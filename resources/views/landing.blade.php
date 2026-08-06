@@ -20,7 +20,7 @@
   <div class="max-w-6xl mx-auto px-5 h-[62px] flex items-center gap-3">
     <x-brand variant="wordmark" class="h-6" />
     <nav class="ml-auto hidden md:flex items-center gap-1 text-[12.5px] font-semibold text-stone-500">
-      @foreach ([['#modul','Modul'],['#fitur','Fitur'],['#alur','Cara Kerja']] as [$h,$l])
+      @foreach ([['#pilar','Pilar'],['#modul','Modul'],['#fitur','Fitur'],['#alur','Cara Kerja']] as [$h,$l])
         <a href="{{ $h }}" class="px-3 py-2 rounded-lg hover:text-cam-ink hover:bg-black/5 transition">{{ $l }}</a>
       @endforeach
     </nav>
@@ -65,6 +65,62 @@
           </div>
         @endforeach
       </div>
+    </div>
+  </div>
+</section>
+
+{{-- ══════════ PILAR ══════════ --}}
+@php
+  $pilar = \App\Support\Pillars::all();
+  // Ikon heksagon per pilar (dipakai bersama halaman /pilar).
+  $pilarIkon = [
+    'energy'      => '<path d="M12 1.5A10.5 10.5 0 1 0 22.5 12 10.51 10.51 0 0 0 12 1.5Zm0 19A8.5 8.5 0 1 1 20.5 12 8.51 8.51 0 0 1 12 20.5Z"/><path d="M13.2 5.6 7.4 13h3.3l-.9 5.4 5.8-7.4h-3.3l.9-5.4Z"/>',
+    'quality'     => '<path d="M12 2.2S5.6 9.3 5.6 13.6a6.4 6.4 0 0 0 12.8 0C18.4 9.3 12 2.2 12 2.2Zm0 16.1a4.7 4.7 0 0 1-4.7-4.7c0-2.6 3.1-6.8 4.7-8.7 1.6 1.9 4.7 6.1 4.7 8.7a4.7 4.7 0 0 1-4.7 4.7Z"/>',
+    'occhealth'   => '<path d="M11 3a5 5 0 0 0-5 4.6h10A5 5 0 0 0 11 3Zm-6 5.6a1 1 0 0 0 0 2h12a1 1 0 0 0 0-2Zm6 3.1a5 5 0 0 0-5 5v2.7h6.3a6.4 6.4 0 0 1 2.2-7.4 5 5 0 0 0-3.5-1.3Z"/><path d="M18.2 12.6a4.6 4.6 0 1 0 0 9.2 4.6 4.6 0 0 0 0-9.2Zm2.3 5.4h-1.6v1.6h-1.4V18h-1.6v-1.4h1.6V15h1.4v1.6h1.6Z"/>',
+    'safety'      => '<path d="M12 1.8 3.8 5v6.2c0 5.1 3.5 9.8 8.2 11 4.7-1.2 8.2-5.9 8.2-11V5Zm0 2.2 6.2 2.4v4.8c0 4-2.6 7.8-6.2 8.9-3.6-1.1-6.2-4.9-6.2-8.9V6.4Z"/><path d="m10.9 14.4-2.2-2.2-1.3 1.4 3.5 3.5 6-6-1.4-1.4Z"/>',
+    'environment' => '<path d="M20.6 3.6c-8 0-13.4 3.2-13.4 9.4a7.9 7.9 0 0 0 1.1 4.2c1.6-3.6 4.5-6.4 8.2-8-3 2.2-5.3 5.3-6.4 8.9l-.9 2.9h2.1l.6-2c6.6-.4 8.7-6 8.7-15.4Z"/>',
+    'engineering' => '<path d="M21 13.1v-2.2l-2.4-.4a6.9 6.9 0 0 0-.8-1.9l1.4-2-1.6-1.6-2 1.4a6.9 6.9 0 0 0-1.9-.8L13.1 3h-2.2l-.4 2.6a6.9 6.9 0 0 0-1.9.8l-2-1.4-1.6 1.6 1.4 2a6.9 6.9 0 0 0-.8 1.9L3 10.9v2.2l2.6.4a6.9 6.9 0 0 0 .8 1.9l-1.4 2 1.6 1.6 2-1.4a6.9 6.9 0 0 0 1.9.8l.4 2.6h2.2l.4-2.6a6.9 6.9 0 0 0 1.9-.8l2 1.4 1.6-1.6-1.4-2a6.9 6.9 0 0 0 .8-1.9ZM12 15.4A3.4 3.4 0 1 1 15.4 12 3.4 3.4 0 0 1 12 15.4Z"/>',
+  ];
+  // Warna tiap huruf EQOHSEE → pilar (O+H = Occupational Health).
+  $wordmark = [
+    ['E','energy'], ['Q','quality'], ['O','occhealth'], ['H','occhealth'],
+    ['S','safety'], ['E','environment'], ['E','engineering'],
+  ];
+@endphp
+<section id="pilar" class="relative bg-cam-ink text-white overflow-hidden">
+  <div class="absolute -left-24 -bottom-24 w-[360px] h-[360px] rounded-full bg-cam-lime/15 blur-3xl"></div>
+  <div class="relative max-w-6xl mx-auto px-5 py-16 md:py-20">
+    <div class="text-center max-w-xl mx-auto">
+      <span class="text-[10.5px] font-bold uppercase tracking-[0.22em] text-cam-lime-light">Kerangka Kerja</span>
+      <h2 class="font-display text-[30px] md:text-[38px] font-black mt-3 leading-tight">Nama kami adalah janjinya</h2>
+      <p class="text-[13.5px] text-white/55 mt-3 leading-relaxed">
+        <strong class="text-white/80">EQOHSEE</strong> berdiri di atas enam pilar. Setiap modul di platform ini
+        menopang salah satunya — sehingga keselamatan bukan program terpisah, melainkan satu sistem utuh.
+      </p>
+
+      {{-- Wordmark: tiap huruf mewakili satu pilar --}}
+      <div class="mt-7 font-display font-black tracking-tight leading-none flex justify-center"
+           style="font-size:clamp(34px,9vw,62px)" aria-label="EQOHSEE">
+        @foreach ($wordmark as [$huruf,$slug])
+          <span style="color:{{ $pilar[$slug]['warna'] }}">{{ $huruf }}</span>
+        @endforeach
+      </div>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-11">
+      @foreach ($pilar as $slug => $p)
+        <div class="group glass-panel rounded-2xl p-6 relative overflow-hidden card-hover"
+             style="border-top:3px solid {{ $p['warna'] }}">
+          <div class="flex items-center gap-3">
+            <span class="w-11 h-10 grid place-items-center shrink-0"
+                  style="background:{{ $p['warna'] }};clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="#fff" aria-hidden="true">{!! $pilarIkon[$slug] !!}</svg>
+            </span>
+            <h3 class="text-[14.5px] font-bold" style="color:{{ $p['warna'] }}">{{ $p['nama'] }}</h3>
+          </div>
+          <p class="text-[12.5px] text-white/60 mt-3 leading-relaxed">{{ $p['ket'] }}</p>
+        </div>
+      @endforeach
     </div>
   </div>
 </section>
