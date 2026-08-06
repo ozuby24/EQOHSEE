@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Laporan Inspeksi — EQOHSEE</title>
+<style>
+  body{font-family:'Inter',Arial,sans-serif;margin:0;padding:24px;color:#1b1817;font-size:11px}
+  h1{font-size:18px;margin:0 0 2px} h2{font-size:13px;margin:18px 0 6px}
+  table{width:100%;border-collapse:collapse;margin-bottom:6px}
+  th{background:#f5f5f4;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.05em;
+     color:#57534e;padding:6px;border-bottom:2px solid #e7e5e4}
+  td{padding:6px;border-bottom:1px solid #f5f5f4;vertical-align:top}
+  .tag{display:inline-block;padding:1px 6px;border-radius:99px;color:#fff;font-size:9px;font-weight:700}
+  .meta{color:#78716c;font-size:10px;margin-bottom:6px}
+  .kop{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #84cc16;padding-bottom:10px;margin-bottom:14px}
+  .logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#65a30d,#a3e635);
+        color:#fff;display:grid;place-items:center;font-weight:800;font-size:14px}
+  .blok{page-break-inside:avoid;margin-bottom:16px}
+  @media print{ .noprint{display:none} body{padding:0} }
+</style>
+  <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
+  <link rel="icon" type="image/png" href="{{ asset('favicon-32.png') }}">
+  <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
+</head>
+<body>
+<div class="noprint" style="margin-bottom:14px">
+  <button onclick="window.print()" style="background:#65a30d;color:#fff;border:0;padding:9px 18px;border-radius:9px;font-weight:700;cursor:pointer">
+    Cetak / Simpan PDF
+  </button>
+</div>
+
+<div class="kop">
+  <div style="display:flex;gap:9px;align-items:center">
+    <div class="logo">E</div>
+    <div><h1>Laporan Inspeksi</h1><div class="meta" style="margin:0">EQOHSEE · HSE Platform</div></div>
+  </div>
+  <div style="text-align:right;font-size:10px;color:#78716c">
+    Dicetak {{ now()->translatedFormat('d F Y · H:i') }}<br>Total <b>{{ $data->count() }}</b> inspeksi
+  </div>
+</div>
+
+@forelse($data as $i)
+  <div class="blok">
+    <h2>{{ $i->kode }} — {{ $i->judul }}</h2>
+    <div class="meta">
+      {{ $i->template?->nama ?: '—' }} · {{ optional($i->tanggal)->format('d/m/Y') }} ·
+      📍 {{ $i->lokasi ?: '—' }} · {{ $i->company?->name ?: '—' }} · Status: <b>{{ $i->status }}</b><br>
+      Inspektur: {{ $i->inspectors->map(fn($p) => $p->nama.' ('.$p->peran.')')->implode(', ') ?: '—' }}
+    </div>
+    <table>
+      <thead><tr><th>Kelompok</th><th>Parameter</th><th>Kondisi</th><th>Risiko</th><th>Temuan</th><th>Tindakan</th></tr></thead>
+      <tbody>
+        @forelse($i->items as $it)
+          <tr>
+            <td>{{ $it->kelompok ?: '—' }}</td>
+            <td>{{ $it->uraian }}</td>
+            <td>
+              @if($it->kondisi)
+                <span class="tag" style="background: {{ $it->kondisi==='Sesuai' ? '#84cc16' : ($it->kondisi==='Tidak Sesuai' ? '#ef4444' : '#a8a29e') }}">{{ $it->kondisi }}</span>
+              @else — @endif
+            </td>
+            <td>{{ $it->risiko ?: '—' }}</td>
+            <td>{{ $it->temuan ?: '—' }}</td>
+            <td>{{ $it->tindakan ?: '—' }}</td>
+          </tr>
+        @empty
+          <tr><td colspan="6" style="text-align:center;color:#a8a29e;padding:14px">Belum ada item.</td></tr>
+        @endforelse
+      </tbody>
+    </table>
+  </div>
+@empty
+  <p style="text-align:center;color:#a8a29e;padding:30px">Tidak ada data inspeksi.</p>
+@endforelse
+</body>
+</html>

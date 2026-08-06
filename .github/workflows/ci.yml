@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  laravel:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Siapkan PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, pdo_pgsql, bcmath, gd, zip
+          coverage: none
+
+      - name: Cache composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('composer.lock') }}
+
+      - name: Pasang dependensi
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Siapkan lingkungan
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          mkdir -p database && touch database/database.sqlite
+
+      - name: Periksa sintaks seluruh PHP
+        run: find app database routes config -name "*.php" -print0 | xargs -0 -n1 php -l
+
+      - name: Periksa sintaks seluruh Blade
+        run: |
+          php -r '
+            $gagal = 0;
+            $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator("resources/views"));
+            foreach ($it as $f) {
+              if ($f->getExtension() !== "php") continue;
+              $out = shell_exec("php -l " . escapeshellarg($f->getPathname()) . " 2>&1");
+              if (!str_contains($out, "No syntax errors")) { echo $out; $gagal++; }
+            }
+            exit($gagal ? 1 : 0);
+          '
+
+      - name: Migrasi
+        run: php artisan migrate --force
+
+      - name: Uji
+        run: php artisan test

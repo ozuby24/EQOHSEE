@@ -1,0 +1,12 @@
+// ============================================================
+//  app/Providers/AppServiceProvider.php
+//  1) Di bagian atas file (setelah namespace):
+// ============================================================
+use Illuminate\Support\Facades\Gate;
+use App\Models\User;
+
+// ============================================================
+//  2) Di dalam method boot():
+// ============================================================
+Gate::define('admin',   fn (User $u) => $u->isAdmin());
+Gate::define('trainer', fn (User $u) => $u->isAdmin() || $u->isTrainer());

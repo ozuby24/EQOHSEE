@@ -1,0 +1,97 @@
+@extends('layouts.app')
+@section('title','Sertifikat')
+
+@section('content')
+@php
+  $logo   = $c->company?->effectiveLogo();
+  $pemilik= $c->company?->ownerName();
+  $tpl    = $c->template ?: 'klasik';
+  $verUrl = route('certificates.verify', $c->verification_code ?: $c->certificate_number);
+@endphp
+
+<div class="max-w-3xl mx-auto">
+  <div class="bg-white rounded-2xl shadow-card overflow-hidden relative
+              {{ $tpl==='modern' ? 'border-0' : ($tpl==='minimal' ? 'border border-stone-200' : 'border-[3px] border-cam-lime/30') }}">
+
+    {{-- Kop --}}
+    @if($tpl === 'korporat')
+      <div class="flex items-center gap-4 px-9 py-5 border-b-2 border-cam-lime/40 bg-stone-50">
+        @if($logo)<img src="{{ asset('storage/'.$logo) }}" class="h-12 w-auto object-contain">@endif
+        <div class="min-w-0">
+          <div class="text-[15px] font-bold text-cam-ink leading-tight">{{ $pemilik }}</div>
+          @if($c->company?->location)<div class="text-[11px] text-stone-400 mt-0.5">{{ $c->company->location }}</div>@endif
+        </div>
+      </div>
+    @elseif($tpl === 'modern')
+      <div class="lime-gradient h-2"></div>
+    @endif
+
+    <div class="p-9 md:p-14 text-center relative">
+      @if($tpl === 'klasik')
+        <div class="absolute -right-24 -top-24 w-64 h-64 rounded-full bg-cam-lime/5"></div>
+        <div class="absolute -left-24 -bottom-24 w-64 h-64 rounded-full bg-cam-lime/5"></div>
+      @endif
+
+      <div class="relative">
+        {{-- Logo tengah (selain korporat) --}}
+        @if($tpl !== 'korporat')
+          @if($logo)
+            <img src="{{ asset('storage/'.$logo) }}" class="h-14 mx-auto object-contain">
+          @else
+            <x-brand variant="mark" class="h-8 rounded-xl" />
+          @endif
+        @endif
+
+        <p class="text-[10px] uppercase tracking-[0.3em] text-stone-400 mt-5 font-bold">Sertifikat Pelatihan</p>
+        @if($tpl !== 'korporat' && $pemilik)
+          <p class="text-[12px] text-stone-400 mt-1">{{ $pemilik }}</p>
+        @endif
+
+        <p class="text-[12px] text-stone-400 mt-7">Diberikan kepada</p>
+        <h2 class="font-display text-[30px] md:text-[38px] font-black text-cam-ink mt-2 leading-tight">{{ $c->recipient_name }}</h2>
+
+        <p class="text-[12.5px] text-stone-400 mt-4">telah menyelesaikan pelatihan</p>
+        <h3 class="font-display text-[20px] md:text-[24px] font-extrabold text-cam-lime-deep mt-2">{{ $c->course_title }}</h3>
+
+        @if($c->final_score)
+          <p class="mt-4 inline-block bg-cam-lime-soft border border-cam-lime/25 text-cam-lime-deep px-4 py-1.5 rounded-full text-[12px] font-bold">
+            Nilai akhir: <span class="num">{{ $c->final_score }}</span>
+          </p>
+        @endif
+
+        {{-- Nomor · Barcode · Tanda tangan --}}
+        <div class="grid sm:grid-cols-[1fr_auto] gap-8 items-end mt-12 text-left">
+          <div>
+            <div class="text-[9.5px] uppercase tracking-[0.15em] text-stone-400 font-bold">Nomor Sertifikat</div>
+            <div class="font-mono font-bold text-cam-ink text-[12.5px] mt-1 num">{{ $c->certificate_number }}</div>
+
+            <div class="mt-3.5 max-w-[230px]">
+              {!! \App\Support\Barcode::svg($c->barcodeText(), 40, 1.4) !!}
+              <div class="font-mono text-[9.5px] tracking-[0.12em] text-stone-500 mt-1 text-center num">{{ $c->barcodeText() }}</div>
+            </div>
+            <div class="text-[9px] text-stone-300 mt-1.5 break-all">{{ $verUrl }}</div>
+          </div>
+
+          <div class="text-right">
+            @if($c->signatory?->signature)
+              <img src="{{ asset('storage/'.$c->signatory->signature) }}" class="h-11 ml-auto mb-1">
+            @endif
+            <div class="text-[12.5px] font-bold text-cam-ink border-t border-stone-200 pt-1.5 min-w-[170px]">{{ $c->signed_by_name ?: '—' }}</div>
+            <div class="text-[10.5px] text-stone-400 mt-0.5">{{ $c->signatory?->title ?: 'Penanggung Jawab' }}</div>
+          </div>
+        </div>
+
+        <p class="text-[10.5px] text-stone-300 mt-8">Diterbitkan {{ optional($c->issued_at)->format('d F Y') }} · EQOHSEE</p>
+      </div>
+    </div>
+
+    @if($tpl === 'modern')<div class="lime-gradient h-2"></div>@endif
+  </div>
+
+  <div class="flex flex-wrap gap-2.5 justify-center mt-5 print:hidden">
+    <button onclick="window.print()" class="rounded-xl bg-cam-ink text-white px-5 py-2.5 text-[12.5px] font-bold hover:bg-cam-panel transition">Cetak / PDF</button>
+    <a href="{{ $verUrl }}" target="_blank" rel="noopener" class="rounded-xl border border-stone-200 px-5 py-2.5 text-[12.5px] font-bold text-stone-600 hover:bg-stone-50 transition">Halaman Verifikasi</a>
+    <a href="{{ route('certificates.index') }}" class="rounded-xl border border-stone-200 px-5 py-2.5 text-[12.5px] font-bold text-stone-600 hover:bg-stone-50 transition">Kembali</a>
+  </div>
+</div>
+@endsection

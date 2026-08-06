@@ -1,0 +1,1042 @@
+{
+ "indicators": [
+  {
+   "id": 1,
+   "name": "Partisipasi Pekerja Tambang",
+   "weight": 0.15,
+   "thr": [
+    0.07,
+    0.1,
+    0.12,
+    0.14,
+    0.15
+   ],
+   "params": [
+    {
+     "code": "1.1",
+     "name": "Kepedulian dan Perilaku Individu terhadap Risiko Keselamatan Pertambangan",
+     "dim": "Kualitatif",
+     "weight": 0.05,
+     "items": [
+      {
+       "code": "1.1.1",
+       "title": "Kesadaran Pekerja terhadap Risiko Keselamatan Pertambangan"
+      },
+      {
+       "code": "1.1.2",
+       "title": "Komitmen dan Inisiatif Pekerja dalam Pengelolaan Keselamatan"
+      },
+      {
+       "code": "1.1.3",
+       "title": "Kedisiplinan Pekerja di Dalam Pekerjaan dan di Luar Pekerjaan"
+      },
+      {
+       "code": "1.1.4",
+       "title": "Aktualisasi Nilai-Nilai Inti (Core Values) Perusahaan oleh Pekerja"
+      },
+      {
+       "code": "1.1.5",
+       "title": "Aktualisasi Aturan Emas Keselamatan Pertambangan (Golden Rules)"
+      }
+     ]
+    },
+    {
+     "code": "1.2",
+     "name": "Keterlibatan Pekerja dalam Pengelolaan Keselamatan Pertambangan",
+     "dim": "Kualitatif & Kuantitatif",
+     "weight": 0.1,
+     "items": [
+      {
+       "code": "1.2.1",
+       "title": "Kehadiran Pekerja dalam Pekerjaan di Hari Kerja"
+      },
+      {
+       "code": "1.2.2",
+       "title": "Kehadiran Pekerja dalam Kegiatan Keselamatan Pertambangan"
+      },
+      {
+       "code": "1.2.3",
+       "title": "Peran Pekerja dalam Kegiatan Keselamatan Pertambangan"
+      },
+      {
+       "code": "1.2.4",
+       "title": "Keterlibatan Perwakilan Departemen/Bagian/Seksi dalam Tim Manajemen Risiko Keselamatan"
+      },
+      {
+       "code": "1.2.5",
+       "title": "Peran Perwakilan Departemen/Bagian/Seksi dalam Manajemen Risiko Keselamatan"
+      },
+      {
+       "code": "1.2.6",
+       "title": "Keterlibatan Pekerja Non Pengawas dalam Manajemen Risiko Keselamatan"
+      },
+      {
+       "code": "1.2.7",
+       "title": "Peran Pekerja dalam Manajemen Risiko Keselamatan Pertambangan"
+      },
+      {
+       "code": "1.2.8",
+       "title": "Keterlibatan Komite Keselamatan Pertambangan dalam Penyusunan Tujuan,"
+      },
+      {
+       "code": "1.2.9",
+       "title": "Kehadiran dan Keterlibatan Komite Keselamatan Pertambangan"
+      },
+      {
+       "code": "1.2.10",
+       "title": "Peran Komite Keselamatan Pertambangan dalam Pemantauan Pelaksanaan dan Perkembangan"
+      },
+      {
+       "code": "1.2.11",
+       "title": "Kehadiran dan Keterlibatan Ketua Komite Keselamatan Pertambangan dalam"
+      },
+      {
+       "code": "1.2.12",
+       "title": "Peran Ketua Komite Keselamatan Pertambangan dalam Rapat Komite"
+      },
+      {
+       "code": "1.2.13",
+       "title": "Kehadiran dan Keterlibatan Wakil Ketua Komite Keselamatan Pertambangan dalam"
+      },
+      {
+       "code": "1.2.14",
+       "title": "Peran Wakil Ketua Komite Keselamatan Pertambangan dalam Rapat Komite"
+      },
+      {
+       "code": "1.2.15",
+       "title": "Kehadiran dan Keterlibatan Sekretaris Komite Keselamatan Pertambangan dalam"
+      },
+      {
+       "code": "1.2.16",
+       "title": "Peran Sekretaris Komite Keselamatan Pertambangan dalam Rapat Komite"
+      },
+      {
+       "code": "1.2.17",
+       "title": "Kehadiran dan Keterlibatan Anggota Komite Keselamatan Pertambangan dalam"
+      },
+      {
+       "code": "1.2.18",
+       "title": "Peran Anggota Komite Keselamatan Pertambangan dalam Rapat Komite"
+      },
+      {
+       "code": "1.2.19",
+       "title": "Peran Anggota Komite Keselamatan Pertambangan dalam Mewakili"
+      },
+      {
+       "code": "1.2.20",
+       "title": "Jumlah Pelaporan Bahaya dan/atau Whistleblowing oleh Pekerja"
+      },
+      {
+       "code": "1.2.21",
+       "title": "Kesesuaian dan Kehandalan Pelaporan Bahaya dan/atau Pengaduan Pelanggaran"
+      },
+      {
+       "code": "1.2.22",
+       "title": "Jumlah Saran dan Masukan Pekerja untuk Peningkatan Keselamatan Pertambangan"
+      },
+      {
+       "code": "1.2.23",
+       "title": "Kesesuaian dan Kehandalan Saran dan Masukan Pekerja untuk Peningkatan Keselamatan"
+      },
+      {
+       "code": "1.2.24",
+       "title": "Efektivitas Partisipasi Pekerja"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": 2,
+   "name": "Tanggung Jawab Pimpinan Unit Kerja",
+   "weight": 0.35,
+   "thr": [
+    0.17,
+    0.24,
+    0.29,
+    0.33,
+    0.35
+   ],
+   "params": [
+    {
+     "code": "2.1",
+     "name": "Implementasi Kebijakan Keselamatan Pertambangan",
+     "dim": "Kualitatif & Kuantitatif",
+     "weight": 0.05,
+     "items": [
+      {
+       "code": "2.1.1",
+       "title": "Upaya Internalisasi Nilai-Nilai Inti (Core Values) Perusahaan oleh Manajemen"
+      },
+      {
+       "code": "2.1.2",
+       "title": "Upaya Internalisasi Aturan Emas Keselamatan Pertambangan"
+      },
+      {
+       "code": "2.1.3",
+       "title": "Efektivitas Kebijakan Keselamatan Pertambangan"
+      },
+      {
+       "code": "2.1.4",
+       "title": "Persepsi Pekerja terhadap Komitmen Manajemen dalam Penerapan Kebijakan"
+      }
+     ]
+    },
+    {
+     "code": "2.2",
+     "name": "Kepemimpinan dan Komitmen Keselamatan Pertambangan",
+     "dim": "Kualitatif & Kuantitatif",
+     "weight": 0.05,
+     "items": [
+      {
+       "code": "2.2.1",
+       "title": "Persepsi Manajemen Puncak terhadap Peran Keselamatan Pertambangan"
+      },
+      {
+       "code": "2.2.2",
+       "title": "Persepsi Pekerja terhadap Kepemimpinan dan"
+      },
+      {
+       "code": "2.2.3",
+       "title": "Ketersediaan Anggaran Keselamatan Pertambangan dalam"
+      },
+      {
+       "code": "2.2.4",
+       "title": "Realisasi Anggaran Keselamatan Pertambangan dalam RKAB"
+      },
+      {
+       "code": "2.2.5",
+       "title": "Kecepatan Manajemen Puncak dalam Merespon Isu Keselamatan Pertambangan"
+      },
+      {
+       "code": "2.2.6",
+       "title": "Jumlah Kehadiran"
+      },
+      {
+       "code": "2.2.7",
+       "title": "Peran Manajemen Puncak pada Kunjungan Site"
+      },
+      {
+       "code": "2.2.8",
+       "title": "Efektivitas Rapat Tinjauan Manajemen"
+      },
+      {
+       "code": "2.2.9",
+       "title": "Peran Pimpinan Tertinggi pada Rapat Tinjauan Manajemen"
+      },
+      {
+       "code": "2.2.10",
+       "title": "Dukungan Manajemen untuk Inovasi dan Peningkatan Kinerja"
+      },
+      {
+       "code": "2.2.11",
+       "title": "Pemberian Penghargaan Keselamatan Pertambangan atas"
+      },
+      {
+       "code": "2.2.12",
+       "title": "Pemberian Sanksi Keselamatan Manajemen"
+      },
+      {
+       "code": "2.2.13",
+       "title": "Persepsi Kepala Teknik Tambang / Penanggung Jawab Operasional"
+      },
+      {
+       "code": "2.2.14",
+       "title": "(item pengukuran)"
+      },
+      {
+       "code": "2.2.15",
+       "title": "Persepsi Pekerja terhadap"
+      },
+      {
+       "code": "2.2.16",
+       "title": "Persepsi Pimpinan Departemen/Bagian /Seksi terhadap Peran Keselamatan"
+      },
+      {
+       "code": "2.2.17",
+       "title": "Persepsi Pekerja terhadap Kepemimpinan dan Komitmen dari"
+      },
+      {
+       "code": "2.2.18",
+       "title": "Kehadiran KTT/PJO dalam Kegiatan Keselamatan Pertambangan"
+      },
+      {
+       "code": "2.2.19",
+       "title": "Peran KTT/PJO dalam Kegiatan Keselamatan Pertambangan"
+      },
+      {
+       "code": "2.2.20",
+       "title": "Peran KTT/PJO dalam Penyusunan dan Tinjauan Kebijakan"
+      },
+      {
+       "code": "2.2.21",
+       "title": "Peran KTT/PJO dalam Manajemen Risiko Keselamatan Pertambangan"
+      },
+      {
+       "code": "2.2.22",
+       "title": "Keterlibatan Pimpinan Departemen/Bagian dalam Penyusunan"
+      },
+      {
+       "code": "2.2.23",
+       "title": "Peran Pimpinan Departemen/Bagian dalam Penyusunan dan Tinjauan"
+      },
+      {
+       "code": "2.2.24",
+       "title": "Keterlibatan Pimpinan Departemen/Bagian dalam Kegiatan"
+      },
+      {
+       "code": "2.2.25",
+       "title": "Peran Pimpinan Departemen/Bagian dalam Kegiatan Keselamatan"
+      },
+      {
+       "code": "2.2.26",
+       "title": "Keterlibatan Pimpinan Departemen/Bagian /Seksi dalam"
+      },
+      {
+       "code": "2.2.27",
+       "title": "Peran Pimpinan Departemen/Bagian /Seksi dalam Manajemen Risiko"
+      },
+      {
+       "code": "2.2.28",
+       "title": "Kehadiran Pengawas Operasional dalam Pertemuan Total persentase"
+      },
+      {
+       "code": "2.2.29",
+       "title": "Peran Pengawas Operasional dalam Pertemuan Keselamatan"
+      },
+      {
+       "code": "2.2.30",
+       "title": "Keterlibatan Pengawas Operasional dalam Manajemen Risiko"
+      },
+      {
+       "code": "2.2.31",
+       "title": "Peran Pengawas Operasional/Teknis dalam Manajemen Risiko Keselamatan"
+      }
+     ]
+    },
+    {
+     "code": "2.3",
+     "name": "Kepatuhan dan Penegakan Peraturan Keselamatan Pertambangan",
+     "dim": "Kualitatif & Kuantitatif",
+     "weight": 0.05,
+     "items": [
+      {
+       "code": "2.3.1",
+       "title": "Inisiatif dan Kesadaran untuk Pemenuhan Persyaratan"
+      },
+      {
+       "code": "2.3.2",
+       "title": "Efektivitas Pemenuhan Ketentuan Peraturan Perundang-undangan dan"
+      },
+      {
+       "code": "2.3.3",
+       "title": "Respon Manajemen"
+      },
+      {
+       "code": "2.3.4",
+       "title": "Kepatuhan Perusahaan dalam Menindaklanjuti Arahan Tertulis"
+      },
+      {
+       "code": "2.3.5",
+       "title": "Kepatuhan Perusahaan dalam Menindaklanjuti Hasil Pembinaan dan Pengawasan"
+      },
+      {
+       "code": "2.3.6",
+       "title": "Kepatuhan KTT dalam Pengelolaan Administrasi Keselamatan"
+      },
+      {
+       "code": "2.3.7",
+       "title": "Kepatuhan KTT dalam Pelaporan Khusus atas Kasus KTT"
+      },
+      {
+       "code": "2.3.8",
+       "title": "Kepatuhan Pimpinan Departemen/Bagian dalam menindaklanjuti"
+      }
+     ]
+    },
+    {
+     "code": "2.4",
+     "name": "Penetapan Peran, Tanggung Jawab dan Kewenangan dalam Keselamatan Pertambangan",
+     "dim": "Kualitatif & Kuantitatif",
+     "weight": 0.04,
+     "items": [
+      {
+       "code": "2.4.1",
+       "title": "Kemandirian Pengelolaan Keselamatan Pertambangan"
+      },
+      {
+       "code": "2.4.2",
+       "title": "Ketersediaan Kepala Teknik Tambang"
+      },
+      {
+       "code": "2.4.3",
+       "title": "Ketersediaan Penanggung Jawab Operasional"
+      },
+      {
+       "code": "2.4.4",
+       "title": "Pelaksanaan Tugas dan Tanggung Jawab Kepala Teknik Tambang /"
+      },
+      {
+       "code": "2.4.5",
+       "title": "Ketersediaan Tenaga Teknis Pertambangan yang Berkompeten"
+      },
+      {
+       "code": "2.4.6",
+       "title": "Penyediaan Pengawas Operasional dan Pengawas Teknis"
+      },
+      {
+       "code": "2.4.7",
+       "title": "Pelaksanaan Tugas dan Tanggung Jawab Pengawas Operasional dan"
+      },
+      {
+       "code": "2.4.8",
+       "title": "Ketersediaan dan Kewenangan Bagian K3 dan Bagian KO Pertambangan"
+      },
+      {
+       "code": "2.4.9",
+       "title": "Penetapan Job Description terkait Keselamatan"
+      },
+      {
+       "code": "2.4.10",
+       "title": "Pemberian Dukungan dan Kewenangan kepada"
+      },
+      {
+       "code": "2.4.11",
+       "title": "Penerapan Mekanisme Pemilihan Perwakilan Pekerja"
+      },
+      {
+       "code": "2.4.12",
+       "title": "Persepsi Manajemen terhadap Pengelolaan Pekerja Manajemen"
+      }
+     ]
+    },
+    {
+     "code": "2.5",
+     "name": "Manajemen Strategi dan Operasi Keselamatan Pertambangan",
+     "dim": "Kualitatif & Kuantitatif",
+     "weight": 0.04,
+     "items": [
+      {
+       "code": "2.5.1",
+       "title": "Formulasi Strategi Pengelolaan Keselamatan Pertambangan"
+      },
+      {
+       "code": "2.5.2",
+       "title": "Penjabaran dan Penyelarasan Strategi Pengelolaan Keselamatan"
+      },
+      {
+       "code": "2.5.3",
+       "title": "Ruang Lingkup Pemantauan Pencapaian Tujuan Pengelolaan"
+      },
+      {
+       "code": "2.5.4",
+       "title": "Efektivitas Pemantauan dan Pengukuran Kinerja Pengelolaan"
+      }
+     ]
+    },
+    {
+     "code": "2.6",
+     "name": "Informasi, Komunikasi, Pendampingan, Konsultasi Keselamatan Pertambangan",
+     "dim": "Kualitatif & Kuantitatif",
+     "weight": 0.04,
+     "items": [
+      {
+       "code": "2.6.1",
+       "title": "Kesesuaian Induksi Keselamatan Pertambangan"
+      },
+      {
+       "code": "2.6.2",
+       "title": "Jumlah Pertemuan Keselamatan Pertambangan Pertemuan KP secara"
+      },
+      {
+       "code": "2.6.3",
+       "title": "Kualitas Pertemuan Keselamatan Pertambangan Pertemuan KP"
+      },
+      {
+       "code": "2.6.4",
+       "title": "Jumlah Kampanye Keselamatan Pertambangan Kampanye KP"
+      },
+      {
+       "code": "2.6.5",
+       "title": "Efektivitas Kampanye Keselamatan Pertambangan"
+      },
+      {
+       "code": "2.6.6",
+       "title": "Efektivitas Komunikasi Keselamatan Pertambangan"
+      },
+      {
+       "code": "2.6.7",
+       "title": "Efektivitas komunikasi vertikal antar pimpinan unit kerja dengan anggota"
+      },
+      {
+       "code": "2.6.8",
+       "title": "Komunikasi Horisontal antar Rekan Kerja"
+      },
+      {
+       "code": "2.6.9",
+       "title": "Efektivitas komunikasi antar ketua kelompok kerja"
+      },
+      {
+       "code": "2.6.10",
+       "title": "Efektivitas komunikasi antar penanggung jawab gilir kerja/shift"
+      },
+      {
+       "code": "2.6.11",
+       "title": "Kehandalan Fasilitas dan Media Penunjang Komunikasi"
+      },
+      {
+       "code": "2.6.12",
+       "title": "Jumlah Mentoring, Coaching, dan Counselling untuk"
+      },
+      {
+       "code": "2.6.13",
+       "title": "Efektivitas Mentoring, Coaching, dan Counselling untuk"
+      },
+      {
+       "code": "2.6.14",
+       "title": "Ketersediaan Ruang dan Akses Penyampaian Informasi"
+      },
+      {
+       "code": "2.6.15",
+       "title": "Proteksi Pelapor dan Mekanisme Penanganan Pelaporan dalam"
+      },
+      {
+       "code": "2.6.16",
+       "title": "Penjangkauan Pemangku Kepentingan Eksternal"
+      },
+      {
+       "code": "2.6.17",
+       "title": "Inventarisasi Harapan dan Kebutuhan Pemangku"
+      },
+      {
+       "code": "2.6.18",
+       "title": "Efektivitas Komunikasi Keselamatan Pertambangan"
+      }
+     ]
+    },
+    {
+     "code": "2.7",
+     "name": "Pengendalian Mutu Keselamatan Pertambangan dalam Kegiatan Operasional",
+     "dim": "Kualitatif & Kuantitatif",
+     "weight": 0.04,
+     "items": [
+      {
+       "code": "2.7.1",
+       "title": "Jumlah Penetapan Tata Cara Kerja Baku untuk Operasi Kerja"
+      },
+      {
+       "code": "2.7.2",
+       "title": "Efektivitas Tata Cara Kerja Baku untuk Operasi Kerja"
+      },
+      {
+       "code": "2.7.3",
+       "title": "Kesesuaian Penetapan Rencana Kerja Operasional Harian"
+      },
+      {
+       "code": "2.7.4",
+       "title": "Kesesuaian Penerapan Pemeriksaan Kesiapan"
+      },
+      {
+       "code": "2.7.5",
+       "title": "Kesesuaian Pemberian Izin Masuk Lokasi Pertambangan"
+      },
+      {
+       "code": "2.7.6",
+       "title": "Kesesuaian Pemberian Lisensi dan Surat Izin Pengoperasian"
+      },
+      {
+       "code": "2.7.7",
+       "title": "Kesesuaian Pemberian Izin Kerja Khusus"
+      },
+      {
+       "code": "2.7.8",
+       "title": "Kesesuaian Penetapan Area, Aktivitas, dan Kontrol Kritis dalam"
+      },
+      {
+       "code": "2.7.9",
+       "title": "Kesesuaian Penetapan Distribusi dan Komposisi Area Pengawasan"
+      },
+      {
+       "code": "2.7.10",
+       "title": "Jumlah Inspeksi, Pemeriksaan, Pengujian oleh Pengawas"
+      },
+      {
+       "code": "2.7.11",
+       "title": "Kesesuaian dan Kehandalan Hasil Inspeksi, Pemeriksaan,"
+      },
+      {
+       "code": "2.7.12",
+       "title": "Jumlah Inspeksi, Pemeriksaan, Pengujian oleh Pengawas"
+      },
+      {
+       "code": "2.7.13",
+       "title": "Kesesuaian dan Kehandalan Hasil Inspeksi, Pemeriksaan,"
+      },
+      {
+       "code": "2.7.14",
+       "title": "Jumlah Inspeksi oleh Pihak Internal di Luar Penanggung Jawab Area (Silang)"
+      },
+      {
+       "code": "2.7.15",
+       "title": "Kesesuaian dan Kehandalan Hasil Inspeksi, Pemeriksaan,"
+      },
+      {
+       "code": "2.7.16",
+       "title": "Efektivitas Inspeksi Keselamatan Pertambangan"
+      }
+     ]
+    },
+    {
+     "code": "2.8",
+     "name": "Penjaminan Mutu Keselamatan Pertambangan melalui Audit Internal SMKP",
+     "dim": "Kualitatif & Kuantitatif",
+     "weight": 0.04,
+     "items": [
+      {
+       "code": "2.8.1",
+       "title": "Dasar Pelaksanaan Audit Internal SMKP Audit Internal SMKP dilakukan secara"
+      },
+      {
+       "code": "2.8.2",
+       "title": "Kesesuaian Metodologi Audit Internal SMKP Audit Internal SMKP"
+      },
+      {
+       "code": "2.8.3",
+       "title": "Keberhasilan Pencapaian Tujuan Audit Internal SMKP Tujuan audit internal"
+      },
+      {
+       "code": "2.8.4",
+       "title": "Jumlah Opportunity for Improvement (OFI) dalam Audit Internal SMKP"
+      },
+      {
+       "code": "2.8.5",
+       "title": "Penyelesaian Rencana Tindak Lanjut Audit Internal SMKP"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": 3,
+   "name": "Analisis dan Statistik Kecelakaan, PAK, KAPTK, dan Kejadian Berbahaya",
+   "weight": 0.2,
+   "thr": [
+    0.1,
+    0.14,
+    0.17,
+    0.19,
+    0.2
+   ],
+   "params": [
+    {
+     "code": "3.1",
+     "name": "Analisis Terhadap Data Kasus Keselamatan Pertambangan",
+     "dim": "Kualitatif & Kuantitatif",
+     "weight": 0.05,
+     "items": [
+      {
+       "code": "3.1.1",
+       "title": "Integritas Data"
+      },
+      {
+       "code": "3.1.2",
+       "title": "Ruang Lingkup Analisis dan Pengolahan Data"
+      },
+      {
+       "code": "3.1.3",
+       "title": "Maturitas Hasil Analisis Analisis KP"
+      }
+     ]
+    },
+    {
+     "code": "3.2",
+     "name": "Investigasi Kasus Keselamatan Pertambangan",
+     "dim": "Kualitatif",
+     "weight": 0.05,
+     "items": [
+      {
+       "code": "3.2.1",
+       "title": "Jumlah Kasus Keselamatan Pertambangan yang Diinvestigasi"
+      },
+      {
+       "code": "3.2.2",
+       "title": "Pengumpulan Data dan Informasi terkait Kasus Keselamatan Pertambangan"
+      },
+      {
+       "code": "3.2.3",
+       "title": "Paradigma Investigasi Kasus Investigasi difokuskan untuk"
+      },
+      {
+       "code": "3.2.4",
+       "title": "Teknik Analisis Kasus Keselamatan Pertambangan"
+      },
+      {
+       "code": "3.2.5",
+       "title": "Penetapan Tindakan Perbaikan dan Pencegahan atas Kasus Keselamatan"
+      },
+      {
+       "code": "3.2.6",
+       "title": "Pelaksanaan Tindakan Perbaikan dan Pencegahan atas Kasus Keselamatan"
+      },
+      {
+       "code": "3.2.7",
+       "title": "Jumlah Kasus Keselamatan Pertambangan Serupa dan Berulang"
+      }
+     ]
+    },
+    {
+     "code": "3.3",
+     "name": "Statistik Kinerja Keselamatan Pertambangan Berdasarkan Indikator Tertinggal",
+     "dim": "Kuantitatif",
+     "weight": 0.05,
+     "items": [
+      {
+       "code": "3.3.1",
+       "title": "Accident Frequency Rate"
+      },
+      {
+       "code": "3.3.2",
+       "title": "Accident Severity Rate"
+      },
+      {
+       "code": "3.3.3",
+       "title": "Jumlah Kejadian Berbahaya"
+      },
+      {
+       "code": "3.3.4",
+       "title": "Morbidity Frequency Rate"
+      },
+      {
+       "code": "3.3.5",
+       "title": "Absence Severity Rate (termasuk KAPTK)"
+      },
+      {
+       "code": "3.3.6",
+       "title": "Frekuensi Penyakit Akibat Kerja"
+      }
+     ]
+    },
+    {
+     "code": "3.4",
+     "name": "Pembelajaran Organisasi",
+     "dim": "Kualitatif & Kuantitatif",
+     "weight": 0.05,
+     "items": [
+      {
+       "code": "3.4.1",
+       "title": "Pembelajaran Retrospektif dari Pengelolaan Keselamatan"
+      },
+      {
+       "code": "3.4.2",
+       "title": "Jumlah Perbaikan Berbasis Pembelajaran"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": 4,
+   "name": "Upaya-Upaya Pengendalian yang Dilakukan",
+   "weight": 0.3,
+   "thr": [
+    0.15,
+    0.2,
+    0.25,
+    0.28,
+    0.3
+   ],
+   "params": [
+    {
+     "code": "4.1",
+     "name": "Pengendalian Risiko Keselamatan Pertambangan Berbasis Tata Kelola",
+     "dim": "Kualitatif & Kuantitatif",
+     "weight": 0.04,
+     "items": [
+      {
+       "code": "4.1.1",
+       "title": "Dasar Pengelolaan Risiko Keselamatan Pertambangan"
+      },
+      {
+       "code": "4.1.2",
+       "title": "Ketuntasan Siklus Manajemen Risiko"
+      },
+      {
+       "code": "4.1.3",
+       "title": "Ruang Lingkup Manajemen Risiko"
+      },
+      {
+       "code": "4.1.4",
+       "title": "Efektivitas Pelaksanaan Manajemen Risiko"
+      }
+     ]
+    },
+    {
+     "code": "4.2",
+     "name": "Manajemen Kesehatan Kerja Pertambangan",
+     "dim": "Kualitatif & Kuantitatif",
+     "weight": 0.03,
+     "items": [
+      {
+       "code": "4.2.1",
+       "title": "Dasar Pengembangan"
+      },
+      {
+       "code": "4.2.2",
+       "title": "Realisasi Program Pokok: Kesehatan Kerja Realisasi Program"
+      },
+      {
+       "code": "4.2.3",
+       "title": "Efektivitas Program Kesehatan Kerja Nilai Audit Sub Elemen IV.3 dalam 2"
+      }
+     ]
+    },
+    {
+     "code": "4.3",
+     "name": "Manajemen Lingkungan Kerja Pertambangan",
+     "dim": "Kualitatif & Kuantitatif",
+     "weight": 0.03,
+     "items": [
+      {
+       "code": "4.3.1",
+       "title": "Dasar Pengembangan Program Lingkungan Kerja Pertambangan"
+      },
+      {
+       "code": "4.3.2",
+       "title": "Realisasi Program Pokok: Lingkungan Kerja Realisasi Program"
+      },
+      {
+       "code": "4.3.3",
+       "title": "Efektivitas Program Lingkungan Kerja Nilai Audit Sub Elemen IV.2 dalam 2"
+      }
+     ]
+    },
+    {
+     "code": "4.4",
+     "name": "Manajemen Rekayasa & Desain Proses",
+     "dim": "Kualitatif & Kuantitatif",
+     "weight": 0.04,
+     "items": [
+      {
+       "code": "4.4.1",
+       "title": "Penerapan Rekayasa Pertambangan: Kehandalan Desain"
+      },
+      {
+       "code": "4.4.2",
+       "title": "Penerapan Rekayasa Pertambangan: Kehandalan Metode"
+      },
+      {
+       "code": "4.4.3",
+       "title": "Penerapan Rekayasa Pertambangan: Kesesuaian Penggunaan"
+      },
+      {
+       "code": "4.4.4",
+       "title": "Penerapan Rekayasa Pertambangan: Penggunaan Peralatan Perangkat"
+      },
+      {
+       "code": "4.4.5",
+       "title": "Efektivitas Perancangan dan Rekayasa Pertambangan"
+      }
+     ]
+    },
+    {
+     "code": "4.5",
+     "name": "Manajemen Aset Keselamatan Pertambangan",
+     "dim": "Kualitatif & Kuantitatif",
+     "weight": 0.04,
+     "items": [
+      {
+       "code": "4.5.1",
+       "title": "Pengadaan dan Pembelian Aset"
+      },
+      {
+       "code": "4.5.2",
+       "title": "Inventarisasi Asset Inventarisasi Aset penunjang aspek KP dilakukan secara"
+      },
+      {
+       "code": "4.5.3",
+       "title": "Manajemen Rantai Pasokan"
+      },
+      {
+       "code": "4.5.4",
+       "title": "Manajemen Integritas Aset: Jumlah Pengujian Kelayakan SPIP"
+      },
+      {
+       "code": "4.5.5",
+       "title": "Manajemen Integritas Aset: Realisasi Commissioning"
+      },
+      {
+       "code": "4.5.6",
+       "title": "Manajemen Integritas Aset: Jumlah Pemeliharaan SPIP"
+      },
+      {
+       "code": "4.5.7",
+       "title": "Nilai Physical Availability"
+      },
+      {
+       "code": "4.5.8",
+       "title": "Nilai Mechanical Availability"
+      },
+      {
+       "code": "4.5.9",
+       "title": "Realisasi Program Pokok: Keselamatan Operasi Realisasi Program"
+      },
+      {
+       "code": "4.5.10",
+       "title": "Efektivitas Program Keselamatan Operasi Nilai Audit Sub Elemen IV.4 dalam 2"
+      }
+     ]
+    },
+    {
+     "code": "4.6",
+     "name": "Manajemen Kehandalan Pekerja dalam Pengelolaan Keselamatan Pertambangan",
+     "dim": "Kualitatif & Kuantitatif",
+     "weight": 0.03,
+     "items": [
+      {
+       "code": "4.6.1",
+       "title": "Pemenuhan Kelaikan Kerja (Fitness for Duty): Kesiapan Psikologi"
+      },
+      {
+       "code": "4.6.2",
+       "title": "Efektivitas Seleksi dan Penempatan Pekerja"
+      },
+      {
+       "code": "4.6.3",
+       "title": "Efektivitas Seleksi dan Penempatan Personel"
+      },
+      {
+       "code": "4.6.4",
+       "title": "Pemenuhan Kompetensi Pekerja sesuai Standar Kompetensi Kerja"
+      },
+      {
+       "code": "4.6.5",
+       "title": "Efektivitas Pemenuhan Kompetensi Kerja"
+      },
+      {
+       "code": "4.6.6",
+       "title": "Pendekatan Pelaksanaan Pendidikan dan Pelatihan Aspek KP"
+      },
+      {
+       "code": "4.6.7",
+       "title": "Efektivitas Pendidikan dan Pelatihan Aspek Keselamatan"
+      },
+      {
+       "code": "4.6.8",
+       "title": "Retensi Pengetahuan & Peningkatan Kinerja Pekerja Pasca Pendidikan"
+      },
+      {
+       "code": "4.6.9",
+       "title": "Retensi Pengetahuan & Peningkatan Kinerja Pekerja Pasca Sertifikasi"
+      },
+      {
+       "code": "4.6.10",
+       "title": "Kesesuaian Penetapan Roster dan Shift/Gilir Kerja Pekerja"
+      },
+      {
+       "code": "4.6.11",
+       "title": "Pernyataan Pekerja terkait Kepuasan Kerja (Job Satisfaction) dan"
+      }
+     ]
+    },
+    {
+     "code": "4.7",
+     "name": "Manajemen Perubahan",
+     "dim": "Kualitatif & Kuantitatif",
+     "weight": 0.04,
+     "items": [
+      {
+       "code": "4.7.1",
+       "title": "Dasar Manajemen Perubahan"
+      },
+      {
+       "code": "4.7.2",
+       "title": "Kebermanfaatan Manajemen Perubahan Manajemen"
+      },
+      {
+       "code": "4.7.3",
+       "title": "Daya Tanggap Organisasi atas Perubahan dari Eksternal"
+      },
+      {
+       "code": "4.7.4",
+       "title": "Efektivitas Kajian Teknis Pertambangan"
+      },
+      {
+       "code": "4.7.5",
+       "title": "Efektivitas Manajemen Perubahan"
+      }
+     ]
+    },
+    {
+     "code": "4.8",
+     "name": "Manajemen Keadaan Darurat",
+     "dim": "Kualitatif & Kuantitatif",
+     "weight": 0.03,
+     "items": [
+      {
+       "code": "4.8.1",
+       "title": "Efektivitas Tim Tanggap Darurat"
+      },
+      {
+       "code": "4.8.2",
+       "title": "Efektivitas Manajemen Keadaan Darurat"
+      }
+     ]
+    },
+    {
+     "code": "4.9",
+     "name": "Manajemen Perusahaan Jasa Pertambangan",
+     "dim": "Kuantitatif",
+     "weight": 0.01,
+     "items": [
+      {
+       "code": "4.9.1",
+       "title": "Persyaratan, Seleksi, dan Penetapan"
+      },
+      {
+       "code": "4.9.2",
+       "title": "Penetapan Tanggung Jawab Perusahaan Jasa Pertambangan"
+      },
+      {
+       "code": "4.9.3",
+       "title": "Pemantauan dan Evaluasi Kinerja"
+      }
+     ]
+    },
+    {
+     "code": "4.10",
+     "name": "Manajemen Dokumen & Rekaman Keselamatan Pertambangan",
+     "dim": "Kualitatif & Kuantitatif",
+     "weight": 0.01,
+     "items": [
+      {
+       "code": "4.10.1",
+       "title": "Manajemen Dokumentasi Keselamatan Pertambangan"
+      },
+      {
+       "code": "4.10.2",
+       "title": "Efektivitas Manajemen Dokumentasi"
+      },
+      {
+       "code": "4.10.3",
+       "title": "Manajemen Pengetahuan"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "levelLabels": [
+  "Dasar",
+  "Reaktif",
+  "Terencana",
+  "Proaktif",
+  "Resilient"
+ ],
+ "overallThresholds": [
+  0.5,
+  0.7,
+  0.8,
+  0.9,
+  1.0
+ ]
+}

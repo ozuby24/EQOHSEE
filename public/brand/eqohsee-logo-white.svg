@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 120" fill="none" role="img" aria-label="EQOHSEE">
+  <defs>
+    <linearGradient id="mtl" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#333B45"/><stop offset=".5" stop-color="#1E242C"/><stop offset="1" stop-color="#10141A"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7C8894"/><stop offset=".45" stop-color="#333B45"/><stop offset="1" stop-color="#12161C"/>
+    </linearGradient>
+    <linearGradient id="shn" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".34" stop-color="#fff" stop-opacity=".16"/><stop offset=".56" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="spc" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#3F7BF0"/><stop offset=".2" stop-color="#28A0E4"/><stop offset=".42" stop-color="#17A5CC"/>
+      <stop offset=".6" stop-color="#1BB6A4"/><stop offset=".8" stop-color="#63BE3E"/><stop offset="1" stop-color="#F7B84E"/>
+    </linearGradient>
+    <linearGradient id="silver" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EEF1F4"/><stop offset=".55" stop-color="#B2BBC5"/><stop offset="1" stop-color="#7E8894"/>
+    </linearGradient>
+    <filter id="glw" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <style><![CDATA[
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@900&display=swap");
+      .wm{font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-weight:900;letter-spacing:.5px;}
+    ]]></style>
+  </defs>
+
+  <g transform="translate(4,14) scale(0.767)">
+    <polygon points="114,60 87,106.8 33,106.8 6,60 33,13.2 87,13.2" fill="url(#mtl)"/>
+    <polygon points="114,60 87,106.8 33,106.8 6,60 33,13.2 87,13.2" fill="url(#shn)"/>
+    <polygon points="114,60 87,106.8 33,106.8 6,60 33,13.2 87,13.2" fill="none" stroke="url(#rim)" stroke-width="3.4" stroke-linejoin="round"/>
+    <path d="M40 84 L80 40" stroke="#07090C" stroke-width="15" stroke-linecap="round"/>
+    <path d="M40 84 L80 40" stroke="url(#spc)" stroke-width="9" stroke-linecap="round" filter="url(#glw)"/>
+    <path d="M40 84 L80 40" stroke="url(#spc)" stroke-width="6" stroke-linecap="round"/>
+    <path d="M38.6 82 L78.6 38" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".55"/>
+  </g>
+
+  <text class="wm" x="112" y="60" font-size="52" dominant-baseline="central" fill="url(#silver)">EQOHSEE</text>
+</svg>

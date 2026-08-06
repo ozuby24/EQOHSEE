@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>@yield('title','Masuk') — EQOHSEE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+@vite(['resources/css/app.css','resources/js/app.js'])
+</head>
+<body>
+@php $daftarModul = \App\Support\Modules::all(); @endphp
+<div class="min-h-screen lg:grid lg:grid-cols-[1.1fr_1fr]">
+
+  {{-- ===== Panel kiri: branding + ilustrasi + modul ===== --}}
+  <div class="brand-gradient relative hidden lg:flex flex-col justify-between p-10 xl:p-12 overflow-hidden text-white">
+    <div class="absolute inset-0 opacity-40">@include('partials.art-mine')</div>
+    <div class="absolute inset-0 bg-gradient-to-b from-cam-black/80 via-cam-black/55 to-cam-black/85"></div>
+    <div class="absolute -right-28 -top-28 w-[360px] h-[360px] rounded-full bg-cam-lime/20 blur-3xl floaty"></div>
+
+    <a href="{{ url('/') }}" class="relative flex items-center gap-3 animate-fadeUp">
+      <div class="w-10 h-10 rounded-2xl lime-gradient grid place-items-center font-extrabold text-lg shadow-glow">E</div>
+      <div class="leading-none">
+        <div class="font-extrabold text-[17px] tracking-tight">EQOHSEE</div>
+        <div class="text-[9.5px] uppercase tracking-[0.25em] text-white/40 mt-1">HSE Platform</div>
+      </div>
+    </a>
+
+    <div class="relative animate-fadeUp" style="animation-delay:.1s">
+      <span class="text-[10.5px] font-bold uppercase tracking-[0.25em] text-cam-lime-light">Health · Safety · Environment</span>
+      <h2 class="font-display text-[38px] xl:text-[46px] font-black mt-3.5 leading-[1.08] text-shadow">
+        Keselamatan<br>dimulai dari<br>
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-cam-lime-light to-cam-lime">pengetahuan.</span>
+      </h2>
+      <p class="mt-4 text-[13px] leading-relaxed text-white/50 max-w-sm">
+        Platform terpadu pembelajaran, prosedur, penilaian kinerja, dan sertifikasi untuk seluruh insan tambang.
+      </p>
+
+      {{-- Modul di dalamnya --}}
+      <div class="mt-6 space-y-1.5 max-w-sm">
+        @foreach($daftarModul as $m)
+          @php [$nama,$ket,$status,$ikon] = [$m['nama'],$m['ket'],$m['status'],$m['ikon']]; @endphp
+          <div class="glass rounded-xl px-3.5 py-2.5 flex items-center gap-3">
+            <svg class="w-[17px] h-[17px] shrink-0 {{ $status==='aktif' ? 'text-cam-lime-light' : 'text-white/25' }}"
+                 fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $ikon }}"/></svg>
+            <span class="text-[12px] font-semibold {{ $status==='aktif' ? 'text-white/90' : 'text-white/40' }} truncate">{{ $nama }}</span>
+            @if($status!=='aktif')
+              <span class="ml-auto text-[8.5px] font-bold uppercase tracking-wide text-white/25 shrink-0">Segera</span>
+            @endif
+          </div>
+        @endforeach
+      </div>
+    </div>
+
+    <div class="relative grid grid-cols-4 gap-2 animate-fadeUp" style="animation-delay:.2s">
+      @foreach ([['194','Item'],['7','Elemen'],['6','Modul'],['24/7','Akses']] as [$n,$l])
+        <div class="glass rounded-xl px-3 py-2.5 text-center">
+          <div class="stat stat-sm text-cam-lime-light">{{ $n }}</div>
+          <div class="text-[10px] text-white/45 mt-1">{{ $l }}</div>
+        </div>
+      @endforeach
+    </div>
+  </div>
+
+  {{-- ===== Panel kanan: form ===== --}}
+  <div class="flex items-center justify-center p-6 sm:p-10 bg-cam-bg">
+    <div class="w-full max-w-[380px] animate-fadeUp">
+      <a href="{{ url('/') }}" class="lg:hidden flex items-center gap-2.5 mb-8">
+        <div class="w-9 h-9 rounded-xl lime-gradient grid place-items-center font-extrabold text-white shadow-glow">E</div>
+        <div class="leading-none">
+          <div class="font-extrabold text-[15px] tracking-tight text-cam-ink">EQOHSEE</div>
+          <div class="text-[9.5px] uppercase tracking-[0.22em] text-stone-400 mt-1">HSE Platform</div>
+        </div>
+      </a>
+      @yield('form')
+    </div>
+  </div>
+</div>
+</body>
+</html>

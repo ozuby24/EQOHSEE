@@ -1,0 +1,45 @@
+*.log
+.DS_Store
+.env
+.env.backup
+.env.production
+.phpactor.json
+.phpunit.result.cache
+/.codex
+/.cursor/
+/.idea
+/.nova
+/.phpunit.cache
+/.vscode
+/.zed
+/auth.json
+/node_modules
+/public/build
+/public/fonts-manifest.dev.json
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/vendor
+_ide_helper.php
+Homestead.json
+Homestead.yaml
+Thumbs.db
+
+# ── EQOHSEE ──────────────────────────────────────────────
+# Basis data lokal — berisi data asli, jangan pernah masuk repo
+/database/*.sqlite
+/database/*.sqlite-journal
+/database/*.sqlite-shm
+/database/*.sqlite-wal
+
+# Cadangan yang dibuat installer paket
+/storage/backup-*
+/storage/app/tpkkp-lama-*.json
+/storage/app/tpkkp-*-sebelum-*.json
+/storage/app/public/*
+!/storage/app/public/.gitkeep
+
+# Berkas kerja Termux
+*.zip
+/.eqget-tmp

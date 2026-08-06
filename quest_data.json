@@ -1,0 +1,446 @@
+{
+ "pekerja": {
+  "key": "pekerja",
+  "title": "Kuesioner Kategori Pekerja",
+  "subtitle": "Operator / Driver / Mekanik / Helper / Non-Staff",
+  "indicator": 1,
+  "theme": "#5fa776",
+  "dept": [
+   "Operation",
+   "Engineering",
+   "CPP & Port",
+   "Plant",
+   "Logistik",
+   "Training Center",
+   "HRGA",
+   "ERCD",
+   "FAT (Finance, Accounting & Tax)",
+   "HSE",
+   "Lainnya"
+  ],
+  "perusahaan": [
+   "PT Citra Dayak Indah",
+   "PT Bina Sarana Sukses",
+   "PT Zafina Analitika Inspektama",
+   "Lainnya"
+  ],
+  "jabFree": true,
+  "questions": [
+   {
+    "id": "P1",
+    "item": "1.1.2",
+    "q": "Bagaimana komitmen dan inisiatif Anda dalam pengelolaan keselamatan pertambangan?",
+    "opts": [
+     "Saya bersikap apatis dalam pengelolaan KP dan mengupayakan keselamatan individu dengan naluri; melaksanakan KP karena terpaksa namun tidak mengetahui manfaatnya",
+     "Saya melaksanakan KP dan sudah mengetahui manfaatnya, namun sepenuhnya bergantung pada perusahaan untuk menjaga saya tetap sehat",
+     "Saya menjaga keselamatan & kesehatan diri secara mandiri sebagai komitmen kepatuhan terhadap norma",
+     "Saya berkontribusi pada keselamatan & kesehatan orang lain (interdependent) dalam tim kerja dengan komitmen berkelanjutan",
+     "Saya berkontribusi pada keselamatan & kesehatan orang lain dalam skala organisasi, menjadi bagian gaya hidup, memiliki ikatan emosional untuk peningkatan pengelolaan KP organisasi (komitmen afektif)"
+    ]
+   },
+   {
+    "id": "P2",
+    "item": "1.2.3",
+    "q": "Bagaimana peran Anda dalam kegiatan keselamatan pertambangan?",
+    "opts": [
+     "Saya hanya menghadiri kegiatan KP yang menjadi kewajiban saya",
+     "Saya hanya terlibat/berkontribusi dalam kegiatan KP apabila ada isu terkait pekerjaan saya atau ketika diminta atasan",
+     "Saya hanya berpartisipasi dalam kegiatan KP lingkup unit kerja sesuai tanggung jawab yang ditetapkan",
+     "Saya berperan aktif memberikan input konstruktif, umpan balik, informasi, dan/atau dukungan dalam kegiatan KP untuk unit kerja saya dan unit lain yang terkait dalam departemen",
+     "Saya berpartisipasi aktif dalam kegiatan KP lingkup organisasi dan mampu berkolaborasi untuk mencapai tujuan kegiatan KP"
+    ]
+   },
+   {
+    "id": "P3",
+    "item": "1.2.5",
+    "q": "Bagaimana peran perwakilan departemen/bagian/seksi dalam manajemen risiko keselamatan pertambangan?",
+    "opts": [
+     "Sebagian besar perwakilan tidak berperan dalam tim manajemen risiko KP",
+     "Sebagian besar perwakilan melaksanakan tanggung jawabnya hanya apabila ada isu dengan pekerjaannya atau ketika diminta KTT/PJO",
+     "Sebagian besar perwakilan berpartisipasi dalam tim manajemen risiko KP sesuai tanggung jawab yang ditetapkan",
+     "Sebagian besar perwakilan berperan aktif memberikan input konstruktif, umpan balik, informasi, dan/atau dukungan dalam tim manajemen risiko KP",
+     "Seluruh perwakilan mampu menyelaraskan pemahaman, bertukar informasi dengan tepat, dan berkolaborasi dalam tim untuk mencapai tujuan manajemen risiko KP lingkup organisasi"
+    ]
+   },
+   {
+    "id": "P4",
+    "item": "1.1.1",
+    "q": "Apakah Anda memahami bahaya di area kerja dan risiko yang timbul terhadap diri Anda dan orang lain?",
+    "opts": [
+     "Saya tidak memahami bahaya di area kerja dan risiko terhadap diri saya dan orang lain di sekitar",
+     "Saya memahami bahaya di area kerja namun kurang memahami risiko terhadap diri saya dan orang lain",
+     "Saya memahami bahaya di area kerja dan cukup memahami risiko terhadap diri saya dan orang lain",
+     "Saya memahami bahaya di area kerja dan memahami risiko terhadap diri saya dan orang lain",
+     "Saya sangat memahami bahaya & risiko di area kerja terhadap diri saya dan orang lain serta mampu melakukan pengendaliannya"
+    ]
+   }
+  ]
+ },
+ "pimpinan": {
+  "key": "pimpinan",
+  "title": "Kuesioner Kategori Pimpinan Unit Kerja",
+  "subtitle": "Leader / Pengawas / KTT / PJO / Superintendent / Supervisor / Foreman",
+  "indicator": 2,
+  "theme": "#b8a957",
+  "dept": [
+   "Site Manajemen",
+   "Operation",
+   "Engineering",
+   "CPP",
+   "Plant",
+   "Logistik",
+   "Training Center",
+   "HRGA & IT",
+   "ERCD",
+   "FAT (Finance, Accounting & Tax)",
+   "HSE",
+   "Lainnya"
+  ],
+  "perusahaan": [
+   "PT Citra Dayak Indah",
+   "PT Bina Sarana Sukses",
+   "PT Zafina Analitika Inspektama",
+   "Lainnya"
+  ],
+  "jabOpts": [
+   "Kepala Teknik Tambang",
+   "Penanggung Jawab Operasional",
+   "Deputy PJO/Deputy Project Manager",
+   "Kepala Departemen/Superintendent",
+   "Kepala Seksi/Supervisor",
+   "GL/Foreman Produksi (Operation)",
+   "GL/Foreman Plant (Plant)",
+   "GL/Foreman Proc & Log/HRD dan Sejenisnya",
+   "Trainer",
+   "GL/Foreman HSE",
+   "GL/Foreman Engineering (Survey, Mine Plan, Pit Control)",
+   "Lainnya"
+  ],
+  "questions": [
+   {
+    "id": "L1",
+    "item": "2.1.4",
+    "q": "Bagaimana persepsi pekerja terhadap komitmen manajemen dalam penerapan kebijakan keselamatan pertambangan?",
+    "opts": [
+     "Manajemen tidak mendukung kebijakan KP",
+     "Manajemen berkomitmen menerapkan kebijakan KP ketika sudah terjadi kecelakaan dan kerugian",
+     "Manajemen berkomitmen menerapkan kebijakan & upaya KP tanpa harus terjadi kecelakaan/kerugian terlebih dahulu",
+     "Manajemen berinisiatif mengevaluasi analisis risiko dan mengutamakan aspek KP tetap terpenuhi",
+     "Manajemen mengutamakan KP saat terjadi konflik kepentingan dan telah menjadi panutan/teladan bagi pekerja"
+    ]
+   },
+   {
+    "id": "L2",
+    "item": "2.2.2",
+    "q": "Bagaimana persepsi pekerja terhadap kepemimpinan dan komitmen manajemen (puncak)?",
+    "opts": [
+     "Komitmen manajemen puncak dalam KP sangat kurang",
+     "Komitmen manajemen puncak terbatas sekadar penyelesaian kasus KP yang telah terjadi",
+     "Komitmen manajemen puncak untuk pemenuhan minimum kewajiban hukum dan pencapaian target lagging indicator",
+     "Komitmen pengelolaan KP untuk menunjang sistem produksi dan mencapai target leading & lagging indicator",
+     "Komitmen tinggi agar menunjang kinerja operasional yang konsisten handal; manajemen menjadi role model, memberi dukungan memadai & dorongan inovasi dan perbaikan berkelanjutan"
+    ]
+   },
+   {
+    "id": "L3",
+    "item": "2.2.5",
+    "q": "Bagaimana kecepatan manajemen puncak dalam merespon isu keselamatan pertambangan?",
+    "opts": [
+     "Komitmen manajemen merespon isu KP sangat kurang",
+     "Menunda perbaikan isu KP dan baru menindaklanjuti ketika telah terjadi kerugian",
+     "Melakukan perbaikan isu KP sesuai birokrasi, fokus pada isu yang mempengaruhi keberlanjutan operasional",
+     "Mampu mengambil keputusan & perbaikan dengan cepat atas isu KP yang telah terjadi (minor, mayor, maupun signifikan)",
+     "Mampu mengambil keputusan & perbaikan dengan cepat atas seluruh isu KP, termasuk antisipasi tepat untuk isu yang berpotensi terjadi di masa mendatang"
+    ]
+   },
+   {
+    "id": "L4",
+    "item": "2.2.17",
+    "q": "Bagaimana persepsi pekerja terhadap kepemimpinan dan komitmen dari KTT/PJO?",
+    "opts": [
+     "Pengelolaan KP sangat kurang",
+     "Pengelolaan KP terbatas sekadar penyelesaian permasalahan khusus KP yang telah terjadi",
+     "Pengelolaan KP untuk memenuhi minimum kewajiban hukum dan pencapaian target lagging indikator",
+     "Komitmen pengelolaan KP untuk menunjang sistem produksi dan mencapai target leading & lagging indikator",
+     "Komitmen tinggi agar menunjang kinerja operasional konsisten handal; PJO menjadi role model bagi pekerja"
+    ]
+   },
+   {
+    "id": "L5",
+    "item": "2.2.16",
+    "q": "Bagaimana persepsi pimpinan departemen/bagian/seksi terhadap peran keselamatan pertambangan?",
+    "opts": [
+     "Pengelolaan KP dilakukan agar tidak terkena sanksi pemerintah/klien & untuk kepentingan sertifikasi eksternal",
+     "Pengelolaan KP untuk mencegah kerugian berulang (loss control), fokus penyelesaian masalah/kejadian",
+     "Pengelolaan KP sebagai kepatuhan administratif untuk mencegah & menurunkan angka kecelakaan/kejadian sesuai target",
+     "Pengelolaan KP sebagai pendukung kelancaran operasional, dikelola dengan sistem manajemen terintegrasi seluruh fungsi",
+     "Pengelolaan KP sebagai pendukung operasional & investasi yang baik serta bagian budaya perusahaan yang terus ditingkatkan berkelanjutan"
+    ]
+   },
+   {
+    "id": "L6",
+    "item": "2.2.15",
+    "q": "Bagaimana persepsi pekerja terhadap kepemimpinan dan komitmen dari pimpinan departemen/bagian/seksi?",
+    "opts": [
+     "Pengelolaan KP sangat kurang",
+     "Pengelolaan KP terbatas sekadar penyelesaian kasus KP yang telah terjadi",
+     "Pengelolaan KP untuk pemenuhan minimum kewajiban hukum dan pencapaian target lagging indicator",
+     "Pengelolaan KP untuk menunjang sistem produksi dan mencapai target leading & lagging indikator",
+     "Komitmen tinggi; pimpinan departemen/bagian telah menjadi role model bagi anggotanya"
+    ]
+   },
+   {
+    "id": "L7",
+    "item": "2.2.19",
+    "q": "Peran KTT/PJO dalam kegiatan keselamatan pertambangan (rapat, pertemuan, seminar, dll)?",
+    "opts": [
+     "KTT/PJO tidak terlibat/berperan dalam kegiatan KP",
+     "KTT/PJO memberikan informasi satu arah, tidak memberi ruang partisipasi & kesempatan merespon kepada pekerja",
+     "KTT/PJO memberi kesempatan diskusi & konsultasi serta mendelegasikan kepada pimpinan unit kerja untuk memimpin kegiatan KP",
+     "KTT/PJO memimpin langsung, membuka ruang kerja sama besar & diskusi dua arah, menjadikan pekerja sebagai partner kolaborasi",
+     "KTT/PJO mampu memberdayakan pekerja berpartisipasi aktif, bertukar informasi tepat, memimpin pengambilan keputusan & mufakat melalui proses rasional dan partisipasi tulus"
+    ]
+   },
+   {
+    "id": "L8",
+    "item": "2.2.20",
+    "q": "Peran KTT/PJO dalam penyusunan dan/atau tinjauan kebijakan keselamatan pertambangan?",
+    "opts": [
+     "KTT/PJO tidak terlibat dalam penyusunan/tinjauan kebijakan KP",
+     "KTT/PJO sekadar hadir namun tidak berperan signifikan, mendelegasikan kepada pimpinan K3 & KO",
+     "KTT/PJO berpartisipasi sesuai tanggung jawab, terlibat pembahasan seluruh substansi namun menetapkan keputusan secara terpimpin",
+     "KTT/PJO memimpin langsung, terlibat pembahasan seluruh substansi & memberi masukan konstruktif yang valid",
+     "KTT/PJO mampu memberdayakan seluruh peserta berkolaborasi & memimpin pengambilan keputusan untuk mencapai tujuan penyusunan/tinjauan kebijakan KP"
+    ]
+   },
+   {
+    "id": "L9",
+    "item": "2.2.21",
+    "q": "Peran KTT/PJO dalam Manajemen Risiko Keselamatan Pertambangan?",
+    "opts": [
+     "KTT/PJO tidak terlibat dalam manajemen risiko KP",
+     "KTT/PJO tidak berperan signifikan dalam manajemen risiko KP",
+     "KTT/PJO ikut berperan dalam tahap perencanaan manajemen risiko KP",
+     "KTT/PJO berperan dalam perencanaan, komunikasi & konsultasi, serta proaktif memantau & meninjau manajemen risiko KP",
+     "KTT/PJO berperan penuh & menindaklanjuti hasil evaluasi untuk peningkatan berkelanjutan manajemen risiko KP"
+    ]
+   },
+   {
+    "id": "L10",
+    "item": "2.2.23",
+    "q": "Peran pimpinan departemen/bagian dalam penyusunan dan tinjauan kebijakan keselamatan pertambangan?",
+    "opts": [
+     "Pimpinan tidak terlibat dalam penyusunan/tinjauan kebijakan KP",
+     "Sebagian besar pimpinan sekadar hadir, berperan hanya ketika diminta PJO",
+     "Sebagian besar pimpinan berpartisipasi sesuai tanggung jawab secara terencana",
+     "Sebagian besar pimpinan berperan aktif memberi input konstruktif",
+     "Seluruh pimpinan mampu memberi informasi & dukungan tepat, mentransfer pemahaman & berkolaborasi untuk mencapai tujuan"
+    ]
+   },
+   {
+    "id": "L11",
+    "item": "2.2.25",
+    "q": "Bagaimana peran pimpinan dalam kegiatan keselamatan pertambangan?",
+    "opts": [
+     "Pimpinan hanya menghadiri kegiatan KP yang menjadi kewajibannya",
+     "Pimpinan berkontribusi hanya apabila ada isu dengan pekerjaannya atau ketika diminta PJO",
+     "Sebagian besar pimpinan berpartisipasi sesuai tanggung jawab secara terencana",
+     "Sebagian besar pimpinan berperan aktif memberi input konstruktif dalam kegiatan KP",
+     "Seluruh pimpinan mampu mentransfer pemahaman & berkolaborasi untuk mencapai tujuan kegiatan KP lingkup organisasi"
+    ]
+   },
+   {
+    "id": "L12",
+    "item": "2.2.27",
+    "q": "Bagaimana peran pimpinan dalam Manajemen Risiko Keselamatan Pertambangan?",
+    "opts": [
+     "Pimpinan tidak berperan/berkontribusi dalam manajemen risiko KP",
+     "Sebagian besar pimpinan melaksanakan tanggung jawab hanya apabila ada isu atau diminta PJO",
+     "Sebagian besar pimpinan berpartisipasi dalam Tim Manajemen Risiko KP sesuai tanggung jawab",
+     "Sebagian besar pimpinan berperan aktif memberi input konstruktif, umpan balik, informasi & dukungan",
+     "Seluruh pimpinan mampu memberi informasi & dukungan tepat, menyelaraskan pemahaman & berkolaborasi mencapai tujuan manajemen risiko KP organisasi"
+    ]
+   },
+   {
+    "id": "L13",
+    "item": "2.2.29",
+    "q": "Bagaimana peran pengawas operasional dalam pertemuan keselamatan pertambangan kelompok kerja?",
+    "opts": [
+     "Pengawas operasional tidak terlibat dalam pertemuan KP kelompok kerja",
+     "Pengawas memberikan informasi satu arah, tidak memberi ruang partisipasi & merespon kepada anggota",
+     "Pengawas memberi kesempatan diskusi & konsultasi, mendelegasikan kepada anggota terpilih untuk memimpin pertemuan",
+     "Pengawas memimpin langsung, membuka ruang kerja sama & diskusi dua arah, menjadikan anggota sebagai partner kolaborasi",
+     "Pengawas mampu memberdayakan anggota berpartisipasi aktif, bertukar informasi tepat, memimpin pengambilan keputusan & mufakat melalui proses rasional dan partisipasi tulus"
+    ]
+   },
+   {
+    "id": "L14",
+    "item": "2.2.31",
+    "q": "Bagaimana peran pengawas operasional dalam Manajemen Risiko Keselamatan Pertambangan?",
+    "opts": [
+     "Pengawas operasional tidak berperan/berkontribusi dalam manajemen risiko KP",
+     "Sebagian besar pengawas melaksanakan tanggung jawab hanya apabila ada isu atau diminta pimpinan unit kerja",
+     "Sebagian besar pengawas berpartisipasi dalam tim manajemen risiko KP sesuai tanggung jawab",
+     "Sebagian besar pengawas berperan aktif memberi input konstruktif, umpan balik, informasi & dukungan",
+     "Seluruh pengawas mampu memberi informasi & dukungan tepat, menyelaraskan pemahaman & berkolaborasi mencapai tujuan manajemen risiko KP organisasi"
+    ]
+   },
+   {
+    "id": "L15",
+    "item": "2.4.10",
+    "q": "Bagaimana pemberian dukungan & kewenangan kepada pekerja untuk menyatakan keberatan bekerja jika syarat KP diragukan?",
+    "opts": [
+     "Tidak ada mekanisme menyatakan keberatan; pekerja wajib melaksanakan seluruh work order dalam setiap kondisi",
+     "Hanya pimpinan departemen/bagian/seksi yang berwenang mewakili pekerja menyatakan keberatan",
+     "Hanya pimpinan departemen/bagian/seksi & pengawas operasional yang berwenang mewakili pekerja",
+     "Seluruh pekerja diberi kesempatan, namun praktiknya masih ada ketidakadilan sosial akibat ketimpangan otoritas sehingga pekerja tidak berani menyatakan keberatan",
+     "Setiap pekerja dari setiap jenjang diberi dukungan adil untuk menyatakan keberatan, dan terdapat mekanisme verifikasi yang adil & transparan"
+    ]
+   },
+   {
+    "id": "L16",
+    "item": "2.4.11",
+    "q": "Bagaimana penerapan mekanisme pemilihan perwakilan pekerja pada komite keselamatan pertambangan?",
+    "opts": [
+     "Pemilihan tanpa pertimbangan apapun oleh manajemen puncak secara otoriter",
+     "Pemilihan melalui proses diskusi sepihak antara manajemen puncak & PJO",
+     "Pemilihan sesuai tingkat jabatan",
+     "Pemilihan melibatkan pemangku kepentingan internal, namun belum ada pertimbangan kompetensi & komposisi",
+     "Pemilihan melalui mekanisme aspiratif & demokratis dengan mempertimbangkan kompetensi & komposisi"
+    ]
+   },
+   {
+    "id": "L17",
+    "item": "2.4.12",
+    "q": "Bagaimana persepsi manajemen terhadap pengelolaan pekerja?",
+    "opts": [
+     "Pekerja sebagai bagian sementara yang harus diambil manfaat sebesar-besarnya & mudah digantikan",
+     "Pekerja sebagai liabilitas/beban yang harus dikendalikan agar tidak menimbulkan kerugian",
+     "Pekerja sebagai sumber daya positif yang dimaksimalkan perannya untuk mengendalikan risiko",
+     "Pekerja sebagai aset yang dikembalikan value-nya sehingga berkontribusi progresif untuk peningkatan kinerja KP",
+     "Pekerja sebagai mitra strategis yang diberi sumber daya penunjang memadai untuk mencapai tujuan bersama pengelolaan KP"
+    ]
+   },
+   {
+    "id": "L18",
+    "item": "2.6.5",
+    "q": "Bagaimana efektivitas kampanye keselamatan pertambangan?",
+    "opts": [
+     "Kampanye KP sudah berjalan, namun tidak menarik & tidak menggugah kesadaran pekerja",
+     "Kampanye menarik perhatian & berhasil membangun kesadaran pekerja terhadap KP",
+     "Kampanye membangun kesadaran & menumbuhkan ketertarikan pekerja untuk berpartisipasi dalam pengelolaan KP",
+     "Kampanye menumbuhkan keinginan & kemauan pekerja berpartisipasi secara konkret",
+     "Kampanye berhasil menggerakkan pekerja bekerja aman & berpartisipasi konkret dalam pengelolaan KP"
+    ]
+   },
+   {
+    "id": "L19",
+    "item": "2.6.16",
+    "q": "Bagaimana efektivitas komunikasi KP eksternal dengan mitra kerja (customer, kontraktor, sub-kontraktor)?",
+    "opts": [
+     "Tidak dilakukan koordinasi & komunikasi KP dengan mitra kerja",
+     "Dilakukan secara insidentil (tidak terencana)",
+     "Dilakukan secara terencana & sistematis",
+     "Dilakukan kontinu (tidak dibatasi proses formal) & terdapat keterbukaan terhadap informasi KP penting",
+     "Dilakukan efektif; pesan tersampaikan tepat & seluruh hal berdampak KP terinformasikan dengan baik"
+    ]
+   },
+   {
+    "id": "L20",
+    "item": "2.6.7",
+    "q": "Bagaimana efektivitas komunikasi vertikal antara pimpinan unit kerja dengan anggota?",
+    "opts": [
+     "Pimpinan tidak memberi arahan; anggota bebas menyelesaikan pekerjaan",
+     "Pimpinan memberi arahan hanya terkait kejadian yang menjadi isu organisasi (tidak terencana)",
+     "Pimpinan memberi arahan sebelum pekerjaan dimulai terkait pelaksanaan yang aman & selamat",
+     "Pimpinan & anggota berdiskusi sebelum mulai, berkoordinasi selama pekerjaan (verbal/non-verbal)",
+     "Komunikasi efektif sebelum, saat, & setelah pekerjaan, serta mampu bersinergi positif"
+    ]
+   },
+   {
+    "id": "L21",
+    "item": "2.6.8",
+    "q": "Bagaimana efektivitas komunikasi horizontal antar rekan kerja?",
+    "opts": [
+     "Sesama anggota tim bekerja individualis tanpa berkoordinasi",
+     "Komunikasi horizontal antar rekan kerja dilakukan dengan buruk",
+     "Komunikasi dilakukan secukupnya, tanpa inisiatif lebih & keterbukaan informasi KP penting",
+     "Komunikasi dilakukan baik, terdapat keterbukaan terhadap informasi KP penting",
+     "Komunikasi efektif; pesan tepat & seluruh hal berdampak KP terinformasikan dengan baik"
+    ]
+   },
+   {
+    "id": "L22",
+    "item": "2.6.9",
+    "q": "Bagaimana efektivitas komunikasi antar ketua kelompok kerja?",
+    "opts": [
+     "Komunikasi tidak dilakukan/independen tanpa berkolaborasi",
+     "Komunikasi dilakukan dengan buruk",
+     "Komunikasi dilakukan secukupnya, tanpa inisiatif lebih & keterbukaan informasi KP penting",
+     "Komunikasi dilakukan baik, terdapat keterbukaan terhadap informasi KP penting",
+     "Komunikasi efektif; pesan tepat & seluruh hal berdampak KP terinformasikan dengan baik"
+    ]
+   },
+   {
+    "id": "L23",
+    "item": "2.6.10",
+    "q": "Bagaimana efektivitas komunikasi antar penanggung jawab gilir kerja/shift?",
+    "opts": [
+     "Penanggung jawab antar shift bekerja independen tanpa berkolaborasi",
+     "Komunikasi dilakukan dengan buruk",
+     "Komunikasi dilakukan secukupnya, tanpa inisiatif lebih & keterbukaan informasi KP penting",
+     "Komunikasi dilakukan baik, terdapat keterbukaan terhadap informasi KP penting",
+     "Komunikasi antar penanggung jawab shift efektif; pesan tepat & seluruh hal berdampak KP terinformasikan dengan baik"
+    ]
+   },
+   {
+    "id": "L24",
+    "item": "2.6.13",
+    "q": "Bagaimana efektivitas mentoring, coaching, dan counselling untuk pekerja dari pimpinan tim kerja?",
+    "opts": [
+     "Pekerja tidak merasakan manfaat dari mentoring/coaching/counselling yang diberikan",
+     "Memberi pekerja kemampuan & petunjuk menyelesaikan permasalahan KP yang dihadapi",
+     "Memberi kemampuan menciptakan pengelolaan KP yang lebih baik sesuai best practice",
+     "Memberi kemampuan mengidentifikasi gagasan solusi yang lebih kreatif & efisien",
+     "Memberi kemampuan mengubah permasalahan KP di tempat kerja menjadi peluang"
+    ]
+   },
+   {
+    "id": "L25",
+    "item": "2.6.14",
+    "q": "Bagaimana ketersediaan ruang & akses penyampaian informasi keselamatan pertambangan dari pekerja?",
+    "opts": [
+     "Informasi KP confidential & eksklusif, tidak disosialisasikan; pekerja tidak punya ruang menyampaikan (satu arah)",
+     "Informasi bersifat top-down; pekerja tidak punya kesempatan & hak yang sama, ruang menyampaikan terbatas",
+     "Informasi disebarluaskan terstruktur melalui komite KP; mekanisme distribusi & ruang masukan formal & sistematis",
+     "Disebarluaskan terstruktur melalui komite KP dilanjutkan peran pengawas operasional di masing-masing area",
+     "Informasi inklusif & terkontrol; seluruh pekerja cepat mendapat notifikasi & punya kesempatan/hak sama mendapatkan & menyampaikan informasi KP"
+    ]
+   },
+   {
+    "id": "L26",
+    "item": "2.6.15",
+    "q": "Bagaimana proteksi pelapor & mekanisme penanganan pelaporan (Whistleblowing System) pelanggaran KP?",
+    "opts": [
+     "Manajemen belum menetapkan Whistleblowing System dalam pengelolaan KP",
+     "Telah menetapkan WBS namun tidak memberi jaminan perlindungan kepada pelapor",
+     "Telah menetapkan WBS, memberi perlindungan/menjaga anonimitas pelapor namun belum menindaklanjuti pelaporan",
+     "Menindaklanjuti setiap laporan dari WBS dengan investigasi & pengumpulan bukti",
+     "Menindaklanjuti laporan dengan investigasi & pengumpulan bukti, serta melakukan perbaikan & pencegahan tepat & cepat"
+    ]
+   },
+   {
+    "id": "L27",
+    "item": null,
+    "q": "Pernyataan pekerja terkait kepuasan kerja (job satisfaction) & kesejahteraan mental (mental well-being) berdasarkan hasil survei?",
+    "opts": [
+     "Sebagian besar pekerja tidak puas & tidak nyaman, sehingga menghambat kinerjanya dalam penerapan KP",
+     "Sebagian besar pekerja kurang cukup puas & kurang nyaman, sehingga menghambat kinerjanya dalam penerapan KP",
+     "Sebagian besar pekerja cukup puas & nyaman; menyatakan kesesuaian nilai balas jasa dengan yang diharapkan (finansial & non-finansial)",
+     "Sebagian besar pekerja puas, nyaman, & sejahtera dalam melaksanakan pekerjaannya",
+     "Sebagian besar pekerja sangat puas, nyaman, & sejahtera, dan kondisi kerja mendukung kinerja baik dalam KP"
+    ]
+   }
+  ]
+ }
+}

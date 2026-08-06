@@ -1,0 +1,407 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\{ActivityLog, TpkkpAssessment};
+use App\Support\Tpkkp;
+use Illuminate\Http\Request;
+
+class TpkkpController extends Controller
+{
+    /* ================= dasar ================= */
+
+    private function aktif(Request $request): TpkkpAssessment
+    {
+        $tahun = (int) ($request->get('tahun') ?? session('tpkkp_tahun') ?? now()->year);
+        if ($tahun < 2000 || $tahun > 2100) $tahun = (int) now()->year;
+        session(['tpkkp_tahun' => $tahun]);
+
+        return TpkkpAssessment::forYear($tahun);
+    }
+
+    private function base(Request $request): array
+    {
+        $a      = $this->aktif($request);
+        $hasil  = Tpkkp::totalCalc($a->scores ?? []);
+        $tahunn = TpkkpAssessment::orderByDesc('tahun')->pluck('tahun')->all();
+
+        return [$a, $hasil, $tahunn];
+    }
+
+    private function guard(): void
+    {
+        abort_unless(auth()->user()->isAdmin(), 403, 'Hanya admin yang boleh mengubah penilaian.');
+    }
+
+    private function log(string $aksi, string $ket = ''): void
+    {
+        try {
+            ActivityLog::create([
+                'user_id' => auth()->id(),
+                'module'  => 'tpkkp',
+                'action'  => $aksi,
+                'detail'  => $ket,
+            ]);
+        } catch (\Throwable $e) {
+            // pencatatan gagal tidak boleh menggagalkan aksi
+        }
+    }
+
+    /* ================= 1. Beranda ================= */
+
+    public function index(Request $request)
+    {
+        [$a, $hasil, $tahunn] = $this->base($request);
+
+        return view('tpkkp.beranda', [
+            'a'       => $a,
+            'hasil'   => $hasil,
+            'tahunn'  => $tahunn,
+            'metode'  => Tpkkp::methodTotals($a->scores ?? []),
+            'sebaran' => Tpkkp::distribution($a->scores ?? []),
+            'gaps'    => Tpkkp::gaps($a->scores ?? [], 10),
+        ]);
+    }
+
+    /* ================= 2. Profil ================= */
+
+    public function profile(Request $request)
+    {
+        [$a, $hasil, $tahunn] = $this->base($request);
+
+        return view('tpkkp.profil', ['a' => $a, 'hasil' => $hasil, 'tahunn' => $tahunn]);
+    }
+
+    public function saveProfile(Request $request)
+    {
+        $this->guard();
+        $a = $this->aktif($request);
+
+        $d = $request->validate([
+            'judul'     => ['nullable', 'string', 'max:200'],
+            'status'    => ['nullable', 'in:draft,aktif,selesai'],
+            'organisasi'=> ['nullable', 'string', 'max:200'],
+            'site'      => ['nullable', 'string', 'max:200'],
+            'komoditas' => ['nullable', 'string', 'max:100'],
+            'ktt'       => ['nullable', 'string', 'max:200'],
+            'basis'     => ['nullable', 'string', 'max:200'],
+        ]);
+
+        $a->judul  = $d['judul']  ?: $a->judul;
+        $a->status = $d['status'] ?: $a->status;
+        $a->profil = array_merge($a->profil ?? [], [
+            'organisasi' => $d['organisasi'] ?? '',
+            'site'       => $d['site'] ?? '',
+            'komoditas'  => $d['komoditas'] ?? '',
+            'ktt'        => $d['ktt'] ?? '',
+            'basis'      => $d['basis'] ?? '',
+            'periode'    => $a->tahun,
+        ]);
+        $a->save();
+
+        $this->log('profil.simpan', 'Periode ' . $a->tahun);
+
+        return back()->with('ok', 'Profil penilaian tersimpan.');
+    }
+
+    /* ================= 3. Penilaian ================= */
+
+    public function assess(Request $request)
+    {
+        [$a, $hasil, $tahunn] = $this->base($request);
+
+        $M  = Tpkkp::methods();
+        $m  = $request->get('m');
+        if (!isset($M[$m])) $m = array_key_first($M);
+
+        $daftarParam = [];
+        foreach (Tpkkp::indicators() as $ind) {
+            foreach ($ind['params'] as $par) {
+                $n = 0;
+                foreach ($par['items'] as $it) if (in_array($m, $it['methods'], true)) $n++;
+                if ($n) $daftarParam[] = ['code' => $par['code'], 'name' => $par['name'], 'n' => $n];
+            }
+        }
+
+        $p = $request->get('p');
+        if (!$p || !collect($daftarParam)->firstWhere('code', $p)) {
+            $p = $daftarParam[0]['code'] ?? null;
+        }
+
+        $items = [];
+        if ($p) {
+            $par = Tpkkp::paramByCode($p);
+            foreach ($par['items'] ?? [] as $it) {
+                if (in_array($m, $it['methods'], true)) $items[] = $it;
+            }
+        }
+
+        return view('tpkkp.penilaian', [
+            'a'           => $a,
+            'hasil'       => $hasil,
+            'tahunn'      => $tahunn,
+            'metodeAktif' => $m,
+            'metodeInfo'  => $M[$m],
+            'entitas'     => $a->entitiesOf($m),
+            'daftarParam' => $daftarParam,
+            'paramAktif'  => $p,
+            'items'       => $items,
+        ]);
+    }
+
+    public function saveAssess(Request $request)
+    {
+        $this->guard();
+        $a = $this->aktif($request);
+
+        $m = (string) $request->input('metode');
+        abort_unless(isset(Tpkkp::methods()[$m]), 422, 'Metode tidak dikenal.');
+
+        $scores = $a->scores ?? [];
+        $scores[$m] ??= [];
+
+        $nilai = $request->input('n', []);   // n[kode][entitas] atau n[kode][_]
+        $ket   = $request->input('ket', []); // ket[kode]
+        $ubah  = 0;
+
+        foreach ($nilai as $code => $cells) {
+            if (!Tpkkp::itemByCode((string) $code)) continue;
+
+            $rec = $scores[$m][$code] ?? ['v' => null, 'e' => [], 'ket' => ''];
+            $rec['e'] ??= [];
+
+            foreach ((array) $cells as $ent => $v) {
+                $v = ($v === '' || $v === null) ? null : (int) $v;
+                if ($v !== null && ($v < 1 || $v > 5)) $v = null;
+
+                if ($ent === '_') {
+                    $rec['v'] = $v;
+                } elseif ($v === null) {
+                    unset($rec['e'][$ent]);
+                } else {
+                    $rec['e'][$ent] = $v;
+                }
+                $ubah++;
+            }
+
+            $rec['ket'] = trim((string) ($ket[$code] ?? ''));
+
+            $kosong = ($rec['v'] ?? null) === null && empty($rec['e']) && $rec['ket'] === '';
+            if ($kosong) unset($scores[$m][$code]);
+            else         $scores[$m][$code] = $rec;
+        }
+
+        $a->scores = $scores;
+        $a->save();
+
+        $this->log('penilaian.simpan', "Metode $m · $ubah sel");
+
+        return back()->with('ok', "Nilai metode {$m} tersimpan.");
+    }
+
+    /* ================= 4. Rekapitulasi ================= */
+
+    public function rekap(Request $request)
+    {
+        [$a, $hasil, $tahunn] = $this->base($request);
+
+        $mCo    = Tpkkp::perCompanyMethods();
+        $daftar = $a->entitiesOf('TD');
+        $co     = $request->get('entitas');
+        if ($co && !in_array($co, $daftar, true)) $co = null;
+
+        return view('tpkkp.rekap', [
+            'a'          => $a,
+            'hasil'      => $hasil,
+            'tahunn'     => $tahunn,
+            'perusahaan' => $daftar,
+            'entitas'    => $co,
+            'rincian'    => $co ? Tpkkp::companyBreakdown($a->scores ?? [], $co, $mCo) : null,
+            'lemah'      => $co ? Tpkkp::companyGaps($a->scores ?? [], $co, $mCo, 10) : null,
+        ]);
+    }
+
+    /* ================= 5. Visualisasi ================= */
+
+    public function visual(Request $request)
+    {
+        [$a, $hasil, $tahunn] = $this->base($request);
+
+        return view('tpkkp.visual', [
+            'a'       => $a,
+            'hasil'   => $hasil,
+            'tahunn'  => $tahunn,
+            'metode'  => Tpkkp::methodTotals($a->scores ?? []),
+            'sebaran' => Tpkkp::distribution($a->scores ?? []),
+        ]);
+    }
+
+    /* ================= 6. Program improvement ================= */
+
+    public function program(Request $request)
+    {
+        [$a, $hasil, $tahunn] = $this->base($request);
+
+        // saran dari parameter dengan selisih target terbesar
+        $saran = [];
+        foreach ($hasil['indicators'] as $ind) {
+            foreach ($ind['params'] as $p) {
+                if ($p['score'] === null || $p['target'] === null) continue;
+                $saran[] = ['code' => $p['code'], 'name' => $p['name'], 'gap' => $p['score'] - $p['target']];
+            }
+        }
+        usort($saran, fn ($x, $y) => $x['gap'] <=> $y['gap']);
+
+        return view('tpkkp.program', [
+            'a'      => $a,
+            'hasil'  => $hasil,
+            'tahunn' => $tahunn,
+            'saran'  => array_slice($saran, 0, 8),
+        ]);
+    }
+
+    public function storeProgram(Request $request)
+    {
+        $this->guard();
+        $a = $this->aktif($request);
+
+        $d = $request->validate([
+            'param'   => ['required', 'string', 'max:10'],
+            'opsi'    => ['required', 'string', 'max:2000'],
+            'durasi'  => ['nullable', 'string', 'max:100'],
+            'sasaran' => ['nullable', 'string', 'max:500'],
+            'target'  => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $rows   = $a->programs ?? [];
+        $rows[] = $d + [
+            'id'       => 'p' . now()->timestamp . rand(10, 99),
+            'remarks'  => '',
+            'status'   => 'Rencana',
+            'progress' => 0,
+        ];
+        $a->programs = $rows;
+        $a->save();
+
+        $this->log('program.tambah', $d['param']);
+
+        return back()->with('ok', 'Program ditambahkan.');
+    }
+
+    public function updateProgramStatus(Request $request, string $id)
+    {
+        $this->guard();
+        $a = $this->aktif($request);
+
+        $d = $request->validate([
+            'status'   => ['required', 'in:Rencana,Berjalan,Selesai,Ditunda'],
+            'progress' => ['nullable', 'integer', 'min:0', 'max:100'],
+        ]);
+
+        $rows = $a->programs ?? [];
+        foreach ($rows as &$r) {
+            if (($r['id'] ?? null) === $id) {
+                $r['status']   = $d['status'];
+                $r['progress'] = (int) ($d['progress'] ?? $r['progress'] ?? 0);
+            }
+        }
+        unset($r);
+
+        $a->programs = $rows;
+        $a->save();
+
+        return back()->with('ok', 'Status program diperbarui.');
+    }
+
+    public function destroyProgram(Request $request, string $id)
+    {
+        $this->guard();
+        $a = $this->aktif($request);
+
+        $a->programs = array_values(array_filter(
+            $a->programs ?? [],
+            fn ($r) => ($r['id'] ?? null) !== $id
+        ));
+        $a->save();
+
+        return back()->with('ok', 'Program dihapus.');
+    }
+
+    /* ================= 7. Sampling ================= */
+
+    public function sampling(Request $request)
+    {
+        [$a, $hasil, $tahunn] = $this->base($request);
+
+        $s   = $a->sampling ?? TpkkpAssessment::samplingSeed();
+        $pop = $s['populasi'] ?? [];
+        $e   = (float) ($s['e'] ?? 0.05);
+
+        $strata = [];
+        foreach ($pop as $k => $v) {
+            if ($k === 'Total') continue;
+            $strata[] = ['j' => $k, 'N' => (int) $v];
+        }
+
+        return view('tpkkp.sampling', [
+            'a'       => $a,
+            'hasil'   => $hasil,
+            'tahunn'  => $tahunn,
+            'e'       => $e,
+            'strata'  => $strata,
+            'alokasi' => Tpkkp::strataAlloc($strata, $e),
+            'rencana' => Tpkkp::samplingRef(),
+        ]);
+    }
+
+    public function saveSampling(Request $request)
+    {
+        $this->guard();
+        $a = $this->aktif($request);
+
+        $d = $request->validate([
+            'e'   => ['required', 'numeric', 'min:0.01', 'max:0.2'],
+            'N'   => ['array'],
+            'N.*' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $s = $a->sampling ?? TpkkpAssessment::samplingSeed();
+        $s['e'] = (float) $d['e'];
+        foreach ((array) ($d['N'] ?? []) as $k => $v) {
+            $s['populasi'][$k] = (int) $v;
+        }
+        $a->sampling = $s;
+        $a->save();
+
+        $this->log('sampling.simpan');
+
+        return back()->with('ok', 'Perhitungan sampel tersimpan.');
+    }
+
+    /* ================= 8. Referensi ================= */
+
+    public function metode(Request $request)
+    {
+        [$a, $hasil, $tahunn] = $this->base($request);
+
+        return view('tpkkp.metode', [
+            'a'       => $a,
+            'hasil'   => $hasil,
+            'tahunn'  => $tahunn,
+            'metode'  => Tpkkp::methodTotals($a->scores ?? []),
+            'info'    => Tpkkp::methods(),
+        ]);
+    }
+
+    public function tentang(Request $request)
+    {
+        [$a, $hasil, $tahunn] = $this->base($request);
+
+        return view('tpkkp.tentang', [
+            'a'      => $a,
+            'hasil'  => $hasil,
+            'tahunn' => $tahunn,
+            'meta'   => Tpkkp::meta(),
+        ]);
+    }
+}
