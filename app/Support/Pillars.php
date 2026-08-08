@@ -45,7 +45,7 @@ class Pillars
                     ['Kompetensi terverifikasi',  'Sertifikat digital ber-barcode yang dapat diperiksa publik.'],
                     ['Audit & tinjauan berkala',  'Temuan ditindaklanjuti sampai tuntas, bukan sekadar dicatat.'],
                 ],
-                'modul' => ['ISO & Dokumen', 'LMS — Learning Center', 'Audit SMKP'],
+                'modul' => ['ISO & Dokumen', 'LMS — Learning Center', 'SMKP Audit'],
             ],
 
             'occhealth' => [
@@ -73,7 +73,7 @@ class Pillars
                     ['Inspeksi terjadwal',        'Parameter per jenis inspeksi, temuan naik jadi tindakan.'],
                     ['Tingkat kematangan',        '194 item penilaian, dari Dasar sampai Resilient.'],
                 ],
-                'modul' => ['Hazard Report & Inspeksi', 'Safety Maturity Level', 'Audit SMKP'],
+                'modul' => ['Hazard Report & Inspeksi', 'Safety Maturity Level', 'SMKP Audit'],
             ],
 
             'environment' => [
@@ -87,7 +87,7 @@ class Pillars
                     ['Kualitas air & udara',  'Pemantauan titik penaatan secara berkala.'],
                     ['Reklamasi lahan',       'Rencana dan realisasi pemulihan area terganggu.'],
                 ],
-                'modul' => ['ISO & Dokumen', 'Audit SMKP'],
+                'modul' => ['ISO & Dokumen', 'SMKP Audit'],
             ],
 
             'engineering' => [
@@ -134,22 +134,17 @@ class Pillars
     }
 
     /**
-     * Petakan nama modul (dari App\Support\Modules) ke slug pilar.
-     * Urutan pencocokan penting: pola yang lebih khusus diperiksa lebih dulu.
+     * Pilar utama sebuah modul.
+     *
+     * Dibaca dari registry modul, bukan ditebak dari potongan nama seperti
+     * sebelumnya — pencocokan teks itu meleset (LMS terbaca Safety) dan
+     * menaruh kebenaran yang sama di dua tempat.
      */
     public static function forModule(string $modul): string
     {
-        return match (true) {
-            str_contains($modul, 'Hazard')                      => 'occhealth',
-            str_contains($modul, 'ISO')                         => 'quality',
-            str_contains($modul, 'Gudang')
-                || str_contains($modul, 'SIGAP')                => 'environment',
-            str_contains($modul, 'Keselamatan Operasi')
-                || str_contains($modul, '(KO)')                 => 'engineering',
-            str_contains($modul, 'Learning')
-                || str_contains($modul, 'Maturity')
-                || str_contains($modul, 'SMKP')                 => 'safety',
-            default                                             => 'engineering',
-        };
+        foreach (Modules::all() as $m) {
+            if ($m['nama'] === $modul) return $m['pilar'] ?? 'engineering';
+        }
+        return 'engineering';
     }
 }

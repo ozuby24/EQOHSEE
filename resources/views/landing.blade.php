@@ -216,7 +216,7 @@
 
 {{-- ══════════ MODUL ══════════ --}}
 <section id="modul" class="max-w-6xl mx-auto px-5 py-16 md:py-20">
-  <div class="text-center max-w-xl mx-auto">
+  <div class="text-center max-w-xl mx-auto reveal">
     <span class="text-[10.5px] font-bold uppercase tracking-[0.22em] text-cam-lime-dark">Aplikasi di Dalamnya</span>
     @php
       $jumlahModul = count($daftarModul);
@@ -230,26 +230,62 @@
     </p>
   </div>
 
-  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-10">
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-10 pers">
     @foreach($daftarModul as $m)
-      @php [$nama,$ket,$status,$ikon] = [$m['nama'],$m['ket'],$m['status'],$m['ikon']]; @endphp
-      <div class="group bg-white rounded-2xl shadow-card border border-stone-100 p-6 card-hover relative overflow-hidden">
-        <div class="absolute -right-10 -top-10 w-28 h-28 rounded-full bg-cam-lime/5 group-hover:bg-cam-lime/10 transition"></div>
-        <div class="relative">
-          <div class="w-11 h-11 rounded-xl {{ $status==='aktif' ? 'lime-gradient shadow-glow text-white' : 'bg-stone-100 text-stone-400' }} grid place-items-center">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $ikon }}"/></svg>
+      @php
+        // Warna kartu diambil dari pilar yang ditopang modul ini, sehingga
+        // bagian Modul terbaca sebagai kelanjutan bagian Pilar di atasnya.
+        $slugPilar = $m['pilar'] ?? \App\Support\Pillars::forModule($m['nama']);
+        $wp        = \App\Support\Pillars::get($slugPilar);
+        $aktif     = ($m['status'] ?? '') === 'aktif';
+        $rute      = $m['rute'] ?? null;
+        $tautan    = $rute && \Illuminate\Support\Facades\Route::has($rute) ? route($rute) : null;
+        $tag       = $tautan ? 'a' : 'div';
+      @endphp
+
+      <{{ $tag }} @if($tautan) href="{{ $tautan }}" @endif data-tilt
+         class="group relative overflow-hidden bg-white rounded-2xl shadow-card border border-stone-100 p-6
+                tilt tilt-fast d3 reveal reveal-d{{ min($loop->iteration, 6) }}
+                {{ $tautan ? 'hover:border-transparent hover:shadow-lg' : '' }} transition-shadow">
+
+        {{-- pita warna pilar di tepi atas --}}
+        <span class="absolute inset-x-0 top-0 h-[3px]"
+              style="background:{{ $aktif ? \App\Support\Pillars::gradient($slugPilar) : '#E7E5E4' }}"></span>
+
+        <span class="absolute -right-10 -top-10 w-28 h-28 rounded-full transition"
+              style="background:{{ $wp['warna'] }}0D"></span>
+
+        <div class="relative d3">
+          <div class="w-11 h-11 rounded-xl grid place-items-center lift-1 {{ $aktif ? 'text-white shadow-lg' : 'bg-stone-100 text-stone-400' }}"
+               @if($aktif) style="background:{{ \App\Support\Pillars::gradient($slugPilar) }}" @endif>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $m['ikon'] }}"/></svg>
           </div>
-          <div class="flex items-center gap-2 mt-4">
-            <h3 class="text-[14.5px] font-bold text-cam-ink">{{ $nama }}</h3>
-            @if($status === 'aktif')
-              <span class="text-[9px] font-bold bg-cam-lime-soft text-cam-lime-deep px-1.5 py-0.5 rounded uppercase tracking-wide">Aktif</span>
+
+          <div class="flex flex-wrap items-center gap-2 mt-4">
+            <h3 class="text-[14.5px] font-bold text-cam-ink">{{ $m['nama'] }}</h3>
+            @if($aktif)
+              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide"
+                    style="background:{{ $wp['warna'] }}1A; color:{{ $wp['deep'] }}">Aktif</span>
             @else
               <span class="text-[9px] font-bold bg-stone-100 text-stone-400 px-1.5 py-0.5 rounded uppercase tracking-wide">Segera</span>
             @endif
           </div>
-          <p class="text-[12.5px] text-stone-500 mt-2 leading-relaxed">{{ $ket }}</p>
+
+          <p class="text-[12.5px] text-stone-500 mt-2 leading-relaxed">{{ $m['ket'] }}</p>
+
+          <div class="flex items-center gap-1.5 mt-4 text-[11px] font-bold"
+               style="color:{{ $aktif ? $wp['deep'] : '#A8A29E' }}">
+            <span class="w-1.5 h-1.5 rounded-full" style="background:{{ $wp['warna'] }}"></span>
+            <span>Pilar {{ $wp['nama'] }}</span>
+            @if($tautan)
+              <svg class="w-3.5 h-3.5 ml-auto transition-transform group-hover:translate-x-1" viewBox="0 0 24 24"
+                   fill="none" stroke="currentColor" stroke-width="2.4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+              </svg>
+            @endif
+          </div>
         </div>
-      </div>
+      </{{ $tag }}>
     @endforeach
   </div>
 </section>
@@ -257,7 +293,7 @@
 {{-- ══════════ FITUR ══════════ --}}
 <section id="fitur" class="bg-white border-y border-stone-100">
   <div class="max-w-6xl mx-auto px-5 py-16 md:py-20">
-    <div class="text-center max-w-xl mx-auto">
+    <div class="text-center max-w-xl mx-auto reveal">
       <span class="text-[10.5px] font-bold uppercase tracking-[0.22em] text-cam-lime-dark">Fitur Unggulan</span>
       <h2 class="font-display text-[30px] md:text-[38px] font-black text-cam-ink mt-3 leading-tight">Dibuat untuk lapangan, bukan sekadar laporan</h2>
     </div>
@@ -271,8 +307,14 @@
         ['Kunci jawaban aman','Soal evaluasi SOP dinilai sepenuhnya di server — kunci jawaban tidak pernah dikirim ke perangkat peserta.','M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'],
         ['Kendali penuh admin','Kelola perusahaan, pengguna, peran, penanda tangan, hingga pemeliharaan sistem dari satu pusat kendali.','M10.32 4.32c.43-1.76 2.93-1.76 3.36 0a1.72 1.72 0 002.57 1.07c1.54-.94 3.31.83 2.37 2.37a1.72 1.72 0 001.07 2.57c1.75.43 1.75 2.93 0 3.36a1.72 1.72 0 00-1.07 2.57c.94 1.54-.83 3.31-2.37 2.37a1.72 1.72 0 00-2.57 1.06c-.43 1.76-2.93 1.76-3.36 0a1.72 1.72 0 00-2.57-1.06c-1.54.94-3.31-.83-2.37-2.37a1.72 1.72 0 00-1.06-2.57c-1.76-.43-1.76-2.93 0-3.36a1.72 1.72 0 001.06-2.57c-.94-1.54.83-3.31 2.37-2.37 1 .61 2.3.07 2.57-1.07z'],
       ] as [$j,$k,$i])
-        <div class="flex gap-4">
-          <div class="w-10 h-10 rounded-xl bg-cam-lime-soft text-cam-lime-deep grid place-items-center shrink-0">
+        @php
+          // Ikon fitur mengambil warna pilar bergiliran, supaya bagian ini
+          // tetap satu keluarga dengan Pilar dan Modul di atasnya.
+          $wf = \App\Support\Pillars::get(\App\Support\Pillars::slugs()[($loop->index) % 6]);
+        @endphp
+        <div class="flex gap-4 reveal reveal-d{{ min($loop->iteration, 6) }}">
+          <div class="w-10 h-10 rounded-xl grid place-items-center shrink-0 text-white shadow-sm"
+               style="background:{{ $wf['warna'] }}">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $i }}"/></svg>
           </div>
           <div class="min-w-0">
@@ -287,7 +329,7 @@
 
 {{-- ══════════ ALUR ══════════ --}}
 <section id="alur" class="max-w-5xl mx-auto px-5 py-16 md:py-20">
-  <div class="text-center max-w-xl mx-auto">
+  <div class="text-center max-w-xl mx-auto reveal">
     <span class="text-[10.5px] font-bold uppercase tracking-[0.22em] text-cam-lime-dark">Cara Kerja</span>
     <h2 class="font-display text-[30px] md:text-[38px] font-black text-cam-ink mt-3 leading-tight">Empat langkah, satu siklus</h2>
   </div>
@@ -299,7 +341,13 @@
       ['Jalankan penilaian','Isi PTPKKP, sebar kuesioner, dan nilai kompetensi peserta.'],
       ['Terbitkan & tindak lanjut','Sertifikat terbit otomatis, program peningkatan tersusun dari hasil.'],
     ] as $i => [$j,$k])
-      <div class="relative bg-white rounded-2xl shadow-card border border-stone-100 p-5">
+      <div class="relative bg-white rounded-2xl shadow-card border border-stone-100 p-5
+                  reveal reveal-d{{ min($i + 1, 6) }}">
+        {{-- Penghubung antar langkah: menandai bahwa keempatnya satu siklus,
+             bukan empat hal terpisah. Disembunyikan saat kartu menumpuk. --}}
+        @if($i < 3)
+          <span class="hidden lg:block absolute top-8 -right-4 w-4 h-px bg-cam-lime/30"></span>
+        @endif
         <div class="stat stat-sm text-cam-lime/35">{{ sprintf('%02d', $i+1) }}</div>
         <h3 class="text-[13.5px] font-bold text-cam-ink mt-2">{{ $j }}</h3>
         <p class="text-[12px] text-stone-500 mt-1.5 leading-relaxed">{{ $k }}</p>
@@ -313,7 +361,7 @@
   <div class="brand-gradient rounded-3xl p-9 md:p-14 text-white text-center relative overflow-hidden shadow-card">
     <div class="absolute inset-0 opacity-30">@include('partials.art-mine')</div>
     <div class="absolute inset-0 bg-cam-black/70"></div>
-    <div class="relative">
+    <div class="relative reveal">
       <h2 class="font-display text-[28px] md:text-[38px] font-black leading-tight">Siap menaikkan level keselamatan?</h2>
       <p class="text-[13.5px] text-white/55 mt-3 max-w-md mx-auto leading-relaxed">
         Masuk dengan akun perusahaan Anda dan mulai dari modul yang paling dibutuhkan.
