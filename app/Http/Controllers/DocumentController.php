@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{ActivityLog, Company, Document};
+use App\Models\{ActivityLog, Company, Document, Procedure};
 use App\Support\{Db, Dokumen};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -66,8 +66,9 @@ class DocumentController extends Controller
     public function create()
     {
         return view('dokumen.form', [
-            'document'  => new Document(['status' => 'draft', 'revisi' => 0]),
-            'companies' => Company::orderBy('name')->get(),
+            'document'   => new Document(['status' => 'draft', 'revisi' => 0]),
+            'companies'  => Company::orderBy('name')->get(),
+            'procedures' => Procedure::orderBy('title')->get(),
         ]);
     }
 
@@ -107,8 +108,9 @@ class DocumentController extends Controller
     public function edit(Document $dokumen)
     {
         return view('dokumen.form', [
-            'document'  => $dokumen,
-            'companies' => Company::orderBy('name')->get(),
+            'document'   => $dokumen,
+            'companies'  => Company::orderBy('name')->get(),
+            'procedures' => Procedure::orderBy('title')->get(),
         ]);
     }
 
@@ -177,6 +179,7 @@ class DocumentController extends Controller
             'klasifikasi'     => ['nullable', Rule::in(Dokumen::KLASIFIKASI)],
             'departemen'      => ['nullable','string','max:100'],
             'company_id'      => ['nullable','exists:companies,id'],
+            'procedure_id'    => ['nullable','exists:procedures,id'],
             'revisi'          => ['nullable','integer','min:0','max:999'],
             'status'          => ['required', Rule::in(Dokumen::STATUS)],
             'tanggal_terbit'  => ['nullable','date'],

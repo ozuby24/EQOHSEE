@@ -72,6 +72,17 @@
       </select>
     </div>
 
+    <div>
+      <label class="block text-[11.5px] font-bold uppercase tracking-wide text-stone-500 mb-1.5">Tautkan ke prosedur LMS</label>
+      <select name="procedure_id" class="ring-focus w-full rounded-xl border border-stone-200 px-4 py-3 text-[13.5px] transition">
+        <option value="">— tidak ditautkan —</option>
+        @foreach($procedures as $p)
+          <option value="{{ $p->id }}" @selected(old('procedure_id',$document->procedure_id)==$p->id)>{{ $p->code ? $p->code.' — ' : '' }}{{ $p->title }}</option>
+        @endforeach
+      </select>
+      <p class="text-[11px] text-stone-400 mt-1">Agar SOP tidak dicatat dua kali: dokumen terkendali di sini, materi pelatihannya di modul LMS.</p>
+    </div>
+
     <div class="grid gap-3 sm:grid-cols-3">
       @foreach ([
         ['tanggal_terbit','Tanggal terbit'],

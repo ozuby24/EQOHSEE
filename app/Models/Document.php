@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
 class Document extends Model
 {
     protected $fillable = [
-        'kode', 'judul', 'jenis', 'klasifikasi', 'departemen', 'company_id',
+        'kode', 'judul', 'jenis', 'klasifikasi', 'departemen', 'company_id', 'procedure_id',
         'revisi', 'status', 'tanggal_terbit', 'tanggal_berlaku', 'tanggal_tinjau',
         'berkas', 'ringkasan', 'acuan', 'disetujui_oleh', 'user_id',
     ];
@@ -25,7 +25,8 @@ class Document extends Model
     }
 
     public function company(): BelongsTo  { return $this->belongsTo(Company::class); }
-    public function user(): BelongsTo     { return $this->belongsTo(User::class); }
+    public function user(): BelongsTo      { return $this->belongsTo(User::class); }
+    public function procedure(): BelongsTo { return $this->belongsTo(Procedure::class); }
     public function revisions(): HasMany  { return $this->hasMany(DocumentRevision::class)->orderByDesc('revisi'); }
 
     /** Sudah lewat jatuh tempo peninjauan dan masih berlaku. */

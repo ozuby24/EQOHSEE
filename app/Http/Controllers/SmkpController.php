@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{ActivityLog, Company, SmkpAudit, SmkpFinding};
+use App\Models\{ActivityLog, Company, HazardReport, SmkpAudit, SmkpFinding};
 use App\Support\Smkp;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -195,6 +195,38 @@ class SmkpController extends Controller
 
         $temuan->update($d);
         return back()->with('ok','Tindakan perbaikan tersimpan.');
+    }
+
+    /**
+     * Naikkan temuan audit menjadi Hazard Report agar masuk ke alur tindak
+     * lanjut lapangan yang sudah berjalan — mengikuti pola yang sama seperti
+     * temuan inspeksi. Temuan yang sudah pernah dinaikkan tidak digandakan.
+     */
+    public function angkatKeHazard(SmkpAudit $smkp, SmkpFinding $temuan)
+    {
+        abort_if($temuan->audit_id !== $smkp->id, 404);
+
+        if ($temuan->hazard_report_id) {
+            return back()->with('ok', 'Temuan ini sudah pernah dinaikkan ke Hazard Report.');
+        }
+
+        $laporan = HazardReport::create([
+            'kode'         => HazardReport::kodeBaru(),
+            'pelapor_nama' => auth()->user()?->name ?: 'Auditor SMKP',
+            'tanggal'      => now(),
+            'deskripsi'    => "[Audit SMKP {$smkp->tahun} · kriteria {$temuan->kode_kriteria}] {$temuan->uraian}",
+            'company_id'   => $smkp->company_id,
+            'user_id'      => auth()->id(),
+            'kategori'     => 'Temuan Audit SMKP',
+            'risiko'       => $temuan->jenis === 'mayor' ? 'Tinggi' : 'Sedang',
+            'status'       => 'Open',
+            'rekomendasi'  => $temuan->tindakan,
+        ]);
+
+        $temuan->update(['hazard_report_id' => $laporan->id]);
+        ActivityLog::write('Naikkan temuan SMKP ke Hazard', $temuan->kode_kriteria.' → '.$laporan->kode, 'smkp');
+
+        return back()->with('ok', "Temuan dinaikkan menjadi {$laporan->kode}.");
     }
 
     public function hapusTemuan(SmkpAudit $smkp, SmkpFinding $temuan)

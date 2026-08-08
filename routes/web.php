@@ -198,6 +198,7 @@ Route::middleware('auth')->group(function () {
         Route::get('{smkp}/temuan',            [SmkpController::class,'temuan'])->name('temuan');
         Route::post('{smkp}/temuan/angkat',    [SmkpController::class,'angkatTemuan'])->name('temuan.angkat');
         Route::put('{smkp}/temuan/{temuan}',   [SmkpController::class,'simpanTemuan'])->name('temuan.simpan');
+        Route::post('{smkp}/temuan/{temuan}/hazard',[SmkpController::class,'angkatKeHazard'])->name('temuan.hazard');
         Route::delete('{smkp}/temuan/{temuan}',[SmkpController::class,'hapusTemuan'])->name('temuan.hapus');
 
         // Formulir penilaian per elemen — ditaruh terakhir agar tidak menyerobot rute di atas
