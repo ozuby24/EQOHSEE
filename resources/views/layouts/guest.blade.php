@@ -41,6 +41,59 @@
       pointer-events:none;background:radial-gradient(circle,rgba(44,176,188,.16),transparent 68%)}
     .eq-hero > .z{position:relative;z-index:1}
 
+    /* ── Adegan tambang yang hidup ──────────────────────────────────
+       Semuanya SVG+CSS: jenjang menggambar dirinya sendiri, truk
+       berjalan menyusuri jenjang, debu melayang, dan cahaya menyapu
+       muka lereng. Tidak ada berkas gambar sehingga tetap tampil
+       walau jaringan site terputus. */
+    @keyframes eq-gambar { to { stroke-dashoffset: 0 } }
+    @keyframes eq-jalan  { 0%{ transform:translateX(-70px) } 100%{ transform:translateX(500px) } }
+    @keyframes eq-debu   { 0%{ transform:translate(0,0) scale(.6); opacity:0 }
+                           18%{ opacity:.5 }
+                           100%{ transform:translate(34px,-58px) scale(1.5); opacity:0 } }
+    @keyframes eq-sapu   { 0%{ transform:translateX(-40%) } 100%{ transform:translateX(160%) } }
+    @keyframes eq-kedip  { 0%,100%{ opacity:.35 } 50%{ opacity:1 } }
+
+    .eq-bench .garis-jenjang{
+      stroke-dasharray: 900; stroke-dashoffset: 900;
+      animation: eq-gambar 2.6s cubic-bezier(.22,.68,.3,1) .35s forwards;
+    }
+    .eq-bench .tread{ stroke-dasharray:140; stroke-dashoffset:140;
+      animation: eq-gambar 1.1s ease-out forwards; }
+    .eq-bench .tread:nth-of-type(1){ animation-delay:.9s }
+    .eq-bench .tread:nth-of-type(2){ animation-delay:1.25s }
+    .eq-bench .tread:nth-of-type(3){ animation-delay:1.6s }
+    .eq-bench .tread:nth-of-type(4){ animation-delay:1.95s }
+
+    .eq-bench .truk{ animation: eq-jalan 15s linear 2.2s infinite; }
+    .eq-bench .debu{ animation: eq-debu 5.5s ease-out infinite; transform-origin:center }
+    .eq-bench .debu:nth-of-type(2){ animation-delay:1.6s }
+    .eq-bench .debu:nth-of-type(3){ animation-delay:3.1s }
+    .eq-bench .sudut{ animation: eq-kedip 3.2s ease-in-out infinite }
+    .eq-bench .sudut:nth-of-type(2){ animation-delay:.7s }
+    .eq-bench .sudut:nth-of-type(3){ animation-delay:1.4s }
+    .eq-bench .sudut:nth-of-type(4){ animation-delay:2.1s }
+
+    /* Sapuan cahaya melintasi lereng */
+    .eq-hero .eq-sapu{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+    .eq-hero .eq-sapu i{position:absolute;top:-20%;left:0;width:28%;height:140%;
+      background:linear-gradient(100deg,transparent,rgba(255,255,255,.055),transparent);
+      transform:skewX(-14deg); animation: eq-sapu 9s ease-in-out 1.4s infinite}
+
+    /* Pita strata menyala bergiliran, mengikat panel ke enam pilar */
+    .eq-band i{ animation: eq-kedip 4.2s ease-in-out infinite }
+    .eq-band:nth-child(2) i{ animation-delay:.5s }
+    .eq-band:nth-child(3) i{ animation-delay:1s }
+    .eq-band:nth-child(4) i{ animation-delay:1.5s }
+    .eq-band:nth-child(5) i{ animation-delay:2s }
+    .eq-band:nth-child(6) i{ animation-delay:2.5s }
+
+    @media (prefers-reduced-motion: reduce){
+      .eq-bench .garis-jenjang,.eq-bench .tread{ stroke-dashoffset:0 !important; animation:none !important }
+      .eq-bench .truk,.eq-bench .debu,.eq-bench .sudut,
+      .eq-hero .eq-sapu i,.eq-band i{ animation:none !important }
+    }
+
     .eq-brand{position:relative;z-index:2;align-self:flex-start;margin:0 0 30px;
       display:inline-flex;align-items:center;gap:10px;text-decoration:none}
     .eq-brand img{height:26px;width:auto;display:block}
@@ -144,16 +197,16 @@
         <path d="M40 100H170V200H280V300H375V400H455V600H40Z" fill="#fff" fill-opacity=".022"/>
 
         {{-- profil jenjang --}}
-        <path d="M40 100H170V200H280V300H375V400H455"
+        <path class="garis-jenjang" d="M40 100H170V200H280V300H375V400H455"
               stroke="#fff" stroke-opacity=".26" stroke-width="1.3"
               stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
 
         {{-- tread diberi warna pilar sesuai pita yang disentuhnya --}}
         <g stroke-width="2.6" vector-effect="non-scaling-stroke" stroke-linecap="round">
-          <path d="M40 100H170"  stroke="#2FA3DE" stroke-opacity=".85"/>
-          <path d="M170 200H280" stroke="#F08A22" stroke-opacity=".85"/>
-          <path d="M280 300H375" stroke="#12897F" stroke-opacity=".85"/>
-          <path d="M375 400H455" stroke="#5EAE38" stroke-opacity=".85"/>
+          <path class="tread" d="M40 100H170"  stroke="#2FA3DE" stroke-opacity=".85"/>
+          <path class="tread" d="M170 200H280" stroke="#F08A22" stroke-opacity=".85"/>
+          <path class="tread" d="M280 300H375" stroke="#12897F" stroke-opacity=".85"/>
+          <path class="tread" d="M375 400H455" stroke="#5EAE38" stroke-opacity=".85"/>
         </g>
 
         {{-- tekstur muka jenjang --}}
@@ -165,11 +218,28 @@
 
         {{-- titik sudut --}}
         <g fill="#fff" fill-opacity=".5">
-          <circle cx="170" cy="100" r="2.4"/><circle cx="280" cy="200" r="2.4"/>
-          <circle cx="375" cy="300" r="2.4"/><circle cx="455" cy="400" r="2.4"/>
+          <circle class="sudut" cx="170" cy="100" r="2.4"/><circle class="sudut" cx="280" cy="200" r="2.4"/>
+          <circle class="sudut" cx="375" cy="300" r="2.4"/><circle class="sudut" cx="455" cy="400" r="2.4"/>
+        </g>
+
+        {{-- truk pengangkut menyusuri jenjang teratas --}}
+        <g class="truk" opacity=".7">
+          <rect x="0" y="82" width="30" height="12" rx="2.5" fill="#fff" fill-opacity=".5"/>
+          <path d="M2 82 L8 74 H24 L28 82 Z" fill="#fff" fill-opacity=".34"/>
+          <circle cx="8"  cy="96" r="3.2" fill="#fff" fill-opacity=".6"/>
+          <circle cx="23" cy="96" r="3.2" fill="#fff" fill-opacity=".6"/>
+        </g>
+
+        {{-- debu terangkat dari muka jenjang --}}
+        <g fill="#fff" fill-opacity=".28">
+          <circle class="debu" cx="196" cy="206" r="3"/>
+          <circle class="debu" cx="300" cy="306" r="2.4"/>
+          <circle class="debu" cx="392" cy="406" r="2.7"/>
         </g>
       </svg>
     </div>
+
+    <div class="eq-sapu" aria-hidden="true"><i></i></div>
 
     <div class="eq-strata" aria-hidden="true">
       <div class="eq-band" style="--c:var(--energy)"><i></i><b>Energy</b></div>

@@ -30,10 +30,15 @@
 </header>
 
 {{-- ══════════ HERO ══════════ --}}
-<section class="relative brand-gradient text-white overflow-hidden">
-  <div class="absolute inset-0 opacity-[.55]">@include('partials.art-mine')</div>
+{{-- Kedalaman dibangun dari lapisan yang bergerak pada laju berbeda:
+     seni tambang paling belakang, pendar di tengah, teks paling depan.
+     Laju diatur lewat data-parallax dan dijalankan di rAF. --}}
+<section class="relative brand-gradient text-white overflow-hidden aurora">
+  <div class="absolute inset-0 opacity-[.55]" data-parallax="0.14">@include('partials.art-mine')</div>
+  <div class="absolute inset-0 grid-tech pointer-events-none" data-parallax="0.06"></div>
   <div class="absolute inset-0 bg-gradient-to-r from-cam-black via-cam-black/85 to-transparent"></div>
-  <div class="absolute -right-24 -top-24 w-[380px] h-[380px] rounded-full bg-cam-lime/20 blur-3xl floaty"></div>
+  <div class="absolute -right-24 -top-24 w-[380px] h-[380px] rounded-full bg-cam-lime/20 blur-3xl apung" data-parallax="0.2"></div>
+  <div class="absolute -left-16 bottom-[-90px] w-[300px] h-[300px] rounded-full bg-[#1F6FB8]/15 blur-3xl apung-2" data-parallax="0.1"></div>
 
   <div class="relative max-w-6xl mx-auto px-5 py-16 md:py-24">
     <div class="max-w-2xl animate-fadeUp">
@@ -44,7 +49,7 @@
 
       <h1 class="font-display text-[38px] md:text-[58px] font-black mt-5 leading-[1.05] text-shadow">
         Keselamatan tambang,<br>
-        <span class="text-transparent bg-clip-text bg-gradient-to-r from-cam-lime-light to-cam-lime">terukur dan terbukti.</span>
+        <span class="sheen" style="--sheen-base:#2CB0BC; --sheen-hi:#BFF6FA">terukur dan terbukti.</span>
       </h1>
 
       <p class="text-[14px] md:text-[15px] text-white/55 mt-5 leading-relaxed max-w-lg">

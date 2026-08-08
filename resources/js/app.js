@@ -68,3 +68,32 @@ function pasangTilt() {
 }
 
 document.addEventListener('DOMContentLoaded', () => { pasangReveal(); pasangTilt(); });
+
+/* Parallax hero: lapisan bergerak lebih lambat dari gulungan halaman,
+   sehingga terbaca sebagai kedalaman. Dijalankan di rAF dan hanya saat
+   bagian itu masih terlihat, supaya tidak membebani gulungan. */
+function pasangParallax() {
+  const lapis = document.querySelectorAll('[data-parallax]');
+  if (!lapis.length || gerakMinimal) return;
+
+  let menunggu = false;
+  const gambar = () => {
+    menunggu = false;
+    const y = window.scrollY;
+    if (y > window.innerHeight * 1.3) return;      // hero sudah lewat
+    lapis.forEach((el) => {
+      const laju = parseFloat(el.dataset.parallax) || 0;
+      el.style.transform = `translate3d(0, ${(y * laju).toFixed(1)}px, 0)`;
+    });
+  };
+
+  window.addEventListener('scroll', () => {
+    if (menunggu) return;
+    menunggu = true;
+    requestAnimationFrame(gambar);
+  }, { passive: true });
+
+  gambar();
+}
+
+document.addEventListener('DOMContentLoaded', pasangParallax);
