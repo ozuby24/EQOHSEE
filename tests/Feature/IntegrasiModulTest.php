@@ -2,12 +2,16 @@
 
 namespace Tests\Feature;
 
-use App\Models\{Company, Document, HazardReport, Procedure, SmkpAudit, SmkpFinding, User};
+use App\Models\{Document, Procedure, SmkpAudit, User};
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Konsolidasi lintas modul: pekerjaan tidak boleh berhenti di batas modul.
+ * Konsolidasi lintas modul: dokumen terkendali menaut ke prosedur LMS,
+ * dan kriteria audit dibuktikan oleh dokumen.
+ *
+ * Temuan SMKP sengaja TIDAK menaut ke Hazard Report — ketidaksesuaian
+ * sistem dan bahaya fisik lapangan adalah dua konteks berbeda.
  */
 class IntegrasiModulTest extends TestCase
 {
@@ -23,69 +27,6 @@ class IntegrasiModulTest extends TestCase
         return SmkpAudit::create(array_merge([
             'tahun' => 2026, 'status' => 'berjalan', 'hasil' => [],
         ], $ganti));
-    }
-
-    public function test_temuan_smkp_dapat_dinaikkan_menjadi_hazard_report(): void
-    {
-        $pt    = Company::create(['name' => 'PT Uji Tambang']);
-        $audit = $this->audit(['company_id' => $pt->id]);
-
-        $temuan = $audit->findings()->create([
-            'kode_kriteria' => 'IV.2.1',
-            'jenis'         => 'mayor',
-            'uraian'        => 'SOP pekerjaan berisiko tinggi belum tersedia.',
-            'status'        => 'Open',
-        ]);
-
-        $this->actingAs($this->admin())
-            ->post(route('smkp.temuan.hazard', [$audit, $temuan]))
-            ->assertRedirect();
-
-        $laporan = HazardReport::first();
-        $this->assertNotNull($laporan, 'Hazard Report harus terbentuk.');
-        $this->assertSame($laporan->id, $temuan->refresh()->hazard_report_id);
-        $this->assertSame($pt->id, $laporan->company_id, 'Perusahaan ikut terbawa.');
-        $this->assertStringContainsString('IV.2.1', $laporan->deskripsi, 'Jejak kriteria asal ikut tercatat.');
-    }
-
-    public function test_temuan_mayor_menjadi_risiko_tinggi_minor_menjadi_sedang(): void
-    {
-        $audit = $this->audit();
-        $admin = $this->admin();
-
-        $mayor = $audit->findings()->create(['kode_kriteria'=>'I.1.1','jenis'=>'mayor','uraian'=>'A','status'=>'Open']);
-        $minor = $audit->findings()->create(['kode_kriteria'=>'I.1.2','jenis'=>'minor','uraian'=>'B','status'=>'Open']);
-
-        $this->actingAs($admin)->post(route('smkp.temuan.hazard', [$audit, $mayor]));
-        $this->actingAs($admin)->post(route('smkp.temuan.hazard', [$audit, $minor]));
-
-        $this->assertSame('Tinggi', $mayor->refresh()->hazardReport->risiko);
-        $this->assertSame('Sedang', $minor->refresh()->hazardReport->risiko);
-    }
-
-    public function test_temuan_tidak_digandakan_bila_dinaikkan_dua_kali(): void
-    {
-        $audit  = $this->audit();
-        $temuan = $audit->findings()->create(['kode_kriteria'=>'I.1.1','jenis'=>'mayor','uraian'=>'A','status'=>'Open']);
-        $admin  = $this->admin();
-
-        $this->actingAs($admin)->post(route('smkp.temuan.hazard', [$audit, $temuan]));
-        $this->actingAs($admin)->post(route('smkp.temuan.hazard', [$audit, $temuan]));
-
-        $this->assertSame(1, HazardReport::count(), 'Menaikkan dua kali tidak boleh menggandakan laporan.');
-    }
-
-    public function test_temuan_milik_audit_lain_ditolak(): void
-    {
-        $a = $this->audit(['tahun' => 2026]);
-        $b = $this->audit(['tahun' => 2025]);
-        $temuan = $b->findings()->create(['kode_kriteria'=>'I.1.1','jenis'=>'mayor','uraian'=>'A','status'=>'Open']);
-
-        $this->actingAs($this->admin())
-            ->post(route('smkp.temuan.hazard', [$a, $temuan]))
-            ->assertNotFound();
-
-        $this->assertSame(0, HazardReport::count());
     }
 
     public function test_dokumen_dapat_ditautkan_ke_prosedur_lms(): void

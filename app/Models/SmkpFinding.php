@@ -13,7 +13,7 @@ class SmkpFinding extends Model
     protected $table = 'smkp_findings';
 
     protected $fillable = [
-        'audit_id', 'kode_kriteria', 'hazard_report_id', 'document_id', 'jenis', 'uraian', 'akar_masalah',
+        'audit_id', 'kode_kriteria', 'document_id', 'jenis', 'uraian', 'akar_masalah',
         'tindakan', 'penanggung_jawab', 'target_selesai', 'tanggal_selesai',
         'status', 'verifikasi',
     ];
@@ -27,7 +27,6 @@ class SmkpFinding extends Model
     }
 
     public function audit(): BelongsTo        { return $this->belongsTo(SmkpAudit::class, 'audit_id'); }
-    public function hazardReport(): BelongsTo { return $this->belongsTo(HazardReport::class); }
     public function document(): BelongsTo     { return $this->belongsTo(Document::class); }
 
     /** Temuan lewat target penyelesaian dan belum ditutup. */

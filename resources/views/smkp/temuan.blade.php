@@ -110,22 +110,6 @@
           <button class="lime-gradient shadow-glow rounded-xl text-white px-4 py-2.5 text-[12.5px] font-bold hover:brightness-105 transition">Simpan</button>
         </form>
 
-        {{-- Jembatan ke modul Hazard: temuan audit masuk ke alur tindak lanjut lapangan --}}
-        <div class="px-5 pb-5 -mt-1">
-          @if($t->hazard_report_id)
-            <a href="{{ route('hazard.show', $t->hazard_report_id) }}"
-               class="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-cam-lime-deep hover:underline">
-              Sudah dinaikkan ke {{ $t->hazardReport?->kode ?? 'Hazard Report' }} →
-            </a>
-          @else
-            <form method="POST" action="{{ route('smkp.temuan.hazard',[$audit,$t]) }}">
-              @csrf
-              <button class="rounded-xl border border-stone-200 px-4 py-2 text-[11.5px] font-bold text-stone-600 hover:bg-stone-50 hover:border-cam-lime/40 transition">
-                Naikkan ke Hazard Report
-              </button>
-            </form>
-          @endif
-        </div>
       </section>
     @empty
       <div class="bg-white rounded-2xl border border-dashed border-stone-200 p-10 text-center">
