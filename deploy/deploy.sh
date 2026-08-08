@@ -58,6 +58,9 @@ chmod -R 775 "$REPO_DIR/storage" "$REPO_DIR/bootstrap/cache"
 echo "==> Running database migrations"
 php artisan migrate --force
 
+echo "==> Linking public storage"
+php artisan storage:link 2>/dev/null || true
+
 echo "==> Laravel optimize"
 cd "$REPO_DIR"
 php artisan config:clear
