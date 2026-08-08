@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{ActivityLog, Company, SmkpAudit, SmkpFinding};
-use App\Support\Smkp;
+use App\Models\{ActivityLog, Company, SmkpAttendee, SmkpAudit, SmkpFinding};
+use App\Support\{Smkp, SmkpTahap};
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -75,11 +75,285 @@ class SmkpController extends Controller
     public function show(SmkpAudit $smkp)
     {
         return view('smkp.show', [
-            'audit'  => $smkp,
-            'rekap'  => $smkp->rekap(),
-            'elemen' => Smkp::elemen(),
-            'temuan' => $smkp->findings()->orderByRaw(Smkp::urutJenisSql())->get(),
+            'audit'     => $smkp,
+            'rekap'     => $smkp->rekap(),
+            'elemen'    => Smkp::elemen(),
+            'temuan'    => $smkp->findings()->orderByRaw(Smkp::urutJenisSql())->get(),
+            'kecukupan' => $smkp->rekapKecukupan(),
+            'rencana'   => $smkp->rekapRencana(),
+            'tahap'     => SmkpTahap::tahap(),
         ]);
+    }
+
+    /* ================= TAHAP I — Permulaan Audit ================= */
+
+    public function tahap1(SmkpAudit $smkp)
+    {
+        return view('smkp.tahap1', [
+            'audit'     => $smkp,
+            'elemen'    => Smkp::elemen(),
+            'kelayakan' => SmkpTahap::indikatorKelayakan(),
+            'faktor'    => SmkpTahap::faktorPenyesuaian(),
+            'kinerja'   => SmkpTahap::butirKinerja(),
+            'mandays'   => $smkp->mandays(),
+            'rekap'     => $smkp->rekapKecukupan(),
+        ]);
+    }
+
+    public function simpanTahap1(Request $request, SmkpAudit $smkp)
+    {
+        $d = $request->validate([
+            'permulaan.tanggal_kontak'      => ['nullable','date'],
+            'permulaan.media_kontak'        => ['nullable','string','max:150'],
+            'permulaan.wakil_auditi'        => ['nullable','string','max:150'],
+            'permulaan.jabatan_wakil'       => ['nullable','string','max:150'],
+            'permulaan.surat_nomor'         => ['nullable','string','max:150'],
+            'permulaan.surat_tanggal'       => ['nullable','date'],
+            'permulaan.jumlah_pekerja'      => ['nullable','integer','min:0','max:1000000'],
+            'permulaan.kelas_risiko'        => ['nullable', Rule::in(SmkpTahap::kelasRisiko())],
+            'permulaan.mandays_dasar'       => ['nullable','numeric','min:0','max:1000'],
+            'permulaan.jumlah_auditor'      => ['nullable','integer','min:1','max:50'],
+            'permulaan.penyesuaian'         => ['nullable','numeric','min:0','max:1000'],
+            'permulaan.kesimpulan'          => ['nullable','string','max:2000'],
+            'permulaan.kelayakan.*'         => ['nullable','string','max:500'],
+            'permulaan.faktor.*'            => ['nullable'],
+
+            'kinerja.*'                     => ['nullable','string','max:50'],
+
+            'kecukupan.*.status'            => ['nullable', Rule::in([SmkpTahap::LENGKAP, SmkpTahap::TIDAK_LENGKAP])],
+            'kecukupan.*.ket'               => ['nullable','string','max:1000'],
+        ]);
+
+        $p = (array) ($d['permulaan'] ?? []);
+
+        // Kotak centang yang tidak dicentang tidak ikut terkirim; disamakan
+        // dulu agar "tidak" tersimpan sebagai jawaban, bukan sebagai kosong.
+        $faktor = [];
+        foreach (array_keys(SmkpTahap::faktorPenyesuaian()) as $k) {
+            $faktor[$k] = !empty($p['faktor'][$k]);
+        }
+        $p['faktor'] = $faktor;
+
+        // Kecukupan hanya disimpan untuk elemen yang benar-benar ada.
+        $kecukupan = [];
+        foreach (Smkp::elemen() as $e) {
+            $baris = $d['kecukupan'][$e['kode']] ?? [];
+            if (empty($baris['status'])) continue;
+            $kecukupan[$e['kode']] = [
+                'status' => $baris['status'],
+                'ket'    => mb_substr(trim((string) ($baris['ket'] ?? '')), 0, 1000),
+            ];
+        }
+
+        $smkp->update([
+            'permulaan' => $p,
+            'kinerja'   => array_map(fn ($v) => trim((string) $v), (array) ($d['kinerja'] ?? [])),
+            'kecukupan' => $kecukupan,
+        ]);
+
+        return redirect()->route('smkp.tahap1', $smkp)->with('ok', 'Hasil Tahap I tersimpan.');
+    }
+
+    /** Berita Acara Hasil Pelaksanaan Tahapan Awal — siap cetak. */
+    public function beritaAcara(SmkpAudit $smkp)
+    {
+        return view('smkp.berita-acara', [
+            'audit'     => $smkp,
+            'elemen'    => Smkp::elemen(),
+            'kelayakan' => SmkpTahap::indikatorKelayakan(),
+            'faktor'    => SmkpTahap::faktorPenyesuaian(),
+            'kinerja'   => SmkpTahap::butirKinerja(),
+            'mandays'   => $smkp->mandays(),
+            'rekap'     => $smkp->rekapKecukupan(),
+        ]);
+    }
+
+    /* ================= RENCANA AUDIT ================= */
+
+    public function rencana(SmkpAudit $smkp)
+    {
+        return view('smkp.rencana', [
+            'audit'    => $smkp,
+            'komponen' => SmkpTahap::komponenRencana(),
+            'pengesah' => SmkpTahap::pengesah(),
+            'kegiatan' => SmkpTahap::kegiatanLapangan(),
+            'elemen'   => Smkp::elemen(),
+            'rekap'    => $smkp->rekapRencana(),
+            'mandays'  => $smkp->mandays(),
+        ]);
+    }
+
+    public function simpanRencana(Request $request, SmkpAudit $smkp)
+    {
+        $d = $request->validate([
+            'nomor'            => ['nullable','string','max:100'],
+            'tujuan'           => ['nullable','string','max:3000'],
+            'kriteria'         => ['nullable','string','max:3000'],
+            'ruang_lingkup'    => ['nullable','string','max:3000'],
+            'tanggal_mulai'    => ['nullable','date'],
+            'tanggal_selesai'  => ['nullable','date','after_or_equal:tanggal_mulai'],
+            'sumberdaya'       => ['nullable','string','max:3000'],
+            'metode'           => ['nullable','string','max:3000'],
+            'sampel'           => ['nullable','string','max:3000'],
+
+            'susunan'          => ['nullable','array','max:60'],
+            'susunan.*.tanggal'  => ['nullable','date'],
+            'susunan.*.waktu'    => ['nullable','string','max:50'],
+            'susunan.*.kegiatan' => ['nullable','string','max:300'],
+            'susunan.*.auditi'   => ['nullable','string','max:200'],
+            'susunan.*.auditor'  => ['nullable','string','max:200'],
+
+            'tugas'            => ['nullable','array','max:30'],
+            'tugas.*.nama'       => ['nullable','string','max:150'],
+            'tugas.*.peran'      => ['nullable','string','max:100'],
+            'tugas.*.registrasi' => ['nullable','string','max:100'],
+            'tugas.*.lingkup'    => ['nullable','string','max:300'],
+
+            'pengesahan'         => ['nullable','array'],
+            'pengesahan.*.nama'    => ['nullable','string','max:150'],
+            'pengesahan.*.jabatan' => ['nullable','string','max:150'],
+            'pengesahan.*.tanggal' => ['nullable','date'],
+
+            'risiko'             => ['nullable','array'],
+            'risiko.present'     => ['nullable','array','max:20'],
+            'risiko.future'      => ['nullable','array','max:20'],
+            'risiko.*.*.kegiatan'=> ['nullable','string','max:200'],
+            'risiko.*.*.risiko'  => ['nullable','string','max:200'],
+            'risiko.*.*.nilai'   => ['nullable','numeric','min:0','max:100'],
+        ]);
+
+        // Baris tabel yang seluruhnya kosong dibuang supaya laporan tidak
+        // memuat baris hampa hanya karena formulirnya menyediakan slot.
+        $rencana = [
+            'nomor'           => $d['nomor'] ?? null,
+            'tujuan'          => $d['tujuan'] ?? null,
+            'kriteria'        => $d['kriteria'] ?? null,
+            'ruang_lingkup'   => $d['ruang_lingkup'] ?? null,
+            'tanggal_mulai'   => $d['tanggal_mulai'] ?? null,
+            'tanggal_selesai' => $d['tanggal_selesai'] ?? null,
+            'susunan'         => $this->baris($d['susunan'] ?? []),
+            'tugas'           => $this->baris($d['tugas'] ?? []),
+            'sumberdaya'      => $d['sumberdaya'] ?? null,
+            'metode'          => $d['metode'] ?? null,
+            'sampel'          => $d['sampel'] ?? null,
+            'pengesahan'      => array_intersect_key(
+                (array) ($d['pengesahan'] ?? []),
+                SmkpTahap::pengesah()
+            ),
+        ];
+
+        $risiko = [
+            'present' => $this->baris($d['risiko']['present'] ?? []),
+            'future'  => $this->baris($d['risiko']['future'] ?? []),
+        ];
+
+        $smkp->update(['rencana' => $rencana, 'risiko' => $risiko]);
+
+        $rekap = $smkp->rekapRencana();
+        $pesan = $rekap['lengkap']
+            ? 'Rencana Audit lengkap — sembilan komponen terpenuhi.'
+            : 'Rencana Audit tersimpan. Belum lengkap: '.implode(', ', $rekap['kurang']).'.';
+
+        return redirect()->route('smkp.rencana', $smkp)->with('ok', $pesan);
+    }
+
+    /** Laporan Rencana Audit — sembilan komponen wajib, siap cetak. */
+    public function rencanaCetak(SmkpAudit $smkp)
+    {
+        return view('smkp.rencana-cetak', [
+            'audit'    => $smkp,
+            'komponen' => SmkpTahap::komponenRencana(),
+            'pengesah' => SmkpTahap::pengesah(),
+            'kegiatan' => SmkpTahap::kegiatanLapangan(),
+            'rekap'    => $smkp->rekapRencana(),
+            'mandays'  => $smkp->mandays(),
+        ]);
+    }
+
+    /* ================= TAHAP II — rapat & daftar hadir ================= */
+
+    public function rapat(SmkpAudit $smkp)
+    {
+        return view('smkp.rapat', [
+            'audit' => $smkp,
+            'rapat' => SmkpTahap::rapat(),
+            'hadir' => $smkp->attendees()->orderBy('id')->get()->groupBy('rapat'),
+            'siap'  => $smkp->siapTahapDua(),
+        ]);
+    }
+
+    public function simpanHadir(Request $request, SmkpAudit $smkp)
+    {
+        $d = $request->validate([
+            'rapat'      => ['required', Rule::in(array_keys(SmkpTahap::rapat()))],
+            'nama'       => ['required','string','max:150'],
+            'jabatan'    => ['nullable','string','max:150'],
+            'perusahaan' => ['nullable','string','max:150'],
+        ]);
+
+        $smkp->attendees()->create($d);
+
+        // Rapat pembukaan menandai audit lapangan benar-benar dimulai.
+        if ($d['rapat'] === 'pembukaan' && $smkp->tahap < SmkpTahap::LAPANGAN) {
+            $smkp->update(['tahap' => SmkpTahap::LAPANGAN]);
+        }
+
+        return back()->with('ok', 'Peserta '.SmkpTahap::labelRapat($d['rapat']).' ditambahkan.');
+    }
+
+    public function hapusHadir(SmkpAudit $smkp, SmkpAttendee $hadir)
+    {
+        abort_if($hadir->audit_id !== $smkp->id, 404);
+        $hadir->delete();
+        return back()->with('ok','Peserta dihapus.');
+    }
+
+    /** Daftar hadir siap cetak, satu berkas per rapat. */
+    public function daftarHadir(SmkpAudit $smkp, string $rapat)
+    {
+        abort_if(!array_key_exists($rapat, SmkpTahap::rapat()), 404, 'Rapat tidak dikenal.');
+
+        return view('smkp.daftar-hadir', [
+            'audit' => $smkp,
+            'rapat' => $rapat,
+            'judul' => SmkpTahap::labelRapat($rapat),
+            'hadir' => $smkp->hadir($rapat),
+        ]);
+    }
+
+    /** Naikkan tahap audit; Tahap I harus tuntas sebelum lapangan dibuka. */
+    public function ubahTahap(Request $request, SmkpAudit $smkp)
+    {
+        $tahap = (int) $request->validate([
+            'tahap' => ['required','integer', Rule::in(array_keys(SmkpTahap::tahap()))],
+        ])['tahap'];
+
+        if ($tahap >= SmkpTahap::LAPANGAN && !$smkp->siapTahapDua()) {
+            $kurang = $smkp->rekapRencana()['kurang'];
+            $sisa   = $smkp->rekapKecukupan()['belum'];
+
+            return back()->withErrors(['tahap' => trim(
+                'Tahap I belum tuntas. '
+                .($sisa ? "$sisa elemen belum ditinjau kecukupan dokumentasinya. " : '')
+                .($kurang ? 'Rencana Audit kurang: '.implode(', ', $kurang).'.' : '')
+            )]);
+        }
+
+        $smkp->update(['tahap' => $tahap]);
+        ActivityLog::write('Ubah tahap audit SMKP', SmkpTahap::labelTahap($tahap), 'smkp');
+
+        return back()->with('ok', 'Audit berpindah ke '.SmkpTahap::labelTahap($tahap).'.');
+    }
+
+    /** Buang baris tabel yang seluruh kolomnya kosong. */
+    private function baris($rows): array
+    {
+        return array_values(array_filter((array) $rows, function ($r) {
+            foreach ((array) $r as $v) {
+                if (trim((string) $v) !== '') return true;
+            }
+            return false;
+        }));
     }
 
     /* ---------- Formulir penilaian per elemen ---------- */
