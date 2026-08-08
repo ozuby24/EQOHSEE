@@ -11,6 +11,18 @@ echo "==> Pulling latest code"
 cd "$REPO_DIR"
 git pull origin "$(git rev-parse --abbrev-ref HEAD)"
 
+echo "==> Installing PHP dependencies"
+composer install --no-dev --optimize-autoloader
+
+if ! command -v npm >/dev/null 2>&1; then
+    echo "==> npm not found, installing nodejs/npm"
+    apt-get install -y nodejs npm
+fi
+
+echo "==> Building frontend assets"
+npm install
+npm run build
+
 echo "==> Detecting PHP-FPM socket"
 PHP_SOCK=$(ls /run/php/*.sock 2>/dev/null | head -n1)
 if [ -z "$PHP_SOCK" ]; then
