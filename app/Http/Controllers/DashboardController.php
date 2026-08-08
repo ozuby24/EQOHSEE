@@ -2,7 +2,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\{Course, Enrollment, Certificate, HazardReport, Inspection, KoObject,
-    News, Procedure, SmkpAudit, SmkpFinding, SopEvaluationAttempt, TpkkpAssessment, User};
+    Document, News, Procedure, SmkpAudit, SmkpFinding, SopEvaluationAttempt,
+    TpkkpAssessment, User};
 
 class DashboardController extends Controller
 {
@@ -71,6 +72,16 @@ class DashboardController extends Controller
                 'ikon'  => 'audit',
                 'rute'  => 'smkp.index',
                 'warna' => '#4FA82E',
+            ],
+            [
+                'nama'  => 'ISO & Dokumen',
+                'ket'   => 'Dokumen lewat masa tinjau',
+                'nilai' => Document::where('status','berlaku')->whereNotNull('tanggal_tinjau')
+                             ->whereDate('tanggal_tinjau','<',now())->count(),
+                'total' => Document::count(),
+                'ikon'  => 'materi',
+                'rute'  => 'dokumen.index',
+                'warna' => '#17A2DC',
             ],
             [
                 'nama'  => 'Safety Maturity',

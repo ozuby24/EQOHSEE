@@ -20,8 +20,9 @@
   $modul = request()->is('hazard*') || request()->is('inspeksi*') ? 'hazrep'
          : (request()->is('tpkkp*') ? 'tpkkp'
          : (request()->is('smkp*') ? 'smkp'
+         : (request()->is('dokumen*') ? 'dokumen'
          : (request()->is('ko*') ? 'ko'
-         : (request()->is('admin*') || request()->is('signatories*') ? 'admin' : 'lms'))));
+         : (request()->is('admin*') || request()->is('signatories*') ? 'admin' : 'lms')))));
 
   $menu = [
     'lms' => [
@@ -104,6 +105,15 @@
       'groups' => [
         '' => [
           ['Periode Audit', 'smkp.index', 'smkp'],
+        ],
+      ],
+    ],
+    'dokumen' => [
+      'label' => 'ISO & Dokumen',
+      'icon'  => 'M7 3h7l4 4v14H7a1 1 0 01-1-1V4a1 1 0 011-1zM14 3v4h4M9.5 12h5M9.5 15.5h3',
+      'groups' => [
+        '' => [
+          ['Register Dokumen', 'dokumen.index', 'dokumen'],
         ],
       ],
     ],

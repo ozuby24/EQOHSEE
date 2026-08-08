@@ -5,7 +5,7 @@ use App\Http\Controllers\{
     LearnController, NewsController, ProcedureController, ProfileController,
     QuizController, SopController
 };
-use App\Http\Controllers\{CourseContentController, EvaluasiTemuanController, HazardController,
+use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiTemuanController, HazardController,
     HazardExportController, InspectionController, InspectionTemplateController,
     KoController, KuesionerController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
@@ -167,6 +167,19 @@ Route::middleware('auth')->group(function () {
     Route::post('kuesioner/tarik',           [KuesionerController::class,'tarikKs'])->name('kuesioner.tarik');
     Route::delete('kuesioner/{response}',    [KuesionerController::class,'destroyResponse'])->name('kuesioner.response.destroy');
     Route::get('kuesioner',                  [KuesionerController::class,'admin'])->name('kuesioner.admin');
+
+    /* ================= WEBSITE #5 — ISO & Dokumen ================= */
+    Route::prefix('dokumen')->name('dokumen.')->group(function () {
+        Route::get('/',                [DocumentController::class,'index'])->name('index');
+        Route::get('baru',             [DocumentController::class,'create'])->name('create');
+        Route::post('/',               [DocumentController::class,'store'])->name('store');
+        Route::get('{dokumen}',        [DocumentController::class,'show'])->name('show');
+        Route::get('{dokumen}/ubah',   [DocumentController::class,'edit'])->name('edit');
+        Route::put('{dokumen}',        [DocumentController::class,'update'])->name('update');
+        Route::delete('{dokumen}',     [DocumentController::class,'destroy'])->middleware('can:admin')->name('destroy');
+        Route::post('{dokumen}/revisi',[DocumentController::class,'revisi'])->name('revisi');
+        Route::get('{dokumen}/unduh',  [DocumentController::class,'unduh'])->name('unduh');
+    });
 
     /* ================= WEBSITE #4 — Audit SMKP Minerba ================= */
     Route::prefix('smkp')->name('smkp.')->group(function () {

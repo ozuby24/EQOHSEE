@@ -36,8 +36,8 @@ class Modules
              'ket'  => 'Pengelolaan stok, penerimaan, pengeluaran, dan penyimpanan material.',
              'ikon' => 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4'],
 
-            ['nama' => 'ISO & Dokumen', 'status' => 'segera',
-             'ket'  => 'Kendali dokumen, revisi, dan kepatuhan standar.',
+            ['nama' => 'ISO & Dokumen', 'status' => 'aktif',
+             'ket'  => 'Register dokumen terkendali: nomor revisi, masa berlaku, riwayat perubahan, dan pengingat peninjauan berkala.',
              'ikon' => 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.59a1 1 0 01.7.29l4.42 4.42a1 1 0 01.29.7V19a2 2 0 01-2 2z'],
         ];
     }
