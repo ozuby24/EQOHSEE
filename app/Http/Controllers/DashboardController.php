@@ -2,7 +2,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{Course, Enrollment, Certificate, HazardReport, Inspection, KoObject,
-    News, Procedure, SopEvaluationAttempt, TpkkpAssessment, User};
+    News, Procedure, SmkpAudit, SmkpFinding, SopEvaluationAttempt, TpkkpAssessment, User};
 
 class DashboardController extends Controller
 {
@@ -59,6 +59,14 @@ class DashboardController extends Controller
                 'total' => KoObject::count(),
                 'rute'  => 'ko.index',
                 'warna' => '#1093B8',
+            ],
+            [
+                'nama'  => 'Audit SMKP',
+                'ket'   => 'Temuan belum ditutup',
+                'nilai' => SmkpFinding::where('status','<>','Closed')->count(),
+                'total' => SmkpAudit::count(),
+                'rute'  => 'smkp.index',
+                'warna' => '#4FA82E',
             ],
             [
                 'nama'  => 'Safety Maturity',

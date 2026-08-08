@@ -1,0 +1,371 @@
+{
+  "meta": {
+    "title": "Audit Sistem Manajemen Keselamatan Pertambangan (SMKP) Minerba",
+    "basis": "Kepdirjen Minerba 185.K/37.04/DJB/2019",
+    "catatan": "Bobot elemen dan daftar kriteria di berkas ini adalah kerangka awal. Sesuaikan dengan lampiran resmi Kepdirjen yang berlaku di perusahaan Anda — struktur ini sengaja dibuat sebagai data agar dapat diubah tanpa mengubah kode."
+  },
+  "penilaian": [
+    { "kode": "sesuai", "label": "Sesuai",                "nilai": 1,    "warna": "#4FA82E" },
+    { "kode": "minor",  "label": "Ketidaksesuaian Minor", "nilai": 0.5,  "warna": "#F0921E" },
+    { "kode": "mayor",  "label": "Ketidaksesuaian Mayor", "nilai": 0,    "warna": "#E5484D" },
+    { "kode": "na",     "label": "Tidak Berlaku",         "nilai": null, "warna": "#9AA3AE" }
+  ],
+  "predikat": [
+    { "min": 90, "label": "Sangat Baik", "warna": "#0FA08F" },
+    { "min": 80, "label": "Baik",        "warna": "#4FA82E" },
+    { "min": 70, "label": "Cukup",       "warna": "#C7DE30" },
+    { "min": 60, "label": "Kurang",      "warna": "#F0921E" },
+    { "min": 0,  "label": "Buruk",       "warna": "#E5484D" }
+  ],
+  "elemen": [
+    {
+      "kode": "I",
+      "nama": "Kebijakan",
+      "bobot": 9,
+      "sub": [
+        {
+          "kode": "I.1",
+          "nama": "Penyusunan Kebijakan",
+          "kriteria": [
+            { "kode": "I.1.1", "uraian": "Kebijakan keselamatan pertambangan disusun dengan melibatkan pekerja tambang dan/atau serikat pekerja." },
+            { "kode": "I.1.2", "uraian": "Penyusunan kebijakan didasarkan pada tinjauan awal kondisi keselamatan pertambangan." },
+            { "kode": "I.1.3", "uraian": "Kebijakan mempertimbangkan hasil identifikasi bahaya, penilaian, dan pengendalian risiko." }
+          ]
+        },
+        {
+          "kode": "I.2",
+          "nama": "Isi Kebijakan",
+          "kriteria": [
+            { "kode": "I.2.1", "uraian": "Kebijakan memuat visi, misi, dan tujuan keselamatan pertambangan perusahaan." },
+            { "kode": "I.2.2", "uraian": "Kebijakan memuat komitmen pemenuhan peraturan perundang-undangan dan persyaratan lain yang terkait." },
+            { "kode": "I.2.3", "uraian": "Kebijakan memuat komitmen perbaikan berkelanjutan atas kinerja keselamatan pertambangan." },
+            { "kode": "I.2.4", "uraian": "Kebijakan memuat komitmen penyediaan sumber daya yang memadai." }
+          ]
+        },
+        {
+          "kode": "I.3",
+          "nama": "Penetapan Kebijakan",
+          "kriteria": [
+            { "kode": "I.3.1", "uraian": "Kebijakan ditandatangani oleh pimpinan tertinggi perusahaan dan diberi tanggal penetapan." },
+            { "kode": "I.3.2", "uraian": "Kebijakan yang berlaku merupakan versi terbaru dan terdokumentasi." }
+          ]
+        },
+        {
+          "kode": "I.4",
+          "nama": "Komunikasi Kebijakan",
+          "kriteria": [
+            { "kode": "I.4.1", "uraian": "Kebijakan dikomunikasikan kepada seluruh pekerja tambang, termasuk perusahaan jasa pertambangan." },
+            { "kode": "I.4.2", "uraian": "Kebijakan dapat diakses oleh pihak terkait dan tersedia di area kerja." },
+            { "kode": "I.4.3", "uraian": "Terdapat bukti pemahaman pekerja terhadap isi kebijakan." }
+          ]
+        },
+        {
+          "kode": "I.5",
+          "nama": "Tinjauan Kebijakan",
+          "kriteria": [
+            { "kode": "I.5.1", "uraian": "Kebijakan ditinjau secara berkala sekurang-kurangnya satu kali dalam satu tahun." },
+            { "kode": "I.5.2", "uraian": "Hasil tinjauan kebijakan terdokumentasi dan ditindaklanjuti." }
+          ]
+        }
+      ]
+    },
+    {
+      "kode": "II",
+      "nama": "Perencanaan",
+      "bobot": 17,
+      "sub": [
+        {
+          "kode": "II.1",
+          "nama": "Penelaahan Awal",
+          "kriteria": [
+            { "kode": "II.1.1", "uraian": "Penelaahan awal kondisi keselamatan pertambangan dilaksanakan dan terdokumentasi." },
+            { "kode": "II.1.2", "uraian": "Hasil penelaahan awal digunakan sebagai dasar penyusunan perencanaan." }
+          ]
+        },
+        {
+          "kode": "II.2",
+          "nama": "Manajemen Risiko",
+          "kriteria": [
+            { "kode": "II.2.1", "uraian": "Terdapat prosedur identifikasi bahaya, penilaian, dan pengendalian risiko (HIRADC) yang ditetapkan." },
+            { "kode": "II.2.2", "uraian": "Manajemen risiko mencakup seluruh kegiatan, produk, dan jasa pertambangan." },
+            { "kode": "II.2.3", "uraian": "Pengendalian risiko disusun mengikuti hierarki pengendalian." },
+            { "kode": "II.2.4", "uraian": "Hasil manajemen risiko dikomunikasikan kepada pekerja terkait." },
+            { "kode": "II.2.5", "uraian": "Manajemen risiko ditinjau ulang secara berkala dan saat terjadi perubahan proses." }
+          ]
+        },
+        {
+          "kode": "II.3",
+          "nama": "Identifikasi dan Kepatuhan terhadap Peraturan Perundang-undangan",
+          "kriteria": [
+            { "kode": "II.3.1", "uraian": "Terdapat daftar peraturan perundang-undangan dan persyaratan lain yang terkait dan mutakhir." },
+            { "kode": "II.3.2", "uraian": "Dilakukan evaluasi pemenuhan terhadap peraturan tersebut secara berkala." },
+            { "kode": "II.3.3", "uraian": "Ketidakpatuhan yang teridentifikasi ditindaklanjuti dan terdokumentasi." }
+          ]
+        },
+        {
+          "kode": "II.4",
+          "nama": "Penetapan Tujuan, Sasaran, dan Program",
+          "kriteria": [
+            { "kode": "II.4.1", "uraian": "Tujuan dan sasaran keselamatan pertambangan ditetapkan, terukur, dan sejalan dengan kebijakan." },
+            { "kode": "II.4.2", "uraian": "Program kerja disusun lengkap dengan penanggung jawab, sumber daya, dan jangka waktu." },
+            { "kode": "II.4.3", "uraian": "Pencapaian tujuan dan sasaran dipantau dan dievaluasi secara berkala." }
+          ]
+        },
+        {
+          "kode": "II.5",
+          "nama": "Rencana Kerja dan Anggaran Keselamatan Pertambangan",
+          "kriteria": [
+            { "kode": "II.5.1", "uraian": "Rencana kerja dan anggaran keselamatan pertambangan disusun dan disahkan." },
+            { "kode": "II.5.2", "uraian": "Realisasi anggaran keselamatan pertambangan dipantau dan dilaporkan." }
+          ]
+        }
+      ]
+    },
+    {
+      "kode": "III",
+      "nama": "Organisasi dan Personel",
+      "bobot": 18,
+      "sub": [
+        {
+          "kode": "III.1",
+          "nama": "Struktur Organisasi, Tugas, Tanggung Jawab, dan Wewenang",
+          "kriteria": [
+            { "kode": "III.1.1", "uraian": "Struktur organisasi keselamatan pertambangan ditetapkan dan disahkan." },
+            { "kode": "III.1.2", "uraian": "Tugas, tanggung jawab, dan wewenang setiap jabatan terdokumentasi dan dipahami." }
+          ]
+        },
+        {
+          "kode": "III.2",
+          "nama": "Penunjukan Kepala Teknik Tambang (KTT)",
+          "kriteria": [
+            { "kode": "III.2.1", "uraian": "KTT ditunjuk dan disahkan oleh Kepala Inspektur Tambang." },
+            { "kode": "III.2.2", "uraian": "KTT memenuhi persyaratan kompetensi yang ditetapkan." }
+          ]
+        },
+        {
+          "kode": "III.3",
+          "nama": "Bagian Keselamatan dan Kesehatan Kerja Pertambangan",
+          "kriteria": [
+            { "kode": "III.3.1", "uraian": "Bagian K3 pertambangan dibentuk dan ditetapkan oleh KTT." },
+            { "kode": "III.3.2", "uraian": "Personel bagian K3 memiliki kompetensi sesuai ketentuan." }
+          ]
+        },
+        {
+          "kode": "III.4",
+          "nama": "Pengawas Operasional dan Pengawas Teknis",
+          "kriteria": [
+            { "kode": "III.4.1", "uraian": "Pengawas operasional ditunjuk dan memiliki sertifikat kompetensi yang berlaku." },
+            { "kode": "III.4.2", "uraian": "Pengawas teknis ditunjuk dan memiliki sertifikat kompetensi yang berlaku." }
+          ]
+        },
+        {
+          "kode": "III.5",
+          "nama": "Bagian Keselamatan Operasi Pertambangan",
+          "kriteria": [
+            { "kode": "III.5.1", "uraian": "Bagian keselamatan operasi pertambangan dibentuk dan ditetapkan." },
+            { "kode": "III.5.2", "uraian": "Tenaga teknis pertambangan yang berkompeten ditunjuk sesuai kebutuhan." }
+          ]
+        },
+        {
+          "kode": "III.6",
+          "nama": "Komite Keselamatan Pertambangan",
+          "kriteria": [
+            { "kode": "III.6.1", "uraian": "Komite keselamatan pertambangan dibentuk dan ditetapkan oleh KTT." },
+            { "kode": "III.6.2", "uraian": "Rapat komite dilaksanakan secara berkala dan terdokumentasi." }
+          ]
+        },
+        {
+          "kode": "III.7",
+          "nama": "Tim Tanggap Darurat",
+          "kriteria": [
+            { "kode": "III.7.1", "uraian": "Tim tanggap darurat dibentuk, ditetapkan, dan dilatih." },
+            { "kode": "III.7.2", "uraian": "Sarana dan prasarana tanggap darurat tersedia dan siap pakai." }
+          ]
+        },
+        {
+          "kode": "III.8",
+          "nama": "Seleksi, Penempatan, dan Kompetensi Personel",
+          "kriteria": [
+            { "kode": "III.8.1", "uraian": "Terdapat prosedur seleksi dan penempatan personel yang mempertimbangkan aspek keselamatan." },
+            { "kode": "III.8.2", "uraian": "Kebutuhan pendidikan dan pelatihan diidentifikasi serta dipenuhi." },
+            { "kode": "III.8.3", "uraian": "Catatan pelatihan dan kompetensi pekerja terdokumentasi dan mutakhir." }
+          ]
+        }
+      ]
+    },
+    {
+      "kode": "IV",
+      "nama": "Implementasi",
+      "bobot": 27,
+      "sub": [
+        {
+          "kode": "IV.1",
+          "nama": "Pelaksanaan Program Keselamatan Pertambangan",
+          "kriteria": [
+            { "kode": "IV.1.1", "uraian": "Program keselamatan pertambangan dilaksanakan sesuai rencana yang ditetapkan." },
+            { "kode": "IV.1.2", "uraian": "Penyimpangan pelaksanaan program diidentifikasi dan ditindaklanjuti." }
+          ]
+        },
+        {
+          "kode": "IV.2",
+          "nama": "Pengelolaan Operasional",
+          "kriteria": [
+            { "kode": "IV.2.1", "uraian": "Prosedur operasi standar (SOP) tersedia untuk seluruh kegiatan berisiko." },
+            { "kode": "IV.2.2", "uraian": "Izin kerja khusus diterapkan untuk pekerjaan berisiko tinggi." },
+            { "kode": "IV.2.3", "uraian": "Alat pelindung diri disediakan, digunakan, dan dipelihara sesuai ketentuan." },
+            { "kode": "IV.2.4", "uraian": "Rambu dan tanda keselamatan terpasang memadai di area kerja." }
+          ]
+        },
+        {
+          "kode": "IV.3",
+          "nama": "Pengelolaan Lingkungan Kerja dan Kesehatan Kerja",
+          "kriteria": [
+            { "kode": "IV.3.1", "uraian": "Pengukuran dan pengendalian faktor bahaya lingkungan kerja dilaksanakan berkala." },
+            { "kode": "IV.3.2", "uraian": "Pemeriksaan kesehatan pekerja dilaksanakan sesuai ketentuan." },
+            { "kode": "IV.3.3", "uraian": "Pelayanan kesehatan kerja dan sarana P3K tersedia dan memadai." },
+            { "kode": "IV.3.4", "uraian": "Pengelolaan higiene dan sanitasi diterapkan di area kerja." }
+          ]
+        },
+        {
+          "kode": "IV.4",
+          "nama": "Pengelolaan Keselamatan Operasi",
+          "kriteria": [
+            { "kode": "IV.4.1", "uraian": "Sarana, prasarana, instalasi, dan peralatan pertambangan dikaji kelayakannya." },
+            { "kode": "IV.4.2", "uraian": "Program perawatan dan perbaikan sarana dan peralatan dilaksanakan sesuai jadwal." },
+            { "kode": "IV.4.3", "uraian": "Pengamanan instalasi diterapkan dan diperiksa secara berkala." },
+            { "kode": "IV.4.4", "uraian": "Kompetensi tenaga teknis yang mengoperasikan peralatan terpenuhi." }
+          ]
+        },
+        {
+          "kode": "IV.5",
+          "nama": "Bahan Berbahaya dan Beracun",
+          "kriteria": [
+            { "kode": "IV.5.1", "uraian": "Bahan berbahaya dan beracun diidentifikasi, disimpan, dan ditangani sesuai ketentuan." },
+            { "kode": "IV.5.2", "uraian": "Lembar data keselamatan bahan tersedia dan dipahami pekerja terkait." }
+          ]
+        },
+        {
+          "kode": "IV.6",
+          "nama": "Tanggap Darurat",
+          "kriteria": [
+            { "kode": "IV.6.1", "uraian": "Prosedur tanggap darurat ditetapkan untuk setiap potensi keadaan darurat." },
+            { "kode": "IV.6.2", "uraian": "Simulasi tanggap darurat dilaksanakan berkala dan dievaluasi." }
+          ]
+        },
+        {
+          "kode": "IV.7",
+          "nama": "Komunikasi, Partisipasi, dan Konsultasi",
+          "kriteria": [
+            { "kode": "IV.7.1", "uraian": "Terdapat mekanisme komunikasi keselamatan pertambangan dua arah yang berjalan." },
+            { "kode": "IV.7.2", "uraian": "Pekerja berpartisipasi dalam identifikasi bahaya dan pelaporan kondisi tidak aman." },
+            { "kode": "IV.7.3", "uraian": "Pertemuan keselamatan dilaksanakan berkala dan terdokumentasi." }
+          ]
+        }
+      ]
+    },
+    {
+      "kode": "V",
+      "nama": "Pemantauan, Evaluasi, dan Tindak Lanjut",
+      "bobot": 17,
+      "sub": [
+        {
+          "kode": "V.1",
+          "nama": "Pemantauan dan Pengukuran Kinerja",
+          "kriteria": [
+            { "kode": "V.1.1", "uraian": "Indikator kinerja keselamatan pertambangan ditetapkan dan dipantau." },
+            { "kode": "V.1.2", "uraian": "Hasil pemantauan kinerja dilaporkan kepada manajemen secara berkala." }
+          ]
+        },
+        {
+          "kode": "V.2",
+          "nama": "Inspeksi Keselamatan Pertambangan",
+          "kriteria": [
+            { "kode": "V.2.1", "uraian": "Inspeksi dilaksanakan sesuai jadwal dan cakupan yang ditetapkan." },
+            { "kode": "V.2.2", "uraian": "Temuan inspeksi ditindaklanjuti dan status penyelesaiannya dipantau." }
+          ]
+        },
+        {
+          "kode": "V.3",
+          "nama": "Evaluasi Kepatuhan terhadap Ketentuan",
+          "kriteria": [
+            { "kode": "V.3.1", "uraian": "Evaluasi kepatuhan terhadap peraturan dilaksanakan berkala dan terdokumentasi." }
+          ]
+        },
+        {
+          "kode": "V.4",
+          "nama": "Penyelidikan Kecelakaan dan Kejadian Berbahaya",
+          "kriteria": [
+            { "kode": "V.4.1", "uraian": "Kecelakaan, kejadian berbahaya, dan penyakit akibat kerja dilaporkan sesuai ketentuan." },
+            { "kode": "V.4.2", "uraian": "Penyelidikan dilaksanakan untuk menemukan penyebab dasar." },
+            { "kode": "V.4.3", "uraian": "Rekomendasi hasil penyelidikan ditindaklanjuti dan diverifikasi keefektifannya." }
+          ]
+        },
+        {
+          "kode": "V.5",
+          "nama": "Ketidaksesuaian, Tindakan Perbaikan, dan Pencegahan",
+          "kriteria": [
+            { "kode": "V.5.1", "uraian": "Ketidaksesuaian diidentifikasi, dicatat, dan dianalisis penyebabnya." },
+            { "kode": "V.5.2", "uraian": "Tindakan perbaikan dan pencegahan ditetapkan serta dipantau penyelesaiannya." }
+          ]
+        },
+        {
+          "kode": "V.6",
+          "nama": "Audit Internal SMKP",
+          "kriteria": [
+            { "kode": "V.6.1", "uraian": "Audit internal SMKP direncanakan dan dilaksanakan sekurang-kurangnya satu kali setahun." },
+            { "kode": "V.6.2", "uraian": "Auditor internal memiliki kompetensi dan independen terhadap area yang diaudit." },
+            { "kode": "V.6.3", "uraian": "Hasil audit internal dilaporkan dan ditindaklanjuti." }
+          ]
+        }
+      ]
+    },
+    {
+      "kode": "VI",
+      "nama": "Dokumentasi",
+      "bobot": 6,
+      "sub": [
+        {
+          "kode": "VI.1",
+          "nama": "Pengendalian Dokumen",
+          "kriteria": [
+            { "kode": "VI.1.1", "uraian": "Terdapat prosedur pengendalian dokumen yang ditetapkan." },
+            { "kode": "VI.1.2", "uraian": "Dokumen yang beredar merupakan versi mutakhir dan dokumen kedaluwarsa ditarik." },
+            { "kode": "VI.1.3", "uraian": "Dokumen mudah diakses oleh pihak yang membutuhkan." }
+          ]
+        },
+        {
+          "kode": "VI.2",
+          "nama": "Pengendalian Rekaman",
+          "kriteria": [
+            { "kode": "VI.2.1", "uraian": "Rekaman keselamatan pertambangan diidentifikasi, disimpan, dan dilindungi." },
+            { "kode": "VI.2.2", "uraian": "Masa simpan rekaman ditetapkan dan dipatuhi." }
+          ]
+        }
+      ]
+    },
+    {
+      "kode": "VII",
+      "nama": "Tinjauan Manajemen dan Peningkatan Kinerja",
+      "bobot": 6,
+      "sub": [
+        {
+          "kode": "VII.1",
+          "nama": "Tinjauan Manajemen",
+          "kriteria": [
+            { "kode": "VII.1.1", "uraian": "Tinjauan manajemen dilaksanakan sekurang-kurangnya satu kali dalam satu tahun." },
+            { "kode": "VII.1.2", "uraian": "Tinjauan manajemen membahas hasil audit, kinerja, dan status tindak lanjut sebelumnya." },
+            { "kode": "VII.1.3", "uraian": "Hasil dan keputusan tinjauan manajemen terdokumentasi." }
+          ]
+        },
+        {
+          "kode": "VII.2",
+          "nama": "Peningkatan Kinerja",
+          "kriteria": [
+            { "kode": "VII.2.1", "uraian": "Keputusan tinjauan manajemen ditindaklanjuti menjadi program peningkatan." },
+            { "kode": "VII.2.2", "uraian": "Efektivitas peningkatan kinerja dievaluasi pada periode berikutnya." }
+          ]
+        }
+      ]
+    }
+  ]
+}

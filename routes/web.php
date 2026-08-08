@@ -7,7 +7,8 @@ use App\Http\Controllers\{
 };
 use App\Http\Controllers\{CourseContentController, EvaluasiTemuanController, HazardController,
     HazardExportController, InspectionController, InspectionTemplateController,
-    KoController, KuesionerController, SignatoryController, TpkkpController, TpkkpLanjutController};
+    KoController, KuesionerController, SignatoryController, SmkpController,
+    TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\Admin\{CompanyController, SystemController, UserController};
 use Illuminate\Support\Facades\Route;
 
@@ -166,6 +167,30 @@ Route::middleware('auth')->group(function () {
     Route::post('kuesioner/tarik',           [KuesionerController::class,'tarikKs'])->name('kuesioner.tarik');
     Route::delete('kuesioner/{response}',    [KuesionerController::class,'destroyResponse'])->name('kuesioner.response.destroy');
     Route::get('kuesioner',                  [KuesionerController::class,'admin'])->name('kuesioner.admin');
+
+    /* ================= WEBSITE #4 — Audit SMKP Minerba ================= */
+    Route::prefix('smkp')->name('smkp.')->group(function () {
+        Route::get('/',                [SmkpController::class,'index'])->name('index');
+        Route::get('buat',             [SmkpController::class,'create'])->name('create');
+        Route::post('/',               [SmkpController::class,'store'])->name('store');
+
+        Route::get('{smkp}',           [SmkpController::class,'show'])->name('show');
+        Route::get('{smkp}/ubah',      [SmkpController::class,'edit'])->name('edit');
+        Route::put('{smkp}',           [SmkpController::class,'update'])->name('update');
+        Route::delete('{smkp}',        [SmkpController::class,'destroy'])->middleware('can:admin')->name('destroy');
+
+        Route::get('{smkp}/laporan',   [SmkpController::class,'laporan'])->name('laporan');
+
+        // Temuan / tindakan perbaikan
+        Route::get('{smkp}/temuan',            [SmkpController::class,'temuan'])->name('temuan');
+        Route::post('{smkp}/temuan/angkat',    [SmkpController::class,'angkatTemuan'])->name('temuan.angkat');
+        Route::put('{smkp}/temuan/{temuan}',   [SmkpController::class,'simpanTemuan'])->name('temuan.simpan');
+        Route::delete('{smkp}/temuan/{temuan}',[SmkpController::class,'hapusTemuan'])->name('temuan.hapus');
+
+        // Formulir penilaian per elemen — ditaruh terakhir agar tidak menyerobot rute di atas
+        Route::get('{smkp}/elemen/{elemen}',  [SmkpController::class,'nilai'])->name('nilai');
+        Route::post('{smkp}/elemen/{elemen}', [SmkpController::class,'simpanNilai'])->name('nilai.simpan');
+    });
 
     /* ================= WEBSITE #3 — Hazard Report & Inspeksi ================= */
     Route::prefix('hazard')->name('hazard.')->group(function () {

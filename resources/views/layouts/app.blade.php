@@ -17,7 +17,11 @@
 <body class="antialiased">
 @php
   // ===== Modul aktif =====
-  $modul = request()->is('hazard*') || request()->is('inspeksi*') ? 'hazrep' : (request()->is('tpkkp*') ? 'tpkkp' : (request()->is('ko*') ? 'ko' : (request()->is('admin*') || request()->is('signatories*') ? 'admin' : 'lms')));
+  $modul = request()->is('hazard*') || request()->is('inspeksi*') ? 'hazrep'
+         : (request()->is('tpkkp*') ? 'tpkkp'
+         : (request()->is('smkp*') ? 'smkp'
+         : (request()->is('ko*') ? 'ko'
+         : (request()->is('admin*') || request()->is('signatories*') ? 'admin' : 'lms'))));
 
   $menu = [
     'lms' => [
@@ -91,6 +95,15 @@
           ['Kajian Teknis',  'ko.kajian',     'ko/kajian'],
           ['Tenaga Teknis',  'ko.tenaga',     'ko/tenaga'],
           ['Tindak Lanjut',  'ko.tindak',     'ko/tindak*'],
+        ],
+      ],
+    ],
+    'smkp' => [
+      'label' => 'Audit SMKP',
+      'icon'  => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+      'groups' => [
+        '' => [
+          ['Periode Audit', 'smkp.index', 'smkp'],
         ],
       ],
     ],
