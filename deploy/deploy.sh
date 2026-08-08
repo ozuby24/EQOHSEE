@@ -55,6 +55,9 @@ echo "==> Setting permissions"
 chown -R www-data:www-data "$REPO_DIR"
 chmod -R 775 "$REPO_DIR/storage" "$REPO_DIR/bootstrap/cache"
 
+echo "==> Running database migrations"
+php artisan migrate --force
+
 echo "==> Laravel optimize"
 cd "$REPO_DIR"
 php artisan config:clear
