@@ -92,7 +92,6 @@ class SmkpController extends Controller
             'audit'     => $smkp,
             'elemen'    => $ref,
             'rekap'     => Smkp::rekapElemen($ref, $smkp->hasil ?? []),
-            'penilaian' => Smkp::penilaian(),
             'semua'     => Smkp::elemen(),
         ]);
     }
@@ -103,25 +102,34 @@ class SmkpController extends Controller
         $ref = collect(Smkp::elemen())->firstWhere('kode', $elemen);
         abort_if(!$ref, 404, 'Elemen tidak dikenal.');
 
-        $sah   = collect(Smkp::penilaian())->pluck('kode')->all();
         $hasil = $smkp->hasil ?? [];
         $masuk = (array) $request->input('k', []);
 
         foreach ($ref['sub'] as $sub) {
-            foreach ($sub['kriteria'] as $k) {
-                $kode = $k['kode'];
+            foreach (Smkp::butirSub($sub) as $b) {
+                $kode  = $b['kode'];
                 $baris = $masuk[$kode] ?? null;
                 if (!is_array($baris)) continue;
 
-                $n = $baris['n'] ?? null;
-                if ($n === '' || $n === null) {
-                    unset($hasil[$kode]);            // kembali ke "belum dinilai"
+                $v = $baris['v'] ?? null;
+
+                if ($v === '' || $v === null) {
+                    unset($hasil[$kode]);                 // kembali ke "belum dinilai"
                     continue;
                 }
-                if (!in_array($n, $sah, true)) continue;   // abaikan nilai asing
+
+                if (is_string($v) && strcasecmp($v, Smkp::NA) === 0) {
+                    $nilai = Smkp::NA;                    // di luar lingkup perusahaan
+                } elseif (is_numeric($v)) {
+                    // Nilai dijepit ke rentang butir; formulir yang dikirim
+                    // langsung tidak boleh menaikkan capaian melebihi maksimum.
+                    $nilai = max(0, min((int) $v, (int) $b['maks']));
+                } else {
+                    continue;                             // abaikan masukan asing
+                }
 
                 $hasil[$kode] = [
-                    'n'     => $n,
+                    'v'     => $nilai,
                     'ket'   => mb_substr(trim((string) ($baris['ket']   ?? '')), 0, 2000),
                     'bukti' => mb_substr(trim((string) ($baris['bukti'] ?? '')), 0, 500),
                 ];

@@ -5,24 +5,39 @@ namespace App\Support;
 /**
  * SMKP Minerba — mesin hitung audit 7 elemen.
  *
- * Sumber kebenaran: resources/data/smkp/elemen.json
+ * Sumber kebenaran: resources/data/smkp/elemen.json, disalin dari Lampiran II
+ * Kepdirjen Minerba 185.K/37.04/DJB/2019 (hal. 336-400). Tiap sub-elemen
+ * membawa kolom 'ref' berisi halaman acuannya sehingga setiap angka dapat
+ * ditelusuri kembali ke sumbernya.
  *
- * Rumus:
- *   nilai kriteria  = 1 (Sesuai) · 0,5 (Minor) · 0 (Mayor) · dikecualikan (Tidak Berlaku)
- *   capaian elemen  = Σ nilai kriteria berlaku / jumlah kriteria berlaku
- *   skor elemen     = capaian elemen × bobot elemen
- *   skor total      = Σ skor elemen                            · maks 100
+ * Penilaian berbasis POIN, bukan kesesuaian. Auditor mengisi nilai capaian
+ * 0..maks pada tiap butir; tiap butir punya nilai maksimum sendiri (2 sampai 4)
+ * dan seluruhnya berjumlah 349 poin bila seluruh butir berlaku.
  *
- * Kriteria "Tidak Berlaku" dikeluarkan dari pembagi sehingga tidak menghukum
- * perusahaan atas kriteria yang memang tidak relevan dengan operasinya.
- * Kriteria yang BELUM dinilai dihitung sebagai nol — sama seperti mesin PTPKKP —
- * agar skor tidak terlihat tinggi palsu saat audit baru berjalan sebagian.
+ *   capaian butir   = nilai / maks
+ *   capaian elemen  = Σ nilai butir berlaku / Σ maks butir berlaku
+ *   nilai elemen    = capaian elemen × bobot elemen        (bobot: 10..35%)
+ *   nilai akhir     = Σ nilai elemen ÷ Σ bobot terpakai × 100
  *
- * Bentuk $hasil:
- *   $hasil[kodeKriteria] = ['n' => 'sesuai'|'minor'|'mayor'|'na', 'ket' => string, 'bukti' => string]
+ * Butir "N/A" tidak berlaku bagi perusahaan yang diaudit dan dikeluarkan dari
+ * pembagi, sehingga tidak menghukum capaian. Butir yang BELUM dinilai dihitung
+ * nol agar skor tidak terlihat tinggi palsu saat audit baru berjalan sebagian.
+ *
+ * Kategori temuan diturunkan DARI nilai, bukan dipilih auditor — sesuai kolom
+ * "KATEGORI TEMUAN (Berdasarkan Nilai)" pada formulir kriteria:
+ *   capaian < 50%          → Ketidaksesuaian Mayor
+ *   capaian 50% s.d. <100% → Ketidaksesuaian Minor
+ *   capaian 100%           → Kesesuaian
+ *
+ * Bentuk $hasil (satu baris per butir yang dinilai, kunci = kode butir):
+ *   $hasil['II.2.1'] = ['v' => 3, 'ket' => '...', 'bukti' => '...']
+ *   $hasil['IV.3.10'] = ['v' => 'N/A']
  */
 class Smkp
 {
+    /** Nilai yang menandai butir tidak berlaku bagi perusahaan. */
+    public const NA = 'N/A';
+
     private static ?array $ref = null;
 
     /* ================= referensi ================= */
@@ -36,48 +51,84 @@ class Smkp
 
     public static function meta(): array     { return self::ref()['meta'] ?? []; }
     public static function elemen(): array   { return self::ref()['elemen'] ?? []; }
-    public static function penilaian(): array { return self::ref()['penilaian'] ?? []; }
-    public static function predikat(): array { return self::ref()['predikat'] ?? []; }
+    public static function kategori(): array { return self::ref()['kategori'] ?? []; }
+    public static function tingkat(): array  { return self::ref()['tingkat'] ?? []; }
 
-    /** Nilai numerik sebuah kode penilaian; null berarti dikecualikan. */
-    public static function nilaiDari(?string $kode): ?float
+    /** Total nilai maksimum bila seluruh butir berlaku (butir N/A menguranginya). */
+    public static function totalNilai(): int
     {
-        foreach (self::penilaian() as $p) {
-            if ($p['kode'] === $kode) return $p['nilai'] === null ? null : (float) $p['nilai'];
+        return (int) (self::meta()['total_nilai'] ?? 0);
+    }
+
+    /**
+     * Butir yang benar-benar dinilai pada sebuah sub-elemen.
+     *
+     * Sub-elemen yang punya rincian sub-sub dinilai lewat sub-subnya, bukan
+     * langsung — mengisi keduanya akan menghitung ganda. Karena itu nilai
+     * maksimum sub-elemen semacam itu dijumlahkan dari rinciannya, tidak
+     * disimpan terpisah di berkas acuan.
+     *
+     * @return array<int,array{kode:string,nama:string,maks:int}>
+     */
+    public static function butirSub(array $sub): array
+    {
+        if (!empty($sub['subsub'])) {
+            return array_values(array_filter(
+                $sub['subsub'],
+                fn ($x) => ($x['maks'] ?? null) !== null
+            ));
         }
-        return null;
+
+        return ($sub['maks'] ?? null) === null
+            ? []
+            : [['kode' => $sub['kode'], 'nama' => $sub['nama'], 'maks' => $sub['maks']]];
     }
 
-    /** Apakah kode penilaian mengecualikan kriteria dari pembagi. */
-    public static function dikecualikan(?string $kode): bool
+    /** Nilai maksimum sebuah sub-elemen, dijumlahkan dari butirnya. */
+    public static function maksSub(array $sub): int
     {
-        return $kode === 'na';
+        return array_sum(array_column(self::butirSub($sub), 'maks'));
     }
 
-    /** Label + warna sebuah kode penilaian. */
-    public static function labelPenilaian(?string $kode): array
+    /** Nilai maksimum sebuah elemen, dijumlahkan dari sub-elemennya. */
+    public static function maksElemen(array $elemen): int
     {
-        foreach (self::penilaian() as $p) {
-            if ($p['kode'] === $kode) return $p;
-        }
-        return ['kode' => null, 'label' => 'Belum dinilai', 'nilai' => 0, 'warna' => '#D6DAE0'];
+        return array_sum(array_map([self::class, 'maksSub'], $elemen['sub']));
     }
 
-    /** Seluruh kode kriteria, berurutan. */
-    public static function kodeKriteria(): array
+    /** Seluruh butir yang dapat dinilai, berurutan. */
+    public static function butir(): array
     {
         $out = [];
         foreach (self::elemen() as $e) {
             foreach ($e['sub'] as $s) {
-                foreach ($s['kriteria'] as $k) $out[] = $k['kode'];
+                foreach (self::butirSub($s) as $b) {
+                    $out[] = $b + ['elemen' => $e['kode'], 'sub' => $s['kode']];
+                }
             }
         }
         return $out;
     }
 
-    public static function jumlahKriteria(): int
+    public static function jumlahButir(): int
     {
-        return count(self::kodeKriteria());
+        return count(self::butir());
+    }
+
+    /* ================= pembacaan nilai ================= */
+
+    /** Nilai mentah sebuah butir: angka, 'N/A', atau null bila belum dinilai. */
+    public static function nilaiButir(array $hasil, string $kode)
+    {
+        $v = $hasil[$kode]['v'] ?? null;
+        if ($v === null || $v === '') return null;
+        if (is_string($v) && strcasecmp($v, self::NA) === 0) return self::NA;
+        return is_numeric($v) ? (float) $v : null;
+    }
+
+    public static function dikecualikan(array $hasil, string $kode): bool
+    {
+        return self::nilaiButir($hasil, $kode) === self::NA;
     }
 
     /* ================= perhitungan ================= */
@@ -85,64 +136,74 @@ class Smkp
     /**
      * Rekap satu sub-elemen.
      *
-     * @return array{berlaku:int,dinilai:int,total:int,nilai:float,capaian:float,rincian:array}
+     * @return array{maks:int,nilai:float,berlaku:int,dinilai:int,total:int,
+     *               capaian:float,kategori:array,butir:array}
      */
     public static function rekapSub(array $sub, array $hasil): array
     {
-        $berlaku = 0; $dinilai = 0; $nilai = 0.0; $rincian = [];
+        $maks = 0; $nilai = 0.0; $berlaku = 0; $dinilai = 0; $rinci = [];
 
-        foreach ($sub['kriteria'] as $k) {
-            $kode = $hasil[$k['kode']]['n'] ?? null;
-            $rincian[$k['kode']] = $kode;
+        foreach (self::butirSub($sub) as $b) {
+            $v = self::nilaiButir($hasil, $b['kode']);
+            $rinci[$b['kode']] = $v;
 
-            if (self::dikecualikan($kode)) continue;
+            if ($v === self::NA) continue;          // di luar lingkup perusahaan
 
             $berlaku++;
-            if ($kode !== null) {
+            $maks += (int) $b['maks'];
+            if ($v !== null) {
                 $dinilai++;
-                $nilai += (float) (self::nilaiDari($kode) ?? 0);
+                // Nilai di luar rentang tidak boleh mengangkat capaian.
+                $nilai += max(0, min((float) $v, (float) $b['maks']));
             }
         }
 
+        $capaian = $maks > 0 ? $nilai / $maks : 0.0;
+
         return [
-            'berlaku' => $berlaku,
-            'dinilai' => $dinilai,
-            'total'   => count($sub['kriteria']),
-            'nilai'   => $nilai,
-            'capaian' => $berlaku > 0 ? $nilai / $berlaku : 0.0,
-            'rincian' => $rincian,
+            'maks'     => $maks,
+            'nilai'    => $nilai,
+            'berlaku'  => $berlaku,
+            'dinilai'  => $dinilai,
+            'total'    => count(self::butirSub($sub)),
+            'capaian'  => $capaian,
+            'kategori' => $berlaku > 0 ? self::kategoriDari($capaian) : self::kategoriNa(),
+            'butir'    => $rinci,
         ];
     }
 
     /**
-     * Rekap satu elemen beserta seluruh sub-elemennya.
+     * Rekap satu elemen beserta sub-elemennya.
      *
-     * @return array{berlaku:int,dinilai:int,total:int,nilai:float,capaian:float,bobot:int,skor:float,sub:array}
+     * @return array{maks:int,nilai:float,capaian:float,bobot:int,skor:float,
+     *               berlaku:int,dinilai:int,total:int,sub:array}
      */
     public static function rekapElemen(array $elemen, array $hasil): array
     {
-        $berlaku = 0; $dinilai = 0; $total = 0; $nilai = 0.0; $sub = [];
+        $maks = 0; $nilai = 0.0; $berlaku = 0; $dinilai = 0; $total = 0; $sub = [];
 
         foreach ($elemen['sub'] as $s) {
             $r = self::rekapSub($s, $hasil);
             $sub[$s['kode']] = $r;
+            $maks    += $r['maks'];
+            $nilai   += $r['nilai'];
             $berlaku += $r['berlaku'];
             $dinilai += $r['dinilai'];
             $total   += $r['total'];
-            $nilai   += $r['nilai'];
         }
 
-        $capaian = $berlaku > 0 ? $nilai / $berlaku : 0.0;
+        $capaian = $maks > 0 ? $nilai / $maks : 0.0;
         $bobot   = (int) ($elemen['bobot'] ?? 0);
 
         return [
-            'berlaku' => $berlaku,
-            'dinilai' => $dinilai,
-            'total'   => $total,
+            'maks'    => $maks,
             'nilai'   => $nilai,
             'capaian' => $capaian,
             'bobot'   => $bobot,
             'skor'    => $capaian * $bobot,
+            'berlaku' => $berlaku,
+            'dinilai' => $dinilai,
+            'total'   => $total,
             'sub'     => $sub,
         ];
     }
@@ -150,21 +211,24 @@ class Smkp
     /**
      * Rekap seluruh audit.
      *
-     * Elemen yang seluruh kriterianya "Tidak Berlaku" dikeluarkan dari pembagi
-     * bobot, lalu skor dinormalkan ke skala 100 agar tetap sebanding.
+     * Elemen yang seluruh butirnya N/A dikeluarkan dari pembagi bobot, lalu
+     * hasilnya dinormalkan ke skala 100 agar tetap sebanding antar perusahaan
+     * yang lingkup operasinya berbeda.
      *
-     * @return array{skor:float,capaian:float,berlaku:int,dinilai:int,total:int,
-     *               bobotTerpakai:int,predikat:array,elemen:array}
+     * @return array{nilai:float,maks:int,skor:float,bobotTerpakai:int,
+     *               berlaku:int,dinilai:int,total:int,tingkat:array,elemen:array}
      */
     public static function rekap(array $hasil): array
     {
         $elemen = []; $skor = 0.0; $bobotTerpakai = 0;
-        $berlaku = 0; $dinilai = 0; $total = 0;
+        $maks = 0; $nilai = 0.0; $berlaku = 0; $dinilai = 0; $total = 0;
 
         foreach (self::elemen() as $e) {
             $r = self::rekapElemen($e, $hasil);
             $elemen[$e['kode']] = $r;
 
+            $maks    += $r['maks'];
+            $nilai   += $r['nilai'];
             $berlaku += $r['berlaku'];
             $dinilai += $r['dinilai'];
             $total   += $r['total'];
@@ -175,78 +239,131 @@ class Smkp
             }
         }
 
-        // Normalkan ke skala 100 bila ada elemen yang seluruhnya tidak berlaku.
-        $skorAkhir = $bobotTerpakai > 0 ? $skor / $bobotTerpakai * 100 : 0.0;
+        $akhir = $bobotTerpakai > 0 ? $skor / $bobotTerpakai * 100 : 0.0;
 
         return [
-            'skor'          => round($skorAkhir, 2),
-            'capaian'       => $berlaku > 0 ? $skorAkhir / 100 : 0.0,
+            'nilai'         => $nilai,
+            'maks'          => $maks,
+            'skor'          => round($akhir, 2),
+            'bobotTerpakai' => $bobotTerpakai,
             'berlaku'       => $berlaku,
             'dinilai'       => $dinilai,
             'total'         => $total,
-            'bobotTerpakai' => $bobotTerpakai,
-            'predikat'      => self::predikatDari($skorAkhir),
+            'tingkat'       => self::tingkatDari($akhir),
             'elemen'        => $elemen,
         ];
     }
 
-    /** Predikat untuk sebuah skor 0..100. */
-    public static function predikatDari(float $skor): array
+    /* ================= kategori & tingkat ================= */
+
+    /** Kategori temuan dari capaian 0..1 — ambangnya dari berkas acuan. */
+    public static function kategoriDari(float $capaian): array
     {
-        foreach (self::predikat() as $p) {
-            if ($skor >= (float) $p['min']) return $p;
+        $persen = $capaian * 100;
+        foreach (self::kategori() as $k) {
+            if ($persen >= (float) $k['min']) return $k;
         }
-        return ['min' => 0, 'label' => 'Buruk', 'warna' => '#E5484D'];
+        return end(self::kategori()) ?: ['kode' => 'mayor', 'label' => 'Ketidaksesuaian Mayor', 'warna' => '#DC2626'];
     }
 
+    /** Penanda untuk sub-elemen yang seluruhnya di luar lingkup. */
+    public static function kategoriNa(): array
+    {
+        return ['kode' => 'na', 'label' => 'Tidak Berlaku', 'min' => null, 'warna' => '#9AA3AE'];
+    }
+
+    /** Tingkat penerapan dari nilai akhir 0..100. */
+    public static function tingkatDari(float $skor): array
+    {
+        foreach (self::tingkat() as $t) {
+            if ($skor >= (float) $t['min']) return $t;
+        }
+        return ['min' => 0, 'label' => 'Perlu Perhatian Serius', 'warna' => '#DC2626'];
+    }
+
+    /* ================= temuan ================= */
+
     /**
-     * Daftar temuan (ketidaksesuaian) dari hasil audit, siap dijadikan CAR.
+     * Ketidaksesuaian tingkat sub-elemen, urut dari yang terberat.
      *
-     * @return array<int,array{kode:string,uraian:string,elemen:string,sub:string,jenis:string,ket:string}>
+     * Temuan dicatat pada tingkat sub-elemen — bukan tiap butir — karena itulah
+     * satuan yang dipakai pada Formulir Rekapitulasi Ketidaksesuaian.
      */
     public static function temuan(array $hasil): array
     {
         $out = [];
         foreach (self::elemen() as $e) {
             foreach ($e['sub'] as $s) {
-                foreach ($s['kriteria'] as $k) {
-                    $n = $hasil[$k['kode']]['n'] ?? null;
-                    if ($n !== 'minor' && $n !== 'mayor') continue;
+                $r = self::rekapSub($s, $hasil);
+                if ($r['berlaku'] === 0) continue;                    // di luar lingkup
+                if ($r['dinilai'] === 0) continue;                    // belum dinilai
+                if ($r['kategori']['kode'] === 'kesesuaian') continue; // sudah sesuai
 
-                    $out[] = [
-                        'kode'    => $k['kode'],
-                        'uraian'  => $k['uraian'],
-                        'elemen'  => $e['kode'] . '. ' . $e['nama'],
-                        'sub'     => $s['kode'] . ' ' . $s['nama'],
-                        'jenis'   => $n,
-                        'label'   => self::labelPenilaian($n)['label'],
-                        'ket'     => (string) ($hasil[$k['kode']]['ket'] ?? ''),
-                    ];
-                }
+                $out[] = [
+                    'kode'    => $s['kode'],
+                    'uraian'  => $s['nama'],
+                    'elemen'  => $e['kode'] . '. ' . $e['nama'],
+                    'jenis'   => $r['kategori']['kode'],
+                    'label'   => $r['kategori']['label'],
+                    'capaian' => $r['capaian'],
+                    'nilai'   => $r['nilai'],
+                    'maks'    => $r['maks'],
+                    'ref'     => $s['ref'] ?? null,
+                    'ket'     => (string) ($hasil[$s['kode']]['ket'] ?? ''),
+                ];
             }
         }
+
+        usort($out, fn ($a, $b) => [$a['jenis'] === 'minor', $a['capaian']]
+                               <=> [$b['jenis'] === 'minor', $b['capaian']]);
         return $out;
+    }
+
+    /** Hitung temuan per jenis. */
+    public static function hitungTemuan(array $hasil): array
+    {
+        $n = ['mayor' => 0, 'minor' => 0];
+        foreach (self::temuan($hasil) as $t) {
+            if (isset($n[$t['jenis']])) $n[$t['jenis']]++;
+        }
+        return $n;
+    }
+
+    /**
+     * Beri nomor ketidaksesuaian sesuai format pada Formulir Rekapitulasi.
+     *
+     * Penomoran berjalan terpisah per jenis — NC-MYR-01, NC-MYR-02, lalu
+     * NC-MNR-01 dan seterusnya — bukan satu urutan gabungan, sebagaimana
+     * pada dokumen audit.
+     *
+     * @param  array $temuan hasil Smkp::temuan()
+     * @return array temuan yang sama, masing-masing bertambah kunci 'nomor'
+     */
+    public static function beriNomor(array $temuan): array
+    {
+        $urut = [];
+        foreach ($temuan as $i => $t) {
+            $jenis = $t['jenis'];
+            $urut[$jenis] = ($urut[$jenis] ?? 0) + 1;
+            $temuan[$i]['nomor'] = self::nomorTemuan($jenis, $urut[$jenis]);
+        }
+        return $temuan;
+    }
+
+    /** Format nomor satu ketidaksesuaian: NC-MYR-01 / NC-MNR-01. */
+    public static function nomorTemuan(string $jenis, int $urutan): string
+    {
+        $awalan = $jenis === 'mayor' ? 'MYR' : ($jenis === 'minor' ? 'MNR' : 'OBS');
+        return sprintf('NC-%s-%02d', $awalan, $urutan);
     }
 
     /**
      * Ekspresi ORDER BY yang mengurutkan jenis temuan dari terberat.
-     *
-     * MySQL punya FIELD(), tetapi aplikasi ini juga berjalan di SQLite dan
-     * PostgreSQL — CASE WHEN adalah SQL baku sehingga berlaku di semuanya.
+     * CASE WHEN adalah SQL baku sehingga berlaku di SQLite, MySQL, maupun
+     * PostgreSQL — berbeda dengan FIELD() yang khusus MySQL.
      */
     public static function urutJenisSql(string $kolom = 'jenis'): string
     {
         return "CASE {$kolom} WHEN 'mayor' THEN 1 WHEN 'minor' THEN 2 ELSE 3 END";
-    }
-
-    /** Hitung temuan per jenis: ['mayor' => n, 'minor' => n]. */
-    public static function hitungTemuan(array $hasil): array
-    {
-        $n = ['mayor' => 0, 'minor' => 0];
-        foreach ($hasil as $h) {
-            $k = $h['n'] ?? null;
-            if (isset($n[$k])) $n[$k]++;
-        }
-        return $n;
     }
 }

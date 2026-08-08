@@ -55,24 +55,24 @@ class SmkpAuditTest extends TestCase
     public function test_menyimpan_penilaian_satu_elemen_tidak_menyentuh_elemen_lain(): void
     {
         $audit = SmkpAudit::create(['tahun' => 2026, 'status' => 'draft', 'hasil' => [
-            'VII.1.1' => ['n' => 'sesuai', 'ket' => '', 'bukti' => ''],
+            'VII.1' => ['v' => 4, 'ket' => '', 'bukti' => ''],
         ]]);
 
         $this->actingAs($this->admin())->post(route('smkp.nilai.simpan', [$audit, 'I']), [
             'k' => [
-                'I.1.1' => ['n' => 'mayor', 'ket' => 'Belum melibatkan pekerja', 'bukti' => 'Notulen rapat'],
-                'I.1.2' => ['n' => 'sesuai'],
+                'I.1' => ['v' => 1, 'ket' => 'Belum melibatkan pekerja', 'bukti' => 'Notulen rapat'],
+                'I.2' => ['v' => 4],
             ],
         ])->assertRedirect();
 
         $audit->refresh();
 
-        $this->assertSame('mayor', $audit->nilai('I.1.1'));
-        $this->assertSame('Belum melibatkan pekerja', $audit->ket('I.1.1'));
-        $this->assertSame('sesuai', $audit->nilai('I.1.2'));
+        $this->assertSame(1.0, $audit->nilai('I.1'));
+        $this->assertSame('Belum melibatkan pekerja', $audit->ket('I.1'));
+        $this->assertSame(4.0, $audit->nilai('I.2'));
 
         // Elemen VII yang tidak dikirim harus tetap utuh.
-        $this->assertSame('sesuai', $audit->nilai('VII.1.1'));
+        $this->assertSame(4.0, $audit->nilai('VII.1'));
 
         // Status draft naik jadi berjalan setelah penilaian pertama.
         $this->assertSame('berjalan', $audit->status);
@@ -83,18 +83,47 @@ class SmkpAuditTest extends TestCase
         $audit = SmkpAudit::create(['tahun' => 2026, 'status' => 'draft', 'hasil' => []]);
 
         $this->actingAs($this->admin())->post(route('smkp.nilai.simpan', [$audit, 'I']), [
-            'k' => ['I.1.1' => ['n' => 'sangat-sesuai-sekali']],
+            'k' => ['I.1' => ['v' => 'sangat-sesuai-sekali']],
         ]);
 
-        $this->assertNull($audit->refresh()->nilai('I.1.1'));
+        $this->assertNull($audit->refresh()->nilai('I.1'));
+    }
+
+    public function test_nilai_melebihi_maksimum_dijepit(): void
+    {
+        // Formulir yang dikirim langsung tidak boleh menaikkan capaian
+        // melebihi nilai maksimum butirnya. I.1 bernilai maksimum 4.
+        $audit = SmkpAudit::create(['tahun' => 2026, 'status' => 'draft', 'hasil' => []]);
+
+        $this->actingAs($this->admin())->post(route('smkp.nilai.simpan', [$audit, 'I']), [
+            'k' => ['I.1' => ['v' => 999], 'I.2' => ['v' => -3]],
+        ]);
+
+        $audit->refresh();
+        $this->assertSame(4.0, $audit->nilai('I.1'));
+        $this->assertSame(0.0, $audit->nilai('I.2'));
+    }
+
+    public function test_butir_dapat_ditandai_tidak_berlaku(): void
+    {
+        $audit = SmkpAudit::create(['tahun' => 2026, 'status' => 'draft', 'hasil' => []]);
+
+        // III.2.2 Kepala Tambang Bawah Tanah tidak berlaku bagi tambang terbuka.
+        $this->actingAs($this->admin())->post(route('smkp.nilai.simpan', [$audit, 'III']), [
+            'k' => ['III.2.2' => ['v' => 'N/A']],
+        ]);
+
+        $this->assertSame('N/A', $audit->refresh()->nilai('III.2.2'));
     }
 
     public function test_ketidaksesuaian_dapat_diangkat_jadi_tindakan_perbaikan(): void
     {
+        // I.1 maks 4 -> nilai 1 = 25% (Mayor); I.2 maks 4 -> 2 = 50% (Minor);
+        // I.3 maks 3 -> 3 = 100% (Kesesuaian, bukan temuan).
         $audit = SmkpAudit::create(['tahun' => 2026, 'status' => 'berjalan', 'hasil' => [
-            'I.1.1'  => ['n' => 'mayor', 'ket' => 'Tidak ada bukti', 'bukti' => ''],
-            'I.2.1'  => ['n' => 'minor', 'ket' => '', 'bukti' => ''],
-            'I.3.1'  => ['n' => 'sesuai', 'ket' => '', 'bukti' => ''],
+            'I.1' => ['v' => 1, 'ket' => 'Tidak ada bukti', 'bukti' => ''],
+            'I.2' => ['v' => 2, 'ket' => '', 'bukti' => ''],
+            'I.3' => ['v' => 3, 'ket' => '', 'bukti' => ''],
         ]]);
 
         $this->actingAs($this->admin())
@@ -103,8 +132,8 @@ class SmkpAuditTest extends TestCase
 
         // Hanya mayor + minor yang jadi temuan, bukan yang sesuai.
         $this->assertSame(2, $audit->findings()->count());
-        $this->assertDatabaseHas('smkp_findings', ['kode_kriteria' => 'I.1.1', 'jenis' => 'mayor']);
-        $this->assertDatabaseMissing('smkp_findings', ['kode_kriteria' => 'I.3.1']);
+        $this->assertDatabaseHas('smkp_findings', ['kode_kriteria' => 'I.1', 'jenis' => 'mayor']);
+        $this->assertDatabaseMissing('smkp_findings', ['kode_kriteria' => 'I.3']);
 
         // Diangkat dua kali tidak menggandakan.
         $this->actingAs($this->admin())->post(route('smkp.temuan.angkat', $audit));

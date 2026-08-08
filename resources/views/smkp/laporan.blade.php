@@ -34,11 +34,11 @@
       <div class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-stone-100 p-5">
         <div>
           <div class="text-[11px] text-stone-400">Skor akhir</div>
-          <div class="stat stat-lg leading-none mt-1" style="color:{{ $rekap['predikat']['warna'] }}">{{ number_format($rekap['skor'],2) }}</div>
+          <div class="stat stat-lg leading-none mt-1" style="color:{{ $rekap["tingkat"]['warna'] }}">{{ number_format($rekap['skor'],2) }}</div>
         </div>
         <div class="text-right">
           <div class="text-[11px] text-stone-400">Predikat</div>
-          <div class="text-[17px] font-black mt-1" style="color:{{ $rekap['predikat']['warna'] }}">{{ $rekap['predikat']['label'] }}</div>
+          <div class="text-[17px] font-black mt-1" style="color:{{ $rekap["tingkat"]['warna'] }}">{{ $rekap["tingkat"]['label'] }}</div>
         </div>
       </div>
     </section>
@@ -74,7 +74,8 @@
               <td class="py-2.5 pr-3">Total</td>
               <td class="py-2.5 px-3 num">{{ $rekap['bobotTerpakai'] }}</td>
               <td class="py-2.5 px-3 num">{{ $rekap['dinilai'] }}/{{ $rekap['berlaku'] }}</td>
-              <td class="py-2.5 px-3 num">{{ number_format($rekap['capaian']*100,1) }}%</td>
+              {{-- Capaian keseluruhan sudah berbobot, jadi angkanya sama dengan nilai akhir. --}}
+              <td class="py-2.5 px-3 num">{{ number_format($rekap['skor'],1) }}%</td>
               <td class="py-2.5 pl-3 num">{{ number_format($rekap['skor'],2) }}</td>
             </tr>
           </tfoot>

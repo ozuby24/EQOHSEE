@@ -21,14 +21,14 @@
         </p>
       </div>
       <div class="text-right shrink-0">
-        <div class="stat stat-lg leading-none" style="color:{{ $rekap['predikat']['warna'] }}">{{ number_format($rekap['skor'],2) }}</div>
-        <div class="text-[11px] font-bold mt-1" style="color:{{ $rekap['predikat']['warna'] }}">{{ $rekap['predikat']['label'] }}</div>
+        <div class="stat stat-lg leading-none" style="color:{{ $rekap["tingkat"]['warna'] }}">{{ number_format($rekap['skor'],2) }}</div>
+        <div class="text-[11px] font-bold mt-1" style="color:{{ $rekap["tingkat"]['warna'] }}">{{ $rekap["tingkat"]['label'] }}</div>
         <div class="text-[10.5px] text-stone-400 mt-0.5">dari 100</div>
       </div>
     </div>
 
     <div class="mt-4 h-2 rounded-full bg-stone-100 overflow-hidden">
-      <div class="h-full rounded-full transition-all" style="width: {{ min(100,$rekap['skor']) }}%; background: {{ $rekap['predikat']['warna'] }}"></div>
+      <div class="h-full rounded-full transition-all" style="width: {{ min(100,$rekap['skor']) }}%; background: {{ $rekap["tingkat"]['warna'] }}"></div>
     </div>
 
     @php $t = \App\Support\Smkp::hitungTemuan($audit->hasil ?? []); @endphp
@@ -65,7 +65,7 @@
             <div class="min-w-0 flex-1">
               <div class="text-[13.5px] font-bold text-cam-ink">{{ $e['kode'] }}. {{ $e['nama'] }}</div>
               <div class="text-[11px] text-stone-400 mt-0.5">
-                bobot {{ $r['bobot'] }} · {{ $r['dinilai'] }}/{{ $r['berlaku'] }} kriteria dinilai
+                bobot {{ $r['bobot'] }} · {{ $r['dinilai'] }}/{{ $r['berlaku'] }} butir dinilai
                 @if($r['total'] > $r['berlaku']) · {{ $r['total'] - $r['berlaku'] }} tidak berlaku @endif
               </div>
             </div>

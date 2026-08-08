@@ -31,20 +31,20 @@ class SmkpAudit extends Model
     public function user(): BelongsTo    { return $this->belongsTo(User::class); }
     public function findings(): HasMany  { return $this->hasMany(SmkpFinding::class, 'audit_id'); }
 
-    /** Penilaian satu kriteria: kode penilaian (sesuai|minor|mayor|na) atau null. */
-    public function nilai(string $kodeKriteria): ?string
+    /** Nilai satu butir: angka, 'N/A', atau null bila belum dinilai. */
+    public function nilai(string $kodeButir)
     {
-        return $this->hasil[$kodeKriteria]['n'] ?? null;
+        return Smkp::nilaiButir($this->hasil ?? [], $kodeButir);
     }
 
-    public function ket(string $kodeKriteria): string
+    public function ket(string $kode): string
     {
-        return (string) ($this->hasil[$kodeKriteria]['ket'] ?? '');
+        return (string) ($this->hasil[$kode]['ket'] ?? '');
     }
 
-    public function bukti(string $kodeKriteria): string
+    public function bukti(string $kode): string
     {
-        return (string) ($this->hasil[$kodeKriteria]['bukti'] ?? '');
+        return (string) ($this->hasil[$kode]['bukti'] ?? '');
     }
 
     /** Rekap penuh — didelegasikan ke mesin hitung agar rumus hanya ada di satu tempat. */
@@ -53,7 +53,7 @@ class SmkpAudit extends Model
         return Smkp::rekap($this->hasil ?? []);
     }
 
-    /** Persentase kriteria yang sudah dinilai (0..1) — untuk bilah kemajuan. */
+    /** Persentase butir yang sudah dinilai (0..1) — untuk bilah kemajuan. */
     public function kemajuan(): float
     {
         $r = $this->rekap();

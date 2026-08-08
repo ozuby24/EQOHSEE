@@ -9,7 +9,7 @@
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div class="min-w-0">
         <h2 class="text-[15px] font-bold text-cam-ink">Audit Sistem Manajemen Keselamatan Pertambangan</h2>
-        <p class="text-[12px] text-stone-400 mt-1 leading-relaxed">{{ $meta['basis'] ?? '' }} — 7 elemen, {{ \App\Support\Smkp::jumlahKriteria() }} kriteria.</p>
+        <p class="text-[12px] text-stone-400 mt-1 leading-relaxed">{{ $meta['basis'] ?? '' }} — 7 elemen, {{ \App\Support\Smkp::jumlahButir() }} butir penilaian · {{ \App\Support\Smkp::totalNilai() }} poin.</p>
       </div>
       <a href="{{ route('smkp.create') }}" class="lime-gradient shadow-glow rounded-xl text-white px-4 py-2.5 text-[12.5px] font-bold hover:brightness-105 transition shrink-0">+ Periode Audit</a>
     </div>
@@ -46,13 +46,13 @@
           </div>
 
           <div class="text-right shrink-0">
-            <div class="stat leading-none" style="color:{{ $r['predikat']['warna'] }}">{{ number_format($r['skor'],1) }}</div>
-            <div class="text-[10.5px] font-bold mt-1" style="color:{{ $r['predikat']['warna'] }}">{{ $r['predikat']['label'] }}</div>
+            <div class="stat leading-none" style="color:{{ $r["tingkat"]['warna'] }}">{{ number_format($r['skor'],1) }}</div>
+            <div class="text-[10.5px] font-bold mt-1" style="color:{{ $r["tingkat"]['warna'] }}">{{ $r["tingkat"]['label'] }}</div>
           </div>
         </div>
 
         <div class="mt-3 h-1.5 rounded-full bg-stone-100 overflow-hidden">
-          <div class="h-full rounded-full transition-all" style="width: {{ min(100, $r['skor']) }}%; background: {{ $r['predikat']['warna'] }}"></div>
+          <div class="h-full rounded-full transition-all" style="width: {{ min(100, $r['skor']) }}%; background: {{ $r["tingkat"]['warna'] }}"></div>
         </div>
       </a>
     @empty
