@@ -10,6 +10,39 @@ body{
   color:#123049;
 }
 
+/* ---------- Pengaman responsif global ----------
+   Halaman tidak boleh pernah menggeser ke samping. Konten yang memang lebar
+   (tabel, diagram) discroll di dalam pembungkusnya sendiri, bukan menyeret
+   seluruh halaman. */
+html,body{ max-width:100%; overflow-x:hidden; }
+
+/* Kontrol formulir punya lebar bawaan dari isi terpanjangnya sehingga menolak
+   menyusut di dalam flexbox — inilah penyebab bilah filter meluber di layar
+   sempit. min-width:0 mengembalikan kendali lebar ke tata letak. */
+input,select,textarea,button{ min-width:0; max-width:100%; }
+
+/* Media tidak pernah melampaui kolomnya. */
+img,svg,video,canvas{ max-width:100%; height:auto; }
+
+/* Kata/URL panjang tanpa spasi tidak melebarkan kartu. */
+p,li,td,th,dd,dt,h1,h2,h3,h4{ overflow-wrap:anywhere; }
+
+/* Pembungkus baku untuk tabel lebar: geser di dalam kartunya sendiri,
+   lengkap dengan momentum di iOS. */
+.tabel-scroll{
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  max-width:100%;
+}
+
+/* Angka besar dipadatkan di layar kecil agar tidak memecah tata letak kartu. */
+@media (max-width:480px){
+  .stat{ font-size:22px; }
+  .stat-sm{ font-size:18px; }
+  .stat-lg{ font-size:27px; }
+  .stat-xl{ font-size:32px; }
+}
+
 /* ---------- Scrollbar ---------- */
 ::-webkit-scrollbar{ width:10px; height:10px; }
 ::-webkit-scrollbar-track{ background:transparent; }

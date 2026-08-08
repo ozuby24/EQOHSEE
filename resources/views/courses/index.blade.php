@@ -17,7 +17,7 @@
       </div>
 
       <select name="kategori" onchange="this.form.submit()"
-              class="ring-focus rounded-xl border border-stone-200 px-3.5 py-2.5 text-[12.5px] font-semibold text-stone-600 transition">
+              class="ring-focus flex-1 basis-[8.5rem] rounded-xl border border-stone-200 px-3.5 py-2.5 text-[12.5px] font-semibold text-stone-600 transition">
         <option value="">Semua jenis</option>
         @foreach($kategori as $k)
           <option value="{{ $k }}" @selected($kat === $k)>{{ $k }}</option>
@@ -25,14 +25,14 @@
       </select>
 
       <select name="status" onchange="this.form.submit()"
-              class="ring-focus rounded-xl border border-stone-200 px-3.5 py-2.5 text-[12.5px] font-semibold text-stone-600 transition">
+              class="ring-focus flex-1 basis-[8.5rem] rounded-xl border border-stone-200 px-3.5 py-2.5 text-[12.5px] font-semibold text-stone-600 transition">
         <option value="">Semua status</option>
         <option value="diikuti" @selected($status === 'diikuti')>Sedang diikuti</option>
         <option value="belum"   @selected($status === 'belum')>Belum diikuti</option>
       </select>
 
       <select name="urut" onchange="this.form.submit()"
-              class="ring-focus rounded-xl border border-stone-200 px-3.5 py-2.5 text-[12.5px] font-semibold text-stone-600 transition">
+              class="ring-focus flex-1 basis-[8.5rem] rounded-xl border border-stone-200 px-3.5 py-2.5 text-[12.5px] font-semibold text-stone-600 transition">
         <option value="baru"  @selected($urut === 'baru')>Terbaru</option>
         <option value="judul" @selected($urut === 'judul')>Judul A–Z</option>
         <option value="modul" @selected($urut === 'modul')>Modul terbanyak</option>
@@ -58,7 +58,7 @@
     </div>
   @endif
 
-  <div class="flex items-center justify-between mb-4">
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
     <p class="text-[12.5px] text-stone-400"><span class="num font-semibold text-stone-600">{{ $courses->total() }}</span> kursus ditemukan</p>
     @can('admin')
       <a href="{{ route('courses.create') }}"

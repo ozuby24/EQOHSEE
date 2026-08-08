@@ -79,7 +79,7 @@
     </div>
 
     @if($o->safeguards->count())
-      <table class="w-full text-[12px]">
+      <div class="tabel-scroll"><table class="w-full text-[12px]">
         <tbody>
           @foreach($o->safeguards as $p)
             <tr class="border-b border-stone-50 last:border-0">
@@ -100,7 +100,7 @@
             </tr>
           @endforeach
         </tbody>
-      </table>
+      </table></div>
     @else
       <p class="px-5 py-6 text-[12.5px] text-stone-400">Belum ada perangkat pengaman terdaftar.</p>
     @endif
@@ -130,7 +130,7 @@
   <div class="bg-white rounded-2xl border border-stone-200 overflow-hidden">
     <div class="px-5 py-3 border-b border-stone-100"><h3 class="text-[13px] font-bold text-cam-ink">Riwayat Pemeriksaan</h3></div>
     @if($o->inspections->count())
-      <table class="w-full text-[12px]">
+      <div class="tabel-scroll"><table class="w-full text-[12px]">
         <tbody>
           @foreach($o->inspections as $i)
             <tr class="border-b border-stone-50 last:border-0">
@@ -141,7 +141,7 @@
             </tr>
           @endforeach
         </tbody>
-      </table>
+      </table></div>
     @else
       <p class="px-5 py-6 text-[12.5px] text-stone-400">Belum ada riwayat.</p>
     @endif

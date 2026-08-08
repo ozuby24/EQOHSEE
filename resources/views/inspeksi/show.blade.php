@@ -29,7 +29,7 @@
   </div>
 
   {{-- Ringkasan --}}
-  <div class="grid grid-cols-4 gap-3">
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
     @foreach ([['Sesuai',$r['sesuai'],'text-cam-lime-deep'],['Tidak sesuai',$r['tidak'],'text-red-500'],['N/A',$r['na'],'text-stone-400'],['Belum diisi',$r['belum'],'text-amber-500']] as [$l,$v,$c])
       <div class="bg-white rounded-2xl shadow-card border border-stone-100 p-4">
         <div class="stat stat-sm {{ $c }}">{{ $v }}</div>

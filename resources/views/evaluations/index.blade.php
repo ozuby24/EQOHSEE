@@ -8,7 +8,7 @@
   @endif
 
   @if($bolehMenilai)
-    <div class="flex items-center justify-between mb-5">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
       <p class="text-[12.5px] text-stone-400">Penilaian peserta setelah pelatihan selesai.</p>
       <a href="{{ route('evaluations.create') }}"
          class="lime-gradient shadow-glow rounded-xl text-white px-4 py-2.5 text-[12.5px] font-bold hover:brightness-105 transition">+ Nilai Peserta</a>

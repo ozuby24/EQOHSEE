@@ -157,7 +157,7 @@
       <div class="px-5 py-3 border-b border-stone-100">
         <h3 class="text-[13px] font-bold text-cam-ink">Keterpenuhan per Metode</h3>
       </div>
-      <table class="w-full text-[12px]">
+      <div class="tabel-scroll"><table class="w-full text-[12px]">
         <tbody>
           @foreach($metode as $m)
             <tr class="border-b border-stone-50 last:border-0">
@@ -170,7 +170,7 @@
             </tr>
           @endforeach
         </tbody>
-      </table>
+      </table></div>
     </div>
 
     {{-- ── Sebaran kategori item ── --}}
@@ -210,7 +210,7 @@
     @if(count($gaps) === 0)
       <p class="px-5 py-6 text-[12.5px] text-stone-400">Belum ada item yang dinilai.</p>
     @else
-      <table class="w-full text-[12px]">
+      <div class="tabel-scroll"><table class="w-full text-[12px]">
         <tbody>
           @foreach($gaps as $g)
             <tr class="border-b border-stone-50 last:border-0">
@@ -221,7 +221,7 @@
             </tr>
           @endforeach
         </tbody>
-      </table>
+      </table></div>
     @endif
   </div>
 </div>

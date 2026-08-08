@@ -38,7 +38,7 @@
       <h3 class="text-[13px] font-bold text-cam-ink">Hasil Perhitungan</h3>
       <span class="num text-[12px] font-bold text-cam-ink">N {{ $alokasi['N'] }} → n {{ $alokasi['n'] }}</span>
     </div>
-    <table class="w-full text-[12px]">
+    <div class="tabel-scroll"><table class="w-full text-[12px]">
       <thead class="text-[10px] uppercase tracking-wider text-stone-400 bg-stone-50">
         <tr>
           <th class="text-left px-5 py-2.5 font-bold">Strata</th>
@@ -60,7 +60,7 @@
           <td class="px-5 py-2.5 text-right num">{{ $alokasi['total'] }}</td>
         </tr>
       </tbody>
-    </table>
+    </table></div>
   </div>
 </div>
 @endsection

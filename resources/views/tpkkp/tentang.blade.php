@@ -55,7 +55,7 @@
         <h3 class="text-[13px] font-bold text-cam-ink">{{ $ind['code'] }}. {{ ucwords(strtolower($ind['name'])) }}</h3>
         <span class="num text-[12px] text-stone-500">bobot {{ number_format(collect($ind['params'])->sum('weight'), 2) }}</span>
       </div>
-      <table class="w-full text-[12px]">
+      <div class="tabel-scroll"><table class="w-full text-[12px]">
         <thead class="text-[10px] uppercase tracking-wider text-stone-400">
           <tr class="border-b border-stone-100">
             <th class="text-left px-5 py-2 font-bold">Parameter</th>
@@ -74,7 +74,7 @@
             </tr>
           @endforeach
         </tbody>
-      </table>
+      </table></div>
     </div>
   @endforeach
 </div>
