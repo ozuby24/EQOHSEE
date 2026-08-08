@@ -9,7 +9,7 @@ SERVER_NAME="${1:-103.89.4.246}"
 
 echo "==> Pulling latest code"
 cd "$REPO_DIR"
-git pull origin claude/lanjutkan-percakapan-1yego8
+git pull origin "$(git rev-parse --abbrev-ref HEAD)"
 
 echo "==> Detecting PHP-FPM socket"
 PHP_SOCK=$(ls /run/php/*.sock 2>/dev/null | head -n1)
@@ -32,7 +32,7 @@ nginx -t
 
 echo "==> Restarting services"
 systemctl restart nginx
-PHP_SERVICE=$(basename "$PHP_SOCK" .sock | sed 's/^/@/' >/dev/null 2>&1; systemctl list-units --type=service --all | grep -o 'php[0-9.]*-fpm.service' | head -n1)
+PHP_SERVICE=$(systemctl list-units --type=service --all | grep -o 'php[0-9.]*-fpm.service' | head -n1)
 if [ -n "$PHP_SERVICE" ]; then
     systemctl restart "$PHP_SERVICE"
 else
