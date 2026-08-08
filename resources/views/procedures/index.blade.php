@@ -8,7 +8,7 @@
   @endif
 
   <div class="flex flex-wrap items-center gap-2.5 mb-5">
-    <form method="GET" class="flex-1 min-w-[200px]">
+    <form method="GET" class="flex-1 min-w-0 basis-[200px]">
       <input name="q" value="{{ $q }}" placeholder="Cari prosedur atau kode..."
              class="ring-focus w-full rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-[13px] transition">
     </form>

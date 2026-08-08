@@ -46,14 +46,21 @@
     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       @foreach($modul as $m)
         <a href="{{ route($m['rute']) }}"
-           class="block bg-white rounded-2xl shadow-card border border-stone-100 p-5 card-hover hover:border-cam-lime/40 transition">
-          <div class="flex items-start justify-between gap-3">
+           class="group block bg-white rounded-2xl shadow-card border border-stone-100 p-5 card-hover hover:border-cam-lime/40 transition relative overflow-hidden">
+          <span class="absolute -right-8 -top-8 w-24 h-24 rounded-full transition"
+                style="background:{{ $m['warna'] }}0F"></span>
+          <div class="relative flex items-start justify-between gap-3">
             <div class="min-w-0">
               <div class="stat stat-lg leading-none" style="color:{{ $m['warna'] }}">{{ $m['nilai'] }}</div>
               <div class="text-[13px] font-bold text-cam-ink mt-2 clamp-1">{{ $m['nama'] }}</div>
-              <div class="text-[11px] text-stone-400 mt-0.5">{{ $m['ket'] }}</div>
+              <div class="text-[11px] text-stone-400 mt-0.5 leading-snug">{{ $m['ket'] }}</div>
             </div>
-            <span style="flex:none;width:10px;height:10px;border-radius:99px;margin-top:6px;background:{{ $m['warna'] }}"></span>
+            <span class="shrink-0 w-10 h-10 rounded-xl grid place-items-center group-hover:scale-110 transition-transform"
+                  style="background:{{ $m['warna'] }}1A">
+              <svg class="w-5 h-5" fill="none" stroke="{{ $m['warna'] }}" stroke-width="1.9" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="{{ \App\Support\Ikon::untuk($m['ikon']) }}"/>
+              </svg>
+            </span>
           </div>
           @if($m['total'])
             <div class="text-[10.5px] text-stone-400 mt-3 pt-3 border-t border-stone-100">

@@ -183,23 +183,33 @@
   {{-- ===== KONTEN ===== --}}
   <div class="flex-1 flex flex-col min-w-0">
     <header class="eq-topbar h-[62px] relative flex items-center gap-3 px-4 lg:px-7 sticky top-0">
-      <button onclick="eqToggle()" class="lg:hidden p-2 -ml-2 rounded-lg hover:bg-black/5" aria-label="Menu">
+      <button onclick="eqToggle()" class="lg:hidden p-2 -ml-2 rounded-lg hover:bg-black/5 shrink-0" aria-label="Menu">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
-      <h1 class="text-[15px] font-bold text-cam-ink truncate">@yield('title', 'Dashboard')</h1>
+      {{-- min-w-0 wajib: tanpa itu item flex menolak menyusut di bawah lebar
+           isinya, sehingga judul panjang mendorong blok pengguna keluar layar
+           di ponsel — `truncate` sendiri tidak cukup. --}}
+      <h1 class="text-[15px] font-bold text-cam-ink truncate min-w-0 flex-1">@yield('title', 'Dashboard')</h1>
 
-      <div class="ml-auto flex items-center gap-2.5">
+      <div class="flex items-center gap-2.5 shrink-0">
         @auth
         <div class="text-right leading-tight hidden sm:block">
           <div class="text-[12.5px] font-bold text-cam-ink">{{ auth()->user()->name }}</div>
           <div class="text-[10.5px] text-stone-400">{{ auth()->user()->isAdmin() ? 'Administrator' : ucfirst(auth()->user()->lms_role ?: 'Peserta') }}</div>
         </div>
-        <div class="w-9 h-9 rounded-xl lime-gradient text-white grid place-items-center font-bold text-[13px] shadow-glow">
+        <div class="w-9 h-9 shrink-0 rounded-xl lime-gradient text-white grid place-items-center font-bold text-[13px] shadow-glow">
           {{ strtoupper(substr(auth()->user()->name,0,1)) }}
         </div>
-        <form method="POST" action="{{ route('logout') }}">
+        <form method="POST" action="{{ route('logout') }}" class="shrink-0">
           @csrf
-          <button class="px-3 py-2 rounded-lg text-[12.5px] font-semibold text-stone-500 hover:text-cam-lime-deep hover:bg-cam-lime-soft transition">Keluar</button>
+          {{-- Di ponsel hanya ikon keluar; teks muncul mulai lebar sm. --}}
+          <button class="px-2 sm:px-3 py-2 rounded-lg text-[12.5px] font-semibold text-stone-500 hover:text-cam-lime-deep hover:bg-cam-lime-soft transition"
+                  aria-label="Keluar">
+            <span class="hidden sm:inline">Keluar</span>
+            <svg class="w-5 h-5 sm:hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 01-2-2V7a2 2 0 012-2h6"/>
+            </svg>
+          </button>
         </form>
         @endauth
       </div>

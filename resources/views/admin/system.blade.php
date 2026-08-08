@@ -144,12 +144,28 @@
         <h3 class="text-[14px] font-bold text-cam-ink">{{ $nama }}</h3>
         @if($m['route'])<a href="{{ route($m['route']) }}" class="text-[11.5px] font-bold text-cam-lime-deep hover:underline">Buka modul →</a>@endif
       </div>
-      <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+      {{-- Maksimal 5 kolom: pada 7 kolom label seperti "Percobaan kuis"
+           terpotong sehingga kartu kehilangan maknanya. --}}
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
         @foreach($m['items'] as $label => $val)
-          <div class="relative bg-white rounded-xl border border-stone-100 px-3 py-3 overflow-hidden hover:border-cam-lime/40 transition">
+          <div class="group relative bg-white rounded-xl border border-stone-100 p-3.5 overflow-hidden
+                      hover:border-cam-lime/50 hover:shadow-card transition">
             <span class="absolute left-0 top-0 bottom-0 w-[3px] bg-cam-lime/70 rounded-r"></span>
-            <div class="stat stat-sm text-cam-lime-deep leading-none pl-1">{{ $val }}</div>
-            <div class="text-[10px] text-stone-400 mt-1.5 clamp-1 pl-1">{{ $label }}</div>
+            <span class="absolute -right-5 -top-5 w-16 h-16 rounded-full bg-cam-lime/5
+                         group-hover:bg-cam-lime/10 transition"></span>
+
+            <div class="relative flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <div class="stat stat-sm text-cam-lime-deep leading-none">{{ $val }}</div>
+                <div class="text-[10.5px] text-stone-400 mt-1.5 leading-snug">{{ $label }}</div>
+              </div>
+              <span class="shrink-0 w-8 h-8 rounded-lg grid place-items-center bg-cam-lime-soft
+                           text-cam-lime-deep group-hover:scale-110 transition-transform">
+                <svg class="w-[17px] h-[17px]" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="{{ \App\Support\Ikon::untuk($label) }}"/>
+                </svg>
+              </span>
+            </div>
           </div>
         @endforeach
       </div>

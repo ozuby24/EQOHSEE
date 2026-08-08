@@ -10,7 +10,7 @@
   {{-- Bilah filter --}}
   <form method="GET" class="bg-white rounded-2xl shadow-card border border-stone-100 p-3 mb-5">
     <div class="flex flex-wrap items-center gap-2">
-      <div class="relative flex-1 min-w-[180px]">
+      <div class="relative flex-1 min-w-0 basis-[180px]">
         <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
         <input name="q" value="{{ $q }}" placeholder="Cari judul atau deskripsi kursus..."
                class="ring-focus w-full rounded-xl border border-stone-200 pl-10 pr-3 py-2.5 text-[13px] transition">

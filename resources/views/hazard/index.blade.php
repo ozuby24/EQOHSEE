@@ -26,7 +26,7 @@
   <form method="GET" class="bg-white rounded-2xl shadow-card border border-stone-100 p-3">
     <div class="flex flex-wrap items-center gap-2">
       <input name="q" value="{{ $f['q'] }}" placeholder="Cari kode, lokasi, deskripsi, pelapor..."
-             class="ring-focus flex-1 min-w-[180px] rounded-xl border border-stone-200 px-4 py-2.5 text-[13px] transition">
+             class="ring-focus flex-1 min-w-0 basis-[180px] rounded-xl border border-stone-200 px-4 py-2.5 text-[13px] transition">
       <select name="bulan" onchange="this.form.submit()" class="ring-focus rounded-xl border border-stone-200 px-3.5 py-2.5 text-[12.5px] font-semibold text-stone-600">
         <option value="">Semua bulan</option>
         @foreach($bulanOpsi as $b)<option value="{{ $b }}" @selected($f['bulan']===$b)>{{ \Carbon\Carbon::parse($b.'-01')->translatedFormat('F Y') }}</option>@endforeach

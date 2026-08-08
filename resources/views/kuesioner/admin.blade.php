@@ -16,7 +16,7 @@
       <p class="text-[12px] text-white/50 mt-1.5">Penerima tidak perlu akun. Cukup buka tautan, pilih kategori, lalu isi.</p>
 
       <div class="glass rounded-xl px-4 py-3 mt-4 flex flex-wrap items-center gap-2">
-        <code id="qurl" class="text-[12px] font-mono text-cam-lime-light break-all flex-1 min-w-[200px]">{{ $url }}</code>
+        <code id="qurl" class="text-[12px] font-mono text-cam-lime-light break-all flex-1 min-w-0 basis-[200px]">{{ $url }}</code>
         <button type="button" onclick="salin()" class="rounded-lg bg-white/15 hover:bg-white/25 px-3 py-1.5 text-[11.5px] font-bold transition">Salin</button>
         <a href="{{ $url }}" target="_blank" rel="noopener" class="rounded-lg bg-white/15 hover:bg-white/25 px-3 py-1.5 text-[11.5px] font-bold transition">Buka</a>
       </div>

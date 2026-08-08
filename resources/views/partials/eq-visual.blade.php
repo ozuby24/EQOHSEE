@@ -103,7 +103,14 @@ body{
 /* ═══════════════════════════════════════════════════════════
    3 · SIDEBAR — kertas milimeter, ikon, dan panorama bawah
    ═══════════════════════════════════════════════════════════ */
-#eqSidebar{position:relative;overflow:hidden}
+/* JANGAN menyetel `position` di sini. Sidebar memakai `fixed lg:static`
+   dari Tailwind untuk menjadi laci melayang di ponsel dan kolom tetap di
+   layar lebar. Selektor ID ini lebih kuat daripada kelas `.fixed`, sehingga
+   `position:relative` membuat sidebar tetap ikut arus dan merebut 248px —
+   di layar 360px konten hanya kebagian 112px dan terpotong.
+   Lapisan hiasan di bawah hanya butuh konteks penumpukan, dan `isolation`
+   memberikannya tanpa menyentuh `position`. */
+#eqSidebar{isolation:isolate;overflow:hidden}
 #eqSidebar > *{position:relative;z-index:2}
 
 #eqSidebar::before{                       /* kertas milimeter tipis */

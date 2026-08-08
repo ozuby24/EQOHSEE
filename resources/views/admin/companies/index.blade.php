@@ -7,7 +7,7 @@
   @if($errors->any())<div class="mb-5 rounded-xl bg-red-50 border border-red-100 text-red-700 px-4 py-3 text-[12.5px]">@foreach($errors->all() as $e)<div>• {{ $e }}</div>@endforeach</div>@endif
 
   <div class="flex flex-wrap items-center gap-2.5 mb-5">
-    <form method="GET" class="flex-1 min-w-[200px]">
+    <form method="GET" class="flex-1 min-w-0 basis-[200px]">
       <input name="q" value="{{ $q }}" placeholder="Cari nama atau kode perusahaan..."
              class="ring-focus w-full rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-[13px]">
     </form>

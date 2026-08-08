@@ -6,7 +6,7 @@
   @if(session('ok'))<div class="rounded-xl bg-cam-lime-soft border border-cam-lime/25 text-cam-lime-deep px-4 py-3 text-[12.5px] font-medium animate-pop">{{ session('ok') }}</div>@endif
 
   <form method="GET" class="bg-white rounded-2xl shadow-card border border-stone-100 p-3 flex flex-wrap items-center gap-2">
-    <select name="template" onchange="this.form.submit()" class="ring-focus flex-1 min-w-[160px] rounded-xl border border-stone-200 px-3.5 py-2.5 text-[12.5px] font-semibold text-stone-600">
+    <select name="template" onchange="this.form.submit()" class="ring-focus flex-1 min-w-0 basis-[160px] rounded-xl border border-stone-200 px-3.5 py-2.5 text-[12.5px] font-semibold text-stone-600">
       <option value="">Semua jenis inspeksi</option>
       @foreach($templates as $t)<option value="{{ $t->id }}" @selected($template==$t->id)>{{ $t->nama }}</option>@endforeach
     </select>
