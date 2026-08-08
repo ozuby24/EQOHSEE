@@ -129,9 +129,15 @@
 <section id="modul" class="max-w-6xl mx-auto px-5 py-16 md:py-20">
   <div class="text-center max-w-xl mx-auto">
     <span class="text-[10.5px] font-bold uppercase tracking-[0.22em] text-cam-lime-dark">Aplikasi di Dalamnya</span>
-    <h2 class="font-display text-[30px] md:text-[38px] font-black text-cam-ink mt-3 leading-tight">Enam modul, satu akun</h2>
+    @php
+      $jumlahModul = count($daftarModul);
+      $modulAktif  = collect($daftarModul)->where('status','aktif')->count();
+      $angka = [1=>'Satu',2=>'Dua',3=>'Tiga',4=>'Empat',5=>'Lima',6=>'Enam',7=>'Tujuh',8=>'Delapan',9=>'Sembilan',10=>'Sepuluh'];
+    @endphp
+    <h2 class="font-display text-[30px] md:text-[38px] font-black text-cam-ink mt-3 leading-tight">{{ $angka[$jumlahModul] ?? $jumlahModul }} modul, satu akun</h2>
     <p class="text-[13.5px] text-stone-500 mt-3 leading-relaxed">
-      Semua modul berbagi data perusahaan, pengguna, dan peran yang sama — tidak perlu login berulang.
+      {{ $modulAktif }} modul sudah aktif dan siap dipakai. Semua modul berbagi data perusahaan,
+      pengguna, dan peran yang sama — tidak perlu login berulang.
     </p>
   </div>
 

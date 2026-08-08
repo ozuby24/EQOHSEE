@@ -40,6 +40,31 @@
     @endforeach
   </div>
 
+  {{-- Pintasan modul: angka yang ditampilkan = yang butuh perhatian --}}
+  <div>
+    <h3 class="text-[15px] font-bold text-cam-ink mb-3">Modul Lainnya</h3>
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      @foreach($modul as $m)
+        <a href="{{ route($m['rute']) }}"
+           class="block bg-white rounded-2xl shadow-card border border-stone-100 p-5 card-hover hover:border-cam-lime/40 transition">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="stat stat-lg leading-none" style="color:{{ $m['warna'] }}">{{ $m['nilai'] }}</div>
+              <div class="text-[13px] font-bold text-cam-ink mt-2 clamp-1">{{ $m['nama'] }}</div>
+              <div class="text-[11px] text-stone-400 mt-0.5">{{ $m['ket'] }}</div>
+            </div>
+            <span style="flex:none;width:10px;height:10px;border-radius:99px;margin-top:6px;background:{{ $m['warna'] }}"></span>
+          </div>
+          @if($m['total'])
+            <div class="text-[10.5px] text-stone-400 mt-3 pt-3 border-t border-stone-100">
+              {{ $m['total'] }} total tercatat
+            </div>
+          @endif
+        </a>
+      @endforeach
+    </div>
+  </div>
+
   {{-- Ringkasan admin --}}
   @if($admin)
   <div>

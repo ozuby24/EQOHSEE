@@ -1,6 +1,9 @@
 <?php
 namespace App\Http\Controllers;
-use App\Models\{Course, Enrollment, Certificate, News, Procedure, SopEvaluationAttempt, User};
+
+use App\Models\{Course, Enrollment, Certificate, HazardReport, Inspection, KoObject,
+    News, Procedure, SopEvaluationAttempt, TpkkpAssessment, User};
+
 class DashboardController extends Controller
 {
     public function index()
@@ -11,6 +14,7 @@ class DashboardController extends Controller
             'certificates'=> Certificate::where('user_id',$user->id)->count(),
             'sopPassed'   => SopEvaluationAttempt::where('user_id',$user->id)->where('passed',true)->count(),
             'news'        => News::latest('published_at')->take(3)->get(),
+            'modul'       => $this->ringkasModul(),
             'admin'       => null,
         ];
         if ($user->isAdmin()) {
@@ -22,5 +26,48 @@ class DashboardController extends Controller
             ];
         }
         return view('dashboard', $data);
+    }
+
+    /**
+     * Ringkasan lintas modul untuk pintasan di dashboard.
+     * Angka yang ditonjolkan adalah yang butuh perhatian (belum tuntas),
+     * bukan sekadar jumlah total.
+     */
+    private function ringkasModul(): array
+    {
+        return [
+            [
+                'nama'  => 'Hazard Report',
+                'ket'   => 'Laporan bahaya belum tuntas',
+                'nilai' => HazardReport::where('status','<>','Closed')->count(),
+                'total' => HazardReport::count(),
+                'rute'  => 'hazard.index',
+                'warna' => '#F0921E',
+            ],
+            [
+                'nama'  => 'Inspeksi',
+                'ket'   => 'Inspeksi masih berjalan',
+                'nilai' => Inspection::where('status','<>','Selesai')->count(),
+                'total' => Inspection::count(),
+                'rute'  => 'inspeksi.index',
+                'warna' => '#0FA08F',
+            ],
+            [
+                'nama'  => 'Keselamatan Operasi',
+                'ket'   => 'Objek perlu ditindak',
+                'nilai' => KoObject::whereDate('pm_berikutnya','<',now())->count(),
+                'total' => KoObject::count(),
+                'rute'  => 'ko.index',
+                'warna' => '#1093B8',
+            ],
+            [
+                'nama'  => 'Safety Maturity',
+                'ket'   => 'Penilaian PTPKKP',
+                'nilai' => TpkkpAssessment::count(),
+                'total' => TpkkpAssessment::count(),
+                'rute'  => 'tpkkp.index',
+                'warna' => '#2E6BE6',
+            ],
+        ];
     }
 }

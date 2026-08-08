@@ -20,13 +20,17 @@ class Modules
              'ket'  => 'Penilaian tingkat kematangan keselamatan: 194 item · 24 parameter · 4 indikator, lengkap Kalkulator Slovin.',
              'ikon' => 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6'],
 
+            ['nama' => 'Hazard Report & Inspeksi', 'status' => 'aktif',
+             'ket'  => 'Pelaporan bahaya lapangan dan inspeksi rutin dengan tindak lanjut berjenjang, KPI per jabatan, dan ekspor siap cetak.',
+             'ikon' => 'M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z'],
+
+            ['nama' => 'Keselamatan Operasi (KO)', 'status' => 'aktif',
+             'ket'  => 'Kelayakan objek, jadwal perawatan, alat pengaman, kajian teknis, dan tenaga teknis bersertifikat.',
+             'ikon' => 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z'],
+
             ['nama' => 'SMKP Audit', 'status' => 'segera',
              'ket'  => 'Audit 7 elemen SMKP Minerba sesuai Kepdirjen 185.K/2019.',
              'ikon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'],
-
-            ['nama' => 'Hazard Report & Inspeksi', 'status' => 'segera',
-             'ket'  => 'Pelaporan bahaya lapangan dan inspeksi rutin dengan tindak lanjut berjenjang.',
-             'ikon' => 'M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z'],
 
             ['nama' => 'Sistem Informasi Gudang & Penyimpanan', 'status' => 'segera',
              'ket'  => 'Pengelolaan stok, penerimaan, pengeluaran, dan penyimpanan material.',
