@@ -2,7 +2,7 @@
 
 namespace App\Support;
 
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\DB as DBFacade;
 
 /**
  * Pembungkus SQL yang berbeda antar mesin basis data.
@@ -14,7 +14,7 @@ class Db
 {
     public static function driver(): string
     {
-        return DB::connection()->getDriverName();
+        return DBFacade::connection()->getDriverName();
     }
 
     public static function pgsql(): bool  { return self::driver() === 'pgsql'; }
