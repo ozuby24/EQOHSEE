@@ -123,3 +123,135 @@ details>summary::-webkit-details-marker{ display:none; }
 input,select,textarea{ outline:none; }
 
 @media print{ .print\:hidden{ display:none !important; } }
+
+/* ══════════════════════════════════════════════════════════════
+   LAPISAN SINEMATIK
+   Dipakai halaman publik (beranda, pilar, masuk). Semuanya murni
+   CSS/SVG — tanpa aset luar — supaya tetap tampil saat jaringan
+   site tambang lambat atau terputus.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Ruang 3D ── */
+.pers        { perspective: 1400px; }
+.pers-near   { perspective: 900px; }
+.d3          { transform-style: preserve-3d; }
+.d3-flat     { backface-visibility: hidden; }
+
+/* Kartu yang bereaksi terhadap kursor. Sudutnya disetel lewat
+   variabel --rx/--ry dari JS sehingga transisi tetap di GPU. */
+.tilt{
+  transform: rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateZ(0);
+  transition: transform .5s cubic-bezier(.16,.84,.44,1);
+  will-change: transform;
+}
+.tilt-fast{ transition: transform .18s cubic-bezier(.16,.84,.44,1); }
+
+/* Lapisan yang terangkat di dalam kartu 3D. */
+.lift-1{ transform: translateZ(28px); }
+.lift-2{ transform: translateZ(52px); }
+.lift-3{ transform: translateZ(80px); }
+
+/* ── Latar bercahaya ── */
+.aurora{ position:relative; isolation:isolate; overflow:hidden; }
+.aurora::before{
+  content:""; position:absolute; inset:-40%; z-index:-1;
+  background:
+    radial-gradient(38% 46% at 22% 28%, rgba(44,176,188,.42), transparent 62%),
+    radial-gradient(34% 42% at 78% 22%, rgba(31,111,184,.38), transparent 64%),
+    radial-gradient(44% 50% at 62% 82%, rgba(18,137,127,.34), transparent 66%);
+  filter: blur(38px);
+  animation: aurora 22s ease-in-out infinite alternate;
+}
+@keyframes aurora{
+  0%   { transform: translate3d(-3%,-2%,0) scale(1);    }
+  50%  { transform: translate3d(3%,2%,0)   scale(1.09); }
+  100% { transform: translate3d(-2%,3%,0)  scale(1.04); }
+}
+
+/* Kisi teknis yang memudar ke tepi — memberi kesan bidang, bukan warna datar. */
+.grid-tech{
+  background-image:
+    linear-gradient(rgba(255,255,255,.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.07) 1px, transparent 1px);
+  background-size: 52px 52px;
+  -webkit-mask-image: radial-gradient(120% 88% at 50% 12%, #000 32%, transparent 78%);
+          mask-image: radial-gradient(120% 88% at 50% 12%, #000 32%, transparent 78%);
+}
+
+/* ── Sapuan cahaya pada teks judul ── */
+.sheen{
+  /* Warna dasar dan kilaunya harus eksplisit. Memakai currentColor di sini
+     tampak rapi tetapi tidak berfungsi: background-clip:text menuntut
+     color:transparent, sehingga currentColor ikut menjadi transparan dan
+     seluruh teks lenyap. */
+  --sheen-base: #FFFFFF;
+  --sheen-hi:   #9FEFF4;
+  background-image: linear-gradient(100deg,
+    var(--sheen-base) 0%,  var(--sheen-base) 38%,
+    var(--sheen-hi)   50%,
+    var(--sheen-base) 62%, var(--sheen-base) 100%);
+  background-size: 260% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+  animation: sheen 7s ease-in-out infinite;
+}
+/* Varian untuk latar terang. */
+.sheen-ink{ --sheen-base:#123049; --sheen-hi:#2CB0BC; }
+@keyframes sheen{
+  0%,72% { background-position: 130% 0; }
+  100%   { background-position: -30% 0; }
+}
+
+/* ── Muncul saat masuk layar ── */
+.reveal{
+  opacity:0; transform: translateY(22px);
+  transition: opacity .8s cubic-bezier(.16,.84,.44,1),
+              transform .8s cubic-bezier(.16,.84,.44,1);
+}
+.reveal.tampil{ opacity:1; transform:none; }
+.reveal-d1{ transition-delay:.09s } .reveal-d2{ transition-delay:.18s }
+.reveal-d3{ transition-delay:.27s } .reveal-d4{ transition-delay:.36s }
+.reveal-d5{ transition-delay:.45s } .reveal-d6{ transition-delay:.54s }
+
+/* ── Gerak halus berkelanjutan ── */
+@keyframes apung{ 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-11px) } }
+@keyframes apung-lambat{ 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-6px) } }
+@keyframes denyut{ 0%,100%{ opacity:.45; transform:scale(1) } 50%{ opacity:.9; transform:scale(1.13) } }
+@keyframes putar{ to{ transform: rotate(360deg) } }
+.apung { animation: apung 7s ease-in-out infinite; }
+.apung-2{ animation: apung-lambat 9s ease-in-out infinite .8s; }
+.denyut{ animation: denyut 3.4s ease-in-out infinite; }
+.putar-lambat{ animation: putar 34s linear infinite; }
+
+/* ── Garis pemisah bergradien ── */
+.rule-grad{
+  height:1px; border:0;
+  background:linear-gradient(90deg,transparent,rgba(44,176,188,.55),transparent);
+}
+
+/* ── Kartu kaca gelap ── */
+.kaca-gelap{
+  background: rgba(255,255,255,.055);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid rgba(255,255,255,.11);
+}
+.kaca-gelap-kuat{
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.20);
+}
+
+/* ── Hormati preferensi gerak minimal ──
+   Pengguna yang sensitif terhadap gerak tetap mendapat seluruh isi
+   halaman; hanya animasinya yang dihentikan. */
+@media (prefers-reduced-motion: reduce){
+  .aurora::before, .sheen, .apung, .apung-2, .denyut, .putar-lambat{
+    animation: none !important;
+  }
+  .reveal{ opacity:1 !important; transform:none !important; transition:none !important; }
+  .tilt{ transform:none !important; transition:none !important; }
+}
+
+/* Sembunyikan elemen Alpine sampai kerangkanya siap, supaya panel rincian
+   tidak berkedip muncul lalu hilang saat halaman pertama dimuat. */
+[x-cloak]{ display:none !important; }

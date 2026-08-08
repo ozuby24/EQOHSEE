@@ -87,41 +87,125 @@
     ['S','safety'], ['E','environment'], ['E','engineering'],
   ];
 @endphp
-<section id="pilar" class="relative bg-cam-ink text-white overflow-hidden">
-  <div class="absolute -left-24 -bottom-24 w-[360px] h-[360px] rounded-full bg-cam-lime/15 blur-3xl"></div>
-  <div class="relative max-w-6xl mx-auto px-5 py-16 md:py-20">
-    <div class="text-center max-w-xl mx-auto">
-      <span class="text-[10.5px] font-bold uppercase tracking-[0.22em] text-cam-lime-light">Kerangka Kerja</span>
-      <h2 class="font-display text-[30px] md:text-[38px] font-black mt-3 leading-tight">Nama kami adalah janjinya</h2>
-      <p class="text-[13.5px] text-white/55 mt-3 leading-relaxed">
-        <strong class="text-white/80">EQOHSEE</strong> berdiri di atas enam pilar. Setiap modul di platform ini
-        menopang salah satunya — sehingga keselamatan bukan program terpisah, melainkan satu sistem utuh.
-      </p>
+<section id="pilar" class="relative bg-cam-ink text-white overflow-hidden aurora"
+         x-data="{ aktif: null, buka(s){ this.aktif = this.aktif === s ? null : s } }">
+  <div class="absolute inset-0 grid-tech pointer-events-none"></div>
 
-      {{-- Wordmark: tiap huruf mewakili satu pilar --}}
-      <div class="mt-7 font-display font-black tracking-tight leading-none flex justify-center"
-           style="font-size:clamp(34px,9vw,62px)" aria-label="EQOHSEE">
-        @foreach ($wordmark as [$huruf,$slug])
-          <span style="color:{{ $pilar[$slug]['warna'] }}">{{ $huruf }}</span>
+  <div class="relative max-w-6xl mx-auto px-5 py-20 md:py-28">
+
+    {{-- Kepala bagian --}}
+    <div class="text-center max-w-2xl mx-auto reveal">
+      <span class="text-[10.5px] font-bold uppercase tracking-[0.28em] text-cam-lime-light">Kerangka Kerja</span>
+      <h2 class="font-display text-[32px] md:text-[46px] font-black mt-4 leading-[1.08]">
+        <span class="sheen text-white">Enam pilar, satu sistem</span>
+      </h2>
+      <p class="text-[13.5px] md:text-[14.5px] text-white/50 mt-4 leading-relaxed">
+        Tiap huruf pada <strong class="text-white/80">EQOHSEE</strong> mewakili satu pilar.
+        Sentuh salah satunya untuk melihat apa yang dikerjakan di dalamnya.
+      </p>
+    </div>
+
+    {{-- Wordmark: tiap huruf berwarna pilarnya, dan bisa diklik --}}
+    <div class="flex justify-center mt-10 reveal reveal-d1">
+      <div class="font-display text-[42px] md:text-[64px] font-black tracking-[.04em] flex select-none">
+        @foreach ($wordmark as $i => [$huruf, $slug])
+          <button type="button" @click="buka('{{ $slug }}')"
+                  class="transition-transform duration-300 hover:-translate-y-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded"
+                  :class="aktif === '{{ $slug }}' ? '-translate-y-2' : ''"
+                  style="color:{{ $pilar[$slug]['warna'] }}"
+                  aria-label="Lihat pilar {{ $pilar[$slug]['nama'] }}">{{ $huruf }}</button>
         @endforeach
       </div>
     </div>
 
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-11">
+    {{-- Kartu pilar --}}
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-12 pers">
       @foreach ($pilar as $slug => $p)
-        <div class="group glass-panel rounded-2xl p-6 relative overflow-hidden card-hover"
-             style="border-top:3px solid {{ $p['warna'] }}">
-          <div class="flex items-center gap-3">
-            <span class="w-11 h-10 grid place-items-center shrink-0"
-                  style="background:{{ $p['warna'] }};clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)">
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="#fff" aria-hidden="true">{!! $pilarIkon[$slug] !!}</svg>
+        <button type="button" @click="buka('{{ $slug }}')"
+                class="group text-left kaca-gelap rounded-2xl p-5 tilt tilt-fast d3 reveal reveal-d{{ min($loop->iteration, 6) }}
+                       hover:kaca-gelap-kuat focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 transition-colors"
+                :class="aktif === '{{ $slug }}' ? 'kaca-gelap-kuat' : ''"
+                data-tilt
+                aria-expanded="false" :aria-expanded="(aktif === '{{ $slug }}').toString()">
+          <div class="flex items-start gap-3.5 d3">
+            <span class="shrink-0 w-11 h-11 rounded-xl grid place-items-center lift-1 shadow-lg"
+                  style="background:{{ \App\Support\Pillars::gradient($slug) }}">
+              <svg class="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="#fff" aria-hidden="true">{!! $pilarIkon[$slug] !!}</svg>
             </span>
-            <h3 class="text-[14.5px] font-bold" style="color:{{ $p['warna'] }}">{{ $p['nama'] }}</h3>
+            <div class="min-w-0">
+              <h3 class="text-[14.5px] font-bold leading-snug">{{ $p['nama'] }}</h3>
+              <p class="text-[12px] text-white/45 mt-1 leading-relaxed">{{ $p['ket'] }}</p>
+            </div>
           </div>
-          <p class="text-[12.5px] text-white/60 mt-3 leading-relaxed">{{ $p['ket'] }}</p>
-        </div>
+
+          <div class="flex items-center gap-1.5 mt-4 text-[11px] font-bold"
+               style="color:{{ $p['light'] }}">
+            <span x-text="aktif === '{{ $slug }}' ? 'Tutup rincian' : 'Lihat rincian'">Lihat rincian</span>
+            <svg class="w-3.5 h-3.5 transition-transform duration-300" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.4"
+                 :class="aktif === '{{ $slug }}' ? 'rotate-90' : 'group-hover:translate-x-0.5'">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+            </svg>
+          </div>
+        </button>
       @endforeach
     </div>
+
+    {{-- Panel rincian: satu panel dipakai bergantian, memakai transisi 3D --}}
+    @foreach ($pilar as $slug => $p)
+      <div x-show="aktif === '{{ $slug }}'" x-cloak
+           x-transition:enter="transition duration-500 ease-out"
+           x-transition:enter-start="opacity-0 translate-y-6 scale-[.97]"
+           x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+           x-transition:leave="transition duration-200 ease-in"
+           x-transition:leave-start="opacity-100"
+           x-transition:leave-end="opacity-0"
+           class="mt-6 rounded-2xl overflow-hidden kaca-gelap-kuat"
+           style="border-color:{{ $p['warna'] }}55">
+
+        <div class="grid md:grid-cols-[minmax(0,1fr)_260px] gap-6 p-6 md:p-8">
+          <div class="min-w-0 order-2 md:order-1">
+            <div class="flex flex-wrap items-center gap-2.5">
+              <span class="w-9 h-9 rounded-lg grid place-items-center shrink-0"
+                    style="background:{{ \App\Support\Pillars::gradient($slug) }}">
+                <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="#fff" aria-hidden="true">{!! $pilarIkon[$slug] !!}</svg>
+              </span>
+              <h3 class="font-display text-[22px] md:text-[26px] font-black">{{ $p['nama'] }}</h3>
+            </div>
+
+            <p class="text-[13px] md:text-[13.5px] text-white/60 mt-4 leading-relaxed max-w-xl">{{ $p['ringkas'] }}</p>
+
+            <hr class="rule-grad my-6">
+
+            <div class="space-y-3.5">
+              @foreach ($p['cakupan'] as [$judul, $isi])
+                <div class="flex gap-3">
+                  <span class="shrink-0 w-1.5 h-1.5 rounded-full mt-2" style="background:{{ $p['light'] }}"></span>
+                  <div class="min-w-0">
+                    <div class="text-[12.5px] font-bold">{{ $judul }}</div>
+                    <div class="text-[12px] text-white/45 mt-0.5 leading-relaxed">{{ $isi }}</div>
+                  </div>
+                </div>
+              @endforeach
+            </div>
+
+            <div class="flex flex-wrap gap-1.5 mt-6">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-white/30 self-center mr-1">Ditopang modul</span>
+              @foreach ($p['modul'] as $m)
+                <span class="text-[10.5px] font-semibold rounded-full px-2.5 py-1"
+                      style="background:{{ $p['warna'] }}22; color:{{ $p['light'] }}">{{ $m }}</span>
+              @endforeach
+            </div>
+          </div>
+
+          {{-- Visual isometrik --}}
+          <div class="order-1 md:order-2 self-center max-w-[240px] mx-auto w-full apung">
+            @include('partials.pilar-visual', ['slug' => $slug, 'p' => $p])
+          </div>
+        </div>
+      </div>
+    @endforeach
+
   </div>
 </section>
 
