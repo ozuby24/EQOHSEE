@@ -20,7 +20,7 @@
   $modul = request()->is('hazard*') || request()->is('inspeksi*') ? 'hazrep'
          : (request()->is('tpkkp*') ? 'tpkkp'
          : (request()->is('smkp*') ? 'smkp'
-         : (request()->is('dokumen*') ? 'dokumen'
+         : (request()->is('dokumen*') || request()->is('iso*') || request()->is('struktur-dokumen') || request()->is('daftar-induk') ? 'dokumen'
          : (request()->is('ko*') ? 'ko'
          : (request()->is('admin*') || request()->is('signatories*') ? 'admin' : 'lms')))));
 
@@ -129,9 +129,19 @@
     'dokumen' => [
       'label' => 'ISO & Dokumen',
       'icon'  => 'M7 3h7l4 4v14H7a1 1 0 01-1-1V4a1 1 0 011-1zM14 3v4h4M9.5 12h5M9.5 15.5h3',
+      // Dua sisi yang saling melengkapi: register menjawab dokumen apa yang
+      // dipunya, ISO menjawab klausul mana yang belum punya dokumen.
       'groups' => [
-        '' => [
-          ['Register Dokumen', 'dokumen.index', 'dokumen'],
+        'Register' => [
+          ['Semua Dokumen',   'dokumen.index',  'dokumen'],
+          ['Dokumen Baru',    'dokumen.create', 'dokumen/baru'],
+        ],
+        'Struktur' => [
+          ['Piramida Dokumen','dokumen.piramida',     'struktur-dokumen'],
+          ['Daftar Induk',    'dokumen.daftar-induk', 'daftar-induk'],
+        ],
+        'Standar ISO' => [
+          ['Pemenuhan Klausul','iso.index', 'iso'],
         ],
       ],
     ],

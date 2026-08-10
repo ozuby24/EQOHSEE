@@ -53,6 +53,16 @@ final class KopDokumen
                 'judul' => 'RENCANA TINDAK LANJUT AUDIT SMKP MINERBA',
                 'kode'  => 'OHSE-IV.067f',
             ],
+            'iso-matriks' => [
+                'jenis' => 'FORM & CHECKLIST',
+                'judul' => 'MATRIKS PEMENUHAN KLAUSUL STANDAR',
+                'kode'  => 'OHSE-II.012',
+            ],
+            'daftar-induk' => [
+                'jenis' => 'FORM & CHECKLIST',
+                'judul' => 'DAFTAR INDUK DOKUMEN TERKENDALI',
+                'kode'  => 'OHSE-II.001',
+            ],
             'laporan-audit' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN AUDIT INTERNAL PENERAPAN SMKP MINERBA',

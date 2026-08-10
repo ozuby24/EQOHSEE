@@ -28,6 +28,21 @@ class Document extends Model
     public function user(): BelongsTo      { return $this->belongsTo(User::class); }
     public function procedure(): BelongsTo { return $this->belongsTo(Procedure::class); }
     public function revisions(): HasMany  { return $this->hasMany(DocumentRevision::class)->orderByDesc('revisi'); }
+    public function isoMap(): HasMany     { return $this->hasMany(DocumentIso::class); }
+
+    /**
+     * Klausul yang dipenuhi dokumen ini, dikelompokkan per standar.
+     * @return array<string,array<int,string>>
+     */
+    public function klausul(): array
+    {
+        $out = [];
+        foreach ($this->isoMap as $m) {
+            $out[$m->standar][] = $m->klausul;
+        }
+        foreach ($out as &$daftar) sort($daftar, SORT_NATURAL);
+        return $out;
+    }
 
     /** Sudah lewat jatuh tempo peninjauan dan masih berlaku. */
     public function perluTinjau(): bool

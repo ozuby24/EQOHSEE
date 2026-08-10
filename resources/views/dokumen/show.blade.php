@@ -122,5 +122,30 @@
       </form>
     @endcan
   </div>
+
+  {{-- Klausul ISO yang dipenuhi dokumen ini --}}
+  @php $klausul = $d->klausul(); @endphp
+  @if($klausul)
+    <section class="kartu-lux rounded-2xl p-5">
+      <h3 class="text-[13px] font-bold text-cam-ink mb-3">Pemenuhan Klausul ISO</h3>
+      <div class="space-y-3">
+        @foreach($klausul as $kode => $daftar)
+          @php $st = \App\Support\Iso::get($kode); @endphp
+          <div>
+            <div class="flex items-center gap-2 mb-1.5">
+              <span class="shrink-0 w-2.5 h-2.5 rounded-full" style="background:{{ \App\Support\Iso::warna($kode) }}"></span>
+              <a href="{{ route('iso.show',$kode) }}" class="text-[12px] font-bold text-cam-ink hover:underline">{{ $st['nama'] ?? $kode }}</a>
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              @foreach($daftar as $no)
+                <span class="num text-[10.5px] font-semibold rounded-lg px-2 py-1 bg-cam-lime-soft text-cam-lime-deep">{{ $no }}</span>
+              @endforeach
+            </div>
+          </div>
+        @endforeach
+      </div>
+    </section>
+  @endif
+
 </div>
 @endsection

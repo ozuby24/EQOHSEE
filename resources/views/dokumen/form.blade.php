@@ -125,6 +125,44 @@
       @endif
     </div>
 
+    {{-- Pemenuhan klausul ISO --}}
+    @php $terpilih = $document->exists ? $document->klausul() : []; @endphp
+    <div>
+      <label class="block text-[11.5px] font-bold uppercase tracking-wide text-stone-500 mb-1.5">Klausul ISO yang dipenuhi</label>
+      <p class="text-[11.5px] text-stone-400 mb-3 leading-relaxed">
+        Centang klausul yang benar-benar dijawab dokumen ini. Dari sinilah halaman
+        pemenuhan mengetahui klausul mana yang masih tanpa dokumen.
+      </p>
+
+      <div class="space-y-2.5">
+        @foreach(\App\Support\Iso::semua() as $kode => $st)
+          @php $adaTerpilih = count($terpilih[$kode] ?? []); @endphp
+          <details class="rounded-xl border border-stone-200 overflow-hidden" @if($adaTerpilih) open @endif>
+            <summary class="px-4 py-3 cursor-pointer flex flex-wrap items-center gap-2.5 hover:bg-stone-50 transition">
+              <span class="shrink-0 w-2.5 h-2.5 rounded-full" style="background:{{ \App\Support\Iso::warna($kode) }}"></span>
+              <span class="text-[12.5px] font-bold text-cam-ink">{{ $st['nama'] }}</span>
+              <span class="text-[11.5px] text-stone-400">{{ $st['judul'] }}</span>
+              @if($adaTerpilih)
+                <span class="ml-auto text-[10.5px] font-bold text-cam-lime-deep">{{ $adaTerpilih }} klausul</span>
+              @endif
+            </summary>
+
+            <div class="px-4 pb-3.5 pt-1 grid gap-1.5 sm:grid-cols-2">
+              @foreach(\App\Support\Iso::butir($kode) as $k)
+                <label class="flex items-start gap-2 rounded-lg px-2.5 py-1.5 hover:bg-cam-sand/30 cursor-pointer transition">
+                  <input type="checkbox" name="iso[{{ $kode }}][]" value="{{ $k['no'] }}" class="mt-0.5 shrink-0"
+                         @checked(in_array($k['no'], old('iso.'.$kode, $terpilih[$kode] ?? []) ?: [], true))>
+                  <span class="text-[11.5px] text-stone-600 leading-snug">
+                    <span class="num font-semibold text-cam-ink">{{ $k['no'] }}</span> {{ $k['judul'] }}
+                  </span>
+                </label>
+              @endforeach
+            </div>
+          </details>
+        @endforeach
+      </div>
+    </div>
+
     <div class="flex flex-wrap gap-2 pt-2">
       <button class="lime-gradient shadow-glow rounded-xl text-white px-5 py-3 text-[13px] font-bold hover:brightness-105 transition">
         {{ $document->exists ? 'Simpan Perubahan' : 'Daftarkan Dokumen' }}

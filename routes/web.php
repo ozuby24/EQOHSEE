@@ -7,7 +7,7 @@ use App\Http\Controllers\{
 };
 use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiTemuanController, HazardController,
     HazardExportController, InspectionController, InspectionTemplateController,
-    KoController, KuesionerController, SignatoryController, SmkpController,
+    IsoController, KoController, KuesionerController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\Admin\{CompanyController, SystemController, UserController};
 use Illuminate\Support\Facades\Route;
@@ -179,6 +179,17 @@ Route::middleware('auth')->group(function () {
         Route::delete('{dokumen}',     [DocumentController::class,'destroy'])->middleware('can:admin')->name('destroy');
         Route::post('{dokumen}/revisi',[DocumentController::class,'revisi'])->name('revisi');
         Route::get('{dokumen}/unduh',  [DocumentController::class,'unduh'])->name('unduh');
+    });
+
+    // Struktur dokumen — ditaruh di luar prefix agar tidak tertangkap {dokumen}.
+    Route::get('struktur-dokumen', [DocumentController::class,'piramida'])->name('dokumen.piramida');
+    Route::get('daftar-induk',     [DocumentController::class,'daftarInduk'])->name('dokumen.daftar-induk');
+
+    /* ================= WEBSITE #5b — ISO: pemenuhan klausul ================= */
+    Route::prefix('iso')->name('iso.')->group(function () {
+        Route::get('/',                 [IsoController::class,'index'])->name('index');
+        Route::get('{standar}',         [IsoController::class,'show'])->name('show');
+        Route::get('{standar}/cetak',   [IsoController::class,'cetak'])->name('cetak');
     });
 
     /* ================= WEBSITE #4 — Audit SMKP Minerba ================= */

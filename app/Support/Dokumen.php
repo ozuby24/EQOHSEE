@@ -20,6 +20,16 @@ class Dokumen
         'Rekaman',
     ];
 
+    /** Apa yang dijawab tiap tingkat piramida — dipakai halaman struktur. */
+    public const KETERANGAN = [
+        'Kebijakan'       => 'Arah dan komitmen manajemen puncak. Satu halaman, ditandatangani pimpinan tertinggi.',
+        'Manual'          => 'Gambaran menyeluruh sistem: ruang lingkup, proses, dan keterkaitannya.',
+        'Prosedur'        => 'Siapa mengerjakan apa, kapan, dan dengan wewenang siapa — lintas bagian.',
+        'Instruksi Kerja' => 'Langkah teknis satu pekerjaan, cukup rinci untuk diikuti tanpa penjelasan lisan.',
+        'Formulir'        => 'Wadah kosong tempat pelaksanaan dicatat.',
+        'Rekaman'         => 'Formulir yang sudah terisi — bukti bahwa sistem benar-benar dijalankan.',
+    ];
+
     public const KLASIFIKASI = ['Umum', 'Internal', 'Rahasia'];
 
     public const STATUS = ['draft', 'berlaku', 'kadaluarsa', 'ditarik'];

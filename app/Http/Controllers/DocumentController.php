@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Company, Document, Procedure};
-use App\Support\{Db, Dokumen};
+use App\Support\{Db, Dokumen, Iso, KopDokumen};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -63,6 +63,53 @@ class DocumentController extends Controller
         ]);
     }
 
+    /**
+     * Piramida dokumen: enam tingkat dari Kebijakan sampai Rekaman.
+     *
+     * Register mendaftar dokumen secara mendatar; piramida menunjukkan
+     * bentuk sistemnya. Tingkat yang kosong justru yang paling berguna
+     * dilihat — sistem tanpa Prosedur, misalnya, terbaca seketika.
+     */
+    public function piramida()
+    {
+        // Satu kueri untuk seluruh tingkat; menghitung per jenis di dalam
+        // perulangan berarti enam kueri untuk pertanyaan yang sama.
+        $hitung = Document::query()
+            ->selectRaw('jenis, status, COUNT(*) as jumlah')
+            ->groupBy('jenis', 'status')
+            ->get()
+            ->groupBy('jenis');
+
+        $tingkat = [];
+        foreach (Dokumen::JENIS as $i => $jenis) {
+            $baris = $hitung[$jenis] ?? collect();
+            $tingkat[] = [
+                'jenis'   => $jenis,
+                'urutan'  => $i + 1,
+                'total'   => (int) $baris->sum('jumlah'),
+                'berlaku' => (int) $baris->firstWhere('status', 'berlaku')?->jumlah,
+                'draft'   => (int) $baris->firstWhere('status', 'draft')?->jumlah,
+                'ket'     => Dokumen::KETERANGAN[$jenis] ?? '',
+            ];
+        }
+
+        return view('dokumen.piramida', [
+            'tingkat' => $tingkat,
+            'total'   => array_sum(array_column($tingkat, 'total')),
+        ]);
+    }
+
+    /** Daftar Induk Dokumen — berkas wajib sistem manajemen, siap cetak. */
+    public function daftarInduk()
+    {
+        return view('dokumen.daftar-induk', [
+            'documents' => Document::with('company')
+                ->orderByRaw(Dokumen::urutJenisSql())->orderBy('kode')->get(),
+            'dok'       => KopDokumen::untuk('daftar-induk', Company::first()),
+            'kembali'   => route('dokumen.index'),
+        ]);
+    }
+
     public function create()
     {
         return view('dokumen.form', [
@@ -84,6 +131,7 @@ class DocumentController extends Controller
         if ($berkas = $this->simpanBerkas($request)) $d['berkas'] = $berkas;
 
         $doc = Document::create($d);
+        $this->simpanKlausul($request, $doc);
 
         // Revisi awal ikut tercatat supaya riwayat tidak berlubang.
         $doc->revisions()->create([
@@ -120,6 +168,8 @@ class DocumentController extends Controller
         if ($berkas = $this->simpanBerkas($request)) $d['berkas'] = $berkas;
 
         $dokumen->update($d);
+        $this->simpanKlausul($request, $dokumen);
+
         return redirect()->route('dokumen.show', $dokumen)->with('ok','Dokumen diperbarui.');
     }
 
@@ -169,6 +219,31 @@ class DocumentController extends Controller
     }
 
     /* ---------- bantu ---------- */
+
+    /**
+     * Simpan pemetaan dokumen ke klausul ISO.
+     *
+     * Ditulis ulang seluruhnya tiap kali disimpan: formulir mengirim keadaan
+     * lengkap, jadi menambah tanpa membuang akan meninggalkan klausul yang
+     * sudah dicabut centangnya tetap terpetakan.
+     */
+    private function simpanKlausul(Request $request, Document $doc): void
+    {
+        $masuk = (array) $request->input('iso', []);
+
+        $sah = [];
+        foreach (Iso::kodeSah() as $kode) {
+            $butir = array_column(Iso::butir($kode), 'no');
+            foreach ((array) ($masuk[$kode] ?? []) as $klausul) {
+                if (in_array($klausul, $butir, true)) {
+                    $sah[] = ['standar' => $kode, 'klausul' => $klausul];
+                }
+            }
+        }
+
+        $doc->isoMap()->delete();
+        foreach ($sah as $baris) $doc->isoMap()->create($baris);
+    }
 
     private function validasi(Request $r, ?Document $abaikan = null): array
     {
