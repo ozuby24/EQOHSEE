@@ -125,6 +125,49 @@ input,select,textarea{ outline:none; }
 @media print{ .print\:hidden{ display:none !important; } }
 
 /* ══════════════════════════════════════════════════════════════
+   DOKUMEN TERKENDALI
+   Berkas audit dicetak sebagai lembar A4 bernomor. Pemenggalan
+   halaman ditentukan di sisi server — peramban tidak mendukung
+   counter(page), jadi tiap lembar dibuat eksplisit agar nomor
+   "Halaman x dari y" pada kopnya benar.
+   ══════════════════════════════════════════════════════════════ */
+
+.lembar{ position:relative; }
+
+/* Tabel di dalam lembar tidak boleh terbelah antar halaman cetak. */
+.lembar table{ break-inside:auto; }
+.lembar tr   { break-inside:avoid; break-after:auto; }
+.lembar thead{ display:table-header-group; }
+
+@media print{
+  @page{ size:A4; margin:10mm; }
+
+  html,body{ background:#fff !important; }
+
+  /* Bingkai layar dilepas: yang tercetak hanya isi lembarnya. */
+  /* Sengaja tanpa break-inside:avoid — bila satu lembar sedikit melebihi
+     tinggi kertas, Chrome menyisipkan halaman kosong alih-alih memampatkan,
+     sehingga jumlah halaman tak lagi cocok dengan nomor pada kop. Membiarkan
+     isinya mengalir jauh lebih jujur daripada halaman hampa. */
+  .lembar{
+    border:0 !important;
+    border-radius:0 !important;
+    box-shadow:none !important;
+    padding:0 !important;
+    margin:0 !important;
+  }
+  .lembar-putus{ break-after:page; }
+  .lembar:last-child{ break-after:auto; }
+
+  /* Warna latar tetap tercetak agar penanda status tidak hilang. */
+  *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* Tabel lebar tidak boleh digulir saat dicetak — kertas tidak bergulir. */
+  .tabel-scroll{ overflow:visible !important; }
+  .tabel-scroll table{ min-width:0 !important; width:100% !important; }
+}
+
+/* ══════════════════════════════════════════════════════════════
    LAPISAN SINEMATIK
    Dipakai halaman publik (beranda, pilar, masuk). Semuanya murni
    CSS/SVG — tanpa aset luar — supaya tetap tampil saat jaringan

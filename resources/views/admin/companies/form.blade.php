@@ -40,7 +40,41 @@
         </div>
         <div>
           <label class="block text-[11.5px] font-bold uppercase tracking-wide text-stone-500 mb-1.5">Prefiks nomor dokumen</label>
-          <input name="doc_no_prefix" value="{{ old('doc_no_prefix',$company->doc_no_prefix) }}" class="ring-focus w-full rounded-xl border border-stone-200 px-4 py-2.5 text-[13.5px]">
+          <input name="doc_no_prefix" value="{{ old('doc_no_prefix',$company->doc_no_prefix) }}"
+                 placeholder="{{ \App\Support\KopDokumen::prefiksDari($company->name) }}"
+                 class="ring-focus w-full rounded-xl border border-stone-200 px-4 py-2.5 text-[13.5px]">
+          <p class="text-[10.5px] text-stone-400 mt-1">Dipakai pada kop berkas audit, mis. CAM-OHSE-IV.067h. Kosong berarti diturunkan dari nama.</p>
+        </div>
+      </div>
+    </div>
+
+    {{-- Kendali dokumen: tampil pada kop tiap berkas audit yang dicetak --}}
+    <div class="space-y-4">
+      <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400">Kendali Dokumen</p>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-[11.5px] font-bold uppercase tracking-wide text-stone-500 mb-1.5">Divisi</label>
+          <input name="divisi" value="{{ old('divisi',$company->divisi) }}"
+                 placeholder="{{ \App\Support\KopDokumen::DIVISI }}"
+                 class="ring-focus w-full rounded-xl border border-stone-200 px-4 py-2.5 text-[13.5px]">
+        </div>
+        <div>
+          <label class="block text-[11.5px] font-bold uppercase tracking-wide text-stone-500 mb-1.5">Departemen</label>
+          <input name="departemen" value="{{ old('departemen',$company->departemen) }}"
+                 placeholder="{{ \App\Support\KopDokumen::DEPARTEMEN }}"
+                 class="ring-focus w-full rounded-xl border border-stone-200 px-4 py-2.5 text-[13.5px]">
+        </div>
+        <div>
+          <label class="block text-[11.5px] font-bold uppercase tracking-wide text-stone-500 mb-1.5">Tanggal penerbitan</label>
+          <input type="date" name="doc_terbit" value="{{ old('doc_terbit',$company->doc_terbit?->format('Y-m-d')) }}" class="ring-focus w-full rounded-xl border border-stone-200 px-4 py-2.5 text-[13.5px]">
+        </div>
+        <div>
+          <label class="block text-[11.5px] font-bold uppercase tracking-wide text-stone-500 mb-1.5">Tanggal persetujuan</label>
+          <input type="date" name="doc_setuju" value="{{ old('doc_setuju',$company->doc_setuju?->format('Y-m-d')) }}" class="ring-focus w-full rounded-xl border border-stone-200 px-4 py-2.5 text-[13.5px]">
+        </div>
+        <div>
+          <label class="block text-[11.5px] font-bold uppercase tracking-wide text-stone-500 mb-1.5">Nomor revisi</label>
+          <input name="doc_revisi" value="{{ old('doc_revisi',$company->doc_revisi) }}" inputmode="numeric" class="ring-focus w-full rounded-xl border border-stone-200 px-4 py-2.5 text-[13.5px] num">
         </div>
       </div>
     </div>

@@ -71,6 +71,11 @@ class CompanyController extends Controller
             'workers_sub'      => ['nullable','integer','min:0'],
             'risk_class'       => ['nullable','in:Rendah,Sedang,Tinggi'],
             'doc_no_prefix'    => ['nullable','string','max:20'],
+            'divisi'           => ['nullable','string','max:150'],
+            'departemen'       => ['nullable','string','max:150'],
+            'doc_terbit'       => ['nullable','date'],
+            'doc_setuju'       => ['nullable','date'],
+            'doc_revisi'       => ['nullable','integer','min:0','max:999'],
             'logo'             => ['nullable','image','max:1024'],
         ]);
         if ($r->hasFile('logo')) $d['logo'] = $r->file('logo')->store('logos', 'public');
@@ -81,6 +86,7 @@ class CompanyController extends Controller
         $d['risk_class']       = $d['risk_class']       ?? 'Tinggi';
         $d['workers_employee'] = $d['workers_employee'] ?? 0;
         $d['workers_sub']      = $d['workers_sub']      ?? 0;
+        $d['doc_revisi']       = $d['doc_revisi']       ?? 0;
 
         return $d;
     }

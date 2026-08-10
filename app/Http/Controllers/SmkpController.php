@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Company, SmkpAttendee, SmkpAudit, SmkpFinding};
-use App\Support\{Smkp, SmkpTahap};
+use App\Support\{KopDokumen, Smkp, SmkpTahap};
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -165,6 +165,8 @@ class SmkpController extends Controller
             'kinerja'   => SmkpTahap::butirKinerja(),
             'mandays'   => $smkp->mandays(),
             'rekap'     => $smkp->rekapKecukupan(),
+            'dok'       => $this->kop($smkp, 'berita-acara'),
+            'kembali'   => route('smkp.tahap1', $smkp),
         ]);
     }
 
@@ -267,6 +269,8 @@ class SmkpController extends Controller
             'kegiatan' => SmkpTahap::kegiatanLapangan(),
             'rekap'    => $smkp->rekapRencana(),
             'mandays'  => $smkp->mandays(),
+            'dok'      => $this->kop($smkp, 'rencana-audit'),
+            'kembali'  => route('smkp.rencana', $smkp),
         ]);
     }
 
@@ -318,6 +322,8 @@ class SmkpController extends Controller
             'rapat' => $rapat,
             'judul' => SmkpTahap::labelRapat($rapat),
             'hadir' => $smkp->hadir($rapat),
+            'dok'   => $this->kop($smkp, 'daftar-hadir'),
+            'kembali' => route('smkp.rapat', $smkp),
         ]);
     }
 
@@ -343,6 +349,12 @@ class SmkpController extends Controller
         ActivityLog::write('Ubah tahap audit SMKP', SmkpTahap::labelTahap($tahap), 'smkp');
 
         return back()->with('ok', 'Audit berpindah ke '.SmkpTahap::labelTahap($tahap).'.');
+    }
+
+    /** Kop dokumen terkendali untuk berkas cetak audit ini. */
+    private function kop(SmkpAudit $smkp, string $jenis): array
+    {
+        return KopDokumen::untuk($jenis, $smkp->company);
     }
 
     /** Buang baris tabel yang seluruh kolomnya kosong. */
@@ -495,6 +507,8 @@ class SmkpController extends Controller
             'elemen' => Smkp::elemen(),
             'temuan' => $smkp->findings()->orderByRaw(Smkp::urutJenisSql())->get(),
             'meta'   => Smkp::meta(),
+            'dok'    => $this->kop($smkp, 'laporan-audit'),
+            'kembali'=> route('smkp.show', $smkp),
         ]);
     }
 
