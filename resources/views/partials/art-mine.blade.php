@@ -13,7 +13,12 @@
   SVG mandiri tanpa aset luar, jadi tetap tampil penuh saat jaringan site
   tambang terputus.
 --}}
-<svg viewBox="0 0 1600 720" class="w-full h-full" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+{{-- Titik jangkar dapat diatur. Pada bidang yang lebih tinggi daripada
+     panoramanya, menjangkarkan ke bawah menahan alat berat tetap di pita
+     bawah dan menyerahkan bidang atas kepada langit — persis cara sebuah
+     foto hero disusun. Menjangkar ke tengah malah menaruh alat berat
+     tepat di belakang teksnya. --}}
+<svg viewBox="0 0 1600 720" class="w-full h-full" preserveAspectRatio="{{ $jangkar ?? 'xMidYMid' }} slice" aria-hidden="true">
   <defs>
     {{-- Langit fajar: charcoal di puncak, menghangat ke arah matahari --}}
     <linearGradient id="hSky" x1="0" y1="0" x2="0" y2="1">

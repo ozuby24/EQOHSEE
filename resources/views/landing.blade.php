@@ -13,72 +13,260 @@
   <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
 </head>
 <body class="bg-cam-bg">
-@php $daftarModul = \App\Support\Modules::all(); @endphp
+@php
+  use App\Support\{Media, Smkp};
+  $daftarModul  = \App\Support\Modules::all();
+  $modulAktifNo = collect($daftarModul)->where('status','aktif')->count();
+  $klien        = Media::klien();
+@endphp
 
 {{-- ══════════ NAV ══════════ --}}
-<header class="sticky top-0 z-40 glass-light border-b border-black/5">
-  <div class="max-w-6xl mx-auto px-5 h-[62px] flex items-center gap-3">
-    <x-brand variant="wordmark" class="h-6" />
-    <nav class="ml-auto hidden md:flex items-center gap-1 text-[12.5px] font-semibold text-stone-500">
-      @foreach ([['#pilar','Pilar'],['#modul','Modul'],['#fitur','Fitur'],['#alur','Cara Kerja']] as [$h,$l])
-        <a href="{{ $h }}" class="px-3 py-2 rounded-lg hover:text-cam-ink hover:bg-black/5 transition">{{ $l }}</a>
+{{-- Bilah mengambang di atas hero selagi di puncak halaman, lalu memadat
+     jadi bilah terang begitu digulir. Bilah terang di atas foto gelap
+     memotong adegan tepat di bagian yang paling ingin dilihat orang. --}}
+<header x-data="{ turun: false }"
+        @scroll.window="turun = window.scrollY > 24"
+        :class="turun ? 'glass-light border-black/5 text-cam-ink' : 'bg-transparent border-transparent text-white'"
+        class="fixed inset-x-0 top-0 z-40 border-b transition-colors duration-500">
+  <div class="max-w-6xl mx-auto px-5 h-[66px] flex items-center gap-3">
+    <span x-show="!turun" x-cloak><x-brand variant="wordmark" tone="white" class="h-6" /></span>
+    <span x-show="turun"  x-cloak><x-brand variant="wordmark" class="h-6" /></span>
+
+    <nav class="ml-auto hidden md:flex items-center gap-1 text-[12.5px] font-semibold">
+      @foreach ([['#beranda','Beranda'],['#pilar','Pilar'],['#modul','Modul'],['#fitur','Fitur'],['#alur','Cara Kerja'],['#tentang','Tentang']] as [$h,$l])
+        <a href="{{ $h }}"
+           :class="turun ? 'text-stone-500 hover:text-cam-ink hover:bg-black/5' : 'text-white/70 hover:text-white hover:bg-white/10'"
+           class="px-3 py-2 rounded-lg transition">{{ $l }}</a>
       @endforeach
     </nav>
+
     <a href="{{ route('login') }}"
-       class="lime-gradient shadow-glow rounded-xl text-white px-4 py-2 text-[12.5px] font-bold hover:brightness-105 transition {{ request()->routeIs('login') ? '' : 'md:ml-2' }}">Masuk</a>
+       class="ml-auto md:ml-2 lime-gradient shadow-glow rounded-xl text-white px-4 py-2.5 text-[12.5px] font-bold hover:brightness-105 transition">
+      Masuk ke Platform
+    </a>
   </div>
 </header>
 
 {{-- ══════════ HERO ══════════ --}}
 {{-- Kedalaman dibangun dari lapisan yang bergerak pada laju berbeda:
-     seni tambang paling belakang, pendar di tengah, teks paling depan.
-     Laju diatur lewat data-parallax dan dijalankan di rAF. --}}
-<section class="relative brand-gradient text-white overflow-hidden aurora">
-  {{-- Panorama dibiarkan hampir penuh; yang meredamnya cuma tirai di sisi
-       kiri, tepat selebar kolom teks. Menutupi seluruh bidang hanya akan
-       membuang adegan yang justru menjadi alasan hero ini ada. --}}
-  <div class="absolute inset-0 opacity-[.92]" data-parallax="0.14">@include('partials.art-mine')</div>
-  <div class="absolute inset-0 grid-tech pointer-events-none opacity-40" data-parallax="0.06"></div>
-  <div class="absolute inset-0 bg-gradient-to-r from-cam-black via-cam-black/55 via-38% to-transparent"></div>
-  {{-- Dasar hero dilarutkan ke warna bidang berikutnya, bukan digelapkan
-       ke hitam — supaya pergantian bagian tidak menyisakan garis lurus. --}}
-  <div class="sambung sambung-bawah h-36 bg-gradient-to-b from-transparent to-cam-ink"></div>
+     adegan tambang paling belakang, pendar di tengah, teks paling depan.
+
+     Tingginya menyesuaikan isi latarnya. Bingkai sinematik setinggi layar
+     ada untuk memperlihatkan foto atau video; tanpa berkas itu tidak ada
+     yang perlu diperlihatkan, dan memaksakan tingginya hanya menghasilkan
+     bidang kosong di bawah tombol. --}}
+@php $adaMedia = \App\Support\Media::heroVideo() || \App\Support\Media::heroPoster(); @endphp
+<section id="beranda"
+         class="relative brand-gradient text-white overflow-hidden aurora flex {{ $adaMedia ? 'min-h-[min(100svh,820px)]' : '' }}">
+  @include('partials.hero-media')
+
+  <div class="absolute inset-0 grid-tech pointer-events-none opacity-25" data-parallax="0.06"></div>
+  {{-- Tirai gelap hanya di sisi kiri, tepat selebar kolom teks, dan pita
+       tipis di bawah bilah navigasi. Menggelapkan seluruh bidang membuat
+       adegannya hilang — padahal adegan itulah alasan hero ini ada. Yang
+       dibutuhkan teks putih cuma cukup kontras di belakangnya sendiri. --}}
+  {{-- Di layar sempit teks memenuhi seluruh lebar, jadi tirainya menutup
+       rata; tirai dari kiri hanya masuk akal ketika ada kolom di kanan
+       yang memang ingin dibiarkan terbuka. --}}
+  <div class="absolute inset-0 bg-cam-black/72 lg:hidden"></div>
+  <div class="absolute inset-0 hidden lg:block bg-gradient-to-r from-cam-black/92 from-5% via-cam-black/45 via-40% to-transparent to-72%"></div>
+  <div class="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-cam-black/70 to-transparent"></div>
+  <div class="sambung sambung-bawah h-40 bg-gradient-to-b from-transparent to-cam-ink"></div>
   <div class="absolute -right-24 -top-24 w-[380px] h-[380px] rounded-full bg-cam-lime/20 blur-3xl apung" data-parallax="0.2"></div>
   <div class="absolute -left-16 bottom-[-90px] w-[300px] h-[300px] rounded-full bg-cam-coral/12 blur-3xl apung-2" data-parallax="0.1"></div>
 
-  <div class="relative max-w-6xl mx-auto px-5 py-16 md:py-24">
-    <div class="max-w-2xl animate-fadeUp">
-      <span class="inline-flex items-center gap-2 glass rounded-full px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-[0.18em] text-cam-lime-light">
-        <span class="w-1.5 h-1.5 rounded-full bg-cam-lime animate-pulse"></span>
-        Delapan Aspek · Satu Platform
-      </span>
+  <div class="relative w-full max-w-6xl mx-auto px-5 pt-28 pb-16 md:pt-32 md:pb-20 self-center">
+    <div class="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-8 lg:gap-10 items-center">
 
-      <h1 class="font-display text-[38px] md:text-[58px] font-black mt-5 leading-[1.05] text-shadow">
-        Keselamatan tambang,<br>
-        {{-- Kilau menyapu dari teal ke pasir hangat, bukan teal ke putih —
-             pergeseran suhu warnanya yang memberi kesan bahan, bukan kilapnya. --}}
-        <span class="sheen" style="--sheen-base:#2A9D8F; --sheen-hi:#F5E6CA">terukur dan terbukti.</span>
-      </h1>
+      {{-- Kolom utama --}}
+      <div class="animate-fadeUp">
+        <span class="inline-flex items-center gap-2 glass rounded-full px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-[0.18em] text-cam-lime-light">
+          <span class="w-1.5 h-1.5 rounded-full bg-cam-lime animate-pulse"></span>
+          Delapan Aspek · Satu Platform
+        </span>
 
-      <p class="text-[14px] md:text-[15px] text-white/55 mt-5 leading-relaxed max-w-lg">
-        Satu platform untuk pembelajaran, penilaian kinerja keselamatan, prosedur kerja,
-        dan sertifikasi — dirancang mengikuti regulasi keselamatan pertambangan Indonesia.
-      </p>
+        <h1 class="font-display text-[40px] md:text-[62px] font-black mt-5 leading-[1.04] text-shadow">
+          Keselamatan tambang,<br>
+          {{-- Kilau menyapu dari teal ke pasir hangat, bukan teal ke putih —
+               pergeseran suhu warnanya yang memberi kesan bahan. --}}
+          <span class="sheen" style="--sheen-base:#2A9D8F; --sheen-hi:#F5E6CA">terukur dan terbukti.</span>
+        </h1>
 
-      <div class="flex flex-wrap gap-2.5 mt-7">
-        <a href="{{ route('login') }}" class="lime-gradient shadow-glow rounded-xl text-white px-6 py-3 text-[13.5px] font-bold hover:brightness-105 transition">Masuk ke Platform</a>
-        <a href="#modul" class="glass rounded-xl px-6 py-3 text-[13.5px] font-bold hover:bg-white/15 transition">Lihat Modul</a>
+        <p class="text-[14px] md:text-[15.5px] text-white/60 mt-5 leading-relaxed max-w-xl">
+          Platform keselamatan pertambangan terpadu untuk pembelajaran, penilaian kinerja,
+          inspeksi, kinerja energi, hingga sertifikasi — mengikuti regulasi keselamatan
+          pertambangan Indonesia.
+        </p>
+
+        <div class="flex flex-wrap gap-2.5 mt-8">
+          <a href="{{ route('login') }}" class="lime-gradient shadow-glow rounded-xl text-white px-6 py-3.5 text-[13.5px] font-bold hover:brightness-105 transition">Masuk ke Platform</a>
+          <a href="#modul" class="glass rounded-xl px-6 py-3.5 text-[13.5px] font-bold hover:bg-white/15 transition">Lihat Modul</a>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-10 max-w-2xl">
+          @foreach ([
+            ['194', 'Item penilaian'],
+            [(string) count(Smkp::elemen()), 'Elemen SMKP'],
+            [(string) count($daftarModul), 'Modul terpadu'],
+            ['24/7', 'Akses platform'],
+          ] as [$n,$l])
+            <div class="glass rounded-xl px-4 py-3.5">
+              <div class="stat stat-sm text-cam-lime-light">{{ $n }}</div>
+              <div class="text-[10.5px] text-white/45 mt-1.5">{{ $l }}</div>
+            </div>
+          @endforeach
+        </div>
       </div>
 
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-10 max-w-xl">
-        @foreach ([['194','Item penilaian'],['7','Elemen SMKP'],['6','Modul terpadu'],['24/7','Akses']] as [$n,$l])
-          <div class="glass rounded-xl px-4 py-3">
-            <div class="stat stat-sm text-cam-lime-light">{{ $n }}</div>
-            <div class="text-[10.5px] text-white/45 mt-1.5">{{ $l }}</div>
+      {{-- Panel alasan --}}
+      <aside class="kaca-gelap-kuat rounded-2xl p-5 animate-fadeUp" style="animation-delay:.15s">
+        <h2 class="text-[13.5px] font-bold text-white">Mengapa EQOHSEE?</h2>
+
+        <div class="space-y-4 mt-5">
+          @foreach ([
+            ['Sesuai regulasi','Mengacu pada Kepdirjen 185.K/2019, SMKP Minerba, dan standar ISO.','M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'],
+            ['Terpadu','Delapan aspek keselamatan terhubung dalam satu basis data.','M4 6a2 2 0 012-2h12a2 2 0 012 2M4 6v12a2 2 0 002 2h12a2 2 0 002-2V6M4 6h16M9 10h6M9 14h4'],
+            ['Data langsung','Kinerja dan temuan terbaca saat itu juga, bukan menunggu rekap bulanan.','M13 10V3L4 14h7v7l9-11h-7z'],
+            ['Mudah dipakai','Antarmuka sederhana, tetap terbaca pada jaringan site tambang.','M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122'],
+          ] as [$j,$k,$ikon])
+            <div class="flex gap-3">
+              <span class="shrink-0 w-8 h-8 rounded-lg grid place-items-center lime-gradient text-white">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="{{ $ikon }}"/>
+                </svg>
+              </span>
+              <div class="min-w-0">
+                <div class="text-[12.5px] font-bold text-white">{{ $j }}</div>
+                <p class="text-[11px] text-white/45 mt-0.5 leading-relaxed">{{ $k }}</p>
+              </div>
+            </div>
+          @endforeach
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+{{-- ══════════ FOKUS SMKP + GALERI ══════════ --}}
+{{-- Dua hal yang saling menjelaskan disandingkan: kerangka yang dipakai
+     di sebelah kiri, dan wujudnya di lapangan di sebelah kanan. --}}
+<section class="relative bg-cam-ink text-white overflow-hidden">
+  <div class="absolute inset-0 grid-tech pointer-events-none opacity-60"></div>
+
+  <div class="relative max-w-6xl mx-auto px-5 py-14 md:py-16">
+    <div class="grid lg:grid-cols-[minmax(0,520px)_minmax(0,1fr)] gap-10">
+
+      {{-- Tujuh elemen SMKP --}}
+      <div class="reveal">
+        <h3 class="font-display text-[19px] md:text-[22px] font-black">Kerangka SMKP Minerba</h3>
+        <p class="text-[12.5px] text-white/45 mt-1.5 leading-relaxed">
+          Tujuh elemen wajib menurut Kepdirjen 185.K/37.04/DJB/2019, beserta bobot penilaiannya.
+        </p>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-2.5 mt-5">
+          @foreach(Smkp::elemen() as $i => $e)
+            <div class="kaca-gelap rounded-xl p-3.5 hover:kaca-gelap-kuat transition-colors">
+              <div class="flex items-center justify-between gap-2">
+                <span class="num text-[10.5px] font-bold text-cam-lime-light">{{ sprintf('%02d', $i + 1) }}</span>
+                <span class="num text-[10px] font-bold text-white/30">{{ $e['bobot'] }}%</span>
+              </div>
+              <div class="text-[11.5px] font-bold leading-snug mt-2">{{ $e['nama'] }}</div>
+              <div class="mt-2.5 h-1 rounded-full bg-white/10 overflow-hidden">
+                <div class="h-full rounded-full lime-gradient" style="width:{{ min(100, $e['bobot'] * 2.9) }}%"></div>
+              </div>
+            </div>
+          @endforeach
+
+          <a href="{{ route('login') }}"
+             class="rounded-xl p-3.5 grid place-items-center text-center border border-dashed border-white/15 hover:border-cam-lime/50 hover:bg-white/5 transition">
+            <span>
+              <span class="block text-[11.5px] font-bold text-cam-lime-light">Audit SMKP</span>
+              <span class="block text-[10px] text-white/35 mt-1">194 item penilaian</span>
+            </span>
+          </a>
+        </div>
+      </div>
+
+      {{-- Galeri --}}
+      <div class="reveal reveal-d2 min-w-0">@include('partials.galeri')</div>
+    </div>
+  </div>
+</section>
+
+{{-- ══════════ TERPERCAYA / ACUAN ══════════ --}}
+<section class="relative overflow-hidden text-white">
+  <div class="absolute inset-0 lime-gradient"></div>
+  <div class="absolute inset-0 opacity-[.18]">@include('partials.art-mine')</div>
+  <div class="absolute inset-0 bg-cam-lime-deep/45"></div>
+
+  <div class="relative max-w-6xl mx-auto px-5 py-12 md:py-14">
+    <div class="grid lg:grid-cols-[260px_minmax(0,1fr)] gap-8 items-center">
+      <div class="reveal">
+        @if(count($klien))
+          <h3 class="font-display text-[19px] md:text-[22px] font-black">Terpercaya di Industri</h3>
+          <p class="text-[12.5px] text-white/65 mt-1.5 leading-relaxed">
+            Dipakai perusahaan pertambangan di seluruh Indonesia.
+          </p>
+        @else
+          <h3 class="font-display text-[19px] md:text-[22px] font-black">Mengacu pada Standar</h3>
+          <p class="text-[12.5px] text-white/65 mt-1.5 leading-relaxed">
+            Setiap penilaian di platform ini bersandar pada regulasi dan standar yang berlaku,
+            bukan pada daftar periksa buatan sendiri.
+          </p>
+        @endif
+      </div>
+
+      <div class="reveal reveal-d2 min-w-0">
+        @if(count($klien))
+          <div class="flex flex-wrap items-center justify-start lg:justify-end gap-x-9 gap-y-6">
+            @foreach($klien as $k)
+              <img src="{{ $k['url'] }}" alt="{{ $k['nama'] }}" loading="lazy"
+                   class="h-8 md:h-9 w-auto object-contain opacity-85 hover:opacity-100 transition">
+            @endforeach
           </div>
-        @endforeach
+        @else
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            @foreach ([
+              ['Kepdirjen 185.K/2019', 'Penerapan SMKP Minerba'],
+              ['Permen ESDM 26/2018',  'Kaidah teknik pertambangan yang baik'],
+              ['SNI ISO 45001',        'Keselamatan dan kesehatan kerja'],
+              ['SNI ISO 14001',        'Manajemen lingkungan'],
+              ['SNI ISO 50001',        'Manajemen energi'],
+              ['SNI ISO 9001',         'Manajemen mutu'],
+            ] as [$kode, $ket])
+              <div class="glass rounded-xl px-3.5 py-3">
+                <div class="text-[11.5px] font-bold leading-snug">{{ $kode }}</div>
+                <div class="text-[10px] text-white/55 mt-1 leading-relaxed">{{ $ket }}</div>
+              </div>
+            @endforeach
+          </div>
+        @endif
       </div>
     </div>
+  </div>
+</section>
+
+{{-- ══════════ JAMINAN ══════════ --}}
+<section id="tentang" class="bg-cam-ink text-white">
+  <div class="max-w-6xl mx-auto px-5 py-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    @foreach ([
+      ['Sesuai regulasi','Mengacu pada standar dan regulasi resmi Indonesia.','M12 1.8 3.8 5v6.2c0 5.1 3.5 9.8 8.2 11 4.7-1.2 8.2-5.9 8.2-11V5Z'],
+      ['Akses fleksibel','Berbasis web, terbuka dari kantor maupun dari site.','M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18Z M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z'],
+      ['Dukungan penuh','Tim HSE siap membantu penerapan di lapangan.','M17 20h5v-2a3 3 0 00-5.36-1.86M17 20H7m10 0v-2M7 20H2v-2a3 3 0 015.36-1.86M15 7a3 3 0 11-6 0 3 3 0 016 0z'],
+      ['Keamanan data','Data terenkripsi dalam pengiriman dan terpisah per perusahaan.','M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'],
+    ] as [$j,$k,$ikon])
+      <div class="flex gap-3.5 reveal reveal-d{{ min($loop->iteration, 4) }}">
+        <span class="shrink-0 w-9 h-9 rounded-xl grid place-items-center kaca-gelap text-cam-lime-light">
+          <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="{{ $ikon }}"/>
+          </svg>
+        </span>
+        <div class="min-w-0">
+          <div class="text-[12.5px] font-bold">{{ $j }}</div>
+          <p class="text-[11px] text-white/45 mt-1 leading-relaxed">{{ $k }}</p>
+        </div>
+      </div>
+    @endforeach
   </div>
 </section>
 

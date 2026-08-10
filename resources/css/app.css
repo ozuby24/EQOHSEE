@@ -466,3 +466,13 @@ input,select,textarea{ outline:none; }
 /* Sembunyikan elemen Alpine sampai kerangkanya siap, supaya panel rincian
    tidak berkedip muncul lalu hilang saat halaman pertama dimuat. */
 [x-cloak]{ display:none !important; }
+
+/* ---------- Galeri yang digeser mendatar ----------
+   Bilah gulir dibuat tipis dan sewarna bidangnya, bukan disembunyikan
+   sama sekali: tanpa satu pun petunjuk, tidak ada yang tahu masih ada
+   kartu di sebelah kanan. */
+.scrollbar-halus{ scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.22) transparent; }
+.scrollbar-halus::-webkit-scrollbar{ height:6px; }
+.scrollbar-halus::-webkit-scrollbar-track{ background:transparent; }
+.scrollbar-halus::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.22); border-radius:99px; }
+.scrollbar-halus::-webkit-scrollbar-thumb:hover{ background:rgba(255,255,255,.35); }

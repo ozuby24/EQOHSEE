@@ -97,3 +97,37 @@ function pasangParallax() {
 }
 
 document.addEventListener('DOMContentLoaded', pasangParallax);
+
+/* ── Video latar hero ─────────────────────────────────────────────────
+   Sumber video ditulis di sini, bukan di atribut src pada markup:
+   peramban mulai mengunduh begitu src-nya ada, jadi menulisnya di markup
+   berarti ponsel tetap menanggung belasan megabita meski videonya tidak
+   pernah ditampilkan.
+
+   Video hanya dipasang pada layar lebar dan hanya bila perangkat tidak
+   meminta gerak dikurangi. Di luar itu, gambar diam pada poster-lah yang
+   tetap terlihat — bukan bidang kosong.                                 */
+function pasangHeroVideo() {
+  const video = document.querySelector('[data-hero-video]');
+  if (!video) return;
+
+  const layak = window.matchMedia?.('(min-width: 1024px)').matches && !gerakMinimal;
+  if (!layak) return;
+
+  video.addEventListener('canplay', () => video.classList.remove('opacity-0'), { once: true });
+  video.src = video.dataset.heroVideo;
+  video.play().catch(() => {
+    // Pemutaran otomatis ditolak: poster tetap tampil, jadi tidak ada
+    // yang perlu diperbaiki selain berhenti mencoba.
+  });
+
+  // Berhenti saat hero tergulir keluar layar; memutar video yang tidak
+  // terlihat hanya menghabiskan baterai.
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(([e]) => {
+      e.isIntersecting ? video.play().catch(() => {}) : video.pause();
+    }, { threshold: 0.05 }).observe(video);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', pasangHeroVideo);
