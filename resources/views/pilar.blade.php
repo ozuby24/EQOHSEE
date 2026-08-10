@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Enam Pilar')
+@section('title', 'Delapan Aspek')
 
 @section('content')
 @php
@@ -131,7 +131,7 @@ $aman = function ($rute) { return $rute && \Illuminate\Support\Facades\Route::ha
 
   <section class="hero">
     <p class="eyebrow">Kerangka Kerja EQOHSEE</p>
-    <h1>Enam pilar, satu sistem.</h1>
+    <h1>Delapan aspek, satu sistem.</h1>
     <p class="lede">Setiap modul di EQOHSEE berdiri di salah satu pilar ini. Pilih pilar untuk melihat modul yang menopangnya.</p>
   </section>
 

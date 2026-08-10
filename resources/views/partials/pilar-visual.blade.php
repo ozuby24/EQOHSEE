@@ -179,6 +179,42 @@
         </g>
         @break
 
+      {{-- HIGIENE INDUSTRI — pengukuran pajanan di tempat kerja --}}
+      @case('hygiene')
+        <g filter="url(#{{ $u }}-jatuh)">
+          {{-- alat ukur pajanan pribadi yang dipasang di pekerja --}}
+          <path d="M96 152 L96 126 Q96 118 104 118 Q112 118 112 126 L112 152 Z" fill="#0E1B1A" fill-opacity=".9"
+                stroke="{{ $light }}" stroke-opacity=".55" stroke-width="1.3"/>
+          <circle cx="104" cy="110" r="7.5" fill="#0E1B1A" fill-opacity=".9"/>
+          <path d="M95 106 q9 -8 18 0 Z" fill="{{ $light }}"/>
+          {{-- pompa sampel di sabuk, selang naik ke zona pernapasan --}}
+          <rect x="110" y="132" width="12" height="15" rx="2.5" fill="{{ $base }}"/>
+          <path d="M116 132 q10 -14 -2 -22" stroke="{{ $light }}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <circle cx="114" cy="110" r="3" fill="{{ $light }}"/>
+        </g>
+        {{-- gelombang bising menyebar dari sumber di kanan --}}
+        <g transform="translate(186 128)">
+          <path d="M0 -6 L0 6" stroke="#0E1B1A" stroke-width="3" stroke-linecap="round"/>
+          @foreach ([0,1,2] as $i)
+            <path d="M-4 -12 q-12 12 0 24" fill="none" stroke="{{ $light }}" stroke-width="1.6"
+                  stroke-linecap="round" class="gelombang" style="--tunda: {{ $i*0.5 }}s"
+                  transform="scale({{ 1 + $i*0.55 }})"/>
+          @endforeach
+        </g>
+        {{-- panel hasil ukur terhadap nilai ambang batas --}}
+        <g transform="translate(28 100)">
+          <rect x="0" y="0" width="58" height="34" rx="5" fill="#0E1B1A" opacity=".9" stroke="{{ $light }}" stroke-opacity=".35"/>
+          <path d="M6 26 L52 26" stroke="{{ $light }}" stroke-opacity=".3" stroke-width="1"/>
+          {{-- garis NAB; batang yang melewatinya diberi warna peringatan --}}
+          <path d="M6 13 L52 13" stroke="#FF7F50" stroke-opacity=".8" stroke-width="1.2" stroke-dasharray="3 3"/>
+          @foreach ([[9,18,'l'],[19,10,'x'],[29,21,'l'],[39,15,'l'],[49,8,'x']] as $i => [$x,$t,$j])
+            <rect x="{{ $x }}" y="{{ 26 - $t }}" width="6" height="{{ $t }}" rx="1.4"
+                  fill="{{ $j === 'x' ? '#FF7F50' : $light }}" opacity=".92"
+                  class="batang" style="--tunda: {{ $i*0.18 }}s"/>
+          @endforeach
+        </g>
+        @break
+
       {{-- KESELAMATAN — truk angkut melintas jalan hauling dengan lampu suar --}}
       @case('safety')
         <g class="melaju">
@@ -254,6 +290,36 @@
             <path d="M146 116 L164 134" stroke="url(#{{ $u }}-logam)" stroke-width="4.2" stroke-linecap="round"/>
             <path d="M160 132 q10 4 8 13 q-11 2 -14 -8 Z" fill="{{ $base }}"/>
           </g>
+        </g>
+        @break
+
+      {{-- KONSERVASI MINERBA — timbunan berjenjang kadar dan pengeboran inti --}}
+      @case('konservasi')
+        {{-- timbunan dipisah menurut kadar; yang rendah tetap disimpan --}}
+        <g filter="url(#{{ $u }}-jatuh)">
+          <path d="M28 156 q34 -34 68 0 Z" fill="#0E1B1A" fill-opacity=".92"/>
+          <path d="M40 148 q22 -20 44 0" stroke="{{ $light }}" stroke-opacity=".5" stroke-width="1.4" fill="none"/>
+          <path d="M52 140 q10 -9 20 0"  stroke="{{ $light }}" stroke-opacity=".35" stroke-width="1.2" fill="none"/>
+
+          <path d="M104 156 q26 -25 52 0 Z" fill="{{ $deep }}"/>
+          <path d="M114 149 q16 -14 32 0" stroke="{{ $light }}" stroke-opacity=".45" stroke-width="1.3" fill="none"/>
+
+          <path d="M164 156 q18 -17 36 0 Z" fill="{{ $base }}" opacity=".75"/>
+        </g>
+        {{-- menara bor mengambil contoh inti --}}
+        <g transform="translate(178 96)">
+          <path d="M-10 34 L0 0 L10 34" stroke="url(#{{ $u }}-logam)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+          <path d="M-6 20 L6 20 M-8 28 L8 28" stroke="{{ $light }}" stroke-width="1.3" opacity=".8"/>
+          <path d="M0 4 L0 40" stroke="{{ $light }}" stroke-width="1.8" stroke-linecap="round" class="bor"/>
+        </g>
+        {{-- neraca cadangan: bilah terisi yang menyusut ke kanan --}}
+        <g transform="translate(28 104)">
+          <rect x="0" y="0" width="60" height="30" rx="5" fill="#0E1B1A" opacity=".88" stroke="{{ $light }}" stroke-opacity=".32"/>
+          @foreach ([[7,44],[7,32],[7,20]] as $i => [$x,$w])
+            <rect x="7" y="{{ 7 + $i*8 }}" width="46" height="4" rx="2" fill="{{ $light }}" opacity=".18"/>
+            <rect x="7" y="{{ 7 + $i*8 }}" width="{{ $w }}" height="4" rx="2" fill="{{ $light }}" opacity=".85"
+                  class="bilah" style="--tunda: {{ $i*0.3 }}s"/>
+          @endforeach
         </g>
         @break
 

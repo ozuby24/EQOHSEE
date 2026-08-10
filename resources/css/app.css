@@ -212,12 +212,16 @@ input,select,textarea{ outline:none; }
 
 /* ── Latar bercahaya ── */
 .aurora{ position:relative; isolation:isolate; overflow:hidden; }
+/* Pendarnya dijauhkan dari tepi atas dan bawah bidang. Cahaya yang jatuh
+   persis di garis pertemuan dua bagian justru menegaskan batasnya —
+   yang seharusnya dilarutkan malah jadi terlihat. Warnanya juga kembali
+   ke palet: teal dan sedikit coral, tanpa biru yang dulu nyasar ke sini. */
 .aurora::before{
   content:""; position:absolute; inset:-40%; z-index:-1;
   background:
-    radial-gradient(38% 46% at 22% 28%, rgba(44,176,188,.42), transparent 62%),
-    radial-gradient(34% 42% at 78% 22%, rgba(31,111,184,.38), transparent 64%),
-    radial-gradient(44% 50% at 62% 82%, rgba(18,137,127,.34), transparent 66%);
+    radial-gradient(38% 42% at 24% 48%, rgba(42,157,143,.38), transparent 62%),
+    radial-gradient(32% 38% at 78% 56%, rgba(255,127,80,.16), transparent 64%),
+    radial-gradient(44% 44% at 54% 74%, rgba(15,118,110,.32), transparent 66%);
   filter: blur(38px);
   animation: aurora 22s ease-in-out infinite alternate;
 }
@@ -246,11 +250,15 @@ input,select,textarea{ outline:none; }
    Dua bagian berwarna beda yang bertemu langsung meninggalkan garis
    lurus yang keras. Pita ini melarutkan pertemuannya sehingga peralihan
    terbaca sebagai kedalaman, bukan sebagai potongan. */
+/* Tingginya sengaja tidak ditetapkan di sini. Berkas ini dimuat setelah
+   utilitas Tailwind, sehingga height apa pun di sini akan mengalahkan
+   kelas h-* pada markup — dan panjang larutan tiap sambungan memang
+   perlu berbeda-beda menurut setajam apa pertemuan warnanya. */
 .sambung{
   position:absolute; left:0; right:0; pointer-events:none; z-index:1;
 }
-.sambung-atas  { top:0;    height:120px; }
-.sambung-bawah { bottom:0; height:140px; }
+.sambung-atas  { top:0; }
+.sambung-bawah { bottom:0; }
 
 /* ── Sapuan cahaya pada teks judul ── */
 .sheen{
@@ -374,6 +382,18 @@ input,select,textarea{ outline:none; }
 @keyframes ayun{ 0%,100%{ transform:rotate(-6deg);} 50%{ transform:rotate(5deg);} }
 .ayun-lengan{ animation:ayun 4.8s ease-in-out infinite; }
 
+/* Gelombang bising menyebar dari sumbernya lalu meredup. */
+@keyframes gelombang{ 0%{ opacity:.8;} 70%{ opacity:0;} 100%{ opacity:0;} }
+.gelombang{ animation:gelombang 2.6s ease-out infinite var(--tunda,0s); }
+
+/* Mata bor turun menembus lapisan, lalu ditarik kembali. */
+@keyframes bor{ 0%,100%{ transform:translateY(0);} 45%{ transform:translateY(9px);} }
+.bor{ animation:bor 3.4s ease-in-out infinite; }
+
+/* Bilah neraca cadangan terisi dari kiri. */
+@keyframes bilah{ 0%{ transform:scaleX(.25);} 55%,100%{ transform:scaleX(1);} }
+.bilah{ transform-box:fill-box; transform-origin:left; animation:bilah 4.5s ease-out infinite var(--tunda,0s); }
+
 /* Butir debu melayang naik dan memudar. */
 @keyframes butir{ 0%{ transform:translateY(6px); opacity:0;} 30%{ opacity:.6;} 100%{ transform:translateY(-16px); opacity:0;} }
 .butir{ animation:butir 7s ease-in-out infinite var(--tunda,0s); }
@@ -426,6 +446,7 @@ input,select,textarea{ outline:none; }
   .aurora::before, .sheen, .apung, .apung-2, .denyut, .putar-lambat,
   .hanyut-lambat, .kabut, .alir-daya, .jalan-ban, .pindai, .detak, .batang,
   .melaju, .suar, .debu, .riak, .tumbuh, .ayun-lengan, .butir,
+  .gelombang, .bor, .bilah,
   .konvoi-jauh, .truk-dekat, .berkas-cahaya, .awan-hero, .kabut-hero,
   .suar-hero, .debu-hero, .lengan-hero, .burung-hero, .butir-hero{
     animation: none !important;

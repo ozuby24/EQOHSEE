@@ -42,7 +42,7 @@
   <div class="absolute inset-0 bg-gradient-to-r from-cam-black via-cam-black/55 via-38% to-transparent"></div>
   {{-- Dasar hero dilarutkan ke warna bidang berikutnya, bukan digelapkan
        ke hitam — supaya pergantian bagian tidak menyisakan garis lurus. --}}
-  <div class="sambung sambung-bawah bg-gradient-to-b from-transparent to-cam-ink"></div>
+  <div class="sambung sambung-bawah h-36 bg-gradient-to-b from-transparent to-cam-ink"></div>
   <div class="absolute -right-24 -top-24 w-[380px] h-[380px] rounded-full bg-cam-lime/20 blur-3xl apung" data-parallax="0.2"></div>
   <div class="absolute -left-16 bottom-[-90px] w-[300px] h-[300px] rounded-full bg-cam-coral/12 blur-3xl apung-2" data-parallax="0.1"></div>
 
@@ -50,7 +50,7 @@
     <div class="max-w-2xl animate-fadeUp">
       <span class="inline-flex items-center gap-2 glass rounded-full px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-[0.18em] text-cam-lime-light">
         <span class="w-1.5 h-1.5 rounded-full bg-cam-lime animate-pulse"></span>
-        Health · Safety · Environment
+        Delapan Aspek · Satu Platform
       </span>
 
       <h1 class="font-display text-[38px] md:text-[58px] font-black mt-5 leading-[1.05] text-shadow">
@@ -92,20 +92,20 @@
     'occhealth'   => '<path d="M11 3a5 5 0 0 0-5 4.6h10A5 5 0 0 0 11 3Zm-6 5.6a1 1 0 0 0 0 2h12a1 1 0 0 0 0-2Zm6 3.1a5 5 0 0 0-5 5v2.7h6.3a6.4 6.4 0 0 1 2.2-7.4 5 5 0 0 0-3.5-1.3Z"/><path d="M18.2 12.6a4.6 4.6 0 1 0 0 9.2 4.6 4.6 0 0 0 0-9.2Zm2.3 5.4h-1.6v1.6h-1.4V18h-1.6v-1.4h1.6V15h1.4v1.6h1.6Z"/>',
     'safety'      => '<path d="M12 1.8 3.8 5v6.2c0 5.1 3.5 9.8 8.2 11 4.7-1.2 8.2-5.9 8.2-11V5Zm0 2.2 6.2 2.4v4.8c0 4-2.6 7.8-6.2 8.9-3.6-1.1-6.2-4.9-6.2-8.9V6.4Z"/><path d="m10.9 14.4-2.2-2.2-1.3 1.4 3.5 3.5 6-6-1.4-1.4Z"/>',
     'environment' => '<path d="M20.6 3.6c-8 0-13.4 3.2-13.4 9.4a7.9 7.9 0 0 0 1.1 4.2c1.6-3.6 4.5-6.4 8.2-8-3 2.2-5.3 5.3-6.4 8.9l-.9 2.9h2.1l.6-2c6.6-.4 8.7-6 8.7-15.4Z"/>',
+    'hygiene'     => '<path d="M9.4 2.2a1 1 0 0 0-1 1v3.1L4.6 15a4.6 4.6 0 0 0 4.2 6.5h6.4A4.6 4.6 0 0 0 19.4 15l-3.8-8.7V3.2a1 1 0 0 0-1-1Zm1 2h3.2v2.4h-3.2Zm-.2 4.4h3.6l1.3 3H8.9Zm-2.1 4.9h9.8l1.3 2.9a2.6 2.6 0 0 1-2.4 3.6H8.8a2.6 2.6 0 0 1-2.4-3.6Z"/>',
+    'konservasi'  => '<path d="M8.1 2.6 4 8.3l8 12.9 8-12.9-4.1-5.7Zm.9 2h6l2.6 3.7h-4.2l-1.4-3.7Zm-.9.6 1.4 3.1H6.1Zm-2.4 5.1h3.6l1.7 6.9Zm5.7 0h1.4l-.7 7Zm3.5 0h3.6L13.7 17Z"/>',
     'engineering' => '<path d="M21 13.1v-2.2l-2.4-.4a6.9 6.9 0 0 0-.8-1.9l1.4-2-1.6-1.6-2 1.4a6.9 6.9 0 0 0-1.9-.8L13.1 3h-2.2l-.4 2.6a6.9 6.9 0 0 0-1.9.8l-2-1.4-1.6 1.6 1.4 2a6.9 6.9 0 0 0-.8 1.9L3 10.9v2.2l2.6.4a6.9 6.9 0 0 0 .8 1.9l-1.4 2 1.6 1.6 2-1.4a6.9 6.9 0 0 0 1.9.8l.4 2.6h2.2l.4-2.6a6.9 6.9 0 0 0 1.9-.8l2 1.4 1.6-1.6-1.4-2a6.9 6.9 0 0 0 .8-1.9ZM12 15.4A3.4 3.4 0 1 1 15.4 12 3.4 3.4 0 0 1 12 15.4Z"/>',
   ];
-  // Warna tiap huruf EQOHSEE → pilar (O+H = Occupational Health).
+  // Warna tiap huruf EQOHSEE → aspek. Tujuh huruf, tujuh aspek; aspek
+  // kedelapan (Konservasi Minerba) berdiri di luar akronim.
   $wordmark = [
-    ['E','energy'], ['Q','quality'], ['O','occhealth'], ['H','occhealth'],
+    ['E','energy'], ['Q','quality'], ['O','occhealth'], ['H','hygiene'],
     ['S','safety'], ['E','environment'], ['E','engineering'],
   ];
 @endphp
 <section id="pilar" class="relative bg-cam-ink text-white overflow-hidden aurora"
          x-data="{ aktif: null, buka(s){ this.aktif = this.aktif === s ? null : s } }">
   <div class="absolute inset-0 grid-tech pointer-events-none"></div>
-  {{-- Pita masuk: mengambil warna ujung hero lalu melarutkannya, sehingga
-       tidak ada garis lurus di titik pertemuan dua bagian gelap. --}}
-  <div class="sambung sambung-atas h-32 bg-gradient-to-b from-cam-black to-transparent"></div>
 
   <div class="relative max-w-6xl mx-auto px-5 py-20 md:py-28">
 
@@ -113,10 +113,10 @@
     <div class="text-center max-w-2xl mx-auto reveal">
       <span class="text-[10.5px] font-bold uppercase tracking-[0.28em] text-cam-lime-light">Kerangka Kerja</span>
       <h2 class="font-display text-[32px] md:text-[46px] font-black mt-4 leading-[1.08]">
-        <span class="sheen text-white">Enam pilar, satu sistem</span>
+        <span class="sheen text-white">Delapan aspek, satu sistem</span>
       </h2>
       <p class="text-[13.5px] md:text-[14.5px] text-white/50 mt-4 leading-relaxed">
-        Tiap huruf pada <strong class="text-white/80">EQOHSEE</strong> mewakili satu pilar.
+        Tujuh huruf pada <strong class="text-white/80">EQOHSEE</strong> mewakili satu aspek masing-masing, ditambah Konservasi Minerba di luar akronim.
         Sentuh salah satunya untuk melihat apa yang dikerjakan di dalamnya.
       </p>
     </div>

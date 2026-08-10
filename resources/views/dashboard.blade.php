@@ -9,7 +9,7 @@
     <div class="absolute -right-24 -top-24 w-72 h-72 rounded-full bg-cam-lime/20 blur-3xl"></div>
     <div class="relative flex flex-wrap items-end justify-between gap-5">
       <div>
-        <span class="text-[10.5px] font-bold uppercase tracking-[0.22em] text-cam-lime-light">Health · Safety · Environment</span>
+        <span class="text-[10.5px] font-bold uppercase tracking-[0.22em] text-cam-lime-light">Delapan Aspek · Satu Platform</span>
         <h2 class="font-display text-[28px] md:text-[34px] font-black mt-2 leading-tight">Halo, {{ auth()->user()->name }}</h2>
         <p class="text-[13px] text-white/50 mt-1.5 max-w-md leading-relaxed">Lanjutkan pembelajaran dan pastikan kompetensi keselamatanmu tetap terjaga.</p>
       </div>

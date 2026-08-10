@@ -92,4 +92,42 @@ class KatalogTest extends TestCase
         $this->assertStringContainsString('#1F6FB8', Pillars::gradient('energy'));
         $this->assertStringStartsWith('linear-gradient', Pillars::gradient('tidak-ada'));
     }
+
+    /* ---------- delapan aspek ---------- */
+
+    public function test_eqohsee_membawa_delapan_aspek(): void
+    {
+        // Tujuh mengikuti ejaan namanya, satu lagi — Konservasi Minerba —
+        // berdiri di luar akronim sebagai kewajiban tersendiri.
+        $this->assertCount(8, Pillars::all());
+    }
+
+    public function test_tiap_huruf_eqohsee_menunjuk_aspek_yang_berbeda(): void
+    {
+        // Sebelumnya O dan H sama-sama menunjuk Occupational Health, sehingga
+        // satu huruf tidak membawa aspek sendiri.
+        $huruf = ['energy','quality','occhealth','hygiene','safety','environment','engineering'];
+
+        $this->assertSame($huruf, array_unique($huruf), 'Dua huruf tidak boleh menunjuk aspek yang sama.');
+        foreach ($huruf as $slug) {
+            $this->assertNotNull(Pillars::get($slug), "Aspek '{$slug}' belum terdaftar.");
+        }
+    }
+
+    public function test_setiap_aspek_lengkap_identitasnya(): void
+    {
+        foreach (Pillars::all() as $slug => $p) {
+            foreach (['nama','ket','deep','warna','light','ringkas','cakupan','modul'] as $kunci) {
+                $this->assertNotEmpty($p[$kunci] ?? null, "Aspek '{$slug}' belum punya '{$kunci}'.");
+            }
+            $this->assertMatchesRegularExpression('/^#[0-9A-F]{6}$/i', $p['warna'], "Warna '{$slug}' tidak sah.");
+        }
+    }
+
+    public function test_warna_tiap_aspek_berbeda_satu_sama_lain(): void
+    {
+        // Dua aspek berwarna sama membuat lencana modul tidak dapat dibedakan.
+        $warna = array_column(Pillars::all(), 'warna');
+        $this->assertSame($warna, array_unique($warna));
+    }
 }

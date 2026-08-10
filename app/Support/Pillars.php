@@ -3,8 +3,12 @@
 namespace App\Support;
 
 /**
- * Enam pilar EQOHSEE — Energy, Quality, Occupational Health,
- * Safety, Environment, Engineering.
+ * Delapan aspek EQOHSEE.
+ *
+ * Tujuh mengikuti ejaan namanya — Energy, Quality, Occupational Health,
+ * Hygiene, Safety, Environment, Engineering — dan satu lagi, Konservasi
+ * Minerba, berdiri di luar akronim karena merupakan kewajiban tersendiri
+ * dalam kaidah teknik pertambangan yang baik.
  *
  * Berkas ini adalah SUMBER TUNGGAL identitas pilar. Sebelumnya warna pilar
  * ditulis ulang di tiga tempat (registry ini, layouts/guest, dan halaman
@@ -62,6 +66,20 @@ class Pillars
                 'modul' => ['Hazard Report & Inspeksi', 'LMS — Learning Center'],
             ],
 
+            'hygiene' => [
+                'nama'  => 'Hygiene',
+                'ket'   => 'Kendalikan pajanan di tempat kerja',
+                'deep'  => '#9E4B2C', 'warna' => '#E2663A', 'light' => '#FF9B72',
+                'ikon'  => 'health',
+                'ringkas' => 'Higiene industri: mengukur pajanan di lingkungan kerja lalu menekannya pada sumbernya, sebelum tubuh pekerja yang menanggung.',
+                'cakupan' => [
+                    ['Pengukuran pajanan',      'Debu respirabel, bising, getaran, iklim kerja, pencahayaan, dan bahan kimia.'],
+                    ['Nilai ambang batas',      'Hasil ukur dibandingkan NAB, yang melampaui wajib dikendalikan.'],
+                    ['Hierarki pengendalian',   'Eliminasi dan rekayasa lebih dulu; alat pelindung diri jalan terakhir.'],
+                ],
+                'modul' => ['Hazard Report & Inspeksi', 'ISO & Dokumen'],
+            ],
+
             'safety' => [
                 'nama'  => 'Safety',
                 'ket'   => 'Zero compromise, zero tolerance',
@@ -103,6 +121,22 @@ class Pillars
                 ],
                 'modul' => ['Keselamatan Operasi (KO)'],
             ],
+
+            // Di luar akronim: kewajiban tersendiri pada kaidah teknik
+            // pertambangan yang baik, bukan turunan dari huruf mana pun.
+            'konservasi' => [
+                'nama'  => 'Konservasi Minerba',
+                'ket'   => 'Cadangan dipakai seoptimalnya',
+                'deep'  => '#7A5A22', 'warna' => '#C08A3E', 'light' => '#E3B872',
+                'ikon'  => 'gem',
+                'ringkas' => 'Memastikan mineral dan batubara terambil seoptimal mungkin dan tidak terbuang percuma — termasuk yang berkadar rendah dan mineral ikutannya.',
+                'cakupan' => [
+                    ['Recovery penambangan',   'Perbandingan cadangan tergali terhadap cadangan tersedia.'],
+                    ['Pengelolaan kadar rendah','Batubara dan bijih kadar rendah disimpan, bukan dibuang.'],
+                    ['Neraca sumber daya',     'Pencatatan cadangan, produksi, dan sisa umur tambang.'],
+                ],
+                'modul' => ['ISO & Dokumen', 'SMKP Audit'],
+            ],
         ];
     }
 
@@ -127,7 +161,7 @@ class Pillars
             : 'linear-gradient(135deg,#0E2B44 0%,#158D99 100%)';
     }
 
-    /** Urutan slug sesuai ejaan E-Q-O-H-S-E-E pada wordmark. */
+    /** Urutan slug: tujuh mengikuti ejaan E-Q-O-H-S-E-E, lalu Konservasi. */
     public static function slugs(): array
     {
         return array_keys(static::all());
