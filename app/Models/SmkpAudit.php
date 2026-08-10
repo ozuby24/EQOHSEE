@@ -84,6 +84,69 @@ class SmkpAudit extends Model
         return $this->rekapKecukupan()['siap'] && $this->rekapRencana()['lengkap'];
     }
 
+    /**
+     * Status tiap langkah pada alur audit.
+     *
+     * Dihitung sekali lalu dipakai seluruh menu, agar satu halaman tidak
+     * menghitung ulang rekap yang sama belasan kali.
+     *
+     * Nilai tiap kunci: ['selesai' => bool, 'ket' => string ringkas].
+     */
+    public function statusAlur(): array
+    {
+        $p  = (array) ($this->permulaan ?? []);
+        $kj = array_filter((array) ($this->kinerja ?? []), fn ($v) => trim((string) $v) !== '');
+        $kc = $this->rekapKecukupan();
+        $rr = $this->rekapRencana();
+        $rk = $this->rekap();
+        $md = $this->mandays();
+
+        $kelayakan = array_filter(
+            (array) ($p['kelayakan'] ?? []),
+            fn ($v) => trim((string) $v) !== ''
+        );
+        $totalKelayakan = count(SmkpTahap::indikatorKelayakan());
+
+        $hadirBuka  = $this->attendees()->where('rapat', 'pembukaan')->count();
+        $hadirTutup = $this->attendees()->where('rapat', 'penutupan')->count();
+        $temuan     = $this->findings()->count();
+
+        // Komponen Rencana Audit dikelompokkan mengikuti langkah di menu,
+        // bukan satu per satu — sebuah langkah selesai bila seluruh
+        // komponen di bawahnya terisi.
+        $ren = fn (array $kunci) => !in_array(false, array_map(fn ($k) => $rr['terisi'][$k] ?? false, $kunci), true);
+
+        return [
+            'kontak'    => $this->langkah(!empty($p['tanggal_kontak']), count($this->tim()).' auditor ditugaskan'),
+            'kinerja'   => $this->langkah(count($kj) > 0, count($kj).' dari '.count(SmkpTahap::butirKinerja()).' angka terisi'),
+            'kelayakan' => $this->langkah(count($kelayakan) === $totalKelayakan, count($kelayakan)."/{$totalKelayakan} indikator dievaluasi"),
+            'mandays'   => $this->langkah($md['dasar'] > 0, $md['dasar'] > 0 ? number_format($md['total'], 2).' hari · Tahap II '.number_format($md['tahap2'], 2).' hari' : 'Belum dihitung'),
+            'kecukupan' => $this->langkah($kc['siap'], $kc['lengkap'].' lengkap · '.$kc['tidak'].' tidak lengkap · '.$kc['belum'].' belum ditinjau'),
+            'berita'    => $this->langkah($kc['siap'], 'Berkas resmi Tahap I'),
+
+            'lingkup'   => $this->langkah($ren(['tujuan','kriteria','ruang_lingkup']), 'Tujuan · Kriteria · Ruang lingkup'),
+            'jadwal'    => $this->langkah($ren(['tanggal','susunan']), 'Tanggal pelaksanaan dan susunan kegiatan'),
+            'tim'       => $this->langkah($ren(['tugas']), count((array) ($this->rencana['tugas'] ?? [])).' auditor dengan lingkupnya'),
+            'sampel'    => $this->langkah($ren(['metode']), count((array) ($this->risiko['present'] ?? [])).' risiko periode berjalan tercatat'),
+            'sah'       => $this->langkah($ren(['pengesahan']), 'Pengesahan KTT dan Ketua Tim'),
+            'rencana-cetak' => $this->langkah($rr['lengkap'], $rr['jumlah'].' dari '.$rr['total'].' komponen wajib'),
+
+            'pembukaan' => $this->langkah($hadirBuka > 0, $hadirBuka.' peserta tercatat'),
+            'nilai'     => $this->langkah($rk['dinilai'] >= $rk['berlaku'] && $rk['berlaku'] > 0, $rk['dinilai'].'/'.$rk['berlaku'].' butir dinilai · nilai '.number_format($rk['skor'], 2)),
+            'temuan'    => $this->langkah($temuan > 0, $temuan ? $temuan.' temuan diangkat' : 'Belum ada temuan diangkat'),
+            'penutupan' => $this->langkah($hadirTutup > 0, $hadirTutup.' peserta tercatat'),
+
+            'laporan'     => $this->langkah($rk['dinilai'] > 0, 'Nilai akhir '.number_format($rk['skor'], 2).' · '.$rk['tingkat']['label']),
+            'hadir-buka'  => $this->langkah($hadirBuka > 0, $hadirBuka.' peserta'),
+            'hadir-tutup' => $this->langkah($hadirTutup > 0, $hadirTutup.' peserta'),
+        ];
+    }
+
+    private function langkah(bool $selesai, string $ket): array
+    {
+        return ['selesai' => $selesai, 'ket' => $ket];
+    }
+
     /** Nilai satu butir: angka, 'N/A', atau null bila belum dinilai. */
     public function nilai(string $kodeButir)
     {

@@ -203,7 +203,7 @@
             </div>
           </div>
 
-          {{-- Visual isometrik --}}
+          {{-- Adegan pilar --}}
           <div class="order-1 md:order-2 self-center max-w-[240px] mx-auto w-full apung">
             @include('partials.pilar-visual', ['slug' => $slug, 'p' => $p])
           </div>

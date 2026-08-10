@@ -445,4 +445,85 @@ class SmkpTahapTest extends TestCase
 
         $this->assertDatabaseMissing('smkp_attendees', ['id' => $h->id]);
     }
+
+    /* ---------- alur & menu ---------- */
+
+    public function test_alur_membagi_audit_menjadi_empat_babak(): void
+    {
+        $alur = SmkpTahap::alur();
+
+        $this->assertSame(['permulaan','rencana','lapangan','pelaporan'], array_keys($alur));
+        foreach ($alur as $kunci => $babak) {
+            $this->assertNotEmpty($babak['langkah'], "Babak {$kunci} tanpa langkah.");
+            $this->assertNotEmpty($babak['ket'],     "Babak {$kunci} tanpa penjelasan.");
+        }
+    }
+
+    public function test_tiap_langkah_menjelaskan_dirinya_dan_punya_rute(): void
+    {
+        // Menu yang hanya berisi judul tidak memberi tahu auditor apa yang
+        // harus dikerjakan; keterangan tiap langkah karena itu wajib ada.
+        foreach (SmkpTahap::alur() as $babak) {
+            foreach ($babak['langkah'] as $l) {
+                $this->assertNotEmpty($l['ket'], "Langkah {$l['kunci']} tanpa keterangan.");
+                $this->assertContains($l['jenis'], ['kerja','cetak']);
+                $this->assertTrue(\Illuminate\Support\Facades\Route::has($l['rute']), "Rute {$l['rute']} tidak ada.");
+            }
+        }
+    }
+
+    public function test_tiap_langkah_punya_status_yang_dihitung(): void
+    {
+        $a = $this->audit();
+        $status = $a->statusAlur();
+
+        foreach (SmkpTahap::alur() as $babak) {
+            foreach ($babak['langkah'] as $l) {
+                $this->assertArrayHasKey($l['kunci'], $status, "Langkah {$l['kunci']} tanpa status.");
+                $this->assertArrayHasKey('selesai', $status[$l['kunci']]);
+            }
+        }
+    }
+
+    public function test_audit_kosong_belum_menyelesaikan_langkah_apa_pun(): void
+    {
+        $status = $this->audit()->statusAlur();
+        $selesai = array_filter($status, fn ($s) => $s['selesai']);
+
+        $this->assertSame([], array_keys($selesai));
+    }
+
+    public function test_status_langkah_ikut_isian_yang_tersimpan(): void
+    {
+        $a = $this->audit([
+            'kecukupan' => $this->kecukupanPenuh(),
+            'rencana'   => $this->rencanaLengkap(),
+            'permulaan' => ['tanggal_kontak' => '2026-02-15', 'mandays_dasar' => 16, 'jumlah_auditor' => 2],
+        ]);
+
+        $s = $a->statusAlur();
+
+        $this->assertTrue($s['kontak']['selesai']);
+        $this->assertTrue($s['mandays']['selesai']);
+        $this->assertTrue($s['kecukupan']['selesai']);
+        $this->assertTrue($s['rencana-cetak']['selesai']);
+        $this->assertFalse($s['pembukaan']['selesai'], 'Belum ada peserta rapat.');
+    }
+
+    public function test_ringkasan_menampilkan_seluruh_langkah_alur(): void
+    {
+        $this->masuk();
+        $a = $this->audit();
+
+        $res = $this->get(route('smkp.show', $a))->assertOk();
+
+        // Tanpa argumen kedua, teks yang diharapkan ikut di-escape seperti
+        // Blade melakukannya — judul yang memuat "&" karena itu tetap cocok.
+        foreach (SmkpTahap::alur() as $babak) {
+            $res->assertSee($babak['judul']);
+            foreach ($babak['langkah'] as $l) {
+                $res->assertSee($l['judul']);
+            }
+        }
+    }
 }

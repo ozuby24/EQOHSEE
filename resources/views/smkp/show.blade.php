@@ -54,49 +54,90 @@
     </div>
   </section>
 
-  {{-- Dua tahap audit --}}
-  <section class="bg-white rounded-2xl shadow-card border border-stone-100 p-5">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <div class="min-w-0">
-        <h3 class="text-[14px] font-bold text-cam-ink">Tahapan Audit</h3>
-        <p class="text-[11.5px] text-stone-400 mt-0.5">Sedang berjalan: {{ \App\Support\SmkpTahap::labelTahap($audit->tahap ?? 1) }}</p>
-      </div>
-      @if(($audit->tahap ?? 1) < \App\Support\SmkpTahap::PELAPORAN)
-        <form method="POST" action="{{ route('smkp.tahap',$audit) }}" class="shrink-0">
-          @csrf
-          <input type="hidden" name="tahap" value="{{ ($audit->tahap ?? 1) + 1 }}">
-          <button class="rounded-xl border border-stone-200 px-4 py-2.5 text-[12.5px] font-bold text-stone-600 hover:bg-stone-50 transition">
-            Lanjut ke {{ \App\Support\SmkpTahap::labelTahap(($audit->tahap ?? 1) + 1) }}
-          </button>
-        </form>
-      @endif
+  {{-- ══════════ Alur audit: empat babak, masing-masing langkahnya sendiri ══════════ --}}
+  <div class="flex flex-wrap items-end justify-between gap-3 pt-1">
+    <div>
+      <h3 class="font-display text-[19px] font-black text-cam-ink leading-tight">Alur Audit</h3>
+      <p class="text-[12px] text-stone-500 mt-0.5">
+        Sedang berjalan: <span class="font-bold text-cam-lime-deep">{{ \App\Support\SmkpTahap::labelTahap($audit->tahap ?? 1) }}</span>
+      </p>
     </div>
+    @if(($audit->tahap ?? 1) < \App\Support\SmkpTahap::PELAPORAN)
+      <form method="POST" action="{{ route('smkp.tahap',$audit) }}" class="shrink-0">
+        @csrf
+        <input type="hidden" name="tahap" value="{{ ($audit->tahap ?? 1) + 1 }}">
+        <button class="rounded-xl border border-cam-sand-dark/60 bg-cam-sand/40 px-4 py-2.5 text-[12.5px] font-bold text-cam-ink hover:bg-cam-sand transition">
+          Lanjut ke {{ \App\Support\SmkpTahap::labelTahap(($audit->tahap ?? 1) + 1) }} →
+        </button>
+      </form>
+    @endif
+  </div>
 
-    <div class="grid gap-2.5 sm:grid-cols-2 mt-4">
-      @foreach ([
-        ['Tahap I — Permulaan Audit', route('smkp.tahap1',$audit),
-         $kecukupan['siap'] ? 'Kecukupan dokumentasi lengkap untuk 7 elemen' : $kecukupan['belum'].' elemen belum ditinjau',
-         $kecukupan['siap']],
-        ['Rencana Audit', route('smkp.rencana',$audit),
-         $rencana['jumlah'].' dari '.$rencana['total'].' komponen wajib terisi',
-         $rencana['lengkap']],
-        ['Berita Acara Tahap I', route('smkp.berita-acara',$audit), 'Berkas resmi hasil permulaan audit', null],
-        ['Laporan Rencana Audit', route('smkp.rencana.cetak',$audit), 'Sembilan komponen, siap cetak', null],
-        ['Tahap II — Rapat &amp; Daftar Hadir', route('smkp.rapat',$audit), 'Rapat pembukaan dan penutupan', null],
-      ] as [$judul,$url,$ket,$ok])
-        <a href="{{ $url }}" class="block rounded-xl border border-stone-100 p-4 hover:border-cam-lime/40 hover:bg-stone-50/60 transition">
-          <div class="flex items-start justify-between gap-2">
-            <div class="text-[12.5px] font-bold text-cam-ink">{!! $judul !!}</div>
-            @if($ok !== null)
-              <span class="text-[9.5px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded shrink-0
-                    {{ $ok ? 'bg-cam-lime-soft text-cam-lime-deep' : 'bg-amber-100 text-amber-700' }}">{{ $ok ? 'Lengkap' : 'Belum' }}</span>
-            @endif
-          </div>
-          <div class="text-[11px] text-stone-400 mt-1 leading-relaxed">{{ $ket }}</div>
-        </a>
-      @endforeach
-    </div>
-  </section>
+  @foreach($alur as $babak)
+    @php
+      // Kemajuan babak dihitung dari langkah kerjanya saja; berkas cetak
+      // selalu tersedia sehingga menghitungnya akan menaikkan angka semu.
+      $kerja   = array_filter($babak['langkah'], fn($l) => $l['jenis'] === 'kerja');
+      $selesai = count(array_filter($kerja, fn($l) => $status[$l['kunci']]['selesai'] ?? false));
+      $rasio   = count($kerja) ? $selesai / count($kerja) : 0;
+    @endphp
+
+    <section class="kartu-lux rounded-2xl overflow-hidden">
+      {{-- Kepala babak --}}
+      <div class="px-5 py-4 hairline flex flex-wrap items-center gap-3">
+        <span class="shrink-0 text-[10px] font-black uppercase tracking-[0.14em] text-white px-2.5 py-1 rounded-lg"
+              style="background:{{ $babak['warna'] }}">{{ $babak['nomor'] }}</span>
+        <div class="min-w-0 flex-1">
+          <h4 class="text-[14.5px] font-bold text-cam-ink leading-tight">{{ $babak['judul'] }}</h4>
+          <p class="text-[11.5px] text-stone-500 mt-0.5 leading-relaxed">{{ $babak['ket'] }}</p>
+        </div>
+        <div class="shrink-0 text-right">
+          <div class="num text-[13px] font-bold" style="color:{{ $babak['warna'] }}">{{ $selesai }}/{{ count($kerja) }}</div>
+          <div class="text-[10px] text-stone-400">langkah</div>
+        </div>
+      </div>
+
+      <div class="h-1 bg-stone-100">
+        <div class="h-full transition-all duration-700" style="width: {{ $rasio*100 }}%; background:{{ $babak['warna'] }}"></div>
+      </div>
+
+      {{-- Langkah --}}
+      <ol class="divide-y divide-stone-100">
+        @foreach($babak['langkah'] as $l)
+          @php
+            $s    = $status[$l['kunci']] ?? ['selesai'=>false,'ket'=>''];
+            $cetak= $l['jenis'] === 'cetak';
+            $url  = isset($l['arg']) ? route($l['rute'], [$audit, $l['arg']]) : route($l['rute'], $audit);
+          @endphp
+          <li>
+            <a href="{{ $url }}" class="flex items-start gap-3.5 px-5 py-3.5 hover:bg-cam-sand/25 transition group">
+              {{-- Penanda langkah --}}
+              <span class="shrink-0 mt-0.5 w-6 h-6 rounded-full grid place-items-center text-[10.5px] font-bold
+                    {{ $s['selesai'] ? 'text-white' : 'text-stone-400 bg-stone-100' }}"
+                    @if($s['selesai']) style="background:{{ $babak['warna'] }}" @endif>
+                @if($s['selesai'])✓@else{{ $loop->iteration }}@endif
+              </span>
+
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-[12.5px] font-bold text-cam-ink">{{ $l['judul'] }}</span>
+                  @if($cetak)
+                    <span class="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-cam-sand text-cam-ink/70">Cetak</span>
+                  @endif
+                </div>
+                <p class="text-[11.5px] text-stone-500 mt-1 leading-relaxed">{{ $l['ket'] }}</p>
+                @if($s['ket'])
+                  <p class="text-[11px] mt-1.5 font-semibold {{ $s['selesai'] ? 'text-cam-lime-deep' : 'text-stone-400' }}">{{ $s['ket'] }}</p>
+                @endif
+              </div>
+
+              <span class="shrink-0 self-center text-stone-300 group-hover:text-cam-coral transition text-[15px] leading-none">→</span>
+            </a>
+          </li>
+        @endforeach
+      </ol>
+    </section>
+  @endforeach
 
   {{-- Skor per elemen --}}
   <div>

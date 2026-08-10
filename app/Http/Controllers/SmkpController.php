@@ -82,6 +82,8 @@ class SmkpController extends Controller
             'kecukupan' => $smkp->rekapKecukupan(),
             'rencana'   => $smkp->rekapRencana(),
             'tahap'     => SmkpTahap::tahap(),
+            'alur'      => SmkpTahap::alur(),
+            'status'    => $smkp->statusAlur(),
         ]);
     }
 

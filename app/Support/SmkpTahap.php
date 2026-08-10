@@ -59,6 +59,97 @@ final class SmkpTahap
         ];
     }
 
+    /* ================= alur kerja ================= */
+
+    /**
+     * Alur audit sebagai empat babak, masing-masing berisi langkah tersendiri.
+     *
+     * Ini yang menggerakkan menu modul. Tiap langkah punya rutenya sendiri
+     * supaya auditor melihat pekerjaan sebagai rangkaian yang jelas, bukan
+     * satu daftar tautan yang rata.
+     *
+     * `jenis`: 'kerja' = formulir isian, 'cetak' = berkas resmi siap cetak.
+     * `kunci` dipakai model untuk menentukan status tiap langkah.
+     */
+    public static function alur(): array
+    {
+        return [
+            'permulaan' => [
+                'nomor' => 'Tahap I',
+                'judul' => 'Permulaan Audit',
+                'ket'   => 'Menentukan apakah audit layak dijalankan dan apakah dokumentasi auditi cukup untuk diaudit.',
+                'warna' => '#0F766E',
+                'langkah' => [
+                    ['kunci'=>'kontak',    'judul'=>'Kontak Awal & Penugasan Tim',   'jenis'=>'kerja', 'rute'=>'smkp.tahap1',
+                     'ket'=>'Pertemuan pertama dengan auditi dan surat pengangkatan tim audit beserta nomor registrasi auditor.'],
+                    ['kunci'=>'kinerja',   'judul'=>'Kinerja Keselamatan Pertambangan','jenis'=>'kerja','rute'=>'smkp.tahap1',
+                     'ket'=>'Sepuluh angka kinerja pada periode audit — frequency rate, severity rate, kejadian berbahaya, penyakit akibat kerja.'],
+                    ['kunci'=>'kelayakan', 'judul'=>'Penentuan Kelayakan Audit',     'jenis'=>'kerja', 'rute'=>'smkp.tahap1',
+                     'ket'=>'Tujuh indikator yang memutuskan audit boleh berjalan: profil organisasi, profil risiko, kerja sama auditi, sumber daya.'],
+                    ['kunci'=>'mandays',   'judul'=>'Perhitungan Hari Kerja Audit',  'jenis'=>'kerja', 'rute'=>'smkp.tahap1',
+                     'ket'=>'Mandays dibagi jumlah auditor lalu disesuaikan tujuh kondisi; Tahap I paling banyak 10% dari total.'],
+                    ['kunci'=>'kecukupan', 'judul'=>'Kecukupan Dokumentasi 7 Elemen','jenis'=>'kerja', 'rute'=>'smkp.tahap1',
+                     'ket'=>'Peninjauan dokumen dan rekaman tiap elemen — lengkap atau tidak lengkap — sebelum tim turun ke lapangan.'],
+                    ['kunci'=>'berita',    'judul'=>'Berita Acara Tahapan Awal',     'jenis'=>'cetak', 'rute'=>'smkp.berita-acara',
+                     'ket'=>'Berkas resmi hasil Tahap I, berkop dokumen terkendali dan siap ditandatangani KTT.'],
+                ],
+            ],
+
+            'rencana' => [
+                'nomor' => 'Tahap I·B',
+                'judul' => 'Rencana Audit',
+                'ket'   => 'Kesepakatan antara klien audit, tim audit, dan auditi mengenai pelaksanaan audit lapangan.',
+                'warna' => '#2A9D8F',
+                'langkah' => [
+                    ['kunci'=>'lingkup',  'judul'=>'Tujuan, Kriteria & Ruang Lingkup','jenis'=>'kerja','rute'=>'smkp.rencana',
+                     'ket'=>'Tiga komponen pertama: apa yang hendak dicapai, acuan penilaiannya, dan batas wilayah serta kegiatan yang diaudit.'],
+                    ['kunci'=>'jadwal',   'judul'=>'Tanggal & Susunan Kegiatan',      'jenis'=>'kerja','rute'=>'smkp.rencana',
+                     'ket'=>'Jadwal dari rapat pembukaan sampai rapat penutupan, dengan auditi dan auditor pada tiap sesi.'],
+                    ['kunci'=>'tim',      'judul'=>'Pembagian Tugas Tim Audit',       'jenis'=>'kerja','rute'=>'smkp.rencana',
+                     'ket'=>'Siapa mengaudit elemen apa, lengkap dengan nomor registrasi auditor DBT.'],
+                    ['kunci'=>'sampel',   'judul'=>'Metode, Sampel & Top Risks',      'jenis'=>'kerja','rute'=>'smkp.rencana',
+                     'ket'=>'Cara pembuktian dan dasar pengambilan sampel, mengacu risiko tertinggi periode berjalan dan rencana kegiatan berikutnya.'],
+                    ['kunci'=>'sah',      'judul'=>'Pengesahan KTT & Ketua Tim',      'jenis'=>'kerja','rute'=>'smkp.rencana',
+                     'ket'=>'Tanda tangan Kepala Teknik Tambang, Penanggung Jawab Operasional bila auditi perusahaan jasa, dan Ketua Tim Audit.'],
+                    ['kunci'=>'rencana-cetak','judul'=>'Laporan Rencana Audit',       'jenis'=>'cetak','rute'=>'smkp.rencana.cetak',
+                     'ket'=>'Sembilan komponen wajib dalam satu berkas bernomor, siap dibagikan ke auditi.'],
+                ],
+            ],
+
+            'lapangan' => [
+                'nomor' => 'Tahap II',
+                'judul' => 'Audit Lapangan',
+                'ket'   => 'Pengumpulan dan verifikasi informasi di lokasi, dari rapat pembukaan sampai rapat penutupan.',
+                'warna' => '#D9993A',
+                'langkah' => [
+                    ['kunci'=>'pembukaan','judul'=>'Rapat Pembukaan',               'jenis'=>'kerja','rute'=>'smkp.rapat',
+                     'ket'=>'Menyampaikan rencana audit kepada auditi dan mencatat daftar hadir yang menjadi lampiran laporan.'],
+                    ['kunci'=>'nilai',    'judul'=>'Penilaian Tujuh Elemen',         'jenis'=>'kerja','rute'=>'smkp.show',
+                     'ket'=>'Pemberian nilai tiap butir kriteria beserta keterangan dan bukti yang diperiksa di lapangan.'],
+                    ['kunci'=>'temuan',   'judul'=>'Perumusan Temuan & Tindakan',    'jenis'=>'kerja','rute'=>'smkp.temuan',
+                     'ket'=>'Ketidaksesuaian mayor dan minor diangkat menjadi tindakan perbaikan dengan akar masalah dan target selesai.'],
+                    ['kunci'=>'penutupan','judul'=>'Rapat Penutupan',               'jenis'=>'kerja','rute'=>'smkp.rapat',
+                     'ket'=>'Menyampaikan kesimpulan audit dan temuan kepada manajemen auditi, dengan daftar hadir tersendiri.'],
+                ],
+            ],
+
+            'pelaporan' => [
+                'nomor' => 'Tahap III',
+                'judul' => 'Pelaporan',
+                'ket'   => 'Berkas akhir audit dan tindak lanjut yang menjadi tanggung jawab auditi.',
+                'warna' => '#FF7F50',
+                'langkah' => [
+                    ['kunci'=>'laporan',   'judul'=>'Laporan Audit Internal',        'jenis'=>'cetak','rute'=>'smkp.laporan',
+                     'ket'=>'Nilai akhir, tingkat penerapan, rekapitulasi tujuh elemen, dan seluruh temuan dalam satu berkas bernomor.'],
+                    ['kunci'=>'hadir-buka','judul'=>'Daftar Hadir Rapat Pembukaan',  'jenis'=>'cetak','rute'=>'smkp.hadir.cetak','arg'=>'pembukaan',
+                     'ket'=>'Lampiran daftar hadir, berpindah halaman sendiri bila pesertanya banyak.'],
+                    ['kunci'=>'hadir-tutup','judul'=>'Daftar Hadir Rapat Penutupan', 'jenis'=>'cetak','rute'=>'smkp.hadir.cetak','arg'=>'penutupan',
+                     'ket'=>'Lampiran daftar hadir rapat penutupan.'],
+                ],
+            ],
+        ];
+    }
+
     /* ================= Tahap I ================= */
 
     /** Tujuh indikator penentuan kelayakan audit. */
