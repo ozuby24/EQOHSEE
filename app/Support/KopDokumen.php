@@ -68,6 +68,11 @@ final class KopDokumen
                 'judul' => 'LAPORAN AUDIT INTERNAL PENERAPAN SMKP MINERBA',
                 'kode'  => 'OHSE-IV.067',
             ],
+            'laporan-energi' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN KINERJA ENERGI DAN EMISI KARBON',
+                'kode'  => 'OHSE-V.021',
+            ],
         ];
     }
 

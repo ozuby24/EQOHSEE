@@ -7,7 +7,7 @@ use App\Http\Controllers\{
 };
 use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiTemuanController, HazardController,
     HazardExportController, InspectionController, InspectionTemplateController,
-    IsoController, KoController, KuesionerController, SignatoryController, SmkpController,
+    EnergyController, IsoController, KoController, KuesionerController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\Admin\{CompanyController, SystemController, UserController};
 use Illuminate\Support\Facades\Route;
@@ -184,6 +184,34 @@ Route::middleware('auth')->group(function () {
     // Struktur dokumen — ditaruh di luar prefix agar tidak tertangkap {dokumen}.
     Route::get('struktur-dokumen', [DocumentController::class,'piramida'])->name('dokumen.piramida');
     Route::get('daftar-induk',     [DocumentController::class,'daftarInduk'])->name('dokumen.daftar-induk');
+
+    /* ================= WEBSITE #6 — Energy Performance Center ================= */
+    Route::prefix('energi')->name('energi.')->group(function () {
+        Route::get('/',            [EnergyController::class,'index'])->name('index');
+        Route::get('konsumsi',     [EnergyController::class,'konsumsi'])->name('konsumsi');
+        Route::get('bahan-bakar',  [EnergyController::class,'fuel'])->name('fuel');
+        Route::get('listrik',      [EnergyController::class,'listrik'])->name('listrik');
+
+        Route::get('alat',         [EnergyController::class,'equipment'])->name('equipment');
+        Route::get('alat/{unit}',  [EnergyController::class,'equipmentShow'])->name('equipment.show');
+
+        Route::get('kpi',          [EnergyController::class,'kpi'])->name('kpi');
+        Route::get('baseline',     [EnergyController::class,'baseline'])->name('baseline');
+        Route::post('baseline',    [EnergyController::class,'simpanBaseline'])->name('baseline.simpan');
+
+        Route::get('penghematan',  [EnergyController::class,'hemat'])->name('hemat');
+        Route::post('penghematan', [EnergyController::class,'simpanPeluang'])->name('hemat.simpan');
+        Route::put('penghematan/{peluang}',   [EnergyController::class,'ubahPeluang'])->name('hemat.ubah');
+        Route::delete('penghematan/{peluang}',[EnergyController::class,'hapusPeluang'])->name('hemat.hapus');
+
+        Route::get('karbon',       [EnergyController::class,'karbon'])->name('karbon');
+        Route::get('kalkulator',   [EnergyController::class,'kalkulator'])->name('kalkulator');
+        Route::get('laporan',      [EnergyController::class,'laporan'])->name('laporan');
+
+        Route::get('data-induk',   [EnergyController::class,'master'])->name('master');
+        Route::post('data-induk',  [EnergyController::class,'simpanUnit'])->name('master.simpan');
+        Route::delete('data-induk/{unit}', [EnergyController::class,'hapusUnit'])->name('master.hapus');
+    });
 
     /* ================= WEBSITE #5b — ISO: pemenuhan klausul ================= */
     Route::prefix('iso')->name('iso.')->group(function () {

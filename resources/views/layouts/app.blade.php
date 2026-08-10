@@ -21,8 +21,9 @@
          : (request()->is('tpkkp*') ? 'tpkkp'
          : (request()->is('smkp*') ? 'smkp'
          : (request()->is('dokumen*') || request()->is('iso*') || request()->is('struktur-dokumen') || request()->is('daftar-induk') ? 'dokumen'
+         : (request()->is('energi*') ? 'energi'
          : (request()->is('ko*') ? 'ko'
-         : (request()->is('admin*') || request()->is('signatories*') ? 'admin' : 'lms')))));
+         : (request()->is('admin*') || request()->is('signatories*') ? 'admin' : 'lms'))))));
 
   $menu = [
     'lms' => [
@@ -123,6 +124,32 @@
         ],
         'Acuan' => [
           ['Kriteria Kepdirjen', 'smkp.acuan', 'smkp/acuan'],
+        ],
+      ],
+    ],
+    'energi' => [
+      'label' => 'Energy Performance',
+      'icon'  => 'M13 2 4 14h7l-1 8 10-13h-7l0-7Z',
+      'groups' => [
+        'Pantau' => [
+          ['Dashboard',          'energi.index',    'energi'],
+          ['Energy Consumption', 'energi.konsumsi', 'energi/konsumsi'],
+          ['Fuel Management',    'energi.fuel',     'energi/bahan-bakar'],
+          ['Electricity',        'energi.listrik',  'energi/listrik'],
+        ],
+        'Kinerja' => [
+          ['Equipment Performance','energi.equipment','energi/alat*'],
+          ['Energy KPI',           'energi.kpi',      'energi/kpi'],
+          ['Baseline & Target',    'energi.baseline', 'energi/baseline'],
+        ],
+        'Optimasi' => [
+          ['Saving Opportunities','energi.hemat',      'energi/penghematan*'],
+          ['Carbon & Emission',   'energi.karbon',     'energi/karbon'],
+          ['Energy Calculator',   'energi.kalkulator', 'energi/kalkulator'],
+        ],
+        'Data' => [
+          ['Laporan Energi', 'energi.laporan', 'energi/laporan'],
+          ['Master Data',    'energi.master',  'energi/data-induk*'],
         ],
       ],
     ],
