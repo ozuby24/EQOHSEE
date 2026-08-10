@@ -186,6 +186,16 @@ Route::middleware('auth')->group(function () {
         Route::get('/',                [SmkpController::class,'index'])->name('index');
         Route::get('buat',             [SmkpController::class,'create'])->name('create');
         Route::post('/',               [SmkpController::class,'store'])->name('store');
+        Route::get('acuan',            [SmkpController::class,'acuan'])->name('acuan');
+
+        // Pintasan menu samping: tanpa parameter, disalurkan ke audit berjalan.
+        foreach ([
+            'tahap1' => 'tahap-1', 'rencana' => 'rencana', 'rapat' => 'rapat', 'temuan' => 'temuan',
+            'berita' => 'berita-acara', 'rencana-cetak' => 'laporan-rencana', 'laporan' => 'laporan-audit',
+        ] as $bagian => $ruas) {
+            Route::get("lanjut/{$ruas}", [SmkpController::class,'lanjut'])
+                ->defaults('bagian', $bagian)->name('ke.'.$bagian);
+        }
 
         Route::get('{smkp}',           [SmkpController::class,'show'])->name('show');
         Route::get('{smkp}/ubah',      [SmkpController::class,'edit'])->name('edit');

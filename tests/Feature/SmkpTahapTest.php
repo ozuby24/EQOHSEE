@@ -526,4 +526,73 @@ class SmkpTahapTest extends TestCase
             }
         }
     }
+
+    /* ---------- menu samping ---------- */
+
+    public function test_pintasan_menu_menyalurkan_ke_audit_yang_berjalan(): void
+    {
+        $this->masuk();
+        $selesai  = $this->audit(['tahun' => 2024, 'status' => 'selesai']);
+        $berjalan = $this->audit(['tahun' => 2026, 'status' => 'berjalan']);
+
+        $this->get(route('smkp.ke.tahap1'))->assertRedirect(route('smkp.tahap1', $berjalan));
+        $this->get(route('smkp.ke.rencana'))->assertRedirect(route('smkp.rencana', $berjalan));
+        $this->get(route('smkp.ke.laporan'))->assertRedirect(route('smkp.laporan', $berjalan));
+    }
+
+    public function test_pintasan_memakai_periode_terakhir_bila_semua_sudah_selesai(): void
+    {
+        // Berkas cetak audit yang sudah ditutup tetap harus dapat dibuka.
+        $this->masuk();
+        $this->audit(['tahun' => 2024, 'status' => 'selesai']);
+        $akhir = $this->audit(['tahun' => 2025, 'status' => 'selesai']);
+
+        $this->get(route('smkp.ke.laporan'))->assertRedirect(route('smkp.laporan', $akhir));
+    }
+
+    public function test_pintasan_mengarahkan_membuat_periode_saat_belum_ada(): void
+    {
+        $this->masuk();
+
+        $this->get(route('smkp.ke.tahap1'))->assertRedirect(route('smkp.create'));
+    }
+
+    public function test_halaman_acuan_memuat_tujuh_elemen_dan_bobotnya(): void
+    {
+        $this->masuk();
+
+        $res = $this->get(route('smkp.acuan'))->assertOk();
+
+        foreach (\App\Support\Smkp::elemen() as $e) {
+            $res->assertSee($e['nama']);
+        }
+        $res->assertSee((string) \App\Support\Smkp::totalNilai());
+    }
+
+    public function test_menu_samping_audit_memuat_seluruh_kelompoknya(): void
+    {
+        $this->masuk();
+
+        $this->get(route('smkp.index'))
+            ->assertOk()
+            ->assertSee('Tahap Audit')
+            ->assertSee('Berkas Resmi')
+            ->assertSee('Kriteria Kepdirjen')
+            ->assertSee(route('smkp.ke.rencana-cetak'), false);
+    }
+
+    public function test_acuan_menampilkan_rentang_kategori_dan_tingkat_dengan_benar(): void
+    {
+        // Ambang tersimpan sebagai persen (100/50/0), bukan pecahan; salah
+        // membacanya membuat "Minor" tampil sebagai capaian penuh.
+        $this->masuk();
+
+        $this->get(route('smkp.acuan'))
+            ->assertOk()
+            ->assertSee('Capaian 50% sampai kurang dari 100%.')
+            ->assertSee('Capaian kurang dari 50%.')
+            ->assertSee('≥ 85', false)          // Baik
+            ->assertSee('60 – 84', false)       // Perlu Perbaikan
+            ->assertSee('0 – 59', false);       // Perlu Perhatian Serius
+    }
 }

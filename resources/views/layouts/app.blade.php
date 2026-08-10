@@ -102,9 +102,27 @@
     'smkp' => [
       'label' => 'Audit SMKP',
       'icon'  => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+      // Menu mengikuti tahapan audit, bukan satu daftar rata. Butir pada
+      // kelompok "Tahap" dan "Berkas" disalurkan ke periode yang sedang
+      // berjalan, sebab menu samping tidak membawa identitas audit.
       'groups' => [
-        '' => [
-          ['Periode Audit', 'smkp.index', 'smkp'],
+        'Periode' => [
+          ['Daftar Audit',   'smkp.index',  'smkp'],
+          ['Buat Periode',   'smkp.create', 'smkp/buat'],
+        ],
+        'Tahap Audit' => [
+          ['Permulaan Audit',   'smkp.ke.tahap1',  'smkp/lanjut/tahap-1'],
+          ['Rencana Audit',     'smkp.ke.rencana', 'smkp/lanjut/rencana'],
+          ['Rapat & Daftar Hadir','smkp.ke.rapat', 'smkp/lanjut/rapat'],
+          ['Temuan & Tindakan', 'smkp.ke.temuan',  'smkp/lanjut/temuan'],
+        ],
+        'Berkas Resmi' => [
+          ['Berita Acara Tahap I',  'smkp.ke.berita',        'smkp/lanjut/berita-acara'],
+          ['Laporan Rencana Audit', 'smkp.ke.rencana-cetak', 'smkp/lanjut/laporan-rencana'],
+          ['Laporan Audit',         'smkp.ke.laporan',       'smkp/lanjut/laporan-audit'],
+        ],
+        'Acuan' => [
+          ['Kriteria Kepdirjen', 'smkp.acuan', 'smkp/acuan'],
         ],
       ],
     ],

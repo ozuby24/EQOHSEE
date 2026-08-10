@@ -87,6 +87,61 @@ class SmkpController extends Controller
         ]);
     }
 
+    /* ================= pintasan menu ================= */
+
+    /**
+     * Penyalur menu samping ke bagian tertentu pada audit yang sedang berjalan.
+     *
+     * Menu samping tidak tahu audit mana yang sedang dikerjakan, sementara
+     * hampir seluruh halaman audit memerlukannya. Rute ini menjembatani
+     * keduanya: memilih periode yang masih berjalan, lalu meneruskan.
+     */
+    public function lanjut(Request $request, string $bagian)
+    {
+        $rute = [
+            'tahap1'        => 'smkp.tahap1',
+            'rencana'       => 'smkp.rencana',
+            'rapat'         => 'smkp.rapat',
+            'temuan'        => 'smkp.temuan',
+            'berita'        => 'smkp.berita-acara',
+            'rencana-cetak' => 'smkp.rencana.cetak',
+            'laporan'       => 'smkp.laporan',
+        ][$bagian] ?? null;
+
+        abort_if(!$rute, 404, 'Bagian audit tidak dikenal.');
+
+        $audit = $this->auditBerjalan();
+
+        if (!$audit) {
+            return redirect()->route('smkp.create')
+                ->with('ok', 'Belum ada periode audit. Buat satu dulu untuk mulai bekerja.');
+        }
+
+        return redirect()->route($rute, $audit);
+    }
+
+    /**
+     * Periode yang sedang dikerjakan: yang belum selesai dan paling baru.
+     * Bila semuanya sudah selesai, yang terakhir tetap dipakai agar berkas
+     * cetaknya masih dapat dibuka lewat menu.
+     */
+    private function auditBerjalan(): ?SmkpAudit
+    {
+        return SmkpAudit::where('status', '<>', 'selesai')->orderByDesc('tahun')->orderByDesc('id')->first()
+            ?? SmkpAudit::orderByDesc('tahun')->orderByDesc('id')->first();
+    }
+
+    /** Acuan kriteria audit — 7 elemen beserta bobot dan rujukan halamannya. */
+    public function acuan()
+    {
+        return view('smkp.acuan', [
+            'elemen'  => Smkp::elemen(),
+            'meta'    => Smkp::meta(),
+            'kategori'=> Smkp::kategori(),
+            'tingkat' => Smkp::tingkat(),
+        ]);
+    }
+
     /* ================= TAHAP I — Permulaan Audit ================= */
 
     public function tahap1(SmkpAudit $smkp)
