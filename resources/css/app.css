@@ -228,14 +228,29 @@ input,select,textarea{ outline:none; }
 }
 
 /* Kisi teknis yang memudar ke tepi — memberi kesan bidang, bukan warna datar. */
+/* Kabut bidang gelap.
+   Dulu berupa kisi garis; kotak-kotaknya berulang rapi dan justru
+   membuat bidang terbaca seperti kertas milimeter, bukan seperti udara.
+   Diganti beberapa pendar lebar yang tidak berulang — teksturnya terasa
+   tanpa pernah menampakkan pola. */
 .grid-tech{
+  /* Pendar dijauhkan dari tepi atas: kalau terang persis di garis
+     pertemuan, batas antar bagian justru makin kelihatan. */
   background-image:
-    linear-gradient(rgba(255,255,255,.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.07) 1px, transparent 1px);
-  background-size: 52px 52px;
-  -webkit-mask-image: radial-gradient(120% 88% at 50% 12%, #000 32%, transparent 78%);
-          mask-image: radial-gradient(120% 88% at 50% 12%, #000 32%, transparent 78%);
+    radial-gradient(58% 40% at 22% 34%, rgba(42,157,143,.15), transparent 70%),
+    radial-gradient(46% 36% at 80% 52%, rgba(255,127,80,.09), transparent 72%),
+    radial-gradient(66% 44% at 50% 88%, rgba(191,230,223,.07), transparent 74%);
 }
+
+/* Sambungan antar bidang.
+   Dua bagian berwarna beda yang bertemu langsung meninggalkan garis
+   lurus yang keras. Pita ini melarutkan pertemuannya sehingga peralihan
+   terbaca sebagai kedalaman, bukan sebagai potongan. */
+.sambung{
+  position:absolute; left:0; right:0; pointer-events:none; z-index:1;
+}
+.sambung-atas  { top:0;    height:120px; }
+.sambung-bawah { bottom:0; height:140px; }
 
 /* ── Sapuan cahaya pada teks judul ── */
 .sheen{
@@ -363,6 +378,46 @@ input,select,textarea{ outline:none; }
 @keyframes butir{ 0%{ transform:translateY(6px); opacity:0;} 30%{ opacity:.6;} 100%{ transform:translateY(-16px); opacity:0;} }
 .butir{ animation:butir 7s ease-in-out infinite var(--tunda,0s); }
 
+/* ══════════════════════════════════════════════════════════════
+   PANORAMA HERO
+   Laju gerak mengikuti jarak: yang jauh bergerak lebih lambat.
+   Perbedaan laju inilah yang membuat bidangnya terbaca sebagai
+   ruang, bukan sebagai tumpukan bentuk pada satu kaca.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Konvoi di jalan jauh — lambat dan panjang siklusnya. */
+@keyframes konvoi{ from{ transform:translateX(-260px);} to{ transform:translateX(1720px);} }
+.konvoi-jauh{ animation:konvoi 54s linear infinite; }
+
+/* Truk terdekat — jauh lebih cepat karena jaraknya dekat. */
+@keyframes trukDekat{ from{ transform:translateX(-980px);} to{ transform:translateX(760px);} }
+.truk-dekat{ animation:trukDekat 19s linear infinite; }
+
+/* Berkas cahaya menguat dan melemah seperti debu yang berubah rapat. */
+@keyframes berkas{ 0%,100%{ opacity:.32;} 50%{ opacity:.7;} }
+.berkas-cahaya{ animation:berkas 12s ease-in-out infinite; }
+
+@keyframes awanHero{ from{ transform:translateX(-40px);} to{ transform:translateX(40px);} }
+.awan-hero{ animation:awanHero 60s ease-in-out infinite alternate; }
+
+@keyframes kabutHero{ 0%,100%{ opacity:.5; transform:translateY(0);} 50%{ opacity:1; transform:translateY(-7px);} }
+.kabut-hero{ animation:kabutHero 18s ease-in-out infinite var(--tunda,0s); }
+
+@keyframes suarHero{ 0%,100%{ opacity:.2;} 50%{ opacity:1;} }
+.suar-hero{ animation:suarHero 1.3s ease-in-out infinite var(--tunda,0s); }
+
+@keyframes debuHero{ 0%{ opacity:0; transform:translateX(0) scale(.5);} 35%{ opacity:.3;} 100%{ opacity:0; transform:translateX(-70px) scale(1.9);} }
+.debu-hero{ animation:debuHero 3.2s ease-out infinite var(--tunda,0s); }
+
+@keyframes lenganHero{ 0%,100%{ transform:rotate(-7deg);} 45%{ transform:rotate(6deg);} }
+.lengan-hero{ animation:lenganHero 7s ease-in-out infinite; }
+
+@keyframes burungHero{ from{ transform:translate(-60px,10px);} to{ transform:translate(1660px,-40px);} }
+.burung-hero{ animation:burungHero 72s linear infinite; }
+
+@keyframes butirHero{ 0%{ transform:translateY(18px); opacity:0;} 30%{ opacity:.55;} 100%{ transform:translateY(-52px); opacity:0;} }
+.butir-hero{ animation:butirHero 13s ease-in-out infinite var(--tunda,0s); }
+
 /* ── Hormati preferensi gerak minimal ──
    Pengguna yang sensitif terhadap gerak tetap mendapat seluruh isi
    halaman; hanya animasinya yang dihentikan. Adegan pilar tetap
@@ -370,9 +425,16 @@ input,select,textarea{ outline:none; }
 @media (prefers-reduced-motion: reduce){
   .aurora::before, .sheen, .apung, .apung-2, .denyut, .putar-lambat,
   .hanyut-lambat, .kabut, .alir-daya, .jalan-ban, .pindai, .detak, .batang,
-  .melaju, .suar, .debu, .riak, .tumbuh, .ayun-lengan, .butir{
+  .melaju, .suar, .debu, .riak, .tumbuh, .ayun-lengan, .butir,
+  .konvoi-jauh, .truk-dekat, .berkas-cahaya, .awan-hero, .kabut-hero,
+  .suar-hero, .debu-hero, .lengan-hero, .burung-hero, .butir-hero{
     animation: none !important;
   }
+  /* Tanpa gerak, kendaraan harus berhenti di dalam bingkai — bukan di
+     titik awal animasinya yang berada jauh di luar layar. */
+  .truk-dekat{ transform: translateX(-140px) !important; }
+  .konvoi-jauh{ transform: translateX(240px) !important; }
+  .burung-hero{ transform: translate(560px,-14px) !important; }
   /* Tanpa animasi, garis bergaris-putus harus tetap tergambar penuh. */
   .alir-daya{ stroke-dasharray:none !important; }
   .detak{ stroke-dashoffset:0 !important; }

@@ -34,11 +34,17 @@
      seni tambang paling belakang, pendar di tengah, teks paling depan.
      Laju diatur lewat data-parallax dan dijalankan di rAF. --}}
 <section class="relative brand-gradient text-white overflow-hidden aurora">
-  <div class="absolute inset-0 opacity-[.55]" data-parallax="0.14">@include('partials.art-mine')</div>
-  <div class="absolute inset-0 grid-tech pointer-events-none" data-parallax="0.06"></div>
-  <div class="absolute inset-0 bg-gradient-to-r from-cam-black via-cam-black/85 to-transparent"></div>
+  {{-- Panorama dibiarkan hampir penuh; yang meredamnya cuma tirai di sisi
+       kiri, tepat selebar kolom teks. Menutupi seluruh bidang hanya akan
+       membuang adegan yang justru menjadi alasan hero ini ada. --}}
+  <div class="absolute inset-0 opacity-[.92]" data-parallax="0.14">@include('partials.art-mine')</div>
+  <div class="absolute inset-0 grid-tech pointer-events-none opacity-40" data-parallax="0.06"></div>
+  <div class="absolute inset-0 bg-gradient-to-r from-cam-black via-cam-black/55 via-38% to-transparent"></div>
+  {{-- Dasar hero dilarutkan ke warna bidang berikutnya, bukan digelapkan
+       ke hitam — supaya pergantian bagian tidak menyisakan garis lurus. --}}
+  <div class="sambung sambung-bawah bg-gradient-to-b from-transparent to-cam-ink"></div>
   <div class="absolute -right-24 -top-24 w-[380px] h-[380px] rounded-full bg-cam-lime/20 blur-3xl apung" data-parallax="0.2"></div>
-  <div class="absolute -left-16 bottom-[-90px] w-[300px] h-[300px] rounded-full bg-[#1F6FB8]/15 blur-3xl apung-2" data-parallax="0.1"></div>
+  <div class="absolute -left-16 bottom-[-90px] w-[300px] h-[300px] rounded-full bg-cam-coral/12 blur-3xl apung-2" data-parallax="0.1"></div>
 
   <div class="relative max-w-6xl mx-auto px-5 py-16 md:py-24">
     <div class="max-w-2xl animate-fadeUp">
@@ -49,7 +55,9 @@
 
       <h1 class="font-display text-[38px] md:text-[58px] font-black mt-5 leading-[1.05] text-shadow">
         Keselamatan tambang,<br>
-        <span class="sheen" style="--sheen-base:#2CB0BC; --sheen-hi:#BFF6FA">terukur dan terbukti.</span>
+        {{-- Kilau menyapu dari teal ke pasir hangat, bukan teal ke putih —
+             pergeseran suhu warnanya yang memberi kesan bahan, bukan kilapnya. --}}
+        <span class="sheen" style="--sheen-base:#2A9D8F; --sheen-hi:#F5E6CA">terukur dan terbukti.</span>
       </h1>
 
       <p class="text-[14px] md:text-[15px] text-white/55 mt-5 leading-relaxed max-w-lg">
@@ -95,6 +103,9 @@
 <section id="pilar" class="relative bg-cam-ink text-white overflow-hidden aurora"
          x-data="{ aktif: null, buka(s){ this.aktif = this.aktif === s ? null : s } }">
   <div class="absolute inset-0 grid-tech pointer-events-none"></div>
+  {{-- Pita masuk: mengambil warna ujung hero lalu melarutkannya, sehingga
+       tidak ada garis lurus di titik pertemuan dua bagian gelap. --}}
+  <div class="sambung sambung-atas h-32 bg-gradient-to-b from-cam-black to-transparent"></div>
 
   <div class="relative max-w-6xl mx-auto px-5 py-20 md:py-28">
 
@@ -212,6 +223,11 @@
     @endforeach
 
   </div>
+
+  {{-- Peralihan gelap ke terang: bidang paling tajam di halaman ini, jadi
+       dilarutkan paling panjang. Pita pasir tipis di ujungnya menahan
+       supaya batasnya tetap terasa hangat, bukan mendadak putih. --}}
+  <div class="sambung sambung-bawah h-64 bg-gradient-to-b from-transparent via-[#2C4A45] via-55% to-cam-bg"></div>
 </section>
 
 {{-- ══════════ MODUL ══════════ --}}
@@ -291,7 +307,9 @@
 </section>
 
 {{-- ══════════ FITUR ══════════ --}}
-<section id="fitur" class="bg-white border-y border-stone-100">
+{{-- Garis tegas diganti gradien pasir: bidang terang bertemu terang, jadi
+     cukup pergeseran nada tipis untuk memisahkannya. --}}
+<section id="fitur" class="relative bg-gradient-to-b from-cam-bg via-white to-cam-bg">
   <div class="max-w-6xl mx-auto px-5 py-16 md:py-20">
     <div class="text-center max-w-xl mx-auto reveal">
       <span class="text-[10.5px] font-bold uppercase tracking-[0.22em] text-cam-lime-dark">Fitur Unggulan</span>
