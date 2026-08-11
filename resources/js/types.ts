@@ -114,6 +114,53 @@ export interface Picker {
   daftarTahun: number[];
 }
 
+/* ══════════════ PTPKKP — rubrik & jadwal ══════════════ */
+
+export interface TingkatRubrik {
+  tingkat: number;
+  teks: string;
+  warna: string;
+}
+
+export interface ItemRubrik {
+  kode: string;
+  nama: string;
+  metode: string[];
+  maks: number;
+  acuan: TingkatRubrik[] | null;
+  rubrik: Array<{ metode: string; tingkat: TingkatRubrik[] }>;
+  target: Array<{ metode: string; teks: string }>;
+}
+
+export interface HalamanRubrik {
+  judul: string;
+  subjudul: string;
+  picker: Picker;
+  parameter: Array<{ kode: string; nama: string; jumlah: number; url: string }>;
+  paramAktif: string;
+  items: ItemRubrik[];
+}
+
+export interface BarisJadwal {
+  idx: number;
+  kegiatan: string;
+  keluaran: string;
+  mulai: number;
+  akhir: number;
+  kiri: number;
+  lebar: number;
+  selesai: boolean;
+}
+
+export interface HalamanJadwal {
+  judul: string;
+  subjudul: string;
+  picker: Picker;
+  tahun: number;
+  tahap: Array<{ nama: string; baris: BarisJadwal[] }>;
+  bisaSunting: boolean;
+}
+
 /** Satu set data grafik batang: label, nilai, dan warna per batang. */
 export interface SeriGrafik {
   label: string[];

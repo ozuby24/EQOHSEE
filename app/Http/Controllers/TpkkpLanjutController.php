@@ -225,37 +225,71 @@ class TpkkpLanjutController extends Controller
         $daftarParam = [];
         foreach (Tpkkp::indicators() as $I) {
             foreach ($I['params'] as $P) {
-                $daftarParam[] = ['code' => $P['code'], 'name' => $P['name'], 'n' => count($P['items'])];
+                $daftarParam[] = [
+                    'kode' => $P['code'], 'nama' => $P['name'], 'jumlah' => count($P['items']),
+                    'url'  => route('tpkkp.rubrik', ['p' => $P['code']]),
+                ];
             }
         }
 
         $p = (string) $request->get('p', '');
-        if (!$p || !collect($daftarParam)->firstWhere('code', $p)) {
-            $p = $daftarParam[0]['code'] ?? '';
+        if (!$p || !collect($daftarParam)->firstWhere('kode', $p)) {
+            $p = $daftarParam[0]['kode'] ?? '';
         }
 
-        $q     = trim((string) $request->get('q', ''));
-        $par   = Tpkkp::paramByCode($p);
-        $items = [];
+        /* Item satu parameter dikirim seluruhnya lalu dicari di peramban.
+           Versi Blade menyaringnya di server dan memuat ulang halaman tiap
+           kali kata kuncinya berubah, padahal isinya sudah ada di memori. */
+        $par    = Tpkkp::paramByCode($p);
+        $target = Tpkkp::target();
+        $items  = [];
 
         foreach ($par['items'] ?? [] as $it) {
-            if ($q !== ''
-                && stripos($it['code'], $q) === false
-                && stripos($it['name'], $q) === false) continue;
+            $acuan = Tpkkp::rubrik()['REF|'.$it['code']] ?? null;
 
-            $rub = [];
+            $rubrik = [];
             foreach ($it['methods'] as $m) {
                 $r = Tpkkp::rubrikFor($m, $it['code']);
-                if ($r) $rub[$m] = $r;
+
+                // Rubrik metode yang isinya sama persis dengan acuan tidak
+                // ditampilkan dua kali — pengulangan itu membuat halaman
+                // panjang tanpa menambah satu keterangan pun.
+                if ($r && (!$acuan || $r !== $acuan)) {
+                    $rubrik[] = ['metode' => $m, 'tingkat' => self::tingkat($r)];
+                }
             }
-            $items[] = ['item' => $it, 'acuan' => Tpkkp::rubrik()['REF|' . $it['code']] ?? null, 'rubrik' => $rub];
+
+            $items[] = [
+                'kode'   => $it['code'],
+                'nama'   => $it['name'],
+                'metode' => $it['methods'],
+                'maks'   => $it['max'],
+                'acuan'  => $acuan ? self::tingkat($acuan) : null,
+                'rubrik' => $rubrik,
+                'target' => collect($target[$it['code']] ?? [])
+                    ->map(fn ($teks, $m) => ['metode' => $m, 'teks' => trim($teks)])
+                    ->values()->all(),
+            ];
         }
 
-        return view('tpkkp.rubrik', [
-            'a' => $a, 'hasil' => $hasil, 'tahunn' => $tahunn,
-            'daftarParam' => $daftarParam, 'paramAktif' => $p, 'items' => $items, 'q' => $q,
-            'target' => Tpkkp::target(),
+        return Inertia::render('Tpkkp/Rubrik', [
+            'judul'      => 'PTPKKP — Rubrik',
+            'subjudul'   => 'Rubrik acuan Kepdirjen, lima tingkat per item',
+            'picker'     => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
+            'parameter'  => $daftarParam,
+            'paramAktif' => $p,
+            'items'      => $items,
         ]);
+    }
+
+    /** Lima tingkat rubrik beserta warnanya. */
+    private static function tingkat(array $rub): array
+    {
+        return collect($rub['l'] ?? [])->map(fn ($teks, $i) => [
+            'tingkat' => $i + 1,
+            'teks'    => $teks,
+            'warna'   => Tpkkp::levelHex($i + 1),
+        ])->values()->all();
     }
 
     /* ---------- Jadwal ---------- */
@@ -268,16 +302,39 @@ class TpkkpLanjutController extends Controller
 
         $tahap = [];
         foreach ($rows as $i => $r) {
-            $t = $r['tahap'] ?? 'Lainnya';
-            $tahap[$t][] = $r + ['idx' => $i];
+            if (!empty($r['header'])) continue;
+
+            $mulai = max(1, (int) ($r['start'] ?? 1));
+            $akhir = min(30, (int) ($r['end'] ?? 30));
+
+            $tahap[$r['tahap'] ?? 'Lainnya'][] = [
+                'idx'      => $i,
+                'kegiatan' => $r['kegiatan'] ?? '',
+                'keluaran' => $r['output'] ?? '',
+                'mulai'    => $mulai,
+                'akhir'    => $akhir,
+
+                /* Posisi batang dihitung di server: rumus hari-ke-persen
+                   ini sudah ada di versi Blade, dan rumus yang sama hidup
+                   di dua tempat sudah sekali terbukti melenceng. */
+                'kiri'     => ($mulai - 1) / 30 * 100,
+                'lebar'    => max(3, ($akhir - $mulai + 1) / 30 * 100),
+                'selesai'  => !empty($r['done']),
+            ];
         }
 
-        $isi = array_values(array_filter($rows, fn ($r) => empty($r['header'])));
-        $selesai = count(array_filter($isi, fn ($r) => !empty($r['done'])));
+        $daftar = [];
+        foreach ($tahap as $nama => $baris) {
+            $daftar[] = ['nama' => $nama, 'baris' => $baris];
+        }
 
-        return view('tpkkp.jadwal', [
-            'a' => $a, 'hasil' => $hasil, 'tahunn' => $tahunn,
-            'tahap' => $tahap, 'jumlah' => count($isi), 'selesai' => $selesai,
+        return Inertia::render('Tpkkp/Jadwal', [
+            'judul'       => 'PTPKKP — Jadwal',
+            'subjudul'    => "Rencana penilaian 30 hari, periode {$a->tahun}",
+            'picker'      => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
+            'tahun'       => $a->tahun,
+            'tahap'       => $daftar,
+            'bisaSunting' => $request->user()->isAdmin(),
         ]);
     }
 
