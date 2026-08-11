@@ -98,6 +98,16 @@ p,li,td,th,dd,dt,h1,h2,h3,h4{ overflow-wrap:anywhere; }
   text-shadow:0 1px 2px rgba(0,0,0,.55), 0 3px 14px rgba(0,0,0,.55), 0 12px 44px rgba(0,0,0,.45);
 }
 
+/* Bayangan untuk teks bersapuan cahaya.
+   `text-shadow` tidak boleh dipakai bersama .sheen: sapuan itu bekerja
+   dengan background-clip:text dan color:transparent, sehingga bayangannya
+   menembus isi huruf dan mengotori warnanya — persis seperti teal yang
+   berubah keruh. `drop-shadow` bekerja pada bentuk yang benar-benar
+   tergambar, jadi bayangannya jatuh di luar huruf, bukan di dalamnya. */
+.sheen-shadow{
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,.5)) drop-shadow(0 8px 26px rgba(0,0,0,.45));
+}
+
 /* ---------- Navigasi ---------- */
 .nav-active{ background:linear-gradient(135deg,rgba(21,141,153,.20),rgba(44,176,188,.10)); color:#fff; }
 .nav-active .nav-accent{ opacity:1; }
@@ -267,6 +277,77 @@ input,select,textarea{ outline:none; }
 }
 .sambung-atas  { top:0; }
 .sambung-bawah { bottom:0; }
+
+/* ══════════════════════════════════════════════════════════════
+   HERO BERFOTO
+   Foto tambang siang hari adalah bidang paling terang dan paling ramai
+   di seluruh halaman. Supaya teks putih tetap terbaca tanpa membuang
+   fotonya, perlakuannya dipisah jadi tiga lapis: penilaian warna,
+   tirai, dan pendar. Ketiganya di sini agar dapat dibaca sekaligus.
+   ══════════════════════════════════════════════════════════════ */
+
+/* 1. Penilaian warna.
+   Rekaman mentah cenderung pucat dan kebiruan. Saturasi diturunkan
+   sedikit, kontras dinaikkan sedikit, dan terangnya ditekan — bukan
+   supaya gelap, melainkan supaya putih pada teks menjadi nilai paling
+   terang di bidang itu. Tanpa itu, sorot logam dan langit akan selalu
+   bersaing dengan judulnya. */
+.grade-tambang{
+  filter: saturate(.88) contrast(1.07) brightness(.94);
+}
+
+/* Lapis penyatu warna: teal pada bayangan, hangat pada sorotan, memakai
+   soft-light supaya bentuk fotonya tetap utuh dan hanya suhunya yang
+   bergeser ke arah palet. Inilah yang membuat foto stok terbaca sebagai
+   bagian dari mereknya, bukan sebagai gambar yang ditempel. */
+.grade-tambang-lapis{
+  background:linear-gradient(118deg,#0F766E 0%,#1B2422 46%,#2E2E2E 68%,#E2663A 100%);
+  mix-blend-mode:soft-light;
+  opacity:.55;
+}
+
+/* 2. Tirai.
+   Perhentiannya dihitung dari titik tengah bidang, bukan dari persen
+   lebar layar. Persen membuat tirainya habis di tengah judul begitu
+   layarnya melebar — kolom teks berhenti di 72rem sementara tirainya
+   ikut melar mengikuti layar. Dengan calc(50% ± rem) tirai selalu
+   menutup kolom yang sama, dari laptop sampai monitor lebar. */
+.tirai-hero{
+  background:linear-gradient(90deg,
+    rgba(14,20,19,.52) 0%,
+    rgba(14,20,19,.86) calc(50% - 36rem),   /* tepi kiri kolom teks */
+    rgba(14,20,19,.82) calc(50% - 12rem),
+    rgba(14,20,19,.52) calc(50% + 4rem),    /* judul berakhir di sekitar sini */
+    rgba(14,20,19,.22) calc(50% + 20rem),
+    rgba(14,20,19,.10) 100%);
+}
+
+/* 3. Pendar sudut: cahaya lembut yang menahan mata di bidang tengah dan
+   menggelapkan keempat sudut, seperti pada bingkai foto sinematik. */
+.pendar-hero{
+  background:radial-gradient(120% 82% at 64% 44%,
+    rgba(255,246,232,.13) 0%, rgba(255,246,232,0) 46%),
+             radial-gradient(100% 84% at 52% 50%,
+    rgba(0,0,0,0) 46%, rgba(10,15,14,.46) 100%);
+}
+
+/* Titik pada penanda gulir: turun lalu memudar, lalu mengulang. */
+@keyframes gulir-titik{
+  0%   { transform:translateY(0);    opacity:0; }
+  22%  {                             opacity:1; }
+  70%  { transform:translateY(9px);  opacity:0; }
+  100% { transform:translateY(9px);  opacity:0; }
+}
+.gulir-titik{ animation:gulir-titik 2.1s cubic-bezier(.42,0,.3,1) infinite; }
+
+/* Tepi kanan galeri dilarutkan, bukan dipotong tegak.
+   Kartu yang terpotong tepat di tengah judulnya terbaca seperti tata
+   letak yang salah; kartu yang memudar terbaca sebagai "masih ada
+   lagi di sebelah sana". */
+.tepi-larut{
+  -webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 5rem),transparent 100%);
+          mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 5rem),transparent 100%);
+}
 
 /* ── Sapuan cahaya pada teks judul ── */
 .sheen{

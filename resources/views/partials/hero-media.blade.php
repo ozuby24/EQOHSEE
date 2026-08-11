@@ -19,7 +19,12 @@
 @endphp
 
 @if($video || $poster)
-  <div class="absolute inset-0">
+  {{-- Rekaman diberi penilaian warna sebelum apa pun ditumpuk di atasnya:
+       saturasi turun sedikit, kontras naik sedikit, terangnya ditekan.
+       Bukan agar gelap, melainkan agar putih pada judul menjadi nilai
+       paling terang di bidang ini — tanpa itu sorot logam dan langit akan
+       selalu bersaing dengan teksnya. --}}
+  <div class="absolute inset-0 grade-tambang">
     @if($poster)
       <img src="{{ $poster }}" alt="" class="w-full h-full object-cover" fetchpriority="high">
     @endif
@@ -31,6 +36,11 @@
              muted playsinline loop preload="none" aria-hidden="true"></video>
     @endif
   </div>
+
+  {{-- Penyatu warna ke arah palet: teal pada bayangan, hangat pada
+       sorotan. Inilah yang membuat rekaman terbaca sebagai bagian dari
+       mereknya, bukan sebagai gambar yang ditempelkan. --}}
+  <div class="absolute inset-0 grade-tambang-lapis pointer-events-none"></div>
 @else
   {{-- Panorama mandiri; tetap tampil penuh saat jaringan site terputus.
        Dijangkarkan ke bawah supaya alat berat berhenti di pita bawah dan

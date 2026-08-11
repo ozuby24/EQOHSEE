@@ -45,7 +45,7 @@
   </div>
 
   <div x-ref="rel"
-       class="flex gap-4 mt-5 overflow-x-auto snap-x snap-mandatory scrollbar-halus pb-2 -mx-1 px-1">
+       class="flex gap-4 mt-5 overflow-x-auto snap-x snap-mandatory scrollbar-halus tepi-larut pb-2 -mx-1 px-1">
     @foreach($butir as $g)
       @php
         $gambar = Media::url($g['gambar']);

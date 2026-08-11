@@ -75,13 +75,17 @@
   {{-- Kepekatan tirai mengikuti isi latarnya. Foto siang hari jauh lebih
        terang daripada panorama SVG, dan teks putih di atasnya tidak
        terbaca tanpa bidang gelap yang sungguh-sungguh. --}}
-  <div class="absolute inset-0 {{ $adaMedia ? 'bg-cam-black/78' : 'bg-cam-black/72' }} lg:hidden"></div>
-  <div class="absolute inset-0 hidden lg:block bg-gradient-to-r
-              {{ $adaMedia
-                  ? 'from-cam-black/94 from-8% via-cam-black/72 via-46% to-cam-black/30'
-                  : 'from-cam-black/92 from-5% via-cam-black/45 via-40% to-transparent to-72%' }}"></div>
-  <div class="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-cam-black/75 to-transparent"></div>
-  <div class="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-cam-black/70 to-transparent"></div>
+  <div class="absolute inset-0 {{ $adaMedia ? 'bg-cam-black/80' : 'bg-cam-black/72' }} lg:hidden"></div>
+
+  @if($adaMedia)
+    <div class="absolute inset-0 hidden lg:block pendar-hero"></div>
+    <div class="absolute inset-0 hidden lg:block tirai-hero"></div>
+  @else
+    <div class="absolute inset-0 hidden lg:block bg-gradient-to-r from-cam-black/92 from-5% via-cam-black/45 via-40% to-transparent to-72%"></div>
+  @endif
+
+  <div class="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-cam-black/80 to-transparent"></div>
+  <div class="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-cam-ink via-cam-ink/55 via-40% to-transparent"></div>
   <div class="sambung sambung-bawah h-40 bg-gradient-to-b from-transparent to-cam-ink"></div>
   <div class="absolute -right-24 -top-24 w-[380px] h-[380px] rounded-full bg-cam-lime/20 blur-3xl apung" data-parallax="0.2"></div>
   <div class="absolute -left-16 bottom-[-90px] w-[300px] h-[300px] rounded-full bg-cam-coral/12 blur-3xl apung-2" data-parallax="0.1"></div>
@@ -96,13 +100,17 @@
           Delapan Aspek · Satu Platform
         </span>
 
-        <h1 class="font-display text-[40px] md:text-[62px] font-black mt-5 leading-[1.04] {{ $adaMedia ? 'text-shadow-foto' : 'text-shadow' }}">
-          Keselamatan tambang,<br>
+        <h1 class="font-display text-[38px] sm:text-[46px] xl:text-[58px] font-black mt-5 leading-[1.06] tracking-[-.01em]">
+          <span class="block {{ $adaMedia ? 'text-shadow-foto' : 'text-shadow' }}">Keselamatan tambang,</span>
           {{-- Kilau menyapu dari teal ke pasir hangat, bukan teal ke putih —
                pergeseran suhu warnanya yang memberi kesan bahan. Di atas
                foto siang hari tealnya dinaikkan terangnya: teal pekat
-               menghilang begitu bidang di belakangnya ikut terang. --}}
-          <span class="sheen" style="--sheen-base:{{ $adaMedia ? '#6FD3C4' : '#2A9D8F' }}; --sheen-hi:#F5E6CA">terukur dan terbukti.</span>
+               menghilang begitu bidang di belakangnya ikut terang.
+
+               Bayangannya lewat drop-shadow, bukan text-shadow; lihat
+               .sheen-shadow untuk alasannya. --}}
+          <span class="sheen block {{ $adaMedia ? 'sheen-shadow' : '' }}"
+                style="--sheen-base:{{ $adaMedia ? '#7FE3D2' : '#2A9D8F' }}; --sheen-hi:#FBF1DC">terukur dan terbukti.</span>
         </h1>
 
         <p class="text-[14px] md:text-[15.5px] mt-5 leading-relaxed max-w-xl
@@ -184,6 +192,19 @@
     </div>
   </div>
 
+  @if($adaMedia)
+    {{-- Petunjuk gulir. Bingkai setinggi layar selalu menyisakan bidang
+         kosong di kakinya; diisi penanda kecil, bidang itu berubah dari
+         ruang yang terlupakan menjadi ajakan turun. --}}
+    <a href="#beranda-lanjut" aria-label="Gulir ke bawah"
+       class="hidden lg:grid absolute inset-x-0 bottom-7 mx-auto w-max place-items-center gap-2 group">
+      <span class="text-[9.5px] font-bold uppercase tracking-[.24em] text-white/40 group-hover:text-white/70 transition">Gulir</span>
+      <span class="w-5 h-8 rounded-full border border-white/25 grid justify-center pt-1.5 group-hover:border-white/50 transition">
+        <span class="w-[3px] h-[7px] rounded-full bg-white/50 gulir-titik"></span>
+      </span>
+    </a>
+  @endif
+
   @if($heroVideo)
     {{-- Pemutar hero. Sumbernya baru dipasang saat dibuka, supaya video
          yang sama tidak terunduh dua kali hanya karena ada di halaman.
@@ -223,7 +244,7 @@
 {{-- ══════════ FOKUS SMKP + GALERI ══════════ --}}
 {{-- Dua hal yang saling menjelaskan disandingkan: kerangka yang dipakai
      di sebelah kiri, dan wujudnya di lapangan di sebelah kanan. --}}
-<section class="relative bg-cam-ink text-white overflow-hidden">
+<section id="beranda-lanjut" class="relative bg-cam-ink text-white overflow-hidden scroll-mt-[66px]">
   <div class="absolute inset-0 grid-tech pointer-events-none opacity-60"></div>
 
   <div class="relative max-w-6xl mx-auto px-5 py-14 md:py-16">
