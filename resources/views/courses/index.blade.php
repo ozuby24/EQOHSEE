@@ -87,7 +87,7 @@
             @endif
             <div class="absolute top-2.5 left-2.5 flex gap-1.5">
               @if($course->category)
-                <span class="glass rounded-full text-[10px] font-bold text-white px-2.5 py-1">{{ $course->category }}</span>
+                <span class="eq-lencana-kat k-{{ \App\Support\Kategori::nada($course->category) }}">{{ $course->category }}</span>
               @endif
               @if($course->require_code)
                 <span class="glass rounded-full text-[10px] font-bold text-white px-2 py-1 inline-flex items-center gap-1" title="Perlu kode akses">

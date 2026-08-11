@@ -10,7 +10,7 @@
       </div>
       <div class="p-6 flex-1">
         @if($course->category)
-          <span class="glass rounded-full text-[10px] font-bold px-2.5 py-1">{{ $course->category }}</span>
+          <span class="eq-lencana-kat k-{{ \App\Support\Kategori::nada($course->category) }}">{{ $course->category }}</span>
         @endif
         <h2 class="stat mt-2.5 leading-tight">{{ $course->title }}</h2>
         <p class="text-[13px] text-white/50 mt-2 leading-relaxed">{{ $course->description ?: '—' }}</p>

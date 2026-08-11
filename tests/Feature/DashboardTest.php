@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\{Certificate, Course, Enrollment, Module, News, User};
-use App\Support\IkonNav;
+use App\Support\{IkonNav, Kategori};
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -238,6 +238,82 @@ class DashboardTest extends TestCase
         $this->assertCount(2, $cocok[1], 'Kedua kartu kursus seharusnya bersampul.');
         $this->assertCount(2, array_unique($cocok[1]),
             'Dua kursus tanpa gambar sendiri seharusnya tidak berbagi satu foto cadangan.');
+    }
+
+    /* ---------- warna kategori ---------- */
+
+    public function test_tiap_kategori_punya_warna_sendiri(): void
+    {
+        $this->assertNotSame(Kategori::nada('Wajib'), Kategori::nada('Operasional'));
+        $this->assertNotSame(Kategori::nada('Keselamatan Kerja'), Kategori::nada('Tanggap Darurat'));
+
+        foreach (['Wajib', 'Operasional', 'Lingkungan'] as $k) {
+            $this->assertContains(Kategori::nada($k), Kategori::NADA);
+        }
+    }
+
+    /**
+     * Warna terikat pada nama kategori, bukan pada urutan tampilnya.
+     *
+     * Warna sempat dipilih dari indeks perulangan, sehingga "Wajib" tampil
+     * jingga di satu halaman dan biru di halaman lain hanya karena
+     * daftarnya terurut berbeda — dan warna yang berpindah-pindah tidak
+     * dapat dipakai mengenali apa pun, yang justru satu-satunya gunanya.
+     */
+    public function test_warna_kategori_tidak_berubah_karena_urutan(): void
+    {
+        $sekali = Kategori::nada('Operasional');
+
+        // Kategori lain yang muncul lebih dulu tidak boleh menggesernya.
+        foreach (['Wajib', 'Lingkungan', 'Kesehatan Kerja'] as $lain) {
+            Kategori::nada($lain);
+        }
+
+        $this->assertSame($sekali, Kategori::nada('Operasional'));
+    }
+
+    public function test_kategori_tak_dikenal_tetap_konsisten_warnanya(): void
+    {
+        // Kategori baru tidak perlu didaftarkan lebih dulu supaya warnanya
+        // tetap sama setiap kali halaman dimuat.
+        $a = Kategori::nada('Kategori Yang Belum Terdaftar');
+        $this->assertContains($a, Kategori::NADA);
+        $this->assertSame($a, Kategori::nada('Kategori Yang Belum Terdaftar'));
+    }
+
+    public function test_lencana_kartu_membawa_warna_kategorinya(): void
+    {
+        $u = $this->pengguna();
+        $this->actingAs($u);
+
+        $a = $this->kursus('Kursus Wajib', 'Wajib', 1);
+        $b = $this->kursus('Kursus Operasional', 'Operasional', 1);
+        Enrollment::create(['user_id' => $u->id, 'course_id' => $a->id, 'progress' => 10, 'status' => 'ongoing']);
+        Enrollment::create(['user_id' => $u->id, 'course_id' => $b->id, 'progress' => 10, 'status' => 'ongoing']);
+
+        $this->get('/dashboard')
+            ->assertOk()
+            ->assertSee('k-'.Kategori::nada('Wajib'), false)
+            ->assertSee('k-'.Kategori::nada('Operasional'), false);
+    }
+
+    /**
+     * Aturan dasar lencana tidak boleh menetapkan latar sendiri.
+     *
+     * `.eq-kursus-lencana i` adalah kelas + elemen, jadi lebih kuat daripada
+     * kelas warna tunggal seperti `.k-kuning`. Sebuah `background` di aturan
+     * dasar menimpa seluruh warna kategori dan membuat setiap lencana tampil
+     * dengan latar yang persis sama — halamannya tetap terbentuk, tidak ada
+     * galat, dan warnanya hilang tanpa suara.
+     */
+    public function test_aturan_dasar_lencana_tidak_menimpa_warna_kategori(): void
+    {
+        $gaya = file_get_contents(resource_path('views/partials/eq-visual.blade.php'));
+
+        preg_match('/\.eq-kursus-lencana i\{(.*?)\}/s', $gaya, $cocok);
+        $this->assertNotEmpty($cocok, 'Aturan dasar lencana tidak ditemukan.');
+        $this->assertStringNotContainsString('background', $cocok[1],
+            'Aturan dasar lencana menetapkan latar dan akan menimpa warna kategori.');
     }
 
     public function test_kategori_kursus_dikelompokkan_beserta_jumlahnya(): void

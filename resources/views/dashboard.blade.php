@@ -125,7 +125,9 @@
                   <img src="{{ $g }}" alt="" loading="lazy">
                 @endif
                 <span class="eq-kursus-lencana">
-                  @if($c?->category)<i class="l-utama">{{ strtoupper($c->category) }}</i>@endif
+                  @if($c?->category)
+                    <i class="l-utama k-{{ \App\Support\Kategori::nada($c->category) }}">{{ strtoupper($c->category) }}</i>
+                  @endif
                   @if($e->status === 'ongoing')<i class="l-ikut">DIIKUTI</i>@endif
                   @if($e->status === 'finished')<i class="l-selesai">SELESAI</i>@endif
                 </span>
@@ -255,7 +257,7 @@
 
       <div class="eq-kategori">
         @foreach($kategori as $i => $k)
-          @php $nada = ['kuning','biru','hijau','merah','ungu'][$i % 5]; @endphp
+          @php $nada = \App\Support\Kategori::nada($k['nama']); @endphp
           <a href="{{ route('courses.index', ['kategori' => $k['nama']]) }}">
             <span class="eq-kategori-ikon t-{{ $nada }}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"

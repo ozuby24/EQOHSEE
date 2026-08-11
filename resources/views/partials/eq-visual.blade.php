@@ -365,21 +365,49 @@ main a{transition:color .16s}
    Latar pekat menempel seperti stiker dan memotong gambar; yang tembus
    pandang tetap terbaca berkat blur + garis tepi terang, sekaligus
    membiarkan sampulnya utuh. Bayangan teks menjaga huruf putih tetap
-   terbaca ketika kebetulan jatuh di bagian foto yang terang. */
+   terbaca ketika kebetulan jatuh di bagian foto yang terang.
+
+   Aturan dasar ini sengaja TIDAK menetapkan background: pemilihnya
+   (kelas + elemen) lebih kuat daripada kelas warna tunggal seperti
+   .k-kuning, sehingga satu latar bersama di sini akan menimpa seluruh
+   warna kategori dan membuat semua lencana tampak sama. */
 .eq-kursus-lencana i{font-style:normal;font-size:9.5px;font-weight:800;letter-spacing:.07em;
   padding:5px 11px;border-radius:999px;color:#fff;
-  background:rgba(255,255,255,.16);
   border:1px solid rgba(255,255,255,.34);
   backdrop-filter:blur(9px) saturate(1.5);
   -webkit-backdrop-filter:blur(9px) saturate(1.5);
   text-shadow:0 1px 3px rgba(6,32,30,.55);
   box-shadow:0 2px 10px rgba(6,32,30,.22)}
 
-/* Warna aspek dibawa sebagai semburat tipis, bukan blok penuh — cukup
-   untuk membedakan ketiganya sekilas tanpa menutup fotonya. */
+/* Warna dibawa sebagai semburat tipis, bukan blok penuh — cukup untuk
+   membedakan sekilas tanpa menutup fotonya. */
 .l-utama{background:linear-gradient(135deg,rgba(14,116,126,.42),rgba(14,74,68,.30))}
 .l-ikut{background:linear-gradient(135deg,rgba(31,111,184,.44),rgba(20,80,140,.30))}
 .l-selesai{background:linear-gradient(135deg,rgba(107,178,58,.44),rgba(74,142,44,.30))}
+
+/* Tiap kategori berwarna sendiri, ditetapkan App\Support\Kategori menurut
+   namanya. Satu warna untuk semua kategori membuat lencananya hanya
+   mengulang tulisan yang sudah ada di dalamnya.
+
+   Kepekatannya sengaja lebih tinggi daripada lencana status: warna yang
+   terlalu tipis di atas foto ramai terbaca sebagai abu-abu yang sama,
+   sehingga kategorinya justru tidak terbedakan sama sekali. */
+.k-toska {background:linear-gradient(135deg,rgba(16,146,136,.80),rgba(12,92,86,.66))}
+.k-biru  {background:linear-gradient(135deg,rgba(33,118,196,.80),rgba(18,74,132,.66))}
+.k-kuning{background:linear-gradient(135deg,rgba(232,132,26,.82),rgba(178,92,10,.68))}
+.k-hijau {background:linear-gradient(135deg,rgba(101,176,50,.80),rgba(64,128,36,.66))}
+.k-ungu  {background:linear-gradient(135deg,rgba(126,94,212,.80),rgba(84,58,158,.66))}
+.k-merah {background:linear-gradient(135deg,rgba(214,66,66,.80),rgba(154,40,40,.66))}
+
+/* Lencana kategori di luar kartu dashboard — katalog dan halaman kursus —
+   memakai bentuk dan warna yang sama supaya kategori dikenali di mana pun
+   ia muncul. */
+.eq-lencana-kat{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.06em;
+  padding:5px 11px;border-radius:999px;color:#fff;
+  border:1px solid rgba(255,255,255,.32);
+  backdrop-filter:blur(9px) saturate(1.5);
+  -webkit-backdrop-filter:blur(9px) saturate(1.5);
+  text-shadow:0 1px 3px rgba(6,32,30,.55)}
 
 /* Peramban tanpa backdrop-filter menampilkan lencana nyaris tanpa latar,
    jadi warnanya dinaikkan agar tulisannya tetap terbaca. */
@@ -387,6 +415,12 @@ main a{transition:color .16s}
   .l-utama{background:rgba(14,74,68,.82)}
   .l-ikut{background:rgba(31,111,184,.82)}
   .l-selesai{background:rgba(74,142,44,.84)}
+  .k-toska {background:rgba(14,116,126,.86)}
+  .k-biru  {background:rgba(31,111,184,.86)}
+  .k-kuning{background:rgba(200,110,20,.88)}
+  .k-hijau {background:rgba(74,142,44,.86)}
+  .k-ungu  {background:rgba(107,79,190,.86)}
+  .k-merah {background:rgba(192,58,58,.86)}
 }
 
 .eq-kursus-isi{padding:15px 16px 16px;display:flex;flex-direction:column;flex:1}
