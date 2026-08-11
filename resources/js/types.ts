@@ -476,3 +476,29 @@ export interface HalamanPenilaian {
   paramBobot: number;
   paramTarget: number;
 }
+
+export interface IsianProfil {
+  judul: string;
+  organisasi: string;
+  site: string;
+  komoditas: string;
+  ktt: string;
+  basis: string;
+  status: string;
+}
+
+export interface RosterMetode {
+  kode: string;
+  label: string;
+  entitas: string[];
+}
+
+export interface HalamanProfil {
+  judul: string;
+  subjudul: string;
+  picker: Picker;
+  tahun: number;
+  isian: IsianProfil;
+  roster: RosterMetode[];
+  bisaSunting: boolean;
+}

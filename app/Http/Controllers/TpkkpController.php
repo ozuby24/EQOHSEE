@@ -139,7 +139,43 @@ class TpkkpController extends Controller
     {
         [$a, $hasil, $tahunn] = $this->base($request);
 
-        return view('tpkkp.profil', ['a' => $a, 'hasil' => $hasil, 'tahunn' => $tahunn]);
+        $p = $a->profil ?? [];
+
+        /* Roster entitas hanya menampilkan metode yang benar-benar punya
+           entitas. Metode tanpa entitas dinilai satu angka untuk seluruh
+           organisasi, dan judul kosong tanpa isi di bawahnya membuat
+           halaman tampak rusak. */
+        $roster = [];
+        foreach (Tpkkp::methods() as $k => $m) {
+            $ents = $a->entitiesOf($k);
+            if (!count($ents)) continue;
+
+            $roster[] = [
+                'kode'    => $k,
+                'label'   => $m['entityLabel'] ?? '',
+                'entitas' => array_values($ents),
+            ];
+        }
+
+        return Inertia::render('Tpkkp/Profil', [
+            'judul'    => 'PTPKKP — Profil',
+            'subjudul' => "Identitas penilaian dan roster entitas, periode {$a->tahun}",
+            'picker'   => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
+            'tahun'    => $a->tahun,
+
+            'isian' => [
+                'judul'      => $a->judul ?? '',
+                'organisasi' => $p['organisasi'] ?? '',
+                'site'       => $p['site'] ?? '',
+                'komoditas'  => $p['komoditas'] ?? '',
+                'ktt'        => $p['ktt'] ?? '',
+                'basis'      => $p['basis'] ?? '',
+                'status'     => $a->status ?? 'draft',
+            ],
+
+            'roster'      => $roster,
+            'bisaSunting' => $request->user()->isAdmin(),
+        ]);
     }
 
     public function saveProfile(Request $request)
@@ -157,8 +193,11 @@ class TpkkpController extends Controller
             'basis'     => ['nullable', 'string', 'max:200'],
         ]);
 
-        $a->judul  = $d['judul']  ?: $a->judul;
-        $a->status = $d['status'] ?: $a->status;
+        // Medannya nullable, jadi yang tidak dikirim sama sekali tidak
+        // muncul di hasil validasi — bukan muncul bernilai null. Membacanya
+        // langsung membuat kiriman sebagian menjadi galat 500.
+        $a->judul  = ($d['judul']  ?? null) ?: $a->judul;
+        $a->status = ($d['status'] ?? null) ?: $a->status;
         $a->profil = array_merge($a->profil ?? [], [
             'organisasi' => $d['organisasi'] ?? '',
             'site'       => $d['site'] ?? '',
