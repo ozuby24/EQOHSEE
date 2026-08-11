@@ -7,7 +7,7 @@ use App\Http\Controllers\{
 };
 use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiTemuanController, HazardController,
     HazardExportController, InspectionController, InspectionTemplateController,
-    EnergyController, IsoController, KoController, KuesionerController, SignatoryController, SmkpController,
+    EnergyController, EngineeringController, IsoController, KoController, KuesionerController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\Admin\{CompanyController, SystemController, UserController};
 use Illuminate\Support\Facades\Route;
@@ -184,6 +184,21 @@ Route::middleware('auth')->group(function () {
     // Struktur dokumen — ditaruh di luar prefix agar tidak tertangkap {dokumen}.
     Route::get('struktur-dokumen', [DocumentController::class,'piramida'])->name('dokumen.piramida');
     Route::get('daftar-induk',     [DocumentController::class,'daftarInduk'])->name('dokumen.daftar-induk');
+
+    /* ================= WEBSITE #7 — Mining Engineering Hub =================
+       Halaman acuan rekayasa. Alamatnya dipertahankan seperti saat masih
+       berupa berkas statis supaya tautan yang sudah beredar tetap sampai. */
+    Route::prefix('mining-engineering-hub')->name('meh.')->group(function () {
+        Route::get('/',            [EngineeringController::class,'index'])->name('index');
+        Route::get('energy',       [EngineeringController::class,'energy'])->name('energy');
+        Route::get('fleet',        [EngineeringController::class,'fleet'])->name('fleet');
+        Route::get('equipment',    [EngineeringController::class,'equipment'])->name('equipment');
+        Route::get('maintenance',  [EngineeringController::class,'maintenance'])->name('maintenance');
+        Route::get('hse',          [EngineeringController::class,'hse'])->name('hse');
+        Route::get('kpi',          [EngineeringController::class,'kpi'])->name('kpi');
+        Route::get('tools',        [EngineeringController::class,'tools'])->name('tools');
+        Route::get('regulations',  [EngineeringController::class,'regulations'])->name('regulations');
+    });
 
     /* ================= WEBSITE #6 — Energy Performance Center ================= */
     Route::prefix('energi')->name('energi.')->group(function () {

@@ -537,17 +537,11 @@
         $wp        = \App\Support\Pillars::get($slugPilar);
         $aktif     = ($m['status'] ?? '') === 'aktif';
         $rute      = $m['rute'] ?? null;
-        // Sebuah modul boleh menunjuk rute Laravel atau berkas statis di
-        // public/. Yang kedua ditulis sebagai 'tautan' karena route() hanya
-        // mengenal rute terdaftar.
-        $tautan    = isset($m['tautan'])
-            ? url($m['tautan'])
-            : ($rute && \Illuminate\Support\Facades\Route::has($rute) ? route($rute) : null);
-        $luar      = isset($m['tautan']);
+        $tautan    = $rute && \Illuminate\Support\Facades\Route::has($rute) ? route($rute) : null;
         $tag       = $tautan ? 'a' : 'div';
       @endphp
 
-      <{{ $tag }} @if($tautan) href="{{ $tautan }}" @endif @if($luar) target="_blank" rel="noopener" @endif data-tilt
+      <{{ $tag }} @if($tautan) href="{{ $tautan }}" @endif data-tilt
          class="group relative overflow-hidden bg-white rounded-2xl shadow-card border border-stone-100 p-6
                 tilt tilt-fast d3 reveal reveal-d{{ min($loop->iteration, 6) }}
                 {{ $tautan ? 'hover:border-transparent hover:shadow-lg' : '' }} transition-shadow">

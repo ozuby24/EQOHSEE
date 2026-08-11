@@ -48,12 +48,8 @@ class Modules
              'ket'  => 'Pengelolaan stok, penerimaan, pengeluaran, dan penyimpanan material.',
              'ikon' => 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4'],
 
-            // Berkas statis di public/, bukan rute Laravel — karena itu ia
-            // memakai 'tautan' dan bukan 'rute'. route() hanya mengenal
-            // rute yang terdaftar, dan situs ini memang sengaja berdiri
-            // sendiri supaya tetap terbuka tanpa PHP maupun basis data.
             ['nama' => 'Mining Engineering Hub', 'status' => 'aktif', 'pilar' => 'engineering',
-             'tautan' => 'mining-engineering-hub/', 'baru' => true,
+             'rute' => 'meh.index',
              'ket'  => 'Dashboard engineering: produksi, energi, armada, pemeliharaan, KPI, dan alat hitung teknis.',
              'ikon' => 'M9 3v18m6-18v18M3 9h18M3 15h18'],
 

@@ -40,54 +40,22 @@ class KatalogTest extends TestCase
     /**
      * Tiap modul aktif harus benar-benar dapat dibuka.
      *
-     * Tujuannya bukan sekadar ada kuncinya, melainkan sampai di ujungnya:
-     * rute Laravel harus terdaftar, dan berkas statis harus benar-benar
-     * ada di public/. Situs statis yang tersimpan di luar public/ lolos
-     * seluruh pemeriksaan lain — berkasnya ada, tautannya tertulis — tetapi
-     * tidak pernah dapat dibuka siapa pun, dan itu justru yang paling
-     * lama tidak ketahuan.
+     * Bukan sekadar ada kuncinya, melainkan sampai di ujungnya: rutenya
+     * harus terdaftar. Modul yang tertulis di katalog tetapi tidak punya
+     * alamat lolos seluruh pemeriksaan lain dan baru ketahuan saat ada
+     * yang mengkliknya.
      */
     public function test_modul_aktif_dapat_dibuka(): void
     {
         foreach (Modules::all() as $m) {
             if (($m['status'] ?? '') !== 'aktif') continue;
 
-            if (isset($m['tautan'])) {
-                $berkas = public_path(trim($m['tautan'], '/').'/index.html');
-                $this->assertFileExists($berkas,
-                    "Modul '{$m['nama']}' menunjuk '{$m['tautan']}' yang tidak ada di public/ — ".
-                    'berkas di luar public/ tidak akan pernah tersaji.');
-                continue;
-            }
-
-            $this->assertArrayHasKey('rute', $m,
-                "Modul aktif '{$m['nama']}' belum punya rute maupun tautan.");
+            $this->assertArrayHasKey('rute', $m, "Modul aktif '{$m['nama']}' belum punya rute.");
             $this->assertTrue(Route::has($m['rute']),
                 "Modul '{$m['nama']}' menunjuk rute '{$m['rute']}' yang tidak terdaftar.");
         }
     }
 
-    /** Berkas pendamping situs statis ikut diperiksa, bukan hanya index-nya. */
-    public function test_situs_statis_membawa_seluruh_berkasnya(): void
-    {
-        foreach (Modules::all() as $m) {
-            if (!isset($m['tautan'])) continue;
-
-            $akar = public_path(trim($m['tautan'], '/'));
-            foreach (['index.html', 'style.css', 'app.js', 'data.js', 'charts.js'] as $b) {
-                $this->assertFileExists($akar.'/'.$b,
-                    "Modul '{$m['nama']}' kehilangan berkas {$b}.");
-            }
-
-            // Rujukan di dalam HTML harus menunjuk berkas yang benar-benar ada.
-            $html = file_get_contents($akar.'/index.html');
-            preg_match_all('/(?:src|href)="((?!https?:|#|mailto:)[^"]+)"/', $html, $c);
-            foreach (array_unique($c[1]) as $rujukan) {
-                $this->assertFileExists($akar.'/'.$rujukan,
-                    "Modul '{$m['nama']}' merujuk '{$rujukan}' yang tidak ada.");
-            }
-        }
-    }
 
     public function test_modul_belum_aktif_tidak_punya_rute(): void
     {
