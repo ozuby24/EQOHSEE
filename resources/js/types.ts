@@ -567,3 +567,34 @@ export interface HalamanSampling {
   alokasi: Alokasi;
   bisaSunting: boolean;
 }
+
+export interface BarisSampel {
+  perusahaan: string;
+  mgm: number | null;
+  emp: number | null;
+  jumlah: number | null;
+}
+
+export interface TotalSampel {
+  mgm: number | null;
+  emp: number | null;
+  jumlah: number | null;
+}
+
+export interface BlokSampel {
+  kode: string;
+  baris: BarisSampel[];
+  /** Penjumlahan baris terbulat — yang benar-benar tampak di tabel. */
+  total: TotalSampel;
+  /** Alokasi proporsional instrumen sebelum dibulatkan; null bila tak ada. */
+  acuan: TotalSampel | null;
+}
+
+export interface HalamanSampel {
+  judul: string;
+  subjudul: string;
+  picker: Picker;
+  populasi: { management: number; employee: number; total: number };
+  metode: BlokSampel[];
+  metodeAwal: string;
+}

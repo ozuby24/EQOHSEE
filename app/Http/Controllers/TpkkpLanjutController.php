@@ -364,16 +364,92 @@ class TpkkpLanjutController extends Controller
         [$a, $hasil, $tahunn] = $this->base($request);
 
         $ref = Tpkkp::samplingRef();
-        $m   = (string) $request->get('m', 'KS');
-        if (!isset($ref[$m]) || !is_array($ref[$m] ?? null)) $m = 'KS';
+        $co  = $ref['companies'] ?? [];
 
-        return view('tpkkp.sampel', [
-            'a' => $a, 'hasil' => $hasil, 'tahunn' => $tahunn,
-            'ref' => $ref, 'metodeAktif' => $m,
-            'daftarMetode' => array_values(array_filter(
-                array_keys($ref),
-                fn ($k) => !in_array($k, ['population', 'companies'], true)
-            )),
+        $daftar = array_values(array_filter(
+            array_keys($ref),
+            fn ($k) => !in_array($k, ['population', 'companies'], true) && is_array($ref[$k] ?? null)
+        ));
+
+        $m = (string) $request->get('m', '');
+        if (!in_array($m, $daftar, true)) $m = $daftar[0] ?? '';
+
+        /*
+         * Seluruh metode dikirim sekaligus, bukan satu per kunjungan.
+         * Datanya kecil (tujuh metode kali delapan perusahaan) dan tetap,
+         * jadi berpindah tab tidak perlu menyentuh server sama sekali.
+         *
+         * Pembulatannya tetap di sini. Angka rencana dibulatkan ke atas
+         * per kolom sebelum dijumlah — membulatkan jumlahnya menghasilkan
+         * angka yang berbeda, dan yang dipakai lapangan adalah per kolom.
+         */
+        $metode = [];
+        foreach ($daftar as $k) {
+            $blok  = $ref[$k];
+            $baris = [];
+
+            foreach ($co as $c) {
+                $mgm = (float) ($blok['Management'][$c] ?? 0);
+                $emp = (float) ($blok['Employee'][$c] ?? 0);
+
+                $baris[] = [
+                    'perusahaan' => $c,
+                    'mgm'    => $mgm ? (int) ceil($mgm) : null,
+                    'emp'    => $emp ? (int) ceil($emp) : null,
+                    'jumlah' => ($mgm + $emp) ? (int) ceil($mgm) + (int) ceil($emp) : null,
+                ];
+            }
+
+            /*
+             * Dua total, dan keduanya perlu.
+             *
+             * Instrumen menyimpan alokasi proporsional dalam pecahan
+             * (PT MIK 0,2 orang) beserta totalnya sendiri. Barisnya harus
+             * dibulatkan ke atas — tidak ada seperlima orang yang bisa
+             * diwawancarai — sehingga jumlah baris selalu lebih besar
+             * daripada total pecahan itu, kadang dua kali lipat.
+             *
+             * Versi sebelumnya hanya menampilkan total instrumen, di baris
+             * paling bawah kolom yang isinya baris terbulat. Total yang
+             * tidak sama dengan penjumlahan kolomnya di atasnya bukan
+             * pembulatan, melainkan angka yang salah dibaca siapa pun yang
+             * memeriksanya.
+             */
+            $tm = isset($blok['totalMgm']) ? (float) $blok['totalMgm'] : null;
+            $te = isset($blok['totalEmp']) ? (float) $blok['totalEmp'] : null;
+
+            $metode[] = [
+                'kode'  => $k,
+                'baris' => $baris,
+
+                // Penjumlahan baris yang benar-benar tampak di tabel.
+                'total' => [
+                    'mgm'    => array_sum(array_map(fn ($r) => (int) $r['mgm'], $baris)) ?: null,
+                    'emp'    => array_sum(array_map(fn ($r) => (int) $r['emp'], $baris)) ?: null,
+                    'jumlah' => array_sum(array_map(fn ($r) => (int) $r['jumlah'], $baris)) ?: null,
+                ],
+
+                // Total proporsional instrumen, sebelum dibulatkan.
+                'acuan' => ($tm === null && $te === null) ? null : [
+                    'mgm'    => $tm,
+                    'emp'    => $te,
+                    'jumlah' => round((float) $tm + (float) $te, 2),
+                ],
+            ];
+        }
+
+        return Inertia::render('Tpkkp/Sampel', [
+            'judul'    => 'PTPKKP — Rencana Sampel',
+            'subjudul' => "Alokasi responden per perusahaan menurut instrumen, periode {$a->tahun}",
+            'picker'   => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
+
+            'populasi' => [
+                'management' => (int) ($ref['population']['Management'] ?? 0),
+                'employee'   => (int) ($ref['population']['Employee'] ?? 0),
+                'total'      => (int) ($ref['population']['Total'] ?? 0),
+            ],
+            'metode'      => $metode,
+            'metodeAwal'  => $m,
         ]);
     }
 
