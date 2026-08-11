@@ -211,6 +211,12 @@ class DashboardTest extends TestCase
         $this->assertSame('prosedur',   IkonNav::nama('Prosedur & SOP'));
         $this->assertSame('sertifikat', IkonNav::nama('Sertifikat'));
         $this->assertSame('default',    IkonNav::nama('Label Yang Tidak Dikenal'));
+
+        // 'Data Diri' harus menang atas kunci 'data' yang lebih pendek —
+        // orang, bukan kotak.
+        $this->assertSame('orang',  IkonNav::nama('Data Diri'));
+        $this->assertSame('gedung', IkonNav::nama('Data Perusahaan'));
+        $this->assertSame('kotak',  IkonNav::nama('Master Data'));
     }
 
     public function test_dua_kursus_berdampingan_tidak_memakai_foto_yang_sama(): void

@@ -18,6 +18,7 @@ class User extends Authenticatable
         'is_admin', 'lms_role', 'audit_role', 'company_id',
         // profil (dulu tabel 'profiles')
         'avatar', 'employee_id', 'position', 'department', 'phone', 'active',
+        'whatsapp', 'bio', 'tema',
     ];
 
     protected $hidden = ['password', 'remember_token'];

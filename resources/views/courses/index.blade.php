@@ -77,9 +77,13 @@
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       @foreach($courses as $course)
         <div class="bg-white rounded-2xl shadow-card border border-stone-100 overflow-hidden card-hover">
+          {{-- Sampul memakai aturan yang sama dengan dashboard lewat
+               App\Support\Sampul. Katalog ini sempat menampilkan kotak
+               gradasi berhuruf sementara dashboard memasang foto lapangan,
+               padahal keduanya menampilkan kursus yang sama. --}}
           <div class="h-28 brand-gradient relative">
-            @if($course->image)
-              <img src="{{ asset('storage/'.$course->image) }}" alt="" class="w-full h-full object-cover">
+            @if($sampul = \App\Support\Sampul::untuk($course))
+              <img src="{{ $sampul }}" alt="" loading="lazy" class="w-full h-full object-cover">
             @else
               <div class="w-full h-full grid place-items-center">
                 <span class="font-display text-3xl font-black text-white/15">{{ strtoupper(substr($course->title,0,1)) }}</span>

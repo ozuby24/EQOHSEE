@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\{
     CertificateController, CourseController, DashboardController, EvaluationController,
-    LearnController, NewsController, ProcedureController, ProfileController,
+    LearnController, NewsController, PersonaliaController, ProcedureController, ProfileController,
     QuizController, SopController
 };
 use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiTemuanController, HazardController,
@@ -28,8 +28,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     /* ---- Kursus ---- */
-    Route::resource('courses', CourseController::class)->only(['index', 'show']);
+    /* Rute admin didaftarkan LEBIH DULU: 'courses/create' harus dicoba
+       sebelum 'courses/{course}', kalau tidak "create" tertangkap sebagai
+       id kursus, pengikatan modelnya gagal, dan tombol Tambah Kursus
+       berujung 404. Urutan ini tidak terlihat pada `route:list` — daftar
+       itu diurutkan menurut abjad, bukan menurut urutan pendaftaran. */
     Route::resource('courses', CourseController::class)->except(['index', 'show'])->middleware('can:admin');
+    Route::resource('courses', CourseController::class)->only(['index', 'show']);
 
     /* ---- Belajar ---- */
     Route::post('courses/{course}/enroll',  [LearnController::class, 'enroll'])->name('courses.enroll');
@@ -347,6 +352,18 @@ Route::middleware('auth')->group(function () {
         Route::get('system',        [SystemController::class, 'index'])->name('system');
         Route::delete('system/logs',[SystemController::class, 'clearLogs'])->name('system.logs.clear');
         Route::post('system/maintenance/{aksi}', [SystemController::class,'maintenance'])->name('system.maintenance');
+    });
+
+    /* ---- Personalia ---- */
+    Route::prefix('personalia')->name('personalia.')->group(function () {
+        Route::get('/',            [PersonaliaController::class, 'index'])->name('index');
+        Route::post('/',           [PersonaliaController::class, 'simpanProfil'])->name('simpan');
+        Route::delete('avatar',    [PersonaliaController::class, 'hapusAvatar'])->name('avatar.hapus');
+        Route::post('tema',        [PersonaliaController::class, 'tema'])->name('tema');
+        Route::get('perusahaan',   [PersonaliaController::class, 'perusahaan'])->name('perusahaan');
+        Route::post('perusahaan',  [PersonaliaController::class, 'simpanPerusahaan'])->name('perusahaan.simpan');
+        Route::delete('perusahaan/logo', [PersonaliaController::class, 'hapusLogo'])->name('logo.hapus');
+        Route::get('direktori',    [PersonaliaController::class, 'direktori'])->name('direktori');
     });
 
     /* ---- Profil (bawaan Breeze) ---- */

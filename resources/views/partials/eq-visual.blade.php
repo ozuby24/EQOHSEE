@@ -51,16 +51,16 @@ body{
 .eq-menu-btn svg{width:19px;height:19px}
 @media (min-width:1024px){.eq-menu-btn{display:none}}
 
-.eq-judul h1{font-size:19px;font-weight:800;letter-spacing:-.02em;line-height:1.2;color:#14385A;
+.eq-judul h1{font-size:19px;font-weight:800;letter-spacing:-.02em;line-height:1.2;color:var(--eq-judul,#14385A);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.eq-judul p{font-size:12.5px;color:#7C8894;margin-top:2px;
+.eq-judul p{font-size:12.5px;color:var(--eq-redup,#7C8894);margin-top:2px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:640px){.eq-judul p{display:none}.eq-judul h1{font-size:16px}}
 
 .eq-topbar-aksi{display:flex;align-items:center;gap:10px;flex:none}
 .eq-lonceng{position:relative}
 .eq-bulat{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;
-  color:#7C8894;background:#fff;border:1px solid rgba(27,32,36,.09);
+  color:var(--eq-redup,#7C8894);background:#fff;border:1px solid rgba(27,32,36,.09);
   box-shadow:0 1px 2px rgba(27,32,36,.05);
   transition:color .18s,border-color .18s,transform .18s cubic-bezier(.21,.6,.35,1)}
 .eq-bulat:hover{color:#12897F;border-color:#12897F}
@@ -74,12 +74,12 @@ body{
 .eq-avatar{width:40px;height:40px;flex:none;border-radius:50%;display:grid;place-items:center;
   background:linear-gradient(135deg,#0E747E,#2CB0BC);color:#fff;font-weight:800;font-size:14px}
 .eq-profil-teks{display:flex;flex-direction:column;line-height:1.25}
-.eq-profil-teks strong{font-size:13px;color:#14385A;font-weight:700}
-.eq-profil-teks small{font-size:11.5px;color:#7C8894}
+.eq-profil-teks strong{font-size:13px;color:var(--eq-judul,#14385A);font-weight:700}
+.eq-profil-teks small{font-size:11.5px;color:var(--eq-redup,#7C8894)}
 @media (max-width:860px){.eq-profil-teks{display:none}}
 
 .eq-keluar{display:flex;align-items:center;gap:7px;padding:9px 13px;border-radius:11px;
-  font-size:12.5px;font-weight:600;color:#7C8894;
+  font-size:12.5px;font-weight:600;color:var(--eq-redup,#7C8894);
   border:1px solid rgba(27,32,36,.09);background:#fff;
   transition:color .18s,border-color .18s,background-color .18s}
 .eq-keluar:hover{color:#12897F;border-color:#12897F;background:rgba(18,137,127,.06)}
@@ -325,24 +325,24 @@ main a{transition:color .16s}
 .eq-kpi-ikon{width:44px;height:44px;flex:none;border-radius:13px;display:grid;place-items:center}
 .eq-kpi-ikon svg{width:21px;height:21px}
 .eq-kpi-isi{min-width:0;display:flex;flex-direction:column}
-.eq-kpi-label{font-size:11.5px;font-weight:600;color:#7C8894}
-.eq-kpi-nilai{font-size:26px;font-weight:800;letter-spacing:-.03em;line-height:1.15;color:#14385A;
+.eq-kpi-label{font-size:11.5px;font-weight:600;color:var(--eq-redup,#7C8894)}
+.eq-kpi-nilai{font-size:26px;font-weight:800;letter-spacing:-.03em;line-height:1.15;color:var(--eq-judul,#14385A);
   font-variant-numeric:tabular-nums lining-nums;margin-top:2px}
-.eq-kpi-ket{font-size:11px;color:#98A2AE;margin-top:3px}
+.eq-kpi-ket{font-size:11px;color:var(--eq-redup2,#98A2AE);margin-top:3px}
 
 /* ── Panel ── */
 .eq-panel{background:#fff;border:1px solid rgba(27,32,36,.07);border-radius:18px;padding:20px 22px;
   box-shadow:0 1px 2px rgba(27,32,36,.04),0 12px 28px -22px rgba(27,32,36,.3)}
 .eq-panel-kepala{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
   gap:12px;margin-bottom:16px}
-.eq-panel-kepala h3{font-size:16px;font-weight:800;color:#14385A;letter-spacing:-.015em}
-.eq-panel-ket{font-size:11.5px;color:#98A2AE}
-.eq-panel-kaki{font-size:11.5px;color:#7C8894;margin-top:12px}
+.eq-panel-kepala h3{font-size:16px;font-weight:800;color:var(--eq-judul,#14385A);letter-spacing:-.015em}
+.eq-panel-ket{font-size:11.5px;color:var(--eq-redup2,#98A2AE)}
+.eq-panel-kaki{font-size:11.5px;color:var(--eq-redup,#7C8894);margin-top:12px}
 .eq-tautan{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#0E747E;
   transition:gap .18s}
 .eq-tautan:hover{gap:9px}
 .eq-tautan svg{width:14px;height:14px}
-.eq-chip{font-size:11.5px;font-weight:600;color:#7C8894;background:#F4F6F8;
+.eq-chip{font-size:11.5px;font-weight:600;color:var(--eq-redup,#7C8894);background:#F4F6F8;
   border:1px solid rgba(27,32,36,.07);border-radius:9px;padding:5px 11px}
 
 .eq-kisi-utama{display:grid;gap:16px;grid-template-columns:minmax(0,1fr) minmax(0,340px)}
@@ -424,13 +424,13 @@ main a{transition:color .16s}
 }
 
 .eq-kursus-isi{padding:15px 16px 16px;display:flex;flex-direction:column;flex:1}
-.eq-kursus-isi h4{font-size:14px;font-weight:700;color:#14385A;line-height:1.35}
-.eq-kursus-isi > p{font-size:12px;color:#7C8894;margin-top:6px;line-height:1.55}
-.eq-kursus-meta{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:11.5px;color:#98A2AE}
+.eq-kursus-isi h4{font-size:14px;font-weight:700;color:var(--eq-judul,#14385A);line-height:1.35}
+.eq-kursus-isi > p{font-size:12px;color:var(--eq-redup,#7C8894);margin-top:6px;line-height:1.55}
+.eq-kursus-meta{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:11.5px;color:var(--eq-redup2,#98A2AE)}
 .eq-kursus-meta span{display:inline-flex;align-items:center;gap:5px}
 .eq-kursus-meta svg{width:14px;height:14px}
 .eq-kursus-maju{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
-  margin-top:14px;font-size:11.5px;color:#7C8894}
+  margin-top:14px;font-size:11.5px;color:var(--eq-redup,#7C8894)}
 .eq-kursus-maju b{font-size:12.5px;font-weight:800;color:#0E747E;font-variant-numeric:tabular-nums}
 .eq-bilah{height:7px;border-radius:999px;background:#EDF0F2;overflow:hidden;margin-top:6px}
 .eq-bilah i{display:block;height:100%;border-radius:999px;
@@ -452,15 +452,15 @@ main a{transition:color .16s}
 .eq-btn-blok{width:100%;margin-top:13px}
 
 /* ── Keadaan kosong ── */
-.eq-kosong{text-align:center;padding:34px 20px;color:#7C8894;font-size:12.5px;line-height:1.7}
-.eq-kosong strong{color:#14385A;font-size:13.5px}
+.eq-kosong{text-align:center;padding:34px 20px;color:var(--eq-redup,#7C8894);font-size:12.5px;line-height:1.7}
+.eq-kosong strong{color:var(--eq-judul,#14385A);font-size:13.5px}
 .eq-kosong .eq-btn-utama{display:inline-flex;flex:none;margin-top:14px;padding-inline:22px}
 .eq-kosong-kecil{padding:24px 12px}
-.eq-kosong-kecil .halus{color:#98A2AE;font-size:11.5px;margin-top:4px}
+.eq-kosong-kecil .halus{color:var(--eq-redup2,#98A2AE);font-size:11.5px;margin-top:4px}
 
 /* ── Progress mingguan ── */
 .eq-pekan-label{display:flex;margin-top:6px;padding-left:52px}
-.eq-pekan-label span{flex:1;text-align:center;font-size:10.5px;color:#98A2AE}
+.eq-pekan-label span{flex:1;text-align:center;font-size:10.5px;color:var(--eq-redup2,#98A2AE)}
 
 /* ── Pengumuman ── */
 .eq-warta li + li{border-top:1px solid rgba(27,32,36,.07)}
@@ -470,9 +470,9 @@ main a{transition:color .16s}
 .eq-warta-ikon{width:34px;height:34px;flex:none;border-radius:11px;display:grid;place-items:center}
 .eq-warta-ikon svg{width:16px;height:16px}
 .eq-warta-teks{flex:1;min-width:0}
-.eq-warta-teks strong{display:block;font-size:12.5px;font-weight:700;color:#14385A;line-height:1.4}
-.eq-warta-teks small{display:block;font-size:11.5px;color:#98A2AE;margin-top:2px;line-height:1.5}
-.eq-warta time{font-size:10.5px;color:#98A2AE;flex:none;padding-top:2px}
+.eq-warta-teks strong{display:block;font-size:12.5px;font-weight:700;color:var(--eq-judul,#14385A);line-height:1.4}
+.eq-warta-teks small{display:block;font-size:11.5px;color:var(--eq-redup2,#98A2AE);margin-top:2px;line-height:1.5}
+.eq-warta time{font-size:10.5px;color:var(--eq-redup2,#98A2AE);flex:none;padding-top:2px}
 
 /* ── Kategori ── */
 .eq-kategori{display:grid;gap:11px;grid-template-columns:repeat(auto-fit,minmax(178px,1fr))}
@@ -482,10 +482,10 @@ main a{transition:color .16s}
 .eq-kategori a:hover{border-color:rgba(18,137,127,.4);transform:translateY(-2px)}
 .eq-kategori-ikon{width:36px;height:36px;flex:none;border-radius:11px;display:grid;place-items:center}
 .eq-kategori-ikon svg{width:17px;height:17px}
-.eq-kategori strong{display:block;font-size:12.5px;font-weight:700;color:#14385A}
-.eq-kategori small{display:block;font-size:11px;color:#98A2AE;margin-top:1px}
+.eq-kategori strong{display:block;font-size:12.5px;font-weight:700;color:var(--eq-judul,#14385A)}
+.eq-kategori small{display:block;font-size:11px;color:var(--eq-redup2,#98A2AE);margin-top:1px}
 .eq-admin-angka{flex-direction:column;align-items:flex-start;gap:2px}
-.eq-admin-angka small{font-size:11.5px;color:#98A2AE}
+.eq-admin-angka small{font-size:11.5px;color:var(--eq-redup2,#98A2AE)}
 
 /* ── Pintasan modul ── */
 .eq-modul{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(206px,1fr))}
@@ -498,7 +498,109 @@ main a{transition:color .16s}
   font-variant-numeric:tabular-nums}
 .eq-modul-ikon{width:38px;height:38px;flex:none;border-radius:12px;display:grid;place-items:center}
 .eq-modul-ikon svg{width:18px;height:18px}
-.eq-modul strong{display:block;font-size:12.5px;font-weight:700;color:#14385A;margin-top:12px}
-.eq-modul small{display:block;font-size:11px;color:#98A2AE;margin-top:2px;line-height:1.5}
+.eq-modul strong{display:block;font-size:12.5px;font-weight:700;color:var(--eq-judul,#14385A);margin-top:12px}
+.eq-modul small{display:block;font-size:11px;color:var(--eq-redup2,#98A2AE);margin-top:2px;line-height:1.5}
+
+/* ═══════════════════════════════════════════════════════════
+   10 · TEMA GELAP DAN WARNA PERUSAHAAN
+   ═══════════════════════════════════════════════════════════
+
+   Hanya ada satu salinan aturan gelap. Skrip di <head> selalu
+   menyelesaikan tema menjadi nilai yang tegas — pilihan pengguna kalau
+   ada, kalau tidak setelan perangkat — sehingga [data-tema="gelap"]
+   cukup untuk keduanya. Menuliskannya juga di dalam
+   prefers-color-scheme berarti dua salinan daftar warna yang panjang,
+   dan dua salinan seperti itu pasti berbeda isinya cepat atau lambat.
+
+   --eq-aksen dan --eq-dasar ditanam pada elemen akar oleh
+   App\Support\Tema, diturunkan dari logo perusahaan yang diunggah.
+   Nilainya berbeda tiap perusahaan sehingga tidak dapat ditulis di
+   berkas gaya. */
+
+.eq-tema-btn .eq-ikon-gelap{display:none}
+
+:root[data-tema="gelap"] body{
+  background-color:#0D1417;
+  background-image:
+    radial-gradient(1100px 520px at 88% -8%, rgba(44,176,188,.10), transparent 62%),
+    radial-gradient(760px 420px at -6% 104%, rgba(94,174,56,.06), transparent 60%);
+  color:#D6DEE2;
+}
+:root[data-tema="gelap"] .eq-topbar{background:rgba(16,25,29,.88);border-bottom-color:#1E2C31}
+:root[data-tema="gelap"] .eq-judul h1{color:#E8EFF2}
+:root[data-tema="gelap"] .eq-judul p{color:#8FA1A8}
+
+/* Permukaan kartu. Ditulis sebagai daftar pemilih, bukan satu kelas
+   bersama, karena kartu di aplikasi ini lahir dari beberapa generasi
+   penulisan dan belum sempat disatukan. */
+:root[data-tema="gelap"] main .bg-white,
+:root[data-tema="gelap"] .eq-panel,
+:root[data-tema="gelap"] .eq-kpi,
+:root[data-tema="gelap"] .eq-kursus,
+:root[data-tema="gelap"] .eq-modul,
+:root[data-tema="gelap"] .eq-warta,
+:root[data-tema="gelap"] .eq-kategori > a,
+:root[data-tema="gelap"] .kartu-lux{
+  background:#141F23;border-color:#223238;color:#D6DEE2}
+
+/* Warna teks diganti lewat variabel, bukan dengan menulis ulang tiap
+   pemilih. Judul dan teks redup muncul di belasan komponen, dan daftar
+   pemilih yang disalin akan tertinggal setiap kali ada komponen baru —
+   yang tampak sebagai satu-dua tulisan gelap di atas latar gelap,
+   persis jenis cacat yang lolos dari pemeriksaan sepintas. */
+:root[data-tema="gelap"]{
+  --eq-judul:#E8EFF2;
+  --eq-redup:#96A8AF;
+  --eq-redup2:#8397A0;
+}
+
+:root[data-tema="gelap"] main .text-stone-900,
+:root[data-tema="gelap"] main .text-stone-800,
+:root[data-tema="gelap"] main .text-cam-ink,
+:root[data-tema="gelap"] .stat{color:#E8EFF2}
+
+:root[data-tema="gelap"] main .text-stone-600,
+:root[data-tema="gelap"] main .text-stone-500,
+:root[data-tema="gelap"] main .text-stone-400,
+:root[data-tema="gelap"] main .text-stone-300{color:#96A8AF}
+
+/* Tautan aksi hijau lumut milik tema terang terlalu redup di atas
+   permukaan gelap; dinaikkan terangnya, bukan diganti warnanya. */
+:root[data-tema="gelap"] main .text-cam-lime-deep{color:#9BD24A}
+:root[data-tema="gelap"] main .hover\:bg-stone-50:hover{background:#1A272C}
+
+:root[data-tema="gelap"] .eq-bilah{background:#223238}
+:root[data-tema="gelap"] .eq-bulat{background:#1A272C;border-color:#26363C;color:#C4D2D7}
+:root[data-tema="gelap"] .eq-btn-lain{background:#1A272C;border-color:#26363C;color:#C4D2D7}
+:root[data-tema="gelap"] input,
+:root[data-tema="gelap"] select,
+:root[data-tema="gelap"] textarea{background:#101A1E;border-color:#26363C;color:#D6DEE2}
+
+:root[data-tema="gelap"] .eq-tema-btn .eq-ikon-terang{display:none}
+:root[data-tema="gelap"] .eq-tema-btn .eq-ikon-gelap{display:block}
+
+/* Tombol dan kepingan yang latarnya putih tetap dari tema terang. */
+:root[data-tema="gelap"] .eq-keluar,
+:root[data-tema="gelap"] .eq-menu-btn{background:#1A272C;border-color:#26363C;color:#C4D2D7}
+:root[data-tema="gelap"] .eq-lonceng-titik{border-color:#101A1E}
+:root[data-tema="gelap"] .eq-kosong{background:#101A1E;border-color:#223238}
+:root[data-tema="gelap"] .eq-hero-isi p{color:rgba(255,255,255,.78)}
+
+/* Batas antar bagian di dalam kartu. Garis terang di atas permukaan
+   gelap terbaca sebagai goresan, bukan sebagai pemisah. */
+:root[data-tema="gelap"] .border-stone-100,
+:root[data-tema="gelap"] .border-stone-200{border-color:#223238}
+:root[data-tema="gelap"] .bg-stone-50{background:#101A1E}
+
+/* Warna perusahaan dipakai untuk aksen, bukan untuk seluruh permukaan:
+   logo yang kebetulan sangat terang atau sangat pekat akan membuat teks
+   di atasnya tidak terbaca kalau dijadikan latar. */
+.eq-btn-utama,
+.eq-bilah i{background:linear-gradient(135deg,var(--eq-aksen,#0E747E),
+                                       color-mix(in srgb,var(--eq-aksen,#0E747E) 78%,#2CB0BC))}
+.eq-kursus-maju b,
+.eq-panel-lihat{color:var(--eq-aksen,#0E747E)}
+.brand-gradient{background:linear-gradient(165deg,var(--eq-dasar,#0B3B39),
+                                           color-mix(in srgb,var(--eq-dasar,#0B3B39) 62%,#12403E))}
 
 </style>

@@ -77,6 +77,9 @@ final class IkonNav
         'slovin' => 'kalkulator', 'kalkulator' => 'kalkulator',
         'metode' => 'kotak', 'matriks' => 'kotak', 'register' => 'kotak',
         'jenis' => 'kotak', 'data' => 'kotak', 'master' => 'kotak',
+        // Lebih panjang daripada 'data', jadi menang atas ikon kotak.
+        'data diri' => 'orang', 'data perusahaan' => 'gedung',
+        'direktori' => 'orang', 'personalia' => 'orang',
         'laporan' => 'dokumen', 'monitor' => 'bahaya', 'hazard' => 'bahaya',
         'temuan' => 'bahaya', 'risiko' => 'bahaya',
         'inspeksi' => 'evaluasi', 'audit' => 'evaluasi', 'tindak' => 'evaluasi',

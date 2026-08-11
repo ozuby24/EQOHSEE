@@ -3,7 +3,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 class Company extends Model {
-    protected $fillable = ['name','code','parent','izin_type','commodity','location','address','ktt','pjo','workers_employee','workers_sub','risk_class','logo','doc_no_prefix','parent_id','pic_name','pic_email','pic_phone','divisi','departemen','doc_terbit','doc_setuju','doc_revisi'];
+    protected $fillable = ['name','code','parent','izin_type','commodity','location','address','ktt','pjo','workers_employee','workers_sub','risk_class','logo','theme_color','theme_dark','doc_no_prefix','parent_id','pic_name','pic_email','pic_phone','divisi','departemen','doc_terbit','doc_setuju','doc_revisi'];
 
     protected function casts(): array
     {

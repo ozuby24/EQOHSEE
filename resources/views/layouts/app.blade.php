@@ -1,9 +1,36 @@
 <!DOCTYPE html>
-<html lang="id">
+@php
+  $eqTema = \App\Support\Tema::pilihan(auth()->user());
+@endphp
+<html lang="id" @if($eqTema) data-tema="{{ $eqTema }}" @endif style="{{ \App\Support\Tema::gaya(auth()->user()) }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
+<meta name="color-scheme" content="light dark">
+
+{{-- Tema dipasang sebelum apa pun tergambar. Dijalankan setelah <body>
+     dicat, layarnya berkedip terang sesaat sebelum berubah gelap — cacat
+     yang paling terlihat justru pada pengguna yang memilih tema gelap. --}}
+<script>
+(function(){
+  var t = null;
+  try{
+    t = document.documentElement.getAttribute('data-tema') || localStorage.getItem('eqTema');
+  }catch(e){}
+
+  /* Selalu diselesaikan menjadi nilai yang tegas. Kalau atribut ini
+     dibiarkan kosong ketika orang belum memilih, seluruh aturan gelap
+     harus ditulis dua kali — sekali untuk [data-tema="gelap"] dan sekali
+     lagi di dalam prefers-color-scheme — dan dua salinan aturan warna
+     yang panjang pasti akan berbeda isinya cepat atau lambat. */
+  if(t !== 'gelap' && t !== 'terang'){
+    t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'gelap' : 'terang';
+  }
+  document.documentElement.setAttribute('data-tema', t);
+})();
+</script>
 <title>@yield('title', 'Dashboard') — EQOHSEE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,16 +44,32 @@
 <body class="antialiased">
 @php
   // ===== Modul aktif =====
-  $modul = request()->is('hazard*') || request()->is('inspeksi*') ? 'hazrep'
+  $modul = request()->is('personalia*') ? 'personalia'
+         : (request()->is('hazard*') || request()->is('inspeksi*') ? 'hazrep'
          : (request()->is('tpkkp*') ? 'tpkkp'
          : (request()->is('smkp*') ? 'smkp'
          : (request()->is('dokumen*') || request()->is('iso*') || request()->is('struktur-dokumen') || request()->is('daftar-induk') ? 'dokumen'
          : (request()->is('energi*') ? 'energi'
          : (request()->is('mining-engineering-hub*') ? 'meh'
          : (request()->is('ko*') ? 'ko'
-         : (request()->is('admin*') || request()->is('signatories*') ? 'admin' : 'lms')))))));
+         : (request()->is('admin*') || request()->is('signatories*') ? 'admin' : 'lms'))))))));
 
   $menu = [
+    /* Personalia berdiri di depan Learning Center: yang diurus di sini
+       bukan pembelajaran melainkan siapa penggunanya dan di bawah
+       perusahaan mana ia bekerja — jawaban yang dipakai hampir seluruh
+       modul lain, termasuk kop dokumen dan nama pada sertifikat. */
+    'personalia' => [
+      'label' => 'Personalia',
+      'icon'  => 'M12 12.2a4.1 4.1 0 1 0 0-8.2 4.1 4.1 0 0 0 0 8.2Zm-7.5 8c0-3.5 3.4-5.6 7.5-5.6s7.5 2.1 7.5 5.6',
+      'groups' => [
+        '' => [
+          ['Data Diri',        'personalia.index',      'personalia'],
+          ['Data Perusahaan',  'personalia.perusahaan', 'personalia/perusahaan'],
+          ['Direktori',        'personalia.direktori',  'personalia/direktori'],
+        ],
+      ],
+    ],
     'lms' => [
       'label' => 'Learning Center',
       'icon'  => 'M12 4 3 8l9 4 9-4-9-4zM7 10.5V15c0 1.3 2.7 2.3 5 2.3s5-1 5-2.3v-4.5',
@@ -332,6 +375,23 @@
 
       <div class="eq-topbar-aksi">
         @auth
+        {{-- Sakelar tema. Pilihannya disimpan di akun supaya ikut berpindah
+             antar perangkat, dan dicerminkan ke localStorage supaya
+             pemuatan berikutnya tidak berkedip sebelum jawaban server
+             sampai. --}}
+        <button type="button" onclick="eqTema()" class="eq-bulat eq-tema-btn"
+                aria-label="Ganti tema terang atau gelap" title="Tema terang / gelap">
+          <svg class="eq-ikon-terang" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.2"/>
+            <path d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/>
+          </svg>
+          <svg class="eq-ikon-gelap" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20.5 14.3A8.6 8.6 0 0 1 9.7 3.5a8.6 8.6 0 1 0 10.8 10.8Z"/>
+          </svg>
+        </button>
+
         <div class="eq-lonceng">
           <a href="{{ route('news.index') }}" class="eq-bulat" aria-label="Pengumuman">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -345,13 +405,18 @@
           </a>
         </div>
 
-        <div class="eq-profil">
-          <span class="eq-avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
+        <a href="{{ route('personalia.index') }}" class="eq-profil" title="Data diri">
+          @if(auth()->user()->avatar)
+            <img class="eq-avatar eq-avatar-foto" src="{{ asset('storage/'.auth()->user()->avatar) }}"
+                 alt="" width="38" height="38">
+          @else
+            <span class="eq-avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
+          @endif
           <span class="eq-profil-teks">
             <strong>{{ auth()->user()->name }}</strong>
-            <small>{{ auth()->user()->isAdmin() ? 'Administrator' : ucfirst(auth()->user()->lms_role ?: 'Peserta') }}</small>
+            <small>{{ auth()->user()->position ?: (auth()->user()->isAdmin() ? 'Administrator' : ucfirst(auth()->user()->lms_role ?: 'Peserta')) }}</small>
           </span>
-        </div>
+        </a>
 
         <form method="POST" action="{{ route('logout') }}" class="shrink-0">
           @csrf
@@ -387,6 +452,32 @@
   try {
     if (localStorage.getItem('eq-sisi-sempit') === '1') document.body.classList.add('eq-sempit');
   } catch (e) { /* mode privat */ }
+
+  /* Sakelar tema.
+
+     Tampilannya berubah lebih dulu, lalu pilihannya dikirim ke server.
+     Menunggu jawaban server sebelum mengubah warna membuat tombolnya
+     terasa macet pada sambungan lapangan yang lambat — dan kalau
+     pengirimannya gagal, yang hilang hanya keawetan pilihan antar
+     perangkat, bukan sakelarnya itu sendiri. */
+  function eqTema(){
+    const akar = document.documentElement;
+    const kini = akar.getAttribute('data-tema')
+              || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'gelap' : 'terang');
+    const baru = kini === 'gelap' ? 'terang' : 'gelap';
+
+    akar.setAttribute('data-tema', baru);
+    try { localStorage.setItem('eqTema', baru); } catch (e) { /* mode privat */ }
+
+    const t = document.querySelector('meta[name=csrf-token]');
+    if (!t) return;
+
+    fetch(@json(route('personalia.tema')), {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-CSRF-TOKEN':t.content,'Accept':'application/json'},
+      body: JSON.stringify({tema: baru})
+    }).catch(function(){ /* pilihan tetap berlaku di perangkat ini */ });
+  }
 </script>
 @stack('scripts')
 </body>

@@ -6,40 +6,13 @@
 @php
   use App\Support\Media;
 
+  use App\Support\Sampul;
+  use App\Support\Waktu;
+
   $nama = trim(explode(' ', auth()->user()->name)[0]);
-  $jam  = (int) now()->format('G');
-  $sapa = $jam < 11 ? 'Selamat pagi' : ($jam < 15 ? 'Selamat siang' : ($jam < 19 ? 'Selamat sore' : 'Selamat malam'));
+  $sapa = Waktu::sapaan();
 
-  // Foto sampul kursus: yang punya berkas sendiri memakainya; sisanya
-  // memakai rekaman lapangan yang sudah ada, dipilih menurut kategorinya.
-  // Kartu kursus tanpa gambar terbaca sebagai daftar, bukan sebagai
-  // katalog — dan katalog yang tidak mengundang tidak dibuka siapa pun.
-  $sampulKategori = [
-    'keselamatan kerja' => 'galeri/budaya.jpg',
-    'operasional'       => 'galeri/operasional.jpg',
-    'lingkungan'        => 'galeri/risiko.jpg',
-    'kesehatan'         => 'galeri/budaya.jpg',
-    'inspeksi'          => 'galeri/inspeksi.jpg',
-    'wajib'             => 'galeri/budaya.jpg',
-    'risiko'            => 'galeri/risiko.jpg',
-  ];
-  $galeriSampul = ['galeri/operasional.jpg', 'galeri/budaya.jpg',
-                   'galeri/inspeksi.jpg', 'galeri/risiko.jpg'];
-
-  $sampul = function ($course) use ($sampulKategori, $galeriSampul) {
-      if ($course?->image) return asset('storage/'.$course->image);
-
-      $k = strtolower(trim($course->category ?? ''));
-      foreach ($sampulKategori as $cari => $berkas) {
-          if ($k !== '' && str_contains($k, $cari)) return Media::url($berkas);
-      }
-
-      // Kategori di luar daftar dibagi rata menurut id, bukan diarahkan ke
-      // satu foto cadangan: satu foto untuk semua membuat dua kartu
-      // bersebelahan tampak seperti kursus yang sama. Memakai id membuat
-      // pilihannya tetap sama setiap kali halaman dimuat.
-      return Media::url($galeriSampul[($course?->id ?? 0) % count($galeriSampul)]);
-  };
+  $sampul = fn ($course) => Sampul::untuk($course);
 @endphp
 
 <div class="max-w-[1400px] mx-auto space-y-5">
