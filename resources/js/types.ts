@@ -114,6 +114,114 @@ export interface Picker {
   daftarTahun: number[];
 }
 
+/* ══════════════ PTPKKP — matriks, summary, hasil ══════════════ */
+
+export interface ItemMatriks {
+  kode: string;
+  nama: string;
+  metode: string[];
+  perMetode: Record<string, number | null>;
+  nilai: number | null;
+  maks: number;
+  capaian: number | null;
+  kategori: string | null;
+  warna: string;
+}
+
+export interface ParamMatriks {
+  kode: string;
+  nama: string;
+  bobot: number;
+  target: number | null;
+  nilai: number | null;
+  maks: number;
+  rasio: number | null;
+  kategori: string | null;
+  warna: string;
+  items: ItemMatriks[];
+}
+
+export interface IndikatorMatriks {
+  kode: string;
+  nama: string;
+  bobot: number;
+  rasio: number | null;
+  kategori: string | null;
+  warna: string;
+  parameter: ParamMatriks[];
+}
+
+export interface HalamanMatriks {
+  judul: string;
+  subjudul: string;
+  picker: Picker;
+  metode: string[];
+  indikator: IndikatorMatriks[];
+}
+
+export interface ParamSummary {
+  kode: string;
+  nama: string;
+  bobot: number;
+  skor: number | null;
+  rasio: number | null;
+  target: number | null;
+  kategori: string | null;
+  warna: string;
+  gap: number | null;
+}
+
+export interface IndikatorSummary extends Omit<ParamSummary, 'target'> {
+  target: number;
+  parameter: ParamSummary[];
+}
+
+export interface HalamanSummary {
+  judul: string;
+  subjudul: string;
+  picker: Picker;
+  indikator: IndikatorSummary[];
+  total: {
+    skor: number | null;
+    rasio: number | null;
+    target: number;
+    kategori: string | null;
+    warna: string;
+    gap: number | null;
+  };
+}
+
+export interface MetodeHasil {
+  kode: string;
+  nama: string;
+  items: number;
+  terisi: number;
+  maks: number;
+  jumlah: number;
+  rasio: number | null;
+  kategori: string | null;
+  warna: string;
+}
+
+export interface HalamanHasil {
+  judul: string;
+  subjudul: string;
+  picker: Picker;
+  rentang: Array<{ teks: string; kategori: string; warna: string }>;
+  total: {
+    skor: number | null;
+    target: number;
+    kategori: string | null;
+    warna: string;
+  };
+  indikator: Array<{
+    kode: string; nama: string; bobot: number;
+    skor: number | null; rasio: number | null;
+    kategori: string | null; warna: string;
+  }>;
+  metode: MetodeHasil[];
+}
+
 /* ══════════════ PTPKKP — beranda ══════════════ */
 
 export interface IndikatorBeranda {

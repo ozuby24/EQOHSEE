@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\TpkkpAssessment;
 use App\Support\Tpkkp;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 /**
  * Halaman lanjutan TPKKP — hanya membaca hitungan dari App\Support\Tpkkp.
@@ -30,38 +31,62 @@ class TpkkpLanjutController extends Controller
     {
         [$a, $hasil, $tahunn] = $this->base($request);
 
-        $q   = trim((string) $request->get('q', ''));
-        $ind = (string) $request->get('ind', '');
+        /* Seluruh baris dikirim tanpa disaring, lalu pencariannya
+           dikerjakan di peramban. Versi Blade menyaring di server dan
+           memuat ulang halaman tiap kali kata kuncinya berubah — untuk
+           tabel yang seluruhnya sudah ada di memori, itu perjalanan
+           bolak-balik yang tidak menghasilkan apa pun selain jeda. */
+        $metode = array_keys(Tpkkp::methods());
 
-        $baris = [];
+        $indikator = [];
         foreach ($hasil['indicators'] as $I) {
-            if ($ind !== '' && (string) $I['code'] !== $ind) continue;
-
-            $barisInd = [];
+            $params = [];
             foreach ($I['params'] as $P) {
                 $items = [];
                 foreach ($P['items'] as $c) {
-                    if ($q !== '') {
-                        $cocok = stripos($c['code'], $q) !== false
-                              || stripos((string) $c['name'], $q) !== false;
-                        if (!$cocok) continue;
-                    }
                     $it = Tpkkp::itemByCode($c['code']);
-                    $items[] = $c + ['methods' => $it['methods'] ?? []];
+
+                    $items[] = [
+                        'kode'      => $c['code'],
+                        'nama'      => $c['name'],
+                        'metode'    => $it['methods'] ?? [],
+                        'perMetode' => $c['perMethod'],
+                        'nilai'     => $c['nilai'],
+                        'maks'      => $c['max'],
+                        'capaian'   => $c['achv'],
+                        // Kategori hanya bermakna bila seluruh metodenya
+                        // sudah dinilai; sebelum itu angkanya masih akan
+                        // berubah dan lencananya menyesatkan.
+                        'kategori'  => $c['complete'] ? $c['category'] : null,
+                        'warna'     => Tpkkp::levelHex(Tpkkp::level($c['category'])),
+                    ];
                 }
-                if ($q !== '' && !$items) {
-                    $cocokPar = stripos($P['code'], $q) !== false || stripos($P['name'], $q) !== false;
-                    if (!$cocokPar) continue;
-                }
-                $barisInd[] = ['par' => $P, 'items' => $items];
+
+                $params[] = [
+                    'kode' => $P['code'], 'nama' => $P['name'],
+                    'bobot' => $P['weight'], 'target' => $P['target'],
+                    'nilai' => $P['nilai'], 'maks' => $P['max'], 'rasio' => $P['ratio'],
+                    'kategori' => $P['category'],
+                    'warna' => Tpkkp::levelHex(Tpkkp::level($P['category'])),
+                    'items' => $items,
+                ];
             }
-            if ($q !== '' && !$barisInd) continue;
-            $baris[] = ['ind' => $I, 'params' => $barisInd];
+
+            $indikator[] = [
+                'kode' => $I['code'], 'nama' => $I['name'],
+                'bobot' => $I['weight'], 'rasio' => $I['ratio'],
+                'kategori' => $I['category'],
+                'warna' => Tpkkp::levelHex(Tpkkp::level($I['category'])),
+                'parameter' => $params,
+            ];
         }
 
-        return view('tpkkp.matriks', [
-            'a' => $a, 'hasil' => $hasil, 'tahunn' => $tahunn,
-            'baris' => $baris, 'q' => $q, 'ind' => $ind,
+        return Inertia::render('Tpkkp/Matriks', [
+            'judul'     => 'PTPKKP — Matriks',
+            'subjudul'  => "Seluruh item pengukuran per metode, periode {$a->tahun}",
+            'picker'    => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
+            'metode'    => $metode,
+            'indikator' => $indikator,
         ]);
     }
 
@@ -71,7 +96,50 @@ class TpkkpLanjutController extends Controller
     {
         [$a, $hasil, $tahunn] = $this->base($request);
 
-        return view('tpkkp.summary', compact('a', 'hasil', 'tahunn'));
+        $indikator = [];
+        foreach ($hasil['indicators'] as $I) {
+            $params = [];
+            foreach ($I['params'] as $P) {
+                $params[] = [
+                    'kode' => $P['code'], 'nama' => $P['name'],
+                    'bobot' => $P['weight'], 'skor' => $P['score'],
+                    'rasio' => $P['ratio'], 'target' => $P['target'],
+                    'kategori' => $P['category'],
+                    'warna' => Tpkkp::levelHex(Tpkkp::level($P['category'])),
+
+                    /* Selisih dihitung server. Di klien ia harus tahu
+                       kapan hasilnya null — capaian atau target yang belum
+                       ada bukan berarti selisihnya nol. */
+                    'gap' => ($P['score'] === null || $P['target'] === null)
+                        ? null : $P['score'] - $P['target'],
+                ];
+            }
+
+            $indikator[] = [
+                'kode' => $I['code'], 'nama' => $I['name'],
+                'bobot' => $I['weight'], 'skor' => $I['score'],
+                'rasio' => $I['ratio'], 'target' => $I['target'],
+                'kategori' => $I['category'],
+                'warna' => Tpkkp::levelHex(Tpkkp::level($I['category'])),
+                'gap' => $I['score'] === null ? null : $I['score'] - $I['target'],
+                'parameter' => $params,
+            ];
+        }
+
+        return Inertia::render('Tpkkp/Summary', [
+            'judul'    => 'PTPKKP — Summary',
+            'subjudul' => "Capaian lawan target per parameter, periode {$a->tahun}",
+            'picker'   => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
+            'indikator'=> $indikator,
+            'total'    => [
+                'skor'     => $hasil['score'],
+                'rasio'    => $hasil['score'],
+                'target'   => $hasil['target'],
+                'kategori' => $hasil['category'],
+                'warna'    => Tpkkp::levelHex(Tpkkp::level($hasil['category'])),
+                'gap'      => $hasil['score'] === null ? null : $hasil['score'] - $hasil['target'],
+            ],
+        ]);
     }
 
     /* ---------- Hasil ---------- */
@@ -80,10 +148,72 @@ class TpkkpLanjutController extends Controller
     {
         [$a, $hasil, $tahunn] = $this->base($request);
 
-        return view('tpkkp.hasil', [
-            'a' => $a, 'hasil' => $hasil, 'tahunn' => $tahunn,
-            'metode' => Tpkkp::methodTotals($a->scores ?? []),
+        return Inertia::render('Tpkkp/Hasil', [
+            'judul'    => 'PTPKKP — Hasil',
+            'subjudul' => "Pencapaian per indikator dan per metode, periode {$a->tahun}",
+            'picker'   => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
+
+            /* Rentang kategori diturunkan dari ambang acuan, tidak diketik
+               ulang. Versi Blade menuliskannya sebagai teks tetap, dan teks
+               tetap seperti itu diam saja ketika ambangnya berubah. */
+            'rentang'  => self::rentangKategori(),
+
+            'total' => [
+                'skor'     => $hasil['score'],
+                'target'   => $hasil['target'],
+                'kategori' => $hasil['category'],
+                'warna'    => Tpkkp::levelHex(Tpkkp::level($hasil['category'])),
+            ],
+
+            'indikator' => collect($hasil['indicators'])->map(fn ($I) => [
+                'kode' => $I['code'], 'nama' => $I['name'],
+                'bobot' => $I['weight'], 'skor' => $I['score'], 'rasio' => $I['ratio'],
+                'kategori' => $I['category'],
+                'warna' => Tpkkp::levelHex(Tpkkp::level($I['category'])),
+            ])->values()->all(),
+
+            'metode' => collect(Tpkkp::methodTotals($a->scores ?? []))->map(fn ($m) => [
+                'kode' => $m['key'], 'nama' => $m['name'],
+                'items' => $m['items'], 'terisi' => $m['filled'],
+                'maks' => $m['max'], 'jumlah' => $m['sum'], 'rasio' => $m['ratio'],
+                'kategori' => $m['category'],
+                'warna' => Tpkkp::levelHex(Tpkkp::level($m['category'])),
+            ])->values()->all(),
         ]);
+    }
+
+    /**
+     * Rentang tiap kategori dalam bentuk teks, diturunkan dari ambang.
+     *
+     * Ambang acuan berupa batas atas tiap tingkat; rentangnya disusun
+     * dari batas tingkat sebelumnya sampai batas tingkat itu sendiri.
+     */
+    private static function rentangKategori(): array
+    {
+        $out = [];
+        $bawah = 0.0;
+
+        foreach (Tpkkp::ref()['thresholds'] as $i => $t) {
+            $atas = (float) $t['lt'];
+            $terakhir = $i === count(Tpkkp::ref()['thresholds']) - 1;
+
+            $out[] = [
+                'teks'     => $terakhir
+                    ? sprintf('%s ≤ x ≤ 1,0', number_format($bawah, 1, ',', '.'))
+                    : sprintf('%s ≤ x < %s', number_format($bawah, 1, ',', '.'), number_format($atas, 1, ',', '.')),
+                'kategori' => $t['label'],
+                'warna'    => Tpkkp::levelHex($i + 1),
+            ];
+
+            $bawah = $atas;
+        }
+
+        // Tingkat pertama tidak punya batas bawah selain nol.
+        if (isset($out[0])) {
+            $out[0]['teks'] = 'x < '.number_format((float) Tpkkp::ref()['thresholds'][0]['lt'], 1, ',', '.');
+        }
+
+        return $out;
     }
 
     /* ---------- Rubrik Kepdirjen ---------- */
