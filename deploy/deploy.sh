@@ -20,7 +20,15 @@ if ! command -v npm >/dev/null 2>&1; then
 fi
 
 echo "==> Building frontend assets"
-npm install
+# `npm ci` dipakai, bukan `npm install`: `install` boleh menulis ulang
+# package-lock.json (versi npm/Node yang beda antara mesin dev dan server
+# bisa meregenerasi lockfile-nya sedikit berbeda meski paketnya sama),
+# meninggalkan working tree kotor. `ci` memasang persis apa yang tercatat
+# di lockfile dan tidak pernah mengubahnya — begitu pula, ia gagal keras
+# kalau package.json dan lockfile tidak sinkron, alih-alih diam-diam
+# menambal keduanya. Deploy berikutnya jadi tidak lagi bentrok dengan
+# `git pull` gara-gara berkas yang sebenarnya tidak ada yang menyunting.
+npm ci
 npm run build
 
 echo "==> Detecting PHP-FPM socket"
