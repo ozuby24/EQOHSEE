@@ -32,6 +32,8 @@ final class RuteInertia
         'tpkkp.matriks',
         'tpkkp.summary',
         'tpkkp.hasil',
+        'tpkkp.metode',
+        'tpkkp.tentang',
     ];
 
     public static function ada(?string $rute): bool

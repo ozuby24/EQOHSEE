@@ -583,12 +583,24 @@ class TpkkpController extends Controller
     {
         [$a, $hasil, $tahunn] = $this->base($request);
 
-        return view('tpkkp.metode', [
-            'a'       => $a,
-            'hasil'   => $hasil,
-            'tahunn'  => $tahunn,
-            'metode'  => Tpkkp::methodTotals($a->scores ?? []),
-            'info'    => Tpkkp::methods(),
+        $info = Tpkkp::methods();
+
+        return Inertia::render('Tpkkp/Metode', [
+            'judul'    => 'PTPKKP — Metode',
+            'subjudul' => "Tujuh metode pengukuran dan keterisiannya, periode {$a->tahun}",
+            'picker'   => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
+
+            'metode' => collect(Tpkkp::methodTotals($a->scores ?? []))->map(fn ($m) => [
+                'kode'        => $m['key'],
+                'nama'        => $m['name'],
+                'labelEntitas'=> $info[$m['key']]['entityLabel'] ?? '',
+                'entitas'     => array_values($info[$m['key']]['entities'] ?? []),
+                'items'       => $m['items'],
+                'terisi'      => $m['filled'],
+                'kategori'    => $m['category'],
+                'warna'       => Tpkkp::levelHex(Tpkkp::level($m['category'])),
+                'url'         => route('tpkkp.assess', ['m' => $m['key']]),
+            ])->values()->all(),
         ]);
     }
 
@@ -596,11 +608,54 @@ class TpkkpController extends Controller
     {
         [$a, $hasil, $tahunn] = $this->base($request);
 
-        return view('tpkkp.tentang', [
-            'a'      => $a,
-            'hasil'  => $hasil,
-            'tahunn' => $tahunn,
-            'meta'   => Tpkkp::meta(),
+        /* Seluruh angka ringkasan dan ambang diturunkan dari acuan, tidak
+           satu pun diketik ulang di tampilan. Halaman ini justru yang
+           menjelaskan cara nilai dihitung, jadi angka yang menyimpang di
+           sini lebih menyesatkan daripada di halaman mana pun. */
+        $parameter = 0;
+        $daftarIndikator = [];
+
+        foreach (Tpkkp::indicators() as $ind) {
+            $parameter += count($ind['params']);
+
+            $daftarIndikator[] = [
+                'kode'  => $ind['code'],
+                'nama'  => $ind['name'],
+                'bobot' => collect($ind['params'])->sum('weight'),
+                'parameter' => collect($ind['params'])->map(fn ($p) => [
+                    'kode'   => $p['code'],
+                    'nama'   => $p['name'],
+                    'bobot'  => $p['weight'],
+                    'target' => Tpkkp::paramTargets()[$p['code']] ?? 0,
+                    'jumlahItem' => count($p['items']),
+                ])->values(),
+            ];
+        }
+
+        return Inertia::render('Tpkkp/Tentang', [
+            'judul'    => 'PTPKKP — Instrumen',
+            'subjudul' => 'Struktur instrumen, ambang kategori, dan cara nilai dihitung',
+            'picker'   => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
+
+            'meta' => [
+                'judul' => Tpkkp::meta()['title'] ?? 'Instrumen PTPKKP',
+                'basis' => Tpkkp::meta()['basis'] ?? '',
+            ],
+
+            'ringkas' => [
+                ['label' => 'Indikator',    'nilai' => (string) count(Tpkkp::indicators())],
+                ['label' => 'Parameter',    'nilai' => (string) $parameter],
+                ['label' => 'Item',         'nilai' => (string) Tpkkp::totalItems()],
+                ['label' => 'Target total', 'nilai' => number_format(Tpkkp::totalTarget(), 2)],
+            ],
+
+            'ambang' => collect(Tpkkp::ref()['thresholds'])->map(fn ($t, $i) => [
+                'label' => $t['label'],
+                'batas' => rtrim(rtrim(number_format((float) $t['lt'], 4, '.', ''), '0'), '.'),
+                'warna' => Tpkkp::levelHex($i + 1),
+            ])->values()->all(),
+
+            'indikator' => $daftarIndikator,
         ]);
     }
 }

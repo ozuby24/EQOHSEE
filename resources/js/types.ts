@@ -114,6 +114,44 @@ export interface Picker {
   daftarTahun: number[];
 }
 
+/* ══════════════ PTPKKP — metode & instrumen ══════════════ */
+
+export interface MetodePengukuran {
+  kode: string;
+  nama: string;
+  labelEntitas: string;
+  entitas: string[];
+  items: number;
+  terisi: number;
+  kategori: string | null;
+  warna: string;
+  url: string;
+}
+
+export interface HalamanMetode {
+  judul: string;
+  subjudul: string;
+  picker: Picker;
+  metode: MetodePengukuran[];
+}
+
+export interface HalamanTentang {
+  judul: string;
+  subjudul: string;
+  picker: Picker;
+  meta: { judul: string; basis: string };
+  ringkas: Array<{ label: string; nilai: string }>;
+  ambang: Array<{ label: string; batas: string; warna: string }>;
+  indikator: Array<{
+    kode: string;
+    nama: string;
+    bobot: number;
+    parameter: Array<{
+      kode: string; nama: string; bobot: number; target: number; jumlahItem: number;
+    }>;
+  }>;
+}
+
 /* ══════════════ PTPKKP — matriks, summary, hasil ══════════════ */
 
 export interface ItemMatriks {
