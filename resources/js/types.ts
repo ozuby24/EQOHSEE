@@ -632,3 +632,48 @@ export interface HalamanData {
   kunciDikenal: string[];
   bisaSunting: boolean;
 }
+
+export interface ParamKuesioner {
+  kode: string;
+  nama: string;
+  rerata: number | null;
+  pct: number;
+}
+
+export interface RingkasKuesioner {
+  kunci: string;
+  label: string;
+  jumlah: number;
+  rerata: number | null;
+  url: string;
+  params: ParamKuesioner[];
+}
+
+export interface Responden {
+  id: number;
+  kategori: string;
+  kategoriLabel: string;
+  nrp: string | null;
+  jabatan: string | null;
+  dept: string | null;
+  jumlahJawaban: number;
+  waktu: string | null;
+}
+
+export interface PerusahaanRingkas {
+  id: number;
+  nama: string;
+}
+
+export interface HalamanKuesioner {
+  judul: string;
+  subjudul: string;
+  picker: Picker;
+  /** null bila belum ada satu pun perusahaan terdaftar. */
+  perusahaan: PerusahaanRingkas | null;
+  daftarPerusahaan: PerusahaanRingkas[];
+  urlPublik: string | null;
+  ringkas: RingkasKuesioner[];
+  responden: Responden[];
+  bisaTarik: boolean;
+}

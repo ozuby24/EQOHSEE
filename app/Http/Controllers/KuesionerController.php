@@ -31,25 +31,84 @@ class KuesionerController extends Controller
         $company = (!$me->isAdmin() && $me->company_id)
             ? Company::find($me->company_id)
             : Company::find($request->get('company') ?? session('tpkkp_company')) ?? Company::orderBy('name')->first();
-        abort_unless($company, 404);
+        $a      = TpkkpAssessment::forYear((int) (session('tpkkp_tahun') ?? now()->year));
+        $tahunn = TpkkpAssessment::orderByDesc('tahun')->pluck('tahun')->all();
+        $picker = \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn);
+
+        /*
+         * Belum ada perusahaan sama sekali.
+         *
+         * Dulu ini abort 404. Menunya selalu tampak di bilah samping, jadi
+         * pemasangan yang baru berujung pada halaman galat tanpa satu pun
+         * petunjuk tentang apa yang kurang. Halaman kosong yang mengatakan
+         * apa yang harus dilakukan lebih berguna daripada kode galat.
+         */
+        if (!$company) {
+            return \Inertia\Inertia::render('Tpkkp/Kuesioner', [
+                'judul'    => 'Kuesioner PTPKKP',
+                'subjudul' => 'Belum ada perusahaan terdaftar',
+                'picker'   => $picker,
+
+                'perusahaan'       => null,
+                'daftarPerusahaan' => [],
+                'urlPublik'        => null,
+                'ringkas'          => [],
+                'responden'        => [],
+                'bisaTarik'        => false,
+            ]);
+        }
+
         session(['tpkkp_company' => $company->id]);
 
         $token = $this->token($company);
         $companies = $me->isAdmin() ? Company::orderBy('name')->get() : collect([$company]);
 
         $responses = TpkkpResponse::where('company_id', $company->id)->latest('ts')->get();
+
         $ringkas = [];
         foreach (self::KATEGORI as $key => $k) {
             $rows = $responses->where('cat', $key);
-            $ringkas[$key] = [
+
+            $ringkas[] = [
+                'kunci'  => $key,
                 'label'  => $k['label'],
                 'jumlah' => $rows->count(),
                 'rerata' => TpkkpKuesioner::rerata($rows),
-                'params' => TpkkpKuesioner::rerataParam($rows, $key),
+                'url'    => route('kuesioner.form', [$token, $key]),
+                'params' => array_map(fn ($p) => [
+                    'kode'   => $p['code'],
+                    'nama'   => $p['name'],
+                    'rerata' => $p['rerata'] ?? null,
+                    'pct'    => (float) ($p['pct'] ?? 0),
+                ], array_values(TpkkpKuesioner::rerataParam($rows, $key))),
             ];
         }
 
-        return view('kuesioner.admin', compact('company','companies','token','responses','ringkas'));
+        return \Inertia\Inertia::render('Tpkkp/Kuesioner', [
+            'judul'    => 'Kuesioner PTPKKP',
+            'subjudul' => "Persepsi pekerja dan pimpinan — {$company->name}",
+            'picker'   => $picker,
+
+            'perusahaan' => ['id' => $company->id, 'nama' => $company->name],
+            'daftarPerusahaan' => $companies
+                ->map(fn ($c) => ['id' => $c->id, 'nama' => $c->name])->values()->all(),
+
+            'urlPublik' => route('kuesioner.pilih', $token),
+            'ringkas'   => $ringkas,
+
+            'responden' => $responses->map(fn ($r) => [
+                'id'            => $r->id,
+                'kategori'      => $r->cat,
+                'kategoriLabel' => self::KATEGORI[$r->cat]['label'] ?? $r->cat,
+                'nrp'           => $r->nrp ?: null,
+                'jabatan'       => $r->jabatan ?: null,
+                'dept'          => $r->dept ?: null,
+                'jumlahJawaban' => count((array) $r->answers),
+                'waktu'         => optional($r->ts)->format('d M · H:i'),
+            ])->values()->all(),
+
+            'bisaTarik' => $me->isAdmin(),
+        ]);
     }
 
     public function resetToken(Request $request)

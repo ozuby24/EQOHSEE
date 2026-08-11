@@ -43,6 +43,13 @@ final class RuteInertia
         'tpkkp.sampel',
         'tpkkp.roster',
         'tpkkp.data',
+
+        // Satu aksi, dua nama rute: bilah samping memakai tpkkp.kuesioner
+        // dan chip PTPKKP memakai kuesioner.admin. Keduanya harus ada di
+        // sini, kalau tidak salah satunya menggambar <a href> biasa dan
+        // memuat ulang halaman penuh tanpa alasan yang tampak.
+        'tpkkp.kuesioner',
+        'kuesioner.admin',
     ];
 
     public static function ada(?string $rute): bool
