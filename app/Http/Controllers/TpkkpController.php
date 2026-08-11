@@ -268,21 +268,78 @@ class TpkkpController extends Controller
 
     public function rekap(Request $request)
     {
-        [$a, $hasil, $tahunn] = $this->base($request);
+        /* Halaman kedua yang dipindah ke Vue — sengaja dipilih karena
+           terhubung langsung dengan Formulir Nilai: alur wajarnya isi
+           nilai lalu cek rekapnya, dan baru dengan dua halaman Inertia
+           yang saling terkait perpindahan ANTARA keduanya bisa instan.
+           Satu halaman saja tidak cukup untuk itu — jalan masuknya tetap
+           lewat bilah samping Blade, yang selalu memuat ulang penuh. */
+        $a = $this->aktif($request);
 
         $mCo    = Tpkkp::perCompanyMethods();
         $daftar = $a->entitiesOf('TD');
         $co     = $request->get('entitas');
         if ($co && !in_array($co, $daftar, true)) $co = null;
 
-        return view('tpkkp.rekap', [
-            'a'          => $a,
-            'hasil'      => $hasil,
-            'tahunn'     => $tahunn,
-            'perusahaan' => $daftar,
-            'entitas'    => $co,
-            'rincian'    => $co ? Tpkkp::companyBreakdown($a->scores ?? [], $co, $mCo) : null,
-            'lemah'      => $co ? Tpkkp::companyGaps($a->scores ?? [], $co, $mCo, 10) : null,
+        return Inertia::render('Tpkkp/Rekap', [
+            'judul'    => 'PTPKKP — Rekapitulasi',
+            'subjudul' => "Nilai per parameter dan per perusahaan, periode {$a->tahun}",
+            'tahun'    => $a->tahun,
+
+            /* Ditutup dalam closure DAN totalCalc() dipanggil DI DALAM
+               closure-nya, bukan sebelum render() dipanggil. Kalau
+               totalCalc() dijalankan lebih dulu lalu hasilnya dibungkus
+               closure, closure-nya hanya menunda pemetaan larik —
+               penghitungan yang sesungguhnya sudah kadung terjadi. Saat
+               orang cuma mengganti perusahaan, Inertia meminta reload
+               sebagian lewat `only`, dan prop ini tidak bergantung pada
+               perusahaan yang dipilih — tidak ada alasan menghitungnya
+               ulang setiap kali orang sekadar berpindah perusahaan. */
+            'hasil' => fn () => (function () use ($a) {
+                $hasil = Tpkkp::totalCalc($a->scores ?? []);
+
+                return [
+                    'skor'      => $hasil['score'],
+                    'target'    => $hasil['target'],
+                    'indikator' => collect($hasil['indicators'])->map(fn ($ind) => [
+                        'kode' => $ind['code'], 'nama' => $ind['name'], 'bobot' => $ind['weight'],
+                        'nilai' => $ind['score'], 'target' => $ind['target'], 'kategori' => $ind['category'],
+                        'parameter' => collect($ind['params'])->map(fn ($p) => [
+                            'kode' => $p['code'], 'nama' => $p['name'],
+                            'nilai' => $p['nilai'], 'maks' => $p['max'], 'rasio' => $p['ratio'],
+                            'bobot' => $p['weight'], 'skor' => $p['score'], 'target' => $p['target'],
+                            'kategori' => $p['category'],
+                        ])->values(),
+                    ])->values(),
+                ];
+            })(),
+
+            'perusahaan'   => fn () => array_values($daftar),
+            'entitasAktif' => $co,
+            'metodePerusahaan' => $mCo,
+
+            'rincian' => fn () => $co
+                ? collect(Tpkkp::companyBreakdown($a->scores ?? [], $co, $mCo))->map(fn ($ind) => [
+                    'kode' => $ind['code'], 'nama' => $ind['name'], 'rerata' => $ind['avg'],
+                    'parameter' => collect($ind['params'])->map(fn ($p) => [
+                        'kode' => $p['code'], 'nama' => $p['name'],
+                        'rerata' => $p['avg'], 'jumlah' => $p['count'],
+                    ])->values(),
+                ])->values()
+                : null,
+
+            'lemah' => fn () => $co
+                ? collect(Tpkkp::companyGaps($a->scores ?? [], $co, $mCo, 10))->map(fn ($g) => [
+                    'kode' => $g['code'], 'nama' => $g['name'], 'rerata' => $g['avg'],
+                ])->values()
+                : null,
+
+            /* Warna lencana kategori dicari lewat label, bukan ditulis
+               ulang sebagai peta warna baru di sisi Vue — .l() label yang
+               sama dipakai App\Support\Tpkkp untuk seluruh aplikasi. */
+            'ambang' => collect(Tpkkp::LV)->map(fn ($label, $i) => [
+                'label' => $label, 'warna' => Tpkkp::levelHex($i + 1),
+            ])->values()->all(),
         ]);
     }
 

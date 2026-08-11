@@ -96,6 +96,75 @@ export interface Ambang {
   warna: string;
 }
 
+/* ══════════════ PTPKKP — rekapitulasi ══════════════ */
+
+export interface ParamRekap {
+  kode: string;
+  nama: string;
+  nilai: number | null;
+  maks: number;
+  rasio: number | null;
+  bobot: number;
+  skor: number | null;
+  target: number | null;
+  kategori: string | null;
+}
+
+export interface IndikatorRekap {
+  kode: string;
+  nama: string;
+  bobot: number;
+  nilai: number | null;
+  target: number;
+  kategori: string | null;
+  parameter: ParamRekap[];
+}
+
+export interface HasilTotal {
+  skor: number | null;
+  target: number;
+  indikator: IndikatorRekap[];
+}
+
+export interface ParamPerusahaan {
+  kode: string;
+  nama: string;
+  rerata: number | null;
+  jumlah: number;
+}
+
+export interface IndikatorPerusahaan {
+  kode: string;
+  nama: string;
+  rerata: number | null;
+  parameter: ParamPerusahaan[];
+}
+
+export interface ItemLemah {
+  kode: string;
+  nama: string;
+  rerata: number | null;
+}
+
+/** Label kategori → warna — dibaca dari server, sama untuk seluruh PTPKKP. */
+export interface AmbangLabel {
+  label: string;
+  warna: string;
+}
+
+export interface HalamanRekap {
+  judul: string;
+  subjudul: string;
+  tahun: number;
+  hasil: HasilTotal;
+  perusahaan: string[];
+  entitasAktif: string | null;
+  metodePerusahaan: string[];
+  rincian: IndikatorPerusahaan[] | null;
+  lemah: ItemLemah[] | null;
+  ambang: AmbangLabel[];
+}
+
 export interface HalamanPenilaian {
   judul: string;
   subjudul: string;
