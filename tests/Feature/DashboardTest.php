@@ -217,6 +217,20 @@ class DashboardTest extends TestCase
         $this->assertSame('orang',  IkonNav::nama('Data Diri'));
         $this->assertSame('gedung', IkonNav::nama('Data Perusahaan'));
         $this->assertSame('kotak',  IkonNav::nama('Master Data'));
+
+        // Menu gudang: tiap butir harus punya siluet sendiri, bukan
+        // sama-sama jatuh ke ikon bawaan.
+        $gudang = ['Daftar Barang', 'Lokasi Simpan', 'Mutasi Keluar Masuk',
+                   'Stok Opname', 'Register B3', 'Laporan Stok'];
+
+        foreach ($gudang as $label) {
+            $this->assertNotSame('default', IkonNav::nama($label),
+                "Menu '{$label}' masih memakai ikon bawaan.");
+        }
+
+        $this->assertSame(count($gudang), count(array_unique(array_map(
+            fn ($l) => IkonNav::nama($l), $gudang
+        ))), 'Tiap butir menu gudang harus berbeda ikonnya.');
     }
 
     public function test_dua_kursus_berdampingan_tidak_memakai_foto_yang_sama(): void

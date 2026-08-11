@@ -44,9 +44,15 @@ class Modules
              'ket'  => 'Audit 7 elemen SMKP Minerba sesuai Kepdirjen 185.K/2019: penilaian per kriteria, temuan berjenjang, dan laporan siap cetak.',
              'ikon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'],
 
-            ['nama' => 'Sistem Informasi Gudang & Penyimpanan', 'status' => 'segera', 'pilar' => 'environment',
-             'ket'  => 'Pengelolaan stok, penerimaan, pengeluaran, dan penyimpanan material.',
+            ['nama' => 'Sistem Informasi Gudang & Penyimpanan', 'status' => 'aktif', 'pilar' => 'environment',
+             'rute' => 'gudang.index',
+             'ket'  => 'Register B3, material, dan APD: mutasi keluar masuk, stok opname, pantangan penyimpanan, dan laporan persediaan.',
              'ikon' => 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4'],
+
+            ['nama' => 'Energy Performance Center', 'status' => 'aktif', 'pilar' => 'energy',
+             'rute' => 'energi.index',
+             'ket'  => 'Konsumsi bahan bakar dan listrik, intensitas energi, baseline dan sasaran, peluang penghematan, serta jejak karbon.',
+             'ikon' => 'M13 2 4 14h7l-1 8 10-13h-7l0-7Z'],
 
             ['nama' => 'Mining Engineering Hub', 'status' => 'aktif', 'pilar' => 'engineering',
              'rute' => 'meh.index',

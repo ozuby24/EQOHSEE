@@ -50,6 +50,8 @@ final class IkonNav
         'energi'      => 'M13.2 3 5.6 13.8h5.1l-.9 7.2 7.6-10.8h-5.1Z',
         'armada'      => 'M3 16.5V8a1 1 0 0 1 1-1h9.5v9.5M13.5 10.5H17l3 3.5v2.5M6.2 19.7a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm11 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z',
         'alat'        => 'M14.6 6.4a4 4 0 1 0 5.1 5.1l-9.5 9.5-2.8.7.7-2.8ZM4 4l4 4',
+        'tukar'       => 'M4 8.5h13l-3.2-3.2M20 15.5H7l3.2 3.2',
+        'timbang'     => 'M12 4.5v15M7.5 6.2h9M4 19.5h16M6 6.8 3 13.2h6ZM18 6.8l-3 6.4h6Z',
         'default'     => 'M5 12h14M5 7h9M5 17h9',
     ];
 
@@ -96,6 +98,14 @@ final class IkonNav
         'bahan bakar' => 'armada', 'fuel' => 'armada',
         'tools' => 'alat', 'alat' => 'alat',
         'kajian' => 'buku', 'buat' => 'dokumen', 'baru' => 'dokumen',
+
+        // Gudang & Penyimpanan.
+        'barang' => 'kotak', 'persediaan' => 'kotak', 'stok' => 'kotak',
+        'lokasi' => 'gedung', 'gudang' => 'gedung', 'penyimpanan' => 'gedung',
+        'mutasi' => 'tukar', 'keluar masuk' => 'tukar',
+        'opname' => 'timbang', 'stok opname' => 'timbang',
+        'b3' => 'bahaya', 'register b3' => 'bahaya',
+        'laporan stok' => 'dokumen',
     ];
 
     /** Nama ikon untuk sebuah label menu. */

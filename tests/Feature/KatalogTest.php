@@ -57,11 +57,23 @@ class KatalogTest extends TestCase
     }
 
 
+    /**
+     * Modul yang belum aktif tidak boleh punya rute.
+     *
+     * Tampilan memakai ketiadaan rute untuk menentukan kartu mana yang
+     * dapat diklik; modul 'segera' yang punya rute akan tampil siap pakai.
+     *
+     * Kosakata status ikut diperiksa supaya uji ini tetap memeriksa
+     * sesuatu ketika seluruh modul kebetulan sudah aktif — tanpa itu,
+     * perulangannya melewati semua baris dan ujinya lulus tanpa arti,
+     * persis pada saat katalognya paling mudah salah ketik.
+     */
     public function test_modul_belum_aktif_tidak_punya_rute(): void
     {
-        // Tampilan memakai ketiadaan rute untuk menentukan kartu mana yang
-        // dapat diklik; modul 'segera' yang punya rute akan tampil siap pakai.
         foreach (Modules::all() as $m) {
+            $this->assertContains($m['status'] ?? '', ['aktif', 'segera'],
+                "Modul '{$m['nama']}' berstatus '{$m['status']}' yang tidak dikenal tampilan.");
+
             if (($m['status'] ?? '') === 'aktif') continue;
 
             $this->assertArrayNotHasKey('rute', $m,

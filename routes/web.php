@@ -7,7 +7,7 @@ use App\Http\Controllers\{
 };
 use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiTemuanController, HazardController,
     HazardExportController, InspectionController, InspectionTemplateController,
-    EnergyController, EngineeringController, IsoController, KoController, KuesionerController, SignatoryController, SmkpController,
+    EnergyController, EngineeringController, GudangController, IsoController, KoController, KuesionerController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\Admin\{CompanyController, SystemController, UserController};
 use Illuminate\Support\Facades\Route;
@@ -352,6 +352,33 @@ Route::middleware('auth')->group(function () {
         Route::get('system',        [SystemController::class, 'index'])->name('system');
         Route::delete('system/logs',[SystemController::class, 'clearLogs'])->name('system.logs.clear');
         Route::post('system/maintenance/{aksi}', [SystemController::class,'maintenance'])->name('system.maintenance');
+    });
+
+    /* ---- Gudang & Penyimpanan ---- */
+    Route::prefix('gudang')->name('gudang.')->group(function () {
+        Route::get('/',          [GudangController::class, 'index'])->name('index');
+        Route::get('barang',     [GudangController::class, 'barang'])->name('barang');
+        Route::get('mutasi',     [GudangController::class, 'mutasi'])->name('mutasi');
+        Route::get('opname',     [GudangController::class, 'opname'])->name('opname');
+        Route::get('lokasi',     [GudangController::class, 'lokasi'])->name('lokasi');
+        Route::get('b3',         [GudangController::class, 'b3'])->name('b3');
+        Route::get('laporan',    [GudangController::class, 'laporan'])->name('laporan');
+
+        /* Pencatatan dibatasi admin dan petugas gudang. Rute 'baru'
+           didaftarkan sebelum '{barang}' — kalau tidak, "baru" tertangkap
+           sebagai id barang dan formulirnya berujung 404. */
+        Route::middleware('can:admin')->group(function () {
+            Route::get('barang/baru',          [GudangController::class, 'barangForm'])->name('barang.baru');
+            Route::post('barang',              [GudangController::class, 'barangSimpan'])->name('barang.simpan');
+            Route::get('barang/{barang}/edit', [GudangController::class, 'barangForm'])->name('barang.edit');
+            Route::put('barang/{barang}',      [GudangController::class, 'barangSimpan'])->name('barang.ubah');
+            Route::delete('barang/{barang}',   [GudangController::class, 'barangHapus'])->name('barang.hapus');
+
+            Route::post('mutasi',              [GudangController::class, 'mutasiSimpan'])->name('mutasi.simpan');
+            Route::post('opname',              [GudangController::class, 'opnameSimpan'])->name('opname.simpan');
+            Route::post('lokasi',              [GudangController::class, 'lokasiSimpan'])->name('lokasi.simpan');
+            Route::put('lokasi/{lokasi}',      [GudangController::class, 'lokasiSimpan'])->name('lokasi.ubah');
+        });
     });
 
     /* ---- Personalia ---- */

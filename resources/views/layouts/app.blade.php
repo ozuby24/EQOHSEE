@@ -50,9 +50,10 @@
          : (request()->is('smkp*') ? 'smkp'
          : (request()->is('dokumen*') || request()->is('iso*') || request()->is('struktur-dokumen') || request()->is('daftar-induk') ? 'dokumen'
          : (request()->is('energi*') ? 'energi'
+         : (request()->is('gudang*') ? 'gudang'
          : (request()->is('mining-engineering-hub*') ? 'meh'
          : (request()->is('ko*') ? 'ko'
-         : (request()->is('admin*') || request()->is('signatories*') ? 'admin' : 'lms'))))))));
+         : (request()->is('admin*') || request()->is('signatories*') ? 'admin' : 'lms')))))))));
 
   $menu = [
     /* Personalia berdiri di depan Learning Center: yang diurus di sini
@@ -215,6 +216,25 @@
         'Alat & Acuan' => [
           ['Engineering Tools',      'meh.tools',       'mining-engineering-hub/tools'],
           ['Regulations & Standards','meh.regulations', 'mining-engineering-hub/regulations'],
+        ],
+      ],
+    ],
+    'gudang' => [
+      'label' => 'Gudang & Penyimpanan',
+      'icon'  => 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
+      'groups' => [
+        'Persediaan' => [
+          ['Dashboard',      'gudang.index',  'gudang'],
+          ['Daftar Barang',  'gudang.barang', 'gudang/barang*'],
+          ['Lokasi Simpan',  'gudang.lokasi', 'gudang/lokasi*'],
+        ],
+        'Transaksi' => [
+          ['Mutasi Keluar Masuk', 'gudang.mutasi', 'gudang/mutasi'],
+          ['Stok Opname',         'gudang.opname', 'gudang/opname'],
+        ],
+        'Pengawasan' => [
+          ['Register B3',    'gudang.b3',      'gudang/b3'],
+          ['Laporan Stok',   'gudang.laporan', 'gudang/laporan'],
         ],
       ],
     ],

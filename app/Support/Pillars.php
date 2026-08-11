@@ -35,7 +35,7 @@ class Pillars
                     ['Keandalan kelistrikan',            'Kelayakan instalasi, proteksi, dan jadwal pemeliharaan.'],
                     ['Jejak emisi operasi',              'Perhitungan emisi dari pemakaian energi.'],
                 ],
-                'modul' => ['Keselamatan Operasi (KO)', 'ISO & Dokumen'],
+                'modul' => ['Energy Performance Center', 'Keselamatan Operasi (KO)', 'ISO & Dokumen'],
             ],
 
             'quality' => [
@@ -105,7 +105,7 @@ class Pillars
                     ['Kualitas air & udara',  'Pemantauan titik penaatan secara berkala.'],
                     ['Reklamasi lahan',       'Rencana dan realisasi pemulihan area terganggu.'],
                 ],
-                'modul' => ['ISO & Dokumen', 'SMKP Audit'],
+                'modul' => ['Sistem Informasi Gudang & Penyimpanan', 'ISO & Dokumen', 'SMKP Audit'],
             ],
 
             'engineering' => [
