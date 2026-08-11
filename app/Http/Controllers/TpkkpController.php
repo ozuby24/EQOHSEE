@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\{ActivityLog, TpkkpAssessment};
 use App\Support\Tpkkp;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class TpkkpController extends Controller
 {
@@ -136,16 +137,80 @@ class TpkkpController extends Controller
             }
         }
 
-        return view('tpkkp.penilaian', [
-            'a'           => $a,
-            'hasil'       => $hasil,
-            'tahunn'      => $tahunn,
+        /* Halaman ini dirender Vue lewat Inertia — halaman pertama yang
+           dipindah. Alasannya bukan Blade tidak sanggup, melainkan
+           bentuk datanya: 194 item dengan nilai per entitas lebih wajar
+           hidup sebagai state di peramban daripada dirender ulang dari
+           server setiap kali satu angka berubah. Di sini capaian tiap
+           item ikut terhitung ulang seketika, yang pada versi Blade baru
+           terlihat setelah disimpan dan halaman dimuat ulang. */
+        $entitas = $a->entitiesOf($m);
+        $target  = Tpkkp::target();
+
+        $daftarItem = [];
+        foreach ($items as $it) {
+            $rub = Tpkkp::rubrikFor($m, $it['code']);
+
+            $nilai = [];
+            if ($entitas) {
+                foreach ($entitas as $ent) $nilai[$ent] = $a->cell($m, $it['code'], $ent);
+            } else {
+                $nilai['_'] = $a->cell($m, $it['code']);
+            }
+
+            $daftarItem[] = [
+                'kode'   => $it['code'],
+                'nama'   => $it['name'],
+                'metode' => $it['methods'],
+                'maks'   => $it['max'],
+                'nilai'  => $nilai,
+                'ket'    => $a->ket($m, $it['code']),
+                'target' => isset($target[$it['code']][$m]) ? trim($target[$it['code']][$m]) : null,
+                'rubrik' => collect($rub['l'] ?? [])->map(fn ($teks, $i) => [
+                    'tingkat' => $i + 1,
+                    'teks'    => $teks,
+                    'warna'   => Tpkkp::levelHex($i + 1),
+                ])->values()->all(),
+            ];
+        }
+
+        $par = $p ? Tpkkp::paramByCode($p) : null;
+
+        return Inertia::render('Tpkkp/Penilaian', [
+            /* Judul bilah atas ditentukan di sini, sejajar dengan
+               @yield('subjudul') pada halaman Blade. */
+            'judul'       => 'PTPKKP — Penilaian',
+            'subjudul'    => "Tingkat kematangan keselamatan, periode {$a->tahun}",
+
+            'tahun'       => $a->tahun,
+            'metode'      => collect($M)->map(fn ($x, $k) => [
+                'kode'         => $k,
+                'nama'         => $x['name'],
+                'labelEntitas' => $x['entityLabel'] ?? '',
+            ])->values()->all(),
             'metodeAktif' => $m,
-            'metodeInfo'  => $M[$m],
-            'entitas'     => $a->entitiesOf($m),
-            'daftarParam' => $daftarParam,
+            'parameter'   => collect($daftarParam)->map(fn ($x) => [
+                'kode' => $x['code'], 'nama' => $x['name'], 'jumlah' => $x['n'],
+            ])->all(),
             'paramAktif'  => $p,
-            'items'       => $items,
+            'entitas'     => array_values($entitas),
+            'items'       => $daftarItem,
+            'bisaSunting' => $request->user()->isAdmin(),
+            'paramBobot'  => (float) ($par['weight'] ?? 0),
+            'paramTarget' => (float) (Tpkkp::paramTargets()[$p] ?? 0),
+
+            /* Ambang kategori dikirim dari sini, tidak ditulis ulang di
+               sisi Vue. Menyalinnya ke peramban berarti dua daftar ambang
+               yang harus diubah bersama — dan yang tertinggal tidak
+               menimbulkan galat, hanya lencana yang menyebut tingkat
+               kematangan yang salah. Sudah pernah terjadi: salinan yang
+               ditulis dengan tangan memakai batas dan nama tingkat yang
+               tidak ada di acuan sama sekali. */
+            'ambang'      => collect(Tpkkp::ref()['thresholds'])->map(fn ($t, $i) => [
+                'batas' => (float) $t['lt'],
+                'label' => $t['label'],
+                'warna' => Tpkkp::levelHex($i + 1),
+            ])->values()->all(),
         ]);
     }
 
