@@ -7,6 +7,15 @@ export default {
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
+
+        /* Halaman Inertia hidup di .vue, bukan .blade.php. Tanpa baris ini
+           Tailwind memindai hanya berkas Blade untuk memutuskan kelas mana
+           yang dipakai, dan kelas yang HANYA muncul di sebuah komponen Vue
+           dibuang saat build produksi — tanpa galat apa pun, kelasnya
+           sekadar hilang dari CSS. Sudah terjadi sekali: `disabled:cursor-
+           not-allowed` pada tombol Simpan PTPKKP hilang total dari berkas
+           terkompilasi karena kelas itu tidak muncul di satu pun .blade.php. */
+        './resources/js/**/*.vue',
     ],
     theme: {
         extend: {

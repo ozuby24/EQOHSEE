@@ -250,6 +250,27 @@ class TpkkpPenilaianTest extends TestCase
             );
     }
 
+    /* ══════════════ kelas Tailwind dari komponen Vue ══════════════ */
+
+    /**
+     * Tailwind harus memindai .vue, bukan hanya .blade.php.
+     *
+     * `tailwind.config.js` sempat hanya mendaftar `resources/views/**\/*.blade.php`.
+     * Kelas yang cuma muncul di sebuah komponen Vue dibuang saat build
+     * produksi tanpa galat apa pun — kelasnya sekadar hilang dari CSS
+     * terkompilasi. `disabled:cursor-not-allowed` pada tombol Simpan
+     * PTPKKP adalah korban nyatanya: kelas itu tidak muncul di satu pun
+     * berkas Blade, jadi build produksi membuangnya sepenuhnya.
+     */
+    public function test_tailwind_memindai_berkas_vue(): void
+    {
+        $konfig = file_get_contents(base_path('tailwind.config.js'));
+
+        $this->assertStringContainsString('resources/js/**/*.vue', $konfig,
+            'tailwind.config.js tidak memindai .vue — kelas yang hanya '.
+            'dipakai komponen Vue akan dibuang saat build produksi.');
+    }
+
     /* ══════════════ halaman Blade tidak terganggu ══════════════ */
 
     public function test_halaman_tpkkp_lain_tetap_blade(): void
