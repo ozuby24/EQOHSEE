@@ -616,3 +616,19 @@ export interface HalamanRoster {
   metode: MetodeRoster[];
   bisaSunting: boolean;
 }
+
+export interface RingkasData {
+  label: string;
+  nilai: string;
+}
+
+export interface HalamanData {
+  judul: string;
+  subjudul: string;
+  picker: Picker;
+  tahun: number;
+  ringkas: RingkasData[];
+  urlEkspor: string;
+  kunciDikenal: string[];
+  bisaSunting: boolean;
+}

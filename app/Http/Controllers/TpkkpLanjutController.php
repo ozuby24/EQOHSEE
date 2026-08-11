@@ -14,6 +14,18 @@ use Inertia\Inertia;
  */
 class TpkkpLanjutController extends Controller
 {
+    /**
+     * Kunci yang dikenali impor.
+     *
+     * Dipakai tiga kali: menulis berkas ekspor, membaca berkas impor, dan
+     * memberi tahu layar kunci apa saja yang akan terpakai sebelum orang
+     * menekan "Impor & timpa". Ditulis berulang, ketiganya akan berbeda
+     * diam-diam — dan yang paling merugikan adalah layar yang menjanjikan
+     * sesuatu yang ternyata dibuang.
+     */
+    public const KUNCI_LARIK = ['scores', 'roster', 'profil', 'tim', 'programs', 'jadwal', 'sampling'];
+    public const KUNCI_TEKS  = ['judul', 'status'];
+
     private function base(Request $request): array
     {
         $tahun = (int) ($request->get('tahun') ?? session('tpkkp_tahun') ?? now()->year);
@@ -519,26 +531,35 @@ class TpkkpLanjutController extends Controller
     {
         [$a, $hasil, $tahunn] = $this->base($request);
 
-        return view('tpkkp.data', compact('a', 'hasil', 'tahunn'));
+        return Inertia::render('Tpkkp/Data', [
+            'judul'    => 'PTPKKP — Data & Koneksi',
+            'subjudul' => "Ekspor, impor, dan pengosongan nilai periode {$a->tahun}",
+            'picker'   => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
+            'tahun'    => $a->tahun,
+
+            'ringkas' => [
+                ['label' => 'Sel terisi',      'nilai' => $hasil['filledCells'] . ' / ' . $hasil['totalCells']],
+                ['label' => 'Kelengkapan',     'nilai' => number_format($hasil['completeness'] * 100, 1) . '%'],
+                ['label' => 'Program',         'nilai' => (string) count($a->programs ?? [])],
+                ['label' => 'Kegiatan jadwal', 'nilai' => (string) count($a->jadwal ?? [])],
+            ],
+
+            'urlEkspor'    => route('tpkkp.data.ekspor', ['tahun' => $a->tahun]),
+            'kunciDikenal' => array_merge(self::KUNCI_LARIK, self::KUNCI_TEKS),
+            'bisaSunting'  => $request->user()->isAdmin(),
+        ]);
     }
 
     public function ekspor(Request $request)
     {
         $a = TpkkpAssessment::forYear((int) ($request->get('tahun') ?? session('tpkkp_tahun') ?? now()->year));
 
-        $isi = [
-            'tahun'    => $a->tahun,
-            'judul'    => $a->judul,
-            'status'   => $a->status,
-            'scores'   => $a->scores   ?? [],
-            'roster'   => $a->roster   ?? [],
-            'profil'   => $a->profil   ?? [],
-            'tim'      => $a->tim      ?? [],
-            'programs' => $a->programs ?? [],
-            'jadwal'   => $a->jadwal   ?? [],
-            'sampling' => $a->sampling ?? [],
-            'diekspor' => now()->toIso8601String(),
-        ];
+        // Ditulis dari daftar kunci yang sama dengan yang dibaca impor,
+        // supaya berkas hasil ekspor selalu bisa diimpor kembali utuh.
+        $isi = ['tahun' => $a->tahun];
+        foreach (self::KUNCI_TEKS as $k)  $isi[$k] = $a->{$k};
+        foreach (self::KUNCI_LARIK as $k) $isi[$k] = $a->{$k} ?? [];
+        $isi['diekspor'] = now()->toIso8601String();
 
         return response()->json($isi, 200, [
             'Content-Disposition' => 'attachment; filename="tpkkp-' . $a->tahun . '-' . now()->format('Ymd-His') . '.json"',
@@ -561,10 +582,10 @@ class TpkkpLanjutController extends Controller
         $this->cadangkan($a, 'sebelum-impor');
 
         $dipakai = [];
-        foreach (['scores', 'roster', 'profil', 'tim', 'programs', 'jadwal', 'sampling'] as $k) {
+        foreach (self::KUNCI_LARIK as $k) {
             if (isset($isi[$k]) && is_array($isi[$k])) { $a->{$k} = $isi[$k]; $dipakai[] = $k; }
         }
-        foreach (['judul', 'status'] as $k) {
+        foreach (self::KUNCI_TEKS as $k) {
             if (isset($isi[$k]) && is_string($isi[$k])) { $a->{$k} = $isi[$k]; $dipakai[] = $k; }
         }
         $a->save();
@@ -591,8 +612,15 @@ class TpkkpLanjutController extends Controller
         try {
             $dir = storage_path('app');
             if (!is_dir($dir)) mkdir($dir, 0775, true);
+            // Akhiran acak, bukan hanya cap waktu: dua pengosongan dalam
+            // detik yang sama menghasilkan nama berkas yang sama persis,
+            // dan salinan kedua menimpa salinan pertama — justru satu-
+            // satunya jalan pulang yang hilang.
+            $nama = 'tpkkp-' . $a->tahun . '-' . $tanda . '-'
+                  . now()->format('Ymd-His') . '-' . bin2hex(random_bytes(3)) . '.json';
+
             file_put_contents(
-                $dir . '/tpkkp-' . $a->tahun . '-' . $tanda . '-' . now()->format('Ymd-His') . '.json',
+                $dir . '/' . $nama,
                 json_encode($a->only(['tahun', 'scores', 'roster', 'profil', 'tim', 'programs', 'jadwal', 'sampling']),
                     JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
             );

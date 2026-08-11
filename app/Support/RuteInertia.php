@@ -42,6 +42,7 @@ final class RuteInertia
         'tpkkp.sampling',
         'tpkkp.sampel',
         'tpkkp.roster',
+        'tpkkp.data',
     ];
 
     public static function ada(?string $rute): bool
