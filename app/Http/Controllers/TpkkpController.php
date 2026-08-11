@@ -9,6 +9,17 @@ use Inertia\Inertia;
 
 class TpkkpController extends Controller
 {
+    /**
+     * Status program improvement.
+     *
+     * Satu daftar dipakai aturan validasi sekaligus pilihan yang dikirim
+     * ke halaman. Sempat ditulis dua kali — sekali di `in:` dan sekali di
+     * pilihan formulir — dan daftar semacam itu diam saja ketika salah
+     * satunya bertambah: pilihannya muncul, dipilih orang, lalu ditolak
+     * validasi tanpa alasan yang tampak.
+     */
+    public const STATUS_PROGRAM = ['Rencana', 'Berjalan', 'Selesai', 'Ditunda'];
+
     /* ================= dasar ================= */
 
     private function aktif(Request $request): TpkkpAssessment
@@ -532,11 +543,36 @@ class TpkkpController extends Controller
         }
         usort($saran, fn ($x, $y) => $x['gap'] <=> $y['gap']);
 
-        return view('tpkkp.program', [
-            'a'      => $a,
-            'hasil'  => $hasil,
-            'tahunn' => $tahunn,
-            'saran'  => array_slice($saran, 0, 8),
+        $program = [];
+        foreach ($a->programs ?? [] as $r) {
+            // Baris tanpa id tidak bisa diperbarui maupun dihapus — id-nya
+            // yang dipakai rute. Barisnya tetap ditampilkan supaya isinya
+            // tidak hilang diam-diam, tapi tombolnya disembunyikan.
+            $program[] = [
+                'id'       => $r['id'] ?? null,
+                'param'    => $r['param'] ?? '',
+                'opsi'     => $r['opsi'] ?? '',
+                'durasi'   => $r['durasi'] ?? '',
+                'sasaran'  => $r['sasaran'] ?? '',
+                'target'   => $r['target'] ?? '',
+                'status'   => $r['status'] ?? self::STATUS_PROGRAM[0],
+                'progress' => (int) ($r['progress'] ?? 0),
+            ];
+        }
+
+        return Inertia::render('Tpkkp/Program', [
+            'judul'    => 'PTPKKP — Program Improvement',
+            'subjudul' => "Rencana perbaikan atas selisih terhadap target, periode {$a->tahun}",
+            'picker'   => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
+            'tahun'    => $a->tahun,
+            'saran'    => array_map(fn ($s) => [
+                'kode' => $s['code'],
+                'nama' => $s['name'],
+                'gap'  => round($s['gap'], 4),
+            ], array_slice($saran, 0, 8)),
+            'program'       => $program,
+            'statusPilihan' => self::STATUS_PROGRAM,
+            'bisaSunting'   => $request->user()->isAdmin(),
         ]);
     }
 
@@ -574,7 +610,7 @@ class TpkkpController extends Controller
         $a = $this->aktif($request);
 
         $d = $request->validate([
-            'status'   => ['required', 'in:Rencana,Berjalan,Selesai,Ditunda'],
+            'status'   => ['required', \Illuminate\Validation\Rule::in(self::STATUS_PROGRAM)],
             'progress' => ['nullable', 'integer', 'min:0', 'max:100'],
         ]);
 

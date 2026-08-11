@@ -502,3 +502,37 @@ export interface HalamanProfil {
   roster: RosterMetode[];
   bisaSunting: boolean;
 }
+
+export interface SaranProgram {
+  kode: string;
+  nama: string;
+  gap: number;
+}
+
+export interface BarisProgram {
+  id: string | null;
+  param: string;
+  opsi: string;
+  durasi: string;
+  sasaran: string;
+  target: string;
+  status: string;
+  progress: number;
+}
+
+/** Salinan lokal satu baris selama disunting, sebelum dikirim ke server. */
+export interface BarisSunting {
+  status: string;
+  progress: number;
+}
+
+export interface HalamanProgram {
+  judul: string;
+  subjudul: string;
+  picker: Picker;
+  tahun: number;
+  saran: SaranProgram[];
+  program: BarisProgram[];
+  statusPilihan: string[];
+  bisaSunting: boolean;
+}
