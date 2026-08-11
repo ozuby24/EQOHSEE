@@ -237,6 +237,21 @@
           @endforeach
         </div>
       @endforeach
+
+      {{-- Alat luar. Berkas statis, bukan rute Laravel, jadi tautannya
+           ditulis apa adanya — route() hanya mengenal rute yang terdaftar. --}}
+      <p class="px-3 mt-4 mb-1 text-[9.5px] font-semibold uppercase tracking-[0.12em] text-white/20">Alat Bantu</p>
+      <a href="{{ url('mining-engineering-hub/') }}" target="_blank" rel="noopener"
+         class="relative flex items-center gap-3 rounded-xl px-3 py-2.5
+                text-[12.5px] font-semibold hover:bg-white/5 hover:text-white transition">
+        <svg class="w-[17px] h-[17px] shrink-0" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
+          <rect x="4" y="3" width="16" height="18" rx="2"/><path stroke-linecap="round" d="M8 7h8M8 11h2M12 11h2M8 15h2M12 15h2"/>
+        </svg>
+        <span>Mining Engineering Hub</span>
+        <svg class="w-3.5 h-3.5 ml-auto opacity-40" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M14 5h5v5M19 5l-7 7M18 14v5H5V6h5"/>
+        </svg>
+      </a>
     </nav>
 
     <div class="m-3 rounded-xl glass p-3.5">
