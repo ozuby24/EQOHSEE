@@ -45,6 +45,14 @@
      salinan seperti itu pasti berbeda isinya cepat atau lambat. --}}
 @include('partials.eq-visual')
 
+{{-- Pemuat dan setelan tema Chart.js yang sama dengan halaman Blade.
+     Berkas CDN-nya beralamat sama persis, jadi peramban memakai satu
+     salinan untuk seluruh aplikasi; yang lebih penting, setelan tema
+     grafiknya tidak tergandakan — dua salinan setelan warna dan font
+     akan berbeda isinya cepat atau lambat, dan bedanya baru ketahuan
+     saat dua grafik dibandingkan berdampingan. --}}
+@include('tpkkp._chart')
+
 @inertia
 </body>
 </html>

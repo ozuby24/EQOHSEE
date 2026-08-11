@@ -97,14 +97,23 @@ class RuteInertiaTest extends TestCase
             }
         }
 
-        // Di modul PTPKKP, tepat dua butir menu menuju halaman Inertia.
-        $inertia = collect($props['menu']['grup'])
+        /* Harapannya diturunkan dari katalog menu, bukan ditulis harfiah:
+           daftar label yang diketik tangan harus disunting setiap kali ada
+           satu halaman dipindah, dan uji yang perlu disunting tiap kali
+           lama-lama disunting tanpa dibaca. */
+        $harap = collect(\App\Support\Menu::modul('tpkkp')['groups'])
+            ->flatten(1)
+            ->filter(fn ($b) => \App\Support\RuteInertia::ada($b[1]))
+            ->count();
+
+        $nyata = collect($props['menu']['grup'])
             ->flatMap(fn ($g) => $g['butir'])
             ->where('inertia', true)
-            ->pluck('label')
-            ->sort()->values()->all();
+            ->count();
 
-        $this->assertSame(['Formulir Nilai', 'Rekapitulasi'], $inertia);
+        $this->assertSame($harap, $nyata,
+            'Jumlah menu bertanda Inertia tidak cocok dengan katalog rute.');
+        $this->assertGreaterThan(0, $nyata, 'Tanda inertia tidak sampai ke menu sama sekali.');
     }
 
     public function test_picker_menandai_tab_inertia(): void
@@ -113,10 +122,15 @@ class RuteInertiaTest extends TestCase
 
         $props = $this->get('/tpkkp/rekap')->assertOk()->viewData('page')['props'];
 
-        $inertia = collect($props['picker']['tabs'])->where('inertia', true)
-            ->pluck('label')->sort()->values()->all();
+        $harap = collect(\App\Support\TpkkpNav::TABS)
+            ->filter(fn ($t) => \App\Support\RuteInertia::ada($t[0]))
+            ->count();
 
-        $this->assertSame(['Penilaian', 'Rekapitulasi'], $inertia);
+        $nyata = collect($props['picker']['tabs'])->where('inertia', true)->count();
+
+        $this->assertSame($harap, $nyata,
+            'Jumlah tab bertanda Inertia tidak cocok dengan katalog rute.');
+        $this->assertGreaterThan(0, $nyata, 'Tanda inertia tidak sampai ke picker sama sekali.');
 
         // Sisanya harus ditandai Blade, bukan dibiarkan tanpa tanda.
         foreach ($props['picker']['tabs'] as $t) {

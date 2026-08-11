@@ -52,15 +52,84 @@ class TpkkpController extends Controller
 
     public function index(Request $request)
     {
+        /* Halaman ketiga yang dipindah ke Vue. Dipilih karena ia pintu
+           masuk modul: dari sini chip ke Penilaian dan Rekapitulasi —
+           dua halaman Inertia lain — berpindah tanpa memuat ulang, dan
+           itulah yang membuat modulnya terasa satu kesatuan alih-alih
+           kumpulan halaman yang saling memuat ulang. */
         [$a, $hasil, $tahunn] = $this->base($request);
 
-        return view('tpkkp.beranda', [
-            'a'       => $a,
-            'hasil'   => $hasil,
-            'tahunn'  => $tahunn,
-            'metode'  => Tpkkp::methodTotals($a->scores ?? []),
-            'sebaran' => Tpkkp::distribution($a->scores ?? []),
-            'gaps'    => Tpkkp::gaps($a->scores ?? [], 10),
+        $sebaran = Tpkkp::distribution($a->scores ?? []);
+
+        /* Data grafik dibentuk di server, bukan di komponen. Rumusnya —
+           capaian dibagi bobot lalu dipersenkan — sama dengan yang dipakai
+           versi Blade; menaruhnya di sisi Vue berarti satu lagi rumus yang
+           hidup di dua tempat, dan yang seperti itu sudah sekali terbukti
+           melenceng tanpa menimbulkan galat. */
+        $radar = ['label' => [], 'capaian' => [], 'target' => []];
+        foreach ($hasil['indicators'] as $I) {
+            $w = $I['weight'] ?: 1;
+            $radar['label'][]   = 'Indikator '.$I['code'];
+            $radar['capaian'][] = round((($I['score'] ?? 0) / $w) * 100, 1);
+            $radar['target'][]  = round((($I['target'] ?? 0) / $w) * 100, 1);
+        }
+
+        $tingkat = [];
+        foreach (Tpkkp::LV as $i => $nama) {
+            $tingkat[] = [
+                'nama'   => $nama,
+                'warna'  => Tpkkp::levelHex($i + 1),
+                'jumlah' => $sebaran[$i + 1] ?? 0,
+            ];
+        }
+
+        return Inertia::render('Tpkkp/Beranda', [
+            'judul'    => 'PTPKKP — Beranda',
+            'subjudul' => "Ringkasan capaian, periode {$a->tahun}",
+            'picker'   => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
+
+            'identitas' => [
+                'organisasi' => $a->profil['organisasi'] ?? $a->judul,
+                'site'       => $a->profil['site'] ?? null,
+                'komoditas'  => $a->profil['komoditas'] ?? null,
+                'tahun'      => $a->tahun,
+            ],
+
+            'hasil' => [
+                'skor'        => $hasil['score'],
+                'tingkat'     => $hasil['level'],
+                'kategori'    => $hasil['category'],
+                'target'      => $hasil['target'],
+                'selTerisi'   => $hasil['filledCells'],
+                'selTotal'    => $hasil['totalCells'],
+                'kelengkapan' => $hasil['completeness'],
+                'indikator'   => collect($hasil['indicators'])->map(fn ($ind) => [
+                    'kode' => $ind['code'], 'nama' => $ind['name'],
+                    'skor' => $ind['score'], 'rasio' => $ind['ratio'],
+                    'bobot' => $ind['weight'], 'target' => $ind['target'],
+                    'kategori' => $ind['category'],
+                    'warna' => Tpkkp::levelHex(Tpkkp::level($ind['category'])),
+                    'selTerisi' => $ind['filledCells'], 'selTotal' => $ind['totalCells'],
+                ])->values()->all(),
+            ],
+
+            'metode' => collect(Tpkkp::methodTotals($a->scores ?? []))->map(fn ($m) => [
+                'kode' => $m['key'], 'nama' => $m['name'],
+                'terisi' => $m['filled'], 'jumlah' => $m['items'], 'rasio' => $m['ratio'],
+            ])->values()->all(),
+
+            'tingkat'      => $tingkat,
+            'belumLengkap' => $sebaran['none'] ?? 0,
+            'totalItem'    => Tpkkp::totalItems(),
+
+            'gaps' => collect(Tpkkp::gaps($a->scores ?? [], 10))->map(fn ($g) => [
+                'kode' => $g['code'], 'nama' => $g['name'] ?? '',
+                'nilai' => $g['nilai'] ?? 0, 'maks' => $g['max'],
+                'kategori' => $g['category'],
+                'warna' => Tpkkp::levelHex(Tpkkp::level($g['category'])),
+            ])->values()->all(),
+
+            'radar' => $radar,
         ]);
     }
 

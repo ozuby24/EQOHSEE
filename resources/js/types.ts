@@ -114,6 +114,72 @@ export interface Picker {
   daftarTahun: number[];
 }
 
+/* ══════════════ PTPKKP — beranda ══════════════ */
+
+export interface IndikatorBeranda {
+  kode: string;
+  nama: string;
+  skor: number | null;
+  rasio: number | null;
+  bobot: number;
+  target: number;
+  kategori: string | null;
+  warna: string;
+  selTerisi: number;
+  selTotal: number;
+}
+
+export interface MetodeRekap {
+  kode: string;
+  nama: string;
+  terisi: number;
+  jumlah: number;
+  rasio: number | null;
+}
+
+export interface TingkatSebaran {
+  nama: string;
+  warna: string;
+  jumlah: number;
+}
+
+export interface ItemGap {
+  kode: string;
+  nama: string;
+  nilai: number;
+  maks: number;
+  kategori: string | null;
+  warna: string;
+}
+
+export interface HalamanBeranda {
+  judul: string;
+  subjudul: string;
+  picker: Picker;
+  identitas: {
+    organisasi: string;
+    site: string | null;
+    komoditas: string | null;
+    tahun: number;
+  };
+  hasil: {
+    skor: number | null;
+    tingkat: number;
+    kategori: string | null;
+    target: number;
+    selTerisi: number;
+    selTotal: number;
+    kelengkapan: number;
+    indikator: IndikatorBeranda[];
+  };
+  metode: MetodeRekap[];
+  tingkat: TingkatSebaran[];
+  belumLengkap: number;
+  totalItem: number;
+  gaps: ItemGap[];
+  radar: { label: string[]; capaian: number[]; target: number[] };
+}
+
 /* ══════════════ PTPKKP — rekapitulasi ══════════════ */
 
 export interface ParamRekap {

@@ -26,6 +26,7 @@ final class RuteInertia
 {
     /** Nama rute yang mengembalikan Inertia::render(). */
     public const NAMA = [
+        'tpkkp.index',
         'tpkkp.assess',
         'tpkkp.rekap',
     ];
