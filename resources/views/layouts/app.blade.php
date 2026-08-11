@@ -211,6 +211,15 @@
   $aktif = $menu[$modul];
 @endphp
 
+@php
+  /* Lencana lonceng menghitung pengumuman terbaru. Angka tetap pada
+     lencana adalah kebohongan kecil yang tidak pernah berubah; ini
+     mengikuti isi tabelnya. */
+  $eqPengumuman = \Illuminate\Support\Facades\Schema::hasTable('news')
+      ? \App\Models\News::where('created_at', '>=', now()->subDays(30))->count()
+      : 0;
+@endphp
+
 @include('partials.eq-visual')
 
 <div class="min-h-screen flex">
@@ -221,10 +230,16 @@
          class="brand-gradient fixed lg:static inset-y-0 left-0 z-40 w-[248px] shrink-0 flex flex-col
                 text-white/70 -translate-x-full lg:translate-x-0 transition-transform duration-300">
 
-    <div class="h-[62px] flex items-center gap-2.5 px-5 border-b border-white/10">
-      <img src="{{ asset('brand/eqohsee-mark-white.svg') }}" alt="EQOHSEE" style="width:26px;height:29px;flex:none">
-      <span style="font-size:17px;font-weight:900;letter-spacing:-.01em;line-height:1;color:#EAF1F5">E<span style="color:#2CB0BC">Q</span>OHSEE</span>
-    </div>
+    {{-- Kepala: lambang, nama, dan janji yang dibawanya. Tagline berdiri
+         di bawah nama, bukan di sebelahnya — sebaris dua-duanya membuat
+         nama kehilangan bobot, padahal itu yang harus terbaca lebih dulu. --}}
+    <a href="{{ route('dashboard') }}" class="eq-merek">
+      <img src="{{ asset('brand/eqohsee-mark-white.svg') }}" alt="" width="38" height="42">
+      <span>
+        <strong>E<em>Q</em>OHSEE</strong>
+        <small>Safety is Our Priority</small>
+      </span>
+    </a>
 
     {{-- Pemilih modul --}}
     <div class="px-3 pt-3.5">
@@ -252,7 +267,7 @@
                class="{{ request()->is($cocok) ? 'nav-active' : '' }} relative flex items-center gap-3 rounded-xl px-3 py-2.5
                       text-[12.5px] font-semibold hover:bg-white/5 hover:text-white transition">
               <span class="nav-accent absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-cam-lime-light opacity-0"></span>
-              {!! isset($eqIcon) ? $eqIcon($label) : '' !!}
+              {!! \App\Support\IkonNav::svg($label) !!}
               <span>{{ $label }}</span>
             </a>
 
@@ -262,41 +277,90 @@
 
     </nav>
 
-    <div class="m-3 rounded-xl glass p-3.5">
-      <div class="text-[11px] font-bold text-white/90">Butuh bantuan?</div>
-      <div class="text-[11px] text-white/45 mt-0.5 leading-relaxed">Hubungi tim HSE untuk pertanyaan seputar pelatihan.</div>
+    <div class="eq-sisi-kaki">
+      <div class="eq-bantuan">
+        <span class="eq-bantuan-ikon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3.5a8.5 8.5 0 0 1 8.5 8.5v4.8a2.7 2.7 0 0 1-2.7 2.7h-1.3v-7.2h4M3.5 16.8V12A8.5 8.5 0 0 1 12 3.5"/>
+            <path d="M3.5 12.3h3.9v7.2H6.2a2.7 2.7 0 0 1-2.7-2.7Z"/>
+          </svg>
+        </span>
+        <span class="eq-bantuan-teks">
+          <strong>Butuh Bantuan?</strong>
+          <small>Kami siap membantu Anda kapan saja.</small>
+        </span>
+      </div>
+      <a href="{{ route('news.index') }}" class="eq-bantuan-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2 0 0 1 4 11.5a8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 8 8.4Z"/>
+        </svg>
+        Hubungi Kami
+      </a>
+
+      <div class="eq-sisi-bawah">
+        <small>© {{ date('Y') }} EQOHSEE<br>All rights reserved.</small>
+        <button type="button" onclick="eqLipat()" class="eq-lipat" aria-label="Lipat bilah samping">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M13 7l-5 5 5 5M18 7l-5 5 5 5"/>
+          </svg>
+        </button>
+      </div>
     </div>
+
   </aside>
 
   {{-- ===== KONTEN ===== --}}
   <div class="flex-1 flex flex-col min-w-0">
-    <header class="eq-topbar h-[62px] relative flex items-center gap-3 px-4 lg:px-7 sticky top-0">
-      <button onclick="eqToggle()" class="lg:hidden p-2 -ml-2 rounded-lg hover:bg-black/5 shrink-0" aria-label="Menu">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    <header class="eq-topbar">
+      <button onclick="eqToggle()" class="eq-menu-btn" aria-label="Buka menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>
+
       {{-- min-w-0 wajib: tanpa itu item flex menolak menyusut di bawah lebar
            isinya, sehingga judul panjang mendorong blok pengguna keluar layar
            di ponsel — `truncate` sendiri tidak cukup. --}}
-      <h1 class="text-[15px] font-bold text-cam-ink truncate min-w-0 flex-1">@yield('title', 'Dashboard')</h1>
+      <div class="eq-judul min-w-0 flex-1">
+        <h1>@yield('title', 'Dashboard')</h1>
+        @hasSection('subjudul')
+          <p>@yield('subjudul')</p>
+        @endif
+      </div>
 
-      <div class="flex items-center gap-2.5 shrink-0">
+      <div class="eq-topbar-aksi">
         @auth
-        <div class="text-right leading-tight hidden sm:block">
-          <div class="text-[12.5px] font-bold text-cam-ink">{{ auth()->user()->name }}</div>
-          <div class="text-[10.5px] text-stone-400">{{ auth()->user()->isAdmin() ? 'Administrator' : ucfirst(auth()->user()->lms_role ?: 'Peserta') }}</div>
+        <div class="eq-lonceng">
+          <a href="{{ route('news.index') }}" class="eq-bulat" aria-label="Pengumuman">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3.2a5.3 5.3 0 0 0-5.3 5.3v3.7l-1.9 3.1h14.4l-1.9-3.1V8.5A5.3 5.3 0 0 0 12 3.2Z"/>
+              <path d="M9.9 18.4a2.2 2.2 0 0 0 4.2 0"/>
+            </svg>
+            @if(($eqPengumuman ?? 0) > 0)
+              <span class="eq-lonceng-titik">{{ $eqPengumuman > 9 ? '9+' : $eqPengumuman }}</span>
+            @endif
+          </a>
         </div>
-        <div class="w-9 h-9 shrink-0 rounded-xl lime-gradient text-white grid place-items-center font-bold text-[13px] shadow-glow">
-          {{ strtoupper(substr(auth()->user()->name,0,1)) }}
+
+        <div class="eq-profil">
+          <span class="eq-avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
+          <span class="eq-profil-teks">
+            <strong>{{ auth()->user()->name }}</strong>
+            <small>{{ auth()->user()->isAdmin() ? 'Administrator' : ucfirst(auth()->user()->lms_role ?: 'Peserta') }}</small>
+          </span>
         </div>
+
         <form method="POST" action="{{ route('logout') }}" class="shrink-0">
           @csrf
-          {{-- Di ponsel hanya ikon keluar; teks muncul mulai lebar sm. --}}
-          <button class="px-2 sm:px-3 py-2 rounded-lg text-[12.5px] font-semibold text-stone-500 hover:text-cam-lime-deep hover:bg-cam-lime-soft transition"
-                  aria-label="Keluar">
-            <span class="hidden sm:inline">Keluar</span>
-            <svg class="w-5 h-5 sm:hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 01-2-2V7a2 2 0 012-2h6"/>
+          <button class="eq-keluar" aria-label="Keluar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/>
             </svg>
+            <span class="hidden sm:inline">Keluar</span>
           </button>
         </form>
         @endauth
@@ -312,6 +376,17 @@
     document.getElementById('eqSidebar').classList.toggle('-translate-x-full');
     document.getElementById('eqOverlay').classList.toggle('hidden');
   }
+
+  /* Lebar bilah samping diingat antar halaman. Kalau tidak, tiap
+     perpindahan halaman mengembalikannya ke lebar penuh, dan pilihan itu
+     harus diulang terus-menerus sampai orang berhenti memakainya. */
+  function eqLipat(){
+    const sempit = document.body.classList.toggle('eq-sempit');
+    try { localStorage.setItem('eq-sisi-sempit', sempit ? '1' : '0'); } catch (e) { /* mode privat */ }
+  }
+  try {
+    if (localStorage.getItem('eq-sisi-sempit') === '1') document.body.classList.add('eq-sempit');
+  } catch (e) { /* mode privat */ }
 </script>
 @stack('scripts')
 </body>
