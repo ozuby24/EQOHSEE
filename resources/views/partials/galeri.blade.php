@@ -11,7 +11,7 @@
 --}}
 @php
   use App\Support\{Media, Pillars};
-  $butir = Media::galeri();
+  $butir = Media::galeriTerisi();
 @endphp
 
 <div x-data="{
@@ -53,7 +53,7 @@
         $p      = Pillars::get($g['aspek']);
       @endphp
 
-      <figure class="snap-start shrink-0 w-[264px] sm:w-[300px] rounded-2xl overflow-hidden kaca-gelap group">
+      <figure class="snap-start shrink-0 w-[248px] sm:w-[272px] rounded-2xl overflow-hidden kaca-gelap group">
         <div class="relative aspect-video overflow-hidden bg-cam-ink">
           @if($gambar)
             <img src="{{ $gambar }}" alt="{{ $g['judul'] }}" loading="lazy"
@@ -87,8 +87,10 @@
             </button>
           @endif
 
+          {{-- Nama aspek yang panjang dipendekkan, bukan dipotong di tengah:
+               "OCCUPATIONAL…" tidak memberi tahu apa pun. --}}
           <span class="absolute left-3 top-3 text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-lg text-white"
-                style="background:{{ $p['warna'] }}CC">{{ $p['nama'] }}</span>
+                style="background:{{ $p['warna'] }}CC">{{ \Illuminate\Support\Str::of($p['nama'])->replace('Occupational Health', 'Occ. Health')->replace('Konservasi Minerba', 'Konservasi') }}</span>
         </div>
 
         <figcaption class="p-4">
@@ -99,13 +101,16 @@
     @endforeach
   </div>
 
-  {{-- Pemutar video --}}
+  {{-- Pemutar video. Dipindahkan ke <body> karena bagian di sekelilingnya
+       membuat konteks penumpukannya sendiri — selubung gelap yang tinggal
+       di dalamnya tidak akan pernah menutupi seluruh layar. --}}
+  <template x-teleport="body">
   <div x-show="video" x-cloak @keydown.escape.window="video = null"
        x-transition:enter="transition duration-300 ease-out"
        x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
        x-transition:leave="transition duration-200 ease-in"
        x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-       class="fixed inset-0 z-50 grid place-items-center bg-cam-black/85 backdrop-blur-sm p-5"
+       class="fixed inset-0 z-50 grid place-items-center bg-black/85 backdrop-blur-sm p-5"
        @click.self="video = null" role="dialog" aria-modal="true">
     <div class="w-full max-w-3xl">
       <div class="flex items-center justify-between gap-3 mb-3">
@@ -118,7 +123,9 @@
           </svg>
         </button>
       </div>
-      <video x-bind:src="video" class="w-full rounded-2xl shadow-2xl" controls autoplay playsinline></video>
+      <video x-bind:src="video" class="w-full rounded-2xl shadow-2xl" controls autoplay playsinline
+             @loadeddata="$el.play().catch(() => {})"></video>
     </div>
   </div>
+  </template>
 </div>

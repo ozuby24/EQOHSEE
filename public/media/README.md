@@ -1,11 +1,25 @@
 # Media halaman depan
 
-Halaman depan dirancang untuk foto dan video tambang sungguhan. Selama
-berkasnya belum ada, halaman memakai panorama SVG sebagai gantinya — jadi
-tampilannya tetap utuh dan tidak pernah menunjukkan gambar rusak.
+Halaman depan dibangun di atas rekaman tambang sungguhan. Selama berkasnya
+belum ada, halaman memakai panorama SVG sebagai gantinya — jadi tampilannya
+tetap utuh dan tidak pernah menunjukkan gambar rusak.
 
-Menambah media cukup menyalin berkas ke folder di bawah ini dengan **nama
-yang sama persis**. Tidak ada kode yang perlu disunting.
+Menambah atau mengganti media cukup menyalin berkas ke folder di bawah ini
+dengan **nama yang sama persis**. Tidak ada kode yang perlu disunting.
+
+## Yang sudah terpasang
+
+| Berkas | Isi |
+|---|---|
+| `hero/tambang.mp4` · `.jpg` | Excavator memuat dump truck — latar hero |
+| `galeri/inspeksi.mp4` · `.jpg` | Pemeriksaan unit dan area kerja |
+| `galeri/operasional.mp4` · `.jpg` | Gali-muat-angkut harian |
+| `galeri/risiko.mp4` · `.jpg` | Pengamatan bahaya di lapangan |
+| `galeri/budaya.mp4` · `.jpg` | Pemakaian alat pelindung diri |
+
+Dua kartu galeri masih menunggu berkasnya — `galeri/energi.*` dan
+`galeri/lingkungan.*`. Keduanya sudah terdaftar, jadi menyalin berkasnya
+langsung memunculkan kartunya.
 
 ## Hero
 
@@ -30,14 +44,20 @@ Semua di folder `galeri/`. Gambar 16∶9, anjuran 1280×720.
 |---|---|
 | `inspeksi.jpg` · `inspeksi.mp4` | Inspeksi & Observasi |
 | `operasional.jpg` · `operasional.mp4` | Operasional Tambang |
-| `risiko.jpg` | Pengendalian Risiko |
-| `briefing.jpg` | Safety Briefing |
-| `energi.jpg` | Kinerja Energi |
-| `lingkungan.jpg` | Reklamasi & Lingkungan |
+| `risiko.jpg` · `risiko.mp4` | Pengendalian Risiko |
+| `budaya.jpg` · `budaya.mp4` | Budaya Keselamatan |
+| `energi.jpg` · `energi.mp4` | Kinerja Energi |
+| `lingkungan.jpg` · `lingkungan.mp4` | Reklamasi & Lingkungan |
 
 Berkas `.mp4` bersifat pilihan. Kartu yang punya video ditandai tombol
 putar dan videonya terbuka di jendela; kartu tanpa video tampil sebagai
 foto biasa.
+
+Kartu yang belum punya berkas apa pun tidak ditampilkan selama masih ada
+kartu lain yang berkasnya lengkap — menyandingkan rekaman sungguhan dengan
+kotak kosong membuat galerinya terbaca sebagai rusak, bukan sebagai belum
+lengkap. Bila belum ada satu pun berkas, semua kartu muncul sebagai tempat
+foto agar bagian ini tidak hilang sama sekali.
 
 ## Logo perusahaan pengguna
 
@@ -54,13 +74,22 @@ yang diacu, yang memang dapat diperiksa kebenarannya.
 ## Menyiapkan berkas
 
 ```bash
-# Video hero: potong 12 detik, buang suara, kecilkan
-ffmpeg -i sumber.mp4 -t 12 -an -vf scale=1920:-2 -c:v libx264 -crf 26 -preset slow \
-       public/media/hero/tambang.mp4
+# Video hero: buang suara — video latar tidak pernah berbunyi — lalu tekan
+# ukurannya. faststart menaruh indeksnya di depan supaya pemutaran mulai
+# sebelum seluruh berkas terunduh.
+ffmpeg -i sumber.mp4 -t 12 -an -c:v libx264 -crf 28 -preset slow \
+       -pix_fmt yuv420p -movflags +faststart public/media/hero/tambang.mp4
 
-# Gambar diam hero, diambil dari detik ke-1 video yang sama
-ffmpeg -i public/media/hero/tambang.mp4 -ss 1 -frames:v 1 -q:v 3 \
+# Gambar diam hero, diambil dari video yang sama supaya keduanya menyatu
+# saat video mulai memudar masuk
+ffmpeg -i public/media/hero/tambang.mp4 -ss 2 -frames:v 1 -q:v 4 \
        public/media/hero/tambang.jpg
+
+# Video galeri: suaranya dipertahankan, sebab pemutarnya punya kendali
+ffmpeg -i sumber.mp4 -c:v libx264 -crf 29 -preset slow -pix_fmt yuv420p \
+       -c:a aac -b:a 96k -movflags +faststart public/media/galeri/energi.mp4
+ffmpeg -i public/media/galeri/energi.mp4 -ss 2 -frames:v 1 -q:v 4 \
+       public/media/galeri/energi.jpg
 ```
 
 Setelah menyalin berkas, jalankan `php artisan optimize:clear` bila

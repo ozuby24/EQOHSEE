@@ -9,9 +9,11 @@ use Tests\TestCase;
 /**
  * Halaman depan.
  *
- * Yang diuji terutama perilaku mundurnya: halaman dirancang untuk foto dan
- * video tambang sungguhan, tetapi harus tetap utuh sebelum satu pun berkas
- * ditaruh — dan tidak boleh menampilkan gambar rusak.
+ * Dua hal yang diuji: bahwa rekaman yang sudah terpasang benar-benar
+ * terpakai, dan bahwa halaman tetap utuh tanpa satu pun berkas media.
+ * Yang kedua mudah terlewat justru karena berkasnya sudah ada — karena itu
+ * letak media dialihkan ke folder kosong saat mengujinya, bukan dengan
+ * memindahkan berkas sungguhan.
  */
 class LandingTest extends TestCase
 {
@@ -28,69 +30,104 @@ class LandingTest extends TestCase
         parent::tearDown();
     }
 
+    /** Alihkan letak media ke folder kosong: keadaan sebelum ada berkas. */
+    private function tanpaMedia(): void
+    {
+        config(['media.akar' => 'media-uji']);
+        @mkdir(public_path('media-uji'), 0755, true);
+    }
+
     private function taruh(string $jalur, string $isi = 'x'): void
     {
-        $penuh = public_path(Media::AKAR.'/'.$jalur);
+        $penuh = public_path(Media::akar().'/'.$jalur);
         @mkdir(dirname($penuh), 0755, true);
         file_put_contents($penuh, $isi);
         $this->sampah[] = $penuh;
     }
 
-    /* ---------- pemilihan media ---------- */
+    /* ---------- rekaman yang sudah terpasang ---------- */
+
+    public function test_video_dan_foto_hero_terpasang(): void
+    {
+        $this->assertNotNull(Media::heroVideo(), 'Video hero belum ada di public/media/hero.');
+        $this->assertNotNull(Media::heroPoster(), 'Gambar diam hero belum ada.');
+
+        $this->get('/')->assertOk()
+            ->assertSee('media/hero/tambang.jpg', false)   // poster langsung terpasang
+            ->assertSee('data-hero-video=', false)         // videonya menyusul lewat JS
+            ->assertSee('Tonton Video');
+    }
+
+    public function test_empat_rekaman_lapangan_tampil_dengan_tombol_putar(): void
+    {
+        $halaman = $this->get('/')->assertOk();
+
+        foreach ([
+            'Inspeksi & Observasi', 'Operasional Tambang',
+            'Pengendalian Risiko', 'Budaya Keselamatan',
+        ] as $judul) {
+            $halaman->assertSee($judul);
+            $halaman->assertSee('Putar video '.$judul);
+        }
+    }
+
+    public function test_kartu_tanpa_berkas_disembunyikan_selama_ada_yang_terisi(): void
+    {
+        // Kinerja Energi dan Reklamasi belum punya rekaman; menyandingkannya
+        // sebagai kotak kosong membuat galerinya terbaca rusak.
+        $terisi = collect(Media::galeriTerisi())->pluck('judul');
+
+        $this->assertTrue($terisi->contains('Operasional Tambang'));
+        $this->assertFalse($terisi->contains('Kinerja Energi'));
+
+        $this->get('/')->assertOk()->assertDontSee('Reklamasi & Lingkungan');
+    }
+
+    public function test_kartu_muncul_begitu_berkasnya_disalin(): void
+    {
+        $this->taruh('galeri/energi.jpg');
+
+        $this->get('/')->assertOk()->assertSee('Kinerja Energi');
+    }
+
+    /* ---------- keadaan tanpa media ---------- */
 
     public function test_tanpa_berkas_media_halaman_tetap_utuh(): void
     {
+        $this->tanpaMedia();
+
         $this->assertNull(Media::heroVideo());
         $this->assertNull(Media::heroPoster());
 
-        $halaman = $this->get('/')->assertOk();
-
-        // Panorama SVG yang dipakai, dan tidak ada gambar yang menunjuk ke
-        // berkas yang tidak ada.
-        $halaman->assertSee('Keselamatan tambang,');
-        $halaman->assertDontSee('media/hero/tambang.jpg');
-        $halaman->assertDontSee('media/hero/tambang.mp4');
+        $this->get('/')->assertOk()
+            ->assertSee('Keselamatan tambang,')
+            ->assertDontSee('media-uji/hero/tambang.jpg')
+            ->assertDontSee('data-hero-video=', false)
+            ->assertDontSee('Tonton Video');
     }
 
-    public function test_foto_hero_dipakai_begitu_berkasnya_ada(): void
+    public function test_tanpa_media_seluruh_kartu_galeri_tetap_tampil_sebagai_tempat_foto(): void
     {
-        $this->taruh(Media::HERO_POSTER);
+        $this->tanpaMedia();
 
-        $this->get('/')->assertOk()->assertSee('media/hero/tambang.jpg', false);
+        $halaman = $this->get('/')->assertOk();
+
+        // Bagian galeri tidak boleh hilang sama sekali hanya karena kosong.
+        foreach (Media::galeri() as $g) {
+            $halaman->assertSee($g['judul']);
+        }
+        $halaman->assertDontSee('Putar video');
     }
 
     public function test_video_hero_tidak_ditulis_pada_atribut_src(): void
     {
-        $this->taruh(Media::HERO_VIDEO);
-
-        // Sumbernya dipasang lewat data-hero-video, bukan src: peramban
-        // mengunduh begitu src-nya ada, jadi menulisnya di markup membuat
-        // ponsel menanggung videonya meski tidak pernah ditampilkan.
+        // Peramban mengunduh begitu src-nya ada, jadi menulisnya di markup
+        // membuat ponsel menanggung videonya meski tidak pernah ditampilkan.
         $isi = $this->get('/')->assertOk()->getContent();
 
         $this->assertStringContainsString('data-hero-video=', $isi);
         $this->assertStringNotContainsString('<video src', $isi);
-        $this->assertStringNotContainsString('src="'.asset('media/hero/tambang.mp4').'"', $isi);
-    }
-
-    public function test_galeri_tanpa_foto_tidak_memasang_gambar_kosong(): void
-    {
-        $halaman = $this->get('/')->assertOk();
-
-        foreach (['Inspeksi & Observasi', 'Operasional Tambang', 'Pengendalian Risiko'] as $judul) {
-            $halaman->assertSee($judul);
-        }
-        $halaman->assertDontSee('media/galeri/inspeksi.jpg');
-    }
-
-    public function test_kartu_galeri_bervideo_menampilkan_tombol_putar(): void
-    {
-        $polos = $this->get('/')->getContent();
-        $this->assertStringNotContainsString('Putar video Inspeksi', $polos);
-
-        $this->taruh('galeri/inspeksi.mp4');
-
-        $this->get('/')->assertOk()->assertSee('Putar video Inspeksi');
+        $this->assertStringNotContainsString('src="'.asset(Media::HERO_VIDEO).'"', $isi);
     }
 
     /* ---------- logo perusahaan ---------- */

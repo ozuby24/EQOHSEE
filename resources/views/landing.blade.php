@@ -55,8 +55,12 @@
      ada untuk memperlihatkan foto atau video; tanpa berkas itu tidak ada
      yang perlu diperlihatkan, dan memaksakan tingginya hanya menghasilkan
      bidang kosong di bawah tombol. --}}
-@php $adaMedia = \App\Support\Media::heroVideo() || \App\Support\Media::heroPoster(); @endphp
+@php
+  $heroVideo = Media::heroVideo();
+  $adaMedia  = $heroVideo || Media::heroPoster();
+@endphp
 <section id="beranda"
+         x-data="{ tonton: false }"
          class="relative brand-gradient text-white overflow-hidden aurora flex {{ $adaMedia ? 'min-h-[min(100svh,820px)]' : '' }}">
   @include('partials.hero-media')
 
@@ -68,9 +72,16 @@
   {{-- Di layar sempit teks memenuhi seluruh lebar, jadi tirainya menutup
        rata; tirai dari kiri hanya masuk akal ketika ada kolom di kanan
        yang memang ingin dibiarkan terbuka. --}}
-  <div class="absolute inset-0 bg-cam-black/72 lg:hidden"></div>
-  <div class="absolute inset-0 hidden lg:block bg-gradient-to-r from-cam-black/92 from-5% via-cam-black/45 via-40% to-transparent to-72%"></div>
-  <div class="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-cam-black/70 to-transparent"></div>
+  {{-- Kepekatan tirai mengikuti isi latarnya. Foto siang hari jauh lebih
+       terang daripada panorama SVG, dan teks putih di atasnya tidak
+       terbaca tanpa bidang gelap yang sungguh-sungguh. --}}
+  <div class="absolute inset-0 {{ $adaMedia ? 'bg-cam-black/78' : 'bg-cam-black/72' }} lg:hidden"></div>
+  <div class="absolute inset-0 hidden lg:block bg-gradient-to-r
+              {{ $adaMedia
+                  ? 'from-cam-black/94 from-8% via-cam-black/72 via-46% to-cam-black/30'
+                  : 'from-cam-black/92 from-5% via-cam-black/45 via-40% to-transparent to-72%' }}"></div>
+  <div class="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-cam-black/75 to-transparent"></div>
+  <div class="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-cam-black/70 to-transparent"></div>
   <div class="sambung sambung-bawah h-40 bg-gradient-to-b from-transparent to-cam-ink"></div>
   <div class="absolute -right-24 -top-24 w-[380px] h-[380px] rounded-full bg-cam-lime/20 blur-3xl apung" data-parallax="0.2"></div>
   <div class="absolute -left-16 bottom-[-90px] w-[300px] h-[300px] rounded-full bg-cam-coral/12 blur-3xl apung-2" data-parallax="0.1"></div>
@@ -80,19 +91,22 @@
 
       {{-- Kolom utama --}}
       <div class="animate-fadeUp">
-        <span class="inline-flex items-center gap-2 glass rounded-full px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-[0.18em] text-cam-lime-light">
+        <span class="inline-flex items-center gap-2 {{ $adaMedia ? 'kaca-foto' : 'glass' }} rounded-full px-3.5 py-1.5 text-[10.5px] font-bold uppercase tracking-[0.18em] text-cam-lime-light">
           <span class="w-1.5 h-1.5 rounded-full bg-cam-lime animate-pulse"></span>
           Delapan Aspek · Satu Platform
         </span>
 
-        <h1 class="font-display text-[40px] md:text-[62px] font-black mt-5 leading-[1.04] text-shadow">
+        <h1 class="font-display text-[40px] md:text-[62px] font-black mt-5 leading-[1.04] {{ $adaMedia ? 'text-shadow-foto' : 'text-shadow' }}">
           Keselamatan tambang,<br>
           {{-- Kilau menyapu dari teal ke pasir hangat, bukan teal ke putih —
-               pergeseran suhu warnanya yang memberi kesan bahan. --}}
-          <span class="sheen" style="--sheen-base:#2A9D8F; --sheen-hi:#F5E6CA">terukur dan terbukti.</span>
+               pergeseran suhu warnanya yang memberi kesan bahan. Di atas
+               foto siang hari tealnya dinaikkan terangnya: teal pekat
+               menghilang begitu bidang di belakangnya ikut terang. --}}
+          <span class="sheen" style="--sheen-base:{{ $adaMedia ? '#6FD3C4' : '#2A9D8F' }}; --sheen-hi:#F5E6CA">terukur dan terbukti.</span>
         </h1>
 
-        <p class="text-[14px] md:text-[15.5px] text-white/60 mt-5 leading-relaxed max-w-xl">
+        <p class="text-[14px] md:text-[15.5px] mt-5 leading-relaxed max-w-xl
+                  {{ $adaMedia ? 'text-white/80 text-shadow-foto' : 'text-white/60' }}">
           Platform keselamatan pertambangan terpadu untuk pembelajaran, penilaian kinerja,
           inspeksi, kinerja energi, hingga sertifikasi — mengikuti regulasi keselamatan
           pertambangan Indonesia.
@@ -110,16 +124,39 @@
             [(string) count($daftarModul), 'Modul terpadu'],
             ['24/7', 'Akses platform'],
           ] as [$n,$l])
-            <div class="glass rounded-xl px-4 py-3.5">
+            <div class="{{ $adaMedia ? 'kaca-foto' : 'glass' }} rounded-xl px-4 py-3.5">
               <div class="stat stat-sm text-cam-lime-light">{{ $n }}</div>
-              <div class="text-[10.5px] text-white/45 mt-1.5">{{ $l }}</div>
+              <div class="text-[10.5px] text-white/55 mt-1.5">{{ $l }}</div>
             </div>
           @endforeach
         </div>
       </div>
 
-      {{-- Panel alasan --}}
-      <aside class="kaca-gelap-kuat rounded-2xl p-5 animate-fadeUp" style="animation-delay:.15s">
+      {{-- Kolom kanan: tombol tonton lalu panel alasan --}}
+      <div class="space-y-3 animate-fadeUp" style="animation-delay:.15s">
+
+        @if($heroVideo)
+          {{-- Tombolnya berdiri sendiri di atas panel, bukan melayang di
+               tengah hero: di tengah ia jatuh tepat pada judul, dan tidak
+               ada yang mau tombol menutupi kalimat pertama halamannya. --}}
+          <button type="button" @click="tonton = true"
+                  class="kaca-foto rounded-2xl w-full flex items-center gap-3.5 p-3 group text-left
+                         hover:border-white/30 transition"
+                  aria-label="Tonton video operasional tambang">
+            <span class="relative shrink-0 w-11 h-11 rounded-full lime-gradient grid place-items-center text-white
+                         transition group-hover:scale-105">
+              <span class="absolute inset-0 rounded-full bg-cam-lime/40 denyut"></span>
+              <svg class="relative w-4 h-4 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            </span>
+            <span class="min-w-0">
+              <span class="block text-[12.5px] font-bold text-white">Tonton Video</span>
+              <span class="block text-[10.5px] text-white/50 mt-0.5">Operasional tambang · 10 detik</span>
+            </span>
+          </button>
+        @endif
+
+      <aside class="kaca-foto rounded-2xl p-5">
+
         <h2 class="text-[13.5px] font-bold text-white">Mengapa EQOHSEE?</h2>
 
         <div class="space-y-4 mt-5">
@@ -143,8 +180,44 @@
           @endforeach
         </div>
       </aside>
+      </div>
     </div>
   </div>
+
+  @if($heroVideo)
+    {{-- Pemutar hero. Sumbernya baru dipasang saat dibuka, supaya video
+         yang sama tidak terunduh dua kali hanya karena ada di halaman.
+
+         Dipindahkan ke <body>: hero memakai `aurora` yang membuat konteks
+         penumpukan sendiri, jadi selubung gelapnya tidak akan pernah
+         menutupi apa pun di luar hero bila dibiarkan di dalam sini. --}}
+    <template x-teleport="body">
+    <div x-show="tonton" x-cloak @keydown.escape.window="tonton = false"
+         x-transition:enter="transition duration-300 ease-out"
+         x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+         x-transition:leave="transition duration-200 ease-in"
+         x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 grid place-items-center bg-black/85 backdrop-blur-sm p-5"
+         @click.self="tonton = false" role="dialog" aria-modal="true" aria-label="Video operasional tambang">
+      <div class="w-full max-w-4xl">
+        <div class="flex items-center justify-between gap-3 mb-3">
+          <span class="text-[13px] font-bold text-white">Operasional Tambang</span>
+          <button type="button" @click="tonton = false"
+                  class="w-8 h-8 rounded-lg glass grid place-items-center text-white/70 hover:text-white transition"
+                  aria-label="Tutup">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+              <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/>
+            </svg>
+          </button>
+        </div>
+        <video x-bind:src="tonton ? '{{ Media::url('galeri/operasional.mp4') ?: $heroVideo }}' : ''"
+               poster="{{ Media::heroPoster() }}"
+               class="w-full rounded-2xl shadow-2xl" controls autoplay playsinline
+               @loadeddata="$el.play().catch(() => {})"></video>
+      </div>
+    </div>
+    </template>
+  @endif
 </section>
 
 {{-- ══════════ FOKUS SMKP + GALERI ══════════ --}}
@@ -154,7 +227,7 @@
   <div class="absolute inset-0 grid-tech pointer-events-none opacity-60"></div>
 
   <div class="relative max-w-6xl mx-auto px-5 py-14 md:py-16">
-    <div class="grid lg:grid-cols-[minmax(0,520px)_minmax(0,1fr)] gap-10">
+    <div class="grid lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)] gap-8 lg:gap-10">
 
       {{-- Tujuh elemen SMKP --}}
       <div class="reveal">
@@ -163,7 +236,7 @@
           Tujuh elemen wajib menurut Kepdirjen 185.K/37.04/DJB/2019, beserta bobot penilaiannya.
         </p>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-2.5 mt-5">
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2.5 mt-5">
           @foreach(Smkp::elemen() as $i => $e)
             <div class="kaca-gelap rounded-xl p-3.5 hover:kaca-gelap-kuat transition-colors">
               <div class="flex items-center justify-between gap-2">

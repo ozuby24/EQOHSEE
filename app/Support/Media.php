@@ -5,19 +5,22 @@ namespace App\Support;
 /**
  * Berkas gambar dan video halaman depan.
  *
- * Halaman depan dirancang untuk foto dan video tambang sungguhan, tetapi
- * tetap harus utuh sebelum berkasnya ada. Karena itu tiap slot diperiksa
+ * Halaman depan dibangun di atas rekaman tambang sungguhan, tetapi tetap
+ * harus utuh sebelum berkasnya ada. Karena itu tiap slot diperiksa
  * keberadaannya di sini: bila berkasnya sudah ditaruh, halaman memakainya;
  * bila belum, panorama SVG yang dipakai sebagai gantinya.
  *
- * Dengan begitu menambah foto cukup menyalin berkas ke public/media —
+ * Dengan begitu menambah rekaman cukup menyalin berkas ke public/media —
  * tidak perlu menyunting Blade, dan halaman tidak pernah menampilkan
  * gambar rusak.
  */
 final class Media
 {
-    /** Letak seluruh berkas media halaman depan, relatif terhadap public/. */
-    public const AKAR = 'media';
+    /** Letak seluruh berkas media, relatif terhadap public/. */
+    public static function akar(): string
+    {
+        return trim((string) config('media.akar', 'media'), '/');
+    }
 
     /**
      * Video latar hero.
@@ -40,60 +43,82 @@ final class Media
         return [
             [
                 'judul' => 'Inspeksi & Observasi',
-                'ket'   => 'Pemeriksaan kondisi lapangan langsung dari perangkat.',
+                'ket'   => 'Pemeriksaan kondisi unit dan area kerja, langsung dari perangkat.',
                 'gambar'=> 'galeri/inspeksi.jpg',
                 'video' => 'galeri/inspeksi.mp4',
                 'aspek' => 'safety',
             ],
             [
                 'judul' => 'Operasional Tambang',
-                'ket'   => 'Kegiatan harian di area penambangan.',
+                'ket'   => 'Kegiatan gali-muat-angkut harian di area penambangan.',
                 'gambar'=> 'galeri/operasional.jpg',
                 'video' => 'galeri/operasional.mp4',
                 'aspek' => 'engineering',
             ],
             [
                 'judul' => 'Pengendalian Risiko',
-                'ket'   => 'Identifikasi bahaya dan penetapan pengendaliannya.',
+                'ket'   => 'Pengamatan bahaya di lapangan dan penetapan pengendaliannya.',
                 'gambar'=> 'galeri/risiko.jpg',
-                'video' => null,
+                'video' => 'galeri/risiko.mp4',
                 'aspek' => 'occhealth',
             ],
             [
-                'judul' => 'Safety Briefing',
-                'ket'   => 'Pengarahan keselamatan sebelum giliran kerja dimulai.',
-                'gambar'=> 'galeri/briefing.jpg',
-                'video' => null,
-                'aspek' => 'quality',
+                'judul' => 'Budaya Keselamatan',
+                'ket'   => 'Pemakaian alat pelindung diri dan kebiasaan kerja yang aman.',
+                'gambar'=> 'galeri/budaya.jpg',
+                'video' => 'galeri/budaya.mp4',
+                'aspek' => 'hygiene',
             ],
             [
                 'judul' => 'Kinerja Energi',
                 'ket'   => 'Pemantauan konsumsi bahan bakar dan listrik alat.',
                 'gambar'=> 'galeri/energi.jpg',
-                'video' => null,
+                'video' => 'galeri/energi.mp4',
                 'aspek' => 'energy',
             ],
             [
                 'judul' => 'Reklamasi & Lingkungan',
                 'ket'   => 'Penanganan lahan bekas tambang dan mutu lingkungan.',
                 'gambar'=> 'galeri/lingkungan.jpg',
-                'video' => null,
+                'video' => 'galeri/lingkungan.mp4',
                 'aspek' => 'environment',
             ],
         ];
+    }
+
+    /**
+     * Butir galeri yang benar-benar layak ditampilkan.
+     *
+     * Begitu ada satu butir yang berkasnya lengkap, hanya butir semacam itu
+     * yang ditampilkan. Menyandingkan rekaman sungguhan dengan kotak kosong
+     * membuat galerinya terbaca sebagai rusak, bukan sebagai belum lengkap —
+     * dan menyalin satu berkas baru sudah cukup untuk memunculkannya.
+     *
+     * Selama belum ada satu pun berkas, seluruh butir tetap ditampilkan
+     * sebagai tempat foto, supaya bagian ini tidak hilang sama sekali.
+     */
+    public static function galeriTerisi(): array
+    {
+        $semua  = self::galeri();
+        $terisi = array_values(array_filter(
+            $semua,
+            fn ($g) => self::ada($g['gambar']) || self::ada($g['video'] ?? null)
+        ));
+
+        return $terisi ?: $semua;
     }
 
     /** Berkas ada di public/media? */
     public static function ada(?string $jalur): bool
     {
         return $jalur !== null && $jalur !== ''
-            && is_file(public_path(self::AKAR.'/'.ltrim($jalur, '/')));
+            && is_file(public_path(self::akar().'/'.ltrim($jalur, '/')));
     }
 
     /** URL berkas bila ada, null bila belum ditaruh. */
     public static function url(?string $jalur): ?string
     {
-        return self::ada($jalur) ? asset(self::AKAR.'/'.ltrim($jalur, '/')) : null;
+        return self::ada($jalur) ? asset(self::akar().'/'.ltrim($jalur, '/')) : null;
     }
 
     /** Hero memakai video hanya bila berkasnya benar-benar tersedia. */
@@ -110,7 +135,7 @@ final class Media
      */
     public static function klien(): array
     {
-        $folder = public_path(self::AKAR.'/klien');
+        $folder = public_path(self::akar().'/klien');
         if (!is_dir($folder)) return [];
 
         $berkas = glob($folder.'/*.{svg,png,webp,jpg}', GLOB_BRACE) ?: [];
@@ -118,7 +143,7 @@ final class Media
 
         return array_map(fn ($b) => [
             'nama' => ucwords(str_replace(['-', '_'], ' ', pathinfo($b, PATHINFO_FILENAME))),
-            'url'  => asset(self::AKAR.'/klien/'.basename($b)),
+            'url'  => asset(self::akar().'/klien/'.basename($b)),
         ], $berkas);
     }
 }

@@ -90,6 +90,14 @@ p,li,td,th,dd,dt,h1,h2,h3,h4{ overflow-wrap:anywhere; }
 }
 .text-shadow{ text-shadow:0 2px 18px rgba(0,0,0,.35); }
 
+/* Teks putih di atas foto siang hari. Dua bayangan: satu rapat untuk
+   memisahkan huruf dari apa pun tepat di belakangnya, satu lebar untuk
+   menurunkan terang bidangnya. Menggelapkan seluruh foto akan lebih
+   mudah, tetapi itu membuang fotonya. */
+.text-shadow-foto{
+  text-shadow:0 1px 2px rgba(0,0,0,.55), 0 3px 14px rgba(0,0,0,.55), 0 12px 44px rgba(0,0,0,.45);
+}
+
 /* ---------- Navigasi ---------- */
 .nav-active{ background:linear-gradient(135deg,rgba(21,141,153,.20),rgba(44,176,188,.10)); color:#fff; }
 .nav-active .nav-accent{ opacity:1; }
@@ -321,6 +329,17 @@ input,select,textarea{ outline:none; }
 .kaca-gelap-kuat{
   background: rgba(255,255,255,.10);
   border-color: rgba(255,255,255,.20);
+}
+
+/* Kaca yang berdiri di atas foto, bukan di atas bidang gelap.
+   Kaca terang menumpang pada latar gelap; di atas foto siang hari yang
+   ramai, ia justru menghilang. Yang dibutuhkan bidang gelap sendiri. */
+.kaca-foto{
+  background: linear-gradient(180deg, rgba(20,28,27,.78), rgba(20,28,27,.86));
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgba(255,255,255,.14);
+  box-shadow: 0 24px 60px -24px rgba(0,0,0,.65);
 }
 
 /* ══════════════════════════════════════════════════════════════
