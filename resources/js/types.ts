@@ -536,3 +536,34 @@ export interface HalamanProgram {
   statusPilihan: string[];
   bisaSunting: boolean;
 }
+
+export interface Strata {
+  nama: string;
+  N: number;
+}
+
+export interface BarisAlokasi {
+  nama: string;
+  N: number;
+  nh: number;
+}
+
+export interface Alokasi {
+  N: number;
+  n: number;
+  total: number;
+  baris: BarisAlokasi[];
+}
+
+export interface HalamanSampling {
+  judul: string;
+  subjudul: string;
+  picker: Picker;
+  tahun: number;
+  strata: Strata[];
+  e: number;
+  eMin: number;
+  eMaks: number;
+  alokasi: Alokasi;
+  bisaSunting: boolean;
+}

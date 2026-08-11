@@ -20,6 +20,10 @@ class TpkkpController extends Controller
      */
     public const STATUS_PROGRAM = ['Rencana', 'Berjalan', 'Selesai', 'Ditunda'];
 
+    /** Batas margin galat Slovin; dipakai validasi sekaligus atribut input. */
+    public const E_MIN  = 0.01;
+    public const E_MAKS = 0.2;
+
     /* ================= dasar ================= */
 
     private function aktif(Request $request): TpkkpAssessment
@@ -653,20 +657,53 @@ class TpkkpController extends Controller
         $pop = $s['populasi'] ?? [];
         $e   = (float) ($s['e'] ?? 0.05);
 
+        /*
+         * Pratinjau: angka dari kueri menimpa yang tersimpan, tanpa
+         * menyimpan apa pun. Halaman memanggil ulang dirinya sendiri
+         * (partial reload 'alokasi') tiap kali isian berubah, sehingga
+         * rumus Slovin tetap hidup di satu tempat saja. Menghitungnya
+         * ulang di peramban akan cepat, tapi pembulatannya harus persis
+         * sama — dan selisih satu orang antara angka yang tampak saat
+         * mengetik dan angka yang tersimpan tidak akan menimbulkan galat
+         * apa pun, hanya laporan yang salah.
+         */
+        foreach ((array) $request->query('N') as $k => $v) {
+            if (array_key_exists($k, $pop)) $pop[$k] = max(0, (int) $v);
+        }
+
+        if ($request->filled('e')) {
+            $e = min(self::E_MAKS, max(self::E_MIN, (float) $request->query('e')));
+        }
+
         $strata = [];
         foreach ($pop as $k => $v) {
             if ($k === 'Total') continue;
             $strata[] = ['j' => $k, 'N' => (int) $v];
         }
 
-        return view('tpkkp.sampling', [
-            'a'       => $a,
-            'hasil'   => $hasil,
-            'tahunn'  => $tahunn,
-            'e'       => $e,
-            'strata'  => $strata,
-            'alokasi' => Tpkkp::strataAlloc($strata, $e),
-            'rencana' => Tpkkp::samplingRef(),
+        $alokasi = Tpkkp::strataAlloc($strata, $e);
+
+        return Inertia::render('Tpkkp/Sampling', [
+            'judul'    => 'PTPKKP — Kalkulator Slovin',
+            'subjudul' => "Jumlah sampel dan alokasinya per strata, periode {$a->tahun}",
+            'picker'   => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
+            'tahun'    => $a->tahun,
+
+            'strata' => array_map(fn ($s) => ['nama' => $s['j'], 'N' => $s['N']], $strata),
+            'e'      => $e,
+            'eMin'   => self::E_MIN,
+            'eMaks'  => self::E_MAKS,
+
+            'alokasi' => [
+                'N'     => $alokasi['N'],
+                'n'     => $alokasi['n'],
+                'total' => $alokasi['total'],
+                'baris' => array_map(fn ($r) => [
+                    'nama' => $r['j'], 'N' => $r['N'], 'nh' => $r['nh'],
+                ], $alokasi['rows']),
+            ],
+
+            'bisaSunting' => $request->user()->isAdmin(),
         ]);
     }
 
@@ -676,15 +713,19 @@ class TpkkpController extends Controller
         $a = $this->aktif($request);
 
         $d = $request->validate([
-            'e'   => ['required', 'numeric', 'min:0.01', 'max:0.2'],
+            'e'   => ['required', 'numeric', 'min:' . self::E_MIN, 'max:' . self::E_MAKS],
             'N'   => ['array'],
             'N.*' => ['nullable', 'integer', 'min:0'],
         ]);
 
         $s = $a->sampling ?? TpkkpAssessment::samplingSeed();
         $s['e'] = (float) $d['e'];
+
+        // Hanya strata yang memang ada. Kunci sembarang dari kiriman akan
+        // menjadi baris strata permanen yang tidak pernah diminta siapa
+        // pun, dan tidak ada tempat di antarmuka untuk menghapusnya lagi.
         foreach ((array) ($d['N'] ?? []) as $k => $v) {
-            $s['populasi'][$k] = (int) $v;
+            if (array_key_exists($k, $s['populasi'] ?? [])) $s['populasi'][$k] = max(0, (int) $v);
         }
         $a->sampling = $s;
         $a->save();
