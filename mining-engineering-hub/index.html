@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="id" data-tema="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EQOHSEE — Mining Engineering Hub</title>
+<meta name="description" content="Dashboard engineering pertambangan batubara: produksi, energi, armada, pemeliharaan, HSE dan SMKP, KPI, serta alat hitung teknis.">
+<meta name="color-scheme" content="dark light">
+
+<link rel="icon" href="assets/eqohsee-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+<a class="lewati" href="#utama">Lompat ke isi utama</a>
+
+<div class="rangka">
+
+  <!-- ══════════ BILAH SAMPING ══════════
+       Setinggi layar penuh dan memuat logonya sendiri, bukan sekadar
+       kolom menu di bawah bilah atas. Bilah atas lalu menjadi milik
+       area isi saja — di situlah judul halaman berada, sehingga orang
+       selalu tahu sedang berdiri di mana. -->
+  <aside class="sisi" id="sisi" aria-label="Navigasi utama">
+
+    <a class="sisi-merek" href="#dashboard" aria-label="EQOHSEE — beranda">
+      <img src="assets/eqohsee-mark-white.svg" alt="" width="40" height="40">
+      <span>
+        <strong>E<em>Q</em>OHSEE</strong>
+        <small>Safety is Our Priority</small>
+      </span>
+    </a>
+
+    <!-- Kisi pintasan. Sembilan halaman sekaligus dalam satu bidang:
+         berpindah tidak perlu menyusuri daftar, dan halaman yang sedang
+         dibuka selalu terlihat posisinya di antara yang lain. -->
+    <div class="sisi-kisi" role="group" aria-label="Pintasan halaman">
+      <a class="petak" href="#dashboard" data-nav="dashboard">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h7V4H4zM13 20h7v-9h-7zM13 8h7V4h-7zM4 20h7v-4H4z"/></svg>
+        <span>Dashboard</span></a>
+      <a class="petak" href="#energy" data-nav="energy">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></svg>
+        <span>Energy</span></a>
+      <a class="petak" href="#fleet" data-nav="fleet">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16V7h11v9M14 10h4l3 3.5V16"/><circle cx="7.5" cy="17.5" r="1.9"/><circle cx="17.5" cy="17.5" r="1.9"/></svg>
+        <span>Fleet</span></a>
+      <a class="petak" href="#equipment" data-nav="equipment">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M5 20v-5l5-2 3 3 3-6 3 2v8"/><path d="M8 8l3-4 3 2"/></svg>
+        <span>Equipment</span></a>
+      <a class="petak" href="#maintenance" data-nav="maintenance">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 105.1 5.1l-9.5 9.5-2.8.7.7-2.8z"/><path d="M4 4l4 4"/></svg>
+        <span>Maintenance</span></a>
+      <a class="petak" href="#hse" data-nav="hse">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.4 8.7-8 10-4.6-1.3-8-5-8-10V6z"/><path d="M9 12.2l2 2 4-4.2"/></svg>
+        <span>HSE</span></a>
+      <a class="petak" href="#kpi" data-nav="kpi">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V9M10 20V4M16 20v-7M22 20H2"/></svg>
+        <span>KPI</span></a>
+      <a class="petak" href="#tools" data-nav="tools">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M8 15h2M12 15h2"/></svg>
+        <span>Tools</span></a>
+      <a class="petak" href="#regulations" data-nav="regulations">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h9l5 5v11H5z"/><path d="M14 4v5h5M8 13h8M8 16h5"/></svg>
+        <span>Acuan</span></a>
+    </div>
+
+    <p class="sisi-modul">Mining Engineering</p>
+    <p class="sisi-modul-hal" id="sisi-modul">Dashboard</p>
+
+    <nav class="sisi-nav">
+      <p class="sisi-judul">Operasi</p>
+      <a class="sisi-tautan" href="#dashboard" data-nav="dashboard">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h7V4H4zM13 20h7v-9h-7zM13 8h7V4h-7zM4 20h7v-4H4z"/></svg>
+        <span>Dashboard</span></a>
+      <a class="sisi-tautan" href="#energy" data-nav="energy">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></svg>
+        <span>Energy Dashboard</span></a>
+      <a class="sisi-tautan" href="#fleet" data-nav="fleet">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16V7h11v9M14 10h4l3 3.5V16"/><circle cx="7.5" cy="17.5" r="1.9"/><circle cx="17.5" cy="17.5" r="1.9"/></svg>
+        <span>Fleet &amp; Productivity</span></a>
+      <a class="sisi-tautan" href="#equipment" data-nav="equipment">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M5 20v-5l5-2 3 3 3-6 3 2v8"/><path d="M8 8l3-4 3 2"/></svg>
+        <span>Mining Equipment</span></a>
+      <a class="sisi-tautan" href="#maintenance" data-nav="maintenance">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 105.1 5.1l-9.5 9.5-2.8.7.7-2.8z"/><path d="M4 4l4 4"/></svg>
+        <span>Maintenance</span></a>
+
+      <p class="sisi-judul">Kinerja</p>
+      <a class="sisi-tautan" href="#hse" data-nav="hse">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.4 8.7-8 10-4.6-1.3-8-5-8-10V6z"/><path d="M9 12.2l2 2 4-4.2"/></svg>
+        <span>HSE &amp; SMKP</span></a>
+      <a class="sisi-tautan" href="#kpi" data-nav="kpi">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V9M10 20V4M16 20v-7M22 20H2"/></svg>
+        <span>Engineering KPI</span></a>
+
+      <p class="sisi-judul">Alat &amp; Acuan</p>
+      <a class="sisi-tautan" href="#tools" data-nav="tools">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M8 15h2M12 15h2M16 15v2"/></svg>
+        <span>Engineering Tools</span></a>
+      <a class="sisi-tautan" href="#regulations" data-nav="regulations">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h9l5 5v11H5z"/><path d="M14 4v5h5M8 13h8M8 16h5"/></svg>
+        <span>Regulations &amp; Standards</span></a>
+    </nav>
+
+    <!-- Kaki bilah samping -->
+    <div class="sisi-kaki">
+      <button class="sisi-pengguna" id="btn-bantuan" aria-label="Tentang sumber data">
+        <span class="sisi-avatar" aria-hidden="true">EN</span>
+        <span class="sisi-pengguna-teks">
+          <strong>Engineering</strong>
+          <small>Mine Engineering Dept.</small>
+        </span>
+        <svg class="sisi-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+
+      <button class="sakelar-tema" id="btn-tema" role="switch" aria-checked="false"
+              aria-label="Mode terang">
+        <span class="sakelar-ikon" aria-hidden="true">
+          <svg class="ikon-mentari" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
+          <svg class="ikon-bulan" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>
+        </span>
+        <span class="sakelar-label">Mode Terang</span>
+        <span class="sakelar-rel" aria-hidden="true"><i></i></span>
+      </button>
+
+      <div class="sisi-bawah">
+        <small>© 2026 EQOHSEE<br>Mining Engineering Hub · v1.0</small>
+        <button class="sisi-lipat" id="btn-lipat" aria-label="Lipat bilah samping">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 6l-6 6 6 6"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="kolom">
+
+    <!-- ══════════ BILAH ATAS ══════════ -->
+    <header class="atas">
+      <button class="ikon-kotak" id="btn-menu" aria-label="Buka menu" aria-expanded="false" aria-controls="sisi">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+
+      <div class="atas-judul">
+        <h1 id="judul-halaman">Dashboard</h1>
+        <p id="subjudul-halaman">Ringkasan operasi harian</p>
+      </div>
+
+      <div class="cari" role="search">
+        <svg class="cari-ikon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input type="search" id="cari-input" placeholder="Cari halaman, alat hitung, unit…"
+               autocomplete="off" role="combobox" aria-expanded="false"
+               aria-controls="cari-hasil" aria-label="Pencarian global">
+        <kbd class="cari-kbd">/</kbd>
+        <div class="cari-hasil" id="cari-hasil" role="listbox" aria-label="Hasil pencarian" hidden></div>
+      </div>
+
+      <div class="atas-aksi">
+        <div class="lonceng">
+          <button class="ikon-bulat" id="btn-notif" aria-label="Notifikasi" aria-expanded="false" aria-controls="panel-notif">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 15V10a6 6 0 10-12 0v5l-2 3h16l-2-3z"/><path d="M10 21h4"/></svg>
+            <span class="lonceng-titik" id="notif-jumlah">3</span>
+          </button>
+          <div class="panel-notif" id="panel-notif" hidden>
+            <div class="panel-notif-kepala">Notifikasi</div>
+            <ul id="notif-daftar"></ul>
+          </div>
+        </div>
+
+
+        <div class="profil">
+          <span class="avatar" aria-hidden="true">EN</span>
+          <span class="profil-teks">
+            <strong id="profil-nama">Engineering</strong>
+            <small id="profil-peran">Mine Engineering Dept.</small>
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <div class="tirai" id="tirai" hidden></div>
+
+  <!-- ══════════ ISI ══════════ -->
+  <main class="utama" id="utama">
+
+    <!-- ---------- DASHBOARD ---------- -->
+    <section class="halaman" id="hal-dashboard" data-halaman="dashboard">
+      <div class="hal-kepala">
+        <div>
+          <h1>Dashboard</h1>
+          <p class="hal-ket">Ringkasan operasi harian — produksi, energi, dan kesiapan armada.</p>
+        </div>
+        <div class="hal-meta" id="meta-periode"></div>
+      </div>
+
+      <!-- Banner sambutan. Bukan hiasan: ia membawa satu angka yang
+           paling sering ditanyakan lebih dulu — capaian produksi hari
+           berjalan — sehingga bidang terbesar di halaman ini juga
+           bidang yang paling berguna. -->
+      <section class="banner" id="dash-banner"></section>
+
+      <div class="kpi-baris" id="dash-kpi"></div>
+
+      <div class="kisi kisi-2-1">
+        <article class="kartu">
+          <div class="kartu-kepala">
+            <div>
+              <h2>Daily Production</h2>
+              <p class="kartu-ket">Realisasi terhadap target, ton ROM.</p>
+            </div>
+            <div class="saring" role="group" aria-label="Rentang produksi">
+              <button class="saring-btn aktif" data-rentang="7">7 Hari</button>
+              <button class="saring-btn" data-rentang="30">30 Hari</button>
+              <button class="saring-btn" data-rentang="90">3 Bulan</button>
+            </div>
+          </div>
+          <div class="grafik" id="grafik-produksi"></div>
+          <div class="legenda" id="legenda-produksi"></div>
+        </article>
+
+        <article class="kartu">
+          <div class="kartu-kepala"><h2>Status Armada</h2></div>
+          <div class="grafik" id="grafik-status"></div>
+          <div class="legenda" id="legenda-status"></div>
+        </article>
+      </div>
+
+      <div class="kisi kisi-1-1">
+        <article class="kartu">
+          <div class="kartu-kepala">
+            <div><h2>Energy Consumption Trend</h2>
+            <p class="kartu-ket">Intensitas energi harian terhadap baseline dan target.</p></div>
+          </div>
+          <div class="grafik" id="grafik-energi-mini"></div>
+        </article>
+
+        <article class="kartu">
+          <div class="kartu-kepala"><h2>Perhatian Hari Ini</h2></div>
+          <ul class="daftar-perhatian" id="dash-perhatian"></ul>
+        </article>
+      </div>
+    </section>
+
+    <!-- ---------- ENGINEERING TOOLS ---------- -->
+    <section class="halaman" id="hal-tools" data-halaman="tools" hidden>
+      <div class="hal-kepala">
+        <div>
+          <h1>Engineering Tools</h1>
+          <p class="hal-ket">Alat hitung yang dipakai sehari-hari di departemen engineering. Semua hitungan berjalan di peramban; tidak ada data yang dikirim ke mana pun.</p>
+        </div>
+      </div>
+
+      <p class="peringatan-acuan">
+        <strong>Engineering reference only.</strong>
+        Verify calculations against applicable company procedures and regulations.
+      </p>
+
+      <div class="kisi-alat" id="alat-kisi"></div>
+    </section>
+
+    <!-- ---------- MINING EQUIPMENT ---------- -->
+    <section class="halaman" id="hal-equipment" data-halaman="equipment" hidden>
+      <div class="hal-kepala">
+        <div>
+          <h1>Mining Equipment</h1>
+          <p class="hal-ket">Data induk alat beserta ketersediaan dan konsumsi bahan bakarnya pada periode berjalan.</p>
+        </div>
+      </div>
+      <div class="kpi-baris" id="eq-kpi"></div>
+      <div class="kisi-unit" id="eq-kisi"></div>
+    </section>
+
+    <!-- ---------- ENERGY ---------- -->
+    <section class="halaman" id="hal-energy" data-halaman="energy" hidden>
+      <div class="hal-kepala">
+        <div>
+          <h1>Energy Performance</h1>
+          <p class="hal-ket">Seluruh sumber energi disamakan ke gigajoule sebelum dijumlahkan — tanpa itu liter solar dan kilowatt-jam tidak dapat dibandingkan, apalagi ditotal.</p>
+        </div>
+      </div>
+
+      <div class="kpi-baris" id="energy-kpi"></div>
+
+      <div class="kisi kisi-2-1">
+        <article class="kartu">
+          <div class="kartu-kepala">
+            <div><h2>Energy Consumption Trend</h2>
+            <p class="kartu-ket">Intensitas energi harian, GJ per ton.</p></div>
+          </div>
+          <div class="grafik" id="grafik-energi"></div>
+          <div class="legenda" id="legenda-energi"></div>
+        </article>
+
+        <article class="kartu kartu-sorot" id="kartu-hemat"></article>
+      </div>
+
+      <div class="kisi kisi-1-1">
+        <article class="kartu">
+          <div class="kartu-kepala"><h2>Bauran Energi</h2></div>
+          <div class="grafik" id="grafik-bauran"></div>
+          <div class="legenda" id="legenda-bauran"></div>
+        </article>
+
+        <article class="kartu">
+          <div class="kartu-kepala"><h2>Program Penghematan</h2></div>
+          <div class="tabel-bungkus">
+            <table class="tabel" id="tabel-hemat">
+              <thead><tr><th scope="col">Program</th><th scope="col">Perkiraan Hemat</th><th scope="col">Nilai/bulan</th><th scope="col">Status</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ---------- FLEET ---------- -->
+    <section class="halaman" id="hal-fleet" data-halaman="fleet" hidden>
+      <div class="hal-kepala">
+        <div>
+          <h1>Fleet &amp; Productivity</h1>
+          <p class="hal-ket">Ketersediaan dan produktivitas armada pada periode berjalan.</p>
+        </div>
+      </div>
+
+      <div class="kpi-baris" id="fleet-kpi"></div>
+
+      <article class="kartu">
+        <div class="kartu-kepala">
+          <div><h2>Daftar Unit</h2>
+          <p class="kartu-ket">Ketersediaan dihitung dari jam kerja, standby, dan jam perbaikan — bukan diketik terpisah.</p></div>
+          <div class="saring" role="group" aria-label="Saring status unit">
+            <button class="saring-btn aktif" data-status="semua">Semua</button>
+            <button class="saring-btn" data-status="Operating">Operating</button>
+            <button class="saring-btn" data-status="Standby">Standby</button>
+            <button class="saring-btn" data-status="Maintenance">Maintenance</button>
+            <button class="saring-btn" data-status="Breakdown">Breakdown</button>
+          </div>
+        </div>
+        <div class="tabel-bungkus">
+          <table class="tabel" id="tabel-fleet">
+            <thead>
+              <tr>
+                <th scope="col" data-urut="kode">Unit</th>
+                <th scope="col" data-urut="tipe">Type</th>
+                <th scope="col" data-urut="status">Status</th>
+                <th scope="col" class="num" data-urut="pa">PA</th>
+                <th scope="col" class="num" data-urut="ma">MA</th>
+                <th scope="col" class="num" data-urut="utilisasi">Utilization</th>
+                <th scope="col" class="num" data-urut="fuelRate">Fuel</th>
+                <th scope="col" class="num" data-urut="hm">HM</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </article>
+
+      <div class="kisi kisi-1-1">
+        <article class="kartu">
+          <div class="kartu-kepala"><h2>Konsumsi Bahan Bakar per Kelas</h2></div>
+          <div class="grafik" id="grafik-fuel-kelas"></div>
+        </article>
+        <article class="kartu">
+          <div class="kartu-kepala"><h2>Produktivitas Hauling</h2></div>
+          <div class="kisi-angka" id="fleet-produktivitas"></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ---------- MAINTENANCE ---------- -->
+    <section class="halaman" id="hal-maintenance" data-halaman="maintenance" hidden>
+      <div class="hal-kepala">
+        <div>
+          <h1>Maintenance Overview</h1>
+          <p class="hal-ket">Kepatuhan pemeliharaan terencana dan keandalan alat.</p>
+        </div>
+      </div>
+
+      <div class="kpi-baris" id="mt-kpi"></div>
+
+      <div class="kisi kisi-2-1">
+        <article class="kartu">
+          <div class="kartu-kepala">
+            <div><h2>Jam Pemeliharaan menurut Jenis</h2>
+            <p class="kartu-ket">Preventif naik sementara breakdown turun — itulah arah yang dituju.</p></div>
+          </div>
+          <div class="grafik" id="grafik-maintenance"></div>
+          <div class="legenda" id="legenda-maintenance"></div>
+        </article>
+
+        <article class="kartu">
+          <div class="kartu-kepala"><h2>Komposisi Bulan Ini</h2></div>
+          <div class="grafik" id="grafik-mt-donat"></div>
+          <div class="legenda" id="legenda-mt-donat"></div>
+        </article>
+      </div>
+
+      <article class="kartu">
+        <div class="kartu-kepala">
+          <div><h2>Daftar Pekerjaan</h2></div>
+          <div class="saring" role="group" aria-label="Saring prioritas">
+            <button class="saring-btn aktif" data-prioritas="semua">Semua</button>
+            <button class="saring-btn" data-prioritas="Critical">Critical</button>
+            <button class="saring-btn" data-prioritas="High">High</button>
+            <button class="saring-btn" data-prioritas="Medium">Medium</button>
+            <button class="saring-btn" data-prioritas="Low">Low</button>
+          </div>
+        </div>
+        <div class="tabel-bungkus">
+          <table class="tabel" id="tabel-maintenance">
+            <thead><tr>
+              <th scope="col">Unit</th><th scope="col">Masalah</th>
+              <th scope="col">Prioritas</th><th scope="col">Status</th>
+              <th scope="col">PIC</th><th scope="col">Tanggal</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <!-- ---------- HSE ---------- -->
+    <section class="halaman" id="hal-hse" data-halaman="hse" hidden>
+      <div class="hal-kepala">
+        <div>
+          <h1>HSE Performance</h1>
+          <p class="hal-ket">Frekuensi kecelakaan dihitung dari jumlah kejadian dan jam kerja kumulatif, sehingga angkanya dapat ditelusuri.</p>
+        </div>
+      </div>
+
+      <div class="kpi-baris" id="hse-kpi"></div>
+
+      <div class="kisi kisi-1-1">
+        <article class="kartu">
+          <div class="kartu-kepala">
+            <div><h2>Penerapan SMKP Minerba</h2>
+            <p class="kartu-ket">Tujuh elemen wajib menurut Kepdirjen 185.K/37.04/DJB/2019, beserta bobot penilaiannya.</p></div>
+          </div>
+          <div id="smkp-batang"></div>
+          <div class="smkp-total" id="smkp-total"></div>
+        </article>
+
+        <article class="kartu">
+          <div class="kartu-kepala"><h2>Piramida Pelaporan</h2>
+          <p class="kartu-ket">Semakin lebar dasarnya, semakin dini bahaya tertangkap.</p></div>
+          <div class="piramida" id="hse-piramida"></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ---------- KPI ---------- -->
+    <section class="halaman" id="hal-kpi" data-halaman="kpi" hidden>
+      <div class="hal-kepala">
+        <div>
+          <h1>Engineering KPI</h1>
+          <p class="hal-ket">Tiap indikator membawa rumusnya. Angka tanpa rumus tidak dapat diperiksa siapa pun.</p>
+        </div>
+      </div>
+      <div id="kpi-kelompok"></div>
+    </section>
+
+    <!-- ---------- REGULATIONS ---------- -->
+    <section class="halaman" id="hal-regulations" data-halaman="regulations" hidden>
+      <div class="hal-kepala">
+        <div>
+          <h1>Regulations &amp; Standards</h1>
+          <p class="hal-ket">Daftar acuan yang dipakai platform ini. Yang dicatat hanya identitas dokumen — isi pasalnya dibaca dari sumber resminya agar revisinya tidak tertinggal.</p>
+        </div>
+      </div>
+
+      <div class="saring saring-lebar" id="reg-saring" role="group" aria-label="Saring kategori regulasi"></div>
+      <div class="kisi-reg" id="reg-kisi"></div>
+    </section>
+
+    </main>
+  </div><!-- /.kolom -->
+</div><!-- /.rangka -->
+
+<!-- Navigasi bawah untuk ponsel -->
+<nav class="nav-bawah" aria-label="Navigasi ringkas">
+  <a href="#dashboard" data-nav="dashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h7V4H4zM13 20h7v-9h-7zM13 8h7V4h-7zM4 20h7v-4H4z"/></svg><span>Dashboard</span></a>
+  <a href="#energy" data-nav="energy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></svg><span>Energy</span></a>
+  <a href="#fleet" data-nav="fleet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16V7h11v9M14 10h4l3 3.5V16"/><circle cx="7.5" cy="17.5" r="1.9"/><circle cx="17.5" cy="17.5" r="1.9"/></svg><span>Fleet</span></a>
+  <a href="#tools" data-nav="tools"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M8 15h2M12 15h2"/></svg><span>Tools</span></a>
+  <a href="#hse" data-nav="hse"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.4 8.7-8 10-4.6-1.3-8-5-8-10V6z"/></svg><span>HSE</span></a>
+</nav>
+
+<div class="toast-wadah" id="toast-wadah" aria-live="polite" aria-atomic="true"></div>
+
+<script src="data.js"></script>
+<script src="charts.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
