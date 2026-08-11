@@ -114,6 +114,23 @@ export interface Picker {
   daftarTahun: number[];
 }
 
+/** Satu set data grafik batang: label, nilai, dan warna per batang. */
+export interface SeriGrafik {
+  label: string[];
+  nilai: number[];
+  warna: string[];
+}
+
+export interface HalamanVisual {
+  judul: string;
+  subjudul: string;
+  picker: Picker;
+  indikator: { label: string[]; capaian: number[]; target: number[] };
+  parameter: { label: string[]; capaian: number[]; target: number[]; warna: string[] };
+  metode: SeriGrafik;
+  donat: SeriGrafik;
+}
+
 /* ══════════════ PTPKKP — metode & instrumen ══════════════ */
 
 export interface MetodePengukuran {

@@ -426,12 +426,54 @@ class TpkkpController extends Controller
     {
         [$a, $hasil, $tahunn] = $this->base($request);
 
-        return view('tpkkp.visual', [
-            'a'       => $a,
-            'hasil'   => $hasil,
-            'tahunn'  => $tahunn,
-            'metode'  => Tpkkp::methodTotals($a->scores ?? []),
-            'sebaran' => Tpkkp::distribution($a->scores ?? []),
+        $sebaran = Tpkkp::distribution($a->scores ?? []);
+
+        /* Seluruh data grafik dibentuk di sini, termasuk warnanya. Versi
+           Blade mengambil warna donat dari window.eqWarnaLevel — larik
+           global yang isinya menyalin Tpkkp::LVHEX. Salinan seperti itu
+           diam saja ketika paletnya berubah, dan yang terlihat hanyalah
+           satu grafik berwarna beda dari grafik di sebelahnya. */
+        $indikator = ['label' => [], 'capaian' => [], 'target' => []];
+        $parameter = ['label' => [], 'capaian' => [], 'target' => [], 'warna' => []];
+
+        foreach ($hasil['indicators'] as $I) {
+            $indikator['label'][]   = 'Ind. '.$I['code'];
+            $indikator['capaian'][] = round($I['score'] ?? 0, 4);
+            $indikator['target'][]  = round($I['target'] ?? 0, 4);
+
+            foreach ($I['params'] as $P) {
+                $parameter['label'][]   = $P['code'];
+                $parameter['capaian'][] = round($P['score'] ?? 0, 4);
+                $parameter['target'][]  = round($P['target'] ?? 0, 4);
+                $parameter['warna'][]   = Tpkkp::levelHex(Tpkkp::level($P['category']));
+            }
+        }
+
+        $metode = ['label' => [], 'nilai' => [], 'warna' => []];
+        foreach (Tpkkp::methodTotals($a->scores ?? []) as $m) {
+            $metode['label'][] = $m['key'];
+            $metode['nilai'][] = $m['ratio'] === null ? 0 : round($m['ratio'] * 100, 1);
+            $metode['warna'][] = Tpkkp::levelHex(Tpkkp::level($m['category']));
+        }
+
+        $donat = ['label' => [], 'nilai' => [], 'warna' => []];
+        foreach (Tpkkp::LV as $i => $nama) {
+            $donat['label'][] = $nama;
+            $donat['nilai'][] = $sebaran[$i + 1] ?? 0;
+            $donat['warna'][] = Tpkkp::levelHex($i + 1);
+        }
+        $donat['label'][] = 'Belum lengkap';
+        $donat['nilai'][] = $sebaran['none'] ?? 0;
+        $donat['warna'][] = '#e7e5e4';
+
+        return Inertia::render('Tpkkp/Visual', [
+            'judul'    => 'PTPKKP — Visualisasi',
+            'subjudul' => "Capaian dalam bentuk grafik, periode {$a->tahun}",
+            'picker'   => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
+            'indikator'=> $indikator,
+            'parameter'=> $parameter,
+            'metode'   => $metode,
+            'donat'    => $donat,
         ]);
     }
 
