@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Support\{IkonNav, Menu, Tema};
+use App\Support\{IkonNav, Menu, RuteInertia, Tema};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
@@ -83,6 +83,11 @@ class HandleInertiaRequests extends Middleware
                 'ikon'  => $m['icon'],
                 'url'   => $rute ? route($rute) : '#',
                 'aktif' => $k === $kunci,
+
+                /* Menentukan <Link> atau <a> di sisi Vue. Salah menandai
+                   di sini bukan sekadar membuat perpindahan lebih lambat —
+                   <Link> ke halaman Blade tidak berpindah sama sekali. */
+                'inertia' => RuteInertia::ada($rute),
             ];
         }
 
@@ -91,10 +96,11 @@ class HandleInertiaRequests extends Middleware
             $isi = [];
             foreach ($butir as [$label, $rute, $cocok]) {
                 $isi[] = [
-                    'label' => $label,
-                    'url'   => route($rute),
-                    'aktif' => request()->is($cocok),
-                    'ikon'  => IkonNav::JALUR[IkonNav::nama($label)],
+                    'label'   => $label,
+                    'url'     => route($rute),
+                    'aktif'   => request()->is($cocok),
+                    'ikon'    => IkonNav::JALUR[IkonNav::nama($label)],
+                    'inertia' => RuteInertia::ada($rute),
                 ];
             }
             $grup[] = ['nama' => (string) $nama, 'butir' => $isi];

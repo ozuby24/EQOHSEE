@@ -152,18 +152,102 @@ class TpkkpRekapTest extends TestCase
         $this->assertStringContainsString("Link href=\"/tpkkp/penilaian\"", $vue);
     }
 
-    public function test_sidebar_vue_memakai_link_bukan_anchor_biasa(): void
+    /**
+     * Bilah samping memilih bentuk tautan menurut tujuannya.
+     *
+     * Uji ini sempat menuntut SELURUH menu memakai <Link>, dengan alasan
+     * <Link> akan jatuh sendiri ke navigasi penuh untuk halaman Blade.
+     * Dugaan itu keliru: <Link> ke halaman Blade tidak berpindah sama
+     * sekali. Yang benar adalah memilih bentuknya menurut tanda dari
+     * server, dan itulah yang dijaga di sini.
+     */
+    public function test_sidebar_vue_memilih_bentuk_tautan_menurut_tujuannya(): void
     {
-        // Sidebar Vue sempat menyalin markup sidebar Blade apa adanya,
-        // termasuk <a href>-nya — berpindah antar dua halaman Inertia pun
-        // tetap memuat ulang penuh sampai ini diperbaiki.
         $vue = file_get_contents(resource_path('js/Layouts/AppLayout.vue'));
 
-        $this->assertStringNotContainsString('<a href="/dashboard"', $vue);
-        $this->assertMatchesRegularExpression('/<Link[^>]*:href="m\.url"/', $vue,
-            'Pemilih modul harus memakai <Link>, bukan <a>.');
-        $this->assertMatchesRegularExpression('/<Link[^>]*:href="b\.url"/', $vue,
-            'Butir menu harus memakai <Link>, bukan <a>.');
+        $this->assertStringContainsString("inertia ? Link : 'a'", $vue,
+            'Bilah samping tidak membedakan tujuan Inertia dan Blade.');
+
+        $this->assertMatchesRegularExpression('/<component\s+:is="tautan\(m\.inertia\)"/', $vue,
+            'Pemilih modul harus memilih bentuk tautan dari tanda inertia.');
+        $this->assertMatchesRegularExpression('/<component\s+:is="tautan\(b\.inertia\)"/', $vue,
+            'Butir menu harus memilih bentuk tautan dari tanda inertia.');
+    }
+
+
+    /* ══════════════ navigasi dalam-halaman ══════════════ */
+
+    /**
+     * Halaman Vue wajib membawa navigasi PTPKKP.
+     *
+     * Saat Penilaian dan Rekapitulasi dipindah ke Inertia, keduanya
+     * terkirim TANPA deretan chip navigasi — larik tab itu tertulis di
+     * dalam _picker.blade.php dan tidak dapat dijangkau dari luar view.
+     * Akibatnya satu-satunya jalan keluar dari halaman Penilaian adalah
+     * tombol back peramban. Tidak ada galat apa pun; navigasinya sekadar
+     * hilang.
+     */
+    public function test_kedua_halaman_vue_membawa_navigasi_picker(): void
+    {
+        $this->admin();
+
+        foreach (['/tpkkp/penilaian', '/tpkkp/rekap'] as $url) {
+            $props = $this->get($url)->assertOk()->viewData('page')['props'];
+
+            $this->assertArrayHasKey('picker', $props, "{$url} terkirim tanpa navigasi.");
+            $this->assertCount(count(\App\Support\TpkkpNav::TABS), $props['picker']['tabs'],
+                "{$url} membawa jumlah tab yang berbeda dari katalog.");
+        }
+    }
+
+    public function test_tab_yang_sedang_dibuka_ditandai_aktif(): void
+    {
+        $this->admin();
+
+        $props = $this->get('/tpkkp/rekap')->assertOk()->viewData('page')['props'];
+        $aktif = collect($props['picker']['tabs'])->firstWhere('aktif', true);
+
+        $this->assertNotNull($aktif, 'Tidak ada tab yang ditandai aktif.');
+        $this->assertSame('Rekapitulasi', $aktif['label']);
+    }
+
+    public function test_tiap_tab_punya_ikon_dan_alamat(): void
+    {
+        $this->admin();
+
+        $props = $this->get('/tpkkp/penilaian')->assertOk()->viewData('page')['props'];
+
+        foreach ($props['picker']['tabs'] as $tab) {
+            $this->assertNotEmpty($tab['ikon'], "Tab '{$tab['label']}' tanpa ikon.");
+            $this->assertNotEmpty($tab['url'],  "Tab '{$tab['label']}' tanpa alamat.");
+        }
+    }
+
+    /**
+     * Blade dan Vue harus membaca daftar tab yang sama.
+     *
+     * Dua salinan daftar navigasi akan berbeda diam-diam setiap kali ada
+     * halaman baru — dan yang tertinggal tidak menimbulkan galat, hanya
+     * satu tampilan yang kehilangan satu menu.
+     */
+    public function test_picker_blade_membaca_katalog_yang_sama(): void
+    {
+        $blade = file_get_contents(resource_path('views/tpkkp/_picker.blade.php'));
+
+        $this->assertStringContainsString('TpkkpNav::TABS', $blade,
+            '_picker.blade.php masih memakai daftar tab sendiri.');
+    }
+
+    public function test_seluruh_rute_tab_benar_terdaftar(): void
+    {
+        // Tab yang menunjuk rute tak terdaftar akan melempar saat route()
+        // dipanggil — dan itu meledakkan seluruh halaman, bukan cuma tabnya.
+        foreach (\App\Support\TpkkpNav::TABS as [$rute, $label, $ikon]) {
+            $this->assertTrue(\Illuminate\Support\Facades\Route::has($rute),
+                "Tab '{$label}' menunjuk rute '{$rute}' yang tidak terdaftar.");
+            $this->assertArrayHasKey($ikon, \App\Support\TpkkpNav::IKON,
+                "Tab '{$label}' memakai ikon '{$ikon}' yang tidak ada.");
+        }
     }
 
     public function test_pengguna_biasa_dapat_membuka_rekap(): void

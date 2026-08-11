@@ -14,7 +14,7 @@ import { Link, router, usePage } from '@inertiajs/vue3';
 import type { PropBersama } from '../types';
 
 /*
-  `<Link>` dipakai untuk navigasi internal, bukan `<a>` biasa.
+  `<Link>` HANYA untuk tujuan yang benar-benar dirender Inertia.
 
   `<a href>` selalu memicu navigasi peramban penuh — Inertia tidak
   mencegat klik anchor apa pun kecuali lewat komponennya sendiri. Ini
@@ -23,12 +23,17 @@ import type { PropBersama } from '../types';
   yang sama-sama Inertia pun tetap memuat ulang penuh — persis cacat
   yang seharusnya sudah tidak ada begitu keduanya sama-sama Vue.
 
-  Tujuan yang belum jadi Inertia (Dashboard, Berita, Personalia, dan
-  hampir semua modul lain) tetap aman: begitu <Link> menerima tanggapan
-  yang bukan format Inertia, ia otomatis jatuh ke navigasi penuh —
-  itu bagian dari protokol Inertia sendiri, bukan sesuatu yang perlu
-  ditangani di sini.
+  Dugaan bahwa <Link> otomatis jatuh ke navigasi penuh ketika tanggapannya
+  bukan Inertia itu KELIRU, dan keliru dengan cara yang mahal: ia mengirim
+  permintaan ber-header X-Inertia, menerima HTML utuh, lalu menampilkan
+  modal galat dan tetap diam. Sempat terjadi persis begitu — seluruh menu
+  memakai <Link>, dan dari halaman Vue tidak satu pun menu bisa diklik.
+
+  Karena itu server menandai tiap tautan (`inertia: true/false`, dari
+  App\Support\RuteInertia) dan komponen di bawah memilih bentuk tautannya
+  sesuai tanda itu.
 */
+const tautan = (inertia: boolean) => (inertia ? Link : 'a');
 
 const halaman = usePage<PropBersama>();
 
@@ -100,18 +105,19 @@ function keluar() {
                   text-white/70 transition-transform duration-300"
            :class="lacisTerbuka ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
 
-      <Link href="/dashboard" class="eq-merek">
+      <a href="/dashboard" class="eq-merek">
         <img src="/brand/eqohsee-mark-white.svg" alt="" width="38" height="42">
         <span>
           <strong>E<em>Q</em>OHSEE</strong>
           <small>Safety is Our Priority</small>
         </span>
-      </Link>
+      </a>
 
       <!-- Pemilih modul -->
       <div class="px-3 pt-3.5">
         <div class="glass rounded-xl p-1 grid grid-cols-3 gap-1">
-          <Link v-for="m in menu.modul" :key="m.kunci" :href="m.url" :title="m.label"
+          <component :is="tautan(m.inertia)"
+             v-for="m in menu.modul" :key="m.kunci" :href="m.url" :title="m.label"
              class="grid place-items-center py-2 rounded-lg transition"
              :class="m.aktif ? 'lime-gradient text-white shadow-glow'
                              : 'text-white/40 hover:text-white hover:bg-white/5'">
@@ -119,7 +125,7 @@ function keluar() {
                  viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" :d="m.ikon"/>
             </svg>
-          </Link>
+          </component>
         </div>
         <div class="mt-2.5 px-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cam-lime-light">
           {{ menu.label }}
@@ -131,7 +137,8 @@ function keluar() {
           <p v-if="g.nama" class="px-3 mt-3 mb-1 text-[9.5px] font-semibold uppercase
                                   tracking-[0.12em] text-white/20">{{ g.nama }}</p>
           <div class="space-y-0.5">
-            <Link v-for="b in g.butir" :key="b.url" :href="b.url"
+            <component :is="tautan(b.inertia)"
+               v-for="b in g.butir" :key="b.url" :href="b.url"
                class="relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[12.5px]
                       font-semibold hover:bg-white/5 hover:text-white transition"
                :class="b.aktif ? 'nav-active' : ''">
@@ -142,7 +149,7 @@ function keluar() {
                 <path :d="b.ikon"/>
               </svg>
               <span>{{ b.label }}</span>
-            </Link>
+            </component>
           </div>
         </template>
       </nav>
@@ -161,13 +168,13 @@ function keluar() {
             <small>Kami siap membantu Anda kapan saja.</small>
           </span>
         </div>
-        <Link href="/news" class="eq-bantuan-btn">
+        <a href="/news" class="eq-bantuan-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2 0 0 1 4 11.5a8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 8 8.4Z"/>
           </svg>
           Hubungi Kami
-        </Link>
+        </a>
 
         <div class="eq-sisi-bawah">
           <small>© {{ new Date().getFullYear() }} EQOHSEE<br>All rights reserved.</small>
@@ -214,7 +221,7 @@ function keluar() {
           </button>
 
           <div class="eq-lonceng">
-            <Link href="/news" class="eq-bulat" aria-label="Pengumuman">
+            <a href="/news" class="eq-bulat" aria-label="Pengumuman">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M12 3.2a5.3 5.3 0 0 0-5.3 5.3v3.7l-1.9 3.1h14.4l-1.9-3.1V8.5A5.3 5.3 0 0 0 12 3.2Z"/>
@@ -223,10 +230,10 @@ function keluar() {
               <span v-if="pengumuman > 0" class="eq-lonceng-titik">
                 {{ pengumuman > 9 ? '9+' : pengumuman }}
               </span>
-            </Link>
+            </a>
           </div>
 
-          <Link v-if="pengguna" href="/personalia" class="eq-profil" title="Data diri">
+          <a v-if="pengguna" href="/personalia" class="eq-profil" title="Data diri">
             <img v-if="pengguna.avatar" class="eq-avatar eq-avatar-foto" :src="pengguna.avatar"
                  alt="" width="38" height="38">
             <span v-else class="eq-avatar">{{ pengguna.nama.charAt(0).toUpperCase() }}</span>
@@ -234,7 +241,7 @@ function keluar() {
               <strong>{{ pengguna.nama }}</strong>
               <small>{{ pengguna.peran }}</small>
             </span>
-          </Link>
+          </a>
 
           <button v-if="pengguna" class="eq-keluar" aria-label="Keluar" @click="keluar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"

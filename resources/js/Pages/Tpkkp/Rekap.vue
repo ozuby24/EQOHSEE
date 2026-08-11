@@ -16,6 +16,7 @@
  */
 import { computed, ref } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
+import PickerTpkkp from '../../Components/PickerTpkkp.vue';
 import type { HalamanRekap } from '../../types';
 
 const props = defineProps<HalamanRekap>();
@@ -46,6 +47,8 @@ const fmt = (n: number | null | undefined, d = 2) =>
   <Head title="PTPKKP — Rekapitulasi" />
 
   <div class="max-w-6xl mx-auto space-y-5">
+
+    <PickerTpkkp v-bind="picker" />
 
     <!-- Tautan balik ke Formulir Nilai lewat <Link>: perpindahan antara
          kedua halaman Inertia ini yang seharusnya terasa instan. -->

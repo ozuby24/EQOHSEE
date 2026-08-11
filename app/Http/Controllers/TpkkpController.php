@@ -180,6 +180,11 @@ class TpkkpController extends Controller
             /* Judul bilah atas ditentukan di sini, sejajar dengan
                @yield('subjudul') pada halaman Blade. */
             'judul'       => 'PTPKKP — Penilaian',
+
+            /* Navigasi dalam-halaman PTPKKP. Tanpa ini halaman Vue
+               terkirim tanpa jalan keluar selain tombol back peramban —
+               persis yang sempat terjadi. */
+            'picker'      => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
             'subjudul'    => "Tingkat kematangan keselamatan, periode {$a->tahun}",
 
             'tahun'       => $a->tahun,
@@ -283,6 +288,9 @@ class TpkkpController extends Controller
 
         return Inertia::render('Tpkkp/Rekap', [
             'judul'    => 'PTPKKP — Rekapitulasi',
+            'picker'   => \App\Support\TpkkpNav::untukInertia(
+                $a->tahun, \App\Support\TpkkpNav::daftarTahun()
+            ),
             'subjudul' => "Nilai per parameter dan per perusahaan, periode {$a->tahun}",
             'tahun'    => $a->tahun,
 

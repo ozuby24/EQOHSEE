@@ -18,6 +18,7 @@
  */
 import { computed, reactive, ref, watch } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
+import PickerTpkkp from '../../Components/PickerTpkkp.vue';
 import type { HalamanPenilaian } from '../../types';
 
 const props = defineProps<HalamanPenilaian>();
@@ -135,6 +136,8 @@ const bukaTarget = reactive<Record<string, boolean>>({});
   <Head title="PTPKKP — Penilaian" />
 
   <div class="max-w-6xl mx-auto space-y-5">
+
+    <PickerTpkkp v-bind="picker" />
 
     <!-- ══════════ METODE ══════════ -->
     <div class="bg-white rounded-2xl border border-stone-200 p-4">

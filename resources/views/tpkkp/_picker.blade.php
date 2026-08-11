@@ -4,17 +4,11 @@
   $tahunn = $tahunn ?? \App\Models\TpkkpAssessment::orderByDesc('tahun')->pluck('tahun')->all();
   $daftarTahun = $tahunn ?: [$a->tahun];
 
-  $tabs = [
-    ['tpkkp.index','Beranda','home'],        ['tpkkp.assess','Penilaian','edit'],
-    ['tpkkp.matriks','Matriks','grid'],      ['tpkkp.summary','Summary','target'],
-    ['tpkkp.hasil','Hasil','award'],         ['tpkkp.rekap','Rekapitulasi','list'],
-    ['tpkkp.visual','Visualisasi','chart'],  ['tpkkp.program','Program','spark'],
-    ['tpkkp.jadwal','Jadwal','calendar'],    ['tpkkp.sampling','Slovin','calc'],
-    ['tpkkp.sampel','Rencana Sampel','users'], ['tpkkp.metode','Metode','layers'],
-    ['tpkkp.rubrik','Rubrik','book'],        ['tpkkp.roster','Mitra & Akses','building'],
-    ['tpkkp.kuesioner','Kuesioner','poll'],  ['tpkkp.data','Data','database'],
-    ['tpkkp.profile','Profil','user'],       ['tpkkp.tentang','Instrumen','info'],
-  ];
+  /* Daftar tab dibaca dari App\Support\TpkkpNav — sumber tunggal yang
+     juga dipakai halaman Vue. Larik ini dulu tertulis di sini, dan saat
+     dua halaman pindah ke Inertia keduanya terkirim tanpa navigasi sama
+     sekali karena larik di dalam view tidak dapat dijangkau dari luar. */
+  $tabs = \App\Support\TpkkpNav::TABS;
 @endphp
 
 <svg width="0" height="0" class="absolute" aria-hidden="true"><defs>

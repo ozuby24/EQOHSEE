@@ -23,6 +23,8 @@ export interface ButirMenu {
   url: string;
   aktif: boolean;
   ikon: string;
+  /** true bila tujuannya dirender Inertia — menentukan <Link> atau <a>. */
+  inertia: boolean;
 }
 
 export interface Modul {
@@ -31,6 +33,7 @@ export interface Modul {
   ikon: string;
   url: string;
   aktif: boolean;
+  inertia: boolean;
 }
 
 export interface KerangkaMenu {
@@ -96,6 +99,21 @@ export interface Ambang {
   warna: string;
 }
 
+/** Navigasi dalam-halaman PTPKKP — dari App\Support\TpkkpNav. */
+export interface TabPicker {
+  label: string;
+  url: string;
+  ikon: string;
+  aktif: boolean;
+  inertia: boolean;
+}
+
+export interface Picker {
+  tabs: TabPicker[];
+  tahun: number;
+  daftarTahun: number[];
+}
+
 /* ══════════════ PTPKKP — rekapitulasi ══════════════ */
 
 export interface ParamRekap {
@@ -155,6 +173,7 @@ export interface AmbangLabel {
 export interface HalamanRekap {
   judul: string;
   subjudul: string;
+  picker: Picker;
   tahun: number;
   hasil: HasilTotal;
   perusahaan: string[];
@@ -168,6 +187,7 @@ export interface HalamanRekap {
 export interface HalamanPenilaian {
   judul: string;
   subjudul: string;
+  picker: Picker;
   ambang: Ambang[];
   tahun: number;
   metode: MetodeInfo[];
