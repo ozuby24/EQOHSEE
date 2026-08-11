@@ -598,3 +598,21 @@ export interface HalamanSampel {
   metode: BlokSampel[];
   metodeAwal: string;
 }
+
+export interface MetodeRoster {
+  kode: string;
+  nama: string;
+  labelEntitas: string;
+  punyaEntitas: boolean;
+  entitas: string[];
+  bawaan: string[];
+}
+
+export interface HalamanRoster {
+  judul: string;
+  subjudul: string;
+  picker: Picker;
+  tahun: number;
+  metode: MetodeRoster[];
+  bisaSunting: boolean;
+}

@@ -459,7 +459,32 @@ class TpkkpLanjutController extends Controller
     {
         [$a, $hasil, $tahunn] = $this->base($request);
 
-        return view('tpkkp.roster', compact('a', 'hasil', 'tahunn'));
+        $metode = [];
+        foreach (Tpkkp::methods() as $k => $m) {
+            $label = $m['entityLabel'] ?? '';
+            $ents  = $label ? $a->entitiesOf($k) : [];
+
+            $metode[] = [
+                'kode'         => $k,
+                'nama'         => $m['name'],
+                'labelEntitas' => $label,
+                'punyaEntitas' => (bool) $label,
+                'entitas'      => array_values($ents),
+                // Daftar bawaan instrumen, dipakai kembali bila kotaknya
+                // dikosongkan. Dikirim supaya layar bisa mengatakan apa
+                // yang akan terjadi sebelum orang menekan simpan.
+                'bawaan'       => array_values($m['entities'] ?? []),
+            ];
+        }
+
+        return Inertia::render('Tpkkp/Roster', [
+            'judul'    => 'PTPKKP — Mitra & Akses',
+            'subjudul' => "Entitas yang dinilai pada tiap metode, periode {$a->tahun}",
+            'picker'   => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
+            'tahun'    => $a->tahun,
+            'metode'   => $metode,
+            'bisaSunting' => $request->user()->isAdmin(),
+        ]);
     }
 
     public function saveRoster(Request $request)
