@@ -59,13 +59,25 @@ class Document extends Model
             && $this->tanggal_tinjau->isPast();
     }
 
-    /** Mendekati jatuh tempo peninjauan (dalam ambang peringatan). */
+    /**
+     * Mendekati jatuh tempo peninjauan (dalam ambang peringatan).
+     *
+     * Sisa hari dihitung dari sekarang MENUJU tanggal tinjaunya, bukan
+     * sebaliknya. Carbon mengembalikan selisih bertanda: arah terbalik
+     * membuat setiap tanggal di masa depan menghasilkan angka negatif,
+     * yang tentu saja selalu lebih kecil dari ambangnya — sehingga
+     * dokumen yang baru jatuh tempo setahun lagi pun ditandai "segera
+     * ditinjau", dan penandanya berhenti berarti apa-apa.
+     */
     public function segeraTinjau(): bool
     {
-        return $this->status === 'berlaku'
-            && $this->tanggal_tinjau
-            && !$this->tanggal_tinjau->isPast()
-            && $this->tanggal_tinjau->diffInDays(now()) <= Dokumen::AMBANG_PERINGATAN;
+        if ($this->status !== 'berlaku' || !$this->tanggal_tinjau || $this->tanggal_tinjau->isPast()) {
+            return false;
+        }
+
+        $sisa = now()->startOfDay()->diffInDays($this->tanggal_tinjau->copy()->startOfDay());
+
+        return $sisa <= Dokumen::AMBANG_PERINGATAN;
     }
 
     /** Label revisi yang lazim dipakai pada lembar dokumen. */

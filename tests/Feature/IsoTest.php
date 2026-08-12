@@ -163,11 +163,19 @@ class IsoTest extends TestCase
         $doc = $this->dokumen(['kode' => 'PR-K3-01', 'judul' => 'Prosedur HIRADC']);
         $doc->isoMap()->create(['standar' => '45001', 'klausul' => '6.1.2']);
 
-        $this->get(route('iso.show', '45001'))
-            ->assertOk()
-            ->assertSee('PR-K3-01')
-            ->assertSee('Prosedur HIRADC')
-            ->assertSee('Belum ada dokumen yang memenuhi klausul ini');
+        $p = $this->get(route('iso.show', '45001'))->assertOk()->viewData('page')['props'];
+
+        // Klausul dibawa bersama dokumen yang memenuhinya, jadi yang
+        // diperiksa di sini pasangannya — bukan sekadar keberadaan teks.
+        $butir = collect($p['bab'])->flatMap(fn ($b) => $b['klausul']);
+
+        $terisi = $butir->firstWhere('no', '6.1.2');
+        $this->assertSame('PR-K3-01', $terisi['dokumen'][0]['kode']);
+        $this->assertSame('Prosedur HIRADC', $terisi['dokumen'][0]['judul']);
+
+        $this->assertTrue($butir->contains(fn ($k) => $k['dokumen'] === []),
+            'Klausul tanpa dokumen harus tetap terbawa supaya celahnya terbaca.');
+        $this->assertGreaterThan(0, $p['cakupan']['celah']);
     }
 
     public function test_seluruh_halaman_iso_terbuka(): void
@@ -207,12 +215,15 @@ class IsoTest extends TestCase
         $this->masuk();
         $this->dokumen(['jenis' => 'Prosedur']);
 
-        $res = $this->get(route('dokumen.piramida'))->assertOk();
+        $p = $this->get(route('dokumen.piramida'))->assertOk()->viewData('page')['props'];
 
-        foreach (\App\Support\Dokumen::JENIS as $jenis) {
-            $res->assertSee($jenis);
-        }
-        $res->assertSee('Tingkat ini masih kosong');
+        $this->assertSame(\App\Support\Dokumen::JENIS, array_column($p['tingkat'], 'jenis'));
+
+        $prosedur = collect($p['tingkat'])->firstWhere('jenis', 'Prosedur');
+        $this->assertSame(1, $prosedur['total']);
+
+        $this->assertTrue(collect($p['tingkat'])->contains(fn ($t) => $t['total'] === 0),
+            'Tingkat yang kosong justru yang paling berguna dilihat; ia harus tetap terbawa.');
     }
 
     public function test_daftar_induk_memuat_dokumen_dan_berkop(): void

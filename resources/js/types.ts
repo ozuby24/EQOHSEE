@@ -1313,3 +1313,115 @@ export interface HalamanLaporanGudang {
   r: RingkasGudang;
   tautan: { laporan: string };
 }
+
+/* ══════════════ ISO & Dokumen ══════════════ */
+
+export interface BarisDokumen {
+  id: number;
+  kode: string;
+  judul: string;
+  jenis: string;
+  status: string;
+  warnaStatus: string;
+  revisi: number;
+  labelRevisi: string;
+  departemen: string | null;
+  tanggalTinjau: string | null;
+  perluTinjau: boolean;
+  segeraTinjau: boolean;
+  adaBerkas: boolean;
+  url: string;
+}
+
+export interface HalamanRegisterDokumen {
+  judul: string; subjudul: string;
+  dokumen: BarisDokumen[];
+  halaman: { kini: number; akhir: number; total: number; tautan: TautanHalaman[] };
+  f: { q: string; jenis: string | null; status: string | null; departemen: string | null; tinjau: string | null };
+  opsi: {
+    jenis: string[];
+    status: string[];
+    tinjau: Pilihan[];
+    departemen: string[];
+  };
+  stat: { total: number; berlaku: number; draft: number; lewat: number };
+  tautan: { daftar: string; buat: string; piramida: string; daftarInduk: string };
+}
+
+export interface HalamanPiramidaDokumen {
+  judul: string; subjudul: string;
+  tingkat: Array<{
+    jenis: string; urutan: number; total: number;
+    berlaku: number; draft: number; ket: string; url: string;
+  }>;
+  total: number;
+}
+
+export interface HalamanDetailDokumen {
+  judul: string; subjudul: string;
+  d: BarisDokumen & {
+    ringkasan: string | null;
+    perusahaan: string | null;
+    klasifikasi: string | null;
+    disetujui: string | null;
+    acuan: string | null;
+    tanggalTerbit: string | null;
+    tanggalBerlaku: string | null;
+    revisiBerikut: string;
+  };
+  riwayat: Array<{
+    id: number; label: string; tanggal: string | null;
+    oleh: string | null; ringkasan: string | null;
+  }>;
+  klausul: Array<{ kode: string; nama: string; warna: string; url: string; butir: string[] }>;
+  bolehHapus: boolean;
+  tautan: { ubah: string; unduh: string | null; revisi: string; hapus: string; daftar: string };
+}
+
+export interface ButirIso {
+  no: string;
+  judul: string;
+}
+
+export interface HalamanFormDokumen {
+  judul: string; subjudul: string;
+  tersimpan: boolean;
+  awal: Record<string, string>;
+  /** Klausul tercentang per kode standar; objek kosong bila dokumen baru. */
+  isoAwal: Record<string, string[]>;
+  adaBerkas: boolean;
+  opsi: {
+    jenis: string[]; status: string[]; klasifikasi: string[];
+    perusahaan: Pilihan[]; prosedur: Pilihan[];
+  };
+  standar: Array<{ kode: string; nama: string; judul: string; warna: string; butir: ButirIso[] }>;
+  tautan: { simpan: string; batal: string };
+}
+
+export interface HalamanIso {
+  judul: string; subjudul: string;
+  standar: Array<{
+    kode: string; nama: string; judul: string; ket: string;
+    aspek: string | null; warna: string;
+    butir: number; tercakup: number; celah: number; rasio: number;
+    url: string;
+  }>;
+  catatan: string;
+  dokumen: number;
+  dipetakan: number;
+}
+
+export interface HalamanDetailIso {
+  judul: string; subjudul: string;
+  kode: string;
+  warna: string;
+  cakupan: { butir: number; tercakup: number; celah: number; rasio: number };
+  bab: Array<{
+    nomor: string; judul: string;
+    klausul: Array<{
+      no: string; judul: string;
+      dokumen: Array<{ kode: string; judul: string; url: string }>;
+    }>;
+  }>;
+  tautan: { cetak: string; daftar: string };
+}

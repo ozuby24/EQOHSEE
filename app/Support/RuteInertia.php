@@ -72,6 +72,12 @@ final class RuteInertia
         'inspeksi.template.index',
         'inspeksi.template.create',
 
+        /* Dokumen & ISO */
+        'dokumen.index',
+        'dokumen.create',
+        'dokumen.piramida',
+        'iso.index',
+
         /* Gudang */
         'gudang.index',
         'gudang.barang',

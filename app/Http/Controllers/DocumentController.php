@@ -6,7 +6,9 @@ use App\Models\{ActivityLog, Company, Document, Procedure};
 use App\Support\{Db, Dokumen, Iso, KopDokumen};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 /**
  * ISO & Dokumen — register dokumen terkendali.
@@ -49,17 +51,39 @@ class DocumentController extends Controller
 
         $semua = Document::query();
 
-        return view('dokumen.index', [
-            'documents' => $documents,
-            'f'         => $f,
-            'stat'      => [
+        return Inertia::render('Dokumen/Index', [
+            'judul'    => 'Register Dokumen',
+            'subjudul' => 'Dokumen terkendali beserta revisi dan masa tinjaunya',
+
+            'dokumen' => array_map(fn (Document $d) => $this->baris($d), $documents->items()),
+            'halaman' => $this->halaman($documents),
+
+            'f'    => $f,
+            'opsi' => [
+                'jenis'  => Dokumen::JENIS,
+                'status' => Dokumen::STATUS,
+                'tinjau' => [
+                    ['nilai' => 'lewat',  'label' => 'Lewat jatuh tempo'],
+                    ['nilai' => 'segera', 'label' => 'Segera ('.Dokumen::AMBANG_PERINGATAN.' hari)'],
+                ],
+                'departemen' => Document::whereNotNull('departemen')->distinct()
+                    ->orderBy('departemen')->pluck('departemen')->all(),
+            ],
+
+            'stat' => [
                 'total'   => (clone $semua)->count(),
                 'berlaku' => (clone $semua)->where('status','berlaku')->count(),
                 'draft'   => (clone $semua)->where('status','draft')->count(),
                 'lewat'   => (clone $semua)->where('status','berlaku')->whereNotNull('tanggal_tinjau')
                                 ->whereDate('tanggal_tinjau','<',now())->count(),
             ],
-            'departemenOpsi' => Document::whereNotNull('departemen')->distinct()->orderBy('departemen')->pluck('departemen'),
+
+            'tautan' => [
+                'daftar'      => route('dokumen.index'),
+                'buat'        => route('dokumen.create'),
+                'piramida'    => route('dokumen.piramida'),
+                'daftarInduk' => route('dokumen.daftar-induk'),
+            ],
         ]);
     }
 
@@ -93,8 +117,11 @@ class DocumentController extends Controller
             ];
         }
 
-        return view('dokumen.piramida', [
-            'tingkat' => $tingkat,
+        return Inertia::render('Dokumen/Piramida', [
+            'judul'    => 'Piramida Dokumen',
+            'subjudul' => 'Bentuk sistem dokumentasi pada enam tingkat',
+
+            'tingkat' => array_map(fn ($t) => $t + ['url' => route('dokumen.index', ['jenis' => $t['jenis']])], $tingkat),
             'total'   => array_sum(array_column($tingkat, 'total')),
         ]);
     }
@@ -112,11 +139,7 @@ class DocumentController extends Controller
 
     public function create()
     {
-        return view('dokumen.form', [
-            'document'   => new Document(['status' => 'draft', 'revisi' => 0]),
-            'companies'  => Company::orderBy('name')->get(),
-            'procedures' => Procedure::orderBy('title')->get(),
-        ]);
+        return $this->formulir(new Document(['status' => 'draft', 'revisi' => 0]));
     }
 
     public function store(Request $request)
@@ -149,17 +172,58 @@ class DocumentController extends Controller
 
     public function show(Document $dokumen)
     {
-        $dokumen->load(['company','user','revisions']);
-        return view('dokumen.show', ['d' => $dokumen]);
+        $dokumen->load(['company','user','revisions','isoMap']);
+
+        return Inertia::render('Dokumen/Detail', [
+            'judul'    => $dokumen->kode,
+            'subjudul' => $dokumen->judul,
+
+            'd' => $this->baris($dokumen) + [
+                'ringkasan'      => $dokumen->ringkasan ?: null,
+                'departemen'     => $dokumen->departemen ?: null,
+                'perusahaan'     => $dokumen->company?->name,
+                'klasifikasi'    => $dokumen->klasifikasi ?: null,
+                'disetujui'      => $dokumen->disetujui_oleh ?: null,
+                'acuan'          => $dokumen->acuan ?: null,
+                'tanggalTerbit'  => $dokumen->tanggal_terbit?->format('d M Y'),
+                'tanggalBerlaku' => $dokumen->tanggal_berlaku?->format('d M Y'),
+                'revisiBerikut'  => 'Rev. '.str_pad((string) ($dokumen->revisi + 1), 2, '0', STR_PAD_LEFT),
+            ],
+
+            'riwayat' => $dokumen->revisions->map(fn ($r) => [
+                'id'        => $r->id,
+                'label'     => $r->labelRevisi(),
+                'tanggal'   => $r->tanggal?->format('d M Y'),
+                'oleh'      => $r->oleh,
+                'ringkasan' => $r->ringkasan_perubahan,
+            ])->all(),
+
+            // Klausul dibawa lengkap dengan nama standarnya: kode mentah
+            // seperti '9001' tidak memberi tahu pembaca standar mana yang
+            // dipenuhi tanpa membuka halaman lain.
+            'klausul' => array_map(fn ($kode) => [
+                'kode'   => (string) $kode,
+                'nama'   => Iso::get((string) $kode)['nama'] ?? (string) $kode,
+                'warna'  => Iso::warna((string) $kode),
+                'url'    => route('iso.show', $kode),
+                'butir'  => $dokumen->klausul()[$kode],
+            ], array_keys($dokumen->klausul())),
+
+            'bolehHapus' => Gate::allows('admin'),
+
+            'tautan' => [
+                'ubah'    => route('dokumen.edit', $dokumen),
+                'unduh'   => $dokumen->berkas ? route('dokumen.unduh', $dokumen) : null,
+                'revisi'  => route('dokumen.revisi', $dokumen),
+                'hapus'   => route('dokumen.destroy', $dokumen),
+                'daftar'  => route('dokumen.index'),
+            ],
+        ]);
     }
 
     public function edit(Document $dokumen)
     {
-        return view('dokumen.form', [
-            'document'   => $dokumen,
-            'companies'  => Company::orderBy('name')->get(),
-            'procedures' => Procedure::orderBy('title')->get(),
-        ]);
+        return $this->formulir($dokumen);
     }
 
     public function update(Request $request, Document $dokumen)
@@ -216,6 +280,114 @@ class DocumentController extends Controller
 
         return redirect()->route('dokumen.show', $dokumen)
             ->with('ok', 'Revisi baru terbit: '.$dokumen->labelRevisi().'.');
+    }
+
+    /* ---------- penyaji ---------- */
+
+    /** Satu dokumen dalam bentuk yang digambar daftar maupun halaman rincinya. */
+    private function baris(Document $d): array
+    {
+        return [
+            'id'            => $d->id,
+            'kode'          => $d->kode,
+            'judul'         => $d->judul,
+            'jenis'         => $d->jenis,
+            'status'        => $d->status,
+            'warnaStatus'   => Dokumen::warna($d->status),
+            'revisi'        => (int) $d->revisi,
+            'labelRevisi'   => $d->labelRevisi(),
+            'departemen'    => $d->departemen ?: null,
+            'tanggalTinjau' => $d->tanggal_tinjau?->format('d M Y'),
+            'perluTinjau'   => $d->perluTinjau(),
+            'segeraTinjau'  => $d->segeraTinjau(),
+            'adaBerkas'     => (bool) $d->berkas,
+            'url'           => route('dokumen.show', $d),
+        ];
+    }
+
+    /** Bentuk penomoran halaman yang sama untuk seluruh daftar Inertia. */
+    private function halaman($paginator): array
+    {
+        return [
+            'kini'   => $paginator->currentPage(),
+            'akhir'  => $paginator->lastPage(),
+            'total'  => $paginator->total(),
+            'tautan' => array_map(fn ($t) => [
+                'label' => $t['label'], 'url' => $t['url'], 'aktif' => (bool) $t['active'],
+            ], $paginator->linkCollection()->all()),
+        ];
+    }
+
+    /**
+     * Formulir dokumen, dipakai bersama oleh create dan edit.
+     *
+     * Daftar klausul ISO dibawa utuh beserta yang sudah tercentang. Ia
+     * memang besar, tetapi memuatnya belakangan lewat permintaan kedua
+     * berarti isian yang sudah diketik hilang saat pengguna menunggu.
+     */
+    private function formulir(Document $d)
+    {
+        $terpilih = $d->exists ? $d->klausul() : [];
+
+        return Inertia::render('Dokumen/Form', [
+            'judul'    => $d->exists ? 'Ubah Dokumen' : 'Dokumen Baru',
+            'subjudul' => $d->exists ? $d->kode.' — '.$d->judul : 'Daftarkan dokumen terkendali baru',
+
+            'tersimpan' => $d->exists,
+
+            'awal' => [
+                'kode'            => (string) ($d->kode ?? ''),
+                'judul'           => (string) ($d->judul ?? ''),
+                'jenis'           => $d->jenis ?: Dokumen::JENIS[0],
+                'status'          => $d->status ?: 'draft',
+                'revisi'          => (string) ($d->revisi ?? 0),
+                'departemen'      => (string) ($d->departemen ?? ''),
+                'klasifikasi'     => (string) ($d->klasifikasi ?? ''),
+                'company_id'      => $d->company_id ? (string) $d->company_id : '',
+                'procedure_id'    => $d->procedure_id ? (string) $d->procedure_id : '',
+                'tanggal_terbit'  => $d->tanggal_terbit?->format('Y-m-d') ?? '',
+                'tanggal_berlaku' => $d->tanggal_berlaku?->format('Y-m-d') ?? '',
+                'tanggal_tinjau'  => $d->tanggal_tinjau?->format('Y-m-d') ?? '',
+                'acuan'           => (string) ($d->acuan ?? ''),
+                'disetujui_oleh'  => (string) ($d->disetujui_oleh ?? ''),
+                'ringkasan'       => (string) ($d->ringkasan ?? ''),
+            ],
+
+            // Kuncinya dipaksa teks; lihat catatan pada 'standar' di bawah.
+            'isoAwal'   => (object) array_combine(
+                array_map('strval', array_keys($terpilih)),
+                array_values($terpilih),
+            ),
+            'adaBerkas' => (bool) $d->berkas,
+
+            'opsi' => [
+                'jenis'       => Dokumen::JENIS,
+                'status'      => Dokumen::STATUS,
+                'klasifikasi' => Dokumen::KLASIFIKASI,
+                'perusahaan'  => Company::orderBy('name')->get()
+                    ->map(fn ($c) => ['nilai' => (string) $c->id, 'label' => $c->name])->all(),
+                'prosedur'    => Procedure::orderBy('title')->get()
+                    ->map(fn ($p) => ['nilai' => (string) $p->id,
+                                      'label' => ($p->code ? $p->code.' — ' : '').$p->title])->all(),
+            ],
+
+            // Lewat kodeSah(), bukan array_keys(): kode ISO seluruhnya
+            // angka, dan PHP mengubah kunci array numerik menjadi integer.
+            // Kode yang sampai ke Vue sebagai angka membuat pencocokannya
+            // dengan kunci isoAwal bergantung pada pemaksaan jenis.
+            'standar' => array_map(fn ($kode) => [
+                'kode'   => $kode,
+                'nama'   => Iso::get($kode)['nama'],
+                'judul'  => Iso::get($kode)['judul'],
+                'warna'  => Iso::warna($kode),
+                'butir'  => Iso::butir($kode),
+            ], Iso::kodeSah()),
+
+            'tautan' => [
+                'simpan' => $d->exists ? route('dokumen.update', $d) : route('dokumen.store'),
+                'batal'  => $d->exists ? route('dokumen.show', $d) : route('dokumen.index'),
+            ],
+        ]);
     }
 
     /* ---------- bantu ---------- */
