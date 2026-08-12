@@ -18,7 +18,10 @@ return [
 
     'ai' => [
         'kunci' => env('GEMINI_API_KEY'),
-        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+        // Alias, bukan versi tertanggal — Google memensiunkan model bertanggal
+        // untuk akun baru tanpa peringatan, dan versi tertanggal yang macet di
+        // konfigurasi berhenti bekerja begitu Google menariknya.
+        'model' => env('GEMINI_MODEL', 'gemini-flash-latest'),
         'alamat' => env('GEMINI_URL', 'https://generativelanguage.googleapis.com/v1beta'),
 
         // Jawaban pendek: ini kotak bantuan, bukan ruang esai.
