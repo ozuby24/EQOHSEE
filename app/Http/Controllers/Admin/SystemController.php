@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\{ActivityLog, Certificate, Company, Course, Enrollment, Material, Module, News,
     PostTrainingEvaluation, Procedure, Quiz, QuizAttempt, Signatory, SopEvaluation,
     SopEvaluationAttempt, TpkkpAssessment, TpkkpResponse, User};
+use App\Support\Ikon;
 use Illuminate\Support\Facades\Artisan;
+use Inertia\Inertia;
 
 class SystemController extends Controller
 {
@@ -68,7 +70,85 @@ class SystemController extends Controller
         $companies = Company::withCount('users')->orderBy('name')->get();
         $logs = ActivityLog::latest()->take(30)->get();
 
-        return view('admin.system', compact('server','modul','roles','companies','logs'));
+        // Aktivitas tujuh hari terakhir, dihitung sekali di sini.
+        // Menghitungnya di peramban berarti seluruh log harus dikirim
+        // hanya untuk menggambar tujuh angka.
+        $hari = collect(range(6, 0))->map(fn ($i) => now()->subDays($i));
+        $tren = $hari->map(fn ($d) => [
+            'label'  => $d->isoFormat('dd'),
+            'jumlah' => $logs->filter(fn ($l) => $l->created_at && $l->created_at->isSameDay($d))->count(),
+        ])->values()->all();
+
+        return Inertia::render('Admin/Sistem', [
+            'judul'    => 'Pusat Kendali Sistem',
+            'subjudul' => 'Status server, statistik modul, dan log aktivitas',
+
+            'server' => array_map(fn ($k) => ['label' => $k, 'nilai' => (string) $server[$k]],
+                                  array_keys($server)),
+
+            'modul' => array_map(fn ($nama) => [
+                'nama'  => $nama,
+                'url'   => $modul[$nama]['route'] ? route($modul[$nama]['route']) : null,
+                'items' => array_map(fn ($label) => [
+                    'label' => $label,
+                    'nilai' => $modul[$nama]['items'][$label],
+                    'ikon'  => Ikon::untuk($label),
+                ], array_keys($modul[$nama]['items'])),
+            ], array_keys($modul)),
+
+            'peran' => array_map(fn ($k) => ['label' => $k, 'jumlah' => $roles[$k]], array_keys($roles)),
+            'tren'  => $tren,
+
+            'perusahaan' => $companies->map(fn ($c) => [
+                'id'        => $c->id,
+                'nama'      => $c->name,
+                'komoditas' => $c->commodity ?: null,
+                'lokasi'    => $c->location ?: null,
+                'pekerja'   => $c->totalWorkers(),
+                'pengguna'  => $c->users_count,
+                'urlUbah'   => route('admin.companies.edit', $c),
+            ])->all(),
+
+            'log' => $logs->map(fn ($l) => [
+                'id'      => $l->id,
+                'aksi'    => $l->action,
+                'modul'   => $l->module,
+                'detail'  => $l->detail,
+                'oleh'    => $l->username ?: null,
+                'waktu'   => $l->created_at?->format('d M · H:i'),
+            ])->all(),
+
+            'pintasan' => [
+                ['url' => route('admin.companies.index'), 'label' => 'Kelola Perusahaan',
+                 'sub' => 'tambah · ubah · hapus', 'warna' => '#2E6BE6',
+                 'ikon' => 'M3 21V8l7-4 7 4v13M17 21V11l4 2v8M8 21v-4h4v4'],
+                ['url' => route('admin.users.index'), 'label' => 'Kelola Pengguna',
+                 'sub' => 'peran & akses', 'warna' => '#0FA08F',
+                 'ikon' => 'M9 8a3.2 3.2 0 100 6.4 3.2 3.2 0 000-6.4zM3.5 20a5.5 5.5 0 0111 0M17 8.5a3 3 0 010 5.4M20.5 20a5 5 0 00-3-4.6'],
+                ['url' => route('signatories.index'), 'label' => 'Penanda Tangan',
+                 'sub' => 'sertifikat', 'warna' => '#F57C00',
+                 'ikon' => 'M12 3l2 4 4 .6-3 3 .8 4-3.8-2-3.8 2 .8-4-3-3 4-.6zM6 21s2-4 6-4 6 4 6 4'],
+                ['url' => route('kuesioner.admin'), 'label' => 'Kuesioner PTPKKP',
+                 'sub' => 'tautan & hasil', 'warna' => '#22C55E',
+                 'ikon' => 'M7 3h7l4 4v14H7a1 1 0 01-1-1V4a1 1 0 011-1zM14 3v4h4M9.5 12h5M9.5 15.5h5'],
+            ],
+
+            'tautan' => [
+                'perusahaanBaru' => route('admin.companies.create'),
+                'bersihkanLog'   => route('admin.system.logs.clear'),
+            ],
+
+            'pemeliharaan' => array_map(fn ($a) => [
+                'aksi'  => $a[0],
+                'label' => $a[1],
+                'url'   => route('admin.system.maintenance', $a[0]),
+            ], [
+                ['cache',  'Bersihkan semua cache'],
+                ['view',   'Cache tampilan'],
+                ['config', 'Cache konfigurasi'],
+                ['route',  'Cache rute'],
+            ]),
+        ]);
     }
 
     public function clearLogs()

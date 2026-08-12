@@ -738,7 +738,8 @@ export interface HalamanPerusahaan {
   logo: string | null;
   /** Logo milik perusahaan ini sendiri — hanya itu yang boleh dihapus. */
   logoSendiri: boolean;
-  warna: WarnaLogo[];
+  /** Namanya 'palet', bukan 'warna': lihat catatan di PersonaliaController. */
+  palet: WarnaLogo[];
   bisaSunting: boolean;
   /** Administrator memilih perusahaan mana yang dibuka dan boleh menambah. */
   admin: boolean;
@@ -1424,4 +1425,81 @@ export interface HalamanDetailIso {
     }>;
   }>;
   tautan: { cetak: string; daftar: string };
+}
+
+/* ══════════════ Admin ══════════════ */
+
+export interface HalamanDaftarPengguna {
+  judul: string; subjudul: string;
+  /** Namanya 'daftar', bukan 'pengguna': lihat catatan di UserController. */
+  daftar: Array<{
+    id: number; nama: string; email: string; inisial: string;
+    admin: boolean; lmsRole: string | null; auditRole: string | null;
+    jabatan: string | null; departemen: string | null;
+    aktif: boolean; perusahaan: string | null;
+    /** true untuk akun yang sedang dipakai — tombol hapusnya tidak digambar. */
+    diri: boolean;
+    urlUbah: string; urlHapus: string;
+  }>;
+  halaman: { kini: number; akhir: number; total: number; tautan: TautanHalaman[] };
+  q: string;
+  tautan: { daftar: string; buat: string };
+}
+
+export interface HalamanFormPengguna {
+  judul: string; subjudul: string;
+  tersimpan: boolean;
+  awal: Record<string, string | boolean>;
+  opsi: {
+    lms: Pilihan[]; audit: Pilihan[]; perusahaan: Pilihan[];
+    jabatan: string[]; departemen: string[];
+  };
+  tautan: { simpan: string; batal: string };
+}
+
+export interface HalamanDaftarPerusahaan {
+  judul: string; subjudul: string;
+  perusahaan: Array<{
+    id: number; nama: string; kode: string | null; inisial: string;
+    logo: string | null; risiko: string;
+    izin: string | null; komoditas: string | null; lokasi: string | null;
+    ktt: string | null; pjo: string | null;
+    pekerja: number; pengguna: number;
+    urlUbah: string; urlHapus: string; urlTpkkp: string;
+  }>;
+  halaman: { kini: number; akhir: number; total: number; tautan: TautanHalaman[] };
+  q: string;
+  tautan: { daftar: string; buat: string };
+}
+
+export interface HalamanFormPerusahaan {
+  judul: string; subjudul: string;
+  tersimpan: boolean;
+  awal: Record<string, string>;
+  logo: string | null;
+  opsi: { induk: Pilihan[]; risiko: string[] };
+  contoh: { prefiks: string; divisi: string; departemen: string };
+  tautan: { simpan: string; batal: string };
+}
+
+export interface HalamanSistem {
+  judul: string; subjudul: string;
+  server: Array<{ label: string; nilai: string }>;
+  modul: Array<{
+    nama: string; url: string | null;
+    items: Array<{ label: string; nilai: number; ikon: string }>;
+  }>;
+  peran: Array<{ label: string; jumlah: number }>;
+  tren: Array<{ label: string; jumlah: number }>;
+  perusahaan: Array<{
+    id: number; nama: string; komoditas: string | null; lokasi: string | null;
+    pekerja: number; pengguna: number; urlUbah: string;
+  }>;
+  log: Array<{
+    id: number; aksi: string; modul: string | null;
+    detail: string | null; oleh: string | null; waktu: string | null;
+  }>;
+  pintasan: Array<{ url: string; label: string; sub: string; warna: string; ikon: string }>;
+  tautan: { perusahaanBaru: string; bersihkanLog: string };
+  pemeliharaan: Array<{ aksi: string; label: string; url: string }>;
 }

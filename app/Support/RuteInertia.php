@@ -72,6 +72,13 @@ final class RuteInertia
         'inspeksi.template.index',
         'inspeksi.template.create',
 
+        /* Admin */
+        'admin.system',
+        'admin.users.index',
+        'admin.users.create',
+        'admin.companies.index',
+        'admin.companies.create',
+
         /* Dokumen & ISO */
         'dokumen.index',
         'dokumen.create',

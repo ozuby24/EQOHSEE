@@ -226,7 +226,10 @@ class PersonaliaController extends Controller
             // Hanya logo milik perusahaan ini yang boleh dihapus; effectiveLogo()
             // bisa memulangkan logo bawaan yang bukan miliknya.
             'logoSendiri' => (bool) $p?->logo,
-            'warna'     => $p?->theme_color ? [
+            // Namanya 'palet', bukan 'warna': 'warna' sudah dipakai
+            // HandleInertiaRequests untuk warna tema yang dibagikan ke
+            // setiap halaman, dan prop halaman menimpanya diam-diam.
+            'palet'     => $p?->theme_color ? [
                 ['nama' => 'Aksen', 'hex' => $p->theme_color],
                 ['nama' => 'Dasar', 'hex' => $p->theme_dark],
             ] : [],

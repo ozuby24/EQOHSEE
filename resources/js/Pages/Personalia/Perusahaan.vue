@@ -183,9 +183,9 @@ function hapusLogo() {
           </button>
         </div>
 
-        <div v-if="warna.length" class="mt-4 flex items-center gap-3 flex-wrap">
+        <div v-if="palet.length" class="mt-4 flex items-center gap-3 flex-wrap">
           <span class="text-[11.5px] text-stone-500">Warna yang terbaca dari logo:</span>
-          <span v-for="w in warna" :key="w.nama" v-show="w.hex"
+          <span v-for="w in palet" :key="w.nama" v-show="w.hex"
                 class="inline-flex items-center gap-2 text-[11.5px] text-stone-600">
             <i class="w-5 h-5 rounded-md border border-stone-200 inline-block"
                :style="{ background: w.hex }"></i>{{ w.nama }} {{ w.hex }}

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\{ActivityLog, Company, User};
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class UserController extends Controller
 {
@@ -18,12 +19,42 @@ class UserController extends Controller
             ->orderByDesc('is_admin')->orderBy('name')
             ->paginate(20)->withQueryString();
 
-        return view('admin.users.index', compact('users','q'));
+        return Inertia::render('Admin/Pengguna/Daftar', [
+            'judul'    => 'Kelola Pengguna',
+            'subjudul' => 'Peran, akses, dan data pegawai',
+
+            // Kuncinya BUKAN 'pengguna': nama itu sudah dipakai
+            // HandleInertiaRequests untuk pengguna yang sedang masuk, dan
+            // prop halaman menimpanya. Sempat terjadi — bilah atas
+            // memanggil pengguna.nama atas larik pengguna, seluruh
+            // halamannya gagal dirender, dan yang tampak hanya layar
+            // kosong tanpa pesan apa pun.
+            'daftar' => array_map(fn (User $u) => [
+                'id'         => $u->id,
+                'nama'       => $u->name,
+                'email'      => $u->email,
+                'inisial'    => mb_strtoupper(mb_substr($u->name, 0, 1)),
+                'admin'      => (bool) $u->is_admin,
+                'lmsRole'    => $u->lms_role,
+                'auditRole'  => $u->audit_role,
+                'jabatan'    => $u->position ?: null,
+                'departemen' => $u->department ?: null,
+                'aktif'      => (bool) $u->active,
+                'perusahaan' => $u->company?->name,
+                'diri'       => $u->id === auth()->id(),
+                'urlUbah'    => route('admin.users.edit', $u),
+                'urlHapus'   => route('admin.users.destroy', $u),
+            ], $users->items()),
+
+            'halaman' => $this->halaman($users),
+            'q'       => $q,
+            'tautan'  => ['daftar' => route('admin.users.index'), 'buat' => route('admin.users.create')],
+        ]);
     }
 
     public function create()
     {
-        return view('admin.users.form', ['user' => new User(), 'companies' => Company::orderBy('name')->get()]);
+        return $this->formulir(new User());
     }
 
     public function store(Request $request)
@@ -38,7 +69,67 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
-        return view('admin.users.form', ['user' => $user, 'companies' => Company::orderBy('name')->get()]);
+        return $this->formulir($user);
+    }
+
+    /** Formulir pengguna, dipakai bersama oleh create dan edit. */
+    private function formulir(User $u)
+    {
+        return Inertia::render('Admin/Pengguna/Form', [
+            'judul'    => $u->exists ? 'Edit Pengguna' : 'Pengguna Baru',
+            'subjudul' => $u->exists ? $u->email : 'Buat akun baru beserta peran dan aksesnya',
+
+            'tersimpan' => $u->exists,
+
+            'awal' => [
+                'name'        => (string) ($u->name ?? ''),
+                'email'       => (string) ($u->email ?? ''),
+                'password'    => '',
+                'lms_role'    => (string) ($u->lms_role ?? ''),
+                'audit_role'  => (string) ($u->audit_role ?? ''),
+                'company_id'  => $u->company_id ? (string) $u->company_id : '',
+                'employee_id' => (string) ($u->employee_id ?? ''),
+                'position'    => (string) ($u->position ?? ''),
+                'department'  => (string) ($u->department ?? ''),
+                'phone'       => (string) ($u->phone ?? ''),
+                'is_admin'    => (bool) $u->is_admin,
+                'active'      => $u->exists ? (bool) $u->active : true,
+            ],
+
+            'opsi' => [
+                'lms'   => [
+                    ['nilai' => 'trainee', 'label' => 'Peserta'],
+                    ['nilai' => 'trainer', 'label' => 'Trainer'],
+                    ['nilai' => 'ktt',     'label' => 'KTT'],
+                ],
+                'audit' => [
+                    ['nilai' => 'auditor', 'label' => 'Auditor'],
+                    ['nilai' => 'company', 'label' => 'Perusahaan'],
+                ],
+                'perusahaan' => Company::orderBy('name')->get()
+                    ->map(fn ($c) => ['nilai' => (string) $c->id, 'label' => $c->name])->all(),
+                'jabatan'    => \App\Support\Hazard::JABATAN,
+                'departemen' => \App\Support\Hazard::DEPARTEMEN,
+            ],
+
+            'tautan' => [
+                'simpan' => $u->exists ? route('admin.users.update', $u) : route('admin.users.store'),
+                'batal'  => route('admin.users.index'),
+            ],
+        ]);
+    }
+
+    /** Bentuk penomoran halaman yang sama untuk seluruh daftar Inertia. */
+    private function halaman($paginator): array
+    {
+        return [
+            'kini'   => $paginator->currentPage(),
+            'akhir'  => $paginator->lastPage(),
+            'total'  => $paginator->total(),
+            'tautan' => array_map(fn ($t) => [
+                'label' => $t['label'], 'url' => $t['url'], 'aktif' => (bool) $t['active'],
+            ], $paginator->linkCollection()->all()),
+        ];
     }
 
     public function update(Request $request, User $user)
