@@ -65,6 +65,13 @@ final class RuteInertia
         'hazard.evaluasi',
         'hazard.pengingat',
 
+        /* Inspeksi */
+        'inspeksi.index',
+        'inspeksi.create',
+        'inspeksi.kpi',
+        'inspeksi.template.index',
+        'inspeksi.template.create',
+
         /* Personalia */
         'personalia.index',
         'personalia.perusahaan',

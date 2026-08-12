@@ -860,6 +860,98 @@ export interface HalamanVerifikasi {
   berlaku: number;
 }
 
+/* ══════════════ Inspeksi ══════════════ */
+
+export interface BarisInspeksi {
+  id: number; kode: string; judul: string; status: string;
+  tanggal: string | null; lokasi: string | null;
+  template: string | null; perusahaan: string | null;
+  jumlahItem: number; inspektur: string[]; url: string;
+}
+
+export interface HalamanDaftarInspeksi {
+  judul: string; subjudul: string;
+  saring: { status: string | null; template: string | null };
+  opsi: { status: string[]; template: Array<{ id: number; nama: string }> };
+  inspeksi: BarisInspeksi[];
+  halaman: { kini: number; akhir: number; total: number; tautan: TautanHalaman[] };
+  tautan: { buat: string };
+}
+
+export interface HalamanFormInspeksi {
+  judul: string; subjudul: string;
+  awal: Record<string, string>;
+  sunting: boolean;
+  opsi: {
+    perusahaan: PilihanPerusahaan[];
+    template: Array<{ id: number; nama: string; jumlahItem: number }>;
+  };
+  tautan: { simpan: string; batal: string };
+}
+
+export interface ItemInspeksi {
+  id: number;
+  kelompok: string | null; uraian: string; acuan: string | null;
+  kondisi: string | null; risiko: string | null;
+  temuan: string | null; tindakan: string | null;
+  foto: string[];
+  /** Kode hazard bila temuan ini sudah dinaikkan; null bila belum. */
+  hazard: string | null;
+  urlHazard: string | null;
+  urlAngkat: string; urlHapus: string;
+}
+
+export interface HalamanDetailInspeksi {
+  judul: string; subjudul: string;
+  i: {
+    id: number; kode: string; judul: string; status: string;
+    tanggal: string | null; lokasi: string | null; catatan: string | null;
+    template: string | null; perusahaan: string | null; pembuat: string | null;
+  };
+  inspektur: Array<{ id: number; nama: string; jabatan: string | null; peran: string }>;
+  item: ItemInspeksi[];
+  opsi: {
+    kondisi: string[]; risiko: string[]; status: string[]; peran: string[];
+    kandidat: Array<{ id: number; nama: string; jabatan: string | null }>;
+  };
+  tautan: {
+    simpanItem: string; tambahItem: string; tambahPetugas: string;
+    ubah: string; cetak: string; kembali: string;
+  };
+}
+
+export interface HalamanKpiInspeksi {
+  judul: string; subjudul: string;
+  bulan: string | null; bulanAktif: number; total: number;
+  temuan: { total: number; sesuai: number; tidak: number; naik: number };
+  opsiBulan: Array<{ nilai: string; label: string }>;
+  golongan: BarisGolongan[];
+  petugas: BarisPelapor[];
+}
+
+export interface HalamanJenisInspeksi {
+  judul: string; subjudul: string;
+  jenis: Array<{
+    id: number; nama: string; keterangan: string | null; aktif: boolean;
+    jumlahItem: number; dipakai: number;
+    urlUbah: string; urlSalin: string; urlHapus: string;
+  }>;
+  tautan: { buat: string };
+}
+
+export interface HalamanJenisFormInspeksi {
+  judul: string; subjudul: string;
+  /** false sebelum jenisnya tersimpan — parameter belum bisa ditambahkan. */
+  tersimpan: boolean;
+  awal: { nama: string; keterangan: string; is_active: boolean };
+  item: Array<{
+    id: number; kelompok: string | null; uraian: string;
+    acuan: string | null; risiko: string | null; urlHapus: string;
+  }>;
+  opsi: { risiko: string[] };
+  tautan: { simpan: string; tambahItem: string | null; batal: string };
+}
+
 /* ══════════════ Hazard Report ══════════════ */
 
 export interface LaporanBahaya {
