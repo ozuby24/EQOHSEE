@@ -90,11 +90,21 @@ class PersonaliaController extends Controller
 
         // Mengubah surel membatalkan verifikasinya — alamat baru belum
         // terbukti milik orang yang sama.
-        if (isset($data['email']) && $data['email'] !== $u->email) {
-            $u->email_verified_at = null;
-        }
+        $gantiSurel = isset($data['email']) && $data['email'] !== $u->email;
+
+        if ($gantiSurel) $u->email_verified_at = null;
 
         $u->fill($data)->save();
+
+        /* Kode dikirim ke alamat BARU begitu disimpan. Tanpa ini orang
+           terlempar ke halaman verifikasi tanpa pernah menerima apa pun,
+           dan satu-satunya jalan keluar adalah menebak bahwa ia harus
+           menekan "kirim ulang". */
+        if ($gantiSurel) {
+            $u->sendEmailVerificationNotification();
+
+            return back()->with('sukses', 'Surel diganti. Kode verifikasi dikirim ke alamat baru.');
+        }
 
         return back()->with('sukses', 'Data diri tersimpan.');
     }

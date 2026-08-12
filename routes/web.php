@@ -24,7 +24,12 @@ Route::post('q/{token}/{cat}',       [KuesionerController::class,'submit'])->nam
 
 Route::get('/', fn () => auth()->check() ? redirect()->route('dashboard') : view('landing'))->name('beranda');
 
-Route::middleware('auth')->group(function () {
+/* 'verified' dipasang di sini, bukan per rute: halaman yang lupa
+   memakainya tidak menimbulkan galat apa pun — ia hanya diam-diam
+   terbuka bagi akun yang emailnya belum terbukti dimiliki pendaftarnya.
+   Halaman verifikasi sendiri berada di routes/auth.php, di luar grup ini,
+   supaya tidak menghalangi jalan menuju dirinya sendiri. */
+Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 

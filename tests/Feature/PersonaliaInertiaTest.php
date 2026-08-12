@@ -73,6 +73,12 @@ class PersonaliaInertiaTest extends TestCase
 
         $this->post(route('personalia.simpan'), $kirim)->assertRedirect()->assertSessionHasNoErrors();
 
+        /* Mengganti surel membatalkan verifikasinya, dan halaman apa pun
+           lalu dialihkan ke verifikasi. Di sini yang sedang diuji adalah
+           tersimpannya medan, jadi verifikasinya dipulihkan dulu — bukan
+           dilewati aturannya. */
+        auth()->user()->forceFill(['email_verified_at' => now()])->save();
+
         $isian = $this->props('personalia.index')['isian'];
 
         foreach ($kirim as $k => $v) {
@@ -105,6 +111,10 @@ class PersonaliaInertiaTest extends TestCase
             'email'  => 'uji@tambang.test',
             'avatar' => UploadedFile::fake()->image('foto.jpg', 200, 200),
         ])->assertRedirect();
+
+        // Surel ikut berganti di atas, jadi verifikasinya batal; yang
+        // sedang diuji di sini alamat avatarnya.
+        auth()->user()->forceFill(['email_verified_at' => now()])->save();
 
         $this->assertStringStartsWith('http', $this->props('personalia.index')['avatar']);
     }

@@ -847,6 +847,19 @@ export interface HalamanPesan {
   penggunaId: number;
 }
 
+/* ══════════════ Autentikasi ══════════════ */
+
+export interface HalamanVerifikasi {
+  judul: string;
+  subjudul: string;
+  email: string;
+  /** Detik tersisa sebelum boleh minta kode lagi; 0 bila boleh. */
+  jeda: number;
+  /** true bila kode terkunci karena terlalu banyak percobaan salah. */
+  hangus: boolean;
+  berlaku: number;
+}
+
 /* ══════════════ Hazard Report ══════════════ */
 
 export interface LaporanBahaya {

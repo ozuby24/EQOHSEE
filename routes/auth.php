@@ -2,13 +2,11 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
-use App\Http\Controllers\Auth\EmailVerificationNotificationController;
-use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Auth\VerifikasiKodeController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
-use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -36,14 +34,21 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('verify-email', EmailVerificationPromptController::class)
+    /* Verifikasi memakai kode enam angka, bukan tautan bertanda tangan.
+       Tautan hanya bekerja bila surelnya dibuka di peramban yang sama
+       dengan tempat mendaftar; surel kerja sering dibuka di ponsel lain
+       atau di peramban dalaman sebuah aplikasi, dan sesi di sana kosong.
+
+       Namanya tetap verification.notice karena middleware 'verified'
+       bawaan Laravel mengalihkan ke nama itu. */
+    Route::get('verify-email', [VerifikasiKodeController::class, 'tampil'])
         ->name('verification.notice');
 
-    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
-        ->middleware(['signed', 'throttle:6,1'])
-        ->name('verification.verify');
+    Route::post('verify-email', [VerifikasiKodeController::class, 'periksa'])
+        ->middleware('throttle:10,1')
+        ->name('verification.periksa');
 
-    Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+    Route::post('email/verification-notification', [VerifikasiKodeController::class, 'kirimUlang'])
         ->middleware('throttle:6,1')
         ->name('verification.send');
 

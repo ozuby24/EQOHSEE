@@ -29,6 +29,7 @@ class RegistrationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        // Pendaftaran kini berakhir di verifikasi, bukan langsung masuk.
+        $response->assertRedirect(route('verification.notice', absolute: false));
     }
 }
