@@ -390,7 +390,10 @@ Route::middleware('auth')->group(function () {
         Route::get('perusahaan',   [PersonaliaController::class, 'perusahaan'])->name('perusahaan');
         Route::post('perusahaan',  [PersonaliaController::class, 'simpanPerusahaan'])->name('perusahaan.simpan');
         Route::delete('perusahaan/logo', [PersonaliaController::class, 'hapusLogo'])->name('logo.hapus');
+        Route::post('perusahaan/baru',   [PersonaliaController::class, 'tambahPerusahaan'])->name('perusahaan.tambah');
         Route::get('direktori',    [PersonaliaController::class, 'direktori'])->name('direktori');
+        Route::post('direktori/{pengguna}/perusahaan',
+            [PersonaliaController::class, 'tetapkanPerusahaan'])->name('direktori.perusahaan');
     });
 
     /* ---- Profil (bawaan Breeze) ---- */

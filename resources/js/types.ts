@@ -710,6 +710,13 @@ export interface MedanPerusahaan {
   label: string;
   wajib: boolean;
   lebar: boolean;
+  /** Identitas perusahaan — hanya administrator yang boleh mengubahnya. */
+  khususAdmin: boolean;
+}
+
+export interface PilihanPerusahaan {
+  id: number;
+  nama: string;
 }
 
 export interface WarnaLogo {
@@ -729,6 +736,10 @@ export interface HalamanPerusahaan {
   logoSendiri: boolean;
   warna: WarnaLogo[];
   bisaSunting: boolean;
+  /** Administrator memilih perusahaan mana yang dibuka dan boleh menambah. */
+  admin: boolean;
+  aktif: number | null;
+  daftar: PilihanPerusahaan[];
 }
 
 export interface OrangDirektori {
@@ -741,6 +752,7 @@ export interface OrangDirektori {
   telepon: string | null;
   avatar: string | null;
   perusahaan: string | null;
+  perusahaanId: number | null;
 }
 
 export interface TautanHalaman {
@@ -755,4 +767,7 @@ export interface HalamanDirektori {
   cari: string;
   orang: OrangDirektori[];
   halaman: { kini: number; akhir: number; total: number; tautan: TautanHalaman[] };
+  /** Hanya administrator menerima daftarnya; bagi yang lain kosong. */
+  admin: boolean;
+  daftar: PilihanPerusahaan[];
 }

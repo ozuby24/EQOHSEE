@@ -111,16 +111,28 @@ class PersonaliaTest extends TestCase
 
     public function test_pic_perusahaan_boleh_merawat_datanya_sendiri(): void
     {
-        // PIC mengurus datanya tanpa harus jadi administrator seluruh aplikasi.
+        // PIC mengurus isi datanya tanpa harus jadi administrator seluruh
+        // aplikasi — tetapi tidak menamai ulang perusahaannya. Nama dan kode
+        // adalah identitas yang dipakai modul lain untuk mengenali
+        // perusahaan ini, dan di bawahnya bernaung orang lain juga.
         $p = $this->perusahaan(['pic_email' => 'pic@tambang.test']);
         $this->actingAs(User::factory()->create([
             'is_admin' => false, 'company_id' => $p->id, 'email' => 'pic@tambang.test',
         ]));
 
-        $this->post(route('personalia.perusahaan.simpan'), ['name' => 'PT Tambang Uji Baru'])
-             ->assertRedirect();
+        $this->post(route('personalia.perusahaan.simpan'), [
+            'name'      => 'PT Tambang Uji Baru',
+            'code'      => 'BARU',
+            'ktt'       => 'Ir. Uji Coba',
+            'commodity' => 'Batubara',
+        ])->assertRedirect()->assertSessionHasNoErrors();
 
-        $this->assertSame('PT Tambang Uji Baru', $p->refresh()->name);
+        $p->refresh();
+
+        $this->assertSame('Ir. Uji Coba', $p->ktt);
+        $this->assertSame('Batubara', $p->commodity);
+        $this->assertSame('PT Tambang Uji', $p->name, 'PIC seharusnya tidak dapat menamai ulang perusahaan.');
+        $this->assertSame('PTU', $p->code, 'PIC seharusnya tidak dapat mengubah kode perusahaan.');
     }
 
     public function test_halaman_perusahaan_terbuka_walau_akun_belum_tertaut(): void

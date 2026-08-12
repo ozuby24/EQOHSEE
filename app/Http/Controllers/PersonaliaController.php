@@ -126,24 +126,65 @@ class PersonaliaController extends Controller
             : back();
     }
 
-    /** Medan identitas perusahaan; 'lebar' menandai isian selebar dua kolom. */
+    /**
+     * Medan identitas perusahaan.
+     *
+     * [nama, label, wajib, lebar, khususAdmin]. 'lebar' menandai isian
+     * selebar dua kolom; 'khususAdmin' menandai medan yang hanya boleh
+     * disentuh administrator.
+     *
+     * Nama dan kode adalah identitas perusahaan itu sendiri — dipakai
+     * modul lain untuk mengenalinya dan tercetak pada kop dokumen. PIC
+     * merawat isi datanya, tetapi tidak menamai ulang perusahaan tempat
+     * orang lain juga bernaung.
+     */
     public const MEDAN_PERUSAHAAN = [
-        ['name',      'Nama Perusahaan',               true,  true],
-        ['code',      'Kode',                          false, false],
-        ['izin_type', 'Jenis Izin (IUP / IUJP)',       false, false],
-        ['commodity', 'Komoditas',                     false, false],
-        ['location',  'Lokasi',                        false, false],
-        ['ktt',       'Kepala Teknik Tambang',         false, false],
-        ['pjo',       'Penanggung Jawab Operasional',  false, false],
-        ['pic_name',  'Nama PIC',                      false, false],
-        ['pic_email', 'Surel PIC',                     false, false],
-        ['pic_phone', 'Telepon PIC',                   false, false],
+        ['name',      'Nama Perusahaan',               true,  true,  true],
+        ['code',      'Kode',                          false, false, true],
+        ['izin_type', 'Jenis Izin (IUP / IUJP)',       false, false, false],
+        ['commodity', 'Komoditas',                     false, false, false],
+        ['location',  'Lokasi',                        false, false, false],
+        ['ktt',       'Kepala Teknik Tambang',         false, false, false],
+        ['pjo',       'Penanggung Jawab Operasional',  false, false, false],
+        ['pic_name',  'Nama PIC',                      false, false, false],
+        ['pic_email', 'Surel PIC',                     false, false, false],
+        ['pic_phone', 'Telepon PIC',                   false, false, false],
     ];
+
+    /** Medan yang hanya administrator boleh ubah. */
+    public static function medanAdmin(): array
+    {
+        return array_values(array_column(array_filter(self::MEDAN_PERUSAHAAN, fn ($m) => $m[4]), 0));
+    }
+
+    /**
+     * Perusahaan yang sedang dibuka.
+     *
+     * Administrator boleh berpindah antar perusahaan lewat ?perusahaan=,
+     * dan pilihannya diingat sepanjang sesi. Selain admin, tidak ada yang
+     * bisa keluar dari perusahaannya sendiri — parameternya diabaikan,
+     * bukan ditolak, sebab tautan yang dibagikan admin tidak boleh
+     * menjatuhkan orang lain ke halaman galat.
+     */
+    private function perusahaanAktif(Request $r): ?Company
+    {
+        $u = $r->user();
+
+        if (!$u->isAdmin()) return $u->company;
+
+        $id = $r->query('perusahaan') ?? session('personalia_perusahaan');
+        $p  = $id ? Company::find($id) : null;
+        $p ??= $u->company ?? Company::orderBy('name')->first();
+
+        if ($p) session(['personalia_perusahaan' => $p->id]);
+
+        return $p;
+    }
 
     public function perusahaan(Request $r)
     {
         $u = $r->user();
-        $p = $u->company;
+        $p = $this->perusahaanAktif($r);
 
         $isian = [];
         foreach (self::MEDAN_PERUSAHAAN as [$k]) $isian[$k] = (string) ($p->{$k} ?? '');
@@ -154,12 +195,22 @@ class PersonaliaController extends Controller
             'subjudul' => 'Identitas, kontak, dan logo yang mewarnai tampilan aplikasi',
 
             'medan' => array_map(fn ($m) => [
-                'nama' => $m[0], 'label' => $m[1], 'wajib' => $m[2], 'lebar' => $m[3],
+                'nama' => $m[0], 'label' => $m[1], 'wajib' => $m[2],
+                'lebar' => $m[3], 'khususAdmin' => $m[4],
             ], self::MEDAN_PERUSAHAAN),
 
             'ada'   => $p !== null,
             'nama'  => $p?->name,
             'isian' => $p ? $isian : null,
+
+            /* Administrator memilih perusahaan mana yang dibuka, dan hanya
+               dia yang boleh menambah perusahaan baru. */
+            'admin'  => $u->isAdmin(),
+            'aktif'  => $p?->id,
+            'daftar' => $u->isAdmin()
+                ? Company::orderBy('name')->get(['id', 'name'])
+                    ->map(fn ($c) => ['id' => $c->id, 'nama' => $c->name])->all()
+                : [],
 
             'logo'      => $p?->effectiveLogo() ? asset('storage/' . $p->effectiveLogo()) : null,
             // Hanya logo milik perusahaan ini yang boleh dihapus; effectiveLogo()
@@ -181,11 +232,11 @@ class PersonaliaController extends Controller
         abort_unless($this->bolehSuntingPerusahaan($u), 403,
             'Hanya administrator atau PIC perusahaan yang dapat mengubah data ini.');
 
-        $p = $u->company;
+        $p = $this->perusahaanAktif($r);
         abort_if($p === null, 404, 'Akun Anda belum terhubung ke perusahaan mana pun.');
 
         $data = $r->validate([
-            'name'      => ['required', 'string', 'max:160'],
+            'name'      => [$u->isAdmin() ? 'required' : 'nullable', 'string', 'max:160'],
             'code'      => ['nullable', 'string', 'max:40'],
             'izin_type' => ['nullable', 'string', 'max:40'],
             'commodity' => ['nullable', 'string', 'max:80'],
@@ -198,6 +249,18 @@ class PersonaliaController extends Controller
             'pic_phone' => ['nullable', 'string', 'max:32'],
             'logo'      => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
         ], [], ['name' => 'nama perusahaan']);
+
+        /*
+         * Medan identitas dibuang bagi yang bukan administrator.
+         *
+         * Layar sudah menggambarnya sebagai isian mati, tetapi layar mati
+         * bukan penjagaan — kiriman tetap bisa disusun tangan. Dibuang di
+         * sini, bukan ditolak, supaya PIC yang menyimpan perubahan sah pada
+         * medan lain tidak terhalang oleh medan yang tidak pernah ia sentuh.
+         */
+        if (!$u->isAdmin()) {
+            foreach (self::medanAdmin() as $k) unset($data[$k]);
+        }
 
         if ($r->hasFile('logo')) {
             if ($p->logo) Storage::disk('public')->delete($p->logo);
@@ -228,7 +291,7 @@ class PersonaliaController extends Controller
         $u = $r->user();
         abort_unless($this->bolehSuntingPerusahaan($u), 403);
 
-        $p = $u->company;
+        $p = $this->perusahaanAktif($r);
         abort_if($p === null, 404);
 
         if ($p->logo) Storage::disk('public')->delete($p->logo);
@@ -239,6 +302,63 @@ class PersonaliaController extends Controller
         $p->save();
 
         return back()->with('sukses', 'Logo dihapus, tampilan kembali ke warna bawaan.');
+    }
+
+    /**
+     * Menambah perusahaan baru — administrator saja.
+     *
+     * Perusahaan adalah batas pemisah data antar penyewa: siapa pun yang
+     * bisa membuatnya bisa membuat wadah baru dan memindahkan orang ke
+     * dalamnya. Karena itu tidak diserahkan kepada PIC.
+     */
+    public function tambahPerusahaan(Request $r)
+    {
+        abort_unless($r->user()->isAdmin(), 403, 'Hanya administrator yang dapat menambah perusahaan.');
+
+        $d = $r->validate([
+            'name' => ['required', 'string', 'max:160'],
+            'code' => ['nullable', 'string', 'max:40'],
+        ], [], ['name' => 'nama perusahaan']);
+
+        $p = Company::create($d);
+
+        session(['personalia_perusahaan' => $p->id]);
+
+        /*
+         * Dialihkan ke perusahaan barunya, bukan back().
+         *
+         * back() memulangkan alamat asal yang masih membawa ?perusahaan=
+         * milik perusahaan sebelumnya, dan kueri itu mengalahkan pilihan
+         * yang baru saja disimpan di sesi: perusahaannya benar-benar
+         * dibuat, tetapi layar tetap memperlihatkan yang lama seolah
+         * tombolnya tidak bekerja.
+         */
+        return redirect()
+            ->route('personalia.perusahaan', ['perusahaan' => $p->id])
+            ->with('sukses', "Perusahaan {$p->name} ditambahkan.");
+    }
+
+    /**
+     * Menetapkan perusahaan seorang pengguna — administrator saja.
+     *
+     * Ini yang menentukan data siapa yang boleh dilihat orang itu, jadi
+     * bukan sekadar isian identitas. Menyerahkannya kepada pemakai berarti
+     * siapa pun bisa memindahkan dirinya ke perusahaan mana pun dan ikut
+     * membaca isinya.
+     */
+    public function tetapkanPerusahaan(Request $r, User $pengguna)
+    {
+        abort_unless($r->user()->isAdmin(), 403,
+            'Hanya administrator yang dapat menetapkan perusahaan seorang pengguna.');
+
+        $d = $r->validate(['company_id' => ['nullable', 'exists:companies,id']]);
+
+        $pengguna->company_id = $d['company_id'] ?: null;
+        $pengguna->save();
+
+        $nama = $pengguna->fresh()->company?->name ?? 'tanpa perusahaan';
+
+        return back()->with('sukses', "{$pengguna->name} kini terdaftar di {$nama}.");
     }
 
     /** Direktori rekan satu perusahaan. */
@@ -268,6 +388,16 @@ class PersonaliaController extends Controller
             'subjudul' => 'Kontak rekan kerja di perusahaan Anda',
 
             'cari'  => (string) $cari,
+
+            /* Hanya administrator yang boleh menetapkan perusahaan seorang
+               pengguna; bagi yang lain daftarnya tidak dikirim sama sekali,
+               bukan sekadar tidak digambar. */
+            'admin'  => $u->isAdmin(),
+            'daftar' => $u->isAdmin()
+                ? Company::orderBy('name')->get(['id', 'name'])
+                    ->map(fn ($c) => ['id' => $c->id, 'nama' => $c->name])->all()
+                : [],
+
             'orang' => array_map(fn (User $o) => [
                 'id'         => $o->id,
                 'nama'       => $o->name,
@@ -280,6 +410,7 @@ class PersonaliaController extends Controller
                 // Nama perusahaan hanya berarti bagi admin, sebab hanya dia
                 // yang melihat lintas perusahaan.
                 'perusahaan' => $u->isAdmin() ? $o->company?->name : null,
+                'perusahaanId' => $u->isAdmin() ? $o->company_id : null,
             ], $hal->items()),
 
             'halaman' => [

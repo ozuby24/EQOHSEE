@@ -12,9 +12,31 @@
  */
 import { onBeforeUnmount, ref, watch } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import type { HalamanDirektori } from '../../types';
+import type { HalamanDirektori, OrangDirektori } from '../../types';
 
 const props = defineProps<HalamanDirektori>();
+
+/**
+ * Menetapkan perusahaan seorang pengguna — administrator saja.
+ *
+ * Ini yang menentukan data siapa yang boleh dilihat orang itu, bukan
+ * sekadar isian identitas, jadi daftarnya pun tidak dikirim ke pemakai
+ * biasa. Perubahan langsung disimpan begitu dipilih: tombol simpan
+ * terpisah pada dua puluh empat kartu sekaligus membuat orang kehilangan
+ * jejak mana yang sudah tersimpan dan mana yang belum.
+ */
+const menetapkan = ref<number | null>(null);
+
+function tetapkan(o: OrangDirektori, id: string) {
+  menetapkan.value = o.id;
+
+  router.post(`/personalia/direktori/${o.id}/perusahaan`, { company_id: id || null }, {
+    preserveScroll: true,
+    preserveState: true,
+    only: ['orang', 'halaman', 'kilat'],
+    onFinish: () => { menetapkan.value = null; },
+  });
+}
 
 const cari = ref(props.cari);
 const mencari = ref(false);
@@ -86,7 +108,17 @@ onBeforeUnmount(() => { if (jeda) clearTimeout(jeda); });
                  class="block text-[11.5px] text-stone-600 hover:underline">{{ o.telepon }}</a>
             </div>
 
-            <p v-if="o.perusahaan" class="mt-2 text-[10.5px] text-stone-400 truncate">
+            <div v-if="admin" class="mt-2.5">
+              <select :value="o.perusahaanId ?? ''" :disabled="menetapkan === o.id"
+                      @change="tetapkan(o, ($event.target as HTMLSelectElement).value)"
+                      class="w-full rounded-lg border border-stone-200 px-2 py-1.5 text-[11px] text-stone-600
+                             disabled:opacity-50
+                             focus:border-[color:var(--eq-aksen,#0E747E)] focus:ring-0">
+                <option value="">— tanpa perusahaan —</option>
+                <option v-for="c in daftar" :key="c.id" :value="c.id">{{ c.nama }}</option>
+              </select>
+            </div>
+            <p v-else-if="o.perusahaan" class="mt-2 text-[10.5px] text-stone-400 truncate">
               {{ o.perusahaan }}
             </p>
           </div>

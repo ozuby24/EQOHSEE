@@ -169,6 +169,165 @@ class PersonaliaInertiaTest extends TestCase
         $this->post(route('personalia.perusahaan.simpan'), ['name' => 'Ganti'])->assertForbidden();
     }
 
+    /* ══════════════ kendali administrator ══════════════ */
+
+    /**
+     * Identitas perusahaan hanya boleh disentuh administrator.
+     *
+     * Isian mati di layar bukan penjagaan — kiriman tetap bisa disusun
+     * tangan. Yang diuji di sini kirimannya, bukan tampilannya.
+     */
+    public function test_medan_identitas_dibuang_dari_kiriman_bukan_admin(): void
+    {
+        $p = $this->perusahaan(['pic_email' => 'pic@tambang.test']);
+        $this->actingAs(User::factory()->create([
+            'is_admin' => false, 'company_id' => $p->id, 'email' => 'pic@tambang.test',
+        ]));
+
+        $kirim = ['ktt' => 'Boleh Diubah'];
+        foreach (Personalia::medanAdmin() as $k) $kirim[$k] = 'DICOBA';
+
+        $this->post(route('personalia.perusahaan.simpan'), $kirim)
+             ->assertRedirect()->assertSessionHasNoErrors();
+
+        $p->refresh();
+
+        $this->assertSame('Boleh Diubah', $p->ktt);
+
+        foreach (Personalia::medanAdmin() as $k) {
+            $this->assertNotSame('DICOBA', $p->{$k}, "Medan {$k} seharusnya khusus administrator.");
+        }
+    }
+
+    public function test_medan_khusus_admin_ditandai_pada_prop(): void
+    {
+        // Layar memakainya untuk mematikan isian. Kalau penandanya hilang,
+        // PIC mengetik sesuatu yang lalu dibuang server tanpa keterangan.
+        $this->admin($this->perusahaan());
+
+        $khusus = [];
+        foreach ($this->props('personalia.perusahaan')['medan'] as $m) {
+            if ($m['khususAdmin']) $khusus[] = $m['nama'];
+        }
+
+        $this->assertSame(Personalia::medanAdmin(), $khusus);
+        $this->assertNotEmpty($khusus);
+    }
+
+    /**
+     * Perusahaan yang baru dibuat langsung menjadi yang dibuka.
+     *
+     * Kirimannya sengaja membawa alamat asal ?perusahaan= milik perusahaan
+     * lama, persis seperti dari peramban. Tanpa itu ujinya lulus karena
+     * alasan yang salah: back() memulangkan alamat kosong, dan kueri lama
+     * yang mengalahkan pilihan barulah yang tidak pernah terjadi.
+     */
+    public function test_perusahaan_baru_langsung_menjadi_yang_dibuka(): void
+    {
+        $lama = $this->perusahaan(['name' => 'PT Lama']);
+        $this->admin($lama);
+
+        $this->from(route('personalia.perusahaan', ['perusahaan' => $lama->id]))
+             ->post(route('personalia.perusahaan.tambah'), ['name' => 'PT Baru', 'code' => 'BRU'])
+             ->assertRedirect();
+
+        $this->assertDatabaseHas('companies', ['name' => 'PT Baru', 'code' => 'BRU']);
+        $this->assertSame('PT Baru', $this->props('personalia.perusahaan')['nama'],
+            'Perusahaan baru dibuat tapi layar tetap memperlihatkan yang lama.');
+    }
+
+    public function test_bukan_admin_tidak_dapat_menambah_perusahaan(): void
+    {
+        $p = $this->perusahaan(['pic_email' => 'pic@tambang.test']);
+        $this->actingAs(User::factory()->create([
+            'is_admin' => false, 'company_id' => $p->id, 'email' => 'pic@tambang.test',
+        ]));
+
+        $this->post(route('personalia.perusahaan.tambah'), ['name' => 'PT Selundupan'])
+             ->assertForbidden();
+
+        $this->assertDatabaseMissing('companies', ['name' => 'PT Selundupan']);
+    }
+
+    public function test_admin_menyunting_perusahaan_yang_sedang_dibuka(): void
+    {
+        $a = $this->perusahaan(['name' => 'PT Satu']);
+        $b = $this->perusahaan(['name' => 'PT Dua']);
+
+        $this->admin($a);
+
+        $this->assertSame('PT Dua', $this->props('personalia.perusahaan', ['perusahaan' => $b->id])['nama']);
+
+        // Yang tersimpan harus perusahaan yang sedang dibuka, bukan
+        // perusahaan tempat akun administratornya sendiri bernaung.
+        $this->post(route('personalia.perusahaan.simpan'), ['name' => 'PT Dua', 'ktt' => 'KTT Dua'])
+             ->assertRedirect();
+
+        $this->assertSame('KTT Dua', $b->refresh()->ktt);
+        $this->assertNull($a->refresh()->ktt);
+    }
+
+    public function test_pemakai_biasa_tidak_dapat_membuka_perusahaan_lain_lewat_kueri(): void
+    {
+        // Diabaikan, bukan ditolak: tautan yang dibagikan admin tidak boleh
+        // menjatuhkan orang lain ke halaman galat.
+        $milik = $this->perusahaan(['name' => 'PT Milik']);
+        $lain  = $this->perusahaan(['name' => 'PT Lain']);
+
+        $this->actingAs(User::factory()->create(['is_admin' => false, 'company_id' => $milik->id]));
+
+        $p = $this->props('personalia.perusahaan', ['perusahaan' => $lain->id]);
+
+        $this->assertSame('PT Milik', $p['nama']);
+        $this->assertSame([], $p['daftar'], 'Daftar perusahaan tidak boleh terkirim ke pemakai biasa.');
+    }
+
+    public function test_admin_dapat_menetapkan_perusahaan_seorang_pengguna(): void
+    {
+        $p = $this->perusahaan();
+        $this->admin();
+
+        $orang = User::factory()->create(['company_id' => null]);
+
+        $this->post(route('personalia.direktori.perusahaan', $orang), ['company_id' => $p->id])
+             ->assertRedirect();
+
+        $this->assertSame($p->id, $orang->refresh()->company_id);
+
+        // Dan dapat melepasnya kembali.
+        $this->post(route('personalia.direktori.perusahaan', $orang), ['company_id' => null])
+             ->assertRedirect();
+
+        $this->assertNull($orang->refresh()->company_id);
+    }
+
+    public function test_bukan_admin_tidak_dapat_memindahkan_siapa_pun(): void
+    {
+        // Perusahaan menentukan data siapa yang boleh dilihat seseorang.
+        // Kalau pemakai bisa memindahkan dirinya, batas itu tidak ada.
+        $a = $this->perusahaan(['name' => 'PT Satu']);
+        $b = $this->perusahaan(['name' => 'PT Dua']);
+
+        $orang = User::factory()->create(['is_admin' => false, 'company_id' => $a->id]);
+        $this->actingAs($orang);
+
+        $this->post(route('personalia.direktori.perusahaan', $orang), ['company_id' => $b->id])
+             ->assertForbidden();
+
+        $this->assertSame($a->id, $orang->refresh()->company_id);
+    }
+
+    public function test_daftar_perusahaan_tidak_terkirim_ke_direktori_pemakai_biasa(): void
+    {
+        $p = $this->perusahaan();
+        $this->actingAs(User::factory()->create(['is_admin' => false, 'company_id' => $p->id]));
+
+        $props = $this->props('personalia.direktori');
+
+        $this->assertFalse($props['admin']);
+        $this->assertSame([], $props['daftar']);
+    }
+
     /* ══════════════ direktori ══════════════ */
 
     public function test_pencarian_dikerjakan_server_bukan_disaring_di_peramban(): void
