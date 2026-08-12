@@ -120,11 +120,42 @@ class HazardController extends Controller
     /* ---------- Form laporan ---------- */
     public function create()
     {
-        return view('hazard.form', [
-            'report'    => new HazardReport(),
-            'companies' => Company::orderBy('name')->get(),
-            'me'        => auth()->user(),
-            'manpower'  => $this->manpower(),
+        $me = auth()->user();
+
+        return \Inertia\Inertia::render('Hazard/Buat', [
+            'judul'    => 'Buat Laporan Bahaya',
+            'subjudul' => 'Laporkan temuan agar dapat ditindaklanjuti',
+
+            /* Isian pelapor sudah terisi dari akun yang sedang masuk.
+               Mengetik ulang identitas sendiri pada tiap laporan bukan
+               hanya merepotkan — di situlah ejaan mulai bervariasi, dan
+               satu orang pecah menjadi beberapa di perhitungan KPI. */
+            'awal' => [
+                'pelapor_nama'       => $me->name,
+                'pelapor_nrp'        => $me->employee_id,
+                'pelapor_jabatan'    => $me->position,
+                'pelapor_departemen' => $me->department,
+                'pelapor_perusahaan' => $me->company?->name,
+                'company_id'         => $me->company_id ? (string) $me->company_id : '',
+                'tanggal'            => now()->toDateString(),
+                'waktu'              => now()->format('H:i'),
+                'risiko'             => 'Sedang',
+            ],
+
+            'opsi' => [
+                'risiko'          => Hazard::RISIKO,
+                'kategori'        => Hazard::KATEGORI,
+                'lokasi'          => Hazard::LOKASI,
+                'hirarki'         => Hazard::HIRARKI,
+                'unsafeAction'    => Hazard::UNSAFE_ACTION,
+                'unsafeCondition' => Hazard::UNSAFE_CONDITION,
+                'perusahaan'      => Company::orderBy('name')->get(['id', 'name'])
+                    ->map(fn ($c) => ['id' => $c->id, 'nama' => $c->name])->all(),
+            ],
+
+            'manpower' => $this->manpower(),
+
+            'tautan' => ['simpan' => route('hazard.store'), 'batal' => route('hazard.index')],
         ]);
     }
 
@@ -178,10 +209,64 @@ class HazardController extends Controller
         return redirect()->route('hazard.show', $r)->with('ok', 'Laporan '.$r->kode.' terkirim.');
     }
 
-    public function show(HazardReport $hazard)
+    public function show(Request $request, HazardReport $hazard)
     {
-        $hazard->load(['company','user','closer']);
-        return view('hazard.show', ['r' => $hazard]);
+        $hazard->load(['company', 'user', 'closer']);
+
+        $foto = fn (?array $daftar) => array_map(fn ($f) => asset('storage/'.$f), $daftar ?: []);
+
+        return \Inertia\Inertia::render('Hazard/Detail', [
+            'judul'    => 'Laporan '.$hazard->kode,
+            'subjudul' => $hazard->lokasi ?: 'Rincian laporan bahaya',
+
+            'r' => [
+                'id'        => $hazard->id,
+                'kode'      => $hazard->kode,
+                'risiko'    => $hazard->risiko,
+                'warnaRisiko' => Hazard::WARNA_RISIKO[$hazard->risiko] ?? '#a8a29e',
+                'status'    => $hazard->status,
+                'warnaStatus' => Hazard::WARNA_STATUS[$hazard->status] ?? '#a8a29e',
+                'kategori'  => $hazard->kategori,
+                'deskripsi' => $hazard->deskripsi,
+                'rekomendasi' => $hazard->rekomendasi,
+                'hirarki'   => $hazard->hirarki,
+                'lokasi'    => $hazard->lokasi,
+                'tanggal'   => $hazard->tanggal?->format('d M Y'),
+                'waktu'     => $hazard->waktu,
+
+                'pelapor' => [
+                    'nama'       => $hazard->user?->name ?: $hazard->pelapor_nama,
+                    'nrp'        => $hazard->pelapor_nrp,
+                    'jabatan'    => $hazard->user?->position ?: $hazard->pelapor_jabatan,
+                    'departemen' => $hazard->pelapor_departemen,
+                    'perusahaan' => $hazard->pelapor_perusahaan,
+                ],
+
+                'tujuan'   => $hazard->company?->name ?: ($hazard->terlapor ?: null),
+                'terlapor' => $hazard->terlapor,
+
+                // Daftar, bukan teks tunggal — data lama masih berupa teks
+                // biasa dan accessor-nya sudah menyeragamkan keduanya.
+                'unsafeAction'    => $hazard->unsafe_action_list,
+                'unsafeCondition' => $hazard->unsafe_condition_list,
+
+                'foto'            => $foto($hazard->foto),
+                'fotoTindakLanjut' => $foto($hazard->foto_tindaklanjut),
+
+                'catatanPenutupan' => $hazard->catatan_penutupan,
+                'penutup'  => $hazard->closer?->name,
+                'ditutup'  => $hazard->closed_at?->format('d M Y H:i'),
+            ],
+
+            'opsi'  => ['status' => Hazard::STATUS],
+            'admin' => (bool) $request?->user()?->isAdmin(),
+
+            'tautan' => [
+                'kembali' => route('hazard.index'),
+                'tindak'  => route('hazard.follow', $hazard),
+                'hapus'   => route('hazard.destroy', $hazard),
+            ],
+        ]);
     }
 
     /* ---------- Tindak lanjut ---------- */

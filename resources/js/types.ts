@@ -969,6 +969,76 @@ export interface HalamanPengingat {
   urlPerusahaan: string;
 }
 
+export interface OrangManpower {
+  id: string;
+  nama: string;
+  nrp: string | null;
+  dept: string | null;
+  jabatan: string | null;
+  perusahaan: string | null;
+}
+
+export interface HalamanBuatBahaya {
+  judul: string;
+  subjudul: string;
+  awal: Record<string, string>;
+  opsi: {
+    risiko: string[]; kategori: string[]; lokasi: string[]; hirarki: string[];
+    unsafeAction: string[]; unsafeCondition: string[];
+    perusahaan: PilihanPerusahaan[];
+  };
+  manpower: OrangManpower[];
+  tautan: { simpan: string; batal: string };
+}
+
+export interface HalamanDetailBahaya {
+  judul: string;
+  subjudul: string;
+  r: {
+    id: number; kode: string;
+    risiko: string; warnaRisiko: string;
+    status: string; warnaStatus: string;
+    kategori: string | null; deskripsi: string;
+    rekomendasi: string | null; hirarki: string | null;
+    lokasi: string | null; tanggal: string | null; waktu: string | null;
+    pelapor: {
+      nama: string | null; nrp: string | null; jabatan: string | null;
+      departemen: string | null; perusahaan: string | null;
+    };
+    tujuan: string | null; terlapor: string | null;
+    /** Selalu daftar — data lama berupa teks tunggal diseragamkan accessor. */
+    unsafeAction: string[];
+    unsafeCondition: string[];
+    foto: string[];
+    fotoTindakLanjut: string[];
+    catatanPenutupan: string | null;
+    penutup: string | null;
+    ditutup: string | null;
+  };
+  opsi: { status: string[] };
+  admin: boolean;
+  tautan: { kembali: string; tindak: string; hapus: string };
+}
+
+export interface HalamanEvaluasiBahaya {
+  judul: string;
+  subjudul: string;
+  saring: { bulan: string | null; perusahaan: string | null };
+  opsi: {
+    bulan: Array<{ nilai: string; label: string }>;
+    perusahaan: PilihanPerusahaan[];
+  };
+  ringkas: {
+    hazard: number; inspeksi: number; itemDiperiksa: number; temuanInspeksi: number;
+    totalTemuan: number; belumTutup: number; risikoTinggi: number; naikJadiHazard: number;
+  };
+  rerataHari: number | null;
+  sebaran: SebaranBahaya[];
+  perPerusahaan: Array<{ nama: string; total: number; tutup: number; tinggi: number }>;
+  /** maks dibawa per batang agar skalanya sama untuk hazard dan inspeksi. */
+  tren: Array<{ label: string; hazard: number; inspeksi: number; maks: number }>;
+}
+
 export interface HalamanMonitorBahaya {
   judul: string;
   subjudul: string;

@@ -148,9 +148,9 @@ const pilihan =
     </div>
 
     <div class="space-y-2.5 transition-opacity" :class="memuat ? 'opacity-50' : ''">
-      <a v-for="r in laporan" :key="r.id" :href="r.url"
-         class="block bg-white rounded-2xl shadow-card border border-stone-100 p-5
-                hover:border-cam-lime/40 transition">
+      <Link v-for="r in laporan" :key="r.id" :href="r.url"
+            class="block bg-white rounded-2xl shadow-card border border-stone-100 p-5
+                   hover:border-cam-lime/40 transition">
         <div class="flex items-start justify-between gap-4">
           <div class="min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
@@ -186,7 +186,7 @@ const pilihan =
 
           <img v-if="r.foto" :src="r.foto" alt="" class="w-20 h-20 object-cover rounded-xl shrink-0">
         </div>
-      </a>
+      </Link>
 
       <div v-if="!laporan.length" class="bg-white rounded-2xl border border-dashed border-stone-200 p-14 text-center">
         <template v-if="adaSaringan">
