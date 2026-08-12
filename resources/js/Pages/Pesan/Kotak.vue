@@ -6,7 +6,7 @@
  * kanan), tapi sisi gelembung di sini ditentukan oleh milikSaya per pesan,
  * bukan oleh kolom peran — setiap pengirim adalah sesama pengguna.
  */
-import { nextTick, ref, watch } from 'vue';
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import type { HalamanPesan } from '../../types';
 
@@ -20,8 +20,24 @@ async function keBawah() {
   if (gulung.value) gulung.value.scrollTop = gulung.value.scrollHeight;
 }
 
+/** Sudah menempel di bawah — dibaca sebelum DOM diperbarui. */
+function diBawah(): boolean {
+  const el = gulung.value;
+
+  return !el || el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+}
+
 keBawah();
-watch(() => props.pesan.length, keBawah);
+
+// Pesan yang datang lewat penyegaran tidak menyeret orang yang sedang
+// membaca ke atas kembali ke bawah. Sebelum ada penyegaran berkala ini
+// tidak pernah jadi soal: panjang daftar hanya berubah oleh kiriman
+// sendiri, dan pengirimnya memang selalu berada di bawah.
+watch(() => props.pesan.length, (baru, lama) => {
+  if (baru > lama && !diBawah()) return;
+
+  keBawah();
+});
 
 function buka(id: number) {
   router.get('/pesan', { percakapan: id }, { preserveScroll: true, preserveState: true });
@@ -32,10 +48,45 @@ function kirim() {
 
   form.post(`/pesan/${props.terpilih}`, {
     preserveScroll: true,
-    only: ['pesan', 'percakapan', 'errors'],
+    only: ['pesan', 'percakapan', 'terpilih', 'errors'],
     onSuccess: () => { form.reset('isi'); },
   });
 }
+
+/**
+ * Menyegarkan sendiri selama halaman dilihat.
+ *
+ * Percakapan yang hanya berubah setelah orang menekan muat ulang bukan
+ * percakapan — balasan yang datang saat lawan bicara masih menatap
+ * layar tidak akan pernah muncul.
+ *
+ * Berhenti saat tab tidak terlihat: tab yang tertinggal terbuka semalaman
+ * akan memanggil server ribuan kali tanpa seorang pun membacanya.
+ *
+ * Tidak menyegarkan selagi pesan sedang dikirim. Inertia membatalkan
+ * kunjungan yang lebih lama ketika ada yang baru, jadi penyegaran yang
+ * kebetulan menyusul tepat setelah tombol Kirim ditekan akan membatalkan
+ * pengiriman itu sendiri — pesannya hilang tanpa satu pun galat tampak.
+ */
+const JEDA = 10000;
+
+let jam: ReturnType<typeof setInterval> | null = null;
+
+function segarkan() {
+  if (document.visibilityState !== 'visible' || form.processing) return;
+
+  /* Percakapan yang sedang dibuka ikut disebut, dan terpilih ikut dimuat.
+     Tanpa keduanya, pesan masuk yang menaikkan utas lain ke urutan teratas
+     membuat server memilihkan utas itu — isi berganti di bawah judul yang
+     tidak berubah, dan orang membaca percakapan yang bukan dibukanya. */
+  router.reload({
+    only: ['pesan', 'percakapan', 'terpilih'],
+    ...(props.terpilih ? { data: { percakapan: props.terpilih } } : {}),
+  });
+}
+
+onMounted(() => { jam = setInterval(segarkan, JEDA); });
+onBeforeUnmount(() => { if (jam) clearInterval(jam); });
 </script>
 
 <template>

@@ -121,7 +121,7 @@ class ChatTest extends TestCase
         $this->post("/pesan/{$grup->id}", ['isi' => 'Halo semua'])->assertRedirect();
 
         $b = $this->masuk(perusahaan: $perusahaan);
-        $props = $this->get('/pesan', ['percakapan' => $grup->id])
+        $props = $this->get("/pesan?percakapan={$grup->id}")
             ->assertOk()->viewData('page')['props'];
 
         $isi = array_column($props['pesan'], 'isi');
@@ -210,7 +210,7 @@ class ChatTest extends TestCase
             'Pesan milik sendiri tidak boleh terhitung belum dibaca.');
 
         $this->actingAs($b);
-        $this->get('/pesan', ['percakapan' => $percakapan->id])->assertOk();
+        $this->get("/pesan?percakapan={$percakapan->id}")->assertOk();
 
         $this->assertSame(0, $percakapan->fresh()->belumDibaca($b),
             'Membuka percakapan harus menandainya terbaca.');
@@ -258,7 +258,7 @@ class ChatTest extends TestCase
         $this->post("/pesan/{$percakapan->id}", ['isi' => 'Halo Budi']);
 
         $this->actingAs($b);
-        $this->get('/pesan', ['percakapan' => $percakapan->id])->assertOk();
+        $this->get("/pesan?percakapan={$percakapan->id}")->assertOk();
 
         $this->assertSame([], Lencana::semua($b->fresh()));
     }
@@ -266,5 +266,34 @@ class ChatTest extends TestCase
     public function test_tamu_tidak_punya_penanda(): void
     {
         $this->assertSame([], Lencana::semua(null));
+    }
+
+    public function test_percakapan_yang_diminta_tetap_terpilih_meski_ada_yang_lebih_baru(): void
+    {
+        // Halaman Pesan menyegarkan dirinya sendiri secara berkala. Kalau
+        // permintaan yang menyebut sebuah utas tetap dijawab dengan utas
+        // yang kebetulan naik ke urutan teratas, isi percakapan berganti di
+        // bawah judul yang tidak ikut berganti — orang membaca percakapan
+        // yang bukan dibukanya.
+        $perusahaan = $this->perusahaan();
+        $a = $this->masuk(perusahaan: $perusahaan);
+        $b = User::factory()->create(['company_id' => $perusahaan->id]);
+
+        $this->get('/pesan');
+        $grup = Percakapan::where('company_id', $perusahaan->id)->first();
+
+        $this->post('/pesan/mulai', ['user_id' => $b->id]);
+        $langsung = Percakapan::where('jenis', 'langsung')->first();
+
+        // Utas langsung dibuat paling akhir sehingga berada di urutan teratas.
+        $this->post("/pesan/{$langsung->id}", ['isi' => 'Pesan terbaru']);
+
+        $props = $this->get("/pesan?percakapan={$grup->id}")
+            ->assertOk()->viewData('page')['props'];
+
+        $this->assertSame($grup->id, $props['terpilih'],
+            'Utas yang diminta harus tetap terpilih.');
+        $this->assertSame([], $props['pesan'],
+            'Isi yang ditampilkan harus milik utas yang diminta, bukan yang terbaru.');
     }
 }
