@@ -78,20 +78,71 @@ class HazardExportController extends Controller
     }
 
     /* ---------- Pengingat tindak lanjut ---------- */
+    /**
+     * Pengingat tindak lanjut per perusahaan.
+     *
+     * Isi pesannya disusun di sini, bukan di tampilan. Sebelumnya seluruh
+     * perakitan teks — sapaan, hitungan, daftar temuan — tertulis di dalam
+     * view, sehingga logika yang menentukan bunyi pesan resmi ke PIC
+     * bercampur dengan penataan letaknya dan tidak dapat diuji tanpa
+     * merender halaman.
+     */
     public function pengingat()
     {
-        $perusahaan = Company::orderBy('name')->get()->map(function ($c) {
+        $daftar = Company::orderBy('name')->get()->map(function (Company $c) {
             $terbuka = HazardReport::where('company_id', $c->id)->where('status', '<>', 'Closed')
                         ->orderBy('tanggal')->get();
-            return [
-                'c' => $c,
-                'terbuka' => $terbuka,
-                'tinggi'  => $terbuka->where('risiko', 'Tinggi')->count(),
-                'lama'    => $terbuka->filter(fn($h) => $h->tanggal && $h->tanggal->diffInDays(now()) > 14)->count(),
-            ];
-        })->filter(fn($x) => $x['terbuka']->count() > 0)->values();
 
-        return view('hazard.pengingat', compact('perusahaan'));
+            if ($terbuka->isEmpty()) return null;
+
+            $tinggi = $terbuka->where('risiko', 'Tinggi')->count();
+            $lama   = $terbuka->filter(fn ($h) => $h->tanggal && $h->tanggal->diffInDays(now()) > 14)->count();
+
+            $judul = 'Pengingat Tindak Lanjut Temuan — '.$c->name;
+
+            $baris = $terbuka->take(20)->map(fn ($h, $i) =>
+                ($i + 1).'. ['.$h->kode.'] '.$h->risiko.' — '
+                .\Illuminate\Support\Str::limit($h->deskripsi, 70)
+                .' (📍'.($h->lokasi ?: '-').', '.optional($h->tanggal)->format('d/m/Y')
+                .', status '.$h->status.')')->implode("\n");
+
+            $pesan = "*{$judul}*\n\n"
+                ."Kepada Yth. ".($c->pic_name ?: 'PIC '.$c->name).",\n\n"
+                ."Terdapat *{$terbuka->count()} temuan* yang belum ditutup"
+                .($tinggi ? ", termasuk *{$tinggi} berisiko tinggi*" : '')
+                .($lama ? ", dan *{$lama} sudah lebih dari 14 hari*" : '')
+                .".\n\n{$baris}\n\n"
+                ."Mohon segera ditindaklanjuti dan diperbarui statusnya pada sistem EQOHSEE.\n\n"
+                ."— Tim HSE EQOHSEE";
+
+            return [
+                'id'     => $c->id,
+                'nama'   => $c->name,
+                'pic'    => [
+                    'nama'    => $c->pic_name ?: null,
+                    'email'   => $c->pic_email ?: null,
+                    'telepon' => $c->pic_phone ?: null,
+                ],
+                'jumlah' => $terbuka->count(),
+                'tinggi' => $tinggi,
+                'lama'   => $lama,
+                'pesan'  => $pesan,
+
+                'wa'         => Ekspor::waLink($pesan, $c->waNumber()),
+                'punyaNomor' => (bool) $c->waNumber(),
+                'mail'       => $c->pic_email ? Ekspor::mailLink($c->pic_email, $judul, $pesan) : null,
+                'urlLihat'   => route('hazard.index', ['perusahaan' => $c->id, 'status' => 'Open']),
+                'urlEdit'    => route('admin.companies.edit', $c),
+            ];
+        })->filter()->values()->all();
+
+        return \Inertia\Inertia::render('Hazard/Pengingat', [
+            'judul'    => 'Pengingat Tindak Lanjut',
+            'subjudul' => 'Temuan yang belum ditutup, per perusahaan',
+
+            'perusahaan'  => $daftar,
+            'urlPerusahaan' => route('admin.companies.index'),
+        ]);
     }
 
     private function saringHazard(Request $r)

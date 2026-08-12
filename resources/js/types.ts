@@ -887,6 +887,30 @@ export interface OpsiBahaya {
   perusahaan: PilihanPerusahaan[];
 }
 
+export interface PengingatPerusahaan {
+  id: number;
+  nama: string;
+  pic: { nama: string | null; email: string | null; telepon: string | null };
+  jumlah: number;
+  tinggi: number;
+  lama: number;
+  /** Teks pesan lengkap — disusun server, ditampilkan apa adanya. */
+  pesan: string;
+  wa: string;
+  /** false bila perusahaan belum punya nomor; tautannya membuka pilih grup. */
+  punyaNomor: boolean;
+  mail: string | null;
+  urlLihat: string;
+  urlEdit: string;
+}
+
+export interface HalamanPengingat {
+  judul: string;
+  subjudul: string;
+  perusahaan: PengingatPerusahaan[];
+  urlPerusahaan: string;
+}
+
 export interface HalamanMonitorBahaya {
   judul: string;
   subjudul: string;
