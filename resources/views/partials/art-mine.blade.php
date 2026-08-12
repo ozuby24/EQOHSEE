@@ -25,7 +25,7 @@
       <stop offset="0"   stop-color="#141C1B"/>
       <stop offset=".42" stop-color="#1B2422"/>
       <stop offset=".74" stop-color="#22403C"/>
-      <stop offset="1"   stop-color="#0C5F58"/>
+      <stop offset="1"   stop-color="#DC6E00"/>
     </linearGradient>
 
     <radialGradient id="hSun" cx=".68" cy=".62" r=".52">
@@ -47,8 +47,8 @@
 
     {{-- Empat tingkat kepekatan punggungan --}}
     <linearGradient id="hR1" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#2A9D8F" stop-opacity=".20"/>
-      <stop offset="1" stop-color="#2A9D8F" stop-opacity=".08"/>
+      <stop offset="0" stop-color="#FF9800" stop-opacity=".20"/>
+      <stop offset="1" stop-color="#FF9800" stop-opacity=".08"/>
     </linearGradient>
     <linearGradient id="hR2" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#25867C" stop-opacity=".70"/>
@@ -148,11 +148,11 @@
   <g opacity=".85" transform="translate(1280 430)">
     <path d="M0 92 L0 22 L16 22 L16 92 Z" fill="#0A100F" fill-opacity=".92"/>
     <path d="M34 92 L34 6 L48 6 L48 92 Z" fill="#0A100F" fill-opacity=".92"/>
-    <path d="M16 30 L34 18" stroke="#2A9D8F" stroke-opacity=".7" stroke-width="3"/>
+    <path d="M16 30 L34 18" stroke="#FF9800" stroke-opacity=".7" stroke-width="3"/>
     <path d="M60 92 L60 44 L124 30 L124 92 Z" fill="#0A100F" fill-opacity=".9"/>
     {{-- konveyor miring ke tumpukan --}}
     <path d="M124 44 L206 78" stroke="#1E5F58" stroke-width="7" stroke-linecap="round"/>
-    <path d="M124 44 L206 78" stroke="#2A9D8F" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/>
+    <path d="M124 44 L206 78" stroke="#FF9800" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/>
     <path d="M188 92 q22 -26 44 0 Z" fill="#0A100F" fill-opacity=".9"/>
     <circle cx="42" cy="2" r="3" fill="#FF7F50" class="suar-hero"/>
   </g>
@@ -166,14 +166,14 @@
   {{-- Ekskavator memuat di tepi terdekat --}}
   <g transform="translate(214 546)">
     <path d="M0 56 L96 56 L96 22 L64 22 L54 4 L8 4 Z" fill="#0A100F" fill-opacity=".96"/>
-    <path d="M0 56 L96 56 L96 22 L64 22 L54 4 L8 4 Z" fill="none" stroke="#2A9D8F" stroke-opacity=".55" stroke-width="2"/>
-    <rect x="14" y="14" width="30" height="17" rx="3" fill="#2A9D8F" opacity=".5"/>
+    <path d="M0 56 L96 56 L96 22 L64 22 L54 4 L8 4 Z" fill="none" stroke="#FF9800" stroke-opacity=".55" stroke-width="2"/>
+    <rect x="14" y="14" width="30" height="17" rx="3" fill="#FF9800" opacity=".5"/>
     <path d="M-8 62 L104 62 L96 78 L0 78 Z" fill="#0A100F" fill-opacity=".96"/>
-    <path d="M4 70 L92 70" stroke="#2A9D8F" stroke-opacity=".35" stroke-width="3"/>
+    <path d="M4 70 L92 70" stroke="#FF9800" stroke-opacity=".35" stroke-width="3"/>
     <g class="lengan-hero" style="transform-origin: 92px 24px">
       <path d="M92 24 L182 -20" stroke="#1E5F58" stroke-width="10" stroke-linecap="round"/>
       <path d="M182 -20 L222 20"  stroke="#1E5F58" stroke-width="8"  stroke-linecap="round"/>
-      <path d="M215 16 q24 8 20 30 q-26 4 -32 -18 Z" fill="#123F3B" stroke="#2A9D8F" stroke-opacity=".5" stroke-width="1.5"/>
+      <path d="M215 16 q24 8 20 30 q-26 4 -32 -18 Z" fill="#123F3B" stroke="#FF9800" stroke-opacity=".5" stroke-width="1.5"/>
     </g>
     <circle cx="60" cy="0" r="3.4" fill="#FF7F50" class="suar-hero" style="--tunda:.5s"/>
   </g>
@@ -182,16 +182,16 @@
   <g class="truk-dekat">
     <g transform="translate(0 0)">
       <path d="M760 606 L884 604 L900 556 L780 558 Z" fill="#080D0D"/>
-      <path d="M760 606 L884 604 L900 556 L780 558 Z" fill="none" stroke="#2A9D8F" stroke-opacity=".7" stroke-width="2.5" stroke-linejoin="round"/>
-      <path d="M786 570 L894 568" stroke="#2A9D8F" stroke-opacity=".38" stroke-width="3"/>
+      <path d="M760 606 L884 604 L900 556 L780 558 Z" fill="none" stroke="#FF9800" stroke-opacity=".7" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M786 570 L894 568" stroke="#FF9800" stroke-opacity=".38" stroke-width="3"/>
       {{-- muatan --}}
-      <path d="M784 558 q26 -14 46 -3 q22 -14 48 2 Z" fill="#2A9D8F" opacity=".38"/>
+      <path d="M784 558 q26 -14 46 -3 q22 -14 48 2 Z" fill="#FF9800" opacity=".38"/>
       {{-- kabin --}}
       <path d="M884 604 L942 603 L942 562 L916 562 L902 580 L884 580 Z" fill="#14504B"/>
       <rect x="912" y="566" width="24" height="15" rx="3" fill="#080D0D" opacity=".8"/>
       {{-- roda --}}
-      <circle cx="800" cy="612" r="20" fill="#080D0D"/><circle cx="800" cy="612" r="8" fill="#2A9D8F" opacity=".75"/>
-      <circle cx="906" cy="612" r="20" fill="#080D0D"/><circle cx="906" cy="612" r="8" fill="#2A9D8F" opacity=".75"/>
+      <circle cx="800" cy="612" r="20" fill="#080D0D"/><circle cx="800" cy="612" r="8" fill="#FF9800" opacity=".75"/>
+      <circle cx="906" cy="612" r="20" fill="#080D0D"/><circle cx="906" cy="612" r="8" fill="#FF9800" opacity=".75"/>
       {{-- lampu suar di atas kabin --}}
       <circle cx="930" cy="556" r="5" fill="#FFC46B" class="suar-hero"/>
       {{-- sorot lampu depan menyapu jalan --}}

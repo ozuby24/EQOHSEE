@@ -25,7 +25,12 @@ export default {
                 sign: ['"Dancing Script"', 'cursive'],
             },
             /**
-             * Palet: Teal + Coral + Sand di atas dasar Charcoal dan Soft Beige.
+             * Palet: Dark Navy + Orange + Silver — mengikuti logo EQOHSEE.
+             *
+             * Perbandingannya kira-kira 70% navy gelap, 20% putih/abu terang,
+             * 10% jingga. Jingga hanya untuk aksen dan tombol utama: dipakai
+             * pada bidang lebar ia berhenti menarik perhatian, padahal
+             * menarik perhatian satu-satunya alasan ia ada.
              *
              * Nama token sengaja dipertahankan — `cam-lime` dan kerabatnya
              * dipakai di ratusan tempat. Yang berubah nilainya, sehingga satu
@@ -33,40 +38,40 @@ export default {
              */
             colors: {
                 cam: {
-                    black: '#1B2422',       // charcoal bersemu teal
-                    dark:  '#25332F',
-                    panel: '#33463F',
+                    black: '#0B1117',       // navy black — chrome utama
+                    dark:  '#151D26',
+                    panel: '#1E2835',
 
-                    // Teal — warna utama
-                    lime:      '#0F766E',
-                    'lime-dark':  '#0C5F58',
-                    'lime-deep':  '#094A45',
-                    'lime-light': '#2A9D8F',
-                    'lime-soft':  '#E3F1EE',
+                    // Jingga EQOHSEE — aksen dan tombol utama
+                    lime:      '#F57C00',
+                    'lime-dark':  '#DC6E00',
+                    'lime-deep':  '#A85400',
+                    'lime-light': '#FF9800',
+                    'lime-soft':  '#FFF2E2',
 
-                    // Coral — aksen hangat, dipakai hemat agar tetap mahal
-                    coral:      '#FF7F50',
-                    'coral-dark': '#E2663A',
-                    'coral-soft': '#FFEDE3',
+                    // Merah — bahaya, penolakan, penghapusan
+                    coral:      '#EF4444',
+                    'coral-dark': '#DC2626',
+                    'coral-soft': '#FEE9E9',
 
-                    // Sand & Sage — bidang tenang penyeimbang teal
-                    sand:       '#F5E6CA',
-                    'sand-dark':'#E0CBA4',
-                    sage:       '#B5CBB7',
-                    'sage-soft':'#E4EDE5',
+                    // Perak & hijau — bidang tenang dan penanda berhasil
+                    sand:       '#E8ECF0',   // light gray
+                    'sand-dark':'#B8BEC5',   // silver
+                    sage:       '#22C55E',   // success
+                    'sage-soft':'#E7F8ED',
 
-                    ink:  '#22312F',        // charcoal, bukan hitam pekat
-                    bg:   '#F3EFE6',        // soft beige
-                    amber:      '#D9993A',
-                    'amber-dark': '#BE8226',
+                    ink:  '#0F1720',        // teks gelap, bukan hitam pekat
+                    bg:   '#F5F7F9',        // off white
+                    amber:      '#FACC15',  // warning
+                    'amber-dark': '#CA9A04',
                 },
             },
             backgroundImage: {
-                'lime-grad':  'linear-gradient(135deg,#0C5F58 0%,#2A9D8F 100%)',
-                'brand-grad': 'linear-gradient(120deg,#1B2422 0%,#25332F 42%,#0C5F58 76%,#0F766E 100%)',
-                'coral-grad': 'linear-gradient(135deg,#E2663A 0%,#FF7F50 100%)',
-                'amber-grad': 'linear-gradient(135deg,#BE8226 0%,#D9993A 100%)',
-                'sand-grad':  'linear-gradient(135deg,#F5E6CA 0%,#F3EFE6 100%)',
+                'lime-grad':  'linear-gradient(135deg,#DC6E00 0%,#FF9800 100%)',
+                'brand-grad': 'linear-gradient(160deg,#0B1117 0%,#141C25 55%,#1B2530 100%)',
+                'coral-grad': 'linear-gradient(135deg,#DC2626 0%,#EF4444 100%)',
+                'amber-grad': 'linear-gradient(135deg,#CA9A04 0%,#FACC15 100%)',
+                'sand-grad':  'linear-gradient(135deg,#E8ECF0 0%,#F5F7F9 100%)',
             },
             boxShadow: {
                 soft: '0 1px 2px rgba(34,49,47,.04),0 8px 24px -12px rgba(34,49,47,.18)',

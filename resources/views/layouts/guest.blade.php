@@ -19,7 +19,7 @@
       --graphite:#12171B; --hair:rgba(255,255,255,.09);
       --cream:#FBFAF7; --ink:#1B2024; --muted:#727B85; --line:#E3DFD7;
       --energy:#1F6FB8; --quality:#2FA3DE; --health:#F08A22; --hygiene:#E2663A;
-      --safety:#12897F; --env:#5EAE38; --eng:#2CB0BC; --konservasi:#C08A3E;
+      --safety:#DC6E00; --env:#5EAE38; --eng:#FF9800; --konservasi:#C08A3E;
     }
     .eq-shell *{box-sizing:border-box}
     .eq-shell{min-height:100vh;min-height:100dvh;display:grid;grid-template-columns:1fr;
@@ -126,7 +126,7 @@
     .eq-kicker{font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;
       color:rgba(255,255,255,.42);margin:0 0 14px}
     .eq-rule{width:52px;height:2px;border-radius:2px;margin:0 0 20px;
-      background:linear-gradient(90deg,#1F6FB8,#2FA3DE,#F08A22,#E2663A,#12897F,#5EAE38,#2CB0BC,#C08A3E)}
+      background:linear-gradient(90deg,#1F6FB8,#2FA3DE,#F08A22,#E2663A,#DC6E00,#5EAE38,#FF9800,#C08A3E)}
     .eq-h1{font-family:'Playfair Display',Georgia,serif;font-weight:500;color:#fff;margin:0 0 15px;
       font-size:clamp(26px,4.4vw,42px);line-height:1.14;letter-spacing:-.01em;max-width:16ch}
     .eq-h1 em{font-style:normal;color:#7ED0D8}
@@ -160,7 +160,7 @@
       border-radius:10px;cursor:pointer;overflow:hidden;
       transition:transform .16s,box-shadow .2s,background .2s}
     .eq-btn::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;
-      background:linear-gradient(90deg,#1F6FB8,#2FA3DE,#F08A22,#E2663A,#12897F,#5EAE38,#2CB0BC,#C08A3E)}
+      background:linear-gradient(90deg,#1F6FB8,#2FA3DE,#F08A22,#E2663A,#DC6E00,#5EAE38,#FF9800,#C08A3E)}
     .eq-btn:hover{background:#1C242A;box-shadow:0 8px 22px rgba(18,23,27,.24)}
     .eq-btn:active{transform:translateY(1px)}
     .eq-btn:focus-visible{outline:2px solid var(--safety);outline-offset:2px}
@@ -181,7 +181,7 @@
   {{-- ===== Panel kiri: kolom strata ===== --}}
   <section class="eq-hero">
     <a href="{{ url('/') }}" class="eq-brand">
-      <img src="{{ asset('brand/eqohsee-mark-white.svg') }}" alt="EQOHSEE">
+      <img src="{{ asset('brand/eqohsee-mark.png') }}" alt="EQOHSEE">
       <span class="wm">E<b>Q</b>OHSEE</span>
     </a>
 
@@ -205,7 +205,7 @@
         <g stroke-width="2.6" vector-effect="non-scaling-stroke" stroke-linecap="round">
           <path class="tread" d="M40 100H170"  stroke="#2FA3DE" stroke-opacity=".85"/>
           <path class="tread" d="M170 200H280" stroke="#F08A22" stroke-opacity=".85"/>
-          <path class="tread" d="M280 300H375" stroke="#12897F" stroke-opacity=".85"/>
+          <path class="tread" d="M280 300H375" stroke="#DC6E00" stroke-opacity=".85"/>
           <path class="tread" d="M375 400H455" stroke="#5EAE38" stroke-opacity=".85"/>
         </g>
 
@@ -270,7 +270,7 @@
   <section class="eq-panel">
     <div class="eq-formwrap">
       <div class="eq-mark">
-        <span style="color:#1F6FB8">E</span><span style="color:#2FA3DE">Q</span><span style="color:#F08A22">O</span><span style="color:#E2663A">H</span><span style="color:#12897F">S</span><span style="color:#5EAE38">E</span><span style="color:#2CB0BC">E</span>
+        <span style="color:#1F6FB8">E</span><span style="color:#2FA3DE">Q</span><span style="color:#F08A22">O</span><span style="color:#E2663A">H</span><span style="color:#DC6E00">S</span><span style="color:#5EAE38">E</span><span style="color:#FF9800">E</span>
       </div>
       @yield('form')
     </div>

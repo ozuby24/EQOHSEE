@@ -1,4 +1,4 @@
-@props(['label', 'nilai', 'satuan' => null, 'ket' => null, 'warna' => '#0F766E', 'rasio' => null])
+@props(['label', 'nilai', 'satuan' => null, 'ket' => null, 'warna' => '#F57C00', 'rasio' => null])
 
 {{-- Kartu angka tunggal. Bilah di bawahnya hanya muncul bila ada rasio
      yang benar-benar bermakna — bilah kosong memberi kesan data hilang. --}}

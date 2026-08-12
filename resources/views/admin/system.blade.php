@@ -97,7 +97,7 @@
     var ROLES = @json($roles), BAR = @json($eqBarItems), SERI = @json($eqSeri), LBL = @json($eqLbl7);
     function draw(){
       if(typeof Chart==='undefined'){ return setTimeout(draw,150); }
-      var teal='#158D99', navy='#14385A', amber='#E0A62C', tealL='#2CB0BC', tealD='#0E747E';
+      var teal='#158D99', navy='#0F1720', amber='#E0A62C', tealL='#FF9800', tealD='#F57C00';
       Chart.defaults.font.family='Inter, system-ui, sans-serif';
       Chart.defaults.color='#64748b';
       Chart.defaults.animation.duration=800;

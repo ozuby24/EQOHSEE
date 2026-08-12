@@ -25,9 +25,9 @@
     <x-kpi label="Near Miss" :nilai="number_format($h['near_miss'])"
            ket="Terlaporkan pada periode berjalan" warna="#4C9AFF" />
     <x-kpi label="Safety Observation" :nilai="number_format($h['observasi'])"
-           :ket="number_format(E::bagi($h['observasi'],$h['near_miss']),1).'× jumlah near miss'" warna="#0F766E" />
+           :ket="number_format(E::bagi($h['observasi'],$h['near_miss']),1).'× jumlah near miss'" warna="#F57C00" />
     <x-kpi label="Hari Tanpa LTI" :nilai="$h['hari_tanpa_lti']" satuan="hari"
-           ket="Sejak kejadian terakhir" warna="#2A9D8F" />
+           ket="Sejak kejadian terakhir" warna="#FF9800" />
   </div>
 
   <div class="grid gap-4 lg:grid-cols-2">
@@ -39,7 +39,7 @@
 
       <div class="mt-4">
         @foreach($smkp as $el)
-          @php $w = $el['capaian'] >= 85 ? '#0F766E' : ($el['capaian'] >= 70 ? '#C08A3E' : '#E2663A'); @endphp
+          @php $w = $el['capaian'] >= 85 ? '#F57C00' : ($el['capaian'] >= 70 ? '#C08A3E' : '#E2663A'); @endphp
           <div class="py-3 hairline last:border-b-0">
             <div class="flex items-baseline justify-between gap-3">
               <span class="text-[12.5px] font-semibold text-cam-ink">
@@ -77,7 +77,7 @@
       </p>
       <div class="space-y-2.5 mt-5">
         @foreach ([
-          ['Safety Observation', $h['observasi'], '#0F766E'],
+          ['Safety Observation', $h['observasi'], '#F57C00'],
           ['Near Miss', $h['near_miss'], '#4C9AFF'],
           ['Recordable Injury', $h['recordable'], '#C08A3E'],
           ['Lost Time Injury', $h['lost_time'], '#E2663A'],

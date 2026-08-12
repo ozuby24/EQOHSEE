@@ -54,8 +54,8 @@
 
       <div class="grid grid-cols-2 gap-3 mt-5 pt-5 hairline border-b-0">
         @foreach ([
-          ['Total Energi', 'angka(gj, 2)', 'GJ', '#0F766E'],
-          ['Intensitas', 'angka(intensitas, 4)', 'GJ/ton', '#2A9D8F'],
+          ['Total Energi', 'angka(gj, 2)', 'GJ', '#F57C00'],
+          ['Intensitas', 'angka(intensitas, 4)', 'GJ/ton', '#FF9800'],
           ['Emisi', 'angka(tco2e, 3)', 'tCO₂e', '#22312F'],
           ['Biaya', "'Rp ' + bulat(rupiah)", null, '#E2663A'],
         ] as [$l, $expr, $s, $w])

@@ -40,7 +40,7 @@
       @php
         $fr = E::fuelRate($u); $ac = $acuan[$u['kelas']] ?? 0;
         $st = E::statusBoros($fr, $ac); $rasio = $ac > 0 ? $fr / $ac : 0;
-        $w = ['Operating'=>'#0F766E','Standby'=>'#4C9AFF','Maintenance'=>'#C08A3E','Breakdown'=>'#E2663A'][$u['status']];
+        $w = ['Operating'=>'#F57C00','Standby'=>'#4C9AFF','Maintenance'=>'#C08A3E','Breakdown'=>'#E2663A'][$u['status']];
       @endphp
       <article class="kartu-lux rounded-2xl p-5">
         <div class="flex items-start justify-between gap-3">

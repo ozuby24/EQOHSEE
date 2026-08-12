@@ -25,7 +25,7 @@
            ket="Perkiraan bulan berjalan" warna="#22312F" />
     <x-kpi label="Porsi Preventif" :nilai="number_format($m['porsiPreventif'],1)" satuan="%"
            :ket="'dari '.number_format($m['totalJam']).' jam pemeliharaan bulan ini'"
-           :rasio="$m['porsiPreventif']/100" warna="#2A9D8F" />
+           :rasio="$m['porsiPreventif']/100" warna="#FF9800" />
   </div>
 
   <div class="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
@@ -35,7 +35,7 @@
       <div class="mt-5">
         <x-batang :label="array_column($m['bulanan'],'label')" tumpuk
           :seri="[
-            ['nama'=>'Preventif','data'=>array_column($m['bulanan'],'preventif'),'warna'=>'#0F766E'],
+            ['nama'=>'Preventif','data'=>array_column($m['bulanan'],'preventif'),'warna'=>'#F57C00'],
             ['nama'=>'Korektif','data'=>array_column($m['bulanan'],'korektif'),'warna'=>'#C08A3E'],
             ['nama'=>'Breakdown','data'=>array_column($m['bulanan'],'breakdown'),'warna'=>'#E2663A'],
           ]" satuan="jam" :tinggi="250" />
@@ -45,7 +45,7 @@
     <section class="kartu-lux rounded-2xl p-6">
       <h3 class="font-display text-[16px] font-black text-cam-ink">Komposisi Bulan Ini</h3>
       <x-donat :data="[
-        ['nama'=>'Preventif','nilai'=>$m['bulanIni']['preventif'],'warna'=>'#0F766E'],
+        ['nama'=>'Preventif','nilai'=>$m['bulanIni']['preventif'],'warna'=>'#F57C00'],
         ['nama'=>'Korektif','nilai'=>$m['bulanIni']['korektif'],'warna'=>'#C08A3E'],
         ['nama'=>'Breakdown','nilai'=>$m['bulanIni']['breakdown'],'warna'=>'#E2663A'],
       ]" :tengah="number_format($m['porsiPreventif'],0).'%'" tengahKet="preventif" :tinggi="215" />

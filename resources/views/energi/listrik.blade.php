@@ -14,8 +14,8 @@
 
     <div class="grid gap-4 grid-cols-2 lg:grid-cols-4 mt-6 pt-6 hairline border-b-0">
       @foreach ([
-        ['Total Listrik', number_format($total['kwh']), 'kWh', '#0F766E'],
-        ['Setara Energi', number_format($total['gj'], 1), 'GJ', '#2A9D8F'],
+        ['Total Listrik', number_format($total['kwh']), 'kWh', '#F57C00'],
+        ['Setara Energi', number_format($total['gj'], 1), 'GJ', '#FF9800'],
         ['Emisi Listrik', number_format($total['tco2e'], 2), 'tCO₂e', '#22312F'],
         ['Biaya Listrik', 'Rp '.Energi::ringkas($total['rupiah'], 2), null, '#E2663A'],
       ] as [$l, $v, $s, $w])
@@ -35,7 +35,7 @@
 
       <div class="space-y-4 mt-5">
         @foreach ([
-          ['PLN', $pln['kwh'], '#0F766E'],
+          ['PLN', $pln['kwh'], '#F57C00'],
           ['Genset', $genset['kwh'], '#D9993A'],
         ] as [$nama, $kwh, $warna])
           <div>
@@ -70,7 +70,7 @@
         <x-kpi label="Solar Genset" :nilai="number_format($genset['liter'])" satuan="L"
                ket="Sudah ikut terhitung pada total solar" warna="#D9993A" />
         <x-kpi label="Efisiensi Genset" :nilai="number_format($genset['efisiensi'], 2)" satuan="kWh/L"
-               ket="Semakin tinggi semakin baik" warna="#2A9D8F" />
+               ket="Semakin tinggi semakin baik" warna="#FF9800" />
         <x-kpi label="Area Tercatat" :nilai="count($perArea)" satuan="area"
                ket="Area tanpa catatan tidak ditampilkan" warna="#22312F" />
       </div>

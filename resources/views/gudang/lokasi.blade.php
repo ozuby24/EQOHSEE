@@ -11,7 +11,7 @@
 
   @can('admin')
     <details class="bg-white rounded-2xl shadow-card border border-stone-100 overflow-hidden">
-      <summary class="px-6 py-4 cursor-pointer text-[13px] font-bold text-[#14385A]">
+      <summary class="px-6 py-4 cursor-pointer text-[13px] font-bold text-[#0F1720]">
         + Tambah Lokasi Penyimpanan
       </summary>
 
@@ -19,11 +19,11 @@
         @csrf
         <div class="grid gap-4 sm:grid-cols-2">
           <div>
-            <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Kode <span class="text-red-500">*</span></label>
+            <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Kode <span class="text-red-500">*</span></label>
             <input name="kode" required class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
           </div>
           <div>
-            <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Jenis <span class="text-red-500">*</span></label>
+            <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Jenis <span class="text-red-500">*</span></label>
             <select name="jenis" required class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
               @foreach(['umum' => 'Umum', 'b3' => 'Khusus B3', 'material' => 'Material', 'apd' => 'APD'] as $k => $n)
                 <option value="{{ $k }}">{{ $n }}</option>
@@ -31,21 +31,21 @@
             </select>
           </div>
           <div class="sm:col-span-2">
-            <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Nama <span class="text-red-500">*</span></label>
+            <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Nama <span class="text-red-500">*</span></label>
             <input name="nama" required class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
           </div>
           <div>
-            <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Letak</label>
+            <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Letak</label>
             <input name="lokasi" placeholder="Blok, area, atau koordinat"
                    class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
           </div>
           <div>
-            <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Penanggung Jawab</label>
+            <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Penanggung Jawab</label>
             <input name="penanggung_jawab" class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
           </div>
         </div>
 
-        <p class="text-[12px] font-semibold text-[#14385A] mt-5 mb-2">Syarat Penyimpanan</p>
+        <p class="text-[12px] font-semibold text-[#0F1720] mt-5 mb-2">Syarat Penyimpanan</p>
         <div class="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           @foreach([
             'berventilasi' => 'Berventilasi',
@@ -70,7 +70,7 @@
 
   @if($lokasi->isEmpty())
     <div class="bg-white rounded-2xl shadow-card border border-stone-100 px-6 py-12 text-center">
-      <p class="text-[13.5px] font-bold text-[#14385A]">Belum ada lokasi penyimpanan</p>
+      <p class="text-[13.5px] font-bold text-[#0F1720]">Belum ada lokasi penyimpanan</p>
       <p class="text-[12.5px] text-stone-500 mt-1">Tambahkan gudang atau rak untuk mulai menata barang.</p>
     </div>
   @else

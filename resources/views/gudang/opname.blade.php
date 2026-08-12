@@ -17,13 +17,13 @@
 
       <div class="px-6 py-5 border-b border-stone-100 flex flex-wrap items-end gap-4">
         <div>
-          <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Tanggal Opname</label>
+          <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Tanggal Opname</label>
           <input name="tanggal" type="date" required
                  value="{{ old('tanggal', \App\Support\Waktu::kini()->toDateString()) }}"
                  class="rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
         </div>
         <div class="flex-1 min-w-[220px]">
-          <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Keterangan</label>
+          <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Keterangan</label>
           <input name="keterangan" placeholder="Opname bulanan, pemeriksaan mendadak, dll."
                  class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
         </div>
@@ -53,11 +53,11 @@
               @php $stok = Gudang::stok($b); @endphp
               <tr class="border-b border-stone-50 last:border-0">
                 <td class="py-2.5 px-4">
-                  <span class="font-semibold text-[#14385A]">{{ $b->nama }}</span>
+                  <span class="font-semibold text-[#0F1720]">{{ $b->nama }}</span>
                   <span class="block text-[11px] text-stone-400">{{ $b->kode }}</span>
                 </td>
                 <td class="py-2.5 px-3 text-stone-500">{{ $b->lokasi?->nama ?? '—' }}</td>
-                <td class="py-2.5 px-3 text-right font-bold tabular-nums text-[#14385A]"
+                <td class="py-2.5 px-3 text-right font-bold tabular-nums text-[#0F1720]"
                     data-buku="{{ $stok }}">
                   {{ rtrim(rtrim(number_format($stok, 2, ',', '.'), '0'), ',') }}
                   <span class="text-stone-400 font-normal">{{ $b->satuan }}</span>
@@ -66,7 +66,7 @@
                   <input type="number" step="0.01" min="0" name="fisik[{{ $b->id }}]"
                          data-buku="{{ $stok }}" @input="hitung($event)"
                          class="w-full rounded-lg border border-stone-200 px-3 py-2 text-[12.5px] text-right
-                                focus:border-[color:var(--eq-aksen,#0E747E)] focus:ring-0">
+                                focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0">
                 </td>
                 <td class="py-2.5 px-4 text-right font-bold tabular-nums text-stone-300" data-selisih>—</td>
               </tr>
@@ -77,8 +77,8 @@
 
       <div class="px-6 py-4 bg-stone-50 border-t border-stone-100 flex items-center justify-between gap-3 flex-wrap">
         <p class="text-[12px] text-stone-500">
-          <b class="text-[#14385A]" x-text="berselisih"></b> baris berselisih dari
-          <b class="text-[#14385A]" x-text="terisi"></b> yang dihitung
+          <b class="text-[#0F1720]" x-text="berselisih"></b> baris berselisih dari
+          <b class="text-[#0F1720]" x-text="terisi"></b> yang dihitung
         </p>
         <button class="eq-btn-utama" style="flex:none;padding:10px 22px">Simpan Opname</button>
       </div>

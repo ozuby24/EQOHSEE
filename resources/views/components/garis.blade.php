@@ -1,4 +1,4 @@
-@props(['titik', 'warna' => '#0F766E', 'target' => null, 'tinggi' => 150, 'satuan' => null, 'desimal' => 2])
+@props(['titik', 'warna' => '#F57C00', 'target' => null, 'tinggi' => 150, 'satuan' => null, 'desimal' => 2])
 
 {{-- Grafik garis sederhana.
      Digambar sebagai SVG dari data, bukan lewat pustaka grafik: satu

@@ -51,8 +51,8 @@ function gambar() {
         labels: props.radar.label,
         datasets: [
           { label: 'Capaian %', data: props.radar.capaian,
-            borderColor: '#12897F', backgroundColor: 'rgba(18,137,127,.18)',
-            pointBackgroundColor: '#12897F', borderWidth: 2 },
+            borderColor: '#DC6E00', backgroundColor: 'rgba(18,137,127,.18)',
+            pointBackgroundColor: '#DC6E00', borderWidth: 2 },
           { label: 'Target %', data: props.radar.target,
             borderColor: '#1B2024', borderDash: [5, 4], backgroundColor: 'transparent',
             pointBackgroundColor: '#1B2024', borderWidth: 1.5 },

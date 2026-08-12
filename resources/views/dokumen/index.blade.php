@@ -9,7 +9,7 @@
   {{-- Ringkasan --}}
   <div class="grid gap-3 grid-cols-2 lg:grid-cols-4">
     @foreach ([
-      ['Total dokumen', $stat['total'],   '#14385A', 'Dokumen'],
+      ['Total dokumen', $stat['total'],   '#0F1720', 'Dokumen'],
       ['Berlaku',       $stat['berlaku'], '#4FA82E', 'Berlaku'],
       ['Draft',         $stat['draft'],   '#9AA3AE', 'Draft'],
       ['Perlu ditinjau',$stat['lewat'],   '#F0921E', 'Tinjau'],

@@ -17,7 +17,7 @@
   </span>
 
   <div class="min-w-0 flex-1">
-    <p class="text-[12.5px] font-semibold text-[#14385A] truncate">{{ $m->barang?->nama ?? '—' }}</p>
+    <p class="text-[12.5px] font-semibold text-[#0F1720] truncate">{{ $m->barang?->nama ?? '—' }}</p>
     <p class="text-[11px] text-stone-400 truncate">
       {{ $m->nomor }} · {{ $m->tanggal?->format('d M Y') }}@if($m->pihak) · {{ $m->pihak }}@endif
     </p>

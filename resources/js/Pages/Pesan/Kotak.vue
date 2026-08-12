@@ -111,7 +111,7 @@ onBeforeUnmount(() => { if (jam) clearInterval(jam); });
           <img v-if="p.avatar" :src="p.avatar" alt=""
                class="w-9 h-9 rounded-full object-cover border border-stone-200 shrink-0">
           <span v-else class="w-9 h-9 rounded-full grid place-items-center text-white text-[12px] font-black shrink-0"
-                style="background:linear-gradient(135deg,var(--eq-aksen,#0E747E),#2CB0BC)">
+                style="background:linear-gradient(135deg,var(--eq-aksen,#F57C00),#FF9800)">
             {{ p.jenis === 'grup' ? 'G' : p.nama.charAt(0).toUpperCase() }}
           </span>
 
@@ -119,7 +119,7 @@ onBeforeUnmount(() => { if (jam) clearInterval(jam); });
             <div class="flex items-center justify-between gap-2">
               <span class="text-[12.5px] font-bold text-cam-ink truncate">{{ p.nama }}</span>
               <span v-if="p.belumDibaca" class="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0
-                           bg-[color:var(--eq-aksen,#0E747E)] text-white">
+                           bg-[color:var(--eq-aksen,#F57C00)] text-white">
                 {{ p.belumDibaca }}
               </span>
             </div>
@@ -141,7 +141,7 @@ onBeforeUnmount(() => { if (jam) clearInterval(jam); });
           <div v-for="m in pesan" :key="m.id" class="flex" :class="m.milikSaya ? 'justify-end' : ''">
             <div class="rounded-2xl px-4 py-2.5 max-w-[80%] whitespace-pre-wrap break-words text-[12.5px] leading-relaxed"
                  :class="m.milikSaya
-                   ? 'bg-[color:var(--eq-aksen,#0E747E)] text-white'
+                   ? 'bg-[color:var(--eq-aksen,#F57C00)] text-white'
                    : 'bg-white border border-stone-200 text-cam-ink'">
               <div v-if="!m.milikSaya" class="text-[10px] font-bold uppercase tracking-wider opacity-60 mb-1">
                 {{ m.nama }}
@@ -155,7 +155,7 @@ onBeforeUnmount(() => { if (jam) clearInterval(jam); });
         <div class="border-t border-stone-100 p-3.5">
           <textarea v-model="form.isi" rows="2" placeholder="Tulis pesan…"
                     class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px] resize-none
-                           focus:border-[color:var(--eq-aksen,#0E747E)] focus:ring-0"></textarea>
+                           focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0"></textarea>
           <p v-if="form.errors.isi" class="text-[11.5px] text-red-600 mt-1">{{ form.errors.isi }}</p>
 
           <button type="button" :disabled="form.processing || !form.isi.trim()" @click="kirim"

@@ -48,7 +48,7 @@ function tekan(e: KeyboardEvent) {
 }
 
 const gaya: Record<string, string> = {
-  pengguna: 'ml-auto bg-[color:var(--eq-aksen,#0E747E)] text-white',
+  pengguna: 'ml-auto bg-[color:var(--eq-aksen,#F57C00)] text-white',
   asisten:  'bg-white border border-stone-200 text-cam-ink',
   admin:    'bg-cam-lime-soft border border-cam-lime/30 text-cam-ink',
   sistem:   'mx-auto bg-stone-100 text-stone-500 text-[11.5px] text-center',
@@ -77,7 +77,7 @@ const label: Record<string, string> = {
         </div>
 
         <Link v-if="admin" href="/bantuan/masuk"
-              class="text-[11.5px] font-semibold shrink-0" style="color:var(--eq-aksen,#0E747E)">
+              class="text-[11.5px] font-semibold shrink-0" style="color:var(--eq-aksen,#F57C00)">
           Kotak masuk admin →
         </Link>
       </div>
@@ -103,7 +103,7 @@ const label: Record<string, string> = {
         <textarea v-model="form.isi" rows="2" @keydown="tekan"
                   :placeholder="aiAktif ? 'Tulis pertanyaan… (Enter kirim, Shift+Enter baris baru)' : 'Tulis pertanyaan untuk admin…'"
                   class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px] resize-none
-                         focus:border-[color:var(--eq-aksen,#0E747E)] focus:ring-0"></textarea>
+                         focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0"></textarea>
 
         <p v-if="form.errors.isi" class="text-[11.5px] text-red-600 mt-1">{{ form.errors.isi }}</p>
 
@@ -116,7 +116,7 @@ const label: Record<string, string> = {
           </button>
 
           <button type="button" :disabled="form.processing || !form.isi.trim()" @click="kirim('admin')"
-                  class="rounded-xl border border-stone-200 px-4 py-2 text-[12.5px] font-semibold text-[#14385A]
+                  class="rounded-xl border border-stone-200 px-4 py-2 text-[12.5px] font-semibold text-[#0F1720]
                          hover:border-stone-400 transition disabled:opacity-40 disabled:cursor-not-allowed">
             {{ form.processing && form.saluran === 'admin' ? 'Mengirim…' : 'Kirim ke Admin' }}
           </button>

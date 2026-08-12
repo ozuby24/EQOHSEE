@@ -28,7 +28,7 @@ $pilar = [
    'ket'=>'Higiene kerja, pemeriksaan kesehatan, dan kesiapan alat pelindung diri.',
    'modul'=>[['Stok APD','aktif','sigap.apd.index'],['Kesehatan Kerja','segera',null]]],
 
-  ['key'=>'safety','nama'=>'Safety','warna'=>'#12897F','g1'=>'#1AA093','g2'=>'#0C6F68',
+  ['key'=>'safety','nama'=>'Safety','warna'=>'#DC6E00','g1'=>'#1AA093','g2'=>'#0C6F68',
    'tag'=>'Tanpa kompromi pada keselamatan, tanpa toleransi pada risiko',
    'ket'=>'Pelaporan bahaya, inspeksi lapangan, kompetensi, dan budaya keselamatan.',
    'modul'=>[['Hazard Report & Inspeksi','aktif','hazard.index'],['Safety Maturity Level','aktif','tpkkp.index'],
@@ -39,7 +39,7 @@ $pilar = [
    'ket'=>'Pengelolaan limbah, kualitas air dan udara, serta reklamasi lahan.',
    'modul'=>[['Audit ISO 14001','segera',null],['Pemantauan Lingkungan','segera',null]]],
 
-  ['key'=>'eng','nama'=>'Engineering','warna'=>'#2CB0BC','g1'=>'#3CC3CF','g2'=>'#20949E',
+  ['key'=>'eng','nama'=>'Engineering','warna'=>'#FF9800','g1'=>'#3CC3CF','g2'=>'#20949E',
    'tag'=>'Rekayasa andal untuk sarana yang laik',
    'ket'=>'Kelaikan peralatan dan instalasi, kajian teknis, serta tenaga teknis bersertifikat.',
    'modul'=>[['KO / SPIP','segera',null],['APAR & Proteksi Kebakaran','aktif','sigap.apar.index']]],
@@ -139,8 +139,8 @@ $aman = function ($rute) { return $rute && \Illuminate\Support\Facades\Route::ha
     <svg class="orbit" viewBox="0 0 500 500" aria-hidden="true">
       <defs><linearGradient id="pgrad" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0" stop-color="#1F6FB8"/><stop offset=".2" stop-color="#2FA3DE"/>
-        <stop offset=".4" stop-color="#F08A22"/><stop offset=".6" stop-color="#12897F"/>
-        <stop offset=".8" stop-color="#5EAE38"/><stop offset="1" stop-color="#2CB0BC"/>
+        <stop offset=".4" stop-color="#F08A22"/><stop offset=".6" stop-color="#DC6E00"/>
+        <stop offset=".8" stop-color="#5EAE38"/><stop offset="1" stop-color="#FF9800"/>
       </linearGradient></defs>
       <circle cx="250" cy="250" r="150" fill="none" stroke="url(#pgrad)" stroke-width="3"
               stroke-linecap="round" stroke-dasharray="130 27" stroke-dashoffset="65" opacity=".9"/>
@@ -158,7 +158,7 @@ $aman = function ($rute) { return $rute && \Illuminate\Support\Facades\Route::ha
     @endforeach
 
     <div class="core">
-      <div class="mark"><span style="color:#1F6FB8">E</span><span style="color:#2FA3DE">Q</span><span style="color:#F08A22">O</span><span style="color:#12897F">H</span><span style="color:#12897F">S</span><span style="color:#5EAE38">E</span><span style="color:#2CB0BC">E</span></div>
+      <div class="mark"><span style="color:#1F6FB8">E</span><span style="color:#2FA3DE">Q</span><span style="color:#F08A22">O</span><span style="color:#DC6E00">H</span><span style="color:#DC6E00">S</span><span style="color:#5EAE38">E</span><span style="color:#FF9800">E</span></div>
       <small>Menjaga kinerja,<br>membentuk masa depan</small>
     </div>
   </div>

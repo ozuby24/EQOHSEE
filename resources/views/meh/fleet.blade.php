@@ -19,7 +19,7 @@
     <x-kpi label="Physical Availability" :nilai="number_format($a['pa'],1)" satuan="%"
            ket="(Kerja + standby) ÷ terjadwal" :rasio="$a['pa']/100" />
     <x-kpi label="Mechanical Availability" :nilai="number_format($a['ma'],1)" satuan="%"
-           ket="Kerja ÷ (kerja + perbaikan)" :rasio="$a['ma']/100" warna="#2A9D8F" />
+           ket="Kerja ÷ (kerja + perbaikan)" :rasio="$a['ma']/100" warna="#FF9800" />
     <x-kpi label="Use of Availability" :nilai="number_format($a['ua'],1)" satuan="%"
            ket="Kerja ÷ (kerja + standby)" :rasio="$a['ua']/100" warna="#4C9AFF" />
     <x-kpi label="Utilization" :nilai="number_format($a['utilisasi'],1)" satuan="%"
@@ -65,7 +65,7 @@
                     <span class="block text-[10.5px] text-stone-400">{{ $u['kelas'] }}</span></td>
                 <td class="py-2.5 text-stone-500">{{ $u['tipe'] }}</td>
                 <td class="py-2.5">
-                  @php $w = ['Operating'=>'#0F766E','Standby'=>'#4C9AFF','Maintenance'=>'#C08A3E','Breakdown'=>'#E2663A'][$u['status']]; @endphp
+                  @php $w = ['Operating'=>'#F57C00','Standby'=>'#4C9AFF','Maintenance'=>'#C08A3E','Breakdown'=>'#E2663A'][$u['status']]; @endphp
                   <span class="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-lg text-white whitespace-nowrap"
                         style="background:{{ $w }}">{{ $u['status'] }}</span>
                 </td>
@@ -95,7 +95,7 @@
       <h3 class="font-display text-[16px] font-black text-cam-ink">Konsumsi per Kelas Alat</h3>
       <div class="mt-5">
         <x-batang :label="array_keys($acuan)"
-                  :seri="[['nama'=>'Liter per jam','data'=>array_values($acuan),'warna'=>'#0F766E']]"
+                  :seri="[['nama'=>'Liter per jam','data'=>array_values($acuan),'warna'=>'#F57C00']]"
                   satuan="L/jam" :desimal="1" :tinggi="230" />
       </div>
     </section>

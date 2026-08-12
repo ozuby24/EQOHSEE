@@ -106,10 +106,10 @@ function keluar() {
            :class="lacisTerbuka ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
 
       <a href="/dashboard" class="eq-merek">
-        <img src="/brand/eqohsee-mark-white.svg" alt="" width="38" height="42">
+        <img src="/brand/eqohsee-mark.png" alt="" width="40" height="40">
         <span>
           <strong>E<em>Q</em>OHSEE</strong>
-          <small>Safety is Our Priority</small>
+          <small>Safe Today · Sustainable Tomorrow</small>
         </span>
       </a>
 
@@ -262,7 +262,7 @@ function keluar() {
       <main class="flex-1 p-4 lg:p-6">
         <div v-if="kilat.sukses" class="max-w-[1400px] mx-auto mb-5">
           <div class="rounded-xl px-4 py-3 text-[12.5px] font-semibold flex items-center gap-2.5"
-               style="background:var(--eq-aksen-tipis,rgba(14,116,126,.12));color:var(--eq-aksen,#0E747E)">
+               style="background:var(--eq-aksen-tipis,rgba(14,116,126,.12));color:var(--eq-aksen,#F57C00)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
                  stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 shrink-0" aria-hidden="true">
               <path d="m5 12.5 4.5 4.5L19 7.5"/>

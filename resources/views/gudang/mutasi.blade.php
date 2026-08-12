@@ -21,7 +21,7 @@
           @csrf
 
           <div>
-            <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Jenis <span class="text-red-500">*</span></label>
+            <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Jenis <span class="text-red-500">*</span></label>
             <div class="grid grid-cols-3 gap-1.5">
               @foreach(['masuk' => 'Masuk', 'keluar' => 'Keluar', 'rusak' => 'Rusak'] as $k => $n)
                 <label class="cursor-pointer">
@@ -36,7 +36,7 @@
           </div>
 
           <div>
-            <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Barang <span class="text-red-500">*</span></label>
+            <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Barang <span class="text-red-500">*</span></label>
             <select name="barang_id" required class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
               <option value="">— pilih barang —</option>
               @foreach($barang as $b)
@@ -50,13 +50,13 @@
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Jumlah <span class="text-red-500">*</span></label>
+              <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Jumlah <span class="text-red-500">*</span></label>
               <input name="jumlah" type="number" step="0.01" min="0.01" required value="{{ old('jumlah') }}"
                      class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
               @error('jumlah')<p class="text-[11.5px] text-red-600 mt-1">{{ $message }}</p>@enderror
             </div>
             <div>
-              <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Tanggal <span class="text-red-500">*</span></label>
+              <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Tanggal <span class="text-red-500">*</span></label>
               <input name="tanggal" type="date" required
                      value="{{ old('tanggal', \App\Support\Waktu::kini()->toDateString()) }}"
                      class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
@@ -64,7 +64,7 @@
           </div>
 
           <div>
-            <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5"
+            <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5"
                    x-text="jenis === 'masuk' ? 'Pemasok' : 'Penerima / Bagian'">Pemasok</label>
             <input name="pihak" value="{{ old('pihak') }}"
                    class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
@@ -73,19 +73,19 @@
           {{-- Batch dan kedaluwarsa hanya bermakna saat menerima barang. --}}
           <div x-show="jenis === 'masuk'" x-cloak class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Batch</label>
+              <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Batch</label>
               <input name="batch" value="{{ old('batch') }}"
                      class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
             </div>
             <div>
-              <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Kedaluwarsa</label>
+              <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Kedaluwarsa</label>
               <input name="kadaluarsa" type="date" value="{{ old('kadaluarsa') }}"
                      class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
             </div>
           </div>
 
           <div>
-            <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Keterangan</label>
+            <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Keterangan</label>
             <textarea name="keterangan" rows="2"
                       class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">{{ old('keterangan') }}</textarea>
           </div>
@@ -136,7 +136,7 @@
 </div>
 
 <style>
-  .eq-jenis-aktif{background:linear-gradient(135deg,var(--eq-aksen,#0E747E),#12897F);
+  .eq-jenis-aktif{background:linear-gradient(135deg,var(--eq-aksen,#F57C00),#DC6E00);
     color:#fff!important;border-color:transparent!important}
 </style>
 @endsection

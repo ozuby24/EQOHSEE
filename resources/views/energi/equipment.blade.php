@@ -34,7 +34,7 @@
       @foreach($perKategori as $kode => $k)
         <x-kpi :label="$k['nama']" :nilai="number_format($k['l_hm'], 2)" satuan="L/HM"
                :ket="number_format($k['liter']).' L · '.number_format($k['hm'], 1).' jam operasi'"
-               :warna="$kategori === $kode ? '#E2663A' : '#0F766E'" />
+               :warna="$kategori === $kode ? '#E2663A' : '#F57C00'" />
       @endforeach
     </div>
   @endif

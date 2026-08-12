@@ -35,10 +35,10 @@
     @php $t = \App\Support\Smkp::hitungTemuan($audit->hasil ?? []); @endphp
     <div class="grid gap-3 grid-cols-2 sm:grid-cols-4 mt-5 pt-5 border-t border-stone-100">
       @foreach ([
-        ['Kriteria dinilai', $rekap['dinilai'].'/'.$rekap['berlaku'], '#14385A'],
+        ['Kriteria dinilai', $rekap['dinilai'].'/'.$rekap['berlaku'], '#0F1720'],
         ['Ketidaksesuaian mayor', $t['mayor'], '#E5484D'],
         ['Ketidaksesuaian minor', $t['minor'], '#F0921E'],
-        ['Temuan belum ditutup', $temuan->where('status','<>','Closed')->count(), '#0E747E'],
+        ['Temuan belum ditutup', $temuan->where('status','<>','Closed')->count(), '#F57C00'],
       ] as [$l,$v,$c])
         <div>
           <div class="stat stat-sm leading-none" style="color:{{ $c }}">{{ $v }}</div>

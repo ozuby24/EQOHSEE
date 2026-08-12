@@ -64,11 +64,11 @@
            :ket="'Total '.number_format($r['gj'], 1).' GJ untuk '.number_format($r['ton']).' ton'" />
 
     <x-kpi label="Penurunan vs Baseline" :nilai="number_format($turun, 1).'%'"
-           :warna="$turun >= 0 ? '#0F766E' : '#E2663A'"
+           :warna="$turun >= 0 ? '#F57C00' : '#E2663A'"
            :ket="$baseline ? 'Terhadap baseline '.$baseline->tahun : 'Baseline belum ditetapkan'" />
 
     <x-kpi label="Fuel Ratio" :nilai="number_format($r['l_ton'], 3)" satuan="L/ton"
-           :ket="number_format($r['liter']).' L solar terpakai'" warna="#2A9D8F" />
+           :ket="number_format($r['liter']).' L solar terpakai'" warna="#FF9800" />
 
     <x-kpi label="Electricity Ratio" :nilai="number_format($r['kwh_ton'], 3)" satuan="kWh/ton"
            :ket="number_format($r['kwh']).' kWh terpakai'" warna="#22312F" />
@@ -95,7 +95,7 @@
 
     <div class="grid gap-4 grid-cols-2 lg:grid-cols-4 mt-5">
       <x-kpi label="Program Berjalan" :nilai="$hemat['jumlah']" satuan="program" ket="Berstatus berjalan atau selesai" />
-      <x-kpi label="Energi Dihemat" :nilai="number_format($hemat['gj'], 1)" satuan="GJ/bulan" warna="#2A9D8F" ket="Perkiraan per bulan" />
+      <x-kpi label="Energi Dihemat" :nilai="number_format($hemat['gj'], 1)" satuan="GJ/bulan" warna="#FF9800" ket="Perkiraan per bulan" />
       <x-kpi label="Emisi Dihindari" :nilai="number_format($hemat['tco2e'], 2)" satuan="tCO₂e/bulan" warna="#22312F" ket="Perkiraan per bulan" />
       <x-kpi label="Biaya Dihemat" :nilai="'Rp '.Energi::ringkas($hemat['rupiah'], 2)" satuan="/bulan" warna="#E2663A" ket="Perkiraan per bulan" />
     </div>

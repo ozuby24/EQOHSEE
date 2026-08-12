@@ -33,7 +33,7 @@
       @foreach ([
         ['Liter per Jam', number_format($m['l_hm'], 2), 'L/HM', $status['warna']],
         ['Acuan Kategori', number_format($acuan, 2), 'L/HM', '#9AA3AE'],
-        ['Total Solar', number_format($m['liter']), 'L', '#0F766E'],
+        ['Total Solar', number_format($m['liter']), 'L', '#F57C00'],
         ['Biaya Solar', 'Rp '.Energi::ringkas($m['rupiah'], 2), null, '#E2663A'],
       ] as [$l, $v, $s, $w])
         <div>
@@ -49,11 +49,11 @@
     <x-kpi label="Jam Operasi" :nilai="number_format($m['hm'], 1)" satuan="HM"
            :ket="$m['idle'] > 0 ? number_format($m['idle'], 1).' jam di antaranya idle' : 'Tidak ada catatan idle'" />
     <x-kpi label="Porsi Idle" :nilai="number_format($m['idle_persen'], 1).'%'"
-           :warna="$m['idle_persen'] > 25 ? '#E2663A' : '#0F766E'"
+           :warna="$m['idle_persen'] > 25 ? '#E2663A' : '#F57C00'"
            :rasio="min(1, $m['idle_persen'] / 100)"
            :ket="$m['idle_persen'] > 25 ? 'Di atas 25% — solar terbakar tanpa hasil' : 'Dalam batas wajar'" />
     <x-kpi label="Liter per Ton" :nilai="number_format($m['l_ton'], 3)" satuan="L/ton"
-           :ket="number_format($m['ton']).' ton terangkut'" warna="#2A9D8F" />
+           :ket="number_format($m['ton']).' ton terangkut'" warna="#FF9800" />
     <x-kpi label="Liter per BCM" :nilai="number_format($m['l_bcm'], 3)" satuan="L/BCM"
            :ket="number_format($m['bcm']).' BCM'" warna="#22312F" />
   </div>
@@ -106,7 +106,7 @@
     <section class="kartu-lux rounded-2xl p-6">
       <h3 class="font-display text-[16px] font-black text-cam-ink">Pola Kerja</h3>
       <div class="grid gap-4 grid-cols-2 mt-5">
-        <x-kpi label="Jarak Tempuh" :nilai="number_format($m['jarak'], 1)" satuan="km" ket="Hanya terisi untuk unit angkut" warna="#2A9D8F" />
+        <x-kpi label="Jarak Tempuh" :nilai="number_format($m['jarak'], 1)" satuan="km" ket="Hanya terisi untuk unit angkut" warna="#FF9800" />
         <x-kpi label="Kecepatan Rata-rata" :nilai="number_format($m['kecepatan'], 1)" satuan="km/jam" ket="Jarak dibagi jam operasi" />
         <x-kpi label="Cycle Time" :nilai="$m['cycle'] ? number_format($m['cycle'], 2) : '—'" satuan="menit" ket="Rata-rata satu siklus" warna="#D9993A" />
         <x-kpi label="Solar per Hari" :nilai="$log->count() ? number_format($m['liter'] / $log->count(), 1) : '0'" satuan="L/hari"

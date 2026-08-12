@@ -76,14 +76,14 @@ onBeforeUnmount(() => { if (jeda) clearTimeout(jeda); });
     <div class="bg-white rounded-2xl shadow-card border border-stone-100 p-3 flex items-center gap-2.5">
       <input v-model="cari" placeholder="Cari nama, jabatan, atau departemen…"
              class="flex-1 rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]
-                    focus:border-[color:var(--eq-aksen,#0E747E)] focus:ring-0">
+                    focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0">
       <span class="text-[11.5px] text-stone-400 num pr-2 shrink-0">
         {{ mencari ? 'mencari…' : `${halaman.total} orang` }}
       </span>
     </div>
 
     <div v-if="!orang.length" class="bg-white rounded-2xl shadow-card border border-stone-100 px-6 py-12 text-center">
-      <p class="text-[13.5px] font-bold text-[#14385A]">
+      <p class="text-[13.5px] font-bold text-[#0F1720]">
         {{ cari ? 'Tidak ada yang cocok dengan pencarian Anda' : 'Belum ada rekan terdaftar' }}
       </p>
     </div>
@@ -96,12 +96,12 @@ onBeforeUnmount(() => { if (jeda) clearTimeout(jeda); });
           <img v-if="o.avatar" :src="o.avatar" alt=""
                class="w-12 h-12 rounded-full object-cover border border-stone-200 shrink-0">
           <span v-else class="w-12 h-12 rounded-full grid place-items-center text-white font-black shrink-0"
-                style="background:linear-gradient(135deg,var(--eq-aksen,#0E747E),#2CB0BC)">
+                style="background:linear-gradient(135deg,var(--eq-aksen,#F57C00),#FF9800)">
             {{ o.inisial }}
           </span>
 
           <div class="min-w-0 flex-1">
-            <p class="text-[13px] font-bold text-[#14385A] truncate">{{ o.nama }}</p>
+            <p class="text-[13px] font-bold text-[#0F1720] truncate">{{ o.nama }}</p>
             <p class="text-[11.5px] text-stone-500 truncate">
               {{ o.jabatan ?? '—' }}<template v-if="o.departemen"> · {{ o.departemen }}</template>
             </p>
@@ -114,7 +114,7 @@ onBeforeUnmount(() => { if (jeda) clearTimeout(jeda); });
             </div>
 
             <button v-if="o.id !== diriId" type="button" @click="pesan(o)"
-                    class="mt-2.5 text-[11.5px] font-semibold text-[color:var(--eq-aksen,#0E747E)] hover:underline">
+                    class="mt-2.5 text-[11.5px] font-semibold text-[color:var(--eq-aksen,#F57C00)] hover:underline">
               Kirim Pesan
             </button>
 
@@ -123,7 +123,7 @@ onBeforeUnmount(() => { if (jeda) clearTimeout(jeda); });
                       @change="tetapkan(o, ($event.target as HTMLSelectElement).value)"
                       class="w-full rounded-lg border border-stone-200 px-2 py-1.5 text-[11px] text-stone-600
                              disabled:opacity-50
-                             focus:border-[color:var(--eq-aksen,#0E747E)] focus:ring-0">
+                             focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0">
                 <option value="">— tanpa perusahaan —</option>
                 <option v-for="c in daftar" :key="c.id" :value="c.id">{{ c.nama }}</option>
               </select>
@@ -141,7 +141,7 @@ onBeforeUnmount(() => { if (jeda) clearTimeout(jeda); });
                    :only="['orang', 'halaman', 'cari']" preserve-state preserve-scroll
                    class="min-w-[36px] text-center rounded-lg border px-3 py-1.5 text-[12px] font-semibold transition"
                    :class="t.aktif
-                     ? 'bg-[color:var(--eq-aksen,#0E747E)] text-white border-transparent'
+                     ? 'bg-[color:var(--eq-aksen,#F57C00)] text-white border-transparent'
                      : t.url ? 'bg-white text-stone-600 border-stone-200 hover:border-stone-400'
                              : 'bg-white text-stone-300 border-stone-100 cursor-default'"
                    v-html="t.label" />

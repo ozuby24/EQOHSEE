@@ -110,7 +110,7 @@
                Bayangannya lewat drop-shadow, bukan text-shadow; lihat
                .sheen-shadow untuk alasannya. --}}
           <span class="sheen block {{ $adaMedia ? 'sheen-shadow' : '' }}"
-                style="--sheen-base:{{ $adaMedia ? '#7FE3D2' : '#2A9D8F' }}; --sheen-hi:#FBF1DC">terukur dan terbukti.</span>
+                style="--sheen-base:{{ $adaMedia ? '#7FE3D2' : '#FF9800' }}; --sheen-hi:#FBF1DC">terukur dan terbukti.</span>
         </h1>
 
         <p class="text-[14px] md:text-[15.5px] mt-5 leading-relaxed max-w-xl

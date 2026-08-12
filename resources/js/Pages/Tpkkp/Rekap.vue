@@ -54,7 +54,7 @@ const fmt = (n: number | null | undefined, d = 2) =>
          kedua halaman Inertia ini yang seharusnya terasa instan. -->
     <div class="flex items-center gap-2 text-[12px] text-stone-500">
       <Link href="/tpkkp/penilaian" class="font-semibold hover:underline"
-            style="color:var(--eq-aksen,#0E747E)">&larr; Kembali ke Formulir Nilai</Link>
+            style="color:var(--eq-aksen,#F57C00)">&larr; Kembali ke Formulir Nilai</Link>
     </div>
 
     <!-- ══════════ TABEL UTAMA ══════════ -->

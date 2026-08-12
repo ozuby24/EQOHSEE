@@ -14,8 +14,8 @@
     </p>
     <div class="grid gap-4 grid-cols-2 lg:grid-cols-4 mt-6 pt-6 hairline border-b-0">
       @foreach ([
-        ['Total Energy', number_format($e['gj'],1), 'GJ', '#0F766E'],
-        ['Energy Intensity', number_format($e['intensitas'],5), 'GJ/ton', '#2A9D8F'],
+        ['Total Energy', number_format($e['gj'],1), 'GJ', '#F57C00'],
+        ['Energy Intensity', number_format($e['intensitas'],5), 'GJ/ton', '#FF9800'],
         ['Emisi', number_format($e['tco2e'],2), 'tCO₂e', '#22312F'],
         ['Biaya Energi', 'Rp '.number_format($e['rupiah']/1e6,1).' jt', null, '#E2663A'],
       ] as [$l,$v,$s,$w])
@@ -34,12 +34,12 @@
     <x-kpi label="Electricity Consumption" :nilai="number_format($e['kwhHari'])" satuan="kWh/hari"
            :ket="number_format($e['kwh']).' kWh pada periode ini'" warna="#4C9AFF" />
     <x-kpi label="Fuel Ratio" :nilai="number_format($e['fuelRatio'],4)" satuan="L/ton"
-           ket="Solar ÷ produksi" warna="#2A9D8F" />
+           ket="Solar ÷ produksi" warna="#FF9800" />
     <x-kpi label="Renewable Energy" :nilai="number_format($e['terbarukanPersen'],1)" satuan="%"
-           :ket="number_format(E::TERBARUKAN_KWH).' kWh/hari dari PLTS site'" :rasio="$e['terbarukanPersen']/100" warna="#0F766E" />
+           :ket="number_format(E::TERBARUKAN_KWH).' kWh/hari dari PLTS site'" :rasio="$e['terbarukanPersen']/100" warna="#F57C00" />
     <x-kpi label="Energy Saving" :nilai="number_format(abs($e['penurunan']),1)" satuan="%"
            :ket="$e['penurunan'] >= 0 ? 'Di bawah baseline tahun lalu' : 'Di atas baseline — perlu ditelusuri'"
-           :warna="$e['penurunan'] >= 0 ? '#0F766E' : '#E2663A'" />
+           :warna="$e['penurunan'] >= 0 ? '#F57C00' : '#E2663A'" />
   </div>
 
   <div class="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
@@ -61,7 +61,7 @@
       <h3 class="font-display text-[16px] font-black text-cam-ink">Bauran Energi</h3>
       <p class="text-[11.5px] text-stone-500 mt-1">Porsi tiap sumber setelah disamakan ke gigajoule.</p>
       <x-donat :data="[
-        ['nama'=>'Solar','nilai'=>$e['liter']*E::GJ_PER_LITER,'warna'=>'#0F766E'],
+        ['nama'=>'Solar','nilai'=>$e['liter']*E::GJ_PER_LITER,'warna'=>'#F57C00'],
         ['nama'=>'Listrik','nilai'=>$e['kwh']*E::GJ_PER_KWH,'warna'=>'#4C9AFF'],
       ]" :desimal="1" :tengah="number_format($e['gj'])" tengahKet="GJ total" :tinggi="215" />
     </section>

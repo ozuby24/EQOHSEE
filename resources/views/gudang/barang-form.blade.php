@@ -16,7 +16,7 @@
     @if($b->exists) @method('PUT') @endif
 
     <div class="px-6 py-5 border-b border-stone-100">
-      <h3 class="text-[15px] font-bold text-[#14385A]">{{ $b->exists ? $b->nama : 'Barang Baru' }}</h3>
+      <h3 class="text-[15px] font-bold text-[#0F1720]">{{ $b->exists ? $b->nama : 'Barang Baru' }}</h3>
       <p class="text-[12.5px] text-stone-500 mt-1">
         Stok tidak diisi di sini — saldo berjalan dihitung dari mutasi penerimaan dan pengeluaran.
       </p>
@@ -25,14 +25,14 @@
     {{-- ── Umum ── --}}
     <div class="px-6 py-5 grid gap-4 sm:grid-cols-2">
       <div>
-        <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Kode <span class="text-red-500">*</span></label>
+        <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Kode <span class="text-red-500">*</span></label>
         <input name="kode" value="{{ old('kode', $b->kode) }}" required
                class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
         @error('kode')<p class="text-[11.5px] text-red-600 mt-1">{{ $message }}</p>@enderror
       </div>
 
       <div>
-        <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Kategori <span class="text-red-500">*</span></label>
+        <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Kategori <span class="text-red-500">*</span></label>
         <select name="kategori" x-model="kategori" required
                 class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
           @foreach(Gudang::KATEGORI as $k => $x)
@@ -42,27 +42,27 @@
       </div>
 
       <div class="sm:col-span-2">
-        <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Nama Barang <span class="text-red-500">*</span></label>
+        <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Nama Barang <span class="text-red-500">*</span></label>
         <input name="nama" value="{{ old('nama', $b->nama) }}" required
                class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
         @error('nama')<p class="text-[11.5px] text-red-600 mt-1">{{ $message }}</p>@enderror
       </div>
 
       <div>
-        <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Satuan <span class="text-red-500">*</span></label>
+        <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Satuan <span class="text-red-500">*</span></label>
         <input name="satuan" value="{{ old('satuan', $b->satuan ?: 'pcs') }}" required
                class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
       </div>
 
       <div>
-        <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Stok Minimum</label>
+        <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Stok Minimum</label>
         <input name="stok_min" type="number" step="0.01" min="0" value="{{ old('stok_min', $b->stok_min ?: 0) }}"
                class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
         <p class="text-[11px] text-stone-400 mt-1">Nol berarti belum ditetapkan — barangnya tidak akan ditandai menipis.</p>
       </div>
 
       <div class="sm:col-span-2">
-        <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Lokasi Penyimpanan</label>
+        <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Lokasi Penyimpanan</label>
         <select name="lokasi_id" class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
           <option value="">— belum ditentukan —</option>
           @foreach($lokasi as $l)
@@ -80,7 +80,7 @@
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="sm:col-span-2">
-          <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Kelas Bahaya</label>
+          <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Kelas Bahaya</label>
           <select name="kelas_b3" class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
             <option value="">— belum digolongkan —</option>
             @foreach(Gudang::KELAS_B3 as $k => $x)
@@ -93,7 +93,7 @@
         </div>
 
         <div>
-          <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Wujud</label>
+          <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Wujud</label>
           <select name="wujud" class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
             <option value="">—</option>
             @foreach(['padat','cair','gas'] as $w)
@@ -103,25 +103,25 @@
         </div>
 
         <div>
-          <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Nomor UN</label>
+          <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Nomor UN</label>
           <input name="un_number" value="{{ old('un_number', $b->un_number) }}"
                  class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
         </div>
 
         <div class="sm:col-span-2">
-          <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">
+          <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">
             Lembar Data Keselamatan (LDK / MSDS)
           </label>
           @if($b->msds)
             <p class="text-[12px] mb-1.5">
               <a href="{{ asset('storage/'.$b->msds) }}" target="_blank" rel="noopener"
-                 class="font-semibold" style="color:var(--eq-aksen,#0E747E)">Lihat berkas tersimpan &rarr;</a>
+                 class="font-semibold" style="color:var(--eq-aksen,#F57C00)">Lihat berkas tersimpan &rarr;</a>
             </p>
           @endif
           <input type="file" name="msds" accept="application/pdf"
                  class="block w-full text-[12.5px] text-stone-600
                         file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0
-                        file:text-[12px] file:font-semibold file:bg-stone-100 file:text-[#14385A]">
+                        file:text-[12px] file:font-semibold file:bg-stone-100 file:text-[#0F1720]">
           <p class="text-[11px] text-stone-500 mt-1">PDF, paling besar 5 MB.</p>
           @error('msds')<p class="text-[11.5px] text-red-600 mt-1">{{ $message }}</p>@enderror
         </div>
@@ -134,13 +134,13 @@
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div>
-          <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Masa Pakai (bulan)</label>
+          <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Masa Pakai (bulan)</label>
           <input name="masa_pakai_bulan" type="number" min="1" max="600"
                  value="{{ old('masa_pakai_bulan', $b->masa_pakai_bulan) }}"
                  class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
         </div>
         <div>
-          <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Ukuran</label>
+          <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Ukuran</label>
           <input name="ukuran" value="{{ old('ukuran', $b->ukuran) }}" placeholder="S / M / L / 42"
                  class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
         </div>
@@ -153,12 +153,12 @@
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div>
-          <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Part Number</label>
+          <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Part Number</label>
           <input name="part_number" value="{{ old('part_number', $b->part_number) }}"
                  class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
         </div>
         <div>
-          <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Merk</label>
+          <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Merk</label>
           <input name="merk" value="{{ old('merk', $b->merk) }}"
                  class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
         </div>
@@ -166,7 +166,7 @@
     </div>
 
     <div class="px-6 py-5 border-t border-stone-100">
-      <label class="block text-[12px] font-semibold text-[#14385A] mb-1.5">Keterangan</label>
+      <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Keterangan</label>
       <textarea name="keterangan" rows="3"
                 class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">{{ old('keterangan', $b->keterangan) }}</textarea>
 

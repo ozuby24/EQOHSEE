@@ -95,7 +95,7 @@
                 @php $s = Gudang::statusStok($b); @endphp
                 <tr class="border-b border-stone-50 last:border-0">
                   <td class="py-2.5 pr-3">
-                    <span class="font-semibold text-[#14385A]">{{ $b->nama }}</span>
+                    <span class="font-semibold text-[#0F1720]">{{ $b->nama }}</span>
                     <span class="block text-[11px] text-stone-400">{{ $b->kode }}</span>
                   </td>
                   <td class="py-2.5 px-3 text-stone-500">{{ $b->lokasi?->nama ?? '—' }}</td>
@@ -138,7 +138,7 @@
                 {{ $k['sisa'] < 0 ? 'Lewat' : $k['sisa'].'h' }}
               </span>
               <div class="min-w-0">
-                <p class="text-[12.5px] font-bold text-[#14385A] truncate">{{ $k['barang']->nama }}</p>
+                <p class="text-[12.5px] font-bold text-[#0F1720] truncate">{{ $k['barang']->nama }}</p>
                 <p class="text-[11.5px] text-stone-500">
                   {{ $k['tanggal']->format('d M Y') }}@if($k['batch']) · Batch {{ $k['batch'] }}@endif
                 </p>
@@ -164,8 +164,8 @@
           @endphp
           <a href="{{ route('gudang.barang', ['kategori' => $kode]) }}" class="block group">
             <div class="flex items-baseline justify-between gap-3">
-              <span class="text-[12.5px] font-semibold text-[#14385A] group-hover:underline">{{ $k['nama'] }}</span>
-              <span class="text-[12.5px] font-bold tabular-nums" style="color:var(--eq-aksen,#0E747E)">{{ $n }}</span>
+              <span class="text-[12.5px] font-semibold text-[#0F1720] group-hover:underline">{{ $k['nama'] }}</span>
+              <span class="text-[12.5px] font-bold tabular-nums" style="color:var(--eq-aksen,#F57C00)">{{ $n }}</span>
             </div>
             <div class="eq-bilah mt-1.5"><i style="width:{{ $lebar }}%"></i></div>
           </a>

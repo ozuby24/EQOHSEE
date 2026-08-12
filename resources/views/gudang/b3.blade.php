@@ -90,12 +90,12 @@
   {{-- ══════════ DAFTAR B3 ══════════ --}}
   <section class="bg-white rounded-2xl shadow-card border border-stone-100 overflow-hidden">
     <div class="px-6 py-4 border-b border-stone-100">
-      <h3 class="text-[15px] font-bold text-[#14385A]">Daftar Bahan</h3>
+      <h3 class="text-[15px] font-bold text-[#0F1720]">Daftar Bahan</h3>
     </div>
 
     @if($b3->isEmpty())
       <div class="px-6 py-12 text-center">
-        <p class="text-[13.5px] font-bold text-[#14385A]">Belum ada bahan B3 terdaftar</p>
+        <p class="text-[13.5px] font-bold text-[#0F1720]">Belum ada bahan B3 terdaftar</p>
         <p class="text-[12.5px] text-stone-500 mt-1">
           Tambahkan lewat Daftar Barang dengan kategori Bahan Berbahaya.
         </p>
@@ -117,7 +117,7 @@
             @foreach($b3 as $b)
               <tr class="border-b border-stone-50 last:border-0">
                 <td class="py-3 px-4">
-                  <span class="font-semibold text-[#14385A]">{{ $b->nama }}</span>
+                  <span class="font-semibold text-[#0F1720]">{{ $b->nama }}</span>
                   <span class="block text-[11px] text-stone-400">
                     {{ $b->kode }}@if($b->un_number) · UN {{ $b->un_number }}@endif
                   </span>
@@ -134,14 +134,14 @@
                 </td>
                 <td class="py-3 px-3 text-stone-500">{{ $b->wujud ? ucfirst($b->wujud) : '—' }}</td>
                 <td class="py-3 px-3 text-stone-500">{{ $b->lokasi?->nama ?? '—' }}</td>
-                <td class="py-3 px-3 text-right font-bold tabular-nums text-[#14385A]">
+                <td class="py-3 px-3 text-right font-bold tabular-nums text-[#0F1720]">
                   {{ rtrim(rtrim(number_format(Gudang::stok($b), 2, ',', '.'), '0'), ',') }}
                   <span class="text-stone-400 font-normal">{{ $b->satuan }}</span>
                 </td>
                 <td class="py-3 px-4">
                   @if($b->msds)
                     <a href="{{ asset('storage/'.$b->msds) }}" target="_blank" rel="noopener"
-                       class="text-[12px] font-semibold" style="color:var(--eq-aksen,#0E747E)">Buka</a>
+                       class="text-[12px] font-semibold" style="color:var(--eq-aksen,#F57C00)">Buka</a>
                   @else
                     <span class="text-[11px] font-bold px-2 py-1 rounded-md bg-amber-50 text-amber-700">Belum ada</span>
                   @endif
@@ -166,7 +166,7 @@
               {{ $k['sisa'] < 0 ? 'Lewat' : $k['sisa'].'h' }}
             </span>
             <div class="min-w-0">
-              <p class="text-[12.5px] font-bold text-[#14385A] truncate">{{ $k['barang']->nama }}</p>
+              <p class="text-[12.5px] font-bold text-[#0F1720] truncate">{{ $k['barang']->nama }}</p>
               <p class="text-[11.5px] text-stone-500">
                 {{ $k['tanggal']->format('d M Y') }}@if($k['batch']) · Batch {{ $k['batch'] }}@endif
               </p>

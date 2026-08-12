@@ -13,12 +13,12 @@
   <form method="GET" class="bg-white rounded-2xl shadow-card border border-stone-100 p-3
                             flex flex-wrap items-end gap-2.5 cetak-sembunyi">
     <div>
-      <label class="block text-[11.5px] font-semibold text-[#14385A] mb-1">Dari</label>
+      <label class="block text-[11.5px] font-semibold text-[#0F1720] mb-1">Dari</label>
       <input name="dari" type="date" value="{{ $dari }}"
              class="rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
     </div>
     <div>
-      <label class="block text-[11.5px] font-semibold text-[#14385A] mb-1">Sampai</label>
+      <label class="block text-[11.5px] font-semibold text-[#0F1720] mb-1">Sampai</label>
       <input name="sampai" type="date" value="{{ $sampai }}"
              class="rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
     </div>
@@ -32,7 +32,7 @@
   <div class="bg-white rounded-2xl shadow-card border border-stone-100 overflow-hidden">
 
     <div class="px-6 py-5 border-b border-stone-100">
-      <h3 class="text-[16px] font-bold text-[#14385A]">Laporan Persediaan</h3>
+      <h3 class="text-[16px] font-bold text-[#0F1720]">Laporan Persediaan</h3>
       <p class="text-[12.5px] text-stone-500 mt-1">
         Periode {{ \App\Support\Waktu::lokal($dari)?->format('d M Y') }}
         &ndash; {{ \App\Support\Waktu::lokal($sampai)?->format('d M Y') }}
@@ -42,7 +42,7 @@
 
     @if(!count($baris))
       <div class="px-6 py-12 text-center">
-        <p class="text-[13.5px] font-bold text-[#14385A]">Tidak ada mutasi pada periode ini</p>
+        <p class="text-[13.5px] font-bold text-[#0F1720]">Tidak ada mutasi pada periode ini</p>
         <p class="text-[12.5px] text-stone-500 mt-1">Pilih rentang tanggal yang lain.</p>
       </div>
     @else
@@ -63,7 +63,7 @@
             @foreach($baris as $x)
               <tr class="border-b border-stone-50 last:border-0">
                 <td class="py-2.5 px-4">
-                  <span class="font-semibold text-[#14385A]">{{ $x['barang']->nama }}</span>
+                  <span class="font-semibold text-[#0F1720]">{{ $x['barang']->nama }}</span>
                   <span class="block text-[11px] text-stone-400">
                     {{ $x['barang']->kode }} · {{ $x['barang']->satuan }}
                   </span>
@@ -90,7 +90,7 @@
                     </span>
                   @endif
                 </td>
-                <td class="py-2.5 px-4 text-right tabular-nums font-bold text-[#14385A]">
+                <td class="py-2.5 px-4 text-right tabular-nums font-bold text-[#0F1720]">
                   {{ $angka($x['akhir']) }}
                 </td>
               </tr>

@@ -17,8 +17,8 @@
 
     <div class="grid gap-4 grid-cols-2 lg:grid-cols-4 mt-6 pt-6 hairline border-b-0">
       @foreach ([
-        ['Total Peluang', $daftar->count(), 'usulan', '#0F766E'],
-        ['Sudah Berjalan', $terwujud['jumlah'], 'program', '#2A9D8F'],
+        ['Total Peluang', $daftar->count(), 'usulan', '#F57C00'],
+        ['Sudah Berjalan', $terwujud['jumlah'], 'program', '#FF9800'],
         ['Potensi Penuh', 'Rp '.Energi::ringkas($potensi['rupiah'], 2), '/bulan', '#D9993A'],
         ['Sudah Terwujud', 'Rp '.Energi::ringkas($terwujud['rupiah'], 2), '/bulan', '#E2663A'],
       ] as [$l, $v, $s, $w])
@@ -113,8 +113,8 @@
           @foreach($daftar as $o)
             @php
               $warna = match($o->status) {
-                'selesai'  => '#0F766E',
-                'berjalan' => '#2A9D8F',
+                'selesai'  => '#F57C00',
+                'berjalan' => '#FF9800',
                 'disetujui'=> '#D9993A',
                 'ditolak'  => '#9AA3AE',
                 default    => '#22312F',

@@ -41,7 +41,7 @@ function gambar() {
         labels: props.indikator.label,
         datasets: [
           { label: 'Capaian', data: props.indikator.capaian,
-            backgroundColor: '#12897F', borderRadius: 6, maxBarThickness: 44 },
+            backgroundColor: '#DC6E00', borderRadius: 6, maxBarThickness: 44 },
           { label: 'Target', data: props.indikator.target,
             backgroundColor: '#d6d3d1', borderRadius: 6, maxBarThickness: 44 },
         ],

@@ -14,7 +14,7 @@
                             grid gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
     <input name="cari" value="{{ $f['cari'] ?? '' }}" placeholder="Cari nama, kode, part number…"
            class="lg:col-span-2 rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]
-                  focus:border-[color:var(--eq-aksen,#0E747E)] focus:ring-0">
+                  focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0">
 
     <select name="kategori" class="rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
       <option value="">Semua kategori</option>
@@ -41,7 +41,7 @@
 
   <div class="flex items-center justify-between gap-3 flex-wrap">
     <p class="text-[12.5px] text-stone-500">
-      <b class="text-[#14385A]">{{ $barang->count() }}</b> barang ditemukan
+      <b class="text-[#0F1720]">{{ $barang->count() }}</b> barang ditemukan
     </p>
     @can('admin')
       <a href="{{ route('gudang.barang.baru') }}" class="eq-btn-utama" style="flex:none;padding:10px 20px">
@@ -53,7 +53,7 @@
   {{-- ══════════ TABEL ══════════ --}}
   @if($barang->isEmpty())
     <div class="bg-white rounded-2xl shadow-card border border-stone-100 px-6 py-12 text-center">
-      <p class="text-[13.5px] font-bold text-[#14385A]">Belum ada barang yang cocok</p>
+      <p class="text-[13.5px] font-bold text-[#0F1720]">Belum ada barang yang cocok</p>
       <p class="text-[12.5px] text-stone-500 mt-1">Ubah penyaring, atau tambahkan barang baru.</p>
     </div>
   @else
@@ -76,7 +76,7 @@
               @php $s = Gudang::statusStok($b); @endphp
               <tr class="border-b border-stone-50 last:border-0">
                 <td class="py-3 px-4">
-                  <span class="font-semibold text-[#14385A]">{{ $b->nama }}</span>
+                  <span class="font-semibold text-[#0F1720]">{{ $b->nama }}</span>
                   <span class="block text-[11px] text-stone-400">
                     {{ $b->kode }}@if($b->part_number) · {{ $b->part_number }}@endif
                   </span>
@@ -96,7 +96,7 @@
                   </span>
                 </td>
                 <td class="py-3 px-3 text-stone-500">{{ $b->lokasi?->nama ?? '—' }}</td>
-                <td class="py-3 px-3 text-right font-bold tabular-nums text-[#14385A]">
+                <td class="py-3 px-3 text-right font-bold tabular-nums text-[#0F1720]">
                   {{ rtrim(rtrim(number_format(Gudang::stok($b), 2, ',', '.'), '0'), ',') }}
                   <span class="text-stone-400 font-normal">{{ $b->satuan }}</span>
                 </td>
@@ -109,7 +109,7 @@
                 @can('admin')
                   <td class="py-3 px-4 text-right whitespace-nowrap">
                     <a href="{{ route('gudang.barang.edit', $b) }}"
-                       class="text-[12px] font-semibold" style="color:var(--eq-aksen,#0E747E)">Ubah</a>
+                       class="text-[12px] font-semibold" style="color:var(--eq-aksen,#F57C00)">Ubah</a>
                     <form action="{{ route('gudang.barang.hapus', $b) }}" method="POST" class="inline ml-2"
                           onsubmit="return confirm('Hapus atau nonaktifkan barang ini?')">
                       @csrf @method('DELETE')

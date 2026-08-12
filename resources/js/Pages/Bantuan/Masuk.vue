@@ -47,7 +47,7 @@ function selesai() {
 const gaya: Record<string, string> = {
   pengguna: 'bg-white border border-stone-200 text-cam-ink',
   asisten:  'ml-auto bg-stone-100 border border-stone-200 text-stone-600',
-  admin:    'ml-auto bg-[color:var(--eq-aksen,#0E747E)] text-white',
+  admin:    'ml-auto bg-[color:var(--eq-aksen,#F57C00)] text-white',
   sistem:   'mx-auto bg-stone-100 text-stone-500 text-[11.5px] text-center',
 };
 
@@ -116,7 +116,7 @@ const label: Record<string, string> = { asisten: 'Asisten AI', admin: 'Admin' };
         <div class="border-t border-stone-100 p-3.5">
           <textarea v-model="form.isi" rows="2" placeholder="Tulis balasan untuk pengguna…"
                     class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px] resize-none
-                           focus:border-[color:var(--eq-aksen,#0E747E)] focus:ring-0"></textarea>
+                           focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0"></textarea>
           <p v-if="form.errors.isi" class="text-[11.5px] text-red-600 mt-1">{{ form.errors.isi }}</p>
 
           <button type="button" :disabled="form.processing || !form.isi.trim()" @click="balas"

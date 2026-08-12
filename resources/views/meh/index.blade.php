@@ -42,14 +42,14 @@
     <x-kpi label="Production" :nilai="number_format($p['terakhir']['ton'])" satuan="ton/hari"
            :ket="($tren>=0?'Naik ':'Turun ').number_format(abs($tren),1).'% vs rata-rata pekan ini'" />
     <x-kpi label="Fuel Consumption" :nilai="number_format($a['fuelRate'],1)" satuan="L/jam"
-           :ket="number_format($a['liter']).' L pada '.number_format($a['kerja']).' jam kerja'" warna="#2A9D8F" />
+           :ket="number_format($a['liter']).' L pada '.number_format($a['kerja']).' jam kerja'" warna="#FF9800" />
     <x-kpi label="Energy Intensity" :nilai="number_format($e['intensitas'],5)" satuan="GJ/ton"
            :ket="'Baseline '.number_format($e['baseline'],4).' · sasaran '.number_format($e['target'],4)"
-           :warna="$e['penurunan'] >= 0 ? '#0F766E' : '#E2663A'" />
+           :warna="$e['penurunan'] >= 0 ? '#F57C00' : '#E2663A'" />
     <x-kpi label="Fleet Availability" :nilai="number_format($a['pa'],1)" satuan="%"
-           :ket="$a['beroperasi'].' dari '.$a['jumlah'].' unit beroperasi'" :rasio="$a['pa']/100" warna="#0F766E" />
+           :ket="$a['beroperasi'].' dari '.$a['jumlah'].' unit beroperasi'" :rasio="$a['pa']/100" warna="#F57C00" />
     <x-kpi label="Mechanical Availability" :nilai="number_format($a['ma'],1)" satuan="%"
-           ket="Kerja ÷ (kerja + perbaikan)" :rasio="$a['ma']/100" warna="#2A9D8F" />
+           ket="Kerja ÷ (kerja + perbaikan)" :rasio="$a['ma']/100" warna="#FF9800" />
     <x-kpi label="Utilization" :nilai="number_format($a['utilisasi'],1)" satuan="%"
            ket="Kerja ÷ jam terjadwal" :rasio="$a['utilisasi']/100" warna="#C08A3E" />
   </div>
@@ -62,7 +62,7 @@
         <x-batang
           :label="array_map(fn($x) => \Illuminate\Support\Carbon::parse($x['tgl'])->translatedFormat('d M'), $p['harian'])"
           :seri="[
-            ['nama'=>'Aktual','data'=>array_column($p['harian'],'ton'),'warna'=>'#0F766E'],
+            ['nama'=>'Aktual','data'=>array_column($p['harian'],'ton'),'warna'=>'#F57C00'],
             ['nama'=>'Target','data'=>array_column($p['harian'],'target'),'warna'=>'#D6D3CB'],
           ]" satuan="ton" :tinggi="240" />
       </div>
@@ -72,7 +72,7 @@
       <h3 class="font-display text-[16px] font-black text-cam-ink">Status Armada</h3>
       <p class="text-[11.5px] text-stone-500 mt-1">Sebaran unit menurut keadaannya hari ini.</p>
       @php
-        $status = ['Operating'=>'#0F766E','Standby'=>'#4C9AFF','Maintenance'=>'#C08A3E','Breakdown'=>'#E2663A'];
+        $status = ['Operating'=>'#F57C00','Standby'=>'#4C9AFF','Maintenance'=>'#C08A3E','Breakdown'=>'#E2663A'];
         $sebaran = [];
         foreach ($status as $s => $w) {
           $j = count(array_filter(E::armada(), fn($u) => $u['status'] === $s));
@@ -107,10 +107,10 @@
         if (count($rusak)) $perhatian[] = ['#E2663A', count($rusak).' unit berstatus Breakdown', implode(', ', array_column($rusak,'kode')).' — menekan MA armada.'];
         $perhatian[] = ['#C08A3E', $boros['kode'].' paling haus: '.number_format(E::fuelRate($boros),1).' L/jam',
                         $boros['tipe'].' · rata-rata armada '.number_format($a['fuelRate'],1).' L/jam.'];
-        $perhatian[] = [$e['penurunan'] >= 0 ? '#0F766E' : '#E2663A',
+        $perhatian[] = [$e['penurunan'] >= 0 ? '#F57C00' : '#E2663A',
                         'Intensitas energi '.($e['penurunan']>=0?'turun':'naik').' '.number_format(abs($e['penurunan']),1).'% dari baseline',
                         'Sekarang '.number_format($e['intensitas'],5).' GJ/ton, sasaran '.number_format($e['target'],4).' GJ/ton.'];
-        $perhatian[] = [$p['capaian'] >= 100 ? '#0F766E' : '#C08A3E',
+        $perhatian[] = [$p['capaian'] >= 100 ? '#F57C00' : '#C08A3E',
                         'Capaian produksi '.number_format($p['capaian'],1).'% terhadap target',
                         number_format($p['ton']).' ton dari sasaran '.number_format($p['target']).' ton pekan ini.'];
       @endphp

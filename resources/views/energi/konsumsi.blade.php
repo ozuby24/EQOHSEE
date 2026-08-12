@@ -14,8 +14,8 @@
 
     <div class="grid gap-4 grid-cols-2 lg:grid-cols-4 mt-6 pt-6 hairline border-b-0">
       @foreach ([
-        ['Total Energi', number_format($r['gj'], 1), 'GJ', '#0F766E'],
-        ['Intensitas', number_format($r['intensitas'], 3), 'GJ/ton', '#2A9D8F'],
+        ['Total Energi', number_format($r['gj'], 1), 'GJ', '#F57C00'],
+        ['Intensitas', number_format($r['intensitas'], 3), 'GJ/ton', '#FF9800'],
         ['Emisi', number_format($r['tco2e'], 1), 'tCO₂e', '#22312F'],
         ['Biaya', 'Rp '.Energi::ringkas($r['rupiah'], 2), null, '#E2663A'],
       ] as [$l, $v, $s, $w])
@@ -30,8 +30,8 @@
   {{-- Tren harian tiap sumber --}}
   <div class="grid gap-4 lg:grid-cols-2">
     @foreach ([
-      ['Solar Harian', 'liter', 'L', 0, '#0F766E'],
-      ['Listrik Harian', 'kwh', 'kWh', 0, '#2A9D8F'],
+      ['Solar Harian', 'liter', 'L', 0, '#F57C00'],
+      ['Listrik Harian', 'kwh', 'kWh', 0, '#FF9800'],
     ] as [$judul, $kunci, $satuan, $desimal, $warna])
       <section class="kartu-lux rounded-2xl p-6">
         <h3 class="font-display text-[16px] font-black text-cam-ink">{{ $judul }}</h3>
@@ -99,7 +99,7 @@
       <x-kpi label="Liter per Ton" :nilai="number_format($r['l_ton'], 3)" satuan="L/ton"
              :ket="number_format($r['ton']).' ton produksi'" />
       <x-kpi label="Liter per BCM" :nilai="number_format($r['l_bcm'], 3)" satuan="L/BCM"
-             :ket="number_format($r['bcm']).' BCM'" warna="#2A9D8F" />
+             :ket="number_format($r['bcm']).' BCM'" warna="#FF9800" />
       <x-kpi label="kWh per Ton" :nilai="number_format($r['kwh_ton'], 3)" satuan="kWh/ton"
              :ket="number_format($r['kwh']).' kWh terpakai'" warna="#22312F" />
       <x-kpi label="Solar per Hari" :nilai="Energi::ringkas($r['liter_hari'], 1)" satuan="L/hari"

@@ -15,8 +15,8 @@
 
     <div class="grid gap-4 grid-cols-2 lg:grid-cols-4 mt-6 pt-6 hairline border-b-0">
       @foreach ([
-        ['Solar Terpakai', number_format($r['liter']), 'L', '#0F766E'],
-        ['Alat Berat', number_format($r['liter_alat']), 'L', '#2A9D8F'],
+        ['Solar Terpakai', number_format($r['liter']), 'L', '#F57C00'],
+        ['Alat Berat', number_format($r['liter_alat']), 'L', '#FF9800'],
         ['Genset', number_format($r['liter_genset']), 'L', '#D9993A'],
         ['Biaya Solar', 'Rp '.Energi::ringkas(Energi::literKeRp($r['liter']), 2), null, '#E2663A'],
       ] as [$l, $v, $s, $w])
@@ -124,11 +124,11 @@
 
     <div class="grid gap-4 grid-cols-2 lg:grid-cols-4 mt-5">
       <x-kpi label="Menurut Stok" :nilai="number_format($recon['disalurkan'])" satuan="L" ket="Stok awal + penyaluran − stok akhir" />
-      <x-kpi label="Tercatat Terpakai" :nilai="number_format($recon['tercatat'])" satuan="L" ket="Jumlah lembar harian unit" warna="#2A9D8F" />
+      <x-kpi label="Tercatat Terpakai" :nilai="number_format($recon['tercatat'])" satuan="L" ket="Jumlah lembar harian unit" warna="#FF9800" />
       <x-kpi label="Selisih" :nilai="number_format($recon['selisih'], 1)" satuan="L"
-             :warna="abs($recon['persen']) > 3 ? '#E2663A' : '#0F766E'" ket="Positif berarti ada solar yang tidak tercatat pemakaiannya" />
+             :warna="abs($recon['persen']) > 3 ? '#E2663A' : '#F57C00'" ket="Positif berarti ada solar yang tidak tercatat pemakaiannya" />
       <x-kpi label="Selisih Relatif" :nilai="number_format($recon['persen'], 2).'%'"
-             :warna="abs($recon['persen']) > 3 ? '#E2663A' : '#0F766E'"
+             :warna="abs($recon['persen']) > 3 ? '#E2663A' : '#F57C00'"
              :ket="abs($recon['persen']) > 3 ? 'Di atas 3% — perlu ditelusuri' : 'Dalam batas wajar'" />
     </div>
 

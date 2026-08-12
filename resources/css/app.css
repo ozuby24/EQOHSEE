@@ -53,8 +53,8 @@ p,li,td,th,dd,dt,h1,h2,h3,h4{ overflow-wrap:anywhere; }
    Teal + Coral + Sand di atas charcoal. Gradien merek berangkat dari
    charcoal, bukan dari teal, supaya bidang gelapnya terbaca tenang dan
    tealnya muncul sebagai cahaya — itu yang memberi kesan mahal. */
-.brand-gradient{ background:linear-gradient(120deg,#1B2422 0%,#25332F 42%,#0C5F58 76%,#0F766E 100%); }
-.lime-gradient { background:linear-gradient(135deg,#0C5F58 0%,#2A9D8F 100%); }
+.brand-gradient{ background:linear-gradient(160deg,#0B1117 0%,#141C25 55%,#1B2530 100%); }
+.lime-gradient { background:linear-gradient(135deg,#DC6E00 0%,#FF9800 100%); }
 .coral-gradient{ background:linear-gradient(135deg,#E2663A 0%,#FF7F50 100%); }
 .sand-gradient { background:linear-gradient(135deg,#F5E6CA 0%,#F3EFE6 100%); }
 
@@ -301,7 +301,7 @@ input,select,textarea{ outline:none; }
    bergeser ke arah palet. Inilah yang membuat foto stok terbaca sebagai
    bagian dari mereknya, bukan sebagai gambar yang ditempel. */
 .grade-tambang-lapis{
-  background:linear-gradient(118deg,#0F766E 0%,#1B2422 46%,#2E2E2E 68%,#E2663A 100%);
+  background:linear-gradient(118deg,#F57C00 0%,#1B2422 46%,#2E2E2E 68%,#E2663A 100%);
   mix-blend-mode:soft-light;
   opacity:.55;
 }
@@ -367,7 +367,7 @@ input,select,textarea{ outline:none; }
   animation: sheen 7s ease-in-out infinite;
 }
 /* Varian untuk latar terang. */
-.sheen-ink{ --sheen-base:#123049; --sheen-hi:#2CB0BC; }
+.sheen-ink{ --sheen-base:#0B1117; --sheen-hi:#B8BEC5; }
 @keyframes sheen{
   0%,72% { background-position: 130% 0; }
   100%   { background-position: -30% 0; }

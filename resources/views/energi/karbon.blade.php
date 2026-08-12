@@ -19,9 +19,9 @@
     <div class="grid gap-4 grid-cols-2 lg:grid-cols-4 mt-6 pt-6 hairline border-b-0">
       @foreach ([
         ['Total Emisi', number_format($r['tco2e'], 2), 'tCO₂e', '#22312F'],
-        ['Intensitas Karbon', $r['ton'] > 0 ? number_format($r['tco2e'] / $r['ton'], 4) : '0', 'tCO₂e/ton', '#0F766E'],
+        ['Intensitas Karbon', $r['ton'] > 0 ? number_format($r['tco2e'] / $r['ton'], 4) : '0', 'tCO₂e/ton', '#F57C00'],
         ['Emisi Solar', number_format(Energi::literKeCo2($r['liter']), 2), 'tCO₂e', '#E2663A'],
-        ['Emisi Listrik', number_format(Energi::kwhKeCo2($r['kwh']), 2), 'tCO₂e', '#2A9D8F'],
+        ['Emisi Listrik', number_format(Energi::kwhKeCo2($r['kwh']), 2), 'tCO₂e', '#FF9800'],
       ] as [$l, $v, $s, $w])
         <div>
           <div class="stat stat-sm" style="color:{{ $w }}">{{ $v }}<span class="stat-unit">{{ $s }}</span></div>
@@ -84,7 +84,7 @@
         <x-kpi label="Lingkup 1 — Langsung" :nilai="number_format($s1, 2)" satuan="tCO₂e"
                :rasio="$s1 / $st" :ket="number_format($s1 / $st * 100, 1).'% dari total'" warna="#E2663A" />
         <x-kpi label="Lingkup 2 — Listrik" :nilai="number_format($s2, 2)" satuan="tCO₂e"
-               :rasio="$s2 / $st" :ket="number_format($s2 / $st * 100, 1).'% dari total'" warna="#2A9D8F" />
+               :rasio="$s2 / $st" :ket="number_format($s2 / $st * 100, 1).'% dari total'" warna="#FF9800" />
       </div>
 
       <div class="rounded-xl bg-cam-lime-soft border border-cam-lime/25 px-4 py-3 mt-4 text-[11.5px] leading-relaxed text-cam-lime-deep">
@@ -108,7 +108,7 @@
     <div class="grid gap-4 grid-cols-2 lg:grid-cols-4 mt-5">
       <x-kpi label="Program Berjalan" :nilai="$hemat['jumlah']" satuan="program" />
       <x-kpi label="Emisi Dihindari" :nilai="number_format($hemat['tco2e'], 2)" satuan="tCO₂e/bulan" warna="#22312F" />
-      <x-kpi label="Setara Setahun" :nilai="number_format($hemat['tco2e'] * 12, 1)" satuan="tCO₂e/tahun" warna="#2A9D8F"
+      <x-kpi label="Setara Setahun" :nilai="number_format($hemat['tco2e'] * 12, 1)" satuan="tCO₂e/tahun" warna="#FF9800"
              ket="Bila laju bulanan bertahan" />
       <x-kpi label="Nilai Penghematan" :nilai="'Rp '.Energi::ringkas($hemat['rupiah'] * 12, 2)" satuan="/tahun" warna="#E2663A" />
     </div>

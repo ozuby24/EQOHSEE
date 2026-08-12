@@ -54,7 +54,7 @@
            :ket="$r['ton'] > 0 ? number_format($r['tco2e'] / $r['ton'], 4).' tCO₂e per ton produksi' : 'Belum ada produksi tercatat'"
            warna="#22312F" />
     <x-kpi label="Total Energy" :nilai="Energi::ringkas($r['gj'], 1)" satuan="GJ"
-           :ket="number_format($r['ton']).' ton produksi · '.$r['hari'].' hari'" warna="#2A9D8F" />
+           :ket="number_format($r['ton']).' ton produksi · '.$r['hari'].' hari'" warna="#FF9800" />
   </div>
 
   {{-- Tren --}}

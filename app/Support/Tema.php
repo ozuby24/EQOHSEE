@@ -14,8 +14,8 @@ use App\Models\User;
  */
 final class Tema
 {
-    public const BAWAAN_TERANG = '#0E747E';
-    public const BAWAAN_GELAP  = '#0B3B39';
+    public const BAWAAN_TERANG = '#F57C00';
+    public const BAWAAN_GELAP  = '#0B1117';
 
     /** 'terang', 'gelap', atau null bila mengikuti setelan perangkat. */
     public static function pilihan(?User $u): ?string

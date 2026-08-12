@@ -145,8 +145,8 @@ class DashboardTest extends TestCase
 
         $this->get('/dashboard')
             ->assertOk()
-            ->assertSee('Safety is Our Priority')
-            ->assertSee('eqohsee-mark-white.svg', false);
+            ->assertSee('Safe Today · Sustainable Tomorrow')
+            ->assertSee('eqohsee-mark.png', false);
     }
 
     public function test_bilah_atas_membawa_judul_dan_subjudul(): void

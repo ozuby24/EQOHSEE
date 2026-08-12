@@ -1,6 +1,6 @@
 @if(session('sukses'))
   <div class="rounded-xl px-4 py-3 text-[12.5px] font-semibold flex items-center gap-2.5"
-       style="background:var(--eq-aksen-tipis,rgba(14,116,126,.12));color:var(--eq-aksen,#0E747E)">
+       style="background:var(--eq-aksen-tipis,rgba(14,116,126,.12));color:var(--eq-aksen,#F57C00)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
          stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 shrink-0" aria-hidden="true">
       <path d="m5 12.5 4.5 4.5L19 7.5"/>
