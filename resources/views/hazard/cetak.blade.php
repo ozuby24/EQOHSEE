@@ -20,9 +20,9 @@
         color:#fff;display:grid;place-items:center;font-weight:800;font-size:14px}
   @media print{ .noprint{display:none} body{padding:0} }
 </style>
-  <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
-  <link rel="icon" type="image/png" href="{{ asset('favicon-32.png') }}">
-  <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
+  <link rel="icon" href="{{ \App\Support\Aset::v('favicon.ico') }}" sizes="any">
+  <link rel="icon" type="image/png" href="{{ \App\Support\Aset::v('favicon-32.png') }}">
+  <link rel="apple-touch-icon" href="{{ \App\Support\Aset::v('apple-touch-icon.png') }}">
 </head>
 <body>
 <div class="noprint" style="margin-bottom:14px">

@@ -139,6 +139,19 @@ class DashboardTest extends TestCase
 
     /* ---------- kerangka halaman ---------- */
 
+    public function test_favicon_membawa_penanda_versi(): void
+    {
+        // Favicon disimpan peramban di luar cache halaman biasa dan tidak
+        // ikut terhapus oleh muat-ulang paksa. Tanpa penanda versi pada
+        // alamatnya, lambang yang sudah diganti tetap tampil lama di tab —
+        // persis yang pernah terjadi setelah pergantian merek.
+        $this->actingAs($this->pengguna());
+
+        $this->get('/dashboard')->assertOk()
+            ->assertSee('brand/favicon.svg?v=', false)
+            ->assertSee('favicon.ico?v=', false);
+    }
+
     public function test_bilah_samping_membawa_lambang_dan_taglinenya(): void
     {
         $this->actingAs($this->pengguna());
