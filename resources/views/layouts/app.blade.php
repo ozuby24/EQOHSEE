@@ -49,6 +49,9 @@
   $modul = \App\Support\Menu::modulAktif();
   $menu  = \App\Support\Menu::all();
   $aktif = \App\Support\Menu::modul($modul);
+
+  /* Sekali di sini, bukan sekali per butir menu — lihat App\Support\Lencana. */
+  $lencana = \App\Support\Lencana::semua(auth()->user());
 @endphp
 
 @php
@@ -87,8 +90,11 @@
         @foreach($menu as $key => $m)
           @if(!($m['admin'] ?? false) || (auth()->check() && auth()->user()->isAdmin()))
             <a href="{{ route(collect($m['groups'])->flatten(1)->first()[1]) }}" title="{{ $m['label'] }}"
-               class="grid place-items-center py-2 rounded-lg transition {{ $modul === $key ? 'lime-gradient text-white shadow-glow' : 'text-white/40 hover:text-white hover:bg-white/5' }}">
+               class="relative grid place-items-center py-2 rounded-lg transition {{ $modul === $key ? 'lime-gradient text-white shadow-glow' : 'text-white/40 hover:text-white hover:bg-white/5' }}">
               <svg class="w-[17px] h-[17px]" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $m['icon'] }}"/></svg>
+              @if(\App\Support\Lencana::modul($m, $lencana))
+                <span class="absolute top-0.5 right-0.5 min-w-[7px] h-[7px] rounded-full bg-cam-lime-light"></span>
+              @endif
             </a>
           @endif
         @endforeach
@@ -109,6 +115,11 @@
               <span class="nav-accent absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-cam-lime-light opacity-0"></span>
               {!! \App\Support\IkonNav::svg($label) !!}
               <span>{{ $label }}</span>
+              @if($n = ($lencana[$rute] ?? null))
+                <span class="ml-auto text-[10px] font-bold leading-none px-1.5 py-1 rounded-full bg-cam-lime-light text-cam-ink">
+                  {{ $n > 99 ? '99+' : $n }}
+                </span>
+              @endif
             </a>
 
           @endforeach

@@ -118,13 +118,15 @@ function keluar() {
         <div class="glass rounded-xl p-1 grid grid-cols-3 gap-1">
           <component :is="tautan(m.inertia)"
              v-for="m in menu.modul" :key="m.kunci" :href="m.url" :title="m.label"
-             class="grid place-items-center py-2 rounded-lg transition"
+             class="relative grid place-items-center py-2 rounded-lg transition"
              :class="m.aktif ? 'lime-gradient text-white shadow-glow'
                              : 'text-white/40 hover:text-white hover:bg-white/5'">
             <svg class="w-[17px] h-[17px]" fill="none" stroke="currentColor" stroke-width="2.2"
                  viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" :d="m.ikon"/>
             </svg>
+            <span v-if="m.lencana" class="absolute top-0.5 right-0.5 min-w-[7px] h-[7px]
+                                          rounded-full bg-cam-lime-light"></span>
           </component>
         </div>
         <div class="mt-2.5 px-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cam-lime-light">
@@ -149,6 +151,10 @@ function keluar() {
                 <path :d="b.ikon"/>
               </svg>
               <span>{{ b.label }}</span>
+              <span v-if="b.lencana" class="ml-auto text-[10px] font-bold leading-none px-1.5 py-1
+                                            rounded-full bg-cam-lime-light text-cam-ink">
+                {{ b.lencana > 99 ? '99+' : b.lencana }}
+              </span>
             </component>
           </div>
         </template>

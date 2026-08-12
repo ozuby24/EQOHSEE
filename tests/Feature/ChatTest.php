@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\{Company, Percakapan, User};
+use App\Support\Lencana;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
@@ -213,5 +214,57 @@ class ChatTest extends TestCase
 
         $this->assertSame(0, $percakapan->fresh()->belumDibaca($b),
             'Membuka percakapan harus menandainya terbaca.');
+    }
+
+    /* ══════════════ penanda pada bilah samping ══════════════ */
+
+    public function test_penanda_pesan_tampak_dari_modul_mana_pun(): void
+    {
+        // Tanpa penanda, pesan yang masuk saat orang berada di modul lain
+        // tidak pernah memanggil siapa pun — fiturnya hanya ditemukan oleh
+        // yang kebetulan membuka halaman Pesan.
+        $perusahaan = $this->perusahaan();
+        $a = $this->masuk(perusahaan: $perusahaan);
+        $b = User::factory()->create(['company_id' => $perusahaan->id]);
+        $this->post('/pesan/mulai', ['user_id' => $b->id]);
+        $percakapan = Percakapan::where('jenis', 'langsung')->first();
+        $this->post("/pesan/{$percakapan->id}", ['isi' => 'Halo Budi']);
+
+        $this->actingAs($b);
+
+        $this->assertSame(['pesan.index' => 1], Lencana::semua($b));
+    }
+
+    public function test_penanda_tidak_menghitung_pesan_sendiri(): void
+    {
+        $perusahaan = $this->perusahaan();
+        $a = $this->masuk(perusahaan: $perusahaan);
+        $b = User::factory()->create(['company_id' => $perusahaan->id]);
+        $this->post('/pesan/mulai', ['user_id' => $b->id]);
+        $percakapan = Percakapan::where('jenis', 'langsung')->first();
+        $this->post("/pesan/{$percakapan->id}", ['isi' => 'Halo Budi']);
+
+        $this->assertSame([], Lencana::semua($a->fresh()),
+            'Pengirim tidak boleh melihat penanda atas pesannya sendiri.');
+    }
+
+    public function test_penanda_hilang_setelah_percakapan_dibuka(): void
+    {
+        $perusahaan = $this->perusahaan();
+        $a = $this->masuk(perusahaan: $perusahaan);
+        $b = User::factory()->create(['company_id' => $perusahaan->id]);
+        $this->post('/pesan/mulai', ['user_id' => $b->id]);
+        $percakapan = Percakapan::where('jenis', 'langsung')->first();
+        $this->post("/pesan/{$percakapan->id}", ['isi' => 'Halo Budi']);
+
+        $this->actingAs($b);
+        $this->get('/pesan', ['percakapan' => $percakapan->id])->assertOk();
+
+        $this->assertSame([], Lencana::semua($b->fresh()));
+    }
+
+    public function test_tamu_tidak_punya_penanda(): void
+    {
+        $this->assertSame([], Lencana::semua(null));
     }
 }

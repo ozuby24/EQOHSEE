@@ -25,6 +25,8 @@ export interface ButirMenu {
   ikon: string;
   /** true bila tujuannya dirender Inertia — menentukan <Link> atau <a>. */
   inertia: boolean;
+  /** Angka penanda, mis. pesan belum dibaca; null bila tidak ada. */
+  lencana: number | null;
 }
 
 export interface Modul {
@@ -34,6 +36,8 @@ export interface Modul {
   url: string;
   aktif: boolean;
   inertia: boolean;
+  /** Jumlah penanda seluruh butir modul ini. */
+  lencana: number | null;
 }
 
 export interface KerangkaMenu {

@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Support\{IkonNav, Menu, RuteInertia, Tema};
+use App\Support\{IkonNav, Lencana, Menu, RuteInertia, Tema};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
@@ -73,16 +73,20 @@ class HandleInertiaRequests extends Middleware
         $kunci = Menu::modulAktif();
         $aktif = Menu::modul($kunci);
 
+        // Sekali per permintaan, bukan sekali per butir — lihat App\Support\Lencana.
+        $lencana = Lencana::semua($u);
+
         $modul = [];
         foreach (Menu::untuk($u) as $k => $m) {
             $rute = Menu::ruteAwal($m);
 
             $modul[] = [
-                'kunci' => $k,
-                'label' => $m['label'],
-                'ikon'  => $m['icon'],
-                'url'   => $rute ? route($rute) : '#',
-                'aktif' => $k === $kunci,
+                'kunci'   => $k,
+                'label'   => $m['label'],
+                'ikon'    => $m['icon'],
+                'url'     => $rute ? route($rute) : '#',
+                'aktif'   => $k === $kunci,
+                'lencana' => Lencana::modul($m, $lencana),
 
                 /* Menentukan <Link> atau <a> di sisi Vue. Salah menandai
                    di sini bukan sekadar membuat perpindahan lebih lambat —
@@ -101,6 +105,7 @@ class HandleInertiaRequests extends Middleware
                     'aktif'   => request()->is($cocok),
                     'ikon'    => IkonNav::JALUR[IkonNav::nama($label)],
                     'inertia' => RuteInertia::ada($rute),
+                    'lencana' => $lencana[$rute] ?? null,
                 ];
             }
             $grup[] = ['nama' => (string) $nama, 'butir' => $isi];
