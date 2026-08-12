@@ -72,6 +72,16 @@ final class RuteInertia
         'inspeksi.template.index',
         'inspeksi.template.create',
 
+        /* LMS */
+        'news.index',
+        'news.create',
+        'procedures.index',
+        'procedures.create',
+        'signatories.index',
+        'certificates.index',
+        'evaluations.index',
+        'evaluations.create',
+
         /* Admin */
         'admin.system',
         'admin.users.index',

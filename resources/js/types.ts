@@ -1503,3 +1503,131 @@ export interface HalamanSistem {
   tautan: { perusahaanBaru: string; bersihkanLog: string };
   pemeliharaan: Array<{ aksi: string; label: string; url: string }>;
 }
+
+/* ══════════════ Berita, Prosedur, Penanda Tangan ══════════════ */
+
+export interface HalamanDaftarBerita {
+  judul: string; subjudul: string;
+  berita: Array<{
+    id: number; judul: string; tanggal: string | null; cuplikan: string;
+    url: string; urlUbah: string; urlHapus: string;
+  }>;
+  halaman: { kini: number; akhir: number; total: number; tautan: TautanHalaman[] };
+  bolehUbah: boolean;
+  tautan: { buat: string };
+}
+
+export interface HalamanDetailBerita {
+  judul: string; subjudul: string;
+  berita: { judul: string; tanggal: string | null; isi: string };
+  tautan: { daftar: string };
+}
+
+export interface HalamanFormBerita {
+  judul: string; subjudul: string;
+  tersimpan: boolean;
+  awal: Record<string, string>;
+  tautan: { simpan: string; batal: string };
+}
+
+export interface HalamanDaftarProsedur {
+  judul: string; subjudul: string;
+  prosedur: Array<{
+    id: number; kode: string | null; judul: string;
+    kategori: string | null; keterangan: string | null; url: string | null;
+    urlUbah: string; urlHapus: string;
+  }>;
+  halaman: { kini: number; akhir: number; total: number; tautan: TautanHalaman[] };
+  q: string;
+  bolehUbah: boolean;
+  tautan: { daftar: string; buat: string };
+}
+
+export interface HalamanFormProsedur {
+  judul: string; subjudul: string;
+  tersimpan: boolean;
+  awal: Record<string, string>;
+  tautan: { simpan: string; batal: string };
+}
+
+export interface PenandaTangan {
+  id: number;
+  nama: string;
+  jabatan: string;
+  aktif: boolean;
+  tandaTangan: string | null;
+  urlSimpan: string;
+  urlHapus: string;
+}
+
+export interface HalamanPenandaTangan {
+  judul: string; subjudul: string;
+  penandaTangan: PenandaTangan[];
+  tautan: { tambah: string };
+}
+
+/* ══════════════ Sertifikat & Evaluasi ══════════════ */
+
+export interface HalamanDaftarSertifikat {
+  judul: string; subjudul: string;
+  sertifikat: Array<{
+    id: number; kursus: string; nomor: string;
+    tanggal: string | null; penerima: string; url: string;
+  }>;
+  siapTerbit: Array<{ kursus: string | null; url: string }>;
+  menungguEvaluasi: string[];
+  admin: boolean;
+}
+
+export interface HalamanLembarSertifikat {
+  judul: string; subjudul: string;
+  c: {
+    template: string;
+    penerima: string; kursus: string; nomor: string;
+    nilai: number | null; terbit: string | null;
+    pemilik: string | null; lokasi: string | null; logo: string | null;
+    ttdNama: string; ttdJabatan: string; ttdGambar: string | null;
+    /** SVG barcode digambar server; lihat catatan di CertificateController. */
+    barcodeSvg: string;
+    barcodeTeks: string;
+  };
+  markUrl: string;
+  tautan: { verifikasi: string; daftar: string };
+}
+
+export interface HalamanDaftarEvaluasi {
+  judul: string; subjudul: string;
+  evaluasi: Array<{
+    id: number; peserta: string | null; kursus: string | null;
+    trainer: string | null; tanggal: string | null;
+    nilai: number; rekomendasi: string | null; url: string;
+  }>;
+  halaman: { kini: number; akhir: number; total: number; tautan: TautanHalaman[] };
+  menunggu: Array<{ peserta: string | null; kursus: string | null; url: string }>;
+  bolehMenilai: boolean;
+  tautan: { buat: string };
+}
+
+export interface HalamanDetailEvaluasi {
+  judul: string; subjudul: string;
+  ev: {
+    peserta: string | null; kursus: string | null; trainer: string | null;
+    tanggal: string | null; nilai: number; rekomendasi: string | null;
+    strengths: string | null; improvements: string | null; notes: string | null;
+  };
+  rincian: Array<{ label: string; nilai: number }>;
+  bolehUbah: boolean;
+  tautan: { daftar: string; ubah: string; hapus: string };
+}
+
+export interface HalamanFormEvaluasi {
+  judul: string; subjudul: string;
+  tersimpan: boolean;
+  awal: Record<string, string>;
+  opsi: { peserta: Pilihan[]; kursus: Pilihan[]; rekomendasi: string[] };
+  /** Peta id peserta → kursus yang diambilnya. */
+  kursusPeserta: Record<string, Array<{ id: number; title: string }>>;
+  medan: Array<{ nama: string; label: string; ket: string }>;
+  catatan: Array<{ nama: string; label: string; ph: string }>;
+  tautan: { simpan: string; batal: string };
+}

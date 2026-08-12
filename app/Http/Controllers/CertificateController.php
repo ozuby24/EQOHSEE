@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Certificate, Company, Course, Enrollment, PostTrainingEvaluation, Signatory};
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class CertificateController extends Controller
 {
@@ -32,7 +33,32 @@ class CertificateController extends Controller
             ->whereNotIn('course_id', Certificate::where('user_id', $me->id)->pluck('course_id'))
             ->whereNotIn('course_id', $tunda ?: [0])->get();
 
-        return view('certificates.index', compact('certificates','claimable','menungguEvaluasi'));
+        return Inertia::render('Sertifikat/Daftar', [
+            'judul'    => 'Sertifikat',
+            'subjudul' => 'Sertifikat pelatihan yang sudah terbit dan yang menunggu',
+
+            'sertifikat' => $certificates->map(fn (Certificate $c) => [
+                'id'      => $c->id,
+                'kursus'  => $c->course_title,
+                'nomor'   => $c->certificate_number,
+                'tanggal' => $c->issued_at?->format('d M Y'),
+                'penerima'=> $c->recipient_name,
+                'url'     => route('certificates.show', $c),
+            ])->all(),
+
+            // "Siap diterbitkan" hanya muncul untuk kursus yang memang
+            // tidak mensyaratkan evaluasi trainer; yang mensyaratkannya
+            // ada di daftar menunggu, bukan di sini.
+            'siapTerbit' => $claimable->map(fn ($en) => [
+                'kursus' => $en->course?->title,
+                'url'    => route('certificates.store', $en->course),
+            ])->all(),
+
+            'menungguEvaluasi' => $menungguEvaluasi->map(fn ($en) => $en->course?->title)
+                ->filter()->values()->all(),
+
+            'admin' => $me->isAdmin(),
+        ]);
     }
 
     /**
@@ -125,7 +151,43 @@ class CertificateController extends Controller
         abort_unless($certificate->user_id === auth()->id() || auth()->user()->isAdmin(), 403);
         $certificate->load(['course','signatory','user','company.owner']);
 
-        return view('certificates.show', ['c' => $certificate]);
+        $logo = $certificate->company?->effectiveLogo();
+
+        return Inertia::render('Sertifikat/Lembar', [
+            'judul'    => 'Sertifikat',
+            'subjudul' => $certificate->certificate_number,
+
+            'c' => [
+                'template'   => $certificate->template ?: 'klasik',
+                'penerima'   => $certificate->recipient_name,
+                'kursus'     => $certificate->course_title,
+                'nomor'      => $certificate->certificate_number,
+                'nilai'      => $certificate->final_score,
+                'terbit'     => $certificate->issued_at?->translatedFormat('d F Y'),
+                'pemilik'    => $certificate->company?->ownerName(),
+                'lokasi'     => $certificate->company?->location,
+                'logo'       => $logo ? asset('storage/'.$logo) : null,
+                'ttdNama'    => $certificate->signed_by_name ?: '—',
+                'ttdJabatan' => $certificate->signatory?->title ?: 'Penanggung Jawab',
+                'ttdGambar'  => $certificate->signatory?->signature
+                    ? asset('storage/'.$certificate->signatory->signature) : null,
+
+                // Barcode digambar di server sebagai SVG. Menggambarnya di
+                // peramban berarti aturan pengkodeannya ada dua salinan,
+                // dan lembar yang dicetak bisa memuat kode yang tidak
+                // dikenali halaman verifikasinya sendiri.
+                'barcodeSvg' => \App\Support\Barcode::svg($certificate->barcodeText(), 40, 1.4),
+                'barcodeTeks'=> $certificate->barcodeText(),
+            ],
+
+            'markUrl' => asset('brand/eqohsee-mark.png'),
+
+            'tautan' => [
+                'verifikasi' => route('certificates.verify',
+                    $certificate->verification_code ?: $certificate->certificate_number),
+                'daftar' => route('certificates.index'),
+            ],
+        ]);
     }
 
     /** Halaman verifikasi publik (tanpa login) — tujuan pemindaian barcode */
