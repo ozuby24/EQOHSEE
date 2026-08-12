@@ -6,8 +6,8 @@
 
 body{
   font-family:'Inter',sans-serif;
-  background:#FBFAF7;
-  color:#123049;
+  background:#F5F7F9;
+  color:#0F1720;
 }
 
 /* ---------- Pengaman responsif global ----------
@@ -232,14 +232,16 @@ input,select,textarea{ outline:none; }
 .aurora{ position:relative; isolation:isolate; overflow:hidden; }
 /* Pendarnya dijauhkan dari tepi atas dan bawah bidang. Cahaya yang jatuh
    persis di garis pertemuan dua bagian justru menegaskan batasnya —
-   yang seharusnya dilarutkan malah jadi terlihat. Warnanya juga kembali
-   ke palet: teal dan sedikit coral, tanpa biru yang dulu nyasar ke sini. */
+   yang seharusnya dilarutkan malah jadi terlihat.
+   Warnanya mengikuti merek: jingga tipis di atas dasar navy. Bukan dua
+   hue yang bersaing — pendar yang berwarna-warni mengubah bidang gelap
+   menjadi keruh, dan bidang keruh membuat teks di atasnya ikut kotor. */
 .aurora::before{
   content:""; position:absolute; inset:-40%; z-index:-1;
   background:
-    radial-gradient(38% 42% at 24% 48%, rgba(42,157,143,.38), transparent 62%),
-    radial-gradient(32% 38% at 78% 56%, rgba(255,127,80,.16), transparent 64%),
-    radial-gradient(44% 44% at 54% 74%, rgba(15,118,110,.32), transparent 66%);
+    radial-gradient(38% 42% at 24% 48%, rgba(245,124,0,.16), transparent 62%),
+    radial-gradient(32% 38% at 78% 56%, rgba(255,152,0,.10), transparent 64%),
+    radial-gradient(44% 44% at 54% 74%, rgba(30,42,56,.55), transparent 66%);
   filter: blur(38px);
   animation: aurora 22s ease-in-out infinite alternate;
 }

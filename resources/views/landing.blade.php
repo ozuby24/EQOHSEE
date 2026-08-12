@@ -410,14 +410,15 @@
           <button type="button" @click="buka('{{ $slug }}')"
                   class="transition-transform duration-300 hover:-translate-y-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded"
                   :class="aktif === '{{ $slug }}' ? '-translate-y-2' : ''"
-                  style="color:{{ $pilar[$slug]['warna'] }}"
+                  :style="aktif === '{{ $slug }}' ? 'color:#FF9800' : ''"
+                  style="color:#E8ECF0"
                   aria-label="Lihat pilar {{ $pilar[$slug]['nama'] }}">{{ $huruf }}</button>
         @endforeach
       </div>
     </div>
 
     {{-- Kartu pilar --}}
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-12 pers">
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mt-12 pers">
       @foreach ($pilar as $slug => $p)
         <button type="button" @click="buka('{{ $slug }}')"
                 class="group text-left kaca-gelap rounded-2xl p-5 tilt tilt-fast d3 reveal reveal-d{{ min($loop->iteration, 6) }}
@@ -436,8 +437,9 @@
             </div>
           </div>
 
-          <div class="flex items-center gap-1.5 mt-4 text-[11px] font-bold"
-               style="color:{{ $p['light'] }}">
+          <div class="flex items-center gap-1.5 mt-4 text-[11px] font-bold text-white/45
+                      group-hover:text-[#FF9800] transition-colors"
+               :class="aktif === '{{ $slug }}' ? 'text-[#FF9800]' : ''">
             <span x-text="aktif === '{{ $slug }}' ? 'Tutup rincian' : 'Lihat rincian'">Lihat rincian</span>
             <svg class="w-3.5 h-3.5 transition-transform duration-300" viewBox="0 0 24 24" fill="none"
                  stroke="currentColor" stroke-width="2.4"
@@ -509,7 +511,7 @@
   {{-- Peralihan gelap ke terang: bidang paling tajam di halaman ini, jadi
        dilarutkan paling panjang. Pita pasir tipis di ujungnya menahan
        supaya batasnya tetap terasa hangat, bukan mendadak putih. --}}
-  <div class="sambung sambung-bawah h-64 bg-gradient-to-b from-transparent via-[#2C4A45] via-55% to-cam-bg"></div>
+  <div class="sambung sambung-bawah h-64 bg-gradient-to-b from-transparent via-[#1B2530] via-55% to-cam-bg"></div>
 </section>
 
 {{-- ══════════ MODUL ══════════ --}}

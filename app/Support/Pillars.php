@@ -27,7 +27,7 @@ class Pillars
             'energy' => [
                 'nama'  => 'Energy',
                 'ket'   => 'Optimasi energi berkelanjutan',
-                'deep'  => '#14497D', 'warna' => '#1F6FB8', 'light' => '#4E9BDD',
+                'deep'  => '#B85C00', 'warna' => '#F57C00', 'light' => '#FF9800',
                 'ikon'  => 'bolt',
                 'ringkas' => 'Mengelola konsumsi dan keandalan energi di seluruh rantai operasi tambang — dari pembangkit, distribusi, hingga alat berat di lapangan.',
                 'cakupan' => [
@@ -41,7 +41,7 @@ class Pillars
             'quality' => [
                 'nama'  => 'Quality',
                 'ket'   => 'Mutu di setiap pekerjaan',
-                'deep'  => '#1B6E99', 'warna' => '#2FA3DE', 'light' => '#69C2EC',
+                'deep'  => '#1B7FA8', 'warna' => '#29ABE2', 'light' => '#5FC5EE',
                 'ikon'  => 'droplet',
                 'ringkas' => 'Menjaga hasil kerja tetap konsisten terhadap standar — lewat prosedur yang terkendali, kompetensi terverifikasi, dan pemeriksaan berkala.',
                 'cakupan' => [
@@ -55,7 +55,7 @@ class Pillars
             'occhealth' => [
                 'nama'  => 'Occupational Health',
                 'ket'   => 'Lindungi kesehatan kerja',
-                'deep'  => '#B45F0C', 'warna' => '#F08A22', 'light' => '#F8B268',
+                'deep'  => '#16883F', 'warna' => '#22C55E', 'light' => '#4ADE80',
                 'ikon'  => 'health',
                 'ringkas' => 'Menjaga pekerja pulang dalam keadaan sehat — mengendalikan pajanan di lingkungan kerja sebelum menjadi penyakit akibat kerja.',
                 'cakupan' => [
@@ -69,7 +69,7 @@ class Pillars
             'hygiene' => [
                 'nama'  => 'Hygiene',
                 'ket'   => 'Kendalikan pajanan di tempat kerja',
-                'deep'  => '#9E4B2C', 'warna' => '#E2663A', 'light' => '#FF9B72',
+                'deep'  => '#B85C00', 'warna' => '#F57C00', 'light' => '#FF9800',
                 'ikon'  => 'health',
                 'ringkas' => 'Higiene industri: mengukur pajanan di lingkungan kerja lalu menekannya pada sumbernya, sebelum tubuh pekerja yang menanggung.',
                 'cakupan' => [
@@ -83,7 +83,7 @@ class Pillars
             'safety' => [
                 'nama'  => 'Safety',
                 'ket'   => 'Zero compromise, zero tolerance',
-                'deep'  => '#0C6F68', 'warna' => '#12897F', 'light' => '#1FB3A6',
+                'deep'  => '#1B7FA8', 'warna' => '#29ABE2', 'light' => '#5FC5EE',
                 'ikon'  => 'shield',
                 'ringkas' => 'Inti dari seluruh kerangka: mengenali bahaya lebih dulu, mengendalikannya berjenjang, dan memastikan tindak lanjut benar-benar menutup risiko.',
                 'cakupan' => [
@@ -97,7 +97,7 @@ class Pillars
             'environment' => [
                 'nama'  => 'Environment',
                 'ket'   => 'Jaga alam untuk masa depan',
-                'deep'  => '#3D7F26', 'warna' => '#5EAE38', 'light' => '#8ACC6B',
+                'deep'  => '#16883F', 'warna' => '#22C55E', 'light' => '#4ADE80',
                 'ikon'  => 'leaf',
                 'ringkas' => 'Menekan dampak operasi terhadap lingkungan sekitar tambang, dari pengelolaan limbah hingga pemulihan lahan pascatambang.',
                 'cakupan' => [
@@ -111,7 +111,7 @@ class Pillars
             'engineering' => [
                 'nama'  => 'Engineering',
                 'ket'   => 'Solusi andal & efisien',
-                'deep'  => '#1B7F8A', 'warna' => '#2CB0BC', 'light' => '#5FCFD8',
+                'deep'  => '#B85C00', 'warna' => '#F57C00', 'light' => '#FF9800',
                 'ikon'  => 'gear',
                 'ringkas' => 'Memastikan sarana, prasarana, instalasi, dan peralatan tambang layak dioperasikan — dan tetap layak sepanjang umur pakainya.',
                 'cakupan' => [
@@ -127,7 +127,7 @@ class Pillars
             'konservasi' => [
                 'nama'  => 'Konservasi Minerba',
                 'ket'   => 'Cadangan dipakai seoptimalnya',
-                'deep'  => '#7A5A22', 'warna' => '#C08A3E', 'light' => '#E3B872',
+                'deep'  => '#1B7FA8', 'warna' => '#29ABE2', 'light' => '#5FC5EE',
                 'ikon'  => 'gem',
                 'ringkas' => 'Memastikan mineral dan batubara terambil seoptimal mungkin dan tidak terbuang percuma — termasuk yang berkadar rendah dan mineral ikutannya.',
                 'cakupan' => [

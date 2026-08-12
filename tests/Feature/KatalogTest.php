@@ -110,7 +110,7 @@ class KatalogTest extends TestCase
 
     public function test_gradien_pilar_terbentuk_dan_punya_cadangan(): void
     {
-        $this->assertStringContainsString('#1F6FB8', Pillars::gradient('energy'));
+        $this->assertStringContainsString(Pillars::get('energy')['warna'], Pillars::gradient('energy'));
         $this->assertStringStartsWith('linear-gradient', Pillars::gradient('tidak-ada'));
     }
 
@@ -145,10 +145,27 @@ class KatalogTest extends TestCase
         }
     }
 
-    public function test_warna_tiap_aspek_berbeda_satu_sama_lain(): void
+    public function test_palet_aspek_tetap_bertahan_pada_tiga_warna(): void
     {
-        // Dua aspek berwarna sama membuat lencana modul tidak dapat dibedakan.
-        $warna = array_column(Pillars::all(), 'warna');
-        $this->assertSame($warna, array_unique($warna));
+        // Dahulu tiap aspek berwarna sendiri — delapan hue pada satu layar.
+        // Delapan warna berhenti membedakan apa pun: yang tersisa hanya
+        // pelangi, dan mereknya ikut hilang di dalamnya. Paletnya kini
+        // hanya jingga, cyan, dan hijau yang berulang.
+        $warna = array_values(array_unique(array_column(Pillars::all(), 'warna')));
+
+        $this->assertLessThanOrEqual(3, count($warna),
+            'Palet aspek tidak boleh melebar lagi menjadi pelangi.');
+    }
+
+    public function test_tiap_aspek_dibedakan_namanya_bukan_warnanya(): void
+    {
+        // Karena warna kini berulang, nama aspeklah yang membedakan — dan
+        // nama itu harus benar-benar tampil di kartu modul, bukan sekadar
+        // tersimpan di registry.
+        $nama = array_column(Pillars::all(), 'nama');
+
+        $this->assertSame($nama, array_unique($nama), 'Dua aspek tidak boleh bernama sama.');
+
+        $this->get('/')->assertOk()->assertSee('Pilar '.Pillars::get('energy')['nama']);
     }
 }
