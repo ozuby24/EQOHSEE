@@ -1,11 +1,20 @@
 #!/bin/bash
 # EQOHSEE VPS deploy helper.
-# Run this ON THE VPS from inside the repo: bash deploy/deploy.sh [server_name]
-# server_name defaults to the VPS public IP if omitted.
+# Jalankan DI VPS dari dalam repo: bash deploy/deploy.sh [server_name]
+#
+# server_name memuat domain DAN alamat IP sekaligus. IP-nya sengaja tetap
+# didaftarkan: selama DNS eqohsee.id belum menyebar — atau bila nanti
+# bermasalah — situsnya tetap dapat dibuka lewat IP, sehingga tidak ada
+# jendela waktu ketika aplikasi sama sekali tak terjangkau.
+#
+# HTTPS: jalankan dengan EQOHSEE_SSL=1 setelah DNS benar-benar mengarah
+# ke VPS ini. Certbot menolak menerbitkan sertifikat bila domainnya belum
+# menunjuk ke sini, jadi ini tidak dijalankan otomatis.
 set -e
 
 REPO_DIR="/var/www/EQOHSEE"
-SERVER_NAME="${1:-103.89.4.246}"
+SERVER_NAME="${1:-eqohsee.id www.eqohsee.id 103.89.4.246}"
+DOMAIN_UTAMA="$(echo "$SERVER_NAME" | awk '{print $1}')"
 
 echo "==> Pulling latest code"
 cd "$REPO_DIR"
@@ -76,4 +85,45 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-echo "==> Done. Visit: http://$SERVER_NAME"
+# ── HTTPS (opsional) ──────────────────────────────────────────────
+if [ "${EQOHSEE_SSL:-0}" = "1" ]; then
+    echo "==> Menerbitkan sertifikat HTTPS untuk $DOMAIN_UTAMA"
+
+    if ! command -v certbot >/dev/null 2>&1; then
+        apt-get update -y && apt-get install -y certbot python3-certbot-nginx
+    fi
+
+    # --nginx menyunting vhost yang barusan dipasang dan menambahkan
+    # blok 443 beserta pengalihan dari 80. Hanya nama yang berupa domain
+    # yang diajukan; certbot menolak alamat IP.
+    DOMAIN_ARGS=""
+    for n in $SERVER_NAME; do
+        case "$n" in
+            *[a-zA-Z]*) DOMAIN_ARGS="$DOMAIN_ARGS -d $n" ;;
+        esac
+    done
+
+    certbot --nginx $DOMAIN_ARGS --non-interactive --agree-tos --redirect \
+        -m "${EQOHSEE_EMAIL:-admin@${DOMAIN_UTAMA}}" || {
+        echo "!!  Certbot gagal. Situs tetap berjalan lewat HTTP."
+        echo "!!  Pastikan DNS $DOMAIN_UTAMA sudah mengarah ke server ini, lalu ulangi."
+    }
+fi
+
+# ── Pemeriksaan APP_URL ───────────────────────────────────────────
+# APP_URL dipakai untuk menyusun alamat mutlak: tautan di surel, dan
+# alamat aset. Bila ia masih menunjuk IP sementara situsnya sudah diakses
+# lewat domain, tautan pada surel yang keluar akan mengarah ke IP —
+# terlihat mencurigakan bagi penerimanya, dan gagal begitu IP berganti.
+APP_URL_KINI="$(grep -E '^APP_URL=' "$REPO_DIR/.env" | cut -d= -f2- | tr -d '"' || true)"
+APP_URL_HARAP="https://${DOMAIN_UTAMA}"
+
+if [ "${EQOHSEE_SSL:-0}" != "1" ]; then APP_URL_HARAP="http://${DOMAIN_UTAMA}"; fi
+
+if [ "$APP_URL_KINI" != "$APP_URL_HARAP" ]; then
+    echo "!!  APP_URL di .env masih '$APP_URL_KINI'."
+    echo "!!  Sebaiknya '$APP_URL_HARAP' — lalu jalankan: php artisan config:cache"
+fi
+
+echo "==> Selesai. Buka: http://$DOMAIN_UTAMA"
+echo "    Nama yang dilayani: $SERVER_NAME"
