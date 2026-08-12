@@ -220,9 +220,14 @@ class HazardController extends Controller
         $bulan = $request->get('bulan');
         $data  = HazardReport::when($bulan, fn($b) => $b->whereRaw(Db::ym('tanggal') . ' = ?', [$bulan]))->get();
 
-        // jumlah bulan aktif (untuk target akumulasi)
+        /* Jumlah bulan yang benar-benar berisi laporan — pengali target.
+           Dihitung lewat pluck, bukan ->distinct()->count(): count()
+           menimpa SELECT dengan count(*) sehingga DISTINCT atas ekspresi
+           bulan ikut hilang, dan yang terhitung menjadi jumlah BARIS.
+           Akibatnya target tiap orang ikut membesar setiap ada laporan
+           baru, dan capaian semua orang merosot tanpa sebab. */
         $bulanAktif = $bulan ? 1 : max(1, HazardReport::selectRaw(Db::ym('tanggal') . ' as b')
-                        ->whereNotNull('tanggal')->distinct()->count());
+                        ->whereNotNull('tanggal')->distinct()->pluck('b')->count());
 
         // KPI per orang
         $perOrang = [];
@@ -258,14 +263,69 @@ class HazardController extends Controller
             $tren[$k] = HazardReport::whereRaw(Db::ym('tanggal') . ' = ?', [$k])->count();
         }
 
-        return view('hazard.analytics', [
-            'bulan' => $bulan, 'bulanAktif' => $bulanAktif,
-            'perOrang' => $perOrang, 'perGolongan' => $perGolongan,
-            'distStatus' => $hitung('status'), 'distRisiko' => $hitung('risiko'),
-            'distKategori' => $hitung('kategori'), 'distLokasi' => $hitung('lokasi')->take(8),
-            'tren' => $tren, 'total' => $data->count(),
-            'bulanOpsi' => HazardReport::selectRaw(Db::ym('tanggal') . ' as b')
-                            ->whereNotNull('tanggal')->distinct()->orderByDesc('b')->pluck('b'),
+        /* Capaian dihitung di sini, bukan di tampilan. Pembagian target yang
+           bernilai nol harus dijaga sekali saja — ditulis ulang di tiap tabel
+           yang menampilkannya, satu di antaranya cepat atau lambat lupa. */
+        $persen = fn (int $aktual, int $target) => $target ? (int) round($aktual / $target * 100) : 0;
+
+        $golongan = [];
+        foreach ($perGolongan as $nama => $g) {
+            $golongan[] = [
+                'nama'     => $nama,
+                'orang'    => $g['orang'],
+                'target'   => $g['target'],
+                'aktual'   => $g['aktual'],
+                'tercapai' => $g['tercapai'],
+                'pct'      => $persen($g['aktual'], $g['target']),
+            ];
+        }
+
+        $maksTren = max(array_values($tren) ?: [1]) ?: 1;
+
+        $sebaran = fn (string $judul, $dist) => [
+            'judul' => $judul,
+            'maks'  => $dist->max() ?: 1,
+            'baris' => $dist->map(fn ($v, $k) => ['label' => $k ?: '—', 'nilai' => $v])->values()->all(),
+        ];
+
+        return \Inertia\Inertia::render('Hazard/Analitik', [
+            'judul'    => 'Analitik & KPI',
+            'subjudul' => 'Capaian pelaporan bahaya terhadap targetnya',
+
+            'bulan'      => $bulan,
+            'bulanAktif' => $bulanAktif,
+            'total'      => $data->count(),
+
+            'opsiBulan' => HazardReport::selectRaw(Db::ym('tanggal') . ' as b')
+                ->whereNotNull('tanggal')->distinct()->orderByDesc('b')->pluck('b')
+                ->map(fn ($b) => [
+                    'nilai' => $b,
+                    'label' => \Carbon\Carbon::parse($b.'-01')->translatedFormat('F Y'),
+                ])->all(),
+
+            'golongan' => $golongan,
+
+            'tren' => collect($tren)->map(fn ($v, $k) => [
+                'label' => \Carbon\Carbon::parse($k.'-01')->translatedFormat('M'),
+                'nilai' => $v,
+                'maks'  => $maksTren,
+            ])->values()->all(),
+
+            'sebaran' => [
+                $sebaran('Status',         $hitung('status')),
+                $sebaran('Risiko',         $hitung('risiko')),
+                $sebaran('Kategori',       $hitung('kategori')),
+                $sebaran('Lokasi teratas', $hitung('lokasi')->take(8)),
+            ],
+
+            'pelapor' => array_values(array_map(fn ($o) => [
+                'nama'    => $o['nama'],
+                'jabatan' => $o['jabatan'] ?: null,
+                'gol'     => $o['gol'],
+                'target'  => $o['target'],
+                'aktual'  => $o['aktual'],
+                'pct'     => $persen($o['aktual'], $o['target']),
+            ], $perOrang)),
         ]);
     }
 

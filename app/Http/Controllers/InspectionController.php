@@ -212,8 +212,12 @@ class InspectionController extends Controller
         $inspeksi = Inspection::with('inspectors')
             ->when($bulan, fn($b) => $b->whereRaw(Db::ym('tanggal') . ' = ?', [$bulan]))->get();
 
+        /* Lewat pluck, bukan ->distinct()->count(): count() menimpa SELECT
+           dengan count(*) sehingga DISTINCT atas ekspresi bulan hilang dan
+           yang terhitung menjadi jumlah BARIS. Target tiap orang lalu ikut
+           membesar setiap ada inspeksi baru. */
         $bulanAktif = $bulan ? 1 : max(1, Inspection::selectRaw(Db::ym('tanggal') . ' as b')
-                        ->whereNotNull('tanggal')->distinct()->count());
+                        ->whereNotNull('tanggal')->distinct()->pluck('b')->count());
 
         $perOrang = [];
         foreach ($inspeksi as $ins) {

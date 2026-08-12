@@ -887,6 +887,51 @@ export interface OpsiBahaya {
   perusahaan: PilihanPerusahaan[];
 }
 
+export interface BarisGolongan {
+  nama: string;
+  orang: number;
+  target: number;
+  aktual: number;
+  tercapai: number;
+  /** Capaian dalam persen — dihitung server; target nol menghasilkan 0. */
+  pct: number;
+}
+
+export interface BatangTren {
+  label: string;
+  nilai: number;
+  /** Nilai tertinggi sepanjang tren, untuk menskalakan tinggi batang. */
+  maks: number;
+}
+
+export interface SebaranBahaya {
+  judul: string;
+  maks: number;
+  baris: Array<{ label: string; nilai: number }>;
+}
+
+export interface BarisPelapor {
+  nama: string;
+  jabatan: string | null;
+  gol: string;
+  target: number;
+  aktual: number;
+  pct: number;
+}
+
+export interface HalamanAnalitikBahaya {
+  judul: string;
+  subjudul: string;
+  bulan: string | null;
+  bulanAktif: number;
+  total: number;
+  opsiBulan: Array<{ nilai: string; label: string }>;
+  golongan: BarisGolongan[];
+  tren: BatangTren[];
+  sebaran: SebaranBahaya[];
+  pelapor: BarisPelapor[];
+}
+
 export interface PengingatPerusahaan {
   id: number;
   nama: string;

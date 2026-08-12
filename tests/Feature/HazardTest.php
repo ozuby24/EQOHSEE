@@ -90,6 +90,82 @@ class HazardTest extends TestCase
         $this->assertSame(\App\Support\Hazard::WARNA_STATUS['Open'], $baris['warnaStatus']);
     }
 
+    /* ══════════════ analitik ══════════════ */
+
+    public function test_analitik_dirender_inertia(): void
+    {
+        $this->masuk();
+
+        $this->get('/hazard/analitik')->assertOk()->assertInertia(fn (AssertableInertia $p) => $p
+            ->component('Hazard/Analitik')
+            ->has('golongan')->has('tren')->has('sebaran')->has('pelapor'));
+    }
+
+    public function test_capaian_dihitung_terhadap_target_golongan(): void
+    {
+        $c = $this->perusahaan();
+        $this->masuk();
+
+        // Jabatan di luar daftar khusus bertarget 4 laporan per bulan.
+        $this->laporan($c, ['pelapor_nama' => 'Budi', 'pelapor_jabatan' => 'Operator']);
+
+        $props = $this->get('/hazard/analitik')->assertOk()->viewData('page')['props'];
+
+        $this->assertSame(1, $props['pelapor'][0]['aktual']);
+        $this->assertSame(4, $props['pelapor'][0]['target']);
+        $this->assertSame(25, $props['pelapor'][0]['pct']);
+    }
+
+    public function test_tren_selalu_dua_belas_bulan_meski_kosong(): void
+    {
+        // Sumbu yang memendek mengikuti data membuat dua kunjungan pada
+        // halaman yang sama tampak seperti rentang waktu yang berbeda.
+        $this->masuk();
+
+        $tren = $this->get('/hazard/analitik')->assertOk()->viewData('page')['props']['tren'];
+
+        $this->assertCount(12, $tren);
+    }
+
+    public function test_golongan_menjumlahkan_target_seluruh_orangnya(): void
+    {
+        $c = $this->perusahaan();
+        $this->masuk();
+
+        $this->laporan($c, ['pelapor_nama' => 'Budi',  'pelapor_nrp' => 'A1', 'pelapor_jabatan' => 'Operator']);
+        $this->laporan($c, ['pelapor_nama' => 'Cakra', 'pelapor_nrp' => 'A2', 'pelapor_jabatan' => 'Operator']);
+
+        $g = $this->get('/hazard/analitik')->assertOk()->viewData('page')['props']['golongan'][0];
+
+        $this->assertSame(2, $g['orang']);
+        $this->assertSame(8, $g['target'], 'Dua orang bertarget 4 menjadi 8, bukan tetap 4.');
+        $this->assertSame(2, $g['aktual']);
+    }
+
+    public function test_target_mengikuti_jumlah_bulan_bukan_jumlah_laporan(): void
+    {
+        /* Pengali target adalah banyaknya bulan yang berisi laporan. Sempat
+           terhitung dari jumlah baris karena ->distinct()->count() menimpa
+           SELECT dengan count(*) sehingga DISTINCT atas ekspresi bulannya
+           hilang. Akibatnya target tiap orang membesar setiap ada laporan
+           baru, dan capaian semua orang merosot tanpa sebab. */
+        $c = $this->perusahaan();
+        $this->masuk();
+
+        foreach (range(1, 5) as $i) {
+            $this->laporan($c, [
+                'pelapor_nama' => 'Budi', 'pelapor_nrp' => 'A1',
+                'pelapor_jabatan' => 'Operator',
+                'tanggal' => now()->startOfMonth()->addDays($i)->toDateString(),
+            ]);
+        }
+
+        $o = $this->get('/hazard/analitik')->assertOk()->viewData('page')['props']['pelapor'][0];
+
+        $this->assertSame(4, $o['target'], 'Lima laporan dalam satu bulan tetap satu bulan.');
+        $this->assertSame(5, $o['aktual']);
+    }
+
     /* ══════════════ pengingat ══════════════ */
 
     public function test_pengingat_hanya_memuat_perusahaan_yang_punya_temuan_terbuka(): void

@@ -60,6 +60,7 @@ final class RuteInertia
 
         /* Hazard */
         'hazard.index',
+        'hazard.analytics',
         'hazard.pengingat',
 
         /* Personalia */
