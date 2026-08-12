@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BerpemilikPerusahaan;
 use App\Models\Scopes\MilikPerusahaan;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 
@@ -12,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
 #[ScopedBy(MilikPerusahaan::class)]
 class Document extends Model
 {
+    use BerpemilikPerusahaan;
+
     protected $fillable = [
         'kode', 'judul', 'jenis', 'klasifikasi', 'departemen', 'company_id', 'procedure_id',
         'revisi', 'status', 'tanggal_terbit', 'tanggal_berlaku', 'tanggal_tinjau',

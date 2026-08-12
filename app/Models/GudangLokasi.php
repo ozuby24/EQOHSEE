@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BerpemilikPerusahaan;
 use App\Models\Scopes\MilikPerusahaan;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 
@@ -11,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[ScopedBy(MilikPerusahaan::class)]
 class GudangLokasi extends Model
 {
+    use BerpemilikPerusahaan;
+
     protected $table = 'gudang_lokasi';
 
     protected $fillable = [

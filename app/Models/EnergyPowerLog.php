@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BerpemilikPerusahaan;
 use App\Models\Scopes\MilikPerusahaan;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 
@@ -12,6 +13,8 @@ use Illuminate\Database\Eloquent\Model;
 #[ScopedBy(MilikPerusahaan::class)]
 class EnergyPowerLog extends Model
 {
+    use BerpemilikPerusahaan;
+
     protected $table = 'energy_power_logs';
 
     protected $fillable = ['company_id','tanggal','area','sumber','kwh','puncak_kw','jam_operasi','liter_genset'];

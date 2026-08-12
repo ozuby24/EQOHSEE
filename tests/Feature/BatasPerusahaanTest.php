@@ -104,6 +104,31 @@ class BatasPerusahaanTest extends TestCase
         $this->assertNull(HazardReport::find($milikB->id));
     }
 
+    public function test_data_tanpa_perusahaan_tetap_terlihat_oleh_semua(): void
+    {
+        /* Baris tanpa perusahaan bukan milik pihak lain yang harus
+           disembunyikan — itu dokumen induk, standar bersama, dan seluruh
+           data yang dibuat sebelum penempatan perusahaan ada.
+
+           Menyaringnya sebagai "company_id = milik saya" saja pernah
+           membuat modul Energi, Gudang, dan Dokumen tampak KOSONG bagi
+           setiap pengguna yang sudah ditempatkan di sebuah perusahaan,
+           sebab seluruh barisnya masih NULL. Kegagalannya diam: tidak ada
+           galat, hanya daftar kosong yang terlihat seperti belum ada data. */
+        $a = $this->perusahaan();
+        $b = $this->perusahaan();
+
+        $this->laporan(null, 'Milik bersama');
+        $this->laporan($a, 'Milik perusahaan A');
+        $this->laporan($b, 'Milik perusahaan B');
+
+        $this->actingAs(User::factory()->create(['is_admin' => false, 'company_id' => $a->id]));
+
+        $terlihat = HazardReport::pluck('deskripsi')->sort()->values()->all();
+
+        $this->assertSame(['Milik bersama', 'Milik perusahaan A'], $terlihat);
+    }
+
     public function test_administrator_tetap_menjangkau_seluruh_perusahaan(): void
     {
         $a = $this->perusahaan();
@@ -127,6 +152,37 @@ class BatasPerusahaanTest extends TestCase
         $this->actingAs(User::factory()->create(['is_admin' => false, 'company_id' => null]));
 
         $this->assertSame(['Tanpa perusahaan'], HazardReport::pluck('deskripsi')->all());
+    }
+
+    /* ══════════════ kepemilikan saat data dibuat ══════════════ */
+
+    public function test_data_baru_mewarisi_perusahaan_pembuatnya(): void
+    {
+        /* Batas per perusahaan hanya bekerja bila barisnya bertuan. Gudang
+           tidak pernah menyebut company_id sama sekali, dan Energi,
+           Dokumen, serta Inspeksi mengambilnya dari isian yang boleh
+           dikosongkan — sehingga data baru terus lahir tanpa pemilik dan
+           tetap terlihat oleh semua perusahaan. */
+        $a = $this->perusahaan();
+        $this->actingAs(User::factory()->create(['is_admin' => false, 'company_id' => $a->id]));
+
+        $h = $this->laporan(null, 'Dibuat tanpa menyebut perusahaan');
+
+        $this->assertSame($a->id, $h->company_id);
+    }
+
+    public function test_perusahaan_yang_disebut_tegas_tidak_ditimpa(): void
+    {
+        // Administrator yang membuatkan data untuk perusahaan lain, atau
+        // sengaja membiarkannya milik bersama, tetap berlaku.
+        $a = $this->perusahaan();
+        $b = $this->perusahaan();
+
+        $this->actingAs(User::factory()->create(['is_admin' => true, 'company_id' => $a->id]));
+
+        $h = $this->laporan($b, 'Dibuatkan untuk perusahaan lain');
+
+        $this->assertSame($b->id, $h->company_id);
     }
 
     public function test_tanpa_pengguna_batas_tidak_dipasang(): void

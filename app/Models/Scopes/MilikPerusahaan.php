@@ -22,9 +22,20 @@ use Illuminate\Database\Eloquent\Scope;
  * `?perusahaan=` yang sudah ada di beberapa modul tetap bekerja karena
  * scope ini tidak ikut campur bagi admin.
  *
- * Pengguna tanpa perusahaan hanya menjangkau baris yang juga tanpa
- * perusahaan. Laravel menerjemahkan `where(kolom, null)` menjadi
- * `is null`, jadi satu baris ini sudah menutup kedua keadaan.
+ * Baris tanpa perusahaan (company_id NULL) terlihat oleh semua orang.
+ * Itu bukan kelonggaran, melainkan arti kolomnya: baris yang belum
+ * dimiliki perusahaan mana pun — dokumen induk, standar bersama, dan
+ * seluruh data yang dibuat sebelum penempatan perusahaan ada — bukan
+ * milik pihak lain yang harus disembunyikan.
+ *
+ * Menyaringnya sebagai `company_id = <milik saya>` saja pernah membuat
+ * modul Energi, Gudang, dan Dokumen tampak KOSONG bagi setiap pengguna
+ * yang sudah ditempatkan di sebuah perusahaan, sebab seluruh barisnya
+ * masih NULL. Kegagalannya diam: tidak ada galat, hanya daftar kosong
+ * yang terlihat seperti "memang belum ada datanya".
+ *
+ * Yang tetap dijaga adalah yang sebenarnya berbahaya: baris milik
+ * perusahaan LAIN tidak pernah terlihat.
  */
 class MilikPerusahaan implements Scope
 {
@@ -38,6 +49,12 @@ class MilikPerusahaan implements Scope
            dilacak daripada kebocoran yang sedang dicegah di sini. */
         if (!$u || $u->isAdmin()) return;
 
-        $builder->where($model->getTable().'.company_id', $u->company_id);
+        $kolom = $model->getTable().'.company_id';
+
+        $builder->where(function (Builder $q) use ($kolom, $u) {
+            $q->whereNull($kolom);
+
+            if ($u->company_id) $q->orWhere($kolom, $u->company_id);
+        });
     }
 }

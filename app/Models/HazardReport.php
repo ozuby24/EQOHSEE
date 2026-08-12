@@ -1,6 +1,7 @@
 <?php
 namespace App\Models;
 
+use App\Models\Concerns\BerpemilikPerusahaan;
 use App\Models\Scopes\MilikPerusahaan;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Model;
@@ -9,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[ScopedBy(MilikPerusahaan::class)]
 class HazardReport extends Model
 {
+    use BerpemilikPerusahaan;
+
     protected $fillable = [
         'kode','user_id','pelapor_nama','pelapor_nrp','pelapor_perusahaan','pelapor_departemen','pelapor_jabatan',
         'company_id','terlapor','tanggal','waktu','lokasi','risiko','kategori','deskripsi',
