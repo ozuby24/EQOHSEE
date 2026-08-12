@@ -168,13 +168,13 @@ function keluar() {
             <small>Kami siap membantu Anda kapan saja.</small>
           </span>
         </div>
-        <a href="/news" class="eq-bantuan-btn">
+        <Link href="/bantuan" class="eq-bantuan-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2 0 0 1 4 11.5a8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 8 8.4Z"/>
           </svg>
           Hubungi Kami
-        </a>
+        </Link>
 
         <div class="eq-sisi-bawah">
           <small>© {{ new Date().getFullYear() }} EQOHSEE<br>All rights reserved.</small>

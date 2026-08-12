@@ -771,3 +771,42 @@ export interface HalamanDirektori {
   admin: boolean;
   daftar: PilihanPerusahaan[];
 }
+
+/* ══════════════ Bantuan ══════════════ */
+
+export interface PesanBantuan {
+  id: number;
+  /** pengguna | asisten | admin | sistem — menentukan sisi dan warna gelembung. */
+  peran: string;
+  isi: string;
+  nama: string | null;
+  waktu: string | null;
+}
+
+export interface HalamanBantuan {
+  judul: string;
+  subjudul: string;
+  /** false bila kunci AI belum dipasang; kotaknya mengatakannya terus terang. */
+  aiAktif: boolean;
+  pesan: PesanBantuan[];
+  status: string;
+  admin: boolean;
+}
+
+export interface UtasBantuan {
+  id: number;
+  nama: string;
+  perusahaan: string | null;
+  status: string;
+  terakhir: string | null;
+  aktif: boolean;
+}
+
+export interface HalamanBantuanMasuk {
+  judul: string;
+  subjudul: string;
+  utas: UtasBantuan[];
+  terpilih: number | null;
+  pesan: PesanBantuan[];
+  status: string | null;
+}

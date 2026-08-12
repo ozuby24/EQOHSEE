@@ -9,6 +9,7 @@ use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiT
     HazardExportController, InspectionController, InspectionTemplateController,
     EnergyController, EngineeringController, GudangController, IsoController, KoController, KuesionerController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
+use App\Http\Controllers\BantuanController;
 use App\Http\Controllers\Admin\{CompanyController, SystemController, UserController};
 use Illuminate\Support\Facades\Route;
 
@@ -394,6 +395,15 @@ Route::middleware('auth')->group(function () {
         Route::get('direktori',    [PersonaliaController::class, 'direktori'])->name('direktori');
         Route::post('direktori/{pengguna}/perusahaan',
             [PersonaliaController::class, 'tetapkanPerusahaan'])->name('direktori.perusahaan');
+    });
+
+    /* ---- Bantuan (asisten AI + admin) ---- */
+    Route::prefix('bantuan')->name('bantuan.')->group(function () {
+        Route::get('/',       [BantuanController::class, 'index'])->name('index');
+        Route::post('/',      [BantuanController::class, 'kirim'])->name('kirim');
+        Route::get('masuk',   [BantuanController::class, 'masuk'])->name('masuk');
+        Route::post('{percakapan}/balas',   [BantuanController::class, 'balas'])->name('balas');
+        Route::post('{percakapan}/selesai', [BantuanController::class, 'selesai'])->name('selesai');
     });
 
     /* ---- Profil (bawaan Breeze) ---- */

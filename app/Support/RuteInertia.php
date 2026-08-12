@@ -51,6 +51,10 @@ final class RuteInertia
         'tpkkp.kuesioner',
         'kuesioner.admin',
 
+        /* Bantuan */
+        'bantuan.index',
+        'bantuan.masuk',
+
         /* Personalia */
         'personalia.index',
         'personalia.perusahaan',
