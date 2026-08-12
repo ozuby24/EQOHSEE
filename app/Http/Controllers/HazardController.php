@@ -46,9 +46,74 @@ class HazardController extends Controller
         $bulanOpsi = HazardReport::selectRaw(Db::ym('tanggal') . ' as b')
                         ->whereNotNull('tanggal')->distinct()->orderByDesc('b')->pluck('b');
 
-        return view('hazard.index', [
-            'reports' => $reports, 'stat' => $stat, 'f' => $f,
-            'bulanOpsi' => $bulanOpsi, 'companies' => Company::orderBy('name')->get(),
+        /* Ringkasan WhatsApp disusun di server, bukan di peramban: isinya
+           mengikuti hasil saringan yang sama dengan daftar di layar, dan
+           menyusunnya ulang di sisi klien berarti dua tempat yang harus
+           sepakat tentang apa yang sedang tersaring. */
+        $ringkasWa = "*Rekap Hazard Report — EQOHSEE*\n\n"
+            ."Total: {$stat['total']} · Open: {$stat['open']} · Proses: {$stat['proses']} · Closed: {$stat['closed']}\n"
+            ."Risiko tinggi belum tutup: {$stat['tinggi']}\n\n"
+            .$reports->take(10)->map(fn ($x) => "• [{$x->kode}] {$x->risiko} — "
+                .\Illuminate\Support\Str::limit($x->deskripsi, 60)
+                ." (📍".($x->lokasi ?: '-').", ".($x->company?->name ?: $x->terlapor ?: '-').", {$x->status})")->implode("\n")
+            ."\n\nMohon ditindaklanjuti sesuai PIC masing-masing.";
+
+        return \Inertia\Inertia::render('Hazard/Monitor', [
+            'judul'    => 'Monitor Hazard Report',
+            'subjudul' => 'Laporan bahaya dari seluruh lokasi kerja',
+
+            'stat'   => $stat,
+            'saring' => $f,
+            'adaSaringan' => collect($f)->filter()->isNotEmpty(),
+
+            'opsi' => [
+                'risiko'   => Hazard::RISIKO,
+                'status'   => Hazard::STATUS,
+                'kategori' => Hazard::KATEGORI,
+                'bulan'    => $bulanOpsi->map(fn ($b) => [
+                    'nilai' => $b,
+                    'label' => \Carbon\Carbon::parse($b.'-01')->translatedFormat('F Y'),
+                ])->all(),
+                'perusahaan' => Company::orderBy('name')->get(['id', 'name'])
+                    ->map(fn ($c) => ['id' => $c->id, 'nama' => $c->name])->all(),
+            ],
+
+            'laporan' => array_map(fn (HazardReport $r) => [
+                'id'          => $r->id,
+                'kode'        => $r->kode,
+                'risiko'      => $r->risiko,
+                'warnaRisiko' => Hazard::WARNA_RISIKO[$r->risiko] ?? '#a8a29e',
+                'status'      => $r->status,
+                'warnaStatus' => Hazard::WARNA_STATUS[$r->status] ?? '#a8a29e',
+                'kategori'    => $r->kategori,
+                'deskripsi'   => $r->deskripsi,
+                'lokasi'      => $r->lokasi ?: null,
+                'pelapor'     => $r->pelapor_nama,
+                'tanggal'     => $r->tanggal?->format('d M Y'),
+                'tujuan'      => $r->company?->name ?: ($r->terlapor ?: null),
+                'terlapor'    => $r->terlapor && $r->company ? $r->terlapor : null,
+                'foto'        => $r->foto && count($r->foto) ? asset('storage/'.$r->foto[0]) : null,
+                'url'         => route('hazard.show', $r),
+            ], $reports->items()),
+
+            'halaman' => [
+                'kini'   => $reports->currentPage(),
+                'akhir'  => $reports->lastPage(),
+                'total'  => $reports->total(),
+                'tautan' => array_map(fn ($t) => [
+                    'label' => $t['label'],
+                    'url'   => $t['url'],
+                    'aktif' => (bool) $t['active'],
+                ], $reports->linkCollection()->all()),
+            ],
+
+            'tautan' => [
+                'buat'     => route('hazard.create'),
+                'csv'      => route('hazard.ekspor.csv', $request->query()),
+                'cetak'    => route('hazard.ekspor.cetak', $request->query()),
+                'wa'       => \App\Support\Ekspor::waLink($ringkasWa),
+                'pengingat'=> route('hazard.pengingat'),
+            ],
         ]);
     }
 

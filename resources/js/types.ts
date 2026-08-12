@@ -846,3 +846,55 @@ export interface HalamanPesan {
   pesan: PesanChat[];
   penggunaId: number;
 }
+
+/* ══════════════ Hazard Report ══════════════ */
+
+export interface LaporanBahaya {
+  id: number;
+  kode: string;
+  risiko: string;
+  /** Warna dari server — satu sumber dengan cetakan dan ekspor. */
+  warnaRisiko: string;
+  status: string;
+  warnaStatus: string;
+  kategori: string | null;
+  deskripsi: string;
+  lokasi: string | null;
+  pelapor: string | null;
+  tanggal: string | null;
+  /** Perusahaan yang dituju, atau nama terlapor bila belum ada perusahaan. */
+  tujuan: string | null;
+  /** Terisi hanya bila terlapor dan perusahaan sama-sama ada. */
+  terlapor: string | null;
+  foto: string | null;
+  url: string;
+}
+
+export interface SaringanBahaya {
+  q: string;
+  bulan: string | null;
+  kategori: string | null;
+  risiko: string | null;
+  status: string | null;
+  perusahaan: string | null;
+}
+
+export interface OpsiBahaya {
+  risiko: string[];
+  status: string[];
+  kategori: string[];
+  bulan: Array<{ nilai: string; label: string }>;
+  perusahaan: PilihanPerusahaan[];
+}
+
+export interface HalamanMonitorBahaya {
+  judul: string;
+  subjudul: string;
+  stat: { total: number; open: number; proses: number; closed: number; tinggi: number };
+  saring: SaringanBahaya;
+  adaSaringan: boolean;
+  opsi: OpsiBahaya;
+  laporan: LaporanBahaya[];
+  halaman: { kini: number; akhir: number; total: number; tautan: TautanHalaman[] };
+  tautan: { buat: string; csv: string; cetak: string; wa: string; pengingat: string };
+}

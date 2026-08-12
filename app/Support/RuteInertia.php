@@ -58,6 +58,9 @@ final class RuteInertia
         /* Pesan */
         'pesan.index',
 
+        /* Hazard */
+        'hazard.index',
+
         /* Personalia */
         'personalia.index',
         'personalia.perusahaan',
