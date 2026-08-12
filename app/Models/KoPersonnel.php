@@ -2,9 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\MilikPerusahaan;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
+#[ScopedBy(MilikPerusahaan::class)]
 class KoPersonnel extends Model
 {
     protected $table = 'ko_personnel';

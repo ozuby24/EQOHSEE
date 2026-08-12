@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\MilikPerusahaan;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
+
 use App\Support\Energi;
 use Illuminate\Database\Eloquent\Model;
 
 /** Pemakaian listrik satu area dari satu sumber pada satu hari. */
+#[ScopedBy(MilikPerusahaan::class)]
 class EnergyPowerLog extends Model
 {
     protected $table = 'energy_power_logs';

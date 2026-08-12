@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\MilikPerusahaan;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
+
 use App\Support\Energi;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /** Peluang penghematan energi yang sedang ditindaklanjuti. */
+#[ScopedBy(MilikPerusahaan::class)]
 class EnergyOpportunity extends Model
 {
     protected $table = 'energy_opportunities';

@@ -40,9 +40,11 @@ class DokumenKopTest extends TestCase
         ], $atribut));
     }
 
-    private function masuk(): void
+    private function masuk(?Company $c = null): void
     {
-        $this->actingAs(User::factory()->create());
+        /* Yang membuka berkas audit adalah orang di perusahaan itu; batas
+           data per perusahaan menolak siapa pun di luarnya. */
+        $this->actingAs(User::factory()->create(['company_id' => $c?->id]));
     }
 
     /* ---------- nomor dokumen ---------- */
@@ -106,8 +108,9 @@ class DokumenKopTest extends TestCase
 
     public function test_berkas_cetak_memuat_kop_lengkap(): void
     {
-        $this->masuk();
-        $a = $this->audit($this->perusahaan());
+        $c = $this->perusahaan();
+        $this->masuk($c);
+        $a = $this->audit($c);
 
         foreach ([
             ['smkp.berita-acara',  ['nomor' => 'CAM-OHSE-IV.067h']],
@@ -131,8 +134,9 @@ class DokumenKopTest extends TestCase
 
     public function test_daftar_hadir_memuat_kop(): void
     {
-        $this->masuk();
-        $a = $this->audit($this->perusahaan());
+        $c = $this->perusahaan();
+        $this->masuk($c);
+        $a = $this->audit($c);
 
         $this->get(route('smkp.hadir.cetak', [$a, 'pembukaan']))
             ->assertOk()
@@ -144,8 +148,9 @@ class DokumenKopTest extends TestCase
 
     public function test_rencana_audit_bernomor_tiga_lembar(): void
     {
-        $this->masuk();
-        $a = $this->audit($this->perusahaan());
+        $c = $this->perusahaan();
+        $this->masuk($c);
+        $a = $this->audit($c);
 
         $res = $this->get(route('smkp.rencana.cetak', $a))->assertOk();
 
@@ -157,8 +162,9 @@ class DokumenKopTest extends TestCase
 
     public function test_berita_acara_bernomor_empat_lembar(): void
     {
-        $this->masuk();
-        $a = $this->audit($this->perusahaan());
+        $c = $this->perusahaan();
+        $this->masuk($c);
+        $a = $this->audit($c);
 
         $res = $this->get(route('smkp.berita-acara', $a))->assertOk();
 
@@ -170,8 +176,9 @@ class DokumenKopTest extends TestCase
     public function test_daftar_hadir_bertambah_lembar_mengikuti_jumlah_peserta(): void
     {
         // Nomor halaman harus ikut isinya; daftar 20 orang tidak muat satu lembar.
-        $this->masuk();
-        $a = $this->audit($this->perusahaan());
+        $c = $this->perusahaan();
+        $this->masuk($c);
+        $a = $this->audit($c);
 
         $this->get(route('smkp.hadir.cetak', [$a, 'pembukaan']))
             ->assertOk()
@@ -187,8 +194,9 @@ class DokumenKopTest extends TestCase
 
     public function test_penomoran_peserta_berlanjut_antar_lembar(): void
     {
-        $this->masuk();
-        $a = $this->audit($this->perusahaan());
+        $c = $this->perusahaan();
+        $this->masuk($c);
+        $a = $this->audit($c);
         for ($i = 1; $i <= 20; $i++) {
             $a->attendees()->create(['rapat' => 'pembukaan', 'nama' => 'Peserta '.$i]);
         }
@@ -201,8 +209,9 @@ class DokumenKopTest extends TestCase
 
     public function test_laporan_bertambah_lembar_mengikuti_jumlah_temuan(): void
     {
-        $this->masuk();
-        $a = $this->audit($this->perusahaan());
+        $c = $this->perusahaan();
+        $this->masuk($c);
+        $a = $this->audit($c);
 
         $this->get(route('smkp.laporan', $a))->assertOk()->assertSee('1 dari 2');
 
@@ -220,8 +229,9 @@ class DokumenKopTest extends TestCase
     {
         // Kelas pemutus halaman pada lembar terakhir akan menyisakan satu
         // halaman kosong di akhir cetakan.
-        $this->masuk();
-        $a = $this->audit($this->perusahaan());
+        $c = $this->perusahaan();
+        $this->masuk($c);
+        $a = $this->audit($c);
 
         $isi = $this->get(route('smkp.rencana.cetak', $a))->getContent();
         $akhir = strrpos($isi, 'class="lembar ');

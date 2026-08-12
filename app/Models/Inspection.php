@@ -1,9 +1,13 @@
 <?php
 namespace App\Models;
 
+use App\Models\Scopes\MilikPerusahaan;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
 
+#[ScopedBy(MilikPerusahaan::class)]
 class Inspection extends Model
 {
     protected $fillable = ['kode','template_id','company_id','user_id','judul','jenis','lokasi','tanggal','pelaksana','status','catatan'];

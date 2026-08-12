@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\MilikPerusahaan;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
+
 use App\Support\Dokumen;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
 
+#[ScopedBy(MilikPerusahaan::class)]
 class Document extends Model
 {
     protected $fillable = [

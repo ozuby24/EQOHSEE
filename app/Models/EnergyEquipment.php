@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\MilikPerusahaan;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
+
 use App\Support\Energi;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
 
 /** Satu unit alat berat beserta catatan bahan bakarnya. */
+#[ScopedBy(MilikPerusahaan::class)]
 class EnergyEquipment extends Model
 {
     protected $table = 'energy_equipment';

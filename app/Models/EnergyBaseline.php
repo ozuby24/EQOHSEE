@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\MilikPerusahaan;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
+
 use App\Support\Energi;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /** Garis dasar dan sasaran intensitas energi untuk satu tahun. */
+#[ScopedBy(MilikPerusahaan::class)]
 class EnergyBaseline extends Model
 {
     protected $table = 'energy_baselines';
