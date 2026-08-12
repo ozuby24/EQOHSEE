@@ -810,3 +810,35 @@ export interface HalamanBantuanMasuk {
   pesan: PesanBantuan[];
   status: string | null;
 }
+
+/* ══════════════ Pesan (chat langsung + grup perusahaan) ══════════════ */
+
+export interface PercakapanRingkas {
+  id: number;
+  /** langsung | grup — menentukan apakah nama diambil dari lawan bicara atau perusahaan. */
+  jenis: string;
+  nama: string;
+  avatar: string | null;
+  terakhir: string | null;
+  belumDibaca: number;
+  aktif: boolean;
+}
+
+export interface PesanChat {
+  id: number;
+  isi: string;
+  nama: string | null;
+  avatar: string | null;
+  waktu: string | null;
+  /** Menentukan sisi gelembung — dibandingkan terhadap pemirsa, bukan dari kolom peran. */
+  milikSaya: boolean;
+}
+
+export interface HalamanPesan {
+  judul: string;
+  subjudul: string;
+  percakapan: PercakapanRingkas[];
+  terpilih: number | null;
+  pesan: PesanChat[];
+  penggunaId: number;
+}

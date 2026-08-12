@@ -11,10 +11,11 @@
  * tengah orang mengetik.
  */
 import { onBeforeUnmount, ref, watch } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
-import type { HalamanDirektori, OrangDirektori } from '../../types';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import type { HalamanDirektori, OrangDirektori, PropBersama } from '../../types';
 
 const props = defineProps<HalamanDirektori>();
+const diriId = (usePage().props as unknown as PropBersama).pengguna?.id ?? null;
 
 /**
  * Menetapkan perusahaan seorang pengguna — administrator saja.
@@ -36,6 +37,10 @@ function tetapkan(o: OrangDirektori, id: string) {
     only: ['orang', 'halaman', 'kilat'],
     onFinish: () => { menetapkan.value = null; },
   });
+}
+
+function pesan(o: OrangDirektori) {
+  router.post('/pesan/mulai', { user_id: o.id });
 }
 
 const cari = ref(props.cari);
@@ -107,6 +112,11 @@ onBeforeUnmount(() => { if (jeda) clearTimeout(jeda); });
               <a v-if="o.telepon" :href="`tel:${o.telepon}`"
                  class="block text-[11.5px] text-stone-600 hover:underline">{{ o.telepon }}</a>
             </div>
+
+            <button v-if="o.id !== diriId" type="button" @click="pesan(o)"
+                    class="mt-2.5 text-[11.5px] font-semibold text-[color:var(--eq-aksen,#0E747E)] hover:underline">
+              Kirim Pesan
+            </button>
 
             <div v-if="admin" class="mt-2.5">
               <select :value="o.perusahaanId ?? ''" :disabled="menetapkan === o.id"

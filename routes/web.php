@@ -9,7 +9,7 @@ use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiT
     HazardExportController, InspectionController, InspectionTemplateController,
     EnergyController, EngineeringController, GudangController, IsoController, KoController, KuesionerController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
-use App\Http\Controllers\BantuanController;
+use App\Http\Controllers\{BantuanController, ChatController};
 use App\Http\Controllers\Admin\{CompanyController, SystemController, UserController};
 use Illuminate\Support\Facades\Route;
 
@@ -395,6 +395,13 @@ Route::middleware('auth')->group(function () {
         Route::get('direktori',    [PersonaliaController::class, 'direktori'])->name('direktori');
         Route::post('direktori/{pengguna}/perusahaan',
             [PersonaliaController::class, 'tetapkanPerusahaan'])->name('direktori.perusahaan');
+    });
+
+    /* ---- Pesan (chat langsung + grup perusahaan) ---- */
+    Route::prefix('pesan')->name('pesan.')->group(function () {
+        Route::get('/',      [ChatController::class, 'index'])->name('index');
+        Route::post('mulai', [ChatController::class, 'mulai'])->name('mulai');
+        Route::post('{percakapan}', [ChatController::class, 'kirim'])->name('kirim');
     });
 
     /* ---- Bantuan (asisten AI + admin) ---- */

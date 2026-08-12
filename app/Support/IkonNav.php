@@ -52,6 +52,7 @@ final class IkonNav
         'alat'        => 'M14.6 6.4a4 4 0 1 0 5.1 5.1l-9.5 9.5-2.8.7.7-2.8ZM4 4l4 4',
         'tukar'       => 'M4 8.5h13l-3.2-3.2M20 15.5H7l3.2 3.2',
         'timbang'     => 'M12 4.5v15M7.5 6.2h9M4 19.5h16M6 6.8 3 13.2h6ZM18 6.8l-3 6.4h6Z',
+        'obrolan'     => 'M4 5.5h16a1 1 0 0 1 1 1V15a1 1 0 0 1-1 1H9l-4 3.5V16H4a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1Z',
         'default'     => 'M5 12h14M5 7h9M5 17h9',
     ];
 
@@ -98,6 +99,7 @@ final class IkonNav
         'bahan bakar' => 'armada', 'fuel' => 'armada',
         'tools' => 'alat', 'alat' => 'alat',
         'kajian' => 'buku', 'buat' => 'dokumen', 'baru' => 'dokumen',
+        'pesan' => 'obrolan', 'chat' => 'obrolan', 'obrolan' => 'obrolan',
 
         // Gudang & Penyimpanan.
         'barang' => 'kotak', 'persediaan' => 'kotak', 'stok' => 'kotak',

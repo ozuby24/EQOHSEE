@@ -35,6 +35,7 @@ final class Menu
           ['Data Diri',        'personalia.index',      'personalia'],
           ['Data Perusahaan',  'personalia.perusahaan', 'personalia/perusahaan'],
           ['Direktori',        'personalia.direktori',  'personalia/direktori'],
+          ['Pesan',            'pesan.index',            'pesan'],
         ],
       ],
     ],
@@ -245,7 +246,7 @@ final class Menu
     /** Kunci modul yang sedang dibuka, ditentukan dari alamat sekarang. */
     public static function modulAktif(): string
     {
-        $kunci = Request::is('personalia*') ? 'personalia'
+        $kunci = Request::is('personalia*') || Request::is('pesan*') ? 'personalia'
          : (Request::is('hazard*') || Request::is('inspeksi*') ? 'hazrep'
          : (Request::is('tpkkp*') ? 'tpkkp'
          : (Request::is('smkp*') ? 'smkp'

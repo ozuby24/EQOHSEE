@@ -55,6 +55,9 @@ final class RuteInertia
         'bantuan.index',
         'bantuan.masuk',
 
+        /* Pesan */
+        'pesan.index',
+
         /* Personalia */
         'personalia.index',
         'personalia.perusahaan',
