@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Company, HazardReport, User};
-use App\Support\{Db, Hazard};
+use App\Support\{Db, Hazard, Identitas};
 use Illuminate\Http\Request;
 
 class HazardController extends Controller
@@ -218,7 +218,10 @@ class HazardController extends Controller
     public function analytics(Request $request)
     {
         $bulan = $request->get('bulan');
-        $data  = HazardReport::when($bulan, fn($b) => $b->whereRaw(Db::ym('tanggal') . ' = ?', [$bulan]))->get();
+        // user dimuat sekaligus: identitas dan jabatan terkini dibaca dari
+        // sana, dan tanpa eager load itu menjadi satu kueri per laporan.
+        $data = HazardReport::with('user')
+            ->when($bulan, fn($b) => $b->whereRaw(Db::ym('tanggal') . ' = ?', [$bulan]))->get();
 
         /* Jumlah bulan yang benar-benar berisi laporan — pengali target.
            Dihitung lewat pluck, bukan ->distinct()->count(): count()
@@ -229,14 +232,28 @@ class HazardController extends Controller
         $bulanAktif = $bulan ? 1 : max(1, HazardReport::selectRaw(Db::ym('tanggal') . ' as b')
                         ->whereNotNull('tanggal')->distinct()->pluck('b')->count());
 
-        // KPI per orang
+        /* KPI per orang.
+           Dikelompokkan lewat Identitas, bukan langsung dari teksnya: satu
+           orang yang mengetik namanya sedikit berbeda pada tiga laporan
+           akan terhitung sebagai tiga orang, dan karena target dijumlahkan
+           per orang, targetnya ikut tiga kali lipat sementara laporannya
+           tetap tiga — capaiannya ambruk jadi sepertiga tanpa satu pun
+           galat muncul.
+
+           Nama dan jabatan diambil dari akunnya bila ada. Teks pada
+           laporan adalah salinan saat laporan dibuat; orang yang berganti
+           jabatan akan menyeret jabatan lamanya — beserta target lama —
+           di seluruh laporan terdahulunya. */
         $perOrang = [];
         foreach ($data as $r) {
-            $key = ($r->pelapor_nrp ?: $r->pelapor_nama);
+            $key = Identitas::kunci($r->user_id, $r->pelapor_nrp, $r->pelapor_nama);
+
+            $jabatan = $r->user?->position ?: $r->pelapor_jabatan;
+
             $perOrang[$key] ??= [
-                'nama' => $r->pelapor_nama, 'jabatan' => $r->pelapor_jabatan,
-                'gol'  => Hazard::golongan($r->pelapor_jabatan),
-                'target' => Hazard::target($r->pelapor_jabatan) * $bulanAktif,
+                'nama' => $r->user?->name ?: $r->pelapor_nama, 'jabatan' => $jabatan,
+                'gol'  => Hazard::golongan($jabatan),
+                'target' => Hazard::target($jabatan) * $bulanAktif,
                 'aktual' => 0,
             ];
             $perOrang[$key]['aktual']++;

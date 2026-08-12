@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Company, HazardReport, Inspection, InspectionInspector,
     InspectionItem, InspectionTemplate, User};
-use App\Support\{Db, Hazard};
+use App\Support\{Db, Hazard, Identitas};
 use Illuminate\Http\Request;
 
 class InspectionController extends Controller
@@ -219,10 +219,16 @@ class InspectionController extends Controller
         $bulanAktif = $bulan ? 1 : max(1, Inspection::selectRaw(Db::ym('tanggal') . ' as b')
                         ->whereNotNull('tanggal')->distinct()->pluck('b')->count());
 
+        /* Dikelompokkan lewat Identitas: nama yang diketik berbeda-beda
+           untuk orang yang sama memecahnya menjadi beberapa orang, dan
+           karena target dijumlahkan per orang, targetnya ikut berlipat
+           sementara inspeksinya tetap — capaiannya turun tanpa sebab.
+           mb_strtolower saja tidak menutupnya: spasi ganda dan spasi di
+           ujung tetap menghasilkan kunci yang berbeda. */
         $perOrang = [];
         foreach ($inspeksi as $ins) {
             foreach ($ins->inspectors as $p) {
-                $key = $p->user_id ?: mb_strtolower($p->nama);
+                $key = Identitas::kunci($p->user_id, null, $p->nama);
                 $perOrang[$key] ??= [
                     'nama' => $p->nama, 'jabatan' => $p->jabatan,
                     'gol' => Hazard::golongan($p->jabatan),

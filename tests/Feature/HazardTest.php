@@ -166,6 +166,68 @@ class HazardTest extends TestCase
         $this->assertSame(5, $o['aktual']);
     }
 
+    public function test_satu_orang_dengan_ejaan_berbeda_tidak_terpecah(): void
+    {
+        /* Nama diketik di lapangan, dan satu orang yang sama muncul
+           sebagai "Budi Santoso", "budi santoso", dan "Budi  Santoso".
+           Terhitung mentah, ketiganya menjadi TIGA orang — dan karena
+           target dijumlahkan per orang, targetnya ikut tiga kali lipat
+           sementara laporannya tetap tiga. Capaian orang itu, beserta
+           capaian golongannya, ambruk menjadi sepertiga tanpa satu pun
+           galat muncul. */
+        $c = $this->perusahaan();
+        $this->masuk();
+
+        foreach (['Budi Santoso', 'budi santoso', 'Budi  Santoso '] as $ejaan) {
+            $this->laporan($c, ['pelapor_nama' => $ejaan, 'pelapor_jabatan' => 'Operator']);
+        }
+
+        $props = $this->get('/hazard/analitik')->assertOk()->viewData('page')['props'];
+
+        $this->assertCount(1, $props['pelapor'], 'Satu orang harus tetap satu baris.');
+        $this->assertSame(3, $props['pelapor'][0]['aktual']);
+        $this->assertSame(4, $props['pelapor'][0]['target'], 'Target tidak boleh ikut berlipat.');
+        $this->assertSame(1, $props['golongan'][0]['orang']);
+    }
+
+    public function test_nrp_menyatukan_orang_meski_namanya_ditulis_lain(): void
+    {
+        // NRP diketik sekali dan jarang berubah — lebih dapat dipercaya
+        // daripada nama.
+        $c = $this->perusahaan();
+        $this->masuk();
+
+        $this->laporan($c, ['pelapor_nama' => 'B. Santoso',   'pelapor_nrp' => 'NRP-001', 'pelapor_jabatan' => 'Operator']);
+        $this->laporan($c, ['pelapor_nama' => 'Budi Santoso', 'pelapor_nrp' => 'nrp001',  'pelapor_jabatan' => 'Operator']);
+
+        $props = $this->get('/hazard/analitik')->assertOk()->viewData('page')['props'];
+
+        $this->assertCount(1, $props['pelapor']);
+        $this->assertSame(2, $props['pelapor'][0]['aktual']);
+    }
+
+    public function test_jabatan_terkini_dipakai_bukan_yang_tersalin_di_laporan(): void
+    {
+        /* Teks pada laporan adalah salinan saat laporan dibuat. Orang yang
+           berganti jabatan akan menyeret jabatan lamanya — beserta target
+           lama — di seluruh laporan terdahulunya. */
+        $c = $this->perusahaan();
+        $this->masuk();
+
+        $orang = User::factory()->create(['company_id' => $c->id, 'position' => 'Manager']);
+
+        $this->laporan($c, [
+            'user_id' => $orang->id,
+            'pelapor_nama' => $orang->name,
+            'pelapor_jabatan' => 'Operator',   // jabatan lama, tersalin di laporan
+        ]);
+
+        $baris = $this->get('/hazard/analitik')->assertOk()->viewData('page')['props']['pelapor'][0];
+
+        $this->assertSame('Manager', $baris['jabatan']);
+        $this->assertSame(\App\Support\Hazard::target('Manager'), $baris['target']);
+    }
+
     /* ══════════════ pengingat ══════════════ */
 
     public function test_pengingat_hanya_memuat_perusahaan_yang_punya_temuan_terbuka(): void
