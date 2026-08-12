@@ -86,10 +86,26 @@ function kirimUlang() {
     <div class="bg-white rounded-2xl shadow-card border border-stone-100 p-7 text-center">
 
       <h2 class="text-[17px] font-bold text-cam-ink">Periksa surel Anda</h2>
-      <p class="text-[12.5px] text-stone-500 mt-2 leading-relaxed">
+      <p v-if="suratAktif" class="text-[12.5px] text-stone-500 mt-2 leading-relaxed">
         Kami mengirim kode 6 angka ke<br>
         <span class="font-bold text-cam-ink">{{ email }}</span>
       </p>
+      <p v-else class="text-[12.5px] text-stone-500 mt-2 leading-relaxed">
+        Kode 6 angka untuk<br>
+        <span class="font-bold text-cam-ink">{{ email }}</span>
+      </p>
+
+      <!-- Dikatakan apa adanya. Menjanjikan surel yang tidak pernah
+           dikirim membuat orang menunggu tanpa akhir, lalu menyalahkan
+           kotak masuknya sendiri. -->
+      <div v-if="!suratAktif"
+           class="mt-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-left">
+        <p class="text-[12px] font-bold text-amber-800">Pengiriman surel belum aktif di server ini</p>
+        <p class="text-[11.5px] text-amber-700 mt-1 leading-relaxed">
+          Kodenya sudah dibuat tetapi tidak dikirim ke mana pun. Hubungi administrator
+          untuk memperoleh kodenya, atau agar akun Anda diverifikasi langsung.
+        </p>
+      </div>
 
       <div class="flex justify-center gap-2 mt-6" dir="ltr">
         <input v-for="(a, i) in angka" :key="i"

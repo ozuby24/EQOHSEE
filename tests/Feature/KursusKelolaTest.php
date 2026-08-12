@@ -66,7 +66,10 @@ class KursusKelolaTest extends TestCase
         $this->actingAs($this->admin());
         $c = Course::create(['title' => 'Kursus Lama', 'description' => 'Uraian.', 'category' => 'Wajib']);
 
-        $this->get("/courses/{$c->id}/edit")->assertOk()->assertSee('Kursus Lama');
+        $p = $this->get("/courses/{$c->id}/edit")->assertOk()->viewData('page')['props'];
+
+        $this->assertTrue($p['tersimpan']);
+        $this->assertSame('Kursus Lama', $p['awal']['title']);
     }
 
     public function test_pengguna_biasa_tidak_dapat_membuka_formulir(): void
@@ -81,8 +84,12 @@ class KursusKelolaTest extends TestCase
         $this->actingAs($this->admin());
 
         // Tombol pada katalog harus menunjuk alamat yang sungguh terdaftar.
-        $this->get('/courses')
-            ->assertOk()
-            ->assertSee(route('courses.create'), false);
+        // Diperiksa lewat prop, bukan teks halaman: Inertia menaruh
+        // muatannya sebagai JSON di atribut, dan garis miring pada URL
+        // ikut di-escape sehingga pencarian teks selalu meleset.
+        $p = $this->get('/courses')->assertOk()->viewData('page')['props'];
+
+        $this->assertSame(route('courses.create'), $p['tautan']['buat']);
+        $this->get($p['tautan']['buat'])->assertOk();
     }
 }

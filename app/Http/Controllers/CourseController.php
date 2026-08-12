@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\Course;
+use App\Support\{Kategori, Sampul};
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
 
 class CourseController extends Controller
 {
@@ -31,12 +34,62 @@ class CourseController extends Controller
         $kategori = Course::whereNotNull('category')->where('category','<>','')
                         ->distinct()->orderBy('category')->pluck('category');
 
-        return view('courses.index', compact('courses','q','kat','status','urut','kategori','diikuti'));
+        return Inertia::render('Kursus/Daftar', [
+            'judul'    => 'Kursus',
+            'subjudul' => 'Katalog pelatihan beserta modul dan kuisnya',
+
+            'kursus' => array_map(fn (Course $c) => [
+                'id'          => $c->id,
+                'judul'       => $c->title,
+                'keterangan'  => $c->description ?: null,
+                'kategori'    => $c->category ?: null,
+                'nadaKategori'=> $c->category ? Kategori::nada($c->category) : null,
+                'inisial'     => mb_strtoupper(mb_substr($c->title, 0, 1)),
+                // Sampul memakai aturan yang sama dengan dashboard lewat
+                // App\Support\Sampul. Katalog ini sempat menampilkan kotak
+                // gradasi berhuruf sementara dashboard memasang foto
+                // lapangan, padahal keduanya menampilkan kursus yang sama.
+                'sampul'      => Sampul::untuk($c),
+                'perluKode'   => (bool) $c->require_code,
+                'diikuti'     => in_array($c->id, $diikuti, true),
+                'jumlahModul' => $c->modules_count,
+                'urlBelajar'  => route('learn.show', $c),
+                'urlDetail'   => route('courses.show', $c),
+                'urlKelola'   => route('manage.course', $c),
+                'urlHapus'    => route('courses.destroy', $c),
+            ], $courses->items()),
+
+            'halaman' => [
+                'kini'   => $courses->currentPage(),
+                'akhir'  => $courses->lastPage(),
+                'total'  => $courses->total(),
+                'tautan' => array_map(fn ($t) => [
+                    'label' => $t['label'], 'url' => $t['url'], 'aktif' => (bool) $t['active'],
+                ], $courses->linkCollection()->all()),
+            ],
+
+            'f'    => ['q' => $q, 'kategori' => $kat, 'status' => (string) $status, 'urut' => (string) $urut],
+            'opsi' => [
+                'kategori' => $kategori->values()->all(),
+                'status'   => [
+                    ['nilai' => 'diikuti', 'label' => 'Sedang diikuti'],
+                    ['nilai' => 'belum',   'label' => 'Belum diikuti'],
+                ],
+                'urut' => [
+                    ['nilai' => 'baru',  'label' => 'Terbaru'],
+                    ['nilai' => 'judul', 'label' => 'Judul A–Z'],
+                    ['nilai' => 'modul', 'label' => 'Modul terbanyak'],
+                ],
+            ],
+
+            'bolehKelola' => Gate::allows('admin'),
+            'tautan'      => ['daftar' => route('courses.index'), 'buat' => route('courses.create')],
+        ]);
     }
 
     public function create()
     {
-        return view('courses.form', ['course' => new Course()]);
+        return $this->formulir(new Course());
     }
 
     public function store(Request $request)
@@ -49,12 +102,77 @@ class CourseController extends Controller
     public function show(Course $course)
     {
         $course->load(['modules.materials', 'quizzes']);
-        return view('courses.show', compact('course'));
+
+        return Inertia::render('Kursus/Detail', [
+            'judul'    => $course->title,
+            'subjudul' => $course->category ?: 'Kursus',
+
+            'kursus' => [
+                'judul'       => $course->title,
+                'keterangan'  => $course->description ?: null,
+                'kategori'    => $course->category ?: null,
+                'nadaKategori'=> $course->category ? Kategori::nada($course->category) : null,
+                'gambar'      => $course->image ? asset('storage/'.$course->image) : null,
+            ],
+
+            'modul' => $course->modules->map(fn ($m) => [
+                'id'         => $m->id,
+                'urutan'     => (int) $m->order_index,
+                'judul'      => $m->title,
+                'keterangan' => $m->description ?: null,
+                'materi'     => $m->materials->map(fn ($x) => [
+                    'id' => $x->id, 'judul' => $x->title, 'jenis' => $x->type ?: 'file',
+                ])->all(),
+            ])->all(),
+
+            'bolehUbah' => Gate::allows('admin'),
+            'tautan'    => [
+                'belajar' => route('learn.show', $course),
+                'ubah'    => route('courses.edit', $course),
+                'daftar'  => route('courses.index'),
+            ],
+        ]);
     }
 
     public function edit(Course $course)
     {
-        return view('courses.form', compact('course'));
+        return $this->formulir($course);
+    }
+
+    /** Formulir kursus, dipakai bersama oleh create dan edit. */
+    private function formulir(Course $c)
+    {
+        return Inertia::render('Kursus/Form', [
+            'judul'    => $c->exists ? 'Edit Kursus' : 'Kursus Baru',
+            'subjudul' => $c->exists ? $c->title : 'Daftarkan kursus beserta kode akses dan aturan sertifikatnya',
+
+            'tersimpan' => $c->exists,
+
+            'awal' => [
+                'title'       => (string) ($c->title ?? ''),
+                'category'    => (string) ($c->category ?? ''),
+                'description' => (string) ($c->description ?? ''),
+                'access_code' => (string) ($c->access_code ?: Course::kodeBaru()),
+                'cert_template'      => (string) ($c->cert_template ?: 'klasik'),
+                'require_code'       => (bool) $c->require_code,
+                'auto_certificate'   => $c->exists ? (bool) $c->auto_certificate : true,
+                'require_evaluation' => $c->exists ? (bool) $c->require_evaluation : true,
+            ],
+
+            'gambar' => $c->image ? asset('storage/'.$c->image) : null,
+
+            'opsi' => [
+                'sertifikat' => array_map(
+                    fn ($k) => ['nilai' => $k, 'label' => CertificateController::TEMPLATE[$k]],
+                    array_keys(CertificateController::TEMPLATE),
+                ),
+            ],
+
+            'tautan' => [
+                'simpan' => $c->exists ? route('courses.update', $c) : route('courses.store'),
+                'batal'  => route('courses.index'),
+            ],
+        ]);
     }
 
     public function update(Request $request, Course $course)

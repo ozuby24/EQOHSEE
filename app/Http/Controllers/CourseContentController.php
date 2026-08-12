@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Course, Material, Module, Quiz, QuizQuestion};
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 /** Satu halaman untuk mengelola modul, materi, kuis & soal dari sebuah kursus. */
 class CourseContentController extends Controller
@@ -11,7 +12,57 @@ class CourseContentController extends Controller
     public function manage(Course $course)
     {
         $course->load(['modules.materials', 'quizzes.questions']);
-        return view('manage.course', compact('course'));
+
+        return Inertia::render('Kursus/Kelola', [
+            'judul'    => 'Kelola: '.$course->title,
+            'subjudul' => 'Modul, materi, kuis, dan soalnya',
+
+            'kursus' => [
+                'judul'     => $course->title,
+                'kode'      => $course->access_code ?: null,
+                'perluKode' => (bool) $course->require_code,
+            ],
+
+            'modul' => $course->modules->map(fn ($m) => [
+                'id'         => $m->id,
+                'urutan'     => (int) $m->order_index,
+                'judul'      => $m->title,
+                'keterangan' => $m->description ?: null,
+                'materi'     => $m->materials->map(fn ($x) => [
+                    'id'       => $x->id,
+                    'judul'    => $x->title,
+                    'jenis'    => $x->type ?: 'file',
+                    'urlHapus' => route('manage.material.destroy', $x),
+                ])->all(),
+                'urlHapus'       => route('manage.module.destroy', $m),
+                'urlTambahMateri'=> route('manage.material.store', $m),
+            ])->all(),
+
+            'kuis' => $course->quizzes->map(fn ($q) => [
+                'id'         => $q->id,
+                'judul'      => $q->title,
+                'nilaiLulus' => (int) $q->pass_score,
+                // Kunci jawaban ikut dikirim DI SINI dan hanya di sini:
+                // halaman ini khusus admin, dan pengelola perlu melihat
+                // jawaban benarnya untuk memeriksa soal yang sudah dibuat.
+                // Halaman pengerjaan tidak pernah menerimanya.
+                'soal' => $q->questions->map(fn ($x) => [
+                    'id'      => $x->id,
+                    'soal'    => $x->question,
+                    'jawaban' => ((array) $x->options)[$x->correct_index] ?? '—',
+                    'urlHapus'=> route('manage.question.destroy', $x),
+                ])->all(),
+                'urlHapus'      => route('manage.quiz.destroy', $q),
+                'urlTambahSoal' => route('manage.question.store', $q),
+            ])->all(),
+
+            'tautan' => [
+                'pratinjau'   => route('learn.show', $course),
+                'info'        => route('courses.edit', $course),
+                'tambahModul' => route('manage.module.store', $course),
+                'tambahKuis'  => route('manage.quiz.store', $course),
+            ],
+        ]);
     }
 
     /* ---------- MODUL ---------- */

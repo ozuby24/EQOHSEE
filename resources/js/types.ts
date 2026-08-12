@@ -859,6 +859,8 @@ export interface HalamanVerifikasi {
   /** true bila kode terkunci karena terlalu banyak percobaan salah. */
   hangus: boolean;
   berlaku: number;
+  /** false bila pengantar surelnya 'log' — kodenya tidak dikirim ke mana pun. */
+  suratAktif: boolean;
 }
 
 /* ══════════════ Inspeksi ══════════════ */
@@ -1630,4 +1632,133 @@ export interface HalamanFormEvaluasi {
   medan: Array<{ nama: string; label: string; ket: string }>;
   catatan: Array<{ nama: string; label: string; ph: string }>;
   tautan: { simpan: string; batal: string };
+}
+
+/* ══════════════ Kursus, Belajar, Kuis, SOP ══════════════ */
+
+export interface HalamanDaftarKursus {
+  judul: string; subjudul: string;
+  kursus: Array<{
+    id: number; judul: string; keterangan: string | null;
+    kategori: string | null; nadaKategori: string | null; inisial: string;
+    sampul: string | null; perluKode: boolean; diikuti: boolean; jumlahModul: number;
+    urlBelajar: string; urlDetail: string; urlKelola: string; urlHapus: string;
+  }>;
+  halaman: { kini: number; akhir: number; total: number; tautan: TautanHalaman[] };
+  f: { q: string; kategori: string; status: string; urut: string };
+  opsi: { kategori: string[]; status: Pilihan[]; urut: Pilihan[] };
+  bolehKelola: boolean;
+  tautan: { daftar: string; buat: string };
+}
+
+export interface MateriKursus {
+  id: number;
+  judul: string;
+  jenis: string;
+  url?: string | null;
+}
+
+export interface HalamanDetailKursus {
+  judul: string; subjudul: string;
+  kursus: {
+    judul: string; keterangan: string | null;
+    kategori: string | null; nadaKategori: string | null; gambar: string | null;
+  };
+  modul: Array<{
+    id: number; urutan: number; judul: string;
+    keterangan: string | null; materi: MateriKursus[];
+  }>;
+  bolehUbah: boolean;
+  tautan: { belajar: string; ubah: string; daftar: string };
+}
+
+export interface HalamanFormKursus {
+  judul: string; subjudul: string;
+  tersimpan: boolean;
+  awal: Record<string, string | boolean>;
+  gambar: string | null;
+  opsi: { sertifikat: Pilihan[] };
+  tautan: { simpan: string; batal: string };
+}
+
+export interface HalamanKelolaKursus {
+  judul: string; subjudul: string;
+  kursus: { judul: string; kode: string | null; perluKode: boolean };
+  modul: Array<{
+    id: number; urutan: number; judul: string; keterangan: string | null;
+    materi: Array<MateriKursus & { urlHapus: string }>;
+    urlHapus: string; urlTambahMateri: string;
+  }>;
+  kuis: Array<{
+    id: number; judul: string; nilaiLulus: number;
+    /** Kunci jawaban hanya ada di halaman admin ini; lihat CourseContentController. */
+    soal: Array<{ id: number; soal: string; jawaban: string; urlHapus: string }>;
+    urlHapus: string; urlTambahSoal: string;
+  }>;
+  tautan: { pratinjau: string; info: string; tambahModul: string; tambahKuis: string };
+}
+
+export interface HalamanKodeKursus {
+  judul: string; subjudul: string;
+  kursus: { judul: string };
+  tautan: { buka: string; daftar: string };
+}
+
+export interface HalamanBelajarKursus {
+  judul: string; subjudul: string;
+  kursus: { judul: string; keterangan: string | null; progres: number; selesai: boolean };
+  modul: Array<{
+    id: number; urutan: number; judul: string; keterangan: string | null;
+    selesai: boolean; catatan: string; materi: MateriKursus[];
+    urlSelesai: string; urlCatatan: string;
+  }>;
+  kuis: Array<{ id: number; judul: string; nilaiLulus: number; url: string }>;
+  tautan: { sertifikat: string };
+}
+
+export interface SoalPilihan {
+  id: number;
+  soal: string;
+  pilihan: string[];
+}
+
+export interface HalamanKerjakanKuis {
+  judul: string; subjudul: string;
+  kuis: { judul: string; jumlahSoal: number; nilaiLulus: number };
+  soal: SoalPilihan[];
+  tautan: { kirim: string };
+}
+
+export interface HalamanHasilKuis {
+  judul: string; subjudul: string;
+  hasil: {
+    nilai: number; lulus: boolean; benar: number;
+    total: number; nilaiLulus: number; kuis: string;
+  };
+  tautan: { ulangi: string; dashboard: string };
+}
+
+export interface HalamanDaftarSop {
+  judul: string; subjudul: string;
+  evaluasi: Array<{
+    id: number; judul: string; keterangan: string | null; prosedur: string | null;
+    durasi: number; nilaiLulus: number;
+    terbaik: number | null; lulus: boolean; url: string;
+  }>;
+}
+
+export interface HalamanKerjakanSop {
+  judul: string; subjudul: string;
+  ev: { judul: string; jumlahSoal: number; nilaiLulus: number; durasiDetik: number };
+  soal: SoalPilihan[];
+  tautan: { kirim: string };
+}
+
+export interface HalamanHasilSop {
+  judul: string; subjudul: string;
+  hasil: {
+    nilai: number; lulus: boolean; benar: number;
+    total: number; nilaiLulus: number; evaluasi: string;
+  };
+  tautan: { ulangi: string; daftar: string };
 }

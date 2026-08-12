@@ -52,6 +52,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('quizzes/{quiz}',        [QuizController::class, 'show'])->name('quizzes.show');
     Route::post('quizzes/{quiz}/submit',[QuizController::class, 'submit'])->name('quizzes.submit');
 
+    /* Hasil punya alamatnya sendiri. Menggambarnya langsung dari POST
+       membuat halaman itu tidak dapat dimuat ulang maupun ditautkan:
+       peramban akan mengirim ulang jawabannya, dan percobaan kedua
+       tercatat tanpa ada yang benar-benar mengerjakannya lagi. */
+    Route::get('quizzes/{quiz}/hasil/{attempt}', [QuizController::class, 'hasil'])->name('quizzes.result');
+
     /* ---- Prosedur ---- */
     Route::resource('procedures', ProcedureController::class)->only(['index']);
     Route::resource('procedures', ProcedureController::class)->except(['index','show'])->middleware('can:admin');
@@ -60,6 +66,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('sop',                     [SopController::class, 'index'])->name('sop.index');
     Route::get('sop/{evaluation}',        [SopController::class, 'show'])->name('sop.show');
     Route::post('sop/{evaluation}/grade', [SopController::class, 'grade'])->name('sop.grade');
+    Route::get('sop/{evaluation}/hasil/{attempt}', [SopController::class, 'hasil'])->name('sop.result');
 
     /* ---- Sertifikat ---- */
     Route::get('certificates',               [CertificateController::class, 'index'])->name('certificates.index');

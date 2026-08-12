@@ -81,6 +81,9 @@ final class RuteInertia
         'certificates.index',
         'evaluations.index',
         'evaluations.create',
+        'courses.index',
+        'courses.create',
+        'sop.index',
 
         /* Admin */
         'admin.system',

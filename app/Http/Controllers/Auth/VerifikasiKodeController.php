@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Notifications\KodeVerifikasiEmail;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
@@ -44,8 +45,10 @@ class VerifikasiKodeController extends Controller
         // Datang ke halaman ini tanpa kode berlaku — mis. setelah kodenya
         // kedaluwarsa — tidak boleh menemui kotak isian yang tidak mungkin
         // diisi benar. Kode baru dibuatkan diam-diam.
+        $gagalKirim = false;
+
         if ($u->kodeVerifikasiKedaluwarsa() && !$u->jedaKirimUlang()) {
-            $this->kirim($u);
+            $gagalKirim = !$this->kirim($u);
         }
 
         return Inertia::render('Auth/Verifikasi', [
@@ -56,6 +59,13 @@ class VerifikasiKodeController extends Controller
             'jeda'      => $u->jedaKirimUlang(),
             'hangus'    => $u->kodeVerifikasiHangus(),
             'berlaku'   => User::KODE_BERLAKU,
+
+            // Ketika pengantar surelnya 'log', kodenya hanya ditulis ke
+            // berkas log dan tidak pernah dikirim ke mana pun. Halaman
+            // ini tetap mengatakan "kami mengirim kode" dan orangnya
+            // menunggu surel yang tidak akan pernah datang. Lebih baik
+            // dikatakan apa adanya beserta jalan keluarnya.
+            'suratAktif' => $this->suratAktif() && !$gagalKirim,
         ]);
     }
 
@@ -105,13 +115,52 @@ class VerifikasiKodeController extends Controller
             ]);
         }
 
-        $this->kirim($u);
+        $terkirim = $this->kirim($u);
 
-        return back()->with('sukses', 'Kode baru sudah dikirim.');
+        if (!$terkirim) {
+            throw ValidationException::withMessages([
+                'kode' => 'Kode baru dibuat, tetapi surelnya gagal dikirim. Hubungi administrator.',
+            ]);
+        }
+
+        return back()->with('sukses', $this->suratAktif()
+            ? 'Kode baru sudah dikirim.'
+            : 'Kode baru dibuat, tetapi pengiriman surel belum aktif di server ini.');
     }
 
-    private function kirim(User $u): void
+    /**
+     * Kirim kode baru. Mengembalikan false bila pengirimannya gagal.
+     *
+     * Kegagalan SMTP — sandi salah, porta tertutup, penyedia menolak —
+     * tidak boleh menjatuhkan halaman ini menjadi 500. Halaman inilah
+     * satu-satunya jalan keluar orang yang belum terverifikasi; ia harus
+     * tetap terbuka justru ketika pengiriman surelnya bermasalah.
+     *
+     * Isi galatnya dicatat di server saja. Pesan penyedia surel kerap
+     * memuat nama pengguna dan petunjuk konfigurasi, dan itu bukan milik
+     * siapa pun yang kebetulan membuka halaman pendaftaran.
+     */
+    private function kirim(User $u): bool
     {
-        $u->notify(new KodeVerifikasiEmail($u->buatKodeVerifikasi()));
+        $kode = $u->buatKodeVerifikasi();
+
+        try {
+            $u->notify(new KodeVerifikasiEmail($kode));
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Gagal mengirim kode verifikasi', [
+                'user_id' => $u->id,
+                'galat'   => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /** Server ini benar-benar mengirim surel, bukan sekadar mencatatnya. */
+    private function suratAktif(): bool
+    {
+        return !in_array(config('mail.default'), ['log', 'array', 'null'], true);
     }
 }
