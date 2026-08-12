@@ -66,9 +66,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('certificates/{course}',     [CertificateController::class, 'store'])->name('certificates.store');
     Route::get('certificates/{certificate}', [CertificateController::class, 'show'])->name('certificates.show');
 
-    /* ---- Berita ---- */
-    Route::resource('news', NewsController::class)->only(['index','show']);
+    /* ---- Berita ----
+
+       Rute admin didaftarkan lebih dulu. Kalau tidak, 'news/{news}'
+       menangkap 'news/create' sebagai id berita, pengikatan modelnya
+       gagal, dan tombol "Berita Baru" berujung 404 — bukan galat izin
+       yang menjelaskan apa pun. */
     Route::resource('news', NewsController::class)->except(['index','show'])->middleware('can:admin');
+    Route::resource('news', NewsController::class)->only(['index','show']);
 
     /* ---- Evaluasi Pasca-Pelatihan (oleh trainer) ---- */
     Route::get('evaluations',              [EvaluationController::class, 'index'])->name('evaluations.index');

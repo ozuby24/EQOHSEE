@@ -65,6 +65,16 @@ class AsapRuteTest extends TestCase
             if ($status >= 500) {
                 $gagal[] = "{$nama} ({$rute->uri()}) — HTTP {$status}";
             }
+
+            // 404 pada rute tanpa parameter selalu berarti ada yang salah:
+            // rutenya jelas terdaftar, jadi yang menjawab pasti rute lain.
+            // Persis begitu 'news/create' hilang — ia didaftarkan sesudah
+            // 'news/{news}', sehingga "create" tertangkap sebagai id berita
+            // dan pengikatan modelnya gagal.
+            if ($status === 404) {
+                $gagal[] = "{$nama} ({$rute->uri()}) — HTTP 404, "
+                          .'kemungkinan tertangkap rute berparameter yang didaftarkan lebih dulu';
+            }
         }
 
         $this->assertGreaterThan(50, $dibuka, 'Terlalu sedikit rute teruji — penyaringnya keliru.');

@@ -1142,3 +1142,174 @@ export interface HalamanMonitorBahaya {
   halaman: { kini: number; akhir: number; total: number; tautan: TautanHalaman[] };
   tautan: { buat: string; csv: string; cetak: string; wa: string; pengingat: string };
 }
+
+/* ══════════════ Gudang & Penyimpanan ══════════════ */
+
+export interface BarisMutasiGudang {
+  id: number;
+  jenis: 'masuk' | 'keluar' | 'rusak' | 'opname' | string;
+  nomor: string | null;
+  tanggal: string | null;
+  pihak: string | null;
+  jumlah: number;
+  /** Hanya terisi untuk opname — ia menetapkan saldo, bukan menambahnya. */
+  stokFisik: number | null;
+  barang: string | null;
+  satuan: string | null;
+}
+
+export interface StatusStok {
+  kode: 'aman' | 'menipis' | 'habis' | string;
+  nama: string;
+  nada: string;
+}
+
+export interface BarisBarangGudang {
+  id: number;
+  kode: string;
+  nama: string;
+  kategori: string;
+  namaKategori: string;
+  nadaKategori: string;
+  satuan: string;
+  stok: number;
+  stokMin: number;
+  lokasi: string | null;
+  partNumber: string | null;
+  kelasB3: string | null;
+  namaKelas: string | null;
+  msds: string | null;
+  status: StatusStok;
+  urlUbah: string;
+  urlHapus: string;
+}
+
+export interface BarisKedaluwarsa {
+  nama: string;
+  batch: string | null;
+  tanggal: string;
+  /** Sisa hari; negatif berarti sudah lewat. */
+  sisa: number;
+}
+
+export interface PelanggaranSimpan {
+  a: string;
+  b: string;
+  alasan: string;
+  lokasi?: string;
+}
+
+export interface RingkasGudang {
+  jumlah: number;
+  habis: number;
+  menipis: number;
+  aman: number;
+  kategori: Record<string, number>;
+  tanpa_msds: number;
+}
+
+export interface Pilihan {
+  nilai: string;
+  label: string;
+}
+
+export interface HalamanGudang {
+  judul: string; subjudul: string;
+  r: RingkasGudang;
+  kategori: Array<{ kode: string; nama: string; jumlah: number; url: string }>;
+  kritis: BarisBarangGudang[];
+  kedaluwarsa: BarisKedaluwarsa[];
+  ambang: number;
+  langgar: PelanggaranSimpan[];
+  terakhir: BarisMutasiGudang[];
+  tautan: { barang: string; menipis: string; mutasi: string };
+}
+
+export interface HalamanBarangGudang {
+  judul: string; subjudul: string;
+  barang: BarisBarangGudang[];
+  f: { cari: string; kategori: string; status: string; lokasi: string };
+  opsi: { kategori: Pilihan[]; status: Pilihan[]; lokasi: Pilihan[] };
+  bolehUbah: boolean;
+  tautan: { baru: string; daftar: string };
+}
+
+export interface HalamanFormBarangGudang {
+  judul: string; subjudul: string;
+  tersimpan: boolean;
+  nama: string;
+  awal: Record<string, string | boolean>;
+  msds: string | null;
+  opsi: { kategori: Pilihan[]; kelasB3: Pilihan[]; wujud: string[]; lokasi: Pilihan[] };
+  tautan: { simpan: string; batal: string };
+}
+
+export interface HalamanMutasiGudang {
+  judul: string; subjudul: string;
+  mutasi: BarisMutasiGudang[];
+  halaman: { kini: number; akhir: number; total: number; tautan: TautanHalaman[] };
+  barang: Array<{ id: number; nama: string; satuan: string; stok: number }>;
+  f: { jenis: string; barang: string; dari: string; sampai: string };
+  opsi: { jenis: Pilihan[]; jenisSaring: Pilihan[] };
+  hariIni: string;
+  bolehCatat: boolean;
+  tautan: { simpan: string; daftar: string };
+}
+
+export interface HalamanOpnameGudang {
+  judul: string; subjudul: string;
+  barang: Array<{
+    id: number; kode: string; nama: string; satuan: string;
+    lokasi: string | null; buku: number;
+  }>;
+  lalu: BarisMutasiGudang[];
+  hariIni: string;
+  bolehCatat: boolean;
+  tautan: { simpan: string };
+}
+
+export interface HalamanLokasiGudang {
+  judul: string; subjudul: string;
+  lokasi: Array<{
+    id: number; kode: string; nama: string; jenis: string;
+    letak: string | null; pj: string | null; jumlah: number;
+    syarat: Array<{ kunci: string; label: string; ada: boolean }>;
+    langgar: PelanggaranSimpan[];
+    urlUbah: string;
+  }>;
+  opsi: { jenis: Pilihan[]; syarat: Array<{ kunci: string; label: string }> };
+  bolehUbah: boolean;
+  tautan: { simpan: string };
+}
+
+export interface HalamanB3Gudang {
+  judul: string; subjudul: string;
+  matriks: Array<{
+    kelas: string; nama: string;
+    sel: Array<{ sama: boolean; alasan: string | null }>;
+  }>;
+  judulKolom: string[];
+  b3: Array<{
+    id: number; kode: string; nama: string; unNumber: string | null;
+    kelas: string | null; namaKelas: string | null; caraSimpan: string | null;
+    wujud: string | null; lokasi: string | null;
+    stok: number; satuan: string; msds: string | null;
+  }>;
+  langgar: PelanggaranSimpan[];
+  kedaluwarsa: BarisKedaluwarsa[];
+  tautan: { barang: string };
+}
+
+export interface HalamanLaporanGudang {
+  judul: string; subjudul: string;
+  baris: Array<{
+    nama: string; kode: string; satuan: string;
+    namaKategori: string; nadaKategori: string;
+    awal: number; masuk: number; keluar: number;
+    penyesuaian: number; akhir: number; opname: boolean;
+  }>;
+  dari: string; sampai: string;
+  label: { dari: string | null; sampai: string | null };
+  r: RingkasGudang;
+  tautan: { laporan: string };
+}

@@ -72,6 +72,16 @@ final class RuteInertia
         'inspeksi.template.index',
         'inspeksi.template.create',
 
+        /* Gudang */
+        'gudang.index',
+        'gudang.barang',
+        'gudang.barang.baru',
+        'gudang.mutasi',
+        'gudang.opname',
+        'gudang.lokasi',
+        'gudang.b3',
+        'gudang.laporan',
+
         /* Personalia */
         'personalia.index',
         'personalia.perusahaan',

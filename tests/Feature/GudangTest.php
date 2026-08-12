@@ -46,6 +46,19 @@ class GudangTest extends TestCase
         ], $x));
     }
 
+    /** Satu baris laporan Agustus 2026 sebagaimana dikirim ke Vue. */
+    private function barisLaporan(string $nama): array
+    {
+        $props = $this->get(route('gudang.laporan', ['dari' => '2026-08-01', 'sampai' => '2026-08-31']))
+                      ->assertOk()->viewData('page')['props'];
+
+        $baris = collect($props['baris'])->firstWhere('nama', $nama);
+
+        $this->assertNotNull($baris, "Baris laporan untuk '{$nama}' tidak ada.");
+
+        return $baris;
+    }
+
     /* ══════════════ saldo stok ══════════════ */
 
     public function test_stok_dijumlahkan_dari_mutasinya(): void
@@ -327,10 +340,7 @@ class GudangTest extends TestCase
         $this->mutasi($b, 'masuk', 40,  ['tanggal' => '2026-08-05']);
         $this->mutasi($b, 'keluar', 15, ['tanggal' => '2026-08-07']);
 
-        $baris = $this->get(route('gudang.laporan', ['dari' => '2026-08-01', 'sampai' => '2026-08-31']))
-                      ->assertOk()->viewData('baris');
-
-        $x = collect($baris)->firstWhere('barang.nama', 'Oli Mesin');
+        $x = $this->barisLaporan('Oli Mesin');
 
         $this->assertSame(100.0, $x['awal']);
         $this->assertSame(40.0,  $x['masuk']);
@@ -351,10 +361,7 @@ class GudangTest extends TestCase
         $this->mutasi($b, 'keluar', 10, ['tanggal' => '2026-08-03']);
         $this->mutasi($b, 'opname', 0,  ['tanggal' => '2026-08-10', 'stok_fisik' => 85]);
 
-        $baris = $this->get(route('gudang.laporan', ['dari' => '2026-08-01', 'sampai' => '2026-08-31']))
-                      ->assertOk()->viewData('baris');
-
-        $x = collect($baris)->firstWhere('barang.nama', 'Sarung Tangan');
+        $x = $this->barisLaporan('Sarung Tangan');
 
         $this->assertSame(100.0, $x['awal']);
         $this->assertSame(85.0,  $x['akhir']);
