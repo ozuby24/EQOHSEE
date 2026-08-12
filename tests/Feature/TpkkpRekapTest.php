@@ -224,18 +224,32 @@ class TpkkpRekapTest extends TestCase
     }
 
     /**
-     * Blade dan Vue harus membaca daftar tab yang sama.
+     * Tidak ada salinan Blade yang tertinggal untuk halaman PTPKKP.
      *
-     * Dua salinan daftar navigasi akan berbeda diam-diam setiap kali ada
-     * halaman baru — dan yang tertinggal tidak menimbulkan galat, hanya
-     * satu tampilan yang kehilangan satu menu.
+     * Selama pemindahan, tiap halaman sempat punya dua rupa. Yang Blade
+     * tidak lagi dipanggil siapa pun, tapi tetap terbaca seperti kode
+     * hidup: orang menyunting di sana, tidak ada yang berubah di layar,
+     * dan tidak ada galat apa pun yang menjelaskan kenapa.
+     *
+     * Yang boleh tersisa hanya _chart, sebab tata letak Inertia sendiri
+     * yang memuatnya.
      */
-    public function test_picker_blade_membaca_katalog_yang_sama(): void
+    public function test_tidak_ada_halaman_blade_ptpkkp_yang_tertinggal(): void
     {
-        $blade = file_get_contents(resource_path('views/tpkkp/_picker.blade.php'));
+        $sisa = array_map('basename', glob(resource_path('views/tpkkp/*.blade.php')) ?: []);
 
-        $this->assertStringContainsString('TpkkpNav::TABS', $blade,
-            '_picker.blade.php masih memakai daftar tab sendiri.');
+        $this->assertSame(['_chart.blade.php'], $sisa,
+            'Masih ada view Blade PTPKKP yang tidak dipanggil siapa pun: ' . implode(', ', $sisa));
+    }
+
+    public function test_setiap_tab_picker_menunjuk_halaman_inertia(): void
+    {
+        // Chip-nya digambar Vue, dan <Link> ke halaman Blade tidak
+        // berpindah sama sekali — ia diam di tempat dengan modal galat.
+        foreach (\App\Support\TpkkpNav::TABS as [$rute, $label]) {
+            $this->assertTrue(\App\Support\RuteInertia::ada($rute),
+                "Tab '{$label}' menunjuk rute '{$rute}' yang bukan halaman Inertia.");
+        }
     }
 
     public function test_seluruh_rute_tab_benar_terdaftar(): void
