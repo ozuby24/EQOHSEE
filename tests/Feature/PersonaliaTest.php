@@ -8,6 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class PersonaliaTest extends TestCase
@@ -127,9 +128,15 @@ class PersonaliaTest extends TestCase
         // Akun tanpa perusahaan harus mendapat penjelasan, bukan galat.
         $this->actingAs(User::factory()->create(['company_id' => null]));
 
+        // Halamannya Inertia: teksnya baru terbentuk di peramban, jadi
+        // assertSee di sini akan lulus atau gagal karena alasan yang salah.
         $this->get(route('personalia.perusahaan'))
              ->assertOk()
-             ->assertSee('belum terhubung ke perusahaan');
+             ->assertInertia(fn (AssertableInertia $p) => $p
+                 ->component('Personalia/Perusahaan')
+                 ->where('ada', false)
+                 ->where('isian', null)
+                 ->where('bisaSunting', false));
     }
 
     /* ---------- warna dari logo ---------- */
@@ -285,9 +292,10 @@ class PersonaliaTest extends TestCase
         User::factory()->create(['company_id' => $b->id, 'name' => 'Orang Perusahaan Lain']);
         $this->actingAs(User::factory()->create(['company_id' => $a->id, 'is_admin' => false]));
 
-        $this->get(route('personalia.direktori'))
-             ->assertOk()
-             ->assertDontSee('Orang Perusahaan Lain');
+        $orang = $this->get(route('personalia.direktori'))
+             ->assertOk()->viewData('page')['props']['orang'];
+
+        $this->assertNotContains('Orang Perusahaan Lain', array_column($orang, 'nama'));
     }
 
     public function test_tamu_tidak_dapat_membuka_personalia(): void

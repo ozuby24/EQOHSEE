@@ -18,9 +18,45 @@ use Illuminate\Validation\Rule;
  */
 class PersonaliaController extends Controller
 {
+    /** Medan data diri; dipakai halaman untuk menggambar isian. */
+    public const MEDAN = [
+        ['name',        'Nama Lengkap',      'text',  true],
+        ['email',       'Surel',             'email', true],
+        ['employee_id', 'NIK / Nomor Induk', 'text',  false],
+        ['position',    'Jabatan',           'text',  false],
+        ['department',  'Departemen',        'text',  false],
+        ['phone',       'Telepon',           'text',  false],
+        ['whatsapp',    'WhatsApp',          'text',  false],
+    ];
+
     public function index(Request $r)
     {
-        return view('personalia.profil', ['u' => $r->user()]);
+        $u = $r->user();
+        $p = $u->company;
+
+        $isian = [];
+        foreach (self::MEDAN as [$k]) $isian[$k] = (string) ($u->{$k} ?? '');
+        $isian['bio'] = (string) ($u->bio ?? '');
+
+        return \Inertia\Inertia::render('Personalia/Profil', [
+            'judul'    => 'Data Diri',
+            'subjudul' => 'Kontak, jabatan, dan foto yang melekat pada akun Anda',
+
+            'medan' => array_map(fn ($m) => [
+                'nama' => $m[0], 'label' => $m[1], 'tipe' => $m[2], 'wajib' => $m[3],
+            ], self::MEDAN),
+            'isian'  => $isian,
+            'avatar' => $u->avatar ? asset('storage/' . $u->avatar) : null,
+            'inisial' => mb_strtoupper(mb_substr($u->name, 0, 1)),
+
+            'perusahaan' => $p ? [
+                'nama'     => $p->name,
+                'jenis'    => $p->izin_type ?: 'Perusahaan',
+                'lokasi'   => $p->location ?: null,
+                'logo'     => $p->effectiveLogo() ? asset('storage/' . $p->effectiveLogo()) : null,
+            ] : null,
+            'urlPerusahaan' => route('personalia.perusahaan'),
+        ]);
     }
 
     public function simpanProfil(Request $r)
@@ -90,12 +126,51 @@ class PersonaliaController extends Controller
             : back();
     }
 
+    /** Medan identitas perusahaan; 'lebar' menandai isian selebar dua kolom. */
+    public const MEDAN_PERUSAHAAN = [
+        ['name',      'Nama Perusahaan',               true,  true],
+        ['code',      'Kode',                          false, false],
+        ['izin_type', 'Jenis Izin (IUP / IUJP)',       false, false],
+        ['commodity', 'Komoditas',                     false, false],
+        ['location',  'Lokasi',                        false, false],
+        ['ktt',       'Kepala Teknik Tambang',         false, false],
+        ['pjo',       'Penanggung Jawab Operasional',  false, false],
+        ['pic_name',  'Nama PIC',                      false, false],
+        ['pic_email', 'Surel PIC',                     false, false],
+        ['pic_phone', 'Telepon PIC',                   false, false],
+    ];
+
     public function perusahaan(Request $r)
     {
-        return view('personalia.perusahaan', [
-            'p'      => $r->user()->company,
-            'boleh'  => $this->bolehSuntingPerusahaan($r->user()),
-            'daftar' => $r->user()->isAdmin() ? Company::orderBy('name')->get() : collect(),
+        $u = $r->user();
+        $p = $u->company;
+
+        $isian = [];
+        foreach (self::MEDAN_PERUSAHAAN as [$k]) $isian[$k] = (string) ($p->{$k} ?? '');
+        $isian['address'] = (string) ($p->address ?? '');
+
+        return \Inertia\Inertia::render('Personalia/Perusahaan', [
+            'judul'    => 'Data Perusahaan',
+            'subjudul' => 'Identitas, kontak, dan logo yang mewarnai tampilan aplikasi',
+
+            'medan' => array_map(fn ($m) => [
+                'nama' => $m[0], 'label' => $m[1], 'wajib' => $m[2], 'lebar' => $m[3],
+            ], self::MEDAN_PERUSAHAAN),
+
+            'ada'   => $p !== null,
+            'nama'  => $p?->name,
+            'isian' => $p ? $isian : null,
+
+            'logo'      => $p?->effectiveLogo() ? asset('storage/' . $p->effectiveLogo()) : null,
+            // Hanya logo milik perusahaan ini yang boleh dihapus; effectiveLogo()
+            // bisa memulangkan logo bawaan yang bukan miliknya.
+            'logoSendiri' => (bool) $p?->logo,
+            'warna'     => $p?->theme_color ? [
+                ['nama' => 'Aksen', 'hex' => $p->theme_color],
+                ['nama' => 'Dasar', 'hex' => $p->theme_dark],
+            ] : [],
+
+            'bisaSunting' => $this->bolehSuntingPerusahaan($u),
         ]);
     }
 
@@ -186,9 +261,37 @@ class PersonaliaController extends Controller
                                    ->orWhere('department', 'like', "%{$cari}%"));
         }
 
-        return view('personalia.direktori', [
-            'orang' => $q->with('company')->paginate(24)->withQueryString(),
-            'cari'  => $cari ?? '',
+        $hal = $q->with('company')->paginate(24)->withQueryString();
+
+        return \Inertia\Inertia::render('Personalia/Direktori', [
+            'judul'    => 'Direktori',
+            'subjudul' => 'Kontak rekan kerja di perusahaan Anda',
+
+            'cari'  => (string) $cari,
+            'orang' => array_map(fn (User $o) => [
+                'id'         => $o->id,
+                'nama'       => $o->name,
+                'inisial'    => mb_strtoupper(mb_substr($o->name, 0, 1)),
+                'jabatan'    => $o->position ?: null,
+                'departemen' => $o->department ?: null,
+                'email'      => $o->email ?: null,
+                'telepon'    => $o->phone ?: null,
+                'avatar'     => $o->avatar ? asset('storage/' . $o->avatar) : null,
+                // Nama perusahaan hanya berarti bagi admin, sebab hanya dia
+                // yang melihat lintas perusahaan.
+                'perusahaan' => $u->isAdmin() ? $o->company?->name : null,
+            ], $hal->items()),
+
+            'halaman' => [
+                'kini'   => $hal->currentPage(),
+                'akhir'  => $hal->lastPage(),
+                'total'  => $hal->total(),
+                'tautan' => array_map(fn ($t) => [
+                    'label' => $t['label'],
+                    'url'   => $t['url'],
+                    'aktif' => (bool) $t['active'],
+                ], $hal->linkCollection()->all()),
+            ],
         ]);
     }
 

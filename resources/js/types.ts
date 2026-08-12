@@ -677,3 +677,82 @@ export interface HalamanKuesioner {
   responden: Responden[];
   bisaTarik: boolean;
 }
+
+/* ══════════════ Personalia ══════════════ */
+
+export interface MedanIsian {
+  nama: string;
+  label: string;
+  tipe: string;
+  wajib: boolean;
+}
+
+export interface PerusahaanSingkat {
+  nama: string;
+  jenis: string;
+  lokasi: string | null;
+  logo: string | null;
+}
+
+export interface HalamanProfilDiri {
+  judul: string;
+  subjudul: string;
+  medan: MedanIsian[];
+  isian: Record<string, string>;
+  avatar: string | null;
+  inisial: string;
+  perusahaan: PerusahaanSingkat | null;
+  urlPerusahaan: string;
+}
+
+export interface MedanPerusahaan {
+  nama: string;
+  label: string;
+  wajib: boolean;
+  lebar: boolean;
+}
+
+export interface WarnaLogo {
+  nama: string;
+  hex: string | null;
+}
+
+export interface HalamanPerusahaan {
+  judul: string;
+  subjudul: string;
+  medan: MedanPerusahaan[];
+  ada: boolean;
+  nama: string | null;
+  isian: Record<string, string> | null;
+  logo: string | null;
+  /** Logo milik perusahaan ini sendiri — hanya itu yang boleh dihapus. */
+  logoSendiri: boolean;
+  warna: WarnaLogo[];
+  bisaSunting: boolean;
+}
+
+export interface OrangDirektori {
+  id: number;
+  nama: string;
+  inisial: string;
+  jabatan: string | null;
+  departemen: string | null;
+  email: string | null;
+  telepon: string | null;
+  avatar: string | null;
+  perusahaan: string | null;
+}
+
+export interface TautanHalaman {
+  label: string;
+  url: string | null;
+  aktif: boolean;
+}
+
+export interface HalamanDirektori {
+  judul: string;
+  subjudul: string;
+  cari: string;
+  orang: OrangDirektori[];
+  halaman: { kini: number; akhir: number; total: number; tautan: TautanHalaman[] };
+}

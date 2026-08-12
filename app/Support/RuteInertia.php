@@ -50,6 +50,11 @@ final class RuteInertia
         // memuat ulang halaman penuh tanpa alasan yang tampak.
         'tpkkp.kuesioner',
         'kuesioner.admin',
+
+        /* Personalia */
+        'personalia.index',
+        'personalia.perusahaan',
+        'personalia.direktori',
     ];
 
     public static function ada(?string $rute): bool
