@@ -239,8 +239,6 @@ final class Menu
       ],
     ],
   ];
-  $aktif = $menu[$modul
-        ];
     }
 
     /** Kunci modul yang sedang dibuka, ditentukan dari alamat sekarang. */
