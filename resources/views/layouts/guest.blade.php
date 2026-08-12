@@ -122,7 +122,7 @@
     .eq-after{margin:20px 0 0;font-size:12.5px;color:var(--muted);text-align:center}
     .eq-after a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line)}
     .eq-note{margin:0 0 16px;border-radius:10px;padding:11px 13px;font-size:12.5px;line-height:1.55}
-    .eq-note.ok{background:#EAF6F4;border:1px solid #BFE0DB;color:#0E6E66}
+    .eq-note.ok{background:#EAF6F4;border:1px solid #CBD5DC;color:#0E6E66}
     .eq-note.bad{background:#FCEDEC;border:1px solid #F3CFCC;color:#A3312A}
     .eq-note ul{margin:0;padding:0;list-style:none}
 

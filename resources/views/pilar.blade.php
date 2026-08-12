@@ -39,7 +39,7 @@ $pilar = [
    'ket'=>'Pengelolaan limbah, kualitas air dan udara, serta reklamasi lahan.',
    'modul'=>[['Audit ISO 14001','segera',null],['Pemantauan Lingkungan','segera',null]]],
 
-  ['key'=>'eng','nama'=>'Engineering','warna'=>'#FF9800','g1'=>'#3CC3CF','g2'=>'#20949E',
+  ['key'=>'eng','nama'=>'Engineering','warna'=>'#FF9800','g1'=>'#29ABE2','g2'=>'#20949E',
    'tag'=>'Rekayasa andal untuk sarana yang laik',
    'ket'=>'Kelaikan peralatan dan instalasi, kajian teknis, serta tenaga teknis bersertifikat.',
    'modul'=>[['KO / SPIP','segera',null],['APAR & Proteksi Kebakaran','aktif','sigap.apar.index']]],

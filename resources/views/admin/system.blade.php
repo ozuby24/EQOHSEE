@@ -105,7 +105,7 @@
       var rl=Object.keys(ROLES), rv=Object.values(ROLES).map(Number);
       if(document.getElementById('eqcRoles')) new Chart(document.getElementById('eqcRoles'),{
         type:'doughnut',
-        data:{labels:rl,datasets:[{data:rv,backgroundColor:[teal,navy,amber,tealL,tealD,'#8AC5CC','#173F5F'],borderColor:'#fff',borderWidth:2,hoverOffset:9}]},
+        data:{labels:rl,datasets:[{data:rv,backgroundColor:[teal,navy,amber,tealL,tealD,'#B8BEC5','#173F5F'],borderColor:'#fff',borderWidth:2,hoverOffset:9}]},
         options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
           plugins:{legend:{position:'bottom',labels:{boxWidth:10,boxHeight:10,padding:12,font:{size:11}}},
             tooltip:{callbacks:{label:function(c){var t=c.dataset.data.reduce(function(a,b){return a+Number(b);},0)||1;return ' '+c.label+': '+c.parsed+' ('+Math.round(c.parsed/t*100)+'%)';}}}},

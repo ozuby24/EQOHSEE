@@ -71,9 +71,9 @@
     </linearGradient>
 
     <linearGradient id="hKabut" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0"  stop-color="#BFE6DF" stop-opacity="0"/>
-      <stop offset=".5" stop-color="#BFE6DF" stop-opacity=".30"/>
-      <stop offset="1"  stop-color="#BFE6DF" stop-opacity="0"/>
+      <stop offset="0"  stop-color="#C8CDD3" stop-opacity="0"/>
+      <stop offset=".5" stop-color="#C8CDD3" stop-opacity=".30"/>
+      <stop offset="1"  stop-color="#C8CDD3" stop-opacity="0"/>
     </linearGradient>
 
     <linearGradient id="hBerkas" x1="0" y1="0" x2="0" y2="1">
@@ -106,8 +106,8 @@
 
   {{-- Awan tipis, hanyut sangat lambat --}}
   <g class="awan-hero" opacity=".4">
-    <ellipse cx="330" cy="150" rx="180" ry="15" fill="#BFE6DF" opacity=".22"/>
-    <ellipse cx="470" cy="182" rx="120" ry="10" fill="#BFE6DF" opacity=".15"/>
+    <ellipse cx="330" cy="150" rx="180" ry="15" fill="#C8CDD3" opacity=".22"/>
+    <ellipse cx="470" cy="182" rx="120" ry="10" fill="#C8CDD3" opacity=".15"/>
     <ellipse cx="1240" cy="140" rx="150" ry="12" fill="#FFE0B8" opacity=".16"/>
   </g>
 
@@ -137,7 +137,7 @@
     @foreach ([0, 300, 640] as $i => $dx)
       <g transform="translate({{ $dx }} {{ -$i * 6 }})">
         <path d="M120 548 L164 547 L170 531 L126 532 Z" fill="#0A100F" fill-opacity=".95"/>
-        <path d="M164 547 L186 546 L186 534 L177 534 L172 540 L164 540 Z" fill="#1E5F58"/>
+        <path d="M164 547 L186 546 L186 534 L177 534 L172 540 L164 540 Z" fill="#2A3A4A"/>
         <circle cx="134" cy="551" r="5" fill="#0A100F"/><circle cx="172" cy="550" r="5" fill="#0A100F"/>
         <circle cx="184" cy="531" r="2.6" fill="#FFC46B" class="suar-hero" style="--tunda:{{ $i*0.4 }}s"/>
       </g>
@@ -151,7 +151,7 @@
     <path d="M16 30 L34 18" stroke="#FF9800" stroke-opacity=".7" stroke-width="3"/>
     <path d="M60 92 L60 44 L124 30 L124 92 Z" fill="#0A100F" fill-opacity=".9"/>
     {{-- konveyor miring ke tumpukan --}}
-    <path d="M124 44 L206 78" stroke="#1E5F58" stroke-width="7" stroke-linecap="round"/>
+    <path d="M124 44 L206 78" stroke="#2A3A4A" stroke-width="7" stroke-linecap="round"/>
     <path d="M124 44 L206 78" stroke="#FF9800" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/>
     <path d="M188 92 q22 -26 44 0 Z" fill="#0A100F" fill-opacity=".9"/>
     <circle cx="42" cy="2" r="3" fill="#FF7F50" class="suar-hero"/>
@@ -171,8 +171,8 @@
     <path d="M-8 62 L104 62 L96 78 L0 78 Z" fill="#0A100F" fill-opacity=".96"/>
     <path d="M4 70 L92 70" stroke="#FF9800" stroke-opacity=".35" stroke-width="3"/>
     <g class="lengan-hero" style="transform-origin: 92px 24px">
-      <path d="M92 24 L182 -20" stroke="#1E5F58" stroke-width="10" stroke-linecap="round"/>
-      <path d="M182 -20 L222 20"  stroke="#1E5F58" stroke-width="8"  stroke-linecap="round"/>
+      <path d="M92 24 L182 -20" stroke="#2A3A4A" stroke-width="10" stroke-linecap="round"/>
+      <path d="M182 -20 L222 20"  stroke="#2A3A4A" stroke-width="8"  stroke-linecap="round"/>
       <path d="M215 16 q24 8 20 30 q-26 4 -32 -18 Z" fill="#123F3B" stroke="#FF9800" stroke-opacity=".5" stroke-width="1.5"/>
     </g>
     <circle cx="60" cy="0" r="3.4" fill="#FF7F50" class="suar-hero" style="--tunda:.5s"/>
@@ -210,7 +210,7 @@
   </g>
 
   {{-- Burung jauh — penanda skala dan kehidupan --}}
-  <g class="burung-hero" opacity=".4" stroke="#BFE6DF" stroke-width="2.5" fill="none" stroke-linecap="round">
+  <g class="burung-hero" opacity=".4" stroke="#C8CDD3" stroke-width="2.5" fill="none" stroke-linecap="round">
     <path d="M560 214 q11 -8 22 0"/><path d="M596 232 q9 -7 18 0"/><path d="M624 208 q8 -6 16 0"/>
   </g>
 
