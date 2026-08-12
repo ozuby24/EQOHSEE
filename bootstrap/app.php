@@ -17,6 +17,11 @@ return Application::configure(basePath: dirname(__DIR__))
            jadi 170-an halaman lama tidak ikut terpengaruh. */
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
+
+            /* Ditaruh SESUDAH HandleInertiaRequests supaya ia melihat
+               tanggapan yang sudah jadi — termasuk yang berasal dari
+               halaman Blade, yang justru menjadi alasan keberadaannya. */
+            \App\Http\Middleware\PastikanTanggapanInertia::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
