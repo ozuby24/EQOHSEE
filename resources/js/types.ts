@@ -1762,3 +1762,284 @@ export interface HalamanHasilSop {
   };
   tautan: { ulangi: string; daftar: string };
 }
+
+/* ══════════════ Energi ══════════════ */
+
+export interface RincianSumberEnergi {
+  jumlah: number;
+  satuan: string;
+  gj: number;
+  tco2e: number;
+  rupiah: number;
+}
+
+export interface RingkasEnergi {
+  gj: number;
+  tco2e: number;
+  rupiah: number;
+  rincian: Record<string, RincianSumberEnergi>;
+  liter: number;
+  liter_alat: number;
+  liter_genset: number;
+  kwh: number;
+  m3: number;
+  ton: number;
+  bcm: number;
+  hari: number;
+  liter_hari: number;
+  intensitas: number;
+  l_ton: number;
+  l_bcm: number;
+  kwh_ton: number;
+}
+
+export interface BaselineEnergi {
+  tahun: number;
+  baselineGjTon: number;
+  targetGjTon: number;
+  catatan: string | null;
+  penurunanTarget: number;
+  penurunanTercapai: number;
+  kemajuan: number;
+}
+
+export interface StatusEfisiensi {
+  kode: string;
+  label: string;
+  warna: string;
+}
+
+export interface TitikTren {
+  tanggal: string;
+  liter?: number;
+  kwh?: number;
+  ton?: number;
+  gj?: number;
+  intensitas?: number;
+  nilai?: number;
+}
+
+export interface BarisUnitEnergi {
+  id: number;
+  kode: string;
+  nama: string;
+  kategori: string;
+  liter: number;
+  hm: number;
+  lHm: number;
+  acuan: number;
+  status: StatusEfisiensi;
+  url: string;
+}
+
+export interface PeluangRingkas {
+  judul: string;
+  status: string;
+  rupiah: number;
+  tco2e: number;
+}
+
+export interface HalamanEnergiIndex {
+  judul: string; subjudul: string;
+  r: RingkasEnergi;
+  baseline: BaselineEnergi | null;
+  tren: TitikTren[];
+  dari: string; sampai: string;
+  teratas: BarisUnitEnergi[];
+  peluang: PeluangRingkas[];
+  tautan: { equipment: string; hemat: string };
+}
+
+export interface HalamanEnergiKonsumsi {
+  judul: string; subjudul: string;
+  r: RingkasEnergi;
+  dari: string; sampai: string;
+  baseline: BaselineEnergi | null;
+  tren: TitikTren[];
+  tautan: { konsumsi: string };
+}
+
+export interface BarisFuelRecon {
+  tanggal: string;
+  stokAwal: number;
+  disalurkan: number;
+  stokAkhir: number;
+  terpakai: number;
+  catatan: string | null;
+}
+
+export interface PerKategoriEnergi {
+  kode: string;
+  nama: string;
+  liter: number;
+  hm: number;
+  l_hm: number;
+  gj: number;
+  url: string;
+}
+
+export interface HalamanEnergiFuel {
+  judul: string; subjudul: string;
+  dari: string; sampai: string;
+  r: RingkasEnergi;
+  biayaSolar: number;
+  peringkat: BarisUnitEnergi[];
+  perKategori: PerKategoriEnergi[];
+  recon: {
+    disalurkan: number; tercatat: number; selisih: number; persen: number;
+    baris: BarisFuelRecon[];
+  };
+  tautan: { fuel: string; equipment: string };
+}
+
+export interface AreaListrik {
+  nama: string;
+  kwh: number;
+  gj: number;
+  rupiah: number;
+  puncak: number;
+  jam: number;
+  faktor: number;
+}
+
+export interface HalamanEnergiListrik {
+  judul: string; subjudul: string;
+  dari: string; sampai: string;
+  perArea: AreaListrik[];
+  total: { kwh: number; gj: number; rupiah: number; tco2e: number; perTon: number };
+  pln: { kwh: number };
+  genset: { kwh: number; liter: number; efisiensi: number; jam: number };
+  tautan: { listrik: string };
+}
+
+export interface HalamanEnergiEquipment {
+  judul: string; subjudul: string;
+  dari: string; sampai: string;
+  kategori: string | null;
+  peringkat: BarisUnitEnergi[];
+  perKategori: PerKategoriEnergi[];
+  opsi: { kategori: Record<string, string> };
+  tautan: { equipment: string };
+}
+
+export interface HalamanEnergiEquipmentDetail {
+  judul: string; subjudul: string;
+  unit: {
+    kode: string; nama: string; kategori: string;
+    merek: string | null; dayaHp: number | null; payloadTon: number | null;
+  };
+  dari: string; sampai: string;
+  acuan: number;
+  status: StatusEfisiensi;
+  m: {
+    hm: number; liter: number; ton: number; bcm: number; idle: number; jarak: number;
+    l_hm: number; l_ton: number; l_bcm: number; gj: number; tco2e: number; rupiah: number;
+    idle_persen: number; cycle: number | null; kecepatan: number;
+  };
+  hariBeroperasi: number;
+  trenLiter: TitikTren[];
+  potensiHemat: { liter: number; rupiah: number; tco2e: number } | null;
+  log: Array<{
+    tanggal: string; hm: number; liter: number; lHm: number;
+    idle: number; ton: number; bcm: number;
+  }>;
+  tautan: { equipment: string; diriSendiri: string };
+}
+
+export interface HalamanEnergiKpi {
+  judul: string; subjudul: string;
+  r: RingkasEnergi;
+  baseline: BaselineEnergi | null;
+  dari: string; sampai: string;
+  hemat: { jumlah: number; gj: number; tco2e: number; rupiah: number };
+  tautan: { kpi: string; baseline: string; hemat: string };
+}
+
+export interface BarisBaseline {
+  id: number;
+  tahun: number;
+  perusahaan: string | null;
+  baselineGjTon: number;
+  targetGjTon: number;
+  penurunanTarget: number;
+  catatan: string | null;
+  berlaku: boolean;
+}
+
+export interface HalamanEnergiBaseline {
+  judul: string; subjudul: string;
+  daftar: BarisBaseline[];
+  baseline: BaselineEnergi | null;
+  r: RingkasEnergi;
+  dari: string; sampai: string;
+  opsi: { perusahaan: Pilihan[] };
+  tautan: { baseline: string; simpan: string };
+}
+
+export interface PeluangHemat {
+  id: number;
+  judul: string;
+  area: string | null;
+  status: string;
+  uraian: string | null;
+  hematLiter: number;
+  hematKwh: number;
+  penanggungJawab: string | null;
+  targetSelesai: string | null;
+  gj: number;
+  tco2e: number;
+  rupiah: number;
+  terwujud: boolean;
+  urlUbah: string;
+  urlHapus: string;
+}
+
+export interface HalamanEnergiHemat {
+  judul: string; subjudul: string;
+  daftar: PeluangHemat[];
+  terwujud: { jumlah: number; gj: number; tco2e: number; rupiah: number };
+  potensi: { gj: number; tco2e: number; rupiah: number };
+  opsi: { status: string[] };
+  tautan: { hemat: string; simpan: string };
+}
+
+export interface HalamanEnergiKarbon {
+  judul: string; subjudul: string;
+  r: RingkasEnergi;
+  dari: string; sampai: string;
+  hemat: { jumlah: number; gj: number; tco2e: number; rupiah: number };
+  pohon: number;
+  faktor: { literKgCo2: number; kwhKgCo2: number; m3KgCo2: number };
+  lingkup: { s1: number; s2: number; total: number; porsiS1: number; porsiS2: number };
+  tautan: { karbon: string; hemat: string };
+}
+
+export interface HalamanEnergiKalkulator {
+  judul: string; subjudul: string;
+  faktor: {
+    gjLiter: number; co2Liter: number; rpLiter: number;
+    gjKwh: number; co2Kwh: number; rpKwh: number;
+    gjM3: number; co2M3: number; rpM3: number;
+  };
+  tautan: { hemat: string };
+}
+
+export interface UnitEnergiMaster {
+  id: number;
+  kode: string;
+  nama: string;
+  kategori: string;
+  merek: string | null;
+  dayaHp: number | null;
+  payloadTon: number | null;
+  urlDetail: string;
+  urlHapus: string;
+}
+
+export interface HalamanEnergiMaster {
+  judul: string; subjudul: string;
+  hitungKategori: Array<{ kode: string; nama: string; jumlah: number }>;
+  units: UnitEnergiMaster[];
+  opsi: { kategori: Record<string, string>; perusahaan: Pilihan[] };
+  tautan: { simpan: string };
+}

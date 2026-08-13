@@ -112,6 +112,19 @@ final class RuteInertia
         'personalia.index',
         'personalia.perusahaan',
         'personalia.direktori',
+
+        /* Energi */
+        'energi.index',
+        'energi.konsumsi',
+        'energi.fuel',
+        'energi.listrik',
+        'energi.equipment',
+        'energi.kpi',
+        'energi.baseline',
+        'energi.hemat',
+        'energi.karbon',
+        'energi.kalkulator',
+        'energi.master',
     ];
 
     public static function ada(?string $rute): bool

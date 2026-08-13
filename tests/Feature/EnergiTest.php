@@ -158,16 +158,20 @@ class EnergiTest extends TestCase
         EnergyOpportunity::create(['judul' => 'Sudah jalan', 'status' => 'berjalan', 'hemat_liter' => 500]);
         EnergyOpportunity::create(['judul' => 'Sudah kelar', 'status' => 'selesai', 'hemat_kwh' => 2000]);
 
-        $this->get(route('energi.kpi'))
-            ->assertOk()
-            ->assertSee('Penghematan yang Sudah Berjalan');
+        $hemat = $this->get(route('energi.kpi'))->assertOk()->viewData('page')['props']['hemat'];
 
         // 500 L + 2000 kWh, bukan 1500 L: usulan bukan penghematan.
         $terwujud = EnergyOpportunity::whereIn('status', ['berjalan', 'selesai'])->get();
         $this->assertSame(2, $terwujud->count());
+        $this->assertSame(2, $hemat['jumlah']);
         $this->assertEqualsWithDelta(
             Energi::literKeGj(500) + Energi::kwhKeGj(2000),
             $terwujud->sum(fn ($o) => $o->gj()),
+            0.0001
+        );
+        $this->assertEqualsWithDelta(
+            Energi::literKeGj(500) + Energi::kwhKeGj(2000),
+            $hemat['gj'],
             0.0001
         );
     }
@@ -284,12 +288,18 @@ class EnergiTest extends TestCase
         $benar    = $this->get(route('energi.konsumsi', $this->rentang()))->assertOk();
         $terbalik = $this->get(route('energi.konsumsi', ['dari' => '2026-01-31', 'sampai' => '2026-01-01']))->assertOk();
 
-        // Rentang terbalik dibetulkan diam-diam, jadi halamannya sama persis
+        // Rentang terbalik dibetulkan diam-diam, jadi datanya sama persis
         // dengan rentang yang benar — bukan halaman kosong tanpa penjelasan.
-        $this->assertSame($benar->getContent(), $terbalik->getContent());
+        $propsBenar    = $benar->viewData('page')['props'];
+        $propsTerbalik = $terbalik->viewData('page')['props'];
+
+        $this->assertSame($propsBenar['dari'], $propsTerbalik['dari']);
+        $this->assertSame($propsBenar['sampai'], $propsTerbalik['sampai']);
+        $this->assertSame($propsBenar['r'], $propsTerbalik['r']);
+        $this->assertSame($propsBenar['tren'], $propsTerbalik['tren']);
 
         // Dan halaman itu memang berisi data, bukan sama-sama kosong.
-        $benar->assertSee(number_format(\App\Support\Energi::literKeGj(400), 2));
+        $this->assertEqualsWithDelta(\App\Support\Energi::literKeGj(400), $propsBenar['r']['gj'], 0.0001);
     }
 
     public function test_solar_genset_ikut_terhitung_sebagai_solar(): void
