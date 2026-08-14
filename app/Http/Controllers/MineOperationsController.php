@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Company, EnergyFuelLog, MineMapLayer, MineOperationalRecord, MineOperationalTarget, TindakLanjut};
-use App\Support\{Alur, KelengkapanShift, PeringatanOperasi, Ramalan};
+use App\Support\{Alur, KelengkapanShift, KopDokumen, PeringatanOperasi, Ramalan};
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
@@ -103,6 +103,102 @@ class MineOperationsController extends Controller
         ActivityLog::write($peristiwa, $record->tanggal->format('Y-m-d').' · '.$record->material, 'operasi');
 
         return back()->with('ok', $pesan);
+    }
+
+    /**
+     * Laporan siap cetak.
+     *
+     * Hanya memuat angka yang sudah ditinjau — inilah gunanya alur
+     * dibangun. Sebuah laporan yang memuat draf akan diedarkan, dibubuhi
+     * tanda tangan, dan dikutip pada rapat, sementara angkanya masih
+     * dapat berubah tanpa jejak; yang beredar kemudian tidak lagi cocok
+     * dengan yang tersimpan, dan tidak seorang pun tahu mana yang benar.
+     *
+     * Kelengkapan ikut dicetak, bukan disembunyikan. Laporan yang hanya
+     * memuat tujuh belas dari tiga puluh shift tetap sah dibaca asalkan
+     * pembacanya tahu; yang tidak menyebutkannya membuat pembacanya
+     * mengira sudah melihat seluruh periode.
+     */
+    public function cetak(Request $request)
+    {
+        $dari = $request->date('dari') ?: now()->startOfMonth();
+        $sampai = $request->date('sampai') ?: now()->endOfMonth();
+        if ($dari->greaterThan($sampai)) [$dari, $sampai] = [$sampai, $dari];
+
+        $semua = MineOperationalRecord::with(['company', 'peninjau'])
+            ->whereBetween('tanggal', [$dari, $sampai])
+            ->orderBy('tanggal')->orderBy('shift')->get();
+
+        $sah = $semua->whereIn('status', Alur::terhitung());
+
+        $targets = MineOperationalTarget::query()->get()->filter(
+            fn (MineOperationalTarget $t) => Carbon::create($t->tahun, $t->bulan, 1)
+                ->between($dari->copy()->startOfMonth(), $sampai->copy()->startOfMonth())
+        );
+
+        $produksi = (float) $sah->sum('produksi_ton');
+        $ob = (float) $sah->sum('overburden_bcm');
+        $operasi = (float) $sah->sum('jam_operasi');
+        $delay = (float) $sah->sum('jam_delay');
+        $targetProduksi = (float) $targets->sum('target_produksi_ton');
+        $targetOb = (float) $targets->sum('target_overburden_bcm');
+
+        $perusahaan = auth()->user()?->company ?: Company::first();
+
+        return Inertia::render('Print/Operasi', [
+            'dok'    => KopDokumen::untuk('laporan-operasi', $perusahaan),
+            'dari'   => $dari->toDateString(),
+            'sampai' => $sampai->toDateString(),
+
+            'ringkas' => [
+                'produksi'         => $produksi,
+                'ob'               => $ob,
+                'strip_ratio'      => $produksi > 0 ? $ob / $produksi : 0,
+                'target_produksi'  => $targetProduksi,
+                'target_ob'        => $targetOb,
+                'capaian_produksi' => $targetProduksi > 0 ? $produksi / $targetProduksi * 100 : 0,
+                'capaian_ob'       => $targetOb > 0 ? $ob / $targetOb * 100 : 0,
+                'jam_operasi'      => $operasi,
+                'jam_delay'        => $delay,
+                'efisiensi_waktu'  => ($operasi + $delay) > 0 ? $operasi / ($operasi + $delay) * 100 : 0,
+                'jumlah_shift'     => $sah->count(),
+            ],
+
+            'kelengkapan' => (new KelengkapanShift($semua, $dari->copy(), $sampai->copy(), self::SHIFT))->toArray(),
+
+            'perPit' => $sah->groupBy(fn ($x) => $x->pit ?: ($x->area ?: 'Belum ditentukan'))
+                ->map(function ($rows, $nama) {
+                    $ton = (float) $rows->sum('produksi_ton');
+                    $obPit = (float) $rows->sum('overburden_bcm');
+
+                    return [
+                        'nama'        => $nama,
+                        'produksi'    => $ton,
+                        'ob'          => $obPit,
+                        'strip_ratio' => $ton > 0 ? $obPit / $ton : 0,
+                        'shift'       => $rows->count(),
+                    ];
+                })->sortByDesc('produksi')->values()->all(),
+
+            'records' => $sah->map(fn (MineOperationalRecord $x) => [
+                'tanggal'        => $x->tanggal?->format('d/m/Y'),
+                'shift'          => $x->shift,
+                'pit'            => $x->pit ?: $x->area ?: '—',
+                'material'       => $x->material,
+                'produksi_ton'   => $x->produksi_ton,
+                'overburden_bcm' => $x->overburden_bcm,
+                'jam_operasi'    => $x->jam_operasi,
+                'jam_delay'      => $x->jam_delay,
+                'peninjau'       => $x->peninjau?->name,
+                'ditinjauPada'   => $x->ditinjau_pada?->format('d/m/Y'),
+            ])->values()->all(),
+
+            'tindak' => TindakLanjut::with('sumber')->modul('operasi')->terbukaSaja()
+                ->urutMendesak()->get()
+                ->map(fn (TindakLanjut $t) => $t->toView())->values()->all(),
+
+            'kembali' => route('operasi.index', ['dari' => $dari->toDateString(), 'sampai' => $sampai->toDateString()]),
+        ]);
     }
 
     /* ---------- tindak lanjut ---------- */
@@ -334,6 +430,7 @@ class MineOperationsController extends Controller
             'tautan' => [
                 'dashboard' => route('operasi.index'), 'data' => route('operasi.data'),
                 'target' => route('operasi.target'), 'gis' => route('operasi.gis'),
+                'cetak' => route('operasi.cetak'),
 
                 'recordSimpan'  => route('operasi.record.simpan'),
                 'recordHapus'   => route('operasi.record.hapus',   ['record' => '__ID__']),

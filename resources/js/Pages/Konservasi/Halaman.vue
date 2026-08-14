@@ -163,6 +163,7 @@ function cetak() {
       <Link :href="props.tautan.dashboard" class="rounded-full px-4 py-2 text-[11px] font-bold" :class="props.mode === 'dashboard' ? 'bg-cam-ink text-white' : 'bg-white text-stone-500 border border-stone-200'">Dashboard</Link>
       <Link :href="props.tautan.data" class="rounded-full px-4 py-2 text-[11px] font-bold" :class="props.mode === 'data' ? 'bg-cam-ink text-white' : 'bg-white text-stone-500 border border-stone-200'">Data Konservasi</Link>
       <Link :href="props.tautan.laporan" class="rounded-full px-4 py-2 text-[11px] font-bold" :class="props.mode === 'laporan' ? 'bg-cam-ink text-white' : 'bg-white text-stone-500 border border-stone-200'">Laporan</Link>
+      <a :href="props.tautan.cetak" class="ml-auto rounded-full px-4 py-2 text-[11px] font-bold bg-white text-cam-orange border border-cam-orange/40">Cetak laporan</a>
     </nav>
 
     <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">

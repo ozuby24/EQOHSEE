@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Company, MinerbaConservationRecord, TindakLanjut};
-use App\Support\{Alur, PeringatanKonservasi};
+use App\Support\{Alur, KopDokumen, PeringatanKonservasi};
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -97,6 +97,95 @@ class KonservasiController extends Controller
         ActivityLog::write($peristiwa, $record->komoditas.' - '.$record->periode->format('F Y'), 'konservasi');
 
         return back()->with('ok', $pesan);
+    }
+
+    /**
+     * Laporan siap cetak.
+     *
+     * Hanya memuat catatan yang sudah ditinjau. Laporan konservasi
+     * dikutip pada rapat dan diedarkan keluar; yang memuat draf akan
+     * berubah setelah beredar, dan yang beredar tidak lagi cocok dengan
+     * yang tersimpan tanpa seorang pun tahu mana yang benar.
+     *
+     * Jumlah yang belum ditinjau tetap disebutkan pada lembarnya. Laporan
+     * yang memuat empat dari sembilan catatan tetap sah dibaca asalkan
+     * pembacanya tahu; yang menyembunyikannya membuat pembacanya mengira
+     * sudah melihat seluruh tahun.
+     */
+    public function cetak(Request $request)
+    {
+        $tahun = max(2000, min(2100, (int) $request->integer('tahun', now()->year)));
+
+        $semua = MinerbaConservationRecord::with(['company', 'peninjau'])
+            ->whereBetween('periode', ["{$tahun}-01-01", "{$tahun}-12-31"])
+            ->orderBy('periode')->get();
+
+        $sah = $semua->whereIn('status', Alur::terhitung());
+
+        $material = (float) $sah->sum('material_digali');
+        $aktual = (float) $sah->sum('produksi_aktual');
+        $target = (float) $sah->sum('target_produksi');
+        $hilang = (float) $sah->sum('kehilangan_material');
+        $dilusi = (float) $sah->sum('dilusi');
+
+        $perusahaan = auth()->user()?->company ?: Company::first();
+
+        return Inertia::render('Print/Konservasi', [
+            'dok'   => KopDokumen::untuk('laporan-konservasi', $perusahaan),
+            'tahun' => $tahun,
+
+            'ringkas' => [
+                'target_produksi'     => $target,
+                'produksi_aktual'     => $aktual,
+                'capaian_target'      => $target > 0 ? $aktual / $target * 100 : 0,
+                'material_digali'     => $material,
+                'recovery'            => $material > 0 ? $aktual / $material * 100 : 0,
+                'kehilangan_material' => $hilang,
+                'porsi_kehilangan'    => $material > 0 ? $hilang / $material * 100 : 0,
+                'dilusi'              => $dilusi,
+                'porsi_dilusi'        => $aktual > 0 ? $dilusi / $aktual * 100 : 0,
+                'stok_akhir'          => (float) $sah->sum('stok_akhir'),
+                'jumlah_record'       => $sah->count(),
+                'belum_ditinjau'      => $semua->count() - $sah->count(),
+            ],
+
+            'perKomoditas' => $sah->groupBy('komoditas')->map(function ($rows, $komoditas) {
+                $bahan = (float) $rows->sum('material_digali');
+                $keluar = (float) $rows->sum('produksi_aktual');
+
+                return [
+                    'komoditas'  => $komoditas,
+                    'target'     => (float) $rows->sum('target_produksi'),
+                    'aktual'     => $keluar,
+                    'digali'     => $bahan,
+                    'recovery'   => $bahan > 0 ? $keluar / $bahan * 100 : 0,
+                    'kehilangan' => (float) $rows->sum('kehilangan_material'),
+                    'record'     => $rows->count(),
+                ];
+            })->values()->all(),
+
+            'records' => $sah->map(fn (MinerbaConservationRecord $r) => [
+                'periode'             => $r->periode?->format('M Y'),
+                'lokasi'              => $r->lokasi,
+                'komoditas'           => $r->komoditas,
+                'satuan'              => $r->satuan,
+                'target_produksi'     => $r->target_produksi,
+                'produksi_aktual'     => $r->produksi_aktual,
+                'material_digali'     => $r->material_digali,
+                'recovery'            => $r->recoveryTerhitung(),
+                'kehilangan_material' => $r->kehilangan_material,
+                'dilusi'              => $r->dilusi,
+                'mineral_ikutan'      => $r->mineral_ikutan,
+                'peninjau'            => $r->peninjau?->name,
+                'ditinjauPada'        => $r->ditinjau_pada?->format('d/m/Y'),
+            ])->values()->all(),
+
+            'tindak' => TindakLanjut::with('sumber')->modul('konservasi')->terbukaSaja()
+                ->urutMendesak()->get()
+                ->map(fn (TindakLanjut $t) => $t->toView())->values()->all(),
+
+            'kembali' => route('konservasi.laporan', ['tahun' => $tahun]),
+        ]);
     }
 
     public function simpanAction(Request $request)
@@ -248,6 +337,7 @@ class KonservasiController extends Controller
                 'dashboard' => route('konservasi.index'),
                 'data' => route('konservasi.data'),
                 'laporan' => route('konservasi.laporan'),
+                'cetak' => route('konservasi.cetak', ['tahun' => $tahun]),
 
                 'recordSimpan'  => route('konservasi.record.simpan'),
                 'recordUbah'    => route('konservasi.record.ubah',    ['record' => '__ID__']),

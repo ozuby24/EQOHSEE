@@ -126,10 +126,12 @@ final class RuteInertia
         'konservasi.index',
         'konservasi.data',
         'konservasi.laporan',
+        'konservasi.cetak',
         'operasi.index',
         'operasi.data',
         'operasi.target',
         'operasi.gis',
+        'operasi.cetak',
 
         /* Mining Engineering Hub */
         'meh.index',

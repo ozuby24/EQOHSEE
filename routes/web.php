@@ -264,6 +264,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/', [KonservasiController::class, 'index'])->name('index');
         Route::get('data', [KonservasiController::class, 'data'])->name('data');
         Route::get('laporan', [KonservasiController::class, 'laporan'])->name('laporan');
+        Route::get('cetak',   [KonservasiController::class, 'cetak'])->name('cetak');
 
         Route::post('records', [KonservasiController::class, 'simpanRecord'])->name('record.simpan');
         Route::put('records/{record}', [KonservasiController::class, 'ubahRecord'])->name('record.ubah');
@@ -287,6 +288,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('data', [MineOperationsController::class, 'data'])->name('data');
         Route::get('target', [MineOperationsController::class, 'target'])->name('target');
         Route::get('gis', [MineOperationsController::class, 'gis'])->name('gis');
+        Route::get('cetak', [MineOperationsController::class, 'cetak'])->name('cetak');
         Route::post('records', [MineOperationsController::class, 'simpanRecord'])->name('record.simpan');
         Route::delete('records/{record}', [MineOperationsController::class, 'hapusRecord'])->middleware('can:admin')->name('record.hapus');
 

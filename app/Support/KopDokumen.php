@@ -73,6 +73,16 @@ final class KopDokumen
                 'judul' => 'LAPORAN KINERJA ENERGI DAN EMISI KARBON',
                 'kode'  => 'OHSE-V.021',
             ],
+            'laporan-operasi' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN KINERJA OPERASI PENAMBANGAN',
+                'kode'  => 'OHSE-V.031',
+            ],
+            'laporan-konservasi' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN KONSERVASI MINERAL DAN BATUBARA',
+                'kode'  => 'OHSE-V.041',
+            ],
         ];
     }
 
