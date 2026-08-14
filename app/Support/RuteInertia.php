@@ -137,6 +137,7 @@ final class RuteInertia
         'maintenance.index',
         'maintenance.order',
         'maintenance.armada',
+        'maintenance.cetak',
 
         /* Mining Engineering Hub */
         'meh.index',

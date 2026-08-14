@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{ActivityLog, Company, KoObject, MineOperationalRecord, WorkOrder, WorkOrderPart};
-use App\Support\{Alur, Keandalan};
+use App\Models\{ActivityLog, Company, KoObject, MineOperationalRecord, TindakLanjut, WorkOrder, WorkOrderPart};
+use App\Support\{Alur, Keandalan, KopDokumen, PeringatanMaintenance};
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -79,6 +79,7 @@ class MaintenanceController extends Controller
         if ($status['status'] === 'selesai') {
             $ubah['mulai_pada'] = $order->mulai_pada ?: now();
             $ubah['selesai_pada'] = now();
+            $ubah['ditutup_oleh'] = auth()->id();
         }
 
         // Dibuka kembali: jejak penyelesaian dihapus, kalau tidak alatnya
@@ -91,7 +92,11 @@ class MaintenanceController extends Controller
             if (array_key_exists($k, $status) && $status[$k] !== null) $ubah[$k] = $status[$k];
         }
 
-        $order->update($ubah);
+        try {
+            $order->update($ubah);
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['alur' => $e->getMessage()]);
+        }
 
         return back()->with('ok', 'Perintah kerja diperbarui.');
     }
@@ -111,12 +116,139 @@ class MaintenanceController extends Controller
         return back()->with('ok', 'Suku cadang dicatat.');
     }
 
+    /* ---------- verifikasi ---------- */
+
+    public function verifikasi(WorkOrder $order)
+    {
+        try {
+            $order->verifikasi();
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['alur' => $e->getMessage()]);
+        }
+
+        ActivityLog::write('Verifikasi perintah kerja', $order->nomor ?: "WO-{$order->id}", 'maintenance');
+
+        return back()->with('ok', 'Penutupan perintah kerja diverifikasi.');
+    }
+
+    public function batalVerifikasi(WorkOrder $order)
+    {
+        $order->batalkanVerifikasi();
+        ActivityLog::write('Batalkan verifikasi perintah kerja', $order->nomor ?: "WO-{$order->id}", 'maintenance');
+
+        return back()->with('ok', 'Verifikasi dibatalkan; perintah kerja dapat disunting kembali.');
+    }
+
+    /* ---------- tindak lanjut ---------- */
+
+    public function simpanTindakLanjut(Request $request)
+    {
+        $data = $this->pemilik($request->validate([
+            'company_id'       => ['nullable', 'exists:companies,id'],
+            'work_order_id'    => ['nullable', 'exists:work_orders,id'],
+            'kode_pemicu'      => ['nullable', 'string', 'max:60'],
+            'judul'            => ['required', 'string', 'max:200'],
+            'prioritas'        => ['required', Rule::in(TindakLanjut::PRIORITAS)],
+            'penanggung_jawab' => ['nullable', 'string', 'max:150'],
+            'target_selesai'   => ['nullable', 'date'],
+            'uraian'           => ['nullable', 'string', 'max:3000'],
+        ]));
+
+        if (!empty($data['work_order_id'])) {
+            $data['sumber_type'] = WorkOrder::class;
+            $data['sumber_id'] = $data['work_order_id'];
+        }
+        unset($data['work_order_id']);
+
+        $data['modul'] = 'maintenance';
+        $data['user_id'] = auth()->id();
+
+        TindakLanjut::create($data);
+        ActivityLog::write('Tambah tindak lanjut pemeliharaan', $data['judul'], 'maintenance');
+
+        return back()->with('ok', 'Tindak lanjut ditambahkan.');
+    }
+
+    public function ubahTindakLanjut(Request $request, TindakLanjut $tindak)
+    {
+        $status = $request->validate([
+            'status' => ['required', Rule::in(TindakLanjut::STATUS)],
+        ])['status'];
+
+        $tindak->update([
+            'status' => $status,
+            'selesai_pada' => $status === 'selesai' ? now()->toDateString() : null,
+        ]);
+
+        return back()->with('ok', 'Status tindak lanjut diperbarui.');
+    }
+
     public function hapus(WorkOrder $order)
     {
         ActivityLog::write('Hapus perintah kerja', $order->nomor ?: "WO-{$order->id}", 'maintenance');
         $order->delete();
 
         return back()->with('ok', 'Perintah kerja dihapus.');
+    }
+
+    /**
+     * Laporan keandalan siap cetak.
+     *
+     * Berbeda dari laporan Operasi dan Konservasi, laporan ini TIDAK
+     * mengeluarkan perintah kerja yang belum diverifikasi. Pada data
+     * produksi, mengeluarkan yang belum disetujui membuat capaian
+     * terlihat lebih kecil, dan itu benar. Di sini akibatnya terbalik:
+     * mengeluarkan waktu henti yang belum diverifikasi membuat
+     * ketersediaan terlihat lebih baik daripada kenyataannya, dan
+     * laporan yang menyanjung dirinya sendiri lebih berbahaya daripada
+     * laporan yang mengaku belum lengkap.
+     *
+     * Yang dilakukan adalah menyebutkan berapa yang belum diverifikasi,
+     * di bagian dasar laporan sebelum angka mana pun muncul.
+     */
+    public function cetak(Request $request)
+    {
+        $dari = $request->date('dari') ?: now()->startOfMonth();
+        $sampai = $request->date('sampai') ?: now()->endOfMonth();
+        if ($dari->greaterThan($sampai)) [$dari, $sampai] = [$sampai, $dari];
+
+        $objek = KoObject::query()->get();
+        $orders = WorkOrder::with(['objek', 'parts', 'pemverifikasi'])
+            ->periode($dari, $sampai)->urutMendesak()->get();
+        $terbuka = WorkOrder::with(['objek', 'parts'])->terbukaSaja()->urutMendesak()->get();
+
+        $keandalan = $this->hitungKeandalan($objek, $orders, $dari, $sampai);
+        $perusahaan = auth()->user()?->company ?: Company::first();
+
+        return Inertia::render('Print/Maintenance', [
+            'dok'    => KopDokumen::untuk('laporan-keandalan', $perusahaan),
+            'dari'   => $dari->toDateString(),
+            'sampai' => $sampai->toDateString(),
+
+            'keandalan' => $keandalan->toArray(),
+            'pm'        => Keandalan::kepatuhanPm($objek, $sampai),
+            'biaya'     => $this->biaya($orders, $keandalan, $dari, $sampai),
+            'tunggakan' => $this->tunggakan($terbuka),
+
+            'dasar' => [
+                'order'             => $orders->count(),
+                'diverifikasi'      => $orders->filter(fn (WorkOrder $w) => $w->sudahDiverifikasi())->count(),
+                'belumDiverifikasi' => $orders->filter(fn (WorkOrder $w) => $w->menungguVerifikasi())->count(),
+                'masihTerbuka'      => $orders->filter(fn (WorkOrder $w) => $w->terbuka())->count(),
+                'unit'              => $objek->count(),
+            ],
+
+            'perAlat' => $this->perAlat($orders),
+
+            'orders' => $orders->map(fn (WorkOrder $w) => $w->toView() + [
+                'pemverifikasi' => $w->pemverifikasi?->name,
+            ])->values(),
+
+            'tindak' => TindakLanjut::modul('maintenance')->terbukaSaja()->urutMendesak()->get()
+                ->map(fn (TindakLanjut $t) => $t->toView())->values(),
+
+            'kembali' => route('maintenance.index', ['dari' => $dari->toDateString(), 'sampai' => $sampai->toDateString()]),
+        ]);
     }
 
     /* ---------- halaman ---------- */
@@ -135,6 +267,11 @@ class MaintenanceController extends Controller
         $terbuka = WorkOrder::with(['objek', 'parts'])->terbukaSaja()->urutMendesak()->get();
 
         $keandalan = $this->hitungKeandalan($objek, $orders, $dari, $sampai);
+        $pm = Keandalan::kepatuhanPm($objek, $sampai);
+        $biaya = $this->biaya($orders, $keandalan, $dari, $sampai);
+        $tunggakan = $this->tunggakan($terbuka);
+
+        $tindak = TindakLanjut::with('sumber')->modul('maintenance')->urutMendesak()->get();
 
         return Inertia::render('Maintenance/Halaman', [
             'mode'   => $mode,
@@ -142,15 +279,23 @@ class MaintenanceController extends Controller
             'sampai' => $sampai->toDateString(),
 
             'keandalan' => $keandalan->toArray(),
-            'pm'        => Keandalan::kepatuhanPm($objek, $sampai),
-            'biaya'     => $this->biaya($orders, $keandalan, $dari, $sampai),
-            'tunggakan' => $this->tunggakan($terbuka),
+            'pm'        => $pm,
+            'biaya'     => $biaya,
+            'tunggakan' => $tunggakan,
+
+            'alerts' => PeringatanMaintenance::susun($keandalan, $pm, $tunggakan, $orders, $biaya),
+
+            'tindak' => $tindak->map(fn (TindakLanjut $t) => $t->toView())->values(),
+            'kodeDitangani' => $tindak->filter(fn (TindakLanjut $t) => $t->terbuka())
+                ->pluck('kode_pemicu')->filter()->unique()->values(),
 
             'ringkas' => [
                 'unit'          => $objek->count(),
                 'order'         => $orders->count(),
                 'orderTerbuka'  => $terbuka->count(),
                 'kegagalan'     => $orders->filter(fn (WorkOrder $w) => $w->kegagalan())->count(),
+                'belumDiverifikasi' => $orders->filter(fn (WorkOrder $w) => $w->menungguVerifikasi())->count(),
+                'tindakTerbuka' => $tindak->filter(fn (TindakLanjut $t) => $t->terbuka())->count(),
             ],
 
             'perAlat' => $this->perAlat($orders),
@@ -167,6 +312,8 @@ class MaintenanceController extends Controller
                 ->orderBy('name')->get(['id', 'name']),
 
             'opsi' => [
+                'prioritasTindak' => TindakLanjut::PRIORITAS,
+                'statusTindak' => TindakLanjut::STATUS,
                 'jenis' => WorkOrder::JENIS,
                 'status' => WorkOrder::STATUS,
                 'prioritas' => WorkOrder::PRIORITAS,
@@ -180,6 +327,11 @@ class MaintenanceController extends Controller
                 'ubahStatus' => route('maintenance.status', ['order' => '__ID__']),
                 'simpanPart' => route('maintenance.part', ['order' => '__ID__']),
                 'hapus'      => route('maintenance.hapus', ['order' => '__ID__']),
+                'verifikasi' => route('maintenance.verifikasi', ['order' => '__ID__']),
+                'batalVerifikasi' => route('maintenance.batalVerifikasi', ['order' => '__ID__']),
+                'tindakSimpan' => route('maintenance.tindak.simpan'),
+                'tindakUbah'   => route('maintenance.tindak.ubah', ['tindak' => '__ID__']),
+                'cetak'        => route('maintenance.cetak'),
             ],
         ]);
     }

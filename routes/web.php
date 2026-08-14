@@ -271,6 +271,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('order/{order}/status',   [MaintenanceController::class, 'ubahStatus'])->name('status');
         Route::post('order/{order}/part',    [MaintenanceController::class, 'simpanPart'])->name('part');
         Route::delete('order/{order}',       [MaintenanceController::class, 'hapus'])->middleware('can:admin')->name('hapus');
+
+        /* Verifikasi penutupan. Hak diperiksa di dalam model supaya
+           aturan "penutup bukan pemverifikasi" berlaku juga bagi
+           pemanggil selain rute ini. */
+        Route::post('order/{order}/verifikasi',       [MaintenanceController::class, 'verifikasi'])->name('verifikasi');
+        Route::post('order/{order}/batal-verifikasi', [MaintenanceController::class, 'batalVerifikasi'])->middleware('can:admin')->name('batalVerifikasi');
+
+        Route::post('tindak',         [MaintenanceController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
+        Route::put('tindak/{tindak}', [MaintenanceController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
+
+        Route::get('cetak', [MaintenanceController::class, 'cetak'])->name('cetak');
     });
 
     /* ================= WEBSITE #8 - Konservasi Minerba ================= */

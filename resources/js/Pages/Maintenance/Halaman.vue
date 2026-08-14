@@ -47,6 +47,43 @@ function rentang() {
   router.get(window.location.pathname, { dari: props.dari, sampai: props.sampai }, { preserveState: true, replace: true });
 }
 
+function verifikasi(item: any) {
+  if (!window.confirm(`Verifikasi penutupan ${item.nomor || item.gejala}? Setelah diverifikasi, jam dan biayanya tidak dapat diubah.`)) return;
+  router.post(untuk(tautan.value.verifikasi, item.id), {}, { preserveScroll: true });
+}
+
+function batalVerifikasi(item: any) {
+  router.post(untuk(tautan.value.batalVerifikasi, item.id), {}, { preserveScroll: true });
+}
+
+/* ---------- tindak lanjut ---------- */
+
+const tindak = useForm<any>({
+  company_id: '', work_order_id: '', kode_pemicu: '', judul: '',
+  prioritas: 'sedang', penanggung_jawab: '', target_selesai: '', uraian: '',
+});
+
+const ditangani = computed(() => new Set(props.kodeDitangani || []));
+
+function tindakDari(a: any) {
+  tindak.kode_pemicu = a.kode;
+  tindak.judul = a.judul;
+  tindak.prioritas = a.level === 'tinggi' ? 'tinggi' : 'sedang';
+  tindak.uraian = a.saran || '';
+  document.getElementById('form-tindak')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function simpanTindak() {
+  tindak.post(tautan.value.tindakSimpan, {
+    preserveScroll: true,
+    onSuccess: () => tindak.reset('work_order_id', 'kode_pemicu', 'judul', 'penanggung_jawab', 'target_selesai', 'uraian'),
+  });
+}
+
+function ubahTindak(item: any, status: string) {
+  router.put(untuk(tautan.value.tindakUbah, item.id), { status }, { preserveScroll: true });
+}
+
 const warnaStatus: Record<string, string> = {
   dibuka: 'bg-red-100 text-red-700',
   dikerjakan: 'bg-amber-100 text-amber-700',
@@ -76,7 +113,23 @@ const warnaStatus: Record<string, string> = {
       <Link v-for="i in [['dashboard','Ringkasan',tautan.dashboard],['order','Perintah Kerja',tautan.order],['armada','Per Alat',tautan.armada]]"
             :key="i[0]" :href="i[2] as string" class="rounded-full px-4 py-2 text-[11px] font-bold"
             :class="props.mode === i[0] ? 'bg-cam-ink text-white' : 'bg-white text-stone-500 border border-stone-200'">{{ i[1] }}</Link>
+      <a :href="tautan.cetak" class="ml-auto rounded-full px-4 py-2 text-[11px] font-bold bg-white text-cam-lime-deep border border-cam-lime">Cetak laporan</a>
     </nav>
+
+    <!-- Peringatan diletakkan di atas seluruh angka: mutu datanya lebih
+         dulu, baru capaiannya. -->
+    <section v-if="(props.alerts || []).length" class="grid gap-3 md:grid-cols-2">
+      <div v-for="a in props.alerts" :key="a.kode" class="rounded-2xl border p-4"
+           :class="a.level === 'tinggi' ? 'border-red-100 bg-red-50' : 'border-amber-100 bg-amber-50'">
+        <b class="text-[12px]" :class="a.level === 'tinggi' ? 'text-red-700' : 'text-amber-700'">{{ a.judul }}</b>
+        <p class="text-[11px] text-stone-600 mt-1">{{ a.ket }}</p>
+        <p v-if="a.saran" class="text-[11px] text-stone-700 mt-2 pt-2 border-t border-black/5"><span class="font-bold">Tindakan: </span>{{ a.saran }}</p>
+        <div class="mt-2">
+          <span v-if="ditangani.has(a.kode)" class="inline-block rounded-full bg-emerald-100 text-emerald-700 px-2 py-1 text-[10px] font-bold">Sedang ditangani</span>
+          <button v-else type="button" class="text-[11px] font-bold text-cam-lime-deep" @click="tindakDari(a)">+ Buat tindak lanjut</button>
+        </div>
+      </div>
+    </section>
 
     <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
       <article v-for="c in [
@@ -164,6 +217,48 @@ const warnaStatus: Record<string, string> = {
       </section>
     </template>
 
+    <section v-if="props.mode === 'dashboard'" class="grid gap-5 xl:grid-cols-[1.15fr_.85fr]">
+      <div class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
+        <div class="px-5 py-4 border-b border-stone-100">
+          <h3 class="font-bold text-[14px]">Tindak lanjut</h3>
+          <p class="text-[11px] text-stone-400">{{ props.ringkas?.tindakTerbuka || 0 }} terbuka</p>
+        </div>
+        <table class="min-w-full text-left text-[12px]">
+          <thead><tr class="border-b border-stone-100 text-stone-400"><th class="px-5 py-3">Tindakan</th><th class="px-5 py-3">PIC</th><th class="px-5 py-3">Target</th><th class="px-5 py-3">Status</th></tr></thead>
+          <tbody>
+            <tr v-for="t in props.tindak || []" :key="t.id" class="border-b border-stone-50" :class="t.terlambat ? 'bg-red-50/40' : ''">
+              <td class="px-5 py-3"><b>{{ t.judul }}</b><small v-if="t.kodePemicu" class="block mt-1"><span class="rounded bg-stone-100 text-stone-500 px-1.5 py-0.5 text-[9px] font-mono">{{ t.kodePemicu }}</span></small></td>
+              <td class="px-5 py-3">{{ t.penanggung_jawab || '—' }}</td>
+              <td class="px-5 py-3" :class="t.terlambat ? 'text-red-600 font-bold' : ''">{{ t.target_selesai || '—' }}</td>
+              <td class="px-5 py-3">
+                <select :value="t.status" class="rounded border-stone-200 text-[11px]" @change="ubahTindak(t, ($event.target as HTMLSelectElement).value)">
+                  <option v-for="st in props.opsi?.statusTindak || []" :key="st" :value="st">{{ label(st) }}</option>
+                </select>
+              </td>
+            </tr>
+            <tr v-if="!(props.tindak || []).length"><td colspan="4" class="px-5 py-10 text-center text-stone-400">Belum ada tindak lanjut. Buat dari peringatan di atas.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="form-tindak" class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
+        <h3 class="font-bold text-[14px]">Tambah tindak lanjut</h3>
+        <form class="grid gap-3 mt-4" @submit.prevent="simpanTindak">
+          <input v-model="tindak.judul" required placeholder="Tindakan yang akan dikerjakan" class="rounded-lg border-stone-200 text-[12px]">
+          <div class="grid grid-cols-2 gap-2">
+            <select v-model="tindak.prioritas" class="rounded-lg border-stone-200 text-[12px]">
+              <option v-for="pr in props.opsi?.prioritasTindak || []" :key="pr" :value="pr">Prioritas {{ label(pr) }}</option>
+            </select>
+            <input v-model="tindak.target_selesai" type="date" class="rounded-lg border-stone-200 text-[12px]">
+          </div>
+          <input v-model="tindak.penanggung_jawab" placeholder="Penanggung jawab" class="rounded-lg border-stone-200 text-[12px]">
+          <textarea v-model="tindak.uraian" rows="3" placeholder="Uraian" class="rounded-lg border-stone-200 text-[12px]"></textarea>
+          <p v-if="tindak.kode_pemicu" class="rounded-lg bg-stone-50 px-3 py-2 text-[11px] text-stone-500">Dari peringatan <b class="font-mono">{{ tindak.kode_pemicu }}</b></p>
+          <button :disabled="tindak.processing" class="eq-btn-utama">{{ tindak.processing ? 'Menyimpan...' : 'Simpan tindak lanjut' }}</button>
+        </form>
+      </div>
+    </section>
+
     <template v-if="props.mode === 'order'">
       <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
         <h3 class="font-bold text-[14px]">Buka perintah kerja</h3>
@@ -209,7 +304,13 @@ const warnaStatus: Record<string, string> = {
                   <option v-for="s in props.opsi?.status || []" :key="s" :value="s">{{ label(s) }}</option>
                 </select>
               </td>
-              <td class="px-5 py-3 text-right"><button v-if="isAdmin" type="button" class="text-red-600 text-[11px]" @click="hapus(w)">Hapus</button></td>
+              <td class="px-5 py-3 text-right whitespace-nowrap">
+                <button v-if="w.verifikasi?.dapatDiverifikasi" type="button" class="text-[11px] font-bold text-emerald-600" @click="verifikasi(w)">Verifikasi</button>
+                <span v-else-if="w.verifikasi?.sudah" class="text-[10px] text-emerald-700" :title="`oleh ${w.verifikasi.pemverifikasi} · ${w.verifikasi.pada}`">✓ terverifikasi</span>
+                <span v-else-if="w.verifikasi?.menunggu" class="text-[10px] text-amber-600">menunggu verifikasi</span>
+                <button v-if="isAdmin && w.verifikasi?.sudah" type="button" class="ml-3 text-[11px] text-stone-400" @click="batalVerifikasi(w)">Batal</button>
+                <button v-if="isAdmin && !w.verifikasi?.sudah" type="button" class="ml-3 text-red-600 text-[11px]" @click="hapus(w)">Hapus</button>
+              </td>
             </tr>
             <tr v-if="!(props.orders || []).length"><td colspan="8" class="px-5 py-10 text-center text-stone-400">Belum ada perintah kerja pada periode ini.</td></tr>
           </tbody>
