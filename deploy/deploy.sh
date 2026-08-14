@@ -2,6 +2,9 @@
 # EQOHSEE VPS deploy helper.
 # Jalankan DI VPS dari dalam repo: bash deploy/deploy.sh [server_name]
 #
+# Dari mesin lokal, tidak perlu masuk ke VPS sendiri: deploy/kirim.sh
+# memeriksa, mengirim ke GitHub, lalu memanggil berkas ini lewat SSH.
+#
 # server_name memuat domain DAN alamat IP sekaligus. IP-nya sengaja tetap
 # didaftarkan: selama DNS eqohsee.id belum menyebar — atau bila nanti
 # bermasalah — situsnya tetap dapat dibuka lewat IP, sehingga tidak ada
@@ -22,6 +25,16 @@ git pull origin "$(git rev-parse --abbrev-ref HEAD)"
 
 echo "==> Installing PHP dependencies"
 composer install --no-dev --optimize-autoloader
+
+# Mulai dari sini kode di disk sudah kode baru, sementara singgahan config,
+# rute, dan tampilan masih milik kode lama, dan migrasinya belum jalan.
+# Melayani pengunjung dalam keadaan setengah itu memunculkan galat yang
+# menyesatkan — bukan gejala kerusakan, hanya deploy yang belum selesai.
+# `up` dipasang sebagai jebakan EXIT supaya situs tetap kembali menyala
+# walau ada langkah di bawah yang gagal dan skrip berhenti mendadak.
+echo "==> Memasuki mode perawatan"
+php artisan down --retry=60 2>/dev/null || true
+trap 'php artisan up >/dev/null 2>&1 || true' EXIT
 
 if ! command -v npm >/dev/null 2>&1; then
     echo "==> npm not found, installing nodejs/npm"
@@ -71,6 +84,50 @@ fi
 echo "==> Setting permissions"
 chown -R www-data:www-data "$REPO_DIR"
 chmod -R 775 "$REPO_DIR/storage" "$REPO_DIR/bootstrap/cache"
+
+# Cadangan diambil sebelum migrasi, bukan sesudah. Migrasi yang menghapus
+# atau mengubah kolom tidak punya jalan pulang: `down()` mengembalikan
+# bentuk tabelnya, bukan isinya. Untuk aplikasi yang menyimpan rekaman
+# audit SMKP dan ISO, isi itulah yang tidak tergantikan.
+echo "==> Mencadangkan basis data"
+CADANGAN="$REPO_DIR/storage/backup-otomatis"
+mkdir -p "$CADANGAN"
+STEMPEL="$(date +%Y%m%d-%H%M%S)"
+DB_CONN="$(grep -E '^DB_CONNECTION=' "$REPO_DIR/.env" | cut -d= -f2- | tr -d '"' || echo sqlite)"
+
+case "$DB_CONN" in
+    sqlite)
+        DB_BERKAS="$(grep -E '^DB_DATABASE=' "$REPO_DIR/.env" | cut -d= -f2- | tr -d '"' || true)"
+        DB_BERKAS="${DB_BERKAS:-$REPO_DIR/database/database.sqlite}"
+        if [ -f "$DB_BERKAS" ]; then
+            cp "$DB_BERKAS" "$CADANGAN/db-$STEMPEL.sqlite"
+            echo "    $CADANGAN/db-$STEMPEL.sqlite"
+        else
+            echo "    Berkas sqlite belum ada — dilewati."
+        fi
+        ;;
+    pgsql)
+        if command -v pg_dump >/dev/null 2>&1; then
+            DB_NAMA="$(grep -E '^DB_DATABASE=' "$REPO_DIR/.env" | cut -d= -f2- | tr -d '"')"
+            DB_USER="$(grep -E '^DB_USERNAME=' "$REPO_DIR/.env" | cut -d= -f2- | tr -d '"')"
+            DB_HOST="$(grep -E '^DB_HOST=' "$REPO_DIR/.env" | cut -d= -f2- | tr -d '"')"
+            PGPASSWORD="$(grep -E '^DB_PASSWORD=' "$REPO_DIR/.env" | cut -d= -f2- | tr -d '"')" \
+                pg_dump -h "${DB_HOST:-127.0.0.1}" -U "$DB_USER" "$DB_NAMA" \
+                > "$CADANGAN/db-$STEMPEL.sql" \
+                && echo "    $CADANGAN/db-$STEMPEL.sql" \
+                || echo "!!  pg_dump gagal — migrasi tetap dilanjutkan tanpa cadangan."
+        else
+            echo "!!  pg_dump tidak terpasang — migrasi berjalan tanpa cadangan."
+        fi
+        ;;
+    *)
+        echo "    DB_CONNECTION '$DB_CONN' tidak dikenal — dilewati."
+        ;;
+esac
+
+# Sepuluh cadangan terakhir disimpan; selebihnya dibuang supaya disk VPS
+# tidak diam-diam penuh oleh berkas yang tidak pernah ada yang menghapus.
+ls -1t "$CADANGAN"/db-* 2>/dev/null | tail -n +11 | xargs -r rm -f
 
 echo "==> Running database migrations"
 php artisan migrate --force
@@ -124,6 +181,9 @@ if [ "$APP_URL_KINI" != "$APP_URL_HARAP" ]; then
     echo "!!  APP_URL di .env masih '$APP_URL_KINI'."
     echo "!!  Sebaiknya '$APP_URL_HARAP' — lalu jalankan: php artisan config:cache"
 fi
+
+echo "==> Keluar dari mode perawatan"
+php artisan up
 
 echo "==> Selesai. Buka: http://$DOMAIN_UTAMA"
 echo "    Nama yang dilayani: $SERVER_NAME"
