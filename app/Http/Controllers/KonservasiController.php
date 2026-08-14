@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Company, MinerbaConservationAction, MinerbaConservationRecord};
-use App\Support\Alur;
+use App\Support\{Alur, PeringatanKonservasi};
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -200,6 +200,8 @@ class KonservasiController extends Controller
             ];
         })->values()->all();
 
+        $alerts = PeringatanKonservasi::susun($ringkas, $records, $actions);
+
         return Inertia::render('Konservasi/Halaman', [
             'judul' => 'Konservasi Minerba',
             'subjudul' => 'Pengendalian pemanfaatan mineral, recovery, kehilangan, dan mineral ikutan',
@@ -208,6 +210,7 @@ class KonservasiController extends Controller
             'tahunOpsi' => range(now()->year - 3, now()->year + 1),
             'ringkas' => $ringkas,
             'perKomoditas' => $perKomoditas,
+            'alerts' => $alerts,
             'records' => $records->map(fn (MinerbaConservationRecord $record) => $this->recordView($record))->values()->all(),
             'actions' => $actions->map(fn (MinerbaConservationAction $action) => $this->actionView($action))->values()->all(),
             'companies' => Company::orderBy('name')->get(['id', 'name']),
@@ -217,12 +220,28 @@ class KonservasiController extends Controller
                 'prioritasAction' => self::PRIORITAS_ACTION,
                 'statusAction' => self::STATUS_ACTION,
             ],
+            /*
+             * Tautan ber-id memakai penanda __ID__, sejajar dengan modul
+             * Operasi. Sebelumnya halaman menuliskan jalurnya sendiri
+             * ('/konservasi/records/' + id); jalur itu kebetulan benar,
+             * tetapi ia tidak ikut berubah ketika rutenya berubah — dan
+             * yang rusak karenanya adalah tombol, tanpa galat apa pun.
+             */
             'tautan' => [
                 'dashboard' => route('konservasi.index'),
                 'data' => route('konservasi.data'),
                 'laporan' => route('konservasi.laporan'),
-                'recordSimpan' => route('konservasi.record.simpan'),
+
+                'recordSimpan'  => route('konservasi.record.simpan'),
+                'recordUbah'    => route('konservasi.record.ubah',    ['record' => '__ID__']),
+                'recordHapus'   => route('konservasi.record.hapus',   ['record' => '__ID__']),
+                'recordAjukan'  => route('konservasi.record.ajukan',  ['record' => '__ID__']),
+                'recordSetujui' => route('konservasi.record.setujui', ['record' => '__ID__']),
+                'recordTolak'   => route('konservasi.record.tolak',   ['record' => '__ID__']),
+
                 'actionSimpan' => route('konservasi.action.simpan'),
+                'actionUbah'   => route('konservasi.action.ubah',  ['action' => '__ID__']),
+                'actionHapus'  => route('konservasi.action.hapus', ['action' => '__ID__']),
             ],
         ]);
     }

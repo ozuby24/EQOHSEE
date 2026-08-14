@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, reactive } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 
 const props = defineProps<{
@@ -12,6 +12,7 @@ const props = defineProps<{
   perKomoditas: Array<Record<string, any>>;
   records: Array<Record<string, any>>;
   actions: Array<Record<string, any>>;
+  alerts: Array<Record<string, any>>;
   companies: Array<{ id: number; name: string }>;
   opsi: Record<string, string[]>;
   tautan: Record<string, string>;
@@ -34,7 +35,7 @@ const record = useForm<any>({
   dilusi: 0,
   stok_akhir: 0,
   mineral_ikutan: '',
-  status: 'draft',
+  // `status` tidak ada di sini: ia hanya berpindah lewat alur tinjauan.
   catatan: '',
 });
 
@@ -82,19 +83,57 @@ function simpanAction() {
   });
 }
 
+/** Menyisipkan id ke tautan bertanda __ID__ yang dikirim controller. */
+const untuk = (pola: string | undefined, id: number | string) => String(pola || '').replace('__ID__', String(id));
+
 function ubahStatus(item: Record<string, any>, status: string) {
-  router.put(`/konservasi/actions/${item.id}`, { status }, { preserveScroll: true });
+  router.put(untuk(props.tautan.actionUbah, item.id), { status }, { preserveScroll: true });
 }
+
+/* ---------- alur tinjauan ---------- */
+
+const sibuk = reactive<Record<number, boolean>>({});
+
+function ajukan(item: Record<string, any>) {
+  sibuk[item.id] = true;
+  router.post(untuk(props.tautan.recordAjukan, item.id), {}, {
+    preserveScroll: true, onFinish: () => { sibuk[item.id] = false; },
+  });
+}
+
+function setujui(item: Record<string, any>) {
+  if (!window.confirm(`Setujui data ${item.komoditas} periode ${item.periodeLabel}? Setelah disetujui, data tidak dapat diubah lagi.`)) return;
+  sibuk[item.id] = true;
+  router.post(untuk(props.tautan.recordSetujui, item.id), {}, {
+    preserveScroll: true, onFinish: () => { sibuk[item.id] = false; },
+  });
+}
+
+function tolak(item: Record<string, any>) {
+  const alasan = window.prompt(`Alasan penolakan data ${item.komoditas} periode ${item.periodeLabel}:`);
+  if (alasan === null) return;
+  sibuk[item.id] = true;
+  router.post(untuk(props.tautan.recordTolak, item.id), { alasan_tolak: alasan }, {
+    preserveScroll: true, onFinish: () => { sibuk[item.id] = false; },
+  });
+}
+
+const warnaStatus: Record<string, string> = {
+  draf: 'bg-stone-100 text-stone-600',
+  diajukan: 'bg-amber-100 text-amber-700',
+  disetujui: 'bg-emerald-100 text-emerald-700',
+  ditolak: 'bg-red-100 text-red-700',
+};
 
 function hapusRecord(item: Record<string, any>) {
   if (window.confirm(`Hapus data ${item.komoditas} periode ${item.periodeLabel}?`)) {
-    router.delete(`/konservasi/records/${item.id}`, { preserveScroll: true });
+    router.delete(untuk(props.tautan.recordHapus, item.id), { preserveScroll: true });
   }
 }
 
 function hapusAction(item: Record<string, any>) {
   if (window.confirm(`Hapus tindak lanjut “${item.judul}”?`)) {
-    router.delete(`/konservasi/actions/${item.id}`, { preserveScroll: true });
+    router.delete(untuk(props.tautan.actionHapus, item.id), { preserveScroll: true });
   }
 }
 
@@ -139,6 +178,23 @@ function cetak() {
       </article>
     </section>
 
+    <!--
+      Peringatan diletakkan tepat di bawah kartu KPI dan di atas seluruh
+      rincian. Angka konservasi menurun perlahan dan jarang menimbulkan
+      keluhan pada harinya; yang terlihat hanya cadangan yang habis lebih
+      cepat daripada rencana, beberapa tahun kemudian.
+    -->
+    <section v-if="(props.alerts || []).length" class="grid gap-3 md:grid-cols-2">
+      <div v-for="item in props.alerts" :key="item.kode" class="rounded-2xl border p-4"
+           :class="item.level === 'tinggi' ? 'border-red-100 bg-red-50' : 'border-amber-100 bg-amber-50'">
+        <b class="text-[12px]" :class="item.level === 'tinggi' ? 'text-red-700' : 'text-amber-700'">{{ item.judul }}</b>
+        <p class="text-[11px] text-stone-600 mt-1">{{ item.ket }}</p>
+        <p v-if="item.saran" class="text-[11px] text-stone-700 mt-2 pt-2 border-t border-black/5">
+          <span class="font-bold">Tindakan: </span>{{ item.saran }}
+        </p>
+      </div>
+    </section>
+
     <template v-if="props.mode !== 'laporan'">
       <section class="grid gap-5 xl:grid-cols-[1.25fr_.75fr]">
         <div class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
@@ -170,7 +226,7 @@ function cetak() {
             <input v-model="record.periode" required type="date" class="rounded-lg border-stone-200 text-[12px]"><input v-model="record.lokasi" required placeholder="Lokasi / pit / fasilitas" class="rounded-lg border-stone-200 text-[12px]">
             <input v-model="record.komoditas" required placeholder="Komoditas" class="rounded-lg border-stone-200 text-[12px]"><input v-model="record.target_produksi" required type="number" step="any" placeholder="Target produksi" class="rounded-lg border-stone-200 text-[12px]"><input v-model="record.produksi_aktual" required type="number" step="any" placeholder="Produksi aktual" class="rounded-lg border-stone-200 text-[12px]">
             <input v-model="record.material_digali" required type="number" step="any" placeholder="Material digali" class="rounded-lg border-stone-200 text-[12px]"><input v-model="record.recovery_percent" required type="number" step="any" min="0" max="100" placeholder="Recovery %" class="rounded-lg border-stone-200 text-[12px]"><input v-model="record.kehilangan_material" required type="number" step="any" placeholder="Kehilangan material" class="rounded-lg border-stone-200 text-[12px]">
-            <input v-model="record.dilusi" required type="number" step="any" placeholder="Dilusi" class="rounded-lg border-stone-200 text-[12px]"><input v-model="record.stok_akhir" required type="number" step="any" placeholder="Stockpile akhir" class="rounded-lg border-stone-200 text-[12px]"><input v-model="record.mineral_ikutan" placeholder="Mineral ikutan" class="rounded-lg border-stone-200 text-[12px]"><select v-model="record.status" class="rounded-lg border-stone-200 text-[12px]"><option v-for="item in props.opsi.statusRecord" :key="item" :value="item">{{ label(item) }}</option></select><textarea v-model="record.catatan" placeholder="Catatan / metode pengukuran" class="rounded-lg border-stone-200 text-[12px] md:col-span-2"></textarea>
+            <input v-model="record.dilusi" required type="number" step="any" placeholder="Dilusi" class="rounded-lg border-stone-200 text-[12px]"><input v-model="record.stok_akhir" required type="number" step="any" placeholder="Stockpile akhir" class="rounded-lg border-stone-200 text-[12px]"><input v-model="record.mineral_ikutan" placeholder="Mineral ikutan" class="rounded-lg border-stone-200 text-[12px]"><p class="self-center rounded-lg bg-stone-50 px-3 py-2 text-[11px] text-stone-500">Tersimpan sebagai <b>draf</b>. Ajukan dari tabel di bawah.</p><textarea v-model="record.catatan" placeholder="Catatan / metode pengukuran" class="rounded-lg border-stone-200 text-[12px] md:col-span-2"></textarea>
             <button :disabled="record.processing" class="eq-btn-utama md:col-span-3">{{ record.processing ? 'Menyimpan...' : 'Simpan data konservasi' }}</button>
           </form>
           <p v-if="record.errors.periode" class="text-[11px] text-red-600 mt-2">{{ record.errors.periode }}</p>
@@ -195,7 +251,20 @@ function cetak() {
     <template v-if="props.mode === 'data'">
       <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-x-auto">
         <div class="px-5 py-4 border-b border-stone-100"><h3 class="font-bold text-[14px]">Register Data Konservasi</h3><p class="text-[11px] text-stone-400">Data operasional yang menjadi dasar evaluasi konservasi minerba.</p></div>
-        <table class="min-w-full text-left text-[12px]"><thead><tr class="border-b border-stone-100 text-stone-400"><th class="px-5 py-3">Periode / Lokasi</th><th class="px-5 py-3">Komoditas</th><th class="px-5 py-3">Target</th><th class="px-5 py-3">Aktual</th><th class="px-5 py-3">Recovery</th><th class="px-5 py-3">Loss / Dilusi</th><th class="px-5 py-3">Status</th><th class="px-5 py-3"></th></tr></thead><tbody><tr v-for="item in props.records" :key="item.id" class="border-b border-stone-50"><td class="px-5 py-3 font-semibold">{{ item.periodeLabel }}<small class="block text-[10px] text-stone-400">{{ item.lokasi }}</small></td><td class="px-5 py-3">{{ item.komoditas }}</td><td class="px-5 py-3">{{ angka(item.target_produksi) }}</td><td class="px-5 py-3">{{ angka(item.produksi_aktual) }}</td><td class="px-5 py-3 text-emerald-700">{{ persen(item.recovery_terhitung) }}</td><td class="px-5 py-3 text-red-600">{{ angka(item.kehilangan_material) }} / {{ angka(item.dilusi) }}</td><td class="px-5 py-3">{{ label(item.status) }}</td><td class="px-5 py-3 text-right"><button v-if="isAdmin" type="button" class="text-red-600 text-[11px]" @click="hapusRecord(item)">Hapus</button></td></tr><tr v-if="!props.records.length"><td colspan="8" class="px-5 py-10 text-center text-stone-400">Belum ada data.</td></tr></tbody></table>
+        <table class="min-w-full text-left text-[12px]"><thead><tr class="border-b border-stone-100 text-stone-400"><th class="px-5 py-3">Periode / Lokasi</th><th class="px-5 py-3">Komoditas</th><th class="px-5 py-3">Target</th><th class="px-5 py-3">Aktual</th><th class="px-5 py-3">Recovery</th><th class="px-5 py-3">Loss / Dilusi</th><th class="px-5 py-3">Status</th><th class="px-5 py-3"></th></tr></thead><tbody><tr v-for="item in props.records" :key="item.id" class="border-b border-stone-50"><td class="px-5 py-3 font-semibold">{{ item.periodeLabel }}<small class="block text-[10px] text-stone-400">{{ item.lokasi }}</small></td><td class="px-5 py-3">{{ item.komoditas }}</td><td class="px-5 py-3">{{ angka(item.target_produksi) }}</td><td class="px-5 py-3">{{ angka(item.produksi_aktual) }}</td><td class="px-5 py-3 text-emerald-700">{{ persen(item.recovery_terhitung) }}</td><td class="px-5 py-3 text-red-600">{{ angka(item.kehilangan_material) }} / {{ angka(item.dilusi) }}</td><td class="px-5 py-3">
+    <span class="rounded-full px-2 py-1 text-[10px] font-bold" :class="warnaStatus[item.status] || 'bg-stone-100 text-stone-600'">{{ item.statusLabel || label(item.status) }}</span>
+    <small v-if="item.alur?.pengaju" class="block text-[10px] text-stone-400 mt-1">Diajukan {{ item.alur.pengaju }}</small>
+    <small v-if="item.alur?.peninjau" class="block text-[10px] text-stone-400">Ditinjau {{ item.alur.peninjau }}</small>
+    <small v-if="item.alur?.alasanTolak" class="block text-[10px] text-red-600 mt-1">{{ item.alur.alasanTolak }}</small>
+  </td>
+  <td class="px-5 py-3 text-right whitespace-nowrap">
+    <button v-if="item.alur?.dapatDiajukan" :disabled="sibuk[item.id]" type="button" class="text-[11px] font-bold text-cam-lime-deep disabled:opacity-40" @click="ajukan(item)">Ajukan</button>
+    <template v-if="item.alur?.dapatDitinjau">
+      <button :disabled="sibuk[item.id]" type="button" class="text-[11px] font-bold text-emerald-600 disabled:opacity-40" @click="setujui(item)">Setujui</button>
+      <button :disabled="sibuk[item.id]" type="button" class="ml-3 text-[11px] font-bold text-amber-600 disabled:opacity-40" @click="tolak(item)">Tolak</button>
+    </template>
+    <button v-if="isAdmin && item.status !== 'disetujui'" type="button" class="ml-3 text-red-600 text-[11px]" @click="hapusRecord(item)">Hapus</button>
+  </td></tr><tr v-if="!props.records.length"><td colspan="8" class="px-5 py-10 text-center text-stone-400">Belum ada data.</td></tr></tbody></table>
       </section>
     </template>
 
