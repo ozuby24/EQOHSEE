@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{ActivityLog, Company, EnergyFuelLog, MineMapLayer, MineOperationalRecord, MineOperationalTarget};
+use App\Models\{ActivityLog, Company, EnergyFuelLog, MineMapLayer, MineOperationalRecord, MineOperationalTarget, TindakLanjut};
 use App\Support\{Alur, KelengkapanShift, PeringatanOperasi, Ramalan};
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -105,6 +105,73 @@ class MineOperationsController extends Controller
         return back()->with('ok', $pesan);
     }
 
+    /* ---------- tindak lanjut ---------- */
+
+    /**
+     * Tindak lanjut dapat lahir langsung dari sebuah peringatan.
+     *
+     * `kode_pemicu` menyimpan kode peringatannya, sehingga halaman dapat
+     * menunjukkan peringatan mana yang sudah ditangani dan mana yang
+     * hanya dibaca berulang kali. Tanpa penanda itu, peringatan yang
+     * sama muncul setiap hari tanpa seorang pun tahu apakah ada yang
+     * sedang mengerjakannya.
+     */
+    public function simpanTindakLanjut(Request $request)
+    {
+        $data = $this->pemilik($request->validate([
+            'company_id'       => ['nullable', 'exists:companies,id'],
+            'record_id'        => ['nullable', 'exists:mine_operational_records,id'],
+            'kode_pemicu'      => ['nullable', 'string', 'max:60'],
+            'judul'            => ['required', 'string', 'max:200'],
+            'kategori'         => ['nullable', 'string', 'max:60'],
+            'prioritas'        => ['required', Rule::in(TindakLanjut::PRIORITAS)],
+            'penanggung_jawab' => ['nullable', 'string', 'max:150'],
+            'target_selesai'   => ['nullable', 'date'],
+            'uraian'           => ['nullable', 'string', 'max:3000'],
+        ]));
+
+        if (!empty($data['record_id'])) {
+            $sumber = MineOperationalRecord::findOrFail($data['record_id']);
+            $data['company_id'] ??= $sumber->company_id;
+            $data['sumber_type'] = MineOperationalRecord::class;
+            $data['sumber_id'] = $sumber->id;
+        }
+        unset($data['record_id']);
+
+        $data['modul'] = 'operasi';
+        $data['user_id'] = auth()->id();
+
+        TindakLanjut::create($data);
+        ActivityLog::write('Tambah tindak lanjut operasi', $data['judul'], 'operasi');
+
+        return back()->with('ok', 'Tindak lanjut ditambahkan.');
+    }
+
+    public function ubahTindakLanjut(Request $request, TindakLanjut $tindak)
+    {
+        $status = $request->validate([
+            'status' => ['required', Rule::in(TindakLanjut::STATUS)],
+        ])['status'];
+
+        // Tanggal penyelesaian dicatat saat status berpindah, bukan
+        // diketik terpisah: yang diketik terpisah akan kosong pada
+        // sebagian besar baris, dan laporan penutupan menjadi mustahil.
+        $tindak->update([
+            'status' => $status,
+            'selesai_pada' => $status === 'selesai' ? now()->toDateString() : null,
+        ]);
+
+        return back()->with('ok', 'Status tindak lanjut diperbarui.');
+    }
+
+    public function hapusTindakLanjut(TindakLanjut $tindak)
+    {
+        ActivityLog::write('Hapus tindak lanjut operasi', $tindak->judul, 'operasi');
+        $tindak->delete();
+
+        return back()->with('ok', 'Tindak lanjut dihapus.');
+    }
+
     public function simpanTarget(Request $request)
     {
         $data = $this->pemilik($request->validate([
@@ -184,6 +251,8 @@ class MineOperationsController extends Controller
             $mode === 'gis' ? ['*'] : ['id', 'company_id', 'nama', 'tipe', 'warna', 'status', 'catatan', 'created_at']
         );
 
+        $tindak = TindakLanjut::with('sumber')->modul('operasi')->urutMendesak()->get();
+
         $produksi = (float) $sah->sum('produksi_ton');
         $ob = (float) $sah->sum('overburden_bcm');
         $operasi = (float) $sah->sum('jam_operasi');
@@ -207,6 +276,8 @@ class MineOperationsController extends Controller
             'hari_aktif' => $sah->pluck('tanggal')->unique()->count(),
             'jumlah_record' => $sah->count(),
             'layer_aktif' => $layers->where('status', 'aktif')->count(),
+            'tindak_terbuka' => $tindak->filter(fn (TindakLanjut $t) => $t->terbuka())->count(),
+            'tindak_terlambat' => $tindak->filter(fn (TindakLanjut $t) => $t->terlambat())->count(),
         ];
 
         $ramalan = new Ramalan($produksi, $targetProduksi, $dari->copy(), $sampai->copy());
@@ -246,8 +317,11 @@ class MineOperationsController extends Controller
             'layers' => $layers->map(fn (MineMapLayer $x) => $this->layerView($x, $mode === 'gis'))->values(),
             'perPit' => $perPit, 'tren' => $tren, 'alerts' => $alerts, 'companies' => $companies,
             'ramalan' => $ramalan->toArray(), 'kelengkapan' => $kelengkapan->toArray(),
+            'tindak' => $tindak->map(fn (TindakLanjut $t) => $t->toView())->values(),
+            'kodeDitangani' => $tindak->filter(fn (TindakLanjut $t) => $t->terbuka())->pluck('kode_pemicu')->filter()->unique()->values(),
             'fuelPerTonBeda' => $fuelBeda,
-            'opsi' => ['shift' => self::SHIFT, 'statusRecord' => Alur::LABEL, 'tipeLayer' => self::TIPE_LAYER, 'statusLayer' => self::STATUS_LAYER],
+            'opsi' => ['shift' => self::SHIFT, 'statusRecord' => Alur::LABEL, 'tipeLayer' => self::TIPE_LAYER, 'statusLayer' => self::STATUS_LAYER,
+                'statusTindak' => TindakLanjut::STATUS, 'prioritasTindak' => TindakLanjut::PRIORITAS],
             /*
              * Tautan yang memerlukan id memakai penanda __ID__, bukan angka
              * 0 yang lalu disambung di sisi browser. Cara lama menghasilkan
@@ -266,6 +340,10 @@ class MineOperationsController extends Controller
                 'recordAjukan'  => route('operasi.record.ajukan',  ['record' => '__ID__']),
                 'recordSetujui' => route('operasi.record.setujui', ['record' => '__ID__']),
                 'recordTolak'   => route('operasi.record.tolak',   ['record' => '__ID__']),
+
+                'tindakSimpan' => route('operasi.tindak.simpan'),
+                'tindakUbah'   => route('operasi.tindak.ubah',  ['tindak' => '__ID__']),
+                'tindakHapus'  => route('operasi.tindak.hapus', ['tindak' => '__ID__']),
 
                 'targetSimpan' => route('operasi.target.simpan'),
                 'layerSimpan'  => route('operasi.layer.simpan'),

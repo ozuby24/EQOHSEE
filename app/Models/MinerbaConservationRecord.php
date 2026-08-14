@@ -7,7 +7,7 @@ use App\Models\Concerns\Ditinjau;
 use App\Models\Scopes\MilikPerusahaan;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
+use Illuminate\Database\Eloquent\Relations\{BelongsTo, MorphMany};
 
 #[ScopedBy(MilikPerusahaan::class)]
 class MinerbaConservationRecord extends Model
@@ -43,7 +43,8 @@ class MinerbaConservationRecord extends Model
 
     public function company(): BelongsTo { return $this->belongsTo(Company::class); }
     public function user(): BelongsTo { return $this->belongsTo(User::class); }
-    public function actions(): HasMany { return $this->hasMany(MinerbaConservationAction::class, 'record_id'); }
+    /** Tindak lanjut yang lahir dari catatan ini; tabelnya dipakai bersama seluruh modul. */
+    public function tindakLanjut(): MorphMany { return $this->morphMany(TindakLanjut::class, 'sumber'); }
 
     public function capaianTarget(): float
     {

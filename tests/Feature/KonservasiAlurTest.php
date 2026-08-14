@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\{MinerbaConservationAction, MinerbaConservationRecord, User};
+use App\Models\{MinerbaConservationRecord, TindakLanjut, User};
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -87,9 +87,9 @@ class KonservasiAlurTest extends TestCase
     public function test_tautan_ubah_status_tindak_lanjut_bekerja(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);
-        $action = MinerbaConservationAction::create([
-            'judul' => 'Perbaiki kendali kadar', 'kategori' => 'recovery',
-            'prioritas' => 'tinggi', 'status' => 'rencana',
+        $action = TindakLanjut::create([
+            'modul' => 'konservasi', 'judul' => 'Perbaiki kendali kadar',
+            'kategori' => 'recovery', 'prioritas' => 'tinggi', 'status' => 'rencana',
         ]);
 
         $url = $this->untuk($this->props($admin)['tautan']['actionUbah'], $action->id);

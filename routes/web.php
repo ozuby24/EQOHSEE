@@ -293,6 +293,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('records/{record}/ajukan',  [MineOperationsController::class, 'ajukanRecord'])->name('record.ajukan');
         Route::post('records/{record}/setujui', [MineOperationsController::class, 'setujuiRecord'])->name('record.setujui');
         Route::post('records/{record}/tolak',   [MineOperationsController::class, 'tolakRecord'])->name('record.tolak');
+
+        /* Tindak lanjut. Tabelnya dipakai bersama seluruh modul; yang
+           membedakan hanya saringan 'modul' di dalam controller. */
+        Route::post('tindak',            [MineOperationsController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
+        Route::put('tindak/{tindak}',    [MineOperationsController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
+        Route::delete('tindak/{tindak}', [MineOperationsController::class, 'hapusTindakLanjut'])->middleware('can:admin')->name('tindak.hapus');
         Route::post('targets', [MineOperationsController::class, 'simpanTarget'])->name('target.simpan');
         Route::post('layers', [MineOperationsController::class, 'simpanLayer'])->name('layer.simpan');
         Route::delete('layers/{layer}', [MineOperationsController::class, 'hapusLayer'])->middleware('can:admin')->name('layer.hapus');

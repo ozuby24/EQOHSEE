@@ -131,7 +131,12 @@ final class PeringatanKonservasi
 
         /* ---------- tindak lanjut ---------- */
 
-        $terlambat = $actions->where('status', 'terlambat')->count();
+        // Dihitung dari tanggal, bukan dari status yang tersimpan.
+        // Status 'terlambat' yang disimpan tidak pernah bertambah sendiri:
+        // baris bertanda "berjalan" yang targetnya lewat sebulan lalu tetap
+        // terbaca berjalan sampai ada yang menyuntingnya, dan yang luput
+        // justru yang paling perlu ditagih.
+        $terlambat = $actions->filter(fn ($a) => $a->terlambat())->count();
         if ($terlambat > 0) {
             $p[] = [
                 'kode'  => 'tindak-lanjut-terlambat',

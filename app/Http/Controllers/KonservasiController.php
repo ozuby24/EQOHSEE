@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{ActivityLog, Company, MinerbaConservationAction, MinerbaConservationRecord};
+use App\Models\{ActivityLog, Company, MinerbaConservationRecord, TindakLanjut};
 use App\Support\{Alur, PeringatanKonservasi};
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -12,7 +12,8 @@ class KonservasiController extends Controller
 {
     public const KATEGORI_ACTION = ['recovery', 'kehilangan', 'dilusi', 'stockpile', 'mineral_ikutan', 'reklamasi'];
     public const PRIORITAS_ACTION = ['rendah', 'sedang', 'tinggi', 'kritis'];
-    public const STATUS_ACTION = ['rencana', 'berjalan', 'selesai', 'terlambat'];
+    /** Keterlambatan dihitung dari tanggal, bukan disimpan sebagai status. */
+    public const STATUS_ACTION = TindakLanjut::STATUS;
 
     public function index(Request $request)
     {
@@ -108,17 +109,33 @@ class KonservasiController extends Controller
         }
 
         $data['user_id'] = auth()->id();
+        $data['modul'] = 'konservasi';
 
-        MinerbaConservationAction::create($data);
+        if (!empty($data['record_id'])) {
+            $data['sumber_type'] = MinerbaConservationRecord::class;
+            $data['sumber_id'] = $data['record_id'];
+        }
+        unset($data['record_id']);
+
+        TindakLanjut::create($data);
+        ActivityLog::write('Tambah tindak lanjut konservasi', $data['judul'], 'konservasi');
 
         return back()->with('ok', 'Tindak lanjut konservasi ditambahkan.');
     }
 
-    public function ubahAction(Request $request, MinerbaConservationAction $action)
+    public function ubahAction(Request $request, TindakLanjut $action)
     {
-        $action->update($request->validate([
+        $status = $request->validate([
             'status' => ['required', Rule::in(self::STATUS_ACTION)],
-        ]));
+        ])['status'];
+
+        // Tanggal penyelesaian dicatat saat status berpindah, bukan
+        // diketik terpisah: yang diketik terpisah akan kosong pada
+        // sebagian besar baris, dan laporan penutupan menjadi mustahil.
+        $action->update([
+            'status' => $status,
+            'selesai_pada' => $status === 'selesai' ? now()->toDateString() : null,
+        ]);
 
         return back()->with('ok', 'Status tindak lanjut diperbarui.');
     }
@@ -133,7 +150,7 @@ class KonservasiController extends Controller
         return $data;
     }
 
-    public function hapusAction(MinerbaConservationAction $action)
+    public function hapusAction(TindakLanjut $action)
     {
         ActivityLog::write('Hapus tindak lanjut konservasi', $action->judul, 'konservasi');
         $action->delete();
@@ -161,10 +178,10 @@ class KonservasiController extends Controller
         // menimbulkan galat apa pun, hanya angka yang salah.
         $sah = $records->whereIn('status', Alur::terhitung());
 
-        $actions = MinerbaConservationAction::with(['record', 'company'])
+        $actions = TindakLanjut::with(['sumber', 'company'])
+            ->modul('konservasi')
             ->when($request->filled('perusahaan'), fn ($q) => $q->where('company_id', $request->integer('perusahaan')))
-            ->orderByRaw("CASE status WHEN 'terlambat' THEN 0 WHEN 'berjalan' THEN 1 WHEN 'rencana' THEN 2 ELSE 3 END")
-            ->latest('target_selesai')->get();
+            ->urutMendesak()->get();
 
         $material = (float) $sah->sum('material_digali');
         $aktual = (float) $sah->sum('produksi_aktual');
@@ -181,7 +198,7 @@ class KonservasiController extends Controller
             'kehilangan_material' => (float) $sah->sum('kehilangan_material'),
             'dilusi' => (float) $sah->sum('dilusi'),
             'stok_akhir' => (float) $sah->sum('stok_akhir'),
-            'action_terbuka' => $actions->whereNotIn('status', ['selesai'])->count(),
+            'action_terbuka' => $actions->filter(fn (TindakLanjut $a) => $a->terbuka())->count(),
         ];
 
         $perKomoditas = $sah->groupBy('komoditas')->map(function ($rows, $komoditas) {
@@ -212,7 +229,7 @@ class KonservasiController extends Controller
             'perKomoditas' => $perKomoditas,
             'alerts' => $alerts,
             'records' => $records->map(fn (MinerbaConservationRecord $record) => $this->recordView($record))->values()->all(),
-            'actions' => $actions->map(fn (MinerbaConservationAction $action) => $this->actionView($action))->values()->all(),
+            'actions' => $actions->map(fn (TindakLanjut $a) => $this->actionView($a))->values()->all(),
             'companies' => Company::orderBy('name')->get(['id', 'name']),
             'opsi' => [
                 'statusRecord' => Alur::LABEL,
@@ -287,19 +304,12 @@ class KonservasiController extends Controller
         ];
     }
 
-    private function actionView(MinerbaConservationAction $action): array
+    private function actionView(TindakLanjut $a): array
     {
-        return [
-            'id' => $action->id,
-            'record_id' => $action->record_id,
-            'judul' => $action->judul,
-            'kategori' => $action->kategori,
-            'prioritas' => $action->prioritas,
-            'status' => $action->status,
-            'penanggung_jawab' => $action->penanggung_jawab,
-            'target_selesai' => $action->target_selesai?->format('Y-m-d'),
-            'uraian' => $action->uraian,
-            'record' => $action->record?->komoditas.' - '.$action->record?->periode?->format('M Y'),
+        return $a->toView() + [
+            'record' => $a->sumber instanceof MinerbaConservationRecord
+                ? $a->sumber->komoditas.' - '.$a->sumber->periode?->format('M Y')
+                : null,
         ];
     }
 

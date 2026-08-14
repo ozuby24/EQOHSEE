@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\{MinerbaConservationAction, MinerbaConservationRecord, User};
+use App\Models\{MinerbaConservationRecord, TindakLanjut, User};
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -84,7 +84,7 @@ class KonservasiMinerbaTest extends TestCase
             'prioritas' => 'tinggi', 'status' => 'rencana', 'target_selesai' => '2026-05-31',
         ])->assertSessionHasNoErrors();
 
-        $action = MinerbaConservationAction::firstOrFail();
+        $action = TindakLanjut::firstOrFail();
         $this->put(route('konservasi.action.ubah', $action), ['status' => 'berjalan'])
             ->assertSessionHasNoErrors();
 
