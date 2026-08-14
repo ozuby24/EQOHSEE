@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import PetaTambang from '../../Components/PetaTambang.vue';
 
 const props = defineProps<{ mode: 'dashboard' | 'data' | 'target' | 'gis'; [key: string]: any }>();
 const halaman = usePage<any>();
@@ -21,7 +22,7 @@ const record = useForm<any>({
   jam_operasi: 0, jam_delay: 0, catatan: '',
 });
 const target = useForm<any>({ company_id: '', tahun: new Date().getFullYear(), bulan: new Date().getMonth() + 1, target_produksi_ton: 0, target_overburden_bcm: 0, target_strip_ratio: '', target_jarak_km: '', catatan: '' });
-const layer = useForm<any>({ company_id: '', nama: '', tipe: 'area_kerja', geojson: '{\n  "type": "FeatureCollection",\n  "features": []\n}', warna: '#84cc16', status: 'draft', catatan: '' });
+const layer = useForm<any>({ company_id: '', nama: '', tipe: 'area_kerja', geojson: '{\n  "type": "FeatureCollection",\n  "features": []\n}', warna: '#84cc16', status: 'draft', catatan: '', tanggal_survey: '', sumber_survey: '' });
 
 const angka = (value: unknown, digits = 0) => new Intl.NumberFormat('id-ID', { maximumFractionDigits: digits, minimumFractionDigits: digits }).format(Number(value || 0));
 const persen = (value: unknown) => `${angka(value, 1)}%`;
@@ -351,7 +352,66 @@ const warnaStatus: Record<string, string> = {
     </template>
 
     <template v-if="props.mode === 'gis'">
-      <section class="grid gap-5 xl:grid-cols-[.8fr_1.2fr]"><div class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><h3 class="font-bold text-[14px]">Registri layer GeoJSON</h3><p class="text-[11px] text-stone-400 mt-1">Fondasi GIS ini menyimpan layer yang dapat dipakai oleh peta interaktif pada tahap berikutnya.</p><form class="grid gap-3 mt-4" @submit.prevent="simpanLayer"><select v-model="layer.company_id" class="rounded-lg border-stone-200 text-[12px]"><option value="">Perusahaan umum</option><option v-for="item in props.companies || []" :key="item.id" :value="item.id">{{ item.name }}</option></select><input v-model="layer.nama" required placeholder="Nama layer, contoh: Pit 1 2026" class="rounded-lg border-stone-200 text-[12px]"><div class="grid grid-cols-3 gap-2"><select v-model="layer.tipe" class="rounded-lg border-stone-200 text-[12px]"><option v-for="item in props.opsi?.tipeLayer || []" :key="item" :value="item">{{ label(item) }}</option></select><select v-model="layer.status" class="rounded-lg border-stone-200 text-[12px]"><option v-for="item in props.opsi?.statusLayer || []" :key="item" :value="item">{{ label(item) }}</option></select><input v-model="layer.warna" type="color" class="h-10 w-full rounded-lg border-stone-200"></div><textarea v-model="layer.geojson" required rows="10" class="font-mono text-[11px] rounded-lg border-stone-200"></textarea><p class="text-[11px]" :class="geoValid ? 'text-emerald-600' : 'text-red-600'">{{ geoValid ? geoSummary(layer.geojson) : 'GeoJSON belum valid' }}</p><textarea v-model="layer.catatan" placeholder="Catatan sumber survey / drone / GIS" class="rounded-lg border-stone-200 text-[12px]"></textarea><button :disabled="layer.processing || !geoValid" class="eq-btn-utama">{{ layer.processing ? 'Menyimpan...' : 'Simpan layer GeoJSON' }}</button></form></div><div class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-x-auto"><div class="px-5 py-4 border-b border-stone-100"><h3 class="font-bold text-[14px]">Layer terdaftar</h3><p class="text-[11px] text-stone-400">{{ (props.layers || []).length }} layer siap diaktifkan pada peta.</p></div><div class="divide-y divide-stone-100"><details v-for="item in props.layers || []" :key="item.id" class="p-5"><summary class="cursor-pointer flex items-center justify-between gap-3"><span><b class="text-[13px]">{{ item.nama }}</b><small class="block text-[10px] text-stone-400">{{ label(item.tipe) }} · {{ label(item.status) }} · {{ item.company?.name || 'Umum' }}</small></span><span class="w-4 h-4 rounded-full border" :style="{backgroundColor:item.warna}"></span></summary><div class="mt-3"><pre class="max-h-44 overflow-auto rounded-lg bg-stone-900 text-lime-200 p-3 text-[10px]">{{ item.geojson }}</pre><div class="flex justify-between items-center mt-2"><span class="text-[11px] text-stone-500">{{ geoSummary(item.geojson) }}</span><button v-if="isAdmin" type="button" class="text-red-600 text-[11px]" @click="hapusLayer(item)">Hapus</button></div></div></details><p v-if="!(props.layers || []).length" class="p-10 text-center text-[12px] text-stone-400">Belum ada layer. Tambahkan GeoJSON dari survey/GIS.</p></div></div></section>
+      <!--
+        Peta dan angka kemajuan diletakkan di atas registri layer. Yang
+        dicari orang saat membuka halaman ini adalah bentuk dan luasnya,
+        bukan daftar berkas yang pernah diunggah.
+      -->
+      <section class="grid gap-5 xl:grid-cols-[1.4fr_.6fr]">
+        <PetaTambang :layers="props.layers || []" />
+
+        <div class="space-y-3">
+          <div class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
+            <h3 class="font-bold text-[14px]">Kemajuan area</h3>
+            <p class="text-[11px] text-stone-400 mt-1">
+              Hanya layer berstatus aktif yang dihitung.
+              <span v-if="props.kemajuan?.surveiTerakhir">Survei terakhir {{ tanggal(props.kemajuan.surveiTerakhir) }}.</span>
+            </p>
+
+            <div class="mt-4 flex items-end gap-2">
+              <b class="text-3xl font-extrabold tracking-tight text-stone-800">{{ angka(props.kemajuan?.terganggu, 2) }}</b>
+              <span class="text-[12px] text-stone-400 pb-1">ha terganggu</span>
+            </div>
+
+            <div class="mt-3 h-2 rounded-full bg-stone-100 overflow-hidden">
+              <div class="h-full rounded-full bg-emerald-500 transition-all"
+                   :style="{ width: `${Math.max(0, Math.min(100, Number(props.kemajuan?.persen || 0)))}%` }"></div>
+            </div>
+            <p class="text-[11px] text-stone-500 mt-2">
+              <b class="text-emerald-700">{{ angka(props.kemajuan?.reklamasi, 2) }} ha</b> direklamasi
+              ({{ persen(props.kemajuan?.persen) }}), sisa {{ angka(props.kemajuan?.sisa, 2) }} ha.
+            </p>
+
+            <div class="grid grid-cols-2 gap-3 mt-4">
+              <div class="rounded-xl bg-stone-50 p-3">
+                <small class="block text-[10px] text-stone-400">Jalan &amp; drainase</small>
+                <b class="text-[13px]">{{ angka(props.kemajuan?.panjangJalanKm, 2) }} km</b>
+              </div>
+              <div class="rounded-xl bg-stone-50 p-3">
+                <small class="block text-[10px] text-stone-400">Layer aktif</small>
+                <b class="text-[13px]">{{ props.ringkas?.layer_aktif || 0 }}</b>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
+            <h3 class="font-bold text-[14px] mb-3">Luas per tipe</h3>
+            <table class="w-full text-[11px]">
+              <tbody>
+                <tr v-for="t in props.kemajuan?.perTipe || []" :key="t.tipe" class="border-b border-stone-50">
+                  <td class="py-2"><span class="inline-block w-2.5 h-2.5 rounded-sm mr-2 align-middle" :style="{ backgroundColor: t.warna }"></span>{{ label(t.tipe) }}</td>
+                  <td class="py-2 text-right font-semibold">{{ angka(t.hektare, 2) }} ha</td>
+                  <td class="py-2 text-right text-stone-400">{{ t.layer }} layer</td>
+                </tr>
+                <tr v-if="!(props.kemajuan?.perTipe || []).length"><td colspan="3" class="py-6 text-center text-stone-400">Belum ada layer aktif.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+
+      <section class="grid gap-5 xl:grid-cols-[.8fr_1.2fr]"><div class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><h3 class="font-bold text-[14px]">Registri layer GeoJSON</h3><p class="text-[11px] text-stone-400 mt-1">Fondasi GIS ini menyimpan layer yang dapat dipakai oleh peta interaktif pada tahap berikutnya.</p><form class="grid gap-3 mt-4" @submit.prevent="simpanLayer"><select v-model="layer.company_id" class="rounded-lg border-stone-200 text-[12px]"><option value="">Perusahaan umum</option><option v-for="item in props.companies || []" :key="item.id" :value="item.id">{{ item.name }}</option></select><input v-model="layer.nama" required placeholder="Nama layer, contoh: Pit 1 2026" class="rounded-lg border-stone-200 text-[12px]"><div class="grid grid-cols-3 gap-2"><select v-model="layer.tipe" class="rounded-lg border-stone-200 text-[12px]"><option v-for="item in props.opsi?.tipeLayer || []" :key="item" :value="item">{{ label(item) }}</option></select><select v-model="layer.status" class="rounded-lg border-stone-200 text-[12px]"><option v-for="item in props.opsi?.statusLayer || []" :key="item" :value="item">{{ label(item) }}</option></select><input v-model="layer.warna" type="color" class="h-10 w-full rounded-lg border-stone-200"></div><textarea v-model="layer.geojson" required rows="10" class="font-mono text-[11px] rounded-lg border-stone-200"></textarea><p class="text-[11px]" :class="geoValid ? 'text-emerald-600' : 'text-red-600'">{{ geoValid ? geoSummary(layer.geojson) : 'GeoJSON belum valid' }}</p><div class="grid grid-cols-2 gap-2"><input v-model="layer.tanggal_survey" type="date" class="rounded-lg border-stone-200 text-[12px]" title="Tanggal survei"><input v-model="layer.sumber_survey" placeholder="Sumber survei (drone / total station)" class="rounded-lg border-stone-200 text-[12px]"></div><textarea v-model="layer.catatan" placeholder="Catatan" class="rounded-lg border-stone-200 text-[12px]"></textarea><button :disabled="layer.processing || !geoValid" class="eq-btn-utama">{{ layer.processing ? 'Menyimpan...' : 'Simpan layer GeoJSON' }}</button></form></div><div class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-x-auto"><div class="px-5 py-4 border-b border-stone-100"><h3 class="font-bold text-[14px]">Layer terdaftar</h3><p class="text-[11px] text-stone-400">{{ (props.layers || []).length }} layer siap diaktifkan pada peta.</p></div><div class="divide-y divide-stone-100"><details v-for="item in props.layers || []" :key="item.id" class="p-5"><summary class="cursor-pointer flex items-center justify-between gap-3"><span><b class="text-[13px]">{{ item.nama }}</b><small class="block text-[10px] text-stone-400">{{ label(item.tipe) }} · {{ label(item.status) }} · <b>{{ angka(item.hektare, 2) }} ha</b> · {{ angka(item.panjang_km, 2) }} km<span v-if="item.tanggal_survey"> · survei {{ tanggal(item.tanggal_survey) }}</span></small></span><span class="w-4 h-4 rounded-full border" :style="{backgroundColor:item.warna}"></span></summary><div class="mt-3"><pre class="max-h-44 overflow-auto rounded-lg bg-stone-900 text-lime-200 p-3 text-[10px]">{{ item.geojson }}</pre><div class="flex justify-between items-center mt-2"><span class="text-[11px] text-stone-500">{{ geoSummary(item.geojson) }}</span><button v-if="isAdmin" type="button" class="text-red-600 text-[11px]" @click="hapusLayer(item)">Hapus</button></div></div></details><p v-if="!(props.layers || []).length" class="p-10 text-center text-[12px] text-stone-400">Belum ada layer. Tambahkan GeoJSON dari survey/GIS.</p></div></div></section>
     </template>
   </div>
 </template>

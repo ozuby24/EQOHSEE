@@ -12,7 +12,12 @@ use Inertia\Inertia;
 class MineOperationsController extends Controller
 {
     public const SHIFT = ['siang', 'malam'];
-    public const TIPE_LAYER = ['pit', 'disposal', 'rom', 'stockpile', 'haul_road', 'area_kerja', 'drainase'];
+    /**
+     * 'reklamasi' ditambahkan agar capaian reklamasi dapat dihitung.
+     * Tanpa tipe ini, luas terganggu terus bertambah sementara penyebut
+     * pembandingnya tidak pernah ada, dan capaiannya nol selamanya.
+     */
+    public const TIPE_LAYER = ['pit', 'disposal', 'rom', 'stockpile', 'haul_road', 'area_kerja', 'drainase', 'reklamasi'];
     public const STATUS_LAYER = ['draft', 'aktif', 'arsip'];
 
     public function index(Request $request) { return $this->halaman($request, 'dashboard'); }
@@ -301,6 +306,12 @@ class MineOperationsController extends Controller
             'warna' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'status' => ['required', Rule::in(self::STATUS_LAYER)],
             'catatan' => ['nullable', 'string', 'max:2000'],
+
+            // Peta tambang selalu potret pada satu tanggal. Dua layer pit
+            // tanpa tanggal tidak dapat dibandingkan, dan kemajuan area
+            // tidak dapat dihitung sama sekali.
+            'tanggal_survey' => ['nullable', 'date'],
+            'sumber_survey' => ['nullable', 'string', 'max:150'],
         ]));
 
         $data['user_id'] = auth()->id();
@@ -344,10 +355,13 @@ class MineOperationsController extends Controller
            metadata layer. Menariknya di setiap mode pernah membuat muatan
            Inertia satu halaman dasbor membengkak sampai puluhan megabita. */
         $layers = MineMapLayer::with('company')->latest()->get(
-            $mode === 'gis' ? ['*'] : ['id', 'company_id', 'nama', 'tipe', 'warna', 'status', 'catatan', 'created_at']
+            $mode === 'gis' ? ['*'] : ['id', 'company_id', 'nama', 'tipe', 'warna', 'status', 'catatan', 'created_at',
+                'luas_m2', 'keliling_m', 'titik_lon', 'titik_lat', 'jumlah_fitur', 'tanggal_survey', 'sumber_survey']
         );
 
         $tindak = TindakLanjut::with('sumber')->modul('operasi')->urutMendesak()->get();
+
+        $kemajuan = $this->kemajuanArea($layers);
 
         $produksi = (float) $sah->sum('produksi_ton');
         $ob = (float) $sah->sum('overburden_bcm');
@@ -416,6 +430,7 @@ class MineOperationsController extends Controller
             'tindak' => $tindak->map(fn (TindakLanjut $t) => $t->toView())->values(),
             'kodeDitangani' => $tindak->filter(fn (TindakLanjut $t) => $t->terbuka())->pluck('kode_pemicu')->filter()->unique()->values(),
             'fuelPerTonBeda' => $fuelBeda,
+            'kemajuan' => $kemajuan,
             'opsi' => ['shift' => self::SHIFT, 'statusRecord' => Alur::LABEL, 'tipeLayer' => self::TIPE_LAYER, 'statusLayer' => self::STATUS_LAYER,
                 'statusTindak' => TindakLanjut::STATUS, 'prioritasTindak' => TindakLanjut::PRIORITAS],
             /*
@@ -556,17 +571,59 @@ class MineOperationsController extends Controller
         ];
     }
 
+    /**
+     * Kemajuan area menurut tipe layer.
+     *
+     * Hanya layer berstatus aktif yang dihitung; yang berstatus draf
+     * adalah rencana yang belum disepakati, dan yang diarsipkan adalah
+     * potret lama. Mencampurkan ketiganya membuat luas terganggu
+     * bertambah setiap kali sebuah survei baru diunggah, sebab survei
+     * lama tidak pernah berhenti ikut dihitung.
+     *
+     * Reklamasi dinyatakan terhadap luas terganggu, bukan terhadap
+     * seluruh wilayah izin. Yang belum pernah dibuka tidak perlu
+     * direklamasi, dan memasukkannya ke penyebut membuat capaian
+     * reklamasi terlihat kecil selamanya.
+     */
+    private function kemajuanArea(\Illuminate\Support\Collection $layers): array
+    {
+        $aktif = $layers->where('status', 'aktif');
+
+        $luas = fn (array $tipe) => round(
+            $aktif->whereIn('tipe', $tipe)->sum('luas_m2') / 10_000, 4
+        );
+
+        // Bukaan tambang: pit, timbunan, penumpukan, dan area kerja.
+        // Jalan angkut dan drainase memanjang, bukan meluas; keduanya
+        // dilaporkan sebagai panjang di bawah.
+        $terganggu = $luas(['pit', 'disposal', 'rom', 'stockpile', 'area_kerja']);
+        $reklamasi = $luas(['reklamasi']);
+
+        return [
+            'terganggu' => $terganggu,
+            'reklamasi' => $reklamasi,
+            'sisa'      => round(max(0, $terganggu - $reklamasi), 4),
+            'persen'    => $terganggu > 0 ? round($reklamasi / $terganggu * 100, 1) : 0.0,
+
+            'perTipe' => $aktif->groupBy('tipe')->map(fn ($rows, $tipe) => [
+                'tipe'      => $tipe,
+                'layer'     => $rows->count(),
+                'hektare'   => round($rows->sum('luas_m2') / 10_000, 4),
+                'panjangKm' => round($rows->sum('keliling_m') / 1000, 3),
+                'warna'     => $rows->first()->warna,
+            ])->sortByDesc('hektare')->values()->all(),
+
+            'panjangJalanKm' => round(
+                $aktif->whereIn('tipe', ['haul_road', 'drainase'])->sum('keliling_m') / 1000, 3
+            ),
+
+            'surveiTerakhir' => $aktif->whereNotNull('tanggal_survey')
+                ->max('tanggal_survey')?->toDateString(),
+        ];
+    }
+
     private function layerView(MineMapLayer $x, bool $denganGeojson): array
     {
-        return [
-            'id' => $x->id,
-            'nama' => $x->nama,
-            'tipe' => $x->tipe,
-            'warna' => $x->warna,
-            'status' => $x->status,
-            'catatan' => $x->catatan,
-            'companyName' => $x->company?->name,
-            'geojson' => $denganGeojson ? $x->geojson : null,
-        ];
+        return $x->toView($denganGeojson);
     }
 }
