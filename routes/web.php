@@ -7,7 +7,7 @@ use App\Http\Controllers\{
 };
 use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiTemuanController, HazardController,
     HazardExportController, InspectionController, InspectionTemplateController,
-    EnergyController, EngineeringController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
+    EnergyController, EngineeringController, EnvironmentController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\{BantuanController, ChatController};
 use App\Http\Controllers\Admin\{CompanyController, SystemController, UserController};
@@ -281,6 +281,39 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::post('tindak',         [WaterController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
         Route::put('tindak/{tindak}', [WaterController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
+    });
+
+    /* ============ Pengelolaan Lingkungan & Reklamasi ============
+       Tahapan petak berpindah hanya lewat laporan kemajuan yang
+       disetujui; baku mutunya berupa data, bukan tetapan di dalam kode. */
+    Route::prefix('lingkungan')->name('lingkungan.')->group(function () {
+        Route::get('/',           [EnvironmentController::class, 'index'])->name('index');
+        Route::get('lahan',       [EnvironmentController::class, 'lahan'])->name('lahan');
+        Route::get('pemantauan',  [EnvironmentController::class, 'pemantauan'])->name('pemantauan');
+        Route::get('baku-mutu',   [EnvironmentController::class, 'baku'])->name('baku');
+        Route::get('cetak',       [EnvironmentController::class, 'cetak'])->name('cetak');
+
+        Route::post('area',          [EnvironmentController::class, 'simpanArea'])->name('area.simpan');
+        Route::put('area/{area}',    [EnvironmentController::class, 'ubahArea'])->name('area.ubah');
+        Route::delete('area/{area}', [EnvironmentController::class, 'hapusArea'])->middleware('can:admin')->name('area.hapus');
+
+        Route::post('kemajuan',              [EnvironmentController::class, 'simpanKemajuan'])->name('kemajuan.simpan');
+        Route::delete('kemajuan/{kemajuan}', [EnvironmentController::class, 'hapusKemajuan'])->middleware('can:admin')->name('kemajuan.hapus');
+        Route::post('kemajuan/{kemajuan}/ajukan',  [EnvironmentController::class, 'ajukanKemajuan'])->name('kemajuan.ajukan');
+        Route::post('kemajuan/{kemajuan}/setujui', [EnvironmentController::class, 'setujuiKemajuan'])->name('kemajuan.setujui');
+        Route::post('kemajuan/{kemajuan}/tolak',   [EnvironmentController::class, 'tolakKemajuan'])->name('kemajuan.tolak');
+
+        Route::post('baku-mutu',               [EnvironmentController::class, 'simpanParameter'])->name('parameter.simpan');
+        Route::delete('baku-mutu/{parameter}', [EnvironmentController::class, 'hapusParameter'])->middleware('can:admin')->name('parameter.hapus');
+
+        Route::post('pantau',            [EnvironmentController::class, 'simpanPantau'])->name('pantau.simpan');
+        Route::delete('pantau/{pantau}', [EnvironmentController::class, 'hapusPantau'])->middleware('can:admin')->name('pantau.hapus');
+        Route::post('pantau/{pantau}/ajukan',  [EnvironmentController::class, 'ajukanPantau'])->name('pantau.ajukan');
+        Route::post('pantau/{pantau}/setujui', [EnvironmentController::class, 'setujuiPantau'])->name('pantau.setujui');
+        Route::post('pantau/{pantau}/tolak',   [EnvironmentController::class, 'tolakPantau'])->name('pantau.tolak');
+
+        Route::post('tindak',         [EnvironmentController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
+        Route::put('tindak/{tindak}', [EnvironmentController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
     });
 
     /* ============ Pemantauan Kestabilan Lereng ============

@@ -79,6 +79,11 @@ class Modules
              'ket'  => 'Perintah kerja, MTBF dan MTTR, ketersediaan armada, kepatuhan perawatan berkala, tunggakan pekerjaan, dan biaya per jam serta per ton.',
              'ikon' => 'M14.6 6.3a1 1 0 0 0 0 1.4l1.7 1.7a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9l-3.8 3.8Z'],
 
+            ['nama' => 'Lingkungan & Reklamasi', 'status' => 'aktif', 'pilar' => 'environment',
+             'rute' => 'lingkungan.index',
+             'ket'  => 'Neraca lahan terganggu dan direklamasi, tahapan berjenjang per petak, tingkat tumbuh revegetasi, kecukupan jaminan, dan pemantauan baku mutu yang dapat disesuaikan.',
+             'ikon' => 'M20 4c0 9-5.5 13-11 13a5 5 0 0 1-1.6-.3C6 15.6 5 13.4 5 11 5 6.6 10 4 20 4ZM4 20c2.5-4.5 6-7.5 11-9.5'],
+
             ['nama' => 'Kestabilan Lereng', 'status' => 'aktif', 'pilar' => 'engineering',
              'rute' => 'geoteknik.index',
              'ket'  => 'Pemantauan gerakan lereng, kebalikan laju, penyimpangan geometri terbangun, dan acuan kajian geoteknik — alat bantu keputusan, bukan pengganti penilaian tenaga kompeten.',

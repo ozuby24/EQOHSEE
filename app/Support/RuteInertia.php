@@ -145,6 +145,13 @@ final class RuteInertia
         'air.kolam',
         'air.cetak',
 
+        /* Lingkungan & Reklamasi */
+        'lingkungan.index',
+        'lingkungan.lahan',
+        'lingkungan.pemantauan',
+        'lingkungan.baku',
+        'lingkungan.cetak',
+
         /* Kestabilan Lereng */
         'geoteknik.index',
         'geoteknik.bacaan',
