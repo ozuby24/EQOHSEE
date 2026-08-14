@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{ActivityLog, Company, MineMapLayer, MineOperationalRecord, MineOperationalTarget};
-use App\Support\Alur;
+use App\Models\{ActivityLog, Company, EnergyFuelLog, MineMapLayer, MineOperationalRecord, MineOperationalTarget};
+use App\Support\{Alur, KelengkapanShift, PeringatanOperasi, Ramalan};
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
@@ -209,13 +209,17 @@ class MineOperationsController extends Controller
             'layer_aktif' => $layers->where('status', 'aktif')->count(),
         ];
 
-        $alerts = [];
-        if (!$sah->count()) $alerts[] = ['level' => 'tinggi', 'judul' => 'Belum ada input operasi', 'ket' => 'Masukkan produksi, OB, jarak, dan jam delay dari laporan shift.'];
-        if ($targetProduksi > 0 && $ringkas['capaian_produksi'] < 90) $alerts[] = ['level' => 'tinggi', 'judul' => 'Capaian produksi di bawah 90%', 'ket' => number_format($ringkas['capaian_produksi'], 1).' % terhadap target periode.'];
-        if ($targetOb > 0 && $ringkas['capaian_ob'] < 90) $alerts[] = ['level' => 'sedang', 'judul' => 'Capaian pemindahan OB rendah', 'ket' => number_format($ringkas['capaian_ob'], 1).' % terhadap target periode.'];
-        if ($targetStrip && $stripRatio > $targetStrip * 1.15) $alerts[] = ['level' => 'tinggi', 'judul' => 'Strip ratio melewati target', 'ket' => number_format($stripRatio, 2).' vs target '.number_format($targetStrip, 2).'.'];
-        if ($targetJarak && $jarak > $targetJarak * 1.15) $alerts[] = ['level' => 'sedang', 'judul' => 'Jarak angkut meningkat', 'ket' => number_format($jarak, 2).' km vs target '.number_format($targetJarak, 2).' km.'];
-        if ($delay > 0 && ($operasi + $delay) > 0 && $delay / ($operasi + $delay) > .15) $alerts[] = ['level' => 'sedang', 'judul' => 'Delay operasi tinggi', 'ket' => number_format($delay / ($operasi + $delay) * 100, 1).' % waktu tercatat sebagai delay.'];
+        $ramalan = new Ramalan($produksi, $targetProduksi, $dari->copy(), $sampai->copy());
+        $kelengkapan = new KelengkapanShift($records, $dari->copy(), $sampai->copy(), self::SHIFT);
+        $fuelBeda = $this->kenaikanFuelPerTon($dari, $sampai, $produksi);
+
+        $alerts = PeringatanOperasi::susun(
+            $ringkas,
+            ['produksi' => $targetProduksi, 'ob' => $targetOb, 'strip_ratio' => $targetStrip, 'jarak' => $targetJarak],
+            $ramalan,
+            $kelengkapan,
+            $fuelBeda,
+        );
 
         $perPit = $sah->groupBy(fn ($x) => $x->pit ?: ($x->area ?: 'Belum ditentukan'))->map(function ($rows, $nama) {
             $ton = (float) $rows->sum('produksi_ton');
@@ -241,6 +245,8 @@ class MineOperationsController extends Controller
                 ->map(fn (MineOperationalTarget $x) => $this->targetView($x))->values(),
             'layers' => $layers->map(fn (MineMapLayer $x) => $this->layerView($x, $mode === 'gis'))->values(),
             'perPit' => $perPit, 'tren' => $tren, 'alerts' => $alerts, 'companies' => $companies,
+            'ramalan' => $ramalan->toArray(), 'kelengkapan' => $kelengkapan->toArray(),
+            'fuelPerTonBeda' => $fuelBeda,
             'opsi' => ['shift' => self::SHIFT, 'statusRecord' => Alur::LABEL, 'tipeLayer' => self::TIPE_LAYER, 'statusLayer' => self::STATUS_LAYER],
             'tautan' => [
                 'dashboard' => route('operasi.index'), 'data' => route('operasi.data'), 'target' => route('operasi.target'), 'gis' => route('operasi.gis'),
@@ -260,6 +266,49 @@ class MineOperationsController extends Controller
        yang dikirim utuh ikut membawa user_id dan stempel waktu ke browser,
        dan setiap kolom baru yang ditambahkan nanti akan ikut terbawa tanpa
        ada yang memutuskannya. */
+
+    /**
+     * Kenaikan liter bahan bakar per ton terhadap periode sebelumnya.
+     *
+     * Ditarik dari modul Energi, bukan dari data operasi, sebab di sanalah
+     * liter tercatat. Perbandingannya memakai periode sebelumnya yang
+     * panjangnya sama persis — membandingkan bulan berjalan yang baru
+     * sepuluh hari dengan bulan penuh sebelumnya akan selalu menunjukkan
+     * penurunan, dan peringatan yang selalu diam sama tidak bergunanya
+     * dengan yang selalu menyala.
+     *
+     * Mengembalikan null bila salah satu periode tidak punya cukup data;
+     * angka nol akan terbaca sebagai "tidak ada kenaikan", padahal yang
+     * benar adalah "belum dapat dibandingkan".
+     */
+    private function kenaikanFuelPerTon(Carbon $dari, Carbon $sampai, float $produksiKini): ?float
+    {
+        if ($produksiKini <= 0) return null;
+
+        $panjang = $dari->diffInDays($sampai) + 1;
+        $dariLalu = $dari->copy()->subDays($panjang);
+        $sampaiLalu = $dari->copy()->subDay();
+
+        $liter = fn (Carbon $a, Carbon $b) => (float) EnergyFuelLog::query()
+            ->whereBetween('tanggal', [$a, $b])->sum('liter');
+
+        $literKini = $liter($dari, $sampai);
+        $literLalu = $liter($dariLalu, $sampaiLalu);
+
+        if ($literKini <= 0 || $literLalu <= 0) return null;
+
+        $produksiLalu = (float) MineOperationalRecord::query()
+            ->whereIn('status', Alur::terhitung())
+            ->whereBetween('tanggal', [$dariLalu, $sampaiLalu])
+            ->sum('produksi_ton');
+
+        if ($produksiLalu <= 0) return null;
+
+        $kini = $literKini / $produksiKini;
+        $lalu = $literLalu / $produksiLalu;
+
+        return $lalu > 0 ? ($kini - $lalu) / $lalu * 100 : null;
+    }
 
     private function recordView(MineOperationalRecord $x): array
     {
