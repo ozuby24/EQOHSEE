@@ -15,7 +15,7 @@ jobs:
       - name: Siapkan PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: '8.4'
           extensions: mbstring, pdo_sqlite, pdo_pgsql, bcmath, gd, zip
           coverage: none
 
@@ -55,3 +55,21 @@ jobs:
 
       - name: Uji
         run: php artisan test
+
+      # Typecheck dijalankan di sini, bukan disatukan ke skrip `build`.
+      # Menyatukannya berarti satu galat tipe menggagalkan penerbitan ke
+      # VPS — padahal Vite tidak membutuhkan tsc untuk menghasilkan bundel.
+      - name: Siapkan Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Pasang dependensi Node
+        run: npm ci
+
+      - name: Periksa tipe TypeScript & Vue
+        run: npm run typecheck
+
+      - name: Bangun aset
+        run: npm run build
