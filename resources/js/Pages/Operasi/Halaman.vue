@@ -13,10 +13,12 @@ const judul: Record<string, string> = {
   gis: 'GIS & Layer Tambang',
 };
 
+// `status` tidak ada di sini: ia hanya berpindah lewat alur tinjauan,
+// tidak pernah dipilih dari formulir.
 const record = useForm<any>({
   company_id: '', tanggal: new Date().toISOString().slice(0, 10), shift: 'siang', pit: '', area: '', material: 'Batubara',
   produksi_ton: 0, overburden_bcm: 0, jarak_angkut_km: 0, jumlah_truk: 0, jumlah_excavator: 0,
-  jam_operasi: 0, jam_delay: 0, status: 'draft', catatan: '',
+  jam_operasi: 0, jam_delay: 0, catatan: '',
 });
 const target = useForm<any>({ company_id: '', tahun: new Date().getFullYear(), bulan: new Date().getMonth() + 1, target_produksi_ton: 0, target_overburden_bcm: 0, target_strip_ratio: '', target_jarak_km: '', catatan: '' });
 const layer = useForm<any>({ company_id: '', nama: '', tipe: 'area_kerja', geojson: '{\n  "type": "FeatureCollection",\n  "features": []\n}', warna: '#84cc16', status: 'draft', catatan: '' });
@@ -50,12 +52,50 @@ function simpanTarget() {
 function simpanLayer() {
   layer.post(tautan.value.layerSimpan, { preserveScroll: true, onSuccess: () => layer.reset('nama', 'catatan') });
 }
+/** Menyisipkan id ke tautan bertanda __ID__ yang dikirim controller. */
+const untuk = (pola: string | undefined, id: number | string) => String(pola || '').replace('__ID__', String(id));
+
 function hapusRecord(item: any) {
-  if (window.confirm(`Hapus record ${item.tanggalLabel}?`)) router.delete(`${tautan.value.recordHapus}/${item.id}`, { preserveScroll: true });
+  if (window.confirm(`Hapus record ${item.tanggalLabel}?`)) router.delete(untuk(tautan.value.recordHapus, item.id), { preserveScroll: true });
 }
 function hapusLayer(item: any) {
-  if (window.confirm(`Hapus layer ${item.nama}?`)) router.delete(`${tautan.value.layerHapus}/${item.id}`, { preserveScroll: true });
+  if (window.confirm(`Hapus layer ${item.nama}?`)) router.delete(untuk(tautan.value.layerHapus, item.id), { preserveScroll: true });
 }
+
+/* ---------- alur tinjauan ---------- */
+
+const sibuk = reactive<Record<number, boolean>>({});
+
+function ajukan(item: any) {
+  sibuk[item.id] = true;
+  router.post(untuk(tautan.value.recordAjukan, item.id), {}, {
+    preserveScroll: true, onFinish: () => { sibuk[item.id] = false; },
+  });
+}
+
+function setujui(item: any) {
+  if (!window.confirm(`Setujui data ${item.tanggalLabel} shift ${item.shift}? Setelah disetujui, data tidak dapat diubah lagi.`)) return;
+  sibuk[item.id] = true;
+  router.post(untuk(tautan.value.recordSetujui, item.id), {}, {
+    preserveScroll: true, onFinish: () => { sibuk[item.id] = false; },
+  });
+}
+
+function tolak(item: any) {
+  const alasan = window.prompt(`Alasan penolakan data ${item.tanggalLabel} shift ${item.shift}:`);
+  if (alasan === null) return;
+  sibuk[item.id] = true;
+  router.post(untuk(tautan.value.recordTolak, item.id), { alasan_tolak: alasan }, {
+    preserveScroll: true, onFinish: () => { sibuk[item.id] = false; },
+  });
+}
+
+const warnaStatus: Record<string, string> = {
+  draf: 'bg-stone-100 text-stone-600',
+  diajukan: 'bg-amber-100 text-amber-700',
+  disetujui: 'bg-emerald-100 text-emerald-700',
+  ditolak: 'bg-red-100 text-red-700',
+};
 </script>
 
 <template>
@@ -75,16 +115,126 @@ function hapusLayer(item: any) {
     </section>
 
     <template v-if="props.mode === 'dashboard'">
+      <!--
+        Ramalan dan kelengkapan diletakkan di atas seluruh angka lain.
+        Capaian yang sama berarti dua hal berlawanan menurut tanggalnya,
+        dan capaian rendah tidak membedakan produksi yang memang kurang
+        dari laporan yang belum masuk — keduanya perlu terbaca lebih
+        dulu, sebelum angka di bawahnya ditafsirkan.
+      -->
+      <section class="grid gap-5 lg:grid-cols-2">
+        <div class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 class="font-bold text-[14px]">Proyeksi akhir periode</h3>
+              <p class="text-[11px] text-stone-400 mt-1">Bila laju {{ angka(props.ramalan?.laju) }} ton/hari diteruskan.</p>
+            </div>
+            <span class="rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wide" :class="{
+              'bg-emerald-100 text-emerald-700': props.ramalan?.status === 'aman',
+              'bg-amber-100 text-amber-700': props.ramalan?.status === 'berisiko',
+              'bg-red-100 text-red-700': props.ramalan?.status === 'meleset',
+              'bg-stone-100 text-stone-500': ['tanpa-target','belum-mulai'].includes(props.ramalan?.status),
+            }">{{ label(String(props.ramalan?.status || '-')) }}</span>
+          </div>
+
+          <div class="mt-4 flex items-end gap-2">
+            <b class="text-3xl font-extrabold tracking-tight text-stone-800">{{ angka(props.ramalan?.proyeksi) }}</b>
+            <span class="text-[12px] text-stone-400 pb-1">ton · {{ persen(props.ramalan?.proyeksiPersen) }} dari target</span>
+          </div>
+
+          <div class="mt-3 h-2 rounded-full bg-stone-100 overflow-hidden">
+            <div class="h-full rounded-full transition-all" :class="props.ramalan?.status === 'meleset' ? 'bg-red-400' : props.ramalan?.status === 'berisiko' ? 'bg-amber-400' : 'bg-cam-lime'"
+                 :style="{ width: `${Math.max(2, Math.min(100, Number(props.ramalan?.proyeksiPersen || 0)))}%` }"></div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-3 mt-5 text-center">
+            <div class="rounded-xl bg-stone-50 p-3">
+              <small class="block text-[10px] text-stone-400">Hari tersisa</small>
+              <b class="text-[13px]">{{ props.ramalan?.hariTersisa ?? '-' }}</b>
+            </div>
+            <div class="rounded-xl bg-stone-50 p-3">
+              <small class="block text-[10px] text-stone-400">Kekurangan</small>
+              <b class="text-[13px]">{{ angka(props.ramalan?.kekurangan) }} ton</b>
+            </div>
+            <div class="rounded-xl bg-stone-50 p-3">
+              <small class="block text-[10px] text-stone-400">Laju perlu</small>
+              <b class="text-[13px]">{{ angka(props.ramalan?.lajuDibutuhkan) }}/hari</b>
+            </div>
+          </div>
+
+          <p v-if="Number(props.ramalan?.pengaliDibutuhkan) > 1" class="mt-3 rounded-xl bg-amber-50 text-amber-800 p-3 text-[11px]">
+            Sisa periode perlu berjalan <b>{{ angka(props.ramalan?.pengaliDibutuhkan, 2) }}×</b> lebih cepat daripada rata-rata sejauh ini.
+          </p>
+        </div>
+
+        <div class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 class="font-bold text-[14px]">Kelengkapan laporan shift</h3>
+              <p class="text-[11px] text-stone-400 mt-1">Selama belum lengkap, angka di halaman ini belum mewakili periode.</p>
+            </div>
+            <b class="text-2xl font-extrabold" :class="Number(props.kelengkapan?.persen) >= 90 ? 'text-emerald-600' : 'text-amber-600'">{{ persen(props.kelengkapan?.persen) }}</b>
+          </div>
+
+          <div class="mt-4 h-2 rounded-full bg-stone-100 overflow-hidden">
+            <div class="h-full rounded-full bg-cam-lime transition-all" :style="{ width: `${Math.max(0, Math.min(100, Number(props.kelengkapan?.persen || 0)))}%` }"></div>
+          </div>
+
+          <!-- Dua celah dipisahkan: tagihannya beralamat berbeda. -->
+          <div class="grid grid-cols-2 gap-3 mt-5">
+            <div class="rounded-xl border border-stone-100 p-3">
+              <small class="block text-[10px] text-stone-400">Belum dilaporkan</small>
+              <b class="text-[15px]" :class="Number(props.kelengkapan?.belumDilaporkan) ? 'text-red-600' : 'text-stone-700'">{{ props.kelengkapan?.belumDilaporkan ?? 0 }}</b>
+              <small class="block text-[10px] text-stone-400 mt-1">shift · tagih ke pengawas lapangan</small>
+            </div>
+            <div class="rounded-xl border border-stone-100 p-3">
+              <small class="block text-[10px] text-stone-400">Menunggu tinjauan</small>
+              <b class="text-[15px]" :class="Number(props.kelengkapan?.menungguTinjauan) ? 'text-amber-600' : 'text-stone-700'">{{ props.kelengkapan?.menungguTinjauan ?? 0 }}</b>
+              <small class="block text-[10px] text-stone-400 mt-1">shift · tagih ke Kepala Teknik Tambang</small>
+            </div>
+          </div>
+
+          <div v-if="(props.kelengkapan?.bolong || []).length" class="mt-4">
+            <small class="block text-[10px] font-bold uppercase tracking-wide text-stone-400 mb-2">Shift yang bolong</small>
+            <div class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+              <span v-for="b in props.kelengkapan.bolong" :key="`${b.tanggal}-${b.shift}`"
+                    class="rounded-md bg-red-50 text-red-700 px-2 py-1 text-[10px] font-medium">
+                {{ tanggal(b.tanggal) }} · {{ label(b.shift) }}
+              </span>
+            </div>
+          </div>
+
+          <p v-if="props.fuelPerTonBeda !== null && props.fuelPerTonBeda !== undefined" class="mt-4 rounded-xl p-3 text-[11px]"
+             :class="Number(props.fuelPerTonBeda) > 10 ? 'bg-amber-50 text-amber-800' : 'bg-stone-50 text-stone-600'">
+            Bahan bakar per ton {{ Number(props.fuelPerTonBeda) >= 0 ? 'naik' : 'turun' }}
+            <b>{{ angka(Math.abs(Number(props.fuelPerTonBeda)), 1) }}%</b> terhadap periode sebelumnya.
+          </p>
+        </div>
+      </section>
+
       <section class="grid gap-5 xl:grid-cols-[1.15fr_.85fr]">
         <div class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden"><div class="px-5 py-4 border-b border-stone-100 flex justify-between"><div><h3 class="font-bold text-[14px]">Kinerja per Pit / Area</h3><p class="text-[11px] text-stone-400">Periode {{ tanggal(props.dari) }} – {{ tanggal(props.sampai) }}</p></div><span class="text-[11px] text-stone-400">{{ props.ringkas?.jumlah_record || 0 }} record</span></div><div class="overflow-x-auto"><table class="min-w-full text-left text-[12px]"><thead><tr class="border-b border-stone-100 text-stone-400"><th class="px-5 py-3">Pit / Area</th><th class="px-5 py-3">Produksi</th><th class="px-5 py-3">OB</th><th class="px-5 py-3">Strip Ratio</th><th class="px-5 py-3">Delay</th></tr></thead><tbody><tr v-for="item in props.perPit || []" :key="item.nama" class="border-b border-stone-50"><td class="px-5 py-3 font-semibold">{{ item.nama }}</td><td class="px-5 py-3">{{ angka(item.produksi) }} ton</td><td class="px-5 py-3">{{ angka(item.ob) }} BCM</td><td class="px-5 py-3">{{ angka(item.strip_ratio, 2) }}</td><td class="px-5 py-3" :class="item.delay_persen > 15 ? 'text-red-600 font-bold' : ''">{{ persen(item.delay_persen) }}</td></tr><tr v-if="!(props.perPit || []).length"><td colspan="5" class="px-5 py-10 text-center text-stone-400">Belum ada input operasi pada periode ini.</td></tr></tbody></table></div></div>
-        <div class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><h3 class="font-bold text-[14px]">Alert & keputusan</h3><div class="mt-4 space-y-3"><div v-for="item in props.alerts || []" :key="item.judul" class="rounded-xl border p-3" :class="item.level === 'tinggi' ? 'border-red-100 bg-red-50' : 'border-amber-100 bg-amber-50'"><b class="text-[12px]" :class="item.level === 'tinggi' ? 'text-red-700' : 'text-amber-700'">{{ item.judul }}</b><p class="text-[11px] text-stone-600 mt-1">{{ item.ket }}</p></div><p v-if="!(props.alerts || []).length" class="rounded-xl bg-emerald-50 text-emerald-700 p-4 text-[12px]">Tidak ada alert kritis pada periode ini.</p></div><div class="grid grid-cols-2 gap-3 mt-5"><div class="rounded-xl bg-stone-50 p-3"><small class="block text-[10px] text-stone-400">Target produksi</small><b>{{ angka(props.target?.produksi) }} ton</b></div><div class="rounded-xl bg-stone-50 p-3"><small class="block text-[10px] text-stone-400">Layer GIS aktif</small><b>{{ angka(props.ringkas?.layer_aktif) }}</b></div></div></div>
+        <div class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><h3 class="font-bold text-[14px]">Alert & keputusan</h3><div class="mt-4 space-y-3"><div v-for="item in props.alerts || []" :key="item.kode" class="rounded-xl border p-3" :class="item.level === 'tinggi' ? 'border-red-100 bg-red-50' : 'border-amber-100 bg-amber-50'"><b class="text-[12px]" :class="item.level === 'tinggi' ? 'text-red-700' : 'text-amber-700'">{{ item.judul }}</b><p class="text-[11px] text-stone-600 mt-1">{{ item.ket }}</p><p v-if="item.saran" class="text-[11px] text-stone-700 mt-2 pt-2 border-t border-black/5"><span class="font-bold">Tindakan: </span>{{ item.saran }}</p></div><p v-if="!(props.alerts || []).length" class="rounded-xl bg-emerald-50 text-emerald-700 p-4 text-[12px]">Tidak ada alert kritis pada periode ini.</p></div><div class="grid grid-cols-2 gap-3 mt-5"><div class="rounded-xl bg-stone-50 p-3"><small class="block text-[10px] text-stone-400">Target produksi</small><b>{{ angka(props.target?.produksi) }} ton</b></div><div class="rounded-xl bg-stone-50 p-3"><small class="block text-[10px] text-stone-400">Layer GIS aktif</small><b>{{ angka(props.ringkas?.layer_aktif) }}</b></div></div></div>
       </section>
       <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><div class="flex justify-between items-center"><div><h3 class="font-bold text-[14px]">Trend Produksi Harian</h3><p class="text-[11px] text-stone-400">Visual sederhana dari input shift; detail dapat diekspor pada tahap berikutnya.</p></div><Link :href="tautan.data" class="text-[11px] font-bold text-cam-lime-deep">Tambah data shift</Link></div><div class="flex items-end gap-2 h-40 mt-5 overflow-x-auto"><div v-for="item in props.tren || []" :key="item.tanggal" class="min-w-[34px] flex flex-col items-center justify-end h-full"><span class="text-[9px] text-stone-400 mb-1">{{ angka(item.produksi / 1000, 1) }}k</span><div class="w-7 rounded-t-md bg-cam-lime" :style="{height:`${Math.max(5, Math.min(100, (item.produksi / Math.max(1, props.ringkas?.produksi)) * 100))}%`}"></div><small class="text-[9px] text-stone-400 mt-1">{{ new Date(item.tanggal).getDate() }}</small></div><p v-if="!(props.tren || []).length" class="m-auto text-[12px] text-stone-400">Belum ada trend.</p></div></section>
     </template>
 
     <template v-if="props.mode === 'data'">
-      <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><h3 class="font-bold text-[14px]">Input laporan shift</h3><p class="text-[11px] text-stone-400 mt-1">Isi data aktual dari pit, fleet, dan laporan pengawas shift.</p><form class="grid gap-3 md:grid-cols-4 mt-4" @submit.prevent="simpanRecord"><select v-model="record.company_id" class="rounded-lg border-stone-200 text-[12px]"><option value="">Perusahaan umum</option><option v-for="item in props.companies || []" :key="item.id" :value="item.id">{{ item.name }}</option></select><input v-model="record.tanggal" required type="date" class="rounded-lg border-stone-200 text-[12px]"><select v-model="record.shift" class="rounded-lg border-stone-200 text-[12px]"><option v-for="item in props.opsi?.shift || []" :key="item" :value="item">Shift {{ label(item) }}</option></select><input v-model="record.material" required placeholder="Material" class="rounded-lg border-stone-200 text-[12px]"><input v-model="record.pit" placeholder="Pit" class="rounded-lg border-stone-200 text-[12px]"><input v-model="record.area" placeholder="Area" class="rounded-lg border-stone-200 text-[12px]"><input v-model.number="record.produksi_ton" required type="number" step="any" min="0" placeholder="Produksi ton" class="rounded-lg border-stone-200 text-[12px]"><input v-model.number="record.overburden_bcm" required type="number" step="any" min="0" placeholder="OB BCM" class="rounded-lg border-stone-200 text-[12px]"><input v-model.number="record.jarak_angkut_km" required type="number" step="any" min="0" placeholder="Jarak angkut km" class="rounded-lg border-stone-200 text-[12px]"><input v-model.number="record.jumlah_truk" required type="number" min="0" placeholder="Jumlah truk" class="rounded-lg border-stone-200 text-[12px]"><input v-model.number="record.jumlah_excavator" required type="number" min="0" placeholder="Jumlah excavator" class="rounded-lg border-stone-200 text-[12px]"><input v-model.number="record.jam_operasi" required type="number" step="any" min="0" max="24" placeholder="Jam operasi" class="rounded-lg border-stone-200 text-[12px]"><input v-model.number="record.jam_delay" required type="number" step="any" min="0" max="24" placeholder="Jam delay" class="rounded-lg border-stone-200 text-[12px]"><select v-model="record.status" class="rounded-lg border-stone-200 text-[12px]"><option v-for="item in props.opsi?.statusRecord || []" :key="item" :value="item">{{ label(item) }}</option></select><textarea v-model="record.catatan" placeholder="Catatan penyebab delay / kendala lapangan" class="rounded-lg border-stone-200 text-[12px] md:col-span-2"></textarea><button :disabled="record.processing" class="eq-btn-utama md:col-span-4">{{ record.processing ? 'Menyimpan...' : 'Simpan laporan shift' }}</button></form><p v-if="record.errors.jam_delay" class="text-[11px] text-red-600 mt-2">{{ record.errors.jam_delay }}</p></section>
-      <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-x-auto"><div class="px-5 py-4 border-b border-stone-100"><h3 class="font-bold text-[14px]">Record operasi terbaru</h3></div><table class="min-w-full text-left text-[12px]"><thead><tr class="border-b border-stone-100 text-stone-400"><th class="px-5 py-3">Tanggal / Shift</th><th class="px-5 py-3">Pit / Material</th><th class="px-5 py-3">Produksi</th><th class="px-5 py-3">OB</th><th class="px-5 py-3">Operasi / Delay</th><th class="px-5 py-3">Status</th><th></th></tr></thead><tbody><tr v-for="item in props.records || []" :key="item.id" class="border-b border-stone-50"><td class="px-5 py-3 font-semibold">{{ item.tanggalLabel }}<small class="block text-[10px] text-stone-400">{{ label(item.shift) }}</small></td><td class="px-5 py-3">{{ item.pit || item.area || '-' }}<small class="block text-[10px] text-stone-400">{{ item.material }}</small></td><td class="px-5 py-3">{{ angka(item.produksi_ton) }} ton</td><td class="px-5 py-3">{{ angka(item.overburden_bcm) }} BCM</td><td class="px-5 py-3">{{ angka(item.jam_operasi,1) }} / {{ angka(item.jam_delay,1) }} jam</td><td class="px-5 py-3">{{ label(item.status) }}</td><td class="px-5 py-3 text-right"><button v-if="isAdmin" type="button" class="text-red-600 text-[11px]" @click="hapusRecord(item)">Hapus</button></td></tr><tr v-if="!(props.records || []).length"><td colspan="7" class="px-5 py-10 text-center text-stone-400">Belum ada record.</td></tr></tbody></table></section>
+      <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><h3 class="font-bold text-[14px]">Input laporan shift</h3><p class="text-[11px] text-stone-400 mt-1">Isi data aktual dari pit, fleet, dan laporan pengawas shift.</p><form class="grid gap-3 md:grid-cols-4 mt-4" @submit.prevent="simpanRecord"><select v-model="record.company_id" class="rounded-lg border-stone-200 text-[12px]"><option value="">Perusahaan umum</option><option v-for="item in props.companies || []" :key="item.id" :value="item.id">{{ item.name }}</option></select><input v-model="record.tanggal" required type="date" class="rounded-lg border-stone-200 text-[12px]"><select v-model="record.shift" class="rounded-lg border-stone-200 text-[12px]"><option v-for="item in props.opsi?.shift || []" :key="item" :value="item">Shift {{ label(item) }}</option></select><input v-model="record.material" required placeholder="Material" class="rounded-lg border-stone-200 text-[12px]"><input v-model="record.pit" placeholder="Pit" class="rounded-lg border-stone-200 text-[12px]"><input v-model="record.area" placeholder="Area" class="rounded-lg border-stone-200 text-[12px]"><input v-model.number="record.produksi_ton" required type="number" step="any" min="0" placeholder="Produksi ton" class="rounded-lg border-stone-200 text-[12px]"><input v-model.number="record.overburden_bcm" required type="number" step="any" min="0" placeholder="OB BCM" class="rounded-lg border-stone-200 text-[12px]"><input v-model.number="record.jarak_angkut_km" required type="number" step="any" min="0" placeholder="Jarak angkut km" class="rounded-lg border-stone-200 text-[12px]"><input v-model.number="record.jumlah_truk" required type="number" min="0" placeholder="Jumlah truk" class="rounded-lg border-stone-200 text-[12px]"><input v-model.number="record.jumlah_excavator" required type="number" min="0" placeholder="Jumlah excavator" class="rounded-lg border-stone-200 text-[12px]"><input v-model.number="record.jam_operasi" required type="number" step="any" min="0" max="24" placeholder="Jam operasi" class="rounded-lg border-stone-200 text-[12px]"><input v-model.number="record.jam_delay" required type="number" step="any" min="0" max="24" placeholder="Jam delay" class="rounded-lg border-stone-200 text-[12px]"><p class="md:col-span-2 self-center rounded-lg bg-stone-50 px-3 py-2 text-[11px] text-stone-500">Tersimpan sebagai <b>draf</b>. Ajukan dari tabel di bawah agar ditinjau Kepala Teknik Tambang.</p><textarea v-model="record.catatan" placeholder="Catatan penyebab delay / kendala lapangan" class="rounded-lg border-stone-200 text-[12px] md:col-span-2"></textarea><button :disabled="record.processing" class="eq-btn-utama md:col-span-4">{{ record.processing ? 'Menyimpan...' : 'Simpan laporan shift' }}</button></form><p v-if="record.errors.jam_delay" class="text-[11px] text-red-600 mt-2">{{ record.errors.jam_delay }}</p></section>
+      <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-x-auto"><div class="px-5 py-4 border-b border-stone-100"><h3 class="font-bold text-[14px]">Record operasi terbaru</h3></div><table class="min-w-full text-left text-[12px]"><thead><tr class="border-b border-stone-100 text-stone-400"><th class="px-5 py-3">Tanggal / Shift</th><th class="px-5 py-3">Pit / Material</th><th class="px-5 py-3">Produksi</th><th class="px-5 py-3">OB</th><th class="px-5 py-3">Operasi / Delay</th><th class="px-5 py-3">Status</th><th></th></tr></thead><tbody><tr v-for="item in props.records || []" :key="item.id" class="border-b border-stone-50"><td class="px-5 py-3 font-semibold">{{ item.tanggalLabel }}<small class="block text-[10px] text-stone-400">{{ label(item.shift) }}</small></td><td class="px-5 py-3">{{ item.pit || item.area || '-' }}<small class="block text-[10px] text-stone-400">{{ item.material }}</small></td><td class="px-5 py-3">{{ angka(item.produksi_ton) }} ton</td><td class="px-5 py-3">{{ angka(item.overburden_bcm) }} BCM</td><td class="px-5 py-3">{{ angka(item.jam_operasi,1) }} / {{ angka(item.jam_delay,1) }} jam</td><td class="px-5 py-3">
+    <span class="rounded-full px-2 py-1 text-[10px] font-bold" :class="warnaStatus[item.status] || 'bg-stone-100 text-stone-600'">{{ item.statusLabel || label(item.status) }}</span>
+    <small v-if="item.alur?.pengaju" class="block text-[10px] text-stone-400 mt-1">Diajukan {{ item.alur.pengaju }}</small>
+    <small v-if="item.alur?.peninjau" class="block text-[10px] text-stone-400">Ditinjau {{ item.alur.peninjau }}</small>
+    <small v-if="item.alur?.alasanTolak" class="block text-[10px] text-red-600 mt-1">{{ item.alur.alasanTolak }}</small>
+  </td>
+  <td class="px-5 py-3 text-right whitespace-nowrap">
+    <button v-if="item.alur?.dapatDiajukan" :disabled="sibuk[item.id]" type="button" class="text-[11px] font-bold text-cam-lime-deep disabled:opacity-40" @click="ajukan(item)">Ajukan</button>
+    <template v-if="item.alur?.dapatDitinjau">
+      <button :disabled="sibuk[item.id]" type="button" class="text-[11px] font-bold text-emerald-600 disabled:opacity-40" @click="setujui(item)">Setujui</button>
+      <button :disabled="sibuk[item.id]" type="button" class="ml-3 text-[11px] font-bold text-amber-600 disabled:opacity-40" @click="tolak(item)">Tolak</button>
+    </template>
+    <button v-if="isAdmin && item.status !== 'disetujui'" type="button" class="ml-3 text-red-600 text-[11px]" @click="hapusRecord(item)">Hapus</button>
+  </td></tr><tr v-if="!(props.records || []).length"><td colspan="7" class="px-5 py-10 text-center text-stone-400">Belum ada record.</td></tr></tbody></table></section>
     </template>
 
     <template v-if="props.mode === 'target'">

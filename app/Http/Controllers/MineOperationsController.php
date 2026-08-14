@@ -248,10 +248,28 @@ class MineOperationsController extends Controller
             'ramalan' => $ramalan->toArray(), 'kelengkapan' => $kelengkapan->toArray(),
             'fuelPerTonBeda' => $fuelBeda,
             'opsi' => ['shift' => self::SHIFT, 'statusRecord' => Alur::LABEL, 'tipeLayer' => self::TIPE_LAYER, 'statusLayer' => self::STATUS_LAYER],
+            /*
+             * Tautan yang memerlukan id memakai penanda __ID__, bukan angka
+             * 0 yang lalu disambung di sisi browser. Cara lama menghasilkan
+             * /records/0/5 — id-nya menempel di belakang nol, bukan
+             * menggantikannya — sehingga tombol hapus tidak pernah bekerja
+             * sejak awal. Kegagalannya luput dari pengujian karena tes
+             * menembak rute backend langsung dan tidak pernah memakai
+             * tautan yang benar-benar dibangun halaman.
+             */
             'tautan' => [
-                'dashboard' => route('operasi.index'), 'data' => route('operasi.data'), 'target' => route('operasi.target'), 'gis' => route('operasi.gis'),
-                'recordSimpan' => route('operasi.record.simpan'), 'recordHapus' => route('operasi.record.hapus', ['record' => 0]),
-                'targetSimpan' => route('operasi.target.simpan'), 'layerSimpan' => route('operasi.layer.simpan'), 'layerHapus' => route('operasi.layer.hapus', ['layer' => 0]),
+                'dashboard' => route('operasi.index'), 'data' => route('operasi.data'),
+                'target' => route('operasi.target'), 'gis' => route('operasi.gis'),
+
+                'recordSimpan'  => route('operasi.record.simpan'),
+                'recordHapus'   => route('operasi.record.hapus',   ['record' => '__ID__']),
+                'recordAjukan'  => route('operasi.record.ajukan',  ['record' => '__ID__']),
+                'recordSetujui' => route('operasi.record.setujui', ['record' => '__ID__']),
+                'recordTolak'   => route('operasi.record.tolak',   ['record' => '__ID__']),
+
+                'targetSimpan' => route('operasi.target.simpan'),
+                'layerSimpan'  => route('operasi.layer.simpan'),
+                'layerHapus'   => route('operasi.layer.hapus', ['layer' => '__ID__']),
             ],
         ]);
     }
