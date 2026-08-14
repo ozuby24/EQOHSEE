@@ -88,6 +88,11 @@ final class KopDokumen
                 'judul' => 'LAPORAN PENGELOLAAN AIR DAN PENIRISAN TAMBANG',
                 'kode'  => 'OHSE-V.061',
             ],
+            'laporan-geoteknik' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN PEMANTAUAN KESTABILAN LERENG',
+                'kode'  => 'OHSE-V.071',
+            ],
             'laporan-konservasi' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN KONSERVASI MINERAL DAN BATUBARA',

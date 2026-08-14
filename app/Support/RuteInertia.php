@@ -145,6 +145,12 @@ final class RuteInertia
         'air.kolam',
         'air.cetak',
 
+        /* Kestabilan Lereng */
+        'geoteknik.index',
+        'geoteknik.bacaan',
+        'geoteknik.lereng',
+        'geoteknik.cetak',
+
         /* Mining Engineering Hub */
         'meh.index',
         'meh.monitor',

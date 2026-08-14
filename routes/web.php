@@ -7,7 +7,7 @@ use App\Http\Controllers\{
 };
 use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiTemuanController, HazardController,
     HazardExportController, InspectionController, InspectionTemplateController,
-    EnergyController, EngineeringController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
+    EnergyController, EngineeringController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\{BantuanController, ChatController};
 use App\Http\Controllers\Admin\{CompanyController, SystemController, UserController};
@@ -281,6 +281,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::post('tindak',         [WaterController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
         Route::put('tindak/{tindak}', [WaterController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
+    });
+
+    /* ============ Pemantauan Kestabilan Lereng ============
+       Alat bantu keputusan, bukan pengganti penilaian geoteknik oleh
+       tenaga kompeten: yang dicatat pengamatan lapangan dan acuan dari
+       kajian yang sudah ada, bukan kesimpulan tentang kestabilannya. */
+    Route::prefix('geoteknik')->name('geoteknik.')->group(function () {
+        Route::get('/',       [GeotechnicalController::class, 'index'])->name('index');
+        Route::get('bacaan',  [GeotechnicalController::class, 'bacaan'])->name('bacaan');
+        Route::get('lereng',  [GeotechnicalController::class, 'lereng'])->name('lereng');
+        Route::get('cetak',   [GeotechnicalController::class, 'cetak'])->name('cetak');
+
+        Route::post('lereng',           [GeotechnicalController::class, 'simpanLereng'])->name('lereng.simpan');
+        Route::put('lereng/{lereng}',   [GeotechnicalController::class, 'ubahLereng'])->name('lereng.ubah');
+        Route::delete('lereng/{lereng}', [GeotechnicalController::class, 'hapusLereng'])->middleware('can:admin')->name('lereng.hapus');
+
+        Route::post('lereng/{lereng}/instrumen', [GeotechnicalController::class, 'simpanInstrumen'])->name('instrumen.simpan');
+        Route::put('instrumen/{instrumen}',      [GeotechnicalController::class, 'ubahInstrumen'])->name('instrumen.ubah');
+
+        Route::post('bacaan',             [GeotechnicalController::class, 'simpanBacaan'])->name('bacaan.simpan');
+        Route::delete('bacaan/{bacaan}',  [GeotechnicalController::class, 'hapusBacaan'])->middleware('can:admin')->name('bacaan.hapus');
+        Route::post('bacaan/{bacaan}/ajukan',  [GeotechnicalController::class, 'ajukan'])->name('ajukan');
+        Route::post('bacaan/{bacaan}/setujui', [GeotechnicalController::class, 'setujui'])->name('setujui');
+        Route::post('bacaan/{bacaan}/tolak',   [GeotechnicalController::class, 'tolak'])->name('tolak');
+
+        Route::post('tindak',         [GeotechnicalController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
+        Route::put('tindak/{tindak}', [GeotechnicalController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
     });
 
     /* ============ Pusat Pemeliharaan & Keandalan ============
