@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
+import Wordmark from '../Components/Wordmark.vue';
 </script>
 
 <template>
   <div class="min-h-screen bg-cam-bg text-cam-ink">
     <header class="brand-gradient text-white">
       <div class="max-w-3xl mx-auto px-5 py-5 flex items-center gap-3">
-        <Link href="/" class="inline-flex items-center gap-2.5">
-          <img src="/brand/eqohsee-mark-white.svg" alt="EQOHSEE" class="h-6 w-auto">
-          <span class="font-extrabold tracking-wide text-lg">E<span class="text-cam-orange">Q</span>OHSEE</span>
-        </Link>
+        <Link href="/"><Wordmark :tinggi="26" /></Link>
       </div>
     </header>
 

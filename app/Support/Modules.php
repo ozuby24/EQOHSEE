@@ -38,7 +38,7 @@ class Modules
 
             ['nama' => 'Keselamatan Operasi (KO)', 'status' => 'aktif', 'pilar' => 'engineering', 'rute' => 'ko.index',
              'ket'  => 'Kelayakan objek, jadwal perawatan, alat pengaman, kajian teknis, dan tenaga teknis bersertifikat.',
-             'ikon' => 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z'],
+             'ikon' => 'M2.5 18.2a1 1 0 0 0 1 1h17a1 1 0 0 0 1-1v-1.7a1 1 0 0 0-1-1h-17a1 1 0 0 0-1 1zM10 10.2V5.4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4.8M4.6 15.5v-3.3a5.6 5.6 0 0 1 5.4-5.6M14 6.6a5.6 5.6 0 0 1 5.4 5.6v3.3'],
 
             ['nama' => 'SMKP Audit', 'status' => 'aktif', 'pilar' => 'safety', 'rute' => 'smkp.index',
              'ket'  => 'Audit 7 elemen SMKP Minerba sesuai Kepdirjen 185.K/2019: penilaian per kriteria, temuan berjenjang, dan laporan siap cetak.',
@@ -57,17 +57,17 @@ class Modules
             ['nama' => 'Konservasi Minerba', 'status' => 'aktif', 'pilar' => 'environment',
              'rute' => 'konservasi.index',
              'ket'  => 'Pemantauan produksi, recovery, kehilangan material, dilusi, stockpile, mineral ikutan, dan tindak lanjut perbaikan.',
-             'ikon' => 'M12 3.5c3.9 0 7 3.1 7 7 0 5.2-7 10-7 10s-7-4.8-7-10c0-3.9 3.1-7 7-7Zm0 4.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6Z'],
+             'ikon' => 'M12.8 2.6a2 2 0 0 0-1.6 0L2.6 6.5a1 1 0 0 0 0 1.8l8.6 3.9a2 2 0 0 0 1.6 0l8.6-3.9a1 1 0 0 0 0-1.8ZM2 12.4a1 1 0 0 0 .6.9l8.6 3.9a2 2 0 0 0 1.6 0l8.6-3.9a1 1 0 0 0 .6-.9M2 17.2a1 1 0 0 0 .6.9l8.6 3.9a2 2 0 0 0 1.6 0l8.6-3.9a1 1 0 0 0 .6-.9'],
 
             ['nama' => 'Mining Engineering Hub', 'status' => 'aktif', 'pilar' => 'engineering',
              'rute' => 'meh.index',
              'ket'  => 'Dashboard engineering: produksi, energi, armada, pemeliharaan, KPI, dan alat hitung teknis.',
-             'ikon' => 'M9 3v18m6-18v18M3 9h18M3 15h18'],
+             'ikon' => 'M3.5 3.5h6.5v8H3.5zM14 3.5h6.5v5H14zM14 12.5h6.5v8H14zM3.5 16h6.5v4.5H3.5z'],
 
             ['nama' => 'Mine Operations & GIS', 'status' => 'aktif', 'pilar' => 'engineering',
              'rute' => 'operasi.index',
              'ket'  => 'Control Tower operasi: target dan realisasi produksi, OB, strip ratio, delay, ramalan akhir periode, serta peta dan luas area tambang.',
-             'ikon' => 'M3 12h18M12 3v18M5.5 7.5h13v9h-13z'],
+             'ikon' => 'm3 6.5 6-3 6 3 6-3v14l-6 3-6-3-6 3zM9 3.5v14M15 6.5v14'],
 
             ['nama' => 'Water & Dewatering', 'status' => 'aktif', 'pilar' => 'environment',
              'rute' => 'air.index',
@@ -77,7 +77,7 @@ class Modules
             ['nama' => 'Maintenance & Reliability', 'status' => 'aktif', 'pilar' => 'engineering',
              'rute' => 'maintenance.index',
              'ket'  => 'Perintah kerja, MTBF dan MTTR, ketersediaan armada, kepatuhan perawatan berkala, tunggakan pekerjaan, dan biaya per jam serta per ton.',
-             'ikon' => 'M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 1 5.4-5.4l-2.6 2.6 1.4 1.4 2.6-2.6a4 4 0 0 1-4.4-4.4Z'],
+             'ikon' => 'M14.6 6.3a1 1 0 0 0 0 1.4l1.7 1.7a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9l-3.8 3.8Z'],
 
             ['nama' => 'ISO & Dokumen', 'status' => 'aktif', 'pilar' => 'quality', 'rute' => 'dokumen.index',
              'ket'  => 'Register dokumen terkendali: nomor revisi, masa berlaku, riwayat perubahan, dan pengingat peninjauan berkala.',

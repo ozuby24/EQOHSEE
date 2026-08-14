@@ -106,7 +106,12 @@ function keluar() {
            :class="lacisTerbuka ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
 
       <a href="/dashboard" class="eq-merek">
-        <img src="/brand/eqohsee-mark.png" alt="" width="40" height="40">
+        <!--
+          Lambang vektor, bukan PNG 512×512 seberat 217 KB untuk kotak 40 px.
+          Ukurannya 36×40 mengikuti perbandingan asli berkasnya (178.62×200);
+          40×40 memaksanya menjadi persegi dan lambangnya ikut gepeng.
+        -->
+        <img src="/brand/eqohsee-mark-white.svg" alt="" width="36" height="40">
         <span>
           <strong>E<em>Q</em>OHSEE</strong>
           <small>Safe Today · Sustainable Tomorrow</small>

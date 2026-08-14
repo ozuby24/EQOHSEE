@@ -139,7 +139,7 @@
     <span class="eq-lapis" aria-hidden="true"></span>
 
     <a href="{{ url('/') }}" class="eq-brand">
-      <img src="{{ asset('brand/eqohsee-mark.png') }}" alt="EQOHSEE">
+      <img src="{{ \App\Support\Aset::v('brand/eqohsee-mark-white.svg') }}" alt="EQOHSEE">
       <span class="wm">E<b>Q</b>OHSEE</span>
     </a>
 

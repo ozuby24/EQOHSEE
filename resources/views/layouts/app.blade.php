@@ -77,7 +77,7 @@
          di bawah nama, bukan di sebelahnya — sebaris dua-duanya membuat
          nama kehilangan bobot, padahal itu yang harus terbaca lebih dulu. --}}
     <a href="{{ route('dashboard') }}" class="eq-merek">
-      <img src="{{ asset('brand/eqohsee-mark.png') }}" alt="" width="40" height="40">
+      <img src="{{ \App\Support\Aset::v('brand/eqohsee-mark-white.svg') }}" alt="" width="36" height="40">
       <span>
         <strong>E<em>Q</em>OHSEE</strong>
         <small>Safe Today · Sustainable Tomorrow</small>

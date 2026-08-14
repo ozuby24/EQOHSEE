@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
+import Wordmark from '../Components/Wordmark.vue';
 </script>
 
 <template>
@@ -8,10 +9,7 @@ import { Link } from '@inertiajs/vue3';
       <img src="/brand/tambang.jpg" alt="" aria-hidden="true" class="absolute inset-0 w-full h-full object-cover opacity-60">
       <div class="absolute inset-0 bg-[linear-gradient(180deg,rgba(11,17,23,.58),rgba(11,17,23,.18)_36%,rgba(11,17,23,.95))]"></div>
 
-      <Link href="/" class="relative z-10 inline-flex items-center gap-2.5 w-fit">
-        <img src="/brand/eqohsee-mark-white.svg" alt="EQOHSEE" class="h-7 w-auto">
-        <span class="font-extrabold tracking-wide text-lg">E<span class="text-[#FF9800]">Q</span>OHSEE</span>
-      </Link>
+      <Link href="/" class="relative z-10 w-fit"><Wordmark :tinggi="28" /></Link>
 
       <div class="relative z-10 max-w-xl mt-12 lg:mt-0">
         <p class="text-[10px] font-bold uppercase tracking-[.22em] text-white/50 mb-4">Delapan Aspek · Satu Sistem</p>

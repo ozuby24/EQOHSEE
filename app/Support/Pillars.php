@@ -42,7 +42,7 @@ class Pillars
                 'nama'  => 'Quality',
                 'ket'   => 'Mutu di setiap pekerjaan',
                 'deep'  => '#1B7FA8', 'warna' => '#29ABE2', 'light' => '#5FC5EE',
-                'ikon'  => 'droplet',
+                'ikon'  => 'gem',
                 'ringkas' => 'Menjaga hasil kerja tetap konsisten terhadap standar — lewat prosedur yang terkendali, kompetensi terverifikasi, dan pemeriksaan berkala.',
                 'cakupan' => [
                     ['Kendali dokumen & revisi', 'Satu versi berlaku, riwayat perubahan terlacak.'],
@@ -70,7 +70,7 @@ class Pillars
                 'nama'  => 'Hygiene',
                 'ket'   => 'Kendalikan pajanan di tempat kerja',
                 'deep'  => '#B85C00', 'warna' => '#F57C00', 'light' => '#FF9800',
-                'ikon'  => 'health',
+                'ikon'  => 'droplet',
                 'ringkas' => 'Higiene industri: mengukur pajanan di lingkungan kerja lalu menekannya pada sumbernya, sebelum tubuh pekerja yang menanggung.',
                 'cakupan' => [
                     ['Pengukuran pajanan',      'Debu respirabel, bising, getaran, iklim kerja, pencahayaan, dan bahan kimia.'],
@@ -128,7 +128,7 @@ class Pillars
                 'nama'  => 'Konservasi Minerba',
                 'ket'   => 'Cadangan dipakai seoptimalnya',
                 'deep'  => '#1B7FA8', 'warna' => '#29ABE2', 'light' => '#5FC5EE',
-                'ikon'  => 'gem',
+                'ikon'  => 'layers',
                 'ringkas' => 'Memastikan mineral dan batubara terambil seoptimal mungkin dan tidak terbuang percuma — termasuk yang berkadar rendah dan mineral ikutannya.',
                 'cakupan' => [
                     ['Recovery penambangan',   'Perbandingan cadangan tergali terhadap cadangan tersedia.'],
