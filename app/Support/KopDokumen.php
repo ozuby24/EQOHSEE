@@ -83,6 +83,11 @@ final class KopDokumen
                 'judul' => 'LAPORAN KEANDALAN DAN PEMELIHARAAN ARMADA',
                 'kode'  => 'OHSE-V.051',
             ],
+            'laporan-air' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN PENGELOLAAN AIR DAN PENIRISAN TAMBANG',
+                'kode'  => 'OHSE-V.061',
+            ],
             'laporan-konservasi' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN KONSERVASI MINERAL DAN BATUBARA',

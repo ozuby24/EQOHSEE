@@ -139,6 +139,12 @@ final class RuteInertia
         'maintenance.armada',
         'maintenance.cetak',
 
+        /* Air & Penirisan */
+        'air.index',
+        'air.catatan',
+        'air.kolam',
+        'air.cetak',
+
         /* Mining Engineering Hub */
         'meh.index',
         'meh.monitor',

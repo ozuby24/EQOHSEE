@@ -69,6 +69,11 @@ class Modules
              'ket'  => 'Control Tower operasi: target dan realisasi produksi, OB, strip ratio, delay, ramalan akhir periode, serta peta dan luas area tambang.',
              'ikon' => 'M3 12h18M12 3v18M5.5 7.5h13v9h-13z'],
 
+            ['nama' => 'Water & Dewatering', 'status' => 'aktif', 'pilar' => 'environment',
+             'rute' => 'air.index',
+             'ket'  => 'Curah hujan, level kolam, debit dan pompa, kualitas air, serta perkiraan luapan dalam milimeter hujan yang masih sanggup ditahan.',
+             'ikon' => 'M12 2.7s5.5 6 5.5 9.8a5.5 5.5 0 1 1-11 0C6.5 8.7 12 2.7 12 2.7Z'],
+
             ['nama' => 'Maintenance & Reliability', 'status' => 'aktif', 'pilar' => 'engineering',
              'rute' => 'maintenance.index',
              'ket'  => 'Perintah kerja, MTBF dan MTTR, ketersediaan armada, kepatuhan perawatan berkala, tunggakan pekerjaan, dan biaya per jam serta per ton.',

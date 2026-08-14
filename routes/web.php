@@ -7,7 +7,7 @@ use App\Http\Controllers\{
 };
 use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiTemuanController, HazardController,
     HazardExportController, InspectionController, InspectionTemplateController,
-    EnergyController, EngineeringController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
+    EnergyController, EngineeringController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\{BantuanController, ChatController};
 use App\Http\Controllers\Admin\{CompanyController, SystemController, UserController};
@@ -257,6 +257,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('data-induk',   [EnergyController::class,'master'])->name('master');
         Route::post('data-induk',  [EnergyController::class,'simpanUnit'])->name('master.simpan');
         Route::delete('data-induk/{unit}', [EnergyController::class,'hapusUnit'])->name('master.hapus');
+    });
+
+    /* ============ Pengelolaan Air & Penirisan ============
+       Pompanya memakai registri Keselamatan Operasi; yang didaftarkan
+       di sini adalah kolam beserta daerah tangkapan airnya. */
+    Route::prefix('penirisan')->name('air.')->group(function () {
+        Route::get('/',        [WaterController::class, 'index'])->name('index');
+        Route::get('catatan',  [WaterController::class, 'catatan'])->name('catatan');
+        Route::get('kolam',    [WaterController::class, 'kolam'])->name('kolam');
+        Route::get('cetak',    [WaterController::class, 'cetak'])->name('cetak');
+
+        Route::post('kolam',            [WaterController::class, 'simpanKolam'])->name('kolam.simpan');
+        Route::delete('kolam/{sump}',   [WaterController::class, 'hapusKolam'])->middleware('can:admin')->name('kolam.hapus');
+        Route::post('kolam/{sump}/pompa', [WaterController::class, 'simpanPompa'])->name('pompa.simpan');
+        Route::put('pompa/{pompa}',     [WaterController::class, 'ubahPompa'])->name('pompa.ubah');
+
+        Route::post('catatan',              [WaterController::class, 'simpanCatatan'])->name('catatan.simpan');
+        Route::delete('catatan/{catatan}',  [WaterController::class, 'hapusCatatan'])->middleware('can:admin')->name('catatan.hapus');
+        Route::post('catatan/{catatan}/ajukan',  [WaterController::class, 'ajukan'])->name('ajukan');
+        Route::post('catatan/{catatan}/setujui', [WaterController::class, 'setujui'])->name('setujui');
+        Route::post('catatan/{catatan}/tolak',   [WaterController::class, 'tolak'])->name('tolak');
+
+        Route::post('tindak',         [WaterController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
+        Route::put('tindak/{tindak}', [WaterController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
     });
 
     /* ============ Pusat Pemeliharaan & Keandalan ============
