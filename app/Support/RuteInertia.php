@@ -133,6 +133,11 @@ final class RuteInertia
         'operasi.gis',
         'operasi.cetak',
 
+        /* Pemeliharaan & Keandalan */
+        'maintenance.index',
+        'maintenance.order',
+        'maintenance.armada',
+
         /* Mining Engineering Hub */
         'meh.index',
         'meh.monitor',

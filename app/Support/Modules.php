@@ -66,8 +66,13 @@ class Modules
 
             ['nama' => 'Mine Operations & GIS', 'status' => 'aktif', 'pilar' => 'engineering',
              'rute' => 'operasi.index',
-             'ket'  => 'Control Tower operasi: target dan realisasi produksi, OB, strip ratio, delay, serta registry layer GIS tambang.',
+             'ket'  => 'Control Tower operasi: target dan realisasi produksi, OB, strip ratio, delay, ramalan akhir periode, serta peta dan luas area tambang.',
              'ikon' => 'M3 12h18M12 3v18M5.5 7.5h13v9h-13z'],
+
+            ['nama' => 'Maintenance & Reliability', 'status' => 'aktif', 'pilar' => 'engineering',
+             'rute' => 'maintenance.index',
+             'ket'  => 'Perintah kerja, MTBF dan MTTR, ketersediaan armada, kepatuhan perawatan berkala, tunggakan pekerjaan, dan biaya per jam serta per ton.',
+             'ikon' => 'M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 1 5.4-5.4l-2.6 2.6 1.4 1.4 2.6-2.6a4 4 0 0 1-4.4-4.4Z'],
 
             ['nama' => 'ISO & Dokumen', 'status' => 'aktif', 'pilar' => 'quality', 'rute' => 'dokumen.index',
              'ket'  => 'Register dokumen terkendali: nomor revisi, masa berlaku, riwayat perubahan, dan pengingat peninjauan berkala.',

@@ -7,7 +7,7 @@ use App\Http\Controllers\{
 };
 use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiTemuanController, HazardController,
     HazardExportController, InspectionController, InspectionTemplateController,
-    EnergyController, EngineeringController, GudangController, IsoController, KoController, KonservasiController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
+    EnergyController, EngineeringController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\{BantuanController, ChatController};
 use App\Http\Controllers\Admin\{CompanyController, SystemController, UserController};
@@ -257,6 +257,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('data-induk',   [EnergyController::class,'master'])->name('master');
         Route::post('data-induk',  [EnergyController::class,'simpanUnit'])->name('master.simpan');
         Route::delete('data-induk/{unit}', [EnergyController::class,'hapusUnit'])->name('master.hapus');
+    });
+
+    /* ============ Pusat Pemeliharaan & Keandalan ============
+       Alatnya memakai registri Keselamatan Operasi; yang ditambahkan di
+       sini adalah catatan gangguan dan perbaikannya. */
+    Route::prefix('pemeliharaan')->name('maintenance.')->group(function () {
+        Route::get('/',       [MaintenanceController::class, 'index'])->name('index');
+        Route::get('order',   [MaintenanceController::class, 'order'])->name('order');
+        Route::get('armada',  [MaintenanceController::class, 'armada'])->name('armada');
+
+        Route::post('order',                 [MaintenanceController::class, 'simpan'])->name('simpan');
+        Route::put('order/{order}/status',   [MaintenanceController::class, 'ubahStatus'])->name('status');
+        Route::post('order/{order}/part',    [MaintenanceController::class, 'simpanPart'])->name('part');
+        Route::delete('order/{order}',       [MaintenanceController::class, 'hapus'])->middleware('can:admin')->name('hapus');
     });
 
     /* ================= WEBSITE #8 - Konservasi Minerba ================= */
