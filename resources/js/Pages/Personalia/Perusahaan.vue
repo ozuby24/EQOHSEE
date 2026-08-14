@@ -188,7 +188,7 @@ function hapusLogo() {
           <span v-for="w in palet" :key="w.nama" v-show="w.hex"
                 class="inline-flex items-center gap-2 text-[11.5px] text-stone-600">
             <i class="w-5 h-5 rounded-md border border-stone-200 inline-block"
-               :style="{ background: w.hex }"></i>{{ w.nama }} {{ w.hex }}
+               :style="{ background: w.hex ?? undefined }"></i>{{ w.nama }} {{ w.hex }}
           </span>
         </div>
       </div>

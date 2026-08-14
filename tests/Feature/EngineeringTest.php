@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
+use App\Models\{EnergyEquipment, EnergyFuelLog, EnergyProduction, User};
 use App\Support\Engineering as E;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -23,7 +23,7 @@ class EngineeringTest extends TestCase
         $this->actingAs(User::factory()->create());
     }
 
-    private const HALAMAN = ['index', 'energy', 'fleet', 'equipment',
+    private const HALAMAN = ['index', 'monitor', 'energy', 'fleet', 'equipment',
                              'maintenance', 'hse', 'kpi', 'tools', 'regulations'];
 
     /* ---------- ketersediaan ---------- */
@@ -205,7 +205,7 @@ class EngineeringTest extends TestCase
         }
     }
 
-    public function test_alamat_lama_situs_statis_tetap_sampai(): void
+    public function legacy_alamat_lama_situs_statis_tetap_sampai(): void
     {
         // Tautan '/mining-engineering-hub' sudah beredar sejak situs ini
         // berupa berkas statis; alamatnya sengaja dipertahankan.
@@ -213,7 +213,7 @@ class EngineeringTest extends TestCase
         $this->get('/mining-engineering-hub')->assertOk()->assertSee('Mining Engineering Hub');
     }
 
-    public function test_penyaring_armada_mempersempit_daftar(): void
+    public function legacy_penyaring_armada_mempersempit_daftar(): void
     {
         $this->masuk();
 
@@ -228,7 +228,7 @@ class EngineeringTest extends TestCase
             ->assertDontSee('EX-002');     // Operating, seharusnya tersaring
     }
 
-    public function test_penyaring_regulasi_bekerja(): void
+    public function legacy_penyaring_regulasi_bekerja(): void
     {
         $this->masuk();
 
@@ -238,7 +238,7 @@ class EngineeringTest extends TestCase
             ->assertDontSee('SNI ISO 9001:2015');
     }
 
-    public function test_halaman_membawa_rumus_indikatornya(): void
+    public function legacy_halaman_membawa_rumus_indikatornya(): void
     {
         $this->masuk();
 
@@ -249,13 +249,62 @@ class EngineeringTest extends TestCase
             ->assertSee('Overburden dipindahkan ÷ Batu bara terangkut');
     }
 
-    public function test_peringatan_acuan_tercantum_pada_alat_hitung(): void
+    public function test_halaman_lama_membawa_component_inertia(): void
+    {
+        $this->masuk();
+        $props = $this->get('/mining-engineering-hub')->assertOk()->viewData('page')['props'];
+        $this->assertSame('index', $props['mode']);
+    }
+
+    public function test_penyaring_armada_mempersempit_props_inertia(): void
+    {
+        $this->masuk();
+        $props = $this->get(route('meh.fleet', ['status' => 'Breakdown']))->assertOk()->viewData('page')['props'];
+        $kode = array_column($props['unit'], 'kode');
+
+        $this->assertContains('DT-005', $kode);
+        $this->assertNotContains('EX-002', $kode);
+    }
+
+    public function test_penyaring_regulasi_bekerja_pada_props_inertia(): void
+    {
+        $this->masuk();
+        $props = $this->get(route('meh.regulations', ['kategori' => 'Energi']))->assertOk()->viewData('page')['props'];
+        $judul = array_column($props['daftar'], 'judul');
+
+        $this->assertContains('SNI ISO 50001:2018', $judul);
+        $this->assertNotContains('SNI ISO 9001:2015', $judul);
+    }
+
+    public function test_halaman_kpi_membawa_rumus_indikator(): void
+    {
+        $this->masuk();
+        $props = $this->get(route('meh.kpi'))->assertOk()->viewData('page')['props'];
+        $this->assertContains('Jam kerja ÷ (Jam kerja + Jam rusak) × 100', $props['rumus']);
+        $this->assertContains('Overburden dipindahkan ÷ Batu bara terangkut', $props['rumus']);
+    }
+
+    public function test_control_tower_membaca_data_operasional_dan_mendeteksi_gap(): void
+    {
+        $this->masuk();
+        $unit = EnergyEquipment::create(['kode' => 'DT-MON-01', 'nama' => 'Dump Truck Monitor', 'kategori' => 'hauling']);
+        EnergyFuelLog::create(['equipment_id' => $unit->id, 'tanggal' => '2026-01-05', 'hm' => 10, 'liter' => 300, 'idle_jam' => 3, 'ton' => 500]);
+        EnergyProduction::create(['tanggal' => '2026-01-05', 'ton' => 500, 'bcm' => 1000]);
+
+        $props = $this->get(route('meh.monitor', ['dari' => '2026-01-01', 'sampai' => '2026-01-31']))
+            ->assertOk()->viewData('page')['props'];
+
+        $this->assertSame(500.0, $props['monitor']['ton']);
+        $this->assertSame(1, count($props['unit']));
+        $this->assertNotEmpty($props['trenMonitor']);
+    }
+
+    public function test_peringatan_acuan_tercantum_pada_props_inertia(): void
     {
         $this->masuk();
 
-        $this->get(route('meh.tools'))
-            ->assertOk()
-            ->assertSee('Engineering reference only.')
-            ->assertSee('Permenaker No. 5 Tahun 2018');
+        $props = $this->get(route('meh.tools'))->assertOk()->viewData('page')['props'];
+        $this->assertContains('Engineering reference only.', $props['catatan']);
+        $this->assertContains('Permenaker No. 5 Tahun 2018', $props['catatan']);
     }
 }

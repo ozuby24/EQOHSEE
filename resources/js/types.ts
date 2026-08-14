@@ -53,9 +53,12 @@ export interface Kilat {
 
 /** Prop yang dibagikan ke SELURUH halaman Inertia. */
 export interface PropBersama {
+  /** Inertia memperbolehkan prop halaman tambahan di luar prop global. */
+  [key: string]: unknown;
   pengguna: Pengguna | null;
   menu: KerangkaMenu;
   kilat: Kilat;
+  status?: string | null;
   pengumuman: number;
   tema: 'terang' | 'gelap' | null;
   warna: { aksen: string; dasar: string };

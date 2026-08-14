@@ -18,10 +18,11 @@ class SmkpAuditTest extends TestCase
 
     public function test_daftar_audit_dapat_dibuka(): void
     {
-        $this->actingAs($this->admin())
+        $props = $this->actingAs($this->admin())
             ->get(route('smkp.index'))
-            ->assertOk()
-            ->assertSee('Audit Sistem Manajemen Keselamatan Pertambangan');
+            ->assertOk()->viewData('page')['props'];
+
+        $this->assertSame('Audit Sistem Manajemen Keselamatan Pertambangan (SMKP) Minerba', $props['meta']['title']);
     }
 
     public function test_periode_audit_dapat_dibuat(): void
@@ -180,10 +181,11 @@ class SmkpAuditTest extends TestCase
 
         // Seluruh tujuh elemen punya halaman penilaian yang dapat dibuka.
         foreach (Smkp::elemen() as $e) {
-            $this->actingAs($admin)
+            $props = $this->actingAs($admin)
                 ->get(route('smkp.nilai', [$audit, $e['kode']]))
-                ->assertOk()
-                ->assertSee($e['nama']);
+                ->assertOk()->viewData('page')['props'];
+
+            $this->assertSame($e['nama'], $props['elemen']['nama']);
         }
     }
 

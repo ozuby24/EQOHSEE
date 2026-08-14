@@ -197,6 +197,18 @@ class CertificateController extends Controller
                 ->where('verification_code', $kode)
                 ->orWhere('certificate_number', $kode)->first();
 
-        return view('certificates.verify', compact('c','kode'));
+        return Inertia::render('Certificates/Verify', [
+            'kode' => $kode,
+            'c' => $c ? [
+                'penerima' => $c->recipient_name,
+                'kursus' => $c->course_title,
+                'perusahaan' => $c->company?->ownerName() ?: '—',
+                'nomor' => $c->certificate_number,
+                'kodeVerifikasi' => $c->verification_code,
+                'nilai' => $c->final_score ?: '—',
+                'terbit' => $c->issued_at?->format('d F Y'),
+                'ditandatangani' => $c->signed_by_name ?: '—',
+            ] : null,
+        ]);
     }
 }

@@ -111,7 +111,7 @@ class IsoController extends Controller
         $s = Iso::get($standar);
         abort_if(!$s, 404, 'Standar tidak dikenal.');
 
-        return view('iso.cetak', [
+        return Inertia::render('Print/Iso', [
             'standar' => $s,
             'kode'    => $standar,
             'perBab'  => Iso::perBab($standar),

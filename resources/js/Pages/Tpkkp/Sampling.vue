@@ -48,8 +48,6 @@ watch([() => ({ ...N }), e], () => {
     router.reload({
       only: ['alokasi'],
       data: { N: { ...N }, e: e.value },
-      preserveState: true,
-      preserveScroll: true,
       replace: true,
       onFinish: () => { menghitung.value = false; },
     });

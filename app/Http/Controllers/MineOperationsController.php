@@ -1,0 +1,262 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\{ActivityLog, Company, MineMapLayer, MineOperationalRecord, MineOperationalTarget};
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
+use Inertia\Inertia;
+
+class MineOperationsController extends Controller
+{
+    public const SHIFT = ['siang', 'malam'];
+    public const STATUS_RECORD = ['draft', 'terverifikasi', 'disetujui'];
+    public const TIPE_LAYER = ['pit', 'disposal', 'rom', 'stockpile', 'haul_road', 'area_kerja', 'drainase'];
+    public const STATUS_LAYER = ['draft', 'aktif', 'arsip'];
+
+    public function index(Request $request) { return $this->halaman($request, 'dashboard'); }
+    public function data(Request $request) { return $this->halaman($request, 'data'); }
+    public function target(Request $request) { return $this->halaman($request, 'target'); }
+    public function gis(Request $request) { return $this->halaman($request, 'gis'); }
+
+    public function simpanRecord(Request $request)
+    {
+        $data = $this->pemilik($request->validate([
+            'company_id' => ['nullable', 'exists:companies,id'],
+            'tanggal' => ['required', 'date'],
+            'shift' => ['required', Rule::in(self::SHIFT)],
+            'pit' => ['nullable', 'string', 'max:100'],
+            'area' => ['nullable', 'string', 'max:100'],
+            'material' => ['required', 'string', 'max:100'],
+            'produksi_ton' => ['required', 'numeric', 'min:0', 'max:1000000000'],
+            'overburden_bcm' => ['required', 'numeric', 'min:0', 'max:1000000000'],
+            'jarak_angkut_km' => ['required', 'numeric', 'min:0', 'max:10000'],
+            'jumlah_truk' => ['required', 'integer', 'min:0', 'max:10000'],
+            'jumlah_excavator' => ['required', 'integer', 'min:0', 'max:1000'],
+            'jam_operasi' => ['required', 'numeric', 'min:0', 'max:24'],
+            'jam_delay' => ['required', 'numeric', 'min:0', 'max:24'],
+            'status' => ['required', Rule::in(self::STATUS_RECORD)],
+            'catatan' => ['nullable', 'string', 'max:2000'],
+        ]));
+
+        if ($data['jam_operasi'] + $data['jam_delay'] > 24) {
+            return back()->withInput()->withErrors(['jam_delay' => 'Jam operasi dan delay tidak boleh melebihi 24 jam.']);
+        }
+
+        $data['user_id'] = auth()->id();
+        $record = MineOperationalRecord::create($data);
+        ActivityLog::write('Input operasi tambang', $record->tanggal->format('Y-m-d').' · '.$record->material, 'operasi');
+
+        return back()->with('ok', 'Data operasi tambang tersimpan.');
+    }
+
+    public function hapusRecord(MineOperationalRecord $record)
+    {
+        ActivityLog::write('Hapus operasi tambang', $record->tanggal->format('Y-m-d').' · '.$record->material, 'operasi');
+        $record->delete();
+        return back()->with('ok', 'Data operasi dihapus.');
+    }
+
+    public function simpanTarget(Request $request)
+    {
+        $data = $this->pemilik($request->validate([
+            'company_id' => ['nullable', 'exists:companies,id'],
+            'tahun' => ['required', 'integer', 'min:2000', 'max:2100'],
+            'bulan' => ['required', 'integer', 'min:1', 'max:12'],
+            'target_produksi_ton' => ['required', 'numeric', 'min:0', 'max:1000000000'],
+            'target_overburden_bcm' => ['required', 'numeric', 'min:0', 'max:1000000000'],
+            'target_strip_ratio' => ['nullable', 'numeric', 'min:0', 'max:1000'],
+            'target_jarak_km' => ['nullable', 'numeric', 'min:0', 'max:10000'],
+            'catatan' => ['nullable', 'string', 'max:2000'],
+        ]));
+
+        $data['user_id'] = auth()->id();
+        MineOperationalTarget::updateOrCreate(
+            ['company_id' => $data['company_id'] ?? null, 'tahun' => $data['tahun'], 'bulan' => $data['bulan']],
+            $data
+        );
+        ActivityLog::write('Tetapkan target operasi', $data['bulan'].'/'.$data['tahun'], 'operasi');
+
+        return back()->with('ok', 'Target operasi bulanan tersimpan.');
+    }
+
+    public function simpanLayer(Request $request)
+    {
+        $data = $this->pemilik($request->validate([
+            'company_id' => ['nullable', 'exists:companies,id'],
+            'nama' => ['required', 'string', 'max:150'],
+            'tipe' => ['required', Rule::in(self::TIPE_LAYER)],
+            'geojson' => ['required', 'json', 'max:5000000'],
+            'warna' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'status' => ['required', Rule::in(self::STATUS_LAYER)],
+            'catatan' => ['nullable', 'string', 'max:2000'],
+        ]));
+
+        $data['user_id'] = auth()->id();
+        $layer = MineMapLayer::create($data);
+        ActivityLog::write('Tambah layer peta', $layer->nama.' ('.$layer->tipe.')', 'operasi');
+
+        return back()->with('ok', 'Layer GeoJSON tersimpan dan siap dipakai pada peta operasional.');
+    }
+
+    public function hapusLayer(MineMapLayer $layer)
+    {
+        ActivityLog::write('Hapus layer peta', $layer->nama.' ('.$layer->tipe.')', 'operasi');
+        $layer->delete();
+        return back()->with('ok', 'Layer peta dihapus.');
+    }
+
+    private function halaman(Request $request, string $mode)
+    {
+        $dari = $request->date('dari') ?: now()->startOfMonth();
+        $sampai = $request->date('sampai') ?: now()->endOfMonth();
+        if ($dari->greaterThan($sampai)) [$dari, $sampai] = [$sampai, $dari];
+
+        $records = MineOperationalRecord::with('company')
+            ->whereBetween('tanggal', [$dari, $sampai])
+            ->latest('tanggal')->latest('id')->get();
+        $targets = MineOperationalTarget::with('company')
+            ->whereRaw('(tahun * 100 + bulan) between ? and ?', [
+                $dari->year * 100 + $dari->month,
+                $sampai->year * 100 + $sampai->month,
+            ])
+            ->get();
+
+        /* Kolom `geojson` bertipe longText dan boleh sampai lima juta karakter.
+           Hanya halaman peta yang benar-benar membacanya; mode lain cukup
+           metadata layer. Menariknya di setiap mode pernah membuat muatan
+           Inertia satu halaman dasbor membengkak sampai puluhan megabita. */
+        $layers = MineMapLayer::with('company')->latest()->get(
+            $mode === 'gis' ? ['*'] : ['id', 'company_id', 'nama', 'tipe', 'warna', 'status', 'catatan', 'created_at']
+        );
+
+        $produksi = (float) $records->sum('produksi_ton');
+        $ob = (float) $records->sum('overburden_bcm');
+        $operasi = (float) $records->sum('jam_operasi');
+        $delay = (float) $records->sum('jam_delay');
+        $targetProduksi = (float) $targets->sum('target_produksi_ton');
+        $targetOb = (float) $targets->sum('target_overburden_bcm');
+        $stripRatio = $produksi > 0 ? $ob / $produksi : 0;
+        $targetStrip = $targets->filter(fn ($x) => $x->target_strip_ratio !== null)->avg('target_strip_ratio');
+        $jarak = $produksi > 0 ? $records->sum(fn ($x) => $x->jarak_angkut_km * $x->produksi_ton) / $produksi : 0;
+        $targetJarak = $targets->filter(fn ($x) => $x->target_jarak_km !== null)->avg('target_jarak_km');
+
+        $ringkas = [
+            'produksi' => $produksi,
+            'ob' => $ob,
+            'capaian_produksi' => $targetProduksi > 0 ? $produksi / $targetProduksi * 100 : 0,
+            'strip_ratio' => $stripRatio,
+            'capaian_ob' => $targetOb > 0 ? $ob / $targetOb * 100 : 0,
+            'jarak_rata' => $jarak,
+            'efisiensi_waktu' => ($operasi + $delay) > 0 ? $operasi / ($operasi + $delay) * 100 : 0,
+            'delay_jam' => $delay,
+            'hari_aktif' => $records->pluck('tanggal')->unique()->count(),
+            'jumlah_record' => $records->count(),
+            'layer_aktif' => $layers->where('status', 'aktif')->count(),
+        ];
+
+        $alerts = [];
+        if (!$records->count()) $alerts[] = ['level' => 'tinggi', 'judul' => 'Belum ada input operasi', 'ket' => 'Masukkan produksi, OB, jarak, dan jam delay dari laporan shift.'];
+        if ($targetProduksi > 0 && $ringkas['capaian_produksi'] < 90) $alerts[] = ['level' => 'tinggi', 'judul' => 'Capaian produksi di bawah 90%', 'ket' => number_format($ringkas['capaian_produksi'], 1).' % terhadap target periode.'];
+        if ($targetOb > 0 && $ringkas['capaian_ob'] < 90) $alerts[] = ['level' => 'sedang', 'judul' => 'Capaian pemindahan OB rendah', 'ket' => number_format($ringkas['capaian_ob'], 1).' % terhadap target periode.'];
+        if ($targetStrip && $stripRatio > $targetStrip * 1.15) $alerts[] = ['level' => 'tinggi', 'judul' => 'Strip ratio melewati target', 'ket' => number_format($stripRatio, 2).' vs target '.number_format($targetStrip, 2).'.'];
+        if ($targetJarak && $jarak > $targetJarak * 1.15) $alerts[] = ['level' => 'sedang', 'judul' => 'Jarak angkut meningkat', 'ket' => number_format($jarak, 2).' km vs target '.number_format($targetJarak, 2).' km.'];
+        if ($delay > 0 && ($operasi + $delay) > 0 && $delay / ($operasi + $delay) > .15) $alerts[] = ['level' => 'sedang', 'judul' => 'Delay operasi tinggi', 'ket' => number_format($delay / ($operasi + $delay) * 100, 1).' % waktu tercatat sebagai delay.'];
+
+        $perPit = $records->groupBy(fn ($x) => $x->pit ?: ($x->area ?: 'Belum ditentukan'))->map(function ($rows, $nama) {
+            $ton = (float) $rows->sum('produksi_ton');
+            $ob = (float) $rows->sum('overburden_bcm');
+            $operasi = (float) $rows->sum('jam_operasi');
+            $delay = (float) $rows->sum('jam_delay');
+            return ['nama' => $nama, 'produksi' => $ton, 'ob' => $ob, 'strip_ratio' => $ton > 0 ? $ob / $ton : 0, 'delay_persen' => ($operasi + $delay) > 0 ? $delay / ($operasi + $delay) * 100 : 0, 'record' => $rows->count()];
+        })->sortByDesc('produksi')->values()->all();
+
+        $tanggal = $records->pluck('tanggal')->map(fn ($x) => Carbon::parse($x)->toDateString())->unique()->sort()->values();
+        $tren = $tanggal->map(function (string $date) use ($records) {
+            $rows = $records->filter(fn ($x) => $x->tanggal->toDateString() === $date);
+            return ['tanggal' => $date, 'produksi' => (float) $rows->sum('produksi_ton'), 'ob' => (float) $rows->sum('overburden_bcm'), 'delay' => (float) $rows->sum('jam_delay')];
+        })->all();
+
+        $companies = Company::query()->when(!auth()->user()?->isAdmin(), fn ($q) => $q->whereKey(auth()->user()?->company_id))->orderBy('name')->get(['id', 'name']);
+
+        return Inertia::render('Operasi/Halaman', [
+            'mode' => $mode, 'dari' => $dari, 'sampai' => $sampai, 'ringkas' => $ringkas,
+            'target' => ['produksi' => $targetProduksi, 'ob' => $targetOb, 'strip_ratio' => $targetStrip, 'jarak' => $targetJarak],
+            'records' => $records->map(fn (MineOperationalRecord $x) => $this->recordView($x))->values(),
+            'targets' => $targets->sortByDesc(fn ($x) => $x->tahun * 100 + $x->bulan)
+                ->map(fn (MineOperationalTarget $x) => $this->targetView($x))->values(),
+            'layers' => $layers->map(fn (MineMapLayer $x) => $this->layerView($x, $mode === 'gis'))->values(),
+            'perPit' => $perPit, 'tren' => $tren, 'alerts' => $alerts, 'companies' => $companies,
+            'opsi' => ['shift' => self::SHIFT, 'statusRecord' => self::STATUS_RECORD, 'tipeLayer' => self::TIPE_LAYER, 'statusLayer' => self::STATUS_LAYER],
+            'tautan' => [
+                'dashboard' => route('operasi.index'), 'data' => route('operasi.data'), 'target' => route('operasi.target'), 'gis' => route('operasi.gis'),
+                'recordSimpan' => route('operasi.record.simpan'), 'recordHapus' => route('operasi.record.hapus', ['record' => 0]),
+                'targetSimpan' => route('operasi.target.simpan'), 'layerSimpan' => route('operasi.layer.simpan'), 'layerHapus' => route('operasi.layer.hapus', ['layer' => 0]),
+            ],
+        ]);
+    }
+
+    private function pemilik(array $data): array
+    {
+        if (!auth()->user()?->isAdmin()) $data['company_id'] = auth()->user()?->company_id;
+        return $data;
+    }
+
+    /* Muatan halaman disusun kolom demi kolom, bukan lewat toArray(). Model
+       yang dikirim utuh ikut membawa user_id dan stempel waktu ke browser,
+       dan setiap kolom baru yang ditambahkan nanti akan ikut terbawa tanpa
+       ada yang memutuskannya. */
+
+    private function recordView(MineOperationalRecord $x): array
+    {
+        return [
+            'id' => $x->id,
+            'tanggal' => $x->tanggal?->toDateString(),
+            'tanggalLabel' => $x->tanggal?->format('d M Y'),
+            'shift' => $x->shift,
+            'pit' => $x->pit,
+            'area' => $x->area,
+            'material' => $x->material,
+            'produksi_ton' => $x->produksi_ton,
+            'overburden_bcm' => $x->overburden_bcm,
+            'jarak_angkut_km' => $x->jarak_angkut_km,
+            'jumlah_truk' => $x->jumlah_truk,
+            'jumlah_excavator' => $x->jumlah_excavator,
+            'jam_operasi' => $x->jam_operasi,
+            'jam_delay' => $x->jam_delay,
+            'status' => $x->status,
+            'catatan' => $x->catatan,
+            'companyName' => $x->company?->name,
+        ];
+    }
+
+    private function targetView(MineOperationalTarget $x): array
+    {
+        return [
+            'id' => $x->id,
+            'tahun' => $x->tahun,
+            'bulan' => $x->bulan,
+            'target_produksi_ton' => $x->target_produksi_ton,
+            'target_overburden_bcm' => $x->target_overburden_bcm,
+            'target_strip_ratio' => $x->target_strip_ratio,
+            'target_jarak_km' => $x->target_jarak_km,
+            'catatan' => $x->catatan,
+            'companyName' => $x->company?->name,
+        ];
+    }
+
+    private function layerView(MineMapLayer $x, bool $denganGeojson): array
+    {
+        return [
+            'id' => $x->id,
+            'nama' => $x->nama,
+            'tipe' => $x->tipe,
+            'warna' => $x->warna,
+            'status' => $x->status,
+            'catatan' => $x->catatan,
+            'companyName' => $x->company?->name,
+            'geojson' => $denganGeojson ? $x->geojson : null,
+        ];
+    }
+}

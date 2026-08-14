@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Builder;
 
 /** Pemakaian bahan bakar satu unit pada satu hari. */
 class EnergyFuelLog extends Model
@@ -16,6 +17,20 @@ class EnergyFuelLog extends Model
     {
         return ['tanggal' => 'date', 'hm' => 'float', 'liter' => 'float', 'idle_jam' => 'float',
                 'jarak_km' => 'float', 'ton' => 'float', 'bcm' => 'float', 'cycle_menit' => 'float'];
+    }
+
+    /** Catatan bahan bakar mengikuti perusahaan unit alatnya. */
+    protected static function booted(): void
+    {
+        static::addGlobalScope('company', function (Builder $builder) {
+            $u = auth()->user();
+            if (!$u || $u->isAdmin()) return;
+
+            $builder->whereHas('equipment', function (Builder $query) use ($u) {
+                $query->whereNull('company_id');
+                if ($u->company_id) $query->orWhere('company_id', $u->company_id);
+            });
+        });
     }
 
     public function equipment(): BelongsTo { return $this->belongsTo(EnergyEquipment::class, 'equipment_id'); }

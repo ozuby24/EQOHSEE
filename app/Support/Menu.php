@@ -146,6 +146,7 @@ final class Menu
       'groups' => [
         'Pantau' => [
           ['Dashboard',          'energi.index',    'energi'],
+          ['Input Lapangan',     'energi.input',    'energi/input'],
           ['Energy Consumption', 'energi.konsumsi', 'energi/konsumsi'],
           ['Fuel Management',    'energi.fuel',     'energi/bahan-bakar'],
           ['Electricity',        'energi.listrik',  'energi/listrik'],
@@ -166,12 +167,38 @@ final class Menu
         ],
       ],
     ],
+    'konservasi' => [
+      'label' => 'Konservasi Minerba',
+      'icon'  => 'M12 3.5c3.9 0 7 3.1 7 7 0 5.2-7 10-7 10s-7-4.8-7-10c0-3.9 3.1-7 7-7Zm0 4.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6Z',
+      'groups' => [
+        'Pengawasan' => [
+          ['Dashboard', 'konservasi.index', 'konservasi'],
+          ['Data Konservasi', 'konservasi.data', 'konservasi/data'],
+          ['Laporan Konservasi', 'konservasi.laporan', 'konservasi/laporan'],
+        ],
+      ],
+    ],
+    'operasi' => [
+      'label' => 'Mine Operations',
+      'icon'  => 'M3 12h18M12 3v18M5.5 7.5h13v9h-13z',
+      'groups' => [
+        'Control Tower' => [
+          ['Dashboard Operasi', 'operasi.index', 'operasi-tambang'],
+          ['Input Data Shift', 'operasi.data', 'operasi-tambang/data'],
+          ['Target Bulanan', 'operasi.target', 'operasi-tambang/target'],
+        ],
+        'Spatial Operations' => [
+          ['GIS & Layer Tambang', 'operasi.gis', 'operasi-tambang/gis'],
+        ],
+      ],
+    ],
     'meh' => [
       'label' => 'Mining Engineering',
       'icon'  => 'M9 3v18m6-18v18M3 9h18M3 15h18',
       'groups' => [
         'Operasi' => [
           ['Dashboard',            'meh.index',       'mining-engineering-hub'],
+          ['Control Tower',        'meh.monitor',     'mining-engineering-hub/monitor'],
           ['Energy Dashboard',     'meh.energy',      'mining-engineering-hub/energy'],
           ['Fleet & Productivity', 'meh.fleet',       'mining-engineering-hub/fleet'],
           ['Mining Equipment',     'meh.equipment',   'mining-engineering-hub/equipment'],
@@ -250,10 +277,12 @@ final class Menu
          : (Request::is('smkp*') ? 'smkp'
          : (Request::is('dokumen*') || Request::is('iso*') || Request::is('struktur-dokumen') || Request::is('daftar-induk') ? 'dokumen'
          : (Request::is('energi*') ? 'energi'
+         : (Request::is('konservasi*') ? 'konservasi'
+         : (Request::is('operasi-tambang*') ? 'operasi'
          : (Request::is('gudang*') ? 'gudang'
          : (Request::is('mining-engineering-hub*') ? 'meh'
          : (Request::is('ko*') ? 'ko'
-         : (Request::is('admin*') || Request::is('signatories*') ? 'admin' : 'lms')))))))));
+         : (Request::is('admin*') || Request::is('signatories*') ? 'admin' : 'lms')))))))))));
 
         return isset(self::all()[$kunci]) ? $kunci : 'lms';
     }

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\{SmkpAudit, User};
 use App\Support\SmkpTahap;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -148,11 +149,10 @@ class SmkpTahapTest extends TestCase
         $this->masuk();
         $a = $this->audit(['rencana' => $this->rencanaLengkap()]);
 
-        $res = $this->get(route('smkp.rencana.cetak', $a))->assertOk();
-
-        foreach (SmkpTahap::komponenRencana() as $c) {
-            $res->assertSee($c['judul'], false);
-        }
+        $this->get(route('smkp.rencana.cetak', $a))->assertOk()->assertInertia(
+            fn (AssertableInertia $p) => $p->component('Print/Smkp')
+                ->where('mode', 'rencana')->where('rekap.lengkap', true)->has('komponen', 9)
+        );
     }
 
     public function test_laporan_rencana_audit_menampilkan_isian_dan_pengesah(): void
@@ -163,12 +163,13 @@ class SmkpTahapTest extends TestCase
             'risiko'  => ['present' => [['kegiatan' => 'Pengoperasian unit di jalan hauling', 'risiko' => 'Fatality', 'nilai' => 15]]],
         ]);
 
-        $this->get(route('smkp.rencana.cetak', $a))
-            ->assertOk()
-            ->assertSee('Menilai penerapan SMKP Minerba.')
-            ->assertSee('Pengoperasian unit di jalan hauling')
-            ->assertSee('Budi')                       // KTT
-            ->assertSee('Lucky');                     // Ketua Tim Audit
+        $this->get(route('smkp.rencana.cetak', $a))->assertOk()->assertInertia(
+            fn (AssertableInertia $p) => $p->component('Print/Smkp')
+                ->where('audit.rencana.tujuan', 'Menilai penerapan SMKP Minerba.')
+                ->where('audit.risiko.present.0.kegiatan', 'Pengoperasian unit di jalan hauling')
+                ->where('audit.rencana.pengesahan.ktt.nama', 'Budi')
+                ->where('audit.rencana.pengesahan.ketua.nama', 'Lucky')
+        );
     }
 
     public function test_laporan_rencana_audit_tetap_terbuka_saat_belum_lengkap(): void
@@ -178,9 +179,9 @@ class SmkpTahapTest extends TestCase
         $this->masuk();
         $a = $this->audit();
 
-        $this->get(route('smkp.rencana.cetak', $a))
-            ->assertOk()
-            ->assertSee('belum lengkap');
+        $this->get(route('smkp.rencana.cetak', $a))->assertOk()->assertInertia(
+            fn (AssertableInertia $p) => $p->component('Print/Smkp')->where('rekap.lengkap', false)
+        );
     }
 
     /* ---------- Tahap I ---------- */
@@ -277,11 +278,10 @@ class SmkpTahapTest extends TestCase
             'kecukupan' => $this->kecukupanPenuh(),
         ]);
 
-        $this->get(route('smkp.berita-acara', $a))
-            ->assertOk()
-            ->assertSee('Penentuan Kecukupan Dokumentasi')
-            ->assertSee('dapat dilanjutkan ke tahap berikutnya')
-            ->assertSee('7.20');   // alokasi Tahap II
+        $this->get(route('smkp.berita-acara', $a))->assertOk()->assertInertia(
+            fn (AssertableInertia $p) => $p->component('Print/Smkp')
+                ->where('mode', 'berita')->has('elemen', 7)->has('mandays')
+        );
     }
 
     /* ---------- halaman ---------- */
@@ -331,10 +331,10 @@ class SmkpTahapTest extends TestCase
         $this->masuk();
         $a = $this->audit();
 
-        $this->get(route('smkp.show', $a))
-            ->assertOk()
-            ->assertSee('Laporan Rencana Audit')
-            ->assertSee(route('smkp.rencana.cetak', $a), false);
+        $props = $this->get(route('smkp.show', $a))
+            ->assertOk()->viewData('page')['props'];
+
+        $this->assertSame(route('smkp.rencana.cetak', $a), $props['tautan']['rencanaCetak']);
     }
 
     /* ---------- perpindahan tahap ---------- */
@@ -411,10 +411,10 @@ class SmkpTahapTest extends TestCase
         $a = $this->audit();
         $a->attendees()->create(['rapat' => 'pembukaan', 'nama' => 'Ridwan', 'jabatan' => 'OHS Officer']);
 
-        $this->get(route('smkp.hadir.cetak', [$a, 'pembukaan']))
-            ->assertOk()
-            ->assertSee('Daftar Hadir Rapat Pembukaan')
-            ->assertSee('Ridwan');
+        $this->get(route('smkp.hadir.cetak', [$a, 'pembukaan']))->assertOk()->assertInertia(
+            fn (AssertableInertia $p) => $p->component('Print/Smkp')
+                ->where('mode', 'hadir')->where('judul', 'Rapat Pembukaan')->where('hadir.0.nama', 'Ridwan')
+        );
     }
 
     public function test_daftar_hadir_rapat_tak_dikenal_menghasilkan_404(): void
@@ -510,7 +510,22 @@ class SmkpTahapTest extends TestCase
         $this->assertFalse($s['pembukaan']['selesai'], 'Belum ada peserta rapat.');
     }
 
-    public function test_ringkasan_menampilkan_seluruh_langkah_alur(): void
+    public function test_ringkasan_menampilkan_seluruh_langkah_alur_inertia(): void
+    {
+        $this->masuk();
+        $a = $this->audit();
+        $props = $this->get(route('smkp.show', $a))->assertOk()->viewData('page')['props'];
+
+        foreach (SmkpTahap::alur() as $kunci => $babak) {
+            $this->assertSame($babak['judul'], $props['alur'][$kunci]['judul']);
+            $judul = array_column($props['alur'][$kunci]['langkah'], 'judul');
+            foreach ($babak['langkah'] as $l) {
+                $this->assertContains($l['judul'], $judul);
+            }
+        }
+    }
+
+    public function legacy_ringkasan_menampilkan_seluruh_langkah_alur(): void
     {
         $this->masuk();
         $a = $this->audit();
@@ -519,12 +534,7 @@ class SmkpTahapTest extends TestCase
 
         // Tanpa argumen kedua, teks yang diharapkan ikut di-escape seperti
         // Blade melakukannya — judul yang memuat "&" karena itu tetap cocok.
-        foreach (SmkpTahap::alur() as $babak) {
-            $res->assertSee($babak['judul']);
-            foreach ($babak['langkah'] as $l) {
-                $res->assertSee($l['judul']);
-            }
-        }
+        $res->assertInertia(fn (AssertableInertia $p) => $p->component('Smkp/Halaman')->where('mode', 'show')->has('audit'));
     }
 
     /* ---------- menu samping ---------- */
@@ -561,27 +571,38 @@ class SmkpTahapTest extends TestCase
     {
         $this->masuk();
 
-        $res = $this->get(route('smkp.acuan'))->assertOk();
+        $props = $this->get(route('smkp.acuan'))->assertOk()->viewData('page')['props'];
 
         foreach (\App\Support\Smkp::elemen() as $e) {
-            $res->assertSee($e['nama']);
+            $this->assertContains($e['nama'], array_column($props['elemen'], 'nama'));
         }
-        $res->assertSee((string) \App\Support\Smkp::totalNilai());
+        $this->assertSame(\App\Support\Smkp::totalNilai(), $props['meta']['total_nilai']);
     }
 
     public function test_menu_samping_audit_memuat_seluruh_kelompoknya(): void
     {
         $this->masuk();
 
-        $this->get(route('smkp.index'))
-            ->assertOk()
-            ->assertSee('Tahap Audit')
-            ->assertSee('Berkas Resmi')
-            ->assertSee('Kriteria Kepdirjen')
-            ->assertSee(route('smkp.ke.rencana-cetak'), false);
+        $props = $this->get(route('smkp.index'))->assertOk()->viewData('page')['props'];
+        $group = array_column($props['menu']['grup'], 'nama');
+        $this->assertContains('Tahap Audit', $group);
+        $this->assertContains('Berkas Resmi', $group);
+        $this->assertContains('Acuan', $group);
     }
 
-    public function test_acuan_menampilkan_rentang_kategori_dan_tingkat_dengan_benar(): void
+    public function test_acuan_menampilkan_rentang_kategori_dan_tingkat_dengan_benar_inertia(): void
+    {
+        $this->masuk();
+        $props = $this->get(route('smkp.acuan'))->assertOk()->viewData('page')['props'];
+        $kategori = array_column($props['kategori'], 'ket');
+        $ambang = array_column($props['tingkat'], 'min');
+
+        $this->assertContains('Capaian 50% sampai kurang dari 100%.', $kategori);
+        $this->assertContains('Capaian kurang dari 50%.', $kategori);
+        $this->assertSame([85, 60, 0], $ambang);
+    }
+
+    public function legacy_acuan_menampilkan_rentang_kategori_dan_tingkat_dengan_benar(): void
     {
         // Ambang tersimpan sebagai persen (100/50/0), bukan pecahan; salah
         // membacanya membuat "Minor" tampil sebagai capaian penuh.

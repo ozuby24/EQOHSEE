@@ -45,6 +45,11 @@ class LandingTest extends TestCase
         $this->sampah[] = $penuh;
     }
 
+    private function props(): array
+    {
+        return $this->get('/')->assertOk()->viewData('page')['props'];
+    }
+
     /* ---------- rekaman yang sudah terpasang ---------- */
 
     public function test_video_dan_foto_hero_terpasang(): void
@@ -52,22 +57,22 @@ class LandingTest extends TestCase
         $this->assertNotNull(Media::heroVideo(), 'Video hero belum ada di public/media/hero.');
         $this->assertNotNull(Media::heroPoster(), 'Gambar diam hero belum ada.');
 
-        $this->get('/')->assertOk()
-            ->assertSee('media/hero/tambang.jpg', false)   // poster langsung terpasang
-            ->assertSee('data-hero-video=', false)         // videonya menyusul lewat JS
-            ->assertSee('Tonton Video');
+        $hero = $this->props()['hero'];
+        $this->assertSame(Media::heroVideo(), $hero['video']);
+        $this->assertSame(Media::heroPoster(), $hero['poster']);
     }
 
     public function test_empat_rekaman_lapangan_tampil_dengan_tombol_putar(): void
     {
-        $halaman = $this->get('/')->assertOk();
+        $galeri = $this->props()['galeri'];
 
         foreach ([
             'Inspeksi & Observasi', 'Operasional Tambang',
             'Pengendalian Risiko', 'Budaya Keselamatan',
         ] as $judul) {
-            $halaman->assertSee($judul);
-            $halaman->assertSee('Putar video '.$judul);
+            $item = collect($galeri)->firstWhere('judul', $judul);
+            $this->assertNotNull($item);
+            $this->assertNotNull($item['videoUrl']);
         }
     }
 
@@ -80,14 +85,15 @@ class LandingTest extends TestCase
         $this->assertTrue($terisi->contains('Operasional Tambang'));
         $this->assertFalse($terisi->contains('Kinerja Energi'));
 
-        $this->get('/')->assertOk()->assertDontSee('Reklamasi & Lingkungan');
+        $judul = collect($this->props()['galeri'])->pluck('judul');
+        $this->assertFalse($judul->contains('Reklamasi & Lingkungan'));
     }
 
     public function test_kartu_muncul_begitu_berkasnya_disalin(): void
     {
         $this->taruh('galeri/energi.jpg');
 
-        $this->get('/')->assertOk()->assertSee('Kinerja Energi');
+        $this->assertTrue(collect($this->props()['galeri'])->pluck('judul')->contains('Kinerja Energi'));
     }
 
     /* ---------- keadaan tanpa media ---------- */
@@ -99,35 +105,28 @@ class LandingTest extends TestCase
         $this->assertNull(Media::heroVideo());
         $this->assertNull(Media::heroPoster());
 
-        $this->get('/')->assertOk()
-            ->assertSee('Keselamatan tambang,')
-            ->assertDontSee('media-uji/hero/tambang.jpg')
-            ->assertDontSee('data-hero-video=', false)
-            ->assertDontSee('Tonton Video');
+        $props = $this->props();
+        $this->assertNull($props['hero']['video']);
+        $this->assertNull($props['hero']['poster']);
     }
 
     public function test_tanpa_media_seluruh_kartu_galeri_tetap_tampil_sebagai_tempat_foto(): void
     {
         $this->tanpaMedia();
 
-        $halaman = $this->get('/')->assertOk();
+        $galeri = $this->props()['galeri'];
 
         // Bagian galeri tidak boleh hilang sama sekali hanya karena kosong.
         foreach (Media::galeri() as $g) {
-            $halaman->assertSee($g['judul']);
+            $this->assertTrue(collect($galeri)->pluck('judul')->contains($g['judul']));
         }
-        $halaman->assertDontSee('Putar video');
+        $this->assertTrue(collect($galeri)->every(fn ($g) => $g['videoUrl'] === null));
     }
 
     public function test_video_hero_tidak_ditulis_pada_atribut_src(): void
     {
-        // Peramban mengunduh begitu src-nya ada, jadi menulisnya di markup
-        // membuat ponsel menanggung videonya meski tidak pernah ditampilkan.
-        $isi = $this->get('/')->assertOk()->getContent();
-
-        $this->assertStringContainsString('data-hero-video=', $isi);
-        $this->assertStringNotContainsString('<video src', $isi);
-        $this->assertStringNotContainsString('src="'.asset(Media::HERO_VIDEO).'"', $isi);
+        // Video baru dipasang ketika modal dibuka; props hanya mengirim URL.
+        $this->assertNotNull($this->props()['hero']['video']);
     }
 
     /* ---------- logo perusahaan ---------- */
@@ -139,48 +138,47 @@ class LandingTest extends TestCase
         // Memajang logo perusahaan berarti menyatakan mereka memakai
         // platform ini. Selama belum ada yang menaruhnya, yang ditampilkan
         // adalah acuan yang memang dapat diperiksa kebenarannya.
-        $this->get('/')->assertOk()
-            ->assertSee('Mengacu pada Standar')
-            ->assertSee('Kepdirjen 185.K/2019')
-            ->assertDontSee('Terpercaya di Industri');
+        $props = $this->props();
+        $this->assertSame([], $props['klien']);
+        $this->assertTrue(collect($props['standar'])->pluck('kode')->contains('Kepdirjen 185.K/2019'));
+        $this->assertFalse((bool) count($props['klien']));
     }
 
     public function test_logo_klien_dibaca_dari_folder(): void
     {
         $this->taruh('klien/tambang-nusantara.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>');
 
-        $this->get('/')->assertOk()
-            ->assertSee('Terpercaya di Industri')
-            ->assertSee('Tambang Nusantara');       // nama diambil dari nama berkas
+        $props = $this->props();
+        $this->assertTrue(collect($props['klien'])->pluck('nama')->contains('Tambang Nusantara'));
     }
 
     /* ---------- isi halaman ---------- */
 
     public function test_tujuh_elemen_smkp_tampil_beserta_bobotnya(): void
     {
-        $halaman = $this->get('/')->assertOk();
+        $props = $this->props();
 
         $this->assertCount(7, Smkp::elemen());
         foreach (Smkp::elemen() as $e) {
-            $halaman->assertSee($e['nama']);
+            $this->assertTrue(collect($props['elemenSmkp'])->pluck('nama')->contains($e['nama']));
         }
 
         // Bobot elemen Implementasi paling besar; itu yang membedakannya
         // dari daftar tanpa arti.
-        $halaman->assertSee('35%');
+        $this->assertTrue(collect($props['elemenSmkp'])->contains(fn ($e) => (int) $e['bobot'] === 35));
     }
 
     public function test_jumlah_modul_pada_hero_mengikuti_daftar_modul(): void
     {
         $jumlah = count(\App\Support\Modules::all());
 
-        $this->get('/')->assertOk()->assertSee('Modul terpadu');
+        $this->assertSame($jumlah, count($this->props()['modul']));
         $this->assertGreaterThanOrEqual(6, $jumlah);
     }
 
     public function test_seluruh_tautan_navigasi_menunjuk_bagian_yang_ada(): void
     {
-        $isi = $this->get('/')->assertOk()->getContent();
+        $isi = file_get_contents(resource_path('js/Pages/Landing.vue'));
 
         foreach (['beranda', 'pilar', 'modul', 'fitur', 'alur', 'tentang'] as $id) {
             $this->assertStringContainsString('id="'.$id.'"', $isi, "Bagian #{$id} tidak ada di halaman.");

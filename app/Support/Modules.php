@@ -54,10 +54,20 @@ class Modules
              'ket'  => 'Konsumsi bahan bakar dan listrik, intensitas energi, baseline dan sasaran, peluang penghematan, serta jejak karbon.',
              'ikon' => 'M13 2 4 14h7l-1 8 10-13h-7l0-7Z'],
 
+            ['nama' => 'Konservasi Minerba', 'status' => 'aktif', 'pilar' => 'environment',
+             'rute' => 'konservasi.index',
+             'ket'  => 'Pemantauan produksi, recovery, kehilangan material, dilusi, stockpile, mineral ikutan, dan tindak lanjut perbaikan.',
+             'ikon' => 'M12 3.5c3.9 0 7 3.1 7 7 0 5.2-7 10-7 10s-7-4.8-7-10c0-3.9 3.1-7 7-7Zm0 4.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6Z'],
+
             ['nama' => 'Mining Engineering Hub', 'status' => 'aktif', 'pilar' => 'engineering',
              'rute' => 'meh.index',
              'ket'  => 'Dashboard engineering: produksi, energi, armada, pemeliharaan, KPI, dan alat hitung teknis.',
              'ikon' => 'M9 3v18m6-18v18M3 9h18M3 15h18'],
+
+            ['nama' => 'Mine Operations & GIS', 'status' => 'aktif', 'pilar' => 'engineering',
+             'rute' => 'operasi.index',
+             'ket'  => 'Control Tower operasi: target dan realisasi produksi, OB, strip ratio, delay, serta registry layer GIS tambang.',
+             'ikon' => 'M3 12h18M12 3v18M5.5 7.5h13v9h-13z'],
 
             ['nama' => 'ISO & Dokumen', 'status' => 'aktif', 'pilar' => 'quality', 'rute' => 'dokumen.index',
              'ket'  => 'Register dokumen terkendali: nomor revisi, masa berlaku, riwayat perubahan, dan pengingat peninjauan berkala.',

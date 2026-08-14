@@ -8,6 +8,7 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules;
+use Inertia\Inertia;
 
 /**
  * Pendaftaran akun — melengkapi data man power sejak awal
@@ -18,7 +19,11 @@ class RegisteredUserController extends Controller
 {
     public function create()
     {
-        return view('auth.register', ['companies' => Company::orderBy('name')->get()]);
+        return Inertia::render('Auth/Register', [
+            'companies'   => Company::orderBy('name')->get(['id', 'name']),
+            'departments' => \App\Support\Hazard::DEPARTEMEN,
+            'positions'   => \App\Support\Hazard::JABATAN,
+        ]);
     }
 
     public function store(Request $request)

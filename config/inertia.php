@@ -21,6 +21,10 @@ return [
 
     'ssr' => [
 
+        // Pengembangan lokal tanpa service SSR yang menyala harus menyetel
+        // INERTIA_SSR_ENABLED=false di .env miliknya sendiri. Default-nya
+        // dibiarkan true: mematikan SSR di sini akan ikut mematikannya di
+        // VPS, diam-diam, tanpa ada yang memilih hal itu.
         'enabled' => (bool) env('INERTIA_SSR_ENABLED', true),
 
         'runtime' => env('INERTIA_SSR_RUNTIME', 'node'),

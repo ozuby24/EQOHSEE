@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 use App\Models\{Course, Enrollment, Certificate, HazardReport, Inspection, KoObject,
     Document, News, Procedure, SmkpAudit, SmkpFinding, SopEvaluationAttempt,
     TpkkpAssessment, User};
+use App\Support\{Kategori, Media, Sampul, Waktu};
+use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
@@ -14,13 +17,44 @@ class DashboardController extends Controller
         $enrollments = Enrollment::with('course')->where('user_id', $user->id)->latest()->get();
 
         $data = [
-            'enrollments' => $enrollments,
+            'judul'       => 'Dashboard',
+            'subjudul'    => 'Kelola pembelajaran dan tingkatkan kompetensi Anda',
+            'sapa'        => Waktu::sapaan(),
+            'nama'        => trim(explode(' ', $user->name)[0]),
+            'hero'        => Media::url('galeri/budaya.jpg'),
+            'lanjut'      => ($lanjut = $enrollments->firstWhere('status', 'ongoing') ?? $enrollments->first())
+                ? route('learn.show', $lanjut->course)
+                : route('courses.index'),
+            'enrollments' => $enrollments->take(3)->map(function ($e) {
+                $c = $e->course;
+                $jumlah = $c?->modules()->count() ?? 0;
+                return [
+                    'judul'    => $c?->title ?? 'Kursus',
+                    'deskripsi'=> Str::limit($c?->description, 78),
+                    'sampul'   => $c ? Sampul::untuk($c) : null,
+                    'kategori' => $c?->category,
+                    'nada'     => $c?->category ? Kategori::nada($c->category) : null,
+                    'status'   => $e->status,
+                    'progress' => (int) $e->progress,
+                    'modul'    => $jumlah,
+                    'menit'    => max(10, $jumlah * 15),
+                    'belajar'  => $c ? route('learn.show', $c) : route('courses.index'),
+                    'detail'   => $c ? route('courses.show', $c) : route('courses.index'),
+                ];
+            })->values()->all(),
             'certificates'=> Certificate::where('user_id',$user->id)->count(),
             'sopPassed'   => SopEvaluationAttempt::where('user_id',$user->id)->where('passed',true)->count(),
-            'news'        => News::latest('published_at')->take(3)->get(),
-            'modul'       => $this->ringkasModul(),
+            'news'        => News::latest('published_at')->take(3)->get()->map(fn ($n) => [
+                'judul'    => $n->title,
+                'cuplikan' => Str::limit(strip_tags($n->content), 74),
+                'tanggal'  => optional($n->published_at ?? $n->created_at)->translatedFormat('d M'),
+                'url'      => route('news.show', $n),
+            ])->values()->all(),
+            'modul'       => collect($this->ringkasModul())->map(fn ($m) => $m + [
+                'url' => route($m['rute']),
+            ])->all(),
             'ringkas'     => $this->ringkasBelajar($enrollments),
-            'kategori'    => $this->ringkasKategori(),
+            'kategori'    => collect($this->ringkasKategori())->map(fn ($k) => $k + ['nada' => Kategori::nada($k['nama'])])->all(),
             'pekan'       => $this->kemajuanPekan($user->id),
             'admin'       => null,
         ];
@@ -32,7 +66,7 @@ class DashboardController extends Controller
                 'certs'      => Certificate::count(),
             ];
         }
-        return view('dashboard', $data);
+        return Inertia::render('Dashboard', $data);
     }
 
     /**

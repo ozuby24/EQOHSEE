@@ -129,7 +129,7 @@ class DocumentController extends Controller
     /** Daftar Induk Dokumen — berkas wajib sistem manajemen, siap cetak. */
     public function daftarInduk()
     {
-        return view('dokumen.daftar-induk', [
+        return Inertia::render('Print/Dokumen', [
             'documents' => Document::with('company')
                 ->orderByRaw(Dokumen::urutJenisSql())->orderBy('kode')->get(),
             'dok'       => KopDokumen::untuk('daftar-induk', Company::first()),

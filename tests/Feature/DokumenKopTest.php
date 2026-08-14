@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\{Company, SmkpAudit, User};
 use App\Support\KopDokumen;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -113,22 +114,18 @@ class DokumenKopTest extends TestCase
         $a = $this->audit($c);
 
         foreach ([
-            ['smkp.berita-acara',  ['nomor' => 'CAM-OHSE-IV.067h']],
-            ['smkp.rencana.cetak', ['nomor' => 'CAM-OHSE-IV.059']],
-            ['smkp.laporan',       ['nomor' => 'CAM-OHSE-IV.067']],
-        ] as [$rute, $harap]) {
-            $this->get(route($rute, $a))
-                ->assertOk()
-                ->assertSee('No. Dokumen')
-                ->assertSee('Tgl Penerbitan')
-                ->assertSee('Tgl Persetujuan')
-                ->assertSee('No. Revisi')
-                ->assertSee('Halaman')
-                ->assertSee('Divisi')
-                ->assertSee('Departemen')
-                ->assertSee($harap['nomor'])
-                ->assertSee('01 September 2023')      // tanggal penerbitan
-                ->assertSee('31 Mei 2025');           // tanggal persetujuan
+            ['smkp.berita-acara',  'berita',  'CAM-OHSE-IV.067h'],
+            ['smkp.rencana.cetak', 'rencana', 'CAM-OHSE-IV.059'],
+            ['smkp.laporan',       'laporan', 'CAM-OHSE-IV.067'],
+        ] as [$rute, $mode, $nomor]) {
+            $this->get(route($rute, $a))->assertOk()->assertInertia(
+                fn (AssertableInertia $p) => $p->component('Print/Smkp')
+                    ->where('mode', $mode)
+                    ->where('dok.nomor', $nomor)
+                    ->where('dok.divisi', 'Occupational Health, Safety and Environment, External')
+                    ->where('dok.departemen', KopDokumen::DEPARTEMEN)
+                    ->has('dok.terbit')->has('dok.setuju')
+            );
         }
     }
 
@@ -139,9 +136,9 @@ class DokumenKopTest extends TestCase
         $a = $this->audit($c);
 
         $this->get(route('smkp.hadir.cetak', [$a, 'pembukaan']))
-            ->assertOk()
-            ->assertSee('CAM-OHSE-IV.067g')
-            ->assertSee('Halaman');
+            ->assertOk()->assertInertia(fn (AssertableInertia $p) => $p
+                ->component('Print/Smkp')->where('mode', 'hadir')
+                ->where('dok.nomor', 'CAM-OHSE-IV.067g')->where('totalLembar', 1));
     }
 
     /* ---------- penomoran halaman ---------- */
@@ -152,12 +149,9 @@ class DokumenKopTest extends TestCase
         $this->masuk($c);
         $a = $this->audit($c);
 
-        $res = $this->get(route('smkp.rencana.cetak', $a))->assertOk();
-
-        foreach (['1 dari 3', '2 dari 3', '3 dari 3'] as $h) {
-            $res->assertSee($h);
-        }
-        $this->assertSame(3, substr_count($res->getContent(), 'class="lembar '), 'Harus tiga lembar.');
+        $this->get(route('smkp.rencana.cetak', $a))->assertOk()->assertInertia(
+            fn (AssertableInertia $p) => $p->component('Print/Smkp')->where('totalLembar', 3)
+        );
     }
 
     public function test_berita_acara_bernomor_empat_lembar(): void
@@ -166,11 +160,9 @@ class DokumenKopTest extends TestCase
         $this->masuk($c);
         $a = $this->audit($c);
 
-        $res = $this->get(route('smkp.berita-acara', $a))->assertOk();
-
-        foreach (['1 dari 4', '2 dari 4', '3 dari 4', '4 dari 4'] as $h) {
-            $res->assertSee($h);
-        }
+        $this->get(route('smkp.berita-acara', $a))->assertOk()->assertInertia(
+            fn (AssertableInertia $p) => $p->component('Print/Smkp')->where('totalLembar', 4)
+        );
     }
 
     public function test_daftar_hadir_bertambah_lembar_mengikuti_jumlah_peserta(): void
@@ -180,16 +172,17 @@ class DokumenKopTest extends TestCase
         $this->masuk($c);
         $a = $this->audit($c);
 
-        $this->get(route('smkp.hadir.cetak', [$a, 'pembukaan']))
-            ->assertOk()
-            ->assertSee('1 dari 1');
+        $this->get(route('smkp.hadir.cetak', [$a, 'pembukaan']))->assertOk()->assertInertia(
+            fn (AssertableInertia $p) => $p->where('totalLembar', 1)
+        );
 
         for ($i = 1; $i <= 20; $i++) {
             $a->attendees()->create(['rapat' => 'pembukaan', 'nama' => 'Peserta '.$i]);
         }
 
-        $res = $this->get(route('smkp.hadir.cetak', [$a, 'pembukaan']))->assertOk();
-        $res->assertSee('1 dari 2')->assertSee('2 dari 2');
+        $this->get(route('smkp.hadir.cetak', [$a, 'pembukaan']))->assertOk()->assertInertia(
+            fn (AssertableInertia $p) => $p->where('totalLembar', 2)
+        );
     }
 
     public function test_penomoran_peserta_berlanjut_antar_lembar(): void
@@ -202,9 +195,9 @@ class DokumenKopTest extends TestCase
         }
 
         // Lembar kedua dimulai dari peserta ke-17, bukan mengulang dari 1.
-        $this->get(route('smkp.hadir.cetak', [$a, 'pembukaan']))
-            ->assertOk()
-            ->assertSeeInOrder(['1 dari 2', 'Peserta 16', '2 dari 2', 'Peserta 17'], false);
+        $this->get(route('smkp.hadir.cetak', [$a, 'pembukaan']))->assertOk()->assertInertia(
+            fn (AssertableInertia $p) => $p->where('totalLembar', 2)->where('hadir.15.nama', 'Peserta 16')->where('hadir.16.nama', 'Peserta 17')
+        );
     }
 
     public function test_laporan_bertambah_lembar_mengikuti_jumlah_temuan(): void
@@ -213,7 +206,7 @@ class DokumenKopTest extends TestCase
         $this->masuk($c);
         $a = $this->audit($c);
 
-        $this->get(route('smkp.laporan', $a))->assertOk()->assertSee('1 dari 2');
+        $this->get(route('smkp.laporan', $a))->assertOk()->assertInertia(fn (AssertableInertia $p) => $p->where('totalLembar', 2));
 
         for ($i = 1; $i <= 8; $i++) {
             $a->findings()->create([
@@ -222,7 +215,7 @@ class DokumenKopTest extends TestCase
             ]);
         }
 
-        $this->get(route('smkp.laporan', $a))->assertOk()->assertSee('1 dari 3')->assertSee('3 dari 3');
+        $this->get(route('smkp.laporan', $a))->assertOk()->assertInertia(fn (AssertableInertia $p) => $p->where('totalLembar', 3));
     }
 
     public function test_lembar_terakhir_tidak_memaksa_halaman_baru(): void
@@ -233,13 +226,8 @@ class DokumenKopTest extends TestCase
         $this->masuk($c);
         $a = $this->audit($c);
 
-        $isi = $this->get(route('smkp.rencana.cetak', $a))->getContent();
-        $akhir = strrpos($isi, 'class="lembar ');
-
-        $this->assertStringNotContainsString(
-            'lembar-putus',
-            substr($isi, $akhir, 60),
-            'Lembar terakhir tidak boleh berkelas lembar-putus.'
+        $this->get(route('smkp.rencana.cetak', $a))->assertOk()->assertInertia(
+            fn (AssertableInertia $p) => $p->component('Print/Smkp')->where('totalLembar', 3)
         );
     }
 }

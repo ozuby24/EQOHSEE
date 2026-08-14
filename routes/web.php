@@ -3,11 +3,11 @@
 use App\Http\Controllers\{
     CertificateController, CourseController, DashboardController, EvaluationController,
     LearnController, NewsController, PersonaliaController, ProcedureController, ProfileController,
-    QuizController, SopController
+    QuizController, SopController, LandingController
 };
 use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiTemuanController, HazardController,
     HazardExportController, InspectionController, InspectionTemplateController,
-    EnergyController, EngineeringController, GudangController, IsoController, KoController, KuesionerController, SignatoryController, SmkpController,
+    EnergyController, EngineeringController, GudangController, IsoController, KoController, KonservasiController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\{BantuanController, ChatController};
 use App\Http\Controllers\Admin\{CompanyController, SystemController, UserController};
@@ -22,7 +22,9 @@ Route::get('q/{token}/selesai',      [KuesionerController::class,'selesai'])->na
 Route::get('q/{token}/{cat}',        [KuesionerController::class,'form'])->name('kuesioner.form');
 Route::post('q/{token}/{cat}',       [KuesionerController::class,'submit'])->name('kuesioner.submit');
 
-Route::get('/', fn () => auth()->check() ? redirect()->route('dashboard') : view('landing'))->name('beranda');
+Route::get('/', fn () => auth()->check()
+    ? redirect()->route('dashboard')
+    : app(LandingController::class)->index())->name('beranda');
 
 /* 'verified' dipasang di sini, bukan per rute: halaman yang lupa
    memakainya tidak menimbulkan galat apa pun — ia hanya diam-diam
@@ -213,6 +215,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
        berupa berkas statis supaya tautan yang sudah beredar tetap sampai. */
     Route::prefix('mining-engineering-hub')->name('meh.')->group(function () {
         Route::get('/',            [EngineeringController::class,'index'])->name('index');
+        Route::get('monitor',      [EngineeringController::class,'monitor'])->name('monitor');
         Route::get('energy',       [EngineeringController::class,'energy'])->name('energy');
         Route::get('fleet',        [EngineeringController::class,'fleet'])->name('fleet');
         Route::get('equipment',    [EngineeringController::class,'equipment'])->name('equipment');
@@ -226,6 +229,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     /* ================= WEBSITE #6 — Energy Performance Center ================= */
     Route::prefix('energi')->name('energi.')->group(function () {
         Route::get('/',            [EnergyController::class,'index'])->name('index');
+        Route::get('input',        [EnergyController::class,'input'])->name('input');
+        Route::post('input/produksi', [EnergyController::class,'simpanProduksi'])->name('input.production');
+        Route::post('input/fuel', [EnergyController::class,'simpanFuel'])->name('input.fuel');
+        Route::post('input/listrik', [EnergyController::class,'simpanListrik'])->name('input.power');
+        Route::post('input/rekonsiliasi', [EnergyController::class,'simpanRekonsiliasi'])->name('input.recon');
         Route::get('konsumsi',     [EnergyController::class,'konsumsi'])->name('konsumsi');
         Route::get('bahan-bakar',  [EnergyController::class,'fuel'])->name('fuel');
         Route::get('listrik',      [EnergyController::class,'listrik'])->name('listrik');
@@ -249,6 +257,34 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('data-induk',   [EnergyController::class,'master'])->name('master');
         Route::post('data-induk',  [EnergyController::class,'simpanUnit'])->name('master.simpan');
         Route::delete('data-induk/{unit}', [EnergyController::class,'hapusUnit'])->name('master.hapus');
+    });
+
+    /* ================= WEBSITE #8 - Konservasi Minerba ================= */
+    Route::prefix('konservasi')->name('konservasi.')->group(function () {
+        Route::get('/', [KonservasiController::class, 'index'])->name('index');
+        Route::get('data', [KonservasiController::class, 'data'])->name('data');
+        Route::get('laporan', [KonservasiController::class, 'laporan'])->name('laporan');
+
+        Route::post('records', [KonservasiController::class, 'simpanRecord'])->name('record.simpan');
+        Route::put('records/{record}', [KonservasiController::class, 'ubahRecord'])->name('record.ubah');
+        Route::delete('records/{record}', [KonservasiController::class, 'hapusRecord'])->middleware('can:admin')->name('record.hapus');
+
+        Route::post('actions', [KonservasiController::class, 'simpanAction'])->name('action.simpan');
+        Route::put('actions/{action}', [KonservasiController::class, 'ubahAction'])->name('action.ubah');
+        Route::delete('actions/{action}', [KonservasiController::class, 'hapusAction'])->middleware('can:admin')->name('action.hapus');
+    });
+
+    /* ================= WEBSITE #9 — Operasi Tambang & peta GIS ================= */
+    Route::prefix('operasi-tambang')->name('operasi.')->group(function () {
+        Route::get('/', [MineOperationsController::class, 'index'])->name('index');
+        Route::get('data', [MineOperationsController::class, 'data'])->name('data');
+        Route::get('target', [MineOperationsController::class, 'target'])->name('target');
+        Route::get('gis', [MineOperationsController::class, 'gis'])->name('gis');
+        Route::post('records', [MineOperationsController::class, 'simpanRecord'])->name('record.simpan');
+        Route::delete('records/{record}', [MineOperationsController::class, 'hapusRecord'])->middleware('can:admin')->name('record.hapus');
+        Route::post('targets', [MineOperationsController::class, 'simpanTarget'])->name('target.simpan');
+        Route::post('layers', [MineOperationsController::class, 'simpanLayer'])->name('layer.simpan');
+        Route::delete('layers/{layer}', [MineOperationsController::class, 'hapusLayer'])->middleware('can:admin')->name('layer.hapus');
     });
 
     /* ================= WEBSITE #5b — ISO: pemenuhan klausul ================= */

@@ -48,6 +48,8 @@ class HandleInertiaRequests extends Middleware
                 'galat'  => $request->session()->get('galat'),
             ],
 
+            'status' => fn () => $request->session()->get('status'),
+
             'pengumuman' => fn () => Schema::hasTable('news')
                 ? \App\Models\News::where('created_at', '>=', now()->subDays(30))->count()
                 : 0,

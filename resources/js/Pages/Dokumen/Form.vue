@@ -28,7 +28,7 @@ const terbukaAwal: Record<string, boolean> = Object.fromEntries(
   props.standar.map((s) => [s.kode, isoAwal[s.kode].length > 0]),
 );
 
-const form = useForm({ ...props.awal, iso: isoAwal, berkas: null as File | null });
+const form = useForm<Record<string, any>>({ ...props.awal, iso: isoAwal, berkas: null as File | null });
 
 function pilihBerkas(e: Event) {
   const f = (e.target as HTMLInputElement).files;

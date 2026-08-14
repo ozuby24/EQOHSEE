@@ -10,6 +10,9 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import type { HalamanVerifikasi } from '../../types';
+import GuestLayout from '../../Layouts/GuestLayout.vue';
+
+defineOptions({ layout: GuestLayout });
 
 const props = defineProps<HalamanVerifikasi>();
 
