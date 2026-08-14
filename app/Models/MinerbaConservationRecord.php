@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BerpemilikPerusahaan;
+use App\Models\Concerns\Ditinjau;
 use App\Models\Scopes\MilikPerusahaan;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Model;
@@ -12,14 +13,16 @@ use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
 class MinerbaConservationRecord extends Model
 {
     use BerpemilikPerusahaan;
+    use Ditinjau;
 
     protected $table = 'konservasi_minerba_records';
 
+    /** `status` dikelola Ditinjau, bukan diisi dari formulir. */
     protected $fillable = [
         'company_id', 'periode', 'lokasi', 'komoditas', 'satuan',
         'target_produksi', 'produksi_aktual', 'material_digali',
         'recovery_percent', 'kehilangan_material', 'dilusi', 'stok_akhir',
-        'mineral_ikutan', 'status', 'catatan', 'user_id',
+        'mineral_ikutan', 'catatan', 'user_id',
     ];
 
     protected function casts(): array
@@ -33,6 +36,8 @@ class MinerbaConservationRecord extends Model
             'kehilangan_material' => 'float',
             'dilusi' => 'float',
             'stok_akhir' => 'float',
+            'diajukan_pada' => 'datetime',
+            'ditinjau_pada' => 'datetime',
         ];
     }
 

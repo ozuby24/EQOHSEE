@@ -23,12 +23,16 @@ class KonservasiMinerbaTest extends TestCase
     {
         $this->masuk(['is_admin' => true]);
 
-        MinerbaConservationRecord::create([
+        // Angka hanya terhitung setelah ditinjau; membuat baris lalu
+        // langsung mengharapkannya di KPI adalah anggapan lama.
+        $rec = MinerbaConservationRecord::create([
             'periode' => '2026-01-31', 'lokasi' => 'Pit A', 'komoditas' => 'Batubara',
             'target_produksi' => 1000, 'produksi_aktual' => 900, 'material_digali' => 1200,
             'recovery_percent' => 75, 'kehilangan_material' => 50, 'dilusi' => 30,
-            'stok_akhir' => 200, 'status' => 'terbit',
+            'stok_akhir' => 200,
         ]);
+        $rec->ajukan();
+        $rec->setujui(User::factory()->create(['lms_role' => 'ktt']));
 
         $this->get(route('konservasi.index', ['tahun' => 2026]))
             ->assertInertia(fn (Assert $page) => $page

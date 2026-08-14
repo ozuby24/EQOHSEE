@@ -3,13 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Company, MinerbaConservationAction, MinerbaConservationRecord};
+use App\Support\Alur;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class KonservasiController extends Controller
 {
-    public const STATUS_RECORD = ['draft', 'diverifikasi', 'terbit'];
     public const KATEGORI_ACTION = ['recovery', 'kehilangan', 'dilusi', 'stockpile', 'mineral_ikutan', 'reklamasi'];
     public const PRIORITAS_ACTION = ['rendah', 'sedang', 'tinggi', 'kritis'];
     public const STATUS_ACTION = ['rencana', 'berjalan', 'selesai', 'terlambat'];
@@ -50,10 +50,52 @@ class KonservasiController extends Controller
 
     public function hapusRecord(MinerbaConservationRecord $record)
     {
+        if ($record->sudahDisetujui()) {
+            return back()->withErrors(['alur' => 'Data yang sudah disetujui tidak dapat dihapus.']);
+        }
+
         ActivityLog::write('Hapus konservasi minerba', $record->komoditas.' - '.$record->periode->format('F Y'), 'konservasi');
         $record->delete();
 
         return back()->with('ok', 'Data konservasi dihapus.');
+    }
+
+    /* ---------- alur tinjauan ---------- */
+
+    public function ajukanRecord(MinerbaConservationRecord $record)
+    {
+        return $this->jalankan($record, fn () => $record->ajukan(),
+            'Ajukan konservasi minerba', 'Data diajukan untuk ditinjau.');
+    }
+
+    public function setujuiRecord(MinerbaConservationRecord $record)
+    {
+        return $this->jalankan($record, fn () => $record->setujui(),
+            'Setujui konservasi minerba', 'Data disetujui dan kini terhitung pada KPI.');
+    }
+
+    public function tolakRecord(Request $request, MinerbaConservationRecord $record)
+    {
+        $alasan = $request->validate([
+            'alasan_tolak' => ['required', 'string', 'min:5', 'max:1000'],
+        ])['alasan_tolak'];
+
+        return $this->jalankan($record, fn () => $record->tolak($alasan),
+            'Tolak konservasi minerba', 'Data ditolak dan dikembalikan kepada pengaju.');
+    }
+
+    /** Penolakan oleh alur dijawab sebagai galat pada bidang, bukan 403. */
+    private function jalankan(MinerbaConservationRecord $record, callable $aksi, string $peristiwa, string $pesan)
+    {
+        try {
+            $aksi();
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['alur' => $e->getMessage()]);
+        }
+
+        ActivityLog::write($peristiwa, $record->komoditas.' - '.$record->periode->format('F Y'), 'konservasi');
+
+        return back()->with('ok', $pesan);
     }
 
     public function simpanAction(Request $request)
@@ -111,30 +153,38 @@ class KonservasiController extends Controller
         }
 
         $records = $query->get();
+
+        // Daftar menampilkan semuanya supaya pengaju melihat drafnya
+        // sendiri; hitungan hanya memakai yang sudah ditinjau. Memisahkan
+        // keduanya di sini, sekali, mencegah angka yang belum disetujui
+        // ikut terbawa ke KPI dan ke laporan — kesalahan yang tidak
+        // menimbulkan galat apa pun, hanya angka yang salah.
+        $sah = $records->whereIn('status', Alur::terhitung());
+
         $actions = MinerbaConservationAction::with(['record', 'company'])
             ->when($request->filled('perusahaan'), fn ($q) => $q->where('company_id', $request->integer('perusahaan')))
             ->orderByRaw("CASE status WHEN 'terlambat' THEN 0 WHEN 'berjalan' THEN 1 WHEN 'rencana' THEN 2 ELSE 3 END")
             ->latest('target_selesai')->get();
 
-        $material = (float) $records->sum('material_digali');
-        $aktual = (float) $records->sum('produksi_aktual');
-        $target = (float) $records->sum('target_produksi');
-        $recovery = $material > 0 ? ($aktual / $material) * 100 : (float) $records->avg('recovery_percent');
+        $material = (float) $sah->sum('material_digali');
+        $aktual = (float) $sah->sum('produksi_aktual');
+        $target = (float) $sah->sum('target_produksi');
+        $recovery = $material > 0 ? ($aktual / $material) * 100 : (float) $sah->avg('recovery_percent');
 
         $ringkas = [
-            'jumlah_record' => $records->count(),
+            'jumlah_record' => $sah->count(),
             'target_produksi' => $target,
             'produksi_aktual' => $aktual,
             'capaian_target' => $target > 0 ? ($aktual / $target) * 100 : 0,
             'material_digali' => $material,
             'recovery' => min(100, max(0, $recovery ?: 0)),
-            'kehilangan_material' => (float) $records->sum('kehilangan_material'),
-            'dilusi' => (float) $records->sum('dilusi'),
-            'stok_akhir' => (float) $records->sum('stok_akhir'),
+            'kehilangan_material' => (float) $sah->sum('kehilangan_material'),
+            'dilusi' => (float) $sah->sum('dilusi'),
+            'stok_akhir' => (float) $sah->sum('stok_akhir'),
             'action_terbuka' => $actions->whereNotIn('status', ['selesai'])->count(),
         ];
 
-        $perKomoditas = $records->groupBy('komoditas')->map(function ($rows, $komoditas) {
+        $perKomoditas = $sah->groupBy('komoditas')->map(function ($rows, $komoditas) {
             $material = (float) $rows->sum('material_digali');
             $aktual = (float) $rows->sum('produksi_aktual');
             $target = (float) $rows->sum('target_produksi');
@@ -162,7 +212,7 @@ class KonservasiController extends Controller
             'actions' => $actions->map(fn (MinerbaConservationAction $action) => $this->actionView($action))->values()->all(),
             'companies' => Company::orderBy('name')->get(['id', 'name']),
             'opsi' => [
-                'statusRecord' => self::STATUS_RECORD,
+                'statusRecord' => Alur::LABEL,
                 'kategoriAction' => self::KATEGORI_ACTION,
                 'prioritasAction' => self::PRIORITAS_ACTION,
                 'statusAction' => self::STATUS_ACTION,
@@ -197,8 +247,24 @@ class KonservasiController extends Controller
             'stok_akhir' => $record->stok_akhir,
             'mineral_ikutan' => $record->mineral_ikutan,
             'status' => $record->status,
+            'statusLabel' => Alur::LABEL[$record->status] ?? $record->status,
             'catatan' => $record->catatan,
             'perusahaan' => $record->company?->name,
+
+            // Keadaan alur ikut dikirim supaya antarmuka tidak perlu
+            // menyusun ulang aturannya sendiri. Aturan yang ditulis dua
+            // kali akan berbeda cepat atau lambat, dan yang di sisi
+            // browser adalah yang paling mudah dilewati.
+            'alur' => [
+                'dapatDiubah'  => $record->dapatDiubah(),
+                'dapatDiajukan' => $record->dapatDiubah(),
+                'dapatDitinjau' => $record->dapatDitinjauOleh(auth()->user()),
+                'pengaju'      => $record->pengaju?->name,
+                'diajukanPada' => $record->diajukan_pada?->format('Y-m-d H:i'),
+                'peninjau'     => $record->peninjau?->name,
+                'ditinjauPada' => $record->ditinjau_pada?->format('Y-m-d H:i'),
+                'alasanTolak'  => $record->alasan_tolak,
+            ],
         ];
     }
 
@@ -234,7 +300,6 @@ class KonservasiController extends Controller
             'dilusi' => ['required', 'numeric', 'min:0', 'max:1000000000'],
             'stok_akhir' => ['required', 'numeric', 'min:0', 'max:1000000000'],
             'mineral_ikutan' => ['nullable', 'string', 'max:500'],
-            'status' => ['required', Rule::in(self::STATUS_RECORD)],
             'catatan' => ['nullable', 'string', 'max:3000'],
         ]);
     }

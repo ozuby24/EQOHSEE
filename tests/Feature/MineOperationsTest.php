@@ -20,12 +20,17 @@ class MineOperationsTest extends TestCase
             'target_produksi_ton' => 1000, 'target_overburden_bcm' => 2500,
             'target_strip_ratio' => 2, 'target_jarak_km' => 5,
         ]);
-        MineOperationalRecord::create([
+        // Angka hanya terhitung setelah melewati tinjauan. Membuat baris
+        // lalu langsung mengharapkannya muncul di KPI adalah anggapan lama,
+        // ketika status masih dapat disebut sendiri oleh pengirim data.
+        $rec = MineOperationalRecord::create([
             'company_id' => $company->id, 'tanggal' => '2026-02-05', 'shift' => 'siang',
             'pit' => 'Pit A', 'material' => 'Batubara', 'produksi_ton' => 800,
             'overburden_bcm' => 2200, 'jarak_angkut_km' => 6, 'jam_operasi' => 7,
-            'jam_delay' => 2, 'status' => 'terverifikasi',
+            'jam_delay' => 2,
         ]);
+        $rec->ajukan();
+        $rec->setujui(User::factory()->create(['lms_role' => 'ktt']));
 
         $props = $this->get(route('operasi.index', ['dari' => '2026-02-01', 'sampai' => '2026-02-28']))
             ->assertOk()->viewData('page')['props'];

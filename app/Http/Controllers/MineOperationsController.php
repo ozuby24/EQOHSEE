@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Company, MineMapLayer, MineOperationalRecord, MineOperationalTarget};
+use App\Support\Alur;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
@@ -11,7 +12,6 @@ use Inertia\Inertia;
 class MineOperationsController extends Controller
 {
     public const SHIFT = ['siang', 'malam'];
-    public const STATUS_RECORD = ['draft', 'terverifikasi', 'disetujui'];
     public const TIPE_LAYER = ['pit', 'disposal', 'rom', 'stockpile', 'haul_road', 'area_kerja', 'drainase'];
     public const STATUS_LAYER = ['draft', 'aktif', 'arsip'];
 
@@ -36,7 +36,6 @@ class MineOperationsController extends Controller
             'jumlah_excavator' => ['required', 'integer', 'min:0', 'max:1000'],
             'jam_operasi' => ['required', 'numeric', 'min:0', 'max:24'],
             'jam_delay' => ['required', 'numeric', 'min:0', 'max:24'],
-            'status' => ['required', Rule::in(self::STATUS_RECORD)],
             'catatan' => ['nullable', 'string', 'max:2000'],
         ]));
 
@@ -53,9 +52,57 @@ class MineOperationsController extends Controller
 
     public function hapusRecord(MineOperationalRecord $record)
     {
+        if ($record->sudahDisetujui()) {
+            return back()->withErrors(['alur' => 'Data yang sudah disetujui tidak dapat dihapus.']);
+        }
+
         ActivityLog::write('Hapus operasi tambang', $record->tanggal->format('Y-m-d').' · '.$record->material, 'operasi');
         $record->delete();
         return back()->with('ok', 'Data operasi dihapus.');
+    }
+
+    /* ---------- alur tinjauan ---------- */
+
+    public function ajukanRecord(MineOperationalRecord $record)
+    {
+        return $this->jalankan($record, fn () => $record->ajukan(),
+            'Ajukan data operasi', 'Data diajukan untuk ditinjau.');
+    }
+
+    public function setujuiRecord(MineOperationalRecord $record)
+    {
+        return $this->jalankan($record, fn () => $record->setujui(),
+            'Setujui data operasi', 'Data disetujui dan kini terhitung pada KPI.');
+    }
+
+    public function tolakRecord(Request $request, MineOperationalRecord $record)
+    {
+        $alasan = $request->validate([
+            'alasan_tolak' => ['required', 'string', 'min:5', 'max:1000'],
+        ])['alasan_tolak'];
+
+        return $this->jalankan($record, fn () => $record->tolak($alasan),
+            'Tolak data operasi', 'Data ditolak dan dikembalikan kepada pengaju.');
+    }
+
+    /**
+     * Penolakan oleh alur dijawab sebagai galat pada bidang, bukan 403.
+     *
+     * Halaman ini dibuka lewat Inertia: 403 memunculkan layar galat dan
+     * membuang isian yang sedang diketik, sementara pesan pada bidang
+     * tampil di tempat pengguna sedang bekerja.
+     */
+    private function jalankan(MineOperationalRecord $record, callable $aksi, string $peristiwa, string $pesan)
+    {
+        try {
+            $aksi();
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['alur' => $e->getMessage()]);
+        }
+
+        ActivityLog::write($peristiwa, $record->tanggal->format('Y-m-d').' · '.$record->material, 'operasi');
+
+        return back()->with('ok', $pesan);
     }
 
     public function simpanTarget(Request $request)
@@ -116,6 +163,12 @@ class MineOperationsController extends Controller
         $records = MineOperationalRecord::with('company')
             ->whereBetween('tanggal', [$dari, $sampai])
             ->latest('tanggal')->latest('id')->get();
+
+        // Daftar menampilkan semuanya supaya pengaju melihat drafnya
+        // sendiri; hitungan hanya memakai yang sudah ditinjau. Angka yang
+        // belum disetujui yang ikut terhitung tidak menimbulkan galat —
+        // ia hanya membuat KPI dan laporan salah tanpa ada yang tahu.
+        $sah = $records->whereIn('status', Alur::terhitung());
         $targets = MineOperationalTarget::with('company')
             ->whereRaw('(tahun * 100 + bulan) between ? and ?', [
                 $dari->year * 100 + $dari->month,
@@ -131,15 +184,15 @@ class MineOperationsController extends Controller
             $mode === 'gis' ? ['*'] : ['id', 'company_id', 'nama', 'tipe', 'warna', 'status', 'catatan', 'created_at']
         );
 
-        $produksi = (float) $records->sum('produksi_ton');
-        $ob = (float) $records->sum('overburden_bcm');
-        $operasi = (float) $records->sum('jam_operasi');
-        $delay = (float) $records->sum('jam_delay');
+        $produksi = (float) $sah->sum('produksi_ton');
+        $ob = (float) $sah->sum('overburden_bcm');
+        $operasi = (float) $sah->sum('jam_operasi');
+        $delay = (float) $sah->sum('jam_delay');
         $targetProduksi = (float) $targets->sum('target_produksi_ton');
         $targetOb = (float) $targets->sum('target_overburden_bcm');
         $stripRatio = $produksi > 0 ? $ob / $produksi : 0;
         $targetStrip = $targets->filter(fn ($x) => $x->target_strip_ratio !== null)->avg('target_strip_ratio');
-        $jarak = $produksi > 0 ? $records->sum(fn ($x) => $x->jarak_angkut_km * $x->produksi_ton) / $produksi : 0;
+        $jarak = $produksi > 0 ? $sah->sum(fn ($x) => $x->jarak_angkut_km * $x->produksi_ton) / $produksi : 0;
         $targetJarak = $targets->filter(fn ($x) => $x->target_jarak_km !== null)->avg('target_jarak_km');
 
         $ringkas = [
@@ -151,20 +204,20 @@ class MineOperationsController extends Controller
             'jarak_rata' => $jarak,
             'efisiensi_waktu' => ($operasi + $delay) > 0 ? $operasi / ($operasi + $delay) * 100 : 0,
             'delay_jam' => $delay,
-            'hari_aktif' => $records->pluck('tanggal')->unique()->count(),
-            'jumlah_record' => $records->count(),
+            'hari_aktif' => $sah->pluck('tanggal')->unique()->count(),
+            'jumlah_record' => $sah->count(),
             'layer_aktif' => $layers->where('status', 'aktif')->count(),
         ];
 
         $alerts = [];
-        if (!$records->count()) $alerts[] = ['level' => 'tinggi', 'judul' => 'Belum ada input operasi', 'ket' => 'Masukkan produksi, OB, jarak, dan jam delay dari laporan shift.'];
+        if (!$sah->count()) $alerts[] = ['level' => 'tinggi', 'judul' => 'Belum ada input operasi', 'ket' => 'Masukkan produksi, OB, jarak, dan jam delay dari laporan shift.'];
         if ($targetProduksi > 0 && $ringkas['capaian_produksi'] < 90) $alerts[] = ['level' => 'tinggi', 'judul' => 'Capaian produksi di bawah 90%', 'ket' => number_format($ringkas['capaian_produksi'], 1).' % terhadap target periode.'];
         if ($targetOb > 0 && $ringkas['capaian_ob'] < 90) $alerts[] = ['level' => 'sedang', 'judul' => 'Capaian pemindahan OB rendah', 'ket' => number_format($ringkas['capaian_ob'], 1).' % terhadap target periode.'];
         if ($targetStrip && $stripRatio > $targetStrip * 1.15) $alerts[] = ['level' => 'tinggi', 'judul' => 'Strip ratio melewati target', 'ket' => number_format($stripRatio, 2).' vs target '.number_format($targetStrip, 2).'.'];
         if ($targetJarak && $jarak > $targetJarak * 1.15) $alerts[] = ['level' => 'sedang', 'judul' => 'Jarak angkut meningkat', 'ket' => number_format($jarak, 2).' km vs target '.number_format($targetJarak, 2).' km.'];
         if ($delay > 0 && ($operasi + $delay) > 0 && $delay / ($operasi + $delay) > .15) $alerts[] = ['level' => 'sedang', 'judul' => 'Delay operasi tinggi', 'ket' => number_format($delay / ($operasi + $delay) * 100, 1).' % waktu tercatat sebagai delay.'];
 
-        $perPit = $records->groupBy(fn ($x) => $x->pit ?: ($x->area ?: 'Belum ditentukan'))->map(function ($rows, $nama) {
+        $perPit = $sah->groupBy(fn ($x) => $x->pit ?: ($x->area ?: 'Belum ditentukan'))->map(function ($rows, $nama) {
             $ton = (float) $rows->sum('produksi_ton');
             $ob = (float) $rows->sum('overburden_bcm');
             $operasi = (float) $rows->sum('jam_operasi');
@@ -172,9 +225,9 @@ class MineOperationsController extends Controller
             return ['nama' => $nama, 'produksi' => $ton, 'ob' => $ob, 'strip_ratio' => $ton > 0 ? $ob / $ton : 0, 'delay_persen' => ($operasi + $delay) > 0 ? $delay / ($operasi + $delay) * 100 : 0, 'record' => $rows->count()];
         })->sortByDesc('produksi')->values()->all();
 
-        $tanggal = $records->pluck('tanggal')->map(fn ($x) => Carbon::parse($x)->toDateString())->unique()->sort()->values();
-        $tren = $tanggal->map(function (string $date) use ($records) {
-            $rows = $records->filter(fn ($x) => $x->tanggal->toDateString() === $date);
+        $tanggal = $sah->pluck('tanggal')->map(fn ($x) => Carbon::parse($x)->toDateString())->unique()->sort()->values();
+        $tren = $tanggal->map(function (string $date) use ($sah) {
+            $rows = $sah->filter(fn ($x) => $x->tanggal->toDateString() === $date);
             return ['tanggal' => $date, 'produksi' => (float) $rows->sum('produksi_ton'), 'ob' => (float) $rows->sum('overburden_bcm'), 'delay' => (float) $rows->sum('jam_delay')];
         })->all();
 
@@ -188,7 +241,7 @@ class MineOperationsController extends Controller
                 ->map(fn (MineOperationalTarget $x) => $this->targetView($x))->values(),
             'layers' => $layers->map(fn (MineMapLayer $x) => $this->layerView($x, $mode === 'gis'))->values(),
             'perPit' => $perPit, 'tren' => $tren, 'alerts' => $alerts, 'companies' => $companies,
-            'opsi' => ['shift' => self::SHIFT, 'statusRecord' => self::STATUS_RECORD, 'tipeLayer' => self::TIPE_LAYER, 'statusLayer' => self::STATUS_LAYER],
+            'opsi' => ['shift' => self::SHIFT, 'statusRecord' => Alur::LABEL, 'tipeLayer' => self::TIPE_LAYER, 'statusLayer' => self::STATUS_LAYER],
             'tautan' => [
                 'dashboard' => route('operasi.index'), 'data' => route('operasi.data'), 'target' => route('operasi.target'), 'gis' => route('operasi.gis'),
                 'recordSimpan' => route('operasi.record.simpan'), 'recordHapus' => route('operasi.record.hapus', ['record' => 0]),
@@ -226,8 +279,23 @@ class MineOperationsController extends Controller
             'jam_operasi' => $x->jam_operasi,
             'jam_delay' => $x->jam_delay,
             'status' => $x->status,
+            'statusLabel' => Alur::LABEL[$x->status] ?? $x->status,
             'catatan' => $x->catatan,
             'companyName' => $x->company?->name,
+
+            // Keadaan alur ikut dikirim supaya antarmuka tidak menyusun
+            // ulang aturannya sendiri; aturan yang ditulis dua kali akan
+            // berbeda cepat atau lambat.
+            'alur' => [
+                'dapatDiubah'   => $x->dapatDiubah(),
+                'dapatDiajukan' => $x->dapatDiubah(),
+                'dapatDitinjau' => $x->dapatDitinjauOleh(auth()->user()),
+                'pengaju'       => $x->pengaju?->name,
+                'diajukanPada'  => $x->diajukan_pada?->format('Y-m-d H:i'),
+                'peninjau'      => $x->peninjau?->name,
+                'ditinjauPada'  => $x->ditinjau_pada?->format('Y-m-d H:i'),
+                'alasanTolak'   => $x->alasan_tolak,
+            ],
         ];
     }
 

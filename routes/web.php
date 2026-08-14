@@ -269,6 +269,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('records/{record}', [KonservasiController::class, 'ubahRecord'])->name('record.ubah');
         Route::delete('records/{record}', [KonservasiController::class, 'hapusRecord'])->middleware('can:admin')->name('record.hapus');
 
+        /* Alur tinjauan. Hak meninjau diperiksa di dalam model — bukan di
+           sini — supaya aturan "pengaju bukan peninjau" berlaku juga bagi
+           pemanggil selain rute ini, seperti perintah artisan dan antrean. */
+        Route::post('records/{record}/ajukan',  [KonservasiController::class, 'ajukanRecord'])->name('record.ajukan');
+        Route::post('records/{record}/setujui', [KonservasiController::class, 'setujuiRecord'])->name('record.setujui');
+        Route::post('records/{record}/tolak',   [KonservasiController::class, 'tolakRecord'])->name('record.tolak');
+
         Route::post('actions', [KonservasiController::class, 'simpanAction'])->name('action.simpan');
         Route::put('actions/{action}', [KonservasiController::class, 'ubahAction'])->name('action.ubah');
         Route::delete('actions/{action}', [KonservasiController::class, 'hapusAction'])->middleware('can:admin')->name('action.hapus');
@@ -282,6 +289,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('gis', [MineOperationsController::class, 'gis'])->name('gis');
         Route::post('records', [MineOperationsController::class, 'simpanRecord'])->name('record.simpan');
         Route::delete('records/{record}', [MineOperationsController::class, 'hapusRecord'])->middleware('can:admin')->name('record.hapus');
+
+        Route::post('records/{record}/ajukan',  [MineOperationsController::class, 'ajukanRecord'])->name('record.ajukan');
+        Route::post('records/{record}/setujui', [MineOperationsController::class, 'setujuiRecord'])->name('record.setujui');
+        Route::post('records/{record}/tolak',   [MineOperationsController::class, 'tolakRecord'])->name('record.tolak');
         Route::post('targets', [MineOperationsController::class, 'simpanTarget'])->name('target.simpan');
         Route::post('layers', [MineOperationsController::class, 'simpanLayer'])->name('layer.simpan');
         Route::delete('layers/{layer}', [MineOperationsController::class, 'hapusLayer'])->middleware('can:admin')->name('layer.hapus');
