@@ -29,6 +29,18 @@
 
 set -euo pipefail
 
+# Pengaturan dibaca dari deploy/vps.conf bila ada. Berkas itu tidak masuk
+# repo: alamat server dan porta SSH berbeda-beda tiap orang, dan yang
+# tersimpan di repo cepat atau lambat akan dipakai orang lain tanpa
+# sengaja. Contohnya ada di deploy/vps.conf.example.
+#
+# Isinya memakai bentuk `: "${VPS_HOST:=...}"` — hanya mengisi yang belum
+# diset, sehingga variabel lingkungan tetap menang bila diberikan saat
+# pemanggilan.
+KONFIG="$(dirname "$0")/vps.conf"
+# shellcheck source=/dev/null
+[ -f "$KONFIG" ] && . "$KONFIG"
+
 VPS_HOST="${VPS_HOST:-root@103.89.4.246}"
 VPS_PORT="${VPS_PORT:-22}"
 VPS_DIR="${VPS_DIR:-/var/www/EQOHSEE}"

@@ -1,0 +1,32 @@
+# Pengaturan pengiriman ke VPS — contoh.
+#
+#   cp deploy/vps.conf.example deploy/vps.conf
+#
+# Salinannya (deploy/vps.conf) diabaikan Git dan tidak akan ikut terkirim.
+# Alamat server dan porta SSH berbeda tiap orang; yang tersimpan di repo
+# cepat atau lambat akan terpakai orang lain tanpa sengaja.
+#
+# Bentuk `: "${NAMA:=nilai}"` hanya mengisi yang belum diset, sehingga
+# variabel lingkungan tetap menang bila diberikan saat pemanggilan:
+#
+#   VPS_HOST=deploy@staging bash deploy/kirim.sh
+#
+# Berkas ini TIDAK boleh memuat kata sandi. Masuk ke VPS memakai kunci
+# SSH, bukan sandi — lihat VPS.md.
+
+# Pengguna dan alamat VPS.
+: "${VPS_HOST:=root@103.89.4.246}"
+
+# Porta SSH. Ubah bila sshd tidak berjalan di 22.
+: "${VPS_PORT:=22}"
+
+# Letak repo di dalam VPS. Harus berupa klon Git, bukan sekadar folder
+# berisi berkas — kirim.sh menyamakan isinya lewat commit.
+: "${VPS_DIR:=/var/www/EQOHSEE}"
+
+# Setel 1 agar deploy.sh sekalian menerbitkan sertifikat HTTPS lewat
+# certbot. Biarkan 0 sampai DNS benar-benar mengarah ke VPS ini —
+# certbot menolak menerbitkan sertifikat bila domainnya belum menunjuk
+# ke sana, dan percobaan yang gagal terlalu sering akan kena pembatasan
+# laju dari Let's Encrypt.
+: "${VPS_SSL:=0}"
