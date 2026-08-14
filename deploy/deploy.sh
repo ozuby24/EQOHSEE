@@ -21,7 +21,25 @@ DOMAIN_UTAMA="$(echo "$SERVER_NAME" | awk '{print $1}')"
 
 echo "==> Pulling latest code"
 cd "$REPO_DIR"
+
+# Bash membaca skrip sambil menjalankannya, berdasarkan posisi byte. `git pull`
+# di sini dapat mengganti isi berkas yang sedang dibaca itu juga — dan bila
+# panjangnya bergeser, perintah berikutnya dibaca dari tengah baris lain.
+# Gejalanya galat sintaks yang tidak cocok dengan isi berkas mana pun, atau
+# lebih buruk: separuh langkah terlewat tanpa satu pun pesan.
+#
+# Karena itu sidik jarinya dibandingkan sebelum dan sesudah pull; bila skrip
+# ini ikut berubah, prosesnya diganti dengan versi baru dari awal.
+SIDIK_SEBELUM="$(sha256sum "$0" | cut -d' ' -f1)"
+
 git pull origin "$(git rev-parse --abbrev-ref HEAD)"
+
+if [ -z "${EQOHSEE_DIMUAT_ULANG:-}" ] \
+   && [ "$SIDIK_SEBELUM" != "$(sha256sum "$0" | cut -d' ' -f1)" ]; then
+    echo "==> deploy.sh ikut diperbarui — menjalankan ulang versi barunya"
+    export EQOHSEE_DIMUAT_ULANG=1
+    exec bash "$0" "$@"
+fi
 
 echo "==> Installing PHP dependencies"
 composer install --no-dev --optimize-autoloader
@@ -61,16 +79,54 @@ if [ -z "$PHP_SOCK" ]; then
 fi
 echo "    Using socket: $PHP_SOCK"
 
-echo "==> Installing Nginx vhost (server_name: $SERVER_NAME)"
+# ── Vhost Nginx ───────────────────────────────────────────────────
+# Templatnya dipilih menurut ada tidaknya sertifikat di disk, bukan menurut
+# EQOHSEE_SSL. Sebelumnya vhost selalu dibangkitkan dari templat yang hanya
+# mengenal `listen 80`, sementara certbot menambahkan blok 443-nya ke berkas
+# yang sama — jadi setiap deploy biasa (tanpa EQOHSEE_SSL=1) menghapus HTTPS
+# yang sudah jalan. Tidak ada yang mendengarkan di 443 lagi, dan peramban
+# yang sudah pernah dialihkan ke https menerima ERR_CONNECTION_REFUSED.
+# Karena Laravel tidak pernah dijalankan, lognya bersih dan penyebabnya tidak
+# terlihat sama sekali dari sisi aplikasi.
+BERKAS_VHOST="/etc/nginx/sites-available/eqohsee"
+SERTIFIKAT="/etc/letsencrypt/live/$DOMAIN_UTAMA/fullchain.pem"
+
+if [ -f "$SERTIFIKAT" ]; then
+    TEMPLAT="$REPO_DIR/deploy/nginx-eqohsee-ssl.conf"
+    echo "==> Installing Nginx vhost + HTTPS (server_name: $SERVER_NAME)"
+else
+    TEMPLAT="$REPO_DIR/deploy/nginx-eqohsee.conf"
+    echo "==> Installing Nginx vhost, HTTP saja (server_name: $SERVER_NAME)"
+    echo "    Belum ada sertifikat di $SERTIFIKAT."
+    echo "    Terbitkan sekali dengan: EQOHSEE_SSL=1 bash deploy/deploy.sh"
+fi
+
+# Ditulis ke berkas sementara lalu diuji, bukan langsung ke tempatnya.
+# `nginx -t` menguji seluruh konfigurasi sekaligus, jadi templat yang rusak
+# akan menahan `systemctl restart` — dan nginx yang berhenti membawa serta
+# seluruh situs, bukan hanya perubahan yang salah.
 sed -e "s#__SERVER_NAME__#${SERVER_NAME}#g" \
     -e "s#__PHP_FPM_SOCK__#${PHP_SOCK}#g" \
-    "$REPO_DIR/deploy/nginx-eqohsee.conf" > /etc/nginx/sites-available/eqohsee
+    -e "s#__DOMAIN__#${DOMAIN_UTAMA}#g" \
+    "$TEMPLAT" > "$BERKAS_VHOST.baru"
 
-ln -sf /etc/nginx/sites-available/eqohsee /etc/nginx/sites-enabled/eqohsee
+[ -f "$BERKAS_VHOST" ] && cp "$BERKAS_VHOST" "$BERKAS_VHOST.sebelumnya"
+mv "$BERKAS_VHOST.baru" "$BERKAS_VHOST"
+
+ln -sf "$BERKAS_VHOST" /etc/nginx/sites-enabled/eqohsee
 rm -f /etc/nginx/sites-enabled/default
 
+mkdir -p /var/www/html/.well-known/acme-challenge
+
 echo "==> Testing Nginx config"
-nginx -t
+if ! nginx -t; then
+    echo "!!  Konfigurasi baru ditolak nginx — vhost dikembalikan ke yang lama."
+    if [ -f "$BERKAS_VHOST.sebelumnya" ]; then
+        mv "$BERKAS_VHOST.sebelumnya" "$BERKAS_VHOST"
+        nginx -t && systemctl reload nginx
+    fi
+    exit 1
+fi
 
 echo "==> Restarting services"
 systemctl restart nginx
@@ -150,9 +206,13 @@ if [ "${EQOHSEE_SSL:-0}" = "1" ]; then
         apt-get update -y && apt-get install -y certbot python3-certbot-nginx
     fi
 
-    # --nginx menyunting vhost yang barusan dipasang dan menambahkan
-    # blok 443 beserta pengalihan dari 80. Hanya nama yang berupa domain
-    # yang diajukan; certbot menolak alamat IP.
+    # `certonly --webroot`, bukan `--nginx`. Plugin nginx menyunting vhost
+    # yang setiap deploy ditulis ulang dari repo, sehingga suntingannya hilang
+    # pada deploy berikutnya — persis cacat yang diperbaiki di atas. Dengan
+    # certonly, certbot hanya mengurus sertifikatnya; bentuk vhost sepenuhnya
+    # ditentukan nginx-eqohsee-ssl.conf, dan itu ikut versi bersama kode.
+    #
+    # Hanya nama yang berupa domain yang diajukan; certbot menolak alamat IP.
     DOMAIN_ARGS=""
     for n in $SERVER_NAME; do
         case "$n" in
@@ -160,11 +220,33 @@ if [ "${EQOHSEE_SSL:-0}" = "1" ]; then
         esac
     done
 
-    certbot --nginx $DOMAIN_ARGS --non-interactive --agree-tos --redirect \
-        -m "${EQOHSEE_EMAIL:-admin@${DOMAIN_UTAMA}}" || {
+    if certbot certonly --webroot -w /var/www/html $DOMAIN_ARGS \
+        --non-interactive --agree-tos --keep-until-expiring \
+        --deploy-hook "systemctl reload nginx" \
+        -m "${EQOHSEE_EMAIL:-admin@${DOMAIN_UTAMA}}"; then
+
+        # Sertifikatnya baru ada sesudah vhost dipasang di atas, jadi
+        # vhost-nya dibangun ulang sekarang — kali ini dengan blok 443.
+        if [ -f "$SERTIFIKAT" ]; then
+            echo "==> Memasang ulang vhost dengan HTTPS"
+            cp "$BERKAS_VHOST" "$BERKAS_VHOST.sebelumnya"
+            sed -e "s#__SERVER_NAME__#${SERVER_NAME}#g" \
+                -e "s#__PHP_FPM_SOCK__#${PHP_SOCK}#g" \
+                -e "s#__DOMAIN__#${DOMAIN_UTAMA}#g" \
+                "$REPO_DIR/deploy/nginx-eqohsee-ssl.conf" > "$BERKAS_VHOST"
+
+            if nginx -t; then
+                systemctl reload nginx
+            else
+                echo "!!  Vhost HTTPS ditolak nginx — dikembalikan ke HTTP."
+                mv "$BERKAS_VHOST.sebelumnya" "$BERKAS_VHOST"
+                nginx -t && systemctl reload nginx
+            fi
+        fi
+    else
         echo "!!  Certbot gagal. Situs tetap berjalan lewat HTTP."
         echo "!!  Pastikan DNS $DOMAIN_UTAMA sudah mengarah ke server ini, lalu ulangi."
-    }
+    fi
 fi
 
 # ── Pemeriksaan APP_URL ───────────────────────────────────────────
@@ -172,10 +254,19 @@ fi
 # alamat aset. Bila ia masih menunjuk IP sementara situsnya sudah diakses
 # lewat domain, tautan pada surel yang keluar akan mengarah ke IP —
 # terlihat mencurigakan bagi penerimanya, dan gagal begitu IP berganti.
+#
+# Skemanya ditentukan oleh ada tidaknya sertifikat, bukan oleh EQOHSEE_SSL.
+# Bendera itu hanya menyatakan "terbitkan sertifikat pada jalannya kali ini";
+# memakainya di sini membuat setiap deploy biasa pada situs ber-HTTPS
+# menyarankan APP_URL kembali ke http:// — saran yang justru merusak.
 APP_URL_KINI="$(grep -E '^APP_URL=' "$REPO_DIR/.env" | cut -d= -f2- | tr -d '"' || true)"
-APP_URL_HARAP="https://${DOMAIN_UTAMA}"
 
-if [ "${EQOHSEE_SSL:-0}" != "1" ]; then APP_URL_HARAP="http://${DOMAIN_UTAMA}"; fi
+if [ -f "$SERTIFIKAT" ]; then
+    SKEMA="https"
+else
+    SKEMA="http"
+fi
+APP_URL_HARAP="${SKEMA}://${DOMAIN_UTAMA}"
 
 if [ "$APP_URL_KINI" != "$APP_URL_HARAP" ]; then
     echo "!!  APP_URL di .env masih '$APP_URL_KINI'."
@@ -185,5 +276,8 @@ fi
 echo "==> Keluar dari mode perawatan"
 php artisan up
 
-echo "==> Selesai. Buka: http://$DOMAIN_UTAMA"
+echo "==> Selesai. Buka: ${SKEMA}://$DOMAIN_UTAMA"
 echo "    Nama yang dilayani: $SERVER_NAME"
+if [ "$SKEMA" = "http" ]; then
+    echo "    HTTPS belum aktif. Sekali saja: EQOHSEE_SSL=1 bash deploy/deploy.sh"
+fi
