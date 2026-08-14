@@ -190,6 +190,41 @@ class IdentitasVisualTest extends TestCase
             'Kelas berikut tidak menghasilkan CSS apa pun: '.implode(', ', $tanpaToken));
     }
 
+    /**
+     * Lambang lama tidak boleh dipakai lagi oleh tampilan mana pun.
+     *
+     * Ada dua identitas di public/brand: heksagon jingga-perak yang berlaku,
+     * dan lambang gunung navy-emas yang digantikannya. Berkas lamanya sengaja
+     * tidak dihapus — tetapi selama masih ada di sana, ia akan terpakai lagi
+     * oleh siapa pun yang menebak nama berkas dari daftar direktori, dan
+     * hasilnya adalah dua merek berbeda pada dua layar berurutan.
+     */
+    public function test_lambang_lama_tidak_dipakai_tampilan_mana_pun(): void
+    {
+        $pensiun = ['eqohsee-mark.svg', 'eqohsee-mark-white.svg',
+                    'eqohsee-logo.svg', 'eqohsee-logo-white.svg'];
+
+        $terpakai = [];
+
+        foreach (['js', 'views'] as $sub) {
+            $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(resource_path($sub)));
+            foreach ($it as $f) {
+                if (!$f->isFile() || str_contains($f->getFilename(), '.bak-')) continue;
+                if (!in_array($f->getExtension(), ['vue', 'php'], true)) continue;
+
+                preg_match_all("#brand/([A-Za-z0-9._-]+)#", file_get_contents($f->getPathname()), $c);
+                foreach ($c[1] as $berkas) {
+                    if (in_array($berkas, $pensiun, true)) {
+                        $terpakai[] = $berkas.' di '.str_replace(base_path().'/', '', $f->getPathname());
+                    }
+                }
+            }
+        }
+
+        $this->assertSame([], array_unique($terpakai),
+            'Lambang lama dipakai lagi: '.implode('; ', array_unique($terpakai)));
+    }
+
     /** Lambang yang dirujuk tampilan harus benar-benar ada di public/brand. */
     public function test_berkas_lambang_yang_dirujuk_benar_benar_ada(): void
     {

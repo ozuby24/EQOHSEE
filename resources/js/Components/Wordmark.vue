@@ -7,12 +7,17 @@
  * biasa — sehingga pengunjung yang datang dari halaman depan lalu
  * masuk melihat dua identitas yang berbeda pada dua layar berurutan.
  *
- * Berkas lambangnya sudah ada di public/brand sejak lama; yang belum
- * ada adalah satu tempat yang memakainya secara seragam.
+ * Lambangnya adalah heksagon jingga-perak. Satu berkas melayani latar
+ * gelap maupun terang: bidangnya jingga dan perak di atas transparan,
+ * jadi tidak ada varian putih yang perlu dipilih. Berkas lambang gunung
+ * navy-emas (eqohsee-mark.svg) adalah identitas lama dan tidak dipakai
+ * lagi di mana pun.
  *
- * `gelap` menandai latar gelap, dan memilih berkas putih. Dipilih lewat
- * prop, bukan lewat kelas CSS: berkasnya memang dua, dan menyembunyikan
- * salah satunya dengan CSS berarti peramban tetap mengunduh keduanya.
+ * Yang dimuat varian 128 piksel, bukan berkas 512 piksel seberat 217 KB:
+ * slot terbesar yang memakainya 40 piksel, jadi 128 sudah melebihi
+ * kebutuhan layar berkerapatan ganda sekalipun.
+ *
+ * `gelap` kini hanya menentukan warna teksnya, bukan berkas lambangnya.
  */
 withDefaults(defineProps<{ gelap?: boolean; tinggi?: number; teks?: boolean }>(), {
   gelap: true,
@@ -23,10 +28,12 @@ withDefaults(defineProps<{ gelap?: boolean; tinggi?: number; teks?: boolean }>()
 
 <template>
   <span class="inline-flex items-center gap-2.5">
+    <!-- Lambangnya persegi (512×512), jadi lebar dan tingginya sama. -->
     <img
-      :src="gelap ? '/brand/eqohsee-mark-white.svg' : '/brand/eqohsee-mark.svg'"
+      src="/brand/eqohsee-mark-128.png"
       alt="" aria-hidden="true"
-      :style="{ height: `${tinggi}px`, width: 'auto' }"
+      :width="tinggi" :height="tinggi"
+      :style="{ height: `${tinggi}px`, width: `${tinggi}px` }"
       class="block shrink-0"
     >
     <!--
