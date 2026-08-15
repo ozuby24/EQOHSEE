@@ -1,0 +1,732 @@
+{
+  "meta": {
+    "title": "Audit Sistem Manajemen Keselamatan Pertambangan (SMKP) Minerba",
+    "basis": "Lampiran II Keputusan Dirjen Minerba No. 185.K/37.04/DJB/2019",
+    "catatan": "Struktur, bobot elemen, dan nilai maksimum diambil dari Lampiran II Kepdirjen 185.K/37.04/DJB/2019 (hal. 336-400); kolom 'ref' tiap sub-elemen menunjuk halaman acuannya. Nilai maksimum sub-elemen yang punya rincian TIDAK disimpan di sini melainkan dijumlahkan dari rinciannya — pada sumber aslinya kedua angka itu sempat berbeda (mis. V.5 tertulis 8 padahal rinciannya berjumlah 20), dan menyimpan dua salinan angka yang sama hanya mengundang selisih. Nilai total di bawah adalah maksimum penuh bila seluruh butir berlaku; butir yang ditandai N/A (mis. tambang bawah tanah, kapal keruk, bahan peledak) mengurangi pembagi.",
+    "total_nilai": 349
+  },
+  "penilaian": {
+    "catatan": "Auditor mengisi nilai capaian 0..maks pada tiap butir. N/A dipakai bila butir tidak berlaku bagi perusahaan dan dikeluarkan dari pembagi.",
+    "na": "N/A"
+  },
+  "kategori": [
+    {
+      "kode": "kesesuaian",
+      "label": "Kesesuaian",
+      "min": 100,
+      "warna": "#16A34A",
+      "ket": "Capaian penuh terhadap nilai maksimum butir."
+    },
+    {
+      "kode": "minor",
+      "label": "Ketidaksesuaian Minor",
+      "min": 50,
+      "warna": "#D97706",
+      "ket": "Capaian 50% sampai kurang dari 100%."
+    },
+    {
+      "kode": "mayor",
+      "label": "Ketidaksesuaian Mayor",
+      "min": 0,
+      "warna": "#DC2626",
+      "ket": "Capaian kurang dari 50%."
+    }
+  ],
+  "tingkat": [
+    {
+      "min": 85,
+      "label": "Baik",
+      "warna": "#16A34A"
+    },
+    {
+      "min": 60,
+      "label": "Perlu Perbaikan",
+      "warna": "#D97706"
+    },
+    {
+      "min": 0,
+      "label": "Perlu Perhatian Serius",
+      "warna": "#DC2626"
+    }
+  ],
+  "elemen": [
+    {
+      "kode": "I",
+      "nama": "Kebijakan",
+      "bobot": 10,
+      "sub": [
+        {
+          "kode": "I.1",
+          "nama": "Penyusunan Kebijakan",
+          "maks": 4,
+          "ref": "Hal 336"
+        },
+        {
+          "kode": "I.2",
+          "nama": "Isi Kebijakan",
+          "maks": 4,
+          "ref": "Hal 336"
+        },
+        {
+          "kode": "I.3",
+          "nama": "Penetapan Kebijakan",
+          "maks": 3,
+          "ref": "Hal 337"
+        },
+        {
+          "kode": "I.4",
+          "nama": "Komunikasi Kebijakan",
+          "maks": 4,
+          "ref": "Hal 337"
+        },
+        {
+          "kode": "I.5",
+          "nama": "Tinjauan Kebijakan",
+          "maks": 4,
+          "ref": "Hal 337"
+        }
+      ]
+    },
+    {
+      "kode": "II",
+      "nama": "Perencanaan",
+      "bobot": 15,
+      "sub": [
+        {
+          "kode": "II.1",
+          "nama": "Penelaahan Awal",
+          "maks": 4,
+          "ref": "Hal 338"
+        },
+        {
+          "kode": "II.2",
+          "nama": "Manajemen Risiko",
+          "ref": "Hal 339",
+          "subsub": [
+            {
+              "kode": "II.2.1",
+              "nama": "Komunikasi dan konsultasi risiko",
+              "maks": 4
+            },
+            {
+              "kode": "II.2.2",
+              "nama": "Penetapan konteks risiko",
+              "maks": 3
+            },
+            {
+              "kode": "II.2.3",
+              "nama": "Identifikasi bahaya",
+              "maks": 2
+            },
+            {
+              "kode": "II.2.4",
+              "nama": "Penilaian dan pengendalian risiko",
+              "maks": 3
+            },
+            {
+              "kode": "II.2.5",
+              "nama": "Pemantauan dan peninjauan risiko",
+              "maks": 3
+            }
+          ]
+        },
+        {
+          "kode": "II.3",
+          "nama": "Identifikasi & Kepatuhan Peraturan",
+          "maks": 3,
+          "ref": "Hal 345"
+        },
+        {
+          "kode": "II.4",
+          "nama": "Penetapan Tujuan, Sasaran, dan Program",
+          "maks": 4,
+          "ref": "Hal 347"
+        },
+        {
+          "kode": "II.5",
+          "nama": "Rencana Kerja dan Anggaran K3",
+          "maks": 3,
+          "ref": "Hal 348"
+        }
+      ]
+    },
+    {
+      "kode": "III",
+      "nama": "Organisasi dan Personel",
+      "bobot": 17,
+      "sub": [
+        {
+          "kode": "III.1",
+          "nama": "Penyusunan Struktur Organisasi & Tugas",
+          "maks": 4,
+          "ref": "Hal 349"
+        },
+        {
+          "kode": "III.2",
+          "nama": "Penunjukan KTT/Kepala Tambang",
+          "ref": "Hal 350",
+          "subsub": [
+            {
+              "kode": "III.2.1",
+              "nama": "Penunjukan KTT",
+              "maks": 4
+            },
+            {
+              "kode": "III.2.2",
+              "nama": "Penunjukan Kepala Tambang Bawah Tanah",
+              "maks": 4
+            },
+            {
+              "kode": "III.2.3",
+              "nama": "Penunjukan Kepala Kapal Keruk",
+              "maks": 4
+            }
+          ]
+        },
+        {
+          "kode": "III.3",
+          "nama": "Penunjukan PJO untuk IUJP",
+          "maks": 2,
+          "ref": "Hal 351"
+        },
+        {
+          "kode": "III.4",
+          "nama": "Pembentukan Bagian K3 & KO Pertambangan",
+          "maks": 4,
+          "ref": "Hal 352"
+        },
+        {
+          "kode": "III.5",
+          "nama": "Penunjukan Pengawas Operasional & Teknik",
+          "maks": 4,
+          "ref": "Hal 354"
+        },
+        {
+          "kode": "III.6",
+          "nama": "Penunjukan Tenaga Teknik Khusus",
+          "maks": 4,
+          "ref": "Hal 355"
+        },
+        {
+          "kode": "III.7",
+          "nama": "Pembentukan Komite Keselamatan Pertambangan",
+          "maks": 4,
+          "ref": "Hal 356"
+        },
+        {
+          "kode": "III.8",
+          "nama": "Penunjukan Tim Tanggap Darurat",
+          "maks": 4,
+          "ref": "Hal 357"
+        },
+        {
+          "kode": "III.9",
+          "nama": "Seleksi dan Penempatan Personel",
+          "maks": 4,
+          "ref": "Hal 358"
+        },
+        {
+          "kode": "III.10",
+          "nama": "Pendidikan, Pelatihan & Kompetensi",
+          "ref": "Hal 358",
+          "subsub": [
+            {
+              "kode": "III.10.1",
+              "nama": "Pendidikan dan pelatihan pekerja tambang",
+              "maks": 4
+            },
+            {
+              "kode": "III.10.2",
+              "nama": "Kompetensi Kerja",
+              "maks": 4
+            }
+          ]
+        },
+        {
+          "kode": "III.11",
+          "nama": "Komunikasi Keselamatan Pertambangan",
+          "maks": 4,
+          "ref": "Hal 363"
+        },
+        {
+          "kode": "III.12",
+          "nama": "Pengelolaan Administrasi K3",
+          "ref": "Hal 363",
+          "subsub": [
+            {
+              "kode": "III.12.1",
+              "nama": "Buku tambang",
+              "maks": 4
+            },
+            {
+              "kode": "III.12.2",
+              "nama": "Buku daftar kecelakaan tambang",
+              "maks": 4
+            },
+            {
+              "kode": "III.12.3",
+              "nama": "Pelaporan pengelolaan K3",
+              "maks": 3
+            },
+            {
+              "kode": "III.12.4",
+              "nama": "Dokumentasi Kejadian Berbahaya & PAK",
+              "maks": 4
+            },
+            {
+              "kode": "III.12.5",
+              "nama": "Dokumen & Laporan Pemenuhan Kompetensi",
+              "maks": 3
+            }
+          ]
+        },
+        {
+          "kode": "III.13",
+          "nama": "Partisipasi, Konsultasi, Motivasi & Kesadaran SMKP",
+          "maks": 4,
+          "ref": "Hal 365"
+        }
+      ]
+    },
+    {
+      "kode": "IV",
+      "nama": "Implementasi",
+      "bobot": 35,
+      "sub": [
+        {
+          "kode": "IV.1",
+          "nama": "Pengelolaan Operasional",
+          "ref": "Hal 365",
+          "subsub": [
+            {
+              "kode": "IV.1.1",
+              "nama": "Prosedur Operasi/Kerja",
+              "maks": 4
+            },
+            {
+              "kode": "IV.1.2",
+              "nama": "Izin Kerja Khusus",
+              "maks": 3
+            },
+            {
+              "kode": "IV.1.3",
+              "nama": "APD dan Alat Keselamatan",
+              "maks": 4
+            }
+          ]
+        },
+        {
+          "kode": "IV.2",
+          "nama": "Pengelolaan Lingkungan Kerja",
+          "ref": "Hal 366",
+          "subsub": [
+            {
+              "kode": "IV.2.1",
+              "nama": "Pengelolaan Bahaya Debu",
+              "maks": 4
+            },
+            {
+              "kode": "IV.2.2",
+              "nama": "Pengelolaan Bahaya Kebisingan",
+              "maks": 4
+            },
+            {
+              "kode": "IV.2.3",
+              "nama": "Pengelolaan Bahaya Getaran",
+              "maks": 4
+            },
+            {
+              "kode": "IV.2.4",
+              "nama": "Pengelolaan Bahaya Pencahayaan",
+              "maks": 4
+            },
+            {
+              "kode": "IV.2.5",
+              "nama": "Kuantitas dan Kualitas Udara Kerja",
+              "maks": 4
+            },
+            {
+              "kode": "IV.2.6",
+              "nama": "Pengelolaan Iklim Kerja",
+              "maks": 4
+            },
+            {
+              "kode": "IV.2.7",
+              "nama": "Pengelolaan Bahaya Radiasi",
+              "maks": 4
+            },
+            {
+              "kode": "IV.2.8",
+              "nama": "Pengelolaan Faktor Kimia",
+              "maks": 4
+            },
+            {
+              "kode": "IV.2.9",
+              "nama": "Pengelolaan Faktor Biologi",
+              "maks": 4
+            },
+            {
+              "kode": "IV.2.10",
+              "nama": "Kebersihan Lingkungan Kerja",
+              "maks": 4
+            }
+          ]
+        },
+        {
+          "kode": "IV.3",
+          "nama": "Pengelolaan Kesehatan Kerja",
+          "ref": "Hal 368",
+          "subsub": [
+            {
+              "kode": "IV.3.1",
+              "nama": "Pemeriksaan Kesehatan",
+              "maks": 4
+            },
+            {
+              "kode": "IV.3.2",
+              "nama": "Pelayanan Kesehatan Kerja",
+              "maks": 2
+            },
+            {
+              "kode": "IV.3.3",
+              "nama": "Pertolongan Pertama pada Kecelakaan (P3K)",
+              "maks": 2
+            },
+            {
+              "kode": "IV.3.4",
+              "nama": "Pengelolaan Kelelahan Kerja (Fatigue)",
+              "maks": 3
+            },
+            {
+              "kode": "IV.3.5",
+              "nama": "Pengelolaan Pekerja di Risiko Kesehatan Tinggi",
+              "maks": 2
+            },
+            {
+              "kode": "IV.3.6",
+              "nama": "Pengelolaan Rekaman Data Kesehatan",
+              "maks": 4
+            },
+            {
+              "kode": "IV.3.7",
+              "nama": "Pengelolaan Higiene dan Sanitasi",
+              "maks": 2
+            },
+            {
+              "kode": "IV.3.8",
+              "nama": "Pengelolaan Ergonomi",
+              "maks": 3
+            },
+            {
+              "kode": "IV.3.9",
+              "nama": "Pengelolaan Makanan, Minuman & Gizi",
+              "maks": 2
+            },
+            {
+              "kode": "IV.3.10",
+              "nama": "Diagnosis dan Pemeriksaan PAK",
+              "maks": 4
+            }
+          ]
+        },
+        {
+          "kode": "IV.4",
+          "nama": "Pengelolaan Keselamatan Operasi",
+          "ref": "Hal 375",
+          "subsub": [
+            {
+              "kode": "IV.4.1",
+              "nama": "Sistem Pemeliharaan/Perawatan Sarana",
+              "maks": 4
+            },
+            {
+              "kode": "IV.4.2",
+              "nama": "Pengamanan Instalasi",
+              "maks": 4
+            },
+            {
+              "kode": "IV.4.3",
+              "nama": "Kelayakan Sarana dan Peralatan",
+              "maks": 4
+            },
+            {
+              "kode": "IV.4.4",
+              "nama": "Kompetensi Tenaga Teknik",
+              "maks": 4
+            },
+            {
+              "kode": "IV.4.5",
+              "nama": "Evaluasi Kajian Teknis Pertambangan",
+              "maks": 4
+            }
+          ]
+        },
+        {
+          "kode": "IV.5",
+          "nama": "Pengelolaan Bahan Peledak",
+          "ref": "Hal 379",
+          "subsub": [
+            {
+              "kode": "IV.5.1",
+              "nama": "Gudang bahan peledak",
+              "maks": 4
+            },
+            {
+              "kode": "IV.5.2",
+              "nama": "Penyimpanan bahan peledak",
+              "maks": 4
+            },
+            {
+              "kode": "IV.5.3",
+              "nama": "Pengangkutan bahan peledak",
+              "maks": 4
+            },
+            {
+              "kode": "IV.5.4",
+              "nama": "Pekerjaan peledakan",
+              "maks": 4
+            }
+          ]
+        },
+        {
+          "kode": "IV.6",
+          "nama": "Sistem Perancangan dan Rekayasa",
+          "ref": "Hal 382",
+          "subsub": [
+            {
+              "kode": "IV.6.1",
+              "nama": "Perancangan dan rekayasa",
+              "maks": 3
+            },
+            {
+              "kode": "IV.6.2",
+              "nama": "Perubahan rancangan dan modifikasi",
+              "maks": 3
+            }
+          ]
+        },
+        {
+          "kode": "IV.7",
+          "nama": "Sistem Pembelian",
+          "maks": 4,
+          "ref": "Hal 382"
+        },
+        {
+          "kode": "IV.8",
+          "nama": "Pemantauan Perusahaan Jasa Pertambangan",
+          "ref": "Hal 383",
+          "subsub": [
+            {
+              "kode": "IV.8.1",
+              "nama": "Persyaratan, seleksi dan penetapan kontraktor",
+              "maks": 2
+            },
+            {
+              "kode": "IV.8.2",
+              "nama": "Tanggung jawab & pemantauan kontraktor",
+              "maks": 2
+            },
+            {
+              "kode": "IV.8.3",
+              "nama": "Evaluasi perusahaan jasa pertambangan",
+              "maks": 2
+            }
+          ]
+        },
+        {
+          "kode": "IV.9",
+          "nama": "Pengelolaan Keadaan Darurat",
+          "maks": 3,
+          "ref": "Hal 385"
+        },
+        {
+          "kode": "IV.10",
+          "nama": "Penyediaan dan Penyiapan P3K",
+          "maks": 3,
+          "ref": "Hal 386"
+        },
+        {
+          "kode": "IV.11",
+          "nama": "Keselamatan di Luar Pekerjaan (Off the Job)",
+          "maks": 3,
+          "ref": "Hal 387"
+        }
+      ]
+    },
+    {
+      "kode": "V",
+      "nama": "Pemantauan, Evaluasi dan Tindak Lanjut",
+      "bobot": 15,
+      "sub": [
+        {
+          "kode": "V.1",
+          "nama": "Pemantauan dan Pengukuran Kinerja",
+          "ref": "Hal 387",
+          "subsub": [
+            {
+              "kode": "V.1.1",
+              "nama": "Pemantauan Tujuan, Sasaran & Program K3",
+              "maks": 4
+            },
+            {
+              "kode": "V.1.2",
+              "nama": "Pemantauan Kinerja Lingkungan Kerja",
+              "maks": 4
+            },
+            {
+              "kode": "V.1.3",
+              "nama": "Pemantauan Kinerja Kesehatan Kerja",
+              "maks": 4
+            },
+            {
+              "kode": "V.1.4",
+              "nama": "Pemantauan Kinerja Keselamatan Operasi",
+              "maks": 4
+            },
+            {
+              "kode": "V.1.5",
+              "nama": "Pemantauan Bahan Peledak & Peledakan",
+              "maks": 4
+            }
+          ]
+        },
+        {
+          "kode": "V.2",
+          "nama": "Inspeksi Keselamatan Pertambangan",
+          "maks": 4,
+          "ref": "Hal 391"
+        },
+        {
+          "kode": "V.3",
+          "nama": "Evaluasi Kepatuhan Peraturan",
+          "maks": 4,
+          "ref": "Hal 392"
+        },
+        {
+          "kode": "V.4",
+          "nama": "Penyelidikan Kecelakaan & PAK",
+          "maks": 4,
+          "ref": "Hal 393"
+        },
+        {
+          "kode": "V.5",
+          "nama": "Evaluasi Pengelolaan Administrasi K3",
+          "ref": "Hal 394",
+          "subsub": [
+            {
+              "kode": "V.5.1",
+              "nama": "Buku tambang",
+              "maks": 4
+            },
+            {
+              "kode": "V.5.2",
+              "nama": "Buku daftar kecelakaan tambang",
+              "maks": 4
+            },
+            {
+              "kode": "V.5.3",
+              "nama": "Pelaporan K3",
+              "maks": 4
+            },
+            {
+              "kode": "V.5.4",
+              "nama": "Dokumentasi Kejadian Berbahaya & PAK",
+              "maks": 4
+            },
+            {
+              "kode": "V.5.5",
+              "nama": "Dokumen & Laporan Kompetensi",
+              "maks": 4
+            }
+          ]
+        },
+        {
+          "kode": "V.6",
+          "nama": "Audit Internal SMKP Minerba",
+          "maks": 4,
+          "ref": "Hal 395"
+        },
+        {
+          "kode": "V.7",
+          "nama": "Rencana Perbaikan dan Tindak Lanjut",
+          "maks": 4,
+          "ref": "Hal 396"
+        }
+      ]
+    },
+    {
+      "kode": "VI",
+      "nama": "Dokumentasi",
+      "bobot": 3,
+      "sub": [
+        {
+          "kode": "VI.1",
+          "nama": "Manual SMKP Minerba",
+          "maks": 4,
+          "ref": "Hal 397"
+        },
+        {
+          "kode": "VI.2",
+          "nama": "Prosedur Pengendalian Dokumen",
+          "maks": 3,
+          "ref": "Hal 398"
+        },
+        {
+          "kode": "VI.3",
+          "nama": "Prosedur Pengendalian Rekaman",
+          "maks": 3,
+          "ref": "Hal 398"
+        },
+        {
+          "kode": "VI.4",
+          "nama": "Penetapan Jenis Dokumen dan Rekaman",
+          "maks": 2,
+          "ref": "Hal 398"
+        }
+      ]
+    },
+    {
+      "kode": "VII",
+      "nama": "Tinjauan Manajemen & Peningkatan Kinerja",
+      "bobot": 5,
+      "sub": [
+        {
+          "kode": "VII.1",
+          "nama": "Tinjauan Manajemen oleh Manajemen Tertinggi",
+          "maks": 4,
+          "ref": "Hal 399"
+        },
+        {
+          "kode": "VII.2",
+          "nama": "Catatan Hasil Tinjauan Manajemen",
+          "maks": 2,
+          "ref": "Hal 399"
+        },
+        {
+          "kode": "VII.3",
+          "nama": "Keluaran Tinjauan Manajemen K3",
+          "maks": 2,
+          "ref": "Hal 399"
+        },
+        {
+          "kode": "VII.4",
+          "nama": "Pencatatan & Pelaporan Hasil Tinjauan",
+          "maks": 2,
+          "ref": "Hal 400"
+        },
+        {
+          "kode": "VII.5",
+          "nama": "Pelaksanaan Peningkatan Kinerja",
+          "maks": 1,
+          "ref": "Hal 400"
+        },
+        {
+          "kode": "VII.6",
+          "nama": "Penggunaan Tindak Lanjut untuk Penetapan Kebijakan",
+          "maks": 2,
+          "ref": "Hal 400"
+        }
+      ]
+    }
+  ]
+}

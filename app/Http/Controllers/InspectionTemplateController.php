@@ -10,12 +10,31 @@ class InspectionTemplateController extends Controller
 {
     public function index()
     {
-        return view('inspeksi.template.index', [
-            'templates' => InspectionTemplate::withCount(['items','inspections'])->orderBy('nama')->get(),
+        return \Inertia\Inertia::render('Inspeksi/Jenis', [
+            'judul'    => 'Jenis & Parameter Inspeksi',
+            'subjudul' => 'Daftar periksa yang disalin ke tiap inspeksi baru',
+
+            'jenis' => InspectionTemplate::withCount(['items', 'inspections'])->orderBy('nama')->get()
+                ->map(fn ($t) => [
+                    'id'          => $t->id,
+                    'nama'        => $t->nama,
+                    'keterangan'  => $t->keterangan,
+                    'aktif'       => (bool) $t->is_active,
+                    'jumlahItem'  => $t->items_count,
+                    'dipakai'     => $t->inspections_count,
+                    'urlUbah'     => route('inspeksi.template.edit', $t),
+                    'urlSalin'    => route('inspeksi.template.salin', $t),
+                    'urlHapus'    => route('inspeksi.template.destroy', $t),
+                ])->all(),
+
+            'tautan' => ['buat' => route('inspeksi.template.create')],
         ]);
     }
 
-    public function create() { return view('inspeksi.template.form', ['template' => new InspectionTemplate()]); }
+    public function create()
+    {
+        return $this->formulir(new InspectionTemplate());
+    }
 
     public function store(Request $r)
     {
@@ -27,7 +46,8 @@ class InspectionTemplateController extends Controller
     public function edit(InspectionTemplate $template)
     {
         $template->load('items');
-        return view('inspeksi.template.form', compact('template'));
+
+        return $this->formulir($template);
     }
 
     public function update(Request $r, InspectionTemplate $template)
@@ -89,5 +109,46 @@ class InspectionTemplateController extends Controller
         ]);
         $d['is_active'] = (bool) ($d['is_active'] ?? false);
         return $d;
+    }
+
+    /**
+     * Formulir jenis inspeksi — dipakai bersama oleh create dan edit.
+     *
+     * Parameter hanya dapat ditambahkan setelah jenisnya tersimpan, sebab
+     * tiap parameter menempel pada id jenisnya. Halaman membaca 'tersimpan'
+     * untuk memutuskan menampilkan daftar parameter atau menahannya.
+     */
+    private function formulir(InspectionTemplate $t)
+    {
+        $ada = (bool) $t->exists;
+
+        return \Inertia\Inertia::render('Inspeksi/JenisForm', [
+            'judul'    => $ada ? 'Ubah '.$t->nama : 'Jenis Inspeksi Baru',
+            'subjudul' => 'Parameter di sini disalin ke tiap inspeksi yang memakainya',
+
+            'tersimpan' => $ada,
+            'awal' => [
+                'nama'       => (string) $t->nama,
+                'keterangan' => (string) $t->keterangan,
+                'is_active'  => $ada ? (bool) $t->is_active : true,
+            ],
+
+            'item' => $ada ? $t->items->map(fn ($x) => [
+                'id'       => $x->id,
+                'kelompok' => $x->kelompok,
+                'uraian'   => $x->uraian,
+                'acuan'    => $x->acuan,
+                'risiko'   => $x->risiko_default,
+                'urlHapus' => route('inspeksi.template.item.destroy', $x),
+            ])->all() : [],
+
+            'opsi' => ['risiko' => Hazard::RISIKO],
+
+            'tautan' => [
+                'simpan'     => $ada ? route('inspeksi.template.update', $t) : route('inspeksi.template.store'),
+                'tambahItem' => $ada ? route('inspeksi.template.item.store', $t) : null,
+                'batal'      => route('inspeksi.template.index'),
+            ],
+        ]);
     }
 }

@@ -5,9 +5,25 @@ namespace App\Http\Controllers;
 use App\Models\{ActivityLog, TpkkpAssessment};
 use App\Support\Tpkkp;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class TpkkpController extends Controller
 {
+    /**
+     * Status program improvement.
+     *
+     * Satu daftar dipakai aturan validasi sekaligus pilihan yang dikirim
+     * ke halaman. Sempat ditulis dua kali — sekali di `in:` dan sekali di
+     * pilihan formulir — dan daftar semacam itu diam saja ketika salah
+     * satunya bertambah: pilihannya muncul, dipilih orang, lalu ditolak
+     * validasi tanpa alasan yang tampak.
+     */
+    public const STATUS_PROGRAM = ['Rencana', 'Berjalan', 'Selesai', 'Ditunda'];
+
+    /** Batas margin galat Slovin; dipakai validasi sekaligus atribut input. */
+    public const E_MIN  = 0.01;
+    public const E_MAKS = 0.2;
+
     /* ================= dasar ================= */
 
     private function aktif(Request $request): TpkkpAssessment
@@ -51,15 +67,84 @@ class TpkkpController extends Controller
 
     public function index(Request $request)
     {
+        /* Halaman ketiga yang dipindah ke Vue. Dipilih karena ia pintu
+           masuk modul: dari sini chip ke Penilaian dan Rekapitulasi —
+           dua halaman Inertia lain — berpindah tanpa memuat ulang, dan
+           itulah yang membuat modulnya terasa satu kesatuan alih-alih
+           kumpulan halaman yang saling memuat ulang. */
         [$a, $hasil, $tahunn] = $this->base($request);
 
-        return view('tpkkp.beranda', [
-            'a'       => $a,
-            'hasil'   => $hasil,
-            'tahunn'  => $tahunn,
-            'metode'  => Tpkkp::methodTotals($a->scores ?? []),
-            'sebaran' => Tpkkp::distribution($a->scores ?? []),
-            'gaps'    => Tpkkp::gaps($a->scores ?? [], 10),
+        $sebaran = Tpkkp::distribution($a->scores ?? []);
+
+        /* Data grafik dibentuk di server, bukan di komponen. Rumusnya —
+           capaian dibagi bobot lalu dipersenkan — sama dengan yang dipakai
+           versi Blade; menaruhnya di sisi Vue berarti satu lagi rumus yang
+           hidup di dua tempat, dan yang seperti itu sudah sekali terbukti
+           melenceng tanpa menimbulkan galat. */
+        $radar = ['label' => [], 'capaian' => [], 'target' => []];
+        foreach ($hasil['indicators'] as $I) {
+            $w = $I['weight'] ?: 1;
+            $radar['label'][]   = 'Indikator '.$I['code'];
+            $radar['capaian'][] = round((($I['score'] ?? 0) / $w) * 100, 1);
+            $radar['target'][]  = round((($I['target'] ?? 0) / $w) * 100, 1);
+        }
+
+        $tingkat = [];
+        foreach (Tpkkp::LV as $i => $nama) {
+            $tingkat[] = [
+                'nama'   => $nama,
+                'warna'  => Tpkkp::levelHex($i + 1),
+                'jumlah' => $sebaran[$i + 1] ?? 0,
+            ];
+        }
+
+        return Inertia::render('Tpkkp/Beranda', [
+            'judul'    => 'PTPKKP — Beranda',
+            'subjudul' => "Ringkasan capaian, periode {$a->tahun}",
+            'picker'   => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
+
+            'identitas' => [
+                'organisasi' => $a->profil['organisasi'] ?? $a->judul,
+                'site'       => $a->profil['site'] ?? null,
+                'komoditas'  => $a->profil['komoditas'] ?? null,
+                'tahun'      => $a->tahun,
+            ],
+
+            'hasil' => [
+                'skor'        => $hasil['score'],
+                'tingkat'     => $hasil['level'],
+                'kategori'    => $hasil['category'],
+                'target'      => $hasil['target'],
+                'selTerisi'   => $hasil['filledCells'],
+                'selTotal'    => $hasil['totalCells'],
+                'kelengkapan' => $hasil['completeness'],
+                'indikator'   => collect($hasil['indicators'])->map(fn ($ind) => [
+                    'kode' => $ind['code'], 'nama' => $ind['name'],
+                    'skor' => $ind['score'], 'rasio' => $ind['ratio'],
+                    'bobot' => $ind['weight'], 'target' => $ind['target'],
+                    'kategori' => $ind['category'],
+                    'warna' => Tpkkp::levelHex(Tpkkp::level($ind['category'])),
+                    'selTerisi' => $ind['filledCells'], 'selTotal' => $ind['totalCells'],
+                ])->values()->all(),
+            ],
+
+            'metode' => collect(Tpkkp::methodTotals($a->scores ?? []))->map(fn ($m) => [
+                'kode' => $m['key'], 'nama' => $m['name'],
+                'terisi' => $m['filled'], 'jumlah' => $m['items'], 'rasio' => $m['ratio'],
+            ])->values()->all(),
+
+            'tingkat'      => $tingkat,
+            'belumLengkap' => $sebaran['none'] ?? 0,
+            'totalItem'    => Tpkkp::totalItems(),
+
+            'gaps' => collect(Tpkkp::gaps($a->scores ?? [], 10))->map(fn ($g) => [
+                'kode' => $g['code'], 'nama' => $g['name'] ?? '',
+                'nilai' => $g['nilai'] ?? 0, 'maks' => $g['max'],
+                'kategori' => $g['category'],
+                'warna' => Tpkkp::levelHex(Tpkkp::level($g['category'])),
+            ])->values()->all(),
+
+            'radar' => $radar,
         ]);
     }
 
@@ -69,7 +154,43 @@ class TpkkpController extends Controller
     {
         [$a, $hasil, $tahunn] = $this->base($request);
 
-        return view('tpkkp.profil', ['a' => $a, 'hasil' => $hasil, 'tahunn' => $tahunn]);
+        $p = $a->profil ?? [];
+
+        /* Roster entitas hanya menampilkan metode yang benar-benar punya
+           entitas. Metode tanpa entitas dinilai satu angka untuk seluruh
+           organisasi, dan judul kosong tanpa isi di bawahnya membuat
+           halaman tampak rusak. */
+        $roster = [];
+        foreach (Tpkkp::methods() as $k => $m) {
+            $ents = $a->entitiesOf($k);
+            if (!count($ents)) continue;
+
+            $roster[] = [
+                'kode'    => $k,
+                'label'   => $m['entityLabel'] ?? '',
+                'entitas' => array_values($ents),
+            ];
+        }
+
+        return Inertia::render('Tpkkp/Profil', [
+            'judul'    => 'PTPKKP — Profil',
+            'subjudul' => "Identitas penilaian dan roster entitas, periode {$a->tahun}",
+            'picker'   => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
+            'tahun'    => $a->tahun,
+
+            'isian' => [
+                'judul'      => $a->judul ?? '',
+                'organisasi' => $p['organisasi'] ?? '',
+                'site'       => $p['site'] ?? '',
+                'komoditas'  => $p['komoditas'] ?? '',
+                'ktt'        => $p['ktt'] ?? '',
+                'basis'      => $p['basis'] ?? '',
+                'status'     => $a->status ?? 'draft',
+            ],
+
+            'roster'      => $roster,
+            'bisaSunting' => $request->user()->isAdmin(),
+        ]);
     }
 
     public function saveProfile(Request $request)
@@ -87,8 +208,11 @@ class TpkkpController extends Controller
             'basis'     => ['nullable', 'string', 'max:200'],
         ]);
 
-        $a->judul  = $d['judul']  ?: $a->judul;
-        $a->status = $d['status'] ?: $a->status;
+        // Medannya nullable, jadi yang tidak dikirim sama sekali tidak
+        // muncul di hasil validasi — bukan muncul bernilai null. Membacanya
+        // langsung membuat kiriman sebagian menjadi galat 500.
+        $a->judul  = ($d['judul']  ?? null) ?: $a->judul;
+        $a->status = ($d['status'] ?? null) ?: $a->status;
         $a->profil = array_merge($a->profil ?? [], [
             'organisasi' => $d['organisasi'] ?? '',
             'site'       => $d['site'] ?? '',
@@ -136,16 +260,85 @@ class TpkkpController extends Controller
             }
         }
 
-        return view('tpkkp.penilaian', [
-            'a'           => $a,
-            'hasil'       => $hasil,
-            'tahunn'      => $tahunn,
+        /* Halaman ini dirender Vue lewat Inertia — halaman pertama yang
+           dipindah. Alasannya bukan Blade tidak sanggup, melainkan
+           bentuk datanya: 194 item dengan nilai per entitas lebih wajar
+           hidup sebagai state di peramban daripada dirender ulang dari
+           server setiap kali satu angka berubah. Di sini capaian tiap
+           item ikut terhitung ulang seketika, yang pada versi Blade baru
+           terlihat setelah disimpan dan halaman dimuat ulang. */
+        $entitas = $a->entitiesOf($m);
+        $target  = Tpkkp::target();
+
+        $daftarItem = [];
+        foreach ($items as $it) {
+            $rub = Tpkkp::rubrikFor($m, $it['code']);
+
+            $nilai = [];
+            if ($entitas) {
+                foreach ($entitas as $ent) $nilai[$ent] = $a->cell($m, $it['code'], $ent);
+            } else {
+                $nilai['_'] = $a->cell($m, $it['code']);
+            }
+
+            $daftarItem[] = [
+                'kode'   => $it['code'],
+                'nama'   => $it['name'],
+                'metode' => $it['methods'],
+                'maks'   => $it['max'],
+                'nilai'  => $nilai,
+                'ket'    => $a->ket($m, $it['code']),
+                'target' => isset($target[$it['code']][$m]) ? trim($target[$it['code']][$m]) : null,
+                'rubrik' => collect($rub['l'] ?? [])->map(fn ($teks, $i) => [
+                    'tingkat' => $i + 1,
+                    'teks'    => $teks,
+                    'warna'   => Tpkkp::levelHex($i + 1),
+                ])->values()->all(),
+            ];
+        }
+
+        $par = $p ? Tpkkp::paramByCode($p) : null;
+
+        return Inertia::render('Tpkkp/Penilaian', [
+            /* Judul bilah atas ditentukan di sini, sejajar dengan
+               @yield('subjudul') pada halaman Blade. */
+            'judul'       => 'PTPKKP — Penilaian',
+
+            /* Navigasi dalam-halaman PTPKKP. Tanpa ini halaman Vue
+               terkirim tanpa jalan keluar selain tombol back peramban —
+               persis yang sempat terjadi. */
+            'picker'      => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
+            'subjudul'    => "Tingkat kematangan keselamatan, periode {$a->tahun}",
+
+            'tahun'       => $a->tahun,
+            'metode'      => collect($M)->map(fn ($x, $k) => [
+                'kode'         => $k,
+                'nama'         => $x['name'],
+                'labelEntitas' => $x['entityLabel'] ?? '',
+            ])->values()->all(),
             'metodeAktif' => $m,
-            'metodeInfo'  => $M[$m],
-            'entitas'     => $a->entitiesOf($m),
-            'daftarParam' => $daftarParam,
+            'parameter'   => collect($daftarParam)->map(fn ($x) => [
+                'kode' => $x['code'], 'nama' => $x['name'], 'jumlah' => $x['n'],
+            ])->all(),
             'paramAktif'  => $p,
-            'items'       => $items,
+            'entitas'     => array_values($entitas),
+            'items'       => $daftarItem,
+            'bisaSunting' => $request->user()->isAdmin(),
+            'paramBobot'  => (float) ($par['weight'] ?? 0),
+            'paramTarget' => (float) (Tpkkp::paramTargets()[$p] ?? 0),
+
+            /* Ambang kategori dikirim dari sini, tidak ditulis ulang di
+               sisi Vue. Menyalinnya ke peramban berarti dua daftar ambang
+               yang harus diubah bersama — dan yang tertinggal tidak
+               menimbulkan galat, hanya lencana yang menyebut tingkat
+               kematangan yang salah. Sudah pernah terjadi: salinan yang
+               ditulis dengan tangan memakai batas dan nama tingkat yang
+               tidak ada di acuan sama sekali. */
+            'ambang'      => collect(Tpkkp::ref()['thresholds'])->map(fn ($t, $i) => [
+                'batas' => (float) $t['lt'],
+                'label' => $t['label'],
+                'warna' => Tpkkp::levelHex($i + 1),
+            ])->values()->all(),
         ]);
     }
 
@@ -203,21 +396,81 @@ class TpkkpController extends Controller
 
     public function rekap(Request $request)
     {
-        [$a, $hasil, $tahunn] = $this->base($request);
+        /* Halaman kedua yang dipindah ke Vue — sengaja dipilih karena
+           terhubung langsung dengan Formulir Nilai: alur wajarnya isi
+           nilai lalu cek rekapnya, dan baru dengan dua halaman Inertia
+           yang saling terkait perpindahan ANTARA keduanya bisa instan.
+           Satu halaman saja tidak cukup untuk itu — jalan masuknya tetap
+           lewat bilah samping Blade, yang selalu memuat ulang penuh. */
+        $a = $this->aktif($request);
 
         $mCo    = Tpkkp::perCompanyMethods();
         $daftar = $a->entitiesOf('TD');
         $co     = $request->get('entitas');
         if ($co && !in_array($co, $daftar, true)) $co = null;
 
-        return view('tpkkp.rekap', [
-            'a'          => $a,
-            'hasil'      => $hasil,
-            'tahunn'     => $tahunn,
-            'perusahaan' => $daftar,
-            'entitas'    => $co,
-            'rincian'    => $co ? Tpkkp::companyBreakdown($a->scores ?? [], $co, $mCo) : null,
-            'lemah'      => $co ? Tpkkp::companyGaps($a->scores ?? [], $co, $mCo, 10) : null,
+        return Inertia::render('Tpkkp/Rekap', [
+            'judul'    => 'PTPKKP — Rekapitulasi',
+            'picker'   => \App\Support\TpkkpNav::untukInertia(
+                $a->tahun, \App\Support\TpkkpNav::daftarTahun()
+            ),
+            'subjudul' => "Nilai per parameter dan per perusahaan, periode {$a->tahun}",
+            'tahun'    => $a->tahun,
+
+            /* Ditutup dalam closure DAN totalCalc() dipanggil DI DALAM
+               closure-nya, bukan sebelum render() dipanggil. Kalau
+               totalCalc() dijalankan lebih dulu lalu hasilnya dibungkus
+               closure, closure-nya hanya menunda pemetaan larik —
+               penghitungan yang sesungguhnya sudah kadung terjadi. Saat
+               orang cuma mengganti perusahaan, Inertia meminta reload
+               sebagian lewat `only`, dan prop ini tidak bergantung pada
+               perusahaan yang dipilih — tidak ada alasan menghitungnya
+               ulang setiap kali orang sekadar berpindah perusahaan. */
+            'hasil' => fn () => (function () use ($a) {
+                $hasil = Tpkkp::totalCalc($a->scores ?? []);
+
+                return [
+                    'skor'      => $hasil['score'],
+                    'target'    => $hasil['target'],
+                    'indikator' => collect($hasil['indicators'])->map(fn ($ind) => [
+                        'kode' => $ind['code'], 'nama' => $ind['name'], 'bobot' => $ind['weight'],
+                        'nilai' => $ind['score'], 'target' => $ind['target'], 'kategori' => $ind['category'],
+                        'parameter' => collect($ind['params'])->map(fn ($p) => [
+                            'kode' => $p['code'], 'nama' => $p['name'],
+                            'nilai' => $p['nilai'], 'maks' => $p['max'], 'rasio' => $p['ratio'],
+                            'bobot' => $p['weight'], 'skor' => $p['score'], 'target' => $p['target'],
+                            'kategori' => $p['category'],
+                        ])->values(),
+                    ])->values(),
+                ];
+            })(),
+
+            'perusahaan'   => fn () => array_values($daftar),
+            'entitasAktif' => $co,
+            'metodePerusahaan' => $mCo,
+
+            'rincian' => fn () => $co
+                ? collect(Tpkkp::companyBreakdown($a->scores ?? [], $co, $mCo))->map(fn ($ind) => [
+                    'kode' => $ind['code'], 'nama' => $ind['name'], 'rerata' => $ind['avg'],
+                    'parameter' => collect($ind['params'])->map(fn ($p) => [
+                        'kode' => $p['code'], 'nama' => $p['name'],
+                        'rerata' => $p['avg'], 'jumlah' => $p['count'],
+                    ])->values(),
+                ])->values()
+                : null,
+
+            'lemah' => fn () => $co
+                ? collect(Tpkkp::companyGaps($a->scores ?? [], $co, $mCo, 10))->map(fn ($g) => [
+                    'kode' => $g['code'], 'nama' => $g['name'], 'rerata' => $g['avg'],
+                ])->values()
+                : null,
+
+            /* Warna lencana kategori dicari lewat label, bukan ditulis
+               ulang sebagai peta warna baru di sisi Vue — .l() label yang
+               sama dipakai App\Support\Tpkkp untuk seluruh aplikasi. */
+            'ambang' => collect(Tpkkp::LV)->map(fn ($label, $i) => [
+                'label' => $label, 'warna' => Tpkkp::levelHex($i + 1),
+            ])->values()->all(),
         ]);
     }
 
@@ -227,12 +480,54 @@ class TpkkpController extends Controller
     {
         [$a, $hasil, $tahunn] = $this->base($request);
 
-        return view('tpkkp.visual', [
-            'a'       => $a,
-            'hasil'   => $hasil,
-            'tahunn'  => $tahunn,
-            'metode'  => Tpkkp::methodTotals($a->scores ?? []),
-            'sebaran' => Tpkkp::distribution($a->scores ?? []),
+        $sebaran = Tpkkp::distribution($a->scores ?? []);
+
+        /* Seluruh data grafik dibentuk di sini, termasuk warnanya. Versi
+           Blade mengambil warna donat dari window.eqWarnaLevel — larik
+           global yang isinya menyalin Tpkkp::LVHEX. Salinan seperti itu
+           diam saja ketika paletnya berubah, dan yang terlihat hanyalah
+           satu grafik berwarna beda dari grafik di sebelahnya. */
+        $indikator = ['label' => [], 'capaian' => [], 'target' => []];
+        $parameter = ['label' => [], 'capaian' => [], 'target' => [], 'warna' => []];
+
+        foreach ($hasil['indicators'] as $I) {
+            $indikator['label'][]   = 'Ind. '.$I['code'];
+            $indikator['capaian'][] = round($I['score'] ?? 0, 4);
+            $indikator['target'][]  = round($I['target'] ?? 0, 4);
+
+            foreach ($I['params'] as $P) {
+                $parameter['label'][]   = $P['code'];
+                $parameter['capaian'][] = round($P['score'] ?? 0, 4);
+                $parameter['target'][]  = round($P['target'] ?? 0, 4);
+                $parameter['warna'][]   = Tpkkp::levelHex(Tpkkp::level($P['category']));
+            }
+        }
+
+        $metode = ['label' => [], 'nilai' => [], 'warna' => []];
+        foreach (Tpkkp::methodTotals($a->scores ?? []) as $m) {
+            $metode['label'][] = $m['key'];
+            $metode['nilai'][] = $m['ratio'] === null ? 0 : round($m['ratio'] * 100, 1);
+            $metode['warna'][] = Tpkkp::levelHex(Tpkkp::level($m['category']));
+        }
+
+        $donat = ['label' => [], 'nilai' => [], 'warna' => []];
+        foreach (Tpkkp::LV as $i => $nama) {
+            $donat['label'][] = $nama;
+            $donat['nilai'][] = $sebaran[$i + 1] ?? 0;
+            $donat['warna'][] = Tpkkp::levelHex($i + 1);
+        }
+        $donat['label'][] = 'Belum lengkap';
+        $donat['nilai'][] = $sebaran['none'] ?? 0;
+        $donat['warna'][] = '#e7e5e4';
+
+        return Inertia::render('Tpkkp/Visual', [
+            'judul'    => 'PTPKKP — Visualisasi',
+            'subjudul' => "Capaian dalam bentuk grafik, periode {$a->tahun}",
+            'picker'   => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
+            'indikator'=> $indikator,
+            'parameter'=> $parameter,
+            'metode'   => $metode,
+            'donat'    => $donat,
         ]);
     }
 
@@ -252,11 +547,36 @@ class TpkkpController extends Controller
         }
         usort($saran, fn ($x, $y) => $x['gap'] <=> $y['gap']);
 
-        return view('tpkkp.program', [
-            'a'      => $a,
-            'hasil'  => $hasil,
-            'tahunn' => $tahunn,
-            'saran'  => array_slice($saran, 0, 8),
+        $program = [];
+        foreach ($a->programs ?? [] as $r) {
+            // Baris tanpa id tidak bisa diperbarui maupun dihapus — id-nya
+            // yang dipakai rute. Barisnya tetap ditampilkan supaya isinya
+            // tidak hilang diam-diam, tapi tombolnya disembunyikan.
+            $program[] = [
+                'id'       => $r['id'] ?? null,
+                'param'    => $r['param'] ?? '',
+                'opsi'     => $r['opsi'] ?? '',
+                'durasi'   => $r['durasi'] ?? '',
+                'sasaran'  => $r['sasaran'] ?? '',
+                'target'   => $r['target'] ?? '',
+                'status'   => $r['status'] ?? self::STATUS_PROGRAM[0],
+                'progress' => (int) ($r['progress'] ?? 0),
+            ];
+        }
+
+        return Inertia::render('Tpkkp/Program', [
+            'judul'    => 'PTPKKP — Program Improvement',
+            'subjudul' => "Rencana perbaikan atas selisih terhadap target, periode {$a->tahun}",
+            'picker'   => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
+            'tahun'    => $a->tahun,
+            'saran'    => array_map(fn ($s) => [
+                'kode' => $s['code'],
+                'nama' => $s['name'],
+                'gap'  => round($s['gap'], 4),
+            ], array_slice($saran, 0, 8)),
+            'program'       => $program,
+            'statusPilihan' => self::STATUS_PROGRAM,
+            'bisaSunting'   => $request->user()->isAdmin(),
         ]);
     }
 
@@ -294,7 +614,7 @@ class TpkkpController extends Controller
         $a = $this->aktif($request);
 
         $d = $request->validate([
-            'status'   => ['required', 'in:Rencana,Berjalan,Selesai,Ditunda'],
+            'status'   => ['required', \Illuminate\Validation\Rule::in(self::STATUS_PROGRAM)],
             'progress' => ['nullable', 'integer', 'min:0', 'max:100'],
         ]);
 
@@ -337,20 +657,53 @@ class TpkkpController extends Controller
         $pop = $s['populasi'] ?? [];
         $e   = (float) ($s['e'] ?? 0.05);
 
+        /*
+         * Pratinjau: angka dari kueri menimpa yang tersimpan, tanpa
+         * menyimpan apa pun. Halaman memanggil ulang dirinya sendiri
+         * (partial reload 'alokasi') tiap kali isian berubah, sehingga
+         * rumus Slovin tetap hidup di satu tempat saja. Menghitungnya
+         * ulang di peramban akan cepat, tapi pembulatannya harus persis
+         * sama — dan selisih satu orang antara angka yang tampak saat
+         * mengetik dan angka yang tersimpan tidak akan menimbulkan galat
+         * apa pun, hanya laporan yang salah.
+         */
+        foreach ((array) $request->query('N') as $k => $v) {
+            if (array_key_exists($k, $pop)) $pop[$k] = max(0, (int) $v);
+        }
+
+        if ($request->filled('e')) {
+            $e = min(self::E_MAKS, max(self::E_MIN, (float) $request->query('e')));
+        }
+
         $strata = [];
         foreach ($pop as $k => $v) {
             if ($k === 'Total') continue;
             $strata[] = ['j' => $k, 'N' => (int) $v];
         }
 
-        return view('tpkkp.sampling', [
-            'a'       => $a,
-            'hasil'   => $hasil,
-            'tahunn'  => $tahunn,
-            'e'       => $e,
-            'strata'  => $strata,
-            'alokasi' => Tpkkp::strataAlloc($strata, $e),
-            'rencana' => Tpkkp::samplingRef(),
+        $alokasi = Tpkkp::strataAlloc($strata, $e);
+
+        return Inertia::render('Tpkkp/Sampling', [
+            'judul'    => 'PTPKKP — Kalkulator Slovin',
+            'subjudul' => "Jumlah sampel dan alokasinya per strata, periode {$a->tahun}",
+            'picker'   => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
+            'tahun'    => $a->tahun,
+
+            'strata' => array_map(fn ($s) => ['nama' => $s['j'], 'N' => $s['N']], $strata),
+            'e'      => $e,
+            'eMin'   => self::E_MIN,
+            'eMaks'  => self::E_MAKS,
+
+            'alokasi' => [
+                'N'     => $alokasi['N'],
+                'n'     => $alokasi['n'],
+                'total' => $alokasi['total'],
+                'baris' => array_map(fn ($r) => [
+                    'nama' => $r['j'], 'N' => $r['N'], 'nh' => $r['nh'],
+                ], $alokasi['rows']),
+            ],
+
+            'bisaSunting' => $request->user()->isAdmin(),
         ]);
     }
 
@@ -360,15 +713,19 @@ class TpkkpController extends Controller
         $a = $this->aktif($request);
 
         $d = $request->validate([
-            'e'   => ['required', 'numeric', 'min:0.01', 'max:0.2'],
+            'e'   => ['required', 'numeric', 'min:' . self::E_MIN, 'max:' . self::E_MAKS],
             'N'   => ['array'],
             'N.*' => ['nullable', 'integer', 'min:0'],
         ]);
 
         $s = $a->sampling ?? TpkkpAssessment::samplingSeed();
         $s['e'] = (float) $d['e'];
+
+        // Hanya strata yang memang ada. Kunci sembarang dari kiriman akan
+        // menjadi baris strata permanen yang tidak pernah diminta siapa
+        // pun, dan tidak ada tempat di antarmuka untuk menghapusnya lagi.
         foreach ((array) ($d['N'] ?? []) as $k => $v) {
-            $s['populasi'][$k] = (int) $v;
+            if (array_key_exists($k, $s['populasi'] ?? [])) $s['populasi'][$k] = max(0, (int) $v);
         }
         $a->sampling = $s;
         $a->save();
@@ -384,12 +741,24 @@ class TpkkpController extends Controller
     {
         [$a, $hasil, $tahunn] = $this->base($request);
 
-        return view('tpkkp.metode', [
-            'a'       => $a,
-            'hasil'   => $hasil,
-            'tahunn'  => $tahunn,
-            'metode'  => Tpkkp::methodTotals($a->scores ?? []),
-            'info'    => Tpkkp::methods(),
+        $info = Tpkkp::methods();
+
+        return Inertia::render('Tpkkp/Metode', [
+            'judul'    => 'PTPKKP — Metode',
+            'subjudul' => "Tujuh metode pengukuran dan keterisiannya, periode {$a->tahun}",
+            'picker'   => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
+
+            'metode' => collect(Tpkkp::methodTotals($a->scores ?? []))->map(fn ($m) => [
+                'kode'        => $m['key'],
+                'nama'        => $m['name'],
+                'labelEntitas'=> $info[$m['key']]['entityLabel'] ?? '',
+                'entitas'     => array_values($info[$m['key']]['entities'] ?? []),
+                'items'       => $m['items'],
+                'terisi'      => $m['filled'],
+                'kategori'    => $m['category'],
+                'warna'       => Tpkkp::levelHex(Tpkkp::level($m['category'])),
+                'url'         => route('tpkkp.assess', ['m' => $m['key']]),
+            ])->values()->all(),
         ]);
     }
 
@@ -397,11 +766,54 @@ class TpkkpController extends Controller
     {
         [$a, $hasil, $tahunn] = $this->base($request);
 
-        return view('tpkkp.tentang', [
-            'a'      => $a,
-            'hasil'  => $hasil,
-            'tahunn' => $tahunn,
-            'meta'   => Tpkkp::meta(),
+        /* Seluruh angka ringkasan dan ambang diturunkan dari acuan, tidak
+           satu pun diketik ulang di tampilan. Halaman ini justru yang
+           menjelaskan cara nilai dihitung, jadi angka yang menyimpang di
+           sini lebih menyesatkan daripada di halaman mana pun. */
+        $parameter = 0;
+        $daftarIndikator = [];
+
+        foreach (Tpkkp::indicators() as $ind) {
+            $parameter += count($ind['params']);
+
+            $daftarIndikator[] = [
+                'kode'  => $ind['code'],
+                'nama'  => $ind['name'],
+                'bobot' => collect($ind['params'])->sum('weight'),
+                'parameter' => collect($ind['params'])->map(fn ($p) => [
+                    'kode'   => $p['code'],
+                    'nama'   => $p['name'],
+                    'bobot'  => $p['weight'],
+                    'target' => Tpkkp::paramTargets()[$p['code']] ?? 0,
+                    'jumlahItem' => count($p['items']),
+                ])->values(),
+            ];
+        }
+
+        return Inertia::render('Tpkkp/Tentang', [
+            'judul'    => 'PTPKKP — Instrumen',
+            'subjudul' => 'Struktur instrumen, ambang kategori, dan cara nilai dihitung',
+            'picker'   => \App\Support\TpkkpNav::untukInertia($a->tahun, $tahunn),
+
+            'meta' => [
+                'judul' => Tpkkp::meta()['title'] ?? 'Instrumen PTPKKP',
+                'basis' => Tpkkp::meta()['basis'] ?? '',
+            ],
+
+            'ringkas' => [
+                ['label' => 'Indikator',    'nilai' => (string) count(Tpkkp::indicators())],
+                ['label' => 'Parameter',    'nilai' => (string) $parameter],
+                ['label' => 'Item',         'nilai' => (string) Tpkkp::totalItems()],
+                ['label' => 'Target total', 'nilai' => number_format(Tpkkp::totalTarget(), 2)],
+            ],
+
+            'ambang' => collect(Tpkkp::ref()['thresholds'])->map(fn ($t, $i) => [
+                'label' => $t['label'],
+                'batas' => rtrim(rtrim(number_format((float) $t['lt'], 4, '.', ''), '0'), '.'),
+                'warna' => Tpkkp::levelHex($i + 1),
+            ])->values()->all(),
+
+            'indikator' => $daftarIndikator,
         ]);
     }
 }

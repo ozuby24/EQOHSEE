@@ -51,4 +51,32 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
         $response->assertRedirect('/');
     }
+
+    public function test_keluar_dari_halaman_inertia_memerintahkan_navigasi_penuh(): void
+    {
+        /* Halaman depan dirender Blade, bukan Inertia. Ketika keluar
+           ditekan dari halaman Vue, tombolnya melakukan kunjungan Inertia,
+           dan Inertia yang menerima HTML utuh TIDAK jatuh sendiri ke
+           navigasi peramban — ia menampilkan HTML itu mentah di dalam
+           bingkai galat, sehingga halaman depan tampak sebagai jendela
+           rusak di atas halaman yang baru ditinggalkan. */
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->withHeader('X-Inertia', 'true')
+            ->post('/logout')
+            ->assertStatus(409)
+            ->assertHeader('X-Inertia-Location', '/');
+
+        $this->assertGuest();
+    }
+
+    public function test_keluar_dari_halaman_blade_tetap_pengalihan_biasa(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->post('/logout')->assertRedirect('/');
+
+        $this->assertGuest();
+    }
 }

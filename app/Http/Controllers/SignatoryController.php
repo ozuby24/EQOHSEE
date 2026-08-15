@@ -4,12 +4,29 @@ namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Signatory};
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class SignatoryController extends Controller
 {
     public function index()
     {
-        return view('signatories.index', ['items' => Signatory::orderByDesc('is_active')->orderBy('name')->get()]);
+        return Inertia::render('PenandaTangan/Daftar', [
+            'judul'    => 'Penanda Tangan Sertifikat',
+            'subjudul' => 'Nama yang tercetak pada sertifikat yang diterbitkan',
+
+            'penandaTangan' => Signatory::orderByDesc('is_active')->orderBy('name')->get()
+                ->map(fn (Signatory $s) => [
+                    'id'        => $s->id,
+                    'nama'      => $s->name,
+                    'jabatan'   => (string) ($s->title ?? ''),
+                    'aktif'     => (bool) $s->is_active,
+                    'tandaTangan' => $s->signature ? asset('storage/'.$s->signature) : null,
+                    'urlSimpan' => route('signatories.update', $s),
+                    'urlHapus'  => route('signatories.destroy', $s),
+                ])->all(),
+
+            'tautan' => ['tambah' => route('signatories.store')],
+        ]);
     }
 
     public function store(Request $r)

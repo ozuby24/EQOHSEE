@@ -15,7 +15,7 @@ jobs:
       - name: Siapkan PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: '8.4'
           extensions: mbstring, pdo_sqlite, pdo_pgsql, bcmath, gd, zip
           coverage: none
 
@@ -50,8 +50,44 @@ jobs:
             exit($gagal ? 1 : 0);
           '
 
+      - name: Siapkan Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Pasang dependensi Node
+        run: npm ci
+
+      # Aset dibangun SEBELUM uji, dan urutan itu bukan selera.
+      #
+      # public/build/ tidak masuk repo, sehingga di CI ia hanya ada bila
+      # langkah ini sudah berjalan. Setiap uji yang merender tata letak
+      # memanggil @vite, dan tanpa manifest.json panggilan itu melempar
+      # — bukan satu-dua uji, melainkan 426 sekaligus, seluruhnya dengan
+      # sebab yang sama dan tidak satu pun menyebut aset.
+      #
+      # Sebelumnya langkah ini berada SESUDAH `php artisan test`.
+      # Akibatnya CI merah terus-menerus karena hal yang tidak ada
+      # hubungannya dengan kode yang diubah, dan merah yang selalu
+      # menyala berhenti dibaca orang.
+      - name: Bangun aset
+        run: npm run build
+
       - name: Migrasi
         run: php artisan migrate --force
 
       - name: Uji
         run: php artisan test
+
+      # Typecheck dijalankan terpisah, bukan disatukan ke skrip `build`.
+      # Menyatukannya berarti satu galat tipe menggagalkan penerbitan ke
+      # VPS — padahal Vite tidak membutuhkan tsc untuk menghasilkan bundel.
+      #
+      # `--if-present` supaya berkas alur ini tetap sah pada cabang yang
+      # package.json-nya belum memuat skrip itu. Tanpa itu, alur yang
+      # dibawa ke cabang lebih lama gagal pada langkah terakhir dengan
+      # "Missing script" — kegagalan yang tidak mengatakan apa pun
+      # tentang kode di cabang tersebut.
+      - name: Periksa tipe TypeScript & Vue
+        run: npm run typecheck --if-present

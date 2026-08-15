@@ -2,11 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BerpemilikPerusahaan;
+use App\Models\Scopes\MilikPerusahaan;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
+
 use App\Support\Ko;
 use Illuminate\Database\Eloquent\Model;
 
+#[ScopedBy(MilikPerusahaan::class)]
 class KoObject extends Model
 {
+    use BerpemilikPerusahaan;
+
     protected $table = 'ko_objects';
 
     protected $fillable = [

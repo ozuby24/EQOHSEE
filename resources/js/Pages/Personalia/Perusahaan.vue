@@ -1,0 +1,232 @@
+<script setup lang="ts">
+/**
+ * Personalia — Data Perusahaan.
+ *
+ * Logo yang diunggah menentukan warna aksen seluruh aplikasi, jadi
+ * pratinjaunya ditampilkan sebelum dikirim: memilih berkas yang keliru
+ * di sini bukan hanya salah gambar, melainkan salah warna di setiap
+ * halaman sampai ada yang mengganti lagi.
+ */
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { Head, router, useForm } from '@inertiajs/vue3';
+import type { HalamanPerusahaan, MedanPerusahaan } from '../../types';
+
+const props = defineProps<HalamanPerusahaan>();
+
+/**
+ * Medan identitas hanya boleh disentuh administrator.
+ *
+ * Isian mati di layar bukan penjagaan — server membuang medan itu dari
+ * kiriman siapa pun yang bukan admin. Yang di sini hanya supaya PIC tidak
+ * mengetik sesuatu yang nanti diam-diam tidak tersimpan.
+ */
+const bisaUbah = (m: MedanPerusahaan) => props.bisaSunting && (props.admin || !m.khususAdmin);
+
+/* ── admin: berpindah dan menambah perusahaan ── */
+
+const pilih = ref(props.aktif);
+
+watch(() => props.aktif, (v) => { pilih.value = v; });
+
+function bukaPerusahaan(id: number | string) {
+  router.get('/personalia/perusahaan', { perusahaan: id }, { preserveScroll: true });
+}
+
+const tambah = useForm({ name: '', code: '' });
+const menambah = ref(false);
+
+function simpanBaru() {
+  tambah.post('/personalia/perusahaan/baru', {
+    preserveScroll: true,
+    onSuccess: () => { tambah.reset(); menambah.value = false; },
+  });
+}
+
+const form = useForm<Record<string, any>>({ ...(props.isian ?? {}), logo: null as File | null });
+
+const pratinjau = ref<string | null>(null);
+
+function pilihLogo(e: Event) {
+  const berkas = (e.target as HTMLInputElement).files?.[0] ?? null;
+
+  if (pratinjau.value) URL.revokeObjectURL(pratinjau.value);
+  pratinjau.value = berkas ? URL.createObjectURL(berkas) : null;
+  form.logo = berkas;
+}
+
+onBeforeUnmount(() => { if (pratinjau.value) URL.revokeObjectURL(pratinjau.value); });
+
+const gambar = computed(() => pratinjau.value ?? props.logo);
+
+function simpan() {
+  form.post('/personalia/perusahaan', {
+    forceFormData: true,
+    preserveScroll: true,
+    onSuccess: () => {
+      if (pratinjau.value) URL.revokeObjectURL(pratinjau.value);
+      pratinjau.value = null;
+      form.logo = null;
+    },
+  });
+}
+
+function hapusLogo() {
+  if (!confirm('Hapus logo? Warna tampilan kembali ke bawaan EQOHSEE.')) return;
+
+  router.delete('/personalia/perusahaan/logo', { preserveScroll: true });
+}
+</script>
+
+<template>
+  <Head title="Data Perusahaan" />
+
+  <div class="max-w-[900px] mx-auto space-y-5">
+
+    <div v-if="admin" class="bg-white rounded-2xl shadow-card border border-stone-100 p-4">
+      <div class="flex flex-wrap items-end gap-3">
+        <div class="flex-1 min-w-[220px]">
+          <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Perusahaan yang dibuka</label>
+          <select v-if="daftar.length" v-model="pilih" @change="bukaPerusahaan(pilih!)"
+                  class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]
+                         focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0">
+            <option v-for="c in daftar" :key="c.id" :value="c.id">{{ c.nama }}</option>
+          </select>
+          <p v-else class="text-[12.5px] text-stone-400">Belum ada perusahaan terdaftar.</p>
+        </div>
+
+        <button type="button" @click="menambah = !menambah"
+                class="rounded-xl border border-stone-200 px-4 py-2.5 text-[12.5px] font-semibold text-[#0F1720]
+                       hover:border-stone-400 transition shrink-0">
+          {{ menambah ? 'Batal' : '+ Perusahaan baru' }}
+        </button>
+      </div>
+
+      <div v-if="menambah" class="mt-4 pt-4 border-t border-stone-100 grid gap-3 sm:grid-cols-[2fr_1fr_auto] sm:items-end">
+        <div>
+          <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">
+            Nama Perusahaan <span class="text-red-500">*</span>
+          </label>
+          <input v-model="tambah.name" type="text" placeholder="PT Contoh Tambang"
+                 class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]
+                        focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0">
+          <p v-if="tambah.errors.name" class="text-[11.5px] text-red-600 mt-1">{{ tambah.errors.name }}</p>
+        </div>
+        <div>
+          <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Kode</label>
+          <input v-model="tambah.code" type="text" placeholder="PCT"
+                 class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]
+                        focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0">
+        </div>
+        <button type="button" :disabled="tambah.processing || !tambah.name.trim()" @click="simpanBaru"
+                class="eq-btn-utama disabled:opacity-40 disabled:cursor-not-allowed"
+                style="flex:none;padding:10px 22px">
+          Tambah
+        </button>
+      </div>
+    </div>
+
+    <div v-if="!ada" class="bg-white rounded-2xl shadow-card border border-stone-100 px-6 py-10 text-center">
+      <p class="text-[14px] font-bold text-[#0F1720]">
+        {{ admin ? 'Belum ada perusahaan terdaftar' : 'Akun Anda belum terhubung ke perusahaan' }}
+      </p>
+      <p class="text-[12.5px] text-stone-500 mt-1.5">
+        {{ admin
+            ? 'Tambahkan perusahaan pertama lewat tombol di atas.'
+            : 'Administrator dapat menautkannya lewat Personalia → Direktori.' }}
+      </p>
+    </div>
+
+    <div v-else class="bg-white rounded-2xl shadow-card border border-stone-100 overflow-hidden">
+      <div class="px-6 py-5 border-b border-stone-100">
+        <h3 class="text-[15px] font-bold text-[#0F1720]">{{ nama }}</h3>
+        <p class="text-[12.5px] text-stone-500 mt-1">
+          <template v-if="bisaSunting">
+            Data ini tercetak pada kop dokumen, laporan audit, dan sertifikat.
+          </template>
+          <template v-else>
+            Hanya administrator atau PIC perusahaan yang dapat mengubah data ini.
+          </template>
+        </p>
+        <p v-if="bisaSunting && !admin" class="text-[11.5px] text-stone-400 mt-1.5">
+          Nama dan kode perusahaan hanya dapat diubah administrator — keduanya dipakai
+          modul lain untuk mengenali perusahaan ini.
+        </p>
+      </div>
+
+      <div class="px-6 py-5 border-b border-stone-100">
+        <div class="flex flex-wrap items-center gap-5">
+          <div class="w-20 h-20 rounded-xl border border-stone-200 grid place-items-center bg-stone-50 shrink-0">
+            <img v-if="gambar" :src="gambar" alt="" class="max-w-[68px] max-h-[68px] object-contain">
+            <span v-else class="text-[11px] text-stone-400">Belum ada</span>
+          </div>
+
+          <div class="flex-1 min-w-[220px]">
+            <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Logo Perusahaan</label>
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                   :disabled="!bisaSunting" @change="pilihLogo"
+                   class="block w-full text-[12.5px] text-stone-600
+                          file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0
+                          file:text-[12px] file:font-semibold file:bg-stone-100 file:text-[#0F1720]">
+            <p v-if="pratinjau" class="text-[11.5px] text-amber-700 font-semibold mt-1.5">
+              Logo baru dipilih — warna aksen baru dihitung setelah Anda menyimpan.
+            </p>
+            <p v-else class="text-[11.5px] text-stone-400 mt-1.5">
+              Warna khas logo diambil otomatis dan dipakai sebagai aksen tampilan.
+              SVG dan logo hitam-putih tetap tersimpan, hanya tidak mengubah warna.
+            </p>
+            <p v-if="form.errors.logo" class="text-[11.5px] text-red-600 mt-1">{{ form.errors.logo }}</p>
+          </div>
+
+          <button v-if="logoSendiri && bisaSunting" type="button" @click="hapusLogo"
+                  class="text-[12px] font-semibold text-red-600 hover:underline">
+            Hapus logo
+          </button>
+        </div>
+
+        <div v-if="palet.length" class="mt-4 flex items-center gap-3 flex-wrap">
+          <span class="text-[11.5px] text-stone-500">Warna yang terbaca dari logo:</span>
+          <span v-for="w in palet" :key="w.nama" v-show="w.hex"
+                class="inline-flex items-center gap-2 text-[11.5px] text-stone-600">
+            <i class="w-5 h-5 rounded-md border border-stone-200 inline-block"
+               :style="{ background: w.hex }"></i>{{ w.nama }} {{ w.hex }}
+          </span>
+        </div>
+      </div>
+
+      <div class="px-6 py-5 grid gap-4 sm:grid-cols-2">
+        <div v-for="m in medan" :key="m.nama" :class="m.lebar ? 'sm:col-span-2' : ''">
+          <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">
+            {{ m.label }} <span v-if="m.wajib" class="text-red-500">*</span>
+          </label>
+          <input v-model="form[m.nama]" type="text" :disabled="!bisaUbah(m)"
+                 class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]
+                        disabled:bg-stone-50 disabled:text-stone-500
+                        focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0">
+          <p v-if="form.errors[m.nama]" class="text-[11.5px] text-red-600 mt-1">
+            {{ form.errors[m.nama] }}
+          </p>
+        </div>
+
+        <div class="sm:col-span-2">
+          <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Alamat</label>
+          <textarea v-model="form.address" rows="3" :disabled="!bisaSunting"
+                    class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]
+                           disabled:bg-stone-50 disabled:text-stone-500
+                           focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0"></textarea>
+        </div>
+      </div>
+
+      <div v-if="bisaSunting"
+           class="px-6 py-4 bg-stone-50 border-t border-stone-100 flex items-center justify-end gap-3">
+        <span v-if="form.progress" class="text-[11.5px] text-stone-500 num">
+          Mengunggah {{ form.progress.percentage }}%
+        </span>
+        <button type="button" :disabled="form.processing" @click="simpan"
+                class="eq-btn-utama disabled:opacity-40 disabled:cursor-not-allowed"
+                style="flex:none;padding:10px 22px">
+          {{ form.processing ? 'Menyimpan…' : 'Simpan Perubahan' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</template>

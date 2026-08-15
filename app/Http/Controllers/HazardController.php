@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Company, HazardReport, User};
-use App\Support\{Db, Hazard};
+use App\Support\{Db, Hazard, Identitas};
 use Illuminate\Http\Request;
 
 class HazardController extends Controller
@@ -46,20 +46,116 @@ class HazardController extends Controller
         $bulanOpsi = HazardReport::selectRaw(Db::ym('tanggal') . ' as b')
                         ->whereNotNull('tanggal')->distinct()->orderByDesc('b')->pluck('b');
 
-        return view('hazard.index', [
-            'reports' => $reports, 'stat' => $stat, 'f' => $f,
-            'bulanOpsi' => $bulanOpsi, 'companies' => Company::orderBy('name')->get(),
+        /* Ringkasan WhatsApp disusun di server, bukan di peramban: isinya
+           mengikuti hasil saringan yang sama dengan daftar di layar, dan
+           menyusunnya ulang di sisi klien berarti dua tempat yang harus
+           sepakat tentang apa yang sedang tersaring. */
+        $ringkasWa = "*Rekap Hazard Report — EQOHSEE*\n\n"
+            ."Total: {$stat['total']} · Open: {$stat['open']} · Proses: {$stat['proses']} · Closed: {$stat['closed']}\n"
+            ."Risiko tinggi belum tutup: {$stat['tinggi']}\n\n"
+            .$reports->take(10)->map(fn ($x) => "• [{$x->kode}] {$x->risiko} — "
+                .\Illuminate\Support\Str::limit($x->deskripsi, 60)
+                ." (📍".($x->lokasi ?: '-').", ".($x->company?->name ?: $x->terlapor ?: '-').", {$x->status})")->implode("\n")
+            ."\n\nMohon ditindaklanjuti sesuai PIC masing-masing.";
+
+        return \Inertia\Inertia::render('Hazard/Monitor', [
+            'judul'    => 'Monitor Hazard Report',
+            'subjudul' => 'Laporan bahaya dari seluruh lokasi kerja',
+
+            'stat'   => $stat,
+            'saring' => $f,
+            'adaSaringan' => collect($f)->filter()->isNotEmpty(),
+
+            'opsi' => [
+                'risiko'   => Hazard::RISIKO,
+                'status'   => Hazard::STATUS,
+                'kategori' => Hazard::KATEGORI,
+                'bulan'    => $bulanOpsi->map(fn ($b) => [
+                    'nilai' => $b,
+                    'label' => \Carbon\Carbon::parse($b.'-01')->translatedFormat('F Y'),
+                ])->all(),
+                'perusahaan' => Company::orderBy('name')->get(['id', 'name'])
+                    ->map(fn ($c) => ['id' => $c->id, 'nama' => $c->name])->all(),
+            ],
+
+            'laporan' => array_map(fn (HazardReport $r) => [
+                'id'          => $r->id,
+                'kode'        => $r->kode,
+                'risiko'      => $r->risiko,
+                'warnaRisiko' => Hazard::WARNA_RISIKO[$r->risiko] ?? '#a8a29e',
+                'status'      => $r->status,
+                'warnaStatus' => Hazard::WARNA_STATUS[$r->status] ?? '#a8a29e',
+                'kategori'    => $r->kategori,
+                'deskripsi'   => $r->deskripsi,
+                'lokasi'      => $r->lokasi ?: null,
+                'pelapor'     => $r->pelapor_nama,
+                'tanggal'     => $r->tanggal?->format('d M Y'),
+                'tujuan'      => $r->company?->name ?: ($r->terlapor ?: null),
+                'terlapor'    => $r->terlapor && $r->company ? $r->terlapor : null,
+                'foto'        => $r->foto && count($r->foto) ? asset('storage/'.$r->foto[0]) : null,
+                'url'         => route('hazard.show', $r),
+            ], $reports->items()),
+
+            'halaman' => [
+                'kini'   => $reports->currentPage(),
+                'akhir'  => $reports->lastPage(),
+                'total'  => $reports->total(),
+                'tautan' => array_map(fn ($t) => [
+                    'label' => $t['label'],
+                    'url'   => $t['url'],
+                    'aktif' => (bool) $t['active'],
+                ], $reports->linkCollection()->all()),
+            ],
+
+            'tautan' => [
+                'buat'     => route('hazard.create'),
+                'csv'      => route('hazard.ekspor.csv', $request->query()),
+                'cetak'    => route('hazard.ekspor.cetak', $request->query()),
+                'wa'       => \App\Support\Ekspor::waLink($ringkasWa),
+                'pengingat'=> route('hazard.pengingat'),
+            ],
         ]);
     }
 
     /* ---------- Form laporan ---------- */
     public function create()
     {
-        return view('hazard.form', [
-            'report'    => new HazardReport(),
-            'companies' => Company::orderBy('name')->get(),
-            'me'        => auth()->user(),
-            'manpower'  => $this->manpower(),
+        $me = auth()->user();
+
+        return \Inertia\Inertia::render('Hazard/Buat', [
+            'judul'    => 'Buat Laporan Bahaya',
+            'subjudul' => 'Laporkan temuan agar dapat ditindaklanjuti',
+
+            /* Isian pelapor sudah terisi dari akun yang sedang masuk.
+               Mengetik ulang identitas sendiri pada tiap laporan bukan
+               hanya merepotkan — di situlah ejaan mulai bervariasi, dan
+               satu orang pecah menjadi beberapa di perhitungan KPI. */
+            'awal' => [
+                'pelapor_nama'       => $me->name,
+                'pelapor_nrp'        => $me->employee_id,
+                'pelapor_jabatan'    => $me->position,
+                'pelapor_departemen' => $me->department,
+                'pelapor_perusahaan' => $me->company?->name,
+                'company_id'         => $me->company_id ? (string) $me->company_id : '',
+                'tanggal'            => now()->toDateString(),
+                'waktu'              => now()->format('H:i'),
+                'risiko'             => 'Sedang',
+            ],
+
+            'opsi' => [
+                'risiko'          => Hazard::RISIKO,
+                'kategori'        => Hazard::KATEGORI,
+                'lokasi'          => Hazard::LOKASI,
+                'hirarki'         => Hazard::HIRARKI,
+                'unsafeAction'    => Hazard::UNSAFE_ACTION,
+                'unsafeCondition' => Hazard::UNSAFE_CONDITION,
+                'perusahaan'      => Company::orderBy('name')->get(['id', 'name'])
+                    ->map(fn ($c) => ['id' => $c->id, 'nama' => $c->name])->all(),
+            ],
+
+            'manpower' => $this->manpower(),
+
+            'tautan' => ['simpan' => route('hazard.store'), 'batal' => route('hazard.index')],
         ]);
     }
 
@@ -113,10 +209,64 @@ class HazardController extends Controller
         return redirect()->route('hazard.show', $r)->with('ok', 'Laporan '.$r->kode.' terkirim.');
     }
 
-    public function show(HazardReport $hazard)
+    public function show(Request $request, HazardReport $hazard)
     {
-        $hazard->load(['company','user','closer']);
-        return view('hazard.show', ['r' => $hazard]);
+        $hazard->load(['company', 'user', 'closer']);
+
+        $foto = fn (?array $daftar) => array_map(fn ($f) => asset('storage/'.$f), $daftar ?: []);
+
+        return \Inertia\Inertia::render('Hazard/Detail', [
+            'judul'    => 'Laporan '.$hazard->kode,
+            'subjudul' => $hazard->lokasi ?: 'Rincian laporan bahaya',
+
+            'r' => [
+                'id'        => $hazard->id,
+                'kode'      => $hazard->kode,
+                'risiko'    => $hazard->risiko,
+                'warnaRisiko' => Hazard::WARNA_RISIKO[$hazard->risiko] ?? '#a8a29e',
+                'status'    => $hazard->status,
+                'warnaStatus' => Hazard::WARNA_STATUS[$hazard->status] ?? '#a8a29e',
+                'kategori'  => $hazard->kategori,
+                'deskripsi' => $hazard->deskripsi,
+                'rekomendasi' => $hazard->rekomendasi,
+                'hirarki'   => $hazard->hirarki,
+                'lokasi'    => $hazard->lokasi,
+                'tanggal'   => $hazard->tanggal?->format('d M Y'),
+                'waktu'     => $hazard->waktu,
+
+                'pelapor' => [
+                    'nama'       => $hazard->user?->name ?: $hazard->pelapor_nama,
+                    'nrp'        => $hazard->pelapor_nrp,
+                    'jabatan'    => $hazard->user?->position ?: $hazard->pelapor_jabatan,
+                    'departemen' => $hazard->pelapor_departemen,
+                    'perusahaan' => $hazard->pelapor_perusahaan,
+                ],
+
+                'tujuan'   => $hazard->company?->name ?: ($hazard->terlapor ?: null),
+                'terlapor' => $hazard->terlapor,
+
+                // Daftar, bukan teks tunggal — data lama masih berupa teks
+                // biasa dan accessor-nya sudah menyeragamkan keduanya.
+                'unsafeAction'    => $hazard->unsafe_action_list,
+                'unsafeCondition' => $hazard->unsafe_condition_list,
+
+                'foto'            => $foto($hazard->foto),
+                'fotoTindakLanjut' => $foto($hazard->foto_tindaklanjut),
+
+                'catatanPenutupan' => $hazard->catatan_penutupan,
+                'penutup'  => $hazard->closer?->name,
+                'ditutup'  => $hazard->closed_at?->format('d M Y H:i'),
+            ],
+
+            'opsi'  => ['status' => Hazard::STATUS],
+            'admin' => (bool) $request?->user()?->isAdmin(),
+
+            'tautan' => [
+                'kembali' => route('hazard.index'),
+                'tindak'  => route('hazard.follow', $hazard),
+                'hapus'   => route('hazard.destroy', $hazard),
+            ],
+        ]);
     }
 
     /* ---------- Tindak lanjut ---------- */
@@ -153,20 +303,42 @@ class HazardController extends Controller
     public function analytics(Request $request)
     {
         $bulan = $request->get('bulan');
-        $data  = HazardReport::when($bulan, fn($b) => $b->whereRaw(Db::ym('tanggal') . ' = ?', [$bulan]))->get();
+        // user dimuat sekaligus: identitas dan jabatan terkini dibaca dari
+        // sana, dan tanpa eager load itu menjadi satu kueri per laporan.
+        $data = HazardReport::with('user')
+            ->when($bulan, fn($b) => $b->whereRaw(Db::ym('tanggal') . ' = ?', [$bulan]))->get();
 
-        // jumlah bulan aktif (untuk target akumulasi)
+        /* Jumlah bulan yang benar-benar berisi laporan — pengali target.
+           Dihitung lewat pluck, bukan ->distinct()->count(): count()
+           menimpa SELECT dengan count(*) sehingga DISTINCT atas ekspresi
+           bulan ikut hilang, dan yang terhitung menjadi jumlah BARIS.
+           Akibatnya target tiap orang ikut membesar setiap ada laporan
+           baru, dan capaian semua orang merosot tanpa sebab. */
         $bulanAktif = $bulan ? 1 : max(1, HazardReport::selectRaw(Db::ym('tanggal') . ' as b')
-                        ->whereNotNull('tanggal')->distinct()->count());
+                        ->whereNotNull('tanggal')->distinct()->pluck('b')->count());
 
-        // KPI per orang
+        /* KPI per orang.
+           Dikelompokkan lewat Identitas, bukan langsung dari teksnya: satu
+           orang yang mengetik namanya sedikit berbeda pada tiga laporan
+           akan terhitung sebagai tiga orang, dan karena target dijumlahkan
+           per orang, targetnya ikut tiga kali lipat sementara laporannya
+           tetap tiga — capaiannya ambruk jadi sepertiga tanpa satu pun
+           galat muncul.
+
+           Nama dan jabatan diambil dari akunnya bila ada. Teks pada
+           laporan adalah salinan saat laporan dibuat; orang yang berganti
+           jabatan akan menyeret jabatan lamanya — beserta target lama —
+           di seluruh laporan terdahulunya. */
         $perOrang = [];
         foreach ($data as $r) {
-            $key = ($r->pelapor_nrp ?: $r->pelapor_nama);
+            $key = Identitas::kunci($r->user_id, $r->pelapor_nrp, $r->pelapor_nama);
+
+            $jabatan = $r->user?->position ?: $r->pelapor_jabatan;
+
             $perOrang[$key] ??= [
-                'nama' => $r->pelapor_nama, 'jabatan' => $r->pelapor_jabatan,
-                'gol'  => Hazard::golongan($r->pelapor_jabatan),
-                'target' => Hazard::target($r->pelapor_jabatan) * $bulanAktif,
+                'nama' => $r->user?->name ?: $r->pelapor_nama, 'jabatan' => $jabatan,
+                'gol'  => Hazard::golongan($jabatan),
+                'target' => Hazard::target($jabatan) * $bulanAktif,
                 'aktual' => 0,
             ];
             $perOrang[$key]['aktual']++;
@@ -193,14 +365,69 @@ class HazardController extends Controller
             $tren[$k] = HazardReport::whereRaw(Db::ym('tanggal') . ' = ?', [$k])->count();
         }
 
-        return view('hazard.analytics', [
-            'bulan' => $bulan, 'bulanAktif' => $bulanAktif,
-            'perOrang' => $perOrang, 'perGolongan' => $perGolongan,
-            'distStatus' => $hitung('status'), 'distRisiko' => $hitung('risiko'),
-            'distKategori' => $hitung('kategori'), 'distLokasi' => $hitung('lokasi')->take(8),
-            'tren' => $tren, 'total' => $data->count(),
-            'bulanOpsi' => HazardReport::selectRaw(Db::ym('tanggal') . ' as b')
-                            ->whereNotNull('tanggal')->distinct()->orderByDesc('b')->pluck('b'),
+        /* Capaian dihitung di sini, bukan di tampilan. Pembagian target yang
+           bernilai nol harus dijaga sekali saja — ditulis ulang di tiap tabel
+           yang menampilkannya, satu di antaranya cepat atau lambat lupa. */
+        $persen = fn (int $aktual, int $target) => $target ? (int) round($aktual / $target * 100) : 0;
+
+        $golongan = [];
+        foreach ($perGolongan as $nama => $g) {
+            $golongan[] = [
+                'nama'     => $nama,
+                'orang'    => $g['orang'],
+                'target'   => $g['target'],
+                'aktual'   => $g['aktual'],
+                'tercapai' => $g['tercapai'],
+                'pct'      => $persen($g['aktual'], $g['target']),
+            ];
+        }
+
+        $maksTren = max(array_values($tren) ?: [1]) ?: 1;
+
+        $sebaran = fn (string $judul, $dist) => [
+            'judul' => $judul,
+            'maks'  => $dist->max() ?: 1,
+            'baris' => $dist->map(fn ($v, $k) => ['label' => $k ?: '—', 'nilai' => $v])->values()->all(),
+        ];
+
+        return \Inertia\Inertia::render('Hazard/Analitik', [
+            'judul'    => 'Analitik & KPI',
+            'subjudul' => 'Capaian pelaporan bahaya terhadap targetnya',
+
+            'bulan'      => $bulan,
+            'bulanAktif' => $bulanAktif,
+            'total'      => $data->count(),
+
+            'opsiBulan' => HazardReport::selectRaw(Db::ym('tanggal') . ' as b')
+                ->whereNotNull('tanggal')->distinct()->orderByDesc('b')->pluck('b')
+                ->map(fn ($b) => [
+                    'nilai' => $b,
+                    'label' => \Carbon\Carbon::parse($b.'-01')->translatedFormat('F Y'),
+                ])->all(),
+
+            'golongan' => $golongan,
+
+            'tren' => collect($tren)->map(fn ($v, $k) => [
+                'label' => \Carbon\Carbon::parse($k.'-01')->translatedFormat('M'),
+                'nilai' => $v,
+                'maks'  => $maksTren,
+            ])->values()->all(),
+
+            'sebaran' => [
+                $sebaran('Status',         $hitung('status')),
+                $sebaran('Risiko',         $hitung('risiko')),
+                $sebaran('Kategori',       $hitung('kategori')),
+                $sebaran('Lokasi teratas', $hitung('lokasi')->take(8)),
+            ],
+
+            'pelapor' => array_values(array_map(fn ($o) => [
+                'nama'    => $o['nama'],
+                'jabatan' => $o['jabatan'] ?: null,
+                'gol'     => $o['gol'],
+                'target'  => $o['target'],
+                'aktual'  => $o['aktual'],
+                'pct'     => $persen($o['aktual'], $o['target']),
+            ], $perOrang)),
         ]);
     }
 

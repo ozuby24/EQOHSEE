@@ -6,19 +6,68 @@
 
 body{
   font-family:'Inter',sans-serif;
-  background:#FBFAF7;
-  color:#123049;
+  background:#F5F7F9;
+  color:#0F1720;
+}
+
+/* ---------- Pengaman responsif global ----------
+   Halaman tidak boleh pernah menggeser ke samping. Konten yang memang lebar
+   (tabel, diagram) discroll di dalam pembungkusnya sendiri, bukan menyeret
+   seluruh halaman. */
+html,body{ max-width:100%; overflow-x:hidden; }
+
+/* Kontrol formulir punya lebar bawaan dari isi terpanjangnya sehingga menolak
+   menyusut di dalam flexbox — inilah penyebab bilah filter meluber di layar
+   sempit. min-width:0 mengembalikan kendali lebar ke tata letak. */
+input,select,textarea,button{ min-width:0; max-width:100%; }
+
+/* Media tidak pernah melampaui kolomnya. */
+img,svg,video,canvas{ max-width:100%; height:auto; }
+
+/* Kata/URL panjang tanpa spasi tidak melebarkan kartu. */
+p,li,td,th,dd,dt,h1,h2,h3,h4{ overflow-wrap:anywhere; }
+
+/* Pembungkus baku untuk tabel lebar: geser di dalam kartunya sendiri,
+   lengkap dengan momentum di iOS. */
+.tabel-scroll{
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  max-width:100%;
+}
+
+/* Angka besar dipadatkan di layar kecil agar tidak memecah tata letak kartu. */
+@media (max-width:480px){
+  .stat{ font-size:22px; }
+  .stat-sm{ font-size:18px; }
+  .stat-lg{ font-size:27px; }
+  .stat-xl{ font-size:32px; }
 }
 
 /* ---------- Scrollbar ---------- */
 ::-webkit-scrollbar{ width:10px; height:10px; }
 ::-webkit-scrollbar-track{ background:transparent; }
-::-webkit-scrollbar-thumb{ background:#c3d0d6; border-radius:20px; border:2px solid #FBFAF7; }
-::-webkit-scrollbar-thumb:hover{ background:#9db0b8; }
+::-webkit-scrollbar-thumb{ background:#C9C2B2; border-radius:20px; border:2px solid #F3EFE6; }
+::-webkit-scrollbar-thumb:hover{ background:#B5CBB7; }
 
-/* ---------- Gradien merek ---------- */
-.brand-gradient{ background:linear-gradient(120deg,#0E2B44 0%,#14385A 48%,#116570 78%,#158D99 100%); }
-.lime-gradient{ background:linear-gradient(135deg,#0E747E 0%,#2CB0BC 100%); }
+/* ---------- Gradien merek ----------
+   Teal + Coral + Sand di atas charcoal. Gradien merek berangkat dari
+   charcoal, bukan dari teal, supaya bidang gelapnya terbaca tenang dan
+   tealnya muncul sebagai cahaya — itu yang memberi kesan mahal. */
+.brand-gradient{ background:linear-gradient(160deg,#0B1117 0%,#141C25 55%,#1B2530 100%); }
+.lime-gradient { background:linear-gradient(135deg,#DC6E00 0%,#FF9800 100%); }
+.coral-gradient{ background:linear-gradient(135deg,#E2663A 0%,#FF7F50 100%); }
+.sand-gradient { background:linear-gradient(135deg,#F5E6CA 0%,#F3EFE6 100%); }
+
+/* Garis rambut emas-pasir: pemisah tipis yang menaikkan kesan bahan. */
+.hairline{ border-block-end:1px solid rgba(224,203,164,.55); }
+
+/* Bidang kaca hangat di atas latar beige — bukan putih murni, agar
+   kartu tidak tampak seperti kertas fotokopi. */
+.kartu-lux{
+  background:linear-gradient(180deg,#FFFFFF 0%,#FCFAF6 100%);
+  border:1px solid rgba(34,49,47,.06);
+  box-shadow:0 0 0 1px rgba(34,49,47,.03),0 2px 4px rgba(34,49,47,.04),0 24px 60px -28px rgba(34,49,47,.30);
+}
 
 /* ---------- Glassmorphism ---------- */
 .glass{
@@ -40,6 +89,24 @@ body{
   border:1px solid rgba(255,255,255,.16);
 }
 .text-shadow{ text-shadow:0 2px 18px rgba(0,0,0,.35); }
+
+/* Teks putih di atas foto siang hari. Dua bayangan: satu rapat untuk
+   memisahkan huruf dari apa pun tepat di belakangnya, satu lebar untuk
+   menurunkan terang bidangnya. Menggelapkan seluruh foto akan lebih
+   mudah, tetapi itu membuang fotonya. */
+.text-shadow-foto{
+  text-shadow:0 1px 2px rgba(0,0,0,.55), 0 3px 14px rgba(0,0,0,.55), 0 12px 44px rgba(0,0,0,.45);
+}
+
+/* Bayangan untuk teks bersapuan cahaya.
+   `text-shadow` tidak boleh dipakai bersama .sheen: sapuan itu bekerja
+   dengan background-clip:text dan color:transparent, sehingga bayangannya
+   menembus isi huruf dan mengotori warnanya — persis seperti teal yang
+   berubah keruh. `drop-shadow` bekerja pada bentuk yang benar-benar
+   tergambar, jadi bayangannya jatuh di luar huruf, bukan di dalamnya. */
+.sheen-shadow{
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,.5)) drop-shadow(0 8px 26px rgba(0,0,0,.45));
+}
 
 /* ---------- Navigasi ---------- */
 .nav-active{ background:linear-gradient(135deg,rgba(21,141,153,.20),rgba(44,176,188,.10)); color:#fff; }
@@ -90,3 +157,424 @@ details>summary::-webkit-details-marker{ display:none; }
 input,select,textarea{ outline:none; }
 
 @media print{ .print\:hidden{ display:none !important; } }
+
+/* ══════════════════════════════════════════════════════════════
+   DOKUMEN TERKENDALI
+   Berkas audit dicetak sebagai lembar A4 bernomor. Pemenggalan
+   halaman ditentukan di sisi server — peramban tidak mendukung
+   counter(page), jadi tiap lembar dibuat eksplisit agar nomor
+   "Halaman x dari y" pada kopnya benar.
+   ══════════════════════════════════════════════════════════════ */
+
+.lembar{ position:relative; }
+
+/* Tabel di dalam lembar tidak boleh terbelah antar halaman cetak. */
+.lembar table{ break-inside:auto; }
+.lembar tr   { break-inside:avoid; break-after:auto; }
+.lembar thead{ display:table-header-group; }
+
+@media print{
+  @page{ size:A4; margin:10mm; }
+
+  html,body{ background:#fff !important; }
+
+  /* Bingkai layar dilepas: yang tercetak hanya isi lembarnya. */
+  /* Sengaja tanpa break-inside:avoid — bila satu lembar sedikit melebihi
+     tinggi kertas, Chrome menyisipkan halaman kosong alih-alih memampatkan,
+     sehingga jumlah halaman tak lagi cocok dengan nomor pada kop. Membiarkan
+     isinya mengalir jauh lebih jujur daripada halaman hampa. */
+  .lembar{
+    border:0 !important;
+    border-radius:0 !important;
+    box-shadow:none !important;
+    padding:0 !important;
+    margin:0 !important;
+  }
+  .lembar-putus{ break-after:page; }
+  .lembar:last-child{ break-after:auto; }
+
+  /* Warna latar tetap tercetak agar penanda status tidak hilang. */
+  *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* Tabel lebar tidak boleh digulir saat dicetak — kertas tidak bergulir. */
+  .tabel-scroll{ overflow:visible !important; }
+  .tabel-scroll table{ min-width:0 !important; width:100% !important; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LAPISAN SINEMATIK
+   Dipakai halaman publik (beranda, pilar, masuk). Semuanya murni
+   CSS/SVG — tanpa aset luar — supaya tetap tampil saat jaringan
+   site tambang lambat atau terputus.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Ruang 3D ── */
+.pers        { perspective: 1400px; }
+.pers-near   { perspective: 900px; }
+.d3          { transform-style: preserve-3d; }
+.d3-flat     { backface-visibility: hidden; }
+
+/* Kartu yang bereaksi terhadap kursor. Sudutnya disetel lewat
+   variabel --rx/--ry dari JS sehingga transisi tetap di GPU. */
+.tilt{
+  transform: rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateZ(0);
+  transition: transform .5s cubic-bezier(.16,.84,.44,1);
+  will-change: transform;
+}
+.tilt-fast{ transition: transform .18s cubic-bezier(.16,.84,.44,1); }
+
+/* Lapisan yang terangkat di dalam kartu 3D. */
+.lift-1{ transform: translateZ(28px); }
+.lift-2{ transform: translateZ(52px); }
+.lift-3{ transform: translateZ(80px); }
+
+/* ── Latar bercahaya ── */
+.aurora{ position:relative; isolation:isolate; overflow:hidden; }
+/* Pendarnya dijauhkan dari tepi atas dan bawah bidang. Cahaya yang jatuh
+   persis di garis pertemuan dua bagian justru menegaskan batasnya —
+   yang seharusnya dilarutkan malah jadi terlihat.
+   Warnanya mengikuti merek: jingga tipis di atas dasar navy. Bukan dua
+   hue yang bersaing — pendar yang berwarna-warni mengubah bidang gelap
+   menjadi keruh, dan bidang keruh membuat teks di atasnya ikut kotor. */
+.aurora::before{
+  content:""; position:absolute; inset:-40%; z-index:-1;
+  background:
+    radial-gradient(38% 42% at 24% 48%, rgba(245,124,0,.16), transparent 62%),
+    radial-gradient(32% 38% at 78% 56%, rgba(255,152,0,.10), transparent 64%),
+    radial-gradient(44% 44% at 54% 74%, rgba(30,42,56,.55), transparent 66%);
+  filter: blur(38px);
+  animation: aurora 22s ease-in-out infinite alternate;
+}
+@keyframes aurora{
+  0%   { transform: translate3d(-3%,-2%,0) scale(1);    }
+  50%  { transform: translate3d(3%,2%,0)   scale(1.09); }
+  100% { transform: translate3d(-2%,3%,0)  scale(1.04); }
+}
+
+/* Kisi teknis yang memudar ke tepi — memberi kesan bidang, bukan warna datar. */
+/* Kabut bidang gelap.
+   Dulu berupa kisi garis; kotak-kotaknya berulang rapi dan justru
+   membuat bidang terbaca seperti kertas milimeter, bukan seperti udara.
+   Diganti beberapa pendar lebar yang tidak berulang — teksturnya terasa
+   tanpa pernah menampakkan pola. */
+.grid-tech{
+  /* Pendar dijauhkan dari tepi atas: kalau terang persis di garis
+     pertemuan, batas antar bagian justru makin kelihatan. */
+  background-image:
+    radial-gradient(58% 40% at 22% 34%, rgba(42,157,143,.15), transparent 70%),
+    radial-gradient(46% 36% at 80% 52%, rgba(255,127,80,.09), transparent 72%),
+    radial-gradient(66% 44% at 50% 88%, rgba(191,230,223,.07), transparent 74%);
+}
+
+/* Sambungan antar bidang.
+   Dua bagian berwarna beda yang bertemu langsung meninggalkan garis
+   lurus yang keras. Pita ini melarutkan pertemuannya sehingga peralihan
+   terbaca sebagai kedalaman, bukan sebagai potongan. */
+/* Tingginya sengaja tidak ditetapkan di sini. Berkas ini dimuat setelah
+   utilitas Tailwind, sehingga height apa pun di sini akan mengalahkan
+   kelas h-* pada markup — dan panjang larutan tiap sambungan memang
+   perlu berbeda-beda menurut setajam apa pertemuan warnanya. */
+.sambung{
+  position:absolute; left:0; right:0; pointer-events:none; z-index:1;
+}
+.sambung-atas  { top:0; }
+.sambung-bawah { bottom:0; }
+
+/* ══════════════════════════════════════════════════════════════
+   HERO BERFOTO
+   Foto tambang siang hari adalah bidang paling terang dan paling ramai
+   di seluruh halaman. Supaya teks putih tetap terbaca tanpa membuang
+   fotonya, perlakuannya dipisah jadi tiga lapis: penilaian warna,
+   tirai, dan pendar. Ketiganya di sini agar dapat dibaca sekaligus.
+   ══════════════════════════════════════════════════════════════ */
+
+/* 1. Penilaian warna.
+   Rekaman mentah cenderung pucat dan kebiruan. Saturasi diturunkan
+   sedikit, kontras dinaikkan sedikit, dan terangnya ditekan — bukan
+   supaya gelap, melainkan supaya putih pada teks menjadi nilai paling
+   terang di bidang itu. Tanpa itu, sorot logam dan langit akan selalu
+   bersaing dengan judulnya. */
+.grade-tambang{
+  filter: saturate(.88) contrast(1.07) brightness(.94);
+}
+
+/* Lapis penyatu warna: teal pada bayangan, hangat pada sorotan, memakai
+   soft-light supaya bentuk fotonya tetap utuh dan hanya suhunya yang
+   bergeser ke arah palet. Inilah yang membuat foto stok terbaca sebagai
+   bagian dari mereknya, bukan sebagai gambar yang ditempel. */
+.grade-tambang-lapis{
+  background:linear-gradient(118deg,#F57C00 0%,#1B2422 46%,#2E2E2E 68%,#E2663A 100%);
+  mix-blend-mode:soft-light;
+  opacity:.55;
+}
+
+/* 2. Tirai.
+   Perhentiannya dihitung dari titik tengah bidang, bukan dari persen
+   lebar layar. Persen membuat tirainya habis di tengah judul begitu
+   layarnya melebar — kolom teks berhenti di 72rem sementara tirainya
+   ikut melar mengikuti layar. Dengan calc(50% ± rem) tirai selalu
+   menutup kolom yang sama, dari laptop sampai monitor lebar. */
+.tirai-hero{
+  background:linear-gradient(90deg,
+    rgba(14,20,19,.52) 0%,
+    rgba(14,20,19,.86) calc(50% - 36rem),   /* tepi kiri kolom teks */
+    rgba(14,20,19,.82) calc(50% - 12rem),
+    rgba(14,20,19,.52) calc(50% + 4rem),    /* judul berakhir di sekitar sini */
+    rgba(14,20,19,.22) calc(50% + 20rem),
+    rgba(14,20,19,.10) 100%);
+}
+
+/* 3. Pendar sudut: cahaya lembut yang menahan mata di bidang tengah dan
+   menggelapkan keempat sudut, seperti pada bingkai foto sinematik. */
+.pendar-hero{
+  background:radial-gradient(120% 82% at 64% 44%,
+    rgba(255,246,232,.13) 0%, rgba(255,246,232,0) 46%),
+             radial-gradient(100% 84% at 52% 50%,
+    rgba(0,0,0,0) 46%, rgba(10,15,14,.46) 100%);
+}
+
+/* Titik pada penanda gulir: turun lalu memudar, lalu mengulang. */
+@keyframes gulir-titik{
+  0%   { transform:translateY(0);    opacity:0; }
+  22%  {                             opacity:1; }
+  70%  { transform:translateY(9px);  opacity:0; }
+  100% { transform:translateY(9px);  opacity:0; }
+}
+.gulir-titik{ animation:gulir-titik 2.1s cubic-bezier(.42,0,.3,1) infinite; }
+
+/* Tepi kanan galeri dilarutkan, bukan dipotong tegak.
+   Kartu yang terpotong tepat di tengah judulnya terbaca seperti tata
+   letak yang salah; kartu yang memudar terbaca sebagai "masih ada
+   lagi di sebelah sana". */
+.tepi-larut{
+  -webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 5rem),transparent 100%);
+          mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 5rem),transparent 100%);
+}
+
+/* ── Sapuan cahaya pada teks judul ── */
+.sheen{
+  /* Warna dasar dan kilaunya harus eksplisit. Memakai currentColor di sini
+     tampak rapi tetapi tidak berfungsi: background-clip:text menuntut
+     color:transparent, sehingga currentColor ikut menjadi transparan dan
+     seluruh teks lenyap. */
+  --sheen-base: #FFFFFF;
+  --sheen-hi:   #9FEFF4;
+  background-image: linear-gradient(100deg,
+    var(--sheen-base) 0%,  var(--sheen-base) 38%,
+    var(--sheen-hi)   50%,
+    var(--sheen-base) 62%, var(--sheen-base) 100%);
+  background-size: 260% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+  animation: sheen 7s ease-in-out infinite;
+}
+/* Varian untuk latar terang. */
+.sheen-ink{ --sheen-base:#0B1117; --sheen-hi:#B8BEC5; }
+@keyframes sheen{
+  0%,72% { background-position: 130% 0; }
+  100%   { background-position: -30% 0; }
+}
+
+/* ── Muncul saat masuk layar ── */
+.reveal{
+  opacity:0; transform: translateY(22px);
+  transition: opacity .8s cubic-bezier(.16,.84,.44,1),
+              transform .8s cubic-bezier(.16,.84,.44,1);
+}
+.reveal.tampil{ opacity:1; transform:none; }
+.reveal-d1{ transition-delay:.09s } .reveal-d2{ transition-delay:.18s }
+.reveal-d3{ transition-delay:.27s } .reveal-d4{ transition-delay:.36s }
+.reveal-d5{ transition-delay:.45s } .reveal-d6{ transition-delay:.54s }
+
+/* ── Gerak halus berkelanjutan ── */
+@keyframes apung{ 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-11px) } }
+@keyframes apung-lambat{ 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-6px) } }
+@keyframes denyut{ 0%,100%{ opacity:.45; transform:scale(1) } 50%{ opacity:.9; transform:scale(1.13) } }
+@keyframes putar{ to{ transform: rotate(360deg) } }
+.apung { animation: apung 7s ease-in-out infinite; }
+.apung-2{ animation: apung-lambat 9s ease-in-out infinite .8s; }
+.denyut{ animation: denyut 3.4s ease-in-out infinite; }
+.putar-lambat{ animation: putar 34s linear infinite; }
+
+/* ── Garis pemisah bergradien ── */
+.rule-grad{
+  height:1px; border:0;
+  background:linear-gradient(90deg,transparent,rgba(44,176,188,.55),transparent);
+}
+
+/* ── Kartu kaca gelap ── */
+.kaca-gelap{
+  background: rgba(255,255,255,.055);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid rgba(255,255,255,.11);
+}
+.kaca-gelap-kuat{
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.20);
+}
+
+/* Kaca yang berdiri di atas foto, bukan di atas bidang gelap.
+   Kaca terang menumpang pada latar gelap; di atas foto siang hari yang
+   ramai, ia justru menghilang. Yang dibutuhkan bidang gelap sendiri. */
+.kaca-foto{
+  background: linear-gradient(180deg, rgba(20,28,27,.78), rgba(20,28,27,.86));
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgba(255,255,255,.14);
+  box-shadow: 0 24px 60px -24px rgba(0,0,0,.65);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ADEGAN PILAR
+   Gerak dibuat pelan dan bersiklus panjang: sebuah adegan tambang
+   yang berdenyut cepat terbaca seperti iklan, bukan seperti tempat
+   kerja. Seluruhnya transform dan opacity saja agar tetap di GPU.
+   ══════════════════════════════════════════════════════════════ */
+
+.adegan{ overflow:visible; }
+
+/* Awan dan burung menyeberang layar sangat lambat. */
+@keyframes hanyut{ from{ transform:translateX(-14px);} to{ transform:translateX(14px);} }
+.hanyut-lambat{ animation:hanyut 26s ease-in-out infinite alternate; }
+
+/* Kabut lembah naik-turun tipis. */
+@keyframes kabut{ 0%,100%{ opacity:.55; transform:translateY(0);} 50%{ opacity:.9; transform:translateY(-3px);} }
+.kabut{ animation:kabut 14s ease-in-out infinite; }
+
+/* Denyut daya berjalan sepanjang kabel transmisi. */
+@keyframes alir{ from{ stroke-dashoffset:97; } to{ stroke-dashoffset:0; } }
+.alir-daya{ animation:alir 2.6s linear infinite; }
+
+/* Material menaiki ban berjalan lalu mengulang dari pangkal. */
+@keyframes ban{ from{ transform:translate(0,0);} to{ transform:translate(36px,-6px);} }
+.jalan-ban{ animation:ban 2.2s linear infinite; }
+
+/* Garis pindai menyapu bidang pemeriksaan. */
+@keyframes sapu{ 0%,100%{ transform:translateX(0); opacity:.2;} 50%{ transform:translateX(96px); opacity:.85;} }
+.pindai{ animation:sapu 4.4s ease-in-out infinite; }
+
+/* Garis detak tergambar dari kiri ke kanan, lalu diulang. */
+@keyframes detak{ 0%{ stroke-dashoffset:70;} 60%,100%{ stroke-dashoffset:0;} }
+.detak{ animation:detak 2.4s ease-out infinite; }
+
+/* Batang grafik naik bergiliran. */
+@keyframes batang{ 0%,100%{ transform:scaleY(.55);} 50%{ transform:scaleY(1);} }
+.batang{ transform-box:fill-box; transform-origin:bottom; animation:batang 3s ease-in-out infinite var(--tunda,0s); }
+
+/* Truk melintas dari kiri ke kanan lalu kembali ke titik masuk. */
+@keyframes melaju{ 0%{ transform:translateX(-52px);} 100%{ transform:translateX(126px);} }
+.melaju{ animation:melaju 11s linear infinite; }
+
+@keyframes suar{ 0%,100%{ opacity:.25;} 50%{ opacity:1;} }
+.suar{ animation:suar 1.1s ease-in-out infinite; }
+
+@keyframes debu{ 0%{ opacity:0; transform:translateX(0) scale(.6);} 40%{ opacity:.28;} 100%{ opacity:0; transform:translateX(-20px) scale(1.5);} }
+.debu{ animation:debu 2.4s ease-out infinite; }
+
+/* Riak menyebar di permukaan kolam pengendap. */
+@keyframes riak{ 0%{ transform:scale(.35); opacity:.75;} 100%{ transform:scale(1.9); opacity:0;} }
+.riak{ transform-box:fill-box; transform-origin:center; animation:riak 4s ease-out infinite var(--tunda,0s); }
+
+/* Tanaman reklamasi tumbuh bergiliran dari pangkalnya. */
+@keyframes tumbuh{ 0%,100%{ transform:scaleY(.94);} 50%{ transform:scaleY(1.04);} }
+.tumbuh{ transform-box:fill-box; transform-origin:bottom; animation:tumbuh 5.5s ease-in-out infinite var(--tunda,0s); }
+
+/* Lengan ekskavator mengayun pendek, seperti sedang memuat. */
+@keyframes ayun{ 0%,100%{ transform:rotate(-6deg);} 50%{ transform:rotate(5deg);} }
+.ayun-lengan{ animation:ayun 4.8s ease-in-out infinite; }
+
+/* Gelombang bising menyebar dari sumbernya lalu meredup. */
+@keyframes gelombang{ 0%{ opacity:.8;} 70%{ opacity:0;} 100%{ opacity:0;} }
+.gelombang{ animation:gelombang 2.6s ease-out infinite var(--tunda,0s); }
+
+/* Mata bor turun menembus lapisan, lalu ditarik kembali. */
+@keyframes bor{ 0%,100%{ transform:translateY(0);} 45%{ transform:translateY(9px);} }
+.bor{ animation:bor 3.4s ease-in-out infinite; }
+
+/* Bilah neraca cadangan terisi dari kiri. */
+@keyframes bilah{ 0%{ transform:scaleX(.25);} 55%,100%{ transform:scaleX(1);} }
+.bilah{ transform-box:fill-box; transform-origin:left; animation:bilah 4.5s ease-out infinite var(--tunda,0s); }
+
+/* Butir debu melayang naik dan memudar. */
+@keyframes butir{ 0%{ transform:translateY(6px); opacity:0;} 30%{ opacity:.6;} 100%{ transform:translateY(-16px); opacity:0;} }
+.butir{ animation:butir 7s ease-in-out infinite var(--tunda,0s); }
+
+/* ══════════════════════════════════════════════════════════════
+   PANORAMA HERO
+   Laju gerak mengikuti jarak: yang jauh bergerak lebih lambat.
+   Perbedaan laju inilah yang membuat bidangnya terbaca sebagai
+   ruang, bukan sebagai tumpukan bentuk pada satu kaca.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Konvoi di jalan jauh — lambat dan panjang siklusnya. */
+@keyframes konvoi{ from{ transform:translateX(-260px);} to{ transform:translateX(1720px);} }
+.konvoi-jauh{ animation:konvoi 54s linear infinite; }
+
+/* Truk terdekat — jauh lebih cepat karena jaraknya dekat. */
+@keyframes trukDekat{ from{ transform:translateX(-980px);} to{ transform:translateX(760px);} }
+.truk-dekat{ animation:trukDekat 19s linear infinite; }
+
+/* Berkas cahaya menguat dan melemah seperti debu yang berubah rapat. */
+@keyframes berkas{ 0%,100%{ opacity:.32;} 50%{ opacity:.7;} }
+.berkas-cahaya{ animation:berkas 12s ease-in-out infinite; }
+
+@keyframes awanHero{ from{ transform:translateX(-40px);} to{ transform:translateX(40px);} }
+.awan-hero{ animation:awanHero 60s ease-in-out infinite alternate; }
+
+@keyframes kabutHero{ 0%,100%{ opacity:.5; transform:translateY(0);} 50%{ opacity:1; transform:translateY(-7px);} }
+.kabut-hero{ animation:kabutHero 18s ease-in-out infinite var(--tunda,0s); }
+
+@keyframes suarHero{ 0%,100%{ opacity:.2;} 50%{ opacity:1;} }
+.suar-hero{ animation:suarHero 1.3s ease-in-out infinite var(--tunda,0s); }
+
+@keyframes debuHero{ 0%{ opacity:0; transform:translateX(0) scale(.5);} 35%{ opacity:.3;} 100%{ opacity:0; transform:translateX(-70px) scale(1.9);} }
+.debu-hero{ animation:debuHero 3.2s ease-out infinite var(--tunda,0s); }
+
+@keyframes lenganHero{ 0%,100%{ transform:rotate(-7deg);} 45%{ transform:rotate(6deg);} }
+.lengan-hero{ animation:lenganHero 7s ease-in-out infinite; }
+
+@keyframes burungHero{ from{ transform:translate(-60px,10px);} to{ transform:translate(1660px,-40px);} }
+.burung-hero{ animation:burungHero 72s linear infinite; }
+
+@keyframes butirHero{ 0%{ transform:translateY(18px); opacity:0;} 30%{ opacity:.55;} 100%{ transform:translateY(-52px); opacity:0;} }
+.butir-hero{ animation:butirHero 13s ease-in-out infinite var(--tunda,0s); }
+
+/* ── Hormati preferensi gerak minimal ──
+   Pengguna yang sensitif terhadap gerak tetap mendapat seluruh isi
+   halaman; hanya animasinya yang dihentikan. Adegan pilar tetap
+   terbaca penuh karena kedalamannya berasal dari gambar, bukan gerak. */
+@media (prefers-reduced-motion: reduce){
+  .aurora::before, .sheen, .apung, .apung-2, .denyut, .putar-lambat,
+  .hanyut-lambat, .kabut, .alir-daya, .jalan-ban, .pindai, .detak, .batang,
+  .melaju, .suar, .debu, .riak, .tumbuh, .ayun-lengan, .butir,
+  .gelombang, .bor, .bilah,
+  .konvoi-jauh, .truk-dekat, .berkas-cahaya, .awan-hero, .kabut-hero,
+  .suar-hero, .debu-hero, .lengan-hero, .burung-hero, .butir-hero{
+    animation: none !important;
+  }
+  /* Tanpa gerak, kendaraan harus berhenti di dalam bingkai — bukan di
+     titik awal animasinya yang berada jauh di luar layar. */
+  .truk-dekat{ transform: translateX(-140px) !important; }
+  .konvoi-jauh{ transform: translateX(240px) !important; }
+  .burung-hero{ transform: translate(560px,-14px) !important; }
+  /* Tanpa animasi, garis bergaris-putus harus tetap tergambar penuh. */
+  .alir-daya{ stroke-dasharray:none !important; }
+  .detak{ stroke-dashoffset:0 !important; }
+  .reveal{ opacity:1 !important; transform:none !important; transition:none !important; }
+  .tilt{ transform:none !important; transition:none !important; }
+}
+
+/* Sembunyikan elemen Alpine sampai kerangkanya siap, supaya panel rincian
+   tidak berkedip muncul lalu hilang saat halaman pertama dimuat. */
+[x-cloak]{ display:none !important; }
+
+/* ---------- Galeri yang digeser mendatar ----------
+   Bilah gulir dibuat tipis dan sewarna bidangnya, bukan disembunyikan
+   sama sekali: tanpa satu pun petunjuk, tidak ada yang tahu masih ada
+   kartu di sebelah kanan. */
+.scrollbar-halus{ scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.22) transparent; }
+.scrollbar-halus::-webkit-scrollbar{ height:6px; }
+.scrollbar-halus::-webkit-scrollbar-track{ background:transparent; }
+.scrollbar-halus::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.22); border-radius:99px; }
+.scrollbar-halus::-webkit-scrollbar-thumb:hover{ background:rgba(255,255,255,.35); }

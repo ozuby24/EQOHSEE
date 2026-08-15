@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 use App\Models\{Course, Module, Enrollment, ModuleCompletion, Note};
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 class LearnController extends Controller
 {
     /** Daftar ke kursus — memverifikasi kode akses dari trainer */
@@ -32,7 +33,16 @@ class LearnController extends Controller
             // Belum terdaftar: minta kode bila disyaratkan (admin & trainer dikecualikan)
             $me = auth()->user();
             if ($course->require_code && !$me->isAdmin() && !$me->isTrainer()) {
-                return view('learn.kode', compact('course'));
+                return Inertia::render('Belajar/Kode', [
+                    'judul'    => $course->title,
+                    'subjudul' => 'Kursus ini memerlukan kode akses dari trainer',
+
+                    'kursus' => ['judul' => $course->title],
+                    'tautan' => [
+                        'buka'   => route('courses.enroll', $course),
+                        'daftar' => route('courses.index'),
+                    ],
+                ]);
             }
             $enrollment = Enrollment::create([
                 'user_id' => auth()->id(), 'course_id' => $course->id,
@@ -44,7 +54,41 @@ class LearnController extends Controller
                     ->whereIn('module_id', $course->modules->pluck('id'))->pluck('module_id')->all();
         $notes = Note::where('user_id', auth()->id())
                     ->whereIn('module_id', $course->modules->pluck('id'))->pluck('content','module_id')->all();
-        return view('learn.show', compact('course','enrollment','done','notes'));
+        return Inertia::render('Belajar/Kursus', [
+            'judul'    => $course->title,
+            'subjudul' => 'Modul, materi, dan catatan pribadi',
+
+            'kursus' => [
+                'judul'      => $course->title,
+                'keterangan' => $course->description ?: null,
+                'progres'    => (int) $enrollment->progress,
+                'selesai'    => $enrollment->progress >= 100,
+            ],
+
+            'modul' => $course->modules->map(fn ($m) => [
+                'id'         => $m->id,
+                'urutan'     => (int) $m->order_index,
+                'judul'      => $m->title,
+                'keterangan' => $m->description ?: null,
+                'selesai'    => in_array($m->id, $done, true),
+                'catatan'    => (string) ($notes[$m->id] ?? ''),
+                'materi'     => $m->materials->map(fn ($x) => [
+                    'id' => $x->id, 'judul' => $x->title,
+                    'jenis' => $x->type ?: 'file', 'url' => $x->url ?: null,
+                ])->all(),
+                'urlSelesai' => route('modules.complete', $m),
+                'urlCatatan' => route('notes.save', $m),
+            ])->all(),
+
+            'kuis' => $course->quizzes->map(fn ($q) => [
+                'id'         => $q->id,
+                'judul'      => $q->title,
+                'nilaiLulus' => (int) $q->pass_score,
+                'url'        => route('quizzes.show', $q),
+            ])->all(),
+
+            'tautan' => ['sertifikat' => route('certificates.store', $course)],
+        ]);
     }
 
     /** Tandai modul selesai + hitung ulang progres */

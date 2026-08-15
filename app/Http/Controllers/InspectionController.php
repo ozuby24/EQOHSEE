@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Company, HazardReport, Inspection, InspectionInspector,
     InspectionItem, InspectionTemplate, User};
-use App\Support\{Db, Hazard};
+use App\Support\{Db, Hazard, Identitas};
 use Illuminate\Http\Request;
 
 class InspectionController extends Controller
@@ -19,18 +19,63 @@ class InspectionController extends Controller
             ->when($template, fn($b) => $b->where('template_id', $template))
             ->latest('tanggal')->paginate(15)->withQueryString();
 
-        return view('inspeksi.index', [
-            'inspections' => $inspections, 'status' => $status, 'template' => $template,
-            'templates'   => InspectionTemplate::orderBy('nama')->get(),
+        return \Inertia\Inertia::render('Inspeksi/Daftar', [
+            'judul'    => 'Daftar Inspeksi',
+            'subjudul' => 'Pemeriksaan lapangan dan hasilnya',
+
+            'saring' => ['status' => $status, 'template' => $template],
+            'opsi'   => [
+                'status'   => ['Draft', 'Selesai'],
+                'template' => InspectionTemplate::orderBy('nama')->get(['id', 'nama'])
+                    ->map(fn ($t) => ['id' => $t->id, 'nama' => $t->nama])->all(),
+            ],
+
+            'inspeksi' => array_map(fn (Inspection $i) => [
+                'id'        => $i->id,
+                'kode'      => $i->kode,
+                'judul'     => $i->judul,
+                'status'    => $i->status,
+                'tanggal'   => $i->tanggal?->format('d M Y'),
+                'lokasi'    => $i->lokasi ?: null,
+                'template'  => $i->template?->nama,
+                'perusahaan'=> $i->company?->name,
+                'jumlahItem'=> $i->items_count,
+                'inspektur' => $i->inspectors->pluck('nama')->all(),
+                'url'       => route('inspeksi.show', $i),
+            ], $inspections->items()),
+
+            'halaman' => [
+                'kini'   => $inspections->currentPage(),
+                'akhir'  => $inspections->lastPage(),
+                'total'  => $inspections->total(),
+                'tautan' => array_map(fn ($t) => [
+                    'label' => $t['label'], 'url' => $t['url'], 'aktif' => (bool) $t['active'],
+                ], $inspections->linkCollection()->all()),
+            ],
+
+            'tautan' => ['buat' => route('inspeksi.create')],
         ]);
     }
 
     public function create(Request $request)
     {
-        return view('inspeksi.form', [
-            'inspection' => new Inspection(),
-            'companies'  => Company::orderBy('name')->get(),
-            'templates'  => InspectionTemplate::where('is_active', true)->withCount('items')->orderBy('nama')->get(),
+        return \Inertia\Inertia::render('Inspeksi/Form', [
+            'judul'    => 'Buat Inspeksi',
+            'subjudul' => 'Pilih jenis inspeksi; parameternya disalin otomatis',
+
+            'awal' => [
+                'judul' => '', 'template_id' => '', 'company_id' => '',
+                'tanggal' => now()->toDateString(), 'lokasi' => '', 'catatan' => '',
+            ],
+            'sunting' => false,
+            'opsi' => [
+                'perusahaan' => Company::orderBy('name')->get(['id', 'name'])
+                    ->map(fn ($c) => ['id' => $c->id, 'nama' => $c->name])->all(),
+                'template' => InspectionTemplate::where('is_active', true)->withCount('items')
+                    ->orderBy('nama')->get()
+                    ->map(fn ($t) => ['id' => $t->id, 'nama' => $t->nama, 'jumlahItem' => $t->items_count])->all(),
+            ],
+            'tautan' => ['simpan' => route('inspeksi.store'), 'batal' => route('inspeksi.index')],
         ]);
     }
 
@@ -67,19 +112,97 @@ class InspectionController extends Controller
 
     public function show(Inspection $inspeksi)
     {
-        $inspeksi->load(['items.hazardReport','company','user','template','inspectors']);
-        return view('inspeksi.show', [
-            'i'        => $inspeksi,
-            'kandidat' => User::orderBy('name')->get(),
+        $inspeksi->load(['items.hazardReport', 'company', 'user', 'template', 'inspectors']);
+
+        return \Inertia\Inertia::render('Inspeksi/Detail', [
+            'judul'    => 'Inspeksi '.$inspeksi->kode,
+            'subjudul' => $inspeksi->judul,
+
+            'i' => [
+                'id'      => $inspeksi->id,
+                'kode'    => $inspeksi->kode,
+                'judul'   => $inspeksi->judul,
+                'status'  => $inspeksi->status,
+                'tanggal' => $inspeksi->tanggal?->format('d M Y'),
+                'lokasi'  => $inspeksi->lokasi ?: null,
+                'catatan' => $inspeksi->catatan,
+                'template'   => $inspeksi->template?->nama,
+                'perusahaan' => $inspeksi->company?->name,
+                'pembuat'    => $inspeksi->user?->name,
+            ],
+
+            'inspektur' => $inspeksi->inspectors->map(fn ($p) => [
+                'id'      => $p->id,
+                'nama'    => $p->nama,
+                'jabatan' => $p->jabatan,
+                'peran'   => $p->peran,
+            ])->all(),
+
+            /* Item dikirim beserta id-nya sebagai kunci penyimpanan: satu
+               kiriman memperbarui banyak baris sekaligus, dan tanpa id
+               tiap baris tidak ada yang tahu baris mana yang diubah. */
+            'item' => $inspeksi->items->map(fn ($x) => [
+                'id'       => $x->id,
+                'kelompok' => $x->kelompok,
+                'uraian'   => $x->uraian,
+                'acuan'    => $x->acuan,
+                'kondisi'  => $x->kondisi,
+                'risiko'   => $x->risiko,
+                'temuan'   => $x->temuan,
+                'tindakan' => $x->tindakan,
+                'foto'     => array_map(fn ($f) => asset('storage/'.$f), $x->foto ?: []),
+                'hazard'   => $x->hazardReport?->kode,
+                'urlHazard'=> $x->hazardReport ? route('hazard.show', $x->hazardReport) : null,
+                'urlAngkat'=> route('inspeksi.item.angkat', $x),
+                'urlHapus' => route('inspeksi.item.destroy', $x),
+            ])->all(),
+
+            'opsi' => [
+                'kondisi' => Hazard::KONDISI,
+                'risiko'  => Hazard::RISIKO,
+                'status'  => ['Draft', 'Selesai'],
+                'peran'   => ['Ketua', 'Anggota'],
+                'kandidat' => User::orderBy('name')->get(['id', 'name', 'position'])
+                    ->map(fn ($u) => ['id' => $u->id, 'nama' => $u->name, 'jabatan' => $u->position])->all(),
+            ],
+
+            'tautan' => [
+                'simpanItem'    => route('inspeksi.items.save', $inspeksi),
+                'tambahItem'    => route('inspeksi.item.store', $inspeksi),
+                'tambahPetugas' => route('inspeksi.inspector.store', $inspeksi),
+                'ubah'          => route('inspeksi.edit', $inspeksi),
+                'cetak'         => route('inspeksi.ekspor.cetak'),
+                'kembali'       => route('inspeksi.index'),
+            ],
         ]);
     }
 
     public function edit(Inspection $inspeksi)
     {
-        return view('inspeksi.form', [
-            'inspection' => $inspeksi,
-            'companies'  => Company::orderBy('name')->get(),
-            'templates'  => InspectionTemplate::where('is_active', true)->withCount('items')->orderBy('nama')->get(),
+        return \Inertia\Inertia::render('Inspeksi/Form', [
+            'judul'    => 'Ubah Inspeksi '.$inspeksi->kode,
+            'subjudul' => $inspeksi->judul,
+
+            'awal' => [
+                'judul'       => (string) $inspeksi->judul,
+                'template_id' => (string) $inspeksi->template_id,
+                'company_id'  => (string) $inspeksi->company_id,
+                'tanggal'     => $inspeksi->tanggal?->toDateString() ?? '',
+                'lokasi'      => (string) $inspeksi->lokasi,
+                'catatan'     => (string) $inspeksi->catatan,
+            ],
+            'sunting' => true,
+            'opsi' => [
+                'perusahaan' => Company::orderBy('name')->get(['id', 'name'])
+                    ->map(fn ($c) => ['id' => $c->id, 'nama' => $c->name])->all(),
+                'template' => InspectionTemplate::where('is_active', true)->withCount('items')
+                    ->orderBy('nama')->get()
+                    ->map(fn ($t) => ['id' => $t->id, 'nama' => $t->nama, 'jumlahItem' => $t->items_count])->all(),
+            ],
+            'tautan' => [
+                'simpan' => route('inspeksi.update', $inspeksi),
+                'batal'  => route('inspeksi.show', $inspeksi),
+            ],
         ]);
     }
 
@@ -212,13 +335,23 @@ class InspectionController extends Controller
         $inspeksi = Inspection::with('inspectors')
             ->when($bulan, fn($b) => $b->whereRaw(Db::ym('tanggal') . ' = ?', [$bulan]))->get();
 
+        /* Lewat pluck, bukan ->distinct()->count(): count() menimpa SELECT
+           dengan count(*) sehingga DISTINCT atas ekspresi bulan hilang dan
+           yang terhitung menjadi jumlah BARIS. Target tiap orang lalu ikut
+           membesar setiap ada inspeksi baru. */
         $bulanAktif = $bulan ? 1 : max(1, Inspection::selectRaw(Db::ym('tanggal') . ' as b')
-                        ->whereNotNull('tanggal')->distinct()->count());
+                        ->whereNotNull('tanggal')->distinct()->pluck('b')->count());
 
+        /* Dikelompokkan lewat Identitas: nama yang diketik berbeda-beda
+           untuk orang yang sama memecahnya menjadi beberapa orang, dan
+           karena target dijumlahkan per orang, targetnya ikut berlipat
+           sementara inspeksinya tetap — capaiannya turun tanpa sebab.
+           mb_strtolower saja tidak menutupnya: spasi ganda dan spasi di
+           ujung tetap menghasilkan kunci yang berbeda. */
         $perOrang = [];
         foreach ($inspeksi as $ins) {
             foreach ($ins->inspectors as $p) {
-                $key = $p->user_id ?: mb_strtolower($p->nama);
+                $key = Identitas::kunci($p->user_id, null, $p->nama);
                 $perOrang[$key] ??= [
                     'nama' => $p->nama, 'jabatan' => $p->jabatan,
                     'gol' => Hazard::golongan($p->jabatan),
@@ -243,18 +376,46 @@ class InspectionController extends Controller
         // ringkasan temuan
         $items = InspectionItem::whereIn('inspection_id', $inspeksi->pluck('id'))->get();
 
-        return view('inspeksi.kpi', [
-            'bulan' => $bulan, 'bulanAktif' => $bulanAktif,
-            'perOrang' => $perOrang, 'perGolongan' => $perGolongan,
-            'total' => $inspeksi->count(),
-            'temuan' => [
+        $persen = fn (int $a, int $t) => $t ? (int) round($a / $t * 100) : 0;
+
+        return \Inertia\Inertia::render('Inspeksi/Kpi', [
+            'judul'    => 'KPI Inspeksi',
+            'subjudul' => 'Capaian pelaksanaan inspeksi terhadap targetnya',
+
+            'bulan'      => $bulan,
+            'bulanAktif' => $bulanAktif,
+            'total'      => $inspeksi->count(),
+            'temuan'     => [
                 'total'  => $items->count(),
-                'sesuai' => $items->where('kondisi','Sesuai')->count(),
-                'tidak'  => $items->where('kondisi','Tidak Sesuai')->count(),
+                'sesuai' => $items->where('kondisi', 'Sesuai')->count(),
+                'tidak'  => $items->where('kondisi', 'Tidak Sesuai')->count(),
                 'naik'   => $items->whereNotNull('hazard_report_id')->count(),
             ],
-            'bulanOpsi' => Inspection::selectRaw(Db::ym('tanggal') . ' as b')
-                            ->whereNotNull('tanggal')->distinct()->orderByDesc('b')->pluck('b'),
+
+            'opsiBulan' => Inspection::selectRaw(Db::ym('tanggal') . ' as b')
+                ->whereNotNull('tanggal')->distinct()->orderByDesc('b')->pluck('b')
+                ->map(fn ($b) => [
+                    'nilai' => $b,
+                    'label' => \Carbon\Carbon::parse($b.'-01')->translatedFormat('F Y'),
+                ])->all(),
+
+            'golongan' => collect($perGolongan)->map(fn ($g, $nama) => [
+                'nama'     => $nama,
+                'orang'    => $g['orang'],
+                'target'   => $g['target'],
+                'aktual'   => $g['aktual'],
+                'tercapai' => $g['tercapai'],
+                'pct'      => $persen($g['aktual'], $g['target']),
+            ])->values()->all(),
+
+            'petugas' => array_values(array_map(fn ($o) => [
+                'nama'    => $o['nama'],
+                'jabatan' => $o['jabatan'] ?: null,
+                'gol'     => $o['gol'],
+                'target'  => $o['target'],
+                'aktual'  => $o['aktual'],
+                'pct'     => $persen($o['aktual'], $o['target']),
+            ], $perOrang)),
         ]);
     }
 

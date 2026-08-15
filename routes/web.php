@@ -2,12 +2,14 @@
 
 use App\Http\Controllers\{
     CertificateController, CourseController, DashboardController, EvaluationController,
-    LearnController, NewsController, ProcedureController, ProfileController,
+    LearnController, NewsController, PersonaliaController, ProcedureController, ProfileController,
     QuizController, SopController
 };
-use App\Http\Controllers\{CourseContentController, EvaluasiTemuanController, HazardController,
+use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiTemuanController, HazardController,
     HazardExportController, InspectionController, InspectionTemplateController,
-    KoController, KuesionerController, SignatoryController, TpkkpController, TpkkpLanjutController};
+    EnergyController, EngineeringController, GudangController, IsoController, KoController, KuesionerController, SignatoryController, SmkpController,
+    TpkkpController, TpkkpLanjutController};
+use App\Http\Controllers\{BantuanController, ChatController};
 use App\Http\Controllers\Admin\{CompanyController, SystemController, UserController};
 use Illuminate\Support\Facades\Route;
 
@@ -22,13 +24,23 @@ Route::post('q/{token}/{cat}',       [KuesionerController::class,'submit'])->nam
 
 Route::get('/', fn () => auth()->check() ? redirect()->route('dashboard') : view('landing'))->name('beranda');
 
-Route::middleware('auth')->group(function () {
+/* 'verified' dipasang di sini, bukan per rute: halaman yang lupa
+   memakainya tidak menimbulkan galat apa pun — ia hanya diam-diam
+   terbuka bagi akun yang emailnya belum terbukti dimiliki pendaftarnya.
+   Halaman verifikasi sendiri berada di routes/auth.php, di luar grup ini,
+   supaya tidak menghalangi jalan menuju dirinya sendiri. */
+Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     /* ---- Kursus ---- */
-    Route::resource('courses', CourseController::class)->only(['index', 'show']);
+    /* Rute admin didaftarkan LEBIH DULU: 'courses/create' harus dicoba
+       sebelum 'courses/{course}', kalau tidak "create" tertangkap sebagai
+       id kursus, pengikatan modelnya gagal, dan tombol Tambah Kursus
+       berujung 404. Urutan ini tidak terlihat pada `route:list` — daftar
+       itu diurutkan menurut abjad, bukan menurut urutan pendaftaran. */
     Route::resource('courses', CourseController::class)->except(['index', 'show'])->middleware('can:admin');
+    Route::resource('courses', CourseController::class)->only(['index', 'show']);
 
     /* ---- Belajar ---- */
     Route::post('courses/{course}/enroll',  [LearnController::class, 'enroll'])->name('courses.enroll');
@@ -40,6 +52,12 @@ Route::middleware('auth')->group(function () {
     Route::get('quizzes/{quiz}',        [QuizController::class, 'show'])->name('quizzes.show');
     Route::post('quizzes/{quiz}/submit',[QuizController::class, 'submit'])->name('quizzes.submit');
 
+    /* Hasil punya alamatnya sendiri. Menggambarnya langsung dari POST
+       membuat halaman itu tidak dapat dimuat ulang maupun ditautkan:
+       peramban akan mengirim ulang jawabannya, dan percobaan kedua
+       tercatat tanpa ada yang benar-benar mengerjakannya lagi. */
+    Route::get('quizzes/{quiz}/hasil/{attempt}', [QuizController::class, 'hasil'])->name('quizzes.result');
+
     /* ---- Prosedur ---- */
     Route::resource('procedures', ProcedureController::class)->only(['index']);
     Route::resource('procedures', ProcedureController::class)->except(['index','show'])->middleware('can:admin');
@@ -48,15 +66,21 @@ Route::middleware('auth')->group(function () {
     Route::get('sop',                     [SopController::class, 'index'])->name('sop.index');
     Route::get('sop/{evaluation}',        [SopController::class, 'show'])->name('sop.show');
     Route::post('sop/{evaluation}/grade', [SopController::class, 'grade'])->name('sop.grade');
+    Route::get('sop/{evaluation}/hasil/{attempt}', [SopController::class, 'hasil'])->name('sop.result');
 
     /* ---- Sertifikat ---- */
     Route::get('certificates',               [CertificateController::class, 'index'])->name('certificates.index');
     Route::post('certificates/{course}',     [CertificateController::class, 'store'])->name('certificates.store');
     Route::get('certificates/{certificate}', [CertificateController::class, 'show'])->name('certificates.show');
 
-    /* ---- Berita ---- */
-    Route::resource('news', NewsController::class)->only(['index','show']);
+    /* ---- Berita ----
+
+       Rute admin didaftarkan lebih dulu. Kalau tidak, 'news/{news}'
+       menangkap 'news/create' sebagai id berita, pengikatan modelnya
+       gagal, dan tombol "Berita Baru" berujung 404 — bukan galat izin
+       yang menjelaskan apa pun. */
     Route::resource('news', NewsController::class)->except(['index','show'])->middleware('can:admin');
+    Route::resource('news', NewsController::class)->only(['index','show']);
 
     /* ---- Evaluasi Pasca-Pelatihan (oleh trainer) ---- */
     Route::get('evaluations',              [EvaluationController::class, 'index'])->name('evaluations.index');
@@ -167,6 +191,124 @@ Route::middleware('auth')->group(function () {
     Route::delete('kuesioner/{response}',    [KuesionerController::class,'destroyResponse'])->name('kuesioner.response.destroy');
     Route::get('kuesioner',                  [KuesionerController::class,'admin'])->name('kuesioner.admin');
 
+    /* ================= WEBSITE #5 — ISO & Dokumen ================= */
+    Route::prefix('dokumen')->name('dokumen.')->group(function () {
+        Route::get('/',                [DocumentController::class,'index'])->name('index');
+        Route::get('baru',             [DocumentController::class,'create'])->name('create');
+        Route::post('/',               [DocumentController::class,'store'])->name('store');
+        Route::get('{dokumen}',        [DocumentController::class,'show'])->name('show');
+        Route::get('{dokumen}/ubah',   [DocumentController::class,'edit'])->name('edit');
+        Route::put('{dokumen}',        [DocumentController::class,'update'])->name('update');
+        Route::delete('{dokumen}',     [DocumentController::class,'destroy'])->middleware('can:admin')->name('destroy');
+        Route::post('{dokumen}/revisi',[DocumentController::class,'revisi'])->name('revisi');
+        Route::get('{dokumen}/unduh',  [DocumentController::class,'unduh'])->name('unduh');
+    });
+
+    // Struktur dokumen — ditaruh di luar prefix agar tidak tertangkap {dokumen}.
+    Route::get('struktur-dokumen', [DocumentController::class,'piramida'])->name('dokumen.piramida');
+    Route::get('daftar-induk',     [DocumentController::class,'daftarInduk'])->name('dokumen.daftar-induk');
+
+    /* ================= WEBSITE #7 — Mining Engineering Hub =================
+       Halaman acuan rekayasa. Alamatnya dipertahankan seperti saat masih
+       berupa berkas statis supaya tautan yang sudah beredar tetap sampai. */
+    Route::prefix('mining-engineering-hub')->name('meh.')->group(function () {
+        Route::get('/',            [EngineeringController::class,'index'])->name('index');
+        Route::get('energy',       [EngineeringController::class,'energy'])->name('energy');
+        Route::get('fleet',        [EngineeringController::class,'fleet'])->name('fleet');
+        Route::get('equipment',    [EngineeringController::class,'equipment'])->name('equipment');
+        Route::get('maintenance',  [EngineeringController::class,'maintenance'])->name('maintenance');
+        Route::get('hse',          [EngineeringController::class,'hse'])->name('hse');
+        Route::get('kpi',          [EngineeringController::class,'kpi'])->name('kpi');
+        Route::get('tools',        [EngineeringController::class,'tools'])->name('tools');
+        Route::get('regulations',  [EngineeringController::class,'regulations'])->name('regulations');
+    });
+
+    /* ================= WEBSITE #6 — Energy Performance Center ================= */
+    Route::prefix('energi')->name('energi.')->group(function () {
+        Route::get('/',            [EnergyController::class,'index'])->name('index');
+        Route::get('konsumsi',     [EnergyController::class,'konsumsi'])->name('konsumsi');
+        Route::get('bahan-bakar',  [EnergyController::class,'fuel'])->name('fuel');
+        Route::get('listrik',      [EnergyController::class,'listrik'])->name('listrik');
+
+        Route::get('alat',         [EnergyController::class,'equipment'])->name('equipment');
+        Route::get('alat/{unit}',  [EnergyController::class,'equipmentShow'])->name('equipment.show');
+
+        Route::get('kpi',          [EnergyController::class,'kpi'])->name('kpi');
+        Route::get('baseline',     [EnergyController::class,'baseline'])->name('baseline');
+        Route::post('baseline',    [EnergyController::class,'simpanBaseline'])->name('baseline.simpan');
+
+        Route::get('penghematan',  [EnergyController::class,'hemat'])->name('hemat');
+        Route::post('penghematan', [EnergyController::class,'simpanPeluang'])->name('hemat.simpan');
+        Route::put('penghematan/{peluang}',   [EnergyController::class,'ubahPeluang'])->name('hemat.ubah');
+        Route::delete('penghematan/{peluang}',[EnergyController::class,'hapusPeluang'])->name('hemat.hapus');
+
+        Route::get('karbon',       [EnergyController::class,'karbon'])->name('karbon');
+        Route::get('kalkulator',   [EnergyController::class,'kalkulator'])->name('kalkulator');
+        Route::get('laporan',      [EnergyController::class,'laporan'])->name('laporan');
+
+        Route::get('data-induk',   [EnergyController::class,'master'])->name('master');
+        Route::post('data-induk',  [EnergyController::class,'simpanUnit'])->name('master.simpan');
+        Route::delete('data-induk/{unit}', [EnergyController::class,'hapusUnit'])->name('master.hapus');
+    });
+
+    /* ================= WEBSITE #5b — ISO: pemenuhan klausul ================= */
+    Route::prefix('iso')->name('iso.')->group(function () {
+        Route::get('/',                 [IsoController::class,'index'])->name('index');
+        Route::get('{standar}',         [IsoController::class,'show'])->name('show');
+        Route::get('{standar}/cetak',   [IsoController::class,'cetak'])->name('cetak');
+    });
+
+    /* ================= WEBSITE #4 — Audit SMKP Minerba ================= */
+    Route::prefix('smkp')->name('smkp.')->group(function () {
+        Route::get('/',                [SmkpController::class,'index'])->name('index');
+        Route::get('buat',             [SmkpController::class,'create'])->name('create');
+        Route::post('/',               [SmkpController::class,'store'])->name('store');
+        Route::get('acuan',            [SmkpController::class,'acuan'])->name('acuan');
+
+        // Pintasan menu samping: tanpa parameter, disalurkan ke audit berjalan.
+        foreach ([
+            'tahap1' => 'tahap-1', 'rencana' => 'rencana', 'rapat' => 'rapat', 'temuan' => 'temuan',
+            'berita' => 'berita-acara', 'rencana-cetak' => 'laporan-rencana', 'laporan' => 'laporan-audit',
+        ] as $bagian => $ruas) {
+            Route::get("lanjut/{$ruas}", [SmkpController::class,'lanjut'])
+                ->defaults('bagian', $bagian)->name('ke.'.$bagian);
+        }
+
+        Route::get('{smkp}',           [SmkpController::class,'show'])->name('show');
+        Route::get('{smkp}/ubah',      [SmkpController::class,'edit'])->name('edit');
+        Route::put('{smkp}',           [SmkpController::class,'update'])->name('update');
+        Route::delete('{smkp}',        [SmkpController::class,'destroy'])->middleware('can:admin')->name('destroy');
+
+        Route::get('{smkp}/laporan',   [SmkpController::class,'laporan'])->name('laporan');
+        Route::post('{smkp}/tahap',    [SmkpController::class,'ubahTahap'])->name('tahap');
+
+        // Tahap I — permulaan audit, peninjauan dokumen, persiapan lapangan
+        Route::get('{smkp}/tahap-1',       [SmkpController::class,'tahap1'])->name('tahap1');
+        Route::post('{smkp}/tahap-1',      [SmkpController::class,'simpanTahap1'])->name('tahap1.simpan');
+        Route::get('{smkp}/berita-acara',  [SmkpController::class,'beritaAcara'])->name('berita-acara');
+
+        // Rencana Audit — sembilan komponen wajib, plus laporannya
+        Route::get('{smkp}/rencana',       [SmkpController::class,'rencana'])->name('rencana');
+        Route::post('{smkp}/rencana',      [SmkpController::class,'simpanRencana'])->name('rencana.simpan');
+        Route::get('{smkp}/rencana/cetak', [SmkpController::class,'rencanaCetak'])->name('rencana.cetak');
+
+        // Tahap II — rapat pembukaan & penutupan
+        Route::get('{smkp}/rapat',                [SmkpController::class,'rapat'])->name('rapat');
+        Route::post('{smkp}/rapat',               [SmkpController::class,'simpanHadir'])->name('rapat.simpan');
+        Route::delete('{smkp}/rapat/{hadir}',     [SmkpController::class,'hapusHadir'])->name('rapat.hapus');
+        Route::get('{smkp}/daftar-hadir/{rapat}', [SmkpController::class,'daftarHadir'])->name('hadir.cetak');
+
+        // Temuan / tindakan perbaikan
+        Route::get('{smkp}/temuan',            [SmkpController::class,'temuan'])->name('temuan');
+        Route::post('{smkp}/temuan/angkat',    [SmkpController::class,'angkatTemuan'])->name('temuan.angkat');
+        Route::put('{smkp}/temuan/{temuan}',   [SmkpController::class,'simpanTemuan'])->name('temuan.simpan');
+        Route::delete('{smkp}/temuan/{temuan}',[SmkpController::class,'hapusTemuan'])->name('temuan.hapus');
+
+        // Formulir penilaian per elemen — ditaruh terakhir agar tidak menyerobot rute di atas
+        Route::get('{smkp}/elemen/{elemen}',  [SmkpController::class,'nilai'])->name('nilai');
+        Route::post('{smkp}/elemen/{elemen}', [SmkpController::class,'simpanNilai'])->name('nilai.simpan');
+    });
+
     /* ================= WEBSITE #3 — Hazard Report & Inspeksi ================= */
     Route::prefix('hazard')->name('hazard.')->group(function () {
         Route::get('/',                  [HazardController::class,'index'])->name('index');
@@ -228,6 +370,64 @@ Route::middleware('auth')->group(function () {
         Route::get('system',        [SystemController::class, 'index'])->name('system');
         Route::delete('system/logs',[SystemController::class, 'clearLogs'])->name('system.logs.clear');
         Route::post('system/maintenance/{aksi}', [SystemController::class,'maintenance'])->name('system.maintenance');
+    });
+
+    /* ---- Gudang & Penyimpanan ---- */
+    Route::prefix('gudang')->name('gudang.')->group(function () {
+        Route::get('/',          [GudangController::class, 'index'])->name('index');
+        Route::get('barang',     [GudangController::class, 'barang'])->name('barang');
+        Route::get('mutasi',     [GudangController::class, 'mutasi'])->name('mutasi');
+        Route::get('opname',     [GudangController::class, 'opname'])->name('opname');
+        Route::get('lokasi',     [GudangController::class, 'lokasi'])->name('lokasi');
+        Route::get('b3',         [GudangController::class, 'b3'])->name('b3');
+        Route::get('laporan',    [GudangController::class, 'laporan'])->name('laporan');
+
+        /* Pencatatan dibatasi admin dan petugas gudang. Rute 'baru'
+           didaftarkan sebelum '{barang}' — kalau tidak, "baru" tertangkap
+           sebagai id barang dan formulirnya berujung 404. */
+        Route::middleware('can:admin')->group(function () {
+            Route::get('barang/baru',          [GudangController::class, 'barangForm'])->name('barang.baru');
+            Route::post('barang',              [GudangController::class, 'barangSimpan'])->name('barang.simpan');
+            Route::get('barang/{barang}/edit', [GudangController::class, 'barangForm'])->name('barang.edit');
+            Route::put('barang/{barang}',      [GudangController::class, 'barangSimpan'])->name('barang.ubah');
+            Route::delete('barang/{barang}',   [GudangController::class, 'barangHapus'])->name('barang.hapus');
+
+            Route::post('mutasi',              [GudangController::class, 'mutasiSimpan'])->name('mutasi.simpan');
+            Route::post('opname',              [GudangController::class, 'opnameSimpan'])->name('opname.simpan');
+            Route::post('lokasi',              [GudangController::class, 'lokasiSimpan'])->name('lokasi.simpan');
+            Route::put('lokasi/{lokasi}',      [GudangController::class, 'lokasiSimpan'])->name('lokasi.ubah');
+        });
+    });
+
+    /* ---- Personalia ---- */
+    Route::prefix('personalia')->name('personalia.')->group(function () {
+        Route::get('/',            [PersonaliaController::class, 'index'])->name('index');
+        Route::post('/',           [PersonaliaController::class, 'simpanProfil'])->name('simpan');
+        Route::delete('avatar',    [PersonaliaController::class, 'hapusAvatar'])->name('avatar.hapus');
+        Route::post('tema',        [PersonaliaController::class, 'tema'])->name('tema');
+        Route::get('perusahaan',   [PersonaliaController::class, 'perusahaan'])->name('perusahaan');
+        Route::post('perusahaan',  [PersonaliaController::class, 'simpanPerusahaan'])->name('perusahaan.simpan');
+        Route::delete('perusahaan/logo', [PersonaliaController::class, 'hapusLogo'])->name('logo.hapus');
+        Route::post('perusahaan/baru',   [PersonaliaController::class, 'tambahPerusahaan'])->name('perusahaan.tambah');
+        Route::get('direktori',    [PersonaliaController::class, 'direktori'])->name('direktori');
+        Route::post('direktori/{pengguna}/perusahaan',
+            [PersonaliaController::class, 'tetapkanPerusahaan'])->name('direktori.perusahaan');
+    });
+
+    /* ---- Pesan (chat langsung + grup perusahaan) ---- */
+    Route::prefix('pesan')->name('pesan.')->group(function () {
+        Route::get('/',      [ChatController::class, 'index'])->name('index');
+        Route::post('mulai', [ChatController::class, 'mulai'])->name('mulai');
+        Route::post('{percakapan}', [ChatController::class, 'kirim'])->name('kirim');
+    });
+
+    /* ---- Bantuan (asisten AI + admin) ---- */
+    Route::prefix('bantuan')->name('bantuan.')->group(function () {
+        Route::get('/',       [BantuanController::class, 'index'])->name('index');
+        Route::post('/',      [BantuanController::class, 'kirim'])->name('kirim');
+        Route::get('masuk',   [BantuanController::class, 'masuk'])->name('masuk');
+        Route::post('{percakapan}/balas',   [BantuanController::class, 'balas'])->name('balas');
+        Route::post('{percakapan}/selesai', [BantuanController::class, 'selesai'])->name('selesai');
     });
 
     /* ---- Profil (bawaan Breeze) ---- */

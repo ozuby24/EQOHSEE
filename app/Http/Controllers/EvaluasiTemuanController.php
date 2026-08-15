@@ -93,13 +93,63 @@ class EvaluasiTemuanController extends Controller
             ];
         }
 
-        return view('hazard.evaluasi', compact(
-            'bulan','perusahaan','ringkas','perLokasi','topUA','topUC','paramSering',
-            'perKategori','perRisiko','perStatus','perHirarki','perPerusahaan','rerataHari','tren'
-        ) + [
-            'companies' => Company::orderBy('name')->get(),
-            'bulanOpsi' => HazardReport::selectRaw(Db::ym('tanggal') . ' as b')
-                            ->whereNotNull('tanggal')->distinct()->orderByDesc('b')->pluck('b'),
+        /* Sebaran dibentuk seragam di sini: judul, nilai terbesar untuk
+           menskalakan batang, dan barisnya. Tampilan yang menghitung
+           sendiri nilai terbesarnya harus mengulang perhitungan itu di
+           setiap blok, dan blok yang terlewat menggambar batang yang
+           panjangnya tidak berarti apa-apa. */
+        $sebaran = fn (string $judul, $koleksi) => [
+            'judul' => $judul,
+            'maks'  => $koleksi->max() ?: 1,
+            'baris' => $koleksi->map(fn ($v, $k) => ['label' => (string) ($k ?: '—'), 'nilai' => $v])
+                ->values()->all(),
+        ];
+
+        $maksTren = max(1, collect($tren)->flatMap(fn ($t) => array_values($t))->max() ?: 1);
+
+        return \Inertia\Inertia::render('Hazard/Evaluasi', [
+            'judul'    => 'Evaluasi Temuan',
+            'subjudul' => 'Hazard report dan temuan inspeksi dalam satu pandangan',
+
+            'saring' => ['bulan' => $bulan, 'perusahaan' => $perusahaan],
+            'opsi'   => [
+                'bulan' => HazardReport::selectRaw(Db::ym('tanggal') . ' as b')
+                    ->whereNotNull('tanggal')->distinct()->orderByDesc('b')->pluck('b')
+                    ->map(fn ($b) => [
+                        'nilai' => $b,
+                        'label' => \Carbon\Carbon::parse($b.'-01')->translatedFormat('F Y'),
+                    ])->all(),
+                'perusahaan' => Company::orderBy('name')->get(['id', 'name'])
+                    ->map(fn ($c) => ['id' => $c->id, 'nama' => $c->name])->all(),
+            ],
+
+            'ringkas'    => $ringkas,
+            'rerataHari' => $rerataHari,
+
+            'sebaran' => [
+                $sebaran('Lokasi terbanyak',            $perLokasi->take(8)),
+                $sebaran('Tindakan tidak aman',         $topUA),
+                $sebaran('Kondisi tidak aman',          $topUC),
+                $sebaran('Parameter sering tidak sesuai', $paramSering),
+                $sebaran('Kategori',                    $perKategori),
+                $sebaran('Risiko',                      $perRisiko),
+                $sebaran('Status',                      $perStatus),
+                $sebaran('Hirarki pengendalian',        $perHirarki),
+            ],
+
+            'perPerusahaan' => $perPerusahaan->map(fn ($v, $k) => [
+                'nama'   => (string) $k,
+                'total'  => $v['total'],
+                'tutup'  => $v['tutup'],
+                'tinggi' => $v['tinggi'],
+            ])->values()->all(),
+
+            'tren' => collect($tren)->map(fn ($t, $k) => [
+                'label'    => \Carbon\Carbon::parse($k.'-01')->translatedFormat('M'),
+                'hazard'   => $t['hazard'],
+                'inspeksi' => $t['inspeksi'],
+                'maks'     => $maksTren,
+            ])->values()->all(),
         ]);
     }
 }

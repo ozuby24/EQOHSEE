@@ -1,41 +1,30 @@
-# Update 11 — Halaman Depan Profesional
+# Update 12 — Enam Pilar di Halaman Depan
 
 ```bash
-cd ~/storage/downloads && unzip -o eqohsee-update11.zip -d ~/
-cp -r ~/eqohsee-update11/. ~/eqohsee/
-cd ~/eqohsee && npm run build && php artisan optimize:clear
+cd ~/eqohsee && git pull && npm run build && php artisan optimize:clear
 php artisan serve --host=127.0.0.1 --port=8000
 ```
 Tanpa migrasi baru. Buka `http://127.0.0.1:8000/` (tanpa login).
 
-## Halaman depan baru (landing)
-Sebelumnya `/` langsung melempar ke login. Sekarang ada halaman depan lengkap:
+## Seksi baru: "Enam Pilar"
+Halaman depan kini menjelaskan **makna nama EQOHSEE** — sesuatu yang sebelumnya
+tak pernah muncul untuk pengunjung publik. Ditambahkan satu seksi (setelah Hero,
+sebelum Modul) dengan latar gelap `cam-ink`:
 
-1. **Navigasi lengket** — logo, tautan Modul/Fitur/Cara Kerja, tombol Masuk.
-2. **Hero** — ilustrasi tambang terbuka berundak, judul besar, 4 angka kunci
-   (194 item · 7 elemen · 6 modul · 24/7), dua tombol aksi.
-3. **Enam modul** — LMS & TPKKP bertanda **Aktif**; SMKP, Hazard Report, SIGAP,
-   ISO bertanda **Segera** — jelas apa saja isi platform.
-4. **Enam fitur unggulan** — sertifikat ber-barcode, penilaian TPKKP, kuesioner
-   bebas akses, evaluasi trainer, kunci jawaban aman, kendali penuh admin.
-5. **Cara kerja** — 4 langkah bernomor.
-6. **CTA penutup** + footer.
+1. **Wordmark hidup** — tulisan `EQOHSEE` besar, tiap huruf diberi warna pilarnya
+   (E·Q·O·H·S·E·E → Energy, Quality, Occupational Health, Safety, Environment,
+   Engineering). O dan H sama-sama warna Occupational Health.
+2. **Enam kartu pilar** — ikon heksagon, nama, dan deskripsi tiap pilar, dengan
+   aksen garis atas berwarna pilar. Ikon sama dengan yang dipakai halaman `/pilar`.
+3. Tautan **Pilar** ditambahkan ke navigasi lengket.
 
-## Halaman login diperkaya
-Panel kiri tidak lagi kosong: ada **ilustrasi tambang**, daftar **6 modul**
-dengan ikon dan penanda Aktif/Segera, serta 4 angka kunci. Logo bisa diklik
-untuk kembali ke halaman depan.
+## Satu sumber data
+Seksi ini membaca langsung dari registry **`App\Support\Pillars::all()`** —
+bukan menyalin ulang data. Jadi kalau warna/nama/deskripsi pilar diubah di satu
+tempat, halaman depan dan halaman `/pilar` ikut berubah serentak.
 
-## Ilustrasi tambang — dibuat sebagai SVG
-Tidak memakai file foto atau layanan gambar daring, melainkan **SVG buatan sendiri**
-(`resources/views/partials/art-mine.blade.php`): tambang terbuka berundak,
-jalan angkut, ekskavator, dua truk angkut, kabut debu. Alasannya: tajam di semua
-ukuran layar, ringan, dan **tetap tampil walau tanpa internet** — penting karena
-aplikasi ini dijalankan lokal di Termux.
-
-Kalau nanti ingin memakai foto asli tambang milik perusahaan, cukup ganti isi
-partial itu dengan `<img>`; seluruh halaman lain tidak perlu diubah.
-
-## Standar tipografi angka
-Sistem `.stat` / `.num` dari update 10 dipakai konsisten di halaman depan, dan
-menjadi patokan tetap untuk semua modul berikutnya (ISO, Hazrep, KO, SIGAP).
+## Tetap konsisten
+Memakai token dan komponen yang sudah ada (`glass-panel`, `card-hover`,
+`font-display`, warna `cam-*`, sistem `.stat`). Tidak ada dependensi baru,
+tidak ada file gambar eksternal — ikon pilar berupa SVG inline sehingga tetap
+tampil walau tanpa internet (penting untuk penggunaan lokal di Termux).

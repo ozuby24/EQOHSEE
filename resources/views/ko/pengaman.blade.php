@@ -36,7 +36,7 @@
           {{ $o->safeguards->where('status','Berfungsi')->count() }}/{{ $o->safeguards->count() }} berfungsi
         </span>
       </div>
-      <table class="w-full text-[12px]">
+      <div class="tabel-scroll"><table class="w-full text-[12px]">
         <tbody>
           @foreach($o->safeguards as $p)
             <tr class="border-b border-stone-50 last:border-0">
@@ -49,7 +49,7 @@
             </tr>
           @endforeach
         </tbody>
-      </table>
+      </table></div>
     </div>
   @empty
     <div class="bg-white rounded-2xl border border-stone-200 px-5 py-10 text-center text-[12.5px] text-stone-400">

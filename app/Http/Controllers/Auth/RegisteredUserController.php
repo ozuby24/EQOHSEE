@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\{Company, User};
-use App\Providers\RouteServiceProvider;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -39,9 +38,13 @@ class RegisteredUserController extends Controller
 
         $user = User::create($data);
 
+        /* Registered memanggil sendEmailVerificationNotification pada User,
+           yang sudah dibajak untuk mengirim kode enam angka. Mengirim
+           sendiri di sini akan menghasilkan dua surel untuk satu
+           pendaftaran, dan kode pada yang pertama langsung tidak berlaku. */
         event(new Registered($user));
         Auth::login($user);
 
-        return redirect(RouteServiceProvider::HOME ?? '/dashboard');
+        return redirect()->route('verification.notice');
     }
 }
