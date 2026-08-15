@@ -1560,6 +1560,8 @@ export interface PenandaTangan {
   nama: string;
   jabatan: string;
   aktif: boolean;
+  perusahaanId: number | null;
+  perusahaan: string | null;
   tandaTangan: string | null;
   urlSimpan: string;
   urlHapus: string;
@@ -1568,6 +1570,7 @@ export interface PenandaTangan {
 export interface HalamanPenandaTangan {
   judul: string; subjudul: string;
   penandaTangan: PenandaTangan[];
+  perusahaan: Array<{ id: number; nama: string }>;
   tautan: { tambah: string };
 }
 

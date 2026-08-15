@@ -2,14 +2,21 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BerpemilikPerusahaan;
+use App\Models\Scopes\MilikPerusahaan;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
+
 use Illuminate\Database\Eloquent\Model;
 
+#[ScopedBy(MilikPerusahaan::class)]
 class GudangMutasi extends Model
 {
+    use BerpemilikPerusahaan;
+
     protected $table = 'gudang_mutasi';
 
     protected $fillable = [
-        'barang_id','jenis','tanggal','nomor','jumlah','stok_fisik',
+        'company_id','barang_id','jenis','tanggal','nomor','jumlah','stok_fisik',
         'pihak','penerima_id','kadaluarsa','batch','keterangan','user_id',
     ];
 

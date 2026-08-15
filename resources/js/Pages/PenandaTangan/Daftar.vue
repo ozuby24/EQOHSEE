@@ -12,7 +12,7 @@ import type { HalamanPenandaTangan } from '../../types';
 
 const props = defineProps<HalamanPenandaTangan>();
 
-const baru = useForm({ name: '', title: '', is_active: true, signature: null as File | null });
+const baru = useForm({ name: '', title: '', company_id: '' as string | number, is_active: true, signature: null as File | null });
 
 function pilihBerkas(e: Event) {
   const f = (e.target as HTMLInputElement).files;
@@ -40,8 +40,25 @@ const kecil = 'ring-focus rounded-lg border border-stone-200 px-3 py-2 text-[12.
       dipakai otomatis saat sertifikat diterbitkan.
     </p>
 
+    <!--
+      Kepemilikan disebut di muka karena inilah yang menentukan lembar
+      siapa yang boleh membawa nama seseorang. Penerbitan mengambil
+      penanda tangan perusahaan penerima lebih dulu, dan hanya jatuh ke
+      penanda tangan pusat bila perusahaan itu belum punya sendiri —
+      tidak pernah memakai milik perusahaan lain.
+    -->
+    <section class="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3">
+      <p class="text-[11.5px] text-stone-700 leading-relaxed">
+        <b>Tanda tangan melekat pada perusahaan.</b>
+        Sertifikat memakai penanda tangan perusahaan penerimanya lebih dulu; yang dikosongkan
+        perusahaannya menjadi <b>penanda tangan pusat</b> dan boleh dipakai seluruh perusahaan.
+        Milik perusahaan lain tidak pernah terpakai — lembar tanpa tanda tangan lebih baik daripada
+        lembar yang mencantumkan pejabat yang tidak pernah menyetujuinya.
+      </p>
+    </section>
+
     <div class="space-y-2.5">
-      <BarisPenandaTangan v-for="s in penandaTangan" :key="s.id" :s="s" />
+      <BarisPenandaTangan v-for="s in penandaTangan" :key="s.id" :s="s" :perusahaan="perusahaan" />
 
       <div v-if="!penandaTangan.length"
            class="bg-white rounded-2xl border border-dashed border-stone-200 p-12
@@ -58,6 +75,13 @@ const kecil = 'ring-focus rounded-lg border border-stone-200 px-3 py-2 text-[12.
 
       <input v-model="baru.name" placeholder="Nama lengkap" :class="kecil">
       <input v-model="baru.title" placeholder="Jabatan" :class="kecil">
+
+      <label class="sm:col-span-2 text-[11px] font-bold text-stone-500">Perusahaan pemilik
+        <select v-model="baru.company_id" :class="kecil" class="mt-1 w-full">
+          <option value="">— penanda tangan pusat (semua perusahaan) —</option>
+          <option v-for="c in perusahaan || []" :key="c.id" :value="c.id">{{ c.nama }}</option>
+        </select>
+      </label>
       <input type="file" accept="image/*" class="text-[11.5px] text-stone-500 sm:col-span-2"
              @change="pilihBerkas">
 

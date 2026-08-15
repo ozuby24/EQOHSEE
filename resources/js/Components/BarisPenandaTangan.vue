@@ -10,11 +10,12 @@
 import { router, useForm } from '@inertiajs/vue3';
 import type { PenandaTangan } from '../types';
 
-const props = defineProps<{ s: PenandaTangan }>();
+const props = defineProps<{ s: PenandaTangan; perusahaan?: Array<{ id: number; nama: string }> }>();
 
 const form = useForm({
   name: props.s.nama,
   title: props.s.jabatan,
+  company_id: props.s.perusahaanId ?? ('' as string | number),
   is_active: props.s.aktif,
   signature: null as File | null,
 });
@@ -47,6 +48,14 @@ const label = 'block text-[10.5px] font-bold uppercase tracking-wide text-stone-
       <div>
         <label :class="label">Jabatan</label>
         <input v-model="form.title" :class="kecil">
+      </div>
+
+      <div class="sm:col-span-2">
+        <label :class="label">Perusahaan pemilik</label>
+        <select v-model="form.company_id" :class="kecil">
+          <option value="">— penanda tangan pusat (semua perusahaan) —</option>
+          <option v-for="c in perusahaan || []" :key="c.id" :value="c.id">{{ c.nama }}</option>
+        </select>
       </div>
       <div class="flex items-center gap-2">
         <label class="flex items-center gap-1.5 text-[12px] text-stone-600 cursor-pointer">
