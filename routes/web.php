@@ -7,7 +7,7 @@ use App\Http\Controllers\{
 };
 use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiTemuanController, HazardController,
     HazardExportController, InspectionController, InspectionTemplateController,
-    EnergyController, EngineeringController, EnvironmentController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
+    BlastingController, EnergyController, EngineeringController, EnvironmentController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\{BantuanController, ChatController};
 use App\Http\Controllers\Admin\{CompanyController, SystemController, UserController};
@@ -314,6 +314,38 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::post('tindak',         [EnvironmentController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
         Route::put('tindak/{tindak}', [EnvironmentController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
+    });
+
+    /* ============ Pengeboran & Peledakan ============
+       Satu-satunya alur yang persetujuannya mendahului pekerjaannya:
+       rencana yang disetujui berarti boleh diledakkan, dan hasil hanya
+       dapat dicatat pada rencana yang izinnya sudah keluar. */
+    Route::prefix('peledakan')->name('peledakan.')->group(function () {
+        Route::get('/',        [BlastingController::class, 'index'])->name('index');
+        Route::get('rencana',  [BlastingController::class, 'rencana'])->name('rencana');
+        Route::get('titik',    [BlastingController::class, 'titik'])->name('titik');
+        Route::get('getaran',  [BlastingController::class, 'getaran'])->name('getaran');
+        Route::get('cetak',    [BlastingController::class, 'cetak'])->name('cetak');
+
+        Route::post('titik',           [BlastingController::class, 'simpanTitik'])->name('titik.simpan');
+        Route::delete('titik/{titik}', [BlastingController::class, 'hapusTitik'])->middleware('can:admin')->name('titik.hapus');
+
+        Route::post('rencana',             [BlastingController::class, 'simpanRencana'])->name('rencana.simpan');
+        Route::delete('rencana/{rencana}', [BlastingController::class, 'hapusRencana'])->middleware('can:admin')->name('rencana.hapus');
+        Route::post('rencana/{rencana}/ajukan',  [BlastingController::class, 'ajukanRencana'])->name('rencana.ajukan');
+        Route::post('rencana/{rencana}/setujui', [BlastingController::class, 'setujuiRencana'])->name('rencana.setujui');
+        Route::post('rencana/{rencana}/tolak',   [BlastingController::class, 'tolakRencana'])->name('rencana.tolak');
+
+        Route::post('rencana/{rencana}/hasil', [BlastingController::class, 'simpanHasil'])->name('hasil.simpan');
+        Route::post('hasil/{hasil}/ajukan',    [BlastingController::class, 'ajukanHasil'])->name('hasil.ajukan');
+        Route::post('hasil/{hasil}/setujui',   [BlastingController::class, 'setujuiHasil'])->name('hasil.setujui');
+        Route::post('hasil/{hasil}/tolak',     [BlastingController::class, 'tolakHasil'])->name('hasil.tolak');
+
+        Route::post('rencana/{rencana}/ukur', [BlastingController::class, 'simpanUkur'])->name('ukur.simpan');
+        Route::delete('ukur/{ukur}',          [BlastingController::class, 'hapusUkur'])->middleware('can:admin')->name('ukur.hapus');
+
+        Route::post('tindak',         [BlastingController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
+        Route::put('tindak/{tindak}', [BlastingController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
     });
 
     /* ============ Pemantauan Kestabilan Lereng ============

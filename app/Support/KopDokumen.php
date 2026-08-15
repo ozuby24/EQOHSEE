@@ -93,6 +93,11 @@ final class KopDokumen
                 'judul' => 'LAPORAN PENGELOLAAN LINGKUNGAN DAN REKLAMASI',
                 'kode'  => 'OHSE-V.081',
             ],
+            'laporan-peledakan' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN PENGEBORAN DAN PELEDAKAN',
+                'kode'  => 'OHSE-V.091',
+            ],
             'laporan-geoteknik' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN PEMANTAUAN KESTABILAN LERENG',

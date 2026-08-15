@@ -84,6 +84,11 @@ class Modules
              'ket'  => 'Neraca lahan terganggu dan direklamasi, tahapan berjenjang per petak, tingkat tumbuh revegetasi, kecukupan jaminan, dan pemantauan baku mutu yang dapat disesuaikan.',
              'ikon' => 'M20 4c0 9-5.5 13-11 13a5 5 0 0 1-1.6-.3C6 15.6 5 13.4 5 11 5 6.6 10 4 20 4ZM4 20c2.5-4.5 6-7.5 11-9.5'],
 
+            ['nama' => 'Drill & Blast', 'status' => 'aktif', 'pilar' => 'engineering',
+             'rute' => 'peledakan.index',
+             'ket'  => 'Rancangan peledakan, powder factor, perkiraan getaran dengan tetapan situs yang dikalibrasi sendiri, isi maksimum per tundaan, radius lemparan, dan fragmentasi.',
+             'ikon' => 'M12 2.5 9.5 9 3 11.5 9.5 14l2.5 6.5 2.5-6.5 6.5-2.5L14.5 9Z'],
+
             ['nama' => 'Kestabilan Lereng', 'status' => 'aktif', 'pilar' => 'engineering',
              'rute' => 'geoteknik.index',
              'ket'  => 'Pemantauan gerakan lereng, kebalikan laju, penyimpangan geometri terbangun, dan acuan kajian geoteknik — alat bantu keputusan, bukan pengganti penilaian tenaga kompeten.',

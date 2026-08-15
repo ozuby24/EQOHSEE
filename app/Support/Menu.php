@@ -227,6 +227,23 @@ final class Menu
         ],
       ],
     ],
+    'peledakan' => [
+      'label' => 'Drill & Blast',
+      'icon'  => 'M12 2.5 9.5 9 3 11.5 9.5 14l2.5 6.5 2.5-6.5 6.5-2.5L14.5 9Z',
+      'groups' => [
+        'Perencanaan' => [
+          ['Dashboard Peledakan', 'peledakan.index',   'peledakan'],
+          ['Rencana Peledakan',   'peledakan.rencana', 'peledakan/rencana*'],
+        ],
+        'Pemantauan' => [
+          ['Titik Terlindung', 'peledakan.titik',   'peledakan/titik*'],
+          ['Getaran Terukur',  'peledakan.getaran', 'peledakan/getaran*'],
+        ],
+        'Data' => [
+          ['Laporan Peledakan', 'peledakan.cetak', 'peledakan/cetak'],
+        ],
+      ],
+    ],
     'geoteknik' => [
       'label' => 'Kestabilan Lereng',
       'icon'  => 'M2.5 19.5h19L15 8l-3.2 5.2L9.4 9.8ZM9.4 9.8 5.6 4.5 2.5 9',
@@ -345,12 +362,13 @@ final class Menu
          : (Request::is('operasi-tambang*') ? 'operasi'
          : (Request::is('penirisan*') ? 'air'
          : (Request::is('geoteknik*') ? 'geoteknik'
+         : (Request::is('peledakan*') ? 'peledakan'
          : (Request::is('lingkungan*') ? 'lingkungan'
          : (Request::is('pemeliharaan*') ? 'maintenance'
          : (Request::is('gudang*') ? 'gudang'
          : (Request::is('mining-engineering-hub*') ? 'meh'
          : (Request::is('ko*') ? 'ko'
-         : (Request::is('admin*') || Request::is('signatories*') ? 'admin' : 'lms')))))))))))))));
+         : (Request::is('admin*') || Request::is('signatories*') ? 'admin' : 'lms'))))))))))))))));
 
         return isset(self::all()[$kunci]) ? $kunci : 'lms';
     }

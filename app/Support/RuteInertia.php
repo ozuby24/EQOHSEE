@@ -152,6 +152,13 @@ final class RuteInertia
         'lingkungan.baku',
         'lingkungan.cetak',
 
+        /* Pengeboran & Peledakan */
+        'peledakan.index',
+        'peledakan.rencana',
+        'peledakan.titik',
+        'peledakan.getaran',
+        'peledakan.cetak',
+
         /* Kestabilan Lereng */
         'geoteknik.index',
         'geoteknik.bacaan',
