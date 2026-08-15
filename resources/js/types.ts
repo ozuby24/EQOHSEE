@@ -1499,6 +1499,13 @@ export interface HalamanSistem {
   perusahaan: Array<{
     id: number; nama: string; komoditas: string | null; lokasi: string | null;
     pekerja: number; pengguna: number; urlUbah: string;
+    /* Data contoh. `isi` hanya dihitung untuk perusahaan contoh —
+       untuk yang lain nilainya null, bukan objek kosong, supaya
+       "belum dihitung" tidak tersamar menjadi "isinya nol". */
+    demo: boolean;
+    isi: Record<string, number> | null;
+    urlTandai: string;
+    urlMuat: string;
   }>;
   log: Array<{
     id: number; aksi: string; modul: string | null;

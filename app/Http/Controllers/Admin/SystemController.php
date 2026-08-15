@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\{ActivityLog, Certificate, Company, Course, Enrollment, Material, Module, News,
     PostTrainingEvaluation, Procedure, Quiz, QuizAttempt, Signatory, SopEvaluation,
     SopEvaluationAttempt, TpkkpAssessment, TpkkpResponse, User};
-use App\Support\Ikon;
+use App\Support\{DataContoh, Ikon};
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class SystemController extends Controller
@@ -107,6 +109,14 @@ class SystemController extends Controller
                 'pekerja'   => $c->totalWorkers(),
                 'pengguna'  => $c->users_count,
                 'urlUbah'   => route('admin.companies.edit', $c),
+
+                'demo'      => (bool) $c->demo,
+                // Dihitung hanya untuk perusahaan contoh: menghitungnya
+                // untuk semua berarti tiga puluh kueri per perusahaan
+                // pada halaman yang tidak memerlukannya.
+                'isi'       => $c->demo ? DataContoh::rincianIsi($c) : null,
+                'urlTandai' => route('admin.system.demo.tandai', $c),
+                'urlMuat'   => route('admin.system.demo.muat', $c),
             ])->all(),
 
             'log' => $logs->map(fn ($l) => [
@@ -173,6 +183,78 @@ class SystemController extends Controller
         ActivityLog::write('Pemeliharaan sistem', $peta[$aksi][0]);
 
         return back()->with('ok', $peta[$aksi][1]);
+    }
+
+    /* ═══════════ data contoh ═══════════ */
+
+    /**
+     * Tandai atau lepas tanda perusahaan contoh.
+     *
+     * Yang dijaga di sini adalah arah MENANDAI, bukan melepasnya:
+     * menandai berarti membuka perusahaan itu bagi pemuat yang membuang
+     * seluruh datanya. Perusahaan yang sudah berisi tidak boleh ditandai
+     * begitu saja — bukan karena tidak mungkin disengaja, melainkan
+     * karena kesengajaan itu perlu dikatakan dengan kalimat, bukan
+     * dengan satu klik pada baris yang salah.
+     */
+    public function tandaiContoh(Request $request, Company $company)
+    {
+        $data = $request->validate([
+            'demo'  => ['required', 'boolean'],
+            'sadar' => ['nullable', 'string'],
+        ]);
+
+        if ($data['demo'] && !$company->demo) {
+            $isi = DataContoh::hitungIsi($company);
+
+            if ($isi > 0 && ($data['sadar'] ?? null) !== $company->name) {
+                return back()->withErrors(['demo' =>
+                    'Perusahaan "'.$company->name.'" sudah berisi '.number_format($isi, 0, ',', '.')
+                    .' baris data. Menandainya sebagai perusahaan contoh membuat seluruh data itu '
+                    .'dapat dibuang oleh tombol muat ulang. Ketik nama perusahaannya persis untuk '
+                    .'menegaskan bahwa itu memang yang dimaksud.']);
+            }
+        }
+
+        $company->update(['demo' => $data['demo']]);
+
+        ActivityLog::write($data['demo'] ? 'Tandai perusahaan contoh' : 'Lepas tanda perusahaan contoh',
+            $company->name, 'sistem');
+
+        return back()->with('ok', $data['demo']
+            ? $company->name.' ditandai sebagai perusahaan contoh.'
+            : 'Tanda perusahaan contoh dilepas dari '.$company->name.'.');
+    }
+
+    /**
+     * Muat ulang data contoh satu perusahaan.
+     *
+     * Dibungkus transaksi: pemuatan yang gagal di tengah meninggalkan
+     * perusahaan yang datanya sudah terbuang tetapi belum terisi —
+     * keadaan yang lebih buruk daripada kedua ujungnya.
+     */
+    public function muatContoh(Company $company)
+    {
+        try {
+            $hasil = DB::transaction(fn () => DataContoh::muat($company, auth()->user()));
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['demo' => $e->getMessage()]);
+        }
+
+        ActivityLog::write('Muat ulang data contoh',
+            $company->name.' · '.$hasil['dihapus'].' dibuang, '
+            .array_sum($hasil['dibuat']).' dibuat', 'sistem');
+
+        $pesan = 'Data contoh '.$company->name.' dimuat ulang: '
+            .$hasil['dihapus'].' baris dibuang, '.array_sum($hasil['dibuat']).' baris dibuat.';
+
+        // Catatan pemuat dinaikkan menjadi galat, bukan disisipkan ke
+        // pesan berhasil: yang paling berguna dilaporkannya adalah
+        // "datanya masuk tetapi masih draf", dan itu terbaca sebagai
+        // kegagalan hitungan bila tidak menonjol.
+        return $hasil['catatan'] === []
+            ? back()->with('ok', $pesan)
+            : back()->with('ok', $pesan)->withErrors(['demo' => implode(' ', $hasil['catatan'])]);
     }
 
     private function human(float $b): string

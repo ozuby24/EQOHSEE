@@ -653,6 +653,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('system',        [SystemController::class, 'index'])->name('system');
         Route::delete('system/logs',[SystemController::class, 'clearLogs'])->name('system.logs.clear');
         Route::post('system/maintenance/{aksi}', [SystemController::class,'maintenance'])->name('system.maintenance');
+
+        // Data contoh. Penandaan dan pemuatan sengaja dua rute terpisah:
+        // menandai perusahaan sebagai perusahaan contoh harus menjadi
+        // tindakan tersendiri yang disengaja, bukan efek samping dari
+        // menekan tombol muat.
+        Route::post('system/demo/{company}/tandai', [SystemController::class,'tandaiContoh'])
+            ->name('system.demo.tandai');
+        Route::post('system/demo/{company}/muat',   [SystemController::class,'muatContoh'])
+            ->name('system.demo.muat');
     });
 
     /* ---- Gudang & Penyimpanan ---- */
