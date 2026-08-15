@@ -699,6 +699,14 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] main .border-amber-100{border-color:#4A3A18}
 :root[data-tema="gelap"] main .border-emerald-100{border-color:#1D4034}
 :root[data-tema="gelap"] main .bg-red-50\/60{background:#241416}
+:root[data-tema="gelap"] main .bg-amber-50\/60{background:#241E12}
+:root[data-tema="gelap"] main .bg-stone-50\/60{background:#18242A}
+
+/* Batang grafik. Warnanya tidak boleh memakai bg-cam-ink: tinta gelap
+   di atas halaman gelap adalah batang yang tingginya benar dan tidak
+   terlihat sama sekali. */
+.eq-batang{background:#0F1720;border-radius:3px 3px 0 0}
+:root[data-tema="gelap"] .eq-batang{background:#5FA8D3}
 
 /* Keping status — Draf, Menunggu tinjauan, Disetujui, Ditolak — memakai
    nada -100 yang lebih pekat daripada kotak catatan di atas, dan

@@ -7,7 +7,7 @@ use App\Http\Controllers\{
 };
 use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiTemuanController, HazardController,
     HazardExportController, InspectionController, InspectionTemplateController,
-    BlastingController, DispatchController, EnergyController, EngineeringController, EnvironmentController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
+    BlastingController, CostController, DispatchController, EnergyController, EngineeringController, EnvironmentController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\{BantuanController, ChatController};
 use App\Http\Controllers\Admin\{CompanyController, SystemController, UserController};
@@ -374,6 +374,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::post('tindak',         [DispatchController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
         Route::put('tindak/{tindak}', [DispatchController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
+    });
+
+    /* ============ Pengendalian Biaya Operasi ============
+       Akuntansi manajemen untuk mengendalikan operasi, bukan pembukuan.
+       Denominator produksinya diambil dari Mine Operations yang sudah
+       disetujui — tonase tidak pernah diketik ulang di sini. */
+    Route::prefix('biaya')->name('biaya.')->group(function () {
+        Route::get('/',          [CostController::class, 'index'])->name('index');
+        Route::get('realisasi',  [CostController::class, 'realisasi'])->name('realisasi');
+        Route::get('anggaran',   [CostController::class, 'anggaran'])->name('anggaran');
+        Route::get('bagan-akun', [CostController::class, 'akun'])->name('akun');
+        Route::get('cetak',      [CostController::class, 'cetak'])->name('cetak');
+
+        Route::post('bagan-akun',        [CostController::class, 'simpanAkun'])->name('akun.simpan');
+        Route::delete('bagan-akun/{akun}', [CostController::class, 'hapusAkun'])->middleware('can:admin')->name('akun.hapus');
+
+        Route::post('anggaran',              [CostController::class, 'simpanAnggaran'])->name('anggaran.simpan');
+        Route::delete('anggaran/{anggaran}', [CostController::class, 'hapusAnggaran'])->middleware('can:admin')->name('anggaran.hapus');
+
+        Route::post('realisasi',               [CostController::class, 'simpanRealisasi'])->name('realisasi.simpan');
+        Route::delete('realisasi/{realisasi}', [CostController::class, 'hapusRealisasi'])->middleware('can:admin')->name('realisasi.hapus');
+        Route::post('realisasi/{realisasi}/ajukan',  [CostController::class, 'ajukan'])->name('ajukan');
+        Route::post('realisasi/{realisasi}/setujui', [CostController::class, 'setujui'])->name('setujui');
+        Route::post('realisasi/{realisasi}/tolak',   [CostController::class, 'tolak'])->name('tolak');
+
+        Route::post('tindak',         [CostController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
+        Route::put('tindak/{tindak}', [CostController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
     });
 
     /* ============ Pemantauan Kestabilan Lereng ============

@@ -103,6 +103,11 @@ final class KopDokumen
                 'judul' => 'LAPORAN PENGANGKUTAN DAN PENGATURAN ARMADA',
                 'kode'  => 'OHSE-V.101',
             ],
+            'laporan-biaya' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN PENGENDALIAN BIAYA OPERASI PENAMBANGAN',
+                'kode'  => 'OHSE-V.111',
+            ],
             'laporan-geoteknik' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN PEMANTAUAN KESTABILAN LERENG',

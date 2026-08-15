@@ -259,6 +259,21 @@ final class Menu
         ],
       ],
     ],
+    'biaya' => [
+      'label' => 'Pengendalian Biaya',
+      'icon'  => 'M12 2.5v19M15.5 7.2c-.6-1.4-2-2.2-3.7-2.2-2.2 0-3.9 1.2-3.9 3s1.5 2.6 4 3.2c2.7.6 4.3 1.5 4.3 3.4 0 2-1.8 3.3-4.2 3.3-2 0-3.5-.9-4.1-2.4',
+      'groups' => [
+        'Pengawasan' => [
+          ['Dashboard Biaya',   'biaya.index',     'biaya'],
+          ['Realisasi Bulanan', 'biaya.realisasi', 'biaya/realisasi*'],
+        ],
+        'Acuan & Data' => [
+          ['Anggaran Tahunan', 'biaya.anggaran', 'biaya/anggaran*'],
+          ['Bagan Akun',       'biaya.akun',     'biaya/bagan-akun*'],
+          ['Laporan Biaya',    'biaya.cetak',    'biaya/cetak'],
+        ],
+      ],
+    ],
     'geoteknik' => [
       'label' => 'Kestabilan Lereng',
       'icon'  => 'M2.5 19.5h19L15 8l-3.2 5.2L9.4 9.8ZM9.4 9.8 5.6 4.5 2.5 9',
@@ -379,12 +394,13 @@ final class Menu
          : (Request::is('geoteknik*') ? 'geoteknik'
          : (Request::is('peledakan*') ? 'peledakan'
          : (Request::is('angkutan*') ? 'angkutan'
+         : (Request::is('biaya*') ? 'biaya'
          : (Request::is('lingkungan*') ? 'lingkungan'
          : (Request::is('pemeliharaan*') ? 'maintenance'
          : (Request::is('gudang*') ? 'gudang'
          : (Request::is('mining-engineering-hub*') ? 'meh'
          : (Request::is('ko*') ? 'ko'
-         : (Request::is('admin*') || Request::is('signatories*') ? 'admin' : 'lms')))))))))))))))));
+         : (Request::is('admin*') || Request::is('signatories*') ? 'admin' : 'lms'))))))))))))))))));
 
         return isset(self::all()[$kunci]) ? $kunci : 'lms';
     }

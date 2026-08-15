@@ -94,6 +94,11 @@ class Modules
              'ket'  => 'Keseimbangan armada, rincian waktu edar, antrean di muka gali, kepatuhan muatan 10/10/20, dan tonase yang hilang karena menunggu.',
              'ikon' => 'M2.5 16.5V7a1 1 0 0 1 1-1h9v10.5m0 0h-9m9 0h2m6.5 0h-2m2 0V12l-2.5-3.5H15m6 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm-12.5 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z'],
 
+            ['nama' => 'Pengendalian Biaya', 'status' => 'aktif', 'pilar' => 'engineering',
+             'rute' => 'biaya.index',
+             'ket'  => 'Anggaran RKAB terhadap realisasi, biaya per ton dan per BCM, selisih yang dipecah menjadi bagian volume dan bagian tarif, serta proyeksi akhir tahun.',
+             'ikon' => 'M12 2.5v19M15.5 7.2c-.6-1.4-2-2.2-3.7-2.2-2.2 0-3.9 1.2-3.9 3s1.5 2.6 4 3.2c2.7.6 4.3 1.5 4.3 3.4 0 2-1.8 3.3-4.2 3.3-2 0-3.5-.9-4.1-2.4'],
+
             ['nama' => 'Kestabilan Lereng', 'status' => 'aktif', 'pilar' => 'engineering',
              'rute' => 'geoteknik.index',
              'ket'  => 'Pemantauan gerakan lereng, kebalikan laju, penyimpangan geometri terbangun, dan acuan kajian geoteknik — alat bantu keputusan, bukan pengganti penilaian tenaga kompeten.',

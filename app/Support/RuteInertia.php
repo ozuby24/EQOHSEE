@@ -166,6 +166,13 @@ final class RuteInertia
         'angkutan.muatan',
         'angkutan.cetak',
 
+        /* Pengendalian Biaya */
+        'biaya.index',
+        'biaya.realisasi',
+        'biaya.anggaran',
+        'biaya.akun',
+        'biaya.cetak',
+
         /* Kestabilan Lereng */
         'geoteknik.index',
         'geoteknik.bacaan',
