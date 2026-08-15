@@ -108,6 +108,11 @@ final class KopDokumen
                 'judul' => 'LAPORAN PENGENDALIAN BIAYA OPERASI PENAMBANGAN',
                 'kode'  => 'OHSE-V.111',
             ],
+            'laporan-izin-kerja' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN IZIN KERJA AMAN',
+                'kode'  => 'OHSE-IV.121',
+            ],
             'laporan-geoteknik' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN PEMANTAUAN KESTABILAN LERENG',

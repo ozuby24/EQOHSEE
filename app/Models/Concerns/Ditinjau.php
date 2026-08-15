@@ -42,9 +42,7 @@ trait Ditinjau
 
             if ($asli !== Alur::DISETUJUI) return;
 
-            $lain = array_diff(array_keys($model->getDirty()), [
-                'status', 'ditinjau_oleh', 'ditinjau_pada', 'alasan_tolak', 'updated_at',
-            ]);
+            $lain = array_diff(array_keys($model->getDirty()), $model->kolomSetelahDisetujui());
 
             if ($lain !== []) {
                 throw new RuntimeException(
@@ -53,6 +51,19 @@ trait Ditinjau
                 );
             }
         });
+    }
+
+    /**
+     * Kolom yang masih boleh berubah setelah baris ini disetujui.
+     *
+     * Ditimpa oleh model yang memerlukan tambahan. Yang menimpanya wajib
+     * menyertakan daftar dasarnya — menghilangkan salah satu kolom
+     * tinjauan dari daftar membuat penolakan dan penyetujuan berhenti
+     * bekerja pada model itu saja, tanpa galat di tempat lain.
+     */
+    protected function kolomSetelahDisetujui(): array
+    {
+        return Alur::KOLOM_SETELAH_DISETUJUI;
     }
 
     public function pengaju(): BelongsTo

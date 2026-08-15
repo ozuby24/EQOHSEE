@@ -7,7 +7,7 @@ use App\Http\Controllers\{
 };
 use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiTemuanController, HazardController,
     HazardExportController, InspectionController, InspectionTemplateController,
-    BlastingController, CostController, DispatchController, EnergyController, EngineeringController, EnvironmentController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
+    BlastingController, CostController, DispatchController, PermitController, EnergyController, EngineeringController, EnvironmentController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\{BantuanController, ChatController};
 use App\Http\Controllers\Admin\{CompanyController, SystemController, UserController};
@@ -401,6 +401,38 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::post('tindak',         [CostController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
         Route::put('tindak/{tindak}', [CostController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
+    });
+
+    /* ============ Izin Kerja Aman ============
+       Persetujuan di sini ADALAH izinnya, dan izinnya kedaluwarsa.
+       Syarat wajib yang belum terpenuhi serta uji gas yang basi
+       MENGHALANGI penerbitan, bukan sekadar memperingatkan. */
+    Route::prefix('izin-kerja')->name('izin.')->group(function () {
+        Route::get('/',        [PermitController::class, 'index'])->name('index');
+        Route::get('daftar',   [PermitController::class, 'daftar'])->name('daftar');
+        Route::get('syarat',   [PermitController::class, 'syarat'])->name('syarat');
+        Route::get('ambang-gas', [PermitController::class, 'ambang'])->name('ambang');
+        Route::get('cetak',    [PermitController::class, 'cetak'])->name('cetak');
+
+        Route::post('syarat',            [PermitController::class, 'simpanSyarat'])->name('syarat.simpan');
+        Route::delete('syarat/{syarat}', [PermitController::class, 'hapusSyarat'])->middleware('can:admin')->name('syarat.hapus');
+
+        Route::post('ambang-gas',            [PermitController::class, 'simpanAmbang'])->name('ambang.simpan');
+        Route::delete('ambang-gas/{ambang}', [PermitController::class, 'hapusAmbang'])->middleware('can:admin')->name('ambang.hapus');
+
+        Route::post('/',           [PermitController::class, 'simpanIzin'])->name('simpan');
+        Route::delete('{izin}',    [PermitController::class, 'hapusIzin'])->middleware('can:admin')->name('hapus');
+        Route::post('{izin}/ajukan',    [PermitController::class, 'ajukan'])->name('ajukan');
+        Route::post('{izin}/terbitkan', [PermitController::class, 'terbitkan'])->name('terbitkan');
+        Route::post('{izin}/tolak',     [PermitController::class, 'tolak'])->name('tolak');
+        Route::post('{izin}/tutup',     [PermitController::class, 'tutup'])->name('tutup');
+
+        Route::put('periksa/{periksa}', [PermitController::class, 'ubahPeriksa'])->name('periksa.ubah');
+        Route::post('{izin}/gas',       [PermitController::class, 'simpanGas'])->name('gas.simpan');
+        Route::delete('gas/{gas}',      [PermitController::class, 'hapusGas'])->middleware('can:admin')->name('gas.hapus');
+
+        Route::post('tindak',         [PermitController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
+        Route::put('tindak/{tindak}', [PermitController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
     });
 
     /* ============ Pemantauan Kestabilan Lereng ============

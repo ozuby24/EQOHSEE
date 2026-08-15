@@ -173,6 +173,13 @@ final class RuteInertia
         'biaya.akun',
         'biaya.cetak',
 
+        /* Izin Kerja Aman */
+        'izin.index',
+        'izin.daftar',
+        'izin.syarat',
+        'izin.ambang',
+        'izin.cetak',
+
         /* Kestabilan Lereng */
         'geoteknik.index',
         'geoteknik.bacaan',

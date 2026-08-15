@@ -99,6 +99,11 @@ class Modules
              'ket'  => 'Anggaran RKAB terhadap realisasi, biaya per ton dan per BCM, selisih yang dipecah menjadi bagian volume dan bagian tarif, serta proyeksi akhir tahun.',
              'ikon' => 'M12 2.5v19M15.5 7.2c-.6-1.4-2-2.2-3.7-2.2-2.2 0-3.9 1.2-3.9 3s1.5 2.6 4 3.2c2.7.6 4.3 1.5 4.3 3.4 0 2-1.8 3.3-4.2 3.3-2 0-3.5-.9-4.1-2.4'],
 
+            ['nama' => 'Izin Kerja Aman', 'status' => 'aktif', 'pilar' => 'safety',
+             'rute' => 'izin.index',
+             'ket'  => 'Izin kerja panas, ruang terbatas, ketinggian, dan lainnya: daftar periksa yang dapat disusun sendiri, uji gas beserta kesegarannya, penutupan izin, dan penyaring dua izin yang tidak boleh berbarengan di satu lokasi.',
+             'ikon' => 'M9 12.5l2 2 4.5-4.5M8.5 4.5h7a1 1 0 0 1 1 1v1h1.5a2 2 0 0 1 2 2v10.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2H7.5v-1a1 1 0 0 1 1-1Z'],
+
             ['nama' => 'Kestabilan Lereng', 'status' => 'aktif', 'pilar' => 'engineering',
              'rute' => 'geoteknik.index',
              'ket'  => 'Pemantauan gerakan lereng, kebalikan laju, penyimpangan geometri terbangun, dan acuan kajian geoteknik — alat bantu keputusan, bukan pengganti penilaian tenaga kompeten.',

@@ -274,6 +274,21 @@ final class Menu
         ],
       ],
     ],
+    'izin' => [
+      'label' => 'Izin Kerja Aman',
+      'icon'  => 'M9 12.5l2 2 4.5-4.5M8.5 4.5h7a1 1 0 0 1 1 1v1h1.5a2 2 0 0 1 2 2v10.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2H7.5v-1a1 1 0 0 1 1-1Z',
+      'groups' => [
+        'Pengawasan' => [
+          ['Dashboard Izin', 'izin.index',  'izin-kerja'],
+          ['Daftar Izin',    'izin.daftar', 'izin-kerja/daftar*'],
+        ],
+        'Acuan & Data' => [
+          ['Daftar Periksa', 'izin.syarat', 'izin-kerja/syarat*'],
+          ['Ambang Gas',     'izin.ambang', 'izin-kerja/ambang-gas*'],
+          ['Laporan Izin',   'izin.cetak',  'izin-kerja/cetak'],
+        ],
+      ],
+    ],
     'geoteknik' => [
       'label' => 'Kestabilan Lereng',
       'icon'  => 'M2.5 19.5h19L15 8l-3.2 5.2L9.4 9.8ZM9.4 9.8 5.6 4.5 2.5 9',
@@ -395,12 +410,13 @@ final class Menu
          : (Request::is('peledakan*') ? 'peledakan'
          : (Request::is('angkutan*') ? 'angkutan'
          : (Request::is('biaya*') ? 'biaya'
+         : (Request::is('izin-kerja*') ? 'izin'
          : (Request::is('lingkungan*') ? 'lingkungan'
          : (Request::is('pemeliharaan*') ? 'maintenance'
          : (Request::is('gudang*') ? 'gudang'
          : (Request::is('mining-engineering-hub*') ? 'meh'
          : (Request::is('ko*') ? 'ko'
-         : (Request::is('admin*') || Request::is('signatories*') ? 'admin' : 'lms'))))))))))))))))));
+         : (Request::is('admin*') || Request::is('signatories*') ? 'admin' : 'lms')))))))))))))))))));
 
         return isset(self::all()[$kunci]) ? $kunci : 'lms';
     }

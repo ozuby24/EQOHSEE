@@ -80,6 +80,20 @@ final class Alur
         return in_array($ke, self::TRANSISI[$dari] ?? [], true);
     }
 
+    /**
+     * Kolom yang masih boleh berubah setelah sebuah baris disetujui.
+     *
+     * Daftar dasar, dan sengaja sependek ini: yang boleh berubah hanya
+     * penandaan tinjauannya sendiri, bukan isinya. Model yang benar-benar
+     * memerlukan tambahan menimpanya lewat kolomSetelahDisetujui() —
+     * izin kerja, misalnya, harus dapat DITUTUP setelah diterbitkan, dan
+     * penutupan bukan penyuntingan isi melainkan penandaan bahwa
+     * pekerjaannya sudah selesai.
+     */
+    public const KOLOM_SETELAH_DISETUJUI = [
+        'status', 'ditinjau_oleh', 'ditinjau_pada', 'alasan_tolak', 'updated_at',
+    ];
+
     /** Hak meninjau: administrator atau Kepala Teknik Tambang. */
     public static function peninjau(?User $u): bool
     {
