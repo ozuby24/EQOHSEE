@@ -1512,8 +1512,25 @@ export interface HalamanSistem {
     detail: string | null; oleh: string | null; waktu: string | null;
   }>;
   pintasan: Array<{ url: string; label: string; sub: string; warna: string; ikon: string }>;
+  diagnosa: { ringkas: Record<string, number>; url: string };
   tautan: { perusahaanBaru: string; bersihkanLog: string };
   pemeliharaan: Array<{ aksi: string; label: string; url: string }>;
+}
+
+export interface HalamanDiagnosa {
+  judul: string; subjudul: string;
+  hasil: Array<{
+    kode: string; kelompok: string; judul: string;
+    /* 'gawat' | 'perhatian' | 'tak-tahu' | 'aman' — dibiarkan string
+       supaya keadaan baru dari sisi server tidak memaksa perubahan
+       tipe di sini sebelum tampilannya siap menanganinya. */
+    keadaan: string;
+    nilai: string; uraian: string; tindakan: string | null;
+  }>;
+  ringkas: Record<string, number>;
+  dijalankan: string;
+  perbaikan: Array<{ aksi: string; label: string; ket: string; berat: boolean; url: string }>;
+  tautan: { sistem: string; pemeliharaan: string };
 }
 
 /* ══════════════ Berita, Prosedur, Penanda Tangan ══════════════ */

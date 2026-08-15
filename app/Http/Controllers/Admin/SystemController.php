@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\{ActivityLog, Certificate, Company, Course, Enrollment, Material, Module, News,
     PostTrainingEvaluation, Procedure, Quiz, QuizAttempt, Signatory, SopEvaluation,
     SopEvaluationAttempt, TpkkpAssessment, TpkkpResponse, User};
-use App\Support\{DataContoh, Ikon};
+use App\Support\{DataContoh, Diagnosa, Ikon};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -143,6 +143,16 @@ class SystemController extends Controller
                  'ikon' => 'M7 3h7l4 4v14H7a1 1 0 01-1-1V4a1 1 0 011-1zM14 3v4h4M9.5 12h5M9.5 15.5h5'],
             ],
 
+            /* Ringkasan diagnosa ikut di halaman ini, bukan hanya di
+               halamannya sendiri. Halaman diagnosa hanya dibuka orang
+               yang sudah curiga ada yang salah — sementara justru
+               hal-hal yang diperiksanya adalah hal yang tidak
+               menimbulkan kecurigaan apa pun. */
+            'diagnosa' => [
+                'ringkas' => Diagnosa::ringkas(Diagnosa::jalankan()),
+                'url'     => route('admin.system.diagnosa'),
+            ],
+
             'tautan' => [
                 'perusahaanBaru' => route('admin.companies.create'),
                 'bersihkanLog'   => route('admin.system.logs.clear'),
@@ -183,6 +193,133 @@ class SystemController extends Controller
         ActivityLog::write('Pemeliharaan sistem', $peta[$aksi][0]);
 
         return back()->with('ok', $peta[$aksi][1]);
+    }
+
+    /* ═══════════ diagnosa ═══════════ */
+
+    /**
+     * Perbaikan yang dapat dijalankan dari halaman diagnosa.
+     *
+     * Yang di sini semuanya dapat diulang tanpa akibat berbeda, kecuali
+     * dua yang ditandai `berat`: migrasi mengubah skema, dan pemotongan
+     * log membuang isinya. Keduanya tetap disediakan — orang yang
+     * membuka halaman ini biasanya sedang tidak punya akses SSH — tetapi
+     * ditandai supaya tampilannya dapat meminta penegasan lebih dulu.
+     */
+    private const PERBAIKAN = [
+        'tautan-storage' => [
+            'label' => 'Pasang tautan storage',
+            'ket'   => 'Menghubungkan public/storage ke storage/app/public supaya berkas unggahan tampil.',
+            'berat' => false,
+        ],
+        'bangun-cache' => [
+            'label' => 'Bangun cache produksi',
+            'ket'   => 'Menyusun cache konfigurasi, rute, dan tampilan. Jalankan setelah menerbitkan.',
+            'berat' => false,
+        ],
+        'antrean-ulang' => [
+            'label' => 'Coba ulang antrean gagal',
+            'ket'   => 'Mengembalikan seluruh pekerjaan gagal ke antrean untuk dicoba lagi.',
+            'berat' => false,
+        ],
+        'migrasi' => [
+            'label' => 'Jalankan migrasi',
+            'ket'   => 'Menerapkan perubahan skema basis data yang belum jalan. Mengubah struktur data.',
+            'berat' => true,
+        ],
+        'potong-log' => [
+            'label' => 'Potong berkas log',
+            'ket'   => 'Mengosongkan laravel.log. Isinya hilang — salin dulu bila masih ditelusuri.',
+            'berat' => true,
+        ],
+    ];
+
+    public function diagnosa()
+    {
+        $hasil = Diagnosa::jalankan();
+
+        return Inertia::render('Admin/Diagnosa', [
+            'judul'    => 'Diagnosa Sistem',
+            'subjudul' => 'Hal yang bila salah tidak menimbulkan galat',
+
+            'hasil'   => $hasil,
+            'ringkas' => Diagnosa::ringkas($hasil),
+            'dijalankan' => now()->format('d M Y · H:i:s'),
+
+            'perbaikan' => array_map(fn ($k) => [
+                'aksi'  => $k,
+                'label' => self::PERBAIKAN[$k]['label'],
+                'ket'   => self::PERBAIKAN[$k]['ket'],
+                'berat' => self::PERBAIKAN[$k]['berat'],
+                'url'   => route('admin.system.perbaiki', $k),
+            ], array_keys(self::PERBAIKAN)),
+
+            'tautan' => [
+                'sistem'      => route('admin.system'),
+                'pemeliharaan' => route('admin.system.maintenance', 'cache'),
+            ],
+        ]);
+    }
+
+    /**
+     * Jalankan satu perbaikan.
+     *
+     * Keluarannya dikembalikan apa adanya, termasuk saat gagal. Tombol
+     * yang hanya berkata "berhasil" atau "gagal" memindahkan pekerjaan
+     * menebak kepada orangnya — dan orang yang membuka halaman ini
+     * sedang mencari tahu, bukan sedang ingin diyakinkan.
+     */
+    public function perbaiki(string $aksi)
+    {
+        abort_unless(isset(self::PERBAIKAN[$aksi]), 404);
+
+        try {
+            $keluaran = match ($aksi) {
+                'tautan-storage' => $this->artisan('storage:link'),
+                'bangun-cache'   => $this->artisan('config:cache')."\n"
+                                   .$this->artisan('route:cache')."\n"
+                                   .$this->artisan('view:cache'),
+                'antrean-ulang'  => $this->artisan('queue:retry', ['id' => ['all']]),
+                'migrasi'        => $this->artisan('migrate', ['--force' => true]),
+                'potong-log'     => $this->potongLog(),
+            };
+        } catch (\Throwable $e) {
+            ActivityLog::write('Perbaikan sistem gagal', $aksi.' · '.$e->getMessage(), 'sistem');
+
+            return back()->withErrors(['perbaikan' =>
+                self::PERBAIKAN[$aksi]['label'].' gagal: '.$e->getMessage()]);
+        }
+
+        ActivityLog::write('Perbaikan sistem', self::PERBAIKAN[$aksi]['label'], 'sistem');
+
+        $ringkas = trim(preg_replace('/\s*\n\s*/', ' · ', trim($keluaran)));
+
+        return back()->with('ok', self::PERBAIKAN[$aksi]['label'].' selesai.'
+            .($ringkas !== '' ? ' '.mb_substr($ringkas, 0, 400) : ''));
+    }
+
+    private function artisan(string $perintah, array $argumen = []): string
+    {
+        Artisan::call($perintah, $argumen);
+
+        return Artisan::output();
+    }
+
+    private function potongLog(): string
+    {
+        $berkas = storage_path('logs/laravel.log');
+
+        if (!is_file($berkas)) return 'Berkas log belum ada.';
+
+        $besar = filesize($berkas);
+
+        /* Dipotong, bukan dihapus. Menghapus berkas yang sedang terbuka
+           membuat penulisan berikutnya masuk ke berkas yang tidak lagi
+           punya nama — lognya seolah berhenti sama sekali sampai proses
+           web dimulai ulang. */
+        file_put_contents($berkas, '');
+
+        return $this->human((float) $besar).' dibuang.';
     }
 
     /* ═══════════ data contoh ═══════════ */

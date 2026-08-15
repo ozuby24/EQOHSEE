@@ -654,6 +654,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('system/logs',[SystemController::class, 'clearLogs'])->name('system.logs.clear');
         Route::post('system/maintenance/{aksi}', [SystemController::class,'maintenance'])->name('system.maintenance');
 
+        Route::get('system/diagnosa',           [SystemController::class,'diagnosa'])->name('system.diagnosa');
+        Route::post('system/perbaiki/{aksi}',   [SystemController::class,'perbaiki'])->name('system.perbaiki');
+
         // Data contoh. Penandaan dan pemuatan sengaja dua rute terpisah:
         // menandai perusahaan sebagai perusahaan contoh harus menjadi
         // tindakan tersendiri yang disengaja, bukan efek samping dari

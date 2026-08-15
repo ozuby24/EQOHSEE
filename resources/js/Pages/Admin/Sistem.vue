@@ -42,6 +42,14 @@ const potongan = computed(() => {
     .filter((p) => p.jumlah > 0);
 });
 
+/* ── ringkasan diagnosa ── */
+
+const perluDitindak = computed(
+  () => (props.diagnosa.ringkas.gawat ?? 0)
+      + (props.diagnosa.ringkas.perhatian ?? 0)
+      + (props.diagnosa.ringkas['tak-tahu'] ?? 0),
+);
+
 /* ── tren log tujuh hari ── */
 
 const maksTren = computed(() => Math.max(1, ...props.tren.map((t) => t.jumlah)));
@@ -140,6 +148,48 @@ function muat(c: Perusahaan) {
         </div>
       </div>
     </section>
+
+    <!-- Ringkasan diagnosa.
+
+         Diletakkan di sini, bukan hanya di halamannya sendiri: halaman
+         diagnosa hanya dibuka orang yang sudah curiga ada yang salah,
+         sementara justru hal-hal yang diperiksanya adalah hal yang
+         tidak menimbulkan kecurigaan apa pun. -->
+    <Link :href="diagnosa.url"
+          class="block rounded-2xl border shadow-card px-5 py-4 card-hover transition"
+          :class="perluDitindak
+            ? 'border-amber-100 bg-amber-50 hover:border-amber-400'
+            : 'border-emerald-100 bg-emerald-50 hover:border-emerald-400'">
+      <div class="flex items-center gap-4 flex-wrap">
+        <div class="min-w-0 flex-1">
+          <div class="text-[13.5px] font-bold text-cam-ink">
+            {{ perluDitindak
+                ? perluDitindak + ' pemeriksaan sistem perlu ditindak'
+                : 'Seluruh pemeriksaan sistem lolos' }}
+          </div>
+          <div class="text-[11.5px] text-stone-500 mt-0.5 leading-relaxed">
+            Mode debug, migrasi tertunda, izin berkas, tautan storage, antrean, nomor sertifikat
+            kembar, dan baris tanpa perusahaan.
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <span v-for="k in ['gawat', 'perhatian', 'tak-tahu']" :key="k"
+                v-show="diagnosa.ringkas[k]"
+                class="text-[11px] font-bold px-2.5 py-1 rounded-lg"
+                :class="{
+                  'bg-red-100 text-red-700': k === 'gawat',
+                  'bg-amber-100 text-amber-800': k === 'perhatian',
+                  'bg-stone-100 text-stone-600': k === 'tak-tahu',
+                }">
+            {{ diagnosa.ringkas[k] }} {{ k === 'tak-tahu' ? 'tak diketahui' : k }}
+          </span>
+          <svg class="w-4 h-4 text-stone-400" fill="none" stroke="currentColor"
+               stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6" /></svg>
+        </div>
+      </div>
+    </Link>
 
     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <Link v-for="p in pintasan" :key="p.label" :href="p.url"
@@ -271,7 +321,7 @@ function muat(c: Perusahaan) {
                 <button v-if="c.demo" type="button" @click="lepasTanda(c)"
                         :disabled="demoForm.processing"
                         class="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded
-                               bg-amber-100 text-amber-800 hover:bg-amber-200 transition disabled:opacity-40"
+                               bg-amber-100 text-amber-800 hover:brightness-95 transition disabled:opacity-40"
                         title="Lepas tanda perusahaan contoh">
                   Perusahaan contoh
                 </button>
@@ -315,14 +365,14 @@ function muat(c: Perusahaan) {
       </p>
 
       <div v-if="galat.demo"
-           class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 mb-3.5 text-[12px]
+           class="rounded-xl border border-red-100 bg-red-50 px-4 py-3 mb-3.5 text-[12px]
                   text-red-700 leading-relaxed">
         {{ galat.demo }}
       </div>
 
       <div v-if="perusahaanContoh.length" class="space-y-2.5">
         <div v-for="c in perusahaanContoh" :key="c.id"
-             class="rounded-xl border border-amber-200 bg-amber-50/50 px-4 py-3
+             class="rounded-xl border border-amber-100 bg-amber-50/60 px-4 py-3
                     flex flex-wrap items-center gap-3">
           <div class="min-w-0 flex-1">
             <div class="text-[13px] font-bold text-cam-ink">{{ c.nama }}</div>
