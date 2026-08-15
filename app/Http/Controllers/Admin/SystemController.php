@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\{ActivityLog, Certificate, Company, Course, Enrollment, Material, Module, News,
     PostTrainingEvaluation, Procedure, Quiz, QuizAttempt, Signatory, SopEvaluation,
     SopEvaluationAttempt, TpkkpAssessment, TpkkpResponse, User};
-use App\Support\{DataContoh, Diagnosa, Ikon};
+use App\Support\{Ai, DataContoh, Diagnosa, Ikon};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -138,6 +138,9 @@ class SystemController extends Controller
                 ['url' => route('signatories.index'), 'label' => 'Penanda Tangan',
                  'sub' => 'sertifikat', 'warna' => '#F57C00',
                  'ikon' => 'M12 3l2 4 4 .6-3 3 .8 4-3.8-2-3.8 2 .8-4-3-3 4-.6zM6 21s2-4 6-4 6 4 6 4'],
+                ['url' => route('admin.ai'), 'label' => 'Integrasi AI',
+                 'sub' => 'kunci API sendiri', 'warna' => '#7C3AED',
+                 'ikon' => 'M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1'],
                 ['url' => route('kuesioner.admin'), 'label' => 'Kuesioner PTPKKP',
                  'sub' => 'tautan & hasil', 'warna' => '#22C55E',
                  'ikon' => 'M7 3h7l4 4v14H7a1 1 0 01-1-1V4a1 1 0 011-1zM14 3v4h4M9.5 12h5M9.5 15.5h5'],
@@ -263,6 +266,16 @@ class SystemController extends Controller
                 'berat' => self::PERBAIKAN[$k]['berat'],
                 'url'   => route('admin.system.perbaiki', $k),
             ], array_keys(self::PERBAIKAN)),
+
+            /* Pendamping AI hanya ditawarkan bila kuncinya memang
+               terpasang. Tombol yang selalu ada lalu selalu menjawab
+               "belum diaktifkan" mengajari orang untuk tidak
+               menekannya. */
+            'ai' => [
+                'aktif' => Ai::aktif(),
+                'url'   => route('admin.ai.diagnosa'),
+                'atur'  => route('admin.ai'),
+            ],
 
             'tautan' => [
                 'sistem'      => route('admin.system'),

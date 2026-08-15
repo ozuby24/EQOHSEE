@@ -10,7 +10,7 @@ use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiT
     BlastingController, CostController, DispatchController, PermitController, EnergyController, EngineeringController, EnvironmentController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\{BantuanController, ChatController};
-use App\Http\Controllers\Admin\{CompanyController, SystemController, UserController};
+use App\Http\Controllers\Admin\{AiController, CompanyController, SystemController, UserController};
 use Illuminate\Support\Facades\Route;
 
 /* ============ VERIFIKASI SERTIFIKAT (publik) ============ */
@@ -655,6 +655,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('system/maintenance/{aksi}', [SystemController::class,'maintenance'])->name('system.maintenance');
 
         Route::get('system/diagnosa',           [SystemController::class,'diagnosa'])->name('system.diagnosa');
+
+        /* Integrasi AI. Kunci API dimasukkan lewat halaman ini, bukan
+           lewat .env di server — yang paling berkepentingan menyalakan
+           asisten justru yang paling tidak punya akses SSH. */
+        Route::get('ai',            [AiController::class,'index'])->name('ai');
+        Route::post('ai',           [AiController::class,'simpan'])->name('ai.simpan');
+        Route::post('ai/uji',       [AiController::class,'uji'])->name('ai.uji');
+        Route::delete('ai/kunci',   [AiController::class,'hapus'])->name('ai.hapus');
+        Route::post('ai/diagnosa',  [AiController::class,'tanyaDiagnosa'])->name('ai.diagnosa');
         Route::post('system/perbaiki/{aksi}',   [SystemController::class,'perbaiki'])->name('system.perbaiki');
 
         // Data contoh. Penandaan dan pemuatan sengaja dua rute terpisah:

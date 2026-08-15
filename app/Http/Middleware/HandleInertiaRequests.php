@@ -46,6 +46,12 @@ class HandleInertiaRequests extends Middleware
             'kilat' => fn () => [
                 'sukses' => $request->session()->get('sukses') ?? $request->session()->get('ok'),
                 'galat'  => $request->session()->get('galat'),
+
+                /* Jawaban asisten AI dibawa terpisah dari 'sukses'.
+                   Jawabannya berparagraf, sementara bilah 'sukses'
+                   dirancang untuk satu kalimat — dan yang paling perlu
+                   dibaca justru akan terpotong di situ. */
+                'aiJawaban' => $request->session()->get('aiJawaban'),
             ],
 
             'status' => fn () => $request->session()->get('status'),

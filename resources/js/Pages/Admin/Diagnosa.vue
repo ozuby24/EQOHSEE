@@ -47,6 +47,13 @@ function perbaiki(p: HalamanDiagnosa['perbaikan'][number]) {
   perbaikanForm.post(p.url, { preserveScroll: true });
 }
 
+const jawabanAi = computed<string | null>(() => (usePage().props.kilat as any)?.aiJawaban ?? null);
+const tanyaForm = useForm({ pertanyaan: '' });
+
+function tanyaAi() {
+  tanyaForm.post(props.ai.url, { preserveScroll: true });
+}
+
 function periksaUlang() {
   router.reload({ only: ['hasil', 'ringkas', 'dijalankan'] });
 }
@@ -169,6 +176,39 @@ function periksaUlang() {
           Seluruh {{ hasil.length }} pemeriksaan lolos. Centang "Tampilkan yang aman" untuk melihat rinciannya.
         </p>
       </div>
+    </section>
+
+    <!-- Pendamping AI -->
+    <section v-if="ai.aktif" class="bg-white rounded-2xl shadow-card border border-stone-100 p-5">
+      <h3 class="text-[14px] font-bold text-cam-ink mb-1">Tanya AI tentang temuan ini</h3>
+      <p class="text-[11.5px] text-stone-500 leading-relaxed mb-3.5">
+        Daftar temuan di atas dikirim ke asisten untuk diurutkan menurut yang paling mendesak.
+        Yang dikirim hanya temuannya — bukan isi basis data, bukan <code>.env</code>, bukan kode.
+        Ia menasihati dan tidak menjalankan apa pun.
+      </p>
+
+      <form class="flex flex-wrap gap-2" @submit.prevent="tanyaAi">
+        <input v-model="tanyaForm.pertanyaan" maxlength="500"
+               placeholder="Mana yang harus saya tangani lebih dulu, dan mengapa?"
+               class="flex-1 min-w-[240px] rounded-xl border-stone-200 text-[12.5px]">
+        <button type="submit" :disabled="tanyaForm.processing"
+                class="rounded-xl bg-cam-lime-deep px-4 py-2 text-[11.5px] font-bold text-white
+                       hover:brightness-95 transition disabled:opacity-40">
+          {{ tanyaForm.processing ? 'Menanyakan…' : 'Tanya' }}
+        </button>
+      </form>
+
+      <div v-if="jawabanAi"
+           class="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-4 text-[12.5px]
+                  text-stone-700 leading-relaxed whitespace-pre-wrap">{{ jawabanAi }}</div>
+    </section>
+
+    <section v-else class="rounded-2xl border border-stone-200 bg-stone-50 px-5 py-4">
+      <p class="text-[12px] text-stone-600 leading-relaxed">
+        Asisten AI belum diaktifkan. Dengan kunci API sendiri, temuan di atas dapat diurutkan
+        menurut yang paling mendesak —
+        <Link :href="ai.atur" class="text-cam-lime-deep font-semibold hover:underline">atur di Integrasi AI</Link>.
+      </p>
     </section>
 
     <!-- Perbaikan -->

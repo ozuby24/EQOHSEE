@@ -49,6 +49,8 @@ export interface KerangkaMenu {
 export interface Kilat {
   sukses?: string | null;
   galat?: string | null;
+  /** Jawaban asisten AI — berparagraf, jadi dibawa terpisah dari `sukses`. */
+  aiJawaban?: string | null;
 }
 
 /** Prop yang dibagikan ke SELURUH halaman Inertia. */
@@ -1517,6 +1519,23 @@ export interface HalamanSistem {
   pemeliharaan: Array<{ aksi: string; label: string; url: string }>;
 }
 
+export interface HalamanAi {
+  judul: string; subjudul: string;
+  penyedia: Array<{
+    kode: string; nama: string; modelBawaan: string;
+    contohModel: string[]; kunciDari: string;
+    /* Sengaja tidak ada bidang untuk kuncinya sendiri: server tidak
+       pernah mengirimkannya, dan bidang yang tersedia cepat atau lambat
+       akan diisi seseorang. */
+    terpasang: boolean; ekor: string | null; dariBerkas: boolean;
+  }>;
+  terpilih: string;
+  model: string;
+  maksToken: number;
+  aktif: boolean;
+  tautan: { simpan: string; uji: string; hapus: string; sistem: string; diagnosa: string };
+}
+
 export interface HalamanDiagnosa {
   judul: string; subjudul: string;
   hasil: Array<{
@@ -1530,6 +1549,7 @@ export interface HalamanDiagnosa {
   ringkas: Record<string, number>;
   dijalankan: string;
   perbaikan: Array<{ aksi: string; label: string; ket: string; berat: boolean; url: string }>;
+  ai: { aktif: boolean; url: string; atur: string };
   tautan: { sistem: string; pemeliharaan: string };
 }
 

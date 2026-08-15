@@ -136,6 +136,7 @@ final class Diagnosa
             'bocor-publik'   => fn () => self::bocorPublik(),
             'administrator'  => fn () => self::administrator(),
             'perusahaan-contoh' => fn () => self::perusahaanContoh(),
+            'kunci-ai'       => fn () => self::kunciAi(),
 
             /* ── basis data ── */
             'migrasi'        => fn () => self::migrasi(),
@@ -387,6 +388,60 @@ final class Diagnosa
             'tindakan' => $nama
                 ? 'Bila salah satunya sudah dipakai bekerja, lepas tandanya di Pusat Kendali sekarang.'
                 : null,
+        ];
+    }
+
+    /**
+     * Kunci AI yang tersimpan tetapi tidak dapat dibaca.
+     *
+     * Kuncinya dienkripsi dengan APP_KEY. Bila APP_KEY berganti — dipulihkan
+     * dari cadangan, atau dibuat ulang karena dikira hilang — kuncinya masih
+     * ada di basis data tetapi tidak lagi dapat dibuka. Asistennya lalu diam
+     * seolah belum pernah diatur, sementara halaman pengaturannya
+     * memperlihatkan sesuatu yang tersimpan. Dua keterangan yang saling
+     * membantah, dan tidak satu pun galat yang menengahi.
+     */
+    private static function kunciAi(): array
+    {
+        if (!Schema::hasTable('app_settings')) {
+            return self::lewat('Keamanan', 'Kunci AI', 'tabel pengaturan belum ada');
+        }
+
+        $tersimpan = DB::table('app_settings')->where('key', 'like', 'ai_kunci_%')->pluck('key');
+        $rusak = [];
+
+        foreach ($tersimpan as $k) {
+            $penyedia = str_replace('ai_kunci_', '', $k);
+
+            if (!Ai::punyaKunci($penyedia)) $rusak[] = $penyedia;
+        }
+
+        if ($rusak) {
+            return [
+                'kelompok' => 'Keamanan',
+                'judul'    => 'Kunci AI',
+                'keadaan'  => self::PERHATIAN,
+                'nilai'    => 'tidak terbaca: '.implode(', ', $rusak),
+                'uraian'   => 'Kunci tersimpan tetapi tidak dapat didekripsi — hampir selalu berarti '
+                    .'APP_KEY berganti sesudah kuncinya disimpan. Asistennya diam seolah belum '
+                    .'pernah diatur, sementara halaman pengaturannya memperlihatkan sesuatu yang ada.',
+                'tindakan' => 'Masukkan ulang kunci API di halaman Integrasi AI; yang lama tidak '
+                    .'dapat dipulihkan dan memang tidak perlu.',
+            ];
+        }
+
+        return [
+            'kelompok' => 'Keamanan',
+            'judul'    => 'Kunci AI',
+            'keadaan'  => self::AMAN,
+            'nilai'    => Ai::aktif()
+                ? AiPenyedia::satu(Ai::penyedia())['nama'].' · '.Ai::model()
+                : 'belum diaktifkan',
+            'uraian'   => Ai::aktif()
+                ? 'Asisten AI aktif, dan kuncinya tersimpan terenkripsi.'
+                : 'Asisten AI mati. Itu keadaan yang sah — tanpa kunci, pertanyaan diteruskan '
+                  .'ke admin alih-alih dijawab dengan tebakan.',
+            'tindakan' => null,
         ];
     }
 
