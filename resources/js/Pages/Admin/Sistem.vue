@@ -71,7 +71,7 @@ function bersihkanLog() {
 
         <div class="grid sm:grid-cols-3 lg:grid-cols-5 gap-2 mt-5">
           <div v-for="s in server" :key="s.label" class="glass rounded-xl px-3.5 py-2.5">
-            <div class="text-[9px] uppercase tracking-[0.12em] text-white/40 font-bold clamp-1">{{ s.label }}</div>
+            <div class="text-[9px] uppercase tracking-[0.12em] text-white/62 font-bold clamp-1">{{ s.label }}</div>
             <div class="text-[12px] font-bold text-white mt-1 clamp-1">{{ s.nilai }}</div>
           </div>
         </div>

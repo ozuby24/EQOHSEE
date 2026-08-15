@@ -30,7 +30,14 @@ const jam = new Intl.DateTimeFormat('id-ID', {
 
 <template>
   <div class="min-h-screen min-h-[100dvh] grid lg:grid-cols-[1.15fr_.85fr] bg-[#FBFAF7] text-[#1B2024]">
-    <section class="relative overflow-hidden bg-[#0B1117] text-white p-8 sm:p-12 lg:p-14 flex flex-col justify-between min-h-[330px] lg:min-h-screen">
+    <!--
+      `pendar-rekaman` memasang dua lapisan: pendar hangat yang bergerak
+      perlahan dan vinyet yang diam. Keduanya di CSS, bukan inline, supaya
+      halaman depan dan halaman masuk memakai bahasa gerak yang sama —
+      dan supaya keduanya ikut berhenti pada satu tempat ketika pengguna
+      meminta gerakan dikurangi.
+    -->
+    <section class="pendar-rekaman sapuan bg-[#0B1117] text-white p-8 sm:p-12 lg:p-14 flex flex-col justify-between min-h-[330px] lg:min-h-screen">
       <video
         v-if="media.video && !kurangiGerak"
         :src="media.video" :poster="media.poster ?? undefined"
@@ -43,22 +50,6 @@ const jam = new Intl.DateTimeFormat('id-ID', {
 
       <div class="absolute inset-0 bg-[linear-gradient(180deg,rgba(11,17,23,.58),rgba(11,17,23,.18)_36%,rgba(11,17,23,.95))]"></div>
 
-      <!--
-        Vinyet dan pendar hangat, bukan kisi.
-        Kisi kotak yang saya pasang sebelumnya memang memberi pembanding
-        gerakan, tetapi harganya terlalu mahal: polanya berulang rapi di
-        atas rekaman dan membuat panelnya terbaca seperti kertas berpetak.
-        Vinyet melakukan pekerjaan yang sama dengan cara berlawanan —
-        menggelapkan tepi supaya mata jatuh ke tengah, tempat gerakannya
-        berada — dan sekaligus menutupi bagian tepi rekaman yang paling
-        banyak kehilangan detail saat dimampatkan.
-        Pendarnya mengikuti arah cahaya pada rekamannya sendiri, jadi ia
-        menyatu alih-alih menempel di atasnya.
-      -->
-      <div class="absolute inset-0 pointer-events-none"
-           style="background-image:
-             radial-gradient(58% 42% at 74% 12%, rgba(245,124,0,.20), transparent 68%),
-             radial-gradient(120% 96% at 50% 50%, transparent 42%, rgba(11,17,23,.72) 100%)"></div>
 
       <div class="relative z-10 flex items-center justify-between gap-4">
         <Link href="/" class="w-fit"><Wordmark :tinggi="28" /></Link>

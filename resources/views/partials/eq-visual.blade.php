@@ -166,12 +166,44 @@ body{
 
 .eq-sisi-bawah{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;
   margin-top:13px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)}
-.eq-sisi-bawah small{font-size:9.5px;color:rgba(255,255,255,.34);line-height:1.65}
-.eq-lipat{width:30px;height:30px;flex:none;border-radius:9px;display:grid;place-items:center;
-  color:rgba(255,255,255,.45);border:1px solid rgba(255,255,255,.1);
-  transition:background-color .18s,color .18s}
-.eq-lipat:hover{background:rgba(255,255,255,.09);color:#fff}
-.eq-lipat svg{width:15px;height:15px;transition:transform .28s cubic-bezier(.21,.6,.35,1)}
+/* Teks hak cipta. Sebelumnya .34 alfa di atas navy — sekitar 2,4:1,
+   di bawah ambang keterbacaan mana pun. Dinaikkan ke .58 supaya masih
+   jelas berperan sekunder tetapi tetap dapat dibaca. */
+.eq-sisi-bawah small{font-size:10px;color:rgba(255,255,255,.58);line-height:1.65}
+
+/* Tombol lipat.
+   DISEMBUNYIKAN di bawah 1024 px, sebab di sana ia memang tidak dapat
+   melakukan apa pun: keadaan terlipat hanya didefinisikan pada layar
+   lebar, dan di bawahnya bilah samping berupa laci yang menutup penuh.
+   Sebelumnya tombolnya tetap tampil dan tetap dapat ditekan — kelas
+   eq-sempit berpindah, tidak ada yang berubah di layar, dan tombolnya
+   terbaca sebagai rusak. Menyembunyikan yang tidak berfungsi lebih
+   jujur daripada menampilkan yang diam saja. */
+.eq-lipat{display:none}
+
+@media (min-width:1024px){
+  .eq-lipat{
+    /* Bidang sentuhnya 44 px sesuai anjuran ukuran sasaran minimum,
+       sementara chip yang terlihat tetap 30 px lewat kotak-dalam.
+       Sebelumnya 30 px seluruhnya — cukup untuk tetikus, meleset
+       untuk jari. */
+    width:44px;height:44px;flex:none;padding:7px;margin:-7px -7px -7px 0;
+    background:none;border:0;display:grid;place-items:center;cursor:pointer;
+  }
+  .eq-lipat::before{
+    content:"";position:absolute;width:30px;height:30px;border-radius:9px;
+    border:1px solid rgba(255,255,255,.16);
+    transition:background-color .18s,border-color .18s;
+  }
+  .eq-lipat{position:relative;color:rgba(255,255,255,.62)}
+  .eq-lipat:hover{color:#fff}
+  .eq-lipat:hover::before{background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.26)}
+  /* Umpan balik tekan bekerja pada sentuhan, tempat :hover tidak ada. */
+  .eq-lipat:active::before{background:rgba(255,255,255,.18)}
+  .eq-lipat:focus-visible::before{border-color:#FF9800;box-shadow:0 0 0 2px rgba(255,152,0,.35)}
+  .eq-lipat svg{width:15px;height:15px;position:relative;
+    transition:transform .28s cubic-bezier(.21,.6,.35,1)}
+}
 
 /* ── Keadaan terlipat (layar lebar saja) ── */
 @media (min-width:1024px){
@@ -598,6 +630,76 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] .border-stone-100,
 :root[data-tema="gelap"] .border-stone-200{border-color:#223238}
 :root[data-tema="gelap"] .bg-stone-50{background:#101A1E}
+
+/* ── Warna teks yang memang dirancang untuk latar terang ──
+   Tailwind menyusun tangga *-600 dan *-700 untuk dibaca di atas putih.
+   Di mode gelap kartunya menjadi gelap tetapi warna teksnya tetap, dan
+   hasilnya angka besar yang praktis tidak terbaca — terukur 1,64:1 pada
+   text-stone-700 di atas kartu gelap, jauh di bawah ambang mana pun.
+
+   Yang paling merugikan justru angka KPI: ia dicetak besar dan tebal
+   supaya terbaca sekilas, lalu menghilang persis pada mode yang dipakai
+   orang saat bekerja malam di ruang kendali.
+
+   Dipetakan ke tangga *-300 yang setara terangnya di atas gelap.
+   Cakupannya dibatasi pada `main` supaya tidak mengganggu bilah samping
+   dan tombol yang latarnya memang selalu berwarna. */
+:root[data-tema="gelap"] main .text-stone-700,
+:root[data-tema="gelap"] main .text-stone-800,
+:root[data-tema="gelap"] main .text-cam-ink{color:#D6DEE2}
+:root[data-tema="gelap"] main .text-stone-600{color:#AEBCC2}
+:root[data-tema="gelap"] main .text-stone-500{color:#93A3AA}
+:root[data-tema="gelap"] main .text-stone-400{color:#7E8E96}
+
+:root[data-tema="gelap"] main .text-sky-700{color:#7DD3FC}
+:root[data-tema="gelap"] main .text-violet-700{color:#C4B5FD}
+:root[data-tema="gelap"] main .text-emerald-700{color:#6EE7B7}
+:root[data-tema="gelap"] main .text-amber-700{color:#FCD34D}
+:root[data-tema="gelap"] main .text-orange-700{color:#FDBA74}
+:root[data-tema="gelap"] main .text-red-700,
+:root[data-tema="gelap"] main .text-red-600{color:#FCA5A5}
+:root[data-tema="gelap"] main .text-emerald-600{color:#5EEAD4}
+:root[data-tema="gelap"] main .text-cam-orange-dark{color:#FDBA74}
+:root[data-tema="gelap"] main .text-sky-600{color:#7DD3FC}
+:root[data-tema="gelap"] main .text-sky-800{color:#93D5FD}
+:root[data-tema="gelap"] main .text-violet-600{color:#C4B5FD}
+:root[data-tema="gelap"] main .text-amber-600{color:#FCD34D}
+:root[data-tema="gelap"] main .text-amber-800{color:#FDE08A}
+:root[data-tema="gelap"] main .text-emerald-800{color:#8FEFC8}
+:root[data-tema="gelap"] main .text-red-800{color:#FDBDBD}
+
+/* ── Bidang bernada terang di mode gelap ──
+   Kotak catatan dan kartu peringatan memakai latar bernada sangat muda
+   (bg-red-50, bg-amber-50, bg-cam-orange-soft). Latar itu tidak ikut
+   digelapkan, sehingga tetap krem di tengah halaman gelap — dan begitu
+   warna teks *-700 di atas dipetakan ke tangga terang, isinya berubah
+   dari gelap-di-atas-krem menjadi terang-di-atas-krem: terukur 1,24:1,
+   lebih buruk daripada sebelum diperbaiki.
+
+   Karena itu latarnya harus ikut digelapkan bersama teksnya. Nadanya
+   dipertahankan — merah tetap terbaca merah, kuning tetap kuning —
+   sebab warna itulah yang membedakan peringatan dari catatan biasa. */
+:root[data-tema="gelap"] main .bg-red-50{background:#2A1618}
+:root[data-tema="gelap"] main .bg-amber-50{background:#2A2213}
+:root[data-tema="gelap"] main .bg-emerald-50{background:#12251D}
+:root[data-tema="gelap"] main .bg-sky-50{background:#122029}
+:root[data-tema="gelap"] main .bg-cam-orange-soft,
+:root[data-tema="gelap"] main .bg-cam-lime-soft{background:#2A1E12}
+:root[data-tema="gelap"] main .border-red-100{border-color:#4A2226}
+:root[data-tema="gelap"] main .border-amber-100{border-color:#4A3A18}
+:root[data-tema="gelap"] main .border-emerald-100{border-color:#1D4034}
+:root[data-tema="gelap"] main .bg-red-50\/60{background:#241416}
+
+/* Keping kecil. Latarnya terang dan teksnya abu — di mode gelap ia
+   tertinggal sebagai satu-satunya bidang putih di halaman, dan teksnya
+   terukur 2,28:1 di atasnya. */
+:root[data-tema="gelap"] .eq-chip{background:#1A272C;border-color:#26363C;color:#B6C6CC}
+
+/* Tagline di bawah merek dan teks bantuan pada kaki bilah samping.
+   Keduanya alfa rendah di atas navy — 4,0:1, tepat di bawah ambang.
+   Dinaikkan secukupnya, tidak lebih: keduanya memang berperan sekunder. */
+.eq-merek small{color:rgba(255,255,255,.62)}
+.eq-bantuan-teks small{color:rgba(255,255,255,.62)}
 
 /* Warna perusahaan dipakai untuk aksen, bukan untuk seluruh permukaan:
    logo yang kebetulan sangat terang atau sangat pekat akan membuat teks
