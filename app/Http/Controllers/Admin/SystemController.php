@@ -149,7 +149,11 @@ class SystemController extends Controller
                hal-hal yang diperiksanya adalah hal yang tidak
                menimbulkan kecurigaan apa pun. */
             'diagnosa' => [
-                'ringkas' => Diagnosa::ringkas(Diagnosa::jalankan()),
+                // Simpanan, bukan hitung ulang: pemeriksaan lengkapnya
+                // menyentuh skema tiap tabel, dan halaman ini hanya
+                // menggambar satu lencana. Simpanannya dibuang oleh
+                // setiap tindakan yang dapat mengubah jawabannya.
+                'ringkas' => Diagnosa::ringkasTersimpan(),
                 'url'     => route('admin.system.diagnosa'),
             ],
 
@@ -189,6 +193,7 @@ class SystemController extends Controller
         ];
         abort_unless(isset($peta[$aksi]), 404);
 
+        Diagnosa::lupakanRingkas();
         Artisan::call($peta[$aksi][0]);
         ActivityLog::write('Pemeliharaan sistem', $peta[$aksi][0]);
 
@@ -236,14 +241,19 @@ class SystemController extends Controller
 
     public function diagnosa()
     {
-        $hasil = Diagnosa::jalankan();
+        $hasil   = Diagnosa::jalankan();
+        $ringkas = Diagnosa::ringkas($hasil);
+
+        // Lencana Pusat Kendali ikut disegarkan dari hitungan ini,
+        // supaya keduanya tidak pernah menyebut angka yang berbeda.
+        Diagnosa::simpanRingkas($ringkas);
 
         return Inertia::render('Admin/Diagnosa', [
             'judul'    => 'Diagnosa Sistem',
             'subjudul' => 'Hal yang bila salah tidak menimbulkan galat',
 
             'hasil'   => $hasil,
-            'ringkas' => Diagnosa::ringkas($hasil),
+            'ringkas' => $ringkas,
             'dijalankan' => now()->format('d M Y · H:i:s'),
 
             'perbaikan' => array_map(fn ($k) => [
@@ -280,16 +290,26 @@ class SystemController extends Controller
                                    .$this->artisan('route:cache')."\n"
                                    .$this->artisan('view:cache'),
                 'antrean-ulang'  => $this->artisan('queue:retry', ['id' => ['all']]),
-                'migrasi'        => $this->artisan('migrate', ['--force' => true]),
+                'migrasi'        => tap($this->artisan('migrate', ['--force' => true]),
+                    fn () => Diagnosa::lupakanSkema()),
                 'potong-log'     => $this->potongLog(),
             };
         } catch (\Throwable $e) {
+            /* Dibuang juga di jalur gagal. Perbaikan yang gagal di
+               tengah — migrasi yang menerapkan separuh berkasnya lalu
+               berhenti — tetap mengubah keadaan, dan lencana yang
+               menyimpan jawaban sebelumnya justru paling menyesatkan
+               tepat di saat itu. */
+            Diagnosa::lupakanSkema();
+            Diagnosa::lupakanRingkas();
+
             ActivityLog::write('Perbaikan sistem gagal', $aksi.' · '.$e->getMessage(), 'sistem');
 
             return back()->withErrors(['perbaikan' =>
                 self::PERBAIKAN[$aksi]['label'].' gagal: '.$e->getMessage()]);
         }
 
+        Diagnosa::lupakanRingkas();
         ActivityLog::write('Perbaikan sistem', self::PERBAIKAN[$aksi]['label'], 'sistem');
 
         $ringkas = trim(preg_replace('/\s*\n\s*/', ' · ', trim($keluaran)));
@@ -355,6 +375,7 @@ class SystemController extends Controller
 
         $company->update(['demo' => $data['demo']]);
 
+        Diagnosa::lupakanRingkas();
         ActivityLog::write($data['demo'] ? 'Tandai perusahaan contoh' : 'Lepas tanda perusahaan contoh',
             $company->name, 'sistem');
 
@@ -378,6 +399,7 @@ class SystemController extends Controller
             return back()->withErrors(['demo' => $e->getMessage()]);
         }
 
+        Diagnosa::lupakanRingkas();
         ActivityLog::write('Muat ulang data contoh',
             $company->name.' · '.$hasil['dihapus'].' dibuang, '
             .array_sum($hasil['dibuat']).' dibuat', 'sistem');

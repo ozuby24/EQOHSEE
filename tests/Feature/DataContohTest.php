@@ -6,6 +6,7 @@ use App\Models\{Company, GeoInstrumen, GeoLereng, GudangBarang, IzinKerja,
                 MineOperationalRecord, User, WaterSump, WaterSumpPump};
 use App\Support\{Alur, DataContoh};
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 /**
@@ -265,6 +266,159 @@ class DataContohTest extends TestCase
 
         $this->assertNotEmpty($hasil['catatan']);
         $this->assertStringContainsString('draf', $hasil['catatan'][0]);
+    }
+
+    /* ---------- tanggal ---------- */
+
+    /**
+     * Pemuat ini dijalankan kapan saja, dan aritmetika tanggalnya punya
+     * dua jebakan yang keduanya diam:
+     *
+     * - range(1, 0) di PHP menghasilkan [1, 0] yang menurun, bukan
+     *   senarai kosong. Pada bulan Januari itu membuat satu catatan
+     *   lahir dengan bulan 0, yang berguling ke Desember tahun lalu.
+     *
+     * - setMonth() sebelum setDay(): dijalankan pada tanggal 31,
+     *   setMonth(2) berguling ke Maret lebih dulu, sehingga catatan
+     *   Februari diam-diam tercatat sebagai Maret — dua catatan di satu
+     *   bulan, dan nol di bulan lain.
+     *
+     * Keduanya lolos seluruh uji selama ujinya kebetulan berjalan pada
+     * tanggal yang aman. Karena itu jamnya dibekukan di sini.
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('tanggalRawan')]
+    public function test_catatan_operasi_jatuh_pada_bulan_yang_benar(string $saat): void
+    {
+        Carbon::setTestNow($saat);
+
+        try {
+            $this->muat();
+
+            $baris = MineOperationalRecord::withoutGlobalScopes()
+                ->where('company_id', $this->contoh->id)->get();
+
+            $this->assertNotEmpty($baris, "Tidak ada catatan operasi pada {$saat}.");
+
+            $tahunIni = Carbon::parse($saat)->year;
+
+            foreach ($baris as $b) {
+                $t = Carbon::parse($b->tanggal);
+
+                $this->assertSame($tahunIni, $t->year,
+                    "Catatan {$b->tanggal} keluar dari tahun berjalan (dijalankan {$saat}).");
+                $this->assertLessThanOrEqual(Carbon::parse($saat)->month, $t->month,
+                    "Catatan {$b->tanggal} jatuh di bulan yang belum terjadi (dijalankan {$saat}).");
+            }
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    /**
+     * Tiap bulan yang sudah lewat harus punya persis satu catatan
+     * bulanan. Yang berguling membuat satu bulan berisi dua dan bulan
+     * tetangganya kosong — dan jumlah totalnya tetap sama, sehingga
+     * hitungan baris tidak pernah menunjukkannya.
+     */
+    public function test_setiap_bulan_lewat_terwakili_tepat_sekali(): void
+    {
+        Carbon::setTestNow('2026-08-31 09:00:00');
+
+        try {
+            $this->muat();
+
+            // Bulan berjalan diisi harian, jadi hanya bulan 1..7 yang
+            // memakai catatan bulanan tunggal.
+            $perBulan = MineOperationalRecord::withoutGlobalScopes()
+                ->where('company_id', $this->contoh->id)
+                ->get()
+                ->filter(fn ($b) => Carbon::parse($b->tanggal)->month < 8)
+                ->groupBy(fn ($b) => Carbon::parse($b->tanggal)->month)
+                ->map->count();
+
+            foreach (range(1, 7) as $b) {
+                $this->assertSame(1, $perBulan[$b] ?? 0,
+                    "Bulan {$b} terwakili ".($perBulan[$b] ?? 0).' kali, seharusnya sekali.');
+            }
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    /**
+     * Modul Operasi tidak boleh kosong, tanggal berapa pun pemuatnya
+     * dijalankan.
+     *
+     * Yang paling rawan 1 Januari: tidak ada bulan lewat untuk diisi
+     * dan tidak ada kemarin di bulan berjalan. Percobaan pertama
+     * menuntut "sampai kemarin" secara ketat dan menghasilkan nol
+     * catatan di sana — halaman terbuka penuh dengan seluruh
+     * indikatornya nol, persis bentuk kegagalan yang hendak dihindari
+     * data contoh.
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('tanggalRawan')]
+    public function test_modul_operasi_tidak_pernah_kosong(string $saat): void
+    {
+        Carbon::setTestNow($saat);
+
+        try {
+            $this->muat();
+
+            $n = MineOperationalRecord::withoutGlobalScopes()
+                ->where('company_id', $this->contoh->id)
+                ->where('status', Alur::DISETUJUI)->count();
+
+            $this->assertGreaterThan(0, $n,
+                "Modul Operasi kosong bila pemuat dijalankan {$saat}.");
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    /**
+     * Satu tanggal dan satu shift hanya boleh punya satu catatan.
+     *
+     * Ini bukan sekadar kerapian: tonase tiap catatan dijumlahkan apa
+     * adanya, sehingga dua catatan untuk shift yang sama berarti
+     * produksi terhitung dua kali. Angkanya tetap terlihat wajar —
+     * hanya terlalu besar — dan tidak ada yang menandainya.
+     *
+     * Gelang bulanan dan gelang harian mengisi rentang yang berbeda,
+     * dan uji inilah yang menjaga keduanya tidak pernah bertindih.
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('tanggalRawan')]
+    public function test_tidak_ada_shift_ganda(string $saat): void
+    {
+        Carbon::setTestNow($saat);
+
+        try {
+            $this->muat();
+
+            $ganda = MineOperationalRecord::withoutGlobalScopes()
+                ->where('company_id', $this->contoh->id)
+                ->get()
+                ->groupBy(fn ($b) => Carbon::parse($b->tanggal)->toDateString().' '.$b->shift)
+                ->filter(fn ($g) => $g->count() > 1)
+                ->keys()->all();
+
+            $this->assertSame([], $ganda,
+                "Shift terhitung lebih dari sekali (dijalankan {$saat}): ".implode(', ', $ganda));
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    /** @return array<string,array{string}> */
+    public static function tanggalRawan(): array
+    {
+        return [
+            'Januari (range menurun)'        => ['2026-01-15 09:00:00'],
+            'tanggal 1 Januari'              => ['2026-01-01 09:00:00'],
+            'tanggal 31 (bulan berguling)'   => ['2026-08-31 09:00:00'],
+            'tanggal 29 Februari kabisat'    => ['2028-02-29 09:00:00'],
+            'tanggal 30 di akhir tahun'      => ['2026-12-30 09:00:00'],
+            'tanggal 1 bulan tengah'         => ['2026-06-01 09:00:00'],
+        ];
     }
 
     /* ---------- data yang memang tidak sempurna ---------- */

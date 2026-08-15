@@ -26,6 +26,16 @@ class DiagnosaTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        /* Pemetaan skema di-memo untuk seumur proses. Antar uji itu
+           membuat hasilnya bergantung pada urutan berjalan — cacat yang
+           muncul dan hilang sendiri, dan yang paling mahal dikejar. */
+        Diagnosa::lupakanSkema();
+    }
+
     /** @return array<string,array<string,mixed>> hasil, dikunci per kode */
     private function periksa(): array
     {

@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Models\{ActivityLog, User};
+use App\Models\{ActivityLog, Company, User};
 use App\Support\Diagnosa;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\{Artisan, Cache};
 use Tests\TestCase;
 
 /**
@@ -25,6 +25,11 @@ class PusatKendaliDiagnosaTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        /* Pemetaan skema di-memo untuk seumur proses. Antar uji itu
+           membuat hasilnya bergantung pada urutan berjalan — cacat yang
+           muncul dan hilang sendiri, dan yang paling mahal dikejar. */
+        Diagnosa::lupakanSkema();
         $this->admin = User::factory()->create(['is_admin' => true]);
     }
 
@@ -76,6 +81,78 @@ class PusatKendaliDiagnosaTest extends TestCase
                 $this->assertArrayHasKey('ringkas', $d);
                 $this->assertArrayHasKey(Diagnosa::GAWAT, $d['ringkas']);
                 $this->assertSame(route('admin.system.diagnosa'), $d['url']);
+            });
+    }
+
+    /* ---------- simpanan lencana ---------- */
+
+    /**
+     * Lencana Pusat Kendali membaca simpanan supaya halaman itu tidak
+     * ikut menanggung ongkos pemeriksaan penuh. Simpanan itu harus
+     * dibuang oleh setiap tindakan yang dapat mengubah jawabannya —
+     * lencana yang tetap merah sesudah perbaikannya berhasil membuat
+     * orang mengulangi perbaikan yang sudah bekerja.
+     */
+    public function test_lencana_memakai_simpanan(): void
+    {
+        Cache::forget(Diagnosa::KUNCI_RINGKAS);
+
+        $this->actingAs($this->admin)->get(route('admin.system'))->assertOk();
+
+        $this->assertNotNull(Cache::get(Diagnosa::KUNCI_RINGKAS),
+            'Ringkasan tidak disimpan, sehingga tiap kunjungan menghitung ulang seluruhnya.');
+    }
+
+    public function test_perbaikan_membuang_simpanan_lencana(): void
+    {
+        Cache::put(Diagnosa::KUNCI_RINGKAS, ['gawat' => 99], 300);
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.system.perbaiki', 'tautan-storage'));
+
+        $this->assertNull(Cache::get(Diagnosa::KUNCI_RINGKAS),
+            'Simpanan lencana masih memuat keadaan sebelum perbaikan.');
+    }
+
+    public function test_pemeliharaan_membuang_simpanan_lencana(): void
+    {
+        Cache::put(Diagnosa::KUNCI_RINGKAS, ['gawat' => 99], 300);
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.system.maintenance', 'cache'));
+
+        $this->assertNull(Cache::get(Diagnosa::KUNCI_RINGKAS));
+    }
+
+    public function test_muat_data_contoh_membuang_simpanan_lencana(): void
+    {
+        $c = Company::create(['name' => 'PT Contoh', 'demo' => true]);
+        User::factory()->create(['company_id' => $c->id]);
+
+        Cache::put(Diagnosa::KUNCI_RINGKAS, ['gawat' => 99], 300);
+
+        $this->actingAs($this->admin)->post(route('admin.system.demo.muat', $c));
+
+        $this->assertNull(Cache::get(Diagnosa::KUNCI_RINGKAS));
+    }
+
+    /**
+     * Halaman diagnosa selalu menghitung ulang, dan menyegarkan
+     * lencananya sekalian — keduanya tidak boleh menyebut angka yang
+     * berbeda pada saat yang sama.
+     */
+    public function test_halaman_diagnosa_menyegarkan_lencana(): void
+    {
+        Cache::put(Diagnosa::KUNCI_RINGKAS, ['gawat' => 99], 300);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.system.diagnosa'))
+            ->assertInertia(function ($p) {
+                $ringkas = $p->toArray()['props']['ringkas'];
+
+                $this->assertSame($ringkas, Cache::get(Diagnosa::KUNCI_RINGKAS),
+                    'Lencana dan halaman diagnosa menyebut angka yang berbeda.');
+                $this->assertNotSame(99, $ringkas['gawat'] ?? null);
             });
     }
 

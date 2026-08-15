@@ -259,10 +259,18 @@ final class DataContoh
         $lalu = [104_800, 111_200, 98_600, 117_400, 108_100, 113_900,
                  121_300, 96_400, 109_700, 114_600, 102_900];
 
-        foreach (range(1, $this->kini->month - 1) as $b) {
+        /* `for`, bukan range(): range(1, 0) di PHP menghasilkan [1, 0]
+           yang menurun, bukan senarai kosong. Pada bulan Januari itu
+           berarti satu catatan dibuat dengan bulan 0 — yang berguling
+           menjadi Desember tahun sebelumnya. */
+        for ($b = 1; $b < $this->kini->month; $b++) {
             $r = $this->baru(MineOperationalRecord::class, [
                 'user_id' => $this->pengaju?->getKey(),
-                'tanggal' => $this->kini->copy()->setMonth($b)->setDay(15)->toDateString(),
+                /* Carbon::create, bukan setMonth()->setDay(): dijalankan
+                   pada tanggal 31, setMonth(2) berguling ke Maret lebih
+                   dulu, dan setDay(15) sesudahnya sudah terlambat —
+                   catatan Februari diam-diam tercatat sebagai Maret. */
+                'tanggal' => Carbon::create($this->kini->year, $b, 15)->toDateString(),
                 'shift' => 'siang', 'pit' => 'Pit Utara', 'area' => 'Blok '.$b,
                 'material' => 'batubara', 'produksi_ton' => $lalu[($b - 1) % count($lalu)],
                 'overburden_bcm' => round($lalu[($b - 1) % count($lalu)] * 8.6),
@@ -282,9 +290,22 @@ final class DataContoh
            Sampai KEMARIN, bukan sampai hari ini: shift hari berjalan
            memang belum sepatutnya dilaporkan, dan kelengkapan yang
            menuntutnya adalah kelengkapan yang salah hitung. */
-        $hariIni = (int) $this->kini->day;
+        /* Sampai kemarin — kecuali pada tanggal 1, yang tidak punya
+           kemarin di bulan ini.
 
-        foreach (range(1, max(1, $hariIni - 1)) as $h) {
+           Di situ pilihannya dua-duanya cacat: mengisi hari berjalan
+           membuat kelengkapan shift sedikit terlalu optimis, sementara
+           tidak mengisi apa pun membuat seluruh modul Operasi kosong —
+           dan pada 1 Januari kosongnya bahkan mencakup seluruh tahun,
+           sebab tidak ada satu pun bulan lewat untuk diisi.
+
+           Yang dipilih yang pertama. Halaman kosong tidak pernah salah,
+           dan justru karena itu ia tidak membuktikan apa pun — padahal
+           membuktikan itulah satu-satunya alasan data contoh ada. */
+        $hariIni = (int) $this->kini->day;
+        $sampai  = max(1, $hariIni - 1);
+
+        for ($h = 1; $h <= $sampai; $h++) {
             foreach (['siang', 'malam'] as $j => $shift) {
                 // Satu hari libur tiap pekan, dan shift malam lebih
                 // rendah — keduanya wajar, dan keduanya membuat

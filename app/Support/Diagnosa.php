@@ -3,7 +3,7 @@
 namespace App\Support;
 
 use App\Models\{Certificate, Company, User};
-use Illuminate\Support\Facades\{DB, Schema};
+use Illuminate\Support\Facades\{Cache, DB, Schema};
 
 /**
  * Pemeriksaan mandiri sistem.
@@ -37,6 +37,9 @@ final class Diagnosa
 
     /** Urutan keparahan, dipakai mengurutkan hasil. */
     private const BOBOT = [self::GAWAT => 0, self::PERHATIAN => 1, self::TAK_TAHU => 2, self::AMAN => 3];
+
+    /** @var array<string,list<string>>|null peta tabel => kolom, dibaca sekali */
+    private static ?array $petaKolom = null;
 
     /**
      * Jalankan seluruh pemeriksaan.
@@ -73,6 +76,41 @@ final class Diagnosa
                                  <=> [self::BOBOT[$b['keadaan']], $b['kelompok']]);
 
         return $hasil;
+    }
+
+    /** Kunci simpanan ringkasan bagi lencana Pusat Kendali. */
+    public const KUNCI_RINGKAS = 'diagnosa.ringkas';
+
+    /**
+     * Ringkasan yang boleh sedikit basi.
+     *
+     * Pemeriksaan lengkapnya menyentuh skema setiap tabel — ongkos yang
+     * wajar bagi halaman diagnosa, tetapi tidak bagi Pusat Kendali yang
+     * hanya menggambar satu lencana. Karena itu lencananya membaca
+     * simpanan, dan halaman diagnosanya selalu menghitung ulang.
+     *
+     * Simpanannya dibuang setiap kali ada tindakan yang dapat
+     * mengubah jawabannya — perbaikan, pemeliharaan, pemuatan data
+     * contoh. Lencana yang tetap merah sesudah perbaikannya berhasil
+     * membuat orang mengulangi perbaikan yang sudah bekerja.
+     *
+     * @return array<string,int>
+     */
+    public static function ringkasTersimpan(int $detik = 300): array
+    {
+        return Cache::remember(self::KUNCI_RINGKAS, $detik,
+            fn () => self::ringkas(self::jalankan()));
+    }
+
+    /** Simpan ringkasan yang baru saja dihitung, dan buang yang lama. */
+    public static function simpanRingkas(array $ringkas, int $detik = 300): void
+    {
+        Cache::put(self::KUNCI_RINGKAS, $ringkas, $detik);
+    }
+
+    public static function lupakanRingkas(): void
+    {
+        Cache::forget(self::KUNCI_RINGKAS);
     }
 
     /** @return array<string,int> jumlah per keadaan */
@@ -810,29 +848,80 @@ final class Diagnosa
     /** Tabel yang punya kolom company_id. */
     private static function tabelBerpemilik(): array
     {
-        return array_values(array_filter(
-            self::semuaTabel(),
-            fn ($t) => Schema::hasColumn($t, 'company_id'),
+        return array_keys(array_filter(
+            self::petaKolom(),
+            fn ($kolom) => in_array('company_id', $kolom, true),
         ));
     }
 
     /** Tabel yang memakai alur tinjauan. */
     private static function tabelBeralur(): array
     {
-        return array_values(array_filter(
-            self::semuaTabel(),
-            fn ($t) => Schema::hasColumn($t, 'status') && Schema::hasColumn($t, 'diajukan_pada'),
+        return array_keys(array_filter(
+            self::petaKolom(),
+            fn ($kolom) => in_array('status', $kolom, true)
+                        && in_array('diajukan_pada', $kolom, true),
         ));
     }
 
+    /**
+     * Peta tabel => nama kolomnya, dibaca sekali saja.
+     *
+     * Percobaan pertama memanggil Schema::hasColumn() per tabel di dalam
+     * dua penyaring terpisah. Tiap panggilan itu satu kueri skema, dan
+     * dengan tabel sebanyak ini ongkosnya 512 kueri untuk satu kali
+     * diagnosa — bukan kesalahan hasil, melainkan ongkos yang menempel
+     * pada halaman Pusat Kendali yang hanya ingin menampilkan satu
+     * lencana ringkasan.
+     *
+     * @return array<string,list<string>>
+     */
+    private static function petaKolom(): array
+    {
+        if (self::$petaKolom !== null) return self::$petaKolom;
+
+        $peta = [];
+        foreach (self::semuaTabel() as $t) {
+            try {
+                $peta[$t] = Schema::getColumnListing($t);
+            } catch (\Throwable) {
+                // Tabel yang hilang di tengah jalan tidak boleh
+                // menghentikan pemetaan tabel lainnya.
+                $peta[$t] = [];
+            }
+        }
+
+        return self::$petaKolom = $peta;
+    }
+
+    /**
+     * Nama seluruh tabel.
+     *
+     * Sengaja TIDAK di-cache lintas permintaan: tombol "Jalankan
+     * migrasi" ada di halaman yang sama, dan daftar tabel yang basi
+     * sesudahnya membuat diagnosa melaporkan keadaan sebelum migrasi
+     * seolah keadaan sesudahnya.
+     */
     private static function semuaTabel(): array
     {
-        static $tabel = null;
-
-        return $tabel ??= array_map(
+        return array_map(
             fn ($t) => is_array($t) ? array_values($t)[0] : $t->name ?? $t,
             array_map(fn ($t) => (array) $t, Schema::getTables()),
         );
+    }
+
+    /**
+     * Lupakan pemetaan skema.
+     *
+     * Dipanggil sesudah migrasi berjalan: tombol "Jalankan migrasi" ada
+     * di halaman yang sama, dan pemetaan yang basi sesudahnya membuat
+     * diagnosa melaporkan keadaan sebelum migrasi seolah keadaan
+     * sesudahnya — tepat pada saat orang sedang memeriksa apakah
+     * perbaikannya berhasil.
+     */
+    public static function lupakanSkema(): void
+    {
+        self::$petaKolom = null;
     }
 
     private static function lewat(string $kelompok, string $judul, string $sebab): array
