@@ -2,9 +2,28 @@
 import { computed } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 
-const props = defineProps<{ mode: 'dashboard' | 'order' | 'armada'; [key: string]: any }>();
-const halaman = usePage<any>();
-const isAdmin = computed(() => Boolean(halaman.props.pengguna?.admin));
+/*
+  Prop halaman diambil lewat usePage(), bukan defineProps.
+
+  Bentuk `defineProps<{ mode: string; [key: string]: any }>()` yang
+  dipakai sebelumnya terbaca seolah menerima apa saja. Yang sebenarnya
+  terjadi: penyusun Vue tidak dapat menurunkan nama prop dari sebuah
+  index signature, sehingga HANYA `mode` yang benar-benar terdaftar
+  sebagai prop. Seluruh sisanya jatuh ke $attrs — dan karena template
+  ini berakar jamak (<Head> beserta pembungkusnya), atribut itu bahkan
+  tidak tersangkut di mana pun.
+
+  Akibatnya halaman merender kosong seluruhnya: tidak ada galat, tidak
+  ada peringatan pada build produksi, hanya data yang dikirim server dan
+  tidak pernah sampai ke tampilan. Uji sisi server tetap hijau, sebab
+  yang salah bukan propnya melainkan penerimaannya.
+
+  usePage() mengambil prop halaman apa adanya — termasuk yang dibagikan
+  middleware — sehingga tidak ada daftar nama yang harus dirawat sejajar
+  dengan controller-nya, dan tidak ada nama yang dapat hilang diam-diam.
+*/
+const props = usePage<any>().props as any;
+const isAdmin = computed(() => Boolean(props.pengguna?.admin));
 
 const judul: Record<string, string> = {
   dashboard: 'Maintenance & Reliability Center',

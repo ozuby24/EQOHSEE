@@ -116,7 +116,7 @@ const label: Record<string, string> = {
           </button>
 
           <button type="button" :disabled="form.processing || !form.isi.trim()" @click="kirim('admin')"
-                  class="rounded-xl border border-stone-200 px-4 py-2 text-[12.5px] font-semibold text-[#0F1720]
+                  class="rounded-xl border border-stone-200 px-4 py-2 text-[12.5px] font-semibold text-cam-ink
                          hover:border-stone-400 transition disabled:opacity-40 disabled:cursor-not-allowed">
             {{ form.processing && form.saluran === 'admin' ? 'Mengirim…' : 'Kirim ke Admin' }}
           </button>

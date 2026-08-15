@@ -7,7 +7,7 @@ use App\Http\Controllers\{
 };
 use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiTemuanController, HazardController,
     HazardExportController, InspectionController, InspectionTemplateController,
-    BlastingController, EnergyController, EngineeringController, EnvironmentController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
+    BlastingController, DispatchController, EnergyController, EngineeringController, EnvironmentController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\{BantuanController, ChatController};
 use App\Http\Controllers\Admin\{CompanyController, SystemController, UserController};
@@ -346,6 +346,34 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::post('tindak',         [BlastingController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
         Route::put('tindak/{tindak}', [BlastingController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
+    });
+
+    /* ============ Dispatch & Pengangkutan ============
+       Mencatat bagaimana tonase terangkut, bukan berapa — tonase di sini
+       adalah bagian dari tonase pit pada Mine Operations, bukan
+       tambahannya. Penimbangan sengaja berdiri di luar alur tinjauan:
+       ia pembacaan alat, bukan pendapat. */
+    Route::prefix('angkutan')->name('angkutan.')->group(function () {
+        Route::get('/',       [DispatchController::class, 'index'])->name('index');
+        Route::get('regu',    [DispatchController::class, 'regu'])->name('regu');
+        Route::get('armada',  [DispatchController::class, 'armada'])->name('armada');
+        Route::get('muatan',  [DispatchController::class, 'muatan'])->name('muatan');
+        Route::get('cetak',   [DispatchController::class, 'cetak'])->name('cetak');
+
+        Route::post('armada',         [DispatchController::class, 'simpanAlat'])->name('alat.simpan');
+        Route::delete('armada/{alat}', [DispatchController::class, 'hapusAlat'])->middleware('can:admin')->name('alat.hapus');
+
+        Route::post('regu',           [DispatchController::class, 'simpanRegu'])->name('regu.simpan');
+        Route::delete('regu/{regu}',  [DispatchController::class, 'hapusRegu'])->middleware('can:admin')->name('regu.hapus');
+        Route::post('regu/{regu}/ajukan',  [DispatchController::class, 'ajukan'])->name('ajukan');
+        Route::post('regu/{regu}/setujui', [DispatchController::class, 'setujui'])->name('setujui');
+        Route::post('regu/{regu}/tolak',   [DispatchController::class, 'tolak'])->name('tolak');
+
+        Route::post('regu/{regu}/muatan',  [DispatchController::class, 'simpanMuatan'])->name('muatan.simpan');
+        Route::delete('muatan/{muatan}',   [DispatchController::class, 'hapusMuatan'])->middleware('can:admin')->name('muatan.hapus');
+
+        Route::post('tindak',         [DispatchController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
+        Route::put('tindak/{tindak}', [DispatchController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
     });
 
     /* ============ Pemantauan Kestabilan Lereng ============

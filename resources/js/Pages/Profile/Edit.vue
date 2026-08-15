@@ -57,18 +57,18 @@ function hapusAkun() {
   <div class="max-w-[900px] mx-auto space-y-5">
     <section class="bg-white rounded-2xl shadow-card border border-stone-100 overflow-hidden">
       <div class="px-6 py-5 border-b border-stone-100">
-        <h2 class="text-[15px] font-bold text-[#0F1720]">Informasi Profil</h2>
+        <h2 class="text-[15px] font-bold text-cam-ink">Informasi Profil</h2>
         <p class="text-[12.5px] text-stone-500 mt-1">Perbarui nama dan alamat email akun Anda.</p>
       </div>
       <form class="px-6 py-5 space-y-4" @submit.prevent="simpanProfil">
         <div>
-          <label for="profile-name" class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Nama</label>
+          <label for="profile-name" class="block text-[12px] font-semibold text-cam-ink mb-1.5">Nama</label>
           <input id="profile-name" v-model="profile.name" autocomplete="name" required
                  class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
           <p v-if="profile.errors.name" class="text-[11.5px] text-red-600 mt-1">{{ profile.errors.name }}</p>
         </div>
         <div>
-          <label for="profile-email" class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Email</label>
+          <label for="profile-email" class="block text-[12px] font-semibold text-cam-ink mb-1.5">Email</label>
           <input id="profile-email" v-model="profile.email" type="email" autocomplete="username" required
                  class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
           <p v-if="profile.errors.email" class="text-[11.5px] text-red-600 mt-1">{{ profile.errors.email }}</p>
@@ -85,7 +85,7 @@ function hapusAkun() {
 
     <section class="bg-white rounded-2xl shadow-card border border-stone-100 overflow-hidden">
       <div class="px-6 py-5 border-b border-stone-100">
-        <h2 class="text-[15px] font-bold text-[#0F1720]">Ganti Kata Sandi</h2>
+        <h2 class="text-[15px] font-bold text-cam-ink">Ganti Kata Sandi</h2>
         <p class="text-[12.5px] text-stone-500 mt-1">Gunakan kata sandi panjang dan unik untuk menjaga keamanan akun.</p>
       </div>
       <form class="px-6 py-5 space-y-4" @submit.prevent="gantiSandi">
@@ -94,7 +94,7 @@ function hapusAkun() {
           ['password', 'Kata Sandi Baru'],
           ['password_confirmation', 'Konfirmasi Kata Sandi'],
         ]" :key="field[0]">
-          <label :for="`password-${field[0]}`" class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">{{ field[1] }}</label>
+          <label :for="`password-${field[0]}`" class="block text-[12px] font-semibold text-cam-ink mb-1.5">{{ field[1] }}</label>
           <input :id="`password-${field[0]}`" v-model="password[field[0]]" type="password" required
                  class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
           <p v-if="password.errors[field[0]]" class="text-[11.5px] text-red-600 mt-1">{{ password.errors[field[0]] }}</p>
@@ -118,7 +118,7 @@ function hapusAkun() {
 
   <div v-if="modalHapus" class="fixed inset-0 z-50 grid place-items-center bg-black/40 px-4" @click.self="modalHapus = false">
     <form class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" @submit.prevent="hapusAkun">
-      <h2 class="text-lg font-bold text-[#0F1720]">Konfirmasi penghapusan akun</h2>
+      <h2 class="text-lg font-bold text-cam-ink">Konfirmasi penghapusan akun</h2>
       <p class="mt-2 text-sm text-stone-600">Masukkan kata sandi untuk mengonfirmasi tindakan permanen ini.</p>
       <input v-model="hapus.password" type="password" autocomplete="current-password" required placeholder="Kata sandi"
              class="mt-5 w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">

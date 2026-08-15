@@ -1,8 +1,28 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 
-const props = defineProps<{ mode: string; [key: string]: any }>();
+/*
+  Prop halaman diambil lewat usePage(), bukan defineProps.
+
+  Bentuk `defineProps<{ mode: string; [key: string]: any }>()` yang
+  dipakai sebelumnya terbaca seolah menerima apa saja. Yang sebenarnya
+  terjadi: penyusun Vue tidak dapat menurunkan nama prop dari sebuah
+  index signature, sehingga HANYA `mode` yang benar-benar terdaftar
+  sebagai prop. Seluruh sisanya jatuh ke $attrs — dan karena template
+  ini berakar jamak (<Head> beserta pembungkusnya), atribut itu bahkan
+  tidak tersangkut di mana pun.
+
+  Akibatnya halaman merender kosong seluruhnya: tidak ada galat, tidak
+  ada peringatan pada build produksi, hanya data yang dikirim server dan
+  tidak pernah sampai ke tampilan. Uji sisi server tetap hijau, sebab
+  yang salah bukan propnya melainkan penerimaannya.
+
+  usePage() mengambil prop halaman apa adanya — termasuk yang dibagikan
+  middleware — sehingga tidak ada daftar nama yang harus dirawat sejajar
+  dengan controller-nya, dan tidak ada nama yang dapat hilang diam-diam.
+*/
+const props = usePage<any>().props as any;
 const audit = computed(() => props.audit ?? {});
 const audits = computed(() => props.audits?.data ?? []);
 const title: Record<string, string> = { index: 'Audit SMKP', form: 'Periode Audit SMKP', show: 'Ringkasan Audit SMKP', acuan: 'Acuan Kriteria SMKP', tahap1: 'Tahap I — Permulaan Audit', rencana: 'Rencana Audit', rapat: 'Rapat Audit', nilai: 'Penilaian Elemen SMKP', temuan: 'Temuan dan Tindakan Perbaikan' };
@@ -41,7 +61,7 @@ function nilaiAwal(kode: string) { return { ...(audit.value.hasil?.[kode] ?? {})
 <template>
   <Head :title="title[props.mode] ?? 'SMKP'" />
   <div class="max-w-[1400px] mx-auto space-y-5">
-    <section class="flex flex-wrap items-end justify-between gap-4"><div><h2 class="text-xl font-bold text-[#0F1720]">{{ title[props.mode] ?? 'SMKP' }}</h2><p class="text-[12.5px] text-stone-500 mt-1">Audit keselamatan pertambangan berbasis tujuh elemen SMKP.</p></div><div class="flex gap-2"><Link v-if="props.mode === 'index'" href="/smkp/buat" class="eq-btn-utama">Buat Periode Audit</Link><Link v-if="props.mode === 'show'" :href="`/smkp/${audit.id}/laporan`" class="eq-btn-lain" target="_blank">Laporan cetak</Link></div></section>
+    <section class="flex flex-wrap items-end justify-between gap-4"><div><h2 class="text-xl font-bold text-cam-ink">{{ title[props.mode] ?? 'SMKP' }}</h2><p class="text-[12.5px] text-stone-500 mt-1">Audit keselamatan pertambangan berbasis tujuh elemen SMKP.</p></div><div class="flex gap-2"><Link v-if="props.mode === 'index'" href="/smkp/buat" class="eq-btn-utama">Buat Periode Audit</Link><Link v-if="props.mode === 'show'" :href="`/smkp/${audit.id}/laporan`" class="eq-btn-lain" target="_blank">Laporan cetak</Link></div></section>
 
     <section v-if="props.mode === 'index'" class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-x-auto"><table class="min-w-full text-left text-[12px]"><thead><tr class="border-b border-stone-100 text-stone-400"><th class="px-5 py-3">Periode</th><th class="px-5 py-3">Perusahaan</th><th class="px-5 py-3">Status</th><th class="px-5 py-3">Temuan</th><th class="px-5 py-3"></th></tr></thead><tbody><tr v-for="item in audits" :key="item.id" class="border-b border-stone-50"><td class="px-5 py-3"><Link :href="`/smkp/${item.id}`" class="font-semibold text-cam-lime-deep">{{ item.judul || `Audit ${item.tahun}` }}</Link><small class="block text-stone-400">{{ item.tahun }}</small></td><td class="px-5 py-3">{{ item.company?.name ?? '—' }}</td><td class="px-5 py-3">{{ item.status }}</td><td class="px-5 py-3">{{ item.findings_count ?? 0 }} <span class="text-stone-400">({{ item.findings_open_count ?? 0 }} terbuka)</span></td><td class="px-5 py-3 text-right"><Link :href="`/smkp/${item.id}/ubah`" class="text-cam-lime-deep mr-2">Ubah</Link></td></tr></tbody></table><div v-if="!audits.length" class="p-8 text-center text-[13px] text-stone-500">Belum ada periode audit.</div><div v-if="props.audits?.links" class="flex gap-1 p-4"><Link v-for="link in props.audits.links" :key="link.label" :href="link.url ?? '# '" class="rounded px-2 py-1 text-[11px]" :class="link.active ? 'bg-cam-ink text-white' : 'bg-stone-100 text-stone-500'" v-html="link.label" /></div></section>
 

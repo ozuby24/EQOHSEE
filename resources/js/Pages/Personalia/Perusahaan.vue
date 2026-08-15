@@ -85,7 +85,7 @@ function hapusLogo() {
     <div v-if="admin" class="bg-white rounded-2xl shadow-card border border-stone-100 p-4">
       <div class="flex flex-wrap items-end gap-3">
         <div class="flex-1 min-w-[220px]">
-          <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Perusahaan yang dibuka</label>
+          <label class="block text-[12px] font-semibold text-cam-ink mb-1.5">Perusahaan yang dibuka</label>
           <select v-if="daftar.length" v-model="pilih" @change="bukaPerusahaan(pilih!)"
                   class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]
                          focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0">
@@ -95,7 +95,7 @@ function hapusLogo() {
         </div>
 
         <button type="button" @click="menambah = !menambah"
-                class="rounded-xl border border-stone-200 px-4 py-2.5 text-[12.5px] font-semibold text-[#0F1720]
+                class="rounded-xl border border-stone-200 px-4 py-2.5 text-[12.5px] font-semibold text-cam-ink
                        hover:border-stone-400 transition shrink-0">
           {{ menambah ? 'Batal' : '+ Perusahaan baru' }}
         </button>
@@ -103,7 +103,7 @@ function hapusLogo() {
 
       <div v-if="menambah" class="mt-4 pt-4 border-t border-stone-100 grid gap-3 sm:grid-cols-[2fr_1fr_auto] sm:items-end">
         <div>
-          <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">
+          <label class="block text-[12px] font-semibold text-cam-ink mb-1.5">
             Nama Perusahaan <span class="text-red-500">*</span>
           </label>
           <input v-model="tambah.name" type="text" placeholder="PT Contoh Tambang"
@@ -112,7 +112,7 @@ function hapusLogo() {
           <p v-if="tambah.errors.name" class="text-[11.5px] text-red-600 mt-1">{{ tambah.errors.name }}</p>
         </div>
         <div>
-          <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Kode</label>
+          <label class="block text-[12px] font-semibold text-cam-ink mb-1.5">Kode</label>
           <input v-model="tambah.code" type="text" placeholder="PCT"
                  class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]
                         focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0">
@@ -126,7 +126,7 @@ function hapusLogo() {
     </div>
 
     <div v-if="!ada" class="bg-white rounded-2xl shadow-card border border-stone-100 px-6 py-10 text-center">
-      <p class="text-[14px] font-bold text-[#0F1720]">
+      <p class="text-[14px] font-bold text-cam-ink">
         {{ admin ? 'Belum ada perusahaan terdaftar' : 'Akun Anda belum terhubung ke perusahaan' }}
       </p>
       <p class="text-[12.5px] text-stone-500 mt-1.5">
@@ -138,7 +138,7 @@ function hapusLogo() {
 
     <div v-else class="bg-white rounded-2xl shadow-card border border-stone-100 overflow-hidden">
       <div class="px-6 py-5 border-b border-stone-100">
-        <h3 class="text-[15px] font-bold text-[#0F1720]">{{ nama }}</h3>
+        <h3 class="text-[15px] font-bold text-cam-ink">{{ nama }}</h3>
         <p class="text-[12.5px] text-stone-500 mt-1">
           <template v-if="bisaSunting">
             Data ini tercetak pada kop dokumen, laporan audit, dan sertifikat.
@@ -161,12 +161,12 @@ function hapusLogo() {
           </div>
 
           <div class="flex-1 min-w-[220px]">
-            <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Logo Perusahaan</label>
+            <label class="block text-[12px] font-semibold text-cam-ink mb-1.5">Logo Perusahaan</label>
             <input type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml"
                    :disabled="!bisaSunting" @change="pilihLogo"
                    class="block w-full text-[12.5px] text-stone-600
                           file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0
-                          file:text-[12px] file:font-semibold file:bg-stone-100 file:text-[#0F1720]">
+                          file:text-[12px] file:font-semibold file:bg-stone-100 file:text-cam-ink">
             <p v-if="pratinjau" class="text-[11.5px] text-amber-700 font-semibold mt-1.5">
               Logo baru dipilih — warna aksen baru dihitung setelah Anda menyimpan.
             </p>
@@ -195,7 +195,7 @@ function hapusLogo() {
 
       <div class="px-6 py-5 grid gap-4 sm:grid-cols-2">
         <div v-for="m in medan" :key="m.nama" :class="m.lebar ? 'sm:col-span-2' : ''">
-          <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">
+          <label class="block text-[12px] font-semibold text-cam-ink mb-1.5">
             {{ m.label }} <span v-if="m.wajib" class="text-red-500">*</span>
           </label>
           <input v-model="form[m.nama]" type="text" :disabled="!bisaUbah(m)"
@@ -208,7 +208,7 @@ function hapusLogo() {
         </div>
 
         <div class="sm:col-span-2">
-          <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Alamat</label>
+          <label class="block text-[12px] font-semibold text-cam-ink mb-1.5">Alamat</label>
           <textarea v-model="form.address" rows="3" :disabled="!bisaSunting"
                     class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]
                            disabled:bg-stone-50 disabled:text-stone-500

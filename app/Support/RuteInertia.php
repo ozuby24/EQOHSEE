@@ -159,6 +159,13 @@ final class RuteInertia
         'peledakan.getaran',
         'peledakan.cetak',
 
+        /* Dispatch & Pengangkutan */
+        'angkutan.index',
+        'angkutan.regu',
+        'angkutan.armada',
+        'angkutan.muatan',
+        'angkutan.cetak',
+
         /* Kestabilan Lereng */
         'geoteknik.index',
         'geoteknik.bacaan',

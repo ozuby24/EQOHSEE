@@ -89,6 +89,11 @@ class Modules
              'ket'  => 'Rancangan peledakan, powder factor, perkiraan getaran dengan tetapan situs yang dikalibrasi sendiri, isi maksimum per tundaan, radius lemparan, dan fragmentasi.',
              'ikon' => 'M12 2.5 9.5 9 3 11.5 9.5 14l2.5 6.5 2.5-6.5 6.5-2.5L14.5 9Z'],
 
+            ['nama' => 'Dispatch & Hauling', 'status' => 'aktif', 'pilar' => 'engineering',
+             'rute' => 'angkutan.index',
+             'ket'  => 'Keseimbangan armada, rincian waktu edar, antrean di muka gali, kepatuhan muatan 10/10/20, dan tonase yang hilang karena menunggu.',
+             'ikon' => 'M2.5 16.5V7a1 1 0 0 1 1-1h9v10.5m0 0h-9m9 0h2m6.5 0h-2m2 0V12l-2.5-3.5H15m6 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm-12.5 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z'],
+
             ['nama' => 'Kestabilan Lereng', 'status' => 'aktif', 'pilar' => 'engineering',
              'rute' => 'geoteknik.index',
              'ket'  => 'Pemantauan gerakan lereng, kebalikan laju, penyimpangan geometri terbangun, dan acuan kajian geoteknik — alat bantu keputusan, bukan pengganti penilaian tenaga kompeten.',

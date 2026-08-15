@@ -1,8 +1,28 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 
-const props = defineProps<{ mode: string; [key: string]: any }>();
+/*
+  Prop halaman diambil lewat usePage(), bukan defineProps.
+
+  Bentuk `defineProps<{ mode: string; [key: string]: any }>()` yang
+  dipakai sebelumnya terbaca seolah menerima apa saja. Yang sebenarnya
+  terjadi: penyusun Vue tidak dapat menurunkan nama prop dari sebuah
+  index signature, sehingga HANYA `mode` yang benar-benar terdaftar
+  sebagai prop. Seluruh sisanya jatuh ke $attrs — dan karena template
+  ini berakar jamak (<Head> beserta pembungkusnya), atribut itu bahkan
+  tidak tersangkut di mana pun.
+
+  Akibatnya halaman merender kosong seluruhnya: tidak ada galat, tidak
+  ada peringatan pada build produksi, hanya data yang dikirim server dan
+  tidak pernah sampai ke tampilan. Uji sisi server tetap hijau, sebab
+  yang salah bukan propnya melainkan penerimaannya.
+
+  usePage() mengambil prop halaman apa adanya — termasuk yang dibagikan
+  middleware — sehingga tidak ada daftar nama yang harus dirawat sejajar
+  dengan controller-nya, dan tidak ada nama yang dapat hilang diam-diam.
+*/
+const props = usePage<any>().props as any;
 const titles: Record<string, string> = { dashboard: 'Keselamatan Operasi', register: 'Register Objek KO', form: 'Objek Keselamatan Operasi', rincian: 'Rincian Objek', kelayakan: 'Kelayakan Operasi', perawatan: 'Perawatan dan Pemeliharaan', pengaman: 'Perangkat Pengaman', kajian: 'Kajian Teknis', tenaga: 'Tenaga Teknis', tindak: 'Tindak Lanjut', pengaturan: 'Pengaturan KO' };
 const kategori = ['Sarana', 'Prasarana', 'Instalasi', 'Peralatan'];
 const kritis = ['Tinggi', 'Sedang', 'Rendah'];
@@ -41,7 +61,7 @@ function hapus(path: string) { if (confirm('Hapus data ini?')) router.delete(pat
 <template>
   <Head :title="titles[props.mode] ?? 'KO'" />
   <div class="max-w-[1400px] mx-auto space-y-5">
-    <section class="flex flex-wrap items-end justify-between gap-4"><div><h2 class="text-xl font-bold text-[#0F1720]">{{ titles[props.mode] ?? 'Keselamatan Operasi' }}</h2><p class="text-[12.5px] text-stone-500 mt-1">Register objek, kelayakan, perawatan, pengaman, dan tindakan keselamatan operasi.</p></div><div class="flex gap-2"><Link v-if="props.mode === 'register' && props.bolehUbah" href="/ko/objek/baru" class="eq-btn-utama">Tambah Objek</Link><button v-if="props.mode === 'tindak' && props.bolehUbah" type="button" class="eq-btn-lain" @click="tarikPeringatan">Tarik peringatan</button></div></section>
+    <section class="flex flex-wrap items-end justify-between gap-4"><div><h2 class="text-xl font-bold text-cam-ink">{{ titles[props.mode] ?? 'Keselamatan Operasi' }}</h2><p class="text-[12.5px] text-stone-500 mt-1">Register objek, kelayakan, perawatan, pengaman, dan tindakan keselamatan operasi.</p></div><div class="flex gap-2"><Link v-if="props.mode === 'register' && props.bolehUbah" href="/ko/objek/baru" class="eq-btn-utama">Tambah Objek</Link><button v-if="props.mode === 'tindak' && props.bolehUbah" type="button" class="eq-btn-lain" @click="tarikPeringatan">Tarik peringatan</button></div></section>
     <nav class="flex gap-1 overflow-x-auto rounded-xl bg-stone-100 p-1 text-[11px]"><Link v-for="tab in [['dashboard','Dashboard','/ko'],['register','Register','/ko/register'],['kelayakan','Kelayakan','/ko/kelayakan'],['perawatan','Perawatan','/ko/perawatan'],['pengaman','Pengaman','/ko/pengaman'],['kajian','Kajian','/ko/kajian'],['tenaga','Tenaga','/ko/tenaga'],['tindak','Tindak lanjut','/ko/tindak'],['pengaturan','Pengaturan','/ko/pengaturan']]" :key="tab[0]" :href="tab[2]" class="whitespace-nowrap rounded-lg px-3 py-2 text-stone-500 hover:bg-white" :class="props.mode === tab[0] ? 'bg-white font-bold text-cam-ink shadow-sm' : ''">{{ tab[1] }}</Link></nav>
 
     <section v-if="props.mode === 'dashboard'" class="space-y-5"><div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><article v-for="(value, key) in props.c" :key="String(key)" class="rounded-2xl bg-white border border-stone-100 shadow-card p-4"><p class="text-[10px] uppercase font-bold text-stone-400">{{ String(key).replaceAll('_', ' ') }}</p><strong class="text-xl block mt-1">{{ angka(value) }}</strong></article></div><div v-if="props.sub?.items" class="grid gap-3 md:grid-cols-2 lg:grid-cols-5"><article v-for="item in props.sub.items" :key="item.n" class="rounded-2xl bg-white border border-stone-100 shadow-card p-4"><b class="text-[12px]">{{ item.n }}. {{ item.nama }}</b><strong class="block text-xl mt-2">{{ item.pct }}%</strong><p class="text-[11px] text-stone-500 mt-1">{{ item.ket }}</p></article></div><div v-if="props.peringatan?.length" class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><h3 class="font-bold text-[14px] mb-3">Peringatan yang perlu ditindak</h3><div v-for="item in props.peringatan" :key="item.objek?.id ?? item.ket" class="border-b border-stone-100 py-3 text-[12px]"><b>{{ item.objek?.kode ?? 'Objek' }}</b><span class="ml-2 text-stone-500">{{ item.ket ?? item.jenis }}</span></div></div></section>

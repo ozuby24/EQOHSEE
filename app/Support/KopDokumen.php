@@ -98,6 +98,11 @@ final class KopDokumen
                 'judul' => 'LAPORAN PENGEBORAN DAN PELEDAKAN',
                 'kode'  => 'OHSE-V.091',
             ],
+            'laporan-angkutan' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN PENGANGKUTAN DAN PENGATURAN ARMADA',
+                'kode'  => 'OHSE-V.101',
+            ],
             'laporan-geoteknik' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN PEMANTAUAN KESTABILAN LERENG',

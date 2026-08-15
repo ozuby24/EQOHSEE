@@ -700,6 +700,30 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] main .border-emerald-100{border-color:#1D4034}
 :root[data-tema="gelap"] main .bg-red-50\/60{background:#241416}
 
+/* Keping status — Draf, Menunggu tinjauan, Disetujui, Ditolak — memakai
+   nada -100 yang lebih pekat daripada kotak catatan di atas, dan
+   luputnya punya sebab yang layak dicatat: selama sepuluh halaman modul
+   merender kosong, tidak ada satu pun keping status yang pernah tergambar
+   di layar, sehingga pemindaian kontras terdahulu tidak menemukan apa
+   pun untuk diukur. Begitu halaman-halaman itu hidup, keping hijau
+   "Disetujui" terukur 1,34:1 dan merah "Melanggar" 1,55:1 — praktis
+   tidak terbaca.
+
+   Nadanya tetap dipertahankan: warna keping inilah yang membedakan
+   disetujui dari ditolak pada pandangan pertama, dan menyeragamkannya
+   menjadi abu berarti membuang satu-satunya isyarat yang terbaca tanpa
+   membaca. */
+:root[data-tema="gelap"] main .bg-stone-100{background:#1F2B30}
+:root[data-tema="gelap"] main .bg-red-100{background:#3B1D21}
+:root[data-tema="gelap"] main .bg-emerald-100{background:#153529}
+:root[data-tema="gelap"] main .bg-amber-100{background:#3A2D12}
+:root[data-tema="gelap"] main .bg-orange-100{background:#3A2412}
+
+/* Tanda wajib isi pada formulir. Terukur 4,46:1 di mode gelap — meleset
+   dari ambang oleh selisih yang tak terlihat, tetapi tanda inilah yang
+   memberi tahu kolom mana yang tidak boleh kosong. */
+:root[data-tema="gelap"] main .text-red-500{color:#F87171}
+
 /* Keping kecil. Latarnya terang dan teksnya abu — di mode gelap ia
    tertinggal sebagai satu-satunya bidang putih di halaman, dan teksnya
    terukur 2,28:1 di atasnya. */

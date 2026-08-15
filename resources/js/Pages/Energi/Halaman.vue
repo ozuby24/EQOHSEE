@@ -1,9 +1,29 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import EnergyInput from '../../Components/EnergyInput.vue';
 
-const props = defineProps<{ mode: string; [key: string]: any }>();
+/*
+  Prop halaman diambil lewat usePage(), bukan defineProps.
+
+  Bentuk `defineProps<{ mode: string; [key: string]: any }>()` yang
+  dipakai sebelumnya terbaca seolah menerima apa saja. Yang sebenarnya
+  terjadi: penyusun Vue tidak dapat menurunkan nama prop dari sebuah
+  index signature, sehingga HANYA `mode` yang benar-benar terdaftar
+  sebagai prop. Seluruh sisanya jatuh ke $attrs — dan karena template
+  ini berakar jamak (<Head> beserta pembungkusnya), atribut itu bahkan
+  tidak tersangkut di mana pun.
+
+  Akibatnya halaman merender kosong seluruhnya: tidak ada galat, tidak
+  ada peringatan pada build produksi, hanya data yang dikirim server dan
+  tidak pernah sampai ke tampilan. Uji sisi server tetap hijau, sebab
+  yang salah bukan propnya melainkan penerimaannya.
+
+  usePage() mengambil prop halaman apa adanya — termasuk yang dibagikan
+  middleware — sehingga tidak ada daftar nama yang harus dirawat sejajar
+  dengan controller-nya, dan tidak ada nama yang dapat hilang diam-diam.
+*/
+const props = usePage<any>().props as any;
 const judul: Record<string, string> = {
   index: 'Energy Performance Center', konsumsi: 'Energy Consumption', fuel: 'Fuel Management', listrik: 'Electricity',
   equipment: 'Equipment Performance', 'equipment-show': 'Equipment Detail', kpi: 'Energy KPI', baseline: 'Baseline & Target',
@@ -40,10 +60,10 @@ function hitung() { pesanKalkulator.value = 'Perhitungan menggunakan faktor konv
 <template>
   <Head :title="judul[props.mode] ?? 'Energi'" />
   <div class="max-w-[1400px] mx-auto space-y-5">
-    <section class="flex flex-wrap items-end justify-between gap-4"><div><h2 class="text-xl font-bold text-[#0F1720]">{{ judul[props.mode] ?? 'Energi' }}</h2><p class="text-[12.5px] text-stone-500 mt-1">Data, indikator, dan tindakan pengendalian kinerja energi.</p></div><form v-if="props.dari || props.sampai" class="flex items-end gap-2" @submit.prevent="filter"><label class="text-[11px] font-semibold text-stone-500">Dari<input v-model="rentang.dari" type="date" class="block mt-1 rounded-lg border-stone-200 text-[12px]"></label><label class="text-[11px] font-semibold text-stone-500">Sampai<input v-model="rentang.sampai" type="date" class="block mt-1 rounded-lg border-stone-200 text-[12px]"></label><button class="eq-btn-utama" style="padding:9px 14px">Terapkan</button></form></section>
+    <section class="flex flex-wrap items-end justify-between gap-4"><div><h2 class="text-xl font-bold text-cam-ink">{{ judul[props.mode] ?? 'Energi' }}</h2><p class="text-[12.5px] text-stone-500 mt-1">Data, indikator, dan tindakan pengendalian kinerja energi.</p></div><form v-if="props.dari || props.sampai" class="flex items-end gap-2" @submit.prevent="filter"><label class="text-[11px] font-semibold text-stone-500">Dari<input v-model="rentang.dari" type="date" class="block mt-1 rounded-lg border-stone-200 text-[12px]"></label><label class="text-[11px] font-semibold text-stone-500">Sampai<input v-model="rentang.sampai" type="date" class="block mt-1 rounded-lg border-stone-200 text-[12px]"></label><button class="eq-btn-utama" style="padding:9px 14px">Terapkan</button></form></section>
     <nav class="flex gap-1 overflow-x-auto rounded-xl bg-stone-100 p-1 text-[11px]"><Link v-for="tab in tabs" :key="tab[0]" :href="tab[2]" class="whitespace-nowrap rounded-lg px-3 py-2 text-stone-500 hover:bg-white hover:text-cam-ink" :class="props.mode === tab[0] ? 'bg-white font-bold text-cam-ink shadow-sm' : ''">{{ tab[1] }}</Link></nav>
 
-    <section v-if="Object.keys(data).length && !['listrik','equipment-show'].includes(props.mode)" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><article v-for="(value, key) in data" :key="String(key)" v-show="typeof value !== 'object'" class="rounded-2xl bg-white border border-stone-100 shadow-card p-4"><p class="text-[10px] uppercase tracking-wider font-bold text-stone-400">{{ String(key).replaceAll('_', ' ') }}</p><strong class="block text-xl text-[#0F1720] mt-1">{{ angka(value) }}</strong></article></section>
+    <section v-if="Object.keys(data).length && !['listrik','equipment-show'].includes(props.mode)" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><article v-for="(value, key) in data" :key="String(key)" v-show="typeof value !== 'object'" class="rounded-2xl bg-white border border-stone-100 shadow-card p-4"><p class="text-[10px] uppercase tracking-wider font-bold text-stone-400">{{ String(key).replaceAll('_', ' ') }}</p><strong class="block text-xl text-cam-ink mt-1">{{ angka(value) }}</strong></article></section>
     <section v-if="props.baseline" class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><div class="flex flex-wrap items-center justify-between gap-2"><h3 class="font-bold text-[14px]">Baseline aktif</h3><Link href="/energi/baseline" class="text-[11px] text-cam-lime-deep font-semibold">Kelola baseline</Link></div><div class="grid gap-3 sm:grid-cols-3 mt-3 text-[12.5px]"><span>Tahun: <b>{{ props.baseline.tahun }}</b></span><span>Baseline: <b>{{ angka(props.baseline.baseline_gj_ton) }} GJ/ton</b></span><span>Target: <b>{{ angka(props.baseline.target_gj_ton) }} GJ/ton</b></span></div></section>
 
     <section v-if="props.mode === 'fuel'" class="grid gap-3 md:grid-cols-4"><template v-for="(value, key) in props.recon" :key="String(key)"><article v-if="typeof value !== 'object'" class="rounded-2xl bg-white border border-stone-100 shadow-card p-4"><p class="text-[10px] uppercase font-bold text-stone-400">{{ String(key) }}</p><b class="text-xl">{{ angka(value) }}</b></article></template></section>

@@ -83,7 +83,7 @@ onBeforeUnmount(() => { if (jeda) clearTimeout(jeda); });
     </div>
 
     <div v-if="!orang.length" class="bg-white rounded-2xl shadow-card border border-stone-100 px-6 py-12 text-center">
-      <p class="text-[13.5px] font-bold text-[#0F1720]">
+      <p class="text-[13.5px] font-bold text-cam-ink">
         {{ cari ? 'Tidak ada yang cocok dengan pencarian Anda' : 'Belum ada rekan terdaftar' }}
       </p>
     </div>
@@ -101,7 +101,7 @@ onBeforeUnmount(() => { if (jeda) clearTimeout(jeda); });
           </span>
 
           <div class="min-w-0 flex-1">
-            <p class="text-[13px] font-bold text-[#0F1720] truncate">{{ o.nama }}</p>
+            <p class="text-[13px] font-bold text-cam-ink truncate">{{ o.nama }}</p>
             <p class="text-[11.5px] text-stone-500 truncate">
               {{ o.jabatan ?? '—' }}<template v-if="o.departemen"> · {{ o.departemen }}</template>
             </p>
