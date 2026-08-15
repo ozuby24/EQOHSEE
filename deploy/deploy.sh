@@ -22,6 +22,24 @@ DOMAIN_UTAMA="$(echo "$SERVER_NAME" | awk '{print $1}')"
 echo "==> Pulling latest code"
 cd "$REPO_DIR"
 
+# Izin berkas di server diatur dari luar Git — lihat `chmod -R 775` pada
+# langkah "Setting permissions" di bawah. Chmod itu ikut mengenai berkas
+# yang DILACAK Git: sebelas berkas .gitignore di dalam storage/ dan
+# bootstrap/cache/ tercatat 100644 di index, dan sesudah chmod menjadi
+# 775 di disk.
+#
+# Git membaca selisih itu sebagai perubahan isi. Akibatnya deploy yang
+# berhasil membuat worktree server kotor secara permanen, dan deploy
+# BERIKUTNYA ditolak kirim.sh dengan "Masih ada perubahan yang belum
+# di-commit" — daftar berkas yang tidak pernah disunting siapa pun.
+# Kegagalannya menuduh orang menyunting di server, padahal skrip inilah
+# yang mengubahnya.
+#
+# core.fileMode=false membuat Git mengabaikan bit izin pada klon ini
+# saja. Aman di sini justru karena izinnya memang bukan urusan Git:
+# yang menentukan adalah chmod di bawah, tiap kali deploy berjalan.
+git config core.fileMode false
+
 # Bash membaca skrip sambil menjalankannya, berdasarkan posisi byte. `git pull`
 # di sini dapat mengganti isi berkas yang sedang dibaca itu juga — dan bila
 # panjangnya bergeser, perintah berikutnya dibaca dari tengah baris lain.

@@ -148,7 +148,16 @@ hijau "    Tersambung."
 # tanpa jejak — dan justru suntingan semacam itu yang biasanya berisi
 # perbaikan mendesak yang belum sempat masuk repo.
 tahap "Memeriksa keadaan repo di VPS"
-KOTOR="$($SSH "$VPS_HOST" "cd '$VPS_DIR' 2>/dev/null && git status --porcelain || echo '__TIDAK_ADA__'")"
+# `-c core.fileMode=false`: deploy.sh menjalankan `chmod -R 775` pada
+# storage/ dan bootstrap/cache/, dan chmod itu ikut mengenai sebelas
+# berkas .gitignore yang DILACAK Git. Tanpa pengecualian ini, setiap
+# deploy yang berhasil membuat deploy berikutnya ditolak — dengan daftar
+# berkas yang tidak pernah disunting siapa pun, sehingga tuduhannya
+# jatuh pada orang yang salah.
+#
+# Yang diabaikan hanya bit izinnya. Suntingan isi di server — yang
+# justru menjadi alasan pemeriksaan ini ada — tetap tertangkap.
+KOTOR="$($SSH "$VPS_HOST" "cd '$VPS_DIR' 2>/dev/null && git -c core.fileMode=false status --porcelain || echo '__TIDAK_ADA__'")"
 if [ "$KOTOR" = "__TIDAK_ADA__" ]; then
     gagal "Direktori '$VPS_DIR' tidak ada atau bukan repo Git di VPS."
 elif [ -n "$KOTOR" ]; then
