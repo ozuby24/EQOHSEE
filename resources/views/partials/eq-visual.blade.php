@@ -582,13 +582,32 @@ main a{transition:color .16s}
 /* Permukaan kartu. Ditulis sebagai daftar pemilih, bukan satu kelas
    bersama, karena kartu di aplikasi ini lahir dari beberapa generasi
    penulisan dan belum sempat disatukan. */
+/* Latar kartu pada mode gelap.
+
+   Pemilihnya harus menyasar elemen yang benar-benar MEMBAWA latar
+   putihnya, bukan wadah di atasnya. `.eq-modul` sempat terdaftar di
+   sini padahal latar putihnya ada pada `.eq-modul a`: wadahnya menjadi
+   gelap, kartunya tetap putih, sementara --eq-judul sudah berubah
+   menjadi #E8EFF2. Hasilnya judul nyaris putih di atas kartu putih —
+   terukur 1,16:1, praktis tidak terbaca, dan justru pada enam pintasan
+   modul di halaman pertama yang dilihat orang.
+
+   `.eq-admin-angka` bahkan tidak pernah terdaftar sama sekali,
+   sekalipun ia berbagi baris deklarasi yang sama dengan
+   `.eq-kategori a` yang terdaftar. Keduanya jenis kelalaian yang
+   diperingatkan catatan di bawah, dan keduanya terjadi pada daftar
+   latar, bukan pada daftar warna teks.
+
+   Yang menjaganya sekarang uji, bukan kewaspadaan: lihat
+   ModeGelapLatarTest. */
 :root[data-tema="gelap"] main .bg-white,
 :root[data-tema="gelap"] .eq-panel,
 :root[data-tema="gelap"] .eq-kpi,
 :root[data-tema="gelap"] .eq-kursus,
-:root[data-tema="gelap"] .eq-modul,
+:root[data-tema="gelap"] .eq-modul a,
 :root[data-tema="gelap"] .eq-warta,
 :root[data-tema="gelap"] .eq-kategori > a,
+:root[data-tema="gelap"] .eq-admin-angka,
 :root[data-tema="gelap"] .kartu-lux{
   background:#141F23;border-color:#223238;color:#D6DEE2}
 
