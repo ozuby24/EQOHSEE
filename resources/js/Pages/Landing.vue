@@ -36,6 +36,19 @@ const props = defineProps<{
 
 const pilarTerpilih = ref<string | null>(null);
 const videoTerbuka = ref(false);
+
+/**
+ * Pengguna yang meminta gerakan dikurangi mendapat poster diam.
+ *
+ * Bukan sekadar sopan santun: latar bergerak memicu mual dan pusing pada
+ * sebagian orang, dan halaman depan adalah tempat mereka tidak punya
+ * pilihan untuk menghindarinya. Dibaca sekali saat pemasangan — bukan
+ * lewat kelas CSS — supaya videonya memang tidak diunduh sama sekali.
+ */
+const kurangiGerak = ref(
+  typeof window !== 'undefined'
+  && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true,
+);
 const pilarList = computed(() => Object.entries(props.pilar));
 
 function togglePilar(slug: string) {
@@ -58,8 +71,35 @@ function togglePilar(slug: string) {
     </header>
 
     <section id="beranda" class="relative min-h-[min(100svh,820px)] brand-gradient text-white overflow-hidden flex items-center pt-20">
-      <img v-if="hero.poster" :src="hero.poster" alt="" class="absolute inset-0 w-full h-full object-cover opacity-35">
+      <!--
+        Rekamannya diputar sebagai latar, bukan hanya disimpan di balik
+        tombol. Sebelumnya video hero sudah ada tetapi yang tergambar di
+        sini hanya posternya, sehingga halaman depan tampak diam padahal
+        berkasnya sudah terunduh.
+
+        `muted` bukan pilihan gaya melainkan syarat: peramban menolak
+        memutar video bersuara tanpa pengguna mengklik lebih dulu, dan
+        penolakan itu tidak memunculkan galat — videonya hanya diam di
+        bingkai pertama. `playsinline` menahan iOS membuka pemutar layar
+        penuh di atas halaman.
+
+        Posternya tetap dipasang: ia yang tampil selama video belum siap,
+        dan yang menggantikannya sepenuhnya ketika pengguna meminta
+        gerakan dikurangi.
+      -->
+      <video
+        v-if="hero.video && !kurangiGerak"
+        :src="hero.video" :poster="hero.poster ?? undefined"
+        autoplay muted loop playsinline preload="metadata"
+        aria-hidden="true"
+        class="absolute inset-0 w-full h-full object-cover opacity-40"
+      ></video>
+      <img v-else-if="hero.poster" :src="hero.poster" alt="" class="absolute inset-0 w-full h-full object-cover opacity-35">
+
       <div class="absolute inset-0 bg-gradient-to-r from-cam-black/95 via-cam-black/65 to-cam-black/20"></div>
+
+      <!-- Rautan halus di tepi bawah supaya potongan videonya tidak terbaca sebagai garis. -->
+      <div class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-cam-black to-transparent"></div>
       <div class="relative w-full max-w-6xl mx-auto px-5 py-16">
         <div class="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-8 lg:gap-10 items-center">
           <div>

@@ -1,15 +1,69 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { ref } from 'vue';
+import { Link, usePage } from '@inertiajs/vue3';
 import Wordmark from '../Components/Wordmark.vue';
+
+/**
+ * Latar halaman masuk.
+ *
+ * Sebelumnya sebuah foto 900 piksel diregangkan memenuhi panel setinggi
+ * layar. Pada layar berkerapatan ganda ia diperbesar sekitar tiga kali
+ * lipat, dan pecahnya terlihat jelas — pada layar pertama yang dilihat
+ * pengguna baru.
+ *
+ * Rekaman dipakai bila berkasnya ada; bila tidak, posternya, dan bila
+ * itu pun belum ada, foto lama tetap menjadi jaring pengaman supaya
+ * halaman masuk tidak pernah tampil tanpa latar sama sekali.
+ */
+const media = usePage<any>().props.mediaMasuk ?? {};
+
+const kurangiGerak = ref(
+  typeof window !== 'undefined'
+  && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true,
+);
+
+/** Waktu setempat, ditulis sekali saat halaman dibuka. */
+const jam = new Intl.DateTimeFormat('id-ID', {
+  hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short',
+}).format(new Date());
 </script>
 
 <template>
   <div class="min-h-screen min-h-[100dvh] grid lg:grid-cols-[1.15fr_.85fr] bg-[#FBFAF7] text-[#1B2024]">
     <section class="relative overflow-hidden bg-[#0B1117] text-white p-8 sm:p-12 lg:p-14 flex flex-col justify-between min-h-[330px] lg:min-h-screen">
-      <img src="/brand/tambang.jpg" alt="" aria-hidden="true" class="absolute inset-0 w-full h-full object-cover opacity-60">
+      <video
+        v-if="media.video && !kurangiGerak"
+        :src="media.video" :poster="media.poster ?? undefined"
+        autoplay muted loop playsinline preload="metadata"
+        aria-hidden="true"
+        class="absolute inset-0 w-full h-full object-cover opacity-60"
+      ></video>
+      <img v-else :src="media.poster ?? '/brand/tambang.jpg'" alt="" aria-hidden="true"
+           class="absolute inset-0 w-full h-full object-cover opacity-60">
+
       <div class="absolute inset-0 bg-[linear-gradient(180deg,rgba(11,17,23,.58),rgba(11,17,23,.18)_36%,rgba(11,17,23,.95))]"></div>
 
-      <Link href="/" class="relative z-10 w-fit"><Wordmark :tinggi="28" /></Link>
+      <!--
+        Kisi halus di atas rekaman. Gunanya bukan hiasan: ia memberi mata
+        pola tetap sebagai pembanding, sehingga gerakan di belakangnya
+        terbaca sebagai gerakan sungguhan alih-alih gambar yang bergoyang.
+      -->
+      <div class="absolute inset-0 opacity-[0.07] pointer-events-none"
+           style="background-image:linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px);background-size:64px 64px"></div>
+
+      <div class="relative z-10 flex items-center justify-between gap-4">
+        <Link href="/" class="w-fit"><Wordmark :tinggi="28" /></Link>
+
+        <!-- Penanda sistem hidup: titik berdenyut dan jam setempat. -->
+        <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 backdrop-blur px-3 py-1.5
+                     text-[10px] font-bold uppercase tracking-[.14em] text-white/70">
+          <span class="relative flex w-1.5 h-1.5">
+            <span class="absolute inline-flex w-full h-full rounded-full bg-[#22C55E] opacity-75 animate-ping"></span>
+            <span class="relative inline-flex w-1.5 h-1.5 rounded-full bg-[#22C55E]"></span>
+          </span>
+          Sistem aktif · {{ jam }}
+        </span>
+      </div>
 
       <div class="relative z-10 max-w-xl mt-12 lg:mt-0">
         <p class="text-[10px] font-bold uppercase tracking-[.22em] text-white/50 mb-4">Delapan Aspek · Satu Sistem</p>

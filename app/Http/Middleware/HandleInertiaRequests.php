@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Support\{IkonNav, Lencana, Menu, RuteInertia, Tema};
+use App\Support\{IkonNav, Lencana, Media, Menu, RuteInertia, Tema};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
@@ -58,6 +58,16 @@ class HandleInertiaRequests extends Middleware
             'warna' => [
                 'aksen' => Tema::aksen($u),
                 'dasar' => Tema::dasar($u),
+            ],
+
+            /* Latar halaman masuk. Dibagikan dari sini, bukan dari tiap
+               pengendali autentikasi: masuk, daftar, lupa sandi, dan atur
+               ulang sandi semuanya memakai tata letak yang sama, dan yang
+               satu terlewat tidak menimbulkan galat — latarnya hanya
+               diam-diam kembali menjadi foto lama pada satu halaman. */
+            'mediaMasuk' => fn () => [
+                'video'  => Media::masukVideo(),
+                'poster' => Media::masukPoster(),
             ],
         ]);
     }

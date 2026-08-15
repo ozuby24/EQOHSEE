@@ -67,8 +67,9 @@ class LandingTest extends TestCase
         $galeri = $this->props()['galeri'];
 
         foreach ([
-            'Inspeksi & Observasi', 'Operasional Tambang',
-            'Pengendalian Risiko', 'Budaya Keselamatan',
+            'Inspeksi & Observasi', 'Perencanaan & Survei Tambang',
+            'Pemantauan Pajanan Kerja', 'Higiene Industri',
+            'Pengujian Mutu', 'Reklamasi & Lingkungan',
         ] as $judul) {
             $item = collect($galeri)->firstWhere('judul', $judul);
             $this->assertNotNull($item);
@@ -78,22 +79,32 @@ class LandingTest extends TestCase
 
     public function test_kartu_tanpa_berkas_disembunyikan_selama_ada_yang_terisi(): void
     {
-        // Kinerja Energi dan Reklamasi belum punya rekaman; menyandingkannya
-        // sebagai kotak kosong membuat galerinya terbaca rusak.
+        // Seluruh butir kini punya rekaman, jadi yang diuji adalah
+        // aturannya: butir tanpa berkas tidak boleh ikut tampil selama
+        // ada butir lain yang terisi. Satu butir tambahan yang sengaja
+        // tidak punya berkas dipakai sebagai pembanding.
         $terisi = collect(Media::galeriTerisi())->pluck('judul');
 
-        $this->assertTrue($terisi->contains('Operasional Tambang'));
-        $this->assertFalse($terisi->contains('Kinerja Energi'));
+        $this->assertTrue($terisi->contains('Perencanaan & Survei Tambang'));
+        $this->assertCount(count(Media::galeri()), $terisi);
 
-        $judul = collect($this->props()['galeri'])->pluck('judul');
-        $this->assertFalse($judul->contains('Reklamasi & Lingkungan'));
+        foreach (Media::galeri() as $g) {
+            $this->assertTrue(
+                Media::ada($g['gambar']) || Media::ada($g['video'] ?? null),
+                "Butir {$g['judul']} tampil tanpa satu pun berkas.",
+            );
+        }
     }
 
-    public function test_kartu_muncul_begitu_berkasnya_disalin(): void
+    public function test_seluruh_butir_galeri_membawa_rekaman(): void
     {
-        $this->taruh('galeri/energi.jpg');
-
-        $this->assertTrue(collect($this->props()['galeri'])->pluck('judul')->contains('Kinerja Energi'));
+        // Dulu hanya empat dari enam butir punya berkas. Kini keenamnya
+        // terisi, dan yang dijaga adalah tidak ada yang tertinggal ketika
+        // berkasnya diganti.
+        foreach ($this->props()['galeri'] as $item) {
+            $this->assertNotNull($item['videoUrl'], "{$item['judul']} tanpa video.");
+            $this->assertNotNull($item['gambarUrl'], "{$item['judul']} tanpa gambar.");
+        }
     }
 
     /* ---------- keadaan tanpa media ---------- */

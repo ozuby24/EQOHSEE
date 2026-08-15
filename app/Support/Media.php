@@ -33,6 +33,18 @@ final class Media
     public const HERO_POSTER = 'hero/tambang.jpg';
 
     /**
+     * Latar halaman masuk dan pendaftaran.
+     *
+     * Sebelumnya sebuah foto 900 piksel dipakai untuk panel setinggi layar
+     * penuh. Diperbesar tiga kali lipat pada layar berkerapatan ganda,
+     * fotonya pecah — dan itu adalah layar pertama yang dilihat pengguna
+     * baru. Rekaman 1280 piksel yang bergerak menutupi jarak itu jauh
+     * lebih baik daripada foto diam yang diregangkan.
+     */
+    public const MASUK_VIDEO  = 'hero/masuk.mp4';
+    public const MASUK_POSTER = 'hero/masuk.jpg';
+
+    /**
      * Galeri lapangan.
      *
      * Tiap butir boleh berupa gambar saja atau gambar dengan videonya.
@@ -44,43 +56,43 @@ final class Media
             [
                 'judul' => 'Inspeksi & Observasi',
                 'ket'   => 'Pemeriksaan kondisi unit dan area kerja, langsung dari perangkat.',
-                'gambar'=> 'galeri/inspeksi.jpg',
-                'video' => 'galeri/inspeksi.mp4',
+                'gambar'=> 'galeri/safety.jpg',
+                'video' => 'galeri/safety.mp4',
                 'aspek' => 'safety',
             ],
             [
-                'judul' => 'Operasional Tambang',
-                'ket'   => 'Kegiatan gali-muat-angkut harian di area penambangan.',
-                'gambar'=> 'galeri/operasional.jpg',
-                'video' => 'galeri/operasional.mp4',
+                'judul' => 'Perencanaan & Survei Tambang',
+                'ket'   => 'Rancangan pit dan pengukuran kemajuan tambang.',
+                'gambar'=> 'galeri/engineering.jpg',
+                'video' => 'galeri/engineering.mp4',
                 'aspek' => 'engineering',
             ],
             [
-                'judul' => 'Pengendalian Risiko',
-                'ket'   => 'Pengamatan bahaya di lapangan dan penetapan pengendaliannya.',
-                'gambar'=> 'galeri/risiko.jpg',
-                'video' => 'galeri/risiko.mp4',
+                'judul' => 'Pemantauan Pajanan Kerja',
+                'ket'   => 'Pengukuran faktor bahaya di lingkungan kerja.',
+                'gambar'=> 'galeri/occhealth.jpg',
+                'video' => 'galeri/occhealth.mp4',
                 'aspek' => 'occhealth',
             ],
             [
-                'judul' => 'Budaya Keselamatan',
-                'ket'   => 'Pemakaian alat pelindung diri dan kebiasaan kerja yang aman.',
-                'gambar'=> 'galeri/budaya.jpg',
-                'video' => 'galeri/budaya.mp4',
+                'judul' => 'Higiene Industri',
+                'ket'   => 'Pengukuran pajanan pada sumbernya, sebelum sampai ke pekerja.',
+                'gambar'=> 'galeri/hygiene.jpg',
+                'video' => 'galeri/hygiene.mp4',
                 'aspek' => 'hygiene',
             ],
             [
-                'judul' => 'Kinerja Energi',
-                'ket'   => 'Pemantauan konsumsi bahan bakar dan listrik alat.',
-                'gambar'=> 'galeri/energi.jpg',
-                'video' => 'galeri/energi.mp4',
-                'aspek' => 'energy',
+                'judul' => 'Pengujian Mutu',
+                'ket'   => 'Uji laboratorium sebagai dasar kendali mutu hasil tambang.',
+                'gambar'=> 'galeri/quality.jpg',
+                'video' => 'galeri/quality.mp4',
+                'aspek' => 'quality',
             ],
             [
                 'judul' => 'Reklamasi & Lingkungan',
                 'ket'   => 'Penanganan lahan bekas tambang dan mutu lingkungan.',
-                'gambar'=> 'galeri/lingkungan.jpg',
-                'video' => 'galeri/lingkungan.mp4',
+                'gambar'=> 'galeri/environment.jpg',
+                'video' => 'galeri/environment.mp4',
                 'aspek' => 'environment',
             ],
         ];
@@ -124,6 +136,9 @@ final class Media
     /** Hero memakai video hanya bila berkasnya benar-benar tersedia. */
     public static function heroVideo(): ?string { return self::url(self::HERO_VIDEO); }
     public static function heroPoster(): ?string { return self::url(self::HERO_POSTER); }
+
+    public static function masukVideo(): ?string  { return self::url(self::MASUK_VIDEO); }
+    public static function masukPoster(): ?string { return self::url(self::MASUK_POSTER); }
 
     /**
      * Logo perusahaan pengguna.

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
+import IkonStat from '../Components/IkonStat.vue';
 
 interface Enrollment {
   judul: string; deskripsi: string | null; sampul: string | null; kategori: string | null;
@@ -16,12 +17,12 @@ const props = defineProps<{
   pekan: Array<{ label: string; nilai: number }>; admin: { users: number; courses: number; procedures: number; certs: number } | null;
 }>();
 
-const kpi: Array<{ label: string; value: () => number | string; hint: string; tone: string }> = [
-  { label: 'Total Kursus', value: () => props.ringkas.total, hint: 'Semua kursus tersedia', tone: 'hijau' },
-  { label: 'Kursus Selesai', value: () => props.ringkas.selesai, hint: 'Kursus telah selesai', tone: 'biru' },
-  { label: 'Progress Belajar', value: () => `${props.ringkas.kemajuan}%`, hint: 'Rata-rata progress', tone: 'toska' },
-  { label: 'Sertifikat', value: () => props.certificates, hint: 'Sertifikat diperoleh', tone: 'kuning' },
-  { label: 'Belum Diikuti', value: () => props.ringkas.belum, hint: 'Menunggu untuk dimulai', tone: 'ungu' },
+const kpi: Array<{ label: string; value: () => number | string; hint: string; tone: string; ikon: string }> = [
+  { label: 'Total Kursus', value: () => props.ringkas.total, hint: 'Semua kursus tersedia', tone: 'hijau', ikon: 'pustaka' },
+  { label: 'Kursus Selesai', value: () => props.ringkas.selesai, hint: 'Kursus telah selesai', tone: 'biru', ikon: 'tuntas' },
+  { label: 'Progress Belajar', value: () => `${props.ringkas.kemajuan}%`, hint: 'Rata-rata progress', tone: 'toska', ikon: 'laju' },
+  { label: 'Sertifikat', value: () => props.certificates, hint: 'Sertifikat diperoleh', tone: 'kuning', ikon: 'medali' },
+  { label: 'Belum Diikuti', value: () => props.ringkas.belum, hint: 'Menunggu untuk dimulai', tone: 'ungu', ikon: 'menunggu' },
 ];
 </script>
 
@@ -34,7 +35,7 @@ const kpi: Array<{ label: string; value: () => number | string; hint: string; to
     </section>
 
     <div class="eq-kpi-baris">
-      <article v-for="item in kpi" :key="item.label" class="eq-kpi"><span class="eq-kpi-ikon" :class="`t-${item.tone}`">◈</span><span class="eq-kpi-isi"><span class="eq-kpi-label">{{ item.label }}</span><span class="eq-kpi-nilai">{{ item.value() }}</span><span class="eq-kpi-ket">{{ item.hint }}</span></span></article>
+      <article v-for="item in kpi" :key="item.label" class="eq-kpi"><span class="eq-kpi-ikon" :class="`t-${item.tone}`"><IkonStat :nama="item.ikon" :ukuran="18" /></span><span class="eq-kpi-isi"><span class="eq-kpi-label">{{ item.label }}</span><span class="eq-kpi-nilai">{{ item.value() }}</span><span class="eq-kpi-ket">{{ item.hint }}</span></span></article>
     </div>
 
     <div class="eq-kisi-utama">
@@ -47,8 +48,8 @@ const kpi: Array<{ label: string; value: () => number | string; hint: string; to
         <section class="eq-panel"><div class="eq-panel-kepala"><h3>Pengumuman</h3><Link href="/news" class="eq-tautan">Lihat Semua →</Link></div><ul v-if="news.length" class="eq-warta"><li v-for="item in news" :key="item.url"><Link :href="item.url"><span class="eq-warta-teks"><strong>{{ item.judul }}</strong><small>{{ item.cuplikan }}</small></span><time>{{ item.tanggal }}</time></Link></li></ul><div v-else class="eq-kosong eq-kosong-kecil"><p>Belum ada pengumuman.</p></div></section></div>
     </div>
 
-    <section v-if="kategori.length" class="eq-panel"><div class="eq-panel-kepala"><h3>Kategori Kursus</h3><Link href="/courses" class="eq-tautan">Lihat Semua →</Link></div><div class="eq-kategori"><Link v-for="item in kategori" :key="item.nama" :href="`/courses?kategori=${encodeURIComponent(item.nama)}`"><span class="eq-kategori-ikon" :class="`t-${item.nada ?? 'biru'}`">◈</span><span><strong>{{ item.nama }}</strong><small>{{ item.jumlah }} Kursus</small></span></Link></div></section>
-    <section class="eq-panel"><div class="eq-panel-kepala"><h3>Modul Lainnya</h3><span class="eq-panel-ket">Angka yang ditampilkan adalah yang butuh perhatian.</span></div><div class="eq-modul"><Link v-for="item in modul" :key="item.nama" :href="item.url"><span class="eq-modul-atas"><span class="eq-modul-nilai" :style="{ color: item.warna }">{{ item.nilai }}</span><span class="eq-modul-ikon" :style="{ background: `${item.warna}18`, color: item.warna }">◈</span></span><strong>{{ item.nama }}</strong><small>{{ item.ket }}<template v-if="item.total > 0"> · dari {{ item.total }}</template></small></Link></div></section>
+    <section v-if="kategori.length" class="eq-panel"><div class="eq-panel-kepala"><h3>Kategori Kursus</h3><Link href="/courses" class="eq-tautan">Lihat Semua →</Link></div><div class="eq-kategori"><Link v-for="item in kategori" :key="item.nama" :href="`/courses?kategori=${encodeURIComponent(item.nama)}`"><span class="eq-kategori-ikon" :class="`t-${item.nada ?? 'biru'}`"><IkonStat nama="kursus" :ukuran="18" /></span><span><strong>{{ item.nama }}</strong><small>{{ item.jumlah }} Kursus</small></span></Link></div></section>
+    <section class="eq-panel"><div class="eq-panel-kepala"><h3>Modul Lainnya</h3><span class="eq-panel-ket">Angka yang ditampilkan adalah yang butuh perhatian.</span></div><div class="eq-modul"><Link v-for="item in modul" :key="item.nama" :href="item.url"><span class="eq-modul-atas"><span class="eq-modul-nilai" :style="{ color: item.warna }">{{ item.nilai }}</span><span class="eq-modul-ikon" :style="{ background: `${item.warna}18`, color: item.warna }"><IkonStat :nama="item.ikon" :ukuran="18" /></span></span><strong>{{ item.nama }}</strong><small>{{ item.ket }}<template v-if="item.total > 0"> · dari {{ item.total }}</template></small></Link></div></section>
     <section v-if="admin" class="eq-panel"><div class="eq-panel-kepala"><h3>Ringkasan Sistem</h3></div><div class="eq-kategori"><div v-for="item in [['Pengguna', admin.users], ['Kursus', admin.courses], ['Prosedur', admin.procedures], ['Sertifikat terbit', admin.certs]]" :key="item[0]" class="eq-admin-angka"><span class="eq-kpi-nilai">{{ item[1] }}</span><small>{{ item[0] }}</small></div></div></section>
   </div>
 </template>

@@ -225,6 +225,80 @@ class IdentitasVisualTest extends TestCase
             'Lambang lama dipakai lagi: '.implode('; ', array_unique($terpakai)));
     }
 
+    /**
+     * Tidak ada karakter hiasan yang dipakai sebagai pengganti ikon.
+     *
+     * Dashboard pernah menggambar satu belah ketupat "◈" yang ditulis
+     * harfiah pada tiga tempat, sehingga lima kartu ringkasan dan enam
+     * kartu modul semuanya memakai lambang yang sama — tidak satu pun
+     * membedakan apa pun. Nama ikonnya sudah dikirim App\Support\Ikon
+     * dan bahkan tercantum pada tipe ModuleItem, tetapi tidak dibaca.
+     */
+    public function test_tidak_ada_karakter_hiasan_sebagai_pengganti_ikon(): void
+    {
+        // Diambil dari yang benar-benar pernah dipakai sebagai ikon palsu.
+        $palsu = ['◈', '◆', '◇', '▣', '❖'];
+
+        $temuan = [];
+        $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(resource_path('js')));
+        foreach ($it as $f) {
+            if (!$f->isFile() || $f->getExtension() !== 'vue') continue;
+            // Berkas ikon sendiri boleh menyebutnya di dalam keterangan.
+            if (str_contains($f->getFilename(), 'Ikon')) continue;
+
+            $isi = file_get_contents($f->getPathname());
+            foreach ($palsu as $c) {
+                if (str_contains($isi, $c)) {
+                    $temuan[] = $c.' di '.str_replace(base_path().'/', '', $f->getPathname());
+                }
+            }
+        }
+
+        $this->assertSame([], $temuan, implode('; ', $temuan));
+    }
+
+    /**
+     * Tiap butir galeri menunjuk aspek yang benar-benar ada.
+     *
+     * Aspeknya menentukan warna kartunya; yang tidak dikenali jatuh ke
+     * warna kosong tanpa satu pun galat, dan kartunya tampil abu-abu di
+     * antara kartu berwarna.
+     */
+    public function test_aspek_galeri_semuanya_pilar_yang_terdaftar(): void
+    {
+        $pilar = array_keys(\App\Support\Pillars::all());
+
+        $asing = [];
+        foreach (\App\Support\Media::galeri() as $g) {
+            if (!in_array($g['aspek'], $pilar, true)) $asing[] = $g['aspek'];
+        }
+
+        $this->assertSame([], $asing, 'Aspek tak dikenal: '.implode(', ', $asing));
+    }
+
+    /**
+     * Berkas media yang didaftarkan harus benar-benar ada, atau slotnya
+     * memang belum diisi sama sekali.
+     *
+     * Yang dijaga di sini bukan keberadaan berkasnya — pemasangan baru
+     * memang belum punya rekaman — melainkan kecocokan nama: slot yang
+     * salah eja lolos tanpa galat dan hanya tampil sebagai kotak kosong.
+     */
+    public function test_setiap_butir_galeri_punya_gambar_dan_video_yang_sepasang(): void
+    {
+        $timpang = [];
+        foreach (\App\Support\Media::galeri() as $g) {
+            $adaGambar = \App\Support\Media::ada($g['gambar']);
+            $adaVideo  = \App\Support\Media::ada($g['video'] ?? null);
+
+            // Video tanpa posternya menampilkan kotak hitam sebelum
+            // pemutarannya dimulai; poster tanpa video hanya foto diam.
+            if ($adaVideo && !$adaGambar) $timpang[] = $g['video'].' tanpa '.$g['gambar'];
+        }
+
+        $this->assertSame([], $timpang, implode('; ', $timpang));
+    }
+
     /** Lambang yang dirujuk tampilan harus benar-benar ada di public/brand. */
     public function test_berkas_lambang_yang_dirujuk_benar_benar_ada(): void
     {
