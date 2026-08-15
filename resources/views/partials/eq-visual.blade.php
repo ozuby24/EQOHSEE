@@ -558,6 +558,16 @@ main a{transition:color .16s}
 
 .eq-tema-btn .eq-ikon-gelap{display:none}
 
+/* Kontrol asli peramban ikut temanya.
+   Meta color-scheme di <head> hanya menyatakan kedua tema didukung; yang
+   menentukan bagaimana peramban menggambar select, kotak centang, pemilih
+   tanggal, dan bilah gulir adalah properti CSS ini. Tanpa dinyatakan,
+   pengguna yang memilih gelap sementara sistemnya terang mendapat
+   kontrol berinternal terang — dan teks pada <select> menjadi gelap di
+   atas kotak gelap, sehingga pilihannya tampak kosong sama sekali. */
+:root[data-tema="gelap"]{color-scheme:dark}
+:root[data-tema="terang"]{color-scheme:light}
+
 :root[data-tema="gelap"] body{
   background-color:#0D1417;
   background-image:

@@ -341,6 +341,45 @@ class IdentitasVisualTest extends TestCase
             'Kisi kotak berulang muncul lagi di: '.implode(', ', $temuan));
     }
 
+    /**
+     * Lapisan latar pada panel bergambar harus tetap berposisi mutlak.
+     *
+     * `.pendar-rekaman` memuat video latar sebagai anak langsung. Sempat
+     * ditambahkan `.pendar-rekaman > *{position:relative}` untuk
+     * mengangkat isinya, dan itu menimpa `absolute` bawaan Tailwind pada
+     * videonya — spesifisitasnya sama, dan aturan itu ditulis belakangan.
+     * Videonya berhenti menjadi lapisan latar, berubah menjadi elemen
+     * alir biasa, lalu mendorong merek dan seluruh teks ke bawahnya.
+     *
+     * Lolos sampai produksi karena aturannya ditambah lalu halaman LAIN
+     * yang dirender ulang. Dijaga di sini secara sempit dan tepat: isi
+     * panel diangkat lewat kelasnya sendiri di templat, tidak pernah
+     * lewat pemilih menyapu di berkas gaya.
+     */
+    public function test_lapisan_latar_panel_bergambar_tidak_ditimpa_pemilih_menyapu(): void
+    {
+        $gaya = file_get_contents(resource_path('css/app.css'))
+              . file_get_contents(resource_path('views/partials/eq-visual.blade.php'));
+
+        // Komentar dibuang lebih dulu: berkas ini memang menjelaskan
+        // polanya, dan penjelasan tidak boleh dihitung sebagai aturan.
+        $tanpaKomentar = preg_replace('#/\*.*?\*/#s', '', $gaya);
+
+        $this->assertDoesNotMatchRegularExpression(
+            '/\.pendar-rekaman\s*>\s*\*/',
+            $tanpaKomentar,
+            'Pemilih menyapu pada .pendar-rekaman menimpa posisi video latarnya.',
+        );
+
+        // Videonya sendiri harus tetap dinyatakan sebagai lapisan penuh.
+        $tataLetak = file_get_contents(resource_path('js/Layouts/GuestLayout.vue'));
+        $this->assertMatchesRegularExpression(
+            '/<video[^>]*class="[^"]*absolute inset-0[^"]*"/s',
+            $tataLetak,
+            'Video latar halaman masuk tidak lagi dinyatakan absolute inset-0.',
+        );
+    }
+
     /** Lambang yang dirujuk tampilan harus benar-benar ada di public/brand. */
     public function test_berkas_lambang_yang_dirujuk_benar_benar_ada(): void
     {

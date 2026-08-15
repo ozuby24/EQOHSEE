@@ -280,8 +280,19 @@ input,select,textarea{ outline:none; }
   background: radial-gradient(120% 96% at 50% 50%, transparent 42%, rgba(11,17,23,.72) 100%);
 }
 
-/* Isi panel harus berada di atas kedua lapisan itu. */
-.pendar-rekaman > *{ position:relative; z-index:2; }
+/* Isi panel diangkat lewat kelasnya sendiri di templat (relative z-10),
+   BUKAN lewat pemilih anak di sini.
+
+   Sempat ditulis `.pendar-rekaman > *{position:relative}`, dan itu
+   merusak halaman masuk: video latarnya adalah anak langsung juga, jadi
+   aturan itu menimpa `absolute` bawaan Tailwind — spesifisitasnya sama
+   dan aturan ini datang belakangan. Videonya berhenti menjadi lapisan
+   latar, berubah menjadi elemen alir biasa, lalu mendorong merek dan
+   teks ke bawahnya.
+
+   Pelajarannya bukan soal z-index melainkan soal jangkauan: pemilih
+   anak universal pada wadah yang juga memuat lapisan berposisi mutlak
+   akan selalu mengenai lapisan itu juga. */
 
 /* Sapuan cahaya yang melintas perlahan.
    Satu berkas miring yang lewat sekali tiap belasan detik. Gunanya

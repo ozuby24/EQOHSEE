@@ -21,12 +21,19 @@ class DocumentController extends Controller
 {
     public function index(Request $request)
     {
+        /* Seluruhnya dicor menjadi teks, termasuk yang kosong.
+           `get()` mengembalikan null ketika parameternya tidak ada, dan
+           null itu terkirim ke <select> yang pilihan pertamanya bernilai
+           "" — v-model tidak pernah mencocokkan keduanya, sehingga
+           selectedIndex menjadi −1 dan kotaknya tampil KOSONG, bukan
+           "Semua jenis". Tidak ada galat yang muncul; saringannya hanya
+           terlihat seperti belum jadi. */
         $f = [
             'q'          => trim((string) $request->get('q')),
-            'jenis'      => $request->get('jenis'),
-            'status'     => $request->get('status'),
-            'departemen' => $request->get('departemen'),
-            'tinjau'     => $request->get('tinjau'),   // 'lewat' | 'segera'
+            'jenis'      => (string) $request->get('jenis'),
+            'status'     => (string) $request->get('status'),
+            'departemen' => (string) $request->get('departemen'),
+            'tinjau'     => (string) $request->get('tinjau'),   // 'lewat' | 'segera'
         ];
 
         $like = Db::like();

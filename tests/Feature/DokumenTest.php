@@ -156,4 +156,27 @@ class DokumenTest extends TestCase
     {
         $this->get(route('dokumen.index'))->assertRedirect(route('login'));
     }
+
+    /**
+     * Nilai saringan yang dikirim halaman harus berupa teks, bukan null.
+     *
+     * `Request::get()` mengembalikan null ketika parameternya tidak ada.
+     * Null itu terkirim ke <select> yang pilihan pertamanya bernilai "",
+     * dan v-model tidak pernah mencocokkan keduanya — selectedIndex
+     * menjadi −1 dan kotaknya tampil KOSONG alih-alih "Semua jenis".
+     * Tidak ada galat yang muncul; saringannya hanya terlihat seperti
+     * belum jadi, dan itulah yang membuatnya lolos sekian lama.
+     */
+    public function test_nilai_saringan_berupa_teks_agar_pilihan_bawaan_terpilih(): void
+    {
+        $this->actingAs($this->admin());
+
+        $f = $this->get(route('dokumen.index'))
+            ->assertOk()->viewData('page')['props']['f'];
+
+        foreach (['q', 'jenis', 'status', 'departemen', 'tinjau'] as $kunci) {
+            $this->assertIsString($f[$kunci],
+                "Saringan '{$kunci}' bukan teks; <select> tidak akan memilih pilihan bawaannya.");
+        }
+    }
 }

@@ -150,7 +150,7 @@ final class Kestabilan
                     'alasan' => 'Titik pembacaan bergerak belum cukup untuk menarik garis.'];
         }
 
-        [$m, $b, $r2] = self::regresi($titik);
+        ['m' => $m, 'b' => $b, 'r2' => $r2] = Regresi::lurus($titik);
 
         if ($m >= 0) {
             return ['hari' => null, 'r2' => round($r2, 3), 'dapatDipakai' => false,
@@ -240,43 +240,5 @@ final class Kestabilan
         $penahan = $c + max(0.0, $normalEfektif) * tan($ph);
 
         return round($penahan / $pendorong, 3);
-    }
-
-    /**
-     * Regresi lurus kuadrat terkecil.
-     *
-     * @param  list<array{x:float,y:float}> $titik
-     * @return array{0:float,1:float,2:float} kemiringan, potongan, R²
-     */
-    private static function regresi(array $titik): array
-    {
-        $n = count($titik);
-        $sx = $sy = $sxy = $sxx = 0.0;
-
-        foreach ($titik as $t) {
-            $sx  += $t['x'];
-            $sy  += $t['y'];
-            $sxy += $t['x'] * $t['y'];
-            $sxx += $t['x'] ** 2;
-        }
-
-        $pembagi = $n * $sxx - $sx ** 2;
-        if (abs($pembagi) < 1e-12) return [0.0, $sy / $n, 0.0];
-
-        $m = ($n * $sxy - $sx * $sy) / $pembagi;
-        $b = ($sy - $m * $sx) / $n;
-
-        $rerata = $sy / $n;
-        $ssTot = $ssRes = 0.0;
-        foreach ($titik as $t) {
-            $ssTot += ($t['y'] - $rerata) ** 2;
-            $ssRes += ($t['y'] - ($m * $t['x'] + $b)) ** 2;
-        }
-
-        // Seluruh y sama: garisnya sempurna, tetapi tidak menjelaskan
-        // ragam apa pun. R² = 1 di sini menyesatkan, jadi dinyatakan 0.
-        $r2 = $ssTot > 1e-12 ? 1 - $ssRes / $ssTot : 0.0;
-
-        return [$m, $b, max(0.0, min(1.0, $r2))];
     }
 }
