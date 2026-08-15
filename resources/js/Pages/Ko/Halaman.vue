@@ -34,6 +34,43 @@ const actionStatus = ['Terbuka', 'Berjalan', 'Selesai', 'Dibatalkan'];
 const objek = computed(() => props.objek ?? []);
 const list = computed(() => props.aksi ?? props.kajian ?? props.tenaga ?? objek.value);
 const angka = (v: unknown) => typeof v === 'number' ? v.toLocaleString('id-ID', { maximumFractionDigits: 2 }) : (v ?? '—');
+
+/*
+  Kartu ringkasan disebut satu per satu, bukan diulang dari kunci
+  props.c.
+
+  Versi sebelumnya `v-for="(value, key) in props.c"` dengan label
+  `String(key).replaceAll('_',' ')`. Itu memperlakukan bentuk internal
+  array hitungan sebagai bahasa yang dibaca orang: kunci `pgTot` tampil
+  sebagai "PGTOT", dan `byStat` — yang isinya objek, bukan angka —
+  tercetak utuh sebagai JSON di tengah kartu.
+
+  Cacatnya lama, tetapi baru terlihat setelah halaman ini berhenti
+  merender kosong. Selama halamannya kosong tidak ada yang dapat
+  melihatnya, dan tidak ada uji yang menangkapnya: propnya memang
+  terkirim benar, yang salah cara menggambarnya.
+
+  Disebut satu per satu supaya kunci hitungan yang ditambahkan kemudian
+  tidak otomatis muncul sebagai kartu tanpa nama — yang muncul hanyalah
+  yang memang diputuskan untuk ditampilkan.
+*/
+const ringkas = computed(() => {
+  const c = props.c ?? {};
+  const layak = c.byStat?.['Layak'] ?? 0;
+
+  return [
+    { label: 'Objek terdaftar', nilai: angka(c.total ?? 0), ket: 'sarana, prasarana, instalasi, peralatan' },
+    { label: 'Bersertifikat layak', nilai: angka(layak), ket: `dari ${angka(c.total ?? 0)} objek` },
+    { label: 'PM terlewat', nilai: angka(c.overdue ?? 0), ket: 'perawatan melewati jadwalnya' },
+    { label: 'Kepatuhan PM', nilai: `${angka(c.pmc ?? 0)}%`, ket: 'objek yang perawatannya sesuai jadwal' },
+  ];
+});
+
+/** Sebaran status kelayakan — nama statusnya memang sudah bahasa manusia. */
+const sebaranStatus = computed(() =>
+  Object.entries((props.c?.byStat ?? {}) as Record<string, number>)
+    .map(([label, jumlah]) => ({ label, jumlah })),
+);
 const tanggal = (v: unknown) => v ? String(v).slice(0, 10) : '';
 const filter = reactive({ q: props.q ?? '', kat: props.kat ?? '', ops: props.ops ?? '', st: props.st ?? '' });
 const selectedObject = ref(props.objek?.[0]?.id ?? props.o?.id ?? '');
@@ -64,7 +101,7 @@ function hapus(path: string) { if (confirm('Hapus data ini?')) router.delete(pat
     <section class="flex flex-wrap items-end justify-between gap-4"><div><h2 class="text-xl font-bold text-cam-ink">{{ titles[props.mode] ?? 'Keselamatan Operasi' }}</h2><p class="text-[12.5px] text-stone-500 mt-1">Register objek, kelayakan, perawatan, pengaman, dan tindakan keselamatan operasi.</p></div><div class="flex gap-2"><Link v-if="props.mode === 'register' && props.bolehUbah" href="/ko/objek/baru" class="eq-btn-utama">Tambah Objek</Link><button v-if="props.mode === 'tindak' && props.bolehUbah" type="button" class="eq-btn-lain" @click="tarikPeringatan">Tarik peringatan</button></div></section>
     <nav class="flex gap-1 overflow-x-auto rounded-xl bg-stone-100 p-1 text-[11px]"><Link v-for="tab in [['dashboard','Dashboard','/ko'],['register','Register','/ko/register'],['kelayakan','Kelayakan','/ko/kelayakan'],['perawatan','Perawatan','/ko/perawatan'],['pengaman','Pengaman','/ko/pengaman'],['kajian','Kajian','/ko/kajian'],['tenaga','Tenaga','/ko/tenaga'],['tindak','Tindak lanjut','/ko/tindak'],['pengaturan','Pengaturan','/ko/pengaturan']]" :key="tab[0]" :href="tab[2]" class="whitespace-nowrap rounded-lg px-3 py-2 text-stone-500 hover:bg-white" :class="props.mode === tab[0] ? 'bg-white font-bold text-cam-ink shadow-sm' : ''">{{ tab[1] }}</Link></nav>
 
-    <section v-if="props.mode === 'dashboard'" class="space-y-5"><div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><article v-for="(value, key) in props.c" :key="String(key)" class="rounded-2xl bg-white border border-stone-100 shadow-card p-4"><p class="text-[10px] uppercase font-bold text-stone-400">{{ String(key).replaceAll('_', ' ') }}</p><strong class="text-xl block mt-1">{{ angka(value) }}</strong></article></div><div v-if="props.sub?.items" class="grid gap-3 md:grid-cols-2 lg:grid-cols-5"><article v-for="item in props.sub.items" :key="item.n" class="rounded-2xl bg-white border border-stone-100 shadow-card p-4"><b class="text-[12px]">{{ item.n }}. {{ item.nama }}</b><strong class="block text-xl mt-2">{{ item.pct }}%</strong><p class="text-[11px] text-stone-500 mt-1">{{ item.ket }}</p></article></div><div v-if="props.peringatan?.length" class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><h3 class="font-bold text-[14px] mb-3">Peringatan yang perlu ditindak</h3><div v-for="item in props.peringatan" :key="item.objek?.id ?? item.ket" class="border-b border-stone-100 py-3 text-[12px]"><b>{{ item.objek?.kode ?? 'Objek' }}</b><span class="ml-2 text-stone-500">{{ item.ket ?? item.jenis }}</span></div></div></section>
+    <section v-if="props.mode === 'dashboard'" class="space-y-5"><div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><article v-for="item in ringkas" :key="item.label" class="rounded-2xl bg-white border border-stone-100 shadow-card p-4"><p class="text-[10px] uppercase font-bold text-stone-400">{{ item.label }}</p><strong class="text-xl block mt-1">{{ item.nilai }}</strong><p class="text-[11px] text-stone-500 mt-1 leading-snug">{{ item.ket }}</p></article></div><div v-if="sebaranStatus.length" class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><h3 class="font-bold text-[14px] mb-3">Sebaran status kelayakan</h3><div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><div v-for="item in sebaranStatus" :key="item.label" class="rounded-xl bg-stone-50 p-3"><small class="block text-[10px] uppercase font-bold text-stone-400">{{ item.label }}</small><b class="text-lg">{{ angka(item.jumlah) }}</b></div></div></div><div v-if="props.sub?.items" class="grid gap-3 md:grid-cols-2 lg:grid-cols-5"><article v-for="item in props.sub.items" :key="item.n" class="rounded-2xl bg-white border border-stone-100 shadow-card p-4"><b class="text-[12px]">{{ item.n }}. {{ item.nama }}</b><strong class="block text-xl mt-2">{{ item.pct }}%</strong><p class="text-[11px] text-stone-500 mt-1">{{ item.ket }}</p></article></div><div v-if="props.peringatan?.length" class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><h3 class="font-bold text-[14px] mb-3">Peringatan yang perlu ditindak</h3><div v-for="item in props.peringatan" :key="item.objek?.id ?? item.ket" class="border-b border-stone-100 py-3 text-[12px]"><b>{{ item.objek?.kode ?? 'Objek' }}</b><span class="ml-2 text-stone-500">{{ item.ket ?? item.jenis }}</span></div></div></section>
 
     <section v-if="['register','kelayakan','perawatan','pengaman'].includes(props.mode)" class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-x-auto"><form v-if="props.mode === 'register'" class="p-4 grid gap-2 md:grid-cols-5 border-b border-stone-100" @submit.prevent="cari"><input v-model="filter.q" placeholder="Cari kode, nama, lokasi…" class="rounded-lg border-stone-200 text-[12px] md:col-span-2"><select v-model="filter.kat" class="rounded-lg border-stone-200 text-[12px]"><option value="">Semua kategori</option><option v-for="item in kategori" :key="item">{{ item }}</option></select><select v-model="filter.ops" class="rounded-lg border-stone-200 text-[12px]"><option value="">Semua operasi</option><option v-for="item in operasi" :key="item">{{ item }}</option></select><button class="eq-btn-utama">Filter</button></form><table class="min-w-full text-left text-[12px]"><thead><tr class="text-stone-400 border-b border-stone-100"><th class="px-5 py-3">Kode</th><th class="px-5 py-3">Nama</th><th class="px-5 py-3">Kategori</th><th class="px-5 py-3">Status</th><th class="px-5 py-3">PM berikutnya</th><th class="px-5 py-3"></th></tr></thead><tbody><tr v-for="item in objek" :key="item.id" class="border-b border-stone-50"><td class="px-5 py-3 font-semibold"><Link :href="`/ko/objek/${item.id}`" class="text-cam-lime-deep">{{ item.kode }}</Link></td><td class="px-5 py-3">{{ item.nama }}</td><td class="px-5 py-3">{{ item.kategori }}</td><td class="px-5 py-3">{{ item.status_ko ?? item.status_operasi }}</td><td class="px-5 py-3">{{ tanggal(item.pm_berikutnya) || '—' }}</td><td class="px-5 py-3 text-right"><Link v-if="props.bolehUbah" :href="`/ko/objek/${item.id}/edit`" class="text-cam-lime-deep mr-2">Ubah</Link></td></tr></tbody></table><div v-if="!objek.length" class="p-8 text-center text-[13px] text-stone-500">Belum ada objek dalam lingkup Anda.</div></section>
 
