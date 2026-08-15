@@ -1,11 +1,18 @@
 <?php
 namespace App\Models;
 
+use App\Models\Concerns\BerindukPerusahaan;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class InspectionItem extends Model
 {
+    use BerindukPerusahaan;
+
+    /** Pemiliknya ada pada induknya; lihat BerindukPerusahaan. */
+    protected static string $indukPerusahaan = 'inspection';
+
     protected $fillable = ['inspection_id','template_item_id','kelompok','uraian','acuan','kondisi','risiko','temuan','tindakan','foto','hazard_report_id','order_index'];
 
     protected function casts(): array { return ['foto' => 'array']; }

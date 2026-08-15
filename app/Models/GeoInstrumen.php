@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BerindukPerusahaan;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -18,6 +20,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class GeoInstrumen extends Model
 {
+    use BerindukPerusahaan;
+
+    /** Pemiliknya ada pada induknya; lihat BerindukPerusahaan. */
+    protected static string $indukPerusahaan = 'lereng';
+
     public const JENIS  = ['prisma', 'extensometer', 'piezometer', 'inklinometer', 'radar'];
     public const STATUS = ['siap', 'rusak', 'perawatan', 'arsip'];
 

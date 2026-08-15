@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BerindukPerusahaan;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -14,6 +16,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class WaterSumpPump extends Model
 {
+    use BerindukPerusahaan;
+
+    /** Pemiliknya ada pada induknya; lihat BerindukPerusahaan. */
+    protected static string $indukPerusahaan = 'sump';
+
     public const STATUS = ['siap', 'jalan', 'rusak', 'perawatan'];
 
     protected $fillable = [

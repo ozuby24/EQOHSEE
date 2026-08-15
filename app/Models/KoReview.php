@@ -2,10 +2,17 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BerindukPerusahaan;
+
 use Illuminate\Database\Eloquent\Model;
 
 class KoReview extends Model
 {
+    use BerindukPerusahaan;
+
+    /** Pemiliknya ada pada induknya; lihat BerindukPerusahaan. */
+    protected static string $indukPerusahaan = 'object';
+
     protected $table = 'ko_reviews';
 
     protected $fillable = [
