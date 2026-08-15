@@ -299,6 +299,48 @@ class IdentitasVisualTest extends TestCase
         $this->assertSame([], $timpang, implode('; ', $timpang));
     }
 
+    /**
+     * Tidak ada kisi kotak berulang sebagai tekstur latar.
+     *
+     * Pola ini sudah muncul tiga kali dan dibuang tiga kali: pada
+     * .grid-tech, pada bilah samping, dan pada panel brand-gradient.
+     * Alasannya selalu sama — kotak yang berulang rapi membuat bidangnya
+     * terbaca seperti kertas milimeter, dan mata mengikuti garisnya alih-
+     * alih isinya. Di atas rekaman video ia lebih buruk lagi: polanya
+     * diam sementara gambarnya bergerak.
+     *
+     * Penggantinya beberapa pendar lebar yang tidak berulang. Teksturnya
+     * terasa tanpa pernah menampakkan pola.
+     */
+    public function test_tidak_ada_kisi_kotak_berulang_sebagai_tekstur(): void
+    {
+        $berkas = array_merge(
+            glob(resource_path('css/*.css')) ?: [],
+            glob(resource_path('views/partials/*.blade.php')) ?: [],
+            glob(resource_path('js/Layouts/*.vue')) ?: [],
+        );
+
+        $temuan = [];
+        foreach ($berkas as $f) {
+            if (str_contains(basename($f), '.bak-')) continue;
+            $isi = file_get_contents($f);
+
+            // Kisi selalu berupa dua gradien garis berpasangan dengan
+            // background-size persegi; salah satunya saja tidak cukup
+            // untuk membentuk kotak.
+            $adaGarisTegak  = (bool) preg_match('/linear-gradient\(\s*(rgba?\([^)]*\)|#[0-9a-f]{3,8})\s+1px/i', $isi);
+            $adaGarisDatar  = (bool) preg_match('/linear-gradient\(\s*90deg\s*,\s*(rgba?\([^)]*\)|#[0-9a-f]{3,8})\s+1px/i', $isi);
+            $adaUkuranKotak = (bool) preg_match('/background-size:\s*(\d+)px\s+\1px/', $isi);
+
+            if ($adaGarisTegak && $adaGarisDatar && $adaUkuranKotak) {
+                $temuan[] = str_replace(base_path().'/', '', $f);
+            }
+        }
+
+        $this->assertSame([], $temuan,
+            'Kisi kotak berulang muncul lagi di: '.implode(', ', $temuan));
+    }
+
     /** Lambang yang dirujuk tampilan harus benar-benar ada di public/brand. */
     public function test_berkas_lambang_yang_dirujuk_benar_benar_ada(): void
     {

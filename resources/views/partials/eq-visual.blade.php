@@ -105,14 +105,21 @@ body{
 #eqSidebar{isolation:isolate;overflow:hidden}
 #eqSidebar > *{position:relative;z-index:2}
 
-#eqSidebar::before{                       /* kertas milimeter tipis */
-  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.5;
+#eqSidebar::before{                       /* pendar bidang, bukan kisi */
+  /* Dulu kertas milimeter 38 px. Kotaknya berulang rapi sepanjang kolom
+     setinggi layar, dan justru itu yang membuatnya terbaca sebagai kertas
+     berpetak alih-alih sebagai bidang — persis alasan yang sama sudah
+     ditulis untuk .grid-tech di app.css, lalu terulang di sini.
+
+     Diganti dua pendar lebar yang tidak berulang: satu hangat di dekat
+     kop tempat merek berada, satu dingin lebih ke bawah. Teksturnya
+     terasa tanpa pernah menampakkan pola, dan tidak ada garis yang
+     bersaing dengan daftar menu di atasnya. */
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
   background-image:
-    linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);
-  background-size:38px 38px;
-  -webkit-mask-image:radial-gradient(120% 80% at 15% 8%,#000 25%,transparent 76%);
-          mask-image:radial-gradient(120% 80% at 15% 8%,#000 25%,transparent 76%);
+    radial-gradient(78% 30% at 18% 4%,  rgba(245,124,0,.16), transparent 72%),
+    radial-gradient(70% 26% at 88% 34%, rgba(44,176,188,.10), transparent 74%),
+    radial-gradient(90% 34% at 50% 96%, rgba(255,255,255,.045), transparent 76%);
 }
 #eqSidebar::after{                        /* panorama bukit + jenjang tambang */
   content:"";position:absolute;left:0;right:0;bottom:0;height:190px;z-index:1;
@@ -223,14 +230,14 @@ main .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
    5 · KARTU GRADASI (brand-gradient) — tekstur & kedalaman
    ═══════════════════════════════════════════════════════════ */
 main .brand-gradient{position:relative;overflow:hidden;isolation:isolate}
-main .brand-gradient::before{             /* kertas milimeter + butiran */
-  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.55;
+main .brand-gradient::before{             /* pendar bidang, bukan kisi */
+  /* Sama seperti bilah samping: kisi 42 px diganti pendar lebar yang
+     tidak berulang. Pada panel selebar layar, kotak yang berulang
+     membuat mata mengikuti garisnya alih-alih isinya. */
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
   background-image:
-    linear-gradient(rgba(255,255,255,.055) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,255,255,.055) 1px,transparent 1px);
-  background-size:42px 42px;
-  -webkit-mask-image:radial-gradient(120% 100% at 12% 0%,#000 20%,transparent 78%);
-          mask-image:radial-gradient(120% 100% at 12% 0%,#000 20%,transparent 78%);
+    radial-gradient(52% 62% at 16% 6%,  rgba(245,124,0,.14), transparent 70%),
+    radial-gradient(44% 54% at 84% 40%, rgba(44,176,188,.09), transparent 72%);
 }
 main .brand-gradient::after{              /* siluet punggungan di tepi bawah */
   content:"";position:absolute;left:0;right:0;bottom:0;height:78px;z-index:-1;
