@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\{Document, User};
 use App\Support\{Iso, Pillars};
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -201,11 +202,10 @@ class IsoTest extends TestCase
     {
         $this->masuk();
 
-        $this->get(route('iso.cetak', '9001'))
-            ->assertOk()
-            ->assertSee('No. Dokumen')
-            ->assertSee('OHSE-II.012')
-            ->assertSee('Halaman');
+        $this->get(route('iso.cetak', '9001'))->assertOk()->assertInertia(
+            fn (AssertableInertia $p) => $p->component('Print/Iso')
+                ->where('kode', '9001')->where('dok.nomor', 'EQ-OHSE-II.012')->has('perBab')->has('cakupan')
+        );
     }
 
     /* ---------- struktur dokumen ---------- */
@@ -242,10 +242,14 @@ class IsoTest extends TestCase
     {
         $this->masuk();
 
-        $this->get(route('dokumen.daftar-induk'))->assertOk()->assertSee('1 dari 1');
+        $this->get(route('dokumen.daftar-induk'))->assertOk()->assertInertia(
+            fn (AssertableInertia $p) => $p->component('Print/Dokumen')->has('documents', 0)
+        );
 
         for ($i = 0; $i < 20; $i++) $this->dokumen();
 
-        $this->get(route('dokumen.daftar-induk'))->assertOk()->assertSee('2 dari 2');
+        $this->get(route('dokumen.daftar-induk'))->assertOk()->assertInertia(
+            fn (AssertableInertia $p) => $p->component('Print/Dokumen')->has('documents', 20)
+        );
     }
 }

@@ -15,21 +15,32 @@ final class Sampul
 {
     /** Kategori yang sudah dikenal → rekaman lapangan yang paling mendekati. */
     private const PETA = [
-        'keselamatan kerja' => 'galeri/budaya.jpg',
-        'operasional'       => 'galeri/operasional.jpg',
-        'lingkungan'        => 'galeri/risiko.jpg',
-        'kesehatan'         => 'galeri/budaya.jpg',
-        'inspeksi'          => 'galeri/inspeksi.jpg',
-        'wajib'             => 'galeri/budaya.jpg',
-        'risiko'            => 'galeri/risiko.jpg',
+        'keselamatan kerja' => 'galeri/safety.jpg',
+        'operasional'       => 'galeri/engineering.jpg',
+        'lingkungan'        => 'galeri/environment.jpg',
+        'kesehatan'         => 'galeri/occhealth.jpg',
+        'inspeksi'          => 'galeri/safety.jpg',
+        'wajib'             => 'galeri/safety.jpg',
+        'risiko'            => 'galeri/occhealth.jpg',
+        'higiene'           => 'galeri/hygiene.jpg',
+        'mutu'              => 'galeri/quality.jpg',
     ];
 
-    /** Dipakai bergiliran untuk kategori di luar daftar. */
+    /**
+     * Dipakai bergiliran untuk kategori di luar daftar.
+     *
+     * Namanya mengikuti berkas galeri; ketika berkas galeri diganti,
+     * daftar ini ikut berganti. Yang tertinggal tidak menimbulkan galat —
+     * sampulnya hanya diam-diam kosong, dan dua kursus bersebelahan
+     * kembali tampak seperti kursus yang sama.
+     */
     private const GALERI = [
-        'galeri/operasional.jpg',
-        'galeri/budaya.jpg',
-        'galeri/inspeksi.jpg',
-        'galeri/risiko.jpg',
+        'galeri/engineering.jpg',
+        'galeri/safety.jpg',
+        'galeri/hygiene.jpg',
+        'galeri/occhealth.jpg',
+        'galeri/quality.jpg',
+        'galeri/environment.jpg',
     ];
 
     /**

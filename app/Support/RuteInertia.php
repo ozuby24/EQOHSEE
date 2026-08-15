@@ -26,6 +26,10 @@ final class RuteInertia
 {
     /** Nama rute yang mengembalikan Inertia::render(). */
     public const NAMA = [
+        'pilar',
+        'dashboard',
+        'password.confirm',
+
         'tpkkp.index',
         'tpkkp.assess',
         'tpkkp.rekap',
@@ -87,6 +91,7 @@ final class RuteInertia
 
         /* Admin */
         'admin.system',
+        'admin.system.diagnosa',
         'admin.users.index',
         'admin.users.create',
         'admin.companies.index',
@@ -96,7 +101,120 @@ final class RuteInertia
         'dokumen.index',
         'dokumen.create',
         'dokumen.piramida',
+        'dokumen.daftar-induk',
         'iso.index',
+
+        /* Berkas cetak HSE */
+        'hazard.ekspor.cetak',
+        'inspeksi.ekspor.cetak',
+
+        /* Energy Performance */
+        'energi.index',
+        'energi.input',
+        'energi.konsumsi',
+        'energi.fuel',
+        'energi.listrik',
+        'energi.equipment',
+        'energi.kpi',
+        'energi.baseline',
+        'energi.hemat',
+        'energi.karbon',
+        'energi.kalkulator',
+        'energi.laporan',
+        'energi.master',
+
+        /* Konservasi Minerba */
+        'konservasi.index',
+        'konservasi.data',
+        'konservasi.laporan',
+        'konservasi.cetak',
+        'operasi.index',
+        'operasi.data',
+        'operasi.target',
+        'operasi.gis',
+        'operasi.cetak',
+
+        /* Pemeliharaan & Keandalan */
+        'maintenance.index',
+        'maintenance.order',
+        'maintenance.armada',
+        'maintenance.cetak',
+
+        /* Air & Penirisan */
+        'air.index',
+        'air.catatan',
+        'air.kolam',
+        'air.cetak',
+
+        /* Lingkungan & Reklamasi */
+        'lingkungan.index',
+        'lingkungan.lahan',
+        'lingkungan.pemantauan',
+        'lingkungan.baku',
+        'lingkungan.cetak',
+
+        /* Pengeboran & Peledakan */
+        'peledakan.index',
+        'peledakan.rencana',
+        'peledakan.titik',
+        'peledakan.getaran',
+        'peledakan.cetak',
+
+        /* Dispatch & Pengangkutan */
+        'angkutan.index',
+        'angkutan.regu',
+        'angkutan.armada',
+        'angkutan.muatan',
+        'angkutan.cetak',
+
+        /* Pengendalian Biaya */
+        'biaya.index',
+        'biaya.realisasi',
+        'biaya.anggaran',
+        'biaya.akun',
+        'biaya.cetak',
+
+        /* Izin Kerja Aman */
+        'izin.index',
+        'izin.daftar',
+        'izin.syarat',
+        'izin.ambang',
+        'izin.cetak',
+
+        /* Kestabilan Lereng */
+        'geoteknik.index',
+        'geoteknik.bacaan',
+        'geoteknik.lereng',
+        'geoteknik.cetak',
+
+        /* Mining Engineering Hub */
+        'meh.index',
+        'meh.monitor',
+        'meh.energy',
+        'meh.fleet',
+        'meh.equipment',
+        'meh.maintenance',
+        'meh.hse',
+        'meh.kpi',
+        'meh.tools',
+        'meh.regulations',
+
+        /* Audit SMKP */
+        'smkp.index',
+        'smkp.create',
+        'smkp.acuan',
+
+        /* Keselamatan Operasi */
+        'ko.index',
+        'ko.register',
+        'ko.create',
+        'ko.kelayakan',
+        'ko.perawatan',
+        'ko.pengaman',
+        'ko.kajian',
+        'ko.tenaga',
+        'ko.tindak',
+        'ko.pengaturan',
 
         /* Gudang */
         'gudang.index',
@@ -112,6 +230,9 @@ final class RuteInertia
         'personalia.index',
         'personalia.perusahaan',
         'personalia.direktori',
+
+        /* Profil akun */
+        'profile.edit',
     ];
 
     public static function ada(?string $rute): bool

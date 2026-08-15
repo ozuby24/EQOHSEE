@@ -1,0 +1,24 @@
+<script setup lang="ts">
+import { Head, Link } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+import BlankLayout from '../Layouts/BlankLayout.vue';
+import Wordmark from '../Components/Wordmark.vue';
+import IkonPilar from '../Components/IkonPilar.vue';
+
+defineOptions({ layout: BlankLayout });
+
+type Pillar = { nama: string; ket: string; deep: string; warna: string; light: string; ringkas: string; cakupan: [string, string][]; modul: string[]; ikon: string };
+type Module = { nama: string; status: string; ket: string; ikon: string; url: string | null };
+const props = defineProps<{ pilar: Record<string, Pillar>; modul: Module[] }>();
+const aktif = ref<string | null>(null);
+const daftar = computed(() => Object.entries(props.pilar));
+</script>
+
+<template>
+  <Head title="Delapan Aspek" />
+  <div class="min-h-screen bg-cam-ink text-white">
+    <header class="sticky top-0 z-30 bg-cam-ink/90 backdrop-blur border-b border-white/10"><div class="max-w-6xl mx-auto px-5 h-16 flex items-center gap-4"><Link href="/" class="shrink-0"><Wordmark :tinggi="28" /></Link><Link href="/dashboard" class="ml-auto text-[12px] text-white/60 hover:text-white">Kembali ke platform</Link></div></header>
+    <main class="max-w-6xl mx-auto px-5 py-16 md:py-24"><div class="text-center max-w-2xl mx-auto"><span class="text-[10.5px] font-bold uppercase tracking-[0.28em] text-cam-lime-light">Kerangka Kerja</span><h1 class="font-display text-[32px] md:text-[46px] font-black mt-4">Delapan aspek, satu sistem</h1><p class="text-[13.5px] text-white/50 mt-4 leading-relaxed">Tujuh huruf pada EQOHSEE mewakili satu aspek masing-masing, ditambah Konservasi Minerba di luar akronim.</p></div><div class="flex justify-center mt-10 font-display text-[42px] md:text-[64px] font-black tracking-[.04em]"><button v-for="[slug, item] in daftar.slice(0, 7)" :key="slug" type="button" class="transition-transform hover:-translate-y-2" :class="aktif === slug ? '-translate-y-2 text-cam-orange' : 'text-white/80'" @click="aktif = aktif === slug ? null : slug">{{ item.nama.slice(0, 1) }}</button></div><div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mt-12"><button v-for="[slug, item] in daftar" :key="slug" type="button" class="text-left bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/10 transition" :class="aktif === slug ? 'ring-2 ring-cam-orange' : ''" @click="aktif = aktif === slug ? null : slug"><span class="inline-grid place-items-center w-11 h-11 rounded-xl text-white" :style="{ background: `linear-gradient(135deg, ${item.deep}, ${item.light})` }"><IkonPilar :nama="item.ikon" :ukuran="22" /></span><h2 class="text-[14.5px] font-bold mt-3">{{ item.nama }}</h2><p class="text-[12px] text-white/45 mt-1 leading-relaxed">{{ item.ket }}</p><span class="block text-[11px] text-cam-orange font-bold mt-4">{{ aktif === slug ? 'Tutup rincian' : 'Lihat rincian' }}</span></button></div><div v-if="aktif && pilar[aktif]" class="mt-6 bg-white/10 border border-white/10 rounded-2xl p-6 md:p-8"><template v-for="[slug, item] in daftar" :key="slug"><div v-if="slug === aktif"><h2 class="font-display text-[26px] font-black">{{ item.nama }}</h2><p class="text-[13px] text-white/60 mt-4 max-w-2xl leading-relaxed">{{ item.ringkas }}</p><div class="grid md:grid-cols-3 gap-4 mt-6"><div v-for="coverage in item.cakupan" :key="coverage[0]" class="border-l-2 pl-3" :style="{ borderColor: item.light }"><div class="text-[12.5px] font-bold">{{ coverage[0] }}</div><p class="text-[12px] text-white/45 mt-1 leading-relaxed">{{ coverage[1] }}</p></div></div><div class="flex flex-wrap gap-1.5 mt-6"><span v-for="module in item.modul" :key="module" class="rounded-full px-2.5 py-1 text-[10.5px] font-semibold" :style="{ backgroundColor: `${item.warna}33`, color: item.light }">{{ module }}</span></div></div></template></div><section class="mt-20"><h2 class="font-display text-[28px] font-black">Modul yang menopang kerangka</h2><div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-6"><component :is="item.url ? 'a' : 'div'" v-for="item in modul" :key="item.nama" :href="item.url ?? undefined" class="rounded-xl bg-white/5 border border-white/10 p-4"><svg class="mb-2.5" :class="item.url ? 'text-cam-lime-light' : 'text-white/30'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="item.ikon" /></svg><div class="text-[13px] font-bold">{{ item.nama }}</div><div class="text-[11.5px] text-white/45 mt-1">{{ item.ket }}</div><span class="inline-block mt-3 text-[10px] text-cam-lime-light">{{ item.url ? 'Buka modul' : 'Segera' }}</span></component></div></section></main>
+    <footer class="border-t border-white/10 text-center text-[11px] text-white/35 py-7">Platform Terpadu Keselamatan Pertambangan</footer>
+  </div>
+</template>

@@ -53,9 +53,12 @@ export interface Kilat {
 
 /** Prop yang dibagikan ke SELURUH halaman Inertia. */
 export interface PropBersama {
+  /** Inertia memperbolehkan prop halaman tambahan di luar prop global. */
+  [key: string]: unknown;
   pengguna: Pengguna | null;
   menu: KerangkaMenu;
   kilat: Kilat;
+  status?: string | null;
   pengumuman: number;
   tema: 'terang' | 'gelap' | null;
   warna: { aksen: string; dasar: string };
@@ -1496,14 +1499,38 @@ export interface HalamanSistem {
   perusahaan: Array<{
     id: number; nama: string; komoditas: string | null; lokasi: string | null;
     pekerja: number; pengguna: number; urlUbah: string;
+    /* Data contoh. `isi` hanya dihitung untuk perusahaan contoh —
+       untuk yang lain nilainya null, bukan objek kosong, supaya
+       "belum dihitung" tidak tersamar menjadi "isinya nol". */
+    demo: boolean;
+    isi: Record<string, number> | null;
+    urlTandai: string;
+    urlMuat: string;
   }>;
   log: Array<{
     id: number; aksi: string; modul: string | null;
     detail: string | null; oleh: string | null; waktu: string | null;
   }>;
   pintasan: Array<{ url: string; label: string; sub: string; warna: string; ikon: string }>;
+  diagnosa: { ringkas: Record<string, number>; url: string };
   tautan: { perusahaanBaru: string; bersihkanLog: string };
   pemeliharaan: Array<{ aksi: string; label: string; url: string }>;
+}
+
+export interface HalamanDiagnosa {
+  judul: string; subjudul: string;
+  hasil: Array<{
+    kode: string; kelompok: string; judul: string;
+    /* 'gawat' | 'perhatian' | 'tak-tahu' | 'aman' — dibiarkan string
+       supaya keadaan baru dari sisi server tidak memaksa perubahan
+       tipe di sini sebelum tampilannya siap menanganinya. */
+    keadaan: string;
+    nilai: string; uraian: string; tindakan: string | null;
+  }>;
+  ringkas: Record<string, number>;
+  dijalankan: string;
+  perbaikan: Array<{ aksi: string; label: string; ket: string; berat: boolean; url: string }>;
+  tautan: { sistem: string; pemeliharaan: string };
 }
 
 /* ══════════════ Berita, Prosedur, Penanda Tangan ══════════════ */
@@ -1557,6 +1584,8 @@ export interface PenandaTangan {
   nama: string;
   jabatan: string;
   aktif: boolean;
+  perusahaanId: number | null;
+  perusahaan: string | null;
   tandaTangan: string | null;
   urlSimpan: string;
   urlHapus: string;
@@ -1565,6 +1594,7 @@ export interface PenandaTangan {
 export interface HalamanPenandaTangan {
   judul: string; subjudul: string;
   penandaTangan: PenandaTangan[];
+  perusahaan: Array<{ id: number; nama: string }>;
   tautan: { tambah: string };
 }
 

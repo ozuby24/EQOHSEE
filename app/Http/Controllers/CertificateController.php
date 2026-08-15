@@ -115,17 +115,67 @@ class CertificateController extends Controller
         return redirect()->route('certificates.show', $cert)->with('ok', 'Sertifikat diterbitkan.');
     }
 
+    /**
+     * Nomor sertifikat berikutnya bagi satu perusahaan pada tahun ini.
+     *
+     * Dua hal yang diperbaiki dari cara lama, dan keduanya menghasilkan
+     * nomor yang terlihat wajar:
+     *
+     * - Dihitung PER PERUSAHAAN. Penghitung lama mencakup seluruh
+     *   sertifikat pada tahun berjalan, sehingga nomor PT A melompat
+     *   setiap kali PT B menerbitkan satu. Prefiksnya per perusahaan,
+     *   urutannya tidak — dan gabungan itu terbaca sebagai penomoran
+     *   per perusahaan yang bocor.
+     *
+     * - Diturunkan dari nomor TERTINGGI, bukan dari jumlah baris.
+     *   Dengan count()+1, satu sertifikat yang dihapus membuat nomor
+     *   berikutnya mengulang nomor yang sudah pernah terbit — dua lembar
+     *   bernomor sama, dan keduanya lolos verifikasi barcode.
+     *
+     * Urutan dibaca kembali dari nomor yang sudah ada, bukan disimpan di
+     * penghitung tersendiri: penghitung yang terpisah dari datanya akan
+     * berselisih dengan data itu cepat atau lambat, dan yang menang
+     * biasanya bukan yang benar.
+     */
+    private function nomorBerikutnya(?int $companyId, string $prefiks): string
+    {
+        $tahun = now()->year;
+
+        $terpakai = Certificate::withoutGlobalScopes()
+            ->when($companyId, fn ($q) => $q->where('company_id', $companyId),
+                               fn ($q) => $q->whereNull('company_id'))
+            ->whereYear('issued_at', $tahun)
+            ->pluck('certificate_number');
+
+        $tertinggi = 0;
+        foreach ($terpakai as $n) {
+            if (preg_match('#/(\d+)$#', (string) $n, $c)) {
+                $tertinggi = max($tertinggi, (int) $c[1]);
+            }
+        }
+
+        return sprintf('%s/%s/%s/%04d', $prefiks, 'SRT', $tahun, $tertinggi + 1);
+    }
+
     private function buat(Course $course, Enrollment $en, ?PostTrainingEvaluation $evaluasi = null): Certificate
     {
-        $u  = auth()->user();
-        $co = $u->company_id ? Company::find($u->company_id) : Company::orderBy('id')->first();
+        $u = auth()->user();
 
-        $urut  = Certificate::whereYear('issued_at', now()->year)->count() + 1;
+        // Pengguna tanpa perusahaan tidak dititipkan ke perusahaan mana
+        // pun. Sebelumnya diambilkan Company::orderBy('id')->first(),
+        // sehingga sertifikatnya diam-diam tercatat milik perusahaan
+        // ber-id terkecil — lengkap dengan kop dan logonya.
+        $co = $u->company_id ? Company::find($u->company_id) : null;
+
         $pfx   = $co?->doc_no_prefix ?: 'EQ';
-        $nomor = sprintf('%s/%s/%s/%04d', $pfx, 'SRT', now()->year, $urut);
+        $nomor = $this->nomorBerikutnya($co?->id, $pfx);
         $kode  = strtoupper(Str::random(4).'-'.Str::random(4).'-'.Str::random(4));
 
-        $ttd = Signatory::where('is_active', true)->first();
+        // Penanda tangan perusahaan penerima, lalu penanda tangan pusat.
+        // Tidak pernah milik perusahaan lain: lebih baik lembar tanpa
+        // tanda tangan daripada lembar yang mencantumkan pejabat yang
+        // tidak pernah menyetujuinya.
+        $ttd = Signatory::withoutGlobalScopes()->untukPerusahaan($co?->id)->first();
 
         $cert = Certificate::create([
             'user_id'            => $u->id,
@@ -197,6 +247,18 @@ class CertificateController extends Controller
                 ->where('verification_code', $kode)
                 ->orWhere('certificate_number', $kode)->first();
 
-        return view('certificates.verify', compact('c','kode'));
+        return Inertia::render('Certificates/Verify', [
+            'kode' => $kode,
+            'c' => $c ? [
+                'penerima' => $c->recipient_name,
+                'kursus' => $c->course_title,
+                'perusahaan' => $c->company?->ownerName() ?: '—',
+                'nomor' => $c->certificate_number,
+                'kodeVerifikasi' => $c->verification_code,
+                'nilai' => $c->final_score ?: '—',
+                'terbit' => $c->issued_at?->format('d F Y'),
+                'ditandatangani' => $c->signed_by_name ?: '—',
+            ] : null,
+        ]);
     }
 }

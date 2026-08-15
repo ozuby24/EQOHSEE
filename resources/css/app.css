@@ -251,6 +251,67 @@ input,select,textarea{ outline:none; }
   100% { transform: translate3d(-2%,3%,0)  scale(1.04); }
 }
 
+/* ── Pendar hidup di atas rekaman ──
+   Rekamannya sendiri sudah bergerak, jadi lapisan ini tidak boleh ikut
+   sibuk. Yang bergerak hanya pendar hangatnya, sangat lambat, dengan
+   irama yang sama seperti .aurora supaya seluruh aplikasi terasa satu
+   tangan.
+
+   Vinyetnya sengaja TIDAK ikut bergerak. Vinyet yang bergeser membuat
+   bingkai gambar seolah goyah, dan mata membaca itu sebagai kamera yang
+   tidak stabil — bukan sebagai kedalaman.
+
+   Dipisah menjadi dua lapisan pseudo karena keduanya perlu perlakuan
+   berbeda: yang satu dianimasikan dan diburamkan, yang lain diam dan
+   tajam. Satu lapisan tidak dapat menjadi keduanya. */
+.pendar-rekaman{ position:relative; isolation:isolate; overflow:hidden; }
+
+.pendar-rekaman::before{      /* pendar hangat, bergerak */
+  content:""; position:absolute; inset:-30%; z-index:1; pointer-events:none;
+  background:
+    radial-gradient(42% 40% at 72% 16%, rgba(245,124,0,.26), transparent 66%),
+    radial-gradient(36% 34% at 24% 76%, rgba(255,152,0,.13), transparent 68%);
+  filter: blur(46px);
+  animation: aurora 26s ease-in-out infinite alternate;
+}
+
+.pendar-rekaman::after{       /* vinyet, diam */
+  content:""; position:absolute; inset:0; z-index:1; pointer-events:none;
+  background: radial-gradient(120% 96% at 50% 50%, transparent 42%, rgba(11,17,23,.72) 100%);
+}
+
+/* Isi panel diangkat lewat kelasnya sendiri di templat (relative z-10),
+   BUKAN lewat pemilih anak di sini.
+
+   Sempat ditulis `.pendar-rekaman > *{position:relative}`, dan itu
+   merusak halaman masuk: video latarnya adalah anak langsung juga, jadi
+   aturan itu menimpa `absolute` bawaan Tailwind — spesifisitasnya sama
+   dan aturan ini datang belakangan. Videonya berhenti menjadi lapisan
+   latar, berubah menjadi elemen alir biasa, lalu mendorong merek dan
+   teks ke bawahnya.
+
+   Pelajarannya bukan soal z-index melainkan soal jangkauan: pemilih
+   anak universal pada wadah yang juga memuat lapisan berposisi mutlak
+   akan selalu mengenai lapisan itu juga. */
+
+/* Sapuan cahaya yang melintas perlahan.
+   Satu berkas miring yang lewat sekali tiap belasan detik. Gunanya
+   memberi tanda bahwa bidangnya hidup tanpa menuntut perhatian —
+   berbeda dari kilau tombol yang memang minta diklik, jadi jauh lebih
+   lambat dan jauh lebih tipis. */
+.sapuan{ position:relative; overflow:hidden; }
+.sapuan::before{
+  content:""; position:absolute; top:-60%; bottom:-60%; width:38%;
+  left:-45%; z-index:1; pointer-events:none;
+  background:linear-gradient(100deg, transparent, rgba(255,255,255,.055) 46%, transparent);
+  transform:skewX(-14deg);
+  animation: sapuan-lewat 17s ease-in-out infinite;
+}
+@keyframes sapuan-lewat{
+  0%, 62%  { left:-45%; }
+  100%     { left:118%; }
+}
+
 /* Kisi teknis yang memudar ke tepi — memberi kesan bidang, bukan warna datar. */
 /* Kabut bidang gelap.
    Dulu berupa kisi garis; kotak-kotaknya berulang rapi dan justru
@@ -545,7 +606,8 @@ input,select,textarea{ outline:none; }
    halaman; hanya animasinya yang dihentikan. Adegan pilar tetap
    terbaca penuh karena kedalamannya berasal dari gambar, bukan gerak. */
 @media (prefers-reduced-motion: reduce){
-  .aurora::before, .sheen, .apung, .apung-2, .denyut, .putar-lambat,
+  .aurora::before, .pendar-rekaman::before, .sapuan::before,
+  .sheen, .apung, .apung-2, .denyut, .putar-lambat,
   .hanyut-lambat, .kabut, .alir-daya, .jalan-ban, .pindai, .detak, .batang,
   .melaju, .suar, .debu, .riak, .tumbuh, .ayun-lengan, .butir,
   .gelombang, .bor, .bilah,

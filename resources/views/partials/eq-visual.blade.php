@@ -105,14 +105,21 @@ body{
 #eqSidebar{isolation:isolate;overflow:hidden}
 #eqSidebar > *{position:relative;z-index:2}
 
-#eqSidebar::before{                       /* kertas milimeter tipis */
-  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.5;
+#eqSidebar::before{                       /* pendar bidang, bukan kisi */
+  /* Dulu kertas milimeter 38 px. Kotaknya berulang rapi sepanjang kolom
+     setinggi layar, dan justru itu yang membuatnya terbaca sebagai kertas
+     berpetak alih-alih sebagai bidang — persis alasan yang sama sudah
+     ditulis untuk .grid-tech di app.css, lalu terulang di sini.
+
+     Diganti dua pendar lebar yang tidak berulang: satu hangat di dekat
+     kop tempat merek berada, satu dingin lebih ke bawah. Teksturnya
+     terasa tanpa pernah menampakkan pola, dan tidak ada garis yang
+     bersaing dengan daftar menu di atasnya. */
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
   background-image:
-    linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);
-  background-size:38px 38px;
-  -webkit-mask-image:radial-gradient(120% 80% at 15% 8%,#000 25%,transparent 76%);
-          mask-image:radial-gradient(120% 80% at 15% 8%,#000 25%,transparent 76%);
+    radial-gradient(78% 30% at 18% 4%,  rgba(245,124,0,.16), transparent 72%),
+    radial-gradient(70% 26% at 88% 34%, rgba(44,176,188,.10), transparent 74%),
+    radial-gradient(90% 34% at 50% 96%, rgba(255,255,255,.045), transparent 76%);
 }
 #eqSidebar::after{                        /* panorama bukit + jenjang tambang */
   content:"";position:absolute;left:0;right:0;bottom:0;height:190px;z-index:1;
@@ -159,12 +166,44 @@ body{
 
 .eq-sisi-bawah{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;
   margin-top:13px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)}
-.eq-sisi-bawah small{font-size:9.5px;color:rgba(255,255,255,.34);line-height:1.65}
-.eq-lipat{width:30px;height:30px;flex:none;border-radius:9px;display:grid;place-items:center;
-  color:rgba(255,255,255,.45);border:1px solid rgba(255,255,255,.1);
-  transition:background-color .18s,color .18s}
-.eq-lipat:hover{background:rgba(255,255,255,.09);color:#fff}
-.eq-lipat svg{width:15px;height:15px;transition:transform .28s cubic-bezier(.21,.6,.35,1)}
+/* Teks hak cipta. Sebelumnya .34 alfa di atas navy — sekitar 2,4:1,
+   di bawah ambang keterbacaan mana pun. Dinaikkan ke .58 supaya masih
+   jelas berperan sekunder tetapi tetap dapat dibaca. */
+.eq-sisi-bawah small{font-size:10px;color:rgba(255,255,255,.58);line-height:1.65}
+
+/* Tombol lipat.
+   DISEMBUNYIKAN di bawah 1024 px, sebab di sana ia memang tidak dapat
+   melakukan apa pun: keadaan terlipat hanya didefinisikan pada layar
+   lebar, dan di bawahnya bilah samping berupa laci yang menutup penuh.
+   Sebelumnya tombolnya tetap tampil dan tetap dapat ditekan — kelas
+   eq-sempit berpindah, tidak ada yang berubah di layar, dan tombolnya
+   terbaca sebagai rusak. Menyembunyikan yang tidak berfungsi lebih
+   jujur daripada menampilkan yang diam saja. */
+.eq-lipat{display:none}
+
+@media (min-width:1024px){
+  .eq-lipat{
+    /* Bidang sentuhnya 44 px sesuai anjuran ukuran sasaran minimum,
+       sementara chip yang terlihat tetap 30 px lewat kotak-dalam.
+       Sebelumnya 30 px seluruhnya — cukup untuk tetikus, meleset
+       untuk jari. */
+    width:44px;height:44px;flex:none;padding:7px;margin:-7px -7px -7px 0;
+    background:none;border:0;display:grid;place-items:center;cursor:pointer;
+  }
+  .eq-lipat::before{
+    content:"";position:absolute;width:30px;height:30px;border-radius:9px;
+    border:1px solid rgba(255,255,255,.16);
+    transition:background-color .18s,border-color .18s;
+  }
+  .eq-lipat{position:relative;color:rgba(255,255,255,.62)}
+  .eq-lipat:hover{color:#fff}
+  .eq-lipat:hover::before{background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.26)}
+  /* Umpan balik tekan bekerja pada sentuhan, tempat :hover tidak ada. */
+  .eq-lipat:active::before{background:rgba(255,255,255,.18)}
+  .eq-lipat:focus-visible::before{border-color:#FF9800;box-shadow:0 0 0 2px rgba(255,152,0,.35)}
+  .eq-lipat svg{width:15px;height:15px;position:relative;
+    transition:transform .28s cubic-bezier(.21,.6,.35,1)}
+}
 
 /* ── Keadaan terlipat (layar lebar saja) ── */
 @media (min-width:1024px){
@@ -223,14 +262,14 @@ main .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
    5 · KARTU GRADASI (brand-gradient) — tekstur & kedalaman
    ═══════════════════════════════════════════════════════════ */
 main .brand-gradient{position:relative;overflow:hidden;isolation:isolate}
-main .brand-gradient::before{             /* kertas milimeter + butiran */
-  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.55;
+main .brand-gradient::before{             /* pendar bidang, bukan kisi */
+  /* Sama seperti bilah samping: kisi 42 px diganti pendar lebar yang
+     tidak berulang. Pada panel selebar layar, kotak yang berulang
+     membuat mata mengikuti garisnya alih-alih isinya. */
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
   background-image:
-    linear-gradient(rgba(255,255,255,.055) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,255,255,.055) 1px,transparent 1px);
-  background-size:42px 42px;
-  -webkit-mask-image:radial-gradient(120% 100% at 12% 0%,#000 20%,transparent 78%);
-          mask-image:radial-gradient(120% 100% at 12% 0%,#000 20%,transparent 78%);
+    radial-gradient(52% 62% at 16% 6%,  rgba(245,124,0,.14), transparent 70%),
+    radial-gradient(44% 54% at 84% 40%, rgba(44,176,188,.09), transparent 72%);
 }
 main .brand-gradient::after{              /* siluet punggungan di tepi bawah */
   content:"";position:absolute;left:0;right:0;bottom:0;height:78px;z-index:-1;
@@ -519,6 +558,16 @@ main a{transition:color .16s}
 
 .eq-tema-btn .eq-ikon-gelap{display:none}
 
+/* Kontrol asli peramban ikut temanya.
+   Meta color-scheme di <head> hanya menyatakan kedua tema didukung; yang
+   menentukan bagaimana peramban menggambar select, kotak centang, pemilih
+   tanggal, dan bilah gulir adalah properti CSS ini. Tanpa dinyatakan,
+   pengguna yang memilih gelap sementara sistemnya terang mendapat
+   kontrol berinternal terang — dan teks pada <select> menjadi gelap di
+   atas kotak gelap, sehingga pilihannya tampak kosong sama sekali. */
+:root[data-tema="gelap"]{color-scheme:dark}
+:root[data-tema="terang"]{color-scheme:light}
+
 :root[data-tema="gelap"] body{
   background-color:#0D1417;
   background-image:
@@ -533,13 +582,32 @@ main a{transition:color .16s}
 /* Permukaan kartu. Ditulis sebagai daftar pemilih, bukan satu kelas
    bersama, karena kartu di aplikasi ini lahir dari beberapa generasi
    penulisan dan belum sempat disatukan. */
+/* Latar kartu pada mode gelap.
+
+   Pemilihnya harus menyasar elemen yang benar-benar MEMBAWA latar
+   putihnya, bukan wadah di atasnya. `.eq-modul` sempat terdaftar di
+   sini padahal latar putihnya ada pada `.eq-modul a`: wadahnya menjadi
+   gelap, kartunya tetap putih, sementara --eq-judul sudah berubah
+   menjadi #E8EFF2. Hasilnya judul nyaris putih di atas kartu putih —
+   terukur 1,16:1, praktis tidak terbaca, dan justru pada enam pintasan
+   modul di halaman pertama yang dilihat orang.
+
+   `.eq-admin-angka` bahkan tidak pernah terdaftar sama sekali,
+   sekalipun ia berbagi baris deklarasi yang sama dengan
+   `.eq-kategori a` yang terdaftar. Keduanya jenis kelalaian yang
+   diperingatkan catatan di bawah, dan keduanya terjadi pada daftar
+   latar, bukan pada daftar warna teks.
+
+   Yang menjaganya sekarang uji, bukan kewaspadaan: lihat
+   ModeGelapLatarTest. */
 :root[data-tema="gelap"] main .bg-white,
 :root[data-tema="gelap"] .eq-panel,
 :root[data-tema="gelap"] .eq-kpi,
 :root[data-tema="gelap"] .eq-kursus,
-:root[data-tema="gelap"] .eq-modul,
+:root[data-tema="gelap"] .eq-modul a,
 :root[data-tema="gelap"] .eq-warta,
 :root[data-tema="gelap"] .eq-kategori > a,
+:root[data-tema="gelap"] .eq-admin-angka,
 :root[data-tema="gelap"] .kartu-lux{
   background:#141F23;border-color:#223238;color:#D6DEE2}
 
@@ -591,6 +659,108 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] .border-stone-100,
 :root[data-tema="gelap"] .border-stone-200{border-color:#223238}
 :root[data-tema="gelap"] .bg-stone-50{background:#101A1E}
+
+/* ── Warna teks yang memang dirancang untuk latar terang ──
+   Tailwind menyusun tangga *-600 dan *-700 untuk dibaca di atas putih.
+   Di mode gelap kartunya menjadi gelap tetapi warna teksnya tetap, dan
+   hasilnya angka besar yang praktis tidak terbaca — terukur 1,64:1 pada
+   text-stone-700 di atas kartu gelap, jauh di bawah ambang mana pun.
+
+   Yang paling merugikan justru angka KPI: ia dicetak besar dan tebal
+   supaya terbaca sekilas, lalu menghilang persis pada mode yang dipakai
+   orang saat bekerja malam di ruang kendali.
+
+   Dipetakan ke tangga *-300 yang setara terangnya di atas gelap.
+   Cakupannya dibatasi pada `main` supaya tidak mengganggu bilah samping
+   dan tombol yang latarnya memang selalu berwarna. */
+:root[data-tema="gelap"] main .text-stone-700,
+:root[data-tema="gelap"] main .text-stone-800,
+:root[data-tema="gelap"] main .text-cam-ink{color:#D6DEE2}
+:root[data-tema="gelap"] main .text-stone-600{color:#AEBCC2}
+:root[data-tema="gelap"] main .text-stone-500{color:#93A3AA}
+:root[data-tema="gelap"] main .text-stone-400{color:#7E8E96}
+
+:root[data-tema="gelap"] main .text-sky-700{color:#7DD3FC}
+:root[data-tema="gelap"] main .text-violet-700{color:#C4B5FD}
+:root[data-tema="gelap"] main .text-emerald-700{color:#6EE7B7}
+:root[data-tema="gelap"] main .text-amber-700{color:#FCD34D}
+:root[data-tema="gelap"] main .text-orange-700{color:#FDBA74}
+:root[data-tema="gelap"] main .text-red-700,
+:root[data-tema="gelap"] main .text-red-600{color:#FCA5A5}
+:root[data-tema="gelap"] main .text-emerald-600{color:#5EEAD4}
+:root[data-tema="gelap"] main .text-cam-orange-dark{color:#FDBA74}
+:root[data-tema="gelap"] main .text-sky-600{color:#7DD3FC}
+:root[data-tema="gelap"] main .text-sky-800{color:#93D5FD}
+:root[data-tema="gelap"] main .text-violet-600{color:#C4B5FD}
+:root[data-tema="gelap"] main .text-amber-600{color:#FCD34D}
+:root[data-tema="gelap"] main .text-amber-800{color:#FDE08A}
+:root[data-tema="gelap"] main .text-emerald-800{color:#8FEFC8}
+:root[data-tema="gelap"] main .text-red-800{color:#FDBDBD}
+
+/* ── Bidang bernada terang di mode gelap ──
+   Kotak catatan dan kartu peringatan memakai latar bernada sangat muda
+   (bg-red-50, bg-amber-50, bg-cam-orange-soft). Latar itu tidak ikut
+   digelapkan, sehingga tetap krem di tengah halaman gelap — dan begitu
+   warna teks *-700 di atas dipetakan ke tangga terang, isinya berubah
+   dari gelap-di-atas-krem menjadi terang-di-atas-krem: terukur 1,24:1,
+   lebih buruk daripada sebelum diperbaiki.
+
+   Karena itu latarnya harus ikut digelapkan bersama teksnya. Nadanya
+   dipertahankan — merah tetap terbaca merah, kuning tetap kuning —
+   sebab warna itulah yang membedakan peringatan dari catatan biasa. */
+:root[data-tema="gelap"] main .bg-red-50{background:#2A1618}
+:root[data-tema="gelap"] main .bg-amber-50{background:#2A2213}
+:root[data-tema="gelap"] main .bg-emerald-50{background:#12251D}
+:root[data-tema="gelap"] main .bg-sky-50{background:#122029}
+:root[data-tema="gelap"] main .bg-cam-orange-soft,
+:root[data-tema="gelap"] main .bg-cam-lime-soft{background:#2A1E12}
+:root[data-tema="gelap"] main .border-red-100{border-color:#4A2226}
+:root[data-tema="gelap"] main .border-amber-100{border-color:#4A3A18}
+:root[data-tema="gelap"] main .border-emerald-100{border-color:#1D4034}
+:root[data-tema="gelap"] main .bg-red-50\/60{background:#241416}
+:root[data-tema="gelap"] main .bg-amber-50\/60{background:#241E12}
+:root[data-tema="gelap"] main .bg-stone-50\/60{background:#18242A}
+
+/* Batang grafik. Warnanya tidak boleh memakai bg-cam-ink: tinta gelap
+   di atas halaman gelap adalah batang yang tingginya benar dan tidak
+   terlihat sama sekali. */
+.eq-batang{background:#0F1720;border-radius:3px 3px 0 0}
+:root[data-tema="gelap"] .eq-batang{background:#5FA8D3}
+
+/* Keping status — Draf, Menunggu tinjauan, Disetujui, Ditolak — memakai
+   nada -100 yang lebih pekat daripada kotak catatan di atas, dan
+   luputnya punya sebab yang layak dicatat: selama sepuluh halaman modul
+   merender kosong, tidak ada satu pun keping status yang pernah tergambar
+   di layar, sehingga pemindaian kontras terdahulu tidak menemukan apa
+   pun untuk diukur. Begitu halaman-halaman itu hidup, keping hijau
+   "Disetujui" terukur 1,34:1 dan merah "Melanggar" 1,55:1 — praktis
+   tidak terbaca.
+
+   Nadanya tetap dipertahankan: warna keping inilah yang membedakan
+   disetujui dari ditolak pada pandangan pertama, dan menyeragamkannya
+   menjadi abu berarti membuang satu-satunya isyarat yang terbaca tanpa
+   membaca. */
+:root[data-tema="gelap"] main .bg-stone-100{background:#1F2B30}
+:root[data-tema="gelap"] main .bg-red-100{background:#3B1D21}
+:root[data-tema="gelap"] main .bg-emerald-100{background:#153529}
+:root[data-tema="gelap"] main .bg-amber-100{background:#3A2D12}
+:root[data-tema="gelap"] main .bg-orange-100{background:#3A2412}
+
+/* Tanda wajib isi pada formulir. Terukur 4,46:1 di mode gelap — meleset
+   dari ambang oleh selisih yang tak terlihat, tetapi tanda inilah yang
+   memberi tahu kolom mana yang tidak boleh kosong. */
+:root[data-tema="gelap"] main .text-red-500{color:#F87171}
+
+/* Keping kecil. Latarnya terang dan teksnya abu — di mode gelap ia
+   tertinggal sebagai satu-satunya bidang putih di halaman, dan teksnya
+   terukur 2,28:1 di atasnya. */
+:root[data-tema="gelap"] .eq-chip{background:#1A272C;border-color:#26363C;color:#B6C6CC}
+
+/* Tagline di bawah merek dan teks bantuan pada kaki bilah samping.
+   Keduanya alfa rendah di atas navy — 4,0:1, tepat di bawah ambang.
+   Dinaikkan secukupnya, tidak lebih: keduanya memang berperan sekunder. */
+.eq-merek small{color:rgba(255,255,255,.62)}
+.eq-bantuan-teks small{color:rgba(255,255,255,.62)}
 
 /* Warna perusahaan dipakai untuk aksen, bukan untuk seluruh permukaan:
    logo yang kebetulan sangat terang atau sangat pekat akan membuat teks

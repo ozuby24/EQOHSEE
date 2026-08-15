@@ -38,7 +38,7 @@ class Modules
 
             ['nama' => 'Keselamatan Operasi (KO)', 'status' => 'aktif', 'pilar' => 'engineering', 'rute' => 'ko.index',
              'ket'  => 'Kelayakan objek, jadwal perawatan, alat pengaman, kajian teknis, dan tenaga teknis bersertifikat.',
-             'ikon' => 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z'],
+             'ikon' => 'M2.5 18.2a1 1 0 0 0 1 1h17a1 1 0 0 0 1-1v-1.7a1 1 0 0 0-1-1h-17a1 1 0 0 0-1 1zM10 10.2V5.4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4.8M4.6 15.5v-3.3a5.6 5.6 0 0 1 5.4-5.6M14 6.6a5.6 5.6 0 0 1 5.4 5.6v3.3'],
 
             ['nama' => 'SMKP Audit', 'status' => 'aktif', 'pilar' => 'safety', 'rute' => 'smkp.index',
              'ket'  => 'Audit 7 elemen SMKP Minerba sesuai Kepdirjen 185.K/2019: penilaian per kriteria, temuan berjenjang, dan laporan siap cetak.',
@@ -54,10 +54,60 @@ class Modules
              'ket'  => 'Konsumsi bahan bakar dan listrik, intensitas energi, baseline dan sasaran, peluang penghematan, serta jejak karbon.',
              'ikon' => 'M13 2 4 14h7l-1 8 10-13h-7l0-7Z'],
 
+            ['nama' => 'Konservasi Minerba', 'status' => 'aktif', 'pilar' => 'environment',
+             'rute' => 'konservasi.index',
+             'ket'  => 'Pemantauan produksi, recovery, kehilangan material, dilusi, stockpile, mineral ikutan, dan tindak lanjut perbaikan.',
+             'ikon' => 'M12.8 2.6a2 2 0 0 0-1.6 0L2.6 6.5a1 1 0 0 0 0 1.8l8.6 3.9a2 2 0 0 0 1.6 0l8.6-3.9a1 1 0 0 0 0-1.8ZM2 12.4a1 1 0 0 0 .6.9l8.6 3.9a2 2 0 0 0 1.6 0l8.6-3.9a1 1 0 0 0 .6-.9M2 17.2a1 1 0 0 0 .6.9l8.6 3.9a2 2 0 0 0 1.6 0l8.6-3.9a1 1 0 0 0 .6-.9'],
+
             ['nama' => 'Mining Engineering Hub', 'status' => 'aktif', 'pilar' => 'engineering',
              'rute' => 'meh.index',
              'ket'  => 'Dashboard engineering: produksi, energi, armada, pemeliharaan, KPI, dan alat hitung teknis.',
-             'ikon' => 'M9 3v18m6-18v18M3 9h18M3 15h18'],
+             'ikon' => 'M3.5 3.5h6.5v8H3.5zM14 3.5h6.5v5H14zM14 12.5h6.5v8H14zM3.5 16h6.5v4.5H3.5z'],
+
+            ['nama' => 'Mine Operations & GIS', 'status' => 'aktif', 'pilar' => 'engineering',
+             'rute' => 'operasi.index',
+             'ket'  => 'Control Tower operasi: target dan realisasi produksi, OB, strip ratio, delay, ramalan akhir periode, serta peta dan luas area tambang.',
+             'ikon' => 'm3 6.5 6-3 6 3 6-3v14l-6 3-6-3-6 3zM9 3.5v14M15 6.5v14'],
+
+            ['nama' => 'Water & Dewatering', 'status' => 'aktif', 'pilar' => 'environment',
+             'rute' => 'air.index',
+             'ket'  => 'Curah hujan, level kolam, debit dan pompa, kualitas air, serta perkiraan luapan dalam milimeter hujan yang masih sanggup ditahan.',
+             'ikon' => 'M12 2.7s5.5 6 5.5 9.8a5.5 5.5 0 1 1-11 0C6.5 8.7 12 2.7 12 2.7Z'],
+
+            ['nama' => 'Maintenance & Reliability', 'status' => 'aktif', 'pilar' => 'engineering',
+             'rute' => 'maintenance.index',
+             'ket'  => 'Perintah kerja, MTBF dan MTTR, ketersediaan armada, kepatuhan perawatan berkala, tunggakan pekerjaan, dan biaya per jam serta per ton.',
+             'ikon' => 'M14.6 6.3a1 1 0 0 0 0 1.4l1.7 1.7a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9l-3.8 3.8Z'],
+
+            ['nama' => 'Lingkungan & Reklamasi', 'status' => 'aktif', 'pilar' => 'environment',
+             'rute' => 'lingkungan.index',
+             'ket'  => 'Neraca lahan terganggu dan direklamasi, tahapan berjenjang per petak, tingkat tumbuh revegetasi, kecukupan jaminan, dan pemantauan baku mutu yang dapat disesuaikan.',
+             'ikon' => 'M20 4c0 9-5.5 13-11 13a5 5 0 0 1-1.6-.3C6 15.6 5 13.4 5 11 5 6.6 10 4 20 4ZM4 20c2.5-4.5 6-7.5 11-9.5'],
+
+            ['nama' => 'Drill & Blast', 'status' => 'aktif', 'pilar' => 'engineering',
+             'rute' => 'peledakan.index',
+             'ket'  => 'Rancangan peledakan, powder factor, perkiraan getaran dengan tetapan situs yang dikalibrasi sendiri, isi maksimum per tundaan, radius lemparan, dan fragmentasi.',
+             'ikon' => 'M12 2.5 9.5 9 3 11.5 9.5 14l2.5 6.5 2.5-6.5 6.5-2.5L14.5 9Z'],
+
+            ['nama' => 'Dispatch & Hauling', 'status' => 'aktif', 'pilar' => 'engineering',
+             'rute' => 'angkutan.index',
+             'ket'  => 'Keseimbangan armada, rincian waktu edar, antrean di muka gali, kepatuhan muatan 10/10/20, dan tonase yang hilang karena menunggu.',
+             'ikon' => 'M2.5 16.5V7a1 1 0 0 1 1-1h9v10.5m0 0h-9m9 0h2m6.5 0h-2m2 0V12l-2.5-3.5H15m6 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm-12.5 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z'],
+
+            ['nama' => 'Pengendalian Biaya', 'status' => 'aktif', 'pilar' => 'engineering',
+             'rute' => 'biaya.index',
+             'ket'  => 'Anggaran RKAB terhadap realisasi, biaya per ton dan per BCM, selisih yang dipecah menjadi bagian volume dan bagian tarif, serta proyeksi akhir tahun.',
+             'ikon' => 'M12 2.5v19M15.5 7.2c-.6-1.4-2-2.2-3.7-2.2-2.2 0-3.9 1.2-3.9 3s1.5 2.6 4 3.2c2.7.6 4.3 1.5 4.3 3.4 0 2-1.8 3.3-4.2 3.3-2 0-3.5-.9-4.1-2.4'],
+
+            ['nama' => 'Izin Kerja Aman', 'status' => 'aktif', 'pilar' => 'safety',
+             'rute' => 'izin.index',
+             'ket'  => 'Izin kerja panas, ruang terbatas, ketinggian, dan lainnya: daftar periksa yang dapat disusun sendiri, uji gas beserta kesegarannya, penutupan izin, dan penyaring dua izin yang tidak boleh berbarengan di satu lokasi.',
+             'ikon' => 'M9 12.5l2 2 4.5-4.5M8.5 4.5h7a1 1 0 0 1 1 1v1h1.5a2 2 0 0 1 2 2v10.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2H7.5v-1a1 1 0 0 1 1-1Z'],
+
+            ['nama' => 'Kestabilan Lereng', 'status' => 'aktif', 'pilar' => 'engineering',
+             'rute' => 'geoteknik.index',
+             'ket'  => 'Pemantauan gerakan lereng, kebalikan laju, penyimpangan geometri terbangun, dan acuan kajian geoteknik — alat bantu keputusan, bukan pengganti penilaian tenaga kompeten.',
+             'ikon' => 'M2.5 19.5h19L15 8l-3.2 5.2L9.4 9.8ZM9.4 9.8 5.6 4.5 2.5 9'],
 
             ['nama' => 'ISO & Dokumen', 'status' => 'aktif', 'pilar' => 'quality', 'rute' => 'dokumen.index',
              'ket'  => 'Register dokumen terkendali: nomor revisi, masa berlaku, riwayat perubahan, dan pengingat peninjauan berkala.',

@@ -6,6 +6,7 @@ use App\Models\{ActivityLog, Company, SmkpAttendee, SmkpAudit, SmkpFinding};
 use App\Support\{KopDokumen, Smkp, SmkpTahap};
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 /**
  * Audit SMKP Minerba — 7 elemen sesuai Kepdirjen 185.K/37.04/DJB/2019.
@@ -23,7 +24,8 @@ class SmkpController extends Controller
             ->orderByDesc('tahun')->orderByDesc('id')
             ->paginate(15);
 
-        return view('smkp.index', [
+        return Inertia::render('Smkp/Halaman', [
+            'mode' => 'index',
             'audits' => $audits,
             'meta'   => Smkp::meta(),
         ]);
@@ -31,7 +33,8 @@ class SmkpController extends Controller
 
     public function create()
     {
-        return view('smkp.form', [
+        return Inertia::render('Smkp/Halaman', [
+            'mode' => 'form',
             'audit'     => new SmkpAudit(['tahun' => now()->year]),
             'companies' => Company::orderBy('name')->get(),
         ]);
@@ -51,7 +54,8 @@ class SmkpController extends Controller
 
     public function edit(SmkpAudit $smkp)
     {
-        return view('smkp.form', [
+        return Inertia::render('Smkp/Halaman', [
+            'mode' => 'form',
             'audit'     => $smkp,
             'companies' => Company::orderBy('name')->get(),
         ]);
@@ -74,7 +78,8 @@ class SmkpController extends Controller
     /* ---------- Ringkasan satu audit ---------- */
     public function show(SmkpAudit $smkp)
     {
-        return view('smkp.show', [
+        return Inertia::render('Smkp/Halaman', [
+            'mode' => 'show',
             'audit'     => $smkp,
             'rekap'     => $smkp->rekap(),
             'elemen'    => Smkp::elemen(),
@@ -84,6 +89,9 @@ class SmkpController extends Controller
             'tahap'     => SmkpTahap::tahap(),
             'alur'      => SmkpTahap::alur(),
             'status'    => $smkp->statusAlur(),
+            'tautan'    => [
+                'rencanaCetak' => route('smkp.rencana.cetak', $smkp),
+            ],
         ]);
     }
 
@@ -134,7 +142,8 @@ class SmkpController extends Controller
     /** Acuan kriteria audit — 7 elemen beserta bobot dan rujukan halamannya. */
     public function acuan()
     {
-        return view('smkp.acuan', [
+        return Inertia::render('Smkp/Halaman', [
+            'mode' => 'acuan',
             'elemen'  => Smkp::elemen(),
             'meta'    => Smkp::meta(),
             'kategori'=> Smkp::kategori(),
@@ -146,7 +155,8 @@ class SmkpController extends Controller
 
     public function tahap1(SmkpAudit $smkp)
     {
-        return view('smkp.tahap1', [
+        return Inertia::render('Smkp/Halaman', [
+            'mode' => 'tahap1',
             'audit'     => $smkp,
             'elemen'    => Smkp::elemen(),
             'kelayakan' => SmkpTahap::indikatorKelayakan(),
@@ -214,7 +224,9 @@ class SmkpController extends Controller
     /** Berita Acara Hasil Pelaksanaan Tahapan Awal — siap cetak. */
     public function beritaAcara(SmkpAudit $smkp)
     {
-        return view('smkp.berita-acara', [
+        return Inertia::render('Print/Smkp', [
+            'mode'       => 'berita',
+            'totalLembar'=> 4,
             'audit'     => $smkp,
             'elemen'    => Smkp::elemen(),
             'kelayakan' => SmkpTahap::indikatorKelayakan(),
@@ -231,7 +243,8 @@ class SmkpController extends Controller
 
     public function rencana(SmkpAudit $smkp)
     {
-        return view('smkp.rencana', [
+        return Inertia::render('Smkp/Halaman', [
+            'mode' => 'rencana',
             'audit'    => $smkp,
             'komponen' => SmkpTahap::komponenRencana(),
             'pengesah' => SmkpTahap::pengesah(),
@@ -319,7 +332,9 @@ class SmkpController extends Controller
     /** Laporan Rencana Audit — sembilan komponen wajib, siap cetak. */
     public function rencanaCetak(SmkpAudit $smkp)
     {
-        return view('smkp.rencana-cetak', [
+        return Inertia::render('Print/Smkp', [
+            'mode'       => 'rencana',
+            'totalLembar'=> 3,
             'audit'    => $smkp,
             'komponen' => SmkpTahap::komponenRencana(),
             'pengesah' => SmkpTahap::pengesah(),
@@ -335,7 +350,8 @@ class SmkpController extends Controller
 
     public function rapat(SmkpAudit $smkp)
     {
-        return view('smkp.rapat', [
+        return Inertia::render('Smkp/Halaman', [
+            'mode' => 'rapat',
             'audit' => $smkp,
             'rapat' => SmkpTahap::rapat(),
             'hadir' => $smkp->attendees()->orderBy('id')->get()->groupBy('rapat'),
@@ -374,7 +390,9 @@ class SmkpController extends Controller
     {
         abort_if(!array_key_exists($rapat, SmkpTahap::rapat()), 404, 'Rapat tidak dikenal.');
 
-        return view('smkp.daftar-hadir', [
+        return Inertia::render('Print/Smkp', [
+            'mode'   => 'hadir',
+            'totalLembar' => max(1, (int) ceil($smkp->hadir($rapat)->count() / 16)),
             'audit' => $smkp,
             'rapat' => $rapat,
             'judul' => SmkpTahap::labelRapat($rapat),
@@ -431,7 +449,8 @@ class SmkpController extends Controller
         $ref = collect(Smkp::elemen())->firstWhere('kode', $elemen);
         abort_if(!$ref, 404, 'Elemen tidak dikenal.');
 
-        return view('smkp.nilai', [
+        return Inertia::render('Smkp/Halaman', [
+            'mode' => 'nilai',
             'audit'     => $smkp,
             'elemen'    => $ref,
             'rekap'     => Smkp::rekapElemen($ref, $smkp->hasil ?? []),
@@ -490,7 +509,8 @@ class SmkpController extends Controller
     /* ---------- Temuan / CAR ---------- */
     public function temuan(SmkpAudit $smkp)
     {
-        return view('smkp.temuan', [
+        return Inertia::render('Smkp/Halaman', [
+            'mode' => 'temuan',
             'audit'    => $smkp,
             'temuan'   => $smkp->findings()->latest('id')->get(),
             'usulan'   => $this->usulanTemuan($smkp),
@@ -558,7 +578,9 @@ class SmkpController extends Controller
     /* ---------- Laporan siap cetak ---------- */
     public function laporan(SmkpAudit $smkp)
     {
-        return view('smkp.laporan', [
+        return Inertia::render('Print/Smkp', [
+            'mode'   => 'laporan',
+            'totalLembar' => 1 + max(1, (int) ceil($smkp->findings()->count() / 6)),
             'audit'  => $smkp,
             'rekap'  => $smkp->rekap(),
             'elemen' => Smkp::elemen(),

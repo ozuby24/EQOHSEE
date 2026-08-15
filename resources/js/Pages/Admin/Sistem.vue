@@ -7,11 +7,16 @@
  * di jaringan tambang yang tertutup — tempat aplikasi ini justru dipakai
  * — skripnya gagal dimuat dan ketiga panelnya kosong tanpa penjelasan.
  */
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import type { HalamanSistem } from '../../types';
 
 const props = defineProps<HalamanSistem>();
+
+/** Galat validasi tidak ditampilkan oleh tata letak; halaman ini sendiri
+    yang menampilkannya — tanpa itu, penolakan penandaan data contoh
+    berlalu tanpa satu kata pun. */
+const galat = computed<Record<string, string>>(() => (usePage().props as any).errors ?? {});
 
 /* ── donat sebaran peran ── */
 
@@ -37,6 +42,14 @@ const potongan = computed(() => {
     .filter((p) => p.jumlah > 0);
 });
 
+/* ── ringkasan diagnosa ── */
+
+const perluDitindak = computed(
+  () => (props.diagnosa.ringkas.gawat ?? 0)
+      + (props.diagnosa.ringkas.perhatian ?? 0)
+      + (props.diagnosa.ringkas['tak-tahu'] ?? 0),
+);
+
 /* ── tren log tujuh hari ── */
 
 const maksTren = computed(() => Math.max(1, ...props.tren.map((t) => t.jumlah)));
@@ -53,6 +66,64 @@ function jalankan(url: string) {
 function bersihkanLog() {
   if (!confirm('Kosongkan seluruh log aktivitas?')) return;
   router.delete(props.tautan.bersihkanLog, { preserveScroll: true });
+}
+
+/* ── data contoh ── */
+
+type Perusahaan = HalamanSistem['perusahaan'][number];
+
+const demoForm = useForm({ demo: true, sadar: '' });
+
+const perusahaanContoh = computed(() => props.perusahaan.filter((c) => c.demo));
+
+/** Jumlah baris data contoh satu perusahaan. */
+function jumlahIsi(c: Perusahaan): number {
+  return Object.values(c.isi ?? {}).reduce((a, n) => a + n, 0);
+}
+
+/** Tiga tabel terbesar, sekadar untuk mengenali sasarannya sekilas. */
+function ringkasIsi(c: Perusahaan): string {
+  const isi = Object.entries(c.isi ?? {}).sort((a, b) => b[1] - a[1]).slice(0, 3);
+
+  return isi.length ? isi.map(([t, n]) => `${t} ${n}`).join(' · ') : 'belum ada data';
+}
+
+function tandai(c: Perusahaan) {
+  /* Perusahaan yang sudah berisi menuntut namanya diketik. Penjagaan
+     yang sama ada di server — yang di sini hanya menghemat satu
+     perjalanan, bukan menggantikannya. */
+  const isi = jumlahIsi(c);
+  let sadar = '';
+
+  if (isi > 0) {
+    sadar =
+      prompt(
+        `${c.nama} sudah berisi ${isi} baris data.\n\n` +
+          'Menandainya sebagai perusahaan contoh membuat seluruh data itu dapat dibuang ' +
+          'oleh tombol muat ulang.\n\nKetik nama perusahaannya persis untuk menegaskan:',
+      ) ?? '';
+
+    if (!sadar) return;
+  }
+
+  demoForm.transform(() => ({ demo: true, sadar })).post(c.urlTandai, { preserveScroll: true });
+}
+
+function lepasTanda(c: Perusahaan) {
+  demoForm.transform(() => ({ demo: false, sadar: '' })).post(c.urlTandai, { preserveScroll: true });
+}
+
+function muat(c: Perusahaan) {
+  const isi = jumlahIsi(c);
+
+  const pesan = isi
+    ? `Muat ulang data contoh ${c.nama}?\n\n${isi} baris yang ada sekarang akan DIBUANG ` +
+      'dan diganti dengan data contoh yang baru. Tindakan ini tidak dapat dibatalkan.'
+    : `Muat data contoh untuk ${c.nama}?`;
+
+  if (!confirm(pesan)) return;
+
+  demoForm.transform(() => ({})).post(c.urlMuat, { preserveScroll: true });
 }
 </script>
 
@@ -71,12 +142,54 @@ function bersihkanLog() {
 
         <div class="grid sm:grid-cols-3 lg:grid-cols-5 gap-2 mt-5">
           <div v-for="s in server" :key="s.label" class="glass rounded-xl px-3.5 py-2.5">
-            <div class="text-[9px] uppercase tracking-[0.12em] text-white/40 font-bold clamp-1">{{ s.label }}</div>
+            <div class="text-[9px] uppercase tracking-[0.12em] text-white/62 font-bold clamp-1">{{ s.label }}</div>
             <div class="text-[12px] font-bold text-white mt-1 clamp-1">{{ s.nilai }}</div>
           </div>
         </div>
       </div>
     </section>
+
+    <!-- Ringkasan diagnosa.
+
+         Diletakkan di sini, bukan hanya di halamannya sendiri: halaman
+         diagnosa hanya dibuka orang yang sudah curiga ada yang salah,
+         sementara justru hal-hal yang diperiksanya adalah hal yang
+         tidak menimbulkan kecurigaan apa pun. -->
+    <Link :href="diagnosa.url"
+          class="block rounded-2xl border shadow-card px-5 py-4 card-hover transition"
+          :class="perluDitindak
+            ? 'border-amber-100 bg-amber-50 hover:border-amber-400'
+            : 'border-emerald-100 bg-emerald-50 hover:border-emerald-400'">
+      <div class="flex items-center gap-4 flex-wrap">
+        <div class="min-w-0 flex-1">
+          <div class="text-[13.5px] font-bold text-cam-ink">
+            {{ perluDitindak
+                ? perluDitindak + ' pemeriksaan sistem perlu ditindak'
+                : 'Seluruh pemeriksaan sistem lolos' }}
+          </div>
+          <div class="text-[11.5px] text-stone-500 mt-0.5 leading-relaxed">
+            Mode debug, migrasi tertunda, izin berkas, tautan storage, antrean, nomor sertifikat
+            kembar, dan baris tanpa perusahaan.
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <span v-for="k in ['gawat', 'perhatian', 'tak-tahu']" :key="k"
+                v-show="diagnosa.ringkas[k]"
+                class="text-[11px] font-bold px-2.5 py-1 rounded-lg"
+                :class="{
+                  'bg-red-100 text-red-700': k === 'gawat',
+                  'bg-amber-100 text-amber-800': k === 'perhatian',
+                  'bg-stone-100 text-stone-600': k === 'tak-tahu',
+                }">
+            {{ diagnosa.ringkas[k] }} {{ k === 'tak-tahu' ? 'tak diketahui' : k }}
+          </span>
+          <svg class="w-4 h-4 text-stone-400" fill="none" stroke="currentColor"
+               stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6" /></svg>
+        </div>
+      </div>
+    </Link>
 
     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <Link v-for="p in pintasan" :key="p.label" :href="p.url"
@@ -191,7 +304,7 @@ function bersihkanLog() {
         <table class="w-full text-[12.5px]">
           <thead>
             <tr class="bg-stone-50 border-b border-stone-100">
-              <th v-for="h in ['Perusahaan', 'Komoditas', 'Lokasi', 'Pekerja', 'Pengguna', '']" :key="h"
+              <th v-for="h in ['Perusahaan', 'Komoditas', 'Lokasi', 'Pekerja', 'Pengguna', 'Data contoh', '']" :key="h"
                   class="text-left font-bold text-stone-500 uppercase tracking-wide text-[10px] px-4 py-2.5">
                 {{ h }}
               </th>
@@ -204,16 +317,84 @@ function bersihkanLog() {
               <td class="px-4 py-2.5 text-stone-500">{{ c.lokasi ?? '—' }}</td>
               <td class="px-4 py-2.5 text-stone-500 num">{{ c.pekerja }}</td>
               <td class="px-4 py-2.5 text-stone-500 num">{{ c.pengguna }}</td>
+              <td class="px-4 py-2.5">
+                <button v-if="c.demo" type="button" @click="lepasTanda(c)"
+                        :disabled="demoForm.processing"
+                        class="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded
+                               bg-amber-100 text-amber-800 hover:brightness-95 transition disabled:opacity-40"
+                        title="Lepas tanda perusahaan contoh">
+                  Perusahaan contoh
+                </button>
+                <button v-else type="button" @click="tandai(c)" :disabled="demoForm.processing"
+                        class="text-[11px] font-semibold text-stone-400 hover:text-cam-lime-deep
+                               hover:underline transition disabled:opacity-40">
+                  Jadikan contoh
+                </button>
+              </td>
               <td class="px-4 py-2.5 text-right">
                 <a :href="c.urlUbah" class="text-[11.5px] font-semibold text-cam-lime-deep hover:underline">Kelola</a>
               </td>
             </tr>
             <tr v-if="!perusahaan.length">
-              <td colspan="6" class="px-4 py-10 text-center text-stone-400">Belum ada perusahaan.</td>
+              <td colspan="7" class="px-4 py-10 text-center text-stone-400">Belum ada perusahaan.</td>
             </tr>
           </tbody>
         </table>
       </div>
+    </section>
+
+    <!-- Data contoh.
+
+         Diletakkan sebagai bagian tersendiri, bukan sebagai satu tombol
+         lagi di dalam tabel perusahaan: tombol ini membuang seluruh data
+         satu perusahaan, dan tombol semacam itu tidak sepatutnya duduk
+         sebaris dengan tombol "Kelola". -->
+    <section class="bg-white rounded-2xl shadow-card border border-stone-100 p-5">
+      <div class="flex items-center justify-between mb-1">
+        <h3 class="text-[14px] font-bold text-cam-ink">Data Contoh</h3>
+        <span class="text-[11px] font-bold text-cam-lime-deep">
+          {{ perusahaanContoh.length }} perusahaan contoh
+        </span>
+      </div>
+      <p class="text-[11.5px] text-stone-400 leading-relaxed mb-3.5">
+        Mengisi seluruh modul sekaligus — operasi, gudang, penirisan, geoteknik, lingkungan,
+        peledakan, angkutan, biaya, dan izin kerja — supaya angka turunannya dapat diperiksa
+        apakah masuk akal. Datanya sengaja tidak sempurna: ada bulan yang melampaui anggaran,
+        lereng yang lajunya naik, pompa rusak, dan izin lewat waktu, supaya peringatannya
+        benar-benar menyala.
+      </p>
+
+      <div v-if="galat.demo"
+           class="rounded-xl border border-red-100 bg-red-50 px-4 py-3 mb-3.5 text-[12px]
+                  text-red-700 leading-relaxed">
+        {{ galat.demo }}
+      </div>
+
+      <div v-if="perusahaanContoh.length" class="space-y-2.5">
+        <div v-for="c in perusahaanContoh" :key="c.id"
+             class="rounded-xl border border-amber-100 bg-amber-50/60 px-4 py-3
+                    flex flex-wrap items-center gap-3">
+          <div class="min-w-0 flex-1">
+            <div class="text-[13px] font-bold text-cam-ink">{{ c.nama }}</div>
+            <div class="text-[11px] text-stone-500 mt-0.5">
+              <span class="num font-semibold">{{ jumlahIsi(c) }}</span> baris ·
+              {{ ringkasIsi(c) }}
+            </div>
+          </div>
+
+          <button type="button" @click="muat(c)" :disabled="demoForm.processing"
+                  class="rounded-xl bg-cam-lime-deep px-4 py-2 text-[11.5px] font-bold text-white
+                         hover:brightness-95 transition disabled:opacity-40 shrink-0">
+            {{ jumlahIsi(c) ? 'Muat ulang' : 'Muat data contoh' }}
+          </button>
+        </div>
+      </div>
+
+      <p v-else class="text-[12px] text-stone-400 py-3">
+        Belum ada perusahaan contoh. Tandai satu perusahaan pada tabel di atas — sebaiknya
+        perusahaan yang memang dibuat untuk pengujian, sebab pemuatan membuang seluruh
+        datanya lebih dulu.
+      </p>
     </section>
 
     <section class="bg-white rounded-2xl shadow-card border border-stone-100 p-5">

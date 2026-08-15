@@ -43,3 +43,7 @@ Thumbs.db
 # Berkas kerja Termux
 *.zip
 /.eqget-tmp
+
+# Pengaturan pengiriman ke VPS — milik tiap mesin, bukan milik repo.
+# Contohnya ada di deploy/vps.conf.example.
+/deploy/vps.conf

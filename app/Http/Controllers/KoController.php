@@ -6,6 +6,7 @@ use App\Models\{ActivityLog, Company, KoAction, KoInspection, KoObject, KoPerson
 use App\Support\Ko;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Inertia\Inertia;
 
 class KoController extends Controller
 {
@@ -77,11 +78,11 @@ class KoController extends Controller
 
     public function index()
     {
-        $objek  = $this->lingkup()->get();
+        $objek  = $this->denganStatus($this->lingkup()->get());
         $tenaga = $this->tenagaLingkup()->get();
         $c      = Ko::hitung($objek, $tenaga);
 
-        return view('ko.dashboard', $this->bersama() + [
+        return Inertia::render('Ko/Halaman', $this->bersama() + ['mode' => 'dashboard',
             'c'          => $c,
             'sub'        => Ko::subElemen($c),
             'peringatan' => array_slice(Ko::peringatan($objek), 0, 12),
@@ -106,13 +107,13 @@ class KoController extends Controller
         if ($kat = $r->get('kat'))  $q->where('kategori', $kat);
         if ($ops = $r->get('ops'))  $q->where('status_operasi', $ops);
 
-        $objek = $q->orderBy('kode')->get();
+        $objek = $this->denganStatus($q->orderBy('kode')->get());
 
         if ($st = $r->get('st')) {
             $objek = $objek->filter(fn ($o) => Ko::status($o) === $st)->values();
         }
 
-        return view('ko.register', $this->bersama() + [
+        return Inertia::render('Ko/Halaman', $this->bersama() + ['mode' => 'register',
             'objek' => $objek,
             'q'     => $cari ?? '',
             'kat'   => $kat, 'ops' => $ops, 'st' => $st,
@@ -123,14 +124,14 @@ class KoController extends Controller
     {
         $this->pastikanUbah();
 
-        return view('ko.form', $this->bersama() + ['o' => new KoObject(['interval_tahun' => 3])]);
+        return Inertia::render('Ko/Halaman', $this->bersama() + ['mode' => 'form', 'o' => new KoObject(['interval_tahun' => 3])]);
     }
 
     public function edit(KoObject $objek)
     {
         $this->pastikanUbah();
 
-        return view('ko.form', $this->bersama() + ['o' => $objek]);
+        return Inertia::render('Ko/Halaman', $this->bersama() + ['mode' => 'form', 'o' => $objek]);
     }
 
     public function store(Request $r)
@@ -198,8 +199,9 @@ class KoController extends Controller
     public function show(KoObject $objek)
     {
         $objek->load(['company', 'safeguards', 'reviews.personnel', 'inspections.personnel', 'actions.pic']);
+        $objek->setAttribute('status_ko', Ko::status($objek));
 
-        return view('ko.rincian', $this->bersama() + [
+        return Inertia::render('Ko/Halaman', $this->bersama() + ['mode' => 'rincian',
             'o'      => $objek,
             'tenaga' => $this->tenagaLingkup()->orderBy('nama')->get(),
             'user'   => User::orderBy('name')->get(),
@@ -211,10 +213,10 @@ class KoController extends Controller
 
     public function kelayakan()
     {
-        $objek = $this->lingkup()->orderBy('kode')->get()
+        $objek = $this->denganStatus($this->lingkup()->orderBy('kode')->get())
             ->sortBy(fn ($o) => Ko::sisaHari($o) ?? -99999)->values();
 
-        return view('ko.kelayakan', $this->bersama() + [
+        return Inertia::render('Ko/Halaman', $this->bersama() + ['mode' => 'kelayakan',
             'objek' => $objek,
             'c'     => Ko::hitung($objek, $this->tenagaLingkup()->get()),
         ]);
@@ -224,10 +226,10 @@ class KoController extends Controller
 
     public function perawatan()
     {
-        $objek = $this->lingkup()->orderBy('kode')->get()
+        $objek = $this->denganStatus($this->lingkup()->orderBy('kode')->get())
             ->sortBy(fn ($o) => Ko::sisaPm($o) ?? 99999)->values();
 
-        return view('ko.perawatan', $this->bersama() + [
+        return Inertia::render('Ko/Halaman', $this->bersama() + ['mode' => 'perawatan',
             'objek' => $objek,
             'c'     => Ko::hitung($objek, $this->tenagaLingkup()->get()),
         ]);
@@ -265,10 +267,9 @@ class KoController extends Controller
 
     public function pengaman()
     {
-        $objek = $this->lingkup()->orderBy('kode')->get()
-            ->filter(fn ($o) => $o->safeguards->count())->values();
+        $objek = $this->denganStatus($this->lingkup()->orderBy('kode')->get())->values();
 
-        return view('ko.pengaman', $this->bersama() + [
+        return Inertia::render('Ko/Halaman', $this->bersama() + ['mode' => 'pengaman',
             'objek' => $objek,
             'c'     => Ko::hitung($this->lingkup()->get(), $this->tenagaLingkup()->get()),
             'sigapAda' => Schema::hasTable('sigap_assets'),
@@ -333,7 +334,7 @@ class KoController extends Controller
             ->whereIn('ko_object_id', $this->lingkup()->select('ko_objects.id'))
             ->latest('tanggal')->get();
 
-        return view('ko.kajian', $this->bersama() + [
+        return Inertia::render('Ko/Halaman', $this->bersama() + ['mode' => 'kajian',
             'kajian' => $kajian,
             'objek'  => $this->lingkup()->orderBy('kode')->get(),
             'tenaga' => $this->tenagaLingkup()->orderBy('nama')->get(),
@@ -384,7 +385,7 @@ class KoController extends Controller
 
     public function tenaga()
     {
-        return view('ko.tenaga', $this->bersama() + [
+        return Inertia::render('Ko/Halaman', $this->bersama() + ['mode' => 'tenaga',
             'tenaga' => $this->tenagaLingkup()->orderBy('nama')->get(),
             'user'   => User::orderBy('name')->get(),
         ]);
@@ -434,7 +435,7 @@ class KoController extends Controller
 
         if ($st = $r->get('st')) $q->where('status', $st);
 
-        return view('ko.tindak', $this->bersama() + [
+        return Inertia::render('Ko/Halaman', $this->bersama() + ['mode' => 'tindak',
             'aksi'  => $q->orderByRaw("CASE status WHEN 'Terbuka' THEN 0 WHEN 'Berjalan' THEN 1 ELSE 2 END")
                          ->orderBy('target_tgl')->get(),
             'st'    => $st,
@@ -527,7 +528,7 @@ class KoController extends Controller
     {
         abort_unless(auth()->user()->isAdmin(), 403);
 
-        return view('ko.pengaturan', $this->bersama());
+        return Inertia::render('Ko/Halaman', $this->bersama() + ['mode' => 'pengaturan']);
     }
 
     public function simpanPengaturan(Request $r)
@@ -546,5 +547,10 @@ class KoController extends Controller
         $this->catat('Ubah pengaturan KO', 'Ambang jatuh tempo: ' . $d['ko_warn_days'] . ' hari');
 
         return back()->with('ok', 'Pengaturan KO tersimpan.');
+    }
+
+    private function denganStatus($objek)
+    {
+        return $objek->each(fn ($o) => $o->setAttribute('status_ko', Ko::status($o)));
     }
 }

@@ -60,7 +60,7 @@ function hapusFoto() {
 
     <div class="bg-white rounded-2xl shadow-card border border-stone-100 overflow-hidden">
       <div class="px-6 py-5 border-b border-stone-100">
-        <h3 class="text-[15px] font-bold text-[#0F1720]">Data Diri</h3>
+        <h3 class="text-[15px] font-bold text-cam-ink">Data Diri</h3>
         <p class="text-[12.5px] text-stone-500 mt-1">
           Nama dan jabatan di sini yang tercetak pada sertifikat serta laporan yang Anda terbitkan.
         </p>
@@ -75,11 +75,11 @@ function hapusFoto() {
         </span>
 
         <div class="flex-1 min-w-[220px]">
-          <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Foto Profil</label>
+          <label class="block text-[12px] font-semibold text-cam-ink mb-1.5">Foto Profil</label>
           <input type="file" accept="image/jpeg,image/png,image/webp" @change="pilihFoto"
                  class="block w-full text-[12.5px] text-stone-600
                         file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0
-                        file:text-[12px] file:font-semibold file:bg-stone-100 file:text-[#0F1720]">
+                        file:text-[12px] file:font-semibold file:bg-stone-100 file:text-cam-ink">
           <p v-if="pratinjau" class="text-[11.5px] text-amber-700 font-semibold mt-1.5">
             Foto baru dipilih — belum tersimpan sampai Anda menekan Simpan Perubahan.
           </p>
@@ -95,7 +95,7 @@ function hapusFoto() {
 
       <div class="px-6 py-5 grid gap-4 sm:grid-cols-2">
         <div v-for="m in medan" :key="m.nama">
-          <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">
+          <label class="block text-[12px] font-semibold text-cam-ink mb-1.5">
             {{ m.label }} <span v-if="m.wajib" class="text-red-500">*</span>
           </label>
           <input v-model="form[m.nama]" :type="m.tipe"
@@ -107,7 +107,7 @@ function hapusFoto() {
         </div>
 
         <div class="sm:col-span-2">
-          <label class="block text-[12px] font-semibold text-[#0F1720] mb-1.5">Keterangan Singkat</label>
+          <label class="block text-[12px] font-semibold text-cam-ink mb-1.5">Keterangan Singkat</label>
           <textarea v-model="form.bio" rows="3" maxlength="300"
                     placeholder="Ringkasan peran atau kompetensi Anda."
                     class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]
@@ -120,7 +120,7 @@ function hapusFoto() {
         <div class="rounded-xl bg-stone-50 border border-stone-100 px-4 py-3.5 flex items-center gap-3">
           <img v-if="perusahaan?.logo" :src="perusahaan.logo" alt="" class="w-10 h-10 object-contain">
           <div class="min-w-0">
-            <p class="text-[12.5px] font-bold text-[#0F1720]">
+            <p class="text-[12.5px] font-bold text-cam-ink">
               {{ perusahaan?.nama ?? 'Belum terhubung ke perusahaan' }}
             </p>
             <p class="text-[11.5px] text-stone-500">

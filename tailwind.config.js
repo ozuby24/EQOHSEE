@@ -49,6 +49,28 @@ export default {
                     'lime-light': '#FF9800',
                     'lime-soft':  '#FFF2E2',
 
+                    /*
+                     * Nama jujurnya, sebagai alias nilai yang sama.
+                     *
+                     * `cam-lime` dipertahankan karena dipakai di ratusan
+                     * tempat, tetapi warnanya sudah lama bukan hijau — dan
+                     * penulisan berikutnya wajar menebak `cam-orange`. Tebakan
+                     * itu sudah terjadi di delapan berkas: `text-cam-orange`
+                     * pada logotype, `ring-cam-orange` pada kartu pilar
+                     * terpilih, dan sepuluh tempat lain. Karena tokennya tidak
+                     * pernah ada, Tailwind tidak menghasilkan kelasnya sama
+                     * sekali — huruf Q tampil putih dan cincin pilihannya
+                     * tidak pernah muncul.
+                     *
+                     * Didaftarkan, bukan ditulis ulang menjadi `cam-lime`:
+                     * nama ini yang benar untuk warnanya, dan tebakan yang
+                     * sama pasti terulang.
+                     */
+                    orange:         '#F57C00',
+                    'orange-light': '#FF9800',
+                    'orange-dark':  '#DC6E00',
+                    'orange-soft':  '#FFF2E2',
+
                     // Merah — bahaya, penolakan, penghapusan
                     coral:      '#EF4444',
                     'coral-dark': '#DC2626',

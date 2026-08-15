@@ -73,6 +73,56 @@ final class KopDokumen
                 'judul' => 'LAPORAN KINERJA ENERGI DAN EMISI KARBON',
                 'kode'  => 'OHSE-V.021',
             ],
+            'laporan-operasi' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN KINERJA OPERASI PENAMBANGAN',
+                'kode'  => 'OHSE-V.031',
+            ],
+            'laporan-keandalan' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN KEANDALAN DAN PEMELIHARAAN ARMADA',
+                'kode'  => 'OHSE-V.051',
+            ],
+            'laporan-air' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN PENGELOLAAN AIR DAN PENIRISAN TAMBANG',
+                'kode'  => 'OHSE-V.061',
+            ],
+            'laporan-lingkungan' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN PENGELOLAAN LINGKUNGAN DAN REKLAMASI',
+                'kode'  => 'OHSE-V.081',
+            ],
+            'laporan-peledakan' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN PENGEBORAN DAN PELEDAKAN',
+                'kode'  => 'OHSE-V.091',
+            ],
+            'laporan-angkutan' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN PENGANGKUTAN DAN PENGATURAN ARMADA',
+                'kode'  => 'OHSE-V.101',
+            ],
+            'laporan-biaya' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN PENGENDALIAN BIAYA OPERASI PENAMBANGAN',
+                'kode'  => 'OHSE-V.111',
+            ],
+            'laporan-izin-kerja' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN IZIN KERJA AMAN',
+                'kode'  => 'OHSE-IV.121',
+            ],
+            'laporan-geoteknik' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN PEMANTAUAN KESTABILAN LERENG',
+                'kode'  => 'OHSE-V.071',
+            ],
+            'laporan-konservasi' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN KONSERVASI MINERAL DAN BATUBARA',
+                'kode'  => 'OHSE-V.041',
+            ],
         ];
     }
 

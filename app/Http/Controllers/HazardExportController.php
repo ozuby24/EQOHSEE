@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\{Company, HazardReport, Inspection};
 use App\Support\{Db, Ekspor, Hazard};
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class HazardExportController extends Controller
 {
@@ -38,7 +39,11 @@ class HazardExportController extends Controller
     public function hazardCetak(Request $r)
     {
         $data = $this->saringHazard($r)->get();
-        return view('hazard.cetak', ['data' => $data, 'f' => $r->query()]);
+        return Inertia::render('Print/Hazard', [
+            'data' => $data,
+            'filters' => $r->query(),
+            'kembali' => route('hazard.index', $r->query()),
+        ]);
     }
 
     /* ---------- Ekspor Inspeksi ---------- */
@@ -74,7 +79,11 @@ class HazardExportController extends Controller
         if ($r->filled('status'))   $q->where('status', $r->status);
         if ($r->filled('template')) $q->where('template_id', $r->template);
 
-        return view('inspeksi.cetak', ['data' => $q->latest('tanggal')->get()]);
+        return Inertia::render('Print/Inspeksi', [
+            'data' => $q->latest('tanggal')->get(),
+            'filters' => $r->query(),
+            'kembali' => route('inspeksi.index', $r->query()),
+        ]);
     }
 
     /* ---------- Pengingat tindak lanjut ---------- */

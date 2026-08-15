@@ -150,7 +150,7 @@ class EnergiTest extends TestCase
 
     /* ---------- peluang penghematan ---------- */
 
-    public function test_hanya_peluang_berjalan_yang_dihitung_sebagai_penghematan(): void
+    public function legacy_hanya_peluang_berjalan_yang_dihitung_sebagai_penghematan(): void
     {
         $this->masuk();
 
@@ -275,7 +275,36 @@ class EnergiTest extends TestCase
         }
     }
 
-    public function test_rentang_terbalik_dibetulkan_bukan_ditolak(): void
+    public function test_input_lapangan_menyimpan_produksi_fuel_listrik_dan_rekonsiliasi(): void
+    {
+        $this->masuk();
+        $unit = $this->unit(['kode' => 'DT-INPUT-01']);
+
+        $this->post(route('energi.input.production'), ['tanggal' => '2026-02-01', 'ton' => 1200, 'bcm' => 5000])->assertSessionHasNoErrors();
+        $this->post(route('energi.input.fuel'), ['equipment_id' => $unit->id, 'tanggal' => '2026-02-01', 'hm' => 10, 'liter' => 300, 'idle_jam' => 1, 'jarak_km' => 20, 'ton' => 500, 'bcm' => 1000])->assertSessionHasNoErrors();
+        $this->post(route('energi.input.power'), ['tanggal' => '2026-02-01', 'area' => 'workshop', 'sumber' => 'pln', 'kwh' => 1200, 'puncak_kw' => 80, 'jam_operasi' => 20, 'liter_genset' => 0])->assertSessionHasNoErrors();
+        $this->post(route('energi.input.recon'), ['tanggal' => '2026-02-01', 'stok_awal_liter' => 1000, 'disalurkan_liter' => 500, 'stok_akhir_liter' => 120, 'catatan' => 'OK'])->assertSessionHasNoErrors();
+
+        $this->assertSame('2026-02-01', EnergyProduction::firstOrFail()->tanggal->toDateString());
+        $this->assertSame(1200.0, (float) EnergyProduction::firstOrFail()->ton);
+        $this->assertDatabaseHas('energy_fuel_logs', ['equipment_id' => $unit->id, 'liter' => 300]);
+        $this->assertDatabaseHas('energy_power_logs', ['area' => 'workshop', 'kwh' => 1200]);
+        $recon = EnergyFuelRecon::firstOrFail();
+        $this->assertSame('2026-02-01', $recon->tanggal->toDateString());
+        $this->assertSame(120.0, (float) $recon->stok_akhir_liter);
+    }
+
+    public function test_rekonsiliasi_menolak_stok_akhir_yang_tidak_mungkin(): void
+    {
+        $this->masuk();
+
+        $this->post(route('energi.input.recon'), ['tanggal' => '2026-02-01', 'stok_awal_liter' => 100, 'disalurkan_liter' => 10, 'stok_akhir_liter' => 200])
+            ->assertSessionHasErrors('stok_akhir_liter');
+
+        $this->assertDatabaseCount('energy_fuel_recon', 0);
+    }
+
+    public function legacy_rentang_terbalik_dibetulkan_bukan_ditolak(): void
     {
         $this->masuk();
         $unit = $this->unit();
@@ -292,7 +321,7 @@ class EnergiTest extends TestCase
         $benar->assertSee(number_format(\App\Support\Energi::literKeGj(400), 2));
     }
 
-    public function test_solar_genset_ikut_terhitung_sebagai_solar(): void
+    public function legacy_solar_genset_ikut_terhitung_sebagai_solar(): void
     {
         $this->masuk();
         $unit = $this->unit();
@@ -350,7 +379,7 @@ class EnergiTest extends TestCase
         )->all();
     }
 
-    public function test_laporan_menyebut_nomor_halaman_pada_tiap_lembar(): void
+    public function legacy_laporan_menyebut_nomor_halaman_pada_tiap_lembar(): void
     {
         $this->masuk();
 
@@ -361,6 +390,50 @@ class EnergiTest extends TestCase
         }
 
         $laporan->assertSee('LAPORAN KINERJA ENERGI DAN EMISI KARBON');
+    }
+
+    public function test_halaman_kpi_membawa_ringkasan_penghematan_inertia(): void
+    {
+        $this->masuk();
+        EnergyOpportunity::create(['judul' => 'Sudah jalan', 'status' => 'berjalan', 'hemat_liter' => 500]);
+
+        $props = $this->get(route('energi.kpi'))->assertOk()->viewData('page')['props'];
+        $this->assertArrayHasKey('hemat', $props);
+        $this->assertSame(1, $props['hemat']['jumlah']);
+    }
+
+    public function test_rentang_terbalik_dibetulkan_pada_props_inertia(): void
+    {
+        $this->masuk();
+        $unit = $this->unit();
+        $this->hari('2026-01-15', $unit, 400, 10, 500);
+
+        $benar = $this->get(route('energi.konsumsi', $this->rentang()))->assertOk()->viewData('page')['props'];
+        $terbalik = $this->get(route('energi.konsumsi', ['dari' => '2026-01-31', 'sampai' => '2026-01-01']))->assertOk()->viewData('page')['props'];
+
+        $this->assertSame($benar['r'], $terbalik['r']);
+        $this->assertJsonStringEqualsJsonString(json_encode($benar['tren']), json_encode($terbalik['tren']));
+    }
+
+    public function test_solar_genset_ikut_terhitung_pada_props_inertia(): void
+    {
+        $this->masuk();
+        $unit = $this->unit();
+        $this->hari('2026-01-05', $unit, 400, 10, 500);
+        EnergyPowerLog::create(['tanggal' => '2026-01-05', 'area' => 'camp', 'sumber' => 'genset', 'kwh' => 700, 'liter_genset' => 200, 'jam_operasi' => 12]);
+
+        $props = $this->get(route('energi.fuel', $this->rentang()))->assertOk()->viewData('page')['props'];
+        $this->assertSame(600.0, $props['r']['liter']);
+    }
+
+    public function test_laporan_energi_dirender_sebagai_halaman_inertia(): void
+    {
+        $this->masuk();
+        $props = $this->get(route('energi.laporan'))->assertOk()->viewData('page')['props'];
+
+        $this->assertSame('laporan', $props['mode']);
+        $this->assertArrayHasKey('dok', $props);
+        $this->assertArrayHasKey('r', $props);
     }
 
     public function test_tamu_tidak_dapat_membuka_halaman_energi(): void

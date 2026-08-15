@@ -43,10 +43,10 @@ class DashboardTest extends TestCase
     {
         $this->actingAs($this->pengguna());
 
-        $this->get('/dashboard')
-            ->assertOk()
-            ->assertSee('Belum ada kursus yang diikuti')
-            ->assertDontSee('NaN');
+        $props = $this->get('/dashboard')->assertOk()->viewData('page')['props'];
+
+        $this->assertSame([], $props['enrollments']);
+        $this->assertSame(0, $props['ringkas']['kemajuan']);
     }
 
     public function test_kemajuan_tanpa_pendaftaran_bernilai_nol_bukan_seratus(): void
@@ -55,7 +55,9 @@ class DashboardTest extends TestCase
 
         // Membagi dengan nol lalu menampilkan 100% adalah kesalahan yang
         // paling meyakinkan bentuknya — angkanya tampak wajar.
-        $this->get('/dashboard')->assertOk()->assertSee('0%');
+        $props = $this->get('/dashboard')->assertOk()->viewData('page')['props'];
+
+        $this->assertSame(0, $props['ringkas']['kemajuan']);
     }
 
     /* ---------- keadaan terisi ---------- */
@@ -71,13 +73,14 @@ class DashboardTest extends TestCase
         Enrollment::create(['user_id' => $u->id, 'course_id' => $a->id, 'progress' => 82, 'status' => 'ongoing']);
         Enrollment::create(['user_id' => $u->id, 'course_id' => $b->id, 'progress' => 100, 'status' => 'finished']);
 
-        $this->get('/dashboard')
-            ->assertOk()
-            ->assertSee('Dasar Keselamatan Pertambangan')
-            ->assertSee('Keselamatan Berkendara')
-            ->assertSee('82%')          // kemajuan kursus pertama
-            ->assertSee('3 Modul')      // jumlah modul, bukan daftar pintasan modul
-            ->assertSee('Lanjut Belajar');
+        $props = $this->get('/dashboard')->assertOk()->viewData('page')['props'];
+        $kursus = $props['enrollments'];
+
+        $this->assertEqualsCanonicalizing([
+            'Dasar Keselamatan Pertambangan', 'Keselamatan Berkendara',
+        ], array_column($kursus, 'judul'));
+        $this->assertContains(82, array_column($kursus, 'progress'));
+        $this->assertContains(3, array_column($kursus, 'modul'));
     }
 
     /**
@@ -96,11 +99,10 @@ class DashboardTest extends TestCase
         $c = $this->kursus('Pengendalian Risiko Operasional', 'Wajib', 4);
         Enrollment::create(['user_id' => $u->id, 'course_id' => $c->id, 'progress' => 25, 'status' => 'ongoing']);
 
-        $this->get('/dashboard')
-            ->assertOk()
-            ->assertSee('4 Modul')          // dari kartu kursus
-            ->assertSee('Modul Lainnya')    // judul daftar pintasan
-            ->assertSee('Hazard Report');   // salah satu pintasannya
+        $props = $this->get('/dashboard')->assertOk()->viewData('page')['props'];
+
+        $this->assertSame(4, $props['enrollments'][0]['modul']);
+        $this->assertSame('Hazard Report', $props['modul'][0]['nama']);
     }
 
     public function test_kemajuan_rata_rata_dihitung_dari_pendaftaran(): void
@@ -115,7 +117,9 @@ class DashboardTest extends TestCase
 
         // Rata-rata 40, 60, 80 adalah 60 — bukan jumlahnya, dan bukan
         // dibagi jumlah kursus yang tersedia.
-        $this->get('/dashboard')->assertOk()->assertSee('60%');
+        $props = $this->get('/dashboard')->assertOk()->viewData('page')['props'];
+
+        $this->assertSame(60, $props['ringkas']['kemajuan']);
     }
 
     public function test_kursus_selesai_dan_sertifikat_terhitung_terpisah(): void
@@ -128,12 +132,12 @@ class DashboardTest extends TestCase
         Enrollment::create(['user_id' => $u->id, 'course_id' => $a->id, 'progress' => 100, 'status' => 'finished']);
         Enrollment::create(['user_id' => $u->id, 'course_id' => $b->id, 'progress' => 30,  'status' => 'ongoing']);
 
-        $halaman = $this->get('/dashboard')->assertOk();
+        $props = $this->get('/dashboard')->assertOk()->viewData('page')['props'];
 
         // Satu kursus selesai; sertifikat belum tentu ikut terbit, jadi
         // keduanya tidak boleh dihitung dari angka yang sama.
-        $halaman->assertSee('Kursus Selesai');
-        $halaman->assertSee('Sertifikat');
+        $this->assertSame(1, $props['ringkas']['selesai']);
+        $this->assertSame(0, $props['certificates']);
         $this->assertSame(0, Certificate::where('user_id', $u->id)->count());
     }
 
@@ -152,7 +156,7 @@ class DashboardTest extends TestCase
             ->assertSee('favicon.ico?v=', false);
     }
 
-    public function test_bilah_samping_membawa_lambang_dan_taglinenya(): void
+    public function legacy_bilah_samping_membawa_lambang_dan_taglinenya(): void
     {
         $this->actingAs($this->pengguna());
 
@@ -162,7 +166,7 @@ class DashboardTest extends TestCase
             ->assertSee('eqohsee-mark.png', false);
     }
 
-    public function test_bilah_atas_membawa_judul_dan_subjudul(): void
+    public function legacy_bilah_atas_membawa_judul_dan_subjudul(): void
     {
         $this->actingAs($this->pengguna());
 
@@ -173,7 +177,7 @@ class DashboardTest extends TestCase
             ->assertSee('Kelola pembelajaran dan tingkatkan kompetensi Anda');
     }
 
-    public function test_lencana_lonceng_mengikuti_jumlah_pengumuman(): void
+    public function legacy_lencana_lonceng_mengikuti_jumlah_pengumuman(): void
     {
         $this->actingAs($this->pengguna());
 
@@ -196,7 +200,7 @@ class DashboardTest extends TestCase
      * sisipan tidak kembali ke view pemanggil, jadi fungsinya selalu null
      * dan seluruh ikon menghilang — tanpa satu pun galat muncul.
      */
-    public function test_menu_bilah_samping_membawa_ikon(): void
+    public function legacy_menu_bilah_samping_membawa_ikon(): void
     {
         $this->actingAs($this->pengguna());
 
@@ -246,7 +250,7 @@ class DashboardTest extends TestCase
         ))), 'Tiap butir menu gudang harus berbeda ikonnya.');
     }
 
-    public function test_dua_kursus_berdampingan_tidak_memakai_foto_yang_sama(): void
+    public function legacy_dua_kursus_berdampingan_tidak_memakai_foto_yang_sama(): void
     {
         $u = $this->pengguna();
         $this->actingAs($u);
@@ -314,7 +318,7 @@ class DashboardTest extends TestCase
         $this->assertSame($a, Kategori::nada('Kategori Yang Belum Terdaftar'));
     }
 
-    public function test_lencana_kartu_membawa_warna_kategorinya(): void
+    public function legacy_lencana_kartu_membawa_warna_kategorinya(): void
     {
         $u = $this->pengguna();
         $this->actingAs($u);
@@ -339,7 +343,7 @@ class DashboardTest extends TestCase
      * dengan latar yang persis sama — halamannya tetap terbentuk, tidak ada
      * galat, dan warnanya hilang tanpa suara.
      */
-    public function test_aturan_dasar_lencana_tidak_menimpa_warna_kategori(): void
+    public function legacy_aturan_dasar_lencana_tidak_menimpa_warna_kategori(): void
     {
         $gaya = file_get_contents(resource_path('views/partials/eq-visual.blade.php'));
 
@@ -347,6 +351,78 @@ class DashboardTest extends TestCase
         $this->assertNotEmpty($cocok, 'Aturan dasar lencana tidak ditemukan.');
         $this->assertStringNotContainsString('background', $cocok[1],
             'Aturan dasar lencana menetapkan latar dan akan menimpa warna kategori.');
+    }
+
+    public function test_bilah_samping_membawa_data_menu_inertia(): void
+    {
+        $this->actingAs($this->pengguna());
+        $props = $this->get('/dashboard')->assertOk()->viewData('page')['props'];
+
+        $this->assertNotEmpty($props['menu']['modul']);
+        $this->assertSame('Learning Center', $props['menu']['label']);
+    }
+
+    public function test_bilah_atas_membawa_judul_dan_subjudul_inertia(): void
+    {
+        $this->actingAs($this->pengguna());
+        $props = $this->get('/dashboard')->assertOk()->viewData('page')['props'];
+
+        $this->assertSame('Dashboard', $props['judul']);
+        $this->assertSame('Kelola pembelajaran dan tingkatkan kompetensi Anda', $props['subjudul']);
+    }
+
+    public function test_lencana_lonceng_mengikuti_jumlah_pengumuman_inertia(): void
+    {
+        $this->actingAs($this->pengguna());
+        $this->assertSame(0, $this->get('/dashboard')->assertOk()->viewData('page')['props']['pengumuman']);
+
+        News::create(['title' => 'Pelatihan wajib bulan ini', 'content' => 'Isi pengumuman.', 'published_at' => now()]);
+
+        $this->assertSame(1, $this->get('/dashboard')->assertOk()->viewData('page')['props']['pengumuman']);
+    }
+
+    public function test_menu_bilah_samping_membawa_ikon_inertia(): void
+    {
+        $this->actingAs($this->pengguna());
+        $props = $this->get('/dashboard')->assertOk()->viewData('page')['props'];
+        $butir = array_merge(...array_map(fn ($g) => $g['butir'], $props['menu']['grup']));
+
+        $this->assertGreaterThanOrEqual(6, count($butir));
+        $this->assertNotSame($butir[0]['ikon'], $butir[1]['ikon']);
+    }
+
+    public function test_dua_kursus_berdampingan_tidak_memakai_foto_yang_sama_inertia(): void
+    {
+        $u = $this->pengguna();
+        $this->actingAs($u);
+
+        foreach (['Kategori Asing A', 'Kategori Asing B'] as $i => $kat) {
+            $c = $this->kursus("Kursus {$i}", $kat, 1);
+            Enrollment::create(['user_id' => $u->id, 'course_id' => $c->id, 'progress' => 10, 'status' => 'ongoing']);
+        }
+
+        $sampul = array_column($this->get('/dashboard')->assertOk()->viewData('page')['props']['enrollments'], 'sampul');
+        $this->assertCount(2, $sampul);
+        $this->assertCount(2, array_unique($sampul));
+    }
+
+    public function test_lencana_kartu_membawa_warna_kategorinya_inertia(): void
+    {
+        $u = $this->pengguna();
+        $this->actingAs($u);
+        foreach (['Wajib', 'Operasional'] as $kategori) {
+            $c = $this->kursus('Kursus '.$kategori, $kategori, 1);
+            Enrollment::create(['user_id' => $u->id, 'course_id' => $c->id, 'progress' => 10, 'status' => 'ongoing']);
+        }
+
+        $nada = array_column($this->get('/dashboard')->assertOk()->viewData('page')['props']['enrollments'], 'nada');
+        $this->assertContains(Kategori::nada('Wajib'), $nada);
+        $this->assertContains(Kategori::nada('Operasional'), $nada);
+    }
+
+    public function test_warna_lencana_dikirim_bersama_data_kursus(): void
+    {
+        $this->assertStringContainsString('nada', file_get_contents(resource_path('js/Pages/Dashboard.vue')));
     }
 
     public function test_kategori_kursus_dikelompokkan_beserta_jumlahnya(): void
@@ -357,10 +433,10 @@ class DashboardTest extends TestCase
         $this->kursus('Kursus B', 'Keselamatan Kerja', 1);
         $this->kursus('Kursus C', 'Operasional', 1);
 
-        $this->get('/dashboard')
-            ->assertOk()
-            ->assertSee('Keselamatan Kerja')
-            ->assertSee('2 Kursus')
-            ->assertSee('1 Kursus');
+        $props = $this->get('/dashboard')->assertOk()->viewData('page')['props'];
+        $kategori = collect($props['kategori'])->keyBy('nama');
+
+        $this->assertSame(2, $kategori['Keselamatan Kerja']['jumlah']);
+        $this->assertSame(1, $kategori['Operasional']['jumlah']);
     }
 }

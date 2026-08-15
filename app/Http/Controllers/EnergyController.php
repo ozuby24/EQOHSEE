@@ -8,6 +8,7 @@ use App\Support\{Energi, KopDokumen};
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 /**
  * Energy Performance Center.
@@ -28,7 +29,8 @@ class EnergyController extends Controller
         $r = $this->ringkasan($dari, $sampai);
         $b = $this->baselineBerlaku();
 
-        return view('energi.index', [
+        return Inertia::render('Energi/Halaman', [
+            'mode'     => 'index',
             'r'        => $r,
             'baseline' => $b,
             'tren'     => $this->trenHarian($dari, $sampai),
@@ -40,6 +42,108 @@ class EnergyController extends Controller
         ]);
     }
 
+    /* ================= input lapangan ================= */
+
+    public function input(Request $request)
+    {
+        return Inertia::render('Energi/Halaman', [
+            'mode' => 'input',
+            'units' => EnergyEquipment::where('aktif', true)->orderBy('kode')->get(['id', 'kode', 'nama', 'kategori']),
+            'areas' => Energi::AREA,
+            'sources' => Energi::SUMBER_LISTRIK,
+            'recent' => [
+                'production' => EnergyProduction::latest('tanggal')->limit(8)->get(),
+                'fuel' => EnergyFuelLog::with('equipment')->latest('tanggal')->limit(8)->get(),
+                'power' => EnergyPowerLog::latest('tanggal')->limit(8)->get(),
+                'recon' => EnergyFuelRecon::latest('tanggal')->limit(8)->get(),
+            ],
+            'tautan' => [
+                'production' => route('energi.input.production'),
+                'fuel' => route('energi.input.fuel'),
+                'power' => route('energi.input.power'),
+                'recon' => route('energi.input.recon'),
+            ],
+        ]);
+    }
+
+    public function simpanProduksi(Request $request)
+    {
+        $data = $request->validate([
+            'tanggal' => ['required', 'date'],
+            'ton' => ['required', 'numeric', 'min:0', 'max:1000000000'],
+            'bcm' => ['required', 'numeric', 'min:0', 'max:1000000000'],
+        ]);
+
+        EnergyProduction::updateOrCreate(['tanggal' => $data['tanggal']], $data);
+
+        return back()->with('ok', 'Produksi harian tersimpan dan langsung masuk ke KPI energi.');
+    }
+
+    public function simpanFuel(Request $request)
+    {
+        $data = $request->validate([
+            'equipment_id' => ['required', 'exists:energy_equipment,id'],
+            'tanggal' => ['required', 'date'],
+            'hm' => ['required', 'numeric', 'min:0', 'max:10000'],
+            'liter' => ['required', 'numeric', 'min:0', 'max:1000000'],
+            'idle_jam' => ['required', 'numeric', 'min:0', 'max:10000'],
+            'jarak_km' => ['required', 'numeric', 'min:0', 'max:100000'],
+            'ton' => ['required', 'numeric', 'min:0', 'max:1000000'],
+            'bcm' => ['required', 'numeric', 'min:0', 'max:1000000'],
+            'cycle_menit' => ['nullable', 'numeric', 'min:0', 'max:1000'],
+        ]);
+
+        // Model unit membawa scope perusahaan; ID lintas perusahaan berhenti di sini.
+        $unit = EnergyEquipment::findOrFail($data['equipment_id']);
+        $log = EnergyFuelLog::updateOrCreate(
+            ['equipment_id' => $unit->id, 'tanggal' => $data['tanggal']],
+            $data
+        );
+
+        ActivityLog::write('Input bahan bakar alat', $unit->kode.' - '.$log->tanggal->format('Y-m-d'), 'energi');
+
+        return back()->with('ok', 'Catatan bahan bakar alat tersimpan.');
+    }
+
+    public function simpanListrik(Request $request)
+    {
+        $data = $request->validate([
+            'tanggal' => ['required', 'date'],
+            'area' => ['required', Rule::in(array_keys(Energi::AREA))],
+            'sumber' => ['required', Rule::in(array_keys(Energi::SUMBER_LISTRIK))],
+            'kwh' => ['required', 'numeric', 'min:0', 'max:100000000'],
+            'puncak_kw' => ['required', 'numeric', 'min:0', 'max:1000000'],
+            'jam_operasi' => ['required', 'numeric', 'min:0', 'max:24'],
+            'liter_genset' => ['required', 'numeric', 'min:0', 'max:1000000'],
+        ]);
+
+        EnergyPowerLog::updateOrCreate(
+            ['tanggal' => $data['tanggal'], 'area' => $data['area'], 'sumber' => $data['sumber']],
+            $data
+        );
+
+        return back()->with('ok', 'Catatan listrik tersimpan.');
+    }
+
+    public function simpanRekonsiliasi(Request $request)
+    {
+        $data = $request->validate([
+            'tanggal' => ['required', 'date'],
+            'stok_awal_liter' => ['required', 'numeric', 'min:0', 'max:100000000'],
+            'disalurkan_liter' => ['required', 'numeric', 'min:0', 'max:100000000'],
+            'stok_akhir_liter' => ['required', 'numeric', 'min:0', 'max:100000000'],
+            'catatan' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        if ($data['stok_awal_liter'] + $data['disalurkan_liter'] < $data['stok_akhir_liter']) {
+            return back()->withInput()->withErrors(['stok_akhir_liter' => 'Stok akhir tidak boleh melebihi stok awal ditambah penyaluran.']);
+        }
+
+        EnergyFuelRecon::updateOrCreate(['tanggal' => $data['tanggal']], $data);
+
+        return back()->with('ok', 'Rekonsiliasi bahan bakar tersimpan.');
+    }
+
     /* ================= konsumsi energi ================= */
 
     public function konsumsi(Request $request)
@@ -47,7 +151,8 @@ class EnergyController extends Controller
         [$dari, $sampai] = $this->rentang($request);
         $r = $this->ringkasan($dari, $sampai);
 
-        return view('energi.konsumsi', [
+        return Inertia::render('Energi/Halaman', [
+            'mode' => 'konsumsi',
             'r' => $r, 'dari' => $dari, 'sampai' => $sampai,
             'baseline' => $this->baselineBerlaku(),
             'tren'     => $this->trenHarian($dari, $sampai),
@@ -65,7 +170,8 @@ class EnergyController extends Controller
 
         $disalurkan = $recon->sum(fn ($x) => $x->terpakaiMenurutStok());
 
-        return view('energi.fuel', [
+        return Inertia::render('Energi/Halaman', [
+            'mode'      => 'fuel',
             'dari' => $dari, 'sampai' => $sampai,
             'r'        => $this->ringkasan($dari, $sampai),
             'peringkat'=> $this->peringkatUnit($dari, $sampai, 10),
@@ -111,7 +217,8 @@ class EnergyController extends Controller
         $pln    = $log->where('sumber', 'pln');
         $kwhTot = (float) $log->sum('kwh');
 
-        return view('energi.listrik', [
+        return Inertia::render('Energi/Halaman', [
+            'mode' => 'listrik',
             'dari' => $dari, 'sampai' => $sampai,
             'perArea' => $perArea,
             'total'   => [
@@ -142,7 +249,8 @@ class EnergyController extends Controller
             ->when($kategori, fn ($c) => $c->where('kategori', $kategori))
             ->values();
 
-        return view('energi.equipment', [
+        return Inertia::render('Energi/Halaman', [
+            'mode'      => 'equipment',
             'dari' => $dari, 'sampai' => $sampai,
             'kategori'  => $kategori,
             'peringkat' => $peringkat,
@@ -166,7 +274,8 @@ class EnergyController extends Controller
         $acuan = $this->acuanKategori($unit->kategori, $dari, $sampai);
         $lpj   = Energi::rasio($liter, $hm);
 
-        return view('energi.equipment-show', [
+        return Inertia::render('Energi/Halaman', [
+            'mode' => 'equipment-show',
             'unit' => $unit, 'log' => $log, 'dari' => $dari, 'sampai' => $sampai,
             'acuan' => $acuan,
             'status' => Energi::statusEfisiensi($lpj, $acuan),
@@ -194,7 +303,8 @@ class EnergyController extends Controller
         $r = $this->ringkasan($dari, $sampai);
         $b = $this->baselineBerlaku();
 
-        return view('energi.kpi', [
+        return Inertia::render('Energi/Halaman', [
+            'mode' => 'kpi',
             'r' => $r, 'baseline' => $b, 'dari' => $dari, 'sampai' => $sampai,
             'hemat' => $this->penghematanTerwujud(),
         ]);
@@ -204,7 +314,8 @@ class EnergyController extends Controller
     {
         [$dari, $sampai] = $this->rentang($request);
 
-        return view('energi.baseline', [
+        return Inertia::render('Energi/Halaman', [
+            'mode'      => 'baseline',
             'daftar'   => EnergyBaseline::orderByDesc('tahun')->get(),
             'baseline' => $this->baselineBerlaku(),
             'r'        => $this->ringkasan($dari, $sampai),
@@ -244,7 +355,8 @@ class EnergyController extends Controller
     {
         $semua = EnergyOpportunity::orderByDesc('hemat_liter')->orderByDesc('hemat_kwh')->get();
 
-        return view('energi.hemat', [
+        return Inertia::render('Energi/Halaman', [
+            'mode'   => 'hemat',
             'daftar'  => $semua,
             'terwujud'=> $this->penghematanTerwujud(),
             'potensi' => [
@@ -296,7 +408,8 @@ class EnergyController extends Controller
     {
         [$dari, $sampai] = $this->rentang($request);
 
-        return view('energi.karbon', [
+        return Inertia::render('Energi/Halaman', [
+            'mode' => 'karbon',
             'r' => $this->ringkasan($dari, $sampai),
             'dari' => $dari, 'sampai' => $sampai,
             'hemat' => $this->penghematanTerwujud(),
@@ -305,7 +418,7 @@ class EnergyController extends Controller
 
     public function kalkulator()
     {
-        return view('energi.kalkulator');
+        return Inertia::render('Energi/Halaman', ['mode' => 'kalkulator']);
     }
 
     /* ================= laporan ================= */
@@ -322,7 +435,8 @@ class EnergyController extends Controller
     {
         [$dari, $sampai] = $this->rentang($request);
 
-        return view('energi.laporan', [
+        return Inertia::render('Energi/Halaman', [
+            'mode'      => 'laporan',
             'dok'      => KopDokumen::untuk('laporan-energi', Company::first()),
             'r'        => $this->ringkasan($dari, $sampai),
             'baseline' => $this->baselineBerlaku(),
@@ -338,7 +452,8 @@ class EnergyController extends Controller
 
     public function master()
     {
-        return view('energi.master', [
+        return Inertia::render('Energi/Halaman', [
+            'mode'      => 'master',
             'units'     => EnergyEquipment::orderBy('kategori')->orderBy('kode')->get(),
             'companies' => Company::orderBy('name')->get(),
         ]);

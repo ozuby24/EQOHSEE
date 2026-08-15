@@ -33,7 +33,7 @@ class VerifikasiKodeController extends Controller
      */
     private function keDashboard(): \Symfony\Component\HttpFoundation\Response
     {
-        return Inertia::location(route('dashboard'));
+        return redirect()->route('dashboard');
     }
 
     public function tampil(Request $r)

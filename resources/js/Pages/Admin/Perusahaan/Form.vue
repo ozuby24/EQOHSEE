@@ -11,7 +11,7 @@ import type { HalamanFormPerusahaan } from '../../../types';
 
 const props = defineProps<HalamanFormPerusahaan>();
 
-const form = useForm({ ...props.awal, logo: null as File | null });
+const form = useForm<Record<string, any>>({ ...props.awal, logo: null as File | null });
 
 function pilihLogo(e: Event) {
   const f = (e.target as HTMLInputElement).files;

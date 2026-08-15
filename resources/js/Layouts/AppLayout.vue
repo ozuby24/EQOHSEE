@@ -106,7 +106,8 @@ function keluar() {
            :class="lacisTerbuka ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
 
       <a href="/dashboard" class="eq-merek">
-        <img src="/brand/eqohsee-mark.png" alt="" width="40" height="40">
+        <!-- Varian 128 px, bukan berkas 512 px seberat 217 KB untuk kotak 40 px. -->
+        <img src="/brand/eqohsee-mark-128.png" alt="" width="40" height="40">
         <span>
           <strong>E<em>Q</em>OHSEE</strong>
           <small>Safe Today · Sustainable Tomorrow</small>
@@ -120,7 +121,7 @@ function keluar() {
              v-for="m in menu.modul" :key="m.kunci" :href="m.url" :title="m.label"
              class="relative grid place-items-center py-2 rounded-lg transition"
              :class="m.aktif ? 'lime-gradient text-white shadow-glow'
-                             : 'text-white/40 hover:text-white hover:bg-white/5'">
+                             : 'text-white/55 hover:text-white hover:bg-white/5'">
             <svg class="w-[17px] h-[17px]" fill="none" stroke="currentColor" stroke-width="2.2"
                  viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" :d="m.ikon"/>
@@ -137,7 +138,7 @@ function keluar() {
       <nav class="flex-1 overflow-y-auto px-3 py-3">
         <template v-for="(g, i) in menu.grup" :key="i">
           <p v-if="g.nama" class="px-3 mt-3 mb-1 text-[9.5px] font-semibold uppercase
-                                  tracking-[0.12em] text-white/20">{{ g.nama }}</p>
+                                  tracking-[0.12em] text-white/55">{{ g.nama }}</p>
           <div class="space-y-0.5">
             <component :is="tautan(b.inertia)"
                v-for="b in g.butir" :key="b.url" :href="b.url"

@@ -20,7 +20,10 @@ function terapkan() {
 }
 
 const kpi = [
-  { label: 'Total dokumen',  nilai: props.stat.total,   warna: '#0F1720' },
+  // currentColor, bukan hex gelap: nilai ini netral dan harus mengikuti
+  // warna teks halaman. Hex ditulis inline sehingga aturan mode gelap
+  // tidak dapat menyentuhnya — angkanya jadi navy di atas kartu navy.
+  { label: 'Total dokumen',  nilai: props.stat.total,   warna: 'currentColor' },
   { label: 'Berlaku',        nilai: props.stat.berlaku, warna: '#22C55E' },
   { label: 'Draft',          nilai: props.stat.draft,   warna: '#9AA3AE' },
   { label: 'Perlu ditinjau', nilai: props.stat.lewat,   warna: '#F57C00' },

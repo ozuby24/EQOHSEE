@@ -7,17 +7,25 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\View\View;
+use Inertia\Inertia;
 
 class ProfileController extends Controller
 {
     /**
      * Display the user's profile form.
      */
-    public function edit(Request $request): View
+    public function edit(Request $request)
     {
-        return view('profile.edit', [
-            'user' => $request->user(),
+        $user = $request->user();
+
+        return Inertia::render('Profile/Edit', [
+            'judul' => 'Profil Pengguna',
+            'subjudul' => 'Kelola informasi akun dan keamanan akses Anda',
+            'user' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'verified' => $user->hasVerifiedEmail(),
+            ],
         ]);
     }
 

@@ -12,7 +12,7 @@ import type { HalamanFormBarangGudang } from '../../types';
 
 const props = defineProps<HalamanFormBarangGudang>();
 
-const form = useForm({ ...props.awal, msds: null as File | null });
+const form = useForm<Record<string, any>>({ ...props.awal, msds: null as File | null });
 
 function pilihBerkas(e: Event) {
   const f = (e.target as HTMLInputElement).files;

@@ -166,6 +166,7 @@ class KatalogTest extends TestCase
 
         $this->assertSame($nama, array_unique($nama), 'Dua aspek tidak boleh bernama sama.');
 
-        $this->get('/')->assertOk()->assertSee('Pilar '.Pillars::get('energy')['nama']);
+        $props = $this->get('/')->assertOk()->viewData('page')['props'];
+        $this->assertSame(Pillars::get('energy')['nama'], $props['pilar']['energy']['nama']);
     }
 }

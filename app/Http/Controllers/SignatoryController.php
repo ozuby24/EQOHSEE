@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{ActivityLog, Signatory};
+use App\Models\{ActivityLog, Company, Signatory};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -14,16 +14,29 @@ class SignatoryController extends Controller
             'judul'    => 'Penanda Tangan Sertifikat',
             'subjudul' => 'Nama yang tercetak pada sertifikat yang diterbitkan',
 
-            'penandaTangan' => Signatory::orderByDesc('is_active')->orderBy('name')->get()
+            'penandaTangan' => Signatory::with('company')
+                ->orderByDesc('is_active')->orderBy('name')->get()
                 ->map(fn (Signatory $s) => [
                     'id'        => $s->id,
                     'nama'      => $s->name,
                     'jabatan'   => (string) ($s->title ?? ''),
                     'aktif'     => (bool) $s->is_active,
+                    'perusahaanId' => $s->company_id,
+                    'perusahaan'   => $s->company?->name,
                     'tandaTangan' => $s->signature ? asset('storage/'.$s->signature) : null,
                     'urlSimpan' => route('signatories.update', $s),
                     'urlHapus'  => route('signatories.destroy', $s),
                 ])->all(),
+
+            /* Perusahaan pemilik dipilih tegas, bukan disimpulkan dari
+               siapa yang menambahkan. Tanda tangan adalah pernyataan
+               pertanggungjawaban seseorang; menebak pemiliknya berarti
+               menempelkan namanya pada dokumen perusahaan yang belum
+               tentu benar. Kosong berarti penanda tangan pusat yang
+               boleh dipakai seluruh perusahaan — dan itu pilihan yang
+               harus disengaja. */
+            'perusahaan' => Company::orderBy('name')->get(['id', 'name'])
+                ->map(fn (Company $c) => ['id' => $c->id, 'nama' => $c->name])->all(),
 
             'tautan' => ['tambah' => route('signatories.store')],
         ]);
@@ -51,11 +64,21 @@ class SignatoryController extends Controller
     private function v(Request $r): array
     {
         $d = $r->validate([
-            'name'      => ['required','string','max:150'],
-            'title'     => ['nullable','string','max:150'],
-            'is_active' => ['nullable','boolean'],
-            'signature' => ['nullable','image','max:1024'],
+            'name'       => ['required','string','max:150'],
+            'title'      => ['nullable','string','max:150'],
+            'company_id' => ['nullable','exists:companies,id'],
+            'is_active'  => ['nullable','boolean'],
+            'signature'  => ['nullable','image','max:1024'],
         ]);
+
+        // Pengguna biasa tidak dapat menitipkan tanda tangan ke
+        // perusahaan lain lewat isian; hanya administrator yang memilih
+        // pemiliknya secara bebas.
+        if (!$r->user()?->isAdmin()) {
+            $d['company_id'] = $r->user()?->company_id;
+        } else {
+            $d['company_id'] = $d['company_id'] ?? null;
+        }
         $d['is_active'] = (bool) ($d['is_active'] ?? false);   // kolom NOT NULL
 
         if ($r->hasFile('signature')) {

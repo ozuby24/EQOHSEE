@@ -3,11 +3,11 @@
 use App\Http\Controllers\{
     CertificateController, CourseController, DashboardController, EvaluationController,
     LearnController, NewsController, PersonaliaController, ProcedureController, ProfileController,
-    QuizController, SopController
+    QuizController, SopController, LandingController
 };
 use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiTemuanController, HazardController,
     HazardExportController, InspectionController, InspectionTemplateController,
-    EnergyController, EngineeringController, GudangController, IsoController, KoController, KuesionerController, SignatoryController, SmkpController,
+    BlastingController, CostController, DispatchController, PermitController, EnergyController, EngineeringController, EnvironmentController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\{BantuanController, ChatController};
 use App\Http\Controllers\Admin\{CompanyController, SystemController, UserController};
@@ -22,7 +22,9 @@ Route::get('q/{token}/selesai',      [KuesionerController::class,'selesai'])->na
 Route::get('q/{token}/{cat}',        [KuesionerController::class,'form'])->name('kuesioner.form');
 Route::post('q/{token}/{cat}',       [KuesionerController::class,'submit'])->name('kuesioner.submit');
 
-Route::get('/', fn () => auth()->check() ? redirect()->route('dashboard') : view('landing'))->name('beranda');
+Route::get('/', fn () => auth()->check()
+    ? redirect()->route('dashboard')
+    : app(LandingController::class)->index())->name('beranda');
 
 /* 'verified' dipasang di sini, bukan per rute: halaman yang lupa
    memakainya tidak menimbulkan galat apa pun — ia hanya diam-diam
@@ -213,6 +215,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
        berupa berkas statis supaya tautan yang sudah beredar tetap sampai. */
     Route::prefix('mining-engineering-hub')->name('meh.')->group(function () {
         Route::get('/',            [EngineeringController::class,'index'])->name('index');
+        Route::get('monitor',      [EngineeringController::class,'monitor'])->name('monitor');
         Route::get('energy',       [EngineeringController::class,'energy'])->name('energy');
         Route::get('fleet',        [EngineeringController::class,'fleet'])->name('fleet');
         Route::get('equipment',    [EngineeringController::class,'equipment'])->name('equipment');
@@ -226,6 +229,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     /* ================= WEBSITE #6 — Energy Performance Center ================= */
     Route::prefix('energi')->name('energi.')->group(function () {
         Route::get('/',            [EnergyController::class,'index'])->name('index');
+        Route::get('input',        [EnergyController::class,'input'])->name('input');
+        Route::post('input/produksi', [EnergyController::class,'simpanProduksi'])->name('input.production');
+        Route::post('input/fuel', [EnergyController::class,'simpanFuel'])->name('input.fuel');
+        Route::post('input/listrik', [EnergyController::class,'simpanListrik'])->name('input.power');
+        Route::post('input/rekonsiliasi', [EnergyController::class,'simpanRekonsiliasi'])->name('input.recon');
         Route::get('konsumsi',     [EnergyController::class,'konsumsi'])->name('konsumsi');
         Route::get('bahan-bakar',  [EnergyController::class,'fuel'])->name('fuel');
         Route::get('listrik',      [EnergyController::class,'listrik'])->name('listrik');
@@ -249,6 +257,281 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('data-induk',   [EnergyController::class,'master'])->name('master');
         Route::post('data-induk',  [EnergyController::class,'simpanUnit'])->name('master.simpan');
         Route::delete('data-induk/{unit}', [EnergyController::class,'hapusUnit'])->name('master.hapus');
+    });
+
+    /* ============ Pengelolaan Air & Penirisan ============
+       Pompanya memakai registri Keselamatan Operasi; yang didaftarkan
+       di sini adalah kolam beserta daerah tangkapan airnya. */
+    Route::prefix('penirisan')->name('air.')->group(function () {
+        Route::get('/',        [WaterController::class, 'index'])->name('index');
+        Route::get('catatan',  [WaterController::class, 'catatan'])->name('catatan');
+        Route::get('kolam',    [WaterController::class, 'kolam'])->name('kolam');
+        Route::get('cetak',    [WaterController::class, 'cetak'])->name('cetak');
+
+        Route::post('kolam',            [WaterController::class, 'simpanKolam'])->name('kolam.simpan');
+        Route::delete('kolam/{sump}',   [WaterController::class, 'hapusKolam'])->middleware('can:admin')->name('kolam.hapus');
+        Route::post('kolam/{sump}/pompa', [WaterController::class, 'simpanPompa'])->name('pompa.simpan');
+        Route::put('pompa/{pompa}',     [WaterController::class, 'ubahPompa'])->name('pompa.ubah');
+
+        Route::post('catatan',              [WaterController::class, 'simpanCatatan'])->name('catatan.simpan');
+        Route::delete('catatan/{catatan}',  [WaterController::class, 'hapusCatatan'])->middleware('can:admin')->name('catatan.hapus');
+        Route::post('catatan/{catatan}/ajukan',  [WaterController::class, 'ajukan'])->name('ajukan');
+        Route::post('catatan/{catatan}/setujui', [WaterController::class, 'setujui'])->name('setujui');
+        Route::post('catatan/{catatan}/tolak',   [WaterController::class, 'tolak'])->name('tolak');
+
+        Route::post('tindak',         [WaterController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
+        Route::put('tindak/{tindak}', [WaterController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
+    });
+
+    /* ============ Pengelolaan Lingkungan & Reklamasi ============
+       Tahapan petak berpindah hanya lewat laporan kemajuan yang
+       disetujui; baku mutunya berupa data, bukan tetapan di dalam kode. */
+    Route::prefix('lingkungan')->name('lingkungan.')->group(function () {
+        Route::get('/',           [EnvironmentController::class, 'index'])->name('index');
+        Route::get('lahan',       [EnvironmentController::class, 'lahan'])->name('lahan');
+        Route::get('pemantauan',  [EnvironmentController::class, 'pemantauan'])->name('pemantauan');
+        Route::get('baku-mutu',   [EnvironmentController::class, 'baku'])->name('baku');
+        Route::get('cetak',       [EnvironmentController::class, 'cetak'])->name('cetak');
+
+        Route::post('area',          [EnvironmentController::class, 'simpanArea'])->name('area.simpan');
+        Route::put('area/{area}',    [EnvironmentController::class, 'ubahArea'])->name('area.ubah');
+        Route::delete('area/{area}', [EnvironmentController::class, 'hapusArea'])->middleware('can:admin')->name('area.hapus');
+
+        Route::post('kemajuan',              [EnvironmentController::class, 'simpanKemajuan'])->name('kemajuan.simpan');
+        Route::delete('kemajuan/{kemajuan}', [EnvironmentController::class, 'hapusKemajuan'])->middleware('can:admin')->name('kemajuan.hapus');
+        Route::post('kemajuan/{kemajuan}/ajukan',  [EnvironmentController::class, 'ajukanKemajuan'])->name('kemajuan.ajukan');
+        Route::post('kemajuan/{kemajuan}/setujui', [EnvironmentController::class, 'setujuiKemajuan'])->name('kemajuan.setujui');
+        Route::post('kemajuan/{kemajuan}/tolak',   [EnvironmentController::class, 'tolakKemajuan'])->name('kemajuan.tolak');
+
+        Route::post('baku-mutu',               [EnvironmentController::class, 'simpanParameter'])->name('parameter.simpan');
+        Route::delete('baku-mutu/{parameter}', [EnvironmentController::class, 'hapusParameter'])->middleware('can:admin')->name('parameter.hapus');
+
+        Route::post('pantau',            [EnvironmentController::class, 'simpanPantau'])->name('pantau.simpan');
+        Route::delete('pantau/{pantau}', [EnvironmentController::class, 'hapusPantau'])->middleware('can:admin')->name('pantau.hapus');
+        Route::post('pantau/{pantau}/ajukan',  [EnvironmentController::class, 'ajukanPantau'])->name('pantau.ajukan');
+        Route::post('pantau/{pantau}/setujui', [EnvironmentController::class, 'setujuiPantau'])->name('pantau.setujui');
+        Route::post('pantau/{pantau}/tolak',   [EnvironmentController::class, 'tolakPantau'])->name('pantau.tolak');
+
+        Route::post('tindak',         [EnvironmentController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
+        Route::put('tindak/{tindak}', [EnvironmentController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
+    });
+
+    /* ============ Pengeboran & Peledakan ============
+       Satu-satunya alur yang persetujuannya mendahului pekerjaannya:
+       rencana yang disetujui berarti boleh diledakkan, dan hasil hanya
+       dapat dicatat pada rencana yang izinnya sudah keluar. */
+    Route::prefix('peledakan')->name('peledakan.')->group(function () {
+        Route::get('/',        [BlastingController::class, 'index'])->name('index');
+        Route::get('rencana',  [BlastingController::class, 'rencana'])->name('rencana');
+        Route::get('titik',    [BlastingController::class, 'titik'])->name('titik');
+        Route::get('getaran',  [BlastingController::class, 'getaran'])->name('getaran');
+        Route::get('cetak',    [BlastingController::class, 'cetak'])->name('cetak');
+
+        Route::post('titik',           [BlastingController::class, 'simpanTitik'])->name('titik.simpan');
+        Route::delete('titik/{titik}', [BlastingController::class, 'hapusTitik'])->middleware('can:admin')->name('titik.hapus');
+
+        Route::post('rencana',             [BlastingController::class, 'simpanRencana'])->name('rencana.simpan');
+        Route::delete('rencana/{rencana}', [BlastingController::class, 'hapusRencana'])->middleware('can:admin')->name('rencana.hapus');
+        Route::post('rencana/{rencana}/ajukan',  [BlastingController::class, 'ajukanRencana'])->name('rencana.ajukan');
+        Route::post('rencana/{rencana}/setujui', [BlastingController::class, 'setujuiRencana'])->name('rencana.setujui');
+        Route::post('rencana/{rencana}/tolak',   [BlastingController::class, 'tolakRencana'])->name('rencana.tolak');
+
+        Route::post('rencana/{rencana}/hasil', [BlastingController::class, 'simpanHasil'])->name('hasil.simpan');
+        Route::post('hasil/{hasil}/ajukan',    [BlastingController::class, 'ajukanHasil'])->name('hasil.ajukan');
+        Route::post('hasil/{hasil}/setujui',   [BlastingController::class, 'setujuiHasil'])->name('hasil.setujui');
+        Route::post('hasil/{hasil}/tolak',     [BlastingController::class, 'tolakHasil'])->name('hasil.tolak');
+
+        Route::post('rencana/{rencana}/ukur', [BlastingController::class, 'simpanUkur'])->name('ukur.simpan');
+        Route::delete('ukur/{ukur}',          [BlastingController::class, 'hapusUkur'])->middleware('can:admin')->name('ukur.hapus');
+
+        Route::post('tindak',         [BlastingController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
+        Route::put('tindak/{tindak}', [BlastingController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
+    });
+
+    /* ============ Dispatch & Pengangkutan ============
+       Mencatat bagaimana tonase terangkut, bukan berapa — tonase di sini
+       adalah bagian dari tonase pit pada Mine Operations, bukan
+       tambahannya. Penimbangan sengaja berdiri di luar alur tinjauan:
+       ia pembacaan alat, bukan pendapat. */
+    Route::prefix('angkutan')->name('angkutan.')->group(function () {
+        Route::get('/',       [DispatchController::class, 'index'])->name('index');
+        Route::get('regu',    [DispatchController::class, 'regu'])->name('regu');
+        Route::get('armada',  [DispatchController::class, 'armada'])->name('armada');
+        Route::get('muatan',  [DispatchController::class, 'muatan'])->name('muatan');
+        Route::get('cetak',   [DispatchController::class, 'cetak'])->name('cetak');
+
+        Route::post('armada',         [DispatchController::class, 'simpanAlat'])->name('alat.simpan');
+        Route::delete('armada/{alat}', [DispatchController::class, 'hapusAlat'])->middleware('can:admin')->name('alat.hapus');
+
+        Route::post('regu',           [DispatchController::class, 'simpanRegu'])->name('regu.simpan');
+        Route::delete('regu/{regu}',  [DispatchController::class, 'hapusRegu'])->middleware('can:admin')->name('regu.hapus');
+        Route::post('regu/{regu}/ajukan',  [DispatchController::class, 'ajukan'])->name('ajukan');
+        Route::post('regu/{regu}/setujui', [DispatchController::class, 'setujui'])->name('setujui');
+        Route::post('regu/{regu}/tolak',   [DispatchController::class, 'tolak'])->name('tolak');
+
+        Route::post('regu/{regu}/muatan',  [DispatchController::class, 'simpanMuatan'])->name('muatan.simpan');
+        Route::delete('muatan/{muatan}',   [DispatchController::class, 'hapusMuatan'])->middleware('can:admin')->name('muatan.hapus');
+
+        Route::post('tindak',         [DispatchController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
+        Route::put('tindak/{tindak}', [DispatchController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
+    });
+
+    /* ============ Pengendalian Biaya Operasi ============
+       Akuntansi manajemen untuk mengendalikan operasi, bukan pembukuan.
+       Denominator produksinya diambil dari Mine Operations yang sudah
+       disetujui — tonase tidak pernah diketik ulang di sini. */
+    Route::prefix('biaya')->name('biaya.')->group(function () {
+        Route::get('/',          [CostController::class, 'index'])->name('index');
+        Route::get('realisasi',  [CostController::class, 'realisasi'])->name('realisasi');
+        Route::get('anggaran',   [CostController::class, 'anggaran'])->name('anggaran');
+        Route::get('bagan-akun', [CostController::class, 'akun'])->name('akun');
+        Route::get('cetak',      [CostController::class, 'cetak'])->name('cetak');
+
+        Route::post('bagan-akun',        [CostController::class, 'simpanAkun'])->name('akun.simpan');
+        Route::delete('bagan-akun/{akun}', [CostController::class, 'hapusAkun'])->middleware('can:admin')->name('akun.hapus');
+
+        Route::post('anggaran',              [CostController::class, 'simpanAnggaran'])->name('anggaran.simpan');
+        Route::delete('anggaran/{anggaran}', [CostController::class, 'hapusAnggaran'])->middleware('can:admin')->name('anggaran.hapus');
+
+        Route::post('realisasi',               [CostController::class, 'simpanRealisasi'])->name('realisasi.simpan');
+        Route::delete('realisasi/{realisasi}', [CostController::class, 'hapusRealisasi'])->middleware('can:admin')->name('realisasi.hapus');
+        Route::post('realisasi/{realisasi}/ajukan',  [CostController::class, 'ajukan'])->name('ajukan');
+        Route::post('realisasi/{realisasi}/setujui', [CostController::class, 'setujui'])->name('setujui');
+        Route::post('realisasi/{realisasi}/tolak',   [CostController::class, 'tolak'])->name('tolak');
+
+        Route::post('tindak',         [CostController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
+        Route::put('tindak/{tindak}', [CostController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
+    });
+
+    /* ============ Izin Kerja Aman ============
+       Persetujuan di sini ADALAH izinnya, dan izinnya kedaluwarsa.
+       Syarat wajib yang belum terpenuhi serta uji gas yang basi
+       MENGHALANGI penerbitan, bukan sekadar memperingatkan. */
+    Route::prefix('izin-kerja')->name('izin.')->group(function () {
+        Route::get('/',        [PermitController::class, 'index'])->name('index');
+        Route::get('daftar',   [PermitController::class, 'daftar'])->name('daftar');
+        Route::get('syarat',   [PermitController::class, 'syarat'])->name('syarat');
+        Route::get('ambang-gas', [PermitController::class, 'ambang'])->name('ambang');
+        Route::get('cetak',    [PermitController::class, 'cetak'])->name('cetak');
+
+        Route::post('syarat',            [PermitController::class, 'simpanSyarat'])->name('syarat.simpan');
+        Route::delete('syarat/{syarat}', [PermitController::class, 'hapusSyarat'])->middleware('can:admin')->name('syarat.hapus');
+
+        Route::post('ambang-gas',            [PermitController::class, 'simpanAmbang'])->name('ambang.simpan');
+        Route::delete('ambang-gas/{ambang}', [PermitController::class, 'hapusAmbang'])->middleware('can:admin')->name('ambang.hapus');
+
+        Route::post('/',           [PermitController::class, 'simpanIzin'])->name('simpan');
+        Route::delete('{izin}',    [PermitController::class, 'hapusIzin'])->middleware('can:admin')->name('hapus');
+        Route::post('{izin}/ajukan',    [PermitController::class, 'ajukan'])->name('ajukan');
+        Route::post('{izin}/terbitkan', [PermitController::class, 'terbitkan'])->name('terbitkan');
+        Route::post('{izin}/tolak',     [PermitController::class, 'tolak'])->name('tolak');
+        Route::post('{izin}/tutup',     [PermitController::class, 'tutup'])->name('tutup');
+
+        Route::put('periksa/{periksa}', [PermitController::class, 'ubahPeriksa'])->name('periksa.ubah');
+        Route::post('{izin}/gas',       [PermitController::class, 'simpanGas'])->name('gas.simpan');
+        Route::delete('gas/{gas}',      [PermitController::class, 'hapusGas'])->middleware('can:admin')->name('gas.hapus');
+
+        Route::post('tindak',         [PermitController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
+        Route::put('tindak/{tindak}', [PermitController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
+    });
+
+    /* ============ Pemantauan Kestabilan Lereng ============
+       Alat bantu keputusan, bukan pengganti penilaian geoteknik oleh
+       tenaga kompeten: yang dicatat pengamatan lapangan dan acuan dari
+       kajian yang sudah ada, bukan kesimpulan tentang kestabilannya. */
+    Route::prefix('geoteknik')->name('geoteknik.')->group(function () {
+        Route::get('/',       [GeotechnicalController::class, 'index'])->name('index');
+        Route::get('bacaan',  [GeotechnicalController::class, 'bacaan'])->name('bacaan');
+        Route::get('lereng',  [GeotechnicalController::class, 'lereng'])->name('lereng');
+        Route::get('cetak',   [GeotechnicalController::class, 'cetak'])->name('cetak');
+
+        Route::post('lereng',           [GeotechnicalController::class, 'simpanLereng'])->name('lereng.simpan');
+        Route::put('lereng/{lereng}',   [GeotechnicalController::class, 'ubahLereng'])->name('lereng.ubah');
+        Route::delete('lereng/{lereng}', [GeotechnicalController::class, 'hapusLereng'])->middleware('can:admin')->name('lereng.hapus');
+
+        Route::post('lereng/{lereng}/instrumen', [GeotechnicalController::class, 'simpanInstrumen'])->name('instrumen.simpan');
+        Route::put('instrumen/{instrumen}',      [GeotechnicalController::class, 'ubahInstrumen'])->name('instrumen.ubah');
+
+        Route::post('bacaan',             [GeotechnicalController::class, 'simpanBacaan'])->name('bacaan.simpan');
+        Route::delete('bacaan/{bacaan}',  [GeotechnicalController::class, 'hapusBacaan'])->middleware('can:admin')->name('bacaan.hapus');
+        Route::post('bacaan/{bacaan}/ajukan',  [GeotechnicalController::class, 'ajukan'])->name('ajukan');
+        Route::post('bacaan/{bacaan}/setujui', [GeotechnicalController::class, 'setujui'])->name('setujui');
+        Route::post('bacaan/{bacaan}/tolak',   [GeotechnicalController::class, 'tolak'])->name('tolak');
+
+        Route::post('tindak',         [GeotechnicalController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
+        Route::put('tindak/{tindak}', [GeotechnicalController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
+    });
+
+    /* ============ Pusat Pemeliharaan & Keandalan ============
+       Alatnya memakai registri Keselamatan Operasi; yang ditambahkan di
+       sini adalah catatan gangguan dan perbaikannya. */
+    Route::prefix('pemeliharaan')->name('maintenance.')->group(function () {
+        Route::get('/',       [MaintenanceController::class, 'index'])->name('index');
+        Route::get('order',   [MaintenanceController::class, 'order'])->name('order');
+        Route::get('armada',  [MaintenanceController::class, 'armada'])->name('armada');
+
+        Route::post('order',                 [MaintenanceController::class, 'simpan'])->name('simpan');
+        Route::put('order/{order}/status',   [MaintenanceController::class, 'ubahStatus'])->name('status');
+        Route::post('order/{order}/part',    [MaintenanceController::class, 'simpanPart'])->name('part');
+        Route::delete('order/{order}',       [MaintenanceController::class, 'hapus'])->middleware('can:admin')->name('hapus');
+
+        /* Verifikasi penutupan. Hak diperiksa di dalam model supaya
+           aturan "penutup bukan pemverifikasi" berlaku juga bagi
+           pemanggil selain rute ini. */
+        Route::post('order/{order}/verifikasi',       [MaintenanceController::class, 'verifikasi'])->name('verifikasi');
+        Route::post('order/{order}/batal-verifikasi', [MaintenanceController::class, 'batalVerifikasi'])->middleware('can:admin')->name('batalVerifikasi');
+
+        Route::post('tindak',         [MaintenanceController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
+        Route::put('tindak/{tindak}', [MaintenanceController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
+
+        Route::get('cetak', [MaintenanceController::class, 'cetak'])->name('cetak');
+    });
+
+    /* ================= WEBSITE #8 - Konservasi Minerba ================= */
+    Route::prefix('konservasi')->name('konservasi.')->group(function () {
+        Route::get('/', [KonservasiController::class, 'index'])->name('index');
+        Route::get('data', [KonservasiController::class, 'data'])->name('data');
+        Route::get('laporan', [KonservasiController::class, 'laporan'])->name('laporan');
+        Route::get('cetak',   [KonservasiController::class, 'cetak'])->name('cetak');
+
+        Route::post('records', [KonservasiController::class, 'simpanRecord'])->name('record.simpan');
+        Route::put('records/{record}', [KonservasiController::class, 'ubahRecord'])->name('record.ubah');
+        Route::delete('records/{record}', [KonservasiController::class, 'hapusRecord'])->middleware('can:admin')->name('record.hapus');
+
+        /* Alur tinjauan. Hak meninjau diperiksa di dalam model — bukan di
+           sini — supaya aturan "pengaju bukan peninjau" berlaku juga bagi
+           pemanggil selain rute ini, seperti perintah artisan dan antrean. */
+        Route::post('records/{record}/ajukan',  [KonservasiController::class, 'ajukanRecord'])->name('record.ajukan');
+        Route::post('records/{record}/setujui', [KonservasiController::class, 'setujuiRecord'])->name('record.setujui');
+        Route::post('records/{record}/tolak',   [KonservasiController::class, 'tolakRecord'])->name('record.tolak');
+
+        Route::post('actions', [KonservasiController::class, 'simpanAction'])->name('action.simpan');
+        Route::put('actions/{action}', [KonservasiController::class, 'ubahAction'])->name('action.ubah');
+        Route::delete('actions/{action}', [KonservasiController::class, 'hapusAction'])->middleware('can:admin')->name('action.hapus');
+    });
+
+    /* ================= WEBSITE #9 — Operasi Tambang & peta GIS ================= */
+    Route::prefix('operasi-tambang')->name('operasi.')->group(function () {
+        Route::get('/', [MineOperationsController::class, 'index'])->name('index');
+        Route::get('data', [MineOperationsController::class, 'data'])->name('data');
+        Route::get('target', [MineOperationsController::class, 'target'])->name('target');
+        Route::get('gis', [MineOperationsController::class, 'gis'])->name('gis');
+        Route::get('cetak', [MineOperationsController::class, 'cetak'])->name('cetak');
+        Route::post('records', [MineOperationsController::class, 'simpanRecord'])->name('record.simpan');
+        Route::delete('records/{record}', [MineOperationsController::class, 'hapusRecord'])->middleware('can:admin')->name('record.hapus');
+
+        Route::post('records/{record}/ajukan',  [MineOperationsController::class, 'ajukanRecord'])->name('record.ajukan');
+        Route::post('records/{record}/setujui', [MineOperationsController::class, 'setujuiRecord'])->name('record.setujui');
+        Route::post('records/{record}/tolak',   [MineOperationsController::class, 'tolakRecord'])->name('record.tolak');
+
+        /* Tindak lanjut. Tabelnya dipakai bersama seluruh modul; yang
+           membedakan hanya saringan 'modul' di dalam controller. */
+        Route::post('tindak',            [MineOperationsController::class, 'simpanTindakLanjut'])->name('tindak.simpan');
+        Route::put('tindak/{tindak}',    [MineOperationsController::class, 'ubahTindakLanjut'])->name('tindak.ubah');
+        Route::delete('tindak/{tindak}', [MineOperationsController::class, 'hapusTindakLanjut'])->middleware('can:admin')->name('tindak.hapus');
+        Route::post('targets', [MineOperationsController::class, 'simpanTarget'])->name('target.simpan');
+        Route::post('layers', [MineOperationsController::class, 'simpanLayer'])->name('layer.simpan');
+        Route::delete('layers/{layer}', [MineOperationsController::class, 'hapusLayer'])->middleware('can:admin')->name('layer.hapus');
     });
 
     /* ================= WEBSITE #5b — ISO: pemenuhan klausul ================= */
@@ -370,6 +653,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('system',        [SystemController::class, 'index'])->name('system');
         Route::delete('system/logs',[SystemController::class, 'clearLogs'])->name('system.logs.clear');
         Route::post('system/maintenance/{aksi}', [SystemController::class,'maintenance'])->name('system.maintenance');
+
+        Route::get('system/diagnosa',           [SystemController::class,'diagnosa'])->name('system.diagnosa');
+        Route::post('system/perbaiki/{aksi}',   [SystemController::class,'perbaiki'])->name('system.perbaiki');
+
+        // Data contoh. Penandaan dan pemuatan sengaja dua rute terpisah:
+        // menandai perusahaan sebagai perusahaan contoh harus menjadi
+        // tindakan tersendiri yang disengaja, bukan efek samping dari
+        // menekan tombol muat.
+        Route::post('system/demo/{company}/tandai', [SystemController::class,'tandaiContoh'])
+            ->name('system.demo.tandai');
+        Route::post('system/demo/{company}/muat',   [SystemController::class,'muatContoh'])
+            ->name('system.demo.muat');
     });
 
     /* ---- Gudang & Penyimpanan ---- */

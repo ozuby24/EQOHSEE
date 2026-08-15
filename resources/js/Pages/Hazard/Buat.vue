@@ -16,7 +16,7 @@ import type { HalamanBuatBahaya } from '../../types';
 
 const props = defineProps<HalamanBuatBahaya>();
 
-const form = useForm({
+const form = useForm<Record<string, any>>({
   ...props.awal,
   terlapor: '',
   lokasi: '',
@@ -55,7 +55,7 @@ function pilihOrang(m: HalamanBuatBahaya['manpower'][number]) {
 
 function alih(daftar: 'unsafe_action' | 'unsafe_condition', nilai: string) {
   const kini = form[daftar];
-  form[daftar] = kini.includes(nilai) ? kini.filter((x) => x !== nilai) : [...kini, nilai];
+  form[daftar] = kini.includes(nilai) ? kini.filter((x: string) => x !== nilai) : [...kini, nilai];
 }
 
 function pilihFoto(e: Event) {

@@ -146,6 +146,7 @@ final class Menu
       'groups' => [
         'Pantau' => [
           ['Dashboard',          'energi.index',    'energi'],
+          ['Input Lapangan',     'energi.input',    'energi/input'],
           ['Energy Consumption', 'energi.konsumsi', 'energi/konsumsi'],
           ['Fuel Management',    'energi.fuel',     'energi/bahan-bakar'],
           ['Electricity',        'energi.listrik',  'energi/listrik'],
@@ -166,12 +167,164 @@ final class Menu
         ],
       ],
     ],
+    'konservasi' => [
+      'label' => 'Konservasi Minerba',
+      'icon'  => 'M12.8 2.6a2 2 0 0 0-1.6 0L2.6 6.5a1 1 0 0 0 0 1.8l8.6 3.9a2 2 0 0 0 1.6 0l8.6-3.9a1 1 0 0 0 0-1.8ZM2 12.4a1 1 0 0 0 .6.9l8.6 3.9a2 2 0 0 0 1.6 0l8.6-3.9a1 1 0 0 0 .6-.9M2 17.2a1 1 0 0 0 .6.9l8.6 3.9a2 2 0 0 0 1.6 0l8.6-3.9a1 1 0 0 0 .6-.9',
+      'groups' => [
+        'Pengawasan' => [
+          ['Dashboard', 'konservasi.index', 'konservasi'],
+          ['Data Konservasi', 'konservasi.data', 'konservasi/data'],
+          ['Laporan Konservasi', 'konservasi.laporan', 'konservasi/laporan'],
+        ],
+      ],
+    ],
+    'operasi' => [
+      'label' => 'Mine Operations',
+      'icon'  => 'm3 6.5 6-3 6 3 6-3v14l-6 3-6-3-6 3zM9 3.5v14M15 6.5v14',
+      'groups' => [
+        'Control Tower' => [
+          ['Dashboard Operasi', 'operasi.index', 'operasi-tambang'],
+          ['Input Data Shift', 'operasi.data', 'operasi-tambang/data'],
+          ['Target Bulanan', 'operasi.target', 'operasi-tambang/target'],
+        ],
+        'Spatial Operations' => [
+          ['GIS & Layer Tambang', 'operasi.gis', 'operasi-tambang/gis'],
+        ],
+      ],
+    ],
+
+    /* Penirisan dan Pemeliharaan sudah punya halaman, rute, dan alur
+       persetujuan yang lengkap, tetapi belum pernah terdaftar di sini —
+       sehingga keduanya hanya dapat dicapai dari kartu halaman depan,
+       dan sekali berada di dalam aplikasi tidak ada jalan menuju ke
+       sana sama sekali. */
+    'air' => [
+      'label' => 'Water & Dewatering',
+      'icon'  => 'M12 2.7s5.5 6 5.5 9.8a5.5 5.5 0 1 1-11 0C6.5 8.7 12 2.7 12 2.7Z',
+      'groups' => [
+        'Pengawasan' => [
+          ['Dashboard Air',   'air.index',   'penirisan'],
+          ['Catatan Harian',  'air.catatan', 'penirisan/catatan*'],
+          ['Kolam & Pompa',   'air.kolam',   'penirisan/kolam*'],
+        ],
+        'Data' => [
+          ['Laporan Air', 'air.cetak', 'penirisan/cetak'],
+        ],
+      ],
+    ],
+    'lingkungan' => [
+      'label' => 'Lingkungan & Reklamasi',
+      'icon'  => 'M20 4c0 9-5.5 13-11 13a5 5 0 0 1-1.6-.3C6 15.6 5 13.4 5 11 5 6.6 10 4 20 4ZM4 20c2.5-4.5 6-7.5 11-9.5',
+      'groups' => [
+        'Pengawasan' => [
+          ['Dashboard Lingkungan', 'lingkungan.index',      'lingkungan'],
+          ['Petak & Reklamasi',    'lingkungan.lahan',      'lingkungan/lahan*'],
+          ['Pemantauan Mutu',      'lingkungan.pemantauan', 'lingkungan/pemantauan*'],
+        ],
+        'Acuan & Data' => [
+          ['Baku Mutu',            'lingkungan.baku',  'lingkungan/baku-mutu*'],
+          ['Laporan Lingkungan',   'lingkungan.cetak', 'lingkungan/cetak'],
+        ],
+      ],
+    ],
+    'peledakan' => [
+      'label' => 'Drill & Blast',
+      'icon'  => 'M12 2.5 9.5 9 3 11.5 9.5 14l2.5 6.5 2.5-6.5 6.5-2.5L14.5 9Z',
+      'groups' => [
+        'Perencanaan' => [
+          ['Dashboard Peledakan', 'peledakan.index',   'peledakan'],
+          ['Rencana Peledakan',   'peledakan.rencana', 'peledakan/rencana*'],
+        ],
+        'Pemantauan' => [
+          ['Titik Terlindung', 'peledakan.titik',   'peledakan/titik*'],
+          ['Getaran Terukur',  'peledakan.getaran', 'peledakan/getaran*'],
+        ],
+        'Data' => [
+          ['Laporan Peledakan', 'peledakan.cetak', 'peledakan/cetak'],
+        ],
+      ],
+    ],
+    'angkutan' => [
+      'label' => 'Dispatch & Hauling',
+      'icon'  => 'M2.5 16.5V7a1 1 0 0 1 1-1h9v10.5m0 0h-9m9 0h2m6.5 0h-2m2 0V12l-2.5-3.5H15m6 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm-12.5 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z',
+      'groups' => [
+        'Pengawasan' => [
+          ['Dashboard Angkutan', 'angkutan.index',  'angkutan'],
+          ['Regu Angkut',        'angkutan.regu',   'angkutan/regu*'],
+          ['Penimbangan Muatan', 'angkutan.muatan', 'angkutan/muatan*'],
+        ],
+        'Acuan & Data' => [
+          ['Armada Angkut',    'angkutan.armada', 'angkutan/armada*'],
+          ['Laporan Angkutan', 'angkutan.cetak',  'angkutan/cetak'],
+        ],
+      ],
+    ],
+    'biaya' => [
+      'label' => 'Pengendalian Biaya',
+      'icon'  => 'M12 2.5v19M15.5 7.2c-.6-1.4-2-2.2-3.7-2.2-2.2 0-3.9 1.2-3.9 3s1.5 2.6 4 3.2c2.7.6 4.3 1.5 4.3 3.4 0 2-1.8 3.3-4.2 3.3-2 0-3.5-.9-4.1-2.4',
+      'groups' => [
+        'Pengawasan' => [
+          ['Dashboard Biaya',   'biaya.index',     'biaya'],
+          ['Realisasi Bulanan', 'biaya.realisasi', 'biaya/realisasi*'],
+        ],
+        'Acuan & Data' => [
+          ['Anggaran Tahunan', 'biaya.anggaran', 'biaya/anggaran*'],
+          ['Bagan Akun',       'biaya.akun',     'biaya/bagan-akun*'],
+          ['Laporan Biaya',    'biaya.cetak',    'biaya/cetak'],
+        ],
+      ],
+    ],
+    'izin' => [
+      'label' => 'Izin Kerja Aman',
+      'icon'  => 'M9 12.5l2 2 4.5-4.5M8.5 4.5h7a1 1 0 0 1 1 1v1h1.5a2 2 0 0 1 2 2v10.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2H7.5v-1a1 1 0 0 1 1-1Z',
+      'groups' => [
+        'Pengawasan' => [
+          ['Dashboard Izin', 'izin.index',  'izin-kerja'],
+          ['Daftar Izin',    'izin.daftar', 'izin-kerja/daftar*'],
+        ],
+        'Acuan & Data' => [
+          ['Daftar Periksa', 'izin.syarat', 'izin-kerja/syarat*'],
+          ['Ambang Gas',     'izin.ambang', 'izin-kerja/ambang-gas*'],
+          ['Laporan Izin',   'izin.cetak',  'izin-kerja/cetak'],
+        ],
+      ],
+    ],
+    'geoteknik' => [
+      'label' => 'Kestabilan Lereng',
+      'icon'  => 'M2.5 19.5h19L15 8l-3.2 5.2L9.4 9.8ZM9.4 9.8 5.6 4.5 2.5 9',
+      'groups' => [
+        'Pengawasan' => [
+          ['Dashboard Lereng', 'geoteknik.index',  'geoteknik'],
+          ['Pembacaan Alat',   'geoteknik.bacaan', 'geoteknik/bacaan*'],
+          ['Lereng & Instrumen','geoteknik.lereng','geoteknik/lereng*'],
+        ],
+        'Data' => [
+          ['Laporan Geoteknik', 'geoteknik.cetak', 'geoteknik/cetak'],
+        ],
+      ],
+    ],
+    'maintenance' => [
+      'label' => 'Maintenance',
+      'icon'  => 'M14.6 6.3a1 1 0 0 0 0 1.4l1.7 1.7a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9l-3.8 3.8Z',
+      'groups' => [
+        'Pengawasan' => [
+          ['Dashboard Keandalan', 'maintenance.index',  'pemeliharaan'],
+          ['Perintah Kerja',      'maintenance.order',  'pemeliharaan/order*'],
+          ['Armada',              'maintenance.armada', 'pemeliharaan/armada'],
+        ],
+        'Data' => [
+          ['Laporan Keandalan', 'maintenance.cetak', 'pemeliharaan/cetak'],
+        ],
+      ],
+    ],
+
     'meh' => [
       'label' => 'Mining Engineering',
-      'icon'  => 'M9 3v18m6-18v18M3 9h18M3 15h18',
+      'icon'  => 'M3.5 3.5h6.5v8H3.5zM14 3.5h6.5v5H14zM14 12.5h6.5v8H14zM3.5 16h6.5v4.5H3.5z',
       'groups' => [
         'Operasi' => [
           ['Dashboard',            'meh.index',       'mining-engineering-hub'],
+          ['Control Tower',        'meh.monitor',     'mining-engineering-hub/monitor'],
           ['Energy Dashboard',     'meh.energy',      'mining-engineering-hub/energy'],
           ['Fleet & Productivity', 'meh.fleet',       'mining-engineering-hub/fleet'],
           ['Mining Equipment',     'meh.equipment',   'mining-engineering-hub/equipment'],
@@ -227,7 +380,7 @@ final class Menu
     ],
     'admin' => [
       'label' => 'Administrasi',
-      'icon'  => 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z',
+      'icon'  => 'M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Zm7.4-.9a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5v.2a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1h.2a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1Z',
       'admin' => true,
       'groups' => [
         '' => [
@@ -250,10 +403,20 @@ final class Menu
          : (Request::is('smkp*') ? 'smkp'
          : (Request::is('dokumen*') || Request::is('iso*') || Request::is('struktur-dokumen') || Request::is('daftar-induk') ? 'dokumen'
          : (Request::is('energi*') ? 'energi'
+         : (Request::is('konservasi*') ? 'konservasi'
+         : (Request::is('operasi-tambang*') ? 'operasi'
+         : (Request::is('penirisan*') ? 'air'
+         : (Request::is('geoteknik*') ? 'geoteknik'
+         : (Request::is('peledakan*') ? 'peledakan'
+         : (Request::is('angkutan*') ? 'angkutan'
+         : (Request::is('biaya*') ? 'biaya'
+         : (Request::is('izin-kerja*') ? 'izin'
+         : (Request::is('lingkungan*') ? 'lingkungan'
+         : (Request::is('pemeliharaan*') ? 'maintenance'
          : (Request::is('gudang*') ? 'gudang'
          : (Request::is('mining-engineering-hub*') ? 'meh'
          : (Request::is('ko*') ? 'ko'
-         : (Request::is('admin*') || Request::is('signatories*') ? 'admin' : 'lms')))))))));
+         : (Request::is('admin*') || Request::is('signatories*') ? 'admin' : 'lms')))))))))))))))))));
 
         return isset(self::all()[$kunci]) ? $kunci : 'lms';
     }

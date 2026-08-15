@@ -6,6 +6,7 @@ use App\Models\{ActivityLog, Company, TpkkpAssessment, TpkkpResponse};
 use App\Support\{Tpkkp, TpkkpKuesioner};
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 /**
  * Kuesioner persepsi (Metode B — Skala Likert).
@@ -131,7 +132,12 @@ class KuesionerController extends Controller
     public function pilih(string $token)
     {
         $company = $this->byToken($token);
-        return view('kuesioner.pilih', compact('company','token'));
+
+        return Inertia::render('Kuesioner/Pilih', [
+            'token' => $token,
+            'company' => ['name' => $company->name],
+            'kategori' => self::KATEGORI,
+        ]);
     }
 
     public function form(string $token, string $cat)
@@ -141,8 +147,8 @@ class KuesionerController extends Controller
 
         abort_unless(TpkkpKuesioner::punya($cat), 404);
 
-        return view('kuesioner.form', [
-            'company'  => $company, 'token' => $token, 'cat' => $cat,
+        return Inertia::render('Kuesioner/Form', [
+            'company'  => ['name' => $company->name], 'token' => $token, 'cat' => $cat,
             'kategori' => self::KATEGORI[$cat],
             'entitas'  => TpkkpKuesioner::entitas($cat),
             'skala'    => TpkkpKuesioner::skala(),
@@ -189,7 +195,12 @@ class KuesionerController extends Controller
 
     public function selesai(string $token)
     {
-        return view('kuesioner.selesai', ['company' => $this->byToken($token), 'token' => $token]);
+        $company = $this->byToken($token);
+
+        return Inertia::render('Kuesioner/Selesai', [
+            'company' => ['name' => $company->name],
+            'token' => $token,
+        ]);
     }
 
     /* ============ BANTU ============ */
