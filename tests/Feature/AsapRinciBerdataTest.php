@@ -53,11 +53,12 @@ class AsapRinciBerdataTest extends TestCase
      * contoh dapat membuat setiap parameter gagal diisi, dan tanpa
      * ambang ini hasilnya tetap hijau dengan nol halaman dibuka.
      *
-     * Angkanya di bawah jumlah yang sekarang lulus, bukan sama dengan,
-     * supaya penambahan rute tidak menuntut angka ini ikut disunting
-     * setiap kali.
+     * Angkanya di bawah jumlah yang sekarang lulus (26), bukan sama
+     * dengan, supaya penambahan rute tidak menuntut angka ini ikut
+     * disunting setiap kali — tetapi cukup dekat untuk menangkap satu
+     * modul data contoh yang berhenti terisi.
      */
-    private const MINIMAL_RINCIAN = 20;
+    private const MINIMAL_RINCIAN = 24;
 
     /** @var list<string> model yang tidak punya satu pun baris contoh */
     private array $tanpaData = [];

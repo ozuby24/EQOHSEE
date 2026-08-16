@@ -10,7 +10,9 @@ use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, 
                 KoAction, KoInspection, KoObject, KoReview, KoSafeguard,
                 LedakHasil, LedakRencana, LedakTitik, LedakUkur, LingkunganArea,
                 LingkunganPantau, LingkunganParameter, MineOperationalRecord,
-                MineOperationalTarget, ReklamasiKemajuan, SmkpAttendee, SmkpAudit, SmkpFinding,
+                MineOperationalTarget, News, Procedure, ReklamasiKemajuan, SmkpAttendee, SmkpAudit,
+                SmkpFinding, SopEvaluation, SopEvaluationAttempt,
+                SopEvaluationQuestion,
                 TindakLanjut, User, WaterLog, WaterSump, WaterSumpPump, WorkOrder};
 use Illuminate\Support\Carbon;
 
@@ -86,6 +88,19 @@ final class DataContoh
         KoSafeguard::class, KoInspection::class, KoAction::class, KoReview::class,
         WorkOrder::class,
         KoObject::class,
+
+        /* Prosedur dan berita baru dapat masuk ke sini sesudah keduanya
+           melekat perusahaan; sebelum itu penghapusnya tidak punya
+           company_id untuk disebut, dan barisnya akan menumpuk tiap
+           kali tombolnya ditekan.
+
+           Procedure paling belakang di antara ketiganya: Document
+           menunjuk procedure_id, dan Document dibuang lebih dulu di
+           atas. SopEvaluation menunjuk Procedure pula, jadi ia dan
+           anak-anaknya mendahuluinya. */
+        SopEvaluationAttempt::class, SopEvaluationQuestion::class, SopEvaluation::class,
+        Procedure::class,
+        News::class,
     ];
 
     /** @var list<string> hal yang perlu diketahui pemanggilnya */
@@ -228,6 +243,19 @@ final class DataContoh
                 => $q->whereIn('ko_object_id',
                     KoObject::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
 
+            SopEvaluation::class => $q->whereIn('procedure_id',
+                Procedure::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            SopEvaluationQuestion::class => $q->whereIn('evaluation_id',
+                SopEvaluation::withoutGlobalScopes()->whereIn('procedure_id',
+                    Procedure::withoutGlobalScopes()->where('company_id', $c->id)->select('id')
+                )->select('id')),
+
+            SopEvaluationAttempt::class => $q->whereIn('evaluation_id',
+                SopEvaluation::withoutGlobalScopes()->whereIn('procedure_id',
+                    Procedure::withoutGlobalScopes()->where('company_id', $c->id)->select('id')
+                )->select('id')),
+
             default => $q->whereRaw('1 = 0'),
         };
     }
@@ -284,6 +312,8 @@ final class DataContoh
             'KO'        => $this->ko(),
             'Energi'    => $this->energiAlat(),
             'SMKP'      => $this->smkp(),
+            'Prosedur'  => $this->prosedur(),
+            'Berita'    => $this->berita(),
         ]);
     }
 
@@ -1168,6 +1198,128 @@ final class DataContoh
                     : null,
                 'ketua_auditor'   => $this->peninjau?->name ?? 'Ketua Auditor Internal',
                 'user_id'         => $this->pengaju?->id,
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /* ─────────── prosedur & evaluasi SOP ─────────── */
+
+    /**
+     * Prosedur berikut satu evaluasi SOP beserta soalnya.
+     *
+     * Soalnya diisi sungguhan, bukan sekadar satu baris judul. Halaman
+     * evaluasi menghitung nilai lulus dari jumlah soal, dan evaluasi
+     * tanpa soal memulangkan pembagian dengan nol — bentuk kegagalan
+     * yang hanya muncul ketika ada yang benar-benar mengerjakannya,
+     * yaitu justru bukan saat diperiksa.
+     */
+    private function prosedur(): int
+    {
+        $n = 0;
+
+        $daftar = [
+            ['SOP-01', 'Penanganan Bahan Bakar di Area Tambang', 'Operasional'],
+            ['SOP-02', 'Pengoperasian Alat Angkut di Jalan Hauling', 'Operasional'],
+            ['SOP-03', 'Tanggap Darurat Kebakaran Workshop', 'Keselamatan'],
+            ['SOP-04', 'Pemeriksaan Harian Kolam Pengendap', 'Lingkungan'],
+        ];
+
+        foreach ($daftar as $i => [$kode, $judul, $kategori]) {
+            $p = $this->baru(Procedure::class, [
+                'code'        => $kode,
+                'title'       => $judul,
+                'category'    => $kategori,
+                'description' => 'Prosedur contoh untuk memeriksa tampilan dan penomoran.',
+                'position'    => $i + 1,
+            ]);
+            $n++;
+
+            // Satu evaluasi pada dua prosedur pertama saja — supaya
+            // halaman daftar memperlihatkan keduanya: yang punya
+            // evaluasi dan yang belum.
+            if ($i > 1) continue;
+
+            $ev = SopEvaluation::withoutGlobalScopes()->create([
+                'procedure_id'     => $p->id,
+                'title'            => 'Evaluasi '.$judul,
+                'description'      => 'Evaluasi contoh.',
+                'passing_score'    => 70,
+                'duration_minutes' => 15,
+                'is_active'        => true,
+                'position'         => 1,
+            ]);
+            $n++;
+
+            $soal = [
+                ['Apa langkah pertama sebelum mengisi bahan bakar?',
+                 ['Matikan mesin', 'Nyalakan mesin', 'Biarkan idle', 'Panggil rekan'], 0],
+                ['Berapa jarak aman minimum dari sumber api?',
+                 ['1 meter', '5 meter', '10 meter', 'Tidak diatur'], 2],
+                ['Siapa yang berwenang menghentikan pekerjaan tidak aman?',
+                 ['Hanya KTT', 'Hanya pengawas', 'Setiap pekerja', 'Hanya kontraktor'], 2],
+            ];
+
+            foreach ($soal as $k => [$tanya, $pilihan, $benar]) {
+                SopEvaluationQuestion::withoutGlobalScopes()->create([
+                    'evaluation_id' => $ev->id,
+                    'question'      => $tanya,
+                    'options'       => $pilihan,
+                    'correct_index' => $benar,
+                    'order_index'   => $k + 1,
+                ]);
+                $n++;
+            }
+
+            /* Satu percobaan pengerjaan, supaya halaman hasil dan
+               rekapitulasi kelulusan punya sesuatu untuk dihitung. */
+            if ($this->pengaju) {
+                SopEvaluationAttempt::withoutGlobalScopes()->create([
+                    'user_id'       => $this->pengaju->id,
+                    'evaluation_id' => $ev->id,
+                    'procedure_id'  => $p->id,
+                    'score'         => 67,
+                    'total'         => count($soal),
+                    'correct'       => 2,
+                    'passed'        => false,
+                    'answers'       => [0, 1, 2],
+                ]);
+                $n++;
+            }
+        }
+
+        return $n;
+    }
+
+    /* ─────────── berita ─────────── */
+
+    /**
+     * Pengumuman, sebagian sudah terbit dan satu masih terjadwal.
+     *
+     * Yang terjadwal sengaja ada: halaman depan menyaring berdasarkan
+     * tanggal terbit, dan penyaring itu tidak pernah terbukti bekerja
+     * bila seluruh contohnya sudah lewat tanggalnya.
+     */
+    private function berita(): int
+    {
+        $n = 0;
+
+        $daftar = [
+            ['Sosialisasi Prosedur Izin Kerja Khusus yang Baru', -21],
+            ['Hasil Audit Internal SMKP Triwulan Ini', -12],
+            ['Jadwal Pemeriksaan Kesehatan Berkala Pekerja Shift Malam', -4],
+            ['Simulasi Tanggap Darurat Bulan Depan', 9],
+        ];
+
+        foreach ($daftar as [$judul, $geser]) {
+            $this->baru(News::class, [
+                'title'        => $judul,
+                'content'      => "Pengumuman contoh untuk memeriksa tampilan halaman berita.\n\n"
+                    ."Isinya sengaja beberapa paragraf agar potongan ringkasnya pada daftar "
+                    ."benar-benar terpotong, bukan tampak utuh karena kebetulan pendek.",
+                'published_at' => $this->kini->copy()->addDays($geser)->toDateString(),
             ]);
             $n++;
         }
