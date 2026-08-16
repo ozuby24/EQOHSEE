@@ -2174,10 +2174,14 @@ final class DataContoh
             $n++;
         }
 
-        /* ── solar per alat ── */
+        /* ── solar per alat ──
 
-        $hm = ['EQ-HD-001' => 18_420, 'EQ-HD-002' => 17_950,
-               'EQ-EX-001' => 22_310, 'EQ-DZ-001' => 15_880, 'EQ-GR-001' => 9_640];
+           `hm` di sini adalah JAM OPERASI HARI ITU, bukan angka jam
+           meter kumulatif. Halaman rekap menghitung liter per jam
+           sebagai liter dibagi SUM(hm); diisi angka meter kumulatif
+           (18.420 dan seterusnya), pembaginya menjadi ratusan ribu dan
+           setiap alat dilaporkan 0,0 L/jam — daftar "alat paling haus"
+           yang seluruh barisnya nol. */
 
         /* Liter per jam yang wajar menurut kelasnya; satu truk sengaja
            lebih boros supaya perbandingan antar alat punya pemenang dan
@@ -2188,17 +2192,20 @@ final class DataContoh
         foreach ($alat as $kode => $e) {
             for ($i = $hari; $i >= 1; $i--) {
                 $tgl = $this->kini->copy()->subDays($i);
-                if ($tgl->isSunday()) continue;
 
-                $jam  = $i === 6 ? 3.0 : 9.5;
+                /* Hari Minggu TETAP dicatat, dengan jam yang lebih
+                   pendek. Melewatinya sama sekali sementara produksi
+                   hari itu tetap dicatat membuat intensitas energinya
+                   0 GJ/ton — dan nol pada kolom intensitas terbaca
+                   sebagai efisiensi sempurna, bukan sebagai pengukuran
+                   yang tidak ada. */
+                $jam = $tgl->isSunday() ? 4.5 : ($i === 6 ? 3.0 : 9.5);
                 $idle = round($jam * ($kode === 'EQ-HD-002' ? 0.22 : 0.12), 1);
-
-                $hm[$kode] += $jam;
 
                 $this->baru(EnergyFuelLog::class, [
                     'equipment_id' => $e->id,
                     'tanggal'      => $tgl->toDateString(),
-                    'hm'           => round($hm[$kode], 1),
+                    'hm'           => $jam,
                     'liter'        => round($jam * $lph[$kode], 1),
                     'idle_jam'     => $idle,
                     /* Nol, bukan null: kolomnya NOT NULL berdefault 0.

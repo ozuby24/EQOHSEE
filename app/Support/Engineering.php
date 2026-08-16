@@ -291,9 +291,13 @@ final class Engineering
         $rasio = $nilai / $acuan;
 
         return match (true) {
-            $rasio <= 1.05 => ['kode' => 'efisien', 'label' => 'Efficient',        'warna' => '#0F766E'],
-            $rasio <= 1.20 => ['kode' => 'pantau',  'label' => 'Monitor',          'warna' => '#D9993A'],
-            default        => ['kode' => 'boros',   'label' => 'High Consumption', 'warna' => '#E2663A'],
+            /* Labelnya berbahasa Indonesia seperti seluruh aplikasi.
+               "High Consumption" di tengah halaman berbahasa Indonesia
+               dibaca sebagai istilah teknis yang punya arti khusus,
+               padahal ia hanya berarti boros. */
+            $rasio <= 1.05 => ['kode' => 'efisien', 'label' => 'Efisien', 'warna' => '#0F766E'],
+            $rasio <= 1.20 => ['kode' => 'pantau',  'label' => 'Pantau',  'warna' => '#D9993A'],
+            default        => ['kode' => 'boros',   'label' => 'Boros',   'warna' => '#E2663A'],
         };
     }
 
