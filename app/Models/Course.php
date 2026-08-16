@@ -11,19 +11,24 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *
  * SENGAJA TANPA BATAS PERUSAHAAN.
  *
- * Kursus, kuis, prosedur, dan template inspeksi adalah pustaka
- * pelatihan yang dipakai bersama seluruh perusahaan pada pemasangan
- * ini — itulah barang yang disediakan platform, dan menggandakannya
- * per perusahaan berarti setiap perbaikan materi harus dikerjakan
- * berulang kali.
+ * Kursus, kuis, dan template inspeksi dipakai bersama seluruh
+ * perusahaan pada pemasangan ini — itulah barang yang disediakan
+ * platform, dan menggandakannya per perusahaan berarti setiap
+ * perbaikan materi harus dikerjakan berulang kali.
  *
- * Yang MELEKAT perusahaan adalah hasilnya, bukan materinya: Certificate
- * membawa company_id, begitu pula Document, Inspection, HazardReport,
- * KoObject, dan SmkpAudit. Pola itu disengaja — materi bersama,
- * penerbitan sendiri-sendiri — dan dijaga oleh LingkupPustakaTest.
+ * Garis pemisahnya: MATERI PELATIHAN sama bagi siapa pun yang belajar.
+ * Yang MELEKAT perusahaan adalah hasilnya dan aturannya sendiri —
+ * Certificate, Document, Inspection, HazardReport, KoObject, SmkpAudit,
+ * News, dan Procedure. Dijaga oleh LingkupPustakaTest.
  *
- * News dahulu ikut di sini dan sekarang TIDAK: pengumuman menyebut nama
- * orang, jadwal, dan kejadian di satu lokasi kerja.
+ * Dua yang dahulu ikut di sini dan sekarang TIDAK:
+ *
+ * - News. Pengumuman menyebut nama orang, jadwal, dan kejadian di satu
+ *   lokasi kerja.
+ * - Procedure. Prosedur menyebut nama jabatan, batas kewenangan, dan
+ *   urutan kerja yang berlaku di satu perusahaan; perusahaan lain
+ *   tidak terikat olehnya, dan prosedur orang lain yang terbaca
+ *   sebagai milik sendiri adalah kesalahan yang mahal pada audit.
  */
 class Course extends Model
 {

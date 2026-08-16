@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Rules\DalamPerusahaan;
+
 use App\Models\{ActivityLog, Company, Document, Procedure};
 use App\Support\{Db, Dokumen, Iso, KopDokumen};
 use Illuminate\Http\Request;
@@ -433,7 +435,7 @@ class DocumentController extends Controller
             'klasifikasi'     => ['nullable', Rule::in(Dokumen::KLASIFIKASI)],
             'departemen'      => ['nullable','string','max:100'],
             'company_id'      => ['nullable','exists:companies,id'],
-            'procedure_id'    => ['nullable','exists:procedures,id'],
+            'procedure_id'    => ['nullable', new DalamPerusahaan('procedures')],
             'revisi'          => ['nullable','integer','min:0','max:999'],
             'status'          => ['required', Rule::in(Dokumen::STATUS)],
             'tanggal_terbit'  => ['nullable','date'],
