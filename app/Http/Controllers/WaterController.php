@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Rules\DalamPerusahaan;
+
 use App\Models\{ActivityLog, Company, KoObject, TindakLanjut, WaterLog, WaterSump, WaterSumpPump};
 use App\Support\{Alur, KelengkapanShift, KopDokumen, NeracaAir, PeringatanAir};
 use Illuminate\Http\Request;
@@ -58,7 +60,7 @@ class WaterController extends Controller
     public function simpanPompa(Request $request, WaterSump $sump)
     {
         $data = $request->validate([
-            'ko_object_id'     => ['nullable', 'exists:ko_objects,id'],
+            'ko_object_id'     => ['nullable', new DalamPerusahaan('ko_objects')],
             'nama'             => ['nullable', 'string', 'max:150'],
             'kapasitas_m3_jam' => ['required', 'numeric', 'min:0', 'max:1000000'],
             'status'           => ['required', Rule::in(WaterSumpPump::STATUS)],
@@ -96,7 +98,7 @@ class WaterController extends Controller
     {
         $data = $this->pemilik($request->validate([
             'company_id'      => ['nullable', 'exists:companies,id'],
-            'water_sump_id'   => ['required', 'exists:water_sumps,id'],
+            'water_sump_id'   => ['required', new DalamPerusahaan('water_sumps')],
             'tanggal'         => ['required', 'date'],
             'curah_hujan_mm'  => ['required', 'numeric', 'min:0', 'max:2000'],
             'level_m'         => ['nullable', 'numeric', 'min:-1000', 'max:10000'],

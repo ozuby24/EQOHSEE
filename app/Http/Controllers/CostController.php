@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Rules\DalamPerusahaan;
+
 use App\Models\{ActivityLog, BiayaAkun, BiayaAnggaran, BiayaRealisasi, Company,
                 MineOperationalRecord, MineOperationalTarget, TindakLanjut};
 use App\Support\{Alur, Biaya, KopDokumen, PeringatanBiaya};
@@ -65,7 +67,7 @@ class CostController extends Controller
     {
         $data = $this->pemilik($request->validate([
             'company_id'        => ['nullable', 'exists:companies,id'],
-            'biaya_akun_id'     => ['required', 'exists:biaya_akuns,id'],
+            'biaya_akun_id'     => ['required', new DalamPerusahaan('biaya_akuns')],
             'tahun'             => ['required', 'integer', 'min:2000', 'max:2100'],
             'pusat_biaya'       => ['required', Rule::in(BiayaAnggaran::PUSAT)],
             'nilai_rp'          => ['required', 'numeric', 'min:0', 'max:1000000000000000'],
@@ -98,7 +100,7 @@ class CostController extends Controller
     {
         $data = $this->pemilik($request->validate([
             'company_id'    => ['nullable', 'exists:companies,id'],
-            'biaya_akun_id' => ['required', 'exists:biaya_akuns,id'],
+            'biaya_akun_id' => ['required', new DalamPerusahaan('biaya_akuns')],
             'tahun'         => ['required', 'integer', 'min:2000', 'max:2100'],
             'bulan'         => ['required', 'integer', 'min:1', 'max:12'],
             'pusat_biaya'   => ['required', Rule::in(BiayaAnggaran::PUSAT)],

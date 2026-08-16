@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Rules\DalamPerusahaan;
+
 use App\Models\{ActivityLog, Company, KoObject, MineOperationalRecord, TindakLanjut, WorkOrder, WorkOrderPart};
 use App\Support\{Alur, Keandalan, KopDokumen, PeringatanMaintenance};
 use Illuminate\Http\Request;
@@ -35,7 +37,7 @@ class MaintenanceController extends Controller
     {
         $data = $this->pemilik($request->validate([
             'company_id'      => ['nullable', 'exists:companies,id'],
-            'ko_object_id'    => ['nullable', 'exists:ko_objects,id'],
+            'ko_object_id'    => ['nullable', new DalamPerusahaan('ko_objects')],
             'nomor'           => ['nullable', 'string', 'max:60'],
             'jenis'           => ['required', Rule::in(WorkOrder::JENIS)],
             'prioritas'       => ['required', Rule::in(WorkOrder::PRIORITAS)],
@@ -104,7 +106,7 @@ class MaintenanceController extends Controller
     public function simpanPart(Request $request, WorkOrder $order)
     {
         $data = $request->validate([
-            'gudang_barang_id' => ['nullable', 'exists:gudang_barang,id'],
+            'gudang_barang_id' => ['nullable', new DalamPerusahaan('gudang_barang')],
             'nama'             => ['required', 'string', 'max:150'],
             'jumlah'           => ['required', 'numeric', 'min:0', 'max:1000000'],
             'satuan'           => ['nullable', 'string', 'max:20'],
@@ -145,7 +147,7 @@ class MaintenanceController extends Controller
     {
         $data = $this->pemilik($request->validate([
             'company_id'       => ['nullable', 'exists:companies,id'],
-            'work_order_id'    => ['nullable', 'exists:work_orders,id'],
+            'work_order_id'    => ['nullable', new DalamPerusahaan('work_orders')],
             'kode_pemicu'      => ['nullable', 'string', 'max:60'],
             'judul'            => ['required', 'string', 'max:200'],
             'prioritas'        => ['required', Rule::in(TindakLanjut::PRIORITAS)],

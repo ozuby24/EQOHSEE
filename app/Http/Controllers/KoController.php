@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Rules\DalamPerusahaan;
+
 use App\Models\{ActivityLog, Company, KoAction, KoInspection, KoObject, KoPersonnel, KoReview, KoSafeguard, User};
 use App\Support\Ko;
 use Illuminate\Http\Request;
@@ -244,7 +246,7 @@ class KoController extends Controller
             'berikutnya' => ['nullable', 'date'],
             'hasil'      => ['nullable', 'string', 'max:100'],
             'catatan'    => ['nullable', 'string', 'max:1000'],
-            'ko_personnel_id' => ['nullable', 'exists:ko_personnel,id'],
+            'ko_personnel_id' => ['nullable', new DalamPerusahaan('ko_personnel')],
         ]);
 
         KoInspection::create($d + [
@@ -347,11 +349,11 @@ class KoController extends Controller
 
         $d = $r->validate([
             'id'              => ['nullable', 'exists:ko_reviews,id'],
-            'ko_object_id'    => ['required', 'exists:ko_objects,id'],
+            'ko_object_id'    => ['required', new DalamPerusahaan('ko_objects')],
             'judul'           => ['required', 'string', 'max:200'],
             'pemicu'          => ['nullable', 'string', 'max:100'],
             'tanggal'         => ['nullable', 'date'],
-            'ko_personnel_id' => ['nullable', 'exists:ko_personnel,id'],
+            'ko_personnel_id' => ['nullable', new DalamPerusahaan('ko_personnel')],
             'status'          => ['required', 'in:' . implode(',', Ko::KAJIAN_STATUS)],
             'tgl_lapor'       => ['nullable', 'date'],
             'ringkasan'       => ['nullable', 'string', 'max:2000'],
@@ -489,7 +491,7 @@ class KoController extends Controller
 
         $d = $r->validate([
             'id'           => ['nullable', 'exists:ko_actions,id'],
-            'ko_object_id' => ['required', 'exists:ko_objects,id'],
+            'ko_object_id' => ['required', new DalamPerusahaan('ko_objects')],
             'sumber'       => ['required', 'string', 'max:50'],
             'uraian'       => ['required', 'string', 'max:2000'],
             'prioritas'    => ['required', 'in:Tinggi,Sedang,Rendah'],

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Rules\DalamPerusahaan;
+
 use App\Models\{GudangBarang, GudangLokasi, GudangMutasi};
 use App\Support\{Gudang, Waktu};
 use Illuminate\Http\Request;
@@ -251,7 +253,7 @@ class GudangController extends Controller
             'kategori'         => ['required', Rule::in(array_keys(Gudang::KATEGORI))],
             'satuan'           => ['required', 'string', 'max:20'],
             'stok_min'         => ['nullable', 'numeric', 'min:0'],
-            'lokasi_id'        => ['nullable', 'exists:gudang_lokasi,id'],
+            'lokasi_id'        => ['nullable', new DalamPerusahaan('gudang_lokasi')],
             'kelas_b3'         => ['nullable', Rule::in(array_keys(Gudang::KELAS_B3))],
             'wujud'            => ['nullable', Rule::in(['padat', 'cair', 'gas'])],
             'un_number'        => ['nullable', 'string', 'max:12'],

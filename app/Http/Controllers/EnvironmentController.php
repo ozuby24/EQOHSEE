@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Rules\DalamPerusahaan;
+
 use App\Models\{ActivityLog, Company, LingkunganArea, LingkunganPantau, LingkunganParameter, ReklamasiKemajuan, TindakLanjut};
 use App\Support\{Alur, KopDokumen, NeracaLahan, PeringatanLingkungan, Reklamasi};
 use Illuminate\Http\Request;
@@ -82,7 +84,7 @@ class EnvironmentController extends Controller
     {
         $data = $this->pemilik($request->validate([
             'company_id'         => ['nullable', 'exists:companies,id'],
-            'lingkungan_area_id' => ['required', 'exists:lingkungan_areas,id'],
+            'lingkungan_area_id' => ['required', new DalamPerusahaan('lingkungan_areas')],
             'tanggal'            => ['required', 'date'],
             'tahap'              => ['required', Rule::in(array_keys(Reklamasi::TAHAP))],
             'luas_ha'            => ['required', 'numeric', 'min:0', 'max:1000000'],
@@ -220,7 +222,7 @@ class EnvironmentController extends Controller
     {
         $data = $this->pemilik($request->validate([
             'company_id'              => ['nullable', 'exists:companies,id'],
-            'lingkungan_parameter_id' => ['required', 'exists:lingkungan_parameters,id'],
+            'lingkungan_parameter_id' => ['required', new DalamPerusahaan('lingkungan_parameters')],
             'titik'                   => ['required', 'string', 'max:100'],
             'tanggal'                 => ['required', 'date'],
             'nilai'                   => ['required', 'numeric', 'min:-1000000', 'max:100000000'],

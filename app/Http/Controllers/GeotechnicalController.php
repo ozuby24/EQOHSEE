@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Rules\DalamPerusahaan;
+
 use App\Models\{ActivityLog, Company, GeoBacaan, GeoInstrumen, GeoLereng, TindakLanjut};
 use App\Support\{Alur, KelengkapanShift, KopDokumen, Kestabilan, PeringatanGeoteknik};
 use Illuminate\Http\Request;
@@ -131,7 +133,7 @@ class GeotechnicalController extends Controller
     {
         $data = $this->pemilik($request->validate([
             'company_id'       => ['nullable', 'exists:companies,id'],
-            'geo_lereng_id'    => ['required', 'exists:geo_lerengs,id'],
+            'geo_lereng_id'    => ['required', new DalamPerusahaan('geo_lerengs')],
             'geo_instrumen_id' => ['nullable', 'exists:geo_instrumens,id'],
             'tanggal'          => ['required', 'date'],
             'perpindahan_mm'   => ['required', 'numeric', 'min:-100000', 'max:1000000'],

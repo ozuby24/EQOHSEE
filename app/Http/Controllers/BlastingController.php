@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Rules\DalamPerusahaan;
+
 use App\Models\{ActivityLog, Company, LedakHasil, LedakRencana, LedakTitik, LedakUkur, TindakLanjut};
 use App\Support\{Alur, KopDokumen, Peledakan, PeringatanPeledakan};
 use Illuminate\Http\Request;
@@ -205,7 +207,7 @@ class BlastingController extends Controller
     {
         $data = $this->pemilik($request->validate([
             'company_id'     => ['nullable', 'exists:companies,id'],
-            'ledak_titik_id' => ['required', 'exists:ledak_titiks,id'],
+            'ledak_titik_id' => ['required', new DalamPerusahaan('ledak_titiks')],
             'jarak_m'        => ['required', 'numeric', 'min:1', 'max:50000'],
             'ppv_mm_s'       => ['required', 'numeric', 'min:0.0001', 'max:10000'],
             'frekuensi_hz'   => ['nullable', 'numeric', 'min:0', 'max:1000'],

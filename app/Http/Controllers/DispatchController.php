@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Rules\DalamPerusahaan;
+
 use App\Models\{ActivityLog, AngkutAlat, AngkutMuatan, AngkutRegu, Company, TindakLanjut};
 use App\Support\{Alur, Angkutan, KopDokumen, PeringatanAngkutan};
 use Illuminate\Http\Request;
@@ -38,7 +40,7 @@ class DispatchController extends Controller
             'kapasitas_ton'       => ['nullable', 'numeric', 'min:0.1', 'max:2000'],
             'kapasitas_bucket_m3' => ['nullable', 'numeric', 'min:0.1', 'max:200'],
             'faktor_isi'          => ['nullable', 'numeric', 'min:0.1', 'max:1.5'],
-            'ko_object_id'        => ['nullable', 'exists:ko_objects,id'],
+            'ko_object_id'        => ['nullable', new DalamPerusahaan('ko_objects')],
             'catatan'             => ['nullable', 'string', 'max:2000'],
         ]));
 
