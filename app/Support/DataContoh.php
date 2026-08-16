@@ -3,12 +3,15 @@
 namespace App\Support;
 
 use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, BiayaRealisasi,
-                Company, GeoBacaan, GeoInstrumen, GeoLereng, GudangBarang, GudangLokasi,
-                GudangMutasi, IzinAmbang, IzinGas, IzinKerja, IzinPeriksa, IzinSyarat,
+                Company, Document, DocumentIso, DocumentRevision, EnergyEquipment,
+                EnergyFuelLog, GeoBacaan, GeoInstrumen, GeoLereng, GudangBarang, GudangLokasi,
+                GudangMutasi, HazardReport, Inspection, InspectionInspector, InspectionItem,
+                IzinAmbang, IzinGas, IzinKerja, IzinPeriksa, IzinSyarat,
+                KoAction, KoInspection, KoObject, KoReview, KoSafeguard,
                 LedakHasil, LedakRencana, LedakTitik, LedakUkur, LingkunganArea,
                 LingkunganPantau, LingkunganParameter, MineOperationalRecord,
-                MineOperationalTarget, ReklamasiKemajuan, TindakLanjut, User,
-                WaterLog, WaterSump, WaterSumpPump};
+                MineOperationalTarget, ReklamasiKemajuan, SmkpAttendee, SmkpAudit, SmkpFinding,
+                TindakLanjut, User, WaterLog, WaterSump, WaterSumpPump, WorkOrder};
 use Illuminate\Support\Carbon;
 
 /**
@@ -68,6 +71,21 @@ final class DataContoh
         GudangMutasi::class, GudangBarang::class, GudangLokasi::class,
         MineOperationalRecord::class, MineOperationalTarget::class,
         TindakLanjut::class,
+
+        /* Modul yang ditambahkan belakangan. Urutannya tetap aturan yang
+           sama — anak lebih dulu — dan di sini aturan itu lebih berbahaya
+           daripada di atas: ko_objects dirujuk oleh enam tabel, dua di
+           antaranya (water_sump_pumps, angkut_alats) sudah dibuang lebih
+           dulu di daftar atas. KoObject karena itu harus berada paling
+           belakang, sesudah seluruh perujuknya. */
+        InspectionItem::class, InspectionInspector::class, Inspection::class,
+        SmkpFinding::class, SmkpAttendee::class, SmkpAudit::class,
+        DocumentRevision::class, DocumentIso::class, Document::class,
+        HazardReport::class,
+        EnergyFuelLog::class, EnergyEquipment::class,
+        KoSafeguard::class, KoInspection::class, KoAction::class, KoReview::class,
+        WorkOrder::class,
+        KoObject::class,
     ];
 
     /** @var list<string> hal yang perlu diketahui pemanggilnya */
@@ -193,6 +211,23 @@ final class DataContoh
                 WaterSump::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
             GeoInstrumen::class => $q->whereIn('geo_lereng_id',
                 GeoLereng::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            InspectionItem::class, InspectionInspector::class => $q->whereIn('inspection_id',
+                Inspection::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            SmkpFinding::class, SmkpAttendee::class => $q->whereIn('audit_id',
+                SmkpAudit::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            DocumentRevision::class, DocumentIso::class => $q->whereIn('document_id',
+                Document::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            EnergyFuelLog::class => $q->whereIn('equipment_id',
+                EnergyEquipment::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            KoSafeguard::class, KoInspection::class, KoAction::class, KoReview::class
+                => $q->whereIn('ko_object_id',
+                    KoObject::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
             default => $q->whereRaw('1 = 0'),
         };
     }
@@ -234,6 +269,21 @@ final class DataContoh
             'Angkutan'   => $this->angkutan(),
             'Biaya'      => $this->biaya(),
             'Izin kerja' => $this->izin(),
+
+            /* Modul di bawah ini sebelumnya tidak pernah terisi sama
+               sekali. Akibatnya bukan sekadar halaman kosong: tombol
+               "muat data contoh" ada supaya orang dapat memeriksa
+               apakah datanya sudah benar, dan modul yang tetap kosong
+               sesudah tombolnya ditekan tidak dapat diperiksa — sambil
+               terlihat seolah sudah. Ketahuan ketika 38 rute rincian
+               tidak dapat diuji karena tidak ada satu pun baris yang
+               dapat dibuka. */
+            'Dokumen'   => $this->dokumen(),
+            'Bahaya'    => $this->bahaya(),
+            'Inspeksi'  => $this->inspeksi(),
+            'KO'        => $this->ko(),
+            'Energi'    => $this->energiAlat(),
+            'SMKP'      => $this->smkp(),
         ]);
     }
 
@@ -847,6 +897,282 @@ final class DataContoh
         }
 
         return $kelas::withoutGlobalScopes()->create($isi);
+    }
+
+    /* ─────────── dokumen terkendali ─────────── */
+
+    /**
+     * Piramida dokumen: kebijakan di puncak, rekaman di dasar.
+     *
+     * Nomor revisinya sengaja tidak semuanya 0. Daftar induk dokumen
+     * yang setiap barisnya revisi 0 tidak dapat dipakai memeriksa
+     * apakah kolom revisi benar-benar terbaca.
+     */
+    private function dokumen(): int
+    {
+        $n = 0;
+
+        $daftar = [
+            ['Kebijakan',       'K3L-KEB-01', 'Kebijakan Keselamatan dan Kesehatan Kerja', 'Umum',     'berlaku',   2],
+            ['Manual',          'K3L-MAN-01', 'Manual Sistem Manajemen Keselamatan',       'Internal', 'berlaku',   1],
+            ['Prosedur',        'K3L-PRO-01', 'Prosedur Izin Kerja Khusus',                'Internal', 'berlaku',   3],
+            ['Prosedur',        'K3L-PRO-02', 'Prosedur Investigasi Kecelakaan',           'Internal', 'berlaku',   1],
+            ['Instruksi Kerja', 'K3L-IK-01',  'Instruksi Kerja Pemeriksaan Sump Harian',   'Internal', 'berlaku',   0],
+            ['Instruksi Kerja', 'K3L-IK-02',  'Instruksi Kerja Pengisian Bahan Peledak',   'Rahasia',  'berlaku',   2],
+            ['Formulir',        'K3L-FRM-01', 'Formulir Inspeksi Jalan Tambang',           'Umum',     'berlaku',   0],
+            ['Rekaman',         'K3L-REK-01', 'Rekaman Pelatihan Tanggap Darurat',         'Internal', 'draft',     0],
+            ['Prosedur',        'K3L-PRO-03', 'Prosedur Pengelolaan Limbah B3',            'Internal', 'kadaluarsa',4],
+        ];
+
+        foreach ($daftar as [$jenis, $kode, $judul, $klas, $status, $rev]) {
+            $terbit = $this->kini->copy()->subMonths(6 + $rev);
+
+            $this->baru(Document::class, [
+                'kode'            => $kode,
+                'judul'           => $judul,
+                'jenis'           => $jenis,
+                'klasifikasi'     => $klas,
+                'departemen'      => 'HSE',
+                'revisi'          => $rev,
+                'status'          => $status,
+                'tanggal_terbit'  => $terbit->toDateString(),
+                'tanggal_berlaku' => $terbit->copy()->addWeek()->toDateString(),
+
+                /* Yang kadaluarsa tanggal tinjaunya memang sudah lewat —
+                   itulah yang membuatnya kadaluarsa, dan halaman daftar
+                   induk menghitungnya dari sini, bukan dari statusnya. */
+                'tanggal_tinjau'  => $status === 'kadaluarsa'
+                    ? $this->kini->copy()->subMonth()->toDateString()
+                    : $terbit->copy()->addYear()->toDateString(),
+
+                'ringkasan'       => 'Dokumen contoh untuk memeriksa tampilan dan penomoran.',
+                'user_id'         => $this->pengaju?->id,
+                'disetujui_oleh'  => $status === 'berlaku' ? ($this->peninjau?->name) : null,
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /* ─────────── laporan bahaya ─────────── */
+
+    /**
+     * Laporan bahaya dengan tiga status sekaligus.
+     *
+     * Sengaja tidak semuanya Open. Halaman bahaya menghitung waktu
+     * penutupan dan jumlah yang tertunda; bila seluruh contohnya
+     * berstatus sama, kedua angka itu tidak pernah terbukti benar.
+     */
+    private function bahaya(): int
+    {
+        $n = 0;
+
+        $daftar = [
+            ['Unsafe Condition', 'Tinggi', 'Open',        'Tanggul jalan hauling KM 4 tergerus hujan',        'Rekayasa'],
+            ['Unsafe Action',    'Sedang', 'In Progress', 'Operator tidak memakai sabuk pengaman di kabin',   'Administratif'],
+            ['Near Miss',        'Tinggi', 'Closed',      'Batu jatuh dari bak dump truck di simpang timbang','Rekayasa'],
+            ['Unsafe Condition', 'Rendah', 'Closed',      'Lampu penerangan front loading mati satu titik',   'Rekayasa'],
+            ['Bahaya Lingkungan','Sedang', 'Open',        'Ceceran oli di area workshop belum ditampung',     'Administratif'],
+            ['Unsafe Action & Unsafe Condition', 'Tinggi', 'In Progress',
+             'Pengisian bahan bakar dilakukan saat mesin hidup',                                              'Eliminasi'],
+        ];
+
+        foreach ($daftar as $i => [$kategori, $risiko, $status, $uraian, $hirarki]) {
+            $tanggal = $this->kini->copy()->subDays(3 + $i * 5);
+
+            $b = $this->baru(HazardReport::class, [
+                'kode'          => 'HZ-'.$tanggal->format('ym').'-'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT),
+                'user_id'       => $this->pengaju?->id,
+                'pelapor_nama'  => $this->pengaju?->name ?? 'Pengawas Lapangan',
+                'pelapor_departemen' => 'Produksi',
+                'pelapor_jabatan'    => 'Pengawas',
+                'tanggal'       => $tanggal->toDateString(),
+                'waktu'         => '09:'.str_pad((string) (10 + $i * 7), 2, '0', STR_PAD_LEFT),
+                'lokasi'        => ['Pit Utara', 'Jalan Hauling KM 4', 'Workshop', 'Disposal Selatan'][$i % 4],
+                'risiko'        => $risiko,
+                'kategori'      => $kategori,
+                'deskripsi'     => $uraian,
+                'hirarki'       => $hirarki,
+                'rekomendasi'   => 'Perbaikan dijadwalkan dan diawasi pengawas area.',
+                'status'        => $status,
+            ]);
+
+            /* Yang sudah ditutup harus punya penutup dan waktunya.
+               Tanpa keduanya, halaman menghitung waktu penutupan dari
+               nilai kosong dan memulangkan angka yang tidak masuk akal. */
+            if ($status === 'Closed') {
+                $b->forceFill([
+                    'closed_by'         => $this->peninjau?->id ?? $this->pengaju?->id,
+                    'closed_at'         => $tanggal->copy()->addDays(4),
+                    'catatan_penutupan' => 'Perbaikan selesai dan diperiksa ulang di lapangan.',
+                ])->saveQuietly();
+            }
+
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /* ─────────── inspeksi ─────────── */
+
+    /**
+     * Inspeksi tanpa template.
+     *
+     * `template_id` sengaja dibiarkan kosong: tabel template TIDAK
+     * punya kolom perusahaan, jadi ia milik bersama seluruh pemasangan.
+     * Membuat template dari sini berarti membuat baris yang tidak dapat
+     * dibuang oleh penghapus data contoh — penghapus itu bekerja
+     * dengan menyebut company_id, dan baris tanpa perusahaan akan
+     * tertinggal menumpuk setiap kali tombolnya ditekan.
+     */
+    private function inspeksi(): int
+    {
+        $n = 0;
+
+        $daftar = [
+            ['Harian',   'Inspeksi Jalan Angkut Pagi',     'Jalan Hauling KM 0–6', 'Selesai'],
+            ['Harian',   'Inspeksi Front Loading',         'Pit Utara',            'Selesai'],
+            ['Mingguan', 'Inspeksi Tanggul dan Drainase',  'Pit Selatan',          'Berjalan'],
+            ['Bulanan',  'Inspeksi Gudang Bahan Peledak',  'Gudang Handak',        'Berjalan'],
+            ['Khusus',   'Inspeksi Pasca Hujan Deras',     'Disposal Selatan',     'Selesai'],
+        ];
+
+        foreach ($daftar as $i => [$jenis, $judul, $lokasi, $status]) {
+            $this->baru(Inspection::class, [
+                'kode'        => 'INS-'.$this->kini->format('ym').'-'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT),
+                'template_id' => null,
+                'user_id'     => $this->pengaju?->id,
+                'judul'       => $judul,
+                'jenis'       => $jenis,
+                'lokasi'      => $lokasi,
+                'tanggal'     => $this->kini->copy()->subDays($i * 3)->toDateString(),
+                'pelaksana'   => $this->pengaju?->name ?? 'Pengawas Lapangan',
+                'status'      => $status,
+                'catatan'     => 'Inspeksi contoh untuk memeriksa tampilan dan rekapitulasi.',
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /* ─────────── kelayakan operasi ─────────── */
+
+    private function ko(): int
+    {
+        $n = 0;
+
+        $daftar = [
+            ['KO-SAR-001', 'Jembatan Timbang 60 Ton',    'Sarana',    'Tinggi', 'Aktif',     2],
+            ['KO-PRA-001', 'Tanggul Kolam Pengendap 3',  'Prasarana', 'Tinggi', 'Aktif',     1],
+            ['KO-INS-001', 'Instalasi Listrik Workshop', 'Instalasi', 'Sedang', 'Aktif',     3],
+            ['KO-PER-001', 'Crane Workshop 10 Ton',      'Peralatan', 'Tinggi', 'Standby',   1],
+            ['KO-PER-002', 'Genset 500 kVA',             'Peralatan', 'Sedang', 'Breakdown', 2],
+            ['KO-SAR-002', 'Tangki Bahan Bakar 50 kL',   'Sarana',    'Tinggi', 'Aktif',     2],
+        ];
+
+        foreach ($daftar as $i => [$kode, $nama, $kategori, $kritis, $operasi, $interval]) {
+            $sertifikasi = $this->kini->copy()->subMonths(6 + $i);
+
+            $this->baru(KoObject::class, [
+                'kode'            => $kode,
+                'nama'            => $nama,
+                'kategori'        => $kategori,
+                'lokasi'          => ['Area Timbang', 'Pit Selatan', 'Workshop', 'Fuel Station'][$i % 4],
+                'kritikalitas'    => $kritis,
+                'status_operasi'  => $operasi,
+                'tgl_sertifikasi' => $sertifikasi->toDateString(),
+                'interval_tahun'  => $interval,
+                'no_sertifikat'   => 'SER/'.$sertifikasi->format('Y').'/'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
+                'lembaga_uji'     => 'Balai Pengujian Peralatan',
+                'pm_terakhir'     => $this->kini->copy()->subMonths(2)->toDateString(),
+                'pm_berikutnya'   => $this->kini->copy()->addMonth()->toDateString(),
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /* ─────────── alat energi ─────────── */
+
+    private function energiAlat(): int
+    {
+        $n = 0;
+
+        /* Kategorinya adalah KUNCI dari Energi::KATEGORI, bukan
+           labelnya — halaman rekap memvalidasi dengan
+           Rule::in(array_keys(...)), dan label yang tersimpan di sini
+           akan lolos penyimpanan lalu hilang dari setiap
+           pengelompokan tanpa menimbulkan galat. */
+        $daftar = [
+            ['EQ-HD-001', 'Dump Truck HD465-7',   'Komatsu', 'hauling',   552, 55.0],
+            ['EQ-HD-002', 'Dump Truck HD465-7',   'Komatsu', 'hauling',   552, 55.0],
+            ['EQ-EX-001', 'Excavator PC2000',     'Komatsu', 'excavator', 960, null],
+            ['EQ-DZ-001', 'Bulldozer D375A',      'Komatsu', 'dozer',     610, null],
+            ['EQ-GR-001', 'Motor Grader GD825',   'Komatsu', 'support',   280, null],
+        ];
+
+        $kategoriSah = array_keys(Energi::KATEGORI);
+
+        foreach ($daftar as [$kode, $nama, $merek, $kategori, $hp, $payload]) {
+            $this->baru(EnergyEquipment::class, [
+                'kode'        => $kode,
+                'nama'        => $nama,
+                'merek'       => $merek,
+
+                /* Kategori yang tidak dikenal membuat halaman rekap
+                   memulangkan kelompok kosong tanpa galat. Bila daftar
+                   kuncinya berubah, dipakai yang pertama supaya barisnya
+                   tetap terhitung, bukan menghilang diam-diam. */
+                'kategori'    => in_array($kategori, $kategoriSah, true)
+                    ? $kategori
+                    : ($kategoriSah[0] ?? $kategori),
+
+                'daya_hp'     => $hp,
+                'payload_ton' => $payload,
+                'aktif'       => true,
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /* ─────────── SMKP ─────────── */
+
+    /**
+     * Satu audit SMKP per tahun berjalan dan satu tahun sebelumnya.
+     *
+     * Dua, bukan satu: halaman SMKP membandingkan nilai antar tahun,
+     * dan perbandingan dengan satu titik data tidak pernah salah — juga
+     * tidak pernah benar.
+     */
+    private function smkp(): int
+    {
+        $n = 0;
+
+        foreach ([['selesai', 1], ['berjalan', 0]] as [$status, $mundur]) {
+            $tahun = $this->kini->year - $mundur;
+
+            $this->baru(SmkpAudit::class, [
+                'tahun'           => $tahun,
+                'judul'           => 'Audit Internal SMKP Minerba '.$tahun,
+                'status'          => $status,
+                'tahap'           => $status === 'selesai' ? 3 : 1,
+                'tanggal_mulai'   => Carbon::create($tahun, 3, 1)->toDateString(),
+                'tanggal_selesai' => $status === 'selesai'
+                    ? Carbon::create($tahun, 3, 14)->toDateString()
+                    : null,
+                'ketua_auditor'   => $this->peninjau?->name ?? 'Ketua Auditor Internal',
+                'user_id'         => $this->pengaju?->id,
+            ]);
+            $n++;
+        }
+
+        return $n;
     }
 
     /**
