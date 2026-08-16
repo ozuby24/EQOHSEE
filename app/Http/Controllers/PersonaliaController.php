@@ -364,7 +364,7 @@ class PersonaliaController extends Controller
         abort_unless($r->user()->isAdmin(), 403,
             'Hanya administrator yang dapat menetapkan perusahaan seorang pengguna.');
 
-        $d = $r->validate(['company_id' => ['nullable', 'exists:companies,id']]);
+        $d = $this->pemilik($r->validate(['company_id' => ['nullable', 'exists:companies,id']]));
 
         $pengguna->company_id = $d['company_id'] ?: null;
         $pengguna->save();

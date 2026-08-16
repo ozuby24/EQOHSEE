@@ -485,12 +485,4 @@ class EnvironmentController extends Controller
         return $dari->greaterThan($sampai) ? [$sampai, $dari] : [$dari, $sampai];
     }
 
-    private function pemilik(array $data): array
-    {
-        if (!auth()->user()?->isAdmin()) {
-            $data['company_id'] = auth()->user()?->company_id;
-        }
-
-        return $data;
-    }
 }

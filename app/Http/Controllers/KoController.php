@@ -171,7 +171,7 @@ class KoController extends Controller
     {
         $unik = 'unique:ko_objects,kode' . ($abaikan ? ',' . $abaikan : '');
 
-        return $r->validate([
+        return $this->pemilik($r->validate([
             'kode'            => ['required', 'string', 'max:50', $unik],
             'nama'            => ['required', 'string', 'max:200'],
             'kategori'        => ['required', 'in:' . implode(',', Ko::KATEGORI)],
@@ -191,7 +191,7 @@ class KoController extends Controller
             'pm_terakhir'     => ['nullable', 'date'],
             'pm_berikutnya'   => ['nullable', 'date'],
             'keterangan'      => ['nullable', 'string', 'max:2000'],
-        ]) + ['lapor_kait' => (bool) $r->boolean('lapor_kait')];
+        ])) + ['lapor_kait' => (bool) $r->boolean('lapor_kait')];
     }
 
     /* ================= 3. Rincian objek ================= */
@@ -395,7 +395,7 @@ class KoController extends Controller
     {
         $this->pastikanUbah();
 
-        $d = $r->validate([
+        $d = $this->pemilik($r->validate([
             'id'             => ['nullable', 'exists:ko_personnel,id'],
             'nama'           => ['required', 'string', 'max:150'],
             'jabatan'        => ['nullable', 'string', 'max:150'],
@@ -404,7 +404,7 @@ class KoController extends Controller
             'no_sertifikat'  => ['nullable', 'string', 'max:100'],
             'tgl_kadaluarsa' => ['nullable', 'date'],
             'user_id'        => ['nullable', 'exists:users,id'],
-        ]);
+        ]));
 
         $t = $d['id'] ? KoPersonnel::findOrFail($d['id']) : new KoPersonnel();
         $t->fill(collect($d)->except('id')->all());

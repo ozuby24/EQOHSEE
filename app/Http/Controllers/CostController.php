@@ -530,12 +530,4 @@ class CostController extends Controller
         return $t >= 2000 && $t <= 2100 ? $t : (int) now()->year;
     }
 
-    private function pemilik(array $data): array
-    {
-        if (!auth()->user()?->isAdmin()) {
-            $data['company_id'] = auth()->user()?->company_id;
-        }
-
-        return $data;
-    }
 }

@@ -5,8 +5,26 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-// Contoh model modul LMS. Model lain (Module, Material, Quiz, QuizQuestion,
-// Enrollment, Certificate, Procedure, SopEvaluation, dst.) mengikuti pola yang sama.
+/**
+ * Contoh model modul LMS. Model lain (Module, Material, Quiz, QuizQuestion,
+ * Enrollment, Certificate, Procedure, SopEvaluation, dst.) mengikuti pola yang sama.
+ *
+ * SENGAJA TANPA BATAS PERUSAHAAN.
+ *
+ * Kursus, kuis, prosedur, dan template inspeksi adalah pustaka
+ * pelatihan yang dipakai bersama seluruh perusahaan pada pemasangan
+ * ini — itulah barang yang disediakan platform, dan menggandakannya
+ * per perusahaan berarti setiap perbaikan materi harus dikerjakan
+ * berulang kali.
+ *
+ * Yang MELEKAT perusahaan adalah hasilnya, bukan materinya: Certificate
+ * membawa company_id, begitu pula Document, Inspection, HazardReport,
+ * KoObject, dan SmkpAudit. Pola itu disengaja — materi bersama,
+ * penerbitan sendiri-sendiri — dan dijaga oleh LingkupPustakaTest.
+ *
+ * News dahulu ikut di sini dan sekarang TIDAK: pengumuman menyebut nama
+ * orang, jadwal, dan kejadian di satu lokasi kerja.
+ */
 class Course extends Model
 {
     protected $fillable = ['title','description','category','image','cert_template','auto_certificate',

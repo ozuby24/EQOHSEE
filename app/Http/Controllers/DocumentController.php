@@ -426,7 +426,7 @@ class DocumentController extends Controller
 
     private function validasi(Request $r, ?Document $abaikan = null): array
     {
-        $d = $r->validate([
+        $d = $this->pemilik($r->validate([
             'kode'            => ['required','string','max:60', Rule::unique('documents','kode')->ignore($abaikan?->id)],
             'judul'           => ['required','string','max:200'],
             'jenis'           => ['required', Rule::in(Dokumen::JENIS)],
@@ -443,7 +443,7 @@ class DocumentController extends Controller
             'acuan'           => ['nullable','string','max:150'],
             'disetujui_oleh'  => ['nullable','string','max:150'],
             'berkas'          => ['nullable','file','max:20480'],
-        ]);
+        ]));
 
         // Hasil validasi memuat objek unggahan, bukan path. Buang di sini agar
         // tidak ikut mass-assignment; pemanggil menyetel path hasil simpanBerkas().

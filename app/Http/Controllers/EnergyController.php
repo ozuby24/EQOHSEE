@@ -326,13 +326,13 @@ class EnergyController extends Controller
 
     public function simpanBaseline(Request $request)
     {
-        $d = $request->validate([
+        $d = $this->pemilik($request->validate([
             'company_id'      => ['nullable','exists:companies,id'],
             'tahun'           => ['required','integer','min:2000','max:2100'],
             'baseline_gj_ton' => ['required','numeric','min:0','max:100'],
             'target_gj_ton'   => ['required','numeric','min:0','max:100'],
             'catatan'         => ['nullable','string','max:1000'],
-        ]);
+        ]));
 
         // Sasaran yang lebih boros daripada garis dasar bukan sasaran.
         if ($d['target_gj_ton'] > $d['baseline_gj_ton']) {
@@ -461,7 +461,7 @@ class EnergyController extends Controller
 
     public function simpanUnit(Request $request)
     {
-        $d = $request->validate([
+        $d = $this->pemilik($request->validate([
             'company_id'  => ['nullable','exists:companies,id'],
             'kode'        => ['required','string','max:50','unique:energy_equipment,kode'],
             'nama'        => ['required','string','max:150'],
@@ -469,7 +469,7 @@ class EnergyController extends Controller
             'merek'       => ['nullable','string','max:100'],
             'daya_hp'     => ['nullable','integer','min:0','max:100000'],
             'payload_ton' => ['nullable','numeric','min:0','max:1000'],
-        ]);
+        ]));
 
         EnergyEquipment::create($d + ['aktif' => true]);
 

@@ -63,13 +63,13 @@ class SignatoryController extends Controller
 
     private function v(Request $r): array
     {
-        $d = $r->validate([
+        $d = $this->pemilik($r->validate([
             'name'       => ['required','string','max:150'],
             'title'      => ['nullable','string','max:150'],
             'company_id' => ['nullable','exists:companies,id'],
             'is_active'  => ['nullable','boolean'],
             'signature'  => ['nullable','image','max:1024'],
-        ]);
+        ]));
 
         // Pengguna biasa tidak dapat menitipkan tanda tangan ke
         // perusahaan lain lewat isian; hanya administrator yang memilih

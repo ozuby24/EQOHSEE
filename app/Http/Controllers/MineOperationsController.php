@@ -464,12 +464,6 @@ class MineOperationsController extends Controller
         ]);
     }
 
-    private function pemilik(array $data): array
-    {
-        if (!auth()->user()?->isAdmin()) $data['company_id'] = auth()->user()?->company_id;
-        return $data;
-    }
-
     /* Muatan halaman disusun kolom demi kolom, bukan lewat toArray(). Model
        yang dikirim utuh ikut membawa user_id dan stempel waktu ke browser,
        dan setiap kolom baru yang ditambahkan nanti akan ikut terbawa tanpa

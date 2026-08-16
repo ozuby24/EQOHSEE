@@ -421,7 +421,7 @@ class InspectionController extends Controller
 
     private function v(Request $r): array
     {
-        $d = $r->validate([
+        $d = $this->pemilik($r->validate([
             'template_id' => ['nullable','exists:inspection_templates,id'],
             'judul'       => ['required','string','max:200'],
             'jenis'       => ['nullable','in:Harian,Mingguan,Bulanan,Khusus'],
@@ -431,7 +431,7 @@ class InspectionController extends Controller
             'pelaksana'   => ['nullable','string','max:150'],
             'status'      => ['nullable','in:Berjalan,Selesai'],
             'catatan'     => ['nullable','string','max:2000'],
-        ]);
+        ]));
         $d['status'] = $d['status'] ?? 'Berjalan';
         return $d;
     }

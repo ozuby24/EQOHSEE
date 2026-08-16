@@ -594,12 +594,23 @@ class SmkpController extends Controller
     /* ---------- bantu ---------- */
     private function validasi(Request $r, ?SmkpAudit $abaikan = null): array
     {
+        /* Perusahaan ditetapkan lebih dulu, sebelum dipakai membangun
+           aturan keunikan. Memakai $r->input('company_id') mentah
+           membuat batas "satu periode audit per perusahaan per tahun"
+           dapat dilewati begitu saja: pengguna biasa cukup mengirim
+           company_id perusahaan lain, keunikannya diperiksa terhadap
+           perusahaan itu, lalu barisnya tetap tersimpan sebagai milik
+           perusahaannya sendiri — dua audit pada tahun yang sama. */
+        $milik = auth()->user()?->isAdmin()
+            ? ($r->input('company_id') ?: null)
+            : auth()->user()?->company_id;
+
         // Satu periode audit per perusahaan per tahun.
         $unik = Rule::unique('smkp_audits', 'tahun')
-            ->where('company_id', $r->input('company_id') ?: null)
+            ->where('company_id', $milik)
             ->ignore($abaikan?->id);
 
-        return $r->validate([
+        return $this->pemilik($r->validate([
             'company_id'      => ['nullable','exists:companies,id'],
             'tahun'           => ['required','integer','min:2000','max:2100', $unik],
             'judul'           => ['nullable','string','max:200'],
@@ -609,6 +620,6 @@ class SmkpController extends Controller
             'ketua_auditor'   => ['nullable','string','max:150'],
         ], [
             'tahun.unique' => 'Periode audit tahun ini sudah ada untuk perusahaan tersebut.',
-        ]);
+        ]));
     }
 }

@@ -429,12 +429,4 @@ class MaintenanceController extends Controller
     }
 
     /** Pengguna biasa tidak boleh menulis data ke perusahaan lain lewat payload. */
-    private function pemilik(array $data): array
-    {
-        if (!auth()->user()?->isAdmin()) {
-            $data['company_id'] = auth()->user()?->company_id;
-        }
-
-        return $data;
-    }
 }
