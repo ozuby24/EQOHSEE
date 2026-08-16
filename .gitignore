@@ -47,3 +47,7 @@ Thumbs.db
 # Pengaturan pengiriman ke VPS — milik tiap mesin, bukan milik repo.
 # Contohnya ada di deploy/vps.conf.example.
 /deploy/vps.conf
+
+# Salinan mentah unduhan deploy/ambil-video.sh — alat bantu
+# penukaran, bukan aset situs. Lihat catatan di skrip itu.
+/public/media/asal-drive/

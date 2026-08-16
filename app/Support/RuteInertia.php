@@ -92,7 +92,9 @@ final class RuteInertia
         /* Admin */
         'admin.system',
         'admin.system.diagnosa',
+        'admin.keamanan',
         'admin.ai',
+        'keamanan.perangkat',
         'admin.users.index',
         'admin.users.create',
         'admin.companies.index',

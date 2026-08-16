@@ -27,7 +27,22 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
-        $request->session()->regenerate();
+        /* regenerate(true), bukan regenerate().
+         *
+         * Bawaannya hanya MEMINDAHKAN sesi ke pengenal baru dan
+         * meninggalkan baris yang lama hidup sampai masa berlakunya
+         * habis — pada pemasangan ini dua jam. Barisnya adalah sesi
+         * tamu sebelum masuk, jadi ia tidak dapat dipakai untuk masuk
+         * sebagai siapa pun; yang ditinggalkannya adalah satu baris
+         * berisi alamat dan perangkat, untuk setiap kali siapa pun
+         * membuka halaman masuk. Pada daftar perangkat aktif ia
+         * muncul sebagai "belum masuk" yang tidak dapat dijelaskan
+         * kepada yang membacanya.
+         *
+         * Bukan lubang keamanan, melainkan kebersihan: membuang yang
+         * sudah tidak dipakai lebih murah daripada menjelaskannya.
+         */
+        $request->session()->regenerate(true);
 
         return redirect()->intended(route('dashboard', absolute: false));
     }

@@ -1812,3 +1812,57 @@ export interface HalamanHasilSop {
   };
   tautan: { ulangi: string; daftar: string };
 }
+
+/* ── Keamanan & jaringan ── */
+
+export interface SesiAktif {
+  id: string;
+  iniSaya: boolean;
+  userId: number | null;
+  nama: string;
+  email: string | null;
+  ip: string;
+  perangkat: string;
+  terakhir: string;
+  detik: number;
+}
+
+export interface PeristiwaKeamanan {
+  id: number;
+  peristiwa: string;
+  siapa: string;
+  detail: string | null;
+  ip: string;
+  perangkat: string;
+  kapan: string | null;
+  gagal: boolean;
+}
+
+export interface HalamanKeamanan {
+  judul: string; subjudul: string;
+  ringkas: {
+    gagal24: number; gagal1: number; keadaan: string;
+    sesiAktif: number; sesiBasi: number;
+    ambang: number; ambangGawat: number;
+  };
+  menekan: Array<{ ip: string; jumlah: number; sasaran: number; terakhir: string }>;
+  sesi: SesiAktif[];
+  riwayat: PeristiwaKeamanan[];
+  tajuk: Array<{ nama: string; ada: boolean; nilai: string | null; guna: string }>;
+  tidurAn: Array<{
+    id: number; nama: string; email: string;
+    admin: boolean; terakhir: string; url: string;
+  }>;
+  tautan: {
+    putusSesi: string; bersihSesi: string; pangkasJejak: string;
+    sistem: string; diagnosa: string; perangkatSaya: string;
+  };
+}
+
+export interface HalamanPerangkat {
+  judul: string; subjudul: string;
+  sesi: SesiAktif[];
+  riwayat: PeristiwaKeamanan[];
+  masukTerakhir: { kapan: string | null; ip: string | null };
+  tautan: { putus: string; putusLain: string };
+}

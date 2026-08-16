@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\{Certificate, Company, User};
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\{Cache, DB, Schema};
 
 /**
@@ -137,6 +138,10 @@ final class Diagnosa
             'administrator'  => fn () => self::administrator(),
             'perusahaan-contoh' => fn () => self::perusahaanContoh(),
             'kunci-ai'       => fn () => self::kunciAi(),
+            'tekanan-masuk'  => fn () => self::tekananMasuk(),
+            'jejak-akses'    => fn () => self::jejakAkses(),
+            'umur-sesi'      => fn () => self::umurSesi(),
+            'sesi-basi'      => fn () => self::sesiBasi(),
 
             /* ── basis data ── */
             'migrasi'        => fn () => self::migrasi(),
@@ -401,6 +406,187 @@ final class Diagnosa
      * memperlihatkan sesuatu yang tersimpan. Dua keterangan yang saling
      * membantah, dan tidak satu pun galat yang menengahi.
      */
+    /**
+     * Tekanan pada pintu masuk dalam satu jam terakhir.
+     *
+     * Yang diukur percobaan yang GAGAL, bukan yang berhasil. Serangan
+     * penebakan sandi hampir seluruhnya berupa kegagalan, dan tepat
+     * karena itu ia tidak pernah muncul di mana pun: tidak menimbulkan
+     * galat, tidak mengisi log, tidak mengganggu siapa pun — sampai
+     * ada satu yang berhasil, dan sesudah itu jejaknya menjadi jejak
+     * pengguna yang sah.
+     */
+    private static function tekananMasuk(): array
+    {
+        if (!Schema::hasTable('activity_log')) {
+            return self::lewat('Keamanan', 'Tekanan pintu masuk', 'tabel jejak belum ada');
+        }
+
+        $sejam   = Keamanan::gagalSejak(1);
+        $sehari  = Keamanan::gagalSejak(24);
+        $keadaan = Keamanan::keadaanTekanan($sejam);
+
+        return [
+            'kelompok' => 'Keamanan',
+            'judul'    => 'Tekanan pintu masuk',
+            'keadaan'  => $keadaan,
+            'nilai'    => $sejam.' gagal / jam · '.$sehari.' / hari',
+            'uraian'   => $keadaan === self::AMAN
+                ? 'Percobaan masuk yang gagal masih pada tingkat yang wajar untuk salah ketik.'
+                : 'Percobaan masuk yang gagal jauh di atas kewajaran. Batas bawaan adalah lima '
+                  .'percobaan per surel per alamat, jadi angka ini berarti beberapa penguncian '
+                  .'beruntun — pola yang tidak dihasilkan orang yang sekadar lupa sandinya.',
+            'tindakan' => $keadaan === self::AMAN ? null
+                : 'Buka Keamanan & Jaringan untuk melihat alamat mana yang menekan dan surel '
+                  .'siapa yang disasar. Satu alamat yang mencoba banyak surel adalah pemindaian; '
+                  .'satu alamat pada satu surel adalah penebakan sandi orang itu — hubungi '
+                  .'pemilik akunnya.',
+        ];
+    }
+
+    /**
+     * Apakah jejak akses benar-benar terisi.
+     *
+     * Pemeriksaan ini menjaga pencatatnya sendiri. Pencatat yang mati —
+     * listener yang tidak terdaftar sesudah penyusunan ulang provider,
+     * kolom yang hilang sesudah migrasi mundur — tidak menimbulkan
+     * galat apa pun; halamannya tetap terbuka dan tabelnya tetap ada,
+     * hanya kosong. Dan jejak yang kosong terlihat persis seperti
+     * keadaan aman.
+     */
+    private static function jejakAkses(): array
+    {
+        if (!Schema::hasTable('activity_log')
+            || !in_array('ip', self::petaKolom()['activity_log'] ?? [], true)) {
+            return [
+                'kelompok' => 'Keamanan',
+                'judul'    => 'Jejak akses',
+                'keadaan'  => self::GAWAT,
+                'nilai'    => 'kolom alamat belum ada',
+                'uraian'   => 'Jejak aktivitas berjalan tanpa alamat dan tanpa perangkat. '
+                    .'Pertanyaan "apakah ini benar orangnya" tidak akan dapat dijawab.',
+                'tindakan' => 'Jalankan php artisan migrate di server.',
+            ];
+        }
+
+        $adaPengguna = Schema::hasTable('users') && User::query()->count() > 0;
+
+        $terakhir = DB::table('activity_log')
+            ->where('module', Keamanan::MODUL)
+            ->max('created_at');
+
+        /* Pemasangan yang baru berdiri belum punya jejak, dan itu bukan
+           kesalahan. Yang mencurigakan adalah pemasangan yang sudah
+           punya pengguna tetapi tidak punya satu pun peristiwa masuk. */
+        if (!$terakhir) {
+            return [
+                'kelompok' => 'Keamanan',
+                'judul'    => 'Jejak akses',
+                'keadaan'  => $adaPengguna ? self::PERHATIAN : self::AMAN,
+                'nilai'    => 'belum ada peristiwa',
+                'uraian'   => $adaPengguna
+                    ? 'Sudah ada pengguna, tetapi belum satu pun peristiwa masuk tercatat. '
+                      .'Bila ada yang sudah pernah masuk sesudah pembaruan ini, pencatatnya '
+                      .'tidak berjalan.'
+                    : 'Belum ada yang pernah masuk. Wajar pada pemasangan yang baru berdiri.',
+                'tindakan' => $adaPengguna
+                    ? 'Keluar lalu masuk kembali, dan periksa halaman Keamanan & Jaringan. '
+                      .'Bila tetap kosong, bersihkan cache konfigurasi: php artisan config:clear.'
+                    : null,
+            ];
+        }
+
+        return [
+            'kelompok' => 'Keamanan',
+            'judul'    => 'Jejak akses',
+            'keadaan'  => self::AMAN,
+            'nilai'    => 'tercatat, terakhir '.Carbon::parse($terakhir)->diffForHumans(),
+            'uraian'   => 'Setiap percobaan masuk — berhasil maupun gagal — tercatat beserta '
+                .'alamat dan perangkatnya. Sandi tidak pernah ikut tercatat.',
+            'tindakan' => null,
+        ];
+    }
+
+    /**
+     * Masa berlaku sesi.
+     *
+     * Terlalu panjang berarti perangkat yang tertinggal di kantor site
+     * tetap terbuka berhari-hari. Terlalu pendek membuat orang keluar
+     * sendiri di tengah pengisian borang lapangan, dan itu berakhir
+     * pada permintaan untuk memanjangkannya lagi tanpa batas.
+     */
+    private static function umurSesi(): array
+    {
+        $menit = (int) config('session.lifetime', 120);
+        $jam   = round($menit / 60, 1);
+
+        $panjang = $menit > 60 * 24 * 7;    // lebih dari sepekan
+
+        return [
+            'kelompok' => 'Keamanan',
+            'judul'    => 'Masa berlaku sesi',
+            'keadaan'  => $panjang ? self::PERHATIAN : self::AMAN,
+            'nilai'    => $menit.' menit ('.$jam.' jam)',
+            'uraian'   => $panjang
+                ? 'Sesi bertahan lebih dari sepekan tanpa aktivitas. Perangkat bersama di kantor '
+                  .'site — komputer ruang rapat, tablet pengawas shift — tetap dapat membuka '
+                  .'akun orang yang sudah pulang berhari-hari lalu.'
+                : 'Sesi berakhir sendiri setelah tidak dipakai selama masa itu.',
+            'tindakan' => $panjang
+                ? 'Turunkan SESSION_LIFETIME pada .env. Pertimbangkan 480 (satu shift) bila '
+                  .'alasan memanjangkannya adalah pengisian borang lapangan yang lama.'
+                : null,
+        ];
+    }
+
+    /**
+     * Baris sesi yang masa berlakunya sudah lewat tetapi belum dibuang.
+     *
+     * Tidak berbahaya dengan sendirinya — pembacanya menolak sesi
+     * kedaluwarsa — tetapi tiap baris menyimpan alamat dan perangkat
+     * seseorang. Menyimpan data yang tidak dipakai lagi hanya menambah
+     * yang dapat hilang tanpa menambah yang dapat dikerjakan.
+     */
+    private static function sesiBasi(): array
+    {
+        /* Bukan "tidak diketahui" melainkan "tidak berlaku". Penyimpan
+           sesi selain basis data tidak meninggalkan baris yang
+           menumpuk, jadi tidak ada yang tidak terjawab di sini —
+           pertanyaannya yang memang tidak ada. Menyebutnya tak-tahu
+           akan menaruh tanda tanya permanen pada daftar diagnosa, dan
+           tanda tanya yang tidak pernah dapat dijawab mengajari orang
+           mengabaikan tanda tanya berikutnya. */
+        if (config('session.driver') !== 'database' || !Schema::hasTable('sessions')) {
+            return [
+                'kelompok' => 'Keamanan',
+                'judul'    => 'Sesi kedaluwarsa',
+                'keadaan'  => self::AMAN,
+                'nilai'    => 'tidak berlaku (sesi disimpan '.config('session.driver').')',
+                'uraian'   => 'Penyimpan sesi ini tidak meninggalkan baris kedaluwarsa yang '
+                    .'menumpuk. Daftar perangkat aktif juga tidak tersedia karenanya.',
+                'tindakan' => null,
+            ];
+        }
+
+        $basi  = Keamanan::sesiBasi();
+        $aktif = Keamanan::jumlahSesiAktif();
+
+        return [
+            'kelompok' => 'Keamanan',
+            'judul'    => 'Sesi kedaluwarsa',
+            'keadaan'  => $basi > 500 ? self::PERHATIAN : self::AMAN,
+            'nilai'    => $basi.' basi · '.$aktif.' aktif',
+            'uraian'   => $basi > 500
+                ? 'Ribuan baris sesi mati masih tersimpan, masing-masing memuat alamat dan '
+                  .'perangkat seseorang. Tidak dapat dipakai untuk masuk, tetapi tetap data '
+                  .'pribadi yang disimpan tanpa keperluan.'
+                : 'Jumlah sesi mati yang tersimpan masih wajar.',
+            'tindakan' => $basi > 500
+                ? 'Tekan "Bersihkan sesi kedaluwarsa" pada halaman Keamanan & Jaringan.'
+                : null,
+        ];
+    }
+
     private static function kunciAi(): array
     {
         if (!Schema::hasTable('app_settings')) {

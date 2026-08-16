@@ -12,6 +12,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        /* Tajuk keamanan dipasang pada SELURUH permintaan, bukan hanya
+           yang web: unduhan berkas, tanggapan galat, dan jawaban api/*
+           sama-sama dikirim ke peramban yang sama. Ditaruh di depan
+           supaya ia tetap membungkus tanggapan yang dihasilkan
+           middleware lain, termasuk tanggapan galat yang dibuat ketika
+           middleware sesudahnya melempar. */
+        $middleware->prepend(\App\Http\Middleware\TajukKeamanan::class);
+
         /* Hanya menyentuh permintaan yang benar-benar mengembalikan
            Inertia::render(); halaman Blade melewatinya tanpa berubah,
            jadi 170-an halaman lama tidak ikut terpengaruh. */

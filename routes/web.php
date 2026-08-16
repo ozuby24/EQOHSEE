@@ -10,7 +10,8 @@ use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiT
     BlastingController, CostController, DispatchController, PermitController, EnergyController, EngineeringController, EnvironmentController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\{BantuanController, ChatController};
-use App\Http\Controllers\Admin\{AiController, CompanyController, SystemController, UserController};
+use App\Http\Controllers\Admin\{AiController, CompanyController, KeamananController, SystemController, UserController};
+use App\Http\Controllers\PerangkatSayaController;
 use Illuminate\Support\Facades\Route;
 
 /* ============ VERIFIKASI SERTIFIKAT (publik) ============ */
@@ -674,7 +675,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('system.demo.tandai');
         Route::post('system/demo/{company}/muat',   [SystemController::class,'muatContoh'])
             ->name('system.demo.muat');
+
+        /* Kendali keamanan. Terpisah dari Diagnosa: diagnosa menjawab
+           "apakah pemasangannya benar", halaman ini menjawab "apa yang
+           sedang terjadi padanya sekarang". */
+        Route::get('keamanan',              [KeamananController::class,'index'])->name('keamanan');
+        Route::delete('keamanan/sesi',      [KeamananController::class,'putusSesi'])->name('keamanan.sesi.putus');
+        Route::post('keamanan/sesi/bersih', [KeamananController::class,'bersihSesi'])->name('keamanan.sesi.bersih');
+        Route::post('keamanan/jejak/pangkas',[KeamananController::class,'pangkasJejak'])->name('keamanan.jejak.pangkas');
     });
+
+    /* ---- Perangkat saya ----
+       Sengaja di luar grup admin: memutus perangkat yang mencurigakan
+       adalah tindakan pertama pemilik akun, bukan tindakan yang harus
+       ia mintakan lebih dulu kepada orang lain. */
+    Route::get('akun/perangkat',        [PerangkatSayaController::class,'index'])->name('keamanan.perangkat');
+    Route::delete('akun/perangkat',     [PerangkatSayaController::class,'putus'])->name('keamanan.perangkat.putus');
+    Route::post('akun/perangkat/lain',  [PerangkatSayaController::class,'putusLain'])->name('keamanan.perangkat.putus-lain');
 
     /* ---- Gudang & Penyimpanan ---- */
     Route::prefix('gudang')->name('gudang.')->group(function () {
