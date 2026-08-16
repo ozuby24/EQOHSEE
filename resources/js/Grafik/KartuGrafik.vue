@@ -22,9 +22,15 @@ withDefaults(defineProps<{
   catatan?: string | null;
   /** Angka pendamping di kanan judul — total, rerata, atau periodenya. */
   angka?: string | null;
-  /** Tinggi bidang gambar; grafiknya sendiri mengisi lebar. */
+  /**
+   * Tinggi TERKECIL bidang gambar, dipakai menyejajarkan dua kartu
+   * yang berdampingan. Nol berarti mengikuti isinya — itulah bawaannya,
+   * sebab batang yang barisnya sedikit akan meninggalkan kolong kosong
+   * sebesar selisihnya, dan kolong itu terbaca sebagai data yang gagal
+   * dimuat.
+   */
   tinggi?: number;
-}>(), { catatan: null, angka: null, tinggi: 176 });
+}>(), { catatan: null, angka: null, tinggi: 0 });
 
 const tabelTampak = ref(false);
 const idTabel     = useId();

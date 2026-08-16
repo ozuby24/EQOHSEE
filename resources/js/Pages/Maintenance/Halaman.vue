@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import Kesiapan from './Kesiapan.vue';
+import KartuGrafik from '../../Grafik/KartuGrafik.vue';
+import Batang from '../../Grafik/Batang.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 
 /*
@@ -107,6 +110,22 @@ function ubahTindak(item: any, status: string) {
   router.put(untuk(tautan.value.tindakUbah, item.id), { status }, { preserveScroll: true });
 }
 
+/**
+ * Tujuh alat teratas menurut jam henti, diwarnai menurut
+ * kritikalitasnya.
+ *
+ * Tujuh, bukan seluruhnya: daftar penuh adalah tabelnya, dan grafik
+ * yang memuat empat puluh batang berhenti menjawab "mana yang
+ * terburuk" — yang justru satu-satunya alasan ia digambar.
+ */
+const alatPenahan = computed(() =>
+  (props.perAlat || []).slice(0, 7).map((a: any) => ({
+    label: a.kode,
+    nilai: Number(a.jamHenti ?? 0),
+    keadaan: a.kritikalitas === 'Tinggi' ? 'gawat'
+      : a.kritikalitas === 'Sedang' ? 'ingat' : 'netral',
+  })));
+
 const warnaStatus: Record<string, string> = {
   dibuka: 'bg-red-100 text-red-700',
   dikerjakan: 'bg-amber-100 text-amber-700',
@@ -154,18 +173,8 @@ const warnaStatus: Record<string, string> = {
       </div>
     </section>
 
-    <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-      <article v-for="c in [
-        { l: 'Ketersediaan', v: persen(props.keandalan?.ketersediaan), c: Number(props.keandalan?.ketersediaan) >= 85 ? 'text-emerald-600' : 'text-red-600' },
-        { l: 'MTBF', v: jam(props.keandalan?.mtbf), c: 'text-cam-ink' },
-        { l: 'MTTR', v: jam(props.keandalan?.mttr), c: 'text-violet-700' },
-        { l: 'Kepatuhan PM', v: persen(props.pm?.persen), c: Number(props.pm?.persen) >= 90 ? 'text-emerald-600' : 'text-amber-600' },
-        { l: 'Tunggakan', v: `${props.tunggakan?.jumlah || 0} WO`, c: props.tunggakan?.kritis ? 'text-red-600' : 'text-stone-700' },
-      ]" :key="c.l" class="rounded-2xl bg-white border border-stone-100 shadow-card p-4">
-        <p class="text-[10px] uppercase tracking-wide font-bold text-stone-400">{{ c.l }}</p>
-        <p class="mt-2 text-xl font-extrabold" :class="c.c">{{ c.v }}</p>
-      </article>
-    </section>
+    <Kesiapan :keandalan="props.keandalan ?? {}" :pm="props.pm ?? {}"
+              :tunggakan="props.tunggakan ?? {}" />
 
     <template v-if="props.mode === 'dashboard'">
       <section class="grid gap-5 lg:grid-cols-2">
@@ -228,6 +237,40 @@ const warnaStatus: Record<string, string> = {
           </div>
         </div>
       </section>
+
+      <!-- Alat mana yang menahan armada. Sebelumnya jawaban ini hanya
+           ada pada tab "Per Alat" sebagai tabel tujuh kolom, sementara
+           keputusannya diambil dari halaman ini. Batangnya diwarnai
+           menurut kritikalitas alatnya: sepuluh jam henti pada alat
+           pendukung tidak sama artinya dengan sepuluh jam pada alat
+           kritis. -->
+      <KartuGrafik judul="Alat yang paling lama berhenti"
+                   :catatan="(props.perAlat || []).length
+                     ? `${props.perAlat[0].kode} menahan ${angka(props.perAlat[0].jamHenti, 1)} jam dari ${props.perAlat[0].order} perintah kerja.`
+                     : 'Belum ada perintah kerja yang tertaut ke alat pada periode ini.'"
+                   angka="jam henti">
+        <Batang :baris="alatPenahan" satuan="jam" apa-adanya />
+
+        <template #tabel>
+          <table>
+            <thead>
+              <tr><th>Alat</th><th>Kritikalitas</th><th>WO</th><th>Kegagalan</th>
+                  <th>Jam henti</th><th>Menunggu</th><th>Biaya</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="a in props.perAlat || []" :key="a.kode">
+                <td>{{ a.kode }} — {{ a.nama }}</td>
+                <td>{{ a.kritikalitas || '—' }}</td>
+                <td class="num">{{ a.order }}</td>
+                <td class="num">{{ a.kegagalan }}</td>
+                <td class="num">{{ angka(a.jamHenti, 1) }}</td>
+                <td class="num">{{ angka(a.jamMenunggu, 1) }}</td>
+                <td class="num">{{ rupiah(a.biaya) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </template>
+      </KartuGrafik>
 
       <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
         <h3 class="font-bold text-[14px]">Tunggakan pekerjaan</h3>

@@ -303,7 +303,7 @@ const kartu = computed(() => [
                    :catatan="terboros
                      ? `${terboros.kode} ${terboros.kata}.`
                      : 'Semua alat masih di sekitar rata-rata kelasnya.'"
-                   angka="liter per jam operasi" :tinggi="150">
+                   angka="liter per jam operasi">
         <Batang :baris="peringkat" satuan="L/HM" apa-adanya />
 
         <template #tabel>

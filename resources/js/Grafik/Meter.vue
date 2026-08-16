@@ -67,9 +67,13 @@ const keterangan = computed(() => {
      0,0105 terhadap target 0,024 dilaporkan tepat sasaran. */
   if (Math.abs(selisih) < Math.abs(props.target) * 0.01) return 'tepat di target';
 
-  const arahBaik = props.kecilLebihBaik ? selisih < 0 : selisih > 0;
-
-  return `${ringkas(Math.abs(selisih))}${props.satuan} ${arahBaik ? 'di bawah' : 'di atas'} target`;
+  /* Kata "di atas" dan "di bawah" menyatakan LETAK, bukan penilaian.
+     Yang menyatakan baik-buruknya adalah warnanya, dan warna itu sudah
+     memperhitungkan arah mana yang lebih baik. Menukar katanya menurut
+     kecilLebihBaik membuat 71% terhadap target 95% terbaca "24% di
+     atas target" — kebalikan dari keadaannya. */
+  return `${ringkas(Math.abs(selisih))}${props.satuan} `
+    + (selisih > 0 ? 'di atas' : 'di bawah') + ' target';
 });
 </script>
 
