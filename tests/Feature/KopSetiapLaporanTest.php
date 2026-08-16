@@ -138,10 +138,15 @@ class KopSetiapLaporanTest extends TestCase
                 continue;
             }
 
-            if (($props['dok']['nomor'] ?? null) !== 'UK-'.$this->kodeDari($props['dok'])) {
-                // Nomor harus memakai prefiks perusahaan yang masuk, bukan
-                // perusahaan lain dan bukan nomor karangan.
-                $tanpaDok[] = $nama.' — nomor "'.($props['dok']['nomor'] ?? '').'" bukan milik PT Uji Kop';
+            /* Nomornya harus mengikuti skema JENIS/PERUSAHAAN/DEPT/URUT
+               dan menyebut perusahaan yang sedang mencetak — bukan
+               perusahaan lain, dan bukan nomor karangan. */
+            $bagian = \App\Support\Nomor::urai($props['dok']['nomor'] ?? null);
+
+            if ($bagian === null) {
+                $tanpaDok[] = $nama.' — nomor "'.($props['dok']['nomor'] ?? '').'" tidak mengikuti skema';
+            } elseif ($bagian['perusahaan'] !== 'UK') {
+                $tanpaDok[] = $nama.' — nomor "'.$props['dok']['nomor'].'" bukan milik PT Uji Kop';
             }
         }
 
@@ -149,12 +154,6 @@ class KopSetiapLaporanTest extends TestCase
 
         $this->assertSame([], $tanpaDok,
             "Rute cetak berikut tidak membawa kop perusahaan yang benar:\n  ".implode("\n  ", $tanpaDok));
-    }
-
-    /** Kode formulir dari nomor yang terkirim, untuk membandingkan prefiksnya saja. */
-    private function kodeDari(array $dok): string
-    {
-        return (string) preg_replace('/^[^-]*-/', '', (string) ($dok['nomor'] ?? ''));
     }
 
     /* ═══════════ logo ═══════════ */

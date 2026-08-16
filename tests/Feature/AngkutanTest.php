@@ -392,7 +392,7 @@ class AngkutanTest extends TestCase
         $this->actingAs($this->pengawas)->get(route('angkutan.cetak'))
             ->assertInertia(fn (Assert $p) => $p
                 ->component('Print/Angkutan')
-                ->where('dok.nomor', 'TU-OHSE-V.101'));
+                ->where('dok.nomor', 'LAP/TU/OHSE/008'));
     }
 
     /* ---------- pemisahan antar perusahaan ---------- */

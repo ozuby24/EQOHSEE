@@ -68,8 +68,11 @@ const kepala = 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400
           <div>
             <label :class="label">Prefiks nomor dokumen</label>
             <input v-model="form.doc_no_prefix" :placeholder="contoh.prefiks" :class="isian">
-            <p class="text-[10.5px] text-stone-400 mt-1">
-              Dipakai pada kop berkas audit, mis. CAM-OHSE-IV.067h. Kosong berarti diturunkan dari nama.
+            <p class="text-[10.5px] text-stone-500 mt-1">
+              Singkatan perusahaan pada nomor dokumen — bagian <b>CAM</b> pada
+              <span class="font-mono">FRM/CAM/OHSE/001</span>. Dibiarkan kosong berarti berkas
+              yang dicetak keluar <b>tanpa nomor</b>; nomor tidak dikarang dari nama perusahaan,
+              sebab nomor karangan bertabrakan dengan penomoran Anda sendiri di daftar induk.
             </p>
           </div>
         </div>
@@ -85,6 +88,15 @@ const kepala = 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400
           <div>
             <label :class="label">Departemen</label>
             <input v-model="form.departemen" :placeholder="contoh.departemen" :class="isian">
+            <p class="text-[10.5px] text-stone-500 mt-1">Nama panjang, dicetak pada kop.</p>
+          </div>
+          <div>
+            <label :class="label">Singkatan departemen</label>
+            <input v-model="form.dept_kode" placeholder="OHSE" maxlength="12" :class="isian">
+            <p class="text-[10.5px] text-stone-500 mt-1">
+              Bagian <b>OHSE</b> pada <span class="font-mono">FRM/CAM/OHSE/001</span>.
+              Kosong berarti OHSE.
+            </p>
           </div>
           <div>
             <label :class="label">Tanggal penerbitan</label>

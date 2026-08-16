@@ -32,107 +32,128 @@ final class KopDokumen
                 'jenis' => 'FORM & CHECKLIST',
                 'judul' => 'BERITA ACARA HASIL PELAKSANAAN TAHAPAN AWAL AUDIT INTERNAL SMKP',
                 'kode'  => 'OHSE-IV.067h',
-            ],
+                'urut'  => 1,
+],
             'rencana-audit' => [
                 'jenis' => 'FORM & CHECKLIST',
                 'judul' => 'RENCANA AUDIT INTERNAL SMKP MINERBA',
                 'kode'  => 'OHSE-IV.059',
-            ],
+                'urut'  => 2,
+],
             'daftar-hadir' => [
                 'jenis' => 'FORM & CHECKLIST',
                 'judul' => 'DAFTAR HADIR AUDIT INTERNAL SMKP MINERBA',
                 'kode'  => 'OHSE-IV.067g',
-            ],
+                'urut'  => 3,
+],
             'kriteria' => [
                 'jenis' => 'FORM & CHECKLIST',
                 'judul' => 'FORMULIR KRITERIA AUDIT SMKP MINERBA',
                 'kode'  => 'OHSE-IV.067j',
-            ],
+                'urut'  => 4,
+],
             'tindak-lanjut' => [
                 'jenis' => 'FORM & CHECKLIST',
                 'judul' => 'RENCANA TINDAK LANJUT AUDIT SMKP MINERBA',
                 'kode'  => 'OHSE-IV.067f',
-            ],
+                'urut'  => 5,
+],
             'iso-matriks' => [
                 'jenis' => 'FORM & CHECKLIST',
                 'judul' => 'MATRIKS PEMENUHAN KLAUSUL STANDAR',
                 'kode'  => 'OHSE-II.012',
-            ],
+                'urut'  => 6,
+],
             'daftar-induk' => [
                 'jenis' => 'FORM & CHECKLIST',
                 'judul' => 'DAFTAR INDUK DOKUMEN TERKENDALI',
                 'kode'  => 'OHSE-II.001',
-            ],
+                'urut'  => 7,
+],
             'laporan-audit' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN AUDIT INTERNAL PENERAPAN SMKP MINERBA',
                 'kode'  => 'OHSE-IV.067',
-            ],
+                'urut'  => 1,
+],
             'laporan-energi' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN KINERJA ENERGI DAN EMISI KARBON',
                 'kode'  => 'OHSE-V.021',
-            ],
+                'urut'  => 2,
+],
             'laporan-operasi' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN KINERJA OPERASI PENAMBANGAN',
                 'kode'  => 'OHSE-V.031',
-            ],
+                'urut'  => 3,
+],
             'laporan-keandalan' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN KEANDALAN DAN PEMELIHARAAN ARMADA',
                 'kode'  => 'OHSE-V.051',
-            ],
+                'urut'  => 4,
+],
             'laporan-air' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN PENGELOLAAN AIR DAN PENIRISAN TAMBANG',
                 'kode'  => 'OHSE-V.061',
-            ],
+                'urut'  => 5,
+],
             'laporan-lingkungan' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN PENGELOLAAN LINGKUNGAN DAN REKLAMASI',
                 'kode'  => 'OHSE-V.081',
-            ],
+                'urut'  => 6,
+],
             'laporan-peledakan' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN PENGEBORAN DAN PELEDAKAN',
                 'kode'  => 'OHSE-V.091',
-            ],
+                'urut'  => 7,
+],
             'laporan-angkutan' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN PENGANGKUTAN DAN PENGATURAN ARMADA',
                 'kode'  => 'OHSE-V.101',
-            ],
+                'urut'  => 8,
+],
             'laporan-biaya' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN PENGENDALIAN BIAYA OPERASI PENAMBANGAN',
                 'kode'  => 'OHSE-V.111',
-            ],
+                'urut'  => 9,
+],
             'laporan-izin-kerja' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN IZIN KERJA AMAN',
                 'kode'  => 'OHSE-IV.121',
-            ],
+                'urut'  => 10,
+],
             'laporan-geoteknik' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN PEMANTAUAN KESTABILAN LERENG',
                 'kode'  => 'OHSE-V.071',
-            ],
+                'urut'  => 11,
+],
             'register-hazard' => [
                 'jenis' => 'FORM & CHECKLIST',
                 'judul' => 'REGISTER LAPORAN BAHAYA',
                 'kode'  => 'OHSE-IV.031',
-            ],
+                'urut'  => 8,
+],
             'register-inspeksi' => [
                 'jenis' => 'FORM & CHECKLIST',
                 'judul' => 'REGISTER INSPEKSI KESELAMATAN',
                 'kode'  => 'OHSE-IV.041',
-            ],
+                'urut'  => 9,
+],
             'laporan-konservasi' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN KONSERVASI MINERAL DAN BATUBARA',
                 'kode'  => 'OHSE-V.041',
-            ],
+                'urut'  => 12,
+],
         ];
     }
 
@@ -166,15 +187,20 @@ final class KopDokumen
         $d = self::daftar()[$kunci] ?? null;
 
         if (!$d) {
-            $d = ['jenis' => 'DOKUMEN', 'judul' => strtoupper(str_replace('-', ' ', $kunci)), 'kode' => 'OHSE'];
+            $d = ['jenis' => 'DOKUMEN', 'judul' => strtoupper(str_replace('-', ' ', $kunci)),
+                  'kode' => 'OHSE', 'urut' => 0];
         }
 
-        $prefiks = trim((string) ($c?->doc_no_prefix ?? ''));
+        /* Bentuknya JENIS/PERUSAHAAN/DEPARTEMEN/URUT — lihat Support\Nomor.
+           Urutannya TETAP per formulir, bukan berjalan: ini formulir baku
+           yang diterbitkan berulang kali, dan nomor yang berubah tiap kali
+           dicetak bukan nomor dokumen terkendali. */
+        $jenisNomor = $d['jenis'] === 'LAPORAN' ? 'Laporan' : 'Formulir';
 
         return [
             'jenis'      => $d['jenis'],
             'judul'      => $d['judul'],
-            'nomor'      => $prefiks !== '' ? $prefiks.'-'.$d['kode'] : '',
+            'nomor'      => Nomor::susun($jenisNomor, $c, (int) ($d['urut'] ?? 0)),
             'terbit'     => $c?->doc_terbit,
             'setuju'     => $c?->doc_setuju,
             'revisi'     => str_pad((string) (int) ($c?->doc_revisi ?? 0), 2, '0', STR_PAD_LEFT),

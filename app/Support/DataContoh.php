@@ -1019,19 +1019,28 @@ final class DataContoh
     {
         $n = 0;
 
+        /* Kodenya DISUSUN dari perusahaannya, bukan ditulis tetap.
+           Data contoh yang kodenya tetap akan memperlihatkan penomoran
+           milik perusahaan lain kepada yang sedang memeriksanya — dan
+           yang diperiksa justru apakah penomorannya sudah benar. */
         $daftar = [
-            ['Kebijakan',       'K3L-KEB-01', 'Kebijakan Keselamatan dan Kesehatan Kerja', 'Umum',     'berlaku',   2],
-            ['Manual',          'K3L-MAN-01', 'Manual Sistem Manajemen Keselamatan',       'Internal', 'berlaku',   1],
-            ['Prosedur',        'K3L-PRO-01', 'Prosedur Izin Kerja Khusus',                'Internal', 'berlaku',   3],
-            ['Prosedur',        'K3L-PRO-02', 'Prosedur Investigasi Kecelakaan',           'Internal', 'berlaku',   1],
-            ['Instruksi Kerja', 'K3L-IK-01',  'Instruksi Kerja Pemeriksaan Sump Harian',   'Internal', 'berlaku',   0],
-            ['Instruksi Kerja', 'K3L-IK-02',  'Instruksi Kerja Pengisian Bahan Peledak',   'Rahasia',  'berlaku',   2],
-            ['Formulir',        'K3L-FRM-01', 'Formulir Inspeksi Jalan Tambang',           'Umum',     'berlaku',   0],
-            ['Rekaman',         'K3L-REK-01', 'Rekaman Pelatihan Tanggap Darurat',         'Internal', 'draft',     0],
-            ['Prosedur',        'K3L-PRO-03', 'Prosedur Pengelolaan Limbah B3',            'Internal', 'kadaluarsa',4],
+            ['Kebijakan',       'Kebijakan Keselamatan dan Kesehatan Kerja', 'Umum',     'berlaku',   2],
+            ['Manual',          'Manual Sistem Manajemen Keselamatan',       'Internal', 'berlaku',   1],
+            ['Prosedur',        'Prosedur Izin Kerja Khusus',                'Internal', 'berlaku',   3],
+            ['Prosedur',        'Prosedur Investigasi Kecelakaan',           'Internal', 'berlaku',   1],
+            ['Instruksi Kerja', 'Instruksi Kerja Pemeriksaan Sump Harian',   'Internal', 'berlaku',   0],
+            ['Instruksi Kerja', 'Instruksi Kerja Pengisian Bahan Peledak',   'Rahasia',  'berlaku',   2],
+            ['Formulir',        'Formulir Inspeksi Jalan Tambang',           'Umum',     'berlaku',   0],
+            ['Rekaman',         'Rekaman Pelatihan Tanggap Darurat',         'Internal', 'draft',     0],
+            ['Prosedur',        'Prosedur Pengelolaan Limbah B3',            'Internal', 'kadaluarsa',4],
         ];
 
-        foreach ($daftar as [$jenis, $kode, $judul, $klas, $status, $rev]) {
+        $urut = [];
+
+        foreach ($daftar as [$jenis, $judul, $klas, $status, $rev]) {
+            $urut[$jenis] = ($urut[$jenis] ?? 0) + 1;
+            $kode = Nomor::susun($jenis, $this->c, $urut[$jenis])
+                ?: strtoupper(Nomor::jenis($jenis)).'-'.str_pad((string) $urut[$jenis], 3, '0', STR_PAD_LEFT);
             $terbit = $this->kini->copy()->subMonths(6 + $rev);
 
             $this->baru(Document::class, [
@@ -1089,7 +1098,8 @@ final class DataContoh
             $tanggal = $this->kini->copy()->subDays(3 + $i * 5);
 
             $b = $this->baru(HazardReport::class, [
-                'kode'          => 'HZ-'.$tanggal->format('ym').'-'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT),
+                'kode'          => Nomor::susun('Formulir', $this->c, 100 + $i + 1)
+                    ?: 'HZ-'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT),
                 'user_id'       => $this->pengaju?->id,
                 'pelapor_nama'  => $this->pengaju?->name ?? 'Pengawas Lapangan',
                 'pelapor_departemen' => 'Produksi',
@@ -1148,7 +1158,8 @@ final class DataContoh
 
         foreach ($daftar as $i => [$jenis, $judul, $lokasi, $status]) {
             $this->baru(Inspection::class, [
-                'kode'        => 'INS-'.$this->kini->format('ym').'-'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT),
+                'kode'        => Nomor::susun('Formulir', $this->c, 200 + $i + 1)
+                    ?: 'INS-'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT),
                 'template_id' => null,
                 'user_id'     => $this->pengaju?->id,
                 'judul'       => $judul,
@@ -1298,13 +1309,15 @@ final class DataContoh
         $n = 0;
 
         $daftar = [
-            ['SOP-01', 'Penanganan Bahan Bakar di Area Tambang', 'Operasional'],
-            ['SOP-02', 'Pengoperasian Alat Angkut di Jalan Hauling', 'Operasional'],
-            ['SOP-03', 'Tanggap Darurat Kebakaran Workshop', 'Keselamatan'],
-            ['SOP-04', 'Pemeriksaan Harian Kolam Pengendap', 'Lingkungan'],
+            ['Penanganan Bahan Bakar di Area Tambang',     'Operasional'],
+            ['Pengoperasian Alat Angkut di Jalan Hauling', 'Operasional'],
+            ['Tanggap Darurat Kebakaran Workshop',         'Keselamatan'],
+            ['Pemeriksaan Harian Kolam Pengendap',         'Lingkungan'],
         ];
 
-        foreach ($daftar as $i => [$kode, $judul, $kategori]) {
+        foreach ($daftar as $i => [$judul, $kategori]) {
+            $kode = Nomor::susun('Prosedur', $this->c, $i + 1)
+                ?: 'SOP-'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT);
             $p = $this->baru(Procedure::class, [
                 'code'        => $kode,
                 'title'       => $judul,
@@ -1522,7 +1535,8 @@ final class DataContoh
             $this->baru(Certificate::class, [
                 'user_id'           => $orang->id,
                 'course_id'         => $kursus->id,
-                'certificate_number' => 'SERT/'.$this->kini->format('Y').'/'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
+                'certificate_number' => Nomor::susun('Sertifikat', $this->c, $i + 1)
+                    ?: 'SRT-'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT),
                 'recipient_name'    => $orang->name,
                 'course_title'      => $kursus->title,
                 'final_score'       => 100,

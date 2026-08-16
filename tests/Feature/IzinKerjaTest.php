@@ -506,7 +506,7 @@ class IzinKerjaTest extends TestCase
         $this->actingAs($this->pemohon)->get(route('izin.cetak'))
             ->assertInertia(fn (Assert $p) => $p
                 ->component('Print/Izin')
-                ->where('dok.nomor', 'TU-OHSE-IV.121'));
+                ->where('dok.nomor', 'LAP/TU/OHSE/010'));
     }
 
     /* ---------- pemisahan antar perusahaan ---------- */

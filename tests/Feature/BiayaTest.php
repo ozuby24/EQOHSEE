@@ -421,7 +421,7 @@ class BiayaTest extends TestCase
         $this->actingAs($this->pengendali)->get(route('biaya.cetak', ['tahun' => 2026]))
             ->assertInertia(fn (Assert $p) => $p
                 ->component('Print/Biaya')
-                ->where('dok.nomor', 'TU-OHSE-V.111'));
+                ->where('dok.nomor', 'LAP/TU/OHSE/009'));
     }
 
     /* ---------- pemisahan antar perusahaan ---------- */

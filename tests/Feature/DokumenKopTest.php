@@ -55,7 +55,7 @@ class DokumenKopTest extends TestCase
         // Berkas acuan PT CAM: Berita Acara bernomor CAM-OHSE-IV.067h.
         $d = KopDokumen::untuk('berita-acara', $this->perusahaan());
 
-        $this->assertSame('CAM-OHSE-IV.067h', $d['nomor']);
+        $this->assertSame('FRM/CAM/OHSE/001', $d['nomor']);
     }
 
     public function test_tiap_formulir_punya_kode_sendiri(): void
@@ -122,7 +122,7 @@ class DokumenKopTest extends TestCase
         // Yang MENETAPKAN prefiksnya tetap bernomor penuh.
         $dengan = $this->perusahaan(['name' => 'PT Gunung Bara Utama', 'doc_no_prefix' => 'GBU']);
 
-        $this->assertSame('GBU-OHSE-IV.059', KopDokumen::untuk('rencana-audit', $dengan)['nomor']);
+        $this->assertSame('FRM/GBU/OHSE/002', KopDokumen::untuk('rencana-audit', $dengan)['nomor']);
     }
 
     public function test_revisi_ditulis_dua_digit(): void
@@ -149,9 +149,9 @@ class DokumenKopTest extends TestCase
         $a = $this->audit($c);
 
         foreach ([
-            ['smkp.berita-acara',  'berita',  'CAM-OHSE-IV.067h'],
-            ['smkp.rencana.cetak', 'rencana', 'CAM-OHSE-IV.059'],
-            ['smkp.laporan',       'laporan', 'CAM-OHSE-IV.067'],
+            ['smkp.berita-acara',  'berita',  'FRM/CAM/OHSE/001'],
+            ['smkp.rencana.cetak', 'rencana', 'FRM/CAM/OHSE/002'],
+            ['smkp.laporan',       'laporan', 'LAP/CAM/OHSE/001'],
         ] as [$rute, $mode, $nomor]) {
             $this->get(route($rute, $a))->assertOk()->assertInertia(
                 fn (AssertableInertia $p) => $p->component('Print/Smkp')
@@ -173,7 +173,7 @@ class DokumenKopTest extends TestCase
         $this->get(route('smkp.hadir.cetak', [$a, 'pembukaan']))
             ->assertOk()->assertInertia(fn (AssertableInertia $p) => $p
                 ->component('Print/Smkp')->where('mode', 'hadir')
-                ->where('dok.nomor', 'CAM-OHSE-IV.067g')->where('totalLembar', 1));
+                ->where('dok.nomor', 'FRM/CAM/OHSE/003')->where('totalLembar', 1));
     }
 
     /* ---------- penomoran halaman ---------- */

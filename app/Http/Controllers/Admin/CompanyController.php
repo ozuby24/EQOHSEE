@@ -84,6 +84,7 @@ class CompanyController extends Controller
                 'doc_no_prefix'    => $teks($c->doc_no_prefix),
                 'divisi'           => $teks($c->divisi),
                 'departemen'       => $teks($c->departemen),
+                'dept_kode'        => $teks($c->dept_kode),
                 'doc_terbit'       => $c->doc_terbit?->format('Y-m-d') ?? '',
                 'doc_setuju'       => $c->doc_setuju?->format('Y-m-d') ?? '',
                 'doc_revisi'       => (string) ($c->doc_revisi ?? 0),
@@ -167,6 +168,10 @@ class CompanyController extends Controller
             'doc_no_prefix'    => ['nullable','string','max:20'],
             'divisi'           => ['nullable','string','max:150'],
             'departemen'       => ['nullable','string','max:150'],
+
+            /* Bagian OHSE pada FRM/CAM/OHSE/001. Huruf dan angka saja:
+               garis miring di dalamnya akan memecah nomornya sendiri. */
+            'dept_kode'        => ['nullable','string','max:12','regex:/^[A-Za-z0-9]+$/'],
             'doc_terbit'       => ['nullable','date'],
             'doc_setuju'       => ['nullable','date'],
             'doc_revisi'       => ['nullable','integer','min:0','max:999'],

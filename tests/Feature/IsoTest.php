@@ -225,7 +225,7 @@ class IsoTest extends TestCase
         $this->actingAs(User::factory()->create(['company_id' => $c->id]));
 
         $this->get(route('iso.cetak', '9001'))->assertOk()->assertInertia(
-            fn (AssertableInertia $p) => $p->where('dok.nomor', 'TU-OHSE-II.012')
+            fn (AssertableInertia $p) => $p->where('dok.nomor', 'FRM/TU/OHSE/006')
         );
     }
 
@@ -257,11 +257,16 @@ class IsoTest extends TestCase
 
         $this->dokumen(['kode' => 'MN-01', 'judul' => 'Manual Sistem Manajemen', 'jenis' => 'Manual']);
 
+        /* Nomornya diperiksa lewat PROP, bukan HTML mentah. Inertia
+           menyandikan props sebagai JSON di dalam atribut data-page,
+           dan JSON meng-escape garis miring: FRM/TU/OHSE/007 tertulis
+           di sana sebagai FRM\/TU\/OHSE\/007. assertSee karena itu
+           tidak pernah menemukannya, meski nomornya benar. */
         $this->get(route('dokumen.daftar-induk'))
             ->assertOk()
             ->assertSee('MN-01')
             ->assertSee('Manual Sistem Manajemen')
-            ->assertSee('TU-OHSE-II.001');
+            ->assertInertia(fn (AssertableInertia $p) => $p->where('dok.nomor', 'FRM/TU/OHSE/007'));
     }
 
     public function test_daftar_induk_bertambah_lembar_mengikuti_jumlah_dokumen(): void
