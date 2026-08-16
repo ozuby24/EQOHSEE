@@ -32,7 +32,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Course extends Model
 {
-    protected $fillable = ['title','description','category','image','cert_template','auto_certificate',
+    protected $fillable = ['demo_company_id','title','description','category','image','cert_template','auto_certificate',
                            'access_code','require_code','require_evaluation'];
 
     protected function casts(): array

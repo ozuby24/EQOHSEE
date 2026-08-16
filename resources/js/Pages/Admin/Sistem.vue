@@ -125,6 +125,29 @@ function muat(c: Perusahaan) {
 
   demoForm.transform(() => ({})).post(c.urlMuat, { preserveScroll: true });
 }
+
+/**
+ * Buang data contoh tanpa mengisinya lagi.
+ *
+ * Terpisah dari "muat ulang" dan sengaja begitu: data contoh bertahan
+ * sampai tombol INI ditekan. Itulah yang membuatnya dapat dipakai
+ * memeriksa alur dari input sampai laporan tanpa khawatir isinya
+ * hilang di tengah pemeriksaan.
+ */
+function buang(c: Perusahaan) {
+  const isi = jumlahIsi(c);
+
+  if (!isi) return;
+
+  if (!confirm(
+    `Buang ${isi} baris data contoh ${c.nama}?\n\n` +
+    'Seluruh modulnya akan kosong kembali. Tindakan ini tidak dapat dibatalkan, ' +
+    'tetapi data contoh memang dibuat untuk dibuang — jalankan ini setelah ' +
+    'pemeriksaan selesai, sebelum pemasangan dipakai sungguhan.',
+  )) return;
+
+  demoForm.transform(() => ({})).delete(c.urlHapus, { preserveScroll: true });
+}
 </script>
 
 <template>
@@ -382,11 +405,19 @@ function muat(c: Perusahaan) {
             </div>
           </div>
 
-          <button type="button" @click="muat(c)" :disabled="demoForm.processing"
-                  class="rounded-xl bg-cam-lime-deep px-4 py-2 text-[11.5px] font-bold text-white
-                         hover:brightness-95 transition disabled:opacity-40 shrink-0">
-            {{ jumlahIsi(c) ? 'Muat ulang' : 'Muat data contoh' }}
-          </button>
+          <div class="flex items-center gap-2 shrink-0">
+            <button type="button" @click="muat(c)" :disabled="demoForm.processing"
+                    class="rounded-xl bg-cam-lime-deep px-4 py-2 text-[11.5px] font-bold text-white
+                           hover:brightness-95 transition disabled:opacity-40">
+              {{ jumlahIsi(c) ? 'Muat ulang' : 'Muat data contoh' }}
+            </button>
+
+            <button v-if="jumlahIsi(c)" type="button" @click="buang(c)" :disabled="demoForm.processing"
+                    class="rounded-xl border border-red-200 px-4 py-2 text-[11.5px] font-bold text-red-700
+                           hover:bg-red-50 transition disabled:opacity-40">
+              Hapus data contoh
+            </button>
+          </div>
         </div>
       </div>
 

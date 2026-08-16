@@ -13,6 +13,8 @@ use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, 
                 MineOperationalTarget, News, Procedure, ReklamasiKemajuan, SmkpAttendee, SmkpAudit,
                 SmkpFinding, SopEvaluation, SopEvaluationAttempt,
                 SopEvaluationQuestion,
+                Certificate, Course, Enrollment, InspectionTemplate, Material, Module,
+                PostTrainingEvaluation, Quiz, QuizAttempt, QuizQuestion,
                 TindakLanjut, User, WaterLog, WaterSump, WaterSumpPump, WorkOrder};
 use Illuminate\Support\Carbon;
 
@@ -101,6 +103,17 @@ final class DataContoh
         SopEvaluationAttempt::class, SopEvaluationQuestion::class, SopEvaluation::class,
         Procedure::class,
         News::class,
+
+        /* LMS. Sertifikat, pendaftaran, percobaan, dan evaluasi pelatihan
+           menggantung pada kursus, jadi semuanya dibuang lebih dulu.
+           Kursus, kuis, dan template inspeksi TIDAK punya company_id —
+           keduanya pustaka bersama — dan disaring lewat penanda `demo`
+           sebagai gantinya. */
+        Certificate::class, PostTrainingEvaluation::class,
+        QuizAttempt::class, Enrollment::class,
+        QuizQuestion::class, Quiz::class,
+        Material::class, Module::class, Course::class,
+        InspectionTemplate::class,
     ];
 
     /** @var list<string> hal yang perlu diketahui pemanggilnya */
@@ -155,6 +168,50 @@ final class DataContoh
             'dibuat'  => $diri->dibuat,
             'catatan' => $diri->catatan,
         ];
+    }
+
+    /**
+     * Buang seluruh data contoh satu perusahaan, tanpa mengisinya lagi.
+     *
+     * Dipisahkan dari `muat()` karena keduanya menjawab kebutuhan yang
+     * berbeda. `muat()` untuk menyegarkan: buang lalu isi, dan modulnya
+     * kembali berisi. Yang ini untuk MENGOSONGKAN — dipakai ketika
+     * pemeriksaan sudah selesai dan pemasangannya hendak dipakai
+     * sungguhan.
+     *
+     * Tanpa pemisahan ini, satu-satunya jalan mengosongkan adalah
+     * memuat ulang lalu menghapus barisnya satu per satu lewat tiap
+     * modul — dan pada dua ratus empat puluh baris di tujuh belas
+     * modul, itu bukan jalan yang akan ditempuh siapa pun. Data contoh
+     * karena itu akan tertinggal, lalu ikut terhitung sebagai data
+     * sungguhan pada laporan pertama yang dicetak.
+     *
+     * Tiga lapis pengamannya sama persis dengan `muat()`: hanya
+     * perusahaan bertanda `demo`, penghapusan selalu menyebut
+     * company_id, dan scope dilepas supaya company_id itulah
+     * satu-satunya penyaring.
+     *
+     * @return array{dihapus:int,rincian:array<string,int>}
+     *
+     * @throws \RuntimeException bila perusahaan itu bukan perusahaan contoh
+     */
+    public static function buang(Company $c): array
+    {
+        if (!$c->demo) {
+            throw new \RuntimeException(
+                'Perusahaan "'.$c->name.'" bukan perusahaan contoh. '
+                .'Tandai dulu sebagai perusahaan contoh bila datanya memang boleh dibuang.'
+            );
+        }
+
+        /* Rinciannya dihitung SEBELUM dihapus — sesudahnya semuanya nol,
+           dan yang menekan tombolnya tidak akan pernah tahu apa yang
+           barusan hilang. */
+        $rincian = self::rincianIsi($c);
+
+        $diri = new self($c, null, null, Carbon::now());
+
+        return ['dihapus' => $diri->bersihkan(), 'rincian' => $rincian];
     }
 
     /** Hitung baris yang akan terhapus, tanpa menghapus apa pun. */
@@ -256,6 +313,25 @@ final class DataContoh
                     Procedure::withoutGlobalScopes()->where('company_id', $c->id)->select('id')
                 )->select('id')),
 
+            /* Pustaka bersama: tidak punya company_id, jadi penyaringnya
+               adalah perusahaan contoh yang MEMBUATNYA. Kursus sungguhan
+               bawaannya null dan karena itu tidak pernah tersentuh; dan
+               dua perusahaan contoh tidak saling membuang pustaka. */
+            Course::class, Quiz::class, InspectionTemplate::class
+                => $q->where('demo_company_id', $c->id),
+
+            Module::class, Material::class => $q->whereIn('course_id',
+                Course::withoutGlobalScopes()->where('demo_company_id', $c->id)->select('id')),
+
+            QuizQuestion::class => $q->whereIn('quiz_id',
+                Quiz::withoutGlobalScopes()->where('demo_company_id', $c->id)->select('id')),
+
+            Enrollment::class, PostTrainingEvaluation::class => $q->whereIn('course_id',
+                Course::withoutGlobalScopes()->where('demo_company_id', $c->id)->select('id')),
+
+            QuizAttempt::class => $q->whereIn('quiz_id',
+                Quiz::withoutGlobalScopes()->where('demo_company_id', $c->id)->select('id')),
+
             default => $q->whereRaw('1 = 0'),
         };
     }
@@ -314,6 +390,7 @@ final class DataContoh
             'SMKP'      => $this->smkp(),
             'Prosedur'  => $this->prosedur(),
             'Berita'    => $this->berita(),
+            'LMS'       => $this->lms(),
         ]);
     }
 
@@ -1320,6 +1397,166 @@ final class DataContoh
                     ."Isinya sengaja beberapa paragraf agar potongan ringkasnya pada daftar "
                     ."benar-benar terpotong, bukan tampak utuh karena kebetulan pendek.",
                 'published_at' => $this->kini->copy()->addDays($geser)->toDateString(),
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /* ─────────── LMS ─────────── */
+
+    /**
+     * Satu kursus utuh: modul, materi, kuis bersoal, pendaftaran,
+     * percobaan, sertifikat, dan evaluasi pasca-pelatihan.
+     *
+     * Dibuat UTUH, bukan sekadar satu baris kursus, sebab yang hendak
+     * diperiksa adalah alurnya: mendaftar → belajar → mengerjakan kuis
+     * → lulus → menerima sertifikat → dievaluasi. Kursus tanpa
+     * pendaftaran hanya membuktikan halaman daftarnya tergambar.
+     *
+     * Kursus, kuis, dan template inspeksi menyebut `demo_company_id`
+     * karena ketiganya pustaka bersama dan tidak punya company_id yang
+     * dapat dipakai penghapus. Kolom itu TIDAK menyaring pembacaan —
+     * pustakanya tetap terlihat semua orang — ia hanya menjawab
+     * "dibuang bersama perusahaan contoh mana". Sertifikat punya
+     * company_id sendiri dan mengikuti jalur biasa.
+     */
+    private function lms(): int
+    {
+        if (!$this->pengaju) {
+            $this->catatan[] = 'Data contoh LMS dilewati: perusahaan ini belum punya pengguna '
+                .'yang dapat didaftarkan sebagai peserta.';
+
+            return 0;
+        }
+
+        $n = 0;
+
+        $kursus = Course::withoutGlobalScopes()->create([
+            'title'            => 'Keselamatan Kerja Tambang Dasar',
+            'description'      => 'Kursus contoh: pengenalan bahaya, APD, dan tanggap darurat.',
+            'category'         => 'Keselamatan',
+            'cert_template'    => 'default',
+            'auto_certificate' => true,
+            'require_code'     => false,
+            'require_evaluation' => false,
+            'demo_company_id'  => $this->c->id,
+        ]);
+        $n++;
+
+        foreach ([
+            ['Pengenalan Bahaya Tambang', 'Jenis bahaya di area tambang terbuka.'],
+            ['Alat Pelindung Diri',       'Pemilihan dan pemakaian APD sesuai pekerjaan.'],
+            ['Tanggap Darurat',           'Langkah pertama saat kecelakaan dan kebakaran.'],
+        ] as $i => [$judul, $uraian]) {
+            $modul = Module::withoutGlobalScopes()->create([
+                'course_id' => $kursus->id, 'title' => $judul,
+                'description' => $uraian, 'order_index' => $i + 1,
+            ]);
+            $n++;
+
+            Material::withoutGlobalScopes()->create([
+                'course_id'   => $kursus->id,
+                'module_id'   => $modul->id,
+                'title'       => 'Materi '.$judul,
+                'description' => 'Materi contoh untuk memeriksa tampilan halaman belajar.',
+                'type'        => 'teks',
+                'content'     => 'Isi materi contoh. Beberapa paragraf agar halaman belajar '
+                    ."benar-benar punya sesuatu untuk digulir.\n\n"
+                    .'Bahaya di area tambang tidak selalu terlihat; yang paling sering '
+                    .'melukai justru yang sudah biasa dilewati setiap hari.',
+                'order_index' => 1,
+            ]);
+            $n++;
+        }
+
+        $kuis = Quiz::withoutGlobalScopes()->create([
+            'course_id' => $kursus->id, 'title' => 'Kuis Keselamatan Kerja Tambang Dasar',
+            'pass_score' => 70, 'demo_company_id' => $this->c->id,
+        ]);
+        $n++;
+
+        $soal = [
+            ['Apa yang pertama dilakukan saat melihat rekan tertimpa material?',
+             ['Menolong sendiri', 'Amankan lokasi lalu panggil bantuan', 'Memotret kejadian', 'Melapor besok'], 1],
+            ['APD wajib di area front loading adalah?',
+             ['Helm dan rompi saja', 'Helm, rompi, sepatu, dan kacamata', 'Sepatu saja', 'Tidak wajib'], 1],
+            ['Siapa yang berwenang menghentikan pekerjaan tidak aman?',
+             ['Hanya KTT', 'Hanya pengawas', 'Setiap pekerja', 'Hanya kontraktor'], 2],
+        ];
+
+        foreach ($soal as $i => [$tanya, $pilihan, $benar]) {
+            QuizQuestion::withoutGlobalScopes()->create([
+                'quiz_id' => $kuis->id, 'question' => $tanya, 'options' => $pilihan,
+                'correct_index' => $benar, 'order_index' => $i + 1,
+            ]);
+            $n++;
+        }
+
+        /* Peserta: pengaju dan peninjau, supaya daftar pesertanya tidak
+           berisi satu nama saja dan rekapitulasinya punya sebaran. */
+        $peserta = array_values(array_filter([$this->pengaju, $this->peninjau]));
+
+        foreach ($peserta as $i => $orang) {
+            $lulus = $i === 0;
+
+            Enrollment::withoutGlobalScopes()->create([
+                'user_id' => $orang->id, 'course_id' => $kursus->id,
+                'progress' => $lulus ? 100 : 60,
+                'status'   => $lulus ? 'completed' : 'in_progress',
+            ]);
+            $n++;
+
+            QuizAttempt::withoutGlobalScopes()->create([
+                'user_id' => $orang->id, 'quiz_id' => $kuis->id,
+                'score' => $lulus ? 100 : 67, 'passed' => $lulus,
+            ]);
+            $n++;
+
+            if (!$lulus) continue;
+
+            /* Hanya yang lulus yang bersertifikat — kalau semuanya
+               bersertifikat, aturan "sertifikat menyusul kelulusan"
+               tidak pernah terbukti berlaku. */
+            $this->baru(Certificate::class, [
+                'user_id'           => $orang->id,
+                'course_id'         => $kursus->id,
+                'certificate_number' => 'SERT/'.$this->kini->format('Y').'/'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
+                'recipient_name'    => $orang->name,
+                'course_title'      => $kursus->title,
+                'final_score'       => 100,
+                'issued_at'         => $this->kini->copy()->subDays(7),
+                'verification_code' => strtoupper(substr(md5($kursus->id.'-'.$orang->id), 0, 10)),
+                'template'          => 'default',
+            ]);
+            $n++;
+
+            PostTrainingEvaluation::withoutGlobalScopes()->create([
+                'user_id'         => $orang->id,
+                'course_id'       => $kursus->id,
+                'trainer_id'      => $this->peninjau?->id,
+                'trainer_name'    => $this->peninjau?->name,
+                'knowledge_score' => 85, 'skill_score' => 80,
+                'attitude_score'  => 90, 'safety_score' => 88,
+                'overall_score'   => 86,
+                'recommendation'  => 'Layak bekerja mandiri dengan pengawasan berkala.',
+                'strengths'       => 'Disiplin memakai APD dan aktif melaporkan bahaya.',
+                'improvements'    => 'Perlu latihan tambahan pada prosedur tanggap darurat.',
+            ]);
+            $n++;
+        }
+
+        /* Template inspeksi — dipakai modul Inspeksi, dan ditandai demo
+           dengan alasan yang sama seperti kursus. */
+        foreach ([
+            ['Inspeksi Harian Jalan Angkut', 'Harian', 'Jalan tambang'],
+            ['Inspeksi Mingguan Alat Berat', 'Mingguan', 'Peralatan'],
+        ] as [$nama, $jenis, $kategori]) {
+            InspectionTemplate::withoutGlobalScopes()->create([
+                'nama' => $nama, 'jenis' => $jenis, 'kategori' => $kategori,
+                'deskripsi' => 'Template contoh untuk memeriksa alur inspeksi.',
+                'is_active' => true, 'demo_company_id' => $this->c->id,
             ]);
             $n++;
         }

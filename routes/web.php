@@ -676,6 +676,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('system/demo/{company}/muat',   [SystemController::class,'muatContoh'])
             ->name('system.demo.muat');
 
+        /* Terpisah dari muat: yang satu menyegarkan, yang ini
+           mengosongkan. Data contoh bertahan sampai ini ditekan. */
+        Route::delete('system/demo/{company}',      [SystemController::class,'hapusContoh'])
+            ->name('system.demo.hapus');
+
         /* Kendali keamanan. Terpisah dari Diagnosa: diagnosa menjawab
            "apakah pemasangannya benar", halaman ini menjawab "apa yang
            sedang terjadi padanya sekarang". */

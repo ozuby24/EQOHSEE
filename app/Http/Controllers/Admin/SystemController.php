@@ -117,6 +117,7 @@ class SystemController extends Controller
                 'isi'       => $c->demo ? DataContoh::rincianIsi($c) : null,
                 'urlTandai' => route('admin.system.demo.tandai', $c),
                 'urlMuat'   => route('admin.system.demo.muat', $c),
+                'urlHapus'  => route('admin.system.demo.hapus', $c),
             ])->all(),
 
             'log' => $logs->map(fn ($l) => [
@@ -433,6 +434,37 @@ class SystemController extends Controller
         return $hasil['catatan'] === []
             ? back()->with('ok', $pesan)
             : back()->with('ok', $pesan)->withErrors(['demo' => implode(' ', $hasil['catatan'])]);
+    }
+
+    /**
+     * Buang data contoh, tanpa mengisinya lagi.
+     *
+     * Terpisah dari "muat ulang" dan sengaja begitu: yang satu
+     * menyegarkan isinya, yang ini mengosongkannya. Data contoh
+     * bertahan sampai tombol INI ditekan — itulah yang membuatnya
+     * dapat dipakai memeriksa alur dari input sampai laporan tanpa
+     * takut hilang di tengah jalan.
+     */
+    public function hapusContoh(Company $company)
+    {
+        try {
+            $hasil = DB::transaction(fn () => DataContoh::buang($company));
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['demo' => $e->getMessage()]);
+        }
+
+        Diagnosa::lupakanRingkas();
+
+        ActivityLog::write('Buang data contoh',
+            $company->name.' · '.$hasil['dihapus'].' baris', 'sistem');
+
+        if ($hasil['dihapus'] === 0) {
+            return back()->with('ok', 'Tidak ada data contoh '.$company->name.' yang perlu dibuang.');
+        }
+
+        return back()->with('ok',
+            $hasil['dihapus'].' baris data contoh '.$company->name.' dibuang dari '
+            .count($hasil['rincian']).' tabel. Modulnya kini kosong.');
     }
 
     private function human(float $b): string

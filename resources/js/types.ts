@@ -1507,7 +1507,7 @@ export interface HalamanSistem {
     demo: boolean;
     isi: Record<string, number> | null;
     urlTandai: string;
-    urlMuat: string;
+    urlMuat: string; urlHapus: string;
   }>;
   log: Array<{
     id: number; aksi: string; modul: string | null;
