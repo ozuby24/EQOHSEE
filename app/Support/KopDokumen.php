@@ -118,6 +118,16 @@ final class KopDokumen
                 'judul' => 'LAPORAN PEMANTAUAN KESTABILAN LERENG',
                 'kode'  => 'OHSE-V.071',
             ],
+            'register-hazard' => [
+                'jenis' => 'FORM & CHECKLIST',
+                'judul' => 'REGISTER LAPORAN BAHAYA',
+                'kode'  => 'OHSE-IV.031',
+            ],
+            'register-inspeksi' => [
+                'jenis' => 'FORM & CHECKLIST',
+                'judul' => 'REGISTER INSPEKSI KESELAMATAN',
+                'kode'  => 'OHSE-IV.041',
+            ],
             'laporan-konservasi' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN KONSERVASI MINERAL DAN BATUBARA',
@@ -170,7 +180,11 @@ final class KopDokumen
             'revisi'     => str_pad((string) (int) ($c?->doc_revisi ?? 0), 2, '0', STR_PAD_LEFT),
             'divisi'     => trim((string) ($c?->divisi ?? '')) ?: self::DIVISI,
             'departemen' => trim((string) ($c?->departemen ?? '')) ?: self::DEPARTEMEN,
-            'logo'       => $c?->effectiveLogo(),
+            /* Alamat penuh, bukan jalur simpanan. Sebelumnya jalur
+               mentah — dan halaman cetak yang menerimanya tidak akan
+               pernah dapat menggambarnya, sebab <img src="logos/x.png">
+               menunjuk ke tempat yang tidak ada. */
+            'logo'       => ($l = $c?->effectiveLogo()) ? asset('storage/'.$l) : null,
             'perusahaan' => $c?->name ?: 'Perusahaan',
         ];
     }

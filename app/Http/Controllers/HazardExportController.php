@@ -40,6 +40,7 @@ class HazardExportController extends Controller
     {
         $data = $this->saringHazard($r)->get();
         return Inertia::render('Print/Hazard', [
+            'dok'  => \App\Support\KopDokumen::untuk('register-hazard', $this->perusahaanKop($r)),
             'data' => $data,
             'filters' => $r->query(),
             'kembali' => route('hazard.index', $r->query()),
@@ -80,6 +81,7 @@ class HazardExportController extends Controller
         if ($r->filled('template')) $q->where('template_id', $r->template);
 
         return Inertia::render('Print/Inspeksi', [
+            'dok'  => \App\Support\KopDokumen::untuk('register-inspeksi', $this->perusahaanKop($r)),
             'data' => $q->latest('tanggal')->get(),
             'filters' => $r->query(),
             'kembali' => route('inspeksi.index', $r->query()),

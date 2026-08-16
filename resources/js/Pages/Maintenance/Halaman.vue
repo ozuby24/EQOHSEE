@@ -32,7 +32,11 @@ const judul: Record<string, string> = {
 };
 
 const angka = (v: unknown, d = 0) => new Intl.NumberFormat('id-ID', { maximumFractionDigits: d, minimumFractionDigits: d }).format(Number(v || 0));
-const persen = (v: unknown) => `${angka(v, 1)}%`;
+/* null berarti TIDAK ADA YANG DIUKUR, bukan nol persen.
+   angka() memaksa null menjadi 0 dan menampilkannya sebagai
+   "0,0%" — terbaca sebagai kepatuhan buruk padahal tidak ada
+   satu pun alat berjadwal untuk dinilai. */
+const persen = (v: unknown) => (v === null || v === undefined ? '—' : `${angka(v, 1)}%`);
 const rupiah = (v: unknown) => `Rp ${angka(v, 0)}`;
 const label = (v: string) => String(v || '').replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 const jam = (v: unknown) => v === null || v === undefined ? '—' : `${angka(v, 1)} jam`;

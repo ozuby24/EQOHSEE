@@ -518,10 +518,17 @@ class EnergyController extends Controller
         $solarTotal = $liter + $genset;
         $k = Energi::konsolidasi($solarTotal, $kwh, $m3);
 
-        // Dibulatkan: selisih hari Carbon berupa pecahan, dan rentang yang
-        // dijepit ke awal/akhir hari menghasilkan 30,99999… hari — angka yang
-        // benar tetapi tidak untuk dibaca orang.
-        $hari = max(1, (int) round($dari->diffInDays($sampai)) + 1);
+        /* Kedua ujungnya dijepit ke AWAL hari lebih dulu, lalu +1 untuk
+           membuat rentangnya inklusif.
+
+           Versi sebelumnya membulatkan pecahannya, dan itu menghitung
+           dua kali: `sampai` adalah akhir hari, jadi 1–31 Agustus
+           menghasilkan 30,99999… hari; round() menaikkannya menjadi 31,
+           lalu +1 menjadikannya 32. Rentang satu bulan penuh terbaca
+           sebagai 32 hari, dan setiap angka "per hari" yang dibagi
+           dengannya ikut meleset. */
+        $hari = max(1, (int) $dari->copy()->startOfDay()
+            ->diffInDays($sampai->copy()->startOfDay()) + 1);
 
         return $k + [
             'liter'      => $solarTotal,

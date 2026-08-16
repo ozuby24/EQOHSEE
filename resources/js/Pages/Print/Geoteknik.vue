@@ -31,23 +31,7 @@ const arah: Record<string, string> = {
   <PrintShell title="Laporan Pemantauan Kestabilan Lereng" :kembali="props.kembali">
     <div class="lembar bg-white rounded-2xl border border-stone-100 p-6 print:border-0 print:rounded-none print:p-0">
 
-      <table class="w-full border-collapse text-[10px] mb-5">
-        <tbody><tr>
-          <td class="border border-stone-300 p-2 w-[18%] text-center font-bold">{{ props.dok?.perusahaan || 'EQOHSEE' }}</td>
-          <td class="border border-stone-300 p-2 text-center">
-            <div class="text-[9px] tracking-wide text-stone-500">{{ props.dok?.jenis }}</div>
-            <div class="font-bold">{{ props.dok?.judul }}</div>
-          </td>
-          <td class="border border-stone-300 p-0 w-[30%]">
-            <table class="w-full border-collapse"><tbody>
-              <tr><td class="border-b border-r border-stone-300 p-1">No. Dokumen</td><td class="border-b border-stone-300 p-1 font-semibold">{{ props.dok?.nomor }}</td></tr>
-              <tr><td class="border-b border-r border-stone-300 p-1">Tgl Penerbitan</td><td class="border-b border-stone-300 p-1">{{ tanggal(props.dok?.terbit) }}</td></tr>
-              <tr><td class="border-b border-r border-stone-300 p-1">Tgl Persetujuan</td><td class="border-b border-stone-300 p-1">{{ tanggal(props.dok?.setuju) }}</td></tr>
-              <tr><td class="border-r border-stone-300 p-1">No. Revisi</td><td class="p-1">{{ props.dok?.revisi }}</td></tr>
-            </tbody></table>
-          </td>
-        </tr></tbody>
-      </table>
+      <KopCetak :dok="props.dok" />
 
       <header class="text-center border-b border-stone-200 pb-4 mb-5">
         <h1 class="font-bold text-[16px] uppercase">Laporan Pemantauan Kestabilan Lereng</h1>

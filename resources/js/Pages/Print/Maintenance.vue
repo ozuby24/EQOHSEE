@@ -19,7 +19,11 @@ const props = defineProps<{
 }>();
 
 const angka = (v: unknown, d = 0) => new Intl.NumberFormat('id-ID', { maximumFractionDigits: d, minimumFractionDigits: d }).format(Number(v || 0));
-const persen = (v: unknown) => `${angka(v, 1)}%`;
+/* null berarti TIDAK ADA YANG DIUKUR, bukan nol persen.
+   angka() memaksa null menjadi 0 dan menampilkannya sebagai
+   "0,0%" — terbaca sebagai kepatuhan buruk padahal tidak ada
+   satu pun alat berjadwal untuk dinilai. */
+const persen = (v: unknown) => (v === null || v === undefined ? '—' : `${angka(v, 1)}%`);
 const rupiah = (v: unknown) => `Rp ${angka(v, 0)}`;
 const jam = (v: unknown) => v === null || v === undefined ? '—' : `${angka(v, 1)} jam`;
 const tanggal = (v: unknown) => v ? new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(String(v))) : '—';
@@ -32,27 +36,7 @@ const label = (v: string) => String(v || '').replaceAll('_', ' ').replace(/\b\w/
   <PrintShell title="Laporan Keandalan dan Pemeliharaan Armada" :kembali="props.kembali">
     <div class="lembar bg-white rounded-2xl border border-stone-100 p-6 print:border-0 print:rounded-none print:p-0">
 
-      <table class="w-full border-collapse text-[10px] mb-5">
-        <tbody>
-          <tr>
-            <td class="border border-stone-300 p-2 w-[18%] text-center font-bold">{{ props.dok?.perusahaan || 'EQOHSEE' }}</td>
-            <td class="border border-stone-300 p-2 text-center">
-              <div class="text-[9px] tracking-wide text-stone-500">{{ props.dok?.jenis }}</div>
-              <div class="font-bold">{{ props.dok?.judul }}</div>
-            </td>
-            <td class="border border-stone-300 p-0 w-[30%]">
-              <table class="w-full border-collapse">
-                <tbody>
-                  <tr><td class="border-b border-r border-stone-300 p-1">No. Dokumen</td><td class="border-b border-stone-300 p-1 font-semibold">{{ props.dok?.nomor }}</td></tr>
-                  <tr><td class="border-b border-r border-stone-300 p-1">Tgl Penerbitan</td><td class="border-b border-stone-300 p-1">{{ tanggal(props.dok?.terbit) }}</td></tr>
-                  <tr><td class="border-b border-r border-stone-300 p-1">Tgl Persetujuan</td><td class="border-b border-stone-300 p-1">{{ tanggal(props.dok?.setuju) }}</td></tr>
-                  <tr><td class="border-r border-stone-300 p-1">No. Revisi</td><td class="p-1">{{ props.dok?.revisi }}</td></tr>
-                </tbody>
-              </table>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <KopCetak :dok="props.dok" />
 
       <header class="text-center border-b border-stone-200 pb-4 mb-5">
         <h1 class="font-bold text-[16px] uppercase">Laporan Keandalan dan Pemeliharaan Armada</h1>

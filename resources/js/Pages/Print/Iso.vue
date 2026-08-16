@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import BlankLayout from '../../Layouts/BlankLayout.vue';
 import PrintShell from '../../Components/PrintShell.vue';
+import KopCetak from '../../Components/KopCetak.vue';
 defineOptions({ layout: BlankLayout });
 const props = defineProps<{ standar: any; kode: string; perBab: Record<string, any>; peta: Record<string, any[]>; cakupan: any; kembali?: string; dok?: any }>();
 const bab = computed(() => Object.entries(props.perBab || {}));
@@ -14,6 +15,14 @@ const tanggal = (v: unknown) => v ? new Date(String(v)).toLocaleDateString('id-I
 
 <script lang="ts">
 import { h } from 'vue';
-const PrintHeader = (props: any) => h('table', { class: 'w-full border-collapse text-[10px] mb-5' }, [h('tbody', {}, [h('tr', {}, [h('td', { class: 'border border-stone-300 p-2 w-[16%] text-center font-bold' }, props.dok?.perusahaan || 'EQOHSEE'), h('td', { class: 'border border-stone-300 p-2 text-center' }, props.dok?.judul || 'Dokumen Terkendali'), h('td', { class: 'border border-stone-300 p-2 w-[34%]' }, `Halaman ${props.halaman} dari ${props.dari}`)])])]);
+/* Kop ringkas diganti kop penuh: yang lama hanya menyebut nama
+   perusahaan, judul, dan nomor halaman — tanpa nomor dokumen,
+   tanggal penerbitan, tanggal persetujuan, maupun revisi.
+   Keempatnya justru yang membuat sebuah lembar disebut
+   dokumen terkendali. */
+const PrintHeader = (props: any) => h(KopCetak, {
+  dok: { ...(props.dok ?? {}), judul: props.dok?.judul || 'Dokumen Terkendali' },
+  halaman: props.halaman, dari: props.dari,
+});
 export default { components: { PrintHeader } };
 </script>
