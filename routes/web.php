@@ -10,7 +10,7 @@ use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiT
     BlastingController, CostController, DispatchController, PermitController, EnergyController, EngineeringController, EnvironmentController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\{BantuanController, ChatController};
-use App\Http\Controllers\Admin\{AiController, CompanyController, KeamananController, SystemController, UserController};
+use App\Http\Controllers\Admin\{AiController, CompanyController, KeamananController, PemilikController, SystemController, UserController};
 use App\Http\Controllers\PerangkatSayaController;
 use Illuminate\Support\Facades\Route;
 
@@ -683,6 +683,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('keamanan/sesi',      [KeamananController::class,'putusSesi'])->name('keamanan.sesi.putus');
         Route::post('keamanan/sesi/bersih', [KeamananController::class,'bersihSesi'])->name('keamanan.sesi.bersih');
         Route::post('keamanan/jejak/pangkas',[KeamananController::class,'pangkasJejak'])->name('keamanan.jejak.pangkas');
+
+        /* Penetapan pemilik bagi prosedur dan berita lama yang belum
+           bertuan — akibat yang disengaja dari migrasi tanpa backfill. */
+        Route::get('pemilik',           [PemilikController::class,'index'])->name('pemilik');
+        Route::post('pemilik/tetapkan', [PemilikController::class,'tetapkan'])->name('pemilik.tetapkan');
     });
 
     /* ---- Perangkat saya ----

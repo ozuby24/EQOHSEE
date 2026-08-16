@@ -437,7 +437,7 @@ class EnergyController extends Controller
 
         return Inertia::render('Energi/Halaman', [
             'mode'      => 'laporan',
-            'dok'      => KopDokumen::untuk('laporan-energi', Company::first()),
+            'dok'      => KopDokumen::untuk('laporan-energi', $this->perusahaanKop($request ?? null)),
             'r'        => $this->ringkasan($dari, $sampai),
             'baseline' => $this->baselineBerlaku(),
             'dari'     => $dari, 'sampai' => $sampai,

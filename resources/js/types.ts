@@ -1866,3 +1866,15 @@ export interface HalamanPerangkat {
   masukTerakhir: { kapan: string | null; ip: string | null };
   tautan: { putus: string; putusLain: string };
 }
+
+/* ── Penetapan pemilik ── */
+
+export interface HalamanPemilik {
+  judul: string; subjudul: string;
+  jenis: Array<{
+    kunci: string; label: string; ket: string; jumlah: number;
+    baris: Array<{ id: number; judul: string; ket: string }>;
+  }>;
+  perusahaan: Array<{ nilai: number; label: string }>;
+  tautan: { tetapkan: string; sistem: string; diagnosa: string };
+}

@@ -142,6 +142,8 @@ final class Diagnosa
             'jejak-akses'    => fn () => self::jejakAkses(),
             'umur-sesi'      => fn () => self::umurSesi(),
             'sesi-basi'      => fn () => self::sesiBasi(),
+            'kop-laporan'    => fn () => self::kopLaporan(),
+            'tanpa-pemilik-lingkup' => fn () => self::tanpaPemilikLingkup(),
 
             /* ── basis data ── */
             'migrasi'        => fn () => self::migrasi(),
@@ -584,6 +586,115 @@ final class Diagnosa
             'tindakan' => $basi > 500
                 ? 'Tekan "Bersihkan sesi kedaluwarsa" pada halaman Keamanan & Jaringan.'
                 : null,
+        ];
+    }
+
+    /**
+     * Perusahaan yang belum menetapkan nomor dokumen atau logo.
+     *
+     * Keduanya muncul pada tiap lembar yang dicetak dan diserahkan
+     * kepada auditor. Sejak nomor tidak lagi dikarang dari nama
+     * perusahaan, yang belum menetapkannya akan mencetak kop dengan
+     * kolom nomor kosong — keadaan yang jujur, tetapi tetap perlu
+     * diberitahukan, sebab tidak ada yang melihatnya sampai lembarnya
+     * sudah tercetak.
+     */
+    private static function kopLaporan(): array
+    {
+        if (!Schema::hasTable('companies')) {
+            return self::lewat('Berkas & disk', 'Kop laporan', 'tabel perusahaan belum ada');
+        }
+
+        $total = Company::query()->withoutGlobalScopes()->count();
+
+        /* Belum ada perusahaan bukan "tidak diketahui" melainkan
+           "belum berlaku" — tidak ada kop yang dapat salah. */
+        if ($total === 0) {
+            return [
+                'kelompok' => 'Berkas & disk',
+                'judul'    => 'Kop laporan',
+                'keadaan'  => self::AMAN,
+                'nilai'    => 'belum ada perusahaan',
+                'uraian'   => 'Belum ada perusahaan yang kopnya perlu ditetapkan.',
+                'tindakan' => null,
+            ];
+        }
+
+        $tanpaNomor = Company::query()->withoutGlobalScopes()
+            ->where(fn ($q) => $q->whereNull('doc_no_prefix')->orWhere('doc_no_prefix', ''))
+            ->count();
+
+        $tanpaLogo = Company::query()->withoutGlobalScopes()
+            ->where(fn ($q) => $q->whereNull('logo')->orWhere('logo', ''))
+            ->count();
+
+        $bermasalah = $tanpaNomor > 0 || $tanpaLogo > 0;
+
+        return [
+            'kelompok' => 'Berkas & disk',
+            'judul'    => 'Kop laporan',
+            'keadaan'  => $bermasalah ? self::PERHATIAN : self::AMAN,
+            'nilai'    => $bermasalah
+                ? $tanpaNomor.' tanpa nomor · '.$tanpaLogo.' tanpa logo (dari '.$total.')'
+                : $total.' perusahaan lengkap',
+            'uraian'   => $bermasalah
+                ? 'Sebagian perusahaan belum menetapkan prefiks nomor dokumen atau logo. '
+                  .'Lembar yang dicetak untuk mereka keluar dengan kolom nomor kosong dan '
+                  .'tanpa lambang — dan itu baru terlihat sesudah tercetak. Nomornya sengaja '
+                  .'dikosongkan, bukan dikarang dari nama perusahaan: nomor karangan '
+                  .'bertabrakan dengan penomoran mereka sendiri pada daftar induk.'
+                : 'Semua perusahaan sudah punya prefiks nomor dokumen dan logo.',
+            'tindakan' => $bermasalah
+                ? 'Buka Kelola Perusahaan, isi Prefiks Nomor Dokumen dan unggah logonya.'
+                : null,
+        ];
+    }
+
+    /**
+     * Prosedur dan berita yang belum bertuan.
+     *
+     * Keduanya baru saja melekat perusahaan, dan migrasinya sengaja
+     * TIDAK menebak pemilik baris yang sudah ada — menebak akan
+     * menyembunyikannya dari yang berhak. Akibat yang benar dari
+     * keputusan itu: barisnya terbaca oleh SEMUA perusahaan sampai ada
+     * yang menetapkannya, dan itu perlu disebutkan, bukan didiamkan.
+     */
+    private static function tanpaPemilikLingkup(): array
+    {
+        $hitung = [];
+
+        foreach (['procedures' => 'prosedur', 'news' => 'berita'] as $tabel => $sebutan) {
+            if (!Schema::hasTable($tabel)) continue;
+            if (!in_array('company_id', self::petaKolom()[$tabel] ?? [], true)) continue;
+
+            $n = DB::table($tabel)->whereNull('company_id')->count();
+
+            if ($n > 0) $hitung[] = $n.' '.$sebutan;
+        }
+
+        if (!$hitung) {
+            return [
+                'kelompok' => 'Keutuhan data',
+                'judul'    => 'Prosedur & berita tanpa pemilik',
+                'keadaan'  => self::AMAN,
+                'nilai'    => 'semuanya bertuan',
+                'uraian'   => 'Tiap prosedur dan berita sudah melekat pada satu perusahaan.',
+                'tindakan' => null,
+            ];
+        }
+
+        return [
+            'kelompok' => 'Keutuhan data',
+            'judul'    => 'Prosedur & berita tanpa pemilik',
+            'keadaan'  => self::PERHATIAN,
+            'nilai'    => implode(' · ', $hitung),
+            'uraian'   => 'Baris ini terbaca oleh SELURUH perusahaan. Itu memang keadaan yang '
+                .'dipilih saat prosedur dan berita mulai melekat perusahaan — menebak '
+                .'pemiliknya akan menyembunyikannya dari yang berhak, dan kegagalan itu tidak '
+                .'menimbulkan galat apa pun. Sebagian mungkin memang milik bersama; sisanya '
+                .'perlu ditetapkan.',
+            'tindakan' => 'Buka Pusat Kendali → Penetapan Pemilik, lalu tetapkan perusahaannya. '
+                .'Yang memang berlaku untuk semua perusahaan boleh dibiarkan kosong.',
         ];
     }
 

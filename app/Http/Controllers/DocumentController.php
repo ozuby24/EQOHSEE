@@ -141,7 +141,7 @@ class DocumentController extends Controller
         return Inertia::render('Print/Dokumen', [
             'documents' => Document::with('company')
                 ->orderByRaw(Dokumen::urutJenisSql())->orderBy('kode')->get(),
-            'dok'       => KopDokumen::untuk('daftar-induk', Company::first()),
+            'dok'       => KopDokumen::untuk('daftar-induk', $this->perusahaanKop()),
             'kembali'   => route('dokumen.index'),
         ]);
     }

@@ -321,7 +321,7 @@ class EnvironmentController extends Controller
         [$dari, $sampai] = $this->rentang($request);
         $d = $this->kumpulkan($request, $dari, $sampai);
 
-        $perusahaan = auth()->user()?->company ?: Company::first();
+        $perusahaan = $this->perusahaanKop();
 
         return Inertia::render('Print/Lingkungan', [
             'dok'    => KopDokumen::untuk('laporan-lingkungan', $perusahaan),

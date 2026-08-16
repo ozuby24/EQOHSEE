@@ -128,7 +128,7 @@ class KonservasiController extends Controller
         $hilang = (float) $sah->sum('kehilangan_material');
         $dilusi = (float) $sah->sum('dilusi');
 
-        $perusahaan = auth()->user()?->company ?: Company::first();
+        $perusahaan = $this->perusahaanKop();
 
         return Inertia::render('Print/Konservasi', [
             'dok'   => KopDokumen::untuk('laporan-konservasi', $perusahaan),

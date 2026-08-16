@@ -269,7 +269,7 @@ class GeotechnicalController extends Controller
             ->whereBetween('tanggal', [$dari, $sampai])->orderBy('tanggal')->get();
         $sah = $semua->whereIn('status', Alur::terhitung());
 
-        $perusahaan = auth()->user()?->company ?: Company::first();
+        $perusahaan = $this->perusahaanKop();
 
         return Inertia::render('Print/Geoteknik', [
             'dok'    => KopDokumen::untuk('laporan-geoteknik', $perusahaan),

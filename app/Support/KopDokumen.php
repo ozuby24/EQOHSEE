@@ -132,9 +132,22 @@ final class KopDokumen
     /**
      * Data kop untuk satu formulir.
      *
-     * Perusahaan tanpa prefiks nomor dokumen tetap menghasilkan nomor yang
-     * terbaca — berkas cetak tidak boleh gagal hanya karena data induk belum
-     * lengkap.
+     * Perusahaan tanpa prefiks nomor dokumen menghasilkan nomor KOSONG,
+     * bukan nomor yang dikarang dari inisial namanya.
+     *
+     * Sebelumnya dikarang, dan itu keliru justru karena hasilnya
+     * meyakinkan: "PT Gunung Bara Utama" menjadi GBU-OHSE-IV.067, yang
+     * terbaca persis seperti nomor sungguhan. Lembar itu lalu keluar
+     * sebagai dokumen terkendali dan diserahkan kepada auditor,
+     * membawa nomor yang tidak ada di daftar induk perusahaan itu —
+     * dan bertabrakan dengan penomoran mereka sendiri.
+     *
+     * Kolom yang kosong terlihat sebagai pekerjaan yang belum selesai,
+     * dan memang begitulah keadaannya. Nomor yang salah terlihat
+     * sebagai pekerjaan yang sudah selesai.
+     *
+     * Berkas cetaknya tetap tidak boleh gagal karena ini — yang kosong
+     * hanya nomornya, bukan halamannya.
      *
      * @return array{jenis:string,judul:string,nomor:string,terbit:?string,setuju:?string,revisi:string,divisi:string,departemen:string,logo:?string,perusahaan:string}
      */
@@ -146,12 +159,12 @@ final class KopDokumen
             $d = ['jenis' => 'DOKUMEN', 'judul' => strtoupper(str_replace('-', ' ', $kunci)), 'kode' => 'OHSE'];
         }
 
-        $prefiks = trim((string) ($c?->doc_no_prefix ?? '')) ?: self::prefiksDari($c?->name);
+        $prefiks = trim((string) ($c?->doc_no_prefix ?? ''));
 
         return [
             'jenis'      => $d['jenis'],
             'judul'      => $d['judul'],
-            'nomor'      => $prefiks.'-'.$d['kode'],
+            'nomor'      => $prefiks !== '' ? $prefiks.'-'.$d['kode'] : '',
             'terbit'     => $c?->doc_terbit,
             'setuju'     => $c?->doc_setuju,
             'revisi'     => str_pad((string) (int) ($c?->doc_revisi ?? 0), 2, '0', STR_PAD_LEFT),

@@ -220,7 +220,7 @@ class MaintenanceController extends Controller
         $terbuka = WorkOrder::with(['objek', 'parts'])->terbukaSaja()->urutMendesak()->get();
 
         $keandalan = $this->hitungKeandalan($objek, $orders, $dari, $sampai);
-        $perusahaan = auth()->user()?->company ?: Company::first();
+        $perusahaan = $this->perusahaanKop();
 
         return Inertia::render('Print/Maintenance', [
             'dok'    => KopDokumen::untuk('laporan-keandalan', $perusahaan),

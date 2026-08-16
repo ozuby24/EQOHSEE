@@ -327,7 +327,7 @@ class PermitController extends Controller
         [$dari, $sampai] = $this->rentang($request);
         $d = $this->kumpulkan($dari, $sampai);
 
-        $perusahaan = auth()->user()?->company ?: Company::first();
+        $perusahaan = $this->perusahaanKop();
 
         return Inertia::render('Print/Izin', [
             'dok'    => KopDokumen::untuk('laporan-izin-kerja', $perusahaan),

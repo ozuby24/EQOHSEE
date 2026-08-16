@@ -226,7 +226,7 @@ class CostController extends Controller
         $tahun = $this->tahun($request);
         $r = $this->rekap($tahun);
 
-        $perusahaan = auth()->user()?->company ?: Company::first();
+        $perusahaan = $this->perusahaanKop();
 
         return Inertia::render('Print/Biaya', [
             'dok'   => KopDokumen::untuk('laporan-biaya', $perusahaan),

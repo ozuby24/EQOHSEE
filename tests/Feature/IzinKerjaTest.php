@@ -41,7 +41,7 @@ class IzinKerjaTest extends TestCase
         parent::setUp();
         Carbon::setTestNow('2026-08-15 10:00:00');
 
-        $this->company = Company::create(['name' => 'Tambang Uji']);
+        $this->company = Company::create(['name' => 'Tambang Uji', 'doc_no_prefix' => 'TU']);
         $this->pemohon = User::factory()->create(['company_id' => $this->company->id]);
         $this->penerbit = User::factory()->create(['company_id' => $this->company->id, 'lms_role' => 'ktt']);
     }

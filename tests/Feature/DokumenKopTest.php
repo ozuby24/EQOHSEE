@@ -70,10 +70,16 @@ class DokumenKopTest extends TestCase
         $this->assertSame($nomor, array_unique($nomor), 'Dua formulir tidak boleh bernomor sama.');
     }
 
-    public function test_prefiks_diturunkan_dari_nama_saat_belum_ditetapkan(): void
+    /**
+     * prefiksDari tetap ada, tetapi kini hanya sebagai SARAN.
+     *
+     * Dahulu ia dipakai langsung sebagai nomor ketika perusahaan belum
+     * menetapkan prefiksnya. Sekarang ia hanya mengisi contoh pada
+     * borang perusahaan — lihat test_nomor_kosong_bila_prefiks_belum_ditetapkan
+     * untuk alasan perubahannya.
+     */
+    public function test_prefiks_disarankan_dari_nama_perusahaan(): void
     {
-        // Perusahaan yang baru didaftarkan belum tentu punya prefiks; berkas
-        // cetaknya tetap harus bernomor terbaca, bukan berawalan tanda hubung.
         $this->assertSame('CAM', KopDokumen::prefiksDari('PT Cemerlang Asa Mandiri'));
         $this->assertSame('GBU', KopDokumen::prefiksDari('PT Gunung Bara Utama'));
         $this->assertSame('EQ',  KopDokumen::prefiksDari(''));
@@ -82,12 +88,41 @@ class DokumenKopTest extends TestCase
 
     public function test_kop_tetap_terbentuk_tanpa_perusahaan(): void
     {
-        // Audit lintas perusahaan tidak punya auditi tunggal.
+        // Audit lintas perusahaan tidak punya auditi tunggal. Kopnya
+        // tetap harus terbentuk — yang kosong hanya nomornya.
         $d = KopDokumen::untuk('rencana-audit', null);
 
-        $this->assertSame('EQ-OHSE-IV.059', $d['nomor']);
+        $this->assertSame('', $d['nomor']);
         $this->assertSame(KopDokumen::DIVISI, $d['divisi']);
         $this->assertSame('00', $d['revisi']);
+        $this->assertNotSame('', $d['judul'], 'Judul formulir ikut hilang bersama nomornya.');
+    }
+
+    /**
+     * Nomor dokumen KOSONG bila prefiksnya belum ditetapkan.
+     *
+     * Sebelumnya dikarang dari inisial nama perusahaan, dan itu keliru
+     * justru karena hasilnya meyakinkan: "PT Gunung Bara Utama"
+     * menjadi GBU-OHSE-IV.059, terbaca persis seperti nomor sungguhan.
+     * Lembar itu keluar sebagai dokumen terkendali dan diserahkan
+     * kepada auditor, membawa nomor yang tidak ada pada daftar induk
+     * perusahaan itu — dan bertabrakan dengan penomoran mereka sendiri.
+     *
+     * Kolom kosong terlihat sebagai pekerjaan yang belum selesai, dan
+     * memang begitulah keadaannya. Nomor yang salah terlihat sebagai
+     * pekerjaan yang sudah selesai.
+     */
+    public function test_nomor_kosong_bila_prefiks_belum_ditetapkan(): void
+    {
+        $tanpa = $this->perusahaan(['name' => 'PT Gunung Bara Utama', 'doc_no_prefix' => null]);
+
+        $this->assertSame('', KopDokumen::untuk('rencana-audit', $tanpa)['nomor'],
+            'Nomor dokumen dikarang dari nama perusahaan.');
+
+        // Yang MENETAPKAN prefiksnya tetap bernomor penuh.
+        $dengan = $this->perusahaan(['name' => 'PT Gunung Bara Utama', 'doc_no_prefix' => 'GBU']);
+
+        $this->assertSame('GBU-OHSE-IV.059', KopDokumen::untuk('rencana-audit', $dengan)['nomor']);
     }
 
     public function test_revisi_ditulis_dua_digit(): void

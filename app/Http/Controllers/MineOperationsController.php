@@ -148,7 +148,7 @@ class MineOperationsController extends Controller
         $targetProduksi = (float) $targets->sum('target_produksi_ton');
         $targetOb = (float) $targets->sum('target_overburden_bcm');
 
-        $perusahaan = auth()->user()?->company ?: Company::first();
+        $perusahaan = $this->perusahaanKop();
 
         return Inertia::render('Print/Operasi', [
             'dok'    => KopDokumen::untuk('laporan-operasi', $perusahaan),

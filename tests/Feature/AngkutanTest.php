@@ -37,7 +37,7 @@ class AngkutanTest extends TestCase
         parent::setUp();
         Carbon::setTestNow('2026-08-15 08:00:00');
 
-        $this->company = Company::create(['name' => 'Tambang Uji']);
+        $this->company = Company::create(['name' => 'Tambang Uji', 'doc_no_prefix' => 'TU']);
         $this->pengawas = User::factory()->create(['company_id' => $this->company->id]);
         $this->ktt = User::factory()->create(['company_id' => $this->company->id, 'lms_role' => 'ktt']);
     }

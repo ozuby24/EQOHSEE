@@ -198,13 +198,34 @@ class IsoTest extends TestCase
         $this->get(route('iso.cetak', '99999'))->assertNotFound();
     }
 
-    public function test_matriks_cetak_berkop_dokumen_terkendali(): void
+    /**
+     * Pengguna TANPA perusahaan mencetak kop tanpa nomor.
+     *
+     * Dahulu ia mendapat 'EQ-OHSE-II.012' — nomor yang dikarang dari
+     * ketiadaan perusahaan. Sekarang kosong, dan itu yang benar: nomor
+     * dokumen milik perusahaan, dan orang yang belum ditempatkan di
+     * perusahaan mana pun tidak punya nomor untuk dicantumkan.
+     * Selebihnya kop tetap terbentuk penuh.
+     */
+    public function test_matriks_cetak_berkop_tanpa_nomor_bila_tanpa_perusahaan(): void
     {
         $this->masuk();
 
         $this->get(route('iso.cetak', '9001'))->assertOk()->assertInertia(
             fn (AssertableInertia $p) => $p->component('Print/Iso')
-                ->where('kode', '9001')->where('dok.nomor', 'EQ-OHSE-II.012')->has('perBab')->has('cakupan')
+                ->where('kode', '9001')->where('dok.nomor', '')->has('perBab')->has('cakupan')
+        );
+    }
+
+    /** Pengguna yang punya perusahaan berprefiks mendapat nomor penuh. */
+    public function test_matriks_cetak_bernomor_bila_perusahaan_berprefiks(): void
+    {
+        $c = \App\Models\Company::create(['name' => 'Tambang Uji', 'doc_no_prefix' => 'TU']);
+
+        $this->actingAs(User::factory()->create(['company_id' => $c->id]));
+
+        $this->get(route('iso.cetak', '9001'))->assertOk()->assertInertia(
+            fn (AssertableInertia $p) => $p->where('dok.nomor', 'TU-OHSE-II.012')
         );
     }
 
@@ -228,14 +249,19 @@ class IsoTest extends TestCase
 
     public function test_daftar_induk_memuat_dokumen_dan_berkop(): void
     {
-        $this->masuk();
+        /* Berprefiks, sebab yang diperiksa di sini justru nomornya.
+           Pengguna tanpa perusahaan mencetak lembar tanpa nomor —
+           keadaan yang sah dan diuji tersendiri di atas. */
+        $c = \App\Models\Company::create(['name' => 'Tambang Uji', 'doc_no_prefix' => 'TU']);
+        $this->actingAs(User::factory()->create(['company_id' => $c->id]));
+
         $this->dokumen(['kode' => 'MN-01', 'judul' => 'Manual Sistem Manajemen', 'jenis' => 'Manual']);
 
         $this->get(route('dokumen.daftar-induk'))
             ->assertOk()
             ->assertSee('MN-01')
             ->assertSee('Manual Sistem Manajemen')
-            ->assertSee('OHSE-II.001');
+            ->assertSee('TU-OHSE-II.001');
     }
 
     public function test_daftar_induk_bertambah_lembar_mengikuti_jumlah_dokumen(): void

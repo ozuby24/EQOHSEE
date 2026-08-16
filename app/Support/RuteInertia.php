@@ -93,6 +93,7 @@ final class RuteInertia
         'admin.system',
         'admin.system.diagnosa',
         'admin.keamanan',
+        'admin.pemilik',
         'admin.ai',
         'keamanan.perangkat',
         'admin.users.index',

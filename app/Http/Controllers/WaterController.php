@@ -223,7 +223,7 @@ class WaterController extends Controller
         $semua = WaterLog::with('sump')->whereBetween('tanggal', [$dari, $sampai])->orderBy('tanggal')->get();
         $sah = $semua->whereIn('status', Alur::terhitung());
 
-        $perusahaan = auth()->user()?->company ?: Company::first();
+        $perusahaan = $this->perusahaanKop();
 
         return Inertia::render('Print/Air', [
             'dok'    => KopDokumen::untuk('laporan-air', $perusahaan),

@@ -50,4 +50,36 @@ abstract class Controller
 
         return $data;
     }
+
+    /**
+     * Perusahaan yang kop laporannya dipakai.
+     *
+     * Urutannya: perusahaan yang sedang disaring pada halaman itu
+     * (hanya administrator yang dapat menyaring), lalu perusahaan
+     * penggunanya sendiri, lalu TIDAK ADA.
+     *
+     * "Tidak ada" sengaja tidak jatuh ke `Company::first()`. Itu pola
+     * yang sebelumnya dipakai di semua tempat, dan pada tiga modul —
+     * Energi, Daftar Induk Dokumen, dan Matriks ISO — ia bahkan dipakai
+     * TANPA memeriksa pengguna lebih dulu, sehingga laporannya membawa
+     * logo dan nomor dokumen perusahaan pertama di basis data, siapa
+     * pun yang mencetaknya.
+     *
+     * Pada dokumen terkendali itu bukan cacat tampilan. Lembar yang
+     * keluar membawa lambang dan nomor milik perusahaan lain, lalu
+     * diserahkan kepada auditor sebagai bukti penerapan. Kop kosong
+     * memalukan; kop milik orang lain menyesatkan.
+     */
+    protected function perusahaanKop(?\Illuminate\Http\Request $request = null): ?\App\Models\Company
+    {
+        $pengguna = auth()->user();
+
+        $disaring = ($request ?: request())?->query('perusahaan');
+
+        if ($pengguna?->isAdmin() && filled($disaring)) {
+            return \App\Models\Company::find($disaring) ?: $pengguna->company;
+        }
+
+        return $pengguna?->company;
+    }
 }
