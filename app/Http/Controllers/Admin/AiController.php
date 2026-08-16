@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Support\{Ai, AiPenyedia, Diagnosa};
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
@@ -78,13 +79,33 @@ class AiController extends Controller
             'kunci'      => ['nullable', 'string', 'min:8', 'max:400'],
         ]);
 
-        Ai::simpanPengaturan($data['penyedia'], $data['model'] ?? null, $data['maks_token'] ?? null);
+        try {
+            Ai::simpanPengaturan($data['penyedia'], $data['model'] ?? null, $data['maks_token'] ?? null);
 
-        if (filled($data['kunci'] ?? null)) {
-            Ai::simpanKunci($data['penyedia'], $data['kunci']);
+            if (filled($data['kunci'] ?? null)) {
+                Ai::simpanKunci($data['penyedia'], $data['kunci']);
 
-            // Kuncinya sendiri tidak pernah masuk log aktivitas.
-            ActivityLog::write('Simpan kunci AI', AiPenyedia::satu($data['penyedia'])['nama'], 'sistem');
+                // Kuncinya sendiri tidak pernah masuk log aktivitas.
+                ActivityLog::write('Simpan kunci AI', AiPenyedia::satu($data['penyedia'])['nama'], 'sistem');
+            }
+        } catch (\Throwable $e) {
+            /* Galat 500 telanjang di sini terbaca sebagai "tombolnya
+               rusak", dan yang mengalaminya mengulanginya berkali-kali.
+               Penyebab yang sudah pernah terjadi adalah tipe kolom
+               app_settings.value, dan itu tidak dapat ditebak dari
+               layar. Sebabnya disebut, dan ke mana perginya.
+
+               Kuncinya tidak pernah ikut masuk pesan maupun log — pesan
+               galat basis data dapat memuat nilai parameter. */
+            Log::error('Pengaturan AI gagal disimpan', [
+                'penyedia' => $data['penyedia'],
+                'galat'    => Ai::samarkan($e->getMessage(), $data['kunci'] ?? null),
+            ]);
+
+            return back()->withErrors(['ai' =>
+                'Pengaturan tidak dapat disimpan ke basis data. Buka Pusat Kendali → '
+                .'Diagnosa dan periksa "Pengaturan tersimpan"; di sana tertulis sebabnya '
+                .'beserta langkah perbaikannya.']);
         }
 
         ActivityLog::write('Ubah pengaturan AI',

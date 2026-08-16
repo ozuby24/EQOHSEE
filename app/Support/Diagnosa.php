@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\{Certificate, Company, User};
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\{Cache, DB, Schema};
+use Illuminate\Support\Str;
 
 /**
  * Pemeriksaan mandiri sistem.
@@ -147,6 +148,7 @@ final class Diagnosa
 
             /* ── basis data ── */
             'migrasi'        => fn () => self::migrasi(),
+            'pengaturan-tersimpan' => fn () => self::pengaturanTersimpan(),
 
             /* ── berkas & disk ── */
             'ruang-disk'     => fn () => self::ruangDisk(),
@@ -779,6 +781,92 @@ final class Diagnosa
                 : 'Skema basis data sudah selaras dengan kode yang berjalan.',
             'tindakan' => $tunggak ? 'Jalankan migrasi dari tombol perbaikan di bawah, atau '
                 .'php artisan migrate --force di server.' : null,
+        ];
+    }
+
+    /**
+     * Pengaturan sungguh-sungguh dapat DISIMPAN, bukan sekadar dibaca.
+     *
+     * Dijalankan sebagai tulis-baca-hapus sungguhan, bukan disimpulkan
+     * dari bentuk tabelnya. Kegagalan menulis di sini tidak menghasilkan
+     * halaman kosong atau angka yang salah — ia menghasilkan galat 500
+     * telanjang pada satu tombol saja, sementara seluruh sisa aplikasi
+     * tetap terlihat sehat. Yang mengalaminya menyimpulkan tombolnya
+     * yang rusak, bukan basis datanya.
+     *
+     * Sejarah yang membuat pemeriksaan ini ada: `app_settings.value`
+     * lahir bertipe `json`. Di SQLite tipe itu tidak diperiksa, jadi
+     * segalanya tersimpan dan seluruh uji lulus. Di PostgreSQL dan
+     * MySQL kolomnya sungguhan bertipe JSON dan menolak nilai yang
+     * bukan JSON — nama penyedia, nama model, kunci API terenkripsi.
+     * Akibatnya setiap penyimpanan kunci AI berakhir 500, sementara
+     * "Uji sambungan" berhasil karena tidak menulis apa pun. Kuncinya
+     * diuji, dinyatakan terhubung, lalu hilang.
+     *
+     * Karena itu nilai ujinya sengaja BUKAN JSON yang sah.
+     */
+    private static function pengaturanTersimpan(): array
+    {
+        if (!Schema::hasTable('app_settings')) {
+            return self::lewat('Basis data', 'Pengaturan tersimpan', 'tabel pengaturan belum ada');
+        }
+
+        $kunci = '__diagnosa_tulis';
+        $nilai = 'uji-'.now()->timestamp;   // sengaja bukan JSON yang sah
+
+        try {
+            DB::table('app_settings')->where('key', $kunci)->delete();
+
+            DB::table('app_settings')->insert([
+                'key' => $kunci, 'value' => $nilai,
+                'created_at' => now(), 'updated_at' => now(),
+            ]);
+
+            $kembali = DB::table('app_settings')->where('key', $kunci)->value('value');
+
+            DB::table('app_settings')->where('key', $kunci)->delete();
+        } catch (\Throwable $e) {
+            /* Pesannya disebut apa adanya. "Gagal menyimpan" tanpa sebab
+               mengirim orang menebak-nebak; SQLSTATE-nya menunjuk
+               langsung ke penyebabnya. */
+            return [
+                'kelompok' => 'Basis data',
+                'judul'    => 'Pengaturan tersimpan',
+                'keadaan'  => self::GAWAT,
+                'nilai'    => 'tidak dapat ditulis',
+                'uraian'   => 'Tabel app_settings tidak menerima tulisan: '
+                    .Str::limit(preg_replace('/\s+/', ' ', $e->getMessage()), 300)
+                    .' — akibatnya kunci AI, model, dan pengaturan KO tidak dapat disimpan, '
+                    .'dan tombolnya hanya memulangkan galat 500 tanpa keterangan.',
+                'tindakan' => 'Jalankan php artisan migrate --force di server; migrasi '
+                    .'2026_08_16_000010 mengubah kolom value menjadi teks.',
+            ];
+        }
+
+        if ((string) $kembali !== $nilai) {
+            return [
+                'kelompok' => 'Basis data',
+                'judul'    => 'Pengaturan tersimpan',
+                'keadaan'  => self::GAWAT,
+                'nilai'    => 'tersimpan berubah bentuk',
+                'uraian'   => 'Nilai yang ditulis "'.$nilai.'" terbaca kembali sebagai "'
+                    .Str::limit((string) $kembali, 60).'". Kunci API yang berubah satu huruf '
+                    .'ditolak penyedianya, dan yang menolaknya tidak dapat menjelaskan sebabnya.',
+                'tindakan' => 'Periksa tipe kolom app_settings.value; ia harus teks biasa.',
+            ];
+        }
+
+        return [
+            'kelompok' => 'Basis data',
+            'judul'    => 'Pengaturan tersimpan',
+            'keadaan'  => self::AMAN,
+            /* Nama penggeraknya ikut disebut meski keadaannya aman:
+               kerusakan yang pernah terjadi di sini hanya muncul pada
+               penggerak tertentu, dan pertanyaan pertama saat
+               melaporkannya selalu "basis datanya apa". */
+            'nilai'    => 'dapat ditulis · '.DB::connection()->getDriverName(),
+            'uraian'   => 'Kunci AI dan pengaturan modul dapat disimpan pada pemasangan ini.',
+            'tindakan' => null,
         ];
     }
 

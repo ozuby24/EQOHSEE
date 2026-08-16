@@ -307,12 +307,18 @@ final class Ai
 
     /* ═══════════ perkakas ═══════════ */
 
-    /** Buang kunci dari teks apa pun sebelum ia ditampilkan atau dicatat. */
-    private static function samarkan(string $teks, string $kunci): string
+    /**
+     * Buang kunci dari teks apa pun sebelum ia ditampilkan atau dicatat.
+     *
+     * Umum, sebab yang perlu disamarkan bukan hanya jawaban penyedia:
+     * pesan galat basis data menyertakan nilai parameternya, dan
+     * parameter itulah kuncinya.
+     */
+    public static function samarkan(string $teks, ?string $kunci): string
     {
-        if (strlen($kunci) < 8) return $teks;
+        if ($kunci === null || strlen($kunci) < 8) return $teks;
 
-        return str_replace($kunci, '[kunci disamarkan]', $teks);
+        return str_replace([$kunci, trim($kunci)], '[kunci disamarkan]', $teks);
     }
 
     private static function baca(string $kunci): ?string
