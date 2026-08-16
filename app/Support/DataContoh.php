@@ -13,9 +13,14 @@ use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, 
                 MineOperationalTarget, News, Procedure, ReklamasiKemajuan, SmkpAttendee, SmkpAudit,
                 SmkpFinding, SopEvaluation, SopEvaluationAttempt,
                 SopEvaluationQuestion,
-                Certificate, Course, Enrollment, InspectionTemplate, Material, Module,
+                Certificate, Course, Enrollment, InspectionTemplate, InspectionTemplateItem,
+                Material, Module, ModuleCompletion,
                 PostTrainingEvaluation, Quiz, QuizAttempt, QuizQuestion,
-                TindakLanjut, User, WaterLog, WaterSump, WaterSumpPump, WorkOrder};
+                TindakLanjut, User, WaterLog, WaterSump, WaterSumpPump, WorkOrder, WorkOrderPart,
+                EnergyBaseline, EnergyFuelRecon, EnergyOpportunity, EnergyOtherLog,
+                EnergyPowerLog, EnergyProduction,
+                KoPersonnel, MineMapLayer, MinerbaConservationRecord, Note, Percakapan,
+                Pesan, Signatory, TpkkpAssessment, TpkkpResponse};
 use Illuminate\Support\Carbon;
 
 /**
@@ -86,10 +91,32 @@ final class DataContoh
         SmkpFinding::class, SmkpAttendee::class, SmkpAudit::class,
         DocumentRevision::class, DocumentIso::class, Document::class,
         HazardReport::class,
+
+        /* Energi. Catatan pemakaian mendahului registri alatnya;
+           EnergyFuelLog menunjuk equipment_id, sisanya berdiri sendiri
+           dengan company_id masing-masing. */
         EnergyFuelLog::class, EnergyEquipment::class,
-        KoSafeguard::class, KoInspection::class, KoAction::class, KoReview::class,
-        WorkOrder::class,
+        EnergyProduction::class, EnergyPowerLog::class, EnergyOtherLog::class,
+        EnergyFuelRecon::class, EnergyBaseline::class, EnergyOpportunity::class,
+
+        /* KO. Suku cadang mendahului perintah kerjanya, dan
+           KoInspection menunjuk ko_safeguard_id sekaligus
+           ko_personnel_id — jadi keduanya dibuang sesudahnya. */
+        WorkOrderPart::class, WorkOrder::class,
+        KoInspection::class, KoAction::class, KoReview::class,
+        KoSafeguard::class, KoPersonnel::class,
         KoObject::class,
+
+        MinerbaConservationRecord::class,
+        MineMapLayer::class,
+        Signatory::class,
+
+        /* Pesan mendahului percakapannya, dan peserta dilepas lewat
+           relasi pivot — bukan model tersendiri. */
+        Pesan::class, Percakapan::class,
+
+        TpkkpResponse::class, TpkkpAssessment::class,
+        Note::class,
 
         /* Prosedur dan berita baru dapat masuk ke sini sesudah keduanya
            melekat perusahaan; sebelum itu penghapusnya tidak punya
@@ -112,8 +139,8 @@ final class DataContoh
         Certificate::class, PostTrainingEvaluation::class,
         QuizAttempt::class, Enrollment::class,
         QuizQuestion::class, Quiz::class,
-        Material::class, Module::class, Course::class,
-        InspectionTemplate::class,
+        ModuleCompletion::class, Material::class, Module::class, Course::class,
+        InspectionTemplateItem::class, InspectionTemplate::class,
     ];
 
     /** @var list<string> hal yang perlu diketahui pemanggilnya */
@@ -300,6 +327,36 @@ final class DataContoh
                 => $q->whereIn('ko_object_id',
                     KoObject::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
 
+            WorkOrderPart::class => $q->whereIn('work_order_id',
+                WorkOrder::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            /* Pesan menggantung pada percakapan; barisnya sendiri tidak
+               menyebut perusahaan. Peserta bukan model — pivotnya ikut
+               terbuang oleh cascadeOnDelete percakapan. */
+            Pesan::class => $q->whereIn('percakapan_id',
+                Percakapan::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            /* Catatan belajar menggantung pada modul, dan modul pada
+               kursus yang dibuat perusahaan contoh ini. */
+            Note::class => $q->whereIn('module_id',
+                Module::withoutGlobalScopes()->whereIn('course_id',
+                    Course::withoutGlobalScopes()->where('demo_company_id', $c->id)->select('id')
+                )->select('id')),
+
+            InspectionTemplateItem::class => $q->whereIn('template_id',
+                InspectionTemplate::withoutGlobalScopes()
+                    ->where('demo_company_id', $c->id)->select('id')),
+
+            /* Penyelesaian modul menggantung pada modul, dan modul pada
+               kursus — jadi penyaringnya adalah kursus yang dibuat
+               perusahaan contoh ini, bukan penggunanya. Menyaring lewat
+               pengguna akan membuang penyelesaian pada kursus sungguhan
+               yang kebetulan diikuti orang yang sama. */
+            ModuleCompletion::class => $q->whereIn('module_id',
+                Module::withoutGlobalScopes()->whereIn('course_id',
+                    Course::withoutGlobalScopes()->where('demo_company_id', $c->id)->select('id')
+                )->select('id')),
+
             SopEvaluation::class => $q->whereIn('procedure_id',
                 Procedure::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
 
@@ -391,7 +448,404 @@ final class DataContoh
             'Prosedur'  => $this->prosedur(),
             'Berita'    => $this->berita(),
             'LMS'       => $this->lms(),
+
+            /* Gelombang kedua, dari penelusuran tabel mana yang masih
+               nol sesudah tombolnya ditekan. Empat modul di bawah ini
+               tidak punya satu baris pun — dan tiga di antaranya
+               (konservasi, tindak lanjut, penanda tangan) muncul pada
+               laporan yang ditandatangani keluar. */
+            'Konservasi'     => $this->konservasi(),
+            'Tindak lanjut'  => $this->tindakLanjut(),
+            'Penanda tangan' => $this->penandaTangan(),
+            'Peta tambang'   => $this->peta(),
+            'TPKKP'          => $this->tpkkp(),
+            'Pesan'          => $this->pesan(),
+            'Catatan'        => $this->catatan(),
         ]);
+    }
+
+    /* ─────────── TPKKP ─────────── */
+
+    /**
+     * Penilaian kinerja keselamatan, nilainya dibangkitkan dari
+     * instrumennya sendiri.
+     *
+     * Nilai TIDAK ditulis tetap. Instrumen TPKKP berisi ratusan item
+     * dengan kode yang dapat berubah bila instrumennya diperbarui, dan
+     * kode yang ditulis tetap akan diam-diam berhenti cocok — hasilnya
+     * penilaian yang tampil sebagai nol pada seluruh parameter tanpa
+     * satu pun galat. Dibangkitkan dari `Tpkkp::allItems()`, nilainya
+     * ikut mengikuti instrumen yang sedang berlaku.
+     *
+     * Sebarannya sengaja tidak rata dan sengaja tidak lengkap: sebagian
+     * item dibiarkan kosong. Penilaian yang seluruh itemnya terisi
+     * penuh tidak memperlihatkan bagaimana halaman ini menandai yang
+     * belum dikerjakan — dan itulah yang paling sering ditanyakan.
+     */
+    private function tpkkp(): int
+    {
+        $n = 0;
+
+        try {
+            $item   = Tpkkp::allItems();
+            $metode = Tpkkp::methods();       // dipetakan menurut KODE, bukan berindeks
+        } catch (\Throwable $e) {
+            /* Instrumennya berkas, bukan tabel. Bila hilang, modul lain
+               tidak boleh ikut gagal dimuat. */
+            $this->catatan[] = 'TPKKP: instrumen tidak terbaca — '.$e->getMessage();
+
+            return 0;
+        }
+
+        if (!$item || !$metode) return 0;
+
+        foreach ([['selesai', 1], ['berjalan', 0]] as [$status, $mundur]) {
+            $tahun  = $this->kini->year - $mundur;
+            $scores = [];
+
+            foreach ($item as $ii => $it) {
+                /* Hanya metode yang MEMANG dipakai item itu. Menilai
+                   dengan metode yang tidak disebut instrumen tidak
+                   pernah terbaca — nilainya tersimpan, tidak terhitung,
+                   dan tidak dapat dijelaskan asalnya. */
+                foreach (($it['methods'] ?? []) as $mi => $m) {
+                    /* Yang berjalan baru terisi sebagian — itulah yang
+                       membedakannya dari yang sudah selesai, dan yang
+                       memperlihatkan bagaimana item kosong ditandai. */
+                    if ($status === 'berjalan' && ($ii + $mi) % 3 !== 0) continue;
+
+                    $nilai = 2 + (($ii * 7 + $mi * 3) % 4);   // 2..5
+                    $ent   = array_slice($metode[$m]['entities'] ?? [], 0, 2);
+
+                    /* Metode berentitas dinilai PER ENTITAS; itulah yang
+                       dirata-ratakan mesin hitungnya. Mengisi 'v' pada
+                       metode berentitas menghasilkan angka yang benar
+                       pada rekap keseluruhan tetapi nol pada rekap per
+                       perusahaan. */
+                    $scores[$m][$it['code']] = $ent
+                        ? ['v' => null,
+                           'e' => array_combine($ent, [$nilai, max(1, $nilai - 1)]),
+                           'ket' => '']
+                        : ['v' => $nilai, 'e' => [], 'ket' => ''];
+                }
+            }
+
+            $this->baru(TpkkpAssessment::class, [
+                'tahun'    => $tahun,
+                'judul'    => 'Penilaian Kinerja Keselamatan Pertambangan '.$tahun,
+                'status'   => $status,
+                'scores'   => $scores,
+                'roster'   => [],
+                'profil'   => [
+                    'organisasi' => $this->c->name,
+                    'site'       => 'Site Utama',
+                    'komoditas'  => 'Batubara',
+                    'ktt'        => $this->peninjau?->name ?? 'Kepala Teknik Tambang',
+                    'periode'    => (string) $tahun,
+                ],
+                'tim'      => [
+                    ['nama' => $this->peninjau?->name ?? 'Kepala Teknik Tambang', 'peran' => 'Ketua'],
+                    ['nama' => $this->pengaju?->name  ?? 'Pengawas Operasional',  'peran' => 'Anggota'],
+                ],
+                'programs' => Tpkkp::programSeed(),
+                'jadwal'   => [],
+                'sampling' => [],
+            ]);
+            $n++;
+        }
+
+        /* Tanggapan kuesioner dari lapangan; tiga kategori responden
+           supaya rekap per kategori punya lebih dari satu batang. */
+        foreach ([
+            ['pekerja',   'Operator Dump Truck', 'Produksi'],
+            ['pengawas',  'Pengawas Operasional', 'Produksi'],
+            ['manajemen', 'Manajer OHSE',         'OHSE'],
+        ] as $i => [$cat, $jabatan, $dept]) {
+            $this->baru(TpkkpResponse::class, [
+                'ext_id'     => 'RESP-'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
+                'cat'        => $cat,
+                'nrp'        => '20'.str_pad((string) (140 + $i), 4, '0', STR_PAD_LEFT),
+                'jabatan'    => $jabatan,
+                'dept'       => $dept,
+                'perusahaan' => $this->c->name,
+                'answers'    => ['q1' => 4, 'q2' => 3 + ($i % 2), 'q3' => 5, 'q4' => 4],
+                'ts'         => $this->kini->copy()->subDays(30 - $i * 4),
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /* ─────────── pesan internal ─────────── */
+
+    /**
+     * Satu percakapan dengan pesan di kedua arah.
+     *
+     * Satu arah saja tidak cukup: halaman pesan membedakan gelembung
+     * kiri dan kanan, menghitung yang belum terbaca, dan mengurutkan
+     * percakapan menurut pesan terakhir. Ketiganya tidak dapat dilihat
+     * dari percakapan yang hanya berisi pesan sendiri.
+     */
+    private function pesan(): int
+    {
+        if (!$this->pengaju || !$this->peninjau) return 0;
+
+        $n = 0;
+
+        /* Dibuat lewat jalan yang dipakai aplikasinya sendiri, bukan
+           dengan menulis tabel pivotnya langsung. Percakapan langsung
+           punya aturan "satu pasang, satu percakapan", dan data contoh
+           yang melewati aturan itu akan menghasilkan keadaan yang tidak
+           pernah dapat muncul dari pemakaian biasa. */
+        $p = Percakapan::withoutGlobalScopes()
+            ->where('jenis', 'langsung')->firstOr(fn () => tap(
+                Percakapan::withoutGlobalScopes()->create([
+                    'jenis'      => 'langsung',
+                    'judul'      => 'Koordinasi tanggul KM 4',
+                    'company_id' => $this->c->id,
+                ]),
+                fn ($baru) => $baru->peserta()->attach([
+                    $this->pengaju->getKey(), $this->peninjau->getKey(),
+                ]),
+            ));
+        $n++;
+
+        $terakhir = null;
+
+        foreach ([
+            [$this->pengaju,  'Tanggul KM 4 tergerus sesudah hujan semalam. Sudah saya buatkan laporan bahayanya.', 180],
+            [$this->peninjau, 'Terima kasih. Tutup dulu jalur itu sampai alat berat sampai.', 165],
+            [$this->pengaju,  'Siap, rambu pengalihan sudah dipasang.', 150],
+            [$this->peninjau, 'Perbaikan dijadwalkan besok pagi; tolong dipantau.', 20],
+        ] as [$dari, $isi, $menitLalu]) {
+            $terakhir = $this->kini->copy()->subMinutes($menitLalu);
+
+            Pesan::withoutGlobalScopes()->create([
+                'percakapan_id' => $p->id,
+                'user_id'       => $dari->getKey(),
+                'peran'         => 'pengguna',
+                'isi'           => $isi,
+                'created_at'    => $terakhir,
+                'updated_at'    => $terakhir,
+            ]);
+            $n++;
+        }
+
+        /* Daftar percakapan diurutkan menurut kolom ini, bukan menurut
+           pesan terakhirnya. Membiarkannya kosong menaruh percakapan
+           yang baru saja ramai di dasar daftar. */
+        $p->forceFill(['pesan_terakhir_at' => $terakhir])->saveQuietly();
+
+        return $n;
+    }
+
+    /* ─────────── catatan belajar ─────────── */
+
+    private function catatan(): int
+    {
+        if (!$this->pengaju) return 0;
+
+        $n = 0;
+
+        $modul = Module::withoutGlobalScopes()->whereIn('course_id',
+            Course::withoutGlobalScopes()->where('demo_company_id', $this->c->id)->select('id')
+        )->orderBy('order_index')->take(2)->get();
+
+        foreach ($modul as $i => $m) {
+            $this->baru(Note::class, [
+                'user_id'   => $this->pengaju->getKey(),
+                'module_id' => $m->id,
+                'content'   => [
+                    'Bagian pengendalian bahaya perlu dibaca ulang sebelum ujian.',
+                    'Urutan pemakaian APD: helm, kacamata, rompi, sepatu.',
+                ][$i],
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /* ─────────── konservasi minerba ─────────── */
+
+    /**
+     * Recovery, kehilangan, dan dilusi per bulan.
+     *
+     * Tiga angka yang saling mengunci: recovery yang naik sementara
+     * kehilangan ikut naik adalah tanda hitungannya keliru, dan itu
+     * hanya terlihat bila ketiganya ada. Satu bulan sengaja berada di
+     * bawah target supaya kolom selisihnya tidak selalu positif.
+     */
+    private function konservasi(): int
+    {
+        $n = 0;
+
+        foreach ([5, 4, 3, 2, 1, 0] as $i => $mundur) {
+            $bulan  = $this->kini->copy()->subMonths($mundur);
+            $target = 82_000;
+
+            /* Bulan keempat turun karena hujan — bulan yang seluruhnya
+               memenuhi target tidak memperlihatkan apakah peringatannya
+               menyala. */
+            $aktual = $i === 3 ? 61_400 : $target + ($i % 2 ? 1_800 : -900);
+            $digali = (int) round($aktual / 0.93);
+
+            $this->baru(MinerbaConservationRecord::class, [
+                'periode'             => $bulan->format('Y-m'),
+                'lokasi'              => 'Pit Utara',
+                'komoditas'           => 'Batubara',
+                'satuan'              => 'ton',
+                'target_produksi'     => $target,
+                'produksi_aktual'     => $aktual,
+                'material_digali'     => $digali,
+                'recovery_percent'    => round($aktual / $digali * 100, 2),
+                'kehilangan_material' => $digali - $aktual,
+                'dilusi'              => round(4.2 + ($i % 3) * 0.6, 2),
+                'stok_akhir'          => 12_500 + $i * 900,
+                'mineral_ikutan'      => 'Tidak ada mineral ikutan bernilai ekonomis.',
+                'catatan'             => $i === 3
+                    ? 'Produksi turun; curah hujan tinggi sepanjang bulan.' : null,
+                'user_id'             => $this->pengaju?->getKey(),
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /* ─────────── tindak lanjut lintas modul ─────────── */
+
+    /**
+     * Papan tindak lanjut yang menyatukan temuan dari banyak modul.
+     *
+     * Justru inilah yang paling perlu berisi: halaman ini ada supaya
+     * temuan tidak berhenti di modulnya masing-masing. Papan kosong
+     * terbaca sebagai "tidak ada yang tertunda", yang merupakan
+     * kesimpulan paling berbahaya yang dapat diambil dari layar kosong.
+     */
+    private function tindakLanjut(): int
+    {
+        $n = 0;
+
+        $daftar = [
+            ['bahaya',    'HZ-001', 'Perbaiki tanggul jalan hauling KM 4',
+             'Rekayasa', 'Tinggi', 'berjalan',  7, null],
+            ['inspeksi',  'INS-003', 'Bersihkan saluran drainase Pit Selatan',
+             'Perawatan', 'Sedang', 'terbuka',  -3, null],
+            ['ko',        'KO-PER-002', 'Ganti pemutus arus utama genset',
+             'Perbaikan', 'Tinggi', 'berjalan', 14, null],
+            ['smkp',      'IV.2.1', 'Lengkapi rekaman inspeksi jalan angkut',
+             'Administratif', 'Sedang', 'terbuka', -8, null],
+            ['lingkungan','LK-002', 'Tambah titik pantau kualitas udara di camp',
+             'Pemantauan', 'Rendah', 'selesai',  -20, -14],
+            ['air',       'AIR-001', 'Perbaiki pompa sump 2 yang mati',
+             'Perbaikan', 'Tinggi', 'selesai',  -30, -26],
+        ];
+
+        foreach ($daftar as [$modul, $pemicu, $judul, $kategori, $prioritas, $status, $target, $selesai]) {
+            $this->baru(TindakLanjut::class, [
+                'user_id'          => $this->pengaju?->getKey(),
+                'modul'            => $modul,
+                'kode_pemicu'      => $pemicu,
+                'judul'            => $judul,
+                'kategori'         => $kategori,
+                'prioritas'        => $prioritas,
+                'status'           => $status,
+                'penanggung_jawab' => $this->peninjau?->name ?? 'Kepala Teknik Tambang',
+                'target_selesai'   => $this->kini->copy()->addDays($target)->toDateString(),
+                'selesai_pada'     => $selesai === null
+                    ? null : $this->kini->copy()->addDays($selesai)->toDateString(),
+                'uraian'           => 'Tindak lanjut contoh; asalnya disebut pada kolom modul dan pemicu.',
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /* ─────────── penanda tangan laporan ─────────── */
+
+    /**
+     * Nama dan jabatan yang tercetak di kaki laporan.
+     *
+     * Tanpa ini setiap lembar keluar dengan kolom tanda tangan tanpa
+     * nama di bawahnya — dan lembar semacam itu ditolak sebagai dokumen
+     * terkendali, bukan sekadar terlihat belum jadi.
+     */
+    private function penandaTangan(): int
+    {
+        $n = 0;
+
+        foreach ([
+            ['Kepala Teknik Tambang',  true],
+            ['Manajer OHSE',           true],
+            ['Pengawas Operasional',   true],
+            ['Kepala Teknik Tambang (pejabat lama)', false],
+        ] as $i => [$jabatan, $aktif]) {
+            $this->baru(Signatory::class, [
+                'name'      => [$this->peninjau?->name ?? 'Ir. Bambang Susilo',
+                                'Dewi Anggraini',
+                                $this->pengaju?->name ?? 'Agus Setiawan',
+                                'Hendra Kusuma'][$i],
+                'title'     => $jabatan,
+                'signature' => null,
+                'is_active' => $aktif,
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /* ─────────── peta tambang ─────────── */
+
+    /**
+     * Lapisan peta sederhana, cukup untuk membuktikan peta menggambar.
+     *
+     * Geometrinya sengaja kecil dan bulat: yang diuji adalah apakah
+     * lapisannya terbaca, terwarnai, dan dapat dinyalakan-matikan —
+     * bukan ketelitian koordinatnya.
+     */
+    private function peta(): int
+    {
+        $n = 0;
+
+        $kotak = fn (float $x, float $y, float $s) => json_encode([
+            'type' => 'FeatureCollection',
+            'features' => [[
+                'type' => 'Feature',
+                'properties' => new \stdClass,
+                'geometry' => [
+                    'type' => 'Polygon',
+                    'coordinates' => [[
+                        [$x, $y], [$x + $s, $y], [$x + $s, $y + $s], [$x, $y + $s], [$x, $y],
+                    ]],
+                ],
+            ]],
+        ]);
+
+        foreach ([
+            ['Batas Pit Utara',      'pit',      '#B45309', 0.000, 0.000, 0.010],
+            ['Disposal Barat',       'disposal', '#4D7C0F', 0.014, 0.002, 0.008],
+            ['Kolam Pengendap 3',    'sump',     '#0E7490', 0.004, 0.014, 0.004],
+            ['Jalan Hauling KM 0–6', 'jalan',    '#9333EA', 0.000, 0.020, 0.006],
+        ] as [$nama, $tipe, $warna, $x, $y, $s]) {
+            $this->baru(MineMapLayer::class, [
+                'user_id'        => $this->pengaju?->getKey(),
+                'nama'           => $nama,
+                'tipe'           => $tipe,
+                'geojson'        => $kotak($x, $y, $s),
+                'warna'          => $warna,
+                'status'         => 'aktif',
+                'catatan'        => 'Lapisan contoh; koordinatnya bukan koordinat sungguhan.',
+                'tanggal_survey' => $this->kini->copy()->subDays(21)->toDateString(),
+                'sumber_survey'  => 'Survey topografi bulanan',
+            ]);
+            $n++;
+        }
+
+        return $n;
     }
 
     /* ─────────── operasi ─────────── */
@@ -792,6 +1246,14 @@ final class DataContoh
            antreannya panjang — dan justru itu yang harus TIDAK ikut
            memperbaiki match factor-nya. */
         foreach ([['RG-CTH-01', 4, 2], ['RG-CTH-02', 9, 9]] as [$kode, $jumlah, $antre]) {
+            /* Ritase adalah CACAHAN — berapa kali truk bolak-balik —
+               jadi bulat, dan tonasenya diturunkan dari ritase yang
+               sudah dibulatkan itu. Menghitung tonase dari pecahannya
+               menghasilkan dua angka yang tidak dapat dicocokkan pada
+               laporan yang sama. PostgreSQL menolak 193.5 pada kolom
+               integer; SQLite menerimanya diam-diam. */
+            $ritase = (int) round(86 * $jumlah / 4);
+
             $r = $this->baru(AngkutRegu::class, [
                 'user_id' => $this->pengaju?->getKey(), 'alat_muat_id' => $ex->id,
                 'kode' => $kode, 'tanggal' => $this->kini->copy()->subDays(3)->toDateString(),
@@ -799,8 +1261,8 @@ final class DataContoh
                 'material' => 'overburden', 'jumlah_alat_muat' => 1, 'jumlah_truk' => $jumlah,
                 'jarak_km' => 3.4, 'waktu_muat_menit' => 4, 'waktu_angkut_menit' => 8,
                 'waktu_tumpah_menit' => 2, 'waktu_kembali_menit' => 6,
-                'waktu_antre_menit' => $antre, 'ritase' => 86 * $jumlah / 4,
-                'tonase' => round(86 * $jumlah / 4 * 89), 'jam_kerja' => 9, 'jam_delay' => 1,
+                'waktu_antre_menit' => $antre, 'ritase' => $ritase,
+                'tonase' => $ritase * 89, 'jam_kerja' => 9, 'jam_delay' => 1,
                 'batas_kecepatan_kmh' => 40,
             ]);
             $this->setujui($r);
@@ -1043,7 +1505,7 @@ final class DataContoh
                 ?: strtoupper(Nomor::jenis($jenis)).'-'.str_pad((string) $urut[$jenis], 3, '0', STR_PAD_LEFT);
             $terbit = $this->kini->copy()->subMonths(6 + $rev);
 
-            $this->baru(Document::class, [
+            $d = $this->baru(Document::class, [
                 'kode'            => $kode,
                 'judul'           => $judul,
                 'jenis'           => $jenis,
@@ -1066,6 +1528,47 @@ final class DataContoh
                 'disetujui_oleh'  => $status === 'berlaku' ? ($this->peninjau?->name) : null,
             ]);
             $n++;
+
+            /* ── riwayat revisi ──
+
+               Dokumen revisi 3 yang riwayatnya kosong tidak dapat
+               dipakai membuktikan apa pun kepada auditor: yang
+               ditanyakan adalah APA yang berubah pada tiap revisi, dan
+               kolom angka saja tidak menjawabnya. Riwayatnya dibuat
+               mundur dari revisi berjalan sampai revisi 0. */
+            for ($r = $rev; $r >= 0; $r--) {
+                $this->baru(DocumentRevision::class, [
+                    'document_id'         => $d->id,
+                    'revisi'              => $r,
+                    'ringkasan_perubahan' => $r === 0
+                        ? 'Terbitan pertama.'
+                        : 'Penyesuaian isi mengikuti hasil tinjauan berkala.',
+                    'tanggal'             => $terbit->copy()->subMonths(($rev - $r) * 8)->toDateString(),
+                    'oleh'                => $this->peninjau?->name ?? 'Pengendali Dokumen',
+                ]);
+                $n++;
+            }
+
+            /* ── kaitan ke klausul standar ──
+
+               Daftar induk yang tidak menyebut klausul memaksa auditor
+               memetakannya sendiri, dan pemetaan yang dikerjakan
+               auditor adalah pemetaan yang tidak pernah sama dua kali. */
+            foreach ([
+                'Kebijakan'       => [['SMKP', 'I.1'], ['ISO 45001', '5.2']],
+                'Manual'          => [['SMKP', 'II.1']],
+                'Prosedur'        => [['SMKP', 'III.2'], ['ISO 45001', '8.1']],
+                'Instruksi Kerja' => [['SMKP', 'III.2']],
+                'Formulir'        => [['SMKP', 'IV.2']],
+                'Rekaman'         => [['SMKP', 'VI.1']],
+            ][$jenis] ?? [] as [$standar, $klausul]) {
+                $this->baru(DocumentIso::class, [
+                    'document_id' => $d->id,
+                    'standar'     => $standar,
+                    'klausul'     => $klausul,
+                ]);
+                $n++;
+            }
         }
 
         return $n;
@@ -1135,18 +1638,70 @@ final class DataContoh
     /* ─────────── inspeksi ─────────── */
 
     /**
-     * Inspeksi tanpa template.
+     * Inspeksi lengkap dengan template, butir, dan pemeriksanya.
      *
-     * `template_id` sengaja dibiarkan kosong: tabel template TIDAK
-     * punya kolom perusahaan, jadi ia milik bersama seluruh pemasangan.
-     * Membuat template dari sini berarti membuat baris yang tidak dapat
-     * dibuang oleh penghapus data contoh — penghapus itu bekerja
-     * dengan menyebut company_id, dan baris tanpa perusahaan akan
-     * tertinggal menumpuk setiap kali tombolnya ditekan.
+     * Template TIDAK punya company_id — ia pustaka bersama — dan
+     * karena itu ditandai `demo_company_id` supaya penghapus data
+     * contoh tetap dapat menemukannya kembali tanpa menyentuh milik
+     * perusahaan contoh yang lain.
+     *
+     * Butirnya diisi, bukan dibiarkan kosong. Inspeksi tanpa butir
+     * tampil sebagai lembar yang sudah selesai dengan nol temuan —
+     * bentuk yang tidak dapat dibedakan dari inspeksi yang memang
+     * bersih, dan yang membuat seluruh rekapitulasi temuan menjadi nol
+     * tanpa ada yang salah di layar.
      */
     private function inspeksi(): int
     {
         $n = 0;
+
+        /* ── template dan butirnya ── */
+
+        $template = [];
+
+        $pustaka = [
+            ['Inspeksi Harian Jalan Angkut', 'Harian', 'Jalan Tambang', [
+                ['Badan jalan', 'Lebar jalan minimal 3,5 kali lebar alat terbesar', 'Kepmen 1827 K/2018', 'Tinggi'],
+                ['Badan jalan', 'Superelevasi tikungan dan kemiringan memanjang', 'Kepmen 1827 K/2018', 'Sedang'],
+                ['Tanggul',     'Tanggul pengaman setinggi setengah diameter ban terbesar', 'Kepmen 1827 K/2018', 'Tinggi'],
+                ['Drainase',    'Saluran samping tidak tersumbat dan mengalir', null, 'Sedang'],
+                ['Rambu',       'Rambu batas kecepatan dan peringatan terbaca', null, 'Rendah'],
+            ]],
+            ['Inspeksi Bulanan Gudang Bahan Peledak', 'Bulanan', 'Gudang Handak', [
+                ['Keamanan',   'Pagar, gembok, dan penerangan keliling berfungsi', 'Kepmen 1827 K/2018', 'Tinggi'],
+                ['Penyimpanan','Detonator dan bahan peledak terpisah sesuai jarak aman', 'Kepmen 1827 K/2018', 'Tinggi'],
+                ['Administrasi','Kartu persediaan cocok dengan hitungan fisik', null, 'Sedang'],
+                ['Kebakaran',  'APAR bertekanan cukup dan belum kedaluwarsa', null, 'Tinggi'],
+            ]],
+        ];
+
+        foreach ($pustaka as [$nama, $jenis, $kategori, $butir]) {
+            $t = InspectionTemplate::withoutGlobalScopes()->create([
+                'demo_company_id' => $this->c->id,
+                'nama'      => $nama,
+                'jenis'     => $jenis,
+                'kategori'  => $kategori,
+                'deskripsi' => 'Template contoh; butirnya mengikuti acuan yang disebut di tiap baris.',
+                'is_active' => true,
+            ]);
+            $n++;
+
+            foreach ($butir as $j => [$kelompok, $uraian, $acuan, $risiko]) {
+                InspectionTemplateItem::withoutGlobalScopes()->create([
+                    'template_id'    => $t->id,
+                    'kelompok'       => $kelompok,
+                    'uraian'         => $uraian,
+                    'acuan'          => $acuan,
+                    'risiko_default' => $risiko,
+                    'order_index'    => $j + 1,
+                ]);
+                $n++;
+            }
+
+            $template[$jenis] = $t;
+        }
+
+        /* ── pelaksanaannya ── */
 
         $daftar = [
             ['Harian',   'Inspeksi Jalan Angkut Pagi',     'Jalan Hauling KM 0–6', 'Selesai'],
@@ -1156,11 +1711,18 @@ final class DataContoh
             ['Khusus',   'Inspeksi Pasca Hujan Deras',     'Disposal Selatan',     'Selesai'],
         ];
 
+        /* Tidak semua butir "Sesuai". Rekapitulasi temuan yang seluruh
+           barisnya sesuai tidak pernah membuktikan penghitungnya
+           bekerja — sama saja dengan tidak menghitung apa pun. */
+        $kondisi = ['Sesuai', 'Sesuai', 'Tidak Sesuai', 'Sesuai', 'N/A'];
+
         foreach ($daftar as $i => [$jenis, $judul, $lokasi, $status]) {
-            $this->baru(Inspection::class, [
+            $t = $template[$jenis] ?? null;
+
+            $ins = $this->baru(Inspection::class, [
                 'kode'        => Nomor::susun('Formulir', $this->c, 200 + $i + 1)
                     ?: 'INS-'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT),
-                'template_id' => null,
+                'template_id' => $t?->id,
                 'user_id'     => $this->pengaju?->id,
                 'judul'       => $judul,
                 'jenis'       => $jenis,
@@ -1171,6 +1733,58 @@ final class DataContoh
                 'catatan'     => 'Inspeksi contoh untuk memeriksa tampilan dan rekapitulasi.',
             ]);
             $n++;
+
+            /* Butir diambil dari template bila ada; bila inspeksinya
+               memang tanpa template, butirnya tetap ditulis sendiri —
+               inspeksi kosong bukan keadaan yang perlu dicontohkan. */
+            $butir = $t
+                ? InspectionTemplateItem::withoutGlobalScopes()
+                    ->where('template_id', $t->id)->orderBy('order_index')->get()
+                    ->map(fn ($b) => [$b->id, $b->kelompok, $b->uraian, $b->acuan, $b->risiko_default])
+                    ->all()
+                : [
+                    [null, 'Umum', 'Kondisi area sesudah hujan deras', null, 'Sedang'],
+                    [null, 'Umum', 'Genangan pada jalan akses',        null, 'Sedang'],
+                    [null, 'Lereng', 'Retakan baru pada muka lereng',  null, 'Tinggi'],
+                ];
+
+            foreach ($butir as $j => [$idButir, $kelompok, $uraian, $acuan, $risiko]) {
+                $k = $kondisi[$j % count($kondisi)];
+
+                InspectionItem::withoutGlobalScopes()->create([
+                    'inspection_id'    => $ins->id,
+                    'template_item_id' => $idButir,
+                    'kelompok'         => $kelompok,
+                    'uraian'           => $uraian,
+                    'acuan'            => $acuan,
+                    'kondisi'          => $k,
+                    'risiko'           => $risiko,
+                    'temuan'  => $k === 'Tidak Sesuai' ? 'Tidak memenuhi acuan saat diperiksa.' : null,
+                    'tindakan'=> $k === 'Tidak Sesuai' ? 'Diperbaiki dan diperiksa ulang pengawas area.' : null,
+                    'order_index'      => $j + 1,
+                ]);
+                $n++;
+            }
+
+            /* Dua pemeriksa, bukan satu: lembar inspeksi resmi
+               ditandatangani pelaksana DAN pengawas, dan halaman
+               cetaknya menyediakan dua kolom tanda tangan yang akan
+               kosong sebelah bila hanya satu yang tercatat. */
+            foreach ([
+                [$this->pengaju,  'Pengawas Operasional', 'Pelaksana'],
+                [$this->peninjau, 'Kepala Teknik Tambang', 'Pemeriksa'],
+            ] as [$orang, $jabatan, $peran]) {
+                if (!$orang) continue;
+
+                InspectionInspector::withoutGlobalScopes()->create([
+                    'inspection_id' => $ins->id,
+                    'user_id'       => $orang->getKey(),
+                    'nama'          => $orang->name,
+                    'jabatan'       => $jabatan,
+                    'peran'         => $peran,
+                ]);
+                $n++;
+            }
         }
 
         return $n;
@@ -1181,6 +1795,9 @@ final class DataContoh
     private function ko(): int
     {
         $n = 0;
+
+        /** @var array<string,KoObject> menurut kodenya, dipakai anak-anaknya */
+        $objek = [];
 
         $daftar = [
             ['KO-SAR-001', 'Jembatan Timbang 60 Ton',    'Sarana',    'Tinggi', 'Aktif',     2],
@@ -1194,7 +1811,7 @@ final class DataContoh
         foreach ($daftar as $i => [$kode, $nama, $kategori, $kritis, $operasi, $interval]) {
             $sertifikasi = $this->kini->copy()->subMonths(6 + $i);
 
-            $this->baru(KoObject::class, [
+            $o = $this->baru(KoObject::class, [
                 'kode'            => $kode,
                 'nama'            => $nama,
                 'kategori'        => $kategori,
@@ -1209,6 +1826,264 @@ final class DataContoh
                 'pm_berikutnya'   => $this->kini->copy()->addMonth()->toDateString(),
             ]);
             $n++;
+
+            $objek[$kode] = $o;
+        }
+
+        return $n + $this->koRinci($objek);
+    }
+
+    /**
+     * Isi modul KO selain registrinya: tenaga teknik, pengaman,
+     * pemeriksaan, tindak lanjut, kajian, dan perintah kerja.
+     *
+     * Tanpa ini registrinya berdiri sendiri, dan indeks KO — rerata
+     * lima sub-elemen — dihitung dari satu sub-elemen saja. Angka yang
+     * keluar tetap berupa persentase yang tampak masuk akal, dan itulah
+     * yang membuatnya berbahaya: tidak ada yang di layar mengatakan
+     * empat sub-elemen lainnya tidak punya data sama sekali.
+     *
+     * @param  array<string,KoObject>  $objek  menurut kodenya
+     */
+    private function koRinci(array $objek): int
+    {
+        $n = 0;
+
+        /* ── tenaga teknik ── */
+
+        $tenaga = [];
+
+        foreach ([
+            ['Tenaga Teknik Pertambangan', 'Operator Crane',     'Lisensi K3 Pesawat Angkat', 8],
+            ['Pengawas Operasional',       'Pengawas Workshop',  'POP',                       -2],
+            ['Juru Ukur',                  'Surveyor Tambang',   'Sertifikat Juru Ukur',      20],
+        ] as $i => [$jabatanSertifikasi, $jabatan, $sertifikasi, $bulan]) {
+            /* Satu sudah lewat masa berlakunya. Daftar yang seluruhnya
+               masih berlaku tidak pernah menyalakan peringatannya, dan
+               peringatan yang tidak pernah menyala tidak dapat
+               dibedakan dari peringatan yang rusak. */
+            $tenaga[] = $this->baru(KoPersonnel::class, [
+                'nama'           => ['Rahmat Hidayat', 'Sri Wahyuni', 'Bayu Pratama'][$i],
+                'jabatan'        => $jabatan,
+                'sertifikasi'    => $sertifikasi,
+                'no_sertifikat'  => 'SRT/'.$this->kini->year.'/'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT),
+                'tgl_kadaluarsa' => $this->kini->copy()->addMonths($bulan)->toDateString(),
+                'user_id'        => $i === 0 ? $this->pengaju?->getKey() : null,
+            ]);
+            $n++;
+        }
+
+        /* ── pengaman, pemeriksaannya, dan tindak lanjutnya ── */
+
+        $pengaman = [
+            'KO-PER-001' => [
+                ['Limit switch batas angkat', 'Trip pada 105% beban', 'Berfungsi'],
+                ['Rem sekunder hoist',        'Tahan beban statis 125%', 'Perlu Perbaikan'],
+            ],
+            'KO-PER-002' => [
+                ['Pemutus arus utama', '630 A', 'Tidak Berfungsi'],
+                ['Alarm tekanan oli',  'Trip < 1,5 bar', 'Berfungsi'],
+            ],
+            'KO-INS-001' => [
+                ['Pembumian panel workshop', 'Tahanan ≤ 5 ohm', 'Berfungsi'],
+            ],
+            'KO-SAR-002' => [
+                ['Katup penutup darurat', 'Tutup penuh ≤ 15 detik', 'Berfungsi'],
+                ['Bunding tangki',        'Tampung 110% isi tangki', 'Perlu Perbaikan'],
+            ],
+        ];
+
+        foreach ($pengaman as $kode => $daftar) {
+            $o = $objek[$kode] ?? null;
+            if (!$o) continue;
+
+            foreach ($daftar as $i => [$nama, $spek, $status]) {
+                $periksa = $this->kini->copy()->subDays(20 + $i * 9);
+
+                $p = KoSafeguard::withoutGlobalScopes()->create([
+                    'ko_object_id' => $o->id,
+                    'nama'         => $nama,
+                    'spesifikasi'  => $spek,
+                    'status'       => $status,
+                    'tgl_periksa'  => $periksa->toDateString(),
+                    'catatan'      => 'Diperiksa bersama pemeriksaan berkala alat.',
+                ]);
+                $n++;
+
+                /* Pemeriksaan pengaman dicatat sebagai baris tersendiri
+                   — itulah yang dibaca sub-elemen "pengaman diperiksa",
+                   bukan kolom tgl_periksa pada pengamannya. */
+                KoInspection::withoutGlobalScopes()->create([
+                    'ko_object_id'    => $o->id,
+                    'ko_safeguard_id' => $p->id,
+                    'ko_personnel_id' => $tenaga[0]?->id,
+                    'jenis'           => 'Pengaman',
+                    'tanggal'         => $periksa->toDateString(),
+                    'hasil'           => $status,
+                    'nilai_ukur'      => $spek,
+                    'berikutnya'      => $periksa->copy()->addMonths(3)->toDateString(),
+                    'catatan'         => 'Pemeriksaan contoh.',
+                    'user_id'         => $this->pengaju?->getKey(),
+                ]);
+                $n++;
+
+                if ($status === 'Berfungsi') continue;
+
+                /* Pengaman yang tidak berfungsi WAJIB punya tindak
+                   lanjut. Temuan tanpa tindak lanjut adalah persis yang
+                   dicari auditor, dan data contoh yang tidak
+                   memperlihatkan pasangan itu tidak menguji alurnya. */
+                KoAction::withoutGlobalScopes()->create([
+                    'ko_object_id'    => $o->id,
+                    'ko_safeguard_id' => $p->id,
+                    'sumber'          => 'Pemeriksaan pengaman',
+                    'uraian'          => $nama.' tidak memenuhi spesifikasi saat diperiksa.',
+                    'prioritas'       => $status === 'Tidak Berfungsi' ? 'Tinggi' : 'Sedang',
+                    'pic_user_id'     => $this->peninjau?->getKey(),
+                    'pic_nama'        => $this->peninjau?->name ?? 'Kepala Workshop',
+                    'target_tgl'      => $periksa->copy()->addDays(14)->toDateString(),
+                    'status'          => $status === 'Tidak Berfungsi' ? 'Berjalan' : 'Selesai',
+                    'tgl_selesai'     => $status === 'Tidak Berfungsi'
+                        ? null : $periksa->copy()->addDays(9)->toDateString(),
+                    'tindakan'        => $status === 'Tidak Berfungsi'
+                        ? 'Suku cadang dipesan; alat distandbykan sampai perbaikan selesai.'
+                        : 'Disetel ulang dan diuji beban.',
+                ]);
+                $n++;
+            }
+        }
+
+        /* ── pemeriksaan berkala alatnya sendiri ── */
+
+        foreach ($objek as $o) {
+            $tgl = $this->kini->copy()->subMonths(2);
+
+            KoInspection::withoutGlobalScopes()->create([
+                'ko_object_id'    => $o->id,
+                'ko_personnel_id' => $tenaga[1]?->id,
+                'jenis'           => 'Berkala',
+                'tanggal'         => $tgl->toDateString(),
+                'hasil'           => $o->status_operasi === 'Breakdown' ? 'Tidak Layak' : 'Layak',
+                'berikutnya'      => $tgl->copy()->addMonths(3)->toDateString(),
+                'catatan'         => 'Pemeriksaan berkala contoh.',
+                'user_id'         => $this->pengaju?->getKey(),
+            ]);
+            $n++;
+        }
+
+        /* ── kajian teknis ── */
+
+        foreach ([
+            ['KO-PRA-001', 'Kajian Teknis Tanggul Kolam Pengendap 3', 'Perubahan tinggi muka air', 'Dilaporkan'],
+            ['KO-PER-002', 'Kajian Teknis Genset 500 kVA',            'Kerusakan berulang',        'Berjalan'],
+        ] as $i => [$kode, $judul, $pemicu, $status]) {
+            $o = $objek[$kode] ?? null;
+            if (!$o) continue;
+
+            $tgl = $this->kini->copy()->subDays(30 + $i * 12);
+
+            KoReview::withoutGlobalScopes()->create([
+                'ko_object_id'    => $o->id,
+                'judul'           => $judul,
+                'pemicu'          => $pemicu,
+                'tanggal'         => $tgl->toDateString(),
+                'oleh'            => $this->peninjau?->name ?? 'Tenaga Teknik Bersertifikat',
+                'ko_personnel_id' => $tenaga[2]?->id,
+                'status'          => $status,
+                'tgl_lapor'       => $status === 'Dilaporkan'
+                    ? $tgl->copy()->addDays(10)->toDateString() : null,
+                'ringkasan'       => 'Kajian contoh; kesimpulannya menjadi dasar keputusan operasi.',
+            ]);
+            $n++;
+        }
+
+        return $n + $this->perintahKerja($objek);
+    }
+
+    /**
+     * Perintah kerja perawatan, terhubung ke registri alat KO.
+     *
+     * Halaman perawatan menghitung ketaatan PM sebagai perbandingan
+     * perintah kerja preventif yang selesai terhadap yang terbit. Tanpa
+     * satu pun perintah kerja, pembaginya nol — dan halaman itu dahulu
+     * menampilkannya sebagai 100% pada pemasangan yang belum punya satu
+     * alat pun.
+     *
+     * @param  array<string,KoObject>  $objek
+     */
+    private function perintahKerja(array $objek): int
+    {
+        $n = 0;
+
+        $daftar = [
+            ['KO-PER-002', 'darurat',   'kritis', 'selesai',    'Genset mati mendadak saat beban puncak',
+             'Filter solar tersumbat dan sensor tekanan oli lemah', 26, 20, 4_850_000.0,
+             [['Filter solar', 2, 'pcs', 385_000.0], ['Sensor tekanan oli', 1, 'pcs', 1_240_000.0]]],
+
+            ['KO-PER-001', 'korektif',  'tinggi', 'dikerjakan', 'Rem sekunder hoist selip saat uji beban',
+             'Kampas rem aus melewati batas', 12, null, 2_100_000.0,
+             [['Kampas rem hoist', 1, 'set', 1_850_000.0]]],
+
+            ['KO-SAR-001', 'preventif', 'sedang', 'selesai',    'Kalibrasi berkala jembatan timbang',
+             null, 34, 33, 3_500_000.0, []],
+
+            ['KO-INS-001', 'preventif', 'sedang', 'selesai',    'Pengukuran tahanan pembumian panel workshop',
+             null, 21, 21, 750_000.0, []],
+
+            ['KO-SAR-002', 'preventif', 'tinggi', 'dibuka',     'Uji katup penutup darurat tangki bahan bakar',
+             null, 2, null, 0.0, []],
+
+            ['KO-PRA-001', 'prediktif', 'tinggi', 'dikerjakan', 'Pembacaan piezometer tanggul naik tiga minggu berturut',
+             'Rembesan pada kaki tanggul sisi timur', 9, null, 0.0, []],
+        ];
+
+        foreach ($daftar as $i => [
+            $kode, $jenis, $prioritas, $status, $gejala, $penyebab,
+            $lapor, $tutup, $biaya, $suku,
+        ]) {
+            $o = $objek[$kode] ?? null;
+
+            $dilaporkan = $this->kini->copy()->subDays($lapor);
+
+            $wo = $this->baru(WorkOrder::class, [
+                'user_id'         => $this->pengaju?->getKey(),
+                'ko_object_id'    => $o?->id,
+                'nomor'           => Nomor::susun('Formulir', $this->c, 300 + $i + 1)
+                    ?: 'WO-'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT),
+                'jenis'           => $jenis,
+                'prioritas'       => $prioritas,
+                'status'          => $status,
+                'gejala'          => $gejala,
+                'penyebab'        => $penyebab,
+                'tindakan'        => $status === 'selesai'
+                    ? 'Diperbaiki, diuji fungsi, dan dikembalikan ke operasi.'
+                    : ($status === 'dikerjakan' ? 'Perbaikan berjalan; alat distandbykan.' : null),
+                'dilaporkan_pada' => $dilaporkan,
+                'mulai_pada'      => $status === 'dibuka' ? null : $dilaporkan->copy()->addHours(6),
+                'selesai_pada'    => $tutup === null ? null : $this->kini->copy()->subDays($tutup),
+                'hm_saat_rusak'   => 12_400 + $i * 615,
+                'biaya'           => $biaya,
+            ]);
+            $n++;
+
+            if ($status === 'selesai') {
+                $wo->forceFill([
+                    'ditutup_oleh'       => $this->peninjau?->getKey() ?? $this->pengaju?->getKey(),
+                    'diverifikasi_oleh'  => $this->peninjau?->getKey(),
+                    'diverifikasi_pada'  => $this->kini->copy()->subDays(max(0, (int) $tutup - 1)),
+                ])->saveQuietly();
+            }
+
+            foreach ($suku as [$nama, $jumlah, $satuan, $harga]) {
+                WorkOrderPart::withoutGlobalScopes()->create([
+                    'work_order_id' => $wo->id,
+                    'nama'          => $nama,
+                    'jumlah'        => $jumlah,
+                    'satuan'        => $satuan,
+                    'harga_satuan'  => $harga,
+                ]);
+                $n++;
+            }
         }
 
         return $n;
@@ -1235,8 +2110,11 @@ final class DataContoh
 
         $kategoriSah = array_keys(Energi::KATEGORI);
 
+        /** @var array<string,EnergyEquipment> menurut kodenya */
+        $alat = [];
+
         foreach ($daftar as [$kode, $nama, $merek, $kategori, $hp, $payload]) {
-            $this->baru(EnergyEquipment::class, [
+            $e = $this->baru(EnergyEquipment::class, [
                 'kode'        => $kode,
                 'nama'        => $nama,
                 'merek'       => $merek,
@@ -1252,6 +2130,188 @@ final class DataContoh
                 'daya_hp'     => $hp,
                 'payload_ton' => $payload,
                 'aktif'       => true,
+            ]);
+            $n++;
+
+            $alat[$kode] = $e;
+        }
+
+        return $n + $this->energiCatatan($alat);
+    }
+
+    /**
+     * Pemakaian energi harian: solar per alat, listrik per area,
+     * produksi pembaginya, rekonsiliasi tangki, garis dasar, dan
+     * peluang penghematan.
+     *
+     * Registri alat saja tidak cukup. Intensitas energi adalah GJ per
+     * ton, dan tanpa satu pun catatan pemakaian maupun produksi, kedua
+     * sisi pecahannya nol — halaman rekapnya menggambar grafik kosong
+     * yang tidak dapat dibedakan dari tambang yang sedang berhenti.
+     *
+     * @param  array<string,EnergyEquipment>  $alat  menurut kodenya
+     */
+    private function energiCatatan(array $alat): int
+    {
+        $n    = 0;
+        $hari = 14;
+
+        /* ── produksi harian ── */
+
+        for ($i = $hari; $i >= 1; $i--) {
+            $tgl = $this->kini->copy()->subDays($i);
+
+            /* Akhir pekan lebih rendah, dan satu hari nyaris berhenti
+               karena hujan. Deret yang rata tidak memperlihatkan apakah
+               grafiknya benar-benar mengikuti datanya. */
+            $faktor = $tgl->isSunday() ? 0.45 : ($i === 6 ? 0.2 : 1.0);
+
+            $this->baru(EnergyProduction::class, [
+                'tanggal' => $tgl->toDateString(),
+                'ton'     => round(8_400 * $faktor),
+                'bcm'     => round(6_100 * $faktor),
+            ]);
+            $n++;
+        }
+
+        /* ── solar per alat ── */
+
+        $hm = ['EQ-HD-001' => 18_420, 'EQ-HD-002' => 17_950,
+               'EQ-EX-001' => 22_310, 'EQ-DZ-001' => 15_880, 'EQ-GR-001' => 9_640];
+
+        /* Liter per jam yang wajar menurut kelasnya; satu truk sengaja
+           lebih boros supaya perbandingan antar alat punya pemenang dan
+           pecundang. */
+        $lph = ['EQ-HD-001' => 38.0, 'EQ-HD-002' => 46.5,
+                'EQ-EX-001' => 62.0, 'EQ-DZ-001' => 41.0, 'EQ-GR-001' => 19.5];
+
+        foreach ($alat as $kode => $e) {
+            for ($i = $hari; $i >= 1; $i--) {
+                $tgl = $this->kini->copy()->subDays($i);
+                if ($tgl->isSunday()) continue;
+
+                $jam  = $i === 6 ? 3.0 : 9.5;
+                $idle = round($jam * ($kode === 'EQ-HD-002' ? 0.22 : 0.12), 1);
+
+                $hm[$kode] += $jam;
+
+                $this->baru(EnergyFuelLog::class, [
+                    'equipment_id' => $e->id,
+                    'tanggal'      => $tgl->toDateString(),
+                    'hm'           => round($hm[$kode], 1),
+                    'liter'        => round($jam * $lph[$kode], 1),
+                    'idle_jam'     => $idle,
+                    /* Nol, bukan null: kolomnya NOT NULL berdefault 0.
+                       Alat yang memang tidak mengangkut apa pun tercatat
+                       0 ton — itu keadaan yang berbeda dari "tidak
+                       diketahui", dan keduanya tidak boleh tertukar pada
+                       pembagi intensitas energi. */
+                    'jarak_km'     => str_starts_with($kode, 'EQ-HD') ? round($jam * 7.4, 1) : 0,
+                    'ton'          => str_starts_with($kode, 'EQ-HD') ? round($jam * 96) : 0,
+                    'bcm'          => $kode === 'EQ-EX-001' ? round($jam * 210) : 0,
+                    'cycle_menit'  => $kode === 'EQ-EX-001' ? 0.6 : null,
+                ]);
+                $n++;
+            }
+        }
+
+        /* ── listrik per area ── */
+
+        foreach ([
+            /* Solar genset 0 untuk yang bersumber PLN — kolomnya NOT
+               NULL, dan 0 memang benar: area itu tidak membakar solar. */
+            ['camp',     'pln',    2_450, 168.0, 24.0, 0.0],
+            ['workshop', 'pln',    1_180,  96.0, 12.0, 0.0],
+            ['office',   'pln',      420,  38.0, 10.0, 0.0],
+            ['crusher',  'pln',    9_800, 720.0, 18.0, 0.0],
+            ['pump',     'genset', 3_150, 240.0, 20.0, 780.0],
+        ] as $j => [$area, $sumber, $kwh, $puncak, $jam, $liter]) {
+            for ($i = 3; $i >= 1; $i--) {
+                $this->baru(EnergyPowerLog::class, [
+                    'tanggal'       => $this->kini->copy()->subDays($i)->toDateString(),
+                    'area'          => $area,
+                    'sumber'        => $sumber,
+                    'kwh'           => $kwh + $j * 10 - $i * 25,
+                    'puncak_kw'     => $puncak,
+                    'jam_operasi'   => $jam,
+                    'liter_genset'  => $liter,
+                ]);
+                $n++;
+            }
+        }
+
+        /* ── energi lain ── */
+
+        foreach ([
+            ['LPG',      'kg', 240.0, 'Dapur mess karyawan'],
+            ['Oli mesin','liter', 860.0, 'Pemakaian workshop bulan berjalan'],
+        ] as [$jenis, $satuan, $jumlah, $ket]) {
+            $this->baru(EnergyOtherLog::class, [
+                'tanggal'     => $this->kini->copy()->subDays(5)->toDateString(),
+                'jenis'       => $jenis,
+                'satuan'      => $satuan,
+                'jumlah'      => $jumlah,
+                'keterangan'  => $ket,
+            ]);
+            $n++;
+        }
+
+        /* ── rekonsiliasi tangki ──
+
+           Selisih antara yang disalurkan dan yang tercatat terpakai
+           adalah satu-satunya cara kehilangan solar terlihat. Dibuat
+           TIDAK nol dengan sengaja: rekonsiliasi yang selalu pas tidak
+           membuktikan penghitungnya bekerja. */
+        $stok = 48_000.0;
+
+        for ($i = 3; $i >= 1; $i--) {
+            $salur = 12_400.0 - $i * 220;
+            $awal  = $stok;
+            $stok  = $awal - $salur + 11_000;
+
+            $this->baru(EnergyFuelRecon::class, [
+                'tanggal'           => $this->kini->copy()->subDays($i)->toDateString(),
+                'disalurkan_liter'  => $salur,
+                'stok_awal_liter'   => $awal,
+                'stok_akhir_liter'  => $stok,
+                'catatan'           => $i === 2 ? 'Selisih diperiksa; dugaan penguapan dan sisa selang.' : null,
+            ]);
+            $n++;
+        }
+
+        /* ── garis dasar dan target ── */
+
+        foreach ([[$this->kini->year - 1, 0.0246, 0.0240], [$this->kini->year, 0.0240, 0.0228]] as [$th, $dasar, $target]) {
+            $this->baru(EnergyBaseline::class, [
+                'tahun'           => $th,
+                'baseline_gj_ton' => $dasar,
+                'target_gj_ton'   => $target,
+                'catatan'         => 'Garis dasar contoh; dihitung dari pemakaian tahun sebelumnya.',
+            ]);
+            $n++;
+        }
+
+        /* ── peluang penghematan ── */
+
+        foreach ([
+            /* Penghematan yang tidak berlaku dicatat 0, bukan kosong:
+               peluang yang hanya menghemat listrik memang menghemat nol
+               liter solar, dan rekapnya menjumlahkan kedua kolomnya. */
+            ['Batasi idle truk hauling maksimal 10%',      'Pit',      'berjalan',  38_000.0,     0.0],
+            ['Ganti lampu penerangan camp ke LED',          'camp',     'disetujui',      0.0, 46_000.0],
+            ['Perbaiki penjadwalan pompa dewatering',       'pump',     'usulan',    12_500.0, 18_000.0],
+            ['Pasang meter listrik terpisah tiap area',     'workshop', 'selesai',        0.0,  9_400.0],
+        ] as $i => [$judul, $area, $status, $liter, $kwh]) {
+            $this->baru(EnergyOpportunity::class, [
+                'judul'             => $judul,
+                'area'              => $area,
+                'status'            => $status,
+                'uraian'            => 'Peluang contoh; angkanya perkiraan setahun penuh.',
+                'hemat_liter'       => $liter,
+                'hemat_kwh'         => $kwh,
+                'penanggung_jawab'  => $this->peninjau?->name ?? 'Kepala Teknik Tambang',
+                'target_selesai'    => $this->kini->copy()->addMonths(2 + $i)->toDateString(),
+                'user_id'           => $this->pengaju?->getKey(),
             ]);
             $n++;
         }
@@ -1275,7 +2335,7 @@ final class DataContoh
         foreach ([['selesai', 1], ['berjalan', 0]] as [$status, $mundur]) {
             $tahun = $this->kini->year - $mundur;
 
-            $this->baru(SmkpAudit::class, [
+            $a = $this->baru(SmkpAudit::class, [
                 'tahun'           => $tahun,
                 'judul'           => 'Audit Internal SMKP Minerba '.$tahun,
                 'status'          => $status,
@@ -1288,6 +2348,80 @@ final class DataContoh
                 'user_id'         => $this->pengaju?->id,
             ]);
             $n++;
+
+            /* ── temuan ──
+
+               Audit tanpa temuan adalah audit yang tidak dapat
+               dibedakan dari audit yang belum dikerjakan. Ketiga
+               statusnya dipakai sekaligus supaya rekap "terbuka /
+               berjalan / tertutup" punya isi di ketiga kolomnya, dan
+               satu temuan sengaja MELEWATI target tanggalnya —
+               keterlambatan yang tidak pernah muncul di data contoh
+               tidak membuktikan penghitung keterlambatannya bekerja. */
+            $temuan = [
+                ['I.1.1', 'Ketidaksesuaian Mayor',
+                 'Kebijakan keselamatan belum ditinjau ulang dalam tiga tahun terakhir.',
+                 'Tinjauan manajemen tidak dijadwalkan dalam program tahunan.',
+                 'Closed', -60, -35],
+                ['II.3.2', 'Ketidaksesuaian Minor',
+                 'Sebagian identifikasi bahaya belum memuat pengendalian yang dapat diverifikasi.',
+                 'Format IBPR lama masih dipakai di dua departemen.',
+                 'In Progress', 20, null],
+                ['IV.2.1', 'Ketidaksesuaian Minor',
+                 'Rekaman inspeksi jalan angkut tidak lengkap pada dua bulan berjalan.',
+                 'Pengawas belum mendapat pelatihan pengisian formulir baru.',
+                 'Open', -8, null],
+                ['V.1.4', 'Observasi',
+                 'Papan informasi keselamatan di simpang timbang tertutup material.',
+                 null, 'Closed', -25, -21],
+            ];
+
+            /* Tahun berjalan baru sampai tahap awal; temuannya belum
+               semuanya terbit. Audit yang belum selesai tetapi sudah
+               punya temuan lengkap adalah keadaan yang tidak mungkin. */
+            foreach (array_slice($temuan, 0, $status === 'selesai' ? 4 : 2) as $t) {
+                [$kode, $jenis, $uraian, $akar, $st, $targetHari, $selesaiHari] = $t;
+
+                $this->baru(SmkpFinding::class, [
+                    'audit_id'          => $a->id,
+                    'kode_kriteria'     => $kode,
+                    'jenis'             => $jenis,
+                    'uraian'            => $uraian,
+                    'akar_masalah'      => $akar,
+                    'tindakan'          => $st === 'Open'
+                        ? null : 'Perbaikan dijalankan dan buktinya dilampirkan.',
+                    'penanggung_jawab'  => $this->peninjau?->name ?? 'Kepala Teknik Tambang',
+                    'target_selesai'    => $this->kini->copy()->addDays($targetHari)->toDateString(),
+                    'tanggal_selesai'   => $selesaiHari === null
+                        ? null : $this->kini->copy()->addDays($selesaiHari)->toDateString(),
+                    'status'            => $st,
+                    'verifikasi'        => $st === 'Closed'
+                        ? 'Diverifikasi ketua auditor; bukti memadai.' : null,
+                ]);
+                $n++;
+            }
+
+            /* ── peserta rapat ── */
+
+            foreach ([
+                ['pembukaan', 'Kepala Teknik Tambang',   'KTT'],
+                ['pembukaan', 'Ketua Auditor Internal',  'Auditor'],
+                ['penutupan', 'Kepala Teknik Tambang',   'KTT'],
+                ['penutupan', 'Pengawas Operasional',    'Auditee'],
+            ] as $j => [$rapat, $jabatan, $peran]) {
+                if ($status !== 'selesai' && $rapat === 'penutupan') continue;
+
+                $this->baru(SmkpAttendee::class, [
+                    'audit_id'      => $a->id,
+                    'rapat'         => $rapat,
+                    'nama'          => [$this->peninjau?->name ?? 'Kepala Teknik Tambang',
+                                        $this->pengaju?->name  ?? 'Auditor Internal'][$j % 2],
+                    'jabatan'       => $jabatan,
+                    'perusahaan'    => $this->c->name,
+                    'tanda_tangan'  => null,
+                ]);
+                $n++;
+            }
         }
 
         return $n;
@@ -1446,6 +2580,9 @@ final class DataContoh
 
         $n = 0;
 
+        /** @var list<Module> dipakai mencatat penyelesaian per peserta */
+        $modulKursus = [];
+
         $kursus = Course::withoutGlobalScopes()->create([
             'title'            => 'Keselamatan Kerja Tambang Dasar',
             'description'      => 'Kursus contoh: pengenalan bahaya, APD, dan tanggap darurat.',
@@ -1482,6 +2619,8 @@ final class DataContoh
                 'order_index' => 1,
             ]);
             $n++;
+
+            $modulKursus[] = $modul;
         }
 
         $kuis = Quiz::withoutGlobalScopes()->create([
@@ -1526,6 +2665,20 @@ final class DataContoh
                 'score' => $lulus ? 100 : 67, 'passed' => $lulus,
             ]);
             $n++;
+
+            /* Kemajuan belajar dicatat per modul, bukan hanya sebagai
+               persen pada pendaftaran. Halaman belajar menandai modul
+               mana yang sudah dilewati dari sini; tanpa barisnya,
+               peserta yang kemajuannya 100% tetap melihat seluruh
+               modulnya belum tercentang. */
+            $selesai = $lulus ? $modulKursus : array_slice($modulKursus, 0, 2);
+
+            foreach ($selesai as $m) {
+                ModuleCompletion::withoutGlobalScopes()->create([
+                    'user_id' => $orang->id, 'module_id' => $m->id,
+                ]);
+                $n++;
+            }
 
             if (!$lulus) continue;
 

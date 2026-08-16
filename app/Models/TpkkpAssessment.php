@@ -3,14 +3,20 @@
 namespace App\Models;
 
 use App\Support\Tpkkp;
+use App\Models\Concerns\BerpemilikPerusahaan;
+use App\Models\Scopes\MilikPerusahaan;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Model;
 
+#[ScopedBy(MilikPerusahaan::class)]
 class TpkkpAssessment extends Model
 {
+    use BerpemilikPerusahaan;
+
     protected $table = 'tpkkp_assessments';
 
     protected $fillable = [
-        'tahun', 'judul', 'status',
+        'company_id', 'tahun', 'judul', 'status',
         'scores', 'roster', 'profil', 'tim', 'programs', 'jadwal', 'sampling',
     ];
 

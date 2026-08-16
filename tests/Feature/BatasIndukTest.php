@@ -159,10 +159,13 @@ class BatasIndukTest extends TestCase
             $tabel = $model->getTable();
             $kunci = $model->{$relasi}()->getForeignKeyName();
 
-            $kolom = collect(\Illuminate\Support\Facades\DB::select("PRAGMA table_info({$tabel})"))
+            /* Dibaca lewat Schema, bukan PRAGMA. PRAGMA hanya ada di
+               SQLite; uji ini karena itu dahulu meledak begitu suitenya
+               dijalankan pada penggerak yang sungguhnya dipakai server. */
+            $kolom = collect(\Illuminate\Support\Facades\Schema::getColumns($tabel))
                 ->firstWhere('name', $kunci);
 
-            if ($kolom && !$kolom->notnull) {
+            if ($kolom && ($kolom['nullable'] ?? false)) {
                 $langgar[] = "{$tabel}.{$kunci}";
             }
         }

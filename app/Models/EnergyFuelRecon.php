@@ -3,14 +3,20 @@
 namespace App\Models;
 
 use App\Support\Energi;
+use App\Models\Concerns\BerpemilikPerusahaan;
+use App\Models\Scopes\MilikPerusahaan;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Model;
 
 /** Rekonsiliasi bahan bakar harian: disalurkan versus tercatat terpakai. */
+#[ScopedBy(MilikPerusahaan::class)]
 class EnergyFuelRecon extends Model
 {
+    use BerpemilikPerusahaan;
+
     protected $table = 'energy_fuel_recon';
 
-    protected $fillable = ['tanggal','disalurkan_liter','stok_awal_liter','stok_akhir_liter','catatan'];
+    protected $fillable = ['company_id','tanggal','disalurkan_liter','stok_awal_liter','stok_akhir_liter','catatan'];
 
     protected function casts(): array
     {

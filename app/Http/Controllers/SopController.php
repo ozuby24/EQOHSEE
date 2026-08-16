@@ -13,8 +13,19 @@ class SopController extends Controller
         $evaluations = SopEvaluation::with('procedure')->where('is_active', true)
                                     ->orderBy('position')->get();
 
+        /* `passed` boolean tidak dapat dijadikan MAX() di PostgreSQL —
+           fungsi max(boolean) memang tidak ada di sana. SQLite dan MySQL
+           menyimpan boolean sebagai angka sehingga MAX(passed) bekerja,
+           dan halaman ini karena itu berjalan mulus di sini lalu
+           memulangkan galat 500 di server.
+
+           CASE WHEN mengubahnya menjadi angka lebih dulu dan berlaku
+           pada ketiganya: pada PostgreSQL kondisinya boolean sungguhan,
+           pada SQLite dan MySQL angka 0/1 yang sudah bernilai benar
+           atau salah. */
         $best = SopEvaluationAttempt::where('user_id', auth()->id())
-                  ->selectRaw('evaluation_id, MAX(score) as best, MAX(passed) as lulus')
+                  ->selectRaw('evaluation_id, MAX(score) as best, '
+                      .'MAX(CASE WHEN passed THEN 1 ELSE 0 END) as lulus')
                   ->groupBy('evaluation_id')->get()->keyBy('evaluation_id');
 
         return Inertia::render('Sop/Daftar', [
