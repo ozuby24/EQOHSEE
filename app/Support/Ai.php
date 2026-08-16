@@ -253,8 +253,23 @@ final class Ai
             $r = Http::timeout(20)->withHeaders($minta['tajuk'])->asJson()
                 ->post($minta['url'], $minta['badan']);
         } catch (\Throwable $e) {
-            return ['ok' => false, 'pesan' => 'Tidak dapat menghubungi '
-                .AiPenyedia::satu($penyedia)['nama'].': '.self::samarkan($e->getMessage(), $kunci)];
+            /* TIDAK SAMPAI ke penyedianya — beda sebab dengan ditolak,
+               dan beda pula penanganannya. Nama host disebut supaya
+               dapat diuji langsung dari server:
+
+                   curl -sS -o /dev/null -w '%{http_code}\n' https://<host>
+
+               Terjadi sungguhan: satu pemasangan dapat menghubungi
+               Gemini tetapi tidak Anthropic maupun OpenAI, dan tanpa
+               pembedaan ini keduanya terbaca sebagai "kunci salah". */
+            $host = parse_url(AiPenyedia::satu($penyedia)['alamat'], PHP_URL_HOST) ?: '?';
+
+            return ['ok' => false, 'pesan' =>
+                'Tidak sampai ke '.AiPenyedia::satu($penyedia)['nama'].' ('.$host.'). '
+                .'Ini kegagalan JARINGAN, bukan kunci — server ini tidak dapat menjangkau '
+                .'alamat itu. Periksa firewall keluar atau DNS di server, lalu coba: '
+                .'curl -sS -o /dev/null -w \'%{http_code}\' https://'.$host
+                .'  ·  Rincian: '.self::samarkan($e->getMessage(), $kunci)];
         }
 
         $json = (array) $r->json();
@@ -268,8 +283,19 @@ final class Ai
                salah, kuota habis, dan nama model yang tidak ada.
                Kuncinya sendiri disamarkan lebih dulu — pesan galat
                sebagian penyedia mengutip kembali kunci yang dikirim. */
-            return ['ok' => false, 'pesan' => 'Ditolak ('.$r->status().'): '
-                .self::samarkan((string) $pesan, $kunci)];
+            /* SAMPAI, lalu ditolak. Statusnya membedakan sebabnya:
+               401/403 kunci, 404 model tidak dikenal, 429 kuota. */
+            $sebab = match (true) {
+                in_array($r->status(), [401, 403], true) => 'Kuncinya ditolak — salah, dicabut, atau belum aktif.',
+                $r->status() === 404 => 'Model "'.$model.'" tidak dikenal penyedia ini. '
+                    .'Coba nama model lain dari daftar contoh.',
+                $r->status() === 429 => 'Kuota atau laju permintaan terlampaui.',
+                $r->status() >= 500  => 'Penyedianya sedang bermasalah, bukan pemasangan ini.',
+                default              => 'Permintaannya ditolak.',
+            };
+
+            return ['ok' => false, 'pesan' => 'Ditolak ('.$r->status().'). '.$sebab
+                .'  ·  Kata penyedianya: '.self::samarkan((string) $pesan, $kunci)];
         }
 
         $teks = AiPenyedia::jawaban($penyedia, $json);

@@ -198,6 +198,24 @@ function periksaUlang() {
         </button>
       </form>
 
+      <!-- Kegagalan AI DITAMPILKAN, tidak ditelan.
+
+           Sebelumnya pesan galatnya dibuat di server lalu tidak pernah
+           digambar di sini — hanya `galat.perbaikan` yang punya
+           tempat. Kunci yang salah, kuota yang habis, dan nama model
+           yang tidak dikenal karena itu terlihat persis sama: tombolnya
+           kembali normal dan tidak ada apa-apa yang muncul. Tidak ada
+           jalan bagi yang memakainya untuk mengetahui bahwa ada yang
+           perlu diperbaiki, apalagi apa yang perlu diperbaiki. -->
+      <div v-if="galat.ai"
+           class="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-[12.5px]
+                  text-red-700 leading-relaxed">
+        {{ galat.ai }}
+        <Link :href="ai.atur" class="block mt-1.5 font-semibold underline">
+          Periksa pengaturan Integrasi AI
+        </Link>
+      </div>
+
       <div v-if="jawabanAi"
            class="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-4 text-[12.5px]
                   text-stone-700 leading-relaxed whitespace-pre-wrap">{{ jawabanAi }}</div>

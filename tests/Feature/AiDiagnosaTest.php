@@ -147,6 +147,35 @@ class AiDiagnosaTest extends TestCase
     }
 
     /**
+     * Kegagalan AI harus SAMPAI ke halamannya, bukan berhenti di sesi.
+     *
+     * Pesannya sudah lama dibuat dengan benar di server, lalu tidak
+     * pernah digambar: halaman diagnosa hanya punya tempat untuk
+     * `galat.perbaikan`. Kunci yang salah, kuota yang habis, dan nama
+     * model yang tidak dikenal karena itu terlihat persis sama —
+     * tombolnya kembali normal dan tidak ada apa pun yang muncul.
+     *
+     * Dijaga dari dua sisi: pesannya ada di sesi, DAN halamannya
+     * memuat tempat untuk menggambarnya. Yang pertama saja pernah
+     * benar selama berbulan-bulan tanpa yang kedua.
+     */
+    public function test_kegagalan_ai_sampai_ke_halaman(): void
+    {
+        Http::fake(['*' => Http::response(['error' => ['message' => 'kuota habis']], 429)]);
+        $this->nyalakan();
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.ai.diagnosa'))
+            ->assertSessionHasErrors('ai');
+
+        $halaman = (string) file_get_contents(resource_path('js/Pages/Admin/Diagnosa.vue'));
+
+        $this->assertStringContainsString('galat.ai', $halaman,
+            'Halaman diagnosa tidak punya tempat untuk menggambar kegagalan AI, '
+            .'sehingga pesannya dibuat lalu dibuang.');
+    }
+
+    /**
      * Satu pertanyaan berarti SATU permintaan, berapa pun temuannya.
      *
      * Mengirim satu permintaan per temuan terasa lebih rapi dan

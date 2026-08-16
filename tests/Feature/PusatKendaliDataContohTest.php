@@ -108,16 +108,48 @@ class PusatKendaliDataContohTest extends TestCase
         $this->assertFalse((bool) $this->sungguhan->fresh()->demo);
     }
 
+    /**
+     * Nama yang benar-benar salah tetap ditolak.
+     *
+     * Dahulu uji ini memakai 'pt sungguhan' — yang berbeda dari
+     * 'PT Sungguhan' HANYA pada huruf besar-kecilnya. Itu bukan salah
+     * ketik melainkan ejaan yang sama, dan menolaknya membuat
+     * penjagaan ini gagal pada orang yang mengetik persis apa yang
+     * terbaca di layar. Terjadi sungguhan pada perusahaan bernama
+     * "DEMO": pemiliknya tidak dapat menandainya sama sekali.
+     *
+     * Sekarang yang diuji salah ketik yang sesungguhnya — satu huruf
+     * hilang.
+     */
     public function test_nama_yang_salah_ketik_tetap_ditolak(): void
     {
         $this->satuBaris($this->sungguhan);
 
         $this->actingAs($this->admin)
             ->post(route('admin.system.demo.tandai', $this->sungguhan),
-                   ['demo' => true, 'sadar' => 'pt sungguhan'])
+                   ['demo' => true, 'sadar' => 'PT Sungguhn'])
             ->assertSessionHasErrors('demo');
 
         $this->assertFalse((bool) $this->sungguhan->fresh()->demo);
+    }
+
+    /**
+     * Huruf besar-kecil dan spasi di ujung TIDAK diperhitungkan.
+     *
+     * Yang diminta konfirmasi ini adalah kesengajaan, bukan ketepatan
+     * mengetik. Keduanya tidak terlihat di layar, sehingga penolakan
+     * karenanya terbaca sebagai kerusakan — bukan sebagai penjagaan.
+     */
+    public function test_beda_huruf_besar_dan_spasi_tetap_diterima(): void
+    {
+        $this->satuBaris($this->sungguhan);
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.system.demo.tandai', $this->sungguhan),
+                   ['demo' => true, 'sadar' => '  '.strtolower($this->sungguhan->name).' '])
+            ->assertSessionHasNoErrors();
+
+        $this->assertTrue((bool) $this->sungguhan->fresh()->demo);
     }
 
     public function test_nama_yang_tepat_membuka_penandaannya(): void

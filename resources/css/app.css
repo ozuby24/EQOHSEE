@@ -24,8 +24,24 @@ input,select,textarea,button{ min-width:0; max-width:100%; }
 /* Media tidak pernah melampaui kolomnya. */
 img,svg,video,canvas{ max-width:100%; height:auto; }
 
-/* Kata/URL panjang tanpa spasi tidak melebarkan kartu. */
-p,li,td,th,dd,dt,h1,h2,h3,h4{ overflow-wrap:anywhere; }
+/* Kata/URL panjang tanpa spasi tidak melebarkan kartu.
+
+   `break-word`, BUKAN `anywhere`. Keduanya sama-sama memecah kata yang
+   memang tidak muat sendirian, tetapi `anywhere` juga ikut mengubah
+   perhitungan lebar-minimum elemen menjadi selebar SATU HURUF. Pada
+   tabel akibatnya kolomnya mengkerut sampai sesempit mungkin lalu
+   isinya patah di tengah kata — "Edi t", "Renda h", "TANGGA L",
+   "Close d" — pada tabel yang sebenarnya masih punya ruang.
+
+   `break-word` menahan diri: kata dipecah hanya bila baris itu memang
+   tidak dapat memuatnya, dan lebar-minimum kolom tetap dihitung dari
+   kata terpanjangnya. */
+p,li,td,th,dd,dt,h1,h2,h3,h4{ overflow-wrap:break-word; }
+
+/* Sel tabel tidak boleh memecah kata sama sekali pada kolom sempit
+   yang isinya memang pendek — label aksi, lencana status, tanggal.
+   Yang panjang tetap dapat digulir lewat .tabel-scroll di atasnya. */
+th{ white-space:nowrap; }
 
 /* Pembungkus baku untuk tabel lebar: geser di dalam kartunya sendiri,
    lengkap dengan momentum di iOS. */

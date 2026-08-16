@@ -384,12 +384,23 @@ class SystemController extends Controller
         if ($data['demo'] && !$company->demo) {
             $isi = DataContoh::hitungIsi($company);
 
-            if ($isi > 0 && ($data['sadar'] ?? null) !== $company->name) {
+            /* Dibandingkan setelah dipangkas dan diseragamkan hurufnya.
+               Yang diminta di sini KESENGAJAAN, bukan ketepatan mengetik:
+               spasi di ujung nama dan beda huruf besar-kecil tidak
+               terlihat di layar, sehingga penolakannya tampak seperti
+               kerusakan. Terjadi sungguhan pada perusahaan bernama
+               "DEMO" — pemiliknya mengetik persis apa yang terbaca dan
+               tetap ditolak. */
+            $diketik = mb_strtolower(trim((string) ($data['sadar'] ?? '')));
+            $harusnya = mb_strtolower(trim($company->name));
+
+            if ($isi > 0 && $diketik !== $harusnya) {
                 return back()->withErrors(['demo' =>
                     'Perusahaan "'.$company->name.'" sudah berisi '.number_format($isi, 0, ',', '.')
                     .' baris data. Menandainya sebagai perusahaan contoh membuat seluruh data itu '
-                    .'dapat dibuang oleh tombol muat ulang. Ketik nama perusahaannya persis untuk '
-                    .'menegaskan bahwa itu memang yang dimaksud.']);
+                    .'dapat dibuang oleh tombol muat ulang. Ketik nama perusahaannya untuk '
+                    .'menegaskan bahwa itu memang yang dimaksud — huruf besar-kecil dan spasi '
+                    .'di ujung tidak diperhitungkan.']);
             }
         }
 

@@ -100,7 +100,8 @@ function tandai(c: Perusahaan) {
       prompt(
         `${c.nama} sudah berisi ${isi} baris data.\n\n` +
           'Menandainya sebagai perusahaan contoh membuat seluruh data itu dapat dibuang ' +
-          'oleh tombol muat ulang.\n\nKetik nama perusahaannya persis untuk menegaskan:',
+          'oleh tombol muat ulang.\n\nKetik nama perusahaannya untuk menegaskan ' +
+          '(huruf besar-kecil bebas):',
       ) ?? '';
 
     if (!sadar) return;
