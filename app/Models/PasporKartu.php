@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\BerindukPerusahaan;
 use App\Models\Concerns\Bertahap;
 use App\Models\Concerns\Ditinjau;
+use App\Support\AlurMiner;
 use App\Support\Authority;
 use App\Support\Tahap;
 use Illuminate\Database\Eloquent\Model;
@@ -74,35 +75,19 @@ class PasporKartu extends Model
     /**
      * Syarat yang belum terpenuhi untuk MENGAJUKAN kartu ini.
      *
-     * Diperiksa saat pengajuan, bukan saat penyimpanan draf: draf memang
-     * boleh setengah jadi, dan menolak simpanan setengah jadi berarti
-     * memaksa orang mengumpulkan seluruh berkas sebelum boleh mencatat
-     * apa pun.
-     *
-     * Hanya SIMPER yang menuntut ketiganya. Kartu masuk biasa tidak
-     * memerlukan SIM kepolisian maupun sertifikat mengemudi defensif,
-     * dan menuntutnya akan membuat seluruh pekerja non-pengemudi
-     * tertahan oleh syarat yang tidak berlaku bagi mereka.
+     * Diserahkan ke App\Support\AlurMiner, tempat urutan tahapannya
+     * tinggal. Sebelumnya syaratnya diperiksa DI SINI dan hanya melihat
+     * apakah medan `berkas_induksi` terisi — sebuah teks yang diketik
+     * tangan. Siapa pun dapat mengetik apa saja ke dalamnya dan kartunya
+     * lolos, sementara induksi yang sesungguhnya tercatat di tabelnya
+     * sendiri tidak pernah dilihat sama sekali. Penjagaan yang memeriksa
+     * keterangan tentang sebuah berkas, bukan berkasnya, adalah
+     * penjagaan yang hanya menahan orang yang jujur.
      *
      * @return list<string>
      */
     public function syaratKurang(): array
     {
-        $kurang = [];
-
-        if (blank($this->berkas_induksi)) $kurang[] = 'bukti induksi';
-
-        if ($this->jenis !== 'SIMPER') return $kurang;
-
-        if (blank($this->sim_polisi)) {
-            $kurang[] = 'nomor SIM kepolisian';
-        } elseif ($this->sim_polisi_expired
-               && Authority::sisaHari($this->sim_polisi_expired) < 0) {
-            $kurang[] = 'SIM kepolisian sudah kadaluarsa';
-        }
-
-        if (blank($this->berkas_ddt)) $kurang[] = 'sertifikat defensive driving';
-
-        return $kurang;
+        return AlurMiner::halanganKartu($this);
     }
 }

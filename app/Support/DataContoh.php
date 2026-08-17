@@ -589,11 +589,13 @@ final class DataContoh
            menunggu — dan alur persetujuannya tampak seperti hiasan yang
            tidak pernah menahan apa pun. */
         $kartu = [
-            0 => [['ID Card', 400, null, Alur::DISETUJUI], ['SIMPER', 180, 'LV', Alur::DISETUJUI]],
-            1 => [['ID Card', 250, null, Alur::DISETUJUI]],
-            2 => [['ID Card', 60, null, Alur::DISETUJUI], ['SIMPER', 20, 'Alat Berat', Alur::DIAJUKAN]],
-            3 => [['ID Card', 310, null, Alur::DISETUJUI]],
-            4 => [['ID Card', -5, null, Alur::DISETUJUI]],             // kartu habis
+            0 => [['Mine Permit', 400, null, Alur::DISETUJUI],
+                  ['Mine License', 180, 'LV', Alur::DISETUJUI]],
+            1 => [['Mine Permit', 250, null, Alur::DISETUJUI]],
+            2 => [['Mine Permit', 60, null, Alur::DISETUJUI],
+                  ['Mine License', 20, 'Alat Berat', Alur::DIAJUKAN]],
+            3 => [['Mine Permit', 310, null, Alur::DISETUJUI]],
+            4 => [['Mine Permit', -5, null, Alur::DISETUJUI]],         // kartu habis
         ];
 
         /* [hari kadaluarsa induksi, jenis, hasil, nilai]
@@ -657,9 +659,8 @@ final class DataContoh
                     'paspor_id'   => $p->id,
                     'jenis'       => $jenisKartu,
                     'sebab_terbit' => 'Terbit',
-                    'nomor'       => $jenisKartu === 'SIMPER'
-                        ? 'SIM/'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT)
-                        : 'ID/'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
+                    'nomor'       => ($jenisKartu === 'Mine License' ? 'ML/' : 'MP/')
+                        .str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
                     'tgl_terbit'  => $this->kini->copy()->addDays($hariKartu)->subYear()->toDateString(),
                     'tgl_expired' => $this->kini->copy()->addDays($hariKartu)->toDateString(),
                     'golongan'    => $gol,

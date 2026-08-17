@@ -204,6 +204,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('{paspor}/kartu/{kartu}/ajukan', [MinersController::class,'ajukanKartu'])->name('kartu.ajukan');
         Route::post('{paspor}/kartu/{kartu}/tinjau', [MinersController::class,'tinjauKartu'])->name('kartu.tinjau');
         Route::post('{paspor}/kartu/{kartu}/paraf',  [MinersController::class,'parafKartu'])->name('kartu.paraf');
+        Route::get('{paspor}/kartu/{kartu}/cetak',   [MinersController::class,'cetakPermit'])->name('permit.cetak');
 
         Route::post('{paspor}/induksi',              [MinersController::class,'simpanInduksi'])->name('induksi.simpan');
         Route::delete('{paspor}/induksi/{induksi}',  [MinersController::class,'hapusInduksi'])->name('induksi.hapus');

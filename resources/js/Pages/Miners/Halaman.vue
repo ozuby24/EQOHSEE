@@ -17,6 +17,7 @@ import KartuGrafik from '../../Grafik/KartuGrafik.vue';
 import Batang from '../../Grafik/Batang.vue';
 import Donat from '../../Grafik/Donat.vue';
 import Rantai from './Rantai.vue';
+import Tahapan from './Tahapan.vue';
 import { KEADAAN } from '../../Grafik/warna';
 
 const props = usePage<any>().props as any;
@@ -110,7 +111,7 @@ const fMcu = useForm<Record<string, any>>({
 });
 
 const fKartu = useForm<Record<string, any>>({
-  jenis: 'ID Card', sebab_terbit: 'Terbit', nomor: '', tgl_terbit: '', tgl_expired: '',
+  jenis: 'Mine Permit', sebab_terbit: 'Terbit', nomor: '', tgl_terbit: '', tgl_expired: '',
   golongan: '', area: '', sim_polisi: '', sim_polisi_expired: '',
   pengalaman_kerja: '', berkas_induksi: '', berkas_ddt: '', email_atasan: '',
   catatan: '',
@@ -465,6 +466,8 @@ function hapus(jalur: string, apa: string) {
         </div>
       </section>
 
+      <Tahapan v-if="props.tahapan" :tahapan="props.tahapan" />
+
       <!-- sertifikat -->
       <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
         <h3 class="text-[14px] font-bold text-cam-ink mb-3">Sertifikat kompetensi</h3>
@@ -607,20 +610,24 @@ function hapus(jalur: string, apa: string) {
               <option v-for="s in (props.opsi?.sebabKartu ?? [])" :key="s">{{ s }}</option>
             </select>
             <input v-model="fKartu.nomor" placeholder="Nomor kartu" class="rounded-lg border-stone-200 text-[12px]">
-            <input v-model="fKartu.golongan" placeholder="Golongan (SIMPER)" class="rounded-lg border-stone-200 text-[12px]">
+            <input v-model="fKartu.golongan" placeholder="Golongan kendaraan (Mine License)" class="rounded-lg border-stone-200 text-[12px]">
             <input v-model="fKartu.tgl_terbit" type="date" title="Tanggal terbit" class="rounded-lg border-stone-200 text-[12px]">
             <input v-model="fKartu.tgl_expired" type="date" title="Berlaku sampai" class="rounded-lg border-stone-200 text-[12px]">
 
-            <!-- Berkas syarat. Hanya SIMPER yang menuntut ketiganya; medannya
-                 tetap tampil supaya tidak tersembunyi, tetapi keterangannya
-                 menyebut untuk siapa. -->
-            <input v-model="fKartu.berkas_induksi" placeholder="Bukti induksi (wajib)"
+            <!-- Berkas syarat. Hanya Mine License yang menuntut SIM dan
+                 sertifikat mengemudi; medannya tetap tampil supaya tidak
+                 tersembunyi, tetapi keterangannya menyebut untuk siapa.
+
+                 Bukti induksi TIDAK lagi diminta di sini: penjaganya kini
+                 membaca catatan induksi yang sesungguhnya, bukan teks
+                 yang diketik ke dalam medan ini. -->
+            <input v-model="fKartu.berkas_induksi" placeholder="Lampiran bukti induksi (opsional)"
                    class="rounded-lg border-stone-200 text-[12px]">
-            <input v-model="fKartu.sim_polisi" placeholder="No. SIM kepolisian (SIMPER)"
+            <input v-model="fKartu.sim_polisi" placeholder="No. SIM kepolisian (Mine License)"
                    class="rounded-lg border-stone-200 text-[12px]">
             <input v-model="fKartu.sim_polisi_expired" type="date" title="SIM kepolisian berlaku sampai"
                    class="rounded-lg border-stone-200 text-[12px]">
-            <input v-model="fKartu.berkas_ddt" placeholder="Sertifikat defensive driving (SIMPER)"
+            <input v-model="fKartu.berkas_ddt" placeholder="Sertifikat defensive driving (Mine License)"
                    class="rounded-lg border-stone-200 text-[12px]">
             <input v-model="fKartu.email_atasan" type="email" placeholder="E-mail atasan"
                    class="rounded-lg border-stone-200 text-[12px]">
@@ -677,6 +684,9 @@ function hapus(jalur: string, apa: string) {
             <option v-for="h in (props.opsi?.hasilInduksi ?? [])" :key="h">{{ h }}</option>
           </select>
           <button class="eq-btn-utama md:col-start-4" :disabled="fInduksi.processing">Catat induksi</button>
+          <p v-if="fInduksi.errors.induksi" class="text-[11px] text-red-600 md:col-span-4">
+            {{ fInduksi.errors.induksi }}
+          </p>
         </form>
       </section>
     </template>

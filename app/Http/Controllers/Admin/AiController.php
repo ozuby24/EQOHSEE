@@ -186,7 +186,22 @@ class AiController extends Controller
                 'Asisten AI belum diaktifkan. Masukkan kunci API di halaman Integrasi AI.']);
         }
 
-        $hasil = Diagnosa::jalankan();
+        /* Diagnosa menjalankan puluhan pemeriksaan, sebagian menyentuh
+           basis data, berkas, dan jaringan. Satu saja yang melempar
+           membuat seluruh halaman memulangkan 500 — dan yang dilihat
+           pemakainya hanya kotak putih bertuliskan "Server Error", tanpa
+           satu pun petunjuk pemeriksaan mana yang gagal.
+
+           Ditangkap di sini supaya sebabnya sampai ke layar dan ke log,
+           bukan supaya kegagalannya disembunyikan. */
+        try {
+            $hasil = Diagnosa::jalankan();
+        } catch (\Throwable $e) {
+            Log::error('Diagnosa gagal dijalankan', ['galat' => $e->getMessage()]);
+
+            return back()->withErrors(['ai' =>
+                'Diagnosa sistem gagal dijalankan: '.$e->getMessage()]);
+        }
 
         $ringkas = [];
         foreach ($hasil as $h) {

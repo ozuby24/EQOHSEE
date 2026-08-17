@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\{Company, KompetensiJenis, McuPengajuan, MinersCampaign, MinersCuti,
     MinersCutiJatah, MinersFieldBreak, Paspor, PasporKartu, User};
-use App\Support\{Alur, Authority, JatahCuti, MasterKompetensi, Tahap};
+use App\Support\{Alur, AlurMiner, Authority, JatahCuti, MasterKompetensi, Tahap};
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -532,60 +532,244 @@ class MinersTest extends TestCase
     }
 
     /**
-     * SIMPER tidak dapat diajukan tanpa berkas syaratnya.
+     * MINE PERMIT TIDAK DAPAT DIAJUKAN SEBELUM MCU DAN INDUKSI.
      *
-     * Syaratnya diperiksa saat MENGAJUKAN, bukan saat menyimpan draf —
-     * draf memang boleh setengah jadi.
+     * Inilah inti perbaikan alurnya. Sebelumnya syaratnya diperiksa
+     * dengan melihat apakah medan `berkas_induksi` terisi — sebuah teks
+     * yang diketik tangan — sehingga siapa pun dapat mengetik apa saja
+     * dan permitnya lolos, sementara induksi yang sesungguhnya tercatat
+     * di tabelnya sendiri tidak pernah dilihat.
      */
-    public function test_simper_tanpa_berkas_syarat_tidak_dapat_diajukan(): void
+    public function test_mine_permit_tertahan_sebelum_mcu_dan_induksi(): void
     {
         $p = $this->orang();
 
         $k = $p->kartu()->create([
-            'jenis' => 'SIMPER', 'golongan' => 'Alat Berat',
-            'tgl_expired' => now()->addYear(),
+            'jenis' => AlurMiner::KARTU_PERMIT, 'tgl_expired' => now()->addYear(),
+
+            /* Diisi sekadarnya — dulu inilah yang meloloskannya. */
+            'berkas_induksi' => 'apa-saja.pdf',
         ]);
 
-        $this->assertNotEmpty($k->syaratKurang(),
-            'SIMPER tanpa SIM kepolisian dan DDT dianggap sudah lengkap.');
-
-        $this->post(route('miners.kartu.ajukan', [$p, $k]))
-            ->assertSessionHasErrors('kartu');
-
+        $this->post(route('miners.kartu.ajukan', [$p, $k]))->assertSessionHasErrors('kartu');
         $this->assertSame(Alur::DRAF, $k->refresh()->status);
 
-        /* Dilengkapi, lalu berhasil diajukan — memastikan penolakan di
-           atas berasal dari syaratnya, bukan dari rute yang memang selalu
-           menolak. */
-        $k->update([
-            'berkas_induksi' => 'induksi/budi.pdf',
-            'sim_polisi'     => 'SIM-B2-000001',
-            'sim_polisi_expired' => now()->addYear(),
-            'berkas_ddt'     => 'ddt/budi.pdf',
+        /* MCU saja belum cukup. */
+        $p->mcu()->create([
+            'tgl_periksa' => now(), 'tgl_expired' => now()->addYear(), 'hasil' => 'Fit',
         ]);
 
-        $this->post(route('miners.kartu.ajukan', [$p, $k]))->assertRedirect();
+        $this->post(route('miners.kartu.ajukan', [$p, $k]))->assertSessionHasErrors('kartu');
+        $this->assertSame(Alur::DRAF, $k->refresh()->status);
 
+        /* Dengan induksinya, baru boleh. */
+        $this->induksi($p);
+
+        $this->post(route('miners.kartu.ajukan', [$p, $k]))->assertRedirect();
         $this->assertSame(Alur::DIAJUKAN, $k->refresh()->status);
     }
 
     /**
-     * Kartu masuk biasa TIDAK menuntut syarat SIMPER.
+     * Induksi tidak dapat dicatat sebelum hasil MCU kembali dan layak.
      *
-     * Menuntutnya akan menahan seluruh pekerja non-pengemudi oleh syarat
-     * yang tidak berlaku bagi mereka — kegagalan yang terlihat seperti
-     * ketegasan.
+     * Menginduksi orang yang ternyata Unfit adalah setengah hari kelas
+     * yang terbuang — dan yang lebih buruk, induksinya tercatat sehingga
+     * di layar ia tampak lebih siap daripada sebenarnya.
      */
-    public function test_kartu_biasa_hanya_menuntut_bukti_induksi(): void
+    public function test_induksi_tertahan_sebelum_mcu_layak(): void
+    {
+        $p = $this->orang();
+
+        $isi = fn () => $this->post(route('miners.induksi.simpan', $p), [
+            'jenis' => 'Awal', 'tanggal' => now()->toDateString(),
+            'tgl_expired' => now()->addYear()->toDateString(), 'hasil' => 'Lulus',
+        ]);
+
+        /* Tanpa MCU sama sekali. */
+        $isi()->assertSessionHasErrors('induksi');
+        $this->assertSame(0, $p->induksi()->count());
+
+        /* MCU ada tetapi hasilnya belum kembali. */
+        $m = $p->mcu()->create(['tgl_periksa' => now(), 'hasil' => null]);
+        $isi()->assertSessionHasErrors('induksi');
+
+        /* Hasilnya kembali, tetapi Unfit. */
+        $m->update(['hasil' => 'Unfit', 'tgl_expired' => now()->addYear()]);
+        $isi()->assertSessionHasErrors('induksi');
+        $this->assertSame(0, $p->induksi()->count());
+
+        /* Layak — barulah boleh. */
+        $m->update(['hasil' => 'Fit']);
+        $isi()->assertRedirect();
+
+        $this->assertSame(1, $p->refresh()->induksi()->count());
+    }
+
+    /**
+     * MINE LICENSE MENUNTUT MINE PERMIT YANG SUDAH TERBIT.
+     *
+     * Seseorang dapat memenuhi MCU dan induksi tetapi permitnya masih
+     * menunggu keputusan OHSE. Menerbitkan izin mengemudi baginya
+     * berarti mengizinkan mengemudi di area yang ia sendiri belum boleh
+     * masuki.
+     */
+    public function test_mine_license_menuntut_mine_permit_terbit(): void
+    {
+        $p = $this->orang();
+        $this->induksi($p);
+        $p->mcu()->create([
+            'tgl_periksa' => now(), 'tgl_expired' => now()->addYear(), 'hasil' => 'Fit',
+        ]);
+
+        $lisensi = $p->kartu()->create([
+            'jenis' => AlurMiner::KARTU_LICENSE, 'golongan' => 'Alat Berat',
+            'tgl_expired' => now()->addYear(),
+            'sim_polisi' => 'SIM-B2-000001',
+            'sim_polisi_expired' => now()->addYear(),
+            'berkas_ddt' => 'ddt.pdf',
+        ]);
+
+        /* Dokumen pengemudinya lengkap, tetapi permitnya belum ada. */
+        $this->post(route('miners.kartu.ajukan', [$p, $lisensi]))->assertSessionHasErrors('kartu');
+        $this->assertSame(Alur::DRAF, $lisensi->refresh()->status);
+
+        /* Permit yang masih DIAJUKAN pun belum cukup. */
+        $permit = $this->kartu($p, [
+            'jenis' => AlurMiner::KARTU_PERMIT, 'tgl_expired' => now()->addYear(),
+        ]);
+        PasporKartu::whereKey($permit->id)->update(['status' => Alur::DIAJUKAN]);
+
+        $this->post(route('miners.kartu.ajukan', [$p, $lisensi]))->assertSessionHasErrors('kartu');
+
+        /* Permit terbit — barulah lisensinya boleh diajukan. */
+        PasporKartu::whereKey($permit->id)->update(['status' => Alur::DISETUJUI]);
+
+        $this->post(route('miners.kartu.ajukan', [$p, $lisensi]))->assertRedirect();
+        $this->assertSame(Alur::DIAJUKAN, $lisensi->refresh()->status);
+    }
+
+    /** Dokumen pengemudi yang kurang disebut satu per satu. */
+    public function test_mine_license_menyebut_dokumen_yang_kurang(): void
+    {
+        $p = $this->orang();
+        $this->induksi($p);
+        $p->mcu()->create([
+            'tgl_periksa' => now(), 'tgl_expired' => now()->addYear(), 'hasil' => 'Fit',
+        ]);
+        $this->kartu($p, ['jenis' => AlurMiner::KARTU_PERMIT, 'tgl_expired' => now()->addYear()]);
+
+        $lisensi = $p->kartu()->create([
+            'jenis' => AlurMiner::KARTU_LICENSE, 'tgl_expired' => now()->addYear(),
+        ]);
+
+        $kurang = $lisensi->refresh()->syaratKurang();
+
+        $gabung = implode(' ', $kurang);
+
+        $this->assertStringContainsString('SIM kepolisian', $gabung);
+        $this->assertStringContainsString('defensive driving', $gabung);
+        $this->assertStringContainsString('Golongan', $gabung);
+    }
+
+    /**
+     * Kartu tamu menuntut induksi, TIDAK menuntut MCU.
+     *
+     * Tamu tidak bekerja; ia berkunjung dan pergi hari itu juga.
+     * Menuntutnya MCU berarti tidak ada tamu yang pernah dapat masuk —
+     * dan yang terjadi berikutnya adalah orang masuk tanpa kartu.
+     */
+    public function test_kartu_tamu_menuntut_induksi_bukan_mcu(): void
+    {
+        $p = $this->orang('Tamu');
+
+        $k = $p->kartu()->create([
+            'jenis' => AlurMiner::KARTU_VISITOR, 'tgl_expired' => now()->addDays(3),
+        ]);
+
+        $this->assertNotEmpty($k->refresh()->syaratKurang(), 'Tamu tanpa induksi ikut lolos.');
+
+        $p->induksi()->create([
+            'jenis' => 'Tamu', 'tanggal' => now(),
+            'tgl_expired' => now()->addDays(7), 'hasil' => 'Lulus',
+        ]);
+
+        /* Tanpa satu pun catatan MCU. */
+        $this->assertSame(0, $p->mcu()->count());
+        $this->assertSame([], $p->refresh()->kartu->firstWhere('id', $k->id)->syaratKurang());
+    }
+
+    /* ═══════════ tahapan yang tergambar ═══════════ */
+
+    /**
+     * Tahap yang terkunci menyebutkan sebabnya.
+     *
+     * "Tidak bisa diklik" tanpa alasan adalah bentuk kegagalan yang
+     * paling sering membuat orang mencari jalan lain — biasanya di luar
+     * sistem.
+     */
+    public function test_tahapan_menyebut_sebab_terkuncinya(): void
+    {
+        $p = $this->orang();
+        $p->load(['mcu', 'induksi', 'kartu']);
+
+        $tahap = collect(AlurMiner::tahapan($p))->keyBy('kode');
+
+        $this->assertSame(AlurMiner::SIAP,     $tahap[AlurMiner::MCU]['keadaan']);
+        $this->assertSame(AlurMiner::TERKUNCI, $tahap[AlurMiner::INDUKSI]['keadaan']);
+        $this->assertNotEmpty($tahap[AlurMiner::INDUKSI]['sebab']);
+        $this->assertSame(AlurMiner::TERKUNCI, $tahap[AlurMiner::PERMIT]['keadaan']);
+        $this->assertSame(AlurMiner::TERKUNCI, $tahap[AlurMiner::LICENSE]['keadaan']);
+    }
+
+    /** Tahapan berpindah selesai mengikuti kelengkapan berkasnya. */
+    public function test_tahapan_berpindah_selesai_berurutan(): void
+    {
+        $p = $this->orang();
+
+        $p->mcu()->create([
+            'tgl_periksa' => now(), 'tgl_expired' => now()->addYear(), 'hasil' => 'Fit',
+        ]);
+        $this->induksi($p);
+        $this->kartu($p, ['jenis' => AlurMiner::KARTU_PERMIT, 'tgl_expired' => now()->addYear()]);
+
+        $p->refresh()->load(['mcu', 'induksi', 'kartu']);
+
+        $tahap = collect(AlurMiner::tahapan($p))->keyBy('kode');
+
+        $this->assertSame(AlurMiner::SELESAI, $tahap[AlurMiner::MCU]['keadaan']);
+        $this->assertSame(AlurMiner::SELESAI, $tahap[AlurMiner::INDUKSI]['keadaan']);
+        $this->assertSame(AlurMiner::SELESAI, $tahap[AlurMiner::PERMIT]['keadaan']);
+
+        /* Mine License terbuka, tetapi opsional — dan orang ini tidak
+           terhitung tertahan karena belum punya. */
+        $this->assertSame(AlurMiner::SIAP, $tahap[AlurMiner::LICENSE]['keadaan']);
+        $this->assertNull(AlurMiner::tahapSekarang($p));
+    }
+
+    /* ═══════════ cetak Mine Permit ═══════════ */
+
+    /**
+     * Hanya permit yang SUDAH TERBIT yang dapat dicetak.
+     *
+     * Lembar bercetak tidak dapat dibedakan dari yang sah oleh petugas
+     * gerbang, jadi mencetak yang belum disetujui membuat seluruh alur
+     * persetujuan yang mendahuluinya tidak ada gunanya.
+     */
+    public function test_mine_permit_draf_tidak_dapat_dicetak(): void
     {
         $p = $this->orang();
 
         $k = $p->kartu()->create([
-            'jenis' => 'ID Card', 'tgl_expired' => now()->addYear(),
-            'berkas_induksi' => 'induksi/budi.pdf',
+            'jenis' => AlurMiner::KARTU_PERMIT, 'tgl_expired' => now()->addYear(),
         ]);
 
-        $this->assertSame([], $k->syaratKurang());
+        $this->get(route('miners.permit.cetak', [$p, $k]))->assertForbidden();
+
+        PasporKartu::whereKey($k->id)->update(['status' => Alur::DISETUJUI]);
+
+        $this->get(route('miners.permit.cetak', [$p, $k]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Print/MinePermit'));
     }
 
     /* ═══════════ pengajuan MCU per rombongan ═══════════ */

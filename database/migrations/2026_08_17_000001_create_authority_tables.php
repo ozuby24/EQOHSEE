@@ -158,7 +158,7 @@ return new class extends Migration
             $t->id();
             $t->foreignId('paspor_id')->constrained('paspor')->cascadeOnDelete();
 
-            $t->string('jenis')->default('ID Card');   // ID Card | SIMPER | Mine Permit | Visitor
+            $t->string('jenis')->default('Mine Permit');   // lihat App\Support\AlurMiner::JENIS_KARTU
             $t->string('nomor')->nullable();
             $t->date('tgl_terbit')->nullable();
             $t->date('tgl_expired')->nullable();

@@ -66,7 +66,15 @@ final class Authority
 
     public const JENIS_MCU = ['Awal', 'Berkala', 'Khusus', 'Purna'];
 
-    public const JENIS_KARTU = ['ID Card', 'SIMPER', 'Mine Permit', 'Visitor'];
+    /**
+     * Jenis kartu tinggal di App\Support\AlurMiner, bukan di sini.
+     *
+     * Di sana ia berdampingan dengan urutan dan syarat penerbitannya —
+     * dan daftar jenis yang terpisah dari aturannya adalah persis yang
+     * dulu membuat "ID Card" dan "Mine Permit" hidup berdampingan tanpa
+     * seorang pun tahu mana yang mendahului mana.
+     */
+    public const JENIS_KARTU = AlurMiner::JENIS_KARTU;
 
     /**
      * Sebab sebuah kartu diterbitkan.

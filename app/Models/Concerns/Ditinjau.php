@@ -22,6 +22,29 @@ use RuntimeException;
  */
 trait Ditinjau
 {
+    /**
+     * Kedua penanda waktu tinjauan dijadikan Carbon di SINI, bukan di
+     * tiap model yang memakainya.
+     *
+     * Trait ini yang menciptakan kolomnya, jadi trait ini pula yang
+     * harus menyebut tipenya. Selama penetapannya diserahkan ke
+     * masing-masing model, yang lupa mencantumkannya tidak menimbulkan
+     * galat apa pun sampai ada satu tempat yang memanggil
+     * ->toDateString() atas nilainya — dan tempat itu bisa jadi sebuah
+     * lembar cetak yang baru dibuka enam bulan kemudian, di hadapan
+     * orang yang sedang membutuhkannya.
+     *
+     * initializeDitinjau() dipanggil per instance, jadi mergeCasts()
+     * bekerja tanpa menuntut model menyebut apa pun.
+     */
+    public function initializeDitinjau(): void
+    {
+        $this->mergeCasts([
+            'diajukan_pada' => 'datetime',
+            'ditinjau_pada' => 'datetime',
+        ]);
+    }
+
     public static function bootDitinjau(): void
     {
         // Baris baru selalu lahir sebagai draf, apa pun isi payload-nya.

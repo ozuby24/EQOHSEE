@@ -8,8 +8,10 @@ use App\Models\{KompetensiJenis, McuPengajuan, MinersCampaign, MinersCuti,
 use App\Rules\DalamPerusahaan;
 use App\Models\ActivityLog as Jejak;
 use App\Support\Alur;
+use App\Support\AlurMiner;
 use App\Support\Authority;
 use App\Support\JatahCuti;
+use App\Support\KopDokumen;
 use App\Support\Tahap;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -95,6 +97,12 @@ class MinersController extends Controller
                 ] : null,
             ])->values(),
             'kartu' => $paspor->kartu->map(fn (PasporKartu $k) => $this->barisKartu($k))->values(),
+
+            /* Urutan tahapannya digambar di layar rincian. Tanpa gambar
+               itu, orang menebak sendiri apa yang harus dikerjakan
+               berikutnya — dan tebakan yang salah menghasilkan formulir
+               yang ditolak tanpa ia tahu mengapa. */
+            'tahapan' => AlurMiner::tahapan($paspor),
             'induksi' => $paspor->induksi->map(fn (PasporInduksi $i) => [
                 'id' => $i->id, 'jenis' => $i->jenis,
                 'nomorRegistrasi' => $i->nomor_registrasi,
@@ -166,7 +174,7 @@ class MinersController extends Controller
                 [Authority::KRITIS, Authority::SEGERA], true))->count();
 
         return Inertia::render('Miners/Dasbor', [
-            'judul'    => 'Authority — Ringkasan',
+            'judul'    => 'Miners — Ringkasan',
             'subjudul' => 'MCU, induksi, kartu masuk, dan kompetensi dalam satu layar',
 
             'menunggu' => [
@@ -465,6 +473,17 @@ class MinersController extends Controller
 
     public function simpanInduksi(Request $request, Paspor $paspor)
     {
+        /* Induksi baru masuk akal SESUDAH orangnya dinyatakan sehat.
+           Menginduksi orang yang ternyata Unfit adalah setengah hari
+           kelas yang terbuang — dan yang lebih buruk, induksinya
+           tercatat sehingga di layar ia tampak lebih siap daripada
+           sebenarnya. */
+        $paspor->load(['mcu', 'induksi', 'kartu']);
+
+        if ($sebab = AlurMiner::halanganInduksi($paspor)) {
+            return back()->withErrors(['induksi' => $sebab]);
+        }
+
         $data = $request->validate([
             'nomor_registrasi' => ['nullable', 'string', 'max:60'],
             'jenis'       => ['required', Rule::in(Authority::JENIS_INDUKSI)],
@@ -674,9 +693,17 @@ class MinersController extends Controller
     {
         abort_unless($kartu->paspor_id === $paspor->id, 404);
 
+        /* Relasi dimuat lebih dulu: penjaganya membaca MCU, induksi, dan
+           kartu lain milik orang yang sama. Tanpa ini tiap pemeriksaan
+           menembak kueri sendiri-sendiri — dan yang lebih penting,
+           kartu() yang belum dimuat memulangkan koleksi kosong pada
+           beberapa jalur, sehingga Mine License lolos karena Mine
+           Permit-nya "tidak ada". */
+        $kartu->setRelation('paspor', $paspor->load(['mcu', 'induksi', 'kartu']));
+
         if ($kurang = $kartu->syaratKurang()) {
             return back()->withErrors([
-                'kartu' => 'Belum dapat diajukan — '.implode(', ', $kurang).'.',
+                'kartu' => 'Belum dapat diajukan. '.implode(' ', $kurang),
             ]);
         }
 
@@ -1112,6 +1139,84 @@ class MinersController extends Controller
         ]);
     }
 
+    /* ═══════════ cetak Mine Permit ═══════════ */
+
+    /**
+     * Lembar Mine Permit yang dibawa orangnya ke gerbang.
+     *
+     * HANYA YANG SUDAH TERBIT yang dapat dicetak. Kartu yang masih draf
+     * atau menunggu keputusan tidak boleh keluar sebagai lembar
+     * bercetak: begitu tercetak ia tidak dapat dibedakan dari yang sah
+     * oleh petugas gerbang, dan seluruh alur persetujuan yang
+     * mendahuluinya menjadi tidak ada gunanya.
+     *
+     * Masa berlaku MCU dan induksi ikut tercetak, bukan hanya masa
+     * berlaku kartunya. Ketiganya harus berlaku bersamaan, dan lembar
+     * yang hanya menyebut satu di antaranya menyembunyikan dua sebab
+     * lain seseorang dapat ditahan.
+     */
+    public function cetakPermit(Paspor $paspor, PasporKartu $kartu)
+    {
+        abort_unless($kartu->paspor_id === $paspor->id, 404);
+
+        abort_unless($kartu->sudahDisetujui(), 403,
+            'Mine Permit yang belum disetujui tidak dapat dicetak.');
+
+        $paspor->load(['mcu', 'induksi', 'kartu', 'sertifikat', 'company']);
+
+        $m = $paspor->mcuTerakhir();
+        $i = $paspor->induksiBerlaku();
+
+        return Inertia::render('Print/MinePermit', [
+            'dok' => KopDokumen::untuk('mine-permit', $this->perusahaanKop()),
+
+            'orang' => [
+                'nama'       => $paspor->nama,
+                'nik'        => $paspor->nik,
+                'jabatan'    => $paspor->jabatan,
+                'departemen' => $paspor->departemen,
+                'register'   => $paspor->nomor_register,
+                'klasifikasi' => $paspor->labelKlasifikasi(),
+                'perusahaan' => $paspor->company?->name,
+            ],
+
+            'kartu' => [
+                'jenis'      => $kartu->jenis,
+                'nomor'      => $kartu->nomor,
+                'sebab'      => $kartu->sebab_terbit,
+                'golongan'   => $kartu->golongan,
+                'area'       => $kartu->area,
+                'tglTerbit'  => $kartu->tgl_terbit?->toDateString(),
+                'tglExpired' => $kartu->tgl_expired?->toDateString(),
+                'keterangan' => $kartu->keterangan(),
+                'peninjau'   => $kartu->peninjau?->name,
+                'ditinjauPada' => $kartu->ditinjau_pada?->toDateString(),
+            ],
+
+            /* Dasar penerbitannya ikut tercetak. Lembar izin yang tidak
+               menyebut dasarnya tidak dapat diperiksa ulang siapa pun
+               tanpa membuka sistem. */
+            'dasar' => [
+                'mcu' => $m ? [
+                    'tanggal'    => $m->tgl_periksa?->toDateString(),
+                    'hasil'      => $m->hasil,
+                    'tglExpired' => $m->tgl_expired?->toDateString(),
+                    'keterangan' => $m->keterangan(),
+                    'penyelenggara' => $m->penyelenggara,
+                ] : null,
+                'induksi' => $i ? [
+                    'jenis'      => $i->jenis,
+                    'tanggal'    => $i->tanggal?->toDateString(),
+                    'tglExpired' => $i->tgl_expired?->toDateString(),
+                    'keterangan' => $i->keterangan(),
+                    'pemberi'    => $i->pemberi,
+                ] : null,
+            ],
+
+            'kembali' => route('miners.show', $paspor),
+        ]);
+    }
+
     /* ═══════════ paraf bertahap ═══════════ */
 
     /**
@@ -1187,7 +1292,7 @@ class MinersController extends Controller
     private function bersama(): array
     {
         return [
-            'judul'    => 'Authority — Kelayakan Kerja',
+            'judul'    => 'Miners — Kelayakan Kerja',
             'subjudul' => 'Kompetensi, MCU, dan kartu masuk tambang dalam satu berkas per orang',
             'opsi' => [
                 'klasifikasi'  => Authority::KLASIFIKASI,

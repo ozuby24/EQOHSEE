@@ -124,6 +124,16 @@ final class KopDokumen
                 'kode'  => 'OHSE-V.111',
                 'urut'  => 9,
 ],
+            /* Mine Permit bukan LAPORAN melainkan IZIN: ia dibawa
+               orangnya, bukan diarsipkan bagiannya. Jenisnya ikut
+               menentukan bunyi kop dan tempat tanda tangannya. */
+            'mine-permit' => [
+                'jenis' => 'IZIN',
+                'judul' => 'MINE PERMIT — IZIN MASUK AREA TAMBANG',
+                'kode'  => 'OHSE-IV.131',
+                'urut'  => 10,
+            ],
+
             'laporan-izin-kerja' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN IZIN KERJA AMAN',
