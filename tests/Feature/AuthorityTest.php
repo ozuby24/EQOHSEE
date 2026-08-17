@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\{Company, KompetensiJenis, McuPengajuan, Paspor, PasporKartu, User};
-use App\Support\{Alur, Authority, MasterKompetensi};
+use App\Support\{Alur, Authority, MasterKompetensi, Tahap};
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -766,5 +766,199 @@ class AuthorityTest extends TestCase
         $this->get(route('authority.mcu.index'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page->component('Authority/Halaman')->where('mode', 'mcu'));
+    }
+
+    public function test_dasbor_terbuka(): void
+    {
+        $this->get(route('authority.dasbor'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Authority/Dasbor'));
+    }
+
+    /* ═══════════ paraf bertingkat ═══════════ */
+
+    /** Pengajuan MCU yang sudah dikirim, siap diparaf/diputus. */
+    private function pengajuanDiajukan(User $pengaju): McuPengajuan
+    {
+        $p = $this->orang();
+
+        $this->actingAs($pengaju);
+
+        $m = McuPengajuan::create([
+            'company_id' => $this->c->id, 'tanggal' => now(), 'jenis' => 'Berkala',
+        ]);
+        $m->hasil()->create(['paspor_id' => $p->id, 'tgl_periksa' => now()]);
+        $m->ajukan();
+
+        return $m->refresh();
+    }
+
+    private function pengguna(array $atribut = []): User
+    {
+        return User::factory()->create($atribut + [
+            'company_id' => $this->c->id, 'email_verified_at' => now(), 'is_admin' => false,
+        ]);
+    }
+
+    /**
+     * PARAF TIDAK MENERBITKAN. Inti dari "bertingkat secara visual".
+     *
+     * Seluruh tahap paraf terisi, dan statusnya tetap menunggu — kartu
+     * tidak terbit, orangnya tidak lolos gerbang. Bila uji ini gagal,
+     * rantai yang tampak bertingkat sesungguhnya memberi wewenang
+     * kepada meja yang menurut pemakainya tidak punya wewenang.
+     */
+    public function test_paraf_lengkap_tidak_menerbitkan_apa_pun(): void
+    {
+        $pengaju = $this->pengguna();
+        $m = $this->pengajuanDiajukan($pengaju);
+
+        $atasan = $this->pengguna();
+        $this->actingAs($atasan);
+
+        foreach ([Tahap::ATASAN, Tahap::DEPARTEMEN] as $tahap) {
+            $this->post(route('authority.mcu.paraf', $m), ['tahap' => $tahap])->assertRedirect();
+        }
+
+        $m->refresh()->load('paraf');
+
+        $this->assertCount(2, $m->paraf, 'Parafnya sendiri tidak tersimpan.');
+        $this->assertSame([], $m->parafTertinggal());
+
+        $this->assertSame(Alur::DIAJUKAN, $m->status,
+            'Paraf lengkap ikut menyetujui — meja sebelum OHSE punya wewenang menerbitkan.');
+    }
+
+    /**
+     * PARAF TIDAK MENAHAN. Sisi lain dari aturan yang sama.
+     *
+     * OHSE memutuskan tanpa satu paraf pun. Bila ini gagal, meja
+     * sebelumnya punya kuasa memveto — dan pengajuan mandek di meja yang
+     * orangnya sedang cuti.
+     */
+    public function test_ohse_memutuskan_walau_belum_ada_paraf(): void
+    {
+        $pengaju = $this->pengguna();
+        $m = $this->pengajuanDiajukan($pengaju);
+
+        $this->assertNotEmpty($m->parafTertinggal(), 'Kontrol gagal: parafnya ternyata sudah ada.');
+
+        $ohse = $this->pengguna(['ohse_role' => 'ohse']);
+        $this->actingAs($ohse);
+
+        $this->post(route('authority.mcu.tinjau', $m), ['aksi' => 'setujui'])->assertRedirect();
+
+        $this->assertSame(Alur::DISETUJUI, $m->refresh()->status);
+    }
+
+    /**
+     * Yang bukan OHSE tidak memutuskan, sebanyak apa pun parafnya.
+     *
+     * Diuji dengan KTT — peran yang di seluruh modul lain berhak
+     * meninjau. Di sini ia sengaja tidak, dan tanpa uji ini penyempitan
+     * wewenangnya akan pelan-pelan hilang saat seseorang menyeragamkan
+     * penjaga tinjauan antar modul.
+     */
+    public function test_ktt_bukan_penentu_di_modul_ini(): void
+    {
+        $pengaju = $this->pengguna();
+        $m = $this->pengajuanDiajukan($pengaju);
+
+        $ktt = $this->pengguna(['lms_role' => 'ktt']);
+        $this->actingAs($ktt);
+
+        $this->assertFalse($m->dapatDitinjauOleh($ktt));
+
+        $this->post(route('authority.mcu.tinjau', $m), ['aksi' => 'setujui'])
+            ->assertSessionHasErrors('alur');
+
+        $this->assertSame(Alur::DIAJUKAN, $m->refresh()->status);
+
+        /* Kontrol: orang OHSE memang bisa. */
+        $this->actingAs($this->pengguna(['ohse_role' => 'ohse']));
+
+        $this->post(route('authority.mcu.tinjau', $m), ['aksi' => 'setujui'])->assertRedirect();
+
+        $this->assertSame(Alur::DISETUJUI, $m->refresh()->status);
+    }
+
+    /** Pengaju tidak memaraf pengajuannya sendiri. */
+    public function test_pengaju_tidak_dapat_memaraf_sendiri(): void
+    {
+        $pengaju = $this->pengguna();
+        $m = $this->pengajuanDiajukan($pengaju);
+
+        $this->actingAs($pengaju);
+
+        $this->post(route('authority.mcu.paraf', $m), ['tahap' => Tahap::ATASAN])
+            ->assertSessionHasErrors('paraf');
+
+        $this->assertCount(0, $m->refresh()->paraf);
+    }
+
+    /** Tahap penentu diputus, bukan diparaf. */
+    public function test_tahap_ohse_tidak_dapat_diparaf(): void
+    {
+        $pengaju = $this->pengguna();
+        $m = $this->pengajuanDiajukan($pengaju);
+
+        $this->actingAs($this->pengguna(['ohse_role' => 'ohse']));
+
+        $this->post(route('authority.mcu.paraf', $m), ['tahap' => Tahap::OHSE])
+            ->assertSessionHasErrors('paraf');
+
+        $this->assertCount(0, $m->refresh()->paraf);
+    }
+
+    /** Paraf ganda pada tahap yang sama tidak melahirkan baris kedua. */
+    public function test_paraf_dua_kali_tetap_satu_baris(): void
+    {
+        $pengaju = $this->pengguna();
+        $m = $this->pengajuanDiajukan($pengaju);
+
+        $this->actingAs($this->pengguna());
+
+        $this->post(route('authority.mcu.paraf', $m), ['tahap' => Tahap::ATASAN]);
+        $this->post(route('authority.mcu.paraf', $m), ['tahap' => Tahap::ATASAN]);
+
+        $this->assertCount(1, $m->refresh()->paraf);
+    }
+
+    /**
+     * Rantai menggambar tahap penentu dari STATUS, bukan dari tabel paraf.
+     *
+     * Bila ia digambar dari sumber yang sama dengan tahap lain, ia akan
+     * selamanya tampak "menunggu" walaupun kartunya sudah terbit.
+     */
+    public function test_rantai_menggambar_tahap_penentu_dari_status(): void
+    {
+        $pengaju = $this->pengguna();
+        $m = $this->pengajuanDiajukan($pengaju);
+
+        $ohse = $this->pengguna(['ohse_role' => 'ohse']);
+        $this->actingAs($ohse);
+        $m->setujui($ohse);
+
+        $penentu = collect($m->refresh()->rantaiTahap())->firstWhere('penentu', true);
+
+        $this->assertSame(Tahap::OHSE, $penentu['kode']);
+        $this->assertSame(Alur::DISETUJUI, $penentu['keadaan']);
+    }
+
+    /** Paraf ikut terbuang bersama subjeknya, tidak tertinggal yatim. */
+    public function test_paraf_terbuang_bersama_pengajuannya(): void
+    {
+        $pengaju = $this->pengguna();
+        $m = $this->pengajuanDiajukan($pengaju);
+
+        $this->actingAs($this->pengguna());
+        $m->bubuhkanParaf(Tahap::ATASAN);
+
+        $this->assertSame(1, \App\Models\PersetujuanParaf::count());
+
+        $m->tarik();
+        $m->delete();
+
+        $this->assertSame(0, \App\Models\PersetujuanParaf::count());
     }
 }

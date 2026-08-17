@@ -37,6 +37,7 @@ class UserController extends Controller
                 'admin'      => (bool) $u->is_admin,
                 'lmsRole'    => $u->lms_role,
                 'auditRole'  => $u->audit_role,
+                'ohseRole'   => $u->ohse_role,
                 'jabatan'    => $u->position ?: null,
                 'departemen' => $u->department ?: null,
                 'aktif'      => (bool) $u->active,
@@ -87,6 +88,7 @@ class UserController extends Controller
                 'password'    => '',
                 'lms_role'    => (string) ($u->lms_role ?? ''),
                 'audit_role'  => (string) ($u->audit_role ?? ''),
+                'ohse_role'   => (string) ($u->ohse_role ?? ''),
                 'company_id'  => $u->company_id ? (string) $u->company_id : '',
                 'employee_id' => (string) ($u->employee_id ?? ''),
                 'position'    => (string) ($u->position ?? ''),
@@ -105,6 +107,9 @@ class UserController extends Controller
                 'audit' => [
                     ['nilai' => 'auditor', 'label' => 'Auditor'],
                     ['nilai' => 'company', 'label' => 'Perusahaan'],
+                ],
+                'ohse' => [
+                    ['nilai' => 'ohse', 'label' => 'Tim OHSE'],
                 ],
                 'perusahaan' => Company::orderBy('name')->get()
                     ->map(fn ($c) => ['nilai' => (string) $c->id, 'label' => $c->name])->all(),
@@ -172,6 +177,11 @@ class UserController extends Controller
             'is_admin'    => ['nullable','boolean'],
             'lms_role'    => ['nullable', Rule::in(['trainee','trainer','ktt'])],
             'audit_role'  => ['nullable', Rule::in(['auditor','company'])],
+
+            /* Wewenang menerbitkan kartu masuk dan meloloskan MCU. Dipisah
+               dari kedua peran di atas dengan sengaja — lihat
+               App\Support\Tahap. */
+            'ohse_role'   => ['nullable', Rule::in(['ohse'])],
             'company_id'  => ['nullable','exists:companies,id'],
             'employee_id' => ['nullable','string','max:50'],
             'position'    => ['nullable','string','max:100'],

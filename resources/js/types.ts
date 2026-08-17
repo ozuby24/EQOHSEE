@@ -1442,6 +1442,7 @@ export interface HalamanDaftarPengguna {
   daftar: Array<{
     id: number; nama: string; email: string; inisial: string;
     admin: boolean; lmsRole: string | null; auditRole: string | null;
+    ohseRole: string | null;
     jabatan: string | null; departemen: string | null;
     aktif: boolean; perusahaan: string | null;
     /** true untuk akun yang sedang dipakai — tombol hapusnya tidak digambar. */
@@ -1458,7 +1459,7 @@ export interface HalamanFormPengguna {
   tersimpan: boolean;
   awal: Record<string, string | boolean>;
   opsi: {
-    lms: Pilihan[]; audit: Pilihan[]; perusahaan: Pilihan[];
+    lms: Pilihan[]; audit: Pilihan[]; ohse: Pilihan[]; perusahaan: Pilihan[];
     jabatan: string[]; departemen: string[];
   };
   tautan: { simpan: string; batal: string };

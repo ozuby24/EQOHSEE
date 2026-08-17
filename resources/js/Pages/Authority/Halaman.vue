@@ -16,6 +16,7 @@ import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import KartuGrafik from '../../Grafik/KartuGrafik.vue';
 import Batang from '../../Grafik/Batang.vue';
 import Donat from '../../Grafik/Donat.vue';
+import Rantai from './Rantai.vue';
 import { KEADAAN } from '../../Grafik/warna';
 
 const props = usePage<any>().props as any;
@@ -186,6 +187,18 @@ function ajukanPengajuan(pengajuanId: number) {
  * ulang" — yang membuat surat yang sama bolak-balik tanpa ada yang
  * berubah.
  */
+/**
+ * Membubuhkan paraf. Sengaja TIDAK meminta konfirmasi.
+ *
+ * Paraf tidak menerbitkan apa pun dan dapat dilihat siapa saja setelah
+ * dibubuhkan; meminta konfirmasi untuk tindakan yang tidak berakibat
+ * hanya melatih orang menekan "ya" tanpa membaca — kebiasaan yang lalu
+ * terbawa ke dialog yang benar-benar penting.
+ */
+function paraf(jalur: string, tahap: string) {
+  router.post(jalur, { tahap }, { preserveScroll: true });
+}
+
 function tinjau(jalur: string, aksi: 'setujui' | 'tolak' | 'tarik') {
   let alasan = '';
 
@@ -560,6 +573,12 @@ function hapus(jalur: string, apa: string) {
                 Syarat belum lengkap: {{ k.syaratKurang.join(', ') }}.
               </p>
 
+              <div v-if="k.status !== 'draf'" class="mt-2 ml-3.5">
+                <Rantai :rantai="k.rantai" :tertinggal="k.tertinggal"
+                        :dapat-paraf="k.dapatParaf" :saya-penentu="props.opsi?.sayaPenentu"
+                        @paraf="t => paraf(`/authority/${id}/kartu/${k.id}/paraf`, t)" />
+              </div>
+
               <div class="flex flex-wrap items-center gap-2 mt-1.5 ml-3.5">
                 <button v-if="k.dapatDiubah && !k.syaratKurang?.length" type="button"
                         class="text-[11px] font-semibold text-cam-lime-deep"
@@ -721,6 +740,12 @@ function hapus(jalur: string, apa: string) {
               {{ m.jumlah }} nama<span v-if="m.belumKembali"> · {{ m.belumKembali }} belum kembali</span>
             </p>
           </div>
+        </div>
+
+        <div v-if="m.status !== 'draf'" class="mt-3">
+          <Rantai :rantai="m.rantai" :tertinggal="m.tertinggal"
+                  :dapat-paraf="m.dapatParaf" :saya-penentu="props.opsi?.sayaPenentu"
+                  @paraf="t => paraf(`/authority/mcu/${m.id}/paraf`, t)" />
         </div>
 
         <div class="flex flex-wrap items-center gap-3 mt-3">

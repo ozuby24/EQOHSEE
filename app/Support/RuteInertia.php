@@ -210,6 +210,7 @@ final class RuteInertia
 
         /* Keselamatan Operasi */
         'authority.index',
+        'authority.dasbor',
         'authority.mcu.index',
         'ko.index',
         'ko.register',

@@ -126,6 +126,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
        setiap pagi di gerbang: boleh atau tidak orang ini bekerja hari ini. */
     Route::prefix('authority')->name('authority.')->group(function () {
         Route::get('/',                [AuthorityController::class,'index'])->name('index');
+        Route::get('dasbor',           [AuthorityController::class,'dasbor'])->name('dasbor');
         Route::post('/',               [AuthorityController::class,'store'])->name('store');
 
         /* Pengajuan MCU didaftarkan SEBELUM {paspor}, dan urutannya
@@ -146,6 +147,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::post('{pengajuan}/ajukan', [AuthorityController::class,'ajukanMcu'])->name('ajukan');
             Route::post('{pengajuan}/tinjau', [AuthorityController::class,'tinjauMcu'])->name('tinjau');
+            Route::post('{pengajuan}/paraf',  [AuthorityController::class,'parafMcu'])->name('paraf');
         });
 
         Route::get('{paspor}',         [AuthorityController::class,'show'])->name('show');
@@ -169,6 +171,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('{paspor}/kartu/{kartu}', [AuthorityController::class,'hapusKartu'])->name('kartu.hapus');
         Route::post('{paspor}/kartu/{kartu}/ajukan', [AuthorityController::class,'ajukanKartu'])->name('kartu.ajukan');
         Route::post('{paspor}/kartu/{kartu}/tinjau', [AuthorityController::class,'tinjauKartu'])->name('kartu.tinjau');
+        Route::post('{paspor}/kartu/{kartu}/paraf',  [AuthorityController::class,'parafKartu'])->name('kartu.paraf');
 
         Route::post('{paspor}/induksi',              [AuthorityController::class,'simpanInduksi'])->name('induksi.simpan');
         Route::delete('{paspor}/induksi/{induksi}',  [AuthorityController::class,'hapusInduksi'])->name('induksi.hapus');

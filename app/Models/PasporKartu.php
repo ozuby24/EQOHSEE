@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Models\Concerns\BerindukPerusahaan;
+use App\Models\Concerns\Bertahap;
 use App\Models\Concerns\Ditinjau;
 use App\Support\Authority;
+use App\Support\Tahap;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -27,6 +29,7 @@ class PasporKartu extends Model
 {
     use BerindukPerusahaan;
     use Ditinjau;
+    use Bertahap;
 
     protected static string $indukPerusahaan = 'paspor';
 
@@ -49,6 +52,21 @@ class PasporKartu extends Model
     }
 
     public function paspor() { return $this->belongsTo(Paspor::class); }
+
+    /**
+     * Yang memutuskan penerbitan kartu hanya OHSE.
+     *
+     * Menimpa penjaga baku Ditinjau, yang membolehkan administrator ATAU
+     * Kepala Teknik Tambang meninjau apa pun. Di modul ini wewenangnya
+     * lebih sempit dan disengaja begitu — lihat App\Support\Tahap.
+     */
+    public function dapatDitinjauOleh(?User $u): bool
+    {
+        if (!Tahap::penentu($u))    return false;
+        if (!$this->menungguTinjauan()) return false;
+
+        return $this->diajukan_oleh !== $u?->getKey();
+    }
 
     public function keadaan(): string    { return Authority::keadaan($this->tgl_expired); }
     public function keterangan(): string { return Authority::keterangan($this->tgl_expired); }

@@ -34,7 +34,7 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $fillable = [
         'name', 'email', 'password',
         // peran terpadu
-        'is_admin', 'lms_role', 'audit_role', 'company_id',
+        'is_admin', 'lms_role', 'audit_role', 'ohse_role', 'company_id',
         // profil (dulu tabel 'profiles')
         'avatar', 'employee_id', 'position', 'department', 'phone', 'active',
         'whatsapp', 'bio', 'tema',
@@ -60,6 +60,14 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isAdmin(): bool   { return (bool) $this->is_admin; }
     public function isTrainer(): bool { return $this->lms_role === 'trainer'; }
     public function isKtt(): bool     { return $this->lms_role === 'ktt'; }
+
+    /**
+     * Tim OHSE — satu-satunya yang memutuskan di modul Authority.
+     *
+     * Dipisah dari isKtt(): rantai paraf kartu masuk dan MCU sengaja
+     * berhenti di OHSE saja, bukan di setiap penanda tangan dokumen.
+     */
+    public function isOhse(): bool    { return $this->ohse_role === 'ohse'; }
 
     // Relasi
     public function company(): BelongsTo     { return $this->belongsTo(Company::class); }

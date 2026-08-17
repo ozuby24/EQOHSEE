@@ -21,7 +21,8 @@ use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, 
                 EnergyPowerLog, EnergyProduction,
                 KoPersonnel, KompetensiJenis, McuPengajuan, MineMapLayer,
                 MinerbaConservationRecord, Note,
-                Paspor, PasporInduksi, PasporKartu, PasporMcu, PasporSertifikat, Percakapan,
+                Paspor, PasporInduksi, PasporKartu, PasporMcu, PasporSertifikat,
+                Percakapan, PersetujuanParaf,
                 Pesan, Signatory, TpkkpAssessment, TpkkpResponse};
 use Illuminate\Support\Carbon;
 
@@ -130,6 +131,11 @@ final class DataContoh
            harus disebut di sini: yang tidak disebut tidak menimbulkan
            galat, hanya dua baris yang bertambah tiap kali tombol muat
            ulang ditekan. */
+        /* Paraf dibuang PALING DULU: ia menunjuk kartu dan pengajuan,
+           dan penyaringnya bekerja lewat keduanya. Dibalik urutannya,
+           penyaring itu tidak menemukan apa pun karena yang ditunjuknya
+           sudah hilang — dan barisnya tertinggal tanpa galat. */
+        PersetujuanParaf::class,
         PasporSertifikat::class, PasporMcu::class, PasporKartu::class,
         PasporInduksi::class, Paspor::class, McuPengajuan::class,
 
@@ -354,6 +360,23 @@ final class DataContoh
             PasporSertifikat::class, PasporMcu::class, PasporKartu::class, PasporInduksi::class
                 => $q->whereIn('paspor_id',
                     Paspor::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            /* Paraf bersifat polimorfik, jadi penyaringnya dua cabang —
+               satu per jenis subjek. Kolom subjek_type WAJIB ikut
+               disebut di tiap cabang: tanpanya, whereIn atas id saja
+               akan ikut menghapus paraf milik jenis subjek LAIN yang
+               kebetulan bernomor sama. */
+            PersetujuanParaf::class => $q->where(fn ($w) => $w
+                ->where(fn ($x) => $x
+                    ->where('subjek_type', PasporKartu::class)
+                    ->whereIn('subjek_id', PasporKartu::withoutGlobalScopes()
+                        ->whereIn('paspor_id', Paspor::withoutGlobalScopes()
+                            ->where('company_id', $c->id)->select('id'))
+                        ->select('id')))
+                ->orWhere(fn ($x) => $x
+                    ->where('subjek_type', McuPengajuan::class)
+                    ->whereIn('subjek_id', McuPengajuan::withoutGlobalScopes()
+                        ->where('company_id', $c->id)->select('id')))),
 
             /* Catatan belajar menggantung pada modul, dan modul pada
                kursus yang dibuat perusahaan contoh ini. */
@@ -657,6 +680,15 @@ final class DataContoh
                         'ditinjau_pada' => $statusKartu === Alur::DISETUJUI
                             ? $this->kini->copy()->subDays(18) : null,
                     ]);
+
+                    /* Yang sudah disetujui parafnya lengkap; yang masih
+                       menunggu sengaja BARU SATU. Rantai yang seluruhnya
+                       terisi tidak pernah memperlihatkan seperti apa
+                       tampilan tahap yang tertinggal — padahal itulah
+                       yang paling sering dilihat orang. */
+                    $n += $this->paraf($k, $statusKartu === Alur::DISETUJUI
+                        ? [Tahap::ATASAN, Tahap::DEPARTEMEN]
+                        : [Tahap::ATASAN]);
                 }
             }
 
@@ -678,6 +710,38 @@ final class DataContoh
         }
 
         return $n + $this->pengajuanMcu();
+    }
+
+    /**
+     * Membubuhkan paraf contoh pada tahap-tahap yang disebut.
+     *
+     * Ditulis langsung ke tabelnya, tidak lewat bubuhkanParaf(): metode
+     * itu menolak paraf dari pengajunya sendiri, dan data contoh hanya
+     * punya dua pengguna. Penjagaannya tetap diuji — lihat AuthorityTest
+     * — dan yang ditembus di sini terlihat sebagai penembusan, bukan
+     * tersembunyi sebagai jalan yang ternyata memang terbuka.
+     *
+     * Memulangkan JUMLAH BARIS, bukan sekadar menandai sudah dipanggil.
+     * Hitungan yang dilaporkan pemuat harus sama persis dengan yang
+     * nanti terbuang; menghitung "sekali per panggilan" membuat selisih
+     * yang muncul sebagai kegagalan uji muat-ulang di tempat yang jauh
+     * dari sebabnya.
+     *
+     * @param  list<string>  $tahap
+     */
+    private function paraf(object $subjek, array $tahap): int
+    {
+        foreach ($tahap as $i => $t) {
+            $subjek->paraf()->create([
+                'tahap'   => $t,
+                'user_id' => $this->peninjau?->getKey(),
+                'nama'    => $this->peninjau?->name ?? 'Pengawas',
+                'jabatan' => $t === Tahap::ATASAN ? 'Atasan langsung' : 'Kepala departemen',
+                'created_at' => $this->kini->copy()->subDays(19 - $i),
+            ]);
+        }
+
+        return count($tahap);
     }
 
     /**
@@ -736,6 +800,10 @@ final class DataContoh
                 'ditinjau_pada' => $status === Alur::DISETUJUI
                     ? $this->kini->copy()->addDays($hari)->addDays(2) : null,
             ]);
+
+            $n += $this->paraf($p, $status === Alur::DISETUJUI
+                ? [Tahap::ATASAN, Tahap::DEPARTEMEN]
+                : [Tahap::ATASAN]);
 
             foreach ($orang->slice($dari, $berapa)->values() as $t => $o) {
                 PasporMcu::withoutGlobalScopes()->create([

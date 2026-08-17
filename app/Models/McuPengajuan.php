@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use App\Models\Concerns\BerpemilikPerusahaan;
+use App\Models\Concerns\Bertahap;
 use App\Models\Concerns\Ditinjau;
 use App\Models\Scopes\MilikPerusahaan;
 use App\Support\Authority;
+use App\Support\Tahap;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Model;
 
@@ -33,6 +35,7 @@ class McuPengajuan extends Model
 {
     use BerpemilikPerusahaan;
     use Ditinjau;
+    use Bertahap;
 
     protected $table = 'mcu_pengajuan';
 
@@ -56,6 +59,15 @@ class McuPengajuan extends Model
 
     public function company() { return $this->belongsTo(Company::class); }
     public function user()    { return $this->belongsTo(User::class); }
+
+    /** Yang memutuskan hanya OHSE — lihat App\Support\Tahap. */
+    public function dapatDitinjauOleh(?User $u): bool
+    {
+        if (!Tahap::penentu($u))        return false;
+        if (!$this->menungguTinjauan()) return false;
+
+        return $this->diajukan_oleh !== $u?->getKey();
+    }
 
     public function hasil()
     {

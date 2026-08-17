@@ -78,6 +78,18 @@ const kepala = 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400
             </select>
           </div>
         </div>
+
+        <div>
+          <label :class="label">Peran OHSE</label>
+          <select v-model="form.ohse_role" :class="isian">
+            <option value="">— tanpa peran —</option>
+            <option v-for="o in (opsi.ohse ?? [])" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
+          </select>
+          <p class="text-[11px] text-stone-500 mt-1">
+            Hanya tim OHSE yang menerbitkan kartu masuk dan meloloskan pengajuan MCU.
+            Tahap sebelumnya membubuhkan paraf, dan paraf tidak menerbitkan apa pun.
+          </p>
+        </div>
         <div>
           <label :class="label">Perusahaan</label>
           <select v-model="form.company_id" :class="isian">

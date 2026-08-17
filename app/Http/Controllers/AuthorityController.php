@@ -8,6 +8,7 @@ use App\Rules\DalamPerusahaan;
 use App\Models\ActivityLog as Jejak;
 use App\Support\Alur;
 use App\Support\Authority;
+use App\Support\Tahap;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -58,7 +59,7 @@ class AuthorityController extends Controller
 
     public function show(Paspor $paspor)
     {
-        $paspor->load(['sertifikat.jenis', 'mcu.pengajuan', 'kartu', 'induksi', 'user', 'company']);
+        $paspor->load(['sertifikat.jenis', 'mcu.pengajuan', 'kartu.paraf', 'induksi', 'user', 'company']);
 
         return Inertia::render('Authority/Halaman', $this->bersama() + [
             'mode'   => 'rincian',
@@ -104,6 +105,132 @@ class AuthorityController extends Controller
         ]);
     }
 
+    /* ═══════════ dasbor ═══════════ */
+
+    /**
+     * Ringkasan seluruh modul dalam satu layar.
+     *
+     * Dua bagian, dan urutannya disengaja. Yang pertama adalah APA YANG
+     * MENUNGGU SAYA — pertanyaan yang dibawa orang saat membuka sistem
+     * pagi hari, dan satu-satunya bagian yang menuntut tindakan. Yang
+     * kedua barulah jumlah keseluruhan.
+     *
+     * Angka besar tanpa tautan tidak dibuat. Sebuah kartu bertuliskan
+     * "3.959 MCU" yang tidak dapat ditekan hanya memberi tahu bahwa
+     * datanya banyak; yang dicari pembacanya selalu barisnya.
+     */
+    public function dasbor(Request $request)
+    {
+        $u = $request->user();
+
+        $orang = Paspor::with(['sertifikat', 'mcu', 'kartu', 'induksi'])->get();
+
+        $takLayak = $orang->filter(fn (Paspor $p) => !$p->kelayakan()['layak']);
+
+        /* Yang menunggu keputusan SAYA — bukan yang menunggu keputusan
+           siapa pun. Bagi yang bukan OHSE angkanya nol, dan itu jawaban
+           yang benar: pengajuan itu memang bukan urusannya. */
+        $mcuMenunggu = McuPengajuan::with(['pengaju'])->menunggu()->get()
+            ->filter(fn (McuPengajuan $m) => $m->dapatDitinjauOleh($u));
+
+        $kartuMenunggu = PasporKartu::with('paspor')->menunggu()->get()
+            ->filter(fn (PasporKartu $k) => $k->dapatDitinjauOleh($u));
+
+        /* Rujukan medis yang tanggal tindak lanjutnya lewat. Tidak
+           menahan orang di gerbang, tetapi menahan orang dari sembuh —
+           dan tanpa satu angka yang menyebutnya, tidak ada yang
+           menagihnya. */
+        $tertunggak = $orang->sum(
+            fn (Paspor $p) => $p->mcu->filter(fn (PasporMcu $m) => $m->rujukanTertunggak())->count()
+        );
+
+        $kritis = fn (iterable $tgl) => collect($tgl)->filter()
+            ->filter(fn ($t) => in_array(Authority::keadaan($t),
+                [Authority::KRITIS, Authority::SEGERA], true))->count();
+
+        return Inertia::render('Authority/Dasbor', [
+            'judul'    => 'Authority — Ringkasan',
+            'subjudul' => 'MCU, induksi, kartu masuk, dan kompetensi dalam satu layar',
+
+            'menunggu' => [
+                'mcu' => $mcuMenunggu->map(fn (McuPengajuan $m) => [
+                    'id'     => $m->id,
+                    'nomor'  => $m->nomor_register ?? '#'.$m->id,
+                    'judul'  => $m->judul,
+                    'jumlah' => $m->hasil()->count(),
+                    'pengaju' => $m->pengaju?->name,
+                    'tanggal' => $m->tanggal?->toDateString(),
+                    'tertinggal' => $m->parafTertinggal(),
+                ])->values(),
+                'kartu' => $kartuMenunggu->map(fn (PasporKartu $k) => [
+                    'id'       => $k->id,
+                    'pasporId' => $k->paspor_id,
+                    'nama'     => $k->paspor?->nama,
+                    'jenis'    => $k->jenis,
+                    'sebab'    => $k->sebab_terbit,
+                    'tertinggal' => $k->parafTertinggal(),
+                ])->values(),
+
+                /* Disebut tegas bila memang nol dan orangnya bukan
+                   penentu — supaya "kosong" tidak terbaca sebagai
+                   "rusak". */
+                'sayaPenentu' => Tahap::penentu($u),
+            ],
+
+            /* Kartu angka. Tiap satu punya tautan ke barisnya. */
+            'kartu' => [
+                [
+                    'label' => 'Orang terdaftar', 'nilai' => $orang->count(),
+                    'jalur' => route('authority.index'), 'nada' => 'netral',
+                ],
+                [
+                    'label' => 'Tidak boleh bekerja', 'nilai' => $takLayak->count(),
+                    'jalur' => route('authority.index', ['keadaan' => '']), 'nada' => 'gawat',
+                ],
+                [
+                    'label' => 'Hasil MCU', 'nilai' => $orang->sum(fn ($p) => $p->mcu->count()),
+                    'jalur' => route('authority.mcu.index'), 'nada' => 'netral',
+                ],
+                [
+                    'label' => 'Induksi', 'nilai' => $orang->sum(fn ($p) => $p->induksi->count()),
+                    'jalur' => route('authority.index'), 'nada' => 'netral',
+                ],
+                [
+                    'label' => 'Kartu masuk', 'nilai' => $orang->sum(fn ($p) => $p->kartu->count()),
+                    'jalur' => route('authority.index'), 'nada' => 'netral',
+                ],
+                [
+                    'label' => 'Sertifikat kompetensi',
+                    'nilai' => $orang->sum(fn ($p) => $p->sertifikat->count()),
+                    'jalur' => route('authority.index'), 'nada' => 'netral',
+                ],
+                [
+                    'label' => 'Rujukan tertunggak', 'nilai' => $tertunggak,
+                    'jalur' => route('authority.mcu.index'), 'nada' => 'serius',
+                ],
+                [
+                    'label' => 'Berkas segera habis',
+                    'nilai' => $kritis($orang->flatMap(fn ($p) => $p->sertifikat->pluck('tgl_expired')))
+                             + $kritis($orang->map(fn ($p) => $p->mcuTerakhir()?->tgl_expired))
+                             + $kritis($orang->map(fn ($p) => $p->kartuBerlaku()?->tgl_expired))
+                             + $kritis($orang->map(fn ($p) => $p->induksiBerlaku()?->tgl_expired)),
+                    'jalur' => route('authority.index', ['keadaan' => Authority::KRITIS]),
+                    'nada'  => 'ingat',
+                ],
+            ],
+
+            /* Yang paling mendesak, langsung dengan namanya — supaya
+               dasbornya dapat ditindaklanjuti tanpa membuka halaman
+               lain lebih dulu. */
+            'mendesak' => $takLayak->take(8)->map(fn (Paspor $p) => [
+                'id'    => $p->id,
+                'nama'  => $p->nama,
+                'jabatan' => $p->jabatan,
+                'sebab' => $p->kelayakan()['sebab'],
+            ])->values(),
+        ]);
+    }
+
     /* ═══════════ pengajuan MCU: satu surat, banyak nama ═══════════ */
 
     /**
@@ -115,7 +242,7 @@ class AuthorityController extends Controller
      */
     public function mcuIndex(Request $request)
     {
-        $pengajuan = McuPengajuan::with(['hasil.paspor', 'pengaju', 'peninjau'])
+        $pengajuan = McuPengajuan::with(['hasil.paspor', 'pengaju', 'peninjau', 'paraf'])
             ->when($request->get('status'), fn ($q, $s) => $q->where('status', $s))
             ->orderByDesc('tanggal')->orderByDesc('id')
             ->get();
@@ -139,6 +266,10 @@ class AuthorityController extends Controller
                 'alasanTolak' => $m->alasan_tolak,
                 'pengaju'     => $m->pengaju?->name,
                 'peninjau'    => $m->peninjau?->name,
+
+                'rantai'     => $m->rantaiTahap(),
+                'tertinggal' => $m->parafTertinggal(),
+                'dapatParaf' => $m->menungguTinjauan(),
 
                 'jumlah'       => $m->hasil->count(),
                 'belumKembali' => $m->belumKembali(),
@@ -535,6 +666,45 @@ class AuthorityController extends Controller
             $pengajuan->nomor_register ?? '#'.$pengajuan->id);
     }
 
+    /* ═══════════ paraf bertahap ═══════════ */
+
+    /**
+     * Membubuhkan paraf pada satu tahap.
+     *
+     * Paraf TIDAK mengubah status apa pun. Ia hanya mencatat siapa sudah
+     * melihat, dan tidak menahan maupun mempercepat keputusan OHSE.
+     */
+    public function parafKartu(Request $request, Paspor $paspor, PasporKartu $kartu)
+    {
+        abort_unless($kartu->paspor_id === $paspor->id, 404);
+
+        return $this->bubuhkan($request, $kartu, $paspor->nama);
+    }
+
+    public function parafMcu(Request $request, McuPengajuan $pengajuan)
+    {
+        return $this->bubuhkan($request, $pengajuan,
+            $pengajuan->nomor_register ?? '#'.$pengajuan->id);
+    }
+
+    private function bubuhkan(Request $request, $model, string $sebutan)
+    {
+        $data = $request->validate([
+            'tahap'   => ['required', Rule::in(Tahap::kode())],
+            'catatan' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        try {
+            $model->bubuhkanParaf($data['tahap'], $request->user(), $data['catatan'] ?? null);
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['paraf' => $e->getMessage()]);
+        }
+
+        Jejak::write('Paraf '.Tahap::label($data['tahap']), $sebutan, 'authority');
+
+        return back()->with('ok', 'Paraf '.Tahap::label($data['tahap']).' dibubuhkan.');
+    }
+
     /**
      * Setujui, tolak, atau tarik — satu jalur untuk kedua model.
      *
@@ -582,6 +752,8 @@ class AuthorityController extends Controller
                 'jenisInduksi' => Authority::JENIS_INDUKSI,
                 'hasilInduksi' => Authority::HASIL_INDUKSI,
                 'statusAlur'   => Alur::LABEL,
+                'tahap'        => Tahap::RANTAI,
+                'sayaPenentu'  => Tahap::penentu(auth()->user()),
                 'kompetensi'   => KompetensiJenis::aktif()->orderBy('urutan')
                     ->get(['id', 'nama', 'lembaga']),
 
@@ -620,6 +792,10 @@ class AuthorityController extends Controller
             'alasanTolak'   => $k->alasan_tolak,
             'syaratKurang'  => $k->syaratKurang(),
             'berlaku'       => $k->sudahDisetujui(),
+
+            'rantai'      => $k->rantaiTahap(),
+            'tertinggal'  => $k->parafTertinggal(),
+            'dapatParaf'  => $k->menungguTinjauan(),
         ];
     }
 
