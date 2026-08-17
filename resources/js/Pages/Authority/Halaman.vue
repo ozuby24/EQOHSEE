@@ -56,7 +56,7 @@ const sebaranKeadaan = computed(() => {
   const per = ringkas.value?.perKeadaan ?? {};
   const gabung: Record<string, number> = {};
 
-  for (const jenis of ['sertifikat', 'mcu', 'kartu']) {
+  for (const jenis of ['sertifikat', 'mcu', 'kartu', 'induksi']) {
     for (const [k, n] of Object.entries((per[jenis] ?? {}) as Record<string, number>)) {
       gabung[k] = (gabung[k] ?? 0) + Number(n);
     }
@@ -76,6 +76,7 @@ const kritisPerJenis = computed(() => {
   const per = ringkas.value?.perKeadaan ?? {};
 
   return [
+    ['Induksi', per.induksi],
     ['Sertifikat kompetensi', per.sertifikat],
     ['MCU', per.mcu],
     ['Kartu masuk', per.kartu],
@@ -108,9 +109,93 @@ const fMcu = useForm<Record<string, any>>({
 });
 
 const fKartu = useForm<Record<string, any>>({
-  jenis: 'ID Card', nomor: '', tgl_terbit: '', tgl_expired: '',
-  golongan: '', area: '', catatan: '',
+  jenis: 'ID Card', sebab_terbit: 'Terbit', nomor: '', tgl_terbit: '', tgl_expired: '',
+  golongan: '', area: '', sim_polisi: '', sim_polisi_expired: '',
+  pengalaman_kerja: '', berkas_induksi: '', berkas_ddt: '', email_atasan: '',
+  catatan: '',
 });
+
+const fInduksi = useForm<Record<string, any>>({
+  nomor_registrasi: '', jenis: 'Awal', tanggal: '', tgl_expired: '',
+  pemberi: '', lokasi: '', nilai: '', hasil: 'Lulus', catatan: '',
+});
+
+/* ── pengajuan MCU ── */
+
+const fPengajuan = useForm<Record<string, any>>({
+  nomor_register: '', tanggal: '', kepada: '', judul: '',
+  jenis: 'Berkala', catatan: '',
+});
+
+const fNama  = useForm<Record<string, any>>({ paspor_id: '', tgl_periksa: '' });
+const fAlur  = useForm<Record<string, any>>({ aksi: '', alasan: '' });
+
+/** Pengajuan yang sedang dibuka rinciannya — hanya satu, supaya
+    layarnya tidak berubah menjadi dinding tabel bersarang. */
+const bukaPengajuan = ref<number | null>(null);
+
+/**
+ * Hasil MCU diisi per baris, jadi formulirnya juga per baris.
+ *
+ * Satu useForm bersama akan membuat isian yang belum disimpan pada satu
+ * nama muncul pada nama berikutnya yang dibuka — dan pada berkas medis,
+ * angka yang nyasar ke orang lain bukan gangguan kecil.
+ */
+const isiHasil = reactive<Record<number, any>>({});
+
+function mulaiIsi(h: any) {
+  isiHasil[h.id] = {
+    tgl_periksa: h.tglPeriksa ?? '', tgl_expired: h.tglExpired ?? '',
+    nomor: h.nomor ?? '', hasil: h.hasil ?? 'Fit',
+    pembatasan: h.pembatasan ?? '', rujukan: h.rujukan ?? '',
+    outstanding: h.outstanding ?? '',
+  };
+}
+
+function batalIsi(hasilId: number) { delete isiHasil[hasilId]; }
+
+function simpanHasil(pengajuanId: number, hasilId: number) {
+  router.put(`/authority/mcu/${pengajuanId}/hasil/${hasilId}`, isiHasil[hasilId], {
+    preserveScroll: true,
+    onSuccess: () => batalIsi(hasilId),
+  });
+}
+
+function simpanPengajuan() {
+  fPengajuan.post('/authority/mcu', {
+    preserveScroll: true,
+    onSuccess: () => { fPengajuan.reset(); buka.value = null; },
+  });
+}
+
+function tambahNama(pengajuanId: number) {
+  fNama.post(`/authority/mcu/${pengajuanId}/nama`, {
+    preserveScroll: true, onSuccess: () => fNama.reset(),
+  });
+}
+
+function ajukanPengajuan(pengajuanId: number) {
+  router.post(`/authority/mcu/${pengajuanId}/ajukan`, {}, { preserveScroll: true });
+}
+
+/**
+ * Menolak selalu menuntut alasan, dan alasannya diminta di muka.
+ *
+ * Penolakan tanpa alasan memaksa pengaju menebak apa yang salah, dan
+ * yang paling sering ditebak adalah "tidak ada yang salah, coba kirim
+ * ulang" — yang membuat surat yang sama bolak-balik tanpa ada yang
+ * berubah.
+ */
+function tinjau(jalur: string, aksi: 'setujui' | 'tolak' | 'tarik') {
+  let alasan = '';
+
+  if (aksi === 'tolak') {
+    alasan = (prompt('Alasan penolakan:') ?? '').trim();
+    if (!alasan) return;
+  }
+
+  fAlur.transform(() => ({ aksi, alasan })).post(jalur, { preserveScroll: true });
+}
 
 /**
  * Memilih jenis kompetensi ikut mengisi nama dan lembaganya.
@@ -140,6 +225,12 @@ function simpanMcu() {
 function simpanKartu() {
   fKartu.post(`/authority/${id.value}/kartu`, { preserveScroll: true, onSuccess: () => fKartu.reset() });
 }
+function simpanInduksi() {
+  fInduksi.post(`/authority/${id.value}/induksi`, { preserveScroll: true, onSuccess: () => fInduksi.reset() });
+}
+function ajukanKartu(kartuId: number) {
+  router.post(`/authority/${id.value}/kartu/${kartuId}/ajukan`, {}, { preserveScroll: true });
+}
 function hapus(jalur: string, apa: string) {
   if (confirm(`Hapus ${apa}?`)) router.delete(jalur, { preserveScroll: true });
 }
@@ -156,13 +247,25 @@ function hapus(jalur: string, apa: string) {
         <p class="text-[12.5px] text-stone-500 mt-1">{{ props.subjudul }}</p>
       </div>
 
-      <Link v-if="props.mode === 'rincian'" href="/authority" class="eq-btn-lain">
-        Kembali ke daftar
-      </Link>
-      <button v-else type="button" class="eq-btn-utama"
-              @click="buka = buka === 'orang' ? null : 'orang'">
-        {{ buka === 'orang' ? 'Batal' : 'Tambah orang' }}
-      </button>
+      <div class="flex flex-wrap items-center gap-2">
+        <Link v-if="props.mode !== 'daftar'" href="/authority" class="eq-btn-lain">
+          Kembali ke daftar
+        </Link>
+
+        <Link v-if="props.mode === 'daftar'" href="/authority/mcu" class="eq-btn-lain">
+          Pengajuan MCU
+        </Link>
+
+        <button v-if="props.mode === 'daftar'" type="button" class="eq-btn-utama"
+                @click="buka = buka === 'orang' ? null : 'orang'">
+          {{ buka === 'orang' ? 'Batal' : 'Tambah orang' }}
+        </button>
+
+        <button v-if="props.mode === 'mcu'" type="button" class="eq-btn-utama"
+                @click="buka = buka === 'pengajuan' ? null : 'pengajuan'">
+          {{ buka === 'pengajuan' ? 'Batal' : 'Surat pengajuan baru' }}
+        </button>
+      </div>
     </section>
 
     <!-- ══════════ DAFTAR ══════════ -->
@@ -191,7 +294,8 @@ function hapus(jalur: string, apa: string) {
           <div>
             <h3 class="text-[14px] font-bold text-cam-ink">Tidak boleh bekerja hari ini</h3>
             <p class="text-[11.5px] text-stone-500 mt-0.5">
-              MCU atau kartu masuk kadaluarsa, belum ada, atau hasil MCU menyatakan tidak layak.
+              Induksi, MCU, atau kartu masuk kadaluarsa, belum ada, belum disetujui,
+              atau hasil MCU menyatakan tidak layak.
             </p>
           </div>
           <span class="text-[11px] font-bold shrink-0 num"
@@ -226,10 +330,11 @@ function hapus(jalur: string, apa: string) {
 
           <template #tabel>
             <table>
-              <thead><tr><th>Keadaan</th><th>Sertifikat</th><th>MCU</th><th>Kartu</th></tr></thead>
+              <thead><tr><th>Keadaan</th><th>Induksi</th><th>Sertifikat</th><th>MCU</th><th>Kartu</th></tr></thead>
               <tbody>
                 <tr v-for="k in ['kritis','segera','perhatian','aman','tak-bertanggal']" :key="k">
                   <td>{{ LABEL[k] }}</td>
+                  <td class="num">{{ ringkas.perKeadaan?.induksi?.[k] ?? 0 }}</td>
                   <td class="num">{{ ringkas.perKeadaan?.sertifikat?.[k] ?? 0 }}</td>
                   <td class="num">{{ ringkas.perKeadaan?.mcu?.[k] ?? 0 }}</td>
                   <td class="num">{{ ringkas.perKeadaan?.kartu?.[k] ?? 0 }}</td>
@@ -429,17 +534,48 @@ function hapus(jalur: string, apa: string) {
           </p>
 
           <ul v-if="props.kartu?.length" class="divide-y divide-stone-100 mb-4">
-            <li v-for="k in props.kartu" :key="k.id" class="py-2.5 flex items-center gap-2">
-              <span class="w-1.5 h-1.5 rounded-full shrink-0" :style="{ background: WARNA[k.keadaan] }"></span>
-              <span class="text-[12.5px] font-semibold text-cam-ink">{{ k.jenis }}</span>
-              <span class="text-[11px] text-stone-400 min-w-0 truncate">
-                {{ k.nomor || '—' }}<span v-if="k.golongan"> · {{ k.golongan }}</span>
-              </span>
-              <span class="ml-auto text-[11.5px] font-semibold shrink-0" :style="{ color: WARNA[k.keadaan] }">
-                {{ k.keterangan }}
-              </span>
-              <button type="button" class="text-red-600 text-[11px] shrink-0"
-                      @click="hapus(`/authority/${id}/kartu/${k.id}`, k.jenis)">Hapus</button>
+            <li v-for="k in props.kartu" :key="k.id" class="py-2.5">
+              <div class="flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full shrink-0"
+                      :style="{ background: k.berlaku ? WARNA[k.keadaan] : KEADAAN.netral }"></span>
+                <span class="text-[12.5px] font-semibold text-cam-ink">{{ k.jenis }}</span>
+                <span class="text-[11px] text-stone-400 min-w-0 truncate">
+                  {{ k.nomor || '—' }}<span v-if="k.golongan"> · {{ k.golongan }}</span>
+                  <span v-if="k.sebabTerbit !== 'Terbit'"> · {{ k.sebabTerbit }}</span>
+                </span>
+                <span class="ml-auto text-[11.5px] font-semibold shrink-0"
+                      :style="{ color: k.berlaku ? WARNA[k.keadaan] : KEADAAN.netral }">
+                  {{ k.berlaku ? k.keterangan : k.statusLabel }}
+                </span>
+              </div>
+
+              <!-- Kartu yang belum disetujui BUKAN kartu; dikatakan, bukan
+                   dibiarkan tersirat dari warna abu-abu saja. -->
+              <p v-if="!k.berlaku" class="text-[11px] text-stone-500 mt-1 ml-3.5">
+                Belum berlaku di gerbang sampai disetujui.
+                <span v-if="k.alasanTolak" class="text-red-600">Ditolak: {{ k.alasanTolak }}</span>
+              </p>
+              <p v-if="k.syaratKurang?.length && k.dapatDiubah"
+                 class="text-[11px] text-amber-700 mt-1 ml-3.5">
+                Syarat belum lengkap: {{ k.syaratKurang.join(', ') }}.
+              </p>
+
+              <div class="flex flex-wrap items-center gap-2 mt-1.5 ml-3.5">
+                <button v-if="k.dapatDiubah && !k.syaratKurang?.length" type="button"
+                        class="text-[11px] font-semibold text-cam-lime-deep"
+                        @click="ajukanKartu(k.id)">Ajukan</button>
+                <button v-if="k.dapatDitinjau" type="button"
+                        class="text-[11px] font-semibold" :style="{ color: KEADAAN.baik }"
+                        @click="tinjau(`/authority/${id}/kartu/${k.id}/tinjau`, 'setujui')">Setujui</button>
+                <button v-if="k.dapatDitinjau" type="button"
+                        class="text-[11px] font-semibold text-red-600"
+                        @click="tinjau(`/authority/${id}/kartu/${k.id}/tinjau`, 'tolak')">Tolak</button>
+                <button v-if="k.status === 'diajukan'" type="button"
+                        class="text-[11px] text-stone-500"
+                        @click="tinjau(`/authority/${id}/kartu/${k.id}/tinjau`, 'tarik')">Tarik</button>
+                <button type="button" class="text-red-600 text-[11px] ml-auto"
+                        @click="hapus(`/authority/${id}/kartu/${k.id}`, k.jenis)">Hapus</button>
+              </div>
             </li>
           </ul>
           <p v-else class="text-[12px] text-stone-400 py-3">Belum ada kartu tercatat.</p>
@@ -448,14 +584,258 @@ function hapus(jalur: string, apa: string) {
             <select v-model="fKartu.jenis" class="rounded-lg border-stone-200 text-[12px]">
               <option v-for="j in (props.opsi?.jenisKartu ?? [])" :key="j">{{ j }}</option>
             </select>
+            <select v-model="fKartu.sebab_terbit" class="rounded-lg border-stone-200 text-[12px]">
+              <option v-for="s in (props.opsi?.sebabKartu ?? [])" :key="s">{{ s }}</option>
+            </select>
             <input v-model="fKartu.nomor" placeholder="Nomor kartu" class="rounded-lg border-stone-200 text-[12px]">
             <input v-model="fKartu.golongan" placeholder="Golongan (SIMPER)" class="rounded-lg border-stone-200 text-[12px]">
             <input v-model="fKartu.tgl_terbit" type="date" title="Tanggal terbit" class="rounded-lg border-stone-200 text-[12px]">
             <input v-model="fKartu.tgl_expired" type="date" title="Berlaku sampai" class="rounded-lg border-stone-200 text-[12px]">
-            <button class="eq-btn-utama" :disabled="fKartu.processing">Terbitkan</button>
+
+            <!-- Berkas syarat. Hanya SIMPER yang menuntut ketiganya; medannya
+                 tetap tampil supaya tidak tersembunyi, tetapi keterangannya
+                 menyebut untuk siapa. -->
+            <input v-model="fKartu.berkas_induksi" placeholder="Bukti induksi (wajib)"
+                   class="rounded-lg border-stone-200 text-[12px]">
+            <input v-model="fKartu.sim_polisi" placeholder="No. SIM kepolisian (SIMPER)"
+                   class="rounded-lg border-stone-200 text-[12px]">
+            <input v-model="fKartu.sim_polisi_expired" type="date" title="SIM kepolisian berlaku sampai"
+                   class="rounded-lg border-stone-200 text-[12px]">
+            <input v-model="fKartu.berkas_ddt" placeholder="Sertifikat defensive driving (SIMPER)"
+                   class="rounded-lg border-stone-200 text-[12px]">
+            <input v-model="fKartu.email_atasan" type="email" placeholder="E-mail atasan"
+                   class="rounded-lg border-stone-200 text-[12px]">
+            <button class="eq-btn-utama" :disabled="fKartu.processing">Buat pengajuan</button>
+            <p v-if="fKartu.errors.kartu" class="text-[11px] text-red-600 md:col-span-3">{{ fKartu.errors.kartu }}</p>
           </form>
         </section>
       </div>
+
+      <!-- induksi -->
+      <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
+        <h3 class="text-[14px] font-bold text-cam-ink mb-1">Induksi keselamatan</h3>
+        <p class="text-[11px] text-stone-500 mb-3">
+          Syarat pertama sebelum masuk area — mendahului MCU maupun kartu.
+          Yang dipakai menilai kelayakan adalah induksi LULUS terakhir yang masih berlaku.
+        </p>
+
+        <ul v-if="props.induksi?.length" class="divide-y divide-stone-100 mb-4">
+          <li v-for="i in props.induksi" :key="i.id" class="py-2.5 flex flex-wrap items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full shrink-0"
+                  :style="{ background: i.lulus ? WARNA[i.keadaan] : KEADAAN.gawat }"></span>
+            <span class="text-[12.5px] font-semibold text-cam-ink">{{ i.jenis }}</span>
+            <span class="text-[11px] text-stone-400 min-w-0 truncate">
+              {{ i.tanggal }}<span v-if="i.pemberi"> · {{ i.pemberi }}</span>
+              <span v-if="i.nilai !== null"> · nilai {{ i.nilai }}</span>
+            </span>
+            <span class="text-[11.5px] font-semibold"
+                  :style="{ color: i.lulus ? KEADAAN.baik : KEADAAN.gawat }">{{ i.hasil }}</span>
+            <span class="ml-auto text-[11.5px] font-semibold shrink-0" :style="{ color: WARNA[i.keadaan] }">
+              {{ i.keterangan }}
+            </span>
+            <button type="button" class="text-red-600 text-[11px] shrink-0"
+                    @click="hapus(`/authority/${id}/induksi/${i.id}`, 'catatan induksi')">Hapus</button>
+          </li>
+        </ul>
+        <p v-else class="text-[12px] text-stone-400 py-3">Belum ada induksi tercatat.</p>
+
+        <form class="grid gap-2 md:grid-cols-4 pt-3 border-t border-stone-100" @submit.prevent="simpanInduksi">
+          <select v-model="fInduksi.jenis" class="rounded-lg border-stone-200 text-[12px]">
+            <option v-for="j in (props.opsi?.jenisInduksi ?? [])" :key="j">{{ j }}</option>
+          </select>
+          <input v-model="fInduksi.tanggal" type="date" required title="Tanggal induksi"
+                 class="rounded-lg border-stone-200 text-[12px]">
+          <input v-model="fInduksi.tgl_expired" type="date" title="Berlaku sampai"
+                 class="rounded-lg border-stone-200 text-[12px]">
+          <input v-model="fInduksi.pemberi" placeholder="Pemberi induksi"
+                 class="rounded-lg border-stone-200 text-[12px]">
+          <input v-model="fInduksi.nomor_registrasi" placeholder="No. registrasi"
+                 class="rounded-lg border-stone-200 text-[12px]">
+          <input v-model="fInduksi.lokasi" placeholder="Lokasi" class="rounded-lg border-stone-200 text-[12px]">
+          <input v-model="fInduksi.nilai" type="number" min="0" max="100" placeholder="Nilai"
+                 class="rounded-lg border-stone-200 text-[12px]">
+          <select v-model="fInduksi.hasil" class="rounded-lg border-stone-200 text-[12px]">
+            <option v-for="h in (props.opsi?.hasilInduksi ?? [])" :key="h">{{ h }}</option>
+          </select>
+          <button class="eq-btn-utama md:col-start-4" :disabled="fInduksi.processing">Catat induksi</button>
+        </form>
+      </section>
+    </template>
+
+    <!-- ══════════ PENGAJUAN MCU ══════════ -->
+    <template v-if="props.mode === 'mcu'">
+
+      <form v-if="buka === 'pengajuan'"
+            class="rounded-2xl bg-white border border-stone-100 shadow-card p-5 grid gap-3 md:grid-cols-4"
+            @submit.prevent="simpanPengajuan">
+        <input v-model="fPengajuan.nomor_register" placeholder="Nomor register surat"
+               class="rounded-lg border-stone-200 text-[12px]">
+        <input v-model="fPengajuan.tanggal" type="date" required title="Tanggal surat"
+               class="rounded-lg border-stone-200 text-[12px]">
+        <input v-model="fPengajuan.kepada" placeholder="Kepada (klinik / rumah sakit)"
+               class="rounded-lg border-stone-200 text-[12px]">
+        <select v-model="fPengajuan.jenis" class="rounded-lg border-stone-200 text-[12px]">
+          <option v-for="j in (props.opsi?.jenisMcu ?? [])" :key="j">{{ j }}</option>
+        </select>
+        <input v-model="fPengajuan.judul" placeholder="Perihal"
+               class="rounded-lg border-stone-200 text-[12px] md:col-span-3">
+        <button class="eq-btn-utama" :disabled="fPengajuan.processing">Simpan draf</button>
+      </form>
+
+      <section class="grid gap-4 sm:grid-cols-3">
+        <div v-for="k in [
+               ['Surat pengajuan', props.ringkasMcu?.total ?? 0, KEADAAN.netral],
+               ['Menunggu tinjauan', props.ringkasMcu?.menunggu ?? 0, KEADAAN.ingat],
+               ['Hasil belum kembali', props.ringkasMcu?.belumKembali ?? 0, KEADAAN.serius],
+             ]" :key="k[0] as string"
+             class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
+          <p class="text-[11.5px] text-stone-500">{{ k[0] }}</p>
+          <p class="text-[26px] font-bold leading-none mt-1 num"
+             :style="{ color: Number(k[1]) ? (k[2] as string) : KEADAAN.netral }">{{ k[1] }}</p>
+        </div>
+      </section>
+
+      <section v-for="m in (props.pengajuan ?? [])" :key="m.id"
+               class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div class="min-w-0">
+            <h3 class="text-[14px] font-bold text-cam-ink">
+              {{ m.nomor || 'Tanpa nomor register' }}
+              <span class="text-[11px] font-normal text-stone-400">· {{ m.tanggal }} · {{ m.jenis }}</span>
+            </h3>
+            <p class="text-[11.5px] text-stone-500 mt-0.5">
+              {{ m.judul || 'Perihal belum diisi' }}
+              <span v-if="m.kepada"> · kepada {{ m.kepada }}</span>
+            </p>
+            <p v-if="m.alasanTolak" class="text-[11.5px] text-red-600 mt-1">Ditolak: {{ m.alasanTolak }}</p>
+          </div>
+
+          <div class="text-right shrink-0">
+            <p class="text-[12px] font-bold"
+               :style="{ color: m.status === 'disetujui' ? KEADAAN.baik
+                              : m.status === 'ditolak' ? KEADAAN.gawat
+                              : m.status === 'diajukan' ? KEADAAN.ingat : KEADAAN.netral }">
+              {{ m.statusLabel }}
+            </p>
+            <p class="text-[11px] text-stone-400 mt-0.5">
+              {{ m.jumlah }} nama<span v-if="m.belumKembali"> · {{ m.belumKembali }} belum kembali</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 mt-3">
+          <button type="button" class="text-[11.5px] font-semibold text-cam-lime-deep"
+                  @click="bukaPengajuan = bukaPengajuan === m.id ? null : m.id">
+            {{ bukaPengajuan === m.id ? 'Tutup daftar nama' : 'Lihat daftar nama' }}
+          </button>
+          <button v-if="m.dapatDiubah && m.jumlah" type="button"
+                  class="text-[11.5px] font-semibold text-cam-lime-deep"
+                  @click="ajukanPengajuan(m.id)">Ajukan</button>
+          <button v-if="m.dapatDitinjau" type="button" class="text-[11.5px] font-semibold"
+                  :style="{ color: KEADAAN.baik }"
+                  @click="tinjau(`/authority/mcu/${m.id}/tinjau`, 'setujui')">Setujui</button>
+          <button v-if="m.dapatDitinjau" type="button" class="text-[11.5px] font-semibold text-red-600"
+                  @click="tinjau(`/authority/mcu/${m.id}/tinjau`, 'tolak')">Tolak</button>
+          <button v-if="m.status === 'diajukan'" type="button" class="text-[11.5px] text-stone-500"
+                  @click="tinjau(`/authority/mcu/${m.id}/tinjau`, 'tarik')">Tarik</button>
+          <button v-if="m.dapatDiubah" type="button" class="text-[11.5px] text-red-600 ml-auto"
+                  @click="hapus(`/authority/mcu/${m.id}`, 'pengajuan ini')">Hapus</button>
+        </div>
+
+        <div v-if="bukaPengajuan === m.id" class="mt-4 pt-4 border-t border-stone-100">
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-left text-[12px]">
+              <thead>
+                <tr class="text-stone-400 border-b border-stone-100">
+                  <th class="py-2 pr-3">Nama</th><th class="py-2 pr-3">Periksa</th>
+                  <th class="py-2 pr-3">Berlaku s/d</th><th class="py-2 pr-3">Hasil</th>
+                  <th class="py-2 pr-3">Rujukan</th><th class="py-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="h in m.nama" :key="h.id" class="border-b border-stone-50 align-top">
+                  <template v-if="!isiHasil[h.id]">
+                    <td class="py-2 pr-3 font-semibold">
+                      <Link :href="`/authority/${h.pasporId}`" class="text-cam-lime-deep">{{ h.nama }}</Link>
+                    </td>
+                    <td class="py-2 pr-3">{{ h.tglPeriksa || '—' }}</td>
+                    <td class="py-2 pr-3">{{ h.tglExpired || '—' }}</td>
+                    <td class="py-2 pr-3">
+                      <span v-if="h.hasil" class="font-semibold">{{ h.hasil }}</span>
+                      <span v-else class="text-stone-400">belum kembali</span>
+                    </td>
+                    <td class="py-2 pr-3">
+                      <span v-if="h.rujukan" :style="{ color: h.tertunggak ? KEADAAN.gawat : KEADAAN.ingat }">
+                        {{ h.rujukan }}
+                      </span>
+                      <span v-else class="text-stone-400">—</span>
+                    </td>
+                    <td class="py-2 text-right whitespace-nowrap">
+                      <button type="button" class="text-[11px] font-semibold text-cam-lime-deep"
+                              @click="mulaiIsi(h)">Isi hasil</button>
+                      <button v-if="m.dapatDiubah" type="button" class="text-[11px] text-red-600 ml-2"
+                              @click="hapus(`/authority/mcu/${m.id}/nama/${h.id}`, h.nama)">Keluarkan</button>
+                    </td>
+                  </template>
+
+                  <td v-else colspan="6" class="py-2">
+                    <p class="text-[11.5px] font-semibold text-cam-ink mb-2">{{ h.nama }}</p>
+                    <div class="grid gap-2 md:grid-cols-4">
+                      <input v-model="isiHasil[h.id].tgl_periksa" type="date" required title="Tanggal periksa"
+                             class="rounded-lg border-stone-200 text-[12px]">
+                      <input v-model="isiHasil[h.id].tgl_expired" type="date" title="Berlaku sampai"
+                             class="rounded-lg border-stone-200 text-[12px]">
+                      <select v-model="isiHasil[h.id].hasil" class="rounded-lg border-stone-200 text-[12px]">
+                        <option v-for="x in (props.opsi?.hasilMcu ?? [])" :key="x">{{ x }}</option>
+                      </select>
+                      <input v-model="isiHasil[h.id].nomor" placeholder="No. hasil"
+                             class="rounded-lg border-stone-200 text-[12px]">
+                      <input v-model="isiHasil[h.id].pembatasan" placeholder="Pembatasan kerja"
+                             class="rounded-lg border-stone-200 text-[12px] md:col-span-2">
+                      <input v-model="isiHasil[h.id].rujukan" placeholder="Rujukan medis"
+                             class="rounded-lg border-stone-200 text-[12px]">
+                      <input v-model="isiHasil[h.id].outstanding" type="date" title="Tindak lanjut sampai"
+                             class="rounded-lg border-stone-200 text-[12px]">
+                    </div>
+                    <div class="flex gap-3 mt-2">
+                      <button type="button" class="eq-btn-utama text-[11px] py-1"
+                              @click="simpanHasil(m.id, h.id)">Simpan hasil</button>
+                      <button type="button" class="text-[11px] text-stone-500"
+                              @click="batalIsi(h.id)">Batal</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr v-if="!m.nama?.length">
+                  <td colspan="6" class="py-6 text-center text-stone-400">
+                    Belum ada nama dalam pengajuan ini.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <form v-if="m.dapatDiubah" class="grid gap-2 md:grid-cols-4 mt-3 pt-3 border-t border-stone-100"
+                @submit.prevent="tambahNama(m.id)">
+            <select v-model="fNama.paspor_id" required class="rounded-lg border-stone-200 text-[12px] md:col-span-2">
+              <option value="">Pilih pekerja…</option>
+              <option v-for="o in (props.opsi?.orang ?? [])" :key="o.id" :value="o.id">
+                {{ o.nama }}<span v-if="o.jabatan"> — {{ o.jabatan }}</span>
+              </option>
+            </select>
+            <input v-model="fNama.tgl_periksa" type="date" title="Rencana tanggal periksa"
+                   class="rounded-lg border-stone-200 text-[12px]">
+            <button class="eq-btn-utama" :disabled="fNama.processing">Tambah nama</button>
+            <p v-if="fNama.errors.paspor_id" class="text-[11px] text-red-600 md:col-span-4">
+              {{ fNama.errors.paspor_id }}
+            </p>
+          </form>
+        </div>
+      </section>
+
+      <p v-if="!(props.pengajuan ?? []).length"
+         class="rounded-2xl bg-white border border-stone-100 shadow-card p-10 text-center text-[12px] text-stone-400">
+        Belum ada surat pengajuan MCU.
+      </p>
     </template>
   </div>
 </template>

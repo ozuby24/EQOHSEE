@@ -23,16 +23,26 @@ class PasporMcu extends Model
     protected $table = 'paspor_mcu';
 
     protected $fillable = [
-        'paspor_id', 'tgl_periksa', 'tgl_expired', 'penyelenggara',
-        'jenis', 'hasil', 'pembatasan', 'berkas',
+        'paspor_id', 'mcu_pengajuan_id', 'tgl_periksa', 'tgl_expired',
+        'penyelenggara', 'nomor', 'jenis', 'hasil', 'pembatasan',
+        'rujukan', 'outstanding', 'berkas',
     ];
 
     protected function casts(): array
     {
-        return ['tgl_periksa' => 'date', 'tgl_expired' => 'date'];
+        return [
+            'tgl_periksa' => 'date',
+            'tgl_expired' => 'date',
+            'outstanding' => 'date',
+        ];
     }
 
     public function paspor() { return $this->belongsTo(Paspor::class); }
+
+    public function pengajuan()
+    {
+        return $this->belongsTo(McuPengajuan::class, 'mcu_pengajuan_id');
+    }
 
     public function keadaan(): string    { return Authority::keadaan($this->tgl_expired); }
     public function keterangan(): string { return Authority::keterangan($this->tgl_expired); }
@@ -41,5 +51,22 @@ class PasporMcu extends Model
     public function hasilLayak(): bool
     {
         return in_array($this->hasil, Authority::MCU_LAYAK, true);
+    }
+
+    /**
+     * Rujukan medis yang tanggal tindak lanjutnya sudah lewat.
+     *
+     * Hasil "Fit With Note" yang dirujuk tetapi tidak pernah ditagih
+     * adalah catatan yang sudah lengkap di berkas dan tidak pernah
+     * terjadi di kenyataan. Yang membuatnya tertagih adalah tanggal —
+     * karena itu rujukan tanpa tanggal ikut terhitung tertunggak di
+     * sini, bukan diabaikan.
+     */
+    public function rujukanTertunggak(): bool
+    {
+        if (blank($this->rujukan)) return false;
+
+        return blank($this->outstanding)
+            || Authority::sisaHari($this->outstanding) < 0;
     }
 }

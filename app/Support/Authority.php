@@ -64,7 +64,24 @@ final class Authority
     /** Hasil MCU yang berarti orangnya BOLEH bekerja. */
     public const MCU_LAYAK = ['Fit', 'Fit With Note'];
 
+    public const JENIS_MCU = ['Awal', 'Berkala', 'Khusus', 'Purna'];
+
     public const JENIS_KARTU = ['ID Card', 'SIMPER', 'Mine Permit', 'Visitor'];
+
+    /**
+     * Sebab sebuah kartu diterbitkan.
+     *
+     * D'Best memisahkan ketiganya menjadi tiga formulir tersendiri. Di
+     * sini satu tabel dengan penanda, sebab medan yang diisi sama persis
+     * dan yang berbeda hanya sebabnya — dan tiga formulir yang isinya
+     * sama adalah tiga tempat yang harus diubah bersamaan tiap kali satu
+     * medan bertambah.
+     */
+    public const SEBAB_KARTU = ['Terbit', 'Perpanjangan', 'Peningkatan golongan'];
+
+    public const JENIS_INDUKSI = ['Awal', 'Penyegaran', 'Perpanjangan', 'Tamu'];
+
+    public const HASIL_INDUKSI = ['Lulus', 'Tidak Lulus', 'Mengulang'];
 
     /* ═══════════ sisa hari dan keadaannya ═══════════ */
 
@@ -152,17 +169,43 @@ final class Authority
      * membuka tiga halaman untuk mencarinya sendiri, di gerbang, sambil
      * antrean memanjang.
      *
-     * MCU dan kartu masuk WAJIB; kompetensi tidak selalu — pekerja umum
-     * tanpa kompetensi khusus tetap boleh masuk. Yang tidak boleh adalah
-     * mengerjakan pekerjaan yang menuntut sertifikat tertentu, dan itu
-     * diperiksa izin kerjanya, bukan di sini.
+     * INDUKSI, MCU, dan kartu masuk WAJIB; kompetensi tidak selalu —
+     * pekerja umum tanpa kompetensi khusus tetap boleh masuk. Yang tidak
+     * boleh adalah mengerjakan pekerjaan yang menuntut sertifikat
+     * tertentu, dan itu diperiksa izin kerjanya, bukan di sini.
      *
+     * BELUM ADA sama beratnya dengan KADALUARSA, dan itu disengaja:
+     * gerbang tidak dapat meloloskan orang dengan alasan datanya belum
+     * dimasukkan. Sebabnya tetap dibedakan dalam kalimat supaya yang
+     * membacanya tahu apakah yang kurang itu pemeriksaannya atau
+     * pencatatannya.
+     *
+     * KARTU YANG BELUM DISETUJUI BUKAN KARTU. Sejak penerbitan kartu
+     * punya alur persetujuan, baris yang masih draf hanyalah pengajuan —
+     * memperlakukannya sebagai kartu berlaku membuat alurnya tidak ada
+     * gunanya, sebab siapa pun dapat meloloskan dirinya sendiri hanya
+     * dengan mengisi formulir.
+     *
+     * @param  ?string  $kartuTgl     kadaluarsa kartu yang SUDAH DISETUJUI
+     * @param  ?string  $kartuStatus  status kartu terakhir, dipakai hanya
+     *                                untuk menjelaskan ketiadaan di atas
      * @return array{layak:bool, sebab:list<string>}
      */
     public static function kelayakan(
-        ?string $mcuTgl, ?string $mcuHasil, ?string $kartuTgl, ?Carbon $kini = null,
+        ?string $mcuTgl = null,
+        ?string $mcuHasil = null,
+        ?string $kartuTgl = null,
+        ?string $kartuStatus = null,
+        ?string $induksiTgl = null,
+        ?Carbon $kini = null,
     ): array {
         $sebab = [];
+
+        if (blank($induksiTgl)) {
+            $sebab[] = 'induksi belum ada';
+        } elseif (self::sisaHari($induksiTgl, $kini) < 0) {
+            $sebab[] = 'induksi kadaluarsa';
+        }
 
         if (blank($mcuTgl)) {
             $sebab[] = 'MCU belum ada';
@@ -175,7 +218,12 @@ final class Authority
         }
 
         if (blank($kartuTgl)) {
-            $sebab[] = 'kartu masuk belum ada';
+            $sebab[] = match ($kartuStatus) {
+                Alur::DRAF     => 'kartu masuk masih draf',
+                Alur::DIAJUKAN => 'kartu masuk menunggu persetujuan',
+                Alur::DITOLAK  => 'pengajuan kartu masuk ditolak',
+                default        => 'kartu masuk belum ada',
+            };
         } elseif (self::sisaHari($kartuTgl, $kini) < 0) {
             $sebab[] = 'kartu masuk kadaluarsa';
         }

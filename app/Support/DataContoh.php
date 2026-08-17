@@ -19,8 +19,9 @@ use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, 
                 TindakLanjut, User, WaterLog, WaterSump, WaterSumpPump, WorkOrder, WorkOrderPart,
                 EnergyBaseline, EnergyFuelRecon, EnergyOpportunity, EnergyOtherLog,
                 EnergyPowerLog, EnergyProduction,
-                KoPersonnel, KompetensiJenis, MineMapLayer, MinerbaConservationRecord, Note,
-                Paspor, PasporKartu, PasporMcu, PasporSertifikat, Percakapan,
+                KoPersonnel, KompetensiJenis, McuPengajuan, MineMapLayer,
+                MinerbaConservationRecord, Note,
+                Paspor, PasporInduksi, PasporKartu, PasporMcu, PasporSertifikat, Percakapan,
                 Pesan, Signatory, TpkkpAssessment, TpkkpResponse};
 use Illuminate\Support\Carbon;
 
@@ -119,10 +120,18 @@ final class DataContoh
         TpkkpResponse::class, TpkkpAssessment::class,
         Note::class,
 
-        /* Authority. Ketiga anaknya menggantung pada paspor; jenis
+        /* Authority. Keempat anaknya menggantung pada paspor; jenis
            kompetensi TIDAK dibuang — ia master nasional milik bersama,
-           bukan data contoh. */
-        PasporSertifikat::class, PasporMcu::class, PasporKartu::class, Paspor::class,
+           bukan data contoh.
+
+           Surat pengajuan MCU dibuang SESUDAH hasilnya, sebab hasilnya
+           menunjuk suratnya. Ia menyebut perusahaan sendiri, jadi tidak
+           ikut terbawa penghapusan paspor — dan itu persis sebabnya ia
+           harus disebut di sini: yang tidak disebut tidak menimbulkan
+           galat, hanya dua baris yang bertambah tiap kali tombol muat
+           ulang ditekan. */
+        PasporSertifikat::class, PasporMcu::class, PasporKartu::class,
+        PasporInduksi::class, Paspor::class, McuPengajuan::class,
 
         /* Prosedur dan berita baru dapat masuk ke sini sesudah keduanya
            melekat perusahaan; sebelum itu penghapusnya tidak punya
@@ -342,7 +351,7 @@ final class DataContoh
             Pesan::class => $q->whereIn('percakapan_id',
                 Percakapan::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
 
-            PasporSertifikat::class, PasporMcu::class, PasporKartu::class
+            PasporSertifikat::class, PasporMcu::class, PasporKartu::class, PasporInduksi::class
                 => $q->whereIn('paspor_id',
                     Paspor::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
 
@@ -537,13 +546,32 @@ final class DataContoh
             4 => [330, 'Fit', null],
         ];
 
-        /* [jenis kartu, hari kadaluarsa, golongan] */
+        /* [jenis kartu, hari kadaluarsa, golongan, status alur]
+
+           Statusnya sengaja bervariasi. Bila seluruhnya disetujui, layar
+           tidak pernah memperlihatkan seperti apa kartu yang masih
+           menunggu — dan alur persetujuannya tampak seperti hiasan yang
+           tidak pernah menahan apa pun. */
         $kartu = [
-            0 => [['ID Card', 400, null], ['SIMPER', 180, 'LV']],
-            1 => [['ID Card', 250, null]],
-            2 => [['ID Card', 60, null], ['SIMPER', 20, 'Alat Berat']],
-            3 => [['ID Card', 310, null]],
-            4 => [['ID Card', -5, null]],                              // kartu habis
+            0 => [['ID Card', 400, null, Alur::DISETUJUI], ['SIMPER', 180, 'LV', Alur::DISETUJUI]],
+            1 => [['ID Card', 250, null, Alur::DISETUJUI]],
+            2 => [['ID Card', 60, null, Alur::DISETUJUI], ['SIMPER', 20, 'Alat Berat', Alur::DIAJUKAN]],
+            3 => [['ID Card', 310, null, Alur::DISETUJUI]],
+            4 => [['ID Card', -5, null, Alur::DISETUJUI]],             // kartu habis
+        ];
+
+        /* [hari kadaluarsa induksi, jenis, hasil, nilai]
+
+           Orang ke-4 induksinya sudah lewat: satu-satunya sebab ia
+           tertahan, sementara MCU dan kartunya aman. Tanpa satu contoh
+           seperti itu, induksi tidak pernah terlihat benar-benar
+           menentukan. */
+        $induksi = [
+            0 => [[500, 'Awal', 'Lulus', 92]],
+            1 => [[280, 'Penyegaran', 'Lulus', 88]],
+            2 => [[120, 'Awal', 'Lulus', 76]],
+            3 => [[-40, 'Penyegaran', 'Lulus', 81]],                   // induksi kadaluarsa
+            4 => [[60, 'Awal', 'Tidak Lulus', 58], [400, 'Awal', 'Lulus', 84]],
         ];
 
         foreach ($orang as $i => [$nama, $nik, $jabatan, $dept, $klas]) {
@@ -588,10 +616,11 @@ final class DataContoh
             ]);
             $n++;
 
-            foreach ($kartu[$i] as [$jenisKartu, $hariKartu, $gol]) {
-                PasporKartu::withoutGlobalScopes()->create([
+            foreach ($kartu[$i] as [$jenisKartu, $hariKartu, $gol, $statusKartu]) {
+                $k = PasporKartu::withoutGlobalScopes()->create([
                     'paspor_id'   => $p->id,
                     'jenis'       => $jenisKartu,
+                    'sebab_terbit' => 'Terbit',
                     'nomor'       => $jenisKartu === 'SIMPER'
                         ? 'SIM/'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT)
                         : 'ID/'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
@@ -599,6 +628,134 @@ final class DataContoh
                     'tgl_expired' => $this->kini->copy()->addDays($hariKartu)->toDateString(),
                     'golongan'    => $gol,
                     'area'        => $gol ? 'Seluruh area tambang' : 'Area kantor dan workshop',
+
+                    /* Berkas syarat. SIMPER menuntut ketiganya; kartu
+                       masuk biasa hanya bukti induksinya. */
+                    'berkas_induksi' => 'induksi/'.$p->nomor_register.'.pdf',
+                    'sim_polisi'     => $gol ? 'SIM-B2-'.str_pad((string) ($i + 1), 6, '0', STR_PAD_LEFT) : null,
+                    'sim_polisi_expired' => $gol
+                        ? $this->kini->copy()->addDays($hariKartu + 200)->toDateString() : null,
+                    'berkas_ddt'     => $gol ? 'ddt/'.$p->nomor_register.'.pdf' : null,
+                    'email_atasan'   => 'atasan@eqohsee.id',
+                ]);
+                $n++;
+
+                /* Status TIDAK dapat diisi lewat create(): trait Ditinjau
+                   memaksa setiap baris baru lahir sebagai draf, tepat
+                   supaya tidak ada jalan memasang "disetujui" tanpa
+                   melewati alurnya. Data contoh memang perlu menembusnya,
+                   dan menembusnya dengan pembaruan langsung ke basis data
+                   membuat penembusan itu terlihat — bukan tersembunyi
+                   sebagai kolom yang diam-diam boleh diisi. */
+                if ($statusKartu !== Alur::DRAF) {
+                    PasporKartu::withoutGlobalScopes()->whereKey($k->id)->update([
+                        'status'        => $statusKartu,
+                        'diajukan_oleh' => $this->pengaju?->getKey(),
+                        'diajukan_pada' => $this->kini->copy()->subDays(20),
+                        'ditinjau_oleh' => $statusKartu === Alur::DISETUJUI
+                            ? $this->peninjau?->getKey() : null,
+                        'ditinjau_pada' => $statusKartu === Alur::DISETUJUI
+                            ? $this->kini->copy()->subDays(18) : null,
+                    ]);
+                }
+            }
+
+            foreach ($induksi[$i] as $j => [$hariInduksi, $jenisInduksi, $hasilInduksi, $nilai]) {
+                PasporInduksi::withoutGlobalScopes()->create([
+                    'paspor_id'        => $p->id,
+                    'nomor_registrasi' => 'IND/'.$this->kini->year.'/'
+                        .str_pad((string) ($i * 10 + $j + 1), 4, '0', STR_PAD_LEFT),
+                    'jenis'       => $jenisInduksi,
+                    'tanggal'     => $this->kini->copy()->addDays($hariInduksi)->subYear()->toDateString(),
+                    'tgl_expired' => $this->kini->copy()->addDays($hariInduksi)->toDateString(),
+                    'pemberi'     => 'Departemen OHSE',
+                    'lokasi'      => 'Ruang Induksi — Pos Utama',
+                    'nilai'       => $nilai,
+                    'hasil'       => $hasilInduksi,
+                ]);
+                $n++;
+            }
+        }
+
+        return $n + $this->pengajuanMcu();
+    }
+
+    /**
+     * Dua surat pengajuan MCU: satu sudah kembali hasilnya, satu belum.
+     *
+     * Keduanya diperlukan. Yang sudah lengkap memperlihatkan bentuk
+     * akhirnya; yang belum memperlihatkan keadaan yang sebenarnya paling
+     * sering ditemui — surat yang sudah dikirim dan hasilnya ditunggu —
+     * dan itulah keadaan yang layarnya harus bisa menampilkan dengan
+     * jelas.
+     */
+    private function pengajuanMcu(): int
+    {
+        /* Disaring ke perusahaan ini SENDIRI. Tanpa itu, memuat data
+           contoh untuk perusahaan kedua akan menyusun suratnya dari nama
+           milik perusahaan pertama — kebocoran yang dibuat sendiri oleh
+           penyemai, dan justru pada tabel yang paling diawasi. */
+        $orang = Paspor::withoutGlobalScopes()
+            ->where('company_id', $this->c->getKey())
+            ->orderBy('id')->get();
+
+        if ($orang->isEmpty()) return 0;
+
+        $n = 0;
+
+        /* [nomor, hari, kepada, jenis, status, sudah kembali, ambil dari, berapa]
+
+           Nama yang diikutkan dipilih supaya TIDAK menimpa keadaan yang
+           sengaja dibuat cacat di atas. Surat pertama yang hasilnya sudah
+           kembali hanya memuat dua orang pertama; bila ia memuat orang
+           ketiga, MCU-nya yang sengaja dibuat kadaluarsa akan tergantikan
+           hasil baru yang sehat — dan satu-satunya contoh MCU kadaluarsa
+           di seluruh data hilang tanpa ada yang menyadarinya. */
+        $surat = [
+            ['MCU/EQ/2026/001', -45, 'Klinik Pratama Sehat Tambang', 'Berkala', Alur::DISETUJUI, true,  0, 2],
+            ['MCU/EQ/2026/002', -6,  'RS Umum Daerah Kabupaten',     'Khusus',  Alur::DIAJUKAN,  false, 2, 3],
+        ];
+
+        foreach ($surat as [$nomor, $hari, $kepada, $jenis, $status, $sudahKembali, $dari, $berapa]) {
+            $p = McuPengajuan::withoutGlobalScopes()->create([
+                'company_id'     => $this->c->getKey(),
+                'user_id'        => $this->pengaju?->getKey(),
+                'nomor_register' => $nomor,
+                'tanggal'        => $this->kini->copy()->addDays($hari)->toDateString(),
+                'kepada'         => $kepada,
+                'judul'          => 'Permohonan pemeriksaan kesehatan '.strtolower($jenis).' pekerja',
+                'jenis'          => $jenis,
+            ]);
+            $n++;
+
+            McuPengajuan::withoutGlobalScopes()->whereKey($p->id)->update([
+                'status'        => $status,
+                'diajukan_oleh' => $this->pengaju?->getKey(),
+                'diajukan_pada' => $this->kini->copy()->addDays($hari)->addDay(),
+                'ditinjau_oleh' => $status === Alur::DISETUJUI ? $this->peninjau?->getKey() : null,
+                'ditinjau_pada' => $status === Alur::DISETUJUI
+                    ? $this->kini->copy()->addDays($hari)->addDays(2) : null,
+            ]);
+
+            foreach ($orang->slice($dari, $berapa)->values() as $t => $o) {
+                PasporMcu::withoutGlobalScopes()->create([
+                    'paspor_id'        => $o->id,
+                    'mcu_pengajuan_id' => $p->id,
+                    'tgl_periksa'      => $this->kini->copy()->addDays($hari)->addDays(7)->toDateString(),
+                    'penyelenggara'    => $kepada,
+                    'jenis'            => $jenis,
+
+                    /* Yang belum kembali BENAR-BENAR kosong hasilnya —
+                       bukan diisi "Fit" sebagai nilai awal. Hasil yang
+                       ditebak tidak dapat dibedakan dari hasil sungguhan
+                       begitu halamannya ditutup. */
+                    'hasil'       => $sudahKembali ? ($t === 1 ? 'Fit With Note' : 'Fit') : null,
+                    'nomor'       => $sudahKembali ? str_replace('MCU/', 'HSL/', $nomor).'-'.($t + 1) : null,
+                    'tgl_expired' => $sudahKembali
+                        ? $this->kini->copy()->addDays($hari)->addDays(372)->toDateString() : null,
+                    'rujukan'     => $sudahKembali && $t === 1 ? 'Poli Jantung — kontrol tekanan darah' : null,
+                    'outstanding' => $sudahKembali && $t === 1
+                        ? $this->kini->copy()->subDays(9)->toDateString() : null,  // tertunggak
                 ]);
                 $n++;
             }

@@ -128,6 +128,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/',                [AuthorityController::class,'index'])->name('index');
         Route::post('/',               [AuthorityController::class,'store'])->name('store');
 
+        /* Pengajuan MCU didaftarkan SEBELUM {paspor}, dan urutannya
+           bukan gaya penulisan: `authority/mcu` cocok dengan pola
+           `authority/{paspor}` juga, jadi yang terdaftar lebih dahulu
+           yang menang. Terbalik, halaman pengajuan akan mencari paspor
+           bernomor "mcu" dan memulangkan 404 yang membingungkan. */
+        Route::prefix('mcu')->name('mcu.')->group(function () {
+            Route::get('/',   [AuthorityController::class,'mcuIndex'])->name('index');
+            Route::post('/',  [AuthorityController::class,'mcuStore'])->name('store');
+
+            Route::put('{pengajuan}',    [AuthorityController::class,'mcuUpdate'])->name('update');
+            Route::delete('{pengajuan}', [AuthorityController::class,'mcuDestroy'])->name('destroy');
+
+            Route::post('{pengajuan}/nama',       [AuthorityController::class,'mcuTambahNama'])->name('nama.tambah');
+            Route::delete('{pengajuan}/nama/{mcu}', [AuthorityController::class,'mcuHapusNama'])->name('nama.hapus');
+            Route::put('{pengajuan}/hasil/{mcu}', [AuthorityController::class,'mcuIsiHasil'])->name('hasil');
+
+            Route::post('{pengajuan}/ajukan', [AuthorityController::class,'ajukanMcu'])->name('ajukan');
+            Route::post('{pengajuan}/tinjau', [AuthorityController::class,'tinjauMcu'])->name('tinjau');
+        });
+
         Route::get('{paspor}',         [AuthorityController::class,'show'])->name('show');
         Route::put('{paspor}',         [AuthorityController::class,'update'])->name('update');
         Route::delete('{paspor}',      [AuthorityController::class,'destroy'])
@@ -136,11 +156,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('{paspor}/sertifikat',              [AuthorityController::class,'simpanSertifikat'])->name('sertifikat.simpan');
         Route::delete('{paspor}/sertifikat/{sertifikat}', [AuthorityController::class,'hapusSertifikat'])->name('sertifikat.hapus');
 
-        Route::post('{paspor}/mcu',        [AuthorityController::class,'simpanMcu'])->name('mcu.simpan');
-        Route::delete('{paspor}/mcu/{mcu}', [AuthorityController::class,'hapusMcu'])->name('mcu.hapus');
+        /* MCU yang dicatat LANGSUNG pada orangnya, tanpa surat pengajuan:
+           pekerja baru dan pemeriksaan khusus. Namanya sengaja dibedakan
+           dari authority.mcu.* di atas — keduanya menyimpan hasil MCU,
+           tetapi yang satu bagian dari rombongan yang disetujui bersama
+           dan yang satu berdiri sendiri. */
+        Route::post('{paspor}/mcu',        [AuthorityController::class,'simpanMcu'])->name('mcuLangsung.simpan');
+        Route::delete('{paspor}/mcu/{mcu}', [AuthorityController::class,'hapusMcu'])->name('mcuLangsung.hapus');
 
         Route::post('{paspor}/kartu',          [AuthorityController::class,'simpanKartu'])->name('kartu.simpan');
+        Route::put('{paspor}/kartu/{kartu}',    [AuthorityController::class,'ubahKartu'])->name('kartu.ubah');
         Route::delete('{paspor}/kartu/{kartu}', [AuthorityController::class,'hapusKartu'])->name('kartu.hapus');
+        Route::post('{paspor}/kartu/{kartu}/ajukan', [AuthorityController::class,'ajukanKartu'])->name('kartu.ajukan');
+        Route::post('{paspor}/kartu/{kartu}/tinjau', [AuthorityController::class,'tinjauKartu'])->name('kartu.tinjau');
+
+        Route::post('{paspor}/induksi',              [AuthorityController::class,'simpanInduksi'])->name('induksi.simpan');
+        Route::delete('{paspor}/induksi/{induksi}',  [AuthorityController::class,'hapusInduksi'])->name('induksi.hapus');
     });
 
 

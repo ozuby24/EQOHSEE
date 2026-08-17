@@ -1,0 +1,83 @@
+<?php
+
+namespace App\Models;
+
+use App\Models\Concerns\BerpemilikPerusahaan;
+use App\Models\Concerns\Ditinjau;
+use App\Models\Scopes\MilikPerusahaan;
+use App\Support\Authority;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
+use Illuminate\Database\Eloquent\Model;
+
+/**
+ * Satu surat pengajuan MCU, berisi banyak nama.
+ *
+ * MCU TIDAK DIAJUKAN PER ORANG. Perusahaan mengirim satu surat berisi
+ * daftar pekerja ke klinik pemeriksa; nomor registernya, tujuannya, dan
+ * persetujuannya melekat pada surat itu — bukan pada masing-masing
+ * orang di dalamnya.
+ *
+ * Bentuk sebelumnya menempelkan MCU langsung ke orangnya. Satu
+ * pengajuan berisi empat puluh nama karena itu tercatat sebagai empat
+ * puluh baris yang tidak saling tahu: tidak ada satu pun tempat untuk
+ * menyimpan nomor suratnya, tidak ada cara mengetahui siapa saja yang
+ * ikut dalam kiriman yang sama, dan persetujuannya harus ditekan empat
+ * puluh kali. Ketika kliniknya membalas, balasannya juga satu — untuk
+ * empat puluh baris yang tidak punya induk bersama.
+ *
+ * Persetujuannya memakai App\Support\Alur yang sama dengan seluruh
+ * modul lain, bukan alur khusus.
+ */
+#[ScopedBy(MilikPerusahaan::class)]
+class McuPengajuan extends Model
+{
+    use BerpemilikPerusahaan;
+    use Ditinjau;
+
+    protected $table = 'mcu_pengajuan';
+
+    /**
+     * `status` sengaja TIDAK ada di sini.
+     *
+     * Trait Ditinjau menuntutnya begitu: selama status masih dapat diisi
+     * massal, satu `create($request->validated())` akan menyimpan
+     * pengajuan yang langsung berstatus disetujui tanpa seorang pun
+     * meninjaunya — dan tidak ada galat apa pun yang menandainya.
+     */
+    protected $fillable = [
+        'company_id', 'user_id', 'nomor_register', 'tanggal',
+        'kepada', 'judul', 'jenis', 'catatan',
+    ];
+
+    protected function casts(): array
+    {
+        return ['tanggal' => 'date'];
+    }
+
+    public function company() { return $this->belongsTo(Company::class); }
+    public function user()    { return $this->belongsTo(User::class); }
+
+    public function hasil()
+    {
+        return $this->hasMany(PasporMcu::class, 'mcu_pengajuan_id');
+    }
+
+    /**
+     * Berapa nama yang hasilnya sudah kembali dari klinik.
+     *
+     * Yang ditanyakan pengaju bukan "berapa yang dikirim" melainkan
+     * "berapa yang belum kembali" — itulah yang menentukan apakah
+     * suratnya masih perlu ditagih.
+     */
+    public function belumKembali(): int
+    {
+        return $this->hasil->whereNull('hasil')->count();
+    }
+
+    public function labelJenis(): string
+    {
+        return in_array($this->jenis, Authority::JENIS_MCU, true)
+            ? $this->jenis
+            : 'Berkala';
+    }
+}

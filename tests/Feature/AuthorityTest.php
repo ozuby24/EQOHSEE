@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\{Company, KompetensiJenis, Paspor, User};
-use App\Support\{Authority, MasterKompetensi};
+use App\Models\{Company, KompetensiJenis, McuPengajuan, Paspor, PasporKartu, User};
+use App\Support\{Alur, Authority, MasterKompetensi};
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -37,6 +37,43 @@ class AuthorityTest extends TestCase
     private function orang(string $nama = 'Budi'): Paspor
     {
         return Paspor::create(['company_id' => $this->c->id, 'nama' => $nama]);
+    }
+
+    /**
+     * Induksi yang lulus dan masih berlaku.
+     *
+     * Dipakai oleh uji yang pokoknya BUKAN induksi. Sejak induksi
+     * menjadi syarat, orang tanpa induksi selalu tidak layak — sehingga
+     * uji tentang MCU yang tidak memasangnya akan lulus karena sebab
+     * yang salah, dan tetap lulus seandainya pemeriksaan MCU-nya dicabut
+     * seluruhnya.
+     */
+    private function induksi(Paspor $p, ?string $expired = null): void
+    {
+        $p->induksi()->create([
+            'jenis'       => 'Awal',
+            'tanggal'     => now()->subMonths(2),
+            'tgl_expired' => $expired ?? now()->addYear(),
+            'hasil'       => 'Lulus',
+        ]);
+    }
+
+    /**
+     * Kartu yang benar-benar berlaku — dibuat lalu disetujui.
+     *
+     * Statusnya dipasang lewat pembaruan langsung, bukan lewat
+     * ajukan()+setujui(). Alurnya menolak peninjau yang sama dengan
+     * pengajunya, dan uji ini hanya bertindak sebagai satu orang. Yang
+     * memeriksa alurnya sendiri adalah uji tersendiri di bawah, dengan
+     * dua pengguna sungguhan — di sini kartunya cuma perlu ada dan sah.
+     */
+    private function kartu(Paspor $p, array $atribut): PasporKartu
+    {
+        $k = $p->kartu()->create($atribut);
+
+        PasporKartu::whereKey($k->id)->update(['status' => Alur::DISETUJUI]);
+
+        return $k->refresh();
     }
 
     /* ═══════════ ambang masa berlaku ═══════════ */
@@ -121,13 +158,16 @@ class AuthorityTest extends TestCase
     {
         $p = $this->orang();
 
+        $this->induksi($p);
         $p->mcu()->create([
             'tgl_periksa' => now()->subMonths(2), 'tgl_expired' => now()->addMonths(10),
             'hasil' => 'Fit',
         ]);
-        $p->kartu()->create(['jenis' => 'ID Card', 'tgl_expired' => now()->addMonths(6)]);
+        $this->kartu($p, ['jenis' => 'ID Card', 'tgl_expired' => now()->addMonths(6)]);
 
-        $this->assertTrue($p->refresh()->kelayakan()['layak']);
+        $hasil = $p->refresh()->kelayakan();
+
+        $this->assertTrue($hasil['layak'], implode(' · ', $hasil['sebab']));
     }
 
     /**
@@ -155,8 +195,9 @@ class AuthorityTest extends TestCase
 
         foreach ($kasus as $harusDisebut => [$mcu, $kartu]) {
             $p = $this->orang('Orang '.$harusDisebut);
+            $this->induksi($p);
             $p->mcu()->create($mcu);
-            $p->kartu()->create($kartu);
+            $this->kartu($p, $kartu);
 
             $hasil = $p->refresh()->kelayakan();
 
@@ -177,13 +218,16 @@ class AuthorityTest extends TestCase
     {
         $p = $this->orang();
 
+        $this->induksi($p);
         $p->mcu()->create([
             'tgl_periksa' => now(), 'tgl_expired' => now()->addYear(),
             'hasil' => 'Fit With Note', 'pembatasan' => 'Tidak boleh bekerja di ketinggian.',
         ]);
-        $p->kartu()->create(['jenis' => 'ID Card', 'tgl_expired' => now()->addYear()]);
+        $this->kartu($p, ['jenis' => 'ID Card', 'tgl_expired' => now()->addYear()]);
 
-        $this->assertTrue($p->refresh()->kelayakan()['layak']);
+        $hasil = $p->refresh()->kelayakan();
+
+        $this->assertTrue($hasil['layak'], implode(' · ', $hasil['sebab']));
     }
 
     /**
@@ -197,6 +241,7 @@ class AuthorityTest extends TestCase
         $hasil = $this->orang()->kelayakan();
 
         $this->assertFalse($hasil['layak']);
+        $this->assertContains('induksi belum ada', $hasil['sebab']);
         $this->assertContains('MCU belum ada', $hasil['sebab']);
         $this->assertContains('kartu masuk belum ada', $hasil['sebab']);
     }
@@ -219,7 +264,8 @@ class AuthorityTest extends TestCase
             'tgl_periksa' => now()->subDay(), 'tgl_expired' => now()->addYear(),
             'hasil' => 'Unfit',
         ]);
-        $p->kartu()->create(['jenis' => 'ID Card', 'tgl_expired' => now()->addYear()]);
+        $this->induksi($p);
+        $this->kartu($p, ['jenis' => 'ID Card', 'tgl_expired' => now()->addYear()]);
 
         $hasil = $p->refresh()->kelayakan();
 
@@ -385,5 +431,340 @@ class AuthorityTest extends TestCase
         ])->assertRedirect();
 
         $this->assertSame(1, $p->refresh()->sertifikat()->count());
+    }
+
+    /* ═══════════ induksi ═══════════ */
+
+    /**
+     * Induksi yang habis menahan orang, walau MCU dan kartunya sempurna.
+     *
+     * Uji ini punya KONTROL: orang kedua identik dalam segala hal kecuali
+     * tanggal induksinya. Tanpa kontrol itu, "tidak layak" dapat berarti
+     * induksinya memang habis, atau berarti pemasangan datanya gagal dan
+     * seluruh orang tidak layak — dan keduanya terbaca sama.
+     */
+    public function test_induksi_kadaluarsa_menahan_walau_sisanya_lengkap(): void
+    {
+        $lengkap = function (string $nama, string $induksiExpired): Paspor {
+            $p = $this->orang($nama);
+            $this->induksi($p, $induksiExpired);
+            $p->mcu()->create([
+                'tgl_periksa' => now()->subMonth(), 'tgl_expired' => now()->addYear(),
+                'hasil' => 'Fit',
+            ]);
+            $this->kartu($p, ['jenis' => 'ID Card', 'tgl_expired' => now()->addYear()]);
+
+            return $p->refresh();
+        };
+
+        $habis = $lengkap('Induksi habis', now()->subDay()->toDateString());
+        $sah   = $lengkap('Induksi sah',   now()->addYear()->toDateString());
+
+        $this->assertTrue($sah->kelayakan()['layak'],
+            'Kontrolnya ikut gagal — yang diuji bukan induksinya: '
+            .implode(' · ', $sah->kelayakan()['sebab']));
+
+        $this->assertFalse($habis->kelayakan()['layak']);
+        $this->assertContains('induksi kadaluarsa', $habis->kelayakan()['sebab']);
+    }
+
+    /**
+     * Induksi yang TIDAK LULUS tidak menggugurkan yang lulus sebelumnya.
+     *
+     * Berbeda dari MCU, dan sengaja: hasil MCU terbaru adalah keadaan
+     * kesehatan orangnya sekarang, sedangkan induksi yang tidak lulus
+     * hanyalah percobaan yang belum berhasil. Induksi lulus sebelumnya
+     * masih sah sampai masa berlakunya habis.
+     */
+    public function test_induksi_tidak_lulus_tidak_menggugurkan_yang_masih_berlaku(): void
+    {
+        $p = $this->orang();
+
+        $this->induksi($p);                       // lulus, berlaku setahun
+        $p->induksi()->create([                   // percobaan penyegaran, gagal
+            'jenis' => 'Penyegaran', 'tanggal' => now(),
+            'tgl_expired' => now()->addYear(), 'hasil' => 'Tidak Lulus',
+        ]);
+
+        $p->mcu()->create([
+            'tgl_periksa' => now(), 'tgl_expired' => now()->addYear(), 'hasil' => 'Fit',
+        ]);
+        $this->kartu($p, ['jenis' => 'ID Card', 'tgl_expired' => now()->addYear()]);
+
+        $hasil = $p->refresh()->kelayakan();
+
+        $this->assertTrue($hasil['layak'], implode(' · ', $hasil['sebab']));
+    }
+
+    /* ═══════════ kartu: draf bukan kartu ═══════════ */
+
+    /**
+     * Kartu yang belum disetujui tidak meloloskan siapa pun.
+     *
+     * Ini pokok alurnya. Bila draf ikut meloloskan, alur persetujuannya
+     * tidak menahan apa pun — siapa pun dapat meloloskan dirinya sendiri
+     * hanya dengan mengisi formulir, dan tombol setujui menjadi hiasan.
+     */
+    public function test_kartu_draf_tidak_meloloskan(): void
+    {
+        $p = $this->orang();
+        $this->induksi($p);
+        $p->mcu()->create([
+            'tgl_periksa' => now(), 'tgl_expired' => now()->addYear(), 'hasil' => 'Fit',
+        ]);
+
+        /* Sengaja TIDAK lewat helper: yang diuji justru kartu yang belum
+           disetujui. */
+        $p->kartu()->create(['jenis' => 'ID Card', 'tgl_expired' => now()->addYear()]);
+
+        $hasil = $p->refresh()->kelayakan();
+
+        $this->assertFalse($hasil['layak'], 'Kartu draf meloloskan orang di gerbang.');
+        $this->assertContains('kartu masuk masih draf', $hasil['sebab']);
+
+        /* Kontrol: kartu yang sama, disetujui, memang meloloskan. Tanpa
+           ini, uji di atas tetap hijau seandainya orangnya tertahan oleh
+           sebab lain sama sekali. */
+        PasporKartu::whereKey($p->kartu()->first()->id)->update(['status' => Alur::DISETUJUI]);
+
+        $this->assertTrue($p->refresh()->kelayakan()['layak']);
+    }
+
+    /**
+     * SIMPER tidak dapat diajukan tanpa berkas syaratnya.
+     *
+     * Syaratnya diperiksa saat MENGAJUKAN, bukan saat menyimpan draf —
+     * draf memang boleh setengah jadi.
+     */
+    public function test_simper_tanpa_berkas_syarat_tidak_dapat_diajukan(): void
+    {
+        $p = $this->orang();
+
+        $k = $p->kartu()->create([
+            'jenis' => 'SIMPER', 'golongan' => 'Alat Berat',
+            'tgl_expired' => now()->addYear(),
+        ]);
+
+        $this->assertNotEmpty($k->syaratKurang(),
+            'SIMPER tanpa SIM kepolisian dan DDT dianggap sudah lengkap.');
+
+        $this->post(route('authority.kartu.ajukan', [$p, $k]))
+            ->assertSessionHasErrors('kartu');
+
+        $this->assertSame(Alur::DRAF, $k->refresh()->status);
+
+        /* Dilengkapi, lalu berhasil diajukan — memastikan penolakan di
+           atas berasal dari syaratnya, bukan dari rute yang memang selalu
+           menolak. */
+        $k->update([
+            'berkas_induksi' => 'induksi/budi.pdf',
+            'sim_polisi'     => 'SIM-B2-000001',
+            'sim_polisi_expired' => now()->addYear(),
+            'berkas_ddt'     => 'ddt/budi.pdf',
+        ]);
+
+        $this->post(route('authority.kartu.ajukan', [$p, $k]))->assertRedirect();
+
+        $this->assertSame(Alur::DIAJUKAN, $k->refresh()->status);
+    }
+
+    /**
+     * Kartu masuk biasa TIDAK menuntut syarat SIMPER.
+     *
+     * Menuntutnya akan menahan seluruh pekerja non-pengemudi oleh syarat
+     * yang tidak berlaku bagi mereka — kegagalan yang terlihat seperti
+     * ketegasan.
+     */
+    public function test_kartu_biasa_hanya_menuntut_bukti_induksi(): void
+    {
+        $p = $this->orang();
+
+        $k = $p->kartu()->create([
+            'jenis' => 'ID Card', 'tgl_expired' => now()->addYear(),
+            'berkas_induksi' => 'induksi/budi.pdf',
+        ]);
+
+        $this->assertSame([], $k->syaratKurang());
+    }
+
+    /* ═══════════ pengajuan MCU per rombongan ═══════════ */
+
+    /**
+     * Menjadwalkan MCU berikutnya tidak menggugurkan MCU yang sekarang.
+     *
+     * Baris pengajuan lahir saat suratnya dikirim, berhari-hari sebelum
+     * orangnya diperiksa, dan hasilnya masih kosong. Bila ia dihitung
+     * sebagai MCU terakhir, setiap pekerja yang namanya baru dimasukkan
+     * ke surat seketika berubah menjadi "MCU belum ada".
+     */
+    public function test_nama_dalam_pengajuan_tidak_menggugurkan_mcu_yang_sah(): void
+    {
+        $p = $this->orang();
+        $this->induksi($p);
+        $this->kartu($p, ['jenis' => 'ID Card', 'tgl_expired' => now()->addYear()]);
+
+        $p->mcu()->create([
+            'tgl_periksa' => now()->subMonths(3), 'tgl_expired' => now()->addMonths(9),
+            'hasil' => 'Fit',
+        ]);
+
+        $this->assertTrue($p->refresh()->kelayakan()['layak'], 'Kontrol gagal sebelum diuji.');
+
+        $pengajuan = McuPengajuan::create([
+            'company_id' => $this->c->id, 'tanggal' => now(), 'jenis' => 'Berkala',
+        ]);
+
+        $this->post(route('authority.mcu.nama.tambah', $pengajuan), ['paspor_id' => $p->id])
+            ->assertRedirect();
+
+        $hasil = $p->refresh()->kelayakan();
+
+        $this->assertTrue($hasil['layak'],
+            'Menjadwalkan MCU berikutnya justru menggugurkan MCU yang masih sah: '
+            .implode(' · ', $hasil['sebab']));
+    }
+
+    /**
+     * Hasil yang belum kembali tersimpan KOSONG, bukan "Fit".
+     *
+     * Kolomnya dulu NOT NULL dengan nilai awal 'Fit'. Dengan pengajuan
+     * rombongan, itu berarti setiap nama yang belum diperiksa terbaca
+     * sehat — dinyatakan layak oleh sistem tanpa seorang dokter pun
+     * melihatnya.
+     */
+    public function test_nama_yang_belum_diperiksa_hasilnya_kosong(): void
+    {
+        $p = $this->orang();
+
+        $pengajuan = McuPengajuan::create([
+            'company_id' => $this->c->id, 'tanggal' => now(), 'jenis' => 'Berkala',
+        ]);
+
+        $this->post(route('authority.mcu.nama.tambah', $pengajuan), ['paspor_id' => $p->id]);
+
+        $this->assertNull($pengajuan->refresh()->hasil->first()->hasil);
+        $this->assertSame(1, $pengajuan->belumKembali());
+    }
+
+    /** Satu orang tidak masuk dua kali ke surat yang sama. */
+    public function test_nama_tidak_dapat_masuk_dua_kali(): void
+    {
+        $p = $this->orang();
+
+        $pengajuan = McuPengajuan::create([
+            'company_id' => $this->c->id, 'tanggal' => now(), 'jenis' => 'Berkala',
+        ]);
+
+        $this->post(route('authority.mcu.nama.tambah', $pengajuan), ['paspor_id' => $p->id]);
+        $this->post(route('authority.mcu.nama.tambah', $pengajuan), ['paspor_id' => $p->id])
+            ->assertSessionHasErrors('paspor_id');
+
+        $this->assertSame(1, $pengajuan->refresh()->hasil->count());
+    }
+
+    /** Surat tanpa satu nama pun tidak dapat dikirim. */
+    public function test_pengajuan_kosong_tidak_dapat_diajukan(): void
+    {
+        $pengajuan = McuPengajuan::create([
+            'company_id' => $this->c->id, 'tanggal' => now(), 'jenis' => 'Berkala',
+        ]);
+
+        $this->post(route('authority.mcu.ajukan', $pengajuan))->assertSessionHasErrors('mcu');
+
+        $this->assertSame(Alur::DRAF, $pengajuan->refresh()->status);
+    }
+
+    /**
+     * Status tidak dapat disebut sendiri oleh pengirim datanya.
+     *
+     * Sekalipun 'status' => 'disetujui' ikut dikirim dalam payload,
+     * barisnya lahir sebagai draf.
+     */
+    public function test_status_pengajuan_tidak_dapat_diisi_lewat_formulir(): void
+    {
+        $this->post(route('authority.mcu.store'), [
+            'tanggal' => now()->toDateString(),
+            'jenis'   => 'Berkala',
+            'status'  => Alur::DISETUJUI,
+        ])->assertRedirect();
+
+        $this->assertSame(Alur::DRAF, McuPengajuan::first()->status);
+    }
+
+    /**
+     * Peninjau bukan pengaju — diuji dengan dua pengguna sungguhan.
+     *
+     * Uji lain memasang status lewat pembaruan langsung supaya pokoknya
+     * tetap pada kelayakan; yang memeriksa alurnya sendiri adalah uji
+     * ini.
+     */
+    public function test_pengaju_tidak_dapat_menyetujui_pengajuannya_sendiri(): void
+    {
+        $pengaju = User::factory()->create([
+            'is_admin' => true, 'company_id' => $this->c->id, 'email_verified_at' => now(),
+        ]);
+        $peninjau = User::factory()->create([
+            'is_admin' => true, 'company_id' => $this->c->id, 'email_verified_at' => now(),
+        ]);
+
+        $p = $this->orang();
+
+        $this->actingAs($pengaju);
+
+        $pengajuan = McuPengajuan::create([
+            'company_id' => $this->c->id, 'tanggal' => now(), 'jenis' => 'Berkala',
+        ]);
+        $pengajuan->hasil()->create(['paspor_id' => $p->id, 'tgl_periksa' => now()]);
+
+        $this->post(route('authority.mcu.ajukan', $pengajuan))->assertRedirect();
+
+        $this->post(route('authority.mcu.tinjau', $pengajuan), ['aksi' => 'setujui'])
+            ->assertSessionHasErrors('alur');
+
+        $this->assertSame(Alur::DIAJUKAN, $pengajuan->refresh()->status);
+
+        /* Kontrol: orang lain memang dapat menyetujuinya. Tanpa ini,
+           penolakan di atas dapat berarti rutenya rusak seluruhnya. */
+        $this->actingAs($peninjau);
+
+        $this->post(route('authority.mcu.tinjau', $pengajuan), ['aksi' => 'setujui'])
+            ->assertRedirect();
+
+        $this->assertSame(Alur::DISETUJUI, $pengajuan->refresh()->status);
+    }
+
+    /**
+     * Rujukan medis tanpa tanggal tindak lanjut terhitung TERTUNGGAK.
+     *
+     * Rujukan yang tidak pernah ditagih adalah catatan yang sudah
+     * lengkap di berkas dan tidak pernah terjadi di kenyataan.
+     */
+    public function test_rujukan_tanpa_tanggal_terhitung_tertunggak(): void
+    {
+        $p = $this->orang();
+
+        $tanpaTanggal = $p->mcu()->create([
+            'tgl_periksa' => now(), 'tgl_expired' => now()->addYear(),
+            'hasil' => 'Fit With Note', 'rujukan' => 'Poli Jantung',
+        ]);
+        $masihWaktu = $p->mcu()->create([
+            'tgl_periksa' => now(), 'tgl_expired' => now()->addYear(),
+            'hasil' => 'Fit With Note', 'rujukan' => 'Poli Mata',
+            'outstanding' => now()->addMonth(),
+        ]);
+        $tanpaRujukan = $p->mcu()->create([
+            'tgl_periksa' => now(), 'tgl_expired' => now()->addYear(), 'hasil' => 'Fit',
+        ]);
+
+        $this->assertTrue($tanpaTanggal->rujukanTertunggak());
+        $this->assertFalse($masihWaktu->rujukanTertunggak());
+        $this->assertFalse($tanpaRujukan->rujukanTertunggak());
+    }
+
+    public function test_halaman_pengajuan_mcu_terbuka(): void
+    {
+        $this->get(route('authority.mcu.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Authority/Halaman')->where('mode', 'mcu'));
     }
 }
