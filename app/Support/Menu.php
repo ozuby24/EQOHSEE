@@ -135,6 +135,8 @@ final class Menu
           ['Dashboard KO',   'ko.index',     'ko'],
           ['Register SPIP',  'ko.register',  'ko/register'],
           ['Kelayakan',      'ko.kelayakan', 'ko/kelayakan'],
+          ['Jenis Unit',     'ko.unit',      'ko/unit*'],
+          ['Uji Kelayakan',  'ko.uji',       'ko/uji*'],
           ['Perawatan',      'ko.perawatan', 'ko/perawatan'],
           ['Pengaman',       'ko.pengaman',  'ko/pengaman'],
         ],

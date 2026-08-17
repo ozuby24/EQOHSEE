@@ -68,6 +68,16 @@ class CakupanDataContohTest extends TestCase
            yang dipakai seluruh perusahaan sungguhan pada pemasangan
            yang sama. */
         'kompetensi_jenis' => 'master nasional, bukan data contoh',
+
+        /* Daftar acuan jenis unit SPIP. Berbeda dari kompetensi_jenis
+           ia BUKAN daftar regulasi melainkan titik berangkat yang
+           dipelihara pemakainya — tetapi alasan tidak membuangnya sama
+           persis: baris milik bersama (company_id NULL) dipakai seluruh
+           perusahaan pada pemasangan yang sama, dan membuangnya bersama
+           data contoh satu perusahaan akan mengosongkan daftar pilih
+           perusahaan lain. Jenis yang ditambahkan sebuah perusahaan
+           sendiri memang bermilik, dan yang itu ikut terbuang. */
+        'ko_unit_master' => 'acuan bersama, dipelihara pemakainya',
     ];
 
     private function muat(): Company

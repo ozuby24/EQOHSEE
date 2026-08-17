@@ -224,6 +224,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::get('kelayakan',            [KoController::class,'kelayakan'])->name('kelayakan');
 
+            /* Daftar acuan jenis unit SPIP — dipelihara pemakainya. */
+            Route::get('unit',                 [KoController::class,'unit'])->name('unit');
+            Route::post('unit',                [KoController::class,'simpanUnit'])->name('unit.simpan');
+            Route::put('unit/{unit}',          [KoController::class,'ubahUnit'])->name('unit.ubah');
+            Route::delete('unit/{unit}',       [KoController::class,'hapusUnit'])->name('unit.hapus');
+
+            /* Uji kelayakan — riwayat, bukan satu tanggal yang ditimpa. */
+            Route::get('uji',                  [KoController::class,'uji'])->name('uji');
+            Route::post('uji',                 [KoController::class,'simpanUji'])->name('uji.simpan');
+            Route::delete('uji/{uji}',         [KoController::class,'hapusUji'])->name('uji.hapus');
+            Route::post('uji/{uji}/ajukan',    [KoController::class,'ajukanUji'])->name('uji.ajukan');
+            Route::post('uji/{uji}/tinjau',    [KoController::class,'tinjauUji'])->name('uji.tinjau');
+
             Route::get('perawatan',            [KoController::class,'perawatan'])->name('perawatan');
             Route::post('perawatan/{objek}',   [KoController::class,'catatPm'])->name('perawatan.catat');
 

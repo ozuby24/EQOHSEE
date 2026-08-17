@@ -219,6 +219,8 @@ final class RuteInertia
         'ko.register',
         'ko.create',
         'ko.kelayakan',
+        'ko.unit',
+        'ko.uji',
         'ko.perawatan',
         'ko.pengaman',
         'ko.kajian',

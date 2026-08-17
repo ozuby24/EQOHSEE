@@ -8,6 +8,7 @@ use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, 
                 GudangMutasi, HazardReport, Inspection, InspectionInspector, InspectionItem,
                 IzinAmbang, IzinGas, IzinKerja, IzinPeriksa, IzinSyarat,
                 KoAction, KoInspection, KoObject, KoReview, KoSafeguard,
+                KoUjiKelayakan, KoUnitMaster,
                 LedakHasil, LedakRencana, LedakTitik, LedakUkur, LingkunganArea,
                 LingkunganPantau, LingkunganParameter, MineOperationalRecord,
                 MineOperationalTarget, News, Procedure, ReklamasiKemajuan, SmkpAttendee, SmkpAudit,
@@ -109,6 +110,11 @@ final class DataContoh
         WorkOrderPart::class, WorkOrder::class,
         KoInspection::class, KoAction::class, KoReview::class,
         KoSafeguard::class, KoPersonnel::class,
+
+        /* Uji kelayakan menggantung pada objeknya, jadi dibuang lebih
+           dulu. Master jenis unit TIDAK dibuang — ia acuan bersama
+           seperti jenis kompetensi, bukan data contoh. */
+        KoUjiKelayakan::class,
         KoObject::class,
 
         MinerbaConservationRecord::class,
@@ -350,6 +356,9 @@ final class DataContoh
             KoSafeguard::class, KoInspection::class, KoAction::class, KoReview::class
                 => $q->whereIn('ko_object_id',
                     KoObject::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            KoUjiKelayakan::class => $q->whereIn('ko_object_id',
+                KoObject::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
 
             WorkOrderPart::class => $q->whereIn('work_order_id',
                 WorkOrder::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
@@ -2322,25 +2331,45 @@ final class DataContoh
     {
         $n = 0;
 
+        /* Daftar acuan jenis unit ditanam bila pemasangannya belum
+           punya — sama seperti jenis kompetensi, ia milik bersama dan
+           tidak ikut dibuang bersama data contoh. */
+        if (KoUnitMaster::withoutGlobalScopes()->whereNull('company_id')->doesntExist()) {
+            MasterUnitSpip::tanam();
+        }
+
+        $jenisUnit = KoUnitMaster::withoutGlobalScopes()
+            ->whereNull('company_id')->pluck('id', 'kode');
+
         /** @var array<string,KoObject> menurut kodenya, dipakai anak-anaknya */
         $objek = [];
 
+        /* Kode jenis ditambahkan supaya unit contoh TERTAUT ke daftar
+           acuan. Bila seluruhnya dibiarkan mengetik bebas, layar "belum
+           tertaut" akan menunjukkan seratus persen dan penyeragamannya
+           tampak tidak pernah berjalan. */
         $daftar = [
-            ['KO-SAR-001', 'Jembatan Timbang 60 Ton',    'Sarana',    'Tinggi', 'Aktif',     2],
-            ['KO-PRA-001', 'Tanggul Kolam Pengendap 3',  'Prasarana', 'Tinggi', 'Aktif',     1],
-            ['KO-INS-001', 'Instalasi Listrik Workshop', 'Instalasi', 'Sedang', 'Aktif',     3],
-            ['KO-PER-001', 'Crane Workshop 10 Ton',      'Peralatan', 'Tinggi', 'Standby',   1],
-            ['KO-PER-002', 'Genset 500 kVA',             'Peralatan', 'Sedang', 'Breakdown', 2],
-            ['KO-SAR-002', 'Tangki Bahan Bakar 50 kL',   'Sarana',    'Tinggi', 'Aktif',     2],
+            ['KO-SAR-001', 'Jembatan Timbang 60 Ton',    'Sarana',    'Tinggi', 'Aktif',     2, 'JBT'],
+            ['KO-PRA-001', 'Tanggul Kolam Pengendap 3',  'Prasarana', 'Tinggi', 'Aktif',     1, 'SETL'],
+            ['KO-INS-001', 'Instalasi Listrik Workshop', 'Instalasi', 'Sedang', 'Aktif',     3, 'PNL'],
+            ['KO-PER-001', 'Crane Workshop 10 Ton',      'Peralatan', 'Tinggi', 'Standby',   1, 'OHC'],
+            ['KO-PER-002', 'Genset 500 kVA',             'Peralatan', 'Sedang', 'Breakdown', 2, 'GEN'],
+
+            /* Satu unit sengaja TIDAK tertaut, supaya angka "belum
+               tertaut" tidak nol dan layarnya memperlihatkan seperti apa
+               keadaan yang perlu dibereskan. */
+            ['KO-SAR-002', 'Tangki Bahan Bakar 50 kL',   'Sarana',    'Tinggi', 'Aktif',     2, null],
         ];
 
-        foreach ($daftar as $i => [$kode, $nama, $kategori, $kritis, $operasi, $interval]) {
+        foreach ($daftar as $i => [$kode, $nama, $kategori, $kritis, $operasi, $interval, $kodeJenis]) {
             $sertifikasi = $this->kini->copy()->subMonths(6 + $i);
 
             $o = $this->baru(KoObject::class, [
                 'kode'            => $kode,
                 'nama'            => $nama,
                 'kategori'        => $kategori,
+                'ko_unit_master_id' => $kodeJenis ? ($jenisUnit[$kodeJenis] ?? null) : null,
+                'jenis'           => $kodeJenis,
                 'lokasi'          => ['Area Timbang', 'Pit Selatan', 'Workshop', 'Fuel Station'][$i % 4],
                 'kritikalitas'    => $kritis,
                 'status_operasi'  => $operasi,
@@ -2356,7 +2385,75 @@ final class DataContoh
             $objek[$kode] = $o;
         }
 
-        return $n + $this->koRinci($objek);
+        return $n + $this->ujiKelayakan($objek) + $this->koRinci($objek);
+    }
+
+    /**
+     * Riwayat uji kelayakan — dua tahun berturut-turut untuk sebagian.
+     *
+     * Dua uji pada unit yang sama memang pokoknya: bentuk lama hanya
+     * menyimpan satu tanggal, sehingga uji tahun lalu selalu hilang.
+     * Data contoh yang hanya berisi satu uji per unit tidak akan pernah
+     * memperlihatkan bahwa masalah itu sudah diperbaiki.
+     *
+     * @param  array<string,KoObject>  $objek
+     */
+    private function ujiKelayakan(array $objek): int
+    {
+        $n = 0;
+
+        /* [kode objek, bulan lalu, hasil, status, syarat] */
+        $daftar = [
+            ['KO-PER-001', 20, 'Layak', Alur::DISETUJUI, null],          // uji tahun lalu
+            ['KO-PER-001', 8,  'Layak', Alur::DISETUJUI, null],          // uji terbaru
+            ['KO-SAR-001', 6,  'Layak Bersyarat', Alur::DISETUJUI,
+                'Beban maksimum dibatasi 50 ton sampai perbaikan load cell selesai.'],
+            ['KO-INS-001', 10, 'Layak', Alur::DISETUJUI, null],
+            ['KO-PER-002', 2,  'Tidak Layak', Alur::DISETUJUI, null],    // genset breakdown
+            ['KO-PRA-001', 1,  'Layak', Alur::DIAJUKAN, null],           // menunggu tinjauan
+            ['KO-SAR-002', 0,  'Layak', Alur::DRAF, null],
+        ];
+
+        foreach ($daftar as $i => [$kode, $bulan, $hasil, $status, $syarat]) {
+            $o = $objek[$kode] ?? null;
+            if (!$o) continue;
+
+            $inspeksi = $this->kini->copy()->subMonths($bulan);
+
+            $u = KoUjiKelayakan::withoutGlobalScopes()->create([
+                'ko_object_id' => $o->id,
+                'company_id'   => $o->company_id,
+                'nomor'        => 'UK/'.$inspeksi->format('Y').'/'
+                    .str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
+                'merk'         => $o->merk,
+                'nomor_seri'   => $o->serial_number,
+                'tgl_inspeksi' => $inspeksi->toDateString(),
+                'tgl_expired'  => $inspeksi->copy()->addYear()->toDateString(),
+                'pemeriksa'    => ['Ir. Hartono', 'Sulaiman, S.T.', 'Nurhayati'][$i % 3],
+                'lembaga'      => 'Balai Pengujian Peralatan',
+                'lokasi_uji'   => $o->lokasi,
+                'hasil'        => $hasil,
+                'syarat'       => $syarat,
+                'temuan'       => $hasil === 'Tidak Layak'
+                    ? 'Kebocoran pendingin dan getaran berlebih pada bantalan.' : null,
+                'rekomendasi'  => $hasil === 'Tidak Layak'
+                    ? 'Hentikan operasi sampai perbaikan menyeluruh dan uji ulang.' : null,
+            ]);
+            $n++;
+
+            if ($status !== Alur::DRAF) {
+                KoUjiKelayakan::withoutGlobalScopes()->whereKey($u->id)->update([
+                    'status'        => $status,
+                    'diajukan_oleh' => $this->pengaju?->getKey(),
+                    'diajukan_pada' => $inspeksi->copy()->addDays(2),
+                    'ditinjau_oleh' => $status === Alur::DISETUJUI ? $this->peninjau?->getKey() : null,
+                    'ditinjau_pada' => $status === Alur::DISETUJUI
+                        ? $inspeksi->copy()->addDays(4) : null,
+                ]);
+            }
+        }
+
+        return $n;
     }
 
     /**
