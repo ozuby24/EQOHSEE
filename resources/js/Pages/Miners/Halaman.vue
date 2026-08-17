@@ -48,7 +48,7 @@ const saring = reactive({
 });
 
 function cari() {
-  router.get('/authority', saring, { preserveState: true, preserveScroll: true });
+  router.get('/miners', saring, { preserveState: true, preserveScroll: true });
 }
 
 /* ── ringkasan sebagai grafik ── */
@@ -156,27 +156,27 @@ function mulaiIsi(h: any) {
 function batalIsi(hasilId: number) { delete isiHasil[hasilId]; }
 
 function simpanHasil(pengajuanId: number, hasilId: number) {
-  router.put(`/authority/mcu/${pengajuanId}/hasil/${hasilId}`, isiHasil[hasilId], {
+  router.put(`/miners/mcu/${pengajuanId}/hasil/${hasilId}`, isiHasil[hasilId], {
     preserveScroll: true,
     onSuccess: () => batalIsi(hasilId),
   });
 }
 
 function simpanPengajuan() {
-  fPengajuan.post('/authority/mcu', {
+  fPengajuan.post('/miners/mcu', {
     preserveScroll: true,
     onSuccess: () => { fPengajuan.reset(); buka.value = null; },
   });
 }
 
 function tambahNama(pengajuanId: number) {
-  fNama.post(`/authority/mcu/${pengajuanId}/nama`, {
+  fNama.post(`/miners/mcu/${pengajuanId}/nama`, {
     preserveScroll: true, onSuccess: () => fNama.reset(),
   });
 }
 
 function ajukanPengajuan(pengajuanId: number) {
-  router.post(`/authority/mcu/${pengajuanId}/ajukan`, {}, { preserveScroll: true });
+  router.post(`/miners/mcu/${pengajuanId}/ajukan`, {}, { preserveScroll: true });
 }
 
 /**
@@ -227,22 +227,22 @@ function pilihJenis() {
 const id = computed(() => props.p?.id);
 
 function simpanOrang() {
-  fOrang.post('/authority', { preserveScroll: true, onSuccess: () => { fOrang.reset(); buka.value = null; } });
+  fOrang.post('/miners', { preserveScroll: true, onSuccess: () => { fOrang.reset(); buka.value = null; } });
 }
 function simpanSertifikat() {
-  fSertifikat.post(`/authority/${id.value}/sertifikat`, { preserveScroll: true, onSuccess: () => fSertifikat.reset() });
+  fSertifikat.post(`/miners/${id.value}/sertifikat`, { preserveScroll: true, onSuccess: () => fSertifikat.reset() });
 }
 function simpanMcu() {
-  fMcu.post(`/authority/${id.value}/mcu`, { preserveScroll: true, onSuccess: () => fMcu.reset() });
+  fMcu.post(`/miners/${id.value}/mcu`, { preserveScroll: true, onSuccess: () => fMcu.reset() });
 }
 function simpanKartu() {
-  fKartu.post(`/authority/${id.value}/kartu`, { preserveScroll: true, onSuccess: () => fKartu.reset() });
+  fKartu.post(`/miners/${id.value}/kartu`, { preserveScroll: true, onSuccess: () => fKartu.reset() });
 }
 function simpanInduksi() {
-  fInduksi.post(`/authority/${id.value}/induksi`, { preserveScroll: true, onSuccess: () => fInduksi.reset() });
+  fInduksi.post(`/miners/${id.value}/induksi`, { preserveScroll: true, onSuccess: () => fInduksi.reset() });
 }
 function ajukanKartu(kartuId: number) {
-  router.post(`/authority/${id.value}/kartu/${kartuId}/ajukan`, {}, { preserveScroll: true });
+  router.post(`/miners/${id.value}/kartu/${kartuId}/ajukan`, {}, { preserveScroll: true });
 }
 function hapus(jalur: string, apa: string) {
   if (confirm(`Hapus ${apa}?`)) router.delete(jalur, { preserveScroll: true });
@@ -261,11 +261,11 @@ function hapus(jalur: string, apa: string) {
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
-        <Link v-if="props.mode !== 'daftar'" href="/authority" class="eq-btn-lain">
+        <Link v-if="props.mode !== 'daftar'" href="/miners" class="eq-btn-lain">
           Kembali ke daftar
         </Link>
 
-        <Link v-if="props.mode === 'daftar'" href="/authority/mcu" class="eq-btn-lain">
+        <Link v-if="props.mode === 'daftar'" href="/miners/mcu" class="eq-btn-lain">
           Pengajuan MCU
         </Link>
 
@@ -320,7 +320,7 @@ function hapus(jalur: string, apa: string) {
         <ul v-if="takLayak.length" class="divide-y divide-stone-100">
           <li v-for="o in takLayak" :key="o.id" class="py-2.5 flex items-center gap-3">
             <span class="w-1.5 h-1.5 rounded-full shrink-0" :style="{ background: KEADAAN.gawat }"></span>
-            <Link :href="`/authority/${o.id}`"
+            <Link :href="`/miners/${o.id}`"
                   class="text-[12.5px] font-semibold text-cam-ink hover:text-cam-lime-deep min-w-0 truncate w-44">
               {{ o.nama }}
             </Link>
@@ -404,7 +404,7 @@ function hapus(jalur: string, apa: string) {
           <tbody>
             <tr v-for="o in orang" :key="o.id" class="border-b border-stone-50">
               <td class="px-5 py-3 font-semibold">
-                <Link :href="`/authority/${o.id}`" class="text-cam-lime-deep">{{ o.nama }}</Link>
+                <Link :href="`/miners/${o.id}`" class="text-cam-lime-deep">{{ o.nama }}</Link>
                 <small class="block text-[10px] text-stone-400">{{ o.nik || '—' }}</small>
               </td>
               <td class="px-5 py-3">{{ o.jabatan || '—' }}</td>
@@ -480,7 +480,7 @@ function hapus(jalur: string, apa: string) {
             <span class="text-[11.5px] font-semibold shrink-0 w-32 text-right"
                   :style="{ color: WARNA[s.keadaan] }">{{ s.keterangan }}</span>
             <button type="button" class="text-red-600 text-[11px] shrink-0"
-                    @click="hapus(`/authority/${id}/sertifikat/${s.id}`, s.nama)">Hapus</button>
+                    @click="hapus(`/miners/${id}/sertifikat/${s.id}`, s.nama)">Hapus</button>
           </li>
         </ul>
         <p v-else class="text-[12px] text-stone-400 py-3">Belum ada sertifikat tercatat.</p>
@@ -518,7 +518,7 @@ function hapus(jalur: string, apa: string) {
                   {{ m.keterangan }}
                 </span>
                 <button type="button" class="text-red-600 text-[11px]"
-                        @click="hapus(`/authority/${id}/mcu/${m.id}`, 'catatan MCU')">Hapus</button>
+                        @click="hapus(`/miners/${id}/mcu/${m.id}`, 'catatan MCU')">Hapus</button>
               </div>
               <p v-if="m.pembatasan" class="text-[11px] text-amber-700 mt-1 ml-3.5">{{ m.pembatasan }}</p>
             </li>
@@ -576,7 +576,7 @@ function hapus(jalur: string, apa: string) {
               <div v-if="k.status !== 'draf'" class="mt-2 ml-3.5">
                 <Rantai :rantai="k.rantai" :tertinggal="k.tertinggal"
                         :dapat-paraf="k.dapatParaf" :saya-penentu="props.opsi?.sayaPenentu"
-                        @paraf="t => paraf(`/authority/${id}/kartu/${k.id}/paraf`, t)" />
+                        @paraf="t => paraf(`/miners/${id}/kartu/${k.id}/paraf`, t)" />
               </div>
 
               <div class="flex flex-wrap items-center gap-2 mt-1.5 ml-3.5">
@@ -585,15 +585,15 @@ function hapus(jalur: string, apa: string) {
                         @click="ajukanKartu(k.id)">Ajukan</button>
                 <button v-if="k.dapatDitinjau" type="button"
                         class="text-[11px] font-semibold" :style="{ color: KEADAAN.baik }"
-                        @click="tinjau(`/authority/${id}/kartu/${k.id}/tinjau`, 'setujui')">Setujui</button>
+                        @click="tinjau(`/miners/${id}/kartu/${k.id}/tinjau`, 'setujui')">Setujui</button>
                 <button v-if="k.dapatDitinjau" type="button"
                         class="text-[11px] font-semibold text-red-600"
-                        @click="tinjau(`/authority/${id}/kartu/${k.id}/tinjau`, 'tolak')">Tolak</button>
+                        @click="tinjau(`/miners/${id}/kartu/${k.id}/tinjau`, 'tolak')">Tolak</button>
                 <button v-if="k.status === 'diajukan'" type="button"
                         class="text-[11px] text-stone-500"
-                        @click="tinjau(`/authority/${id}/kartu/${k.id}/tinjau`, 'tarik')">Tarik</button>
+                        @click="tinjau(`/miners/${id}/kartu/${k.id}/tinjau`, 'tarik')">Tarik</button>
                 <button type="button" class="text-red-600 text-[11px] ml-auto"
-                        @click="hapus(`/authority/${id}/kartu/${k.id}`, k.jenis)">Hapus</button>
+                        @click="hapus(`/miners/${id}/kartu/${k.id}`, k.jenis)">Hapus</button>
               </div>
             </li>
           </ul>
@@ -653,7 +653,7 @@ function hapus(jalur: string, apa: string) {
               {{ i.keterangan }}
             </span>
             <button type="button" class="text-red-600 text-[11px] shrink-0"
-                    @click="hapus(`/authority/${id}/induksi/${i.id}`, 'catatan induksi')">Hapus</button>
+                    @click="hapus(`/miners/${id}/induksi/${i.id}`, 'catatan induksi')">Hapus</button>
           </li>
         </ul>
         <p v-else class="text-[12px] text-stone-400 py-3">Belum ada induksi tercatat.</p>
@@ -745,7 +745,7 @@ function hapus(jalur: string, apa: string) {
         <div v-if="m.status !== 'draf'" class="mt-3">
           <Rantai :rantai="m.rantai" :tertinggal="m.tertinggal"
                   :dapat-paraf="m.dapatParaf" :saya-penentu="props.opsi?.sayaPenentu"
-                  @paraf="t => paraf(`/authority/mcu/${m.id}/paraf`, t)" />
+                  @paraf="t => paraf(`/miners/mcu/${m.id}/paraf`, t)" />
         </div>
 
         <div class="flex flex-wrap items-center gap-3 mt-3">
@@ -758,13 +758,13 @@ function hapus(jalur: string, apa: string) {
                   @click="ajukanPengajuan(m.id)">Ajukan</button>
           <button v-if="m.dapatDitinjau" type="button" class="text-[11.5px] font-semibold"
                   :style="{ color: KEADAAN.baik }"
-                  @click="tinjau(`/authority/mcu/${m.id}/tinjau`, 'setujui')">Setujui</button>
+                  @click="tinjau(`/miners/mcu/${m.id}/tinjau`, 'setujui')">Setujui</button>
           <button v-if="m.dapatDitinjau" type="button" class="text-[11.5px] font-semibold text-red-600"
-                  @click="tinjau(`/authority/mcu/${m.id}/tinjau`, 'tolak')">Tolak</button>
+                  @click="tinjau(`/miners/mcu/${m.id}/tinjau`, 'tolak')">Tolak</button>
           <button v-if="m.status === 'diajukan'" type="button" class="text-[11.5px] text-stone-500"
-                  @click="tinjau(`/authority/mcu/${m.id}/tinjau`, 'tarik')">Tarik</button>
+                  @click="tinjau(`/miners/mcu/${m.id}/tinjau`, 'tarik')">Tarik</button>
           <button v-if="m.dapatDiubah" type="button" class="text-[11.5px] text-red-600 ml-auto"
-                  @click="hapus(`/authority/mcu/${m.id}`, 'pengajuan ini')">Hapus</button>
+                  @click="hapus(`/miners/mcu/${m.id}`, 'pengajuan ini')">Hapus</button>
         </div>
 
         <div v-if="bukaPengajuan === m.id" class="mt-4 pt-4 border-t border-stone-100">
@@ -781,7 +781,7 @@ function hapus(jalur: string, apa: string) {
                 <tr v-for="h in m.nama" :key="h.id" class="border-b border-stone-50 align-top">
                   <template v-if="!isiHasil[h.id]">
                     <td class="py-2 pr-3 font-semibold">
-                      <Link :href="`/authority/${h.pasporId}`" class="text-cam-lime-deep">{{ h.nama }}</Link>
+                      <Link :href="`/miners/${h.pasporId}`" class="text-cam-lime-deep">{{ h.nama }}</Link>
                     </td>
                     <td class="py-2 pr-3">{{ h.tglPeriksa || '—' }}</td>
                     <td class="py-2 pr-3">{{ h.tglExpired || '—' }}</td>
@@ -799,7 +799,7 @@ function hapus(jalur: string, apa: string) {
                       <button type="button" class="text-[11px] font-semibold text-cam-lime-deep"
                               @click="mulaiIsi(h)">Isi hasil</button>
                       <button v-if="m.dapatDiubah" type="button" class="text-[11px] text-red-600 ml-2"
-                              @click="hapus(`/authority/mcu/${m.id}/nama/${h.id}`, h.nama)">Keluarkan</button>
+                              @click="hapus(`/miners/mcu/${m.id}/nama/${h.id}`, h.nama)">Keluarkan</button>
                     </td>
                   </template>
 

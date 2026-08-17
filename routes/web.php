@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\AuthorityController;
+use App\Http\Controllers\MinersController;
 use App\Http\Controllers\{
     CertificateController, CourseController, DashboardController, EvaluationController,
     LearnController, NewsController, PersonaliaController, ProcedureController, ProfileController,
@@ -124,10 +124,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
        menyimpan seluruh berkas kelayakan kerjanya — kompetensi, MCU, dan
        kartu masuk tambang — dan menjawab satu pertanyaan yang ditanyakan
        setiap pagi di gerbang: boleh atau tidak orang ini bekerja hari ini. */
-    Route::prefix('authority')->name('authority.')->group(function () {
-        Route::get('/',                [AuthorityController::class,'index'])->name('index');
-        Route::get('dasbor',           [AuthorityController::class,'dasbor'])->name('dasbor');
-        Route::post('/',               [AuthorityController::class,'store'])->name('store');
+    Route::prefix('miners')->name('miners.')->group(function () {
+        Route::get('/',                [MinersController::class,'index'])->name('index');
+        Route::get('dasbor',           [MinersController::class,'dasbor'])->name('dasbor');
+        Route::post('/',               [MinersController::class,'store'])->name('store');
 
         /* Pengajuan MCU didaftarkan SEBELUM {paspor}, dan urutannya
            bukan gaya penulisan: `authority/mcu` cocok dengan pola
@@ -135,46 +135,78 @@ Route::middleware(['auth', 'verified'])->group(function () {
            yang menang. Terbalik, halaman pengajuan akan mencari paspor
            bernomor "mcu" dan memulangkan 404 yang membingungkan. */
         Route::prefix('mcu')->name('mcu.')->group(function () {
-            Route::get('/',   [AuthorityController::class,'mcuIndex'])->name('index');
-            Route::post('/',  [AuthorityController::class,'mcuStore'])->name('store');
+            Route::get('/',   [MinersController::class,'mcuIndex'])->name('index');
+            Route::post('/',  [MinersController::class,'mcuStore'])->name('store');
 
-            Route::put('{pengajuan}',    [AuthorityController::class,'mcuUpdate'])->name('update');
-            Route::delete('{pengajuan}', [AuthorityController::class,'mcuDestroy'])->name('destroy');
+            Route::put('{pengajuan}',    [MinersController::class,'mcuUpdate'])->name('update');
+            Route::delete('{pengajuan}', [MinersController::class,'mcuDestroy'])->name('destroy');
 
-            Route::post('{pengajuan}/nama',       [AuthorityController::class,'mcuTambahNama'])->name('nama.tambah');
-            Route::delete('{pengajuan}/nama/{mcu}', [AuthorityController::class,'mcuHapusNama'])->name('nama.hapus');
-            Route::put('{pengajuan}/hasil/{mcu}', [AuthorityController::class,'mcuIsiHasil'])->name('hasil');
+            Route::post('{pengajuan}/nama',       [MinersController::class,'mcuTambahNama'])->name('nama.tambah');
+            Route::delete('{pengajuan}/nama/{mcu}', [MinersController::class,'mcuHapusNama'])->name('nama.hapus');
+            Route::put('{pengajuan}/hasil/{mcu}', [MinersController::class,'mcuIsiHasil'])->name('hasil');
 
-            Route::post('{pengajuan}/ajukan', [AuthorityController::class,'ajukanMcu'])->name('ajukan');
-            Route::post('{pengajuan}/tinjau', [AuthorityController::class,'tinjauMcu'])->name('tinjau');
-            Route::post('{pengajuan}/paraf',  [AuthorityController::class,'parafMcu'])->name('paraf');
+            Route::post('{pengajuan}/ajukan', [MinersController::class,'ajukanMcu'])->name('ajukan');
+            Route::post('{pengajuan}/tinjau', [MinersController::class,'tinjauMcu'])->name('tinjau');
+            Route::post('{pengajuan}/paraf',  [MinersController::class,'parafMcu'])->name('paraf');
         });
 
-        Route::get('{paspor}',         [AuthorityController::class,'show'])->name('show');
-        Route::put('{paspor}',         [AuthorityController::class,'update'])->name('update');
-        Route::delete('{paspor}',      [AuthorityController::class,'destroy'])
+        /* Field break, cuti, dan campaign didaftarkan SEBELUM {paspor},
+           sebab semuanya cocok dengan pola `miners/{paspor}` juga —
+           yang terdaftar lebih dahulu yang menang. */
+        Route::prefix('field-break')->name('fieldBreak.')->group(function () {
+            Route::get('/',   [MinersController::class,'fieldBreak'])->name('index');
+            Route::post('/',  [MinersController::class,'fieldBreakStore'])->name('store');
+            Route::put('{fieldBreak}',    [MinersController::class,'fieldBreakUpdate'])->name('update');
+            Route::delete('{fieldBreak}', [MinersController::class,'fieldBreakDestroy'])->name('destroy');
+            Route::post('{fieldBreak}/kembali', [MinersController::class,'fieldBreakKembali'])->name('kembali');
+            Route::post('{fieldBreak}/ajukan',  [MinersController::class,'fieldBreakAjukan'])->name('ajukan');
+            Route::post('{fieldBreak}/tinjau',  [MinersController::class,'fieldBreakTinjau'])->name('tinjau');
+        });
+
+        Route::prefix('cuti')->name('cuti.')->group(function () {
+            Route::get('/',  [MinersController::class,'cuti'])->name('index');
+            Route::post('/', [MinersController::class,'cutiStore'])->name('store');
+            Route::post('jatah', [MinersController::class,'cutiJatah'])->name('jatah');
+            Route::delete('{cuti}',       [MinersController::class,'cutiDestroy'])->name('destroy');
+            Route::post('{cuti}/ajukan',  [MinersController::class,'cutiAjukan'])->name('ajukan');
+            Route::post('{cuti}/tinjau',  [MinersController::class,'cutiTinjau'])->name('tinjau');
+        });
+
+        Route::prefix('campaign')->name('campaign.')->group(function () {
+            Route::get('/',  [MinersController::class,'campaign'])->name('index');
+            Route::post('/', [MinersController::class,'campaignStore'])->name('store');
+            Route::put('{campaign}',    [MinersController::class,'campaignUpdate'])->name('update');
+            Route::delete('{campaign}', [MinersController::class,'campaignDestroy'])->name('destroy');
+            Route::post('{campaign}/jangkauan', [MinersController::class,'campaignJangkauan'])->name('jangkauan');
+            Route::post('{campaign}/ajukan',    [MinersController::class,'campaignAjukan'])->name('ajukan');
+            Route::post('{campaign}/tinjau',    [MinersController::class,'campaignTinjau'])->name('tinjau');
+        });
+
+        Route::get('{paspor}',         [MinersController::class,'show'])->name('show');
+        Route::put('{paspor}',         [MinersController::class,'update'])->name('update');
+        Route::delete('{paspor}',      [MinersController::class,'destroy'])
             ->middleware('can:admin')->name('destroy');
 
-        Route::post('{paspor}/sertifikat',              [AuthorityController::class,'simpanSertifikat'])->name('sertifikat.simpan');
-        Route::delete('{paspor}/sertifikat/{sertifikat}', [AuthorityController::class,'hapusSertifikat'])->name('sertifikat.hapus');
+        Route::post('{paspor}/sertifikat',              [MinersController::class,'simpanSertifikat'])->name('sertifikat.simpan');
+        Route::delete('{paspor}/sertifikat/{sertifikat}', [MinersController::class,'hapusSertifikat'])->name('sertifikat.hapus');
 
         /* MCU yang dicatat LANGSUNG pada orangnya, tanpa surat pengajuan:
            pekerja baru dan pemeriksaan khusus. Namanya sengaja dibedakan
-           dari authority.mcu.* di atas — keduanya menyimpan hasil MCU,
+           dari miners.mcu.* di atas — keduanya menyimpan hasil MCU,
            tetapi yang satu bagian dari rombongan yang disetujui bersama
            dan yang satu berdiri sendiri. */
-        Route::post('{paspor}/mcu',        [AuthorityController::class,'simpanMcu'])->name('mcuLangsung.simpan');
-        Route::delete('{paspor}/mcu/{mcu}', [AuthorityController::class,'hapusMcu'])->name('mcuLangsung.hapus');
+        Route::post('{paspor}/mcu',        [MinersController::class,'simpanMcu'])->name('mcuLangsung.simpan');
+        Route::delete('{paspor}/mcu/{mcu}', [MinersController::class,'hapusMcu'])->name('mcuLangsung.hapus');
 
-        Route::post('{paspor}/kartu',          [AuthorityController::class,'simpanKartu'])->name('kartu.simpan');
-        Route::put('{paspor}/kartu/{kartu}',    [AuthorityController::class,'ubahKartu'])->name('kartu.ubah');
-        Route::delete('{paspor}/kartu/{kartu}', [AuthorityController::class,'hapusKartu'])->name('kartu.hapus');
-        Route::post('{paspor}/kartu/{kartu}/ajukan', [AuthorityController::class,'ajukanKartu'])->name('kartu.ajukan');
-        Route::post('{paspor}/kartu/{kartu}/tinjau', [AuthorityController::class,'tinjauKartu'])->name('kartu.tinjau');
-        Route::post('{paspor}/kartu/{kartu}/paraf',  [AuthorityController::class,'parafKartu'])->name('kartu.paraf');
+        Route::post('{paspor}/kartu',          [MinersController::class,'simpanKartu'])->name('kartu.simpan');
+        Route::put('{paspor}/kartu/{kartu}',    [MinersController::class,'ubahKartu'])->name('kartu.ubah');
+        Route::delete('{paspor}/kartu/{kartu}', [MinersController::class,'hapusKartu'])->name('kartu.hapus');
+        Route::post('{paspor}/kartu/{kartu}/ajukan', [MinersController::class,'ajukanKartu'])->name('kartu.ajukan');
+        Route::post('{paspor}/kartu/{kartu}/tinjau', [MinersController::class,'tinjauKartu'])->name('kartu.tinjau');
+        Route::post('{paspor}/kartu/{kartu}/paraf',  [MinersController::class,'parafKartu'])->name('kartu.paraf');
 
-        Route::post('{paspor}/induksi',              [AuthorityController::class,'simpanInduksi'])->name('induksi.simpan');
-        Route::delete('{paspor}/induksi/{induksi}',  [AuthorityController::class,'hapusInduksi'])->name('induksi.hapus');
+        Route::post('{paspor}/induksi',              [MinersController::class,'simpanInduksi'])->name('induksi.simpan');
+        Route::delete('{paspor}/induksi/{induksi}',  [MinersController::class,'hapusInduksi'])->name('induksi.hapus');
     });
 
 

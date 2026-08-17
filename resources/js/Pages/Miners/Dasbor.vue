@@ -41,7 +41,9 @@ function warna(k: { nilai: number; nada: string }): string {
 }
 
 const menunggu = () =>
-  (props.menunggu?.mcu?.length ?? 0) + (props.menunggu?.kartu?.length ?? 0);
+  (props.menunggu?.mcu?.length ?? 0)
+  + (props.menunggu?.kartu?.length ?? 0)
+  + (props.menunggu?.lain?.length ?? 0);
 </script>
 
 <template>
@@ -55,8 +57,8 @@ const menunggu = () =>
         <p class="text-[12.5px] text-stone-500 mt-1">{{ props.subjudul }}</p>
       </div>
       <div class="flex gap-2">
-        <Link href="/authority" class="eq-btn-lain">Kelayakan kerja</Link>
-        <Link href="/authority/mcu" class="eq-btn-utama">Pengajuan MCU</Link>
+        <Link href="/miners" class="eq-btn-lain">Kelayakan kerja</Link>
+        <Link href="/miners/mcu" class="eq-btn-utama">Pengajuan MCU</Link>
       </div>
     </section>
 
@@ -77,7 +79,7 @@ const menunggu = () =>
 
         <ul v-if="menunggu()" class="divide-y divide-stone-100">
           <li v-for="m in props.menunggu.mcu" :key="'m'+m.id" class="py-2.5">
-            <Link href="/authority/mcu" class="text-[12.5px] font-semibold text-cam-lime-deep">
+            <Link href="/miners/mcu" class="text-[12.5px] font-semibold text-cam-lime-deep">
               {{ m.nomor }}
             </Link>
             <span class="text-[11px] text-stone-400"> · MCU · {{ m.jumlah }} nama</span>
@@ -86,13 +88,19 @@ const menunggu = () =>
             </p>
           </li>
           <li v-for="k in props.menunggu.kartu" :key="'k'+k.id" class="py-2.5">
-            <Link :href="`/authority/${k.pasporId}`" class="text-[12.5px] font-semibold text-cam-lime-deep">
+            <Link :href="`/miners/${k.pasporId}`" class="text-[12.5px] font-semibold text-cam-lime-deep">
               {{ k.nama }}
             </Link>
             <span class="text-[11px] text-stone-400"> · {{ k.jenis }} · {{ k.sebab }}</span>
             <p v-if="k.tertinggal?.length" class="text-[10.5px] mt-0.5" :style="{ color: KEADAAN.ingat }">
               Belum diparaf: {{ k.tertinggal.join(', ') }}
             </p>
+          </li>
+          <li v-for="(l, n) in (props.menunggu.lain ?? [])" :key="'l'+n" class="py-2.5">
+            <Link :href="l.jalur" class="text-[12.5px] font-semibold text-cam-lime-deep">
+              {{ l.sebutan }}
+            </Link>
+            <span class="text-[11px] text-stone-400"> · {{ l.apa }} · {{ l.terang }}</span>
           </li>
         </ul>
 
@@ -115,7 +123,7 @@ const menunggu = () =>
             <h3 class="text-[14px] font-bold text-cam-ink">Tidak boleh bekerja hari ini</h3>
             <p class="text-[11.5px] text-stone-500 mt-0.5">Beserta sebabnya, bukan hanya vonisnya.</p>
           </div>
-          <Link href="/authority" class="text-[11px] font-semibold text-cam-lime-deep shrink-0">
+          <Link href="/miners" class="text-[11px] font-semibold text-cam-lime-deep shrink-0">
             Seluruhnya →
           </Link>
         </div>
@@ -123,7 +131,7 @@ const menunggu = () =>
         <ul v-if="props.mendesak?.length" class="divide-y divide-stone-100">
           <li v-for="o in props.mendesak" :key="o.id" class="py-2.5 flex items-center gap-3">
             <span class="w-1.5 h-1.5 rounded-full shrink-0" :style="{ background: KEADAAN.gawat }"></span>
-            <Link :href="`/authority/${o.id}`"
+            <Link :href="`/miners/${o.id}`"
                   class="text-[12.5px] font-semibold text-cam-ink hover:text-cam-lime-deep truncate w-40">
               {{ o.nama }}
             </Link>
@@ -134,6 +142,17 @@ const menunggu = () =>
         <p v-else class="text-[12px] py-4 text-center" :style="{ color: KEADAAN.baik }">
           Seluruh pekerja memenuhi syarat masuk hari ini.
         </p>
+
+        <!-- Yang sedang pergi disebut TERPISAH dari yang tidak layak,
+             dan kalimatnya menegaskan bedanya. Menggabungkan keduanya
+             membuat orang yang cutinya sah terbaca sebagai temuan. -->
+        <div v-if="props.pergi?.length" class="mt-3 pt-3 border-t border-stone-100">
+          <p class="text-[11px] text-stone-500">
+            {{ props.pergi.length }} orang sedang tidak di lokasi (field break atau cuti) —
+            mereka tetap memenuhi syarat, hanya sedang tidak di sini:
+            <span class="text-stone-600">{{ props.pergi.map((x: any) => x.nama).join(', ') }}</span>
+          </p>
+        </div>
       </section>
     </div>
 

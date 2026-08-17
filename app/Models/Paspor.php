@@ -59,6 +59,60 @@ class Paspor extends Model
         return $this->hasMany(PasporInduksi::class)->orderByDesc('tanggal');
     }
 
+    public function fieldBreak()
+    {
+        return $this->hasMany(MinersFieldBreak::class, 'paspor_id')->orderByDesc('mulai');
+    }
+
+    public function cuti()
+    {
+        return $this->hasMany(MinersCuti::class, 'paspor_id')->orderByDesc('mulai');
+    }
+
+    public function jatahCuti()
+    {
+        return $this->hasMany(MinersCutiJatah::class, 'paspor_id');
+    }
+
+    /* ═══════════ kehadiran ═══════════ */
+
+    /**
+     * Sedang tidak di lokasi — field break atau cuti.
+     *
+     * TERPISAH DARI KELAYAKAN, dan itu keputusan yang disengaja. Orang
+     * yang sedang cuti tetap memenuhi syarat masuk; ia hanya sedang
+     * tidak di sini. Memasukkannya ke kelayakan() akan membuat daftar
+     * "tidak boleh bekerja" berisi puluhan nama yang tidak bermasalah
+     * sama sekali — dan daftar semacam itu berhenti dibaca dalam
+     * seminggu, membawa serta nama-nama yang benar-benar bermasalah.
+     *
+     * @return array{pergi:bool, sebab:?string, sampai:?string}
+     */
+    public function kehadiran(): array
+    {
+        $fb = $this->fieldBreak->first(fn (MinersFieldBreak $f) => $f->sedangPergi());
+
+        if ($fb) {
+            return [
+                'pergi'  => true,
+                'sebab'  => 'Field break'.($fb->pola ? ' '.$fb->pola : ''),
+                'sampai' => ($fb->kembali_aktual ?? $fb->selesai)?->toDateString(),
+            ];
+        }
+
+        $c = $this->cuti->first(fn (MinersCuti $x) => $x->sedangCuti());
+
+        if ($c) {
+            return [
+                'pergi'  => true,
+                'sebab'  => 'Cuti '.$c->jenis,
+                'sampai' => $c->selesai?->toDateString(),
+            ];
+        }
+
+        return ['pergi' => false, 'sebab' => null, 'sampai' => null];
+    }
+
     /* ═══════════ yang berlaku sekarang ═══════════ */
 
     /**

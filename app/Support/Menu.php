@@ -55,16 +55,34 @@ final class Menu
       ],
     ],
     /* Tepat sesudah LMS: keduanya berbicara tentang orang yang sama.
-       LMS menerbitkan sertifikat pelatihan; Authority menyimpan seluruh
-       berkas kelayakan kerjanya. */
-    'authority' => [
-      'label' => 'Authority',
+       LMS menerbitkan sertifikat pelatihannya; Miners menyimpan seluruh
+       sisanya — kelayakan kerja, MCU, induksi, kartu masuk, jadwal
+       kehadiran, dan cutinya.
+
+       Namanya Miners, bukan Authority, dan itu bukan sekadar penggantian
+       kata. "Authority" adalah SATU isi di dalamnya: paspor kompetensi.
+       Selama modulnya dinamai menurut salah satu isinya, tidak ada
+       tempat yang jelas bagi field break dan cuti tahunan — keduanya
+       jelas tentang orang yang sama, tetapi jelas pula bukan
+       "authority", sehingga akan mendarat di modul lain dan memutus
+       hubungannya dengan berkas orang itu. */
+    'miners' => [
+      'label' => 'Miners',
       'icon'  => 'M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 14l2 2 4-4',
       'groups' => [
         '' => [
-          ['Ringkasan',       'authority.dasbor',    'authority/dasbor*'],
-          ['Kelayakan Kerja', 'authority.index',     'authority'],
-          ['Pengajuan MCU',   'authority.mcu.index', 'authority/mcu*'],
+          ['Ringkasan',       'miners.dasbor',    'miners/dasbor*'],
+        ],
+        'Kelayakan Kerja' => [
+          ['Pekerja',         'miners.index',     'miners'],
+          ['Pengajuan MCU',   'miners.mcu.index', 'miners/mcu*'],
+        ],
+        'Kehadiran' => [
+          ['Field Break',     'miners.fieldBreak.index', 'miners/field-break*'],
+          ['Cuti Tahunan',    'miners.cuti.index',       'miners/cuti*'],
+        ],
+        'Komunikasi' => [
+          ['Campaign',        'miners.campaign.index',   'miners/campaign*'],
         ],
       ],
     ],
@@ -442,7 +460,7 @@ final class Menu
         [['pemeliharaan*'],                        'maintenance'],
         [['gudang*'],                              'gudang'],
         [['mining-engineering-hub*'],              'meh'],
-        [['authority*'],                           'authority'],
+        [['miners*'],                           'miners'],
         [['ko*'],                                  'ko'],
         [['admin*', 'signatories*'],               'admin'],
     ];

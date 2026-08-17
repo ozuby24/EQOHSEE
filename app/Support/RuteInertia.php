@@ -209,9 +209,12 @@ final class RuteInertia
         'smkp.acuan',
 
         /* Keselamatan Operasi */
-        'authority.index',
-        'authority.dasbor',
-        'authority.mcu.index',
+        'miners.index',
+        'miners.dasbor',
+        'miners.mcu.index',
+        'miners.fieldBreak.index',
+        'miners.cuti.index',
+        'miners.campaign.index',
         'ko.index',
         'ko.register',
         'ko.create',

@@ -2,14 +2,15 @@
 
 namespace Tests\Feature;
 
-use App\Models\{Company, KompetensiJenis, McuPengajuan, Paspor, PasporKartu, User};
-use App\Support\{Alur, Authority, MasterKompetensi, Tahap};
+use App\Models\{Company, KompetensiJenis, McuPengajuan, MinersCampaign, MinersCuti,
+    MinersCutiJatah, MinersFieldBreak, Paspor, PasporKartu, User};
+use App\Support\{Alur, Authority, JatahCuti, MasterKompetensi, Tahap};
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 /**
- * Authority — berkas kelayakan kerja.
+ * Miners — berkas kelayakan kerja.
  *
  * Yang diuji di sini bukan tampilan halamannya melainkan jawaban atas
  * pertanyaan gerbang: boleh atau tidak orang ini bekerja hari ini.
@@ -17,7 +18,7 @@ use Tests\TestCase;
  * salahnya punya dua bentuk yang sama buruknya — menahan orang yang
  * sebenarnya berhak, dan meloloskan orang yang MCU-nya sudah habis.
  */
-class AuthorityTest extends TestCase
+class MinersTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -401,10 +402,10 @@ class AuthorityTest extends TestCase
         $p = $this->orang();
         $p->mcu()->create(['tgl_periksa' => now(), 'tgl_expired' => now()->subDay(), 'hasil' => 'Fit']);
 
-        $this->get(route('authority.index'))
+        $this->get(route('miners.index'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('Authority/Halaman')
+                ->component('Miners/Halaman')
                 ->where('ringkas.orang', 1)
                 ->where('ringkas.takLayak', 1));
     }
@@ -413,10 +414,10 @@ class AuthorityTest extends TestCase
     {
         $p = $this->orang('Rahmat');
 
-        $this->get(route('authority.show', $p))
+        $this->get(route('miners.show', $p))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('Authority/Halaman')
+                ->component('Miners/Halaman')
                 ->where('p.nama', 'Rahmat'));
     }
 
@@ -424,7 +425,7 @@ class AuthorityTest extends TestCase
     {
         $p = $this->orang();
 
-        $this->post(route('authority.sertifikat.simpan', $p), [
+        $this->post(route('miners.sertifikat.simpan', $p), [
             'nama' => 'Pengawas Operasional Pertama (POP)',
             'lembaga' => 'BNSP',
             'tgl_expired' => now()->addYear()->toDateString(),
@@ -548,7 +549,7 @@ class AuthorityTest extends TestCase
         $this->assertNotEmpty($k->syaratKurang(),
             'SIMPER tanpa SIM kepolisian dan DDT dianggap sudah lengkap.');
 
-        $this->post(route('authority.kartu.ajukan', [$p, $k]))
+        $this->post(route('miners.kartu.ajukan', [$p, $k]))
             ->assertSessionHasErrors('kartu');
 
         $this->assertSame(Alur::DRAF, $k->refresh()->status);
@@ -563,7 +564,7 @@ class AuthorityTest extends TestCase
             'berkas_ddt'     => 'ddt/budi.pdf',
         ]);
 
-        $this->post(route('authority.kartu.ajukan', [$p, $k]))->assertRedirect();
+        $this->post(route('miners.kartu.ajukan', [$p, $k]))->assertRedirect();
 
         $this->assertSame(Alur::DIAJUKAN, $k->refresh()->status);
     }
@@ -614,7 +615,7 @@ class AuthorityTest extends TestCase
             'company_id' => $this->c->id, 'tanggal' => now(), 'jenis' => 'Berkala',
         ]);
 
-        $this->post(route('authority.mcu.nama.tambah', $pengajuan), ['paspor_id' => $p->id])
+        $this->post(route('miners.mcu.nama.tambah', $pengajuan), ['paspor_id' => $p->id])
             ->assertRedirect();
 
         $hasil = $p->refresh()->kelayakan();
@@ -640,7 +641,7 @@ class AuthorityTest extends TestCase
             'company_id' => $this->c->id, 'tanggal' => now(), 'jenis' => 'Berkala',
         ]);
 
-        $this->post(route('authority.mcu.nama.tambah', $pengajuan), ['paspor_id' => $p->id]);
+        $this->post(route('miners.mcu.nama.tambah', $pengajuan), ['paspor_id' => $p->id]);
 
         $this->assertNull($pengajuan->refresh()->hasil->first()->hasil);
         $this->assertSame(1, $pengajuan->belumKembali());
@@ -655,8 +656,8 @@ class AuthorityTest extends TestCase
             'company_id' => $this->c->id, 'tanggal' => now(), 'jenis' => 'Berkala',
         ]);
 
-        $this->post(route('authority.mcu.nama.tambah', $pengajuan), ['paspor_id' => $p->id]);
-        $this->post(route('authority.mcu.nama.tambah', $pengajuan), ['paspor_id' => $p->id])
+        $this->post(route('miners.mcu.nama.tambah', $pengajuan), ['paspor_id' => $p->id]);
+        $this->post(route('miners.mcu.nama.tambah', $pengajuan), ['paspor_id' => $p->id])
             ->assertSessionHasErrors('paspor_id');
 
         $this->assertSame(1, $pengajuan->refresh()->hasil->count());
@@ -669,7 +670,7 @@ class AuthorityTest extends TestCase
             'company_id' => $this->c->id, 'tanggal' => now(), 'jenis' => 'Berkala',
         ]);
 
-        $this->post(route('authority.mcu.ajukan', $pengajuan))->assertSessionHasErrors('mcu');
+        $this->post(route('miners.mcu.ajukan', $pengajuan))->assertSessionHasErrors('mcu');
 
         $this->assertSame(Alur::DRAF, $pengajuan->refresh()->status);
     }
@@ -682,7 +683,7 @@ class AuthorityTest extends TestCase
      */
     public function test_status_pengajuan_tidak_dapat_diisi_lewat_formulir(): void
     {
-        $this->post(route('authority.mcu.store'), [
+        $this->post(route('miners.mcu.store'), [
             'tanggal' => now()->toDateString(),
             'jenis'   => 'Berkala',
             'status'  => Alur::DISETUJUI,
@@ -716,9 +717,9 @@ class AuthorityTest extends TestCase
         ]);
         $pengajuan->hasil()->create(['paspor_id' => $p->id, 'tgl_periksa' => now()]);
 
-        $this->post(route('authority.mcu.ajukan', $pengajuan))->assertRedirect();
+        $this->post(route('miners.mcu.ajukan', $pengajuan))->assertRedirect();
 
-        $this->post(route('authority.mcu.tinjau', $pengajuan), ['aksi' => 'setujui'])
+        $this->post(route('miners.mcu.tinjau', $pengajuan), ['aksi' => 'setujui'])
             ->assertSessionHasErrors('alur');
 
         $this->assertSame(Alur::DIAJUKAN, $pengajuan->refresh()->status);
@@ -727,7 +728,7 @@ class AuthorityTest extends TestCase
            penolakan di atas dapat berarti rutenya rusak seluruhnya. */
         $this->actingAs($peninjau);
 
-        $this->post(route('authority.mcu.tinjau', $pengajuan), ['aksi' => 'setujui'])
+        $this->post(route('miners.mcu.tinjau', $pengajuan), ['aksi' => 'setujui'])
             ->assertRedirect();
 
         $this->assertSame(Alur::DISETUJUI, $pengajuan->refresh()->status);
@@ -763,16 +764,16 @@ class AuthorityTest extends TestCase
 
     public function test_halaman_pengajuan_mcu_terbuka(): void
     {
-        $this->get(route('authority.mcu.index'))
+        $this->get(route('miners.mcu.index'))
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->component('Authority/Halaman')->where('mode', 'mcu'));
+            ->assertInertia(fn ($page) => $page->component('Miners/Halaman')->where('mode', 'mcu'));
     }
 
     public function test_dasbor_terbuka(): void
     {
-        $this->get(route('authority.dasbor'))
+        $this->get(route('miners.dasbor'))
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->component('Authority/Dasbor'));
+            ->assertInertia(fn ($page) => $page->component('Miners/Dasbor'));
     }
 
     /* ═══════════ paraf bertingkat ═══════════ */
@@ -817,7 +818,7 @@ class AuthorityTest extends TestCase
         $this->actingAs($atasan);
 
         foreach ([Tahap::ATASAN, Tahap::DEPARTEMEN] as $tahap) {
-            $this->post(route('authority.mcu.paraf', $m), ['tahap' => $tahap])->assertRedirect();
+            $this->post(route('miners.mcu.paraf', $m), ['tahap' => $tahap])->assertRedirect();
         }
 
         $m->refresh()->load('paraf');
@@ -846,7 +847,7 @@ class AuthorityTest extends TestCase
         $ohse = $this->pengguna(['ohse_role' => 'ohse']);
         $this->actingAs($ohse);
 
-        $this->post(route('authority.mcu.tinjau', $m), ['aksi' => 'setujui'])->assertRedirect();
+        $this->post(route('miners.mcu.tinjau', $m), ['aksi' => 'setujui'])->assertRedirect();
 
         $this->assertSame(Alur::DISETUJUI, $m->refresh()->status);
     }
@@ -869,7 +870,7 @@ class AuthorityTest extends TestCase
 
         $this->assertFalse($m->dapatDitinjauOleh($ktt));
 
-        $this->post(route('authority.mcu.tinjau', $m), ['aksi' => 'setujui'])
+        $this->post(route('miners.mcu.tinjau', $m), ['aksi' => 'setujui'])
             ->assertSessionHasErrors('alur');
 
         $this->assertSame(Alur::DIAJUKAN, $m->refresh()->status);
@@ -877,7 +878,7 @@ class AuthorityTest extends TestCase
         /* Kontrol: orang OHSE memang bisa. */
         $this->actingAs($this->pengguna(['ohse_role' => 'ohse']));
 
-        $this->post(route('authority.mcu.tinjau', $m), ['aksi' => 'setujui'])->assertRedirect();
+        $this->post(route('miners.mcu.tinjau', $m), ['aksi' => 'setujui'])->assertRedirect();
 
         $this->assertSame(Alur::DISETUJUI, $m->refresh()->status);
     }
@@ -890,7 +891,7 @@ class AuthorityTest extends TestCase
 
         $this->actingAs($pengaju);
 
-        $this->post(route('authority.mcu.paraf', $m), ['tahap' => Tahap::ATASAN])
+        $this->post(route('miners.mcu.paraf', $m), ['tahap' => Tahap::ATASAN])
             ->assertSessionHasErrors('paraf');
 
         $this->assertCount(0, $m->refresh()->paraf);
@@ -904,7 +905,7 @@ class AuthorityTest extends TestCase
 
         $this->actingAs($this->pengguna(['ohse_role' => 'ohse']));
 
-        $this->post(route('authority.mcu.paraf', $m), ['tahap' => Tahap::OHSE])
+        $this->post(route('miners.mcu.paraf', $m), ['tahap' => Tahap::OHSE])
             ->assertSessionHasErrors('paraf');
 
         $this->assertCount(0, $m->refresh()->paraf);
@@ -918,8 +919,8 @@ class AuthorityTest extends TestCase
 
         $this->actingAs($this->pengguna());
 
-        $this->post(route('authority.mcu.paraf', $m), ['tahap' => Tahap::ATASAN]);
-        $this->post(route('authority.mcu.paraf', $m), ['tahap' => Tahap::ATASAN]);
+        $this->post(route('miners.mcu.paraf', $m), ['tahap' => Tahap::ATASAN]);
+        $this->post(route('miners.mcu.paraf', $m), ['tahap' => Tahap::ATASAN]);
 
         $this->assertCount(1, $m->refresh()->paraf);
     }
@@ -943,6 +944,253 @@ class AuthorityTest extends TestCase
 
         $this->assertSame(Tahap::OHSE, $penentu['kode']);
         $this->assertSame(Alur::DISETUJUI, $penentu['keadaan']);
+    }
+
+    /* ═══════════ field break & cuti: kehadiran, bukan kelayakan ═══════════ */
+
+    /**
+     * Orang yang sedang field break TETAP LAYAK BEKERJA.
+     *
+     * Ia hanya sedang tidak di sini. Bila keadaan ini bocor ke dalam
+     * kelayakan(), daftar "tidak boleh bekerja" akan berisi puluhan nama
+     * yang tidak bermasalah sama sekali — dan daftar semacam itu
+     * berhenti dibaca dalam seminggu, membawa serta nama-nama yang
+     * benar-benar bermasalah.
+     */
+    public function test_field_break_tidak_membuat_orang_tidak_layak(): void
+    {
+        $p = $this->orang();
+        $this->induksi($p);
+        $p->mcu()->create([
+            'tgl_periksa' => now(), 'tgl_expired' => now()->addYear(), 'hasil' => 'Fit',
+        ]);
+        $this->kartu($p, ['jenis' => 'ID Card', 'tgl_expired' => now()->addYear()]);
+
+        $fb = MinersFieldBreak::create([
+            'paspor_id' => $p->id, 'pola' => '8:2', 'jenis' => 'Roster',
+            'mulai' => now()->subDays(3), 'selesai' => now()->addDays(10),
+        ]);
+        MinersFieldBreak::whereKey($fb->id)->update(['status' => Alur::DISETUJUI]);
+
+        $p->refresh()->load(['fieldBreak', 'cuti']);
+
+        $this->assertTrue($p->kehadiran()['pergi'], 'Kehadirannya tidak terbaca sebagai pergi.');
+        $this->assertTrue($p->kelayakan()['layak'],
+            'Field break bocor ke kelayakan: '.implode(' · ', $p->kelayakan()['sebab']));
+    }
+
+    /**
+     * Yang dipanggil balik lebih awal SUDAH ADA di lokasi.
+     *
+     * Tanggal selesainya belum tiba, tetapi ia sudah kembali — dan
+     * daftar kehadiran yang masih menyebutnya pergi akan dipakai membagi
+     * pekerjaan kepada orang lain, padahal ia siap bekerja.
+     */
+    public function test_kembali_lebih_awal_tidak_lagi_terhitung_pergi(): void
+    {
+        $p = $this->orang();
+
+        $fb = MinersFieldBreak::create([
+            'paspor_id' => $p->id, 'jenis' => 'Roster',
+            'mulai' => now()->subDays(10), 'selesai' => now()->addDays(10),
+        ]);
+        MinersFieldBreak::whereKey($fb->id)->update(['status' => Alur::DISETUJUI]);
+
+        $fb->refresh();
+        $this->assertTrue($fb->sedangPergi(), 'Kontrol gagal: belum terbaca pergi sejak awal.');
+
+        $fb->update(['kembali_aktual' => now()->subDay()]);
+
+        $this->assertFalse($fb->refresh()->sedangPergi());
+    }
+
+    /** Kepulangan boleh dicatat SESUDAH disetujui — ia kejadian, bukan suntingan. */
+    public function test_tanggal_kembali_dapat_dicatat_setelah_disetujui(): void
+    {
+        $p = $this->orang();
+
+        $fb = MinersFieldBreak::create([
+            'paspor_id' => $p->id, 'jenis' => 'Roster',
+            'mulai' => now()->subDays(20), 'selesai' => now()->subDays(5),
+        ]);
+        MinersFieldBreak::whereKey($fb->id)->update(['status' => Alur::DISETUJUI]);
+
+        $this->post(route('miners.fieldBreak.kembali', $fb->refresh()), [
+            'kembali_aktual' => now()->subDays(2)->toDateString(),
+        ])->assertRedirect();
+
+        $this->assertSame(3, $fb->refresh()->telat());
+    }
+
+    /* ═══════════ jatah cuti ═══════════ */
+
+    /**
+     * Cuti yang MASIH MENUNGGU ikut memotong sisa.
+     *
+     * Tanpa ini seseorang dapat mengajukan lima cuti sekaligus yang
+     * masing-masing tampak muat dalam sisa jatahnya, lalu kelimanya
+     * disetujui satu per satu dan jatahnya minus — tanpa satu pun
+     * langkah yang keliru.
+     */
+    public function test_cuti_yang_menunggu_ikut_memotong_sisa(): void
+    {
+        $p = $this->orang();
+
+        MinersCutiJatah::create(['paspor_id' => $p->id, 'tahun' => (int) now()->year, 'jatah' => 10]);
+
+        $this->assertSame(10, JatahCuti::hitung($p)['sisa']);
+
+        $c = MinersCuti::create([
+            'paspor_id' => $p->id, 'tahun' => (int) now()->year, 'jenis' => 'Tahunan',
+            'mulai' => now()->addDays(10), 'selesai' => now()->addDays(13), 'jumlah_hari' => 4,
+        ]);
+
+        /* Masih draf — belum membebani apa pun. */
+        $this->assertSame(10, JatahCuti::hitung($p)['sisa']);
+
+        $c->ajukan();
+
+        $saldo = JatahCuti::hitung($p);
+
+        $this->assertSame(4, $saldo['tertahan']);
+        $this->assertSame(0, $saldo['terpakai'], 'Yang menunggu terhitung sebagai sudah terpakai.');
+        $this->assertSame(6, $saldo['sisa']);
+    }
+
+    /** Hanya cuti tahunan yang memotong jatah; sakit tidak. */
+    public function test_cuti_sakit_tidak_memotong_jatah(): void
+    {
+        $p = $this->orang();
+
+        MinersCutiJatah::create(['paspor_id' => $p->id, 'tahun' => (int) now()->year, 'jatah' => 12]);
+
+        $sakit = MinersCuti::create([
+            'paspor_id' => $p->id, 'tahun' => (int) now()->year, 'jenis' => 'Sakit',
+            'mulai' => now(), 'selesai' => now()->addDays(4), 'jumlah_hari' => 5,
+        ]);
+        $sakit->ajukan();
+
+        $this->assertSame(12, JatahCuti::hitung($p)['sisa'],
+            'Cuti sakit memotong jatah tahunan — orang dihukum karena jatuh sakit.');
+    }
+
+    /**
+     * Pengajuan melebihi sisa ditolak SAAT DRAF DIBUAT, bukan saat ditinjau.
+     *
+     * Menolak di akhir berarti pengaju sudah menyusun rencana, memberi
+     * tahu keluarganya, dan menunggu berhari-hari sebelum diberi tahu
+     * bahwa jatahnya memang tidak pernah cukup.
+     */
+    public function test_cuti_melebihi_sisa_ditolak_sejak_awal(): void
+    {
+        $p = $this->orang();
+
+        MinersCutiJatah::create(['paspor_id' => $p->id, 'tahun' => (int) now()->year, 'jatah' => 3]);
+
+        $this->post(route('miners.cuti.store'), [
+            'paspor_id' => $p->id, 'jenis' => 'Tahunan',
+            'mulai' => now()->addDays(10)->toDateString(),
+            'selesai' => now()->addDays(14)->toDateString(),
+        ])->assertSessionHasErrors('jumlah_hari');
+
+        $this->assertSame(0, MinersCuti::count());
+
+        /* Kontrol: yang muat memang diterima — supaya penolakan di atas
+           tidak dapat berarti rutenya menolak segalanya. */
+        $this->post(route('miners.cuti.store'), [
+            'paspor_id' => $p->id, 'jenis' => 'Tahunan',
+            'mulai' => now()->addDays(10)->toDateString(),
+            'selesai' => now()->addDays(12)->toDateString(),
+        ])->assertRedirect();
+
+        $this->assertSame(1, MinersCuti::count());
+    }
+
+    /** Jumlah hari dihitung inklusif — cuti sehari adalah satu hari, bukan nol. */
+    public function test_jumlah_hari_cuti_inklusif(): void
+    {
+        $this->assertSame(1, MinersCuti::hariKalender('2026-08-17', '2026-08-17'));
+        $this->assertSame(5, MinersCuti::hariKalender('2026-08-17', '2026-08-21'));
+    }
+
+    /**
+     * Jumlah hari yang tersimpan tidak berubah walau tanggalnya bergeser.
+     *
+     * Yang menentukan potongan jatah adalah keputusan saat cuti
+     * disetujui, bukan selisih tanggal yang dihitung ulang tiap dibaca.
+     */
+    public function test_jumlah_hari_tersimpan_bukan_dihitung_ulang(): void
+    {
+        $p = $this->orang();
+
+        /* Lima hari kalender, tetapi hanya tiga yang dipotong — dua di
+           antaranya hari libur. */
+        $c = MinersCuti::create([
+            'paspor_id' => $p->id, 'tahun' => (int) now()->year, 'jenis' => 'Tahunan',
+            'mulai' => now()->addDays(10), 'selesai' => now()->addDays(14), 'jumlah_hari' => 3,
+        ]);
+
+        $this->assertSame(3, $c->refresh()->jumlah_hari);
+        $this->assertSame(5, MinersCuti::hariKalender($c->mulai, $c->selesai));
+    }
+
+    /* ═══════════ campaign ═══════════ */
+
+    /** Tanpa tanggal selesai berarti berjalan terus, bukan sudah berakhir. */
+    public function test_campaign_tanpa_tanggal_selesai_tetap_tayang(): void
+    {
+        $c = MinersCampaign::create([
+            'company_id' => $this->c->id, 'judul' => 'Wajib APD',
+            'jenis' => 'Spanduk', 'mulai' => now()->subYear(),
+        ]);
+        MinersCampaign::whereKey($c->id)->update(['status' => Alur::DISETUJUI]);
+
+        $this->assertTrue($c->refresh()->sedangTayang());
+    }
+
+    /** Campaign yang belum disetujui tidak tayang, walau tanggalnya sudah lewat. */
+    public function test_campaign_draf_tidak_tayang(): void
+    {
+        $c = MinersCampaign::create([
+            'company_id' => $this->c->id, 'judul' => 'Belum disetujui',
+            'jenis' => 'Poster', 'mulai' => now()->subMonth(), 'selesai' => now()->addMonth(),
+        ]);
+
+        $this->assertFalse($c->refresh()->sedangTayang());
+    }
+
+    /**
+     * Jangkauan boleh dicatat setelah disetujui.
+     *
+     * Berapa orang yang menerima baru diketahui SESUDAH campaign
+     * berjalan; mengunci angkanya pada saat persetujuan berarti angka
+     * itu selamanya kosong.
+     */
+    public function test_jangkauan_dapat_dicatat_setelah_disetujui(): void
+    {
+        $c = MinersCampaign::create([
+            'company_id' => $this->c->id, 'judul' => 'Bulan K3',
+            'jenis' => 'Poster', 'mulai' => now()->subMonth(),
+        ]);
+        MinersCampaign::whereKey($c->id)->update(['status' => Alur::DISETUJUI]);
+
+        $this->post(route('miners.campaign.jangkauan', $c->refresh()), ['jangkauan' => 240])
+            ->assertRedirect();
+
+        $this->assertSame(240, $c->refresh()->jangkauan);
+    }
+
+    /** Ketiga halaman baru terbuka. */
+    public function test_halaman_kehadiran_dan_campaign_terbuka(): void
+    {
+        $this->get(route('miners.fieldBreak.index'))->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Miners/FieldBreak'));
+
+        $this->get(route('miners.cuti.index'))->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Miners/Cuti'));
+
+        $this->get(route('miners.campaign.index'))->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Miners/Campaign'));
     }
 
     /** Paraf ikut terbuang bersama subjeknya, tidak tertinggal yatim. */

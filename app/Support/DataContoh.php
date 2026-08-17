@@ -19,7 +19,8 @@ use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, 
                 TindakLanjut, User, WaterLog, WaterSump, WaterSumpPump, WorkOrder, WorkOrderPart,
                 EnergyBaseline, EnergyFuelRecon, EnergyOpportunity, EnergyOtherLog,
                 EnergyPowerLog, EnergyProduction,
-                KoPersonnel, KompetensiJenis, McuPengajuan, MineMapLayer,
+                KoPersonnel, KompetensiJenis, McuPengajuan, MinersCampaign, MinersCuti,
+                MinersCutiJatah, MinersFieldBreak, MineMapLayer,
                 MinerbaConservationRecord, Note,
                 Paspor, PasporInduksi, PasporKartu, PasporMcu, PasporSertifikat,
                 Percakapan, PersetujuanParaf,
@@ -136,6 +137,8 @@ final class DataContoh
            penyaring itu tidak menemukan apa pun karena yang ditunjuknya
            sudah hilang — dan barisnya tertinggal tanpa galat. */
         PersetujuanParaf::class,
+        MinersCampaign::class, MinersCuti::class, MinersCutiJatah::class,
+        MinersFieldBreak::class,
         PasporSertifikat::class, PasporMcu::class, PasporKartu::class,
         PasporInduksi::class, Paspor::class, McuPengajuan::class,
 
@@ -357,7 +360,8 @@ final class DataContoh
             Pesan::class => $q->whereIn('percakapan_id',
                 Percakapan::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
 
-            PasporSertifikat::class, PasporMcu::class, PasporKartu::class, PasporInduksi::class
+            PasporSertifikat::class, PasporMcu::class, PasporKartu::class, PasporInduksi::class,
+            MinersFieldBreak::class, MinersCuti::class, MinersCutiJatah::class
                 => $q->whereIn('paspor_id',
                     Paspor::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
 
@@ -709,7 +713,161 @@ final class DataContoh
             }
         }
 
-        return $n + $this->pengajuanMcu();
+        return $n + $this->pengajuanMcu() + $this->kehadiranDanCampaign();
+    }
+
+    /**
+     * Field break, cuti, dan campaign.
+     *
+     * Keadaan yang dibuat sengaja bervariasi — ada yang sedang berjalan,
+     * ada yang masih menunggu tinjauan, ada yang kembali terlambat.
+     * Data contoh yang seluruhnya rapi tidak pernah memperlihatkan
+     * bagaimana layarnya menampilkan keadaan yang tidak rapi, padahal
+     * itulah keadaan yang paling sering ditemui.
+     */
+    private function kehadiranDanCampaign(): int
+    {
+        $orang = Paspor::withoutGlobalScopes()
+            ->where('company_id', $this->c->getKey())->orderBy('id')->get();
+
+        if ($orang->isEmpty()) return 0;
+
+        $n = 0;
+        $th = (int) $this->kini->year;
+
+        /* ── field break ──
+           [indeks orang, mulai (hari dari kini), lama, status, kembali telat?] */
+        $fb = [
+            [2, -6,  14, Alur::DISETUJUI, null],   // sedang pergi
+            [4, -70, 14, Alur::DISETUJUI, 3],      // sudah kembali, telat 3 hari
+            [1, 21,  14, Alur::DIAJUKAN,  null],   // menunggu tinjauan
+            [0, 60,  14, Alur::DRAF,      null],
+        ];
+
+        foreach ($fb as [$i, $mulai, $lama, $status, $telat]) {
+            if (!isset($orang[$i])) continue;
+
+            $mulaiTgl   = $this->kini->copy()->addDays($mulai);
+            $selesaiTgl = $mulaiTgl->copy()->addDays($lama - 1);
+
+            $b = MinersFieldBreak::withoutGlobalScopes()->create([
+                'paspor_id'     => $orang[$i]->id,
+                'pola'          => '8:2',
+                'jenis'         => 'Roster',
+                'mulai'         => $mulaiTgl->toDateString(),
+                'selesai'       => $selesaiTgl->toDateString(),
+                'lokasi_tujuan' => ['Banjarmasin', 'Surabaya', 'Balikpapan', 'Makassar'][$i % 4],
+                'pengganti_id'  => $orang[($i + 1) % $orang->count()]->id,
+            ]);
+            $n++;
+
+            if ($status !== Alur::DRAF) {
+                MinersFieldBreak::withoutGlobalScopes()->whereKey($b->id)->update([
+                    'status'        => $status,
+                    'diajukan_oleh' => $this->pengaju?->getKey(),
+                    'diajukan_pada' => $mulaiTgl->copy()->subDays(14),
+                    'ditinjau_oleh' => $status === Alur::DISETUJUI ? $this->peninjau?->getKey() : null,
+                    'ditinjau_pada' => $status === Alur::DISETUJUI
+                        ? $mulaiTgl->copy()->subDays(12) : null,
+                    'kembali_aktual' => $telat === null
+                        ? null : $selesaiTgl->copy()->addDays($telat)->toDateString(),
+                ]);
+            }
+        }
+
+        /* ── jatah cuti: ditetapkan untuk semua, supaya tabel saldonya
+              tidak seluruhnya berlabel "baku" ── */
+        foreach ($orang as $i => $o) {
+            MinersCutiJatah::withoutGlobalScopes()->create([
+                'paspor_id' => $o->id,
+                'tahun'     => $th,
+                'jatah'     => 12,
+                'bawaan'    => $i === 1 ? 3 : 0,
+            ]);
+            $n++;
+        }
+
+        /* ── pengajuan cuti ──
+           [indeks orang, jenis, mulai, lama, status] */
+        $cuti = [
+            [0, 'Tahunan', -3,  5, Alur::DISETUJUI],   // sedang cuti
+            [1, 'Tahunan', -90, 4, Alur::DISETUJUI],
+            [3, 'Sakit',   -30, 3, Alur::DISETUJUI],   // tidak memotong jatah
+            [1, 'Tahunan', 30,  6, Alur::DIAJUKAN],    // tertahan, memotong sisa
+            [2, 'Tahunan', 45,  2, Alur::DRAF],
+        ];
+
+        foreach ($cuti as [$i, $jenis, $mulai, $lama, $status]) {
+            if (!isset($orang[$i])) continue;
+
+            $mulaiTgl = $this->kini->copy()->addDays($mulai);
+
+            $c = MinersCuti::withoutGlobalScopes()->create([
+                'paspor_id'    => $orang[$i]->id,
+                'tahun'        => $th,
+                'jenis'        => $jenis,
+                'mulai'        => $mulaiTgl->toDateString(),
+                'selesai'      => $mulaiTgl->copy()->addDays($lama - 1)->toDateString(),
+                'jumlah_hari'  => $lama,
+                'alamat_cuti'  => 'Jl. Melati No. '.(10 + $i).', Banjarbaru',
+                'kontak'       => '0812-3456-'.str_pad((string) (1000 + $i), 4, '0', STR_PAD_LEFT),
+                'pengganti_id' => $orang[($i + 2) % $orang->count()]->id,
+                'alasan'       => $jenis === 'Sakit' ? 'Rawat jalan' : 'Keperluan keluarga',
+            ]);
+            $n++;
+
+            if ($status !== Alur::DRAF) {
+                MinersCuti::withoutGlobalScopes()->whereKey($c->id)->update([
+                    'status'        => $status,
+                    'diajukan_oleh' => $this->pengaju?->getKey(),
+                    'diajukan_pada' => $mulaiTgl->copy()->subDays(10),
+                    'ditinjau_oleh' => $status === Alur::DISETUJUI ? $this->peninjau?->getKey() : null,
+                    'ditinjau_pada' => $status === Alur::DISETUJUI
+                        ? $mulaiTgl->copy()->subDays(8) : null,
+                ]);
+            }
+        }
+
+        /* ── campaign ──
+           [judul, jenis, mulai, lama (null = terus berjalan), status, jangkauan] */
+        $campaign = [
+            ['Bulan K3 Nasional — Selamat Sampai Rumah', 'Poster', -20, 40, Alur::DISETUJUI, 240],
+            ['Fatigue Management untuk Operator Malam',  'Toolbox', -60, 30, Alur::DISETUJUI, 86],
+            ['Wajib APD di Seluruh Area Tambang',        'Spanduk', -120, null, Alur::DISETUJUI, null],
+            ['Pengenalan Prosedur LOTO Terbaru',         'Video',   5,  30, Alur::DIAJUKAN, null],
+            ['Kampanye Hemat Bahan Bakar',               'Artikel', 40, 60, Alur::DRAF,     null],
+        ];
+
+        foreach ($campaign as [$judul, $jenis, $mulai, $lama, $status, $jangkauan]) {
+            $mulaiTgl = $this->kini->copy()->addDays($mulai);
+
+            $k = MinersCampaign::withoutGlobalScopes()->create([
+                'company_id' => $this->c->getKey(),
+                'judul'      => $judul,
+                'jenis'      => $jenis,
+                'tema'       => 'Keselamatan Kerja',
+                'mulai'      => $mulaiTgl->toDateString(),
+                'selesai'    => $lama === null
+                    ? null : $mulaiTgl->copy()->addDays($lama)->toDateString(),
+                'sasaran'    => 'Seluruh departemen',
+                'ringkasan'  => 'Materi kampanye keselamatan yang dipasang di area kerja dan pos gerbang.',
+                'jangkauan'  => $jangkauan,
+            ]);
+            $n++;
+
+            if ($status !== Alur::DRAF) {
+                MinersCampaign::withoutGlobalScopes()->whereKey($k->id)->update([
+                    'status'        => $status,
+                    'diajukan_oleh' => $this->pengaju?->getKey(),
+                    'diajukan_pada' => $mulaiTgl->copy()->subDays(7),
+                    'ditinjau_oleh' => $status === Alur::DISETUJUI ? $this->peninjau?->getKey() : null,
+                    'ditinjau_pada' => $status === Alur::DISETUJUI
+                        ? $mulaiTgl->copy()->subDays(5) : null,
+                ]);
+            }
+        }
+
+        return $n;
     }
 
     /**
@@ -717,7 +875,7 @@ final class DataContoh
      *
      * Ditulis langsung ke tabelnya, tidak lewat bubuhkanParaf(): metode
      * itu menolak paraf dari pengajunya sendiri, dan data contoh hanya
-     * punya dua pengguna. Penjagaannya tetap diuji — lihat AuthorityTest
+     * punya dua pengguna. Penjagaannya tetap diuji — lihat MinersTest
      * — dan yang ditembus di sini terlihat sebagai penembusan, bukan
      * tersembunyi sebagai jalan yang ternyata memang terbuka.
      *

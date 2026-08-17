@@ -34,7 +34,7 @@ class Modules
                menjawab pertanyaan gerbang — boleh atau tidak orang ini
                bekerja hari ini. */
             ['nama' => 'Authority — Kelayakan Kerja', 'status' => 'aktif', 'pilar' => 'occhealth',
-             'rute' => 'authority.index',
+             'rute' => 'miners.index',
              'ket'  => 'Kompetensi, MCU, dan kartu masuk tambang dalam satu berkas per orang, dengan pengingat masa berlaku berjenjang.',
              'ikon' => 'M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 14l2 2 4-4'],
 
