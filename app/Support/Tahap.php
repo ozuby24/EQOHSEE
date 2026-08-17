@@ -34,7 +34,9 @@ final class Tahap
 {
     public const ATASAN     = 'atasan';
     public const DEPARTEMEN = 'departemen';
+    public const PARAMEDIS  = 'paramedis';
     public const OHSE       = 'ohse';
+    public const KTT        = 'ktt';
 
     /**
      * Urutan meja, dari yang pertama.
@@ -44,41 +46,97 @@ final class Tahap
      * pengajuan yang kepala departemennya kebetulan melihat lebih dulu
      * tertahan menunggu paraf yang secara isi tidak menambah apa pun.
      *
-     * @var array<string,array{label:string, penentu:bool, terang:string}>
+     * RANTAINYA BERBEDA PER MODUL, dan itu bukan kerumitan yang dapat
+     * disatukan. Pengajuan MCU melewati paramedis — dialah yang membaca
+     * hasil pemeriksaannya, dan tidak ada meja lain yang dapat
+     * menggantikannya — lalu ditutup Kepala Teknik Tambang. Induksi
+     * tidak: ia diselenggarakan OHSE sendiri, jadi rantai tiga meja di
+     * atasnya hanyalah upacara. Menyeragamkan keduanya berarti salah
+     * satunya pasti keliru.
+     *
+     * @var array<string,array<string,array{label:string, penentu:bool, terang:string}>>
      */
-    public const RANTAI = [
-        self::ATASAN => [
-            'label'   => 'Atasan langsung',
-            'penentu' => false,
-            'terang'  => 'Membenarkan pekerjaan dan kebutuhannya',
+    public const RANTAI_MODUL = [
+        'mcu' => [
+            self::PARAMEDIS => [
+                'label' => 'Paramedis',
+                'penentu' => false,
+                'terang' => 'Membaca hasil pemeriksaan dan menyimpulkan kelayakannya',
+            ],
+            self::OHSE => [
+                'label' => 'OHSE',
+                'penentu' => true,
+                'terang' => 'Memutuskan — hanya tahap ini yang meloloskan',
+            ],
+            self::KTT => [
+                'label' => 'Kepala Teknik Tambang',
+                'penentu' => false,
+                'terang' => 'Mengetahui, sebagai penanggung jawab keselamatan tambang',
+            ],
         ],
-        self::DEPARTEMEN => [
-            'label'   => 'Kepala departemen',
-            'penentu' => false,
-            'terang'  => 'Mengetahui pengajuan dari departemennya',
+
+        'induksi' => [
+            self::OHSE => [
+                'label' => 'OHSE',
+                'penentu' => true,
+                'terang' => 'Menyelenggarakan sekaligus memutuskan',
+            ],
         ],
-        self::OHSE => [
-            'label'   => 'OHSE',
-            'penentu' => true,
-            'terang'  => 'Memutuskan — hanya tahap ini yang menerbitkan',
+
+        'kartu' => [
+            self::ATASAN => [
+                'label' => 'Atasan langsung',
+                'penentu' => false,
+                'terang' => 'Membenarkan pekerjaan dan kebutuhannya',
+            ],
+            self::DEPARTEMEN => [
+                'label' => 'Kepala departemen',
+                'penentu' => false,
+                'terang' => 'Mengetahui pengajuan dari departemennya',
+            ],
+            self::OHSE => [
+                'label' => 'OHSE',
+                'penentu' => true,
+                'terang' => 'Memutuskan — hanya tahap ini yang menerbitkan',
+            ],
         ],
     ];
+
+    /** Rantai baku bagi modul yang belum menyebut rantainya sendiri. */
+    public const RANTAI = self::RANTAI_MODUL['kartu'];
+
+    /** @return array<string,array{label:string, penentu:bool, terang:string}> */
+    public static function rantai(?string $modul = null): array
+    {
+        return self::RANTAI_MODUL[$modul] ?? self::RANTAI;
+    }
 
     /** @return list<string> */
     public static function kode(): array
     {
-        return array_keys(self::RANTAI);
+        /* Seluruh kode dari SEMUA rantai. Dipakai memvalidasi kiriman
+           formulir, dan pembatasan per modulnya dikerjakan
+           dapatDiparaf() beserta rantai modelnya — bukan di sini. */
+        return array_values(array_unique(array_merge(
+            ...array_map('array_keys', array_values(self::RANTAI_MODUL))
+        )));
     }
 
     /** Tahap yang boleh diparaf; tahap penentu tidak diparaf, ia diputus. */
-    public static function dapatDiparaf(string $tahap): bool
+    public static function dapatDiparaf(string $tahap, ?string $modul = null): bool
     {
-        return isset(self::RANTAI[$tahap]) && !self::RANTAI[$tahap]['penentu'];
+        $r = self::rantai($modul);
+
+        return isset($r[$tahap]) && !$r[$tahap]['penentu'];
     }
 
     public static function label(string $tahap): string
     {
-        return self::RANTAI[$tahap]['label'] ?? $tahap;
+        foreach (self::RANTAI_MODUL as $rantai) {
+            if (isset($rantai[$tahap])) return $rantai[$tahap]['label'];
+        }
+
+        return $tahap;
     }
 
     /**

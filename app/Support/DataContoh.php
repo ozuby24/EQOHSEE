@@ -904,7 +904,7 @@ final class DataContoh
                 'tahap'   => $t,
                 'user_id' => $this->peninjau?->getKey(),
                 'nama'    => $this->peninjau?->name ?? 'Pengawas',
-                'jabatan' => $t === Tahap::ATASAN ? 'Atasan langsung' : 'Kepala departemen',
+                'jabatan' => Tahap::label($t),
                 'created_at' => $this->kini->copy()->subDays(19 - $i),
             ]);
         }
@@ -969,9 +969,10 @@ final class DataContoh
                     ? $this->kini->copy()->addDays($hari)->addDays(2) : null,
             ]);
 
+            /* Rantai MCU: paramedis lalu KTT — bukan rantai kartu. */
             $n += $this->paraf($p, $status === Alur::DISETUJUI
-                ? [Tahap::ATASAN, Tahap::DEPARTEMEN]
-                : [Tahap::ATASAN]);
+                ? [Tahap::PARAMEDIS, Tahap::KTT]
+                : [Tahap::PARAMEDIS]);
 
             foreach ($orang->slice($dari, $berapa)->values() as $t => $o) {
                 PasporMcu::withoutGlobalScopes()->create([

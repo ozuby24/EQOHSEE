@@ -72,10 +72,20 @@ final class Menu
       'groups' => [
         '' => [
           ['Ringkasan',       'miners.dasbor',    'miners/dasbor*'],
-        ],
-        'Kelayakan Kerja' => [
           ['Pekerja',         'miners.index',     'miners'],
-          ['Pengajuan MCU',   'miners.mcu.index', 'miners/mcu*'],
+        ],
+
+        /* Urutannya MENGIKUTI ALURNYA, bukan abjad dan bukan urutan
+           pembuatannya. Bilah samping adalah tempat orang belajar
+           urutan sebuah proses tanpa membaca petunjuk; menyusunnya
+           menurut abjad membuang pelajaran itu, dan yang menggantikannya
+           adalah tebakan. */
+        'Riwayat' => [
+          ['MCU',           'miners.mcu.index',            'miners/mcu*'],
+          ['Induksi',       'miners.riwayat.induksi',      'miners/riwayat/induksi'],
+          ['Mine Permit',   'miners.riwayat.mine-permit',  'miners/riwayat/mine-permit'],
+          ['Mine License',  'miners.riwayat.mine-license', 'miners/riwayat/mine-license'],
+          ['Authority',     'miners.riwayat.authority',    'miners/riwayat/authority'],
         ],
         'Kehadiran' => [
           ['Field Break',     'miners.fieldBreak.index', 'miners/field-break*'],

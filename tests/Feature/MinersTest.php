@@ -953,6 +953,24 @@ class MinersTest extends TestCase
             ->assertInertia(fn ($page) => $page->component('Miners/Halaman')->where('mode', 'mcu'));
     }
 
+    /**
+     * Keempat halaman riwayat terbuka, dan urutannya utuh.
+     *
+     * Urutan bilah sampingnya — MCU, induksi, Mine Permit, Mine License,
+     * Authority — adalah tempat orang belajar urutan prosesnya tanpa
+     * membaca petunjuk. Satu halaman yang hilang memutus pelajaran itu.
+     */
+    public function test_empat_halaman_riwayat_terbuka(): void
+    {
+        foreach (['induksi', 'mine-permit', 'mine-license', 'authority'] as $tahap) {
+            $this->get(route('miners.riwayat.'.$tahap))
+                ->assertOk()
+                ->assertInertia(fn ($page) => $page
+                    ->component('Miners/Riwayat')
+                    ->where('tahap', $tahap));
+        }
+    }
+
     public function test_dasbor_terbuka(): void
     {
         $this->get(route('miners.dasbor'))
@@ -1001,7 +1019,9 @@ class MinersTest extends TestCase
         $atasan = $this->pengguna();
         $this->actingAs($atasan);
 
-        foreach ([Tahap::ATASAN, Tahap::DEPARTEMEN] as $tahap) {
+        /* Rantai MCU: paramedis dan KTT. Rantai kartu (atasan, kepala
+           departemen) sengaja TIDAK berlaku di sini. */
+        foreach ([Tahap::PARAMEDIS, Tahap::KTT] as $tahap) {
             $this->post(route('miners.mcu.paraf', $m), ['tahap' => $tahap])->assertRedirect();
         }
 
@@ -1075,6 +1095,28 @@ class MinersTest extends TestCase
 
         $this->actingAs($pengaju);
 
+        $this->post(route('miners.mcu.paraf', $m), ['tahap' => Tahap::PARAMEDIS])
+            ->assertSessionHasErrors('paraf');
+
+        $this->assertCount(0, $m->refresh()->paraf);
+    }
+
+    /**
+     * Rantai kartu tidak berlaku pada MCU.
+     *
+     * Keduanya memakai tabel paraf yang sama, jadi tanpa penjagaan ini
+     * sebuah pengajuan MCU dapat mengumpulkan paraf "atasan langsung"
+     * yang tidak pernah ada di rantainya — dan rantai yang digambar
+     * layar tidak akan pernah menampilkannya, sehingga parafnya
+     * tersimpan tanpa seorang pun melihatnya.
+     */
+    public function test_tahap_di_luar_rantai_modulnya_ditolak(): void
+    {
+        $pengaju = $this->pengguna();
+        $m = $this->pengajuanDiajukan($pengaju);
+
+        $this->actingAs($this->pengguna());
+
         $this->post(route('miners.mcu.paraf', $m), ['tahap' => Tahap::ATASAN])
             ->assertSessionHasErrors('paraf');
 
@@ -1103,8 +1145,8 @@ class MinersTest extends TestCase
 
         $this->actingAs($this->pengguna());
 
-        $this->post(route('miners.mcu.paraf', $m), ['tahap' => Tahap::ATASAN]);
-        $this->post(route('miners.mcu.paraf', $m), ['tahap' => Tahap::ATASAN]);
+        $this->post(route('miners.mcu.paraf', $m), ['tahap' => Tahap::PARAMEDIS]);
+        $this->post(route('miners.mcu.paraf', $m), ['tahap' => Tahap::PARAMEDIS]);
 
         $this->assertCount(1, $m->refresh()->paraf);
     }
@@ -1384,7 +1426,7 @@ class MinersTest extends TestCase
         $m = $this->pengajuanDiajukan($pengaju);
 
         $this->actingAs($this->pengguna());
-        $m->bubuhkanParaf(Tahap::ATASAN);
+        $m->bubuhkanParaf(Tahap::PARAMEDIS);
 
         $this->assertSame(1, \App\Models\PersetujuanParaf::count());
 

@@ -182,6 +182,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('{campaign}/tinjau',    [MinersController::class,'campaignTinjau'])->name('tinjau');
         });
 
+        /* Riwayat per tahap, urut mengikuti alurnya. Didaftarkan
+           sebelum {paspor} — `miners/riwayat/...` cocok pula dengan
+           pola itu.
+
+           Empat nama rute tersendiri, bukan satu rute berparameter.
+           Sebabnya bukan gaya: RuteInertiaTest memanggil SETIAP nama
+           rute terdaftar tanpa parameter untuk memastikan halamannya
+           benar-benar Inertia. Satu rute berparameter memaksa uji itu
+           menyimpan daftar parameter contoh — dan daftar semacam itu
+           adalah tempat pertama yang tertinggal saat rutenya berubah. */
+        foreach (['induksi', 'mine-permit', 'mine-license', 'authority'] as $tahap) {
+            Route::get('riwayat/'.$tahap, [MinersController::class, 'riwayat'])
+                ->defaults('tahap', $tahap)
+                ->name('riwayat.'.$tahap);
+        }
+
         Route::get('{paspor}',         [MinersController::class,'show'])->name('show');
         Route::put('{paspor}',         [MinersController::class,'update'])->name('update');
         Route::delete('{paspor}',      [MinersController::class,'destroy'])

@@ -57,6 +57,9 @@ class McuPengajuan extends Model
         return ['tanggal' => 'date'];
     }
 
+    /** Rantainya lewat paramedis dan ditutup KTT — lihat App\Support\Tahap. */
+    public function modulTahap(): ?string { return 'mcu'; }
+
     public function company() { return $this->belongsTo(Company::class); }
     public function user()    { return $this->belongsTo(User::class); }
 

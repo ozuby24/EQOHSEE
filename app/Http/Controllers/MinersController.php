@@ -1139,6 +1139,175 @@ class MinersController extends Controller
         ]);
     }
 
+    /* ═══════════ riwayat per tahap ═══════════ */
+
+    /**
+     * Satu halaman per tahap, menyilang seluruh pekerja.
+     *
+     * Sebelumnya induksi, Mine Permit, Mine License, dan kompetensi
+     * hanya dapat dilihat dengan membuka orangnya satu per satu. Itu
+     * membuat pertanyaan yang paling sering diajukan tidak terjawab
+     * sama sekali: "mana saja Mine Permit yang menunggu keputusan saya",
+     * "berapa induksi yang jatuh tempo bulan ini". Pertanyaan semacam
+     * itu menyilang orang, bukan menyusuri satu orang.
+     *
+     * Urutan menunya mengikuti urutan alurnya — MCU, induksi, Mine
+     * Permit, Mine License, Authority — supaya bilah samping itu
+     * sendiri yang mengajarkan urutannya, tanpa seorang pun perlu
+     * membaca petunjuk.
+     */
+    public function riwayat(Request $request)
+    {
+        /* Diambil dari defaults() rutenya, bukan dari segmen jalur:
+           keempatnya rute tersendiri supaya dapat dipanggil tanpa
+           parameter — lihat catatan di routes/web.php. */
+        $tahap = (string) $request->route()->defaults['tahap'];
+
+        $daftar = match ($tahap) {
+            'induksi'      => $this->riwayatInduksi(),
+            'mine-permit'  => $this->riwayatKartu(AlurMiner::KARTU_PERMIT, $request),
+            'mine-license' => $this->riwayatKartu(AlurMiner::KARTU_LICENSE, $request),
+            'authority'    => $this->riwayatKompetensi(),
+            default        => abort(404),
+        };
+
+        return Inertia::render('Miners/Riwayat', $this->bersama() + [
+            'judul'    => 'Miners — '.$daftar['judul'],
+            'subjudul' => $daftar['subjudul'],
+            'tahap'    => $tahap,
+            'kolom'    => $daftar['kolom'],
+            'baris'    => $daftar['baris'],
+            'ringkas'  => $daftar['ringkas'],
+        ]);
+    }
+
+    /** @return array<string,mixed> */
+    private function riwayatInduksi(): array
+    {
+        $baris = PasporInduksi::with('paspor')
+            ->orderByDesc('tanggal')->get();
+
+        return [
+            'judul'    => 'Riwayat Induksi',
+            'subjudul' => 'Induksi keselamatan seluruh pekerja — dicatat setelah hasil MCU menyatakan layak',
+            'kolom'    => ['Nama', 'Jenis', 'Tanggal', 'Berlaku sampai', 'Nilai', 'Hasil'],
+            'baris'    => $baris->map(fn (PasporInduksi $i) => [
+                'id'       => $i->id,
+                'pasporId' => $i->paspor_id,
+                'nama'     => $i->paspor?->nama,
+                'jabatan'  => $i->paspor?->jabatan,
+                'nomor'    => $i->nomor_registrasi,
+                'sel'      => [
+                    $i->paspor?->nama, $i->jenis,
+                    $i->tanggal?->toDateString(),
+                    $i->tgl_expired?->toDateString(),
+                    $i->nilai === null ? '—' : (string) $i->nilai,
+                    $i->hasil,
+                ],
+                'keadaan'    => $i->keadaan(),
+                'keterangan' => $i->keterangan(),
+
+                /* Induksi tidak berjalur persetujuan sendiri: ia
+                   diselenggarakan OHSE dan dicatat sesudah selesai.
+                   Yang menentukan sah atau tidak adalah hasilnya. */
+                'baik' => $i->lulus(),
+            ])->values(),
+            'ringkas' => [
+                ['Total induksi', $baris->count(), 'netral'],
+                ['Lulus', $baris->filter(fn ($i) => $i->lulus())->count(), 'baik'],
+                ['Belum lulus', $baris->reject(fn ($i) => $i->lulus())->count(), 'gawat'],
+                ['Segera habis', $baris->filter(fn ($i) => in_array($i->keadaan(),
+                    [Authority::KRITIS, Authority::SEGERA], true))->count(), 'ingat'],
+            ],
+        ];
+    }
+
+    /** @return array<string,mixed> */
+    private function riwayatKartu(string $jenis, Request $request): array
+    {
+        $baris = PasporKartu::with(['paspor', 'paraf', 'peninjau'])
+            ->where('jenis', $jenis)
+            ->orderByDesc('tgl_terbit')->orderByDesc('id')->get();
+
+        $permit = $jenis === AlurMiner::KARTU_PERMIT;
+
+        return [
+            'judul'    => $permit ? 'Riwayat Mine Permit' : 'Riwayat Mine License',
+            'subjudul' => $permit
+                ? 'Izin masuk area tambang — terbit sesudah MCU dan induksi, diverifikasi OHSE'
+                : 'Izin mengemudi di area tambang (A2B) — tambahan di atas Mine Permit',
+            'kolom' => ['Nama', 'Nomor', 'Sebab', $permit ? 'Area' : 'Golongan', 'Terbit', 'Berlaku sampai'],
+            'baris' => $baris->map(fn (PasporKartu $k) => [
+                'id'       => $k->id,
+                'pasporId' => $k->paspor_id,
+                'nama'     => $k->paspor?->nama,
+                'jabatan'  => $k->paspor?->jabatan,
+                'nomor'    => $k->nomor,
+                'sel'      => [
+                    $k->paspor?->nama, $k->nomor ?: '—', $k->sebab_terbit,
+                    ($permit ? $k->area : $k->golongan) ?: '—',
+                    $k->tgl_terbit?->toDateString(),
+                    $k->tgl_expired?->toDateString(),
+                ],
+                'keadaan'    => $k->keadaan(),
+                'keterangan' => $k->keterangan(),
+                'baik'       => $k->sudahDisetujui(),
+
+                'status'        => $k->status,
+                'statusLabel'   => Alur::LABEL[$k->status] ?? $k->status,
+                'dapatDitinjau' => $k->dapatDitinjauOleh($request->user()),
+                'tertinggal'    => $k->parafTertinggal(),
+
+                /* Hanya yang sudah terbit yang dapat dicetak. */
+                'cetak' => $permit && $k->sudahDisetujui()
+                    ? route('miners.permit.cetak', [$k->paspor_id, $k]) : null,
+            ])->values(),
+            'ringkas' => [
+                ['Total', $baris->count(), 'netral'],
+                ['Terbit', $baris->filter(fn ($k) => $k->sudahDisetujui())->count(), 'baik'],
+                ['Menunggu OHSE', $baris->where('status', Alur::DIAJUKAN)->count(), 'ingat'],
+                ['Segera habis', $baris->filter(fn ($k) => $k->sudahDisetujui()
+                    && in_array($k->keadaan(), [Authority::KRITIS, Authority::SEGERA], true))->count(), 'serius'],
+            ],
+        ];
+    }
+
+    /** @return array<string,mixed> */
+    private function riwayatKompetensi(): array
+    {
+        $baris = PasporSertifikat::with('paspor')
+            ->orderByDesc('tgl_terbit')->orderByDesc('id')->get();
+
+        return [
+            'judul'    => 'Riwayat Authority',
+            'subjudul' => 'Sertifikat kompetensi dan kewenangan — POP, POM, POU, dan kewenangan teknis lainnya',
+            'kolom'    => ['Nama', 'Kompetensi', 'Lembaga', 'Nomor', 'Terbit', 'Berlaku sampai'],
+            'baris'    => $baris->map(fn (PasporSertifikat $s) => [
+                'id'       => $s->id,
+                'pasporId' => $s->paspor_id,
+                'nama'     => $s->paspor?->nama,
+                'jabatan'  => $s->paspor?->jabatan,
+                'nomor'    => $s->nomor,
+                'sel'      => [
+                    $s->paspor?->nama, $s->nama, $s->lembaga ?: '—', $s->nomor ?: '—',
+                    $s->tgl_terbit?->toDateString(),
+                    $s->tgl_expired?->toDateString() ?: 'tanpa tanggal',
+                ],
+                'keadaan'    => $s->keadaan(),
+                'keterangan' => $s->keterangan(),
+                'baik'       => Authority::sisaHari($s->tgl_expired) >= 0 || $s->tgl_expired === null,
+            ])->values(),
+            'ringkas' => [
+                ['Total sertifikat', $baris->count(), 'netral'],
+                ['Kadaluarsa', $baris->filter(
+                    fn ($s) => $s->tgl_expired && Authority::sisaHari($s->tgl_expired) < 0)->count(), 'gawat'],
+                ['Segera habis', $baris->filter(fn ($s) => in_array($s->keadaan(),
+                    [Authority::KRITIS, Authority::SEGERA], true))->count(), 'ingat'],
+                ['Tanpa tanggal', $baris->whereNull('tgl_expired')->count(), 'netral'],
+            ],
+        ];
+    }
+
     /* ═══════════ cetak Mine Permit ═══════════ */
 
     /**

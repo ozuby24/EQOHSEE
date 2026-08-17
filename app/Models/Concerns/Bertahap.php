@@ -47,6 +47,19 @@ trait Bertahap
         });
     }
 
+    /**
+     * Modul mana rantai parafnya — ditimpa model yang berbeda rantainya.
+     *
+     * Baku ke rantai kartu. Yang tidak menimpanya mendapat rantai tiga
+     * meja, dan itu pilihan yang aman: rantai yang terlalu panjang
+     * terlihat dan dikeluhkan, sedangkan rantai yang terlalu pendek
+     * hanya terlihat setelah ada yang lolos tanpa diperiksa.
+     */
+    public function modulTahap(): ?string
+    {
+        return null;
+    }
+
     public function paraf(): MorphMany
     {
         return $this->morphMany(PersetujuanParaf::class, 'subjek');
@@ -69,7 +82,7 @@ trait Bertahap
 
         $hasil = [];
 
-        foreach (Tahap::RANTAI as $kode => $t) {
+        foreach (Tahap::rantai($this->modulTahap()) as $kode => $t) {
             $p = $terparaf->get($kode);
 
             $hasil[] = [
@@ -114,7 +127,7 @@ trait Bertahap
     {
         $ada = $this->paraf->pluck('tahap')->all();
 
-        return collect(Tahap::RANTAI)
+        return collect(Tahap::rantai($this->modulTahap()))
             ->reject(fn ($t) => $t['penentu'])
             ->keys()
             ->reject(fn ($kode) => in_array($kode, $ada, true))
@@ -133,7 +146,7 @@ trait Bertahap
     {
         $u ??= auth()->user();
 
-        if (!Tahap::dapatDiparaf($tahap)) {
+        if (!Tahap::dapatDiparaf($tahap, $this->modulTahap())) {
             throw new RuntimeException(
                 'Tahap "'.$tahap.'" bukan tahap paraf. Tahap penentu diputus, bukan diparaf.'
             );
