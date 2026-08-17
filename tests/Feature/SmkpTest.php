@@ -180,12 +180,12 @@ class SmkpTest extends TestCase
     public function test_kategori_diturunkan_dari_nilai(): void
     {
         /* Formulir kriteria: "KATEGORI TEMUAN (Berdasarkan Nilai)".
-           Ambang mayor ditetapkan pemilik sistem pada 30%, bukan 50% seperti
-           pada lampiran — tercatat di meta.ambang_kategori berkas acuan.
-           Angkanya diambil dari berkas itu, tidak ditulis ulang di sini,
-           supaya uji ini ikut berubah bila ambangnya dikembalikan. */
+           Ambang mayor 50%, sama dengan lampiran dan sistem rujukan.
+           Angka itu dikunci di sini supaya perubahannya tidak pernah
+           lolos diam-diam — mengubahnya mengubah jumlah temuan mayor
+           yang dilaporkan ke inspektur tambang. */
         $mayorMin = (float) collect(Smkp::kategori())->firstWhere('kode', 'minor')['min'];
-        $this->assertSame(30.0, $mayorMin, 'Ambang mayor berubah tanpa disengaja.');
+        $this->assertSame(50.0, $mayorMin, 'Ambang mayor berubah tanpa disengaja.');
 
         $this->assertSame('Kesesuaian',            Smkp::kategoriDari(1.00)['label']);
         $this->assertSame('Ketidaksesuaian Minor', Smkp::kategoriDari(0.99)['label']);

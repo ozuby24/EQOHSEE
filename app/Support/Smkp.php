@@ -25,15 +25,13 @@ namespace App\Support;
  *
  * Kategori temuan diturunkan DARI nilai, bukan dipilih auditor — sesuai kolom
  * "KATEGORI TEMUAN (Berdasarkan Nilai)" pada formulir kriteria:
- *   capaian < 30%          → Ketidaksesuaian Mayor
- *   capaian 30% s.d. <100% → Ketidaksesuaian Minor
+ *   capaian < 50%          → Ketidaksesuaian Mayor
+ *   capaian 50% s.d. <100% → Ketidaksesuaian Minor
  *   capaian 100%           → Kesesuaian
  *
- * Ambang 30% itu ketetapan pemilik sistem. Lampiran II Kepdirjen dan sistem
- * rujukan D'Best sama-sama memakai 50%; selisihnya disengaja, tercatat pada
- * meta.ambang_kategori di berkas acuan, dan hanya perlu diubah di sana untuk
- * dikembalikan. Tidak ada satu pun angka ambang yang ditulis ulang di kode —
- * termasuk pada penentuan mayor sub-elemen berincian.
+ * Angka ambangnya hanya ada di berkas acuan. Tidak ada satu pun yang ditulis
+ * ulang di kode — termasuk pada penentuan mayor sub-elemen berincian, yang
+ * membaca kategori agregatnya alih-alih membandingkan dengan 0.5.
  *
  * Bentuk $hasil (satu baris per butir yang dinilai, kunci = kode butir):
  *   $hasil['II.2.1'] = ['v' => 3, 'ket' => '...', 'bukti' => '...']

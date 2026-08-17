@@ -4,7 +4,7 @@
     "basis": "Lampiran II Keputusan Dirjen Minerba No. 185.K/37.04/DJB/2019",
     "catatan": "Struktur, bobot elemen, dan nilai maksimum diambil dari Lampiran II Kepdirjen 185.K/37.04/DJB/2019 (hal. 336-400); kolom 'ref' tiap sub-elemen menunjuk halaman acuannya. Nilai maksimum sub-elemen yang punya rincian TIDAK disimpan di sini melainkan dijumlahkan dari rinciannya — pada sumber aslinya kedua angka itu sempat berbeda (mis. V.5 tertulis 8 padahal rinciannya berjumlah 20), dan menyimpan dua salinan angka yang sama hanya mengundang selisih. Nilai total di bawah adalah maksimum penuh bila seluruh butir berlaku; butir yang ditandai N/A (mis. tambang bawah tanah, kapal keruk, bahan peledak) mengurangi pembagi.",
     "total_nilai": 349,
-    "ambang_kategori": "Ambang kategori temuan ditetapkan pemilik sistem: Kesesuaian 100%, Minor 30% sampai kurang dari 100%, Mayor kurang dari 30%. PERHATIKAN: Lampiran II Kepdirjen 185.K/37.04/DJB/2019 dan sistem rujukan D'Best sama-sama memakai 50% sebagai batas Mayor. Selisih itu disengaja atas permintaan pemilik sistem, bukan salah salin. Hanya angka 'min' di bawah yang perlu diubah untuk mengembalikannya ke 50 — seluruh hitungan membaca ambangnya dari berkas ini, tidak ada satu pun yang menuliskannya ulang di kode."
+    "ambang_kategori": "Kesesuaian 100%, Minor 50% sampai kurang dari 100%, Mayor kurang dari 50% — sama dengan Lampiran II Kepdirjen 185.K/37.04/DJB/2019 dan sistem rujukan. Ambang ini hanya ada di sini; tidak ada satu pun hitungan yang menuliskannya ulang di kode, sehingga mengubah angka 'min' di bawah cukup untuk mengubah seluruh sistem."
   },
   "penilaian": {
     "catatan": "Auditor mengisi nilai capaian 0..maks pada tiap butir. N/A dipakai bila butir tidak berlaku bagi perusahaan dan dikeluarkan dari pembagi.",
@@ -21,16 +21,16 @@
     {
       "kode": "minor",
       "label": "Ketidaksesuaian Minor",
-      "min": 30,
+      "min": 50,
       "warna": "#D97706",
-      "ket": "Capaian 30% sampai kurang dari 100%."
+      "ket": "Capaian 50% sampai kurang dari 100%."
     },
     {
       "kode": "mayor",
       "label": "Ketidaksesuaian Mayor",
       "min": 0,
       "warna": "#DC2626",
-      "ket": "Capaian kurang dari 30%."
+      "ket": "Capaian kurang dari 50%."
     }
   ],
   "tingkat": [

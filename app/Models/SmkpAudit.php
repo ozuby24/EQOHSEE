@@ -127,7 +127,17 @@ class SmkpAudit extends Model
             'kontak'    => $this->langkah(!empty($p['tanggal_kontak']), count($this->tim()).' auditor ditugaskan'),
             'kinerja'   => $this->langkah(count($kj) > 0, count($kj).' dari '.count(SmkpTahap::butirKinerja()).' angka terisi'),
             'kelayakan' => $this->langkah(count($kelayakan) === $totalKelayakan, count($kelayakan)."/{$totalKelayakan} indikator dievaluasi"),
-            'mandays'   => $this->langkah($md['dasar'] > 0, $md['dasar'] > 0 ? number_format($md['total'], 2).' hari · Tahap II '.number_format($md['tahap2'], 2).' hari' : 'Belum dihitung'),
+            /* Mandays dasar kini dibaca dari tabel, jadi ia selalu terisi.
+               Yang menandakan langkah ini selesai bukan lagi angkanya
+               melainkan MASUKANNYA: jumlah pekerja auditi. Tanpa itu tabel
+               jatuh ke baris terkecil dan menagih tiga hari untuk tambang
+               berapa pun besarnya. */
+            'mandays'   => $this->langkah(
+                $md['pekerja'] > 0,
+                $md['pekerja'] > 0
+                    ? $md['total'].' mandays · '.$md['durasi'].' hari di lapangan · Tahap II '.$md['tahap2'].' hari'
+                    : 'Jumlah pekerja auditi belum diisi',
+            ),
             'kecukupan' => $this->langkah($kc['siap'], $kc['lengkap'].' lengkap · '.$kc['tidak'].' tidak lengkap · '.$kc['belum'].' belum ditinjau'),
             'berita'    => $this->langkah($kc['siap'], 'Berkas resmi Tahap I'),
 

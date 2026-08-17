@@ -167,19 +167,62 @@ final class SmkpTahap
     }
 
     /**
-     * Tujuh kondisi dasar faktor penyesuaian hari kerja audit.
-     * Tiap kondisi yang terpenuhi menambah hari audit.
+     * Tabel mandays dasar: jumlah pekerja × kelas risiko.
+     *
+     * Tiap baris [pekerja minimum, pekerja maksimum, Tinggi, Menengah, Rendah].
+     * Pekerja yang melampaui baris terakhir memakai baris terakhir.
+     *
+     * CATATAN SUMBER, dan ini penting sebelum angkanya dipakai menagih hari
+     * kerja auditor: tabel ini pola ISO/IEC 17021 sebagai DEFAULT, bukan
+     * salinan angka Kepdirjen 185.K/37.04/DJB/2019. Berkas acuan yang
+     * menjadi sumbernya menyatakannya sendiri demikian. Angkanya berada di
+     * satu tempat ini supaya dapat diganti begitu ketentuan yang berlaku
+     * bagi perusahaan diketahui pasti.
+     */
+    public const MANDAYS_TABLE = [
+        [1, 5, 3, 2, 2],          [6, 10, 4, 3, 2],         [11, 15, 5, 4, 3],
+        [16, 25, 6, 5, 4],        [26, 45, 8, 6, 4],        [46, 65, 9, 7, 5],
+        [66, 85, 10, 8, 6],       [86, 125, 11, 9, 7],      [126, 175, 12, 10, 8],
+        [176, 275, 13, 11, 9],    [276, 425, 15, 12, 10],   [426, 625, 16, 13, 11],
+        [626, 875, 17, 14, 12],   [876, 1175, 18, 15, 13],  [1176, 1550, 19, 16, 14],
+        [1551, 2025, 20, 17, 15], [2026, 3450, 21, 18, 16], [3451, 5450, 22, 19, 17],
+        [5451, 10700, 23, 20, 18], [10701, 999999, 25, 22, 20],
+    ];
+
+    /** Kolom tabel mandays menurut kelas risiko. */
+    private const KOLOM_RISIKO = ['Tinggi' => 2, 'Menengah' => 3, 'Rendah' => 4];
+
+    /**
+     * Kondisi yang MENAMBAH hari kerja audit. Tiap yang terpenuhi menambah
+     * satu hari.
      */
     public static function faktorPenyesuaian(): array
     {
         return [
-            'jarak'      => 'Jarak antar objek audit yang saling berjauhan, dengan waktu tempuh ≥ 4 jam',
-            'metode'     => 'Perusahaan pertambangan menggunakan lebih dari satu metode penambangan',
-            'pengolahan' => 'Perusahaan pertambangan memiliki fasilitas pengolahan dan pemurnian',
-            'kecelakaan' => 'Severity rate dan frequency rate kecelakaan tahun terakhir lebih tinggi dari rata-rata nasional',
-            'penyakit'   => 'Absence severity rate dan morbidity frequency rate tahun terakhir lebih tinggi dari rata-rata nasional',
-            'berbahaya'  => 'Terjadi kejadian berbahaya serupa dan berulang dalam satu tahun terakhir',
-            'pak'        => 'Terjadi kejadian akibat penyakit tenaga kerja dan/atau penyakit akibat kerja dalam satu tahun terakhir',
+            'jarak'       => 'Lokasi/area kerja berjauhan (waktu tempuh ≥ 4 jam antar objek audit)',
+            'metode'      => 'Menggunakan lebih dari satu metode penambangan',
+            'pengolahan'  => 'Memiliki fasilitas pengolahan dan/atau pemurnian',
+            'kecelakaan'  => 'Severity/Frequency rate kecelakaan tahun terakhir > rata-rata nasional',
+            'berbahaya'   => 'Terjadi kejadian berbahaya serupa & berulang dalam 1 tahun terakhir',
+            'kompleksitas'=> 'Kompleksitas proses / teknologi pertambangan tinggi',
+        ];
+    }
+
+    /**
+     * Kondisi yang MENGURANGI hari kerja audit.
+     *
+     * Sebelumnya tidak ada sama sekali, dan ketiadaannya bukan netral:
+     * mandays hanya dapat bertambah, sehingga perusahaan yang sistem
+     * manajemennya matang dan audit sebelumnya bersih tetap ditagih hari
+     * sebanyak yang paling bermasalah.
+     */
+    public static function faktorPengurang(): array
+    {
+        return [
+            'terintegrasi' => 'Sistem manajemen K3 terintegrasi & matang (mis. ISO 45001 tersertifikasi)',
+            'kepatuhan'    => 'Riwayat kepatuhan & kinerja keselamatan sangat baik',
+            'tanpa_mayor'  => 'Audit periode sebelumnya tanpa temuan kategori Mayor',
+            'shift'        => 'Jumlah shift / area kerja terbatas',
         ];
     }
 
@@ -202,47 +245,108 @@ final class SmkpTahap
 
     public static function kelasRisiko(): array
     {
-        return ['Rendah', 'Sedang', 'Tinggi'];
+        return array_keys(self::KOLOM_RISIKO);
+    }
+
+    /**
+     * Baris tabel mandays yang berlaku bagi sejumlah pekerja.
+     *
+     * DUA UJUNG DIPERLAKUKAN BERBEDA, dan itu keharusan. Yang melampaui baris
+     * terakhir memakai baris terakhir — masuk akal, tambang terbesar memang
+     * menuntut hari terbanyak. Yang jatuh DI BAWAH baris pertama memakai
+     * baris PERTAMA, bukan terakhir.
+     *
+     * Bedanya bukan teoretis: jumlah pekerja yang belum diisi terbaca sebagai
+     * nol, dan nol tidak masuk baris mana pun. Jatuh ke baris terakhir, audit
+     * yang datanya belum lengkap menagih 25 hari — angka yang tampak seperti
+     * jawaban sungguhan, tidak menimbulkan galat, dan karena itu tidak pernah
+     * dipertanyakan. Jatuh ke baris pertama, ia menampilkan angka terkecil
+     * yang jelas menuntut diisi.
+     */
+    public static function barisMandays(int $pekerja): array
+    {
+        $awal   = self::MANDAYS_TABLE[0];
+        $akhir  = self::MANDAYS_TABLE[count(self::MANDAYS_TABLE) - 1];
+
+        if ($pekerja < $awal[0]) return $awal;
+
+        foreach (self::MANDAYS_TABLE as $r) {
+            if ($pekerja >= $r[0] && $pekerja <= $r[1]) return $r;
+        }
+
+        return $akhir;
     }
 
     /**
      * Hari kerja audit.
      *
-     * Mandays dasar dibagi jumlah auditor, lalu ditambah faktor penyesuaian.
-     * Tahap I mendapat maksimal 10% dari total, sisanya untuk Tahap II —
-     * itulah sebabnya alokasi diturunkan, bukan diisi terpisah.
+     * MANDAYS DASAR TIDAK DIKETIK, melainkan dibaca dari tabel menurut jumlah
+     * pekerja auditi dan kelas risikonya. Angka yang diketik tangan tidak
+     * dapat ditelusuri kembali ke dasarnya, dan dua auditor yang mengetik
+     * berbeda untuk perusahaan yang sama menghasilkan tagihan hari berbeda
+     * tanpa satu pun yang salah menurut sistem.
      *
-     * @return array{dasar:float,auditor:int,per_auditor:float,penyesuaian:float,total:float,tahap1:float,tahap2:float,usul_penyesuaian:int}
+     *   dasar  = tabel[pekerja][kelas risiko]
+     *   total  = maks(1, dasar + faktor penambah − faktor pengurang)
+     *
+     * MANDAYS DAN DURASI ITU DUA HAL BERBEDA, dan menyatukannya adalah cacat
+     * yang diperbaiki di sini. Mandays satuan USAHA (orang-hari); durasi
+     * satuan WAKTU di lapangan. Empat auditor mengerjakan 12 mandays dalam
+     * 3 hari — jumlah auditor membagi durasinya, bukan usahanya. Sebelumnya
+     * pembagian itu dikenakan pada mandays, sehingga menambah auditor
+     * seolah-olah mengurangi beban audit.
+     *
+     *   durasi = total ÷ jumlah auditor
+     *   tahap1 = maks(1, durasi × 10%)   tahap2 = durasi − tahap1
+     *
+     * @return array{pekerja:int,kelas:string,rentang:string,dasar:int,penambah:int,
+     *               pengurang:int,total:int,auditor:int,durasi:float,tahap1:float,tahap2:float}
      */
     public static function mandays(array $p): array
     {
-        $dasar   = max(0.0, (float) ($p['mandays_dasar'] ?? 0));
+        $pekerja = max(0, (int) ($p['jumlah_pekerja'] ?? 0));
+        $kelas   = (string) ($p['kelas_risiko'] ?? '');
+        $kelas   = isset(self::KOLOM_RISIKO[$kelas]) ? $kelas : 'Tinggi';
         $auditor = max(1, (int) ($p['jumlah_auditor'] ?? 1));
 
-        // Tiap kondisi yang dijawab "ya" mengusulkan tambahan satu hari.
-        $usul = 0;
-        foreach (array_keys(self::faktorPenyesuaian()) as $k) {
-            if (!empty($p['faktor'][$k])) $usul++;
-        }
+        $baris = self::barisMandays($pekerja);
+        $dasar = (int) $baris[self::KOLOM_RISIKO[$kelas]];
 
-        // Auditor boleh menetapkan angka lain; usulan hanya jadi bawaan.
-        $tambah = array_key_exists('penyesuaian', $p) && $p['penyesuaian'] !== ''
-            ? max(0.0, (float) $p['penyesuaian'])
-            : (float) $usul;
+        $penambah  = self::hitungFaktor($p['faktor'] ?? [], self::faktorPenyesuaian());
+        $pengurang = self::hitungFaktor($p['pengurang'] ?? [], self::faktorPengurang());
 
-        $per   = $dasar / $auditor;
-        $total = $per + $tambah;
+        // Sekurang-kurangnya satu hari: faktor pengurang tidak boleh
+        // menghabiskan audit sampai nol hari.
+        $total = max(1, $dasar + $penambah - $pengurang);
+
+        $durasi = round($total / $auditor, 1);
+        $tahap1 = max(1.0, round($durasi * 0.10, 1));
+        $tahap2 = max(0.0, round($durasi - $tahap1, 1));
 
         return [
-            'dasar'            => round($dasar, 2),
-            'auditor'          => $auditor,
-            'per_auditor'      => round($per, 2),
-            'penyesuaian'      => round($tambah, 2),
-            'usul_penyesuaian' => $usul,
-            'total'            => round($total, 2),
-            'tahap1'           => round($total * 0.10, 2),
-            'tahap2'           => round($total * 0.90, 2),
+            'pekerja'   => $pekerja,
+            'kelas'     => $kelas,
+            'rentang'   => $baris[0].'–'.($baris[1] >= 999999 ? '∞' : $baris[1]),
+            'dasar'     => $dasar,
+            'penambah'  => $penambah,
+            'pengurang' => $pengurang,
+            'total'     => $total,
+            'auditor'   => $auditor,
+            'durasi'    => $durasi,
+            'tahap1'    => $tahap1,
+            'tahap2'    => $tahap2,
         ];
+    }
+
+    /** Berapa kondisi yang dicentang dari sebuah daftar faktor. */
+    private static function hitungFaktor($jawab, array $daftar): int
+    {
+        $n = 0;
+        foreach (array_keys($daftar) as $k) {
+            if (!empty(((array) $jawab)[$k])) $n++;
+        }
+
+        return $n;
     }
 
     /**

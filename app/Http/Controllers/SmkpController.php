@@ -171,10 +171,41 @@ class SmkpController extends Controller
             'elemen'    => Smkp::elemen(),
             'kelayakan' => SmkpTahap::indikatorKelayakan(),
             'faktor'    => SmkpTahap::faktorPenyesuaian(),
+            'pengurang' => SmkpTahap::faktorPengurang(),
+            'risiko'    => SmkpTahap::kelasRisiko(),
+            'tabelMandays' => SmkpTahap::MANDAYS_TABLE,
             'kinerja'   => SmkpTahap::butirKinerja(),
             'mandays'   => $smkp->mandays(),
             'rekap'     => $smkp->rekapKecukupan(),
+
+            /* Angka pekerja yang tercatat pada profil perusahaan, ditawarkan
+               sebagai isian awal. Dibiarkan nol, tabel mandays jatuh ke baris
+               terkecil dan menagih tiga hari untuk tambang berapa pun
+               besarnya — kesalahan yang tidak menimbulkan galat apa pun dan
+               karena itu tidak pernah ketahuan. */
+            'pekerjaPerusahaan' => $this->pekerjaPerusahaan($smkp),
         ]);
+    }
+
+    /**
+     * Jumlah pekerja auditi menurut profil perusahaannya.
+     *
+     * Audit boleh berdiri tanpa perusahaan — company_id NULL adalah audit
+     * yang terlihat oleh semua penyewa. Membaca profilnya tanpa penjagaan
+     * merobohkan seluruh halaman Tahap I pada audit semacam itu.
+     */
+    private function pekerjaPerusahaan(SmkpAudit $smkp): array
+    {
+        $c   = $smkp->company;
+        $kar = (int) ($c?->workers_employee ?? 0);
+        $sub = (int) ($c?->workers_sub ?? 0);
+
+        return [
+            'karyawan'   => $kar,
+            'subkontrak' => $sub,
+            'total'      => $kar + $sub,
+            'risiko'     => $c?->risk_class ?: null,
+        ];
     }
 
     public function simpanTahap1(Request $request, SmkpAudit $smkp)
@@ -188,12 +219,11 @@ class SmkpController extends Controller
             'permulaan.surat_tanggal'       => ['nullable','date'],
             'permulaan.jumlah_pekerja'      => ['nullable','integer','min:0','max:1000000'],
             'permulaan.kelas_risiko'        => ['nullable', Rule::in(SmkpTahap::kelasRisiko())],
-            'permulaan.mandays_dasar'       => ['nullable','numeric','min:0','max:1000'],
             'permulaan.jumlah_auditor'      => ['nullable','integer','min:1','max:50'],
-            'permulaan.penyesuaian'         => ['nullable','numeric','min:0','max:1000'],
             'permulaan.kesimpulan'          => ['nullable','string','max:2000'],
             'permulaan.kelayakan.*'         => ['nullable','string','max:500'],
             'permulaan.faktor.*'            => ['nullable'],
+            'permulaan.pengurang.*'         => ['nullable'],
 
             'kinerja.*'                     => ['nullable','string','max:50'],
 
@@ -205,11 +235,16 @@ class SmkpController extends Controller
 
         // Kotak centang yang tidak dicentang tidak ikut terkirim; disamakan
         // dulu agar "tidak" tersimpan sebagai jawaban, bukan sebagai kosong.
-        $faktor = [];
-        foreach (array_keys(SmkpTahap::faktorPenyesuaian()) as $k) {
-            $faktor[$k] = !empty($p['faktor'][$k]);
+        foreach ([
+            'faktor'    => SmkpTahap::faktorPenyesuaian(),
+            'pengurang' => SmkpTahap::faktorPengurang(),
+        ] as $ruas => $daftar) {
+            $jawab = [];
+            foreach (array_keys($daftar) as $k) {
+                $jawab[$k] = !empty($p[$ruas][$k]);
+            }
+            $p[$ruas] = $jawab;
         }
-        $p['faktor'] = $faktor;
 
         // Kecukupan hanya disimpan untuk elemen yang benar-benar ada.
         $kecukupan = [];
@@ -241,6 +276,9 @@ class SmkpController extends Controller
             'elemen'    => Smkp::elemen(),
             'kelayakan' => SmkpTahap::indikatorKelayakan(),
             'faktor'    => SmkpTahap::faktorPenyesuaian(),
+            'pengurang' => SmkpTahap::faktorPengurang(),
+            'risiko'    => SmkpTahap::kelasRisiko(),
+            'tabelMandays' => SmkpTahap::MANDAYS_TABLE,
             'kinerja'   => SmkpTahap::butirKinerja(),
             'mandays'   => $smkp->mandays(),
             'rekap'     => $smkp->rekapKecukupan(),

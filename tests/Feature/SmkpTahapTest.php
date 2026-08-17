@@ -195,47 +195,114 @@ class SmkpTahapTest extends TestCase
         $this->assertFalse($r['siap']);
     }
 
-    public function test_mandays_mengikuti_berita_acara_pt_gbu_2023(): void
+    public function test_mandays_dasar_dibaca_dari_tabel_bukan_diketik(): void
     {
-        // Berita Acara Tahap I PT GBU 2023: 16 hari / 2 auditor = 8 hari,
-        // penyesuaian 0 hari, total 8 hari, Tahap I 0,8 dan Tahap II 7,2.
-        $m = SmkpTahap::mandays(['mandays_dasar' => 16, 'jumlah_auditor' => 2, 'penyesuaian' => 0]);
+        // 460 pekerja jatuh pada baris 426–625; risiko Tinggi = kolom 16 hari.
+        $m = SmkpTahap::mandays(['jumlah_pekerja' => 460, 'kelas_risiko' => 'Tinggi', 'jumlah_auditor' => 2]);
 
-        $this->assertSame(8.0,  $m['per_auditor']);
-        $this->assertSame(8.0,  $m['total']);
-        $this->assertSame(0.8,  $m['tahap1']);
-        $this->assertSame(7.2,  $m['tahap2']);
+        $this->assertSame('426–625', $m['rentang']);
+        $this->assertSame(16, $m['dasar']);
+
+        /* Kelas risiko memilih kolom, bukan sekadar keterangan. Bila ia
+           tidak berpengaruh, tambang berisiko rendah ditagih hari sebanyak
+           tambang berisiko tinggi. */
+        $this->assertSame(13, SmkpTahap::mandays(
+            ['jumlah_pekerja' => 460, 'kelas_risiko' => 'Menengah'])['dasar']);
+        $this->assertSame(11, SmkpTahap::mandays(
+            ['jumlah_pekerja' => 460, 'kelas_risiko' => 'Rendah'])['dasar']);
     }
 
-    public function test_penyesuaian_diusulkan_dari_kondisi_yang_terpenuhi(): void
+    public function test_pekerja_melampaui_tabel_memakai_baris_terakhir(): void
     {
-        $m = SmkpTahap::mandays([
-            'mandays_dasar'  => 10,
-            'jumlah_auditor' => 2,
-            'faktor'         => ['jarak' => true, 'pengolahan' => true],
-        ]);
+        $m = SmkpTahap::mandays(['jumlah_pekerja' => 5_000_000, 'kelas_risiko' => 'Tinggi']);
 
-        $this->assertSame(2, $m['usul_penyesuaian']);
-        $this->assertSame(7.0, $m['total'], 'Usulan dipakai bila auditor tidak menetapkan angka sendiri.');
+        $this->assertSame(25, $m['dasar'], 'Tabel harus punya batas atas, bukan jatuh ke nol.');
     }
 
-    public function test_penetapan_auditor_mengalahkan_usulan(): void
+    public function test_pekerja_belum_diisi_memakai_baris_terkecil_bukan_terbesar(): void
     {
-        $m = SmkpTahap::mandays([
-            'mandays_dasar'  => 10,
-            'jumlah_auditor' => 2,
-            'faktor'         => ['jarak' => true, 'pengolahan' => true],
-            'penyesuaian'    => 1,
+        $m = SmkpTahap::mandays(['jumlah_pekerja' => 0, 'kelas_risiko' => 'Tinggi']);
+
+        /* Nol berarti belum diisi, dan nol tidak masuk baris mana pun.
+           Jatuh ke baris TERAKHIR, audit yang datanya belum lengkap menagih
+           25 hari — angka yang tampak seperti jawaban sungguhan, tidak
+           menimbulkan galat, dan karena itu tidak pernah dipertanyakan. */
+        $this->assertSame(3, $m['dasar']);
+        $this->assertSame('1–5', $m['rentang']);
+    }
+
+    public function test_faktor_penambah_dan_pengurang_menggeser_total(): void
+    {
+        $dasar = ['jumlah_pekerja' => 460, 'kelas_risiko' => 'Tinggi', 'jumlah_auditor' => 1];
+
+        $m = SmkpTahap::mandays($dasar + [
+            'faktor'    => ['jarak' => true, 'pengolahan' => true],
+            'pengurang' => ['tanpa_mayor' => true],
         ]);
 
-        $this->assertSame(1.0, $m['penyesuaian']);
-        $this->assertSame(6.0, $m['total']);
+        $this->assertSame(2, $m['penambah']);
+        $this->assertSame(1, $m['pengurang']);
+        $this->assertSame(17, $m['total'], '16 + 2 − 1');
+    }
+
+    public function test_faktor_pengurang_tidak_menghabiskan_audit_sampai_nol(): void
+    {
+        $m = SmkpTahap::mandays([
+            'jumlah_pekerja' => 3, 'kelas_risiko' => 'Rendah',      // dasar 2
+            'pengurang' => array_fill_keys(array_keys(SmkpTahap::faktorPengurang()), true),
+        ]);
+
+        $this->assertSame(1, $m['total'], 'Audit sekurang-kurangnya satu hari.');
+    }
+
+    public function test_auditor_membagi_durasi_bukan_mandays(): void
+    {
+        $m = SmkpTahap::mandays(['jumlah_pekerja' => 460, 'kelas_risiko' => 'Tinggi', 'jumlah_auditor' => 4]);
+
+        /* Mandays satuan USAHA, durasi satuan WAKTU. Empat auditor
+           mengerjakan 16 orang-hari dalam 4 hari — menambah auditor
+           memperpendek waktu di lapangan, bukan mengurangi beban auditnya.
+           Membagi mandays-nya membuat audit tampak makin murah tiap kali
+           satu auditor ditambahkan. */
+        $this->assertSame(16,  $m['total']);
+        $this->assertSame(4.0, $m['durasi']);
+    }
+
+    public function test_alokasi_tahap_diturunkan_dari_durasi(): void
+    {
+        $m = SmkpTahap::mandays(['jumlah_pekerja' => 460, 'kelas_risiko' => 'Tinggi', 'jumlah_auditor' => 1]);
+
+        // Durasi 16 hari: Tahap I 10% = 1,6; sisanya Tahap II.
+        $this->assertSame(16.0, $m['durasi']);
+        $this->assertSame(1.6,  $m['tahap1']);
+        $this->assertSame(14.4, $m['tahap2']);
+    }
+
+    public function test_tahap_satu_sekurang_kurangnya_satu_hari(): void
+    {
+        // Durasi 2 hari: 10% = 0,2 hari — tidak masuk akal sebagai kunjungan.
+        $m = SmkpTahap::mandays(['jumlah_pekerja' => 3, 'kelas_risiko' => 'Rendah', 'jumlah_auditor' => 1]);
+
+        $this->assertSame(1.0, $m['tahap1']);
+        $this->assertSame(1.0, $m['tahap2']);
     }
 
     public function test_pembagi_auditor_tidak_pernah_nol(): void
     {
-        $m = SmkpTahap::mandays(['mandays_dasar' => 8, 'jumlah_auditor' => 0]);
-        $this->assertSame(8.0, $m['per_auditor']);
+        $m = SmkpTahap::mandays(['jumlah_pekerja' => 460, 'kelas_risiko' => 'Tinggi', 'jumlah_auditor' => 0]);
+
+        $this->assertSame(1, $m['auditor']);
+        $this->assertSame(16.0, $m['durasi']);
+    }
+
+    public function test_kelas_risiko_asing_jatuh_ke_yang_paling_ketat(): void
+    {
+        /* Kelas yang tidak dikenal — mis. data lama bertuliskan "Sedang" —
+           tidak boleh menjatuhkan hitungan ke kolom termurah diam-diam. */
+        $m = SmkpTahap::mandays(['jumlah_pekerja' => 460, 'kelas_risiko' => 'Sedang']);
+
+        $this->assertSame('Tinggi', $m['kelas']);
+        $this->assertSame(16, $m['dasar']);
     }
 
     public function test_menyimpan_tahap_satu_mencatat_faktor_yang_tidak_dicentang(): void
@@ -246,13 +313,24 @@ class SmkpTahapTest extends TestCase
         $a = $this->audit();
 
         $this->post(route('smkp.tahap1.simpan', $a), [
-            'permulaan' => ['mandays_dasar' => 16, 'jumlah_auditor' => 2, 'faktor' => ['jarak' => '1']],
+            'permulaan' => [
+                'jumlah_pekerja' => 460, 'jumlah_auditor' => 2,
+                'faktor'    => ['jarak' => '1'],
+                'pengurang' => ['tanpa_mayor' => '1'],
+            ],
         ])->assertRedirect(route('smkp.tahap1', $a));
 
-        $f = $a->fresh()->permulaan['faktor'];
-        $this->assertTrue($f['jarak']);
-        $this->assertFalse($f['pengolahan']);
-        $this->assertCount(7, $f);
+        $p = $a->fresh()->permulaan;
+
+        $this->assertTrue($p['faktor']['jarak']);
+        $this->assertFalse($p['faktor']['pengolahan']);
+        $this->assertCount(count(SmkpTahap::faktorPenyesuaian()), $p['faktor']);
+
+        // Daftar pengurang diperlakukan sama; tanpa itu "tidak" tersimpan
+        // sebagai kosong dan Berita Acara punya isian yang tak terjawab.
+        $this->assertTrue($p['pengurang']['tanpa_mayor']);
+        $this->assertFalse($p['pengurang']['kepatuhan']);
+        $this->assertCount(count(SmkpTahap::faktorPengurang()), $p['pengurang']);
     }
 
     public function test_kecukupan_hanya_disimpan_untuk_elemen_yang_ada(): void
@@ -498,7 +576,7 @@ class SmkpTahapTest extends TestCase
         $a = $this->audit([
             'kecukupan' => $this->kecukupanPenuh(),
             'rencana'   => $this->rencanaLengkap(),
-            'permulaan' => ['tanggal_kontak' => '2026-02-15', 'mandays_dasar' => 16, 'jumlah_auditor' => 2],
+            'permulaan' => ['tanggal_kontak' => '2026-02-15', 'jumlah_pekerja' => 460, 'jumlah_auditor' => 2],
         ]);
 
         $s = $a->statusAlur();

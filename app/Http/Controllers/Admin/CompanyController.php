@@ -110,7 +110,12 @@ class CompanyController extends Controller
                 // berputar tanpa henti.
                 'induk'  => Company::whereKeyNot($c->id ?? 0)->orderBy('name')->get()
                     ->map(fn ($o) => ['nilai' => (string) $o->id, 'label' => $o->name])->all(),
-                'risiko' => ['Rendah', 'Sedang', 'Tinggi'],
+                /* Diambil dari SmkpTahap, bukan ditulis ulang: kelas risiko
+                   di sini memilih KOLOM tabel mandays audit SMKP. Daftar
+                   yang berbeda sedikit saja — "Sedang" alih-alih
+                   "Menengah" — membuat perusahaan jatuh ke kolom cadangan
+                   dan ditagih hari kerja kelas tertinggi tanpa peringatan. */
+                'risiko' => \App\Support\SmkpTahap::kelasRisiko(),
             ],
 
             'contoh' => [
@@ -164,7 +169,7 @@ class CompanyController extends Controller
             'pic_phone'        => ['nullable','string','max:30'],
             'workers_employee' => ['nullable','integer','min:0'],
             'workers_sub'      => ['nullable','integer','min:0'],
-            'risk_class'       => ['nullable','in:Rendah,Sedang,Tinggi'],
+            'risk_class'       => ['nullable', \Illuminate\Validation\Rule::in(\App\Support\SmkpTahap::kelasRisiko())],
             'doc_no_prefix'    => ['nullable','string','max:20'],
             'divisi'           => ['nullable','string','max:150'],
             'departemen'       => ['nullable','string','max:150'],
