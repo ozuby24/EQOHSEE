@@ -677,6 +677,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         foreach ([
             'tahap1' => 'tahap-1', 'rencana' => 'rencana', 'rapat' => 'rapat', 'temuan' => 'temuan',
             'berita' => 'berita-acara', 'rencana-cetak' => 'laporan-rencana', 'laporan' => 'laporan-audit',
+
+            /* Lima keluaran audit yang menyusul. */
+            'kriteria' => 'kriteria', 'rekap-nc' => 'rekap-nc', 'respon' => 'respon',
+            'rencana-tindak' => 'rencana-tindak', 'nc-tindak' => 'nc-tindak',
         ] as $bagian => $ruas) {
             Route::get("lanjut/{$ruas}", [SmkpController::class,'lanjut'])
                 ->defaults('bagian', $bagian)->name('ke.'.$bagian);
@@ -688,6 +692,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('{smkp}',        [SmkpController::class,'destroy'])->middleware('can:admin')->name('destroy');
 
         Route::get('{smkp}/laporan',   [SmkpController::class,'laporan'])->name('laporan');
+
+        /* Lima keluaran audit yang sebelumnya belum ada, plus ekspor
+           formulir kriteria ke CSV. Nomornya mengikuti urutan berkas
+           audit, bukan urutan pembuatannya di sini. */
+        Route::get('{smkp}/kriteria',        [SmkpController::class,'kriteria'])->name('kriteria');
+        Route::get('{smkp}/kriteria/ekspor', [SmkpController::class,'kriteriaEkspor'])->name('kriteria.ekspor');
+        Route::get('{smkp}/rekap-nc',        [SmkpController::class,'rekapNc'])->name('rekapNc');
+        Route::get('{smkp}/respon',          [SmkpController::class,'responManajemen'])->name('respon');
+        Route::get('{smkp}/rencana-tindak',  [SmkpController::class,'rencanaTindak'])->name('rencanaTindak');
+        Route::get('{smkp}/nc-tindak',       [SmkpController::class,'ncTindak'])->name('ncTindak');
+        Route::put('{smkp}/temuan/{temuan}/respon',
+            [SmkpController::class,'simpanRespon'])->name('temuan.respon');
         Route::post('{smkp}/tahap',    [SmkpController::class,'ubahTahap'])->name('tahap');
 
         // Tahap I — permulaan audit, peninjauan dokumen, persiapan lapangan

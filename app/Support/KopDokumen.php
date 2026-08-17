@@ -70,6 +70,48 @@ final class KopDokumen
                 'kode'  => 'OHSE-II.001',
                 'urut'  => 7,
 ],
+            /* Lima keluaran audit yang sebelumnya belum punya kop.
+               Nomornya mengikuti urutan berkas audit, bukan urutan
+               pembuatannya di sini.
+
+               `urut` WAJIB unik dalam satu awalan nomor: ia yang
+               menyusun FRM/CAM/OHSE/0NN. Lima formulir bernomor sama
+               tidak menimbulkan galat — hanya lima lembar berbeda yang
+               masuk daftar induk dokumen dengan satu nomor, dan
+               daftar induk itulah yang diperiksa auditor eksternal.
+               Slot 1–9 sudah terpakai formulir lain dan 10 oleh Mine
+               Permit, jadi kelimanya mulai dari 11. */
+            'formulir-kriteria' => [
+                'jenis' => 'FORMULIR',
+                'judul' => 'FORMULIR KRITERIA AUDIT SMKP',
+                'kode'  => 'OHSE-IV.141',
+                'urut'  => 11,
+            ],
+            'rekap-ketidaksesuaian' => [
+                'jenis' => 'FORMULIR',
+                'judul' => 'REKAPITULASI KETIDAKSESUAIAN',
+                'kode'  => 'OHSE-IV.142',
+                'urut'  => 12,
+            ],
+            'respon-manajemen' => [
+                'jenis' => 'FORMULIR',
+                'judul' => 'RESPON MANAJEMEN ATAS KETIDAKSESUAIAN',
+                'kode'  => 'OHSE-IV.143',
+                'urut'  => 13,
+            ],
+            'rencana-tindak-lanjut' => [
+                'jenis' => 'FORMULIR',
+                'judul' => 'RENCANA TINDAK LANJUT AUDIT SMKP',
+                'kode'  => 'OHSE-IV.144',
+                'urut'  => 14,
+            ],
+            'ketidaksesuaian-tindak-lanjut' => [
+                'jenis' => 'FORMULIR',
+                'judul' => 'KETIDAKSESUAIAN DAN TINDAK LANJUTNYA',
+                'kode'  => 'OHSE-IV.145',
+                'urut'  => 15,
+            ],
+
             'laporan-audit' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN AUDIT INTERNAL PENERAPAN SMKP MINERBA',

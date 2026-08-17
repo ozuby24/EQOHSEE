@@ -174,10 +174,20 @@ final class Menu
           ['Rapat & Daftar Hadir','smkp.ke.rapat', 'smkp/lanjut/rapat'],
           ['Temuan & Tindakan', 'smkp.ke.temuan',  'smkp/lanjut/temuan'],
         ],
+        /* Delapan keluaran audit, URUT SESUAI BERKASNYA — bukan urut
+           abjad dan bukan urut pembuatannya di sini. Berkas audit
+           diserahkan sebagai satu bundel bernomor, dan menu yang
+           urutannya berbeda dari bundelnya memaksa penyusunnya
+           mencocokkan sendiri satu per satu. */
         'Berkas Resmi' => [
-          ['Berita Acara Tahap I',  'smkp.ke.berita',        'smkp/lanjut/berita-acara'],
-          ['Laporan Rencana Audit', 'smkp.ke.rencana-cetak', 'smkp/lanjut/laporan-rencana'],
-          ['Laporan Audit',         'smkp.ke.laporan',       'smkp/lanjut/laporan-audit'],
+          ['1 · Formulir Kriteria',   'smkp.ke.kriteria',       'smkp/lanjut/kriteria'],
+          ['2 · Rekap Ketidaksesuaian','smkp.ke.rekap-nc',      'smkp/lanjut/rekap-nc'],
+          ['3 · Respon Manajemen',    'smkp.ke.respon',         'smkp/lanjut/respon'],
+          ['4 · Rencana Tindak Lanjut','smkp.ke.rencana-tindak','smkp/lanjut/rencana-tindak'],
+          ['5 · Berita Acara Tahap I','smkp.ke.berita',         'smkp/lanjut/berita-acara'],
+          ['6 · Laporan Rencana Audit','smkp.ke.rencana-cetak', 'smkp/lanjut/laporan-rencana'],
+          ['7 · Laporan Audit',       'smkp.ke.laporan',        'smkp/lanjut/laporan-audit'],
+          ['8 · NC & Tindak Lanjut',  'smkp.ke.nc-tindak',      'smkp/lanjut/nc-tindak'],
         ],
         'Acuan' => [
           ['Kriteria Kepdirjen', 'smkp.acuan', 'smkp/acuan'],

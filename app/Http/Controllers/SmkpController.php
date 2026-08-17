@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Company, SmkpAttendee, SmkpAudit, SmkpFinding};
-use App\Support\{KopDokumen, Smkp, SmkpTahap};
+use App\Support\{Ekspor, KopDokumen, Smkp, SmkpTahap};
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -114,6 +114,15 @@ class SmkpController extends Controller
             'berita'        => 'smkp.berita-acara',
             'rencana-cetak' => 'smkp.rencana.cetak',
             'laporan'       => 'smkp.laporan',
+
+            /* Lima keluaran audit yang menyusul. Dilewatkan router yang
+               sama supaya menu samping tidak perlu membawa id audit —
+               menu tidak tahu periode mana yang sedang dikerjakan. */
+            'kriteria'      => 'smkp.kriteria',
+            'rekap-nc'      => 'smkp.rekapNc',
+            'respon'        => 'smkp.respon',
+            'rencana-tindak'=> 'smkp.rencanaTindak',
+            'nc-tindak'     => 'smkp.ncTindak',
         ][$bagian] ?? null;
 
         abort_if(!$rute, 404, 'Bagian audit tidak dikenal.');
@@ -589,6 +598,273 @@ class SmkpController extends Controller
             'dok'    => $this->kop($smkp, 'laporan-audit'),
             'kembali'=> route('smkp.show', $smkp),
         ]);
+    }
+
+    /* ═══════════ keluaran 1 — Formulir Kriteria Audit ═══════════ */
+
+    /**
+     * Seluruh butir kriteria beserta nilainya, satu baris satu butir.
+     *
+     * Inilah lembar kerja auditor: ia dibawa ke lapangan, diisi tangan
+     * bila perlu, dan menjadi lampiran laporan. Berbeda dari Laporan
+     * Audit yang meringkas per elemen, formulir ini menampilkan
+     * SELURUH butir — termasuk yang sudah sesuai dan yang dikecualikan.
+     *
+     * Yang dikecualikan tetap dicetak, dan itu disengaja: butir yang
+     * hilang dari lembar tidak dapat dibedakan antara "tidak berlaku"
+     * dan "terlewat dinilai", dan pembedaan itu justru yang ditanyakan
+     * inspektur.
+     */
+    public function kriteria(SmkpAudit $smkp)
+    {
+        return Inertia::render('Print/SmkpKriteria', [
+            'audit'  => $smkp,
+            'baris'  => $this->barisKriteria($smkp),
+            'rekap'  => $smkp->rekap(),
+            'meta'   => Smkp::meta(),
+            'dok'    => $this->kop($smkp, 'formulir-kriteria'),
+            'ekspor' => route('smkp.kriteria.ekspor', $smkp),
+            'kembali'=> route('smkp.show', $smkp),
+        ]);
+    }
+
+    /** Formulir kriteria sebagai CSV — dibuka Excel tanpa pustaka luar. */
+    public function kriteriaEkspor(SmkpAudit $smkp)
+    {
+        $baris = array_map(fn ($b) => [
+            $b['elemen'], $b['sub'], $b['kode'], $b['uraian'],
+            $b['acuan'], $b['maks'], $b['nilai'], $b['capaian'], $b['keterangan'],
+        ], $this->barisKriteria($smkp));
+
+        return Ekspor::csv(
+            'formulir-kriteria-smkp-'.$smkp->tahun,
+            ['Elemen', 'Sub-elemen', 'Kode', 'Uraian kriteria',
+             'Acuan', 'Nilai maksimum', 'Nilai', 'Capaian %', 'Keterangan'],
+            $baris,
+        );
+    }
+
+    /**
+     * Satu baris per butir kriteria — dipakai layar cetak dan CSV.
+     *
+     * Dibentuk sekali di sini supaya keduanya tidak pernah berbeda.
+     * Lembar cetak dan berkas Excel yang disusun terpisah adalah dua
+     * daftar yang cepat atau lambat berselisih, dan yang membandingkan
+     * keduanya adalah auditor eksternal.
+     *
+     * @return list<array<string,mixed>>
+     */
+    private function barisKriteria(SmkpAudit $smkp): array
+    {
+        $hasil = (array) ($smkp->hasil ?? []);
+        $out   = [];
+
+        foreach (Smkp::elemen() as $e) {
+            foreach ($e['sub'] as $s) {
+                foreach (Smkp::butirSub($s) as $b) {
+                    $kode  = $b['kode'];
+                    $nilai = Smkp::nilaiButir($hasil, $kode);
+                    $maks  = (int) ($b['maks'] ?? 0);
+
+                    $out[] = [
+                        'elemen'  => $e['kode'].'. '.$e['nama'],
+                        'sub'     => $s['kode'].' '.$s['nama'],
+                        'kode'    => $kode,
+                        'uraian'  => $b['nama'] ?? $b['uraian'] ?? '',
+                        'acuan'   => $b['ref'] ?? $s['ref'] ?? '',
+                        'maks'    => $maks,
+
+                        /* Yang dikecualikan ditulis "N/A", bukan nol.
+                           Nol berarti dinilai dan gagal; N/A berarti
+                           tidak berlaku — dua hal yang berlawanan, dan
+                           menyamakannya menurunkan skor perusahaan atas
+                           butir yang memang tidak dapat berlaku
+                           baginya. */
+                        'nilai'   => Smkp::dikecualikan($hasil, $kode)
+                            ? Smkp::NA : ($nilai === null ? '' : $nilai),
+
+                        'capaian' => Smkp::dikecualikan($hasil, $kode) || $nilai === null || $maks === 0
+                            ? '' : round($nilai / $maks * 100, 1),
+
+                        'keterangan' => (string) ($hasil[$kode]['ket'] ?? ''),
+                    ];
+                }
+            }
+        }
+
+        return $out;
+    }
+
+    /* ═══════════ keluaran 2 — Rekapitulasi Ketidaksesuaian ═══════════ */
+
+    /**
+     * Ringkasan ketidaksesuaian: berapa, jenis apa, tersebar di elemen mana.
+     *
+     * Dipakai rapat penutupan. Yang ditanyakan di sana bukan bunyi tiap
+     * temuan melainkan sebarannya — elemen mana yang paling banyak
+     * bermasalah, dan berapa yang mayor.
+     */
+    public function rekapNc(SmkpAudit $smkp)
+    {
+        $temuan = $smkp->findings()->orderByRaw(Smkp::urutJenisSql())->get();
+
+        /* Sebaran per elemen dihitung dari kode kriterianya, bukan dari
+           kolom tersendiri: kode "3.2.1" sudah menyebut elemennya, dan
+           menyimpannya dua kali melahirkan dua sumber kebenaran yang
+           berselisih begitu satu temuan dipindah kriterianya. */
+        $perElemen = [];
+
+        foreach (Smkp::elemen() as $e) {
+            $milik = $temuan->filter(
+                fn (SmkpFinding $t) => str_starts_with((string) $t->kode_kriteria, $e['kode'].'.'));
+
+            $perElemen[] = [
+                'kode'   => $e['kode'],
+                'nama'   => $e['nama'],
+                'mayor'  => $milik->where('jenis', 'mayor')->count(),
+                'minor'  => $milik->where('jenis', 'minor')->count(),
+                'obs'    => $milik->whereNotIn('jenis', ['mayor', 'minor'])->count(),
+                'total'  => $milik->count(),
+                'terbuka' => $milik->where('status', '!=', SmkpFinding::TUTUP)->count(),
+            ];
+        }
+
+        return Inertia::render('Print/SmkpRekapNc', [
+            'audit'  => $smkp,
+
+            /* Nomor urut ikut dikirim, tidak dihitung dari posisi baris
+               di layar. Pada formulir audit nomor itu DATA: ia disebut
+               dalam rapat penutupan dan dalam surat-menyurat
+               sesudahnya ("temuan nomor 3"), jadi ia harus sama pada
+               lembar cetak, layar, dan berkas ekspor. */
+            'temuan' => $temuan->values()->map(
+                fn (SmkpFinding $t, int $i) => $t->toArray() + ['urut' => $i + 1])->values(),
+            'perElemen' => $perElemen,
+            'ringkas' => [
+                'total'   => $temuan->count(),
+                'mayor'   => $temuan->where('jenis', 'mayor')->count(),
+                'minor'   => $temuan->where('jenis', 'minor')->count(),
+                'obs'     => $temuan->whereNotIn('jenis', ['mayor', 'minor'])->count(),
+                'tertutup' => $temuan->where('status', SmkpFinding::TUTUP)->count(),
+                'terbuka'  => $temuan->where('status', '!=', SmkpFinding::TUTUP)->count(),
+            ],
+            'meta'    => Smkp::meta(),
+            'dok'     => $this->kop($smkp, 'rekap-ketidaksesuaian'),
+            'kembali' => route('smkp.show', $smkp),
+        ]);
+    }
+
+    /* ═══════════ keluaran 3 — Respon Manajemen ═══════════ */
+
+    /**
+     * Pernyataan pihak yang diaudit atas tiap ketidaksesuaian.
+     *
+     * TERPISAH DARI TINDAKAN, dan itu bukan pemisahan administratif:
+     * tindakan adalah apa yang akan dikerjakan, respon adalah apakah
+     * temuannya diterima. Menyatukan keduanya menghapus kemungkinan
+     * manajemen MENOLAK sebuah temuan — dan penolakan itu justru yang
+     * paling perlu tercatat, sebab ia yang dibawa ke tingkat berikutnya.
+     */
+    public function responManajemen(SmkpAudit $smkp)
+    {
+        return Inertia::render('Print/SmkpRespon', [
+            'audit'  => $smkp,
+            'temuan' => $smkp->findings()->orderByRaw(Smkp::urutJenisSql())->get()
+                ->values()->map(fn (SmkpFinding $t, int $i) => $t->toArray() + ['urut' => $i + 1])
+                ->values(),
+            'meta'   => Smkp::meta(),
+            'dok'    => $this->kop($smkp, 'respon-manajemen'),
+            'kembali'=> route('smkp.show', $smkp),
+        ]);
+    }
+
+    /* ═══════════ keluaran 4 — Rencana Tindak Lanjut ═══════════ */
+
+    /**
+     * Rencana tindak lanjut, diurutkan menurut TENGGATNYA.
+     *
+     * Berbeda dari daftar temuan yang diurut menurut beratnya. Yang
+     * dipakai memantau bukan mana yang paling berat melainkan mana yang
+     * paling dekat jatuh tempo — sebuah observasi yang tenggatnya lusa
+     * lebih mendesak daripada mayor yang tenggatnya tiga bulan lagi.
+     */
+    public function rencanaTindak(SmkpAudit $smkp)
+    {
+        $temuan = $smkp->findings()
+            ->orderByRaw('CASE WHEN target_selesai IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('target_selesai')
+            ->orderByRaw(Smkp::urutJenisSql())
+            ->get();
+
+        $kini = now()->startOfDay();
+
+        return Inertia::render('Print/SmkpRtl', [
+            'audit'  => $smkp,
+            'temuan' => $temuan->values()->map(fn (SmkpFinding $t, int $i) => $t->toArray() + [
+                'urut' => $i + 1,
+                /* Sisa hari dihitung di server supaya lembar cetak dan
+                   layar tidak pernah berbeda karena zona waktu
+                   perambannya. */
+                'sisaHari' => $t->target_selesai
+                    ? (int) $kini->diffInDays($t->target_selesai->copy()->startOfDay(), false)
+                    : null,
+                'lewat' => $t->target_selesai
+                    && $t->status !== SmkpFinding::TUTUP
+                    && $t->target_selesai->copy()->startOfDay()->lt($kini),
+            ])->values(),
+            'ringkas' => [
+                'total'    => $temuan->count(),
+                'tertutup' => $temuan->where('status', SmkpFinding::TUTUP)->count(),
+                'lewat'    => $temuan->filter(fn ($t) => $t->target_selesai
+                    && $t->status !== SmkpFinding::TUTUP
+                    && $t->target_selesai->copy()->startOfDay()->lt($kini))->count(),
+                'tanpaTarget' => $temuan->whereNull('target_selesai')->count(),
+            ],
+            'meta'   => Smkp::meta(),
+            'dok'    => $this->kop($smkp, 'rencana-tindak-lanjut'),
+            'kembali'=> route('smkp.show', $smkp),
+        ]);
+    }
+
+    /* ═══════════ keluaran 8 — Ketidaksesuaian & Tindak Lanjut ═══════════ */
+
+    /**
+     * Satu lembar per temuan, dengan foto sebelum dan sesudah.
+     *
+     * Inilah berkas yang ditunjukkan saat penutupan temuan diperiksa.
+     * Kedua foto berdampingan pada lembar yang sama — memisahkannya ke
+     * dua lembar membuat pembacanya harus mengingat yang pertama sambil
+     * melihat yang kedua, dan yang diingat orang setelah membalik
+     * halaman bukanlah keadaan sebuah lereng.
+     */
+    public function ncTindak(SmkpAudit $smkp)
+    {
+        return Inertia::render('Print/SmkpNcTindak', [
+            'audit'  => $smkp,
+            'temuan' => $smkp->findings()->orderByRaw(Smkp::urutJenisSql())->get(),
+            'meta'   => Smkp::meta(),
+            'dok'    => $this->kop($smkp, 'ketidaksesuaian-tindak-lanjut'),
+            'kembali'=> route('smkp.show', $smkp),
+        ]);
+    }
+
+    /** Menyimpan respon manajemen dan bukti penutupan satu temuan. */
+    public function simpanRespon(Request $request, SmkpAudit $smkp, SmkpFinding $temuan)
+    {
+        abort_unless($temuan->audit_id === $smkp->id, 404);
+
+        $temuan->update($request->validate([
+            'respon_diterima'  => ['nullable', 'boolean'],
+            'respon_manajemen' => ['nullable', 'string', 'max:2000'],
+            'respon_oleh'      => ['nullable', 'string', 'max:150'],
+            'respon_pada'      => ['nullable', 'date'],
+            'foto_open'        => ['nullable', 'string', 'max:255'],
+            'foto_closed'      => ['nullable', 'string', 'max:255'],
+            'verifikasi_oleh'  => ['nullable', 'string', 'max:150'],
+            'verifikasi_pada'  => ['nullable', 'date'],
+        ]));
+
+        return back()->with('ok', 'Respon manajemen tersimpan.');
     }
 
     /* ---------- bantu ---------- */
