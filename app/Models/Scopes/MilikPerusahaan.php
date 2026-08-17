@@ -2,6 +2,7 @@
 
 namespace App\Models\Scopes;
 
+use App\Support\LingkupLintas;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
@@ -36,6 +37,21 @@ use Illuminate\Database\Eloquent\Scope;
  *
  * Yang tetap dijaga adalah yang sebenarnya berbahaya: baris milik
  * perusahaan LAIN tidak pernah terlihat.
+ *
+ * SATU PENGECUALIAN, DAN HANYA SEPANJANG GARIS KETURUNAN
+ *
+ * Pemegang IUP dan mitra IUJP di bawahnya bukan dua perusahaan yang
+ * tidak berhubungan: yang satu bertanggung jawab atas keselamatan
+ * pekerjaan yang dikerjakan yang lain, dan yang lain wajib mematuhi
+ * prosedur yang diterbitkan yang satu. Beberapa tabel karena itu
+ * menembus batas — TETAPI hanya ke induk sendiri dan anak sendiri,
+ * tidak pernah menyamping antar sesama IUJP, dan hanya tabel yang
+ * disebut tegas pada App\Support\LingkupLintas.
+ *
+ * Perhatikan bentuk pelebarannya di bawah: ia menyebut `parent_id`
+ * perusahaan saya dan daftar anak perusahaan saya. Perusahaan saudara —
+ * IUJP lain di bawah induk yang sama — tidak berada di salah satu pun
+ * dari keduanya, jadi ia tidak pernah ikut terbuka.
  */
 class MilikPerusahaan implements Scope
 {
@@ -49,12 +65,34 @@ class MilikPerusahaan implements Scope
            dilacak daripada kebocoran yang sedang dicegah di sini. */
         if (!$u || $u->isAdmin()) return;
 
-        $kolom = $model->getTable().'.company_id';
+        $tabel = $model->getTable();
+        $kolom = $tabel.'.company_id';
 
-        $builder->where(function (Builder $q) use ($kolom, $u) {
+        $builder->where(function (Builder $q) use ($kolom, $tabel, $u) {
             $q->whereNull($kolom);
 
-            if ($u->company_id) $q->orWhere($kolom, $u->company_id);
+            if (!$u->company_id) return;
+
+            $q->orWhere($kolom, $u->company_id);
+
+            $saya = $u->company;
+            if (!$saya) return;
+
+            /* Ke atas: baris induk saya, bila tabelnya memang dibuka
+               ke anak. Hanya SATU induk — bukan seluruh leluhur, dan
+               bukan saudara. */
+            if ($saya->parent_id && LingkupLintas::keAnak($tabel)) {
+                $q->orWhere($kolom, $saya->parent_id);
+            }
+
+            /* Ke bawah: baris anak-anak saya, bila tabelnya memang
+               dibuka ke induk. Diambil sebagai subkueri id, bukan
+               dimuat ke memori: sebuah IUP dapat menaungi puluhan
+               mitra. */
+            if (LingkupLintas::keInduk($tabel)) {
+                $q->orWhereIn($kolom, \App\Models\Company::query()
+                    ->where('parent_id', $u->company_id)->select('id'));
+            }
         });
     }
 }
