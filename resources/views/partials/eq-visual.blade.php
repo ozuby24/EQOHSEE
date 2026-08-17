@@ -490,6 +490,36 @@ main a{transition:color .16s}
 .eq-btn-lain:hover{border-color:#DC6E00;color:#F57C00}
 .eq-btn-blok{width:100%;margin-top:13px}
 
+/* ── Tombol keputusan ──
+   Setujui dan Tolak dulu digambar sebagai tautan teks kecil di antara
+   tautan teks kecil lainnya, sederet dengan "Tarik" dan "Hapus". Dua
+   akibatnya nyata: tombol yang paling sering dicari tidak terlihat, dan
+   tindakan yang tidak dapat dibatalkan berukuran sama dengan tindakan
+   biasa — sehingga yang menekannya tidak pernah merasa sedang
+   memutuskan apa pun.
+
+   Setujui berbentuk tombol padat, Tolak bergaris, sisanya tetap teks.
+   Urutan bobotnya karena itu terbaca dari bentuknya saja, sebelum satu
+   kata pun dibaca. */
+.eq-btn-setuju,.eq-btn-tolak{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:8px 16px;border-radius:10px;font-size:12px;font-weight:700;
+  transition:filter .18s,transform .18s cubic-bezier(.21,.6,.35,1),background-color .18s}
+.eq-btn-setuju{background:#16A34A;color:#fff;box-shadow:0 1px 2px rgba(22,163,74,.28)}
+.eq-btn-setuju:hover{filter:brightness(1.07)}
+.eq-btn-setuju:active{transform:scale(.97)}
+.eq-btn-tolak{background:#fff;color:#D92D20;border:1.5px solid rgba(217,45,32,.35)}
+.eq-btn-tolak:hover{background:#FEF3F2;border-color:#D92D20}
+.eq-btn-tolak:active{transform:scale(.97)}
+
+/* Tindakan sekunder: bentuknya tetap tombol supaya sasaran tekannya
+   cukup besar di layar sentuh, tetapi bobotnya jelas di bawah keduanya. */
+.eq-btn-mini{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:9px;
+  font-size:11.5px;font-weight:600;color:#5C6874;background:#F5F5F4;
+  transition:background-color .18s,color .18s}
+.eq-btn-mini:hover{background:#E7E5E4;color:#1B2024}
+.eq-btn-mini.bahaya{color:#B42318}
+.eq-btn-mini.bahaya:hover{background:#FEF3F2;color:#912018}
+
 /* ── Keadaan kosong ── */
 .eq-kosong{text-align:center;padding:34px 20px;color:var(--eq-redup,#7C8894);font-size:12.5px;line-height:1.7}
 .eq-kosong strong{color:var(--eq-judul,#0F1720);font-size:13.5px}
@@ -640,6 +670,17 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] .eq-bilah{background:#223238}
 :root[data-tema="gelap"] .eq-bulat{background:#1A272C;border-color:#26363C;color:#C4D2D7}
 :root[data-tema="gelap"] .eq-btn-lain{background:#1A272C;border-color:#26363C;color:#C4D2D7}
+
+/* Tolak berlatar putih pada mode terang; tanpa pasangan ini teksnya
+   diterangkan oleh --eq-judul dan berakhir nyaris putih di atas putih.
+   Setujui tidak perlu pasangan — latarnya warna padat yang sama di
+   kedua mode, dan itulah gunanya ia padat. */
+:root[data-tema="gelap"] .eq-btn-tolak{background:#241A1A;border-color:#5A2B27;color:#FF9B92}
+:root[data-tema="gelap"] .eq-btn-tolak:hover{background:#2E1F1F;border-color:#7A3B36}
+:root[data-tema="gelap"] .eq-btn-mini{background:#1A272C;color:#C4D2D7}
+:root[data-tema="gelap"] .eq-btn-mini:hover{background:#22333A;color:#E8F0F2}
+:root[data-tema="gelap"] .eq-btn-mini.bahaya{color:#FF9B92}
+:root[data-tema="gelap"] .eq-btn-mini.bahaya:hover{background:#2E1F1F}
 :root[data-tema="gelap"] input,
 :root[data-tema="gelap"] select,
 :root[data-tema="gelap"] textarea{background:#101A1E;border-color:#26363C;color:#D6DEE2}

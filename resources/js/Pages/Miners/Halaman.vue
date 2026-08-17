@@ -542,110 +542,224 @@ function hapus(jalur: string, apa: string) {
           </form>
         </section>
 
-        <!-- kartu masuk -->
-        <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
-          <h3 class="text-[14px] font-bold text-cam-ink mb-1">Kartu masuk tambang</h3>
-          <p class="text-[11px] text-stone-500 mb-3">
-            ID card, SIMPER, dan mine permit — masing-masing masa berlakunya sendiri.
-          </p>
-
-          <ul v-if="props.kartu?.length" class="divide-y divide-stone-100 mb-4">
-            <li v-for="k in props.kartu" :key="k.id" class="py-2.5">
-              <div class="flex items-center gap-2">
-                <span class="w-1.5 h-1.5 rounded-full shrink-0"
-                      :style="{ background: k.berlaku ? WARNA[k.keadaan] : KEADAAN.netral }"></span>
-                <span class="text-[12.5px] font-semibold text-cam-ink">{{ k.jenis }}</span>
-                <span class="text-[11px] text-stone-400 min-w-0 truncate">
-                  {{ k.nomor || '—' }}<span v-if="k.golongan"> · {{ k.golongan }}</span>
-                  <span v-if="k.sebabTerbit !== 'Terbit'"> · {{ k.sebabTerbit }}</span>
-                </span>
-                <span class="ml-auto text-[11.5px] font-semibold shrink-0"
-                      :style="{ color: k.berlaku ? WARNA[k.keadaan] : KEADAAN.netral }">
-                  {{ k.berlaku ? k.keterangan : k.statusLabel }}
-                </span>
-              </div>
-
-              <!-- Kartu yang belum disetujui BUKAN kartu; dikatakan, bukan
-                   dibiarkan tersirat dari warna abu-abu saja. -->
-              <p v-if="!k.berlaku" class="text-[11px] text-stone-500 mt-1 ml-3.5">
-                Belum berlaku di gerbang sampai disetujui.
-                <span v-if="k.alasanTolak" class="text-red-600">Ditolak: {{ k.alasanTolak }}</span>
-              </p>
-              <p v-if="k.syaratKurang?.length && k.dapatDiubah"
-                 class="text-[11px] text-amber-700 mt-1 ml-3.5">
-                Syarat belum lengkap: {{ k.syaratKurang.join(', ') }}.
-              </p>
-
-              <div v-if="k.status !== 'draf'" class="mt-2 ml-3.5">
-                <Rantai :rantai="k.rantai" :tertinggal="k.tertinggal"
-                        :dapat-paraf="k.dapatParaf" :saya-penentu="props.opsi?.sayaPenentu"
-                        @paraf="t => paraf(`/miners/${id}/kartu/${k.id}/paraf`, t)" />
-              </div>
-
-              <div class="flex flex-wrap items-center gap-2 mt-1.5 ml-3.5">
-                <button v-if="k.dapatDiubah && !k.syaratKurang?.length" type="button"
-                        class="text-[11px] font-semibold text-cam-lime-deep"
-                        @click="ajukanKartu(k.id)">Ajukan</button>
-                <button v-if="k.dapatDitinjau" type="button"
-                        class="text-[11px] font-semibold" :style="{ color: KEADAAN.baik }"
-                        @click="tinjau(`/miners/${id}/kartu/${k.id}/tinjau`, 'setujui')">Setujui</button>
-                <button v-if="k.dapatDitinjau" type="button"
-                        class="text-[11px] font-semibold text-red-600"
-                        @click="tinjau(`/miners/${id}/kartu/${k.id}/tinjau`, 'tolak')">Tolak</button>
-                <button v-if="k.status === 'diajukan'" type="button"
-                        class="text-[11px] text-stone-500"
-                        @click="tinjau(`/miners/${id}/kartu/${k.id}/tinjau`, 'tarik')">Tarik</button>
-
-                <!-- Sebab tombol Setujui tidak ada, DIKATAKAN. Menyembunyikan
-                     tombol tanpa keterangan membuat yang membacanya tidak
-                     dapat membedakan antara tidak berhak, sudah diputus, dan
-                     sistemnya rusak — dan dugaan yang paling sering diambil
-                     adalah yang ketiga. -->
-                <span v-if="!k.dapatDitinjau && k.sebabTakTinjau && k.status === 'diajukan'"
-                      class="text-[10.5px] text-stone-500 basis-full">
-                  {{ k.sebabTakTinjau }}
-                </span>
-                <button type="button" class="text-red-600 text-[11px] ml-auto"
-                        @click="hapus(`/miners/${id}/kartu/${k.id}`, k.jenis)">Hapus</button>
-              </div>
-            </li>
-          </ul>
-          <p v-else class="text-[12px] text-stone-400 py-3">Belum ada kartu tercatat.</p>
-
-          <form class="grid gap-2 md:grid-cols-3 pt-3 border-t border-stone-100" @submit.prevent="simpanKartu">
-            <select v-model="fKartu.jenis" class="rounded-lg border-stone-200 text-[12px]">
-              <option v-for="j in (props.opsi?.jenisKartu ?? [])" :key="j">{{ j }}</option>
-            </select>
-            <select v-model="fKartu.sebab_terbit" class="rounded-lg border-stone-200 text-[12px]">
-              <option v-for="s in (props.opsi?.sebabKartu ?? [])" :key="s">{{ s }}</option>
-            </select>
-            <input v-model="fKartu.nomor" placeholder="Nomor kartu" class="rounded-lg border-stone-200 text-[12px]">
-            <input v-model="fKartu.golongan" placeholder="Golongan kendaraan (Mine License)" class="rounded-lg border-stone-200 text-[12px]">
-            <input v-model="fKartu.tgl_terbit" type="date" title="Tanggal terbit" class="rounded-lg border-stone-200 text-[12px]">
-            <input v-model="fKartu.tgl_expired" type="date" title="Berlaku sampai" class="rounded-lg border-stone-200 text-[12px]">
-
-            <!-- Berkas syarat. Hanya Mine License yang menuntut SIM dan
-                 sertifikat mengemudi; medannya tetap tampil supaya tidak
-                 tersembunyi, tetapi keterangannya menyebut untuk siapa.
-
-                 Bukti induksi TIDAK lagi diminta di sini: penjaganya kini
-                 membaca catatan induksi yang sesungguhnya, bukan teks
-                 yang diketik ke dalam medan ini. -->
-            <input v-model="fKartu.berkas_induksi" placeholder="Lampiran bukti induksi (opsional)"
-                   class="rounded-lg border-stone-200 text-[12px]">
-            <input v-model="fKartu.sim_polisi" placeholder="No. SIM kepolisian (Mine License)"
-                   class="rounded-lg border-stone-200 text-[12px]">
-            <input v-model="fKartu.sim_polisi_expired" type="date" title="SIM kepolisian berlaku sampai"
-                   class="rounded-lg border-stone-200 text-[12px]">
-            <input v-model="fKartu.berkas_ddt" placeholder="Sertifikat defensive driving (Mine License)"
-                   class="rounded-lg border-stone-200 text-[12px]">
-            <input v-model="fKartu.email_atasan" type="email" placeholder="E-mail atasan"
-                   class="rounded-lg border-stone-200 text-[12px]">
-            <button class="eq-btn-utama" :disabled="fKartu.processing">Buat pengajuan</button>
-            <p v-if="fKartu.errors.kartu" class="text-[11px] text-red-600 md:col-span-3">{{ fKartu.errors.kartu }}</p>
-          </form>
-        </section>
       </div>
+
+      <!-- ══════════ KARTU MASUK TAMBANG ══════════
+           Dipindah ke lebar penuh, keluar dari kisi dua kolom. Isinya
+           tumbuh menjadi tiga hal sekaligus — daftar kartu, rantai
+           paraf, dan formulir bermedan sepuluh — dan memampatkan
+           ketiganya ke setengah lebar layar membuat setiap medan hanya
+           cukup menampilkan separuh keterangannya. Itulah sebab
+           "Golongan kendar", "No. SIM kepolisia", dan "Sertifikat
+           defensi" terpotong di tengah kata. -->
+      <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
+        <h3 class="text-[14px] font-bold text-cam-ink mb-1">Kartu masuk tambang</h3>
+        <p class="text-[11.5px] text-stone-500 mb-4">
+          <b>Mine Permit</b> adalah izin masuk area — terbit sesudah MCU dan induksi.
+          <b>Mine License</b> izin mengemudi di atasnya, hanya bagi yang membawa unit.
+          <b>Visitor</b> untuk tamu, tidak menuntut MCU.
+        </p>
+
+        <ul v-if="props.kartu?.length" class="space-y-3 mb-5">
+          <li v-for="k in props.kartu" :key="k.id"
+              class="rounded-xl border p-4"
+              :style="{ borderColor: k.berlaku ? '#D6E9DC' : '#E7E5E4',
+                        background: k.berlaku ? '#F7FCF9' : '#FAFAF9' }">
+
+            <!-- kepala: jenis, nomor, dan vonis masa berlakunya -->
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-[13px] font-bold text-cam-ink">
+                  {{ k.jenis }}
+                  <span v-if="k.nomor" class="text-[11.5px] font-normal text-stone-400">
+                    · {{ k.nomor }}
+                  </span>
+                </p>
+                <p class="text-[11.5px] text-stone-500 mt-0.5">
+                  {{ k.sebabTerbit }}
+                  <span v-if="k.golongan"> · golongan {{ k.golongan }}</span>
+                  <span v-if="k.area"> · {{ k.area }}</span>
+                  <span v-if="k.tglTerbit"> · terbit {{ k.tglTerbit }}</span>
+                </p>
+              </div>
+
+              <div class="text-right shrink-0">
+                <!-- Yang belum disetujui BELUM BERLAKU, jadi statusnya
+                     yang disebut — bukan sisa harinya. Menyebut "365 hari
+                     lagi" pada kartu yang belum terbit membuatnya terbaca
+                     sebagai kartu yang sah. -->
+                <p class="text-[12px] font-bold"
+                   :style="{ color: k.berlaku ? WARNA[k.keadaan] : KEADAAN.ingat }">
+                  {{ k.berlaku ? k.keterangan : k.statusLabel }}
+                </p>
+                <p v-if="k.berlaku" class="text-[10.5px] mt-0.5" :style="{ color: KEADAAN.baik }">
+                  berlaku di gerbang
+                </p>
+                <p v-else class="text-[10.5px] text-stone-500 mt-0.5">
+                  belum berlaku di gerbang
+                </p>
+              </div>
+            </div>
+
+            <p v-if="k.alasanTolak" class="text-[11.5px] text-red-600 mt-2">
+              Ditolak: {{ k.alasanTolak }}
+            </p>
+            <p v-if="k.syaratKurang?.length && k.dapatDiubah"
+               class="text-[11.5px] mt-2 rounded-lg px-2.5 py-2"
+               :style="{ color: '#92400E', background: '#FEF6E7' }">
+              <b>Belum dapat diajukan.</b> {{ k.syaratKurang.join(' ') }}
+            </p>
+
+            <div v-if="k.status !== 'draf'" class="mt-3">
+              <Rantai :rantai="k.rantai" :tertinggal="k.tertinggal"
+                      :dapat-paraf="k.dapatParaf" :saya-penentu="props.opsi?.sayaPenentu"
+                      @paraf="t => paraf(`/miners/${id}/kartu/${k.id}/paraf`, t)" />
+            </div>
+
+            <!-- Keputusan dipisahkan dari tindakan biasa oleh garis dan
+                 oleh bentuk tombolnya, bukan hanya oleh urutan. -->
+            <div class="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-stone-200/70">
+              <button v-if="k.dapatDiubah && !k.syaratKurang?.length" type="button"
+                      class="eq-btn-utama !flex-none" @click="ajukanKartu(k.id)">
+                Ajukan ke OHSE
+              </button>
+
+              <button v-if="k.dapatDitinjau" type="button" class="eq-btn-setuju"
+                      @click="tinjau(`/miners/${id}/kartu/${k.id}/tinjau`, 'setujui')">
+                Setujui &amp; terbitkan
+              </button>
+              <button v-if="k.dapatDitinjau" type="button" class="eq-btn-tolak"
+                      @click="tinjau(`/miners/${id}/kartu/${k.id}/tinjau`, 'tolak')">
+                Tolak
+              </button>
+
+              <a v-if="k.berlaku && k.jenis === 'Mine Permit'"
+                 :href="`/miners/${id}/kartu/${k.id}/cetak`" target="_blank"
+                 class="eq-btn-lain !py-2 !text-[12px]">Cetak</a>
+
+              <button v-if="k.status === 'diajukan'" type="button" class="eq-btn-mini"
+                      @click="tinjau(`/miners/${id}/kartu/${k.id}/tinjau`, 'tarik')">Tarik</button>
+              <button type="button" class="eq-btn-mini bahaya ml-auto"
+                      @click="hapus(`/miners/${id}/kartu/${k.id}`, k.jenis)">Hapus</button>
+
+              <!-- Sebab tombol Setujui tidak ada, DIKATAKAN. Menyembunyikan
+                   tombol tanpa keterangan membuat pembacanya tidak dapat
+                   membedakan antara tidak berhak, sudah diputus, dan
+                   sistemnya rusak — dan dugaan yang paling sering diambil
+                   adalah yang ketiga. -->
+              <p v-if="!k.dapatDitinjau && k.sebabTakTinjau && k.status === 'diajukan'"
+                 class="text-[11px] text-stone-500 basis-full mt-1">
+                {{ k.sebabTakTinjau }}
+              </p>
+            </div>
+          </li>
+        </ul>
+        <p v-else class="text-[12px] text-stone-400 py-4">Belum ada kartu tercatat.</p>
+
+        <!-- ── formulir pengajuan ──
+             BERLABEL, bukan berplaceholder. Placeholder hilang begitu
+             diketik dan terpotong begitu kolomnya sempit — dua sifat
+             yang membuat sepuluh kotak kosong berjajar tidak dapat
+             dibedakan satu sama lain.
+
+             Medan syarat pengemudi hanya muncul untuk Mine License.
+             Medan yang selalu tampil tetapi jarang berlaku dilewati
+             mata; yang muncul justru saat dibutuhkan tidak. -->
+        <form class="pt-4 border-t border-stone-100" @submit.prevent="simpanKartu">
+          <p class="text-[12px] font-bold text-cam-ink mb-3">Buat pengajuan kartu baru</p>
+
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <label class="text-[11px] font-semibold text-stone-600">
+              Jenis kartu
+              <select v-model="fKartu.jenis" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                <option v-for="j in (props.opsi?.jenisKartu ?? [])" :key="j">{{ j }}</option>
+              </select>
+            </label>
+
+            <label class="text-[11px] font-semibold text-stone-600">
+              Sebab penerbitan
+              <select v-model="fKartu.sebab_terbit" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                <option v-for="s in (props.opsi?.sebabKartu ?? [])" :key="s">{{ s }}</option>
+              </select>
+            </label>
+
+            <label class="text-[11px] font-semibold text-stone-600">
+              Nomor kartu
+              <input v-model="fKartu.nomor" placeholder="mis. MP/0007"
+                     class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+            </label>
+
+            <label class="text-[11px] font-semibold text-stone-600">
+              Area berlaku
+              <input v-model="fKartu.area" placeholder="mis. Seluruh area tambang"
+                     class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+            </label>
+
+            <label class="text-[11px] font-semibold text-stone-600">
+              Tanggal terbit
+              <input v-model="fKartu.tgl_terbit" type="date"
+                     class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+            </label>
+
+            <label class="text-[11px] font-semibold text-stone-600">
+              Berlaku sampai
+              <input v-model="fKartu.tgl_expired" type="date"
+                     class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+            </label>
+
+            <label class="text-[11px] font-semibold text-stone-600 sm:col-span-2">
+              Lampiran bukti induksi <span class="font-normal text-stone-400">— opsional</span>
+              <input v-model="fKartu.berkas_induksi" placeholder="jalur berkas"
+                     class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+            </label>
+          </div>
+
+          <!-- syarat khusus pengemudi -->
+          <div v-if="fKartu.jenis === 'Mine License'"
+               class="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-4">
+            <p class="text-[11.5px] font-bold text-cam-ink mb-1">Syarat pengemudi</p>
+            <p class="text-[11px] text-stone-500 mb-3">
+              Wajib untuk Mine License. Mine Permit yang masih berlaku juga harus sudah terbit.
+            </p>
+
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <label class="text-[11px] font-semibold text-stone-600">
+                Golongan kendaraan
+                <input v-model="fKartu.golongan" placeholder="mis. LV, Alat Berat, A2B"
+                       class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+              </label>
+              <label class="text-[11px] font-semibold text-stone-600">
+                No. SIM kepolisian
+                <input v-model="fKartu.sim_polisi" placeholder="mis. SIM B2 Umum"
+                       class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+              </label>
+              <label class="text-[11px] font-semibold text-stone-600">
+                SIM berlaku sampai
+                <input v-model="fKartu.sim_polisi_expired" type="date"
+                       class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+              </label>
+              <label class="text-[11px] font-semibold text-stone-600">
+                Sertifikat defensive driving
+                <input v-model="fKartu.berkas_ddt" placeholder="jalur berkas"
+                       class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+              </label>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3 mt-4">
+            <label class="text-[11px] font-semibold text-stone-600 flex-1 min-w-[220px]">
+              E-mail atasan <span class="font-normal text-stone-400">— untuk pemberitahuan</span>
+              <input v-model="fKartu.email_atasan" type="email" placeholder="nama@perusahaan.co.id"
+                     class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+            </label>
+            <button class="eq-btn-utama !flex-none self-end" :disabled="fKartu.processing">
+              Buat pengajuan
+            </button>
+          </div>
+
+          <p v-if="fKartu.errors.kartu" class="text-[11.5px] text-red-600 mt-2">{{ fKartu.errors.kartu }}</p>
+        </form>
+      </section>
 
       <!-- induksi -->
       <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
