@@ -58,10 +58,29 @@ class SmkpAudit extends Model
     /* ---------- tahapan ---------- */
 
     /** Tim audit yang ditugaskan; dipakai Tahap I maupun Rencana Audit. */
+    /**
+     * Tim auditor yang ditugaskan.
+     *
+     * Sumbernya PEMBAGIAN TUGAS pada Rencana Audit — di sanalah auditor
+     * benar-benar diisi, lengkap dengan peran, nomor registrasi, dan elemen
+     * yang menjadi lingkupnya.
+     *
+     * Kolom `auditor` tetap dibaca sebagai cadangan, tetapi tidak pernah ada
+     * satu pun formulir yang menulisinya. Selama ini tim() membaca kolom itu
+     * saja, sehingga ia selalu kosong dan ringkasan audit melaporkan "0
+     * auditor ditugaskan" pada audit yang timnya sudah lengkap — angka yang
+     * salah tanpa pernah menimbulkan galat.
+     *
+     * @return list<array{nama:string,peran?:string,registrasi?:string,lingkup?:string}>
+     */
     public function tim(): array
     {
+        $sumber = (array) ($this->rencana['tugas'] ?? []);
+
+        if ($sumber === []) $sumber = (array) ($this->auditor ?? []);
+
         return array_values(array_filter(
-            (array) ($this->auditor ?? []),
+            $sumber,
             fn ($a) => trim((string) ($a['nama'] ?? '')) !== ''
         ));
     }

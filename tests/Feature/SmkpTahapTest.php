@@ -403,6 +403,68 @@ class SmkpTahapTest extends TestCase
         }
     }
 
+    /* ---------- hari kerja audit sampai ke Laporan Audit ---------- */
+
+    public function test_laporan_audit_membawa_dasar_hari_kerja_dan_tim(): void
+    {
+        $this->masuk();
+        $a = $this->audit([
+            'permulaan' => ['jumlah_pekerja' => 460, 'kelas_risiko' => 'Tinggi', 'jumlah_auditor' => 2],
+            'rencana'   => ['tugas' => [
+                ['nama' => 'Ir. Bambang', 'peran' => 'Ketua Tim', 'registrasi' => 'DBT-001', 'lingkup' => 'I, II'],
+                ['nama' => 'Sdri. Rina',  'peran' => 'Auditor',   'registrasi' => 'DBT-002', 'lingkup' => 'III'],
+            ]],
+        ]);
+
+        $props = $this->get(route('smkp.laporan', $a))->assertOk()->viewData('page')['props'];
+
+        /* Pertanyaan pertama atas sebuah nilai audit adalah berapa lama
+           audit itu berjalan dan oleh berapa orang. Tanpa keterangan itu,
+           skor dari kunjungan setengah hari terbaca sama saja dengan skor
+           dari audit dua minggu — dan laporan inilah yang dibaca inspektur
+           tambang. */
+        $this->assertSame(16, $props['mandays']['total']);
+        $this->assertSame(8.0, $props['mandays']['durasi']);
+        $this->assertSame(['auditor', 'tanggal', 'susunan'], array_column($props['selaras'], 'kunci'));
+        $this->assertSame(['Ir. Bambang', 'Sdri. Rina'], array_column($props['tim'], 'nama'));
+        $this->assertSame('DBT-001', $props['tim'][0]['registrasi']);
+    }
+
+    public function test_lembar_laporan_bertambah_satu_untuk_pelaksanaan_audit(): void
+    {
+        $this->masuk();
+        $a = $this->audit();
+
+        /* Ringkasan nilai, pelaksanaan, lalu daftar temuan. Bila jumlah
+           lembar tidak ikut bertambah, penomoran "Halaman 2 dari 2" pada
+           berkas terkendali menyebut lembar yang tidak ada. */
+        $props = $this->get(route('smkp.laporan', $a))->assertOk()->viewData('page')['props'];
+
+        $this->assertSame(3, $props['totalLembar'], 'Dua lembar tetap plus satu lembar temuan.');
+    }
+
+    public function test_tim_auditor_dibaca_dari_pembagian_tugas_rencana(): void
+    {
+        $a = $this->audit(['rencana' => ['tugas' => [
+            ['nama' => 'Ir. Bambang', 'peran' => 'Ketua Tim'],
+            ['nama' => '',            'peran' => 'Baris kosong'],
+        ]]]);
+
+        /* Kolom `auditor` fillable tetapi tidak pernah ditulisi satu pun
+           formulir. Selama tim() hanya membacanya, ringkasan audit
+           melaporkan "0 auditor ditugaskan" pada audit yang timnya sudah
+           lengkap — angka yang salah tanpa pernah menimbulkan galat. */
+        $this->assertSame(['Ir. Bambang'], array_column($a->tim(), 'nama'));
+        $this->assertStringStartsWith('1 auditor', $a->statusAlur()['kontak']['ket']);
+    }
+
+    public function test_kolom_auditor_lama_tetap_terbaca_bila_pembagian_tugas_kosong(): void
+    {
+        $a = $this->audit(['auditor' => [['nama' => 'Auditor Lama']]]);
+
+        $this->assertSame(['Auditor Lama'], array_column($a->tim(), 'nama'));
+    }
+
     public function test_menyimpan_tahap_satu_mencatat_faktor_yang_tidak_dicentang(): void
     {
         // Kotak yang tidak dicentang tidak terkirim; jawabannya tetap harus

@@ -936,11 +936,28 @@ class SmkpController extends Controller
     {
         return Inertia::render('Print/Smkp', [
             'mode'   => 'laporan',
-            'totalLembar' => 1 + max(1, (int) ceil($smkp->findings()->count() / 6)),
+
+            /* Dua lembar tetap sebelum daftar temuan: ringkasan nilai, lalu
+               pelaksanaan audit beserta tim auditornya. Pelaksanaan diberi
+               lembarnya sendiri karena tabel dasar hari kerja dan tabel tim
+               bersama-sama tidak muat di bawah rekapitulasi elemen, dan
+               tabel yang terpotong di tengah halaman cetak tidak dapat
+               dibaca sebagai satu keterangan. */
+            'totalLembar' => 2 + max(1, (int) ceil($smkp->findings()->count() / 6)),
             'audit'  => $smkp,
             'rekap'  => $smkp->rekap(),
             'elemen' => Smkp::elemen(),
             'temuan' => $smkp->findings()->orderByRaw(Smkp::urutJenisSql())->get(),
+
+            /* Dasar hari kerja ikut ke laporan, bukan berhenti di Berita
+               Acara Tahap I. Laporan inilah yang dibaca inspektur tambang,
+               dan pertanyaan pertama atas sebuah nilai audit adalah berapa
+               lama audit itu berjalan dan oleh berapa orang — tanpa itu,
+               skor 82% dari kunjungan setengah hari terbaca sama saja
+               dengan 82% dari audit dua minggu. */
+            'mandays'  => $smkp->mandays(),
+            'selaras'  => $smkp->selarasRencana(),
+            'tim'      => $smkp->tim(),
             'meta'   => Smkp::meta(),
             'dok'    => $this->kop($smkp, 'laporan-audit'),
             'kembali'=> route('smkp.show', $smkp),

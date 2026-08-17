@@ -241,7 +241,12 @@ class DokumenKopTest extends TestCase
         $this->masuk($c);
         $a = $this->audit($c);
 
-        $this->get(route('smkp.laporan', $a))->assertOk()->assertInertia(fn (AssertableInertia $p) => $p->where('totalLembar', 2));
+        /* DUA lembar tetap — ringkasan nilai lalu pelaksanaan audit dan tim
+           auditornya — sebelum daftar temuan mulai berlembar sendiri tiap
+           enam baris. Yang dijaga uji ini pertumbuhannya, bukan angka
+           tetapnya: penomoran "Halaman 2 dari 2" pada berkas terkendali
+           tidak boleh menyebut lembar yang tidak ada. */
+        $this->get(route('smkp.laporan', $a))->assertOk()->assertInertia(fn (AssertableInertia $p) => $p->where('totalLembar', 3));
 
         for ($i = 1; $i <= 8; $i++) {
             $a->findings()->create([
@@ -250,7 +255,7 @@ class DokumenKopTest extends TestCase
             ]);
         }
 
-        $this->get(route('smkp.laporan', $a))->assertOk()->assertInertia(fn (AssertableInertia $p) => $p->where('totalLembar', 3));
+        $this->get(route('smkp.laporan', $a))->assertOk()->assertInertia(fn (AssertableInertia $p) => $p->where('totalLembar', 4));
     }
 
     public function test_lembar_terakhir_tidak_memaksa_halaman_baru(): void

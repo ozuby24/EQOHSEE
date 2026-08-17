@@ -17,6 +17,7 @@ const props = defineProps<{
   faktor?: Record<string, string>;
   pengurang?: Record<string, string>;
   selaras?: Array<{ kunci: string; judul: string; selaras: boolean; ket: string }>;
+  tim?: Array<Record<string, any>>;
   kinerja?: Record<string, any>;
   komponen?: Record<string, any>;
   pengesah?: Record<string, any>;
@@ -171,7 +172,71 @@ const total = computed(() => props.totalLembar || (
 
     <template v-if="props.mode === 'hadir'"><section v-for="(bagian, page) in pages" :key="page" class="lembar bg-white rounded-2xl border border-stone-100 p-6 print:border-0 print:rounded-none print:p-0" :class="Number(page) < pages.length - 1 ? 'lembar-putus' : ''"><DocHeader :dok="props.dok" :title="title" :halaman="nomor(page)" :dari="pages.length" /><h1 v-if="Number(page) === 0" class="text-center font-bold text-[16px] uppercase border-b border-stone-200 pb-4 mb-5">Daftar Hadir {{ props.judul }}</h1><table class="w-full text-[11.5px]"><thead><tr class="bg-stone-100 text-left"><th class="p-2">No</th><th class="p-2">Nama</th><th class="p-2">Jabatan</th><th class="p-2">Perusahaan</th><th class="p-2">Tanda Tangan</th></tr></thead><tbody><tr v-for="(person, index) in bagian" :key="person.id" class="border-b border-stone-100"><td class="p-2">{{ Number(page) * 16 + Number(index) + 1 }}</td><td class="p-2 font-semibold">{{ person.nama }}</td><td class="p-2">{{ person.jabatan || '-' }}</td><td class="p-2">{{ person.perusahaan || '-' }}</td><td class="p-2"><div class="h-7 border-b border-dashed border-stone-300"></div></td></tr><tr v-if="!bagian.length"><td colspan="5" class="p-8 text-center text-stone-400">Belum ada peserta tercatat.</td></tr></tbody></table></section></template>
 
-    <template v-if="props.mode === 'laporan'"><section class="lembar bg-white rounded-2xl border border-stone-100 p-6 print:border-0 print:rounded-none print:p-0 lembar-putus"><DocHeader :dok="props.dok" :title="title" :halaman="1" :dari="total" /><h1 class="text-center font-bold text-[17px] uppercase border-b border-stone-200 pb-4 mb-5">Laporan Audit Internal SMKP</h1><p class="text-center text-[11px] text-stone-500">{{ props.meta?.basis || 'Sistem Manajemen Keselamatan Pertambangan' }}</p><InfoAudit :audit="props.audit" /><div class="rounded-xl border border-stone-200 p-4 flex justify-between my-5"><span>Nilai akhir<br><b class="text-2xl">{{ props.rekap?.skor ?? 0 }}</b></span><span class="text-right">Tingkat penerapan<br><b>{{ props.rekap?.tingkat?.label || '-' }}</b></span></div><h3 class="font-bold text-[13px] mb-2">Rekapitulasi per Elemen</h3><table class="w-full text-[11px]"><thead><tr class="bg-stone-100 text-left"><th class="p-2">Elemen</th><th class="p-2">Bobot</th><th class="p-2">Dinilai</th><th class="p-2">Capaian</th><th class="p-2">Nilai</th></tr></thead><tbody><tr v-for="element in props.elemen || []" :key="element.kode" class="border-b border-stone-100"><td class="p-2">{{ element.kode }}. {{ element.nama }}</td><td class="p-2">{{ props.rekap?.elemen?.[element.kode]?.bobot }}</td><td class="p-2">{{ props.rekap?.elemen?.[element.kode]?.dinilai }}/{{ props.rekap?.elemen?.[element.kode]?.berlaku }}</td><td class="p-2">{{ props.rekap?.elemen?.[element.kode]?.capaian }}</td><td class="p-2 font-bold">{{ props.rekap?.elemen?.[element.kode]?.skor }}</td></tr></tbody></table></section><section v-for="(bagian, page) in pages" :key="`temuan-${page}`" class="lembar bg-white rounded-2xl border border-stone-100 p-6 print:border-0 print:rounded-none print:p-0" :class="Number(page) < pages.length - 1 ? 'lembar-putus' : ''"><DocHeader :dok="props.dok" title="Daftar Temuan" :halaman="Number(page) + 2" :dari="total" /><h3 class="font-bold text-[13px] mb-3">Daftar Temuan ({{ props.temuan?.length || 0 }})</h3><article v-for="finding in bagian" :key="finding.id" class="border border-stone-200 rounded-xl p-3 mb-2"><div class="flex gap-2 text-[10px] font-bold"><span>{{ finding.kode_kriteria }}</span><span>{{ finding.jenis }}</span><span>{{ finding.status }}</span></div><p class="text-[12px] mt-1">{{ finding.uraian }}</p><p v-if="finding.akar_masalah" class="text-[11px] text-stone-500">Akar masalah: {{ finding.akar_masalah }}</p><p v-if="finding.tindakan" class="text-[11px] text-stone-500">Tindakan: {{ finding.tindakan }}</p></article></section></template>
+    <template v-if="props.mode === 'laporan'"><section class="lembar bg-white rounded-2xl border border-stone-100 p-6 print:border-0 print:rounded-none print:p-0 lembar-putus"><DocHeader :dok="props.dok" :title="title" :halaman="1" :dari="total" /><h1 class="text-center font-bold text-[17px] uppercase border-b border-stone-200 pb-4 mb-5">Laporan Audit Internal SMKP</h1><p class="text-center text-[11px] text-stone-500">{{ props.meta?.basis || 'Sistem Manajemen Keselamatan Pertambangan' }}</p><InfoAudit :audit="props.audit" /><div class="rounded-xl border border-stone-200 p-4 flex justify-between my-5"><span>Nilai akhir<br><b class="text-2xl">{{ props.rekap?.skor ?? 0 }}</b></span><span class="text-right">Tingkat penerapan<br><b>{{ props.rekap?.tingkat?.label || '-' }}</b></span></div><h3 class="font-bold text-[13px] mb-2">Rekapitulasi per Elemen</h3><table class="w-full text-[11px]"><thead><tr class="bg-stone-100 text-left"><th class="p-2">Elemen</th><th class="p-2">Bobot</th><th class="p-2">Dinilai</th><th class="p-2">Capaian</th><th class="p-2">Nilai</th></tr></thead><tbody><tr v-for="element in props.elemen || []" :key="element.kode" class="border-b border-stone-100"><td class="p-2">{{ element.kode }}. {{ element.nama }}</td><td class="p-2">{{ props.rekap?.elemen?.[element.kode]?.bobot }}</td><td class="p-2">{{ props.rekap?.elemen?.[element.kode]?.dinilai }}/{{ props.rekap?.elemen?.[element.kode]?.berlaku }}</td><td class="p-2">{{ props.rekap?.elemen?.[element.kode]?.capaian }}</td><td class="p-2 font-bold">{{ props.rekap?.elemen?.[element.kode]?.skor }}</td></tr></tbody></table></section>
+
+      <!-- Lembar tersendiri: pelaksanaan audit dan tim auditornya.
+           Pertanyaan pertama atas sebuah nilai audit adalah berapa lama
+           audit itu berjalan dan oleh berapa orang. Tanpa keterangan itu,
+           skor 82% dari kunjungan setengah hari terbaca sama saja dengan
+           82% dari audit dua minggu — dan laporan inilah yang dibaca
+           inspektur tambang. -->
+      <section class="lembar bg-white rounded-2xl border border-stone-100 p-6 print:border-0 print:rounded-none print:p-0 lembar-putus">
+        <DocHeader :dok="props.dok" title="Pelaksanaan Audit" :halaman="2" :dari="total" />
+        <h3 class="font-bold text-[13px] mb-2">Pelaksanaan Audit</h3>
+        <p class="text-[12px] text-stone-600 mb-3">
+          Audit dilaksanakan {{ tanggal(rencana.tanggal_mulai || props.audit?.tanggal_mulai) }} —
+          {{ tanggal(rencana.tanggal_selesai || props.audit?.tanggal_selesai) }}.
+        </p>
+        <table class="w-full text-[11.5px] mb-5"><tbody>
+          <tr v-for="baris in [
+                ['Jumlah tenaga kerja auditi', `${props.mandays?.pekerja ?? '-'} orang`],
+                ['Kelas risiko', props.mandays?.kelas ?? '-'],
+                ['Mandays dasar (tabel)', `${props.mandays?.dasar ?? '-'} hari`],
+                ['Faktor penyesuaian', `+${props.mandays?.penambah ?? 0} / −${props.mandays?.pengurang ?? 0} hari`],
+                ['Total mandays', `${props.mandays?.total ?? '-'} orang-hari`],
+                ['Jumlah auditor', `${props.mandays?.auditor ?? '-'} orang`],
+                ['Durasi audit di lapangan', `${props.mandays?.durasi ?? '-'} hari`],
+                ['Alokasi Tahap I', `${props.mandays?.tahap1 ?? '-'} hari`],
+                ['Alokasi Tahap II', `${props.mandays?.tahap2 ?? '-'} hari`],
+              ]" :key="baris[0]" class="border-b border-stone-100">
+            <td class="p-2 text-stone-500 w-64">{{ baris[0] }}</td>
+            <td class="p-2 font-semibold">{{ baris[1] }}</td>
+          </tr>
+        </tbody></table>
+
+        <!-- Selisih antara yang dialokasikan dan yang dijadwalkan ikut
+             tercatat pada laporan, bukan hanya pada rencana. Ia menyangkut
+             kecukupan sampel, dan pembaca laporan berhak menimbangnya
+             sendiri terhadap nilai yang tertera di lembar sebelumnya. -->
+        <div v-if="(props.selaras || []).some((c) => !c.selaras)" class="mb-5">
+          <h4 class="font-bold text-[12px] mb-1">Catatan pelaksanaan</h4>
+          <p v-for="c in (props.selaras || []).filter((c) => !c.selaras)" :key="c.kunci"
+             class="text-[11px] text-stone-600 leading-relaxed">
+            {{ c.judul }}: {{ c.ket }}
+          </p>
+        </div>
+
+        <!-- Nama dan nomor registrasi auditor adalah bagian dari bukti
+             audit, bukan pelengkap: laporan tanpa keduanya tidak dapat
+             ditelusuri siapa yang menilai elemen mana. -->
+        <h3 class="font-bold text-[13px] mb-2">Tim Auditor</h3>
+        <table class="w-full text-[11.5px]"><thead><tr class="bg-stone-100 text-left"><th class="p-2 w-10">No</th><th class="p-2">Nama</th><th class="p-2">Peran</th><th class="p-2">No. Registrasi</th><th class="p-2">Lingkup Elemen</th></tr></thead><tbody>
+          <tr v-for="(row, index) in props.tim || []" :key="index" class="border-b border-stone-100">
+            <td class="p-2">{{ nomor(index) }}</td>
+            <td class="p-2 font-semibold">{{ row.nama }}</td>
+            <td class="p-2">{{ row.peran || '-' }}</td>
+            <td class="p-2">{{ row.registrasi || '-' }}</td>
+            <td class="p-2">{{ row.lingkup || '-' }}</td>
+          </tr>
+          <tr v-if="!(props.tim || []).length">
+            <td colspan="5" class="p-6 text-center text-stone-400">
+              Pembagian tugas tim auditor belum diisi pada Rencana Audit.
+            </td>
+          </tr>
+        </tbody></table>
+      </section>
+
+      <section v-for="(bagian, page) in pages" :key="`temuan-${page}`" class="lembar bg-white rounded-2xl border border-stone-100 p-6 print:border-0 print:rounded-none print:p-0" :class="Number(page) < pages.length - 1 ? 'lembar-putus' : ''"><DocHeader :dok="props.dok" title="Daftar Temuan" :halaman="Number(page) + 3" :dari="total" /><h3 class="font-bold text-[13px] mb-3">Daftar Temuan ({{ props.temuan?.length || 0 }})</h3><article v-for="finding in bagian" :key="finding.id" class="border border-stone-200 rounded-xl p-3 mb-2"><div class="flex gap-2 text-[10px] font-bold"><span>{{ finding.kode_kriteria }}</span><span>{{ finding.jenis }}</span><span>{{ finding.status }}</span></div><p class="text-[12px] mt-1">{{ finding.uraian }}</p><p v-if="finding.akar_masalah" class="text-[11px] text-stone-500">Akar masalah: {{ finding.akar_masalah }}</p><p v-if="finding.tindakan" class="text-[11px] text-stone-500">Tindakan: {{ finding.tindakan }}</p></article></section></template>
   </PrintShell>
 </template>
 
