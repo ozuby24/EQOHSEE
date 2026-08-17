@@ -179,11 +179,19 @@ class SmkpTest extends TestCase
 
     public function test_kategori_diturunkan_dari_nilai(): void
     {
-        // Formulir kriteria: "KATEGORI TEMUAN (Berdasarkan Nilai)".
+        /* Formulir kriteria: "KATEGORI TEMUAN (Berdasarkan Nilai)".
+           Ambang mayor ditetapkan pemilik sistem pada 30%, bukan 50% seperti
+           pada lampiran — tercatat di meta.ambang_kategori berkas acuan.
+           Angkanya diambil dari berkas itu, tidak ditulis ulang di sini,
+           supaya uji ini ikut berubah bila ambangnya dikembalikan. */
+        $mayorMin = (float) collect(Smkp::kategori())->firstWhere('kode', 'minor')['min'];
+        $this->assertSame(30.0, $mayorMin, 'Ambang mayor berubah tanpa disengaja.');
+
         $this->assertSame('Kesesuaian',            Smkp::kategoriDari(1.00)['label']);
         $this->assertSame('Ketidaksesuaian Minor', Smkp::kategoriDari(0.99)['label']);
         $this->assertSame('Ketidaksesuaian Minor', Smkp::kategoriDari(0.50)['label']);
-        $this->assertSame('Ketidaksesuaian Mayor', Smkp::kategoriDari(0.49)['label']);
+        $this->assertSame('Ketidaksesuaian Minor', Smkp::kategoriDari($mayorMin / 100)['label']);
+        $this->assertSame('Ketidaksesuaian Mayor', Smkp::kategoriDari(($mayorMin - 1) / 100)['label']);
         $this->assertSame('Ketidaksesuaian Mayor', Smkp::kategoriDari(0.00)['label']);
     }
 
@@ -209,23 +217,78 @@ class SmkpTest extends TestCase
         $this->assertNotContains('I.4', $kode, 'Yang belum dinilai belum jadi temuan.');
     }
 
-    public function test_temuan_terurut_dari_yang_terberat(): void
+    public function test_temuan_terurut_menurut_urutan_kriteria(): void
     {
         $h = ['I.1'=>['v'=>2], 'I.2'=>['v'=>0]];   // Minor lalu Mayor
-        $t = Smkp::temuan($h);
 
-        $this->assertSame('mayor', $t[0]['jenis'], 'Mayor harus di atas Minor.');
+        /* Urutan berkas, bukan urutan berat. Nomor NC diturunkan dari
+           urutan ini dan disebut dalam rapat penutupan; menomori menurut
+           berat memindahkan nomor setiap kali satu nilai berubah, sehingga
+           "temuan nomor 3" pada risalah menunjuk temuan lain minggu depan. */
+        $this->assertSame(['I.1', 'I.2'], array_column(Smkp::temuan($h), 'kode'));
     }
 
-    public function test_penomoran_berjalan_terpisah_per_jenis(): void
+    public function test_mayor_sub_elemen_berincian_melekat_pada_induknya(): void
     {
-        // Dokumen audit memakai NC-MYR-01.. dan NC-MNR-01.. sebagai dua
-        // urutan terpisah, bukan satu urutan gabungan.
-        $h = ['I.1'=>['v'=>0], 'I.2'=>['v'=>0], 'I.4'=>['v'=>2]];
-        $t = Smkp::beriNomor(Smkp::temuan($h));
+        // III.2 punya tiga rincian bermaksimum 4. Agregat 1/12 = 8% → mayor.
+        $t = Smkp::temuan(['III.2.1'=>['v'=>1], 'III.2.2'=>['v'=>0], 'III.2.3'=>['v'=>0]]);
 
-        $nomor = array_column($t, 'nomor');
-        $this->assertSame(['NC-MYR-01','NC-MYR-02','NC-MNR-01'], $nomor);
+        /* Satu kegagalan sub-elemen dinyatakan sekali, pada sub-elemennya.
+           Memecahnya jadi tiga mayor per rincian melipatgandakan kegagalan
+           yang sama dan membuat rekapitulasi terbaca lebih buruk daripada
+           keadaannya. */
+        $this->assertSame([['III.2', 'mayor']], array_map(
+            fn ($x) => [$x['kode'], $x['jenis']], $t));
+    }
+
+    public function test_rincian_yang_tertinggal_jadi_minor_sendiri_bila_induknya_berjalan(): void
+    {
+        // Agregat 10/12 = 83% → induknya berjalan; dua rincian belum penuh.
+        $t = Smkp::temuan(['III.2.1'=>['v'=>4], 'III.2.2'=>['v'=>3], 'III.2.3'=>['v'=>3]]);
+
+        /* Masing-masing perlu tindakan perbaikannya sendiri, jadi
+           masing-masing jadi temuan sendiri. */
+        $this->assertSame([['III.2.2', 'minor'], ['III.2.3', 'minor']], array_map(
+            fn ($x) => [$x['kode'], $x['jenis']], $t));
+
+        $this->assertSame('III.2 Penunjukan KTT/Kepala Tambang', $t[0]['induk'],
+            'Rincian harus menyebut sub-elemen induknya di lembar rekapitulasi.');
+    }
+
+    public function test_rincian_bernilai_nol_tetap_minor_bila_agregat_induknya_sehat(): void
+    {
+        // Agregat 8/12 = 67% → induknya berjalan meski satu rincian nol.
+        $t = Smkp::temuan(['III.2.1'=>['v'=>4], 'III.2.2'=>['v'=>4], 'III.2.3'=>['v'=>0]]);
+
+        /* Mayor adalah pernyataan tentang SUB-ELEMEN, bukan tentang satu
+           butir. Butir nol di dalam sub-elemen yang berjalan tetap minor. */
+        $this->assertSame([['III.2.3', 'minor']], array_map(
+            fn ($x) => [$x['kode'], $x['jenis']], $t));
+
+        /* Labelnya harus ikut jenisnya. Dihitung ulang dari capaian butir
+           — yang di sini nol — barisnya akan berbunyi "minor" pada kolom
+           jenis dan "Ketidaksesuaian Mayor" pada kolom label. */
+        $this->assertSame('Ketidaksesuaian Minor', $t[0]['label']);
+    }
+
+    public function test_penomoran_membawa_urutan_berjalan_dan_kode_per_jenis(): void
+    {
+        $h = ['I.1'=>['v'=>0], 'I.2'=>['v'=>0], 'I.4'=>['v'=>2]];
+        $t = Smkp::beriNomor(Smkp::temuan($h), 'CAM');
+
+        /* NC-xx satu urutan berjalan — itu yang disebut dalam rapat.
+           {kode perusahaan}-MAY/MIN-xx urutan terpisah per jenis — itu yang
+           dipakai dalam surat-menyurat antar-perusahaan, tempat "NC-01"
+           saja tidak cukup menunjuk temuan siapa. */
+        $this->assertSame(['NC-01','NC-02','NC-03'], array_column($t, 'nomor'));
+        $this->assertSame(['CAM-MAY-01','CAM-MAY-02','CAM-MIN-01'], array_column($t, 'kode_nc'));
+    }
+
+    public function test_kode_nc_jatuh_ke_awalan_bawaan_bila_perusahaan_tak_berkode(): void
+    {
+        $t = Smkp::beriNomor(Smkp::temuan(['I.1'=>['v'=>0]]), '');
+
+        $this->assertSame('NC-MAY-01', $t[0]['kode_nc']);
     }
 
     public function test_hitung_temuan_per_jenis(): void

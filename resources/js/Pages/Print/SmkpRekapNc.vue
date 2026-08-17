@@ -105,7 +105,10 @@ const tanggal = (v: unknown) =>
       <table class="w-full text-[10.5px] border border-stone-300">
         <thead>
           <tr class="bg-stone-100 text-left">
-            <th class="p-1.5 border-b border-stone-300 w-10">No</th>
+            <th class="p-1.5 border-b border-stone-300 w-12">No</th>
+            <!-- Kode NC dipakai dalam surat-menyurat antar-perusahaan;
+                 "temuan nomor 3" saja tidak cukup menunjuk temuan siapa. -->
+            <th class="p-1.5 border-b border-stone-300 w-24">Kode NC</th>
             <th class="p-1.5 border-b border-stone-300 w-16">Kriteria</th>
             <th class="p-1.5 border-b border-stone-300 w-16">Jenis</th>
             <th class="p-1.5 border-b border-stone-300">Uraian</th>
@@ -114,14 +117,15 @@ const tanggal = (v: unknown) =>
         </thead>
         <tbody>
           <tr v-for="t in props.temuan" :key="t.id" class="border-b border-stone-100 align-top">
-            <td class="p-1.5">{{ t.urut }}</td>
+            <td class="p-1.5">{{ t.nomor }}</td>
+            <td class="p-1.5 font-semibold">{{ t.kode_nc }}</td>
             <td class="p-1.5 font-semibold">{{ t.kode_kriteria }}</td>
             <td class="p-1.5 uppercase">{{ t.jenis }}</td>
             <td class="p-1.5">{{ t.uraian }}</td>
             <td class="p-1.5">{{ t.status }}</td>
           </tr>
           <tr v-if="!props.temuan?.length">
-            <td colspan="5" class="p-8 text-center text-stone-400">
+            <td colspan="6" class="p-8 text-center text-stone-400">
               Tidak ada ketidaksesuaian tercatat pada periode ini.
             </td>
           </tr>

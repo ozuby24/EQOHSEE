@@ -597,8 +597,14 @@ class SmkpTahapTest extends TestCase
         $kategori = array_column($props['kategori'], 'ket');
         $ambang = array_column($props['tingkat'], 'min');
 
-        $this->assertContains('Capaian 50% sampai kurang dari 100%.', $kategori);
-        $this->assertContains('Capaian kurang dari 50%.', $kategori);
+        $this->assertContains(
+            collect(\App\Support\Smkp::kategori())->firstWhere('kode', 'minor')['ket'],
+            $kategori,
+        );
+        $this->assertContains(
+            collect(\App\Support\Smkp::kategori())->firstWhere('kode', 'mayor')['ket'],
+            $kategori,
+        );
         $this->assertSame([85, 60, 0], $ambang);
     }
 

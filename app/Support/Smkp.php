@@ -25,9 +25,15 @@ namespace App\Support;
  *
  * Kategori temuan diturunkan DARI nilai, bukan dipilih auditor — sesuai kolom
  * "KATEGORI TEMUAN (Berdasarkan Nilai)" pada formulir kriteria:
- *   capaian < 50%          → Ketidaksesuaian Mayor
- *   capaian 50% s.d. <100% → Ketidaksesuaian Minor
+ *   capaian < 30%          → Ketidaksesuaian Mayor
+ *   capaian 30% s.d. <100% → Ketidaksesuaian Minor
  *   capaian 100%           → Kesesuaian
+ *
+ * Ambang 30% itu ketetapan pemilik sistem. Lampiran II Kepdirjen dan sistem
+ * rujukan D'Best sama-sama memakai 50%; selisihnya disengaja, tercatat pada
+ * meta.ambang_kategori di berkas acuan, dan hanya perlu diubah di sana untuk
+ * dikembalikan. Tidak ada satu pun angka ambang yang ditulis ulang di kode —
+ * termasuk pada penentuan mayor sub-elemen berincian.
  *
  * Bentuk $hasil (satu baris per butir yang dinilai, kunci = kode butir):
  *   $hasil['II.2.1'] = ['v' => 3, 'ket' => '...', 'bukti' => '...']
@@ -113,6 +119,34 @@ class Smkp
     public static function jumlahButir(): int
     {
         return count(self::butir());
+    }
+
+    /**
+     * Urutan dokumen seluruh kode yang dapat menjadi temuan.
+     *
+     * Memuat sub-elemen DAN rinciannya, sebab temuan melekat pada keduanya:
+     * mayor pada sub-elemen, minor pada rinciannya. Peta ini yang menjaga
+     * nomor NC tetap pada urutan berkas kriteria, bukan pada urutan berat
+     * yang berpindah setiap kali satu temuan ditutup.
+     *
+     * @return array<string,int> kode → posisi
+     */
+    public static function urutanKriteria(): array
+    {
+        $urut = [];
+        $n    = 0;
+
+        foreach (self::elemen() as $e) {
+            foreach ($e['sub'] as $s) {
+                $urut[$s['kode']] ??= $n++;
+
+                foreach (self::butirSub($s) as $b) {
+                    $urut[$b['kode']] ??= $n++;
+                }
+            }
+        }
+
+        return $urut;
     }
 
     /* ================= pembacaan nilai ================= */
@@ -284,39 +318,122 @@ class Smkp
     /* ================= temuan ================= */
 
     /**
-     * Ketidaksesuaian tingkat sub-elemen, urut dari yang terberat.
+     * Ketidaksesuaian, urut sesuai urutan dokumen — elemen, sub-elemen,
+     * lalu rinciannya.
      *
-     * Temuan dicatat pada tingkat sub-elemen — bukan tiap butir — karena itulah
-     * satuan yang dipakai pada Formulir Rekapitulasi Ketidaksesuaian.
+     * TINGKAT MELEKATNYA TEMUAN BERBEDA MENURUT BENTUK SUB-ELEMENNYA, dan
+     * ini bukan kerapian melainkan aturan pada Formulir Kriteria:
+     *
+     *   sub-elemen tanpa rincian
+     *       kategorinya dari capaiannya sendiri, melekat pada sub-elemen.
+     *
+     *   sub-elemen dengan rincian, AGREGATNYA jatuh ke mayor
+     *       MAYOR melekat pada SUB-ELEMEN, bukan pada rinciannya. Yang
+     *       gagal dinyatakan gagal sebagai satu kesatuan; memecahnya
+     *       menjadi beberapa mayor per rincian melipatgandakan satu
+     *       kegagalan yang sama.
+     *
+     *   sub-elemen dengan rincian, AGREGATNYA masih di atas ambang mayor
+     *       tiap RINCIAN yang belum penuh menjadi MINOR tersendiri.
+     *       Sub-elemennya secara keseluruhan masih berjalan, jadi yang
+     *       ditagih perbaikannya adalah rincian yang tertinggal — dan
+     *       masing-masing perlu tindakan perbaikannya sendiri.
+     *
+     * Perhatikan akibatnya: rincian bernilai nol di dalam sub-elemen yang
+     * agregatnya sehat tetap MINOR, bukan mayor. Mayor adalah pernyataan
+     * tentang sub-elemen, bukan tentang satu butir.
+     *
+     * URUTANNYA URUTAN DOKUMEN, bukan urutan berat. Nomor NC diturunkan
+     * dari urutan ini dan disebut dalam rapat penutupan serta
+     * surat-menyurat sesudahnya; urutan berat membuat nomor berpindah
+     * setiap kali sebuah nilai berubah, sehingga "temuan nomor 3" pada
+     * risalah rapat menunjuk temuan yang berbeda seminggu kemudian.
      */
     public static function temuan(array $hasil): array
     {
         $out = [];
+
         foreach (self::elemen() as $e) {
             foreach ($e['sub'] as $s) {
                 $r = self::rekapSub($s, $hasil);
-                if ($r['berlaku'] === 0) continue;                    // di luar lingkup
-                if ($r['dinilai'] === 0) continue;                    // belum dinilai
-                if ($r['kategori']['kode'] === 'kesesuaian') continue; // sudah sesuai
+                if ($r['berlaku'] === 0) continue;   // seluruhnya di luar lingkup
+                if ($r['dinilai'] === 0) continue;   // belum dinilai
 
-                $out[] = [
-                    'kode'    => $s['kode'],
-                    'uraian'  => $s['nama'],
-                    'elemen'  => $e['kode'] . '. ' . $e['nama'],
-                    'jenis'   => $r['kategori']['kode'],
-                    'label'   => $r['kategori']['label'],
-                    'capaian' => $r['capaian'],
-                    'nilai'   => $r['nilai'],
-                    'maks'    => $r['maks'],
-                    'ref'     => $s['ref'] ?? null,
-                    'ket'     => (string) ($hasil[$s['kode']]['ket'] ?? ''),
-                ];
+                // Sub-elemen tanpa rincian: dinilai sebagai dirinya sendiri.
+                if (empty($s['subsub'])) {
+                    if ($r['kategori']['kode'] === 'kesesuaian') continue;
+
+                    $out[] = self::barisTemuan($e, $s, null, $r['kategori']['kode'],
+                        $r['capaian'], $r['nilai'], $r['maks'], $hasil);
+                    continue;
+                }
+
+                // Berincian dan agregatnya gagal: satu mayor pada sub-elemen.
+                // Ambangnya dibaca dari kategori, bukan ditulis sebagai angka
+                // di sini — satu-satunya tempat ambang boleh berubah adalah
+                // berkas acuan, dan angka yang tersalin ke kode akan bertahan
+                // diam-diam sesudah berkasnya diubah.
+                if ($r['kategori']['kode'] === 'mayor') {
+                    $out[] = self::barisTemuan($e, $s, null, 'mayor',
+                        $r['capaian'], $r['nilai'], $r['maks'], $hasil);
+                    continue;
+                }
+
+                // Berincian dan agregatnya berjalan: rincian yang tertinggal
+                // ditagih satu per satu.
+                foreach (self::butirSub($s) as $b) {
+                    $v = self::nilaiButir($hasil, $b['kode']);
+                    if ($v === null || $v === self::NA) continue;
+
+                    $maks    = (int) ($b['maks'] ?? 0);
+                    $nilai   = max(0, min((float) $v, (float) $maks));
+                    $capaian = $maks > 0 ? $nilai / $maks : 0.0;
+                    if ($capaian >= 1) continue;
+
+                    $out[] = self::barisTemuan($e, $s, $b, 'minor',
+                        $capaian, $nilai, $maks, $hasil);
+                }
             }
         }
 
-        usort($out, fn ($a, $b) => [$a['jenis'] === 'minor', $a['capaian']]
-                               <=> [$b['jenis'] === 'minor', $b['capaian']]);
         return $out;
+    }
+
+    /**
+     * Satu baris temuan. $butir null berarti temuan melekat pada
+     * sub-elemennya; berisi berarti melekat pada rincian di bawahnya.
+     */
+    private static function barisTemuan(
+        array $elemen, array $sub, ?array $butir,
+        string $jenis, float $capaian, float $nilai, int $maks, array $hasil
+    ): array {
+        $sasaran = $butir ?? $sub;
+
+        /* Label mengikuti JENIS yang sudah ditetapkan, bukan dihitung ulang
+           dari capaian. Keduanya sengaja dapat berbeda: rincian bernilai nol
+           di dalam sub-elemen yang agregatnya sehat berjenis minor, padahal
+           capaiannya sendiri jatuh di bawah ambang mayor. Menghitung ulang
+           label dari capaian membuat satu baris berbunyi "minor" pada
+           kolom jenis dan "Ketidaksesuaian Mayor" pada kolom label. */
+        $label = collect(self::kategori())->firstWhere('kode', $jenis)['label'] ?? $jenis;
+
+        return [
+            'kode'    => $sasaran['kode'],
+            'uraian'  => $sasaran['nama'],
+            'elemen'  => $elemen['kode'].'. '.$elemen['nama'],
+            // Rincian membawa induknya supaya lembar rekapitulasi dapat
+            // menyebut sub-elemen mana yang ditagih, bukan kode telanjang.
+            'induk'   => $butir ? $sub['kode'].' '.$sub['nama'] : null,
+            'jenis'   => $jenis,
+            'label'   => $label,
+            'capaian' => $capaian,
+            'nilai'   => $nilai,
+            'maks'    => $maks,
+            // Halaman acuan selalu milik sub-elemennya; rincian tidak
+            // punya halaman tersendiri pada lampiran.
+            'ref'     => $sub['ref'] ?? null,
+            'ket'     => (string) ($hasil[$sasaran['kode']]['ket'] ?? ''),
+        ];
     }
 
     /** Hitung temuan per jenis. */
@@ -330,31 +447,48 @@ class Smkp
     }
 
     /**
-     * Beri nomor ketidaksesuaian sesuai format pada Formulir Rekapitulasi.
+     * Beri nomor ketidaksesuaian — DUA nomor untuk tiap temuan.
      *
-     * Penomoran berjalan terpisah per jenis — NC-MYR-01, NC-MYR-02, lalu
-     * NC-MNR-01 dan seterusnya — bukan satu urutan gabungan, sebagaimana
-     * pada dokumen audit.
+     *   nomor  NC-01, NC-02, …   satu urutan berjalan untuk seluruh temuan,
+     *                            apa pun jenisnya. Inilah yang disebut dalam
+     *                            rapat penutupan: "temuan nomor 3".
+     *   kode   {AWALAN}-MAY-01   urutan terpisah per jenis, berawalan kode
+     *          {AWALAN}-MIN-01   dokumen perusahaan yang diaudit. Inilah yang
+     *                            dipakai dalam surat-menyurat antar-perusahaan,
+     *                            tempat "NC-01" saja tidak cukup menunjuk.
      *
-     * @param  array $temuan hasil Smkp::temuan()
-     * @return array temuan yang sama, masing-masing bertambah kunci 'nomor'
+     * Keduanya mengikuti urutan yang diberikan — urutan dokumen dari
+     * Smkp::temuan(). Menomori menurut berat akan memindahkan nomor setiap
+     * kali sebuah nilai berubah, dan risalah rapat yang menyebut nomor lama
+     * langsung menunjuk temuan yang salah.
+     *
+     * @param  array  $temuan hasil Smkp::temuan()
+     * @param  string $awalan kode dokumen perusahaan; 'NC' bila tak ada
+     * @return array  temuan yang sama, bertambah kunci 'nomor' dan 'kode_nc'
      */
-    public static function beriNomor(array $temuan): array
+    public static function beriNomor(array $temuan, string $awalan = 'NC'): array
     {
-        $urut = [];
+        $awalan = strtoupper(trim($awalan)) ?: 'NC';
+        $urut   = 0;
+        $per    = [];
+
         foreach ($temuan as $i => $t) {
             $jenis = $t['jenis'];
-            $urut[$jenis] = ($urut[$jenis] ?? 0) + 1;
-            $temuan[$i]['nomor'] = self::nomorTemuan($jenis, $urut[$jenis]);
+            $per[$jenis] = ($per[$jenis] ?? 0) + 1;
+
+            $temuan[$i]['nomor']   = sprintf('NC-%02d', ++$urut);
+            $temuan[$i]['kode_nc'] = self::nomorTemuan($jenis, $per[$jenis], $awalan);
         }
+
         return $temuan;
     }
 
-    /** Format nomor satu ketidaksesuaian: NC-MYR-01 / NC-MNR-01. */
-    public static function nomorTemuan(string $jenis, int $urutan): string
+    /** Format kode satu ketidaksesuaian: CAM-MAY-01 / CAM-MIN-01. */
+    public static function nomorTemuan(string $jenis, int $urutan, string $awalan = 'NC'): string
     {
-        $awalan = $jenis === 'mayor' ? 'MYR' : ($jenis === 'minor' ? 'MNR' : 'OBS');
-        return sprintf('NC-%s-%02d', $awalan, $urutan);
+        $bagian = $jenis === 'mayor' ? 'MAY' : ($jenis === 'minor' ? 'MIN' : 'OBS');
+
+        return sprintf('%s-%s-%02d', strtoupper(trim($awalan)) ?: 'NC', $bagian, $urutan);
     }
 
     /**

@@ -168,11 +168,18 @@ final class Menu
           ['Daftar Audit',   'smkp.index',  'smkp'],
           ['Buat Periode',   'smkp.create', 'smkp/buat'],
         ],
+        /* Urut sesuai jalannya audit. Form Penilaian ditaruh SESUDAH
+           Permulaan Audit dan Rencana Audit — keduanya yang menetapkan
+           lingkup dan sampel, dan menilai sebelum lingkupnya disepakati
+           berarti menilai butir yang belum tentu berlaku. Halamannya
+           sendiri tetap dapat dibuka lebih awal; yang dijaga urutannya,
+           bukan pintunya. */
         'Tahap Audit' => [
-          ['Permulaan Audit',   'smkp.ke.tahap1',  'smkp/lanjut/tahap-1'],
-          ['Rencana Audit',     'smkp.ke.rencana', 'smkp/lanjut/rencana'],
-          ['Rapat & Daftar Hadir','smkp.ke.rapat', 'smkp/lanjut/rapat'],
-          ['Temuan & Tindakan', 'smkp.ke.temuan',  'smkp/lanjut/temuan'],
+          ['Permulaan Audit',   'smkp.ke.tahap1',    'smkp/lanjut/tahap-1'],
+          ['Rencana Audit',     'smkp.ke.rencana',   'smkp/lanjut/rencana'],
+          ['Form Penilaian Audit','smkp.ke.penilaian','smkp/lanjut/penilaian'],
+          ['Rapat & Daftar Hadir','smkp.ke.rapat',   'smkp/lanjut/rapat'],
+          ['Temuan & Tindakan', 'smkp.ke.temuan',    'smkp/lanjut/temuan'],
         ],
         /* Delapan keluaran audit, URUT SESUAI BERKASNYA — bukan urut
            abjad dan bukan urut pembuatannya di sini. Berkas audit

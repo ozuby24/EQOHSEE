@@ -520,6 +520,49 @@ main a{transition:color .16s}
 .eq-btn-mini.bahaya{color:#B42318}
 .eq-btn-mini.bahaya:hover{background:#FEF3F2;color:#912018}
 
+/* ── Penyaring keadaan dan lencana keadaan ──
+
+   Dipakai formulir penilaian audit, tempat 100 butir disaring menurut
+   keadaan kesesuaiannya. Yang aktif dibedakan oleh BENTUK — latar
+   terangkat dan bergaris — bukan oleh warna saja, sebab titik warna di
+   dalamnya sudah dipakai menandai keadaan dan dua makna warna pada satu
+   kendali tidak dapat dibedakan lagi.
+
+   Warna titik dan garis lencana datang dari data, bukan dari kelas:
+   sumbernya berkas acuan kategori temuan, sehingga tanda di layar dan
+   kategori di Formulir Kriteria tidak pernah berbeda. */
+.eq-saring{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;
+  font-size:11.5px;font-weight:600;color:#5C6874;background:#F4F6F8;
+  border:1.5px solid transparent;cursor:pointer;
+  transition:background-color .18s,color .18s,border-color .18s}
+.eq-saring:hover{background:#E7E5E4;color:#1B2024}
+.eq-saring.aktif{background:#fff;border-color:#DC6E00;color:#B45309;box-shadow:0 1px 2px rgba(0,0,0,.07)}
+.eq-saring b{font-weight:800}
+.eq-saring .titik{width:8px;height:8px;border-radius:999px;display:inline-block;flex:none}
+.eq-keadaan{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;
+  font-size:10.5px;font-weight:700;line-height:1.5;border:1.5px solid;white-space:nowrap}
+
+/* ── Tangga nilai butir kriteria ──
+
+   Satu tombol per anak tangga, angkanya besar dan namanya di bawahnya.
+   Menggantikan daftar tarik-turun: yang dipilih auditor bukan angka
+   melainkan tingkat pemenuhan, dan daftar tarik-turun menyembunyikan
+   namanya sampai dibuka.
+
+   Yang terpilih dibedakan oleh BENTUK — garis menebal dan kartunya
+   terangkat — sebelum warnanya berperan. Warnanya sendiri datang dari
+   kategori temuan yang dihasilkan angka itu, dipasang sebaris dari
+   data, sehingga memilih nilai berarti sekaligus melihat akibatnya. */
+.eq-nilai{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+  min-width:66px;padding:5px 9px;border-radius:10px;border:1.5px solid #E7E5E4;background:#fff;
+  font-size:9.5px;font-weight:600;color:#7C8894;cursor:pointer;
+  transition:border-color .16s,background-color .16s,box-shadow .16s,transform .16s}
+.eq-nilai b{font-size:13.5px;font-weight:800;line-height:1.25;color:#1B2024}
+.eq-nilai:hover{border-color:#C9CFD4;background:#FAFAF9}
+.eq-nilai.terpilih{border-width:2.5px;padding:4px 8px;background:#FAFAF9;
+  transform:translateY(-1px);box-shadow:0 2px 6px rgba(0,0,0,.10)}
+.eq-nilai.terpilih b{color:inherit}
+
 /* ── Keadaan kosong ── */
 .eq-kosong{text-align:center;padding:34px 20px;color:var(--eq-redup,#7C8894);font-size:12.5px;line-height:1.7}
 .eq-kosong strong{color:var(--eq-judul,#0F1720);font-size:13.5px}
@@ -681,6 +724,18 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] .eq-btn-mini:hover{background:#22333A;color:#E8F0F2}
 :root[data-tema="gelap"] .eq-btn-mini.bahaya{color:#FF9B92}
 :root[data-tema="gelap"] .eq-btn-mini.bahaya:hover{background:#2E1F1F}
+
+/* Penyaring aktif berlatar putih pada mode terang — pasangan gelapnya
+   wajib, sebab teksnya sudah ikut diterangkan. Titik warna dan garis
+   lencana tidak perlu dipasangkan: keduanya warna padat dari data yang
+   sama terbacanya di kedua latar. */
+:root[data-tema="gelap"] .eq-saring{background:#1A272C;color:#C4D2D7}
+:root[data-tema="gelap"] .eq-saring:hover{background:#22333A;color:#E8F0F2}
+:root[data-tema="gelap"] .eq-saring.aktif{background:#22333A;border-color:#DC6E00;color:#FFC078}
+:root[data-tema="gelap"] .eq-nilai{background:#131F24;border-color:#26363C;color:#98A8AF}
+:root[data-tema="gelap"] .eq-nilai b{color:#E8F0F2}
+:root[data-tema="gelap"] .eq-nilai:hover{background:#1A272C;border-color:#33474F}
+:root[data-tema="gelap"] .eq-nilai.terpilih{background:#1C2B31}
 :root[data-tema="gelap"] input,
 :root[data-tema="gelap"] select,
 :root[data-tema="gelap"] textarea{background:#101A1E;border-color:#26363C;color:#D6DEE2}

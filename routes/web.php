@@ -673,9 +673,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/',               [SmkpController::class,'store'])->name('store');
         Route::get('acuan',            [SmkpController::class,'acuan'])->name('acuan');
 
+        // Bunyi rubrik butir — teks peraturan, diambil terpisah dari halaman
+        // penilaian supaya 260 ribu aksara tidak ikut tiap kali dibuka.
+        Route::get('rubrik',           [SmkpController::class,'rubrik'])->name('rubrik');
+
         // Pintasan menu samping: tanpa parameter, disalurkan ke audit berjalan.
         foreach ([
-            'tahap1' => 'tahap-1', 'rencana' => 'rencana', 'rapat' => 'rapat', 'temuan' => 'temuan',
+            'tahap1' => 'tahap-1', 'rencana' => 'rencana', 'penilaian' => 'penilaian',
+            'rapat' => 'rapat', 'temuan' => 'temuan',
             'berita' => 'berita-acara', 'rencana-cetak' => 'laporan-rencana', 'laporan' => 'laporan-audit',
 
             /* Lima keluaran audit yang menyusul. */
@@ -727,6 +732,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('{smkp}/temuan/angkat',    [SmkpController::class,'angkatTemuan'])->name('temuan.angkat');
         Route::put('{smkp}/temuan/{temuan}',   [SmkpController::class,'simpanTemuan'])->name('temuan.simpan');
         Route::delete('{smkp}/temuan/{temuan}',[SmkpController::class,'hapusTemuan'])->name('temuan.hapus');
+
+        // Form Penilaian Audit — tujuh elemen sekaligus, untuk memeriksa
+        // kesesuaian tiap parameter tanpa berpindah halaman per elemen.
+        Route::get('{smkp}/penilaian',  [SmkpController::class,'penilaian'])->name('penilaian');
+        Route::post('{smkp}/penilaian', [SmkpController::class,'simpanPenilaian'])->name('penilaian.simpan');
 
         // Formulir penilaian per elemen — ditaruh terakhir agar tidak menyerobot rute di atas
         Route::get('{smkp}/elemen/{elemen}',  [SmkpController::class,'nilai'])->name('nilai');

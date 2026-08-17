@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Company, SmkpAttendee, SmkpAudit, SmkpFinding};
-use App\Support\{Ekspor, KopDokumen, Smkp, SmkpTahap};
+use App\Support\{Ekspor, KopDokumen, Smkp, SmkpRubrik, SmkpTahap};
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -109,6 +109,7 @@ class SmkpController extends Controller
         $rute = [
             'tahap1'        => 'smkp.tahap1',
             'rencana'       => 'smkp.rencana',
+            'penilaian'     => 'smkp.penilaian',
             'rapat'         => 'smkp.rapat',
             'temuan'        => 'smkp.temuan',
             'berita'        => 'smkp.berita-acara',
@@ -473,37 +474,63 @@ class SmkpController extends Controller
         $ref = collect(Smkp::elemen())->firstWhere('kode', $elemen);
         abort_if(!$ref, 404, 'Elemen tidak dikenal.');
 
-        $hasil = $smkp->hasil ?? [];
-        $masuk = (array) $request->input('k', []);
+        $this->terapkanNilai($smkp, [$ref], (array) $request->input('k', []));
 
-        foreach ($ref['sub'] as $sub) {
-            foreach (Smkp::butirSub($sub) as $b) {
-                $kode  = $b['kode'];
-                $baris = $masuk[$kode] ?? null;
-                if (!is_array($baris)) continue;
+        return redirect()->route('smkp.nilai', [$smkp, $elemen])
+            ->with('ok', 'Penilaian elemen '.$ref['kode'].' tersimpan.');
+    }
 
-                $v = $baris['v'] ?? null;
+    /**
+     * Terapkan masukan formulir penilaian ke hasil audit.
+     *
+     * Hanya butir yang benar-benar termasuk $elemen yang disentuh. Batas itu
+     * penting: formulir satu lembar dan formulir per elemen memakai nama ruas
+     * yang sama, sehingga tanpa penyaringan ini kiriman dari satu elemen dapat
+     * menghapus nilai elemen lain hanya karena kodenya ikut terkirim.
+     *
+     * @param  array<int,array>  $elemen  acuan elemen yang boleh diubah
+     * @param  array             $masuk   ruas `k` dari formulir
+     * @return int  jumlah butir yang berubah isinya
+     */
+    private function terapkanNilai(SmkpAudit $smkp, array $elemen, array $masuk): int
+    {
+        $hasil  = $smkp->hasil ?? [];
+        $ubah   = 0;
 
-                if ($v === '' || $v === null) {
-                    unset($hasil[$kode]);                 // kembali ke "belum dinilai"
-                    continue;
+        foreach ($elemen as $ref) {
+            foreach ($ref['sub'] as $sub) {
+                foreach (Smkp::butirSub($sub) as $b) {
+                    $kode  = $b['kode'];
+                    $baris = $masuk[$kode] ?? null;
+                    if (!is_array($baris)) continue;
+
+                    $sebelum = $hasil[$kode] ?? null;
+                    $v       = $baris['v'] ?? null;
+
+                    if ($v === '' || $v === null) {
+                        unset($hasil[$kode]);             // kembali ke "belum dinilai"
+                        if ($sebelum !== null) $ubah++;
+                        continue;
+                    }
+
+                    if (is_string($v) && strcasecmp($v, Smkp::NA) === 0) {
+                        $nilai = Smkp::NA;                // di luar lingkup perusahaan
+                    } elseif (is_numeric($v)) {
+                        // Nilai dijepit ke rentang butir; formulir yang dikirim
+                        // langsung tidak boleh menaikkan capaian melebihi maksimum.
+                        $nilai = max(0, min((int) $v, (int) $b['maks']));
+                    } else {
+                        continue;                         // abaikan masukan asing
+                    }
+
+                    $hasil[$kode] = [
+                        'v'     => $nilai,
+                        'ket'   => mb_substr(trim((string) ($baris['ket']   ?? '')), 0, 2000),
+                        'bukti' => mb_substr(trim((string) ($baris['bukti'] ?? '')), 0, 500),
+                    ];
+
+                    if ($hasil[$kode] !== $sebelum) $ubah++;
                 }
-
-                if (is_string($v) && strcasecmp($v, Smkp::NA) === 0) {
-                    $nilai = Smkp::NA;                    // di luar lingkup perusahaan
-                } elseif (is_numeric($v)) {
-                    // Nilai dijepit ke rentang butir; formulir yang dikirim
-                    // langsung tidak boleh menaikkan capaian melebihi maksimum.
-                    $nilai = max(0, min((int) $v, (int) $b['maks']));
-                } else {
-                    continue;                             // abaikan masukan asing
-                }
-
-                $hasil[$kode] = [
-                    'v'     => $nilai,
-                    'ket'   => mb_substr(trim((string) ($baris['ket']   ?? '')), 0, 2000),
-                    'bukti' => mb_substr(trim((string) ($baris['bukti'] ?? '')), 0, 500),
-                ];
             }
         }
 
@@ -511,8 +538,285 @@ class SmkpController extends Controller
 
         if ($smkp->status === 'draft') $smkp->update(['status' => 'berjalan']);
 
-        return redirect()->route('smkp.nilai', [$smkp, $elemen])
-            ->with('ok', 'Penilaian elemen '.$ref['kode'].' tersimpan.');
+        return $ubah;
+    }
+
+    /* ---------- Form Penilaian Audit — seluruh kriteria dalam satu lembar ---------- */
+
+    /**
+     * Formulir penilaian utuh: 100 butir tujuh elemen sekaligus.
+     *
+     * Sebelumnya penilaian hanya dapat dibuka satu elemen per halaman, lewat
+     * kartu di ringkasan audit. Untuk MENGISI itu memadai; untuk MEMERIKSA
+     * tidak, sebab pertanyaan yang sebenarnya diajukan — butir mana yang
+     * belum sesuai — menuntut tujuh halaman dibuka satu per satu lalu
+     * dibandingkan sendiri di kepala.
+     *
+     * Lembar ini menjawabnya langsung: tiap butir membawa keadaan
+     * kesesuaiannya, dan penyaringnya bekerja di sisi peramban sehingga
+     * "tampilkan yang belum sesuai" tidak memuat ulang halaman.
+     */
+    public function penilaian(SmkpAudit $smkp)
+    {
+        return Inertia::render('Smkp/Penilaian', [
+            'audit'     => $smkp->load('company'),
+            'elemen'    => $this->butirPenilaian($smkp),
+            'rekap'     => $smkp->rekap(),
+            'ringkas'   => $this->ringkasKesesuaian($smkp),
+            'keadaan'   => $this->keadaanPenilaian(),
+            'rubrik'    => $this->rubrikPenilaian(),
+            'prasyarat' => $this->prasyaratPenilaian($smkp),
+            'tautan'    => [
+                'audit'    => route('smkp.show', $smkp),
+                'kriteria' => route('smkp.kriteria', $smkp),
+                'ekspor'   => route('smkp.kriteria.ekspor', $smkp),
+                'temuan'   => route('smkp.temuan', $smkp),
+            ],
+        ]);
+    }
+
+    /** Simpan formulir penilaian utuh; satu kiriman untuk seluruh elemen. */
+    public function simpanPenilaian(Request $request, SmkpAudit $smkp)
+    {
+        $n = $this->terapkanNilai($smkp, Smkp::elemen(), (array) $request->input('k', []));
+
+        return redirect()->route('smkp.penilaian', $smkp)
+            ->with('ok', $n ? "$n butir kriteria diperbarui." : 'Tidak ada perubahan nilai.');
+    }
+
+    /**
+     * Tujuh elemen beserta butirnya, masing-masing membawa keadaan kesesuaian.
+     *
+     * Keadaan butir diturunkan dari nilainya memakai ambang yang sama dengan
+     * kategori temuan resmi — bukan ambang tersendiri — supaya tanda di layar
+     * dan kategori di Formulir Kriteria tidak pernah berbeda.
+     *
+     * Satuan temuan yang sah tetap SUB-ELEMEN, sebagaimana Formulir
+     * Rekapitulasi Ketidaksesuaian. Keadaan per butir di sini alat periksa,
+     * bukan temuan: ia menunjukkan butir mana yang menarik capaian
+     * sub-elemennya turun.
+     */
+    private function butirPenilaian(SmkpAudit $smkp): array
+    {
+        $hasil = (array) ($smkp->hasil ?? []);
+        $out   = [];
+
+        foreach (Smkp::elemen() as $e) {
+            $rekapE = Smkp::rekapElemen($e, $hasil);
+            $sub    = [];
+
+            foreach ($e['sub'] as $s) {
+                $rekapS = Smkp::rekapSub($s, $hasil);
+                $butir  = [];
+
+                foreach (Smkp::butirSub($s) as $b) {
+                    $kode  = $b['kode'];
+                    $maks  = (int) ($b['maks'] ?? 0);
+                    $v     = Smkp::nilaiButir($hasil, $kode);
+                    $sifat = $this->sifatButir($v, $maks);
+
+                    $butir[] = [
+                        'kode'    => $kode,
+                        'nama'    => $b['nama'] ?? '',
+                        'maks'    => $maks,
+                        // Nilai dikirim sebagai teks: ruas isian menerima angka
+                        // maupun 'N/A', dan 0 yang sah tidak boleh berubah
+                        // menjadi kosong dalam perjalanan ke peramban.
+                        'v'       => $v === null ? '' : (string) $v,
+                        'ket'     => (string) ($hasil[$kode]['ket']   ?? ''),
+                        'bukti'   => (string) ($hasil[$kode]['bukti'] ?? ''),
+                        'keadaan' => $sifat['kode'],
+                        'capaian' => $sifat['capaian'],
+                    ];
+                }
+
+                $sub[] = [
+                    'kode'     => $s['kode'],
+                    'nama'     => $s['nama'] ?? '',
+                    'ref'      => $s['ref'] ?? null,
+                    // Sub-elemen tanpa rincian DINILAI LANGSUNG — butirnya
+                    // adalah dirinya sendiri. Tanpa penanda ini tampilan
+                    // menggambar kode dan namanya dua kali berturut-turut,
+                    // sekali sebagai judul dan sekali sebagai barisnya.
+                    'rinci'    => !empty($s['subsub']),
+                    'maks'     => $rekapS['maks'],
+                    'nilai'    => $rekapS['nilai'],
+                    'berlaku'  => $rekapS['berlaku'],
+                    'dinilai'  => $rekapS['dinilai'],
+                    'capaian'  => round($rekapS['capaian'] * 100, 1),
+                    // Kategori sub-elemen hanya bermakna bila sudah ada yang
+                    // dinilai; sebelum itu ia akan selalu berbunyi "Mayor"
+                    // semata-mata karena pembilangnya masih nol.
+                    'kategori' => $rekapS['dinilai'] > 0 ? $rekapS['kategori'] : null,
+                    'butir'    => $butir,
+                ];
+            }
+
+            $out[] = [
+                'kode'    => $e['kode'],
+                'nama'    => $e['nama'],
+                'bobot'   => (int) ($e['bobot'] ?? 0),
+                'maks'    => $rekapE['maks'],
+                'nilai'   => $rekapE['nilai'],
+                'dinilai' => $rekapE['dinilai'],
+                'berlaku' => $rekapE['berlaku'],
+                'capaian' => round($rekapE['capaian'] * 100, 1),
+                'sub'     => $sub,
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Keadaan satu butir: belum dinilai, tidak berlaku, atau kategori nilainya.
+     *
+     * "Belum dinilai" sengaja BUKAN kategori. Bila ia ikut dihitung sebagai
+     * capaian nol, seluruh audit yang baru dibuka akan tampak merah seolah
+     * gagal — padahal belum ada yang diperiksa. Yang merah harus benar-benar
+     * berarti diperiksa dan tidak memenuhi.
+     */
+    private function sifatButir($nilai, int $maks): array
+    {
+        if ($nilai === null)      return ['kode' => 'belum', 'capaian' => null];
+        if ($nilai === Smkp::NA)  return ['kode' => 'na',    'capaian' => null];
+
+        $capaian = $maks > 0 ? (float) $nilai / $maks : 0.0;
+
+        return [
+            'kode'    => Smkp::kategoriDari($capaian)['kode'],
+            'capaian' => round($capaian * 100, 1),
+        ];
+    }
+
+    /**
+     * Nama, warna, dan AMBANG tiap keadaan — dipakai penyaring dan legenda.
+     *
+     * Ambangnya ikut dikirim, bukan ditulis ulang di sisi Vue. Tanda kesesuaian
+     * berubah seketika saat nilai diketik, jadi peramban memang harus dapat
+     * menghitungnya sendiri — tetapi angkanya tetap satu, bersumber dari berkas
+     * acuan yang sama dengan kategori temuan. Menyalinnya ke Vue berarti dua
+     * salinan ambang yang dapat berbeda diam-diam.
+     *
+     * Urutannya menurun sesuai berkas acuan, sehingga pencocokan pertama yang
+     * memenuhi adalah kategori yang benar.
+     */
+    private function keadaanPenilaian(): array
+    {
+        $out = [['kode' => 'belum', 'label' => 'Belum dinilai', 'warna' => '#94A3B8', 'min' => null]];
+
+        foreach (Smkp::kategori() as $k) {
+            $out[] = [
+                'kode'  => $k['kode'],
+                'label' => $k['label'],
+                'warna' => $k['warna'],
+                'min'   => (float) $k['min'],
+            ];
+        }
+
+        $out[] = ['kode' => 'na', 'label' => 'Tidak berlaku', 'warna' => Smkp::kategoriNa()['warna'], 'min' => null];
+
+        return $out;
+    }
+
+    /**
+     * Keterangan rubrik yang ikut halaman: nama tingkat dan sumbernya.
+     *
+     * BUNYI rubriknya sengaja TIDAK ikut. Seluruhnya 260 ribu aksara untuk
+     * seratus butir — dikirim bersama halaman, ia menggandakan berat muatan
+     * hanya demi teks yang pada satu kali pembukaan paling banyak dibaca
+     * beberapa butir. Bunyinya diambil terpisah lewat SmkpController::rubrik()
+     * saat auditor benar-benar membukanya.
+     *
+     * Nama tingkat tetap ikut: ia tercetak pada tiap tombol nilai, jadi
+     * harus ada sebelum satu pun rubrik dibuka. Lima kata, bukan beban.
+     */
+    private function rubrikPenilaian(): array
+    {
+        return [
+            'skala'   => SmkpRubrik::skala(),
+            'sumber'  => SmkpRubrik::sumber(),
+            'lengkap' => SmkpRubrik::jumlahLengkap(),
+            'total'   => Smkp::jumlahButir(),
+            'alamat'  => route('smkp.rubrik'),
+        ];
+    }
+
+    /**
+     * Bunyi rubrik beberapa butir sekaligus.
+     *
+     * Diambil terpisah dari halaman penilaian, dan dibatasi daftar kode yang
+     * diminta — bukan seluruhnya — supaya membuka satu butir tidak menarik
+     * 260 ribu aksara.
+     *
+     * Rubrik adalah teks peraturan, sama bagi semua perusahaan, sehingga
+     * tidak ada data perusahaan yang dapat bocor lewat sini. Yang tetap
+     * dijaga: hanya kode butir yang benar-benar ada pada acuan yang dilayani,
+     * dan jumlah permintaan dibatasi.
+     */
+    public function rubrik(Request $request)
+    {
+        $maks  = collect(Smkp::butir())->keyBy('kode');
+        $minta = array_slice(array_filter(array_map(
+            'trim',
+            explode(',', (string) $request->query('butir', ''))
+        )), 0, 120);
+
+        $out = [];
+
+        foreach ($minta as $kode) {
+            if (!$maks->has($kode)) continue;
+
+            $out[$kode] = SmkpRubrik::tangga($kode, (int) $maks[$kode]['maks']);
+        }
+
+        return response()->json(['tangga' => $out]);
+    }
+
+    /** Berapa butir pada tiap keadaan — angka yang dibaca lebih dulu. */
+    private function ringkasKesesuaian(SmkpAudit $smkp): array
+    {
+        $hasil = (array) ($smkp->hasil ?? []);
+        $n     = ['belum' => 0, 'mayor' => 0, 'minor' => 0, 'kesesuaian' => 0, 'na' => 0, 'total' => 0];
+
+        foreach (Smkp::butir() as $b) {
+            $sifat = $this->sifatButir(Smkp::nilaiButir($hasil, $b['kode']), (int) ($b['maks'] ?? 0));
+            $n[$sifat['kode']]++;
+            $n['total']++;
+        }
+
+        return $n;
+    }
+
+    /**
+     * Dua berkas yang mendahului penilaian lapangan.
+     *
+     * Ditampilkan, bukan dipakai mengunci. Menutup formulir sampai keduanya
+     * selesai justru menghalangi pekerjaan yang sah — auditor lazim membaca
+     * kriteria lebih dulu untuk menyiapkan sampel — sementara menyembunyikan
+     * urutannya sama sekali membuat orang menilai sebelum lingkupnya
+     * disepakati. Yang dibutuhkan urutannya terlihat, bukan dipaksakan.
+     */
+    private function prasyaratPenilaian(SmkpAudit $smkp): array
+    {
+        $status = $smkp->statusAlur();
+
+        return [
+            [
+                'kunci'   => 'berita',
+                'judul'   => 'Berita Acara Tahap I',
+                'ket'     => $status['berita']['ket'] ?? '',
+                'selesai' => (bool) ($status['berita']['selesai'] ?? false),
+                'tautan'  => route('smkp.tahap1', $smkp),
+            ],
+            [
+                'kunci'   => 'rencana-cetak',
+                'judul'   => 'Rencana Audit',
+                'ket'     => $status['rencana-cetak']['ket'] ?? '',
+                'selesai' => (bool) ($status['rencana-cetak']['selesai'] ?? false),
+                'tautan'  => route('smkp.rencana', $smkp),
+            ],
+        ];
     }
 
     /* ---------- Temuan / CAR ---------- */
@@ -706,7 +1010,16 @@ class SmkpController extends Controller
      */
     public function rekapNc(SmkpAudit $smkp)
     {
-        $temuan = $smkp->findings()->orderByRaw(Smkp::urutJenisSql())->get();
+        /* Diurutkan mengikuti URUTAN KRITERIA, bukan urutan berat.
+           Nomor NC diturunkan dari urutan ini dan disebut dalam rapat
+           penutupan serta surat-menyurat sesudahnya; urutan berat membuat
+           nomornya berpindah setiap kali satu temuan ditutup, sehingga
+           "temuan nomor 3" pada risalah menunjuk temuan lain minggu depan. */
+        $urutan = Smkp::urutanKriteria();
+
+        $temuan = $smkp->findings()->get()
+            ->sortBy(fn (SmkpFinding $t) => $urutan[$t->kode_kriteria] ?? PHP_INT_MAX)
+            ->values();
 
         /* Sebaran per elemen dihitung dari kode kriterianya, bukan dari
            kolom tersendiri: kode "3.2.1" sudah menyebut elemennya, dan
@@ -732,13 +1045,20 @@ class SmkpController extends Controller
         return Inertia::render('Print/SmkpRekapNc', [
             'audit'  => $smkp,
 
-            /* Nomor urut ikut dikirim, tidak dihitung dari posisi baris
-               di layar. Pada formulir audit nomor itu DATA: ia disebut
-               dalam rapat penutupan dan dalam surat-menyurat
-               sesudahnya ("temuan nomor 3"), jadi ia harus sama pada
-               lembar cetak, layar, dan berkas ekspor. */
-            'temuan' => $temuan->values()->map(
-                fn (SmkpFinding $t, int $i) => $t->toArray() + ['urut' => $i + 1])->values(),
+            /* Nomor ikut dikirim, tidak dihitung dari posisi baris di layar.
+               Pada formulir audit nomor itu DATA: ia disebut dalam rapat
+               penutupan ("temuan nomor 3") dan dalam surat-menyurat
+               sesudahnya, jadi ia harus sama pada lembar cetak, layar, dan
+               berkas ekspor.
+
+               Dua nomor sekaligus: NC-xx sebagai urutan berjalan, dan
+               {kode dokumen perusahaan}-MAY/MIN-xx sebagai urutan per
+               jenis. Yang kedua yang dipakai antar-perusahaan, tempat
+               "NC-01" saja tidak cukup menunjuk temuan siapa. */
+            'temuan' => collect(Smkp::beriNomor(
+                $temuan->map(fn (SmkpFinding $t) => $t->toArray())->all(),
+                (string) ($smkp->company?->doc_no_prefix ?: 'NC'),
+            ))->map(fn (array $t, int $i) => $t + ['urut' => $i + 1])->values(),
             'perElemen' => $perElemen,
             'ringkas' => [
                 'total'   => $temuan->count(),
