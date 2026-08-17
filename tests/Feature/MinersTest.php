@@ -1087,6 +1087,82 @@ class MinersTest extends TestCase
         $this->assertSame(Alur::DISETUJUI, $m->refresh()->status);
     }
 
+    /* ═══════════ kebuntuan persetujuan ═══════════ */
+
+    /**
+     * Sebab tombol Setujui tidak ada SELALU dapat disebut.
+     *
+     * Ini kegagalan yang benar-benar dilaporkan: tombolnya hilang, dan
+     * tanpa keterangan apa pun hal itu terbaca sebagai sistem yang
+     * rusak. Yang diuji di sini bukan aturannya — aturannya sudah diuji
+     * di atas — melainkan bahwa setiap penolakan punya kalimatnya.
+     */
+    public function test_setiap_penolakan_memutuskan_punya_sebab(): void
+    {
+        $pengaju = $this->pengguna();
+        $m = $this->pengajuanDiajukan($pengaju);
+
+        /* Bukan OHSE sama sekali. */
+        $biasa = $this->pengguna();
+        $this->assertStringContainsString('tim OHSE',
+            Tahap::sebabTakDapatMemutuskan($biasa, $m->status, $m->diajukan_oleh) ?? '');
+
+        /* OHSE, tetapi dialah pengajunya. */
+        $pengajuOhse = $this->pengguna(['ohse_role' => 'ohse']);
+        $this->actingAs($pengajuOhse);
+        $sendiri = McuPengajuan::create([
+            'company_id' => $this->c->id, 'tanggal' => now(), 'jenis' => 'Berkala',
+        ]);
+        $sendiri->hasil()->create(['paspor_id' => $this->orang('X')->id, 'tgl_periksa' => now()]);
+        $sendiri->ajukan();
+
+        $this->assertStringContainsString('pengajunya sendiri',
+            Tahap::sebabTakDapatMemutuskan($pengajuOhse, $sendiri->status, $sendiri->diajukan_oleh) ?? '');
+
+        /* Masih draf. */
+        $draf = McuPengajuan::create([
+            'company_id' => $this->c->id, 'tanggal' => now(), 'jenis' => 'Berkala',
+        ]);
+        $this->assertStringContainsString('draf',
+            Tahap::sebabTakDapatMemutuskan($pengajuOhse, $draf->status, $draf->diajukan_oleh) ?? '');
+
+        /* Yang memang berhak tidak mendapat sebab apa pun — kontrol,
+           supaya uji di atas tidak dapat lulus dengan memulangkan
+           kalimat untuk semua orang. */
+        $ohse = $this->pengguna(['ohse_role' => 'ohse']);
+        $this->assertNull(
+            Tahap::sebabTakDapatMemutuskan($ohse, $m->status, $m->diajukan_oleh));
+    }
+
+    /**
+     * KTT yang sudah ada tidak kehilangan haknya saat wewenang dipersempit.
+     *
+     * Wewenangnya dipersempit dari "admin atau KTT" menjadi "admin atau
+     * OHSE", sementara kolom ohse_role lahir kosong. Tanpa pemindahan
+     * ini, KTT kehilangan haknya, tidak ada yang mendapat hak OHSE, dan
+     * seluruh pengajuan tertahan tanpa seorang pun dapat memutuskannya.
+     */
+    public function test_ktt_lama_dipindahkan_menjadi_ohse(): void
+    {
+        $ktt = User::factory()->create([
+            'is_admin' => false, 'lms_role' => 'ktt', 'ohse_role' => null,
+            'company_id' => $this->c->id, 'email_verified_at' => now(),
+        ]);
+
+        /* Migrasinya sudah berjalan sebelum uji ini; yang diperiksa
+           adalah bahwa pengguna KTT BARU pun tetap tertolak — pemindahan
+           itu sekali, bukan aturan tetap. Yang lama dijamin migrasinya,
+           dan itu diuji dengan menjalankan ulang perintahnya. */
+        $this->assertFalse(Tahap::penentu($ktt->refresh()));
+
+        \Illuminate\Support\Facades\DB::table('users')
+            ->where('lms_role', 'ktt')->whereNull('ohse_role')
+            ->update(['ohse_role' => 'ohse']);
+
+        $this->assertTrue(Tahap::penentu($ktt->refresh()),
+            'KTT lama tidak ikut terbawa menjadi OHSE — seluruh pengajuan akan tertahan.');
+    }
+
     /** Pengaju tidak memaraf pengajuannya sendiri. */
     public function test_pengaju_tidak_dapat_memaraf_sendiri(): void
     {

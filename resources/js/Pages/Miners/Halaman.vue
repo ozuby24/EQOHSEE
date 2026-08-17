@@ -595,6 +595,16 @@ function hapus(jalur: string, apa: string) {
                 <button v-if="k.status === 'diajukan'" type="button"
                         class="text-[11px] text-stone-500"
                         @click="tinjau(`/miners/${id}/kartu/${k.id}/tinjau`, 'tarik')">Tarik</button>
+
+                <!-- Sebab tombol Setujui tidak ada, DIKATAKAN. Menyembunyikan
+                     tombol tanpa keterangan membuat yang membacanya tidak
+                     dapat membedakan antara tidak berhak, sudah diputus, dan
+                     sistemnya rusak — dan dugaan yang paling sering diambil
+                     adalah yang ketiga. -->
+                <span v-if="!k.dapatDitinjau && k.sebabTakTinjau && k.status === 'diajukan'"
+                      class="text-[10.5px] text-stone-500 basis-full">
+                  {{ k.sebabTakTinjau }}
+                </span>
                 <button type="button" class="text-red-600 text-[11px] ml-auto"
                         @click="hapus(`/miners/${id}/kartu/${k.id}`, k.jenis)">Hapus</button>
               </div>
@@ -773,6 +783,10 @@ function hapus(jalur: string, apa: string) {
                   @click="tinjau(`/miners/mcu/${m.id}/tinjau`, 'tolak')">Tolak</button>
           <button v-if="m.status === 'diajukan'" type="button" class="text-[11.5px] text-stone-500"
                   @click="tinjau(`/miners/mcu/${m.id}/tinjau`, 'tarik')">Tarik</button>
+          <span v-if="!m.dapatDitinjau && m.sebabTakTinjau && m.status === 'diajukan'"
+                class="text-[11px] text-stone-500 basis-full">
+            {{ m.sebabTakTinjau }}
+          </span>
           <button v-if="m.dapatDiubah" type="button" class="text-[11.5px] text-red-600 ml-auto"
                   @click="hapus(`/miners/mcu/${m.id}`, 'pengajuan ini')">Hapus</button>
         </div>

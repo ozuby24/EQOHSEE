@@ -62,6 +62,22 @@ const menunggu = () =>
       </div>
     </section>
 
+    <!-- Kebuntuan yang tidak terlihat dari mana pun: tanpa seorang pun
+         bertanda OHSE, seluruh pengajuan menumpuk pada "menunggu
+         tinjauan" dan tombol setujuinya tidak muncul bagi siapa pun. -->
+    <section v-if="props.menunggu && props.menunggu.adaOhse === false"
+             class="rounded-2xl bg-white border border-amber-300 shadow-card p-5">
+      <h3 class="text-[14px] font-bold" :style="{ color: KEADAAN.serius }">
+        Belum ada pengguna bertanda OHSE
+      </h3>
+      <p class="text-[12px] text-stone-600 mt-1">
+        Keputusan MCU, Mine Permit, dan Mine License dipegang tim OHSE. Selama belum ada
+        satu pun pengguna yang ditandai, seluruh pengajuan akan menumpuk pada
+        "menunggu tinjauan" dan tombol setujuinya tidak muncul bagi siapa pun.
+        Tandai lewat <b>Admin → Pengguna → Peran OHSE</b>.
+      </p>
+    </section>
+
     <div class="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
 
       <!-- ══ menunggu keputusan saya ══ -->

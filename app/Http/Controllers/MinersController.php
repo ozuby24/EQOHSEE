@@ -221,6 +221,18 @@ class MinersController extends Controller
                    penentu — supaya "kosong" tidak terbaca sebagai
                    "rusak". */
                 'sayaPenentu' => Tahap::penentu($u),
+
+                /* Tidak ada seorang pun bertanda OHSE adalah kebuntuan
+                   yang TIDAK TERLIHAT dari mana pun: seluruh pengajuan
+                   menumpuk pada status "menunggu tinjauan" dan tombol
+                   setujuinya tidak pernah muncul bagi siapa pun.
+                   Disebutkan di sini karena dasbor adalah satu-satunya
+                   layar yang pasti dibuka orang tiap pagi. */
+                'adaOhse' => \App\Models\User::query()
+                    ->where('ohse_role', 'ohse')
+                    ->when($u?->company_id && !$u->isAdmin(),
+                        fn ($q) => $q->where('company_id', $u->company_id))
+                    ->exists(),
             ],
 
             /* Kartu angka. Tiap satu punya tautan ke barisnya. */
@@ -320,6 +332,8 @@ class MinersController extends Controller
                 'statusLabel' => Alur::LABEL[$m->status] ?? $m->status,
                 'dapatDiubah' => $m->dapatDiubah(),
                 'dapatDitinjau' => $m->dapatDitinjauOleh($request->user()),
+                'sebabTakTinjau' => Tahap::sebabTakDapatMemutuskan(
+                    $request->user(), $m->status, $m->diajukan_oleh),
                 'alasanTolak' => $m->alasan_tolak,
                 'pengaju'     => $m->pengaju?->name,
                 'peninjau'    => $m->peninjau?->name,
@@ -1512,6 +1526,8 @@ class MinersController extends Controller
             'statusLabel'   => Alur::LABEL[$k->status] ?? $k->status,
             'dapatDiubah'   => $k->dapatDiubah(),
             'dapatDitinjau' => $k->dapatDitinjauOleh(auth()->user()),
+            'sebabTakTinjau' => Tahap::sebabTakDapatMemutuskan(
+                auth()->user(), $k->status, $k->diajukan_oleh),
             'alasanTolak'   => $k->alasan_tolak,
             'syaratKurang'  => $k->syaratKurang(),
             'berlaku'       => $k->sudahDisetujui(),

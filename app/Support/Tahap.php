@@ -157,4 +157,39 @@ final class Tahap
     {
         return (bool) $u?->isAdmin() || (bool) $u?->isOhse();
     }
+
+    /**
+     * Mengapa orang ini TIDAK dapat memutuskan pengajuan itu.
+     *
+     * Ada karena kegagalan yang sesungguhnya dilaporkan bukan
+     * "penolakannya salah" melainkan "tombolnya tidak ada". Menyembunyikan
+     * tombol tanpa keterangan adalah bentuk penolakan yang paling buruk:
+     * yang membacanya tidak dapat membedakan antara tidak berhak, sudah
+     * diputus, dan sistemnya rusak — dan dugaan yang paling sering
+     * diambil adalah yang ketiga.
+     *
+     * @return ?string null bila ia memang dapat memutuskan
+     */
+    public static function sebabTakDapatMemutuskan(?User $u, string $status, $diajukanOleh): ?string
+    {
+        if (!self::penentu($u)) {
+            return 'Keputusan dipegang tim OHSE. Peran OHSE diberikan lewat '
+                 .'Admin → Pengguna → Peran OHSE.';
+        }
+
+        if ($status === Alur::DRAF) {
+            return 'Masih draf — belum diajukan, jadi belum ada yang perlu diputuskan.';
+        }
+
+        if ($status !== Alur::DIAJUKAN) {
+            return 'Sudah diputus ('.(Alur::LABEL[$status] ?? $status).').';
+        }
+
+        if ($diajukanOleh !== null && $diajukanOleh === $u?->getKey()) {
+            return 'Anda pengajunya sendiri. Pengaju tidak meninjau pekerjaannya '
+                 .'sendiri — mintalah anggota OHSE lain memutuskannya.';
+        }
+
+        return null;
+    }
 }
