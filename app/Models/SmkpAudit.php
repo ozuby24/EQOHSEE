@@ -81,6 +81,12 @@ class SmkpAudit extends Model
         return SmkpTahap::rekapRencana($this->rencana);
     }
 
+    /** Apakah Rencana Audit selaras dengan hitungan hari kerja Tahap I. */
+    public function selarasRencana(): array
+    {
+        return SmkpTahap::selarasRencana($this->rencana, $this->mandays());
+    }
+
     /**
      * Audit lapangan hanya boleh berjalan setelah Tahap I tuntas: seluruh
      * elemen sudah ditinjau kecukupan dokumentasinya dan Rencana Audit lengkap

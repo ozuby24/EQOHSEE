@@ -148,9 +148,66 @@ function nilaiAwal(kode: string) { return { ...(audit.value.hasil?.[kode] ?? {})
           <div><h4 class="text-[12px] font-bold">Faktor pengurang hari</h4>
             <label v-for="(teks, kunci) in props.pengurang ?? {}" :key="kunci" class="flex gap-2 items-start text-[12px] mt-2"><input v-model="tahapForm.permulaan.pengurang[kunci]" type="checkbox" class="mt-0.5 accent-[#F57C00]"><span>{{ teks }}</span></label></div>
         </div>
+
+        <!-- Tabelnya ditampilkan, bukan hanya hasilnya. Auditor yang
+             menyerahkan angka mandays kepada auditi akan ditanya dari mana
+             angka itu; baris yang berlaku ditandai supaya jawabannya ada di
+             layar yang sama, bukan di berkas acuan yang terpisah. -->
+        <details class="mt-5">
+          <summary class="text-[12px] font-bold cursor-pointer">Tabel mandays dasar — {{ (props.tabelMandays ?? []).length }} rentang pekerja</summary>
+          <div class="overflow-x-auto mt-3">
+            <table class="min-w-full text-[11.5px]">
+              <thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-1.5 pr-4">Jumlah pekerja</th><th class="py-1.5 pr-4">Tinggi</th><th class="py-1.5 pr-4">Menengah</th><th class="py-1.5">Rendah</th></tr></thead>
+              <tbody>
+                <tr v-for="baris in props.tabelMandays ?? []" :key="baris[0]"
+                    class="border-b border-stone-50"
+                    :class="props.mandays?.rentang === `${baris[0]}–${baris[1] >= 999999 ? '∞' : baris[1]}` ? 'font-bold bg-stone-50' : ''">
+                  <td class="py-1.5 pr-4">{{ baris[0] }}–{{ baris[1] >= 999999 ? '∞' : baris[1] }}</td>
+                  <td class="py-1.5 pr-4">{{ baris[2] }}</td>
+                  <td class="py-1.5 pr-4">{{ baris[3] }}</td>
+                  <td class="py-1.5">{{ baris[4] }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <!-- Peringatan sumber ikut tercetak. Angka ini menagih hari kerja
+                 auditor dan dibawa ke auditi; berkas acuannya sendiri
+                 menyebutnya default ilustratif, bukan angka Kepdirjen. -->
+            <p class="text-[11px] text-amber-700 mt-3 leading-relaxed">
+              Tabel ini pola ISO/IEC 17021 sebagai bawaan, bukan salinan angka Kepdirjen
+              185.K/37.04/DJB/2019. Sesuaikan bila ketentuan yang berlaku bagi perusahaan berbeda.
+            </p>
+          </div>
+        </details>
       </div><button class="eq-btn-utama">Simpan Tahap I</button></form></section>
 
-    <section v-if="props.mode === 'rencana'" class="space-y-4"><form @submit.prevent="simpanRencana"><div class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><h3 class="font-bold text-[14px]">Sembilan komponen rencana audit</h3><div class="grid gap-3 md:grid-cols-2 mt-4"><label v-for="field in ['nomor','tanggal_mulai','tanggal_selesai']" :key="field" class="text-[12px] font-semibold">{{ field.replaceAll('_',' ') }}<input v-model="rencanaForm[field]" :type="field.includes('tanggal') ? 'date' : 'text'" class="mt-1 w-full rounded-xl border-stone-200 text-[12px]"></label><label v-for="field in ['tujuan','kriteria','ruang_lingkup','sumberdaya','metode','sampel']" :key="field" class="text-[12px] font-semibold md:col-span-2">{{ field.replaceAll('_',' ') }}<textarea v-model="rencanaForm[field]" rows="2" class="mt-1 w-full rounded-xl border-stone-200 text-[12px]"></textarea></label></div></div><div class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><div class="flex justify-between items-center"><h3 class="font-bold text-[14px]">Susunan kegiatan</h3><button type="button" class="eq-btn-lain" @click="tambahBaris('susunan')">Tambah baris</button></div><div v-for="(row, index) in rencanaForm.susunan" :key="index" class="grid gap-2 md:grid-cols-5 mt-3"><input v-model="row.tanggal" type="date" class="rounded-lg border-stone-200 text-[11px]"><input v-model="row.waktu" placeholder="Waktu" class="rounded-lg border-stone-200 text-[11px]"><input v-model="row.kegiatan" placeholder="Kegiatan" class="rounded-lg border-stone-200 text-[11px]"><input v-model="row.auditi" placeholder="Auditi" class="rounded-lg border-stone-200 text-[11px]"><button type="button" class="text-red-600 text-[11px]" @click="hapusBaris('susunan', index)">Hapus</button></div></div><div class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><div class="flex justify-between items-center"><h3 class="font-bold text-[14px]">Tim auditor</h3><button type="button" class="eq-btn-lain" @click="tambahBaris('tugas')">Tambah anggota</button></div><div v-for="(row, index) in rencanaForm.tugas" :key="index" class="grid gap-2 md:grid-cols-4 mt-3"><input v-model="row.nama" placeholder="Nama" class="rounded-lg border-stone-200 text-[11px]"><input v-model="row.peran" placeholder="Peran" class="rounded-lg border-stone-200 text-[11px]"><input v-model="row.registrasi" placeholder="Registrasi" class="rounded-lg border-stone-200 text-[11px]"><button type="button" class="text-red-600 text-[11px]" @click="hapusBaris('tugas', index)">Hapus</button></div></div><button class="eq-btn-utama">Simpan Rencana Audit</button></form><div class="text-[12px] text-stone-500">Kelengkapan: {{ props.rekap?.lengkap ? 'lengkap' : `belum lengkap (${(props.rekap?.kurang ?? []).join(', ')})` }}</div></section>
+    <section v-if="props.mode === 'rencana'" class="space-y-4">
+      <!-- Hitungan Tahap I dibawa ke sini. Keduanya disimpan terpisah dan
+           sampai sekarang tidak pernah dibandingkan, sehingga rencana yang
+           menjadwalkan tiga hari untuk audit yang menuntut empat belas tetap
+           lolos sebagai "lengkap" — dan selisihnya baru ketahuan di lapangan
+           pada hari terakhir. -->
+      <div class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+          <h3 class="font-bold text-[14px]">Dasar hari kerja audit</h3>
+          <Link :href="`/smkp/${audit.id}/tahap-1`" class="eq-btn-mini">Ubah di Tahap I</Link>
+        </div>
+        <p class="text-[12px] text-stone-500 mt-1">
+          {{ props.mandays?.pekerja ?? 0 }} pekerja · risiko {{ props.mandays?.kelas ?? '—' }} ·
+          {{ props.mandays?.total ?? 0 }} mandays ÷ {{ props.mandays?.auditor ?? 1 }} auditor =
+          <b>{{ props.mandays?.durasi ?? 0 }} hari</b> di lapangan, Tahap II
+          <b>{{ props.mandays?.tahap2 ?? 0 }} hari</b>.
+        </p>
+        <ul class="mt-3 space-y-1.5">
+          <li v-for="c in props.selaras ?? []" :key="c.kunci" class="flex gap-2 text-[12px] items-start">
+            <!-- Bentuk lebih dulu, warna menyusul: lembar ini juga dibaca
+                 orang yang tidak dapat membedakan hijau dari merah. -->
+            <span class="font-bold w-4 shrink-0" :class="c.selaras ? 'text-emerald-700' : 'text-amber-700'">{{ c.selaras ? '✓' : '!' }}</span>
+            <span><b>{{ c.judul }}</b> — <span :class="c.selaras ? 'text-stone-500' : 'text-amber-700'">{{ c.ket }}</span></span>
+          </li>
+        </ul>
+      </div>
+
+      <form @submit.prevent="simpanRencana"><div class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><h3 class="font-bold text-[14px]">Sembilan komponen rencana audit</h3><div class="grid gap-3 md:grid-cols-2 mt-4"><label v-for="field in ['nomor','tanggal_mulai','tanggal_selesai']" :key="field" class="text-[12px] font-semibold">{{ field.replaceAll('_',' ') }}<input v-model="rencanaForm[field]" :type="field.includes('tanggal') ? 'date' : 'text'" class="mt-1 w-full rounded-xl border-stone-200 text-[12px]"></label><label v-for="field in ['tujuan','kriteria','ruang_lingkup','sumberdaya','metode','sampel']" :key="field" class="text-[12px] font-semibold md:col-span-2">{{ field.replaceAll('_',' ') }}<textarea v-model="rencanaForm[field]" rows="2" class="mt-1 w-full rounded-xl border-stone-200 text-[12px]"></textarea></label></div></div><div class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><div class="flex justify-between items-center"><h3 class="font-bold text-[14px]">Susunan kegiatan</h3><button type="button" class="eq-btn-lain" @click="tambahBaris('susunan')">Tambah baris</button></div><div v-for="(row, index) in rencanaForm.susunan" :key="index" class="grid gap-2 md:grid-cols-5 mt-3"><input v-model="row.tanggal" type="date" class="rounded-lg border-stone-200 text-[11px]"><input v-model="row.waktu" placeholder="Waktu" class="rounded-lg border-stone-200 text-[11px]"><input v-model="row.kegiatan" placeholder="Kegiatan" class="rounded-lg border-stone-200 text-[11px]"><input v-model="row.auditi" placeholder="Auditi" class="rounded-lg border-stone-200 text-[11px]"><button type="button" class="text-red-600 text-[11px]" @click="hapusBaris('susunan', index)">Hapus</button></div></div><div class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><div class="flex justify-between items-center"><h3 class="font-bold text-[14px]">Tim auditor</h3><button type="button" class="eq-btn-lain" @click="tambahBaris('tugas')">Tambah anggota</button></div><div v-for="(row, index) in rencanaForm.tugas" :key="index" class="grid gap-2 md:grid-cols-4 mt-3"><input v-model="row.nama" placeholder="Nama" class="rounded-lg border-stone-200 text-[11px]"><input v-model="row.peran" placeholder="Peran" class="rounded-lg border-stone-200 text-[11px]"><input v-model="row.registrasi" placeholder="Registrasi" class="rounded-lg border-stone-200 text-[11px]"><button type="button" class="text-red-600 text-[11px]" @click="hapusBaris('tugas', index)">Hapus</button></div></div><button class="eq-btn-utama">Simpan Rencana Audit</button></form><div class="text-[12px] text-stone-500">Kelengkapan: {{ props.rekap?.lengkap ? 'lengkap' : `belum lengkap (${(props.rekap?.kurang ?? []).join(', ')})` }}</div></section>
 
     <section v-if="props.mode === 'rapat'" class="space-y-4"><div class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><h3 class="font-bold text-[14px]">Tambah peserta rapat</h3><form class="grid gap-3 md:grid-cols-5 mt-4" @submit.prevent="simpanHadir"><select v-model="hadirForm.rapat" class="rounded-lg border-stone-200 text-[12px]"><option v-for="(label, key) in props.rapat ?? {}" :key="key" :value="key">{{ label }}</option></select><input v-model="hadirForm.nama" required placeholder="Nama" class="rounded-lg border-stone-200 text-[12px]"><input v-model="hadirForm.jabatan" placeholder="Jabatan" class="rounded-lg border-stone-200 text-[12px]"><input v-model="hadirForm.perusahaan" placeholder="Perusahaan" class="rounded-lg border-stone-200 text-[12px]"><button class="eq-btn-utama">Tambah</button></form></div><div v-for="(rows, key) in props.hadir ?? {}" :key="key" class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><h3 class="font-bold text-[14px]">{{ props.rapat?.[key] ?? key }}</h3><div v-for="person in rows" :key="person.id" class="flex justify-between border-b border-stone-100 py-2 text-[12px]"><span>{{ person.nama }} · {{ person.jabatan ?? '—' }} · {{ person.perusahaan ?? '—' }}</span><button type="button" class="text-red-600" @click="router.delete(`/smkp/${audit.id}/rapat/${person.id}`)">Hapus</button></div><a :href="`/smkp/${audit.id}/daftar-hadir/${key}`" target="_blank" class="inline-block mt-3 text-[11px] text-cam-lime-deep">Cetak daftar hadir</a></div></section>
 

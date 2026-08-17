@@ -278,7 +278,6 @@ class SmkpController extends Controller
             'faktor'    => SmkpTahap::faktorPenyesuaian(),
             'pengurang' => SmkpTahap::faktorPengurang(),
             'risiko'    => SmkpTahap::kelasRisiko(),
-            'tabelMandays' => SmkpTahap::MANDAYS_TABLE,
             'kinerja'   => SmkpTahap::butirKinerja(),
             'mandays'   => $smkp->mandays(),
             'rekap'     => $smkp->rekapKecukupan(),
@@ -300,6 +299,11 @@ class SmkpController extends Controller
             'elemen'   => Smkp::elemen(),
             'rekap'    => $smkp->rekapRencana(),
             'mandays'  => $smkp->mandays(),
+
+            /* Hitungan Tahap I dibawa ke sini supaya rencana yang
+               menjadwalkan tiga hari untuk audit yang menuntut empat belas
+               tidak lolos sebagai "lengkap" dan baru ketahuan di lapangan. */
+            'selaras'  => $smkp->selarasRencana(),
         ]);
     }
 
@@ -389,6 +393,7 @@ class SmkpController extends Controller
             'kegiatan' => SmkpTahap::kegiatanLapangan(),
             'rekap'    => $smkp->rekapRencana(),
             'mandays'  => $smkp->mandays(),
+            'selaras'  => $smkp->selarasRencana(),
             'dok'      => $this->kop($smkp, 'rencana-audit'),
             'kembali'  => route('smkp.rencana', $smkp),
         ]);

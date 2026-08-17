@@ -16,6 +16,7 @@ const props = defineProps<{
   kelayakan?: Record<string, string>;
   faktor?: Record<string, string>;
   pengurang?: Record<string, string>;
+  selaras?: Array<{ kunci: string; judul: string; selaras: boolean; ket: string }>;
   kinerja?: Record<string, any>;
   komponen?: Record<string, any>;
   pengesah?: Record<string, any>;
@@ -131,10 +132,34 @@ const total = computed(() => props.totalLembar || (
       <section class="lembar bg-white rounded-2xl border border-stone-100 p-6 print:border-0 print:rounded-none print:p-0 lembar-putus">
         <DocHeader :dok="props.dok" :title="title" :halaman="1" :dari="3" /><h1 class="text-center font-bold text-[16px] uppercase border-b border-stone-200 pb-4 mb-5">Rencana Audit SMKP</h1><InfoAudit :audit="props.audit" />
         <div v-for="(key, index) in ['tujuan', 'kriteria', 'ruang_lingkup']" :key="key" class="mb-4"><h3 class="font-bold text-[13px]">{{ nomor(index) }}. {{ props.komponen?.[key]?.judul || key }}</h3><p class="text-[12px] text-stone-600 whitespace-pre-line">{{ rencana[key] || 'Belum diisi.' }}</p></div>
-        <h3 class="font-bold text-[13px]">4. {{ props.komponen?.tanggal?.judul || 'Jadwal Audit' }}</h3><p class="text-[12px] text-stone-600">{{ tanggal(rencana.tanggal_mulai) }} - {{ tanggal(rencana.tanggal_selesai) }}</p><!-- Alokasi tahap diukur dalam HARI DI LAPANGAN, bukan dalam mandays.
-             Menyebut "3 hari dari 16 hari" ketika 16 itu orang-hari membuat
-             pembacanya mengira audit molor lima kali lipat dari jadwalnya. -->
-        <p class="text-[11px] text-stone-500 mt-2">Alokasi Tahap II: {{ props.mandays?.tahap2 ?? '-' }} hari dari {{ props.mandays?.durasi ?? '-' }} hari di lapangan ({{ props.mandays?.total ?? '-' }} mandays ÷ {{ props.mandays?.auditor ?? '-' }} auditor).</p>
+        <h3 class="font-bold text-[13px]">4. {{ props.komponen?.tanggal?.judul || 'Jadwal Audit' }}</h3><p class="text-[12px] text-stone-600">{{ tanggal(rencana.tanggal_mulai) }} - {{ tanggal(rencana.tanggal_selesai) }}</p><!-- Dasar hari kerja audit ikut dicetak di sini, bukan hanya di Berita
+             Acara Tahap I. Rencana Audit dibagikan kepada auditi, dan tanggal
+             pelaksanaannya baru dapat disepakati bila dasar perhitungannya
+             terbaca — jumlah pekerja, kelas risiko, dan pembaginya. Alokasi
+             diukur dalam HARI DI LAPANGAN, bukan mandays: menyebut "3 hari
+             dari 16 hari" ketika 16 itu orang-hari membuat pembacanya
+             mengira audit molor lima kali lipat dari jadwalnya. -->
+        <table class="w-full text-[11px] mt-3 border border-stone-200"><tbody>
+          <tr v-for="baris in [
+                ['Jumlah tenaga kerja auditi', `${props.mandays?.pekerja ?? '-'} orang`],
+                ['Kelas risiko', props.mandays?.kelas ?? '-'],
+                ['Total mandays', `${props.mandays?.total ?? '-'} orang-hari`],
+                ['Jumlah auditor', `${props.mandays?.auditor ?? '-'} orang`],
+                ['Durasi audit di lapangan', `${props.mandays?.durasi ?? '-'} hari`],
+                ['Alokasi Tahap II', `${props.mandays?.tahap2 ?? '-'} hari`],
+              ]" :key="baris[0]" class="border-b border-stone-100">
+            <td class="p-1.5 text-stone-500 w-56">{{ baris[0] }}</td>
+            <td class="p-1.5 font-semibold">{{ baris[1] }}</td>
+          </tr>
+        </tbody></table>
+        <!-- Ketidakselarasan dicetak, tidak disembunyikan. Rencana yang
+             menjadwalkan lebih pendek dari alokasinya adalah kesepakatan
+             yang perlu dibaca auditi sebelum ditandatangani, bukan cacat
+             yang dirapikan diam-diam sebelum dibagikan. -->
+        <p v-for="c in (props.selaras || []).filter((x) => !x.selaras)" :key="c.kunci"
+           class="text-[10.5px] mt-2 font-semibold">
+          Catatan — {{ c.judul }}: {{ c.ket }}
+        </p>
       </section>
       <section class="lembar bg-white rounded-2xl border border-stone-100 p-6 print:border-0 print:rounded-none print:p-0 lembar-putus">
         <DocHeader :dok="props.dok" :title="title" :halaman="2" :dari="3" /><h3 class="font-bold text-[13px] mb-2">5. {{ props.komponen?.susunan?.judul || 'Susunan Kegiatan' }}</h3><table class="w-full text-[11px]"><thead><tr class="bg-stone-100 text-left"><th class="p-2">No</th><th class="p-2">Tanggal</th><th class="p-2">Waktu</th><th class="p-2">Kegiatan</th><th class="p-2">Auditi</th><th class="p-2">Auditor</th></tr></thead><tbody><tr v-for="(row, index) in rencana.susunan || []" :key="index" class="border-b border-stone-100"><td class="p-2">{{ nomor(index) }}</td><td class="p-2">{{ tanggal(row.tanggal) }}</td><td class="p-2">{{ row.waktu || '-' }}</td><td class="p-2">{{ row.kegiatan || '-' }}</td><td class="p-2">{{ row.auditi || '-' }}</td><td class="p-2">{{ row.auditor || '-' }}</td></tr></tbody></table><h3 class="font-bold text-[13px] mt-6 mb-2">6. {{ props.komponen?.tugas?.judul || 'Tim Auditor' }}</h3><table class="w-full text-[11px]"><thead><tr class="bg-stone-100 text-left"><th class="p-2">No</th><th class="p-2">Nama</th><th class="p-2">Peran</th><th class="p-2">Registrasi</th><th class="p-2">Lingkup</th></tr></thead><tbody><tr v-for="(row, index) in rencana.tugas || []" :key="index" class="border-b border-stone-100"><td class="p-2">{{ nomor(index) }}</td><td class="p-2">{{ row.nama }}</td><td class="p-2">{{ row.peran }}</td><td class="p-2">{{ row.registrasi || '-' }}</td><td class="p-2">{{ row.lingkup || '-' }}</td></tr></tbody></table>

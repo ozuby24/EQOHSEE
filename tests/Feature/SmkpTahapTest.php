@@ -305,6 +305,104 @@ class SmkpTahapTest extends TestCase
         $this->assertSame(16, $m['dasar']);
     }
 
+    /* ---------- keselarasan Rencana Audit dengan hari kerja ---------- */
+
+    /** Hitungan hari kerja untuk 460 pekerja risiko Tinggi, satu auditor. */
+    private function mandaysUji(int $auditor = 1): array
+    {
+        return SmkpTahap::mandays([
+            'jumlah_pekerja' => 460, 'kelas_risiko' => 'Tinggi', 'jumlah_auditor' => $auditor,
+        ]);
+    }
+
+    private function selaras(array $rencana, int $auditor = 1): array
+    {
+        return collect(SmkpTahap::selarasRencana($rencana, $this->mandaysUji($auditor)))
+            ->keyBy('kunci')->all();
+    }
+
+    public function test_jumlah_auditor_tim_harus_sama_dengan_pembagi_durasi(): void
+    {
+        $tugas = ['tugas' => [['nama' => 'Ir. Bambang'], ['nama' => 'Sdri. Rina']]];
+
+        /* Durasi dibagi jumlah auditor. Bila tim yang benar-benar ditugaskan
+           berbeda dari pembaginya, durasi di lapangan yang tercetak pada
+           Rencana Audit bukan angka yang akan terjadi. */
+        $this->assertFalse($this->selaras($tugas, 1)['auditor']['selaras']);
+        $this->assertTrue($this->selaras($tugas, 2)['auditor']['selaras']);
+    }
+
+    public function test_pembagian_tugas_kosong_bukan_ketidakselarasan(): void
+    {
+        /* Belum diisi bukan salah — hanya pekerjaan yang belum dimulai.
+           Menandainya merah membuat rencana yang baru dibuka tampak cacat. */
+        $c = $this->selaras([], 2)['auditor'];
+
+        $this->assertTrue($c['selaras']);
+        $this->assertStringContainsString('belum diisi', $c['ket']);
+    }
+
+    public function test_rentang_tanggal_lebih_pendek_dari_alokasi_tahap_dua_ditandai(): void
+    {
+        // Tahap II menuntut 14,4 hari untuk satu auditor.
+        $pendek = ['tanggal_mulai' => '2026-03-02', 'tanggal_selesai' => '2026-03-04'];
+        $cukup  = ['tanggal_mulai' => '2026-03-02', 'tanggal_selesai' => '2026-03-20'];
+
+        $this->assertFalse($this->selaras($pendek)['tanggal']['selaras']);
+        $this->assertStringContainsString('3 hari', $this->selaras($pendek)['tanggal']['ket']);
+        $this->assertTrue($this->selaras($cukup)['tanggal']['selaras']);
+    }
+
+    public function test_rentang_sehari_dihitung_satu_hari_bukan_nol(): void
+    {
+        $c = $this->selaras(['tanggal_mulai' => '2026-03-02', 'tanggal_selesai' => '2026-03-02']);
+
+        $this->assertStringContainsString('1 hari', $c['tanggal']['ket']);
+    }
+
+    public function test_kegiatan_di_luar_rentang_tanggal_audit_ditandai(): void
+    {
+        $r = [
+            'tanggal_mulai' => '2026-03-02', 'tanggal_selesai' => '2026-03-20',
+            'susunan' => [
+                ['tanggal' => '2026-03-03', 'kegiatan' => 'Rapat pembukaan'],
+                ['tanggal' => '2026-04-01', 'kegiatan' => 'Rapat penutupan'],
+                ['tanggal' => '',           'kegiatan' => 'Belum dijadwalkan'],
+            ],
+        ];
+
+        $c = $this->selaras($r)['susunan'];
+
+        /* Baris tanpa tanggal bukan pelanggaran; yang di luar rentang iya.
+           Jadwal penutupan yang jatuh sebulan setelah audit berakhir adalah
+           salah ketik yang tidak pernah menimbulkan galat. */
+        $this->assertFalse($c['selaras']);
+        $this->assertStringContainsString('1 kegiatan', $c['ket']);
+    }
+
+    public function test_tanggal_belum_ditetapkan_tidak_dihitung_menyimpang(): void
+    {
+        foreach ($this->selaras([]) as $c) {
+            $this->assertTrue($c['selaras'], "{$c['judul']} tidak boleh ditandai sebelum diisi.");
+        }
+    }
+
+    public function test_halaman_rencana_membawa_hasil_pemeriksaan_keselarasan(): void
+    {
+        $this->masuk();
+        $a = $this->audit(['permulaan' => ['jumlah_pekerja' => 460, 'jumlah_auditor' => 2]]);
+
+        foreach ([route('smkp.rencana', $a), route('smkp.rencana.cetak', $a)] as $alamat) {
+            $props = $this->get($alamat)->assertOk()->viewData('page')['props'];
+
+            $this->assertSame(
+                ['auditor', 'tanggal', 'susunan'],
+                array_column($props['selaras'], 'kunci'),
+                "Pemeriksaan keselarasan tidak sampai ke {$alamat}."
+            );
+        }
+    }
+
     public function test_menyimpan_tahap_satu_mencatat_faktor_yang_tidak_dicentang(): void
     {
         // Kotak yang tidak dicentang tidak terkirim; jawabannya tetap harus

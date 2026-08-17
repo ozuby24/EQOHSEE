@@ -438,6 +438,115 @@ final class SmkpTahap
         ];
     }
 
+    /**
+     * Keselarasan Rencana Audit terhadap hitungan hari kerja audit.
+     *
+     * Tahap I menghitung berapa hari audit ini menuntut; Rencana Audit
+     * menetapkan kapan audit dijalankan dan oleh siapa. Keduanya disimpan
+     * terpisah dan sampai sekarang tidak pernah dibandingkan — sehingga
+     * rencana yang menjadwalkan tiga hari untuk audit yang menuntut empat
+     * belas hari tetap lolos sebagai "lengkap", dan selisihnya baru
+     * ketahuan di lapangan pada hari terakhir.
+     *
+     * Yang dikembalikan penilaian, bukan penolakan. Auditor boleh punya
+     * alasan menyimpang — yang tidak boleh adalah menyimpang tanpa tahu.
+     *
+     * @return list<array{kunci:string,judul:string,selaras:bool,ket:string}>
+     */
+    public static function selarasRencana(?array $rencana, array $mandays): array
+    {
+        $r = (array) ($rencana ?? []);
+
+        // Auditor yang benar-benar bernama pada pembagian tugas.
+        $tim = 0;
+        foreach ((array) ($r['tugas'] ?? []) as $b) {
+            if (trim((string) ($b['nama'] ?? '')) !== '') $tim++;
+        }
+
+        $pembagi = (int) ($mandays['auditor'] ?? 1);
+        $tahap2  = (float) ($mandays['tahap2'] ?? 0);
+        $hari    = self::rentangHari($r['tanggal_mulai'] ?? null, $r['tanggal_selesai'] ?? null);
+        $luar    = self::susunanDiLuarRentang($r);
+
+        return [
+            [
+                'kunci'   => 'auditor',
+                'judul'   => 'Jumlah auditor',
+                // Tim yang belum diisi sama sekali bukan ketidakselarasan,
+                // hanya pekerjaan yang belum dimulai.
+                'selaras' => $tim === 0 || $tim === $pembagi,
+                'ket'     => $tim === 0
+                    ? 'Pembagian tugas belum diisi; hitungan memakai '.$pembagi.' auditor.'
+                    : ($tim === $pembagi
+                        ? $tim.' auditor, sama dengan pembagi durasi.'
+                        : $tim.' auditor pada pembagian tugas, tetapi durasi dibagi '.$pembagi.'. Durasi di lapangan tidak lagi benar.'),
+            ],
+            [
+                'kunci'   => 'tanggal',
+                'judul'   => 'Rentang tanggal audit',
+                'selaras' => $hari === null || $hari >= $tahap2,
+                'ket'     => $hari === null
+                    ? 'Tanggal pelaksanaan belum ditetapkan.'
+                    : ($hari >= $tahap2
+                        ? $hari.' hari dijadwalkan untuk alokasi Tahap II '.$tahap2.' hari.'
+                        : 'Hanya '.$hari.' hari dijadwalkan, sedangkan Tahap II menuntut '.$tahap2.' hari.'),
+            ],
+            [
+                'kunci'   => 'susunan',
+                'judul'   => 'Susunan kegiatan',
+                'selaras' => $luar === 0,
+                'ket'     => $luar === 0
+                    ? 'Seluruh kegiatan berada dalam rentang tanggal audit.'
+                    : $luar.' kegiatan dijadwalkan di luar rentang tanggal audit.',
+            ],
+        ];
+    }
+
+    /** Jumlah hari kalender sebuah rentang, ujung ke ujung. Null bila belum lengkap. */
+    private static function rentangHari($mulai, $selesai): ?int
+    {
+        if (blank($mulai) || blank($selesai)) return null;
+
+        try {
+            $a = \Illuminate\Support\Carbon::parse($mulai)->startOfDay();
+            $b = \Illuminate\Support\Carbon::parse($selesai)->startOfDay();
+        } catch (\Throwable) {
+            return null;
+        }
+
+        // Sehari penuh dihitung satu hari, bukan nol.
+        return $b->lessThan($a) ? null : (int) $a->diffInDays($b) + 1;
+    }
+
+    /** Berapa baris susunan kegiatan yang tanggalnya jatuh di luar rentang audit. */
+    private static function susunanDiLuarRentang(array $r): int
+    {
+        if (blank($r['tanggal_mulai'] ?? null) || blank($r['tanggal_selesai'] ?? null)) return 0;
+
+        try {
+            $a = \Illuminate\Support\Carbon::parse($r['tanggal_mulai'])->startOfDay();
+            $b = \Illuminate\Support\Carbon::parse($r['tanggal_selesai'])->endOfDay();
+        } catch (\Throwable) {
+            return 0;
+        }
+
+        $n = 0;
+        foreach ((array) ($r['susunan'] ?? []) as $baris) {
+            $t = $baris['tanggal'] ?? null;
+            if (blank($t)) continue;
+
+            try {
+                $hari = \Illuminate\Support\Carbon::parse($t);
+            } catch (\Throwable) {
+                continue;
+            }
+
+            if ($hari->lessThan($a) || $hari->greaterThan($b)) $n++;
+        }
+
+        return $n;
+    }
+
     /** Pihak yang mengesahkan Rencana Audit. */
     public static function pengesah(): array
     {
