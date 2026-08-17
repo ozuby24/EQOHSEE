@@ -19,7 +19,8 @@ use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, 
                 TindakLanjut, User, WaterLog, WaterSump, WaterSumpPump, WorkOrder, WorkOrderPart,
                 EnergyBaseline, EnergyFuelRecon, EnergyOpportunity, EnergyOtherLog,
                 EnergyPowerLog, EnergyProduction,
-                KoPersonnel, MineMapLayer, MinerbaConservationRecord, Note, Percakapan,
+                KoPersonnel, KompetensiJenis, MineMapLayer, MinerbaConservationRecord, Note,
+                Paspor, PasporKartu, PasporMcu, PasporSertifikat, Percakapan,
                 Pesan, Signatory, TpkkpAssessment, TpkkpResponse};
 use Illuminate\Support\Carbon;
 
@@ -117,6 +118,11 @@ final class DataContoh
 
         TpkkpResponse::class, TpkkpAssessment::class,
         Note::class,
+
+        /* Authority. Ketiga anaknya menggantung pada paspor; jenis
+           kompetensi TIDAK dibuang — ia master nasional milik bersama,
+           bukan data contoh. */
+        PasporSertifikat::class, PasporMcu::class, PasporKartu::class, Paspor::class,
 
         /* Prosedur dan berita baru dapat masuk ke sini sesudah keduanya
            melekat perusahaan; sebelum itu penghapusnya tidak punya
@@ -336,6 +342,10 @@ final class DataContoh
             Pesan::class => $q->whereIn('percakapan_id',
                 Percakapan::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
 
+            PasporSertifikat::class, PasporMcu::class, PasporKartu::class
+                => $q->whereIn('paspor_id',
+                    Paspor::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
             /* Catatan belajar menggantung pada modul, dan modul pada
                kursus yang dibuat perusahaan contoh ini. */
             Note::class => $q->whereIn('module_id',
@@ -458,10 +468,143 @@ final class DataContoh
             'Tindak lanjut'  => $this->tindakLanjut(),
             'Penanda tangan' => $this->penandaTangan(),
             'Peta tambang'   => $this->peta(),
+            'Authority'      => $this->authority(),
             'TPKKP'          => $this->tpkkp(),
             'Pesan'          => $this->pesan(),
             'Catatan'        => $this->catatan(),
         ]);
+    }
+
+    /* ─────────── Authority: kelayakan kerja ─────────── */
+
+    /**
+     * Berkas kelayakan kerja lima orang.
+     *
+     * Sebarannya sengaja tidak rapi, dan tiap ketidakrapiannya menguji
+     * satu hal:
+     *
+     *   satu MCU kadaluarsa       → orangnya tidak boleh bekerja
+     *   satu hasil Temporary Unfit → tidak boleh meski MCU masih berlaku
+     *   satu kartu masuk habis     → tidak boleh meski MCU sehat
+     *   satu sertifikat lewat      → orangnya tetap boleh masuk, tetapi
+     *                                 tidak boleh mengerjakan pekerjaan
+     *                                 yang menuntut sertifikat itu
+     *   satu tanpa tanggal         → bukan aman, melainkan tidak diketahui
+     *
+     * Berkas yang seluruhnya berlaku tidak pernah menyalakan satu pun
+     * peringatan, dan peringatan yang tidak pernah menyala tidak dapat
+     * dibedakan dari peringatan yang rusak.
+     */
+    private function authority(): int
+    {
+        $n = 0;
+
+        /* Jenis kompetensi ditanam bila pemasangannya belum punya —
+           masternya milik bersama, jadi tidak ikut dibuang bersama data
+           contoh. */
+        if (KompetensiJenis::withoutGlobalScopes()->whereNull('company_id')->doesntExist()) {
+            MasterKompetensi::tanam();
+        }
+
+        $jenis = KompetensiJenis::withoutGlobalScopes()
+            ->whereNull('company_id')->pluck('id', 'nama');
+
+        $orang = [
+            ['Ir. Bambang Susilo',  '3201010101800001', 'Kepala Teknik Tambang',   'OHSE',      'PO'],
+            ['Dewi Anggraini',      '3201010202850002', 'Manajer OHSE',            'OHSE',      'PO'],
+            ['Rahmat Hidayat',      '3201010303900003', 'Operator Crane',          'Workshop',  'TTK'],
+            ['Sri Wahyuni',         '3201010404880004', 'Pengawas Workshop',       'Workshop',  'PT'],
+            ['Bayu Pratama',        '3201010505920005', 'Surveyor Tambang',        'Engineering','TTK'],
+        ];
+
+        /* [sertifikat, hari sampai kadaluarsa] · null = tanpa tanggal */
+        $sertifikat = [
+            0 => [['Pengawas Operasional Utama (POU)', 620], ['Implementasi SMKP', 200]],
+            1 => [['Pengawas Operasional Madya (POM)', 410], ['Auditor SMKP', 75],
+                  ['AK3U BNSP', -30]],
+            2 => [['SIO Kelas 2 ( Surat Ijin Operator ) beban 25 - 50 Ton', 45],
+                  ['Rigger', 150]],
+            3 => [['Pengawas Operasional Pertama (POP)', 300], ['Petugas P3K', null]],
+            4 => [['Juru Ukur', 520]],
+        ];
+
+        /* [hari kadaluarsa MCU, hasil, pembatasan] */
+        $mcu = [
+            0 => [210, 'Fit', null],
+            1 => [140, 'Fit With Note', 'Pemeriksaan tekanan darah tiap enam bulan.'],
+            2 => [-12, 'Fit', null],                                   // kadaluarsa
+            3 => [95,  'Temporary Unfit', 'Cedera punggung; tidak boleh mengangkat beban.'],
+            4 => [330, 'Fit', null],
+        ];
+
+        /* [jenis kartu, hari kadaluarsa, golongan] */
+        $kartu = [
+            0 => [['ID Card', 400, null], ['SIMPER', 180, 'LV']],
+            1 => [['ID Card', 250, null]],
+            2 => [['ID Card', 60, null], ['SIMPER', 20, 'Alat Berat']],
+            3 => [['ID Card', 310, null]],
+            4 => [['ID Card', -5, null]],                              // kartu habis
+        ];
+
+        foreach ($orang as $i => [$nama, $nik, $jabatan, $dept, $klas]) {
+            $p = $this->baru(Paspor::class, [
+                'user_id'        => $i === 0 ? $this->peninjau?->getKey()
+                                  : ($i === 2 ? $this->pengaju?->getKey() : null),
+                'nomor_register' => 'REG-'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
+                'nama'           => $nama,
+                'nik'            => $nik,
+                'jabatan'        => $jabatan,
+                'departemen'     => $dept,
+                'klasifikasi'    => $klas,
+                'status'         => 'aktif',
+                'tgl_bergabung'  => $this->kini->copy()->subYears(3 + $i)->toDateString(),
+            ]);
+            $n++;
+
+            foreach ($sertifikat[$i] ?? [] as $j => [$namaSert, $hari]) {
+                PasporSertifikat::withoutGlobalScopes()->create([
+                    'paspor_id'           => $p->id,
+                    'kompetensi_jenis_id' => $jenis[$namaSert] ?? null,
+                    'nama'                => $namaSert,
+                    'nomor'               => 'SRT/'.$this->kini->year.'/'
+                        .str_pad((string) ($i * 10 + $j + 1), 4, '0', STR_PAD_LEFT),
+                    'tgl_terbit'          => $this->kini->copy()->subYears(2)->toDateString(),
+                    'tgl_expired'         => $hari === null
+                        ? null : $this->kini->copy()->addDays($hari)->toDateString(),
+                ]);
+                $n++;
+            }
+
+            [$hariMcu, $hasil, $batas] = $mcu[$i];
+
+            PasporMcu::withoutGlobalScopes()->create([
+                'paspor_id'     => $p->id,
+                'tgl_periksa'   => $this->kini->copy()->addDays($hariMcu)->subYear()->toDateString(),
+                'tgl_expired'   => $this->kini->copy()->addDays($hariMcu)->toDateString(),
+                'penyelenggara' => 'Klinik Pratama Sehat Tambang',
+                'jenis'         => 'Berkala',
+                'hasil'         => $hasil,
+                'pembatasan'    => $batas,
+            ]);
+            $n++;
+
+            foreach ($kartu[$i] as [$jenisKartu, $hariKartu, $gol]) {
+                PasporKartu::withoutGlobalScopes()->create([
+                    'paspor_id'   => $p->id,
+                    'jenis'       => $jenisKartu,
+                    'nomor'       => $jenisKartu === 'SIMPER'
+                        ? 'SIM/'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT)
+                        : 'ID/'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
+                    'tgl_terbit'  => $this->kini->copy()->addDays($hariKartu)->subYear()->toDateString(),
+                    'tgl_expired' => $this->kini->copy()->addDays($hariKartu)->toDateString(),
+                    'golongan'    => $gol,
+                    'area'        => $gol ? 'Seluruh area tambang' : 'Area kantor dan workshop',
+                ]);
+                $n++;
+            }
+        }
+
+        return $n;
     }
 
     /* ─────────── TPKKP ─────────── */

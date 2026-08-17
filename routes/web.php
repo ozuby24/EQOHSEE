@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AuthorityController;
 use App\Http\Controllers\{
     CertificateController, CourseController, DashboardController, EvaluationController,
     LearnController, NewsController, PersonaliaController, ProcedureController, ProfileController,
@@ -113,6 +114,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('signatories',              [SignatoryController::class,'store'])->name('signatories.store');
         Route::put('signatories/{signatory}',   [SignatoryController::class,'update'])->name('signatories.update');
         Route::delete('signatories/{signatory}',[SignatoryController::class,'destroy'])->name('signatories.destroy');
+    });
+
+
+    /* ================= WEBSITE #1b — Authority: kelayakan kerja =================
+
+       Diletakkan tepat sesudah LMS: keduanya berbicara tentang orang yang
+       sama. LMS menerbitkan sertifikat pelatihan internal; Authority
+       menyimpan seluruh berkas kelayakan kerjanya — kompetensi, MCU, dan
+       kartu masuk tambang — dan menjawab satu pertanyaan yang ditanyakan
+       setiap pagi di gerbang: boleh atau tidak orang ini bekerja hari ini. */
+    Route::prefix('authority')->name('authority.')->group(function () {
+        Route::get('/',                [AuthorityController::class,'index'])->name('index');
+        Route::post('/',               [AuthorityController::class,'store'])->name('store');
+
+        Route::get('{paspor}',         [AuthorityController::class,'show'])->name('show');
+        Route::put('{paspor}',         [AuthorityController::class,'update'])->name('update');
+        Route::delete('{paspor}',      [AuthorityController::class,'destroy'])
+            ->middleware('can:admin')->name('destroy');
+
+        Route::post('{paspor}/sertifikat',              [AuthorityController::class,'simpanSertifikat'])->name('sertifikat.simpan');
+        Route::delete('{paspor}/sertifikat/{sertifikat}', [AuthorityController::class,'hapusSertifikat'])->name('sertifikat.hapus');
+
+        Route::post('{paspor}/mcu',        [AuthorityController::class,'simpanMcu'])->name('mcu.simpan');
+        Route::delete('{paspor}/mcu/{mcu}', [AuthorityController::class,'hapusMcu'])->name('mcu.hapus');
+
+        Route::post('{paspor}/kartu',          [AuthorityController::class,'simpanKartu'])->name('kartu.simpan');
+        Route::delete('{paspor}/kartu/{kartu}', [AuthorityController::class,'hapusKartu'])->name('kartu.hapus');
     });
 
 

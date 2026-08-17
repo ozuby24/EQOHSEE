@@ -54,6 +54,18 @@ final class Menu
         ],
       ],
     ],
+    /* Tepat sesudah LMS: keduanya berbicara tentang orang yang sama.
+       LMS menerbitkan sertifikat pelatihan; Authority menyimpan seluruh
+       berkas kelayakan kerjanya. */
+    'authority' => [
+      'label' => 'Authority',
+      'icon'  => 'M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 14l2 2 4-4',
+      'groups' => [
+        '' => [
+          ['Kelayakan Kerja', 'authority.index', 'authority*'],
+        ],
+      ],
+    ],
     'tpkkp' => [
       'label' => 'Safety Maturity Level',
       'icon'  => 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6',
@@ -394,31 +406,56 @@ final class Menu
   ];
     }
 
-    /** Kunci modul yang sedang dibuka, ditentukan dari alamat sekarang. */
+    /**
+     * Kunci modul yang sedang dibuka, ditentukan dari alamat sekarang.
+     *
+     * Ditulis sebagai DAFTAR, bukan rantai ternary bersarang.
+     * Bentuk sebelumnya berupa dua puluh ternary bertingkat yang
+     * ditutup sembilan belas kurung sekaligus di baris terakhir:
+     * menambah satu modul menuntut menghitung kurung dengan benar, dan
+     * salah satu kurung menghasilkan galat parse yang menumbangkan
+     * seluruh aplikasi — bukan hanya menunya.
+     *
+     * Urutannya berarti: yang PERTAMA cocok yang dipakai, jadi pola
+     * yang lebih khusus harus berada di atas yang lebih umum.
+     *
+     * @var list<array{0:list<string>,1:string}>
+     */
+    private const PETA_ALAMAT = [
+        [['personalia*', 'pesan*'],                'personalia'],
+        [['hazard*', 'inspeksi*'],                 'hazrep'],
+        [['tpkkp*'],                               'tpkkp'],
+        [['smkp*'],                                'smkp'],
+        [['dokumen*', 'iso*', 'struktur-dokumen', 'daftar-induk'], 'dokumen'],
+        [['energi*'],                              'energi'],
+        [['konservasi*'],                          'konservasi'],
+        [['operasi-tambang*'],                     'operasi'],
+        [['penirisan*'],                           'air'],
+        [['geoteknik*'],                           'geoteknik'],
+        [['peledakan*'],                           'peledakan'],
+        [['angkutan*'],                            'angkutan'],
+        [['biaya*'],                               'biaya'],
+        [['izin-kerja*'],                          'izin'],
+        [['lingkungan*'],                          'lingkungan'],
+        [['pemeliharaan*'],                        'maintenance'],
+        [['gudang*'],                              'gudang'],
+        [['mining-engineering-hub*'],              'meh'],
+        [['authority*'],                           'authority'],
+        [['ko*'],                                  'ko'],
+        [['admin*', 'signatories*'],               'admin'],
+    ];
+
     public static function modulAktif(): string
     {
-        $kunci = Request::is('personalia*') || Request::is('pesan*') ? 'personalia'
-         : (Request::is('hazard*') || Request::is('inspeksi*') ? 'hazrep'
-         : (Request::is('tpkkp*') ? 'tpkkp'
-         : (Request::is('smkp*') ? 'smkp'
-         : (Request::is('dokumen*') || Request::is('iso*') || Request::is('struktur-dokumen') || Request::is('daftar-induk') ? 'dokumen'
-         : (Request::is('energi*') ? 'energi'
-         : (Request::is('konservasi*') ? 'konservasi'
-         : (Request::is('operasi-tambang*') ? 'operasi'
-         : (Request::is('penirisan*') ? 'air'
-         : (Request::is('geoteknik*') ? 'geoteknik'
-         : (Request::is('peledakan*') ? 'peledakan'
-         : (Request::is('angkutan*') ? 'angkutan'
-         : (Request::is('biaya*') ? 'biaya'
-         : (Request::is('izin-kerja*') ? 'izin'
-         : (Request::is('lingkungan*') ? 'lingkungan'
-         : (Request::is('pemeliharaan*') ? 'maintenance'
-         : (Request::is('gudang*') ? 'gudang'
-         : (Request::is('mining-engineering-hub*') ? 'meh'
-         : (Request::is('ko*') ? 'ko'
-         : (Request::is('admin*') || Request::is('signatories*') ? 'admin' : 'lms')))))))))))))))))));
+        foreach (self::PETA_ALAMAT as [$pola, $kunci]) {
+            if (Request::is(...$pola)) {
+                return isset(self::all()[$kunci]) ? $kunci : 'lms';
+            }
+        }
 
-        return isset(self::all()[$kunci]) ? $kunci : 'lms';
+        /* LMS adalah beranda: alamat yang tidak dikenali satu pun pola
+           di atas memang berada di sana (dashboard, kursus, profil). */
+        return 'lms';
     }
 
     public static function modul(?string $kunci = null): array

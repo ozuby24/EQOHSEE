@@ -60,6 +60,14 @@ class CakupanDataContohTest extends TestCase
         'app_settings' => 'pengaturan, bukan data lapangan',
         'activity_logs'=> 'jejak perbuatan; terisi sendiri saat dipakai',
         'jejak_akses'  => 'jejak masuk; terisi sendiri saat dipakai',
+
+        /* Master 51 jenis kompetensi berasal dari SK Dirjen
+           185.K/37.04/DJB/2019 — regulasi nasional, sama bagi setiap
+           perusahaan. Ia ditanam sekali dan SENGAJA tidak ikut terbuang
+           bersama data contoh: membuangnya akan menghapus daftar pilih
+           yang dipakai seluruh perusahaan sungguhan pada pemasangan
+           yang sama. */
+        'kompetensi_jenis' => 'master nasional, bukan data contoh',
     ];
 
     private function muat(): Company

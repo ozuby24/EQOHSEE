@@ -28,6 +28,16 @@ class Modules
              'ket'  => 'Pelatihan, kuis, evaluasi SOP, dan sertifikat digital ber-barcode.',
              'ikon' => 'M12 14l9-5-9-5-9 5 9 5z M12 14l6.16-3.42A12 12 0 0112 21a12 12 0 01-6.16-10.42L12 14z'],
 
+            /* Tepat sesudah LMS: keduanya berbicara tentang orang yang
+               sama. LMS menerbitkan sertifikat pelatihan internal;
+               Authority menyimpan seluruh berkas kelayakan kerjanya dan
+               menjawab pertanyaan gerbang — boleh atau tidak orang ini
+               bekerja hari ini. */
+            ['nama' => 'Authority — Kelayakan Kerja', 'status' => 'aktif', 'pilar' => 'occhealth',
+             'rute' => 'authority.index',
+             'ket'  => 'Kompetensi, MCU, dan kartu masuk tambang dalam satu berkas per orang, dengan pengingat masa berlaku berjenjang.',
+             'ikon' => 'M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 14l2 2 4-4'],
+
             ['nama' => 'Safety Maturity Level', 'status' => 'aktif', 'pilar' => 'safety', 'rute' => 'tpkkp.index',
              'ket'  => 'Penilaian tingkat kematangan keselamatan: 194 item · 24 parameter · 4 indikator, lengkap Kalkulator Slovin.',
              'ikon' => 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6'],

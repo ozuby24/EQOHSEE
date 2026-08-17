@@ -209,6 +209,7 @@ final class RuteInertia
         'smkp.acuan',
 
         /* Keselamatan Operasi */
+        'authority.index',
         'ko.index',
         'ko.register',
         'ko.create',
