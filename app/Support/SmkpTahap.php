@@ -248,6 +248,68 @@ final class SmkpTahap
         return array_keys(self::KOLOM_RISIKO);
     }
 
+    /* ================= tim auditor ================= */
+
+    public const LEAD    = 'Lead Auditor';
+    public const AUDITOR = 'Auditor';
+
+    /**
+     * Nama auditor yang ditugaskan, urut sesuai penulisannya.
+     *
+     * Susunan nama menggantikan angka "jumlah auditor". Angka lepas dapat
+     * menyimpang dari tim yang sebenarnya berangkat — diketik 4 sementara
+     * yang hadir 2 — dan durasi audit yang tercetak menjadi separuh dari
+     * yang akan terjadi. Nama tidak dapat menyimpang dari dirinya sendiri,
+     * dan sekaligus menjawab pertanyaan berikutnya pada berkas audit:
+     * siapa saja mereka.
+     *
+     * @return list<string>
+     */
+    public static function timAuditor(array $permulaan): array
+    {
+        $nama = [];
+
+        foreach ((array) ($permulaan['tim'] ?? []) as $baris) {
+            // Menerima baris teks maupun baris berbentuk {nama: ...}.
+            $n = is_array($baris) ? ($baris['nama'] ?? '') : $baris;
+            $n = trim((string) $n);
+
+            if ($n !== '') $nama[] = $n;
+        }
+
+        return $nama;
+    }
+
+    /**
+     * Peran auditor menurut POSISINYA, bukan menurut ruas yang dipilih.
+     *
+     * Yang pertama memimpin, sisanya anggota. Ditentukan posisi, satu audit
+     * selalu punya tepat satu ketua tim — ruas pilihan bebas memungkinkan
+     * nol ketua atau tiga ketua sekaligus, dan keduanya membuat berkas audit
+     * tidak dapat ditandatangani.
+     */
+    public static function peranAuditor(int $urutan): string
+    {
+        return $urutan === 0 ? self::LEAD : self::AUDITOR;
+    }
+
+    /**
+     * Tim auditor beserta perannya, siap dipakai tabel.
+     *
+     * @return list<array{nama:string,peran:string}>
+     */
+    public static function susunanTim(array $permulaan): array
+    {
+        $out = [];
+
+        foreach (self::timAuditor($permulaan) as $i => $nama) {
+            $out[] = ['nama' => $nama, 'peran' => self::peranAuditor($i)];
+        }
+
+        return $out;
+    }
+
+
     /**
      * Baris tabel mandays yang berlaku bagi sejumlah pekerja.
      *
@@ -307,7 +369,17 @@ final class SmkpTahap
         $pekerja = max(0, (int) ($p['jumlah_pekerja'] ?? 0));
         $kelas   = (string) ($p['kelas_risiko'] ?? '');
         $kelas   = isset(self::KOLOM_RISIKO[$kelas]) ? $kelas : 'Tinggi';
-        $auditor = max(1, (int) ($p['jumlah_auditor'] ?? 1));
+
+        /* Pembaginya JUMLAH NAMA pada susunan tim, bukan angka yang diketik.
+           Angka lepas dapat menyimpang dari tim yang sebenarnya ditugaskan —
+           diketik 4 sementara yang berangkat 2, durasi di lapangan yang
+           tercetak pada Rencana Audit separuh dari yang akan terjadi.
+           Susunan nama tidak dapat menyimpang dari dirinya sendiri.
+
+           Angka lama tetap dibaca bagi audit yang timnya belum disusun,
+           supaya hitungan yang sudah tersimpan tidak berubah diam-diam. */
+        $tim     = self::timAuditor($p);
+        $auditor = $tim !== [] ? count($tim) : max(1, (int) ($p['jumlah_auditor'] ?? 1));
 
         $baris = self::barisMandays($pekerja);
         $dasar = (int) $baris[self::KOLOM_RISIKO[$kelas]];
@@ -453,33 +525,38 @@ final class SmkpTahap
      *
      * @return list<array{kunci:string,judul:string,selaras:bool,ket:string}>
      */
-    public static function selarasRencana(?array $rencana, array $mandays): array
+    public static function selarasRencana(?array $rencana, array $mandays, array $permulaan = []): array
     {
         $r = (array) ($rencana ?? []);
 
-        // Auditor yang benar-benar bernama pada pembagian tugas.
-        $tim = 0;
+        /* Dicocokkan MENURUT NAMA, bukan menurut jumlah. Dua daftar yang
+           sama-sama berisi tiga orang tetapi tiga orang yang berbeda akan
+           lolos pemeriksaan jumlah, dan lingkup elemen berakhir tertulis
+           atas nama orang yang tidak berangkat. */
+        $tugas = [];
         foreach ((array) ($r['tugas'] ?? []) as $b) {
-            if (trim((string) ($b['nama'] ?? '')) !== '') $tim++;
+            $n = trim((string) ($b['nama'] ?? ''));
+            if ($n !== '') $tugas[$n] = true;
         }
+        $tugas = array_keys($tugas);
 
+        $susunan = self::timAuditor($permulaan);
         $pembagi = (int) ($mandays['auditor'] ?? 1);
         $tahap2  = (float) ($mandays['tahap2'] ?? 0);
         $hari    = self::rentangHari($r['tanggal_mulai'] ?? null, $r['tanggal_selesai'] ?? null);
         $luar    = self::susunanDiLuarRentang($r);
 
+        $tanpaTugas = array_values(array_diff($susunan, $tugas));
+        $asing      = array_values(array_diff($tugas, $susunan));
+
         return [
             [
                 'kunci'   => 'auditor',
-                'judul'   => 'Jumlah auditor',
-                // Tim yang belum diisi sama sekali bukan ketidakselarasan,
-                // hanya pekerjaan yang belum dimulai.
-                'selaras' => $tim === 0 || $tim === $pembagi,
-                'ket'     => $tim === 0
-                    ? 'Pembagian tugas belum diisi; hitungan memakai '.$pembagi.' auditor.'
-                    : ($tim === $pembagi
-                        ? $tim.' auditor, sama dengan pembagi durasi.'
-                        : $tim.' auditor pada pembagian tugas, tetapi durasi dibagi '.$pembagi.'. Durasi di lapangan tidak lagi benar.'),
+                'judul'   => 'Tim auditor',
+                // Belum diisi bukan ketidakselarasan, hanya pekerjaan yang
+                // belum dimulai.
+                'selaras' => $tugas === [] || ($tanpaTugas === [] && $asing === []),
+                'ket'     => self::ketTimAuditor($susunan, $tugas, $tanpaTugas, $asing, $pembagi),
             ],
             [
                 'kunci'   => 'tanggal',
@@ -500,6 +577,24 @@ final class SmkpTahap
                     : $luar.' kegiatan dijadwalkan di luar rentang tanggal audit.',
             ],
         ];
+    }
+
+    /** Kalimat keadaan pencocokan susunan tim dengan pembagian tugas. */
+    private static function ketTimAuditor(array $susunan, array $tugas, array $tanpaTugas, array $asing, int $pembagi): string
+    {
+        if ($tugas === []) {
+            return $susunan === []
+                ? 'Susunan tim belum diisi; durasi dibagi '.$pembagi.' auditor.'
+                : 'Pembagian tugas belum diisi untuk '.count($susunan).' auditor pada susunan tim.';
+        }
+
+        $pesan = [];
+        if ($tanpaTugas !== []) $pesan[] = 'belum kebagian lingkup: '.implode(', ', $tanpaTugas);
+        if ($asing !== [])      $pesan[] = 'tidak ada pada susunan tim: '.implode(', ', $asing);
+
+        return $pesan === []
+            ? count($tugas).' auditor, sama dengan susunan tim.'
+            : ucfirst(implode('; ', $pesan)).'.';
     }
 
     /** Jumlah hari kalender sebuah rentang, ujung ke ujung. Null bila belum lengkap. */

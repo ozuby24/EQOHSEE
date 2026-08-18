@@ -74,7 +74,24 @@ const total = computed(() => props.totalLembar || (
       <section class="lembar bg-white rounded-2xl border border-stone-100 p-6 print:border-0 print:rounded-none print:p-0 lembar-putus">
         <DocHeader :dok="props.dok" :title="title" :halaman="2" :dari="4" />
         <h3 class="font-bold text-[13px] mb-2">B. Pelaksanaan Kontak Awal dan Kelayakan Audit</h3>
-        <p class="text-[12px] text-stone-600 mb-3">Kontak awal: {{ tanggal(permulaan.tanggal_kontak) }} - {{ permulaan.media_kontak || 'Media belum dicatat' }} - {{ permulaan.wakil_auditi || 'Wakil auditi belum dicatat' }}</p>
+        <p class="text-[12px] text-stone-600 mb-3">Kontak awal: {{ tanggal(permulaan.tanggal_kontak) }} - {{ permulaan.media_kontak || 'Media belum dicatat' }} - {{ permulaan.wakil_auditi || 'Auditi belum dicatat' }}<span v-if="permulaan.jabatan_wakil"> ({{ permulaan.jabatan_wakil }})</span></p>
+
+        <!-- Tim auditor ikut pada Berita Acara Tahap I, sebab langkah ini
+             memang "Kontak Awal & Penugasan Tim": berkas inilah yang
+             menugaskan mereka, dan jumlah namanya pula yang membagi durasi
+             audit pada tabel hari kerja di lembar berikutnya. -->
+        <h3 class="font-bold text-[13px] mt-5 mb-2">Susunan Tim Auditor</h3>
+        <table class="w-full text-[11.5px] mb-3"><thead><tr class="bg-stone-100 text-left"><th class="p-2 w-10">No</th><th class="p-2">Nama</th><th class="p-2 w-32">Peran</th><th class="p-2 w-28">No. Registrasi</th></tr></thead><tbody>
+          <tr v-for="(row, index) in props.tim || []" :key="index" class="border-b border-stone-100">
+            <td class="p-2">{{ nomor(index) }}</td>
+            <td class="p-2 font-semibold">{{ row.nama }}</td>
+            <td class="p-2">{{ row.peran }}</td>
+            <td class="p-2">{{ row.registrasi || '-' }}</td>
+          </tr>
+          <tr v-if="!(props.tim || []).length">
+            <td colspan="4" class="p-6 text-center text-stone-400">Susunan tim auditor belum diisi.</td>
+          </tr>
+        </tbody></table>
         <table class="w-full text-[11.5px]"><thead><tr class="bg-stone-100 text-left"><th class="p-2">No</th><th class="p-2">Indikator Kelayakan Audit</th><th class="p-2">Hasil Evaluasi</th></tr></thead><tbody>
           <!-- Nomor dari POSISI barisnya, bukan dari kuncinya. Kunci di sini
                teks — `profil_organisasi` — dan Number() atasnya menghasilkan

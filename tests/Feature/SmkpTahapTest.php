@@ -305,38 +305,154 @@ class SmkpTahapTest extends TestCase
         $this->assertSame(16, $m['dasar']);
     }
 
+    /* ---------- susunan tim auditor ---------- */
+
+    public function test_pembagi_durasi_adalah_jumlah_nama_bukan_angka_ketikan(): void
+    {
+        $m = SmkpTahap::mandays([
+            'jumlah_pekerja' => 460, 'kelas_risiko' => 'Tinggi',
+            'tim' => ['Ir. Bambang', 'Sdri. Rina', 'Doni', 'Sari'],
+        ]);
+
+        /* Satu nama satu auditor. Angka lepas dapat menyimpang dari tim yang
+           sebenarnya berangkat — diketik 4 sementara yang hadir 2 — dan
+           durasi yang tercetak menjadi separuh dari yang akan terjadi. */
+        $this->assertSame(4, $m['auditor']);
+        $this->assertSame(4.0, $m['durasi'], '16 mandays dibagi empat orang.');
+    }
+
+    public function test_nama_kosong_tidak_dihitung_sebagai_auditor(): void
+    {
+        $m = SmkpTahap::mandays([
+            'jumlah_pekerja' => 460, 'kelas_risiko' => 'Tinggi',
+            'tim' => ['Ir. Bambang', '   ', ''],
+        ]);
+
+        $this->assertSame(1, $m['auditor'], 'Baris kosong pada formulir bukan orang.');
+    }
+
+    public function test_angka_lama_tetap_dipakai_bila_susunan_belum_ada(): void
+    {
+        /* Audit yang tersimpan sebelum susunan nama ada tidak boleh berubah
+           hitungannya diam-diam hanya karena kodenya diperbarui. */
+        $m = SmkpTahap::mandays([
+            'jumlah_pekerja' => 460, 'kelas_risiko' => 'Tinggi', 'jumlah_auditor' => 2,
+        ]);
+
+        $this->assertSame(2, $m['auditor']);
+    }
+
+    public function test_peran_diturunkan_dari_urutan_bukan_dari_pilihan(): void
+    {
+        $tim = SmkpTahap::susunanTim(['tim' => ['Ir. Bambang', 'Sdri. Rina', 'Doni']]);
+
+        /* Ditentukan posisi, satu audit selalu punya tepat satu ketua tim.
+           Ruas pilihan bebas memungkinkan nol ketua atau tiga sekaligus, dan
+           keduanya membuat berkas audit tidak dapat ditandatangani. */
+        $this->assertSame(
+            [['Ir. Bambang', 'Lead Auditor'], ['Sdri. Rina', 'Auditor'], ['Doni', 'Auditor']],
+            array_map(fn ($o) => [$o['nama'], $o['peran']], $tim),
+        );
+    }
+
+    public function test_menyimpan_tahap_satu_merapatkan_susunan_tim(): void
+    {
+        $this->masuk();
+        $a = $this->audit();
+
+        $this->post(route('smkp.tahap1.simpan', $a), [
+            'permulaan' => ['jumlah_pekerja' => 460, 'tim' => ['Ir. Bambang', '', ' Sdri. Rina ']],
+        ])->assertRedirect(route('smkp.tahap1', $a));
+
+        /* Lubang di tengah daftar memindahkan peran Lead Auditor ke orang
+           lain, jadi indeksnya disusun ulang saat disimpan. */
+        $this->assertSame(['Ir. Bambang', 'Sdri. Rina'], $a->fresh()->permulaan['tim']);
+    }
+
+    public function test_tim_menggabungkan_susunan_dengan_lingkup_pembagian_tugas(): void
+    {
+        $a = $this->audit([
+            'permulaan' => ['tim' => ['Ir. Bambang', 'Sdri. Rina']],
+            'rencana'   => ['tugas' => [
+                ['nama' => 'Sdri. Rina', 'registrasi' => 'DBT-002', 'lingkup' => 'III'],
+            ]],
+        ]);
+
+        $tim = $a->tim();
+
+        $this->assertSame(['Ir. Bambang', 'Sdri. Rina'], array_column($tim, 'nama'));
+        $this->assertSame('Lead Auditor', $tim[0]['peran']);
+        $this->assertNull($tim[0]['registrasi'], 'Yang belum kebagian lingkup tetap muncul.');
+        $this->assertSame('DBT-002', $tim[1]['registrasi']);
+        $this->assertSame('III', $tim[1]['lingkup']);
+    }
+
+    public function test_nama_yang_hanya_ada_di_pembagian_tugas_tetap_ikut(): void
+    {
+        $a = $this->audit([
+            'permulaan' => ['tim' => ['Ir. Bambang']],
+            'rencana'   => ['tugas' => [['nama' => 'Orang Lain', 'lingkup' => 'V']]],
+        ]);
+
+        /* Menghilangkan orang dari laporan lebih buruk daripada
+           menampilkannya tanpa peran: ia tetap memeriksa elemen itu. */
+        $this->assertSame(['Ir. Bambang', 'Orang Lain'], array_column($a->tim(), 'nama'));
+    }
+
     /* ---------- keselarasan Rencana Audit dengan hari kerja ---------- */
 
-    /** Hitungan hari kerja untuk 460 pekerja risiko Tinggi, satu auditor. */
-    private function mandaysUji(int $auditor = 1): array
+    /** Permulaan uji: 460 pekerja risiko Tinggi dengan susunan tim tertentu. */
+    private function permulaanUji(array $tim = []): array
     {
-        return SmkpTahap::mandays([
-            'jumlah_pekerja' => 460, 'kelas_risiko' => 'Tinggi', 'jumlah_auditor' => $auditor,
-        ]);
+        return ['jumlah_pekerja' => 460, 'kelas_risiko' => 'Tinggi', 'tim' => $tim];
     }
 
-    private function selaras(array $rencana, int $auditor = 1): array
+    private function mandaysUji(array $tim = []): array
     {
-        return collect(SmkpTahap::selarasRencana($rencana, $this->mandaysUji($auditor)))
-            ->keyBy('kunci')->all();
+        return SmkpTahap::mandays($this->permulaanUji($tim));
     }
 
-    public function test_jumlah_auditor_tim_harus_sama_dengan_pembagi_durasi(): void
+    private function selaras(array $rencana, array $tim = []): array
     {
+        return collect(SmkpTahap::selarasRencana(
+            $rencana, $this->mandaysUji($tim), $this->permulaanUji($tim),
+        ))->keyBy('kunci')->all();
+    }
+
+    public function test_pembagian_tugas_dicocokkan_menurut_nama_bukan_jumlah(): void
+    {
+        $tim   = ['Ir. Bambang', 'Sdri. Rina'];
         $tugas = ['tugas' => [['nama' => 'Ir. Bambang'], ['nama' => 'Sdri. Rina']]];
 
-        /* Durasi dibagi jumlah auditor. Bila tim yang benar-benar ditugaskan
-           berbeda dari pembaginya, durasi di lapangan yang tercetak pada
-           Rencana Audit bukan angka yang akan terjadi. */
-        $this->assertFalse($this->selaras($tugas, 1)['auditor']['selaras']);
-        $this->assertTrue($this->selaras($tugas, 2)['auditor']['selaras']);
+        $this->assertTrue($this->selaras($tugas, $tim)['auditor']['selaras']);
+
+        /* Dua daftar yang sama-sama berisi dua orang tetapi orang yang
+           berbeda lolos pemeriksaan jumlah — dan lingkup elemen berakhir
+           tertulis atas nama orang yang tidak berangkat. */
+        $tukar = ['tugas' => [['nama' => 'Ir. Bambang'], ['nama' => 'Orang Lain']]];
+        $c = $this->selaras($tukar, $tim)['auditor'];
+
+        $this->assertFalse($c['selaras']);
+        $this->assertStringContainsString('Sdri. Rina', $c['ket']);
+        $this->assertStringContainsString('Orang Lain', $c['ket']);
+    }
+
+    public function test_auditor_pada_susunan_tanpa_lingkup_ditandai(): void
+    {
+        $c = $this->selaras(
+            ['tugas' => [['nama' => 'Ir. Bambang']]],
+            ['Ir. Bambang', 'Sdri. Rina'],
+        )['auditor'];
+
+        $this->assertFalse($c['selaras']);
+        $this->assertStringContainsString('Belum kebagian lingkup: Sdri. Rina', $c['ket']);
     }
 
     public function test_pembagian_tugas_kosong_bukan_ketidakselarasan(): void
     {
         /* Belum diisi bukan salah — hanya pekerjaan yang belum dimulai.
            Menandainya merah membuat rencana yang baru dibuka tampak cacat. */
-        $c = $this->selaras([], 2)['auditor'];
+        $c = $this->selaras([], ['Ir. Bambang', 'Sdri. Rina'])['auditor'];
 
         $this->assertTrue($c['selaras']);
         $this->assertStringContainsString('belum diisi', $c['ket']);

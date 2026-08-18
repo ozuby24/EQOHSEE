@@ -215,11 +215,14 @@ class SmkpController extends Controller
             'permulaan.media_kontak'        => ['nullable','string','max:150'],
             'permulaan.wakil_auditi'        => ['nullable','string','max:150'],
             'permulaan.jabatan_wakil'       => ['nullable','string','max:150'],
+            // Susunan tim: satu nama satu auditor. Perannya diturunkan dari
+            // urutan, jadi tidak ada ruas peran yang dapat dikirim.
+            'permulaan.tim'                 => ['nullable','array','max:50'],
+            'permulaan.tim.*'               => ['nullable','string','max:150'],
             'permulaan.surat_nomor'         => ['nullable','string','max:150'],
             'permulaan.surat_tanggal'       => ['nullable','date'],
             'permulaan.jumlah_pekerja'      => ['nullable','integer','min:0','max:1000000'],
             'permulaan.kelas_risiko'        => ['nullable', Rule::in(SmkpTahap::kelasRisiko())],
-            'permulaan.jumlah_auditor'      => ['nullable','integer','min:1','max:50'],
             'permulaan.kesimpulan'          => ['nullable','string','max:2000'],
             'permulaan.kelayakan.*'         => ['nullable','string','max:500'],
             'permulaan.faktor.*'            => ['nullable'],
@@ -245,6 +248,20 @@ class SmkpController extends Controller
             }
             $p[$ruas] = $jawab;
         }
+
+        /* Susunan tim disimpan rapat: baris kosong dibuang dan indeksnya
+           disusun ulang. Urutan itu yang menentukan siapa Lead Auditor, jadi
+           lubang di tengah daftar akan memindahkan peran ke orang lain. */
+        $p['tim'] = array_values(array_filter(
+            array_map(fn ($n) => trim((string) $n), (array) ($p['tim'] ?? [])),
+            fn ($n) => $n !== '',
+        ));
+
+        /* Angka "jumlah auditor" lama dibuang HANYA setelah susunan namanya
+           ada. Dibuang lebih awal, audit lama yang timnya belum disusun akan
+           berpindah diam-diam ke pembagi 1 dan durasinya berlipat — padahal
+           penggunanya hanya menekan simpan pada bagian lain formulir. */
+        if ($p['tim'] !== []) unset($p['jumlah_auditor']);
 
         // Kecukupan hanya disimpan untuk elemen yang benar-benar ada.
         $kecukupan = [];
@@ -280,6 +297,7 @@ class SmkpController extends Controller
             'risiko'    => SmkpTahap::kelasRisiko(),
             'kinerja'   => SmkpTahap::butirKinerja(),
             'mandays'   => $smkp->mandays(),
+            'tim'       => $smkp->tim(),
             'rekap'     => $smkp->rekapKecukupan(),
             'dok'       => $this->kop($smkp, 'berita-acara'),
             'kembali'   => route('smkp.tahap1', $smkp),
@@ -304,6 +322,10 @@ class SmkpController extends Controller
                menjadwalkan tiga hari untuk audit yang menuntut empat belas
                tidak lolos sebagai "lengkap" dan baru ketahuan di lapangan. */
             'selaras'  => $smkp->selarasRencana(),
+
+            // Susunan tim Tahap I, agar pembagian tugas dapat diisi dari
+            // sana alih-alih diketik ulang menjadi daftar kedua.
+            'timTahap1' => $smkp->tim(),
         ]);
     }
 

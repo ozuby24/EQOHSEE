@@ -57,32 +57,65 @@ class SmkpAudit extends Model
 
     /* ---------- tahapan ---------- */
 
-    /** Tim audit yang ditugaskan; dipakai Tahap I maupun Rencana Audit. */
     /**
-     * Tim auditor yang ditugaskan.
+     * Tim auditor yang ditugaskan, lengkap dengan peran dan lingkupnya.
      *
-     * Sumbernya PEMBAGIAN TUGAS pada Rencana Audit — di sanalah auditor
-     * benar-benar diisi, lengkap dengan peran, nomor registrasi, dan elemen
-     * yang menjadi lingkupnya.
+     * SATU DAFTAR, DUA SUMBER YANG SALING MELENGKAPI — bukan dua daftar yang
+     * dapat berselisih:
      *
-     * Kolom `auditor` tetap dibaca sebagai cadangan, tetapi tidak pernah ada
-     * satu pun formulir yang menulisinya. Selama ini tim() membaca kolom itu
-     * saja, sehingga ia selalu kosong dan ringkasan audit melaporkan "0
-     * auditor ditugaskan" pada audit yang timnya sudah lengkap — angka yang
-     * salah tanpa pernah menimbulkan galat.
+     *   permulaan.tim   susunan nama pada Tahap I. Inilah yang menentukan
+     *                   SIAPA dan berapa orang, dan angka itu pula yang
+     *                   membagi durasi audit.
+     *   rencana.tugas   pembagian tugas pada Rencana Audit, menambahkan
+     *                   nomor registrasi dan lingkup elemen tiap orang.
      *
-     * @return list<array{nama:string,peran?:string,registrasi?:string,lingkup?:string}>
+     * Peran diturunkan dari urutan pada susunan Tahap I, jadi selalu ada
+     * tepat satu ketua tim. Baris pembagian tugas dicocokkan MENURUT NAMA;
+     * nama yang hanya ada di pembagian tugas tetap ikut, sebab menghilangkan
+     * orang dari laporan lebih buruk daripada menampilkannya tanpa peran.
+     *
+     * @return list<array{nama:string,peran:string,registrasi:?string,lingkup:?string}>
      */
     public function tim(): array
     {
-        $sumber = (array) ($this->rencana['tugas'] ?? []);
+        $tugas = [];
+        foreach ((array) ($this->rencana['tugas'] ?? []) as $b) {
+            $nama = trim((string) ($b['nama'] ?? ''));
+            if ($nama !== '') $tugas[$nama] = $b;
+        }
 
-        if ($sumber === []) $sumber = (array) ($this->auditor ?? []);
+        $out = [];
 
-        return array_values(array_filter(
-            $sumber,
-            fn ($a) => trim((string) ($a['nama'] ?? '')) !== ''
-        ));
+        foreach (SmkpTahap::susunanTim((array) ($this->permulaan ?? [])) as $orang) {
+            $b = $tugas[$orang['nama']] ?? [];
+            unset($tugas[$orang['nama']]);
+
+            $out[] = $orang + [
+                'registrasi' => $b['registrasi'] ?? null,
+                'lingkup'    => $b['lingkup'] ?? null,
+            ];
+        }
+
+        // Sisa nama yang belum ada pada susunan Tahap I, beserta data lama
+        // pada kolom `auditor` bagi audit yang dibuat sebelum susunan ada.
+        $sisa = array_values($tugas);
+        if ($out === [] && $sisa === []) {
+            $sisa = array_values(array_filter(
+                (array) ($this->auditor ?? []),
+                fn ($a) => trim((string) ($a['nama'] ?? '')) !== ''
+            ));
+        }
+
+        foreach ($sisa as $b) {
+            $out[] = [
+                'nama'       => trim((string) ($b['nama'] ?? '')),
+                'peran'      => trim((string) ($b['peran'] ?? '')) ?: SmkpTahap::peranAuditor(count($out)),
+                'registrasi' => $b['registrasi'] ?? null,
+                'lingkup'    => $b['lingkup'] ?? null,
+            ];
+        }
+
+        return $out;
     }
 
     public function mandays(): array
@@ -103,7 +136,7 @@ class SmkpAudit extends Model
     /** Apakah Rencana Audit selaras dengan hitungan hari kerja Tahap I. */
     public function selarasRencana(): array
     {
-        return SmkpTahap::selarasRencana($this->rencana, $this->mandays());
+        return SmkpTahap::selarasRencana($this->rencana, $this->mandays(), (array) ($this->permulaan ?? []));
     }
 
     /**
