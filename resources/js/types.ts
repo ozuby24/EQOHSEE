@@ -1552,6 +1552,14 @@ export interface HalamanDiagnosa {
   perbaikan: Array<{ aksi: string; label: string; ket: string; berat: boolean; url: string }>;
   ai: { aktif: boolean; url: string; atur: string };
   tautan: { sistem: string; pemeliharaan: string };
+
+  /* Kesesuaian angka tiap modul. Bentuk barisnya sengaja sama persis
+     dengan `hasil` di atas, supaya satu perender melayani keduanya —
+     dua perender untuk bentuk yang sama pasti berbeda cepat atau
+     lambat, dan bedanya muncul justru pada baris yang paling jarang
+     tampil: yang merah. */
+  sesuai: HalamanDiagnosa['hasil'];
+  ringkasSesuai: Record<string, number>;
 }
 
 /* ══════════════ Berita, Prosedur, Penanda Tangan ══════════════ */

@@ -12,6 +12,7 @@
  */
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import BarisPeriksa from '../../Components/BarisPeriksa.vue';
 import type { HalamanDiagnosa } from '../../types';
 
 const props = defineProps<HalamanDiagnosa>();
@@ -37,6 +38,17 @@ const perluTindakan = computed(() =>
   props.hasil.filter((h) => h.keadaan === 'gawat' || h.keadaan === 'perhatian').length,
 );
 
+/* Kesesuaian memakai saringan yang sama. "Belum dinilai" sengaja ikut
+   terlihat walau bukan merah: modul yang kosong bukan modul yang sehat,
+   ia hanya modul yang belum membuktikan apa pun. */
+const sesuaiTerlihat = computed(() =>
+  props.sesuai.filter((h) => tampilkanAman.value || h.keadaan !== 'aman'),
+);
+
+const sesuaiPerluTindakan = computed(() =>
+  props.sesuai.filter((h) => h.keadaan !== 'aman').length,
+);
+
 /* ── aksi ── */
 
 const perbaikanForm = useForm({});
@@ -55,7 +67,7 @@ function tanyaAi() {
 }
 
 function periksaUlang() {
-  router.reload({ only: ['hasil', 'ringkas', 'dijalankan'] });
+  router.reload({ only: ['hasil', 'ringkas', 'sesuai', 'ringkasSesuai', 'dijalankan'] });
 }
 </script>
 
@@ -127,53 +139,51 @@ function periksaUlang() {
         </label>
       </div>
 
-      <div v-for="h in terlihat" :key="h.kode"
-           class="rounded-2xl border shadow-card p-4"
-           :class="[NADA[h.keadaan].garis, NADA[h.keadaan].latar]">
-        <div class="flex items-start gap-3">
-          <span class="w-2.5 h-2.5 rounded-full mt-1.5 shrink-0" :class="NADA[h.keadaan].titik"></span>
-
-          <div class="min-w-0 flex-1">
-            <div class="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-              <span class="text-[13.5px] font-bold text-cam-ink">{{ h.judul }}</span>
-              <!-- Nada bakunya, bukan bg-white/70: pada tema gelap
-                   putih tetap putih sementara text-stone-500 ikut
-                   diterangkan, sehingga abu terang duduk di atas putih
-                   pada 2,6:1. Pasangan stone-100/stone-500 inilah yang
-                   dipakai lencana lain di aplikasi ini dan yang
-                   terbukti lolos di kedua tema. -->
-              <span class="text-[9.5px] font-bold uppercase tracking-wide bg-stone-100
-                           text-stone-600 px-1.5 py-0.5 rounded">
-                {{ h.kelompok }}
-              </span>
-              <span class="text-[11px] font-bold" :class="NADA[h.keadaan].teks">
-                {{ NADA[h.keadaan].label }}
-              </span>
-            </div>
-
-            <div class="text-[12.5px] font-semibold text-stone-700 mt-1.5 break-words">
-              {{ h.nilai }}
-            </div>
-
-            <!-- stone-600, bukan stone-500: kartu ini berlatar merah
-                 atau kuning muda, dan di atas latar itu stone-500
-                 turun ke 4,4:1 — tepat di bawah ambang. Justru baris
-                 yang paling perlu dibaca yang latarnya paling berwarna. -->
-            <p class="text-[12px] text-stone-600 mt-1.5 leading-relaxed">{{ h.uraian }}</p>
-
-            <p v-if="h.tindakan"
-               class="text-[12px] mt-2 leading-relaxed font-semibold" :class="NADA[h.keadaan].teks">
-              Langkah: {{ h.tindakan }}
-            </p>
-          </div>
-        </div>
-      </div>
+      <BarisPeriksa v-for="h in terlihat" :key="h.kode" :baris="h" />
 
       <div v-if="!terlihat.length"
            class="rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-10 text-center">
         <div class="text-[14px] font-bold text-emerald-800">Tidak ada yang perlu ditindak</div>
         <p class="text-[12px] text-emerald-700 mt-1.5">
           Seluruh {{ hasil.length }} pemeriksaan lolos. Centang "Tampilkan yang aman" untuk melihat rinciannya.
+        </p>
+      </div>
+    </section>
+
+    <!--
+      Kesesuaian angka.
+
+      Dipisahkan dari diagnosa karena pertanyaannya berbeda: diagnosa
+      menanyakan apakah sistemnya sehat, bagian ini menanyakan apakah
+      angka yang dipajangnya benar. Sistem dapat sehat sempurna sementara
+      skor yang ditampilkannya keliru — dan kekeliruan macam itu tidak
+      pernah memunculkan galat, hanya memunculkan angka.
+    -->
+    <section class="space-y-2.5 pt-2">
+      <div class="flex flex-wrap items-baseline justify-between gap-2">
+        <h3 class="text-[14px] font-bold text-cam-ink">
+          Kesesuaian isi &amp; penilaian tiap modul
+        </h3>
+        <span class="text-[11.5px] font-semibold text-stone-500">
+          {{ sesuaiPerluTindakan }} dari {{ sesuai.length }} perlu diperiksa
+        </span>
+      </div>
+
+      <p class="text-[11.5px] text-stone-500 leading-relaxed max-w-3xl">
+        Yang diperiksa di sini bukan kesehatan sistemnya melainkan kebenaran angkanya:
+        apakah totalnya masih sama dengan jumlah rinciannya, apakah persentasenya masih
+        di dalam 0–100, dan apakah modulnya cukup terisi sehingga skornya layak dibaca.
+        Modul yang kosong ditandai <strong>belum dinilai</strong>, bukan aman — halaman
+        kosong tidak pernah keliru, dan justru karena itu ia tidak membuktikan apa pun.
+      </p>
+
+      <BarisPeriksa v-for="h in sesuaiTerlihat" :key="'s-' + h.kode + h.judul" :baris="h" />
+
+      <div v-if="!sesuaiTerlihat.length"
+           class="rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-10 text-center">
+        <div class="text-[14px] font-bold text-emerald-800">Angka tiap modul konsisten</div>
+        <p class="text-[12px] text-emerald-700 mt-1.5">
+          Seluruh {{ sesuai.length }} pemeriksaan kesesuaian lolos.
         </p>
       </div>
     </section>

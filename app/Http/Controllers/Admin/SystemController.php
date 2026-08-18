@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\{ActivityLog, Certificate, Company, Course, Enrollment, Material, Module, News,
     PostTrainingEvaluation, Procedure, Quiz, QuizAttempt, Signatory, SopEvaluation,
     SopEvaluationAttempt, TpkkpAssessment, TpkkpResponse, User};
-use App\Support\{Ai, DataContoh, Diagnosa, Ikon};
+use App\Support\{Ai, DataContoh, Diagnosa, Ikon, Kesesuaian};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -258,6 +258,12 @@ class SystemController extends Controller
         // supaya keduanya tidak pernah menyebut angka yang berbeda.
         Diagnosa::simpanRingkas($ringkas);
 
+        /* Kesesuaian dihitung di halaman yang sama, bukan halaman
+           tersendiri. Keduanya menjawab pertanyaan yang orang datangi
+           berbarengan — "sistemnya sehat?" dan "angkanya benar?" — dan
+           memisahkannya berarti separuh jawabannya tidak pernah dibuka. */
+        $sesuai = Kesesuaian::jalankan();
+
         return Inertia::render('Admin/Diagnosa', [
             'judul'    => 'Diagnosa Sistem',
             'subjudul' => 'Hal yang bila salah tidak menimbulkan galat',
@@ -265,6 +271,9 @@ class SystemController extends Controller
             'hasil'   => $hasil,
             'ringkas' => $ringkas,
             'dijalankan' => now()->format('d M Y · H:i:s'),
+
+            'sesuai'        => $sesuai,
+            'ringkasSesuai' => Kesesuaian::ringkas($sesuai),
 
             'perbaikan' => array_map(fn ($k) => [
                 'aksi'  => $k,
