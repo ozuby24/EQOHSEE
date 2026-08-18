@@ -51,3 +51,13 @@ Thumbs.db
 # Salinan mentah unduhan deploy/ambil-video.sh — alat bantu
 # penukaran, bukan aset situs. Lihat catatan di skrip itu.
 /public/media/asal-drive/
+
+# Salinan bertanggal hasil penyuntingan darurat.
+#
+# Dua belas berkas semacam ini pernah ikut ter-commit dan bertahan
+# berbulan-bulan. Bahayanya bukan ukurannya melainkan kemiripannya:
+# certificates/show.blade.php.bak-20260728 berisi templat sertifikat yang
+# hampir sama dengan yang hidup, lengkap dengan tanda tangannya, dan yang
+# membacanya tidak punya cara mengetahui mana yang benar-benar dipakai.
+*.bak-*
+*.bak
