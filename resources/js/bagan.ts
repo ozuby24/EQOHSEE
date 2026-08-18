@@ -59,24 +59,30 @@ declare global {
 }
 
 /*
-  Bentuk pemanggilannya sengaja dipertahankan.
+  Dimuat saat dibutuhkan, bukan di muka.
 
-  Dulu `eqChartSiap` memang perlu menunggu — pustakanya datang dari
-  jaringan dan bisa belum tiba saat komponen tergambar, jadi ia memanggil
-  dirinya sendiri tiap 120 milidetik sampai `Chart` muncul. Sekarang
-  pustakanya sudah ada di dalam bundel yang sama, jadi tidak ada lagi yang
-  perlu ditunggu dan callback-nya dijalankan langsung.
+  Berkas ini pernah diimpor langsung oleh inertia.ts, yang menaruh
+  Chart.js di dalam bundel masuk — bundel yang diunduh SETIAP halaman
+  Inertia sebelum layar pertamanya muncul. Dua dari 147 halaman memakai
+  Chart.js. Seratus empat puluh lima sisanya mengunduh 68 kB (terkempa)
+  yang tidak pernah mereka sentuh.
 
-  Namanya dibiarkan supaya kedua halaman yang memakainya tidak perlu
-  diubah sekaligus dengan perubahan ini. Menggabungkan dua perubahan yang
-  tidak berhubungan membuat keduanya lebih sulit ditelusuri bila salah
-  satunya keliru.
+  Alasannya sama dengan alasan halaman-halamannya dipecah: aplikasi ini
+  dipakai di site tambang, di ujung sambungan yang lambat. Yang dihemat
+  bukan ruang cakram melainkan waktu sebelum sesuatu muncul di layar.
+
+  Sekarang inertia.ts hanya memasang `window.eqChartSiap`, dan berkas ini
+  baru ditarik ketika salah satu dari dua halaman itu benar-benar
+  memanggilnya. Efek sampingnya — tema, `window.Chart`, `eqWarnaLevel` —
+  berjalan sekali saat modulnya tiba.
+
+  Yang TIDAK berubah: pustakanya tetap ikut terbundel, tetap satu asal
+  dengan aplikasinya, dan tetap tidak menuntut `script-src` dilonggarkan.
+  Ketiga alasan di atas berdiri utuh; hanya waktu pengunduhannya yang
+  bergeser dari "selalu, di muka" menjadi "ketika dipakai".
 */
 window.Chart = Chart;
 window.eqWarnaLevel = ['#E5484D', '#F5760A', '#C7DE30', '#1EE699', '#47CEFF'];
-window.eqChartSiap = (cb: () => void): void => {
-  pasangTema();
-  cb();
-};
+pasangTema();
 
-export { Chart };
+export { Chart, pasangTema };

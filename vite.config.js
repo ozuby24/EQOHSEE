@@ -4,21 +4,25 @@ import vue from '@vitejs/plugin-vue';
 import fs from 'node:fs';
 
 /*
-  Dua titik masuk yang berdiri sendiri.
+  Satu titik masuk.
 
-  `app.js` melayani halaman Blade: Alpine dan gerak halaman publik.
-  `inertia.ts` melayani halaman Vue. Keduanya sengaja tidak digabung —
-  halaman Blade tidak perlu memuat Vue, dan halaman Inertia tidak perlu
-  memuat Alpine. Menggabungnya berarti setiap halaman menanggung berat
-  kerangka yang tidak dipakainya, dan dua kerangka yang sama-sama
-  mengikat elemen mudah berebut atas elemen yang sama.
+  Dulu ada dua: `app.js` melayani halaman Blade (Alpine, gerak halaman
+  publik), `inertia.ts` melayani halaman Vue. Halaman Blade-nya sudah
+  habis dipindahkan ke Vue, dan bersama halaman terakhirnya hilang pula
+  satu-satunya pemuat `app.js` — sejak itu ia tetap dibangun 47 kB tiap
+  kali, tanpa satu halaman pun yang menariknya.
+
+  Keempat perilaku yang dibawanya juga sudah tidak berpijak pada apa pun:
+  tidak ada lagi markup ber-`.reveal`, `[data-tilt]`, `[data-parallax]`,
+  atau `[data-hero-video]`. Video hero dikerjakan langsung di Landing.vue
+  dan GuestLayout.vue, lengkap dengan penghormatan pada
+  `prefers-reduced-motion` yang dulu ditangani di sana.
 */
 export default defineConfig({
     plugins: [
         laravel({
             input: [
                 'resources/css/app.css',
-                'resources/js/app.js',
                 'resources/js/inertia.ts',
             ],
             refresh: true,

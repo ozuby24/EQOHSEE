@@ -2,10 +2,33 @@ import { createApp, h, type DefineComponent } from 'vue';
 import { createInertiaApp } from '@inertiajs/vue3';
 import AppLayout from './Layouts/AppLayout.vue';
 
-/* Chart.js ikut dibundel, tidak lagi ditarik dari CDN. Diimpor demi
-   efek sampingnya — ia memasang window.eqChartSiap yang dipanggil
-   halaman-halaman bergrafik. Lihat bagan.ts untuk alasannya. */
-import './bagan';
+/*
+  Chart.js ikut dibundel (tidak lagi dari CDN), tetapi ditarik saat
+  dibutuhkan — lihat bagan.ts untuk kedua alasannya.
+
+  Yang dipasang di sini hanyalah pintunya. `eqChartSiap` sudah sejak awal
+  berbentuk callback karena dulu ia menunggu skrip dari jaringan; bentuk
+  itulah yang membuat pemuatan tertunda ini tidak menuntut satu baris pun
+  berubah di kedua halaman yang memakainya.
+
+  Impornya dihafal supaya beberapa grafik pada satu halaman berbagi satu
+  unduhan, dan supaya kegagalannya terjadi sekali — bukan sekali per
+  grafik.
+*/
+let bagan: Promise<typeof import('./bagan')> | null = null;
+
+window.eqChartSiap = (cb: () => void): void => {
+  bagan ??= import('./bagan');
+
+  bagan.then(cb).catch((e) => {
+    /* Halaman pemakainya sudah menjaga diri (`if (!C) return`), jadi
+       kegagalan di sini berarti kanvas kosong, bukan halaman rusak. Yang
+       hilang tanpa baris ini adalah keterangannya: grafik yang tidak
+       muncul tanpa sebab persis keluhan yang melahirkan bagan.ts. */
+    bagan = null;
+    console.error('Modul grafik gagal dimuat; grafik tidak digambar.', e);
+  });
+};
 
 /*
   Titik masuk halaman Vue.

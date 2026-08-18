@@ -151,9 +151,26 @@ class TpkkpBerandaTest extends TestCase
         $this->assertStringNotContainsString('cdn.jsdelivr.net', $isi);
         $this->assertStringNotContainsString('unpkg.com', $isi);
 
+        /* Yang ditegakkan: pemuatnya ada dan berasal dari dalam aplikasi.
+           BUKAN bentuk impornya — sejak Chart.js dipisah dari bundel
+           masuk, `./bagan` ditarik lewat import() dinamis, dan menuntut
+           kata `import './bagan'` di sini berarti menuntut ia kembali
+           membebani ke-145 halaman yang tidak memakainya. Pemisahan itu
+           dijaga tersendiri di BundelMasukTest. */
         $masuk = file_get_contents(resource_path('js/inertia.ts'));
-        $this->assertStringContainsString("import './bagan'", $masuk,
-            'Pemuat grafik tidak ikut dibundel; halaman bergrafik akan kosong.');
+
+        /* Dicari DI DALAM badan `eqChartSiap`, bukan di mana pun dalam
+           berkas. Anotasi tipenya sendiri memuat `import('./bagan')` —
+           `Promise<typeof import('./bagan')>` — jadi pencarian seluruh
+           berkas tetap hijau meski pemuatnya dicabut. Persis itu yang
+           terjadi saat uji ini pertama kali disesuaikan. */
+        $badan = substr($masuk, (int) strpos($masuk, 'window.eqChartSiap'));
+
+        $this->assertStringContainsString(
+            "import('./bagan')",
+            $badan,
+            'Pemuat grafik tidak ikut dibundel; halaman bergrafik akan kosong.',
+        );
     }
 
     public function test_tamu_tidak_dapat_membuka_beranda(): void
