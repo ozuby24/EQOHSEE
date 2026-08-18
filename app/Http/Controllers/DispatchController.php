@@ -323,7 +323,12 @@ class DispatchController extends Controller
 
     private function kumpulkan(Carbon $dari, Carbon $sampai): array
     {
-        $regu = AngkutRegu::with(['alatMuat', 'muatan.alat'])
+        /* `muatan.regu` ikut dimuat meski regunya justru induk yang
+           sedang diambil di sini. AngkutMuatan::toView() membaca
+           $this->regu?->kode pada tiap baris, dan tanpa disebut, Eloquent
+           mengambilnya satu per satu — dua puluh empat kueri pada data
+           contoh sekecil ini. Menyebutnya menukar semuanya dengan satu. */
+        $regu = AngkutRegu::with(['alatMuat', 'muatan.alat', 'muatan.regu'])
             ->whereBetween('tanggal', [$dari, $sampai])
             ->orderByDesc('tanggal')->orderBy('shift')->get();
 

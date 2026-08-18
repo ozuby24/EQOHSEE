@@ -384,7 +384,7 @@ class BlastingController extends Controller
 
     private function kumpulkan(Carbon $dari, Carbon $sampai): array
     {
-        $rencana = LedakRencana::with(['hasil', 'ukur.titik'])
+        $rencana = LedakRencana::with(['hasil', 'ukur.titik', 'ukur.rencana'])
             ->whereBetween('tanggal_rencana', [$dari, $sampai])
             ->orderByDesc('tanggal_rencana')->get();
 
@@ -396,7 +396,12 @@ class BlastingController extends Controller
         // situs adalah sifat batuannya, bukan sifat periodenya, dan
         // membatasinya pada satu bulan membuang data yang justru
         // membuatnya layak dipercaya.
-        $semuaUkur = LedakUkur::with('titik')->get();
+        /* `rencana` ikut dimuat: baris di bawah membaca
+           $u->rencana?->isi_per_tunda_kg untuk SETIAP pengukuran, dan
+           kalibrasi ini sengaja memakai seluruh pengukuran yang pernah
+           ada — jadi jumlah kueri yang ditimbulkannya tumbuh seumur
+           pemasangan, bukan sebesar rentang tanggal yang sedang dilihat. */
+        $semuaUkur = LedakUkur::with(['titik', 'rencana'])->get();
 
         $tetapan = Peledakan::kalibrasi(
             $semuaUkur->map(fn (LedakUkur $u) => [

@@ -43,6 +43,31 @@ trait Ditinjau
             'diajukan_pada' => 'datetime',
             'ditinjau_pada' => 'datetime',
         ]);
+
+        /* Pengaju dan peninjau selalu ikut dimuat.
+         *
+         * Keduanya dibaca oleh toView() pada SETIAP baris — nama pengaju
+         * dan nama peninjau tercetak di tiap baris daftar. Tanpa ini,
+         * Eloquent mengambilnya satu per satu: dua kueri per baris, dan
+         * daftar tiga puluh baris berarti enam puluh kueri tambahan yang
+         * seluruhnya menanyakan hal yang sama ke tabel yang sama.
+         *
+         * Terukur di halaman penirisan: 44 kueri, 28 di antaranya
+         * `select * from users where id = ?`. Sesudah ini, dua.
+         *
+         * Dipasang di trait, bukan di tiap pemanggil. Sepuluh model
+         * memakai trait ini dan masing-masing punya beberapa halaman;
+         * memperbaikinya satu per satu berarti yang kesebelas — dan
+         * halaman berikutnya pada yang sepuluh — lahir dengan cacat yang
+         * sama, sebab tidak ada apa pun yang mengingatkan.
+         *
+         * Ongkosnya dua kueri tetap bagi halaman yang ternyata tidak
+         * membaca nama siapa pun. Dua yang tetap selalu lebih murah
+         * daripada dua yang dikalikan jumlah baris.
+         */
+        $this->with = array_values(array_unique(
+            array_merge($this->with, ['pengaju', 'peninjau'])
+        ));
     }
 
     public static function bootDitinjau(): void
