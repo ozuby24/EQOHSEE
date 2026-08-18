@@ -116,7 +116,10 @@ function keluar() {
 
       <!-- Pemilih modul -->
       <div class="px-3 pt-3.5">
-        <div class="glass rounded-xl p-1 grid grid-cols-3 gap-1">
+        <!-- Lima kolom di laci ponsel, tiga di desktop. Dua puluh dua modul
+             pada tiga kolom berarti delapan baris — 341px dari layar yang
+             tingginya 727px, sebelum daftar menunya sendiri mendapat apa pun. -->
+        <div class="glass rounded-xl p-1 grid grid-cols-5 lg:grid-cols-3 gap-1">
           <component :is="tautan(m.inertia)"
              v-for="m in menu.modul" :key="m.kunci" :href="m.url" :title="m.label"
              class="relative grid place-items-center py-2 rounded-lg transition"

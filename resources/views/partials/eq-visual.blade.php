@@ -224,6 +224,37 @@ body{
   body.eq-sempit #eqSidebar .grid-cols-3{grid-template-columns:repeat(1,minmax(0,1fr))}
 }
 
+/* ── Kaki bilah samping di laci ponsel ──
+ *
+ * Di bawah 1024px bilah samping menjadi laci yang dibatasi tinggi layar,
+ * dan tiap piksel yang dipakai kaki adalah piksel yang tidak dapat dipakai
+ * daftar menunya. Terukur pada layar 727px sebelum ini: kisi modul 341px
+ * dan kaki 213px menyisakan 99px untuk seluruh daftar menu — dua butir
+ * terlihat, sisanya harus digulir dalam jendela setinggi dua baris.
+ *
+ * Yang dibuang hanya penjelasannya, bukan jalannya. "Butuh Bantuan? Kami
+ * siap membantu Anda kapan saja" adalah kalimat sambutan; tombol "Hubungi
+ * Kami" di bawahnya yang benar-benar mengantar orang ke tujuan, dan ia
+ * tetap ada. Di desktop keduanya tampil seperti semula — di sana ruangnya
+ * memang ada.
+ *
+ * Tombol lipat juga disembunyikan: ia melipat bilah samping menjadi kolom
+ * ikon, keadaan yang hanya ada di layar lebar (lihat blok min-width:1024px
+ * di atas). Di laci ponsel menekannya tidak pernah melakukan apa pun yang
+ * terlihat.
+ *
+ * Letaknya SESUDAH seluruh definisi .eq-bantuan dan .eq-sisi-bawah, dan
+ * itu bukan kebetulan: kekhususannya sama persis, jadi yang menang adalah
+ * yang tertulis belakangan. Ditaruh di atas, aturan ini terpasang rapi dan
+ * tidak berpengaruh apa pun.
+ */
+@media (max-width:1023.98px){
+  .eq-sisi-kaki{padding:8px 12px 10px}
+  .eq-bantuan{display:none}
+  .eq-lipat{display:none}
+  .eq-sisi-bawah{justify-content:center}
+}
+
 /* item nav + ikon */
 #eqSidebar nav a{gap:10px}
 .eq-navico{width:15px;height:15px;flex:none;opacity:.55;transition:opacity .18s,transform .18s}
