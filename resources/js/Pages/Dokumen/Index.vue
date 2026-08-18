@@ -86,10 +86,10 @@ const chip = 'text-[9.5px] font-bold uppercase tracking-wide px-2 py-0.5 rounded
       </div>
 
       <div class="flex flex-wrap gap-3 mt-2.5 px-1">
-        <Link :href="tautan.piramida" class="text-[11.5px] font-bold text-cam-lime-deep hover:underline">
+        <Link :href="tautan.piramida" class="text-[11.5px] font-bold text-cam-lime-deep hover:underline py-1.5 -my-1.5">
           Piramida dokumen →
         </Link>
-        <a :href="tautan.daftarInduk" class="text-[11.5px] font-bold text-stone-400 hover:underline">
+        <a :href="tautan.daftarInduk" class="text-[11.5px] font-bold text-stone-400 hover:underline py-1.5 -my-1.5">
           Daftar induk (cetak) →
         </a>
       </div>

@@ -231,7 +231,7 @@ const kartu = computed(() => [
           </p>
         </div>
 
-        <Link href="/ko/tindak" class="text-[11px] font-semibold text-cam-lime-deep shrink-0">
+        <Link href="/ko/tindak" class="text-[11px] font-semibold text-cam-lime-deep shrink-0 py-1.5 -my-1.5">
           Tindak lanjut
         </Link>
       </div>

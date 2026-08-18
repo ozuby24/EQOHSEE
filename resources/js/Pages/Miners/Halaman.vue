@@ -322,7 +322,7 @@ function hapus(jalur: string, apa: string) {
           <li v-for="o in takLayak" :key="o.id" class="py-2.5 flex items-center gap-3">
             <span class="w-1.5 h-1.5 rounded-full shrink-0" :style="{ background: KEADAAN.gawat }"></span>
             <Link :href="`/miners/${o.id}`"
-                  class="text-[12.5px] font-semibold text-cam-ink hover:text-cam-lime-deep min-w-0 truncate w-44">
+                  class="text-[12.5px] font-semibold text-cam-ink hover:text-cam-lime-deep min-w-0 truncate w-44 py-1.5 -my-1.5">
               {{ o.nama }}
             </Link>
             <span class="text-[11.5px] text-stone-500 min-w-0 flex-1 truncate">{{ o.jabatan || '—' }}</span>

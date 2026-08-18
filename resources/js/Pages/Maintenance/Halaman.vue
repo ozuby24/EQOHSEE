@@ -168,7 +168,7 @@ const warnaStatus: Record<string, string> = {
         <p v-if="a.saran" class="text-[11px] text-stone-700 mt-2 pt-2 border-t border-black/5"><span class="font-bold">Tindakan: </span>{{ a.saran }}</p>
         <div class="mt-2">
           <span v-if="ditangani.has(a.kode)" class="inline-block rounded-full bg-emerald-100 text-emerald-700 px-2 py-1 text-[10px] font-bold">Sedang ditangani</span>
-          <button v-else type="button" class="text-[11px] font-bold text-cam-lime-deep" @click="tindakDari(a)">+ Buat tindak lanjut</button>
+          <button v-else type="button" class="text-[11px] font-bold text-cam-lime-deep py-1.5" @click="tindakDari(a)">+ Buat tindak lanjut</button>
         </div>
       </div>
     </section>
@@ -371,7 +371,7 @@ const warnaStatus: Record<string, string> = {
                 </select>
               </td>
               <td class="px-5 py-3 text-right whitespace-nowrap">
-                <button v-if="w.verifikasi?.dapatDiverifikasi" type="button" class="text-[11px] font-bold text-emerald-600" @click="verifikasi(w)">Verifikasi</button>
+                <button v-if="w.verifikasi?.dapatDiverifikasi" type="button" class="text-[11px] font-bold text-emerald-600 py-1.5" @click="verifikasi(w)">Verifikasi</button>
                 <span v-else-if="w.verifikasi?.sudah" class="text-[10px] text-emerald-700" :title="`oleh ${w.verifikasi.pemverifikasi} · ${w.verifikasi.pada}`">✓ terverifikasi</span>
                 <span v-else-if="w.verifikasi?.menunggu" class="text-[10px] text-amber-600">menunggu verifikasi</span>
                 <button v-if="isAdmin && w.verifikasi?.sudah" type="button" class="ml-3 text-[11px] text-stone-400" @click="batalVerifikasi(w)">Batal</button>

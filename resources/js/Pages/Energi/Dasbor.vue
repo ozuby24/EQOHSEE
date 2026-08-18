@@ -335,7 +335,7 @@ const kartu = computed(() => [
           </p>
         </div>
 
-        <Link href="/energi/penghematan" class="text-[11px] font-semibold text-cam-lime-deep shrink-0">
+        <Link href="/energi/penghematan" class="text-[11px] font-semibold text-cam-lime-deep shrink-0 py-1.5 -my-1.5">
           Semua peluang
         </Link>
       </div>

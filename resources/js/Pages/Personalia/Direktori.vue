@@ -114,7 +114,7 @@ onBeforeUnmount(() => { if (jeda) clearTimeout(jeda); });
             </div>
 
             <button v-if="o.id !== diriId" type="button" @click="pesan(o)"
-                    class="mt-2.5 text-[11.5px] font-semibold text-[color:var(--eq-aksen,#F57C00)] hover:underline">
+                    class="mt-1 text-[11.5px] font-semibold text-[color:var(--eq-aksen,#F57C00)] hover:underline py-1.5 -mb-1.5">
               Kirim Pesan
             </button>
 

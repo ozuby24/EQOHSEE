@@ -139,7 +139,7 @@ const warnaStatus: Record<string, string> = {
         <p v-if="a.saran" class="text-[11px] text-stone-700 mt-2 pt-2 border-t border-black/5"><span class="font-bold">Tindakan: </span>{{ a.saran }}</p>
         <div class="mt-2">
           <span v-if="ditangani.has(a.kode)" class="inline-block rounded-full bg-emerald-100 text-emerald-700 px-2 py-1 text-[10px] font-bold">Sedang ditangani</span>
-          <button v-else type="button" class="text-[11px] font-bold text-cam-orange-dark" @click="tindakDari(a)">+ Buat tindak lanjut</button>
+          <button v-else type="button" class="text-[11px] font-bold text-cam-orange-dark py-1.5" @click="tindakDari(a)">+ Buat tindak lanjut</button>
         </div>
       </div>
     </section>

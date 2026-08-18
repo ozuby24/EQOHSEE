@@ -409,7 +409,10 @@ main a{transition:color .16s}
 .eq-panel-ket{font-size:11.5px;color:var(--eq-redup2,#98A2AE)}
 .eq-panel-kaki{font-size:11.5px;color:var(--eq-redup,#7C8894);margin-top:12px}
 .eq-tautan{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#F57C00;
-  transition:gap .18s}
+  transition:gap .18s;
+  /* Sasaran sentuh: padding tegak memperbesar area ketuk, margin negatif
+     mengembalikan tinggi tata letaknya persis seperti semula. */
+  padding-block:5px;margin-block:-5px}
 .eq-tautan:hover{gap:9px}
 .eq-tautan svg{width:14px;height:14px}
 .eq-chip{font-size:11.5px;font-weight:600;color:var(--eq-redup,#7C8894);background:#F4F6F8;
@@ -909,6 +912,7 @@ main a{transition:color .16s}
                                        color-mix(in srgb,var(--eq-aksen,#F57C00) 78%,#FF9800))}
 .eq-kursus-maju b,
 .eq-panel-lihat{color:var(--eq-aksen,#F57C00)}
+.eq-panel-lihat{padding-block:5px;margin-block:-5px}
 .brand-gradient{background:linear-gradient(165deg,var(--eq-dasar,#0B1117),
                                            color-mix(in srgb,var(--eq-dasar,#0B1117) 62%,#12403E))}
 

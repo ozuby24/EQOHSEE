@@ -173,6 +173,45 @@ class LapanganTest extends TestCase
             .implode("\n  ", $tanpa));
     }
 
+    /**
+     * Sasaran sentuh yang sudah dilebarkan tidak boleh menyusut lagi.
+     *
+     * Dua tempat ini menampung sebagian besar tautan aksi yang tadinya
+     * di bawah 24px: kelas bersama `.eq-tautan` / `.eq-panel-lihat`, dan
+     * legenda diagram donat yang dipakai ulang di tujuh halaman.
+     *
+     * Yang dijaga bukan angka pastinya, melainkan bahwa paddingnya masih
+     * ada. Menghapusnya mengembalikan 36 temuan yang sudah ditutup, dan
+     * tidak satu pun menimbulkan galat — tautan 17px tetap dapat diklik
+     * oleh siapa pun yang memakai tetikus.
+     *
+     * Catatan tentang `margin-block` negatif yang menyertainya: itulah
+     * yang membuat paddingnya tidak menggeser apa pun. Ia hanya bekerja
+     * pada kotak sebaris dan inline-flex; pada elemen blok ia dapat
+     * menciut bersama margin tetangganya, dan pernah menggeser tombol
+     * "Kirim Pesan" 6px ke bawah persis karena itu.
+     */
+    public function test_sasaran_sentuh_tetap_lebar(): void
+    {
+        $css = file_get_contents(resource_path('views/partials/eq-visual.blade.php'));
+
+        foreach (['.eq-tautan', '.eq-panel-lihat'] as $kelas) {
+            $this->assertMatchesRegularExpression(
+                '/' . preg_quote($kelas, '/') . '\{[^}]*padding-block:\s*\d/',
+                $css,
+                "{$kelas} kehilangan padding tegaknya — sasaran sentuhnya kembali di bawah 24px.",
+            );
+        }
+
+        $donat = file_get_contents(resource_path('js/Grafik/Donat.vue'));
+
+        $this->assertStringNotContainsString(
+            'px-1 py-0.5',
+            $donat,
+            'Butir legenda donat kembali ke py-0.5; tingginya hanya 22px.',
+        );
+    }
+
     /** @return list<string> */
     private function berkasVue(): array
     {

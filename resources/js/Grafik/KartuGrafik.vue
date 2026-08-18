@@ -56,7 +56,7 @@ const idTabel     = useId();
     <div class="mt-3 pt-3 border-t border-stone-100 grafik-tanpa-cetak">
       <button type="button"
               class="text-[11px] font-semibold text-stone-500 hover:text-cam-ink
-                     inline-flex items-center gap-1.5 rounded focus:outline-none
+                     inline-flex items-center gap-1.5 rounded py-1.5 -my-1.5 focus:outline-none
                      focus-visible:ring-2 focus-visible:ring-cam-lime focus-visible:ring-offset-2"
               :aria-expanded="tabelTampak" :aria-controls="idTabel"
               @click="tabelTampak = !tabelTampak">

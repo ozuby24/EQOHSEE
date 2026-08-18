@@ -107,7 +107,7 @@ const disorot = ref<string | null>(null);
     <ul class="min-w-0 flex-1 space-y-1" @pointerleave="disorot = null">
       <li v-for="p in potongan" :key="p.label">
         <button type="button"
-                class="w-full flex items-center gap-2 text-[12px] rounded px-1 py-0.5
+                class="w-full flex items-center gap-2 text-[12px] rounded px-1 py-1
                        hover:bg-stone-50 focus:outline-none focus-visible:ring-2
                        focus-visible:ring-cam-lime"
                 @pointerenter="disorot = p.label" @focus="disorot = p.label"

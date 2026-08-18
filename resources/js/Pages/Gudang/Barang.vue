@@ -120,9 +120,9 @@ const isian = 'rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px] ring
                 <span class="eq-lencana-kat" :class="`k-${b.status.nada}`">{{ b.status.nama }}</span>
               </td>
               <td v-if="bolehUbah" class="py-3 px-4 text-right whitespace-nowrap">
-                <a :href="b.urlUbah" class="text-[12px] font-semibold"
+                <a :href="b.urlUbah" class="text-[12px] font-semibold py-1.5 -my-1.5"
                    style="color:var(--eq-aksen,#F57C00)">Ubah</a>
-                <button type="button" class="text-[12px] font-semibold text-red-600 ml-2"
+                <button type="button" class="text-[12px] font-semibold text-red-600 ml-2 py-1.5 -my-1.5"
                         @click="hapus(b.urlHapus, b.nama)">Hapus</button>
               </td>
             </tr>

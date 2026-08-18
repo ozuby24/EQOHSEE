@@ -145,7 +145,7 @@ const lebarBagian: Record<string, string> = {
         <p v-if="a.saran" class="text-[11px] text-stone-700 mt-2 pt-2 border-t border-black/5"><span class="font-bold">Tindakan: </span>{{ a.saran }}</p>
         <div class="mt-2">
           <span v-if="ditangani.has(a.kode)" class="inline-block rounded-full bg-emerald-100 text-emerald-700 px-2 py-1 text-[10px] font-bold">Sedang ditangani</span>
-          <button v-else type="button" class="text-[11px] font-bold text-cam-orange-dark" @click="tindakDari(a)">+ Buat tindak lanjut</button>
+          <button v-else type="button" class="text-[11px] font-bold text-cam-orange-dark py-1.5" @click="tindakDari(a)">+ Buat tindak lanjut</button>
         </div>
       </div>
     </section>
@@ -371,7 +371,7 @@ const lebarBagian: Record<string, string> = {
                     <button type="button" class="ml-3 text-[11px] font-bold text-red-600 disabled:opacity-40"
                             :disabled="sibuk[r.id]" @click="tolak(r)">Tolak</button>
                   </template>
-                  <button v-if="isAdmin && r.status !== 'disetujui'" type="button" class="ml-3 text-[11px] font-bold text-stone-400" @click="hapusRegu(r)">Hapus</button>
+                  <button v-if="isAdmin && r.status !== 'disetujui'" type="button" class="ml-3 py-1.5 -my-1.5 text-[11px] font-bold text-stone-400" @click="hapusRegu(r)">Hapus</button>
                 </td>
               </tr>
               <tr v-if="!(props.regu || []).length"><td colspan="8" class="px-5 py-8 text-center text-stone-400">Belum ada catatan regu pada rentang ini.</td></tr>
@@ -407,7 +407,7 @@ const lebarBagian: Record<string, string> = {
                 <td class="py-2" :class="m.lampauiPuncak ? 'text-red-600 font-bold' : 'text-stone-500'">
                   {{ m.persen === null ? 'kapasitas belum diisi' : `${angka(m.persen, 1)}%` }}
                 </td>
-                <td class="py-2 text-right"><button v-if="isAdmin" type="button" class="text-[11px] text-stone-400" @click="hapusMuatan(m)">Hapus</button></td>
+                <td class="py-2 text-right"><button v-if="isAdmin" type="button" class="py-1.5 -my-1.5 text-[11px] text-stone-400" @click="hapusMuatan(m)">Hapus</button></td>
               </tr>
             </tbody>
           </table></div>
@@ -443,7 +443,7 @@ const lebarBagian: Record<string, string> = {
                 {{ m.persen === null ? '—' : `${angka(m.persen, 1)}%` }}
               </td>
               <td class="px-5 py-3 text-stone-500">{{ m.sumber || '—' }}</td>
-              <td class="px-5 py-3 text-right"><button v-if="isAdmin" type="button" class="text-[11px] text-stone-400" @click="hapusMuatan(m)">Hapus</button></td>
+              <td class="px-5 py-3 text-right"><button v-if="isAdmin" type="button" class="py-1.5 -my-1.5 text-[11px] text-stone-400" @click="hapusMuatan(m)">Hapus</button></td>
             </tr>
             <tr v-if="!(props.muatan || []).length"><td colspan="8" class="px-5 py-8 text-center text-stone-400">Belum ada penimbangan pada rentang ini.</td></tr>
           </tbody>
@@ -500,7 +500,7 @@ const lebarBagian: Record<string, string> = {
                 </template>
                 <template v-else>{{ a.bucket === null ? '—' : `${angka(a.bucket, 1)} m³` }}</template>
               </td>
-              <td class="px-5 py-3 text-right"><button v-if="isAdmin" type="button" class="text-[11px] text-stone-400" @click="hapusAlat(a)">Hapus</button></td>
+              <td class="px-5 py-3 text-right"><button v-if="isAdmin" type="button" class="py-1.5 -my-1.5 text-[11px] text-stone-400" @click="hapusAlat(a)">Hapus</button></td>
             </tr>
             <tr v-if="!(props.alat || []).length"><td colspan="6" class="px-5 py-8 text-center text-stone-400">Belum ada unit terdaftar.</td></tr>
           </tbody>

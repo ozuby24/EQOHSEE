@@ -5,7 +5,8 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
-        "typecheck": "vue-tsc --noEmit"
+        "typecheck": "vue-tsc --noEmit",
+        "periksa-tampilan": "node tools/periksa-tampilan.mjs"
     },
     "devDependencies": {
         "@inertiajs/vue3": "^3.6.1",
