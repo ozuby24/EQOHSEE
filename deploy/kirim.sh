@@ -79,6 +79,37 @@ for alat in git ssh; do
 done
 git rev-parse --git-dir >/dev/null 2>&1 || gagal "Bukan repo Git: $AKAR"
 
+# Berkas ini dijalankan DI MESIN LOKAL, bukan di VPS.
+#
+# Keterangan itu sudah tertulis di kepala berkas, dan itu tidak cukup:
+# yang membaca kepala berkas adalah orang yang sedang mempelajarinya,
+# sedangkan yang menjalankannya adalah orang yang sedang menyalin
+# perintah. Dijalankan di VPS, skrip ini ber-SSH ke dirinya sendiri —
+# butuh kunci SSH ke localhost yang tidak pernah ada alasan untuk
+# dipasang — dan gagal dengan pesan tentang kunci, bukan tentang tempat.
+# Pesan tentang kunci mengirim orang memasang kunci; itu memperbaiki
+# gejalanya sambil mengekalkan kekeliruannya.
+#
+# Dikenali dari letak repo, bukan dari nama host: nama host dapat sama
+# kebetulan, sedangkan $VPS_DIR adalah alamat yang skrip ini sendiri
+# tuju. Kalau ia berdiri di dalamnya, ia sedang menuju dirinya sendiri.
+if [ "$AKAR" = "${VPS_DIR%/}" ]; then
+    merah "GAGAL: kirim.sh sedang dijalankan DI VPS."
+    echo  ""
+    echo  "    Skrip ini berjalan di mesin Anda sendiri, lalu memanggil"
+    echo  "    deploy.sh di VPS lewat SSH. Dijalankan dari dalam VPS, ia"
+    echo  "    akan menyambung ke dirinya sendiri."
+    echo  ""
+    echo  "    Dari VPS, yang dijalankan adalah pasangannya:"
+    echo  ""
+    echo  "        cd '$VPS_DIR'"
+    echo  "        git fetch origin <cabang> && git checkout <cabang>"
+    echo  "        bash deploy/deploy.sh"
+    echo  ""
+    echo  "    Dari mesin Anda, barulah:  bash deploy/kirim.sh"
+    exit 1
+fi
+
 CABANG="${CABANG:-$(git rev-parse --abbrev-ref HEAD)}"
 [ "$CABANG" != "HEAD" ] || gagal "HEAD sedang lepas. Sebutkan cabangnya: bash deploy/kirim.sh <cabang>"
 echo "    cabang  : $CABANG"

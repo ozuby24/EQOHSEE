@@ -78,14 +78,33 @@ git fetch --prune origin "$CABANG"
 # storage/ (di luar jangkauan reset karena diabaikan Git), supaya
 # menegakkan Git tidak berarti kehilangan berkas yang mungkin satu-satunya
 # salinannya ada di server.
-MENYIMPANG="$(git diff --name-only "origin/$CABANG" -- . | head -200)"
+# Yang terlacak DAN yang tak terlacak, keduanya.
+#
+# Semula hanya `git diff` yang dibaca, dan itu melewatkan separuh
+# masalahnya. `git diff` hanya melihat berkas yang DILACAK Git; berkas
+# yang diunggah langsung ke server dan namanya belum pernah ada di repo
+# — public/media/galeri/energi.mp4, misalnya — tidak muncul di situ sama
+# sekali.
+#
+# Berkas semacam itu memang selamat dari `reset --hard`, jadi ia tidak
+# hilang hari ini. Tetapi ia juga tidak pernah tercatat di mana pun, dan
+# justru itu bahayanya: satu-satunya salinan sesuatu yang dipakai situs,
+# hidup di luar Git, tanpa seorang pun tahu ia ada sampai server diganti.
+# Menyalinnya ke cadangan tidak memindahkannya ke repo, tetapi membuatnya
+# TERSEBUT — dan yang tersebut dapat diputuskan nasibnya.
+#
+# `--exclude-standard` menjaga agar isi .gitignore tidak ikut tersalin;
+# tanpa itu, seluruh vendor/, node_modules/, dan storage/ ikut masuk
+# cadangan tiap deploy.
+MENYIMPANG="$( { git diff --name-only "origin/$CABANG" -- .
+                 git ls-files --others --exclude-standard; } | sort -u | head -200)"
 
 if [ -n "$MENYIMPANG" ]; then
     # Nama diawali `backup-` supaya tercakup aturan /storage/backup-* di
     # .gitignore — kalau tidak, cadangannya sendiri menjadi berkas tak
     # terlacak yang membuat kirim.sh menolak deploy berikutnya.
     SIMPAN="$REPO_DIR/storage/backup-berkas-server/$(date +%Y%m%d-%H%M%S)"
-    echo "==> Berkas terlacak yang menyimpang dari Git — disalin ke $SIMPAN"
+    echo "==> Berkas yang menyimpang dari Git — disalin ke $SIMPAN"
     while IFS= read -r berkas; do
         [ -f "$berkas" ] || continue
         mkdir -p "$SIMPAN/$(dirname "$berkas")"
@@ -251,7 +270,15 @@ echo "==> Running database migrations"
 php artisan migrate --force
 
 echo "==> Linking public storage"
-php artisan storage:link 2>/dev/null || true
+# `--quiet` menekan ERROR merah "link already exists" yang muncul pada
+# SETIAP deploy sesudah yang pertama. Tautannya memang sudah ada dan
+# memang sudah benar; yang salah hanyalah kata "ERROR" di keluarannya.
+#
+# Bukan soal kerapian. Keluaran deploy adalah satu-satunya tempat orang
+# melihat ada tidaknya yang gagal, dan baris merah yang selalu muncul
+# tanpa pernah berarti apa-apa melatih mata melewati warna merah — lalu
+# baris merah yang sungguh-sungguh penting ikut terlewat.
+php artisan storage:link --quiet 2>/dev/null || true
 
 # Berkas tertutup dipindahkan keluar dari disk publik.
 #
