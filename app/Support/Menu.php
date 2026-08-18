@@ -497,6 +497,21 @@ final class Menu
         [['admin*', 'signatories*'],               'admin'],
     ];
 
+    /**
+     * Peta alamat modul, untuk yang perlu membacanya dari luar.
+     *
+     * Dipakai PenemuanController membangkitkan robots.txt. Dibuka sebagai
+     * pengakses, bukan dengan menjadikan konstantanya public: yang perlu
+     * keluar hanya isinya untuk dibaca, dan tabel ini adalah satu-satunya
+     * tempat yang menentukan alamat mana milik modul mana.
+     *
+     * @return list<array{0:list<string>,1:string}>
+     */
+    public static function petaAlamat(): array
+    {
+        return self::PETA_ALAMAT;
+    }
+
     public static function modulAktif(): string
     {
         foreach (self::PETA_ALAMAT as [$pola, $kunci]) {

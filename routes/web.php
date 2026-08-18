@@ -15,6 +15,15 @@ use App\Http\Controllers\Admin\{AiController, CompanyController, KeamananControl
 use App\Http\Controllers\PerangkatSayaController;
 use Illuminate\Support\Facades\Route;
 
+/* ============ PENEMUAN (publik) ============
+
+   robots.txt dan sitemap.xml dibangkitkan, bukan berupa berkas statis di
+   public/. Berkas statis menua diam-diam: modul baru ditambahkan,
+   alamatnya tidak pernah masuk ke robots.txt, dan tidak ada yang memberi
+   tahu siapa pun. Lihat PenemuanController. */
+Route::get('robots.txt', [\App\Http\Controllers\PenemuanController::class, 'robots']);
+Route::get('sitemap.xml', [\App\Http\Controllers\PenemuanController::class, 'sitemap']);
+
 /* ============ VERIFIKASI SERTIFIKAT (publik) ============ */
 Route::get('verifikasi/{kode}', [\App\Http\Controllers\CertificateController::class,'verify'])->name('certificates.verify');
 

@@ -34,6 +34,47 @@
 })();
 </script>
 
+{{-- Judul dan keterangan berbagi, digambar SERVER.
+
+     Aplikasi ini memakai Inertia tanpa SSR, jadi seluruh <title> dipasang
+     JavaScript sesudah halaman tiba. Bagi orang itu tidak terasa; bagi
+     apa pun yang tidak menjalankan JavaScript — pratinjau tautan di
+     WhatsApp, LinkedIn, Telegram — halaman ini datang tanpa judul, tanpa
+     uraian, dan tanpa gambar sama sekali.
+
+     Ditaruh SEBELUM @inertiaHead supaya judul dari <Head> di sisi Vue
+     tetap menang begitu halamannya hidup. Yang di sini berlaku untuk
+     pembaca yang tidak pernah sampai ke tahap itu. --}}
+@php($eqSeo = \App\Support\Seo::untuk(request()))
+<title>{{ $eqSeo['judul'] }}</title>
+<meta name="description" content="{{ $eqSeo['uraian'] }}">
+<link rel="canonical" href="{{ $eqSeo['kanonik'] }}">
+@unless($eqSeo['indeks'])
+<meta name="robots" content="noindex, nofollow">
+@endunless
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{ \App\Support\Seo::NAMA }}">
+<meta property="og:locale" content="id_ID">
+<meta property="og:title" content="{{ $eqSeo['judul'] }}">
+<meta property="og:description" content="{{ $eqSeo['uraian'] }}">
+<meta property="og:url" content="{{ $eqSeo['kanonik'] }}">
+<meta property="og:image" content="{{ url($eqSeo['gambar']) }}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ $eqSeo['judul'] }}">
+<meta name="twitter:description" content="{{ $eqSeo['uraian'] }}">
+<meta name="twitter:image" content="{{ url($eqSeo['gambar']) }}">
+
+{{-- Data terstruktur hanya di halaman pendaratan. Memasangnya di setiap
+     halaman berarti menyatakan bahwa tiap alamat adalah aplikasinya
+     sendiri — dan pernyataan yang berulang di dua ratus alamat bukan
+     penekanan, melainkan kekeliruan yang diulang dua ratus kali. --}}
+@if($eqSeo['indeks'] && request()->route()?->getName() === 'beranda')
+<script type="application/ld+json" nonce="{{ \App\Http\Middleware\TajukKeamanan::nonce() }}">{!! \App\Support\Seo::dataTerstruktur() !!}</script>
+@endif
+
 @inertiaHead
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
