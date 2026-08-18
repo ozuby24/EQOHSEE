@@ -49,17 +49,17 @@ const isian = 'ring-focus rounded-xl border border-stone-200 px-3.5 py-2.5 text-
                         text-[13px] transition">
         </div>
 
-        <select v-model="saring.kategori" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan">
+        <select v-model="saring.kategori" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan" aria-label="Kategori">
           <option value="">Semua jenis</option>
           <option v-for="k in opsi.kategori" :key="k" :value="k">{{ k }}</option>
         </select>
 
-        <select v-model="saring.status" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan">
+        <select v-model="saring.status" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan" aria-label="Status">
           <option value="">Semua status</option>
           <option v-for="o in opsi.status" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
         </select>
 
-        <select v-model="saring.urut" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan">
+        <select v-model="saring.urut" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan" aria-label="Urutan">
           <option v-for="o in opsi.urut" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
         </select>
 

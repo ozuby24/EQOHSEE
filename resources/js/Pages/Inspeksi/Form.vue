@@ -36,7 +36,7 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
 
         <div>
           <label :class="label">Jenis inspeksi</label>
-          <select v-model="form.template_id" :class="isian">
+          <select v-model="form.template_id" :class="isian" aria-label="Templat">
             <option value="">— tanpa jenis —</option>
             <option v-for="t in opsi.template" :key="t.id" :value="String(t.id)">
               {{ t.nama }} ({{ t.jumlahItem }} parameter)
@@ -49,7 +49,7 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
 
         <div>
           <label :class="label">Perusahaan</label>
-          <select v-model="form.company_id" :class="isian">
+          <select v-model="form.company_id" :class="isian" aria-label="Perusahaan">
             <option value="">— pilih perusahaan —</option>
             <option v-for="c in opsi.perusahaan" :key="c.id" :value="String(c.id)">{{ c.nama }}</option>
           </select>
@@ -57,7 +57,7 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
 
         <div>
           <label :class="label">Tanggal <span class="text-red-500">*</span></label>
-          <input v-model="form.tanggal" type="date" :class="isian">
+          <input v-model="form.tanggal" type="date" :class="isian" aria-label="Tanggal">
           <p v-if="form.errors.tanggal" class="text-[11.5px] text-red-600 mt-1">{{ form.errors.tanggal }}</p>
         </div>
 

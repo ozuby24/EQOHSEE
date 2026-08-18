@@ -138,7 +138,7 @@ const rinci: Array<[string, string | null]> = [
         <div>
           <label class="block text-[11.5px] font-bold uppercase tracking-wide text-stone-500 mb-1.5">Status</label>
           <select v-model="form.status"
-                  class="ring-focus w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
+                  class="ring-focus w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]" aria-label="Status">
             <option v-for="s in opsi.status" :key="s" :value="s">{{ s }}</option>
           </select>
         </div>

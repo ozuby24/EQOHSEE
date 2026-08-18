@@ -38,7 +38,7 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
       </div>
       <div>
         <label :class="label">Tanggal terbit</label>
-        <input v-model="form.published_at" type="date" :class="isian">
+        <input v-model="form.published_at" type="date" :class="isian" aria-label="Tanggal terbit">
       </div>
       <div>
         <label :class="label">Isi</label>

@@ -89,27 +89,27 @@ const pilihan =
                class="ring-focus flex-1 min-w-0 basis-[180px] rounded-xl border border-stone-200
                       px-4 py-2.5 text-[13px] transition">
 
-        <select v-model="isi.bulan" :class="pilihan" @change="kirim()">
+        <select v-model="isi.bulan" :class="pilihan" @change="kirim()" aria-label="Bulan">
           <option :value="null">Semua bulan</option>
           <option v-for="b in opsi.bulan" :key="b.nilai" :value="b.nilai">{{ b.label }}</option>
         </select>
 
-        <select v-model="isi.risiko" :class="pilihan" @change="kirim()">
+        <select v-model="isi.risiko" :class="pilihan" @change="kirim()" aria-label="Tingkat risiko">
           <option :value="null">Semua risiko</option>
           <option v-for="r in opsi.risiko" :key="r" :value="r">{{ r }}</option>
         </select>
 
-        <select v-model="isi.status" :class="pilihan" @change="kirim()">
+        <select v-model="isi.status" :class="pilihan" @change="kirim()" aria-label="Status">
           <option :value="null">Semua status</option>
           <option v-for="s in opsi.status" :key="s" :value="s">{{ s }}</option>
         </select>
 
-        <select v-model="isi.kategori" :class="pilihan" @change="kirim()">
+        <select v-model="isi.kategori" :class="pilihan" @change="kirim()" aria-label="Kategori">
           <option :value="null">Semua kategori</option>
           <option v-for="k in opsi.kategori" :key="k" :value="k">{{ k }}</option>
         </select>
 
-        <select v-model="isi.perusahaan" :class="pilihan" @change="kirim()">
+        <select v-model="isi.perusahaan" :class="pilihan" @change="kirim()" aria-label="Perusahaan">
           <option :value="null">Semua perusahaan</option>
           <option v-for="c in opsi.perusahaan" :key="c.id" :value="String(c.id)">{{ c.nama }}</option>
         </select>

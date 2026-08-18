@@ -104,8 +104,8 @@ const warnaStatus: Record<string, string> = {
         <p class="text-[12px] text-stone-500 mt-1">Rancangan, getaran, dan hasil peledakan dalam satu alur persetujuan.</p>
       </div>
       <div class="flex gap-2">
-        <input v-model="props.dari" type="date" class="rounded-lg border-stone-200 text-[11px]">
-        <input v-model="props.sampai" type="date" class="rounded-lg border-stone-200 text-[11px]">
+        <input v-model="props.dari" type="date" class="rounded-lg border-stone-200 text-[11px]" aria-label="Tanggal mulai">
+        <input v-model="props.sampai" type="date" class="rounded-lg border-stone-200 text-[11px]" aria-label="Tanggal akhir">
         <button class="eq-btn-lain" type="button" @click="rentang">Terapkan</button>
       </div>
     </section>
@@ -341,7 +341,7 @@ const warnaStatus: Record<string, string> = {
 
           <h4 class="font-bold text-[13px] mt-5">Pengukuran getaran</h4>
           <form class="mt-2 grid gap-2 md:grid-cols-6" @submit.prevent="simpanUkur(r)">
-            <select v-model="ukur.ledak_titik_id" class="rounded-lg border-stone-200 text-[11px]" required>
+            <select v-model="ukur.ledak_titik_id" class="rounded-lg border-stone-200 text-[11px]" required aria-label="Titik ukur">
               <option value="">— titik —</option>
               <option v-for="t in props.titik || []" :key="t.id" :value="t.id">{{ t.nama }}</option>
             </select>
@@ -478,7 +478,7 @@ const warnaStatus: Record<string, string> = {
             <td class="py-2 text-stone-500">{{ t.target_selesai || '—' }}</td>
             <td class="py-2 text-right">
               <select class="rounded-lg border-stone-200 text-[11px]" :value="t.status"
-                      @change="ubahTindak(t, ($event.target as HTMLSelectElement).value)">
+                      @change="ubahTindak(t, ($event.target as HTMLSelectElement).value)" aria-label="Status">
                 <option v-for="s in props.opsi?.statusTindak || []" :key="s" :value="s">{{ label(s) }}</option>
               </select>
             </td>

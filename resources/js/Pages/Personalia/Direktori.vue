@@ -119,7 +119,7 @@ onBeforeUnmount(() => { if (jeda) clearTimeout(jeda); });
             </button>
 
             <div v-if="admin" class="mt-2.5">
-              <select :value="o.perusahaanId ?? ''" :disabled="menetapkan === o.id"
+              <select :value="o.perusahaanId ?? ''" :disabled="menetapkan === o.id" aria-label="Perusahaan pengguna"
                       @change="tetapkan(o, ($event.target as HTMLSelectElement).value)"
                       class="w-full rounded-lg border border-stone-200 px-2 py-1.5 text-[11px] text-stone-600
                              disabled:opacity-50

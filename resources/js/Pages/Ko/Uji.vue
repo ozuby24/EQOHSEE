@@ -102,14 +102,14 @@ function hapus(id: number, kode: string) {
           class="rounded-2xl bg-white border border-stone-100 shadow-card p-5 grid gap-3 md:grid-cols-4"
           @submit.prevent="simpan">
       <select v-model="f.ko_object_id" required @change="pilihObjek"
-              class="rounded-lg border-stone-200 text-[12px] md:col-span-2">
+              class="rounded-lg border-stone-200 text-[12px] md:col-span-2" aria-label="Objek KO">
         <option value="">Pilih unit…</option>
         <option v-for="o in (props.objek ?? [])" :key="o.id" :value="o.id">
           {{ o.kode }} · {{ o.nama }}
         </option>
       </select>
       <input v-model="f.nomor" placeholder="No. sertifikat uji" class="rounded-lg border-stone-200 text-[12px]">
-      <select v-model="f.hasil" class="rounded-lg border-stone-200 text-[12px]">
+      <select v-model="f.hasil" class="rounded-lg border-stone-200 text-[12px]" aria-label="Hasil">
         <option v-for="h in ['Layak','Layak Bersyarat','Tidak Layak']" :key="h">{{ h }}</option>
       </select>
 

@@ -155,7 +155,7 @@ const angka = (n: number) => (n >= 0 ? '+' : '') + n.toFixed(3);
               <!-- pr-7: tanda panah select digambar di dalam kotaknya, jadi
                    tanpa ruang di kanan ia menindih teks pilihan. -->
               <select v-model="sunting[r.id].status"
-                      class="ring-focus rounded-lg border border-stone-200 pl-2 pr-7 py-1 text-[11.5px] font-semibold">
+                      class="ring-focus rounded-lg border border-stone-200 pl-2 pr-7 py-1 text-[11.5px] font-semibold" aria-label="Status">
                 <option v-for="s in statusPilihan" :key="s" :value="s">{{ s }}</option>
               </select>
               <input v-model.number="sunting[r.id].progress"

@@ -93,7 +93,7 @@ function hapus(id: number) {
           <select :value="perusahaan.id"
                   @change="gantiPerusahaan(($event.target as HTMLSelectElement).value)"
                   class="ring-focus rounded-lg bg-white/15 border border-white/20 pl-3 pr-8 py-1.5
-                         text-[12px] font-semibold text-white">
+                         text-[12px] font-semibold text-white" aria-label="Perusahaan">
             <option v-for="c in daftarPerusahaan" :key="c.id" :value="c.id" class="text-cam-ink">
               {{ c.nama }}
             </option>

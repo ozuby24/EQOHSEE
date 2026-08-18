@@ -63,7 +63,7 @@ const label = 'block text-[12px] font-semibold text-cam-ink mb-1.5';
 
         <div>
           <label :class="label">Kategori <span class="text-red-500">*</span></label>
-          <select v-model="form.kategori" :class="isian">
+          <select v-model="form.kategori" :class="isian" aria-label="Kategori">
             <option v-for="o in opsi.kategori" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
           </select>
         </div>
@@ -88,7 +88,7 @@ const label = 'block text-[12px] font-semibold text-cam-ink mb-1.5';
 
         <div class="sm:col-span-2">
           <label :class="label">Lokasi Penyimpanan</label>
-          <select v-model="form.lokasi_id" :class="isian">
+          <select v-model="form.lokasi_id" :class="isian" aria-label="Lokasi Penyimpanan">
             <option value="">— belum ditentukan —</option>
             <option v-for="o in opsi.lokasi" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
           </select>
@@ -101,7 +101,7 @@ const label = 'block text-[12px] font-semibold text-cam-ink mb-1.5';
         <div class="grid gap-4 sm:grid-cols-2">
           <div class="sm:col-span-2">
             <label :class="label">Kelas Bahaya</label>
-            <select v-model="form.kelas_b3" :class="isian">
+            <select v-model="form.kelas_b3" :class="isian" aria-label="Kelas Bahaya">
               <option value="">— belum digolongkan —</option>
               <option v-for="o in opsi.kelasB3" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
             </select>
@@ -112,7 +112,7 @@ const label = 'block text-[12px] font-semibold text-cam-ink mb-1.5';
 
           <div>
             <label :class="label">Wujud</label>
-            <select v-model="form.wujud" :class="isian">
+            <select v-model="form.wujud" :class="isian" aria-label="Wujud">
               <option value="">—</option>
               <option v-for="w in opsi.wujud" :key="w" :value="w">{{ w[0].toUpperCase() + w.slice(1) }}</option>
             </select>

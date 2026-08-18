@@ -109,11 +109,11 @@ const chip = 'text-[9.5px] font-bold uppercase tracking-wide px-2 py-0.5 rounded
         <div class="grid gap-3 sm:grid-cols-3">
           <div>
             <label :class="label">Tanggal terbit</label>
-            <input v-model="form.tanggal" type="date" :class="isian">
+            <input v-model="form.tanggal" type="date" :class="isian" aria-label="Tanggal">
           </div>
           <div>
             <label :class="label">Jatuh tempo tinjau</label>
-            <input v-model="form.tanggal_tinjau" type="date" :class="isian">
+            <input v-model="form.tanggal_tinjau" type="date" :class="isian" aria-label="Jatuh tempo tinjau">
           </div>
           <div>
             <label :class="label">Berkas baru</label>

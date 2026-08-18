@@ -109,7 +109,7 @@ const label = 'block text-[11px] font-bold uppercase tracking-wide text-stone-50
               preserveScroll: true, onSuccess: () => formPetugas.reset() })">
         <div>
           <label :class="label">Tambah dari pengguna</label>
-          <select v-model="formPetugas.user_id" :class="isian">
+          <select v-model="formPetugas.user_id" :class="isian" aria-label="Pengguna">
             <option value="">— pilih —</option>
             <option v-for="k in opsi.kandidat" :key="k.id" :value="String(k.id)">{{ k.nama }}</option>
           </select>
@@ -120,7 +120,7 @@ const label = 'block text-[11px] font-bold uppercase tracking-wide text-stone-50
         </div>
         <div>
           <label :class="label">Peran</label>
-          <select v-model="formPetugas.peran" :class="isian">
+          <select v-model="formPetugas.peran" :class="isian" aria-label="Peran">
             <option v-for="r in opsi.peran" :key="r" :value="r">{{ r }}</option>
           </select>
         </div>
@@ -135,7 +135,7 @@ const label = 'block text-[11px] font-bold uppercase tracking-wide text-stone-50
         <h3 class="text-[13px] font-bold text-cam-ink">Parameter Pemeriksaan ({{ item.length }})</h3>
         <div class="flex items-center gap-2">
           <select v-model="status"
-                  class="ring-focus rounded-xl border border-stone-200 px-3 py-2 text-[12px] font-semibold text-stone-600">
+                  class="ring-focus rounded-xl border border-stone-200 px-3 py-2 text-[12px] font-semibold text-stone-600" aria-label="Status">
             <option v-for="s in opsi.status" :key="s" :value="s">{{ s }}</option>
           </select>
           <button type="button" :disabled="menyimpan" @click="simpanSemua"
@@ -172,11 +172,11 @@ const label = 'block text-[11px] font-bold uppercase tracking-wide text-stone-50
           </div>
 
           <div class="grid gap-2 sm:grid-cols-[130px_130px_1fr_1fr]">
-            <select v-model="baris[x.id].kondisi" :class="isian">
+            <select v-model="baris[x.id].kondisi" :class="isian" aria-label="Kondisi">
               <option value="">— kondisi —</option>
               <option v-for="k in opsi.kondisi" :key="k" :value="k">{{ k }}</option>
             </select>
-            <select v-model="baris[x.id].risiko" :class="isian">
+            <select v-model="baris[x.id].risiko" :class="isian" aria-label="Tingkat risiko">
               <option value="">— risiko —</option>
               <option v-for="r in opsi.risiko" :key="r" :value="r">{{ r }}</option>
             </select>
@@ -209,7 +209,7 @@ const label = 'block text-[11px] font-bold uppercase tracking-wide text-stone-50
         </div>
         <div>
           <label :class="label">Risiko</label>
-          <select v-model="formItem.risiko" :class="isian">
+          <select v-model="formItem.risiko" :class="isian" aria-label="Tingkat risiko">
             <option value="">—</option>
             <option v-for="r in opsi.risiko" :key="r" :value="r">{{ r }}</option>
           </select>

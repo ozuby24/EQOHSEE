@@ -476,7 +476,18 @@ main a{transition:color .16s}
   background:linear-gradient(90deg,#F57C00,#FF9800);transition:width 1s cubic-bezier(.21,.6,.35,1)}
 .eq-kursus-aksi{display:flex;gap:8px;margin-top:auto;padding-top:15px}
 
+/* `flex:1` berarti flex-basis:0 — tombolnya mulai dari lebar NOL lalu
+   tumbuh dari sisa ruang. Di baris yang sempit sisa ruangnya bisa lebih
+   kecil daripada teksnya sendiri, dan tombolnya menyusut sampai tulisannya
+   keluar dari kotaknya. Terukur di layar 393px: tombol "Terapkan" pada
+   saringan energi menjadi 47px untuk teks yang butuh 85px.
+
+   `min-width:fit-content` menjadi lantainya. Tombolnya tetap boleh tumbuh
+   berbagi ruang seperti sebelumnya — yang hilang hanya kemampuannya
+   menyusut sampai lebih kecil daripada tulisannya, dan itu memang tidak
+   pernah berguna. */
 .eq-btn-utama{display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:1;
+  min-width:fit-content;
   padding:10px 14px;border-radius:11px;font-size:12.5px;font-weight:700;
   background:linear-gradient(135deg,#F57C00,#DC6E00);color:#fff;
   transition:filter .18s,transform .18s cubic-bezier(.21,.6,.35,1)}
@@ -484,6 +495,7 @@ main a{transition:color .16s}
 .eq-btn-utama:active{transform:scale(.97)}
 .eq-btn-utama svg{width:13px;height:13px}
 .eq-btn-lain{display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  min-width:fit-content;
   padding:10px 14px;border-radius:11px;font-size:12.5px;font-weight:600;
   color:#5C6874;background:#fff;border:1px solid rgba(27,32,36,.11);
   transition:border-color .18s,color .18s}

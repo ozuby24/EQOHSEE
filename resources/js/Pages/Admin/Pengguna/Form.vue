@@ -65,14 +65,14 @@ const kepala = 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400
         <div class="grid sm:grid-cols-2 gap-4">
           <div>
             <label :class="label">Peran LMS</label>
-            <select v-model="form.lms_role" :class="isian">
+            <select v-model="form.lms_role" :class="isian" aria-label="Peran LMS">
               <option value="">— tanpa peran —</option>
               <option v-for="o in opsi.lms" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
             </select>
           </div>
           <div>
             <label :class="label">Peran Audit</label>
-            <select v-model="form.audit_role" :class="isian">
+            <select v-model="form.audit_role" :class="isian" aria-label="Peran Audit">
               <option value="">— tanpa peran —</option>
               <option v-for="o in opsi.audit" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
             </select>
@@ -81,7 +81,7 @@ const kepala = 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400
 
         <div>
           <label :class="label">Peran OHSE</label>
-          <select v-model="form.ohse_role" :class="isian">
+          <select v-model="form.ohse_role" :class="isian" aria-label="Peran OHSE">
             <option value="">— tanpa peran —</option>
             <option v-for="o in (opsi.ohse ?? [])" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
           </select>
@@ -92,7 +92,7 @@ const kepala = 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400
         </div>
         <div>
           <label :class="label">Perusahaan</label>
-          <select v-model="form.company_id" :class="isian">
+          <select v-model="form.company_id" :class="isian" aria-label="Perusahaan">
             <option value="">— tidak ada —</option>
             <option v-for="c in opsi.perusahaan" :key="c.nilai" :value="c.nilai">{{ c.label }}</option>
           </select>
@@ -122,7 +122,7 @@ const kepala = 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400
           </div>
           <div>
             <label :class="label">Jabatan</label>
-            <select v-model="form.position" :class="isian">
+            <select v-model="form.position" :class="isian" aria-label="Jabatan">
               <option value="">— pilih jabatan —</option>
               <option v-for="j in opsi.jabatan" :key="j" :value="j">{{ j }}</option>
             </select>

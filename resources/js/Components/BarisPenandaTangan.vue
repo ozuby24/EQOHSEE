@@ -52,7 +52,7 @@ const label = 'block text-[10.5px] font-bold uppercase tracking-wide text-stone-
 
       <div class="sm:col-span-2">
         <label :class="label">Perusahaan pemilik</label>
-        <select v-model="form.company_id" :class="kecil">
+        <select v-model="form.company_id" :class="kecil" aria-label="Perusahaan">
           <option value="">— penanda tangan pusat (semua perusahaan) —</option>
           <option v-for="c in perusahaan || []" :key="c.id" :value="c.id">{{ c.nama }}</option>
         </select>

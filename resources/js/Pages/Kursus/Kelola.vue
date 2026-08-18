@@ -165,7 +165,7 @@ const HURUF = ['A', 'B', 'C', 'D'];
             <form v-show="terbuka[`m${m.id}`]" class="mt-2.5 grid sm:grid-cols-[1fr_130px] gap-2"
                   @submit.prevent="tambahMateri(m)">
               <input v-model="materi[m.id].title" placeholder="Judul materi" :class="kecil">
-              <select v-model="materi[m.id].type" :class="kecil">
+              <select v-model="materi[m.id].type" :class="kecil" aria-label="Jenis">
                 <option value="document">Dokumen</option>
                 <option value="pdf">PDF</option>
                 <option value="pptx">PPTX</option>

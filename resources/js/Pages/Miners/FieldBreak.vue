@@ -87,20 +87,20 @@ function kembali(id: number, selesai: string) {
     <form v-if="buka.form"
           class="rounded-2xl bg-white border border-stone-100 shadow-card p-5 grid gap-3 md:grid-cols-4"
           @submit.prevent="simpan">
-      <select v-model="f.paspor_id" required class="rounded-lg border-stone-200 text-[12px] md:col-span-2">
+      <select v-model="f.paspor_id" required class="rounded-lg border-stone-200 text-[12px] md:col-span-2" aria-label="Paspor">
         <option value="">Pilih pekerja…</option>
         <option v-for="o in (props.opsi?.orang ?? [])" :key="o.id" :value="o.id">
           {{ o.nama }}<span v-if="o.jabatan"> — {{ o.jabatan }}</span>
         </option>
       </select>
       <input v-model="f.pola" placeholder="Pola roster (8:2)" class="rounded-lg border-stone-200 text-[12px]">
-      <select v-model="f.jenis" class="rounded-lg border-stone-200 text-[12px]">
+      <select v-model="f.jenis" class="rounded-lg border-stone-200 text-[12px]" aria-label="Jenis">
         <option v-for="j in (props.opsi?.jenisFieldBreak ?? [])" :key="j">{{ j }}</option>
       </select>
       <input v-model="f.mulai" type="date" required title="Mulai" class="rounded-lg border-stone-200 text-[12px]">
       <input v-model="f.selesai" type="date" required title="Selesai" class="rounded-lg border-stone-200 text-[12px]">
       <input v-model="f.lokasi_tujuan" placeholder="Kota tujuan" class="rounded-lg border-stone-200 text-[12px]">
-      <select v-model="f.pengganti_id" class="rounded-lg border-stone-200 text-[12px]">
+      <select v-model="f.pengganti_id" class="rounded-lg border-stone-200 text-[12px]" aria-label="Pengganti">
         <option value="">Tanpa pengganti</option>
         <option v-for="o in (props.opsi?.orang ?? [])" :key="o.id" :value="o.id">{{ o.nama }}</option>
       </select>

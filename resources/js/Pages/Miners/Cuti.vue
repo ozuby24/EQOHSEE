@@ -115,7 +115,7 @@ function warnaSisa(s: number, total: number): string {
     <form v-if="buka.jatah"
           class="rounded-2xl bg-white border border-stone-100 shadow-card p-5 grid gap-3 md:grid-cols-5"
           @submit.prevent="simpanJatah">
-      <select v-model="fJatah.paspor_id" required class="rounded-lg border-stone-200 text-[12px] md:col-span-2">
+      <select v-model="fJatah.paspor_id" required class="rounded-lg border-stone-200 text-[12px] md:col-span-2" aria-label="Paspor">
         <option value="">Pilih pekerja…</option>
         <option v-for="o in (props.opsi?.orang ?? [])" :key="o.id" :value="o.id">{{ o.nama }}</option>
       </select>
@@ -130,13 +130,13 @@ function warnaSisa(s: number, total: number): string {
     <form v-if="buka.form"
           class="rounded-2xl bg-white border border-stone-100 shadow-card p-5 grid gap-3 md:grid-cols-4"
           @submit.prevent="simpan">
-      <select v-model="f.paspor_id" required class="rounded-lg border-stone-200 text-[12px] md:col-span-2">
+      <select v-model="f.paspor_id" required class="rounded-lg border-stone-200 text-[12px] md:col-span-2" aria-label="Paspor">
         <option value="">Pilih pekerja…</option>
         <option v-for="o in (props.opsi?.orang ?? [])" :key="o.id" :value="o.id">
           {{ o.nama }}<span v-if="o.jabatan"> — {{ o.jabatan }}</span>
         </option>
       </select>
-      <select v-model="f.jenis" class="rounded-lg border-stone-200 text-[12px]">
+      <select v-model="f.jenis" class="rounded-lg border-stone-200 text-[12px]" aria-label="Jenis">
         <option v-for="j in (props.opsi?.jenisCuti ?? [])" :key="j">{{ j }}</option>
       </select>
       <input v-model="f.jumlah_hari" type="number" min="1" placeholder="Jumlah hari"
@@ -147,7 +147,7 @@ function warnaSisa(s: number, total: number): string {
              class="rounded-lg border-stone-200 text-[12px]">
       <input v-model="f.alamat_cuti" placeholder="Alamat selama cuti" class="rounded-lg border-stone-200 text-[12px]">
       <input v-model="f.kontak" placeholder="Kontak darurat" class="rounded-lg border-stone-200 text-[12px]">
-      <select v-model="f.pengganti_id" class="rounded-lg border-stone-200 text-[12px]">
+      <select v-model="f.pengganti_id" class="rounded-lg border-stone-200 text-[12px]" aria-label="Pengganti">
         <option value="">Tanpa pengganti</option>
         <option v-for="o in (props.opsi?.orang ?? [])" :key="o.id" :value="o.id">{{ o.nama }}</option>
       </select>

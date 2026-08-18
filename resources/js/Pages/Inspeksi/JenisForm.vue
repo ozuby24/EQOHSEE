@@ -115,7 +115,7 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
         </div>
         <div>
           <label :class="label">Risiko awal</label>
-          <select v-model="formItem.risiko_default" :class="kecil">
+          <select v-model="formItem.risiko_default" :class="kecil" aria-label="Risiko awal">
             <option value="">—</option>
             <option v-for="r in opsi.risiko" :key="r" :value="r">{{ r }}</option>
           </select>

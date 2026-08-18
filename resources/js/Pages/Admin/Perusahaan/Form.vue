@@ -57,7 +57,7 @@ const kepala = 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400
         <div class="grid sm:grid-cols-2 gap-4">
           <div>
             <label :class="label">Pemilik izin / Induk</label>
-            <select v-model="form.parent_id" :class="isian">
+            <select v-model="form.parent_id" :class="isian" aria-label="Pemilik izin / Induk">
               <option value="">— berdiri sendiri (IUP/Owner) —</option>
               <option v-for="o in opsi.induk" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
             </select>
@@ -100,11 +100,11 @@ const kepala = 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400
           </div>
           <div>
             <label :class="label">Tanggal penerbitan</label>
-            <input v-model="form.doc_terbit" type="date" :class="isian">
+            <input v-model="form.doc_terbit" type="date" :class="isian" aria-label="Tanggal penerbitan">
           </div>
           <div>
             <label :class="label">Tanggal persetujuan</label>
-            <input v-model="form.doc_setuju" type="date" :class="isian">
+            <input v-model="form.doc_setuju" type="date" :class="isian" aria-label="Tanggal persetujuan">
           </div>
           <div>
             <label :class="label">Nomor revisi</label>
@@ -130,7 +130,7 @@ const kepala = 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400
           </div>
           <div>
             <label :class="label">Kelas risiko</label>
-            <select v-model="form.risk_class" :class="isian">
+            <select v-model="form.risk_class" :class="isian" aria-label="Kelas risiko">
               <option v-for="r in opsi.risiko" :key="r" :value="r">{{ r }}</option>
             </select>
           </div>

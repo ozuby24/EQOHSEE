@@ -91,7 +91,7 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
       <div class="grid sm:grid-cols-2 gap-4">
         <div>
           <label :class="label">Ragam sertifikat</label>
-          <select v-model="form.cert_template" :class="isian">
+          <select v-model="form.cert_template" :class="isian" aria-label="Templat sertifikat">
             <option v-for="o in opsi.sertifikat" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
           </select>
         </div>

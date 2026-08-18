@@ -68,7 +68,7 @@ function simpan() {
           Status
         </label>
         <select v-model="form.status" :disabled="!bisaSunting"
-                class="ring-focus w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-[13px] font-semibold">
+                class="ring-focus w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-[13px] font-semibold" aria-label="Status">
           <option value="draft">Draft</option>
           <option value="aktif">Aktif</option>
           <option value="selesai">Selesai</option>

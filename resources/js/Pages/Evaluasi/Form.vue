@@ -64,14 +64,14 @@ const kepala = 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400
         <div class="grid sm:grid-cols-2 gap-4">
           <div>
             <label :class="label">Peserta</label>
-            <select v-model="form.user_id" :class="isian">
+            <select v-model="form.user_id" :class="isian" aria-label="Pengguna">
               <option value="">— pilih peserta —</option>
               <option v-for="p in opsi.peserta" :key="p.nilai" :value="p.nilai">{{ p.label }}</option>
             </select>
           </div>
           <div>
             <label :class="label">Kursus</label>
-            <select v-model="form.course_id" :class="isian">
+            <select v-model="form.course_id" :class="isian" aria-label="Kursus">
               <option value="">— tanpa kursus —</option>
               <option v-for="k in opsiKursus" :key="k.nilai" :value="k.nilai">{{ k.label }}</option>
             </select>
@@ -100,7 +100,7 @@ const kepala = 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400
         </div>
         <div>
           <label :class="label">Rekomendasi</label>
-          <select v-model="form.recommendation" :class="isian">
+          <select v-model="form.recommendation" :class="isian" aria-label="Rekomendasi">
             <option value="">— pilih —</option>
             <option v-for="r in opsi.rekomendasi" :key="r" :value="r">{{ r }}</option>
           </select>

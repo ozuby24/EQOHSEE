@@ -88,7 +88,7 @@ function hapusLogo() {
           <label class="block text-[12px] font-semibold text-cam-ink mb-1.5">Perusahaan yang dibuka</label>
           <select v-if="daftar.length" v-model="pilih" @change="bukaPerusahaan(pilih!)"
                   class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]
-                         focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0">
+                         focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0" aria-label="Perusahaan yang dibuka">
             <option v-for="c in daftar" :key="c.id" :value="c.id">{{ c.nama }}</option>
           </select>
           <p v-else class="text-[12.5px] text-stone-400">Belum ada perusahaan terdaftar.</p>

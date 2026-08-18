@@ -95,7 +95,7 @@ const warnaSerapan: Record<string, string> = {
       <div class="flex items-center gap-2">
         <label class="text-[11px] font-bold text-stone-500">Tahun anggaran</label>
         <select class="rounded-lg border-stone-200 text-[12px]" :value="props.tahun"
-                @change="gantiTahun(($event.target as HTMLSelectElement).value)">
+                @change="gantiTahun(($event.target as HTMLSelectElement).value)" aria-label="Tahun">
           <option v-for="t in props.opsi?.tahunPilihan || []" :key="t" :value="t">{{ t }}</option>
         </select>
       </div>
@@ -483,7 +483,7 @@ const warnaSerapan: Record<string, string> = {
             <td class="py-2 text-stone-500">{{ t.target_selesai || '—' }}</td>
             <td class="py-2 text-right">
               <select class="rounded-lg border-stone-200 text-[11px]" :value="t.status"
-                      @change="ubahTindak(t, ($event.target as HTMLSelectElement).value)">
+                      @change="ubahTindak(t, ($event.target as HTMLSelectElement).value)" aria-label="Status">
                 <option v-for="s in props.opsi?.statusTindak || []" :key="s" :value="s">{{ label(s) }}</option>
               </select>
             </td>

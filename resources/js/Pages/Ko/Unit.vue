@@ -94,7 +94,7 @@ function ubahAktif(u: any) {
              class="rounded-lg border-stone-200 text-[12px]">
       <input v-model="f.unit" required placeholder="Nama jenis unit"
              class="rounded-lg border-stone-200 text-[12px] md:col-span-2">
-      <select v-model="f.kategori" class="rounded-lg border-stone-200 text-[12px]">
+      <select v-model="f.kategori" class="rounded-lg border-stone-200 text-[12px]" aria-label="Kategori">
         <option v-for="k in ['Sarana','Prasarana','Instalasi','Peralatan']" :key="k">{{ k }}</option>
       </select>
       <input v-model="f.interval_tahun" type="number" min="1" max="20" title="Interval uji (tahun)"

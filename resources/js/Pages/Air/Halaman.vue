@@ -106,8 +106,8 @@ const warnaPompa: Record<string, string> = {
         <p class="text-[12px] text-stone-500 mt-1">Hujan, level kolam, pompa, dan kualitas air. Pompa memakai registri Keselamatan Operasi.</p>
       </div>
       <div class="flex gap-2">
-        <input v-model="props.dari" type="date" class="rounded-lg border-stone-200 text-[11px]">
-        <input v-model="props.sampai" type="date" class="rounded-lg border-stone-200 text-[11px]">
+        <input v-model="props.dari" type="date" class="rounded-lg border-stone-200 text-[11px]" aria-label="Tanggal mulai">
+        <input v-model="props.sampai" type="date" class="rounded-lg border-stone-200 text-[11px]" aria-label="Tanggal akhir">
         <button class="eq-btn-lain" type="button" @click="rentang">Terapkan</button>
       </div>
     </section>
@@ -230,10 +230,10 @@ const warnaPompa: Record<string, string> = {
           <form class="grid gap-3 mt-4" @submit.prevent="simpanTindak">
             <input v-model="tindak.judul" required placeholder="Tindakan yang akan dikerjakan" class="rounded-lg border-stone-200 text-[12px]">
             <div class="grid grid-cols-2 gap-2">
-              <select v-model="tindak.prioritas" class="rounded-lg border-stone-200 text-[12px]">
+              <select v-model="tindak.prioritas" class="rounded-lg border-stone-200 text-[12px]" aria-label="Prioritas">
                 <option v-for="pr in props.opsi?.prioritasTindak || []" :key="pr" :value="pr">Prioritas {{ label(pr) }}</option>
               </select>
-              <input v-model="tindak.target_selesai" type="date" class="rounded-lg border-stone-200 text-[12px]">
+              <input v-model="tindak.target_selesai" type="date" class="rounded-lg border-stone-200 text-[12px]" aria-label="Tenggat">
             </div>
             <input v-model="tindak.penanggung_jawab" placeholder="Penanggung jawab" class="rounded-lg border-stone-200 text-[12px]">
             <textarea v-model="tindak.uraian" rows="2" placeholder="Uraian" class="rounded-lg border-stone-200 text-[12px]"></textarea>
@@ -253,7 +253,7 @@ const warnaPompa: Record<string, string> = {
               <td class="px-5 py-3">{{ t.penanggung_jawab || '—' }}</td>
               <td class="px-5 py-3" :class="t.terlambat ? 'text-red-600 font-bold' : ''">{{ t.target_selesai || '—' }}</td>
               <td class="px-5 py-3">
-                <select :value="t.status" class="rounded border-stone-200 text-[11px]" @change="ubahTindak(t, ($event.target as HTMLSelectElement).value)">
+                <select :value="t.status" class="rounded border-stone-200 text-[11px]" @change="ubahTindak(t, ($event.target as HTMLSelectElement).value)" aria-label="Status tindak lanjut">
                   <option v-for="st in props.opsi?.statusTindak || []" :key="st" :value="st">{{ label(st) }}</option>
                 </select>
               </td>
@@ -268,11 +268,11 @@ const warnaPompa: Record<string, string> = {
         <h3 class="font-bold text-[14px]">Catatan harian</h3>
         <p class="text-[11px] text-stone-400 mt-1">Satu kolam satu catatan per hari. Kualitas air boleh dikosongkan pada hari tanpa sampel.</p>
         <form class="grid gap-3 md:grid-cols-4 mt-4" @submit.prevent="simpanCatatan">
-          <select v-model="catatan.water_sump_id" required class="rounded-lg border-stone-200 text-[12px]">
+          <select v-model="catatan.water_sump_id" required class="rounded-lg border-stone-200 text-[12px]" aria-label="Kolam">
             <option value="">Pilih kolam</option>
             <option v-for="s in props.kolam || []" :key="s.id" :value="s.id">{{ s.kode }} — {{ s.nama }}</option>
           </select>
-          <input v-model="catatan.tanggal" type="date" required class="rounded-lg border-stone-200 text-[12px]">
+          <input v-model="catatan.tanggal" type="date" required class="rounded-lg border-stone-200 text-[12px]" aria-label="Tanggal">
           <input v-model.number="catatan.curah_hujan_mm" type="number" step="any" min="0" placeholder="Curah hujan (mm)" required class="rounded-lg border-stone-200 text-[12px]">
           <input v-model.number="catatan.level_m" type="number" step="any" placeholder="Level (m)" class="rounded-lg border-stone-200 text-[12px]">
           <input v-model.number="catatan.volume_m3" type="number" step="any" min="0" placeholder="Volume (m³)" required class="rounded-lg border-stone-200 text-[12px]">
@@ -335,14 +335,14 @@ const warnaPompa: Record<string, string> = {
         <form class="grid gap-3 md:grid-cols-4 mt-4" @submit.prevent="simpanKolam">
           <input v-model="kolam.kode" required placeholder="Kode, mis. SUMP-01" class="rounded-lg border-stone-200 text-[12px]">
           <input v-model="kolam.nama" required placeholder="Nama kolam" class="rounded-lg border-stone-200 text-[12px]">
-          <select v-model="kolam.jenis" class="rounded-lg border-stone-200 text-[12px]">
+          <select v-model="kolam.jenis" class="rounded-lg border-stone-200 text-[12px]" aria-label="Jenis">
             <option v-for="j in props.opsi?.jenis || []" :key="j" :value="j">{{ label(j) }}</option>
           </select>
           <input v-model="kolam.lokasi" placeholder="Lokasi" class="rounded-lg border-stone-200 text-[12px]">
           <input v-model.number="kolam.kapasitas_m3" type="number" step="any" min="0" required placeholder="Kapasitas (m³)" class="rounded-lg border-stone-200 text-[12px]">
           <input v-model.number="kolam.luas_tangkapan_ha" type="number" step="any" min="0" required placeholder="Luas tangkapan (ha)" class="rounded-lg border-stone-200 text-[12px]">
           <input v-model.number="kolam.koefisien_limpasan" type="number" step="0.01" min="0.01" max="1" required placeholder="Koefisien limpasan" class="rounded-lg border-stone-200 text-[12px]">
-          <select v-model="kolam.status" class="rounded-lg border-stone-200 text-[12px]">
+          <select v-model="kolam.status" class="rounded-lg border-stone-200 text-[12px]" aria-label="Status">
             <option v-for="st in props.opsi?.statusKolam || []" :key="st" :value="st">{{ label(st) }}</option>
           </select>
           <input v-model="kolam.pembersihan_terakhir" type="date" class="rounded-lg border-stone-200 text-[12px]" title="Pembersihan terakhir">
@@ -367,7 +367,7 @@ const warnaPompa: Record<string, string> = {
         <div class="mt-4 grid gap-2">
           <div v-for="p in s.pumps || []" :key="p.id" class="flex items-center justify-between gap-3 rounded-xl bg-stone-50 px-3 py-2">
             <span class="text-[12px]"><b>{{ p.label }}</b> · {{ angka(p.kapasitas) }} m³/jam</span>
-            <select :value="p.status" class="rounded border-stone-200 text-[11px]" :class="warnaPompa[p.status]" @change="ubahPompa(p, ($event.target as HTMLSelectElement).value)">
+            <select :value="p.status" class="rounded border-stone-200 text-[11px]" :class="warnaPompa[p.status]" @change="ubahPompa(p, ($event.target as HTMLSelectElement).value)" aria-label="Status pompa">
               <option v-for="st in props.opsi?.statusPompa || []" :key="st" :value="st">{{ label(st) }}</option>
             </select>
           </div>
@@ -375,7 +375,7 @@ const warnaPompa: Record<string, string> = {
         </div>
 
         <form class="grid gap-2 md:grid-cols-4 mt-3" @submit.prevent="simpanPompa(s)">
-          <select v-model="pompa.ko_object_id" class="rounded-lg border-stone-200 text-[12px]">
+          <select v-model="pompa.ko_object_id" class="rounded-lg border-stone-200 text-[12px]" aria-label="Objek KO">
             <option value="">Alat dari registri KO</option>
             <option v-for="o in props.objekOpsi || []" :key="o.id" :value="o.id">{{ o.kode }} — {{ o.nama }}</option>
           </select>

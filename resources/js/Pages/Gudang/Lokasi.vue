@@ -52,7 +52,7 @@ const label = 'block text-[12px] font-semibold text-cam-ink mb-1.5';
           </div>
           <div>
             <label :class="label">Jenis <span class="text-red-500">*</span></label>
-            <select v-model="form.jenis" :class="isian">
+            <select v-model="form.jenis" :class="isian" aria-label="Jenis">
               <option v-for="o in opsi.jenis" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
             </select>
           </div>

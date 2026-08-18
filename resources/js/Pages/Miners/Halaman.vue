@@ -293,11 +293,11 @@ function hapus(jalur: string, apa: string) {
         <input v-model="fOrang.nik" placeholder="NIK" class="rounded-lg border-stone-200 text-[12px]">
         <input v-model="fOrang.jabatan" placeholder="Jabatan" class="rounded-lg border-stone-200 text-[12px]">
         <input v-model="fOrang.departemen" placeholder="Departemen" class="rounded-lg border-stone-200 text-[12px]">
-        <select v-model="fOrang.klasifikasi" class="rounded-lg border-stone-200 text-[12px]">
+        <select v-model="fOrang.klasifikasi" class="rounded-lg border-stone-200 text-[12px]" aria-label="Klasifikasi">
           <option value="">Tanpa klasifikasi</option>
           <option v-for="(l, k) in (props.opsi?.klasifikasi ?? {})" :key="k" :value="k">{{ k }} — {{ l }}</option>
         </select>
-        <input v-model="fOrang.tgl_bergabung" type="date" class="rounded-lg border-stone-200 text-[12px]">
+        <input v-model="fOrang.tgl_bergabung" type="date" class="rounded-lg border-stone-200 text-[12px]" aria-label="Tanggal bergabung">
         <button class="eq-btn-utama" :disabled="fOrang.processing">Simpan</button>
         <p v-if="fOrang.errors.nama" class="text-[11px] text-red-600 md:col-span-4">{{ fOrang.errors.nama }}</p>
       </form>
@@ -381,11 +381,11 @@ function hapus(jalur: string, apa: string) {
         <form class="p-4 grid gap-2 md:grid-cols-5 border-b border-stone-100" @submit.prevent="cari">
           <input v-model="saring.q" placeholder="Cari nama, NIK, jabatan…"
                  class="rounded-lg border-stone-200 text-[12px] md:col-span-2">
-          <select v-model="saring.klas" class="rounded-lg border-stone-200 text-[12px]">
+          <select v-model="saring.klas" class="rounded-lg border-stone-200 text-[12px]" aria-label="Klasifikasi">
             <option value="">Semua klasifikasi</option>
             <option v-for="(l, k) in (props.opsi?.klasifikasi ?? {})" :key="k" :value="k">{{ k }} — {{ l }}</option>
           </select>
-          <select v-model="saring.keadaan" class="rounded-lg border-stone-200 text-[12px]">
+          <select v-model="saring.keadaan" class="rounded-lg border-stone-200 text-[12px]" aria-label="Keadaan">
             <option value="">Semua keadaan</option>
             <option v-for="(l, k) in LABEL" :key="k" :value="k">{{ l }}</option>
           </select>
@@ -490,7 +490,7 @@ function hapus(jalur: string, apa: string) {
 
         <form class="grid gap-2 md:grid-cols-6 pt-3 border-t border-stone-100" @submit.prevent="simpanSertifikat">
           <select v-model="fSertifikat.kompetensi_jenis_id" class="rounded-lg border-stone-200 text-[12px] md:col-span-2"
-                  @change="pilihJenis">
+                  @change="pilihJenis" aria-label="Jenis kompetensi">
             <option value="">Pilih jenis kompetensi…</option>
             <option v-for="j in (props.opsi?.kompetensi ?? [])" :key="j.id" :value="j.id">{{ j.nama }}</option>
           </select>
@@ -531,10 +531,10 @@ function hapus(jalur: string, apa: string) {
           <form class="grid gap-2 md:grid-cols-3 pt-3 border-t border-stone-100" @submit.prevent="simpanMcu">
             <input v-model="fMcu.tgl_periksa" type="date" required title="Tanggal periksa" class="rounded-lg border-stone-200 text-[12px]">
             <input v-model="fMcu.tgl_expired" type="date" title="Berlaku sampai" class="rounded-lg border-stone-200 text-[12px]">
-            <select v-model="fMcu.jenis" class="rounded-lg border-stone-200 text-[12px]">
+            <select v-model="fMcu.jenis" class="rounded-lg border-stone-200 text-[12px]" aria-label="Jenis">
               <option v-for="j in (props.opsi?.jenisMcu ?? [])" :key="j">{{ j }}</option>
             </select>
-            <select v-model="fMcu.hasil" class="rounded-lg border-stone-200 text-[12px]">
+            <select v-model="fMcu.hasil" class="rounded-lg border-stone-200 text-[12px]" aria-label="Hasil">
               <option v-for="h in (props.opsi?.hasilMcu ?? [])" :key="h">{{ h }}</option>
             </select>
             <input v-model="fMcu.pembatasan" placeholder="Pembatasan kerja" class="rounded-lg border-stone-200 text-[12px]">
@@ -790,7 +790,7 @@ function hapus(jalur: string, apa: string) {
         <p v-else class="text-[12px] text-stone-400 py-3">Belum ada induksi tercatat.</p>
 
         <form class="grid gap-2 md:grid-cols-4 pt-3 border-t border-stone-100" @submit.prevent="simpanInduksi">
-          <select v-model="fInduksi.jenis" class="rounded-lg border-stone-200 text-[12px]">
+          <select v-model="fInduksi.jenis" class="rounded-lg border-stone-200 text-[12px]" aria-label="Jenis">
             <option v-for="j in (props.opsi?.jenisInduksi ?? [])" :key="j">{{ j }}</option>
           </select>
           <input v-model="fInduksi.tanggal" type="date" required title="Tanggal induksi"
@@ -804,7 +804,7 @@ function hapus(jalur: string, apa: string) {
           <input v-model="fInduksi.lokasi" placeholder="Lokasi" class="rounded-lg border-stone-200 text-[12px]">
           <input v-model="fInduksi.nilai" type="number" min="0" max="100" placeholder="Nilai"
                  class="rounded-lg border-stone-200 text-[12px]">
-          <select v-model="fInduksi.hasil" class="rounded-lg border-stone-200 text-[12px]">
+          <select v-model="fInduksi.hasil" class="rounded-lg border-stone-200 text-[12px]" aria-label="Hasil">
             <option v-for="h in (props.opsi?.hasilInduksi ?? [])" :key="h">{{ h }}</option>
           </select>
           <button class="eq-btn-utama md:col-start-4" :disabled="fInduksi.processing">Catat induksi</button>
@@ -827,7 +827,7 @@ function hapus(jalur: string, apa: string) {
                class="rounded-lg border-stone-200 text-[12px]">
         <input v-model="fPengajuan.kepada" placeholder="Kepada (klinik / rumah sakit)"
                class="rounded-lg border-stone-200 text-[12px]">
-        <select v-model="fPengajuan.jenis" class="rounded-lg border-stone-200 text-[12px]">
+        <select v-model="fPengajuan.jenis" class="rounded-lg border-stone-200 text-[12px]" aria-label="Jenis">
           <option v-for="j in (props.opsi?.jenisMcu ?? [])" :key="j">{{ j }}</option>
         </select>
         <input v-model="fPengajuan.judul" placeholder="Perihal"
@@ -948,7 +948,7 @@ function hapus(jalur: string, apa: string) {
                              class="rounded-lg border-stone-200 text-[12px]">
                       <input v-model="isiHasil[h.id].tgl_expired" type="date" title="Berlaku sampai"
                              class="rounded-lg border-stone-200 text-[12px]">
-                      <select v-model="isiHasil[h.id].hasil" class="rounded-lg border-stone-200 text-[12px]">
+                      <select v-model="isiHasil[h.id].hasil" class="rounded-lg border-stone-200 text-[12px]" aria-label="Hasil">
                         <option v-for="x in (props.opsi?.hasilMcu ?? [])" :key="x">{{ x }}</option>
                       </select>
                       <input v-model="isiHasil[h.id].nomor" placeholder="No. hasil"
@@ -979,7 +979,7 @@ function hapus(jalur: string, apa: string) {
 
           <form v-if="m.dapatDiubah" class="grid gap-2 md:grid-cols-4 mt-3 pt-3 border-t border-stone-100"
                 @submit.prevent="tambahNama(m.id)">
-            <select v-model="fNama.paspor_id" required class="rounded-lg border-stone-200 text-[12px] md:col-span-2">
+            <select v-model="fNama.paspor_id" required class="rounded-lg border-stone-200 text-[12px] md:col-span-2" aria-label="Paspor">
               <option value="">Pilih pekerja…</option>
               <option v-for="o in (props.opsi?.orang ?? [])" :key="o.id" :value="o.id">
                 {{ o.nama }}<span v-if="o.jabatan"> — {{ o.jabatan }}</span>

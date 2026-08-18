@@ -64,17 +64,17 @@ const chip = 'text-[9.5px] font-bold uppercase tracking-wide px-2 py-0.5 rounded
                class="ring-focus flex-1 min-w-0 basis-[180px] rounded-xl border border-stone-200
                       px-4 py-2.5 text-[13px] transition">
 
-        <select v-model="saring.jenis" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan">
+        <select v-model="saring.jenis" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan" aria-label="Jenis">
           <option value="">Semua jenis</option>
           <option v-for="j in opsi.jenis" :key="j" :value="j">{{ j }}</option>
         </select>
 
-        <select v-model="saring.status" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan">
+        <select v-model="saring.status" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan" aria-label="Status">
           <option value="">Semua status</option>
           <option v-for="s in opsi.status" :key="s" :value="s">{{ s[0].toUpperCase() + s.slice(1) }}</option>
         </select>
 
-        <select v-model="saring.tinjau" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan">
+        <select v-model="saring.tinjau" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan" aria-label="Masa tinjau">
           <option value="">Semua masa tinjau</option>
           <option v-for="t in opsi.tinjau" :key="t.nilai" :value="t.nilai">{{ t.label }}</option>
         </select>

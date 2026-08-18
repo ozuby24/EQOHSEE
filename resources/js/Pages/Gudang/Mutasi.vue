@@ -73,7 +73,7 @@ const label = 'block text-[12px] font-semibold text-cam-ink mb-1.5';
 
           <div>
             <label :class="label">Barang <span class="text-red-500">*</span></label>
-            <select v-model="form.barang_id" :class="isian">
+            <select v-model="form.barang_id" :class="isian" aria-label="Barang">
               <option value="">— pilih barang —</option>
               <option v-for="b in barang" :key="b.id" :value="String(b.id)">
                 {{ b.nama }} — sisa {{ angka(b.stok) }} {{ b.satuan }}
@@ -90,7 +90,7 @@ const label = 'block text-[12px] font-semibold text-cam-ink mb-1.5';
             </div>
             <div>
               <label :class="label">Tanggal <span class="text-red-500">*</span></label>
-              <input v-model="form.tanggal" type="date" :class="isian">
+              <input v-model="form.tanggal" type="date" :class="isian" aria-label="Tanggal">
             </div>
           </div>
 
@@ -107,7 +107,7 @@ const label = 'block text-[12px] font-semibold text-cam-ink mb-1.5';
             </div>
             <div>
               <label :class="label">Kedaluwarsa</label>
-              <input v-model="form.kadaluarsa" type="date" :class="isian">
+              <input v-model="form.kadaluarsa" type="date" :class="isian" aria-label="Kedaluwarsa">
             </div>
           </div>
 
@@ -130,12 +130,12 @@ const label = 'block text-[12px] font-semibold text-cam-ink mb-1.5';
         <div class="eq-panel-kepala"><h3>Riwayat Mutasi</h3></div>
 
         <form class="grid gap-2 sm:grid-cols-4 mb-4" @submit.prevent="terapkan">
-          <select v-model="saring.jenis" :class="kecil" @change="terapkan">
+          <select v-model="saring.jenis" :class="kecil" @change="terapkan" aria-label="Jenis">
             <option value="">Semua jenis</option>
             <option v-for="o in opsi.jenisSaring" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
           </select>
-          <input v-model="saring.dari" type="date" :class="kecil">
-          <input v-model="saring.sampai" type="date" :class="kecil">
+          <input v-model="saring.dari" type="date" :class="kecil" aria-label="Tanggal mulai">
+          <input v-model="saring.sampai" type="date" :class="kecil" aria-label="Tanggal akhir">
           <button type="submit" class="eq-btn-utama" style="padding:8px 16px">Saring</button>
         </form>
 

@@ -45,12 +45,12 @@ const isian = 'rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px] ring
       <input v-model="saring.cari" :class="[isian, 'lg:col-span-2']"
              placeholder="Cari nama, kode, part number…">
 
-      <select v-model="saring.kategori" :class="isian" @change="terapkan">
+      <select v-model="saring.kategori" :class="isian" @change="terapkan" aria-label="Kategori">
         <option value="">Semua kategori</option>
         <option v-for="o in opsi.kategori" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
       </select>
 
-      <select v-model="saring.status" :class="isian" @change="terapkan">
+      <select v-model="saring.status" :class="isian" @change="terapkan" aria-label="Status">
         <option value="">Semua status</option>
         <option v-for="o in opsi.status" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
       </select>

@@ -84,7 +84,7 @@ function catatJangkauan(id: number, kini: number | null) {
           @submit.prevent="simpan">
       <input v-model="f.judul" required placeholder="Judul campaign"
              class="rounded-lg border-stone-200 text-[12px] md:col-span-2">
-      <select v-model="f.jenis" class="rounded-lg border-stone-200 text-[12px]">
+      <select v-model="f.jenis" class="rounded-lg border-stone-200 text-[12px]" aria-label="Jenis">
         <option v-for="j in (props.opsi?.jenisCampaign ?? [])" :key="j">{{ j }}</option>
       </select>
       <input v-model="f.tema" placeholder="Tema" class="rounded-lg border-stone-200 text-[12px]">

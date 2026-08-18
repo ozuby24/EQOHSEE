@@ -122,7 +122,7 @@ const fmt = (n: number | null | undefined, d = 2) =>
         <h3 class="text-[13px] font-bold text-cam-ink">Rekap per Perusahaan</h3>
         <select :value="entitasAktif ?? ''" :disabled="memuat"
                 @change="pilihPerusahaan(($event.target as HTMLSelectElement).value)"
-                class="ring-focus rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-[12.5px] font-semibold">
+                class="ring-focus rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-[12.5px] font-semibold" aria-label="Perusahaan">
           <option value="">— pilih perusahaan —</option>
           <option v-for="c in perusahaan" :key="c" :value="c">{{ c }}</option>
         </select>

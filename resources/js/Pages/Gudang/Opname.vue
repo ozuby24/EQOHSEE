@@ -79,7 +79,7 @@ const label = 'block text-[12px] font-semibold text-cam-ink mb-1.5';
       <div class="px-6 py-5 border-b border-stone-100 flex flex-wrap items-end gap-4">
         <div>
           <label :class="label">Tanggal Opname</label>
-          <input v-model="form.tanggal" type="date" :class="isian">
+          <input v-model="form.tanggal" type="date" :class="isian" aria-label="Tanggal">
         </div>
         <div class="flex-1 min-w-[220px]">
           <label :class="label">Keterangan</label>

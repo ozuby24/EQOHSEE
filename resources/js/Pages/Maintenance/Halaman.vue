@@ -145,8 +145,8 @@ const warnaStatus: Record<string, string> = {
         <p class="text-[12px] text-stone-500 mt-1">Alat diambil dari registri Keselamatan Operasi; di sini dicatat gangguan, perbaikan, dan biayanya.</p>
       </div>
       <div class="flex gap-2">
-        <input v-model="props.dari" type="date" class="rounded-lg border-stone-200 text-[11px]">
-        <input v-model="props.sampai" type="date" class="rounded-lg border-stone-200 text-[11px]">
+        <input v-model="props.dari" type="date" class="rounded-lg border-stone-200 text-[11px]" aria-label="Tanggal mulai">
+        <input v-model="props.sampai" type="date" class="rounded-lg border-stone-200 text-[11px]" aria-label="Tanggal akhir">
         <button class="eq-btn-lain" type="button" @click="rentang">Terapkan</button>
       </div>
     </section>
@@ -297,7 +297,7 @@ const warnaStatus: Record<string, string> = {
               <td class="px-5 py-3">{{ t.penanggung_jawab || '—' }}</td>
               <td class="px-5 py-3" :class="t.terlambat ? 'text-red-600 font-bold' : ''">{{ t.target_selesai || '—' }}</td>
               <td class="px-5 py-3">
-                <select :value="t.status" class="rounded border-stone-200 text-[11px]" @change="ubahTindak(t, ($event.target as HTMLSelectElement).value)">
+                <select :value="t.status" class="rounded border-stone-200 text-[11px]" @change="ubahTindak(t, ($event.target as HTMLSelectElement).value)" aria-label="Status">
                   <option v-for="st in props.opsi?.statusTindak || []" :key="st" :value="st">{{ label(st) }}</option>
                 </select>
               </td>
@@ -312,10 +312,10 @@ const warnaStatus: Record<string, string> = {
         <form class="grid gap-3 mt-4" @submit.prevent="simpanTindak">
           <input v-model="tindak.judul" required placeholder="Tindakan yang akan dikerjakan" class="rounded-lg border-stone-200 text-[12px]">
           <div class="grid grid-cols-2 gap-2">
-            <select v-model="tindak.prioritas" class="rounded-lg border-stone-200 text-[12px]">
+            <select v-model="tindak.prioritas" class="rounded-lg border-stone-200 text-[12px]" aria-label="Prioritas">
               <option v-for="pr in props.opsi?.prioritasTindak || []" :key="pr" :value="pr">Prioritas {{ label(pr) }}</option>
             </select>
-            <input v-model="tindak.target_selesai" type="date" class="rounded-lg border-stone-200 text-[12px]">
+            <input v-model="tindak.target_selesai" type="date" class="rounded-lg border-stone-200 text-[12px]" aria-label="Tenggat">
           </div>
           <input v-model="tindak.penanggung_jawab" placeholder="Penanggung jawab" class="rounded-lg border-stone-200 text-[12px]">
           <textarea v-model="tindak.uraian" rows="3" placeholder="Uraian" class="rounded-lg border-stone-200 text-[12px]"></textarea>
@@ -329,16 +329,16 @@ const warnaStatus: Record<string, string> = {
       <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
         <h3 class="font-bold text-[14px]">Buka perintah kerja</h3>
         <form class="grid gap-3 md:grid-cols-3 mt-4" @submit.prevent="simpan">
-          <select v-model="order.ko_object_id" class="rounded-lg border-stone-200 text-[12px]">
+          <select v-model="order.ko_object_id" class="rounded-lg border-stone-200 text-[12px]" aria-label="Objek KO">
             <option value="">Pilih alat (registri KO)</option>
             <option v-for="o in props.objekOpsi || []" :key="o.id" :value="o.id">{{ o.kode }} — {{ o.nama }}</option>
           </select>
           <input v-model="order.nomor" placeholder="Nomor WO (opsional)" class="rounded-lg border-stone-200 text-[12px]">
           <input v-model="order.dilaporkan_pada" type="datetime-local" required class="rounded-lg border-stone-200 text-[12px]">
-          <select v-model="order.jenis" class="rounded-lg border-stone-200 text-[12px]">
+          <select v-model="order.jenis" class="rounded-lg border-stone-200 text-[12px]" aria-label="Jenis">
             <option v-for="j in props.opsi?.jenis || []" :key="j" :value="j">{{ label(j) }}</option>
           </select>
-          <select v-model="order.prioritas" class="rounded-lg border-stone-200 text-[12px]">
+          <select v-model="order.prioritas" class="rounded-lg border-stone-200 text-[12px]" aria-label="Prioritas">
             <option v-for="p in props.opsi?.prioritas || []" :key="p" :value="p">Prioritas {{ label(p) }}</option>
           </select>
           <input v-model.number="order.hm_saat_rusak" type="number" step="any" min="0" placeholder="HM saat rusak" class="rounded-lg border-stone-200 text-[12px]">
@@ -366,7 +366,7 @@ const warnaStatus: Record<string, string> = {
               <td class="px-5 py-3 text-right" :class="w.jamMenunggu > w.jamPerbaikan ? 'text-amber-700 font-semibold' : ''">{{ angka(w.jamMenunggu, 1) }}</td>
               <td class="px-5 py-3 text-right">{{ rupiah(w.biaya) }}</td>
               <td class="px-5 py-3">
-                <select :value="w.status" class="rounded border-stone-200 text-[11px]" @change="ubahStatus(w, ($event.target as HTMLSelectElement).value)">
+                <select :value="w.status" class="rounded border-stone-200 text-[11px]" @change="ubahStatus(w, ($event.target as HTMLSelectElement).value)" aria-label="Status">
                   <option v-for="s in props.opsi?.status || []" :key="s" :value="s">{{ label(s) }}</option>
                 </select>
               </td>

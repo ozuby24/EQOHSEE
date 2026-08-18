@@ -81,7 +81,7 @@ function reset() {
              class="ring-focus rounded-xl border border-stone-200 px-3.5 py-2 text-[12.5px] w-64">
 
       <select v-model="indikatorPilihan"
-              class="ring-focus rounded-xl border border-stone-200 px-3.5 py-2 text-[12.5px] font-semibold">
+              class="ring-focus rounded-xl border border-stone-200 px-3.5 py-2 text-[12.5px] font-semibold" aria-label="Indikator">
         <option value="">Semua indikator</option>
         <option v-for="I in indikator" :key="I.kode" :value="I.kode">
           {{ I.kode }} — {{ I.nama.slice(0, 38) }}

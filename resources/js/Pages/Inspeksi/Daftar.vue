@@ -39,12 +39,12 @@ const pilihan =
   <div class="max-w-6xl mx-auto space-y-5">
 
     <div class="bg-white rounded-2xl shadow-card border border-stone-100 p-3 flex flex-wrap items-center gap-2">
-      <select v-model="isi.status" :class="pilihan" @change="kirim">
+      <select v-model="isi.status" :class="pilihan" @change="kirim" aria-label="Status">
         <option :value="null">Semua status</option>
         <option v-for="s in opsi.status" :key="s" :value="s">{{ s }}</option>
       </select>
 
-      <select v-model="isi.template" :class="pilihan" @change="kirim">
+      <select v-model="isi.template" :class="pilihan" @change="kirim" aria-label="Templat">
         <option :value="null">Semua jenis</option>
         <option v-for="t in opsi.template" :key="t.id" :value="String(t.id)">{{ t.nama }}</option>
       </select>

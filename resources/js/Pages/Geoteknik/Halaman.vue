@@ -128,8 +128,8 @@ const arahTren: Record<string, string> = {
         <p class="text-[12px] text-stone-500 mt-1">Gerakan lereng, geometri terbangun, dan acuan kajian geoteknik dalam satu tempat.</p>
       </div>
       <div class="flex gap-2">
-        <input v-model="props.dari" type="date" class="rounded-lg border-stone-200 text-[11px]">
-        <input v-model="props.sampai" type="date" class="rounded-lg border-stone-200 text-[11px]">
+        <input v-model="props.dari" type="date" class="rounded-lg border-stone-200 text-[11px]" aria-label="Tanggal mulai">
+        <input v-model="props.sampai" type="date" class="rounded-lg border-stone-200 text-[11px]" aria-label="Tanggal akhir">
         <button class="eq-btn-lain" type="button" @click="rentang">Terapkan</button>
       </div>
     </section>
@@ -469,7 +469,7 @@ const arahTren: Record<string, string> = {
                 <td class="py-2 font-bold" :class="warnaAlat[i.status]">{{ label(i.status) }}</td>
                 <td class="py-2 text-right">
                   <select class="rounded-lg border-stone-200 text-[11px]" :value="i.status"
-                          @change="ubahInstrumen(i, ($event.target as HTMLSelectElement).value)">
+                          @change="ubahInstrumen(i, ($event.target as HTMLSelectElement).value)" aria-label="Status">
                     <option v-for="s in props.opsi?.statusInstrumen || []" :key="s" :value="s">{{ label(s) }}</option>
                   </select>
                 </td>
@@ -480,10 +480,10 @@ const arahTren: Record<string, string> = {
 
           <form class="mt-3 grid grid-cols-4 gap-2" @submit.prevent="simpanInstrumen(l)">
             <input v-model="instrumen.kode" type="text" placeholder="Kode alat" class="rounded-lg border-stone-200 text-[11px]" required>
-            <select v-model="instrumen.jenis" class="rounded-lg border-stone-200 text-[11px]">
+            <select v-model="instrumen.jenis" class="rounded-lg border-stone-200 text-[11px]" aria-label="Jenis">
               <option v-for="j in props.opsi?.jenisInstrumen || []" :key="j" :value="j">{{ label(j) }}</option>
             </select>
-            <select v-model="instrumen.status" class="rounded-lg border-stone-200 text-[11px]">
+            <select v-model="instrumen.status" class="rounded-lg border-stone-200 text-[11px]" aria-label="Status">
               <option v-for="s in props.opsi?.statusInstrumen || []" :key="s" :value="s">{{ label(s) }}</option>
             </select>
             <button class="eq-btn-lain text-[11px]" :disabled="instrumen.processing">+ Alat</button>
@@ -526,7 +526,7 @@ const arahTren: Record<string, string> = {
             <td class="py-2">{{ label(t.status) }}</td>
             <td class="py-2 text-right">
               <select class="rounded-lg border-stone-200 text-[11px]" :value="t.status"
-                      @change="ubahTindak(t, ($event.target as HTMLSelectElement).value)">
+                      @change="ubahTindak(t, ($event.target as HTMLSelectElement).value)" aria-label="Status">
                 <option v-for="s in props.opsi?.statusTindak || []" :key="s" :value="s">{{ label(s) }}</option>
               </select>
             </td>
