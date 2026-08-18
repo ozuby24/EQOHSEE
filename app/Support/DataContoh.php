@@ -1265,22 +1265,36 @@ final class DataContoh
     {
         $n = 0;
 
+        /* Unsur terakhir tiap baris menyatakan apakah temuannya BERTUAN:
+           punya penanggung jawab sekaligus tenggat. Satu baris sengaja
+           dibiarkan tanpa keduanya.
+
+           Bukan kelalaian menyusun contoh — justru keadaan itu yang
+           paling perlu terlihat. Temuan tanpa tenggat tidak pernah
+           terhitung terlambat, sebab tidak punya tanggal untuk dilewati,
+           sehingga ia tidak menyalakan peringatan apa pun di modul mana
+           pun, selamanya. Di daftar biasa ia tampak persis sama dengan
+           temuan yang sedang ditangani. Bila data contoh hanya memuat
+           baris yang rapi, kolom `bertuan` di register tidak pernah
+           membuktikan apa-apa. */
         $daftar = [
             ['bahaya',    'HZ-001', 'Perbaiki tanggul jalan hauling KM 4',
-             'Rekayasa', 'Tinggi', 'berjalan',  7, null],
+             'Rekayasa', 'Tinggi', 'berjalan',  7, null, true],
             ['inspeksi',  'INS-003', 'Bersihkan saluran drainase Pit Selatan',
-             'Perawatan', 'Sedang', 'terbuka',  -3, null],
+             'Perawatan', 'Sedang', 'terbuka',  -3, null, true],
             ['ko',        'KO-PER-002', 'Ganti pemutus arus utama genset',
-             'Perbaikan', 'Tinggi', 'berjalan', 14, null],
+             'Perbaikan', 'Tinggi', 'berjalan', 14, null, true],
             ['smkp',      'IV.2.1', 'Lengkapi rekaman inspeksi jalan angkut',
-             'Administratif', 'Sedang', 'terbuka', -8, null],
+             'Administratif', 'Sedang', 'terbuka', -8, null, true],
             ['lingkungan','LK-002', 'Tambah titik pantau kualitas udara di camp',
-             'Pemantauan', 'Rendah', 'selesai',  -20, -14],
+             'Pemantauan', 'Rendah', 'selesai',  -20, -14, true],
             ['air',       'AIR-001', 'Perbaiki pompa sump 2 yang mati',
-             'Perbaikan', 'Tinggi', 'selesai',  -30, -26],
+             'Perbaikan', 'Tinggi', 'selesai',  -30, -26, true],
+            ['gudang',    'GD-004', 'Tata ulang penyimpanan oli bekas di gudang B',
+             'Administratif', 'Sedang', 'terbuka', null, null, false],
         ];
 
-        foreach ($daftar as [$modul, $pemicu, $judul, $kategori, $prioritas, $status, $target, $selesai]) {
+        foreach ($daftar as [$modul, $pemicu, $judul, $kategori, $prioritas, $status, $target, $selesai, $bertuan]) {
             $this->baru(TindakLanjut::class, [
                 'user_id'          => $this->pengaju?->getKey(),
                 'modul'            => $modul,
@@ -1289,8 +1303,10 @@ final class DataContoh
                 'kategori'         => $kategori,
                 'prioritas'        => $prioritas,
                 'status'           => $status,
-                'penanggung_jawab' => $this->peninjau?->name ?? 'Kepala Teknik Tambang',
-                'target_selesai'   => $this->kini->copy()->addDays($target)->toDateString(),
+                'penanggung_jawab' => $bertuan
+                    ? ($this->peninjau?->name ?? 'Kepala Teknik Tambang') : null,
+                'target_selesai'   => $bertuan && $target !== null
+                    ? $this->kini->copy()->addDays($target)->toDateString() : null,
                 'selesai_pada'     => $selesai === null
                     ? null : $this->kini->copy()->addDays($selesai)->toDateString(),
                 'uraian'           => 'Tindak lanjut contoh; asalnya disebut pada kolom modul dan pemicu.',

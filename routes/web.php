@@ -10,7 +10,7 @@ use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiT
     HazardExportController, InspectionController, InspectionTemplateController,
     BlastingController, CostController, DispatchController, PermitController, EnergyController, EngineeringController, EnvironmentController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
-use App\Http\Controllers\{BantuanController, ChatController};
+use App\Http\Controllers\{BantuanController, ChatController, TemuanController};
 use App\Http\Controllers\Admin\{AiController, CompanyController, KeamananController, PemilikController, SystemController, UserController};
 use App\Http\Controllers\PerangkatSayaController;
 use Illuminate\Support\Facades\Route;
@@ -36,6 +36,11 @@ Route::get('/', fn () => auth()->check()
 Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    /* Register temuan lintas modul. Berdiri di luar modul mana pun karena
+       ia justru menyatukan kelimanya — menaruhnya di dalam salah satu modul
+       akan menyiratkan bahwa isinya hanya milik modul itu. */
+    Route::get('/temuan', [TemuanController::class, 'index'])->name('temuan.index');
 
     /* ---- Kursus ---- */
     /* Rute admin didaftarkan LEBIH DULU: 'courses/create' harus dicoba

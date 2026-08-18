@@ -129,6 +129,9 @@ final class Menu
           ['Evaluasi Temuan', 'hazard.evaluasi',  'hazard/evaluasi'],
           ['Pengingat PIC',   'hazard.pengingat', 'hazard/pengingat'],
         ],
+        'Lintas Modul' => [
+          ['Register Temuan', 'temuan.index', 'temuan'],
+        ],
         'Inspeksi' => [
           ['Jenis & Parameter','inspeksi.template.index','inspeksi/jenis*'],
           ['Daftar Inspeksi',  'inspeksi.index',         'inspeksi'],
@@ -472,7 +475,7 @@ final class Menu
      */
     private const PETA_ALAMAT = [
         [['personalia*', 'pesan*'],                'personalia'],
-        [['hazard*', 'inspeksi*'],                 'hazrep'],
+        [['hazard*', 'inspeksi*', 'temuan*'],      'hazrep'],
         [['tpkkp*'],                               'tpkkp'],
         [['smkp*'],                                'smkp'],
         [['dokumen*', 'iso*', 'struktur-dokumen', 'daftar-induk'], 'dokumen'],

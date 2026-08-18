@@ -3,9 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\{Company, EnergyBaseline, EnergyEquipment, EnergyFuelLog, EnergyProduction,
-                GudangBarang, GudangMutasi, Procedure, SmkpAudit, SopEvaluation,
+                GudangBarang, GudangMutasi, HazardReport, Procedure, SmkpAudit, SopEvaluation,
                 SopEvaluationAttempt, User};
-use App\Support\{Kesesuaian, Smkp};
+use App\Support\{Hazard, Kesesuaian, Smkp};
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -203,6 +203,45 @@ class KesesuaianTest extends TestCase
         $h = $this->periksa($c);
         $this->assertSame(Kesesuaian::AMAN, $h['Skor akhir dalam rentang 0–100']['keadaan']);
         $this->assertSame(Kesesuaian::AMAN, $h['Nilai tidak melampaui nilai maksimum']['keadaan']);
+    }
+
+    /* ═══════════ Hazard — kosakata status ═══════════ */
+
+    private function hazard(Company $c, string $status): void
+    {
+        HazardReport::withoutGlobalScopes()->create([
+            'company_id' => $c->id,
+            'kode'       => 'HZ-'.fake()->unique()->numberBetween(100, 999),
+            'tanggal'    => '2026-01-05',
+            'lokasi'     => 'Pit Utara',
+            'risiko'     => 'Tinggi',
+            'deskripsi'   => 'Uji kosakata status',
+            'pelapor_nama'=> 'Pelapor Uji',
+            'status'     => $status,
+        ]);
+    }
+
+    public function test_status_hazard_yang_dikenal_terbaca_aman(): void
+    {
+        $c = $this->perusahaan();
+        $this->hazard($c, Hazard::STATUS[0]);
+
+        $x = $this->periksa($c)['Status laporan memakai kosakata yang dikenal'];
+        $this->assertSame(Kesesuaian::AMAN, $x['keadaan']);
+    }
+
+    public function test_status_hazard_di_luar_daftar_tertangkap(): void
+    {
+        $c = $this->perusahaan();
+
+        // Padanan Indonesia — tersimpan rapi, tetapi tidak cocok dengan
+        // saringan status mana pun maupun corong KPI-nya.
+        $this->hazard($c, 'terbuka');
+
+        $x = $this->periksa($c)['Status laporan memakai kosakata yang dikenal'];
+
+        $this->assertSame(Kesesuaian::GAWAT, $x['keadaan']);
+        $this->assertStringContainsString('terbuka', $x['nilai']);
     }
 
     /* ═══════════ Evaluasi — skor vs jawaban ═══════════ */

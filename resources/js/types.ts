@@ -1562,6 +1562,35 @@ export interface HalamanDiagnosa {
   ringkasSesuai: Record<string, number>;
 }
 
+/* ══════════════ Register temuan lintas modul ══════════════ */
+
+export interface BarisTemuan {
+  sumber: string;
+  modul: string;
+  kode: string;
+  judul: string;
+  uraian: string | null;
+  prioritas: string;
+  status: string;
+  terbuka: boolean;
+  /** Punya penanggung jawab DAN tenggat. Salah satu saja belum cukup. */
+  bertuan: boolean;
+  penanggungJawab: string | null;
+  targetSelesai: string | null;
+  terlambat: boolean;
+  hariTerlambat: number;
+}
+
+export interface HalamanRegisterTemuan {
+  judul: string; subjudul: string;
+  temuan: BarisTemuan[];
+  ringkas: { semua: number; terbuka: number; terlambat: number; takBertuan: number; selesai: number };
+  perModul: Array<{ modul: string; jumlah: number }>;
+  saring: string;
+  opsi: Array<{ nilai: string; label: string }>;
+  tautan: { register: string };
+}
+
 /* ══════════════ Berita, Prosedur, Penanda Tangan ══════════════ */
 
 export interface HalamanDaftarBerita {

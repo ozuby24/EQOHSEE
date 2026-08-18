@@ -112,7 +112,61 @@ final class Kesesuaian
             'gudang'   => fn (?Company $c) => self::gudang($c),
             'hse'      => fn (?Company $c) => self::hse($c),
             'evaluasi' => fn (?Company $c) => self::evaluasi($c),
+            'temuan'   => fn (?Company $c) => self::temuan($c),
         ];
+    }
+
+    /* ═══════════ temuan lintas modul ═══════════ */
+
+    /**
+     * Temuan yang tidak sedang ditangani siapa pun.
+     *
+     * Diperiksa di sini, bukan hanya ditampilkan di registernya, karena
+     * inilah satu-satunya keadaan di seluruh aplikasi yang benar-benar
+     * tidak punya gejala. Temuan tanpa penanggung jawab dan tanpa tenggat
+     * tidak pernah lewat waktu — ia tidak punya waktu untuk dilewati —
+     * sehingga tidak pernah menyalakan peringatan apa pun, di modul mana
+     * pun, selamanya.
+     */
+    private static function temuan(?Company $c): array
+    {
+        $r = Temuan::ringkas(Temuan::semua($c));
+
+        if ($r['semua'] === 0) {
+            return [self::kosong('Temuan lintas modul', 'temuan',
+                'Muat data contoh atau catat satu temuan, lalu periksa lagi.')];
+        }
+
+        $baris = [];
+
+        $baris[] = [
+            'kelompok' => 'Temuan lintas modul',
+            'judul'    => 'Setiap temuan terbuka punya penanggung jawab dan tenggat',
+            'keadaan'  => $r['takBertuan'] === 0 ? self::AMAN : self::PERHATIAN,
+            'nilai'    => $r['takBertuan'].' dari '.$r['terbuka'].' temuan terbuka',
+            'uraian'   => $r['takBertuan'] === 0
+                ? 'Seluruh temuan terbuka sudah bertuan dan bertenggat.'
+                : 'Ada temuan terbuka tanpa penanggung jawab maupun tenggat. Temuan semacam '
+                  .'itu tidak pernah terhitung terlambat — ia tidak punya tanggal untuk '
+                  .'dilewati — sehingga tidak akan pernah menyalakan peringatan apa pun.',
+            'tindakan' => $r['takBertuan'] === 0 ? 'Tidak ada.'
+                : 'Buka Register Temuan, saring "Tanpa penanggung jawab", lalu tetapkan '
+                  .'pemilik dan tenggatnya.',
+        ];
+
+        if ($r['terlambat'] > 0) {
+            $baris[] = [
+                'kelompok' => 'Temuan lintas modul',
+                'judul'    => 'Ada temuan yang lewat tenggat',
+                'keadaan'  => self::GAWAT,
+                'nilai'    => $r['terlambat'].' dari '.$r['terbuka'].' temuan terbuka',
+                'uraian'   => 'Temuan ini sudah dijanjikan selesai pada tanggal yang telah lewat.',
+                'tindakan' => 'Buka Register Temuan, saring "Lewat tenggat", lalu tagih '
+                    .'penanggung jawabnya atau sepakati tenggat baru.',
+            ];
+        }
+
+        return $baris;
     }
 
     /* ═══════════ TPKKP — penilaian kematangan ═══════════ */
@@ -404,7 +458,7 @@ final class Kesesuaian
                 'Muat data contoh atau catat satu laporan, lalu periksa lagi.')];
         }
 
-        return [[
+        $baris = [[
             'kelompok' => 'Hazard & Inspeksi',
             'judul'    => 'Kedua modul berisi',
             'keadaan'  => ($hazard > 0 && $inspeksi > 0) ? self::AMAN : self::PERHATIAN,
@@ -415,6 +469,37 @@ final class Kesesuaian
             'tindakan' => ($hazard > 0 && $inspeksi > 0) ? 'Tidak ada.'
                 : 'Lengkapi modul yang masih kosong sebelum membaca KPI keselamatannya.',
         ]];
+
+        /* Status di luar daftar yang sah adalah kegagalan yang paling diam
+           di seluruh aplikasi ini. Barisnya tersimpan rapi, halamannya tetap
+           membuka, dan tidak ada satu pun galat — tetapi baris itu tidak
+           cocok dengan saringan status mana pun maupun corong KPI-nya,
+           sehingga modulnya tampak berisi sementara seluruh angkanya nol.
+           Penyebabnya biasanya sepele: padanan Indonesia dipakai di satu
+           tempat sementara kosakata kanonisnya bahasa Inggris, atau
+           sebaliknya. */
+        $sah   = Hazard::STATUS;
+        $liar  = self::kueri(HazardReport::class, $c)
+            ->whereNotIn('status', $sah)->pluck('status')->unique();
+
+        $baris[] = [
+            'kelompok' => 'Hazard & Inspeksi',
+            'judul'    => 'Status laporan memakai kosakata yang dikenal',
+            'keadaan'  => $liar->isEmpty() ? self::AMAN : self::GAWAT,
+            'nilai'    => $liar->isEmpty()
+                ? $hazard.' laporan · '.implode(' / ', $sah)
+                : $liar->count().' status asing: '.$liar->take(4)->join(', '),
+            'uraian'   => $liar->isEmpty()
+                ? 'Seluruh laporan memakai status yang dikenal saringan dan KPI.'
+                : 'Ada laporan berstatus di luar daftar yang sah. Baris itu tidak akan '
+                  .'muncul pada saringan status mana pun, dan tidak ikut terhitung pada '
+                  .'KPI keselamatan — tanpa satu pun galat yang menandainya.',
+            'tindakan' => $liar->isEmpty() ? 'Tidak ada.'
+                : 'Samakan nilainya dengan App\Support\Hazard::STATUS, lalu telusuri '
+                  .'jalur yang menuliskannya — impor, penyemai, atau perubahan langsung.',
+        ];
+
+        return $baris;
     }
 
     /* ═══════════ Evaluasi pembelajaran ═══════════ */
