@@ -2,7 +2,17 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # Cabang kerja ikut diperiksa, bukan hanya main.
+    #
+    # Sebelumnya hanya [main]. Yang di-deploy ke VPS justru cabang
+    # claude/…, dan tidak ada pull request yang dibuka untuknya — sehingga
+    # seluruh alur ini, termasuk langkah typecheck di bawah, TIDAK PERNAH
+    # berjalan sekali pun terhadap kode yang benar-benar dipasang.
+    #
+    # Alur yang tidak pernah berjalan lebih buruk daripada alur yang tidak
+    # ada: yang kedua jelas tidak menjaga apa-apa, sedangkan yang pertama
+    # terlihat seperti penjagaan pada setiap orang yang membaca berkas ini.
+    branches: [main, 'claude/**']
   pull_request:
 
 jobs:

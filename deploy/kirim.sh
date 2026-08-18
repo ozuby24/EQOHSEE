@@ -149,6 +149,29 @@ else
         php artisan test || gagal "Uji tidak lulus. Perbaiki dulu, atau pakai --tanpa-tes bila memang mendesak."
         hijau "    Uji lulus."
     fi
+
+    # Tipe TypeScript dan Vue diperiksa TERPISAH dari `npm run build`.
+    #
+    # Vite tidak memeriksa tipe sama sekali — ia membuang anotasinya lalu
+    # membundel. Artinya galat tipe lolos build tanpa satu pun peringatan,
+    # dan yang tersisa memeriksanya hanyalah langkah yang harus dipanggil
+    # dengan sengaja. Tujuh galat pernah menumpuk begitu, termasuk
+    # resolve() halaman yang mengembalikan modul padahal tipenya menuntut
+    # komponen — bentuk yang bekerja hari itu karena Inertia menerima
+    # keduanya saat dijalankan, dan berhenti bekerja pada versi berikutnya
+    # yang tidak lagi menerimanya.
+    #
+    # Sengaja TIDAK disatukan ke skrip `build`: satu galat tipe tidak boleh
+    # menghalangi penerbitan darurat, dan Vite memang tidak membutuhkannya
+    # untuk menghasilkan bundel yang benar.
+    tahap "Memeriksa tipe TypeScript & Vue"
+    if [ ! -d node_modules ]; then
+        kuning "    node_modules/ belum ada — pemeriksaan dilewati. Jalankan 'npm ci' bila ingin diperiksa."
+    elif ! npm run --silent typecheck; then
+        gagal "Ada galat tipe. Perbaiki dulu, atau pakai --tanpa-tes bila memang mendesak."
+    else
+        hijau "    Tipe bersih."
+    fi
 fi
 
 # ── 4. Kirim ke GitHub ────────────────────────────────────────────
