@@ -12,7 +12,14 @@
 {{-- Sama persis dengan layouts/app.blade.php: tema dipasang sebelum apa
      pun tergambar, supaya halaman Inertia tidak berkedip terang sesaat
      sebelum berubah gelap. --}}
-<script>
+{{-- nonce WAJIB ada di sini.
+
+     Content-Security-Policy pada TajukKeamanan melarang skrip sebaris
+     tanpa nonce. Tanpa atribut ini, skrip tema tidak dijalankan sama
+     sekali — dan kegagalannya sunyi: tidak ada galat di sisi server,
+     hanya halaman yang berkedip terang lalu berubah gelap, persis cacat
+     yang skrip ini ada untuk mencegahnya. --}}
+<script nonce="{{ \App\Http\Middleware\TajukKeamanan::nonce() }}">
 (function(){
   var t = null;
   try{
@@ -45,13 +52,16 @@
      salinan seperti itu pasti berbeda isinya cepat atau lambat. --}}
 @include('partials.eq-visual')
 
-{{-- Pemuat dan setelan tema Chart.js yang sama dengan halaman Blade.
-     Berkas CDN-nya beralamat sama persis, jadi peramban memakai satu
-     salinan untuk seluruh aplikasi; yang lebih penting, setelan tema
-     grafiknya tidak tergandakan — dua salinan setelan warna dan font
-     akan berbeda isinya cepat atau lambat, dan bedanya baru ketahuan
-     saat dua grafik dibandingkan berdampingan. --}}
-@include('tpkkp._chart')
+{{-- Chart.js TIDAK lagi disisipkan di sini.
+
+     Dulu partial tpkkp._chart memuatnya dari cdn.jsdelivr.net pada setiap
+     halaman Inertia. Di jaringan tambang yang tertutup — tempat aplikasi
+     ini justru dipakai — skripnya gagal dimuat dan grafiknya kosong tanpa
+     satu pun penjelasan; Pages/Admin/Sistem.vue sudah ditulis ulang
+     menjadi SVG karena persis itu.
+
+     Kini pustakanya ikut dibundel lewat resources/js/bagan.ts, jadi ia
+     tiba bersama halamannya. --}}
 
 @inertia
 </body>

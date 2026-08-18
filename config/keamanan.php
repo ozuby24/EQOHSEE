@@ -21,6 +21,21 @@ return [
      * https yang putus berarti situs yang tidak dapat dibuka sama
      * sekali — bukan situs yang sekadar tidak terenkripsi.
      */
+    /*
+     * Content-Security-Policy — pembatas dari mana skrip boleh berasal.
+     *
+     * Bawaannya HIDUP, berbeda dari HSTS. Alasannya: CSP yang keliru
+     * merusak halaman seketika dan terlihat pada percobaan pertama,
+     * sedangkan HSTS yang keliru baru terasa berhari-hari kemudian dan
+     * tidak dapat ditarik kembali dari peramban yang sudah menyimpannya.
+     * Kesalahan yang segera terlihat aman dinyalakan lebih dulu.
+     *
+     * Dimatikan dengan KEAMANAN_CSP=false bila suatu saat ada modul yang
+     * ternyata memuat skrip dari luar. Matikan sementara, lalu sebutkan
+     * asalnya di TajukKeamanan::csp — jangan biarkan mati.
+     */
+    'csp'       => env('KEAMANAN_CSP', true),
+
     'hsts'      => env('KEAMANAN_HSTS', false),
     'hsts_umur' => (int) env('KEAMANAN_HSTS_UMUR', 31536000),   // setahun
 

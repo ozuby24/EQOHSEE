@@ -111,16 +111,49 @@ class TpkkpBerandaTest extends TestCase
 
     public function test_setelan_grafik_tidak_digandakan_di_sisi_vue(): void
     {
-        // Pemuat dan tema Chart.js berasal dari partial Blade yang sama
-        // dengan halaman lain; menyalinnya ke Vue berarti dua setelan warna
-        // dan font yang akan berbeda cepat atau lambat.
-        $vue  = file_get_contents(resource_path('js/Pages/Tpkkp/Beranda.vue'));
-        $akar = file_get_contents(resource_path('views/app-inertia.blade.php'));
+        /* Setelan warna dan font Chart.js harus tinggal di SATU tempat.
+           Dua salinan akan berbeda isinya cepat atau lambat, dan bedanya
+           baru ketahuan saat dua grafik dibandingkan berdampingan.
 
-        $this->assertStringContainsString("@include('tpkkp._chart')", $akar,
-            'Root Inertia tidak memuat pemuat Chart.js bersama.');
+           Tempatnya kini resources/js/bagan.ts, bukan lagi partial Blade
+           tpkkp._chart. Yang diuji tetap aturannya — satu tempat — bukan
+           tempat mana; menegaskan nama berkasnya akan membuat uji ini
+           gagal setiap kali pemuatnya dipindah, padahal aturannya utuh. */
+        $vue   = file_get_contents(resource_path('js/Pages/Tpkkp/Beranda.vue'));
+        $bagan = file_get_contents(resource_path('js/bagan.ts'));
+
+        $this->assertStringContainsString('Chart.defaults', $bagan,
+            'Setelan tema Chart.js tidak ada di pemuat bersama.');
         $this->assertStringNotContainsString('Chart.defaults', $vue,
             'Setelan tema Chart.js tergandakan di komponen Vue.');
+    }
+
+    /**
+     * Chart.js dibundel, tidak ditarik dari jaringan luar.
+     *
+     * Bukan hanya soal keamanan pasokan dan Content-Security-Policy. Di
+     * jaringan tambang yang tertutup — tempat aplikasi ini justru dipakai
+     * — skrip dari CDN gagal dimuat dan grafiknya kosong tanpa satu pun
+     * penjelasan. Pages/Admin/Sistem.vue sudah pernah ditulis ulang
+     * menjadi SVG karena persis itu, dan alasannya tercatat di sana.
+     */
+    public function test_chart_js_tidak_datang_dari_cdn(): void
+    {
+        /* Ditegaskan pada HALAMAN YANG TERGAMBAR, bukan pada berkas
+           sumbernya. Berkas sumber memuat komentar yang menyebut alamat
+           CDN lamanya — penjelasan mengapa ia dibuang — dan uji yang
+           mencari teksnya di sumber akan tersandung pada penjelasan itu
+           sendiri. Yang penting bukan kata apa yang tertulis di berkas
+           melainkan apa yang benar-benar dikirim ke peramban. */
+        $this->masuk();
+        $isi = $this->get('/tpkkp')->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('cdn.jsdelivr.net', $isi);
+        $this->assertStringNotContainsString('unpkg.com', $isi);
+
+        $masuk = file_get_contents(resource_path('js/inertia.ts'));
+        $this->assertStringContainsString("import './bagan'", $masuk,
+            'Pemuat grafik tidak ikut dibundel; halaman bergrafik akan kosong.');
     }
 
     public function test_tamu_tidak_dapat_membuka_beranda(): void

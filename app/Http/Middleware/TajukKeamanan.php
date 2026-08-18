@@ -4,6 +4,8 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Vite;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -65,6 +67,16 @@ class TajukKeamanan
 
     public function handle(Request $request, Closure $next): Response
     {
+        /* Nonce dibuat SEBELUM tanggapannya digambar, bukan sesudah.
+
+           `$next($request)` sudah menghasilkan HTML yang jadi, jadi
+           nonce yang dibuat sesudahnya tidak akan pernah masuk ke
+           dalam tag <script> mana pun — tajuknya terpasang, skripnya
+           terblokir, dan halamannya kosong tanpa satu pun galat di sisi
+           server. */
+        $nonce = self::$nonce = Str::random(24);
+        Vite::useCspNonce($nonce);
+
         $tanggapan = $next($request);
 
         foreach (self::TAJUK as $nama => $nilai) {
@@ -96,6 +108,10 @@ class TajukKeamanan
             $tanggapan->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
         }
 
+        if (config('keamanan.csp', true) && !$tanggapan->headers->has('Content-Security-Policy')) {
+            $tanggapan->headers->set('Content-Security-Policy', $this->csp($nonce));
+        }
+
         if ($this->hsts($request) && !$tanggapan->headers->has('Strict-Transport-Security')) {
             $tanggapan->headers->set(
                 'Strict-Transport-Security',
@@ -104,6 +120,76 @@ class TajukKeamanan
         }
 
         return $tanggapan;
+    }
+
+    /**
+     * Susun Content-Security-Policy.
+     *
+     * Yang benar-benar dijaga di sini adalah `script-src`. Selama
+     * halaman boleh menjalankan skrip apa pun yang muncul di dalam
+     * HTML-nya, satu isian yang lolos penyaringan cukup untuk menjalankan
+     * kode atas nama siapa pun yang membuka halaman itu — dan pada
+     * aplikasi ini yang membukanya termasuk administrator.
+     *
+     * `style-src` terpaksa memuat 'unsafe-inline'. Vue menulis gaya
+     * langsung pada elemen untuk tiap pengikatan `:style`, dan akar
+     * halaman sendiri membawa `style="..."` berisi warna tema. Menutupnya
+     * berarti membongkar cara aplikasi ini menggambar warnanya. Kelonggaran
+     * pada gaya jauh lebih kecil akibatnya daripada pada skrip: gaya dapat
+     * dipakai membocorkan bentuk halaman, tetapi tidak dapat memanggil
+     * apa pun atas nama penggunanya.
+     *
+     * Huruf dari Google Fonts disebut satu per satu. Membiarkan
+     * `default-src 'self'` menutupnya akan membuat seluruh halaman
+     * tergambar dengan huruf cadangan — perubahan yang terlihat oleh
+     * semua orang dan tidak terbaca sebagai masalah keamanan, sehingga
+     * diperbaiki dengan melonggarkan CSP-nya, bukan dengan menyebut
+     * hurufnya.
+     */
+    private function csp(string $nonce): string
+    {
+        $skrip  = "'self' 'nonce-$nonce'";
+        $sambung = "'self'";
+
+        /* Saat `npm run dev` berjalan, berkas dilayani dari server Vite
+           pada porta lain — asal yang berbeda menurut CSP. Tanpa
+           kelonggaran ini, pengembangan berhenti bekerja sama sekali,
+           dan cara tercepat memperbaikinya adalah mematikan CSP-nya —
+           lalu lupa menyalakannya lagi. */
+        if (Vite::isRunningHot()) {
+            $asal = rtrim((string) config('vite.dev_server_url', 'http://localhost:5173'), '/');
+            $skrip   .= " $asal";
+            $sambung .= " $asal ws://localhost:5173 ws://127.0.0.1:5173";
+        }
+
+        return implode('; ', [
+            "default-src 'self'",
+            "base-uri 'self'",
+            "object-src 'none'",
+            "frame-ancestors 'self'",
+            "form-action 'self'",
+            "script-src $skrip",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+            "font-src 'self' data: https://fonts.gstatic.com",
+            "img-src 'self' data: blob:",
+            "media-src 'self'",
+            "connect-src $sambung",
+        ]);
+    }
+
+    /**
+     * Nonce permintaan yang sedang berjalan.
+     *
+     * Dipakai app-inertia.blade.php. Diambil lewat Vite::cspNonce() bila
+     * bisa; properti ini hanya cadangan supaya tampilan tidak pernah
+     * menggambar tag tanpa nonce diam-diam — tag semacam itu tidak
+     * memunculkan galat, hanya halaman yang tidak jalan.
+     */
+    private static ?string $nonce = null;
+
+    public static function nonce(): string
+    {
+        return Vite::cspNonce() ?? self::$nonce ?? '';
     }
 
     /** Tanggapan yang memang dimaksudkan untuk diunduh dan disimpan. */

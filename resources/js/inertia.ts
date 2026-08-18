@@ -2,6 +2,11 @@ import { createApp, h, type DefineComponent } from 'vue';
 import { createInertiaApp } from '@inertiajs/vue3';
 import AppLayout from './Layouts/AppLayout.vue';
 
+/* Chart.js ikut dibundel, tidak lagi ditarik dari CDN. Diimpor demi
+   efek sampingnya — ia memasang window.eqChartSiap yang dipanggil
+   halaman-halaman bergrafik. Lihat bagan.ts untuk alasannya. */
+import './bagan';
+
 /*
   Titik masuk halaman Vue.
 

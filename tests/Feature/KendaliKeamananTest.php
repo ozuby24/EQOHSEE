@@ -379,4 +379,74 @@ class KendaliKeamananTest extends TestCase
         $this->actingAs($u)->post(route('admin.keamanan.jejak.pangkas'))->assertForbidden();
         $this->actingAs($u)->delete(route('admin.keamanan.sesi.putus'), ['id' => 'x'])->assertForbidden();
     }
+
+    /* ═══════════ Content-Security-Policy ═══════════ */
+
+    /**
+     * CSP terpasang, dan nonce-nya BENAR-BENAR dipakai halamannya.
+     *
+     * Menegaskan keberadaan tajuknya saja tidak cukup, dan justru
+     * menyesatkan: CSP yang terpasang dengan nonce yang tidak pernah
+     * muncul di dalam HTML membuat seluruh skrip halaman ditolak
+     * peramban. Kegagalannya tidak terlihat sedikit pun dari sisi server
+     * — tanggapannya 200, tajuknya lengkap, hanya halamannya yang tidak
+     * jalan di layar orang.
+     */
+    public function test_csp_terpasang_dan_nonce_nya_dipakai_halaman(): void
+    {
+        $jawaban = $this->get('/login')->assertOk();
+
+        $csp = $jawaban->headers->get('Content-Security-Policy');
+        $this->assertNotNull($csp, 'Content-Security-Policy tidak terpasang.');
+
+        $this->assertMatchesRegularExpression("/script-src [^;]*'nonce-([A-Za-z0-9]+)'/", $csp);
+        preg_match("/'nonce-([A-Za-z0-9]+)'/", $csp, $c);
+
+        $this->assertStringContainsString('nonce="'.$c[1].'"', $jawaban->getContent(),
+            'Nonce pada CSP tidak muncul pada satu pun tag skrip; seluruh skrip halaman akan ditolak.');
+    }
+
+    /** Nonce tidak boleh sama antar permintaan — nonce tetap bukan nonce. */
+    public function test_nonce_berbeda_tiap_permintaan(): void
+    {
+        $ambil = function () {
+            preg_match("/'nonce-([A-Za-z0-9]+)'/",
+                (string) $this->get('/login')->headers->get('Content-Security-Policy'), $m);
+            return $m[1] ?? null;
+        };
+
+        $this->assertNotSame($ambil(), $ambil(),
+            'Nonce yang sama dipakai ulang; penyerang yang pernah melihatnya dapat memakainya lagi.');
+    }
+
+    /**
+     * Skrip pihak ketiga tidak diizinkan.
+     *
+     * Sebelumnya setiap halaman Inertia memuat Chart.js dari
+     * cdn.jsdelivr.net. Selain menuntut CSP dilonggarkan, ia gagal dimuat
+     * sama sekali di jaringan tambang yang tertutup — dan grafiknya kosong
+     * tanpa satu pun penjelasan.
+     */
+    public function test_tidak_ada_skrip_dari_luar(): void
+    {
+        $isi = $this->get('/login')->getContent();
+
+        $this->assertStringNotContainsString('cdn.jsdelivr.net', $isi);
+        $this->assertStringNotContainsString('unpkg.com', $isi);
+
+        $csp = $this->get('/login')->headers->get('Content-Security-Policy');
+        preg_match('/script-src ([^;]+)/', $csp, $m);
+        $this->assertStringNotContainsString('http', $m[1] ?? '',
+            'script-src memuat asal luar.');
+    }
+
+    /** Halaman tidak boleh dibingkai situs lain. */
+    public function test_csp_melarang_pembingkaian_lintas_situs(): void
+    {
+        $csp = $this->get('/login')->headers->get('Content-Security-Policy');
+
+        $this->assertStringContainsString("frame-ancestors 'self'", $csp);
+        $this->assertStringContainsString("object-src 'none'", $csp);
+        $this->assertStringContainsString("base-uri 'self'", $csp);
+    }
 }
