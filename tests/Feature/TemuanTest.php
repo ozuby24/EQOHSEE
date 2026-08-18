@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\{Company, HazardReport, Inspection, InspectionItem, KoAction, KoObject,
                 SmkpAudit, SmkpFinding, TindakLanjut, User};
-use App\Support\{Hazard, Temuan};
+use App\Support\{DataContoh, Hazard, Temuan};
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -299,5 +299,60 @@ class TemuanTest extends TestCase
         $this->hazard($c, ['status' => Hazard::STATUS[2]]);
 
         $this->assertSame([], Temuan::semua($c));
+    }
+
+    /* ─────────── data contoh ─────────── */
+
+    /**
+     * Data contoh harus menghidupi registernya, bukan sekadar mengisi
+     * modulnya masing-masing.
+     *
+     * Uji-uji di atas membangun tiap sumber dengan tangan, jadi seluruhnya
+     * lulus bahkan bila pemuat data contoh tidak pernah menyentuh satu pun
+     * dari kelimanya. Padahal register kosong adalah persis yang dilihat
+     * orang saat pertama kali membuka halaman ini pada basis data contoh —
+     * dan register kosong terbaca sebagai fitur yang rusak, bukan sebagai
+     * site yang bersih.
+     */
+    public function test_data_contoh_mengisi_registernya(): void
+    {
+        $c = Company::create(['name' => 'PT Contoh Temuan', 'demo' => true]);
+        User::factory()->create(['company_id' => $c->id]);
+
+        DataContoh::muat($c->fresh(), User::factory()->create(['is_admin' => true]));
+
+        $semua = Temuan::semua($c);
+        $this->assertNotEmpty($semua, 'Data contoh tidak menghasilkan satu pun temuan.');
+
+        /* Tiap sumber disebut sendiri-sendiri. Satu penegasan atas
+           jumlah total akan tetap lulus bila empat sumber terbaca dan
+           satu diam-diam kosong — dan sumber yang kosong tidak
+           menimbulkan galat apa pun, hanya daftar yang lebih pendek. */
+        $sumber = array_unique(array_column($semua, 'sumber'));
+        foreach (['tindak-lanjut', 'smkp', 'ko', 'hazard', 'inspeksi'] as $s) {
+            $this->assertContains($s, $sumber, "Data contoh tidak mengisi sumber '$s'.");
+        }
+    }
+
+    /**
+     * Dan salah satunya harus tak bertuan.
+     *
+     * Kolom `bertuan` adalah alasan register ini dibangun. Bila seluruh
+     * data contoh rapi — berpenanggung jawab, bertenggat — kolom itu
+     * tidak pernah memperlihatkan apa yang membuatnya perlu ada, dan
+     * saringan "tak bertuan" selamanya menampilkan halaman kosong pada
+     * satu-satunya basis data tempat orang belajar memakai fiturnya.
+     */
+    public function test_data_contoh_menyertakan_temuan_tak_bertuan(): void
+    {
+        $c = Company::create(['name' => 'PT Contoh Yatim', 'demo' => true]);
+        User::factory()->create(['company_id' => $c->id]);
+
+        DataContoh::muat($c->fresh(), User::factory()->create(['is_admin' => true]));
+
+        $takBertuan = array_filter(Temuan::semua($c), fn ($t) => !$t['bertuan'] && $t['terbuka']);
+
+        $this->assertNotEmpty($takBertuan,
+            'Seluruh temuan contoh bertuan, sehingga saringan "tak bertuan" tidak dapat dibuktikan.');
     }
 }
