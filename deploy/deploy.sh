@@ -50,7 +50,51 @@ git config core.fileMode false
 # ini ikut berubah, prosesnya diganti dengan versi baru dari awal.
 SIDIK_SEBELUM="$(sha256sum "$0" | cut -d' ' -f1)"
 
-git pull origin "$(git rev-parse --abbrev-ref HEAD)"
+CABANG="$(git rev-parse --abbrev-ref HEAD)"
+git fetch --prune origin "$CABANG"
+
+# Git harus menjadi satu-satunya sumber isi berkas yang dilacaknya.
+#
+# Sebelumnya langkah ini `git pull` biasa, dan itu punya lubang yang
+# diam. Berkas yang dilacak Git tetapi diganti langsung di server —
+# lewat panel, scp, atau FTP — TIDAK akan pernah ditimpa `git pull`
+# selama tidak ada commit baru yang kebetulan menyentuh berkas yang
+# sama. Git menganggapnya perubahan lokal yang belum diputuskan, dan
+# membiarkannya. Situs pun menyajikan berkas yang tidak ada di repo
+# mana pun, tanpa satu pun pesan.
+#
+# Itu benar-benar terjadi: seluruh berkas .mp4 di server berbeda dari
+# yang ada di repo, sedangkan seluruh .jpg sama persis. Videonya pernah
+# diunggah langsung ke server, lalu menetap di sana berbulan-bulan.
+# Setiap commit yang memperbarui video "berhasil" tanpa pernah tampak.
+#
+# Lebih buruk lagi, lubang ini punya sisi kedua: begitu ada commit yang
+# menyentuh berkas yang menyimpang itu, `git pull` menolak MELEBUR SAMA
+# SEKALI ("local changes would be overwritten"). Dengan `set -e` di atas,
+# seluruh deploy berhenti — bukan hanya videonya yang gagal, melainkan
+# semuanya, karena berkas yang tak seorang pun ingat pernah menggantinya.
+#
+# `reset --hard` menutup keduanya. Yang menyimpang disalin dulu ke
+# storage/ (di luar jangkauan reset karena diabaikan Git), supaya
+# menegakkan Git tidak berarti kehilangan berkas yang mungkin satu-satunya
+# salinannya ada di server.
+MENYIMPANG="$(git diff --name-only "origin/$CABANG" -- . | head -200)"
+
+if [ -n "$MENYIMPANG" ]; then
+    # Nama diawali `backup-` supaya tercakup aturan /storage/backup-* di
+    # .gitignore — kalau tidak, cadangannya sendiri menjadi berkas tak
+    # terlacak yang membuat kirim.sh menolak deploy berikutnya.
+    SIMPAN="$REPO_DIR/storage/backup-berkas-server/$(date +%Y%m%d-%H%M%S)"
+    echo "==> Berkas terlacak yang menyimpang dari Git — disalin ke $SIMPAN"
+    while IFS= read -r berkas; do
+        [ -f "$berkas" ] || continue
+        mkdir -p "$SIMPAN/$(dirname "$berkas")"
+        cp -p "$berkas" "$SIMPAN/$berkas"
+        echo "    $berkas"
+    done <<< "$MENYIMPANG"
+fi
+
+git reset --hard "origin/$CABANG"
 
 if [ -z "${EQOHSEE_DIMUAT_ULANG:-}" ] \
    && [ "$SIDIK_SEBELUM" != "$(sha256sum "$0" | cut -d' ' -f1)" ]; then

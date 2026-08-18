@@ -164,10 +164,14 @@ elif [ -n "$KOTOR" ]; then
     echo "$KOTOR" | sed 's/^/      /'
     if [ "$PAKSA" != "1" ]; then
         merah "    Ada suntingan langsung di VPS yang belum masuk repo."
-        echo  "    Selamatkan dulu, atau buang dengan sengaja lewat --paksa."
+        echo  "    Berkas di atas TIDAK ada di repo mana pun — hanya di server."
+        echo  "    Masukkan dulu ke repo bila memang dipakai, atau teruskan"
+        echo  "    dengan --paksa: deploy.sh menyalinnya lebih dulu ke"
+        echo  "    storage/backup-berkas-server/<waktu>/ sebelum menimpanya."
         exit 1
     fi
-    kuning "    Diteruskan karena --paksa — suntingan di atas akan hilang."
+    kuning "    Diteruskan karena --paksa — berkas di atas ditimpa isi repo,"
+    kuning "    salinannya tersimpan di storage/backup-berkas-server/."
 else
     hijau "    Bersih."
 fi
@@ -187,7 +191,11 @@ cd '$VPS_DIR'
 echo '--> Menarik $CABANG'
 git fetch origin '$CABANG'
 git checkout '$CABANG' 2>/dev/null || git checkout -b '$CABANG' 'origin/$CABANG'
-git reset --hard '$COMMIT'
+
+# Sengaja TIDAK reset di sini. deploy.sh yang menegakkan isi repo, dan ia
+# menyalin lebih dulu berkas terlacak yang menyimpang ke
+# storage/backup-berkas-server/. Reset di titik ini akan membuang berkas
+# itu sebelum sempat disalin — persis kehilangan yang ingin dicegah.
 
 echo '--> Menjalankan deploy.sh'
 EQOHSEE_SSL='$VPS_SSL' bash deploy/deploy.sh
