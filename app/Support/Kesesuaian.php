@@ -4,7 +4,7 @@ namespace App\Support;
 
 use App\Models\{Company, EnergyBaseline, EnergyFuelLog, EnergyProduction, GudangBarang,
                 HazardReport, Inspection, PostTrainingEvaluation, SmkpAudit,
-                SopEvaluationAttempt, TpkkpResponse};
+                SopEvaluationAttempt, TpkkpAssessment};
 
 /**
  * Pemeriksaan kesesuaian isi, penilaian, dan evaluasi tiap modul.
@@ -173,16 +173,20 @@ final class Kesesuaian
 
     private static function tpkkp(?Company $c): array
     {
-        $q = TpkkpResponse::withoutGlobalScopes();
-        if ($c) $q->where('company_id', $c->id);
-        $jumlah = $q->count();
+        /* Nilainya ada di TpkkpAssessment.scores, BUKAN di jawaban kuesioner.
+           Keduanya mudah tertukar karena sama-sama bernama "nilai" dalam
+           percakapan sehari-hari: kuesioner adalah masukan dari responden,
+           sedangkan penilaian adalah skor yang diberikan asesor. Membaca yang
+           keliru menghasilkan "0 dari 308 sel" pada penilaian yang sebenarnya
+           sudah terisi penuh. */
+        $nilai = self::nilaiTpkkp($c);
 
-        if ($jumlah === 0) {
-            return [self::kosong('Kematangan (PTPKKP)', 'kuesioner',
-                'Muat data contoh atau isi kuesioner, lalu periksa lagi.')];
+        if ($nilai === []) {
+            return [self::kosong('Kematangan (PTPKKP)', 'penilaian',
+                'Muat data contoh atau isi penilaian kematangan, lalu periksa lagi.')];
         }
 
-        $skor  = Tpkkp::totalCalc(self::nilaiTpkkp($c));
+        $skor  = Tpkkp::totalCalc($nilai);
         $baris = [];
 
         /* Total harus sama dengan jumlah skor indikatornya. Keduanya
@@ -209,42 +213,62 @@ final class Kesesuaian
                   .'sudah tidak membaca bobot yang sama.',
         ];
 
-        /* Kelengkapan adalah rasio, jadi ia mustahil di luar 0..1. */
+        /* Kelengkapan adalah rasio, jadi ia mustahil di luar 0..1.
+           Tetapi berada di dalam rentang saja belum cukup untuk hijau:
+           nol pun berada di dalam rentang. Penilaian yang belum terisi
+           menghasilkan skor nol yang terlihat persis seperti kematangan
+           yang benar-benar rendah — dan menyatakannya "aman" adalah cara
+           tercepat membuat orang percaya pada angka yang belum ada. */
         $lengkap = (float) ($skor['completeness'] ?? 0);
+        $masukAkal = $lengkap >= 0 && $lengkap <= 1;
+
+        $keadaan = match (true) {
+            !$masukAkal      => self::GAWAT,
+            $lengkap <= 0.0  => self::TAK_TAHU,
+            $lengkap < 0.5   => self::PERHATIAN,
+            default          => self::AMAN,
+        };
+
         $baris[] = [
             'kelompok' => 'Kematangan (PTPKKP)',
-            'judul'    => 'Kelengkapan pengisian masih dalam rentang',
-            'keadaan'  => ($lengkap >= 0 && $lengkap <= 1) ? self::AMAN : self::GAWAT,
+            'judul'    => 'Kelengkapan pengisian cukup untuk dibaca',
+            'keadaan'  => $keadaan,
             'nilai'    => self::persen($lengkap * 100).' · '
                           .$skor['filledCells'].'/'.$skor['totalCells'].' sel',
-            'uraian'   => ($lengkap >= 0 && $lengkap <= 1)
-                ? 'Sel terisi tidak melebihi sel yang tersedia.'
-                : 'Rasio kelengkapan di luar 0–100%, yang secara aritmetika mustahil.',
-            'tindakan' => ($lengkap >= 0 && $lengkap <= 1)
-                ? ($lengkap < 0.5
-                    ? 'Pengisian baru '.self::persen($lengkap * 100).'. Skor di bawah '
-                      .'separuh kelengkapan belum layak dibaca sebagai capaian.'
-                    : 'Tidak ada.')
-                : 'Periksa Tpkkp::itemCalc — sel terisi terhitung melebihi sel yang ada.',
+            'uraian'   => match ($keadaan) {
+                self::GAWAT     => 'Rasio kelengkapan di luar 0–100%, yang secara aritmetika mustahil.',
+                self::TAK_TAHU  => 'Penilaiannya ada tetapi belum satu sel pun terisi, sehingga skor '
+                                   .'yang tampil bukan hasil penilaian melainkan nol bawaan.',
+                self::PERHATIAN => 'Baru '.self::persen($lengkap * 100).' sel terisi. Sel yang belum '
+                                   .'dinilai terhitung nol, bukan diabaikan, sehingga skornya tertarik '
+                                   .'ke bawah oleh pengisian yang belum selesai.',
+                default         => 'Sel terisi tidak melebihi sel yang tersedia, dan pengisiannya sudah '
+                                   .'cukup banyak untuk dibaca sebagai capaian.',
+            },
+            'tindakan' => match ($keadaan) {
+                self::GAWAT    => 'Periksa Tpkkp::itemCalc — sel terisi terhitung melebihi sel yang ada.',
+                self::TAK_TAHU => 'Isi penilaian kematangan, atau muat data contoh.',
+                self::PERHATIAN=> 'Selesaikan pengisiannya sebelum tingkat kematangannya dipakai '
+                                  .'mengambil keputusan.',
+                default        => 'Tidak ada.',
+            },
         ];
 
         return $baris;
     }
 
-    /** Nilai kuesioner dalam bentuk yang diminta Tpkkp::totalCalc. */
+    /**
+     * Skor penilaian terbaru dalam bentuk yang diminta Tpkkp::totalCalc.
+     *
+     * Tabelnya belum berperusahaan, jadi penyaringnya diabaikan di sini
+     * dan yang dibaca selalu penilaian tahun terakhir. Menyaringnya
+     * seolah-olah per perusahaan akan menghasilkan "kosong" yang keliru.
+     */
     private static function nilaiTpkkp(?Company $c): array
     {
-        $q = TpkkpResponse::withoutGlobalScopes();
-        if ($c) $q->where('company_id', $c->id);
+        $a = TpkkpAssessment::withoutGlobalScopes()->orderByDesc('tahun')->first();
 
-        $nilai = [];
-        foreach ($q->get() as $r) {
-            foreach ((array) $r->answers as $kunci => $isi) {
-                $nilai[$kunci] = $isi;
-            }
-        }
-
-        return $nilai;
+        return $a && is_array($a->scores) ? $a->scores : [];
     }
 
     /* ═══════════ SMKP — audit ═══════════ */

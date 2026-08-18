@@ -177,13 +177,15 @@ class KesesuaianTest extends TestCase
     {
         $c = $this->perusahaan();
 
-        // Satu butir dinilai saja dari seratusan yang berlaku.
+        // Satu butir dinilai saja dari seratusan yang berlaku. Kuncinya 'v',
+        // sesuai yang dibaca Smkp::nilaiButir — kunci lain akan terbaca
+        // sebagai belum dinilai, sehingga ujinya lulus tanpa benar-benar
+        // menguji butir yang terisi.
         $butir = Smkp::butir();
-        $kode  = $butir[0]['kode'] ?? array_key_first($butir);
 
         SmkpAudit::withoutGlobalScopes()->create([
             'company_id' => $c->id, 'tahun' => 2026, 'status' => 'draf',
-            'hasil' => [$kode => ['nilai' => 3]],
+            'hasil' => [$butir[0]['kode'] => ['v' => $butir[0]['maks']]],
         ]);
 
         $x = $this->periksa($c)['Skor belum layak dibaca sebagai capaian'];
