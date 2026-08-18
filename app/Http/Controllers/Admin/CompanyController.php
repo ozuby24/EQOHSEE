@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\{ActivityLog, Company, TpkkpAssessment, User};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Support\Berkas;
 
 class CompanyController extends Controller
 {
@@ -25,7 +26,7 @@ class CompanyController extends Controller
                 'nama'       => $c->name,
                 'kode'       => $c->code ?: null,
                 'inisial'    => mb_strtoupper(mb_substr($c->code ?: $c->name, 0, 2)),
-                'logo'       => $c->logo ? asset('storage/'.$c->logo) : null,
+                'logo'       => $c->logo ? Berkas::terbuka($c->logo) : null,
                 'risiko'     => $c->risk_class,
                 'izin'       => $c->izin_type ?: null,
                 'komoditas'  => $c->commodity ?: null,
@@ -102,7 +103,7 @@ class CompanyController extends Controller
                 'pic_phone'        => $teks($c->pic_phone),
             ],
 
-            'logo' => $c->logo ? asset('storage/'.$c->logo) : null,
+            'logo' => $c->logo ? Berkas::terbuka($c->logo) : null,
 
             'opsi' => [
                 // Perusahaan tidak boleh menjadi induk dirinya sendiri;
@@ -180,7 +181,7 @@ class CompanyController extends Controller
             'doc_terbit'       => ['nullable','date'],
             'doc_setuju'       => ['nullable','date'],
             'doc_revisi'       => ['nullable','integer','min:0','max:999'],
-            'logo'             => ['nullable','image','max:1024'],
+            'logo'             => array_merge(['nullable'], Berkas::ATURAN_GAMBAR),
         ]);
         if ($r->hasFile('logo')) $d['logo'] = $r->file('logo')->store('logos', 'public');
         else unset($d['logo']);

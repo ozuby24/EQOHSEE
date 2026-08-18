@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\{ActivityLog, Company, Signatory};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Support\Berkas;
 
 class SignatoryController extends Controller
 {
@@ -23,7 +24,7 @@ class SignatoryController extends Controller
                     'aktif'     => (bool) $s->is_active,
                     'perusahaanId' => $s->company_id,
                     'perusahaan'   => $s->company?->name,
-                    'tandaTangan' => $s->signature ? asset('storage/'.$s->signature) : null,
+                    'tandaTangan' => Berkas::url($s, 'ttd'),
                     'urlSimpan' => route('signatories.update', $s),
                     'urlHapus'  => route('signatories.destroy', $s),
                 ])->all(),
@@ -68,7 +69,7 @@ class SignatoryController extends Controller
             'title'      => ['nullable','string','max:150'],
             'company_id' => ['nullable','exists:companies,id'],
             'is_active'  => ['nullable','boolean'],
-            'signature'  => ['nullable','image','max:1024'],
+            'signature'  => array_merge(['nullable'], Berkas::ATURAN_GAMBAR),
         ]));
 
         // Pengguna biasa tidak dapat menitipkan tanda tangan ke
@@ -82,7 +83,7 @@ class SignatoryController extends Controller
         $d['is_active'] = (bool) ($d['is_active'] ?? false);   // kolom NOT NULL
 
         if ($r->hasFile('signature')) {
-            $d['signature'] = $r->file('signature')->store('signatures', 'public');
+            $d['signature'] = Berkas::simpan($r->file('signature'), 'signatures');
         } else {
             unset($d['signature']);
         }

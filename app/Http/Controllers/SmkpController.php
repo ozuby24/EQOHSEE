@@ -7,6 +7,7 @@ use App\Support\{Ekspor, KopDokumen, Smkp, SmkpRubrik, SmkpTahap};
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use App\Support\Berkas;
 
 /**
  * Audit SMKP Minerba — 7 elemen sesuai Kepdirjen 185.K/37.04/DJB/2019.
@@ -1241,9 +1242,21 @@ class SmkpController extends Controller
      */
     public function ncTindak(SmkpAudit $smkp)
     {
+        /* Bukti foto dilewatkan sebagai ALAMAT, bukan sebagai jalur
+           berkas. Sebelumnya barisnya dikirim mentah dan halamannya
+           menyusun sendiri `/storage/{jalur}` — alamat statis yang
+           dilayani Nginx tanpa melewati aplikasi sama sekali, sehingga
+           foto bukti tiap temuan audit dapat dibuka siapa pun yang
+           mengetahui jalurnya, tanpa login. */
+        $temuan = $smkp->findings()->orderByRaw(Smkp::urutJenisSql())->get()
+            ->map(fn ($t) => array_merge($t->toArray(), [
+                'foto_open'   => Berkas::url($t, 'smo'),
+                'foto_closed' => Berkas::url($t, 'smc'),
+            ]));
+
         return Inertia::render('Print/SmkpNcTindak', [
             'audit'  => $smkp,
-            'temuan' => $smkp->findings()->orderByRaw(Smkp::urutJenisSql())->get(),
+            'temuan' => $temuan,
             'meta'   => Smkp::meta(),
             'dok'    => $this->kop($smkp, 'ketidaksesuaian-tindak-lanjut'),
             'kembali'=> route('smkp.show', $smkp),

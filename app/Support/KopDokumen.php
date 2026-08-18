@@ -262,7 +262,7 @@ final class KopDokumen
                mentah — dan halaman cetak yang menerimanya tidak akan
                pernah dapat menggambarnya, sebab <img src="logos/x.png">
                menunjuk ke tempat yang tidak ada. */
-            'logo'       => ($l = $c?->effectiveLogo()) ? asset('storage/'.$l) : null,
+            'logo'       => ($l = $c?->effectiveLogo()) ? Berkas::terbuka($l) : null,
             'perusahaan' => $c?->name ?: 'Perusahaan',
         ];
     }

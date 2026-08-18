@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\{ActivityLog, Certificate, Company, Course, Enrollment, PostTrainingEvaluation, Signatory};
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use App\Support\Berkas;
 
 class CertificateController extends Controller
 {
@@ -216,11 +217,10 @@ class CertificateController extends Controller
                 'terbit'     => $certificate->issued_at?->translatedFormat('d F Y'),
                 'pemilik'    => $certificate->company?->ownerName(),
                 'lokasi'     => $certificate->company?->location,
-                'logo'       => $logo ? asset('storage/'.$logo) : null,
+                'logo'       => $logo ? Berkas::terbuka($logo) : null,
                 'ttdNama'    => $certificate->signed_by_name ?: '—',
                 'ttdJabatan' => $certificate->signatory?->title ?: 'Penanggung Jawab',
-                'ttdGambar'  => $certificate->signatory?->signature
-                    ? asset('storage/'.$certificate->signatory->signature) : null,
+                'ttdGambar'  => Berkas::url($certificate->signatory, 'ttd'),
 
                 // Barcode digambar di server sebagai SVG. Menggambarnya di
                 // peramban berarti aturan pengkodeannya ada dua salinan,

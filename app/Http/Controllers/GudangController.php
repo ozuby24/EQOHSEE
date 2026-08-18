@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use App\Support\Berkas;
 
 /**
  * Sistem Informasi Gudang & Penyimpanan.
@@ -70,7 +71,7 @@ class GudangController extends Controller
             'partNumber'  => $b->part_number ?: null,
             'kelasB3'     => $b->kelas_b3,
             'namaKelas'   => $b->kelas_b3 ? Gudang::namaKelas($b->kelas_b3) : null,
-            'msds'        => $b->msds ? asset('storage/'.$b->msds) : null,
+            'msds'        => Berkas::url($b, 'sds'),
             'status'      => $s,
             'urlUbah'     => route('gudang.barang.edit', $b),
             'urlHapus'    => route('gudang.barang.hapus', $b),
@@ -225,7 +226,7 @@ class GudangController extends Controller
                 'aktif'            => $b->exists ? (bool) $b->aktif : true,
             ],
 
-            'msds' => $b->msds ? asset('storage/'.$b->msds) : null,
+            'msds' => Berkas::url($b, 'sds'),
 
             'opsi' => [
                 'kategori' => array_map(fn ($k) => ['nilai' => $k, 'label' => Gudang::KATEGORI[$k]['nama']],
@@ -281,8 +282,8 @@ class GudangController extends Controller
         $data['aktif']      = $r->boolean('aktif', true);
 
         if ($r->hasFile('msds')) {
-            if ($barang?->msds) Storage::disk('public')->delete($barang->msds);
-            $data['msds'] = $r->file('msds')->store('gudang/msds', 'public');
+            Berkas::buang($barang?->msds);
+            $data['msds'] = Berkas::simpan($r->file('msds'), 'gudang/msds');
         } else {
             unset($data['msds']);
         }
@@ -592,7 +593,7 @@ class GudangController extends Controller
                 'lokasi'    => $b->lokasi?->nama,
                 'stok'      => Gudang::stok($b),
                 'satuan'    => $b->satuan,
-                'msds'      => $b->msds ? asset('storage/'.$b->msds) : null,
+                'msds'      => Berkas::url($b, 'sds'),
             ])->all(),
 
             'langgar'     => $this->pelanggaranSemua(),

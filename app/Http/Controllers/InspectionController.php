@@ -6,6 +6,7 @@ use App\Models\{ActivityLog, Company, HazardReport, Inspection, InspectionInspec
     InspectionItem, InspectionTemplate, User};
 use App\Support\{Db, Hazard, Identitas};
 use Illuminate\Http\Request;
+use App\Support\Berkas;
 
 class InspectionController extends Controller
 {
@@ -150,7 +151,7 @@ class InspectionController extends Controller
                 'risiko'   => $x->risiko,
                 'temuan'   => $x->temuan,
                 'tindakan' => $x->tindakan,
-                'foto'     => array_map(fn ($f) => asset('storage/'.$f), $x->foto ?: []),
+                'foto'     => Berkas::daftarUrl($x, 'ins'),
                 'hazard'   => $x->hazardReport?->kode,
                 'urlHazard'=> $x->hazardReport ? route('hazard.show', $x->hazardReport) : null,
                 'urlAngkat'=> route('inspeksi.item.angkat', $x),
@@ -277,11 +278,13 @@ class InspectionController extends Controller
         ]);
         $d['order_index'] = (int) $inspeksi->items()->max('order_index') + 1;
 
-        $foto = [];
-        foreach ((array) $request->file('foto') as $f) {
-            if ($f && $f->isValid()) $foto[] = $f->store('inspeksi', 'public');
+        /* Foto butir pemeriksaan sebelumnya tersimpan tanpa diperiksa
+           sama sekali — bukan hanya tanpa batas ukuran, melainkan tanpa
+           batas JENIS. */
+        if ($request->hasFile('foto')) {
+            $request->validate(['foto.*' => Berkas::ATURAN_GAMBAR], [], ['foto.*' => 'foto']);
+            if ($foto = Berkas::simpanBanyak($request->file('foto'), 'inspeksi')) $d['foto'] = $foto;
         }
-        if ($foto) $d['foto'] = $foto;
 
         $inspeksi->items()->create($d);
         return back()->with('ok','Item pemeriksaan ditambahkan.');

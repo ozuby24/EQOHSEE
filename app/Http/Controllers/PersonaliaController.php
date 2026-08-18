@@ -7,6 +7,7 @@ use App\Support\WarnaLogo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use App\Support\Berkas;
 
 /**
  * Personalia — data diri, kontak, dan identitas perusahaan.
@@ -46,14 +47,14 @@ class PersonaliaController extends Controller
                 'nama' => $m[0], 'label' => $m[1], 'tipe' => $m[2], 'wajib' => $m[3],
             ], self::MEDAN),
             'isian'  => $isian,
-            'avatar' => $u->avatar ? asset('storage/' . $u->avatar) : null,
+            'avatar' => $u->avatar ? Berkas::terbuka($u->avatar) : null,
             'inisial' => mb_strtoupper(mb_substr($u->name, 0, 1)),
 
             'perusahaan' => $p ? [
                 'nama'     => $p->name,
                 'jenis'    => $p->izin_type ?: 'Perusahaan',
                 'lokasi'   => $p->location ?: null,
-                'logo'     => $p->effectiveLogo() ? asset('storage/' . $p->effectiveLogo()) : null,
+                'logo'     => $p->effectiveLogo() ? Berkas::terbuka($p->effectiveLogo()) : null,
             ] : null,
             'urlPerusahaan' => route('personalia.perusahaan'),
         ]);
@@ -72,7 +73,7 @@ class PersonaliaController extends Controller
             'phone'       => ['nullable', 'string', 'max:32'],
             'whatsapp'    => ['nullable', 'string', 'max:32'],
             'bio'         => ['nullable', 'string', 'max:300'],
-            'avatar'      => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'avatar'      => array_merge(['nullable'], Berkas::ATURAN_GAMBAR),
         ], [], [
             'name' => 'nama', 'email' => 'surel', 'employee_id' => 'NIK',
             'position' => 'jabatan', 'department' => 'departemen',
@@ -222,7 +223,7 @@ class PersonaliaController extends Controller
                     ->map(fn ($c) => ['id' => $c->id, 'nama' => $c->name])->all()
                 : [],
 
-            'logo'      => $p?->effectiveLogo() ? asset('storage/' . $p->effectiveLogo()) : null,
+            'logo'      => $p?->effectiveLogo() ? Berkas::terbuka($p->effectiveLogo()) : null,
             // Hanya logo milik perusahaan ini yang boleh dihapus; effectiveLogo()
             // bisa memulangkan logo bawaan yang bukan miliknya.
             'logoSendiri' => (bool) $p?->logo,
@@ -260,7 +261,11 @@ class PersonaliaController extends Controller
             'pic_name'  => ['nullable', 'string', 'max:120'],
             'pic_email' => ['nullable', 'email', 'max:160'],
             'pic_phone' => ['nullable', 'string', 'max:32'],
-            'logo'      => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
+            /* SVG dikeluarkan. Ia XML yang boleh memuat <script>, disajikan
+               dari domain yang sama, dan logo adalah tempat paling nyaman
+               untuk menaruhnya: dipasang sekali oleh satu orang, tergambar
+               di halaman semua orang. Lihat Berkas::ATURAN_GAMBAR. */
+            'logo'      => array_merge(['nullable'], Berkas::ATURAN_GAMBAR),
         ], [], ['name' => 'nama perusahaan']);
 
         /*
@@ -419,7 +424,7 @@ class PersonaliaController extends Controller
                 'departemen' => $o->department ?: null,
                 'email'      => $o->email ?: null,
                 'telepon'    => $o->phone ?: null,
-                'avatar'     => $o->avatar ? asset('storage/' . $o->avatar) : null,
+                'avatar'     => $o->avatar ? Berkas::terbuka($o->avatar) : null,
                 // Nama perusahaan hanya berarti bagi admin, sebab hanya dia
                 // yang melihat lintas perusahaan.
                 'perusahaan' => $u->isAdmin() ? $o->company?->name : null,

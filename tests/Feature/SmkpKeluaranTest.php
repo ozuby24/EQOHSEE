@@ -269,9 +269,27 @@ class SmkpKeluaranTest extends TestCase
 
         $t = $props['temuan'][0];
 
-        $this->assertSame('smkp/open-1.jpg',   $t['foto_open']);
-        $this->assertSame('smkp/closed-1.jpg', $t['foto_closed']);
-        $this->assertSame('Ketua Auditor',     $t['verifikasi_oleh']);
+        /* Yang dikirim adalah ALAMAT BERJAGA, bukan jalur berkas.
+
+           Sebelumnya barisnya dikirim mentah dan halamannya menyusun
+           sendiri `/storage/{jalur}` — alamat statis yang dilayani Nginx
+           tanpa melewati aplikasi, sehingga foto bukti tiap temuan audit
+           dapat dibuka siapa pun yang mengetahui jalurnya, tanpa login.
+
+           Ditegaskan sebagai aturan, bukan sebagai satu alamat harfiah:
+           yang penting bukan bentuk alamatnya melainkan bahwa ia tidak
+           lagi menunjuk ke berkas statis. */
+        foreach (['foto_open', 'foto_closed'] as $medan) {
+            $this->assertNotNull($t[$medan], "$medan hilang dari lembar.");
+            $this->assertStringNotContainsString('/storage/', $t[$medan],
+                "$medan masih menunjuk ke berkas statis yang tidak dijaga.");
+            $this->assertStringContainsString('/berkas/', $t[$medan]);
+        }
+
+        $this->assertNotSame($t['foto_open'], $t['foto_closed'],
+            'Bukti sebelum dan sesudah menunjuk ke alamat yang sama.');
+
+        $this->assertSame('Ketua Auditor', $t['verifikasi_oleh']);
     }
 
     /** Lembar tetap terbuka walau belum ada satu temuan pun. */

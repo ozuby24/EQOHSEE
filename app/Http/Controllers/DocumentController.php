@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use App\Support\Berkas;
 
 /**
  * ISO & Dokumen — register dokumen terkendali.
@@ -264,7 +265,7 @@ class DocumentController extends Controller
             'ringkasan_perubahan' => ['required','string','max:2000'],
             'tanggal'             => ['nullable','date'],
             'tanggal_tinjau'      => ['nullable','date'],
-            'berkas'              => ['nullable','file','max:20480'],
+            'berkas'              => array_merge(['nullable'], Berkas::ATURAN_DOKUMEN),
         ]);
 
         $berkas = $this->simpanBerkas($request) ?: $dokumen->berkas;
@@ -444,7 +445,7 @@ class DocumentController extends Controller
             'ringkasan'       => ['nullable','string','max:3000'],
             'acuan'           => ['nullable','string','max:150'],
             'disetujui_oleh'  => ['nullable','string','max:150'],
-            'berkas'          => ['nullable','file','max:20480'],
+            'berkas'          => array_merge(['nullable'], Berkas::ATURAN_DOKUMEN),
         ]));
 
         // Hasil validasi memuat objek unggahan, bukan path. Buang di sini agar
@@ -457,14 +458,18 @@ class DocumentController extends Controller
     /** Simpan berkas unggahan; kembalikan path, atau null bila tidak ada. */
     private function simpanBerkas(Request $r): ?string
     {
-        $f = $r->file('berkas');
-        return ($f && $f->isValid()) ? $f->store('dokumen', 'public') : null;
+        return Berkas::simpan($r->file('berkas'), 'dokumen');
     }
 
     /** Unduh berkas revisi berjalan. */
     public function unduh(Document $dokumen)
     {
-        abort_if(!$dokumen->berkas || !Storage::disk('public')->exists($dokumen->berkas), 404, 'Berkas tidak ditemukan.');
-        return Storage::disk('public')->download($dokumen->berkas);
+        /* Diteruskan ke BerkasController supaya hanya ada SATU tempat
+           yang tahu di disk mana berkas tertutup berada. Selama ada dua,
+           pemindahan disk berikutnya akan memperbaiki satu dan
+           melewatkan yang lain — dan yang terlewat adalah yang jarang
+           dibuka, jadi tidak segera ketahuan. */
+        abort_if(!$dokumen->berkas, 404, 'Berkas tidak ditemukan.');
+        return app(BerkasController::class)->unduh('dok', $dokumen->getKey());
     }
 }

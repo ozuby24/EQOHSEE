@@ -6,6 +6,7 @@ use App\Support\{IkonNav, Lencana, Media, Menu, RuteInertia, Tema};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
+use App\Support\Berkas;
 
 /**
  * Data yang dibagikan ke seluruh halaman Inertia.
@@ -35,7 +36,7 @@ class HandleInertiaRequests extends Middleware
                 'nama'   => $u->name,
                 'peran'  => $u->position ?: ($u->isAdmin() ? 'Administrator' : ucfirst($u->lms_role ?: 'Peserta')),
                 'admin'  => $u->isAdmin(),
-                'avatar' => $u->avatar ? asset('storage/'.$u->avatar) : null,
+                'avatar' => $u->avatar ? Berkas::terbuka($u->avatar) : null,
             ] : null,
 
             'menu' => fn () => $this->menu($u),

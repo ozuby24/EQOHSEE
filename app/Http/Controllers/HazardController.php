@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\{ActivityLog, Company, HazardReport, User};
 use App\Support\{Db, Hazard, Identitas};
 use Illuminate\Http\Request;
+use App\Support\Berkas;
 
 class HazardController extends Controller
 {
@@ -92,7 +93,7 @@ class HazardController extends Controller
                 'tanggal'     => $r->tanggal?->format('d M Y'),
                 'tujuan'      => $r->company?->name ?: ($r->terlapor ?: null),
                 'terlapor'    => $r->terlapor && $r->company ? $r->terlapor : null,
-                'foto'        => $r->foto && count($r->foto) ? asset('storage/'.$r->foto[0]) : null,
+                'foto'        => Berkas::url($r, 'hzd', 0),
                 'url'         => route('hazard.show', $r),
             ], $reports->items()),
 
@@ -213,7 +214,6 @@ class HazardController extends Controller
     {
         $hazard->load(['company', 'user', 'closer']);
 
-        $foto = fn (?array $daftar) => array_map(fn ($f) => asset('storage/'.$f), $daftar ?: []);
 
         return \Inertia\Inertia::render('Hazard/Detail', [
             'judul'    => 'Laporan '.$hazard->kode,
@@ -250,8 +250,8 @@ class HazardController extends Controller
                 'unsafeAction'    => $hazard->unsafe_action_list,
                 'unsafeCondition' => $hazard->unsafe_condition_list,
 
-                'foto'            => $foto($hazard->foto),
-                'fotoTindakLanjut' => $foto($hazard->foto_tindaklanjut),
+                'foto'            => Berkas::daftarUrl($hazard, 'hzd'),
+                'fotoTindakLanjut' => Berkas::daftarUrl($hazard, 'hzt'),
 
                 'catatanPenutupan' => $hazard->catatan_penutupan,
                 'penutup'  => $hazard->closer?->name,
@@ -458,12 +458,26 @@ class HazardController extends Controller
         ]);
     }
 
+    /**
+     * Simpan foto laporan, sesudah memeriksanya.
+     *
+     * Pemeriksaannya ada di sini, bukan di blok validate tiap pemanggil.
+     * Sebelumnya kedua pemanggil tidak memvalidasinya sama sekali —
+     * `$request->file('foto')` langsung tersimpan, apa pun isinya — dan
+     * pemanggil ketiga akan ditulis dengan menyalin salah satu dari
+     * keduanya. Aturan yang diletakkan di jalur yang WAJIB dilewati
+     * tidak dapat terlewat dengan cara itu.
+     */
     private function simpanFoto(Request $r, string $field): array
     {
-        $out = [];
-        foreach ((array) $r->file($field) as $file) {
-            if ($file && $file->isValid()) $out[] = $file->store('hazard', 'public');
-        }
-        return $out;
+        if (!$r->hasFile($field)) return [];
+
+        $r->validate(
+            [$field.'.*' => Berkas::ATURAN_GAMBAR],
+            [],
+            [$field.'.*' => 'foto'],
+        );
+
+        return Berkas::simpanBanyak($r->file($field), 'hazard');
     }
 }

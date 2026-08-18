@@ -54,7 +54,7 @@ final class Sampul
      */
     public static function untuk($course): ?string
     {
-        if ($course?->image) return asset('storage/'.$course->image);
+        if ($course?->image) return Berkas::terbuka($course->image);
 
         $k = mb_strtolower(trim((string) ($course->category ?? '')));
 

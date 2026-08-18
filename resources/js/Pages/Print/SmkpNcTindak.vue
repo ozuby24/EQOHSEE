@@ -34,7 +34,11 @@ const tanggal = (v: unknown) =>
         .format(new Date(String(v)))
     : '—';
 
-const berkas = (p: unknown) => p ? `/storage/${String(p).replace(/^\/+/, '')}` : null;
+/* Alamat bukti sudah jadi dari server — halaman ini tidak lagi
+   menyusunnya sendiri. Menyusunnya di sini berarti menebak di disk mana
+   berkasnya berada, dan tebakan itulah yang dulu membuat foto bukti
+   dilayani sebagai berkas statis, tanpa melewati penjagaan apa pun. */
+const berkas = (p: unknown) => (p ? String(p) : null);
 </script>
 
 <template>

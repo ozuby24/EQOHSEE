@@ -10,7 +10,7 @@ use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiT
     HazardExportController, InspectionController, InspectionTemplateController,
     BlastingController, CostController, DispatchController, PermitController, EnergyController, EngineeringController, EnvironmentController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
-use App\Http\Controllers\{BantuanController, ChatController, TemuanController};
+use App\Http\Controllers\{BantuanController, BerkasController, ChatController, TemuanController};
 use App\Http\Controllers\Admin\{AiController, CompanyController, KeamananController, PemilikController, SystemController, UserController};
 use App\Http\Controllers\PerangkatSayaController;
 use Illuminate\Support\Facades\Route;
@@ -41,6 +41,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
        ia justru menyatukan kelimanya — menaruhnya di dalam salah satu modul
        akan menyiratkan bahwa isinya hanya milik modul itu. */
     Route::get('/temuan', [TemuanController::class, 'index'])->name('temuan.index');
+
+    /* ---- Berkas tertutup ----
+
+       Satu pintu bagi dokumen, tanda tangan, foto bahaya, foto inspeksi,
+       dan MSDS. Sebelumnya kelimanya tergeletak di disk publik, dan
+       `storage:link` menjadikannya terbaca dari eqohsee.id/storage/…
+       tanpa login — termasuk gambar tanda tangan yang dicetak pada tiap
+       sertifikat sebagai bukti persetujuan.
+
+       Berada di dalam grup ini, jadi 'auth' dan 'verified' berlaku
+       tanpa perlu disebut. Batas perusahaannya ditegakkan oleh scope
+       modelnya sendiri; lihat BerkasController. */
+    Route::get('berkas/{jenis}/{baris}/{i?}', [BerkasController::class, 'sajikan'])
+        ->whereIn('jenis', array_keys(\App\Support\Berkas::TERSAJI))
+        ->whereNumber('baris')->whereNumber('i')
+        ->name('berkas.sajikan');
+
+    Route::get('berkas/{jenis}/{baris}/unduh/{i?}', [BerkasController::class, 'unduh'])
+        ->whereIn('jenis', array_keys(\App\Support\Berkas::TERSAJI))
+        ->whereNumber('baris')->whereNumber('i')
+        ->name('berkas.unduh');
 
     /* ---- Kursus ---- */
     /* Rute admin didaftarkan LEBIH DULU: 'courses/create' harus dicoba

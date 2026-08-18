@@ -253,6 +253,20 @@ php artisan migrate --force
 echo "==> Linking public storage"
 php artisan storage:link 2>/dev/null || true
 
+# Berkas tertutup dipindahkan keluar dari disk publik.
+#
+# Kodenya sudah menyimpan ke tempat yang benar, tetapi berkas yang
+# terlanjur ada tidak berpindah sendiri — dan justru itulah yang penting:
+# dokumen terkendali, foto insiden, dan gambar tanda tangan yang selama
+# ini terbaca dari /storage/… tanpa login. Selama berkas lama masih di
+# sana, perbaikan kodenya belum menutup apa pun.
+#
+# Aman diulang, dan tidak menghentikan deploy bila ada yang gagal: berkas
+# yang gagal pindah tetap di tempat lamanya, dan itu keadaan yang sama
+# dengan sebelum deploy — bukan lebih buruk.
+echo "==> Mengamankan berkas unggahan"
+php artisan berkas:amankan || echo "    Sebagian berkas gagal dipindah; jalankan ulang: php artisan berkas:amankan"
+
 echo "==> Laravel optimize"
 cd "$REPO_DIR"
 php artisan config:clear
