@@ -32,5 +32,19 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+
+        <!-- Kunci AI sungguhan dikosongkan paksa saat uji.
+
+             Tiga uji di berkas ini menyatakan bahwa TANPA kunci tidak
+             ada satu pun permintaan keluar. Tanpa baris di bawah, uji
+             itu membaca kunci dari .env mesin yang menjalankannya:
+             lulus di mesin yang belum memasang kunci, gagal di mesin
+             yang sudah — dan yang gagal justru mesin pengembang yang
+             memakai fiturnya setiap hari. Lebih buruk lagi, uji yang
+             menyangka dirinya menguji keadaan "tanpa kunci" sebenarnya
+             menembak titik akhir Gemini yang sesungguhnya, dengan kunci
+             sungguhan, pada tiap kali dijalankan. -->
+        <env name="GEMINI_API_KEY" value=""/>
+        <env name="GEMINI_MODEL" value=""/>
     </php>
 </phpunit>
