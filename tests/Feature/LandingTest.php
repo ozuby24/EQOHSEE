@@ -73,14 +73,27 @@ class LandingTest extends TestCase
 
     public function test_kartu_tanpa_berkas_disembunyikan_selama_ada_yang_terisi(): void
     {
-        // Kinerja Energi dan Reklamasi belum punya rekaman; menyandingkannya
-        // sebagai kotak kosong membuat galerinya terbaca rusak.
+        // Yang diuji adalah aturannya, bukan slot mana yang kebetulan kosong
+        // hari ini: menambah satu rekaman baru tidak boleh membuat uji ini
+        // merah. Sebelumnya uji ini menyebut "Kinerja Energi" secara langsung,
+        // dan memang jatuh merah begitu slot itu terisi.
         $terisi = collect(Media::galeriTerisi())->pluck('judul');
+        $semua  = collect(Media::galeri())->pluck('judul');
 
+        // Ada yang terisi, dan yang terisi memang punya berkasnya.
         $this->assertTrue($terisi->contains('Operasional Tambang'));
-        $this->assertFalse($terisi->contains('Kinerja Energi'));
+        foreach (Media::galeriTerisi() as $g) {
+            $this->assertTrue(
+                Media::ada($g['gambar']) || Media::ada($g['video'] ?? null),
+                "Butir '{$g['judul']}' tampil tanpa berkas apa pun."
+            );
+        }
 
-        $this->get('/')->assertOk()->assertDontSee('Reklamasi & Lingkungan');
+        // Dan yang belum punya berkas tidak ikut ditampilkan.
+        $halaman = $this->get('/')->assertOk();
+        foreach ($semua->diff($terisi) as $kosong) {
+            $halaman->assertDontSee($kosong);
+        }
     }
 
     public function test_kartu_muncul_begitu_berkasnya_disalin(): void
