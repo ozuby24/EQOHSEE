@@ -227,4 +227,53 @@ class TpkkpProgramTest extends TestCase
     {
         $this->get('/tpkkp/program')->assertRedirect(route('login'));
     }
+
+    /**
+     * Dua program yang ditambahkan berturut-turut tidak boleh ber-id sama.
+     *
+     * Id-nya dulu 'p' . timestamp . rand(10, 99) — dua program dalam detik
+     * yang sama bertabrakan satu kali dari sembilan puluh. Menambahkan dua
+     * program berturut-turut adalah cara normal mengisi rencana perbaikan,
+     * bukan keadaan langka.
+     *
+     * Akibatnya tidak berhenti pada id kembar: destroyProgram menyaring
+     * dengan `!== $id`, jadi menghapus satu program menghapus keduanya.
+     * Kehilangannya diam — tidak ada galat, hanya satu baris yang ikut
+     * lenyap.
+     *
+     * Diuji dengan dua puluh baris, bukan dua. Pada peluang satu per
+     * sembilan puluh, uji dua baris LULUS sembilan puluh sembilan kali
+     * dari seratus — dan uji yang hampir selalu lulus atas cacat yang
+     * nyata lebih buruk daripada tidak ada uji sama sekali.
+     */
+    public function test_id_program_tidak_pernah_kembar(): void
+    {
+        $this->admin();
+
+        for ($i = 0; $i < 20; $i++) {
+            $this->tambah(['param' => 'U-' . $i]);
+        }
+
+        $id = array_column($this->props()['program'], 'id');
+
+        $this->assertSame(count($id), count(array_unique($id)),
+            'Ada program ber-id kembar; menghapus salah satunya akan membuang keduanya.');
+    }
+
+    /** Dan menghapus satu memang hanya membuang satu. */
+    public function test_hapus_hanya_membuang_satu_walau_ditambah_beruntun(): void
+    {
+        $this->admin();
+
+        $sebelum = count($this->props()['program']);
+        for ($i = 0; $i < 20; $i++) {
+            $this->tambah(['param' => 'U-' . $i]);
+        }
+
+        $program = $this->props()['program'];
+        $this->delete('/tpkkp/program/' . $program[$sebelum]['id'])->assertRedirect();
+
+        $this->assertCount($sebelum + 19, $this->props()['program'],
+            'Lebih dari satu program terbuang oleh satu penghapusan.');
+    }
 }
