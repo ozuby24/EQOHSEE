@@ -18,13 +18,35 @@ import './bagan';
 createInertiaApp({
   title: (judul) => (judul ? `${judul} — EQOHSEE` : 'EQOHSEE'),
 
-  resolve: (nama) => {
-    const halaman = import.meta.glob<DefineComponent>('./Pages/**/*.vue', { eager: true });
-    const komponen = halaman[`./Pages/${nama}.vue`];
+  /*
+    Halaman dimuat SAAT DIBUTUHKAN, bukan seluruhnya di muka.
 
-    if (!komponen) {
+    Sebelumnya glob ini memakai `eager: true`, yang menarik seluruh 147
+    halaman ke dalam satu berkas 1,5 MB. Artinya seorang pengawas yang
+    membuka satu halaman laporan bahaya ikut mengunduh modul peledakan,
+    konservasi, penirisan, gudang, dan seratus empat puluh dua halaman
+    lain yang tidak akan ia buka hari itu.
+
+    Yang membuatnya penting bukan angka melainkan tempat: aplikasi ini
+    dipakai di site tambang, di ujung sambungan yang lambat dan sering
+    terputus. Satu setengah megabita sebelum layar pertama muncul adalah
+    perbedaan antara aplikasi yang terasa hidup dan aplikasi yang
+    disangka rusak lalu dimuat ulang berkali-kali — yang justru
+    mengunduhnya lagi dari awal.
+
+    Tanpa `eager`, tiap halaman menjadi berkasnya sendiri dan hanya yang
+    dibuka yang diunduh. Yang sudah pernah dibuka tersimpan di peramban,
+    jadi ongkosnya dibayar sekali per halaman, bukan sekali per kunjungan.
+  */
+  resolve: async (nama) => {
+    const halaman = import.meta.glob<{ default: DefineComponent }>('./Pages/**/*.vue');
+    const muat = halaman[`./Pages/${nama}.vue`];
+
+    if (!muat) {
       throw new Error(`Halaman Inertia '${nama}' tidak ditemukan di resources/js/Pages.`);
     }
+
+    const komponen = await muat();
 
     // Tata letak dipasang di sini, bukan diimpor tiap halaman: satu
     // halaman yang lupa membungkus dirinya akan tampil tanpa bilah

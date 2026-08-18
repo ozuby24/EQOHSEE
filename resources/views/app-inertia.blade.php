@@ -77,9 +77,12 @@
 
 @inertiaHead
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+{{-- Huruf disajikan sendiri dari /fonts/, tidak lagi dari
+     fonts.googleapis.com. Lihat resources/css/fonts.css. Berkasnya
+     dimuat lewat app.css, jadi tidak ada lagi permintaan ke luar di
+     sini — dan tidak ada lagi halaman yang tergambar dengan huruf
+     cadangan ketika jaringannya tertutup. --}}
+<link rel="preload" href="{{ \App\Support\Aset::v('fonts/inter-latin.woff2') }}" as="font" type="font/woff2" crossorigin>
 @vite(['resources/css/app.css', 'resources/js/inertia.ts'])
 <link rel="icon" type="image/svg+xml" href="{{ \App\Support\Aset::v('brand/favicon.svg') }}">
 <link rel="icon" href="{{ \App\Support\Aset::v('favicon.ico') }}" sizes="any">

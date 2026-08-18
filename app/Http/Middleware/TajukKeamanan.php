@@ -169,8 +169,13 @@ class TajukKeamanan
             "frame-ancestors 'self'",
             "form-action 'self'",
             "script-src $skrip",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-            "font-src 'self' data: https://fonts.gstatic.com",
+            /* Tidak ada lagi asal luar. Huruf disajikan sendiri dari
+               /fonts/ sejak ia dikeluarkan dari Google Fonts, jadi
+               kelonggaran untuk fonts.googleapis.com dan fonts.gstatic.com
+               tidak lagi diperlukan — dan kelonggaran yang tidak
+               diperlukan tetap saja kelonggaran. */
+            "style-src 'self' 'unsafe-inline'",
+            "font-src 'self' data:",
             "img-src 'self' data: blob:",
             "media-src 'self'",
             "connect-src $sambung",

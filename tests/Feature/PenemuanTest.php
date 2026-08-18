@@ -216,4 +216,97 @@ class PenemuanTest extends TestCase
         $this->assertStringNotContainsString('utm_', $m[1] ?? '',
             'Alamat kanonik membawa parameter kampanye; satu halaman tercatat sebagai banyak alamat.');
     }
+
+    /* ───────── tidak ada yang datang dari luar ───────── */
+
+    /**
+     * Tak satu pun berkas halaman berasal dari host lain.
+     *
+     * Ini bukan soal keamanan pasokan saja. Aplikasi ini dipakai di site
+     * tambang, di jaringan yang sering menutup akses keluar, dan tiap
+     * berkas yang datang dari luar adalah satu bagian halaman yang bisa
+     * hilang tanpa jejak di sana.
+     *
+     * Dua sudah pernah ditemukan dengan cara yang sama: Chart.js dari
+     * cdn.jsdelivr.net — grafiknya kosong — dan Inter dari
+     * fonts.googleapis.com, yang gagalnya jauh lebih halus. Huruf yang
+     * tidak termuat hanya menggeser tata letak sedikit; tidak ada yang
+     * melaporkannya sebagai kerusakan, yang tercatat hanya kesan bahwa
+     * aplikasinya berantakan kalau dibuka di lapangan.
+     *
+     * Ujinya dipasang di sini supaya yang ketiga tidak perlu ditemukan
+     * dengan cara yang sama lagi.
+     */
+    public function test_tidak_ada_berkas_dari_host_luar(): void
+    {
+        foreach (['/', '/login', '/register'] as $alamat) {
+            $isi = $this->kepala($alamat);
+
+            preg_match_all('~(?:src|href)="(https?://[^"]+)"~', $isi, $m);
+
+            $luar = array_filter($m[1], function (string $u) {
+                $host = parse_url($u, PHP_URL_HOST);
+                return $host !== null && $host !== parse_url(config('app.url'), PHP_URL_HOST);
+            });
+
+            /* og:image dan tautan kanonik memang beralamat penuh, tetapi
+               keduanya menunjuk ke host aplikasi sendiri, jadi tidak
+               tersaring di atas. Yang tersisa benar-benar dari luar. */
+            $this->assertSame([], array_values($luar),
+                $alamat.' memuat berkas dari host luar: '.implode(', ', $luar));
+        }
+    }
+
+    public function test_huruf_disajikan_sendiri(): void
+    {
+        foreach (['inter-latin', 'inter-latin-ext', 'playfair-latin', 'playfair-latin-ext'] as $berkas) {
+            $this->assertFileExists(public_path("fonts/$berkas.woff2"));
+        }
+
+        $css = file_get_contents(resource_path('css/fonts.css'));
+
+        $this->assertStringNotContainsString('gstatic.com', $css);
+        $this->assertStringContainsString('/fonts/inter-latin.woff2', $css);
+
+        /* Nama berkas harus menyusul ISI-nya. Percobaan pertama menamainya
+           menurut urutan unduhan, dan pasangan Playfair tertukar: berkas
+           bernama "latin" memuat glif latin-ext. Secara fungsi tidak
+           terlihat — pemetaannya tetap taat asas — tetapi namanya
+           berbohong kepada yang membacanya berikutnya. */
+        preg_match_all('~url\(/fonts/\w+-(latin(?:-ext)?)\.woff2\)[^}]*?unicode-range: (U\+[0-9A-F]{4})~s',
+            $css, $pasangan, PREG_SET_ORDER);
+
+        $this->assertNotEmpty($pasangan);
+
+        foreach ($pasangan as [, $subset, $awal]) {
+            $this->assertSame($awal === 'U+0000' ? 'latin' : 'latin-ext', $subset,
+                'Nama berkas huruf tidak sesuai dengan subset yang dimuatnya.');
+        }
+    }
+
+    /**
+     * Halaman tidak lagi mengunduh seluruh 147 halaman untuk membuka satu.
+     *
+     * Ditegaskan atas hasil build, bukan atas kode sumbernya: yang sampai
+     * ke pengguna adalah berkas di public/build, dan `eager: true` yang
+     * kembali secara tidak sengaja hanya terlihat di sana.
+     */
+    public function test_halaman_dipecah_menjadi_berkas_terpisah(): void
+    {
+        $manifest = public_path('build/manifest.json');
+
+        if (!file_exists($manifest)) {
+            $this->markTestSkipped('Belum ada hasil build; jalankan npm run build.');
+        }
+
+        $berkas = glob(public_path('build/assets/*.js'));
+
+        $this->assertGreaterThan(50, count($berkas),
+            'Seluruh halaman masih menyatu dalam satu berkas.');
+
+        $terbesar = max(array_map('filesize', $berkas));
+
+        $this->assertLessThan(800 * 1024, $terbesar,
+            'Berkas terbesar '.round($terbesar / 1024).' KB — pemecahan halaman tidak berjalan.');
+    }
 }
