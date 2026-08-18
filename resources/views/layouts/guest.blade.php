@@ -34,26 +34,51 @@
 
     /* Foto operasi tambang sebagai dasar. Diberi gradasi navy pekat dari
        kiri-bawah supaya teks tetap terbaca tanpa menutupi conveyor dan
-       cahaya matahari di kanan-atas — bagian yang membuat gambarnya hidup. */
+       cahaya matahari di kanan-atas — bagian yang membuat gambarnya hidup.
+
+       Gambarnya disiapkan pada 1600px, bukan dibiarkan diperbesar peramban:
+       panel ini setinggi layar penuh, dan pada layar rapat (DPR 2) berkas
+       900px terbaca pecah. */
     .eq-foto{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
-      object-position:52% 46%;z-index:0}
+      object-position:52% 46%;z-index:0;
+      animation:eq-dekat 26s ease-in-out infinite alternate}
     @media(min-width:900px){ .eq-foto{object-position:46% 44%} }
-    .eq-hero .eq-lapis{position:absolute;inset:0;z-index:0;pointer-events:none;
+
+    /* Sapuan cahaya yang perlahan melintasi lereng. Sengaja hanya cahaya,
+       bukan adegan kedua: menyilangkan dua lokasi berbeda di balik satu
+       gradasi membuat panel terbaca keruh, bukan hidup. */
+    .eq-sapu{position:absolute;inset:-20% -40%;z-index:1;pointer-events:none;mix-blend-mode:screen;
+      background:linear-gradient(102deg,transparent 38%,rgba(245,124,0,.16) 48%,rgba(255,152,0,.07) 54%,transparent 64%);
+      animation:eq-sapu 15s ease-in-out infinite}
+
+    .eq-hero .eq-lapis{position:absolute;inset:0;z-index:2;pointer-events:none;
       background:
         linear-gradient(180deg,rgba(11,17,23,.55) 0%,rgba(11,17,23,.06) 34%,rgba(11,17,23,.62) 74%,rgba(11,17,23,.93) 100%),
         linear-gradient(102deg,rgba(11,17,23,.86) 6%,rgba(11,17,23,.34) 42%,rgba(11,17,23,0) 78%)}
-    .eq-hero > .z{position:relative;z-index:2}
 
+    /* Butir halus menutupi pita gradasi supaya tidak tampak bertingkat. */
+    .eq-hero .eq-lapis::after{content:"";position:absolute;inset:0;opacity:.05;
+      background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E")}
 
-    }
+    .eq-hero > .z{position:relative;z-index:3}
 
+    /* Isi panel naik perlahan saat halaman dibuka, bergiliran dari atas. */
+    .eq-hero .eq-brand,.eq-hero .z > *{animation:eq-naik .9s cubic-bezier(.22,.9,.3,1) both}
+    .eq-hero .z > *:nth-child(1){animation-delay:.06s}
+    .eq-hero .z > *:nth-child(2){animation-delay:.12s}
+    .eq-hero .z > *:nth-child(3){animation-delay:.18s}
+    .eq-hero .z > *:nth-child(4){animation-delay:.26s}
+    .eq-hero .z > *:nth-child(5){animation-delay:.34s}
 
-    /* Sapuan cahaya melintasi lereng */
-
-    /* Pita strata menyala bergiliran, mengikat panel ke delapan aspek */
+    @keyframes eq-naik{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+    @keyframes eq-dekat{from{transform:scale(1)}to{transform:scale(1.08)}}
+    @keyframes eq-sapu{0%{transform:translateX(-28%)}55%,100%{transform:translateX(28%)}}
 
     @media (prefers-reduced-motion: reduce){
-      }
+      .eq-foto{animation:none}
+      .eq-sapu{display:none}
+      .eq-hero .eq-brand,.eq-hero .z > *{animation:none}
+    }
 
     .eq-brand{position:relative;z-index:3;align-self:flex-start;margin:0 0 30px;
       display:inline-flex;align-items:center;gap:10px;text-decoration:none}
@@ -83,9 +108,19 @@
       font-size:clamp(13px,1.35vw,16px);line-height:1.32;color:#fff}
     .eq-slogan em{font-style:normal;color:var(--jingga-terang)}
 
-    .eq-aspek{margin:22px 0 0;max-width:44ch;font-size:11.5px;line-height:1.9;
-      letter-spacing:.075em;text-transform:uppercase;font-weight:600;
-      color:rgba(255,255,255,.46)}
+    /* Delapan aspek sebagai keping bersegi enam — bentuk yang sama dengan
+       lambang merek, supaya panel ini terbaca sebagai satu keluarga dengan
+       materi cetak, bukan sekadar daftar kata. */
+    .eq-aspek{margin:24px 0 0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:7px;max-width:46ch}
+    .eq-aspek li{display:inline-flex;align-items:center;gap:6px;
+      padding:5px 11px 5px 8px;border-radius:999px;
+      background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.11);
+      font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;
+      color:rgba(255,255,255,.66);backdrop-filter:blur(2px);
+      transition:background .25s,border-color .25s,color .25s,transform .25s}
+    .eq-aspek li:hover{background:rgba(245,124,0,.14);border-color:rgba(245,124,0,.45);
+      color:#fff;transform:translateY(-1px)}
+    .eq-aspek svg{width:11px;height:11px;flex:none;color:var(--jingga-terang)}
 
     /* ── Panel kanan: form ── */
     .eq-panel{background:var(--cream);display:flex;align-items:center;justify-content:center;
@@ -135,7 +170,13 @@
 
   {{-- ===== Panel kiri: kolom strata ===== --}}
   <section class="eq-hero">
-    <img class="eq-foto" src="{{ asset('brand/tambang.jpg') }}" alt="" aria-hidden="true">
+    <picture>
+      <source srcset="{{ \App\Support\Aset::v('brand/tambang-1600.webp') }}" type="image/webp">
+      <img class="eq-foto" src="{{ \App\Support\Aset::v('brand/tambang-1600.jpg') }}"
+           alt="" aria-hidden="true" fetchpriority="high" decoding="async">
+    </picture>
+
+    <span class="eq-sapu" aria-hidden="true"></span>
     <span class="eq-lapis" aria-hidden="true"></span>
 
     <a href="{{ url('/') }}" class="eq-brand">
@@ -155,8 +196,18 @@
         <em>Innovation Always</em>
       </div>
 
-      <p class="eq-aspek">Energy · Quality · Occupational Health · Hygiene ·
-        Safety · Environment · Engineering · Konservasi Minerba</p>
+      <ul class="eq-aspek">
+        @foreach (['Energy','Quality','Occupational Health','Hygiene',
+                   'Safety','Environment','Engineering','Konservasi Minerba'] as $aspek)
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                 stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 2.6 20.4 7.3v9.4L12 21.4 3.6 16.7V7.3Z"/>
+            </svg>
+            {{ $aspek }}
+          </li>
+        @endforeach
+      </ul>
     </div>
   </section>
 
