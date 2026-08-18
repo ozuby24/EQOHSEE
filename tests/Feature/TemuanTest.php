@@ -355,4 +355,185 @@ class TemuanTest extends TestCase
         $this->assertNotEmpty($takBertuan,
             'Seluruh temuan contoh bertuan, sehingga saringan "tak bertuan" tidak dapat dibuktikan.');
     }
+
+    /* ═══════════ penugasan ═══════════ */
+
+    /**
+     * Temuan yang punya kolomnya sendiri ditugaskan DI TEMPAT.
+     *
+     * Membuatkan tindak lanjut terpisah bagi baris yang sudah punya kolom
+     * penanggung jawab akan melahirkan dua tempat yang sama-sama mengaku
+     * tahu siapa yang bertanggung jawab, dan keduanya akan berselisih.
+     */
+    public function test_temuan_smkp_ditugaskan_pada_barisnya_sendiri(): void
+    {
+        $c = $this->perusahaan();
+        $f = $this->temuanSmkp($c, ['penanggung_jawab' => null, 'target_selesai' => null]);
+
+        $this->actingAs($this->pengguna($c))
+             ->post("/temuan/smkp/{$f->id}/tugaskan", [
+                 'penanggung_jawab' => 'Budi · Kepala Teknik',
+                 'target_selesai'   => now()->addDays(14)->toDateString(),
+             ])
+             ->assertSessionHasNoErrors();
+
+        $f->refresh();
+
+        $this->assertSame('Budi · Kepala Teknik', $f->penanggung_jawab);
+        $this->assertSame(0, TindakLanjut::withoutGlobalScopes()->count(),
+            'Tindak lanjut terpisah dibuat padahal barisnya sudah punya kolomnya sendiri.');
+    }
+
+    /**
+     * Laporan bahaya memperoleh tindak lanjut yang MELEKAT.
+     *
+     * hazard_reports tidak punya kolom penanggung jawab maupun tenggat.
+     * Menambahkannya tampak paling lurus, dan justru itu yang dihindari:
+     * tabel tindak_lanjut sudah punya daur hidupnya sendiri dan sudah
+     * punya relasi morph untuk ini.
+     */
+    public function test_laporan_bahaya_ditugaskan_lewat_tindak_lanjut_melekat(): void
+    {
+        $c = $this->perusahaan();
+        $h = $this->hazard($c);
+
+        $this->actingAs($this->pengguna($c))
+             ->post("/temuan/hazard/{$h->id}/tugaskan", [
+                 'penanggung_jawab' => 'Siti · Pengawas',
+                 'target_selesai'   => now()->addDays(7)->toDateString(),
+             ])
+             ->assertSessionHasNoErrors();
+
+        $t = TindakLanjut::withoutGlobalScopes()->firstOrFail();
+
+        $this->assertSame(HazardReport::class, $t->sumber_type);
+        $this->assertSame($h->id, (int) $t->sumber_id);
+        $this->assertSame('Siti · Pengawas', $t->penanggung_jawab);
+    }
+
+    /** Dan sejak itu barisnya terbaca sebagai BERTUAN di register. */
+    public function test_bahaya_yang_ditugaskan_tidak_lagi_tak_bertuan(): void
+    {
+        $c = $this->perusahaan();
+        $h = $this->hazard($c);
+
+        $this->assertFalse($this->cari($c, 'hazard', $h->id)['bertuan']);
+
+        $this->actingAs($this->pengguna($c))
+             ->post("/temuan/hazard/{$h->id}/tugaskan", [
+                 'penanggung_jawab' => 'Siti',
+                 'target_selesai'   => now()->addDays(7)->toDateString(),
+             ]);
+
+        $this->assertTrue($this->cari($c, 'hazard', $h->id)['bertuan'],
+            'Bahaya yang sudah ditugaskan masih terbaca tak bertuan.');
+    }
+
+    /**
+     * Dan TIDAK terhitung dua kali.
+     *
+     * Tanpa penjagaan ini, satu bahaya yang ditugaskan muncul dua kali:
+     * sekali sebagai bahaya, sekali sebagai tindak lanjut. Angka register
+     * lalu menjadi lebih besar daripada pekerjaan yang sebenarnya ada —
+     * dan angka itulah yang dipakai orang memutuskan mana yang mendesak.
+     */
+    public function test_bahaya_yang_ditugaskan_tidak_terhitung_dua_kali(): void
+    {
+        $c = $this->perusahaan();
+        $h = $this->hazard($c);
+
+        $sebelum = count(Temuan::semua($c));
+
+        $this->actingAs($this->pengguna($c))
+             ->post("/temuan/hazard/{$h->id}/tugaskan", [
+                 'penanggung_jawab' => 'Siti',
+                 'target_selesai'   => now()->addDays(7)->toDateString(),
+             ]);
+
+        $this->assertCount($sebelum, Temuan::semua($c),
+            'Jumlah temuan bertambah setelah penugasan; barisnya terhitung dua kali.');
+    }
+
+    /** Menugaskan ulang mengubah tugas yang ada, tidak menumpuk yang kedua. */
+    public function test_penugasan_ulang_tidak_menumpuk(): void
+    {
+        $c = $this->perusahaan();
+        $h = $this->hazard($c);
+        $p = $this->pengguna($c);
+
+        foreach (['Siti', 'Budi'] as $nama) {
+            $this->actingAs($p)->post("/temuan/hazard/{$h->id}/tugaskan", [
+                'penanggung_jawab' => $nama,
+                'target_selesai'   => now()->addDays(7)->toDateString(),
+            ]);
+        }
+
+        $this->assertSame(1, TindakLanjut::withoutGlobalScopes()->count(),
+            'Dua tugas pada satu temuan berarti dua tenggat, dan tidak ada cara memilih.');
+        $this->assertSame('Budi', TindakLanjut::withoutGlobalScopes()->first()->penanggung_jawab);
+    }
+
+    /**
+     * Nama tanpa tanggal ditolak, dan sebaliknya.
+     *
+     * Membolehkan salah satu saja menghasilkan baris yang lolos dari
+     * saringan "tanpa penanggung jawab" tanpa benar-benar ditangani
+     * siapa pun — persis keadaan yang halaman ini ada untuk melihatnya.
+     */
+    public function test_setengah_penugasan_ditolak(): void
+    {
+        $c = $this->perusahaan();
+        $h = $this->hazard($c);
+        $p = $this->pengguna($c);
+
+        $this->actingAs($p)->post("/temuan/hazard/{$h->id}/tugaskan",
+            ['penanggung_jawab' => 'Siti'])->assertSessionHasErrors('target_selesai');
+
+        $this->actingAs($p)->post("/temuan/hazard/{$h->id}/tugaskan",
+            ['target_selesai' => now()->addDay()->toDateString()])
+            ->assertSessionHasErrors('penanggung_jawab');
+
+        $this->assertSame(0, TindakLanjut::withoutGlobalScopes()->count());
+    }
+
+    /** Temuan perusahaan lain tidak dapat ditugaskan. */
+    public function test_tidak_dapat_menugaskan_temuan_perusahaan_lain(): void
+    {
+        $milikOrang = $this->hazard(Company::create(['name' => 'PT Sebelah']));
+
+        $this->actingAs($this->pengguna($this->perusahaan()))
+             ->post("/temuan/hazard/{$milikOrang->id}/tugaskan", [
+                 'penanggung_jawab' => 'Saya',
+                 'target_selesai'   => now()->addDay()->toDateString(),
+             ])
+             ->assertNotFound();
+
+        $this->assertSame(0, TindakLanjut::withoutGlobalScopes()->count());
+    }
+
+    /** Sumber yang tidak dikenal ditolak rutenya, bukan controllernya. */
+    public function test_sumber_asing_ditolak(): void
+    {
+        $this->actingAs($this->pengguna($this->perusahaan()))
+             ->post('/temuan/users/1/tugaskan', [
+                 'penanggung_jawab' => 'X',
+                 'target_selesai'   => now()->addDay()->toDateString(),
+             ])
+             ->assertNotFound();
+    }
+
+    private function pengguna(Company $c): User
+    {
+        return User::factory()->create(['company_id' => $c->id, 'email_verified_at' => now()]);
+    }
+
+    /** @return array<string,mixed> */
+    private function cari(Company $c, string $sumber, int $id): array
+    {
+        foreach (Temuan::semua($c) as $t) {
+            if ($t['sumber'] === $sumber && $t['id'] === $id) return $t;
+        }
+
+        $this->fail("Temuan $sumber:$id tidak ada di register.");
+    }
 }

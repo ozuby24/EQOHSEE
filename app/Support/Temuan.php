@@ -37,6 +37,40 @@ use Illuminate\Support\Carbon;
  */
 final class Temuan
 {
+    /**
+     * Sumber yang sudah punya kolom penanggung jawab sendiri.
+     *
+     * Ditugaskan DI TEMPAT, pada barisnya sendiri. Membuatkan tindak
+     * lanjut terpisah untuk baris yang sudah punya kolomnya akan
+     * melahirkan dua tempat yang sama-sama mengaku tahu siapa
+     * penanggung jawabnya, dan keduanya akan berselisih.
+     *
+     * sumber => [kelas, kolom nama, kolom tenggat]
+     */
+    public const DITUGASKAN_DI_TEMPAT = [
+        'tindak-lanjut' => [TindakLanjut::class, 'penanggung_jawab', 'target_selesai'],
+        'smkp'          => [SmkpFinding::class,  'penanggung_jawab', 'target_selesai'],
+        'ko'            => [KoAction::class,     'pic_nama',         'target_tgl'],
+    ];
+
+    /**
+     * Sumber yang TIDAK punya kolom penanggung jawab sama sekali.
+     *
+     * Laporan bahaya dan butir inspeksi tidak menyimpan siapa pun dan
+     * tidak menyimpan tenggat. Menambahkan kolomnya ke kedua tabel itu
+     * tampak paling lurus, dan justru itu yang tidak dilakukan: tabel
+     * tindak_lanjut sudah ada, sudah punya daur hidupnya sendiri, dan
+     * sudah punya relasi morph `sumber` yang docblock-nya menyebut niat
+     * ini sejak awal. Menambah kolom berarti membangun daur hidup kedua
+     * di sebelah yang sudah jalan.
+     *
+     * sumber => [kelas, nama modul untuk tindak lanjutnya]
+     */
+    public const DITUGASKAN_LEWAT_TINDAK_LANJUT = [
+        'hazard'   => [HazardReport::class,   'bahaya'],
+        'inspeksi' => [InspectionItem::class, 'inspeksi'],
+    ];
+
     /** Status yang berarti pekerjaannya masih menuntut sesuatu. */
     private const TERBUKA = 'terbuka';
     private const SELESAI = 'selesai';
@@ -126,7 +160,21 @@ final class Temuan
 
     private static function tindakLanjut(?Company $c): array
     {
-        return self::kueri(TindakLanjut::class, $c)->with('sumber')->get()->map(fn ($t) => self::baris(
+        return self::kueri(TindakLanjut::class, $c)->with('sumber')
+            /* Tindak lanjut yang MELEKAT pada baris lain tidak muncul
+               sebagai barisnya sendiri — ia sudah terwakili oleh baris
+               yang ditunjuknya, yang kini memakai nama dan tenggatnya.
+               Tanpa ini, satu laporan bahaya yang ditugaskan akan terhitung
+               dua kali: sekali sebagai bahaya, sekali sebagai tindak
+               lanjut, dan angka register menjadi lebih besar daripada
+               pekerjaan yang sebenarnya ada.
+
+               Yang menempel lewat kode_pemicu saja TIDAK disembunyikan:
+               kode adalah teks yang diketik orang, bisa salah, dan bisa
+               sama di dua modul. Hanya kaitan morph yang cukup pasti
+               untuk dipakai membuang baris dari daftar. */
+            ->whereNull('sumber_type')
+            ->get()->map(fn ($t) => self::baris(
             sumber: 'tindak-lanjut',
             modul: $t->modul ?: 'lain',
             kode: $t->kode_pemicu ?: '#'.$t->id,
@@ -140,6 +188,7 @@ final class Temuan
             },
             penanggungJawab: $t->penanggung_jawab,
             targetSelesai: $t->target_selesai?->toDateString(),
+            id: $t->id,
         ))->all();
     }
 
@@ -166,6 +215,7 @@ final class Temuan
             status: $f->status === 'Closed' ? self::SELESAI : self::TERBUKA,
             penanggungJawab: $f->penanggung_jawab,
             targetSelesai: $f->target_selesai?->toDateString(),
+            id: $f->id,
         ))->all();
     }
 
@@ -191,6 +241,7 @@ final class Temuan
             },
             penanggungJawab: $a->pic_nama ?: $a->pic?->name,
             targetSelesai: $a->target_tgl?->toDateString(),
+            id: $a->id,
         ))->all();
     }
 
@@ -204,6 +255,8 @@ final class Temuan
      */
     private static function hazard(?Company $c): array
     {
+        $tugas = self::tugasMelekat(HazardReport::class, $c);
+
         return self::kueri(HazardReport::class, $c)
             ->whereNotIn('status', [Hazard::STATUS[2]])
             ->get()->map(fn ($h) => self::baris(
@@ -218,8 +271,13 @@ final class Temuan
                     default  => 'sedang',
                 },
                 status: self::TERBUKA,
-                penanggungJawab: null,
-                targetSelesai: null,
+                /* Pemiliknya diwarisi dari tindak lanjut yang MENUNJUKNYA
+                   lewat relasi morph. Laporan bahaya sendiri tidak
+                   menyimpan siapa pun; sesudah ditugaskan, yang menyimpan
+                   nama dan tenggatnya adalah tindak lanjut itu. */
+                penanggungJawab: $tugas[$h->id]['nama'] ?? null,
+                targetSelesai: $tugas[$h->id]['tenggat'] ?? null,
+                id: $h->id,
             ))->all();
     }
 
@@ -233,6 +291,8 @@ final class Temuan
      */
     private static function inspeksi(?Company $c): array
     {
+        $tugas = self::tugasMelekat(InspectionItem::class, $c);
+
         $q = InspectionItem::query()
             ->with('inspection')
             ->where('kondisi', Hazard::KONDISI[1])
@@ -254,8 +314,9 @@ final class Temuan
                 default  => 'sedang',
             },
             status: self::TERBUKA,
-            penanggungJawab: null,
-            targetSelesai: null,
+            penanggungJawab: $tugas[$x->id]['nama'] ?? null,
+            targetSelesai: $tugas[$x->id]['tenggat'] ?? null,
+            id: $x->id,
         ))->all();
     }
 
@@ -278,6 +339,7 @@ final class Temuan
         string $status = self::TERBUKA,
         ?string $penanggungJawab = null,
         ?string $targetSelesai = null,
+        ?int $id = null,
     ): array {
         $terbuka = $status === self::TERBUKA;
         $bertuan = $penanggungJawab !== null && $penanggungJawab !== ''
@@ -289,6 +351,12 @@ final class Temuan
 
         return [
             'sumber'          => $sumber,
+            /* Identitas baris asalnya. Tanpa ini register hanya dapat
+               MELAPORKAN; dengan ini ia dapat menugaskan, sebab penugasan
+               harus tahu baris mana yang dimaksud — dan harus tahunya
+               lewat kunci yang dijaga scope perusahaan, bukan lewat kode
+               yang diketik orang dan bisa sama di dua perusahaan. */
+            'id'              => $id,
             'modul'           => $modul,
             'kode'            => $kode,
             'judul'           => $judul,
@@ -303,7 +371,48 @@ final class Temuan
             'hariTerlambat'   => $terlambat
                 ? (int) Carbon::parse($targetSelesai)->diffInDays(now())
                 : 0,
+
+            /* Yang sudah selesai atau batal tidak lagi menuntut siapa pun,
+               jadi tidak ada gunanya ditugaskan. Ditentukan di sini, bukan
+               di tampilan: tombol yang muncul lalu ditolak server adalah
+               cara paling cepat membuat orang berhenti memercayai
+               tombolnya. */
+            'dapatDitugaskan' => $id !== null && $terbuka,
         ];
+    }
+
+    /**
+     * Penanggung jawab dan tenggat dari tindak lanjut yang melekat.
+     *
+     * Satu kueri untuk seluruh baris, bukan satu per baris: register ini
+     * justru dibuka ketika temuannya banyak.
+     *
+     * Bila satu baris punya lebih dari satu tindak lanjut, yang dipakai
+     * adalah yang tenggatnya PALING DEKAT. Yang paling dekat itulah yang
+     * menentukan kapan baris ini mulai terlambat, dan terlambat adalah
+     * pertanyaan yang dibawa orang ke halaman ini.
+     *
+     * @return array<int,array{nama:?string,tenggat:?string}>
+     */
+    private static function tugasMelekat(string $kelas, ?Company $c): array
+    {
+        $q = TindakLanjut::query()
+            ->where('sumber_type', $kelas)
+            ->whereNotNull('sumber_id')
+            ->orderByDesc('target_selesai');      // terdekat ditulis terakhir, jadi menang
+
+        if ($c) $q->where('company_id', $c->id);
+
+        $out = [];
+
+        foreach ($q->get() as $t) {
+            $out[(int) $t->sumber_id] = [
+                'nama'    => $t->penanggung_jawab,
+                'tenggat' => $t->target_selesai?->toDateString(),
+            ];
+        }
+
+        return $out;
     }
 
     /**

@@ -11,8 +11,8 @@
  * dengan temuan yang sedang ditangani perlahan — keduanya berstatus
  * terbuka — dan kemiripan itulah yang membuatnya bertahan berbulan-bulan.
  */
-import { Head, Link } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 import type { HalamanRegisterTemuan } from '../../types';
 
 const props = defineProps<HalamanRegisterTemuan>();
@@ -28,6 +28,35 @@ const nada = (p: string) => NADA[p] ?? NADA.sedang;
 
 const namaModul = (m: string) =>
   m.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+/* ── penugasan ──
+
+   Satu formulir dipakai bergantian, bukan satu formulir per baris.
+   Register ini dapat memuat ratusan temuan; membuat useForm untuk
+   masing-masing berarti ratusan keadaan yang hidup bersamaan padahal
+   paling banyak satu yang sedang diisi. */
+const sedangDitugaskan = ref<string | null>(null);
+
+const tugas = useForm({ penanggung_jawab: '', target_selesai: '' });
+
+const kunci = (t: { sumber: string; id: number | null }) => `${t.sumber}:${t.id}`;
+
+function bukaTugas(t: { sumber: string; id: number | null; penanggungJawab: string | null; targetSelesai: string | null }) {
+  sedangDitugaskan.value = kunci(t);
+  tugas.clearErrors();
+  /* Nilai yang sudah ada ikut terisi: menugaskan ULANG jauh lebih sering
+     daripada menugaskan pertama kali, dan formulir kosong memaksa orang
+     mengetik ulang nama yang sudah benar hanya untuk menggeser tenggat. */
+  tugas.penanggung_jawab = t.penanggungJawab ?? '';
+  tugas.target_selesai = t.targetSelesai ?? '';
+}
+
+function simpanTugas(t: { sumber: string; id: number | null }) {
+  tugas.post(`/temuan/${t.sumber}/${t.id}/tugaskan`, {
+    preserveScroll: true,
+    onSuccess: () => { sedangDitugaskan.value = null; tugas.reset(); },
+  });
+}
 
 const kartu = computed(() => [
   { kunci: 'terbuka',    nilai: props.ringkas.terbuka,    label: 'Masih terbuka',  warna: '#F57C00' },
@@ -140,7 +169,58 @@ const kartu = computed(() => [
               <span v-if="!t.terbuka" class="font-semibold text-emerald-700">
                 {{ t.status === 'selesai' ? 'Selesai' : 'Dibatalkan' }}
               </span>
+
+              <button v-if="t.dapatDitugaskan && sedangDitugaskan !== kunci(t)"
+                      type="button" @click="bukaTugas(t)"
+                      class="rounded-lg border border-stone-300 px-2.5 py-1 text-[11px] font-bold
+                             text-cam-ink hover:bg-stone-50 transition">
+                {{ t.bertuan ? 'Ubah penugasan' : 'Tetapkan penanggung jawab' }}
+              </button>
             </div>
+
+            <!-- Formulir penugasan.
+
+                 Kedua isian WAJIB, dan itu bukan kekakuan. Nama tanpa
+                 tanggal tidak pernah jatuh tempo; tanggal tanpa nama tidak
+                 pernah ada yang ditagih. Membolehkan salah satu saja
+                 menghasilkan baris yang lolos dari saringan "tanpa
+                 penanggung jawab" tanpa benar-benar ditangani siapa pun. -->
+            <form v-if="sedangDitugaskan === kunci(t)"
+                  class="mt-3 rounded-xl border border-stone-200 bg-white p-3 space-y-2"
+                  @submit.prevent="simpanTugas(t)">
+              <div class="flex flex-wrap gap-2">
+                <label class="flex-1 min-w-[180px]">
+                  <span class="block text-[10.5px] font-bold text-stone-500 mb-1">Penanggung jawab</span>
+                  <input v-model="tugas.penanggung_jawab" maxlength="150" required
+                         placeholder="Nama dan jabatan"
+                         class="w-full rounded-lg border-stone-200 text-[12px]">
+                </label>
+
+                <label class="min-w-[150px]">
+                  <span class="block text-[10.5px] font-bold text-stone-500 mb-1">Tenggat</span>
+                  <input v-model="tugas.target_selesai" type="date" required
+                         class="w-full rounded-lg border-stone-200 text-[12px]">
+                </label>
+              </div>
+
+              <p v-if="tugas.errors.penanggung_jawab || tugas.errors.target_selesai"
+                 class="text-[11px] text-red-700">
+                {{ tugas.errors.penanggung_jawab || tugas.errors.target_selesai }}
+              </p>
+
+              <div class="flex gap-2">
+                <button type="submit" :disabled="tugas.processing"
+                        class="rounded-lg bg-cam-lime-deep px-3 py-1.5 text-[11px] font-bold text-white
+                               hover:brightness-95 transition disabled:opacity-40">
+                  {{ tugas.processing ? 'Menyimpan…' : 'Simpan' }}
+                </button>
+                <button type="button" @click="sedangDitugaskan = null"
+                        class="rounded-lg border border-stone-200 px-3 py-1.5 text-[11px] font-semibold
+                               text-stone-600 hover:bg-stone-50 transition">
+                  Batal
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </article>
@@ -155,10 +235,11 @@ const kartu = computed(() => [
     </section>
 
     <p class="text-[11.5px] text-stone-400 leading-relaxed max-w-3xl">
-      Laporan bahaya dan butir inspeksi belum punya kolom penanggung jawab maupun tenggat,
-      sehingga keduanya selalu tampil sebagai belum bertuan. Itu bukan cara membacanya di
-      halaman ini, melainkan keadaan sebenarnya — keduanya memang belum dapat ditugaskan
-      kepada siapa pun di aplikasi ini.
+      Laporan bahaya dan butir inspeksi tidak punya kolom penanggung jawab maupun tenggat
+      pada tabelnya sendiri. Menugaskannya dari sini membuatkan sebuah tindak lanjut yang
+      melekat pada temuan itu, dan sejak itu nama serta tenggatnya dibaca dari sana —
+      bukan dengan menambahkan kolom baru ke kedua tabel, yang akan melahirkan daur hidup
+      kedua di sebelah yang sudah berjalan.
     </p>
 
   </div>

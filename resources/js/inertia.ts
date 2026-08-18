@@ -46,13 +46,17 @@ createInertiaApp({
       throw new Error(`Halaman Inertia '${nama}' tidak ditemukan di resources/js/Pages.`);
     }
 
-    const komponen = await muat();
+    const komponen = (await muat()).default;
 
     // Tata letak dipasang di sini, bukan diimpor tiap halaman: satu
     // halaman yang lupa membungkus dirinya akan tampil tanpa bilah
     // samping sama sekali, dan itu tidak menimbulkan galat apa pun.
-    komponen.default.layout ??= AppLayout;
+    komponen.layout ??= AppLayout;
 
+    /* Yang dikembalikan komponennya, bukan modulnya. Inertia menerima
+       keduanya saat dijalankan, tetapi hanya salah satunya yang sah
+       menurut tipe `resolve` — dan bentuk yang tidak sah lolos begitu saja
+       lewat build, sebab Vite tidak memeriksa tipe. */
     return komponen;
   },
 

@@ -34,7 +34,11 @@ function pasangTema(): void {
   Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
   Chart.defaults.font.size = 11;
   Chart.defaults.color = '#78716c';
-  Chart.defaults.animation.duration = 700;
+  /* Tipenya membolehkan `animation` bernilai false, jadi menulis
+     `.duration` langsung tidak sah menurut TypeScript meski selalu bekerja
+     saat dijalankan. Ditulis sebagai objek utuh — lebih jujur pada
+     tipenya, dan tetap satu setelan. */
+  Chart.defaults.animation = { duration: 700 };
   Chart.defaults.plugins.legend.labels.boxWidth = 10;
   Chart.defaults.plugins.legend.labels.boxHeight = 10;
   Chart.defaults.plugins.legend.labels.usePointStyle = true;

@@ -51,6 +51,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
        akan menyiratkan bahwa isinya hanya milik modul itu. */
     Route::get('/temuan', [TemuanController::class, 'index'])->name('temuan.index');
 
+    /* Menetapkan penanggung jawab dan tenggat dari register. Sumbernya
+       dibatasi ke lima yang dikenal — alamat yang menerima nama kelas
+       sembarang dari luar adalah cara paling mudah membuat pengguna
+       menyentuh model yang tidak dimaksudkan. */
+    Route::post('/temuan/{sumber}/{id}/tugaskan', [TemuanController::class, 'tugaskan'])
+        ->whereIn('sumber', ['tindak-lanjut', 'smkp', 'ko', 'hazard', 'inspeksi'])
+        ->whereNumber('id')
+        ->name('temuan.tugaskan');
+
     /* ---- Berkas tertutup ----
 
        Satu pintu bagi dokumen, tanda tangan, foto bahaya, foto inspeksi,

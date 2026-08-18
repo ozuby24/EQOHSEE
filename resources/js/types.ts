@@ -1566,6 +1566,8 @@ export interface HalamanDiagnosa {
 
 export interface BarisTemuan {
   sumber: string;
+  /** Kunci baris ASALNYA, dipakai menugaskan. */
+  id: number | null;
   modul: string;
   kode: string;
   judul: string;
@@ -1579,6 +1581,8 @@ export interface BarisTemuan {
   targetSelesai: string | null;
   terlambat: boolean;
   hariTerlambat: number;
+  /** Punya id DAN masih terbuka. Yang sudah selesai tidak perlu ditugaskan. */
+  dapatDitugaskan: boolean;
 }
 
 export interface HalamanRegisterTemuan {
