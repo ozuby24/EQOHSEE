@@ -663,42 +663,44 @@ input,select,textarea{ outline:none; }
 /* ── Sasaran sentuh di perangkat sentuh ──────────────────────────────
  *
  * Diukur di layar 393px: 51 tombol dan 18 tautan lebih pendek dari 24px,
- * sebagian hanya 15px. WCAG 2.2 AA (2.5.8) menuntut 24x24 sebagai batas
- * terendah, dan batas itu ditulis untuk jari telanjang di ruangan tenang
- * — bukan untuk sarung tangan di area tambang, tempat aplikasi ini
- * dipakai. 28px diambil sedikit di atas batasnya.
+ * sebagian hanya 15px.
  *
- * `pointer: coarse` membatasinya pada perangkat sentuh. Kerapatan tabel
- * di layar desktop tidak berubah sama sekali.
+ * WCAG 2.2 AA (2.5.8) menuntut 24x24 sebagai batas terendah, dan batas itu
+ * ditulis untuk jari telanjang di ruangan tenang. Yang dipakai di sini
+ * 44px — angka yang dianjurkan pedoman antarmuka sentuh Apple dan Google,
+ * dan yang sepadan dengan keadaan sebenarnya: jari bersarung tangan, di
+ * atas alat yang bergetar.
  *
- * `min-height` sengaja dipakai sendirian, tanpa mengubah `display`, dan
- * justru di situ ketepatannya: min-height TIDAK berpengaruh pada elemen
- * inline. Tautan di tengah kalimat karena itu terlewati dengan
- * sendirinya — dan memang harus, sebab WCAG mengecualikannya. Yang
- * terkena hanya kendali yang sudah berdiri sendiri sebagai block atau
- * flex, yaitu 15 dari 18 tautan yang terukur tadi.
+ * `pointer: coarse` membatasinya pada perangkat sentuh; kerapatan di layar
+ * desktop tidak berubah sama sekali.
+ *
+ * HANYA min-height. TIDAK ADA yang menyentuh `display`.
+ *
+ * Versi pertama aturan ini mengubah `display` menjadi inline-flex untuk
+ * menegakkan isi tombol yang tanpa padding, dengan pengecualian
+ * `display: revert` bagi yang kelasnya memuat flex/grid/block. Pengecualian
+ * itu SALAH dan merusak seluruh aplikasi: `revert` mengembalikan nilai ke
+ * lembar gaya PERAMBAN, bukan ke `flex` milik Tailwind. Setiap
+ * `<a class="flex …">` karena itu menjadi `display: inline` — dan pada
+ * tiap tautan bilah samping, ikon berhenti sebaris dengan labelnya lalu
+ * menumpuk di atasnya.
+ *
+ * Pelajarannya bukan tentang `revert`. Aturan global yang menyentuh
+ * `display` tidak dapat mengenal tata letak yang sedang ia timpa, dan
+ * kerusakannya muncul di tempat-tempat yang tidak pernah disebut dalam
+ * perubahan itu. `min-height` tidak punya sifat itu: ia menambah lantai,
+ * tidak pernah mengganti cara elemen menyusun isinya.
+ *
+ * Akibatnya tombol tanpa padding sendiri menaruh teksnya di tepi atas
+ * kotak 44px, bukan di tengahnya. Itu ketidakrapian yang terlihat pada
+ * beberapa tombol, dan harganya jauh lebih murah daripada tata letak yang
+ * runtuh di setiap halaman.
  */
 @media (pointer: coarse) {
   button,
   [role='button'],
   a[href],
   summary {
-    min-height: 28px;
-  }
-
-  /* Tombol tanpa padding sendiri tetap perlu isinya tegak di tengah;
-     tanpa ini teksnya menempel ke atas kotak yang baru saja ditinggikan. */
-  button:not([class*='p-']):not([class*='py-']),
-  a[href]:not([class*='p-']):not([class*='py-']) {
-    display: inline-flex;
-    align-items: center;
-  }
-
-  /* Kecuali yang memang sudah mengatur tata letaknya sendiri — mengubah
-     display pada elemen block akan meruntuhkan lebarnya menjadi selebar
-     isinya, dan kartu selebar teksnya terbaca sebagai tata letak rusak. */
-  button[class*='block'], button[class*='flex'], button[class*='grid'], button[class*='w-full'],
-  a[href][class*='block'], a[href][class*='flex'], a[href][class*='grid'], a[href][class*='w-full'] {
-    display: revert;
+    min-height: 44px;
   }
 }

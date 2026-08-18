@@ -29,11 +29,23 @@ use Tests\TestCase;
 class LapanganTest extends TestCase
 {
     /**
-     * Lantai sasaran sentuh masih terpasang.
+     * Lantai sasaran sentuh masih terpasang, dan masih 44px.
      *
-     * WCAG 2.2 AA (2.5.8) menuntut 24x24 sebagai batas terendah. Batas itu
-     * ditulis untuk jari telanjang; di sini dipakai 28px, sedikit di
-     * atasnya, sebab yang memakainya bersarung tangan.
+     * WCAG 2.2 AA (2.5.8) menuntut 24x24 sebagai batas terendah, dan batas
+     * itu ditulis untuk jari telanjang di ruangan tenang. Yang dipilih di
+     * sini 44px — angka yang dianjurkan pedoman antarmuka sentuh Apple dan
+     * Google, dan yang sepadan dengan keadaan sebenarnya: jari bersarung
+     * tangan, di atas alat yang bergetar.
+     *
+     * Ditegaskan pada 44, bukan pada 24. Menegaskan batas WCAG akan
+     * membiarkan angkanya turun diam-diam ke 24 dan tetap hijau — padahal
+     * turun dari 44 adalah keputusan desain yang pantas disengaja, bukan
+     * pergeseran yang berlalu tanpa disadari.
+     *
+     * Harganya sudah diukur, bukan dikira-kira: seluruh 22 halaman daftar
+     * bertambah tinggi 2,9% dibanding 28px, yang terberat 10%. Murah
+     * karena sebagian besar kendali sudah cukup tinggi lewat padding-nya
+     * sendiri; yang tumbuh hanya yang memang terlalu kecil.
      */
     public function test_lantai_sasaran_sentuh_masih_ada(): void
     {
@@ -44,8 +56,10 @@ class LapanganTest extends TestCase
 
         preg_match('/min-height:\s*(\d+)px/', $css, $m);
 
-        $this->assertGreaterThanOrEqual(24, (int) ($m[1] ?? 0),
-            'Lantai sasaran sentuh turun di bawah 24px — batas terendah WCAG 2.2 AA.');
+        $this->assertGreaterThanOrEqual(44, (int) ($m[1] ?? 0),
+            'Lantai sasaran sentuh turun di bawah 44px. Batas WCAG memang 24px, '
+            .'tetapi 44 dipilih dengan sengaja untuk pemakaian bersarung tangan — '
+            .'turunkan hanya bila itu memang keputusannya, lalu perbarui uji ini.');
     }
 
     /**
