@@ -29,37 +29,70 @@ use Tests\TestCase;
 class LapanganTest extends TestCase
 {
     /**
-     * Lantai sasaran sentuh masih terpasang, dan masih 44px.
+     * Bilah samping harus dapat digulir sampai butir terakhirnya.
      *
-     * WCAG 2.2 AA (2.5.8) menuntut 24x24 sebagai batas terendah, dan batas
-     * itu ditulis untuk jari telanjang di ruangan tenang. Yang dipilih di
-     * sini 44px — angka yang dianjurkan pedoman antarmuka sentuh Apple dan
-     * Google, dan yang sepadan dengan keadaan sebenarnya: jari bersarung
-     * tangan, di atas alat yang bergetar.
+     * <nav class="flex-1 overflow-y-auto"> di dalam wadah flex TIDAK
+     * menggulir tanpa `min-h-0`. Anak flex punya `min-height: auto`, yang
+     * melarangnya menyusut di bawah tinggi ISINYA — jadi ia tumbuh
+     * melewati wadahnya, dan `overflow-y-auto` tidak pernah punya sesuatu
+     * untuk digulir.
      *
-     * Ditegaskan pada 44, bukan pada 24. Menegaskan batas WCAG akan
-     * membiarkan angkanya turun diam-diam ke 24 dan tetap hijau — padahal
-     * turun dari 44 adalah keputusan desain yang pantas disengaja, bukan
-     * pergeseran yang berlalu tanpa disadari.
+     * Terukur sebelum diperbaiki: pada laci ponsel, nav setinggi 1.464px
+     * di dalam aside yang dibatasi tinggi layar, tidak dapat digulir sama
+     * sekali. Sekitar sepertiga butir menu tidak terjangkau siapa pun.
      *
-     * Harganya sudah diukur, bukan dikira-kira: seluruh 22 halaman daftar
-     * bertambah tinggi 2,9% dibanding 28px, yang terberat 10%. Murah
-     * karena sebagian besar kendali sudah cukup tinggi lewat padding-nya
-     * sendiri; yang tumbuh hanya yang memang terlalu kecil.
+     * Cacat lamanya diam karena di layar lebar aside memang tumbuh bebas
+     * dan halamanlah yang menggulir. Ia hanya menggigit pada laci ponsel,
+     * yang posisinya `fixed` dan karena itu dibatasi tinggi layar.
      */
-    public function test_lantai_sasaran_sentuh_masih_ada(): void
+    public function test_bilah_samping_dapat_digulir(): void
+    {
+        $tata = file_get_contents(resource_path('js/Layouts/AppLayout.vue'));
+
+        preg_match('/<nav class="([^"]*overflow-y-auto[^"]*)"/', $tata, $m);
+
+        $this->assertNotEmpty($m[1] ?? '', 'Bilah samping tidak lagi punya nav yang menggulir.');
+
+        $this->assertStringContainsString('min-h-0', $m[1],
+            'nav bilah samping kehilangan min-h-0. Tanpa itu ia tumbuh melewati '
+            .'wadahnya dan butir terbawah tidak terjangkau di laci ponsel.');
+    }
+
+    /**
+     * TIDAK ADA aturan global yang menaikkan tinggi kendali.
+     *
+     * Aturan semacam itu pernah dipasang di sini — `min-height` pada
+     * button dan a[href] di perangkat sentuh, demi memenuhi WCAG 2.2 AA
+     * (2.5.8). Ia dibuang seluruhnya sesudah merusak tampilan tiga kali:
+     *
+     *   Menyentuh `display` merobohkan setiap `<a class="flex …">`
+     *   menjadi inline; ikon bilah samping menumpuk di atas labelnya, di
+     *   seluruh modul sekaligus.
+     *
+     *   `min-height` pada <a> merenggangkan baris daftar. Di halaman
+     *   Miners, nama orang dan keterangan statusnya berhenti sebaris.
+     *
+     *   `min-height` pada seluruh tautan menu membuat daftar bilah samping
+     *   melewati wadahnya, dan pada laci ponsel butir terbawah menjadi
+     *   tak terjangkau.
+     *
+     * Sebabnya satu dan sama: di aplikasi ini <a> bukan hanya kendali
+     * yang berdiri sendiri, ia juga ISI baris — nama di dalam daftar, kode
+     * di dalam tabel. Aturan global tidak dapat membedakan keduanya, dan
+     * kerusakannya selalu muncul di halaman yang tidak disebut dalam
+     * perubahan itu.
+     *
+     * Memperbesar sasaran sentuh tetap layak dikerjakan — tetapi per
+     * tempat, dengan menambah padding pada tombol yang memang terlalu
+     * kecil, bukan lewat satu pemilih yang menyapu semuanya.
+     */
+    public function test_tidak_ada_aturan_tinggi_global(): void
     {
         $css = file_get_contents(resource_path('css/app.css'));
 
-        $this->assertStringContainsString('pointer: coarse', $css,
-            'Aturan sasaran sentuh hilang; tombol kembali sekecil teksnya di perangkat sentuh.');
-
-        preg_match('/min-height:\s*(\d+)px/', $css, $m);
-
-        $this->assertGreaterThanOrEqual(44, (int) ($m[1] ?? 0),
-            'Lantai sasaran sentuh turun di bawah 44px. Batas WCAG memang 24px, '
-            .'tetapi 44 dipilih dengan sengaja untuk pemakaian bersarung tangan — '
-            .'turunkan hanya bila itu memang keputusannya, lalu perbarui uji ini.');
+        $this->assertStringNotContainsString('pointer: coarse', $css,
+            'Aturan tinggi global dipasang lagi. Baca alasannya di docblock uji ini '
+            .'lebih dulu — ia sudah tiga kali merusak tampilan.');
     }
 
     /**

@@ -135,7 +135,7 @@ function keluar() {
         </div>
       </div>
 
-      <nav class="flex-1 overflow-y-auto px-3 py-3">
+      <nav class="min-h-0 flex-1 overflow-y-auto px-3 py-3">
         <template v-for="(g, i) in menu.grup" :key="i">
           <p v-if="g.nama" class="px-3 mt-3 mb-1 text-[9.5px] font-semibold uppercase
                                   tracking-[0.12em] text-white/55">{{ g.nama }}</p>
