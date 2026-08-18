@@ -125,6 +125,60 @@ fi
 echo "==> Installing PHP dependencies"
 composer install --no-dev --optimize-autoloader
 
+if ! command -v npm >/dev/null 2>&1; then
+    echo "==> npm not found, installing nodejs/npm"
+    apt-get install -y nodejs npm
+fi
+
+echo "==> Memasang dependensi Node"
+# `npm ci` dipakai, bukan `npm install`: `install` boleh menulis ulang
+# package-lock.json (versi npm/Node yang beda antara mesin dev dan server
+# bisa meregenerasi lockfile-nya sedikit berbeda meski paketnya sama),
+# meninggalkan working tree kotor. `ci` memasang persis apa yang tercatat
+# di lockfile dan tidak pernah mengubahnya — begitu pula, ia gagal keras
+# kalau package.json dan lockfile tidak sinkron, alih-alih diam-diam
+# menambal keduanya. Deploy berikutnya jadi tidak lagi bentrok dengan
+# `git pull` gara-gara berkas yang sebenarnya tidak ada yang menyunting.
+#
+# Dijalankan SEBELUM mode perawatan, bukan sesudahnya. Memasang paket Node
+# tidak menyentuh apa pun yang dipakai melayani permintaan — PHP tidak
+# membaca node_modules — jadi menurunkan situs untuk itu hanya memperpanjang
+# padamnya tanpa menukar apa pun.
+npm ci
+
+# ── Pemeriksaan tipe, sebelum apa pun diturunkan ──────────────────
+#
+# Vite TIDAK memeriksa tipe sama sekali; ia membuang anotasinya lalu
+# membundel. Berkas dengan `const x: number = "teks"` tetap menghasilkan
+# "built in 5s" tanpa satu pun peringatan. Artinya `npm run build` yang
+# hijau bukan bukti bahwa kodenya benar — ia hanya bukti bahwa kodenya
+# dapat dibundel.
+#
+# Letaknya di sini, SEBELUM `php artisan down`, dan itu yang terpenting
+# dari langkah ini. Ditaruh sesudahnya, galat tipe akan menurunkan situs
+# lebih dulu lalu menghentikan deploy di tengah — meninggalkan kode PHP
+# yang baru berdampingan dengan aset yang lama. Di sini, kegagalannya
+# berhenti sebelum satu pengunjung pun terganggu, dan yang berjalan tetap
+# versi lama yang utuh.
+#
+# node_modules baru saja dipasang ulang oleh `npm ci` di atas, jadi yang
+# diperiksa adalah tipe kode baru terhadap dependensi barunya — bukan
+# terhadap sisa pemasangan sebelumnya.
+if npm run --silent typecheck >/dev/null 2>&1; then
+    echo "==> Tipe TypeScript & Vue bersih"
+else
+    echo "==> GAGAL: ada galat tipe TypeScript/Vue"
+    npm run --silent typecheck || true
+    echo
+    echo "    Deploy dihentikan SEBELUM situs diturunkan; yang berjalan"
+    echo "    masih versi lama yang utuh. Perbaiki tipenya lalu deploy lagi."
+    echo
+    echo "    Bila memang mendesak dan Anda menerima risikonya:"
+    echo "        EQOHSEE_LEWATI_TIPE=1 bash deploy/deploy.sh"
+    [ "${EQOHSEE_LEWATI_TIPE:-0}" = "1" ] || exit 1
+    echo "    Dilanjutkan karena EQOHSEE_LEWATI_TIPE=1."
+fi
+
 # Mulai dari sini kode di disk sudah kode baru, sementara singgahan config,
 # rute, dan tampilan masih milik kode lama, dan migrasinya belum jalan.
 # Melayani pengunjung dalam keadaan setengah itu memunculkan galat yang
@@ -135,21 +189,7 @@ echo "==> Memasuki mode perawatan"
 php artisan down --retry=60 2>/dev/null || true
 trap 'php artisan up >/dev/null 2>&1 || true' EXIT
 
-if ! command -v npm >/dev/null 2>&1; then
-    echo "==> npm not found, installing nodejs/npm"
-    apt-get install -y nodejs npm
-fi
-
 echo "==> Building frontend assets"
-# `npm ci` dipakai, bukan `npm install`: `install` boleh menulis ulang
-# package-lock.json (versi npm/Node yang beda antara mesin dev dan server
-# bisa meregenerasi lockfile-nya sedikit berbeda meski paketnya sama),
-# meninggalkan working tree kotor. `ci` memasang persis apa yang tercatat
-# di lockfile dan tidak pernah mengubahnya — begitu pula, ia gagal keras
-# kalau package.json dan lockfile tidak sinkron, alih-alih diam-diam
-# menambal keduanya. Deploy berikutnya jadi tidak lagi bentrok dengan
-# `git pull` gara-gara berkas yang sebenarnya tidak ada yang menyunting.
-npm ci
 npm run build
 
 echo "==> Detecting PHP-FPM socket"
