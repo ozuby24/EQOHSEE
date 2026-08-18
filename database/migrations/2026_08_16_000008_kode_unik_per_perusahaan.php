@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use App\Support\Indeks;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -62,10 +63,24 @@ return new class extends Migration
         foreach (self::INDEKS as $tabel => [$lama, $kolom]) {
             if (!Schema::hasTable($tabel) || !Schema::hasColumn($tabel, 'company_id')) continue;
 
-            Schema::table($tabel, function (Blueprint $b) use ($tabel, $lama, $kolom) {
-                try { $b->dropUnique($lama); } catch (\Throwable) {}
+            /* Keberadaan indeksnya DITANYAKAN, tidak dibungkus try/catch.
 
-                $b->unique(array_merge(['company_id'], $kolom), $tabel.'_company_unik');
+               Bentuk sebelumnya `try { $b->dropUnique($lama); } catch
+               (\Throwable) {}` tidak menangkap apa pun: $b->dropUnique()
+               hanya mencatat perintah ke daftar, dan daftar itu baru
+               dijalankan sesudah closure selesai — di luar jangkauan
+               try/catch. Pada basis data yang indeks lamanya sudah tidak
+               ada, migrasi ini jatuh di tengah jalan, dengan pengaman
+               yang tampak terpasang rapi tepat di atas baris yang
+               menjatuhkannya. Lihat App\Support\Indeks. */
+            $adaLama = Indeks::ada($tabel, $lama);
+            $adaBaru = Indeks::ada($tabel, $tabel.'_company_unik');
+
+            if ($adaBaru && !$adaLama) continue;   // sudah selesai sebelumnya
+
+            Schema::table($tabel, function (Blueprint $b) use ($tabel, $kolom, $lama, $adaLama, $adaBaru) {
+                if ($adaLama) $b->dropUnique($lama);
+                if (!$adaBaru) $b->unique(array_merge(['company_id'], $kolom), $tabel.'_company_unik');
             });
         }
     }
@@ -75,15 +90,21 @@ return new class extends Migration
         foreach (self::INDEKS as $tabel => [$lama, $kolom]) {
             if (!Schema::hasTable($tabel) || !Schema::hasColumn($tabel, 'company_id')) continue;
 
-            Schema::table($tabel, function (Blueprint $b) use ($tabel, $lama, $kolom) {
-                try { $b->dropUnique($tabel.'_company_unik'); } catch (\Throwable) {}
+            if (Indeks::ada($tabel, $tabel.'_company_unik')) {
+                Schema::table($tabel, fn (Blueprint $b) => $b->dropUnique($tabel.'_company_unik'));
+            }
 
-                /* Dikembalikan hanya bila datanya memang masih memenuhi
-                   aturan lama — turun ke aturan yang LEBIH ketat dapat
-                   gagal, dan migrasi turun yang gagal di tengah jalan
-                   lebih buruk daripada tidak turun sama sekali. */
-                try { $b->unique($kolom, $lama); } catch (\Throwable) {}
-            });
+            /* Aturan lama dikembalikan hanya bila datanya memang masih
+               memenuhinya — turun ke aturan yang LEBIH ketat dapat gagal
+               karena kode yang kini sah bagi dua perusahaan menjadi
+               bentrok. Di sinilah try/catch memang tempatnya: ia
+               membungkus Schema::table, yang benar-benar menjalankan
+               SQL-nya, bukan Blueprint yang hanya mencatat. */
+            try {
+                Schema::table($tabel, fn (Blueprint $b) => $b->unique($kolom, $lama));
+            } catch (\Throwable) {
+                // Datanya sudah tidak memenuhi aturan lama; dibiarkan.
+            }
         }
     }
 };
