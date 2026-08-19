@@ -24,6 +24,19 @@ class EnergiTest extends TestCase
         $this->actingAs(User::factory()->create());
     }
 
+    /**
+     * Masuk sebagai admin.
+     *
+     * Membuang data induk energi — unit maupun peluang penghematan —
+     * menuntut peran admin, sama seperti penghapusan merusak lainnya di
+     * aplikasi ini. Uji yang menghapus sebagai pengguna biasa dulu lulus
+     * hanya karena penjagaannya belum ada.
+     */
+    private function masukAdmin(): void
+    {
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+    }
+
     private function unit(array $atribut = []): EnergyEquipment
     {
         return EnergyEquipment::create(array_merge([
@@ -174,7 +187,7 @@ class EnergiTest extends TestCase
 
     public function test_peluang_dicatat_diubah_dan_dihapus(): void
     {
-        $this->masuk();
+        $this->masukAdmin();
 
         $this->post(route('energi.hemat.simpan'), [
             'judul' => 'Batasi idle dump truck', 'status' => 'usulan', 'hemat_liter' => 800,
@@ -203,7 +216,7 @@ class EnergiTest extends TestCase
 
     public function test_unit_terdaftar_dan_hapusnya_ikut_membawa_catatan(): void
     {
-        $this->masuk();
+        $this->masukAdmin();
 
         $this->post(route('energi.master.simpan'), [
             'kode' => 'HD785-01', 'nama' => 'Dump Truck Komatsu HD785-7', 'kategori' => 'hauling',

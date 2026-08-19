@@ -359,7 +359,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('kuesioner/token',           [KuesionerController::class,'resetToken'])->name('kuesioner.token.reset');
     Route::post('kuesioner/tarik',           [KuesionerController::class,'tarikKs'])->name('kuesioner.tarik');
-    Route::delete('kuesioner/{response}',    [KuesionerController::class,'destroyResponse'])->name('kuesioner.response.destroy');
+    Route::delete('kuesioner/{response}',    [KuesionerController::class,'destroyResponse'])->middleware('can:admin')->name('kuesioner.response.destroy');
     Route::get('kuesioner',                  [KuesionerController::class,'admin'])->name('kuesioner.admin');
 
     /* ================= WEBSITE #5 — ISO & Dokumen ================= */
@@ -417,7 +417,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('penghematan',  [EnergyController::class,'hemat'])->name('hemat');
         Route::post('penghematan', [EnergyController::class,'simpanPeluang'])->name('hemat.simpan');
         Route::put('penghematan/{peluang}',   [EnergyController::class,'ubahPeluang'])->name('hemat.ubah');
-        Route::delete('penghematan/{peluang}',[EnergyController::class,'hapusPeluang'])->name('hemat.hapus');
+        Route::delete('penghematan/{peluang}',[EnergyController::class,'hapusPeluang'])->middleware('can:admin')->name('hemat.hapus');
 
         Route::get('karbon',       [EnergyController::class,'karbon'])->name('karbon');
         Route::get('kalkulator',   [EnergyController::class,'kalkulator'])->name('kalkulator');
@@ -425,7 +425,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('data-induk',   [EnergyController::class,'master'])->name('master');
         Route::post('data-induk',  [EnergyController::class,'simpanUnit'])->name('master.simpan');
-        Route::delete('data-induk/{unit}', [EnergyController::class,'hapusUnit'])->name('master.hapus');
+        Route::delete('data-induk/{unit}', [EnergyController::class,'hapusUnit'])->middleware('can:admin')->name('master.hapus');
     });
 
     /* ============ Pengelolaan Air & Penirisan ============
@@ -815,11 +815,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/',                [InspectionTemplateController::class,'store'])->name('store');
             Route::get('{template}/kelola', [InspectionTemplateController::class,'edit'])->name('edit');
             Route::put('{template}',        [InspectionTemplateController::class,'update'])->name('update');
-            Route::delete('{template}',     [InspectionTemplateController::class,'destroy'])->name('destroy');
+            Route::delete('{template}',     [InspectionTemplateController::class,'destroy'])->middleware('can:admin')->name('destroy');
             Route::post('{template}/param', [InspectionTemplateController::class,'storeItem'])->name('item.store');
             Route::post('{template}/salin', [InspectionTemplateController::class,'salin'])->name('salin');
         });
-        Route::delete('param/{item}', [InspectionTemplateController::class,'destroyItem'])->name('template.item.destroy');
+        Route::delete('param/{item}', [InspectionTemplateController::class,'destroyItem'])->middleware('can:admin')->name('template.item.destroy');
 
         // KPI inspeksi
         Route::get('kpi', [InspectionController::class,'kpi'])->name('kpi');
@@ -833,16 +833,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('{inspeksi}',          [InspectionController::class,'show'])->name('show');
         Route::get('{inspeksi}/ubah',     [InspectionController::class,'edit'])->name('edit');
         Route::put('{inspeksi}',          [InspectionController::class,'update'])->name('update');
-        Route::delete('{inspeksi}',       [InspectionController::class,'destroy'])->name('destroy');
+        Route::delete('{inspeksi}',       [InspectionController::class,'destroy'])->middleware('can:admin')->name('destroy');
 
         // Inspektur
         Route::post('{inspeksi}/inspektur',  [InspectionController::class,'addInspector'])->name('inspector.store');
-        Route::delete('inspektur/{inspector}',[InspectionController::class,'removeInspector'])->name('inspector.destroy');
+        Route::delete('inspektur/{inspector}',[InspectionController::class,'removeInspector'])->middleware('can:admin')->name('inspector.destroy');
 
         // Item pemeriksaan
         Route::post('{inspeksi}/items',   [InspectionController::class,'saveItems'])->name('items.save');
         Route::post('{inspeksi}/item',    [InspectionController::class,'storeItem'])->name('item.store');
-        Route::delete('item/{item}',      [InspectionController::class,'destroyItem'])->name('item.destroy');
+        Route::delete('item/{item}',      [InspectionController::class,'destroyItem'])->middleware('can:admin')->name('item.destroy');
         Route::post('item/{item}/angkat', [InspectionController::class,'angkat'])->name('item.angkat');
     });
 
