@@ -17,6 +17,7 @@
  */
 import { computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
+import RingkasPemantauan from './RingkasPemantauan.vue';
 import { propHalaman } from '../../halaman';
 import { KEADAAN } from '../../Grafik/warna';
 
@@ -95,6 +96,13 @@ const kini = computed(() => {
         <p class="text-[11.5px] text-stone-500 mt-1.5">{{ r[0] }}</p>
       </div>
     </section>
+
+    <!--
+      Hanya untuk daftar berkas berjangka. Riwayat induksi dan riwayat
+      kompetensi tidak mengirimkannya, dan komponennya sendiri diam bila
+      propnya kosong.
+    -->
+    <RingkasPemantauan v-if="props.pemantauan" :pemantauan="props.pemantauan" />
 
     <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
       <div class="overflow-x-auto">

@@ -91,7 +91,7 @@ final class Menu
            menjawab "apa yang pernah terjadi", yang ini menjawab "apa
            yang harus dikerjakan hari ini". */
         'Pemantauan' => [
-          ['Masa Berlaku Kartu', 'miners.kedaluwarsa', 'miners/kedaluwarsa'],
+          ['Masa Berlaku Berkas', 'miners.kedaluwarsa', 'miners/kedaluwarsa'],
         ],
         'Kehadiran' => [
           ['Field Break',     'miners.fieldBreak.index', 'miners/field-break*'],

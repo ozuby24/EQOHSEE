@@ -10,7 +10,7 @@ use App\Models\ActivityLog as Jejak;
 use App\Support\Alur;
 use App\Support\AlurMiner;
 use App\Support\Authority;
-use App\Support\PemantauanKartu;
+use App\Support\PemantauanBerkas;
 use App\Support\JatahCuti;
 use App\Support\KopDokumen;
 use App\Support\Tahap;
@@ -73,7 +73,9 @@ class MinersController extends Controller
     public function kedaluwarsa(Request $request)
     {
         $jenis = $request->get('jenis');
-        if (!in_array($jenis, PemantauanKartu::JENIS, true)) $jenis = null;
+        if (!in_array($jenis, PemantauanBerkas::JENIS, true)) $jenis = null;
+
+        $status = in_array($st = $request->get('status'), ['aktif', 'cuti', 'keluar'], true) ? $st : null;
 
         $orang = Paspor::with(['kartu', 'mcu', 'company'])
             ->when($cari = trim((string) $request->get('q')), fn ($q) => $q->where(
@@ -81,17 +83,18 @@ class MinersController extends Controller
                     ->orWhere('nik', 'like', "%{$cari}%")
                     ->orWhere('jabatan', 'like', "%{$cari}%")))
             ->when($request->get('perusahaan'), fn ($q, $c) => $q->where('company_id', $c))
+            ->when($status, fn ($q, $s) => $q->where('status', $s))
             ->orderBy('nama')
             ->get();
 
-        $baris = PemantauanKartu::baris($orang, $jenis);
+        $baris = PemantauanBerkas::baris($orang, $jenis);
 
         /* Ringkasan dihitung SEBELUM penyaring keadaan dipasang.
            Sesudahnya, memilih "habis" akan membuat kartu ringkasannya
            menyebut 100% habis — angka yang benar untuk daftar yang
            tersaring dan menyesatkan sebagai gambaran keadaan. */
-        $ringkas      = PemantauanKartu::ringkas($baris);
-        $perPerusahaan = PemantauanKartu::perPerusahaan($baris);
+        $ringkas      = PemantauanBerkas::ringkas($baris);
+        $perPerusahaan = PemantauanBerkas::perPerusahaan($baris);
 
         if ($keadaan = $request->get('keadaan')) {
             $baris = array_values(array_filter($baris, fn ($b) => $b['keadaan'] === $keadaan));
@@ -103,8 +106,8 @@ class MinersController extends Controller
            galat apa pun — yang terlihat hanya bilah atas yang menyebut
            halaman lain. */
         return Inertia::render('Miners/Kedaluwarsa', [
-            'judul'    => 'Miners — Masa Berlaku Kartu',
-            'subjudul' => 'Mine Permit dan SIMPER yang perlu diurus',
+            'judul'    => 'Miners — Masa Berlaku Berkas',
+            'subjudul' => 'MCU, Mine Permit, dan SIMPER yang perlu diurus',
         ] + $this->bersama() + [
             'baris'         => $baris,
             'ringkas'       => $ringkas,
@@ -115,9 +118,11 @@ class MinersController extends Controller
                 'jenis'      => $jenis,
                 'keadaan'    => $keadaan,
                 'perusahaan' => $request->get('perusahaan'),
+                'status'     => $status,
             ],
 
-            'opsiJenis'   => PemantauanKartu::JENIS,
+            'opsiJenis'   => PemantauanBerkas::JENIS,
+            'opsiStatus'  => ['aktif' => 'Aktif', 'cuti' => 'Cuti', 'keluar' => 'Sudah keluar'],
             'opsiKeadaan' => collect(Authority::LABEL_KARTU)
                 ->map(fn ($label, $kode) => ['kode' => $kode, 'label' => $label])
                 ->values()->all(),
@@ -162,7 +167,15 @@ class MinersController extends Controller
                     'id' => $m->pengajuan->id, 'nomor' => $m->pengajuan->nomor_register,
                 ] : null,
             ])->values(),
-            'kartu' => $paspor->kartu->map(fn (PasporKartu $k) => $this->barisKartu($k))->values(),
+            /* Orangnya dipasang balik ke tiap kartunya: keadaan kartu
+               dihitung atas tanggal efektif, yang bagi Mine Permit
+               diambil dari MCU orang itu lewat $kartu->paspor — relasi
+               yang tidak ikut terisi saat kartunya dimuat sebagai anak.
+               Tanpa ini, dua kueri tambahan per kartu untuk mengambil
+               baris yang sudah ada di memori. */
+            'kartu' => $paspor->kartu
+                ->each(fn (PasporKartu $k) => $k->setRelation('paspor', $paspor))
+                ->map(fn (PasporKartu $k) => $this->barisKartu($k))->values(),
 
             /* Urutan tahapannya digambar di layar rincian. Tanpa gambar
                itu, orang menebak sendiri apa yang harus dikerjakan
@@ -426,6 +439,13 @@ class MinersController extends Controller
                 'menunggu' => $pengajuan->where('status', Alur::DIAJUKAN)->count(),
                 'belumKembali' => $pengajuan->sum(fn (McuPengajuan $m) => $m->belumKembali()),
             ],
+
+            /* Daftar di halaman ini berisi PENGAJUAN MCU — surat yang
+               dikirim ke klinik. Yang tidak dijawabnya: dari seluruh
+               pekerja, berapa yang MCU-nya masih berlaku hari ini.
+               Keduanya perlu, dan keduanya sering tertukar. */
+            'pemantauan' => PemantauanBerkas::untukDaftar(
+                $this->orangPemantauan(), PemantauanBerkas::MCU),
         ]);
     }
 
@@ -1362,6 +1382,7 @@ class MinersController extends Controller
             'kolom'    => $daftar['kolom'],
             'baris'    => $daftar['baris'],
             'ringkas'  => $daftar['ringkas'],
+            'pemantauan' => $daftar['pemantauan'] ?? null,
         ]);
     }
 
@@ -1409,7 +1430,11 @@ class MinersController extends Controller
     /** @return array<string,mixed> */
     private function riwayatKartu(string $jenis, Request $request): array
     {
-        $baris = PasporKartu::with(['paspor', 'paraf', 'peninjau'])
+        /* `paspor.mcu` ikut dimuat: keadaan kartu dihitung atas tanggal
+           EFEKTIF, dan bagi Mine Permit tanggal itu dibatasi MCU
+           terakhir orangnya. Tanpa dimuat di sini, satu kueri tambahan
+           per baris — dan daftar ini memang berisi seluruh kartu. */
+        $baris = PasporKartu::with(['paspor.mcu', 'paraf', 'peninjau'])
             ->where('jenis', $jenis)
             ->orderByDesc('tgl_terbit')->orderByDesc('id')->get();
 
@@ -1431,7 +1456,13 @@ class MinersController extends Controller
                     $k->paspor?->nama, $k->nomor ?: '—', $k->sebab_terbit,
                     ($permit ? $k->area : $k->golongan) ?: '—',
                     $k->tgl_terbit?->toDateString(),
-                    $k->tgl_expired?->toDateString(),
+
+                    /* Tanggal EFEKTIF, bukan yang tercetak. Kolomnya
+                       bertanya "berlaku sampai kapan", dan jawabannya
+                       bagi kartu yang dibatasi MCU atau SIM bukan
+                       tanggal yang tertulis padanya. Sebabnya disebut
+                       di kolom keadaan. */
+                    $k->expiredEfektif()?->toDateString(),
                 ],
                 'keadaan'    => $k->keadaan(),
                 'keterangan' => $k->keterangan(),
@@ -1453,7 +1484,29 @@ class MinersController extends Controller
                 ['Segera habis', $baris->filter(fn ($k) => $k->sudahDisetujui()
                     && in_array($k->keadaan(), [Authority::KRITIS, Authority::SEGERA], true))->count(), 'serius'],
             ],
+
+            /* Berapa yang bermasalah dan milik siapa — pertanyaan yang
+               selalu menyusul daftar ini, dan yang selama ini menuntut
+               pindah halaman untuk menjawabnya. Dihitung atas tanggal
+               EFEKTIF, sehingga permit yang MCU-nya sudah habis terhitung
+               habis di sini meski tanggal cetaknya masih panjang. */
+            'pemantauan' => PemantauanBerkas::untukDaftar($this->orangPemantauan(), $jenis),
         ];
+    }
+
+    /**
+     * Orang beserta berkasnya, untuk ringkasan pemantauan.
+     *
+     * Dimuat sekaligus dengan relasinya. Tanpa `with()` ringkasan yang
+     * hanya menghitung jumlah akan menembak satu kueri per orang untuk
+     * kartunya dan satu lagi untuk MCU-nya — pada seratus pekerja itu
+     * dua ratus kueri untuk sebuah angka.
+     *
+     * @return \Illuminate\Support\Collection<int,Paspor>
+     */
+    private function orangPemantauan(): \Illuminate\Support\Collection
+    {
+        return Paspor::with(['kartu', 'mcu', 'company'])->orderBy('nama')->get();
     }
 
     /** @return array<string,mixed> */

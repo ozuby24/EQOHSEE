@@ -19,6 +19,7 @@ import Batang from '../../Grafik/Batang.vue';
 import Donat from '../../Grafik/Donat.vue';
 import Rantai from './Rantai.vue';
 import Tahapan from './Tahapan.vue';
+import RingkasPemantauan from './RingkasPemantauan.vue';
 import { KEADAAN } from '../../Grafik/warna';
 import Dialog from '../../Components/Dialog.vue';
 import { useDialog } from '../../dialog';
@@ -940,6 +941,14 @@ async function hapus(jalur: string, apa: string) {
              :style="{ color: Number(k[1]) ? (k[2] as string) : KEADAAN.netral }">{{ k[1] }}</p>
         </div>
       </section>
+
+      <!--
+        Daftar di bawah berisi PENGAJUAN MCU — surat yang dikirim ke
+        klinik. Yang tidak dijawabnya: dari seluruh pekerja, berapa yang
+        MCU-nya masih berlaku hari ini. Keduanya perlu, dan keduanya
+        sering tertukar.
+      -->
+      <RingkasPemantauan v-if="props.pemantauan" :pemantauan="props.pemantauan" />
 
       <section v-for="m in (props.pengajuan ?? [])" :key="m.id"
                class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Pemantauan masa berlaku Mine Permit dan SIMPER.
+ * Pemantauan masa berlaku MCU, Mine Permit, dan SIMPER.
  *
  * Menjawab satu pertanyaan yang ditanyakan tiap pagi di gerbang: siapa
  * yang hari ini tidak boleh masuk, dan siapa yang minggu depan tidak
@@ -79,6 +79,40 @@ const kartu = computed(() => {
 
   <div class="space-y-5">
     <!--
+      Berapa ORANGNYA, bukan berapa berkasnya. Satu orang memegang MCU,
+      Mine Permit, dan kerap SIMPER pula; empat pita di bawah menghitung
+      berkas, dan tanpa baris ini tiga puluh pekerja terbaca sebagai
+      delapan puluh tenaga kerja.
+    -->
+    <section class="rounded-2xl bg-white border border-stone-100 shadow-card px-5 py-4
+                    flex flex-wrap items-center gap-x-8 gap-y-3">
+      <div>
+        <p class="text-[11px] font-bold uppercase tracking-wide text-stone-400">Tenaga kerja</p>
+        <strong class="num text-2xl text-cam-ink">{{ props.ringkas?.manpower ?? 0 }}</strong>
+      </div>
+
+      <div>
+        <p class="text-[11px] font-bold uppercase tracking-wide text-stone-400">Aktif</p>
+        <strong class="num text-2xl" style="color:#15803D">{{ props.ringkas?.manpowerAktif ?? 0 }}</strong>
+      </div>
+
+      <div>
+        <p class="text-[11px] font-bold uppercase tracking-wide text-stone-400">Tidak aktif</p>
+        <strong class="num text-2xl"
+                :style="{ color: props.ringkas?.manpowerNonaktif ? '#A16207' : '#A8A29E' }">
+          {{ props.ringkas?.manpowerNonaktif ?? 0 }}
+        </strong>
+        <span class="block text-[11px] text-stone-400">cuti atau sudah keluar</span>
+      </div>
+
+      <div class="ml-auto">
+        <p class="text-[11px] font-bold uppercase tracking-wide text-stone-400">Berkas dipantau</p>
+        <strong class="num text-2xl text-cam-ink">{{ props.ringkas?.total ?? 0 }}</strong>
+        <span class="block text-[11px] text-stone-400">MCU, Mine Permit, SIMPER</span>
+      </div>
+    </section>
+
+    <!--
       Empat kartu, dan mengkliknya menyaring daftarnya. Angka yang tidak
       dapat diklik memaksa orang membaca angkanya lalu mencarinya sendiri
       di bawah — dua langkah untuk satu pertanyaan.
@@ -116,9 +150,9 @@ const kartu = computed(() => {
                @change="(e: any) => pasang('q', e.target.value)">
 
         <select :value="saring.jenis ?? ''" class="rounded-xl border-stone-200 text-[12.5px] py-2"
-                aria-label="Jenis kartu"
+                aria-label="Jenis berkas"
                 @change="(e: any) => pasang('jenis', e.target.value || null)">
-          <option value="">Semua jenis kartu</option>
+          <option value="">Semua jenis berkas</option>
           <option v-for="j in props.opsiJenis ?? []" :key="j" :value="j">{{ j }}</option>
         </select>
 
@@ -129,7 +163,14 @@ const kartu = computed(() => {
           <option v-for="c in props.opsiPerusahaan ?? []" :key="c.id" :value="c.id">{{ c.name }}</option>
         </select>
 
-        <button v-if="saring.keadaan || saring.jenis || saring.perusahaan || saring.q"
+        <select :value="saring.status ?? ''" class="rounded-xl border-stone-200 text-[12.5px] py-2"
+                aria-label="Status kepegawaian"
+                @change="(e: any) => pasang('status', e.target.value || null)">
+          <option value="">Aktif dan tidak aktif</option>
+          <option v-for="(label, kode) in props.opsiStatus ?? {}" :key="kode" :value="kode">{{ label }}</option>
+        </select>
+
+        <button v-if="saring.keadaan || saring.jenis || saring.perusahaan || saring.q || saring.status"
                 type="button" class="eq-btn-lain" style="flex:none"
                 @click="router.get('/miners/kedaluwarsa')">Bersihkan</button>
       </div>
@@ -148,8 +189,10 @@ const kartu = computed(() => {
           <thead>
             <tr class="text-stone-400 border-b border-stone-100">
               <th class="py-2 pr-3 font-semibold">Perusahaan</th>
-              <th class="py-2 pr-3 font-semibold text-right">Pemegang kartu</th>
-              <th class="py-2 pr-3 font-semibold text-right">Aktif</th>
+              <th class="py-2 pr-3 font-semibold text-right">Tenaga kerja</th>
+              <th class="py-2 pr-3 font-semibold text-right">Tidak aktif</th>
+              <th class="py-2 pr-3 font-semibold text-right">Berkas</th>
+              <th class="py-2 pr-3 font-semibold text-right">Berlaku</th>
               <th class="py-2 pr-3 font-semibold text-right">Mendekati</th>
               <th class="py-2 font-semibold text-right">Habis</th>
             </tr>
@@ -157,7 +200,12 @@ const kartu = computed(() => {
           <tbody>
             <tr v-for="c in props.perPerusahaan" :key="c.perusahaan" class="border-b border-stone-50">
               <td class="py-2 pr-3 font-semibold text-cam-ink">{{ c.perusahaan }}</td>
-              <td class="py-2 pr-3 num text-right">{{ c.total }}</td>
+              <td class="py-2 pr-3 num text-right">{{ c.manpower }}</td>
+              <td class="py-2 pr-3 num text-right"
+                  :style="{ color: c.manpowerNonaktif ? '#A16207' : '#A8A29E' }">
+                {{ c.manpowerNonaktif || '—' }}
+              </td>
+              <td class="py-2 pr-3 num text-right text-stone-500">{{ c.total }}</td>
               <td class="py-2 pr-3 num text-right" style="color:#15803D">{{ c.aktif }}</td>
               <td class="py-2 pr-3 num text-right" style="color:#A16207">{{ c.mendekati || '—' }}</td>
               <td class="py-2 num text-right font-bold" :style="{ color: c.habis ? '#B91C1C' : '#A8A29E' }">
@@ -176,7 +224,7 @@ const kartu = computed(() => {
           <tr class="text-stone-400 border-b border-stone-100">
             <th class="px-5 py-3 font-semibold">Nama</th>
             <th class="px-5 py-3 font-semibold">Perusahaan</th>
-            <th class="px-5 py-3 font-semibold">Kartu</th>
+            <th class="px-5 py-3 font-semibold">Berkas</th>
             <th class="px-5 py-3 font-semibold">Berlaku sampai</th>
             <th class="px-5 py-3 font-semibold text-right">Keadaan</th>
           </tr>
@@ -189,10 +237,28 @@ const kartu = computed(() => {
               </Link>
               <small class="block text-stone-400">{{ b.jabatan || '—' }}</small>
             </td>
-            <td class="px-5 py-3 text-stone-500">{{ b.perusahaan || '—' }}</td>
+            <td class="px-5 py-3 text-stone-500">
+              {{ b.perusahaan || '—' }}
+              <!--
+                Status kepegawaian disebut hanya bila BUKAN aktif. Yang
+                aktif adalah keadaan biasa, dan menuliskannya di tiap
+                baris membuat yang tidak aktif justru sulit dilihat.
+              -->
+              <small v-if="!b.orangAktif" class="block text-[10.5px]" style="color:#A16207">
+                {{ b.statusOrang === 'keluar' ? 'sudah keluar' : b.statusOrang }}
+              </small>
+            </td>
             <td class="px-5 py-3">
               {{ b.jenis }}
               <small v-if="b.nomor" class="block text-stone-400 num">{{ b.nomor }}</small>
+              <!--
+                MCU yang masih berlaku tetapi berhasil "unfit" tetap
+                melarang orang bekerja. Tanpa keterangan ini pita
+                hijaunya terbaca sebagai aman.
+              -->
+              <small v-if="b.hasil && !b.hasilLayak" class="block text-[10.5px] font-semibold"
+                     style="color:#B91C1C">{{ b.hasil }}</small>
+              <small v-else-if="b.hasil" class="block text-[10.5px] text-stone-400">{{ b.hasil }}</small>
             </td>
             <td class="px-5 py-3">
               <span class="num">{{ b.tglEfektif || '—' }}</span>
@@ -220,7 +286,7 @@ const kartu = computed(() => {
 
           <tr v-if="!(props.baris ?? []).length">
             <td colspan="5" class="px-5 py-10 text-center text-[13px] text-stone-500">
-              Tidak ada kartu yang cocok dengan penyaring ini.
+              Tidak ada berkas yang cocok dengan penyaring ini.
             </td>
           </tr>
         </tbody>

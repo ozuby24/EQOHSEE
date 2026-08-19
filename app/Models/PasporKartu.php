@@ -78,8 +78,35 @@ class PasporKartu extends Model
         return $this->diajukan_oleh !== $u?->getKey();
     }
 
-    public function keadaan(): string    { return Authority::keadaan($this->tgl_expired); }
-    public function keterangan(): string { return Authority::keterangan($this->tgl_expired); }
+    /**
+     * Keadaan masa berlakunya, dihitung atas tanggal EFEKTIF.
+     *
+     * Bukan atas tanggal yang tercetak. Kartu yang berlaku sampai
+     * Desember tetapi berpijak pada MCU yang habis Agustus sudah tidak
+     * sah pada September, dan menampilkannya sebagai "aman" persis cara
+     * orang lolos gerbang dengan berkas yang secara resmi masih berlaku
+     * tetapi secara medis tidak lagi berdasar.
+     *
+     * Menuntut relasi `paspor.mcu` sudah dimuat untuk Mine Permit —
+     * lihat expiredDasar(). Yang memuatnya bertanggung jawab; tanpa itu
+     * satu kueri tambahan per kartu.
+     */
+    public function keadaan(): string    { return Authority::keadaan($this->expiredEfektif()); }
+
+    /**
+     * Keterangannya, beserta SEBAB pembatasnya bila ada.
+     *
+     * "Habis 12 September" tanpa sebab membuat orang memperpanjang
+     * kartunya, padahal yang perlu diperpanjang MCU-nya.
+     */
+    public function keterangan(): string
+    {
+        $dasar = Authority::keterangan($this->expiredEfektif());
+
+        return $this->dibatasiDasar()
+            ? $dasar.' — dibatasi '.$this->namaDasar()
+            : $dasar;
+    }
 
     /* ═══════════ masa berlaku turunan ═══════════ */
 

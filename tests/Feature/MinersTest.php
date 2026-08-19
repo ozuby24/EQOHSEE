@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\{Company, KompetensiJenis, McuPengajuan, MinersCampaign, MinersCuti,
     MinersCutiJatah, MinersFieldBreak, Paspor, PasporKartu, User};
-use App\Support\{Alur, AlurMiner, Authority, JatahCuti, MasterKompetensi, Tahap};
+use App\Support\{Alur, AlurMiner, Authority, JatahCuti, MasterKompetensi, PemantauanBerkas, Tahap};
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Illuminate\Support\Carbon;
@@ -1774,6 +1774,185 @@ class MinersTest extends TestCase
             .json_encode($judul, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
             ."\nJudul halaman harus ditulis SEBELUM bersama(): ['judul' => ...] + \$this->bersama().",
         );
+    }
+
+    /* ═══════════ pemantauan masa berlaku ═══════════ */
+
+    /**
+     * Daftar kartu memakai tanggal EFEKTIF, bukan yang tercetak.
+     *
+     * Kartu yang berlaku sampai Desember tetapi berpijak pada MCU yang
+     * habis Agustus sudah tidak sah pada September. Daftar yang memakai
+     * tanggal cetaknya menampilkannya sebagai "aman" — dan itulah tepat
+     * bentuk kegagalan yang membuat orang lolos gerbang dengan berkas
+     * yang secara resmi masih berlaku tetapi secara medis tidak lagi
+     * berdasar.
+     */
+    public function test_daftar_kartu_memakai_tanggal_efektif(): void
+    {
+        $p = Paspor::create([
+            'company_id' => $this->c->id, 'nama' => 'Efektif', 'nik' => 'EF1',
+            'jabatan' => 'Operator', 'status' => 'aktif',
+        ]);
+
+        /* MCU habis 30 hari lagi; kartunya tercetak berlaku setahun. */
+        $p->mcu()->create([
+            'tgl_periksa' => now()->subMonths(11), 'tgl_expired' => now()->addDays(30),
+            'hasil' => 'Fit',
+        ]);
+
+        $k = $p->kartu()->create([
+            'jenis' => AlurMiner::KARTU_PERMIT, 'nomor' => 'MP/EF',
+            'tgl_terbit' => now(), 'tgl_expired' => now()->addYear(),
+        ]);
+
+        PasporKartu::whereKey($k->id)->update(['status' => Alur::DISETUJUI]);
+
+        $this->get(route('miners.riwayat.mine-permit'))
+            ->assertOk()
+            ->assertInertia(function (Assert $h) {
+                $baris = collect($h->toArray()['props']['baris'])->firstWhere('nomor', 'MP/EF');
+
+                $this->assertNotNull($baris, 'Kartu ujinya tidak muncul di daftar.');
+
+                $this->assertSame(
+                    now()->addDays(30)->toDateString(),
+                    $baris['sel'][5],
+                    'Kolom "berlaku sampai" memakai tanggal cetak kartunya, '
+                    .'bukan tanggal MCU yang membatasinya.',
+                );
+
+                $this->assertStringContainsString('dibatasi', (string) $baris['keterangan'],
+                    'Keterangan tidak menyebut bahwa kartunya dibatasi berkas lain — '
+                    .'tanpa sebabnya, orang memperpanjang kartunya dan bukan MCU-nya.');
+            });
+    }
+
+    /**
+     * Ringkasan pemantauan menghitung ORANG, bukan baris berkas.
+     *
+     * Satu orang memegang MCU, Mine Permit, dan kerap SIMPER pula.
+     * Menghitung barisnya membuat tiga puluh pekerja terbaca sebagai
+     * delapan puluh tenaga kerja — dan angka itu dipakai menghitung
+     * mandays.
+     */
+    public function test_ringkasan_pemantauan_menghitung_orang_bukan_berkas(): void
+    {
+        $p = Paspor::create([
+            'company_id' => $this->c->id, 'nama' => 'Rangkap', 'nik' => 'RG1',
+            'jabatan' => 'Operator', 'status' => 'aktif',
+        ]);
+
+        $p->mcu()->create([
+            'tgl_periksa' => now(), 'tgl_expired' => now()->addYear(), 'hasil' => 'Fit',
+        ]);
+
+        foreach ([AlurMiner::KARTU_PERMIT, AlurMiner::KARTU_LICENSE] as $i => $jenis) {
+            $k = $p->kartu()->create([
+                'jenis' => $jenis, 'nomor' => 'RG/'.$i,
+                'tgl_terbit' => now(), 'tgl_expired' => now()->addYear(),
+                'sim_polisi_expired' => now()->addYear(),
+            ]);
+
+            /* `status` sengaja di luar $fillable — kartu terbit lewat
+               alur tinjauan, bukan lewat create(). Di uji ini alurnya
+               dilewati karena yang diuji penghitungannya. */
+            PasporKartu::whereKey($k->id)->update(['status' => Alur::DISETUJUI]);
+        }
+
+        $orang = Paspor::with(['kartu', 'mcu', 'company'])->get();
+        $ringkas = PemantauanBerkas::ringkas(PemantauanBerkas::baris($orang));
+
+        $this->assertSame(3, $ringkas['total'], 'Berkasnya tiga: MCU, permit, dan SIMPER.');
+        $this->assertSame(1, $ringkas['manpower'], 'Orangnya satu, bukan tiga.');
+        $this->assertSame(1, $ringkas['manpowerAktif']);
+        $this->assertSame(0, $ringkas['manpowerNonaktif']);
+    }
+
+    /**
+     * Yang sudah keluar terhitung tenaga kerja tidak aktif.
+     *
+     * Kartunya tetap tercatat, dan menghitungnya bersama yang aktif
+     * membuat jumlah "berkas habis" membengkak oleh nama-nama yang
+     * memang tidak akan diperpanjang lagi.
+     */
+    public function test_orang_keluar_terhitung_tidak_aktif(): void
+    {
+        foreach ([['Tetap', 'aktif'], ['Pergi', 'keluar']] as [$nama, $status]) {
+            $p = Paspor::create([
+                'company_id' => $this->c->id, 'nama' => $nama, 'nik' => 'ST'.$nama,
+                'jabatan' => 'Operator', 'status' => $status,
+            ]);
+
+            $p->mcu()->create([
+                'tgl_periksa' => now(), 'tgl_expired' => now()->addYear(), 'hasil' => 'Fit',
+            ]);
+        }
+
+        $orang = Paspor::with(['kartu', 'mcu', 'company'])->get();
+        $ringkas = PemantauanBerkas::ringkas(PemantauanBerkas::baris($orang));
+
+        $this->assertSame(2, $ringkas['manpower']);
+        $this->assertSame(1, $ringkas['manpowerAktif']);
+        $this->assertSame(1, $ringkas['manpowerNonaktif']);
+    }
+
+    /**
+     * Ringkasan pemantauan tidak menembak satu kueri per kartu.
+     *
+     * Tanggal efektif Mine Permit diambil dari MCU orangnya lewat
+     * `$kartu->paspor` — relasi yang TIDAK ikut terisi saat kartunya
+     * dimuat sebagai anak. Tanpa dipasang balik, dua kueri tambahan per
+     * kartu untuk mengambil baris yang sudah ada di memori.
+     *
+     * Yang diuji BENTUK PERTUMBUHANNYA, bukan angka tetap: ambang tetap
+     * tetap hijau pada data uji yang kecil, persis saat N+1 paling
+     * mudah lolos.
+     */
+    public function test_pemantauan_tidak_menembak_kueri_per_kartu(): void
+    {
+        $buat = function (int $n) {
+            for ($i = 0; $i < $n; $i++) {
+                $p = Paspor::create([
+                    'company_id' => $this->c->id, 'nama' => 'Kueri'.$i, 'nik' => 'KQ'.uniqid(),
+                    'jabatan' => 'Operator', 'status' => 'aktif',
+                ]);
+
+                $p->mcu()->create([
+                    'tgl_periksa' => now(), 'tgl_expired' => now()->addYear(), 'hasil' => 'Fit',
+                ]);
+
+                $k = $p->kartu()->create([
+                    'jenis' => AlurMiner::KARTU_PERMIT, 'nomor' => 'KQ/'.uniqid(),
+                    'tgl_terbit' => now(), 'tgl_expired' => now()->addYear(),
+                ]);
+
+                PasporKartu::whereKey($k->id)->update(['status' => Alur::DISETUJUI]);
+            }
+        };
+
+        $hitung = function (): int {
+            \DB::flushQueryLog();
+            \DB::enableQueryLog();
+
+            $orang = Paspor::with(['kartu', 'mcu', 'company'])->get();
+            PemantauanBerkas::baris($orang);
+
+            $n = count(\DB::getQueryLog());
+            \DB::disableQueryLog();
+
+            return $n;
+        };
+
+        $buat(2);
+        $kecil = $hitung();
+
+        $buat(8);
+        $besar = $hitung();
+
+        $this->assertSame($kecil, $besar,
+            "Jumlah kueri tumbuh bersama jumlah orang ({$kecil} lalu {$besar}): "
+            .'ada relasi yang dimuat satu per satu di dalam perulangan.');
     }
 
 }

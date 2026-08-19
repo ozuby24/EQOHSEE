@@ -4,14 +4,21 @@ namespace App\Support;
 
 use App\Models\Paspor;
 use App\Models\PasporKartu;
+use App\Models\PasporMcu;
 use Illuminate\Support\Collection;
 
 /**
- * Pemantauan masa berlaku Mine Permit dan SIMPER.
+ * Pemantauan masa berlaku MCU, Mine Permit, dan SIMPER.
  *
  * Satu pertanyaan yang ditanyakan tiap pagi di gerbang: siapa yang hari
  * ini tidak boleh masuk, dan siapa yang minggu depan tidak boleh masuk
  * kalau tidak ada yang mengurusnya sekarang.
+ *
+ * KETIGANYA DIPANTAU BERSAMA karena ketiganya satu rantai. MCU
+ * mendasari Mine Permit, dan SIM kepolisian mendasari SIMPER; memantau
+ * kartunya saja membuat MCU yang tinggal seminggu tidak terlihat sampai
+ * ia menjatuhkan kartunya. Yang dipantau di sini bukan tiga daftar
+ * berdampingan melainkan satu daftar dengan tiga jenis berkas.
  *
  * YANG DIPANTAU TANGGAL EFEKTIF, BUKAN YANG TERCETAK. Kartu berpijak
  * pada berkas lain — permit pada MCU, SIMPER pada SIM kepolisian — dan
@@ -26,10 +33,16 @@ use Illuminate\Support\Collection;
  * boleh masuk — dan selisih itu justru pada orang-orang yang berkasnya
  * belum beres.
  */
-final class PemantauanKartu
+final class PemantauanBerkas
 {
-    /** Jenis kartu yang dipantau. Visitor tidak: ia tidak berdasar apa pun. */
-    public const JENIS = [AlurMiner::KARTU_PERMIT, AlurMiner::KARTU_LICENSE];
+    /** MCU bukan kartu, tetapi masa berlakunya dipantau dengan cara yang sama. */
+    public const MCU = 'MCU';
+
+    /** Status kepegawaian yang dihitung sebagai tenaga kerja aktif. */
+    public const ORANG_AKTIF = 'aktif';
+
+    /** Jenis berkas yang dipantau. Visitor tidak: ia tidak berdasar apa pun. */
+    public const JENIS = [self::MCU, AlurMiner::KARTU_PERMIT, AlurMiner::KARTU_LICENSE];
 
     /**
      * Baris pemantauan untuk sekumpulan orang.
@@ -42,10 +55,28 @@ final class PemantauanKartu
         $keluar = [];
 
         foreach ($orang as $p) {
+            /* MCU dihitung dari yang TERAKHIR saja, bukan dari seluruh
+               riwayatnya. Pemeriksaan tahun lalu memang sudah habis
+               masa berlakunya, dan menghitungnya sebagai baris "habis"
+               membuat setiap orang yang rajin MCU tampak paling
+               bermasalah — persis kebalikan dari yang sebenarnya. */
+            if ($jenis === null || $jenis === self::MCU) {
+                if ($m = $p->mcuTerakhir()) $keluar[] = self::satuMcu($p, $m);
+            }
+
             foreach ($p->kartu as $k) {
                 if (!in_array($k->jenis, self::JENIS, true)) continue;
                 if ($jenis !== null && $k->jenis !== $jenis) continue;
                 if (!$k->sudahDisetujui()) continue;
+
+                /* Orangnya dipasang balik ke kartunya. Tanggal efektif
+                   Mine Permit dihitung dari MCU orang itu lewat
+                   $kartu->paspor — relasi yang TIDAK ikut terisi saat
+                   kartunya dimuat sebagai anak. Tanpa baris ini, dua
+                   kueri tambahan per kartu (paspornya, lalu MCU-nya),
+                   dan keduanya mengambil baris yang sudah ada di
+                   memori. */
+                $k->setRelation('paspor', $p);
 
                 $keluar[] = self::satu($p, $k);
             }
@@ -64,19 +95,74 @@ final class PemantauanKartu
         return $keluar;
     }
 
-    /** @return array<string,mixed> */
-    private static function satu(Paspor $p, PasporKartu $k): array
+    /**
+     * Satu baris MCU.
+     *
+     * Tidak berdasar berkas lain — MCU-lah yang menjadi dasar bagi Mine
+     * Permit, bukan sebaliknya — sehingga tanggal efektifnya sama dengan
+     * yang tercetak.
+     *
+     * @return array<string,mixed>
+     */
+    private static function satuMcu(Paspor $p, PasporMcu $m): array
     {
-        $efektif = $k->expiredEfektif();
+        return self::orang($p) + [
+            'id'     => 'mcu-'.$m->id,
+            'jenis'  => self::MCU,
+            'nomor'  => $m->nomor,
+            'tglTerbit' => $m->tgl_periksa?->toDateString(),
 
+            'tglTercetak' => $m->tgl_expired?->toDateString(),
+            'tglEfektif'  => $m->tgl_expired?->toDateString(),
+
+            'dibatasiDasar' => false,
+            'namaDasar'     => null,
+            'tglDasar'      => null,
+
+            /* Hasil pemeriksaannya, bukan hanya tanggalnya. MCU yang
+               masih berlaku tetapi berhasil "unfit" tetap melarang orang
+               bekerja, dan pita hijau tanpa keterangan ini membuatnya
+               terbaca sebagai aman. */
+            'hasil'      => $m->hasil,
+            'hasilLayak' => $m->hasilLayak(),
+
+            'keadaan'      => $keadaan = Authority::keadaanKartu($m->tgl_expired),
+            'keadaanLabel' => Authority::LABEL_KARTU[$keadaan] ?? $keadaan,
+            'sisaHari'     => Authority::sisaHari($m->tgl_expired),
+        ];
+    }
+
+    /**
+     * Bagian barisnya yang menyebut ORANGNYA, bukan berkasnya.
+     *
+     * Termasuk status kepegawaian. Orang yang sudah keluar tetap
+     * memegang kartu yang tercatat, dan menghitungnya bersama yang aktif
+     * membuat jumlah "kartu habis" membengkak oleh nama-nama yang memang
+     * tidak akan diperpanjang lagi.
+     *
+     * @return array<string,mixed>
+     */
+    private static function orang(Paspor $p): array
+    {
         return [
-            'id'         => $k->id,
             'pasporId'   => $p->id,
             'nama'       => $p->nama,
             'nik'        => $p->nik,
             'jabatan'    => $p->jabatan,
             'perusahaan' => $p->company?->name,
 
+            'statusOrang' => $p->status,
+            'orangAktif'  => $p->status === self::ORANG_AKTIF,
+        ];
+    }
+
+    /** @return array<string,mixed> */
+    private static function satu(Paspor $p, PasporKartu $k): array
+    {
+        $efektif = $k->expiredEfektif();
+
+        return self::orang($p) + [
+            'id'      => $k->id,
             'jenis'   => $k->jenis,
             'nomor'   => $k->nomor,
             'tglTerbit'  => $k->tgl_terbit?->toDateString(),
@@ -124,8 +210,20 @@ final class PemantauanKartu
 
         $total = count($baris);
 
+        /* Jumlah ORANG, bukan jumlah berkas. Satu orang memegang MCU,
+           Mine Permit, dan kerap SIMPER pula — menghitung barisnya
+           membuat tiga puluh pekerja terbaca sebagai delapan puluh
+           tenaga kerja, dan angka itu dipakai menghitung mandays. */
+        $orang = [];
+        foreach ($baris as $b) $orang[$b['pasporId']] = $b['orangAktif'];
+
         return [
             'total'  => $total,
+
+            'manpower'      => count($orang),
+            'manpowerAktif' => count(array_filter($orang)),
+            'manpowerNonaktif' => count($orang) - count(array_filter($orang)),
+
             'aktif'  => $total - $per[Authority::HABIS],
             'habis'  => $per[Authority::HABIS],
 
@@ -141,6 +239,28 @@ final class PemantauanKartu
                Angka ini memisahkan dua pekerjaan yang berbeda:
                memperpanjang kartu, dan memperbarui MCU atau SIM. */
             'dibatasiDasar' => count(array_filter($baris, fn ($b) => $b['dibatasiDasar'])),
+        ];
+    }
+
+    /**
+     * Ringkasan satu jenis berkas, siap dipasang di daftarnya sendiri.
+     *
+     * Daftar Mine Permit menjawab "berkas apa saja yang ada"; yang
+     * ditanyakan di sebelahnya selalu "lalu berapa yang bermasalah, dan
+     * milik siapa". Menjawabnya menuntut pindah halaman, dan yang
+     * berpindah halaman hanya orang yang sudah tahu ada yang salah.
+     *
+     * @param  Collection<int,Paspor>  $orang
+     * @return array<string,mixed>
+     */
+    public static function untukDaftar(Collection $orang, string $jenis): array
+    {
+        $baris = self::baris($orang, $jenis);
+
+        return [
+            'jenis'         => $jenis,
+            'ringkas'       => self::ringkas($baris),
+            'perPerusahaan' => self::perPerusahaan($baris),
         ];
     }
 
@@ -165,9 +285,11 @@ final class PemantauanKartu
             $per[$nama] ??= [
                 'perusahaan' => $nama,
                 'total' => 0, 'aktif' => 0, 'habis' => 0, 'mendekati' => 0,
+                'orang' => [],
             ];
 
             $per[$nama]['total']++;
+            $per[$nama]['orang'][$b['pasporId']] = $b['orangAktif'];
 
             if ($b['keadaan'] === Authority::HABIS) $per[$nama]['habis']++;
             else                                    $per[$nama]['aktif']++;
@@ -175,6 +297,19 @@ final class PemantauanKartu
             if (in_array($b['keadaan'], [Authority::MENDESAK, Authority::DEKAT], true)) {
                 $per[$nama]['mendekati']++;
             }
+        }
+
+        /* Pertanyaan yang selalu menyusul: berapa ORANGNYA. "Dua belas
+           berkas habis" pada mitra dengan empat pekerja dan pada mitra
+           dengan empat puluh pekerja adalah dua keadaan yang sama sekali
+           berbeda, dan angka berkasnya sendiri tidak membedakannya. */
+        foreach ($per as $nama => $baris_) {
+            $per[$nama]['manpower']      = count($baris_['orang']);
+            $per[$nama]['manpowerAktif'] = count(array_filter($baris_['orang']));
+            $per[$nama]['manpowerNonaktif'] =
+                count($baris_['orang']) - count(array_filter($baris_['orang']));
+
+            unset($per[$nama]['orang']);
         }
 
         /* Yang paling banyak masalahnya di atas — itu yang perlu
