@@ -62,6 +62,25 @@ const warna = (b: { label: string; keadaan?: keyof typeof KEADAAN }) => {
 
   return b.keadaan ? KEADAAN[b.keadaan] : AKSEN;
 };
+
+/**
+ * Isian batang: landaian dari warnanya ke warna yang sedikit lebih
+ * terang.
+ *
+ * Bukan hiasan. Batang datar setinggi 18px yang berderet enam baris
+ * membaur menjadi satu blok warna, dan mata kehilangan batas antar
+ * baris justru pada grafik yang barisnya paling banyak. Landaian tipis
+ * memberi tiap batang tepi yang terbaca tanpa menambah garis.
+ *
+ * Landaiannya SELALU ke arah yang sama dan selalu setipis ini: landaian
+ * yang mencolok membuat batang panjang tampak berubah warna di
+ * tengahnya, dan warna di grafik ini punya arti sendiri.
+ */
+const isian = (b: { label: string; keadaan?: keyof typeof KEADAAN }) => {
+  const w = warna(b);
+
+  return `linear-gradient(90deg, ${w} 0%, ${w}D8 55%, ${w}B0 100%)`;
+};
 </script>
 
 <template>
@@ -82,11 +101,17 @@ const warna = (b: { label: string; keadaan?: keyof typeof KEADAAN }) => {
       <span class="text-[11.5px] text-cam-ink truncate" :title="b.label">{{ b.label }}</span>
 
       <!-- Tebalnya dibatasi supaya sisa jalurnya menjadi udara, bukan
-           batang setebal barisnya. Sudut kanan dibulatkan dan sudut
-           kiri disikukan: batang tumbuh dari satu garis dasar, dan
-           ujung bulat di pangkal membuatnya tampak melayang. -->
-      <span class="block h-[18px] rounded-r-[4px] transition-[width] duration-300"
-            :style="{ width: lebar(b.nilai), background: warna(b) }"></span>
+           batang setebal barisnya. Sudut kanan dibulatkan penuh dan
+           sudut kiri disikukan: batang tumbuh dari satu garis dasar,
+           dan ujung bulat di pangkal membuatnya tampak melayang.
+
+           Jalur redup di belakangnya menunjukkan sisa ruang menuju
+           nilai terbesar — tanpa itu, batang terpendek tidak dapat
+           dibedakan dari batang yang datanya belum masuk. -->
+      <span class="block h-[18px] rounded-[9px] bg-stone-100/70 overflow-hidden">
+        <span class="grafik-batang block h-full rounded-r-[9px] transition-[width] duration-300"
+              :style="{ width: lebar(b.nilai), background: isian(b) }"></span>
+      </span>
 
       <span class="text-[11.5px] font-bold text-cam-ink num tabular-nums whitespace-nowrap">
         {{ ringkas(b.nilai) }}

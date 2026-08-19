@@ -41,6 +41,11 @@ const props = withDefaults(defineProps<{
 }>(), { satuan: '', bidang: false, tinggi: 176 });
 
 const P = { atas: 12, kanan: 12, bawah: 22, kiri: 44 };
+
+/* Pengenal unik per contoh komponen: dua grafik pada satu halaman yang
+   memakai id landaian sama akan saling menimpa, dan yang kedua mewarisi
+   warna yang pertama tanpa satu pun galat. */
+const uid = Math.random().toString(36).slice(2, 8);
 const L = 640;
 
 const T = computed(() => props.tinggi);
@@ -174,7 +179,18 @@ const kosong = computed(() =>
             :x="x(i)" :y="T - 6" text-anchor="middle"
             font-size="10" :fill="BINGKAI.redupTinta">{{ l }}</text>
 
-      <path v-if="jalurBidang" :d="jalurBidang" :fill="warna(0)" fill-opacity="0.1" />
+      <!-- Bidang di bawah garis dibuat memudar ke bawah, bukan
+           berwarna rata. Bidang rata setebal 10% membentuk balok warna
+           yang bersaing dengan garisnya sendiri; yang memudar menuntun
+           mata ke garisnya dan tetap menandai luasannya. -->
+      <defs v-if="jalurBidang">
+        <linearGradient :id="`bidang-${uid}`" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" :stop-color="warna(0)" stop-opacity=".26" />
+          <stop offset="100%" :stop-color="warna(0)" stop-opacity="0" />
+        </linearGradient>
+      </defs>
+
+      <path v-if="jalurBidang" :d="jalurBidang" :fill="`url(#bidang-${uid})`" />
 
       <template v-for="(d, di) in deret" :key="d.nama">
         <path v-for="(p, pi) in penggal(d.nilai)" :key="pi"

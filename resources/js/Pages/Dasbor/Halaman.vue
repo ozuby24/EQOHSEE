@@ -19,7 +19,7 @@ import KartuGrafik from '../../Grafik/KartuGrafik.vue';
 import Batang from '../../Grafik/Batang.vue';
 import Donat from '../../Grafik/Donat.vue';
 import Garis from '../../Grafik/Garis.vue';
-import Meter from '../../Grafik/Meter.vue';
+import Cincin from '../../Grafik/Cincin.vue';
 import Legenda from './Legenda.vue';
 
 const props = propHalaman();
@@ -150,6 +150,28 @@ const sertifikat = computed(() => {
   return (x?.label ?? []).map((l: string, i: number) => ({ label: l, nilai: x.nilai[i] }));
 });
 
+/* Empat angka pembuka. Ikonnya dipilih supaya bentuknya berbeda satu
+   sama lain bahkan pada layar kecil — orang, tanda seru, jam, gedung —
+   sebab empat kartu seukuran dengan ikon serupa dibedakan hanya oleh
+   teksnya, dan teks kecil itu yang justru tidak terbaca sekilas. */
+const kpi = computed(() => [
+  { label: 'Tenaga kerja', nilai: props.ringkas?.manpower, warna: '#0F1720',
+    ket: `${props.ringkas?.manpowerAktif ?? 0} aktif`,
+    ikon: 'M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20M9.5 10.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM21 20v-1.5a4 4 0 0 0-3-3.87' },
+
+  { label: 'Berkas sudah habis', nilai: props.ringkas?.berkasHabis, warna: '#DC2626',
+    ket: 'tidak boleh masuk hari ini',
+    ikon: 'M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z' },
+
+  { label: 'Mendekati habis', nilai: props.ringkas?.berkasDekat, warna: '#CA8A04',
+    ket: '≤ 60 hari lagi',
+    ikon: 'M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z' },
+
+  { label: 'Perusahaan', nilai: props.ringkas?.perusahaan, warna: '#0EA5E9',
+    ket: 'punya pemegang berkas',
+    ikon: 'M3 21h18M5 21V7l7-4 7 4v14M9 21v-4h6v4M9 11h.01M15 11h.01' },
+]);
+
 /** Ada isinya? Grafik kosong lebih baik diganti kalimat. */
 const berisi = (baris: any[] | undefined) =>
   Array.isArray(baris) && baris.some((b) => (b?.nilai ?? 0) > 0);
@@ -221,16 +243,31 @@ const berisi = (baris: any[] | undefined) =>
     </section>
 
     <!-- ═══ 3 · angka pembuka ═══ -->
+    <!--
+      Pita warna di tepi kiri tiap kartu, bukan angka berwarna saja.
+      Empat angka besar berderet dengan warna berbeda membuat warnanya
+      terbaca sebagai hiasan; pita tegak di tepi memberi tiap kartu
+      penanda yang sama tebalnya, sehingga warnanya kembali berarti
+      tingkat kemendesakan.
+    -->
     <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      <div v-for="k in [
-             { label: 'Tenaga kerja', nilai: props.ringkas?.manpower, ket: `${props.ringkas?.manpowerAktif ?? 0} aktif`, warna: '#0F1720' },
-             { label: 'Berkas sudah habis', nilai: props.ringkas?.berkasHabis, ket: 'tidak boleh masuk hari ini', warna: '#DC2626' },
-             { label: 'Mendekati habis', nilai: props.ringkas?.berkasDekat, ket: '≤ 60 hari lagi', warna: '#CA8A04' },
-             { label: 'Perusahaan', nilai: props.ringkas?.perusahaan, ket: 'punya pemegang berkas', warna: '#0EA5E9' },
-           ]" :key="k.label"
-           class="rounded-2xl bg-white border border-stone-100 shadow-card p-4">
-        <p class="text-[11px] font-bold uppercase tracking-wide text-stone-400">{{ k.label }}</p>
-        <strong class="num block text-[26px] leading-none mt-1.5" :style="{ color: k.warna }">
+      <div v-for="k in kpi" :key="k.label"
+           class="relative overflow-hidden rounded-2xl bg-white border border-stone-100 shadow-card p-4 pl-5">
+        <i class="absolute left-0 top-0 bottom-0 w-[5px]" aria-hidden="true"
+           :style="{ background: `linear-gradient(180deg, ${k.warna}, ${k.warna}80)` }"></i>
+
+        <div class="flex items-start justify-between gap-2">
+          <p class="text-[11px] font-bold uppercase tracking-wide text-stone-400">{{ k.label }}</p>
+          <span class="grid place-items-center rounded-xl w-8 h-8 shrink-0"
+                :style="{ background: `${k.warna}14`, color: k.warna }" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path :d="k.ikon" />
+            </svg>
+          </span>
+        </div>
+
+        <strong class="num block text-[28px] leading-none mt-1.5" :style="{ color: k.warna }">
           {{ angka(k.nilai) }}
         </strong>
         <p class="text-[11px] text-stone-400 mt-1">{{ k.ket }}</p>
@@ -257,13 +294,17 @@ const berisi = (baris: any[] | undefined) =>
     <KartuGrafik v-if="tab === 'ringkas'" judul="Kepatuhan"
                  catatan="Persen, bukan jumlah — dua belas objek lewat jadwal berarti berbeda pada situs dengan 15 objek dan pada situs dengan 400.">
       <div class="grid gap-5 md:grid-cols-3">
-        <div v-for="m in props.meter ?? []" :key="m.nama">
-          <div class="flex items-baseline justify-between gap-2">
-            <span class="text-[12.5px] font-semibold text-cam-ink">{{ m.nama }}</span>
-            <small class="text-[11px] text-stone-400 num">{{ m.baik }} dari {{ m.dari }}</small>
-          </div>
-          <Meter :nilai="m.nilai" :maks="100" satuan="%" :target="90" />
-          <small class="block text-[11px] text-stone-400 mt-0.5">{{ m.ket }}</small>
+        <!--
+          Cincin, bukan jalur mendatar. Angkanya berada di tengah
+          bentuknya sendiri — satu benda untuk dibaca, bukan angka di
+          satu sisi dan bentuk di sisi lain — dan takik pada jalurnya
+          menunjukkan targetnya, sehingga "72%" dapat dinilai tanpa
+          membaca keterangan di bawahnya.
+        -->
+        <div v-for="m in props.meter ?? []" :key="m.nama" class="text-center">
+          <Cincin :nilai="m.nilai" :maks="100" satuan="%" :target="90" :label="m.nama" />
+          <p class="text-[11px] text-stone-400 mt-1 num">{{ m.baik }} dari {{ m.dari }}</p>
+          <p class="text-[11px] text-stone-400">{{ m.ket }}</p>
         </div>
       </div>
     </KartuGrafik>
@@ -314,7 +355,7 @@ const berisi = (baris: any[] | undefined) =>
       <div class="grid gap-4 lg:grid-cols-2">
         <KartuGrafik judul="Nisbah kupas harian"
                      catatan="Dihitung per hari dari kedua angkanya, bukan dari totalnya: nisbah rata-rata sebulan menyembunyikan hari pengupasan berat yang justru menentukan biayanya. Hari tanpa produksi tidak punya nisbah — dan digambar sebagai putus, bukan nol.">
-          <Garis :label="prod.label ?? []" :deret="deretNisbah" satuan="bcm/ton" :tinggi="180" />
+          <Garis :label="prod.label ?? []" :deret="deretNisbah" satuan="bcm/ton" :tinggi="180" bidang />
         </KartuGrafik>
 
         <KartuGrafik judul="Jam operasi dan jam delay"
@@ -326,7 +367,7 @@ const berisi = (baris: any[] | undefined) =>
 
       <div class="grid gap-4 lg:grid-cols-2">
         <KartuGrafik judul="Tonase tertimbang" catatan="Dari jembatan timbang, bukan dari catatan shift.">
-          <Garis :label="angkut.label ?? []" :deret="deretAngkut" satuan="ton" :tinggi="180" />
+          <Garis :label="angkut.label ?? []" :deret="deretAngkut" satuan="ton" :tinggi="180" bidang />
         </KartuGrafik>
 
         <KartuGrafik judul="Solar terpakai dan jam idle"
@@ -382,7 +423,7 @@ const berisi = (baris: any[] | undefined) =>
 
         <KartuGrafik judul="Realisasi biaya per bulan"
                      catatan="Tahun berjalan. Bulan yang belum tercatat digambar nol supaya bentuk serapannya terlihat utuh.">
-          <Garis :label="biaya.label ?? []" :deret="deretBiaya" satuan="Rp" :tinggi="180" />
+          <Garis :label="biaya.label ?? []" :deret="deretBiaya" satuan="Rp" :tinggi="180" bidang />
         </KartuGrafik>
       </div>
     </template>

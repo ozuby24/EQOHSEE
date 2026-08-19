@@ -34,6 +34,11 @@ const props = withDefaults(defineProps<{
 }>(), { tengah: null, tengahLabel: null });
 
 const R = 42;
+
+/* Pengenal unik per contoh komponen. Dua donat pada satu halaman yang
+   memakai id landaian sama akan saling menimpa: yang kedua mewarisi
+   warna yang pertama, dan tidak ada galat sama sekali. */
+const uid = Math.random().toString(36).slice(2, 8);
 const KELILING = 2 * Math.PI * R;
 
 const total = computed(() => props.bagian.reduce((j, b) => j + b.nilai, 0));
@@ -83,11 +88,24 @@ const disorot = ref<string | null>(null);
     <div class="relative shrink-0">
       <svg viewBox="0 0 100 100" class="w-[132px] h-[132px] -rotate-90" role="img"
            aria-label="Sebaran bagian terhadap keseluruhan">
-        <circle cx="50" cy="50" :r="R" fill="none" :stroke="BINGKAI.bantu" stroke-width="14" />
+        <defs>
+          <!-- Satu landaian per irisan, dari warnanya sendiri ke versi
+               yang lebih ringan. Tipis dan searah: landaian mencolok
+               membuat irisan besar tampak berganti warna di tengahnya,
+               dan warna di sini menandai kategori. -->
+          <linearGradient v-for="p in potongan" :key="'g' + p.label"
+                          :id="`donat-${uid}-${p.label.replace(/\W/g, '')}`"
+                          x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" :stop-color="p.warna" />
+            <stop offset="100%" :stop-color="p.warna" stop-opacity=".68" />
+          </linearGradient>
+        </defs>
+
+        <circle cx="50" cy="50" :r="R" fill="none" :stroke="BINGKAI.bantu" stroke-width="15" />
 
         <circle v-for="p in potongan" :key="p.label"
-                cx="50" cy="50" :r="R" fill="none" stroke-width="14"
-                :stroke="p.warna"
+                cx="50" cy="50" :r="R" fill="none" stroke-width="15"
+                :stroke="`url(#donat-${uid}-${p.label.replace(/\W/g, '')})`"
                 :stroke-dasharray="`${p.panjang} ${KELILING - p.panjang}`"
                 :stroke-dashoffset="p.geser"
                 :style="{ opacity: disorot && disorot !== p.label ? 0.4 : 1,
