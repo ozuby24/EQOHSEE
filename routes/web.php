@@ -249,6 +249,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
            "kedaluwarsa" tidak terbaca sebagai nomor paspor. */
         Route::get('kedaluwarsa', [MinersController::class,'kedaluwarsa'])->name('kedaluwarsa');
 
+        /* Unggah berkas SIM lalu baca masa berlakunya. Menjawab JSON,
+           bukan Inertia: pemanggilnya sebuah kolom pada formulir yang
+           sedang diisi, dan memuat ulang halamannya akan membuang
+           seluruh isian lain yang belum tersimpan. */
+        Route::post('sim', [MinersController::class,'unggahSim'])->name('sim.unggah');
+
         Route::get('{paspor}',         [MinersController::class,'show'])->name('show');
         Route::put('{paspor}',         [MinersController::class,'update'])->name('update');
         Route::delete('{paspor}',      [MinersController::class,'destroy'])

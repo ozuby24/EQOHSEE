@@ -39,7 +39,7 @@ class PasporKartu extends Model
     /** `status` sengaja tidak dapat diisi massal — lihat trait Ditinjau. */
     protected $fillable = [
         'paspor_id', 'jenis', 'sebab_terbit', 'nomor', 'tgl_terbit', 'tgl_expired',
-        'golongan', 'area', 'sim_polisi', 'sim_polisi_expired', 'pengalaman_kerja',
+        'golongan', 'area', 'sim_polisi', 'sim_polisi_expired', 'berkas_sim', 'pengalaman_kerja',
         'berkas_induksi', 'berkas_ddt', 'email_atasan', 'berkas', 'catatan',
     ];
 

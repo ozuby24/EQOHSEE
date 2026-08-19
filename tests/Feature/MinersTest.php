@@ -1955,4 +1955,58 @@ class MinersTest extends TestCase
             .'ada relasi yang dimuat satu per satu di dalam perulangan.');
     }
 
+    /**
+     * Unggahan SIM mengusulkan masa berlakunya, tidak menetapkannya.
+     *
+     * Yang dikembalikan tanggalnya BESERTA dari mana ia terbaca. Tanpa
+     * asal-usulnya, tanggal yang salah tidak dapat dibedakan dari yang
+     * benar oleh siapa pun yang memakainya di gerbang.
+     */
+    public function test_unggah_sim_mengusulkan_masa_berlakunya(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('tertutup');
+
+        $r = $this->post(route('miners.sim.unggah'), [
+            'berkas' => \Illuminate\Http\UploadedFile::fake()
+                ->image('SIM_B2_31-12-2029.jpg'),
+        ]);
+
+        $r->assertOk()
+            ->assertJsonPath('terbaca.tanggal', '2029-12-31')
+            ->assertJsonPath('terbaca.sumber', 'nama berkas');
+
+        $this->assertNotNull($r->json('jalur'), 'Berkasnya harus tetap tersimpan.');
+    }
+
+    /**
+     * Gagal membaca BUKAN gagal mengunggah.
+     *
+     * Hasil pindaian berupa gambar tidak punya lapisan teks dan tidak
+     * akan pernah terbaca. Menolak unggahannya karena itu berarti berkas
+     * yang sah tidak dapat disimpan sama sekali.
+     */
+    public function test_sim_yang_tak_terbaca_tetap_tersimpan(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('tertutup');
+
+        $r = $this->post(route('miners.sim.unggah'), [
+            'berkas' => \Illuminate\Http\UploadedFile::fake()->image('scan001.jpg'),
+        ]);
+
+        $r->assertOk()->assertJsonPath('terbaca', null);
+
+        $this->assertNotNull($r->json('jalur'),
+            'Berkas yang tanggalnya tidak terbaca tetap harus tersimpan.');
+    }
+
+    /** Jenis berkas yang tidak masuk akal ditolak sebelum tersimpan. */
+    public function test_unggahan_sim_menolak_berkas_yang_bukan_dokumen(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('tertutup');
+
+        $this->post(route('miners.sim.unggah'), [
+            'berkas' => \Illuminate\Http\UploadedFile::fake()->create('jahat.php', 8),
+        ])->assertSessionHasErrors('berkas');
+    }
+
 }

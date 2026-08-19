@@ -44,6 +44,66 @@ const LAMPIRAN: Record<string, string> = {
 };
 
 /** Berapa dari empat berkas uji unit yang sudah ada. */
+/* ── unggahan SIM dan pembacaan masa berlakunya ──
+   Mengusulkan, tidak menetapkan. Tanggal yang terisi diam-diam lebih
+   buruk daripada kolom kosong: kolom kosong terlihat belum diisi,
+   sedangkan tanggal yang salah terbaca sebagai sudah diperiksa. Karena
+   itu asal-usulnya selalu ikut ditampilkan, dan tanggal yang SUDAH
+   diisi orang tidak pernah ditimpa. */
+const simUnggah = reactive<{ sibuk: boolean; nama: string; terbaca: any; pesan: string }>({
+  sibuk: false, nama: '', terbaca: null, pesan: '',
+});
+
+async function unggahSim(e: Event) {
+  const berkas = (e.target as HTMLInputElement).files?.[0];
+  if (!berkas) return;
+
+  simUnggah.sibuk = true;
+  simUnggah.pesan = '';
+  simUnggah.terbaca = null;
+
+  try {
+    const badan = new FormData();
+    badan.append('berkas', berkas);
+
+    const r = await fetch('/miners/sim', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
+      },
+      body: badan,
+    });
+
+    if (!r.ok) {
+      simUnggah.pesan = 'Berkas tidak dapat diunggah. Periksa jenis dan ukurannya.';
+      return;
+    }
+
+    const j = await r.json();
+
+    fKartu.berkas_sim = j.jalur;
+    simUnggah.nama = j.nama;
+    simUnggah.terbaca = j.terbaca;
+
+    /* Yang sudah diisi orang TIDAK ditimpa. Bacaan mesin kalah oleh
+       ketikan manusia — manusianya memegang kartunya. */
+    if (j.terbaca && !fKartu.sim_polisi_expired) {
+      fKartu.sim_polisi_expired = j.terbaca.tanggal;
+    } else if (j.terbaca) {
+      simUnggah.pesan = `Kolom tanggal tidak diubah — sudah diisi ${fKartu.sim_polisi_expired}.`;
+    } else if (fKartu.sim_polisi_expired) {
+      simUnggah.pesan = 'Masa berlakunya tidak terbaca — tanggal yang sudah diisi tetap dipakai.';
+    } else {
+      simUnggah.pesan = 'Masa berlakunya tidak terbaca — isi tanggalnya di kolom sebelah.';
+    }
+  } catch {
+    simUnggah.pesan = 'Berkas tidak dapat diunggah.';
+  } finally {
+    simUnggah.sibuk = false;
+  }
+}
+
 function berkasTerisi(b: Record<string, string | null> | undefined): number {
   return b ? Object.values(b).filter(Boolean).length : 0;
 }
@@ -145,7 +205,7 @@ const fMcu = useForm<Record<string, any>>({
 
 const fKartu = useForm<Record<string, any>>({
   jenis: 'Mine Permit', sebab_terbit: 'Terbit', nomor: '', tgl_terbit: '', tgl_expired: '',
-  golongan: '', area: '', sim_polisi: '', sim_polisi_expired: '',
+  golongan: '', area: '', sim_polisi: '', sim_polisi_expired: '', berkas_sim: '',
   pengalaman_kerja: '', berkas_induksi: '', berkas_ddt: '', email_atasan: '',
   catatan: '',
 });
@@ -837,6 +897,46 @@ async function hapus(jalur: string, apa: string) {
                 <input v-model="fKartu.berkas_ddt" placeholder="jalur berkas"
                        class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
               </label>
+            </div>
+
+            <!--
+              Unggah berkas SIM-nya, lalu masa berlakunya dibaca dari
+              nama berkas atau dari teks di dalam PDF-nya. Yang dibaca
+              hanya DIUSULKAN: asal-usulnya ditulis di bawah supaya
+              dapat diperiksa dalam sedetik, dan tanggal yang sudah
+              diisi orang tidak pernah ditimpa.
+            -->
+            <div class="mt-3 rounded-xl bg-stone-50 border border-stone-100 p-3">
+              <label class="text-[11px] font-semibold text-stone-600">
+                Berkas SIM kepolisian
+                <span class="font-normal text-stone-400">— masa berlakunya dibaca sendiri bila terbaca</span>
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" :disabled="simUnggah.sibuk"
+                       class="mt-1 w-full text-[12px] file:mr-3 file:rounded-lg file:border-0
+                              file:bg-white file:border file:border-stone-200 file:px-3 file:py-1.5
+                              file:text-[11.5px] file:font-semibold"
+                       @change="unggahSim">
+              </label>
+
+              <p v-if="simUnggah.sibuk" class="text-[11px] text-stone-500 mt-2">Mengunggah…</p>
+
+              <p v-else-if="simUnggah.terbaca" class="text-[11px] mt-2" style="color:#15803D">
+                Terbaca <b class="num">{{ simUnggah.terbaca.tanggal }}</b>
+                dari {{ simUnggah.terbaca.sumber }} —
+                <span class="text-stone-500">"{{ simUnggah.terbaca.petikan }}"</span>
+                <!--
+                  Hari dan bulan yang keduanya ≤ 12 dapat terbaca dua
+                  cara. Tetap diusulkan, tetapi orangnya diminta melihat.
+                -->
+                <span v-if="!simUnggah.terbaca.pasti" class="block" style="color:#A16207">
+                  Hari dan bulannya dapat tertukar — mohon dipastikan.
+                </span>
+              </p>
+
+              <p v-if="simUnggah.pesan" class="text-[11px] text-stone-500 mt-1">{{ simUnggah.pesan }}</p>
+
+              <p v-if="fKartu.berkas_sim" class="text-[11px] text-stone-400 mt-1">
+                Tersimpan: {{ simUnggah.nama || fKartu.berkas_sim }}
+              </p>
             </div>
           </div>
 

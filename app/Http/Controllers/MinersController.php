@@ -10,6 +10,8 @@ use App\Models\ActivityLog as Jejak;
 use App\Support\Alur;
 use App\Support\AlurMiner;
 use App\Support\Authority;
+use App\Support\Berkas;
+use App\Support\MasaBerlakuTerbaca;
 use App\Support\PemantauanBerkas;
 use App\Support\JatahCuti;
 use App\Support\KopDokumen;
@@ -768,6 +770,7 @@ class MinersController extends Controller
             'area'         => ['nullable', 'string', 'max:150'],
 
             'sim_polisi'         => ['nullable', 'string', 'max:40'],
+            'berkas_sim'         => ['nullable', 'string', 'max:255'],
             'sim_polisi_expired' => ['nullable', 'date'],
             'pengalaman_kerja'   => ['nullable', 'string', 'max:150'],
             'berkas_induksi'     => ['nullable', 'string', 'max:255'],
@@ -790,6 +793,43 @@ class MinersController extends Controller
             'berkas_blasting'   => ['nullable', 'string', 'max:255'],
 
             'catatan' => ['nullable', 'string', 'max:1000'],
+        ]);
+    }
+
+    /**
+     * Unggah berkas SIM, lalu usulkan masa berlakunya.
+     *
+     * MENGUSULKAN, TIDAK MENGISI. Yang dikembalikan tanggalnya beserta
+     * dari mana ia terbaca dan potongan teks yang membuatnya terbaca —
+     * layar yang memakainya wajib memperlihatkan ketiganya. Tanggal
+     * kedaluwarsa yang terisi diam-diam lebih buruk daripada kolom
+     * kosong: kolom kosong terlihat belum diisi, sedangkan tanggal yang
+     * salah terbaca sebagai sudah diperiksa, dan yang memakainya di
+     * gerbang tidak punya cara mengetahui bedanya.
+     *
+     * Gagal membaca BUKAN gagal mengunggah. Hasil pindaian berupa
+     * gambar tidak punya lapisan teks dan tidak akan pernah terbaca;
+     * berkasnya tetap tersimpan dan tanggalnya diisi tangan.
+     */
+    public function unggahSim(Request $request)
+    {
+        $request->validate([
+            'berkas' => ['required', 'file', 'max:8192', 'mimes:pdf,jpg,jpeg,png,webp'],
+        ]);
+
+        $berkas = $request->file('berkas');
+        $jalur  = Berkas::simpan($berkas, 'miners/sim');
+
+        if (!$jalur) {
+            return response()->json(['pesan' => 'Berkas tidak dapat disimpan.'], 422);
+        }
+
+        $terbaca = MasaBerlakuTerbaca::dariUnggahan($berkas);
+
+        return response()->json([
+            'jalur'   => $jalur,
+            'nama'    => $berkas->getClientOriginalName(),
+            'terbaca' => $terbaca,
         ]);
     }
 
@@ -1753,6 +1793,7 @@ class MinersController extends Controller
 
             'simPolisi' => $k->sim_polisi,
             'simPolisiExpired' => $k->sim_polisi_expired?->toDateString(),
+            'berkasSim' => $k->berkas_sim,
             'pengalamanKerja' => $k->pengalaman_kerja,
             'berkasInduksi' => $k->berkas_induksi,
             'berkasDdt' => $k->berkas_ddt,
