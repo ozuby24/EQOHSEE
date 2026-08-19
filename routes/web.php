@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\MinersController;
+use App\Http\Controllers\DasborController;
 use App\Http\Controllers\{
     CertificateController, CourseController, DashboardController, EvaluationController,
     LearnController, NewsController, PersonaliaController, ProcedureController, ProfileController,
@@ -45,6 +46,14 @@ Route::get('/', fn () => auth()->check()
 Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    /* Dasbor menyeluruh, TERPISAH dari dasbor pembelajaran di atas.
+       Yang satu menjawab pertanyaan seorang peserta tentang kursusnya;
+       yang ini menjawab pertanyaan seorang pengawas tentang situsnya.
+       Menggabungkannya membuat angka kursus dan angka izin kerja
+       berebut tempat yang sama, dan yang kalah selalu yang tidak
+       sedang dicari orangnya. */
+    Route::get('/dasbor', [DasborController::class, 'index'])->name('dasbor');
 
     /* Register temuan lintas modul. Berdiri di luar modul mana pun karena
        ia justru menyatukan kelimanya — menaruhnya di dalam salah satu modul

@@ -23,6 +23,20 @@ final class Menu
     public static function all(): array
     {
         return [
+    /* Dasbor menyeluruh berdiri paling depan: ia satu-satunya halaman
+       yang menyebut keadaan SELURUH modul, dan karena itu tempat yang
+       benar untuk memulai hari. Terpisah dari dasbor Learning Center,
+       yang menjawab pertanyaan seorang peserta tentang kursusnya
+       sendiri, bukan pertanyaan seorang pengawas tentang situsnya. */
+    'dasbor' => [
+      'label' => 'Dasbor',
+      'icon'  => 'M4 13h6V4H4v9Zm10 7h6v-9h-6v9ZM4 20h6v-4H4v4Zm10-11h6V4h-6v5Z',
+      'groups' => [
+        '' => [
+          ['Ringkasan Situs', 'dasbor', 'dasbor'],
+        ],
+      ],
+    ],
     /* Personalia berdiri di depan Learning Center: yang diurus di sini
        bukan pembelajaran melainkan siapa penggunanya dan di bawah
        perusahaan mana ia bekerja — jawaban yang dipakai hampir seluruh
@@ -480,6 +494,7 @@ final class Menu
      * @var list<array{0:list<string>,1:string}>
      */
     private const PETA_ALAMAT = [
+        [['dasbor'],                               'dasbor'],
         [['personalia*', 'pesan*'],                'personalia'],
         [['hazard*', 'inspeksi*', 'temuan*'],      'hazrep'],
         [['tpkkp*'],                               'tpkkp'],

@@ -423,12 +423,18 @@ main a{transition:color .16s}
 .eq-chip{font-size:11.5px;font-weight:600;color:var(--eq-redup,#7C8894);background:#F4F6F8;
   border:1px solid rgba(27,32,36,.07);border-radius:9px;padding:5px 11px}
 
-.eq-kisi-utama{display:grid;gap:16px;grid-template-columns:minmax(0,1fr) minmax(0,340px)}
+.eq-kisi-utama{display:grid;gap:16px;grid-template-columns:minmax(0,1fr) minmax(0,340px);align-items:start}
 @media (max-width:1180px){.eq-kisi-utama{grid-template-columns:minmax(0,1fr)}}
 .eq-kolom-sisi{display:flex;flex-direction:column;gap:16px;min-width:0}
 
 /* ── Kartu kursus ── */
-.eq-kursus-kisi{display:grid;gap:15px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+/* auto-fill, BUKAN auto-fit. Keduanya sama selama kartunya banyak;
+   bedanya baru terlihat saat kartunya satu — auto-fit meruntuhkan jalur
+   yang kosong sehingga kartu tunggal meregang selebar panelnya, dan
+   gambar 16/10 selebar 600px menjadi 375px tinggi. Satu kursus lalu
+   memakan layar lebih banyak daripada dua puluh satu modul di bawahnya. */
+.eq-kursus-kisi{display:grid;gap:15px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.eq-kursus-kisi .eq-kursus-gambar{aspect-ratio:16/9}
 .eq-kursus{border:1px solid rgba(27,32,36,.08);border-radius:16px;overflow:hidden;background:#fff;
   display:flex;flex-direction:column;
   transition:transform .22s cubic-bezier(.21,.6,.35,1),box-shadow .22s,border-color .22s}
