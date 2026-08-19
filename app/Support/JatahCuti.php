@@ -34,34 +34,75 @@ final class JatahCuti
      */
     public static function hitung(Paspor $p, ?int $tahun = null): array
     {
+        return self::hitungBanyak([$p], $tahun)[$p->getKey()];
+    }
+
+    /**
+     * Sisa cuti SEKUMPULAN orang, dalam dua kueri — berapa pun jumlahnya.
+     *
+     * Rumusnya tidak digandakan: `hitung()` untuk satu orang memanggil
+     * yang ini juga. Alasan yang sama dengan alasan kelas ini ada —
+     * dua salinan rumus sisa cuti adalah dua angka yang cepat atau
+     * lambat berselisih, dan yang berselisih bukan tampilan melainkan
+     * jawaban yang diterima orang di layar lalu dibantah saat ia
+     * mengajukan.
+     *
+     * Yang melahirkan versi ini: layar /miners/cuti menghitung saldo
+     * untuk SETIAP orang, dan memanggil `hitung()` sekali per orang
+     * berarti dua kueri per orang. Terukur pada empat puluh orang: 177
+     * kueri untuk satu halaman, 160 di antaranya dua pola yang sama
+     * berulang. Bertambah lurus mengikuti jumlah pegawai — yaitu
+     * memburuk persis ketika perusahaannya bertumbuh.
+     *
+     * @param  iterable<Paspor>  $orang
+     * @return array<int, array{
+     *   tahun:int, jatah:int, bawaan:int, total:int,
+     *   terpakai:int, tertahan:int, sisa:int, diatur:bool
+     * }>  dikunci paspor_id
+     */
+    public static function hitungBanyak(iterable $orang, ?int $tahun = null): array
+    {
         $tahun ??= (int) now()->year;
 
-        $baris = MinersCutiJatah::where('paspor_id', $p->getKey())
-            ->where('tahun', $tahun)->first();
+        $id = [];
+        foreach ($orang as $p) { $id[] = $p->getKey(); }
+        if (!$id) return [];
 
-        $jatah  = $baris?->jatah  ?? MinersCutiJatah::BAKU;
-        $bawaan = $baris?->bawaan ?? 0;
+        $jatahPer = MinersCutiJatah::whereIn('paspor_id', $id)
+            ->where('tahun', $tahun)->get()->keyBy('paspor_id');
 
-        $cuti = MinersCuti::where('paspor_id', $p->getKey())
-            ->where('tahun', $tahun)->membebaniJatah()->get();
+        $cutiPer = MinersCuti::whereIn('paspor_id', $id)
+            ->where('tahun', $tahun)->membebaniJatah()->get()->groupBy('paspor_id');
 
-        $terpakai = (int) $cuti->where('status', Alur::DISETUJUI)->sum('jumlah_hari');
-        $tertahan = (int) $cuti->where('status', Alur::DIAJUKAN)->sum('jumlah_hari');
+        $keluar = [];
 
-        return [
-            'tahun'    => $tahun,
-            'jatah'    => $jatah,
-            'bawaan'   => $bawaan,
-            'total'    => $jatah + $bawaan,
-            'terpakai' => $terpakai,
-            'tertahan' => $tertahan,
-            'sisa'     => $jatah + $bawaan - $terpakai - $tertahan,
+        foreach ($id as $pid) {
+            $baris = $jatahPer->get($pid);
+            $cuti  = $cutiPer->get($pid) ?? collect();
 
-            /* Apakah jatahnya memang pernah diatur, atau ini angka baku.
-               Bedanya penting di layar: "12 hari" yang belum pernah
-               ditetapkan siapa pun tidak boleh terlihat sama dengan
-               "12 hari" yang sudah disepakati HRD. */
-            'diatur'   => $baris !== null,
-        ];
+            $jatah  = $baris?->jatah  ?? MinersCutiJatah::BAKU;
+            $bawaan = $baris?->bawaan ?? 0;
+
+            $terpakai = (int) $cuti->where('status', Alur::DISETUJUI)->sum('jumlah_hari');
+            $tertahan = (int) $cuti->where('status', Alur::DIAJUKAN)->sum('jumlah_hari');
+
+            $keluar[$pid] = [
+                'tahun'    => $tahun,
+                'jatah'    => $jatah,
+                'bawaan'   => $bawaan,
+                'total'    => $jatah + $bawaan,
+                'terpakai' => $terpakai,
+                'tertahan' => $tertahan,
+                'sisa'     => $jatah + $bawaan - $terpakai - $tertahan,
+
+                /* Apakah jatahnya memang pernah diatur, atau ini angka baku.
+                   Bedanya penting di layar: "12 hari" yang belum pernah
+                   ditetapkan siapa pun tidak boleh terlihat sama dengan
+                   "12 hari" yang sudah disepakati HRD. */
+                'diatur'   => $baris !== null,
+            ];
+        }
+
+        return $keluar;
     }
 }

@@ -219,7 +219,8 @@ class WaterController extends Controller
     {
         [$dari, $sampai] = $this->rentang($request);
 
-        $sumps = WaterSump::with(['pumps.objek', 'logs'])->where('status', 'aktif')->orderBy('kode')->get();
+        $sumps = WaterSump::with(['pumps.objek', 'logs', 'company:id,name'])
+            ->where('status', 'aktif')->orderBy('kode')->get();
         $semua = WaterLog::with('sump')->whereBetween('tanggal', [$dari, $sampai])->orderBy('tanggal')->get();
         $sah = $semua->whereIn('status', Alur::terhitung());
 
@@ -254,7 +255,7 @@ class WaterController extends Controller
     {
         [$dari, $sampai] = $this->rentang($request);
 
-        $sumps = WaterSump::with(['pumps.objek', 'logs'])->orderBy('kode')->get();
+        $sumps = WaterSump::with(['pumps.objek', 'logs', 'company:id,name'])->orderBy('kode')->get();
         $aktif = $sumps->where('status', 'aktif');
 
         $semua = WaterLog::with('sump')->whereBetween('tanggal', [$dari, $sampai])

@@ -934,10 +934,16 @@ class MinersController extends Controller
                 'alasanTolak'   => $c->alasan_tolak,
             ])->values(),
 
-            'saldo' => $orang->map(function (Paspor $p) use ($tahun) {
-                return ['id' => $p->id, 'nama' => $p->nama, 'jabatan' => $p->jabatan]
-                    + JatahCuti::hitung($p, $tahun);
-            })->values(),
+            /* Saldo seluruh orang diambil sekaligus. Memanggil
+               JatahCuti::hitung() per orang berarti dua kueri per orang,
+               dan halaman ini memang menghitung untuk SETIAP orang. */
+            'saldo' => (function () use ($orang, $tahun) {
+                $saldo = JatahCuti::hitungBanyak($orang, $tahun);
+
+                return $orang->map(fn (Paspor $p) => [
+                    'id' => $p->id, 'nama' => $p->nama, 'jabatan' => $p->jabatan,
+                ] + $saldo[$p->getKey()])->values();
+            })(),
 
             'ringkas' => [
                 'sedangCuti' => $baris->filter(fn ($c) => $c->sedangCuti())->count(),
