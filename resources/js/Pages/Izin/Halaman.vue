@@ -239,7 +239,7 @@ const warnaWaktu: Record<string, string> = {
             <input v-model="izin.batas_uji_menit" type="number" :disabled="!perluGas"
                    :placeholder="perluGas ? String(props.opsi?.batasUjiBawaan) : 'jenis ini tidak menuntut uji gas'"
                    class="mt-1 w-full rounded-lg border-stone-200 text-[12px] disabled:bg-stone-50"></label>
-          <button class="eq-btn self-end" :disabled="izin.processing">Simpan draf</button>
+          <button class="eq-btn-utama self-end" :disabled="izin.processing">Simpan draf</button>
         </form>
         <p v-for="(e, k) in izin.errors" :key="k" class="mt-2 text-[11px] text-red-600">{{ e }}</p>
       </section>
@@ -384,7 +384,7 @@ const warnaWaktu: Record<string, string> = {
             <input v-model="syarat.urutan" type="number" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
           <label class="flex items-center gap-2 text-[11px] font-bold text-stone-500 self-end pb-2">
             <input v-model="syarat.wajib" type="checkbox" class="rounded border-stone-300"> Wajib</label>
-          <button class="eq-btn md:col-start-5" :disabled="syarat.processing">Tambah</button>
+          <button class="eq-btn-utama md:col-start-5" :disabled="syarat.processing">Tambah</button>
         </form>
         <p v-for="(e, k) in syarat.errors" :key="k" class="mt-2 text-[11px] text-red-600">{{ e }}</p>
       </section>
@@ -434,7 +434,7 @@ const warnaWaktu: Record<string, string> = {
             <input v-model="ambang.satuan" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
           <label class="text-[11px] font-bold text-stone-500">Acuan
             <input v-model="ambang.acuan" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
-          <button class="eq-btn md:col-start-5" :disabled="ambang.processing">Simpan</button>
+          <button class="eq-btn-utama md:col-start-5" :disabled="ambang.processing">Simpan</button>
         </form>
         <p v-for="(e, k) in ambang.errors" :key="k" class="mt-2 text-[11px] text-red-600">{{ e }}</p>
       </section>
@@ -483,7 +483,7 @@ const warnaWaktu: Record<string, string> = {
           <input v-model="tindak.target_selesai" type="date" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
         <label class="md:col-span-4 text-[11px] font-bold text-stone-500">Uraian
           <input v-model="tindak.uraian" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
-        <button class="eq-btn self-end" :disabled="tindak.processing">Tambah</button>
+        <button class="eq-btn-utama self-end" :disabled="tindak.processing">Tambah</button>
       </form>
 
       <table class="w-full mt-4 text-[11.5px]">

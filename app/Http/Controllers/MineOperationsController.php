@@ -421,7 +421,16 @@ class MineOperationsController extends Controller
         return Inertia::render('Operasi/Halaman', [
             'mode' => $mode, 'dari' => $dari, 'sampai' => $sampai, 'ringkas' => $ringkas,
             'target' => ['produksi' => $targetProduksi, 'ob' => $targetOb, 'strip_ratio' => $targetStrip, 'jarak' => $targetJarak],
-            'records' => $records->map(fn (MineOperationalRecord $x) => $this->recordView($x))->values(),
+            /* Hanya tab "Input Shift" yang menggambar daftar ini; tiga
+               tab lain memakai $records untuk hitungannya saja. Alasan
+               yang sama dengan `geojson` di atas — tiap tab kunjungan
+               terpisah ke server, jadi mengirimnya di semua tab hanya
+               menambah muatan yang dibayar ulang tiap perpindahan.
+
+               Terukur pada data 16x: 71,9 kB dikirim kepada empat tab,
+               tiga di antaranya tidak menggambarkannya. */
+            'records' => $mode !== 'data' ? [] :
+                $records->map(fn (MineOperationalRecord $x) => $this->recordView($x))->values(),
             'targets' => $targets->sortByDesc(fn ($x) => $x->tahun * 100 + $x->bulan)
                 ->map(fn (MineOperationalTarget $x) => $this->targetView($x))->values(),
             'layers' => $layers->map(fn (MineMapLayer $x) => $this->layerView($x, $mode === 'gis'))->values(),

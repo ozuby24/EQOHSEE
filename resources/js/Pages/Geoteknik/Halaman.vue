@@ -321,7 +321,7 @@ const arahTren: Record<string, string> = {
             Perpindahan diisi <b>kumulatif sejak titik nol alat</b>, bukan selisih harian — lajunya dihitung sendiri.
             Gejala yang ditandai langsung masuk peringatan tanpa menunggu tinjauan.
           </p>
-          <button class="eq-btn self-end" :disabled="bacaan.processing">Simpan sebagai draf</button>
+          <button class="eq-btn-utama self-end" :disabled="bacaan.processing">Simpan sebagai draf</button>
         </form>
         <p v-for="(e, k) in bacaan.errors" :key="k" class="mt-2 text-[11px] text-red-600">{{ e }}</p>
       </section>
@@ -440,7 +440,7 @@ const arahTren: Record<string, string> = {
 
           <label class="md:col-span-3 text-[11px] font-bold text-stone-500">Catatan
             <input v-model="lereng.catatan" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
-          <button class="eq-btn self-end" :disabled="lereng.processing">Simpan lereng</button>
+          <button class="eq-btn-utama self-end" :disabled="lereng.processing">Simpan lereng</button>
         </form>
         <p v-for="(e, k) in lereng.errors" :key="k" class="mt-2 text-[11px] text-red-600">{{ e }}</p>
       </section>
@@ -508,7 +508,7 @@ const arahTren: Record<string, string> = {
           <input v-model="tindak.target_selesai" type="date" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
         <label class="md:col-span-4 text-[11px] font-bold text-stone-500">Uraian
           <input v-model="tindak.uraian" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
-        <button class="eq-btn self-end" :disabled="tindak.processing">Tambah</button>
+        <button class="eq-btn-utama self-end" :disabled="tindak.processing">Tambah</button>
       </form>
 
       <table class="w-full mt-4 text-[11.5px]">

@@ -273,7 +273,7 @@ const warnaStatus: Record<string, string> = {
             </select></label>
           <label class="text-[11px] font-bold text-stone-500">Catatan
             <input v-model="rencana.catatan" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
-          <button class="eq-btn self-end" :disabled="rencana.processing">Simpan draf</button>
+          <button class="eq-btn-utama self-end" :disabled="rencana.processing">Simpan draf</button>
         </form>
         <p v-for="(e, k) in rencana.errors" :key="k" class="mt-2 text-[11px] text-red-600">{{ e }}</p>
       </section>
@@ -335,7 +335,7 @@ const warnaStatus: Record<string, string> = {
               <input v-model="hasil.flyrock_jarak_m" type="number" step="0.1" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
             <label class="md:col-span-3 text-[11px] font-bold text-stone-500">Kejadian
               <input v-model="hasil.kejadian" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
-            <button class="eq-btn self-end" :disabled="hasil.processing">Simpan hasil</button>
+            <button class="eq-btn-utama self-end" :disabled="hasil.processing">Simpan hasil</button>
           </form>
           <p v-for="(e, k) in hasil.errors" :key="k" class="mt-2 text-[11px] text-red-600">{{ e }}</p>
 
@@ -390,7 +390,7 @@ const warnaStatus: Record<string, string> = {
             <input v-model="titik.ppv_ambang_mm_s" type="number" step="0.01" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
           <label class="md:col-span-2 text-[11px] font-bold text-stone-500">Acuan (dasar hukum)
             <input v-model="titik.acuan_ambang" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
-          <button class="eq-btn self-end" :disabled="titik.processing">Simpan</button>
+          <button class="eq-btn-utama self-end" :disabled="titik.processing">Simpan</button>
         </form>
         <p v-for="(e, k) in titik.errors" :key="k" class="mt-2 text-[11px] text-red-600">{{ e }}</p>
       </section>
@@ -466,7 +466,7 @@ const warnaStatus: Record<string, string> = {
           <input v-model="tindak.target_selesai" type="date" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
         <label class="md:col-span-4 text-[11px] font-bold text-stone-500">Uraian
           <input v-model="tindak.uraian" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
-        <button class="eq-btn self-end" :disabled="tindak.processing">Tambah</button>
+        <button class="eq-btn-utama self-end" :disabled="tindak.processing">Tambah</button>
       </form>
 
       <table class="w-full mt-4 text-[11.5px]">

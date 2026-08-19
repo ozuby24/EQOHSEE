@@ -280,7 +280,7 @@ const warnaStatus: Record<string, string> = {
 
           <label class="md:col-span-3 text-[11px] font-bold text-stone-500">Catatan
             <input v-model="area.catatan" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
-          <button class="eq-btn self-end" :disabled="area.processing">Simpan petak</button>
+          <button class="eq-btn-utama self-end" :disabled="area.processing">Simpan petak</button>
         </form>
         <p v-for="(e, k) in area.errors" :key="k" class="mt-2 text-[11px] text-red-600">{{ e }}</p>
       </section>
@@ -317,7 +317,7 @@ const warnaStatus: Record<string, string> = {
             <input v-model="kemajuan.tingkat_tumbuh_persen" type="number" step="0.01" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
           <label class="md:col-span-1 text-[11px] font-bold text-stone-500">Catatan
             <input v-model="kemajuan.catatan" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
-          <button class="eq-btn self-end" :disabled="kemajuan.processing">Simpan draf</button>
+          <button class="eq-btn-utama self-end" :disabled="kemajuan.processing">Simpan draf</button>
         </form>
         <p v-for="(e, k) in kemajuan.errors" :key="k" class="mt-2 text-[11px] text-red-600">{{ e }}</p>
       </section>
@@ -401,7 +401,7 @@ const warnaStatus: Record<string, string> = {
           <p class="md:col-span-4 text-[11px] text-stone-500 self-center">
             Pelanggaran dihitung saat dibaca, terhadap ambang yang berlaku — bukan disimpan sebagai status yang membeku ketika baku mutunya berubah.
           </p>
-          <button class="eq-btn self-end" :disabled="pantau.processing">Simpan draf</button>
+          <button class="eq-btn-utama self-end" :disabled="pantau.processing">Simpan draf</button>
         </form>
         <p v-for="(e, k) in pantau.errors" :key="k" class="mt-2 text-[11px] text-red-600">{{ e }}</p>
       </section>
@@ -484,7 +484,7 @@ const warnaStatus: Record<string, string> = {
             <input v-model="parameter.batas_maks" type="number" step="0.0001" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
           <label class="text-[11px] font-bold text-stone-500">Acuan (dasar hukum)
             <input v-model="parameter.acuan" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
-          <button class="eq-btn self-end" :disabled="parameter.processing">Simpan</button>
+          <button class="eq-btn-utama self-end" :disabled="parameter.processing">Simpan</button>
         </form>
         <p v-for="(e, k) in parameter.errors" :key="k" class="mt-2 text-[11px] text-red-600">{{ e }}</p>
       </section>
@@ -533,7 +533,7 @@ const warnaStatus: Record<string, string> = {
           <input v-model="tindak.target_selesai" type="date" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
         <label class="md:col-span-4 text-[11px] font-bold text-stone-500">Uraian
           <input v-model="tindak.uraian" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
-        <button class="eq-btn self-end" :disabled="tindak.processing">Tambah</button>
+        <button class="eq-btn-utama self-end" :disabled="tindak.processing">Tambah</button>
       </form>
 
       <table class="w-full mt-4 text-[11.5px]">

@@ -272,12 +272,28 @@ class CostController extends Controller
 
             'daftarAkun' => BiayaAkun::where('aktif', true)->orderBy('kode')->get()
                 ->map(fn (BiayaAkun $a) => $a->toView())->values(),
-            'daftarAnggaran' => BiayaAnggaran::with('akun')->where('tahun', $tahun)
-                ->orderBy('biaya_akun_id')->get()
-                ->map(fn (BiayaAnggaran $a) => $a->toView())->values(),
-            'daftarRealisasi' => BiayaRealisasi::with('akun')->where('tahun', $tahun)
-                ->orderByDesc('bulan')->orderBy('biaya_akun_id')->get()
-                ->map(fn (BiayaRealisasi $x) => $x->toView())->values(),
+            /* Dua daftar panjang ini hanya dibaca oleh tabnya sendiri —
+               `daftarAnggaran` oleh tab anggaran, `daftarRealisasi` oleh
+               tab realisasi. Tiap tab adalah kunjungan terpisah ke
+               server (<Link>, bukan saklar di sisi peramban), jadi
+               mengirim keduanya di keempat tab bukan mempercepat
+               perpindahan tab: muatannya dibayar ulang di setiap tab,
+               dan tiga per empatnya tidak pernah tergambar.
+
+               Terukur pada data 16x: daftarRealisasi 36,4 kB dikirim
+               kepada empat tab, tiga di antaranya tidak memakainya.
+
+               `daftarAkun` sengaja tidak ikut disyaratkan — ia dibaca
+               sebuah computed di script setup, jadi ia memang dibutuhkan
+               tab mana pun. */
+            'daftarAnggaran' => $mode !== 'anggaran' ? [] :
+                BiayaAnggaran::with('akun')->where('tahun', $tahun)
+                    ->orderBy('biaya_akun_id')->get()
+                    ->map(fn (BiayaAnggaran $a) => $a->toView())->values(),
+            'daftarRealisasi' => $mode !== 'realisasi' ? [] :
+                BiayaRealisasi::with('akun')->where('tahun', $tahun)
+                    ->orderByDesc('bulan')->orderBy('biaya_akun_id')->get()
+                    ->map(fn (BiayaRealisasi $x) => $x->toView())->values(),
 
             'tindak' => $tindak->map(fn (TindakLanjut $t) => $t->toView())->values(),
             'kodeDitangani' => $tindak->filter(fn (TindakLanjut $t) => $t->terbuka())

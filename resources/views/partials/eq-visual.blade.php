@@ -73,6 +73,11 @@ body{
 .eq-profil{display:flex;align-items:center;gap:10px;padding-left:2px}
 .eq-avatar{width:40px;height:40px;flex:none;border-radius:50%;display:grid;place-items:center;
   background:linear-gradient(135deg,#F57C00,#FF9800);color:#fff;font-weight:800;font-size:14px}
+/* Varian berfoto. Tanpa `object-fit`, potret yang tidak persegi
+   dipipihkan ke dalam lingkaran 40px alih-alih dipotong — dan `.eq-avatar`
+   sendiri tidak dapat memakainya, sebab varian berhuruf memakai `grid`
+   untuk menengahkan inisialnya. */
+.eq-avatar-foto{object-fit:cover}
 .eq-profil-teks{display:flex;flex-direction:column;line-height:1.25}
 .eq-profil-teks strong{font-size:13px;color:var(--eq-judul,#0F1720);font-weight:700}
 .eq-profil-teks small{font-size:11.5px;color:var(--eq-redup,#7C8894)}

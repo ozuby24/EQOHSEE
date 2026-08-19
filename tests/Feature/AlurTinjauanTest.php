@@ -96,8 +96,18 @@ class AlurTinjauanTest extends TestCase
 
         $this->assertSame(0.0, (float) $props['ringkas']['produksi'],
             'Draf tidak boleh ikut terhitung.');
-        $this->assertCount(1, $props['records'],
-            'Tetapi draf harus tetap terlihat di daftar oleh pengajunya.');
+
+        /* Daftarnya diperiksa pada tab "Input Shift", bukan pada dasbor.
+           Di situlah ia digambar — dasbornya tidak pernah menampilkan
+           daftar record sama sekali, dan sejak muatannya dipangkas ia
+           juga tidak lagi mengirimnya. Yang ditegakkan tetap sama persis:
+           draf harus tetap terlihat oleh pengajunya. */
+        $daftar = $this->actingAs($this->operator())
+            ->get(route('operasi.data'))->assertOk()
+            ->viewData('page')['props'];
+
+        $this->assertCount(1, $daftar['records'],
+            'Draf harus tetap terlihat di daftar oleh pengajunya.');
     }
 
     public function test_angka_yang_sudah_disetujui_terhitung_di_kpi(): void

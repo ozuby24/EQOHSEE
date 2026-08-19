@@ -212,6 +212,72 @@ class LapanganTest extends TestCase
         );
     }
 
+    /**
+     * Tiap kelas `eq-*` yang dipakai markup harus benar-benar ada CSS-nya.
+     *
+     * Kelas yang tidak pernah didefinisikan tidak menimbulkan galat apa
+     * pun: peramban mengabaikannya, buildnya berhasil, ujinya hijau, dan
+     * tombolnya tergambar sebagai teks polos di tengah formulir — tanpa
+     * bidang, tanpa garis, tanpa tanda bahwa ia dapat ditekan.
+     *
+     * Terjadi persis begitu pada `.eq-btn`, yang tidak pernah ada:
+     * 23 tombol kirim di enam modul — "Tambah", "Simpan", "Simpan draf" —
+     * semuanya tampil sebagai tulisan biasa. Yang ada hanya
+     * `.eq-btn-utama`, `.eq-btn-lain`, `.eq-btn-mini`, `.eq-btn-blok`,
+     * `.eq-btn-setuju`, dan `.eq-btn-tolak`.
+     *
+     * Kelas utilitas Tailwind sengaja tidak ikut diperiksa — ia lahir
+     * dari pemindaian, bukan dari berkas gaya, jadi memeriksanya di sini
+     * hanya akan salah menuduh. Yang diperiksa khusus awalan `eq-`,
+     * sebab itulah yang ditulis tangan dan karenanya dapat salah ketik.
+     */
+    public function test_kelas_eq_yang_dipakai_ada_gayanya(): void
+    {
+        $gaya = file_get_contents(resource_path('views/partials/eq-visual.blade.php'))
+              . file_get_contents(resource_path('css/app.css'));
+
+        preg_match_all('/\.(eq-[a-z0-9-]+)/', $gaya, $m);
+        $ada = array_flip($m[1]);
+
+        $hilang = [];
+
+        foreach ($this->berkasVue() as $berkas) {
+            $isi = file_get_contents($berkas);
+
+            /* Blok <style> komponennya sendiri ikut dihitung sebagai
+               sumber gaya — sebagian kelas memang tinggal di sana, dan
+               mengabaikannya melahirkan tuduhan palsu. Terjadi pada
+               `.eq-denyut` dan `.eq-jenis-aktif` saat uji ini ditulis. */
+            $adaBerkas = $ada;
+            if (preg_match_all('/\.(eq-[a-z0-9-]+)/', $isi, $lokal)) {
+                $adaBerkas += array_flip($lokal[1]);
+            }
+
+            /* Hanya atribut class harfiah. Kelas yang dirangkai saat
+               berjalan (`:class`, gabungan tali) tidak dapat dibaca dari
+               sumber, dan menebaknya akan melahirkan tuduhan palsu. */
+            preg_match_all('/(?<![:\w-])class="([^"{\']*)"/', $isi, $c);
+
+            foreach ($c[1] as $daftar) {
+                foreach (preg_split('/\s+/', trim($daftar)) as $kelas) {
+                    if (!str_starts_with($kelas, 'eq-') || isset($adaBerkas[$kelas])) continue;
+                    $hilang[$kelas][] = basename($berkas);
+                }
+            }
+        }
+
+        $pesan = '';
+        foreach ($hilang as $kelas => $berkas) {
+            $pesan .= sprintf("\n  .%s — %d tempat (%s)", $kelas, count($berkas),
+                implode(', ', array_slice(array_unique($berkas), 0, 4)));
+        }
+
+        $this->assertSame([], $hilang,
+            'Kelas eq-* dipakai markup tetapi tidak ada aturan gayanya. '
+            . 'Elemennya tergambar tanpa gaya sama sekali, dan tidak ada yang menimbulkan galat:'
+            . $pesan);
+    }
+
     /** @return list<string> */
     private function berkasVue(): array
     {

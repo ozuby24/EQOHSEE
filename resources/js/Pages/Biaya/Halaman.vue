@@ -299,7 +299,7 @@ const warnaSerapan: Record<string, string> = {
                    :placeholder="akunTerpilih?.bersatuan ? '' : 'akun tanpa satuan'"></label>
           <label class="md:col-span-2 text-[11px] font-bold text-stone-500">Catatan
             <input v-model="realisasi.catatan" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
-          <button class="eq-btn self-end" :disabled="realisasi.processing">Simpan draf</button>
+          <button class="eq-btn-utama self-end" :disabled="realisasi.processing">Simpan draf</button>
         </form>
         <p v-for="(e, k) in realisasi.errors" :key="k" class="mt-2 text-[11px] text-red-600">{{ e }}</p>
       </section>
@@ -371,7 +371,7 @@ const warnaSerapan: Record<string, string> = {
             <input v-model="anggaran.kuantitas_rencana" type="number" step="0.001" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
           <label class="md:col-span-3 text-[11px] font-bold text-stone-500">Catatan
             <input v-model="anggaran.catatan" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
-          <button class="eq-btn self-end" :disabled="anggaran.processing">Simpan</button>
+          <button class="eq-btn-utama self-end" :disabled="anggaran.processing">Simpan</button>
         </form>
         <p v-for="(e, k) in anggaran.errors" :key="k" class="mt-2 text-[11px] text-red-600">{{ e }}</p>
       </section>
@@ -426,7 +426,7 @@ const warnaSerapan: Record<string, string> = {
                    class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
           <label class="md:col-span-2 text-[11px] font-bold text-stone-500">Catatan
             <input v-model="akun.catatan" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
-          <button class="eq-btn self-end" :disabled="akun.processing">Simpan</button>
+          <button class="eq-btn-utama self-end" :disabled="akun.processing">Simpan</button>
         </form>
         <p v-for="(e, k) in akun.errors" :key="k" class="mt-2 text-[11px] text-red-600">{{ e }}</p>
       </section>
@@ -471,7 +471,7 @@ const warnaSerapan: Record<string, string> = {
           <input v-model="tindak.target_selesai" type="date" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
         <label class="md:col-span-4 text-[11px] font-bold text-stone-500">Uraian
           <input v-model="tindak.uraian" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
-        <button class="eq-btn self-end" :disabled="tindak.processing">Tambah</button>
+        <button class="eq-btn-utama self-end" :disabled="tindak.processing">Tambah</button>
       </form>
 
       <table class="w-full mt-4 text-[11.5px]">
