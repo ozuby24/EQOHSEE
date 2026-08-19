@@ -12,7 +12,8 @@
  * antrean memanjang.
  */
 import { computed, reactive, ref } from 'vue';
-import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { propHalaman } from '../../halaman';
 import KartuGrafik from '../../Grafik/KartuGrafik.vue';
 import Batang from '../../Grafik/Batang.vue';
 import Donat from '../../Grafik/Donat.vue';
@@ -24,7 +25,7 @@ import { useDialog } from '../../dialog';
 const { dialog, tanya, minta, batal, lanjut } = useDialog();
 
 
-const props = usePage<any>().props as any;
+const props = propHalaman();
 
 /**
  * Lampiran syarat Mine Permit, dengan nama yang dipakai di layar.

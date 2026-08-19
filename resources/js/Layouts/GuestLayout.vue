@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { Link, usePage } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+import { Link } from '@inertiajs/vue3';
+import { propHalaman } from '../halaman';
 import Wordmark from '../Components/Wordmark.vue';
 
 /**
@@ -15,7 +16,8 @@ import Wordmark from '../Components/Wordmark.vue';
  * itu pun belum ada, foto lama tetap menjadi jaring pengaman supaya
  * halaman masuk tidak pernah tampil tanpa latar sama sekali.
  */
-const media = usePage<any>().props.mediaMasuk ?? {};
+const prop = propHalaman();
+const media = computed<any>(() => prop.mediaMasuk ?? {});
 
 const kurangiGerak = ref(
   typeof window !== 'undefined'

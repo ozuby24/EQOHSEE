@@ -10,7 +10,8 @@
  * kesimpulan biasanya yang kedua.
  */
 import { computed, reactive } from 'vue';
-import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { propHalaman } from '../../halaman';
 import Baris from './Baris.vue';
 import { KEADAAN } from '../../Grafik/warna';
 import Dialog from '../../Components/Dialog.vue';
@@ -18,7 +19,7 @@ import { useDialog } from '../../dialog';
 const { dialog, tanya, minta, batal, lanjut } = useDialog();
 
 
-const props = usePage<any>().props as any;
+const props = propHalaman();
 
 const baris   = computed(() => props.baris ?? []);
 const tayang  = computed(() => baris.value.filter((b: any) => b.tayang));

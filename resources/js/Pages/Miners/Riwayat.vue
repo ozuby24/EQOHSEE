@@ -16,10 +16,11 @@
  * halaman yang diam-diam berbeda dari tiga lainnya.
  */
 import { computed } from 'vue';
-import { Head, Link, usePage } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
+import { propHalaman } from '../../halaman';
 import { KEADAAN } from '../../Grafik/warna';
 
-const props = usePage<any>().props as any;
+const props = propHalaman();
 
 const baris = computed(() => props.baris ?? []);
 

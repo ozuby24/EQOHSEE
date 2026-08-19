@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { propHalaman } from '../../halaman';
 import EngineeringMonitor from '../../Components/EngineeringMonitor.vue';
 import MiningTools from '../../Components/MiningTools.vue';
 
 /*
-  Prop halaman diambil lewat usePage(), bukan defineProps.
+  Prop halaman diambil lewat propHalaman(), bukan defineProps.
 
   Bentuk `defineProps<{ mode: string; [key: string]: any }>()` yang
   dipakai sebelumnya terbaca seolah menerima apa saja. Yang sebenarnya
@@ -20,11 +21,12 @@ import MiningTools from '../../Components/MiningTools.vue';
   tidak pernah sampai ke tampilan. Uji sisi server tetap hijau, sebab
   yang salah bukan propnya melainkan penerimaannya.
 
-  usePage() mengambil prop halaman apa adanya — termasuk yang dibagikan
-  middleware — sehingga tidak ada daftar nama yang harus dirawat sejajar
-  dengan controller-nya, dan tidak ada nama yang dapat hilang diam-diam.
+  propHalaman() mengambil prop halaman apa adanya — termasuk yang
+  dibagikan middleware — sehingga tidak ada daftar nama yang harus
+  dirawat sejajar dengan controller-nya, dan tidak ada nama yang dapat
+  hilang diam-diam. Dibacanya hidup: lihat resources/js/halaman.ts.
 */
-const props = usePage<any>().props as any;
+const props = propHalaman();
 const titlesMonitor = 'Engineering Control Tower';
 const titles: Record<string, string> = { index: 'Mining Engineering Hub', energy: 'Energy Dashboard', fleet: 'Fleet & Productivity', equipment: 'Mining Equipment', maintenance: 'Maintenance', hse: 'HSE & SMKP', kpi: 'Engineering KPI', tools: 'Engineering Tools', regulations: 'Regulations & Standards' };
 const tabs = [['index', 'Dashboard', '/mining-engineering-hub'], ['energy', 'Energi', '/mining-engineering-hub/energy'], ['fleet', 'Armada', '/mining-engineering-hub/fleet'], ['equipment', 'Equipment', '/mining-engineering-hub/equipment'], ['maintenance', 'Maintenance', '/mining-engineering-hub/maintenance'], ['hse', 'HSE', '/mining-engineering-hub/hse'], ['kpi', 'KPI', '/mining-engineering-hub/kpi'], ['tools', 'Tools', '/mining-engineering-hub/tools'], ['regulations', 'Regulasi', '/mining-engineering-hub/regulations']];

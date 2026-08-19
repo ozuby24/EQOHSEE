@@ -212,6 +212,7 @@ final class RuteInertia
         /* Keselamatan Operasi */
         'miners.index',
         'miners.dasbor',
+        'miners.kedaluwarsa',
         'miners.mcu.index',
         'miners.riwayat.induksi',
         'miners.riwayat.mine-permit',

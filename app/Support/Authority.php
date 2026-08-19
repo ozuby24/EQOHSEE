@@ -43,6 +43,79 @@ final class Authority
     public const BATAS_PERHATIAN = 90;
     public const BATAS_KRITIS    = 30;
 
+    /* ═══════════ pita kedaluwarsa KARTU ═══════════ */
+
+    /**
+     * Mine Permit dan SIMPER dipantau dengan pita yang berbeda.
+     *
+     * Pita 180/90/30 di atas melayani MCU, sertifikat, dan induksi —
+     * berkas yang perpanjangannya PUNYA ANTREAN. MCU menunggu slot
+     * klinik, sertifikat menunggu jadwal lembaga, dan enam bulan adalah
+     * waktu yang wajar untuk mendapatkannya.
+     *
+     * Kartu tidak begitu. Perpanjangannya bergantung pada berkas lain
+     * yang sudah ada — MCU untuk permit, SIM untuk SIMPER — sehingga
+     * yang dibutuhkan bukan setengah tahun melainkan hitungan minggu.
+     * Memakai pita yang sama membuat kartu berumur lima bulan tampil
+     * "perhatian" bersama sertifikat yang benar-benar mendesak, dan
+     * daftar yang seluruhnya kuning berhenti dibaca.
+     *
+     *   HABIS    sudah lewat tanggalnya  — orangnya TIDAK BOLEH masuk
+     *   MENDESAK ≤ 30 hari
+     *   DEKAT    31–60 hari
+     *   PANJANG  > 60 hari
+     *
+     * HABIS dipisahkan dari MENDESAK, tidak digabung seperti pita di
+     * atas. Pada berkas yang punya antrean, "lewat 3 hari" dan "tinggal
+     * 3 hari" sama-sama berarti segera urus. Pada kartu, yang pertama
+     * berarti orangnya tidak boleh berada di area tambang hari ini —
+     * dan itu bukan tingkat kemendesakan, melainkan tindakan yang lain
+     * sama sekali.
+     */
+    public const HABIS    = 'habis';
+    public const MENDESAK = 'mendesak';
+    public const DEKAT    = 'dekat';
+    public const PANJANG  = 'panjang';
+
+    public const BATAS_KARTU_MENDESAK = 30;
+    public const BATAS_KARTU_DEKAT    = 60;
+
+    /** Urut dari yang paling mendesak — dipakai mengurutkan daftar kartu. */
+    public const URUT_KARTU = [
+        self::HABIS          => 0,
+        self::MENDESAK       => 1,
+        self::DEKAT          => 2,
+        self::TAK_BERTANGGAL => 3,
+        self::PANJANG        => 4,
+    ];
+
+    public const LABEL_KARTU = [
+        self::HABIS          => 'Habis',
+        self::MENDESAK       => 'Mendesak',
+        self::DEKAT          => 'Dekat',
+        self::PANJANG        => 'Panjang',
+        self::TAK_BERTANGGAL => 'Tanpa tanggal',
+    ];
+
+    /**
+     * Keadaan kedaluwarsa sebuah kartu.
+     *
+     * `$kini` dapat diisi supaya uji dapat memeriksa tepat di batasnya —
+     * kesalahan perbandingan (< versus <=) hanya muncul pada nilai batas.
+     */
+    public static function keadaanKartu($tgl, ?Carbon $kini = null): string
+    {
+        $sisa = self::sisaHari($tgl, $kini);
+
+        if ($sisa === null) return self::TAK_BERTANGGAL;
+        if ($sisa < 0)      return self::HABIS;
+
+        if ($sisa <= self::BATAS_KARTU_MENDESAK) return self::MENDESAK;
+        if ($sisa <= self::BATAS_KARTU_DEKAT)    return self::DEKAT;
+
+        return self::PANJANG;
+    }
+
     /** Urut dari yang paling mendesak — dipakai mengurutkan daftar. */
     public const URUT = [
         self::KRITIS         => 0,

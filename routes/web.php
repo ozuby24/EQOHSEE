@@ -242,6 +242,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->name('riwayat.'.$tahap);
         }
 
+        /* Pemantauan masa berlaku kartu — halaman tersendiri, sebab
+           pertanyaannya berbeda dari daftar orang: bukan "siapa saja
+           pekerja kita" melainkan "siapa yang hari ini tidak boleh
+           masuk". Didaftarkan SEBELUM rute ber-{paspor} supaya
+           "kedaluwarsa" tidak terbaca sebagai nomor paspor. */
+        Route::get('kedaluwarsa', [MinersController::class,'kedaluwarsa'])->name('kedaluwarsa');
+
         Route::get('{paspor}',         [MinersController::class,'show'])->name('show');
         Route::put('{paspor}',         [MinersController::class,'update'])->name('update');
         Route::delete('{paspor}',      [MinersController::class,'destroy'])

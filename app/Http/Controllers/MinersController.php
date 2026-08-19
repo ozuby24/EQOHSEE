@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{KompetensiJenis, McuPengajuan, MinersCampaign, MinersCuti,
+use App\Models\{Company, KompetensiJenis, McuPengajuan, MinersCampaign, MinersCuti,
     MinersCutiJatah, MinersFieldBreak, Paspor, PasporInduksi, PasporKartuUnit,
     PasporKartu, PasporMcu, PasporSertifikat};
 use App\Rules\DalamPerusahaan;
@@ -10,6 +10,7 @@ use App\Models\ActivityLog as Jejak;
 use App\Support\Alur;
 use App\Support\AlurMiner;
 use App\Support\Authority;
+use App\Support\PemantauanKartu;
 use App\Support\JatahCuti;
 use App\Support\KopDokumen;
 use App\Support\Tahap;
@@ -58,6 +59,71 @@ class MinersController extends Controller
                 'q' => $cari, 'klas' => $request->get('klas'), 'keadaan' => $keadaan,
             ],
             'ringkas' => $this->ringkasan(),
+        ]);
+    }
+
+    /**
+     * Pemantauan masa berlaku Mine Permit dan SIMPER.
+     *
+     * Halaman tersendiri, bukan kolom tambahan pada daftar orang.
+     * Pertanyaannya berbeda: daftar orang menjawab "siapa saja pekerja
+     * kita", yang ini menjawab "siapa yang hari ini tidak boleh masuk".
+     * Keduanya dibaca orang yang berbeda pada waktu yang berbeda.
+     */
+    public function kedaluwarsa(Request $request)
+    {
+        $jenis = $request->get('jenis');
+        if (!in_array($jenis, PemantauanKartu::JENIS, true)) $jenis = null;
+
+        $orang = Paspor::with(['kartu', 'mcu', 'company'])
+            ->when($cari = trim((string) $request->get('q')), fn ($q) => $q->where(
+                fn ($w) => $w->where('nama', 'like', "%{$cari}%")
+                    ->orWhere('nik', 'like', "%{$cari}%")
+                    ->orWhere('jabatan', 'like', "%{$cari}%")))
+            ->when($request->get('perusahaan'), fn ($q, $c) => $q->where('company_id', $c))
+            ->orderBy('nama')
+            ->get();
+
+        $baris = PemantauanKartu::baris($orang, $jenis);
+
+        /* Ringkasan dihitung SEBELUM penyaring keadaan dipasang.
+           Sesudahnya, memilih "habis" akan membuat kartu ringkasannya
+           menyebut 100% habis — angka yang benar untuk daftar yang
+           tersaring dan menyesatkan sebagai gambaran keadaan. */
+        $ringkas      = PemantauanKartu::ringkas($baris);
+        $perPerusahaan = PemantauanKartu::perPerusahaan($baris);
+
+        if ($keadaan = $request->get('keadaan')) {
+            $baris = array_values(array_filter($baris, fn ($b) => $b['keadaan'] === $keadaan));
+        }
+
+        /* Judul halaman ditulis SEBELUM bersama(). Operator + memakai
+           nilai dari operan KIRI bila kuncinya bertabrakan, jadi urutan
+           terbalik membuat judul modul menimpa judul halaman ini tanpa
+           galat apa pun — yang terlihat hanya bilah atas yang menyebut
+           halaman lain. */
+        return Inertia::render('Miners/Kedaluwarsa', [
+            'judul'    => 'Miners — Masa Berlaku Kartu',
+            'subjudul' => 'Mine Permit dan SIMPER yang perlu diurus',
+        ] + $this->bersama() + [
+            'baris'         => $baris,
+            'ringkas'       => $ringkas,
+            'perPerusahaan' => $perPerusahaan,
+
+            'saring' => [
+                'q'          => $cari,
+                'jenis'      => $jenis,
+                'keadaan'    => $keadaan,
+                'perusahaan' => $request->get('perusahaan'),
+            ],
+
+            'opsiJenis'   => PemantauanKartu::JENIS,
+            'opsiKeadaan' => collect(Authority::LABEL_KARTU)
+                ->map(fn ($label, $kode) => ['kode' => $kode, 'label' => $label])
+                ->values()->all(),
+            'opsiPerusahaan' => Company::query()
+                ->when(!auth()->user()?->isAdmin(), fn ($q) => $q->whereKey(auth()->user()?->company_id))
+                ->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -865,9 +931,10 @@ class MinersController extends Controller
             ->when($request->get('status'), fn ($q, $s) => $q->where('status', $s))
             ->orderByDesc('mulai')->get();
 
-        return Inertia::render('Miners/FieldBreak', $this->bersama() + [
+        return Inertia::render('Miners/FieldBreak', [
             'judul'    => 'Miners — Field Break',
             'subjudul' => 'Giliran pulang pada pola kerja rotasi — bukan cuti, tidak memotong jatah',
+        ] + $this->bersama() + [
             'saring'   => ['status' => $request->get('status')],
 
             'baris' => $baris->map(fn (MinersFieldBreak $f) => [
@@ -1000,9 +1067,10 @@ class MinersController extends Controller
            jatahnya akan hangus. */
         $orang = Paspor::orderBy('nama')->get();
 
-        return Inertia::render('Miners/Cuti', $this->bersama() + [
+        return Inertia::render('Miners/Cuti', [
             'judul'    => 'Miners — Cuti Tahunan',
             'subjudul' => 'Jatah, pengajuan, dan sisa cuti per orang',
+        ] + $this->bersama() + [
             'tahun'    => $tahun,
             'saring'   => ['status' => $request->get('status')],
 
@@ -1146,9 +1214,10 @@ class MinersController extends Controller
             ->when($request->get('jenis'), fn ($q, $j) => $q->where('jenis', $j))
             ->orderByDesc('mulai')->get();
 
-        return Inertia::render('Miners/Campaign', $this->bersama() + [
+        return Inertia::render('Miners/Campaign', [
             'judul'    => 'Miners — Campaign Keselamatan',
             'subjudul' => 'Poster, artikel, video, dan toolbox — beserta masa tayangnya',
+        ] + $this->bersama() + [
             'saring'   => ['jenis' => $request->get('jenis')],
 
             'baris' => $baris->map(fn (MinersCampaign $c) => [
@@ -1285,9 +1354,10 @@ class MinersController extends Controller
             default        => abort(404),
         };
 
-        return Inertia::render('Miners/Riwayat', $this->bersama() + [
+        return Inertia::render('Miners/Riwayat', [
             'judul'    => 'Miners — '.$daftar['judul'],
             'subjudul' => $daftar['subjudul'],
+        ] + $this->bersama() + [
             'tahap'    => $tahap,
             'kolom'    => $daftar['kolom'],
             'baris'    => $daftar['baris'],
@@ -1572,6 +1642,19 @@ class MinersController extends Controller
     /* ═══════════ pendukung ═══════════ */
 
     /** @return array<string,mixed> */
+    /**
+     * Prop yang dipakai seluruh halaman modul ini.
+     *
+     * PERHATIKAN URUTANNYA saat dipanggil. `bersama() + [...]` memakai
+     * nilai dari operan KIRI bila kuncinya bertabrakan, sehingga judul
+     * di sebelah kanan tidak pernah sampai ke layar. Empat halaman —
+     * Field Break, Cuti Tahunan, Campaign, dan Riwayat — sempat menyebut
+     * dirinya "Miners — Kelayakan Kerja" karena itu, tanpa satu galat
+     * pun: judulnya dikirim, hanya tidak dipakai.
+     *
+     * Halaman yang berjudul sendiri menulis judulnya SEBELUM pemanggilan
+     * ini: `['judul' => ...] + $this->bersama() + [...]`.
+     */
     private function bersama(): array
     {
         return [

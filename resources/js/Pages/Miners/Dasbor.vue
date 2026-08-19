@@ -17,10 +17,11 @@
  * memaksa pembacanya mencari sendiri lewat menu, dan yang dicari selalu
  * barisnya — bukan angkanya.
  */
-import { Head, Link, usePage } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
+import { propHalaman } from '../../halaman';
 import { KEADAAN } from '../../Grafik/warna';
 
-const props = usePage<any>().props as any;
+const props = propHalaman();
 
 const NADA: Record<string, string> = {
   netral: KEADAAN.netral,

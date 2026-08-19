@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
-import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { propHalaman } from '../../halaman';
 import Dialog from '../../Components/Dialog.vue';
 import { useDialog } from '../../dialog';
 const { dialog, tanya, minta, batal, lanjut } = useDialog();
@@ -12,7 +13,7 @@ const { dialog, tanya, minta, batal, lanjut } = useDialog();
   `defineProps<{ mode: string; [key: string]: any }>()` hanya
   mendaftarkan `mode`, dan sisanya hilang tanpa galat apa pun.
 */
-const props = usePage<any>().props as any;
+const props = propHalaman();
 const isAdmin = computed(() => Boolean(props.pengguna?.admin));
 
 const judul: Record<string, string> = {

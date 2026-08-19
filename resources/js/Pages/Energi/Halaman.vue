@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
-import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { propHalaman } from '../../halaman';
 import EnergyInput from '../../Components/EnergyInput.vue';
 import Dasbor from './Dasbor.vue';
 import Dialog from '../../Components/Dialog.vue';
@@ -9,7 +10,7 @@ const { dialog, tanya, batal, lanjut } = useDialog();
 
 
 /*
-  Prop halaman diambil lewat usePage(), bukan defineProps.
+  Prop halaman diambil lewat propHalaman(), bukan defineProps.
 
   Bentuk `defineProps<{ mode: string; [key: string]: any }>()` yang
   dipakai sebelumnya terbaca seolah menerima apa saja. Yang sebenarnya
@@ -24,11 +25,12 @@ const { dialog, tanya, batal, lanjut } = useDialog();
   tidak pernah sampai ke tampilan. Uji sisi server tetap hijau, sebab
   yang salah bukan propnya melainkan penerimaannya.
 
-  usePage() mengambil prop halaman apa adanya — termasuk yang dibagikan
-  middleware — sehingga tidak ada daftar nama yang harus dirawat sejajar
-  dengan controller-nya, dan tidak ada nama yang dapat hilang diam-diam.
+  propHalaman() mengambil prop halaman apa adanya — termasuk yang
+  dibagikan middleware — sehingga tidak ada daftar nama yang harus
+  dirawat sejajar dengan controller-nya, dan tidak ada nama yang dapat
+  hilang diam-diam. Dibacanya hidup: lihat resources/js/halaman.ts.
 */
-const props = usePage<any>().props as any;
+const props = propHalaman();
 const judul: Record<string, string> = {
   index: 'Energy Performance Center', konsumsi: 'Energy Consumption', fuel: 'Fuel Management', listrik: 'Electricity',
   equipment: 'Equipment Performance', 'equipment-show': 'Equipment Detail', kpi: 'Energy KPI', baseline: 'Baseline & Target',

@@ -6,6 +6,7 @@ use App\Models\{Company, KompetensiJenis, McuPengajuan, MinersCampaign, MinersCu
     MinersCutiJatah, MinersFieldBreak, Paspor, PasporKartu, User};
 use App\Support\{Alur, AlurMiner, Authority, JatahCuti, MasterKompetensi, Tahap};
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
@@ -1599,4 +1600,180 @@ class MinersTest extends TestCase
             'jenis_unit' => 'EXCAVATOR', 'nilai_p2h' => 120,
         ])->assertSessionHasErrors('nilai_p2h');
     }
+
+    /* ═══════════ pita kedaluwarsa kartu ═══════════ */
+
+    /**
+     * Empat pita, dan batasnya persis.
+     *
+     * Diuji tepat di batasnya, bukan di tengah pita: kesalahan
+     * perbandingan (< versus <=) hanya muncul pada nilai batas.
+     *
+     * "Habis" dipisahkan dari "mendesak", tidak digabung seperti pita
+     * MCU dan sertifikat. Pada berkas yang punya antrean, "lewat 3 hari"
+     * dan "tinggal 3 hari" sama-sama berarti segera urus. Pada kartu,
+     * yang pertama berarti orangnya tidak boleh berada di area tambang
+     * hari ini — tindakan yang lain sama sekali.
+     */
+    public function test_pita_kedaluwarsa_kartu_tepat_di_batasnya(): void
+    {
+        $kini = Carbon::parse('2026-01-01');
+
+        foreach ([
+            [-1,  Authority::HABIS],
+            [0,   Authority::MENDESAK],
+            [30,  Authority::MENDESAK],
+            [31,  Authority::DEKAT],
+            [60,  Authority::DEKAT],
+            [61,  Authority::PANJANG],
+        ] as [$hari, $harus]) {
+            $this->assertSame($harus,
+                Authority::keadaanKartu($kini->copy()->addDays($hari), $kini),
+                "Sisa {$hari} hari seharusnya '{$harus}'.");
+        }
+
+        $this->assertSame(Authority::TAK_BERTANGGAL, Authority::keadaanKartu(null, $kini));
+    }
+
+    /* ═══════════ masa berlaku turunan ═══════════ */
+
+    /**
+     * Mine Permit tidak dapat hidup lebih lama daripada MCU-nya.
+     *
+     * Kartu berlaku sampai Desember yang berpijak pada MCU yang habis
+     * Agustus sudah tidak sah pada bulan September — meskipun tanggal
+     * yang tercetak padanya mengatakan sebaliknya, dan meskipun tidak
+     * ada satu pun galat yang muncul.
+     */
+    public function test_permit_dibatasi_masa_berlaku_mcu(): void
+    {
+        $p = $this->orang();
+
+        $p->mcu()->create([
+            'tgl_periksa' => now()->subMonths(2),
+            'tgl_expired' => now()->addDays(20),
+            'hasil'       => 'Fit',
+        ]);
+
+        $k = $p->kartu()->create([
+            'jenis'        => AlurMiner::KARTU_PERMIT,
+            'sebab_terbit' => Authority::SEBAB_KARTU[0],
+            'tgl_expired'  => now()->addDays(300),
+        ]);
+
+        $k->setRelation('paspor', $p->fresh()->load('mcu'));
+
+        $this->assertTrue($k->dibatasiDasar(),
+            'MCU habis lebih dulu, jadi kartunya dibatasi MCU.');
+        $this->assertSame(now()->addDays(20)->toDateString(),
+            $k->expiredEfektif()?->toDateString());
+        $this->assertSame(Authority::MENDESAK, $k->keadaanKartu(),
+            'Yang dipantau tanggal efektifnya, bukan yang tercetak.');
+        $this->assertSame('MCU', $k->namaDasar());
+    }
+
+    /** SIMPER dibatasi SIM kepolisian, dengan cara yang sama. */
+    public function test_simper_dibatasi_masa_berlaku_sim(): void
+    {
+        $p = $this->orang();
+
+        $k = $p->kartu()->create([
+            'jenis'              => AlurMiner::KARTU_LICENSE,
+            'sebab_terbit'       => Authority::SEBAB_KARTU[0],
+            'tgl_expired'        => now()->addDays(300),
+            'sim_polisi'         => 'SIM-B2-000001',
+            'sim_polisi_expired' => now()->addDays(45),
+        ]);
+
+        $this->assertTrue($k->dibatasiDasar());
+        $this->assertSame(Authority::DEKAT, $k->keadaanKartu());
+        $this->assertSame('SIM kepolisian', $k->namaDasar());
+    }
+
+    /**
+     * Dasar yang lebih panjang TIDAK memperpanjang kartunya.
+     *
+     * Pembatasannya satu arah. MCU yang berlaku tiga tahun tidak membuat
+     * permit setahun ikut berlaku tiga tahun — yang menentukan tetap
+     * yang mana pun habis lebih dulu.
+     */
+    public function test_dasar_yang_lebih_panjang_tidak_memperpanjang_kartu(): void
+    {
+        $p = $this->orang();
+
+        $p->mcu()->create([
+            'tgl_periksa' => now()->subMonth(),
+            'tgl_expired' => now()->addDays(900),
+            'hasil'       => 'Fit',
+        ]);
+
+        $k = $p->kartu()->create([
+            'jenis'        => AlurMiner::KARTU_PERMIT,
+            'sebab_terbit' => Authority::SEBAB_KARTU[0],
+            'tgl_expired'  => now()->addDays(10),
+        ]);
+
+        $k->setRelation('paspor', $p->fresh()->load('mcu'));
+
+        $this->assertFalse($k->dibatasiDasar());
+        $this->assertSame(now()->addDays(10)->toDateString(),
+            $k->expiredEfektif()?->toDateString());
+    }
+
+    /** Visitor tidak berpijak pada apa pun, jadi tidak dibatasi. */
+    public function test_visitor_tidak_punya_dasar(): void
+    {
+        $p = $this->orang();
+
+        $k = $p->kartu()->create([
+            'jenis'        => AlurMiner::KARTU_VISITOR,
+            'sebab_terbit' => Authority::SEBAB_KARTU[0],
+            'tgl_expired'  => now()->addDays(5),
+        ]);
+
+        $this->assertNull($k->expiredDasar());
+        $this->assertNull($k->namaDasar());
+        $this->assertFalse($k->dibatasiDasar());
+        $this->assertSame(now()->addDays(5)->toDateString(),
+            $k->expiredEfektif()?->toDateString());
+    }
+    /**
+     * Tiap halaman modul menyebut namanya sendiri di bilah atas.
+     *
+     * Judulnya dikirim lewat prop, dan prop itu digabung dengan prop
+     * bersama modul memakai operator `+` — yang memakai nilai dari
+     * operan KIRI bila kuncinya bertabrakan. Ditulis dengan urutan
+     * terbalik, judul halaman hilang tanpa jejak: tidak ada galat,
+     * tidak ada uji yang berubah warna, hanya empat halaman berbeda
+     * yang semuanya menyebut diri "Miners — Kelayakan Kerja".
+     *
+     * Karena itu yang diuji di sini bukan adanya prop judul, melainkan
+     * BERBEDANYA judul antarhalaman.
+     */
+    public function test_tiap_halaman_miners_berjudul_sendiri(): void
+    {
+        $judul = [];
+
+        foreach ([
+            'miners.index', 'miners.fieldBreak.index', 'miners.cuti.index',
+            'miners.campaign.index', 'miners.kedaluwarsa',
+            'miners.riwayat.mine-permit', 'miners.riwayat.induksi',
+        ] as $rute) {
+            $this->get(route($rute))
+                ->assertOk()
+                ->assertInertia(function (Assert $h) use (&$judul, $rute) {
+                    $h->has('judul');
+                    $judul[$rute] = $h->toArray()['props']['judul'];
+                });
+        }
+
+        $this->assertSame(
+            count($judul),
+            count(array_unique($judul)),
+            "Ada halaman Miners yang memakai judul halaman lain:\n"
+            .json_encode($judul, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+            ."\nJudul halaman harus ditulis SEBELUM bersama(): ['judul' => ...] + \$this->bersama().",
+        );
+    }
+
 }

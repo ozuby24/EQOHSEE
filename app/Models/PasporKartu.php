@@ -81,6 +81,82 @@ class PasporKartu extends Model
     public function keadaan(): string    { return Authority::keadaan($this->tgl_expired); }
     public function keterangan(): string { return Authority::keterangan($this->tgl_expired); }
 
+    /* ═══════════ masa berlaku turunan ═══════════ */
+
+    /**
+     * Tanggal yang MEMBATASI kartu ini dari berkas yang mendasarinya.
+     *
+     * Mine Permit berdiri di atas MCU; SIMPER berdiri di atas SIM
+     * kepolisian. Keduanya bukan pelengkap administratif melainkan dasar
+     * izinnya: MCU yang habis berarti orangnya tidak lagi dinyatakan
+     * sehat untuk bekerja di tambang, dan SIM yang habis berarti ia tidak
+     * lagi boleh mengemudi di jalan umum mana pun.
+     *
+     * Karena itu kartu TIDAK DAPAT hidup lebih lama daripada dasarnya.
+     * Kartu berlaku sampai Desember yang berpijak pada MCU yang habis
+     * Agustus sudah tidak sah pada bulan September — meskipun tanggal
+     * yang tercetak padanya mengatakan sebaliknya, dan meskipun tidak
+     * ada satu pun galat yang muncul.
+     *
+     * Visitor tidak punya dasar semacam itu dan memulangkan null.
+     */
+    public function expiredDasar(): ?\Illuminate\Support\Carbon
+    {
+        return match ($this->jenis) {
+            AlurMiner::KARTU_PERMIT  => $this->paspor?->mcuTerakhir()?->tgl_expired,
+            AlurMiner::KARTU_LICENSE => $this->sim_polisi_expired,
+            default                  => null,
+        };
+    }
+
+    /** Nama dasar itu, untuk dijelaskan di layar. */
+    public function namaDasar(): ?string
+    {
+        return match ($this->jenis) {
+            AlurMiner::KARTU_PERMIT  => 'MCU',
+            AlurMiner::KARTU_LICENSE => 'SIM kepolisian',
+            default                  => null,
+        };
+    }
+
+    /**
+     * Tanggal habis yang SEBENARNYA berlaku — yang mana pun lebih dulu.
+     *
+     * Inilah yang dipantau, bukan `tgl_expired` yang tercetak. Yang
+     * tercetak hanya benar selama dasarnya masih hidup.
+     */
+    public function expiredEfektif(): ?\Illuminate\Support\Carbon
+    {
+        $kartu = $this->tgl_expired;
+        $dasar = $this->expiredDasar();
+
+        if (!$kartu) return $dasar;
+        if (!$dasar) return $kartu;
+
+        return $dasar->lt($kartu) ? $dasar : $kartu;
+    }
+
+    /**
+     * Apakah dasarnya habis lebih dulu daripada kartunya.
+     *
+     * Dipisahkan supaya layarnya dapat mengatakan SEBABNYA. "Habis 12
+     * September" tanpa keterangan membuat orang memperpanjang kartunya,
+     * padahal yang perlu diperpanjang MCU-nya.
+     */
+    public function dibatasiDasar(): bool
+    {
+        $kartu = $this->tgl_expired;
+        $dasar = $this->expiredDasar();
+
+        return $kartu !== null && $dasar !== null && $dasar->lt($kartu);
+    }
+
+    /** Keadaan kedaluwarsa menurut pita kartu, atas tanggal efektifnya. */
+    public function keadaanKartu(): string
+    {
+        return Authority::keadaanKartu($this->expiredEfektif());
+    }
+
     /**
      * Syarat yang belum terpenuhi untuk MENGAJUKAN kartu ini.
      *

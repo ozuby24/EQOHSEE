@@ -87,6 +87,12 @@ final class Menu
           ['Mine License',  'miners.riwayat.mine-license', 'miners/riwayat/mine-license'],
           ['Authority',     'miners.riwayat.authority',    'miners/riwayat/authority'],
         ],
+        /* Pemantauan berdiri sendiri, bukan di bawah Riwayat: riwayat
+           menjawab "apa yang pernah terjadi", yang ini menjawab "apa
+           yang harus dikerjakan hari ini". */
+        'Pemantauan' => [
+          ['Masa Berlaku Kartu', 'miners.kedaluwarsa', 'miners/kedaluwarsa'],
+        ],
         'Kehadiran' => [
           ['Field Break',     'miners.fieldBreak.index', 'miners/field-break*'],
           ['Cuti Tahunan',    'miners.cuti.index',       'miners/cuti*'],
