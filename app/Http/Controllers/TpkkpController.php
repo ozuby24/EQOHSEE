@@ -339,6 +339,17 @@ class TpkkpController extends Controller
                 'label' => $t['label'],
                 'warna' => Tpkkp::levelHex($i + 1),
             ])->values()->all(),
+
+            /* Tingkat rubrik 1–5, terpisah dari ambang rasio di atas.
+               Keduanya memakai lima nama yang sama dan karena itu mudah
+               tertukar — tetapi skalanya berbeda, dan menampilkan yang
+               satu sebagai yang lain membuat penilai yang mengisi 3
+               membaca "Reaktif". */
+            'tingkatan'   => collect(Tpkkp::LV)->map(fn ($label, $i) => [
+                'nomor' => $i + 1,
+                'label' => $label,
+                'warna' => Tpkkp::levelHex($i + 1),
+            ])->values()->all(),
         ]);
     }
 

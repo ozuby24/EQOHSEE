@@ -108,6 +108,20 @@ export interface Ambang {
   warna: string;
 }
 
+/**
+ * Tingkat rubrik 1–5.
+ *
+ * Berbeda dari `Ambang`, yang memetakan RASIO capaian. Kelimanya bernama
+ * sama dan karena itu mudah tertukar — tetapi skalanya berbeda, dan
+ * menampilkan yang satu sebagai yang lain membuat penilai yang mengisi 3
+ * membaca "Reaktif".
+ */
+export interface Tingkatan {
+  nomor: number;
+  label: string;
+  warna: string;
+}
+
 /** Navigasi dalam-halaman PTPKKP — dari App\Support\TpkkpNav. */
 export interface TabPicker {
   label: string;
@@ -474,6 +488,7 @@ export interface HalamanPenilaian {
   subjudul: string;
   picker: Picker;
   ambang: Ambang[];
+  tingkatan: Tingkatan[];
   tahun: number;
   metode: MetodeInfo[];
   metodeAktif: string;

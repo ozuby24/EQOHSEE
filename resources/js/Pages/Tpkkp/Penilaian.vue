@@ -73,6 +73,33 @@ function kategori(rasio: number | null) {
   return props.ambang[props.ambang.length - 1] ?? null;
 }
 
+/**
+ * Tingkat rubrik satu item: rerata sel TERISI, dibulatkan setengah ke bawah.
+ *
+ * Inilah yang boleh ditampilkan sebagai tingkat pada formulir penilaian.
+ * Sebelumnya lencananya memakai `kategori(capaian(...))` — kategori dari
+ * RASIO capaian, yang skalanya tidak selaras dengan tingkat rubrik:
+ * mengisi 3 memberi rasio 0,6 yang jatuh ke "Reaktif", dan mengisi 2
+ * memberi "Dasar". Penilai membaca satu tingkat lebih rendah daripada
+ * yang benar-benar dinilainya, tanpa satu pun galat.
+ *
+ * Pembulatannya sama dengan App\Support\Tpkkp::roundLevel() — setengah
+ * ke bawah, sebab menaikkan tingkat kematangan yang belum dicapai adalah
+ * kesalahan yang berpihak pada auditi.
+ */
+function tingkat(kode: string) {
+  const sel = nilai[kode];
+  if (!sel) return null;
+
+  const isi = Object.values(sel).filter((v): v is number => v !== null && v !== undefined);
+  if (!isi.length) return null;
+
+  const rerata = isi.reduce((a, b) => a + b, 0) / isi.length;
+  const n = Math.min(5, Math.max(1, Math.ceil(rerata - 0.5)));
+
+  return props.tingkatan.find((t) => t.nomor === n) ?? null;
+}
+
 /** Capaian satu item: rerata sel terisi dibagi nilai penuh. */
 function capaian(kode: string): number | null {
   const sel = nilai[kode];
@@ -227,15 +254,27 @@ const bukaTarget = reactive<Record<string, boolean>>({});
               </div>
 
               <div class="text-right whitespace-nowrap">
-                <span v-if="kategori(capaian(it.kode))"
+                <span v-if="tingkat(it.kode)"
                       class="inline-block text-[10.5px] font-bold text-white px-2.5 py-1 rounded-md"
-                      :style="{ background: kategori(capaian(it.kode))!.warna }">
-                  {{ kategori(capaian(it.kode))!.label }}
+                      :style="{ background: tingkat(it.kode)!.warna }">
+                  {{ tingkat(it.kode)!.label }}
                 </span>
                 <span v-else class="inline-block text-[10.5px] font-bold px-2.5 py-1 rounded-md
                                     bg-stone-100 text-stone-400">Belum dinilai</span>
                 <div class="num text-[11px] text-stone-400 mt-1">
                   {{ terisi(it.kode) }}/{{ kunciSel.length }} terisi
+                </div>
+                <!--
+                  Kedua angka ditampilkan terbuka, bukan salah satunya.
+                  Tingkat adalah rerata skor yang diisi; capaian adalah
+                  rasio nilai/maks menurut rumus workbook, dengan metode
+                  kosong dihitung nol. Keduanya sah dan sering berbeda —
+                  menyembunyikan salah satunya membuat selisihnya tampak
+                  seperti kesalahan.
+                -->
+                <div v-if="capaian(it.kode) !== null" class="num text-[10.5px] text-stone-300 mt-0.5">
+                  capaian {{ (capaian(it.kode)! * 100).toFixed(1) }}%
+                  <span v-if="kategori(capaian(it.kode))">· {{ kategori(capaian(it.kode))!.label }}</span>
                 </div>
               </div>
             </div>
