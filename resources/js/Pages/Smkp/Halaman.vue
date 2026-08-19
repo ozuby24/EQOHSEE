@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import Dialog from '../../Components/Dialog.vue';
 import { useDialog } from '../../dialog';
@@ -66,6 +66,75 @@ tahapForm.permulaan.pengurang ??= {};
 /* Selalu ada sekurang-kurangnya satu baris: baris pertama adalah Lead
    Auditor, dan daftar kosong tidak memberi tempat untuk mengetiknya. */
 if (!Array.isArray(tahapForm.permulaan.tim) || !tahapForm.permulaan.tim.length) tahapForm.permulaan.tim = [''];
+/**
+ * Kartu hari kerja audit mengikuti isian yang sedang diketik.
+ *
+ * Sebelumnya keempatnya membaca `props.mandays` — hasil simpanan
+ * terakhir. Mengetik jumlah pekerja, mencentang faktor, atau menambah
+ * auditor tidak mengubah apa pun sampai tombol simpan ditekan, sehingga
+ * perhitungannya tampak tidak jalan. Yang terbaca memang bukan angka
+ * dari isian yang sedang dilihat.
+ *
+ * Rumusnya tidak disalin ke sini: ia dihitung server lewat endpoint yang
+ * tidak menyimpan apa pun. Dua salinan rumus hari kerja audit akan
+ * berselisih cepat atau lambat, dan yang berselisih adalah tagihannya.
+ *
+ * Ditunda sesaat supaya mengetik angka empat digit tidak melahirkan empat
+ * permintaan, dan jawaban yang datang terlambat dibuang — tanpa itu,
+ * jawaban permintaan lama dapat menimpa jawaban yang lebih baru.
+ */
+const mandaysHidup = ref<Record<string, any> | null>(null);
+const mandaysTampil = computed(() => mandaysHidup.value ?? props.mandays);
+
+let jedaMandays: ReturnType<typeof setTimeout> | undefined;
+let permintaanKe = 0;
+
+async function hitungMandays() {
+  if (!props.tautan?.mandays) return;
+
+  const ini = ++permintaanKe;
+  const p = tahapForm.permulaan;
+
+  try {
+    const r = await fetch(props.tautan.mandays, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
+      },
+      body: JSON.stringify({
+        permulaan: {
+          tim: p.tim, jumlah_pekerja: p.jumlah_pekerja, jumlah_auditor: p.jumlah_auditor,
+          kelas_risiko: p.kelas_risiko, faktor: p.faktor, pengurang: p.pengurang,
+        },
+      }),
+    });
+    if (!r.ok) return;
+
+    const hasil = await r.json();
+    if (ini === permintaanKe) mandaysHidup.value = hasil;
+  } catch {
+    /* Jaringan tambang memang putus-putus. Kartunya tetap menampilkan
+       angka terakhir yang sah, bukan nol yang menyesatkan. */
+  }
+}
+
+watch(
+  () => [
+    tahapForm.permulaan.jumlah_pekerja,
+    tahapForm.permulaan.kelas_risiko,
+    tahapForm.permulaan.jumlah_auditor,
+    JSON.stringify(tahapForm.permulaan.tim ?? []),
+    JSON.stringify(tahapForm.permulaan.faktor ?? {}),
+    JSON.stringify(tahapForm.permulaan.pengurang ?? {}),
+  ],
+  () => {
+    clearTimeout(jedaMandays);
+    jedaMandays = setTimeout(hitungMandays, 300);
+  },
+);
+
 const rencanaForm = useForm<Record<string, any>>({ ...(audit.value.rencana ?? {}), susunan: audit.value.rencana?.susunan ?? [], tugas: audit.value.rencana?.tugas ?? [], pengesahan: audit.value.rencana?.pengesahan ?? {}, risiko: audit.value.risiko ?? { present: [], future: [] } });
 const hadirForm = useForm<Record<string, any>>({ rapat: 'pembukaan', nama: '', jabatan: '', perusahaan: '' });
 const nilaiForm = useForm<Record<string, any>>({ k: {} });
@@ -149,10 +218,10 @@ function nilaiAwal(kode: string) { return { ...(audit.value.hasil?.[kode] ?? {})
         </p>
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mt-4">
           <div v-for="kartu in [
-                 ['Mandays dasar', `${props.mandays?.dasar ?? 0} hari`, `${props.mandays?.pekerja ?? 0} pekerja · risiko ${props.mandays?.kelas ?? '—'} · rentang ${props.mandays?.rentang ?? '—'}`],
-                 ['Total mandays', `${props.mandays?.total ?? 0}`, `penambah +${props.mandays?.penambah ?? 0} · pengurang −${props.mandays?.pengurang ?? 0}`],
-                 ['Durasi di lapangan', `${props.mandays?.durasi ?? 0} hari`, `dibagi ${props.mandays?.auditor ?? 1} auditor`],
-                 ['Alokasi tahap', `${props.mandays?.tahap1 ?? 0} / ${props.mandays?.tahap2 ?? 0}`, 'Tahap I maks 10% · Tahap II sisanya'],
+                 ['Mandays dasar', `${mandaysTampil?.dasar ?? 0} hari`, `${mandaysTampil?.pekerja ?? 0} pekerja · risiko ${mandaysTampil?.kelas ?? '—'} · rentang ${mandaysTampil?.rentang ?? '—'}`],
+                 ['Total mandays', `${mandaysTampil?.total ?? 0}`, `penambah +${mandaysTampil?.penambah ?? 0} · pengurang −${mandaysTampil?.pengurang ?? 0}`],
+                 ['Durasi di lapangan', `${mandaysTampil?.durasi ?? 0} hari`, `dibagi ${mandaysTampil?.auditor ?? 1} auditor`],
+                 ['Alokasi tahap', `${mandaysTampil?.tahap1 ?? 0} / ${mandaysTampil?.tahap2 ?? 0}`, 'Tahap I maks 10% · Tahap II sisanya'],
                ]" :key="kartu[0]" class="rounded-xl bg-stone-50 p-3">
             <p class="text-[10px] uppercase tracking-wider font-bold text-stone-400">{{ kartu[0] }}</p>
             <strong class="block text-lg mt-1">{{ kartu[1] }}</strong>
@@ -208,7 +277,7 @@ function nilaiAwal(kode: string) { return { ...(audit.value.hasil?.[kode] ?? {})
               <tbody>
                 <tr v-for="baris in props.tabelMandays ?? []" :key="baris[0]"
                     class="border-b border-stone-50"
-                    :class="props.mandays?.rentang === `${baris[0]}–${baris[1] >= 999999 ? '∞' : baris[1]}` ? 'font-bold bg-stone-50' : ''">
+                    :class="mandaysTampil?.rentang === `${baris[0]}–${baris[1] >= 999999 ? '∞' : baris[1]}` ? 'font-bold bg-stone-50' : ''">
                   <td class="py-1.5 pr-4">{{ baris[0] }}–{{ baris[1] >= 999999 ? '∞' : baris[1] }}</td>
                   <td class="py-1.5 pr-4">{{ baris[2] }}</td>
                   <td class="py-1.5 pr-4">{{ baris[3] }}</td>
@@ -239,10 +308,10 @@ function nilaiAwal(kode: string) { return { ...(audit.value.hasil?.[kode] ?? {})
           <Link :href="`/smkp/${audit.id}/tahap-1`" class="eq-btn-mini">Ubah di Tahap I</Link>
         </div>
         <p class="text-[12px] text-stone-500 mt-1">
-          {{ props.mandays?.pekerja ?? 0 }} pekerja · risiko {{ props.mandays?.kelas ?? '—' }} ·
-          {{ props.mandays?.total ?? 0 }} mandays ÷ {{ props.mandays?.auditor ?? 1 }} auditor =
-          <b>{{ props.mandays?.durasi ?? 0 }} hari</b> di lapangan, Tahap II
-          <b>{{ props.mandays?.tahap2 ?? 0 }} hari</b>.
+          {{ mandaysTampil?.pekerja ?? 0 }} pekerja · risiko {{ mandaysTampil?.kelas ?? '—' }} ·
+          {{ mandaysTampil?.total ?? 0 }} mandays ÷ {{ mandaysTampil?.auditor ?? 1 }} auditor =
+          <b>{{ mandaysTampil?.durasi ?? 0 }} hari</b> di lapangan, Tahap II
+          <b>{{ mandaysTampil?.tahap2 ?? 0 }} hari</b>.
         </p>
         <ul class="mt-3 space-y-1.5">
           <li v-for="c in props.selaras ?? []" :key="c.kunci" class="flex gap-2 text-[12px] items-start">

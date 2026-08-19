@@ -976,4 +976,68 @@ class SmkpTahapTest extends TestCase
             ->assertSee('60 – 84', false)       // Perlu Perbaikan
             ->assertSee('0 – 59', false);       // Perlu Perhatian Serius
     }
+
+    /**
+     * Kartu hari kerja audit mengikuti isian yang SEDANG diketik.
+     *
+     * Keempat kartunya dulu membaca hasil simpanan terakhir. Mengetik
+     * jumlah pekerja, mencentang faktor, atau menambah auditor tidak
+     * mengubah apa pun sampai tombol simpan ditekan — dan yang mengisinya
+     * membaca angka yang bukan berasal dari isian di depannya. Terlihat
+     * di lapangan sebagai "perhitungan mandays-nya tidak jalan": profil
+     * mencatat 1.098 pekerja, kartunya tetap menyebut 0 pekerja dan tiga
+     * hari.
+     *
+     * Rumusnya TIDAK disalin ke sisi peramban. Ia membawa keputusan yang
+     * tidak boleh bercabang dua — mandays dibagi auditor menjadi durasi
+     * dan bukan sebaliknya, sekurang-kurangnya satu hari, Tahap I
+     * dibatasi sepersepuluh, dan pembaginya jumlah NAMA pada tim. Yang
+     * ditambahkan hanya jalan untuk memanggilnya lebih awal.
+     */
+    public function test_mandays_dihitung_dari_isian_tanpa_menyimpan(): void
+    {
+        $this->masuk();
+        $a = $this->audit();
+
+        $sebelum = $a->permulaan;
+
+        $r = $this->postJson(route('smkp.tahap1.mandays', $a), [
+            'permulaan' => [
+                'jumlah_pekerja' => 1098,
+                'kelas_risiko'   => 'Tinggi',
+                'tim'            => ['Auditor Satu', 'Auditor Dua'],
+            ],
+        ])->assertOk();
+
+        $h = $r->json();
+
+        $this->assertSame(1098, $h['pekerja']);
+        $this->assertSame(2, $h['auditor'], 'Pembaginya jumlah nama pada tim.');
+        /* Dibandingkan nilainya, bukan tipenya: JSON memulangkan 9.0
+           sebagai 9, dan menuntut kesamaan tipe di sini hanya menguji
+           perilaku json_encode. */
+        $this->assertEquals(
+            SmkpTahap::mandays(['jumlah_pekerja' => 1098, 'kelas_risiko' => 'Tinggi',
+                                'tim' => ['Auditor Satu', 'Auditor Dua']]),
+            $h,
+            'Jawabannya harus datang dari rumus yang sama dengan yang menyimpannya.',
+        );
+
+        /* Dan tidak boleh menyimpan apa pun: kartunya berubah saat
+           diketik, tetapi berkas auditnya baru berubah bila tombol simpan
+           ditekan. */
+        $this->assertSame($sebelum, $a->fresh()->permulaan,
+            'Menghitung ulang tidak boleh mengubah data audit.');
+    }
+
+    /** Dan halaman Tahap I mengirim alamat penghitungnya. */
+    public function test_halaman_tahap1_mengirim_tautan_mandays(): void
+    {
+        $this->masuk();
+        $a = $this->audit();
+
+        $this->get(route('smkp.tahap1', $a))->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('tautan.mandays', route('smkp.tahap1.mandays', $a)));
+    }
 }

@@ -185,7 +185,50 @@ class SmkpController extends Controller
                besarnya — kesalahan yang tidak menimbulkan galat apa pun dan
                karena itu tidak pernah ketahuan. */
             'pekerjaPerusahaan' => $this->pekerjaPerusahaan($smkp),
+
+            'tautan'    => [
+                'mandays' => route('smkp.tahap1.mandays', $smkp),
+            ],
         ]);
+    }
+
+    /**
+     * Hitung ulang hari kerja audit dari isian yang SEDANG diketik.
+     *
+     * Keempat kartunya dulu membaca angka hasil simpanan terakhir, jadi
+     * mengetik jumlah pekerja, mencentang faktor, atau menambah auditor
+     * tidak mengubah apa pun di layar sampai tombol simpan ditekan.
+     * Bagi yang mengisinya, perhitungannya tampak tidak jalan sama
+     * sekali — dan itu bukan salah paham: angka yang terbaca memang
+     * bukan angka dari isian yang sedang dilihatnya.
+     *
+     * Rumusnya TIDAK disalin ke sisi peramban. Ia membawa keputusan yang
+     * tidak boleh bercabang dua — mandays dibagi auditor menjadi durasi
+     * dan bukan sebaliknya, sekurang-kurangnya satu hari, Tahap I
+     * dibatasi sepersepuluh, dan pembaginya jumlah NAMA pada tim bukan
+     * angka yang diketik. Dua salinan rumus semacam itu akan berselisih,
+     * dan yang berselisih adalah tagihan hari kerja audit.
+     *
+     * Karena itu jawabannya tetap datang dari satu tempat yang sama
+     * dengan yang menyimpannya. Yang berubah hanya waktunya: sekarang,
+     * bukan setelah disimpan.
+     */
+    public function hitungMandays(Request $request, SmkpAudit $smkp)
+    {
+        $d = $request->validate([
+            'permulaan'                     => ['nullable', 'array'],
+            'permulaan.tim'                 => ['nullable', 'array', 'max:50'],
+            'permulaan.tim.*'               => ['nullable', 'string', 'max:150'],
+            'permulaan.jumlah_pekerja'      => ['nullable', 'integer', 'min:0', 'max:1000000'],
+            'permulaan.jumlah_auditor'      => ['nullable', 'integer', 'min:1', 'max:50'],
+            'permulaan.kelas_risiko'        => ['nullable', Rule::in(SmkpTahap::kelasRisiko())],
+            'permulaan.faktor'              => ['nullable', 'array'],
+            'permulaan.faktor.*'            => ['nullable'],
+            'permulaan.pengurang'           => ['nullable', 'array'],
+            'permulaan.pengurang.*'         => ['nullable'],
+        ]);
+
+        return response()->json(SmkpTahap::mandays((array) ($d['permulaan'] ?? [])));
     }
 
     /**

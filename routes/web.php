@@ -758,6 +758,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Tahap I — permulaan audit, peninjauan dokumen, persiapan lapangan
         Route::get('{smkp}/tahap-1',       [SmkpController::class,'tahap1'])->name('tahap1');
         Route::post('{smkp}/tahap-1',      [SmkpController::class,'simpanTahap1'])->name('tahap1.simpan');
+
+        /* Hitung ulang hari kerja audit tanpa menyimpan apa pun, supaya
+           kartunya mengikuti isian yang sedang diketik. Rumusnya satu dan
+           tetap di server; yang dikirim ke sini hanya isiannya. */
+        Route::post('{smkp}/tahap-1/mandays', [SmkpController::class,'hitungMandays'])->name('tahap1.mandays');
         Route::get('{smkp}/berita-acara',  [SmkpController::class,'beritaAcara'])->name('berita-acara');
 
         // Rencana Audit — sembilan komponen wajib, plus laporannya
