@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 /*
   Prop halaman diambil lewat usePage(), bukan defineProps.
@@ -83,7 +87,7 @@ function simpanHadir() { hadirForm.post(`/smkp/${audit.value.id}/rapat`, { prese
 function simpanNilai() { nilaiForm.post(`/smkp/${audit.value.id}/elemen/${props.elemen?.kode}`, { preserveScroll: true }); }
 function angkatTemuan() { router.post(`/smkp/${audit.value.id}/temuan/angkat`, {}, { preserveScroll: true }); }
 function simpanTemuan(item: any) { router.put(`/smkp/${audit.value.id}/temuan/${item.id}`, temuanForm[item.id], { preserveScroll: true }); }
-function hapusTemuan(item: any) { if (confirm('Hapus temuan ini?')) router.delete(`/smkp/${audit.value.id}/temuan/${item.id}`, { preserveScroll: true }); }
+async function hapusTemuan(item: any) { if (await tanya('Hapus temuan ini?')) router.delete(`/smkp/${audit.value.id}/temuan/${item.id}`, { preserveScroll: true }); }
 function tambahBaris(kunci: 'susunan' | 'tugas') { rencanaForm[kunci].push(kunci === 'susunan' ? { tanggal: '', waktu: '', kegiatan: '', auditi: '', auditor: '' } : { nama: '', peran: '', registrasi: '', lingkup: '' }); }
 /* Pembagian tugas diisi dari susunan tim Tahap I, bukan diketik ulang.
    Mengetik ulang nama melahirkan dua daftar yang dapat berselisih, dan
@@ -263,4 +267,6 @@ function nilaiAwal(kode: string) { return { ...(audit.value.hasil?.[kode] ?? {})
 
     <section v-if="props.mode === 'temuan'" class="space-y-4"><div class="flex flex-wrap gap-2"><button type="button" class="eq-btn-utama" @click="angkatTemuan">Angkat seluruh temuan usulan ({{ props.usulan?.length ?? 0 }})</button><Link :href="`/smkp/${audit.id}`" class="eq-btn-lain">Kembali ke ringkasan</Link></div><div v-for="item in temuan" :key="item.id" class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><div class="flex justify-between gap-3"><div><h3 class="font-bold text-[13px]">{{ item.kode_kriteria }} · {{ item.jenis }}</h3><p class="text-[12px] text-stone-500 mt-1">{{ item.uraian }}</p></div><button type="button" class="text-red-600 text-[11px]" @click="hapusTemuan(item)">Hapus</button></div><div class="grid gap-3 md:grid-cols-3 mt-4"><textarea v-model="temuanForm[item.id].akar_masalah" placeholder="Akar masalah" class="rounded-lg border-stone-200 text-[12px]"></textarea><textarea v-model="temuanForm[item.id].tindakan" placeholder="Tindakan perbaikan" class="rounded-lg border-stone-200 text-[12px]"></textarea><div class="space-y-2"><input v-model="temuanForm[item.id].penanggung_jawab" placeholder="Penanggung jawab" class="w-full rounded-lg border-stone-200 text-[12px]"><input v-model="temuanForm[item.id].target_selesai" type="date" class="w-full rounded-lg border-stone-200 text-[12px]" aria-label="Tenggat"><select v-model="temuanForm[item.id].status" class="w-full rounded-lg border-stone-200 text-[12px]" aria-label="Status"><option>Open</option><option>In Progress</option><option>Closed</option></select></div></div><button type="button" class="eq-btn-lain mt-3" @click="simpanTemuan(item)">Simpan tindakan</button></div><div v-if="!temuan.length" class="rounded-2xl bg-white p-8 text-center text-stone-500">Belum ada temuan.</div></section>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

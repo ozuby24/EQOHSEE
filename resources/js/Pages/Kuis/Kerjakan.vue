@@ -9,6 +9,10 @@
 import { Head, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import type { HalamanKerjakanKuis } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanKerjakanKuis>();
 
@@ -17,8 +21,8 @@ const form = useForm({ answers: {} as Record<number, string> });
 const terjawab = computed(() => Object.keys(form.answers).length);
 const lengkap = computed(() => terjawab.value === props.soal.length);
 
-function kirim() {
-  if (!lengkap.value && !confirm(
+async function kirim() {
+  if (!lengkap.value && !await tanya(
     `Masih ada ${props.soal.length - terjawab.value} soal yang belum dijawab. Kirim sekarang?`)) return;
 
   form.post(props.tautan.kirim);
@@ -63,4 +67,6 @@ function kirim() {
       </button>
     </form>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

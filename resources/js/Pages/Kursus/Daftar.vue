@@ -4,6 +4,10 @@
  */
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import type { HalamanDaftarKursus } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanDaftarKursus>();
 
@@ -22,8 +26,8 @@ function pilihKategori(k: string) {
   terapkan();
 }
 
-function hapus(url: string, judul: string) {
-  if (!confirm(`Hapus kursus "${judul}" beserta modul dan kuisnya?`)) return;
+async function hapus(url: string, judul: string) {
+  if (!await tanya(`Hapus kursus "${judul}" beserta modul dan kuisnya?`)) return;
   router.delete(url, { preserveScroll: true });
 }
 
@@ -174,4 +178,6 @@ const isian = 'ring-focus rounded-xl border border-stone-200 px-3.5 py-2.5 text-
                  v-html="t.label" />
     </nav>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

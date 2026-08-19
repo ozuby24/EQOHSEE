@@ -10,6 +10,10 @@
 import { reactive, ref } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import type { HalamanDetailInspeksi } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanDetailInspeksi>();
 
@@ -33,13 +37,13 @@ function simpanSemua() {
   });
 }
 
-function angkat(url: string) {
-  if (!confirm('Naikkan temuan ini menjadi Hazard Report?')) return;
+async function angkat(url: string) {
+  if (!await tanya('Naikkan temuan ini menjadi Hazard Report?')) return;
   router.post(url, {}, { preserveScroll: true });
 }
 
-function hapusItem(url: string) {
-  if (!confirm('Hapus parameter ini?')) return;
+async function hapusItem(url: string) {
+  if (!await tanya('Hapus parameter ini?')) return;
   router.delete(url, { preserveScroll: true });
 }
 
@@ -220,4 +224,6 @@ const label = 'block text-[11px] font-bold uppercase tracking-wide text-stone-50
       </form>
     </div>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

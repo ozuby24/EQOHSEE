@@ -9,6 +9,10 @@
  */
 import { router, useForm } from '@inertiajs/vue3';
 import type { PenandaTangan } from '../types';
+import Dialog from '../Components/Dialog.vue';
+import { useDialog } from '../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<{ s: PenandaTangan; perusahaan?: Array<{ id: number; nama: string }> }>();
 
@@ -29,8 +33,8 @@ function simpan() {
   form.put(props.s.urlSimpan, { preserveScroll: true });
 }
 
-function hapus() {
-  if (!confirm(`Hapus penanda tangan "${props.s.nama}"?`)) return;
+async function hapus() {
+  if (!await tanya(`Hapus penanda tangan "${props.s.nama}"?`)) return;
   router.delete(props.s.urlHapus, { preserveScroll: true });
 }
 
@@ -85,4 +89,6 @@ const label = 'block text-[10.5px] font-bold uppercase tracking-wide text-stone-
       Hapus
     </button>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

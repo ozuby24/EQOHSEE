@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, minta, batal, lanjut } = useDialog();
+
 
 /*
   Prop halaman diambil lewat usePage(), bukan defineProps.
@@ -64,9 +68,9 @@ function rentang() {
   router.get(window.location.pathname, { dari: props.dari, sampai: props.sampai }, { preserveState: true, replace: true });
 }
 function simpanRegu() { regu.post(tautan.value.reguSimpan, { preserveScroll: true, onSuccess: () => regu.reset('kode', 'catatan') }); }
-function hapusRegu(r: any) { if (window.confirm(`Hapus catatan ${r.kode}?`)) router.delete(untuk(tautan.value.reguHapus, r.id), { preserveScroll: true }); }
+async function hapusRegu(r: any) { if (await tanya(`Hapus catatan ${r.kode}?`)) router.delete(untuk(tautan.value.reguHapus, r.id), { preserveScroll: true }); }
 function simpanAlat() { alat.post(tautan.value.alatSimpan, { preserveScroll: true, onSuccess: () => alat.reset('kode', 'nama', 'tipe', 'catatan') }); }
-function hapusAlat(a: any) { if (window.confirm(`Hapus unit ${a.kode}?`)) router.delete(untuk(tautan.value.alatHapus, a.id), { preserveScroll: true }); }
+async function hapusAlat(a: any) { if (await tanya(`Hapus unit ${a.kode}?`)) router.delete(untuk(tautan.value.alatHapus, a.id), { preserveScroll: true }); }
 function simpanMuatan(r: any) { muatan.post(untuk(tautan.value.muatanSimpan, r.id), { preserveScroll: true, onSuccess: () => muatan.reset('rit_ke', 'muatan_ton') }); }
 function hapusMuatan(m: any) { router.delete(untuk(tautan.value.muatanHapus, m.id), { preserveScroll: true }); }
 
@@ -74,12 +78,13 @@ function alur(pola: string, baris: any, isi: Record<string, any> = {}) {
   sibuk[baris.id] = true;
   router.post(untuk(pola, baris.id), isi, { preserveScroll: true, onFinish: () => { sibuk[baris.id] = false; } });
 }
-function setujui(baris: any) {
-  if (!window.confirm(`Setujui catatan ${baris.kode}? Setelah disetujui tidak dapat diubah.`)) return;
+async function setujui(baris: any) {
+  if (!await tanya(`Setujui catatan ${baris.kode}? Setelah disetujui tidak dapat diubah.`)) return;
   alur(tautan.value.reguSetujui, baris);
 }
-function tolak(baris: any) {
-  const a = window.prompt(`Alasan penolakan catatan ${baris.kode}:`);
+async function tolak(baris: any) {
+  const a = await minta({ judul: `Tolak catatan ${baris.kode}?`, label: 'Alasan penolakan',
+    jenis: 'panjang', min: 5, labelAksi: 'Tolak', nada: 'bahaya' });
   if (a === null) return;
   alur(tautan.value.reguTolak, baris, { alasan_tolak: a });
 }
@@ -546,4 +551,6 @@ const lebarBagian: Record<string, string> = {
       </table></div>
     </section>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

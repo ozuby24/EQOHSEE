@@ -4,11 +4,15 @@
  */
 import { Head, Link, router } from '@inertiajs/vue3';
 import type { HalamanDaftarBerita } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 defineProps<HalamanDaftarBerita>();
 
-function hapus(url: string, judul: string) {
-  if (!confirm(`Hapus berita "${judul}"?`)) return;
+async function hapus(url: string, judul: string) {
+  if (!await tanya(`Hapus berita "${judul}"?`)) return;
   router.delete(url, { preserveScroll: true });
 }
 </script>
@@ -61,4 +65,6 @@ function hapus(url: string, judul: string) {
                  v-html="t.label" />
     </nav>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

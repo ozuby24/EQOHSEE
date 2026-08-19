@@ -10,6 +10,10 @@
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { angka } from '../../angka';
 import type { HalamanBarangGudang } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanBarangGudang>();
 
@@ -26,8 +30,8 @@ function terapkan() {
 
 const adaSaringan = () => Object.values(props.f).some((v) => v !== '');
 
-function hapus(url: string, nama: string) {
-  if (!confirm(`Hapus atau nonaktifkan "${nama}"?`)) return;
+async function hapus(url: string, nama: string) {
+  if (!await tanya(`Hapus atau nonaktifkan "${nama}"?`)) return;
   router.delete(url, { preserveScroll: true });
 }
 
@@ -132,4 +136,6 @@ const isian = 'rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px] ring
     </div>
 
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

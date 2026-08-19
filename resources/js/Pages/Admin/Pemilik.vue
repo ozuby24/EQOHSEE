@@ -11,6 +11,10 @@
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, reactive } from 'vue';
 import type { HalamanPemilik } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanPemilik>();
 
@@ -27,12 +31,12 @@ function semua(kunci: string, ada: boolean) {
   pilihan[kunci].id = ada && j ? j.baris.map((b) => b.id) : [];
 }
 
-function tetapkan(kunci: string) {
+async function tetapkan(kunci: string) {
   const p = pilihan[kunci];
   const j = props.jenis.find((x) => x.kunci === kunci);
   const nama = props.perusahaan.find((c) => c.nilai === p.company_id)?.label ?? '';
 
-  if (!confirm(`Tetapkan ${p.id.length} ${j?.label.toLowerCase()} sebagai milik ${nama}?\n\nSetelah ditetapkan, hanya perusahaan itu yang dapat melihatnya.`)) return;
+  if (!await tanya(`Tetapkan ${p.id.length} ${j?.label.toLowerCase()} sebagai milik ${nama}?\n\nSetelah ditetapkan, hanya perusahaan itu yang dapat melihatnya.`)) return;
 
   router.post(props.tautan.tetapkan,
     { jenis: kunci, id: p.id, company_id: p.company_id },
@@ -138,4 +142,6 @@ function tetapkan(kunci: string) {
     </section>
 
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

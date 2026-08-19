@@ -16,6 +16,10 @@ import { computed, reactive } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import Baris from './Baris.vue';
 import { KEADAAN } from '../../Grafik/warna';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, minta, batal, lanjut } = useDialog();
+
 
 const props = usePage<any>().props as any;
 
@@ -67,17 +71,18 @@ function ajukan(id: number) {
   router.post(`/miners/cuti/${id}/ajukan`, {}, { preserveScroll: true });
 }
 
-function tinjau(id: number, aksi: 'setujui' | 'tolak' | 'tarik') {
+async function tinjau(id: number, aksi: 'setujui' | 'tolak' | 'tarik') {
   let alasan = '';
   if (aksi === 'tolak') {
-    alasan = (prompt('Alasan penolakan:') ?? '').trim();
+    alasan = (await minta({ judul: 'Tolak pengajuan cuti?', label: 'Alasan penolakan',
+      jenis: 'panjang', min: 5, labelAksi: 'Tolak', nada: 'bahaya' }) ?? '').trim();
     if (!alasan) return;
   }
   router.post(`/miners/cuti/${id}/tinjau`, { aksi, alasan }, { preserveScroll: true });
 }
 
-function hapus(id: number, nama: string) {
-  if (confirm(`Hapus pengajuan cuti ${nama}?`)) {
+async function hapus(id: number, nama: string) {
+  if (await tanya(`Hapus pengajuan cuti ${nama}?`)) {
     router.delete(`/miners/cuti/${id}`, { preserveScroll: true });
   }
 }
@@ -250,4 +255,6 @@ function warnaSisa(s: number, total: number): string {
       </p>
     </section>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

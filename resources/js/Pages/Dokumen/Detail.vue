@@ -7,6 +7,10 @@
  */
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import type { HalamanDetailDokumen } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanDetailDokumen>();
 
@@ -26,8 +30,8 @@ function terbitkan() {
   form.post(props.tautan.revisi, { onSuccess: () => form.reset() });
 }
 
-function hapus() {
-  if (!confirm(`Hapus dokumen ${props.d.kode} beserta riwayatnya?`)) return;
+async function hapus() {
+  if (!await tanya(`Hapus dokumen ${props.d.kode} beserta riwayatnya?`)) return;
   router.delete(props.tautan.hapus);
 }
 
@@ -177,4 +181,6 @@ const chip = 'text-[9.5px] font-bold uppercase tracking-wide px-2 py-0.5 rounded
     </section>
 
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

@@ -10,6 +10,10 @@
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import type { HalamanPerangkat } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanPerangkat>();
 
@@ -18,14 +22,14 @@ const galat = computed<Record<string, string>>(() => halaman.props.errors ?? {})
 
 const lain = computed(() => props.sesi.filter((s) => !s.iniSaya).length);
 
-function putus(id: string, perangkat: string) {
-  if (!confirm(`Putus ${perangkat}?\n\nPerangkat itu langsung kehilangan aksesnya dan harus masuk lagi.`)) return;
+async function putus(id: string, perangkat: string) {
+  if (!await tanya(`Putus ${perangkat}?\n\nPerangkat itu langsung kehilangan aksesnya dan harus masuk lagi.`)) return;
 
   router.delete(props.tautan.putus, { data: { id }, preserveScroll: true });
 }
 
-function putusLain() {
-  if (!confirm(`Putus ${lain.value} perangkat lain?\n\nPerangkat yang sedang Anda pakai sekarang tetap masuk, supaya Anda dapat langsung mengganti sandi sesudah ini.`)) return;
+async function putusLain() {
+  if (!await tanya(`Putus ${lain.value} perangkat lain?\n\nPerangkat yang sedang Anda pakai sekarang tetap masuk, supaya Anda dapat langsung mengganti sandi sesudah ini.`)) return;
 
   router.post(props.tautan.putusLain, {}, { preserveScroll: true });
 }
@@ -116,4 +120,6 @@ function putusLain() {
     </section>
 
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

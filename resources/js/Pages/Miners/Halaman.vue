@@ -19,6 +19,10 @@ import Donat from '../../Grafik/Donat.vue';
 import Rantai from './Rantai.vue';
 import Tahapan from './Tahapan.vue';
 import { KEADAAN } from '../../Grafik/warna';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, minta, batal, lanjut } = useDialog();
+
 
 const props = usePage<any>().props as any;
 
@@ -200,11 +204,12 @@ function paraf(jalur: string, tahap: string) {
   router.post(jalur, { tahap }, { preserveScroll: true });
 }
 
-function tinjau(jalur: string, aksi: 'setujui' | 'tolak' | 'tarik') {
+async function tinjau(jalur: string, aksi: 'setujui' | 'tolak' | 'tarik') {
   let alasan = '';
 
   if (aksi === 'tolak') {
-    alasan = (prompt('Alasan penolakan:') ?? '').trim();
+    alasan = (await minta({ judul: 'Tolak pengajuan?', label: 'Alasan penolakan',
+      jenis: 'panjang', min: 5, labelAksi: 'Tolak', nada: 'bahaya' }) ?? '').trim();
     if (!alasan) return;
   }
 
@@ -245,8 +250,8 @@ function simpanInduksi() {
 function ajukanKartu(kartuId: number) {
   router.post(`/miners/${id.value}/kartu/${kartuId}/ajukan`, {}, { preserveScroll: true });
 }
-function hapus(jalur: string, apa: string) {
-  if (confirm(`Hapus ${apa}?`)) router.delete(jalur, { preserveScroll: true });
+async function hapus(jalur: string, apa: string) {
+  if (await tanya(`Hapus ${apa}?`)) router.delete(jalur, { preserveScroll: true });
 }
 </script>
 
@@ -1001,4 +1006,6 @@ function hapus(jalur: string, apa: string) {
       </p>
     </template>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

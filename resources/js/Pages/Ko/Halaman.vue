@@ -2,6 +2,10 @@
 import { computed, reactive, ref } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import Dasbor from './Dasbor.vue';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 /*
   Prop halaman diambil lewat usePage(), bukan defineProps.
@@ -92,7 +96,7 @@ const settingsForm = useForm<Record<string, any>>({ ...(props.set ?? {}) });
 
 function cari() { router.get(window.location.pathname, filter, { preserveState: true, preserveScroll: true }); }
 function simpanObjek() { props.o?.id ? objectForm.put(`/ko/objek/${props.o.id}`, { preserveScroll: true }) : objectForm.post('/ko/objek', { preserveScroll: true }); }
-function hapusObjek() { if (props.o?.id && confirm(`Hapus ${props.o.kode}?`)) router.delete(`/ko/objek/${props.o.id}`); }
+async function hapusObjek() { if (props.o?.id && await tanya(`Hapus ${props.o.kode}?`)) router.delete(`/ko/objek/${props.o.id}`); }
 function simpanPm() { pmForm.post(`/ko/perawatan/${selectedObject.value}`, { preserveScroll: true }); }
 function simpanPengaman() { safeguardForm.post(`/ko/pengaman/${props.o?.id ?? selectedObject.value}`, { preserveScroll: true, onSuccess: () => safeguardForm.reset('id', 'nama', 'spesifikasi', 'tgl_periksa', 'catatan') }); }
 function simpanKajian() { reviewForm.post('/ko/kajian', { preserveScroll: true }); }
@@ -100,7 +104,7 @@ function simpanTenaga() { personnelForm.post('/ko/tenaga', { preserveScroll: tru
 function simpanTindak() { actionForm.post('/ko/tindak', { preserveScroll: true }); }
 function simpanPengaturan() { settingsForm.post('/ko/pengaturan', { preserveScroll: true }); }
 function tarikPeringatan() { router.post('/ko/tindak/tarik', {}, { preserveScroll: true }); }
-function hapus(path: string) { if (confirm('Hapus data ini?')) router.delete(path, { preserveScroll: true }); }
+async function hapus(path: string) { if (await tanya('Hapus data ini?')) router.delete(path, { preserveScroll: true }); }
 </script>
 
 <template>
@@ -154,4 +158,6 @@ function hapus(path: string) { if (confirm('Hapus data ini?')) router.delete(pat
 
     <section v-if="props.mode === 'pengaturan'" class="rounded-2xl bg-white border border-stone-100 shadow-card p-6 max-w-3xl"><form class="grid gap-4 sm:grid-cols-2" @submit.prevent="simpanPengaturan"><label v-for="key in ['ko_warn_days','ko_target_layak','ko_target_pmc','ko_iv_peralatan','ko_iv_instalasi']" :key="key" class="text-[12px] font-semibold">{{ key.replaceAll('_',' ') }}<input v-model="settingsForm[key]" type="number" class="mt-1 w-full rounded-xl border-stone-200 text-[12px]"></label><button class="eq-btn-utama">Simpan pengaturan</button></form></section>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

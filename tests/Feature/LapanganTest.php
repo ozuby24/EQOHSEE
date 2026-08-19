@@ -279,48 +279,59 @@ class LapanganTest extends TestCase
     }
 
     /**
-     * Panel data contoh tidak boleh bergantung pada dialog bawaan peramban.
+     * Tidak satu pun halaman boleh memakai dialog bawaan peramban.
      *
      * `confirm()` dan `prompt()` tidak dapat diandalkan di tempat
-     * aplikasi ini justru dipakai: pada webview ponsel dan tablet,
-     * keduanya kerap dibungkam aplikasi induknya dan langsung
-     * memulangkan `false`/`null` — yang dibaca kode pemanggilnya sebagai
-     * "pengguna menekan Batal".
+     * aplikasi ini justru dipakai. Pada webview ponsel dan tablet —
+     * aplikasi induk yang tidak memasang penangan `onJsConfirm` /
+     * `onJsPrompt` — keduanya langsung memulangkan `false` dan `null`
+     * tanpa menampilkan apa pun. Kode pemanggilnya membaca itu sebagai
+     * "pengguna menekan Batal", lalu berhenti diam-diam.
      *
-     * Akibatnya tidak terlihat sebagai kerusakan: tombolnya ditekan,
-     * tidak ada dialog, tidak ada pesan, tidak ada yang terjadi.
+     * Tidak ada galat, tidak ada pesan, tidak ada yang terjadi. Dari
+     * sisi pemakainya fiturnya sekadar mati — dan hanya di perangkat
+     * itu, jadi ia tidak pernah terlihat oleh siapa pun yang
+     * memeriksanya di layar lebar.
      *
-     * Terukur pada kode lama, dengan dialog bawaan dibungkam persis
-     * seperti webview: "Muat data contoh" tidak memuat satu baris pun,
-     * dan karena panelnya tetap kosong, tombol "Hapus data contoh" —
-     * yang hanya muncul bila ada isinya — tidak pernah ada. Seluruh
-     * panelnya mati, sementara sisi servernya sehat sepenuhnya (623
-     * baris ke 56 tabel, terhapus tanpa sisa).
+     * Terukur sebelum diperbaiki, dengan dialog bawaan dibungkam persis
+     * seperti webview: panel data contoh tidak memuat satu baris pun,
+     * dan tombol hapusnya — yang hanya muncul bila panelnya berisi —
+     * karena itu tidak pernah ada sama sekali. Sisi servernya sehat
+     * sepenuhnya; yang hilang hanya jalan menuju ke sana.
      *
-     * Yang dijaga di sini panel data contohnya saja. Sisa aplikasi masih
-     * memakai dialog bawaan di banyak tempat, dan itu tercatat sebagai
-     * pekerjaan tersendiri — menuliskannya sebagai penjagaan menyeluruh
-     * sekarang hanya akan melahirkan uji merah yang lalu dimatikan.
+     * Yang paling berat bukan panel itu melainkan alur tinjauan: seluruh
+     * "Alasan penolakan" memakai `prompt()`. Menolak laporan bahaya,
+     * inspeksi, atau catatan penirisan dari ponsel diam-diam tidak jadi.
+     *
+     * Penggantinya `useDialog()` di resources/js/dialog.ts, yang
+     * digambar aplikasinya sendiri sehingga muncul di mana pun
+     * aplikasinya muncul.
      */
-    public function test_panel_data_contoh_tidak_memakai_dialog_bawaan(): void
+    public function test_tidak_ada_dialog_bawaan_peramban(): void
     {
-        $isi = file_get_contents(resource_path('js/Pages/Admin/Sistem.vue'));
+        $temuan = [];
 
-        /* Baris berkomentar tidak dihitung — berkas ini memang
-           menjelaskan mengapa keduanya ditinggalkan. */
-        $kode = preg_replace('#^\s*(//|\*|/\*).*$#m', '', $isi);
+        foreach ($this->berkasVue() as $berkas) {
+            $isi = file_get_contents($berkas);
 
-        foreach (['confirm', 'prompt'] as $dialog) {
-            $this->assertDoesNotMatchRegularExpression(
-                '/(?<![\w.])(?:window\.)?' . $dialog . '\s*\(/',
-                $kode,
-                "Sistem.vue memanggil {$dialog}(); pada webview ponsel panggilan itu "
-                . 'dibungkam dan tindakannya diam-diam tidak jadi. Pakai Components/Dialog.vue.',
-            );
+            /* Komentar dibuang lebih dulu. Berkas-berkas ini memang
+               menjelaskan mengapa keduanya ditinggalkan, dan uji yang
+               membaca prosanya akan tersandung pada penjelasan itu
+               sendiri — sempat terjadi saat penggantiannya dikerjakan. */
+            $kode = preg_replace('#/\*.*?\*/#s', '', $isi);
+            $kode = preg_replace('#(?m)^\s*//.*$#', '', $kode);
+
+            foreach (['confirm', 'prompt'] as $dialog) {
+                if (preg_match('/(?<![\w.])(?:window\.)?' . $dialog . '\s*\(/', $kode)) {
+                    $temuan[] = basename($berkas) . " :: {$dialog}()";
+                }
+            }
         }
 
-        $this->assertStringContainsString('Components/Dialog.vue', $isi,
-            'Dialog dalam halaman hilang dari Sistem.vue.');
+        $this->assertSame([], $temuan,
+            'Dialog bawaan peramban dipakai lagi. Pada webview ponsel panggilan itu '
+            . "dibungkam dan tindakannya diam-diam tidak jadi — pakai useDialog():\n  "
+            . implode("\n  ", $temuan));
     }
 
     /** @return list<string> */

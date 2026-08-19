@@ -17,6 +17,10 @@
 import { computed, reactive } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { KEADAAN } from '../../Grafik/warna';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, minta, batal, lanjut } = useDialog();
+
 
 const props = usePage<any>().props as any;
 
@@ -59,17 +63,18 @@ function ajukan(id: number) {
   router.post(`/ko/uji/${id}/ajukan`, {}, { preserveScroll: true });
 }
 
-function tinjau(id: number, aksi: 'setujui' | 'tolak' | 'tarik') {
+async function tinjau(id: number, aksi: 'setujui' | 'tolak' | 'tarik') {
   let alasan = '';
   if (aksi === 'tolak') {
-    alasan = (prompt('Alasan penolakan:') ?? '').trim();
+    alasan = (await minta({ judul: 'Tolak uji kelayakan?', label: 'Alasan penolakan',
+      jenis: 'panjang', min: 5, labelAksi: 'Tolak', nada: 'bahaya' }) ?? '').trim();
     if (!alasan) return;
   }
   router.post(`/ko/uji/${id}/tinjau`, { aksi, alasan }, { preserveScroll: true });
 }
 
-function hapus(id: number, kode: string) {
-  if (confirm(`Hapus uji kelayakan ${kode}?`)) {
+async function hapus(id: number, kode: string) {
+  if (await tanya(`Hapus uji kelayakan ${kode}?`)) {
     router.delete(`/ko/uji/${id}`, { preserveScroll: true });
   }
 }
@@ -217,4 +222,6 @@ function hapus(id: number, kode: string) {
       <p v-else class="text-[12px] py-10 text-center text-stone-400">Belum ada uji kelayakan tercatat.</p>
     </section>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

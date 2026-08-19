@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, minta, batal, lanjut } = useDialog();
+
 
 /*
   Prop halaman diambil lewat usePage(), bukan defineProps.
@@ -69,7 +73,7 @@ function rentang() {
   router.get(window.location.pathname, { dari: props.dari, sampai: props.sampai }, { preserveState: true, replace: true });
 }
 function simpanLereng() { lereng.post(tautan.value.lerengSimpan, { preserveScroll: true, onSuccess: () => lereng.reset('kode', 'nama', 'lokasi', 'litologi', 'catatan') }); }
-function hapusLereng(l: any) { if (window.confirm(`Hapus lereng ${l.kode} beserta seluruh pembacaannya?`)) router.delete(untuk(tautan.value.lerengHapus, l.id), { preserveScroll: true }); }
+async function hapusLereng(l: any) { if (await tanya(`Hapus lereng ${l.kode} beserta seluruh pembacaannya?`)) router.delete(untuk(tautan.value.lerengHapus, l.id), { preserveScroll: true }); }
 function simpanInstrumen(l: any) { instrumen.post(untuk(tautan.value.instrumenSimpan, l.id), { preserveScroll: true, onSuccess: () => instrumen.reset() }); }
 function ubahInstrumen(i: any, status: string) { router.put(untuk(tautan.value.instrumenUbah, i.id), { status }, { preserveScroll: true }); }
 
@@ -79,15 +83,16 @@ function simpanBacaan() {
     onSuccess: () => bacaan.reset('retakan_mm', 'muka_air_m', 'curah_hujan_mm', 'ada_gejala', 'gejala', 'catatan'),
   });
 }
-function hapusBacaan(b: any) { if (window.confirm(`Hapus pembacaan ${b.tanggalLabel}?`)) router.delete(untuk(tautan.value.bacaanHapus, b.id), { preserveScroll: true }); }
+async function hapusBacaan(b: any) { if (await tanya(`Hapus pembacaan ${b.tanggalLabel}?`)) router.delete(untuk(tautan.value.bacaanHapus, b.id), { preserveScroll: true }); }
 
 function ajukan(b: any) { sibuk[b.id] = true; router.post(untuk(tautan.value.ajukan, b.id), {}, { preserveScroll: true, onFinish: () => { sibuk[b.id] = false; } }); }
-function setujui(b: any) {
-  if (!window.confirm(`Setujui pembacaan ${b.tanggalLabel}? Setelah disetujui tidak dapat diubah.`)) return;
+async function setujui(b: any) {
+  if (!await tanya(`Setujui pembacaan ${b.tanggalLabel}? Setelah disetujui tidak dapat diubah.`)) return;
   sibuk[b.id] = true; router.post(untuk(tautan.value.setujui, b.id), {}, { preserveScroll: true, onFinish: () => { sibuk[b.id] = false; } });
 }
-function tolak(b: any) {
-  const alasan = window.prompt(`Alasan penolakan pembacaan ${b.tanggalLabel}:`);
+async function tolak(b: any) {
+  const alasan = await minta({ judul: `Tolak pembacaan ${b.tanggalLabel}?`, label: 'Alasan penolakan',
+    jenis: 'panjang', min: 5, labelAksi: 'Tolak', nada: 'bahaya' });
   if (alasan === null) return;
   sibuk[b.id] = true; router.post(untuk(tautan.value.tolak, b.id), { alasan_tolak: alasan }, { preserveScroll: true, onFinish: () => { sibuk[b.id] = false; } });
 }
@@ -536,4 +541,6 @@ const arahTren: Record<string, string> = {
       </table>
     </section>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

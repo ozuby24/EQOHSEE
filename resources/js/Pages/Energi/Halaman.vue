@@ -3,6 +3,10 @@ import { computed, reactive, ref } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import EnergyInput from '../../Components/EnergyInput.vue';
 import Dasbor from './Dasbor.vue';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 /*
   Prop halaman diambil lewat usePage(), bukan defineProps.
@@ -53,8 +57,8 @@ const kalkulator = reactive({ liter: 0, kwh: 0, ton: 0, hargaLiter: 0, hargaKwh:
 const hasilKalkulator = computed(() => ({ gj: Number(kalkulator.liter) * 0.0358 + Number(kalkulator.kwh) * 0.0036, rupiah: Number(kalkulator.liter) * Number(kalkulator.hargaLiter) + Number(kalkulator.kwh) * Number(kalkulator.hargaKwh), intensitas: Number(kalkulator.ton) ? (Number(kalkulator.liter) * 0.0358 + Number(kalkulator.kwh) * 0.0036) / Number(kalkulator.ton) : 0 }));
 function simpan(path: string, form: any) { form.post(path, { preserveScroll: true, onSuccess: () => form.reset() }); }
 function ubahPeluang(item: any, status: string) { router.put(`/energi/penghematan/${item.id}`, { status }, { preserveScroll: true }); }
-function hapusPeluang(item: any) { if (confirm(`Hapus peluang ${item.judul}?`)) router.delete(`/energi/penghematan/${item.id}`, { preserveScroll: true }); }
-function hapusUnit(item: any) { if (confirm(`Hapus unit ${item.kode}?`)) router.delete(`/energi/data-induk/${item.id}`, { preserveScroll: true }); }
+async function hapusPeluang(item: any) { if (await tanya(`Hapus peluang ${item.judul}?`)) router.delete(`/energi/penghematan/${item.id}`, { preserveScroll: true }); }
+async function hapusUnit(item: any) { if (await tanya(`Hapus unit ${item.kode}?`)) router.delete(`/energi/data-induk/${item.id}`, { preserveScroll: true }); }
 function hitung() { pesanKalkulator.value = 'Perhitungan menggunakan faktor konversi aplikasi; nilai ini tidak mengubah data server.'; }
 </script>
 
@@ -87,4 +91,6 @@ function hitung() { pesanKalkulator.value = 'Perhitungan menggunakan faktor konv
     <div v-if="!daftar.length && !props.baseline && !['index','kalkulator','listrik','equipment-show'].includes(props.mode)" class="rounded-2xl bg-white border border-stone-100 p-8 text-center text-stone-500 text-[13px]">Belum ada data pada rentang atau modul ini.</div>
     <EnergyInput v-if="props.mode === 'input'" :units="props.units ?? []" :areas="props.areas ?? {}" :sources="props.sources ?? {}" :recent="props.recent ?? {}" :tautan="props.tautan ?? {}" />
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

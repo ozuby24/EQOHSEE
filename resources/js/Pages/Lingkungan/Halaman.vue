@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, minta, batal, lanjut } = useDialog();
+
 
 /*
   Prop halaman diambil lewat usePage(), bukan defineProps.
@@ -70,25 +74,26 @@ function rentang() {
   router.get(window.location.pathname, { dari: props.dari, sampai: props.sampai }, { preserveState: true, replace: true });
 }
 function simpanArea() { area.post(tautan.value.areaSimpan, { preserveScroll: true, onSuccess: () => area.reset('kode', 'nama', 'catatan') }); }
-function hapusArea(a: any) { if (window.confirm(`Hapus petak ${a.kode}?`)) router.delete(untuk(tautan.value.areaHapus, a.id), { preserveScroll: true }); }
+async function hapusArea(a: any) { if (await tanya(`Hapus petak ${a.kode}?`)) router.delete(untuk(tautan.value.areaHapus, a.id), { preserveScroll: true }); }
 function simpanKemajuan() { kemajuan.post(tautan.value.kemajuanSimpan, { preserveScroll: true, onSuccess: () => kemajuan.reset('pohon_ditanam', 'tingkat_tumbuh_persen', 'catatan') }); }
-function hapusKemajuan(k: any) { if (window.confirm(`Hapus kemajuan ${k.tanggalLabel}?`)) router.delete(untuk(tautan.value.kemajuanHapus, k.id), { preserveScroll: true }); }
+async function hapusKemajuan(k: any) { if (await tanya(`Hapus kemajuan ${k.tanggalLabel}?`)) router.delete(untuk(tautan.value.kemajuanHapus, k.id), { preserveScroll: true }); }
 function simpanParameter() { parameter.post(tautan.value.parameterSimpan, { preserveScroll: true, onSuccess: () => parameter.reset('kode', 'nama', 'satuan', 'batas_min', 'batas_maks', 'acuan') }); }
-function hapusParameter(p: any) { if (window.confirm(`Hapus parameter ${p.kode}?`)) router.delete(untuk(tautan.value.parameterHapus, p.id), { preserveScroll: true }); }
+async function hapusParameter(p: any) { if (await tanya(`Hapus parameter ${p.kode}?`)) router.delete(untuk(tautan.value.parameterHapus, p.id), { preserveScroll: true }); }
 function simpanPantau() { pantau.post(tautan.value.pantauSimpan, { preserveScroll: true, onSuccess: () => pantau.reset('nilai', 'catatan') }); }
-function hapusPantau(x: any) { if (window.confirm(`Hapus hasil uji ${x.tanggalLabel}?`)) router.delete(untuk(tautan.value.pantauHapus, x.id), { preserveScroll: true }); }
+async function hapusPantau(x: any) { if (await tanya(`Hapus hasil uji ${x.tanggalLabel}?`)) router.delete(untuk(tautan.value.pantauHapus, x.id), { preserveScroll: true }); }
 
 function alur(pola: string, baris: any, muatan: Record<string, any> = {}) {
   sibuk[baris.id] = true;
   router.post(untuk(pola, baris.id), muatan, { preserveScroll: true, onFinish: () => { sibuk[baris.id] = false; } });
 }
-function tolakDengan(pola: string, baris: any, apa: string) {
-  const alasan = window.prompt(`Alasan penolakan ${apa}:`);
+async function tolakDengan(pola: string, baris: any, apa: string) {
+  const alasan = await minta({ judul: `Tolak ${apa}?`, label: 'Alasan penolakan',
+    jenis: 'panjang', min: 5, labelAksi: 'Tolak', nada: 'bahaya' });
   if (alasan === null) return;
   alur(pola, baris, { alasan_tolak: alasan });
 }
-function setujuiDengan(pola: string, baris: any, apa: string) {
-  if (!window.confirm(`Setujui ${apa}? Setelah disetujui tidak dapat diubah.`)) return;
+async function setujuiDengan(pola: string, baris: any, apa: string) {
+  if (!await tanya(`Setujui ${apa}? Setelah disetujui tidak dapat diubah.`)) return;
   alur(pola, baris);
 }
 
@@ -561,4 +566,6 @@ const warnaStatus: Record<string, string> = {
       </table>
     </section>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

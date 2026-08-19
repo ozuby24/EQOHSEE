@@ -16,6 +16,10 @@ import { reactive, ref, watch } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import PickerTpkkp from '../../Components/PickerTpkkp.vue';
 import type { BarisProgram, BarisSunting, HalamanProgram } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanProgram>();
 
@@ -73,8 +77,8 @@ function simpanBaris(id: string) {
     { preserveScroll: true });
 }
 
-function hapus(id: string) {
-  if (!confirm('Hapus program ini?')) return;
+async function hapus(id: string) {
+  if (!await tanya('Hapus program ini?')) return;
 
   router.delete(`/tpkkp/program/${id}?tahun=${props.tahun}`, { preserveScroll: true });
 }
@@ -186,4 +190,6 @@ const angka = (n: number) => (n >= 0 ? '+' : '') + n.toFixed(3);
       </div>
     </div>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

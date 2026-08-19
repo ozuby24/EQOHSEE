@@ -9,6 +9,10 @@
 import { Head, useForm } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import type { HalamanKerjakanSop } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanKerjakanSop>();
 
@@ -24,10 +28,10 @@ const waktu = computed(() => {
 
 const terjawab = computed(() => Object.keys(form.answers).length);
 
-function kirim(paksa = false) {
+async function kirim(paksa = false) {
   if (form.processing) return;
 
-  if (!paksa && terjawab.value < props.soal.length && !confirm(
+  if (!paksa && terjawab.value < props.soal.length && !await tanya(
     `Masih ada ${props.soal.length - terjawab.value} soal yang belum dijawab. Kirim sekarang?`)) return;
 
   form.post(props.tautan.kirim);
@@ -95,4 +99,6 @@ onBeforeUnmount(() => clearInterval(jam));
       </button>
     </form>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

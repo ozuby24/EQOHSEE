@@ -13,6 +13,10 @@ import { computed, reactive } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import Baris from './Baris.vue';
 import { KEADAAN } from '../../Grafik/warna';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, minta, batal, lanjut } = useDialog();
+
 
 const props = usePage<any>().props as any;
 
@@ -38,23 +42,25 @@ function ajukan(id: number) {
   router.post(`/miners/campaign/${id}/ajukan`, {}, { preserveScroll: true });
 }
 
-function tinjau(id: number, aksi: 'setujui' | 'tolak' | 'tarik') {
+async function tinjau(id: number, aksi: 'setujui' | 'tolak' | 'tarik') {
   let alasan = '';
   if (aksi === 'tolak') {
-    alasan = (prompt('Alasan penolakan:') ?? '').trim();
+    alasan = (await minta({ judul: 'Tolak campaign?', label: 'Alasan penolakan',
+      jenis: 'panjang', min: 5, labelAksi: 'Tolak', nada: 'bahaya' }) ?? '').trim();
     if (!alasan) return;
   }
   router.post(`/miners/campaign/${id}/tinjau`, { aksi, alasan }, { preserveScroll: true });
 }
 
-function hapus(id: number, judul: string) {
-  if (confirm(`Hapus campaign "${judul}"?`)) {
+async function hapus(id: number, judul: string) {
+  if (await tanya(`Hapus campaign "${judul}"?`)) {
     router.delete(`/miners/campaign/${id}`, { preserveScroll: true });
   }
 }
 
-function catatJangkauan(id: number, kini: number | null) {
-  const n = prompt('Berapa orang yang menerima campaign ini?', String(kini ?? ''));
+async function catatJangkauan(id: number, kini: number | null) {
+  const n = await minta({ judul: 'Jumlah penerima campaign', label: 'Berapa orang yang menerima?',
+    jenis: 'angka', nilai: String(kini ?? ''), labelAksi: 'Simpan' });
   if (n === null || n.trim() === '') return;
 
   router.post(`/miners/campaign/${id}/jangkauan`, { jangkauan: Number(n) }, { preserveScroll: true });
@@ -164,4 +170,6 @@ function catatJangkauan(id: number, kini: number | null) {
       <p v-else class="text-[12px] py-8 text-center text-stone-400">Belum ada campaign.</p>
     </section>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

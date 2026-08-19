@@ -14,6 +14,10 @@
 import { computed, onBeforeUnmount, ref } from 'vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import type { HalamanProfilDiri } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanProfilDiri>();
 
@@ -46,8 +50,8 @@ function simpan() {
   });
 }
 
-function hapusFoto() {
-  if (!confirm('Hapus foto profil?')) return;
+async function hapusFoto() {
+  if (!await tanya('Hapus foto profil?')) return;
 
   router.delete('/personalia/avatar', { preserveScroll: true });
 }
@@ -147,4 +151,6 @@ function hapusFoto() {
       </div>
     </div>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

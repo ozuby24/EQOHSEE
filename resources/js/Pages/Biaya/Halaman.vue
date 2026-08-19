@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, minta, batal, lanjut } = useDialog();
+
 
 /*
   Prop halaman diambil lewat usePage(), bukan defineProps — lihat
@@ -44,22 +48,23 @@ function gantiTahun(t: number | string) {
   router.get(window.location.pathname, { tahun: t }, { preserveState: false });
 }
 function simpanAkun() { akun.post(tautan.value.akunSimpan, { preserveScroll: true, onSuccess: () => akun.reset('kode', 'nama', 'satuan', 'catatan') }); }
-function hapusAkun(a: any) { if (window.confirm(`Hapus akun ${a.kode}? Anggaran dan realisasinya ikut terhapus.`)) router.delete(untuk(tautan.value.akunHapus, a.id), { preserveScroll: true }); }
+async function hapusAkun(a: any) { if (await tanya(`Hapus akun ${a.kode}? Anggaran dan realisasinya ikut terhapus.`)) router.delete(untuk(tautan.value.akunHapus, a.id), { preserveScroll: true }); }
 function simpanAnggaran() { anggaran.post(tautan.value.anggaranSimpan, { preserveScroll: true, onSuccess: () => anggaran.reset('nilai_rp', 'kuantitas_rencana', 'catatan') }); }
 function hapusAnggaran(a: any) { router.delete(untuk(tautan.value.anggaranHapus, a.id), { preserveScroll: true }); }
 function simpanRealisasi() { realisasi.post(tautan.value.realisasiSimpan, { preserveScroll: true, onSuccess: () => realisasi.reset('nilai_rp', 'kuantitas', 'catatan') }); }
-function hapusRealisasi(r: any) { if (window.confirm('Hapus realisasi ini?')) router.delete(untuk(tautan.value.realisasiHapus, r.id), { preserveScroll: true }); }
+async function hapusRealisasi(r: any) { if (await tanya('Hapus realisasi ini?')) router.delete(untuk(tautan.value.realisasiHapus, r.id), { preserveScroll: true }); }
 
 function alur(pola: string, baris: any, isi: Record<string, any> = {}) {
   sibuk[baris.id] = true;
   router.post(untuk(pola, baris.id), isi, { preserveScroll: true, onFinish: () => { sibuk[baris.id] = false; } });
 }
-function setujui(baris: any) {
-  if (!window.confirm('Setujui realisasi ini? Setelah disetujui tidak dapat diubah.')) return;
+async function setujui(baris: any) {
+  if (!await tanya('Setujui realisasi ini? Setelah disetujui tidak dapat diubah.')) return;
   alur(tautan.value.realisasiSetujui, baris);
 }
-function tolak(baris: any) {
-  const a = window.prompt('Alasan penolakan:');
+async function tolak(baris: any) {
+  const a = await minta({ judul: 'Tolak realisasi biaya?', label: 'Alasan penolakan',
+    jenis: 'panjang', min: 5, labelAksi: 'Tolak', nada: 'bahaya' });
   if (a === null) return;
   alur(tautan.value.realisasiTolak, baris, { alasan_tolak: a });
 }
@@ -493,4 +498,6 @@ const warnaSerapan: Record<string, string> = {
       </table>
     </section>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

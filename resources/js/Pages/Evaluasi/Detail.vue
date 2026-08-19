@@ -4,11 +4,15 @@
  */
 import { Head, Link, router } from '@inertiajs/vue3';
 import type { HalamanDetailEvaluasi } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanDetailEvaluasi>();
 
-function hapus() {
-  if (!confirm('Hapus evaluasi ini?')) return;
+async function hapus() {
+  if (!await tanya('Hapus evaluasi ini?')) return;
   router.delete(props.tautan.hapus);
 }
 
@@ -91,4 +95,6 @@ const adaCatatan = props.ev.strengths || props.ev.improvements || props.ev.notes
       </template>
     </div>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

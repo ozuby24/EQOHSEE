@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, minta, batal, lanjut } = useDialog();
+
 
 const props = defineProps<{
   judul: string;
@@ -101,16 +105,17 @@ function ajukan(item: Record<string, any>) {
   });
 }
 
-function setujui(item: Record<string, any>) {
-  if (!window.confirm(`Setujui data ${item.komoditas} periode ${item.periodeLabel}? Setelah disetujui, data tidak dapat diubah lagi.`)) return;
+async function setujui(item: Record<string, any>) {
+  if (!await tanya(`Setujui data ${item.komoditas} periode ${item.periodeLabel}? Setelah disetujui, data tidak dapat diubah lagi.`)) return;
   sibuk[item.id] = true;
   router.post(untuk(props.tautan.recordSetujui, item.id), {}, {
     preserveScroll: true, onFinish: () => { sibuk[item.id] = false; },
   });
 }
 
-function tolak(item: Record<string, any>) {
-  const alasan = window.prompt(`Alasan penolakan data ${item.komoditas} periode ${item.periodeLabel}:`);
+async function tolak(item: Record<string, any>) {
+  const alasan = await minta({ judul: `Tolak data ${item.komoditas} periode ${item.periodeLabel}?`,
+    label: 'Alasan penolakan', jenis: 'panjang', min: 5, labelAksi: 'Tolak', nada: 'bahaya' });
   if (alasan === null) return;
   sibuk[item.id] = true;
   router.post(untuk(props.tautan.recordTolak, item.id), { alasan_tolak: alasan }, {
@@ -125,14 +130,14 @@ const warnaStatus: Record<string, string> = {
   ditolak: 'bg-red-100 text-red-700',
 };
 
-function hapusRecord(item: Record<string, any>) {
-  if (window.confirm(`Hapus data ${item.komoditas} periode ${item.periodeLabel}?`)) {
+async function hapusRecord(item: Record<string, any>) {
+  if (await tanya(`Hapus data ${item.komoditas} periode ${item.periodeLabel}?`)) {
     router.delete(untuk(props.tautan.recordHapus, item.id), { preserveScroll: true });
   }
 }
 
-function hapusAction(item: Record<string, any>) {
-  if (window.confirm(`Hapus tindak lanjut “${item.judul}”?`)) {
+async function hapusAction(item: Record<string, any>) {
+  if (await tanya(`Hapus tindak lanjut “${item.judul}”?`)) {
     router.delete(untuk(props.tautan.actionHapus, item.id), { preserveScroll: true });
   }
 }
@@ -274,4 +279,6 @@ function cetak() {
       <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-x-auto"><table class="min-w-full text-left text-[12px]"><thead><tr class="border-b border-stone-100 text-stone-400"><th class="px-5 py-3">Periode</th><th class="px-5 py-3">Lokasi</th><th class="px-5 py-3">Komoditas</th><th class="px-5 py-3">Produksi</th><th class="px-5 py-3">Mineral Ikutan</th><th class="px-5 py-3">Catatan</th></tr></thead><tbody><tr v-for="item in props.records" :key="item.id" class="border-b border-stone-50"><td class="px-5 py-3">{{ item.periodeLabel }}</td><td class="px-5 py-3">{{ item.lokasi }}</td><td class="px-5 py-3 font-semibold">{{ item.komoditas }}</td><td class="px-5 py-3">{{ angka(item.produksi_aktual) }} {{ item.satuan }}</td><td class="px-5 py-3">{{ item.mineral_ikutan || '-' }}</td><td class="px-5 py-3 text-stone-500">{{ item.catatan || '-' }}</td></tr></tbody></table></section>
     </template>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

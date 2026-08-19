@@ -14,6 +14,10 @@ import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import BarisPeriksa from '../../Components/BarisPeriksa.vue';
 import type { HalamanDiagnosa } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanDiagnosa>();
 
@@ -53,8 +57,8 @@ const sesuaiPerluTindakan = computed(() =>
 
 const perbaikanForm = useForm({});
 
-function perbaiki(p: HalamanDiagnosa['perbaikan'][number]) {
-  if (p.berat && !confirm(`${p.label}\n\n${p.ket}\n\nJalankan sekarang?`)) return;
+async function perbaiki(p: HalamanDiagnosa['perbaikan'][number]) {
+  if (p.berat && !await tanya(`${p.label}\n\n${p.ket}\n\nJalankan sekarang?`)) return;
 
   perbaikanForm.post(p.url, { preserveScroll: true });
 }
@@ -271,4 +275,6 @@ function periksaUlang() {
     </section>
 
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

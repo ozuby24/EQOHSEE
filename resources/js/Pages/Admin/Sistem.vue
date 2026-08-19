@@ -8,11 +8,13 @@
  * — skripnya gagal dimuat dan ketiga panelnya kosong tanpa penjelasan.
  */
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
 import type { HalamanSistem } from '../../types';
-
 const props = defineProps<HalamanSistem>();
+
+const { dialog, tanya, batal, lanjut } = useDialog();
 
 /** Galat validasi tidak ditampilkan oleh tata letak; halaman ini sendiri
     yang menampilkannya — tanpa itu, penolakan penandaan data contoh
@@ -64,15 +66,16 @@ function jalankan(url: string) {
   pemeliharaanForm.post(url, { preserveScroll: true });
 }
 
-const konfirmasiLog = ref(false);
-
-function bersihkanLog() { konfirmasiLog.value = true; }
-
-function jalankanBersihLog() {
-  router.delete(props.tautan.bersihkanLog, {
-    preserveScroll: true,
-    onFinish: () => { konfirmasiLog.value = false; },
+async function bersihkanLog() {
+  const ok = await tanya({
+    judul: 'Kosongkan seluruh log aktivitas?',
+    pesan: 'Seluruh catatan aktivitas dihapus dan tidak dapat dikembalikan.',
+    labelAksi: 'Kosongkan log',
+    nada: 'bahaya',
   });
+  if (!ok) return;
+
+  router.delete(props.tautan.bersihkanLog, { preserveScroll: true });
 }
 
 /* ── data contoh ── */
@@ -109,83 +112,64 @@ function ringkasIsi(c: Perusahaan): string {
  * dan membuang semuanya tanpa sisa. Yang hilang hanya jalan menuju ke
  * sana.
  */
-type Tindakan = 'tandai' | 'muat' | 'buang';
+async function tandai(c: Perusahaan) {
+  const isi = jumlahIsi(c);
 
-const dialog = ref<{ jenis: Tindakan; c: Perusahaan } | null>(null);
+  const ok = await tanya({
+    judul: `Jadikan ${c.nama} perusahaan contoh?`,
+    pesan: isi
+      ? `${c.nama} sudah berisi ${isi} baris data.\n\n`
+        + 'Menandainya sebagai perusahaan contoh membuat seluruh data itu dapat dihapus '
+        + 'oleh tombol muat ulang maupun tombol hapus.'
+      : 'Perusahaan contoh dapat diisi data contoh dan dikosongkan kembali kapan saja.',
+    /* Namanya diminta HANYA bila sudah ada yang bisa hilang. Menuntut
+       ketikan pada perusahaan kosong tidak menjaga apa pun, dan
+       penegasan yang diminta tanpa alasan cepat berhenti dibaca. */
+    tegasNama: isi > 0 ? c.nama : null,
+    labelAksi: 'Jadikan contoh',
+  });
+  if (!ok) return;
 
-const dialogIsi = computed(() => {
-  const d = dialog.value;
-  if (!d) return null;
+  demoForm.transform(() => ({ demo: true, sadar: c.nama })).post(c.urlTandai, { preserveScroll: true });
+}
 
-  const isi = jumlahIsi(d.c);
+async function muat(c: Perusahaan) {
+  const isi = jumlahIsi(c);
 
-  if (d.jenis === 'tandai') {
-    return {
-      judul: `Jadikan ${d.c.nama} perusahaan contoh?`,
-      pesan: isi
-        ? `${d.c.nama} sudah berisi ${isi} baris data.\n\n`
-          + 'Menandainya sebagai perusahaan contoh membuat seluruh data itu dapat dibuang '
-          + 'oleh tombol muat ulang maupun tombol buang.'
-        : 'Perusahaan contoh dapat diisi data contoh dan dikosongkan kembali kapan saja.',
-      /* Namanya diminta HANYA bila sudah ada yang bisa hilang. Menuntut
-         ketikan pada perusahaan kosong tidak menjaga apa pun, dan
-         penegasan yang diminta tanpa alasan cepat berhenti dibaca. */
-      tegasNama: isi > 0 ? d.c.nama : null,
-      labelAksi: 'Jadikan contoh',
-      nada: 'utama' as const,
-    };
-  }
+  const ok = await tanya({
+    judul: `Muat data contoh ${c.nama}?`,
+    pesan: isi
+      ? `${isi} baris yang ada sekarang akan DIHAPUS lebih dulu, lalu diganti dengan `
+        + 'data contoh yang baru.\n\nTindakan ini tidak dapat dibatalkan.'
+      : 'Seluruh modul akan diisi data contoh — operasi, gudang, penirisan, geoteknik, '
+        + 'lingkungan, peledakan, angkutan, biaya, dan izin kerja.',
+    labelAksi: isi ? 'Hapus lalu muat ulang' : 'Muat data contoh',
+    nada: isi ? 'bahaya' : 'utama',
+  });
+  if (!ok) return;
 
-  if (d.jenis === 'muat') {
-    return {
-      judul: `Muat data contoh ${d.c.nama}?`,
-      pesan: isi
-        ? `${isi} baris yang ada sekarang akan DIBUANG lebih dulu, lalu diganti dengan `
-          + 'data contoh yang baru.\n\nTindakan ini tidak dapat dibatalkan.'
-        : 'Seluruh modul akan diisi data contoh — operasi, gudang, penirisan, geoteknik, '
-          + 'lingkungan, peledakan, angkutan, biaya, dan izin kerja.',
-      tegasNama: null,
-      labelAksi: isi ? 'Buang lalu muat ulang' : 'Muat data contoh',
-      nada: (isi ? 'bahaya' : 'utama') as 'utama' | 'bahaya',
-    };
-  }
+  demoForm.transform(() => ({})).post(c.urlMuat, { preserveScroll: true });
+}
 
-  return {
-    judul: `Hapus data contoh ${d.c.nama}?`,
+async function buang(c: Perusahaan) {
+  const isi = jumlahIsi(c);
+  if (!isi) return;
+
+  const ok = await tanya({
+    judul: `Hapus data contoh ${c.nama}?`,
     pesan: `${isi} baris akan dihapus dan seluruh modulnya kosong kembali.\n\n`
       + 'Tindakan ini tidak dapat dibatalkan — tetapi data contoh memang dibuat untuk '
       + 'dihapus. Jalankan setelah pemeriksaan selesai, sebelum pemasangan dipakai sungguhan.',
-    tegasNama: null,
     labelAksi: 'Hapus data contoh',
-    nada: 'bahaya' as const,
-  };
-});
+    nada: 'bahaya',
+  });
+  if (!ok) return;
 
-function tandai(c: Perusahaan) { dialog.value = { jenis: 'tandai', c }; }
-function muat(c: Perusahaan)   { dialog.value = { jenis: 'muat', c }; }
-
-function buang(c: Perusahaan) {
-  if (!jumlahIsi(c)) return;
-  dialog.value = { jenis: 'buang', c };
+  demoForm.transform(() => ({})).delete(c.urlHapus, { preserveScroll: true });
 }
 
 function lepasTanda(c: Perusahaan) {
   demoForm.transform(() => ({ demo: false, sadar: '' })).post(c.urlTandai, { preserveScroll: true });
-}
-
-function jalankanContoh() {
-  const d = dialog.value;
-  if (!d) return;
-
-  const tutup = { preserveScroll: true, onFinish: () => { dialog.value = null; } };
-
-  if (d.jenis === 'tandai') {
-    demoForm.transform(() => ({ demo: true, sadar: d.c.nama })).post(d.c.urlTandai, tutup);
-  } else if (d.jenis === 'muat') {
-    demoForm.transform(() => ({})).post(d.c.urlMuat, tutup);
-  } else {
-    demoForm.transform(() => ({})).delete(d.c.urlHapus, tutup);
-  }
 }
 </script>
 
@@ -516,24 +500,7 @@ function jalankanContoh() {
 
   </div>
 
-  <Dialog v-if="dialogIsi"
-          :terbuka="!!dialog"
-          :judul="dialogIsi.judul"
-          :pesan="dialogIsi.pesan"
-          :tegas-nama="dialogIsi.tegasNama"
-          :label-aksi="dialogIsi.labelAksi"
-          :nada="dialogIsi.nada"
-          :sibuk="demoForm.processing"
-          @batal="dialog = null"
-          @lanjut="jalankanContoh" />
-
-  <Dialog :terbuka="konfirmasiLog"
-          judul="Kosongkan seluruh log aktivitas?"
-          pesan="Seluruh catatan aktivitas dihapus dan tidak dapat dikembalikan."
-          label-aksi="Kosongkan log"
-          nada="bahaya"
-          @batal="konfirmasiLog = false"
-          @lanjut="jalankanBersihLog" />
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>
 
 <style scoped>

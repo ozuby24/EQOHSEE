@@ -4,6 +4,10 @@ import Kesiapan from './Kesiapan.vue';
 import KartuGrafik from '../../Grafik/KartuGrafik.vue';
 import Batang from '../../Grafik/Batang.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 /*
   Prop halaman diambil lewat usePage(), bukan defineProps.
@@ -63,8 +67,8 @@ function ubahStatus(item: any, status: string) {
   router.put(untuk(tautan.value.ubahStatus, item.id), { status }, { preserveScroll: true });
 }
 
-function hapus(item: any) {
-  if (window.confirm(`Hapus perintah kerja ${item.nomor || item.gejala}?`)) {
+async function hapus(item: any) {
+  if (await tanya(`Hapus perintah kerja ${item.nomor || item.gejala}?`)) {
     router.delete(untuk(tautan.value.hapus, item.id), { preserveScroll: true });
   }
 }
@@ -73,8 +77,8 @@ function rentang() {
   router.get(window.location.pathname, { dari: props.dari, sampai: props.sampai }, { preserveState: true, replace: true });
 }
 
-function verifikasi(item: any) {
-  if (!window.confirm(`Verifikasi penutupan ${item.nomor || item.gejala}? Setelah diverifikasi, jam dan biayanya tidak dapat diubah.`)) return;
+async function verifikasi(item: any) {
+  if (!await tanya(`Verifikasi penutupan ${item.nomor || item.gejala}? Setelah diverifikasi, jam dan biayanya tidak dapat diubah.`)) return;
   router.post(untuk(tautan.value.verifikasi, item.id), {}, { preserveScroll: true });
 }
 
@@ -413,4 +417,6 @@ const warnaStatus: Record<string, string> = {
       </section>
     </template>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

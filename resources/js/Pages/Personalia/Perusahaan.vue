@@ -10,6 +10,10 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import type { HalamanPerusahaan, MedanPerusahaan } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanPerusahaan>();
 
@@ -70,8 +74,8 @@ function simpan() {
   });
 }
 
-function hapusLogo() {
-  if (!confirm('Hapus logo? Warna tampilan kembali ke bawaan EQOHSEE.')) return;
+async function hapusLogo() {
+  if (!await tanya('Hapus logo? Warna tampilan kembali ke bawaan EQOHSEE.')) return;
 
   router.delete('/personalia/perusahaan/logo', { preserveScroll: true });
 }
@@ -229,4 +233,6 @@ function hapusLogo() {
       </div>
     </div>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

@@ -15,6 +15,10 @@ import { computed, ref } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import PickerTpkkp from '../../Components/PickerTpkkp.vue';
 import type { HalamanKuesioner } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, minta, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanKuesioner>();
 
@@ -26,9 +30,14 @@ async function salin() {
     tersalin.value = true;
     setTimeout(() => { tersalin.value = false; }, 2000);
   } catch {
-    // Clipboard ditolak peramban (bukan konteks aman, atau izin dicabut).
-    // Kotak prompt tetap memungkinkan orang menyalin sendiri.
-    window.prompt("Salin tautan:", props.urlPublik ?? "");
+    /* Clipboard ditolak peramban (bukan konteks aman, atau izin dicabut).
+       Cadangannya menampilkan tautannya di kolom yang sudah tersorot,
+       supaya masih dapat disalin sendiri. Dulu ini memakai `prompt()` —
+       yang pada webview ponsel tidak muncul sama sekali, sehingga
+       cadangannya sendiri ikut lenyap justru di perangkat yang paling
+       sering menolak clipboard. */
+    await minta({ judul: 'Salin tautan kuesioner', label: 'Tautan publik',
+      nilai: props.urlPublik ?? '', baca: true, wajib: false, labelAksi: 'Selesai' });
   }
 }
 
@@ -38,20 +47,20 @@ function gantiPerusahaan(id: number | string) {
   router.get('/tpkkp/kuesioner', { company: id }, { preserveScroll: true });
 }
 
-function gantiTautan() {
-  if (!confirm('Buat tautan baru? Tautan lama langsung tidak berlaku, termasuk yang sudah tersebar.')) return;
+async function gantiTautan() {
+  if (!await tanya('Buat tautan baru? Tautan lama langsung tidak berlaku, termasuk yang sudah tersebar.')) return;
 
   router.post("/kuesioner/token", { company_id: props.perusahaan?.id }, { preserveScroll: true });
 }
 
-function tarik() {
-  if (!confirm('Tarik seluruh jawaban kuesioner menjadi skor metode KS? Nilai KS yang ada akan ditimpa.')) return;
+async function tarik() {
+  if (!await tanya('Tarik seluruh jawaban kuesioner menjadi skor metode KS? Nilai KS yang ada akan ditimpa.')) return;
 
   router.post('/kuesioner/tarik', {}, { preserveScroll: true });
 }
 
-function hapus(id: number) {
-  if (!confirm('Hapus responden?')) return;
+async function hapus(id: number) {
+  if (!await tanya('Hapus responden?')) return;
 
   router.delete(`/kuesioner/${id}`, { preserveScroll: true });
 }
@@ -211,4 +220,6 @@ function hapus(id: number) {
     </div>
     </template>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

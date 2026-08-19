@@ -11,6 +11,10 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import type { HalamanAi } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanAi>();
 
@@ -47,8 +51,8 @@ function uji() {
     { preserveScroll: true, onFinish: () => (menguji.value = false) });
 }
 
-function hapus(kode: string, nama: string) {
-  if (!confirm(`Hapus kunci ${nama}?\n\nAsisten akan mati bila ini penyedia yang sedang dipakai. Kuncinya tidak dapat dipulihkan dari sini — ambil lagi dari penyedianya bila diperlukan.`)) return;
+async function hapus(kode: string, nama: string) {
+  if (!await tanya(`Hapus kunci ${nama}?\n\nAsisten akan mati bila ini penyedia yang sedang dipakai. Kuncinya tidak dapat dipulihkan dari sini — ambil lagi dari penyedianya bila diperlukan.`)) return;
 
   router.delete(props.tautan.hapus, { data: { penyedia: kode }, preserveScroll: true });
 }
@@ -200,4 +204,6 @@ function hapus(kode: string, nama: string) {
     </section>
 
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

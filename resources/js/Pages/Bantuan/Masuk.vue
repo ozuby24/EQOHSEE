@@ -9,6 +9,10 @@
 import { nextTick, ref, watch } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import type { HalamanBantuanMasuk } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanBantuanMasuk>();
 
@@ -37,9 +41,9 @@ function balas() {
   });
 }
 
-function selesai() {
+async function selesai() {
   if (!props.terpilih) return;
-  if (!confirm('Tandai percakapan ini selesai?')) return;
+  if (!await tanya('Tandai percakapan ini selesai?')) return;
 
   router.post(`/bantuan/${props.terpilih}/selesai`, {}, { preserveScroll: true });
 }
@@ -130,4 +134,6 @@ const label: Record<string, string> = { asisten: 'Asisten AI', admin: 'Admin' };
       <p v-else class="m-auto text-[12.5px] text-stone-400">Pilih percakapan di sebelah kiri.</p>
     </div>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

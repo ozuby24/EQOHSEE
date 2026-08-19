@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, minta, batal, lanjut } = useDialog();
+
 
 /*
   Prop halaman diambil lewat usePage(), bukan defineProps.
@@ -64,16 +68,17 @@ function simpanKolam() { kolam.post(tautan.value.kolamSimpan, { preserveScroll: 
 function simpanCatatan() { catatan.post(tautan.value.catatanSimpan, { preserveScroll: true, onSuccess: () => catatan.reset('curah_hujan_mm', 'level_m', 'ph', 'tss_mgl', 'fe_mgl', 'mn_mgl', 'catatan') }); }
 function simpanPompa(s: any) { pompa.post(untuk(tautan.value.pompaSimpan, s.id), { preserveScroll: true, onSuccess: () => pompa.reset() }); }
 function ubahPompa(p: any, status: string) { router.put(untuk(tautan.value.pompaUbah, p.id), { status }, { preserveScroll: true }); }
-function hapusKolam(s: any) { if (window.confirm(`Hapus kolam ${s.kode}?`)) router.delete(untuk(tautan.value.kolamHapus, s.id), { preserveScroll: true }); }
-function hapusCatatan(c: any) { if (window.confirm(`Hapus catatan ${c.tanggalLabel}?`)) router.delete(untuk(tautan.value.catatanHapus, c.id), { preserveScroll: true }); }
+async function hapusKolam(s: any) { if (await tanya(`Hapus kolam ${s.kode}?`)) router.delete(untuk(tautan.value.kolamHapus, s.id), { preserveScroll: true }); }
+async function hapusCatatan(c: any) { if (await tanya(`Hapus catatan ${c.tanggalLabel}?`)) router.delete(untuk(tautan.value.catatanHapus, c.id), { preserveScroll: true }); }
 
 function ajukan(c: any) { sibuk[c.id] = true; router.post(untuk(tautan.value.ajukan, c.id), {}, { preserveScroll: true, onFinish: () => { sibuk[c.id] = false; } }); }
-function setujui(c: any) {
-  if (!window.confirm(`Setujui catatan ${c.tanggalLabel}? Setelah disetujui tidak dapat diubah.`)) return;
+async function setujui(c: any) {
+  if (!await tanya(`Setujui catatan ${c.tanggalLabel}? Setelah disetujui tidak dapat diubah.`)) return;
   sibuk[c.id] = true; router.post(untuk(tautan.value.setujui, c.id), {}, { preserveScroll: true, onFinish: () => { sibuk[c.id] = false; } });
 }
-function tolak(c: any) {
-  const alasan = window.prompt(`Alasan penolakan catatan ${c.tanggalLabel}:`);
+async function tolak(c: any) {
+  const alasan = await minta({ judul: `Tolak catatan ${c.tanggalLabel}?`, label: 'Alasan penolakan',
+    jenis: 'panjang', min: 5, labelAksi: 'Tolak', nada: 'bahaya' });
   if (alasan === null) return;
   sibuk[c.id] = true; router.post(untuk(tautan.value.tolak, c.id), { alasan_tolak: alasan }, { preserveScroll: true, onFinish: () => { sibuk[c.id] = false; } });
 }
@@ -386,4 +391,6 @@ const warnaPompa: Record<string, string> = {
       </section>
     </template>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

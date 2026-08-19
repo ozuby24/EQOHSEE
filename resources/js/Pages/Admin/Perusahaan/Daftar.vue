@@ -4,6 +4,10 @@
  */
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import type { HalamanDaftarPerusahaan } from '../../../types';
+import Dialog from '../../../Components/Dialog.vue';
+import { useDialog } from '../../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanDaftarPerusahaan>();
 
@@ -15,8 +19,8 @@ function cari() {
     .get(props.tautan.daftar, { preserveState: true, preserveScroll: true, replace: true });
 }
 
-function hapus(url: string, nama: string) {
-  if (!confirm(`Hapus perusahaan "${nama}"? Data penilaian & kuesionernya ikut terhapus.`)) return;
+async function hapus(url: string, nama: string) {
+  if (!await tanya(`Hapus perusahaan "${nama}"? Data penilaian & kuesionernya ikut terhapus.`)) return;
   router.delete(url, { preserveScroll: true });
 }
 
@@ -105,4 +109,6 @@ const nadaRisiko = (r: string) =>
                  v-html="t.label" />
     </nav>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

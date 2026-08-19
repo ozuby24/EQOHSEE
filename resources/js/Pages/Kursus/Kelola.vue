@@ -9,6 +9,10 @@
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { reactive, watchEffect } from 'vue';
 import type { HalamanKelolaKursus } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanKelolaKursus>();
 
@@ -77,8 +81,8 @@ function tambahSoal(q: { id: number; urlTambahSoal: string }) {
   });
 }
 
-function hapus(url: string, pesan: string) {
-  if (!confirm(pesan)) return;
+async function hapus(url: string, pesan: string) {
+  if (!await tanya(pesan)) return;
   router.delete(url, { preserveScroll: true });
 }
 
@@ -260,4 +264,6 @@ const HURUF = ['A', 'B', 'C', 'D'];
       </form>
     </section>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

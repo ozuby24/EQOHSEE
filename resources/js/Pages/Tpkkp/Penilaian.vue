@@ -20,6 +20,10 @@ import { computed, reactive, ref, watch } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import PickerTpkkp from '../../Components/PickerTpkkp.vue';
 import type { HalamanPenilaian } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanPenilaian>();
 
@@ -102,8 +106,8 @@ const kemajuan = computed(() => {
 
 const kunciSel = computed(() => (props.entitas.length ? props.entitas : ['_']));
 
-function buka(m: string, p?: string | null) {
-  if (kotor.value && !confirm('Ada perubahan yang belum tersimpan. Tinggalkan halaman ini?')) return;
+async function buka(m: string, p?: string | null) {
+  if (kotor.value && !await tanya('Ada perubahan yang belum tersimpan. Tinggalkan halaman ini?')) return;
 
   router.get('/tpkkp/penilaian', { m, ...(p ? { p } : {}) }, {
     preserveScroll: false,
@@ -300,4 +304,6 @@ const bukaTarget = reactive<Record<string, boolean>>({});
       </div>
     </template>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

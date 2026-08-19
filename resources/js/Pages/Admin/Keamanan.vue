@@ -11,6 +11,10 @@
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import type { HalamanKeamanan } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanKeamanan>();
 
@@ -31,20 +35,20 @@ const kalimatTekanan = computed(() => {
   return 'Pada tingkat yang wajar untuk salah ketik.';
 });
 
-function putus(id: string, nama: string) {
-  if (!confirm(`Putus sesi ${nama}?\n\nPerangkat itu langsung kehilangan aksesnya dan harus masuk lagi. Pekerjaan yang belum tersimpan di sana akan hilang.`)) return;
+async function putus(id: string, nama: string) {
+  if (!await tanya(`Putus sesi ${nama}?\n\nPerangkat itu langsung kehilangan aksesnya dan harus masuk lagi. Pekerjaan yang belum tersimpan di sana akan hilang.`)) return;
 
   router.delete(props.tautan.putusSesi, { data: { id }, preserveScroll: true });
 }
 
-function bersihSesi() {
-  if (!confirm(`Bersihkan ${props.ringkas.sesiBasi} sesi kedaluwarsa?\n\nHanya sesi yang masa berlakunya sudah lewat. Tidak ada yang sedang masuk yang terputus.`)) return;
+async function bersihSesi() {
+  if (!await tanya(`Bersihkan ${props.ringkas.sesiBasi} sesi kedaluwarsa?\n\nHanya sesi yang masa berlakunya sudah lewat. Tidak ada yang sedang masuk yang terputus.`)) return;
 
   router.post(props.tautan.bersihSesi, {}, { preserveScroll: true });
 }
 
-function pangkasJejak() {
-  if (!confirm('Hapus jejak keamanan yang lebih tua dari masa simpan?\n\nJejak yang dihapus tidak dapat dipulihkan. Insiden yang lebih lama dari itu tidak akan dapat ditelusuri lagi.')) return;
+async function pangkasJejak() {
+  if (!await tanya('Hapus jejak keamanan yang lebih tua dari masa simpan?\n\nJejak yang dihapus tidak dapat dipulihkan. Insiden yang lebih lama dari itu tidak akan dapat ditelusuri lagi.')) return;
 
   router.post(props.tautan.pangkasJejak, {}, { preserveScroll: true });
 }
@@ -290,4 +294,6 @@ function pangkasJejak() {
     </section>
 
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

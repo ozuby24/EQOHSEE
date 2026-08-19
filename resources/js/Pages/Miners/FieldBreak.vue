@@ -17,6 +17,10 @@ import { reactive, computed } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import Baris from './Baris.vue';
 import { KEADAAN } from '../../Grafik/warna';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, minta, batal, lanjut } = useDialog();
+
 
 const props = usePage<any>().props as any;
 
@@ -42,24 +46,26 @@ function ajukan(id: number) {
   router.post(`/miners/field-break/${id}/ajukan`, {}, { preserveScroll: true });
 }
 
-function tinjau(id: number, aksi: 'setujui' | 'tolak' | 'tarik') {
+async function tinjau(id: number, aksi: 'setujui' | 'tolak' | 'tarik') {
   let alasan = '';
   if (aksi === 'tolak') {
-    alasan = (prompt('Alasan penolakan:') ?? '').trim();
+    alasan = (await minta({ judul: 'Tolak pengajuan field break?', label: 'Alasan penolakan',
+      jenis: 'panjang', min: 5, labelAksi: 'Tolak', nada: 'bahaya' }) ?? '').trim();
     if (!alasan) return;
   }
   router.post(`/miners/field-break/${id}/tinjau`, { aksi, alasan }, { preserveScroll: true });
 }
 
-function hapus(id: number, nama: string) {
-  if (confirm(`Hapus field break ${nama}?`)) {
+async function hapus(id: number, nama: string) {
+  if (await tanya(`Hapus field break ${nama}?`)) {
     router.delete(`/miners/field-break/${id}`, { preserveScroll: true });
   }
 }
 
 /** Mencatat kepulangan yang sebenarnya — boleh setelah disetujui. */
-function kembali(id: number, selesai: string) {
-  const t = prompt('Tanggal kembali sebenarnya (YYYY-MM-DD):', selesai);
+async function kembali(id: number, selesai: string) {
+  const t = await minta({ judul: 'Catat kembali dari field break', label: 'Tanggal kembali sebenarnya',
+    jenis: 'tanggal', nilai: selesai, labelAksi: 'Simpan' });
   if (!t) return;
 
   router.post(`/miners/field-break/${id}/kembali`, { kembali_aktual: t }, { preserveScroll: true });
@@ -196,4 +202,6 @@ function kembali(id: number, selesai: string) {
       <p v-else class="text-[12px] py-8 text-center text-stone-400">Belum ada jadwal field break.</p>
     </section>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

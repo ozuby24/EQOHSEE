@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, minta, batal, lanjut } = useDialog();
+
 
 /*
   Prop halaman diambil lewat usePage(), bukan defineProps — lihat
@@ -41,7 +45,7 @@ function rentang() {
   router.get(window.location.pathname, { dari: props.dari, sampai: props.sampai }, { preserveState: true, replace: true });
 }
 function simpanIzin() { izin.post(tautan.value.izinSimpan, { preserveScroll: true, onSuccess: () => izin.reset('nomor', 'uraian', 'catatan') }); }
-function hapusIzin(i: any) { if (window.confirm(`Hapus izin ${i.nomor}?`)) router.delete(untuk(tautan.value.izinHapus, i.id), { preserveScroll: true }); }
+async function hapusIzin(i: any) { if (await tanya(`Hapus izin ${i.nomor}?`)) router.delete(untuk(tautan.value.izinHapus, i.id), { preserveScroll: true }); }
 function simpanGas(i: any) { gas.post(untuk(tautan.value.gasSimpan, i.id), { preserveScroll: true, onSuccess: () => gas.reset('o2', 'lel', 'co', 'h2s') }); }
 function hapusGas(g: any) { router.delete(untuk(tautan.value.gasHapus, g.id), { preserveScroll: true }); }
 function simpanSyarat() { syarat.post(tautan.value.syaratSimpan, { preserveScroll: true, onSuccess: () => syarat.reset('teks') }); }
@@ -57,17 +61,20 @@ function alur(pola: string, baris: any, isi: Record<string, any> = {}) {
   sibuk[baris.id] = true;
   router.post(untuk(pola, baris.id), isi, { preserveScroll: true, onFinish: () => { sibuk[baris.id] = false; } });
 }
-function terbitkan(i: any) {
-  if (!window.confirm(`Terbitkan izin ${i.nomor}? Pekerjaan boleh dimulai setelah ini.`)) return;
+async function terbitkan(i: any) {
+  if (!await tanya(`Terbitkan izin ${i.nomor}? Pekerjaan boleh dimulai setelah ini.`)) return;
   alur(tautan.value.izinTerbitkan, i);
 }
-function tolak(i: any) {
-  const a = window.prompt(`Alasan penolakan izin ${i.nomor}:`);
+async function tolak(i: any) {
+  const a = await minta({ judul: `Tolak izin ${i.nomor}?`, label: 'Alasan penolakan',
+    jenis: 'panjang', min: 5, labelAksi: 'Tolak', nada: 'bahaya' });
   if (a === null) return;
   alur(tautan.value.izinTolak, i, { alasan_tolak: a });
 }
-function tutup(i: any) {
-  const c = window.prompt(`Catatan penutupan izin ${i.nomor} (keadaan area, orang sudah keluar, dsb.):`);
+async function tutup(i: any) {
+  const c = await minta({ judul: `Tutup izin ${i.nomor}?`, label: 'Catatan penutupan',
+    pesan: 'Keadaan area, orang sudah keluar, peralatan sudah diamankan, dan sebagainya.',
+    jenis: 'panjang', wajib: false, labelAksi: 'Tutup izin' });
   if (c === null) return;
   alur(tautan.value.izinTutup, i, { catatan_penutupan: c });
 }
@@ -505,4 +512,6 @@ const warnaWaktu: Record<string, string> = {
       </table>
     </section>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

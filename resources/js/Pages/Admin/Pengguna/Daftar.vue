@@ -8,6 +8,10 @@
  */
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import type { HalamanDaftarPengguna } from '../../../types';
+import Dialog from '../../../Components/Dialog.vue';
+import { useDialog } from '../../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanDaftarPengguna>();
 
@@ -19,8 +23,8 @@ function cari() {
     .get(props.tautan.daftar, { preserveState: true, preserveScroll: true, replace: true });
 }
 
-function hapus(url: string, nama: string) {
-  if (!confirm(`Hapus pengguna "${nama}"?`)) return;
+async function hapus(url: string, nama: string) {
+  if (!await tanya(`Hapus pengguna "${nama}"?`)) return;
   router.delete(url, { preserveScroll: true });
 }
 
@@ -119,4 +123,6 @@ const chip = 'text-[9.5px] font-bold px-2 py-0.5 rounded tracking-wide uppercase
                  v-html="t.label" />
     </nav>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

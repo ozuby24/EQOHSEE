@@ -10,6 +10,10 @@
 import { ref } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import type { HalamanDetailBahaya } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanDetailBahaya>();
 
@@ -29,8 +33,8 @@ function pilihFoto(e: Event) {
 
 const menghapus = ref(false);
 
-function hapus() {
-  if (!confirm(`Hapus laporan ${props.r.kode}? Tindakan ini tidak dapat dibatalkan.`)) return;
+async function hapus() {
+  if (!await tanya(`Hapus laporan ${props.r.kode}? Tindakan ini tidak dapat dibatalkan.`)) return;
 
   menghapus.value = true;
   router.delete(props.tautan.hapus, { onFinish: () => { menghapus.value = false; } });
@@ -176,4 +180,6 @@ const rinci: Array<[string, string | null]> = [
       </div>
     </div>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

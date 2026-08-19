@@ -2,6 +2,10 @@
 import { computed, reactive } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import PetaTambang from '../../Components/PetaTambang.vue';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, minta, batal, lanjut } = useDialog();
+
 
 /*
   Prop halaman diambil lewat usePage(), bukan defineProps.
@@ -75,11 +79,11 @@ function simpanLayer() {
 /** Menyisipkan id ke tautan bertanda __ID__ yang dikirim controller. */
 const untuk = (pola: string | undefined, id: number | string) => String(pola || '').replace('__ID__', String(id));
 
-function hapusRecord(item: any) {
-  if (window.confirm(`Hapus record ${item.tanggalLabel}?`)) router.delete(untuk(tautan.value.recordHapus, item.id), { preserveScroll: true });
+async function hapusRecord(item: any) {
+  if (await tanya(`Hapus record ${item.tanggalLabel}?`)) router.delete(untuk(tautan.value.recordHapus, item.id), { preserveScroll: true });
 }
-function hapusLayer(item: any) {
-  if (window.confirm(`Hapus layer ${item.nama}?`)) router.delete(untuk(tautan.value.layerHapus, item.id), { preserveScroll: true });
+async function hapusLayer(item: any) {
+  if (await tanya(`Hapus layer ${item.nama}?`)) router.delete(untuk(tautan.value.layerHapus, item.id), { preserveScroll: true });
 }
 
 /* ---------- alur tinjauan ---------- */
@@ -93,16 +97,17 @@ function ajukan(item: any) {
   });
 }
 
-function setujui(item: any) {
-  if (!window.confirm(`Setujui data ${item.tanggalLabel} shift ${item.shift}? Setelah disetujui, data tidak dapat diubah lagi.`)) return;
+async function setujui(item: any) {
+  if (!await tanya(`Setujui data ${item.tanggalLabel} shift ${item.shift}? Setelah disetujui, data tidak dapat diubah lagi.`)) return;
   sibuk[item.id] = true;
   router.post(untuk(tautan.value.recordSetujui, item.id), {}, {
     preserveScroll: true, onFinish: () => { sibuk[item.id] = false; },
   });
 }
 
-function tolak(item: any) {
-  const alasan = window.prompt(`Alasan penolakan data ${item.tanggalLabel} shift ${item.shift}:`);
+async function tolak(item: any) {
+  const alasan = await minta({ judul: `Tolak data ${item.tanggalLabel} shift ${item.shift}?`,
+    label: 'Alasan penolakan', jenis: 'panjang', min: 5, labelAksi: 'Tolak', nada: 'bahaya' });
   if (alasan === null) return;
   sibuk[item.id] = true;
   router.post(untuk(tautan.value.recordTolak, item.id), { alasan_tolak: alasan }, {
@@ -148,8 +153,8 @@ function ubahTindak(item: any, status: string) {
   router.put(untuk(tautan.value.tindakUbah, item.id), { status }, { preserveScroll: true });
 }
 
-function hapusTindak(item: any) {
-  if (window.confirm(`Hapus tindak lanjut “${item.judul}”?`)) {
+async function hapusTindak(item: any) {
+  if (await tanya(`Hapus tindak lanjut “${item.judul}”?`)) {
     router.delete(untuk(tautan.value.tindakHapus, item.id), { preserveScroll: true });
   }
 }
@@ -433,4 +438,6 @@ const warnaStatus: Record<string, string> = {
       <section class="grid gap-5 xl:grid-cols-[.8fr_1.2fr]"><div class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><h3 class="font-bold text-[14px]">Registri layer GeoJSON</h3><p class="text-[11px] text-stone-400 mt-1">Fondasi GIS ini menyimpan layer yang dapat dipakai oleh peta interaktif pada tahap berikutnya.</p><form class="grid gap-3 mt-4" @submit.prevent="simpanLayer"><select v-model="layer.company_id" class="rounded-lg border-stone-200 text-[12px]" aria-label="Perusahaan"><option value="">Perusahaan umum</option><option v-for="item in props.companies || []" :key="item.id" :value="item.id">{{ item.name }}</option></select><input v-model="layer.nama" required placeholder="Nama layer, contoh: Pit 1 2026" class="rounded-lg border-stone-200 text-[12px]"><div class="grid grid-cols-3 gap-2"><select v-model="layer.tipe" class="rounded-lg border-stone-200 text-[12px]" aria-label="Tipe"><option v-for="item in props.opsi?.tipeLayer || []" :key="item" :value="item">{{ label(item) }}</option></select><select v-model="layer.status" class="rounded-lg border-stone-200 text-[12px]" aria-label="Status"><option v-for="item in props.opsi?.statusLayer || []" :key="item" :value="item">{{ label(item) }}</option></select><input v-model="layer.warna" type="color" class="h-10 w-full rounded-lg border-stone-200"></div><textarea v-model="layer.geojson" required rows="10" class="font-mono text-[11px] rounded-lg border-stone-200"></textarea><p class="text-[11px]" :class="geoValid ? 'text-emerald-600' : 'text-red-600'">{{ geoValid ? geoSummary(layer.geojson) : 'GeoJSON belum valid' }}</p><div class="grid grid-cols-2 gap-2"><input v-model="layer.tanggal_survey" type="date" class="rounded-lg border-stone-200 text-[12px]" title="Tanggal survei"><input v-model="layer.sumber_survey" placeholder="Sumber survei (drone / total station)" class="rounded-lg border-stone-200 text-[12px]"></div><textarea v-model="layer.catatan" placeholder="Catatan" class="rounded-lg border-stone-200 text-[12px]"></textarea><button :disabled="layer.processing || !geoValid" class="eq-btn-utama">{{ layer.processing ? 'Menyimpan...' : 'Simpan layer GeoJSON' }}</button></form></div><div class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-x-auto"><div class="px-5 py-4 border-b border-stone-100"><h3 class="font-bold text-[14px]">Layer terdaftar</h3><p class="text-[11px] text-stone-400">{{ (props.layers || []).length }} layer siap diaktifkan pada peta.</p></div><div class="divide-y divide-stone-100"><details v-for="item in props.layers || []" :key="item.id" class="p-5"><summary class="cursor-pointer flex items-center justify-between gap-3"><span><b class="text-[13px]">{{ item.nama }}</b><small class="block text-[10px] text-stone-400">{{ label(item.tipe) }} · {{ label(item.status) }} · <b>{{ angka(item.hektare, 2) }} ha</b> · {{ angka(item.panjang_km, 2) }} km<span v-if="item.tanggal_survey"> · survei {{ tanggal(item.tanggal_survey) }}</span></small></span><span class="w-4 h-4 rounded-full border" :style="{backgroundColor:item.warna}"></span></summary><div class="mt-3"><pre class="max-h-44 overflow-auto rounded-lg bg-stone-900 text-lime-200 p-3 text-[10px]">{{ item.geojson }}</pre><div class="flex justify-between items-center mt-2"><span class="text-[11px] text-stone-500">{{ geoSummary(item.geojson) }}</span><button v-if="isAdmin" type="button" class="text-red-600 text-[11px]" @click="hapusLayer(item)">Hapus</button></div></div></details><p v-if="!(props.layers || []).length" class="p-10 text-center text-[12px] text-stone-400">Belum ada layer. Tambahkan GeoJSON dari survey/GIS.</p></div></div></section>
     </template>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

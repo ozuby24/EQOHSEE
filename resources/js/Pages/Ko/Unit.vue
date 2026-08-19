@@ -15,6 +15,10 @@
 import { computed, reactive } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { KEADAAN } from '../../Grafik/warna';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = usePage<any>().props as any;
 
@@ -34,12 +38,12 @@ function simpan() {
  * Kalimat konfirmasinya mengatakan itu di muka, supaya hasilnya tidak
  * mengejutkan orang yang mengira barisnya benar-benar hilang.
  */
-function hapus(u: any) {
+async function hapus(u: any) {
   const pesan = u.dipakai
     ? `"${u.unit}" masih dipakai ${u.dipakai} unit, jadi akan dinonaktifkan — bukan dihapus. Lanjutkan?`
     : `Hapus jenis "${u.unit}"?`;
 
-  if (confirm(pesan)) router.delete(`/ko/unit/${u.id}`, { preserveScroll: true });
+  if (await tanya(pesan)) router.delete(`/ko/unit/${u.id}`, { preserveScroll: true });
 }
 
 function ubahAktif(u: any) {
@@ -157,4 +161,6 @@ function ubahAktif(u: any) {
       </div>
     </section>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>
