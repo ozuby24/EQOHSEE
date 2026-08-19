@@ -278,6 +278,51 @@ class LapanganTest extends TestCase
             . $pesan);
     }
 
+    /**
+     * Panel data contoh tidak boleh bergantung pada dialog bawaan peramban.
+     *
+     * `confirm()` dan `prompt()` tidak dapat diandalkan di tempat
+     * aplikasi ini justru dipakai: pada webview ponsel dan tablet,
+     * keduanya kerap dibungkam aplikasi induknya dan langsung
+     * memulangkan `false`/`null` — yang dibaca kode pemanggilnya sebagai
+     * "pengguna menekan Batal".
+     *
+     * Akibatnya tidak terlihat sebagai kerusakan: tombolnya ditekan,
+     * tidak ada dialog, tidak ada pesan, tidak ada yang terjadi.
+     *
+     * Terukur pada kode lama, dengan dialog bawaan dibungkam persis
+     * seperti webview: "Muat data contoh" tidak memuat satu baris pun,
+     * dan karena panelnya tetap kosong, tombol "Hapus data contoh" —
+     * yang hanya muncul bila ada isinya — tidak pernah ada. Seluruh
+     * panelnya mati, sementara sisi servernya sehat sepenuhnya (623
+     * baris ke 56 tabel, terhapus tanpa sisa).
+     *
+     * Yang dijaga di sini panel data contohnya saja. Sisa aplikasi masih
+     * memakai dialog bawaan di banyak tempat, dan itu tercatat sebagai
+     * pekerjaan tersendiri — menuliskannya sebagai penjagaan menyeluruh
+     * sekarang hanya akan melahirkan uji merah yang lalu dimatikan.
+     */
+    public function test_panel_data_contoh_tidak_memakai_dialog_bawaan(): void
+    {
+        $isi = file_get_contents(resource_path('js/Pages/Admin/Sistem.vue'));
+
+        /* Baris berkomentar tidak dihitung — berkas ini memang
+           menjelaskan mengapa keduanya ditinggalkan. */
+        $kode = preg_replace('#^\s*(//|\*|/\*).*$#m', '', $isi);
+
+        foreach (['confirm', 'prompt'] as $dialog) {
+            $this->assertDoesNotMatchRegularExpression(
+                '/(?<![\w.])(?:window\.)?' . $dialog . '\s*\(/',
+                $kode,
+                "Sistem.vue memanggil {$dialog}(); pada webview ponsel panggilan itu "
+                . 'dibungkam dan tindakannya diam-diam tidak jadi. Pakai Components/Dialog.vue.',
+            );
+        }
+
+        $this->assertStringContainsString('Components/Dialog.vue', $isi,
+            'Dialog dalam halaman hilang dari Sistem.vue.');
+    }
+
     /** @return list<string> */
     private function berkasVue(): array
     {
