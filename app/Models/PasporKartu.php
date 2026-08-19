@@ -55,6 +55,15 @@ class PasporKartu extends Model
     public function paspor() { return $this->belongsTo(Paspor::class); }
 
     /**
+     * Unit yang boleh dikemudikan, beserta penilaiannya masing-masing.
+     *
+     * Hanya bermakna bagi kartu SIMPER (Mine License). Kartu masuk area
+     * tidak menyebut unit, dan relasi ini akan kosong di sana — kosong
+     * yang benar, bukan yang terlupa.
+     */
+    public function unit() { return $this->hasMany(PasporKartuUnit::class, 'paspor_kartu_id'); }
+
+    /**
      * Yang memutuskan penerbitan kartu hanya OHSE.
      *
      * Menimpa penjaga baku Ditinjau, yang membolehkan administrator ATAU

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{KompetensiJenis, McuPengajuan, MinersCampaign, MinersCuti,
-    MinersCutiJatah, MinersFieldBreak, Paspor, PasporInduksi,
+    MinersCutiJatah, MinersFieldBreak, Paspor, PasporInduksi, PasporKartuUnit,
     PasporKartu, PasporMcu, PasporSertifikat};
 use App\Rules\DalamPerusahaan;
 use App\Models\ActivityLog as Jejak;
@@ -63,7 +63,7 @@ class MinersController extends Controller
 
     public function show(Paspor $paspor)
     {
-        $paspor->load(['sertifikat.jenis', 'mcu.pengajuan', 'kartu.paraf', 'induksi', 'user', 'company']);
+        $paspor->load(['sertifikat.jenis', 'mcu.pengajuan', 'kartu.paraf', 'kartu.unit.unitMaster', 'induksi', 'user', 'company']);
 
         return Inertia::render('Miners/Halaman', $this->bersama() + [
             'mode'   => 'rincian',
@@ -687,6 +687,100 @@ class MinersController extends Controller
             'berkas_induksi'     => ['nullable', 'string', 'max:255'],
             'berkas_ddt'         => ['nullable', 'string', 'max:255'],
             'email_atasan'       => ['nullable', 'email', 'max:150'],
+
+            /* Tercetak pada kartunya sendiri, jadi harus ada sebelum
+               kartunya dapat dicetak. */
+            'golongan_darah'  => ['nullable', 'string', 'max:5'],
+            'telepon'         => ['nullable', 'string', 'max:30'],
+            'kontak_darurat'  => ['nullable', 'string', 'max:120'],
+
+            /* Lampiran syarat Mine Permit. Keempatnya diperiksa SEBELUM
+               permit terbit — bukan berkas pelengkap. */
+            'berkas_ktp'        => ['nullable', 'string', 'max:255'],
+            'berkas_permohonan' => ['nullable', 'string', 'max:255'],
+            'berkas_spdk'       => ['nullable', 'string', 'max:255'],
+            'berkas_dept'       => ['nullable', 'string', 'max:255'],
+            'berkas_lotto'      => ['nullable', 'string', 'max:255'],
+            'berkas_blasting'   => ['nullable', 'string', 'max:255'],
+
+            'catatan' => ['nullable', 'string', 'max:1000'],
+        ]);
+    }
+
+    /* ═══════════ unit SIMPER ═══════════ */
+
+    /**
+     * SIMPER dinilai PER UNIT, bukan per orang.
+     *
+     * Seorang operator dapat lulus untuk Excavator PC 200 dan belum
+     * lulus untuk PC 500. Menyimpannya sebagai satu baris per kartu
+     * membuat kartu yang menyebut "Excavator" membolehkan unit yang
+     * tidak pernah diujikan kepadanya.
+     *
+     * Hanya boleh ditambahkan selama kartunya masih dapat diubah:
+     * menambah unit pada kartu yang sudah disetujui berarti memperluas
+     * kewenangan tanpa melewati peninjauan yang menyetujuinya.
+     */
+    public function simpanUnitKartu(Request $request, Paspor $paspor, PasporKartu $kartu)
+    {
+        abort_unless($kartu->paspor_id === $paspor->id, 404);
+        abort_unless($kartu->dapatDiubah(), 422,
+            'Kartu yang sudah diajukan tidak dapat ditambah unitnya.');
+
+        $kartu->unit()->create($this->aturanUnitKartu($request));
+
+        Jejak::write('Tambah unit SIMPER', $paspor->nama, 'miners');
+
+        return back()->with('ok', 'Unit ditambahkan.');
+    }
+
+    public function ubahUnitKartu(Request $request, Paspor $paspor, PasporKartu $kartu, PasporKartuUnit $unit)
+    {
+        abort_unless($kartu->paspor_id === $paspor->id, 404);
+        abort_unless($unit->paspor_kartu_id === $kartu->id, 404);
+        abort_unless($kartu->dapatDiubah(), 422,
+            'Kartu yang sudah diajukan tidak dapat diubah unitnya.');
+
+        $unit->update($this->aturanUnitKartu($request));
+
+        return back()->with('ok', 'Unit diperbarui.');
+    }
+
+    public function hapusUnitKartu(Paspor $paspor, PasporKartu $kartu, PasporKartuUnit $unit)
+    {
+        abort_unless($kartu->paspor_id === $paspor->id, 404);
+        abort_unless($unit->paspor_kartu_id === $kartu->id, 404);
+        abort_unless($kartu->dapatDiubah(), 422,
+            'Kartu yang sudah diajukan tidak dapat diubah unitnya.');
+
+        $unit->delete();
+
+        return back()->with('ok', 'Unit dihapus.');
+    }
+
+    /** @return array<string,mixed> */
+    private function aturanUnitKartu(Request $request): array
+    {
+        return $request->validate([
+            /* Master unit dipakai bila ada padanannya, tetapi tidak
+               diwajibkan: unit sewa dan unit subkontraktor kerap belum
+               terdaftar. */
+            'ko_unit_master_id' => ['nullable', new DalamPerusahaan('ko_unit_master')],
+
+            'authority'  => ['nullable', 'string', 'max:10'],
+            'jenis_unit' => ['nullable', 'string', 'max:120'],
+            'type_merk'  => ['nullable', 'string', 'max:200'],
+
+            /* Nilai 0..100. Dibiarkan kosong berarti BELUM DIUJI, dan itu
+               berbeda dari nilai nol — yang pertama menunggu, yang kedua
+               gagal. */
+            'nilai_p2h'     => ['nullable', 'integer', 'min:0', 'max:100'],
+            'nilai_praktek' => ['nullable', 'integer', 'min:0', 'max:100'],
+
+            'berkas_rambu'  => ['nullable', 'string', 'max:255'],
+            'berkas_teori'  => ['nullable', 'string', 'max:255'],
+            'hasil_praktek' => ['nullable', 'string', 'max:255'],
+            'evaluasi'      => ['nullable', 'string', 'max:255'],
 
             'catatan' => ['nullable', 'string', 'max:1000'],
         ]);
@@ -1541,6 +1635,27 @@ class MinersController extends Controller
             'rantai'      => $k->rantaiTahap(),
             'tertinggal'  => $k->parafTertinggal(),
             'dapatParaf'  => $k->menungguTinjauan(),
+
+            /* Tercetak pada kartunya sendiri. */
+            'golonganDarah' => $k->golongan_darah,
+            'telepon'       => $k->telepon,
+            'kontakDarurat' => $k->kontak_darurat,
+
+            /* Lampiran syarat Mine Permit — keempatnya diperiksa sebelum
+               permit terbit, jadi kekosongannya harus terlihat. */
+            'lampiran' => [
+                'ktp'        => $k->berkas_ktp,
+                'permohonan' => $k->berkas_permohonan,
+                'spdk'       => $k->berkas_spdk,
+                'dept'       => $k->berkas_dept,
+                'lotto'      => $k->berkas_lotto,
+                'blasting'   => $k->berkas_blasting,
+            ],
+
+            /* Unit SIMPER, masing-masing dengan nilai dan berkas ujinya
+               sendiri. Kosong pada kartu masuk area — kosong yang benar,
+               bukan yang terlupa. */
+            'unit' => $k->unit->map(fn (PasporKartuUnit $u) => $u->toView())->values(),
         ];
     }
 

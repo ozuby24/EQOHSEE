@@ -26,6 +26,33 @@ const { dialog, tanya, minta, batal, lanjut } = useDialog();
 
 const props = usePage<any>().props as any;
 
+/**
+ * Lampiran syarat Mine Permit, dengan nama yang dipakai di layar.
+ *
+ * Kuncinya sama dengan yang dikirim server; namanya di sini supaya
+ * urutan dan sebutannya satu tempat, bukan tersebar di markup.
+ */
+const LAMPIRAN: Record<string, string> = {
+  ktp: 'KTP',
+  permohonan: 'Permohonan',
+  spdk: 'SPDK',
+  dept: 'Dept khusus',
+  lotto: 'LOTO/welder',
+  blasting: 'Blasting',
+};
+
+/** Berapa dari empat berkas uji unit yang sudah ada. */
+function berkasTerisi(b: Record<string, string | null> | undefined): number {
+  return b ? Object.values(b).filter(Boolean).length : 0;
+}
+
+/* Blok lampiran hanya untuk kartu yang memang menuntutnya. Kartu masuk
+   area tidak punya SPDK maupun training blasting, dan menampilkan enam
+   tanda "—" di sana membuatnya tampak belum lengkap padahal sudah. */
+function adaLampiran(k: any): boolean {
+  return k.jenis !== 'Visitor';
+}
+
 /** Warna keadaan masa berlaku — dipesan maknanya, tidak dipakai lain. */
 const WARNA: Record<string, string> = {
   aman:            KEADAAN.baik,
@@ -614,6 +641,66 @@ async function hapus(jalur: string, apa: string) {
                :style="{ color: '#92400E', background: '#FEF6E7' }">
               <b>Belum dapat diajukan.</b> {{ k.syaratKurang.join(' ') }}
             </p>
+
+            <!--
+              Unit SIMPER — satu baris per unit, dengan nilai dan berkas
+              ujinya masing-masing. Kartu masuk area tidak menyebut unit,
+              jadi bloknya tidak muncul di sana sama sekali.
+
+              Nilai yang belum diisi ditulis "—", bukan nol: kekosongan
+              berarti belum diuji, dan nol berarti diuji lalu gagal.
+            -->
+            <div v-if="k.unit?.length" class="mt-3 overflow-x-auto">
+              <table class="min-w-full text-left text-[11.5px]">
+                <thead>
+                  <tr class="text-stone-400 border-b border-stone-200">
+                    <th class="py-1.5 pr-3 font-semibold">Authority</th>
+                    <th class="py-1.5 pr-3 font-semibold">Unit</th>
+                    <th class="py-1.5 pr-3 font-semibold">Type/Merk</th>
+                    <th class="py-1.5 pr-3 font-semibold text-right">P2H</th>
+                    <th class="py-1.5 pr-3 font-semibold text-right">Praktek</th>
+                    <th class="py-1.5 font-semibold">Berkas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="u in k.unit" :key="u.id" class="border-b border-stone-100">
+                    <td class="py-1.5 pr-3 num font-semibold">{{ u.authority || '—' }}</td>
+                    <td class="py-1.5 pr-3">{{ u.unit }}</td>
+                    <td class="py-1.5 pr-3 text-stone-500">{{ u.typeMerk || '—' }}</td>
+                    <td class="py-1.5 pr-3 num text-right">{{ u.nilaiP2h ?? '—' }}</td>
+                    <td class="py-1.5 pr-3 num text-right">{{ u.nilaiPraktek ?? '—' }}</td>
+                    <td class="py-1.5">
+                      <span class="inline-block rounded px-1.5 py-0.5 text-[10px] font-bold"
+                            :style="u.lulus
+                              ? { background: '#DCFCE7', color: '#15803D' }
+                              : { background: '#FEF3C7', color: '#92400E' }">
+                        {{ u.lulus ? 'Lulus' : 'Belum lulus' }}
+                      </span>
+                      <span class="text-[10.5px] text-stone-400 ml-1.5">
+                        {{ berkasTerisi(u.berkas) }}/4 berkas
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!--
+              Lampiran syarat Mine Permit. Yang KOSONG ikut ditampilkan
+              dan diberi tanda: keempatnya diperiksa sebelum permit
+              terbit, jadi yang belum ada justru yang perlu terlihat.
+              Menyembunyikan yang kosong membuat daftar lengkap dan
+              daftar setengah jadi tampak sama persis.
+            -->
+            <div v-if="k.lampiran && adaLampiran(k)" class="mt-3 flex flex-wrap gap-1.5">
+              <span v-for="(l, nama) in LAMPIRAN" :key="nama"
+                    class="inline-block rounded-md px-2 py-1 text-[10.5px] font-semibold"
+                    :style="k.lampiran[nama]
+                      ? { background: '#EEF6F0', color: '#15803D' }
+                      : { background: '#F5F5F4', color: '#A8A29E' }">
+                {{ l }} {{ k.lampiran[nama] ? '✓' : '—' }}
+              </span>
+            </div>
 
             <div v-if="k.status !== 'draf'" class="mt-3">
               <Rantai :rantai="k.rantai" :tertinggal="k.tertinggal"

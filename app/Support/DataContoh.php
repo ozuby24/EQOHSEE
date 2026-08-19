@@ -23,7 +23,7 @@ use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, 
                 KoPersonnel, KompetensiJenis, McuPengajuan, MinersCampaign, MinersCuti,
                 MinersCutiJatah, MinersFieldBreak, MineMapLayer,
                 MinerbaConservationRecord, Note,
-                Paspor, PasporInduksi, PasporKartu, PasporMcu, PasporSertifikat,
+                Paspor, PasporInduksi, PasporKartu, PasporKartuUnit, PasporMcu, PasporSertifikat,
                 Percakapan, PersetujuanParaf,
                 Pesan, Signatory, TpkkpAssessment, TpkkpResponse};
 use Illuminate\Support\Carbon;
@@ -145,7 +145,8 @@ final class DataContoh
         PersetujuanParaf::class,
         MinersCampaign::class, MinersCuti::class, MinersCutiJatah::class,
         MinersFieldBreak::class,
-        PasporSertifikat::class, PasporMcu::class, PasporKartu::class,
+        PasporSertifikat::class, PasporMcu::class,
+        PasporKartuUnit::class, PasporKartu::class,
         PasporInduksi::class, Paspor::class, McuPengajuan::class,
 
         /* Prosedur dan berita baru dapat masuk ke sini sesudah keduanya
@@ -340,6 +341,14 @@ final class DataContoh
                 WaterSump::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
             GeoInstrumen::class => $q->whereIn('geo_lereng_id',
                 GeoLereng::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            /* Unit SIMPER menempel pada kartu, dan kartu pada paspor —
+               dua tingkat. Disaring lewat kartunya, bukan lewat paspor,
+               supaya penyaringnya sependek mungkin. */
+            PasporKartuUnit::class => $q->whereIn('paspor_kartu_id',
+                PasporKartu::withoutGlobalScopes()->whereIn('paspor_id',
+                    Paspor::withoutGlobalScopes()->where('company_id', $c->id)->select('id')
+                )->select('id')),
 
             InspectionItem::class, InspectionInspector::class => $q->whereIn('inspection_id',
                 Inspection::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
@@ -674,8 +683,49 @@ final class DataContoh
                         ? $this->kini->copy()->addDays($hariKartu + 200)->toDateString() : null,
                     'berkas_ddt'     => $gol ? 'ddt/'.$p->nomor_register.'.pdf' : null,
                     'email_atasan'   => 'atasan@eqohsee.id',
+
+                    /* Tercetak pada kartunya sendiri. */
+                    'golongan_darah' => ['A', 'B', 'O', 'AB'][$i % 4],
+                    'telepon'        => '08123456'.str_pad((string) ($i + 10), 4, '0', STR_PAD_LEFT),
+                    'kontak_darurat' => 'Keluarga · 08998877'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT),
+
+                    /* Lampiran syarat permit. Sengaja TIDAK lengkap
+                       semuanya: satu kartu dibiarkan tanpa SPDK supaya
+                       tampilan "belum lengkap" benar-benar pernah
+                       tergambar, bukan hanya ada di kode. */
+                    'berkas_ktp'        => 'ktp/'.$p->nomor_register.'.pdf',
+                    'berkas_permohonan' => 'permohonan/'.$p->nomor_register.'.pdf',
+                    'berkas_spdk'       => $i === 0 ? null : 'spdk/'.$p->nomor_register.'.pdf',
+                    'berkas_dept'       => $gol ? 'dept/'.$p->nomor_register.'.pdf' : null,
+                    'berkas_lotto'      => $gol ? 'lotto/'.$p->nomor_register.'.pdf' : null,
+                    'berkas_blasting'   => null,
                 ]);
                 $n++;
+
+                /* Unit SIMPER — hanya pada Mine License, dan sengaja dua
+                   baris dengan hasil berbeda: satu lulus, satu belum.
+                   Seluruhnya lulus tidak pernah memperlihatkan seperti apa
+                   unit yang tertahan itu tampak di layar. */
+                if ($jenisKartu === 'Mine License') {
+                    foreach ([
+                        ['F', 'EXCAVATOR', 'Komatsu PC 200', 82, 82],
+                        ['T', 'EXCAVATOR', 'Komatsu PC 500', 64, 58],
+                    ] as [$auth, $unit, $merk, $p2h, $praktek]) {
+                        PasporKartuUnit::withoutGlobalScopes()->create([
+                            'paspor_kartu_id' => $k->id,
+                            'authority'       => $auth,
+                            'jenis_unit'      => $unit,
+                            'type_merk'       => $merk,
+                            'nilai_p2h'       => $p2h,
+                            'nilai_praktek'   => $praktek,
+                            'berkas_rambu'    => 'simper/rambu-'.$k->id.'.pdf',
+                            'berkas_teori'    => 'simper/teori-'.$k->id.'.pdf',
+                            'hasil_praktek'   => $p2h >= 70 ? 'simper/praktek-'.$k->id.'.pdf' : null,
+                            'evaluasi'        => $p2h >= 70 ? 'simper/evaluasi-'.$k->id.'.pdf' : null,
+                        ]);
+                        $n++;
+                    }
+                }
 
                 /* Status TIDAK dapat diisi lewat create(): trait Ditinjau
                    memaksa setiap baris baru lahir sebagai draf, tepat

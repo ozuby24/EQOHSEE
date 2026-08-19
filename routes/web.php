@@ -266,6 +266,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('{paspor}/kartu/{kartu}/paraf',  [MinersController::class,'parafKartu'])->name('kartu.paraf');
         Route::get('{paspor}/kartu/{kartu}/cetak',   [MinersController::class,'cetakPermit'])->name('permit.cetak');
 
+        /* Unit SIMPER — satu baris per unit yang boleh dikemudikan,
+           masing-masing dengan nilai dan berkas ujinya sendiri.
+           Penghapusan menuntut admin, sama seperti penghapusan merusak
+           lainnya di aplikasi ini. */
+        Route::post('{paspor}/kartu/{kartu}/unit',        [MinersController::class,'simpanUnitKartu'])->name('kartu.unit.simpan');
+        Route::put('{paspor}/kartu/{kartu}/unit/{unit}',  [MinersController::class,'ubahUnitKartu'])->name('kartu.unit.ubah');
+        Route::delete('{paspor}/kartu/{kartu}/unit/{unit}', [MinersController::class,'hapusUnitKartu'])->middleware('can:admin')->name('kartu.unit.hapus');
+
         Route::post('{paspor}/induksi',              [MinersController::class,'simpanInduksi'])->name('induksi.simpan');
         Route::delete('{paspor}/induksi/{induksi}',  [MinersController::class,'hapusInduksi'])->name('induksi.hapus');
     });

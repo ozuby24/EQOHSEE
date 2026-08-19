@@ -1511,4 +1511,92 @@ class MinersTest extends TestCase
 
         $this->assertSame(0, \App\Models\PersetujuanParaf::count());
     }
+
+    /* ═══════════ unit SIMPER ═══════════ */
+
+    /**
+     * SIMPER dinilai PER UNIT, bukan per orang.
+     *
+     * Seorang operator dapat lulus untuk Excavator PC 200 dan belum
+     * lulus untuk PC 500 — dua baris, satu kartu. Disimpan sebagai satu
+     * baris per kartu, kartu yang menyebut "Excavator" membolehkan orang
+     * mengemudikan unit yang tidak pernah diujikan kepadanya, dan tidak
+     * ada satu pun catatan yang menunjukkan itu terjadi.
+     */
+    public function test_satu_kartu_menampung_banyak_unit_dengan_nilai_sendiri(): void
+    {
+        $p = $this->orang();
+        $k = $p->kartu()->create(['jenis' => AlurMiner::KARTU_LICENSE, 'sebab_terbit' => Authority::SEBAB_KARTU[0]]);
+
+        $this->post(route('miners.kartu.unit.simpan', [$p, $k]), [
+            'authority' => 'F', 'jenis_unit' => 'EXCAVATOR', 'type_merk' => 'Komatsu PC 200',
+            'nilai_p2h' => 82, 'nilai_praktek' => 82,
+        ])->assertSessionHasNoErrors();
+
+        $this->post(route('miners.kartu.unit.simpan', [$p, $k]), [
+            'authority' => 'T', 'jenis_unit' => 'EXCAVATOR', 'type_merk' => 'Komatsu PC 500',
+            'nilai_p2h' => 60, 'nilai_praktek' => 55,
+        ])->assertSessionHasNoErrors();
+
+        $unit = $k->fresh()->unit()->orderBy('id')->get();
+
+        $this->assertCount(2, $unit);
+        $this->assertTrue($unit[0]->lulus(), 'PC 200 dengan 82/82 seharusnya lulus.');
+        $this->assertFalse($unit[1]->lulus(), 'PC 500 dengan 60/55 seharusnya belum lulus.');
+        $this->assertSame('Komatsu PC 200', $unit[0]->type_merk);
+    }
+
+    /**
+     * Nilai yang belum diisi bukan nilai nol.
+     *
+     * Kekosongan berarti BELUM DIUJI; nol berarti diuji dan gagal.
+     * Memperlakukan keduanya sama membuat unit yang belum pernah
+     * diujikan terbaca seolah sudah dinilai — persis cara kartu terbit
+     * tanpa dasar.
+     */
+    public function test_unit_tanpa_nilai_tidak_dianggap_lulus(): void
+    {
+        $p = $this->orang();
+        $k = $p->kartu()->create(['jenis' => AlurMiner::KARTU_LICENSE, 'sebab_terbit' => Authority::SEBAB_KARTU[0]]);
+
+        $this->post(route('miners.kartu.unit.simpan', [$p, $k]), [
+            'jenis_unit' => 'DUMP TRUCK', 'type_merk' => 'HD785',
+        ])->assertSessionHasNoErrors();
+
+        $u = $k->fresh()->unit()->first();
+
+        $this->assertNull($u->nilai_p2h);
+        $this->assertFalse($u->lulus(), 'Unit tanpa nilai tidak boleh terbaca lulus.');
+    }
+
+    /**
+     * Unit tidak boleh ditambahkan pada kartu yang sudah diajukan.
+     *
+     * Menambah unit berarti memperluas kewenangan mengemudi. Dilakukan
+     * setelah kartunya diajukan, perluasan itu tidak pernah melewati
+     * peninjauan yang menyetujuinya — dan yang tercetak pada kartunya
+     * lebih banyak daripada yang pernah diperiksa siapa pun.
+     */
+    public function test_unit_tidak_dapat_ditambah_setelah_kartu_diajukan(): void
+    {
+        $p = $this->orang();
+        $k = $this->kartu($p, ['jenis' => AlurMiner::KARTU_LICENSE, 'sebab_terbit' => Authority::SEBAB_KARTU[0]]);
+
+        $this->postJson(route('miners.kartu.unit.simpan', [$p, $k]), [
+            'jenis_unit' => 'EXCAVATOR', 'nilai_p2h' => 90, 'nilai_praktek' => 90,
+        ])->assertStatus(422);
+
+        $this->assertSame(0, $k->fresh()->unit()->count());
+    }
+
+    /** Dan nilai di luar 0..100 ditolak. */
+    public function test_nilai_unit_di_luar_rentang_ditolak(): void
+    {
+        $p = $this->orang();
+        $k = $p->kartu()->create(['jenis' => AlurMiner::KARTU_LICENSE, 'sebab_terbit' => Authority::SEBAB_KARTU[0]]);
+
+        $this->post(route('miners.kartu.unit.simpan', [$p, $k]), [
+            'jenis_unit' => 'EXCAVATOR', 'nilai_p2h' => 120,
+        ])->assertSessionHasErrors('nilai_p2h');
+    }
 }
