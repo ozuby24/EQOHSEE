@@ -50,7 +50,10 @@ function gantiTahun(t: number | string) {
 function simpanAkun() { akun.post(tautan.value.akunSimpan, { preserveScroll: true, onSuccess: () => akun.reset('kode', 'nama', 'satuan', 'catatan') }); }
 async function hapusAkun(a: any) { if (await tanya(`Hapus akun ${a.kode}? Anggaran dan realisasinya ikut terhapus.`)) router.delete(untuk(tautan.value.akunHapus, a.id), { preserveScroll: true }); }
 function simpanAnggaran() { anggaran.post(tautan.value.anggaranSimpan, { preserveScroll: true, onSuccess: () => anggaran.reset('nilai_rp', 'kuantitas_rencana', 'catatan') }); }
-function hapusAnggaran(a: any) { router.delete(untuk(tautan.value.anggaranHapus, a.id), { preserveScroll: true }); }
+async function hapusAnggaran(a: any) {
+  if (!await tanya(`Hapus anggaran ${a.akun} — ${a.akunNama}?`)) return;
+  router.delete(untuk(tautan.value.anggaranHapus, a.id), { preserveScroll: true });
+}
 function simpanRealisasi() { realisasi.post(tautan.value.realisasiSimpan, { preserveScroll: true, onSuccess: () => realisasi.reset('nilai_rp', 'kuantitas', 'catatan') }); }
 async function hapusRealisasi(r: any) { if (await tanya('Hapus realisasi ini?')) router.delete(untuk(tautan.value.realisasiHapus, r.id), { preserveScroll: true }); }
 

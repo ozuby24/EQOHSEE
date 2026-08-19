@@ -334,6 +334,82 @@ class LapanganTest extends TestCase
             . implode("\n  ", $temuan));
     }
 
+    /**
+     * Tiap tindakan yang menghapus harus bertanya lebih dulu.
+     *
+     * Yang dicari fungsi bernama yang memanggil `.delete()` tanpa satu
+     * pun penegasan di badannya. Penghapusan yang terjadi pada ketukan
+     * pertama tidak menimbulkan galat — barisnya hilang, halamannya
+     * menggambar ulang, dan tidak ada yang tahu sampai seseorang mencari
+     * data yang sudah tidak ada.
+     *
+     * Bahayanya bertambah oleh sasaran sentuh yang berdempetan di layar
+     * ponsel: "Hapus" pada tabel angkutan bertetangga dengan tombol lain
+     * dalam satu baris setinggi 42px.
+     *
+     * Terhitung sebelum diperbaiki: enam tindakan menghapus tanpa
+     * bertanya — muatan angkutan, anggaran biaya, serta gas, syarat, dan
+     * ambang pada izin kerja, dan pengukuran getaran peledakan. Di
+     * berkas yang sama, tindakan sejenis lainnya sudah bertanya; yang
+     * enam ini terlewat satu per satu, bukan karena diputuskan begitu.
+     */
+    public function test_penghapusan_selalu_bertanya(): void
+    {
+        $tanpa = [];
+
+        foreach ($this->berkasVue() as $berkas) {
+            $isi = file_get_contents($berkas);
+
+            /* Komentar dibuang: sebagian menjelaskan penghapusan dan akan
+               salah terbaca sebagai kodenya. */
+            $kode = preg_replace('#/\*.*?\*/#s', '', $isi);
+            $kode = preg_replace('#(?m)^\s*//.*$#', '', $kode);
+
+            preg_match_all('/(?m)^\s*(?:async\s+)?function\s+(\w+)\s*\([^)]*\)\s*\{/', $kode, $m, PREG_OFFSET_CAPTURE);
+
+            foreach ($m[0] as $i => [$cocok, $mulai]) {
+                $badan = $this->badanFungsi($kode, $mulai);
+
+                if (!preg_match('/\.delete\s*\(/', $badan)) continue;
+                if (str_contains($badan, 'await tanya(') || str_contains($badan, 'await minta(')) continue;
+
+                $nama = $m[1][$i][0];
+
+                /* Penghapusan akun punya penegasannya sendiri: sebuah
+                   modal yang menuntut kata sandi diketik. Itu penjagaan
+                   yang lebih kuat, bukan yang kurang. */
+                if ($nama === 'hapusAkun') continue;
+
+                $tanpa[] = basename($berkas) . " :: {$nama}()";
+            }
+        }
+
+        $this->assertSame([], $tanpa,
+            "Tindakan menghapus tanpa penegasan:\n  " . implode("\n  ", $tanpa));
+    }
+
+    /** Badan sebuah fungsi, dihitung dari kurung kurawalnya. */
+    private function badanFungsi(string $kode, int $mulai): string
+    {
+        $i = strpos($kode, '{', $mulai);
+        if ($i === false) return '';
+
+        $dalam = 0;
+        $j = $i;
+        $n = strlen($kode);
+
+        while ($j < $n) {
+            if ($kode[$j] === '{') $dalam++;
+            elseif ($kode[$j] === '}') {
+                $dalam--;
+                if ($dalam === 0) break;
+            }
+            $j++;
+        }
+
+        return substr($kode, $mulai, $j - $mulai);
+    }
+
     /** @return list<string> */
     private function berkasVue(): array
     {

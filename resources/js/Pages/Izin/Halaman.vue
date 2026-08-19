@@ -47,11 +47,24 @@ function rentang() {
 function simpanIzin() { izin.post(tautan.value.izinSimpan, { preserveScroll: true, onSuccess: () => izin.reset('nomor', 'uraian', 'catatan') }); }
 async function hapusIzin(i: any) { if (await tanya(`Hapus izin ${i.nomor}?`)) router.delete(untuk(tautan.value.izinHapus, i.id), { preserveScroll: true }); }
 function simpanGas(i: any) { gas.post(untuk(tautan.value.gasSimpan, i.id), { preserveScroll: true, onSuccess: () => gas.reset('o2', 'lel', 'co', 'h2s') }); }
-function hapusGas(g: any) { router.delete(untuk(tautan.value.gasHapus, g.id), { preserveScroll: true }); }
+async function hapusGas(g: any) {
+  if (!await tanya(`Hapus pengukuran gas ${g.waktu}?`)) return;
+  router.delete(untuk(tautan.value.gasHapus, g.id), { preserveScroll: true });
+}
 function simpanSyarat() { syarat.post(tautan.value.syaratSimpan, { preserveScroll: true, onSuccess: () => syarat.reset('teks') }); }
-function hapusSyarat(s: any) { router.delete(untuk(tautan.value.syaratHapus, s.id), { preserveScroll: true }); }
+async function hapusSyarat(s: any) {
+  if (!await tanya(`Hapus syarat "${s.teks}"?`)) return;
+  router.delete(untuk(tautan.value.syaratHapus, s.id), { preserveScroll: true });
+}
 function simpanAmbang() { ambang.post(tautan.value.ambangSimpan, { preserveScroll: true }); }
-function hapusAmbang(a: any) { router.delete(untuk(tautan.value.ambangHapus, a.id), { preserveScroll: true }); }
+async function hapusAmbang(a: any) {
+  /* Baris ini dicari dari daftar lain oleh templatnya; bila tidak ketemu
+     tidak ada yang boleh dihapus. Tanpa penjagaan ini `a.id` menjadi
+     undefined dan permintaannya tetap terkirim ke alamat yang salah. */
+  if (!a) return;
+  if (!await tanya(`Hapus ambang ${String(a.parameter ?? '').toUpperCase()} yang ditetapkan situs?`)) return;
+  router.delete(untuk(tautan.value.ambangHapus, a.id), { preserveScroll: true });
+}
 
 function ubahPeriksa(p: any, nilai: boolean) {
   router.put(untuk(tautan.value.periksaUbah, p.id), { terpenuhi: nilai, keterangan: p.keterangan || '' }, { preserveScroll: true });

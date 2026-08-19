@@ -72,7 +72,10 @@ async function hapusRegu(r: any) { if (await tanya(`Hapus catatan ${r.kode}?`)) 
 function simpanAlat() { alat.post(tautan.value.alatSimpan, { preserveScroll: true, onSuccess: () => alat.reset('kode', 'nama', 'tipe', 'catatan') }); }
 async function hapusAlat(a: any) { if (await tanya(`Hapus unit ${a.kode}?`)) router.delete(untuk(tautan.value.alatHapus, a.id), { preserveScroll: true }); }
 function simpanMuatan(r: any) { muatan.post(untuk(tautan.value.muatanSimpan, r.id), { preserveScroll: true, onSuccess: () => muatan.reset('rit_ke', 'muatan_ton') }); }
-function hapusMuatan(m: any) { router.delete(untuk(tautan.value.muatanHapus, m.id), { preserveScroll: true }); }
+async function hapusMuatan(m: any) {
+  if (!await tanya(`Hapus muatan rit ke-${m.ritKe} (${m.alat})?`)) return;
+  router.delete(untuk(tautan.value.muatanHapus, m.id), { preserveScroll: true });
+}
 
 function alur(pola: string, baris: any, isi: Record<string, any> = {}) {
   sibuk[baris.id] = true;

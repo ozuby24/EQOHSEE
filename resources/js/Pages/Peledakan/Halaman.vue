@@ -67,7 +67,10 @@ function simpanTitik() { titik.post(tautan.value.titikSimpan, { preserveScroll: 
 async function hapusTitik(t: any) { if (await tanya(`Hapus titik ${t.kode}?`)) router.delete(untuk(tautan.value.titikHapus, t.id), { preserveScroll: true }); }
 function simpanHasil(r: any) { hasil.post(untuk(tautan.value.hasilSimpan, r.id), { preserveScroll: true }); }
 function simpanUkur(r: any) { ukur.post(untuk(tautan.value.ukurSimpan, r.id), { preserveScroll: true, onSuccess: () => ukur.reset('ppv_mm_s', 'frekuensi_hz', 'airblast_db') }); }
-function hapusUkur(u: any) { router.delete(untuk(tautan.value.ukurHapus, u.id), { preserveScroll: true }); }
+async function hapusUkur(u: any) {
+  if (!await tanya(`Hapus pengukuran ${u.titik} (${u.jarak_m} m)?`)) return;
+  router.delete(untuk(tautan.value.ukurHapus, u.id), { preserveScroll: true });
+}
 
 function alur(pola: string, baris: any, muatan: Record<string, any> = {}) {
   sibuk[baris.id] = true;
