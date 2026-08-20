@@ -26,6 +26,54 @@ class TpkkpKuesioner
     public static function skala(): array   { return self::ref()['scale'] ?? []; }
     public static function identitas(): array { return self::ref()['identity'] ?? []; }
 
+    /** @return array<string,array{label:string,hint:string,positions:list<string>}> */
+    public static function kelompokJabatan(): array
+    {
+        return self::identitas()['positionGroups'] ?? [];
+    }
+
+    /**
+     * Kuesioner mana yang seharusnya diisi orang berjabatan ini.
+     *
+     * ALUR DIBALIK dari yang sebelumnya. Dulu responden memilih sendiri
+     * kuesionernya dari dua tab, dan pekerja tambang berulang kali
+     * mengisi kuesioner pimpinan unit kerja — bukan karena lalai
+     * melainkan karena tab pertama yang terlihat memang itu. Jawabannya
+     * masuk sebagai persepsi pimpinan atas dirinya sendiri, dan tidak
+     * ada satu pun tanda bahwa itu terjadi.
+     *
+     * Dicocokkan dua tahap: daftar resmi lebih dulu, lalu kata kunci
+     * bagi jabatan yang diketik bebas atau berasal dari data lama.
+     *
+     * BAWAANNYA "pekerja", dan itu keputusan yang disengaja. Jabatan tak
+     * dikenal yang jatuh ke kuesioner pekerja hanya kehilangan sebagian
+     * pertanyaan; yang jatuh ke kuesioner pimpinan MENCEMARI penilaian
+     * kepemimpinan dengan jawaban orang yang tidak memimpin siapa pun.
+     */
+    public static function kategoriUntukJabatan(?string $jabatan): ?string
+    {
+        $mentah = trim((string) $jabatan);
+
+        if ($mentah === '') return null;
+
+        $samakan = fn (string $x) => preg_replace('/\s+/u', ' ', mb_strtolower(trim($x), 'UTF-8'));
+        $kunci   = $samakan($mentah);
+
+        foreach (self::kelompokJabatan() as $kode => $kel) {
+            foreach ($kel['positions'] ?? [] as $j) {
+                if ($samakan($j) === $kunci) return $kode;
+            }
+        }
+
+        /* Kata kunci pengawas ke atas. Foreman dan Officer adalah batas
+           bawahnya — merekalah jabatan terendah yang mengawasi orang. */
+        $pimpinan = '/(direktur|general manager|project manager|\bmanager\b|manajer|superi?n?tendent'
+            .'|supervisor|dokter|foreman|leading hand|group leader|officer|paramedic|kepala'
+            .'|\bktt\b|\bpjo\b|pengawas|head|chief|coordinator|koordinator|section|superior)/u';
+
+        return preg_match($pimpinan, $kunci) ? 'pimpinan' : 'pekerja';
+    }
+
     /** @return array<string,array> kategori => ['label','entity','questions'] */
     public static function kategori(): array { return self::ref()['kategori'] ?? []; }
 

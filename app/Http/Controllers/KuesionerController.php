@@ -129,23 +129,70 @@ class KuesionerController extends Controller
 
     /* ============ SISI PUBLIK (tanpa login) ============ */
 
+    /**
+     * Halaman pembuka: identitas dahulu, kuesionernya menyusul.
+     *
+     * ALUR DIBALIK. Sebelumnya halaman ini menyodorkan dua tab dan
+     * meminta responden memilih sendiri — dan pekerja tambang berulang
+     * kali mengisi kuesioner pimpinan unit kerja, bukan karena lalai
+     * melainkan karena tab pertama yang terlihat memang itu. Jawabannya
+     * masuk sebagai persepsi pimpinan atas dirinya sendiri, tanpa satu
+     * pun tanda bahwa itu terjadi.
+     *
+     * Kini jabatan yang menentukan, dan respondennya diberi tahu
+     * kuesioner mana yang akan ia isi sebelum mulai.
+     */
     public function pilih(string $token)
     {
         $company = $this->byToken($token);
 
-        return Inertia::render('Kuesioner/Pilih', [
-            'token' => $token,
-            'company' => ['name' => $company->name],
+        return Inertia::render('Kuesioner/Mulai', [
+            'token'    => $token,
+            'company'  => ['name' => $company->name],
             'kategori' => self::KATEGORI,
+
+            /* Jabatan dikelompokkan supaya respondennya melihat sendiri
+               batas antara pimpinan unit kerja dan pekerja tambang —
+               daftar datar membuat batas itu tak terlihat. */
+            'kelompok'   => TpkkpKuesioner::kelompokJabatan(),
+            'identitas'  => TpkkpKuesioner::identitas(),
+
+            /* Berapa pertanyaan tiap kuesioner. Disebut di muka: yang
+               tahu sedang mengisi tiga pertanyaan tidak berhenti di
+               tengah karena mengira daftarnya panjang. */
+            'jumlahButir' => collect(self::KATEGORI)
+                ->map(fn ($_, $k) => count(TpkkpKuesioner::kodeSah($k)))->all(),
         ]);
     }
 
-    public function form(string $token, string $cat)
+    /**
+     * Kuesioner yang sesuai jabatan responden.
+     *
+     * Jabatannya dibawa sebagai kueri, bukan kategorinya: yang memilih
+     * kategori adalah sistem, dan alamat yang menyebut kategori langsung
+     * mengembalikan pilihan itu ke tangan responden — persis yang
+     * hendak dihindari.
+     */
+    public function form(Request $request, string $token, string $cat)
     {
         $company = $this->byToken($token);
         abort_unless(isset(self::KATEGORI[$cat]), 404);
-
         abort_unless(TpkkpKuesioner::punya($cat), 404);
+
+        $jabatan = trim((string) $request->get('jabatan'));
+
+        /* Alamat yang menyebut kategori tidak sesuai jabatannya
+           diluruskan, bukan ditolak: yang menempelkan tautan lama tetap
+           sampai ke kuesioner yang benar. */
+        if ($jabatan !== '') {
+            $sesuai = TpkkpKuesioner::kategoriUntukJabatan($jabatan);
+
+            if ($sesuai !== null && $sesuai !== $cat) {
+                return redirect()->route('kuesioner.form', [
+                    'token' => $token, 'cat' => $sesuai, 'jabatan' => $jabatan,
+                ] + $request->only(['nrp', 'dept', 'perusahaan']));
+            }
+        }
 
         return Inertia::render('Kuesioner/Form', [
             'company'  => ['name' => $company->name], 'token' => $token, 'cat' => $cat,
@@ -153,6 +200,15 @@ class KuesionerController extends Controller
             'entitas'  => TpkkpKuesioner::entitas($cat),
             'skala'    => TpkkpKuesioner::skala(),
             'params'   => TpkkpKuesioner::butirPerParam($cat),
+
+            /* Identitas yang sudah diisi di halaman pembuka dibawa serta
+               supaya tidak perlu diketik dua kali. */
+            'identitas' => [
+                'nrp'        => $request->get('nrp'),
+                'jabatan'    => $jabatan ?: null,
+                'dept'       => $request->get('dept'),
+                'perusahaan' => $request->get('perusahaan'),
+            ],
         ]);
     }
 
@@ -168,6 +224,15 @@ class KuesionerController extends Controller
             'perusahaan' => ['nullable','string','max:150'],
             'answers'    => ['required','array','min:1'],
         ]);
+
+        /* Kategorinya ditentukan ULANG dari jabatannya di sisi server.
+           Penyaringan di layar hanya menuntun; yang menentukan isi
+           basis data adalah baris ini. Tanpanya, alamat yang disusun
+           tangan tetap dapat memasukkan jawaban pekerja ke kuesioner
+           pimpinan — dan itu tepat kegagalan yang hendak dihentikan. */
+        if (filled($d['jabatan'] ?? null)) {
+            $cat = TpkkpKuesioner::kategoriUntukJabatan($d['jabatan']) ?? $cat;
+        }
 
         $sah     = TpkkpKuesioner::kodeSah($cat);
         $answers = [];
