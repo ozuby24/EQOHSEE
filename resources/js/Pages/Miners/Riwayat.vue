@@ -46,7 +46,7 @@ function warnaAngka(n: number, nada: string): string {
    samping: dari halaman mana pun, urutan seluruh alurnya tetap
    terlihat. */
 const URUT = [
-  ['MCU',          '/miners/mcu'],
+  ['MCU',          '/miners/riwayat/mcu'],
   ['Induksi',      '/miners/riwayat/induksi'],
   ['Mine Permit',  '/miners/riwayat/mine-permit'],
   ['Mine License', '/miners/riwayat/mine-license'],
@@ -56,7 +56,7 @@ const URUT = [
 const kini = computed(() => {
   const t = String(props.tahap ?? '');
 
-  return { induksi: 'Induksi', 'mine-permit': 'Mine Permit',
+  return { mcu: 'MCU', induksi: 'Induksi', 'mine-permit': 'Mine Permit',
            'mine-license': 'Mine License', authority: 'Authority' }[t] ?? '';
 });
 </script>

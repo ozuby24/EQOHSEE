@@ -95,7 +95,8 @@ final class Menu
            menurut abjad membuang pelajaran itu, dan yang menggantikannya
            adalah tebakan. */
         'Riwayat' => [
-          ['MCU',           'miners.mcu.index',            'miners/mcu*'],
+          ['MCU',           'miners.riwayat.mcu',          'miners/riwayat/mcu'],
+          ['Pengajuan MCU',  'miners.mcu.index',           'miners/mcu*'],
           ['Induksi',       'miners.riwayat.induksi',      'miners/riwayat/induksi'],
           ['Mine Permit',   'miners.riwayat.mine-permit',  'miners/riwayat/mine-permit'],
           ['Mine License',  'miners.riwayat.mine-license', 'miners/riwayat/mine-license'],

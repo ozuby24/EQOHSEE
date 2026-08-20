@@ -26,14 +26,23 @@ class PasporMcu extends Model
         'paspor_id', 'mcu_pengajuan_id', 'tgl_periksa', 'tgl_expired',
         'penyelenggara', 'nomor', 'jenis', 'hasil', 'pembatasan',
         'rujukan', 'outstanding', 'berkas',
+
+        /* Dibaca dari D'Best. `usia` disimpan apa adanya, bukan dihitung
+           dari tanggal lahir: yang tercetak pada surat MCU adalah usia
+           saat pemeriksaan, dan menghitungnya ulang tahun depan memberi
+           angka yang berbeda dari suratnya. */
+        'usia', 'mcu_berikutnya', 'status_verifikasi',
+        'catatan_kontraktor', 'remarks',
     ];
 
     protected function casts(): array
     {
         return [
-            'tgl_periksa' => 'date',
-            'tgl_expired' => 'date',
-            'outstanding' => 'date',
+            'tgl_periksa'    => 'date',
+            'tgl_expired'    => 'date',
+            'outstanding'    => 'date',
+            'mcu_berikutnya' => 'date',
+            'usia'           => 'integer',
         ];
     }
 
@@ -45,6 +54,19 @@ class PasporMcu extends Model
     }
 
     public function keadaan(): string    { return Authority::keadaan($this->tgl_expired); }
+
+    /**
+     * Sudah diperiksa kebenarannya, bukan sekadar sudah masuk.
+     *
+     * Berkas yang baru diunggah kontraktor dan berkas yang sudah
+     * diverifikasi paramedis sama-sama "ada". Tanpa pemisahan ini
+     * keduanya terbaca sama sahnya — dan yang belum diverifikasi
+     * justru yang paling perlu dilihat.
+     */
+    public function terverifikasi(): bool
+    {
+        return $this->status_verifikasi === Authority::MCU_TERVERIFIKASI;
+    }
     public function keterangan(): string { return Authority::keterangan($this->tgl_expired); }
 
     /** Hasilnya membolehkan bekerja — terpisah dari masa berlakunya. */

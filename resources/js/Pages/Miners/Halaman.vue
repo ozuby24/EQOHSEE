@@ -201,11 +201,17 @@ const fSertifikat = useForm<Record<string, any>>({
 const fMcu = useForm<Record<string, any>>({
   tgl_periksa: '', tgl_expired: '', penyelenggara: '',
   jenis: 'Berkala', hasil: 'Fit', pembatasan: '',
+
+  /* Dibaca dari D'Best. Usia diketik apa adanya, bukan dihitung dari
+     tanggal lahir: yang tercetak pada surat MCU adalah usia saat
+     pemeriksaan. */
+  usia: '', mcu_berikutnya: '', status_verifikasi: '',
 });
 
 const fKartu = useForm<Record<string, any>>({
   jenis: 'Mine Permit', sebab_terbit: 'Terbit', nomor: '', tgl_terbit: '', tgl_expired: '',
   golongan: '', area: '', sim_polisi: '', sim_polisi_expired: '', berkas_sim: '',
+  jenis_sim: '', tgl_lahir: '', subkontraktor: '',
   pengalaman_kerja: '', berkas_induksi: '', berkas_ddt: '', email_atasan: '',
   catatan: '',
 });
@@ -632,6 +638,22 @@ async function hapus(jalur: string, apa: string) {
               <option v-for="h in (props.opsi?.hasilMcu ?? [])" :key="h">{{ h }}</option>
             </select>
             <input v-model="fMcu.pembatasan" placeholder="Pembatasan kerja" class="rounded-lg border-stone-200 text-[12px]">
+            <input v-model="fMcu.usia" type="number" min="15" max="80" placeholder="Usia saat periksa"
+                   class="rounded-lg border-stone-200 text-[12px]">
+            <input v-model="fMcu.mcu_berikutnya" type="date" title="Jadwal MCU berikutnya"
+                   class="rounded-lg border-stone-200 text-[12px]">
+
+            <!--
+              Verifikasi BERKASNYA, bukan penilaian ulang hasil medisnya.
+              "Fit" menyatakan orangnya sehat; verifikasi menyatakan
+              berkasnya sudah diperiksa kebenarannya — dan berkas yang
+              baru diunggah kontraktor belum menjadi dasar apa pun.
+            -->
+            <select v-model="fMcu.status_verifikasi" class="rounded-lg border-stone-200 text-[12px]"
+                    aria-label="Status verifikasi berkas">
+              <option value="">Belum diperiksa</option>
+              <option v-for="v in (props.opsi?.statusMcu ?? [])" :key="v">{{ v }}</option>
+            </select>
             <button class="eq-btn-utama" :disabled="fMcu.processing">Catat</button>
           </form>
         </section>
@@ -764,6 +786,52 @@ async function hapus(jalur: string, apa: string) {
               </span>
             </div>
 
+            <!--
+              RANTAI BERKAS: atas dasar apa kartu ini diterbitkan.
+
+              Ditulis sekali pada penerbitan dan tidak ikut berpindah
+              saat MCU baru datang. Tanpa baris ini, pertanyaan "permit
+              ini terbit atas MCU yang mana" — pertanyaan pertama yang
+              diajukan auditor ketika sebuah permit dipersoalkan — hanya
+              dapat dijawab dengan menebak.
+            -->
+            <div v-if="k.dasar && (k.dasar.mcu || k.dasar.induksi || k.dasar.kartu)"
+                 class="mt-3 rounded-xl bg-stone-50 border border-stone-100 px-3 py-2.5">
+              <p class="text-[10.5px] font-bold uppercase tracking-wide text-stone-400">
+                Diterbitkan atas dasar
+              </p>
+
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-[11.5px]">
+                <span v-if="k.dasar.mcu" class="text-stone-600">
+                  MCU <b class="num">{{ k.dasar.mcu.tanggal }}</b>
+                  <span class="text-stone-400">· {{ k.dasar.mcu.hasil }}</span>
+                  <span class="text-stone-400">· berlaku {{ k.dasar.mcu.expired ?? '—' }}</span>
+                </span>
+
+                <span v-if="k.dasar.induksi" class="text-stone-600">
+                  Induksi {{ k.dasar.induksi.jenis }}
+                  <b class="num">{{ k.dasar.induksi.tanggal }}</b>
+                </span>
+
+                <span v-if="k.dasar.kartu" class="text-stone-600">
+                  {{ k.dasar.kartu.jenis }}
+                  <b class="num">{{ k.dasar.kartu.nomor || '—' }}</b>
+                </span>
+              </div>
+
+              <!--
+                BUKAN galat, dan bukan berarti kartunya batal. Yang perlu
+                dilihat: kartunya masih berpijak pada pemeriksaan lama,
+                sehingga masa berlakunya dihitung dari sana — memperbarui
+                dasarnya dapat memperpanjangnya tanpa menerbitkan kartu
+                baru.
+              -->
+              <p v-if="k.dasar.usang" class="text-[11px] mt-1.5" style="color:#92400E">
+                Sudah ada MCU yang lebih baru daripada dasar kartu ini.
+                Masa berlakunya masih dihitung dari MCU di atas.
+              </p>
+            </div>
+
             <div v-if="k.status !== 'draf'" class="mt-3">
               <Rantai :rantai="k.rantai" :tertinggal="k.tertinggal"
                       :dapat-paraf="k.dapatParaf" :saya-penentu="props.opsi?.sayaPenentu"
@@ -884,8 +952,23 @@ async function hapus(jalur: string, apa: string) {
               </label>
               <label class="text-[11px] font-semibold text-stone-600">
                 No. SIM kepolisian
-                <input v-model="fKartu.sim_polisi" placeholder="mis. SIM B2 Umum"
+                <input v-model="fKartu.sim_polisi" placeholder="mis. 8801-2345-6789"
                        class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+              </label>
+              <!--
+                Kelas SIM menentukan unit apa yang boleh dikemudikan, dan
+                itu bukan hal yang dapat dibaca dari nomornya. Dipilih
+                dari daftar, bukan diketik: "B2 umum", "B2 Umum", dan
+                "b2-umum" adalah tiga nilai berbeda yang tidak dapat
+                disaring bersama.
+              -->
+              <label class="text-[11px] font-semibold text-stone-600">
+                Kelas SIM
+                <select v-model="fKartu.jenis_sim"
+                        class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                  <option value="">— pilih kelas —</option>
+                  <option v-for="j in (props.opsi?.jenisSim ?? [])" :key="j">{{ j }}</option>
+                </select>
               </label>
               <label class="text-[11px] font-semibold text-stone-600">
                 SIM berlaku sampai

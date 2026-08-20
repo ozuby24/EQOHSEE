@@ -30,6 +30,10 @@ class PasporInduksi extends Model
     protected $fillable = [
         'paspor_id', 'nomor_registrasi', 'jenis', 'tanggal', 'tgl_expired',
         'pemberi', 'lokasi', 'nilai', 'hasil', 'berkas', 'catatan',
+
+        /* Berkas permohonan induksinya, dan MCU yang mendasarinya —
+           keduanya dibaca dari D'Best. */
+        'berkas_permohonan', 'paspor_mcu_id',
     ];
 
     protected function casts(): array
@@ -38,6 +42,15 @@ class PasporInduksi extends Model
     }
 
     public function paspor() { return $this->belongsTo(Paspor::class); }
+
+    /**
+     * MCU yang menjadi dasar induksi ini, bila dicatat.
+     *
+     * Nullable dengan sengaja: riwayat lama tidak menyimpannya, dan
+     * menolak baris yang tidak punya berarti membuang catatan sah hanya
+     * karena dibuat sebelum aturannya ada.
+     */
+    public function mcuDasar() { return $this->belongsTo(PasporMcu::class, 'paspor_mcu_id'); }
 
     public function keadaan(): string    { return Authority::keadaan($this->tgl_expired); }
     public function keterangan(): string { return Authority::keterangan($this->tgl_expired); }

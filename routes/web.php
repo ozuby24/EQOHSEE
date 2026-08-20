@@ -245,7 +245,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
            benar-benar Inertia. Satu rute berparameter memaksa uji itu
            menyimpan daftar parameter contoh — dan daftar semacam itu
            adalah tempat pertama yang tertinggal saat rutenya berubah. */
-        foreach (['induksi', 'mine-permit', 'mine-license', 'authority'] as $tahap) {
+        foreach (['mcu', 'induksi', 'mine-permit', 'mine-license', 'authority'] as $tahap) {
             Route::get('riwayat/'.$tahap, [MinersController::class, 'riwayat'])
                 ->defaults('tahap', $tahap)
                 ->name('riwayat.'.$tahap);

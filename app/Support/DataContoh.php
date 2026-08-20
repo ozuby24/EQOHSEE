@@ -652,7 +652,7 @@ final class DataContoh
 
             [$hariMcu, $hasil, $batas] = $mcu[$i];
 
-            PasporMcu::withoutGlobalScopes()->create([
+            $barisMcu = PasporMcu::withoutGlobalScopes()->create([
                 'paspor_id'     => $p->id,
                 'tgl_periksa'   => $this->kini->copy()->addDays($hariMcu)->subYear()->toDateString(),
                 'tgl_expired'   => $this->kini->copy()->addDays($hariMcu)->toDateString(),
@@ -660,6 +660,21 @@ final class DataContoh
                 'jenis'         => 'Berkala',
                 'hasil'         => $hasil,
                 'pembatasan'    => $batas,
+
+                /* Medan yang dibaca dari D'Best. Usia disimpan apa
+                   adanya — yang tercetak pada suratnya adalah usia saat
+                   pemeriksaan, dan menghitungnya ulang tahun depan
+                   memberi angka yang berbeda dari suratnya. */
+                'usia'           => 28 + $i * 3,
+                'mcu_berikutnya' => $this->kini->copy()->addDays($hariMcu - 30)->toDateString(),
+
+                /* Satu orang sengaja dibiarkan BELUM diverifikasi:
+                   tanpa satu pun contohnya, tampilan "belum diperiksa"
+                   tidak pernah benar-benar tergambar. */
+                'status_verifikasi' => $i === 1
+                    ? Authority::MCU_MENUNGGU : Authority::MCU_TERVERIFIKASI,
+                'catatan_kontraktor' => $i === 1
+                    ? 'Berkas menyusul dari klinik rujukan.' : null,
             ]);
             $n++;
 
@@ -688,6 +703,16 @@ final class DataContoh
                     'golongan_darah' => ['A', 'B', 'O', 'AB'][$i % 4],
                     'telepon'        => '08123456'.str_pad((string) ($i + 10), 4, '0', STR_PAD_LEFT),
                     'kontak_darurat' => 'Keluarga · 08998877'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT),
+                    'tgl_lahir'      => $this->kini->copy()->subYears(28 + $i * 3)->toDateString(),
+                    'subkontraktor'  => $i % 2 ? 'PT Mitra Karya Tambang' : null,
+                    'jenis_sim'      => $gol ? 'B2 Umum' : null,
+
+                    /* ── rantai berkas ──
+                       Atas dasar apa kartu ini diterbitkan. Ditulis
+                       sekali pada penerbitan; MCU baru yang datang
+                       kemudian TIDAK menggesernya, dan selisih itulah
+                       yang membuat "dasar usang" dapat terlihat. */
+                    'paspor_mcu_id'  => $barisMcu->id,
 
                     /* Lampiran syarat permit. Sengaja TIDAK lengkap
                        semuanya: satu kartu dibiarkan tanpa SPDK supaya

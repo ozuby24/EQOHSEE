@@ -140,6 +140,30 @@ final class Authority
     public const JENIS_MCU = ['Awal', 'Berkala', 'Khusus', 'Purna'];
 
     /**
+     * Keadaan pemeriksaan berkas MCU — terpisah dari hasil medisnya.
+     *
+     * "Fit" menyatakan orangnya sehat; verifikasi menyatakan berkasnya
+     * sudah diperiksa kebenarannya. Keduanya kerap dianggap satu, dan
+     * akibatnya berkas yang baru diunggah kontraktor terbaca sama
+     * sahnya dengan yang sudah dibaca paramedis.
+     *
+     * Yang DITOLAK bukan orangnya melainkan berkasnya — hasil medis
+     * tidak dinilai ulang di sini, hanya keabsahan dokumennya.
+     */
+    public const MCU_MENUNGGU      = 'Menunggu verifikasi';
+    public const MCU_TERVERIFIKASI = 'Terverifikasi';
+    public const MCU_DIKEMBALIKAN  = 'Dikembalikan';
+
+    public const STATUS_MCU = [
+        self::MCU_MENUNGGU,
+        self::MCU_TERVERIFIKASI,
+        self::MCU_DIKEMBALIKAN,
+    ];
+
+    /** Kelas SIM kepolisian yang dipakai sebagai dasar SIMPER. */
+    public const JENIS_SIM = ['A', 'A Umum', 'B1', 'B1 Umum', 'B2', 'B2 Umum', 'C'];
+
+    /**
      * Jenis kartu tinggal di App\Support\AlurMiner, bukan di sini.
      *
      * Di sana ia berdampingan dengan urutan dan syarat penerbitannya —

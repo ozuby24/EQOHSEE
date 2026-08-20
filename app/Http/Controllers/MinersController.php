@@ -136,7 +136,14 @@ class MinersController extends Controller
 
     public function show(Paspor $paspor)
     {
-        $paspor->load(['sertifikat.jenis', 'mcu.pengajuan', 'kartu.paraf', 'kartu.unit.unitMaster', 'induksi', 'user', 'company']);
+        /* Rantai berkasnya ikut dimuat: tiap kartu menyebut MCU,
+           induksi, dan kartu yang mendasarinya, dan tanpa dimuat di sini
+           itu tiga kueri tambahan per kartu. */
+        $paspor->load([
+            'sertifikat.jenis', 'mcu.pengajuan', 'kartu.paraf', 'kartu.unit.unitMaster',
+            'kartu.mcuDasar', 'kartu.induksiDasar', 'kartu.kartuDasar',
+            'induksi.mcuDasar', 'user', 'company',
+        ]);
 
         return Inertia::render('Miners/Halaman', $this->bersama() + [
             'mode'   => 'rincian',
@@ -594,6 +601,13 @@ class MinersController extends Controller
             'pemberi'     => ['nullable', 'string', 'max:150'],
             'lokasi'      => ['nullable', 'string', 'max:150'],
             'nilai'       => ['nullable', 'integer', 'min:0', 'max:100'],
+            'berkas_permohonan' => ['nullable', 'string', 'max:255'],
+
+            /* MCU yang mendasari induksi ini — dibatasi milik orang yang
+               sama, sebab induksi yang berdiri di atas MCU orang lain
+               bukan salah ketik melainkan catatan yang tidak berdasar. */
+            'paspor_mcu_id' => ['nullable', 'integer', Rule::exists('paspor_mcu', 'id')
+                ->where('paspor_id', $paspor->id)],
             'hasil'       => ['required', Rule::in(Authority::HASIL_INDUKSI)],
             'catatan'     => ['nullable', 'string', 'max:1000'],
         ]);
@@ -708,6 +722,17 @@ class MinersController extends Controller
             'jenis'         => ['required', Rule::in(['Awal', 'Berkala', 'Khusus', 'Purna'])],
             'hasil'         => ['required', Rule::in(Authority::HASIL_MCU)],
             'pembatasan'    => ['nullable', 'string', 'max:500'],
+
+            /* Dibaca dari D'Best. `usia` disimpan apa adanya, bukan
+               dihitung dari tanggal lahir: yang tercetak pada surat MCU
+               adalah usia saat pemeriksaan. */
+            'usia'           => ['nullable', 'integer', 'min:15', 'max:80'],
+            'mcu_berikutnya' => ['nullable', 'date', 'after_or_equal:tgl_periksa'],
+
+            /* Verifikasi berkas, BUKAN penilaian ulang hasil medisnya. */
+            'status_verifikasi'  => ['nullable', Rule::in(Authority::STATUS_MCU)],
+            'catatan_kontraktor' => ['nullable', 'string', 'max:1000'],
+            'remarks'            => ['nullable', 'string', 'max:1000'],
         ]);
 
         $paspor->mcu()->create($data);
@@ -770,8 +795,25 @@ class MinersController extends Controller
             'area'         => ['nullable', 'string', 'max:150'],
 
             'sim_polisi'         => ['nullable', 'string', 'max:40'],
+            'jenis_sim'          => ['nullable', Rule::in(Authority::JENIS_SIM)],
             'berkas_sim'         => ['nullable', 'string', 'max:255'],
             'sim_polisi_expired' => ['nullable', 'date'],
+
+            /* Tercetak pada kartunya, dibaca dari D'Best. */
+            'tgl_lahir'     => ['nullable', 'date'],
+            'foto'          => ['nullable', 'string', 'max:255'],
+            'subkontraktor' => ['nullable', 'string', 'max:150'],
+
+            /* Rantai berkas: atas dasar apa kartu ini diterbitkan.
+               Dibatasi milik orang yang sama — kartu yang berdiri di
+               atas MCU orang lain bukan kekeliruan pengetikan melainkan
+               izin yang tidak berdasar. */
+            'paspor_mcu_id'     => ['nullable', 'integer', Rule::exists('paspor_mcu', 'id')
+                ->where('paspor_id', $request->route('paspor')?->id ?? 0)],
+            'paspor_induksi_id' => ['nullable', 'integer', Rule::exists('paspor_induksi', 'id')
+                ->where('paspor_id', $request->route('paspor')?->id ?? 0)],
+            'kartu_dasar_id'    => ['nullable', 'integer', Rule::exists('paspor_kartu', 'id')
+                ->where('paspor_id', $request->route('paspor')?->id ?? 0)],
             'pengalaman_kerja'   => ['nullable', 'string', 'max:150'],
             'berkas_induksi'     => ['nullable', 'string', 'max:255'],
             'berkas_ddt'         => ['nullable', 'string', 'max:255'],
@@ -1407,6 +1449,7 @@ class MinersController extends Controller
         $tahap = (string) $request->route()->defaults['tahap'];
 
         $daftar = match ($tahap) {
+            'mcu'          => $this->riwayatMcu(),
             'induksi'      => $this->riwayatInduksi(),
             'mine-permit'  => $this->riwayatKartu(AlurMiner::KARTU_PERMIT, $request),
             'mine-license' => $this->riwayatKartu(AlurMiner::KARTU_LICENSE, $request),
@@ -1427,15 +1470,83 @@ class MinersController extends Controller
     }
 
     /** @return array<string,mixed> */
+    /**
+     * Daftar induk MCU — satu baris per pemeriksaan, bukan per surat.
+     *
+     * Halaman /miners/mcu berisi PENGAJUAN: surat yang dikirim ke
+     * klinik, satu surat memuat banyak nama. Yang tidak dijawabnya
+     * pertanyaan yang justru paling sering diajukan — dari seluruh
+     * pekerja, siapa saja yang MCU-nya masih berlaku hari ini, dan apa
+     * hasilnya.
+     *
+     * Susunan kolomnya mengikuti daftar man-power D'Best: orangnya
+     * lebih dulu, hasilnya, lalu masa berlakunya.
+     */
+    private function riwayatMcu(): array
+    {
+        $baris = PasporMcu::with(['paspor.company', 'pengajuan'])
+            ->orderByDesc('tgl_periksa')->orderByDesc('id')->get();
+
+        return [
+            'judul'    => 'Riwayat MCU',
+            'subjudul' => 'Pemeriksaan kesehatan seluruh pekerja — hasil dan masa berlakunya',
+            'kolom'    => ['No. Registrasi', 'Tanggal', 'NIK', 'Nama', 'Perusahaan',
+                           'Jenis', 'Hasil', 'Berlaku sampai', 'Verifikasi'],
+
+            'baris' => $baris->map(fn (PasporMcu $m) => [
+                'id'       => $m->id,
+                'pasporId' => $m->paspor_id,
+                'nama'     => $m->paspor?->nama,
+                'jabatan'  => $m->paspor?->jabatan,
+                'nomor'    => $m->nomor,
+                'sel'      => [
+                    $m->nomor ?: ($m->pengajuan?->nomor_register ?: '—'),
+                    $m->tgl_periksa?->toDateString(),
+                    $m->paspor?->nik ?: '—',
+                    $m->paspor?->nama,
+                    $m->paspor?->company?->name ?: '—',
+                    $m->jenis ?: '—',
+                    $m->hasil ?: 'Belum ada hasil',
+                    $m->tgl_expired?->toDateString() ?: '—',
+                    $m->status_verifikasi ?: 'Belum diperiksa',
+                ],
+                'keadaan'    => $m->keadaan(),
+                'keterangan' => $m->keterangan(),
+
+                /* "Baik" berarti BOLEH BEKERJA, dan itu menuntut dua hal
+                   sekaligus: hasilnya meloloskan, dan berkasnya sudah
+                   diverifikasi. Berkas yang baru diunggah kontraktor
+                   belum menjadi dasar apa pun. */
+                'baik' => $m->hasilLayak() && $m->terverifikasi(),
+            ])->values(),
+
+            'ringkas' => [
+                ['Total pemeriksaan', $baris->count(), 'netral'],
+                ['Layak bekerja', $baris->filter(fn ($m) => $m->hasilLayak())->count(), 'baik'],
+                ['Belum diverifikasi', $baris->reject(fn ($m) => $m->terverifikasi())->count(), 'ingat'],
+                ['Rujukan tertunggak', $baris->filter(fn ($m) => $m->rujukanTertunggak())->count(), 'gawat'],
+            ],
+
+            'pemantauan' => PemantauanBerkas::untukDaftar(
+                $this->orangPemantauan(), PemantauanBerkas::MCU),
+        ];
+    }
+
     private function riwayatInduksi(): array
     {
-        $baris = PasporInduksi::with('paspor')
+        $baris = PasporInduksi::with(['paspor.company'])
             ->orderByDesc('tanggal')->get();
 
         return [
             'judul'    => 'Riwayat Induksi',
             'subjudul' => 'Induksi keselamatan seluruh pekerja — dicatat setelah hasil MCU menyatakan layak',
-            'kolom'    => ['Nama', 'Jenis', 'Tanggal', 'Berlaku sampai', 'Nilai', 'Hasil'],
+
+            /* Kolomnya mengikuti daftar induk D'Best: nomor registrasi,
+               orangnya, lalu di mana dan kapan induksinya diberikan.
+               Lokasi disebut karena induksi berlaku per area — yang
+               diinduksi di workshop belum tentu boleh masuk pit. */
+            'kolom'    => ['No. Registrasi', 'Tanggal', 'Nama', 'Perusahaan',
+                           'Jenis', 'Lokasi', 'Berlaku sampai', 'Hasil'],
             'baris'    => $baris->map(fn (PasporInduksi $i) => [
                 'id'       => $i->id,
                 'pasporId' => $i->paspor_id,
@@ -1443,10 +1554,13 @@ class MinersController extends Controller
                 'jabatan'  => $i->paspor?->jabatan,
                 'nomor'    => $i->nomor_registrasi,
                 'sel'      => [
-                    $i->paspor?->nama, $i->jenis,
+                    $i->nomor_registrasi ?: '—',
                     $i->tanggal?->toDateString(),
-                    $i->tgl_expired?->toDateString(),
-                    $i->nilai === null ? '—' : (string) $i->nilai,
+                    $i->paspor?->nama,
+                    $i->paspor?->company?->name ?: '—',
+                    $i->jenis,
+                    $i->lokasi ?: '—',
+                    $i->tgl_expired?->toDateString() ?: '—',
                     $i->hasil,
                 ],
                 'keadaan'    => $i->keadaan(),
@@ -1474,7 +1588,7 @@ class MinersController extends Controller
            EFEKTIF, dan bagi Mine Permit tanggal itu dibatasi MCU
            terakhir orangnya. Tanpa dimuat di sini, satu kueri tambahan
            per baris — dan daftar ini memang berisi seluruh kartu. */
-        $baris = PasporKartu::with(['paspor.mcu', 'paraf', 'peninjau'])
+        $baris = PasporKartu::with(['paspor.mcu', 'paspor.company', 'paraf', 'peninjau'])
             ->where('jenis', $jenis)
             ->orderByDesc('tgl_terbit')->orderByDesc('id')->get();
 
@@ -1485,17 +1599,27 @@ class MinersController extends Controller
             'subjudul' => $permit
                 ? 'Izin masuk area tambang — terbit sesudah MCU dan induksi, diverifikasi OHSE'
                 : 'Izin mengemudi di area tambang (A2B) — tambahan di atas Mine Permit',
-            'kolom' => ['Nama', 'Nomor', 'Sebab', $permit ? 'Area' : 'Golongan', 'Terbit', 'Berlaku sampai'],
+            /* Kolomnya mengikuti daftar induk D'Best: yang dicari orang
+               di daftar ini bukan rincian kartunya melainkan ORANGNYA —
+               siapa, dari perusahaan mana, jabatan apa. Rincian kartu
+               dibuka dari barisnya. */
+            'kolom' => $permit
+                ? ['No. Registrasi', 'Terbit', 'NIK', 'Nama', 'Jabatan', 'Perusahaan', 'Berlaku sampai']
+                : ['No. SIMPER', 'Terbit', 'NIK', 'Nama', 'Jabatan', 'Perusahaan', 'Jenis SIM', 'SIM berlaku'],
+
             'baris' => $baris->map(fn (PasporKartu $k) => [
                 'id'       => $k->id,
                 'pasporId' => $k->paspor_id,
                 'nama'     => $k->paspor?->nama,
                 'jabatan'  => $k->paspor?->jabatan,
                 'nomor'    => $k->nomor,
-                'sel'      => [
-                    $k->paspor?->nama, $k->nomor ?: '—', $k->sebab_terbit,
-                    ($permit ? $k->area : $k->golongan) ?: '—',
+                'sel'      => $permit ? [
+                    $k->nomor ?: '—',
                     $k->tgl_terbit?->toDateString(),
+                    $k->paspor?->nik ?: '—',
+                    $k->paspor?->nama,
+                    $k->paspor?->jabatan ?: '—',
+                    $k->paspor?->company?->name ?: '—',
 
                     /* Tanggal EFEKTIF, bukan yang tercetak. Kolomnya
                        bertanya "berlaku sampai kapan", dan jawabannya
@@ -1503,6 +1627,20 @@ class MinersController extends Controller
                        tanggal yang tertulis padanya. Sebabnya disebut
                        di kolom keadaan. */
                     $k->expiredEfektif()?->toDateString(),
+                ] : [
+                    $k->nomor ?: '—',
+                    $k->tgl_terbit?->toDateString(),
+                    $k->paspor?->nik ?: '—',
+                    $k->paspor?->nama,
+                    $k->paspor?->jabatan ?: '—',
+                    $k->paspor?->company?->name ?: '—',
+
+                    /* SIMPER dinilai atas SIM kepolisiannya: kelasnya
+                       menentukan unit apa yang boleh dikemudikan, dan
+                       masa berlakunya membatasi masa berlaku SIMPER-nya.
+                       Keduanya tidak terbaca dari nomor kartunya. */
+                    $k->jenis_sim ?: '—',
+                    $k->sim_polisi_expired?->toDateString() ?: '—',
                 ],
                 'keadaan'    => $k->keadaan(),
                 'keterangan' => $k->keterangan(),
@@ -1758,6 +1896,8 @@ class MinersController extends Controller
                 'hasilMcu'     => Authority::HASIL_MCU,
                 'jenisKartu'   => Authority::JENIS_KARTU,
                 'jenisMcu'     => Authority::JENIS_MCU,
+                'statusMcu'    => Authority::STATUS_MCU,
+                'jenisSim'     => Authority::JENIS_SIM,
                 'sebabKartu'   => Authority::SEBAB_KARTU,
                 'jenisInduksi' => Authority::JENIS_INDUKSI,
                 'hasilInduksi' => Authority::HASIL_INDUKSI,
@@ -1817,6 +1957,40 @@ class MinersController extends Controller
             'golonganDarah' => $k->golongan_darah,
             'telepon'       => $k->telepon,
             'kontakDarurat' => $k->kontak_darurat,
+            'tglLahir'      => $k->tgl_lahir?->toDateString(),
+            'foto'          => $k->foto,
+            'subkontraktor' => $k->subkontraktor,
+            'jenisSim'      => $k->jenis_sim,
+
+            /* ── rantai berkas ──
+               Atas dasar apa kartu ini diterbitkan. Ditulis sekali pada
+               penerbitan dan tidak ikut berpindah saat MCU baru datang;
+               `dasarUsang` menandai bahwa orangnya sudah punya MCU yang
+               lebih baru daripada yang dipakai menerbitkan kartu ini —
+               bukan galat, tetapi hal yang perlu dilihat. */
+            'dasar' => [
+                'mcu' => $k->mcuDasar ? [
+                    'id'      => $k->mcuDasar->id,
+                    'tanggal' => $k->mcuDasar->tgl_periksa?->toDateString(),
+                    'expired' => $k->mcuDasar->tgl_expired?->toDateString(),
+                    'hasil'   => $k->mcuDasar->hasil,
+                ] : null,
+
+                'induksi' => $k->induksiDasar ? [
+                    'id'      => $k->induksiDasar->id,
+                    'tanggal' => $k->induksiDasar->tanggal?->toDateString(),
+                    'expired' => $k->induksiDasar->tgl_expired?->toDateString(),
+                    'jenis'   => $k->induksiDasar->jenis,
+                ] : null,
+
+                'kartu' => $k->kartuDasar ? [
+                    'id'    => $k->kartuDasar->id,
+                    'jenis' => $k->kartuDasar->jenis,
+                    'nomor' => $k->kartuDasar->nomor,
+                ] : null,
+
+                'usang' => $k->dasarUsang(),
+            ],
 
             /* Lampiran syarat Mine Permit — keempatnya diperiksa sebelum
                permit terbit, jadi kekosongannya harus terlihat. */

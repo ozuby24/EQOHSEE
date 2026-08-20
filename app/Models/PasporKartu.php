@@ -41,6 +41,19 @@ class PasporKartu extends Model
         'paspor_id', 'jenis', 'sebab_terbit', 'nomor', 'tgl_terbit', 'tgl_expired',
         'golongan', 'area', 'sim_polisi', 'sim_polisi_expired', 'berkas_sim', 'pengalaman_kerja',
         'berkas_induksi', 'berkas_ddt', 'email_atasan', 'berkas', 'catatan',
+
+        /* Tercetak pada kartunya sendiri, jadi harus ada sebelum
+           kartunya dapat dicetak. */
+        'golongan_darah', 'telepon', 'kontak_darurat',
+        'tgl_lahir', 'foto', 'subkontraktor', 'jenis_sim',
+
+        /* Lampiran syarat Mine Permit — keempatnya diperiksa SEBELUM
+           permit terbit, bukan berkas pelengkap. */
+        'berkas_ktp', 'berkas_permohonan', 'berkas_spdk',
+        'berkas_dept', 'berkas_lotto', 'berkas_blasting',
+
+        /* Rantai berkas: atas dasar apa kartu ini diterbitkan. */
+        'paspor_mcu_id', 'paspor_induksi_id', 'kartu_dasar_id',
     ];
 
     protected function casts(): array
@@ -49,6 +62,7 @@ class PasporKartu extends Model
             'tgl_terbit'         => 'date',
             'tgl_expired'        => 'date',
             'sim_polisi_expired' => 'date',
+            'tgl_lahir'          => 'date',
         ];
     }
 
@@ -62,6 +76,59 @@ class PasporKartu extends Model
      * yang benar, bukan yang terlupa.
      */
     public function unit() { return $this->hasMany(PasporKartuUnit::class, 'paspor_kartu_id'); }
+
+    /* ═══════════ rantai berkas ═══════════ */
+
+    /**
+     * Baris MCU yang dipakai saat kartu ini diterbitkan.
+     *
+     * Ditulis sekali pada penerbitan dan tidak ikut berpindah saat MCU
+     * baru datang. Selisih antara ini dan MCU terakhir orangnya justru
+     * menjadi temuan yang dapat dilihat, bukan keadaan yang hilang.
+     */
+    public function mcuDasar()
+    {
+        return $this->belongsTo(PasporMcu::class, 'paspor_mcu_id');
+    }
+
+    /** Baris induksi yang dipakai saat kartu ini diterbitkan. */
+    public function induksiDasar()
+    {
+        return $this->belongsTo(PasporInduksi::class, 'paspor_induksi_id');
+    }
+
+    /**
+     * Kartu yang mendasari kartu ini — SIMPER berdiri di atas Mine Permit.
+     *
+     * Dinamai menurut PERANNYA, bukan menurut jenis kartunya: nama
+     * kolom yang menyebut satu jenis akan salah begitu ada jenis
+     * ketiga yang juga berdiri di atas kartu lain.
+     */
+    public function kartuDasar()
+    {
+        return $this->belongsTo(PasporKartu::class, 'kartu_dasar_id');
+    }
+
+    /**
+     * Orangnya sudah punya MCU yang lebih baru daripada dasar kartu ini.
+     *
+     * BUKAN galat, dan bukan berarti kartunya batal — MCU baru kerap
+     * datang di tengah masa berlaku kartu, dan itu memang seharusnya.
+     * Yang perlu dilihat: kartunya masih berpijak pada pemeriksaan lama,
+     * sehingga masa berlakunya dihitung dari sana, dan memperbarui
+     * dasarnya dapat memperpanjang kartunya tanpa menerbitkan yang baru.
+     *
+     * Memulangkan salah bila dasarnya memang tidak dicatat: yang tidak
+     * pernah ditulis tidak dapat dikatakan usang.
+     */
+    public function dasarUsang(): bool
+    {
+        if (!$this->paspor_mcu_id) return false;
+
+        $terakhir = $this->paspor?->mcuTerakhir();
+
+        return $terakhir !== null && $terakhir->id !== $this->paspor_mcu_id;
+    }
 
     /**
      * Yang memutuskan penerbitan kartu hanya OHSE.

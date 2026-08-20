@@ -1811,13 +1811,23 @@ class MinersTest extends TestCase
         $this->get(route('miners.riwayat.mine-permit'))
             ->assertOk()
             ->assertInertia(function (Assert $h) {
-                $baris = collect($h->toArray()['props']['baris'])->firstWhere('nomor', 'MP/EF');
+                $prop  = $h->toArray()['props'];
+                $baris = collect($prop['baris'])->firstWhere('nomor', 'MP/EF');
 
                 $this->assertNotNull($baris, 'Kartu ujinya tidak muncul di daftar.');
 
+                /* Kolomnya dicari menurut NAMANYA, bukan menurut nomor
+                   urutnya. Uji yang menyebut sel[5] ikut merah setiap
+                   kali urutan kolom berubah — dan yang berubah saat itu
+                   tata letaknya, bukan hal yang dijaga uji ini. */
+                $kolom = array_search('Berlaku sampai', $prop['kolom'], true);
+
+                $this->assertNotFalse($kolom,
+                    'Daftar Mine Permit tidak lagi punya kolom "Berlaku sampai".');
+
                 $this->assertSame(
                     now()->addDays(30)->toDateString(),
-                    $baris['sel'][5],
+                    $baris['sel'][$kolom],
                     'Kolom "berlaku sampai" memakai tanggal cetak kartunya, '
                     .'bukan tanggal MCU yang membatasinya.',
                 );
