@@ -27,6 +27,14 @@ class BerkasController extends Controller
     {
         [$kelas, $atribut, $daftar] = Berkas::TERSAJI[$jenis] ?? abort(404);
 
+        /* Sebagian jenis terjaga lebih ketat daripada barisnya sendiri.
+           Surat MCU memuat rincian medis yang sengaja TIDAK disimpan di
+           kolom mana pun — membiarkan lampirannya terbuka bagi semua
+           yang dapat melihat barisnya akan membatalkan prinsip itu
+           lewat pintu belakang. Lihat Berkas::GERBANG. */
+        abort_unless(Berkas::bolehMembuka(auth()->user(), $jenis), 403,
+            'Berkas ini hanya dapat dibuka paramedis, tim OHSE, atau administrator.');
+
         $model = $kelas::findOrFail($baris);
         $nilai = $model->{$atribut};
 
@@ -60,6 +68,9 @@ class BerkasController extends Controller
     public function unduh(string $jenis, int $baris, ?int $i = null): StreamedResponse
     {
         [$kelas, $atribut, $daftar] = Berkas::TERSAJI[$jenis] ?? abort(404);
+
+        abort_unless(Berkas::bolehMembuka(auth()->user(), $jenis), 403,
+            'Berkas ini hanya dapat dibuka paramedis, tim OHSE, atau administrator.');
 
         $model = $kelas::findOrFail($baris);
         $nilai = $model->{$atribut};

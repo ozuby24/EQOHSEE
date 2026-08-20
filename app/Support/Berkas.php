@@ -2,7 +2,7 @@
 
 namespace App\Support;
 
-use App\Models\{Document, GudangBarang, HazardReport, InspectionItem, Signatory, SmkpFinding};
+use App\Models\{Document, GudangBarang, HazardReport, InspectionItem, PasporMcu, Signatory, SmkpFinding};
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -70,7 +70,53 @@ final class Berkas
            urutannya bermakna: kotak kiri selalu "sebelum". */
         'smo' => [SmkpFinding::class,    'foto_open',   false],
         'smc' => [SmkpFinding::class,    'foto_closed', false],
+
+        /* Surat MCU. Terjaga lebih ketat daripada yang lain — lihat
+           GERBANG di bawah. */
+        'mcu' => [PasporMcu::class,      'berkas',      false],
     ];
+
+    /**
+     * Siapa yang boleh MEMBUKA berkas satu jenis, di luar batas perusahaan.
+     *
+     * Kosong berarti siapa pun yang dapat melihat barisnya dapat
+     * membuka berkasnya, dan bagi hampir semua jenis itu benar: foto
+     * bahaya, foto inspeksi, dan tanda tangan memang dimaksudkan
+     * terlihat oleh yang membuka halamannya.
+     *
+     * SURAT MCU TIDAK. Yang disimpan `paspor_mcu` sengaja hanya
+     * KESIMPULAN kelayakan kerjanya — "Fit", "Fit With Note" — sebab
+     * rincian medis punya aturan kerahasiaannya sendiri dan tidak boleh
+     * terbaca oleh setiap admin HSE yang membuka daftar pekerja. Surat
+     * dari klinik justru memuat rincian itu: diagnosis, hasil
+     * laboratorium, riwayat. Mengunggahnya tanpa penjagaan berarti
+     * membatalkan prinsip itu lewat pintu belakang — kolomnya bersih,
+     * lampirannya yang membocorkan.
+     *
+     * Karena itu suratnya hanya terbuka bagi yang memang membacanya
+     * sebagai bagian pekerjaannya: paramedis, tim OHSE, dan
+     * administrator.
+     *
+     * @var array<string,list<string>> jenis => nama helper peran pada User
+     */
+    public const GERBANG = [
+        'mcu' => ['isAdmin', 'isOhse', 'isParamedis'],
+    ];
+
+    /** Pengguna ini boleh membuka berkas jenis itu? */
+    public static function bolehMembuka(?object $u, string $jenis): bool
+    {
+        $peran = self::GERBANG[$jenis] ?? null;
+
+        if ($peran === null) return true;      // jenis yang memang tidak dijaga
+        if (!$u) return false;
+
+        foreach ($peran as $cek) {
+            if (method_exists($u, $cek) && $u->{$cek}()) return true;
+        }
+
+        return false;
+    }
 
     /** Folder tempat tiap jenis disimpan, dipakai pemindah berkas lama. */
     public const FOLDER_TERTUTUP = ['dokumen', 'signatures', 'hazard', 'inspeksi', 'gudang/msds'];

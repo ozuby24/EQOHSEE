@@ -675,6 +675,30 @@ final class DataContoh
                     ? Authority::MCU_MENUNGGU : Authority::MCU_TERVERIFIKASI,
                 'catatan_kontraktor' => $i === 1
                     ? 'Berkas menyusul dari klinik rujukan.' : null,
+
+                /* Level risiko menyebar, tidak seragam. Kolom yang
+                   seluruh barisnya berisi "Rendah" memperlihatkan
+                   halaman yang BEKERJA tetapi tidak memperlihatkan apa
+                   gunanya — yang dicari orang justru ekor atasnya.
+                   Salah satunya sengaja Fit-tetapi-Tinggi: itulah baris
+                   yang menjadi isi angka "Risiko tinggi" pada ringkasan. */
+                'level_risiko' => [
+                    Authority::RISIKO_RENDAH,
+                    Authority::RISIKO_TINGGI,
+                    Authority::RISIKO_SEDANG,
+                ][$i % 3],
+
+                /* Satu rujukan yang batasnya SUDAH LEWAT, supaya angka
+                   "Rujukan tertunggak" pada ringkasan riwayat punya isi.
+                   Sebelum medannya dapat dijangkau formulir, angka itu
+                   selamanya nol — dan nol terbaca sebagai "tidak ada
+                   yang tertunggak", bukan sebagai "belum dapat diisi". */
+                'rujukan'     => $i === 1 ? 'Rujukan Sp.PD — tekanan darah' : null,
+                'outstanding' => $i === 1
+                    ? $this->kini->copy()->subDays(20)->toDateString() : null,
+
+                'nomor' => 'MCU/'.$this->kini->year.'/'
+                    .str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
             ]);
             $n++;
 

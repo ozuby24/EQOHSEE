@@ -171,7 +171,15 @@ class MinersController extends Controller
                 'risikoPerhatian' => $m->risikoPerluPerhatian(),
                 'nomor' => $m->nomor,
                 'penyelenggara' => $m->penyelenggara,
-                'berkas' => $m->berkas ? \App\Support\Berkas::url($m->berkas) : null,
+                /* Alamatnya hanya dikirim kepada yang boleh membukanya.
+                   Mengirimnya kepada semua orang lalu menolak di ujung
+                   menghasilkan tautan yang tampak ada lalu memulangkan
+                   403 — dan yang menekannya menyimpulkan sistemnya
+                   rusak, bukan bahwa ia tidak berhak. */
+                'berkas' => Berkas::bolehMembuka(auth()->user(), 'mcu')
+                    ? Berkas::url($m, 'mcu') : null,
+                'berkasTerjaga' => (bool) $m->berkas
+                    && !Berkas::bolehMembuka(auth()->user(), 'mcu'),
                 'catatanKontraktor' => $m->catatan_kontraktor,
                 'remarks' => $m->remarks,
                 'rujukan' => $m->rujukan,
@@ -1581,7 +1589,7 @@ class MinersController extends Controller
             'judul'    => 'Riwayat MCU',
             'subjudul' => 'Pemeriksaan kesehatan seluruh pekerja — hasil dan masa berlakunya',
             'kolom'    => ['No. Registrasi', 'Tanggal', 'NIK', 'Nama', 'Perusahaan',
-                           'Jenis', 'Hasil', 'Berlaku sampai', 'Verifikasi'],
+                           'Jenis', 'Hasil', 'Risiko', 'Berlaku sampai', 'Verifikasi'],
 
             'baris' => $baris->map(fn (PasporMcu $m) => [
                 'id'       => $m->id,
@@ -1597,6 +1605,7 @@ class MinersController extends Controller
                     $m->paspor?->company?->name ?: '—',
                     $m->jenis ?: '—',
                     $m->hasil ?: 'Belum ada hasil',
+                    $m->level_risiko ?: '—',
                     $m->tgl_expired?->toDateString() ?: '—',
                     $m->status_verifikasi ?: 'Belum diperiksa',
                 ],
@@ -1615,6 +1624,14 @@ class MinersController extends Controller
                 ['Total pemeriksaan', $baris->count(), 'netral'],
                 ['Layak bekerja', $baris->filter(fn ($m) => $m->hasilLayak())->count(), 'baik'],
                 ['Belum diverifikasi', $baris->reject(fn ($m) => $m->terverifikasi())->count(), 'ingat'],
+
+                /* Layak bekerja TETAPI berisiko tinggi — bukan gabungan
+                   "semua yang berisiko tinggi". Yang sudah Unfit bukan
+                   orang yang perlu diawasi melainkan orang yang sudah
+                   dihentikan, dan satu angka yang mencampur keduanya
+                   tidak dapat ditindak dengan satu cara yang sama. */
+                ['Risiko tinggi', $baris->filter(fn ($m) => $m->risikoPerluPerhatian())->count(), 'ingat'],
+
                 ['Rujukan tertunggak', $baris->filter(fn ($m) => $m->rujukanTertunggak())->count(), 'gawat'],
             ],
 

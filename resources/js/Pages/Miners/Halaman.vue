@@ -198,14 +198,32 @@ const fSertifikat = useForm<Record<string, any>>({
   tgl_terbit: '', tgl_expired: '', catatan: '',
 });
 
+/**
+ * SELURUH kolom yang disimpan tabelnya ada di sini.
+ *
+ * Tujuh dari sebelas kolom `paspor_mcu` dulu tidak dapat dijangkau sama
+ * sekali — tiga divalidasi server tanpa punya medan di layar, empat
+ * lagi tidak ada di keduanya. Yang paling merugikan `rujukan` dan
+ * `outstanding`: halaman riwayat MCU menghitung "rujukan tertunggak"
+ * sebagai salah satu dari empat angka ringkasannya, dan angka itu
+ * selamanya nol. Ringkasan yang selalu nol tidak terbaca sebagai "belum
+ * dapat diisi" melainkan sebagai "tidak ada yang tertunggak".
+ */
 const fMcu = useForm<Record<string, any>>({
-  tgl_periksa: '', tgl_expired: '', penyelenggara: '',
-  jenis: 'Berkala', hasil: 'Fit', pembatasan: '',
+  tgl_periksa: '', tgl_expired: '', nomor: '', penyelenggara: '',
+  jenis: 'Berkala', hasil: 'Fit', level_risiko: '', pembatasan: '',
+
+  /* Rujukan medis dan tanggal tindak lanjutnya. Rujukan tanpa tanggal
+     terhitung TERTUNGGAK, bukan diabaikan. */
+  rujukan: '', outstanding: '',
 
   /* Dibaca dari D'Best. Usia diketik apa adanya, bukan dihitung dari
      tanggal lahir: yang tercetak pada surat MCU adalah usia saat
      pemeriksaan. */
   usia: '', mcu_berikutnya: '', status_verifikasi: '',
+  catatan_kontraktor: '', remarks: '',
+
+  berkas: null as File | null,
 });
 
 const fKartu = useForm<Record<string, any>>({
@@ -334,7 +352,12 @@ function simpanSertifikat() {
   fSertifikat.post(`/miners/${id.value}/sertifikat`, { preserveScroll: true, onSuccess: () => fSertifikat.reset() });
 }
 function simpanMcu() {
-  fMcu.post(`/miners/${id.value}/mcu`, { preserveScroll: true, onSuccess: () => fMcu.reset() });
+  /* forceFormData: ada unggahan berkas di formulir ini, dan tanpa ini
+     Inertia mengirimnya sebagai JSON — berkasnya hilang diam-diam,
+     tanpa galat, dan catatan MCU tersimpan tanpa suratnya. */
+  fMcu.post(`/miners/${id.value}/mcu`, {
+    forceFormData: true, preserveScroll: true, onSuccess: () => fMcu.reset(),
+  });
 }
 function simpanKartu() {
   fKartu.post(`/miners/${id.value}/kartu`, { preserveScroll: true, onSuccess: () => fKartu.reset() });
@@ -624,6 +647,37 @@ async function hapus(jalur: string, apa: string) {
                         @click="hapus(`/miners/${id}/mcu/${m.id}`, 'catatan MCU')">Hapus</button>
               </div>
               <p v-if="m.pembatasan" class="text-[11px] text-amber-700 mt-1 ml-3.5">{{ m.pembatasan }}</p>
+
+              <!--
+                Baris kedua: hal-hal yang menentukan tindakan, bukan
+                sekadar catatan. Level risiko dan rujukan tertunggak
+                keduanya menuntut sesuatu dikerjakan; keduanya dulu
+                tersimpan tetapi tidak pernah tergambar.
+              -->
+              <div v-if="m.levelRisiko || m.rujukan || m.berkas || m.berkasTerjaga"
+                   class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 ml-3.5 text-[10.5px]">
+                <span v-if="m.levelRisiko"
+                      class="rounded px-1.5 py-0.5 font-bold text-white"
+                      :style="{ background: m.risikoPerhatian ? KEADAAN.gawat : '#78716C' }">
+                  Risiko {{ m.levelRisiko }}
+                </span>
+
+                <span v-if="m.rujukan" :style="{ color: m.tertunggak ? KEADAAN.gawat : '#78716C' }">
+                  Rujukan: {{ m.rujukan }}
+                  <template v-if="m.outstanding">· s/d {{ m.outstanding }}</template>
+                  <b v-if="m.tertunggak"> · tertunggak</b>
+                </span>
+
+                <a v-if="m.berkas" :href="m.berkas" target="_blank" rel="noopener"
+                   class="font-semibold text-cam-lime-deep">Surat MCU</a>
+
+                <!-- Yang tidak berhak diberi tahu bahwa suratnya ADA,
+                     bukan dibiarkan mengira belum diunggah. -->
+                <span v-else-if="m.berkasTerjaga" class="text-stone-400"
+                      title="Hanya paramedis, tim OHSE, dan administrator yang dapat membukanya">
+                  Surat MCU tersimpan · terjaga
+                </span>
+              </div>
             </li>
           </ul>
           <p v-else class="text-[12px] text-stone-400 py-3">Belum ada MCU tercatat.</p>
@@ -631,13 +685,32 @@ async function hapus(jalur: string, apa: string) {
           <form class="grid gap-2 md:grid-cols-3 pt-3 border-t border-stone-100" @submit.prevent="simpanMcu">
             <input v-model="fMcu.tgl_periksa" type="date" required title="Tanggal periksa" class="rounded-lg border-stone-200 text-[12px]">
             <input v-model="fMcu.tgl_expired" type="date" title="Berlaku sampai" class="rounded-lg border-stone-200 text-[12px]">
+            <input v-model="fMcu.nomor" placeholder="No. surat MCU" class="rounded-lg border-stone-200 text-[12px]">
             <select v-model="fMcu.jenis" class="rounded-lg border-stone-200 text-[12px]" aria-label="Jenis">
               <option v-for="j in (props.opsi?.jenisMcu ?? [])" :key="j">{{ j }}</option>
             </select>
+            <input v-model="fMcu.penyelenggara" placeholder="Klinik / rumah sakit"
+                   class="rounded-lg border-stone-200 text-[12px] md:col-span-2">
             <select v-model="fMcu.hasil" class="rounded-lg border-stone-200 text-[12px]" aria-label="Hasil">
               <option v-for="h in (props.opsi?.hasilMcu ?? [])" :key="h">{{ h }}</option>
             </select>
+
+            <!--
+              Level risiko menjawab pertanyaan yang BERBEDA dari hasil.
+              "Fit" menjawab boleh atau tidak orangnya bekerja; level
+              risiko menjawab seberapa dekat ia ke batas itu — dan yang
+              kedua tidak dapat disimpulkan dari yang pertama. Pekerja
+              Fit berisiko Tinggi perlu diperiksa lebih sering dan
+              diawasi penempatannya; tanpa medan ini ia tercatat persis
+              sama dengan rekannya yang Fit berisiko Rendah.
+            -->
+            <select v-model="fMcu.level_risiko" class="rounded-lg border-stone-200 text-[12px]"
+                    aria-label="Level risiko kesehatan kerja">
+              <option value="">Level risiko —</option>
+              <option v-for="r in (props.opsi?.levelRisiko ?? [])" :key="r">{{ r }}</option>
+            </select>
             <input v-model="fMcu.pembatasan" placeholder="Pembatasan kerja" class="rounded-lg border-stone-200 text-[12px]">
+
             <input v-model="fMcu.usia" type="number" min="15" max="80" placeholder="Usia saat periksa"
                    class="rounded-lg border-stone-200 text-[12px]">
             <input v-model="fMcu.mcu_berikutnya" type="date" title="Jadwal MCU berikutnya"
@@ -654,6 +727,37 @@ async function hapus(jalur: string, apa: string) {
               <option value="">Belum diperiksa</option>
               <option v-for="v in (props.opsi?.statusMcu ?? [])" :key="v">{{ v }}</option>
             </select>
+
+            <!--
+              Rujukan dan tanggal tindak lanjutnya. Rujukan TANPA tanggal
+              terhitung tertunggak, bukan diabaikan: hasil "Fit With
+              Note" yang dirujuk tetapi tidak pernah ditagih adalah
+              catatan yang lengkap di berkas dan tidak pernah terjadi di
+              kenyataan.
+            -->
+            <input v-model="fMcu.rujukan" placeholder="Rujukan medis" class="rounded-lg border-stone-200 text-[12px]">
+            <input v-model="fMcu.outstanding" type="date" title="Batas tindak lanjut rujukan"
+                   class="rounded-lg border-stone-200 text-[12px]">
+
+            <input v-model="fMcu.catatan_kontraktor" placeholder="Catatan kontraktor"
+                   class="rounded-lg border-stone-200 text-[12px]">
+            <input v-model="fMcu.remarks" placeholder="Remarks"
+                   class="rounded-lg border-stone-200 text-[12px] md:col-span-2">
+
+            <!--
+              Surat MCU dari klinik. Boleh kosong: hasil yang masuk lewat
+              telepon lebih baik tercatat hari ini daripada menunggu
+              suratnya seminggu. Yang membukanya hanya paramedis, tim
+              OHSE, dan administrator — suratnya memuat rincian medis
+              yang sengaja tidak disimpan di kolom mana pun.
+            -->
+            <label class="md:col-span-2 text-[11px] text-stone-500">
+              Surat MCU <span class="text-stone-400">— hanya paramedis &amp; OHSE yang dapat membukanya</span>
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"
+                     class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"
+                     @change="fMcu.berkas = (($event.target as HTMLInputElement).files?.[0] ?? null)">
+            </label>
+
             <button class="eq-btn-utama" :disabled="fMcu.processing">Catat</button>
           </form>
         </section>
