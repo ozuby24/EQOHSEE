@@ -49,7 +49,11 @@ const lebar = (nilai: number | null, bobot: number) =>
               <th class="text-right px-3 py-2.5 font-bold">Maks</th>
               <th class="text-right px-3 py-2.5 font-bold">Capaian</th>
               <th class="text-right px-3 py-2.5 font-bold">Ach</th>
+              <!-- Kategori = rasio capaian (rumus workbook);
+                   Tingkat = rerata skor 1–5 yang diisi penilai.
+                   Keduanya kerap berselisih, dan itu bukan kesalahan. -->
               <th class="text-left px-3 py-2.5 font-bold">Kategori</th>
+              <th class="text-left px-3 py-2.5 font-bold">Tingkat</th>
               <th class="text-right px-3 py-2.5 font-bold">Target</th>
               <th class="text-right px-5 py-2.5 font-bold">Gap</th>
             </tr>
@@ -64,6 +68,10 @@ const lebar = (nilai: number | null, bobot: number) =>
                 <td class="px-3 py-2 text-right num">{{ angka(I.skor) }}</td>
                 <td class="px-3 py-2 text-right num">{{ persen(I.rasio) }}</td>
                 <td class="px-3 py-2"><LencanaKategori :kategori="I.kategori" :warna="I.warna" /></td>
+                <td class="px-3 py-2">
+                  <LencanaKategori v-if="I.tingkat" :kategori="I.tingkat" :warna="I.warnaTingkat" />
+                  <span v-else class="text-stone-300">—</span>
+                </td>
                 <td class="px-3 py-2 text-right num">{{ I.target.toFixed(2) }}</td>
                 <td class="px-5 py-2 text-right num">
                   <span v-if="I.gap === null" class="text-stone-400">—</span>
@@ -81,6 +89,10 @@ const lebar = (nilai: number | null, bobot: number) =>
                 <td class="px-3 py-2 text-right num font-semibold">{{ angka(P.skor) }}</td>
                 <td class="px-3 py-2 text-right num">{{ persen(P.rasio) }}</td>
                 <td class="px-3 py-2"><LencanaKategori :kategori="P.kategori" :warna="P.warna" /></td>
+                <td class="px-3 py-2">
+                  <LencanaKategori v-if="P.tingkat" :kategori="P.tingkat" :warna="P.warnaTingkat" />
+                  <span v-else class="text-stone-300">—</span>
+                </td>
                 <td class="px-3 py-2 text-right num text-stone-400">
                   {{ P.target === null ? '—' : P.target.toFixed(2) }}
                 </td>
@@ -101,6 +113,10 @@ const lebar = (nilai: number | null, bobot: number) =>
               <td class="px-3 py-2.5 text-right num text-cam-lime-light">{{ angka(total.skor) }}</td>
               <td class="px-3 py-2.5 text-right num">{{ persen(total.rasio) }}</td>
               <td class="px-3 py-2.5"><LencanaKategori :kategori="total.kategori" :warna="total.warna" /></td>
+              <td class="px-3 py-2.5">
+                <LencanaKategori v-if="total.tingkat" :kategori="total.tingkat" :warna="total.warnaTingkat" />
+                <span v-else class="text-stone-300">—</span>
+              </td>
               <td class="px-3 py-2.5 text-right num">{{ total.target.toFixed(2) }}</td>
               <td class="px-5 py-2.5 text-right num">
                 <span v-if="total.gap === null" class="text-white/50">—</span>

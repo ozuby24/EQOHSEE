@@ -251,6 +251,9 @@ export interface ItemMatriks {
   capaian: number | null;
   kategori: string | null;
   warna: string;
+  tingkat: string | null;
+  rerata: number | null;
+  warnaTingkat: string;
 }
 
 export interface ParamMatriks {
@@ -264,6 +267,9 @@ export interface ParamMatriks {
   kategori: string | null;
   warna: string;
   items: ItemMatriks[];
+  tingkat: string | null;
+  rerata: number | null;
+  warnaTingkat: string;
 }
 
 export interface IndikatorMatriks {
@@ -274,6 +280,9 @@ export interface IndikatorMatriks {
   kategori: string | null;
   warna: string;
   parameter: ParamMatriks[];
+  tingkat: string | null;
+  rerata: number | null;
+  warnaTingkat: string;
 }
 
 export interface HalamanMatriks {
@@ -294,6 +303,9 @@ export interface ParamSummary {
   kategori: string | null;
   warna: string;
   gap: number | null;
+  tingkat: string | null;
+  rerata: number | null;
+  warnaTingkat: string;
 }
 
 export interface IndikatorSummary extends Omit<ParamSummary, 'target'> {
@@ -313,6 +325,14 @@ export interface HalamanSummary {
     kategori: string | null;
     warna: string;
     gap: number | null;
+
+    /* Tingkat rubrik 1–5 dari skor yang benar-benar diisi penilai —
+       berbeda dari `kategori`, yang merupakan rasio capaian terhadap
+       nilai maksimum. Keduanya kerap berselisih, dan itu bukan
+       kesalahan. */
+    tingkat: string | null;
+    rerata: number | null;
+    warnaTingkat: string;
   };
 }
 

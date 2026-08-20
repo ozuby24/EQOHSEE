@@ -109,7 +109,21 @@ function reset() {
               <th class="text-right px-3 py-2.5 font-bold">Nilai</th>
               <th class="text-right px-2 py-2.5 font-bold">Maks</th>
               <th class="text-right px-3 py-2.5 font-bold">Achv</th>
+              <!--
+                DUA KOLOM, dan keduanya perlu. "Kategori" adalah rasio
+                capaian terhadap nilai maksimum — rumus resmi workbook.
+                "Tingkat" adalah rerata skor 1–5 yang benar-benar diisi
+                penilai.
+
+                Keduanya kerap berselisih, dan selisihnya bukan
+                kesalahan: skor 3 dari maksimum 5 berarti rasio 0,6 yang
+                menurut ambang Kepdirjen jatuh ke "Reaktif", sedangkan
+                tingkat rubrik yang diisi penilai memang "Terencana".
+                Menampilkan satu saja membuat penilai melihat angka yang
+                tidak pernah ia isi.
+              -->
               <th class="text-left px-4 py-2.5 font-bold">Kategori</th>
+              <th class="text-left px-4 py-2.5 font-bold">Tingkat</th>
             </tr>
           </thead>
 
@@ -121,6 +135,10 @@ function reset() {
                 <td class="px-2 py-2 text-right num">{{ I.bobot.toFixed(2) }}</td>
                 <td class="px-3 py-2 text-right num">{{ persen(I.rasio) }}</td>
                 <td class="px-4 py-2"><LencanaKategori :kategori="I.kategori" :warna="I.warna" /></td>
+                <td class="px-4 py-2">
+                  <LencanaKategori v-if="I.tingkat" :kategori="I.tingkat" :warna="I.warnaTingkat" />
+                  <span v-else class="text-stone-300">—</span>
+                </td>
               </tr>
 
               <template v-for="P in I.parameter" :key="P.kode">
@@ -137,6 +155,10 @@ function reset() {
                   <td class="px-2 py-1.5 text-right num text-stone-400">{{ P.maks }}</td>
                   <td class="px-3 py-1.5 text-right num">{{ persen(P.rasio) }}</td>
                   <td class="px-4 py-1.5"><LencanaKategori :kategori="P.kategori" :warna="P.warna" /></td>
+                  <td class="px-4 py-1.5">
+                    <LencanaKategori v-if="P.tingkat" :kategori="P.tingkat" :warna="P.warnaTingkat" />
+                    <span v-else class="text-stone-300">—</span>
+                  </td>
                 </tr>
 
                 <tr v-for="c in P.items" :key="c.kode" class="border-b border-stone-50 hover:bg-stone-50/60">
@@ -159,6 +181,18 @@ function reset() {
                   <td class="px-2 py-1.5 text-right num text-stone-400">{{ c.maks }}</td>
                   <td class="px-3 py-1.5 text-right num">{{ persen(c.capaian) }}</td>
                   <td class="px-4 py-1.5"><LencanaKategori :kategori="c.kategori" :warna="c.warna" /></td>
+                  <td class="px-4 py-1.5">
+                    <!-- Rerata mentahnya ikut disebut: tingkat 4 dari
+                         rerata 3,60 dan dari rerata 4,00 adalah dua
+                         keadaan berbeda, dan yang membedakannya hanya
+                         angka ini. -->
+                    <LencanaKategori v-if="c.tingkat" :kategori="c.tingkat" :warna="c.warnaTingkat" />
+                    <span v-else class="text-stone-300">—</span>
+                    <small v-if="c.rerata !== null && c.rerata !== undefined"
+                           class="block text-[10px] text-stone-400 num">
+                      rerata {{ Number(c.rerata).toFixed(2) }}
+                    </small>
+                  </td>
                 </tr>
               </template>
             </template>

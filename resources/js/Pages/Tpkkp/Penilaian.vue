@@ -159,6 +159,24 @@ function simpan() {
     });
 }
 
+/**
+ * Isi seluruh kolom entitas satu item sekaligus.
+ *
+ * Penilaian CAM atas dua belas mitra kerja sebelumnya harus diisi satu
+ * per satu — dua belas klik untuk satu item, dikali ratusan item.
+ * Kenyataannya sebagian besar mitra memang bernilai sama, dan yang
+ * berbeda hanya satu atau dua; mengisi seluruhnya lalu menyesuaikan
+ * yang berbeda jauh lebih sedikit pekerjaannya daripada mengisi
+ * satu-satu dari kosong.
+ *
+ * `null` mengosongkan seluruhnya — dan itu perlu ada: tanpa cara
+ * mengosongkan massal, satu salah klik pada tombol isi-cepat menuntut
+ * dua belas klik untuk dibatalkan.
+ */
+function isiCepat(kode: string, v: number | null) {
+  for (const sel of kunciSel.value) nilai[kode][sel] = v;
+}
+
 const bukaRubrik = reactive<Record<string, boolean>>({});
 const bukaTarget = reactive<Record<string, boolean>>({});
 </script>
@@ -279,6 +297,29 @@ const bukaTarget = reactive<Record<string, boolean>>({});
               </div>
             </div>
 
+            <!--
+              Baris isi cepat, hanya bila entitasnya lebih dari satu:
+              pada penilaian tanpa entitas tombol ini tidak menghemat
+              apa pun dan hanya menambah satu hal untuk dibaca.
+            -->
+            <div v-if="bisaSunting && kunciSel.length > 1"
+                 class="flex flex-wrap items-center gap-1.5 mb-2">
+              <span class="text-[11px] text-stone-500">Isi cepat seluruh
+                {{ (metode.find(x => x.kode === metodeAktif)?.labelEntitas || 'entitas').toLowerCase() }}:</span>
+
+              <button v-for="i in 5" :key="i" type="button"
+                      class="w-7 h-7 rounded-md border border-stone-200 bg-white text-[12px]
+                             font-bold num text-cam-ink hover:border-cam-lime transition"
+                      :title="`Isi ${i} untuk seluruh kolom`"
+                      @click="isiCepat(it.kode, i)">{{ i }}</button>
+
+              <button type="button"
+                      class="w-7 h-7 rounded-md border border-stone-200 bg-white text-[12px]
+                             text-stone-400 hover:border-red-300 hover:text-red-500 transition"
+                      title="Kosongkan seluruh kolom"
+                      @click="isiCepat(it.kode, null)">✕</button>
+            </div>
+
             <!-- kolom nilai -->
             <div class="flex flex-wrap gap-2">
               <label v-for="sel in kunciSel" :key="sel"
@@ -315,12 +356,28 @@ const bukaTarget = reactive<Record<string, boolean>>({});
                       @click="bukaRubrik[it.kode] = !bukaRubrik[it.kode]">
                 Rubrik 5 tingkat {{ bukaRubrik[it.kode] ? '▾' : '▸' }}
               </button>
+              <!--
+                Tingkat rubriknya DAPAT DIKLIK, dan mengkliknya mengisi
+                nilainya. Penilai membaca rubrik justru untuk memutuskan
+                angkanya; memaksanya menggulir kembali ke atas untuk
+                memilih angka yang baru saja ia baca adalah langkah yang
+                tidak menambah apa pun.
+
+                Pada penilaian berentitas, satu klik mengisi seluruh
+                kolom sekaligus — lalu yang berbeda tinggal disesuaikan.
+              -->
               <div v-if="bukaRubrik[it.kode]" class="mt-1.5 space-y-1">
-                <div v-for="r in it.rubrik" :key="r.tingkat" class="flex gap-2.5 text-[11.5px] leading-snug">
+                <component :is="bisaSunting ? 'button' : 'div'"
+                           v-for="r in it.rubrik" :key="r.tingkat"
+                           :type="bisaSunting ? 'button' : undefined"
+                           class="w-full flex gap-2.5 text-[11.5px] leading-snug text-left rounded-md"
+                           :class="bisaSunting ? 'hover:bg-stone-50 px-1 -mx-1 py-0.5 transition' : ''"
+                           :title="bisaSunting ? `Isi tingkat ${r.tingkat} untuk seluruh kolom` : undefined"
+                           @click="bisaSunting && isiCepat(it.kode, r.tingkat)">
                   <span class="flex-none w-5 h-5 rounded-md text-white text-[10px] font-bold
                                grid place-items-center" :style="{ background: r.warna }">{{ r.tingkat }}</span>
                   <span class="text-stone-600">{{ r.teks }}</span>
-                </div>
+                </component>
               </div>
             </div>
           </div>
