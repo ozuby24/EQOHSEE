@@ -720,6 +720,9 @@ export interface HalamanKuesioner {
   ringkas: RingkasKuesioner[];
   responden: Responden[];
   bisaTarik: boolean;
+
+  /* Respons mitra kerja — analisa saja, di luar skor penilaian. */
+  mitra: Array<{ perusahaan: string; jumlah: number; rerata: number | null }>;
 }
 
 /* ══════════════ Personalia ══════════════ */

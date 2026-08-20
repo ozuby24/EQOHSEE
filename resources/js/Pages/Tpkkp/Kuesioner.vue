@@ -174,6 +174,51 @@ async function hapus(id: number) {
       bukan nilai otomatis, sesuai prosedur penilaian PTPKKP.
     </p>
 
+    <!--
+      RESPONS MITRA KERJA — analisa, bukan nilai.
+
+      Tidak masuk skor KS: kematangan yang dinilai adalah milik pemegang
+      IUP, dan persepsi orang yang bekerja di perusahaan lain, dengan
+      pengawas lain dan aturan internal lain, akan menaikkan atau
+      menurunkan nilai itu oleh keadaan yang bukan miliknya.
+
+      Tetapi TIDAK dibuang. Mitra yang persepsi keselamatannya rendah
+      adalah mitra yang perlu dibina — temuan tersendiri yang tidak
+      muncul di mana pun bila datanya hanya disingkirkan diam-diam.
+    -->
+    <section v-if="(mitra ?? []).length"
+             class="bg-white rounded-2xl shadow-card border border-stone-100 overflow-hidden">
+      <div class="px-5 py-4 border-b border-stone-100">
+        <h3 class="text-[14px] font-bold text-cam-ink">
+          Persepsi mitra kerja
+          <span class="font-normal text-[11.5px] text-stone-400">
+            | analisa saja — tidak masuk Summary maupun nilai total
+          </span>
+        </h3>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-left text-[12px]">
+          <thead class="text-[10px] uppercase tracking-wider text-stone-400 bg-stone-50">
+            <tr>
+              <th class="px-5 py-2.5 font-bold">Perusahaan</th>
+              <th class="px-3 py-2.5 font-bold text-right">Responden</th>
+              <th class="px-5 py-2.5 font-bold text-right">Rerata persepsi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="m in mitra" :key="m.perusahaan" class="border-t border-stone-50">
+              <td class="px-5 py-2.5 font-semibold text-cam-ink">{{ m.perusahaan }}</td>
+              <td class="px-3 py-2.5 text-right num">{{ m.jumlah }}</td>
+              <td class="px-5 py-2.5 text-right num">
+                {{ m.rerata === null ? '—' : Number(m.rerata).toFixed(2) }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <div class="bg-white rounded-2xl shadow-card border border-stone-100 overflow-hidden">
       <div class="px-5 py-4 border-b border-stone-100">
         <h3 class="text-[14px] font-bold text-cam-ink">Responden ({{ responden.length }})</h3>

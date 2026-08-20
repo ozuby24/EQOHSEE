@@ -171,4 +171,102 @@ class KuesionerJabatanTest extends TestCase
                 ->has('jumlahButir')
                 ->etc());
     }
+    /* ═══════════ respons mitra kerja ═══════════ */
+
+    /**
+     * Respons mitra kerja TIDAK menggeser skor KS.
+     *
+     * Yang dinilai penilaian ini kematangan PEMEGANG IUP. Respons mitra
+     * menyatakan persepsi orang yang bekerja di perusahaan lain, dengan
+     * pengawas lain dan aturan internal lain; memasukkannya berarti
+     * nilai CAM naik atau turun oleh keadaan yang bukan miliknya — dan
+     * tidak ada satu pun tanda di layar bahwa itu terjadi.
+     */
+    #[Test]
+    public function respons_mitra_tidak_masuk_skor_ks(): void
+    {
+        $kode = TpkkpKuesioner::kodeSah('pekerja');
+        $butir = $kode[0];
+
+        /* Pemegang IUP menjawab 5; mitra menjawab 1. Bila keduanya
+           tercampur, reratanya 3 — dan itulah yang akan terlihat. */
+        $this->kirim($this->c->name, $butir, 5);
+        $this->kirim('PT Mitra Kerja Lain', $butir, 1);
+        $this->kirim('PT Mitra Kerja Lain', $butir, 1);
+
+        $this->post(route('kuesioner.tarik'), ['tahun' => now()->year])
+            ->assertRedirect();
+
+        $a = TpkkpAssessment::forYear(now()->year);
+
+        /* Bentuk tersimpannya ['v' => …, 'e' => [entitas => nilai]];
+           kuesioner menulis per ENTITAS, bukan ke 'v'. */
+        $ent = TpkkpKuesioner::entitas('pekerja');
+        $sel = $a->scores['KS'][$butir]['e'][$ent] ?? null;
+
+        $this->assertNotNull($sel,
+            "Butir {$butir} entitas \"{$ent}\" tidak tertulis ke skor KS sama sekali.");
+
+        $this->assertSame(5.0, (float) $sel,
+            'Skor KS tercampur respons mitra kerja: nilai pemegang IUP (5) '
+            .'tergeser oleh jawaban mitra (1).');
+    }
+
+    /** Responsnya tetap tersimpan, hanya tidak dipakai menilai. */
+    #[Test]
+    public function respons_mitra_tetap_tersimpan_sebagai_analisa(): void
+    {
+        $butir = TpkkpKuesioner::kodeSah('pekerja')[0];
+
+        $this->kirim('PT Mitra Kerja Lain', $butir, 2);
+
+        $this->assertSame(1,
+            TpkkpResponse::withoutGlobalScopes()->where('perusahaan', 'PT Mitra Kerja Lain')->count(),
+            'Respons mitra dibuang, bukan dipisahkan — analisa rantai kerjanya ikut hilang.');
+
+        $this->get('/tpkkp/kuesioner')
+            ->assertOk()
+            ->assertInertia(fn ($p) => $p->has('mitra')->etc());
+    }
+
+    /**
+     * Respons tanpa nama perusahaan dihitung milik pemegang IUP.
+     *
+     * Tautannya memang miliknya, dan mengeluarkannya berarti membuang
+     * jawaban sah hanya karena satu kolom opsional dikosongkan.
+     */
+    #[Test]
+    public function respons_tanpa_perusahaan_dihitung_milik_pemegang_iup(): void
+    {
+        $butir = TpkkpKuesioner::kodeSah('pekerja')[0];
+
+        TpkkpResponse::create([
+            'company_id' => $this->c->id, 'ext_id' => (string) \Illuminate\Support\Str::uuid(),
+            'cat' => 'pekerja', 'jabatan' => 'Operator', 'perusahaan' => null,
+            'answers' => [$butir => 4], 'ts' => now(),
+        ]);
+
+        $this->post(route('kuesioner.tarik'), ['tahun' => now()->year])->assertRedirect();
+
+        $a = TpkkpAssessment::forYear(now()->year);
+
+        $this->assertArrayHasKey($butir, $a->scores['KS'] ?? [],
+            'Respons tanpa nama perusahaan ikut terbuang — jawaban sah hilang '
+            .'hanya karena satu kolom opsional dikosongkan.');
+    }
+
+    /** Mengirim satu respons atas nama sebuah perusahaan. */
+    private function kirim(string $perusahaan, string $butir, int $nilai): void
+    {
+        TpkkpResponse::create([
+            'company_id' => $this->c->id,
+            'ext_id'     => (string) \Illuminate\Support\Str::uuid(),
+            'cat'        => 'pekerja',
+            'jabatan'    => 'Operator',
+            'perusahaan' => $perusahaan,
+            'answers'    => [$butir => $nilai],
+            'ts'         => now(),
+        ]);
+    }
+
 }

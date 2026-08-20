@@ -108,8 +108,41 @@ class KuesionerController extends Controller
                 'waktu'         => optional($r->ts)->format('d M · H:i'),
             ])->values()->all(),
 
+            /* ═══ RESPONS MITRA KERJA, TERPISAH ═══
+             *
+             * Tidak masuk skor KS — kematangan yang dinilai adalah milik
+             * pemegang IUP — tetapi TIDAK dibuang. Ia analisa tentang
+             * rantai kerja: mitra yang persepsi keselamatannya rendah
+             * adalah mitra yang perlu dibina, dan itu temuan tersendiri
+             * yang tidak muncul di mana pun bila datanya hanya
+             * disingkirkan diam-diam. */
+            'mitra' => $this->ringkasMitra($responses, $company),
+
             'bisaTarik' => $me->isAdmin(),
         ]);
+    }
+
+    /**
+     * Rerata persepsi per mitra kerja, di luar skor penilaian.
+     *
+     * @return list<array<string,mixed>>
+     */
+    private function ringkasMitra($responses, Company $tuan): array
+    {
+        $samakan = fn (?string $x) => preg_replace('/\s+/u', ' ', mb_strtolower(trim((string) $x), 'UTF-8'));
+        $nama    = $samakan($tuan->name);
+
+        $mitra = $responses->filter(fn ($r) => filled($r->perusahaan)
+            && $samakan($r->perusahaan) !== $nama);
+
+        return $mitra->groupBy('perusahaan')
+            ->map(fn ($rows, $perusahaan) => [
+                'perusahaan' => $perusahaan,
+                'jumlah'     => $rows->count(),
+                'rerata'     => TpkkpKuesioner::rerata($rows),
+            ])
+            ->sortByDesc('jumlah')
+            ->values()->all();
     }
 
     public function resetToken(Request $request)
@@ -314,8 +347,25 @@ class KuesionerController extends Controller
         $tahun = (int) ($request->get('tahun') ?? session('tpkkp_tahun') ?? now()->year);
         $a     = TpkkpAssessment::forYear($tahun);
 
-        $rows    = TpkkpResponse::all();
-        $agregat = TpkkpKuesioner::agregat($rows);
+        $rows = TpkkpResponse::all();
+
+        /* ═══ RESPONS MITRA KERJA TIDAK MASUK SKOR ═══
+         *
+         * Yang dinilai penilaian ini adalah kematangan PEMEGANG IUP.
+         * Respons dari mitra kerja menyatakan persepsi orang-orang yang
+         * bekerja di perusahaan lain, dengan pengawas lain dan aturan
+         * internal lain; memasukkannya ke skor KS berarti nilai CAM naik
+         * atau turun oleh keadaan yang bukan miliknya, dan tidak ada
+         * satu pun tanda di layar bahwa itu terjadi.
+         *
+         * Datanya TIDAK dibuang — ia analisa yang berharga tentang
+         * rantai kerja, dan tetap tampil di halaman kuesioner serta
+         * rekap perusahaan. Yang dipisahkan hanya pengaruhnya terhadap
+         * nilai.
+         */
+        [$milikSendiri, $mitra] = $this->pisahResponsMitra($rows, $a);
+
+        $agregat = TpkkpKuesioner::agregat($milikSendiri);
         $hasil   = TpkkpKuesioner::tulisKeSkor($a->scores ?? [], $agregat);
 
         $a->scores = $hasil['scores'];
@@ -323,16 +373,79 @@ class KuesionerController extends Controller
 
         ActivityLog::write(
             'Tarik kuesioner ke skor KS',
-            $hasil['ditulis'] . ' item · ' . $hasil['entitas'] . ' sel entitas · periode ' . $tahun,
+            $hasil['ditulis'].' item · '.$hasil['entitas'].' sel entitas · '
+            .$milikSendiri->count().' respons pemegang IUP · '
+            .$mitra->count().' respons mitra dipisahkan · periode '.$tahun,
             'tpkkp'
         );
 
-        $pesan = "Skor KS diperbarui: {$hasil['ditulis']} item, {$hasil['entitas']} sel entitas.";
+        /* Angkanya disebut apa adanya. "Skor KS diperbarui" tanpa
+           menyebut berapa respons yang TIDAK ikut membuat orang mengira
+           seluruh responsnya terhitung — dan selisihnya baru ketahuan
+           saat ada yang menghitung ulang dengan tangan. */
+        $pesan = "Skor KS diperbarui: {$hasil['ditulis']} item, {$hasil['entitas']} sel entitas"
+            ." dari {$milikSendiri->count()} respons pemegang IUP.";
+
+        if ($mitra->count()) {
+            $jumlahMitra = $mitra->pluck('perusahaan')->unique()->count();
+
+            $pesan .= " {$mitra->count()} respons dari {$jumlahMitra} mitra kerja disimpan"
+                .' terpisah — tidak masuk Summary maupun nilai total.';
+        }
+
         if ($hasil['dilewati']) {
-            $pesan .= ' Dilewati (bukan item KS): ' . implode(', ', array_slice($hasil['dilewati'], 0, 8)) . '.';
+            $pesan .= ' Dilewati (bukan item KS): '.implode(', ', array_slice($hasil['dilewati'], 0, 8)).'.';
         }
 
         return back()->with('ok', $pesan);
+    }
+
+    /**
+     * Memisahkan respons pemegang IUP dari respons mitra kerja.
+     *
+     * Dibandingkan dengan nama perusahaan pemilik penilaian, disamakan
+     * huruf besar-kecil dan spasi gandanya lebih dulu: "PT Cemerlang
+     * Asa Mandiri" dan "pt cemerlang  asa mandiri" adalah perusahaan
+     * yang sama, dan yang mengetiknya di lapangan bukan basis data.
+     *
+     * Respons TANPA nama perusahaan dihitung milik pemegang IUP —
+     * tautan kuesionernya memang miliknya, dan mengeluarkannya berarti
+     * membuang jawaban yang sah hanya karena satu kolom opsional
+     * dikosongkan.
+     *
+     * @return array{0:\Illuminate\Support\Collection,1:\Illuminate\Support\Collection}
+     */
+    private function pisahResponsMitra($rows, TpkkpAssessment $a): array
+    {
+        /* Dibandingkan PER RESPONS terhadap perusahaan pemilik TAUTAN
+           yang dipakai mengisinya, bukan terhadap perusahaan pemilik
+           penilaian.
+           
+           Sebabnya: satu penilaian dapat memakai beberapa tautan, dan
+           TpkkpAssessment sendiri tidak selalu punya company_id —
+           forYear() membuatnya tanpa itu. Membandingkan dengan sesuatu
+           yang kerap null membuat SELURUH respons terbaca sebagai mitra,
+           dan skor KS-nya kosong tanpa satu pun galat. */
+        $namaPerusahaan = Company::pluck('name', 'id');
+
+        $samakan = fn (?string $x) => preg_replace('/\s+/u', ' ', mb_strtolower(trim((string) $x), 'UTF-8'));
+
+        $tuanSendiri = function ($r) use ($namaPerusahaan, $samakan): bool {
+            /* Tanpa nama perusahaan → dihitung milik pemilik tautan.
+               Tautannya memang miliknya, dan mengeluarkannya berarti
+               membuang jawaban sah hanya karena satu kolom opsional
+               dikosongkan. */
+            if (blank($r->perusahaan)) return true;
+
+            $tuan = $namaPerusahaan[$r->company_id] ?? null;
+
+            return $tuan !== null && $samakan($r->perusahaan) === $samakan($tuan);
+        };
+
+        return [
+            $rows->filter($tuanSendiri)->values(),
+            $rows->reject($tuanSendiri)->values(),
+        ];
     }
 
     /** Parameter milik satu indikator */
