@@ -1017,12 +1017,18 @@ class MinersTest extends TestCase
         $pengaju = $this->pengguna();
         $m = $this->pengajuanDiajukan($pengaju);
 
-        $atasan = $this->pengguna();
-        $this->actingAs($atasan);
-
         /* Rantai MCU: paramedis dan KTT. Rantai kartu (atasan, kepala
-           departemen) sengaja TIDAK berlaku di sini. */
-        foreach ([Tahap::PARAMEDIS, Tahap::KTT] as $tahap) {
+           departemen) sengaja TIDAK berlaku di sini.
+
+           Tiap tahap diparaf oleh orang yang MEMANG memegang perannya —
+           sejak paraf dijaga peran, satu orang tidak lagi dapat
+           membubuhkan seluruh rantai sendirian. Justru itu yang dijaga:
+           lihat test_paraf_menuntut_peran_tahapnya. */
+        foreach ([
+            Tahap::PARAMEDIS => ['ohse_role' => 'paramedis'],
+            Tahap::KTT       => ['lms_role'  => 'ktt'],
+        ] as $tahap => $peran) {
+            $this->actingAs($this->pengguna($peran));
             $this->post(route('miners.mcu.paraf', $m), ['tahap' => $tahap])->assertRedirect();
         }
 
@@ -1220,7 +1226,7 @@ class MinersTest extends TestCase
         $pengaju = $this->pengguna();
         $m = $this->pengajuanDiajukan($pengaju);
 
-        $this->actingAs($this->pengguna());
+        $this->actingAs($this->pengguna(['ohse_role' => 'paramedis']));
 
         $this->post(route('miners.mcu.paraf', $m), ['tahap' => Tahap::PARAMEDIS]);
         $this->post(route('miners.mcu.paraf', $m), ['tahap' => Tahap::PARAMEDIS]);
@@ -1496,13 +1502,165 @@ class MinersTest extends TestCase
             ->assertInertia(fn ($page) => $page->component('Miners/Campaign'));
     }
 
+    /* ═══════════ paraf menuntut peran tahapnya ═══════════ */
+
+    /**
+     * Tahap bernama jabatan hanya dapat diparaf pemegang jabatan itu.
+     *
+     * Sebelum penjagaan ini, `bubuhkanParaf()` hanya memeriksa bahwa
+     * tahapnya memang tahap paraf. Siapa pun yang dapat membuka
+     * halamannya — admin kontraktor, staf HR, operator — dapat
+     * membubuhkan paraf pada tahap "Paramedis", dan yang tercetak pada
+     * rantai adalah "Paramedis · <namanya>": sebuah pernyataan bahwa
+     * hasil pemeriksaan sudah dibaca tenaga medis.
+     *
+     * Pernyataan itu tidak pernah terjadi. Kegagalannya sunyi sempurna:
+     * parafnya sah menurut basis data, rantainya tergambar benar, dan
+     * hanya orang yang mengenal namanya yang tahu bahwa ia bukan
+     * paramedis. Rantai yang tidak dapat dipercaya lebih buruk daripada
+     * tidak ada rantai — yang kedua tidak menyesatkan siapa pun.
+     */
+    public function test_paraf_menuntut_peran_tahapnya(): void
+    {
+        $m = $this->pengajuanDiajukan($this->pengguna());
+
+        /* Tanpa peran apa pun. */
+        $this->actingAs($this->pengguna());
+
+        $this->post(route('miners.mcu.paraf', $m), ['tahap' => Tahap::PARAMEDIS])
+            ->assertSessionHasErrors('paraf');
+
+        $this->assertCount(0, $m->refresh()->paraf,
+            'Orang tanpa peran paramedis berhasil memaraf tahap Paramedis — '
+            .'rantai menyatakan hasil pemeriksaan sudah dibaca tenaga medis, '
+            .'padahal tidak.');
+    }
+
+    public function test_paraf_ktt_menuntut_peran_ktt(): void
+    {
+        $m = $this->pengajuanDiajukan($this->pengguna());
+
+        $this->actingAs($this->pengguna(['ohse_role' => 'paramedis']));
+
+        $this->post(route('miners.mcu.paraf', $m), ['tahap' => Tahap::KTT])
+            ->assertSessionHasErrors('paraf');
+
+        $this->assertCount(0, $m->refresh()->paraf,
+            'Paramedis berhasil memaraf tahap Kepala Teknik Tambang.');
+    }
+
+    public function test_pemegang_peran_dapat_memaraf_tahapnya(): void
+    {
+        $m = $this->pengajuanDiajukan($this->pengguna());
+
+        $this->actingAs($this->pengguna(['ohse_role' => 'paramedis']));
+
+        $this->post(route('miners.mcu.paraf', $m), ['tahap' => Tahap::PARAMEDIS])
+            ->assertSessionHasNoErrors();
+
+        $this->assertCount(1, $m->refresh()->paraf);
+    }
+
+    /**
+     * Tahap yang bukan jabatan TIDAK dijaga peran, dan itu disengaja.
+     *
+     * "Atasan langsung" dan "Kepala departemen" adalah HUBUNGAN, bukan
+     * jabatan: atasan siapa, kepala departemen mana. EQOHSEE tidak
+     * menyimpan garis pelaporan, jadi peran global bernama "atasan"
+     * akan menjadikan satu orang atasan seluruh perusahaan — penjagaan
+     * yang tampak ketat tetapi tidak menjaga apa pun.
+     *
+     * Yang jujur adalah membiarkannya terbuka dan mencatat siapa yang
+     * memaraf. Uji ini menjaga keputusan itu tetap disengaja: bila
+     * suatu saat kedua tahap ini ikut dijaga peran, ia gagal dan
+     * memaksa keputusannya ditinjau ulang, bukan diam-diam berubah.
+     */
+    public function test_tahap_hubungan_tidak_dijaga_peran(): void
+    {
+        foreach ([Tahap::ATASAN, Tahap::DEPARTEMEN] as $tahap) {
+            $this->assertNull(Tahap::peran($tahap, 'kartu'),
+                "Tahap {$tahap} kini dijaga peran. Itu boleh saja, tetapi harus "
+                .'disengaja: EQOHSEE tidak menyimpan garis pelaporan, jadi peran '
+                .'global "atasan" menjadikan satu orang atasan seluruh perusahaan.');
+
+            $this->assertNull(
+                Tahap::sebabTakDapatMemaraf($this->pengguna(), $tahap, 'kartu')
+            );
+        }
+    }
+
+    /**
+     * Rantai menyebut hak PER TAHAP, bukan satu boolean untuk semuanya.
+     *
+     * Satu boolean membuat tombol "Bubuhkan paraf" muncul pada setiap
+     * mata rantai bagi siapa pun yang boleh memaraf salah satunya — dan
+     * yang menekannya pada tahap yang bukan haknya mendapat galat tanpa
+     * tahu sebabnya.
+     */
+    public function test_rantai_menyebut_hak_tiap_tahap(): void
+    {
+        $m = $this->pengajuanDiajukan($this->pengguna());
+
+        $this->actingAs($this->pengguna(['ohse_role' => 'paramedis']));
+
+        $rantai = collect($m->refresh()->rantaiTahap())->keyBy('kode');
+
+        $this->assertTrue($rantai[Tahap::PARAMEDIS]['bolehSaya'],
+            'Paramedis tidak diizinkan memaraf tahapnya sendiri.');
+        $this->assertNull($rantai[Tahap::PARAMEDIS]['sebabTolak']);
+
+        $this->assertFalse($rantai[Tahap::KTT]['bolehSaya']);
+        $this->assertNotNull($rantai[Tahap::KTT]['sebabTolak'],
+            'Tombol paraf disembunyikan tanpa menyebut sebabnya — yang '
+            .'membacanya tidak dapat membedakan tidak berhak dari sistem rusak.');
+    }
+
+    /**
+     * Peran OHSE dan paramedis saling meniadakan.
+     *
+     * Satu kolom, dan itu disengaja. Tahap paramedis ada supaya yang
+     * MEMBACA hasil pemeriksaan bukan orang yang MEMUTUSKAN
+     * kelayakannya; seorang yang memegang keduanya dapat memaraf tahap
+     * paramedis lalu menyetujui pengajuan yang sama sebagai OHSE, dan
+     * pemisahan itu lenyap tanpa satu pun tanda di layar.
+     */
+    public function test_ohse_dan_paramedis_tidak_dapat_dirangkap(): void
+    {
+        $paramedis = $this->pengguna(['ohse_role' => 'paramedis']);
+        $ohse      = $this->pengguna(['ohse_role' => 'ohse']);
+
+        $this->assertTrue($paramedis->isParamedis());
+        $this->assertFalse($paramedis->isOhse(),
+            'Pemegang peran paramedis ikut terbaca sebagai OHSE — ia dapat '
+            .'memaraf pembacaan hasil lalu menyetujuinya sendiri.');
+
+        /* ARAH SEBALIKNYA, dan inilah yang benar-benar berbahaya.
+           Anggota OHSE yang ikut terbaca sebagai paramedis dapat
+           memaraf tahap pembacaan hasil PADA PENGAJUAN YANG SAMA yang
+           akan ia putuskan sendiri — dan rantainya tetap tergambar
+           lengkap dengan dua nama yang sesungguhnya satu orang. */
+        $this->assertFalse($ohse->isParamedis(),
+            'Anggota OHSE ikut terbaca sebagai paramedis — pemisahan antara '
+            .'yang membaca hasil dan yang memutuskan lenyap.');
+
+        $m = $this->pengajuanDiajukan($this->pengguna());
+        $this->actingAs($ohse);
+
+        $this->post(route('miners.mcu.paraf', $m), ['tahap' => Tahap::PARAMEDIS])
+            ->assertSessionHasErrors('paraf');
+
+        $this->assertCount(0, $m->refresh()->paraf,
+            'Anggota OHSE berhasil memaraf tahap Paramedis pada pengajuan '
+            .'yang ia sendiri yang memutuskannya.');
+    }
+
     /** Paraf ikut terbuang bersama subjeknya, tidak tertinggal yatim. */
     public function test_paraf_terbuang_bersama_pengajuannya(): void
     {
         $pengaju = $this->pengguna();
         $m = $this->pengajuanDiajukan($pengaju);
 
-        $this->actingAs($this->pengguna());
+        $this->actingAs($this->pengguna(['ohse_role' => 'paramedis']));
         $m->bubuhkanParaf(Tahap::PARAMEDIS);
 
         $this->assertSame(1, \App\Models\PersetujuanParaf::count());

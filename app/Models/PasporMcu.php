@@ -33,6 +33,10 @@ class PasporMcu extends Model
            angka yang berbeda dari suratnya. */
         'usia', 'mcu_berikutnya', 'status_verifikasi',
         'catatan_kontraktor', 'remarks',
+
+        /* Seberapa dekat orangnya ke batas kelayakan — terpisah dari
+           hasilnya, lihat Authority::LEVEL_RISIKO. */
+        'level_risiko',
     ];
 
     protected function casts(): array
@@ -73,6 +77,21 @@ class PasporMcu extends Model
     public function hasilLayak(): bool
     {
         return in_array($this->hasil, Authority::MCU_LAYAK, true);
+    }
+
+    /**
+     * Boleh bekerja, tetapi dekat ke batasnya.
+     *
+     * Sengaja menuntut KEDUANYA benar. Pekerja yang sudah Unfit bukan
+     * "risiko tinggi" melainkan sudah tidak bekerja — memasukkannya ke
+     * sini menggabungkan orang yang perlu diawasi dengan orang yang
+     * sudah dihentikan, dan daftar gabungan itu tidak dapat ditindak
+     * dengan satu cara yang sama.
+     */
+    public function risikoPerluPerhatian(): bool
+    {
+        return $this->hasilLayak()
+            && Authority::risikoPerluPerhatian($this->level_risiko);
     }
 
     /**

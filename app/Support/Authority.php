@@ -140,6 +140,51 @@ final class Authority
     public const JENIS_MCU = ['Awal', 'Berkala', 'Khusus', 'Purna'];
 
     /**
+     * Level risiko kesehatan kerja — SEBERAPA DEKAT ke batas kelayakan.
+     *
+     * Terpisah dari HASIL_MCU, dan pemisahan itu yang menjadi gunanya.
+     * "Fit" menjawab boleh atau tidak orangnya bekerja; level risiko
+     * menjawab seberapa dekat ia ke batas itu. Yang kedua tidak dapat
+     * disimpulkan dari yang pertama: pekerja Fit dengan risiko Tinggi
+     * perlu diperiksa lebih sering dan diawasi penempatannya, dan tanpa
+     * kolom ini ia tercatat persis sama dengan rekannya yang Fit dengan
+     * risiko Rendah.
+     *
+     * Urutannya dari ringan ke berat, dan urutan itu dipakai — jangan
+     * disusun ulang menurut abjad.
+     */
+    public const RISIKO_RENDAH = 'Rendah';
+    public const RISIKO_SEDANG = 'Sedang';
+    public const RISIKO_TINGGI = 'Tinggi';
+
+    public const LEVEL_RISIKO = [
+        self::RISIKO_RENDAH,
+        self::RISIKO_SEDANG,
+        self::RISIKO_TINGGI,
+    ];
+
+    /** Warna level risiko — sejajar dengan pita keadaan berkas. */
+    public const WARNA_RISIKO = [
+        self::RISIKO_RENDAH => '#1EE699',
+        self::RISIKO_SEDANG => '#F5760A',
+        self::RISIKO_TINGGI => '#E5484D',
+    ];
+
+    /**
+     * Level risiko yang menuntut perhatian.
+     *
+     * Hanya "Tinggi". "Sedang" adalah keadaan yang dipantau, bukan
+     * keadaan yang ditindak — memasukkannya ke sini membuat angka
+     * "perlu perhatian" pada ringkasan mencakup separuh tenaga kerja,
+     * dan angka yang mencakup separuh tenaga kerja tidak menunjuk siapa
+     * pun.
+     */
+    public static function risikoPerluPerhatian(?string $level): bool
+    {
+        return $level === self::RISIKO_TINGGI;
+    }
+
+    /**
      * Keadaan pemeriksaan berkas MCU — terpisah dari hasil medisnya.
      *
      * "Fit" menyatakan orangnya sehat; verifikasi menyatakan berkasnya

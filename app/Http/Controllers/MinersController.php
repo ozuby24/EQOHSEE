@@ -167,6 +167,13 @@ class MinersController extends Controller
                 'penyelenggara' => $m->penyelenggara, 'jenis' => $m->jenis,
                 'nomor' => $m->nomor,
                 'hasil' => $m->hasil, 'pembatasan' => $m->pembatasan,
+                'levelRisiko' => $m->level_risiko,
+                'risikoPerhatian' => $m->risikoPerluPerhatian(),
+                'nomor' => $m->nomor,
+                'penyelenggara' => $m->penyelenggara,
+                'berkas' => $m->berkas ? \App\Support\Berkas::url($m->berkas) : null,
+                'catatanKontraktor' => $m->catatan_kontraktor,
+                'remarks' => $m->remarks,
                 'rujukan' => $m->rujukan,
                 'outstanding' => $m->outstanding?->toDateString(),
                 'tertunggak' => $m->rujukanTertunggak(),
@@ -563,15 +570,18 @@ class MinersController extends Controller
     {
         abort_unless($mcu->mcu_pengajuan_id === $pengajuan->id, 404);
 
-        $mcu->update($request->validate([
-            'tgl_periksa' => ['required', 'date'],
-            'tgl_expired' => ['nullable', 'date', 'after_or_equal:tgl_periksa'],
-            'nomor'       => ['nullable', 'string', 'max:80'],
-            'hasil'       => ['required', Rule::in(Authority::HASIL_MCU)],
-            'pembatasan'  => ['nullable', 'string', 'max:500'],
-            'rujukan'     => ['nullable', 'string', 'max:200'],
-            'outstanding' => ['nullable', 'date'],
-        ]));
+        /* Aturan yang SAMA dengan pencatatan langsung — lihat
+           aturanMcu(). Jenis pemeriksaannya sudah ditentukan saat nama
+           dimasukkan ke pengajuan, jadi tidak diwajibkan lagi di sini. */
+        $data = $request->validate($this->aturanMcu(wajibJenis: false));
+
+        if ($jalur = $this->simpanBerkasMcu($request)) $data['berkas'] = $jalur;
+
+        /* Yang dikosongkan penilai TIDAK menghapus isi lama. Formulir
+           balasan klinik hanya memuat sebagian medan; mengirimkan sisanya
+           sebagai string kosong akan menghapus nomor surat dan catatan
+           kontraktor yang sudah diisi pada langkah sebelumnya. */
+        $mcu->update(array_filter($data, fn ($v) => $v !== null && $v !== ''));
 
         Jejak::write('Isi hasil MCU', $mcu->paspor?->nama.' — '.$mcu->hasil, 'miners');
 
@@ -713,15 +723,68 @@ class MinersController extends Controller
 
     /* ═══════════ MCU ═══════════ */
 
+    /**
+     * Catat satu hasil MCU langsung pada berkas orangnya.
+     *
+     * SELURUH kolom yang disimpan tabelnya dapat diisi dari sini, dan
+     * itu perbaikan atas keadaan sebelumnya: tujuh dari sebelas kolom
+     * `paspor_mcu` tidak dapat dijangkau sama sekali. Tiga di antaranya
+     * (`penyelenggara`, `catatan_kontraktor`, `remarks`) divalidasi di
+     * sini tetapi tidak punya medan di layar; empat lagi (`nomor`,
+     * `rujukan`, `outstanding`, `berkas`) tidak ada di keduanya.
+     *
+     * Yang paling merugikan `rujukan` dan `outstanding`. Model ini punya
+     * `rujukanTertunggak()` dan halaman riwayat menghitungnya sebagai
+     * salah satu dari empat angka ringkasan — angka yang selamanya nol,
+     * sebab satu-satunya jalan mengisi rujukan adalah alur balasan
+     * klinik. Ringkasan yang selalu nol tidak terbaca sebagai "belum
+     * dapat diisi", melainkan sebagai "tidak ada yang tertunggak".
+     */
     public function simpanMcu(Request $request, Paspor $paspor)
     {
-        $data = $request->validate([
+        $data = $request->validate($this->aturanMcu());
+
+        $data['berkas'] = $this->simpanBerkasMcu($request) ?? null;
+
+        $paspor->mcu()->create(array_filter(
+            $data, fn ($v) => $v !== null && $v !== ''
+        ));
+
+        Jejak::write('Catat MCU', $paspor->nama.' — '.$data['hasil'], 'miners');
+
+        return back()->with('ok', 'Hasil MCU tersimpan.');
+    }
+
+    /**
+     * Aturan satu catatan MCU.
+     *
+     * Dipakai bersama oleh pencatatan langsung dan pengisian hasil yang
+     * kembali dari klinik. Dua daftar aturan terpisah untuk satu tabel
+     * yang sama adalah persis bagaimana `rujukan` bisa ada di satu jalan
+     * dan hilang di jalan lain tanpa ada yang menyadarinya.
+     *
+     * @return array<string,mixed>
+     */
+    private function aturanMcu(bool $wajibJenis = true): array
+    {
+        return [
             'tgl_periksa'   => ['required', 'date'],
             'tgl_expired'   => ['nullable', 'date', 'after_or_equal:tgl_periksa'],
+            'nomor'         => ['nullable', 'string', 'max:80'],
             'penyelenggara' => ['nullable', 'string', 'max:150'],
-            'jenis'         => ['required', Rule::in(['Awal', 'Berkala', 'Khusus', 'Purna'])],
+            'jenis'         => [$wajibJenis ? 'required' : 'nullable', Rule::in(Authority::JENIS_MCU)],
             'hasil'         => ['required', Rule::in(Authority::HASIL_MCU)],
             'pembatasan'    => ['nullable', 'string', 'max:500'],
+
+            /* Seberapa dekat ke batas kelayakan — terpisah dari hasilnya.
+               Lihat Authority::LEVEL_RISIKO. */
+            'level_risiko'  => ['nullable', Rule::in(Authority::LEVEL_RISIKO)],
+
+            /* Rujukan medis dan tanggal tindak lanjutnya. Rujukan tanpa
+               tanggal terhitung TERTUNGGAK, bukan diabaikan — lihat
+               PasporMcu::rujukanTertunggak(). */
+            'rujukan'     => ['nullable', 'string', 'max:200'],
+            'outstanding' => ['nullable', 'date'],
 
             /* Dibaca dari D'Best. `usia` disimpan apa adanya, bukan
                dihitung dari tanggal lahir: yang tercetak pada surat MCU
@@ -733,13 +796,24 @@ class MinersController extends Controller
             'status_verifikasi'  => ['nullable', Rule::in(Authority::STATUS_MCU)],
             'catatan_kontraktor' => ['nullable', 'string', 'max:1000'],
             'remarks'            => ['nullable', 'string', 'max:1000'],
-        ]);
 
-        $paspor->mcu()->create($data);
+            'berkas' => ['nullable', 'file', 'max:8192', 'mimes:pdf,jpg,jpeg,png,webp'],
+        ];
+    }
 
-        Jejak::write('Catat MCU', $paspor->nama.' — '.$data['hasil'], 'miners');
-
-        return back()->with('ok', 'Hasil MCU tersimpan.');
+    /**
+     * Simpan surat MCU-nya bila ada yang diunggah.
+     *
+     * Suratnya yang menjadi bukti; tanpa berkas, seluruh kolom di
+     * atasnya hanyalah pengetikan yang tidak dapat diperiksa siapa pun.
+     * Tetap boleh kosong — hasil yang masuk lewat telepon dari klinik
+     * lebih baik tercatat hari ini daripada menunggu suratnya seminggu.
+     */
+    private function simpanBerkasMcu(Request $request): ?string
+    {
+        return $request->hasFile('berkas')
+            ? Berkas::simpan($request->file('berkas'), 'miners/mcu')
+            : null;
     }
 
     public function hapusMcu(Paspor $paspor, PasporMcu $mcu)
@@ -1989,6 +2063,7 @@ class MinersController extends Controller
                 'jenisKartu'   => Authority::JENIS_KARTU,
                 'jenisMcu'     => Authority::JENIS_MCU,
                 'statusMcu'    => Authority::STATUS_MCU,
+                'levelRisiko'  => Authority::LEVEL_RISIKO,
                 'jenisSim'     => Authority::JENIS_SIM,
                 'sebabKartu'   => Authority::SEBAB_KARTU,
                 'jenisInduksi' => Authority::JENIS_INDUKSI,

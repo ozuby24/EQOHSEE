@@ -88,6 +88,8 @@ const kepala = 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400
           <p class="text-[11px] text-stone-500 mt-1">
             Hanya tim OHSE yang menerbitkan kartu masuk dan meloloskan pengajuan MCU.
             Tahap sebelumnya membubuhkan paraf, dan paraf tidak menerbitkan apa pun.
+            <b>Paramedis</b> memaraf tahap pembacaan hasil MCU — sengaja tidak dapat
+            dirangkap tim OHSE, supaya yang membaca hasil bukan yang memutuskannya.
           </p>
         </div>
         <div>

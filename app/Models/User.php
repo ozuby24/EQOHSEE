@@ -69,6 +69,18 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function isOhse(): bool    { return $this->ohse_role === 'ohse'; }
 
+    /**
+     * Paramedis — yang membaca hasil pemeriksaan, bukan yang memutuskan.
+     *
+     * Menumpang pada kolom yang sama dengan isOhse(), sehingga keduanya
+     * saling meniadakan. Itu disengaja: tahap paramedis ada supaya yang
+     * membaca hasil pemeriksaan bukan orang yang memutuskan
+     * kelayakannya, dan satu orang yang memegang kedua peran dapat
+     * memaraf tahap paramedis lalu menyetujui pengajuannya sendiri
+     * sebagai OHSE.
+     */
+    public function isParamedis(): bool { return $this->ohse_role === 'paramedis'; }
+
     // Relasi
     public function company(): BelongsTo     { return $this->belongsTo(Company::class); }
     public function enrollments(): HasMany   { return $this->hasMany(Enrollment::class); }

@@ -25,6 +25,11 @@ const props = defineProps<{
     kode: string; urut: number; label: string; terang: string; penentu: boolean;
     keadaan: string; oleh: string | null; jabatan: string | null;
     pada: string | null; catatan: string | null;
+
+    /* Hak PER TAHAP. `dapatParaf` di bawah hanya menyatakan halaman ini
+       sedang dalam keadaan yang menerima paraf sama sekali; yang
+       menentukan tombolnya muncul di mata rantai mana adalah ini. */
+    bolehSaya?: boolean; sebabTolak?: string | null;
   }>;
   tertinggal?: string[];
   dapatParaf?: boolean;
@@ -88,11 +93,24 @@ function keterangan(t: { penentu: boolean; keadaan: string; oleh: string | null;
             {{ keterangan(t) }}
           </p>
 
-          <button v-if="!t.penentu && t.keadaan !== 'paraf' && props.dapatParaf"
-                  type="button" class="text-[10.5px] font-semibold text-cam-lime-deep mt-1"
-                  @click="emit('paraf', t.kode)">
-            Bubuhkan paraf
-          </button>
+          <template v-if="!t.penentu && t.keadaan !== 'paraf' && props.dapatParaf">
+            <button v-if="t.bolehSaya !== false"
+                    type="button" class="text-[10.5px] font-semibold text-cam-lime-deep mt-1"
+                    @click="emit('paraf', t.kode)">
+              Bubuhkan paraf
+            </button>
+
+            <!--
+              Sebabnya disebut, bukan tombolnya dihilangkan diam-diam.
+              Tombol yang lenyap tanpa keterangan adalah bentuk penolakan
+              paling buruk: yang membacanya tidak dapat membedakan antara
+              tidak berhak, sudah diparaf, dan sistemnya rusak — dan
+              dugaan yang paling sering diambil adalah yang ketiga.
+            -->
+            <p v-else-if="t.sebabTolak" class="text-[10px] text-stone-400 mt-1 leading-snug">
+              {{ t.sebabTolak }}
+            </p>
+          </template>
         </div>
       </li>
     </ol>

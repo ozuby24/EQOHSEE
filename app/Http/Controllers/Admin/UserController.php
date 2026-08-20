@@ -109,7 +109,8 @@ class UserController extends Controller
                     ['nilai' => 'company', 'label' => 'Perusahaan'],
                 ],
                 'ohse' => [
-                    ['nilai' => 'ohse', 'label' => 'Tim OHSE'],
+                    ['nilai' => 'ohse',      'label' => 'Tim OHSE — memutuskan'],
+                    ['nilai' => 'paramedis', 'label' => 'Paramedis — memaraf hasil MCU'],
                 ],
                 'perusahaan' => Company::orderBy('name')->get()
                     ->map(fn ($c) => ['nilai' => (string) $c->id, 'label' => $c->name])->all(),
@@ -178,10 +179,17 @@ class UserController extends Controller
             'lms_role'    => ['nullable', Rule::in(['trainee','trainer','ktt'])],
             'audit_role'  => ['nullable', Rule::in(['auditor','company'])],
 
-            /* Wewenang menerbitkan kartu masuk dan meloloskan MCU. Dipisah
+            /* Peran di dalam tim keselamatan & kesehatan kerja. Dipisah
                dari kedua peran di atas dengan sengaja — lihat
-               App\Support\Tahap. */
-            'ohse_role'   => ['nullable', Rule::in(['ohse'])],
+               App\Support\Tahap.
+        
+               'ohse'      menerbitkan kartu masuk dan meloloskan MCU;
+               'paramedis' membaca hasil pemeriksaan dan memaraf tahapnya.
+        
+               Keduanya SALING MENIADAKAN, dan itu memang dikehendaki:
+               tahap paramedis ada supaya yang membaca hasil pemeriksaan
+               bukan orang yang memutuskan kelayakannya. */
+            'ohse_role'   => ['nullable', Rule::in(['ohse', 'paramedis'])],
             'company_id'  => ['nullable','exists:companies,id'],
             'employee_id' => ['nullable','string','max:50'],
             'position'    => ['nullable','string','max:100'],

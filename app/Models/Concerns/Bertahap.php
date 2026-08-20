@@ -79,6 +79,7 @@ trait Bertahap
     public function rantaiTahap(): array
     {
         $terparaf = $this->paraf->keyBy('tahap');
+        $pengguna = auth()->user();
 
         $hasil = [];
 
@@ -107,6 +108,19 @@ trait Bertahap
                 'jabatan' => $p?->jabatan,
                 'pada'    => $p?->created_at?->toDateTimeString(),
                 'catatan' => $p?->catatan,
+
+                /* Hak PER TAHAP, bukan satu boolean untuk seluruh
+                   rantai. Satu boolean membuat tombol "Bubuhkan paraf"
+                   muncul di setiap mata rantai bagi siapa pun yang boleh
+                   memaraf salah satunya — dan yang menekannya pada tahap
+                   yang bukan haknya mendapat galat tanpa tahu sebabnya. */
+                'bolehSaya' => $t['penentu']
+                    ? false
+                    : Tahap::sebabTakDapatMemaraf($pengguna, $kode, $this->modulTahap()) === null,
+
+                'sebabTolak' => $t['penentu']
+                    ? null
+                    : Tahap::sebabTakDapatMemaraf($pengguna, $kode, $this->modulTahap()),
             ];
         }
 
@@ -146,10 +160,16 @@ trait Bertahap
     {
         $u ??= auth()->user();
 
-        if (!Tahap::dapatDiparaf($tahap, $this->modulTahap())) {
-            throw new RuntimeException(
-                'Tahap "'.$tahap.'" bukan tahap paraf. Tahap penentu diputus, bukan diparaf.'
-            );
+        /* Berhak memaraf TAHAP ITU, bukan sekadar berhak memaraf.
+           Sebelum ini pemeriksaannya berhenti pada "tahap ini memang
+           tahap paraf" — sehingga siapa pun yang dapat membuka
+           halamannya dapat membubuhkan paraf pada tahap "Paramedis",
+           dan yang tercetak pada rantai adalah pernyataan bahwa hasil
+           pemeriksaan sudah dibaca tenaga medis. Pernyataan itu tidak
+           pernah terjadi, dan tidak ada satu pun tanda yang
+           membedakannya dari yang sungguhan. */
+        if ($sebab = Tahap::sebabTakDapatMemaraf($u, $tahap, $this->modulTahap())) {
+            throw new RuntimeException($sebab);
         }
 
         if ($this->sudahDisetujui() || $this->status === \App\Support\Alur::DITOLAK) {
