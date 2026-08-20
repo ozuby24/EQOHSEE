@@ -1916,6 +1916,11 @@ class MinersTest extends TestCase
             'miners.index', 'miners.fieldBreak.index', 'miners.cuti.index',
             'miners.campaign.index', 'miners.kedaluwarsa',
             'miners.riwayat.mine-permit', 'miners.riwayat.induksi',
+
+            /* Dua halaman pengajuan yang berbagi komponen Vue yang sama
+               dan hanya dibedakan prop `mode`. Justru keduanya yang
+               paling mudah tertukar judulnya. */
+            'miners.mcu.index', 'miners.induksi.index',
         ] as $rute) {
             $this->get(route($rute))
                 ->assertOk()

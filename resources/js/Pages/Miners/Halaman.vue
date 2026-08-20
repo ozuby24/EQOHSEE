@@ -239,11 +239,52 @@ const fInduksi = useForm<Record<string, any>>({
   pemberi: '', lokasi: '', nilai: '', hasil: 'Lulus', catatan: '',
 });
 
-/* ── pengajuan MCU ── */
+/* ── pengajuan MCU & induksi ──
+ *
+ * SATU blok melayani keduanya, dan itu bukan penghematan baris
+ * melainkan syarat agar keduanya tetap sama. Pengajuan MCU dan
+ * pengajuan induksi adalah benda yang sama secara proses — surat berisi
+ * daftar nama yang melewati persetujuan lalu diisi hasilnya satu per
+ * satu. Menuliskannya dua kali berarti tiap perbaikan harus diingat dua
+ * kali, dan yang terlupa tidak menimbulkan galat: satu halaman
+ * diam-diam berperilaku beda dari kembarannya.
+ *
+ * Yang benar-benar berbeda hanya tiga hal, dan ketiganya disebut di
+ * `bentukPengajuan` di bawah: alamat rutenya, medan suratnya, dan kolom
+ * hasil per orangnya.
+ */
+
+const modePengajuan = computed(() => props.mode === 'mcu' || props.mode === 'induksi');
+
+const bentukPengajuan = computed(() => props.mode === 'induksi'
+  ? {
+      basis: '/miners/induksi',
+      judulDaftar: 'Pengajuan induksi',
+      tombolBaru: 'Kelas induksi baru',
+      labelTujuan: 'Lokasi / ruang kelas',
+      labelJumlah: 'Peserta',
+      labelBelum: 'Hasil belum dinilai',
+      labelTotal: 'Kelas induksi',
+      jenis: props.opsi?.jenisInduksi ?? [],
+      hasil: props.opsi?.hasilInduksi ?? [],
+    }
+  : {
+      basis: '/miners/mcu',
+      judulDaftar: 'Surat pengajuan MCU',
+      tombolBaru: 'Surat pengajuan baru',
+      labelTujuan: 'Kepada (klinik / rumah sakit)',
+      labelJumlah: 'Nama',
+      labelBelum: 'Hasil belum kembali',
+      labelTotal: 'Surat pengajuan',
+      jenis: props.opsi?.jenisMcu ?? [],
+      hasil: props.opsi?.hasilMcu ?? [],
+    });
 
 const fPengajuan = useForm<Record<string, any>>({
   nomor_register: '', tanggal: '', kepada: '', judul: '',
   jenis: 'Berkala', catatan: '',
+  /* Khusus induksi. */
+  lokasi: '', tgl_pelaksanaan: '',
 });
 
 const fNama  = useForm<Record<string, any>>({ paspor_id: '', tgl_periksa: '' });
@@ -263,38 +304,44 @@ const bukaPengajuan = ref<number | null>(null);
 const isiHasil = reactive<Record<number, any>>({});
 
 function mulaiIsi(h: any) {
-  isiHasil[h.id] = {
-    tgl_periksa: h.tglPeriksa ?? '', tgl_expired: h.tglExpired ?? '',
-    nomor: h.nomor ?? '', hasil: h.hasil ?? 'Fit',
-    pembatasan: h.pembatasan ?? '', rujukan: h.rujukan ?? '',
-    outstanding: h.outstanding ?? '',
-  };
+  isiHasil[h.id] = props.mode === 'induksi'
+    ? {
+        tanggal: h.tglPeriksa ?? '', tgl_expired: h.tglExpired ?? '',
+        nomor_registrasi: h.nomor ?? '', hasil: h.hasil ?? 'Lulus',
+        nilai: h.nilai ?? '', pemberi: '', catatan: '',
+      }
+    : {
+        tgl_periksa: h.tglPeriksa ?? '', tgl_expired: h.tglExpired ?? '',
+        nomor: h.nomor ?? '', hasil: h.hasil ?? 'Fit',
+        pembatasan: h.pembatasan ?? '', rujukan: h.rujukan ?? '',
+        outstanding: h.outstanding ?? '',
+      };
 }
 
 function batalIsi(hasilId: number) { delete isiHasil[hasilId]; }
 
 function simpanHasil(pengajuanId: number, hasilId: number) {
-  router.put(`/miners/mcu/${pengajuanId}/hasil/${hasilId}`, isiHasil[hasilId], {
+  router.put(`${bentukPengajuan.value.basis}/${pengajuanId}/hasil/${hasilId}`, isiHasil[hasilId], {
     preserveScroll: true,
     onSuccess: () => batalIsi(hasilId),
   });
 }
 
 function simpanPengajuan() {
-  fPengajuan.post('/miners/mcu', {
+  fPengajuan.post(bentukPengajuan.value.basis, {
     preserveScroll: true,
     onSuccess: () => { fPengajuan.reset(); buka.value = null; },
   });
 }
 
 function tambahNama(pengajuanId: number) {
-  fNama.post(`/miners/mcu/${pengajuanId}/nama`, {
+  fNama.post(`${bentukPengajuan.value.basis}/${pengajuanId}/nama`, {
     preserveScroll: true, onSuccess: () => fNama.reset(),
   });
 }
 
 function ajukanPengajuan(pengajuanId: number) {
-  router.post(`/miners/mcu/${pengajuanId}/ajukan`, {}, { preserveScroll: true });
+  router.post(`${bentukPengajuan.value.basis}/${pengajuanId}/ajukan`, {}, { preserveScroll: true });
 }
 
 /**
@@ -398,9 +445,9 @@ async function hapus(jalur: string, apa: string) {
           {{ buka === 'orang' ? 'Batal' : 'Tambah orang' }}
         </button>
 
-        <button v-if="props.mode === 'mcu'" type="button" class="eq-btn-utama"
+        <button v-if="modePengajuan" type="button" class="eq-btn-utama"
                 @click="buka = buka === 'pengajuan' ? null : 'pengajuan'">
-          {{ buka === 'pengajuan' ? 'Batal' : 'Surat pengajuan baru' }}
+          {{ buka === 'pengajuan' ? 'Batal' : bentukPengajuan.tombolBaru }}
         </button>
       </div>
     </section>
@@ -1203,7 +1250,7 @@ async function hapus(jalur: string, apa: string) {
     </template>
 
     <!-- ══════════ PENGAJUAN MCU ══════════ -->
-    <template v-if="props.mode === 'mcu'">
+    <template v-if="modePengajuan">
 
       <form v-if="buka === 'pengajuan'"
             class="rounded-2xl bg-white border border-stone-100 shadow-card p-5 grid gap-3 md:grid-cols-4"
@@ -1212,21 +1259,33 @@ async function hapus(jalur: string, apa: string) {
                class="rounded-lg border-stone-200 text-[12px]">
         <input v-model="fPengajuan.tanggal" type="date" required title="Tanggal surat"
                class="rounded-lg border-stone-200 text-[12px]">
-        <input v-model="fPengajuan.kepada" placeholder="Kepada (klinik / rumah sakit)"
+        <input v-if="props.mode === 'induksi'" v-model="fPengajuan.lokasi"
+               :placeholder="bentukPengajuan.labelTujuan"
                class="rounded-lg border-stone-200 text-[12px]">
+        <input v-else v-model="fPengajuan.kepada" :placeholder="bentukPengajuan.labelTujuan"
+               class="rounded-lg border-stone-200 text-[12px]">
+
         <select v-model="fPengajuan.jenis" class="rounded-lg border-stone-200 text-[12px]" aria-label="Jenis">
-          <option v-for="j in (props.opsi?.jenisMcu ?? [])" :key="j">{{ j }}</option>
+          <option v-for="j in bentukPengajuan.jenis" :key="j">{{ j }}</option>
         </select>
+
+        <!-- Tanggal kelasnya berdiri sendiri dari tanggal suratnya:
+             surat dibuat hari ini untuk kelas pekan depan, dan
+             menyamakan keduanya membuat sertifikatnya bertanggal salah. -->
+        <input v-if="props.mode === 'induksi'" v-model="fPengajuan.tgl_pelaksanaan" type="date"
+               title="Tanggal pelaksanaan kelas" class="rounded-lg border-stone-200 text-[12px]">
+
         <input v-model="fPengajuan.judul" placeholder="Perihal"
-               class="rounded-lg border-stone-200 text-[12px] md:col-span-3">
+               class="rounded-lg border-stone-200 text-[12px]"
+               :class="props.mode === 'induksi' ? 'md:col-span-2' : 'md:col-span-3'">
         <button class="eq-btn-utama" :disabled="fPengajuan.processing">Simpan draf</button>
       </form>
 
       <section class="grid gap-4 sm:grid-cols-3">
         <div v-for="k in [
-               ['Surat pengajuan', props.ringkasMcu?.total ?? 0, KEADAAN.netral],
+               [bentukPengajuan.labelTotal, props.ringkasMcu?.total ?? 0, KEADAAN.netral],
                ['Menunggu tinjauan', props.ringkasMcu?.menunggu ?? 0, KEADAAN.ingat],
-               ['Hasil belum kembali', props.ringkasMcu?.belumKembali ?? 0, KEADAAN.serius],
+               [bentukPengajuan.labelBelum, props.ringkasMcu?.belumKembali ?? 0, KEADAAN.serius],
              ]" :key="k[0] as string"
              class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
           <p class="text-[11.5px] text-stone-500">{{ k[0] }}</p>
@@ -1268,7 +1327,10 @@ async function hapus(jalur: string, apa: string) {
             </h3>
             <p class="text-[11.5px] text-stone-500 mt-0.5">
               {{ m.judul || 'Perihal belum diisi' }}
-              <span v-if="m.kepada"> · kepada {{ m.kepada }}</span>
+              <span v-if="m.kepada">
+                · {{ props.mode === 'induksi' ? 'di' : 'kepada' }} {{ m.kepada }}
+              </span>
+              <span v-if="props.mode === 'induksi' && m.pelaksanaan"> · kelas {{ m.pelaksanaan }}</span>
             </p>
             <p v-if="m.alasanTolak" class="text-[11.5px] text-red-600 mt-1">Ditolak: {{ m.alasanTolak }}</p>
           </div>
@@ -1281,7 +1343,9 @@ async function hapus(jalur: string, apa: string) {
               {{ m.statusLabel }}
             </p>
             <p class="text-[11px] text-stone-400 mt-0.5">
-              {{ m.jumlah }} nama<span v-if="m.belumKembali"> · {{ m.belumKembali }} belum kembali</span>
+              {{ m.jumlah }} {{ bentukPengajuan.labelJumlah.toLowerCase() }}<span
+                v-if="m.belumKembali"> · {{ m.belumKembali }}
+                {{ props.mode === 'induksi' ? 'belum dinilai' : 'belum kembali' }}</span>
             </p>
           </div>
         </div>
@@ -1289,7 +1353,7 @@ async function hapus(jalur: string, apa: string) {
         <div v-if="m.status !== 'draf'" class="mt-3">
           <Rantai :rantai="m.rantai" :tertinggal="m.tertinggal"
                   :dapat-paraf="m.dapatParaf" :saya-penentu="props.opsi?.sayaPenentu"
-                  @paraf="t => paraf(`/miners/mcu/${m.id}/paraf`, t)" />
+                  @paraf="t => paraf(`${bentukPengajuan.basis}/${m.id}/paraf`, t)" />
         </div>
 
         <div class="flex flex-wrap items-center gap-3 mt-3">
@@ -1302,17 +1366,17 @@ async function hapus(jalur: string, apa: string) {
                   @click="ajukanPengajuan(m.id)">Ajukan</button>
           <button v-if="m.dapatDitinjau" type="button" class="text-[11.5px] font-semibold"
                   :style="{ color: KEADAAN.baik }"
-                  @click="tinjau(`/miners/mcu/${m.id}/tinjau`, 'setujui')">Setujui</button>
+                  @click="tinjau(`${bentukPengajuan.basis}/${m.id}/tinjau`, 'setujui')">Setujui</button>
           <button v-if="m.dapatDitinjau" type="button" class="text-[11.5px] font-semibold text-red-600"
-                  @click="tinjau(`/miners/mcu/${m.id}/tinjau`, 'tolak')">Tolak</button>
+                  @click="tinjau(`${bentukPengajuan.basis}/${m.id}/tinjau`, 'tolak')">Tolak</button>
           <button v-if="m.status === 'diajukan'" type="button" class="text-[11.5px] text-stone-500"
-                  @click="tinjau(`/miners/mcu/${m.id}/tinjau`, 'tarik')">Tarik</button>
+                  @click="tinjau(`${bentukPengajuan.basis}/${m.id}/tinjau`, 'tarik')">Tarik</button>
           <span v-if="!m.dapatDitinjau && m.sebabTakTinjau && m.status === 'diajukan'"
                 class="text-[11px] text-stone-500 basis-full">
             {{ m.sebabTakTinjau }}
           </span>
           <button v-if="m.dapatDiubah" type="button" class="text-[11.5px] text-red-600 ml-auto"
-                  @click="hapus(`/miners/mcu/${m.id}`, 'pengajuan ini')">Hapus</button>
+                  @click="hapus(`${bentukPengajuan.basis}/${m.id}`, 'pengajuan ini')">Hapus</button>
         </div>
 
         <div v-if="bukaPengajuan === m.id" class="mt-4 pt-4 border-t border-stone-100">
@@ -1320,9 +1384,11 @@ async function hapus(jalur: string, apa: string) {
             <table class="min-w-full text-left text-[12px]">
               <thead>
                 <tr class="text-stone-400 border-b border-stone-100">
-                  <th class="py-2 pr-3">Nama</th><th class="py-2 pr-3">Periksa</th>
+                  <th class="py-2 pr-3">Nama</th>
+                  <th class="py-2 pr-3">{{ props.mode === 'induksi' ? 'Tanggal' : 'Periksa' }}</th>
                   <th class="py-2 pr-3">Berlaku s/d</th><th class="py-2 pr-3">Hasil</th>
-                  <th class="py-2 pr-3">Rujukan</th><th class="py-2"></th>
+                  <th class="py-2 pr-3">{{ props.mode === 'induksi' ? 'Nilai' : 'Rujukan' }}</th>
+                  <th class="py-2"></th>
                 </tr>
               </thead>
               <tbody>
@@ -1335,31 +1401,57 @@ async function hapus(jalur: string, apa: string) {
                     <td class="py-2 pr-3">{{ h.tglExpired || '—' }}</td>
                     <td class="py-2 pr-3">
                       <span v-if="h.hasil" class="font-semibold">{{ h.hasil }}</span>
-                      <span v-else class="text-stone-400">belum kembali</span>
+                      <span v-else class="text-stone-400">
+                        {{ props.mode === 'induksi' ? 'belum dinilai' : 'belum kembali' }}
+                      </span>
                     </td>
                     <td class="py-2 pr-3">
-                      <span v-if="h.rujukan" :style="{ color: h.tertunggak ? KEADAAN.gawat : KEADAAN.ingat }">
-                        {{ h.rujukan }}
-                      </span>
-                      <span v-else class="text-stone-400">—</span>
+                      <template v-if="props.mode === 'induksi'">
+                        <span v-if="h.nilai !== null && h.nilai !== undefined" class="num">{{ h.nilai }}</span>
+                        <span v-else class="text-stone-400">—</span>
+                      </template>
+                      <template v-else>
+                        <span v-if="h.rujukan" :style="{ color: h.tertunggak ? KEADAAN.gawat : KEADAAN.ingat }">
+                          {{ h.rujukan }}
+                        </span>
+                        <span v-else class="text-stone-400">—</span>
+                      </template>
                     </td>
                     <td class="py-2 text-right whitespace-nowrap">
                       <button type="button" class="text-[11px] font-semibold text-cam-lime-deep"
                               @click="mulaiIsi(h)">Isi hasil</button>
                       <button v-if="m.dapatDiubah" type="button" class="text-[11px] text-red-600 ml-2"
-                              @click="hapus(`/miners/mcu/${m.id}/nama/${h.id}`, h.nama)">Keluarkan</button>
+                              @click="hapus(`${bentukPengajuan.basis}/${m.id}/nama/${h.id}`, h.nama)">Keluarkan</button>
                     </td>
                   </template>
 
                   <td v-else colspan="6" class="py-2">
                     <p class="text-[11.5px] font-semibold text-cam-ink mb-2">{{ h.nama }}</p>
-                    <div class="grid gap-2 md:grid-cols-4">
+                    <div v-if="props.mode === 'induksi'" class="grid gap-2 md:grid-cols-4">
+                      <input v-model="isiHasil[h.id].tanggal" type="date" required title="Tanggal induksi"
+                             class="rounded-lg border-stone-200 text-[12px]">
+                      <input v-model="isiHasil[h.id].tgl_expired" type="date" title="Berlaku sampai"
+                             class="rounded-lg border-stone-200 text-[12px]">
+                      <select v-model="isiHasil[h.id].hasil" class="rounded-lg border-stone-200 text-[12px]" aria-label="Hasil">
+                        <option v-for="x in bentukPengajuan.hasil" :key="x">{{ x }}</option>
+                      </select>
+                      <input v-model="isiHasil[h.id].nilai" type="number" min="0" max="100" placeholder="Nilai"
+                             class="rounded-lg border-stone-200 text-[12px]">
+                      <input v-model="isiHasil[h.id].nomor_registrasi" placeholder="No. sertifikat"
+                             class="rounded-lg border-stone-200 text-[12px]">
+                      <input v-model="isiHasil[h.id].pemberi" placeholder="Pemberi induksi"
+                             class="rounded-lg border-stone-200 text-[12px]">
+                      <input v-model="isiHasil[h.id].catatan" placeholder="Catatan"
+                             class="rounded-lg border-stone-200 text-[12px] md:col-span-2">
+                    </div>
+
+                    <div v-else class="grid gap-2 md:grid-cols-4">
                       <input v-model="isiHasil[h.id].tgl_periksa" type="date" required title="Tanggal periksa"
                              class="rounded-lg border-stone-200 text-[12px]">
                       <input v-model="isiHasil[h.id].tgl_expired" type="date" title="Berlaku sampai"
                              class="rounded-lg border-stone-200 text-[12px]">
                       <select v-model="isiHasil[h.id].hasil" class="rounded-lg border-stone-200 text-[12px]" aria-label="Hasil">
-                        <option v-for="x in (props.opsi?.hasilMcu ?? [])" :key="x">{{ x }}</option>
+                        <option v-for="x in bentukPengajuan.hasil" :key="x">{{ x }}</option>
                       </select>
                       <input v-model="isiHasil[h.id].nomor" placeholder="No. hasil"
                              class="rounded-lg border-stone-200 text-[12px]">
@@ -1395,8 +1487,8 @@ async function hapus(jalur: string, apa: string) {
                 {{ o.nama }}<span v-if="o.jabatan"> — {{ o.jabatan }}</span>
               </option>
             </select>
-            <input v-model="fNama.tgl_periksa" type="date" title="Rencana tanggal periksa"
-                   class="rounded-lg border-stone-200 text-[12px]">
+            <input v-if="props.mode !== 'induksi'" v-model="fNama.tgl_periksa" type="date"
+                   title="Rencana tanggal periksa" class="rounded-lg border-stone-200 text-[12px]">
             <button class="eq-btn-utama" :disabled="fNama.processing">Tambah nama</button>
             <p v-if="fNama.errors.paspor_id" class="text-[11px] text-red-600 md:col-span-4">
               {{ fNama.errors.paspor_id }}
@@ -1407,7 +1499,7 @@ async function hapus(jalur: string, apa: string) {
 
       <p v-if="!(props.pengajuan ?? []).length"
          class="rounded-2xl bg-white border border-stone-100 shadow-card p-10 text-center text-[12px] text-stone-400">
-        Belum ada surat pengajuan MCU.
+        Belum ada {{ props.mode === 'induksi' ? 'kelas induksi' : 'surat pengajuan MCU' }}.
       </p>
     </template>
   </div>

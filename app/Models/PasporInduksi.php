@@ -34,6 +34,11 @@ class PasporInduksi extends Model
         /* Berkas permohonan induksinya, dan MCU yang mendasarinya —
            keduanya dibaca dari D'Best. */
         'berkas_permohonan', 'paspor_mcu_id',
+
+        /* Surat pengajuan yang melahirkannya, bila ada. Boleh NULL:
+           induksi susulan untuk satu pekerja baru tidak lahir dari
+           surat mana pun. */
+        'induksi_pengajuan_id',
     ];
 
     protected function casts(): array
@@ -42,6 +47,11 @@ class PasporInduksi extends Model
     }
 
     public function paspor() { return $this->belongsTo(Paspor::class); }
+
+    public function pengajuan()
+    {
+        return $this->belongsTo(InduksiPengajuan::class, 'induksi_pengajuan_id');
+    }
 
     /**
      * MCU yang menjadi dasar induksi ini, bila dicatat.

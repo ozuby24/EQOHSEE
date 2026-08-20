@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Company, KompetensiJenis, McuPengajuan, MinersCampaign, MinersCuti,
+use App\Models\{Company, InduksiPengajuan, KompetensiJenis, McuPengajuan, MinersCampaign, MinersCuti,
     MinersCutiJatah, MinersFieldBreak, Paspor, PasporInduksi, PasporKartuUnit,
     PasporKartu, PasporMcu, PasporSertifikat};
 use App\Rules\DalamPerusahaan;
@@ -419,7 +419,10 @@ class MinersController extends Controller
             ->orderByDesc('tanggal')->orderByDesc('id')
             ->get();
 
-        return Inertia::render('Miners/Halaman', $this->bersama() + [
+        return Inertia::render('Miners/Halaman', [
+            'judul'    => 'Miners — Pengajuan MCU',
+            'subjudul' => 'Surat permintaan pemeriksaan ke klinik — satu surat, banyak nama',
+        ] + $this->bersama() + [
             'mode'   => 'mcu',
             'saring' => ['status' => $request->get('status')],
             'pengajuan' => $pengajuan->map(fn (McuPengajuan $m) => [
@@ -594,6 +597,243 @@ class MinersController extends Controller
         Jejak::write('Isi hasil MCU', $mcu->paspor?->nama.' — '.$mcu->hasil, 'miners');
 
         return back()->with('ok', 'Hasil MCU tersimpan.');
+    }
+
+    /* ═══════════ PENGAJUAN INDUKSI ═══════════
+     *
+     * Kembar dengan pengajuan MCU di atas, dan kembarnya disengaja:
+     * keduanya surat berisi daftar nama yang melewati persetujuan lalu
+     * diisi hasilnya satu per satu. Yang berbeda hanya rantai
+     * persetujuannya — induksi diselenggarakan OHSE sendiri, jadi
+     * berhenti di sana.
+     */
+
+    public function induksiIndex(Request $request)
+    {
+        $pengajuan = InduksiPengajuan::with(['hasil.paspor', 'pengaju', 'peninjau', 'paraf'])
+            ->when($request->get('status'), fn ($q, $s) => $q->where('status', $s))
+            ->orderByDesc('tanggal')->orderByDesc('id')
+            ->get();
+
+        return Inertia::render('Miners/Halaman', [
+            'judul'    => 'Miners — Pengajuan Induksi',
+            'subjudul' => 'Kelas induksi keselamatan — satu kelas, banyak peserta',
+        ] + $this->bersama() + [
+            'mode'   => 'induksi',
+            'saring' => ['status' => $request->get('status')],
+            'pengajuan' => $pengajuan->map(fn (InduksiPengajuan $m) => [
+                'id'      => $m->id,
+                'nomor'   => $m->nomor_register,
+                'tanggal' => $m->tanggal?->toDateString(),
+                'kepada'  => $m->lokasi,
+                'judul'   => $m->judul,
+                'jenis'   => $m->jenis,
+                'catatan' => $m->catatan,
+                'pelaksanaan' => $m->tgl_pelaksanaan?->toDateString(),
+
+                'status'      => $m->status,
+                'statusLabel' => Alur::LABEL[$m->status] ?? $m->status,
+                'dapatDiubah' => $m->dapatDiubah(),
+                'dapatDitinjau' => $m->dapatDitinjauOleh($request->user()),
+                'sebabTakTinjau' => Tahap::sebabTakDapatMemutuskan(
+                    $request->user(), $m->status, $m->diajukan_oleh),
+                'alasanTolak' => $m->alasan_tolak,
+                'pengaju'     => $m->pengaju?->name,
+                'peninjau'    => $m->peninjau?->name,
+
+                'rantai'     => $m->rantaiTahap(),
+                'tertinggal' => $m->parafTertinggal(),
+                'dapatParaf' => $m->menungguTinjauan(),
+
+                'jumlah'       => $m->hasil->count(),
+                'belumKembali' => $m->belumDinilai(),
+                'nama' => $m->hasil->map(fn (PasporInduksi $h) => [
+                    'id'         => $h->id,
+                    'pasporId'   => $h->paspor_id,
+                    'nama'       => $h->paspor?->nama,
+                    'hasil'      => $h->hasil,
+                    'nilai'      => $h->nilai,
+                    'tglPeriksa' => $h->tanggal?->toDateString(),
+                    'tglExpired' => $h->tgl_expired?->toDateString(),
+                ])->values(),
+            ])->values(),
+
+            'ringkasMcu' => [
+                'total'    => $pengajuan->count(),
+                'menunggu' => $pengajuan->where('status', Alur::DIAJUKAN)->count(),
+                'belumKembali' => $pengajuan->sum(fn (InduksiPengajuan $m) => $m->belumDinilai()),
+            ],
+
+            'pemantauan' => PemantauanBerkas::untukDaftar(
+                $this->orangPemantauan(), PemantauanBerkas::MCU),
+        ]);
+    }
+
+    /** @return array<string,mixed> */
+    private function aturanPengajuanInduksi(): array
+    {
+        return [
+            'nomor_register'  => ['nullable', 'string', 'max:60'],
+            'tanggal'         => ['required', 'date'],
+            'judul'           => ['nullable', 'string', 'max:200'],
+            'jenis'           => ['required', Rule::in(Authority::JENIS_INDUKSI)],
+            'lokasi'          => ['nullable', 'string', 'max:150'],
+            'tgl_pelaksanaan' => ['nullable', 'date'],
+            'catatan'         => ['nullable', 'string', 'max:2000'],
+        ];
+    }
+
+    public function induksiStore(Request $request)
+    {
+        $data = $this->pemilik($request->validate(
+            ['company_id' => ['nullable', 'exists:companies,id']] + $this->aturanPengajuanInduksi()
+        ));
+
+        $data['user_id'] = $request->user()?->getKey();
+
+        $m = InduksiPengajuan::create($data);
+
+        Jejak::write('Buat pengajuan induksi', $m->nomor_register ?? '#'.$m->id, 'miners');
+
+        return back()->with('ok', 'Pengajuan induksi dibuat sebagai draf.');
+    }
+
+    public function induksiUpdate(Request $request, InduksiPengajuan $pengajuan)
+    {
+        abort_unless($pengajuan->dapatDiubah(), 422,
+            'Pengajuan yang sudah diajukan tidak dapat diubah.');
+
+        $pengajuan->update($request->validate($this->aturanPengajuanInduksi()));
+
+        Jejak::write('Ubah pengajuan induksi', $pengajuan->nomor_register ?? '#'.$pengajuan->id, 'miners');
+
+        return back()->with('ok', 'Pengajuan diperbarui.');
+    }
+
+    public function induksiDestroy(InduksiPengajuan $pengajuan)
+    {
+        abort_unless($pengajuan->dapatDiubah(), 422,
+            'Pengajuan yang sudah diajukan tidak dapat dihapus.');
+
+        $nomor = $pengajuan->nomor_register ?? '#'.$pengajuan->id;
+        $pengajuan->delete();
+
+        Jejak::write('Hapus pengajuan induksi', $nomor, 'miners');
+
+        return redirect()->route('miners.induksi.index')->with('ok', 'Pengajuan dihapus.');
+    }
+
+    /**
+     * Menambahkan satu nama ke dalam kelas induksi.
+     *
+     * SYARAT MCU-nya diperiksa DI SINI, bukan hanya saat hasilnya diisi.
+     * Menginduksi orang yang ternyata Unfit adalah setengah hari kelas
+     * yang terbuang — dan yang lebih buruk, namanya tercatat di daftar
+     * hadir sehingga di layar ia tampak lebih siap daripada sebenarnya.
+     * Menahannya pada saat pendaftaran menghemat kelasnya, bukan hanya
+     * catatannya.
+     */
+    public function induksiTambahNama(Request $request, InduksiPengajuan $pengajuan)
+    {
+        abort_unless($pengajuan->dapatDiubah(), 422,
+            'Nama hanya dapat ditambahkan selagi pengajuan masih draf.');
+
+        $data = $request->validate([
+            'paspor_id' => ['required', new DalamPerusahaan('paspor')],
+        ]);
+
+        if ($pengajuan->hasil()->where('paspor_id', $data['paspor_id'])->exists()) {
+            return back()->withErrors(['paspor_id' => 'Nama ini sudah ada dalam pengajuan.']);
+        }
+
+        $paspor = Paspor::with(['mcu', 'induksi', 'kartu'])->findOrFail($data['paspor_id']);
+
+        if ($sebab = AlurMiner::halanganInduksi($paspor)) {
+            return back()->withErrors(['paspor_id' => $paspor->nama.': '.$sebab]);
+        }
+
+        /* MCU yang MENDASARINYA ikut dicatat, bukan hanya diperiksa lalu
+           dilupakan. Enam bulan kemudian pertanyaannya bukan "apakah
+           waktu itu ia layak" melainkan "atas dasar apa" — dan tanpa
+           tautannya, jawabannya harus ditebak dari tanggal. */
+        $dasar = $paspor->mcu
+            ->filter(fn ($m) => $m->hasilLayak())
+            ->sortByDesc('tgl_periksa')->first();
+
+        $pengajuan->hasil()->create([
+            'paspor_id'     => $data['paspor_id'],
+            'jenis'         => $pengajuan->jenis,
+            'tanggal'       => $pengajuan->tgl_pelaksanaan?->toDateString()
+                ?? $pengajuan->tanggal?->toDateString(),
+            'lokasi'        => $pengajuan->lokasi,
+            'paspor_mcu_id' => $dasar?->id,
+        ]);
+
+        return back()->with('ok', 'Nama ditambahkan ke pengajuan.');
+    }
+
+    public function induksiHapusNama(InduksiPengajuan $pengajuan, PasporInduksi $induksi)
+    {
+        abort_unless($induksi->induksi_pengajuan_id === $pengajuan->id, 404);
+        abort_unless($pengajuan->dapatDiubah(), 422,
+            'Nama hanya dapat dihapus selagi pengajuan masih draf.');
+
+        $induksi->delete();
+
+        return back()->with('ok', 'Nama dikeluarkan dari pengajuan.');
+    }
+
+    /** Mengisi hasil kelas yang sudah berjalan, per nama. */
+    public function induksiIsiHasil(Request $request, InduksiPengajuan $pengajuan, PasporInduksi $induksi)
+    {
+        abort_unless($induksi->induksi_pengajuan_id === $pengajuan->id, 404);
+
+        $data = $request->validate([
+            'tanggal'     => ['required', 'date'],
+            'tgl_expired' => ['nullable', 'date', 'after_or_equal:tanggal'],
+            'nomor_registrasi' => ['nullable', 'string', 'max:60'],
+            'hasil'       => ['required', Rule::in(Authority::HASIL_INDUKSI)],
+            'nilai'       => ['nullable', 'integer', 'min:0', 'max:100'],
+            'pemberi'     => ['nullable', 'string', 'max:150'],
+            'catatan'     => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $induksi->update(array_filter($data, fn ($v) => $v !== null && $v !== ''));
+
+        Jejak::write('Isi hasil induksi', $induksi->paspor?->nama.' — '.$induksi->hasil, 'miners');
+
+        return back()->with('ok', 'Hasil induksi tersimpan.');
+    }
+
+    public function parafInduksi(Request $request, InduksiPengajuan $pengajuan)
+    {
+        return $this->bubuhkan($request, $pengajuan,
+            $pengajuan->nomor_register ?? '#'.$pengajuan->id);
+    }
+
+    public function ajukanInduksiPengajuan(InduksiPengajuan $pengajuan)
+    {
+        /* Kelas tanpa satu peserta pun tidak dikirim. Sama alasannya
+           dengan surat MCU kosong: yang ditinjau peninjaunya adalah
+           daftar namanya, dan daftar kosong tidak dapat ditinjau —
+           hanya disetujui secara upacara. */
+        if ($pengajuan->hasil()->doesntExist()) {
+            return back()->withErrors([
+                'induksi' => 'Pengajuan tanpa satu nama pun tidak dapat dikirim.',
+            ]);
+        }
+
+        $pengajuan->ajukan();
+
+        Jejak::write('Ajukan induksi', $pengajuan->nomor_register ?? '#'.$pengajuan->id, 'miners');
+
+        return back()->with('ok', 'Pengajuan induksi dikirim untuk ditinjau.');
+    }
+
+    public function tinjauInduksiPengajuan(Request $request, InduksiPengajuan $pengajuan)
+    {
+        return $this->tinjau($request, $pengajuan, 'pengajuan induksi',
+            $pengajuan->nomor_register ?? '#'.$pengajuan->id);
     }
 
     /* ═══════════ induksi ═══════════ */

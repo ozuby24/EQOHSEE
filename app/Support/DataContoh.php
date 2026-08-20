@@ -25,7 +25,7 @@ use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, 
                 MinerbaConservationRecord, Note,
                 Paspor, PasporInduksi, PasporKartu, PasporKartuUnit, PasporMcu, PasporSertifikat,
                 Percakapan, PersetujuanParaf,
-                Pesan, Signatory, TpkkpAssessment, TpkkpPengujian, TpkkpResponse};
+                Pesan, Signatory, TpkkpAssessment, TpkkpPengujian, TpkkpResponse, InduksiPengajuan};
 use Illuminate\Support\Carbon;
 
 /**
@@ -147,7 +147,7 @@ final class DataContoh
         MinersFieldBreak::class,
         PasporSertifikat::class, PasporMcu::class,
         PasporKartuUnit::class, PasporKartu::class,
-        PasporInduksi::class, Paspor::class, McuPengajuan::class,
+        PasporInduksi::class, Paspor::class, McuPengajuan::class, InduksiPengajuan::class,
 
         /* Prosedur dan berita baru dapat masuk ke sini sesudah keduanya
            melekat perusahaan; sebelum itu penghapusnya tidak punya
@@ -398,6 +398,10 @@ final class DataContoh
                 ->orWhere(fn ($x) => $x
                     ->where('subjek_type', McuPengajuan::class)
                     ->whereIn('subjek_id', McuPengajuan::withoutGlobalScopes()
+                        ->where('company_id', $c->id)->select('id')))
+                ->orWhere(fn ($x) => $x
+                    ->where('subjek_type', InduksiPengajuan::class)
+                    ->whereIn('subjek_id', InduksiPengajuan::withoutGlobalScopes()
                         ->where('company_id', $c->id)->select('id')))),
 
             /* Catatan belajar menggantung pada modul, dan modul pada
@@ -1092,6 +1096,77 @@ final class DataContoh
                     'rujukan'     => $sudahKembali && $t === 1 ? 'Poli Jantung — kontrol tekanan darah' : null,
                     'outstanding' => $sudahKembali && $t === 1
                         ? $this->kini->copy()->subDays(9)->toDateString() : null,  // tertunggak
+                ]);
+                $n++;
+            }
+        }
+
+        return $n + $this->pengajuanInduksi($orang);
+    }
+
+    /**
+     * Kelas induksi — kembar dengan surat pengajuan MCU di atas.
+     *
+     * Dua kelas: satu yang sudah selesai dan dinilai, satu yang masih
+     * menunggu tinjauan dengan pesertanya belum dinilai. Yang kedua ada
+     * supaya angka "hasil belum dinilai" pada ringkasan punya isi —
+     * angka yang selalu nol tidak terbaca sebagai "belum dapat diisi"
+     * melainkan sebagai "semua sudah selesai".
+     *
+     * @param  \Illuminate\Support\Collection  $orang
+     */
+    private function pengajuanInduksi($orang): int
+    {
+        if ($orang->isEmpty()) return 0;
+
+        $n = 0;
+
+        /* [nomor, hari, lokasi, jenis, status, sudah dinilai, ambil dari, berapa] */
+        $kelas = [
+            ['IND/EQ/2026/001', -40, 'Ruang Kelas Safety — Site A', 'Awal',       Alur::DISETUJUI, true,  0, 2],
+            ['IND/EQ/2026/002', -4,  'Ruang Kelas Safety — Site A', 'Penyegaran', Alur::DIAJUKAN,  false, 1, 3],
+        ];
+
+        foreach ($kelas as [$nomor, $hari, $lokasi, $jenis, $status, $sudahDinilai, $dari, $berapa]) {
+            $p = InduksiPengajuan::withoutGlobalScopes()->create([
+                'company_id'      => $this->c->getKey(),
+                'user_id'         => $this->pengaju?->getKey(),
+                'nomor_register'  => $nomor,
+                'tanggal'         => $this->kini->copy()->addDays($hari)->toDateString(),
+                'judul'           => 'Induksi keselamatan '.strtolower($jenis).' pekerja',
+                'jenis'           => $jenis,
+                'lokasi'          => $lokasi,
+                'tgl_pelaksanaan' => $this->kini->copy()->addDays($hari)->addDays(3)->toDateString(),
+            ]);
+            $n++;
+
+            InduksiPengajuan::withoutGlobalScopes()->whereKey($p->id)->update([
+                'status'        => $status,
+                'diajukan_oleh' => $this->pengaju?->getKey(),
+                'diajukan_pada' => $this->kini->copy()->addDays($hari)->addDay(),
+                'ditinjau_oleh' => $status === Alur::DISETUJUI ? $this->peninjau?->getKey() : null,
+                'ditinjau_pada' => $status === Alur::DISETUJUI
+                    ? $this->kini->copy()->addDays($hari)->addDays(2) : null,
+            ]);
+
+            /* Rantai induksi BERHENTI DI OHSE — tidak ada tahap paraf
+               sama sekali, sebab OHSE sendiri yang menyelenggarakannya. */
+            foreach ($orang->slice($dari, $berapa)->values() as $t => $o) {
+                PasporInduksi::withoutGlobalScopes()->create([
+                    'paspor_id'            => $o->id,
+                    'induksi_pengajuan_id' => $p->id,
+                    'jenis'                => $jenis,
+                    'tanggal'              => $this->kini->copy()->addDays($hari)->addDays(3)->toDateString(),
+                    'lokasi'               => $lokasi,
+
+                    /* Yang belum dinilai BENAR-BENAR kosong hasilnya. */
+                    'hasil'       => $sudahDinilai ? ($t === 1 ? 'Mengulang' : 'Lulus') : null,
+                    'nilai'       => $sudahDinilai ? ($t === 1 ? 62 : 88) : null,
+                    'nomor_registrasi' => $sudahDinilai
+                        ? str_replace('IND/', 'SRT/', $nomor).'-'.($t + 1) : null,
+                    'tgl_expired' => $sudahDinilai
+                        ? $this->kini->copy()->addDays($hari)->addDays(368)->toDateString() : null,
+                    'pemberi'     => $sudahDinilai ? ($this->peninjau?->name ?? 'Tim OHSE') : null,
                 ]);
                 $n++;
             }

@@ -217,6 +217,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('{pengajuan}/paraf',  [MinersController::class,'parafMcu'])->name('paraf');
         });
 
+        /* Pengajuan induksi — kembar dengan pengajuan MCU di atas, dan
+           didaftarkan lebih dahulu daripada `{paspor}` untuk alasan yang
+           sama: `authority/induksi` cocok pula dengan pola
+           `authority/{paspor}`. */
+        Route::prefix('induksi')->name('induksi.')->group(function () {
+            Route::get('/',   [MinersController::class,'induksiIndex'])->name('index');
+            Route::post('/',  [MinersController::class,'induksiStore'])->name('store');
+
+            Route::put('{pengajuan}',    [MinersController::class,'induksiUpdate'])->name('update');
+            Route::delete('{pengajuan}', [MinersController::class,'induksiDestroy'])->name('destroy');
+
+            Route::post('{pengajuan}/nama',             [MinersController::class,'induksiTambahNama'])->name('nama.tambah');
+            Route::delete('{pengajuan}/nama/{induksi}', [MinersController::class,'induksiHapusNama'])->name('nama.hapus');
+            Route::put('{pengajuan}/hasil/{induksi}',   [MinersController::class,'induksiIsiHasil'])->name('hasil');
+
+            Route::post('{pengajuan}/ajukan', [MinersController::class,'ajukanInduksiPengajuan'])->name('ajukan');
+            Route::post('{pengajuan}/tinjau', [MinersController::class,'tinjauInduksiPengajuan'])->name('tinjau');
+            Route::post('{pengajuan}/paraf',  [MinersController::class,'parafInduksi'])->name('paraf');
+        });
+
         /* Field break, cuti, dan campaign didaftarkan SEBELUM {paspor},
            sebab semuanya cocok dengan pola `miners/{paspor}` juga —
            yang terdaftar lebih dahulu yang menang. */
