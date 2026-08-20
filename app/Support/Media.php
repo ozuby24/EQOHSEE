@@ -25,23 +25,28 @@ final class Media
     /**
      * Video latar hero halaman depan.
      *
-     * REKAMAN LAPANGAN, BUKAN FILM BRAND. Berkas ini sempat berisi
-     * montase yang berakhir pada logo EQOHSEE bergaya tiga dimensi —
-     * logo yang tidak sama dengan wordmark yang dipakai di seluruh
-     * aplikasi, dan yang di antara potongannya memuat layar kabin dengan
-     * tulisan kacau ("EQOH", "RPN", angka yang tidak terbaca). Halaman
-     * depan menggambar wordmark aslinya di atas rekaman ini; logo kedua
-     * yang berbeda bentuk, di belakangnya, bukan penegasan merek
-     * melainkan bantahan terhadap merek itu sendiri.
+     * FILM BRAND RESMI — dan logonya HARUS logo yang benar.
      *
-     * Penggantinya rekaman operasi tambang saat senja tanpa satu pun
-     * teks: alat muat, dozer, lalu aerial pit. Yang di atasnya —
-     * wordmark, tagline, tombol — tetap menjadi satu-satunya teks di
-     * layar.
+     * Berkas ini sempat berisi montase yang berakhir pada logo EQOHSEE
+     * bergaya tiga dimensi yang TIDAK sama dengan wordmark yang dipakai
+     * di seluruh aplikasi, dan yang di antara potongannya memuat layar
+     * kabin bertuliskan kacau ("EQOH", "RPN", angka yang tidak terbaca).
+     * Halaman depan menggambar wordmark aslinya di atas rekaman ini;
+     * logo kedua yang berbeda bentuk, di belakangnya, bukan penegasan
+     * merek melainkan bantahan terhadap merek itu sendiri.
+     *
+     * Isinya sekarang film brand yang diberikan pemakainya sendiri:
+     * aerial pit senja, ruang kendali, animasi tanda heksagon EQOHSEE
+     * yang benar, tampilan dasbor, lalu regu berjalan. Audionya
+     * dipertahankan — latar hero memang dibisukan, tetapi modal "Tonton
+     * Video" memutarnya dengan kontrol.
      *
      * Panjangnya 10 detik, dan angka itu disebut di halaman depan
      * ("Operasional tambang · 10 detik" pada tombol Tonton Video).
      * Mengubah durasinya berarti mengubah kalimat itu juga.
+     *
+     * Berlaku pula di sini: periksa SELURUH bingkai sebelum memasang
+     * rekaman baru — lihat catatan pada MASUK_VIDEO di bawah.
      */
     public const HERO_VIDEO  = 'hero/tambang.mp4';
     public const HERO_POSTER = 'hero/tambang.jpg';
@@ -69,6 +74,28 @@ final class Media
      *
      * Posternya adalah bingkai pertama rekaman yang sama, jadi tidak ada
      * lompatan gambar saat rekamannya mulai berjalan.
+     *
+     * ── WAJIB: PERIKSA SELURUH BINGKAI, BUKAN CUPLIKANNYA ──
+     *
+     * Rekaman stok semacam ini kerap ditutup KARTU PENUTUP BERLOGO pada
+     * satu detik terakhirnya. Berkas ini sempat lolos dengan kartu
+     * penutup berisi logo perisai biru-hijau dan tagline "Sustaining
+     * Performance | Shaping the Future" — logo yang bukan milik EQOHSEE
+     * sama sekali, tergambar tepat di belakang wordmark aslinya.
+     *
+     * Ia lolos karena diperiksa dengan mengambil bingkai tiap dua detik
+     * (0, 2, 4, 6, 8) pada rekaman sepuluh detik: kartunya mulai pada
+     * detik 9,02 dan tidak satu pun cuplikan mengenainya. Pemeriksaan
+     * yang tidak menyentuh detik terakhir bukan pemeriksaan.
+     *
+     * Cara memeriksa yang benar — kontak sheet SELURUH berkas:
+     *
+     *   ffmpeg -i public/media/hero/masuk.mp4 \
+     *     -vf "fps=4,scale=240:-1,tile=8x5" /tmp/periksa-%%02d.png
+     *
+     * Lalu LIHAT gambarnya. Tidak boleh ada teks, logo, atau kartu
+     * penutup di bingkai mana pun — halaman ini sudah menggambar
+     * wordmark, tagline, dan delapan aspek di atas rekamannya.
      */
     public const MASUK_VIDEO  = 'hero/masuk.mp4';
     public const MASUK_POSTER = 'hero/masuk.jpg';
