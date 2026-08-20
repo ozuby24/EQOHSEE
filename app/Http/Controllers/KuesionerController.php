@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Company, TpkkpAssessment, TpkkpResponse};
-use App\Support\{Tpkkp, TpkkpKuesioner};
+use App\Support\{TautanPublik, Tpkkp, TpkkpKuesioner};
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -149,9 +149,13 @@ class KuesionerController extends Controller
     {
         $company = Company::findOrFail($request->input('company_id'));
         $this->setToken($company, Str::random(24));
-        ActivityLog::write('Reset tautan kuesioner', $company->name, 'tpkkp');
+        ActivityLog::write('Reset tautan publik PTPKKP', $company->name, 'tpkkp');
 
-        return back()->with('ok', 'Tautan kuesioner diperbarui. Tautan lama tidak berlaku lagi.');
+        /* Satu token melayani kuesioner DAN pengujian, jadi menggantinya
+           mencabut keduanya. Pesan yang hanya menyebut kuesioner
+           membuat tautan pengujian mati tanpa ada yang tahu kapan. */
+        return back()->with('ok', 'Tautan publik diperbarui — kuesioner dan pengujian sekaligus.'
+            .' Tautan lama tidak berlaku lagi.');
     }
 
     public function destroyResponse(TpkkpResponse $response)
@@ -303,39 +307,28 @@ class KuesionerController extends Controller
 
     /* ============ BANTU ============ */
 
-    /** Penilaian periode berjalan — token kuesioner menumpang di sini. */
-    private function assessment(): TpkkpAssessment
-    {
-        return TpkkpAssessment::forYear((int) now()->year);
-    }
+    /*
+     * Penanganan token pindah ke App\Support\TautanPublik.
+     *
+     * Sebabnya halaman Pengujian: ia dibagikan ke orang yang sama,
+     * lewat cara yang sama, dan harus dicabut bersama saat tautannya
+     * di-reset. Dua salinan kode token berarti cepat atau lambat yang
+     * satu direset dan yang lain masih hidup.
+     */
 
     private function token(Company $c): string
     {
-        $a = $this->assessment();
-        $t = $a->profil['tokens'][$c->id] ?? null;
-
-        return $t ?: $this->setToken($c, Str::random(24));
+        return TautanPublik::token($c);
     }
 
     private function setToken(Company $c, string $token): string
     {
-        $a = $this->assessment();
-        $p = (array) $a->profil;
-        $p['tokens'] ??= [];
-        $p['tokens'][$c->id] = $token;
-        $a->update(['profil' => $p]);
-
-        return $token;
+        return TautanPublik::setToken($c, $token);
     }
 
     private function byToken(string $token): Company
     {
-        foreach (TpkkpAssessment::all() as $a) {
-            foreach ((array) ($a->profil['tokens'] ?? []) as $cid => $t) {
-                if ($t === $token && ($c = Company::find($cid))) return $c;
-            }
-        }
-        abort(404, 'Tautan kuesioner tidak valid atau sudah diganti.');
+        return TautanPublik::wajib($token);
     }
 
     /* ============ TARIK KE SKOR METODE KS ============ */

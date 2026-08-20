@@ -725,6 +725,56 @@ export interface HalamanKuesioner {
   mitra: Array<{ perusahaan: string; jumlah: number; rerata: number | null }>;
 }
 
+/* ══════════════ Pengujian (metode PJ) ══════════════ */
+
+export interface PesertaUji {
+  id: number;
+  nama: string;
+  nrp: string | null;
+  jabatan: string | null;
+  dept: string | null;
+  perusahaan: string | null;
+  benar: number;
+  total: number;
+  tingkat: number;
+  label: string | null;
+  durasi: number;
+  /** Berapa kali peserta meninggalkan layar saat mengerjakan. */
+  pindahLayar: number;
+  waktu: string | null;
+}
+
+export interface RingkasUji {
+  peserta: number;
+  /** Tingkat yang masuk penilaian — rerata tingkat peserta, dibulatkan. */
+  tingkat: number | null;
+  rerataTingkat: number | null;
+  rerataPct: number | null;
+  /** tingkat 1–5 → jumlah peserta */
+  sebaran: Record<string, number>;
+  pindahLayar: number;
+}
+
+export interface HalamanPengujian {
+  judul: string;
+  subjudul: string;
+  picker: Picker;
+  bank: number;
+  jumlahSoal: number;
+  detikPerSoal: number;
+  pita: Array<{ batas: number; tingkat: number; nama: string }>;
+  /** Palet tingkat 1–5, datang dari server agar tidak ada salinan palet. */
+  warnaTingkat: string[];
+  namaTingkat: string[];
+  perusahaan: PerusahaanRingkas | null;
+  daftarPerusahaan: PerusahaanRingkas[];
+  urlPublik: string | null;
+  ringkas: RingkasUji;
+  peserta: PesertaUji[];
+  skorKini: { kode: string; nama: string; nilai: number | null; ket: string | null } | null;
+  bisaTerapkan: boolean;
+}
+
 /* ══════════════ Personalia ══════════════ */
 
 export interface MedanIsian {

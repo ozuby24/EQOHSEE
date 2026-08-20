@@ -9,7 +9,7 @@ use App\Http\Controllers\{
 };
 use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiTemuanController, HazardController,
     HazardExportController, InspectionController, InspectionTemplateController,
-    BlastingController, CostController, DispatchController, PermitController, EnergyController, EngineeringController, EnvironmentController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
+    BlastingController, CostController, DispatchController, PermitController, EnergyController, EngineeringController, EnvironmentController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, PengujianController, MineOperationsController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\{BantuanController, BerkasController, ChatController, TemuanController};
 use App\Http\Controllers\Admin\{AiController, CompanyController, KeamananController, PemilikController, SystemController, UserController};
@@ -33,6 +33,20 @@ Route::get('q/{token}',              [KuesionerController::class,'pilih'])->name
 Route::get('q/{token}/selesai',      [KuesionerController::class,'selesai'])->name('kuesioner.selesai');
 Route::get('q/{token}/{cat}',        [KuesionerController::class,'form'])->name('kuesioner.form');
 Route::post('q/{token}/{cat}',       [KuesionerController::class,'submit'])->name('kuesioner.submit');
+
+/* ============ PENGUJIAN PUBLIK — kuis metode PJ (tanpa login) ============
+ *
+ * Alurnya dijalankan server langkah demi langkah, bukan satu halaman
+ * JavaScript: soal berikutnya baru ada setelah yang sekarang dijawab,
+ * dan batas waktunya disimpan di server. Lihat PengujianController.
+ */
+Route::get('uji/{token}',            [PengujianController::class,'mulai'])->name('pengujian.mulai');
+Route::post('uji/{token}/siap',      [PengujianController::class,'siap'])->name('pengujian.siap');
+Route::get('uji/{token}/aturan',     [PengujianController::class,'aturan'])->name('pengujian.aturan');
+Route::post('uji/{token}/jalan',     [PengujianController::class,'jalan'])->name('pengujian.jalan');
+Route::get('uji/{token}/soal',       [PengujianController::class,'soal'])->name('pengujian.soal');
+Route::post('uji/{token}/jawab',     [PengujianController::class,'jawab'])->name('pengujian.jawab');
+Route::get('uji/{token}/selesai',    [PengujianController::class,'selesai'])->name('pengujian.selesai');
 
 Route::get('/', fn () => auth()->check()
     ? redirect()->route('dashboard')
@@ -367,6 +381,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('program/{id}/status', [TpkkpController::class,'updateProgramStatus'])->name('program.status');
         Route::delete('program/{id}',    [TpkkpController::class,'destroyProgram'])->name('program.destroy');
         Route::get('kuesioner',          [KuesionerController::class,'admin'])->name('kuesioner');
+        Route::get('pengujian',          [PengujianController::class,'admin'])->name('pengujian');
         Route::get('metode',      [TpkkpController::class,'metode'])->name('metode');
         Route::get('tentang',     [TpkkpController::class,'tentang'])->name('tentang');
 
@@ -391,6 +406,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('kuesioner/tarik',           [KuesionerController::class,'tarikKs'])->name('kuesioner.tarik');
     Route::delete('kuesioner/{response}',    [KuesionerController::class,'destroyResponse'])->middleware('can:admin')->name('kuesioner.response.destroy');
     Route::get('kuesioner',                  [KuesionerController::class,'admin'])->name('kuesioner.admin');
+
+    Route::get('pengujian',                  [PengujianController::class,'admin'])->name('pengujian.admin');
+    Route::post('pengujian/terapkan',        [PengujianController::class,'terapkan'])->name('pengujian.terapkan');
+    Route::delete('pengujian/{peserta}',     [PengujianController::class,'destroyPeserta'])->middleware('can:admin')->name('pengujian.peserta.destroy');
 
     /* ================= WEBSITE #5 — ISO & Dokumen ================= */
     Route::prefix('dokumen')->name('dokumen.')->group(function () {

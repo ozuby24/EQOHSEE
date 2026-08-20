@@ -126,6 +126,7 @@ final class Menu
           ['Profil',         'tpkkp.profile',   'tpkkp/profil'],
           ['Formulir Nilai', 'tpkkp.assess',    'tpkkp/penilaian'],
           ['Kuesioner',      'tpkkp.kuesioner', 'tpkkp/kuesioner'],
+          ['Pengujian',      'tpkkp.pengujian', 'tpkkp/pengujian'],
         ],
         'Hasil & Analisis' => [
           ['Rekapitulasi',   'tpkkp.rekap',     'tpkkp/rekap'],

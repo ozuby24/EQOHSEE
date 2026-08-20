@@ -25,7 +25,7 @@ use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, 
                 MinerbaConservationRecord, Note,
                 Paspor, PasporInduksi, PasporKartu, PasporKartuUnit, PasporMcu, PasporSertifikat,
                 Percakapan, PersetujuanParaf,
-                Pesan, Signatory, TpkkpAssessment, TpkkpResponse};
+                Pesan, Signatory, TpkkpAssessment, TpkkpPengujian, TpkkpResponse};
 use Illuminate\Support\Carbon;
 
 /**
@@ -125,7 +125,7 @@ final class DataContoh
            relasi pivot — bukan model tersendiri. */
         Pesan::class, Percakapan::class,
 
-        TpkkpResponse::class, TpkkpAssessment::class,
+        TpkkpResponse::class, TpkkpPengujian::class, TpkkpAssessment::class,
         Note::class,
 
         /* Authority. Keempat anaknya menggantung pada paspor; jenis
@@ -1182,6 +1182,73 @@ final class DataContoh
                 'perusahaan' => $this->c->name,
                 'answers'    => ['q1' => 4, 'q2' => 3 + ($i % 2), 'q3' => 5, 'q4' => 4],
                 'ts'         => $this->kini->copy()->subDays(30 - $i * 4),
+            ]);
+            $n++;
+        }
+
+        $n += $this->tpkkpPengujian();
+
+        return $n;
+    }
+
+    /**
+     * Hasil pengujian (metode PJ) — enam peserta, sengaja tidak seragam.
+     *
+     * Nilainya menyebar dari 6/15 sampai 14/15 supaya sebaran tingkat di
+     * halaman admin punya lebih dari satu batang. Sebaran yang rata —
+     * enam peserta bertingkat sama — memperlihatkan halaman yang
+     * BEKERJA tetapi tidak memperlihatkan apa gunanya: yang dicari
+     * seorang penilai justru ekor bawahnya.
+     *
+     * Tingkatnya dihitung lewat TpkkpUji::tingkatDari, bukan ditulis
+     * tetap. Pita konversinya ada di berkas instrumen dan dapat
+     * berubah; angka tetap akan diam-diam berhenti cocok dengan pita
+     * yang berlaku, dan data contoh yang tidak konsisten dengan
+     * mesinnya sendiri lebih menyesatkan daripada tidak ada data.
+     *
+     * Satu peserta diberi `pindah_layar` di atas nol supaya kolom
+     * indikasi itu punya isi — kolom yang seluruhnya nol tampak seperti
+     * kolom yang tidak berfungsi.
+     */
+    private function tpkkpPengujian(): int
+    {
+        $total = TpkkpUji::jumlahSoal();
+        $n     = 0;
+
+        $peserta = [
+            ['Suryanto',      'Operator Dump Truck',  'Mining / Operation / Produksi', 14, 0],
+            ['Rahmat Hidayat','Mekanik',              'Plant',                         12, 0],
+            ['Dewi Lestari',  'Admin',                'HRGA / HRO',                    10, 2],
+            ['Bagus Prakoso', 'Crew / Helper',        'Mining / Operation / Produksi',  9, 0],
+            ['Iwan Setiawan', 'Driver',               'CHF / Port',                     7, 1],
+            ['Marta Sinaga',  'Security',             'HRGA / HRO',                     5, 0],
+        ];
+
+        foreach ($peserta as $i => [$nama, $jabatan, $dept, $benar, $pindah]) {
+            $benar = min($benar, $total);
+            $pct   = $total ? $benar / $total : 0.0;
+
+            $mulai = $this->kini->copy()->subDays(12 - $i)->setTime(9 + $i % 6, 15);
+
+            $this->baru(TpkkpPengujian::class, [
+                'ext_id'       => 'UJI-'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
+                'nama'         => $nama,
+                'nrp'          => '20'.str_pad((string) (210 + $i), 4, '0', STR_PAD_LEFT),
+                'jabatan'      => $jabatan,
+                'dept'         => $dept,
+                'perusahaan'   => $this->c->name,
+                'kunci_identitas' => TpkkpUji::kunciIdentitas([
+                    'nama' => $nama, 'jabatan' => $jabatan,
+                    'dept' => $dept, 'perusahaan' => $this->c->name,
+                ]),
+                'benar'        => $benar,
+                'total'        => $total,
+                'skor_pct'     => round($pct, 4),
+                'tingkat'      => TpkkpUji::tingkatDari($pct),
+                'durasi_detik' => 420 + $i * 55,
+                'pindah_layar' => $pindah,
+                'mulai'        => $mulai,
+                'ts'           => $mulai->copy()->addSeconds(420 + $i * 55),
             ]);
             $n++;
         }

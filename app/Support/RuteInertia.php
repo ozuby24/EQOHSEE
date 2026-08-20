@@ -57,6 +57,11 @@ final class RuteInertia
         'tpkkp.kuesioner',
         'kuesioner.admin',
 
+        // Sama untuk Pengujian: bilah PTPKKP memakai tpkkp.pengujian,
+        // tautan lain memakai pengujian.admin.
+        'tpkkp.pengujian',
+        'pengujian.admin',
+
         /* Bantuan */
         'bantuan.index',
         'bantuan.masuk',

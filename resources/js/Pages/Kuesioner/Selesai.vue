@@ -19,6 +19,21 @@ defineProps<{
     <p class="text-[13px] text-stone-500 mt-2 leading-relaxed">
       Jawaban Anda sudah tersimpan dan akan digunakan untuk penilaian PTPKKP di {{ company.name }}.
     </p>
-    <Link :href="`/q/${token}`" class="inline-block mt-6 text-[12.5px] font-bold text-cam-lime-deep hover:underline">Isi kuesioner lain</Link>
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+      <Link :href="`/q/${token}`"
+            class="text-[12.5px] font-bold text-cam-lime-deep hover:underline">Isi kuesioner lain</Link>
+      <!--
+        Tautan ke pengujian dipasang di sini, bukan hanya disebar
+        terpisah. Keduanya ditujukan kepada orang yang sama dan
+        dibagikan lewat cara yang sama; yang baru selesai mengisi
+        kuesioner adalah orang yang paling mungkin mengerjakan
+        pengujiannya sekarang juga, dan menyuruhnya mencari tautan
+        kedua di grup WhatsApp adalah cara paling pasti kehilangan dia.
+      -->
+      <Link :href="`/uji/${token}`"
+            class="text-[12.5px] font-bold text-cam-lime-deep hover:underline">
+        Ikuti pengujian kesadaran risiko →
+      </Link>
+    </div>
   </div>
 </template>
