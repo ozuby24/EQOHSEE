@@ -23,11 +23,25 @@ final class Media
     }
 
     /**
-     * Video latar hero.
+     * Video latar hero halaman depan.
      *
-     * Hanya dipasang di layar lebar. Di ponsel gambar diam yang dipakai —
-     * memutar video belasan megabita lewat jaringan site tambang bukan
-     * kesan mewah, melainkan halaman yang tidak kunjung muncul.
+     * REKAMAN LAPANGAN, BUKAN FILM BRAND. Berkas ini sempat berisi
+     * montase yang berakhir pada logo EQOHSEE bergaya tiga dimensi —
+     * logo yang tidak sama dengan wordmark yang dipakai di seluruh
+     * aplikasi, dan yang di antara potongannya memuat layar kabin dengan
+     * tulisan kacau ("EQOH", "RPN", angka yang tidak terbaca). Halaman
+     * depan menggambar wordmark aslinya di atas rekaman ini; logo kedua
+     * yang berbeda bentuk, di belakangnya, bukan penegasan merek
+     * melainkan bantahan terhadap merek itu sendiri.
+     *
+     * Penggantinya rekaman operasi tambang saat senja tanpa satu pun
+     * teks: alat muat, dozer, lalu aerial pit. Yang di atasnya —
+     * wordmark, tagline, tombol — tetap menjadi satu-satunya teks di
+     * layar.
+     *
+     * Panjangnya 10 detik, dan angka itu disebut di halaman depan
+     * ("Operasional tambang · 10 detik" pada tombol Tonton Video).
+     * Mengubah durasinya berarti mengubah kalimat itu juga.
      */
     public const HERO_VIDEO  = 'hero/tambang.mp4';
     public const HERO_POSTER = 'hero/tambang.jpg';
@@ -35,11 +49,26 @@ final class Media
     /**
      * Latar halaman masuk dan pendaftaran.
      *
-     * Sebelumnya sebuah foto 900 piksel dipakai untuk panel setinggi layar
-     * penuh. Diperbesar tiga kali lipat pada layar berkerapatan ganda,
-     * fotonya pecah — dan itu adalah layar pertama yang dilihat pengguna
-     * baru. Rekaman 1280 piksel yang bergerak menutupi jarak itu jauh
-     * lebih baik daripada foto diam yang diregangkan.
+     * REKAMANNYA HARUS BEDA DARI HALAMAN DEPAN, dan itu bukan selera.
+     * Berkas ini sempat berisi klip yang sama persis dengan butir galeri
+     * "Inspeksi & Observasi" — posternya bahkan byte-per-byte identik
+     * dengan galeri/safety.jpg. Akibatnya orang yang menekan "Masuk"
+     * dari halaman depan melihat gambar yang baru saja dilewatinya, dan
+     * perpindahan halaman itu terbaca sebagai halaman yang gagal
+     * berganti, bukan sebagai halaman baru.
+     *
+     * Halaman depan memakai film brand yang berakhir pada logo; halaman
+     * masuk memakai rekaman operasi tambang tanpa teks — sengaja tanpa
+     * teks, sebab panel ini sudah memuat wordmark, tagline, dan delapan
+     * aspek di atasnya.
+     *
+     * Ukurannya 1920×1080, bukan 1280×720 seperti dahulu. Panelnya
+     * setinggi layar penuh: pada layar berkerapatan ganda, sumber 720p
+     * diregangkan sekitar tiga kali dan lunaknya terlihat justru pada
+     * layar pertama yang dilihat pengguna baru.
+     *
+     * Posternya adalah bingkai pertama rekaman yang sama, jadi tidak ada
+     * lompatan gambar saat rekamannya mulai berjalan.
      */
     public const MASUK_VIDEO  = 'hero/masuk.mp4';
     public const MASUK_POSTER = 'hero/masuk.jpg';

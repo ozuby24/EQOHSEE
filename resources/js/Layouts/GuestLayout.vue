@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, ref } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import { propHalaman } from '../halaman';
 import Wordmark from '../Components/Wordmark.vue';
@@ -15,14 +15,44 @@ import Wordmark from '../Components/Wordmark.vue';
  * Rekaman dipakai bila berkasnya ada; bila tidak, posternya, dan bila
  * itu pun belum ada, foto lama tetap menjadi jaring pengaman supaya
  * halaman masuk tidak pernah tampil tanpa latar sama sekali.
+ *
+ * Rekamannya dipakai di SEMUA ukuran layar, ponsel termasuk. Sempat
+ * dibatasi ke layar lebar demi berkasnya yang hampir lima megabita,
+ * tetapi gerakan itu memang yang diminta ada di halaman ini — dan
+ * poster diam pada panel yang di sebelahnya penuh gerak terbaca sebagai
+ * rekaman yang gagal dimuat, bukan sebagai penghematan.
+ *
+ * Posternya tetap bingkai pertama rekaman yang sama, jadi tidak ada
+ * lompatan gambar saat rekamannya mulai berjalan.
  */
 const prop = propHalaman();
 const media = computed<any>(() => prop.mediaMasuk ?? {});
 
-const kurangiGerak = ref(
-  typeof window !== 'undefined'
-  && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true,
-);
+/**
+ * Cocokkan satu media query dan ikuti perubahannya.
+ *
+ * Diikuti, bukan dibaca sekali. Memutar layar ponsel ke lanskap
+ * melewati ambang ini, dan nilai yang dibaca sekali membuat halaman
+ * tetap memakai keputusan lama sampai dimuat ulang.
+ */
+function cocok(kueri: string) {
+  const siap = typeof window !== 'undefined' && typeof window.matchMedia === 'function';
+  const mq = siap ? window.matchMedia(kueri) : null;
+  const nilai = ref(mq?.matches === true);
+
+  if (mq) {
+    const ubah = (e: MediaQueryListEvent) => { nilai.value = e.matches; };
+    mq.addEventListener('change', ubah);
+    onBeforeUnmount(() => mq.removeEventListener('change', ubah));
+  }
+
+  return nilai;
+}
+
+const kurangiGerak = cocok('(prefers-reduced-motion: reduce)');
+
+const pakaiRekaman = computed(() =>
+  Boolean(media.value.video) && !kurangiGerak.value);
 
 /** Waktu setempat, ditulis sekali saat halaman dibuka. */
 const jam = new Intl.DateTimeFormat('id-ID', {
@@ -41,7 +71,7 @@ const jam = new Intl.DateTimeFormat('id-ID', {
     -->
     <section class="pendar-rekaman sapuan bg-[#0B1117] text-white p-8 sm:p-12 lg:p-14 flex flex-col justify-between min-h-[330px] lg:min-h-screen">
       <video
-        v-if="media.video && !kurangiGerak"
+        v-if="pakaiRekaman"
         :src="media.video" :poster="media.poster ?? undefined"
         autoplay muted loop playsinline preload="metadata"
         aria-hidden="true"
