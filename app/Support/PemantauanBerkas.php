@@ -243,6 +243,66 @@ final class PemantauanBerkas
     }
 
     /**
+     * Nama zona D'Best untuk sebuah keadaan.
+     *
+     * Ambangnya sudah sama — expired / ≤30 / 31–60 / >60 / belum
+     * bertanggal — yang berbeda hanya namanya. Dipetakan di satu tempat
+     * supaya layar dan server tidak pernah menyebut zona yang berbeda
+     * untuk baris yang sama.
+     */
+    public const ZONA = [
+        Authority::HABIS          => 'expired',
+        Authority::MENDESAK       => 'kritis',
+        Authority::DEKAT          => 'waspada',
+        Authority::PANJANG        => 'aman',
+        Authority::TAK_BERTANGGAL => 'kosong',
+    ];
+
+    /**
+     * Berapa baris pada tiap zona, ditambah totalnya.
+     *
+     * Zona yang KOSONG tetap disebut dengan nilai nol. Kartu zona yang
+     * menghilang saat tidak ada isinya membuat deretnya berubah-ubah
+     * lebar tiap kali data berubah, dan yang membaca kehilangan tempat
+     * yang sudah dihafalnya.
+     *
+     * @param  list<array<string,mixed>>  $baris
+     * @return array<string,int>
+     */
+    public static function perZona(array $baris): array
+    {
+        $per = array_fill_keys(array_values(self::ZONA), 0);
+
+        foreach ($baris as $b) {
+            $z = self::ZONA[$b['keadaan']] ?? 'kosong';
+            $per[$z]++;
+        }
+
+        return ['total' => count($baris)] + $per;
+    }
+
+    /**
+     * Menyaring baris pada satu zona.
+     *
+     * Zona yang tidak dikenal TIDAK menyaring apa pun — alamat yang
+     * disusun tangan atau tautan lama yang menyebut zona yang sudah
+     * dihapus tetap memperlihatkan seluruh daftar, bukan daftar kosong
+     * yang terbaca sebagai "tidak ada data".
+     *
+     * @param  list<array<string,mixed>>  $baris
+     * @return list<array<string,mixed>>
+     */
+    public static function saringZona(array $baris, ?string $zona): array
+    {
+        if (!$zona || !in_array($zona, self::ZONA, true)) return $baris;
+
+        return array_values(array_filter(
+            $baris,
+            fn ($b) => (self::ZONA[$b['keadaan']] ?? 'kosong') === $zona,
+        ));
+    }
+
+    /**
      * Ringkasan satu jenis berkas, siap dipasang di daftarnya sendiri.
      *
      * Daftar Mine Permit menjawab "berkas apa saja yang ada"; yang
@@ -257,10 +317,21 @@ final class PemantauanBerkas
     {
         $baris = self::baris($orang, $jenis);
 
+        $ringkas = self::ringkas($baris);
+
         return [
             'jenis'         => $jenis,
-            'ringkas'       => self::ringkas($baris),
+            'ringkas'       => $ringkas,
             'perPerusahaan' => self::perPerusahaan($baris),
+
+            /* Bentuk D'Best: hitungan per zona untuk kartu penyaring,
+               dan jumlah ORANG terpisah dari jumlah berkas. */
+            'zona'     => self::perZona($baris),
+            'manpower' => [
+                'total'    => $ringkas['manpower'],
+                'aktif'    => $ringkas['manpowerAktif'],
+                'nonaktif' => $ringkas['manpowerNonaktif'],
+            ],
         ];
     }
 

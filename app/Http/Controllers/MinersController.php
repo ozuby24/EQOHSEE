@@ -1448,11 +1448,17 @@ class MinersController extends Controller
            parameter — lihat catatan di routes/web.php. */
         $tahap = (string) $request->route()->defaults['tahap'];
 
+        /* Zona masa berlaku dari alamat — kartu zona di atas daftar
+           menyaringnya. Zona tak dikenal diabaikan, bukan ditolak:
+           tautan lama tetap memperlihatkan seluruh daftar, bukan daftar
+           kosong yang terbaca sebagai "tidak ada data". */
+        $zona = $request->get('zona');
+
         $daftar = match ($tahap) {
-            'mcu'          => $this->riwayatMcu(),
+            'mcu'          => $this->riwayatMcu($zona),
             'induksi'      => $this->riwayatInduksi(),
-            'mine-permit'  => $this->riwayatKartu(AlurMiner::KARTU_PERMIT, $request),
-            'mine-license' => $this->riwayatKartu(AlurMiner::KARTU_LICENSE, $request),
+            'mine-permit'  => $this->riwayatKartu(AlurMiner::KARTU_PERMIT, $request, $zona),
+            'mine-license' => $this->riwayatKartu(AlurMiner::KARTU_LICENSE, $request, $zona),
             'authority'    => $this->riwayatKompetensi(),
             default        => abort(404),
         };
@@ -1466,6 +1472,8 @@ class MinersController extends Controller
             'baris'    => $daftar['baris'],
             'ringkas'  => $daftar['ringkas'],
             'pemantauan' => $daftar['pemantauan'] ?? null,
+            'zona'       => $zona,
+            'rute'       => '/miners/riwayat/'.$tahap,
         ]);
     }
 
@@ -1482,10 +1490,18 @@ class MinersController extends Controller
      * Susunan kolomnya mengikuti daftar man-power D'Best: orangnya
      * lebih dulu, hasilnya, lalu masa berlakunya.
      */
-    private function riwayatMcu(): array
+    private function riwayatMcu(?string $zona = null): array
     {
         $baris = PasporMcu::with(['paspor.company', 'pengajuan'])
             ->orderByDesc('tgl_periksa')->orderByDesc('id')->get();
+
+        if (in_array($zona, PemantauanBerkas::ZONA, true)) {
+            $baris = $baris->filter(function (PasporMcu $m) use ($zona) {
+                $keadaan = Authority::keadaanKartu($m->tgl_expired);
+
+                return (PemantauanBerkas::ZONA[$keadaan] ?? 'kosong') === $zona;
+            })->values();
+        }
 
         return [
             'judul'    => 'Riwayat MCU',
@@ -1512,6 +1528,7 @@ class MinersController extends Controller
                 ],
                 'keadaan'    => $m->keadaan(),
                 'keterangan' => $m->keterangan(),
+                'sisaHari'   => Authority::sisaHari($m->tgl_expired),
 
                 /* "Baik" berarti BOLEH BEKERJA, dan itu menuntut dua hal
                    sekaligus: hasilnya meloloskan, dan berkasnya sudah
@@ -1582,7 +1599,7 @@ class MinersController extends Controller
     }
 
     /** @return array<string,mixed> */
-    private function riwayatKartu(string $jenis, Request $request): array
+    private function riwayatKartu(string $jenis, Request $request, ?string $zona = null): array
     {
         /* `paspor.mcu` ikut dimuat: keadaan kartu dihitung atas tanggal
            EFEKTIF, dan bagi Mine Permit tanggal itu dibatasi MCU
@@ -1593,6 +1610,22 @@ class MinersController extends Controller
             ->orderByDesc('tgl_terbit')->orderByDesc('id')->get();
 
         $permit = $jenis === AlurMiner::KARTU_PERMIT;
+
+        /* Disaring menurut zona TANGGAL EFEKTIF, bukan tanggal cetak:
+           kartu yang MCU-nya sudah habis harus muncul di zona "expired"
+           meski tanggal pada kartunya masih panjang. Itu memang zona
+           yang benar — orangnya tidak boleh masuk hari ini. */
+        /* Zona yang tidak dikenal DIABAIKAN, bukan menyaring habis.
+           Tautan lama yang menyebut zona yang sudah dihapus akan
+           terbaca sebagai "tidak ada data" — kesimpulan yang jauh lebih
+           berat daripada "penyaringnya tidak dikenali". */
+        if (in_array($zona, PemantauanBerkas::ZONA, true)) {
+            $baris = $baris->filter(function (PasporKartu $k) use ($zona) {
+                $keadaan = Authority::keadaanKartu($k->expiredEfektif());
+
+                return (PemantauanBerkas::ZONA[$keadaan] ?? 'kosong') === $zona;
+            })->values();
+        }
 
         return [
             'judul'    => $permit ? 'Riwayat Mine Permit' : 'Riwayat Mine License',
@@ -1645,6 +1678,14 @@ class MinersController extends Controller
                 'keadaan'    => $k->keadaan(),
                 'keterangan' => $k->keterangan(),
                 'baik'       => $k->sudahDisetujui(),
+
+                /* Untuk pita masa berlaku: sisa harinya, dari berkas apa
+                   tanggalnya berasal, dan tanggal yang tercetak pada
+                   kartunya bila berbeda. Tanpa ketiganya, pitanya hanya
+                   mengulang tanggal yang sudah ada di kolomnya. */
+                'sisaHari'    => Authority::sisaHari($k->expiredEfektif()),
+                'namaDasar'   => $k->dibatasiDasar() ? $k->namaDasar() : null,
+                'tglTercetak' => $k->dibatasiDasar() ? $k->tgl_expired?->toDateString() : null,
 
                 'status'        => $k->status,
                 'statusLabel'   => Alur::LABEL[$k->status] ?? $k->status,
@@ -2089,6 +2130,7 @@ class MinersController extends Controller
                 'hasil'      => $m->hasil,
                 'keadaan'    => $m->keadaan(),
                 'keterangan' => $m->keterangan(),
+                'sisaHari'   => Authority::sisaHari($m->tgl_expired),
             ] : null,
 
             'kartu' => $k ? [

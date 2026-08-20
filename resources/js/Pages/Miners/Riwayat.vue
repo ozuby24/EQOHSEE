@@ -17,7 +17,8 @@
  */
 import { computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
-import RingkasPemantauan from './RingkasPemantauan.vue';
+import ZonaMasaBerlaku from './ZonaMasaBerlaku.vue';
+import PitaMasaBerlaku from './PitaMasaBerlaku.vue';
 import { propHalaman } from '../../halaman';
 import { KEADAAN } from '../../Grafik/warna';
 
@@ -52,6 +53,21 @@ const URUT = [
   ['Mine License', '/miners/riwayat/mine-license'],
   ['Authority',    '/miners/riwayat/authority'],
 ];
+
+/*
+ * Kolom mana yang berisi nama orang dan mana yang berisi tanggal
+ * berlaku — dicari dari JUDULNYA, bukan dari nomor urutnya.
+ *
+ * Susunan kolom berbeda antar tahap dan pernah berubah sekali. Nomor
+ * urut yang ditulis tetap membuat tautan nama menempel pada kolom yang
+ * salah begitu urutannya digeser — tanpa galat, hanya nama perusahaan
+ * yang tiba-tiba dapat diklik.
+ */
+const kolomNama = computed(() =>
+  (props.kolom ?? []).findIndex((k: string) => /^nama/i.test(k)));
+
+const kolomTanggal = computed(() =>
+  (props.kolom ?? []).findIndex((k: string) => /berlaku sampai|sim berlaku/i.test(k)));
 
 const kini = computed(() => {
   const t = String(props.tahap ?? '');
@@ -98,36 +114,70 @@ const kini = computed(() => {
     </section>
 
     <!--
-      Hanya untuk daftar berkas berjangka. Riwayat induksi dan riwayat
-      kompetensi tidak mengirimkannya, dan komponennya sendiri diam bila
-      propnya kosong.
+      Panel zona hanya untuk daftar berkas berjangka. Riwayat induksi
+      dan riwayat kompetensi tidak mengirimkannya, dan komponennya
+      sendiri diam bila propnya kosong.
     -->
-    <RingkasPemantauan v-if="props.pemantauan" :pemantauan="props.pemantauan" />
+    <ZonaMasaBerlaku v-if="props.pemantauan?.zona"
+                     :ringkas="props.pemantauan.zona"
+                     :manpower="props.pemantauan.manpower"
+                     :zona="props.zona"
+                     :rute="props.rute ?? ''"
+                     :judul="`Masa berlaku ${props.judul?.replace('Miners — Riwayat ', '') ?? ''}`" />
 
     <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
+      <!--
+        Judul kartu membawa jumlah barisnya, mengikuti D'Best. Daftar
+        tanpa jumlah membuat orang menggulir sampai bawah hanya untuk
+        tahu ada berapa — dan setelah disaring, jumlah itulah jawaban
+        pertanyaannya.
+      -->
+      <div class="flex flex-wrap items-baseline justify-between gap-2 px-5 pt-4 pb-3">
+        <h3 class="font-bold text-[14px]">
+          Daftar {{ kini || 'berkas' }}
+          <span class="font-normal text-[11.5px] text-stone-400">| {{ baris.length }} data</span>
+        </h3>
+
+        <p v-if="props.zona" class="text-[11.5px] text-stone-500">
+          disaring pada satu zona masa berlaku
+        </p>
+      </div>
+
       <div class="overflow-x-auto">
         <table class="min-w-full text-left text-[12px]">
           <thead>
             <tr class="text-stone-400 border-b border-stone-100">
-              <th v-for="k in (props.kolom ?? [])" :key="k" class="px-5 py-3">{{ k }}</th>
-              <th class="px-5 py-3">Keadaan</th>
-              <th class="px-5 py-3"></th>
+              <th class="pl-5 pr-2 py-3 w-10">No</th>
+              <th v-for="k in (props.kolom ?? [])" :key="k" class="px-3 py-3">{{ k }}</th>
+              <th class="px-3 py-3">Keadaan</th>
+              <th class="px-3 py-3"></th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="b in baris" :key="b.id" class="border-b border-stone-50">
-              <td v-for="(s, i) in b.sel" :key="i" class="px-5 py-3"
-                  :class="i === 0 ? 'font-semibold' : ''">
-                <Link v-if="i === 0" :href="`/miners/${b.pasporId}`" class="text-cam-lime-deep">
+            <tr v-for="(b, n) in baris" :key="b.id" class="border-b border-stone-50">
+              <td class="pl-5 pr-2 py-3 num text-stone-400">{{ Number(n) + 1 }}</td>
+
+              <td v-for="(s, i) in b.sel" :key="i" class="px-3 py-3"
+                  :class="kolomNama === i ? 'font-semibold' : ''">
+                <Link v-if="kolomNama === i" :href="`/miners/${b.pasporId}`" class="text-cam-lime-deep">
                   {{ s || '—' }}
                 </Link>
+
+                <!-- Kolom tanggal digambar sebagai pita: tanggal, sisa
+                     hari, dan dari mana tanggalnya berasal. -->
+                <PitaMasaBerlaku v-else-if="kolomTanggal === i"
+                                 :tanggal="s || null" :sisa-hari="b.sisaHari ?? null"
+                                 :sumber="b.namaDasar ?? null" :tgl-kartu="b.tglTercetak ?? null" />
+
                 <template v-else>{{ s || '—' }}</template>
-                <small v-if="i === 0 && b.jabatan" class="block text-[10px] text-stone-400 font-normal">
+
+                <small v-if="kolomNama === i && b.jabatan"
+                       class="block text-[10px] text-stone-400 font-normal">
                   {{ b.jabatan }}
                 </small>
               </td>
 
-              <td class="px-5 py-3">
+              <td class="px-3 py-3">
                 <!-- Status alur mendahului masa berlaku: yang belum
                      disetujui belum berlaku sama sekali, jadi menyebut
                      sisa harinya lebih dulu akan menyesatkan. -->
@@ -137,9 +187,18 @@ const kini = computed(() => {
                                      : b.status === 'diajukan' ? KEADAAN.ingat : KEADAAN.netral }">
                   {{ b.statusLabel }}
                 </span>
-                <span v-else class="font-semibold" :style="{ color: WARNA[b.keadaan] }">
+                <!--
+                  Sisa harinya sudah tertulis pada pita di kolom tanggal;
+                  mengulanginya di sini membuat satu keterangan tampak
+                  seperti dua hal berbeda. Yang tersisa untuk kolom ini
+                  hanyalah keadaan alurnya — dan bila alurnya selesai,
+                  cukup ditandai berlaku.
+                -->
+                <span v-else-if="kolomTanggal < 0" class="font-semibold"
+                      :style="{ color: WARNA[b.keadaan] }">
                   {{ b.keterangan }}
                 </span>
+                <span v-else class="font-semibold" style="color:#15803D">Berlaku</span>
 
                 <small v-if="b.tertinggal?.length" class="block text-[10px]"
                        :style="{ color: KEADAAN.ingat }">
@@ -156,7 +215,7 @@ const kini = computed(() => {
             </tr>
 
             <tr v-if="!baris.length">
-              <td :colspan="(props.kolom?.length ?? 4) + 2"
+              <td :colspan="(props.kolom?.length ?? 4) + 3"
                   class="px-5 py-12 text-center text-stone-400">
                 Belum ada data pada tahap ini.
                 <span v-if="props.tahap === 'induksi'">

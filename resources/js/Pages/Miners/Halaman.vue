@@ -19,7 +19,7 @@ import Batang from '../../Grafik/Batang.vue';
 import Donat from '../../Grafik/Donat.vue';
 import Rantai from './Rantai.vue';
 import Tahapan from './Tahapan.vue';
-import RingkasPemantauan from './RingkasPemantauan.vue';
+import ZonaMasaBerlaku from './ZonaMasaBerlaku.vue';
 import { KEADAAN } from '../../Grafik/warna';
 import Dialog from '../../Components/Dialog.vue';
 import { useDialog } from '../../dialog';
@@ -1137,7 +1137,22 @@ async function hapus(jalur: string, apa: string) {
         MCU-nya masih berlaku hari ini. Keduanya perlu, dan keduanya
         sering tertukar.
       -->
-      <RingkasPemantauan v-if="props.pemantauan" :pemantauan="props.pemantauan" />
+      <!--
+        Panel zona yang sama dengan daftar riwayat: satu bentuk untuk
+        satu makna. Dua bentuk ringkasan masa berlaku pada dua halaman
+        membuat orang harus mempelajari keduanya, dan yang jarang dibuka
+        selalu kalah.
+
+        Di sini tidak menyaring apa pun — daftar di bawahnya berisi
+        PENGAJUAN MCU, bukan hasil per orang — jadi kartunya menautkan ke
+        halaman pemantauan yang memang dapat menyaring.
+      -->
+      <ZonaMasaBerlaku v-if="props.pemantauan?.zona"
+                       :ringkas="props.pemantauan.zona"
+                       :manpower="props.pemantauan.manpower"
+                       :zona="null"
+                       rute="/miners/riwayat/mcu"
+                       judul="Masa berlaku MCU seluruh pekerja" />
 
       <section v-for="m in (props.pengajuan ?? [])" :key="m.id"
                class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">

@@ -2019,4 +2019,127 @@ class MinersTest extends TestCase
         ])->assertSessionHasErrors('berkas');
     }
 
+    /**
+     * Kartu zona menyaring daftarnya, dan hasilnya dapat ditautkan.
+     *
+     * Angka yang tidak dapat diklik memaksa orang membaca "2 sudah
+     * habis" lalu mencari sendiri yang mana di antara dua ratus baris —
+     * dua langkah untuk satu pertanyaan, tiap pagi, oleh tiap orang.
+     */
+    public function test_zona_menyaring_daftar_kartu(): void
+    {
+        $p = Paspor::create([
+            'company_id' => $this->c->id, 'nama' => 'Zona', 'nik' => 'ZN1',
+            'jabatan' => 'Operator', 'status' => 'aktif',
+        ]);
+
+        /* Dua kartu: satu sudah lewat, satu masih panjang. */
+        foreach ([['ZN/LEWAT', -10], ['ZN/PANJANG', 300]] as [$nomor, $hari]) {
+            $k = $p->kartu()->create([
+                'jenis' => AlurMiner::KARTU_PERMIT, 'nomor' => $nomor,
+                'tgl_terbit' => now()->subYear(),
+                'tgl_expired' => now()->addDays($hari),
+            ]);
+
+            PasporKartu::whereKey($k->id)->update(['status' => Alur::DISETUJUI]);
+        }
+
+        $semua = fn (array $prop) => collect($prop['baris'])->pluck('nomor')->all();
+
+        $this->get(route('miners.riwayat.mine-permit'))
+            ->assertOk()
+            ->assertInertia(function (Assert $h) use ($semua) {
+                $prop = $h->toArray()['props'];
+
+                $this->assertContains('ZN/LEWAT', $semua($prop));
+                $this->assertContains('ZN/PANJANG', $semua($prop));
+
+                $this->assertSame(count($prop['baris']), $prop['pemantauan']['zona']['total'] ?? -1,
+                    'Hitungan zona "total" harus sama dengan jumlah baris yang tampil.');
+            });
+
+        $this->get(route('miners.riwayat.mine-permit', ['zona' => 'expired']))
+            ->assertOk()
+            ->assertInertia(function (Assert $h) use ($semua) {
+                $nomor = $semua($h->toArray()['props']);
+
+                $this->assertContains('ZN/LEWAT', $nomor,
+                    'Kartu yang sudah lewat harus muncul pada zona expired.');
+                $this->assertNotContains('ZN/PANJANG', $nomor,
+                    'Kartu yang masih panjang tidak boleh muncul pada zona expired.');
+            });
+    }
+
+    /**
+     * Zona menghitung tanggal EFEKTIF, bukan tanggal cetak.
+     *
+     * Kartu yang MCU-nya sudah habis harus muncul di zona "expired"
+     * meski tanggal pada kartunya masih setahun lagi — orangnya memang
+     * tidak boleh masuk hari ini, dan zona yang memakai tanggal cetak
+     * menyembunyikannya persis di tempat orang mencarinya.
+     */
+    public function test_zona_memakai_tanggal_efektif(): void
+    {
+        $p = Paspor::create([
+            'company_id' => $this->c->id, 'nama' => 'Efektif Zona', 'nik' => 'EZ1',
+            'jabatan' => 'Operator', 'status' => 'aktif',
+        ]);
+
+        $p->mcu()->create([
+            'tgl_periksa' => now()->subYear(), 'tgl_expired' => now()->subDays(5), 'hasil' => 'Fit',
+        ]);
+
+        $k = $p->kartu()->create([
+            'jenis' => AlurMiner::KARTU_PERMIT, 'nomor' => 'EZ/PERMIT',
+            'tgl_terbit' => now()->subMonths(2), 'tgl_expired' => now()->addYear(),
+        ]);
+
+        PasporKartu::whereKey($k->id)->update(['status' => Alur::DISETUJUI]);
+
+        $this->get(route('miners.riwayat.mine-permit', ['zona' => 'expired']))
+            ->assertOk()
+            ->assertInertia(function (Assert $h) {
+                $nomor = collect($h->toArray()['props']['baris'])->pluck('nomor')->all();
+
+                $this->assertContains('EZ/PERMIT', $nomor,
+                    'Kartu yang dibatasi MCU habis tidak muncul di zona expired — '
+                    .'zonanya memakai tanggal cetak, bukan tanggal efektif.');
+            });
+    }
+
+    /**
+     * Zona tak dikenal TIDAK mengosongkan daftar.
+     *
+     * Tautan lama yang menyebut zona yang sudah dihapus akan terbaca
+     * sebagai "tidak ada data" — kesimpulan yang jauh lebih berat
+     * daripada "penyaringnya tidak dikenali".
+     */
+    public function test_zona_tak_dikenal_tidak_mengosongkan_daftar(): void
+    {
+        $p = Paspor::create([
+            'company_id' => $this->c->id, 'nama' => 'Zona Asing', 'nik' => 'ZA1',
+            'jabatan' => 'Operator', 'status' => 'aktif',
+        ]);
+
+        $k = $p->kartu()->create([
+            'jenis' => AlurMiner::KARTU_PERMIT, 'nomor' => 'ZA/PERMIT',
+            'tgl_terbit' => now()->subMonth(), 'tgl_expired' => now()->addYear(),
+        ]);
+
+        PasporKartu::whereKey($k->id)->update(['status' => Alur::DISETUJUI]);
+
+        $sebelum = $this->get(route('miners.riwayat.mine-permit'))
+            ->assertOk()->viewData('page')['props']['baris'];
+
+        /* Tanpa baris, uji ini lulus untuk sebab yang salah: 0 sama
+           dengan 0 apa pun yang terjadi pada penyaringnya. */
+        $this->assertNotEmpty($sebelum, 'Daftar ujinya kosong — uji ini tidak menguji apa pun.');
+
+        $sesudah = $this->get(route('miners.riwayat.mine-permit', ['zona' => 'zzz']))
+            ->assertOk()->viewData('page')['props']['baris'];
+
+        $this->assertSame(count($sebelum), count($sesudah),
+            'Zona tak dikenal seharusnya diabaikan, bukan menyaring habis daftarnya.');
+    }
+
 }
