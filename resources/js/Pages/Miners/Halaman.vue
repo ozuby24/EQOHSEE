@@ -855,9 +855,15 @@ async function hapus(jalur: string, apa: string) {
                 Tolak
               </button>
 
-              <a v-if="k.berlaku && k.jenis === 'Mine Permit'"
+              <!--
+                Kedua jenis kartu dicetak, bukan permit saja: SIMPER pun
+                benda fisik yang dibawa ke gerbang, dan sisi belakangnya
+                justru yang menyebutkan unit apa saja yang boleh
+                dikemudikan.
+              -->
+              <a v-if="k.berlaku && k.jenis !== 'Visitor'"
                  :href="`/miners/${id}/kartu/${k.id}/cetak`" target="_blank"
-                 class="eq-btn-lain !py-2 !text-[12px]">Cetak</a>
+                 class="eq-btn-lain !py-2 !text-[12px]">Cetak kartu</a>
 
               <button v-if="k.status === 'diajukan'" type="button" class="eq-btn-mini"
                       @click="tinjau(`/miners/${id}/kartu/${k.id}/tinjau`, 'tarik')">Tarik</button>

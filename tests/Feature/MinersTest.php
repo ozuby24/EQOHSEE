@@ -770,7 +770,7 @@ class MinersTest extends TestCase
 
         $this->get(route('miners.permit.cetak', [$p, $k]))
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->component('Print/MinePermit'));
+            ->assertInertia(fn ($page) => $page->component('Print/KartuTambang'));
     }
 
     /* ═══════════ pengajuan MCU per rombongan ═══════════ */

@@ -35,13 +35,22 @@ class KopSetiapLaporanTest extends TestCase
     /**
      * Halaman cetak yang sengaja TIDAK berkop.
      *
-     * Kosong sekarang. Bila suatu saat ada yang masuk sini, alasannya
-     * ditulis di sebelahnya — pengecualian tanpa alasan adalah cara
-     * daftar semacam ini pelan-pelan kehilangan artinya.
+     * Alasannya ditulis di sebelah tiap nama — pengecualian tanpa
+     * alasan adalah cara daftar semacam ini pelan-pelan kehilangan
+     * artinya. Daftar ini juga sengaja disebut satu per satu, bukan
+     * dicocokkan dengan pola nama: halaman berikutnya yang seharusnya
+     * berkop tidak boleh lolos hanya karena namanya kebetulan mirip.
      *
-     * @var list<string>
+     * @var array<string,string>
      */
-    private const TANPA_KOP = [];
+    private const TANPA_KOP = [
+        /* Kartu identitas ukuran KTP, bukan lembar A4. Kop dokumen
+           terkendali — nomor dokumen, revisi, tanggal terbit — memakan
+           sepertiga muka kartu yang lebarnya 85,6 mm, dan kartu itu
+           sendiri sudah menyandang identitas penerbitnya pada kepalanya:
+           nama perusahaan, jenis kartu, dan nomor kartunya. */
+        'KartuTambang' => 'kartu identitas fisik, kopnya menyatu pada kepala kartu',
+    ];
 
     /* ═══════════ sisi tampilan ═══════════ */
 
@@ -52,7 +61,7 @@ class KopSetiapLaporanTest extends TestCase
         foreach (glob(resource_path('js/Pages/Print/*.vue')) as $berkas) {
             $nama = basename($berkas, '.vue');
 
-            if (in_array($nama, self::TANPA_KOP, true)) continue;
+            if (array_key_exists($nama, self::TANPA_KOP)) continue;
 
             if (!str_contains((string) file_get_contents($berkas), 'KopCetak')) {
                 $tanpa[] = $nama;

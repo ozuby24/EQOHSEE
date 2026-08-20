@@ -1652,7 +1652,11 @@ class MinersController extends Controller
                 'tertinggal'    => $k->parafTertinggal(),
 
                 /* Hanya yang sudah terbit yang dapat dicetak. */
-                'cetak' => $permit && $k->sudahDisetujui()
+                /* Kedua jenis kartu dapat dicetak: SIMPER pun benda
+                   fisik yang dibawa ke gerbang, dan sisi belakangnya
+                   justru yang menyebutkan unit apa saja yang boleh
+                   dikemudikan. */
+                'cetak' => $k->sudahDisetujui()
                     ? route('miners.permit.cetak', [$k->paspor_id, $k]) : null,
             ])->values(),
             'ringkas' => [
@@ -1739,19 +1743,33 @@ class MinersController extends Controller
      * yang hanya menyebut satu di antaranya menyembunyikan dua sebab
      * lain seseorang dapat ditahan.
      */
+    /**
+     * Kartu tambang siap cetak — Mine Permit maupun Mine License.
+     *
+     * BERBENTUK KARTU, bukan lembar A4. Yang dibawa orangnya ke gerbang
+     * adalah benda yang muat di saku dan dapat ditunjukkan sambil
+     * berjalan; lembar A4 dilipat empat, basah, lalu berhenti dibawa.
+     *
+     * Dua sisi, dan keduanya perlu. Muka menjawab "siapa ini dan sampai
+     * kapan"; belakang menjawab "boleh apa" — daftar unit beserta kelas
+     * kewenangannya bagi SIMPER, dan syarat serta kontak darurat bagi
+     * permit. Menjejalkan keduanya ke satu sisi menghasilkan huruf yang
+     * tidak terbaca di bawah matahari.
+     */
     public function cetakPermit(Paspor $paspor, PasporKartu $kartu)
     {
         abort_unless($kartu->paspor_id === $paspor->id, 404);
 
         abort_unless($kartu->sudahDisetujui(), 403,
-            'Mine Permit yang belum disetujui tidak dapat dicetak.');
+            'Kartu yang belum disetujui tidak dapat dicetak.');
 
         $paspor->load(['mcu', 'induksi', 'kartu', 'sertifikat', 'company']);
+        $kartu->load('unit.unitMaster');
 
         $m = $paspor->mcuTerakhir();
         $i = $paspor->induksiBerlaku();
 
-        return Inertia::render('Print/MinePermit', [
+        return Inertia::render('Print/KartuTambang', [
             'dok' => KopDokumen::untuk('mine-permit', $this->perusahaanKop()),
 
             'orang' => [
@@ -1795,6 +1813,39 @@ class MinersController extends Controller
                     'keterangan' => $i->keterangan(),
                     'pemberi'    => $i->pemberi,
                 ] : null,
+            ],
+
+            /* Yang tercetak PADA kartunya sendiri — tidak satu pun
+               dapat diambil dari tabel lain saat kartunya dicetak. */
+            'kartuCetak' => [
+                'jenis'         => $kartu->jenis,
+                'nomor'         => $kartu->nomor,
+                'foto'          => $kartu->foto,
+                'tglLahir'      => $kartu->tgl_lahir?->toDateString(),
+                'golonganDarah' => $kartu->golongan_darah,
+                'telepon'       => $kartu->telepon,
+                'kontakDarurat' => $kartu->kontak_darurat,
+                'subkontraktor' => $kartu->subkontraktor,
+                'area'          => $kartu->area,
+                'golongan'      => $kartu->golongan,
+
+                /* Khusus SIMPER: kelas SIM kepolisian dan masa
+                   berlakunya membatasi kartunya, jadi tercetak di
+                   sisinya sendiri. */
+                'jenisSim'    => $kartu->jenis_sim,
+                'simPolisi'   => $kartu->sim_polisi,
+                'simExpired'  => $kartu->sim_polisi_expired?->toDateString(),
+
+                /* Kewenangan per unit — inti sisi belakang SIMPER.
+                   Kartu yang menyebut "Excavator" tanpa merinci tipe
+                   membolehkan orang mengemudikan unit yang tidak pernah
+                   diujikan kepadanya. */
+                'unit' => $kartu->unit->map(fn (PasporKartuUnit $u) => [
+                    'authority' => $u->authority,
+                    'unit'      => $u->namaUnit(),
+                    'typeMerk'  => $u->type_merk,
+                    'lulus'     => $u->lulus(),
+                ])->values(),
             ],
 
             'kembali' => route('miners.show', $paspor),
