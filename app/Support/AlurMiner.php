@@ -184,6 +184,29 @@ final class AlurMiner
             $kurang[] = 'Golongan kendaraan yang dimintakan belum diisi.';
         }
 
+        /* ── BERKAS UJI TIAP UNIT YANG SUDAH DICANTUMKAN ──
+         *
+         * Diperiksa PER BARIS UNIT, bukan per kartu, dan hanya atas unit
+         * yang memang sudah dicantumkan. Kartu yang belum menyebut unit
+         * sama sekali tidak dihalangi di sini — itu keadaan yang sah,
+         * dan sudah dijaga syarat lain.
+         *
+         * Yang dihalangi keadaan yang lebih berbahaya daripada
+         * kekosongan: unit yang TERTULIS pada kartu tanpa lembar rambu,
+         * teori, atau praktiknya. Barisnya membuat kartu itu terbaca
+         * sebagai kewenangan yang sudah diuji — pengawas di gerbang
+         * membacanya begitu, dan tidak ada padanya cara membedakan unit
+         * yang lembar ujinya ada dari yang tidak. Kekosongan setidaknya
+         * terlihat kosong. */
+        foreach ($k->unit as $u) {
+            $kurangUnit = LampiranMiners::unitKurang($u);
+
+            if ($kurangUnit) {
+                $kurang[] = 'Unit '.$u->namaUnit().' belum melampirkan '
+                          .implode(', ', $kurangUnit).'.';
+            }
+        }
+
         return $kurang;
     }
 

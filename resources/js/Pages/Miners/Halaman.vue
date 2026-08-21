@@ -22,6 +22,8 @@ import Tahapan from './Tahapan.vue';
 import ZonaMasaBerlaku from './ZonaMasaBerlaku.vue';
 import { KEADAAN } from '../../Grafik/warna';
 import BerkasPeserta from './BerkasPeserta.vue';
+import BerkasAuthority from './BerkasAuthority.vue';
+import LampiranSimper from './LampiranSimper.vue';
 import Dialog from '../../Components/Dialog.vue';
 import { useDialog } from '../../dialog';
 const { dialog, tanya, minta, batal, lanjut } = useDialog();
@@ -94,10 +96,6 @@ async function unggahSim(e: Event) {
   } finally {
     simUnggah.sibuk = false;
   }
-}
-
-function berkasTerisi(b: Record<string, string | null> | undefined): number {
-  return b ? Object.values(b).filter(Boolean).length : 0;
 }
 
 /** Warna keadaan masa berlaku — dipesan maknanya, tidak dipakai lain. */
@@ -176,11 +174,6 @@ const buka = ref<string | null>(null);
 const fOrang = useForm<Record<string, any>>({
   nama: '', nik: '', jabatan: '', departemen: '', klasifikasi: '',
   nomor_register: '', tgl_bergabung: '', status: 'aktif', catatan: '',
-});
-
-const fSertifikat = useForm<Record<string, any>>({
-  kompetensi_jenis_id: '', nama: '', lembaga: '', nomor: '',
-  tgl_terbit: '', tgl_expired: '', catatan: '',
 });
 
 /**
@@ -458,27 +451,48 @@ async function tinjau(jalur: string, aksi: 'setujui' | 'tolak' | 'tarik') {
   fAlur.transform(() => ({ aksi, alasan })).post(jalur, { preserveScroll: true });
 }
 
-/**
- * Memilih jenis kompetensi ikut mengisi nama dan lembaganya.
- *
- * Nama disalin, bukan hanya dirujuk: jenis yang kemudian diganti
- * namanya tidak boleh mengubah bunyi sertifikat yang sudah tercetak
- * dan sudah diperiksa inspektur.
- */
-function pilihJenis() {
-  const j = (props.opsi?.kompetensi ?? []).find(
-    (x: any) => String(x.id) === String(fSertifikat.kompetensi_jenis_id));
-
-  if (j) { fSertifikat.nama = j.nama; fSertifikat.lembaga = j.lembaga ?? ''; }
-}
-
 const id = computed(() => props.p?.id);
 
 function simpanOrang() {
   fOrang.post('/miners', { preserveScroll: true, onSuccess: () => { fOrang.reset(); buka.value = null; } });
 }
-function simpanSertifikat() {
-  fSertifikat.post(`/miners/${id.value}/sertifikat`, { preserveScroll: true, onSuccess: () => fSertifikat.reset() });
+/**
+ * Sertifikat baru dikirim dari kartu Attachment, bukan dari formulir
+ * yang menempel di halaman ini.
+ *
+ * Berkasnya sudah tersimpan di disk saat berkasnya dipilih; yang
+ * dikirim di sini jalurnya saja, jadi permintaannya tetap ringan dan
+ * tidak perlu multipart.
+ */
+function simpanSertifikat(isi: Record<string, any>) {
+  router.post(`/miners/${id.value}/sertifikat`, isi, { preserveScroll: true });
+}
+
+/**
+ * Identitas untuk kartu Detail Authority.
+ *
+ * Diambil dari orangnya — satu sumber, sama seperti profilPeserta().
+ * Nomor register dan tanggal bergabung ikut disebut: keduanya yang
+ * dipakai auditor mencocokkan berkas ini dengan daftar tenaga kerja.
+ */
+function profilAuthority() {
+  const o: any = props.p ?? {};
+
+  return [
+    { label: 'No. Register', nilai: o.nomorRegister },
+    { label: 'Tanggal bergabung', nilai: o.tglBergabung },
+    { label: 'Nama lengkap', nilai: o.nama },
+    { label: 'NIK', nilai: o.nik },
+    { label: 'Jabatan', nilai: o.jabatan },
+    { label: 'Klasifikasi', nilai: o.klasLabel ?? o.klasifikasi },
+    { label: 'Departemen', nilai: o.departemen },
+    { label: 'Perusahaan', nilai: o.perusahaan },
+  ];
+}
+
+/** Unit SIMPER baru — berkas ujinya sudah terunggah, jalurnya ikut. */
+function simpanUnit(kartuId: number, isi: Record<string, any>) {
+  router.post(`/miners/${id.value}/kartu/${kartuId}/unit`, isi, { preserveScroll: true });
 }
 function simpanMcu() {
   /* forceFormData: ada unggahan berkas di formulir ini, dan tanpa ini
@@ -720,38 +734,20 @@ async function hapus(jalur: string, apa: string) {
 
       <Tahapan v-if="props.tahapan" :tahapan="props.tahapan" />
 
-      <!-- sertifikat -->
-      <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
-        <h3 class="text-[14px] font-bold text-cam-ink mb-3">Sertifikat kompetensi</h3>
-
-        <ul v-if="props.sertifikat?.length" class="divide-y divide-stone-100 mb-4">
-          <li v-for="s in props.sertifikat" :key="s.id" class="py-2.5 flex items-center gap-3">
-            <span class="w-1.5 h-1.5 rounded-full shrink-0" :style="{ background: WARNA[s.keadaan] }"></span>
-            <span class="text-[12.5px] font-semibold text-cam-ink min-w-0 flex-1 truncate">
-              {{ s.nama }}
-              <span v-if="s.dariLms" class="text-[10px] font-normal text-stone-400">· dari LMS</span>
-            </span>
-            <span class="text-[11px] text-stone-400 shrink-0 hidden sm:block">{{ s.lembaga || '—' }}</span>
-            <span class="text-[11.5px] font-semibold shrink-0 w-32 text-right"
-                  :style="{ color: WARNA[s.keadaan] }">{{ s.keterangan }}</span>
-            <button type="button" class="text-red-600 text-[11px] shrink-0"
-                    @click="hapus(`/miners/${id}/sertifikat/${s.id}`, s.nama)">Hapus</button>
-          </li>
-        </ul>
-        <p v-else class="text-[12px] text-stone-400 py-3">Belum ada sertifikat tercatat.</p>
-
-        <form class="grid gap-2 md:grid-cols-6 pt-3 border-t border-stone-100" @submit.prevent="simpanSertifikat">
-          <select v-model="fSertifikat.kompetensi_jenis_id" class="rounded-lg border-stone-200 text-[12px] md:col-span-2"
-                  @change="pilihJenis" aria-label="Jenis kompetensi">
-            <option value="">Pilih jenis kompetensi…</option>
-            <option v-for="j in (props.opsi?.kompetensi ?? [])" :key="j.id" :value="j.id">{{ j.nama }}</option>
-          </select>
-          <input v-model="fSertifikat.nomor" placeholder="No. sertifikat" class="rounded-lg border-stone-200 text-[12px]">
-          <input v-model="fSertifikat.tgl_terbit" type="date" title="Tanggal terbit" class="rounded-lg border-stone-200 text-[12px]">
-          <input v-model="fSertifikat.tgl_expired" type="date" title="Tanggal kadaluarsa" class="rounded-lg border-stone-200 text-[12px]">
-          <button class="eq-btn-utama" :disabled="fSertifikat.processing">Tambah</button>
-        </form>
-      </section>
+      <!--
+        AUTHORITY — susunan D'Best: "Detail" lalu "Attachment
+        Sertifikasi". Kartu kiri menyebut berkas siapa ini, kartu kanan
+        apa yang masih kurang; sebelumnya keduanya tidak terjawab di
+        layar ini sama sekali.
+      -->
+      <BerkasAuthority
+        :profil="profilAuthority()"
+        :sertifikat="props.sertifikat ?? []"
+        :jenis-berkas="props.opsi?.berkasSertifikat ?? []"
+        :opsi-kompetensi="props.opsi?.kompetensi ?? []"
+        :warna="WARNA"
+        @tambah="simpanSertifikat"
+        @hapus="(sid, nama) => hapus(`/miners/${id}/sertifikat/${sid}`, nama)" />
 
       <div class="grid gap-4 lg:grid-cols-2">
         <!-- MCU -->
@@ -990,46 +986,27 @@ async function hapus(jalur: string, apa: string) {
             </div>
 
             <!--
-              Unit SIMPER — satu baris per unit, dengan nilai dan berkas
-              ujinya masing-masing. Kartu masuk area tidak menyebut unit,
-              jadi bloknya tidak muncul di sana sama sekali.
+              ATTACHMENT SIMPER — satu baris per unit yang diujikan,
+              dengan nilai dan keempat berkas ujinya masing-masing.
+              Susunan kolomnya mengikuti D'Best persis, sampai urutannya.
+
+              Hanya pada Mine License. Kartu masuk area tidak menyebut
+              unit sama sekali, dan menggambarkan tabel kosong di sana
+              membuat pembacanya mengira ada yang belum diisi.
 
               Nilai yang belum diisi ditulis "—", bukan nol: kekosongan
               berarti belum diuji, dan nol berarti diuji lalu gagal.
             -->
-            <div v-if="k.unit?.length" class="mt-3 overflow-x-auto">
-              <table class="min-w-full text-left text-[11.5px]">
-                <thead>
-                  <tr class="text-stone-400 border-b border-stone-200">
-                    <th class="py-1.5 pr-3 font-semibold">Authority</th>
-                    <th class="py-1.5 pr-3 font-semibold">Unit</th>
-                    <th class="py-1.5 pr-3 font-semibold">Type/Merk</th>
-                    <th class="py-1.5 pr-3 font-semibold text-right">P2H</th>
-                    <th class="py-1.5 pr-3 font-semibold text-right">Praktek</th>
-                    <th class="py-1.5 font-semibold">Berkas</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="u in k.unit" :key="u.id" class="border-b border-stone-100">
-                    <td class="py-1.5 pr-3 num font-semibold">{{ u.authority || '—' }}</td>
-                    <td class="py-1.5 pr-3">{{ u.unit }}</td>
-                    <td class="py-1.5 pr-3 text-stone-500">{{ u.typeMerk || '—' }}</td>
-                    <td class="py-1.5 pr-3 num text-right">{{ u.nilaiP2h ?? '—' }}</td>
-                    <td class="py-1.5 pr-3 num text-right">{{ u.nilaiPraktek ?? '—' }}</td>
-                    <td class="py-1.5">
-                      <span class="inline-block rounded px-1.5 py-0.5 text-[10px] font-bold"
-                            :style="u.lulus
-                              ? { background: '#DCFCE7', color: '#15803D' }
-                              : { background: '#FEF3C7', color: '#92400E' }">
-                        {{ u.lulus ? 'Lulus' : 'Belum lulus' }}
-                      </span>
-                      <span class="text-[10.5px] text-stone-400 ml-1.5">
-                        {{ berkasTerisi(u.berkas) }}/4 berkas
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            <div v-if="k.punyaUnit" class="mt-3">
+              <LampiranSimper
+                :unit="k.unit ?? []"
+                :jenis-berkas="props.opsi?.berkasUnit ?? []"
+                :opsi-authority="props.opsi?.authorityUnit ?? []"
+                :opsi-unit="props.opsi?.unit ?? []"
+                :bisa-ubah="k.dapatDiubah"
+                :bisa-hapus="k.dapatDiubah && !!props.pengguna?.admin"
+                @tambah="(isi) => simpanUnit(k.id, isi)"
+                @hapus="(uid, nama) => hapus(`/miners/${id}/kartu/${k.id}/unit/${uid}`, `unit ${nama}`)" />
             </div>
 
             <!--

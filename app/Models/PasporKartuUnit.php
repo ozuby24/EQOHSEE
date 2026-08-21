@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BerindukPerusahaan;
+use App\Support\LampiranMiners;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -94,12 +95,18 @@ class PasporKartuUnit extends Model
             'lulus'        => $this->lulus(),
             'catatan'      => $this->catatan,
 
-            'berkas' => [
-                'rambu'    => $this->berkas_rambu,
-                'teori'    => $this->berkas_teori,
-                'praktek'  => $this->hasil_praktek,
-                'evaluasi' => $this->evaluasi,
-            ],
+            /* Keempat berkas ujinya, masing-masing beserta ALAMAT
+               MEMBUKANYA. Bentuk lama hanya menyalin jalurnya sebagai
+               teks, sehingga yang tergambar di layar adalah nama berkas
+               yang tidak dapat ditekan — dan nama berkas yang tidak
+               dapat ditekan tidak dapat dibedakan dari salah ketik.
+
+               `berkasKurang` menyebut yang WAJIB tetapi belum ada. Unit
+               yang tercantum pada SIMPER tanpa lembar teori dan praktik
+               adalah kewenangan mengemudi yang dasarnya tidak pernah
+               diperiksa. */
+            'berkas'       => LampiranMiners::unitUntukLayar($this),
+            'berkasKurang' => LampiranMiners::unitKurang($this),
         ];
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Support;
 
-use App\Models\{Document, GudangBarang, HazardReport, InspectionItem, PasporKartu, PasporMcu, Signatory, SmkpFinding};
+use App\Models\{Document, GudangBarang, HazardReport, InspectionItem, PasporKartu, PasporKartuUnit, PasporMcu, PasporSertifikat, Signatory, SmkpFinding};
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -100,6 +100,19 @@ final class Berkas
         foreach (array_keys(LampiranMiners::KARTU) as $kolom) {
             $out[self::jenisLampiran($kolom)] = [PasporKartu::class, $kolom, false];
         }
+
+        /* Berkas uji per unit SIMPER melekat pada barisnya sendiri,
+           bukan pada kartunya — satu kartu dapat menyebut lima unit,
+           masing-masing dengan lembar rambu, teori, dan praktiknya
+           sendiri. Batas perusahaannya dijaga BerindukPerusahaan pada
+           PasporKartuUnit, yang menyaring lewat kartunya. */
+        foreach (array_keys(LampiranMiners::UNIT) as $kolom) {
+            $out[LampiranMiners::jenisUnit($kolom)] = [PasporKartuUnit::class, $kolom, false];
+        }
+
+        /* Berkas sertifikat kompetensi — satu berkas per sertifikat,
+           jadi satu jenis saja dan tidak perlu dibangkitkan berulang. */
+        $out['srt'] = [PasporSertifikat::class, 'berkas', false];
 
         return $out;
     }

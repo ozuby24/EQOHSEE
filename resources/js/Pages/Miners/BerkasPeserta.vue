@@ -26,6 +26,8 @@
  */
 import { computed, ref } from 'vue';
 import { KEADAAN } from '../../Grafik/warna';
+import { unggahLampiran } from '../../unggah';
+import KartuDetail from './KartuDetail.vue';
 
 const props = defineProps<{
   /** Identitas orangnya — seluruhnya hanya dibaca. */
@@ -66,23 +68,8 @@ async function pilih(kolom: string, ev: Event) {
   naik.value[kolom] = true;
   delete galat.value[kolom];
 
-  const data = new FormData();
-  data.append('kolom', kolom);
-  data.append('berkas', f);
-
   try {
-    const r = await fetch('/miners/lampiran', {
-      method: 'POST',
-      body: data,
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
-      },
-    });
-
-    const j = await r.json();
-
-    if (!r.ok) throw new Error(j?.pesan ?? `Gagal mengunggah (HTTP ${r.status}).`);
+    const j = await unggahLampiran(kolom, f);
 
     baru.value[kolom] = j.nama;
     emit('unggah', kolom, j.jalur, j.nama);
@@ -103,42 +90,8 @@ const adaKurang = computed(() => (props.kurang ?? []).length > 0);
   <div class="grid gap-4 lg:grid-cols-[1.05fr_.95fr] items-start">
 
     <!-- ══════════ DETAIL — hanya dibaca ══════════ -->
-    <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
-      <header class="px-5 py-3.5 border-b border-stone-100 flex items-center justify-between gap-3">
-        <h3 class="text-[13.5px] font-bold text-cam-ink">{{ judulDetail }}</h3>
-        <a v-if="urlCetak" :href="urlCetak" target="_blank" rel="noopener"
-           class="shrink-0 rounded-lg bg-cam-ink text-white px-3 py-1.5 text-[11px] font-bold hover:bg-stone-700 transition">
-          {{ labelCetak ?? 'Cetak kartu' }}
-        </a>
-      </header>
-
-      <dl class="px-5 py-4 grid gap-x-5 gap-y-2.5 sm:grid-cols-2">
-        <div v-for="p in profil" :key="p.label" class="min-w-0">
-          <dt class="text-[10px] uppercase tracking-wide text-stone-400">{{ p.label }}</dt>
-          <dd class="text-[12.5px] font-semibold text-cam-ink truncate" :title="p.nilai ?? '—'">
-            {{ p.nilai || '—' }}
-          </dd>
-        </div>
-      </dl>
-
-      <!-- Dokumen yang sudah ada: tombol buka, bukan nama berkas.
-           Nama berkas tidak dapat diperiksa; yang memeriksanya perlu
-           membukanya. -->
-      <div v-if="(dokumen ?? []).length" class="px-5 pb-4 pt-1 border-t border-stone-100">
-        <p class="text-[10px] uppercase tracking-wide text-stone-400 mb-2">Dokumen terkait</p>
-        <div class="flex flex-wrap gap-2">
-          <a v-for="d in dokumen" :key="d.label"
-             :href="d.url ?? undefined"
-             :target="d.url ? '_blank' : undefined" rel="noopener"
-             class="rounded-lg px-2.5 py-1.5 text-[11px] font-semibold border transition"
-             :class="d.url
-               ? 'border-stone-200 text-cam-ink hover:bg-stone-50'
-               : 'border-stone-100 text-stone-300 cursor-not-allowed'">
-            {{ d.label }}<span v-if="!d.url"> · belum ada</span>
-          </a>
-        </div>
-      </div>
-    </section>
+    <KartuDetail :judul="judulDetail" :profil="profil" :dokumen="dokumen"
+                 :url-cetak="urlCetak" :label-cetak="labelCetak" />
 
     <!-- ══════════ ATTACHMENT — satu-satunya yang diisi ══════════ -->
     <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">

@@ -209,6 +209,19 @@ final class Authority
     public const JENIS_SIM = ['A', 'A Umum', 'B1', 'B1 Umum', 'B2', 'B2 Umum', 'C'];
 
     /**
+     * Huruf kewenangan yang tercetak pada kartu SIMPER, per unit.
+     *
+     * Keempatnya disalin apa adanya dari D'Best, DAN SENGAJA TANPA
+     * KEPANJANGAN. Di sana pun pilihannya empat huruf telanjang; yang
+     * mengetahui artinya adalah pengawas tambang yang memakai kartunya,
+     * bukan berkas ini. Menuliskan tebakan kepanjangannya di sini akan
+     * membuat tebakan itu tercetak di layar, lalu di kartu, lalu di
+     * dokumen audit — dan tebakan yang sudah tercetak sangat sukar
+     * dibedakan dari keterangan resmi.
+     */
+    public const AUTHORITY_UNIT = ['F', 'T', 'R', 'I'];
+
+    /**
      * Jenis kartu tinggal di App\Support\AlurMiner, bukan di sini.
      *
      * Di sana ia berdampingan dengan urutan dan syarat penerbitannya —

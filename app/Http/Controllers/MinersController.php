@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Company, InduksiPengajuan, KompetensiJenis, McuPengajuan, MinersCampaign, MinersCuti,
+use App\Models\{Company, InduksiPengajuan, KoUnitMaster, KompetensiJenis, McuPengajuan, MinersCampaign, MinersCuti,
     MinersCutiJatah, MinersFieldBreak, Paspor, PasporInduksi, PasporKartuUnit,
     PasporKartu, PasporMcu, PasporSertifikat};
 use App\Rules\DalamPerusahaan;
@@ -150,6 +150,15 @@ class MinersController extends Controller
             'mode'   => 'rincian',
             'p'      => $this->baris($paspor) + [
                 'departemen'    => $paspor->departemen,
+
+                /* Nama perusahaannya. Kartu Detail sudah menyebutnya
+                   sejak lama dan selama itu selalu tergambar "—":
+                   medannya ada di layar, isinya tidak pernah dikirim.
+                   Dilekatkan di sini, bukan di baris(), sebab daftar
+                   orang tidak memuat relasi company-nya — menambahkannya
+                   di sana berarti satu kueri per baris. */
+                'perusahaan'    => $paspor->company?->name,
+
                 'nomorRegister' => $paspor->nomor_register,
                 'tglBergabung'  => $paspor->tgl_bergabung?->toDateString(),
                 'catatan'       => $paspor->catatan,
@@ -161,6 +170,11 @@ class MinersController extends Controller
                 'tglExpired' => $s->tgl_expired?->toDateString(),
                 'keadaan' => $s->keadaan(), 'keterangan' => $s->keterangan(),
                 'dariLms' => $s->certificate_id !== null,
+
+                /* Alamat membuka berkasnya, bukan nama berkasnya. Nama
+                   berkas tidak dapat diperiksa oleh yang membacanya —
+                   yang memeriksanya perlu membukanya. */
+                'berkas'  => Berkas::url($s, 'srt'),
             ])->values(),
             'mcu' => $paspor->mcu->map(fn (PasporMcu $m) => [
                 'id' => $m->id, 'tglPeriksa' => $m->tgl_periksa?->toDateString(),
@@ -979,6 +993,15 @@ class MinersController extends Controller
             'nomor'       => ['nullable', 'string', 'max:80'],
             'tgl_terbit'  => ['nullable', 'date'],
             'tgl_expired' => ['nullable', 'date'],
+
+            /* Berkas sertifikatnya. Kolomnya sudah ada sejak tabel ini
+               lahir dan selama itu tidak pernah dapat diisi — tidak di
+               aturan ini, tidak pula di formulirnya. Yang tersimpan
+               karena itu hanya NAMA sertifikatnya, dan nama sertifikat
+               tidak dapat dibedakan dari sertifikat yang tidak pernah
+               ada. Jalurnya datang dari POST /miners/lampiran, yang
+               sudah menyimpan berkasnya ke disk tertutup. */
+            'berkas'      => ['nullable', 'string', 'max:255'],
             'catatan'     => ['nullable', 'string', 'max:1000'],
         ]);
 
@@ -1288,7 +1311,7 @@ class MinersController extends Controller
     public function unggahLampiran(Request $request)
     {
         $request->validate([
-            'kolom'  => ['required', 'string', Rule::in(LampiranMiners::kolom())],
+            'kolom'  => ['required', 'string', Rule::in(LampiranMiners::kolomUnggah())],
             'berkas' => ['required', 'file', 'max:8192', 'mimes:pdf,jpg,jpeg,png,webp'],
         ]);
 
@@ -2441,6 +2464,28 @@ class MinersController extends Controller
                 'kompetensi'   => KompetensiJenis::aktif()->orderBy('urutan')
                     ->get(['id', 'nama', 'lembaga']),
 
+                /* Master unit, untuk memilih unit apa yang diujikan saat
+                   menyusun lampiran SIMPER. Tidak diwajibkan dipakai —
+                   unit sewa dan unit subkontraktor kerap belum
+                   terdaftar, dan menolak barisnya berarti orang yang
+                   sudah diuji tidak dapat dicatat sama sekali. */
+                'unit' => KoUnitMaster::where('aktif', true)
+                    ->orderBy('unit')->get(['id', 'unit', 'kategori']),
+
+                /* Kewenangan mengemudi seperti di D'Best: satu huruf
+                   per golongan unit yang tercetak pada kartunya. */
+                'authorityUnit' => Authority::AUTHORITY_UNIT,
+
+                /* Katalog berkas uji unit — dipakai layar menyusun medan
+                   unggah baris BARU, yang belum punya berkas apa pun.
+                   Dibangkitkan dari katalog yang sama dengan yang
+                   dipakai memeriksa kelengkapannya, sehingga medan di
+                   layar tidak dapat berselisih dengan yang diperiksa. */
+                'berkasUnit' => LampiranMiners::unitUntukLayar(null),
+
+                /* Katalog berkas sertifikat, dengan alasan yang sama. */
+                'berkasSertifikat' => LampiranMiners::sertifikatUntukLayar(null),
+
                 /* Daftar orang untuk memilih nama saat menyusun surat
                    pengajuan MCU. Hanya id dan nama — halaman ini tidak
                    perlu seluruh berkasnya, dan mengirimkannya berarti
@@ -2545,6 +2590,13 @@ class MinersController extends Controller
                sendiri. Kosong pada kartu masuk area — kosong yang benar,
                bukan yang terlupa. */
             'unit' => $k->unit->map(fn (PasporKartuUnit $u) => $u->toView())->values(),
+
+            /* Jenis kartu mana yang MEMANG menyebut unit — dijawab di
+               sini, bukan dengan membandingkan teks jenisnya di layar.
+               Perbandingan teks di layar adalah salinan kedua dari
+               aturan yang tinggal di AlurMiner, dan salinan kedua akan
+               tertinggal pada hari jenis kartunya bertambah. */
+            'punyaUnit' => $k->jenis === AlurMiner::KARTU_LICENSE,
         ];
     }
 
