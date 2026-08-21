@@ -37,6 +37,11 @@ class PasporMcu extends Model
         /* Seberapa dekat orangnya ke batas kelayakan — terpisah dari
            hasilnya, lihat Authority::LEVEL_RISIKO. */
         'level_risiko',
+
+        /* Surat rujukannya sendiri. `rujukan` menjawab "dirujuk ke
+           mana", kolom ini menjawab "mana suratnya" — keduanya
+           berpasangan, bukan salah satu. */
+        'berkas_rujukan',
     ];
 
     protected function casts(): array

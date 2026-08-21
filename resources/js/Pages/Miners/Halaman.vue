@@ -349,19 +349,29 @@ function mulaiIsi(h: any) {
       }
     : {
         tgl_periksa: h.tglPeriksa ?? '', tgl_expired: h.tglExpired ?? '',
+        mcu_berikutnya: h.mcuBerikutnya ?? '', usia: h.usia ?? '',
         nomor: h.nomor ?? '', hasil: h.hasil ?? 'Fit',
+        level_risiko: h.levelRisiko ?? '',
+        status_verifikasi: h.statusVerifikasi ?? '',
         pembatasan: h.pembatasan ?? '', rujukan: h.rujukan ?? '',
         outstanding: h.outstanding ?? '',
+        catatan_kontraktor: h.catatanKontraktor ?? '',
+        berkas: null as File | null, berkas_rujukan: null as File | null,
       };
 }
 
 function batalIsi(hasilId: number) { delete isiHasil[hasilId]; }
 
 function simpanHasil(pengajuanId: number, hasilId: number) {
-  router.put(`${bentukPengajuan.value.basis}/${pengajuanId}/hasil/${hasilId}`, isiHasil[hasilId], {
-    preserveScroll: true,
-    onSuccess: () => batalIsi(hasilId),
-  });
+  /* PUT lewat _method: unggahan berkas menuntut multipart, dan
+     multipart hanya berjalan pada POST. Tanpa ini berkasnya hilang
+     diam-diam — barisnya tersimpan, hanya suratnya yang tidak ikut. */
+  router.post(`${bentukPengajuan.value.basis}/${pengajuanId}/hasil/${hasilId}`,
+    { ...isiHasil[hasilId], _method: 'put' }, {
+      forceFormData: true,
+      preserveScroll: true,
+      onSuccess: () => batalIsi(hasilId),
+    });
 }
 
 function simpanPengajuan() {
@@ -1513,26 +1523,138 @@ async function hapus(jalur: string, apa: string) {
                              class="rounded-lg border-stone-200 text-[12px] md:col-span-2">
                     </div>
 
-                    <div v-else class="grid gap-2 md:grid-cols-4">
-                      <input v-model="isiHasil[h.id].tgl_periksa" type="date" required title="Tanggal periksa"
-                             class="rounded-lg border-stone-200 text-[12px]">
-                      <input v-model="isiHasil[h.id].tgl_expired" type="date" title="Berlaku sampai"
-                             class="rounded-lg border-stone-200 text-[12px]">
-                      <select v-model="isiHasil[h.id].hasil" class="rounded-lg border-stone-200 text-[12px]" aria-label="Hasil">
-                        <option v-for="x in bentukPengajuan.hasil" :key="x">{{ x }}</option>
-                      </select>
-                      <input v-model="isiHasil[h.id].nomor" placeholder="No. hasil"
-                             class="rounded-lg border-stone-200 text-[12px]">
-                      <input v-model="isiHasil[h.id].pembatasan" placeholder="Pembatasan kerja"
-                             class="rounded-lg border-stone-200 text-[12px] md:col-span-2">
-                      <input v-model="isiHasil[h.id].rujukan" placeholder="Rujukan medis"
-                             class="rounded-lg border-stone-200 text-[12px]">
-                      <input v-model="isiHasil[h.id].outstanding" type="date" title="Tindak lanjut sampai"
-                             class="rounded-lg border-stone-200 text-[12px]">
+                    <!--
+                      Susunan MENGIKUTI "Manpower Table" D'Best: identitas
+                      yang sudah diketahui ditampilkan sebagai teks, lalu
+                      yang benar-benar diisi paramedis.
+
+                      Tiap medan BERLABEL. Bentuk sebelumnya hanya
+                      petunjuk di dalam kotak, dan petunjuk lenyap begitu
+                      kotaknya terisi — yang membuka baris yang sudah
+                      diisi separuh tidak dapat tahu kotak mana yang
+                      mana tanpa mengosongkannya lebih dulu.
+                    -->
+                    <div v-else class="grid gap-x-3 gap-y-2.5 md:grid-cols-4">
+
+                      <!-- Yang sudah diketahui dari berkas orangnya —
+                           dibaca, tidak diketik ulang. -->
+                      <div class="md:col-span-4 flex flex-wrap gap-x-4 gap-y-1 text-[10.5px] text-stone-500
+                                  rounded-lg bg-stone-50 border border-stone-100 px-3 py-2">
+                        <span>NIK <b class="text-cam-ink">{{ h.nik || '—' }}</b></span>
+                        <span>Noid <b class="text-cam-ink">{{ h.noid || '—' }}</b></span>
+                        <span>Jabatan <b class="text-cam-ink">{{ h.jabatan || '—' }}</b></span>
+                        <span>Departemen <b class="text-cam-ink">{{ h.departemen || '—' }}</b></span>
+                      </div>
+
+                      <label class="text-[10.5px] font-semibold text-stone-600">
+                        Tanggal MCU <span class="text-red-600">*</span>
+                        <input v-model="isiHasil[h.id].tgl_periksa" type="date" required
+                               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                      </label>
+                      <label class="text-[10.5px] font-semibold text-stone-600">
+                        Berlaku sampai
+                        <input v-model="isiHasil[h.id].tgl_expired" type="date"
+                               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                      </label>
+                      <label class="text-[10.5px] font-semibold text-stone-600">
+                        MCU berikutnya
+                        <input v-model="isiHasil[h.id].mcu_berikutnya" type="date"
+                               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                      </label>
+                      <label class="text-[10.5px] font-semibold text-stone-600">
+                        Umur
+                        <input v-model="isiHasil[h.id].usia" type="number" min="15" max="80"
+                               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                      </label>
+
+                      <label class="text-[10.5px] font-semibold text-stone-600">
+                        Hasil MCU <span class="text-red-600">*</span>
+                        <select v-model="isiHasil[h.id].hasil"
+                                class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                          <option v-for="x in bentukPengajuan.hasil" :key="x">{{ x }}</option>
+                        </select>
+                      </label>
+                      <label class="text-[10.5px] font-semibold text-stone-600">
+                        Level risiko
+                        <select v-model="isiHasil[h.id].level_risiko"
+                                class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                          <option value="">—</option>
+                          <option v-for="r in (props.opsi?.levelRisiko ?? [])" :key="r">{{ r }}</option>
+                        </select>
+                      </label>
+                      <label class="text-[10.5px] font-semibold text-stone-600">
+                        Status verifikasi
+                        <select v-model="isiHasil[h.id].status_verifikasi"
+                                class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                          <option value="">Belum diperiksa</option>
+                          <option v-for="v in (props.opsi?.statusMcu ?? [])" :key="v">{{ v }}</option>
+                        </select>
+                      </label>
+                      <label class="text-[10.5px] font-semibold text-stone-600">
+                        No. surat hasil
+                        <input v-model="isiHasil[h.id].nomor"
+                               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                      </label>
+
+                      <label class="text-[10.5px] font-semibold text-stone-600 md:col-span-2">
+                        Pembatasan kerja
+                        <input v-model="isiHasil[h.id].pembatasan"
+                               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                      </label>
+                      <label class="text-[10.5px] font-semibold text-stone-600">
+                        Dirujuk ke
+                        <input v-model="isiHasil[h.id].rujukan" placeholder="mis. Poli Jantung"
+                               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                      </label>
+                      <label class="text-[10.5px] font-semibold text-stone-600">
+                        Tindak lanjut sampai
+                        <input v-model="isiHasil[h.id].outstanding" type="date"
+                               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                      </label>
+
+                      <label class="text-[10.5px] font-semibold text-stone-600 md:col-span-4">
+                        Catatan dokter kontraktor
+                        <input v-model="isiHasil[h.id].catatan_kontraktor"
+                               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                      </label>
+
+                      <!--
+                        DUA BERKAS, keduanya diunggah — bukan diketik
+                        namanya. Pada D'Best "Hasil MCU" dan "Rujukan"
+                        sama-sama <input type=file>, dan memang begitu
+                        seharusnya: nama berkas tidak dapat dibuka
+                        siapa pun.
+                      -->
+                      <label class="text-[10.5px] font-semibold text-stone-600 md:col-span-2">
+                        Surat hasil MCU
+                        <span class="font-normal text-stone-400">— hanya paramedis &amp; OHSE</span>
+                        <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"
+                               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"
+                               @change="isiHasil[h.id].berkas = (($event.target as HTMLInputElement).files?.[0] ?? null)">
+                        <a v-if="h.berkas" :href="h.berkas" target="_blank" rel="noopener"
+                           class="text-[10.5px] font-bold text-cam-lime-deep">Lihat yang tersimpan</a>
+                      </label>
+                      <label class="text-[10.5px] font-semibold text-stone-600 md:col-span-2">
+                        Surat rujukan
+                        <span class="font-normal text-stone-400">— hanya paramedis &amp; OHSE</span>
+                        <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"
+                               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"
+                               @change="isiHasil[h.id].berkas_rujukan = (($event.target as HTMLInputElement).files?.[0] ?? null)">
+                        <a v-if="h.berkasRujukan" :href="h.berkasRujukan" target="_blank" rel="noopener"
+                           class="text-[10.5px] font-bold text-cam-lime-deep">Lihat yang tersimpan</a>
+                      </label>
                     </div>
-                    <div class="flex gap-3 mt-2">
-                      <button type="button" class="eq-btn-utama text-[11px] py-1"
-                              @click="simpanHasil(m.id, h.id)">Simpan hasil</button>
+                    <!--
+                      `eq-btn-utama` memakai `flex:1`, jadi di dalam
+                      wadah flex ia melebar memenuhi barisnya dan
+                      terbaca sebagai bilah, bukan tombol. Dibungkus
+                      supaya lebarnya mengikuti isinya.
+                    -->
+                    <div class="flex items-center gap-3 mt-3">
+                      <span class="inline-flex">
+                        <button type="button" class="eq-btn-utama text-[11px] py-1.5 px-4"
+                                @click="simpanHasil(m.id, h.id)">Simpan hasil</button>
+                      </span>
                       <button type="button" class="text-[11px] text-stone-500"
                               @click="batalIsi(h.id)">Batal</button>
                     </div>

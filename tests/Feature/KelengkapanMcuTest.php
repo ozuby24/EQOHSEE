@@ -81,8 +81,17 @@ class KelengkapanMcuTest extends TestCase
     #[Test]
     public function seluruh_kolom_catatan_mcu_dapat_diisi_dari_formulir(): void
     {
-        $this->post("/miners/{$this->p->id}/mcu", $this->isian())
-            ->assertSessionHasNoErrors();
+        Storage::fake(Berkas::TERTUTUP);
+
+        /* Kedua berkasnya ikut diunggah, bukan dilewatkan dari
+           pemeriksaan. Kolom berkas yang dikecualikan dari uji
+           kelengkapan adalah kolom yang tidak pernah diuji sama
+           sekali — dan justru kolom berkas yang paling mudah
+           tertinggal saat aturan validasinya ditulis. */
+        $this->post("/miners/{$this->p->id}/mcu", $this->isian([
+            'berkas' => UploadedFile::fake()->create('hasil.pdf', 20, 'application/pdf'),
+            'berkas_rujukan' => UploadedFile::fake()->create('rujukan.pdf', 20, 'application/pdf'),
+        ]))->assertSessionHasNoErrors();
 
         $m = PasporMcu::withoutGlobalScopes()->firstOrFail();
 
@@ -95,7 +104,7 @@ class KelengkapanMcuTest extends TestCase
 
         foreach ($m->getFillable() as $kolom) {
             /* Kolom penghubung, bukan isian. */
-            if (in_array($kolom, ['paspor_id', 'mcu_pengajuan_id', 'berkas'], true)) continue;
+            if (in_array($kolom, ['paspor_id', 'mcu_pengajuan_id'], true)) continue;
 
             if (blank($m->{$kolom})) $lewat[] = $kolom;
         }
@@ -290,14 +299,60 @@ class KelengkapanMcuTest extends TestCase
             .'mengira berkasnya belum diunggah dan menagihnya berulang kali.');
     }
 
+    /**
+     * Surat rujukan terjaga sama ketatnya dengan surat MCU.
+     *
+     * Ia menyebut ke poli mana orangnya dirujuk — jantung, paru, jiwa —
+     * dan itu diagnosis dengan cara lain. Menjaga surat MCU lalu
+     * membiarkan surat rujukannya terbuka menutup pintu depan sambil
+     * meninggalkan pintu samping.
+     */
+    #[Test]
+    public function surat_rujukan_terjaga_seperti_surat_mcu(): void
+    {
+        Storage::fake(Berkas::TERTUTUP);
+
+        $this->post("/miners/{$this->p->id}/mcu", $this->isian([
+            'berkas_rujukan' => UploadedFile::fake()->create('rujukan.pdf', 20, 'application/pdf'),
+        ]));
+
+        $m = PasporMcu::withoutGlobalScopes()->firstOrFail();
+        $this->assertNotNull($m->berkas_rujukan, 'Surat rujukan tidak tersimpan.');
+
+        $biasa = User::factory()->create([
+            'is_admin' => false, 'company_id' => $this->c->id, 'email_verified_at' => now(),
+        ]);
+
+        $this->actingAs($biasa)
+            ->get(route('berkas.sajikan', ['jenis' => 'mcr', 'baris' => $m->id]))
+            ->assertForbidden();
+
+        $paramedis = User::factory()->create([
+            'is_admin' => false, 'ohse_role' => 'paramedis',
+            'company_id' => $this->c->id, 'email_verified_at' => now(),
+        ]);
+
+        $this->actingAs($paramedis)
+            ->get(route('berkas.sajikan', ['jenis' => 'mcr', 'baris' => $m->id]))
+            ->assertOk();
+    }
+
     #[Test]
     public function berkas_lain_tidak_ikut_terjaga(): void
     {
         /* GERBANG hanya menyebut MCU. Bila suatu saat ia melebar tanpa
            sengaja, foto bahaya dan tanda tangan akan ikut tertutup dan
            halaman-halaman lain berlubang tanpa galat apa pun. */
+        /* Yang MEMANG dijaga: surat MCU dan surat rujukannya. Keduanya
+           memuat rincian medis — yang kedua menyebut ke poli mana
+           orangnya dirujuk, dan itu diagnosis dengan cara lain. */
+        $dijaga = ['mcu', 'mcr'];
+
+        $this->assertSame($dijaga, array_keys(Berkas::GERBANG),
+            'Daftar berkas terjaga berubah tanpa ujinya ikut ditinjau.');
+
         foreach (array_keys(Berkas::tersaji()) as $jenis) {
-            if ($jenis === 'mcu') continue;
+            if (in_array($jenis, $dijaga, true)) continue;
 
             $this->assertTrue(Berkas::bolehMembuka(null, $jenis),
                 "Jenis berkas \"{$jenis}\" ikut terjaga gerbang MCU.");

@@ -451,15 +451,42 @@ class MinersController extends Controller
 
                 'jumlah'       => $m->hasil->count(),
                 'belumKembali' => $m->belumKembali(),
+                /* Susunan medan MENGIKUTI "Manpower Table" D'Best:
+                   nama, NIK, umur, tanggal MCU, noid, jabatan,
+                   departemen, status, level risiko, lalu dua berkas.
+                   Yang dibaca dari orangnya (NIK, noid, jabatan,
+                   departemen) ikut dikirim supaya barisnya dapat
+                   digambar utuh tanpa membuka berkas orangnya. */
                 'nama' => $m->hasil->map(fn (PasporMcu $h) => [
                     'id'         => $h->id,
                     'pasporId'   => $h->paspor_id,
                     'nama'       => $h->paspor?->nama,
+                    'nik'        => $h->paspor?->nik,
+                    'noid'       => $h->paspor?->nomor_register,
+                    'jabatan'    => $h->paspor?->jabatan,
+                    'departemen' => $h->paspor?->departemen,
+
+                    'usia'       => $h->usia,
                     'hasil'      => $h->hasil,
+                    'levelRisiko' => $h->level_risiko,
+                    'statusVerifikasi' => $h->status_verifikasi,
+                    'nomor'      => $h->nomor,
+                    'pembatasan' => $h->pembatasan,
+                    'catatanKontraktor' => $h->catatan_kontraktor,
+
                     'tglPeriksa' => $h->tgl_periksa?->toDateString(),
                     'tglExpired' => $h->tgl_expired?->toDateString(),
+                    'mcuBerikutnya' => $h->mcu_berikutnya?->toDateString(),
                     'rujukan'    => $h->rujukan,
+                    'outstanding' => $h->outstanding?->toDateString(),
                     'tertunggak' => $h->rujukanTertunggak(),
+
+                    /* Berkasnya hanya dialamatkan kepada yang boleh
+                       membukanya — lihat Berkas::GERBANG. */
+                    'berkas' => Berkas::bolehMembuka(auth()->user(), 'mcu')
+                        ? Berkas::url($h, 'mcu') : null,
+                    'berkasRujukan' => Berkas::bolehMembuka(auth()->user(), 'mcr')
+                        ? Berkas::url($h, 'mcr') : null,
                 ])->values(),
             ])->values(),
             'ringkasMcu' => [
@@ -588,6 +615,7 @@ class MinersController extends Controller
         $data = $request->validate($this->aturanMcu(wajibJenis: false));
 
         if ($jalur = $this->simpanBerkasMcu($request)) $data['berkas'] = $jalur;
+        if ($jalur = $this->simpanBerkasMcu($request, 'berkas_rujukan')) $data['berkas_rujukan'] = $jalur;
 
         /* Yang dikosongkan penilai TIDAK menghapus isi lama. Formulir
            balasan klinik hanya memuat sebagian medan; mengirimkan sisanya
@@ -993,7 +1021,8 @@ class MinersController extends Controller
     {
         $data = $request->validate($this->aturanMcu());
 
-        $data['berkas'] = $this->simpanBerkasMcu($request) ?? null;
+        $data['berkas']         = $this->simpanBerkasMcu($request) ?? null;
+        $data['berkas_rujukan'] = $this->simpanBerkasMcu($request, 'berkas_rujukan') ?? null;
 
         $paspor->mcu()->create(array_filter(
             $data, fn ($v) => $v !== null && $v !== ''
@@ -1047,6 +1076,12 @@ class MinersController extends Controller
             'remarks'            => ['nullable', 'string', 'max:1000'],
 
             'berkas' => ['nullable', 'file', 'max:8192', 'mimes:pdf,jpg,jpeg,png,webp'],
+
+            /* Surat rujukannya sendiri — pada D'Best inilah yang
+               diunggah paramedis. `rujukan` di atas tetap keterangan
+               bebas: yang satu menjawab "dirujuk ke mana", yang ini
+               "mana suratnya". */
+            'berkas_rujukan' => ['nullable', 'file', 'max:8192', 'mimes:pdf,jpg,jpeg,png,webp'],
         ];
     }
 
@@ -1058,10 +1093,10 @@ class MinersController extends Controller
      * Tetap boleh kosong — hasil yang masuk lewat telepon dari klinik
      * lebih baik tercatat hari ini daripada menunggu suratnya seminggu.
      */
-    private function simpanBerkasMcu(Request $request): ?string
+    private function simpanBerkasMcu(Request $request, string $medan = 'berkas'): ?string
     {
-        return $request->hasFile('berkas')
-            ? Berkas::simpan($request->file('berkas'), 'miners/mcu')
+        return $request->hasFile($medan)
+            ? Berkas::simpan($request->file($medan), 'miners/mcu')
             : null;
     }
 

@@ -74,6 +74,11 @@ final class Berkas
         /* Surat MCU. Terjaga lebih ketat daripada yang lain — lihat
            GERBANG di bawah. */
         'mcu' => [PasporMcu::class,      'berkas',      false],
+
+        /* Surat rujukan medis. Terjaga sama ketatnya dengan surat MCU —
+           ia menyebut ke poli mana orangnya dirujuk, dan itu rincian
+           medis. */
+        'mcr' => [PasporMcu::class,      'berkas_rujukan', false],
     ];
 
     /**
@@ -136,6 +141,7 @@ final class Berkas
      */
     public const GERBANG = [
         'mcu' => ['isAdmin', 'isOhse', 'isParamedis'],
+        'mcr' => ['isAdmin', 'isOhse', 'isParamedis'],
     ];
 
     /** Pengguna ini boleh membuka berkas jenis itu? */
