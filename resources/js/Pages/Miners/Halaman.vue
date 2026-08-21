@@ -279,6 +279,41 @@ const fAlur  = useForm<Record<string, any>>({ aksi: '', alasan: '' });
     layarnya tidak berubah menjadi dinding tabel bersarang. */
 const bukaPengajuan = ref<number | null>(null);
 
+/**
+ * Pencarian pada daftar pengajuan.
+ *
+ * DI SISI LAYAR, bukan di server, dan itu keputusan yang disengaja:
+ * daftarnya sudah utuh di memori — pengendalinya memuat seluruh
+ * pengajuan sekaligus untuk menggambar rantai parafnya — sehingga
+ * memanggil server hanya untuk menyaring berarti memuat ulang seluruh
+ * halaman demi menyembunyikan sebagian baris yang sudah ada.
+ *
+ * Bila suatu saat daftarnya dihalamankan di server, penyaringnya harus
+ * ikut pindah ke sana: pencarian yang hanya melihat halaman yang sedang
+ * tampil akan mengatakan "tidak ada yang cocok" untuk surat yang jelas
+ * ada di halaman berikutnya.
+ */
+const cariPengajuan = ref('');
+
+const pengajuanTersaring = computed<any[]>(() => {
+  const q = cariPengajuan.value.trim().toLowerCase();
+  const semua = props.pengajuan ?? [];
+
+  if (!q) return semua as any[];
+
+  return semua.filter((m: any) => [m.nomor, m.judul, m.pengaju, m.kepada, m.jenis]
+    .some((x: any) => String(x ?? '').toLowerCase().includes(q)));
+});
+
+/** Warna lencana status — sama maknanya dengan seluruh modul. */
+function warnaStatus(status: string): string {
+  return ({
+    disetujui: KEADAAN.baik,
+    ditolak:   KEADAAN.gawat,
+    diajukan:  KEADAAN.ingat,
+  } as Record<string, string>)[status] ?? '#78716C';
+}
+
 /** Berkas peserta yang sedang dibuka — satu saja, seperti daftar nama. */
 const bukaBerkas = ref<number | null>(null);
 
@@ -1395,302 +1430,368 @@ async function hapus(jalur: string, apa: string) {
                        rute="/miners/riwayat/mcu"
                        judul="Masa berlaku MCU seluruh pekerja" />
 
-      <section v-for="m in (props.pengajuan ?? [])" :key="m.id"
-               class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div class="min-w-0">
-            <h3 class="text-[14px] font-bold text-cam-ink">
-              {{ m.nomor || 'Tanpa nomor register' }}
-              <span class="text-[11px] font-normal text-stone-400">· {{ m.tanggal }} · {{ m.jenis }}</span>
-            </h3>
-            <p class="text-[11.5px] text-stone-500 mt-0.5">
-              {{ m.judul || 'Perihal belum diisi' }}
-              <span v-if="m.kepada">
-                · {{ props.mode === 'induksi' ? 'di' : 'kepada' }} {{ m.kepada }}
-              </span>
-              <span v-if="props.mode === 'induksi' && m.pelaksanaan"> · kelas {{ m.pelaksanaan }}</span>
-            </p>
-            <p v-if="m.alasanTolak" class="text-[11.5px] text-red-600 mt-1">Ditolak: {{ m.alasanTolak }}</p>
-          </div>
+      <!--
+        DAFTAR BERBENTUK TABEL, mengikuti master-mcu D'Best: bernomor,
+        satu baris per surat, dengan kolom Creator dan Status.
 
-          <div class="text-right shrink-0">
-            <p class="text-[12px] font-bold"
-               :style="{ color: m.status === 'disetujui' ? KEADAAN.baik
-                              : m.status === 'ditolak' ? KEADAAN.gawat
-                              : m.status === 'diajukan' ? KEADAAN.ingat : KEADAAN.netral }">
-              {{ m.statusLabel }}
-            </p>
-            <p class="text-[11px] text-stone-400 mt-0.5">
-              {{ m.jumlah }} {{ bentukPengajuan.labelJumlah.toLowerCase() }}<span
-                v-if="m.belumKembali"> · {{ m.belumKembali }}
-                {{ props.mode === 'induksi' ? 'belum dinilai' : 'belum kembali' }}</span>
-            </p>
-          </div>
+        Bentuk sebelumnya satu KARTU per surat, dan tiap kartu memuat
+        rantai paraf beserta seluruh tombolnya. Sepuluh surat berarti
+        sepuluh kartu setinggi layar: yang mencari satu nomor harus
+        menggulir melewati sembilan rantai paraf yang tidak ia cari.
+        Rinciannya kini dibuka per baris — yang dicari orang di daftar
+        adalah barisnya, bukan seluruh isinya sekaligus.
+      -->
+      <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-stone-100 flex flex-wrap items-center gap-3">
+          <h3 class="text-[13.5px] font-bold text-cam-ink">
+            {{ bentukPengajuan.judulDaftar }}
+            <span class="font-normal text-[11.5px] text-stone-400">
+              | {{ pengajuanTersaring.length }} dari {{ (props.pengajuan ?? []).length }}
+            </span>
+          </h3>
+
+          <!-- Pencarian menyaring nomor, perihal, dan pengajunya —
+               ketiganya yang dipakai orang mengingat suratnya. -->
+          <input v-model="cariPengajuan" type="search"
+                 placeholder="Cari nomor, perihal, atau pengaju…"
+                 class="ml-auto w-full sm:w-72 rounded-lg border-stone-200 text-[12px]"
+                 aria-label="Cari pengajuan">
         </div>
 
-        <div v-if="m.status !== 'draf'" class="mt-3">
-          <Rantai :rantai="m.rantai" :tertinggal="m.tertinggal"
-                  :dapat-paraf="m.dapatParaf" :saya-penentu="props.opsi?.sayaPenentu"
-                  @paraf="t => paraf(`${bentukPengajuan.basis}/${m.id}/paraf`, t)" />
-        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-left text-[12px]">
+            <thead class="text-[10px] uppercase tracking-wider text-stone-400 bg-stone-50">
+              <tr>
+                <th class="px-4 py-2.5 font-bold w-10">No</th>
+                <th class="px-3 py-2.5 font-bold">Tanggal</th>
+                <th class="px-3 py-2.5 font-bold">No. Register</th>
+                <th class="px-3 py-2.5 font-bold">Perihal</th>
+                <th class="px-3 py-2.5 font-bold">Jenis</th>
+                <th class="px-3 py-2.5 font-bold text-right">{{ bentukPengajuan.labelJumlah }}</th>
+                <th class="px-3 py-2.5 font-bold">Status</th>
+                <th class="px-3 py-2.5 font-bold">Pengaju</th>
+                <th class="px-4 py-2.5"></th>
+              </tr>
+            </thead>
 
-        <div class="flex flex-wrap items-center gap-3 mt-3">
-          <button type="button" class="text-[11.5px] font-semibold text-cam-lime-deep"
-                  @click="bukaPengajuan = bukaPengajuan === m.id ? null : m.id">
-            {{ bukaPengajuan === m.id ? 'Tutup daftar nama' : 'Lihat daftar nama' }}
-          </button>
-          <button v-if="m.dapatDiubah && m.jumlah" type="button"
-                  class="text-[11.5px] font-semibold text-cam-lime-deep"
-                  @click="ajukanPengajuan(m.id)">Ajukan</button>
-          <button v-if="m.dapatDitinjau" type="button" class="text-[11.5px] font-semibold"
-                  :style="{ color: KEADAAN.baik }"
-                  @click="tinjau(`${bentukPengajuan.basis}/${m.id}/tinjau`, 'setujui')">Setujui</button>
-          <button v-if="m.dapatDitinjau" type="button" class="text-[11.5px] font-semibold text-red-600"
-                  @click="tinjau(`${bentukPengajuan.basis}/${m.id}/tinjau`, 'tolak')">Tolak</button>
-          <button v-if="m.status === 'diajukan'" type="button" class="text-[11.5px] text-stone-500"
-                  @click="tinjau(`${bentukPengajuan.basis}/${m.id}/tinjau`, 'tarik')">Tarik</button>
-          <span v-if="!m.dapatDitinjau && m.sebabTakTinjau && m.status === 'diajukan'"
-                class="text-[11px] text-stone-500 basis-full">
-            {{ m.sebabTakTinjau }}
-          </span>
-          <button v-if="m.dapatDiubah" type="button" class="text-[11.5px] text-red-600 ml-auto"
-                  @click="hapus(`${bentukPengajuan.basis}/${m.id}`, 'pengajuan ini')">Hapus</button>
-        </div>
-
-        <div v-if="bukaPengajuan === m.id" class="mt-4 pt-4 border-t border-stone-100">
-          <div class="overflow-x-auto">
-            <table class="min-w-full text-left text-[12px]">
-              <thead>
-                <tr class="text-stone-400 border-b border-stone-100">
-                  <th class="py-2 pr-3">Nama</th>
-                  <th class="py-2 pr-3">{{ props.mode === 'induksi' ? 'Tanggal' : 'Periksa' }}</th>
-                  <th class="py-2 pr-3">Berlaku s/d</th><th class="py-2 pr-3">Hasil</th>
-                  <th class="py-2 pr-3">{{ props.mode === 'induksi' ? 'Nilai' : 'Rujukan' }}</th>
-                  <th class="py-2"></th>
+            <tbody>
+              <template v-for="(m, i) in pengajuanTersaring" :key="m.id">
+                <tr class="border-t border-stone-100 align-top"
+                    :class="bukaPengajuan === m.id ? 'bg-stone-50/70' : ''">
+                  <td class="px-4 py-2.5 num text-stone-400">{{ i + 1 }}</td>
+                  <td class="px-3 py-2.5 whitespace-nowrap">{{ m.tanggal }}</td>
+                  <td class="px-3 py-2.5 font-semibold text-cam-ink whitespace-nowrap">
+                    {{ m.nomor || '—' }}
+                  </td>
+                  <td class="px-3 py-2.5 min-w-[180px]">
+                    {{ m.judul || 'Perihal belum diisi' }}
+                    <span v-if="m.kepada" class="block text-[10.5px] text-stone-400">
+                      {{ props.mode === 'induksi' ? 'di' : 'kepada' }} {{ m.kepada }}
+                    </span>
+                  </td>
+                  <td class="px-3 py-2.5 whitespace-nowrap">{{ m.jenis }}</td>
+                  <td class="px-3 py-2.5 text-right num whitespace-nowrap">
+                    {{ m.jumlah }}
+                    <span v-if="m.belumKembali" class="text-amber-700">
+                      · {{ m.belumKembali }} belum
+                    </span>
+                  </td>
+                  <td class="px-3 py-2.5">
+                    <span class="inline-block rounded-md px-2 py-0.5 text-[10.5px] font-bold text-white
+                                 whitespace-nowrap"
+                          :style="{ background: warnaStatus(m.status) }">
+                      {{ m.statusLabel }}
+                    </span>
+                    <span v-if="m.alasanTolak" class="block text-[10px] text-red-600 mt-0.5">
+                      {{ m.alasanTolak }}
+                    </span>
+                  </td>
+                  <td class="px-3 py-2.5 text-stone-500 whitespace-nowrap">{{ m.pengaju || '—' }}</td>
+                  <td class="px-4 py-2.5 text-right whitespace-nowrap">
+                    <button type="button" class="text-[11px] font-bold text-cam-lime-deep"
+                            @click="bukaPengajuan = bukaPengajuan === m.id ? null : m.id">
+                      {{ bukaPengajuan === m.id ? 'Tutup' : 'Rincian' }}
+                    </button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                <tr v-for="h in m.nama" :key="h.id" class="border-b border-stone-50 align-top">
-                  <template v-if="!isiHasil[h.id]">
-                    <td class="py-2 pr-3 font-semibold">
-                      <Link :href="`/miners/${h.pasporId}`" class="text-cam-lime-deep">{{ h.nama }}</Link>
-                    </td>
-                    <td class="py-2 pr-3">{{ h.tglPeriksa || '—' }}</td>
-                    <td class="py-2 pr-3">{{ h.tglExpired || '—' }}</td>
-                    <td class="py-2 pr-3">
-                      <span v-if="h.hasil" class="font-semibold">{{ h.hasil }}</span>
-                      <span v-else class="text-stone-400">
-                        {{ props.mode === 'induksi' ? 'belum dinilai' : 'belum kembali' }}
-                      </span>
-                    </td>
-                    <td class="py-2 pr-3">
-                      <template v-if="props.mode === 'induksi'">
-                        <span v-if="h.nilai !== null && h.nilai !== undefined" class="num">{{ h.nilai }}</span>
-                        <span v-else class="text-stone-400">—</span>
-                      </template>
-                      <template v-else>
-                        <span v-if="h.rujukan" :style="{ color: h.tertunggak ? KEADAAN.gawat : KEADAAN.ingat }">
-                          {{ h.rujukan }}
+
+                <tr v-if="bukaPengajuan === m.id" class="border-t border-stone-100 bg-stone-50/40">
+                  <td colspan="9" class="px-4 py-4">
+          <div v-if="m.status !== 'draf'" class="mt-3">
+            <Rantai :rantai="m.rantai" :tertinggal="m.tertinggal"
+                    :dapat-paraf="m.dapatParaf" :saya-penentu="props.opsi?.sayaPenentu"
+                    @paraf="t => paraf(`${bentukPengajuan.basis}/${m.id}/paraf`, t)" />
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3 mt-3">
+            <button type="button" class="text-[11.5px] font-semibold text-cam-lime-deep"
+                    @click="bukaPengajuan = bukaPengajuan === m.id ? null : m.id">
+              {{ bukaPengajuan === m.id ? 'Tutup daftar nama' : 'Lihat daftar nama' }}
+            </button>
+            <button v-if="m.dapatDiubah && m.jumlah" type="button"
+                    class="text-[11.5px] font-semibold text-cam-lime-deep"
+                    @click="ajukanPengajuan(m.id)">Ajukan</button>
+            <button v-if="m.dapatDitinjau" type="button" class="text-[11.5px] font-semibold"
+                    :style="{ color: KEADAAN.baik }"
+                    @click="tinjau(`${bentukPengajuan.basis}/${m.id}/tinjau`, 'setujui')">Setujui</button>
+            <button v-if="m.dapatDitinjau" type="button" class="text-[11.5px] font-semibold text-red-600"
+                    @click="tinjau(`${bentukPengajuan.basis}/${m.id}/tinjau`, 'tolak')">Tolak</button>
+            <button v-if="m.status === 'diajukan'" type="button" class="text-[11.5px] text-stone-500"
+                    @click="tinjau(`${bentukPengajuan.basis}/${m.id}/tinjau`, 'tarik')">Tarik</button>
+            <span v-if="!m.dapatDitinjau && m.sebabTakTinjau && m.status === 'diajukan'"
+                  class="text-[11px] text-stone-500 basis-full">
+              {{ m.sebabTakTinjau }}
+            </span>
+            <button v-if="m.dapatDiubah" type="button" class="text-[11.5px] text-red-600 ml-auto"
+                    @click="hapus(`${bentukPengajuan.basis}/${m.id}`, 'pengajuan ini')">Hapus</button>
+          </div>
+
+          <div v-if="bukaPengajuan === m.id" class="mt-4 pt-4 border-t border-stone-100">
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-left text-[12px]">
+                <thead>
+                  <tr class="text-stone-400 border-b border-stone-100">
+                    <th class="py-2 pr-3">Nama</th>
+                    <th class="py-2 pr-3">{{ props.mode === 'induksi' ? 'Tanggal' : 'Periksa' }}</th>
+                    <th class="py-2 pr-3">Berlaku s/d</th><th class="py-2 pr-3">Hasil</th>
+                    <th class="py-2 pr-3">{{ props.mode === 'induksi' ? 'Nilai' : 'Rujukan' }}</th>
+                    <th class="py-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="h in m.nama" :key="h.id" class="border-b border-stone-50 align-top">
+                    <template v-if="!isiHasil[h.id]">
+                      <td class="py-2 pr-3 font-semibold">
+                        <Link :href="`/miners/${h.pasporId}`" class="text-cam-lime-deep">{{ h.nama }}</Link>
+                      </td>
+                      <td class="py-2 pr-3">{{ h.tglPeriksa || '—' }}</td>
+                      <td class="py-2 pr-3">{{ h.tglExpired || '—' }}</td>
+                      <td class="py-2 pr-3">
+                        <span v-if="h.hasil" class="font-semibold">{{ h.hasil }}</span>
+                        <span v-else class="text-stone-400">
+                          {{ props.mode === 'induksi' ? 'belum dinilai' : 'belum kembali' }}
                         </span>
-                        <span v-else class="text-stone-400">—</span>
-                      </template>
-                    </td>
-                    <td class="py-2 text-right whitespace-nowrap">
-                      <button type="button" class="text-[11px] font-semibold text-cam-lime-deep"
-                              @click="mulaiIsi(h)">Isi hasil</button>
-                      <button v-if="m.dapatDiubah" type="button" class="text-[11px] text-red-600 ml-2"
-                              @click="hapus(`${bentukPengajuan.basis}/${m.id}/nama/${h.id}`, h.nama)">Keluarkan</button>
-                    </td>
-                  </template>
+                      </td>
+                      <td class="py-2 pr-3">
+                        <template v-if="props.mode === 'induksi'">
+                          <span v-if="h.nilai !== null && h.nilai !== undefined" class="num">{{ h.nilai }}</span>
+                          <span v-else class="text-stone-400">—</span>
+                        </template>
+                        <template v-else>
+                          <span v-if="h.rujukan" :style="{ color: h.tertunggak ? KEADAAN.gawat : KEADAAN.ingat }">
+                            {{ h.rujukan }}
+                          </span>
+                          <span v-else class="text-stone-400">—</span>
+                        </template>
+                      </td>
+                      <td class="py-2 text-right whitespace-nowrap">
+                        <button type="button" class="text-[11px] font-semibold text-cam-lime-deep"
+                                @click="mulaiIsi(h)">Isi hasil</button>
+                        <button v-if="m.dapatDiubah" type="button" class="text-[11px] text-red-600 ml-2"
+                                @click="hapus(`${bentukPengajuan.basis}/${m.id}/nama/${h.id}`, h.nama)">Keluarkan</button>
+                      </td>
+                    </template>
 
-                  <td v-else colspan="6" class="py-2">
-                    <p class="text-[11.5px] font-semibold text-cam-ink mb-2">{{ h.nama }}</p>
-                    <div v-if="props.mode === 'induksi'" class="grid gap-2 md:grid-cols-4">
-                      <input v-model="isiHasil[h.id].tanggal" type="date" required title="Tanggal induksi"
-                             class="rounded-lg border-stone-200 text-[12px]">
-                      <input v-model="isiHasil[h.id].tgl_expired" type="date" title="Berlaku sampai"
-                             class="rounded-lg border-stone-200 text-[12px]">
-                      <select v-model="isiHasil[h.id].hasil" class="rounded-lg border-stone-200 text-[12px]" aria-label="Hasil">
-                        <option v-for="x in bentukPengajuan.hasil" :key="x">{{ x }}</option>
-                      </select>
-                      <input v-model="isiHasil[h.id].nilai" type="number" min="0" max="100" placeholder="Nilai"
-                             class="rounded-lg border-stone-200 text-[12px]">
-                      <input v-model="isiHasil[h.id].nomor_registrasi" placeholder="No. sertifikat"
-                             class="rounded-lg border-stone-200 text-[12px]">
-                      <input v-model="isiHasil[h.id].pemberi" placeholder="Pemberi induksi"
-                             class="rounded-lg border-stone-200 text-[12px]">
-                      <input v-model="isiHasil[h.id].catatan" placeholder="Catatan"
-                             class="rounded-lg border-stone-200 text-[12px] md:col-span-2">
-                    </div>
-
-                    <!--
-                      Susunan MENGIKUTI "Manpower Table" D'Best: identitas
-                      yang sudah diketahui ditampilkan sebagai teks, lalu
-                      yang benar-benar diisi paramedis.
-
-                      Tiap medan BERLABEL. Bentuk sebelumnya hanya
-                      petunjuk di dalam kotak, dan petunjuk lenyap begitu
-                      kotaknya terisi — yang membuka baris yang sudah
-                      diisi separuh tidak dapat tahu kotak mana yang
-                      mana tanpa mengosongkannya lebih dulu.
-                    -->
-                    <div v-else class="grid gap-x-3 gap-y-2.5 md:grid-cols-4">
-
-                      <!-- Yang sudah diketahui dari berkas orangnya —
-                           dibaca, tidak diketik ulang. -->
-                      <div class="md:col-span-4 flex flex-wrap gap-x-4 gap-y-1 text-[10.5px] text-stone-500
-                                  rounded-lg bg-stone-50 border border-stone-100 px-3 py-2">
-                        <span>NIK <b class="text-cam-ink">{{ h.nik || '—' }}</b></span>
-                        <span>Noid <b class="text-cam-ink">{{ h.noid || '—' }}</b></span>
-                        <span>Jabatan <b class="text-cam-ink">{{ h.jabatan || '—' }}</b></span>
-                        <span>Departemen <b class="text-cam-ink">{{ h.departemen || '—' }}</b></span>
-                      </div>
-
-                      <label class="text-[10.5px] font-semibold text-stone-600">
-                        Tanggal MCU <span class="text-red-600">*</span>
-                        <input v-model="isiHasil[h.id].tgl_periksa" type="date" required
-                               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-                      </label>
-                      <label class="text-[10.5px] font-semibold text-stone-600">
-                        Berlaku sampai
-                        <input v-model="isiHasil[h.id].tgl_expired" type="date"
-                               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-                      </label>
-                      <label class="text-[10.5px] font-semibold text-stone-600">
-                        MCU berikutnya
-                        <input v-model="isiHasil[h.id].mcu_berikutnya" type="date"
-                               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-                      </label>
-                      <label class="text-[10.5px] font-semibold text-stone-600">
-                        Umur
-                        <input v-model="isiHasil[h.id].usia" type="number" min="15" max="80"
-                               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-                      </label>
-
-                      <label class="text-[10.5px] font-semibold text-stone-600">
-                        Hasil MCU <span class="text-red-600">*</span>
-                        <select v-model="isiHasil[h.id].hasil"
-                                class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                    <td v-else colspan="6" class="py-2">
+                      <p class="text-[11.5px] font-semibold text-cam-ink mb-2">{{ h.nama }}</p>
+                      <div v-if="props.mode === 'induksi'" class="grid gap-2 md:grid-cols-4">
+                        <input v-model="isiHasil[h.id].tanggal" type="date" required title="Tanggal induksi"
+                               class="rounded-lg border-stone-200 text-[12px]">
+                        <input v-model="isiHasil[h.id].tgl_expired" type="date" title="Berlaku sampai"
+                               class="rounded-lg border-stone-200 text-[12px]">
+                        <select v-model="isiHasil[h.id].hasil" class="rounded-lg border-stone-200 text-[12px]" aria-label="Hasil">
                           <option v-for="x in bentukPengajuan.hasil" :key="x">{{ x }}</option>
                         </select>
-                      </label>
-                      <label class="text-[10.5px] font-semibold text-stone-600">
-                        Level risiko
-                        <select v-model="isiHasil[h.id].level_risiko"
-                                class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-                          <option value="">—</option>
-                          <option v-for="r in (props.opsi?.levelRisiko ?? [])" :key="r">{{ r }}</option>
-                        </select>
-                      </label>
-                      <label class="text-[10.5px] font-semibold text-stone-600">
-                        Status verifikasi
-                        <select v-model="isiHasil[h.id].status_verifikasi"
-                                class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-                          <option value="">Belum diperiksa</option>
-                          <option v-for="v in (props.opsi?.statusMcu ?? [])" :key="v">{{ v }}</option>
-                        </select>
-                      </label>
-                      <label class="text-[10.5px] font-semibold text-stone-600">
-                        No. surat hasil
-                        <input v-model="isiHasil[h.id].nomor"
-                               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-                      </label>
-
-                      <label class="text-[10.5px] font-semibold text-stone-600 md:col-span-2">
-                        Pembatasan kerja
-                        <input v-model="isiHasil[h.id].pembatasan"
-                               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-                      </label>
-                      <label class="text-[10.5px] font-semibold text-stone-600">
-                        Dirujuk ke
-                        <input v-model="isiHasil[h.id].rujukan" placeholder="mis. Poli Jantung"
-                               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-                      </label>
-                      <label class="text-[10.5px] font-semibold text-stone-600">
-                        Tindak lanjut sampai
-                        <input v-model="isiHasil[h.id].outstanding" type="date"
-                               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-                      </label>
-
-                      <label class="text-[10.5px] font-semibold text-stone-600 md:col-span-4">
-                        Catatan dokter kontraktor
-                        <input v-model="isiHasil[h.id].catatan_kontraktor"
-                               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-                      </label>
+                        <input v-model="isiHasil[h.id].nilai" type="number" min="0" max="100" placeholder="Nilai"
+                               class="rounded-lg border-stone-200 text-[12px]">
+                        <input v-model="isiHasil[h.id].nomor_registrasi" placeholder="No. sertifikat"
+                               class="rounded-lg border-stone-200 text-[12px]">
+                        <input v-model="isiHasil[h.id].pemberi" placeholder="Pemberi induksi"
+                               class="rounded-lg border-stone-200 text-[12px]">
+                        <input v-model="isiHasil[h.id].catatan" placeholder="Catatan"
+                               class="rounded-lg border-stone-200 text-[12px] md:col-span-2">
+                      </div>
 
                       <!--
-                        DUA BERKAS, keduanya diunggah — bukan diketik
-                        namanya. Pada D'Best "Hasil MCU" dan "Rujukan"
-                        sama-sama <input type=file>, dan memang begitu
-                        seharusnya: nama berkas tidak dapat dibuka
-                        siapa pun.
-                      -->
-                      <label class="text-[10.5px] font-semibold text-stone-600 md:col-span-2">
-                        Surat hasil MCU
-                        <span class="font-normal text-stone-400">— hanya paramedis &amp; OHSE</span>
-                        <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"
-                               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"
-                               @change="isiHasil[h.id].berkas = (($event.target as HTMLInputElement).files?.[0] ?? null)">
-                        <a v-if="h.berkas" :href="h.berkas" target="_blank" rel="noopener"
-                           class="text-[10.5px] font-bold text-cam-lime-deep">Lihat yang tersimpan</a>
-                      </label>
-                      <label class="text-[10.5px] font-semibold text-stone-600 md:col-span-2">
-                        Surat rujukan
-                        <span class="font-normal text-stone-400">— hanya paramedis &amp; OHSE</span>
-                        <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"
-                               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"
-                               @change="isiHasil[h.id].berkas_rujukan = (($event.target as HTMLInputElement).files?.[0] ?? null)">
-                        <a v-if="h.berkasRujukan" :href="h.berkasRujukan" target="_blank" rel="noopener"
-                           class="text-[10.5px] font-bold text-cam-lime-deep">Lihat yang tersimpan</a>
-                      </label>
-                    </div>
-                    <!--
-                      `eq-btn-utama` memakai `flex:1`, jadi di dalam
-                      wadah flex ia melebar memenuhi barisnya dan
-                      terbaca sebagai bilah, bukan tombol. Dibungkus
-                      supaya lebarnya mengikuti isinya.
-                    -->
-                    <div class="flex items-center gap-3 mt-3">
-                      <span class="inline-flex">
-                        <button type="button" class="eq-btn-utama text-[11px] py-1.5 px-4"
-                                @click="simpanHasil(m.id, h.id)">Simpan hasil</button>
-                      </span>
-                      <button type="button" class="text-[11px] text-stone-500"
-                              @click="batalIsi(h.id)">Batal</button>
-                    </div>
-                  </td>
-                </tr>
-                <tr v-if="!m.nama?.length">
-                  <td colspan="6" class="py-6 text-center text-stone-400">
-                    Belum ada nama dalam pengajuan ini.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+                        Susunan MENGIKUTI "Manpower Table" D'Best: identitas
+                        yang sudah diketahui ditampilkan sebagai teks, lalu
+                        yang benar-benar diisi paramedis.
 
-          <form v-if="m.dapatDiubah" class="grid gap-2 md:grid-cols-4 mt-3 pt-3 border-t border-stone-100"
-                @submit.prevent="tambahNama(m.id)">
-            <select v-model="fNama.paspor_id" required class="rounded-lg border-stone-200 text-[12px] md:col-span-2" aria-label="Paspor">
-              <option value="">Pilih pekerja…</option>
-              <option v-for="o in (props.opsi?.orang ?? [])" :key="o.id" :value="o.id">
-                {{ o.nama }}<span v-if="o.jabatan"> — {{ o.jabatan }}</span>
-              </option>
-            </select>
-            <input v-if="props.mode !== 'induksi'" v-model="fNama.tgl_periksa" type="date"
-                   title="Rencana tanggal periksa" class="rounded-lg border-stone-200 text-[12px]">
-            <button class="eq-btn-utama" :disabled="fNama.processing">Tambah nama</button>
-            <p v-if="fNama.errors.paspor_id" class="text-[11px] text-red-600 md:col-span-4">
-              {{ fNama.errors.paspor_id }}
-            </p>
-          </form>
+                        Tiap medan BERLABEL. Bentuk sebelumnya hanya
+                        petunjuk di dalam kotak, dan petunjuk lenyap begitu
+                        kotaknya terisi — yang membuka baris yang sudah
+                        diisi separuh tidak dapat tahu kotak mana yang
+                        mana tanpa mengosongkannya lebih dulu.
+                      -->
+                      <div v-else class="grid gap-x-3 gap-y-2.5 md:grid-cols-4">
+
+                        <!-- Yang sudah diketahui dari berkas orangnya —
+                             dibaca, tidak diketik ulang. -->
+                        <div class="md:col-span-4 flex flex-wrap gap-x-4 gap-y-1 text-[10.5px] text-stone-500
+                                    rounded-lg bg-stone-50 border border-stone-100 px-3 py-2">
+                          <span>NIK <b class="text-cam-ink">{{ h.nik || '—' }}</b></span>
+                          <span>Noid <b class="text-cam-ink">{{ h.noid || '—' }}</b></span>
+                          <span>Jabatan <b class="text-cam-ink">{{ h.jabatan || '—' }}</b></span>
+                          <span>Departemen <b class="text-cam-ink">{{ h.departemen || '—' }}</b></span>
+                        </div>
+
+                        <label class="text-[10.5px] font-semibold text-stone-600">
+                          Tanggal MCU <span class="text-red-600">*</span>
+                          <input v-model="isiHasil[h.id].tgl_periksa" type="date" required
+                                 class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                        </label>
+                        <label class="text-[10.5px] font-semibold text-stone-600">
+                          Berlaku sampai
+                          <input v-model="isiHasil[h.id].tgl_expired" type="date"
+                                 class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                        </label>
+                        <label class="text-[10.5px] font-semibold text-stone-600">
+                          MCU berikutnya
+                          <input v-model="isiHasil[h.id].mcu_berikutnya" type="date"
+                                 class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                        </label>
+                        <label class="text-[10.5px] font-semibold text-stone-600">
+                          Umur
+                          <input v-model="isiHasil[h.id].usia" type="number" min="15" max="80"
+                                 class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                        </label>
+
+                        <label class="text-[10.5px] font-semibold text-stone-600">
+                          Hasil MCU <span class="text-red-600">*</span>
+                          <select v-model="isiHasil[h.id].hasil"
+                                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                            <option v-for="x in bentukPengajuan.hasil" :key="x">{{ x }}</option>
+                          </select>
+                        </label>
+                        <label class="text-[10.5px] font-semibold text-stone-600">
+                          Level risiko
+                          <select v-model="isiHasil[h.id].level_risiko"
+                                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                            <option value="">—</option>
+                            <option v-for="r in (props.opsi?.levelRisiko ?? [])" :key="r">{{ r }}</option>
+                          </select>
+                        </label>
+                        <label class="text-[10.5px] font-semibold text-stone-600">
+                          Status verifikasi
+                          <select v-model="isiHasil[h.id].status_verifikasi"
+                                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                            <option value="">Belum diperiksa</option>
+                            <option v-for="v in (props.opsi?.statusMcu ?? [])" :key="v">{{ v }}</option>
+                          </select>
+                        </label>
+                        <label class="text-[10.5px] font-semibold text-stone-600">
+                          No. surat hasil
+                          <input v-model="isiHasil[h.id].nomor"
+                                 class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                        </label>
+
+                        <label class="text-[10.5px] font-semibold text-stone-600 md:col-span-2">
+                          Pembatasan kerja
+                          <input v-model="isiHasil[h.id].pembatasan"
+                                 class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                        </label>
+                        <label class="text-[10.5px] font-semibold text-stone-600">
+                          Dirujuk ke
+                          <input v-model="isiHasil[h.id].rujukan" placeholder="mis. Poli Jantung"
+                                 class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                        </label>
+                        <label class="text-[10.5px] font-semibold text-stone-600">
+                          Tindak lanjut sampai
+                          <input v-model="isiHasil[h.id].outstanding" type="date"
+                                 class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                        </label>
+
+                        <label class="text-[10.5px] font-semibold text-stone-600 md:col-span-4">
+                          Catatan dokter kontraktor
+                          <input v-model="isiHasil[h.id].catatan_kontraktor"
+                                 class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+                        </label>
+
+                        <!--
+                          DUA BERKAS, keduanya diunggah — bukan diketik
+                          namanya. Pada D'Best "Hasil MCU" dan "Rujukan"
+                          sama-sama <input type=file>, dan memang begitu
+                          seharusnya: nama berkas tidak dapat dibuka
+                          siapa pun.
+                        -->
+                        <label class="text-[10.5px] font-semibold text-stone-600 md:col-span-2">
+                          Surat hasil MCU
+                          <span class="font-normal text-stone-400">— hanya paramedis &amp; OHSE</span>
+                          <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                 class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"
+                                 @change="isiHasil[h.id].berkas = (($event.target as HTMLInputElement).files?.[0] ?? null)">
+                          <a v-if="h.berkas" :href="h.berkas" target="_blank" rel="noopener"
+                             class="text-[10.5px] font-bold text-cam-lime-deep">Lihat yang tersimpan</a>
+                        </label>
+                        <label class="text-[10.5px] font-semibold text-stone-600 md:col-span-2">
+                          Surat rujukan
+                          <span class="font-normal text-stone-400">— hanya paramedis &amp; OHSE</span>
+                          <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                 class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"
+                                 @change="isiHasil[h.id].berkas_rujukan = (($event.target as HTMLInputElement).files?.[0] ?? null)">
+                          <a v-if="h.berkasRujukan" :href="h.berkasRujukan" target="_blank" rel="noopener"
+                             class="text-[10.5px] font-bold text-cam-lime-deep">Lihat yang tersimpan</a>
+                        </label>
+                      </div>
+                      <!--
+                        `eq-btn-utama` memakai `flex:1`, jadi di dalam
+                        wadah flex ia melebar memenuhi barisnya dan
+                        terbaca sebagai bilah, bukan tombol. Dibungkus
+                        supaya lebarnya mengikuti isinya.
+                      -->
+                      <div class="flex items-center gap-3 mt-3">
+                        <span class="inline-flex">
+                          <button type="button" class="eq-btn-utama text-[11px] py-1.5 px-4"
+                                  @click="simpanHasil(m.id, h.id)">Simpan hasil</button>
+                        </span>
+                        <button type="button" class="text-[11px] text-stone-500"
+                                @click="batalIsi(h.id)">Batal</button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr v-if="!m.nama?.length">
+                    <td colspan="6" class="py-6 text-center text-stone-400">
+                      Belum ada nama dalam pengajuan ini.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <form v-if="m.dapatDiubah" class="grid gap-2 md:grid-cols-4 mt-3 pt-3 border-t border-stone-100"
+                  @submit.prevent="tambahNama(m.id)">
+              <select v-model="fNama.paspor_id" required class="rounded-lg border-stone-200 text-[12px] md:col-span-2" aria-label="Paspor">
+                <option value="">Pilih pekerja…</option>
+                <option v-for="o in (props.opsi?.orang ?? [])" :key="o.id" :value="o.id">
+                  {{ o.nama }}<span v-if="o.jabatan"> — {{ o.jabatan }}</span>
+                </option>
+              </select>
+              <input v-if="props.mode !== 'induksi'" v-model="fNama.tgl_periksa" type="date"
+                     title="Rencana tanggal periksa" class="rounded-lg border-stone-200 text-[12px]">
+              <button class="eq-btn-utama" :disabled="fNama.processing">Tambah nama</button>
+              <p v-if="fNama.errors.paspor_id" class="text-[11px] text-red-600 md:col-span-4">
+                {{ fNama.errors.paspor_id }}
+              </p>
+            </form>
+          </div>
+                  </td>
+                </tr>
+              </template>
+
+              <tr v-if="!pengajuanTersaring.length">
+                <td colspan="9" class="px-4 py-10 text-center text-[12px] text-stone-400">
+                  {{ cariPengajuan
+                     ? `Tidak ada yang cocok dengan "${cariPengajuan}".`
+                     : (props.mode === 'induksi'
+                        ? 'Belum ada kelas induksi.'
+                        : 'Belum ada surat pengajuan MCU.') }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
-      <p v-if="!(props.pengajuan ?? []).length"
-         class="rounded-2xl bg-white border border-stone-100 shadow-card p-10 text-center text-[12px] text-stone-400">
-        Belum ada {{ props.mode === 'induksi' ? 'kelas induksi' : 'surat pengajuan MCU' }}.
-      </p>
     </template>
   </div>
 
