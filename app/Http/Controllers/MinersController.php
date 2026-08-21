@@ -15,6 +15,7 @@ use App\Support\MasaBerlakuTerbaca;
 use App\Support\PemantauanBerkas;
 use App\Support\JatahCuti;
 use App\Support\KopDokumen;
+use App\Support\LampiranMiners;
 use App\Support\Tahap;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -1197,6 +1198,77 @@ class MinersController extends Controller
         ]);
     }
 
+    /**
+     * Lekatkan satu lampiran yang sudah terunggah ke kartunya.
+     *
+     * Rute TERSENDIRI, bukan menumpang ubahKartu(). Aturan ubahKartu
+     * menuntut seluruh medan kartu — jenis, sebab terbit, tanggal —
+     * sehingga kiriman yang hanya membawa satu kolom lampiran akan
+     * ditolak validasinya. Menyiasatinya dengan melonggarkan aturan
+     * ubahKartu berarti seluruh medan kartu menjadi opsional pada
+     * SEMUA jalan masuk, dan kartu tanpa jenis dapat tersimpan.
+     *
+     * Hanya kolom lampiran yang boleh berubah lewat sini, dan hanya
+     * selagi kartunya masih dapat diubah: menambah bukti pada kartu
+     * yang sudah disetujui berarti mengubah dasar keputusan yang sudah
+     * diambil tanpa melewati peninjauan yang menyetujuinya.
+     */
+    public function lekatkanLampiran(Request $request, Paspor $paspor, PasporKartu $kartu)
+    {
+        abort_unless($kartu->paspor_id === $paspor->id, 404);
+        abort_unless($kartu->dapatDiubah(), 422,
+            'Kartu yang sudah diajukan tidak dapat ditambahi lampiran.');
+
+        $aturan = [];
+        foreach (LampiranMiners::kolom() as $kolom) {
+            $aturan[$kolom] = ['nullable', 'string', 'max:255'];
+        }
+
+        $data = array_filter($request->validate($aturan),
+            fn ($v) => $v !== null && $v !== '');
+
+        abort_if(empty($data), 422, 'Tidak ada lampiran yang dikirim.');
+
+        $kartu->update($data);
+
+        Jejak::write('Unggah lampiran kartu',
+            $paspor->nama.' — '.implode(', ', array_keys($data)), 'miners');
+
+        return back()->with('ok', 'Lampiran tersimpan.');
+    }
+
+    /**
+     * Unggah satu lampiran syarat, lalu pulangkan alamatnya.
+     *
+     * SATU jalur untuk seluruh lampiran, bukan satu endpoint per
+     * dokumen. Kolomnya disebut pemanggil dan divalidasi terhadap
+     * katalog di App\Support\LampiranMiners — jadi lampiran baru cukup
+     * ditambahkan di katalog itu, dan tidak ada rute yang harus
+     * diingat untuk ikut ditambah.
+     *
+     * Berkasnya disimpan ke disk TERTUTUP dan alamat yang dipulangkan
+     * adalah JALURNYA, bukan URL publik: yang membukanya nanti tetap
+     * harus melewati BerkasController beserta batas perusahaannya.
+     */
+    public function unggahLampiran(Request $request)
+    {
+        $request->validate([
+            'kolom'  => ['required', 'string', Rule::in(LampiranMiners::kolom())],
+            'berkas' => ['required', 'file', 'max:8192', 'mimes:pdf,jpg,jpeg,png,webp'],
+        ]);
+
+        $jalur = Berkas::simpan($request->file('berkas'), 'miners/lampiran');
+
+        if (!$jalur) {
+            return response()->json(['pesan' => 'Berkas tidak dapat disimpan.'], 422);
+        }
+
+        return response()->json([
+            'jalur' => $jalur,
+            'nama'  => $request->file('berkas')->getClientOriginalName(),
+        ]);
+    }
+
     /* ═══════════ unit SIMPER ═══════════ */
 
     /**
@@ -2363,6 +2435,22 @@ class MinersController extends Controller
             'berkasDdt' => $k->berkas_ddt,
             'emailAtasan' => $k->email_atasan,
 
+            /* ── LAMPIRAN SYARAT ──
+             *
+             * Tiap lampiran beserta keadaannya dan alamat membukanya —
+             * bukan sekadar nama berkasnya. Bentuk lama menyimpan
+             * jalurnya sebagai teks, jadi yang tergambar di layar hanya
+             * pernyataan bahwa buktinya ada di suatu tempat: tidak dapat
+             * dibuka, tidak dapat diperiksa, dan tidak dapat dibedakan
+             * dari salah ketik.
+             *
+             * `lampiranKurang` menyebut yang WAJIB tetapi belum ada.
+             * Permit yang terbit tanpa SPDK adalah izin masuk area
+             * tambang yang syaratnya tidak pernah diperiksa — dan
+             * sesudah terbit, tidak ada yang kembali memeriksanya. */
+            'lampiran'       => LampiranMiners::untukLayar($k),
+            'lampiranKurang' => LampiranMiners::kurang($k),
+
             'status'        => $k->status,
             'statusLabel'   => Alur::LABEL[$k->status] ?? $k->status,
             'dapatDiubah'   => $k->dapatDiubah(),
@@ -2418,15 +2506,6 @@ class MinersController extends Controller
 
             /* Lampiran syarat Mine Permit — keempatnya diperiksa sebelum
                permit terbit, jadi kekosongannya harus terlihat. */
-            'lampiran' => [
-                'ktp'        => $k->berkas_ktp,
-                'permohonan' => $k->berkas_permohonan,
-                'spdk'       => $k->berkas_spdk,
-                'dept'       => $k->berkas_dept,
-                'lotto'      => $k->berkas_lotto,
-                'blasting'   => $k->berkas_blasting,
-            ],
-
             /* Unit SIMPER, masing-masing dengan nilai dan berkas ujinya
                sendiri. Kosong pada kartu masuk area — kosong yang benar,
                bukan yang terlupa. */

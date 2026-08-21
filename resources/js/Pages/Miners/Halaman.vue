@@ -21,6 +21,7 @@ import Rantai from './Rantai.vue';
 import Tahapan from './Tahapan.vue';
 import ZonaMasaBerlaku from './ZonaMasaBerlaku.vue';
 import { KEADAAN } from '../../Grafik/warna';
+import BerkasPeserta from './BerkasPeserta.vue';
 import Dialog from '../../Components/Dialog.vue';
 import { useDialog } from '../../dialog';
 const { dialog, tanya, minta, batal, lanjut } = useDialog();
@@ -34,15 +35,6 @@ const props = propHalaman();
  * Kuncinya sama dengan yang dikirim server; namanya di sini supaya
  * urutan dan sebutannya satu tempat, bukan tersebar di markup.
  */
-const LAMPIRAN: Record<string, string> = {
-  ktp: 'KTP',
-  permohonan: 'Permohonan',
-  spdk: 'SPDK',
-  dept: 'Dept khusus',
-  lotto: 'LOTO/welder',
-  blasting: 'Blasting',
-};
-
 /** Berapa dari empat berkas uji unit yang sudah ada. */
 /* ── unggahan SIM dan pembacaan masa berlakunya ──
    Mengusulkan, tidak menetapkan. Tanggal yang terisi diam-diam lebih
@@ -106,13 +98,6 @@ async function unggahSim(e: Event) {
 
 function berkasTerisi(b: Record<string, string | null> | undefined): number {
   return b ? Object.values(b).filter(Boolean).length : 0;
-}
-
-/* Blok lampiran hanya untuk kartu yang memang menuntutnya. Kartu masuk
-   area tidak punya SPDK maupun training blasting, dan menampilkan enam
-   tanda "—" di sana membuatnya tampak belum lengkap padahal sudah. */
-function adaLampiran(k: any): boolean {
-  return k.jenis !== 'Visitor';
 }
 
 /** Warna keadaan masa berlaku — dipesan maknanya, tidak dipakai lain. */
@@ -293,6 +278,58 @@ const fAlur  = useForm<Record<string, any>>({ aksi: '', alasan: '' });
 /** Pengajuan yang sedang dibuka rinciannya — hanya satu, supaya
     layarnya tidak berubah menjadi dinding tabel bersarang. */
 const bukaPengajuan = ref<number | null>(null);
+
+/** Berkas peserta yang sedang dibuka — satu saja, seperti daftar nama. */
+const bukaBerkas = ref<number | null>(null);
+
+/**
+ * Identitas yang tercetak pada kartunya, disusun dari SATU sumber.
+ *
+ * Diambil dari orangnya dan dari kartunya, bukan diketik ulang di
+ * layar ini: dua salinan identitas akan berselisih cepat atau lambat,
+ * dan yang membacanya di gerbang tidak punya cara tahu mana yang benar.
+ */
+function profilPeserta(k: any) {
+  const o: any = props.p ?? {};
+
+  return [
+    { label: 'No. Register', nilai: k.nomor },
+    { label: 'Tanggal terbit', nilai: k.tglTerbit },
+    { label: 'Nama lengkap', nilai: o.nama },
+    { label: 'NIK', nilai: o.nik },
+    { label: 'Jabatan', nilai: o.jabatan },
+    { label: 'Tanggal lahir', nilai: k.tglLahir ?? o.tglLahir },
+    { label: 'Jenis kartu', nilai: k.jenis },
+    { label: 'Golongan darah', nilai: k.golonganDarah },
+    { label: 'Telepon', nilai: k.telepon },
+    { label: 'Kontak darurat', nilai: k.kontakDarurat },
+    { label: 'Perusahaan', nilai: o.perusahaan },
+    { label: 'Subkontraktor', nilai: k.subkontraktor },
+    { label: 'Departemen', nilai: o.departemen },
+    { label: 'Berlaku sampai', nilai: k.tglExpired },
+  ];
+}
+
+/** Dokumen yang sudah ada pada rantai berkasnya. */
+function dokumenPeserta(k: any) {
+  return (k.lampiran ?? [])
+    .filter((l: any) => l.ada)
+    .map((l: any) => ({ label: l.label, url: l.url }));
+}
+
+/**
+ * Lampiran yang baru diunggah dilekatkan ke kartunya.
+ *
+ * Unggahannya sudah tersimpan di disk saat berkasnya dipilih; yang
+ * dikerjakan di sini hanya menuliskan jalurnya ke kolom kartunya.
+ * Dipisah begitu supaya berkas besar tidak diunggah ulang setiap kali
+ * formulir kartunya disimpan.
+ */
+function simpanLampiran(kartuId: number, kolom: string, jalur: string) {
+  router.put(`/miners/${id.value}/kartu/${kartuId}/lampiran`, { [kolom]: jalur }, {
+    preserveScroll: true,
+  });
+}
 
 /**
  * Hasil MCU diisi per baris, jadi formulirnya juga per baris.
@@ -878,6 +915,36 @@ async function hapus(jalur: string, apa: string) {
             </p>
 
             <!--
+              BERKAS PESERTA — susunan D'Best: Detail lalu Attachment.
+              Detail berisi apa yang sudah diketahui sistem; Attachment
+              satu-satunya tempat ada isian. Pembagian itu menjawab
+              "apa lagi yang kurang dari saya" dalam sekali lihat.
+            -->
+            <div class="mt-3">
+              <button type="button" class="text-[11.5px] font-semibold text-cam-lime-deep"
+                      @click="bukaBerkas = bukaBerkas === k.id ? null : k.id">
+                {{ bukaBerkas === k.id ? 'Tutup berkas peserta' : 'Berkas peserta & lampiran' }}
+                <span v-if="k.lampiranKurang?.length" class="font-normal text-amber-700">
+                  · {{ k.lampiranKurang.length }} lampiran wajib belum ada
+                </span>
+              </button>
+
+              <div v-if="bukaBerkas === k.id" class="mt-3">
+                <BerkasPeserta
+                  :profil="profilPeserta(k)"
+                  :judul-detail="`Detail ${k.jenis}`"
+                  :judul-lampiran="`Lampiran ${k.jenis}`"
+                  :dokumen="dokumenPeserta(k)"
+                  :lampiran="k.lampiran ?? []"
+                  :kurang="k.lampiranKurang ?? []"
+                  :bisa-unggah="k.dapatDiubah"
+                  :url-cetak="k.berlaku ? `/miners/${id}/kartu/${k.id}/cetak` : null"
+                  :label-cetak="`Cetak ${k.jenis}`"
+                  @unggah="(kolom, jalur) => simpanLampiran(k.id, kolom, jalur)" />
+              </div>
+            </div>
+
+            <!--
               Unit SIMPER — satu baris per unit, dengan nilai dan berkas
               ujinya masing-masing. Kartu masuk area tidak menyebut unit,
               jadi bloknya tidak muncul di sana sama sekali.
@@ -927,13 +994,14 @@ async function hapus(jalur: string, apa: string) {
               Menyembunyikan yang kosong membuat daftar lengkap dan
               daftar setengah jadi tampak sama persis.
             -->
-            <div v-if="k.lampiran && adaLampiran(k)" class="mt-3 flex flex-wrap gap-1.5">
-              <span v-for="(l, nama) in LAMPIRAN" :key="nama"
+            <div v-if="k.lampiran?.length" class="mt-3 flex flex-wrap gap-1.5">
+              <span v-for="l in k.lampiran" :key="l.kolom"
                     class="inline-block rounded-md px-2 py-1 text-[10.5px] font-semibold"
-                    :style="k.lampiran[nama]
+                    :style="l.ada
                       ? { background: '#EEF6F0', color: '#15803D' }
                       : { background: '#F5F5F4', color: '#A8A29E' }">
-                {{ l }} {{ k.lampiran[nama] ? '✓' : '—' }}
+                {{ l.label }}<span v-if="l.wajib && !l.ada" class="text-red-600"> *</span>
+                {{ l.ada ? '✓' : '—' }}
               </span>
             </div>
 

@@ -25,7 +25,7 @@ class BerkasController extends Controller
 {
     public function sajikan(string $jenis, int $baris, ?int $i = null): StreamedResponse
     {
-        [$kelas, $atribut, $daftar] = Berkas::TERSAJI[$jenis] ?? abort(404);
+        [$kelas, $atribut, $daftar] = Berkas::tersaji()[$jenis] ?? abort(404);
 
         /* Sebagian jenis terjaga lebih ketat daripada barisnya sendiri.
            Surat MCU memuat rincian medis yang sengaja TIDAK disimpan di
@@ -67,7 +67,7 @@ class BerkasController extends Controller
     /** Unduh, bukan tampilkan. Dipakai dokumen dan MSDS. */
     public function unduh(string $jenis, int $baris, ?int $i = null): StreamedResponse
     {
-        [$kelas, $atribut, $daftar] = Berkas::TERSAJI[$jenis] ?? abort(404);
+        [$kelas, $atribut, $daftar] = Berkas::tersaji()[$jenis] ?? abort(404);
 
         abort_unless(Berkas::bolehMembuka(auth()->user(), $jenis), 403,
             'Berkas ini hanya dapat dibuka paramedis, tim OHSE, atau administrator.');

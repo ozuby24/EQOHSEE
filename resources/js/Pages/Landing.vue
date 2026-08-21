@@ -115,7 +115,7 @@ function togglePilar(slug: string) {
             </div>
           </div>
           <aside class="glass rounded-2xl p-5">
-            <button v-if="hero.video" type="button" class="w-full flex items-center gap-3.5 text-left mb-5" @click="videoTerbuka = true"><span class="w-11 h-11 rounded-full lime-gradient grid place-items-center text-white text-xl">▶</span><span><span class="block text-[12.5px] font-bold">Tonton Video</span><span class="block text-[10.5px] text-white/50 mt-0.5">Operasional tambang · 10 detik</span></span></button>
+            <button v-if="hero.video" type="button" class="w-full flex items-center gap-3.5 text-left mb-5" @click="videoTerbuka = true"><span class="w-11 h-11 rounded-full lime-gradient grid place-items-center text-white text-xl">▶</span><span><span class="block text-[12.5px] font-bold">Tonton Video</span><span class="block text-[10.5px] text-white/50 mt-0.5">Operasional tambang · rekaman singkat</span></span></button>
             <h2 class="text-[13.5px] font-bold text-white">Mengapa EQOHSEE?</h2>
             <div class="space-y-4 mt-5"><div v-for="reason in [['Sesuai regulasi','Mengacu pada Kepdirjen 185.K/2019, SMKP Minerba, dan standar ISO.'],['Terpadu','Delapan aspek keselamatan terhubung dalam satu basis data.'],['Data langsung','Kinerja dan temuan terbaca saat itu juga, bukan menunggu rekap bulanan.'],['Mudah dipakai','Antarmuka sederhana, tetap terbaca pada jaringan site tambang.']]" :key="reason[0]" class="flex gap-3"><span class="shrink-0 w-8 h-8 rounded-lg lime-gradient grid place-items-center text-white">✓</span><div><div class="text-[12.5px] font-bold">{{ reason[0] }}</div><p class="text-[11px] text-white/45 mt-0.5 leading-relaxed">{{ reason[1] }}</p></div></div></div>
           </aside>

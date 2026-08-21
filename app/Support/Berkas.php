@@ -2,7 +2,7 @@
 
 namespace App\Support;
 
-use App\Models\{Document, GudangBarang, HazardReport, InspectionItem, PasporMcu, Signatory, SmkpFinding};
+use App\Models\{Document, GudangBarang, HazardReport, InspectionItem, PasporKartu, PasporMcu, Signatory, SmkpFinding};
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -75,6 +75,41 @@ final class Berkas
            GERBANG di bawah. */
         'mcu' => [PasporMcu::class,      'berkas',      false],
     ];
+
+    /**
+     * Seluruh jenis yang dapat disajikan, termasuk lampiran kartu.
+     *
+     * Lampiran kartu TIDAK ditulis satu per satu di TERSAJI, melainkan
+     * dibangkitkan dari App\Support\LampiranMiners. Daftar lampiran
+     * sudah pernah berselisih antara tiga tempat — aturan validasi,
+     * medan di layar, dan kolom di basis data — dan `berkas_lotto`
+     * sempat ada di dua yang pertama tanpa punya medan sama sekali.
+     * Menyalinnya ke tempat KEEMPAT hanya menambah peluang selisih.
+     *
+     * @return array<string,array{0:class-string,1:string,2:bool}>
+     */
+    public static function tersaji(): array
+    {
+        $out = self::TERSAJI;
+
+        foreach (array_keys(LampiranMiners::KARTU) as $kolom) {
+            $out[self::jenisLampiran($kolom)] = [PasporKartu::class, $kolom, false];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Kode jenis bagi satu kolom lampiran kartu.
+     *
+     * Berawalan `kar-` supaya tidak pernah bertabrakan dengan jenis
+     * yang ditulis tangan di TERSAJI, dan supaya terbaca asalnya saat
+     * muncul di alamat.
+     */
+    public static function jenisLampiran(string $kolom): string
+    {
+        return 'kar-'.str_replace('berkas_', '', $kolom);
+    }
 
     /**
      * Siapa yang boleh MEMBUKA berkas satu jenis, di luar batas perusahaan.
@@ -206,7 +241,7 @@ final class Berkas
     {
         if (!$baris) return null;
 
-        [, $atribut, $daftar] = self::TERSAJI[$jenis]
+        [, $atribut, $daftar] = self::tersaji()[$jenis]
             ?? throw new \InvalidArgumentException("Jenis berkas tidak dikenal: $jenis");
 
         $nilai = $baris->{$atribut};
@@ -230,7 +265,7 @@ final class Berkas
     {
         if (!$baris) return [];
 
-        [, $atribut] = self::TERSAJI[$jenis];
+        [, $atribut] = self::tersaji()[$jenis];
 
         return array_values(array_filter(array_map(
             fn ($i) => self::url($baris, $jenis, $i),

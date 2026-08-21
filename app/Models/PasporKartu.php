@@ -7,6 +7,7 @@ use App\Models\Concerns\Bertahap;
 use App\Models\Concerns\Ditinjau;
 use App\Support\AlurMiner;
 use App\Support\Authority;
+use App\Support\NomorRegister;
 use App\Support\Tahap;
 use Illuminate\Database\Eloquent\Model;
 
@@ -64,6 +65,30 @@ class PasporKartu extends Model
             'sim_polisi_expired' => 'date',
             'tgl_lahir'          => 'date',
         ];
+    }
+
+    /**
+     * `MKI.20260427002755` — bentuk D'Best, terbit sendiri.
+     *
+     * Kode perusahaan · tanggal terbit · ID baris. Kode diambil dari
+     * `doc_no_prefix` perusahaan pemilik pekerjanya, kolom yang sudah
+     * dipakai seluruh penomoran dokumen lain — jadi nomor kartu
+     * sejalan dengan nomor dokumen lain milik perusahaan yang sama.
+     *
+     * Tanggalnya memakai tgl_terbit bila sudah ada; kartu draf yang
+     * belum bertanggal memakai hari ini, dan nomornya TIDAK diperbarui
+     * ketika tanggal terbitnya kemudian diisi — menomori ulang kartu
+     * yang sudah tersebar berarti dua nomor untuk satu kartu.
+     */
+    protected static function booted(): void
+    {
+        static::created(function (self $k) {
+            NomorRegister::terbitkan($k, 'nomor', fn (self $x) => NomorRegister::kartu(
+                $x->paspor?->company?->doc_no_prefix,
+                $x->tgl_terbit ?? now(),
+                $x->getKey(),
+            ));
+        });
     }
 
     public function paspor() { return $this->belongsTo(Paspor::class); }

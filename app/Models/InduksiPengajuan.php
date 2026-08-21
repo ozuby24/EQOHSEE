@@ -7,6 +7,7 @@ use App\Models\Concerns\Bertahap;
 use App\Models\Concerns\Ditinjau;
 use App\Models\Scopes\MilikPerusahaan;
 use App\Support\Authority;
+use App\Support\NomorRegister;
 use App\Support\Tahap;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Model;
@@ -54,6 +55,20 @@ class InduksiPengajuan extends Model
     protected function casts(): array
     {
         return ['tanggal' => 'date', 'tgl_pelaksanaan' => 'date'];
+    }
+
+    /**
+     * `IND000996` — bentuk D'Best, terbit sendiri sesudah punya ID.
+     *
+     * Lihat catatan pada McuPengajuan::booted() untuk alasan `created`
+     * dan bukan `creating`.
+     */
+    protected static function booted(): void
+    {
+        static::created(function (self $m) {
+            NomorRegister::terbitkan($m, 'nomor_register',
+                fn (self $x) => NomorRegister::berawalan('IND', $x->getKey()));
+        });
     }
 
     /**

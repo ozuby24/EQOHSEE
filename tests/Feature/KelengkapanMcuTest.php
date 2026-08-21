@@ -296,7 +296,7 @@ class KelengkapanMcuTest extends TestCase
         /* GERBANG hanya menyebut MCU. Bila suatu saat ia melebar tanpa
            sengaja, foto bahaya dan tanda tangan akan ikut tertutup dan
            halaman-halaman lain berlubang tanpa galat apa pun. */
-        foreach (array_keys(Berkas::TERSAJI) as $jenis) {
+        foreach (array_keys(Berkas::tersaji()) as $jenis) {
             if ($jenis === 'mcu') continue;
 
             $this->assertTrue(Berkas::bolehMembuka(null, $jenis),

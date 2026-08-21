@@ -95,12 +95,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
        tanpa perlu disebut. Batas perusahaannya ditegakkan oleh scope
        modelnya sendiri; lihat BerkasController. */
     Route::get('berkas/{jenis}/{baris}/{i?}', [BerkasController::class, 'sajikan'])
-        ->whereIn('jenis', array_keys(\App\Support\Berkas::TERSAJI))
+        ->whereIn('jenis', array_keys(\App\Support\Berkas::tersaji()))
         ->whereNumber('baris')->whereNumber('i')
         ->name('berkas.sajikan');
 
     Route::get('berkas/{jenis}/{baris}/unduh/{i?}', [BerkasController::class, 'unduh'])
-        ->whereIn('jenis', array_keys(\App\Support\Berkas::TERSAJI))
+        ->whereIn('jenis', array_keys(\App\Support\Berkas::tersaji()))
         ->whereNumber('baris')->whereNumber('i')
         ->name('berkas.unduh');
 
@@ -297,6 +297,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
            sedang diisi, dan memuat ulang halamannya akan membuang
            seluruh isian lain yang belum tersimpan. */
         Route::post('sim', [MinersController::class,'unggahSim'])->name('sim.unggah');
+        Route::post('lampiran', [MinersController::class,'unggahLampiran'])->name('lampiran.unggah');
 
         Route::get('{paspor}',         [MinersController::class,'show'])->name('show');
         Route::put('{paspor}',         [MinersController::class,'update'])->name('update');
@@ -316,6 +317,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::post('{paspor}/kartu',          [MinersController::class,'simpanKartu'])->name('kartu.simpan');
         Route::put('{paspor}/kartu/{kartu}',    [MinersController::class,'ubahKartu'])->name('kartu.ubah');
+        Route::put('{paspor}/kartu/{kartu}/lampiran', [MinersController::class,'lekatkanLampiran'])->name('kartu.lampiran');
         Route::delete('{paspor}/kartu/{kartu}', [MinersController::class,'hapusKartu'])->name('kartu.hapus');
         Route::post('{paspor}/kartu/{kartu}/ajukan', [MinersController::class,'ajukanKartu'])->name('kartu.ajukan');
         Route::post('{paspor}/kartu/{kartu}/tinjau', [MinersController::class,'tinjauKartu'])->name('kartu.tinjau');

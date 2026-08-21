@@ -25,25 +25,25 @@ final class Media
     /**
      * Video latar hero halaman depan.
      *
-     * FILM BRAND RESMI — dan logonya HARUS logo yang benar.
+     * REKAMAN OPERASI TAMBANG, TANPA SATU PUN TEKS.
      *
-     * Berkas ini sempat berisi montase yang berakhir pada logo EQOHSEE
-     * bergaya tiga dimensi yang TIDAK sama dengan wordmark yang dipakai
-     * di seluruh aplikasi, dan yang di antara potongannya memuat layar
-     * kabin bertuliskan kacau ("EQOH", "RPN", angka yang tidak terbaca).
-     * Halaman depan menggambar wordmark aslinya di atas rekaman ini;
-     * logo kedua yang berbeda bentuk, di belakangnya, bukan penegasan
-     * merek melainkan bantahan terhadap merek itu sendiri.
+     * Truk angkut, ekskavator memuat, dozer, aerial pit, lalu haul
+     * malam. Tidak ada logo maupun tulisan di dalamnya — halaman depan
+     * menggambar wordmark, tagline, dan tombolnya sendiri DI ATAS
+     * rekaman ini, dan logo kedua yang berbeda bentuk di belakangnya
+     * bukan penegasan merek melainkan bantahan terhadapnya.
      *
-     * Isinya sekarang film brand yang diberikan pemakainya sendiri:
-     * aerial pit senja, ruang kendali, animasi tanda heksagon EQOHSEE
-     * yang benar, tampilan dasbor, lalu regu berjalan. Audionya
-     * dipertahankan — latar hero memang dibisukan, tetapi modal "Tonton
-     * Video" memutarnya dengan kontrol.
+     * Berkas ini sempat berisi montase yang justru berakhir pada logo
+     * EQOHSEE bergaya tiga dimensi yang tidak sama dengan wordmark
+     * aplikasi, dan di antara potongannya memuat layar kabin
+     * bertuliskan kacau ("EQOH", "RPN", angka yang tidak terbaca).
      *
-     * Panjangnya 10 detik, dan angka itu disebut di halaman depan
-     * ("Operasional tambang · 10 detik" pada tombol Tonton Video).
-     * Mengubah durasinya berarti mengubah kalimat itu juga.
+     * Durasinya TIDAK disebut di layar. Tombol "Tonton Video" pernah
+     * berbunyi "Operasional tambang · 10 detik", dan angka itu menjadi
+     * salah begitu rekamannya ditukar dengan yang berdurasi sembilan
+     * detik — fakta yang sama disimpan di dua tempat selalu berselisih
+     * pada penggantian berikutnya. Kalimatnya kini tidak menyebut
+     * angka sama sekali.
      *
      * Berlaku pula di sini: periksa SELURUH bingkai sebelum memasang
      * rekaman baru — lihat catatan pada MASUK_VIDEO di bawah.
@@ -62,10 +62,11 @@ final class Media
      * perpindahan halaman itu terbaca sebagai halaman yang gagal
      * berganti, bukan sebagai halaman baru.
      *
-     * Halaman depan memakai film brand yang berakhir pada logo; halaman
-     * masuk memakai rekaman operasi tambang tanpa teks — sengaja tanpa
-     * teks, sebab panel ini sudah memuat wordmark, tagline, dan delapan
-     * aspek di atasnya.
+     * Isinya sekarang film brand: aerial pit senja, ruang kendali,
+     * animasi tanda heksagon EQOHSEE yang benar, tampilan dasbor, lalu
+     * regu berjalan. Halaman depan memakai rekaman operasi tanpa teks.
+     * Audionya dipertahankan — panel ini membisukan rekamannya, tetapi
+     * berkas yang sama dipakai modal "Tonton Video" dengan kontrol.
      *
      * Ukurannya 1920×1080, bukan 1280×720 seperti dahulu. Panelnya
      * setinggi layar penuh: pada layar berkerapatan ganda, sumber 720p

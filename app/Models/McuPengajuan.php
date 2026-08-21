@@ -7,6 +7,7 @@ use App\Models\Concerns\Bertahap;
 use App\Models\Concerns\Ditinjau;
 use App\Models\Scopes\MilikPerusahaan;
 use App\Support\Authority;
+use App\Support\NomorRegister;
 use App\Support\Tahap;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Model;
@@ -55,6 +56,29 @@ class McuPengajuan extends Model
     protected function casts(): array
     {
         return ['tanggal' => 'date'];
+    }
+
+    /**
+     * Nomor register terbit sendiri sesudah barisnya punya ID.
+     *
+     * `created` dan bukan `creating`: nomornya berpijak pada ID baris,
+     * dan ID baru ada setelah barisnya tersimpan. Menghitung baris
+     * ("berapa surat tahun ini, tambah satu") akan memberi nomor yang
+     * sama kepada dua permintaan yang datang bersamaan, dan memberi
+     * nomor yang SUDAH DIPAKAI setelah satu surat dihapus.
+     *
+     * Yang sudah bernomor tidak disentuh — lihat NomorRegister::terbitkan().
+     */
+    protected static function booted(): void
+    {
+        static::created(function (self $m) {
+            /* `MCU000035` — bentuk berawalan, sama keluarga dengan
+               IND000996 dan SIMPER-002039 di D'Best. Yang berbentuk
+               {KODE}.{tanggal}{id} di sana hanyalah KARTU, bukan surat
+               pengajuan. */
+            NomorRegister::terbitkan($m, 'nomor_register',
+                fn (self $x) => NomorRegister::berawalan('MCU', $x->getKey()));
+        });
     }
 
     /** Rantainya lewat paramedis dan ditutup KTT — lihat App\Support\Tahap. */
