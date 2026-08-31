@@ -464,6 +464,24 @@ class MinersController extends Controller
                 'tertinggal' => $m->parafTertinggal(),
                 'dapatParaf' => $m->menungguTinjauan(),
 
+                /* Rel pengajuan — sama seperti pada kartu.
+                   Syaratnya satu: surat harus punya nama.
+
+                   Tombol Ajukan pada layar memang sudah dijaga oleh
+                   jumlah namanya, jadi yang ditambahkan di sini BUKAN
+                   penjagaan melainkan sebabnya: layar lama menyembunyikan
+                   tombolnya tanpa mengatakan mengapa, dan tombol yang
+                   hilang tanpa keterangan sama membingungkannya dengan
+                   tombol yang ditolak sesudah ditekan. */
+                'alur' => RelPengajuan::bangun(
+                    status: $m->status,
+                    rantai: $m->rantaiTahap(),
+                    kurang: $m->hasil->isEmpty()
+                        ? ['Belum ada satu nama pun pada surat ini.'] : [],
+                    alasanTolak: $m->alasan_tolak,
+                    labelTerbit: 'Hasil masuk',
+                ),
+
                 'jumlah'       => $m->hasil->count(),
                 'belumKembali' => $m->belumKembali(),
                 /* Susunan medan MENGIKUTI "Manpower Table" D'Best:
@@ -688,6 +706,24 @@ class MinersController extends Controller
                 'rantai'     => $m->rantaiTahap(),
                 'tertinggal' => $m->parafTertinggal(),
                 'dapatParaf' => $m->menungguTinjauan(),
+
+                /* Rel pengajuan — sama seperti pada kartu.
+                   Syaratnya satu: surat harus punya nama.
+
+                   Tombol Ajukan pada layar memang sudah dijaga oleh
+                   jumlah namanya, jadi yang ditambahkan di sini BUKAN
+                   penjagaan melainkan sebabnya: layar lama menyembunyikan
+                   tombolnya tanpa mengatakan mengapa, dan tombol yang
+                   hilang tanpa keterangan sama membingungkannya dengan
+                   tombol yang ditolak sesudah ditekan. */
+                'alur' => RelPengajuan::bangun(
+                    status: $m->status,
+                    rantai: $m->rantaiTahap(),
+                    kurang: $m->hasil->isEmpty()
+                        ? ['Belum ada satu nama pun pada surat ini.'] : [],
+                    alasanTolak: $m->alasan_tolak,
+                    labelTerbit: 'Hasil masuk',
+                ),
 
                 'jumlah'       => $m->hasil->count(),
                 'belumKembali' => $m->belumDinilai(),

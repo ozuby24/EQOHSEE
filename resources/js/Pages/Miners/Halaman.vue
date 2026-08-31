@@ -1497,6 +1497,18 @@ async function hapus(jalur: string, apa: string) {
 
                 <tr v-if="bukaPengajuan === m.id" class="border-t border-stone-100 bg-stone-50/40">
                   <td colspan="9" class="px-4 py-4">
+          <!--
+            REL PENGAJUAN di atas rantai parafnya, dan keduanya memang
+            berbeda pekerjaan. Rel menjawab "sudah sampai mana"; rantai
+            menjawab "siapa yang sudah tanda tangan, kapan". Yang pertama
+            dibaca sekilas oleh pengaju, yang kedua dibaca teliti oleh
+            peninjau — dan menggabungkannya membuat keduanya setengah
+            terbaca.
+          -->
+          <div v-if="m.alur" class="mt-3">
+            <RelPengajuan :alur="m.alur" @ajukan="ajukanPengajuan(m.id)" />
+          </div>
+
           <div v-if="m.status !== 'draf'" class="mt-3">
             <Rantai :rantai="m.rantai" :tertinggal="m.tertinggal"
                     :dapat-paraf="m.dapatParaf" :saya-penentu="props.opsi?.sayaPenentu"
@@ -1508,9 +1520,6 @@ async function hapus(jalur: string, apa: string) {
                     @click="bukaPengajuan = bukaPengajuan === m.id ? null : m.id">
               {{ bukaPengajuan === m.id ? 'Tutup daftar nama' : 'Lihat daftar nama' }}
             </button>
-            <button v-if="m.dapatDiubah && m.jumlah" type="button"
-                    class="text-[11.5px] font-semibold text-cam-lime-deep"
-                    @click="ajukanPengajuan(m.id)">Ajukan</button>
             <button v-if="m.dapatDitinjau" type="button" class="text-[11.5px] font-semibold"
                     :style="{ color: KEADAAN.baik }"
                     @click="tinjau(`${bentukPengajuan.basis}/${m.id}/tinjau`, 'setujui')">Setujui</button>
