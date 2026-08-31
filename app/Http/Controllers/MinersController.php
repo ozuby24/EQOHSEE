@@ -13,6 +13,7 @@ use App\Support\Authority;
 use App\Support\Berkas;
 use App\Support\MasaBerlakuTerbaca;
 use App\Support\PemantauanBerkas;
+use App\Support\RelPengajuan;
 use App\Support\JatahCuti;
 use App\Support\KopDokumen;
 use App\Support\LampiranMiners;
@@ -2544,6 +2545,17 @@ class MinersController extends Controller
             'rantai'      => $k->rantaiTahap(),
             'tertinggal'  => $k->parafTertinggal(),
             'dapatParaf'  => $k->menungguTinjauan(),
+
+            /* Rel pengajuan: status, apa yang menahan, dan boleh-tidaknya
+               diajukan — dihitung SEKALI di sini alih-alih disusun ulang
+               dari tiga sudut layar oleh yang membacanya. */
+            'alur' => RelPengajuan::bangun(
+                status: $k->status,
+                rantai: $k->rantaiTahap(),
+                kurang: $k->syaratKurang(),
+                alasanTolak: $k->alasan_tolak,
+                labelTerbit: 'Terbit',
+            ),
 
             /* Tercetak pada kartunya sendiri. */
             'golonganDarah' => $k->golongan_darah,

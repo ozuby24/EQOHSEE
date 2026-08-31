@@ -24,6 +24,7 @@ import { KEADAAN } from '../../Grafik/warna';
 import BerkasPeserta from './BerkasPeserta.vue';
 import BerkasAuthority from './BerkasAuthority.vue';
 import LampiranSimper from './LampiranSimper.vue';
+import RelPengajuan from './RelPengajuan.vue';
 import Dialog from '../../Components/Dialog.vue';
 import { useDialog } from '../../dialog';
 const { dialog, tanya, minta, batal, lanjut } = useDialog();
@@ -946,14 +947,21 @@ async function hapus(jalur: string, apa: string) {
               </div>
             </div>
 
-            <p v-if="k.alasanTolak" class="text-[11.5px] text-red-600 mt-2">
-              Ditolak: {{ k.alasanTolak }}
-            </p>
-            <p v-if="k.syaratKurang?.length && k.dapatDiubah"
-               class="text-[11.5px] mt-2 rounded-lg px-2.5 py-2"
-               :style="{ color: '#92400E', background: '#FEF6E7' }">
-              <b>Belum dapat diajukan.</b> {{ k.syaratKurang.join(' ') }}
-            </p>
+            <!--
+              REL PENGAJUAN — menggantikan tiga keterangan yang dulu
+              terserak di tiga sudut kartu ini: lencana status, kotak
+              kuning "Belum dapat diajukan", dan tombol Ajukan jauh di
+              bawah rantai paraf. Ketiganya menjawab satu pertanyaan yang
+              sama, dan yang membacanya harus menyusunnya sendiri.
+
+              Kotak kuningnya dulu hanya muncul selama kartunya masih
+              dapat diubah, sehingga pengajuan yang sudah dikirim tidak
+              menyebut apa pun tentang giliran siapa sekarang — dan yang
+              menunggunya menyimpulkan berkasnya hilang.
+            -->
+            <div v-if="k.alur" class="mt-3">
+              <RelPengajuan :alur="k.alur" @ajukan="ajukanKartu(k.id)" />
+            </div>
 
             <!--
               BERKAS PESERTA — susunan D'Best: Detail lalu Attachment.
@@ -1082,11 +1090,6 @@ async function hapus(jalur: string, apa: string) {
             <!-- Keputusan dipisahkan dari tindakan biasa oleh garis dan
                  oleh bentuk tombolnya, bukan hanya oleh urutan. -->
             <div class="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-stone-200/70">
-              <button v-if="k.dapatDiubah && !k.syaratKurang?.length" type="button"
-                      class="eq-btn-utama !flex-none" @click="ajukanKartu(k.id)">
-                Ajukan ke OHSE
-              </button>
-
               <button v-if="k.dapatDitinjau" type="button" class="eq-btn-setuju"
                       @click="tinjau(`/miners/${id}/kartu/${k.id}/tinjau`, 'setujui')">
                 Setujui &amp; terbitkan
