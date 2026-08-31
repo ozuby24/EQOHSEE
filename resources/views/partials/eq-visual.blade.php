@@ -928,3 +928,147 @@ main a{transition:color .16s}
                                            color-mix(in srgb,var(--eq-dasar,#0B1117) 62%,#12403E))}
 
 </style>
+
+<style>
+/* ==========================================================================
+   TEMA SAFE TRACK — pasir · teal · coral
+   --------------------------------------------------------------------------
+   Dipakai modul Miners dan Investigasi. Keduanya mengurus dokumen yang
+   dibaca DI LUAR kantor: kartu yang dicetak dan dibawa ke gerbang, berkas
+   yang diminta Inspektur Tambang. Warna pasirnya membedakan keduanya dari
+   modul harian, dan pembedaan itu membuat orang tahu ia sedang berada di
+   berkas resmi tanpa membaca judulnya lebih dulu.
+
+   ── MENGAPA MENIMPA UTILITAS, BUKAN MENGGANTI MARKUPNYA ──
+
+   Halaman Miners dan Investigasi memakai puluhan kelas Tailwind langsung
+   di markupnya: bg-white, border-stone-100, text-cam-ink, shadow-card.
+   Mengganti palet dengan menyunting tiap kelas itu berarti menyentuh
+   belasan berkas Vue — dan halaman yang ditambahkan bulan depan akan
+   lahir dengan palet lama, tanpa satu pun galat.
+
+   Menimpanya dari SATU tempat membuat seluruh modul berganti sekaligus,
+   termasuk halaman yang belum ditulis. Yang menentukan modul mana
+   memakainya adalah Menu::all(), bukan berkas ini.
+
+   Kekhususan (specificity) sengaja hanya satu tingkat di atas Tailwind:
+   `.tema-safetrack .bg-white` menang atas `.bg-white` tanpa perlu
+   !important. Yang ditulis inline dengan style="" tetap menang, dan itu
+   benar — warna yang disebut langsung pada satu unsur memang keputusan
+   yang lebih khusus daripada tema.
+   ========================================================================== */
+
+.tema-safetrack{
+  /* Palet diambil apa adanya dari tema-safetrack.css milik paketnya. */
+  --st-teal:#0F766E; --st-teal-gelap:#0B5A54; --st-teal-tua:#08302D;
+  --st-teal-lembut:#E7F2F0;
+  --st-coral:#FF7F50; --st-coral-gelap:#F0663A; --st-coral-lembut:#FFF0E9;
+  --st-pasir:#F5E6CA; --st-pasir-muda:#FBF5EA; --st-pasir-lembut:#F6EEDF;
+  --st-tinta:#08302D; --st-teks:#33403D; --st-redup:#7D8C89;
+  --st-garis:#E4DCCB; --st-garis-tegas:#DCD2BE;
+
+  background:var(--st-pasir-muda);
+  color:var(--st-teks);
+}
+
+/* Mode gelap: pasirnya diganti, bukan sekadar diredupkan. Pasir yang
+   digelapkan menjadi cokelat lumpur; yang dipakai di sini gelap
+   bersemu teal, sehingga modulnya tetap terbaca sebagai modul yang
+   sama tanpa menyakiti mata. */
+:root[data-tema="gelap"] .tema-safetrack{
+  background:#0E1A1D;
+  color:#C7D5D2;
+  --st-garis:#22343A;
+  --st-garis-tegas:#2C4148;
+  --st-pasir-lembut:#14242A;
+  --st-pasir:#1A2C33;
+  --st-tinta:#E8EFF2;
+  --st-redup:#8FA1A8;
+}
+
+/* ---------- permukaan ---------- */
+.tema-safetrack .bg-white{ background-color:#fff; }
+.tema-safetrack .bg-stone-50\/70,
+.tema-safetrack .bg-stone-50\/60,
+.tema-safetrack .bg-stone-50{ background-color:var(--st-pasir-lembut) !important; }
+.tema-safetrack .bg-stone-100{ background-color:var(--st-pasir); }
+.tema-safetrack .hover\:bg-stone-50:hover{ background-color:var(--st-pasir-lembut); }
+
+/* Kartu: sudut lebih rapat dan bayangan lebih tipis daripada tema utama.
+   Pasir memantulkan lebih banyak cahaya daripada abu; bayangan yang sama
+   tebalnya terbaca kotor di atasnya. */
+.tema-safetrack .shadow-card{
+  box-shadow:0 1px 3px rgba(8,48,45,.05),0 10px 30px -18px rgba(8,48,45,.20);
+}
+.tema-safetrack .rounded-2xl{ border-radius:14px; }
+
+/* ---------- garis ---------- */
+.tema-safetrack .border-stone-100{ border-color:var(--st-garis); }
+.tema-safetrack .border-stone-200{ border-color:var(--st-garis-tegas); }
+.tema-safetrack .border-stone-300{ border-color:#CFC3AC; }
+.tema-safetrack .divide-stone-100 > * + *{ border-color:var(--st-garis); }
+.tema-safetrack .hover\:border-stone-200:hover{ border-color:var(--st-garis-tegas); }
+
+/* ---------- teks ---------- */
+.tema-safetrack .text-cam-ink{ color:var(--st-tinta); }
+.tema-safetrack .text-stone-400{ color:var(--st-redup); }
+.tema-safetrack .text-stone-500{ color:#5A6B68; }
+.tema-safetrack .text-stone-600{ color:var(--st-teks); }
+.tema-safetrack .text-stone-300{ color:#B3BFBC; }
+
+/* Tautan dan angka penting memakai teal, bukan jingga. */
+.tema-safetrack .text-cam-lime-deep,
+.tema-safetrack .text-cam-lime{ color:var(--st-teal); }
+
+/* ---------- tombol ---------- */
+.tema-safetrack .eq-btn-utama{
+  background:linear-gradient(135deg,var(--st-teal),var(--st-teal-gelap));
+  border-radius:9px;
+}
+.tema-safetrack .bg-cam-ink{ background-color:var(--st-teal-tua); }
+.tema-safetrack .hover\:bg-stone-700:hover{ background-color:var(--st-teal-gelap); }
+
+/* ---------- medan isian ---------- */
+.tema-safetrack input,
+.tema-safetrack select,
+.tema-safetrack textarea{
+  border-color:var(--st-garis-tegas);
+  background:#fff;
+  border-radius:9px;
+}
+
+/* Pasangan mode gelapnya, pada ELEMEN YANG SAMA.
+   Tanpa baris ini medannya tetap putih sementara teksnya sudah
+   diterangkan — tulisan nyaris putih di atas kotak putih, dan yang
+   melihatnya adalah orang yang bekerja malam di ruang kendali, bukan
+   orang yang menuliskannya. */
+:root[data-tema="gelap"] .tema-safetrack input,
+:root[data-tema="gelap"] .tema-safetrack select,
+:root[data-tema="gelap"] .tema-safetrack textarea{
+  background:#121D22;
+  border-color:#294049;
+  color:#E8EFF2;
+}
+.tema-safetrack input:focus,
+.tema-safetrack select:focus,
+.tema-safetrack textarea:focus{
+  border-color:var(--st-teal);
+  box-shadow:0 0 0 3px rgba(15,118,110,.13);
+}
+
+/* ---------- kepala tabel ---------- */
+.tema-safetrack thead tr{ background:var(--st-pasir-lembut); }
+.tema-safetrack thead th{ color:var(--st-redup); }
+.tema-safetrack tbody tr{ border-color:var(--st-garis); }
+.tema-safetrack tbody tr:hover{ background:var(--st-pasir-lembut); }
+
+/* ---------- judul kartu: pola "Judul | keterangan" ----------
+   Bilah pemisahnya TIDAK digambar CSS. Percobaan pertama memasangnya
+   sebagai ::before dan hasilnya dua bilah berjajar — halamannya memang
+   sudah mengetik "|" sendiri di dalam teksnya. Yang tampak di layar
+   "Surat pengajuan MCU | | 2 dari 2".
+
+   Dibiarkan diketik, dan yang diatur di sini hanya warnanya, supaya
+   bilahnya senada garis kartu alih-alih sepekat teksnya. */
+.tema-safetrack h3 > span.font-normal{ color:var(--st-redup); }
+</style>

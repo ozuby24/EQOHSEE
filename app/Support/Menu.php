@@ -82,6 +82,19 @@ final class Menu
        hubungannya dengan berkas orang itu. */
     'miners' => [
       'label' => 'Miners',
+
+      /* Palet Safe Track — pasir, teal, coral — bukan navy-jingga milik
+         seluruh aplikasi. Modul ini dan Investigasi mengurus dokumen
+         yang sama-sama dibaca di luar kantor: kartu yang dicetak dan
+         dibawa ke gerbang, berkas yang diminta Inspektur Tambang. Warna
+         pasirnya membedakan keduanya dari modul harian, dan pembedaan
+         itu yang membuat orang tahu ia sedang berada di berkas resmi
+         tanpa membaca judulnya lebih dulu.
+
+         Ditulis di sini, bukan di tiap berkas Vue: satu modul punya
+         belasan halaman, dan palet yang ditempelkan per halaman akan
+         tertinggal pada halaman yang ditambahkan berikutnya. */
+      'tema'  => 'safetrack',
       'icon'  => 'M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 14l2 2 4-4',
       'groups' => [
         '' => [
@@ -129,6 +142,7 @@ final class Menu
        bahaya, padahal yang dicari selalu kejadiannya. */
     'investigasi' => [
       'label' => 'Investigasi',
+      'tema'  => 'safetrack',
       'icon'  => 'M21 21l-5.2-5.2M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z',
       'groups' => [
         '' => [

@@ -42,8 +42,19 @@ export interface Modul {
 
 export interface KerangkaMenu {
   modul: Modul[];
+  /** Kunci modul yang sedang aktif — dipakai menandai dan memberi tema. */
+  kunci: string;
   label: string;
   grup: Array<{ nama: string; butir: ButirMenu[] }>;
+
+  /**
+   * Nama tema modul ini, bila ia menyatakan satu.
+   *
+   * Dikirim sebagai NAMA, bukan sebagai daftar warna: yang menentukan
+   * rupa sebuah tema adalah lembar gayanya, dan mengirim warnanya lewat
+   * prop berarti dua tempat yang harus sama selamanya.
+   */
+  tema?: string | null;
 }
 
 export interface Kilat {

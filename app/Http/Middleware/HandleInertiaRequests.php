@@ -130,6 +130,17 @@ class HandleInertiaRequests extends Middleware
             $grup[] = ['nama' => (string) $nama, 'butir' => $isi];
         }
 
-        return ['modul' => $modul, 'label' => $aktif['label'], 'grup' => $grup];
+        return [
+            'modul' => $modul,
+            'kunci' => $kunci,
+            'label' => $aktif['label'],
+            'grup'  => $grup,
+
+            /* Tema modul, bila ia menyatakan satu. Dikirim sebagai NAMA,
+               bukan sebagai daftar warna: yang menentukan rupa sebuah
+               tema adalah lembar gayanya, dan mengirim warnanya lewat
+               prop berarti dua tempat yang harus sama selamanya. */
+            'tema'  => $aktif['tema'] ?? null,
+        ];
     }
 }

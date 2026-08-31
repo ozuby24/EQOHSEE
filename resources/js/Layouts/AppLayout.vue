@@ -263,7 +263,13 @@ function keluar() {
         </div>
       </header>
 
-      <main class="flex-1 p-4 lg:p-6">
+      <!-- Kelas tema datang dari modulnya, bukan dari halamannya.
+           Modul yang menyatakan `tema` di Menu::all() berganti palet
+           seluruhnya — termasuk halaman yang belum ditulis. Dipasang di
+           <main>, bukan di pembungkus terluar, supaya bilah samping dan
+           kepala halaman tetap satu rupa di seluruh aplikasi: yang
+           berganti isinya, bukan kerangkanya. -->
+      <main class="flex-1 p-4 lg:p-6" :class="menu.tema ? `tema-${menu.tema}` : null">
         <div v-if="kilat.sukses" class="max-w-[1400px] mx-auto mb-5">
           <div class="rounded-xl px-4 py-3 text-[12.5px] font-semibold flex items-center gap-2.5"
                style="background:var(--eq-aksen-tipis,rgba(14,116,126,.12));color:var(--eq-aksen,#F57C00)">
