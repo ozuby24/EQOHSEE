@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache">
+    <testsuites>
+        <!--
+          Uji paket sengaja tidak membangkitkan aplikasi Laravel: yang diuji
+          adalah mesin hitung dan daftar acuannya, dan itu murni fungsi atas
+          resources/data/elemen.json. Alur HTTP-nya diuji di aplikasi yang
+          memasang modul ini — di situlah rute, basis data, dan penggunanya.
+        -->
+        <testsuite name="smkp">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>src</directory>
+        </include>
+    </source>
+</phpunit>

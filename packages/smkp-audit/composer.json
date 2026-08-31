@@ -1,0 +1,40 @@
+{
+    "name": "eqohsee/smkp-audit",
+    "description": "Modul Audit Internal SMKP Minerba (7 elemen, Kepdirjen 185.K/37.04/DJB/2019) — siap dipasang pada aplikasi Laravel lain.",
+    "type": "library",
+    "version": "1.0.0",
+    "license": "MIT",
+    "keywords": ["laravel", "smkp", "minerba", "audit", "inertia"],
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "^11.0|^12.0",
+        "illuminate/database": "^11.0|^12.0",
+        "illuminate/routing": "^11.0|^12.0",
+        "inertiajs/inertia-laravel": "^1.0|^2.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Eqohsee\\SmkpAudit\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Eqohsee\\SmkpAudit\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Eqohsee\\SmkpAudit\\SmkpServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

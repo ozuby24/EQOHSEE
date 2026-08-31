@@ -1,0 +1,94 @@
+/*
+ * Gaya modul Audit SMKP.
+ *
+ * Halaman modul memakai sepuluh kelas di luar Tailwind bawaan. Berkas ini
+ * mendefinisikan seluruhnya sebagai CSS biasa — BUKAN sebagai token Tailwind —
+ * supaya modul terpasang utuh pada aplikasi mana pun, termasuk yang memakai
+ * versi atau setelan Tailwind berbeda, atau tidak memakai Tailwind sama
+ * sekali untuk warnanya.
+ *
+ * Aplikasi yang sudah punya token sendiri boleh membuang berkas ini dan
+ * memetakan kesepuluh nama itu ke tokennya. Yang tidak boleh terjadi adalah
+ * kelasnya tidak ada sama sekali: Tailwind tidak menghasilkan galat untuk
+ * kelas yang tak dikenal, jadi tombol utama akan tampil sebagai teks polos
+ * tanpa satu pun peringatan.
+ *
+ * Pemasangan:  @import './smkp.css';  pada resources/css/app.css
+ */
+
+:root {
+  --smkp-aksen:       #F57C00;   /* jingga — tombol utama dan aksen */
+  --smkp-aksen-tua:   #DC6E00;
+  --smkp-aksen-dalam: #A85400;   /* teks tautan di atas latar terang */
+  --smkp-aksen-muda:  #FF9800;
+  --smkp-aksen-samar: #FFF2E2;
+  --smkp-tinta:       #0F1720;   /* teks gelap, bukan hitam pekat */
+}
+
+/* ── Warna ─────────────────────────────────────────────────────── */
+.text-cam-ink        { color: var(--smkp-tinta); }
+.text-cam-lime-deep  { color: var(--smkp-aksen-dalam); }
+.bg-cam-ink          { background-color: var(--smkp-tinta); }
+.hover\:bg-cam-lime-soft:hover { background-color: var(--smkp-aksen-samar); }
+.lime-gradient       { background: linear-gradient(135deg, var(--smkp-aksen-tua) 0%, var(--smkp-aksen-muda) 100%); }
+
+/* ── Bayangan kartu ────────────────────────────────────────────── */
+.shadow-card { box-shadow: 0 1px 3px rgba(34,49,47,.05), 0 14px 40px -18px rgba(34,49,47,.20); }
+
+/* ── Tombol ────────────────────────────────────────────────────── */
+.eq-btn-utama {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 10px 14px; border-radius: 11px; font-size: 12.5px; font-weight: 700;
+  background: linear-gradient(135deg, var(--smkp-aksen), var(--smkp-aksen-tua)); color: #fff;
+  transition: filter .18s, transform .18s cubic-bezier(.21,.6,.35,1);
+}
+.eq-btn-utama:hover  { filter: brightness(1.08); }
+.eq-btn-utama:active { transform: scale(.97); }
+.eq-btn-utama:disabled { opacity: .6; cursor: not-allowed; }
+
+.eq-btn-lain {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 10px 14px; border-radius: 11px; font-size: 12.5px; font-weight: 600;
+  color: #5C6874; background: #fff; border: 1px solid rgba(27,32,36,.11);
+  transition: border-color .18s, color .18s;
+}
+.eq-btn-lain:hover { color: var(--smkp-aksen-dalam); border-color: var(--smkp-aksen); }
+
+/* ══════════════════════════════════════════════════════════════
+   DOKUMEN TERKENDALI
+   Berkas audit dicetak sebagai lembar A4 bernomor. Pemenggalan
+   halaman ditentukan di sisi server — peramban tidak mendukung
+   counter(page) di sini — jadi tiap lembar dibuat eksplisit agar
+   nomor "Halaman x dari y" pada kopnya benar.
+   ══════════════════════════════════════════════════════════════ */
+
+.lembar { position: relative; }
+
+/* Tabel di dalam lembar tidak boleh terbelah antar halaman cetak. */
+.lembar table { break-inside: auto; }
+.lembar tr    { break-inside: avoid; break-after: auto; }
+.lembar thead { display: table-header-group; }
+
+@media print {
+  @page { size: A4; margin: 10mm; }
+
+  html, body { background: #fff !important; }
+
+  /* Bingkai layar dilepas: yang tercetak hanya isi lembarnya.
+     Sengaja tanpa break-inside:avoid — bila satu lembar sedikit melebihi
+     tinggi kertas, Chrome menyisipkan halaman kosong alih-alih memampatkan,
+     sehingga jumlah halaman tak lagi cocok dengan nomor pada kop. */
+  .lembar {
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .lembar-putus     { break-after: page; }
+  .lembar:last-child { break-after: auto; }
+
+  /* Warna latar tetap tercetak agar penanda status tidak hilang. */
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
