@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Investigasi\Bukti as BuktiInvestigasi;
 use App\Models\{Document, GudangBarang, HazardReport, InspectionItem, PasporKartu, PasporKartuUnit, PasporMcu, PasporSertifikat, Signatory, SmkpFinding};
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -113,6 +114,11 @@ final class Berkas
         /* Berkas sertifikat kompetensi — satu berkas per sertifikat,
            jadi satu jenis saja dan tidak perlu dibangkitkan berulang. */
         $out['srt'] = [PasporSertifikat::class, 'berkas', false];
+
+        /* Bukti investigasi. Batas perusahaannya dijaga
+           BerindukPerusahaan pada Bukti, yang menyaring lewat
+           investigasi lalu insidennya. */
+        $out['evd'] = [BuktiInvestigasi::class, 'berkas', false];
 
         return $out;
     }

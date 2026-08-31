@@ -216,6 +216,11 @@ final class RuteInertia
         'smkp.acuan',
 
         /* Keselamatan Operasi */
+        'investigasi.dasbor',
+        'investigasi.insiden',
+        'investigasi.insiden.baru',
+        'investigasi.daftar',
+
         'miners.index',
         'miners.dasbor',
         'miners.kedaluwarsa',

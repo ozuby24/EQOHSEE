@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\InvestigasiController;
 use App\Http\Controllers\MinersController;
 use App\Http\Controllers\DasborController;
 use App\Http\Controllers\{
@@ -336,6 +337,48 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('{paspor}/induksi/{induksi}',  [MinersController::class,'hapusInduksi'])->name('induksi.hapus');
     });
 
+
+    /* ================= INVESTIGASI KECELAKAAN =================
+     *
+     * Modul tersendiri, TERPISAH dari Miners. Miners menjawab "boleh
+     * atau tidak orang ini bekerja hari ini"; modul ini menjawab
+     * "mengapa kejadian ini terjadi dan apa yang membuatnya tidak
+     * terulang". Keduanya dibaca orang berbeda pada waktu berbeda, dan
+     * menyelipkan yang kedua ke dalam yang pertama membuat berkas
+     * investigasi hanya dapat ditemukan lewat halaman seorang pekerja —
+     * padahal yang dicari selalu kejadiannya, bukan orangnya.
+     */
+    Route::prefix('investigasi')->name('investigasi.')->group(function () {
+        Route::get('/', [InvestigasiController::class, 'dasbor'])->name('dasbor');
+
+        /* Register insiden dan formulir laporannya didaftarkan SEBELUM
+           rute ber-{insiden}: `insiden/baru` cocok pula dengan pola
+           `insiden/{insiden}`, dan yang terdaftar lebih dahulu yang
+           menang. Terbalik, halaman formulir akan mencari insiden
+           bernomor "baru" dan memulangkan 404 yang membingungkan. */
+        Route::get('insiden',       [InvestigasiController::class, 'insiden'])->name('insiden');
+        Route::get('insiden/baru',  [InvestigasiController::class, 'insidenBaru'])->name('insiden.baru');
+        Route::post('insiden',      [InvestigasiController::class, 'insidenSimpan'])->name('insiden.simpan');
+
+        Route::get('insiden/{insiden}', [InvestigasiController::class, 'insidenDetail'])
+            ->whereNumber('insiden')->name('insiden.detail');
+
+        Route::get('insiden/{insiden}/triase',  [InvestigasiController::class, 'triase'])
+            ->whereNumber('insiden')->name('triase');
+        Route::post('insiden/{insiden}/triase', [InvestigasiController::class, 'triaseSimpan'])
+            ->whereNumber('insiden')->name('triase.simpan');
+
+        /* Membuka investigasi memakai POST, bukan tautan GET: aksinya
+           membuat baris baru, dan tautan GET dapat terpicu prefetch
+           peramban tanpa pengguna menyentuh apa pun. */
+        Route::post('insiden/{insiden}/buka', [InvestigasiController::class, 'investigasiBuka'])
+            ->whereNumber('insiden')->name('buka');
+
+        Route::get('berkas', [InvestigasiController::class, 'investigasi'])->name('daftar');
+
+        Route::get('berkas/{investigasi}', [InvestigasiController::class, 'detail'])
+            ->whereNumber('investigasi')->name('detail');
+    });
 
     /* ================= WEBSITE #2 — SafeMine TPKKP ================= */
         /* ================= KO / SPIP ================= */

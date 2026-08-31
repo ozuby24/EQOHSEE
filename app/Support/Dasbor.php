@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Investigasi\{Insiden, Tindakan as TindakanInvestigasi};
 use App\Models\{
     AngkutMuatan, BiayaRealisasi, Document, GeoBacaan, GudangBarang,
     HazardReport, Inspection, IzinKerja, KoObject, LedakRencana,
@@ -81,6 +82,28 @@ final class Dasbor
         $kini = Carbon::now();
 
         return [
+            /* ═══ investigasi ═══
+             *
+             * Dua ubin, dan keduanya menyebut KELALAIAN, bukan jumlah.
+             * "24 insiden tercatat" tidak menuntut apa pun dari
+             * pembacanya; insiden yang belum ditriase dan tindakan
+             * perbaikan yang lewat tenggat menuntut. */
+            [
+                'modul' => 'investigasi', 'nama' => 'Insiden Belum Ditriase',
+                'ket'   => 'Levelnya belum dinilai siapa pun',
+                'nilai' => Insiden::whereNull('level_investigasi')->count(),
+                'total' => Insiden::count(),
+                'rute'  => 'investigasi.insiden', 'nada' => 'serius',
+            ],
+            [
+                'modul' => 'investigasi', 'nama' => 'Tindakan Perbaikan Telat',
+                'ket'   => 'Lewat tenggat, investigasinya tertahan',
+                'nilai' => TindakanInvestigasi::whereIn('status', ['terbuka', 'berjalan'])
+                    ->whereNotNull('tenggat')->whereDate('tenggat', '<', $kini)->count(),
+                'total' => TindakanInvestigasi::count(),
+                'rute'  => 'investigasi.dasbor', 'nada' => 'gawat',
+            ],
+
             /* ═══ orang ═══ */
             [
                 'modul' => 'miners', 'nama' => 'Masa Berlaku Berkas',

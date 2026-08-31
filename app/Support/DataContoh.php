@@ -2,6 +2,16 @@
 
 namespace App\Support;
 
+use App\Models\Investigasi\{
+    AkarMasalah as InvAkar, Analisis as InvAnalisis, Bukti as InvBukti,
+    Insiden as InvInsiden, InsidenOrang as InvInsidenOrang, Investigasi as InvInvestigasi,
+    Jejak as InvJejak, Kronologi as InvKronologi, Lokasi as InvLokasi,
+    Pembelajaran as InvPembelajaran, ScatPilihan as InvScatPilihan, Temuan as InvTemuan,
+    Tim as InvTim, Tindakan as InvTindakan, Wawancara as InvWawancara,
+    WawancaraJawaban as InvWawancaraJawaban
+};
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Support\Investigasi\{MasterInvestigasi, NomorInvestigasi, Triase as InvTriase};
 use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, BiayaRealisasi,
                 Company, Document, DocumentIso, DocumentRevision, EnergyEquipment,
                 EnergyFuelLog, GeoBacaan, GeoInstrumen, GeoLereng, GudangBarang, GudangLokasi,
@@ -27,6 +37,7 @@ use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, 
                 Percakapan, PersetujuanParaf,
                 Pesan, Signatory, TpkkpAssessment, TpkkpPengujian, TpkkpResponse, InduksiPengajuan};
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Pemuat data contoh untuk satu perusahaan.
@@ -172,6 +183,32 @@ final class DataContoh
         QuizQuestion::class, Quiz::class,
         ModuleCompletion::class, Material::class, Module::class, Course::class,
         InspectionTemplateItem::class, InspectionTemplate::class,
+
+        /* Investigasi. Seluruh anaknya disebut satu per satu meski
+           kunci asingnya sudah berkaskade, dan itu bukan pengulangan
+           yang sia-sia: penghapusan berkaskade dikerjakan basis data
+           dan TIDAK IKUT TERHITUNG oleh pemanggilnya, sehingga jumlah
+           "dibuang" tidak lagi sebanding dengan jumlah "dibuat" — dan
+           pemeriksaan penumpukan bersandar pada perbandingan itu.
+           Kaskade juga bergantung pada penegakan kunci asing, yang
+           tidak sama di setiap mesin.
+
+           Urutannya anak lebih dulu. `inv_akar_bukti` tidak disebut:
+           ia pivot tanpa model, terbuang bersama akar masalahnya, dan
+           karena tidak pernah dihitung sebagai "dibuat" ia tidak
+           membuat kedua sisi timpang.
+
+           Master investigasi TIDAK dibuang. Matriks risiko, kamus SCAT,
+           dan klasifikasi menurut Kepmen adalah kerangka regulasi yang
+           berlaku sama bagi setiap perusahaan — membuangnya bersama
+           data contoh satu perusahaan akan melumpuhkan triase seluruh
+           perusahaan lain pada pemasangan yang sama. */
+        InvWawancaraJawaban::class, InvWawancara::class,
+        InvScatPilihan::class, InvAnalisis::class,
+        InvTindakan::class, InvTemuan::class, InvAkar::class,
+        InvPembelajaran::class, InvKronologi::class, InvBukti::class, InvTim::class,
+        InvJejak::class, InvInvestigasi::class,
+        InvInsidenOrang::class, InvInsiden::class, InvLokasi::class,
     ];
 
     /** @var list<string> hal yang perlu diketahui pemanggilnya */
@@ -306,8 +343,23 @@ final class DataContoh
     private function bersihkan(): int
     {
         $n = 0;
+
         foreach (self::URUTAN_HAPUS as $kelas) {
-            $n += self::kueri($kelas, $this->c)->delete();
+            $q = self::kueri($kelas, $this->c);
+
+            /* Model bertanda hapus-lunak DIBUANG SUNGGUHAN di sini.
+               `delete()` biasa hanya mengisi deleted_at, sehingga
+               barisnya tetap ada — dan dua akibatnya sama-sama sunyi:
+               kaskade kunci asing tidak pernah berjalan sehingga anaknya
+               tertinggal sebagai baris yatim, dan tombol muat ulang
+               menambah satu rombongan baru tiap kali ditekan tanpa
+               membuang yang lama.
+
+               Data contoh memang tidak punya alasan disimpan di kotak
+               sampah: ia dibuat untuk dibuang. */
+            $n += in_array(SoftDeletes::class, class_uses_recursive($kelas), true)
+                ? $q->forceDelete()
+                : $q->delete();
         }
 
         return $n;
@@ -326,6 +378,19 @@ final class DataContoh
      * terlihat, dapat diperbaiki, dan jauh lebih ringan akibatnya
      * daripada tebakan yang salah tentang siapa pemiliknya.
      */
+    /** Id seluruh insiden satu perusahaan — subkueri, bukan daftar id. */
+    private static function idInsiden(Company $c)
+    {
+        return InvInsiden::withoutGlobalScopes()->where('company_id', $c->id)->select('id');
+    }
+
+    /** Id seluruh investigasi satu perusahaan, lewat insidennya. */
+    private static function idInvestigasi(Company $c)
+    {
+        return InvInvestigasi::withoutGlobalScopes()
+            ->whereIn('insiden_id', self::idInsiden($c))->select('id');
+    }
+
     private static function kueri(string $kelas, Company $c)
     {
         $q = $kelas::withoutGlobalScopes();
@@ -337,6 +402,33 @@ final class DataContoh
         }
 
         return match ($kelas) {
+            /* ── Investigasi ──
+               Tiga tingkat dari perusahaannya: anak → investigasi →
+               insiden. Disaring lewat id investigasi, bukan lewat
+               rangkaian whereIn bertumpuk yang ditulis ulang belasan
+               kali — satu subkueri bernama membuat penyaringnya sama
+               persis di tiap cabang, dan cabang yang berbeda sendiri
+               adalah cara termudah satu tabel tertinggal tidak
+               terhapus. */
+            InvTim::class, InvBukti::class, InvKronologi::class, InvAnalisis::class,
+            InvAkar::class, InvTemuan::class, InvPembelajaran::class, InvWawancara::class
+                => $q->whereIn('investigasi_id', self::idInvestigasi($c)),
+
+            InvInvestigasi::class, InvInsidenOrang::class, InvJejak::class
+                => $q->whereIn('insiden_id', self::idInsiden($c)),
+
+            InvScatPilihan::class => $q->whereIn('analisis_id',
+                InvAnalisis::withoutGlobalScopes()
+                    ->whereIn('investigasi_id', self::idInvestigasi($c))->select('id')),
+
+            InvTindakan::class => $q->whereIn('temuan_id',
+                InvTemuan::withoutGlobalScopes()
+                    ->whereIn('investigasi_id', self::idInvestigasi($c))->select('id')),
+
+            InvWawancaraJawaban::class => $q->whereIn('wawancara_id',
+                InvWawancara::withoutGlobalScopes()
+                    ->whereIn('investigasi_id', self::idInvestigasi($c))->select('id')),
+
             WaterSumpPump::class => $q->whereIn('water_sump_id',
                 WaterSump::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
             GeoInstrumen::class => $q->whereIn('geo_lereng_id',
@@ -528,6 +620,7 @@ final class DataContoh
             'Peta tambang'   => $this->peta(),
             'Authority'      => $this->authority(),
             'TPKKP'          => $this->tpkkp(),
+            'Investigasi'    => $this->investigasi(),
             'Pesan'          => $this->pesan(),
             'Catatan'        => $this->catatan(),
         ]);
@@ -1365,6 +1458,344 @@ final class DataContoh
      * percakapan menurut pesan terakhir. Ketiganya tidak dapat dilihat
      * dari percakapan yang hanya berisi pesan sendiri.
      */
+    /* ─────────── Investigasi kecelakaan ─────────── */
+
+    /**
+     * Satu berkas investigasi yang lengkap dari ujung ke ujung.
+     *
+     * SATU, BUKAN LIMA, dan itu keputusan yang berbeda dari modul lain
+     * di berkas ini. Modul lain diisi beberapa baris supaya sebaran dan
+     * penyaringnya dapat diperiksa. Investigasi tidak diperiksa lewat
+     * sebaran melainkan lewat RANTAINYA — bukti menyokong akar masalah,
+     * akar melahirkan temuan, temuan melahirkan tindakan — dan rantai
+     * itu hanya terlihat kalau satu berkas benar-benar utuh. Lima berkas
+     * setengah jadi memenuhi tiap tabel dengan angka bukan-nol sambil
+     * tidak memperlihatkan satu pun rantai yang tersambung.
+     *
+     * Levelnya sengaja L3. Di L1 dan L2 tahap Verifikasi dilewati,
+     * sehingga tabel verifikasi tindakan tidak akan pernah terisi oleh
+     * data contoh — dan bagian yang tidak pernah terisi adalah bagian
+     * yang tidak pernah diperiksa siapa pun.
+     */
+    private function investigasi(): int
+    {
+        /* Masternya dipasang lebih dulu, dan pemasangannya idempoten.
+           Tanpa ini, data contoh pada pemasangan yang belum pernah
+           menjalankan `investigasi:pasang` akan menunjuk klasifikasi
+           yang tidak ada — dan triasenya diam-diam tidak menghasilkan
+           level apa pun. */
+        MasterInvestigasi::pasang();
+
+        $n = 0;
+
+        $lokasi = InvLokasi::withoutGlobalScopes()->create([
+            'company_id' => $this->c->id,
+            'kode' => 'HR-KM4', 'nama' => 'Jalan Hauling KM 4',
+            'area' => 'Pit Selatan', 'aktif' => true,
+        ]);
+        $n++;
+
+        $kejadian = $this->kini->copy()->subDays(12)->setTime(14, 20);
+
+        $insiden = InvInsiden::withoutGlobalScopes()->create([
+            'company_id'       => $this->c->id,
+            'no_insiden'       => NomorInvestigasi::terbitkan(NomorInvestigasi::INSIDEN, (int) $kejadian->format('Y')),
+            'judul'            => 'Dump truck menabrak tanggul pengaman di jalan hauling KM 4',
+            'tanggal_kejadian' => $kejadian->toDateString(),
+            'waktu_kejadian'   => $kejadian->format('H:i:s'),
+            'dilaporkan_pada'  => $kejadian->copy()->addHours(2),
+            'lokasi_id'        => $lokasi->id,
+            'lokasi_rinci'     => 'Tikungan menurun sesudah simpang workshop',
+            'aktivitas'        => 'Hauling overburden dari Pit Selatan ke disposal',
+            'jenis_insiden_id' => DB::table('inv_jenis_insiden')->where('kode', 'tabrakan')->value('id'),
+            'klasifikasi_cedera_id' => DB::table('inv_klasifikasi_cedera')->where('kode', 'ringan')->value('id'),
+            'pelapor_id'       => $this->pengaju?->id,
+            'kronologi'        => 'Unit HD-785 keluar dari pit bermuatan penuh. Pada tikungan menurun '
+                .'sesudah simpang workshop, pengemudi mengerem dan pedal terasa dalam. Unit tidak berhenti '
+                .'pada jarak biasa dan menabrak tanggul pengaman sisi kiri, berhenti sekitar 12 meter dari '
+                .'titik pengereman. Area tikungan gelap karena dua lampu penerangan mati sejak pekan lalu.',
+            'tindakan_segera'  => 'Unit diamankan dan ditarik ke workshop. Jalur dialihkan lewat ramp lama. '
+                .'Pengemudi diperiksa paramedis, lecet pada siku kiri.',
+
+            /* Enam pemicu saran lapis 3 — dicentang pelapor di formulir,
+               dan justru kolom inilah yang dulu tidak punya medan sama
+               sekali sehingga lapis 3 tidak pernah menyala. */
+            'p_shift_malam'      => true,
+            'p_sop_tidak_ada'    => false,
+            'p_belum_dilatih'    => false,
+            'p_inspeksi_absen'   => true,
+            'p_insiden_berulang' => true,
+            'p_lembur_panjang'   => true,
+        ]);
+        $n++;
+
+        $insiden->orang()->create([
+            'nama' => 'Budi Santoso', 'jabatan' => 'Operator HD',
+            'perusahaan' => $this->c->name, 'peran' => 'korban',
+            'bagian_tubuh' => 'Siku kiri', 'rincian_cedera' => 'Lecet, dibalut di klinik site.',
+            'hari_hilang' => 2,
+        ]);
+        $insiden->orang()->create([
+            'nama' => 'Hendra Gunawan', 'jabatan' => 'Pengawas Hauling',
+            'perusahaan' => $this->c->name, 'peran' => 'saksi',
+        ]);
+        $n += 2;
+
+        /* Triase dijalankan lewat jalur yang sama dengan layarnya —
+           bukan dengan menulis level langsung ke kolomnya. Menulisnya
+           langsung membuat data contoh tetap benar meskipun rumus
+           triasenya rusak, dan itu justru menyembunyikan kerusakannya. */
+        InvTriase::terapkan($insiden, [
+            'kemungkinan' => 3, 'keparahan' => 3, 'keparahan_potensial' => 4,
+            'klasifikasi_regulasi_id' => DB::table('inv_klasifikasi_regulasi')
+                ->where('kode', 'kecelakaan_tambang')->value('id'),
+            'k1_benar_terjadi' => 1, 'k2_mencederai_pekerja' => 1,
+            'k3_akibat_kegiatan' => 1, 'k4_jam_kerja' => 1, 'k5_wilayah_usaha' => 1,
+        ]);
+
+        $insiden->update([
+            'status' => 'diselidiki',
+            'dilaporkan_kait_pada' => $kejadian->copy()->addHours(6),
+        ]);
+
+        $inv = $insiden->investigasi()->create([
+            'no_investigasi' => NomorInvestigasi::terbitkan(NomorInvestigasi::INVESTIGASI, (int) $kejadian->format('Y')),
+            'ketua_id'       => $this->peninjau?->id ?? $this->pengaju?->id,
+            'prioritas'      => 'tinggi',
+            'target_selesai' => $kejadian->copy()->addDays(30)->toDateString(),
+            'tahap'          => 'verifikasi',
+            'tujuan'         => 'Menetapkan penyebab kegagalan pengereman dan mencegah terulangnya '
+                .'pada unit sejenis.',
+            'ruang_lingkup'  => 'Seluruh unit HD-785 yang melintasi jalan hauling bergradien.',
+            'metode'         => 'ICAM, Bowtie, 5 Why, Kronologi, Analisis Penghalang',
+        ]);
+        $n++;
+
+        if ($this->pengaju) {
+            $inv->tim()->create(['user_id' => $this->pengaju->id, 'peran_tim' => 'Anggota']);
+            $n++;
+        }
+
+        /* ── kronologi ── */
+        $peristiwa = [
+            ['-08:25', 'Unit keluar dari pit bermuatan penuh', 'Muatan tercatat 91 ton, dalam batas.', false],
+            ['-08:10', 'Pemeriksaan awal (P2H) tidak mencatat keluhan rem', 'Lembar P2H pagi itu diisi tanpa catatan.', true],
+            ['-00:01', 'Operator mengerem memasuki tikungan', 'Menurut pernyataan, pedal terasa dalam.', true],
+            ['+00:00', 'Unit menabrak tanggul dan berhenti', 'Jarak henti sekitar 12 meter dari titik pengereman.', false],
+        ];
+
+        foreach ($peristiwa as $i => [$geser, $judul, $ket, $sebab]) {
+            [$tanda, $jam] = [substr($geser, 0, 1), substr($geser, 1)];
+            [$j, $m] = array_map('intval', explode(':', $jam));
+            $waktu = $tanda === '-'
+                ? $kejadian->copy()->subHours($j)->subMinutes($m)
+                : $kejadian->copy()->addHours($j)->addMinutes($m);
+
+            $inv->kronologi()->create([
+                'waktu' => $waktu, 'peristiwa' => $judul, 'keterangan' => $ket,
+                'penyebab' => $sebab, 'urutan' => $i + 1,
+            ]);
+            $n++;
+        }
+
+        /* ── bukti ── */
+        $bukti = [];
+        $daftarBukti = [
+            ['foto',       'Foto posisi akhir unit dan bekas ban',          true],
+            ['dokumen',    'Lembar P2H unit HD-785 tiga hari terakhir',     true],
+            ['dokumen',    'Riwayat perawatan sistem rem HD-785',           false],
+            ['pernyataan', 'Pernyataan operator Budi Santoso',              true],
+            ['foto',       'Foto kondisi kampas rem setelah pembongkaran',  true],
+        ];
+
+        foreach ($daftarBukti as $i => [$jenis, $judul, $dikunci]) {
+            $b = $inv->bukti()->create([
+                'no_bukti' => NomorInvestigasi::terbitkan(NomorInvestigasi::BUKTI, (int) $kejadian->format('Y')),
+                'jenis' => $jenis, 'judul' => $judul,
+                'sumber' => $i === 3 ? 'Wawancara di klinik site' : 'Tim investigasi',
+                'dikumpulkan_pada' => $kejadian->copy()->addDay()->toDateString(),
+                'dikumpulkan_oleh' => $inv->ketua_id,
+
+                /* Sidik jarinya dibuat dari judulnya supaya tetap sama
+                   tiap kali data contoh dimuat ulang. Nilai acak akan
+                   membuat dua pemuatan menghasilkan sidik jari berbeda
+                   untuk berkas yang sama — persis keadaan yang seharusnya
+                   menandakan berkasnya diganti. */
+                'sha256' => hash('sha256', $judul),
+                'dikunci' => $dikunci,
+                'dikunci_pada' => $dikunci ? $kejadian->copy()->addDays(2) : null,
+                'dikunci_oleh' => $dikunci ? $inv->ketua_id : null,
+            ]);
+
+            $bukti[] = $b;
+            $n++;
+        }
+
+        /* ── analisis SCAT ── */
+        $analisis = $inv->analisis()->create([
+            'metode'  => 'scat',
+            'catatan' => 'Dipilih dari 15 saran mesin atas 252 butir kamus; seluruhnya diverifikasi '
+                .'ulang terhadap bukti sebelum dicentang.',
+        ]);
+        $n++;
+
+        $butir = DB::table('inv_taksonomi')->where('metode', 'scat')
+            ->whereIn('kode', ['6.12', '8.5.5', '9.5.7', '5.2'])
+            ->pluck('id', 'kode');
+
+        foreach ($butir as $kode => $id) {
+            $analisis->pilihan()->create([
+                'taksonomi_id' => $id,
+                'dari_saran'   => true,
+                'lapis_saran'  => $kode === '9.5.7' ? 2 : 3,
+                'catatan_lapangan' => 'Dicocokkan dengan bukti '.$bukti[0]->no_bukti.'.',
+            ]);
+            $n++;
+        }
+
+        /* ── akar masalah, masing-masing bertaut ke buktinya ── */
+        $akar = [];
+        $daftarAkar = [
+            ['Interval penggantian kampas rem tidak disesuaikan dengan kondisi jalan hauling yang menurun tajam.', '8.5.5', [2, 4]],
+            ['Lembar P2H diisi tanpa pemeriksaan fisik yang sebenarnya.', null, [1, 3]],
+            ['Pengawasan pengisian P2H tidak berjalan.', '9.5.7', [1]],
+        ];
+
+        foreach ($daftarAkar as $i => [$uraian, $kode, $idxBukti]) {
+            $a = $inv->akar()->create([
+                'uraian'  => $uraian,
+                'metode'  => $kode ? 'scat' : '5why',
+                'taksonomi_id' => $kode ? ($butir[$kode] ?? null) : null,
+                'urutan'  => $i + 1,
+            ]);
+
+            /* Tiap akar disokong bukti. Akar tanpa bukti adalah pendapat,
+               dan pendapat tidak bertahan di depan Inspektur Tambang —
+               data contoh yang memperlihatkan akar tanpa bukti akan
+               mengajarkan kebiasaan yang justru hendak dicegah. */
+            $a->bukti()->attach(collect($idxBukti)->map(fn ($x) => $bukti[$x]->id)->all());
+
+            $akar[] = $a;
+            $n++;
+        }
+
+        /* ── temuan dan tindakan perbaikan ── */
+        $hierarki = DB::table('inv_hierarki_kendali')->pluck('id', 'kode');
+
+        $daftarTemuan = [
+            [
+                'Jadwal penggantian kampas rem memakai interval jam kerja standar pabrikan, tanpa '
+                    .'penyesuaian terhadap jalan hauling bergradien di atas 8%.',
+                'Susun ulang interval perawatan sistem rem berdasarkan gradien jalan dan jam kerja aktual.',
+                'tinggi', 0,
+                [
+                    ['Revisi jadwal perawatan sistem rem seluruh unit HD berdasarkan gradien jalan', 'rekayasa', 'diverifikasi', -2],
+                    ['Pasang alat pemantau suhu rem pada unit yang melintasi jalan bergradien tinggi', 'rekayasa', 'selesai', 18],
+                ],
+            ],
+            [
+                'Lembar P2H diisi tanpa pemeriksaan fisik. Tiga lembar terakhir tidak mencatat satu pun '
+                    .'temuan meskipun kampas sudah aus melewati batas.',
+                'Ubah cara verifikasi P2H sehingga tidak bergantung pada kejujuran pengisian sendiri.',
+                'tinggi', 1,
+                [
+                    ['Pemeriksaan silang P2H oleh pengawas pada 20% unit setiap giliran kerja', 'administratif', 'diverifikasi', -5],
+                    ['Penyegaran pelatihan P2H untuk seluruh operator HD', 'administratif', 'selesai', 9],
+                ],
+            ],
+        ];
+
+        foreach ($daftarTemuan as $i => [$uraian, $rekomendasi, $tingkat, $idxAkar, $tindakan]) {
+            $t = $inv->temuan()->create([
+                'no_temuan' => NomorInvestigasi::terbitkan(NomorInvestigasi::TEMUAN, (int) $kejadian->format('Y')),
+                'akar_id'   => $akar[$idxAkar]->id,
+                'uraian'    => $uraian,
+                'rekomendasi' => $rekomendasi,
+                'tingkat'   => $tingkat,
+                'urutan'    => $i + 1,
+            ]);
+            $n++;
+
+            foreach ($tindakan as [$isi, $kodeHierarki, $status, $geserTenggat]) {
+                $sudahDiverifikasi = $status === 'diverifikasi';
+
+                $t->tindakan()->create([
+                    'no_tindakan' => NomorInvestigasi::terbitkan(NomorInvestigasi::TINDAKAN, (int) $kejadian->format('Y')),
+                    'hierarki_id' => $hierarki[$kodeHierarki] ?? null,
+                    'uraian'      => $isi,
+                    'pic_id'      => $this->pengaju?->id,
+                    'tenggat'     => $this->kini->copy()->addDays($geserTenggat)->toDateString(),
+                    'status'      => $status,
+                    'selesai_pada' => $this->kini->copy()->subDays(3)->toDateString(),
+                    'diverifikasi_oleh' => $sudahDiverifikasi ? $inv->ketua_id : null,
+                    'diverifikasi_pada' => $sudahDiverifikasi ? $this->kini->copy()->subDay()->toDateString() : null,
+                    'catatan_verifikasi' => $sudahDiverifikasi
+                        ? 'Diperiksa di lapangan; jadwal baru sudah berjalan pada dua unit contoh.' : null,
+                    'efektif' => $sudahDiverifikasi ? true : null,
+                ]);
+                $n++;
+            }
+        }
+
+        /* ── wawancara ── */
+        $w = $inv->wawancara()->create([
+            'narasumber' => 'Budi Santoso', 'jabatan' => 'Operator HD',
+            'peran' => 'korban',
+            'tanggal' => $kejadian->copy()->addDay()->toDateString(),
+            'tempat' => 'Klinik site',
+            'pewawancara_id' => $inv->ketua_id,
+            'catatan' => 'Narasumber tenang, keterangan runtut.',
+        ]);
+        $n++;
+
+        foreach ([
+            ['Ceritakan kronologi kejadian dari sudut pandang Anda, dari sebelum sampai sesudah kejadian.',
+             'Saya keluar pit sekitar pukul enam pagi. Di tikungan menurun saya mulai mengerem seperti '
+                .'biasa, tetapi pedalnya terasa lebih dalam dan unit tidak melambat seperti biasanya.'],
+            ['APD apa yang digunakan saat kejadian, dan apakah kondisinya baik & sesuai standar?',
+             'Sabuk pengaman terpasang, helm dan sepatu lengkap. Sabuk yang menahan saya tidak terbentur setir.'],
+        ] as [$tanya, $jawab]) {
+            $w->jawaban()->create([
+                'pertanyaan_id' => DB::table('inv_wawancara_pertanyaan')
+                    ->where('pertanyaan', $tanya)->value('id'),
+                'pertanyaan_teks' => $tanya,
+                'jawaban' => $jawab,
+            ]);
+            $n++;
+        }
+
+        /* ── pembelajaran ── */
+        $inv->pembelajaran()->create([
+            'judul' => 'Interval perawatan rem harus mengikuti gradien jalan, bukan hanya jam kerja',
+            'ringkasan' => 'Unit HD-785 menabrak tanggul pengaman karena kampas rem sudah aus melewati '
+                .'batas, sementara jadwal penggantiannya memakai interval jam kerja standar pabrikan. '
+                .'Jalan hauling bergradien di atas 8% mempercepat keausan jauh melebihi asumsi itu.',
+            'pesan_kunci' => 'Periksa apakah jadwal perawatan rem di site Anda sudah memperhitungkan '
+                .'gradien jalan. Bila belum, hitung ulang sebelum musim hujan.',
+            'diterbitkan_pada' => $this->kini->toDateString(),
+            'diterbitkan_oleh' => $inv->ketua_id,
+        ]);
+        $n++;
+
+        /* ── jejak langkah ── */
+        foreach ([
+            ['Insiden dilaporkan', $insiden->no_insiden],
+            ['Triase', 'L3 · skor '.$insiden->skor_risiko],
+            ['Investigasi dibuka', $inv->no_investigasi],
+            ['Bukti dikunci', '4 dari 5 berkas'],
+            ['Tahap dimajukan', 'Analisis → Rencana Aksi'],
+        ] as [$aksi, $ket]) {
+            DB::table('inv_jejak')->insert([
+                'investigasi_id' => $inv->id, 'insiden_id' => $insiden->id,
+                'user_id' => $inv->ketua_id, 'aksi' => $aksi, 'keterangan' => $ket,
+                'created_at' => now(), 'updated_at' => now(),
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
     private function pesan(): int
     {
         if (!$this->pengaju || !$this->peninjau) return 0;

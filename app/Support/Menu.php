@@ -118,6 +118,31 @@ final class Menu
         ],
       ],
     ],
+    /* Investigasi berdiri sendiri, BUKAN di bawah Miners maupun Hazard
+       Report. Miners menjawab "boleh atau tidak orang ini bekerja hari
+       ini"; Hazard Report menjawab "ada bahaya, tolong ditangani".
+       Yang ini menjawab pertanyaan ketiga yang sama sekali lain —
+       "mengapa kejadian ini terjadi" — dan jawabannya berupa berkas
+       yang dapat diminta Inspektur Tambang. Menyelipkannya ke dalam
+       salah satu modul di atas membuat berkas itu hanya dapat
+       ditemukan lewat halaman seorang pekerja atau lewat satu laporan
+       bahaya, padahal yang dicari selalu kejadiannya. */
+    'investigasi' => [
+      'label' => 'Investigasi',
+      'icon'  => 'M21 21l-5.2-5.2M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z',
+      'groups' => [
+        '' => [
+          ['Ringkasan',  'investigasi.dasbor',  'investigasi'],
+        ],
+        'Kejadian' => [
+          ['Register Insiden', 'investigasi.insiden',      'investigasi/insiden*'],
+          ['Lapor Insiden',    'investigasi.insiden.baru', 'investigasi/insiden/baru'],
+        ],
+        'Berkas' => [
+          ['Investigasi', 'investigasi.daftar', 'investigasi/berkas*'],
+        ],
+      ],
+    ],
     'tpkkp' => [
       'label' => 'Safety Maturity Level',
       'icon'  => 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6',
@@ -517,6 +542,13 @@ final class Menu
         [['gudang*'],                              'gudang'],
         [['mining-engineering-hub*'],              'meh'],
         [['miners*'],                           'miners'],
+
+        /* Investigasi didaftarkan SEBELUM pola 'ko*' di bawahnya. Pola
+           itu berupa awalan satu kata dan tidak cocok dengan
+           'investigasi', tetapi urutan di sini memang sudah menentukan
+           sekali — dan menaruh modul baru di tengah daftar adalah cara
+           tercepat menemukan bahwa ia tertelan pola lain. */
+        [['investigasi*'],                         'investigasi'],
         [['ko*'],                                  'ko'],
         [['admin*', 'signatories*'],               'admin'],
     ];

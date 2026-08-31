@@ -78,6 +78,35 @@ class CakupanDataContohTest extends TestCase
            perusahaan lain. Jenis yang ditambahkan sebuah perusahaan
            sendiri memang bermilik, dan yang itu ikut terbuang. */
         'ko_unit_master' => 'acuan bersama, dipelihara pemakainya',
+
+        /* Master modul Investigasi. Alasannya sama persis dengan
+           kompetensi_jenis: isinya kerangka REGULASI — matriks risiko,
+           klasifikasi cedera menurut Kepmen ESDM 1827/2018, klasifikasi
+           kecelakaan menurut Kepdirjen 185/2019, hierarki pengendalian,
+           dan kamus penyebab SCAT — yang berlaku sama bagi setiap
+           perusahaan. Ia dipasang `investigasi:pasang`, bukan oleh data
+           contoh, dan membuangnya bersama data contoh satu perusahaan
+           akan melumpuhkan triase seluruh perusahaan lain pada
+           pemasangan yang sama.
+
+           Bahwa keenamnya benar-benar terisi tetap dijaga — bukan di
+           sini melainkan di InvestigasiTriaseTest, yang memeriksa
+           matriksnya 25 sel dan kamusnya 252 butir. */
+        'inv_matriks_risiko'       => 'matriks regulasi, dipasang investigasi:pasang',
+        'inv_klasifikasi_cedera'   => 'Kepmen ESDM 1827/2018, master nasional',
+        'inv_klasifikasi_regulasi' => 'Kepdirjen Minerba 185/2019, master nasional',
+        'inv_hierarki_kendali'     => 'hierarki pengendalian, master nasional',
+        'inv_jenis_insiden'        => 'daftar acuan bersama',
+        'inv_taksonomi'            => 'kamus penyebab SCAT/ICAM, master bersama',
+        'inv_wawancara_pertanyaan' => 'bank soal wawancara, master bersama',
+
+        /* Penghitung nomor. SENGAJA tidak ikut dibuang: mengosongkannya
+           membuat deret nomor mulai dari satu lagi, sehingga INC-2026-0001
+           terbit dua kali dalam tahun yang sama. Dua dokumen bernomor
+           sama adalah persoalan yang baru ketahuan saat salah satunya
+           dicari — dan pada berkas yang dapat diminta Inspektur Tambang,
+           itu bukan persoalan kecil. */
+        'inv_nomor_urut' => 'penghitung nomor; direset akan membuat nomor terpakai ulang',
     ];
 
     private function muat(): Company
