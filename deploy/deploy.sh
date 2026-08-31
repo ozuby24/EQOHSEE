@@ -309,6 +309,25 @@ ls -1t "$CADANGAN"/db-* 2>/dev/null | tail -n +11 | xargs -r rm -f
 echo "==> Running database migrations"
 php artisan migrate --force
 
+# Master data modul Investigasi — matriks risiko 5x5, klasifikasi menurut
+# Kepmen ESDM 1827/2018 dan Kepdirjen Minerba 185/2019, hierarki
+# pengendalian, kamus penyebab SCAT 252 butir, dan bank soal wawancara.
+#
+# Dijalankan pada SETIAP deploy, bukan sekali saat pemasangan, dan itu
+# disengaja: isinya bertambah bersama kode — kamus yang panjangnya
+# berubah, klasifikasi yang direvisi mengikuti regulasi baru — dan
+# perintah yang hanya dijalankan sekali akan membuat server berjalan
+# dengan kamus versi lama tanpa satu pun tanda.
+#
+# Aman diulang: penyimpanannya idempoten berdasar kode, sehingga matriks
+# tetap 25 sel dan kamus tetap 252 butir berapa kali pun ia dipanggil.
+#
+# TANPA LANGKAH INI triase tidak menghasilkan level apa pun — dan
+# kegagalannya diam: layarnya terbuka, matriksnya kosong, dan insiden
+# tersimpan tanpa level seolah memang belum ditriase.
+echo "==> Installing Investigasi master data"
+php artisan investigasi:pasang
+
 echo "==> Linking public storage"
 # `--quiet` menekan ERROR merah "link already exists" yang muncul pada
 # SETIAP deploy sesudah yang pertama. Tautannya memang sudah ada dan
