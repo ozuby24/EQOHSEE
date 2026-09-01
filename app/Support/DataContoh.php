@@ -11,7 +11,7 @@ use App\Models\Investigasi\{
     WawancaraJawaban as InvWawancaraJawaban
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Support\Investigasi\{MasterInvestigasi, NomorInvestigasi, Triase as InvTriase};
+use App\Support\Investigasi\{MasterInvestigasi, MesinScat, NomorInvestigasi, Triase as InvTriase};
 use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, BiayaRealisasi,
                 Company, Document, DocumentIso, DocumentRevision, EnergyEquipment,
                 EnergyFuelLog, GeoBacaan, GeoInstrumen, GeoLereng, GudangBarang, GudangLokasi,
@@ -1643,11 +1643,21 @@ final class DataContoh
             ->whereIn('kode', ['6.12', '8.5.5', '9.5.7', '5.2'])
             ->pluck('id', 'kode');
 
+        /* `dari_saran` mengikuti apa yang SUNGGUH DAPAT terjadi di layar.
+           Lapis 1 dipilih sendiri dari keterangan saksi — mesinnya tidak
+           pernah mengusulkannya — jadi menandainya sebagai hasil usulan
+           membuat rekap "apakah mesinnya menolong atau justru menyetir"
+           dijawab dengan angka yang tidak pernah ada kejadiannya.
+
+           Lapisnya pun dihitung MesinScat, bukan ditulis tangan. Ditulis
+           tangan, ia diam-diam melenceng begitu kamusnya bergeser. */
         foreach ($butir as $kode => $id) {
+            $lapis = MesinScat::lapis($kode);
+
             $analisis->pilihan()->create([
                 'taksonomi_id' => $id,
-                'dari_saran'   => true,
-                'lapis_saran'  => $kode === '9.5.7' ? 2 : 3,
+                'dari_saran'   => $lapis > 1,
+                'lapis_saran'  => $lapis > 1 ? $lapis : null,
                 'catatan_lapangan' => 'Dicocokkan dengan bukti '.$bukti[0]->no_bukti.'.',
             ]);
             $n++;

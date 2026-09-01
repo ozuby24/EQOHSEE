@@ -124,6 +124,37 @@ const WARNA_STATUS: Record<string, string> = {
               :kurang="props.inv?.kurang ?? []" :boleh-maju="props.inv?.bolehMaju && bisaUbah()"
               @maju="aksi('tahap/maju')" @mundur="aksi('tahap/mundur')" />
 
+    <!-- ══════════ dua layar kerja yang dipisahkan ══════════
+
+         Analisis SCAT dan wawancara punya halamannya sendiri: keduanya
+         menampung katalog panjang — 252 butir penyebab dan puluhan
+         pertanyaan — dan menempelkannya ke sini membuat halaman yang
+         sudah sepuluh blok tidak terbaca.
+
+         Tautannya ditaruh DI ATAS, sejajar rel tahap, bukan di dalam
+         blok analisis di bawah. Yang di bawah baru ditemukan sesudah
+         digulir melewati bukti dan kronologi, dan tahap Analisis
+         justru yang paling sering ditinggalkan setengah jalan. -->
+    <section class="grid gap-3 sm:grid-cols-2">
+      <Link :href="`/investigasi/berkas/${props.inv?.id}/analisis`"
+            class="rounded-2xl bg-white border border-stone-100 shadow-card px-5 py-3.5 hover:border-stone-200">
+        <p class="text-[13px] font-bold text-cam-ink">Analisis penyebab — SCAT →</p>
+        <p class="text-[11.5px] text-stone-500 mt-0.5">
+          Tiga lapis: tindakan &amp; kondisi, sebab dasar, lack of control.
+          Lapis berikutnya diusulkan dari pilihan lapis sebelumnya.
+        </p>
+      </Link>
+
+      <Link :href="`/investigasi/berkas/${props.inv?.id}/wawancara`"
+            class="rounded-2xl bg-white border border-stone-100 shadow-card px-5 py-3.5 hover:border-stone-200">
+        <p class="text-[13px] font-bold text-cam-ink">Wawancara saksi →</p>
+        <p class="text-[11.5px] text-stone-500 mt-0.5">
+          Panduan pertanyaan yang menyesuaikan diri pada peran narasumber
+          dan kewenangannya atas hierarki pengendalian.
+        </p>
+      </Link>
+    </section>
+
     <!-- Metode wajib menurut levelnya — disebut, bukan dipaksakan.
          Menilai kecocokan metode adalah pekerjaan KTT, bukan palang
          yang menghentikan orang di tengah pekerjaan. -->

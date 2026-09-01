@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Investigasi\{
-    AkarMasalah, Bukti, HierarkiKendali, Insiden, Investigasi, JenisInsiden,
+    AkarMasalah, Analisis, Bukti, HierarkiKendali, Insiden, Investigasi, JenisInsiden,
     Jejak, KlasifikasiCedera, KlasifikasiRegulasi, Kronologi, Lokasi,
-    Pembelajaran, Taksonomi, Temuan, Tim, Tindakan
+    Pembelajaran, ScatPilihan, Taksonomi, Temuan, Tim, Tindakan, Wawancara
 };
 use App\Models\User;
 use App\Support\Berkas;
-use App\Support\Investigasi\{MasterInvestigasi, NomorInvestigasi, TahapInvestigasi, Triase};
+use App\Support\Investigasi\{MasterInvestigasi, MesinScat, NomorInvestigasi, PanduanWawancara,
+    TahapInvestigasi, Triase};
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
@@ -938,6 +939,247 @@ class InvestigasiController extends Controller
     }
 
     /** Prop yang dipakai setiap layar modul ini. */
+    /* ═══════════════════ ANALISIS SCAT ═══════════════════ */
+
+    /**
+     * Layar analisis penyebab.
+     *
+     * Dipisahkan dari ruang kerja, bukan dijadikan satu blok lagi di
+     * dalamnya. Ruang kerja sudah memuat sepuluh blok; menambahkan
+     * katalog 252 butir beserta usulannya ke sana membuat halamannya
+     * digulir tanpa ujung, dan bagian yang paling perlu dipikirkan
+     * justru yang paling jauh dari layar pertama.
+     */
+    public function analisis(Investigasi $investigasi)
+    {
+        $analisis = $this->analisisScat($investigasi);
+
+        $analisis->load('pilihan.taksonomi');
+
+        return Inertia::render('Investigasi/Analisis', $this->bersama() + [
+            'inv' => $this->barisInvestigasi($investigasi) + [
+                'berjalan' => $investigasi->berjalan(),
+            ],
+
+            'katalog' => MesinScat::katalog(),
+            'saran'   => MesinScat::saran($analisis),
+            'rantai'  => MesinScat::rantai($analisis),
+
+            'pilihan' => $analisis->pilihan->map(fn (ScatPilihan $p) => [
+                'id'          => $p->id,
+                'taksonomiId' => $p->taksonomi_id,
+                'kode'        => $p->taksonomi?->kode,
+                'label'       => $p->taksonomi?->label,
+                'grup'        => $p->taksonomi?->definisi,
+                'lapis'       => $p->taksonomi ? MesinScat::lapis($p->taksonomi->kode) : 0,
+                'dariSaran'   => $p->dari_saran,
+                'catatan'     => $p->catatan_lapangan,
+            ])->values(),
+
+            'catatan' => $analisis->catatan,
+        ]);
+    }
+
+    /**
+     * Baris analisis SCAT berkas ini, dibuat bila belum ada.
+     *
+     * Dibuat saat layarnya dibuka dan bukan saat butir pertama dipilih:
+     * catatan analisis dapat ditulis lebih dahulu daripada pilihannya,
+     * dan menyimpan catatan pada baris yang belum ada berarti
+     * percabangan yang sama diulang di setiap aksi.
+     */
+    private function analisisScat(Investigasi $investigasi): Analisis
+    {
+        return $investigasi->analisis()->firstOrCreate(['metode' => 'scat']);
+    }
+
+    public function scatPilih(Request $request, Investigasi $investigasi)
+    {
+        $this->pastikanBerjalan($investigasi);
+
+        $data = $request->validate([
+            'taksonomi_id' => ['required', 'exists:inv_taksonomi,id'],
+            'dari_saran'   => ['boolean'],
+            'catatan'      => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        /* Butirnya wajib SCAT. Kamus lain memakai tabel yang sama, dan
+           butir ICAM yang masuk sebagai pilihan SCAT tidak menimbulkan
+           galat — ia hanya muncul di rekap "penyebab terbanyak" sebagai
+           baris yang tidak ada padanannya di bagan mana pun. */
+        $t = Taksonomi::where('metode', 'scat')->find($data['taksonomi_id']);
+
+        if (! $t) {
+            return back()->withErrors(['taksonomi_id' => 'Butir itu bukan bagian dari kamus SCAT.']);
+        }
+
+        $analisis = $this->analisisScat($investigasi);
+
+        /* updateOrCreate, bukan create: tabelnya unik per
+           analisis×taksonomi, dan pilihan ganda dari layar yang
+           ditekan dua kali harus menjadi satu baris, bukan galat SQL
+           yang dilihat pengguna sebagai halaman 500. */
+        $analisis->pilihan()->updateOrCreate(
+            ['taksonomi_id' => $t->id],
+            [
+                'dari_saran'       => (bool) ($data['dari_saran'] ?? false),
+                'lapis_saran'      => ($data['dari_saran'] ?? false) ? MesinScat::lapis($t->kode) : null,
+                'catatan_lapangan' => $data['catatan'] ?? null,
+            ],
+        );
+
+        Jejak::catat('Penyebab SCAT dipilih', $t->kode.' '.$t->label,
+            $investigasi->id, $investigasi->insiden_id);
+
+        return back()->with('ok', 'Penyebab '.$t->kode.' dicatat.');
+    }
+
+    public function scatHapus(Investigasi $investigasi, ScatPilihan $pilihan)
+    {
+        $this->pastikanBerjalan($investigasi);
+
+        /* Kepemilikannya diperiksa lewat analisisnya, bukan lewat
+           investigasi_id — tabel pilihan tidak punya kolom itu, dan
+           memercayai id dari alamat berarti pilihan berkas lain dapat
+           dihapus dengan menebak angka. */
+        abort_unless(
+            $investigasi->analisis()->whereKey($pilihan->analisis_id)->exists(),
+            404,
+        );
+
+        $pilihan->delete();
+
+        return back()->with('ok', 'Penyebab dihapus dari analisis.');
+    }
+
+    public function scatCatatan(Request $request, Investigasi $investigasi)
+    {
+        $this->pastikanBerjalan($investigasi);
+
+        $this->analisisScat($investigasi)->update($request->validate([
+            'catatan' => ['nullable', 'string', 'max:5000'],
+        ]));
+
+        return back()->with('ok', 'Catatan analisis tersimpan.');
+    }
+
+    /* ═══════════════════ WAWANCARA ═══════════════════ */
+
+    /**
+     * Layar wawancara: daftar berita acara, dan panduan per peran.
+     *
+     * Panduannya disusun ulang tiap kali halaman dibuka, dari kronologi
+     * yang berlaku sekarang. Menyimpan hasil pencocokan kata kunci akan
+     * membekukan panduan pada keadaan kronologi saat wawancara pertama
+     * dibuat — padahal justru wawancara yang membuat kronologinya
+     * bertambah.
+     */
+    public function wawancara(Request $request, Investigasi $investigasi)
+    {
+        $investigasi->load(['wawancara.jawaban', 'wawancara.pewawancara', 'kronologi']);
+
+        $peran = $request->get('peran');
+
+        if (! array_key_exists((string) $peran, Wawancara::PERAN)) {
+            $peran = array_key_first(Wawancara::PERAN);
+        }
+
+        /* Bahan pencocokan kata kunci: kronologi berbutir DITAMBAH
+           uraian kejadian pada laporan insiden. Kronologi berbutir
+           kosong sepenuhnya sah di L1, dan panduan yang hanya membaca
+           kronologi akan menyembunyikan seluruh pertanyaan kontekstual
+           pada berkas yang justru paling butuh dituntun. */
+        $bahan = trim(
+            $investigasi->kronologi->pluck('peristiwa')->implode(' ')
+            .' '.(string) $investigasi->insiden?->kronologi
+        );
+
+        return Inertia::render('Investigasi/Wawancara', $this->bersama() + [
+            'inv' => $this->barisInvestigasi($investigasi) + [
+                'berjalan' => $investigasi->berjalan(),
+            ],
+
+            'peran'    => $peran,
+            'daftarPeran' => Wawancara::PERAN,
+            'tingkatBoleh' => PanduanWawancara::TINGKAT_PER_PERAN[$peran] ?? [],
+            'panduan'  => PanduanWawancara::untuk($peran, $bahan),
+
+            'wawancara' => $investigasi->wawancara->map(fn (Wawancara $w) => [
+                'id'          => $w->id,
+                'narasumber'  => $w->narasumber,
+                'jabatan'     => $w->jabatan,
+                'peran'       => $w->peran,
+                'peranLabel'  => Wawancara::PERAN[$w->peran] ?? $w->peran,
+                'tanggal'     => $w->tanggal?->format('Y-m-d'),
+                'tempat'      => $w->tempat,
+                'catatan'     => $w->catatan,
+                'pewawancara' => $w->pewawancara?->name,
+                'jawaban'     => $w->jawaban->map(fn ($j) => [
+                    'id'         => $j->id,
+                    'pertanyaan' => $j->pertanyaan_teks,
+                    'jawaban'    => $j->jawaban,
+                ])->values(),
+            ])->values(),
+        ]);
+    }
+
+    public function wawancaraTambah(Request $request, Investigasi $investigasi)
+    {
+        $this->pastikanBerjalan($investigasi);
+
+        $data = $request->validate([
+            'narasumber' => ['required', 'string', 'max:120'],
+            'jabatan'    => ['nullable', 'string', 'max:120'],
+            'peran'      => ['required', Rule::in(array_keys(Wawancara::PERAN))],
+            'tanggal'    => ['nullable', 'date'],
+            'tempat'     => ['nullable', 'string', 'max:120'],
+            'catatan'    => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        $w = $investigasi->wawancara()->create($data + [
+            'pewawancara_id' => auth()->id(),
+        ]);
+
+        Jejak::catat('Wawancara dicatat', $w->narasumber.' ('.$w->peran.')',
+            $investigasi->id, $investigasi->insiden_id);
+
+        return back()->with('ok', 'Berita acara wawancara '.$w->narasumber.' dibuat.');
+    }
+
+    public function wawancaraJawab(Request $request, Investigasi $investigasi, Wawancara $wawancara)
+    {
+        $this->pastikanBerjalan($investigasi);
+        abort_unless($wawancara->investigasi_id === $investigasi->id, 404);
+
+        $data = $request->validate([
+            'pertanyaan_id' => ['nullable', 'exists:inv_wawancara_pertanyaan,id'],
+            'pertanyaan'    => ['required', 'string', 'max:1000'],
+            'jawaban'       => ['required', 'string', 'max:5000'],
+        ]);
+
+        /* Bunyi pertanyaannya IKUT DISALIN. Bank soal boleh diperbaiki
+           kapan saja; berita acara yang sudah ditandatangani tidak boleh
+           ikut berubah bunyinya karena seseorang membetulkan ejaan di
+           master setahun kemudian. */
+        $wawancara->jawaban()->create([
+            'pertanyaan_id'   => $data['pertanyaan_id'] ?? null,
+            'pertanyaan_teks' => $data['pertanyaan'],
+            'jawaban'         => $data['jawaban'],
+        ]);
+
+        return back()->with('ok', 'Jawaban tercatat.');
+    }
+
+    public function wawancaraHapus(Investigasi $investigasi, Wawancara $wawancara)
+    {
+        $this->pastikanBerjalan($investigasi);
+        abort_unless($wawancara->investigasi_id === $investigasi->id, 404);
+
+        $wawancara->delete();
+
+        return back()->with('ok', 'Berita acara wawancara dihapus.');
+    }
+
     private function bersama(): array
     {
         return [

@@ -415,6 +415,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('buka-lagi',    [InvestigasiController::class, 'bukaLagi'])->name('bukaLagi');
 
             Route::post('pembelajaran', [InvestigasiController::class, 'pembelajaranTambah'])->name('pembelajaran');
+
+            /* Analisis SCAT dan wawancara punya LAYARNYA SENDIRI.
+               Keduanya memang bagian dari berkas yang sama, tetapi
+               masing-masing menampung katalog panjang — 252 butir
+               penyebab dan 46 pertanyaan — dan menempelkannya ke ruang
+               kerja membuat halaman yang sudah sepuluh blok menjadi
+               tidak terbaca. Alamatnya tetap di bawah berkasnya supaya
+               kepemilikan dan lingkup perusahaannya diperiksa di satu
+               tempat yang sama. */
+            Route::get('analisis',  [InvestigasiController::class, 'analisis'])->name('analisis');
+            Route::post('scat',                  [InvestigasiController::class, 'scatPilih'])->name('scat.pilih');
+            Route::post('scat/{pilihan}/hapus',  [InvestigasiController::class, 'scatHapus'])->name('scat.hapus');
+            Route::post('scat/catatan',          [InvestigasiController::class, 'scatCatatan'])->name('scat.catatan');
+
+            Route::get('wawancara', [InvestigasiController::class, 'wawancara'])->name('wawancara');
+            Route::post('wawancara',                       [InvestigasiController::class, 'wawancaraTambah'])->name('wawancara.tambah');
+            Route::post('wawancara/{wawancara}/jawab',     [InvestigasiController::class, 'wawancaraJawab'])->name('wawancara.jawab');
+            Route::post('wawancara/{wawancara}/hapus',     [InvestigasiController::class, 'wawancaraHapus'])->name('wawancara.hapus');
         });
     });
 
