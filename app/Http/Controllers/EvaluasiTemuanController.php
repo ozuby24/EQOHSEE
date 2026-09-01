@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\DeretBulan;
+
 use App\Models\{Company, HazardReport, Inspection, InspectionItem};
 use App\Support\{Db, Hazard};
 use Illuminate\Http\Request;
@@ -83,8 +85,7 @@ class EvaluasiTemuanController extends Controller
 
         /* ---------- Tren 12 bulan (hazard vs temuan inspeksi) ---------- */
         $tren = [];
-        for ($i = 11; $i >= 0; $i--) {
-            $k = now()->subMonths($i)->format('Y-m');
+        foreach (DeretBulan::kunciMundur(now(), 12) as $k) {
             $tren[$k] = [
                 'hazard'   => HazardReport::whereRaw(Db::ym('tanggal') . ' = ?', [$k])->count(),
                 'inspeksi' => InspectionItem::where('kondisi','Tidak Sesuai')

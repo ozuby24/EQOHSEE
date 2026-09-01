@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\{MineOperationalRecord, User};
 use App\Support\Alur;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 /**
@@ -18,6 +19,32 @@ use Tests\TestCase;
 class AlurTinjauanTest extends TestCase
 {
     use RefreshDatabase;
+
+    /**
+     * Jamnya dipatok — uji ini pernah gagal sendiri saat bulan berganti.
+     *
+     * Halaman operasi menyaring bawaan ke BULAN BERJALAN. Isian di bawah
+     * bertanggal 14 Agustus, jadi selama Agustus ia masuk jendela dan
+     * selama September ia tidak — dua uji berubah dari lulus menjadi
+     * gagal tanpa ada satu baris pun yang diubah.
+     *
+     * Kegagalan yang datang sendiri seperti itu terbaca sebagai uji rewel
+     * lalu ditandai lewati, dan bersamanya ikut hilang penjagaan atas hal
+     * yang sebenarnya diuji di sini: angka yang belum disetujui tidak
+     * boleh terhitung. Karena itu waktunya dipatok, bukan tanggalnya yang
+     * digeser mengikuti hari ini.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Carbon::setTestNow('2026-08-14 08:00:00');
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+        parent::tearDown();
+    }
 
     private function operator(): User
     {

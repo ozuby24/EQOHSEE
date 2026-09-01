@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\DeretBulan;
+
 use App\Models\{ActivityLog, Company, HazardReport, User};
 use App\Support\{Db, Hazard, Identitas};
 use Illuminate\Http\Request;
@@ -358,10 +360,12 @@ class HazardController extends Controller
 
         $hitung = fn(string $kolom) => $data->groupBy($kolom)->map->count()->sortDesc();
 
-        // tren 12 bulan
+        /* Tren 12 bulan. Kuncinya dibangun DeretBulan, bukan
+           `now()->subMonths($i)`: yang kedua meluap pada tanggal 29–31
+           dan membuat dua bulan berbagi satu kunci, sehingga larik
+           berkuncinya menyusut dari dua belas menjadi tujuh baris. */
         $tren = [];
-        for ($i = 11; $i >= 0; $i--) {
-            $k = now()->subMonths($i)->format('Y-m');
+        foreach (DeretBulan::kunciMundur(now(), 12) as $k) {
             $tren[$k] = HazardReport::whereRaw(Db::ym('tanggal') . ' = ?', [$k])->count();
         }
 

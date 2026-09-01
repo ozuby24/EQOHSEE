@@ -51,8 +51,12 @@ final class DasborGrafik
     {
         $label = []; $masuk = []; $tutup = [];
 
-        for ($i = $bulan - 1; $i >= 0; $i--) {
-            $b = $kini->copy()->subMonths($i);
+        /* Deret bulannya dibangun DeretBulan, bukan `subMonths($i)` dari
+           tanggal hari ini: yang kedua meluap pada tanggal 29–31,
+           sehingga satu bulan dihitung dua kali dan bulan lain tidak
+           pernah muncul. Grafiknya tetap enam batang — dua di antaranya
+           berlabel sama — dan justru karena itu ia tidak terlihat salah. */
+        foreach (DeretBulan::mundur($kini, $bulan) as $b) {
 
             $dalam = fn ($q) => $q->whereYear('tanggal', $b->year)->whereMonth('tanggal', $b->month);
 
@@ -286,8 +290,7 @@ final class DasborGrafik
     {
         $label = []; $nilai = [];
 
-        for ($i = 0; $i < $bulan; $i++) {
-            $b = $kini->copy()->addMonths($i);
+        foreach (DeretBulan::maju($kini, $bulan) as $b) {
 
             $label[] = $b->translatedFormat('M y');
             $nilai[] = PasporSertifikat::whereNotNull('tgl_expired')
