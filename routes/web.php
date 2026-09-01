@@ -378,6 +378,44 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('berkas/{investigasi}', [InvestigasiController::class, 'detail'])
             ->whereNumber('investigasi')->name('detail');
+
+        /* ── aksi tulis pada ruang kerja ──
+         *
+         * SELURUHNYA POST, termasuk penghapusan dan pemajuan tahap.
+         * Tautan GET yang menghapus bukti atau memajukan tahap dapat
+         * terpicu prefetch peramban tanpa pengguna menyentuh apa pun,
+         * dan pada berkas yang dapat diminta Inspektur Tambang, satu
+         * penghapusan yang tidak disengaja tidak dapat dijelaskan
+         * kepada siapa pun. */
+        Route::prefix('berkas/{investigasi}')->whereNumber('investigasi')->group(function () {
+            Route::post('keterangan', [InvestigasiController::class, 'simpanKeterangan'])->name('keterangan');
+
+            Route::post('tim',                 [InvestigasiController::class, 'timTambah'])->name('tim.tambah');
+            Route::post('tim/{tim}/hapus',     [InvestigasiController::class, 'timHapus'])->name('tim.hapus');
+
+            Route::post('kronologi',                     [InvestigasiController::class, 'kronologiTambah'])->name('kronologi.tambah');
+            Route::post('kronologi/{kronologi}/hapus',   [InvestigasiController::class, 'kronologiHapus'])->name('kronologi.hapus');
+
+            Route::post('bukti',                 [InvestigasiController::class, 'buktiTambah'])->name('bukti.tambah');
+            Route::post('bukti/{bukti}/kunci',   [InvestigasiController::class, 'buktiKunci'])->name('bukti.kunci');
+            Route::post('bukti/{bukti}/hapus',   [InvestigasiController::class, 'buktiHapus'])->name('bukti.hapus');
+
+            Route::post('akar',               [InvestigasiController::class, 'akarTambah'])->name('akar.tambah');
+            Route::post('akar/{akar}/hapus',  [InvestigasiController::class, 'akarHapus'])->name('akar.hapus');
+
+            Route::post('temuan',                          [InvestigasiController::class, 'temuanTambah'])->name('temuan.tambah');
+            Route::post('temuan/{temuan}/hapus',           [InvestigasiController::class, 'temuanHapus'])->name('temuan.hapus');
+            Route::post('temuan/{temuan}/tindakan',        [InvestigasiController::class, 'tindakanTambah'])->name('tindakan.tambah');
+            Route::post('tindakan/{tindakan}/status',      [InvestigasiController::class, 'tindakanStatus'])->name('tindakan.status');
+            Route::post('tindakan/{tindakan}/hapus',       [InvestigasiController::class, 'tindakanHapus'])->name('tindakan.hapus');
+
+            Route::post('tahap/maju',   [InvestigasiController::class, 'tahapMaju'])->name('tahap.maju');
+            Route::post('tahap/mundur', [InvestigasiController::class, 'tahapMundur'])->name('tahap.mundur');
+            Route::post('tutup',        [InvestigasiController::class, 'tutup'])->name('tutup');
+            Route::post('buka-lagi',    [InvestigasiController::class, 'bukaLagi'])->name('bukaLagi');
+
+            Route::post('pembelajaran', [InvestigasiController::class, 'pembelajaranTambah'])->name('pembelajaran');
+        });
     });
 
     /* ================= WEBSITE #2 — SafeMine TPKKP ================= */

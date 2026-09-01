@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Support\Berkas;
 use App\Support\Investigasi\{MasterInvestigasi, NomorInvestigasi, TahapInvestigasi, Triase};
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
@@ -401,6 +402,461 @@ class InvestigasiController extends Controller
                 ],
             ],
         ]);
+    }
+
+
+    /* ═══════════════════ AKSI TULIS ═══════════════════
+     *
+     * SELURUHNYA POST, tanpa kecuali — termasuk penghapusan dan
+     * pemajuan tahap. Tautan GET yang menghapus bukti atau memajukan
+     * tahap dapat terpicu prefetch peramban tanpa pengguna menyentuh
+     * apa pun, dan pada berkas yang dapat diminta Inspektur Tambang,
+     * satu penghapusan yang tidak disengaja tidak dapat dijelaskan
+     * kepada siapa pun.
+     *
+     * Yang sudah DITUTUP tidak lagi menerima perubahan. Penjagaannya
+     * satu tempat — `pastikanBerjalan()` — bukan diulang di tiap
+     * metode: penjagaan yang disalin ke dua belas tempat akan
+     * tertinggal di tempat ketiga belas, dan yang tertinggal tidak
+     * menimbulkan galat, hanya berkas tertutup yang diam-diam berubah
+     * isinya sesudah ditandatangani.
+     */
+
+    /** Investigasi yang sudah ditutup tidak menerima perubahan apa pun. */
+    private function pastikanBerjalan(Investigasi $inv): void
+    {
+        abort_unless($inv->berjalan(), 422,
+            'Investigasi '.$inv->no_investigasi.' sudah ditutup. '
+            .'Buka kembali lebih dahulu bila memang perlu diubah.');
+    }
+
+    public function simpanKeterangan(Request $request, Investigasi $investigasi)
+    {
+        $this->pastikanBerjalan($investigasi);
+
+        $investigasi->update($request->validate([
+            'ketua_id'       => ['nullable', 'exists:users,id'],
+            'target_selesai' => ['nullable', 'date'],
+            'prioritas'      => ['nullable', 'in:rendah,sedang,tinggi'],
+            'tujuan'         => ['nullable', 'string', 'max:2000'],
+            'ruang_lingkup'  => ['nullable', 'string', 'max:2000'],
+        ]));
+
+        return back()->with('ok', 'Keterangan investigasi tersimpan.');
+    }
+
+    /* ── tim ── */
+
+    public function timTambah(Request $request, Investigasi $investigasi)
+    {
+        $this->pastikanBerjalan($investigasi);
+
+        $data = $request->validate([
+            'user_id'   => ['required', 'exists:users,id'],
+            'peran_tim' => ['nullable', 'string', 'max:60'],
+        ]);
+
+        /* firstOrCreate, bukan create: menambahkan orang yang sama dua
+           kali melanggar kunci unik dan memulangkan galat basis data
+           mentah ke layar. Yang benar bukan galat melainkan tidak
+           terjadi apa-apa. */
+        $investigasi->tim()->firstOrCreate(
+            ['user_id' => $data['user_id']],
+            ['peran_tim' => $data['peran_tim'] ?? null],
+        );
+
+        return back()->with('ok', 'Anggota tim ditambahkan.');
+    }
+
+    public function timHapus(Investigasi $investigasi, Tim $tim)
+    {
+        $this->pastikanBerjalan($investigasi);
+        abort_unless($tim->investigasi_id === $investigasi->id, 404);
+
+        $tim->delete();
+
+        return back()->with('ok', 'Anggota tim dilepas.');
+    }
+
+    /* ── kronologi ── */
+
+    public function kronologiTambah(Request $request, Investigasi $investigasi)
+    {
+        $this->pastikanBerjalan($investigasi);
+
+        $data = $request->validate([
+            'waktu'      => ['nullable', 'date'],
+            'peristiwa'  => ['required', 'string', 'max:300'],
+            'keterangan' => ['nullable', 'string', 'max:2000'],
+            'penyebab'   => ['nullable', 'boolean'],
+        ]);
+
+        $investigasi->kronologi()->create($data + [
+            'urutan' => (int) $investigasi->kronologi()->max('urutan') + 1,
+        ]);
+
+        return back()->with('ok', 'Peristiwa ditambahkan ke kronologi.');
+    }
+
+    public function kronologiHapus(Investigasi $investigasi, Kronologi $kronologi)
+    {
+        $this->pastikanBerjalan($investigasi);
+        abort_unless($kronologi->investigasi_id === $investigasi->id, 404);
+
+        $kronologi->delete();
+
+        return back()->with('ok', 'Peristiwa dihapus.');
+    }
+
+    /* ── bukti ── */
+
+    public function buktiTambah(Request $request, Investigasi $investigasi)
+    {
+        $this->pastikanBerjalan($investigasi);
+
+        $data = $request->validate([
+            'jenis'            => ['required', Rule::in(array_keys(Bukti::JENIS))],
+            'judul'            => ['required', 'string', 'max:200'],
+            'keterangan'       => ['nullable', 'string', 'max:2000'],
+            'sumber'           => ['nullable', 'string', 'max:200'],
+            'dikumpulkan_pada' => ['nullable', 'date'],
+            'berkas'           => ['nullable', 'file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,webp,mp4,mov,doc,docx,xls,xlsx'],
+        ]);
+
+        $jalur = null;
+        $sidik = null;
+
+        if ($f = $request->file('berkas')) {
+            /* Sidik jarinya dihitung dari berkas SEBELUM disimpan, saat
+               ia masih di jalur unggahan sementara. Dihitung sesudah
+               tersimpan pun sama nilainya — yang penting ia dihitung
+               SEKALI lalu tidak pernah dihitung ulang. Menghitungnya
+               ulang tiap kali barisnya dibaca akan membuat berkas yang
+               diganti tetap terlihat cocok dengan catatannya, dan
+               seluruh gunanya hilang. */
+            $sidik = hash_file('sha256', $f->getRealPath());
+            $jalur = Berkas::simpan($f, 'investigasi/bukti');
+        }
+
+        $investigasi->bukti()->create([
+            'no_bukti'         => NomorInvestigasi::terbitkan(NomorInvestigasi::BUKTI),
+            'jenis'            => $data['jenis'],
+            'judul'            => $data['judul'],
+            'keterangan'       => $data['keterangan'] ?? null,
+            'sumber'           => $data['sumber'] ?? null,
+            'dikumpulkan_pada' => $data['dikumpulkan_pada'] ?? now()->toDateString(),
+            'berkas'           => $jalur,
+            'mime'             => $f?->getClientMimeType(),
+            'sha256'           => $sidik,
+            'dikumpulkan_oleh' => auth()->id(),
+        ]);
+
+        Jejak::catat('Bukti ditambahkan', $data['judul'], $investigasi->id, $investigasi->insiden_id);
+
+        return back()->with('ok', 'Bukti dicatat.');
+    }
+
+    /**
+     * Kunci sebuah bukti.
+     *
+     * SATU ARAH, dan tidak ada rute membukanya kembali. Kunci yang
+     * dapat dibuka lagi tidak menjamin apa pun — ia hanya menambah satu
+     * langkah bagi siapa pun yang hendak mengganti isinya, dan langkah
+     * yang dapat dilewati bukan penjagaan melainkan hiasan.
+     */
+    public function buktiKunci(Investigasi $investigasi, Bukti $bukti)
+    {
+        $this->pastikanBerjalan($investigasi);
+        abort_unless($bukti->investigasi_id === $investigasi->id, 404);
+
+        if ($bukti->dikunci) return back();
+
+        $bukti->update([
+            'dikunci'      => true,
+            'dikunci_pada' => now(),
+            'dikunci_oleh' => auth()->id(),
+        ]);
+
+        Jejak::catat('Bukti dikunci', $bukti->no_bukti, $investigasi->id, $investigasi->insiden_id);
+
+        return back()->with('ok', 'Bukti '.$bukti->no_bukti.' dikunci.');
+    }
+
+    public function buktiHapus(Investigasi $investigasi, Bukti $bukti)
+    {
+        $this->pastikanBerjalan($investigasi);
+        abort_unless($bukti->investigasi_id === $investigasi->id, 404);
+
+        abort_if($bukti->dikunci, 422,
+            'Bukti '.$bukti->no_bukti.' sudah dikunci dan tidak dapat dihapus. '
+            .'Itulah gunanya dikunci.');
+
+        Berkas::buang($bukti->berkas);
+        $bukti->delete();
+
+        Jejak::catat('Bukti dihapus', $bukti->no_bukti, $investigasi->id, $investigasi->insiden_id);
+
+        return back()->with('ok', 'Bukti dihapus.');
+    }
+
+    /* ── akar masalah ── */
+
+    public function akarTambah(Request $request, Investigasi $investigasi)
+    {
+        $this->pastikanBerjalan($investigasi);
+
+        $data = $request->validate([
+            'uraian'       => ['required', 'string', 'max:2000'],
+            'metode'       => ['nullable', 'string', 'max:20'],
+            'taksonomi_id' => ['nullable', 'exists:inv_taksonomi,id'],
+            'bukti'        => ['array'],
+            'bukti.*'      => ['integer'],
+        ]);
+
+        $akar = $investigasi->akar()->create([
+            'uraian'       => $data['uraian'],
+            'metode'       => $data['metode'] ?? '5why',
+            'taksonomi_id' => $data['taksonomi_id'] ?? null,
+            'urutan'       => (int) $investigasi->akar()->max('urutan') + 1,
+        ]);
+
+        /* Bukti yang ditaut disaring pada bukti MILIK investigasi ini.
+           Tanpa penyaring itu, id bukti dari berkas lain dapat ditaut
+           lewat kiriman yang disusun tangan — dan akar masalah yang
+           menunjuk bukti berkas lain adalah persis jenis kekeliruan yang
+           tidak akan pernah ada yang menyadarinya. */
+        $akar->bukti()->sync(
+            $investigasi->bukti()->whereIn('id', $data['bukti'] ?? [])->pluck('id')->all()
+        );
+
+        return back()->with('ok', 'Akar masalah dicatat.');
+    }
+
+    public function akarHapus(Investigasi $investigasi, AkarMasalah $akar)
+    {
+        $this->pastikanBerjalan($investigasi);
+        abort_unless($akar->investigasi_id === $investigasi->id, 404);
+
+        $akar->delete();
+
+        return back()->with('ok', 'Akar masalah dihapus.');
+    }
+
+    /* ── temuan dan tindakan ── */
+
+    public function temuanTambah(Request $request, Investigasi $investigasi)
+    {
+        $this->pastikanBerjalan($investigasi);
+
+        $data = $request->validate([
+            'uraian'      => ['required', 'string', 'max:2000'],
+            'rekomendasi' => ['nullable', 'string', 'max:2000'],
+            'tingkat'     => ['nullable', Rule::in(array_keys(Temuan::TINGKAT))],
+            'akar_id'     => ['nullable', 'integer'],
+        ]);
+
+        $investigasi->temuan()->create([
+            'no_temuan'   => NomorInvestigasi::terbitkan(NomorInvestigasi::TEMUAN),
+            'uraian'      => $data['uraian'],
+            'rekomendasi' => $data['rekomendasi'] ?? null,
+            'tingkat'     => $data['tingkat'] ?? 'sedang',
+
+            /* Akar yang dirujuk harus milik investigasi ini. */
+            'akar_id'     => $investigasi->akar()->whereKey($data['akar_id'] ?? null)->value('id'),
+            'urutan'      => (int) $investigasi->temuan()->max('urutan') + 1,
+        ]);
+
+        return back()->with('ok', 'Temuan dicatat.');
+    }
+
+    public function temuanHapus(Investigasi $investigasi, Temuan $temuan)
+    {
+        $this->pastikanBerjalan($investigasi);
+        abort_unless($temuan->investigasi_id === $investigasi->id, 404);
+
+        $temuan->delete();
+
+        return back()->with('ok', 'Temuan dihapus.');
+    }
+
+    public function tindakanTambah(Request $request, Investigasi $investigasi, Temuan $temuan)
+    {
+        $this->pastikanBerjalan($investigasi);
+        abort_unless($temuan->investigasi_id === $investigasi->id, 404);
+
+        $data = $request->validate([
+            'uraian'      => ['required', 'string', 'max:2000'],
+            'hierarki_id' => ['nullable', 'exists:inv_hierarki_kendali,id'],
+            'pic_id'      => ['nullable', 'exists:users,id'],
+            'pic_nama'    => ['nullable', 'string', 'max:120'],
+            'tenggat'     => ['nullable', 'date'],
+        ]);
+
+        $temuan->tindakan()->create($data + [
+            'no_tindakan' => NomorInvestigasi::terbitkan(NomorInvestigasi::TINDAKAN),
+            'status'      => 'terbuka',
+        ]);
+
+        return back()->with('ok', 'Tindakan perbaikan dicatat.');
+    }
+
+    /**
+     * Ubah status satu tindakan perbaikan.
+     *
+     * "selesai" dinyatakan pelaksananya; "diverifikasi" dinyatakan orang
+     * lain. Yang menegakkan pembedaan itu di sini bukan sekadar nama
+     * statusnya melainkan penolakan di bawah: pelaksana tidak boleh
+     * memverifikasi pekerjaannya sendiri, dan verifikasi semacam itu
+     * tidak pernah menemukan apa pun.
+     */
+    public function tindakanStatus(Request $request, Investigasi $investigasi, Tindakan $tindakan)
+    {
+        $this->pastikanBerjalan($investigasi);
+        abort_unless($tindakan->temuan?->investigasi_id === $investigasi->id, 404);
+
+        $data = $request->validate([
+            'status'             => ['required', Rule::in(array_keys(Tindakan::STATUS))],
+            'catatan_verifikasi' => ['nullable', 'string', 'max:2000'],
+            'efektif'            => ['nullable', 'boolean'],
+        ]);
+
+        $memverifikasi = in_array($data['status'], ['diverifikasi', 'ditutup'], true);
+
+        if ($memverifikasi && $tindakan->pic_id && $tindakan->pic_id === auth()->id()) {
+            return back()->withErrors([
+                'tindakan' => 'Pelaksana tidak dapat memverifikasi tindakannya sendiri. '
+                    .'Mintalah orang lain di tim yang memeriksanya di lapangan.',
+            ]);
+        }
+
+        $tindakan->update([
+            'status'             => $data['status'],
+            'selesai_pada'       => in_array($data['status'], ['selesai', 'diverifikasi', 'ditutup'], true)
+                ? ($tindakan->selesai_pada ?? now()->toDateString()) : null,
+            'diverifikasi_oleh'  => $memverifikasi ? auth()->id() : null,
+            'diverifikasi_pada'  => $memverifikasi ? now()->toDateString() : null,
+            'catatan_verifikasi' => $data['catatan_verifikasi'] ?? null,
+            'efektif'            => $memverifikasi ? ($data['efektif'] ?? null) : null,
+        ]);
+
+        return back()->with('ok', 'Status tindakan '.$tindakan->no_tindakan.' diperbarui.');
+    }
+
+    public function tindakanHapus(Investigasi $investigasi, Tindakan $tindakan)
+    {
+        $this->pastikanBerjalan($investigasi);
+        abort_unless($tindakan->temuan?->investigasi_id === $investigasi->id, 404);
+
+        $tindakan->delete();
+
+        return back()->with('ok', 'Tindakan dihapus.');
+    }
+
+    /* ── tahap dan penutupan ── */
+
+    public function tahapMaju(Investigasi $investigasi)
+    {
+        $this->pastikanBerjalan($investigasi);
+
+        /* Syaratnya diperiksa DI SINI, bukan hanya di layar. Tombolnya
+           memang sudah disembunyikan ketika syaratnya kurang, tetapi
+           tombol yang tersembunyi bukan penjagaan — kiriman POST yang
+           disusun tangan tidak pernah melihat layarnya. */
+        if ($kurang = TahapInvestigasi::yangKurang($investigasi)) {
+            return back()->withErrors(['tahap' => implode(' ', $kurang)]);
+        }
+
+        $berikutnya = TahapInvestigasi::berikutnya($investigasi->tahap, $investigasi->level());
+
+        if (! $berikutnya) return back();
+
+        $investigasi->update(['tahap' => $berikutnya]);
+
+        Jejak::catat('Tahap dimajukan',
+            TahapInvestigasi::URUTAN[$investigasi->tahap] ?? $berikutnya,
+            $investigasi->id, $investigasi->insiden_id);
+
+        return back()->with('ok', 'Maju ke tahap '.(TahapInvestigasi::URUTAN[$berikutnya] ?? $berikutnya).'.');
+    }
+
+    /**
+     * Mundur satu tahap.
+     *
+     * TIDAK menuntut syarat apa pun, dan itu disengaja. Mundur dipakai
+     * justru ketika ada yang keliru — bukti salah, akar masalah
+     * dirumuskan terlalu cepat — dan menuntut kelengkapan untuk mundur
+     * berarti berkas yang terlanjur maju tidak dapat diperbaiki sama
+     * sekali.
+     */
+    public function tahapMundur(Investigasi $investigasi)
+    {
+        $this->pastikanBerjalan($investigasi);
+
+        $sebelumnya = TahapInvestigasi::sebelumnya($investigasi->tahap, $investigasi->level());
+
+        if (! $sebelumnya) return back();
+
+        $investigasi->update(['tahap' => $sebelumnya]);
+
+        Jejak::catat('Tahap dimundurkan',
+            TahapInvestigasi::URUTAN[$sebelumnya] ?? $sebelumnya,
+            $investigasi->id, $investigasi->insiden_id);
+
+        return back()->with('ok', 'Kembali ke tahap '.(TahapInvestigasi::URUTAN[$sebelumnya] ?? $sebelumnya).'.');
+    }
+
+    public function tutup(Investigasi $investigasi)
+    {
+        $this->pastikanBerjalan($investigasi);
+
+        if ($kurang = TahapInvestigasi::yangKurangUntukTutup($investigasi)) {
+            return back()->withErrors(['tutup' => implode(' ', $kurang)]);
+        }
+
+        $investigasi->update(['status' => 'ditutup', 'ditutup_pada' => now()]);
+        $investigasi->insiden?->update(['status' => 'ditutup']);
+
+        Jejak::catat('Investigasi ditutup', $investigasi->no_investigasi,
+            $investigasi->id, $investigasi->insiden_id);
+
+        return back()->with('ok', 'Investigasi '.$investigasi->no_investigasi.' ditutup.');
+    }
+
+    public function bukaLagi(Investigasi $investigasi)
+    {
+        abort_unless($investigasi->sudahDitutup(), 422, 'Investigasi ini belum ditutup.');
+
+        $investigasi->update(['status' => 'berjalan', 'ditutup_pada' => null]);
+        $investigasi->insiden?->update(['status' => 'diselidiki']);
+
+        Jejak::catat('Investigasi dibuka kembali', $investigasi->no_investigasi,
+            $investigasi->id, $investigasi->insiden_id);
+
+        return back()->with('ok', 'Investigasi dibuka kembali.');
+    }
+
+    public function pembelajaranTambah(Request $request, Investigasi $investigasi)
+    {
+        $data = $request->validate([
+            'judul'       => ['required', 'string', 'max:200'],
+            'ringkasan'   => ['required', 'string', 'max:3000'],
+            'pesan_kunci' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        /* Pembelajaran BOLEH diterbitkan pada berkas yang sudah ditutup,
+           dan hanya ini yang boleh. Yang dibaca site lain adalah
+           paragraf ini, dan menutup berkasnya lebih dahulu adalah urutan
+           yang wajar — memaksa pembelajaran terbit sebelum penutupan
+           berarti ia ditulis sebelum kesimpulannya matang. */
+        $investigasi->pembelajaran()->create($data + [
+            'diterbitkan_pada' => now()->toDateString(),
+            'diterbitkan_oleh' => auth()->id(),
+        ]);
+
+        Jejak::catat('Pembelajaran diterbitkan', $data['judul'],
+            $investigasi->id, $investigasi->insiden_id);
+
+        return back()->with('ok', 'Pembelajaran diterbitkan.');
     }
 
     /* ═══════════════════ bentuk baris ═══════════════════ */
