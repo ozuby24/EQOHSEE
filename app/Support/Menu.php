@@ -122,13 +122,6 @@ final class Menu
         'Pemantauan' => [
           ['Masa Berlaku Berkas', 'miners.kedaluwarsa', 'miners/kedaluwarsa'],
         ],
-        'Kehadiran' => [
-          ['Field Break',     'miners.fieldBreak.index', 'miners/field-break*'],
-          ['Cuti Tahunan',    'miners.cuti.index',       'miners/cuti*'],
-        ],
-        'Komunikasi' => [
-          ['Campaign',        'miners.campaign.index',   'miners/campaign*'],
-        ],
       ],
     ],
     /* Investigasi berdiri sendiri, BUKAN di bawah Miners maupun Hazard

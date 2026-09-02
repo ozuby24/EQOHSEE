@@ -238,38 +238,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('{pengajuan}/paraf',  [MinersController::class,'parafInduksi'])->name('paraf');
         });
 
-        /* Field break, cuti, dan campaign didaftarkan SEBELUM {paspor},
-           sebab semuanya cocok dengan pola `miners/{paspor}` juga —
-           yang terdaftar lebih dahulu yang menang. */
-        Route::prefix('field-break')->name('fieldBreak.')->group(function () {
-            Route::get('/',   [MinersController::class,'fieldBreak'])->name('index');
-            Route::post('/',  [MinersController::class,'fieldBreakStore'])->name('store');
-            Route::put('{fieldBreak}',    [MinersController::class,'fieldBreakUpdate'])->name('update');
-            Route::delete('{fieldBreak}', [MinersController::class,'fieldBreakDestroy'])->name('destroy');
-            Route::post('{fieldBreak}/kembali', [MinersController::class,'fieldBreakKembali'])->name('kembali');
-            Route::post('{fieldBreak}/ajukan',  [MinersController::class,'fieldBreakAjukan'])->name('ajukan');
-            Route::post('{fieldBreak}/tinjau',  [MinersController::class,'fieldBreakTinjau'])->name('tinjau');
-        });
-
-        Route::prefix('cuti')->name('cuti.')->group(function () {
-            Route::get('/',  [MinersController::class,'cuti'])->name('index');
-            Route::post('/', [MinersController::class,'cutiStore'])->name('store');
-            Route::post('jatah', [MinersController::class,'cutiJatah'])->name('jatah');
-            Route::delete('{cuti}',       [MinersController::class,'cutiDestroy'])->name('destroy');
-            Route::post('{cuti}/ajukan',  [MinersController::class,'cutiAjukan'])->name('ajukan');
-            Route::post('{cuti}/tinjau',  [MinersController::class,'cutiTinjau'])->name('tinjau');
-        });
-
-        Route::prefix('campaign')->name('campaign.')->group(function () {
-            Route::get('/',  [MinersController::class,'campaign'])->name('index');
-            Route::post('/', [MinersController::class,'campaignStore'])->name('store');
-            Route::put('{campaign}',    [MinersController::class,'campaignUpdate'])->name('update');
-            Route::delete('{campaign}', [MinersController::class,'campaignDestroy'])->name('destroy');
-            Route::post('{campaign}/jangkauan', [MinersController::class,'campaignJangkauan'])->name('jangkauan');
-            Route::post('{campaign}/ajukan',    [MinersController::class,'campaignAjukan'])->name('ajukan');
-            Route::post('{campaign}/tinjau',    [MinersController::class,'campaignTinjau'])->name('tinjau');
-        });
-
         /* Riwayat per tahap, urut mengikuti alurnya. Didaftarkan
            sebelum {paspor} — `miners/riwayat/...` cocok pula dengan
            pola itu.

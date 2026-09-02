@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Company, InduksiPengajuan, KoUnitMaster, KompetensiJenis, McuPengajuan, MinersCampaign, MinersCuti,
-    MinersCutiJatah, MinersFieldBreak, Paspor, PasporInduksi, PasporKartuUnit,
+use App\Models\{Company, InduksiPengajuan, KoUnitMaster, KompetensiJenis, McuPengajuan,
+    Paspor, PasporInduksi, PasporKartuUnit,
     PasporKartu, PasporMcu, PasporSertifikat};
 use App\Rules\DalamPerusahaan;
 use App\Models\ActivityLog as Jejak;
@@ -14,7 +14,6 @@ use App\Support\Berkas;
 use App\Support\MasaBerlakuTerbaca;
 use App\Support\PemantauanBerkas;
 use App\Support\RelPengajuan;
-use App\Support\JatahCuti;
 use App\Support\KopDokumen;
 use App\Support\LampiranMiners;
 use App\Support\Tahap;
@@ -252,7 +251,7 @@ class MinersController extends Controller
     {
         $u = $request->user();
 
-        $orang = Paspor::with(['sertifikat', 'mcu', 'kartu', 'induksi', 'fieldBreak', 'cuti'])->get();
+        $orang = Paspor::with(['sertifikat', 'mcu', 'kartu', 'induksi'])->get();
 
         $takLayak = $orang->filter(fn (Paspor $p) => !$p->kelayakan()['layak']);
 
@@ -264,21 +263,6 @@ class MinersController extends Controller
 
         $kartuMenunggu = PasporKartu::with('paspor')->menunggu()->get()
             ->filter(fn (PasporKartu $k) => $k->dapatDitinjauOleh($u));
-
-        $fbMenunggu = MinersFieldBreak::with('paspor')->menunggu()->get()
-            ->filter(fn (MinersFieldBreak $f) => $f->dapatDitinjauOleh($u));
-
-        $cutiMenunggu = MinersCuti::with('paspor')->menunggu()->get()
-            ->filter(fn (MinersCuti $c) => $c->dapatDitinjauOleh($u));
-
-        $campaignMenunggu = MinersCampaign::menunggu()->get()
-            ->filter(fn (MinersCampaign $c) => $c->dapatDitinjauOleh($u));
-
-        /* Siapa yang tidak ada di lokasi hari ini. Terpisah dari
-           kelayakan, dan disebut terpisah di layar: mereka bukan
-           masalah, hanya sedang tidak di sini. */
-        $pergi = $orang->map(fn (Paspor $p) => $p->kehadiran() + ['nama' => $p->nama, 'id' => $p->id])
-            ->filter(fn ($k) => $k['pergi'])->values();
 
         /* Rujukan medis yang tanggal tindak lanjutnya lewat. Tidak
            menahan orang di gerbang, tetapi menahan orang dari sembuh —
@@ -314,27 +298,6 @@ class MinersController extends Controller
                     'sebab'    => $k->sebab_terbit,
                     'tertinggal' => $k->parafTertinggal(),
                 ])->values(),
-
-                /* Ketiga jenis lain tanpa rantai paraf: field break,
-                   cuti, dan campaign langsung ke OHSE. Rantai tiga meja
-                   untuk permintaan pulang dua minggu adalah upacara,
-                   bukan pengendalian. */
-                'lain' => collect()
-                    ->merge($fbMenunggu->map(fn ($f) => [
-                        'jalur' => '/miners/field-break', 'apa' => 'Field break',
-                        'sebutan' => $f->paspor?->nama,
-                        'terang' => $f->mulai?->toDateString().' → '.$f->selesai?->toDateString(),
-                    ]))
-                    ->merge($cutiMenunggu->map(fn ($c) => [
-                        'jalur' => '/miners/cuti', 'apa' => 'Cuti '.$c->jenis,
-                        'sebutan' => $c->paspor?->nama,
-                        'terang' => $c->jumlah_hari.' hari · '.$c->mulai?->toDateString(),
-                    ]))
-                    ->merge($campaignMenunggu->map(fn ($c) => [
-                        'jalur' => '/miners/campaign', 'apa' => 'Campaign',
-                        'sebutan' => $c->judul, 'terang' => $c->jenis,
-                    ]))
-                    ->values(),
 
                 /* Disebut tegas bila memang nol dan orangnya bukan
                    penentu — supaya "kosong" tidak terbaca sebagai
@@ -386,15 +349,6 @@ class MinersController extends Controller
                     'jalur' => route('miners.mcu.index'), 'nada' => 'serius',
                 ],
                 [
-                    'label' => 'Tidak di lokasi hari ini', 'nilai' => $pergi->count(),
-                    'jalur' => route('miners.fieldBreak.index'), 'nada' => 'netral',
-                ],
-                [
-                    'label' => 'Campaign tayang',
-                    'nilai' => MinersCampaign::tayang()->count(),
-                    'jalur' => route('miners.campaign.index'), 'nada' => 'netral',
-                ],
-                [
                     'label' => 'Berkas segera habis',
                     'nilai' => $kritis($orang->flatMap(fn ($p) => $p->sertifikat->pluck('tgl_expired')))
                              + $kritis($orang->map(fn ($p) => $p->mcuTerakhir()?->tgl_expired))
@@ -414,8 +368,6 @@ class MinersController extends Controller
                 'jabatan' => $p->jabatan,
                 'sebab' => $p->kelayakan()['sebab'],
             ])->values(),
-
-            'pergi' => $pergi,
         ]);
     }
 
@@ -1507,412 +1459,6 @@ class MinersController extends Controller
             $pengajuan->nomor_register ?? '#'.$pengajuan->id);
     }
 
-    /* ═══════════ field break ═══════════ */
-
-    /**
-     * Siapa yang sedang pergi, dan siapa yang akan pergi.
-     *
-     * Pertanyaan yang dijawab halaman ini bukan "berapa banyak field
-     * break tahun ini" melainkan "berapa orang yang HARI INI tidak ada
-     * di lokasi" — angka yang dipakai membagi pekerjaan besok pagi.
-     */
-    public function fieldBreak(Request $request)
-    {
-        $baris = MinersFieldBreak::with(['paspor', 'pengganti', 'pengaju'])
-            ->when($request->get('status'), fn ($q, $s) => $q->where('status', $s))
-            ->orderByDesc('mulai')->get();
-
-        return Inertia::render('Miners/FieldBreak', [
-            'judul'    => 'Miners — Field Break',
-            'subjudul' => 'Giliran pulang pada pola kerja rotasi — bukan cuti, tidak memotong jatah',
-        ] + $this->bersama() + [
-            'saring'   => ['status' => $request->get('status')],
-
-            'baris' => $baris->map(fn (MinersFieldBreak $f) => [
-                'id'        => $f->id,
-                'pasporId'  => $f->paspor_id,
-                'nama'      => $f->paspor?->nama,
-                'jabatan'   => $f->paspor?->jabatan,
-                'pola'      => $f->pola,
-                'jenis'     => $f->jenis,
-                'mulai'     => $f->mulai?->toDateString(),
-                'selesai'   => $f->selesai?->toDateString(),
-                'kembali'   => $f->kembali_aktual?->toDateString(),
-                'hari'      => $f->jumlahHari(),
-                'telat'     => $f->telat(),
-                'lokasi'    => $f->lokasi_tujuan,
-                'pengganti' => $f->pengganti?->nama,
-                'catatan'   => $f->catatan,
-
-                'sedangPergi'   => $f->sedangPergi(),
-                'status'        => $f->status,
-                'statusLabel'   => Alur::LABEL[$f->status] ?? $f->status,
-                'dapatDiubah'   => $f->dapatDiubah(),
-                'dapatDitinjau' => $f->dapatDitinjauOleh($request->user()),
-                'alasanTolak'   => $f->alasan_tolak,
-            ])->values(),
-
-            'ringkas' => [
-                'sedangPergi' => $baris->filter(fn ($f) => $f->sedangPergi())->count(),
-                'menunggu'    => $baris->where('status', Alur::DIAJUKAN)->count(),
-                'telat'       => $baris->filter(fn ($f) => $f->telat() !== null)->count(),
-            ],
-        ]);
-    }
-
-    public function fieldBreakStore(Request $request)
-    {
-        $data = $this->aturanFieldBreak($request);
-
-        MinersFieldBreak::create($data);
-
-        Jejak::write('Buat field break', Paspor::find($data['paspor_id'])?->nama ?? '', 'miners');
-
-        return back()->with('ok', 'Field break dibuat sebagai draf.');
-    }
-
-    public function fieldBreakUpdate(Request $request, MinersFieldBreak $fieldBreak)
-    {
-        abort_unless($fieldBreak->dapatDiubah(), 422,
-            'Field break yang sudah diajukan tidak dapat diubah.');
-
-        $fieldBreak->update($this->aturanFieldBreak($request));
-
-        return back()->with('ok', 'Field break diperbarui.');
-    }
-
-    /**
-     * Mencatat kepulangan yang sebenarnya.
-     *
-     * Terpisah dari ubah biasa, dan boleh dilakukan SETELAH disetujui:
-     * ini kejadian yang terjadi sesudah persetujuan, bukan penyuntingan
-     * isi pengajuannya. Tanpa jalur tersendiri, kepulangan yang meleset
-     * dari rencana tidak dapat dicatat sama sekali — padahal selisih
-     * itulah yang ingin diketahui.
-     */
-    public function fieldBreakKembali(Request $request, MinersFieldBreak $fieldBreak)
-    {
-        $data = $request->validate([
-            'kembali_aktual' => ['required', 'date', 'after_or_equal:'.$fieldBreak->mulai->toDateString()],
-        ]);
-
-        $fieldBreak->update($data);
-
-        Jejak::write('Catat kembali dari field break', $fieldBreak->paspor?->nama ?? '', 'miners');
-
-        return back()->with('ok', 'Tanggal kembali tercatat.');
-    }
-
-    public function fieldBreakDestroy(MinersFieldBreak $fieldBreak)
-    {
-        abort_unless($fieldBreak->dapatDiubah(), 422,
-            'Field break yang sudah diajukan tidak dapat dihapus.');
-
-        $fieldBreak->delete();
-
-        return back()->with('ok', 'Field break dihapus.');
-    }
-
-    public function fieldBreakAjukan(MinersFieldBreak $fieldBreak)
-    {
-        $fieldBreak->ajukan();
-
-        return back()->with('ok', 'Field break dikirim untuk ditinjau.');
-    }
-
-    public function fieldBreakTinjau(Request $request, MinersFieldBreak $fieldBreak)
-    {
-        return $this->tinjau($request, $fieldBreak, 'field break',
-            $fieldBreak->paspor?->nama ?? '#'.$fieldBreak->id);
-    }
-
-    /** @return array<string,mixed> */
-    private function aturanFieldBreak(Request $request): array
-    {
-        return $request->validate([
-            'paspor_id'     => ['required', new DalamPerusahaan('paspor')],
-            'pola'          => ['nullable', 'string', 'max:20'],
-            'jenis'         => ['required', Rule::in(MinersFieldBreak::JENIS)],
-            'mulai'         => ['required', 'date'],
-            'selesai'       => ['required', 'date', 'after_or_equal:mulai'],
-            'lokasi_tujuan' => ['nullable', 'string', 'max:150'],
-            'pengganti_id'  => ['nullable', new DalamPerusahaan('paspor'), 'different:paspor_id'],
-            'catatan'       => ['nullable', 'string', 'max:1000'],
-        ]);
-    }
-
-    /* ═══════════ cuti tahunan ═══════════ */
-
-    public function cuti(Request $request)
-    {
-        $tahun = (int) ($request->get('tahun') ?: now()->year);
-
-        $baris = MinersCuti::with(['paspor', 'pengganti'])
-            ->where('tahun', $tahun)
-            ->when($request->get('status'), fn ($q, $s) => $q->where('status', $s))
-            ->orderByDesc('mulai')->get();
-
-        /* Saldo dihitung untuk SETIAP orang, bukan hanya yang sudah
-           pernah mengambil cuti. Orang yang jatahnya utuh justru yang
-           paling sering ditanyakan menjelang akhir tahun — dialah yang
-           jatahnya akan hangus. */
-        $orang = Paspor::orderBy('nama')->get();
-
-        return Inertia::render('Miners/Cuti', [
-            'judul'    => 'Miners — Cuti Tahunan',
-            'subjudul' => 'Jatah, pengajuan, dan sisa cuti per orang',
-        ] + $this->bersama() + [
-            'tahun'    => $tahun,
-            'saring'   => ['status' => $request->get('status')],
-
-            'baris' => $baris->map(fn (MinersCuti $c) => [
-                'id'       => $c->id,
-                'pasporId' => $c->paspor_id,
-                'nama'     => $c->paspor?->nama,
-                'jenis'    => $c->jenis,
-                'memotong' => $c->memotongJatah(),
-                'mulai'    => $c->mulai?->toDateString(),
-                'selesai'  => $c->selesai?->toDateString(),
-                'hari'     => $c->jumlah_hari,
-                'alamat'   => $c->alamat_cuti,
-                'kontak'   => $c->kontak,
-                'pengganti' => $c->pengganti?->nama,
-                'alasan'   => $c->alasan,
-
-                'sedangCuti'    => $c->sedangCuti(),
-                'status'        => $c->status,
-                'statusLabel'   => Alur::LABEL[$c->status] ?? $c->status,
-                'dapatDiubah'   => $c->dapatDiubah(),
-                'dapatDitinjau' => $c->dapatDitinjauOleh($request->user()),
-                'alasanTolak'   => $c->alasan_tolak,
-            ])->values(),
-
-            /* Saldo seluruh orang diambil sekaligus. Memanggil
-               JatahCuti::hitung() per orang berarti dua kueri per orang,
-               dan halaman ini memang menghitung untuk SETIAP orang. */
-            'saldo' => (function () use ($orang, $tahun) {
-                $saldo = JatahCuti::hitungBanyak($orang, $tahun);
-
-                return $orang->map(fn (Paspor $p) => [
-                    'id' => $p->id, 'nama' => $p->nama, 'jabatan' => $p->jabatan,
-                ] + $saldo[$p->getKey()])->values();
-            })(),
-
-            'ringkas' => [
-                'sedangCuti' => $baris->filter(fn ($c) => $c->sedangCuti())->count(),
-                'menunggu'   => $baris->where('status', Alur::DIAJUKAN)->count(),
-                'hariTerpakai' => (int) $baris->where('status', Alur::DISETUJUI)
-                    ->filter(fn ($c) => $c->memotongJatah())->sum('jumlah_hari'),
-            ],
-        ]);
-    }
-
-    public function cutiStore(Request $request)
-    {
-        $data = $request->validate([
-            'paspor_id'    => ['required', new DalamPerusahaan('paspor')],
-            'jenis'        => ['required', Rule::in(MinersCuti::JENIS)],
-            'mulai'        => ['required', 'date'],
-            'selesai'      => ['required', 'date', 'after_or_equal:mulai'],
-            'jumlah_hari'  => ['nullable', 'integer', 'min:1', 'max:365'],
-            'alamat_cuti'  => ['nullable', 'string', 'max:255'],
-            'kontak'       => ['nullable', 'string', 'max:60'],
-            'pengganti_id' => ['nullable', new DalamPerusahaan('paspor'), 'different:paspor_id'],
-            'alasan'       => ['nullable', 'string', 'max:1000'],
-        ]);
-
-        $p = Paspor::findOrFail($data['paspor_id']);
-
-        $data['tahun'] = (int) \Illuminate\Support\Carbon::parse($data['mulai'])->year;
-
-        /* Jumlah hari yang tidak diisi diusulkan dari selisih tanggal.
-           Diusulkan, bukan dipaksakan: pengaju yang tahu ada hari libur
-           di tengahnya tetap dapat menurunkannya. */
-        $data['jumlah_hari'] ??= MinersCuti::hariKalender($data['mulai'], $data['selesai']);
-
-        /* Jatah diperiksa DI SINI, saat draf dibuat — bukan saat
-           disetujui. Menolak di akhir berarti pengaju sudah menyusun
-           rencana, memberi tahu keluarganya, dan menunggu berhari-hari
-           sebelum diberi tahu bahwa jatahnya memang tidak pernah
-           cukup. */
-        if (in_array($data['jenis'], MinersCuti::MEMOTONG_JATAH, true)) {
-            $saldo = JatahCuti::hitung($p, $data['tahun']);
-
-            if ($data['jumlah_hari'] > $saldo['sisa']) {
-                return back()->withErrors(['jumlah_hari' =>
-                    'Sisa jatah '.$saldo['tahun'].' tinggal '.$saldo['sisa'].' hari'
-                    .($saldo['tertahan'] ? ' (termasuk '.$saldo['tertahan'].' hari yang masih menunggu tinjauan)' : '')
-                    .', tidak cukup untuk '.$data['jumlah_hari'].' hari.']);
-            }
-        }
-
-        MinersCuti::create($data);
-
-        Jejak::write('Ajukan cuti', $p->nama.' — '.$data['jumlah_hari'].' hari', 'miners');
-
-        return back()->with('ok', 'Pengajuan cuti dibuat sebagai draf.');
-    }
-
-    public function cutiDestroy(MinersCuti $cuti)
-    {
-        abort_unless($cuti->dapatDiubah(), 422,
-            'Cuti yang sudah diajukan tidak dapat dihapus.');
-
-        $cuti->delete();
-
-        return back()->with('ok', 'Pengajuan cuti dihapus.');
-    }
-
-    public function cutiAjukan(MinersCuti $cuti)
-    {
-        $cuti->ajukan();
-
-        return back()->with('ok', 'Pengajuan cuti dikirim untuk ditinjau.');
-    }
-
-    public function cutiTinjau(Request $request, MinersCuti $cuti)
-    {
-        return $this->tinjau($request, $cuti, 'cuti', $cuti->paspor?->nama ?? '#'.$cuti->id);
-    }
-
-    /** Menetapkan jatah cuti seseorang untuk satu tahun. */
-    public function cutiJatah(Request $request)
-    {
-        $data = $request->validate([
-            'paspor_id' => ['required', new DalamPerusahaan('paspor')],
-            'tahun'     => ['required', 'integer', 'min:2000', 'max:2100'],
-            'jatah'     => ['required', 'integer', 'min:0', 'max:365'],
-            'bawaan'    => ['nullable', 'integer', 'min:0', 'max:365'],
-            'catatan'   => ['nullable', 'string', 'max:500'],
-        ]);
-
-        MinersCutiJatah::updateOrCreate(
-            ['paspor_id' => $data['paspor_id'], 'tahun' => $data['tahun']],
-            $data,
-        );
-
-        Jejak::write('Atur jatah cuti',
-            Paspor::find($data['paspor_id'])?->nama.' — '.$data['tahun'], 'miners');
-
-        return back()->with('ok', 'Jatah cuti ditetapkan.');
-    }
-
-    /* ═══════════ campaign ═══════════ */
-
-    public function campaign(Request $request)
-    {
-        $baris = MinersCampaign::with(['pengaju', 'peninjau'])
-            ->when($request->get('jenis'), fn ($q, $j) => $q->where('jenis', $j))
-            ->orderByDesc('mulai')->get();
-
-        return Inertia::render('Miners/Campaign', [
-            'judul'    => 'Miners — Campaign Keselamatan',
-            'subjudul' => 'Poster, artikel, video, dan toolbox — beserta masa tayangnya',
-        ] + $this->bersama() + [
-            'saring'   => ['jenis' => $request->get('jenis')],
-
-            'baris' => $baris->map(fn (MinersCampaign $c) => [
-                'id'        => $c->id,
-                'judul'     => $c->judul,
-                'jenis'     => $c->jenis,
-                'tema'      => $c->tema,
-                'mulai'     => $c->mulai?->toDateString(),
-                'selesai'   => $c->selesai?->toDateString(),
-                'sasaran'   => $c->sasaran,
-                'ringkasan' => $c->ringkasan,
-                'jangkauan' => $c->jangkauan,
-
-                'tayang'        => $c->sedangTayang(),
-                'status'        => $c->status,
-                'statusLabel'   => Alur::LABEL[$c->status] ?? $c->status,
-                'dapatDiubah'   => $c->dapatDiubah(),
-                'dapatDitinjau' => $c->dapatDitinjauOleh($request->user()),
-                'alasanTolak'   => $c->alasan_tolak,
-            ])->values(),
-
-            'ringkas' => [
-                'tayang'   => $baris->filter(fn ($c) => $c->sedangTayang())->count(),
-                'menunggu' => $baris->where('status', Alur::DIAJUKAN)->count(),
-
-                /* Jangkauan hanya dijumlah dari yang MENGISINYA. Kosong
-                   diperlakukan sebagai "belum diketahui", bukan nol —
-                   menjumlahkannya sebagai nol membuat total jangkauan
-                   terlihat rendah dan tak seorang pun tahu apakah
-                   sebabnya campaign yang lemah atau pencatatan yang
-                   belum lengkap. */
-                'jangkauan' => (int) $baris->whereNotNull('jangkauan')->sum('jangkauan'),
-                'tanpaJangkauan' => $baris->whereNull('jangkauan')
-                    ->filter(fn ($c) => $c->sudahDisetujui())->count(),
-            ],
-        ]);
-    }
-
-    public function campaignStore(Request $request)
-    {
-        $c = MinersCampaign::create($this->pemilik($this->aturanCampaign($request)));
-
-        Jejak::write('Buat campaign', $c->judul, 'miners');
-
-        return back()->with('ok', 'Campaign dibuat sebagai draf.');
-    }
-
-    public function campaignUpdate(Request $request, MinersCampaign $campaign)
-    {
-        abort_unless($campaign->dapatDiubah(), 422,
-            'Campaign yang sudah diajukan tidak dapat diubah.');
-
-        $campaign->update($this->aturanCampaign($request));
-
-        return back()->with('ok', 'Campaign diperbarui.');
-    }
-
-    /** Mencatat jangkauan — boleh setelah disetujui, sebab baru diketahui sesudah tayang. */
-    public function campaignJangkauan(Request $request, MinersCampaign $campaign)
-    {
-        $campaign->update($request->validate([
-            'jangkauan' => ['required', 'integer', 'min:0', 'max:1000000'],
-        ]));
-
-        return back()->with('ok', 'Jangkauan tercatat.');
-    }
-
-    public function campaignDestroy(MinersCampaign $campaign)
-    {
-        abort_unless($campaign->dapatDiubah(), 422,
-            'Campaign yang sudah diajukan tidak dapat dihapus.');
-
-        $campaign->delete();
-
-        return back()->with('ok', 'Campaign dihapus.');
-    }
-
-    public function campaignAjukan(MinersCampaign $campaign)
-    {
-        $campaign->ajukan();
-
-        return back()->with('ok', 'Campaign dikirim untuk ditinjau.');
-    }
-
-    public function campaignTinjau(Request $request, MinersCampaign $campaign)
-    {
-        return $this->tinjau($request, $campaign, 'campaign', $campaign->judul);
-    }
-
-    /** @return array<string,mixed> */
-    private function aturanCampaign(Request $request): array
-    {
-        return $request->validate([
-            'judul'     => ['required', 'string', 'max:200'],
-            'jenis'     => ['required', Rule::in(MinersCampaign::JENIS)],
-            'tema'      => ['nullable', 'string', 'max:120'],
-            'mulai'     => ['required', 'date'],
-            'selesai'   => ['nullable', 'date', 'after_or_equal:mulai'],
-            'sasaran'   => ['nullable', 'string', 'max:150'],
-            'ringkasan' => ['nullable', 'string', 'max:1000'],
-            'isi'       => ['nullable', 'string', 'max:20000'],
-        ]);
-    }
-
     /* ═══════════ riwayat per tahap ═══════════ */
 
     /**
@@ -2495,9 +2041,6 @@ class MinersController extends Controller
                 'statusAlur'   => Alur::LABEL,
                 'tahap'        => Tahap::RANTAI,
                 'sayaPenentu'  => Tahap::penentu(auth()->user()),
-                'jenisFieldBreak' => MinersFieldBreak::JENIS,
-                'jenisCuti'       => MinersCuti::JENIS,
-                'jenisCampaign'   => MinersCampaign::JENIS,
                 'kompetensi'   => KompetensiJenis::aktif()->orderBy('urutan')
                     ->get(['id', 'nama', 'lembaga']),
 

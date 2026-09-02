@@ -159,17 +159,6 @@ const menunggu = () =>
         <p v-else class="text-[12px] py-4 text-center" :style="{ color: KEADAAN.baik }">
           Seluruh pekerja memenuhi syarat masuk hari ini.
         </p>
-
-        <!-- Yang sedang pergi disebut TERPISAH dari yang tidak layak,
-             dan kalimatnya menegaskan bedanya. Menggabungkan keduanya
-             membuat orang yang cutinya sah terbaca sebagai temuan. -->
-        <div v-if="props.pergi?.length" class="mt-3 pt-3 border-t border-stone-100">
-          <p class="text-[11px] text-stone-500">
-            {{ props.pergi.length }} orang sedang tidak di lokasi (field break atau cuti) —
-            mereka tetap memenuhi syarat, hanya sedang tidak di sini:
-            <span class="text-stone-600">{{ props.pergi.map((x: any) => x.nama).join(', ') }}</span>
-          </p>
-        </div>
       </section>
     </div>
 
