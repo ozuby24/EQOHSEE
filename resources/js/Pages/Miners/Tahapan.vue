@@ -41,7 +41,7 @@ const KATA: Record<string, string> = {
   <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
     <h3 class="text-[14px] font-bold text-cam-ink">Tahapan kelayakan</h3>
     <p class="text-[11.5px] text-stone-500 mt-0.5 mb-4">
-      MCU → induksi → Mine Permit, dan Mine License bagi yang mengemudi.
+      MCU → induksi → Mine Permit, dan SIMPER bagi yang mengemudi.
       Urutannya tidak dapat didahului: tiap tahap menuntut yang sebelumnya selesai.
     </p>
 

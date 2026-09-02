@@ -33,7 +33,7 @@ const props = defineProps<{
   kembali?: string;
 }>();
 
-const simper = computed(() => props.kartuCetak?.jenis === 'Mine License');
+const simper = computed(() => props.kartuCetak?.jenis === 'SIMPER');
 
 const judul = computed(() => simper.value ? 'MINE LICENSE' : 'MINE PERMIT');
 

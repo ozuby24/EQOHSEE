@@ -473,7 +473,7 @@ class LampiranSimperAuthorityTest extends TestCase
     }
 
     /**
-     * Hanya Mine License yang menyebut unit.
+     * Hanya SIMPER yang menyebut unit.
      *
      * Kartu masuk area tidak menyebut unit sama sekali; menggambarkan
      * tabel kosong di sana membuat pembacanya mengira ada yang belum
@@ -495,7 +495,7 @@ class LampiranSimperAuthorityTest extends TestCase
         $this->assertFalse($baris[$tamu->id]['punyaUnit']);
     }
 
-    /** Syarat lain Mine License, supaya yang diuji hanya berkas ujinya. */
+    /** Syarat lain SIMPER, supaya yang diuji hanya berkas ujinya. */
     private function siapkanSyaratLicense(): void
     {
         $this->p->mcu()->create([

@@ -740,7 +740,7 @@ class MinersTest extends TestCase
         $this->assertSame(AlurMiner::SELESAI, $tahap[AlurMiner::INDUKSI]['keadaan']);
         $this->assertSame(AlurMiner::SELESAI, $tahap[AlurMiner::PERMIT]['keadaan']);
 
-        /* Mine License terbuka, tetapi opsional — dan orang ini tidak
+        /* SIMPER terbuka, tetapi opsional — dan orang ini tidak
            terhitung tertahan karena belum punya. */
         $this->assertSame(AlurMiner::SIAP, $tahap[AlurMiner::LICENSE]['keadaan']);
         $this->assertNull(AlurMiner::tahapSekarang($p));
@@ -956,7 +956,7 @@ class MinersTest extends TestCase
     /**
      * Keempat halaman riwayat terbuka, dan urutannya utuh.
      *
-     * Urutan bilah sampingnya — MCU, induksi, Mine Permit, Mine License,
+     * Urutan bilah sampingnya — MCU, induksi, Mine Permit, SIMPER,
      * Authority — adalah tempat orang belajar urutan prosesnya tanpa
      * membaca petunjuk. Satu halaman yang hilang memutus pelajaran itu.
      */

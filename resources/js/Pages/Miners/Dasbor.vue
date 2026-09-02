@@ -72,7 +72,7 @@ const menunggu = () =>
         Belum ada pengguna bertanda OHSE
       </h3>
       <p class="text-[12px] text-stone-600 mt-1">
-        Keputusan MCU, Mine Permit, dan Mine License dipegang tim OHSE. Selama belum ada
+        Keputusan MCU, Mine Permit, dan SIMPER dipegang tim OHSE. Selama belum ada
         satu pun pengguna yang ditandai, seluruh pengajuan akan menumpuk pada
         "menunggu tinjauan" dan tombol setujuinya tidak muncul bagi siapa pun.
         Tandai lewat <b>Admin → Pengguna → Peran OHSE</b>.

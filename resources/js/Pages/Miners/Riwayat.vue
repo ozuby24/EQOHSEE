@@ -2,7 +2,7 @@
 /**
  * Riwayat satu tahap, menyilang seluruh pekerja.
  *
- * Sebelumnya induksi, Mine Permit, Mine License, dan kompetensi hanya
+ * Sebelumnya induksi, Mine Permit, SIMPER, dan kompetensi hanya
  * dapat dilihat dengan membuka orangnya satu per satu — sehingga
  * pertanyaan yang paling sering diajukan tidak terjawab sama sekali:
  * "mana saja yang menunggu keputusan saya", "berapa yang jatuh tempo
@@ -50,7 +50,7 @@ const URUT = [
   ['MCU',          '/miners/riwayat/mcu'],
   ['Induksi',      '/miners/riwayat/induksi'],
   ['Mine Permit',  '/miners/riwayat/mine-permit'],
-  ['Mine License', '/miners/riwayat/mine-license'],
+  ['SIMPER', '/miners/riwayat/mine-license'],
   ['Authority',    '/miners/riwayat/authority'],
 ];
 
@@ -73,7 +73,7 @@ const kini = computed(() => {
   const t = String(props.tahap ?? '');
 
   return { mcu: 'MCU', induksi: 'Induksi', 'mine-permit': 'Mine Permit',
-           'mine-license': 'Mine License', authority: 'Authority' }[t] ?? '';
+           'mine-license': 'SIMPER', authority: 'Authority' }[t] ?? '';
 });
 </script>
 

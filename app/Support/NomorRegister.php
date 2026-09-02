@@ -8,7 +8,7 @@ namespace App\Support;
  * D'Best menerbitkannya otomatis dan bentuknya berbeda per jenis:
  *
  *   Mine Permit   MKI.20260427002755   kode perusahaan · tanggal · id
- *   Mine License  PST.20260316002509   (bentuk sama dengan permit)
+ *   SIMPER  PST.20260316002509   (bentuk sama dengan permit)
  *   Induksi       IND000996            awalan · id
  *   Simper        SIMPER-002039        awalan · id
  *   Authority     AUTHORITY-00175      awalan · id

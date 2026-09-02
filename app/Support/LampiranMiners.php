@@ -77,7 +77,7 @@ final class LampiranMiners
             'jenis' => [AlurMiner::KARTU_PERMIT, AlurMiner::KARTU_LICENSE],
         ],
 
-        /* Khusus Mine License — dasar mengemudi. */
+        /* Khusus SIMPER — dasar mengemudi. */
         'berkas_sim' => [
             'label' => 'Berkas SIM kepolisian',
             'wajib' => true,

@@ -692,10 +692,10 @@ final class DataContoh
            tidak pernah menahan apa pun. */
         $kartu = [
             0 => [['Mine Permit', 400, null, Alur::DISETUJUI],
-                  ['Mine License', 180, 'LV', Alur::DISETUJUI]],
+                  ['SIMPER', 180, 'LV', Alur::DISETUJUI]],
             1 => [['Mine Permit', 250, null, Alur::DISETUJUI]],
             2 => [['Mine Permit', 60, null, Alur::DISETUJUI],
-                  ['Mine License', 20, 'Alat Berat', Alur::DIAJUKAN]],
+                  ['SIMPER', 20, 'Alat Berat', Alur::DIAJUKAN]],
             3 => [['Mine Permit', 310, null, Alur::DISETUJUI]],
             4 => [['Mine Permit', -5, null, Alur::DISETUJUI]],         // kartu habis
         ];
@@ -800,7 +800,7 @@ final class DataContoh
                     'paspor_id'   => $p->id,
                     'jenis'       => $jenisKartu,
                     'sebab_terbit' => 'Terbit',
-                    'nomor'       => ($jenisKartu === 'Mine License' ? 'ML/' : 'MP/')
+                    'nomor'       => ($jenisKartu === 'SIMPER' ? 'ML/' : 'MP/')
                         .str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
                     'tgl_terbit'  => $this->kini->copy()->addDays($hariKartu)->subYear()->toDateString(),
                     'tgl_expired' => $this->kini->copy()->addDays($hariKartu)->toDateString(),
@@ -844,11 +844,11 @@ final class DataContoh
                 ]);
                 $n++;
 
-                /* Unit SIMPER — hanya pada Mine License, dan sengaja dua
+                /* Unit SIMPER — hanya pada SIMPER, dan sengaja dua
                    baris dengan hasil berbeda: satu lulus, satu belum.
                    Seluruhnya lulus tidak pernah memperlihatkan seperti apa
                    unit yang tertahan itu tampak di layar. */
-                if ($jenisKartu === 'Mine License') {
+                if ($jenisKartu === 'SIMPER') {
                     foreach ([
                         ['F', 'EXCAVATOR', 'Komatsu PC 200', 82, 82],
                         ['T', 'EXCAVATOR', 'Komatsu PC 500', 64, 58],

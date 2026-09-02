@@ -96,31 +96,68 @@ final class Menu
          tertinggal pada halaman yang ditambahkan berikutnya. */
       'tema'  => 'safetrack',
       'icon'  => 'M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 14l2 2 4-4',
+      /* SUSUNANNYA MENGIKUTI PROJECT1, bukan urutan pembuatannya di sini.
+         Di sana bilah sampingnya terbagi menurut PERTANYAAN yang dijawab
+         tiap kelompok, bukan menurut jenis dokumennya:
+
+           Pendaftaran  apa yang saya ajukan hari ini
+           Riwayat      apa yang pernah terjadi pada dokumen ini
+           Data         siapa orangnya dan apa hasilnya
+           Pemantauan   apa yang harus dikerjakan sebelum kedaluwarsa
+
+         Bedanya terasa pada MCU, yang muncul di tiga kelompok sekaligus
+         dengan arti berbeda: mengajukan surat ke klinik, menelusuri
+         hasil yang pernah keluar, dan menagih rujukan yang belum
+         ditindaklanjuti. Digabung menjadi satu entri "MCU", ketiganya
+         menjadi satu halaman yang tidak menjawab satu pun di antaranya
+         dengan baik.
+
+         Kelompok Project1 yang belum punya layarnya — Outstanding,
+         SIMPER Lanjutan, Master Data, Cetak Kartu — sengaja BELUM
+         didaftarkan di sini. Entri menu yang menunjuk rute yang belum
+         ada memulangkan galat saat ditekan, dan menu yang salah satu
+         entrinya galat membuat seluruh menunya berhenti dipercaya. */
       'groups' => [
         '' => [
           ['Ringkasan',       'miners.dasbor',    'miners/dasbor*'],
-          ['Pekerja',         'miners.index',     'miners'],
+        ],
+
+        'Pendaftaran' => [
+          ['MCU',       'miners.mcu.index',     'miners/mcu*'],
+          ['Induksi',   'miners.induksi.index', 'miners/induksi*'],
         ],
 
         /* Urutannya MENGIKUTI ALURNYA, bukan abjad dan bukan urutan
            pembuatannya. Bilah samping adalah tempat orang belajar
            urutan sebuah proses tanpa membaca petunjuk; menyusunnya
            menurut abjad membuang pelajaran itu, dan yang menggantikannya
-           adalah tebakan. */
+           adalah tebakan.
+
+           Alurnya: MCU menentukan Mine Permit, Mine Permit menentukan
+           SIMPER. Kompetensi berdiri di sampingnya, bukan di dalamnya. */
         'Riwayat' => [
           ['MCU',           'miners.riwayat.mcu',          'miners/riwayat/mcu'],
-          ['Pengajuan MCU',  'miners.mcu.index',           'miners/mcu*'],
           ['Induksi',       'miners.riwayat.induksi',      'miners/riwayat/induksi'],
-          ['Pengajuan Induksi', 'miners.induksi.index',    'miners/induksi*'],
           ['Mine Permit',   'miners.riwayat.mine-permit',  'miners/riwayat/mine-permit'],
-          ['Mine License',  'miners.riwayat.mine-license', 'miners/riwayat/mine-license'],
-          ['Authority',     'miners.riwayat.authority',    'miners/riwayat/authority'],
+          ['SIMPER',        'miners.riwayat.mine-license', 'miners/riwayat/mine-license'],
+
+          /* Dulu bernama "Authority", dan itu keliru sejak awal:
+             rutenya memanggil riwayatKompetensi() dan yang ditampilkan
+             daftar sertifikat kompetensi. Nama lamanya berasal dari
+             Authority Passport milik DBEST — dokumen yang berbeda, dan
+             yang justru tidak dibawa Project1. */
+          ['Kompetensi',    'miners.riwayat.authority',    'miners/riwayat/authority'],
         ],
+
+        'Data' => [
+          ['Manpower', 'miners.index', 'miners'],
+        ],
+
         /* Pemantauan berdiri sendiri, bukan di bawah Riwayat: riwayat
            menjawab "apa yang pernah terjadi", yang ini menjawab "apa
            yang harus dikerjakan hari ini". */
         'Pemantauan' => [
-          ['Masa Berlaku Berkas', 'miners.kedaluwarsa', 'miners/kedaluwarsa'],
+          ['Masa Berlaku', 'miners.kedaluwarsa', 'miners/kedaluwarsa'],
         ],
       ],
     ],

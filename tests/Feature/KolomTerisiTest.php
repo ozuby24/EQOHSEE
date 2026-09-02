@@ -92,7 +92,7 @@ class KolomTerisiTest extends TestCase
         \App\Support\DataContoh::muat($c);
 
         $kartu = PasporKartu::withoutGlobalScopes()
-            ->whereIn('jenis', ['Mine Permit', 'Mine License'])->get();
+            ->whereIn('jenis', ['Mine Permit', 'SIMPER'])->get();
 
         $this->assertNotEmpty($kartu, 'Data contoh tidak membuat satu pun kartu.');
 

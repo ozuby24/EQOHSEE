@@ -96,7 +96,7 @@ class PasporKartu extends Model
     /**
      * Unit yang boleh dikemudikan, beserta penilaiannya masing-masing.
      *
-     * Hanya bermakna bagi kartu SIMPER (Mine License). Kartu masuk area
+     * Hanya bermakna bagi kartu SIMPER (SIMPER). Kartu masuk area
      * tidak menyebut unit, dan relasi ini akan kosong di sana — kosong
      * yang benar, bukan yang terlupa.
      */

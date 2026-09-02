@@ -1414,7 +1414,7 @@ class MinersController extends Controller
            kartu lain milik orang yang sama. Tanpa ini tiap pemeriksaan
            menembak kueri sendiri-sendiri — dan yang lebih penting,
            kartu() yang belum dimuat memulangkan koleksi kosong pada
-           beberapa jalur, sehingga Mine License lolos karena Mine
+           beberapa jalur, sehingga SIMPER lolos karena Mine
            Permit-nya "tidak ada". */
         $kartu->setRelation('paspor', $paspor->load(['mcu', 'induksi', 'kartu']));
 
@@ -1464,7 +1464,7 @@ class MinersController extends Controller
     /**
      * Satu halaman per tahap, menyilang seluruh pekerja.
      *
-     * Sebelumnya induksi, Mine Permit, Mine License, dan kompetensi
+     * Sebelumnya induksi, Mine Permit, SIMPER, dan kompetensi
      * hanya dapat dilihat dengan membuka orangnya satu per satu. Itu
      * membuat pertanyaan yang paling sering diajukan tidak terjawab
      * sama sekali: "mana saja Mine Permit yang menunggu keputusan saya",
@@ -1472,7 +1472,7 @@ class MinersController extends Controller
      * itu menyilang orang, bukan menyusuri satu orang.
      *
      * Urutan menunya mengikuti urutan alurnya — MCU, induksi, Mine
-     * Permit, Mine License, Authority — supaya bilah samping itu
+     * Permit, SIMPER, Authority — supaya bilah samping itu
      * sendiri yang mengajarkan urutannya, tanpa seorang pun perlu
      * membaca petunjuk.
      */
@@ -1672,7 +1672,7 @@ class MinersController extends Controller
         }
 
         return [
-            'judul'    => $permit ? 'Riwayat Mine Permit' : 'Riwayat Mine License',
+            'judul'    => $permit ? 'Riwayat Mine Permit' : 'Riwayat SIMPER',
             'subjudul' => $permit
                 ? 'Izin masuk area tambang — terbit sesudah MCU dan induksi, diverifikasi OHSE'
                 : 'Izin mengemudi di area tambang (A2B) — tambahan di atas Mine Permit',
@@ -1829,7 +1829,7 @@ class MinersController extends Controller
      * lain seseorang dapat ditahan.
      */
     /**
-     * Kartu tambang siap cetak — Mine Permit maupun Mine License.
+     * Kartu tambang siap cetak — Mine Permit maupun SIMPER.
      *
      * BERBENTUK KARTU, bukan lembar A4. Yang dibawa orangnya ke gerbang
      * adalah benda yang muat di saku dan dapat ditunjukkan sambil

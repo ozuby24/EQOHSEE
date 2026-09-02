@@ -902,7 +902,7 @@ async function hapus(jalur: string, apa: string) {
         <h3 class="text-[14px] font-bold text-cam-ink mb-1">Kartu masuk tambang</h3>
         <p class="text-[11.5px] text-stone-500 mb-4">
           <b>Mine Permit</b> adalah izin masuk area — terbit sesudah MCU dan induksi.
-          <b>Mine License</b> izin mengemudi di atasnya, hanya bagi yang membawa unit.
+          <b>SIMPER</b> izin mengemudi di atasnya, hanya bagi yang membawa unit.
           <b>Visitor</b> untuk tamu, tidak menuntut MCU.
         </p>
 
@@ -998,7 +998,7 @@ async function hapus(jalur: string, apa: string) {
               dengan nilai dan keempat berkas ujinya masing-masing.
               Susunan kolomnya mengikuti D'Best persis, sampai urutannya.
 
-              Hanya pada Mine License. Kartu masuk area tidak menyebut
+              Hanya pada SIMPER. Kartu masuk area tidak menyebut
               unit sama sekali, dan menggambarkan tabel kosong di sana
               membuat pembacanya mengira ada yang belum diisi.
 
@@ -1134,7 +1134,7 @@ async function hapus(jalur: string, apa: string) {
              yang membuat sepuluh kotak kosong berjajar tidak dapat
              dibedakan satu sama lain.
 
-             Medan syarat pengemudi hanya muncul untuk Mine License.
+             Medan syarat pengemudi hanya muncul untuk SIMPER.
              Medan yang selalu tampil tetapi jarang berlaku dilewati
              mata; yang muncul justru saat dibutuhkan tidak. -->
         <form class="pt-4 border-t border-stone-100" @submit.prevent="simpanKartu">
@@ -1187,11 +1187,11 @@ async function hapus(jalur: string, apa: string) {
           </div>
 
           <!-- syarat khusus pengemudi -->
-          <div v-if="fKartu.jenis === 'Mine License'"
+          <div v-if="fKartu.jenis === 'SIMPER'"
                class="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-4">
             <p class="text-[11.5px] font-bold text-cam-ink mb-1">Syarat pengemudi</p>
             <p class="text-[11px] text-stone-500 mb-3">
-              Wajib untuk Mine License. Mine Permit yang masih berlaku juga harus sudah terbit.
+              Wajib untuk SIMPER. Mine Permit yang masih berlaku juga harus sudah terbit.
             </p>
 
             <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

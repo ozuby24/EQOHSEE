@@ -59,9 +59,9 @@ final class AlurMiner
     public const SIAP     = 'siap';       // syaratnya terpenuhi, belum dimulai
     public const TERKUNCI = 'terkunci';   // syarat sebelumnya belum lengkap
 
-    /** Jenis kartu. Mine Permit dulu, Mine License menyusul. */
+    /** Jenis kartu. Mine Permit dulu, SIMPER menyusul. */
     public const KARTU_PERMIT  = 'Mine Permit';
-    public const KARTU_LICENSE = 'Mine License';
+    public const KARTU_LICENSE = 'SIMPER';
     public const KARTU_VISITOR = 'Visitor';
 
     public const JENIS_KARTU = [self::KARTU_PERMIT, self::KARTU_LICENSE, self::KARTU_VISITOR];
@@ -141,7 +141,7 @@ final class AlurMiner
     }
 
     /**
-     * Mine License menuntut Mine Permit yang SUDAH TERBIT, bukan sekadar
+     * SIMPER menuntut Mine Permit yang SUDAH TERBIT, bukan sekadar
      * MCU dan induksi.
      *
      * Bedanya penting: seseorang dapat memenuhi MCU dan induksi tetapi
@@ -163,7 +163,7 @@ final class AlurMiner
 
         if (!$permit) {
             $kurang[] = 'Mine Permit belum terbit atau sudah kadaluarsa. '
-                      .'Mine License adalah izin tambahan di atasnya.';
+                      .'SIMPER adalah izin tambahan di atasnya.';
         }
 
         /* Dokumen tambahan khas pengemudi. Diperiksa dari medan
@@ -292,11 +292,11 @@ final class AlurMiner
             'cetak' => $permit ? route('miners.permit.cetak', [$p, $permit]) : null,
         ];
 
-        /* Mine License — opsional */
+        /* SIMPER — opsional */
         $tahap[] = [
             'kode'  => self::LICENSE,
             'urut'  => 4,
-            'label' => 'Mine License',
+            'label' => 'SIMPER',
             'terang' => 'Izin mengemudi di area tambang — hanya bagi yang mengemudi, dan hanya di atas Mine Permit',
             'opsional' => true,
             'keadaan' => $license
