@@ -149,15 +149,38 @@ final class Menu
           ['Kompetensi',    'miners.riwayat.authority',    'miners/riwayat/authority'],
         ],
 
+        /* Antrean di meja SAYA. Berdiri sendiri, bukan di bawah
+           Riwayat: riwayat menjawab "apa yang pernah terjadi", yang ini
+           menjawab "apa yang menunggu keputusan saya pagi ini". Bagi
+           yang bukan peninjau, ketiganya kosong — dan itu jawaban yang
+           benar, bukan kerusakan. */
+        'Outstanding' => [
+          ['MCU',         'miners.daftar.outstanding-mcu',     'miners/daftar/outstanding-mcu'],
+          ['Mine Permit', 'miners.daftar.outstanding-permit',  'miners/daftar/outstanding-permit'],
+          ['SIMPER',      'miners.daftar.outstanding-simper',  'miners/daftar/outstanding-simper'],
+          ['Induksi',     'miners.daftar.outstanding-induksi', 'miners/daftar/outstanding-induksi'],
+        ],
+
+        /* Ketiganya sudah termodelkan sejak dulu — dua sebagai sebab
+           terbit kartu, satu sebagai baris unit — dan hanya belum punya
+           layarnya. */
+        'SIMPER Lanjutan' => [
+          ['Penambahan Unit', 'miners.daftar.penambahan-unit', 'miners/daftar/penambahan-unit'],
+          ['Upgrade SIMPER',  'miners.daftar.upgrade-simper',  'miners/daftar/upgrade-simper'],
+          ['Perpanjangan',    'miners.daftar.perpanjangan',    'miners/daftar/perpanjangan'],
+        ],
+
         'Data' => [
-          ['Manpower', 'miners.index', 'miners'],
+          ['Manpower', 'miners.index',           'miners'],
+          ['Rujukan',  'miners.daftar.rujukan',  'miners/daftar/rujukan'],
         ],
 
         /* Pemantauan berdiri sendiri, bukan di bawah Riwayat: riwayat
            menjawab "apa yang pernah terjadi", yang ini menjawab "apa
            yang harus dikerjakan hari ini". */
         'Pemantauan' => [
-          ['Masa Berlaku', 'miners.kedaluwarsa', 'miners/kedaluwarsa'],
+          ['Masa Berlaku', 'miners.kedaluwarsa',        'miners/kedaluwarsa'],
+          ['Cetak Kartu',  'miners.daftar.cetak-kartu', 'miners/daftar/cetak-kartu'],
         ],
       ],
     ],

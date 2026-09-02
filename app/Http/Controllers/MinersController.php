@@ -1844,7 +1844,7 @@ class MinersController extends Controller
             ->orderByDesc('tgl_terbit')->orderByDesc('id')->get();
 
         return [
-            'judul'    => 'Riwayat Authority',
+            'judul'    => 'Riwayat Kompetensi',
             'subjudul' => 'Sertifikat kompetensi dan kewenangan — POP, POM, POU, dan kewenangan teknis lainnya',
             'kolom'    => ['Nama', 'Kompetensi', 'Lembaga', 'Nomor', 'Terbit', 'Berlaku sampai'],
             'baris'    => $baris->map(fn (PasporSertifikat $s) => [
@@ -1869,6 +1869,341 @@ class MinersController extends Controller
                 ['Segera habis', $baris->filter(fn ($s) => in_array($s->keadaan(),
                     [Authority::KRITIS, Authority::SEGERA], true))->count(), 'ingat'],
                 ['Tanpa tanggal', $baris->whereNull('tgl_expired')->count(), 'netral'],
+            ],
+        ];
+    }
+
+
+    /* ═══════════ daftar menyilang orang ═══════════ */
+
+    /**
+     * Delapan daftar yang menjawab pertanyaan menyilang orang.
+     *
+     * ── MENGAPA SATU AKSI, BUKAN DELAPAN ──
+     *
+     * Kedelapannya menggambar layar yang sama persis: kepala, kartu
+     * ringkas, tabel berkolom. Yang berbeda hanya kueri dan judulnya.
+     * Ditulis sebagai delapan aksi bersama delapan berkas Vue, tiap
+     * perbaikan tata letak harus diulang delapan kali — dan yang
+     * terlewat tidak menimbulkan galat, hanya satu halaman yang
+     * lama-lama terlihat berbeda dari tujuh saudaranya.
+     *
+     * Komponennya pun bukan komponen baru: Miners/Riwayat sudah
+     * menerima kolom, baris, dan ringkasan dari server sejak awal.
+     *
+     * ── MENGAPA TIDAK ADA YANG BENAR-BENAR BARU DI BASIS DATA ──
+     *
+     * Ketiga "SIMPER Lanjutan" milik Project1 sudah termodelkan di
+     * sini sejak dulu, hanya belum punya layarnya:
+     *
+     *   Perpanjangan     kartu bersebab_terbit 'Perpanjangan'
+     *   Upgrade SIMPER   kartu bersebab_terbit 'Peningkatan golongan'
+     *   Penambahan Unit  baris pada paspor_kartu_unit
+     *
+     * Membuat tabel baru untuk ketiganya akan melahirkan dua tempat
+     * yang menyimpan hal yang sama, dan dua tempat semacam itu selalu
+     * berbeda isinya cepat atau lambat.
+     */
+    public function daftar(Request $request)
+    {
+        $jenis = (string) $request->route()->defaults['jenis'];
+
+        $isi = match ($jenis) {
+            'outstanding-mcu'     => $this->outstandingMcu($request->user()),
+            'outstanding-simper'  => $this->outstandingKartu($request->user(), AlurMiner::KARTU_LICENSE),
+            'outstanding-permit'  => $this->outstandingKartu($request->user(), AlurMiner::KARTU_PERMIT),
+            'outstanding-induksi' => $this->outstandingInduksi($request->user()),
+            'penambahan-unit'     => $this->daftarPenambahanUnit(),
+            'upgrade-simper'      => $this->daftarSebab('Peningkatan golongan'),
+            'perpanjangan'        => $this->daftarSebab('Perpanjangan'),
+            'rujukan'             => $this->daftarRujukan(),
+            'cetak-kartu'         => $this->daftarCetak(),
+            default               => abort(404),
+        };
+
+        return Inertia::render('Miners/Riwayat', [
+            'judul'    => 'Miners — '.$isi['judul'],
+            'subjudul' => $isi['subjudul'],
+        ] + $this->bersama() + [
+            'tahap'   => $jenis,
+            'kolom'   => $isi['kolom'],
+            'baris'   => $isi['baris'],
+            'ringkas' => $isi['ringkas'],
+            'rute'    => '/miners/daftar/'.$jenis,
+        ]);
+    }
+
+    /**
+     * Nama tahap yang parafnya belum dibubuhkan, sebagai satu kalimat.
+     *
+     * `parafTertinggal()` memulangkan LARIK nama tahap. Ditaruh apa
+     * adanya ke dalam sel tabel, yang tergambar di layar adalah
+     * "[object Array]" — bukan galat, hanya kolom yang tidak berarti
+     * apa-apa bagi pembacanya.
+     */
+    private function sebutParaf(array $tahap): string
+    {
+        return $tahap ? implode(', ', $tahap) : 'siap diputuskan';
+    }
+
+    /**
+     * Pengajuan MCU yang menunggu keputusan SAYA.
+     *
+     * Bukan seluruh antrean. Antrean penuh sudah ada di riwayat MCU;
+     * yang tidak dijawabnya adalah pertanyaan yang diajukan tiap pagi —
+     * mana yang menunggu saya. Bagi yang bukan peninjau, daftarnya
+     * kosong, dan itu jawaban yang benar: pengajuan itu memang bukan
+     * urusannya.
+     */
+    private function outstandingMcu(?\App\Models\User $u): array
+    {
+        $baris = McuPengajuan::with('pengaju')->menunggu()->get()
+            ->filter(fn (McuPengajuan $m) => $m->dapatDitinjauOleh($u))->values();
+
+        return [
+            'judul'    => 'Outstanding MCU',
+            'subjudul' => 'Pengajuan MCU yang menunggu keputusan Anda — bukan seluruh antrean',
+            'kolom'    => ['Nomor', 'Judul', 'Pengaju', 'Nama diperiksa', 'Tanggal', 'Menunggu paraf'],
+            'baris'    => $baris->map(fn (McuPengajuan $m) => [
+                'id'    => $m->id,
+                'nomor' => $m->nomor_register ?? '#'.$m->id,
+                'sel'   => [
+                    $m->nomor_register ?? '#'.$m->id,
+                    $m->judul,
+                    $m->pengaju?->name ?: '—',
+                    $m->hasil()->count().' nama',
+                    $m->tanggal?->toDateString() ?: '—',
+                    $this->sebutParaf($m->parafTertinggal()),
+                ],
+                'keadaan'    => Authority::PERHATIAN,
+                'keterangan' => $this->sebutParaf($m->parafTertinggal()),
+                'baik'       => true,
+            ])->values(),
+            'ringkas' => [
+                ['Menunggu Anda', $baris->count(), $baris->count() ? 'ingat' : 'netral'],
+                ['Nama terdampak', $baris->sum(fn (McuPengajuan $m) => $m->hasil()->count()), 'netral'],
+            ],
+        ];
+    }
+
+    /** Kartu — Mine Permit atau SIMPER — yang menunggu keputusan saya. */
+    private function outstandingKartu(?\App\Models\User $u, string $jenisKartu): array
+    {
+        $baris = PasporKartu::with('paspor')->menunggu()->where('jenis', $jenisKartu)->get()
+            ->filter(fn (PasporKartu $k) => $k->dapatDitinjauOleh($u))->values();
+
+        return [
+            'judul'    => 'Outstanding '.$jenisKartu,
+            'subjudul' => 'Pengajuan '.$jenisKartu.' yang menunggu keputusan Anda',
+            'kolom'    => ['Nama', 'Sebab terbit', 'Nomor', 'Diajukan', 'Menunggu paraf'],
+            'baris'    => $baris->map(fn (PasporKartu $k) => [
+                'id'       => $k->id,
+                'pasporId' => $k->paspor_id,
+                'nama'     => $k->paspor?->nama,
+                'nomor'    => $k->nomor,
+                'sel'      => [
+                    $k->paspor?->nama,
+                    $k->sebab_terbit ?: '—',
+                    $k->nomor ?: 'belum bernomor',
+                    $k->diajukan_pada?->toDateString() ?: '—',
+                    $this->sebutParaf($k->parafTertinggal()),
+                ],
+                'keadaan'    => Authority::PERHATIAN,
+                'keterangan' => $this->sebutParaf($k->parafTertinggal()),
+                'baik'       => true,
+            ])->values(),
+            'ringkas' => [
+                ['Menunggu Anda', $baris->count(), $baris->count() ? 'ingat' : 'netral'],
+            ],
+        ];
+    }
+
+    private function outstandingInduksi(?\App\Models\User $u): array
+    {
+        $baris = InduksiPengajuan::with('pengaju')->menunggu()->get()
+            ->filter(fn (InduksiPengajuan $i) => $i->dapatDitinjauOleh($u))->values();
+
+        return [
+            'judul'    => 'Outstanding Induksi',
+            'subjudul' => 'Pengajuan induksi yang menunggu keputusan Anda',
+            'kolom'    => ['Nomor', 'Judul', 'Pengaju', 'Peserta', 'Tanggal'],
+            'baris'    => $baris->map(fn (InduksiPengajuan $i) => [
+                'id'    => $i->id,
+                'nomor' => $i->nomor_register ?? '#'.$i->id,
+                'sel'   => [
+                    $i->nomor_register ?? '#'.$i->id,
+                    $i->judul,
+                    $i->pengaju?->name ?: '—',
+                    $i->hasil()->count().' orang',
+                    $i->tanggal?->toDateString() ?: '—',
+                ],
+                'keadaan'    => Authority::PERHATIAN,
+                'keterangan' => 'menunggu keputusan',
+                'baik'       => true,
+            ])->values(),
+            'ringkas' => [
+                ['Menunggu Anda', $baris->count(), $baris->count() ? 'ingat' : 'netral'],
+                ['Peserta terdampak', $baris->sum(fn (InduksiPengajuan $i) => $i->hasil()->count()), 'netral'],
+            ],
+        ];
+    }
+
+    /**
+     * Unit yang ditambahkan pada SIMPER — "Penambahan Unit" milik Project1.
+     *
+     * Satu baris per UNIT, bukan per kartu. Satu SIMPER dapat memuat
+     * beberapa unit dengan hasil uji yang berbeda-beda, dan meringkasnya
+     * menjadi satu baris per kartu menyembunyikan unit yang lembar
+     * ujinya belum lengkap.
+     */
+    private function daftarPenambahanUnit(): array
+    {
+        $baris = PasporKartuUnit::with('kartu.paspor')->orderByDesc('id')->get();
+
+        return [
+            'judul'    => 'Penambahan Unit',
+            'subjudul' => 'Unit yang tercantum pada SIMPER, satu baris per unit',
+            /* Kolom "Uji" ada karena ringkasannya menyebut berapa unit
+               yang belum lulus. Angka ringkas tanpa kolom yang
+               menunjukkan BARIS MANA hanya memberi tahu bahwa ada
+               masalah, lalu membiarkan orang mencarinya satu per satu. */
+            'kolom'    => ['Nama', 'Unit', 'Authority', 'Nomor SIMPER', 'Berlaku sampai', 'Uji'],
+            'baris'    => $baris->map(fn (PasporKartuUnit $x) => [
+                'id'       => $x->id,
+                'pasporId' => $x->kartu?->paspor_id,
+                'nama'     => $x->kartu?->paspor?->nama,
+                'nomor'    => $x->kartu?->nomor,
+                'sel'      => [
+                    $x->kartu?->paspor?->nama,
+                    $x->namaUnit(),
+                    $x->authority ?: '—',
+                    $x->kartu?->nomor ?: 'belum bernomor',
+                    $x->kartu?->tgl_expired?->toDateString() ?: 'tanpa tanggal',
+                    $x->lulus() ? 'lulus' : 'belum lulus',
+                ],
+                'keadaan'    => Authority::keadaanKartu($x->kartu?->tgl_expired),
+                'keterangan' => Authority::keterangan($x->kartu?->tgl_expired),
+                'baik'       => Authority::sisaHari($x->kartu?->tgl_expired) >= 0
+                                || $x->kartu?->tgl_expired === null,
+            ])->values(),
+            'ringkas' => [
+                ['Total unit', $baris->count(), 'netral'],
+                ['Kartu memuatnya', $baris->pluck('paspor_kartu_id')->unique()->count(), 'netral'],
+                ['Belum lulus uji', $baris->reject(fn (PasporKartuUnit $x) => $x->lulus())->count(), 'ingat'],
+            ],
+        ];
+    }
+
+    /** Kartu menurut sebab terbitnya — Perpanjangan atau Peningkatan golongan. */
+    private function daftarSebab(string $sebab): array
+    {
+        $baris = PasporKartu::with('paspor')->where('sebab_terbit', $sebab)
+            ->orderByDesc('tgl_terbit')->orderByDesc('id')->get();
+
+        return [
+            'judul'    => $sebab === 'Perpanjangan' ? 'Perpanjangan' : 'Upgrade SIMPER',
+            'subjudul' => 'Kartu yang terbit dengan sebab "'.$sebab.'"',
+            'kolom'    => ['Nama', 'Jenis', 'Nomor', 'Terbit', 'Berlaku sampai', 'Status'],
+            'baris'    => $baris->map(fn (PasporKartu $k) => [
+                'id'       => $k->id,
+                'pasporId' => $k->paspor_id,
+                'nama'     => $k->paspor?->nama,
+                'nomor'    => $k->nomor,
+                'sel'      => [
+                    $k->paspor?->nama, $k->jenis, $k->nomor ?: 'belum bernomor',
+                    $k->tgl_terbit?->toDateString() ?: '—',
+                    $k->tgl_expired?->toDateString() ?: 'tanpa tanggal',
+                    Alur::LABEL[$k->status] ?? $k->status,
+                ],
+                'keadaan'    => Authority::keadaanKartu($k->tgl_expired),
+                'keterangan' => Authority::keterangan($k->tgl_expired),
+                'baik'       => Authority::sisaHari($k->tgl_expired) >= 0 || $k->tgl_expired === null,
+            ])->values(),
+            'ringkas' => [
+                ['Total', $baris->count(), 'netral'],
+                ['Sudah terbit', $baris->where('status', Alur::DISETUJUI)->count(), 'netral'],
+                ['Masih diproses', $baris->where('status', '!=', Alur::DISETUJUI)->count(), 'ingat'],
+            ],
+        ];
+    }
+
+    /**
+     * Rujukan medis yang tanggal tindak lanjutnya sudah lewat.
+     *
+     * Ia TIDAK menahan orang di gerbang — karena itu ia tidak muncul di
+     * daftar kelayakan mana pun, dan karena itu pula ia paling mudah
+     * terlupakan. Yang ditahannya adalah orang dari sembuh.
+     */
+    private function daftarRujukan(): array
+    {
+        $baris = PasporMcu::with('paspor')->whereNotNull('rujukan')
+            ->orderByDesc('tgl_periksa')->get();
+
+        $tertunggak = $baris->filter(fn (PasporMcu $m) => $m->rujukanTertunggak());
+
+        return [
+            'judul'    => 'Rujukan MCU',
+            'subjudul' => 'Rujukan medis beserta tindak lanjutnya — yang lewat tenggat disebut lebih dulu',
+            'kolom'    => ['Nama', 'Rujukan', 'Hasil MCU', 'Diperiksa', 'Tindak lanjut'],
+            'baris'    => $baris->sortByDesc(fn (PasporMcu $m) => $m->rujukanTertunggak() ? 1 : 0)
+                ->map(fn (PasporMcu $m) => [
+                    'id'       => $m->id,
+                    'pasporId' => $m->paspor_id,
+                    'nama'     => $m->paspor?->nama,
+                    'sel'      => [
+                        $m->paspor?->nama,
+                        $m->rujukan ?: '—',
+                        $m->hasil ?: '—',
+                        $m->tgl_periksa?->toDateString() ?: '—',
+                        $m->outstanding?->toDateString() ?: 'belum dijadwalkan',
+                    ],
+                    'keadaan'    => $m->rujukanTertunggak() ? Authority::KRITIS : Authority::AMAN,
+                    'keterangan' => $m->rujukanTertunggak() ? 'lewat tenggat' : 'terkendali',
+                    'baik'       => ! $m->rujukanTertunggak(),
+                ])->values(),
+            'ringkas' => [
+                ['Total rujukan', $baris->count(), 'netral'],
+                ['Lewat tenggat', $tertunggak->count(), $tertunggak->count() ? 'gawat' : 'netral'],
+            ],
+        ];
+    }
+
+    /**
+     * Kartu yang siap dicetak.
+     *
+     * HANYA YANG SUDAH TERBIT. Kartu yang masih draf atau masih
+     * menunggu tinjauan tidak boleh sampai ke gerbang, dan daftar cetak
+     * yang memuatnya adalah cara paling mudah membuat kartu belum sah
+     * ikut tercetak bersama setumpuk kartu yang sah.
+     */
+    private function daftarCetak(): array
+    {
+        $baris = PasporKartu::with('paspor')->where('status', Alur::DISETUJUI)
+            ->orderByDesc('tgl_terbit')->orderByDesc('id')->get();
+
+        return [
+            'judul'    => 'Cetak Kartu',
+            'subjudul' => 'Kartu yang sudah terbit dan siap dicetak — yang belum terbit tidak disertakan',
+            'kolom'    => ['Nama', 'Jenis', 'Nomor', 'Terbit', 'Berlaku sampai'],
+            'baris'    => $baris->map(fn (PasporKartu $k) => [
+                'id'       => $k->id,
+                'pasporId' => $k->paspor_id,
+                'nama'     => $k->paspor?->nama,
+                'nomor'    => $k->nomor,
+                'cetak'    => route('miners.permit.cetak', [$k->paspor_id, $k->id]),
+                'sel'      => [
+                    $k->paspor?->nama, $k->jenis, $k->nomor ?: 'belum bernomor',
+                    $k->tgl_terbit?->toDateString() ?: '—',
+                    $k->tgl_expired?->toDateString() ?: 'tanpa tanggal',
+                ],
+                'keadaan'    => Authority::keadaanKartu($k->tgl_expired),
+                'keterangan' => Authority::keterangan($k->tgl_expired),
+                'baik'       => Authority::sisaHari($k->tgl_expired) >= 0 || $k->tgl_expired === null,
+            ])->values(),
+            'ringkas' => [
+                ['Siap dicetak', $baris->count(), 'netral'],
+                ['Sudah kadaluarsa', $baris->filter(
+                    fn ($k) => $k->tgl_expired && Authority::sisaHari($k->tgl_expired) < 0)->count(), 'gawat'],
             ],
         ];
     }

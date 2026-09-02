@@ -231,6 +231,18 @@ final class RuteInertia
         'miners.riwayat.mine-permit',
         'miners.riwayat.mine-license',
         'miners.riwayat.authority',
+
+        /* Daftar menyilang orang. Kesembilannya memakai komponen
+           Miners/Riwayat yang sama, dan seluruhnya Inertia. */
+        'miners.daftar.outstanding-mcu',
+        'miners.daftar.outstanding-permit',
+        'miners.daftar.outstanding-simper',
+        'miners.daftar.outstanding-induksi',
+        'miners.daftar.penambahan-unit',
+        'miners.daftar.upgrade-simper',
+        'miners.daftar.perpanjangan',
+        'miners.daftar.rujukan',
+        'miners.daftar.cetak-kartu',
         'ko.index',
         'ko.register',
         'ko.create',

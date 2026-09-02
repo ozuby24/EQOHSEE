@@ -51,7 +51,7 @@ const URUT = [
   ['Induksi',      '/miners/riwayat/induksi'],
   ['Mine Permit',  '/miners/riwayat/mine-permit'],
   ['SIMPER', '/miners/riwayat/mine-license'],
-  ['Authority',    '/miners/riwayat/authority'],
+  ['Kompetensi',   '/miners/riwayat/authority'],
 ];
 
 /*
@@ -73,7 +73,7 @@ const kini = computed(() => {
   const t = String(props.tahap ?? '');
 
   return { mcu: 'MCU', induksi: 'Induksi', 'mine-permit': 'Mine Permit',
-           'mine-license': 'SIMPER', authority: 'Authority' }[t] ?? '';
+           'mine-license': 'SIMPER', authority: 'Kompetensi' }[t] ?? '';
 });
 </script>
 

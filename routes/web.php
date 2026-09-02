@@ -254,6 +254,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->name('riwayat.'.$tahap);
         }
 
+        /* Daftar menyilang orang: antrean di meja saya, SIMPER
+           lanjutan, rujukan, dan kartu siap cetak.
+
+           Satu nama rute per jenis, bukan satu rute berparameter —
+           alasannya sama dengan riwayat di atas: RuteInertiaTest
+           memanggil SETIAP nama rute terdaftar tanpa parameter, dan
+           satu rute berparameter memaksa uji itu menyimpan daftar
+           parameter contoh yang akan tertinggal saat jenisnya berubah.
+
+           Didaftarkan SEBELUM rute ber-{paspor}: `miners/daftar/...`
+           cocok pula dengan pola `miners/{paspor}`. */
+        foreach ([
+            'outstanding-mcu', 'outstanding-permit', 'outstanding-simper', 'outstanding-induksi',
+            'penambahan-unit', 'upgrade-simper', 'perpanjangan',
+            'rujukan', 'cetak-kartu',
+        ] as $jenis) {
+            Route::get('daftar/'.$jenis, [MinersController::class, 'daftar'])
+                ->defaults('jenis', $jenis)
+                ->name('daftar.'.$jenis);
+        }
+
         /* Pemantauan masa berlaku kartu — halaman tersendiri, sebab
            pertanyaannya berbeda dari daftar orang: bukan "siapa saja
            pekerja kita" melainkan "siapa yang hari ini tidak boleh
