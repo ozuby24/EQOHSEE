@@ -15,6 +15,9 @@ export interface Pengguna {
   peran: string;
   admin: boolean;
   avatar: string | null;
+
+  /** Null bagi pengguna lintas perusahaan — bukan berarti datanya hilang. */
+  perusahaan: string | null;
 }
 
 /** Satu butir menu: label, alamat, dan apakah ia sedang dibuka. */

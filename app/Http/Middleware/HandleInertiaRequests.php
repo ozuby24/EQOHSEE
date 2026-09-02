@@ -37,6 +37,13 @@ class HandleInertiaRequests extends Middleware
                 'peran'  => $u->position ?: ($u->isAdmin() ? 'Administrator' : ucfirst($u->lms_role ?: 'Peserta')),
                 'admin'  => $u->isAdmin(),
                 'avatar' => $u->avatar ? Berkas::terbuka($u->avatar) : null,
+
+                /* Nama perusahaannya ikut dikirim karena kepala halaman
+                   menyebutkannya. Pengguna yang tidak terikat perusahaan
+                   mana pun — admin lintas perusahaan — memulangkan null,
+                   dan kepala halamannya menuliskan "Semua perusahaan"
+                   alih-alih kotak kosong yang terbaca sebagai galat. */
+                'perusahaan' => $u->company?->name,
             ] : null,
 
             'menu' => fn () => $this->menu($u),

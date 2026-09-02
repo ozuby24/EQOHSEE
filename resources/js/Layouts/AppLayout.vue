@@ -47,6 +47,71 @@ const pengumuman = computed(() => halaman.props.pengumuman ?? 0);
 const lacisTerbuka = ref(false);
 const sempit       = ref(false);
 
+/**
+ * Panel pemindah modul.
+ *
+ * Menggantikan kisi 22 ikon telanjang yang dulu duduk di atas menu.
+ * Kisi itu padat dan tidak dapat dibaca: ikon tanpa label memaksa orang
+ * menghafal posisi, dan yang tidak hafal menekan satu per satu sampai
+ * ketemu. Sekarang yang terlihat hanya NAMA modul yang sedang dibuka;
+ * daftar lengkapnya — beserta labelnya — muncul saat diminta.
+ */
+const modulTerbuka = ref(false);
+
+/**
+ * Sapaan menurut jam setempat.
+ *
+ * Dihitung di peramban, bukan di server. Server berjalan pada UTC,
+ * sedangkan yang membaca sapaan ini duduk di lokasi tambang: sapaan
+ * "Selamat malam" pada pukul sembilan pagi terbaca sebagai jam aplikasi
+ * yang salah, bukan sebagai basa-basi yang keliru.
+ */
+const sapaan = computed(() => {
+  const j = new Date().getHours();
+
+  if (j < 11) return 'Selamat pagi';
+  if (j < 15) return 'Selamat siang';
+  if (j < 19) return 'Selamat sore';
+
+  return 'Selamat malam';
+});
+
+/**
+ * Nama depan saja — sapaan bernama lengkap berbunyi seperti surat resmi.
+ *
+ * GELARNYA DILEWATI. Memenggal pada spasi pertama terlihat benar sampai
+ * ada nama yang berawalan gelar: "Miss Fleta Lehner" menghasilkan
+ * sapaan "Selamat siang, Miss" — terbaca sebagai aplikasi yang tidak
+ * tahu siapa yang sedang memakainya. Daftarnya sengaja pendek dan hanya
+ * berisi gelar yang benar-benar muncul di depan nama; kata yang tidak
+ * dikenali diperlakukan sebagai nama, bukan dibuang.
+ */
+const GELAR = ['mr', 'mrs', 'ms', 'miss', 'dr', 'drs', 'ir', 'h', 'hj', 'prof'];
+
+const namaDepan = computed(() => {
+  const kata = (pengguna.value?.nama ?? '').trim().split(/\s+/).filter(Boolean);
+
+  for (const k of kata) {
+    if (!GELAR.includes(k.toLowerCase().replace(/\.$/, ''))) return k;
+  }
+
+  return kata[0] || 'Anda';
+});
+
+const cari = ref('');
+
+/**
+ * Pencarian menuju daftar pekerja, sebab hanya itu yang benar-benar
+ * dapat dicari hari ini — nama, NIK, dan jabatan, lewat `q` pada
+ * /miners. Kotak cari yang tidak menuju ke mana-mana lebih buruk
+ * daripada tidak ada: ia menjanjikan sesuatu lalu diam.
+ */
+function kirimCari() {
+  const q = cari.value.trim();
+
+  router.get('/miners', q ? { q } : {}, { preserveState: false });
+}
+
 onMounted(() => {
   try {
     sempit.value = localStorage.getItem('eq-sisi-sempit') === '1';
@@ -114,27 +179,38 @@ function keluar() {
         </span>
       </a>
 
-      <!-- Pemilih modul -->
+      <!-- ── Pemindah modul ──
+
+           Dulu di sini duduk kisi 22 ikon telanjang. Ikon tanpa label
+           memaksa orang menghafal posisinya, dan yang belum hafal
+           menekan satu per satu sampai ketemu — dua puluh dua kotak
+           yang seluruhnya terlihat sama.
+
+           Sekarang yang terlihat hanya modul yang sedang dibuka.
+           Daftar lengkapnya muncul saat diminta, dengan LABELNYA, jadi
+           tidak ada yang perlu dihafal. -->
       <div class="px-3 pt-3.5">
-        <!-- Lima kolom di laci ponsel, tiga di desktop. Dua puluh dua modul
-             pada tiga kolom berarti delapan baris — 341px dari layar yang
-             tingginya 727px, sebelum daftar menunya sendiri mendapat apa pun. -->
-        <div class="glass rounded-xl p-1 grid grid-cols-5 lg:grid-cols-3 gap-1">
+        <button type="button" class="eq-modul-pilih" :aria-expanded="modulTerbuka"
+                aria-label="Pindah modul" @click="modulTerbuka = !modulTerbuka">
+          <span class="eq-modul-nama">{{ menu.label }}</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+               :style="modulTerbuka ? 'transform:rotate(180deg)' : ''">
+            <path d="m6 9 6 6 6-6"/>
+          </svg>
+        </button>
+
+        <div v-if="modulTerbuka" class="eq-modul-daftar">
           <component :is="tautan(m.inertia)"
-             v-for="m in menu.modul" :key="m.kunci" :href="m.url" :title="m.label"
-             class="relative grid place-items-center py-2 rounded-lg transition"
-             :class="m.aktif ? 'lime-gradient text-white shadow-glow'
-                             : 'text-white/55 hover:text-white hover:bg-white/5'">
-            <svg class="w-[17px] h-[17px]" fill="none" stroke="currentColor" stroke-width="2.2"
-                 viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" :d="m.ikon"/>
+             v-for="m in menu.modul" :key="m.kunci" :href="m.url"
+             class="eq-modul-butir" :class="m.aktif ? 'eq-modul-aktif' : ''">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path :d="m.ikon"/>
             </svg>
-            <span v-if="m.lencana" class="absolute top-0.5 right-0.5 min-w-[7px] h-[7px]
-                                          rounded-full bg-cam-lime-light"></span>
+            <span>{{ m.label }}</span>
+            <span v-if="m.lencana" class="eq-modul-titik"></span>
           </component>
-        </div>
-        <div class="mt-2.5 px-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cam-lime-light">
-          {{ menu.label }}
         </div>
       </div>
 
@@ -164,30 +240,48 @@ function keluar() {
         </template>
       </nav>
 
+      <!-- ── Kaki bilah samping ──
+
+           Chip pengguna turun ke sini dari kepala halaman. Kepala
+           halaman sekarang menyapa orangnya dengan namanya; menaruh
+           nama yang sama sekali lagi di sebelah kanan membuatnya
+           tercetak dua kali pada satu baris pandang.
+
+           Kartu "Butuh Bantuan?" yang dulu di sini dipindah menjadi
+           satu tombol saja. Kartu setinggi 96px yang isinya tidak
+           pernah berubah memakan ruang yang dibutuhkan menu, dan menu
+           yang terpotong membuat butir terbawahnya tidak pernah
+           ditemukan. -->
       <div class="eq-sisi-kaki">
-        <div class="eq-bantuan">
-          <span class="eq-bantuan-ikon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                 stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 3.5a8.5 8.5 0 0 1 8.5 8.5v4.8a2.7 2.7 0 0 1-2.7 2.7h-1.3v-7.2h4M3.5 16.8V12A8.5 8.5 0 0 1 12 3.5"/>
-              <path d="M3.5 12.3h3.9v7.2H6.2a2.7 2.7 0 0 1-2.7-2.7Z"/>
-            </svg>
-          </span>
-          <span class="eq-bantuan-teks">
-            <strong>Butuh Bantuan?</strong>
-            <small>Kami siap membantu Anda kapan saja.</small>
-          </span>
-        </div>
         <Link href="/bantuan" class="eq-bantuan-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2 0 0 1 4 11.5a8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 8 8.4Z"/>
           </svg>
-          Hubungi Kami
+          Butuh bantuan?
         </Link>
 
+        <div v-if="pengguna" class="eq-sisi-akun">
+          <a href="/personalia" class="eq-sisi-akun-tautan" title="Data diri">
+            <img v-if="pengguna.avatar" class="eq-sisi-avatar eq-sisi-avatar-foto"
+                 :src="pengguna.avatar" alt="" width="34" height="34">
+            <span v-else class="eq-sisi-avatar">{{ pengguna.nama.charAt(0).toUpperCase() }}</span>
+            <span class="eq-sisi-akun-teks">
+              <strong>{{ pengguna.nama }}</strong>
+              <small>{{ pengguna.peran }}</small>
+            </span>
+          </a>
+
+          <button type="button" class="eq-sisi-keluar" aria-label="Keluar" @click="keluar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/>
+            </svg>
+          </button>
+        </div>
+
         <div class="eq-sisi-bawah">
-          <small>© {{ new Date().getFullYear() }} EQOHSEE<br>All rights reserved.</small>
+          <small>&copy; {{ new Date().getFullYear() }} EQOHSEE</small>
           <button type="button" class="eq-lipat" aria-label="Lipat bilah samping" @click="lipat">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"
                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -206,15 +300,30 @@ function keluar() {
                stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
         </button>
 
-        <!-- Judul datang dari server, bukan dari slot bernama. Tata letak
-             Inertia dipasang otomatis di inertia.ts dan halaman masuk
-             sebagai slot bawaan, sehingga slot bernama tidak menembus ke
-             sini. Cara ini juga sejalan dengan @yield('subjudul') pada
-             sisi Blade: judul halaman ditentukan controller. -->
-        <div class="eq-judul min-w-0 flex-1">
-          <h1>{{ judul }}</h1>
-          <p v-if="subjudul">{{ subjudul }}</p>
+        <!-- ── Sapaan, bukan judul halaman ──
+
+             Judul halaman TIDAK lagi dicetak di sini. Tiap halaman
+             sudah mencetak judulnya sendiri di badan halaman, dan
+             keduanya bersebelahan membuat kalimat yang sama muncul dua
+             kali dengan jarak dua sentimeter — terlihat pada
+             /miners/dasbor: "Miners — Ringkasan" tercetak di kepala
+             halaman dan langsung diulang di bawahnya. -->
+        <div class="eq-sapa min-w-0">
+          <small>{{ sapaan }},</small>
+          <strong>{{ namaDepan }} <span aria-hidden="true">&#128075;</span></strong>
         </div>
+
+        <!-- Kotak cari menuju daftar pekerja: nama, NIK, jabatan.
+             Hanya itu yang benar-benar dapat dicari hari ini, dan
+             menjanjikan lebih dari itu berarti kotak yang diam. -->
+        <form class="eq-cari" @submit.prevent="kirimCari">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/>
+          </svg>
+          <input v-model="cari" type="search" aria-label="Cari pekerja"
+                 placeholder="Cari pekerja menurut nama, NIK, atau jabatan…">
+        </form>
 
         <div class="eq-topbar-aksi">
           <button type="button" class="eq-bulat eq-tema-btn" title="Tema terang / gelap"
@@ -243,23 +352,20 @@ function keluar() {
             </a>
           </div>
 
-          <a v-if="pengguna" href="/personalia" class="eq-profil" title="Data diri">
-            <img v-if="pengguna.avatar" class="eq-avatar eq-avatar-foto" :src="pengguna.avatar"
-                 alt="" width="38" height="38">
-            <span v-else class="eq-avatar">{{ pengguna.nama.charAt(0).toUpperCase() }}</span>
-            <span class="eq-profil-teks">
-              <strong>{{ pengguna.nama }}</strong>
-              <small>{{ pengguna.peran }}</small>
-            </span>
-          </a>
+          <!-- Perusahaan yang sedang dilihat. Bukan pemilih: lingkup
+               perusahaan ditentukan akun, bukan dipilih di layar, dan
+               tombol yang terlihat dapat ditekan tetapi tidak mengubah
+               apa pun lebih membingungkan daripada label biasa.
 
-          <button v-if="pengguna" class="eq-keluar" aria-label="Keluar" @click="keluar">
+               Pengguna lintas perusahaan berbunyi "Semua perusahaan",
+               bukan kosong — kotak kosong terbaca sebagai data hilang. -->
+          <span v-if="pengguna" class="eq-perusahaan" :title="pengguna.perusahaan ?? 'Semua perusahaan'">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/>
+              <path d="M4 20V7.5L12 4l8 3.5V20M9 20v-4.5h6V20M8 10.5h.01M12 10.5h.01M16 10.5h.01"/>
             </svg>
-            <span class="hidden sm:inline">Keluar</span>
-          </button>
+            <span>{{ pengguna.perusahaan ?? 'Semua perusahaan' }}</span>
+          </span>
         </div>
       </header>
 

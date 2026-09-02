@@ -1071,4 +1071,96 @@ main a{transition:color .16s}
    Dibiarkan diketik, dan yang diatur di sini hanya warnanya, supaya
    bilahnya senada garis kartu alih-alih sepekat teksnya. */
 .tema-safetrack h3 > span.font-normal{ color:var(--st-redup); }
+
+/* ═══════════════════════════════════════════════════════════
+   KERANGKA BARU — pemindah modul, sapaan, cari, akun di kaki
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Pemindah modul ──
+   Menggantikan kisi 22 ikon telanjang. Yang terlihat hanya modul yang
+   sedang dibuka; daftarnya muncul saat diminta, dengan labelnya. */
+.eq-modul-pilih{width:100%;display:flex;align-items:center;justify-content:space-between;
+  gap:10px;padding:9px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);color:#fff;cursor:pointer;transition:background .18s}
+.eq-modul-pilih:hover{background:rgba(255,255,255,.11)}
+.eq-modul-pilih svg{width:15px;height:15px;flex:none;opacity:.7;transition:transform .18s}
+.eq-modul-nama{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--eq-lime,#B7E44B);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.eq-modul-daftar{margin-top:6px;max-height:280px;overflow-y:auto;
+  border-radius:12px;background:rgba(0,0,0,.22);padding:4px}
+.eq-modul-butir{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;
+  font-size:12px;font-weight:600;color:rgba(255,255,255,.62);position:relative;transition:.15s}
+.eq-modul-butir:hover{background:rgba(255,255,255,.08);color:#fff}
+.eq-modul-butir svg{width:15px;height:15px;flex:none}
+.eq-modul-butir span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eq-modul-aktif{background:rgba(255,255,255,.13);color:#fff}
+.eq-modul-titik{position:absolute;right:8px;width:6px;height:6px;border-radius:50%;
+  background:var(--eq-lime,#B7E44B);flex:none}
+
+/* ── Akun di kaki bilah samping ── */
+.eq-sisi-akun{display:flex;align-items:center;gap:8px;margin-top:10px;
+  padding:8px;border-radius:13px;background:rgba(255,255,255,.06)}
+.eq-sisi-akun-tautan{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
+.eq-sisi-avatar{width:34px;height:34px;border-radius:11px;flex:none;display:grid;
+  place-items:center;font-size:14px;font-weight:800;color:#fff;
+  background:linear-gradient(135deg,#F57C00,#FF9F35)}
+.eq-sisi-avatar-foto{object-fit:cover}
+.eq-sisi-akun-teks{min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.eq-sisi-akun-teks strong{font-size:12.5px;color:#fff;font-weight:700;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eq-sisi-akun-teks small{font-size:10.5px;color:rgba(255,255,255,.5);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eq-sisi-keluar{width:30px;height:30px;border-radius:9px;flex:none;display:grid;
+  place-items:center;color:rgba(255,255,255,.6);background:transparent;
+  border:1px solid rgba(255,255,255,.12);cursor:pointer;transition:.15s}
+.eq-sisi-keluar:hover{color:#fff;background:rgba(255,255,255,.1)}
+.eq-sisi-keluar svg{width:15px;height:15px}
+
+/* ── Sapaan di kepala halaman ──
+   Menggantikan judul halaman, yang sudah dicetak tiap halaman di
+   badannya sendiri. Keduanya bersebelahan mencetak kalimat yang sama
+   dua kali berjarak dua sentimeter. */
+.eq-sapa{display:flex;flex-direction:column;line-height:1.2;flex:none}
+.eq-sapa small{font-size:11.5px;color:var(--eq-redup,#7C8894)}
+.eq-sapa strong{font-size:16px;font-weight:800;color:var(--eq-judul,#0F1720);
+  letter-spacing:-.012em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── Kotak cari ── */
+.eq-cari{flex:1;min-width:0;max-width:460px;margin:0 auto;position:relative;display:flex;
+  align-items:center}
+.eq-cari svg{position:absolute;left:13px;width:16px;height:16px;
+  color:var(--eq-redup,#7C8894);pointer-events:none}
+.eq-cari input{width:100%;height:40px;padding:0 14px 0 37px;border-radius:12px;
+  font-size:12.5px;color:var(--eq-judul,#0F1720);
+  border:1px solid var(--eq-garis,#E4E8EC);background:var(--eq-kartu,#fff);
+  transition:border-color .15s,box-shadow .15s}
+.eq-cari input::placeholder{color:var(--eq-redup,#9AA5B1)}
+.eq-cari input:focus{outline:none;border-color:var(--eq-aksen,#F57C00);
+  box-shadow:0 0 0 3px rgba(245,124,0,.13)}
+@media (max-width:860px){.eq-cari{display:none}}
+
+/* ── Perusahaan yang sedang dilihat ── */
+.eq-perusahaan{display:flex;align-items:center;gap:8px;height:40px;padding:0 13px;
+  border-radius:12px;font-size:12.5px;font-weight:700;flex:none;
+  color:var(--eq-judul,#0F1720);border:1px solid var(--eq-garis,#E4E8EC);
+  background:var(--eq-kartu,#fff);max-width:190px}
+.eq-perusahaan svg{width:16px;height:16px;flex:none;color:var(--eq-aksen,#F57C00)}
+.eq-perusahaan span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:640px){.eq-perusahaan span{display:none}}
+
+/* ── Pasangan mode gelap ──
+   Ketiganya memakai --eq-kartu dan --eq-garis yang memang sudah
+   bertukar nilai pada tema gelap, jadi yang perlu disebut ulang hanya
+   yang warnanya ditulis tetap. Tanpa blok ini, kotak carinya tetap
+   putih di atas halaman gelap — teksnya terbaca, kotaknya menyilaukan. */
+:root[data-tema="gelap"] .eq-cari input,
+:root[data-tema="gelap"] .eq-perusahaan{
+  background:var(--eq-kartu,#141A21);
+  border-color:var(--eq-garis,rgba(255,255,255,.10));
+  color:var(--eq-judul,#E8ECF0);
+}
+:root[data-tema="gelap"] .eq-cari input::placeholder{color:rgba(255,255,255,.38)}
+:root[data-tema="gelap"] .eq-sapa strong{color:var(--eq-judul,#E8ECF0)}
+
 </style>
