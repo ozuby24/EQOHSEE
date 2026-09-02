@@ -1163,4 +1163,99 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] .eq-cari input::placeholder{color:rgba(255,255,255,.38)}
 :root[data-tema="gelap"] .eq-sapa strong{color:var(--eq-judul,#E8ECF0)}
 
+
+/* ═══════════════════════════════════════════════════════════
+   HALAMAN MINERS — hero, kartu ringkasan, ubin ber-ikon
+   ═══════════════════════════════════════════════════════════ */
+
+.miners-hero{border-radius:20px;overflow:hidden;position:relative;
+  background:var(--eq-kartu,#fff);border:1px solid var(--eq-garis,#EFEBE4);
+  box-shadow:0 1px 2px rgba(16,24,40,.04)}
+
+/* Aksen jingga miring di kanan, menggantikan foto alat berat pada
+   acuan. Foto bitmap harus ikut dikirim, ikut diunduh, dan ikut salah
+   potong di tiap lebar layar; gradasi menghasilkan kesan yang sama
+   tanpa satu bita pun tambahan. Disembunyikan di layar sempit, tempat
+   ia hanya menutupi tombolnya. */
+.miners-hero::after{content:"";position:absolute;top:0;right:0;bottom:0;width:38%;
+  background:linear-gradient(115deg,transparent 0 38%,rgba(245,124,0,.10) 38% 62%,rgba(245,124,0,.20) 62%);
+  pointer-events:none}
+@media (max-width:900px){.miners-hero::after{display:none}}
+
+.miners-hero-isi{position:relative;z-index:1;display:flex;flex-wrap:wrap;
+  align-items:flex-end;justify-content:space-between;gap:16px;padding:22px 24px 18px}
+.miners-hero-isi h2{font-size:23px;font-weight:800;letter-spacing:-.015em;
+  color:var(--eq-judul,#0F1720)}
+.miners-hero-isi p{font-size:12.5px;color:var(--eq-redup,#7C8894);margin-top:4px}
+.miners-hero-aksi{display:flex;gap:8px;flex:none}
+
+.miners-pita{position:relative;z-index:1;display:flex;align-items:flex-start;gap:11px;
+  margin:0 24px 22px;padding:13px 15px;border-radius:14px;border:1px solid}
+.miners-pita-gawat{background:rgba(245,158,11,.09);border-color:rgba(245,158,11,.32)}
+.miners-pita-aman{background:rgba(22,163,74,.09);border-color:rgba(22,163,74,.30)}
+.miners-pita-ikon{width:30px;height:30px;border-radius:10px;flex:none;display:grid;place-items:center}
+.miners-pita-gawat .miners-pita-ikon{background:rgba(245,158,11,.20);color:#B45309}
+.miners-pita-aman .miners-pita-ikon{background:rgba(22,163,74,.18);color:#15803D}
+.miners-pita-ikon svg{width:16px;height:16px}
+.miners-pita strong{display:block;font-size:13px;font-weight:700;color:var(--eq-judul,#0F1720)}
+.miners-pita-aman strong{color:#15803D}
+.miners-pita small{display:block;font-size:11.5px;color:var(--eq-redup,#7C8894);margin-top:2px}
+.miners-pita-angka{flex:none;font-size:12.5px;font-weight:800;color:#DC2626}
+
+/* ── Kartu ringkasan ── */
+.miners-kartu{display:flex;flex-direction:column;border-radius:18px;overflow:hidden;
+  background:var(--eq-kartu,#fff);border:1px solid var(--eq-garis,#EFEBE4);
+  box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.miners-kartu header{padding:16px 18px 0}
+.miners-kartu header h3{font-size:14px;font-weight:800;color:var(--eq-judul,#0F1720)}
+.miners-kartu header p{font-size:11.5px;color:var(--eq-redup,#7C8894);margin-top:2px}
+.miners-kartu-isi{flex:1;padding:16px 18px}
+
+/* Kaki kartu: tautan, bukan hiasan. Tiap kartu ringkasan menjawab
+   sebagian pertanyaan; barisnya selalu ada di halaman lain. */
+.miners-kaki{display:flex;align-items:center;justify-content:space-between;
+  padding:11px 18px;font-size:12px;font-weight:700;color:var(--eq-aksen,#F57C00);
+  border-top:1px solid var(--eq-garis,#EFEBE4);transition:background .15s}
+.miners-kaki:hover{background:var(--eq-lembut,rgba(245,124,0,.06))}
+
+.miners-donat{width:104px;height:104px;flex:none}
+.miners-donat-angka{font-size:8.5px;font-weight:800;text-anchor:middle;
+  fill:var(--eq-judul,#0F1720)}
+.miners-donat-teks{font-size:3.1px;text-anchor:middle;fill:var(--eq-redup,#7C8894)}
+.miners-titik{width:8px;height:8px;border-radius:3px;flex:none}
+
+.miners-bilah{flex:1;height:7px;border-radius:99px;overflow:hidden;
+  background:var(--eq-garis,#EFEBE4)}
+.miners-bilah i{display:block;height:100%;border-radius:99px;min-width:2px}
+
+.miners-perisai{width:74px;height:74px;margin:0 auto}
+
+/* ── Chip ikon ── */
+.miners-chip{width:26px;height:26px;border-radius:9px;flex:none;display:grid;place-items:center}
+.miners-chip svg{width:14px;height:14px}
+.miners-chip-besar{width:40px;height:40px;border-radius:13px}
+.miners-chip-besar svg{width:19px;height:19px}
+
+/* ── Ubin angka ── */
+.miners-ubin{display:flex;align-items:center;gap:13px;padding:16px 18px;border-radius:18px;
+  background:var(--eq-kartu,#fff);border:1px solid var(--eq-garis,#EFEBE4);
+  box-shadow:0 1px 2px rgba(16,24,40,.04);transition:border-color .15s,transform .15s}
+.miners-ubin:hover{border-color:var(--eq-aksen,#F57C00);transform:translateY(-1px)}
+.miners-ubin-angka{display:block;font-size:24px;font-weight:800;line-height:1}
+.miners-ubin-label{display:block;font-size:11.5px;color:var(--eq-redup,#7C8894);margin-top:3px}
+
+/* ── Pasangan mode gelap ──
+   Pita dan chip memakai warna tetap ber-alfa, jadi ia sudah menyesuaikan
+   diri. Yang perlu disebut ulang hanya yang bertumpu pada putih. */
+:root[data-tema="gelap"] .miners-hero,
+:root[data-tema="gelap"] .miners-kartu,
+:root[data-tema="gelap"] .miners-ubin{
+  background:var(--eq-kartu,#141A21);
+  border-color:var(--eq-garis,rgba(255,255,255,.10));
+}
+:root[data-tema="gelap"] .miners-pita strong,
+:root[data-tema="gelap"] .miners-hero-isi h2,
+:root[data-tema="gelap"] .miners-kartu header h3{color:var(--eq-judul,#E8ECF0)}
+:root[data-tema="gelap"] .miners-donat-angka{fill:var(--eq-judul,#E8ECF0)}
+
 </style>

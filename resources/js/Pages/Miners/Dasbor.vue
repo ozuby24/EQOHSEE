@@ -17,11 +17,63 @@
  * memaksa pembacanya mencari sendiri lewat menu, dan yang dicari selalu
  * barisnya — bukan angkanya.
  */
+import { computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { propHalaman } from '../../halaman';
 import { KEADAAN } from '../../Grafik/warna';
 
 const props = propHalaman();
+
+/** Sebaran dengan nilai bawaan — halaman tidak boleh pecah saat propnya belum ada. */
+const sebaran = computed(() => props.sebaran ?? { total: 0, aman: 0, perhatian: 0, takLayak: 0 });
+
+/**
+ * Juring donat, sudah lengkap dengan titik mulainya.
+ *
+ * Offset dihitung BERANTAI dari juring sebelumnya, bukan dari indeksnya:
+ * dihitung dari indeks, tiga juring yang panjangnya tidak sama akan
+ * saling menumpuk dan yang tergambar bukan galat melainkan donat yang
+ * juringnya salah besar.
+ *
+ * Total nol memulangkan daftar kosong, sehingga yang tergambar hanya
+ * cincin abu-abunya. Membagi dengan nol menghasilkan NaN pada
+ * stroke-dasharray, dan SVG dengan NaN tidak menggambar apa pun sama
+ * sekali — lingkarannya hilang tanpa satu pun pesan.
+ */
+const juring = computed(() => {
+  const s = sebaran.value;
+  const total = s.total || 0;
+
+  if (!total) return [];
+
+  const isi = [
+    { label: 'Aman bekerja',      nilai: s.aman,      warna: '#16A34A' },
+    { label: 'Perlu perhatian',   nilai: s.perhatian, warna: '#F59E0B' },
+    { label: 'Tidak boleh bekerja', nilai: s.takLayak, warna: '#DC2626' },
+  ];
+
+  let jalan = 0;
+
+  return isi.map((j) => {
+    const panjang = j.nilai / total * 100;
+    const mulai = -jalan;
+    jalan += panjang;
+
+    return { ...j, panjang, mulai, persen: Math.round(panjang) };
+  });
+});
+
+const persenAman = computed(() => {
+  const s = sebaran.value;
+
+  return s.total ? Math.round(s.aman / s.total * 100) : 0;
+});
+
+/* Perisai TIDAK selalu hijau. Perisai hijau di atas berkas yang
+   bermasalah adalah gambar yang berbohong, dan gambar itu yang paling
+   dulu dipercaya orang saat membuka halaman. */
+const warnaPerisai = computed(() =>
+  persenAman.value === 100 ? '#16A34A' : persenAman.value >= 70 ? '#F59E0B' : '#DC2626');
 
 const NADA: Record<string, string> = {
   netral: KEADAAN.netral,
@@ -52,14 +104,139 @@ const menunggu = () =>
 
   <div class="max-w-[1400px] mx-auto space-y-5">
 
-    <section class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h2 class="text-xl font-bold text-cam-ink">{{ props.judul }}</h2>
-        <p class="text-[12.5px] text-stone-500 mt-1">{{ props.subjudul }}</p>
+    <!-- ══════════ hero ══════════
+         Judulnya dicetak DI SINI, bukan di kepala halaman. Kepala
+         halaman kini menyapa orangnya; mencetak judul di keduanya
+         membuat kalimat yang sama muncul dua kali berjarak dua
+         sentimeter — persis keadaan sebelum perubahan ini. -->
+    <section class="miners-hero">
+      <div class="miners-hero-isi">
+        <div class="min-w-0">
+          <h2>{{ props.judul }}</h2>
+          <p>{{ props.subjudul }}</p>
+        </div>
+        <div class="miners-hero-aksi">
+          <Link href="/miners" class="eq-btn-lain">Kelayakan kerja</Link>
+          <Link href="/miners/mcu" class="eq-btn-utama">Pengajuan MCU</Link>
+        </div>
       </div>
-      <div class="flex gap-2">
-        <Link href="/miners" class="eq-btn-lain">Kelayakan kerja</Link>
-        <Link href="/miners/mcu" class="eq-btn-utama">Pengajuan MCU</Link>
+
+      <!-- Pita kelayakan hari ini. Menyebut ANGKANYA, bukan sekadar
+           "ada masalah": "3 dari 24 orang" dapat ditindaklanjuti,
+           "ada masalah" hanya membuat orang membuka halaman lain. -->
+      <div class="miners-pita" :class="(props.sebaran?.takLayak ?? 0) ? 'miners-pita-gawat' : 'miners-pita-aman'">
+        <span class="miners-pita-ikon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path v-if="(props.sebaran?.takLayak ?? 0)" d="M12 8.5v4.2M12 16.2h.01M10.3 4.2 2.8 17.5a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0Z"/>
+            <path v-else d="m5 12.5 4.5 4.5L19 7.5"/>
+          </svg>
+        </span>
+        <span class="min-w-0 flex-1">
+          <strong v-if="(props.sebaran?.takLayak ?? 0)">Tidak boleh bekerja hari ini</strong>
+          <strong v-else>Seluruh {{ props.sebaran?.total ?? 0 }} orang memenuhi syarat masuk hari ini.</strong>
+          <small v-if="(props.sebaran?.takLayak ?? 0)">
+            Induksi, MCU, atau kartu masuk kadaluarsa, belum ada, belum disetujui,
+            atau hasil MCU menyatakan tidak layak.
+          </small>
+        </span>
+        <span v-if="(props.sebaran?.takLayak ?? 0)" class="miners-pita-angka num">
+          {{ props.sebaran.takLayak }} dari {{ props.sebaran.total }} orang
+        </span>
+      </div>
+    </section>
+
+    <!-- ══════════ tiga kartu ringkasan ══════════ -->
+    <section class="grid gap-3 lg:grid-cols-3">
+
+      <!-- Sebaran kelayakan. Juringnya berjumlah persis sebanyak orang
+           terdaftar; donat yang tidak berjumlah totalnya membuat orang
+           mencari ke mana sisanya pergi. -->
+      <div class="miners-kartu">
+        <header>
+          <h3>Ringkasan Hari Ini</h3>
+          <p>Status kelayakan kerja</p>
+        </header>
+
+        <div class="miners-kartu-isi flex items-center gap-5">
+          <svg viewBox="0 0 42 42" class="miners-donat" role="img"
+               :aria-label="`${sebaran.aman} aman, ${sebaran.perhatian} perlu perhatian, ${sebaran.takLayak} tidak boleh bekerja`">
+            <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--eq-garis,#E7E5E4)" stroke-width="6"/>
+            <circle v-for="j in juring" :key="j.label" cx="21" cy="21" r="15.9" fill="none"
+                    :stroke="j.warna" stroke-width="6"
+                    :stroke-dasharray="`${j.panjang} ${100 - j.panjang}`"
+                    :stroke-dashoffset="j.mulai" transform="rotate(-90 21 21)"/>
+            <text x="21" y="20" class="miners-donat-angka">{{ sebaran.total }}</text>
+            <text x="21" y="25.5" class="miners-donat-teks">Total</text>
+          </svg>
+
+          <ul class="min-w-0 flex-1 space-y-1.5">
+            <li v-for="j in juring" :key="'l' + j.label" class="flex items-center gap-2 text-[11.5px]">
+              <span class="miners-titik" :style="{ background: j.warna }"></span>
+              <span class="flex-1 text-stone-600">{{ j.label }}</span>
+              <span class="num font-bold text-cam-ink">{{ j.nilai }}</span>
+              <span class="num text-stone-400 w-11 text-right">({{ j.persen }}%)</span>
+            </li>
+          </ul>
+        </div>
+
+        <Link href="/miners" class="miners-kaki">Data per orang <span aria-hidden="true">&rsaquo;</span></Link>
+      </div>
+
+      <!-- Yang perlu diperpanjang. Bilahnya berskala terhadap JUMLAH
+           ORANG, bukan terhadap nilai terbesar di antara keempatnya:
+           skala yang mengikuti nilai terbesar membuat satu induksi
+           kadaluarsa tampil sepanjang bilah penuh. -->
+      <div class="miners-kartu">
+        <header>
+          <h3>Yang Perlu Diperpanjang</h3>
+          <p>Segera lakukan perpanjangan</p>
+        </header>
+
+        <ul class="miners-kartu-isi space-y-2.5">
+          <li v-for="b in (props.perpanjang ?? [])" :key="b.label" class="flex items-center gap-2.5">
+            <span class="miners-chip" :style="{ background: b.warna + '1F', color: b.warna }">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 7.5V12l3 1.8M12 3.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17Z"/>
+              </svg>
+            </span>
+            <span class="text-[11.5px] text-stone-600 w-[112px] shrink-0">{{ b.label }}</span>
+            <span class="miners-bilah"><i :style="{ width: (b.nilai / b.maks * 100) + '%', background: b.warna }"></i></span>
+            <span class="num text-[12px] font-bold w-4 text-right"
+                  :style="{ color: b.nilai ? b.warna : '#A8A29E' }">{{ b.nilai }}</span>
+          </li>
+        </ul>
+
+        <Link href="/miners/kedaluwarsa" class="miners-kaki">Lihat angkanya <span aria-hidden="true">&rsaquo;</span></Link>
+      </div>
+
+      <!-- Perisai. Warnanya mengikuti keadaan, bukan selalu hijau:
+           perisai hijau di atas berkas yang bermasalah adalah gambar
+           yang berbohong. -->
+      <div class="miners-kartu">
+        <header>
+          <h3>Masa Berlaku Seluruh Berkas</h3>
+          <p>{{ persenAman === 100 ? 'Berlaku aman sesuai ketentuan' : 'Sebagian berkas perlu ditindaklanjuti' }}</p>
+        </header>
+
+        <div class="miners-kartu-isi text-center">
+          <svg viewBox="0 0 24 24" class="miners-perisai" :style="{ color: warnaPerisai }" aria-hidden="true">
+            <path fill="currentColor" opacity=".16"
+                  d="M12 2.5 4.5 5.6v6.1c0 4.7 3.2 9.1 7.5 10.3 4.3-1.2 7.5-5.6 7.5-10.3V5.6L12 2.5Z"/>
+            <path fill="none" stroke="currentColor" stroke-width="1.6"
+                  d="M12 2.5 4.5 5.6v6.1c0 4.7 3.2 9.1 7.5 10.3 4.3-1.2 7.5-5.6 7.5-10.3V5.6L12 2.5Z"/>
+            <path fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"
+                  stroke-linejoin="round" d="m8.6 12.2 2.4 2.4 4.4-4.6"/>
+          </svg>
+          <p class="text-[22px] font-bold leading-none num text-cam-ink mt-1">{{ sebaran.total }}</p>
+          <p class="text-[11px] text-stone-500">orang</p>
+          <p class="text-[12.5px] font-bold mt-1.5" :style="{ color: warnaPerisai }">
+            <span class="num">{{ persenAman }}%</span> {{ persenAman === 100 ? 'Aman' : 'Berlaku aman' }}
+          </p>
+        </div>
+
+        <Link href="/miners/kedaluwarsa" class="miners-kaki">Detail lengkap <span aria-hidden="true">&rsaquo;</span></Link>
       </div>
     </section>
 
@@ -165,10 +342,18 @@ const menunggu = () =>
     <!-- ══ jumlah keseluruhan ══ -->
     <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <Link v-for="k in (props.kartu ?? [])" :key="k.label" :href="k.jalur"
-            class="rounded-2xl bg-white border border-stone-100 shadow-card p-5 block
-                   hover:border-stone-200 transition-colors">
-        <p class="text-[28px] font-bold leading-none num" :style="{ color: warna(k) }">{{ k.nilai }}</p>
-        <p class="text-[11.5px] text-stone-500 mt-1.5">{{ k.label }}</p>
+            class="miners-ubin">
+        <span class="miners-chip miners-chip-besar"
+              :style="{ background: (k.warna ?? '#78716C') + '1F', color: k.warna ?? '#78716C' }">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path :d="k.ikon"/>
+          </svg>
+        </span>
+        <span class="min-w-0">
+          <span class="miners-ubin-angka num" :style="{ color: warna(k) }">{{ k.nilai }}</span>
+          <span class="miners-ubin-label">{{ k.label }}</span>
+        </span>
       </Link>
     </section>
   </div>

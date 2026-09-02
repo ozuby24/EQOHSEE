@@ -276,9 +276,55 @@ class MinersController extends Controller
             ->filter(fn ($t) => in_array(Authority::keadaan($t),
                 [Authority::KRITIS, Authority::SEGERA], true))->count();
 
+        /* ── Tiga kartu ringkasan di kepala halaman ──
+           Angkanya dihitung DI SINI, bukan di layar. Layar yang
+           menghitung sendiri harus mengulang aturannya di tiap tempat
+           yang menampilkannya, dan tempat yang terlewat menggambar
+           angka yang berbeda untuk data yang sama. */
+
+        /* Sebaran kelayakan hari ini. Tiga keadaan, dan sengaja
+           berjumlah persis sebanyak orangnya — donat yang jumlah
+           juringnya tidak sama dengan totalnya membuat orang mencari
+           ke mana sisanya pergi. */
+        $perhatian = $orang->reject(fn (Paspor $p) => ! $p->kelayakan()['layak'])
+            ->filter(fn (Paspor $p) => in_array($p->keadaanTerburuk(),
+                [Authority::KRITIS, Authority::SEGERA, Authority::PERHATIAN], true))
+            ->count();
+
+        $aman = max(0, $orang->count() - $takLayak->count() - $perhatian);
+
+        /* Yang perlu diperpanjang, per jenis berkas. `maks` dikirim
+           bersama nilainya supaya bilah kemajuannya berskala terhadap
+           jumlah orang, bukan terhadap nilai terbesar di antara
+           keempatnya — skala yang mengikuti nilai terbesar membuat satu
+           induksi kadaluarsa tampil sepanjang bilah penuh. */
+        $perpanjang = [
+            ['label' => 'Induksi', 'warna' => '#2563EB',
+             'nilai' => $kritis($orang->map(fn ($p) => $p->induksiBerlaku()?->tgl_expired))],
+            ['label' => 'Sertifikat kompetensi', 'warna' => '#7C3AED',
+             'nilai' => $kritis($orang->flatMap(fn ($p) => $p->sertifikat->pluck('tgl_expired')))],
+            ['label' => 'MCU', 'warna' => '#059669',
+             'nilai' => $kritis($orang->map(fn ($p) => $p->mcuTerakhir()?->tgl_expired))],
+            ['label' => 'Kartu masuk', 'warna' => '#EA580C',
+             'nilai' => $kritis($orang->map(fn ($p) => $p->kartuBerlaku()?->tgl_expired))],
+        ];
+
         return Inertia::render('Miners/Dasbor', [
-            'judul'    => 'Miners — Ringkasan',
-            'subjudul' => 'MCU, induksi, kartu masuk, dan kompetensi dalam satu layar',
+            'judul'    => 'Miners — Kelayakan Kerja',
+            'subjudul' => 'Kompetensi, MCU, dan kartu masuk tambang dalam satu berkas per orang.',
+
+            /* Sebaran kelayakan — tiga juring yang berjumlah persis
+               sebanyak orang terdaftar. */
+            'sebaran' => [
+                'total'     => $orang->count(),
+                'aman'      => $aman,
+                'perhatian' => $perhatian,
+                'takLayak'  => $takLayak->count(),
+            ],
+
+            'perpanjang' => array_map(
+                fn (array $b) => $b + ['maks' => max(1, $orang->count())],
+                $perpanjang),
 
             'menunggu' => [
                 'mcu' => $mcuMenunggu->map(fn (McuPengajuan $m) => [
@@ -317,39 +363,54 @@ class MinersController extends Controller
                     ->exists(),
             ],
 
-            /* Kartu angka. Tiap satu punya tautan ke barisnya. */
+            /* Kartu angka. Tiap satu punya tautan ke barisnya, dan
+               tiap satu punya ikon berwarnanya sendiri.
+
+               Ikonnya disebut DI SINI bersama angkanya, bukan dipetakan
+               di layar menurut labelnya. Peta menurut label diam-diam
+               kehilangan ikonnya begitu sebuah label diperbaiki
+               ejaannya — dan yang tergambar bukan galat melainkan kotak
+               kosong di tempat ikon. */
             'kartu' => [
                 [
-                    'label' => 'Orang terdaftar', 'nilai' => $orang->count(),
+                    'label' => 'Orang terdaftar',
+                    'warna' => '#2563EB', 'ikon' => 'M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19M10 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm10 8v-1.5a3.5 3.5 0 0 0-2.6-3.4M15.5 4.2a3.5 3.5 0 0 1 0 6.6', 'nilai' => $orang->count(),
                     'jalur' => route('miners.index'), 'nada' => 'netral',
                 ],
                 [
-                    'label' => 'Tidak boleh bekerja', 'nilai' => $takLayak->count(),
+                    'label' => 'Tidak boleh bekerja',
+                    'warna' => '#DC2626', 'ikon' => 'M18.4 5.6 5.6 18.4M12 3.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17Z', 'nilai' => $takLayak->count(),
                     'jalur' => route('miners.index', ['keadaan' => '']), 'nada' => 'gawat',
                 ],
                 [
-                    'label' => 'Hasil MCU', 'nilai' => $orang->sum(fn ($p) => $p->mcu->count()),
+                    'label' => 'Hasil MCU',
+                    'warna' => '#059669', 'ikon' => 'M12 8v8m-4-4h8M12 3.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17Z', 'nilai' => $orang->sum(fn ($p) => $p->mcu->count()),
                     'jalur' => route('miners.mcu.index'), 'nada' => 'netral',
                 ],
                 [
                     'label' => 'Induksi', 'nilai' => $orang->sum(fn ($p) => $p->induksi->count()),
+                    'warna' => '#7C3AED', 'ikon' => 'M12 4 2.5 8.7 12 13.4l9.5-4.7L12 4Zm-6 6.6v4.2c0 1.5 2.7 2.8 6 2.8s6-1.3 6-2.8v-4.2',
                     'jalur' => route('miners.index'), 'nada' => 'netral',
                 ],
                 [
                     'label' => 'Kartu masuk', 'nilai' => $orang->sum(fn ($p) => $p->kartu->count()),
+                    'warna' => '#0D9488', 'ikon' => 'M3.5 7.5h17v9h-17v-9Zm0 3.2h17M7 14h3',
                     'jalur' => route('miners.index'), 'nada' => 'netral',
                 ],
                 [
                     'label' => 'Sertifikat kompetensi',
+                    'warna' => '#78716C', 'ikon' => 'M12 3.5 14.2 8l5 .7-3.6 3.5.9 5-4.5-2.4L7.5 17.2l.9-5L4.8 8.7l5-.7L12 3.5Z',
                     'nilai' => $orang->sum(fn ($p) => $p->sertifikat->count()),
                     'jalur' => route('miners.index'), 'nada' => 'netral',
                 ],
                 [
-                    'label' => 'Rujukan tertunggak', 'nilai' => $tertunggak,
+                    'label' => 'Rujukan tertunggak',
+                    'warna' => '#EA580C', 'ikon' => 'M12 7.5V12l3 1.8M12 3.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17Z', 'nilai' => $tertunggak,
                     'jalur' => route('miners.mcu.index'), 'nada' => 'serius',
                 ],
                 [
                     'label' => 'Berkas segera habis',
+                    'warna' => '#B45309', 'ikon' => 'M4 6.5h11l5 5v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z',
                     'nilai' => $kritis($orang->flatMap(fn ($p) => $p->sertifikat->pluck('tgl_expired')))
                              + $kritis($orang->map(fn ($p) => $p->mcuTerakhir()?->tgl_expired))
                              + $kritis($orang->map(fn ($p) => $p->kartuBerlaku()?->tgl_expired))
