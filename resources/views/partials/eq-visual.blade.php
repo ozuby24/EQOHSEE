@@ -836,6 +836,7 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] main .text-sky-700{color:#7DD3FC}
 :root[data-tema="gelap"] main .text-violet-700{color:#C4B5FD}
 :root[data-tema="gelap"] main .text-emerald-700{color:#6EE7B7}
+:root[data-tema="gelap"] main .text-green-700{color:#86EFAC}
 :root[data-tema="gelap"] main .text-amber-700{color:#FCD34D}
 :root[data-tema="gelap"] main .text-orange-700{color:#FDBA74}
 :root[data-tema="gelap"] main .text-red-700,
@@ -864,6 +865,7 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] main .bg-red-50{background:#2A1618}
 :root[data-tema="gelap"] main .bg-amber-50{background:#2A2213}
 :root[data-tema="gelap"] main .bg-emerald-50{background:#12251D}
+:root[data-tema="gelap"] main .bg-green-50{background:#12251D}
 :root[data-tema="gelap"] main .bg-sky-50{background:#122029}
 :root[data-tema="gelap"] main .bg-cam-orange-soft,
 :root[data-tema="gelap"] main .bg-cam-lime-soft{background:#2A1E12}
@@ -1257,5 +1259,33 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] .miners-hero-isi h2,
 :root[data-tema="gelap"] .miners-kartu header h3{color:var(--eq-judul,#E8ECF0)}
 :root[data-tema="gelap"] .miners-donat-angka{fill:var(--eq-judul,#E8ECF0)}
+
+
+/* ═══════════════════════════════════════════════════════════
+   PEMBELIAN — isian, tombol jumlah
+   ═══════════════════════════════════════════════════════════ */
+
+.beli-isian{width:100%;border-radius:11px;padding:9px 12px;font-size:12.5px;
+  color:var(--eq-judul,#0F1720);border:1px solid var(--eq-garis,#E4E8EC);
+  background:var(--eq-kartu,#fff);transition:border-color .15s,box-shadow .15s}
+.beli-isian::placeholder{color:var(--eq-redup,#9AA5B1)}
+.beli-isian:focus{outline:none;border-color:var(--eq-aksen,#F57C00);
+  box-shadow:0 0 0 3px rgba(245,124,0,.13)}
+
+/* Tombol tambah/kurang. min-width menjaga agar angkanya tidak menggeser
+   tombolnya saat berubah dari 9 ke 10. */
+.beli-plusmin{width:26px;height:26px;min-width:26px;border-radius:8px;
+  display:grid;place-items:center;font-size:15px;line-height:1;font-weight:700;
+  color:var(--eq-judul,#0F1720);border:1px solid var(--eq-garis,#E4E8EC);
+  background:var(--eq-kartu,#fff);cursor:pointer;transition:.15s}
+.beli-plusmin:hover{border-color:var(--eq-aksen,#F57C00);color:var(--eq-aksen,#F57C00)}
+
+:root[data-tema="gelap"] .beli-isian,
+:root[data-tema="gelap"] .beli-plusmin{
+  background:var(--eq-kartu,#141A21);
+  border-color:var(--eq-garis,rgba(255,255,255,.10));
+  color:var(--eq-judul,#E8ECF0);
+}
+:root[data-tema="gelap"] .beli-isian::placeholder{color:rgba(255,255,255,.38)}
 
 </style>

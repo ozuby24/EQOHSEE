@@ -249,6 +249,10 @@ class CertificateController extends Controller
 
         return Inertia::render('Certificates/Verify', [
             'kode' => $kode,
+
+            /* Kerangka publik berbawaan kalimat PTPKKP; halaman ini
+               memverifikasi sertifikat, tidak mengumpulkan jawaban. */
+            'catatanKaki' => 'Halaman verifikasi keaslian sertifikat EQOHSEE.',
             'c' => $c ? [
                 'penerima' => $c->recipient_name,
                 'kursus' => $c->course_title,

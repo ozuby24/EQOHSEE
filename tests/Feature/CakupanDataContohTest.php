@@ -98,6 +98,12 @@ class CakupanDataContohTest extends TestCase
         'inv_hierarki_kendali'     => 'hierarki pengendalian, master nasional',
         'inv_jenis_insiden'        => 'daftar acuan bersama',
         'inv_taksonomi'            => 'kamus penyebab SCAT/ICAM, master bersama',
+
+        /* Katalog jual: daftar harga penjual, bukan data pelanggan. Ia
+           dipasang perintah `pembelian:katalog` pada tiap deploy dan
+           TIDAK dibuang bersama data contoh — membuangnya akan menghapus
+           harga yang sudah ditetapkan orang. */
+        'beli_produk'              => 'katalog jual, master milik penjual',
         'inv_wawancara_pertanyaan' => 'bank soal wawancara, master bersama',
 
         /* Penghitung nomor. SENGAJA tidak ikut dibuang: mengosongkannya

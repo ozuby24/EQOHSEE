@@ -343,10 +343,20 @@ class KelengkapanMcuTest extends TestCase
         /* GERBANG hanya menyebut MCU. Bila suatu saat ia melebar tanpa
            sengaja, foto bahaya dan tanda tangan akan ikut tertutup dan
            halaman-halaman lain berlubang tanpa galat apa pun. */
-        /* Yang MEMANG dijaga: surat MCU dan surat rujukannya. Keduanya
-           memuat rincian medis — yang kedua menyebut ke poli mana
-           orangnya dirujuk, dan itu diagnosis dengan cara lain. */
-        $dijaga = ['mcu', 'mcr'];
+        /* Yang MEMANG dijaga:
+
+           mcu, mcr — surat MCU dan surat rujukannya. Keduanya memuat
+           rincian medis; yang kedua menyebut ke poli mana orangnya
+           dirujuk, dan itu diagnosis dengan cara lain.
+
+           bkt — bukti bayar. Tangkapan layar mutasi rekening: memuat
+           nomor rekening pengirim, dan kerap saldonya. Hanya admin,
+           orang yang memang memverifikasinya.
+
+           Daftar ini dipatok supaya pelebarannya selalu disengaja.
+           Melebar tanpa sengaja, foto bahaya dan tanda tangan ikut
+           tertutup dan halaman-halaman lain berlubang tanpa galat. */
+        $dijaga = ['mcu', 'mcr', 'bkt'];
 
         $this->assertSame($dijaga, array_keys(Berkas::GERBANG),
             'Daftar berkas terjaga berubah tanpa ujinya ikut ditinjau.');

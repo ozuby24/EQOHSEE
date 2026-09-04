@@ -3,6 +3,7 @@
 use App\Http\Controllers\InvestigasiController;
 use App\Http\Controllers\MinersController;
 use App\Http\Controllers\DasborController;
+use App\Http\Controllers\PembelianController;
 use App\Http\Controllers\{
     CertificateController, CourseController, DashboardController, EvaluationController,
     LearnController, NewsController, PersonaliaController, ProcedureController, ProfileController,
@@ -48,6 +49,17 @@ Route::post('uji/{token}/jalan',     [PengujianController::class,'jalan'])->name
 Route::get('uji/{token}/soal',       [PengujianController::class,'soal'])->name('pengujian.soal');
 Route::post('uji/{token}/jawab',     [PengujianController::class,'jawab'])->name('pengujian.jawab');
 Route::get('uji/{token}/selesai',    [PengujianController::class,'selesai'])->name('pengujian.selesai');
+
+/* Halaman bayar. TERBUKA TANPA LOGIN, dan itu memang keperluannya:
+   pembelinya calon pelanggan yang belum punya akun. Yang menjaganya
+   token acak 48 karakter pada alamatnya — sama seperti kuesioner dan
+   pengujian di atas.
+
+   Tidak memakai id pesanan. Id berurutan berarti mengganti angkanya
+   menampilkan tagihan orang lain lengkap dengan nama, telepon, dan
+   nilainya, pada halaman yang memang tidak meminta login. */
+Route::get('bayar/{token}',        [PembelianController::class, 'bayar'])->name('pembelian.bayar');
+Route::post('bayar/{token}/bukti', [PembelianController::class, 'unggahBukti'])->name('pembelian.bukti');
 
 Route::get('/', fn () => auth()->check()
     ? redirect()->route('dashboard')
@@ -337,6 +349,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
      * investigasi hanya dapat ditemukan lewat halaman seorang pekerja —
      * padahal yang dicari selalu kejadiannya, bukan orangnya.
      */
+    /* ================= Pembelian & lisensi ================= */
+    Route::prefix('pembelian')->name('pembelian.')->group(function () {
+        Route::get('/',        [PembelianController::class, 'katalog'])->name('katalog');
+        Route::post('pesan',   [PembelianController::class, 'simpan'])->name('simpan');
+
+        /* 'tagihan' didaftarkan SEBELUM 'tagihan/{pesanan}': tanpa itu
+           kata "tagihan" terbaca sebagai nomor pesanan. */
+        Route::get('tagihan',  [PembelianController::class, 'daftar'])->name('daftar');
+        Route::get('tagihan/{pesanan}', [PembelianController::class, 'tagihan'])
+            ->whereNumber('pesanan')->name('tagihan');
+
+        /* Ketiganya mengubah keadaan uang, jadi POST — bukan tautan GET
+           yang dapat terpicu prefetch peramban tanpa disentuh siapa pun.
+           Kewenangannya diperiksa di dalam controller supaya pesan
+           penolakannya dapat menyebut alasannya. */
+        Route::post('tagihan/{pesanan}/verifikasi', [PembelianController::class, 'verifikasi'])->name('verifikasi');
+        Route::post('tagihan/{pesanan}/tolak',      [PembelianController::class, 'tolak'])->name('tolak');
+        Route::post('tagihan/{pesanan}/batal',      [PembelianController::class, 'batal'])->name('batal');
+    });
+
     Route::prefix('investigasi')->name('investigasi.')->group(function () {
         Route::get('/', [InvestigasiController::class, 'dasbor'])->name('dasbor');
 

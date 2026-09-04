@@ -243,6 +243,12 @@ final class RuteInertia
         'miners.daftar.perpanjangan',
         'miners.daftar.rujukan',
         'miners.daftar.cetak-kartu',
+
+        /* Pembelian. Halaman bayar TIDAK didaftarkan di sini: ia
+           berparameter token dan berada di luar grup auth, sedangkan
+           daftar ini dipanggil tanpa parameter oleh RuteInertiaTest. */
+        'pembelian.katalog',
+        'pembelian.daftar',
         'ko.index',
         'ko.register',
         'ko.create',

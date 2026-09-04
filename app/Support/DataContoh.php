@@ -11,7 +11,10 @@ use App\Models\Investigasi\{
     WawancaraJawaban as InvWawancaraJawaban
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Pembelian\{Item as ItemBeli, Lisensi as LisensiBeli,
+    Pembayaran as PembayaranBeli, Pesanan as PesananBeli, Produk as ProdukBeli};
 use App\Support\Investigasi\{MasterInvestigasi, MesinScat, NomorInvestigasi, Triase as InvTriase};
+use App\Support\Pembelian;
 use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, BiayaRealisasi,
                 Company, Document, DocumentIso, DocumentRevision, EnergyEquipment,
                 EnergyFuelLog, GeoBacaan, GeoInstrumen, GeoLereng, GudangBarang, GudangLokasi,
@@ -153,6 +156,11 @@ final class DataContoh
            penyaring itu tidak menemukan apa pun karena yang ditunjuknya
            sudah hilang — dan barisnya tertinggal tanpa galat. */
         PersetujuanParaf::class,
+
+        /* Pembelian: anak lebih dulu. Lisensi dan pembayaran menunjuk
+           pesanan, item menunjuk pesanan dan produk. */
+        LisensiBeli::class, PembayaranBeli::class, ItemBeli::class,
+        PesananBeli::class, ProdukBeli::class,
         PasporSertifikat::class, PasporMcu::class,
         PasporKartuUnit::class, PasporKartu::class,
         PasporInduksi::class, Paspor::class, McuPengajuan::class, InduksiPengajuan::class,
@@ -467,6 +475,14 @@ final class DataContoh
             Pesan::class => $q->whereIn('percakapan_id',
                 Percakapan::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
 
+            /* Keduanya tidak punya company_id sendiri; batasnya lewat
+               pesanan. Tanpa cabang ini mereka tertinggal saat data
+               contoh dibuang — dan bertambah tiap kali tombol muat
+               ulang ditekan, tanpa satu pun galat. */
+            ItemBeli::class, PembayaranBeli::class
+                => $q->whereIn('pesanan_id',
+                    PesananBeli::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
             PasporSertifikat::class, PasporMcu::class, PasporKartu::class, PasporInduksi::class
                 => $q->whereIn('paspor_id',
                     Paspor::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
@@ -617,9 +633,94 @@ final class DataContoh
             'Authority'      => $this->authority(),
             'TPKKP'          => $this->tpkkp(),
             'Investigasi'    => $this->investigasi(),
+            'Pembelian'      => $this->pembelian(),
             'Pesan'          => $this->pesan(),
             'Catatan'        => $this->catatan(),
         ]);
+    }
+
+    /**
+     * Pembelian: katalog, satu tagihan lunas, satu yang masih menunggu.
+     *
+     * Dua tagihan, dan sengaja berbeda keadaannya. Data contoh yang
+     * seluruhnya lunas tidak pernah memperlihatkan bagaimana layarnya
+     * menampilkan tagihan yang menunggu — padahal itu keadaan yang
+     * paling sering dibuka orang.
+     *
+     * Katalognya dipasang lewat perintah yang sama dengan yang dipakai
+     * server, bukan disusun ulang di sini: dua penyusun untuk satu
+     * daftar akan berbeda isinya cepat atau lambat, dan yang di sini
+     * yang lebih dulu ketinggalan.
+     */
+    private function pembelian(): int
+    {
+        /* Katalognya dipasang, tetapi TIDAK dihitung sebagai baris data
+           contoh — ia master milik penjual, bukan data pelanggan, dan
+           membuangnya bersama data contoh akan menghapus harga yang
+           sudah ditetapkan orang. */
+        \Illuminate\Support\Facades\Artisan::call('pembelian:katalog');
+
+        $n = 0;
+
+        /* Harga contoh. Perintah pemasangnya sengaja menaruh nol dan
+           menonaktifkan — di sini diisi supaya katalognya dapat dilihat
+           berisi. */
+        ProdukBeli::where('kode', 'WEBSITE')->update(['harga' => 25_000_000, 'aktif' => true]);
+
+        ProdukBeli::where('jenis', 'aplikasi')->orderBy('urutan')->take(8)->get()
+            ->each(fn ($p) => $p->update(['harga' => 2_500_000, 'aktif' => true]));
+
+        $paket = ProdukBeli::where('kode', 'WEBSITE')->first();
+        $satuan = ProdukBeli::where('jenis', 'aplikasi')->where('aktif', true)->first();
+
+        if (! $paket || ! $satuan) return $n;
+
+        /* ── tagihan yang sudah lunas, lengkap dengan lisensinya ── */
+        $lunas = Pembelian::buat([
+            'company_id'         => $this->c->id,
+            'pembeli_nama'       => 'Bpk. Hendra Wijaya',
+            'pembeli_perusahaan' => $this->c->name,
+            'pembeli_email'      => 'hendra@contoh.co.id',
+            'pembeli_telepon'    => '0811-2233-4455',
+        ], [$paket->id => 1], $this->peninjau);
+
+        Pembelian::kirim($lunas);
+        $n += 1 + $lunas->items()->count();
+
+        PembayaranBeli::create([
+            'pesanan_id' => $lunas->id,
+            'metode'     => 'qris',
+            'jumlah'     => $lunas->total,
+            'atas_nama'  => 'Hendra Wijaya',
+            'tanggal_bayar' => $this->kini->copy()->subDays(9),
+            'catatan'    => 'Dibayar lewat QRIS, satu kali penuh.',
+        ]);
+        $n++;
+
+        if ($this->peninjau) {
+            Pembelian::tandaiLunas($lunas, $this->peninjau);
+            $n += $lunas->lisensi()->count();
+        }
+
+        /* ── tagihan yang masih menunggu pembayaran ── */
+        /* Perusahaannya diisi, meski di kenyataan calon pelanggan kerap
+           belum punya. Data contoh harus dapat dibuang seluruhnya, dan
+           tagihan tanpa perusahaan tidak terjangkau pembuangnya —
+           tertinggal, lalu menumpuk tiap kali tombol muat ulang
+           ditekan. */
+        $menunggu = Pembelian::buat([
+            'company_id'         => $this->c->id,
+            'pembeli_nama'       => 'Ibu Ratna Sari',
+            'pembeli_perusahaan' => 'PT Bara Sejahtera',
+            'pembeli_email'      => 'ratna@barasejahtera.co.id',
+            'pembeli_telepon'    => '0812-9988-7766',
+            'catatan'            => 'Minta penawaran tiga aplikasi lebih dulu.',
+        ], [$satuan->id => 3], $this->peninjau);
+
+        Pembelian::kirim($menunggu);
+        $n += 1 + $menunggu->items()->count();
+
+        return $n;
     }
 
     /* ─────────── Authority: kelayakan kerja ─────────── */

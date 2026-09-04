@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Investigasi\Bukti as BuktiInvestigasi;
+use App\Models\Pembelian\Pembayaran as PembayaranBeli;
 use App\Models\{Document, GudangBarang, HazardReport, InspectionItem, PasporKartu, PasporKartuUnit, PasporMcu, PasporSertifikat, Signatory, SmkpFinding};
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -120,6 +121,12 @@ final class Berkas
            investigasi lalu insidennya. */
         $out['evd'] = [BuktiInvestigasi::class, 'berkas', false];
 
+        /* Bukti bayar. TIDAK berlingkup perusahaan — tagihan boleh
+           berasal dari calon pelanggan yang belum punya perusahaan sama
+           sekali. Penjagaannya di GERBANG di bawah: hanya admin yang
+           boleh membukanya. */
+        $out['bkt'] = [PembayaranBeli::class, 'bukti', false];
+
         return $out;
     }
 
@@ -161,6 +168,15 @@ final class Berkas
     public const GERBANG = [
         'mcu' => ['isAdmin', 'isOhse', 'isParamedis'],
         'mcr' => ['isAdmin', 'isOhse', 'isParamedis'],
+
+        /* Bukti bayar adalah tangkapan layar mutasi rekening: ia memuat
+           nomor rekening pengirim, dan kerap saldonya. Hanya admin —
+           orang yang memang memverifikasinya — yang boleh membukanya.
+
+           Pembelinya sendiri tidak perlu: ia yang mengunggahnya, dan
+           halaman bayar tidak punya sesi yang dapat dipakai memastikan
+           bahwa yang membuka memang dia. */
+        'bkt' => ['isAdmin'],
     ];
 
     /** Pengguna ini boleh membuka berkas jenis itu? */

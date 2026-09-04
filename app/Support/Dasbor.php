@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Investigasi\{Insiden, Tindakan as TindakanInvestigasi};
+use App\Models\Pembelian\Pesanan as PesananBeli;
 use App\Models\{
     AngkutMuatan, BiayaRealisasi, Document, GeoBacaan, GudangBarang,
     HazardReport, Inspection, IzinKerja, KoObject, LedakRencana,
@@ -102,6 +103,27 @@ final class Dasbor
                     ->whereNotNull('tenggat')->whereDate('tenggat', '<', $kini)->count(),
                 'total' => TindakanInvestigasi::count(),
                 'rute'  => 'investigasi.dasbor', 'nada' => 'gawat',
+            ],
+
+            /* ═══ uang masuk ═══
+               Dua ubin, dan keduanya menuntut tindakan orang yang
+               berbeda: yang pertama menunggu penjual memeriksa bukti,
+               yang kedua menunggu pembeli membayar. Digabung menjadi
+               satu angka "tagihan berjalan", tidak satu pun dari kedua
+               tindakan itu terpanggil. */
+            [
+                'modul' => 'pembelian', 'nama' => 'Bukti Menunggu Diperiksa',
+                'ket'   => 'Pembeli sudah mengirim bukti, belum diverifikasi',
+                'nilai' => PesananBeli::where('status', PesananBeli::MENUNGGU_VERIFIKASI)->count(),
+                'total' => PesananBeli::count(),
+                'rute'  => 'pembelian.daftar', 'nada' => 'serius',
+            ],
+            [
+                'modul' => 'pembelian', 'nama' => 'Tagihan Belum Dibayar',
+                'ket'   => 'Sudah dikirim, menunggu pembayaran',
+                'nilai' => PesananBeli::where('status', PesananBeli::MENUNGGU_BAYAR)->count(),
+                'total' => PesananBeli::count(),
+                'rute'  => 'pembelian.daftar', 'nada' => 'ingat',
             ],
 
             /* ═══ orang ═══ */

@@ -328,6 +328,18 @@ php artisan migrate --force
 echo "==> Installing Investigasi master data"
 php artisan investigasi:pasang
 
+# Katalog jual — paket website dan tiap aplikasi di dalamnya.
+#
+# Dijalankan tiap deploy dengan alasan yang sama: modul baru yang
+# ditambahkan ke aplikasi harus ikut muncul di katalog, dan yang lupa
+# ditambahkan tidak dapat dijual sama sekali.
+#
+# TIDAK menimpa harga maupun keaktifan yang sudah diisi — butir yang
+# sudah ada hanya diperbarui nama dan urutannya. Butir baru lahir
+# berharga nol dan tidak aktif, sehingga tidak dapat terjual sebelum
+# harganya ditetapkan orang.
+php artisan pembelian:katalog
+
 echo "==> Linking public storage"
 # `--quiet` menekan ERROR merah "link already exists" yang muncul pada
 # SETIAP deploy sesudah yang pertama. Tautannya memang sudah ada dan
