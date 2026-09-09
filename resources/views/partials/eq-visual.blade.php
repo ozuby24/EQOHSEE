@@ -1309,149 +1309,6 @@ main a{transition:color .16s}
 
 
 
-/* ═══════════════════════════════════════════════════════════
-   ETALASE JUAL — chip saring, bilah keranjang
-   ═══════════════════════════════════════════════════════════ */
-
-/* Halaman publik, selalu di atas latar terang: ia memakai kerangka
-   kosong seperti halaman depan, di luar <main> yang dipetakan ulang
-   mode gelap. Karena itu warnanya ditulis tetap, bukan lewat peubah
-   tema — peubah tema di sini akan mengambil nilai yang disiapkan untuk
-   kartu gelap dan mencetak chip gelap di tengah halaman terang. */
-
-/* ── Garis kontur hero ──
-
-   Peta topografi adalah gambar yang setiap hari dibaca orang tambang.
-   Digambar sebagai satu <svg> inline, bukan berkas: ia mengisi seluruh
-   lebar hero tanpa satu permintaan jaringan pun, dan tidak pernah
-   tampil sebagai bingkai gambar rusak pada jaringan site. */
-.etalase-topo{position:absolute;inset:auto 0 0 0;height:58%;width:100%;
-  color:rgba(255,255,255,.22);pointer-events:none}
-
-/* ── Cahaya sudut pada panel kaca ──
-
-   Panel kaca yang rata terbaca sebagai kotak abu; satu sumber cahaya di
-   sudutnya memberi kedalaman tanpa menambah satu unsur pun yang harus
-   dibaca. */
-.etalase-kilau{position:absolute;top:-40%;right:-30%;width:70%;height:120%;
-  border-radius:999px;pointer-events:none;
-  background:radial-gradient(closest-side,rgba(199,231,68,.20),transparent 72%)}
-
-/* ── Bintik halus pada kartu putih ──
-
-   Dipakai kartu "paket disusun sesuai kebutuhan", satu-satunya kartu
-   besar tanpa foto di halaman ini. Rata putih, ia terbaca sebagai
-   ruang yang belum diisi. */
-.etalase-bintik{position:absolute;inset:0;pointer-events:none;opacity:.55;
-  background-image:radial-gradient(rgba(15,23,32,.07) 1px,transparent 1px);
-  background-size:18px 18px;
-  -webkit-mask-image:radial-gradient(ellipse at 50% 0%,#000,transparent 72%);
-  mask-image:radial-gradient(ellipse at 50% 0%,#000,transparent 72%)}
-
-/* ── Aura warna di balik grid aplikasi ──
-
-   Dua bulatan sangat lembut, memecah bidang putih besar yang di
-   belakang dua puluh satu kartu terbaca sebagai kertas. */
-.etalase-aura{position:absolute;width:38rem;height:38rem;border-radius:999px;
-  pointer-events:none;filter:blur(10px)}
-.etalase-aura-kiri{top:6rem;left:-14rem;
-  background:radial-gradient(closest-side,rgba(245,124,0,.10),transparent 70%)}
-.etalase-aura-kanan{bottom:2rem;right:-15rem;
-  background:radial-gradient(closest-side,rgba(30,136,229,.10),transparent 70%)}
-
-/* ── Kartu aspek berfoto ──
-
-   Rasio dikunci supaya delapan kartu berfoto berbeda tetap sebaris
-   rapi; tanpa itu tingginya mengikuti isi dan barisannya bergerigi. */
-.etalase-aspek{position:relative;overflow:hidden;border-radius:1rem;
-  aspect-ratio:4/3;min-height:9.5rem;text-align:left;cursor:pointer;
-  border:1px solid rgba(255,255,255,.10);background:#0F1720;
-  transition:transform .25s cubic-bezier(.21,.6,.35,1),border-color .25s,box-shadow .25s}
-.etalase-aspek:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.24);
-  box-shadow:0 12px 28px -14px rgba(0,0,0,.75)}
-.etalase-aspek-aktif{border-color:#C7E744;box-shadow:0 0 0 2px rgba(199,231,68,.35)}
-
-/* Cap ikon pada kartu aspek yang belum punya foto. Diputar sedikit
-   supaya tidak terbaca sebagai ikon kedua yang kebetulan kebesaran. */
-.etalase-aspek-cap{color:rgba(255,255,255,.14);transform:rotate(-8deg) translate(12%,10%);
-  pointer-events:none}
-
-/* ── Kartu aplikasi ── */
-.etalase-kartu{position:relative;overflow:hidden;display:flex;flex-direction:column;
-  background:#fff;border:1px solid #F0F0EF;border-radius:1rem;padding:1.5rem;
-  box-shadow:0 1px 2px rgba(15,23,32,.05),0 8px 24px -18px rgba(15,23,32,.35);
-  transition:transform .25s cubic-bezier(.21,.6,.35,1),box-shadow .25s,border-color .25s}
-.etalase-kartu:hover{transform:translateY(-4px);border-color:#E4E4E2;
-  box-shadow:0 6px 14px -8px rgba(15,23,32,.14),0 22px 44px -26px rgba(15,23,32,.42)}
-
-/* Cap air: ikon modulnya sendiri, dibesarkan dan diredupkan. Tiap kartu
-   jadi berbeda tanpa satu berkas gambar pun ditambahkan. */
-.etalase-cap{position:absolute;right:-1.6rem;bottom:-1.8rem;
-  width:9.5rem;height:9.5rem;opacity:.07;pointer-events:none;
-  transition:opacity .3s,transform .3s cubic-bezier(.21,.6,.35,1)}
-.etalase-kartu:hover .etalase-cap{opacity:.12;transform:translate(-.35rem,-.35rem) rotate(-4deg)}
-
-/* ── Empat langkah ── */
-.etalase-langkah{position:relative;display:inline-grid;place-items:center;
-  width:4rem;height:4rem;border-radius:1.15rem;color:#fff;
-  background:linear-gradient(135deg,#F57C00,#DC6E00);
-  box-shadow:0 10px 24px -12px rgba(245,124,0,.75)}
-.etalase-langkah-angka{position:absolute;top:-.35rem;right:-.35rem;
-  width:1.35rem;height:1.35rem;border-radius:999px;display:grid;place-items:center;
-  font-size:10px;font-weight:800;color:#0F1720;background:#C7E744;
-  border:2px solid #F7F7F5}
-
-/* Rel penghubung antar langkah. Hanya pada lebar yang benar-benar
-   menampung empat kolom sejajar: pada dua kolom ia menyambungkan
-   langkah 2 ke langkah 3 yang berada di baris berbeda, menggambar
-   urutan yang tidak pernah terjadi. */
-.etalase-rel{display:none}
-@media (min-width:1024px){
-  .etalase-rel{display:block;position:absolute;top:2rem;left:12.5%;right:12.5%;height:2px;
-    background:linear-gradient(90deg,transparent,#E4E8EC 12%,#E4E8EC 88%,transparent);
-    pointer-events:none}
-}
-.etalase-chip{border-radius:999px;padding:6px 13px;font-size:11.5px;font-weight:700;
-  border:1px solid #E4E8EC;background:#fff;color:#54606B;cursor:pointer;
-  transition:border-color .15s,background .15s,color .15s}
-.etalase-chip:hover{border-color:#C6CFD6}
-.etalase-chip-aktif{background:#0F1720;border-color:#0F1720;color:#fff}
-.etalase-chip-aktif:hover{border-color:#0F1720}
-
-/* Pasangan mode gelapnya tetap ditulis meski etalase hari ini selalu
-   terang. Kartu putih tanpa pasangan adalah cacat yang tidak terlihat
-   oleh yang menuliskannya — ia hanya terlihat oleh yang membacanya
-   malam hari — dan halaman yang pindah ke kerangka bertema nanti tidak
-   akan mengingatkan siapa pun bahwa barisnya belum ada. */
-:root[data-tema="gelap"] .etalase-chip{
-  background:var(--eq-kartu,#141A21);
-  border-color:var(--eq-garis,rgba(255,255,255,.10));
-  color:var(--eq-teks,#B7C2CC)}
-:root[data-tema="gelap"] .etalase-chip:hover{border-color:rgba(255,255,255,.22)}
-:root[data-tema="gelap"] .etalase-chip-aktif{
-  background:#E8ECF0;border-color:#E8ECF0;color:#0F1720}
-:root[data-tema="gelap"] .etalase-kartu{
-  background:var(--eq-kartu,#141A21);
-  border-color:var(--eq-garis,rgba(255,255,255,.10))}
-
-/* Bilah keranjang menyelinap dari bawah, bukan muncul begitu saja:
-   sesuatu seukuran itu yang terbit mendadak di tepi layar terbaca
-   sebagai iklan yang menutupi halaman, dan yang pertama dicari
-   pembacanya adalah tombol menutupnya. */
-.etalase-bilah-enter-active,.etalase-bilah-leave-active{transition:transform .22s ease,opacity .22s ease}
-.etalase-bilah-enter-from,.etalase-bilah-leave-to{transform:translateY(120%);opacity:0}
-
-@media (prefers-reduced-motion:reduce){
-  .etalase-bilah-enter-active,.etalase-bilah-leave-active{transition:none}
-  .etalase-bilah-enter-from,.etalase-bilah-leave-to{transform:none;opacity:1}
-
-  /* Kartu yang terangkat dan cap air yang berputar sama-sama gerakan,
-     dan permintaan "kurangi gerakan" tidak berhenti pada video. */
-  .etalase-kartu,.etalase-aspek,.etalase-cap{transition:none}
-  .etalase-kartu:hover,.etalase-aspek:hover{transform:none}
-  .etalase-kartu:hover .etalase-cap{transform:none}
-}
-
 
 /* ═══════════════════════════════════════════════════════════
    TOMBOL YANG SEDANG MATI
@@ -1483,17 +1340,484 @@ main a{transition:color .16s}
   transform:none}
 
 
-/* ── Bagian harga halaman depan ── */
 
-/* Kontur pada bidang navy di antara dua bagian terang. Tanpa tekstur, ia
-   terbaca sebagai jeda kosong, bukan sebagai bagian yang berisi. */
-.harga-topo{position:absolute;inset:auto 0 0 0;height:64%;width:100%;
-  color:rgba(255,255,255,.07);pointer-events:none}
 
-/* Cahaya sudut pada kartu paket, menandainya sebagai yang dituju tanpa
-   menambah satu kata pun. */
-.harga-kilau{position:absolute;top:-45%;right:-30%;width:75%;height:130%;
-  border-radius:999px;pointer-events:none;
-  background:radial-gradient(closest-side,rgba(199,231,68,.16),transparent 72%)}
+/* ═══════════════════════════════════════════════════════════
+   ETALASE JUAL
+   ═══════════════════════════════════════════════════════════
+
+   Halaman publik, selalu di atas latar terang: ia memakai kerangka
+   kosong seperti halaman depan, di luar <main> yang dipetakan ulang mode
+   gelap. Warnanya karena itu ditulis tetap, bukan lewat peubah tema —
+   peubah tema di sini akan mengambil nilai yang disiapkan untuk kartu
+   gelap dan mencetak kartu gelap di tengah halaman terang.
+
+   ── HURUFNYA YANG SUDAH ADA, BUKAN YANG DIUNDUH ──
+
+   Judulnya memakai Inter tebal, bukan grotesk lain yang harus diambil
+   dari Google Fonts. Repo ini menyajikan hurufnya sendiri dan sudah
+   sekali melepas pustaka dari CDN; menambah satu keluarga huruf dari
+   jaringan berarti judul yang belum tergambar pada sambungan site
+   tambang — persis pada kalimat yang harus terbaca lebih dulu.
+
+   Label kecilnya memakai monospace bawaan sistem, juga tanpa unduhan.
+   Yang membuatnya bekerja bukan huruf tertentu melainkan bentuknya:
+   huruf besar, tebal sedang, dan jarak antarhuruf yang lapang.
+
+   ── SATU LENGKUNG WAKTU UNTUK SELURUH HALAMAN ──
+
+   cubic-bezier(.22,1,.36,1): melambat di ujung, tidak pernah melampaui
+   tujuannya. Angka yang sama dipakai v-singkap; gerakan masuk dan
+   gerakan sentuh harus terasa berasal dari satu tangan.
+   ═══════════════════════════════════════════════════════════ */
+
+.jual{
+  --j-dasar:#F7F8F6;
+  --j-kartu:#FFFFFF;
+  --j-tinta:#12161A;
+  --j-redup:#5F6B66;
+  --j-samar:#8A948F;
+  --j-garis:#E3E7E2;
+  --j-garis-tebal:#D4DAD3;
+  --j-aksen:#F57C00;
+  --j-aksen-lembut:#FFF1E3;
+  --j-hijau:#12BE15;
+  --j-hijau-lembut:#E4FBE4;
+  --j-hijau-tua:#095F0A;
+  --j-gelap:#12161A;
+  --j-lengkung:cubic-bezier(.22,1,.36,1);
+
+  background:var(--j-dasar);color:var(--j-tinta);
+  font-feature-settings:"kern" 1,"liga" 1,"cv11" 1;
+}
+
+/* Bagian harga di halaman depan MEMINJAM kosakata ini.
+
+   Peubahnya hidup pada `.jual`; sebuah bagian di halaman lain yang
+   memakai .jual-kartu tanpa induk itu akan mewarisi peubah yang tidak
+   pernah ditetapkan, dan yang tergambar kartu tanpa warna sama sekali.
+   `.jual-lugas` memberi peubah yang sama tanpa membawa latar halamannya
+   — halaman depan sudah punya latarnya sendiri. */
+.jual-lugas{
+  --j-dasar:#F7F8F6;
+  --j-kartu:#FFFFFF;
+  --j-tinta:#12161A;
+  --j-redup:#5F6B66;
+  --j-samar:#8A948F;
+  --j-garis:#E3E7E2;
+  --j-garis-tebal:#D4DAD3;
+  --j-aksen:#F57C00;
+  --j-aksen-lembut:#FFF1E3;
+  --j-hijau:#12BE15;
+  --j-hijau-lembut:#E4FBE4;
+  --j-hijau-tua:#095F0A;
+  --j-gelap:#12161A;
+  --j-lengkung:cubic-bezier(.22,1,.36,1);
+
+  background:var(--j-dasar);color:var(--j-tinta);
+}
+
+.jual-lebar{max-width:78rem;margin-inline:auto;padding-inline:1.25rem}
+@media (min-width:768px){.jual-lebar{padding-inline:2.5rem}}
+
+/* ── tipografi ── */
+
+/* Label monospace berhuruf besar dengan jarak .2em. Satu-satunya unsur
+   yang bukan Inter, dan itulah gunanya: ia menandai awal tiap bagian
+   tanpa perlu garis, kotak, maupun ikon. */
+.jual-mata{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  font-size:12px;font-weight:600;letter-spacing:.2em;line-height:1.4;
+  text-transform:uppercase;color:var(--j-samar)}
+.jual-mata-aksen{color:var(--j-aksen)}
+.jual-mata-terang{color:rgba(255,255,255,.5)}
+
+/* Ukurannya ditahan supaya tetap dua baris pada lebar meja kerja.
+
+   Dibiarkan naik, baris kedua pecah dan menyisakan satu kata sendirian di
+   baris ketiga — janda, yang pada judul setebal ini terbaca sebagai
+   kalimat terpotong, bukan sebagai baris baru. Diukur, bukan dikira. */
+.jual-judul{font-size:clamp(2.2rem,4.1vw,3.2rem);font-weight:700;line-height:1.1;
+  letter-spacing:-.03em;color:#fff}
+.jual-judul-tipis{color:rgba(255,255,255,.52)}
+
+.jual-h2{font-size:clamp(1.85rem,3.6vw,3rem);font-weight:700;line-height:1.14;
+  letter-spacing:-.028em;margin-top:1.25rem}
+.jual-h2-terang{color:#fff}
+
+.jual-h3{font-size:1.35rem;font-weight:700;line-height:1.25;letter-spacing:-.016em}
+.jual-h4{font-size:1.05rem;font-weight:700;line-height:1.35;letter-spacing:-.01em}
+
+.jual-tubuh{font-size:16px;line-height:1.6;color:var(--j-redup)}
+.jual-tubuh-besar{font-size:19px;line-height:1.55;color:var(--j-redup)}
+.jual-tubuh-kecil{font-size:14px;line-height:1.55;color:var(--j-redup)}
+.jual-tubuh-terang{color:rgba(255,255,255,.62)}
+
+/* Angka harga. tabular-nums menjaga digitnya selebar sama, sehingga
+   Rp 9.500.000 dan Rp 13.500.000 tidak saling menggeser. */
+.jual-angka{font-size:clamp(2rem,3.6vw,2.75rem);font-weight:700;line-height:1;
+  letter-spacing:-.035em;font-variant-numeric:tabular-nums}
+.jual-angka-kecil{font-size:.44em;font-weight:600;letter-spacing:-.01em;
+  margin-right:.3em;vertical-align:.5em;color:var(--j-samar)}
+
+/* ── tombol ── */
+
+.jual-tombol{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
+  padding:.8rem 1.4rem;border-radius:8px;
+  font-size:14px;font-weight:600;letter-spacing:-.008em;
+  background:var(--j-gelap);color:#fff;border:1px solid var(--j-gelap);
+  transition:background .3s var(--j-lengkung),border-color .3s var(--j-lengkung),
+  color .3s var(--j-lengkung),transform .3s var(--j-lengkung),box-shadow .3s var(--j-lengkung)}
+.jual-tombol:hover{background:var(--j-aksen);border-color:var(--j-aksen);
+  box-shadow:0 8px 20px -10px rgba(245,124,0,.65)}
+.jual-tombol:active{transform:translateY(1px)}
+.jual-tombol:disabled{opacity:.34;cursor:not-allowed;background:var(--j-gelap);
+  border-color:var(--j-gelap);transform:none;box-shadow:none}
+
+.jual-tombol-lain{background:transparent;color:var(--j-tinta);border-color:var(--j-garis-tebal)}
+.jual-tombol-lain:hover{background:var(--j-tinta);border-color:var(--j-tinta);color:#fff;
+  box-shadow:none}
+
+.jual-tombol-terang{background:#fff;color:var(--j-gelap);border-color:#fff}
+.jual-tombol-terang:hover{background:var(--j-aksen);border-color:var(--j-aksen);color:#fff}
+.jual-tombol-terang:disabled{background:rgba(255,255,255,.35);border-color:transparent}
+
+.jual-tombol-garis{background:transparent;color:#fff;border-color:rgba(255,255,255,.3)}
+.jual-tombol-garis:hover{background:#fff;border-color:#fff;color:var(--j-gelap);box-shadow:none}
+
+.jual-tombol-kecil{padding:.58rem 1rem;font-size:13px}
+
+/* Garis bawah yang menyapu, bukan yang menyala serentak. background-size
+   tidak memicu tata letak dihitung ulang, jadi sapuannya tetap halus
+   meski ada dua puluh satu tautan di layar. */
+.jual-tautan{display:inline-block;font-size:14px;font-weight:600;color:var(--j-tinta);
+  padding-bottom:2px;
+  background-image:linear-gradient(currentColor,currentColor);
+  background-repeat:no-repeat;background-position:0 100%;background-size:100% 1.5px;
+  transition:background-size .4s var(--j-lengkung),color .3s var(--j-lengkung)}
+.jual-tautan:hover{color:var(--j-aksen);background-size:0% 1.5px;background-position:100% 100%}
+.jual-tautan-terang{color:#fff}
+.jual-tautan-terang:hover{color:var(--j-aksen)}
+
+/* ── kepala ── */
+
+.jual-kepala{position:fixed;inset:0 0 auto 0;z-index:40;height:4.5rem;color:#fff;
+  border-bottom:1px solid transparent;
+  transition:background .4s var(--j-lengkung),border-color .4s var(--j-lengkung),
+  color .4s var(--j-lengkung),backdrop-filter .4s var(--j-lengkung)}
+.jual-kepala-turun{background:rgba(247,248,246,.9);color:var(--j-tinta);
+  border-bottom-color:var(--j-garis);backdrop-filter:saturate(1.5) blur(16px)}
+
+.jual-nav{font-size:14px;font-weight:500;color:currentColor;opacity:.66;
+  transition:opacity .28s var(--j-lengkung)}
+.jual-nav:hover{opacity:1}
+
+/* ── hero ── */
+
+.jual-hero{position:relative;overflow:hidden;background:var(--j-gelap)}
+.jual-hero-media{position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;object-position:center 42%;opacity:.3}
+.jual-hero-tirai{position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(102deg,#12161AF7 0%,#12161AE0 46%,#12161A99 100%)}
+
+/* ── kartu tiruan tagihan ──
+
+   Potongan produk yang sesungguhnya, bukan gambar hiasan. Ia sekaligus
+   memperlihatkan apa yang akan diterima pembeli sesudah menekan tombol:
+   nomor tagihan, barisnya, totalnya, dan cara membayarnya. Halaman jual
+   yang memperlihatkan barangnya lebih meyakinkan daripada halaman jual
+   yang memperlihatkan ikon tentang barangnya. */
+.jual-mock{background:var(--j-kartu);border-radius:16px;padding:1.25rem;
+  box-shadow:0 30px 60px -30px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.14);
+  width:min(23rem,100%)}
+.jual-mock-kepala{display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding-bottom:.9rem;border-bottom:1px solid var(--j-garis)}
+.jual-mock-nomor{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:12px;font-weight:600;letter-spacing:.04em}
+.jual-mock-lencana{display:inline-flex;align-items:center;gap:.4rem;border-radius:40px;
+  padding:.25rem .6rem;font-size:11px;font-weight:600;
+  background:var(--j-hijau-lembut);color:var(--j-hijau-tua)}
+.jual-mock-lencana::before{content:"";width:5px;height:5px;border-radius:999px;
+  background:var(--j-hijau)}
+.jual-mock-baris{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;
+  padding:.6rem 0;font-size:13px}
+.jual-mock-baris+.jual-mock-baris{border-top:1px solid var(--j-garis)}
+.jual-mock-baris span:last-child{font-variant-numeric:tabular-nums;font-weight:600}
+.jual-mock-total{display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  margin-top:.35rem;padding-top:.85rem;border-top:1px solid var(--j-garis-tebal)}
+.jual-mock-total b{font-size:1.15rem;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.jual-mock-bayar{display:flex;align-items:center;gap:.75rem;margin-top:1rem;
+  background:var(--j-dasar);border-radius:12px;padding:.75rem}
+/* Ikon garis, BUKAN kisi titik yang menyerupai kode sungguhan.
+
+   Kisi titik terbaca dua cara, dan keduanya buruk: sebagai gambar yang
+   gagal dimuat, atau sebagai kode yang dapat dipindai. Yang kedua lebih
+   buruk — orang benar-benar akan mengarahkan kameranya ke sana, dan yang
+   didapatnya tidak ada. Ikon tidak pernah disalahpahami begitu. */
+.jual-mock-qr{width:2.5rem;height:2.5rem;border-radius:8px;flex:none;
+  display:grid;place-items:center;background:#fff;color:var(--j-tinta);
+  border:1px solid var(--j-garis-tebal)}
+.jual-mock-qr svg{width:1.35rem;height:1.35rem}
+
+/* ── bagian ── */
+
+.jual-bagian{padding-block:5rem}
+@media (min-width:768px){.jual-bagian{padding-block:7rem}}
+.jual-bagian-gelap{background:var(--j-gelap);color:#fff}
+.jual-bagian-putih{background:var(--j-kartu)}
+
+.jual-kepala-bagian{max-width:46rem;margin-bottom:3rem}
+@media (min-width:768px){.jual-kepala-bagian{margin-bottom:4rem}}
+
+/* Pita penanda pada kartu rencana. Kata, bukan warna sendirian: warna
+   saja tidak terbaca oleh yang tidak membedakan jingga dan abu. */
+.jual-pita{display:inline-flex;align-items:center;align-self:flex-start;
+  border-radius:40px;padding:.28rem .7rem;font-size:11px;font-weight:700;
+  letter-spacing:.02em;background:var(--j-aksen-lembut);color:var(--j-aksen)}
+.jual-pita-sunyi{background:var(--j-dasar);color:var(--j-redup)}
+
+/* ── kartu ── */
+
+.jual-kartu{background:var(--j-kartu);border:1px solid var(--j-garis);border-radius:12px;
+  padding:1.65rem;
+  transition:border-color .3s var(--j-lengkung),box-shadow .3s var(--j-lengkung),
+  transform .3s var(--j-lengkung)}
+.jual-kartu:hover{border-color:var(--j-garis-tebal);transform:translateY(-2px);
+  box-shadow:0 14px 32px -22px rgba(18,22,26,.4)}
+
+/* ── paket ── */
+
+.jual-paket{display:grid;gap:1rem;align-items:stretch}
+@media (min-width:1024px){.jual-paket{grid-template-columns:minmax(0,1fr) 21rem}}
+
+.jual-paket-isi{background:var(--j-kartu);border:1px solid var(--j-garis);
+  border-radius:12px;padding:2rem}
+@media (min-width:768px){.jual-paket-isi{padding:2.5rem}}
+
+.jual-paket-daftar{display:grid;gap:.6rem 1.5rem;margin-top:1.75rem;
+  grid-template-columns:1fr;font-size:14px;color:var(--j-redup)}
+@media (min-width:640px){.jual-paket-daftar{grid-template-columns:1fr 1fr}}
+@media (min-width:1024px){.jual-paket-daftar{grid-template-columns:1fr 1fr 1fr}}
+.jual-paket-daftar li{display:flex;align-items:center;gap:.55rem}
+.jual-centang{width:1rem;height:1rem;border-radius:999px;flex:none;display:grid;
+  place-items:center;background:var(--j-hijau-lembut)}
+.jual-centang svg{width:.6rem;height:.6rem;color:var(--j-hijau-tua)}
+
+.jual-paket-harga{background:var(--j-gelap);color:#fff;border-radius:12px;padding:2rem;
+  display:flex;flex-direction:column}
+.jual-paket-tombol{margin-top:auto;padding-top:0}
+@media (max-width:1023px){.jual-paket-tombol{margin-top:1.75rem}}
+
+.jual-kosong{background:var(--j-kartu);border:1px solid var(--j-garis);border-radius:12px;
+  padding:2.5rem;max-width:42rem}
+
+/* ── cakupan ── */
+
+.jual-aspek-kisi{display:grid;gap:1rem;grid-template-columns:1fr}
+@media (min-width:640px){.jual-aspek-kisi{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1024px){.jual-aspek-kisi{grid-template-columns:repeat(3,1fr)}}
+
+.jual-aspek{text-align:left;cursor:pointer;display:block;border-radius:12px;overflow:hidden;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);
+  transition:border-color .3s var(--j-lengkung),transform .3s var(--j-lengkung),
+  background .3s var(--j-lengkung)}
+.jual-aspek:hover{border-color:rgba(255,255,255,.22);transform:translateY(-2px);
+  background:rgba(255,255,255,.07)}
+
+.jual-aspek-bingkai{position:relative;display:block;overflow:hidden;aspect-ratio:16/10;
+  background:#1B2126}
+
+/* Tingginya DILEBIHKAN dan dijangkarkan ke atas, dan itu bukan pilihan
+   gaya: berkas galerinya membawa tulisan yang terbakar di dalam
+   gambarnya — occhealth.jpg mencetak "Occupational Health" di tengah
+   bawah, dan lima berkas lain membawa lencana bintang penyunting di
+   kanan bawah. Ditampilkan utuh, kartunya menyebut nama aspeknya dua
+   kali: sekali sebagai label, sekali sebagai tulisan buram yang tidak
+   sejajar dengan apa pun.
+
+   Berkas fotonya sendiri tidak disentuh. Menggantinya dengan yang bersih
+   membuat baris ini tidak lagi berguna, tetapi juga tidak merusak apa
+   pun. */
+.jual-aspek-foto{position:absolute;inset:0 0 auto 0;width:100%;height:124%;
+  object-fit:cover;object-position:center 34%;transform-origin:50% 0;
+  transition:transform 1s var(--j-lengkung)}
+.jual-aspek:hover .jual-aspek-foto{transform:scale(1.05)}
+.jual-aspek-polos{background:
+  linear-gradient(155deg,rgba(255,255,255,.09),rgba(0,0,0,.32)),
+  color-mix(in srgb,var(--w,#2A323B) 55%,#1B2126)}
+.jual-aspek-tirai{position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,transparent 50%,#12161A66 100%)}
+
+.jual-aspek-baris{display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding:1rem 1.15rem}
+.jual-aspek-nama{font-size:15px;font-weight:700;letter-spacing:-.012em}
+.jual-aspek-jumlah{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:11px;color:rgba(255,255,255,.42);font-variant-numeric:tabular-nums}
+
+/* ── daftar harga ── */
+
+.jual-grup{margin-top:2.5rem}
+.jual-grup:first-of-type{margin-top:0}
+
+.jual-grup-kepala{display:flex;align-items:center;gap:.75rem;margin-bottom:.85rem}
+.jual-grup-titik{width:.55rem;height:.55rem;border-radius:999px;flex:none}
+.jual-grup-nama{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+.jual-grup-jumlah{margin-left:auto;font-size:13px;color:var(--j-samar);
+  font-variant-numeric:tabular-nums}
+
+.jual-baris{display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap;
+  background:var(--j-kartu);border:1px solid var(--j-garis);border-radius:12px;
+  padding:1.15rem 1.35rem;margin-bottom:.6rem;
+  transition:border-color .28s var(--j-lengkung),box-shadow .28s var(--j-lengkung)}
+.jual-baris:hover{border-color:var(--j-garis-tebal);
+  box-shadow:0 10px 26px -20px rgba(18,22,26,.4)}
+
+.jual-baris-teks{flex:1 1 19rem;min-width:0}
+.jual-baris-nama{display:block;font-size:15px;font-weight:700;letter-spacing:-.014em}
+.jual-baris-ket{display:block;font-size:13.5px;line-height:1.5;color:var(--j-redup);
+  margin-top:.25rem;max-width:36rem}
+
+.jual-baris-aksi{display:flex;align-items:center;gap:1.25rem;margin-left:auto}
+.jual-baris-harga{text-align:right;min-width:7.5rem;font-variant-numeric:tabular-nums}
+.jual-baris-harga .num{display:block;font-size:15px;font-weight:700;letter-spacing:-.015em}
+.jual-baris-masa{display:block;font-size:12px;color:var(--j-samar);margin-top:.1rem}
+
+/* ── penghitung ── */
+
+.jual-hitung{display:inline-flex;align-items:center;background:var(--j-dasar);
+  border:1px solid var(--j-garis);border-radius:8px}
+.jual-hitung button{width:1.95rem;height:1.95rem;display:grid;place-items:center;
+  font-size:15px;line-height:1;color:var(--j-redup);cursor:pointer;border-radius:7px;
+  transition:color .22s var(--j-lengkung),background .22s var(--j-lengkung)}
+.jual-hitung button:hover{color:var(--j-tinta);background:#fff}
+.jual-hitung .num{width:2rem;text-align:center;font-size:13px;font-weight:700;
+  font-variant-numeric:tabular-nums}
+
+.jual-paket-harga .jual-hitung{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.16)}
+.jual-paket-harga .jual-hitung button{color:rgba(255,255,255,.66)}
+.jual-paket-harga .jual-hitung button:hover{color:#fff;background:rgba(255,255,255,.12)}
+
+/* ── cara beli ── */
+
+.jual-langkah{display:grid;gap:1rem;grid-template-columns:1fr}
+@media (min-width:640px){.jual-langkah{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1024px){.jual-langkah{grid-template-columns:repeat(4,1fr)}}
+.jual-langkah-angka{display:inline-flex;align-items:center;justify-content:center;
+  width:1.9rem;height:1.9rem;border-radius:8px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:12px;font-weight:700;
+  background:var(--j-aksen-lembut);color:var(--j-aksen)}
+
+.jual-jaminan{display:grid;gap:1rem;grid-template-columns:1fr}
+@media (min-width:640px){.jual-jaminan{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1024px){.jual-jaminan{grid-template-columns:repeat(4,1fr)}}
+
+/* ── pemesanan ── */
+
+.jual-pesanan{background:var(--j-kartu);border:1px solid var(--j-garis);border-radius:12px;
+  overflow:hidden}
+.jual-pesanan li{display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap;
+  padding:1.1rem 1.35rem}
+.jual-pesanan li+li{border-top:1px solid var(--j-garis)}
+.jual-pesanan-teks{flex:1 1 13rem;min-width:0}
+.jual-pesanan-aksi{display:flex;align-items:center;gap:1.15rem;margin-left:auto}
+.jual-pesanan-jumlah{font-size:15px;font-weight:700;min-width:7.5rem;text-align:right;
+  font-variant-numeric:tabular-nums;letter-spacing:-.015em}
+.jual-pesanan-kosong{background:var(--j-kartu);border:1px dashed var(--j-garis-tebal);
+  border-radius:12px;padding:2.5rem 1.5rem;text-align:center;
+  font-size:14px;color:var(--j-samar)}
+
+.jual-buang{width:1.5rem;height:1.5rem;display:grid;place-items:center;font-size:16px;
+  line-height:1;color:#C3CAC5;cursor:pointer;border-radius:6px;
+  transition:color .22s var(--j-lengkung),background .22s var(--j-lengkung)}
+.jual-buang:hover{color:#B91C1C;background:#FEF2F2}
+
+.jual-total{display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  background:var(--j-gelap);color:#fff;border-radius:12px;padding:1.25rem 1.35rem;
+  margin-top:.6rem}
+.jual-total span:first-child{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+  color:rgba(255,255,255,.5)}
+.jual-total span:last-child{font-size:1.4rem;font-weight:700;letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums}
+
+/* ── formulir ──
+
+   Label di ATAS isian, bukan sebagai placeholder yang hilang begitu
+   diketik. Placeholder sebagai label membuat orang yang berhenti sejenak
+   di tengah pengisian kehilangan nama medannya, dan yang paling sering
+   berhenti adalah yang paling ragu. */
+.jual-form{background:var(--j-kartu);border:1px solid var(--j-garis);border-radius:12px;
+  padding:1.75rem}
+
+.jual-isian{display:block;margin-top:1rem}
+.jual-isian:first-of-type{margin-top:0}
+.jual-isian>span{display:block;font-size:12px;font-weight:600;color:var(--j-redup);
+  margin-bottom:.4rem}
+.jual-isian input,.jual-isian textarea{width:100%;background:var(--j-dasar);
+  border:1px solid var(--j-garis);border-radius:8px;padding:.65rem .8rem;
+  font-size:14px;color:var(--j-tinta);
+  transition:border-color .25s var(--j-lengkung),background .25s var(--j-lengkung),
+  box-shadow .25s var(--j-lengkung)}
+.jual-isian input::placeholder,.jual-isian textarea::placeholder{color:#AEB6B1}
+.jual-isian input:focus,.jual-isian textarea:focus{outline:none;background:#fff;
+  border-color:var(--j-aksen);box-shadow:0 0 0 3px rgba(245,124,0,.13)}
+.jual-isian textarea{resize:vertical}
+
+.jual-galat{font-size:12.5px;color:#B91C1C;margin-top:.35rem}
+
+/* ── kaki ── */
+
+.jual-kaki{background:var(--j-kartu);border-top:1px solid var(--j-garis);padding-block:2.25rem}
+
+/* ── bilah keranjang ──
+
+   Melekat di bawah layar, bukan hanya di panel yang jauh: pada ponsel,
+   dua puluh satu baris berarti pilihannya berada beberapa layar di atas
+   tombol pesannya, dan yang memilih tidak punya cara tahu bahwa
+   pilihannya tercatat. */
+.jual-bilah-bungkus{position:fixed;inset:auto 0 0 0;z-index:40;padding:0 1rem 1rem}
+.jual-bilah{max-width:42rem;margin-inline:auto;display:flex;align-items:center;gap:1.25rem;
+  background:var(--j-gelap);color:#fff;border-radius:14px;
+  padding:.85rem .85rem .85rem 1.35rem;
+  box-shadow:0 24px 48px -24px rgba(18,22,26,.75)}
+.jual-bilah-angka{display:block;font-size:16px;font-weight:700;line-height:1;
+  letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.jual-bilah-ket{display:block;font-size:11.5px;color:rgba(255,255,255,.5);margin-top:.3rem}
+
+.jual-bilah-enter-active,.jual-bilah-leave-active{
+  transition:transform .42s var(--j-lengkung),opacity .42s var(--j-lengkung)}
+.jual-bilah-enter-from,.jual-bilah-leave-to{transform:translateY(130%);opacity:0}
+
+/* ── dua unsur yang memang tetap terang ──
+
+   Keduanya hidup DI ATAS latar gelap, bukan di atas kartu: tombol terang
+   berdiri di hero dan di panel harga paket, dan ubin QRIS berada di dalam
+   kartu tiruan yang putih pada kedua mode. Digelapkan mengikuti aturan
+   umum, keduanya justru hilang — putih di atas gelap adalah yang
+   dimaksudkan, bukan yang terlewat.
+
+   Ditulis tetap begini supaya niatnya terbaca, bukan disamarkan lewat
+   peubah agar lolos pemeriksaan. */
+:root[data-tema="gelap"] .jual-tombol-terang{background:#fff;color:#12161A;border-color:#fff}
+:root[data-tema="gelap"] .jual-mock-qr{background:#fff;color:#12161A}
+
+/* ── gerakan boleh diminta berhenti ──
+
+   Bukan soal selera: gerakan memicu mual dan pusing pada sebagian orang,
+   dan halaman jual adalah tempat mereka tidak punya pilihan untuk
+   menghindarinya. v-singkap sudah tidak memasang keadaan awalnya sama
+   sekali bila diminta; yang tersisa di sini gerakan sentuh. */
+@media (prefers-reduced-motion:reduce){
+  .jual-kepala,.jual-tombol,.jual-tautan,.jual-nav,.jual-aspek,.jual-aspek-foto,
+  .jual-kartu,.jual-baris,.jual-hitung button,.jual-buang,
+  .jual-isian input,.jual-isian textarea,
+  .jual-bilah-enter-active,.jual-bilah-leave-active{transition:none}
+
+  .jual-aspek:hover,.jual-kartu:hover{transform:none}
+  .jual-aspek:hover .jual-aspek-foto{transform:none}
+  .jual-tombol:active{transform:none}
+  .jual-bilah-enter-from,.jual-bilah-leave-to{transform:none;opacity:1}
+}
 
 </style>

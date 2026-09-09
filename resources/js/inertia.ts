@@ -1,6 +1,7 @@
 import { createApp, h, type DefineComponent } from 'vue';
 import { createInertiaApp } from '@inertiajs/vue3';
 import AppLayout from './Layouts/AppLayout.vue';
+import { singkap } from './singkap';
 
 /*
   Chart.js ikut dibundel (tidak lagi dari CDN), tetapi ditarik saat
@@ -86,6 +87,12 @@ createInertiaApp({
   setup({ el, App, props, plugin }) {
     createApp({ render: () => h(App, props) })
       .use(plugin)
+
+      /* v-singkap dipasang menyeluruh, bukan diimpor per halaman:
+         gerakan masuk hanya terasa satu kesatuan bila lengkung waktu,
+         jarak, dan jedanya sama di seluruh situs. Diimpor sendiri-sendiri,
+         tiap halaman perlahan memilih angkanya masing-masing. */
+      .directive('singkap', singkap)
       .mount(el);
   },
 

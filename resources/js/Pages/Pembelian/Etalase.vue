@@ -11,28 +11,34 @@
  * seharga nol rupiah — dan tagihannya akan terlihat wajar sepenuhnya di
  * layar admin, sebab nol itu memang yang tersimpan.
  *
+ * ── DAFTAR HARGA, BUKAN KISI KARTU ──
+ *
+ * Dua puluh satu kartu seragam berjajar tiga kolom adalah bentuk yang
+ * sama dengan seluruh halaman jual yang dibangkitkan mesin, dan yang
+ * membacanya mengenalinya sebelum sempat membaca satu kata pun.
+ * Barangnya sendiri memang sebuah daftar harga: nama, satu kalimat,
+ * angka. Ditulis sebagai daftar bergaris rambut dan dikelompokkan
+ * menurut aspeknya, ia lebih cepat dibandingkan, lebih mudah dipindai,
+ * dan tidak menyerupai apa pun kecuali daftar harga.
+ *
  * ── KARTU TANPA HARGA TETAP DIGAMBAR ──
  *
  * Aplikasi yang harganya belum ditetapkan punya `id` null. Ia tetap
- * tampil lengkap dengan keterangan, ikon, dan warna pilarnya, hanya
- * tanpa tombol beli. Yang disembunyikan cara membelinya, bukan
- * keberadaannya: katalog yang separuh kosong terbaca sebagai perusahaan
- * yang tidak punya apa-apa untuk dijual, bukan sebagai harga yang belum
- * diumumkan.
+ * tampil lengkap dengan keterangannya, hanya tanpa tombol beli. Yang
+ * disembunyikan cara membelinya, bukan keberadaannya.
  *
  * ── GAMBARNYA BOLEH TIDAK ADA ──
  *
  * Tiap foto dan rekaman diperiksa keberadaannya di server (lihat
  * App\Support\Media) dan dikirim sebagai null bila berkasnya belum
- * ditaruh. Halaman ini menggambar gradien dan vektor sebagai gantinya —
- * bukan bingkai gambar rusak, yang di halaman jual lebih buruk daripada
- * tidak ada gambar sama sekali.
+ * ditaruh. Yang tampil sebagai gantinya bidang warna aspeknya — bukan
+ * bingkai gambar rusak, yang di halaman jual lebih buruk daripada tidak
+ * ada gambar sama sekali.
  */
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import BlankLayout from '../../Layouts/BlankLayout.vue';
 import Wordmark from '../../Components/Wordmark.vue';
-import IkonPilar from '../../Components/IkonPilar.vue';
 
 defineOptions({ layout: BlankLayout });
 
@@ -60,15 +66,16 @@ const props = defineProps<{
 /** id produk => banyaknya. Nol berarti tidak dipilih. */
 const pilih = reactive<Record<number, number>>({});
 
-const saring = ref<string | null>(null);
-
 const terjual = computed(() => props.aplikasi.filter((a) => a.id !== null));
 
-const tampil = computed(() => (saring.value === null
-  ? props.aplikasi
-  : props.aplikasi.filter((a) => a.pilar === saring.value)));
-
 const pilarList = computed(() => Object.entries(props.pilar));
+
+/** Aplikasi dikelompokkan menurut aspeknya, urut seperti daftar pilarnya. */
+const kelompok = computed(() => pilarList.value.map(([slug, w]) => ({
+  slug,
+  pilar: w,
+  butir: props.aplikasi.filter((a) => a.pilar === slug),
+})).filter((k) => k.butir.length > 0));
 
 /** Semua yang dapat dibeli, paket dan satuan, dalam satu daftar. */
 const semua = computed<{ id: number; nama: string; harga: number }[]>(() => [
@@ -85,10 +92,10 @@ const jumlahButir = computed(() =>
   terpilih.value.reduce((n, p) => n + (pilih[p.id] ?? 0), 0));
 
 /**
- * Harga satuan termurah, dipakai kalimat hero.
+ * Harga satuan termurah.
  *
- * Dihitung dari yang benar-benar berharga saja; nol dari kartu tanpa
- * harga akan membuat halaman depan menjanjikan "mulai Rp 0".
+ * Dihitung dari yang benar-benar berharga saja; nol dari butir tanpa
+ * harga akan membuat halamannya menjanjikan "mulai Rp 0".
  */
 const termurah = computed(() => {
   const h = terjual.value.map((a) => a.harga as number).filter((n) => n > 0);
@@ -96,26 +103,19 @@ const termurah = computed(() => {
   return h.length ? Math.min(...h) : null;
 });
 
-/**
- * Empat angka hero.
- *
- * "0 Siap dibeli" tidak pernah terpajang. Angka nol di halaman jual
- * tidak dibaca sebagai harga yang belum diumumkan — ia dibaca sebagai
- * perusahaan yang tidak punya apa pun untuk dijual, tepat di baris
- * pertama yang dilihat calon pembeli.
- */
-const angka = computed<[string | number, string][]>(() => [
-  [props.aplikasi.length, 'Aplikasi'],
-  ...(terjual.value.length
-    ? [[terjual.value.length, 'Siap dibeli'] as [number, string]]
-    : [['Terpadu', 'Satu basis data'] as [string, string]]),
-  ['QRIS', 'Cara bayar'],
-  ['Tanpa akun', 'Untuk memesan'],
-]);
-
 function rupiah(n: number | null) {
   return n === null ? '' : 'Rp ' + Number(n || 0).toLocaleString('id-ID');
 }
+
+/**
+ * Harga TIDAK PERNAH disingkat.
+ *
+ * "Rp 80 jt" enak dibaca sekilas dan salah sebagai harga: yang membaca
+ * tidak tahu apakah yang dimaksud 80.000.000 atau 80.500.000 yang
+ * dibulatkan, dan pertanyaan itu tidak boleh ada pada halaman yang
+ * meminta orang menekan tombol beli. Yang dihemat satu baris; yang
+ * hilang kepercayaan pada angkanya.
+ */
 
 function ubah(id: number, n: number) {
   pilih[id] = Math.max(0, Math.min(99, (pilih[id] ?? 0) + n));
@@ -125,26 +125,21 @@ function buang(id: number) {
   pilih[id] = 0;
 }
 
-function keForm() {
-  document.getElementById('pesan')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function keAplikasi(slug: string) {
-  saring.value = saring.value === slug ? null : slug;
-  document.getElementById('aplikasi')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+function ke(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function ambilSemua() {
   for (const a of terjual.value) pilih[a.id as number] = 1;
-  keForm();
+  ke('pesan');
 }
 
 /**
  * Pengguna yang meminta gerakan dikurangi mendapat poster diam.
  *
- * Bukan sekadar sopan santun: latar bergerak memicu mual dan pusing pada
- * sebagian orang. Dibaca sekali saat pemasangan — bukan lewat kelas CSS
- * — supaya videonya memang tidak diunduh sama sekali.
+ * Bukan sekadar sopan santun: latar bergerak memicu mual dan pusing
+ * pada sebagian orang. Dibaca sekali saat pemasangan — bukan lewat
+ * kelas CSS — supaya videonya memang tidak diunduh sama sekali.
  */
 const kurangiGerak = ref(
   typeof window !== 'undefined'
@@ -170,87 +165,70 @@ const waUrl = computed(() => (props.kontak.whatsapp
  * Kemana tombol "minta penawaran" menuju bila tidak ada satu pun cara
  * hubung yang diatur.
  *
- * Tanpa cadangan ini, ajakan "sebutkan kebutuhan Anda, penawarannya kami
- * kirim" berdiri tanpa satu pun tombol di bawahnya — kalimat yang
- * meminta sesuatu lalu tidak menyediakan caranya.
+ * Tanpa cadangan ini, ajakan "sebutkan kebutuhan Anda" berdiri tanpa
+ * satu pun tautan di bawahnya — kalimat yang meminta sesuatu lalu tidak
+ * menyediakan caranya.
  */
 const tanya = computed(() => (waUrl.value
   ?? (props.kontak.email ? 'mailto:' + props.kontak.email : null)));
 
-/**
- * Empat langkah membeli, digambar dengan vektornya sendiri.
- *
- * Angka bulat 01–04 sendirian tidak menceritakan apa pun; yang
- * menjelaskan bentuknya. Digambar sebagai path inline, bukan pustaka
- * ikon: repo ini sudah sekali melepas pustaka dari CDN, dan ikon yang
- * gagal dimuat pada jaringan site tambang meninggalkan kotak kosong
- * persis di tempat yang paling menjelaskan.
- */
-const langkah: { judul: string; ket: string; jalur: string[] }[] = [
-  {
-    judul: 'Pilih',
-    ket: 'Ambil paket menyeluruh, atau aplikasi satuan yang Anda butuhkan.',
-    jalur: ['M6.5 7.5h11l1.4 10.2a2 2 0 0 1-2 2.3H7.1a2 2 0 0 1-2-2.3L6.5 7.5Z',
-            'M9 7.5V6a3 3 0 0 1 6 0v1.5', 'm10 13.6 1.6 1.6 3-3.2'],
-  },
-  {
-    judul: 'Tagihan terbit',
-    ket: 'Nomor tagihan dan tautan pembayaran muncul seketika — tanpa perlu akun.',
-    jalur: ['M6 3.2h9.2L19 7v13.8H6V3.2Z', 'M15 3.2V7h4', 'M9 12h7', 'M9 15.5h7', 'M9 8.5h3'],
-  },
-  {
-    judul: 'Bayar QRIS',
-    ket: 'Pindai kodenya dari aplikasi bank atau dompet digital mana pun.',
-    jalur: ['M4 4h6v6H4V4Z', 'M14 4h6v6h-6V4Z', 'M4 14h6v6H4v-6Z',
-            'M14 14h2.5v2.5H14V14Z', 'M19.5 14H20v2.5', 'M17 19.5h3', 'M14 19.5h.5'],
-  },
-  {
-    judul: 'Lisensi aktif',
-    ket: 'Bukti bayar diperiksa, lisensinya terbit, dan akses Anda menyala.',
-    jalur: ['M8.5 13.5a4 4 0 1 1 3.9-4.9L20 8.6l1.5 1.6-1.6 1.7-1.6-1.1-1.6 1.4-1.7-1.3-2.6 2.4a4 4 0 0 1-3.9 0Z',
-            'M7.2 9.4h.01'],
-  },
+const langkah = [
+  ['Pilih', 'Ambil paket menyeluruh, atau aplikasi satuan yang Anda butuhkan.'],
+  ['Tagihan terbit', 'Nomor tagihan dan tautan pembayaran muncul seketika, tanpa perlu akun.'],
+  ['Bayar', 'Pindai QRIS dari aplikasi bank atau dompet digital mana pun.'],
+  ['Lisensi aktif', 'Bukti bayar diperiksa, lisensinya terbit, dan akses Anda menyala.'],
 ];
 
-/** Alasan membeli, dengan vektornya masing-masing. */
-const alasan: { judul: string; ket: string; jalur: string[] }[] = [
-  {
-    judul: 'Data terpisah per perusahaan',
-    ket: 'Tiap perusahaan hanya melihat datanya sendiri, dijaga di lapisan basis data.',
-    jalur: ['M12 2.8 4.6 5.7v5.6c0 4.5 3.1 8.6 7.4 9.9 4.3-1.3 7.4-5.4 7.4-9.9V5.7L12 2.8Z',
-            'm8.9 11.9 2.2 2.2 4-4.4'],
-  },
-  {
-    judul: 'Pembaruan aplikasi termasuk',
-    ket: 'Modul baru dan perbaikan masuk tanpa biaya tambahan selama masa berlaku.',
-    jalur: ['M20.5 12a8.5 8.5 0 1 1-2.6-6.1', 'M20.5 4.5V10h-5.5'],
-  },
-  {
-    judul: 'Pendampingan pemasangan',
-    ket: 'Pemasangan di server Anda, pemindahan data awal, dan pelatihan penggunanya.',
-    jalur: ['M16.5 20v-1.6a3.4 3.4 0 0 0-3.4-3.4H6.9a3.4 3.4 0 0 0-3.4 3.4V20',
-            'M10 11.6a3.6 3.6 0 1 0 0-7.2 3.6 3.6 0 0 0 0 7.2Z',
-            'M20.5 20v-1.6a3.4 3.4 0 0 0-2.5-3.3', 'M15.5 4.6a3.4 3.4 0 0 1 0 6.6'],
-  },
-  {
-    judul: 'Sesuai regulasi Minerba',
-    ket: 'Kepdirjen 185.K/2019, Permen ESDM 26/2018, dan seri SNI ISO yang berlaku.',
-    jalur: ['M9 3.5h9.5v17H5.5v-14', 'M5.5 6.5 9 3.5v3H5.5Z', 'M9 11h6', 'M9 14.5h6', 'M9 17.5h4'],
-  },
+const jaminan = [
+  ['Data terpisah per perusahaan', 'Tiap perusahaan hanya melihat datanya sendiri, dijaga di lapisan basis data.'],
+  ['Pembaruan termasuk', 'Modul baru dan perbaikan masuk tanpa biaya tambahan selama masa berlaku.'],
+  ['Pendampingan pemasangan', 'Pemasangan di server Anda, pemindahan data awal, dan pelatihan penggunanya.'],
+  ['Sesuai regulasi Minerba', 'Kepdirjen 185.K/2019, Permen ESDM 26/2018, dan seri SNI ISO yang berlaku.'],
 ];
+
+/**
+ * Dua baris contoh untuk kartu tiruan tagihan di hero.
+ *
+ * Diambil dari katalog yang sungguhan bila ada isinya — bukan nama dan
+ * angka karangan. Yang dipajang di halaman jual sebagai contoh tagihan
+ * harus berupa barang yang benar-benar dijual pada harga yang benar-benar
+ * berlaku; contoh karangan yang lupa diganti adalah harga yang salah,
+ * dipajang di tempat yang paling dipercaya orang.
+ */
+const contohTagihan = computed(() => {
+  const b = terjual.value.slice(0, 2)
+    .map((a) => ({ nama: a.nama, harga: a.harga as number }));
+
+  return { baris: b, total: b.reduce((n, x) => n + x.harga, 0) };
+});
+
+/**
+ * Kepala berubah setelah halaman digulir.
+ *
+ * Di puncak halaman ia mengambang tanpa garis di atas rekaman; sesudah
+ * digulir ia mendapat latar dan garis bawah supaya menunya tetap
+ * terbaca di atas isi terang. Diambil dari scrollY, bukan dari
+ * IntersectionObserver pada unsur pengintai: pengintai setinggi nol
+ * piksel tidak pernah memicu apa pun pada sebagian peramban.
+ */
+const digulir = ref(false);
+let onScroll: (() => void) | null = null;
 
 /**
  * Bilah keranjang menyingkir begitu formulirnya terlihat.
  *
  * Tanpa ini, pada ponsel bilah itu duduk di atas isian terbawah selama
- * seluruh pengisian — persis pada layar tersempit, tempat ruangnya paling
- * mahal. Ia berguna ketika pilihannya berada beberapa layar di atas
- * tombol pesannya; begitu keduanya terlihat bersama, ia hanya menutupi.
+ * seluruh pengisian — persis pada layar tersempit, tempat ruangnya
+ * paling mahal.
  */
 const formTerlihat = ref(false);
 let pengamat: IntersectionObserver | null = null;
 
 onMounted(() => {
+  onScroll = () => { digulir.value = window.scrollY > 24; };
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
+
   const el = document.getElementById('pesan');
 
   /* IntersectionObserver tidak ada pada peramban yang sangat lama.
@@ -266,567 +244,398 @@ onMounted(() => {
   pengamat.observe(el);
 });
 
-onBeforeUnmount(() => pengamat?.disconnect());
+onBeforeUnmount(() => {
+  pengamat?.disconnect();
+  if (onScroll) window.removeEventListener('scroll', onScroll);
+});
 </script>
 
 <template>
   <Head title="Beli EQOHSEE — Paket dan Aplikasi" />
 
-  <div class="bg-cam-bg text-cam-ink scroll-smooth">
+  <div class="jual">
 
     <!-- ══════════ kepala ══════════ -->
-    <header class="fixed inset-x-0 top-0 z-40 border-b border-white/10 bg-cam-ink/85 backdrop-blur-md text-white">
-      <div class="max-w-6xl mx-auto px-5 h-[66px] flex items-center gap-3">
-        <Link href="/" class="shrink-0"><Wordmark :tinggi="30" /></Link>
-        <nav class="ml-auto hidden md:flex items-center gap-1 text-[12.5px] font-semibold">
-          <a v-for="item in [['#paket','Paket'],['#aspek','Aspek'],['#aplikasi','Aplikasi'],['#cara','Cara Beli']]"
-             :key="item[0]" :href="item[0]"
-             class="px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition">{{ item[1] }}</a>
-        </nav>
-        <Link href="/login"
-              class="ml-2 glass rounded-xl text-white px-4 py-2.5 text-[12.5px] font-bold hover:bg-white/15 transition">
-          Masuk
+    <header class="jual-kepala" :class="digulir ? 'jual-kepala-turun' : ''">
+      <div class="jual-lebar flex items-center gap-8 h-full">
+        <Link href="/" class="shrink-0 opacity-90 hover:opacity-100 transition-opacity duration-300">
+          <Wordmark :tinggi="26" />
         </Link>
+
+        <nav class="ml-auto hidden md:flex items-center gap-7">
+          <a v-for="item in [['#paket','Paket'],['#aspek','Cakupan'],['#harga','Harga'],['#cara','Cara beli']]"
+             :key="item[0]" :href="item[0]" class="jual-nav">{{ item[1] }}</a>
+        </nav>
+
+        <!-- Terlihat juga di ponsel. Disembunyikan di bawah sm, pelanggan
+             yang SUDAH membeli tidak punya satu pun jalan masuk dari
+             halaman ini — dan halaman jual adalah alamat yang paling
+             mudah mereka ingat. -->
+        <Link href="/login" class="jual-nav ml-auto md:ml-0">Masuk</Link>
+
+        <!-- Terang selagi kepala mengambang di atas rekaman, pekat sesudah
+             halaman digulir. Satu bentuk untuk keduanya berarti salah
+             satunya hampir tak terlihat. -->
+        <a href="#harga" class="jual-tombol jual-tombol-kecil"
+           :class="digulir ? '' : 'jual-tombol-terang'">Lihat harga</a>
       </div>
     </header>
 
     <!-- ══════════ hero ══════════ -->
-    <section class="relative brand-gradient text-white overflow-hidden pt-[66px]">
-      <!-- Rekaman tambang sungguhan sebagai latar, sama dengan halaman
-           depan. `muted` bukan pilihan gaya melainkan syarat: peramban
-           menolak memutar video bersuara tanpa pengguna mengklik lebih
-           dulu, dan penolakan itu tidak memunculkan galat — videonya
-           hanya diam di bingkai pertama. -->
+    <section class="jual-hero">
       <video v-if="latar.video && !kurangiGerak"
              :src="latar.video" :poster="latar.poster ?? undefined"
              autoplay muted loop playsinline preload="metadata" aria-hidden="true"
-             class="absolute inset-0 w-full h-full object-cover opacity-[0.28]"></video>
-      <img v-else-if="latar.poster" :src="latar.poster" alt=""
-           class="absolute inset-0 w-full h-full object-cover opacity-[0.24]">
+             class="jual-hero-media"></video>
+      <img v-else-if="latar.poster" :src="latar.poster" alt="" class="jual-hero-media">
 
-      <!-- Garis kontur DI BAWAH selubung gelap, bukan di atasnya.
+      <span class="jual-hero-tirai" aria-hidden="true"></span>
 
-           Digambar di atas, garisnya melintasi judul dan membuat huruf
-           putih setebal 56px terbaca bergaris — hiasan yang merusak
-           satu-satunya kalimat yang harus terbaca lebih dulu. Peta
-           topografi memang gambar yang setiap hari dibaca orang tambang,
-           tetapi tempatnya di belakang. -->
-      <svg class="etalase-topo" viewBox="0 0 1200 420" preserveAspectRatio="none" aria-hidden="true">
-        <g fill="none" stroke="currentColor" stroke-width="1.1">
-          <path d="M-20 340C160 300 250 250 420 262s250 84 430 52 300-96 390-92" />
-          <path d="M-20 300C160 258 250 206 420 219s250 86 430 53 300-99 390-95" />
-          <path d="M-20 258C160 214 250 160 420 174s250 88 430 54 300-101 390-97" />
-          <path d="M-20 214C160 168 250 112 420 127s250 90 430 55 300-104 390-100" />
-          <path d="M-20 168C160 120 250 62 420 78s250 92 430 56 300-106 390-102" />
-          <path d="M-20 120C160 70 250 10 420 27s250 94 430 57 300-109 390-105" />
-        </g>
-      </svg>
+      <div class="jual-lebar relative">
+        <div class="grid lg:grid-cols-[minmax(0,1fr)_auto] gap-x-14 gap-y-14 items-center
+                    pt-32 pb-20 md:pt-40 md:pb-28">
+          <div class="max-w-[40rem]">
+            <p v-singkap class="jual-mata jual-mata-terang">Platform keselamatan pertambangan</p>
 
-      <div class="absolute inset-0 bg-gradient-to-r from-cam-black/95 via-cam-black/70 to-cam-black/30"></div>
-
-      <div class="relative max-w-6xl mx-auto px-5 py-16 md:py-24">
-        <div class="grid lg:grid-cols-[minmax(0,1fr)_370px] gap-9 lg:gap-12 items-center">
-          <div>
-            <span class="inline-flex items-center gap-2 glass rounded-full px-3.5 py-1.5 text-[10.5px] font-bold uppercase tracking-[0.18em] text-cam-lime-light">
-              <span class="w-1.5 h-1.5 rounded-full bg-cam-lime animate-pulse"></span>
-              {{ aplikasi.length }} Aplikasi · Satu Platform
-            </span>
-
-            <h1 class="font-display text-[34px] sm:text-[44px] xl:text-[56px] font-black mt-5 leading-[1.05]">
-              Beli sekali,<span class="sheen block">pakai seluruh platformnya.</span>
+            <h1 v-singkap="60" class="jual-judul mt-6">
+              Satu platform,<br>
+              <span class="jual-judul-tipis">dibeli utuh atau sepotong.</span>
             </h1>
 
-            <p class="text-[14px] md:text-[15.5px] mt-5 leading-relaxed max-w-xl text-white/75">
-              EQOHSEE menjual paket menyeluruh maupun aplikasi satuan — pelatihan, kelayakan
-              kerja, hazard report, investigasi insiden, sampai kendali biaya. Semua berbagi satu
-              basis data perusahaan, pengguna, dan peran.
+            <p v-singkap="120" class="jual-tubuh-besar jual-tubuh-terang mt-7 max-w-xl">
+              {{ aplikasi.length }} aplikasi untuk pelatihan, kelayakan kerja, pelaporan bahaya,
+              investigasi insiden, hingga kendali biaya — berbagi satu basis data perusahaan,
+              pengguna, dan peran.
             </p>
 
-            <div class="flex flex-wrap gap-2.5 mt-8">
-              <a href="#paket" class="lime-gradient shadow-glow rounded-xl text-white px-6 py-3.5 text-[13.5px] font-bold">
-                Lihat paket
-              </a>
-              <a href="#aplikasi" class="glass rounded-xl px-6 py-3.5 text-[13.5px] font-bold">
-                Beli satuan
-              </a>
-            </div>
-
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-10 max-w-2xl">
-              <div v-for="s in angka" :key="String(s[1])" class="glass rounded-xl px-4 py-3.5">
-                <div class="stat stat-sm text-cam-lime-light">{{ s[0] }}</div>
-                <div class="text-[10.5px] text-white/55 mt-1.5">{{ s[1] }}</div>
-              </div>
+            <div v-singkap="180" class="flex flex-wrap items-center gap-3 mt-9">
+              <a href="#harga" class="jual-tombol jual-tombol-terang">Lihat daftar harga</a>
+              <a href="#aspek" class="jual-tombol jual-tombol-garis">Apa saja yang ditangani</a>
             </div>
           </div>
 
-          <!-- ringkas harga -->
-          <aside class="glass rounded-2xl p-6 relative overflow-hidden">
-            <!-- Cahaya sudut, memberi kedalaman pada panel kaca yang
-                 kalau rata terbaca sebagai kotak abu. -->
-            <span class="etalase-kilau" aria-hidden="true"></span>
+          <!-- Potongan produk yang sesungguhnya, bukan gambar hiasan: ia
+               memperlihatkan apa yang diterima pembeli sesudah menekan
+               tombol. Halaman jual yang memperlihatkan barangnya lebih
+               meyakinkan daripada yang memperlihatkan ikon tentang
+               barangnya. -->
+          <aside v-if="contohTagihan.baris.length" v-singkap="240" class="jual-mock">
+            <div class="jual-mock-kepala">
+              <span class="jual-mock-nomor">INV000318</span>
+              <span class="jual-mock-lencana">Lunas</span>
+            </div>
 
-            <template v-if="paket">
-              <div class="text-[10.5px] font-bold uppercase tracking-[0.2em] text-cam-lime-light">Paket menyeluruh</div>
-              <div class="num font-display text-[34px] font-black mt-2 leading-none">{{ rupiah(paket.harga) }}</div>
-              <div class="text-[11.5px] text-white/50 mt-1.5">{{ paket.masa }} · seluruh aplikasi di dalamnya</div>
-              <button type="button" class="w-full lime-gradient shadow-glow rounded-xl text-white px-5 py-3 text-[13px] font-bold mt-5"
-                      @click="ubah(paket.id, 1); keForm()">
-                Ambil paket ini
-              </button>
-              <div v-if="termurah !== null" class="text-[11.5px] text-white/45 mt-3 text-center">
-                atau beli satuan mulai <span class="num font-semibold text-white/70">{{ rupiah(termurah) }}</span>
+            <div class="pt-1.5">
+              <div v-for="b in contohTagihan.baris" :key="b.nama" class="jual-mock-baris">
+                <span class="truncate pr-2">{{ b.nama }}</span>
+                <span>{{ rupiah(b.harga) }}</span>
               </div>
-            </template>
+            </div>
 
-            <template v-else-if="termurah !== null">
-              <div class="text-[10.5px] font-bold uppercase tracking-[0.2em] text-cam-lime-light">Aplikasi satuan</div>
-              <div class="num font-display text-[34px] font-black mt-2 leading-none">{{ rupiah(termurah) }}</div>
-              <div class="text-[11.5px] text-white/50 mt-1.5">harga mulai · {{ terjual.length }} aplikasi siap dibeli</div>
-              <a href="#aplikasi" class="block text-center w-full lime-gradient shadow-glow rounded-xl text-white px-5 py-3 text-[13px] font-bold mt-5">
-                Pilih aplikasi
-              </a>
-            </template>
+            <div class="jual-mock-total">
+              <span class="jual-tubuh-kecil">Total tagihan</span>
+              <b>{{ rupiah(contohTagihan.total) }}</b>
+            </div>
 
-            <!-- Harga belum diumumkan. Yang ditawarkan percakapan, bukan
-                 tombol beli yang tidak menuju ke mana-mana. -->
-            <template v-else>
-              <div class="text-[10.5px] font-bold uppercase tracking-[0.2em] text-cam-lime-light">Penawaran</div>
-              <p class="text-[13px] text-white/70 mt-3 leading-relaxed">
-                Harga disusun menurut jumlah pengguna dan aplikasi yang dipilih. Sebutkan
-                kebutuhan Anda, penawarannya kami kirim.
-              </p>
-              <a v-if="tanya" :href="tanya" :target="waUrl ? '_blank' : undefined" rel="noopener"
-                 class="block text-center w-full lime-gradient shadow-glow rounded-xl text-white px-5 py-3 text-[13px] font-bold mt-5">
-                Minta penawaran
-              </a>
-              <a v-else href="/#modul"
-                 class="block text-center w-full lime-gradient shadow-glow rounded-xl text-white px-5 py-3 text-[13px] font-bold mt-5">
-                Lihat seluruh modul
-              </a>
-            </template>
-
-            <ul class="space-y-3 mt-6 pt-5 border-t border-white/10">
-              <li v-for="a in alasan" :key="a.judul" class="flex gap-3">
-                <span class="shrink-0 w-7 h-7 rounded-lg bg-cam-lime/15 text-cam-lime-light grid place-items-center">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path v-for="(d, i) in a.jalur" :key="i" :d="d" />
-                  </svg>
-                </span>
-                <span class="text-[11.5px] text-white/60 leading-snug pt-0.5">{{ a.judul }}</span>
-              </li>
-            </ul>
+            <div class="jual-mock-bayar">
+              <span class="jual-mock-qr" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                     stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z" />
+                  <path d="M14 14h2.5v2.5H14zM19.5 14H20v2.5M17 19.5h3M14 19.5h.5" />
+                </svg>
+              </span>
+              <span class="min-w-0">
+                <span class="block text-[12.5px] font-bold">Bayar dengan QRIS</span>
+                <span class="block jual-tubuh-kecil">Nominal sudah tercantum di dalam kode</span>
+              </span>
+            </div>
           </aside>
         </div>
       </div>
     </section>
 
     <!-- ══════════ paket ══════════ -->
-    <section id="paket" class="max-w-6xl mx-auto px-5 py-16 md:py-20 scroll-mt-[80px]">
-      <div class="text-center max-w-xl mx-auto">
-        <span class="text-[10.5px] font-bold uppercase tracking-[0.22em] text-cam-lime-dark">Paling banyak diambil</span>
-        <h2 class="font-display text-[30px] md:text-[38px] font-black text-cam-ink mt-3">Satu paket, semuanya</h2>
-        <p class="text-[13.5px] text-stone-500 mt-3 leading-relaxed">
-          Membeli seluruh aplikasi terpisah selalu lebih mahal daripada paketnya — dan yang
-          terpisah tidak berbagi data begitu saja.
-        </p>
-      </div>
+    <section id="paket" class="jual-bagian">
+      <div class="jual-lebar">
+        <div class="jual-kepala-bagian">
+          <p v-singkap class="jual-mata jual-mata-aksen">Paket</p>
+          <h2 v-singkap="60" class="jual-h2">Seluruhnya, dalam satu tagihan</h2>
+          <p v-singkap="120" class="jual-tubuh mt-5 max-w-xl">
+            Membeli seluruh aplikasi terpisah selalu lebih mahal daripada paketnya, dan yang
+            terpisah tidak berbagi data begitu saja.
+          </p>
+        </div>
 
-      <div v-if="paket" class="relative mt-10 rounded-3xl overflow-hidden text-white shadow-card brand-gradient">
-        <!-- Sama seperti kartu aspek: pita bawahnya membawa lencana
-             penyunting yang terbakar di dalam berkasnya. -->
-        <img v-if="latar.paket" :src="latar.paket" alt=""
-             class="absolute inset-x-0 top-0 w-full h-[124%] object-cover object-top opacity-25">
-        <div class="absolute inset-0 bg-gradient-to-r from-cam-black/95 via-cam-black/80 to-cam-black/45"></div>
+        <div v-if="paket" class="jual-paket">
+          <div v-singkap class="jual-paket-isi">
+            <h3 class="jual-h3">{{ paket.nama }}</h3>
+            <p v-if="paket.ket" class="jual-tubuh mt-3 max-w-lg">{{ paket.ket }}</p>
 
-        <div class="relative grid lg:grid-cols-[minmax(0,1fr)_320px] gap-8 p-8 md:p-11">
-          <div>
-            <span class="inline-flex items-center gap-2 rounded-full bg-cam-lime/20 text-cam-lime-light px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em]">
-              Paket menyeluruh
-            </span>
-            <h3 class="font-display text-[24px] md:text-[30px] font-black mt-4">{{ paket.nama }}</h3>
-            <p v-if="paket.ket" class="text-[13px] text-white/70 mt-3 max-w-xl leading-relaxed">{{ paket.ket }}</p>
-
-            <div class="flex flex-wrap gap-1.5 mt-6">
-              <span v-for="a in aplikasi" :key="a.nama"
-                    class="inline-flex items-center gap-1.5 text-[10.5px] font-semibold rounded-full pl-1.5 pr-2.5 py-1 bg-white/[0.07] border border-white/10 text-white/75">
-                <span class="w-4 h-4 rounded grid place-items-center shrink-0"
-                      :style="{ background: `linear-gradient(135deg, ${a.pilarDeep}, ${a.pilarWarna})` }">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff"
-                       stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path :d="a.ikon" />
+            <ul class="jual-paket-daftar">
+              <li v-for="a in aplikasi" :key="a.nama">
+                <span class="jual-centang">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"
+                       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="m5 12.5 4.5 4.5L19 7" />
                   </svg>
                 </span>
                 {{ a.nama }}
-              </span>
-            </div>
+              </li>
+            </ul>
           </div>
 
-          <div class="lg:border-l lg:border-white/15 lg:pl-8 flex flex-col justify-center">
-            <div class="text-[10.5px] font-bold uppercase tracking-[0.2em] text-cam-lime-light">Harga</div>
-            <div class="num font-display text-[34px] font-black mt-1.5 leading-none">{{ rupiah(paket.harga) }}</div>
-            <div class="text-[11.5px] text-white/55 mt-1.5">{{ paket.masa }}</div>
+          <div v-singkap="80" class="jual-paket-harga">
+            <p class="jual-mata jual-mata-terang">Harga</p>
+            <p class="jual-angka mt-3">
+              <span class="jual-angka-kecil">Rp</span>{{ paket.harga.toLocaleString('id-ID') }}
+            </p>
+            <p class="jual-tubuh-kecil jual-tubuh-terang mt-2">{{ paket.masa }}</p>
 
-            <span class="inline-flex items-center gap-2 mt-5">
-              <button type="button" class="beli-plusmin" aria-label="Kurangi" @click="ubah(paket.id, -1)">−</button>
-              <span class="num w-7 text-center text-[14px] font-bold">{{ pilih[paket.id] ?? 0 }}</span>
-              <button type="button" class="beli-plusmin" aria-label="Tambah" @click="ubah(paket.id, 1)">+</button>
-            </span>
+            <div class="flex items-center gap-3 mt-7">
+              <span class="jual-hitung">
+                <button type="button" aria-label="Kurangi" @click="ubah(paket.id, -1)">−</button>
+                <span class="num">{{ pilih[paket.id] ?? 0 }}</span>
+                <button type="button" aria-label="Tambah" @click="ubah(paket.id, 1)">+</button>
+              </span>
+            </div>
 
-            <button type="button"
-                    class="lime-gradient shadow-glow rounded-xl text-white px-5 py-3 text-[13px] font-bold mt-4"
-                    @click="ubah(paket.id, 1); keForm()">
-              Beli paket
+            <button type="button" class="jual-tombol jual-tombol-terang w-full jual-paket-tombol"
+                    @click="ubah(paket.id, 1); ke('pesan')">
+              Ambil paket ini
             </button>
           </div>
         </div>
-      </div>
 
-      <!-- Paketnya belum berharga. Disebutkan, bukan dibiarkan sebagai
-           lubang di tengah halaman. -->
-      <div v-else class="relative mt-10 rounded-3xl overflow-hidden border border-stone-200 bg-white shadow-card px-7 py-10 text-center">
-        <span class="etalase-bintik" aria-hidden="true"></span>
-        <div class="relative">
-          <span class="inline-grid place-items-center w-14 h-14 rounded-2xl lime-gradient text-white">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M20 11.5a8 8 0 1 1-3.4-6.5" /><path d="M9.5 9.5a2.6 2.6 0 1 1 3.1 2.6v1.6" />
-              <path d="M12.6 17h.01" />
-            </svg>
-          </span>
-          <h3 class="font-display text-[22px] font-black text-cam-ink mt-4">Paket disusun sesuai kebutuhan</h3>
-          <p class="text-[13px] text-stone-500 mt-3 max-w-lg mx-auto leading-relaxed">
+        <!-- Paketnya belum berharga. Disebutkan, bukan dibiarkan sebagai
+             lubang di tengah halaman. -->
+        <div v-else v-singkap class="jual-kosong">
+          <h3 class="jual-h3">Paket disusun sesuai kebutuhan</h3>
+          <p class="jual-tubuh mt-3 max-w-lg">
             Jumlah pengguna, aplikasi yang dipakai, dan lama berlangganan menentukan harganya.
             Sebutkan kebutuhan Anda — penawarannya kami susun.
           </p>
           <a v-if="tanya" :href="tanya" :target="waUrl ? '_blank' : undefined" rel="noopener"
-             class="inline-block lime-gradient shadow-glow rounded-xl text-white px-6 py-3 text-[13px] font-bold mt-6">
-            Minta penawaran
-          </a>
-          <a v-else href="#aplikasi"
-             class="inline-block lime-gradient shadow-glow rounded-xl text-white px-6 py-3 text-[13px] font-bold mt-6">
-            Lihat aplikasinya
-          </a>
+             class="jual-tombol mt-7">Minta penawaran</a>
+          <a v-else href="#harga" class="jual-tombol mt-7">Lihat aplikasinya</a>
         </div>
       </div>
     </section>
 
-    <!-- ══════════ aspek: foto lapangan ══════════ -->
-    <section id="aspek" class="bg-cam-ink text-white scroll-mt-[80px]">
-      <div class="max-w-6xl mx-auto px-5 py-16 md:py-20">
-        <div class="text-center max-w-xl mx-auto">
-          <span class="text-[10.5px] font-bold uppercase tracking-[0.22em] text-cam-lime-light">Cakupan</span>
-          <h2 class="font-display text-[30px] md:text-[38px] font-black mt-3">Aspek yang ditangani</h2>
-          <p class="text-[13.5px] text-white/50 mt-3 leading-relaxed">
-            Klik satu aspek untuk melihat aplikasi yang menopangnya.
+    <!-- ══════════ cakupan ══════════ -->
+    <section id="aspek" class="jual-bagian jual-bagian-gelap">
+      <div class="jual-lebar">
+        <div class="jual-kepala-bagian">
+          <p v-singkap class="jual-mata jual-mata-terang">Cakupan</p>
+          <h2 v-singkap="60" class="jual-h2 jual-h2-terang">Aspek yang ditangani</h2>
+          <p v-singkap="120" class="jual-tubuh jual-tubuh-terang mt-5 max-w-xl">
+            Klik satu aspek untuk melompat ke aplikasi yang menopangnya.
           </p>
         </div>
 
-        <div class="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3 mt-10">
-          <button v-for="[slug, w] in pilarList" :key="slug" type="button"
-                  class="etalase-aspek group"
-                  :class="saring === slug ? 'etalase-aspek-aktif' : ''"
-                  @click="keAplikasi(slug)">
-            <!-- Pita bawah foto DIPOTONG, dan itu bukan pilihan gaya.
-
-                 Berkas galerinya membawa tulisan yang terbakar di dalam
-                 gambarnya: occhealth.jpg mencetak "Occupational Health"
-                 di tengah bawah, dan lima berkas lain membawa lencana
-                 bintang penyunting di kanan bawah. Ditampilkan utuh,
-                 kartunya menyebut nama aspeknya dua kali — sekali
-                 sebagai label, sekali sebagai tulisan buram yang tidak
-                 sejajar dengan apa pun — dan halaman jual yang begitu
-                 terbaca sebagai contoh templat, bukan sebagai produk.
-
-                 Tingginya dilebihkan lalu dijangkarkan ke atas; sisanya
-                 terpotong oleh overflow-hidden kartunya. Berkas fotonya
-                 sendiri tidak disentuh: menggantinya dengan yang bersih
-                 membuat baris ini tidak lagi berguna, tetapi juga tidak
-                 merusak apa pun. -->
-            <img v-if="w.foto" :src="w.foto" alt="" loading="lazy" decoding="async"
-                 class="absolute inset-x-0 top-0 w-full h-[124%] object-cover object-top
-                        opacity-45 group-hover:opacity-60 transition-opacity duration-300">
-            <!-- Belum ada fotonya. Gradien pilarnya, dengan ikon aspeknya
-                 sendiri sebagai cap besar — supaya kartunya tetap punya
-                 bentuk, bukan sekadar bidang warna di antara kartu
-                 berfoto. -->
-            <span v-else class="absolute inset-0 grid place-items-center overflow-hidden"
-                  :style="{ background: `linear-gradient(140deg, ${w.deep}, ${w.warna})` }">
-              <span class="etalase-aspek-cap"><IkonPilar :nama="w.ikon" :ukuran="150" /></span>
+        <div class="jual-aspek-kisi">
+          <button v-for="([slug, w], i) in pilarList" :key="slug" v-singkap="i * 40" type="button"
+                  class="jual-aspek" @click="ke('grup-' + slug)">
+            <span class="jual-aspek-bingkai">
+              <img v-if="w.foto" :src="w.foto" alt="" loading="lazy" decoding="async"
+                   class="jual-aspek-foto">
+              <span v-else class="jual-aspek-foto jual-aspek-polos" :style="{ '--w': w.deep }"></span>
+              <span class="jual-aspek-tirai"></span>
             </span>
 
-            <span class="absolute inset-0"
-                  :style="{ background: `linear-gradient(180deg, ${w.deep}22 0%, #0B1117E6 78%)` }"></span>
-
-            <span class="relative flex flex-col h-full p-4">
-              <span class="w-10 h-10 rounded-xl grid place-items-center text-white shrink-0"
-                    :style="{ background: `linear-gradient(135deg, ${w.deep}, ${w.light})` }">
-                <IkonPilar :nama="w.ikon" :ukuran="20" />
-              </span>
-              <span class="mt-auto pt-6">
-                <span class="block text-[13.5px] font-bold">{{ w.nama }}</span>
-                <span class="block num text-[10.5px] mt-1" :style="{ color: w.light }">
-                  {{ w.jumlah }} aplikasi
-                </span>
-              </span>
+            <span class="jual-aspek-baris">
+              <span class="jual-aspek-nama">{{ w.nama }}</span>
+              <span class="jual-aspek-jumlah">{{ String(w.jumlah).padStart(2, '0') }}</span>
             </span>
           </button>
         </div>
       </div>
     </section>
 
-    <!-- ══════════ aplikasi satuan ══════════ -->
-    <section id="aplikasi" class="relative bg-gradient-to-b from-cam-bg via-white to-cam-bg scroll-mt-[80px] overflow-hidden">
-      <span class="etalase-aura etalase-aura-kiri" aria-hidden="true"></span>
-      <span class="etalase-aura etalase-aura-kanan" aria-hidden="true"></span>
-
-      <div class="relative max-w-6xl mx-auto px-5 py-16 md:py-20">
-        <div class="text-center max-w-xl mx-auto">
-          <span class="text-[10.5px] font-bold uppercase tracking-[0.22em] text-cam-lime-dark">Aplikasi satuan</span>
-          <h2 class="font-display text-[30px] md:text-[38px] font-black text-cam-ink mt-3">
-            Ambil yang dipakai saja
-          </h2>
-          <p class="text-[13.5px] text-stone-500 mt-3 leading-relaxed">
+    <!-- ══════════ daftar harga ══════════ -->
+    <section id="harga" class="jual-bagian">
+      <div class="jual-lebar">
+        <div class="jual-kepala-bagian">
+          <p v-singkap class="jual-mata jual-mata-aksen">Harga</p>
+          <h2 v-singkap="60" class="jual-h2">Aplikasi satuan</h2>
+          <p v-singkap="120" class="jual-tubuh mt-5 max-w-xl">
             Tiap aplikasi berdiri sendiri dan tetap terhubung dengan yang lain begitu ditambahkan.
           </p>
         </div>
 
-        <!-- saring per pilar -->
-        <div class="flex flex-wrap justify-center gap-1.5 mt-8">
-          <button type="button" class="etalase-chip" :class="saring === null ? 'etalase-chip-aktif' : ''"
-                  @click="saring = null">
-            Semua <span class="num opacity-60">{{ aplikasi.length }}</span>
-          </button>
-          <button v-for="[slug, w] in pilarList" :key="slug" type="button"
-                  class="etalase-chip inline-flex items-center gap-1.5"
-                  :class="saring === slug ? 'etalase-chip-aktif' : ''"
-                  :style="saring === slug ? { background: w.deep, borderColor: w.deep, color: '#fff' } : { borderColor: w.warna + '55', color: w.deep }"
-                  @click="saring = saring === slug ? null : slug">
-            <span class="w-1.5 h-1.5 rounded-full" :style="{ background: saring === slug ? '#fff' : w.warna }"></span>
-            {{ w.nama }}
-          </button>
-        </div>
+        <div v-for="grup in kelompok" :id="'grup-' + grup.slug" :key="grup.slug" class="jual-grup">
+          <header v-singkap class="jual-grup-kepala">
+            <span class="jual-grup-titik" :style="{ background: grup.pilar.warna }"></span>
+            <h3 class="jual-grup-nama">{{ grup.pilar.nama }}</h3>
+            <span class="jual-grup-jumlah">{{ grup.butir.length }} aplikasi</span>
+          </header>
 
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-8">
-          <article v-for="a in tampil" :key="a.nama" class="etalase-kartu group">
-            <span class="absolute inset-x-0 top-0 h-[3px]"
-                  :style="{ background: `linear-gradient(90deg, ${a.pilarDeep}, ${a.pilarWarna})` }"></span>
+          <ul>
+            <li v-for="a in grup.butir" :key="a.nama" v-singkap class="jual-baris">
+              <span class="jual-baris-teks">
+                <span class="jual-baris-nama">{{ a.nama }}</span>
+                <span class="jual-baris-ket">{{ a.ket }}</span>
+              </span>
 
-            <!-- Ikon modulnya sendiri, dibesarkan dan diredupkan sebagai
-                 cap air. Tiap kartu jadi berbeda tanpa satu berkas gambar
-                 pun ditambahkan, dan bentuknya memang bentuk yang sama
-                 dengan ikon kecil di atasnya. -->
-            <svg class="etalase-cap" viewBox="0 0 24 24" fill="none" :stroke="a.pilarWarna"
-                 stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path :d="a.ikon" />
-            </svg>
-
-            <div class="relative flex flex-col h-full">
-              <div class="w-12 h-12 rounded-xl grid place-items-center text-white shadow-sm transition-transform duration-300 group-hover:scale-105"
-                   :style="{ background: `linear-gradient(135deg, ${a.pilarDeep}, ${a.pilarWarna})` }">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                     stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path :d="a.ikon" />
-                </svg>
-              </div>
-
-              <h3 class="text-[14.5px] font-bold text-cam-ink mt-4">{{ a.nama }}</h3>
-              <p class="text-[12.5px] text-stone-500 mt-2 leading-relaxed flex-1">{{ a.ket }}</p>
-
-              <div class="inline-flex items-center gap-1.5 text-[11px] font-bold mt-4"
-                   :style="{ color: a.pilarDeep }">
-                <span class="w-1.5 h-1.5 rounded-full" :style="{ background: a.pilarWarna }"></span>
-                Pilar {{ a.pilarNama }}
-              </div>
-
-              <div class="flex items-end justify-between gap-3 mt-4 pt-4 border-t border-stone-100">
-                <div v-if="a.id !== null">
-                  <div class="num text-[17px] font-black text-cam-ink leading-none">{{ rupiah(a.harga) }}</div>
-                  <div class="text-[10.5px] text-stone-400 mt-1">{{ a.masa }}</div>
-                </div>
-                <div v-else class="text-[11.5px] text-stone-400 leading-snug">
-                  Hubungi kami<br>untuk penawaran
-                </div>
-
-                <span v-if="a.id !== null" class="inline-flex items-center gap-1.5 shrink-0">
-                  <button type="button" class="beli-plusmin" aria-label="Kurangi" @click="ubah(a.id, -1)">−</button>
-                  <span class="num w-6 text-center text-[13px] font-bold">{{ pilih[a.id] ?? 0 }}</span>
-                  <button type="button" class="beli-plusmin" aria-label="Tambah" @click="ubah(a.id, 1)">+</button>
+              <span v-if="a.id !== null" class="jual-baris-aksi">
+                <span class="jual-baris-harga">
+                  <span class="num">{{ rupiah(a.harga) }}</span>
+                  <span class="jual-baris-masa">{{ a.masa }}</span>
                 </span>
-              </div>
-            </div>
-          </article>
+                <span class="jual-hitung">
+                  <button type="button" aria-label="Kurangi" @click="ubah(a.id, -1)">−</button>
+                  <span class="num">{{ pilih[a.id] ?? 0 }}</span>
+                  <button type="button" aria-label="Tambah" @click="ubah(a.id, 1)">+</button>
+                </span>
+              </span>
+
+              <span v-else class="jual-baris-aksi">
+                <a v-if="tanya" :href="tanya" :target="waUrl ? '_blank' : undefined" rel="noopener"
+                   class="jual-tautan">Minta penawaran</a>
+                <span v-else class="jual-baris-masa">Belum ditawarkan</span>
+              </span>
+            </li>
+          </ul>
         </div>
 
-        <div v-if="terjual.length > 1" class="text-center mt-8">
-          <button type="button" class="text-[12.5px] font-bold text-cam-lime-dark hover:underline"
-                  @click="ambilSemua">
-            Pilih semua {{ terjual.length }} aplikasi
+        <p v-if="terjual.length > 1" v-singkap class="mt-10">
+          <button type="button" class="jual-tombol jual-tombol-lain" @click="ambilSemua">
+            Pilih seluruh {{ terjual.length }} aplikasi
           </button>
-        </div>
+        </p>
       </div>
     </section>
 
     <!-- ══════════ cara beli ══════════ -->
-    <section id="cara" class="max-w-6xl mx-auto px-5 py-16 md:py-20 scroll-mt-[80px]">
-      <div class="text-center max-w-xl mx-auto">
-        <span class="text-[10.5px] font-bold uppercase tracking-[0.22em] text-cam-lime-dark">Cara Beli</span>
-        <h2 class="font-display text-[30px] md:text-[38px] font-black text-cam-ink mt-3">Empat langkah</h2>
-      </div>
-
-      <!-- Rel penghubung, hanya pada lebar yang benar-benar menampung
-           empat kolom sejajar. Pada dua kolom ia akan menyambungkan
-           langkah 2 ke langkah 3 yang berada di baris berbeda —
-           menggambar urutan yang salah. -->
-      <div class="relative grid gap-5 sm:grid-cols-2 lg:grid-cols-4 mt-11">
-        <span class="etalase-rel" aria-hidden="true"></span>
-
-        <div v-for="(l, i) in langkah" :key="l.judul" class="relative text-center">
-          <span class="etalase-langkah">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path v-for="(d, j) in l.jalur" :key="j" :d="d" />
-            </svg>
-            <span class="etalase-langkah-angka num">{{ i + 1 }}</span>
-          </span>
-          <h3 class="text-[13.5px] font-bold text-cam-ink mt-4">{{ l.judul }}</h3>
-          <p class="text-[12px] text-stone-500 mt-1.5 leading-relaxed max-w-[16rem] mx-auto">{{ l.ket }}</p>
+    <section id="cara" class="jual-bagian jual-bagian-putih">
+      <div class="jual-lebar">
+        <div class="jual-kepala-bagian">
+          <p v-singkap class="jual-mata jual-mata-aksen">Cara beli</p>
+          <h2 v-singkap="60" class="jual-h2">Empat langkah, tanpa akun</h2>
         </div>
-      </div>
 
-      <!-- alasan, lebih lengkap daripada ringkasan di hero -->
-      <div class="grid gap-x-8 gap-y-7 sm:grid-cols-2 mt-14 max-w-4xl mx-auto">
-        <div v-for="a in alasan" :key="a.judul" class="flex gap-4">
-          <span class="shrink-0 w-10 h-10 rounded-xl grid place-items-center text-white lime-gradient shadow-sm">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path v-for="(d, i) in a.jalur" :key="i" :d="d" />
-            </svg>
-          </span>
-          <div>
-            <h3 class="text-[13.5px] font-bold text-cam-ink">{{ a.judul }}</h3>
-            <p class="text-[12.5px] text-stone-500 mt-1.5 leading-relaxed">{{ a.ket }}</p>
+        <div class="jual-langkah">
+          <div v-for="(l, i) in langkah" :key="l[0]" v-singkap="i * 40" class="jual-kartu">
+            <span class="jual-langkah-angka">{{ String(i + 1).padStart(2, '0') }}</span>
+            <h3 class="jual-h4 mt-4">{{ l[0] }}</h3>
+            <p class="jual-tubuh-kecil mt-2">{{ l[1] }}</p>
+          </div>
+        </div>
+
+        <p v-singkap class="jual-mata mt-14 mb-5">Yang termasuk</p>
+
+        <div class="jual-jaminan">
+          <div v-for="(j, i) in jaminan" :key="j[0]" v-singkap="i * 40" class="jual-kartu">
+            <h3 class="jual-h4">{{ j[0] }}</h3>
+            <p class="jual-tubuh-kecil mt-2">{{ j[1] }}</p>
           </div>
         </div>
       </div>
     </section>
 
     <!-- ══════════ pemesanan ══════════ -->
-    <section id="pesan" class="max-w-6xl mx-auto px-5 pb-16 md:pb-20 scroll-mt-[80px]">
-      <div class="grid gap-4 lg:grid-cols-[1fr_.8fr] items-start">
-
-        <div class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
-          <header class="px-6 py-4 border-b border-stone-100">
-            <h3 class="text-[14.5px] font-bold text-cam-ink">Pesanan Anda</h3>
-            <p class="text-[11.5px] text-stone-500 mt-0.5">
-              Harga dihitung ulang di server saat tagihan dibuat.
-            </p>
-          </header>
-
-          <ul v-if="terpilih.length" class="divide-y divide-stone-100">
-            <!-- Menumpuk di layar sempit, berjajar mulai sm.
-
-                 Berjajar pada 390px, empat bagian berlebar tetap
-                 mendesak namanya sampai tersisa "Websi…" dan memecah
-                 "Rp 80.000.000" menjadi dua baris di tengah angka.
-                 Terlihat saat dipotret; tidak terlihat sama sekali pada
-                 lebar meja kerja. -->
-            <li v-for="p in terpilih" :key="p.id"
-                class="px-6 py-3.5 flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3">
-              <span class="min-w-0 flex-1 flex items-start gap-2">
-                <span class="min-w-0 flex-1">
-                  <span class="block text-[12.5px] font-semibold text-cam-ink">{{ p.nama }}</span>
-                  <span class="block num text-[11px] text-stone-400 mt-0.5">
-                    {{ rupiah(p.harga) }} per butir
-                  </span>
-                </span>
-                <button type="button" class="sm:hidden text-stone-300 hover:text-red-500 text-lg leading-none shrink-0"
-                        aria-label="Buang" @click="buang(p.id)">×</button>
-              </span>
-
-              <span class="flex items-center gap-3 shrink-0">
-                <span class="inline-flex items-center gap-1.5">
-                  <button type="button" class="beli-plusmin" aria-label="Kurangi" @click="ubah(p.id, -1)">−</button>
-                  <span class="num w-6 text-center text-[13px] font-bold">{{ pilih[p.id] }}</span>
-                  <button type="button" class="beli-plusmin" aria-label="Tambah" @click="ubah(p.id, 1)">+</button>
-                </span>
-
-                <span class="num text-[13px] font-bold text-cam-ink ml-auto sm:ml-0 sm:w-28 sm:text-right">
-                  {{ rupiah(p.harga * pilih[p.id]) }}
-                </span>
-
-                <button type="button"
-                        class="hidden sm:block text-stone-300 hover:text-red-500 text-lg leading-none shrink-0"
-                        aria-label="Buang" @click="buang(p.id)">×</button>
-              </span>
-            </li>
-          </ul>
-
-          <p v-else class="px-6 py-10 text-center text-[12.5px] text-stone-400">
-            Belum ada yang dipilih. Ambil paketnya, atau tambahkan aplikasi satuan di atas.
-          </p>
-
-          <div class="px-6 py-4 flex items-baseline justify-between border-t border-stone-100 bg-stone-50/60">
-            <span class="text-[12.5px] font-bold text-stone-500">Total</span>
-            <span class="num text-[22px] font-black text-cam-ink">{{ rupiah(total) }}</span>
-          </div>
+    <section id="pesan" class="jual-bagian">
+      <div class="jual-lebar">
+        <div class="jual-kepala-bagian">
+          <p v-singkap class="jual-mata jual-mata-aksen">Pesan</p>
+          <h2 v-singkap="60" class="jual-h2">Buat tagihan</h2>
         </div>
 
-        <form class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden"
-              @submit.prevent="kirim">
-          <header class="px-6 py-4 border-b border-stone-100">
-            <h3 class="text-[14.5px] font-bold text-cam-ink">Data pembeli</h3>
-            <p class="text-[11.5px] text-stone-500 mt-0.5">Tidak perlu membuat akun lebih dulu.</p>
-          </header>
+        <div class="grid lg:grid-cols-[minmax(0,1fr)_23rem] gap-x-10 gap-y-8 items-start">
+          <div v-singkap>
+            <ul v-if="terpilih.length" class="jual-pesanan">
+              <li v-for="p in terpilih" :key="p.id">
+                <span class="jual-pesanan-teks">
+                  <span class="jual-baris-nama">{{ p.nama }}</span>
+                  <span class="jual-baris-masa">{{ rupiah(p.harga) }} per butir</span>
+                </span>
+                <span class="jual-pesanan-aksi">
+                  <span class="jual-hitung">
+                    <button type="button" aria-label="Kurangi" @click="ubah(p.id, -1)">−</button>
+                    <span class="num">{{ pilih[p.id] }}</span>
+                    <button type="button" aria-label="Tambah" @click="ubah(p.id, 1)">+</button>
+                  </span>
+                  <span class="jual-pesanan-jumlah">{{ rupiah(p.harga * pilih[p.id]) }}</span>
+                  <button type="button" class="jual-buang" aria-label="Buang" @click="buang(p.id)">×</button>
+                </span>
+              </li>
+            </ul>
 
-          <div class="px-6 py-5 grid gap-2.5">
-            <input v-model="f.pembeli_nama" required placeholder="Nama pembeli" class="beli-isian" />
-            <p v-if="f.errors.pembeli_nama" class="text-[11.5px] text-red-600">{{ f.errors.pembeli_nama }}</p>
+            <p v-else class="jual-pesanan-kosong">
+              Belum ada yang dipilih. Ambil paketnya, atau tambahkan aplikasi satuan di atas.
+            </p>
 
-            <input v-model="f.pembeli_perusahaan" placeholder="Perusahaan (opsional)" class="beli-isian" />
-            <input v-model="f.pembeli_email" type="email" placeholder="Email (opsional)" class="beli-isian" />
-            <p v-if="f.errors.pembeli_email" class="text-[11.5px] text-red-600">{{ f.errors.pembeli_email }}</p>
+            <div class="jual-total">
+              <span>Total</span>
+              <span>{{ rupiah(total) }}</span>
+            </div>
+          </div>
 
-            <input v-model="f.pembeli_telepon" placeholder="Telepon / WhatsApp (opsional)" class="beli-isian" />
-            <textarea v-model="f.catatan" rows="2" placeholder="Catatan (opsional)" class="beli-isian"></textarea>
+          <form v-singkap="80" class="jual-form" @submit.prevent="kirim">
+            <p class="jual-mata">Data pembeli</p>
+            <p class="jual-tubuh-kecil mt-2 mb-5">Tidak perlu membuat akun lebih dulu.</p>
 
-            <p v-if="f.errors.produk" class="text-[11.5px] text-red-600">{{ f.errors.produk }}</p>
+            <label class="jual-isian">
+              <span>Nama</span>
+              <input v-model="f.pembeli_nama" required placeholder="Nama pembeli" />
+            </label>
+            <p v-if="f.errors.pembeli_nama" class="jual-galat">{{ f.errors.pembeli_nama }}</p>
 
-            <button type="submit" class="eq-btn-utama justify-center"
+            <label class="jual-isian">
+              <span>Perusahaan</span>
+              <input v-model="f.pembeli_perusahaan" placeholder="Opsional" />
+            </label>
+
+            <label class="jual-isian">
+              <span>Email</span>
+              <input v-model="f.pembeli_email" type="email" placeholder="Opsional" />
+            </label>
+            <p v-if="f.errors.pembeli_email" class="jual-galat">{{ f.errors.pembeli_email }}</p>
+
+            <label class="jual-isian">
+              <span>Telepon</span>
+              <input v-model="f.pembeli_telepon" placeholder="Opsional" />
+            </label>
+
+            <label class="jual-isian">
+              <span>Catatan</span>
+              <textarea v-model="f.catatan" rows="2" placeholder="Opsional"></textarea>
+            </label>
+
+            <p v-if="f.errors.produk" class="jual-galat">{{ f.errors.produk }}</p>
+
+            <button type="submit" class="jual-tombol w-full mt-6"
                     :disabled="!terpilih.length || f.processing">
               Buat tagihan
             </button>
 
-            <p class="text-[10.5px] text-stone-400 leading-snug">
-              Tagihan dibuat lebih dulu. Pembayarannya lewat QRIS pada halaman yang muncul
-              sesudahnya, dan lisensinya terbit setelah bukti bayar diperiksa.
+            <p class="jual-tubuh-kecil mt-4">
+              Pembayarannya lewat QRIS pada halaman yang muncul sesudahnya, dan lisensinya
+              terbit setelah bukti bayar diperiksa.
             </p>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </section>
 
-    <footer class="border-t border-stone-100 bg-white">
-      <div class="max-w-6xl mx-auto px-5 py-7 flex flex-wrap items-center justify-between gap-3">
-        <div class="font-extrabold tracking-wide text-lg">E<span class="text-cam-orange">Q</span>OHSEE</div>
-        <p class="text-[11.5px] text-stone-400">Platform Terpadu Keselamatan Pertambangan · {{ tahun }}</p>
+    <footer class="jual-kaki">
+      <div class="jual-lebar flex flex-wrap items-center justify-between gap-4">
+        <Wordmark :tinggi="20" />
+        <p class="jual-tubuh-kecil">Platform Terpadu Keselamatan Pertambangan · {{ tahun }}</p>
       </div>
     </footer>
   </div>
 
   <!-- ══════════ bilah keranjang ══════════ -->
-  <transition name="etalase-bilah">
-    <div v-if="terpilih.length && !formTerlihat" class="fixed inset-x-0 bottom-0 z-40 px-3 pb-3">
-      <div class="max-w-3xl mx-auto rounded-2xl bg-cam-ink text-white shadow-glow
-                  px-4 py-3 flex items-center gap-3">
-        <span class="min-w-0">
-          <span class="block num text-[17px] font-black leading-none">{{ rupiah(total) }}</span>
-          <span class="block text-[10.5px] text-white/50 mt-1">
-            {{ jumlahButir }} butir · {{ terpilih.length }} jenis
-          </span>
+  <transition name="jual-bilah">
+    <div v-if="terpilih.length && !formTerlihat" class="jual-bilah-bungkus">
+      <div class="jual-bilah">
+        <span>
+          <span class="jual-bilah-angka">{{ rupiah(total) }}</span>
+          <span class="jual-bilah-ket">{{ jumlahButir }} butir · {{ terpilih.length }} jenis</span>
         </span>
-        <button type="button" class="ml-auto lime-gradient rounded-xl px-5 py-2.5 text-[12.5px] font-bold shrink-0"
-                @click="keForm">
+        <button type="button" class="jual-tombol jual-tombol-terang jual-tombol-kecil ml-auto shrink-0"
+                @click="ke('pesan')">
           Lanjut memesan
         </button>
       </div>
