@@ -164,18 +164,93 @@ npm ci
 # node_modules baru saja dipasang ulang oleh `npm ci` di atas, jadi yang
 # diperiksa adalah tipe kode baru terhadap dependensi barunya — bukan
 # terhadap sisa pemasangan sebelumnya.
-if npm run --silent typecheck >/dev/null 2>&1; then
-    echo "==> Tipe TypeScript & Vue bersih"
+# ── Jatah memori pemeriksa tipe ──
+#
+# vue-tsc memuat SELURUH grafik tipe proyek sekaligus — 150-an halaman Vue
+# beserta seluruh d.ts dependensinya. Node memilih batas old-space-nya dari
+# memori yang terlihat saat ia mulai, dan pada VPS kecil batas itu jatuh di
+# sekitar 480 MB: cukup untuk proyek yang lebih kecil, tidak cukup untuk
+# yang ini. Yang terjadi kemudian bukan galat tipe melainkan
+# "FATAL ERROR: Reached heap limit — JavaScript heap out of memory", dan
+# prosesnya mati dengan status bukan-nol persis seperti galat tipe.
+#
+# Jatahnya dihitung dari memori yang BENAR-BENAR tersedia, bukan angka
+# tetap: angka tetap yang terlalu besar membuat kernel membunuh prosesnya
+# (OOM killer) alih-alih membuat Node menyerah dengan rapi, dan yang
+# terbunuh bisa saja PHP-FPM yang sedang melayani pengunjung.
+TIPE_TERSEDIA_MB=$(( $(awk '/^MemAvailable:/ {print $2}' /proc/meminfo 2>/dev/null || echo 0) / 1024 ))
+
+# 70% dari yang tersedia, disisakan untuk kernel dan proses lain — di
+# antaranya PHP-FPM yang masih melayani pengunjung, sebab langkah ini
+# sengaja berjalan SEBELUM situs diturunkan.
+TIPE_MB=$(( TIPE_TERSEDIA_MB * 7 / 10 ))
+[ "$TIPE_MB" -gt 4096 ] && TIPE_MB=4096
+
+TIPE_LOG=$(mktemp)
+
+# Jatahnya hanya DINAIKKAN, tidak pernah diturunkan.
+#
+# Tanpa NODE_OPTIONS, Node memilih batasnya sendiri dari memori yang
+# terlihat. Memasang angka yang lebih kecil daripada pilihannya sendiri
+# akan MEMPERBURUK keadaan — mesin sempit yang sudah nyaris tidak cukup
+# dibuat lebih sempit lagi oleh perintah yang dimaksudkan menolong.
+# Karena itu batasnya hanya dipasang bila memang lebih lapang daripada
+# yang biasa dipilih Node pada mesin sekelas ini.
+if [ "$TIPE_MB" -ge 768 ]; then
+    echo "==> Memeriksa tipe (tersedia ${TIPE_TERSEDIA_MB} MB, jatah ${TIPE_MB} MB)"
+    export NODE_OPTIONS="--max-old-space-size=${TIPE_MB}"
 else
-    echo "==> GAGAL: ada galat tipe TypeScript/Vue"
-    npm run --silent typecheck || true
+    echo "==> Memeriksa tipe (tersedia ${TIPE_TERSEDIA_MB} MB — sempit, memakai bawaan Node)"
+fi
+
+if npm run --silent typecheck >"$TIPE_LOG" 2>&1; then
+    unset NODE_OPTIONS
+    echo "==> Tipe TypeScript & Vue bersih"
+    rm -f "$TIPE_LOG"
+else
+    unset NODE_OPTIONS
+    # ── Kehabisan memori BUKAN galat tipe ──
+    #
+    # Keduanya keluar dengan status bukan-nol, dan sebelum pembedaan ini
+    # keduanya dilaporkan sebagai "ada galat tipe". Yang membacanya lalu
+    # mencari kesalahan tipe yang tidak pernah ada — sementara yang
+    # sebenarnya kurang adalah memori, dan tidak satu pun baris kode yang
+    # perlu disentuh.
+    if grep -qE "heap out of memory|Reached heap limit|JavaScript heap" "$TIPE_LOG"; then
+        echo "==> GAGAL: pemeriksa tipe kehabisan memori — BUKAN galat tipe"
+        echo
+        echo "    vue-tsc berhenti sebelum sempat memeriksa apa pun, jadi tidak"
+        echo "    ada yang perlu diperbaiki pada kodenya. Yang kurang memori"
+        echo "    mesin ini — tersedia ${TIPE_TERSEDIA_MB} MB saat deploy berjalan."
+        echo
+        echo "    Yang biasanya menolong, berurutan:"
+        echo "      1. Tambahkan swap bila belum ada — cukup sekali, permanen:"
+        echo "           fallocate -l 2G /swapfile && chmod 600 /swapfile"
+        echo "           mkswap /swapfile && swapon /swapfile"
+        echo "           echo '/swapfile none swap sw 0 0' >> /etc/fstab"
+        echo "      2. Hentikan sebentar yang memakan memori, lalu deploy lagi."
+        echo "      3. Periksa tipenya di komputer Anda sendiri, lalu deploy"
+        echo "         dengan EQOHSEE_LEWATI_TIPE=1 — aman selama sudah bersih"
+        echo "         di tempat lain."
+    else
+        echo "==> GAGAL: ada galat tipe TypeScript/Vue"
+        echo
+        cat "$TIPE_LOG"
+    fi
+
     echo
     echo "    Deploy dihentikan SEBELUM situs diturunkan; yang berjalan"
-    echo "    masih versi lama yang utuh. Perbaiki tipenya lalu deploy lagi."
+    echo "    masih versi lama yang utuh."
     echo
     echo "    Bila memang mendesak dan Anda menerima risikonya:"
     echo "        EQOHSEE_LEWATI_TIPE=1 bash deploy/deploy.sh"
-    [ "${EQOHSEE_LEWATI_TIPE:-0}" = "1" ] || exit 1
+
+    if [ "${EQOHSEE_LEWATI_TIPE:-0}" != "1" ]; then
+        rm -f "$TIPE_LOG"
+        exit 1
+    fi
+
+    rm -f "$TIPE_LOG"
     echo "    Dilanjutkan karena EQOHSEE_LEWATI_TIPE=1."
 fi
 
