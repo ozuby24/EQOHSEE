@@ -1417,6 +1417,8 @@ main a{transition:color .16s}
   background:var(--j-dasar);color:var(--j-tinta);
 }
 
+.jual-lugas-gelap{background:var(--j-gelap);color:#fff}
+
 .jual-lebar{max-width:78rem;margin-inline:auto;padding-inline:1.25rem}
 @media (min-width:768px){.jual-lebar{padding-inline:2.5rem}}
 
@@ -1567,6 +1569,95 @@ main a{transition:color .16s}
 
 .jual-kepala-bagian{max-width:46rem;margin-bottom:3rem}
 @media (min-width:768px){.jual-kepala-bagian{margin-bottom:4rem}}
+
+/* ── warna aspek, dipakai dengan takaran ──
+
+   Tiap pilar punya warnanya sendiri, dan itu berguna: pada dua puluh satu
+   kartu, warna adalah satu-satunya pembeda yang terbaca sebelum
+   membaca. Yang membuatnya murahan bukan warnanya melainkan takarannya —
+   medali bergradien penuh pada tiap kartu membuat halaman terlihat
+   seperti papan ikon, bukan seperti daftar produk.
+
+   Di sini warnanya dipakai encer: latar tipis dengan goresan pekat di
+   atasnya. Terbaca jelas, tetap tenang, dan tetap cukup gelap untuk
+   dibaca — kebalikannya, teks berwarna pilar di atas putih, jatuh di
+   bawah ambang keterbacaan untuk beberapa pilar.
+
+   color-mix menghitungnya dari satu nilai, sehingga menambah pilar baru
+   tidak menuntut satu baris CSS pun ditulis. */
+.jual-tanda{width:2.4rem;height:2.4rem;border-radius:10px;flex:none;
+  display:grid;place-items:center;
+  background:color-mix(in srgb,var(--c,#F57C00) 13%,#fff);
+  color:color-mix(in srgb,var(--c,#F57C00) 78%,#12161A);
+  transition:background .3s var(--j-lengkung)}
+.jual-kartu:hover .jual-tanda,.jual-modul:hover .jual-tanda{
+  background:color-mix(in srgb,var(--c,#F57C00) 20%,#fff)}
+.jual-tanda svg{width:1.25rem;height:1.25rem}
+
+.jual-label{display:inline-flex;align-items:center;gap:.35rem;border-radius:40px;
+  padding:.22rem .6rem;font-size:11px;font-weight:600;letter-spacing:.01em;
+  background:color-mix(in srgb,var(--c,#F57C00) 12%,#fff);
+  color:color-mix(in srgb,var(--c,#F57C00) 80%,#12161A)}
+
+/* Goresan warna di tepi atas kartu modul. Dua piksel penuh, bukan
+   gradien: gradien pada garis setipis ini hanya terbaca sebagai warna
+   yang kotor. */
+.jual-modul{position:relative;overflow:hidden;display:flex;flex-direction:column;
+  background:var(--j-kartu);border:1px solid var(--j-garis);border-radius:12px;
+  padding:1.5rem;
+  transition:border-color .3s var(--j-lengkung),box-shadow .3s var(--j-lengkung),
+  transform .3s var(--j-lengkung)}
+.jual-modul::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;
+  background:var(--c,#D4DAD3)}
+.jual-modul:hover{border-color:var(--j-garis-tebal);transform:translateY(-2px);
+  box-shadow:0 14px 32px -22px rgba(18,22,26,.4)}
+.jual-modul-mati{opacity:.72}
+.jual-modul-mati::before{background:var(--j-garis-tebal)}
+
+/* Lencana keadaan. Hijau untuk yang sudah dapat dipakai, kelabu untuk
+   yang belum — dan kata di dalamnya, bukan warna sendirian. */
+.jual-status{display:inline-flex;align-items:center;gap:.3rem;border-radius:40px;
+  padding:.16rem .5rem;font-size:10px;font-weight:700;letter-spacing:.04em;
+  text-transform:uppercase}
+.jual-status-hidup{background:var(--j-hijau-lembut);color:var(--j-hijau-tua)}
+.jual-status-hidup::before{content:"";width:4px;height:4px;border-radius:999px;
+  background:var(--j-hijau)}
+.jual-status-nanti{background:var(--j-dasar);color:var(--j-samar)}
+
+/* ── di atas latar gelap ── */
+
+.jual-gelap-kartu{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);
+  border-radius:12px;padding:1.4rem;
+  transition:border-color .3s var(--j-lengkung),background .3s var(--j-lengkung),
+  transform .3s var(--j-lengkung)}
+.jual-gelap-kartu:hover{border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.075);
+  transform:translateY(-2px)}
+.jual-gelap-kartu-aktif{border-color:var(--j-aksen);background:rgba(245,124,0,.09)}
+
+.jual-tanda-gelap{width:2.4rem;height:2.4rem;border-radius:10px;flex:none;
+  display:grid;place-items:center;
+  background:color-mix(in srgb,var(--c,#F57C00) 26%,transparent);
+  color:color-mix(in srgb,var(--c,#F57C00) 45%,#fff)}
+.jual-tanda-gelap svg{width:1.25rem;height:1.25rem}
+
+/* Angka hero: dipisah garis rambut, bukan dikotakkan satu per satu.
+   Empat ubin berbingkai di bawah judul adalah bentuk yang paling sering
+   dipakai halaman bangkitan mesin. */
+.jual-statistik{display:grid;grid-template-columns:repeat(2,1fr);
+  border-top:1px solid rgba(255,255,255,.14)}
+@media (min-width:640px){.jual-statistik{grid-template-columns:repeat(4,1fr)}}
+.jual-statistik>div{padding:1.1rem 0 0;border-right:1px solid rgba(255,255,255,.14)}
+.jual-statistik>div:last-child{border-right:0}
+.jual-statistik>div:not(:first-child){padding-left:1.25rem}
+.jual-statistik b{display:block;font-size:1.6rem;font-weight:700;line-height:1;
+  letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.jual-statistik span{display:block;font-size:11.5px;color:rgba(255,255,255,.5);
+  margin-top:.5rem}
+
+/* Bilah bobot elemen SMKP. */
+.jual-bilah-nilai{height:3px;border-radius:999px;background:rgba(255,255,255,.12);
+  overflow:hidden;margin-top:.7rem}
+.jual-bilah-nilai>i{display:block;height:100%;border-radius:999px;background:var(--j-aksen)}
 
 /* Pita penanda pada kartu rencana. Kata, bukan warna sendirian: warna
    saja tidak terbaca oleh yang tidak membedakan jingga dan abu. */
@@ -1814,7 +1905,9 @@ main a{transition:color .16s}
   .jual-isian input,.jual-isian textarea,
   .jual-bilah-enter-active,.jual-bilah-leave-active{transition:none}
 
-  .jual-aspek:hover,.jual-kartu:hover{transform:none}
+  .jual-modul,.jual-gelap-kartu,.jual-tanda{transition:none}
+  .jual-aspek:hover,.jual-kartu:hover,.jual-modul:hover,
+  .jual-gelap-kartu:hover{transform:none}
   .jual-aspek:hover .jual-aspek-foto{transform:none}
   .jual-tombol:active{transform:none}
   .jual-bilah-enter-from,.jual-bilah-leave-to{transform:none;opacity:1}
