@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pembelian\{Pembayaran, Pesanan, Produk};
-use App\Support\{Berkas, Pembelian};
+use App\Support\{Berkas, Modules, Pembelian, Pillars};
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -25,6 +25,156 @@ use Inertia\Inertia;
  */
 class PembelianController extends Controller
 {
+    /* ═══════════════════ katalog jual — tanpa login ═══════════════════ */
+
+    /**
+     * Etalase publik: apa yang dijual, berapa, dan bagaimana membelinya.
+     *
+     * ── TERBUKA, DAN MEMANG HARUS ──
+     *
+     * Yang membacanya calon pembeli yang belum punya akun. Katalog di
+     * balik layar masuk hanya dapat dibaca orang yang sudah membeli —
+     * yaitu satu-satunya orang yang tidak perlu membacanya.
+     *
+     * ── KARTUNYA TETAP UTUH MESKI HARGANYA BELUM DIISI ──
+     *
+     * Daftar aplikasinya digambar dari App\Support\Modules, bukan dari
+     * baris produk. Digambar dari produk, katalog yang harganya belum
+     * ditetapkan akan tampil sebagai halaman kosong — dan halaman kosong
+     * terbaca sebagai perusahaan yang tidak punya apa-apa untuk dijual,
+     * bukan sebagai harga yang belum diumumkan.
+     *
+     * Harganya menempel bila ada, dan hanya butir berharga yang dapat
+     * dimasukkan ke pesanan. Yang belum berharga tampil apa adanya:
+     * "hubungi untuk penawaran".
+     */
+    public function publik()
+    {
+        $produk = Produk::aktif()->get()->keyBy('modul_kunci');
+        $paket  = Produk::aktif()->where('jenis', Produk::WEBSITE)
+            ->orderBy('urutan')->first();
+
+        $pilar = Pillars::all();
+
+        $aplikasi = [];
+
+        foreach (Modules::perKunciMenu() as $kunci => $modul) {
+            $p = $produk->get($kunci);
+            $w = $pilar[$modul['pilar']] ?? $pilar['engineering'];
+
+            $aplikasi[] = [
+                /* Tanpa produk, idnya null — dan layar memakai null itu
+                   untuk menentukan kartu mana yang punya tombol beli,
+                   alih-alih memeriksa harga di dua tempat berbeda. */
+                'id'    => $p?->id,
+                'nama'  => $modul['nama'],
+                'ket'   => $modul['ket'],
+                'ikon'  => $modul['ikon'],
+                'harga' => $p?->harga,
+                'masa'  => $p?->masaBerlaku(),
+                'pilar'      => $modul['pilar'],
+                'pilarNama'  => $w['nama'],
+                'pilarWarna' => $w['warna'],
+                'pilarDeep'  => $w['deep'],
+            ];
+        }
+
+        return Inertia::render('Pembelian/Etalase', [
+            'paket' => $paket ? [
+                'id'    => $paket->id,
+                'nama'  => $paket->nama,
+                'ket'   => $paket->keterangan,
+                'harga' => $paket->harga,
+                'masa'  => $paket->masaBerlaku(),
+            ] : null,
+
+            'aplikasi' => $aplikasi,
+            'pilar'    => array_map(fn ($w) => [
+                'nama' => $w['nama'], 'warna' => $w['warna'], 'deep' => $w['deep'],
+            ], $pilar),
+
+            /* Kosong bila tidak satu butir pun berharga — layar memakainya
+               untuk menukar seluruh ajakan beli menjadi ajakan bertanya,
+               bukan untuk menyembunyikan katalognya. */
+            'adaHarga' => $paket !== null || $produk->isNotEmpty(),
+
+            'kontak' => [
+                'whatsapp' => (string) config('pembelian.kontak.whatsapp'),
+                'email'    => (string) config('pembelian.kontak.email'),
+            ],
+
+            'tahun' => now()->year,
+        ]);
+    }
+
+    /**
+     * Pesanan dari etalase publik.
+     *
+     * Terpisah dari `simpan()` karena UJUNGNYA berbeda, bukan karena
+     * aturannya berbeda: pembeli publik tidak punya akun, jadi ia tidak
+     * boleh dilempar ke layar kelola tagihan yang berada di balik login —
+     * yang terjadi di sana bukan halaman tagihan melainkan halaman masuk,
+     * tepat sesudah orangnya menekan "beli".
+     *
+     * Pembatasan lajunya dipasang pada rutenya. Tanpa itu, satu skrip
+     * dapat menerbitkan ribuan tagihan semalaman; tidak satu pun berisi
+     * uang, tetapi daftar tagihan yang sebenarnya tenggelam di baliknya.
+     */
+    public function pesanPublik(Request $request)
+    {
+        $data = $this->validasiPesanan($request);
+
+        $pesanan = Pembelian::buat(
+            $this->pembeli($data) + ['company_id' => $request->user()?->company_id],
+            $data['produk'],
+            $request->user(),
+        );
+
+        if ($pesanan->items()->count() < 1) {
+            $pesanan->delete();
+
+            return back()->withErrors(['produk' => self::TAK_TERSEDIA]);
+        }
+
+        Pembelian::kirim($pesanan);
+
+        /* Ke halaman bayar lewat TOKEN — satu-satunya alamat pesanan yang
+           terbuka tanpa login. */
+        return redirect()->route('pembelian.bayar', $pesanan->token);
+    }
+
+    private const TAK_TERSEDIA = 'Tidak satu pun produk yang dipilih masih tersedia. '
+        .'Muat ulang katalognya lalu pilih kembali.';
+
+    /** @return array<string, mixed> */
+    private function validasiPesanan(Request $request): array
+    {
+        return $request->validate([
+            'pembeli_nama'       => ['required', 'string', 'max:150'],
+            'pembeli_perusahaan' => ['nullable', 'string', 'max:150'],
+            'pembeli_email'      => ['nullable', 'email', 'max:150'],
+            'pembeli_telepon'    => ['nullable', 'string', 'max:40'],
+            'catatan'            => ['nullable', 'string', 'max:2000'],
+
+            /* Yang diterima hanya ID dan banyaknya. HARGA TIDAK PERNAH
+               DITERIMA dari layar — lihat App\Support\Pembelian. */
+            'produk'             => ['required', 'array', 'min:1'],
+            'produk.*'           => ['integer', 'min:1', 'max:99'],
+        ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function pembeli(array $data): array
+    {
+        return [
+            'pembeli_nama'       => $data['pembeli_nama'],
+            'pembeli_perusahaan' => $data['pembeli_perusahaan'] ?? null,
+            'pembeli_email'      => $data['pembeli_email'] ?? null,
+            'pembeli_telepon'    => $data['pembeli_telepon'] ?? null,
+            'catatan'            => $data['catatan'] ?? null,
+        ];
+    }
+
     /* ═══════════════════ katalog dan tagihan ═══════════════════ */
 
     public function katalog()
@@ -60,28 +210,10 @@ class PembelianController extends Controller
 
     public function simpan(Request $request)
     {
-        $data = $request->validate([
-            'pembeli_nama'       => ['required', 'string', 'max:150'],
-            'pembeli_perusahaan' => ['nullable', 'string', 'max:150'],
-            'pembeli_email'      => ['nullable', 'email', 'max:150'],
-            'pembeli_telepon'    => ['nullable', 'string', 'max:40'],
-            'catatan'            => ['nullable', 'string', 'max:2000'],
-
-            /* Yang diterima hanya ID dan banyaknya. HARGA TIDAK PERNAH
-               DITERIMA dari layar — lihat App\Support\Pembelian. */
-            'produk'             => ['required', 'array', 'min:1'],
-            'produk.*'           => ['integer', 'min:1', 'max:99'],
-        ]);
+        $data = $this->validasiPesanan($request);
 
         $pesanan = Pembelian::buat(
-            [
-                'company_id'         => $request->user()?->company_id,
-                'pembeli_nama'       => $data['pembeli_nama'],
-                'pembeli_perusahaan' => $data['pembeli_perusahaan'] ?? null,
-                'pembeli_email'      => $data['pembeli_email'] ?? null,
-                'pembeli_telepon'    => $data['pembeli_telepon'] ?? null,
-                'catatan'            => $data['catatan'] ?? null,
-            ],
+            $this->pembeli($data) + ['company_id' => $request->user()?->company_id],
             $data['produk'],
             $request->user(),
         );
@@ -89,10 +221,7 @@ class PembelianController extends Controller
         if ($pesanan->items()->count() < 1) {
             $pesanan->delete();
 
-            return back()->withErrors([
-                'produk' => 'Tidak satu pun produk yang dipilih masih tersedia. '
-                    .'Muat ulang katalognya lalu pilih kembali.',
-            ]);
+            return back()->withErrors(['produk' => self::TAK_TERSEDIA]);
         }
 
         Pembelian::kirim($pesanan);
@@ -278,6 +407,85 @@ class PembelianController extends Controller
 
         return back()->with('ok',
             'Bukti pembayaran terkirim. Tagihan akan diperiksa lebih dulu sebelum dinyatakan lunas.');
+    }
+
+    /* ═══════════════════ harga — hanya admin ═══════════════════ */
+
+    /**
+     * Daftar harga: satu-satunya layar yang membuat katalog dapat dijual.
+     *
+     * `pembelian:katalog` sengaja memasang butir baru berharga nol dan
+     * tidak aktif — harga adalah keputusan dagang, bukan keputusan
+     * pemrogram. Tanpa layar ini keputusan itu tidak punya tempat untuk
+     * dituliskan selain langsung ke basis data, dan katalog yang hanya
+     * dapat diisi lewat SQL adalah katalog yang tidak pernah terisi.
+     */
+    public function produk(Request $request)
+    {
+        abort_unless($request->user()?->isAdmin(), 403,
+            'Hanya admin yang dapat mengubah daftar harga.');
+
+        $baris = Produk::orderBy('urutan')->orderBy('nama')->get();
+
+        return Inertia::render('Pembelian/Produk', [
+            'judul'    => 'Pembelian — Daftar harga',
+            'subjudul' => 'Harga, masa berlaku, dan butir mana yang dijual',
+
+            'baris' => $baris->map(fn (Produk $p) => [
+                'id'    => $p->id,
+                'kode'  => $p->kode,
+                'nama'  => $p->nama,
+                'jenis' => $p->jenis,
+                'keterangan' => $p->keterangan,
+                'harga' => $p->harga,
+                'masa_bulan' => $p->masa_bulan,
+                'aktif' => $p->aktif,
+
+                /* Butir berharga nol tidak dapat diaktifkan — dan
+                   layarnya menyebutkannya di baris itu sendiri, bukan
+                   membiarkan tombolnya ditekan lalu ditolak diam-diam
+                   oleh server. */
+                'bolehAktif' => $p->harga > 0,
+            ])->values(),
+
+            'tautanEtalase' => route('katalog.publik'),
+        ]);
+    }
+
+    /**
+     * Simpan satu baris harga.
+     *
+     * ── NOL TIDAK DAPAT AKTIF ──
+     *
+     * Butir aktif berharga nol dapat dipesan, ditagihkan, "dibayar", dan
+     * lisensinya terbit — tanpa satu rupiah pun masuk dan tanpa satu pun
+     * angka yang terlihat janggal di layar mana pun, sebab nol itu
+     * memang yang tersimpan. Karena itu keaktifan dipaksa mati ketika
+     * harganya nol, di sini, bukan hanya disembunyikan tombolnya.
+     */
+    public function simpanProduk(Request $request, Produk $produk)
+    {
+        abort_unless($request->user()?->isAdmin(), 403,
+            'Hanya admin yang dapat mengubah daftar harga.');
+
+        $data = $request->validate([
+            /* Rupiah bulat. Pecahan rupiah tidak ada di dunia nyata, dan
+               harga pecahan yang tersimpan sebagai bilangan bulat
+               dibulatkan diam-diam entah ke mana. */
+            'harga'      => ['required', 'integer', 'min:0', 'max:99999999999'],
+            'masa_bulan' => ['required', 'integer', 'min:0', 'max:600'],
+            'aktif'      => ['required', 'boolean'],
+        ]);
+
+        $produk->update([
+            'harga'      => $data['harga'],
+            'masa_bulan' => $data['masa_bulan'],
+            'aktif'      => $data['harga'] > 0 && $data['aktif'],
+        ]);
+
+        return back()->with('ok', $data['harga'] > 0 || ! $data['aktif']
+            ? 'Harga '.$produk->nama.' disimpan.'
+            : 'Harga '.$produk->nama.' disimpan, tetapi butir berharga nol tidak dapat diaktifkan.');
     }
 
     /* ═══════════════════ verifikasi — hanya admin ═══════════════════ */

@@ -30,6 +30,16 @@ class Produk extends Model
 
     public function scopeAktif($q) { return $q->where('aktif', true); }
 
+    /**
+     * Baris tagihan yang pernah menunjuk produk ini.
+     *
+     * Dipakai pembelian:katalog untuk memutuskan apakah sebuah produk
+     * usang boleh dihapus atau hanya dinonaktifkan: yang pernah dipesan
+     * tidak boleh hilang, sebab tagihan tanpa rujukan barangnya adalah
+     * tagihan yang tidak dapat dipertanggungjawabkan kepada pembelinya.
+     */
+    public function items() { return $this->hasMany(Item::class, 'produk_id'); }
+
     /** Masa berlaku sebagai kalimat, bukan angka telanjang. */
     public function masaBerlaku(): string
     {

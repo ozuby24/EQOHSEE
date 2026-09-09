@@ -31,6 +31,11 @@ const props = defineProps<{
   pilar: Record<string, Pillar>;
   fitur: { judul: string; ket: string }[];
   alur: { judul: string; ket: string }[];
+  jual: {
+    paket: { nama: string; harga: number; masa: string } | null;
+    termurah: number | null;
+    jumlah: number;
+  };
   tahun: number;
 }>();
 
@@ -51,6 +56,10 @@ const kurangiGerak = ref(
 );
 const pilarList = computed(() => Object.entries(props.pilar));
 
+function rupiah(n: number | null) {
+  return n === null ? '' : 'Rp ' + Number(n || 0).toLocaleString('id-ID');
+}
+
 function togglePilar(slug: string) {
   pilarTerpilih.value = pilarTerpilih.value === slug ? null : slug;
 }
@@ -64,9 +73,10 @@ function togglePilar(slug: string) {
       <div class="max-w-6xl mx-auto px-5 h-[66px] flex items-center gap-3">
         <Link href="/" class="shrink-0"><Wordmark :tinggi="30" /></Link>
         <nav class="ml-auto hidden md:flex items-center gap-1 text-[12.5px] font-semibold">
-          <a v-for="item in [['#beranda','Beranda'],['#pilar','Pilar'],['#modul','Modul'],['#fitur','Fitur'],['#alur','Cara Kerja'],['#tentang','Tentang']]" :key="item[0]" :href="item[0]" class="px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition">{{ item[1] }}</a>
+          <a v-for="item in [['#beranda','Beranda'],['#pilar','Pilar'],['#modul','Modul'],['#harga','Harga'],['#fitur','Fitur'],['#alur','Cara Kerja']]" :key="item[0]" :href="item[0]" class="px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition">{{ item[1] }}</a>
         </nav>
-        <Link href="/login" class="ml-2 lime-gradient shadow-glow rounded-xl text-white px-4 py-2.5 text-[12.5px] font-bold hover:brightness-105 transition">Masuk ke Platform</Link>
+        <Link href="/katalog" class="ml-2 lime-gradient shadow-glow rounded-xl text-white px-4 py-2.5 text-[12.5px] font-bold hover:brightness-105 transition">Beli Sekarang</Link>
+        <Link href="/login" class="glass rounded-xl text-white px-4 py-2.5 text-[12.5px] font-bold hover:bg-white/15 transition">Masuk</Link>
       </div>
     </header>
 
@@ -107,7 +117,8 @@ function togglePilar(slug: string) {
             <h1 class="font-display text-[38px] sm:text-[46px] xl:text-[58px] font-black mt-5 leading-[1.06]">Keselamatan tambang,<span class="sheen block">terukur dan terbukti.</span></h1>
             <p class="text-[14px] md:text-[15.5px] mt-5 leading-relaxed max-w-xl text-white/75">Platform keselamatan pertambangan terpadu untuk pembelajaran, penilaian kinerja, inspeksi, kinerja energi, hingga sertifikasi — mengikuti regulasi keselamatan pertambangan Indonesia.</p>
             <div class="flex flex-wrap gap-2.5 mt-8">
-              <Link href="/login" class="lime-gradient shadow-glow rounded-xl text-white px-6 py-3.5 text-[13.5px] font-bold">Masuk ke Platform</Link>
+              <Link href="/katalog" class="lime-gradient shadow-glow rounded-xl text-white px-6 py-3.5 text-[13.5px] font-bold">Beli Platform</Link>
+              <Link href="/login" class="glass rounded-xl px-6 py-3.5 text-[13.5px] font-bold">Masuk ke Platform</Link>
               <a href="#modul" class="glass rounded-xl px-6 py-3.5 text-[13.5px] font-bold">Lihat Modul</a>
             </div>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-10 max-w-2xl">
@@ -133,11 +144,91 @@ function togglePilar(slug: string) {
 
     <section id="modul" class="max-w-6xl mx-auto px-5 py-16 md:py-20"><div class="text-center max-w-xl mx-auto"><span class="text-[10.5px] font-bold uppercase tracking-[0.22em] text-cam-lime-dark">Aplikasi di Dalamnya</span><h2 class="font-display text-[30px] md:text-[38px] font-black text-cam-ink mt-3">{{ modul.length }} modul, satu akun</h2><p class="text-[13.5px] text-stone-500 mt-3 leading-relaxed">{{ modul.filter(item => item.status === 'aktif').length }} modul sudah aktif dan siap dipakai. Semua modul berbagi data perusahaan, pengguna, dan peran yang sama.</p></div><div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-10"><component :is="item.url ? 'a' : 'div'" v-for="item in modul" :key="item.nama" :href="item.url ?? undefined" class="group relative bg-white rounded-2xl shadow-card border border-stone-100 p-6 hover:shadow-lg transition"><span class="absolute inset-x-0 top-0 h-[3px]" :style="{ background: item.url ? `linear-gradient(90deg, ${item.pilarDeep}, ${item.pilarWarna})` : '#E7E5E4' }"></span><div class="w-11 h-11 rounded-xl grid place-items-center" :class="item.url ? 'text-white' : 'text-stone-400'" :style="{ background: item.url ? `linear-gradient(135deg, ${item.pilarDeep}, ${item.pilarWarna})` : '#E7E5E4' }"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="item.ikon" /></svg></div><div class="flex flex-wrap items-center gap-2 mt-4"><h3 class="text-[14.5px] font-bold text-cam-ink">{{ item.nama }}</h3><span class="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide" :class="item.status === 'aktif' ? 'bg-cam-lime-soft text-cam-lime-deep' : 'bg-stone-100 text-stone-400'">{{ item.status === 'aktif' ? 'Aktif' : 'Segera' }}</span></div><p class="text-[12.5px] text-stone-500 mt-2 leading-relaxed">{{ item.ket }}</p><div class="text-[11px] font-bold mt-4" :style="{ color: item.pilarDeep }">Pilar {{ item.pilarNama }}</div></component></div></section>
 
+    <!-- ══════════ HARGA ══════════
+
+         Halaman depan menjawab "berapa kira-kira", bukan "berapa
+         tepatnya untuk tiap butir": daftar harga lengkapnya di /katalog.
+         Disalin ke sini, dua tempat harus sama-sama diperbarui — dan
+         yang terjadi cepat atau lambat adalah dua harga berbeda untuk
+         satu barang yang sama, keduanya tercetak di situs yang sama.
+
+         Ketika harganya belum diumumkan, yang tampil ajakan bertanya,
+         bukan angka nol. -->
+    <section id="harga" class="relative bg-cam-ink text-white overflow-hidden scroll-mt-[66px]">
+      <div class="max-w-6xl mx-auto px-5 py-16 md:py-20">
+        <div class="text-center max-w-xl mx-auto">
+          <span class="text-[10.5px] font-bold uppercase tracking-[0.22em] text-cam-lime-light">Pembelian</span>
+          <h2 class="font-display text-[30px] md:text-[38px] font-black mt-3">Miliki platformnya</h2>
+          <p class="text-[13.5px] text-white/50 mt-3 leading-relaxed">
+            Ambil paket menyeluruh, atau beli aplikasi satuan yang benar-benar Anda pakai.
+            Pemesanannya tidak menuntut akun, dan pembayarannya lewat QRIS.
+          </p>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-2 mt-10 max-w-4xl mx-auto">
+          <!-- paket menyeluruh -->
+          <div class="glass rounded-2xl p-7 flex flex-col ring-1 ring-cam-lime/30">
+            <span class="inline-flex self-start items-center gap-1.5 rounded-full bg-cam-lime/20 text-cam-lime-light px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em]">
+              Paling lengkap
+            </span>
+            <h3 class="text-[16px] font-bold mt-4">Paket menyeluruh</h3>
+            <p class="text-[12px] text-white/45 mt-1.5 leading-relaxed">
+              Seluruh {{ modul.length }} aplikasi, pembaruan, dan pendampingan pemasangan.
+            </p>
+
+            <div v-if="jual.paket" class="mt-5">
+              <div class="num font-display text-[32px] font-black leading-none">{{ rupiah(jual.paket.harga) }}</div>
+              <div class="text-[11px] text-white/45 mt-1.5">{{ jual.paket.masa }}</div>
+            </div>
+            <div v-else class="num font-display text-[22px] font-black mt-5 leading-none text-white/70">
+              Sesuai kebutuhan
+            </div>
+
+            <Link href="/katalog"
+                  class="text-center lime-gradient shadow-glow rounded-xl text-white px-5 py-3 text-[13px] font-bold mt-6">
+              {{ jual.paket ? 'Beli paket' : 'Minta penawaran' }}
+            </Link>
+          </div>
+
+          <!-- satuan -->
+          <div class="glass rounded-2xl p-7 flex flex-col">
+            <span class="inline-flex self-start items-center gap-1.5 rounded-full bg-white/10 text-white/60 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em]">
+              Bertahap
+            </span>
+            <h3 class="text-[16px] font-bold mt-4">Aplikasi satuan</h3>
+            <p class="text-[12px] text-white/45 mt-1.5 leading-relaxed">
+              Mulai dari satu aplikasi, tambahkan yang lain kapan saja — datanya menyatu sendiri.
+            </p>
+
+            <div v-if="jual.termurah !== null" class="mt-5">
+              <div class="num font-display text-[32px] font-black leading-none">{{ rupiah(jual.termurah) }}</div>
+              <div class="text-[11px] text-white/45 mt-1.5">harga mulai · {{ jual.jumlah }} aplikasi siap dibeli</div>
+            </div>
+            <div v-else class="num font-display text-[22px] font-black mt-5 leading-none text-white/70">
+              Sesuai kebutuhan
+            </div>
+
+            <Link href="/katalog"
+                  class="text-center glass rounded-xl text-white px-5 py-3 text-[13px] font-bold mt-6 hover:bg-white/15 transition">
+              Lihat katalog
+            </Link>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-9 text-[11.5px] text-white/40">
+          <span v-for="t in ['Bayar QRIS', 'Tanpa membuat akun', 'Lisensi terbit setelah bukti diperiksa', 'Data terpisah per perusahaan']"
+                :key="t" class="inline-flex items-center gap-1.5">
+            <span class="w-1 h-1 rounded-full bg-cam-lime"></span>{{ t }}
+          </span>
+        </div>
+      </div>
+    </section>
+
     <section id="fitur" class="relative bg-gradient-to-b from-cam-bg via-white to-cam-bg"><div class="max-w-6xl mx-auto px-5 py-16 md:py-20"><div class="text-center max-w-xl mx-auto"><span class="text-[10.5px] font-bold uppercase tracking-[0.22em] text-cam-lime-dark">Fitur Unggulan</span><h2 class="font-display text-[30px] md:text-[38px] font-black text-cam-ink mt-3">Dibuat untuk lapangan, bukan sekadar laporan</h2></div><div class="grid gap-x-8 gap-y-9 sm:grid-cols-2 lg:grid-cols-3 mt-11"><div v-for="(item, index) in fitur" :key="item.judul" class="flex gap-4"><div class="w-10 h-10 rounded-xl grid place-items-center shrink-0 text-white shadow-sm lime-gradient">{{ index + 1 }}</div><div><h3 class="text-[13.5px] font-bold text-cam-ink">{{ item.judul }}</h3><p class="text-[12.5px] text-stone-500 mt-1.5 leading-relaxed">{{ item.ket }}</p></div></div></div></div></section>
 
     <section id="alur" class="max-w-5xl mx-auto px-5 py-16 md:py-20"><div class="text-center max-w-xl mx-auto"><span class="text-[10.5px] font-bold uppercase tracking-[0.22em] text-cam-lime-dark">Cara Kerja</span><h2 class="font-display text-[30px] md:text-[38px] font-black text-cam-ink mt-3">Empat langkah, satu siklus</h2></div><div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mt-10"><div v-for="(item, index) in alur" :key="item.judul" class="bg-white rounded-2xl shadow-card border border-stone-100 p-5"><div class="stat stat-sm text-cam-lime/35">{{ String(index + 1).padStart(2, '0') }}</div><h3 class="text-[13.5px] font-bold text-cam-ink mt-2">{{ item.judul }}</h3><p class="text-[12px] text-stone-500 mt-1.5 leading-relaxed">{{ item.ket }}</p></div></div></section>
 
-    <section class="max-w-6xl mx-auto px-5 pb-16 md:pb-20"><div class="brand-gradient rounded-3xl p-9 md:p-14 text-white text-center shadow-card"><h2 class="font-display text-[28px] md:text-[38px] font-black">Siap menaikkan level keselamatan?</h2><p class="text-[13.5px] text-white/55 mt-3 max-w-md mx-auto">Masuk dengan akun perusahaan Anda dan mulai dari modul yang paling dibutuhkan.</p><Link href="/login" class="inline-block lime-gradient shadow-glow rounded-xl text-white px-7 py-3 text-[13.5px] font-bold mt-7">Masuk ke Platform</Link></div></section>
+    <section class="max-w-6xl mx-auto px-5 pb-16 md:pb-20"><div class="brand-gradient rounded-3xl p-9 md:p-14 text-white text-center shadow-card"><h2 class="font-display text-[28px] md:text-[38px] font-black">Siap menaikkan level keselamatan?</h2><p class="text-[13.5px] text-white/55 mt-3 max-w-md mx-auto">Ambil paketnya, atau mulai dari satu aplikasi yang paling dibutuhkan lebih dulu.</p><div class="flex flex-wrap justify-center gap-2.5 mt-7"><Link href="/katalog" class="inline-block lime-gradient shadow-glow rounded-xl text-white px-7 py-3 text-[13.5px] font-bold">Lihat Katalog</Link><Link href="/login" class="inline-block glass rounded-xl text-white px-7 py-3 text-[13.5px] font-bold">Masuk ke Platform</Link></div></div></section>
     <footer class="border-t border-stone-100 bg-white"><div class="max-w-6xl mx-auto px-5 py-7 flex flex-wrap items-center justify-between gap-3"><div class="font-extrabold tracking-wide text-lg">E<span class="text-cam-orange">Q</span>OHSEE</div><p class="text-[11.5px] text-stone-400">Platform Terpadu Keselamatan Pertambangan · {{ tahun }}</p></div></footer>
   </div>
 

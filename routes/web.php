@@ -61,6 +61,20 @@ Route::get('uji/{token}/selesai',    [PengujianController::class,'selesai'])->na
 Route::get('bayar/{token}',        [PembelianController::class, 'bayar'])->name('pembelian.bayar');
 Route::post('bayar/{token}/bukti', [PembelianController::class, 'unggahBukti'])->name('pembelian.bukti');
 
+/* ============ ETALASE JUAL (publik) ============
+
+   Yang membacanya calon pembeli yang belum punya akun; di balik login
+   ia hanya terbaca oleh orang yang sudah membeli.
+
+   Pemesanannya dibatasi lajunya. Tanpa itu satu skrip dapat menerbitkan
+   ribuan tagihan semalaman — tidak satu pun berisi uang, tetapi tagihan
+   yang sungguhan tenggelam di baliknya, dan nomor registernya melompat
+   ribuan angka. Enam per menit per alamat: cukup longgar untuk orang
+   yang salah pilih lalu memesan ulang, cukup ketat untuk skrip. */
+Route::get('katalog', [PembelianController::class, 'publik'])->name('katalog.publik');
+Route::post('katalog/pesan', [PembelianController::class, 'pesanPublik'])
+    ->middleware('throttle:6,1')->name('katalog.pesan');
+
 Route::get('/', fn () => auth()->check()
     ? redirect()->route('dashboard')
     : app(LandingController::class)->index())->name('beranda');
@@ -356,6 +370,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         /* 'tagihan' didaftarkan SEBELUM 'tagihan/{pesanan}': tanpa itu
            kata "tagihan" terbaca sebagai nomor pesanan. */
+        /* Daftar harga. Sebelum 'tagihan/{pesanan}' karena alasan yang
+           sama: kata yang bukan angka tidak boleh terbaca sebagai nomor. */
+        Route::get('produk',   [PembelianController::class, 'produk'])->name('produk');
+        Route::put('produk/{produk}', [PembelianController::class, 'simpanProduk'])
+            ->name('produk.simpan');
+
         Route::get('tagihan',  [PembelianController::class, 'daftar'])->name('daftar');
         Route::get('tagihan/{pesanan}', [PembelianController::class, 'tagihan'])
             ->whereNumber('pesanan')->name('tagihan');

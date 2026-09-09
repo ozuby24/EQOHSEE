@@ -248,7 +248,14 @@ final class RuteInertia
            berparameter token dan berada di luar grup auth, sedangkan
            daftar ini dipanggil tanpa parameter oleh RuteInertiaTest. */
         'pembelian.katalog',
+        'pembelian.produk',
         'pembelian.daftar',
+
+        /* Etalase publik. Di luar grup auth, jadi uji "lupa didaftarkan"
+           tidak akan menemukannya sendiri — ia hanya memeriksa rute
+           ber-middleware auth. Didaftarkan tangan supaya <Link> dari
+           halaman depan benar-benar berpindah. */
+        'katalog.publik',
         'ko.index',
         'ko.register',
         'ko.create',

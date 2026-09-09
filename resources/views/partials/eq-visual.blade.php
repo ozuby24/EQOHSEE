@@ -1288,4 +1288,96 @@ main a{transition:color .16s}
 }
 :root[data-tema="gelap"] .beli-isian::placeholder{color:rgba(255,255,255,.38)}
 
+/* Kotak centang daftar harga.
+
+   Dibiarkan bawaan, pada mode gelap ia mewarisi color-scheme:dark dan
+   tergambar abu tua di atas kartu abu tua — centangnya ada, tetapi
+   nyaris tidak terbaca. Yang dijawabnya pertanyaan "butir ini dijual
+   atau tidak", jadi salah baca di sini berarti salah tentang apa yang
+   sedang terjual. Kata "Ya"/"Tidak" di sebelahnya memang sudah
+   menyebutkannya, tetapi yang dilihat mata lebih dulu kotaknya. */
+/* Sakelar "dijual" pada daftar harga. Warna DAN kata, sebab warna
+   sendirian tidak terbaca oleh yang tidak membedakan hijau dan abu. */
+.harga-sakelar{border-radius:999px;padding:4px 12px;font-size:11px;font-weight:700;
+  border:1px solid transparent;cursor:pointer;transition:.15s;min-width:64px}
+.harga-sakelar-hidup{background:#DCFCE7;border-color:#86EFAC;color:#166534}
+.harga-sakelar-mati{background:#F1F5F9;border-color:#E2E8F0;color:#64748B}
+.harga-sakelar:disabled{opacity:.55;cursor:not-allowed}
+
+:root[data-tema="gelap"] .harga-sakelar-hidup{background:#12341F;border-color:#1F6B3A;color:#86EFAC}
+:root[data-tema="gelap"] .harga-sakelar-mati{background:#1B242B;border-color:rgba(255,255,255,.12);color:#94A3B8}
+
+
+
+/* ═══════════════════════════════════════════════════════════
+   ETALASE JUAL — chip saring, bilah keranjang
+   ═══════════════════════════════════════════════════════════ */
+
+/* Halaman publik, selalu di atas latar terang: ia memakai kerangka
+   kosong seperti halaman depan, di luar <main> yang dipetakan ulang
+   mode gelap. Karena itu warnanya ditulis tetap, bukan lewat peubah
+   tema — peubah tema di sini akan mengambil nilai yang disiapkan untuk
+   kartu gelap dan mencetak chip gelap di tengah halaman terang. */
+.etalase-chip{border-radius:999px;padding:6px 13px;font-size:11.5px;font-weight:700;
+  border:1px solid #E4E8EC;background:#fff;color:#54606B;cursor:pointer;
+  transition:border-color .15s,background .15s,color .15s}
+.etalase-chip:hover{border-color:#C6CFD6}
+.etalase-chip-aktif{background:#0F1720;border-color:#0F1720;color:#fff}
+.etalase-chip-aktif:hover{border-color:#0F1720}
+
+/* Pasangan mode gelapnya tetap ditulis meski etalase hari ini selalu
+   terang. Kartu putih tanpa pasangan adalah cacat yang tidak terlihat
+   oleh yang menuliskannya — ia hanya terlihat oleh yang membacanya
+   malam hari — dan halaman yang pindah ke kerangka bertema nanti tidak
+   akan mengingatkan siapa pun bahwa barisnya belum ada. */
+:root[data-tema="gelap"] .etalase-chip{
+  background:var(--eq-kartu,#141A21);
+  border-color:var(--eq-garis,rgba(255,255,255,.10));
+  color:var(--eq-teks,#B7C2CC)}
+:root[data-tema="gelap"] .etalase-chip:hover{border-color:rgba(255,255,255,.22)}
+:root[data-tema="gelap"] .etalase-chip-aktif{
+  background:#E8ECF0;border-color:#E8ECF0;color:#0F1720}
+
+/* Bilah keranjang menyelinap dari bawah, bukan muncul begitu saja:
+   sesuatu seukuran itu yang terbit mendadak di tepi layar terbaca
+   sebagai iklan yang menutupi halaman, dan yang pertama dicari
+   pembacanya adalah tombol menutupnya. */
+.etalase-bilah-enter-active,.etalase-bilah-leave-active{transition:transform .22s ease,opacity .22s ease}
+.etalase-bilah-enter-from,.etalase-bilah-leave-to{transform:translateY(120%);opacity:0}
+
+@media (prefers-reduced-motion:reduce){
+  .etalase-bilah-enter-active,.etalase-bilah-leave-active{transition:none}
+  .etalase-bilah-enter-from,.etalase-bilah-leave-to{transform:none;opacity:1}
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   TOMBOL YANG SEDANG MATI
+   ═══════════════════════════════════════════════════════════ */
+
+/* Sampai sekarang tidak ada satu pun aturan untuk :disabled, sehingga
+   tombol yang dimatikan tergambar persis seperti tombol yang hidup:
+   jingga penuh, berbayang, dan menyusut saat ditekan. Yang menekannya
+   tidak mendapat apa pun dan tidak diberi tahu apa-apa — dan tombol
+   yang tampak hidup tetapi diam terbaca sebagai aplikasi yang rusak,
+   bukan sebagai syarat yang belum terpenuhi.
+
+   Terlihat pada layar daftar harga: dua puluh dua tombol "Simpan"
+   jingga penuh, dan hanya satu di antaranya yang benar-benar
+   mengerjakan sesuatu.
+
+   :disabled tidak pernah cocok dengan <a> — ia hanya berlaku pada
+   unsur formulir — jadi aturan ini tidak dapat menyentuh tautan. */
+.eq-btn-utama:disabled,.eq-btn-lain:disabled,.eq-btn-mini:disabled,
+.eq-btn-blok:disabled,.eq-btn-setuju:disabled,.eq-btn-tolak:disabled{
+  opacity:.42;filter:grayscale(.6);cursor:not-allowed;box-shadow:none}
+
+.eq-btn-utama:disabled:hover,.eq-btn-lain:disabled:hover,.eq-btn-mini:disabled:hover,
+.eq-btn-blok:disabled:hover,.eq-btn-setuju:disabled:hover,.eq-btn-tolak:disabled:hover{
+  filter:grayscale(.6)}
+
+.eq-btn-utama:disabled:active,.eq-btn-lain:disabled:active,.eq-btn-mini:disabled:active,
+.eq-btn-blok:disabled:active,.eq-btn-setuju:disabled:active,.eq-btn-tolak:disabled:active{
+  transform:none}
+
 </style>

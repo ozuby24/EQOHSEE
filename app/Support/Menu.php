@@ -568,6 +568,7 @@ final class Menu
         '' => [
           ['Katalog', 'pembelian.katalog', 'pembelian'],
           ['Tagihan', 'pembelian.daftar',  'pembelian/tagihan*'],
+          ['Daftar Harga', 'pembelian.produk', 'pembelian/produk*'],
         ],
       ],
     ],

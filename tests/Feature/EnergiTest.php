@@ -269,9 +269,8 @@ class EnergiTest extends TestCase
         ]);
 
         foreach (['index','konsumsi','fuel','listrik','equipment','kpi','baseline','hemat','karbon','kalkulator','master','laporan'] as $aksi) {
-            $this->get(route('energi.'.$aksi, $this->rentang()))
-                ->assertOk()
-                ->assertDontSee('NaN');
+            $this->tanpaNaN(
+                $this->get(route('energi.'.$aksi, $this->rentang()))->assertOk());
         }
 
         $this->get(route('energi.equipment.show', [$truk] + $this->rentang()))

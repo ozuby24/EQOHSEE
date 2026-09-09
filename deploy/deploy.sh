@@ -337,7 +337,12 @@ php artisan investigasi:pasang
 # TIDAK menimpa harga maupun keaktifan yang sudah diisi — butir yang
 # sudah ada hanya diperbarui nama dan urutannya. Butir baru lahir
 # berharga nol dan tidak aktif, sehingga tidak dapat terjual sebelum
-# harganya ditetapkan orang.
+# harganya ditetapkan orang lewat layar Pembelian → Daftar Harga.
+#
+# Arah sebaliknya juga dikerjakan di sini, dan itu yang lebih penting:
+# butir yang modulnya sudah tidak ada lagi berhenti dijual. Yang belum
+# pernah dipesan dibuang; yang pernah dipesan hanya dinonaktifkan,
+# supaya tagihan yang sudah terbit tidak kehilangan nama barangnya.
 php artisan pembelian:katalog
 
 echo "==> Linking public storage"

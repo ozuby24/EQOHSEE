@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Pembelian\Produk;
-use App\Support\Menu;
+use App\Support\{Menu, Modules};
 use Illuminate\Console\Command;
 
 /**
@@ -49,27 +49,96 @@ class PasangKatalog extends Command
             'urutan'      => 0,
         ], $baru);
 
+        /* Keterangan jualnya diambil dari Modules — daftar yang sama
+           dengan yang menggambar halaman depan — supaya katalog dan
+           beranda tidak pernah menceritakan aplikasi yang sama dengan
+           kalimat berbeda.
+
+           Pencocokannya dikerjakan Modules::perKunciMenu() — satu tempat
+           saja, dipakai bersama halaman katalog publik. Disalin ke sini,
+           salah satunya akan tertinggal saat aturan pencocokannya
+           berubah, dan yang tertinggal biasanya yang tidak pernah dibaca
+           lagi. */
+        $jual = Modules::perKunciMenu();
+
         $urutan = 10;
+        $hidup  = ['WEBSITE'];
 
         foreach (Menu::all() as $kunci => $modul) {
             /* Dasbor dan Admin tidak dijual terpisah: keduanya bagian
                dari kerangka aplikasi, bukan aplikasi tersendiri.
                Menjualnya berarti menjanjikan sesuatu yang tetap ada
-               meski tidak dibeli. */
-            if (in_array($kunci, ['dasbor', 'admin', 'personalia'], true)) continue;
+               meski tidak dibeli.
+
+               'pembelian' ikut dikecualikan karena alasan yang lain lagi:
+               ia adalah lorong menuju pembayaran, bukan barang. Menjualnya
+               berarti menagih orang untuk hak membayar. */
+            if (in_array($kunci, ['dasbor', 'admin', 'personalia', 'pembelian'], true)) continue;
+
+            $hidup[] = 'APP-'.strtoupper($kunci);
 
             $ada += $this->pasang('APP-'.strtoupper($kunci), [
-                'nama'        => $modul['label'],
+                /* Nama jualnya dari Modules bila ada — "Authority —
+                   Kelayakan Kerja" lebih menjelaskan apa yang dibeli
+                   daripada label bilah samping "Miners". */
+                'nama'        => $jual[$kunci]['nama'] ?? $modul['label'],
                 'jenis'       => Produk::APLIKASI,
                 'modul_kunci' => $kunci,
-                'keterangan'  => null,
+                'keterangan'  => $jual[$kunci]['ket'] ?? null,
                 'urutan'      => $urutan,
             ], $baru);
 
             $urutan += 10;
         }
 
+        /* ── MODUL YANG SUDAH TIDAK ADA BERHENTI DIJUAL ──
+
+           Kebalikan dari pemasangan, dan yang lebih berbahaya dari
+           keduanya: modul yang dibuang dari menu tetap muncul di katalog
+           dengan harga terpasang, sehingga orang membayar sesuatu yang
+           tidak ada lagi. Tidak dihapus — pesanan lama menunjuk barisnya,
+           dan menghapusnya membuat tagihan yang sudah terbit kehilangan
+           nama barangnya. Cukup dinonaktifkan: tidak muncul di katalog,
+           tidak dapat dipesan, riwayatnya utuh. */
+        $usang = Produk::whereNotIn('kode', $hidup)->get();
+
+        $dibuang = [];
+        $dimatikan = [];
+
+        foreach ($usang as $p) {
+            /* Yang belum pernah dipesan DIHAPUS. Ia tidak pernah menjadi
+               bagian dari riwayat siapa pun, dan membiarkannya berarti
+               daftar harga penjual perlahan berisi baris-baris yang tidak
+               dapat dijelaskan kepada orang yang membacanya. */
+            if ($p->items()->count() === 0) {
+                $dibuang[] = $p->kode;
+                $p->delete();
+
+                continue;
+            }
+
+            /* Yang pernah dipesan hanya dinonaktifkan. Menghapusnya
+               membuat tagihan yang sudah terbit kehilangan rujukan
+               barangnya — dan tagihan tanpa nama barang adalah tagihan
+               yang tidak dapat dipertanggungjawabkan kepada pembelinya. */
+            if ($p->aktif) {
+                $dimatikan[] = $p->kode;
+                $p->update(['aktif' => false]);
+            }
+        }
+
         $this->info("Katalog terpasang: {$baru} butir baru, {$ada} sudah ada.");
+
+        if ($dibuang) {
+            $this->warn('Dibuang karena modulnya sudah tidak ada dan belum pernah dipesan: '
+                .implode(', ', $dibuang).'.');
+        }
+
+        if ($dimatikan) {
+            $this->warn('Dinonaktifkan karena modulnya sudah tidak ada, '
+                .'tetapi pernah dipesan sehingga barisnya dipertahankan: '
+                .implode(', ', $dimatikan).'.');
+        }
 
         if ($baru > 0) {
             $this->warn('Butir baru berharga nol dan belum aktif. '
@@ -93,6 +162,7 @@ class PasangKatalog extends Command
                 'nama'        => $data['nama'],
                 'jenis'       => $data['jenis'],
                 'modul_kunci' => $data['modul_kunci'],
+                'keterangan'  => $data['keterangan'],
                 'urutan'      => $data['urutan'],
             ]);
 

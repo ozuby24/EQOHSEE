@@ -21,6 +21,39 @@ namespace App\Support;
  */
 class Modules
 {
+    /**
+     * Modul jual per KUNCI MENU.
+     *
+     * Katalog jual dan halaman depan menceritakan aplikasi yang sama;
+     * keduanya harus mengambil kalimatnya dari daftar ini, bukan dari
+     * salinan masing-masing. Pencocokannya lewat NAMA RUTE — bukan peta
+     * nama yang ditulis tangan, sebab peta tangan basi diam-diam: satu
+     * modul berganti nama, petanya tidak, dan yang terjadi bukan galat
+     * melainkan kartu jual tanpa keterangan sama sekali.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public static function perKunciMenu(): array
+    {
+        $rute = [];
+
+        foreach (Menu::all() as $kunci => $m) {
+            foreach ($m['groups'] as $grup) {
+                foreach ($grup as $butir) $rute[$butir[1]] = $kunci;
+            }
+        }
+
+        $per = [];
+
+        foreach (self::all() as $modul) {
+            $kunci = $rute[$modul['rute'] ?? ''] ?? null;
+
+            if ($kunci !== null) $per[$kunci] = $modul;
+        }
+
+        return $per;
+    }
+
     public static function all(): array
     {
         return [
@@ -49,6 +82,16 @@ class Modules
             ['nama' => 'Keselamatan Operasi (KO)', 'status' => 'aktif', 'pilar' => 'engineering', 'rute' => 'ko.index',
              'ket'  => 'Kelayakan objek, jadwal perawatan, alat pengaman, kajian teknis, dan tenaga teknis bersertifikat.',
              'ikon' => 'M2.5 18.2a1 1 0 0 0 1 1h17a1 1 0 0 0 1-1v-1.7a1 1 0 0 0-1-1h-17a1 1 0 0 0-1 1zM10 10.2V5.4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4.8M4.6 15.5v-3.3a5.6 5.6 0 0 1 5.4-5.6M14 6.6a5.6 5.6 0 0 1 5.4 5.6v3.3'],
+
+            /* Berdiri sendiri, bukan bagian Hazard Report. Hazard mencatat
+               bahaya sebelum ada yang celaka; Investigasi bekerja setelah
+               kejadian, dengan alur, bukti, dan kesimpulan yang berbeda —
+               menggabungkan keduanya dalam satu kartu jual membuat pembeli
+               mengira sudah memiliki yang sebenarnya belum dibeli. */
+            ['nama' => 'Investigasi Insiden', 'status' => 'aktif', 'pilar' => 'safety',
+             'rute' => 'investigasi.dasbor',
+             'ket'  => 'Register insiden, analisis SCAT tiga lapis, wawancara terarah, hierarki kendali, dan matriks risiko — dari laporan awal sampai tindakan perbaikan yang tuntas.',
+             'ikon' => 'M21 21l-5.2-5.2M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z'],
 
             ['nama' => 'SMKP Audit', 'status' => 'aktif', 'pilar' => 'safety', 'rute' => 'smkp.index',
              'ket'  => 'Audit 7 elemen SMKP Minerba sesuai Kepdirjen 185.K/2019: penilaian per kriteria, temuan berjenjang, dan laporan siap cetak.',

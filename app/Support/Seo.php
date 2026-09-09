@@ -55,6 +55,15 @@ final class Seo
             'Satu platform untuk pembelajaran K3, penilaian kinerja keselamatan, '
             .'audit SMKP, prosedur, dan sertifikasi di industri pertambangan Indonesia.',
         ],
+        /* Etalase jual. Halaman yang paling ingin ditemukan orang yang
+           belum kenal EQOHSEE — dan satu-satunya yang menyebut harga,
+           yang memang dicari orang lebih dulu daripada daftar fitur. */
+        'katalog.publik' => [
+            'Harga dan Paket',
+            'Beli platform EQOHSEE sebagai paket menyeluruh atau aplikasi satuan: '
+            .'LMS, kelayakan kerja, hazard report, investigasi insiden, SMKP, hingga '
+            .'kendali biaya. Pemesanan tanpa akun, pembayaran QRIS.',
+        ],
         'login' => [
             'Masuk',
             'Masuk ke akun EQOHSEE untuk mengelola keselamatan, kesehatan kerja, '
