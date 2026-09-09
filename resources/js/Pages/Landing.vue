@@ -105,6 +105,38 @@ const ikonFitur: string[][] = [
   ['M3.5 3.5h6.5v6.5H3.5zM14 3.5h6.5v6.5H14zM3.5 14h6.5v6.5H3.5zM14 14h6.5v6.5H14z'],
 ];
 
+/**
+ * Angka contoh untuk tiruan dasbor di hero.
+ *
+ * Ketiganya memang yang dihitung EQOHSEE — laporan bahaya, temuan yang
+ * belum tuntas, dan kepatuhan MCU. Bukan angka karangan tentang hal yang
+ * tidak ada: yang dipajang sebagai layar produk harus berupa layar yang
+ * benar-benar dapat dibuka.
+ */
+const angkaDasbor = [
+  { nama: 'Hazard dilaporkan', nilai: '142', delta: '+18', baik: true },
+  { nama: 'Temuan terbuka', nilai: '23', delta: '−7', baik: true },
+  { nama: 'Kepatuhan MCU', nilai: '96%', delta: '', baik: true },
+];
+
+/** Tinggi batang bagan, persen. Bentuk, bukan data. */
+const batangDasbor = [38, 52, 44, 61, 49, 72, 58, 83, 66, 91, 74, 88];
+
+/**
+ * Warna untuk ketujuh elemen SMKP.
+ *
+ * Diambil dari palet pilar yang sudah ada, bukan dikarang baru — halaman
+ * yang memakai dua kumpulan warna berbeda untuk hal yang setara terbaca
+ * sebagai dua halaman yang ditempel.
+ */
+/* Ketujuhnya harus dapat dibedakan SATU SAMA LAIN, bukan sekadar enak
+   dipandang berdampingan. Susunan sebelumnya memakai jingga untuk
+   Kebijakan dan jingga tua untuk Implementasi: pada bilah keduanya tidak
+   bersebelahan, sehingga membaca daftarnya menuntut mencocokkan dua
+   warna yang sekilas sama — persis pekerjaan yang seharusnya dihapus
+   oleh warna. */
+const warnaSmkp = ['#F57C00', '#2D8CF0', '#16A34A', '#8B5CF6', '#06B6D4', '#F43F5E', '#EAB308'];
+
 const tentang: [string, string][] = [
   ['Sesuai regulasi', 'Mengacu pada standar dan regulasi resmi Indonesia.'],
   ['Akses fleksibel', 'Berbasis web, terbuka dari kantor maupun dari site.'],
@@ -220,95 +252,103 @@ function togglePilar(slug: string) {
             </div>
           </div>
 
-          <aside class="jual-gelap-kartu">
-            <button v-if="hero.video" type="button"
-                    class="w-full flex items-center gap-3 text-left pb-5 mb-5 border-b border-white/10"
-                    @click="videoTerbuka = true">
-              <span class="jual-tanda-gelap" style="--c:#F57C00">
-                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M8 5.5v13l11-6.5-11-6.5Z" />
-                </svg>
-              </span>
-              <span>
-                <span class="block text-[13px] font-bold">Tonton video</span>
-                <span class="block jual-tubuh-kecil jual-tubuh-terang">Operasional tambang</span>
-              </span>
-            </button>
+          <!-- Potongan produk yang sesungguhnya. Sebelum ini
+               satu-satunya gambar produk di seluruh situs ada di
+               /katalog, bukan di halaman yang dilihat lebih dulu.
 
-            <p class="jual-mata jual-mata-terang">Mengapa EQOHSEE</p>
-            <ul class="space-y-3.5 mt-4">
-              <li v-for="r in alasanHero" :key="r[0]" class="flex gap-2.5">
-                <span class="jual-centang mt-0.5">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"
-                       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="m5 12.5 4.5 4.5L19 7" />
-                  </svg>
-                </span>
-                <span>
-                  <span class="block text-[12.5px] font-bold">{{ r[0] }}</span>
-                  <span class="block jual-tubuh-kecil jual-tubuh-terang mt-0.5">{{ r[1] }}</span>
-                </span>
-              </li>
-            </ul>
+               Angkanya contoh, dan terbaca sebagai contoh: tanpa nama
+               perusahaan dan tanpa klaim, hanya bentuk layarnya. -->
+          <aside class="jual-dasbor">
+            <div class="jual-dasbor-kepala">
+              <span class="jual-dasbor-judul">Dasbor HSE</span>
+              <span class="jual-dasbor-masa">Sep 2026</span>
+            </div>
+
+            <div v-for="a in angkaDasbor" :key="a.nama" class="jual-dasbor-angka">
+              <span>{{ a.nama }}</span>
+              <span class="jual-dasbor-nilai">
+                <b>{{ a.nilai }}</b>
+                <span v-if="a.delta" class="jual-delta"
+                      :class="a.baik ? 'jual-delta-naik' : 'jual-delta-turun'">{{ a.delta }}</span>
+              </span>
+            </div>
+
+            <div class="jual-dasbor-bagan" aria-hidden="true">
+              <i v-for="(t, k) in batangDasbor" :key="k" :style="{ height: t + '%' }"></i>
+            </div>
+            <div class="jual-dasbor-kaki">
+              <span>Hazard dilaporkan · 12 bulan</span>
+              <span class="num">2025–2026</span>
+            </div>
           </aside>
         </div>
       </div>
     </section>
 
-    <!-- ══════════ SMKP & GALERI ══════════ -->
+    <!-- ══════════ SMKP ══════════ -->
     <section id="beranda-lanjut" class="jual-lugas jual-lugas-gelap scroll-mt-[66px]"
              style="border-top:1px solid rgba(255,255,255,.08)">
       <div class="jual-lebar py-16 md:py-20">
-        <div class="grid lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] gap-x-14 gap-y-12">
+        <div class="grid lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] gap-x-14 gap-y-10 items-start">
           <div>
             <p class="jual-mata jual-mata-terang">Kerangka</p>
             <h2 class="jual-h2 jual-h2-terang">SMKP Minerba</h2>
             <p class="jual-tubuh jual-tubuh-terang mt-4">
-              Tujuh elemen wajib menurut Kepdirjen 185.K/37.04/DJB/2019, beserta bobot
-              penilaiannya.
+              Tujuh elemen wajib menurut Kepdirjen 185.K/37.04/DJB/2019. Bobotnya berjumlah
+              tepat seratus — dan Implementasi sendirian menanggung sepertiganya.
             </p>
-
-            <div class="grid grid-cols-2 gap-2.5 mt-7">
-              <div v-for="(e, i) in elemenSmkp" :key="e.nama" class="jual-gelap-kartu"
-                   style="padding:.9rem 1rem">
-                <div class="flex items-baseline justify-between">
-                  <span class="jual-mata jual-mata-terang">{{ String(i + 1).padStart(2, '0') }}</span>
-                  <span class="text-[11px] num" style="color:#F57C00">{{ e.bobot }}%</span>
-                </div>
-                <div class="text-[12px] font-bold mt-2 leading-snug">{{ e.nama }}</div>
-                <div class="jual-bilah-nilai">
-                  <i :style="{ width: `${Math.min(100, e.bobot * 2.9)}%` }"></i>
-                </div>
-              </div>
-            </div>
           </div>
 
           <div>
+            <!-- Satu bilah utuh yang dibagi tujuh, bukan tujuh bilah yang
+                 masing-masing punya seratus persennya sendiri. Yang
+                 menarik dari angka ini justru perbandingannya. -->
+            <div class="jual-takaran">
+              <i v-for="(e, k) in elemenSmkp" :key="e.nama"
+                 :style="{ width: e.bobot + '%', background: warnaSmkp[k % warnaSmkp.length] }"
+                 :title="`${e.nama} — ${e.bobot}%`"></i>
+            </div>
+
+            <ul class="jual-takaran-daftar">
+              <li v-for="(e, k) in elemenSmkp" :key="e.nama">
+                <span class="jual-takaran-titik"
+                      :style="{ background: warnaSmkp[k % warnaSmkp.length] }"></span>
+                <span class="jual-takaran-nama">{{ e.nama }}</span>
+                <span class="jual-takaran-bobot num">{{ e.bobot }}%</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ GALERI ══════════ -->
+    <section class="jual-lugas jual-lugas-gelap"
+             style="border-top:1px solid rgba(255,255,255,.08)">
+      <div class="jual-lebar py-16 md:py-20">
+        <div class="flex flex-wrap items-end justify-between gap-4 max-w-3xl">
+          <div>
             <p class="jual-mata jual-mata-terang">Lapangan</p>
             <h2 class="jual-h2 jual-h2-terang">Potret kegiatan</h2>
-
-            <div class="grid sm:grid-cols-2 gap-3 mt-7">
-              <article v-for="g in galeri" :key="g.judul"
-                       class="rounded-xl overflow-hidden bg-white/[0.045] border border-white/10">
-                <!-- Pita bawah foto dipotong: berkas galerinya membawa
-                     tulisan dan lencana penyunting yang terbakar di dalam
-                     gambarnya. Lihat catatan pada .jual-aspek-foto. -->
-                <span class="relative block overflow-hidden" style="aspect-ratio:16/10">
-                  <img v-if="g.gambarUrl" :src="g.gambarUrl" alt="" loading="lazy" decoding="async"
-                       class="absolute inset-x-0 top-0 w-full object-cover"
-                       style="height:124%;object-position:center 34%">
-                  <span v-else class="absolute inset-0" style="background:#1B2126"></span>
-                </span>
-                <div class="p-3.5">
-                  <div class="text-[12.5px] font-bold">{{ g.judul }}</div>
-                  <p class="jual-tubuh-kecil jual-tubuh-terang mt-1">{{ g.ket }}</p>
-                  <button v-if="g.videoUrl" type="button"
-                          class="text-[11.5px] font-bold mt-2" style="color:#F57C00"
-                          @click="videoTerbuka = true">Putar video</button>
-                </div>
-              </article>
-            </div>
           </div>
+        </div>
+
+        <div class="jual-pita-galeri mt-9">
+          <article v-for="g in galeri" :key="g.judul">
+            <!-- Pita bawah foto dipotong: berkas galerinya membawa
+                 tulisan dan lencana penyunting yang terbakar di dalam
+                 gambarnya. Lihat catatan pada .jual-aspek-foto. -->
+            <span class="jual-galeri-bingkai">
+              <img v-if="g.gambarUrl" :src="g.gambarUrl" alt="" loading="lazy" decoding="async"
+                   class="jual-galeri-foto">
+            </span>
+            <div class="mt-3.5">
+              <div class="text-[13px] font-bold">{{ g.judul }}</div>
+              <p class="jual-tubuh-kecil jual-tubuh-terang mt-1">{{ g.ket }}</p>
+              <button v-if="g.videoUrl" type="button" class="jual-tautan jual-tautan-terang mt-2.5"
+                      @click="videoTerbuka = true">Putar video</button>
+            </div>
+          </article>
         </div>
       </div>
     </section>
@@ -548,31 +588,31 @@ function togglePilar(slug: string) {
           <h2 class="jual-h2">Empat langkah, satu siklus</h2>
         </div>
 
-        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mt-10">
-          <div v-for="(item, i) in alur" :key="item.judul" class="jual-kartu">
+        <!-- Rel penghubung hanya digambar pada lebar yang benar-benar
+             menampung empat kolom sejajar. Pada dua kolom ia akan
+             menyambungkan langkah 2 ke langkah 3 yang berada di baris
+             berbeda — menggambar urutan yang tidak pernah terjadi. -->
+        <div class="jual-alur mt-10">
+          <span class="jual-alur-rel" aria-hidden="true"></span>
+          <div v-for="(item, i) in alur" :key="item.judul" class="jual-alur-butir">
             <span class="jual-langkah-angka">{{ String(i + 1).padStart(2, '0') }}</span>
             <h3 class="jual-h4 mt-4">{{ item.judul }}</h3>
             <p class="jual-tubuh-kecil mt-2">{{ item.ket }}</p>
           </div>
         </div>
-      </div>
-    </section>
 
-    <!-- ══════════ TENTANG ══════════
+        <!-- Tanpa bingkai kartu, dan sengaja.
 
-         Empat kalimat jaminan yang sempat hilang saat halaman ini
-         disusun ulang, dan ketahuan oleh uji yang memang menjaga
-         keberadaannya. Tempatnya di sini: tepat sebelum ajakan terakhir,
-         tempat orang yang hampir memutuskan mencari alasan terakhir. -->
-    <section id="tentang" class="jual-lugas scroll-mt-[66px]" style="background:#FFFFFF">
-      <div class="jual-lebar pb-16 md:pb-20">
-        <p class="jual-mata jual-mata-aksen">Tentang</p>
-        <h2 class="jual-h2">Yang Anda dapat, di luar aplikasinya</h2>
-
-        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mt-9">
-          <div v-for="(t, i) in tentang" :key="t[0]" class="jual-kartu"
-               :style="{ '--c': warnaFitur[i % warnaFitur.length] }">
-            <span class="jual-tanda">
+             Sebelum ini halaman memuat enam kisi kartu berturut-turut —
+             pilar, modul, harga, fitur, alur, tentang — dan keseragaman
+             sepanjang itu terbaca sebagai halaman yang tidak dipikirkan,
+             berapa pun rapinya tiap kartu. Empat butir terakhir ini tidak
+             menuntut bingkai untuk dapat dibaca. -->
+        <div id="tentang" class="grid gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-4
+                                 mt-16 pt-12 scroll-mt-[66px]"
+             style="border-top:1px solid #E3E7E2">
+          <div v-for="(t, i) in tentang" :key="t[0]">
+            <span class="jual-tanda" :style="{ '--c': warnaFitur[i % warnaFitur.length] }">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path v-for="(d, k) in ikonTentang[i]" :key="k" :d="d" />

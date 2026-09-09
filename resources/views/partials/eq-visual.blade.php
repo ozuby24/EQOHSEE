@@ -1521,6 +1521,48 @@ main a{transition:color .16s}
 .jual-hero-tirai{position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(102deg,#12161AF7 0%,#12161AE0 46%,#12161A99 100%)}
 
+/* ── tiruan dasbor untuk hero halaman depan ──
+
+   Potongan produk yang sesungguhnya, bukan gambar hiasan. Halaman jual
+   yang memperlihatkan barangnya lebih meyakinkan daripada halaman jual
+   yang memperlihatkan ikon tentang barangnya — dan sebelum ini,
+   satu-satunya gambar produk di seluruh situs justru ada di /katalog,
+   bukan di halaman depan yang dilihat lebih dulu.
+
+   Angkanya contoh, dan memang terbaca sebagai contoh: tanpa nama
+   perusahaan, tanpa klaim, hanya bentuk layarnya. */
+.jual-dasbor{background:var(--j-kartu);border-radius:16px;overflow:hidden;
+  box-shadow:0 34px 68px -34px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.16);
+  width:min(23rem,100%);color:var(--j-tinta)}
+.jual-dasbor-kepala{display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding:.95rem 1.15rem;border-bottom:1px solid var(--j-garis)}
+.jual-dasbor-judul{font-size:13px;font-weight:700;letter-spacing:-.01em}
+.jual-dasbor-masa{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:11px;color:var(--j-samar)}
+
+.jual-dasbor-angka{display:flex;align-items:baseline;justify-content:space-between;gap:.75rem;
+  padding:.7rem 1.15rem}
+.jual-dasbor-angka+.jual-dasbor-angka{border-top:1px solid var(--j-garis)}
+.jual-dasbor-angka>span:first-child{font-size:12.5px;color:var(--j-redup)}
+.jual-dasbor-nilai{display:inline-flex;align-items:baseline;gap:.5rem}
+.jual-dasbor-nilai b{font-size:16px;font-weight:700;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums}
+.jual-delta{font-size:10.5px;font-weight:700;border-radius:40px;padding:.1rem .4rem;
+  font-variant-numeric:tabular-nums}
+.jual-delta-naik{background:var(--j-hijau-lembut);color:var(--j-hijau-tua)}
+.jual-delta-turun{background:var(--j-aksen-lembut);color:var(--j-aksen)}
+
+/* Bagan batang dua belas bulan. Digambar dengan flex, bukan pustaka
+   grafik: ia tidak pernah dibaca datanya, hanya bentuknya — dan menarik
+   Chart.js ke halaman depan demi dua belas batang adalah 200 kB yang
+   diunduh sebelum kalimat pertama terbaca. */
+.jual-dasbor-bagan{display:flex;align-items:flex-end;gap:4px;height:3.25rem;
+  padding:0 1.15rem;margin-top:.35rem}
+.jual-dasbor-bagan i{flex:1;border-radius:2px 2px 0 0;background:var(--j-garis-tebal)}
+.jual-dasbor-bagan i:nth-last-child(-n+3){background:var(--j-aksen)}
+.jual-dasbor-kaki{display:flex;align-items:center;justify-content:space-between;
+  padding:.65rem 1.15rem 1rem;font-size:11px;color:var(--j-samar)}
+
 /* ── kartu tiruan tagihan ──
 
    Potongan produk yang sesungguhnya, bukan gambar hiasan. Ia sekaligus
@@ -1624,6 +1666,47 @@ main a{transition:color .16s}
   background:var(--j-hijau)}
 .jual-status-nanti{background:var(--j-dasar);color:var(--j-samar)}
 
+/* ── pita galeri selebar layar ──
+
+   Foto lapangan sebelumnya diapit kolom setengah lebar di sebelah
+   kerangka SMKP, sehingga tingginya tinggal 128px dan yang tergambar
+   hanya potongan helm. Foto yang dipakai sebagai bukti bahwa aplikasinya
+   dipakai di tambang sungguhan tidak berguna bila terlalu kecil untuk
+   memperlihatkan tambangnya.
+
+   Digulir mendatar pada layar sempit, bukan diperkecil lagi. */
+.jual-pita-galeri{display:grid;gap:1rem;grid-auto-flow:column;
+  grid-auto-columns:minmax(17rem,1fr);overflow-x:auto;
+  padding-bottom:.5rem;scroll-snap-type:x mandatory;
+  scrollbar-width:thin}
+@media (min-width:1024px){
+  .jual-pita-galeri{grid-auto-flow:row;grid-template-columns:repeat(3,1fr);
+    overflow:visible;padding-bottom:0}
+}
+.jual-pita-galeri>article{scroll-snap-align:start}
+
+.jual-galeri-bingkai{position:relative;display:block;overflow:hidden;
+  border-radius:12px;aspect-ratio:4/3;background:#1B2126}
+.jual-galeri-foto{position:absolute;inset:0 0 auto 0;width:100%;height:124%;
+  object-fit:cover;object-position:center 34%;transform-origin:50% 0;
+  transition:transform 1s var(--j-lengkung)}
+.jual-pita-galeri>article:hover .jual-galeri-foto{transform:scale(1.045)}
+
+/* ── empat langkah dengan rel penghubung ── */
+.jual-alur{position:relative;display:grid;gap:2rem 1.5rem;grid-template-columns:1fr}
+@media (min-width:640px){.jual-alur{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1024px){.jual-alur{grid-template-columns:repeat(4,1fr)}}
+.jual-alur-butir{position:relative}
+
+/* Hanya pada lebar yang benar-benar menampung empat kolom sejajar. Pada
+   dua kolom rel ini menyambungkan langkah 2 ke langkah 3 yang berada di
+   baris berbeda — menggambar urutan yang tidak pernah terjadi. */
+.jual-alur-rel{display:none}
+@media (min-width:1024px){
+  .jual-alur-rel{display:block;position:absolute;top:.95rem;left:12.5%;right:12.5%;height:1px;
+    background:var(--j-garis-tebal);pointer-events:none}
+}
+
 /* ── di atas latar gelap ── */
 
 .jual-gelap-kartu{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);
@@ -1643,21 +1726,57 @@ main a{transition:color .16s}
 /* Angka hero: dipisah garis rambut, bukan dikotakkan satu per satu.
    Empat ubin berbingkai di bawah judul adalah bentuk yang paling sering
    dipakai halaman bangkitan mesin. */
+/* Sekat dan lekukannya dihitung per BARIS, bukan per unsur.
+
+   `:not(:first-child)` benar pada satu baris dan salah pada dua: butir
+   ketiga membuka baris kedua tetapi tetap mendapat lekukan kiri, sehingga
+   angka di kolom kiri tidak sejajar dengan angka di atasnya — meleset
+   dua puluh piksel, cukup untuk terbaca sebagai tata letak yang tidak
+   dirapikan. `:nth-child` menghitungnya menurut kolom yang sebenarnya. */
 .jual-statistik{display:grid;grid-template-columns:repeat(2,1fr);
   border-top:1px solid rgba(255,255,255,.14)}
-@media (min-width:640px){.jual-statistik{grid-template-columns:repeat(4,1fr)}}
-.jual-statistik>div{padding:1.1rem 0 0;border-right:1px solid rgba(255,255,255,.14)}
-.jual-statistik>div:last-child{border-right:0}
-.jual-statistik>div:not(:first-child){padding-left:1.25rem}
+.jual-statistik>div{padding:1.1rem 1.25rem 0 0;
+  border-right:1px solid rgba(255,255,255,.14)}
+.jual-statistik>div:nth-child(2n){border-right:0;padding-right:0;padding-left:1.25rem}
+
+@media (min-width:640px){
+  .jual-statistik{grid-template-columns:repeat(4,1fr)}
+  .jual-statistik>div{padding:1.1rem 1.25rem 0;border-right:1px solid rgba(255,255,255,.14)}
+  .jual-statistik>div:first-child{padding-left:0}
+  .jual-statistik>div:last-child{border-right:0;padding-right:0}
+}
 .jual-statistik b{display:block;font-size:1.6rem;font-weight:700;line-height:1;
   letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .jual-statistik span{display:block;font-size:11.5px;color:rgba(255,255,255,.5);
   margin-top:.5rem}
 
-/* Bilah bobot elemen SMKP. */
-.jual-bilah-nilai{height:3px;border-radius:999px;background:rgba(255,255,255,.12);
-  overflow:hidden;margin-top:.7rem}
-.jual-bilah-nilai>i{display:block;height:100%;border-radius:999px;background:var(--j-aksen)}
+/* ── bobot SMKP sebagai SATU bilah ──
+
+   Sebelumnya tujuh kartu kecil berjajar dua kolom, masing-masing dengan
+   bilahnya sendiri. Bentuk itu menyembunyikan satu-satunya hal yang
+   menarik dari angkanya: bahwa Implementasi sendirian menanggung 35%
+   sementara Dokumentasi hanya 3%. Perbandingan tidak terbaca ketika tiap
+   bilah punya seratus persennya sendiri.
+
+   Satu bilah utuh yang dibagi tujuh membuat perbandingan itu terbaca
+   dalam sekali lihat — dan jumlahnya memang tepat seratus, jadi bilahnya
+   jujur secara harfiah. */
+.jual-takaran{display:flex;height:2.75rem;border-radius:8px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.12)}
+.jual-takaran>i{display:block;height:100%;position:relative;
+  border-right:1px solid rgba(18,22,26,.35);
+  transition:filter .3s var(--j-lengkung)}
+.jual-takaran>i:last-child{border-right:0}
+.jual-takaran:hover>i{filter:saturate(.45) opacity(.55)}
+.jual-takaran>i:hover{filter:none}
+
+.jual-takaran-daftar{display:grid;gap:.55rem;margin-top:1.25rem}
+.jual-takaran-daftar li{display:flex;align-items:baseline;gap:.65rem;font-size:12.5px}
+.jual-takaran-titik{width:.5rem;height:.5rem;border-radius:2px;flex:none;
+  transform:translateY(-1px)}
+.jual-takaran-nama{color:rgba(255,255,255,.72)}
+.jual-takaran-bobot{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:700;
+  color:#fff}
 
 /* Pita penanda pada kartu rencana. Kata, bukan warna sendirian: warna
    saja tidak terbaca oleh yang tidak membedakan jingga dan abu. */
@@ -1905,7 +2024,9 @@ main a{transition:color .16s}
   .jual-isian input,.jual-isian textarea,
   .jual-bilah-enter-active,.jual-bilah-leave-active{transition:none}
 
-  .jual-modul,.jual-gelap-kartu,.jual-tanda{transition:none}
+  .jual-modul,.jual-gelap-kartu,.jual-tanda,.jual-galeri-foto,.jual-takaran>i{transition:none}
+  .jual-pita-galeri>article:hover .jual-galeri-foto{transform:none}
+  .jual-takaran:hover>i{filter:none}
   .jual-aspek:hover,.jual-kartu:hover,.jual-modul:hover,
   .jual-gelap-kartu:hover{transform:none}
   .jual-aspek:hover .jual-aspek-foto{transform:none}
