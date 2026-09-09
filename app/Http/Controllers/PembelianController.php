@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pembelian\{Pembayaran, Pesanan, Produk};
-use App\Support\{Berkas, Modules, Pembelian, Pillars};
+use App\Support\{Berkas, Media, Modules, Pembelian, Pillars};
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -56,7 +56,24 @@ class PembelianController extends Controller
 
         $pilar = Pillars::all();
 
-        $aplikasi = [];
+        /* Foto lapangan per aspek, dipakai kartu pilar dan latar bagian
+           paket. Diambil dari galeri yang sama dengan halaman depan —
+           bukan berkas tersendiri — supaya etalase tidak memajang
+           tambang yang berbeda dari yang dipajang beranda.
+
+           Media::url() mengembalikan null bila berkasnya belum ditaruh,
+           dan layar memakai null itu untuk menggambar gradien sebagai
+           gantinya. Tanpa itu yang tampil bingkai gambar rusak — dan
+           gambar rusak di halaman jual lebih buruk daripada tidak ada
+           gambar sama sekali. */
+        $foto = [];
+
+        foreach (Media::galeri() as $g) {
+            $foto[$g['aspek']] = Media::url($g['gambar']);
+        }
+
+        $aplikasi  = [];
+        $terpakai  = [];
 
         foreach (Modules::perKunciMenu() as $kunci => $modul) {
             $p = $produk->get($kunci);
@@ -77,6 +94,8 @@ class PembelianController extends Controller
                 'pilarWarna' => $w['warna'],
                 'pilarDeep'  => $w['deep'],
             ];
+
+            $terpakai[$modul['pilar']] = true;
         }
 
         return Inertia::render('Pembelian/Etalase', [
@@ -89,9 +108,28 @@ class PembelianController extends Controller
             ] : null,
 
             'aplikasi' => $aplikasi,
-            'pilar'    => array_map(fn ($w) => [
-                'nama' => $w['nama'], 'warna' => $w['warna'], 'deep' => $w['deep'],
-            ], $pilar),
+
+            /* Hanya pilar yang benar-benar punya kartu. Chip saring untuk
+               pilar kosong menyaring seluruh kartu menjadi tidak ada, dan
+               yang membacanya menduga katalognya yang habis. */
+            'pilar'    => collect($pilar)
+                ->filter(fn ($w, $slug) => isset($terpakai[$slug]))
+                ->map(fn ($w, $slug) => [
+                    'nama'   => $w['nama'],
+                    'ket'    => $w['ket'],
+                    'warna'  => $w['warna'],
+                    'deep'   => $w['deep'],
+                    'light'  => $w['light'],
+                    'ikon'   => $w['ikon'] ?? 'shield',
+                    'foto'   => $foto[$slug] ?? null,
+                    'jumlah' => collect($aplikasi)->where('pilar', $slug)->count(),
+                ])->all(),
+
+            'latar' => [
+                'video'  => Media::heroVideo(),
+                'poster' => Media::heroPoster(),
+                'paket'  => $foto['engineering'] ?? Media::heroPoster(),
+            ],
 
             /* Kosong bila tidak satu butir pun berharga — layar memakainya
                untuk menukar seluruh ajakan beli menjadi ajakan bertanya,

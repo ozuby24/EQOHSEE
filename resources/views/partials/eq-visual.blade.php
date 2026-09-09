@@ -1318,6 +1318,99 @@ main a{transition:color .16s}
    mode gelap. Karena itu warnanya ditulis tetap, bukan lewat peubah
    tema — peubah tema di sini akan mengambil nilai yang disiapkan untuk
    kartu gelap dan mencetak chip gelap di tengah halaman terang. */
+
+/* ── Garis kontur hero ──
+
+   Peta topografi adalah gambar yang setiap hari dibaca orang tambang.
+   Digambar sebagai satu <svg> inline, bukan berkas: ia mengisi seluruh
+   lebar hero tanpa satu permintaan jaringan pun, dan tidak pernah
+   tampil sebagai bingkai gambar rusak pada jaringan site. */
+.etalase-topo{position:absolute;inset:auto 0 0 0;height:58%;width:100%;
+  color:rgba(255,255,255,.22);pointer-events:none}
+
+/* ── Cahaya sudut pada panel kaca ──
+
+   Panel kaca yang rata terbaca sebagai kotak abu; satu sumber cahaya di
+   sudutnya memberi kedalaman tanpa menambah satu unsur pun yang harus
+   dibaca. */
+.etalase-kilau{position:absolute;top:-40%;right:-30%;width:70%;height:120%;
+  border-radius:999px;pointer-events:none;
+  background:radial-gradient(closest-side,rgba(199,231,68,.20),transparent 72%)}
+
+/* ── Bintik halus pada kartu putih ──
+
+   Dipakai kartu "paket disusun sesuai kebutuhan", satu-satunya kartu
+   besar tanpa foto di halaman ini. Rata putih, ia terbaca sebagai
+   ruang yang belum diisi. */
+.etalase-bintik{position:absolute;inset:0;pointer-events:none;opacity:.55;
+  background-image:radial-gradient(rgba(15,23,32,.07) 1px,transparent 1px);
+  background-size:18px 18px;
+  -webkit-mask-image:radial-gradient(ellipse at 50% 0%,#000,transparent 72%);
+  mask-image:radial-gradient(ellipse at 50% 0%,#000,transparent 72%)}
+
+/* ── Aura warna di balik grid aplikasi ──
+
+   Dua bulatan sangat lembut, memecah bidang putih besar yang di
+   belakang dua puluh satu kartu terbaca sebagai kertas. */
+.etalase-aura{position:absolute;width:38rem;height:38rem;border-radius:999px;
+  pointer-events:none;filter:blur(10px)}
+.etalase-aura-kiri{top:6rem;left:-14rem;
+  background:radial-gradient(closest-side,rgba(245,124,0,.10),transparent 70%)}
+.etalase-aura-kanan{bottom:2rem;right:-15rem;
+  background:radial-gradient(closest-side,rgba(30,136,229,.10),transparent 70%)}
+
+/* ── Kartu aspek berfoto ──
+
+   Rasio dikunci supaya delapan kartu berfoto berbeda tetap sebaris
+   rapi; tanpa itu tingginya mengikuti isi dan barisannya bergerigi. */
+.etalase-aspek{position:relative;overflow:hidden;border-radius:1rem;
+  aspect-ratio:4/3;min-height:9.5rem;text-align:left;cursor:pointer;
+  border:1px solid rgba(255,255,255,.10);background:#0F1720;
+  transition:transform .25s cubic-bezier(.21,.6,.35,1),border-color .25s,box-shadow .25s}
+.etalase-aspek:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.24);
+  box-shadow:0 12px 28px -14px rgba(0,0,0,.75)}
+.etalase-aspek-aktif{border-color:#C7E744;box-shadow:0 0 0 2px rgba(199,231,68,.35)}
+
+/* Cap ikon pada kartu aspek yang belum punya foto. Diputar sedikit
+   supaya tidak terbaca sebagai ikon kedua yang kebetulan kebesaran. */
+.etalase-aspek-cap{color:rgba(255,255,255,.14);transform:rotate(-8deg) translate(12%,10%);
+  pointer-events:none}
+
+/* ── Kartu aplikasi ── */
+.etalase-kartu{position:relative;overflow:hidden;display:flex;flex-direction:column;
+  background:#fff;border:1px solid #F0F0EF;border-radius:1rem;padding:1.5rem;
+  box-shadow:0 1px 2px rgba(15,23,32,.05),0 8px 24px -18px rgba(15,23,32,.35);
+  transition:transform .25s cubic-bezier(.21,.6,.35,1),box-shadow .25s,border-color .25s}
+.etalase-kartu:hover{transform:translateY(-4px);border-color:#E4E4E2;
+  box-shadow:0 6px 14px -8px rgba(15,23,32,.14),0 22px 44px -26px rgba(15,23,32,.42)}
+
+/* Cap air: ikon modulnya sendiri, dibesarkan dan diredupkan. Tiap kartu
+   jadi berbeda tanpa satu berkas gambar pun ditambahkan. */
+.etalase-cap{position:absolute;right:-1.6rem;bottom:-1.8rem;
+  width:9.5rem;height:9.5rem;opacity:.07;pointer-events:none;
+  transition:opacity .3s,transform .3s cubic-bezier(.21,.6,.35,1)}
+.etalase-kartu:hover .etalase-cap{opacity:.12;transform:translate(-.35rem,-.35rem) rotate(-4deg)}
+
+/* ── Empat langkah ── */
+.etalase-langkah{position:relative;display:inline-grid;place-items:center;
+  width:4rem;height:4rem;border-radius:1.15rem;color:#fff;
+  background:linear-gradient(135deg,#F57C00,#DC6E00);
+  box-shadow:0 10px 24px -12px rgba(245,124,0,.75)}
+.etalase-langkah-angka{position:absolute;top:-.35rem;right:-.35rem;
+  width:1.35rem;height:1.35rem;border-radius:999px;display:grid;place-items:center;
+  font-size:10px;font-weight:800;color:#0F1720;background:#C7E744;
+  border:2px solid #F7F7F5}
+
+/* Rel penghubung antar langkah. Hanya pada lebar yang benar-benar
+   menampung empat kolom sejajar: pada dua kolom ia menyambungkan
+   langkah 2 ke langkah 3 yang berada di baris berbeda, menggambar
+   urutan yang tidak pernah terjadi. */
+.etalase-rel{display:none}
+@media (min-width:1024px){
+  .etalase-rel{display:block;position:absolute;top:2rem;left:12.5%;right:12.5%;height:2px;
+    background:linear-gradient(90deg,transparent,#E4E8EC 12%,#E4E8EC 88%,transparent);
+    pointer-events:none}
+}
 .etalase-chip{border-radius:999px;padding:6px 13px;font-size:11.5px;font-weight:700;
   border:1px solid #E4E8EC;background:#fff;color:#54606B;cursor:pointer;
   transition:border-color .15s,background .15s,color .15s}
@@ -1337,6 +1430,9 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] .etalase-chip:hover{border-color:rgba(255,255,255,.22)}
 :root[data-tema="gelap"] .etalase-chip-aktif{
   background:#E8ECF0;border-color:#E8ECF0;color:#0F1720}
+:root[data-tema="gelap"] .etalase-kartu{
+  background:var(--eq-kartu,#141A21);
+  border-color:var(--eq-garis,rgba(255,255,255,.10))}
 
 /* Bilah keranjang menyelinap dari bawah, bukan muncul begitu saja:
    sesuatu seukuran itu yang terbit mendadak di tepi layar terbaca
@@ -1348,6 +1444,12 @@ main a{transition:color .16s}
 @media (prefers-reduced-motion:reduce){
   .etalase-bilah-enter-active,.etalase-bilah-leave-active{transition:none}
   .etalase-bilah-enter-from,.etalase-bilah-leave-to{transform:none;opacity:1}
+
+  /* Kartu yang terangkat dan cap air yang berputar sama-sama gerakan,
+     dan permintaan "kurangi gerakan" tidak berhenti pada video. */
+  .etalase-kartu,.etalase-aspek,.etalase-cap{transition:none}
+  .etalase-kartu:hover,.etalase-aspek:hover{transform:none}
+  .etalase-kartu:hover .etalase-cap{transform:none}
 }
 
 
@@ -1379,5 +1481,19 @@ main a{transition:color .16s}
 .eq-btn-utama:disabled:active,.eq-btn-lain:disabled:active,.eq-btn-mini:disabled:active,
 .eq-btn-blok:disabled:active,.eq-btn-setuju:disabled:active,.eq-btn-tolak:disabled:active{
   transform:none}
+
+
+/* ── Bagian harga halaman depan ── */
+
+/* Kontur pada bidang navy di antara dua bagian terang. Tanpa tekstur, ia
+   terbaca sebagai jeda kosong, bukan sebagai bagian yang berisi. */
+.harga-topo{position:absolute;inset:auto 0 0 0;height:64%;width:100%;
+  color:rgba(255,255,255,.07);pointer-events:none}
+
+/* Cahaya sudut pada kartu paket, menandainya sebagai yang dituju tanpa
+   menambah satu kata pun. */
+.harga-kilau{position:absolute;top:-45%;right:-30%;width:75%;height:130%;
+  border-radius:999px;pointer-events:none;
+  background:radial-gradient(closest-side,rgba(199,231,68,.16),transparent 72%)}
 
 </style>

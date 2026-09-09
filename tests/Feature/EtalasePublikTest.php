@@ -103,6 +103,113 @@ class EtalasePublikTest extends TestCase
             'Satu harga menempel pada lebih dari satu kartu.');
     }
 
+    /* ═══════════════════ gambar dan vektor ═══════════════════ */
+
+    /**
+     * Tiap kartu aspek punya bahan untuk digambar.
+     *
+     * Kartu aspek boleh tidak berfoto — berkasnya memang belum tentu
+     * ada, dan layar menggambar gradien beserta ikon pilarnya sebagai
+     * ganti. Yang TIDAK boleh hilang nama ikonnya: tanpa itu kartunya
+     * tergambar sebagai bidang warna polos tanpa satu bentuk pun, dan
+     * kegagalannya diam — tidak ada galat, hanya delapan kotak yang
+     * tidak dapat dibedakan.
+     */
+    public function test_setiap_kartu_aspek_punya_ikon_dan_jumlahnya(): void
+    {
+        $props = $this->get('/katalog')->assertOk()->viewData('page')['props'];
+
+        $this->assertNotEmpty($props['pilar'], 'Etalase tidak menggambar satu aspek pun.');
+
+        foreach ($props['pilar'] as $slug => $w) {
+            $this->assertNotEmpty($w['ikon'], "Aspek {$slug} dikirim tanpa nama ikon.");
+            $this->assertNotEmpty($w['nama'], "Aspek {$slug} dikirim tanpa nama.");
+
+            foreach (['warna', 'deep', 'light'] as $k) {
+                $this->assertMatchesRegularExpression('/^#[0-9A-Fa-f]{6}$/', $w[$k],
+                    "Warna '{$k}' aspek {$slug} bukan hex 6 digit — gradiennya tidak akan terbentuk.");
+            }
+
+            $this->assertGreaterThan(0, $w['jumlah'],
+                "Aspek {$slug} tampil sebagai kartu saring padahal tidak menaungi satu aplikasi pun — "
+                .'mengkliknya mengosongkan seluruh grid, dan yang membacanya menduga katalognya habis.');
+        }
+    }
+
+    /** Jumlah pada kartu aspek harus sama dengan yang benar-benar tersaring. */
+    public function test_jumlah_aspek_sama_dengan_kartu_yang_tersaring(): void
+    {
+        $props = $this->get('/katalog')->assertOk()->viewData('page')['props'];
+
+        foreach ($props['pilar'] as $slug => $w) {
+            $nyata = collect($props['aplikasi'])->where('pilar', $slug)->count();
+
+            $this->assertSame($nyata, $w['jumlah'],
+                "Aspek {$slug} menjanjikan {$w['jumlah']} aplikasi tetapi menyaring {$nyata}.");
+        }
+    }
+
+    /**
+     * Latar hero dikirim, dan alamatnya benar-benar menunjuk berkas.
+     *
+     * Media::url() mengembalikan null bila berkasnya belum ditaruh, dan
+     * layar memakai null itu untuk menggambar gradien sebagai ganti.
+     * Yang tidak boleh terjadi kebalikannya: alamat terkirim untuk
+     * berkas yang tidak ada, yang tergambar sebagai bingkai gambar
+     * rusak — di halaman jual lebih buruk daripada tidak ada gambar
+     * sama sekali.
+     */
+    public function test_latar_yang_dikirim_benar_benar_ada_berkasnya(): void
+    {
+        $props = $this->get('/katalog')->assertOk()->viewData('page')['props'];
+
+        $this->assertArrayHasKey('latar', $props);
+
+        $alamat = array_filter([
+            $props['latar']['video'] ?? null,
+            $props['latar']['poster'] ?? null,
+            $props['latar']['paket'] ?? null,
+            ...collect($props['pilar'])->pluck('foto')->all(),
+        ]);
+
+        foreach ($alamat as $url) {
+            $jalur = public_path(parse_url((string) $url, PHP_URL_PATH) ?? '');
+
+            $this->assertFileExists($jalur,
+                "Etalase mengirim alamat {$url} untuk berkas yang tidak ada.");
+        }
+    }
+
+    /**
+     * Berkasnya tidak ada: yang dikirim NULL, bukan alamat yang mengarah
+     * ke ketiadaan.
+     *
+     * Uji di atas tidak dapat menangkap ini sendirian — seluruh berkas
+     * galeri kebetulan memang ada, sehingga alamat yang dikarang pun
+     * tetap menunjuk berkas nyata. Di sini akar medianya dialihkan ke
+     * map kosong, sehingga cabang yang memeriksa keberadaan berkas
+     * benar-benar terpakai.
+     *
+     * Yang dijaga bukan kerapian: alamat untuk berkas yang tidak ada
+     * tergambar sebagai bingkai gambar rusak, dan bingkai rusak di
+     * halaman jual lebih buruk daripada tidak ada gambar sama sekali.
+     */
+    public function test_berkas_yang_tidak_ada_dikirim_sebagai_null(): void
+    {
+        config(['media.akar' => 'media-yang-tidak-pernah-ada']);
+
+        $props = $this->get('/katalog')->assertOk()->viewData('page')['props'];
+
+        $this->assertNull($props['latar']['video'], 'Alamat video dikirim untuk berkas yang tidak ada.');
+        $this->assertNull($props['latar']['poster'], 'Alamat poster dikirim untuk berkas yang tidak ada.');
+        $this->assertNull($props['latar']['paket'], 'Alamat latar paket dikirim untuk berkas yang tidak ada.');
+
+        foreach ($props['pilar'] as $slug => $w) {
+            $this->assertNull($w['foto'],
+                "Aspek {$slug} mengirim alamat foto untuk berkas yang tidak ada.");
+        }
+    }
+
     /* ═══════════════════ pesanan publik ═══════════════════ */
 
     public function test_pesanan_publik_berakhir_di_halaman_bayar_bukan_halaman_masuk(): void

@@ -60,6 +60,29 @@ function rupiah(n: number | null) {
   return n === null ? '' : 'Rp ' + Number(n || 0).toLocaleString('id-ID');
 }
 
+/**
+ * Empat jaminan pada bagian harga, dengan vektornya masing-masing.
+ *
+ * Digambar sebagai path inline, bukan pustaka ikon: repo ini sudah
+ * sekali melepas pustaka dari CDN, dan ikon yang gagal dimuat pada
+ * jaringan site tambang meninggalkan kotak kosong persis di tempat yang
+ * paling menjelaskan.
+ */
+const jaminan: { teks: string; jalur: string[] }[] = [
+  { teks: 'Bayar QRIS',
+    jalur: ['M4 4h6v6H4V4Z', 'M14 4h6v6h-6V4Z', 'M4 14h6v6H4v-6Z', 'M14 14h2.5v2.5H14V14Z',
+            'M19.5 14H20v2.5', 'M17 19.5h3'] },
+  { teks: 'Tanpa membuat akun',
+    jalur: ['M16.5 20v-1.6a3.4 3.4 0 0 0-3.4-3.4H6.9a3.4 3.4 0 0 0-3.4 3.4V20',
+            'M10 11.6a3.6 3.6 0 1 0 0-7.2 3.6 3.6 0 0 0 0 7.2Z', 'M17 8.5h4'] },
+  { teks: 'Lisensi terbit setelah bukti diperiksa',
+    jalur: ['M12 2.8 4.6 5.7v5.6c0 4.5 3.1 8.6 7.4 9.9 4.3-1.3 7.4-5.4 7.4-9.9V5.7L12 2.8Z',
+            'm8.9 11.9 2.2 2.2 4-4.4'] },
+  { teks: 'Data terpisah per perusahaan',
+    jalur: ['M12 7.5c4.4 0 8-1.2 8-2.6S16.4 2.3 12 2.3 4 3.5 4 4.9s3.6 2.6 8 2.6Z',
+            'M20 4.9v14.2c0 1.4-3.6 2.6-8 2.6s-8-1.2-8-2.6V4.9', 'M20 12c0 1.4-3.6 2.6-8 2.6S4 13.4 4 12'] },
+];
+
 function togglePilar(slug: string) {
   pilarTerpilih.value = pilarTerpilih.value === slug ? null : slug;
 }
@@ -155,7 +178,22 @@ function togglePilar(slug: string) {
          Ketika harganya belum diumumkan, yang tampil ajakan bertanya,
          bukan angka nol. -->
     <section id="harga" class="relative bg-cam-ink text-white overflow-hidden scroll-mt-[66px]">
-      <div class="max-w-6xl mx-auto px-5 py-16 md:py-20">
+      <!-- Garis kontur, sama dengan hero etalase. Bidang navy sebesar
+           ini di antara dua bagian terang terbaca sebagai jeda kosong;
+           satu lapis vektor sudah cukup memberinya tekstur, dan peta
+           topografi adalah gambar yang setiap hari dibaca orang
+           tambang. -->
+      <svg class="harga-topo" viewBox="0 0 1200 420" preserveAspectRatio="none" aria-hidden="true">
+        <g fill="none" stroke="currentColor" stroke-width="1.1">
+          <path d="M-20 340C160 300 250 250 420 262s250 84 430 52 300-96 390-92" />
+          <path d="M-20 292C160 250 250 198 420 211s250 86 430 53 300-99 390-95" />
+          <path d="M-20 244C160 200 250 146 420 160s250 88 430 54 300-101 390-97" />
+          <path d="M-20 194C160 148 250 92 420 107s250 90 430 55 300-104 390-100" />
+          <path d="M-20 142C160 94 250 36 420 52s250 92 430 56 300-106 390-102" />
+        </g>
+      </svg>
+
+      <div class="relative max-w-6xl mx-auto px-5 py-16 md:py-20">
         <div class="text-center max-w-xl mx-auto">
           <span class="text-[10.5px] font-bold uppercase tracking-[0.22em] text-cam-lime-light">Pembelian</span>
           <h2 class="font-display text-[30px] md:text-[38px] font-black mt-3">Miliki platformnya</h2>
@@ -167,11 +205,18 @@ function togglePilar(slug: string) {
 
         <div class="grid gap-4 md:grid-cols-2 mt-10 max-w-4xl mx-auto">
           <!-- paket menyeluruh -->
-          <div class="glass rounded-2xl p-7 flex flex-col ring-1 ring-cam-lime/30">
-            <span class="inline-flex self-start items-center gap-1.5 rounded-full bg-cam-lime/20 text-cam-lime-light px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em]">
+          <div class="relative glass rounded-2xl p-7 flex flex-col ring-1 ring-cam-lime/30 overflow-hidden">
+            <span class="harga-kilau" aria-hidden="true"></span>
+            <span class="relative inline-flex self-start items-center gap-1.5 rounded-full bg-cam-lime/20 text-cam-lime-light px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em]">
               Paling lengkap
             </span>
-            <h3 class="text-[16px] font-bold mt-4">Paket menyeluruh</h3>
+            <span class="relative w-11 h-11 rounded-xl grid place-items-center text-white lime-gradient shadow-glow mt-5">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M20 7 12 3 4 7m16 0-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+            </span>
+            <h3 class="relative text-[16px] font-bold mt-4">Paket menyeluruh</h3>
             <p class="text-[12px] text-white/45 mt-1.5 leading-relaxed">
               Seluruh {{ modul.length }} aplikasi, pembaruan, dan pendampingan pemasangan.
             </p>
@@ -195,6 +240,13 @@ function togglePilar(slug: string) {
             <span class="inline-flex self-start items-center gap-1.5 rounded-full bg-white/10 text-white/60 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em]">
               Bertahap
             </span>
+            <span class="w-11 h-11 rounded-xl grid place-items-center text-white bg-white/10 border border-white/15 mt-5">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3.5 3.5h7v7h-7zM13.5 3.5h7v7h-7zM3.5 13.5h7v7h-7z" />
+                <path d="M17 13.5v7M13.5 17h7" />
+              </svg>
+            </span>
             <h3 class="text-[16px] font-bold mt-4">Aplikasi satuan</h3>
             <p class="text-[12px] text-white/45 mt-1.5 leading-relaxed">
               Mulai dari satu aplikasi, tambahkan yang lain kapan saja — datanya menyatu sendiri.
@@ -215,10 +267,15 @@ function togglePilar(slug: string) {
           </div>
         </div>
 
-        <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-9 text-[11.5px] text-white/40">
-          <span v-for="t in ['Bayar QRIS', 'Tanpa membuat akun', 'Lisensi terbit setelah bukti diperiksa', 'Data terpisah per perusahaan']"
-                :key="t" class="inline-flex items-center gap-1.5">
-            <span class="w-1 h-1 rounded-full bg-cam-lime"></span>{{ t }}
+        <div class="flex flex-wrap items-center justify-center gap-x-7 gap-y-3 mt-10 text-[11.5px] text-white/45">
+          <span v-for="t in jaminan" :key="t.teks" class="inline-flex items-center gap-2">
+            <span class="w-6 h-6 rounded-lg bg-cam-lime/15 text-cam-lime-light grid place-items-center shrink-0">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path v-for="(d, i) in t.jalur" :key="i" :d="d" />
+              </svg>
+            </span>
+            {{ t.teks }}
           </span>
         </div>
       </div>
