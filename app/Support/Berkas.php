@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Investigasi\Bukti as BuktiInvestigasi;
 use App\Models\Pembelian\Pembayaran as PembayaranBeli;
+use App\Models\Pjp\Laporan as LaporanPjp;
 use App\Models\{Document, GudangBarang, HazardReport, InspectionItem, PasporKartu, PasporKartuUnit, PasporMcu, PasporSertifikat, Signatory, SmkpFinding};
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -120,6 +121,17 @@ final class Berkas
            BerindukPerusahaan pada Bukti, yang menyaring lewat
            investigasi lalu insidennya. */
         $out['evd'] = [BuktiInvestigasi::class, 'berkas', false];
+
+        /* Dokumen berkala perusahaan jasa — laporan bulanan, triwulan,
+           data SPIP, TSP. Batas perusahaannya dijaga BerindukPerusahaan
+           pada Laporan, yang menyaring lewat PJP-nya.
+
+           Wajib TERTUTUP. Isinya laporan produksi dan keselamatan milik
+           pihak ketiga yang diserahkan kepada pemegang IUP; kit asalnya
+           menaruhnya di disk publik, sehingga seluruhnya terbaca lewat
+           /storage/… oleh siapa pun yang menebak jalurnya, tanpa login
+           sama sekali. */
+        $out['pjl'] = [LaporanPjp::class, 'file_path', false];
 
         /* Bukti bayar. TIDAK berlingkup perusahaan — tagihan boleh
            berasal dari calon pelanggan yang belum punya perusahaan sama

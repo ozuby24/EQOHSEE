@@ -106,6 +106,24 @@ class CakupanDataContohTest extends TestCase
         'beli_produk'              => 'katalog jual, master milik penjual',
         'inv_wawancara_pertanyaan' => 'bank soal wawancara, master bersama',
 
+        /* Daftar periksa prakualifikasi SMKP modul PJP. Alasannya sama
+           persis dengan master Investigasi di atas: isinya lampiran
+           Kepdirjen Minerba 185/2019 — 17 kategori dan 126 butir — yang
+           berlaku sama bagi setiap pemegang IUP. Dipasang `pjp:pasang`,
+           bukan oleh data contoh.
+
+           Membuangnya bersama data contoh satu perusahaan tidak sekadar
+           mengosongkan daftar periksa perusahaan lain: jawaban mereka
+           menunjuk butirnya lewat kunci asing yang cascade on delete,
+           jadi pekerjaan berbulan-bulan ikut terhapus tanpa satu galat
+           pun.
+
+           Bahwa keduanya benar-benar terisi tetap dijaga — bukan di sini
+           melainkan di PjpAksiTest, yang memeriksa 17 kategori, 126
+           butir, dan bobot A–P berjumlah 178. */
+        'pjp_smkp_kategori' => 'daftar periksa Kepdirjen 185/2019, dipasang pjp:pasang',
+        'pjp_smkp_item'     => 'daftar periksa Kepdirjen 185/2019, dipasang pjp:pasang',
+
         /* Penghitung nomor. SENGAJA tidak ikut dibuang: mengosongkannya
            membuat deret nomor mulai dari satu lagi, sehingga INC-2026-0001
            terbit dua kali dalam tahun yang sama. Dua dokumen bernomor

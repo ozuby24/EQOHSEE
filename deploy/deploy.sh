@@ -403,6 +403,20 @@ php artisan migrate --force
 echo "==> Installing Investigasi master data"
 php artisan investigasi:pasang
 
+# Daftar periksa prakualifikasi SMKP modul PJP — 17 kategori, 126 butir.
+#
+# Aman diulang, dan itu bukan sekadar kerapian: penyimpanannya
+# MEMPERBARUI, tidak pernah menghapus. Jawaban tiap mitra menunjuk ke
+# butirnya lewat kunci asing yang cascade on delete, sehingga penyemai
+# yang mengosongkan tabelnya lebih dahulu akan menghapus seluruh
+# jawaban daftar periksa setiap mitra — dan yang tersisa hanyalah
+# daftar periksa yang kembali kosong tanpa satu pun galat.
+#
+# TANPA LANGKAH INI halaman daftar periksa terbuka tanpa satu
+# pertanyaan pun, dan skor kepatuhannya menjawab 0% bagi setiap mitra.
+echo "==> Installing PJP checklist master data"
+php artisan pjp:pasang
+
 # Katalog jual — paket website dan tiap aplikasi di dalamnya.
 #
 # Dijalankan tiap deploy dengan alasan yang sama: modul baru yang

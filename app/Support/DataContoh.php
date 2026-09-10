@@ -14,6 +14,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Pembelian\{Item as ItemBeli, Lisensi as LisensiBeli,
     Pembayaran as PembayaranBeli, Pesanan as PesananBeli, Produk as ProdukBeli};
 use App\Support\Investigasi\{MasterInvestigasi, MesinScat, NomorInvestigasi, Triase as InvTriase};
+use App\Models\Pjp\{
+    Evaluasi as PjpEvaluasi, Laporan as PjpLaporan, Pjp,
+    SmkpItem as PjpSmkpItem, SmkpJawaban as PjpSmkpJawaban, SmkpKategori as PjpSmkpKategori,
+};
+use App\Support\Pjp\DaftarPeriksaSmkp;
 use App\Support\Pembelian;
 use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, BiayaRealisasi,
                 Company, Document, DocumentIso, DocumentRevision, EnergyEquipment,
@@ -214,6 +219,20 @@ final class DataContoh
         InvPembelajaran::class, InvKronologi::class, InvBukti::class, InvTim::class,
         InvJejak::class, InvInvestigasi::class,
         InvInsidenOrang::class, InvInsiden::class, InvLokasi::class,
+
+        /* PJP. Anaknya disebut satu per satu dengan alasan yang sama
+           seperti Investigasi di atas: penghapusan berkaskade tidak ikut
+           terhitung, dan pemeriksaan penumpukan bersandar pada
+           perbandingan "dibuat" lawan "dibuang".
+
+           Daftar periksanya — pjp_smkp_kategori dan pjp_smkp_item —
+           TIDAK dibuang. Isinya lampiran Kepdirjen 185/2019 yang berlaku
+           sama bagi setiap perusahaan, dan membuangnya bersama data
+           contoh satu perusahaan akan mengosongkan daftar periksa
+           seluruh perusahaan lain pada pemasangan yang sama — beserta
+           jawaban mereka, yang menunjuk butirnya lewat kunci asing
+           berkaskade. */
+        PjpSmkpJawaban::class, PjpEvaluasi::class, PjpLaporan::class, Pjp::class,
     ];
 
     /** @var list<string> hal yang perlu diketahui pemanggilnya */
@@ -434,6 +453,11 @@ final class DataContoh
                 InvWawancara::withoutGlobalScopes()
                     ->whereIn('investigasi_id', self::idInvestigasi($c))->select('id')),
 
+            /* PJP — satu tingkat: seluruh anaknya menempel pada
+               mitranya, dan mitranya yang berkolom company_id. */
+            PjpLaporan::class, PjpEvaluasi::class, PjpSmkpJawaban::class => $q->whereIn('pjp_id',
+                Pjp::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
             WaterSumpPump::class => $q->whereIn('water_sump_id',
                 WaterSump::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
             GeoInstrumen::class => $q->whereIn('geo_lereng_id',
@@ -633,6 +657,7 @@ final class DataContoh
             'Authority'      => $this->authority(),
             'TPKKP'          => $this->tpkkp(),
             'Investigasi'    => $this->investigasi(),
+            'PJP'            => $this->pjp(),
             'Pembelian'      => $this->pembelian(),
             'Pesan'          => $this->pesan(),
             'Catatan'        => $this->catatan(),
@@ -652,6 +677,175 @@ final class DataContoh
      * daftar akan berbeda isinya cepat atau lambat, dan yang di sini
      * yang lebih dulu ketinggalan.
      */
+    /* ─────────── Pemantauan Perusahaan Jasa ─────────── */
+
+    /**
+     * Dua mitra yang keadaannya BERLAWANAN, bukan dua mitra yang sama.
+     *
+     * Yang satu patuh sepenuhnya, yang lain menunggak dan skornya jatuh.
+     * Data contoh yang seluruhnya rapi tidak pernah memperlihatkan
+     * bagaimana layarnya menandai mitra bermasalah — padahal daftar
+     * "paling perlu perhatian" dan ubin "laporan bulanan menunggak"
+     * adalah dua bagian yang paling sering dibuka, dan keduanya hanya
+     * dapat diperiksa kalau memang ada yang bermasalah.
+     *
+     * Daftar periksanya diisi SELURUHNYA untuk keduanya, 126 butir
+     * masing-masing. Mengisi sebagian akan membuat skornya bergantung
+     * pada butir mana yang kebetulan terisi — dan angka yang tidak dapat
+     * dihitung ulang dengan tangan adalah angka yang tidak dapat
+     * diperiksa siapa pun.
+     */
+    private function pjp(): int
+    {
+        /* Daftar periksanya dipasang lebih dulu, dan pemasangannya
+           idempoten. Tanpa ini, data contoh pada pemasangan yang belum
+           pernah menjalankan `pjp:pasang` akan menghasilkan mitra tanpa
+           satu pun jawaban — dan skornya 0% bagi semuanya, tanpa satu
+           galat pun yang menandai bahwa masternya yang belum ada. */
+        DaftarPeriksaSmkp::pasang();
+
+        $n = 0;
+
+        $butir = PjpSmkpItem::query()->with('kategori')->orderBy('urutan')->get();
+
+        /* Dua mitra, dan nilai daftar periksanya ditentukan oleh satu
+           angka: berapa dari setiap tiga butir yang dinilai penuh.
+           Ditulis begitu supaya skornya dapat dihitung ulang dengan
+           tangan dari angka itu saja. */
+        foreach ([
+            ['PT Karya Bumi Sejahtera', '0812345678901', 'Ir. Bagas Wicaksono', 'aktif',
+             'tiap' => 1, 'catatan' => 'Kontrak hauling overburden Pit Selatan, berlaku sampai Desember 2026.'],
+            ['PT Mitra Tambang Nusantara', '0898765432109', 'Andi Prasetyo, S.T.', 'perlu_tindak_lanjut',
+             'tiap' => 3, 'catatan' => 'Laporan bulanan sering terlambat. Sudah dua kali diberi surat teguran.'],
+        ] as $b) {
+            [$nama, $nib, $pj, $status] = $b;
+
+            $pjp = Pjp::withoutGlobalScopes()->create([
+                'company_id'       => $this->c->id,
+                'nama_perusahaan'  => $nama,
+                'nib'              => $nib,
+                'penanggung_jawab' => $pj,
+                'alamat'           => 'Jl. Poros Tambang KM 12, Kutai Kartanegara, Kalimantan Timur',
+                'status'           => $status,
+                'catatan'          => $b['catatan'],
+            ]);
+            $n++;
+
+            foreach ($butir as $i => $satu) {
+                $legalitas = $satu->kategori?->kode === PjpSmkpKategori::LEGALITAS;
+                $penuh     = $i % $b['tiap'] === 0;
+
+                PjpSmkpJawaban::withoutGlobalScopes()->create([
+                    'pjp_id'  => $pjp->id,
+                    'item_id' => $satu->id,
+
+                    /* Kategori LEGALITAS dijawab ada/tidak ada; A–P
+                       dinilai 0–3. Mengisi keduanya dengan kolom yang
+                       sama akan membuat salah satunya terbaca kosong di
+                       layar tanpa satu galat pun. */
+                    'jawaban' => $legalitas ? ($penuh ? 'ya' : 'tidak') : null,
+                    'nilai'   => $legalitas ? null : ($penuh ? '3' : '1'),
+                ]);
+                $n++;
+            }
+
+            $n += $this->pjpLaporan($pjp, $b['tiap'] === 1);
+            $n += $this->pjpEvaluasi($pjp, $b['tiap'] === 1);
+        }
+
+        return $n;
+    }
+
+    /**
+     * Dokumen berkala satu mitra.
+     *
+     * Tanggal unggahnya ditulis lewat kueri, bukan lewat isian: kolom
+     * stempel waktu diisi Eloquent sesudah penyimpanan dan menimpa apa
+     * pun yang diberikan — sehingga seluruh dokumen contoh akan
+     * bertanggal hari ini, dan tidak satu pun akan terbaca terlambat.
+     */
+    private function pjpLaporan(Pjp $pjp, bool $patuh): int
+    {
+        $n = 0;
+
+        $tahun     = (int) $this->kini->format('Y');
+        $bulanLalu = $this->kini->copy()->subMonth();
+
+        foreach ([
+            ['spip', 'Semester I '.$tahun, $bulanLalu, 2, 'sesuai',
+             'Data SPIP 24 unit, lengkap dengan sertifikat kelayakan.'],
+
+            ['tsp', (string) $tahun, $bulanLalu, 3, 'sesuai',
+             'TSP '.$tahun.' memuat 11 sasaran dengan penanggung jawab.'],
+
+            /* Laporan bulanan sengaja jatuh pada BULAN BERJALAN, bukan
+               bulan lalu. Pjp::belumLaporanBulananBulanIni() menanyakan
+               bulan ini; ditaruh di bulan lalu, kedua mitra sama-sama
+               muncul menunggak — dan data contoh yang dimaksudkan
+               memperlihatkan satu mitra patuh justru memperlihatkan
+               dua-duanya lalai. */
+            ['laporan_bulanan', $this->kini->translatedFormat('F Y'), $this->kini,
+             $patuh ? 2 : 14, $patuh ? 'sesuai' : null,
+             $patuh ? 'Jam kerja, statistik kecelakaan, dan realisasi program.'
+                    : 'Terlambat 11 hari. Statistik jam kerja belum dilampirkan.'],
+        ] as [$jenis, $periode, $bulan, $hari, $sesuai, $catatan]) {
+            $saat = $bulan->copy()->startOfMonth()->addDays($hari - 1)->setTime(9, 15);
+
+            $l = PjpLaporan::withoutGlobalScopes()->create([
+                'pjp_id'    => $pjp->id,
+                'jenis'     => $jenis,
+                'periode'   => $periode,
+                'catatan'   => $catatan,
+                'kesesuaian_isi' => $sesuai,
+
+                /* Berkasnya sengaja TIDAK ada di disk. Data contoh tidak
+                   mengunggah apa pun, dan menaruh berkas palsu di disk
+                   tertutup berarti data contoh meninggalkan berkas yang
+                   tidak ikut terbuang saat data contohnya dibuang. Yang
+                   membukanya memperoleh 404 dari rute penyaji — jawaban
+                   yang benar bagi berkas yang memang tidak ada. */
+                'file_path' => "pjp/{$pjp->id}/contoh-{$jenis}.pdf",
+                'file_name' => str(PjpLaporan::JENIS[$jenis] ?? $jenis)->slug().'-'
+                    .str($periode)->slug().'.pdf',
+                'file_size' => 248_000,
+            ]);
+
+            PjpLaporan::withoutGlobalScopes()->where('id', $l->id)
+                ->update(['created_at' => $saat, 'updated_at' => $saat]);
+
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /** Dua semester penilaian, supaya grafik trennya punya dua titik. */
+    private function pjpEvaluasi(Pjp $pjp, bool $patuh): int
+    {
+        $tahun = (int) $this->kini->format('Y');
+        $n = 0;
+
+        foreach ([
+            [$tahun - 1, 2, $patuh ? [88, 90, 86] : [62, 55, 60]],
+            [$tahun,     1, $patuh ? [92, 94, 90] : [58, 48, 57]],
+        ] as [$th, $sem, $skor]) {
+            PjpEvaluasi::withoutGlobalScopes()->create([
+                'pjp_id'   => $pjp->id,
+                'tahun'    => $th,
+                'semester' => $sem,
+                'skor_teknis'                => $skor[0],
+                'skor_keselamatan_kesehatan' => $skor[1],
+                'skor_lingkungan'            => $skor[2],
+                'catatan' => $patuh
+                    ? 'Tidak ada temuan mayor. Program KPLH berjalan sesuai TSP.'
+                    : 'Dua temuan mayor pada pengelolaan kelelahan dan tanggap darurat.',
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
     private function pembelian(): int
     {
         /* Katalognya dipasang, tetapi TIDAK dihitung sebagai baris data

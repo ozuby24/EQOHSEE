@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Investigasi\{Insiden, Tindakan as TindakanInvestigasi};
 use App\Models\Pembelian\Pesanan as PesananBeli;
+use App\Models\Pjp\{Laporan as LaporanPjp, Pjp};
 use App\Models\{
     AngkutMuatan, BiayaRealisasi, Document, GeoBacaan, GudangBarang,
     HazardReport, Inspection, IzinKerja, KoObject, LedakRencana,
@@ -103,6 +104,34 @@ final class Dasbor
                     ->whereNotNull('tenggat')->whereDate('tenggat', '<', $kini)->count(),
                 'total' => TindakanInvestigasi::count(),
                 'rute'  => 'investigasi.dasbor', 'nada' => 'gawat',
+            ],
+
+            /* ═══ perusahaan jasa ═══
+             *
+             * Dua ubin, dan keduanya menuntut tindakan orang yang
+             * berbeda: yang pertama menuntut mitranya mengirim, yang
+             * kedua menuntut pemegang IUP membuka dan menilai apa yang
+             * sudah dikirim. Digabung menjadi satu "kepatuhan
+             * pelaporan", tidak satu pun dari keduanya terpanggil.
+             *
+             * Keduanya dihitung dengan kueri, bukan dengan memuat tiap
+             * mitra lalu menjumlahkan skornya di PHP. Skor achievement
+             * memerlukan tiga relasi per mitra, dan menaruhnya di ubin
+             * dasbor berarti membayarnya pada tiap kali dasbor dibuka —
+             * pada halaman yang justru harus terbuka cepat. */
+            [
+                'modul' => 'pjp', 'nama' => 'Laporan Bulanan Menunggak',
+                'ket'   => 'Lewat tanggal '.LaporanPjp::BATAS_TANGGAL.', belum diterima',
+                'nilai' => Pjp::belumLaporanBulananBulanIni()->count(),
+                'total' => Pjp::where('status', '!=', 'tidak_aktif')->count(),
+                'rute'  => 'pjp.dasbor', 'nada' => 'gawat',
+            ],
+            [
+                'modul' => 'pjp', 'nama' => 'Dokumen Belum Dinilai',
+                'ket'   => 'Sudah diunggah, kesesuaian isinya belum diperiksa',
+                'nilai' => LaporanPjp::whereNull('kesesuaian_isi')->count(),
+                'total' => LaporanPjp::count(),
+                'rute'  => 'pjp.index', 'nada' => 'serius',
             ],
 
             /* ═══ uang masuk ═══

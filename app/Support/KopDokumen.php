@@ -200,6 +200,17 @@ final class KopDokumen
                 'kode'  => 'OHSE-IV.041',
                 'urut'  => 9,
 ],
+            /* urut 16, bukan 10. Prefiks nomornya FRM, dan FRM 001–015
+               sudah dipakai — termasuk oleh 'mine-permit' yang berjenis
+               IZIN tetapi tetap bernomor FRM. Dua formulir bernomor sama
+               tidak menimbulkan galat apa pun; yang menemukannya
+               auditor. */
+            'register-pjp' => [
+                'jenis' => 'FORM & CHECKLIST',
+                'judul' => 'REGISTER PEMANTAUAN PERUSAHAAN JASA PERTAMBANGAN',
+                'kode'  => 'OHSE-IV.051',
+                'urut'  => 16,
+],
             'laporan-konservasi' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN KONSERVASI MINERAL DAN BATUBARA',

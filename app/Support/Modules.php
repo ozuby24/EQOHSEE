@@ -93,6 +93,16 @@ class Modules
              'ket'  => 'Register insiden, analisis SCAT tiga lapis, wawancara terarah, hierarki kendali, dan matriks risiko — dari laporan awal sampai tindakan perbaikan yang tuntas.',
              'ikon' => 'M21 21l-5.2-5.2M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z'],
 
+            /* Dijual terpisah dari SMKP Audit, dan pemisahannya bukan
+               soal harga. Yang satu menilai sistem keselamatan pembeli
+               sendiri; yang ini menilai mitra yang dipekerjakannya.
+               Menggabungkan keduanya dalam satu kartu membuat pembeli
+               mengira sudah memiliki yang sebenarnya belum dibeli. */
+            ['nama' => 'Pemantauan Perusahaan Jasa (PJP)', 'status' => 'aktif', 'pilar' => 'safety',
+             'rute' => 'pjp.dasbor',
+             'ket'  => 'Prakualifikasi SMKP 17 kategori dan 126 butir, dokumen berkala beserta ketepatan waktunya, dan evaluasi kinerja semesteran tiap mitra kerja — satu berkas yang siap diminta Inspektur Tambang.',
+             'ikon' => 'M4 21h9M6 21V5a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v6M9 8h1M9 11.5h1M14.5 17.5l2.2 2.2 4.3-4.3'],
+
             ['nama' => 'SMKP Audit', 'status' => 'aktif', 'pilar' => 'safety', 'rute' => 'smkp.index',
              'ket'  => 'Audit 7 elemen SMKP Minerba sesuai Kepdirjen 185.K/2019: penilaian per kriteria, temuan berjenjang, dan laporan siap cetak.',
              'ikon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'],

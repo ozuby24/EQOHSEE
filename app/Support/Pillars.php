@@ -91,7 +91,8 @@ class Pillars
                     ['Inspeksi terjadwal',        'Parameter per jenis inspeksi, temuan naik jadi tindakan.'],
                     ['Tingkat kematangan',        '194 item penilaian, dari Dasar sampai Resilient.'],
                 ],
-                'modul' => ['Hazard Report & Inspeksi', 'Safety Maturity Level', 'SMKP Audit'],
+                'modul' => ['Hazard Report & Inspeksi', 'Safety Maturity Level', 'SMKP Audit',
+                            'Pemantauan Perusahaan Jasa (PJP)'],
             ],
 
             'environment' => [

@@ -221,6 +221,16 @@ final class RuteInertia
         'investigasi.insiden.baru',
         'investigasi.daftar',
 
+        /* Pemantauan perusahaan jasa. Hanya yang tanpa parameter yang
+           disebut: uji di Tests\Feature\RuteInertiaTest memanggil tiap
+           nama di sini tanpa argumen, dan rute ber-{pjp} tidak dapat
+           dibangun begitu. Tautan ke halaman rinci ditulis langsung
+           sebagai <Link href="/pjp/…"> di sisi Vue. */
+        'pjp.dasbor',
+        'pjp.index',
+        'pjp.baru',
+        'pjp.cetak',
+
         'miners.index',
         'miners.dasbor',
         'miners.kedaluwarsa',

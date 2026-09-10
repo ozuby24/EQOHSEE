@@ -144,11 +144,35 @@ class BatasIndukTest extends TestCase
     {
         $langgar = [];
 
-        foreach (glob(app_path('Models/*.php')) as $berkas) {
+        /* Ikut menelusuri anak folder. Sebelumnya hanya Models/*.php
+           yang dibaca, sehingga seluruh model di bawah Models/Investigasi
+           dan Models/Pjp — yang justru paling banyak memakai trait ini —
+           tidak pernah diperiksa sama sekali. Penjaga yang melewati
+           sebagian besar yang harus dijaganya tetap hijau, dan
+           kehijauannya yang membuatnya tidak pernah diperiksa ulang. */
+        $semua = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(app_path('Models'))
+        );
+
+        foreach ($semua as $f) {
+            if (!$f->isFile() || $f->getExtension() !== 'php') continue;
+
+            $berkas = $f->getPathname();
             $isi = file_get_contents($berkas);
             if (!str_contains($isi, 'use BerindukPerusahaan;')) continue;
 
-            $kelas = 'App\\Models\\'.basename($berkas, '.php');
+            $ruang = str_replace('/', '\\', trim(
+                str_replace(app_path('Models'), '', dirname($berkas)), '/'
+            ));
+
+            $kelas = 'App\\Models\\'.($ruang ? $ruang.'\\' : '').basename($berkas, '.php');
+
+            /* Trait-nya sendiri menyebut `use BerindukPerusahaan;` di
+               dalam contoh pemakaian pada komentarnya. class_exists()
+               memulangkan false bagi trait, jadi satu baris ini cukup —
+               tanpa perlu mengecualikan folder Concerns dengan nama. */
+            if (!class_exists($kelas)) continue;
+
             $model = new $kelas;
 
             $ref = new \ReflectionClass($kelas);

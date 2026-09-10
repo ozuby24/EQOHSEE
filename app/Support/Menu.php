@@ -210,6 +210,27 @@ final class Menu
         ],
       ],
     ],
+    /* Perusahaan Jasa berdiri sendiri, BUKAN di bawah SMKP Audit.
+       SMKP Audit menilai sistem keselamatan pemegang IUP atas
+       pekerjaannya sendiri; yang ini menilai PIHAK LAIN yang
+       dipekerjakan di wilayah izinnya, dengan daftar pertanyaan,
+       bobot, dan akibat hukum yang berbeda. Menyelipkannya ke dalam
+       menu SMKP membuat orang yang mencari berkas mitra membuka
+       audit internal, dan sebaliknya. */
+    'pjp' => [
+      'label' => 'Perusahaan Jasa',
+      'tema'  => 'safetrack',
+      'icon'  => 'M4 21h9M6 21V5a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v6M9 8h1M9 11.5h1M14.5 17.5l2.2 2.2 4.3-4.3',
+      'groups' => [
+        '' => [
+          ['Ringkasan', 'pjp.dasbor', 'pjp'],
+        ],
+        'Mitra' => [
+          ['Daftar Perusahaan Jasa', 'pjp.index', 'pjp/daftar*'],
+          ['Tambah Perusahaan Jasa', 'pjp.baru',  'pjp/baru'],
+        ],
+      ],
+    ],
     'tpkkp' => [
       'label' => 'Safety Maturity Level',
       'icon'  => 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6',
@@ -632,6 +653,7 @@ final class Menu
            sekali — dan menaruh modul baru di tengah daftar adalah cara
            tercepat menemukan bahwa ia tertelan pola lain. */
         [['investigasi*'],                         'investigasi'],
+        [['pjp*'],                                 'pjp'],
         [['ko*'],                                  'ko'],
         [['pembelian*'],                           'pembelian'],
         [['admin*', 'signatories*'],               'admin'],

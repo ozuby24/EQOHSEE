@@ -4,6 +4,7 @@ use App\Http\Controllers\InvestigasiController;
 use App\Http\Controllers\MinersController;
 use App\Http\Controllers\DasborController;
 use App\Http\Controllers\PembelianController;
+use App\Http\Controllers\PjpController;
 use App\Http\Controllers\{
     CertificateController, CourseController, DashboardController, EvaluationController,
     LearnController, NewsController, PersonaliaController, ProcedureController, ProfileController,
@@ -474,6 +475,61 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('wawancara',                       [InvestigasiController::class, 'wawancaraTambah'])->name('wawancara.tambah');
             Route::post('wawancara/{wawancara}/jawab',     [InvestigasiController::class, 'wawancaraJawab'])->name('wawancara.jawab');
             Route::post('wawancara/{wawancara}/hapus',     [InvestigasiController::class, 'wawancaraHapus'])->name('wawancara.hapus');
+        });
+    });
+
+    /* ================= PJP — PERUSAHAAN JASA PERTAMBANGAN ================= */
+    /*
+     * Seluruhnya di dalam grup auth+verified di atas, dan itu perubahan
+     * yang disengaja terhadap kit asalnya: di sana modul ini berdiri
+     * sendiri tanpa satu pun lapis autentikasi, sehingga daftar mitra,
+     * dokumen laporannya, dan nilai evaluasinya terbuka bagi siapa saja
+     * yang tahu alamatnya.
+     */
+    Route::prefix('pjp')->name('pjp.')->group(function () {
+        Route::get('/', [PjpController::class, 'dasbor'])->name('dasbor');
+
+        /* Yang beralamat tetap didaftarkan SEBELUM rute ber-{pjp}:
+           `pjp/baru` cocok pula dengan pola `pjp/{pjp}`, dan yang
+           terdaftar lebih dahulu yang menang. Terbalik, halaman formulir
+           akan mencari mitra bernomor "baru" dan memulangkan 404 yang
+           membingungkan. Pola {pjp} juga dibatasi angka, supaya pola itu
+           tidak pernah menelan alamat baru yang ditulis orang kemudian. */
+        Route::get('daftar',  [PjpController::class, 'index'])->name('index');
+        Route::get('csv',     [PjpController::class, 'csv'])->name('csv');
+        Route::get('cetak',   [PjpController::class, 'cetak'])->name('cetak');
+        Route::get('baru',    [PjpController::class, 'baru'])->name('baru');
+        Route::post('baru',   [PjpController::class, 'simpan'])->name('simpan');
+
+        Route::prefix('{pjp}')->whereNumber('pjp')->group(function () {
+            Route::get('/',        [PjpController::class, 'rincian'])->name('rincian');
+            Route::get('ubah',     [PjpController::class, 'sunting'])->name('sunting');
+            Route::put('/',        [PjpController::class, 'perbarui'])->name('perbarui');
+
+            Route::post('laporan',             [PjpController::class, 'laporanSimpan'])->name('laporan.simpan');
+            Route::patch('laporan/{laporan}',  [PjpController::class, 'laporanNilai'])->name('laporan.nilai');
+
+            Route::post('evaluasi',              [PjpController::class, 'evaluasiSimpan'])->name('evaluasi.simpan');
+
+            /* PENGHAPUSAN HANYA UNTUK ADMINISTRATOR, sama seperti modul
+               lain di berkas ini.
+
+               Bukan sekadar keseragaman. Yang dihapus di sini adalah
+               bukti pemantauan yang dapat diminta Inspektur Tambang:
+               dokumen laporan mitra, nilai evaluasinya, dan — pada rute
+               pertama — seluruh berkas mitra sekaligus, beserta jawaban
+               daftar periksa yang mungkin disusun berbulan-bulan.
+               Layarnya memang menyembunyikan tombolnya dari yang bukan
+               admin, tetapi penjagaan yang hanya ada di peramban
+               dilewati satu permintaan yang disusun tangan. */
+            Route::middleware('can:admin')->group(function () {
+                Route::delete('/',                   [PjpController::class, 'hapus'])->name('hapus');
+                Route::delete('laporan/{laporan}',   [PjpController::class, 'laporanHapus'])->name('laporan.hapus');
+                Route::delete('evaluasi/{evaluasi}', [PjpController::class, 'evaluasiHapus'])->name('evaluasi.hapus');
+            });
+
+            Route::get('checklist',  [PjpController::class, 'checklist'])->name('checklist');
+            Route::post('checklist', [PjpController::class, 'checklistSimpan'])->name('checklist.simpan');
         });
     });
 
