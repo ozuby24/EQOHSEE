@@ -1502,12 +1502,33 @@ main a{transition:color .16s}
 
 /* ── kepala ── */
 
+/* ── TANPA backdrop-filter, DAN ITU DISENGAJA ──
+ *
+ * Kepala ini melekat (position:fixed) dan sebelumnya mengaburkan apa pun
+ * di belakangnya. backdrop-filter memaksa peramban membentuk "backdrop
+ * root": tiap bingkai, seluruh yang tergambar di belakangnya dipotret
+ * ulang lebih dulu. Selama halaman digulir itu berarti seluruh halaman —
+ * dan pada penggambar tablet, potret yang gagal diperbarui muncul sebagai
+ * kotak putih. Bukan di kepalanya, melainkan di tengah isi halaman,
+ * persis seperti yang terlihat pada bagian paket.
+ *
+ * Yang lebih buruk lagi, backdrop-filter itu ikut DIANIMASIKAN pada
+ * daftar transition di bawah — properti termahal yang ada, dijalankan
+ * empat ratus milidetik tiap kali kepala berganti keadaan.
+ *
+ * Diganti latar pekat. Pada halaman berlatar terang hasilnya nyaris tak
+ * terbedakan: yang hilang hanya kaburnya isi yang lewat di belakang,
+ * yang memang tidak pernah terbaca. Bukti bahwa harganya murah: aturan
+ * lama bahkan tidak menulis -webkit-backdrop-filter, sehingga Safari dan
+ * iOS SUDAH menampilkannya tanpa kabur sejak awal — dan tidak seorang pun
+ * menyebutnya rusak.
+ */
 .jual-kepala{position:fixed;inset:0 0 auto 0;z-index:40;height:4.5rem;color:#fff;
   border-bottom:1px solid transparent;
   transition:background .4s var(--j-lengkung),border-color .4s var(--j-lengkung),
-  color .4s var(--j-lengkung),backdrop-filter .4s var(--j-lengkung)}
-.jual-kepala-turun{background:rgba(247,248,246,.9);color:var(--j-tinta);
-  border-bottom-color:var(--j-garis);backdrop-filter:saturate(1.5) blur(16px)}
+  color .4s var(--j-lengkung)}
+.jual-kepala-turun{background:var(--j-dasar);color:var(--j-tinta);
+  border-bottom-color:var(--j-garis)}
 
 .jual-nav{font-size:14px;font-weight:500;color:currentColor;opacity:.66;
   transition:opacity .28s var(--j-lengkung)}
@@ -1820,10 +1841,31 @@ main a{transition:color .16s}
   place-items:center;background:var(--j-hijau-lembut)}
 .jual-centang svg{width:.6rem;height:.6rem;color:var(--j-hijau-tua)}
 
+/* ── SETINGGI ISINYA, BUKAN SETINGGI KARTU DI SEBELAHNYA ──
+ *
+ * Sebelumnya panel ini diregangkan mengikuti kartu daftar aplikasi yang
+ * memuat dua puluh satu baris, dan tombolnya dipaku ke dasar. Yang
+ * terbentuk lubang kosong hampir empat ratus piksel antara harga dan
+ * tombolnya — bukan ruang bernapas melainkan kekosongan, dan pada panel
+ * hitam pekat kekosongan itu yang paling dulu terlihat.
+ *
+ * Sekarang ia setinggi isinya sendiri.
+ *
+ * TIDAK melekat saat digulir, meski itu godaan yang wajar untuk panel
+ * harga. `position:sticky` tidak bekerja di sini: app.css memasang
+ * `overflow-x:hidden` pada html dan body sebagai pengaman agar halaman
+ * tidak pernah tergeser ke samping, dan itu menjadikan body wadah gulir
+ * tersendiri — sticky lalu tidak punya apa pun untuk dilekati. Dicoba dan
+ * diukur: panelnya tetap lewat begitu saja ke atas layar (top 333 → 33 →
+ * −67 → −167), bukan berhenti pada 88.
+ *
+ * Aturannya dibuang, bukan dibiarkan. CSS yang tertulis tetapi tidak
+ * mengerjakan apa pun adalah janji yang akan dipercaya orang berikutnya
+ * yang membacanya.
+ */
 .jual-paket-harga{background:var(--j-gelap);color:#fff;border-radius:12px;padding:2rem;
-  display:flex;flex-direction:column}
-.jual-paket-tombol{margin-top:auto;padding-top:0}
-@media (max-width:1023px){.jual-paket-tombol{margin-top:1.75rem}}
+  display:flex;flex-direction:column;align-self:start}
+.jual-paket-tombol{margin-top:1.75rem}
 
 .jual-kosong{background:var(--j-kartu);border:1px solid var(--j-garis);border-radius:12px;
   padding:2.5rem;max-width:42rem}
