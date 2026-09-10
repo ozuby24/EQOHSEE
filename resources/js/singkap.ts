@@ -137,10 +137,43 @@ const BATAS_TUNGGU = 2600;
  * pengamatnya bekerja seperti seharusnya — dan hampir selalu begitu —
  * penghitungnya dibatalkan sebelum sempat berbunyi.
  */
+/**
+ * Lepaskan seluruh gaya sebaris yang dipasang direktif ini.
+ *
+ * ── BUKAN SEKADAR KERAPIAN ──
+ *
+ * Gaya sebaris MENGALAHKAN lembar gaya. Selama `transition` bawaan
+ * direktif ini masih menempel, tiap perubahan opacity atau transform
+ * berikutnya pada unsur yang sama ikut memakai lamanya — 620 milidetik,
+ * bukan 300 yang tertulis untuk sentuhan.
+ *
+ * Terukur begitu: kartu yang diangkat saat disentuh bergerak dua kali
+ * lebih lambat daripada yang dirancang, di seluruh halaman, dan tidak
+ * ada satu baris CSS pun yang menjelaskan mengapa — sebab penyebabnya
+ * tidak ada di CSS.
+ *
+ * Dilepas, unsurnya kembali sepenuhnya diatur lembar gaya: opacity dan
+ * transform tidak ditetapkan di sana, jadi ia tetap terlihat dan tidak
+ * tergeser.
+ */
+function bersihkan(el: HTMLElement) {
+  el.style.removeProperty('opacity');
+  el.style.removeProperty('transform');
+  el.style.removeProperty('transition');
+  el.style.removeProperty('transition-delay');
+  el.style.removeProperty('will-change');
+}
+
 function bukaPaksa(el: HTMLElement) {
   el.style.transitionDelay = '';
   el.style.opacity = '1';
   el.style.transform = 'none';
+
+  /* Kalau transisinya memang berjalan, transitionend yang membersihkan.
+     Kalau tidak — unsurnya sudah terlihat, atau transisinya tidak pernah
+     mulai — penghitung ini yang mengambil alih, supaya gaya sebarisnya
+     tidak menetap selamanya. */
+  window.setTimeout(() => bersihkan(el), 900);
 }
 
 export const singkap: Directive<HTMLElement, number | undefined> = {
@@ -150,19 +183,37 @@ export const singkap: Directive<HTMLElement, number | undefined> = {
     const lama = 620 + (ikatan.value ?? 0);
 
     el.style.opacity = '0';
-    el.style.transform = `translate3d(0, ${GESER}, 0)`;
+
+    /* translateY, BUKAN translate3d.
+       Sufiks 3d memaksa unsurnya naik ke lapisan penggambarnya sendiri
+       sejak dipasang — dan halaman ini menyingkap lebih dari lima puluh
+       unsur, sehingga yang terbentuk lima puluh lapisan sekaligus.
+       Peramban tetap menggabungkan transisi transform tanpa dipaksa;
+       yang hilang hanya lapisan yang tidak diminta siapa pun. */
+    el.style.transform = `translateY(${GESER})`;
     el.style.transition = `opacity ${lama}ms ${LENGKUNG}, transform ${lama}ms ${LENGKUNG}`;
 
-    /* will-change dipasang hanya selama gerakannya berlangsung.
-       Dibiarkan menempel, ia menahan tiap unsur pada lapisan
-       penggambarnya sendiri selamanya — memori yang tidak pernah
-       dikembalikan, pada perangkat yang paling sedikit memilikinya. */
-    el.style.willChange = 'opacity, transform';
-
-    el.addEventListener('transitionend', () => {
-      el.style.willChange = '';
-      el.style.transitionDelay = '';
-    }, { once: true });
+    /* ── TANPA will-change, DAN ITU DISENGAJA ──
+     *
+     * Sebelumnya baris ini memasang `will-change: opacity, transform`
+     * saat unsurnya DIPASANG, lalu melepasnya pada transitionend. Yang
+     * terjadi bukan seperti yang dimaksudkan: unsur yang belum tersingkap
+     * belum bertransisi sama sekali, jadi ia menyandang will-change sejak
+     * halaman dimuat sampai gilirannya tiba — dan diukur pada gulir biasa,
+     * puncaknya 65 lapisan penggambar serentak.
+     *
+     * Enam puluh lima lapisan pada peramban meja kerja hanya boros. Pada
+     * tablet — yang memang dipakai membuka halaman ini — ia melampaui
+     * memori penggambarnya, dan yang tergambar kotak putih di tempat
+     * kartu seharusnya berada: lapisan yang digambar pada kedudukan
+     * sebelum transformnya, lalu tidak pernah diperbarui.
+     *
+     * Petunjuknya dilepas seluruhnya. Transisi opacity dan transform
+     * sudah digabungkan peramban tanpa diminta; yang hilang paling-paling
+     * satu bingkai pertama, dan yang didapat halaman yang tergambar benar
+     * pada perangkat yang benar-benar memakainya.
+     */
+    el.addEventListener('transitionend', () => bersihkan(el), { once: true });
 
     const jaring = window.setTimeout(() => {
       if (el.style.opacity === '0') bukaPaksa(el);

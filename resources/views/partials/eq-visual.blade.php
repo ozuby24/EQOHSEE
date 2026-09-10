@@ -1803,10 +1803,18 @@ main a{transition:color .16s}
   border-radius:12px;padding:2rem}
 @media (min-width:768px){.jual-paket-isi{padding:2.5rem}}
 
-.jual-paket-daftar{display:grid;gap:.6rem 1.5rem;margin-top:1.75rem;
+/* Tiga kolom baru mulai 1280px, bukan 1024px.
+
+   Kartunya bukan selebar layar — ia berbagi baris dengan panel harga
+   selebar 21rem — sehingga pada 1024px tiap kolom tinggal sekitar 190px,
+   dan nama seperti "Sistem Informasi Gudang & Penyimpanan" pecah menjadi
+   tiga baris. Daftar yang barisnya setinggi satu, dua, dan tiga baris
+   bergantian terbaca sebagai daftar yang tidak dirapikan, padahal yang
+   kurang hanya ruang. */
+.jual-paket-daftar{display:grid;gap:.65rem 1.75rem;margin-top:1.75rem;
   grid-template-columns:1fr;font-size:14px;color:var(--j-redup)}
 @media (min-width:640px){.jual-paket-daftar{grid-template-columns:1fr 1fr}}
-@media (min-width:1024px){.jual-paket-daftar{grid-template-columns:1fr 1fr 1fr}}
+@media (min-width:1280px){.jual-paket-daftar{grid-template-columns:1fr 1fr 1fr}}
 .jual-paket-daftar li{display:flex;align-items:center;gap:.55rem}
 .jual-centang{width:1rem;height:1rem;border-radius:999px;flex:none;display:grid;
   place-items:center;background:var(--j-hijau-lembut)}
