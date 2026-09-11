@@ -14,10 +14,20 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Pembelian\{Item as ItemBeli, Lisensi as LisensiBeli,
     Pembayaran as PembayaranBeli, Pesanan as PesananBeli, Produk as ProdukBeli};
 use App\Support\Investigasi\{MasterInvestigasi, MesinScat, NomorInvestigasi, Triase as InvTriase};
+use App\Models\Miners\{Alur as MnrAlur, Blok as MnrBlok, Departemen as MnrDepartemen,
+    HasilMcu as MnrHasilMcu, Induksi as MnrInduksi, InduksiOrang as MnrInduksiOrang,
+    Jabatan as MnrJabatan, JenisUnit as MnrJenisUnit, KategoriPermit as MnrKategoriPermit,
+    Kendaraan as MnrKendaraan, Kompetensi as MnrKompetensi, Mcu as MnrMcu, McuOrang as MnrMcuOrang, McuRujukan as MnrMcuRujukan,
+    Pekerja as MnrPekerja, Permit as MnrPermit, PermitBerkas as MnrPermitBerkas, Pjo as MnrPjo,
+    Simper as MnrSimper, SimperAjuan as MnrSimperAjuan, SimperAjuanUnit as MnrSimperAjuanUnit,
+    SimperUnit as MnrSimperUnit, SubBlok as MnrSubBlok, Subkontraktor as MnrSubkontraktor,
+    TipePermit as MnrTipePermit};
 use App\Models\Pjp\{
     Evaluasi as PjpEvaluasi, Laporan as PjpLaporan, Pjp,
     SmkpItem as PjpSmkpItem, SmkpJawaban as PjpSmkpJawaban, SmkpKategori as PjpSmkpKategori,
 };
+use App\Support\Miners\Acuan;
+use App\Support\Miners\MasterMiners;
 use App\Support\Pjp\DaftarPeriksaSmkp;
 use App\Support\Pembelian;
 use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, BiayaRealisasi,
@@ -44,6 +54,7 @@ use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, 
                 Percakapan, PersetujuanParaf,
                 Pesan, Signatory, TpkkpAssessment, TpkkpPengujian, TpkkpResponse, InduksiPengajuan};
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -239,6 +250,38 @@ final class DataContoh
            jawaban mereka, yang menunjuk butirnya lewat kunci asing
            berkaskade. */
         PjpSmkpJawaban::class, PjpEvaluasi::class, PjpLaporan::class, Pjp::class,
+
+        /* Miners. Urutannya ANAK LEBIH DULU, dan rantainya panjang:
+           unit pengajuan → pengajuan → unit SIMPER → SIMPER → lampiran
+           → permit → induksi → MCU → pekerja. Satu tabel yang lepas
+           urutan akan tertahan kunci asingnya dan menghentikan seluruh
+           pembuangan.
+
+           `mnr_alur` disebut TERSENDIRI dan dibuang paling dahulu. Ia
+           tidak punya kunci asing ke dokumennya — relasinya polimorfik
+           lewat sepasang kolom (`dokumen`, `dokumen_id`) — sehingga
+           tidak ada kaskade yang membuangnya. Dilewatkan, tiap
+           penekanan tombol meninggalkan satu rombongan langkah
+           persetujuan yatim yang menunjuk ke dokumen yang sudah tidak
+           ada, dan jumlahnya bertambah tiap kali.
+
+           Daftar awal bersamanya — departemen, jabatan, blok, golongan
+           unit, jenis permit, hasil MCU — TIDAK dibuang, dengan alasan
+           yang sama seperti master Investigasi dan PJP di atas: isinya
+           acuan SOP yang berlaku sama bagi setiap tambang, dan
+           membuangnya bersama data contoh satu perusahaan akan memutus
+           rujukan kartu yang sudah terbit di perusahaan lain.
+
+           Yang milik perusahaan sendiri — subkontraktor, PJO, sub-blok
+           — memang ikut terbuang, dan memang harus. */
+        MnrAlur::class,
+        MnrSimperAjuanUnit::class, MnrSimperAjuan::class,
+        MnrSimperUnit::class, MnrSimper::class,
+        MnrPermitBerkas::class, MnrPermit::class,
+        MnrInduksiOrang::class, MnrInduksi::class,
+        MnrMcuRujukan::class, MnrMcuOrang::class, MnrMcu::class,
+        MnrKompetensi::class,
+        MnrPekerja::class, MnrSubBlok::class, MnrPjo::class, MnrSubkontraktor::class,
     ];
 
     /** @var list<string> hal yang perlu diketahui pemanggilnya */
@@ -459,6 +502,60 @@ final class DataContoh
                 InvWawancara::withoutGlobalScopes()
                     ->whereIn('investigasi_id', self::idInvestigasi($c))->select('id')),
 
+            /* ── Miners ──
+               Anaknya disaring lewat induknya yang berkolom
+               company_id, sependek mungkin: unit SIMPER lewat
+               SIMPER, bukan lewat permit lalu pekerja. */
+            MnrMcuOrang::class => $q->whereIn('mcu_id',
+                MnrMcu::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            MnrMcuRujukan::class => $q->whereIn('mcu_orang_id',
+                MnrMcuOrang::query()->whereIn('mcu_id',
+                    MnrMcu::withoutGlobalScopes()->where('company_id', $c->id)->select('id')
+                )->select('id')),
+
+            MnrInduksiOrang::class => $q->whereIn('induksi_id',
+                MnrInduksi::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            MnrPermitBerkas::class => $q->whereIn('permit_id',
+                MnrPermit::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            MnrSimperUnit::class, MnrSimperAjuan::class => $q->whereIn('simper_id',
+                MnrSimper::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            MnrSimperAjuanUnit::class => $q->whereIn('ajuan_id',
+                MnrSimperAjuan::query()->whereIn('simper_id',
+                    MnrSimper::withoutGlobalScopes()->where('company_id', $c->id)->select('id')
+                )->select('id')),
+
+            /* Alur BERELASI POLIMORFIK lewat sepasang kolom, jadi ia
+               tidak punya satu kunci asing pun yang dapat ditelusuri
+               ke perusahaannya — dan tidak ada kaskade yang
+               membuangnya bersama dokumennya.
+
+               Disaring per jenis dokumen, seluruhnya digabung dengan
+               `orWhere`. Yang kosong tetap disebut: jenis dokumen yang
+               dilewatkan akan meninggalkan langkah persetujuan yatim
+               yang bertambah tiap kali tombolnya ditekan. */
+            MnrAlur::class => $q->where(function ($w) use ($c) {
+                foreach ([
+                    'mcu'     => MnrMcu::class,
+                    'induksi' => MnrInduksi::class,
+                    'permit'  => MnrPermit::class,
+                    'simper'  => MnrSimper::class,
+                ] as $jenis => $kelas) {
+                    $w->orWhere(fn ($x) => $x->where('dokumen', $jenis)
+                        ->whereIn('dokumen_id',
+                            $kelas::withoutGlobalScopes()->where('company_id', $c->id)->select('id')));
+                }
+
+                $w->orWhere(fn ($x) => $x->where('dokumen', 'ajuan')
+                    ->whereIn('dokumen_id',
+                        MnrSimperAjuan::query()->whereIn('simper_id',
+                            MnrSimper::withoutGlobalScopes()->where('company_id', $c->id)->select('id')
+                        )->select('id')));
+            }),
+
             /* PJP — satu tingkat: seluruh anaknya menempel pada
                mitranya, dan mitranya yang berkolom company_id. */
             PjpLaporan::class, PjpEvaluasi::class, PjpSmkpJawaban::class => $q->whereIn('pjp_id',
@@ -665,6 +762,12 @@ final class DataContoh
             'TPKKP'          => $this->tpkkp(),
             'Investigasi'    => $this->investigasi(),
             'PJP'            => $this->pjp(),
+
+            /* Miners: MCU → Mine Permit → SIMPER. Satu rantai, dan
+               yang paling perlu diperiksa orang justru sambungannya —
+               kartu yang gugur karena MCU-nya habis, SIMPER yang gugur
+               karena SIMPOL-nya habis. Keduanya sengaja ada di sini. */
+            'Miners'         => $this->miners(),
             'Pembelian'      => $this->pembelian(),
             'Pesan'          => $this->pesan(),
             'Catatan'        => $this->catatan(),
@@ -684,6 +787,597 @@ final class DataContoh
      * daftar akan berbeda isinya cepat atau lambat, dan yang di sini
      * yang lebih dulu ketinggalan.
      */
+
+    /* ─────────── Miners: MCU → Mine Permit → SIMPER ─────────── */
+
+    /**
+     * Satu rantai utuh, bukan tiga daftar yang kebetulan berdampingan.
+     *
+     * Ketiga dokumen Miners BERURUTAN — MCU menentukan Mine Permit, Mine
+     * Permit menentukan SIMPER — dan yang paling perlu diperiksa orang
+     * justru sambungannya: kartu yang gugur karena MCU-nya habis,
+     * SIMPER yang gugur karena SIMPOL-nya habis, permit tamu yang hanya
+     * berumur tujuh hari. Data contoh yang seluruhnya sah tidak pernah
+     * memperlihatkan satu pun dari itu; ia hanya memperlihatkan bahwa
+     * halamannya terbuka.
+     *
+     * Karena itu keenam orang di bawah sengaja BERBEDA KEADAANNYA, dan
+     * perbedaannya dipilih dari apa yang ditanyakan layar pemantauan:
+     *
+     *   1 Sudarmin      semuanya sah — jalur yang benar, untuk pembanding
+     *   2 Yulianto      MCU tinggal 10 hari — masuk ambang peringatan SOP
+     *   3 Haryanto      MCU sudah lewat — kartunya gugur meski tanggalnya belum
+     *   4 Bambang       mekanik, SIMPER R1 — kewenangan terbatas
+     *   5 Ratna         Mine Permit saja, tanpa SIMPER — kartu putih
+     *   6 Dwi Prasetyo  tamu, Visitor Permit tujuh hari
+     *
+     * Daftar awalnya dipasang lebih dulu, dan pemasangannya idempoten.
+     * Tanpa itu, data contoh pada pemasangan yang belum pernah
+     * menjalankan `miners:pasang` akan menghasilkan pekerja tanpa
+     * departemen dan permit tanpa jenis — dan kegagalannya berhenti di
+     * tingkat basis data, sebagai galat 500 tanpa sebab.
+     */
+    private function miners(): int
+    {
+        MasterMiners::pasang();
+
+        $n = 0;
+
+        /* TENGAH MALAM, dan itu bukan kerapian.
+         *
+         * Cast `date` Laravel memangkas jam saat DIBACA, tidak saat
+         * DITULIS: Carbon berjam 22:15 tersimpan apa adanya sebagai
+         * "2026-10-11 22:15:09" pada kolom bertipe DATE. MySQL memangkas
+         * sendiri di tingkat kolom, SQLite tidak — sehingga baris yang
+         * sama berperilaku BERBEDA di server dan di mesin penguji, dan
+         * yang berbeda bukan tampilannya melainkan jawaban kueri
+         * rentang: `whereBetween(hari ini, hari ini + 30)` melewatkan
+         * sertifikat yang habis tepat pada hari ke-30, sebab 22:15 lewat
+         * dari tengah malam hari itu. Ujinya hijau di sini, layarnya
+         * salah di sana.
+         *
+         * Seluruh modul lain menyimpan 00:00:00 pada kolom tanggalnya;
+         * yang di bawah ini mengikuti. `$this->kini` tetap dipakai apa
+         * adanya untuk kolom WAKTU — `bertindak_pada` memang perlu
+         * jamnya. */
+        $hari = $this->kini->copy()->startOfDay();
+
+        /* ── daftar milik perusahaan sendiri ── */
+
+        $subkon = [];
+        foreach ([['PT Karya Tambang Mandiri', 'KTM'], ['CV Sinar Jaya Teknik', 'SJT']] as [$nama, $kode]) {
+            $subkon[] = MnrSubkontraktor::withoutGlobalScopes()->create([
+                'company_id' => $this->c->id, 'nama' => $nama, 'kode' => $kode,
+            ]);
+            $n++;
+        }
+
+        foreach ([
+            ['Ir. Bagas Wicaksono', 'Penanggung Jawab Operasional', 'pjo@contoh.test'],
+            ['Andi Prasetyo, S.T.', 'Wakil PJO', 'wakil.pjo@contoh.test'],
+        ] as [$nama, $jabatan, $surel]) {
+            MnrPjo::withoutGlobalScopes()->create([
+                'company_id' => $this->c->id, 'nama' => $nama,
+                'jabatan' => $jabatan, 'email' => $surel,
+            ]);
+            $n++;
+        }
+
+        /* Sub-blok menempel pada blok acuan bersama — lokasi kerja
+           001-SPM-007 — dan rinciannya memang milik masing-masing
+           tambang: front dan bay tidak sama di dua tambang mana pun. */
+        $blok = MnrBlok::withoutGlobalScopes()->whereNull('company_id')
+            ->get()->keyBy('kunci');
+
+        $subBlok = [];
+        foreach ([
+            ['pit', ['Front A', 'Front B']],
+            ['workshop', ['Bay 1', 'Bay 2']],
+        ] as [$kunci, $daftar]) {
+            if (! isset($blok[$kunci])) continue;
+
+            foreach ($daftar as $i => $nama) {
+                $subBlok[$nama] = MnrSubBlok::withoutGlobalScopes()->create([
+                    'company_id' => $this->c->id,
+                    'blok_id'    => $blok[$kunci]->id,
+                    'nama'       => $nama,
+                    'urutan'     => ($i + 1) * 10,
+                ]);
+                $n++;
+            }
+        }
+
+        $dep    = $this->minersMaster(MnrDepartemen::class);
+        $jab    = $this->minersMaster(MnrJabatan::class);
+        $unit   = $this->minersMaster(MnrJenisUnit::class);
+        $golong = $this->minersMaster(MnrKendaraan::class);
+        $tipe   = $this->minersMaster(MnrTipePermit::class);
+        $hasil  = $this->minersMaster(MnrHasilMcu::class);
+
+        /* ── orangnya ── */
+
+        $orang = [
+            ['Sudarmin',      '6371010101900001', 'produksi',    'driver-dt',          'PIT/Front A',    1990, 'O',  'karyawan'],
+            ['Yulianto',      '6371010202880002', 'produksi',    'operator-excavator', 'PIT/Front B',    1988, 'B',  'karyawan'],
+            ['Haryanto',      '6371010303920003', 'logistik',    'driver-lv',          'Main Office',    1992, 'A',  'kontrak'],
+            ['Bambang Irawan','6371010404850004', 'plant',       'mekanik',            'Workshop/Bay 1', 1985, 'AB', 'karyawan'],
+            ['Ratna Dewi',    '6371010505950005', 'logistik',    'admin-logistik',     'Main Office',    1995, 'O',  'karyawan'],
+            ['Dwi Prasetyo',  '6371010606800006', 'hse',         'safety-officer',     'Main Office',    1980, 'B',  'tamu'],
+        ];
+
+        $pekerja = [];
+        foreach ($orang as $i => [$nama, $nik, $kDep, $kJab, $lokasi, $lahir, $darah, $kerja]) {
+            [$namaBlok, $namaSub] = array_pad(explode('/', $lokasi), 2, null);
+
+            $pekerja[$nama] = MnrPekerja::withoutGlobalScopes()->create([
+                'company_id'      => $this->c->id,
+                'no_registrasi'   => sprintf('MNR-%s-%03d', $hari->format('Y'), $i + 1),
+                'nama'            => $nama,
+                'nik'             => $nik,
+                'no_induk'        => sprintf('IBP-%04d', 1200 + $i),
+                'tanggal_lahir'   => Carbon::create($lahir, ($i % 12) + 1, (($i * 3) % 27) + 1),
+                'gol_darah'       => $darah,
+                'telepon'         => '0812'.str_pad((string) (3300000 + $i), 7, '0', STR_PAD_LEFT),
+                'telepon_darurat' => '0813'.str_pad((string) (4400000 + $i), 7, '0', STR_PAD_LEFT),
+                'departemen_id'   => $dep[$kDep] ?? null,
+                'jabatan_id'      => $jab[$kJab] ?? null,
+
+                /* Dua dari enam dipekerjakan subkontraktor, bukan
+                   seluruhnya atau tak seorang pun: penyaring "mitra
+                   kerja" pada daftar pekerja hanya dapat diperiksa
+                   kalau memang ada yang bermitra DAN ada yang tidak. */
+                'subkontraktor_id' => $i % 3 === 1 ? $subkon[(int) ($i / 3)]->id : null,
+                'blok_id'          => $blok->firstWhere('nama', $namaBlok)?->id,
+                'sub_blok_id'      => $namaSub ? ($subBlok[$namaSub]->id ?? null) : null,
+                'status_kerja'     => $kerja,
+                'status'           => 'aktif',
+                'user_id'          => $this->pengaju?->id,
+            ]);
+            $n++;
+        }
+
+        /* ── MCU ──
+           Dua berkas: satu sudah selesai dan menjadi dasar seluruh
+           kartu, satu masih di meja dokter. Yang kedua itu yang membuat
+           antrean "menunggu pemeriksaan" dapat diperiksa; data contoh
+           yang seluruh MCU-nya selesai tidak pernah menampilkannya. */
+
+        $mcu = MnrMcu::withoutGlobalScopes()->create([
+            'company_id'    => $this->c->id,
+            'no_registrasi' => 'MCU-'.$hari->format('Y').'-001',
+            'tanggal'       => $hari->copy()->subMonths(3),
+            'kepada'        => 'Klinik Pratama Bhakti Medika',
+            'perihal'       => 'Permohonan pemeriksaan kesehatan berkala karyawan tambang.',
+            'status'        => 'selesai',
+            'user_id'       => $this->pengaju?->id,
+        ]);
+        $n++;
+        $n += $this->minersAlur($mcu, ['setuju', 'setuju', 'setuju']);
+
+        /* Berapa bulan lalu MCU tiap orang dilakukan. Sengaja
+           BUKAN satu angka: 11 bulan lalu berarti tinggal sebulan lagi,
+           12 bulan 10 hari lalu berarti sudah lewat — dua keadaan yang
+           justru paling perlu terlihat di layar pemantauan. */
+        $umurMcu = [
+            'Sudarmin'       => ['bulan' => 2,  'hasil' => 'fit'],
+            'Yulianto'       => ['hari'  => 355, 'hasil' => 'fit'],
+            'Haryanto'       => ['hari'  => 380, 'hasil' => 'fit'],
+            'Bambang Irawan' => ['bulan' => 4,  'hasil' => 'fit-with-note'],
+            'Ratna Dewi'     => ['bulan' => 1,  'hasil' => 'fit'],
+            'Dwi Prasetyo'   => ['bulan' => 1,  'hasil' => 'fit'],
+        ];
+
+        $mcuOrang = [];
+        foreach ($pekerja as $nama => $p) {
+            $u = $umurMcu[$nama];
+
+            $periksa = isset($u['bulan'])
+                ? $hari->copy()->subMonths($u['bulan'])
+                : $hari->copy()->subDays($u['hari']);
+
+            $mcuOrang[$nama] = MnrMcuOrang::create([
+                'mcu_id'             => $mcu->id,
+                'pekerja_id'         => $p->id,
+                'nama'               => $p->nama,
+                'nik'                => $p->nik,
+                'jabatan'            => MnrJabatan::withoutGlobalScopes()->find($p->jabatan_id)?->nama,
+                'usia'               => $p->usia($periksa),
+                'departemen_id'      => $p->departemen_id,
+                'hasil_id'           => $hasil[$u['hasil']] ?? null,
+                'tanggal_periksa'    => $periksa,
+                'berlaku_sampai'     => $periksa->copy()->addMonths(MnrMcuOrang::BULAN_BERLAKU),
+                'tanggal_berikut'    => $periksa->copy()->addMonths(MnrMcuOrang::BULAN_BERLAKU),
+                'hasil_napza'        => 'negatif',
+                'aktif'              => true,
+            ]);
+            $n++;
+        }
+
+        /* Satu rujukan, pada satu-satunya orang yang hasilnya "Fit With
+           Note". Rujukan tanpa catatan medis apa pun tidak masuk akal,
+           dan yang tidak masuk akal tidak dapat dipakai memeriksa
+           apakah layarnya benar. */
+        MnrMcuRujukan::create([
+            'mcu_orang_id'    => $mcuOrang['Bambang Irawan']->id,
+            'tanggal_surat'   => $mcuOrang['Bambang Irawan']->tanggal_periksa->copy()->addDays(3),
+            'dokter'          => 'dr. Retno Wulandari, Sp.PD',
+            'poliklinik'      => 'Penyakit Dalam',
+            'rumah_sakit'     => 'RSUD Kabupaten',
+            'diagnosis_awal'  => 'Tekanan darah 150/95 mmHg pada dua kali pengukuran.',
+            'keterangan'      => 'Boleh bekerja dengan pemantauan tekanan darah tiap tiga bulan. Tidak untuk shift malam.',
+        ]);
+        $n++;
+
+        $mcuJalan = MnrMcu::withoutGlobalScopes()->create([
+            'company_id'    => $this->c->id,
+            'no_registrasi' => 'MCU-'.$hari->format('Y').'-002',
+            'tanggal'       => $hari->copy()->subDays(5),
+            'kepada'        => 'Klinik Pratama Bhakti Medika',
+            'perihal'       => 'Permohonan MCU pre-employment dua calon karyawan baru.',
+            'status'        => 'diperiksa',
+            'user_id'       => $this->pengaju?->id,
+        ]);
+        $n++;
+        $n += $this->minersAlur($mcuJalan, ['setuju', 'menunggu', 'menunggu']);
+
+        /* ── induksi ── */
+
+        $induksi = MnrInduksi::withoutGlobalScopes()->create([
+            'company_id'    => $this->c->id,
+            'no_registrasi' => 'IND-'.$hari->format('Y').'-001',
+            'tanggal'       => $hari->copy()->subMonths(3)->addDays(7),
+            'perihal'       => 'Induksi keselamatan pertambangan bagi enam karyawan.',
+            'status'        => 'selesai',
+            'user_id'       => $this->pengaju?->id,
+        ]);
+        $n++;
+        $n += $this->minersAlur($induksi, ['setuju', 'setuju']);
+
+        /* Nilai post test sengaja MELINTASI ambang kelulusan, bukan
+           seluruhnya di atasnya. Satu orang harus mengulang, dan
+           layar remidi tidak dapat diperiksa tanpa itu. */
+        $nilai = [
+            'Sudarmin' => [88, 1], 'Yulianto' => [92, 1], 'Haryanto' => [76, 2],
+            'Bambang Irawan' => [85, 1], 'Ratna Dewi' => [95, 1], 'Dwi Prasetyo' => [90, 1],
+        ];
+
+        $induksiOrang = [];
+        foreach ($pekerja as $nama => $p) {
+            [$angka, $percobaan] = $nilai[$nama];
+            $tanggal = $induksi->tanggal->copy();
+
+            $induksiOrang[$nama] = MnrInduksiOrang::create([
+                'induksi_id'      => $induksi->id,
+                'pekerja_id'      => $p->id,
+                'mcu_orang_id'    => $mcuOrang[$nama]->id,
+                'tanggal_induksi' => $tanggal,
+                'lokasi'          => 'Ruang Induksi, Main Office',
+                'nilai'           => $angka,
+                'percobaan'       => $percobaan,
+                'status'          => MnrInduksiOrang::statusDari($angka, $percobaan),
+                'berlaku_sampai'  => $tanggal->copy()->addMonths(MnrInduksiOrang::BULAN_BERLAKU),
+                'catatan'         => $percobaan > 1
+                    ? 'Nilai '.$angka.' masih di bawah ambang '.MnrInduksiOrang::NILAI_LULUS
+                        .'. Dijadwalkan mengulang sekali lagi.'
+                    : null,
+            ]);
+            $n++;
+        }
+
+        $induksiJalan = MnrInduksi::withoutGlobalScopes()->create([
+            'company_id'    => $this->c->id,
+            'no_registrasi' => 'IND-'.$hari->format('Y').'-002',
+            'tanggal'       => $hari->copy()->addDays(10),
+            'perihal'       => 'Refresh induksi keselamatan menjelang perpanjangan tahunan.',
+            'status'        => 'dijadwal',
+            'user_id'       => $this->pengaju?->id,
+        ]);
+        $n++;
+        $n += $this->minersAlur($induksiJalan, ['setuju', 'menunggu']);
+
+        /* ── Mine Permit ──
+           Masa berlakunya DIHITUNG dari tipenya lewat jalan yang sama
+           dengan yang dipakai aplikasi, bukan diketik sebagai tanggal
+           di sini: tanggal yang diketik akan diam-diam berbeda dari
+           yang dihitung aplikasi, dan yang berbeda itulah yang
+           dipercaya orang saat memeriksa layarnya. */
+
+        $rencana = [
+            ['Sudarmin',       'full-permit',      'umum',      'UNRESTRICTED', 'merah', 'terbit',   null],
+            ['Yulianto',       'full-permit',      'umum',      'UNRESTRICTED', 'merah', 'terbit',   null],
+            ['Haryanto',       'full-permit',      'umum',      'RESTRICTED',   'hijau', 'terbit',   null],
+            ['Bambang Irawan', 'full-permit',      'umum',      'UNRESTRICTED', 'merah', 'terbit',   null],
+            ['Ratna Dewi',     'full-permit',      'umum',      'RESTRICTED',   'putih', 'terbit',   null],
+            ['Dwi Prasetyo',   'visitor-permit',   'kunjungan', 'RESTRICTED',   'putih', 'diajukan', null],
+        ];
+
+        $permit = [];
+        foreach ($rencana as $i => [$nama, $kTipe, $kKategori, $zona, $warna, $status, $cabut]) {
+            $p       = $pekerja[$nama];
+            $tipeRow = MnrTipePermit::withoutGlobalScopes()->find($tipe[$kTipe] ?? 0);
+
+            /* Permit tamu diterbitkan BARU-BARU INI, bukan tiga bulan
+               lalu seperti sisanya. Umurnya hanya tujuh hari menurut
+               SOP, jadi yang berumur tiga bulan sudah lama habis — dan
+               permit tamu yang selalu tampil kedaluwarsa tidak
+               memperlihatkan apa pun tentang bagaimana jendela tujuh
+               hari itu digambar, yang justru satu-satunya alasan
+               jenis ini ada. */
+            $terbit = $tipeRow?->hari_berlaku === null
+                ? $hari->copy()->subMonths(3)->addDays(14)
+                : $hari->copy()->subDays(2);
+
+            [$habis, $asal] = MnrPermit::hitungBerlaku($tipeRow, $terbit);
+
+            $kategoriId = MnrKategoriPermit::where('tipe_permit_id', $tipeRow?->id)
+                ->where('kunci', $kKategori)->value('id');
+
+            $permit[$nama] = MnrPermit::withoutGlobalScopes()->create([
+                'company_id'         => $this->c->id,
+                'kontraktor_id'      => null,
+                'pekerja_id'         => $p->id,
+                'mcu_orang_id'       => $mcuOrang[$nama]->id,
+                'induksi_orang_id'   => $induksiOrang[$nama]->id,
+                'no_registrasi'      => sprintf('MP-%s-%03d', $terbit->format('Y'), $i + 1),
+                'tanggal'            => $terbit,
+                'tipe_permit_id'     => $tipeRow?->id,
+                'kategori_permit_id' => $kategoriId,
+                'cakupan_area'       => $zona,
+                'kode_warna'         => $warna,
+                'status'             => $status,
+                'berlaku_sampai'     => $habis,
+                'sumber_berlaku'     => $asal,
+                'user_id'            => $this->pengaju?->id,
+            ]);
+            $n++;
+
+            $n += $this->minersAlur(
+                $permit[$nama],
+                $status === 'terbit' ? ['setuju', 'setuju', 'setuju'] : ['setuju', 'menunggu', 'menunggu'],
+            );
+        }
+
+        /* Lampiran wajib menurut SOP, pada satu permit saja. Seluruhnya
+           pada keenamnya hanya menggandakan baris yang sama; satu yang
+           lengkap cukup memperlihatkan bagaimana daftar periksa
+           kelengkapan digambar. */
+        foreach (Acuan::berkasWajib('permit_baru') as $j => $jenis) {
+            MnrPermitBerkas::create([
+                'permit_id' => $permit['Sudarmin']->id,
+                'jenis'     => Str::slug($jenis),
+                'berkas'    => null,
+                'nomor'     => sprintf('LMP-%03d', $j + 1),
+                'tanggal'   => $permit['Sudarmin']->tanggal,
+                'catatan'   => $jenis,
+            ]);
+            $n++;
+        }
+
+        /* ── SIMPER ── */
+
+        $kartu = [
+            ['Sudarmin',       'F',  'Dump Truck', ['Dump Truck PS'],               'B2 Umum', 'operator', [90, 88, 92, 85]],
+            ['Yulianto',       'F',  'Alat Berat', ['Excavator', 'Wheel Loader'],   'B2 Umum', 'operator', [92, 90, 88, 90]],
+            ['Bambang Irawan', 'R1', 'Alat Berat', ['Excavator', 'Bulldozer'],      'B2 Umum', 'pengawas', [85, 80, 82, null]],
+        ];
+
+        $simper = [];
+        foreach ($kartu as $i => [$nama, $kelas, $namaGolongan, $daftarUnit, $simpol, $wewenang, $skor]) {
+            $terbit = $permit[$nama]->tanggal->copy()->addDays(21);
+
+            /* SIMPOL Bambang habis LEBIH DAHULU daripada apa pun yang
+               lain pada kartunya. SOP: "SIMPOL habis → SIMPER otomatis
+               tidak berlaku", dan aturan itu tidak dapat diperiksa di
+               layar mana pun tanpa satu kartu yang benar-benar begitu.
+
+               DIA, BUKAN YULIANTO, dan pilihan itu bukan selera. Masa
+               berlaku SIMPER adalah yang PALING AWAL di antara tiga —
+               kartunya sendiri, permitnya, dan SIMPOL — sedangkan
+               permit Yulianto sudah dipendekkan MCU-nya sampai sepuluh
+               hari lagi. SIMPOL pendek di sana akan kalah oleh permit,
+               dan `penyebabHabis()` menjawab "permit": aturan SIMPOL
+               tidak pernah terlihat sekali pun. MCU Bambang masih lama,
+               jadi pada kartunyalah SIMPOL benar-benar yang menentukan. */
+            $simpolHabis = $nama === 'Bambang Irawan'
+                ? $hari->copy()->addDays(20)
+                : $hari->copy()->addYears(3);
+
+            $simper[$nama] = MnrSimper::withoutGlobalScopes()->create([
+                'company_id'            => $this->c->id,
+                'permit_id'             => $permit[$nama]->id,
+                'pekerja_id'            => $pekerja[$nama]->id,
+                'no_simper'             => sprintf('SMP-%s-%03d', $terbit->format('Y'), $i + 1),
+                'tanggal'               => $terbit,
+                'kelas'                 => $kelas,
+                'no_simpol'             => '7401'.str_pad((string) (120045 + $i), 6, '0', STR_PAD_LEFT),
+                'jenis_simpol'          => $simpol,
+                'simpol_berlaku_sampai' => $simpolHabis,
+                'pengalaman_kerja'      => (5 + $i).' tahun',
+                'status'                => 'terbit',
+                'berlaku_sampai'        => $terbit->copy()->endOfYear()->startOfDay(),
+                'sumber_berlaku'        => 'tahunan',
+                'user_id'               => $this->pengaju?->id,
+            ]);
+            $n++;
+            $n += $this->minersAlur($simper[$nama], ['setuju', 'setuju', 'setuju']);
+
+            foreach ($daftarUnit as $namaUnit) {
+                MnrSimperUnit::create([
+                    'simper_id'     => $simper[$nama]->id,
+                    'kendaraan_id'  => $golong[Str::slug($namaGolongan)] ?? null,
+                    'jenis_unit_id' => $unit[Str::slug($namaUnit)] ?? null,
+                    'kewenangan'    => $wewenang,
+                    'nilai_p2h'     => $skor[0],
+                    'nilai_praktek' => $skor[1],
+                    'nilai_teori'   => $skor[2],
+                    'nilai_rambu'   => $skor[3],
+                    'asal'          => 'baru',
+                ]);
+                $n++;
+            }
+        }
+
+        /* ── pengajuan lanjutan ──
+           Dua jenis dari tiga, dan keduanya berbeda keadaan: satu sudah
+           tuntas, satu masih menunggu KTT. Tanpa yang kedua, layar
+           "menunggu pengesahan" tidak punya satu baris pun. */
+
+        $tambah = MnrSimperAjuan::create([
+            'simper_id'        => $simper['Sudarmin']->id,
+            'jenis'            => 'penambahan',
+            'no_registrasi'    => 'AJU-'.$hari->format('Y').'-001',
+            'tanggal'          => $hari->copy()->subMonths(1),
+            'pengalaman_kerja' => '6 tahun',
+            'status'           => 'selesai',
+            'user_id'          => $this->pengaju?->id,
+        ]);
+        $n++;
+        $n += $this->minersAlur($tambah, ['setuju', 'setuju', 'setuju']);
+
+        foreach (['Water Truck' => 'Water Truck', 'Fuel Truck' => 'Fuel Truck'] as $namaGolongan => $namaUnit) {
+            MnrSimperAjuanUnit::create([
+                'ajuan_id'      => $tambah->id,
+                'kendaraan_id'  => $golong[Str::slug($namaGolongan)] ?? null,
+                'jenis_unit_id' => $unit[Str::slug($namaUnit)] ?? null,
+                'kewenangan'    => 'operator',
+                'nilai_p2h'     => 88,
+                'nilai_praktek' => 86,
+                'nilai_teori'   => 90,
+            ]);
+            $n++;
+
+            /* Unit yang sudah disetujui IKUT MASUK ke kartunya, bertanda
+               asal "penambahan". Disimpan hanya pada pengajuannya,
+               kartu yang unitnya bertambah tidak pernah menunjukkan
+               unit barunya — dan yang dibaca petugas pos adalah kartu,
+               bukan arsip pengajuan. */
+            MnrSimperUnit::create([
+                'simper_id'     => $simper['Sudarmin']->id,
+                'kendaraan_id'  => $golong[Str::slug($namaGolongan)] ?? null,
+                'jenis_unit_id' => $unit[Str::slug($namaUnit)] ?? null,
+                'kewenangan'    => 'operator',
+                'nilai_p2h'     => 88,
+                'nilai_praktek' => 86,
+                'nilai_teori'   => 90,
+                'asal'          => 'penambahan',
+            ]);
+            $n++;
+        }
+
+        /* ── sertifikat kompetensi ──
+           Tiga orang, dan masa berlakunya sengaja BERBEDA JAUH: satu
+           masih lama, satu tinggal tiga minggu, satu sudah lewat.
+           Masa berlaku melekat pada sertifikatnya, bukan pada orangnya
+           — seorang pengawas dapat memegang POP sampai 2028 dan Ahli K3
+           yang habis bulan depan — dan perbedaan itu tidak dapat
+           diperiksa pada data contoh yang seluruhnya berlaku sampai
+           tahun yang sama. */
+        foreach ([
+            ['Sudarmin',       'Pengawas Operasional Pertama (POP)', 'BNSP', 36],
+            ['Yulianto',       'Petugas K3 Pertambangan',            'ESDM', 1],
+            ['Bambang Irawan', 'AK3U BNSP',                          'BNSP', -2],
+        ] as [$nama, $judul, $lembaga, $bulanLagi]) {
+            $jenis = KompetensiJenis::withoutGlobalScopes()
+                ->whereRaw('LOWER(nama) = ?', [mb_strtolower($judul)])->first();
+
+            MnrKompetensi::withoutGlobalScopes()->create([
+                'company_id'          => $this->c->id,
+                'pekerja_id'          => $pekerja[$nama]->id,
+                'kompetensi_jenis_id' => $jenis?->id,
+                'nama'                => $jenis?->nama ?? $judul,
+                'lembaga'             => $jenis?->lembaga ?? $lembaga,
+                'nomor'               => 'SRT/'.strtoupper(Str::random(4)).'/'.$hari->format('Y'),
+                'tanggal_terbit'      => $hari->copy()->addMonths($bulanLagi)->subYears(3),
+                'berlaku_sampai'      => $hari->copy()->addMonths($bulanLagi),
+                'user_id'             => $this->pengaju?->id,
+            ]);
+            $n++;
+        }
+
+        $perpanjang = MnrSimperAjuan::create([
+            'simper_id'             => $simper['Yulianto']->id,
+            'jenis'                 => 'perpanjangan',
+            'no_registrasi'         => 'AJU-'.$hari->format('Y').'-002',
+            'tanggal'               => $hari->copy()->subDays(4),
+            'simpol_berlaku_sampai' => $hari->copy()->addYears(5),
+            'pengalaman_kerja'      => '7 tahun',
+            'status'                => 'ktt',
+            'catatan'               => 'SIMPOL diperpanjang; menunggu pengesahan KTT.',
+            'user_id'               => $this->pengaju?->id,
+        ]);
+        $n++;
+        $n += $this->minersAlur($perpanjang, ['setuju', 'setuju', 'menunggu']);
+
+        MnrSimperAjuanUnit::create([
+            'ajuan_id'      => $perpanjang->id,
+            'kendaraan_id'  => $golong['alat-berat'] ?? null,
+            'jenis_unit_id' => $unit['excavator'] ?? null,
+            'kewenangan'    => 'operator',
+            'nilai_p2h'     => 94,
+            'nilai_praktek' => 91,
+            'nilai_teori'   => 89,
+        ]);
+        $n++;
+
+        return $n;
+    }
+
+    /**
+     * Daftar master Miners sebagai kunci => id.
+     *
+     * Dikunci lewat `kunci`, bukan lewat nama: nama boleh disunting
+     * perusahaan yang memakainya — itu justru yang dijaga MasterMiners —
+     * sehingga data contoh yang mencari lewat nama akan berhenti
+     * menemukan apa pun pada pemasangan yang departemennya sudah
+     * diganti namanya, dan pekerjanya lahir tanpa departemen.
+     *
+     * @param  class-string<\App\Models\Miners\Master>  $kelas
+     * @return array<string,int>
+     */
+    private function minersMaster(string $kelas): array
+    {
+        return $kelas::withoutGlobalScopes()
+            ->whereNotNull('kunci')
+            ->pluck('id', 'kunci')
+            ->all();
+    }
+
+    /**
+     * Terbitkan alur sebuah dokumen lalu tetapkan keadaan tiap langkah.
+     *
+     * Alurnya dibuat lewat `terbitkanAlur()` — jalan yang sama dengan
+     * yang dipakai aplikasi — bukan disusun ulang di sini. Dua penyusun
+     * untuk satu aturan akan berbeda cepat atau lambat, dan yang di
+     * sini yang lebih dulu ketinggalan: data contoh akan memperlihatkan
+     * alur yang tidak pernah dilalui dokumen sungguhan.
+     *
+     * @param  list<string>  $keadaan  berurutan; yang lebih pendek
+     *                                 membiarkan sisanya menunggu
+     * @return int jumlah langkah yang lahir
+     */
+    private function minersAlur(object $dokumen, array $keadaan): int
+    {
+        $dokumen->terbitkanAlur();
+
+        $langkah = $dokumen->alur()->orderBy('urutan')->get();
+
+        foreach ($langkah as $i => $l) {
+            $k = $keadaan[$i] ?? 'menunggu';
+
+            $l->update([
+                'keadaan'        => $k,
+                'user_id'        => $k === 'menunggu' ? null : ($this->peninjau?->id ?? $this->pengaju?->id),
+
+                /* Kolom WAKTU, bukan tanggal — jamnya memang disimpan,
+                   sebab "siapa menyetujui pukul berapa" adalah yang
+                   ditanyakan saat sebuah pengesahan dipersoalkan. */
+                'bertindak_pada' => $k === 'menunggu' ? null : $this->kini->copy()->subDays(30 - $i),
+            ]);
+        }
+
+        return $langkah->count();
+    }
+
     /* ─────────── Pemantauan Perusahaan Jasa ─────────── */
 
     /**
@@ -893,7 +1587,10 @@ final class DataContoh
             'metode'     => 'qris',
             'jumlah'     => $lunas->total,
             'atas_nama'  => 'Hendra Wijaya',
-            'tanggal_bayar' => $this->kini->copy()->subDays(9),
+            /* startOfDay(): kolomnya bertipe DATE, dan cast `date`
+               Laravel memangkas jam saat dibaca — tidak saat ditulis.
+               Lihat KolomTanggalTest. */
+            'tanggal_bayar' => $this->kini->copy()->subDays(9)->startOfDay(),
             'catatan'    => 'Dibayar lewat QRIS, satu kali penuh.',
         ]);
         $n++;

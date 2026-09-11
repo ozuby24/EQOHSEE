@@ -417,6 +417,25 @@ php artisan investigasi:pasang
 echo "==> Installing PJP checklist master data"
 php artisan pjp:pasang
 
+# Daftar awal bersama modul Miners — departemen, jabatan, lokasi kerja,
+# golongan unit beserta kelas SIMPOL-nya, jenis permit, dan hasil MCU.
+#
+# Aman diulang: baris yang sudah ada hanya DIPERBARUI pada kolom yang
+# berasal dari SOP — kelas SIM, kewajiban SIO, masa berlaku tipe permit
+# — dan tidak pada namanya, sebab nama itulah yang tercetak pada kartu
+# yang sudah terbit. Tidak satu baris pun dihapus: `mnr_pekerja`,
+# `mnr_permit`, dan `mnr_simper_unit` menunjuk ke daftar ini, dan
+# penyemai yang mengosongkannya lebih dahulu akan memutus rujukan
+# ribuan dokumen yang sudah berjalan.
+#
+# TANPA LANGKAH INI modulnya tidak dapat dipakai sama sekali, dan
+# kegagalannya diam: formulir MCU terbuka dengan daftar hasil yang
+# kosong, formulir permit tanpa satu jenis permit pun, lalu
+# penyimpanannya gagal di tingkat basis data. Yang terlihat pengguna
+# hanyalah galat 500 tanpa sebab.
+echo "==> Installing Miners master data"
+php artisan miners:pasang
+
 # Katalog jual — paket website dan tiap aplikasi di dalamnya.
 #
 # Dijalankan tiap deploy dengan alasan yang sama: modul baru yang

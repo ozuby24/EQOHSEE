@@ -436,7 +436,11 @@ class PembelianController extends Controller
                tagihannya. */
             'jumlah'     => $pesanan->total,
             'atas_nama'  => $data['atas_nama'],
-            'tanggal_bayar' => $data['tanggal_bayar'],
+            /* Dipangkas ke tanggal. Aturan `date` menerima
+               "2026-09-02T14:30" juga, dan jam yang lolos ke kolom DATE
+               menjawab berbeda di MySQL dan SQLite pada kueri rentang —
+               lihat KolomTanggalTest. */
+            'tanggal_bayar' => \Illuminate\Support\Carbon::parse($data['tanggal_bayar'])->startOfDay(),
             'bukti'      => Berkas::simpan($request->file('bukti'), 'pembelian/bukti'),
             'catatan'    => $data['catatan'] ?? null,
         ]);

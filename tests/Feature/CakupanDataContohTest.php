@@ -103,6 +103,33 @@ class CakupanDataContohTest extends TestCase
            dipasang perintah `pembelian:katalog` pada tiap deploy dan
            TIDAK dibuang bersama data contoh — membuangnya akan menghapus
            harga yang sudah ditetapkan orang. */
+        /* Daftar awal bersama modul Miners. Alasannya sama persis
+           dengan master Investigasi dan PJP di atas: isinya acuan SOP
+           001-SPM-007 dan 007-SOP-OHSE — matriks SIMPOL per golongan
+           unit, kewajiban SIO, masa berlaku tiap jenis permit, lokasi
+           kerja berdasarkan risiko — yang berlaku sama bagi setiap
+           tambang. Dipasang `miners:pasang`, bukan oleh data contoh.
+
+           Membuangnya bersama data contoh satu perusahaan akan
+           mengosongkan daftar pilih perusahaan lain pada pemasangan
+           yang sama, dan akibatnya bukan sekadar daftar kosong:
+           `mnr_pekerja`, `mnr_permit`, dan `mnr_simper_unit` menunjuk
+           ke sini, sehingga kartu yang sudah terbit kehilangan nama
+           golongan unitnya tanpa satu galat pun.
+
+           Yang BUKAN acuan bersama tidak ikut ke sini: daftar
+           subkontraktor, PJO, dan sub-blok disusun masing-masing
+           perusahaan, jadi keduanya tetap wajib terisi data contoh. */
+        'mnr_departemen'      => 'acuan bersama, dipasang miners:pasang',
+        'mnr_jabatan'         => 'acuan bersama, dipasang miners:pasang',
+        'mnr_blok'            => 'lokasi kerja 001-SPM-007, dipasang miners:pasang',
+        'mnr_kendaraan'       => 'matriks SIMPOL 007-SOP-OHSE, dipasang miners:pasang',
+        'mnr_sub_kendaraan'   => 'rincian golongan unit, dipasang miners:pasang',
+        'mnr_jenis_unit'      => 'daftar unit acuan, dipasang miners:pasang',
+        'mnr_tipe_permit'     => 'jenis permit 007-SOP-OHSE, dipasang miners:pasang',
+        'mnr_kategori_permit' => 'kategori izin khusus, dipasang miners:pasang',
+        'mnr_hasil_mcu'       => 'daftar hasil MCU acuan, dipasang miners:pasang',
+
         'beli_produk'              => 'katalog jual, master milik penjual',
         'inv_wawancara_pertanyaan' => 'bank soal wawancara, master bersama',
 
