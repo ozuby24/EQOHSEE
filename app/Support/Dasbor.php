@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\Investigasi\{Insiden, Tindakan as TindakanInvestigasi};
 use App\Models\Pembelian\Pesanan as PesananBeli;
 use App\Models\Pjp\{Laporan as LaporanPjp, Pjp};
+use App\Models\Hr\Roster as HrRoster;
 use App\Models\Miners\{Alur as MnrAlur, Pekerja as MnrPekerja, Permit as MnrPermit};
 use App\Support\Miners\Keadaan;
 use App\Models\{
@@ -173,6 +174,18 @@ final class Dasbor
                     ->select('dokumen_id'))->count(),
                 'total' => MnrPermit::count(),
                 'rute'  => 'miners.riwayat.mine-permit', 'nada' => 'ingat',
+            ],
+
+            [
+                'modul' => 'roster', 'nama' => 'Roster Terhalang Berkas',
+                'ket'   => 'Hari kerja terjadwal yang berkasnya tidak berlaku',
+                'nilai' => HrRoster::query()->bekerja()->whereNotNull('halangan')
+                    ->where('tanggal', '>=', \App\Support\Waktu::kini()->startOfDay()->toDateString())
+                    ->count(),
+                'total' => HrRoster::query()->bekerja()
+                    ->where('tanggal', '>=', \App\Support\Waktu::kini()->startOfDay()->toDateString())
+                    ->count(),
+                'rute'  => 'roster.index', 'nada' => 'gawat',
             ],
 
             /* ═══ bahaya dan inspeksi ═══ */

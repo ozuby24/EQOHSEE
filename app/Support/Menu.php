@@ -191,6 +191,31 @@ final class Menu
         ],
       ],
     ],
+    /* Tepat sesudah Miners, dan itu bukan urutan abjad. Miners
+       menjawab "boleh atau tidak orang ini bekerja"; Roster menjawab
+       "kapan ia seharusnya bekerja". Keduanya bersinggungan di satu
+       titik yang menentukan — roster menolak menjadwalkan orang yang
+       berkasnya tidak berlaku — dan berdampingan di bilah samping,
+       titik itu tidak perlu dijelaskan siapa pun. */
+    'roster' => [
+      'label' => 'Roster',
+      'tema'  => 'safetrack',
+      'icon'  => 'M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z',
+      'groups' => [
+        '' => [
+          ['Kalender Regu', 'roster.index', 'roster'],
+        ],
+
+        'Penyusunan' => [
+          ['Pola & Regu', 'roster.pola', 'roster/pola'],
+        ],
+
+        'Pemantauan' => [
+          ['Manpower Plan', 'roster.kebutuhan', 'roster/kebutuhan'],
+        ],
+      ],
+    ],
+
     /* Investigasi berdiri sendiri, BUKAN di bawah Miners maupun Hazard
        Report. Miners menjawab "boleh atau tidak orang ini bekerja hari
        ini"; Hazard Report menjawab "ada bahaya, tolong ditangani".
@@ -665,6 +690,7 @@ final class Menu
         [['gudang*'],                              'gudang'],
         [['mining-engineering-hub*'],              'meh'],
         [['miners*'],                           'miners'],
+        [['roster*'],                           'roster'],
 
         /* Investigasi didaftarkan SEBELUM pola 'ko*' di bawahnya. Pola
            itu berupa awalan satu kata dan tidak cocok dengan

@@ -26,6 +26,9 @@ use App\Models\Pjp\{
     Evaluasi as PjpEvaluasi, Laporan as PjpLaporan, Pjp,
     SmkpItem as PjpSmkpItem, SmkpJawaban as PjpSmkpJawaban, SmkpKategori as PjpSmkpKategori,
 };
+use App\Models\Hr\{Kebutuhan as HrKebutuhan, PolaRoster as HrPola, Regu as HrRegu,
+    ReguAnggota as HrReguAnggota, Roster as HrRoster};
+use App\Support\Hr\{MasterRoster, Penyusun};
 use App\Support\Miners\Acuan;
 use App\Support\Miners\MasterMiners;
 use App\Support\Pjp\DaftarPeriksaSmkp;
@@ -274,6 +277,20 @@ final class DataContoh
 
            Yang milik perusahaan sendiri — subkontraktor, PJO, sub-blok
            — memang ikut terbuang, dan memang harus. */
+        /* Roster dibuang SEBELUM Miners: `hr_roster.pekerja_id` dan
+           `hr_regu_anggota.pekerja_id` menunjuk ke `mnr_pekerja`, dan
+           meski kaskadenya ada, penghapusan berkaskade TIDAK ikut
+           terhitung pemanggilnya — sedangkan pemeriksaan penumpukan
+           bersandar pada perbandingan "dibuat" lawan "dibuang".
+
+           Pola rosternya sendiri TIDAK dibuang, dengan alasan yang sama
+           seperti master Miners: ia daftar awal bersama tanpa pemilik,
+           dipasang `roster:pasang`, dan membuangnya bersama data contoh
+           satu perusahaan akan memutus regu perusahaan lain dari
+           polanya. */
+        HrRoster::class, HrKebutuhan::class,
+        HrReguAnggota::class, HrRegu::class,
+
         MnrAlur::class,
         MnrSimperAjuanUnit::class, MnrSimperAjuan::class,
         MnrSimperUnit::class, MnrSimper::class,
@@ -501,6 +518,11 @@ final class DataContoh
             InvWawancaraJawaban::class => $q->whereIn('wawancara_id',
                 InvWawancara::withoutGlobalScopes()
                     ->whereIn('investigasi_id', self::idInvestigasi($c))->select('id')),
+
+            /* Anggota regu tidak berkolom company_id sendiri —
+               ia menumpang regunya, yang memang bermilik. */
+            HrReguAnggota::class => $q->whereIn('regu_id',
+                HrRegu::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
 
             /* ── Miners ──
                Anaknya disaring lewat induknya yang berkolom
@@ -768,6 +790,13 @@ final class DataContoh
                kartu yang gugur karena MCU-nya habis, SIMPER yang gugur
                karena SIMPOL-nya habis. Keduanya sengaja ada di sini. */
             'Miners'         => $this->miners(),
+
+            /* Roster disusun SESUDAH Miners, dan urutan itu mengikat:
+               penyusunnya memeriksa MCU, induksi, dan Mine Permit tiap
+               orang pada tanggal yang dijadwalkan. Disusun lebih
+               dahulu, seluruh baris tertandai "terhalang" sebab
+               berkasnya memang belum ada. */
+            'Roster'         => $this->roster(),
             'Pembelian'      => $this->pembelian(),
             'Pesan'          => $this->pesan(),
             'Catatan'        => $this->catatan(),
@@ -1318,6 +1347,136 @@ final class DataContoh
             'nilai_teori'   => 89,
         ]);
         $n++;
+
+        return $n;
+    }
+
+
+    /* ─────────── Roster & shift ─────────── */
+
+    /**
+     * Dua regu pada pola 14:7, BERJANGKAR SETENGAH SIKLUS BERSELISIH.
+     *
+     * Itu bentuk yang sesungguhnya dipakai, dan yang paling perlu
+     * terlihat: yang satu pulang ketika yang lain datang, sehingga site
+     * tidak pernah kosong. Dua regu berjangkar sama akan libur pada
+     * minggu yang sama — kesalahan yang baru ketahuan setelah tiketnya
+     * terbit, dan justru karena itu data contoh harus memperlihatkan
+     * yang benar.
+     *
+     * Satu regu ketiga memakai pola kantor 5:2 sebagai pembanding:
+     * batas fatigue lapangan tidak berlaku baginya, dan layar yang
+     * hanya berisi pola lapangan tidak pernah memperlihatkan pembedaan
+     * itu.
+     */
+    private function roster(): int
+    {
+        MasterRoster::pasang();
+
+        $n = 0;
+
+        $hari = $this->kini->copy()->startOfDay();
+
+        $pola = HrPola::withoutGlobalScopes()->whereNull('company_id')
+            ->get()->keyBy('kunci');
+
+        if ($pola->isEmpty()) return 0;
+
+        $blok = MnrBlok::withoutGlobalScopes()->whereNull('company_id')
+            ->get()->keyBy('kunci');
+
+        $pekerja = MnrPekerja::withoutGlobalScopes()
+            ->where('company_id', $this->c->id)->orderBy('nama')->get();
+
+        if ($pekerja->isEmpty()) return 0;
+
+        /* Jangkar dipasang pada awal bulan LALU, bukan hari ini:
+           rosternya harus memuat periode yang sudah berjalan supaya
+           pemeriksaan "14 hari berturut-turut" punya sesuatu untuk
+           diperiksa. Berjangkar hari ini, tiap regu baru memulai hari
+           pertamanya dan tidak satu batas pun dapat dilanggar. */
+        $jangkar = $hari->copy()->subMonth()->startOfMonth();
+
+        $rencana = [
+            ['Regu A', '147', 'pit',      $jangkar->copy(),              'siang', [0, 1, 2]],
+            ['Regu B', '147', 'pit',      $jangkar->copy()->addDays(14), 'malam', [3, 4]],
+            ['Regu Kantor', '52', 'main-office', $jangkar->copy(),       'siang', [5]],
+        ];
+
+        $regu = [];
+
+        foreach ($rencana as [$nama, $kunciPola, $kunciBlok, $mulai, $shift, $indeks]) {
+            if (! isset($pola[$kunciPola])) continue;
+
+            $g = HrRegu::withoutGlobalScopes()->create([
+                'company_id'     => $this->c->id,
+                'pola_roster_id' => $pola[$kunciPola]->id,
+                'blok_id'        => $blok[$kunciBlok]->id ?? null,
+                'nama'           => $nama,
+                'mulai'          => $mulai,
+                'shift'          => $shift,
+            ]);
+            $n++;
+
+            foreach ($indeks as $i) {
+                if (! isset($pekerja[$i])) continue;
+
+                HrReguAnggota::create([
+                    'regu_id'    => $g->id,
+                    'pekerja_id' => $pekerja[$i]->id,
+                    'mulai'      => $mulai,
+                ]);
+                $n++;
+            }
+
+            $regu[] = $g;
+        }
+
+        /* Rosternya benar-benar disusun lewat jalan yang sama dengan
+           yang dipakai aplikasi, bukan ditulis baris demi baris di
+           sini. Dua penyusun untuk satu aturan akan berbeda cepat atau
+           lambat, dan yang di sini yang lebih dulu ketinggalan — data
+           contoh lalu memperlihatkan siklus yang tidak pernah dihasilkan
+           tombolnya. */
+        $dari   = $hari->copy()->subMonth()->startOfMonth();
+        $sampai = $hari->copy()->endOfMonth();
+
+        foreach ($regu as $g) {
+            $hasil = Penyusun::susun($g, $dari, $sampai, $this->pengaju?->id);
+            $n += $hasil['dibuat'];
+        }
+
+        /* Bulan yang sudah lewat DITERBITKAN, bulan berjalan tidak.
+           Keduanya perlu: yang terbit memperlihatkan baris terkunci
+           yang tidak lagi tersusun ulang, yang belum terbit
+           memperlihatkan tombol "Terbitkan" masih punya pekerjaan. */
+        HrRoster::withoutGlobalScopes()
+            ->whereIn('regu_id', collect($regu)->pluck('id'))
+            ->where('tanggal', '<', $hari->copy()->startOfMonth()->toDateString())
+            ->update(['terbit' => true]);
+
+        /* Kebutuhan tenaga kerja — satu yang terpenuhi, satu yang
+           kurang. Seluruhnya terpenuhi, layar manpower tidak pernah
+           memperlihatkan bagaimana kekurangan digambar, padahal itulah
+           satu-satunya keadaan yang menuntut tindakan. */
+        foreach ([
+            ['pit',         'driver-dt',          6, 'siang'],
+            ['pit',         'operator-excavator', 4, 'siang'],
+            ['workshop',    'mekanik',            2, null],
+        ] as [$kunciBlok, $kunciJabatan, $jumlah, $shift]) {
+            $jabatan = MnrJabatan::withoutGlobalScopes()->whereNull('company_id')
+                ->where('kunci', $kunciJabatan)->first();
+
+            HrKebutuhan::withoutGlobalScopes()->create([
+                'company_id' => $this->c->id,
+                'blok_id'    => $blok[$kunciBlok]->id ?? null,
+                'jabatan_id' => $jabatan?->id,
+                'mulai'      => $dari,
+                'jumlah'     => $jumlah,
+                'shift'      => $shift,
+            ]);
+            $n++;
+        }
 
         return $n;
     }

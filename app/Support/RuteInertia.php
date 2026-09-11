@@ -241,6 +241,10 @@ final class RuteInertia
         'miners.induksi.index',
         'miners.permit.index',
         'miners.simper.index',
+
+        'roster.index',
+        'roster.pola',
+        'roster.kebutuhan',
         'miners.riwayat.mcu',
         'miners.riwayat.induksi',
         'miners.riwayat.mine-permit',

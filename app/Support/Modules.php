@@ -71,6 +71,17 @@ class Modules
              'ket'  => 'Kompetensi, MCU, dan kartu masuk tambang dalam satu berkas per orang, dengan pengingat masa berlaku berjenjang.',
              'ikon' => 'M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 14l2 2 4-4'],
 
+            /* Tepat sesudah Authority, dengan alasan yang sama: Authority
+               menjawab "boleh atau tidak orang ini bekerja", Roster
+               menjawab "kapan ia seharusnya bekerja". Yang kedua
+               menolak menjadwalkan orang yang berkasnya tidak berlaku
+               pada TANGGAL YANG DIRENCANAKAN — bukan pada hari
+               penyusunnya membuka layar. */
+            ['nama' => 'Roster & Shift', 'status' => 'aktif', 'pilar' => 'occhealth',
+             'rute' => 'roster.index',
+             'ket'  => 'Pola kerja bergilir 14:7, 10:2 minggu, dan seterusnya — dengan validasi batas jam kerja Kepmenakertrans 234/2003 dan blokir dari berkas kelayakan yang habis.',
+             'ikon' => 'M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z'],
+
             ['nama' => 'Safety Maturity Level', 'status' => 'aktif', 'pilar' => 'safety', 'rute' => 'tpkkp.index',
              'ket'  => 'Penilaian tingkat kematangan keselamatan: 194 item · 24 parameter · 4 indikator, lengkap Kalkulator Slovin.',
              'ikon' => 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6'],

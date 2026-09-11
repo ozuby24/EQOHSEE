@@ -3,6 +3,7 @@
 use App\Http\Controllers\InvestigasiController;
 use App\Http\Controllers\MinersController;
 use App\Http\Controllers\MinersDokumenController;
+use App\Http\Controllers\RosterController;
 use App\Http\Controllers\DasborController;
 use App\Http\Controllers\PembelianController;
 use App\Http\Controllers\PjpController;
@@ -341,6 +342,48 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('{pekerja}',    [MinersController::class, 'update'])->name('update');
         Route::delete('{pekerja}', [MinersController::class, 'destroy'])
             ->middleware('can:admin')->name('destroy');
+    });
+
+
+    /* ================= ROSTER & SHIFT =================
+     *
+     * Pola kerja bergilir di tambang terpencil — 14:7, 10:2 minggu,
+     * dan seterusnya. Berdiri sebagai modulnya sendiri, bukan di bawah
+     * Miners: Miners menjawab "boleh atau tidak orang ini bekerja",
+     * yang ini menjawab "kapan ia seharusnya bekerja". Keduanya
+     * bersinggungan justru di satu titik — roster menolak menjadwalkan
+     * orang yang berkasnya tidak berlaku — dan titik itu yang membuat
+     * keduanya harus tinggal di aplikasi yang sama.
+     */
+    Route::prefix('roster')->name('roster.')->group(function () {
+        /* Rute berkata-tetap didaftarkan lebih dahulu, sebab `pola` dan
+           `kebutuhan` cocok pula dengan pola berparameter di bawahnya. */
+        Route::get('pola',      [RosterController::class, 'pola'])->name('pola');
+        Route::get('kebutuhan', [RosterController::class, 'kebutuhan'])->name('kebutuhan');
+
+        Route::post('pola',          [RosterController::class, 'polaSimpan'])->name('pola.simpan');
+        Route::put('pola/{pola}',    [RosterController::class, 'polaUbah'])->name('pola.ubah');
+        Route::delete('pola/{pola}', [RosterController::class, 'polaHapus'])
+            ->middleware('can:admin')->name('pola.hapus');
+
+        Route::post('regu',          [RosterController::class, 'reguSimpan'])->name('regu.simpan');
+        Route::put('regu/{regu}',    [RosterController::class, 'reguUbah'])->name('regu.ubah');
+        Route::delete('regu/{regu}', [RosterController::class, 'reguHapus'])
+            ->middleware('can:admin')->name('regu.hapus');
+
+        Route::post('regu/{regu}/anggota',            [RosterController::class, 'anggotaTambah'])->name('anggota.tambah');
+        Route::delete('regu/{regu}/anggota/{anggota}', [RosterController::class, 'anggotaHapus'])->name('anggota.hapus');
+
+        Route::post('regu/{regu}/susun',    [RosterController::class, 'susun'])->name('susun');
+        Route::post('regu/{regu}/terbitkan',[RosterController::class, 'terbitkan'])->name('terbitkan');
+
+        Route::post('kebutuhan',              [RosterController::class, 'kebutuhanSimpan'])->name('kebutuhan.simpan');
+        Route::delete('kebutuhan/{kebutuhan}',[RosterController::class, 'kebutuhanHapus'])
+            ->middleware('can:admin')->name('kebutuhan.hapus');
+
+        Route::put('{roster}', [RosterController::class, 'ubah'])->name('ubah');
+
+        Route::get('/', [RosterController::class, 'index'])->name('index');
     });
 
 

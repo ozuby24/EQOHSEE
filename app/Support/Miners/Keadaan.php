@@ -59,13 +59,21 @@ final class Keadaan
      *
      * @param  int  $ambang  berapa hari sebelum habis mulai diperingatkan
      */
-    public static function dariTanggal(?Carbon $habis, int $ambang = 30): string
+    public static function dariTanggal(?Carbon $habis, int $ambang = 30, ?Carbon $pada = null): string
     {
         if ($habis === null) return self::BELUM;
 
-        $sisa = (int) \App\Support\Waktu::kini()->startOfDay()->diffInDays($habis, false);
+        /* Dinilai pada TANGGAL YANG DIMINTA, bukan selalu hari ini.
+           Roster disusun untuk bulan depan, dan berkas yang masih
+           berlaku hari ini dapat habis di tengah periode kerja yang
+           sedang direncanakan. Dinilai terhadap hari ini saja,
+           penyusunnya mendapati seluruh baris hijau lalu menerbitkan
+           jadwal yang separuhnya tidak boleh dijalankan. */
+        $acuan = ($pada ?? \App\Support\Waktu::kini())->copy()->startOfDay();
 
-        if ($sisa < 0)       return self::HABIS;
+        $sisa = (int) $acuan->diffInDays($habis, false);
+
+        if ($sisa < 0)        return self::HABIS;
         if ($sisa <= $ambang) return self::MENDEKATI;
 
         return self::BERLAKU;
@@ -94,11 +102,11 @@ final class Keadaan
 
     /* ═══════════ per dokumen ═══════════ */
 
-    public static function mcu(?McuOrang $m): string
+    public static function mcu(?McuOrang $m, ?Carbon $pada = null): string
     {
         return $m === null
             ? self::BELUM
-            : self::dariTanggal($m->berlaku_sampai, McuOrang::HARI_PERINGATAN);
+            : self::dariTanggal($m->berlaku_sampai, McuOrang::HARI_PERINGATAN, $pada);
     }
 
     /**
@@ -112,12 +120,12 @@ final class Keadaan
      * ulang. Sertifikat yang pernah lulus lalu lewat tanggalnya tetap
      * "habis", dan itu memang perpanjangan.
      */
-    public static function induksi(?InduksiOrang $i): string
+    public static function induksi(?InduksiOrang $i, ?Carbon $pada = null): string
     {
         if ($i === null)   return self::BELUM;
         if (! $i->lulus()) return self::BELUM;
 
-        return self::dariTanggal($i->berlaku_sampai);
+        return self::dariTanggal($i->berlaku_sampai, 30, $pada);
     }
 
     /**
@@ -129,7 +137,7 @@ final class Keadaan
      * lewat. Dibaca dari kolomnya saja, kartu itu tampil hijau — dan
      * hijau di layar ini berarti "boleh masuk".
      */
-    public static function permit(?Permit $p): string
+    public static function permit(?Permit $p, ?Carbon $pada = null): string
     {
         if ($p === null) return self::BELUM;
 
@@ -138,18 +146,18 @@ final class Keadaan
            peninjaunya — bukan mengajukan ulang. */
         if ($p->status !== 'terbit') return self::BELUM;
 
-        return self::dariTanggal($p->habisEfektif());
+        return self::dariTanggal($p->habisEfektif(), 30, $pada);
     }
 
-    public static function simper(?Simper $s): string
+    public static function simper(?Simper $s, ?Carbon $pada = null): string
     {
         if ($s === null) return self::BELUM;
         if ($s->status !== 'terbit') return self::BELUM;
 
-        return self::dariTanggal($s->habisEfektif());
+        return self::dariTanggal($s->habisEfektif(), 30, $pada);
     }
 
-    public static function kompetensi(?Kompetensi $k): string
+    public static function kompetensi(?Kompetensi $k, ?Carbon $pada = null): string
     {
         if ($k === null) return self::BELUM;
 
@@ -157,6 +165,6 @@ final class Keadaan
            Sertifikat sistem seperti ISO memang begitu. */
         if ($k->berlaku_sampai === null) return self::BERLAKU;
 
-        return self::dariTanggal($k->berlaku_sampai, Kompetensi::HARI_PERINGATAN);
+        return self::dariTanggal($k->berlaku_sampai, Kompetensi::HARI_PERINGATAN, $pada);
     }
 }

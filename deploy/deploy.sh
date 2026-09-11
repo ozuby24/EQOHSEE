@@ -436,6 +436,20 @@ php artisan pjp:pasang
 echo "==> Installing Miners master data"
 php artisan miners:pasang
 
+# Pola roster awal — 14:7, 10:2 minggu, 8:2, 6:2, 4:1, 5:2.
+#
+# Aman diulang: baris yang sudah ada hanya diperbarui pada bentuk
+# siklusnya — hari kerja, hari libur, satuan, jam — dan tidak pada
+# namanya. Tidak satu pun dihapus: `hr_regu.pola_roster_id` menunjuk ke
+# sini, dan penyemai yang mengosongkannya lebih dahulu akan memutus
+# seluruh regu dari polanya, sehingga kalender rosternya kosong tanpa
+# satu galat pun.
+#
+# TANPA LANGKAH INI halaman Pola & Regu terbuka tanpa satu pilihan pun,
+# dan regu tidak dapat dibuat sama sekali.
+echo "==> Installing roster patterns"
+php artisan roster:pasang
+
 # Katalog jual — paket website dan tiap aplikasi di dalamnya.
 #
 # Dijalankan tiap deploy dengan alasan yang sama: modul baru yang

@@ -130,6 +130,15 @@ class CakupanDataContohTest extends TestCase
         'mnr_kategori_permit' => 'kategori izin khusus, dipasang miners:pasang',
         'mnr_hasil_mcu'       => 'daftar hasil MCU acuan, dipasang miners:pasang',
 
+        /* Pola roster awal bersama — 14:7, 10:2 minggu, dan seterusnya.
+           Alasannya sama persis dengan master Miners di atas: ia daftar
+           acuan tanpa pemilik, dipasang `roster:pasang`, dan
+           `hr_regu.pola_roster_id` menunjuk ke sini. Membuangnya
+           bersama data contoh satu perusahaan akan memutus seluruh regu
+           perusahaan lain dari polanya — dan kalender rosternya kosong
+           tanpa satu galat pun. */
+        'hr_pola_roster' => 'pola acuan, dipasang roster:pasang',
+
         'beli_produk'              => 'katalog jual, master milik penjual',
         'inv_wawancara_pertanyaan' => 'bank soal wawancara, master bersama',
 
