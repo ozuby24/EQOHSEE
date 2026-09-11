@@ -303,6 +303,12 @@ final class Menu
       // kelompok "Tahap" dan "Berkas" disalurkan ke periode yang sedang
       // berjalan, sebab menu samping tidak membawa identitas audit.
       'groups' => [
+        '' => [
+          /* Dasbor mendahului daftar periode. Yang dibuka manajemen
+             bukan "audit mana yang ada" melainkan "apakah kami
+             membaik" — dan daftar tidak menjawab pertanyaan kedua. */
+          ['Performa SMKP', 'smkp.dasbor', 'smkp/dasbor'],
+        ],
         'Periode' => [
           ['Daftar Audit',   'smkp.index',  'smkp'],
           ['Buat Periode',   'smkp.create', 'smkp/buat'],
@@ -334,6 +340,12 @@ final class Menu
           ['6 · Laporan Rencana Audit','smkp.ke.rencana-cetak', 'smkp/lanjut/laporan-rencana'],
           ['7 · Laporan Audit',       'smkp.ke.laporan',        'smkp/lanjut/laporan-audit'],
           ['8 · NC & Tindak Lanjut',  'smkp.ke.nc-tindak',      'smkp/lanjut/nc-tindak'],
+
+          /* Lembar OFI berdiri SESUDAH kedelapan berkas wajib, dan
+             bernomor terpisah. Ia bukan berkas kesembilan dalam bundel
+             yang sama: kedelapan di atas melaporkan ketidaksesuaian,
+             yang ini melaporkan yang sudah memenuhi seluruhnya. */
+          ['Peluang Perbaikan (OFI)', 'smkp.ke.ofi',            'smkp/lanjut/ofi'],
         ],
         'Acuan' => [
           ['Kriteria Kepdirjen', 'smkp.acuan', 'smkp/acuan'],

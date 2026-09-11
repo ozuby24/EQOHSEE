@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{ActivityLog, Company, SmkpAttendee, SmkpAudit, SmkpFinding};
-use App\Support\{Ekspor, KopDokumen, Smkp, SmkpRubrik, SmkpTahap};
+use App\Models\{ActivityLog, Company, SmkpAttendee, SmkpAudit, SmkpBukti, SmkpFinding, SmkpOfi};
+use App\Support\{Ekspor, KopDokumen, Smkp, SmkpBanding, SmkpPeluang, SmkpRubrik, SmkpTahap};
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -125,6 +125,11 @@ class SmkpController extends Controller
             'respon'        => 'smkp.respon',
             'rencana-tindak'=> 'smkp.rencanaTindak',
             'nc-tindak'     => 'smkp.ncTindak',
+
+            /* Peluang perbaikan. Ikut disalurkan lewat sini supaya
+               menu samping dapat menautinya tanpa membawa id audit —
+               menu tidak tahu periode mana yang sedang dikerjakan. */
+            'ofi'           => 'smkp.ofi',
         ][$bagian] ?? null;
 
         abort_if(!$rute, 404, 'Bagian audit tidak dikenal.');
@@ -151,14 +156,106 @@ class SmkpController extends Controller
     }
 
     /** Acuan kriteria audit — 7 elemen beserta bobot dan rujukan halamannya. */
-    public function acuan()
+    /**
+     * Acuan kriteria Kepdirjen, dapat ditelusuri.
+     *
+     * Sebelumnya halaman ini berupa tujuh kartu berisi nama elemen,
+     * bobotnya, dan jumlah sub-elemennya — tiga angka yang sudah
+     * diketahui siapa pun yang membuka halaman penilaian. Yang
+     * sesungguhnya dicari orang di acuan adalah bunyi satu butir:
+     * "apa persisnya yang dituntut III.12.4, dan apa bedanya nilai 2
+     * dari nilai 3". Pertanyaan itu tidak dapat dijawab daftar yang
+     * berhenti di tingkat elemen, dan yang menjawabnya selama ini
+     * adalah salinan PDF lampiran di luar aplikasi.
+     *
+     * Bunyi rubriknya TIDAK ikut dikirim di sini. Seluruhnya berjumlah
+     * sekitar 260 ribu aksara — lebih besar daripada seluruh sisa
+     * halaman — dan dimuat sendiri lewat `smkp.rubrik` ketika sebuah
+     * butir dibuka. Ikut dikirim, halaman acuan menjadi halaman
+     * terberat di aplikasi demi teks yang sebagian besar tidak pernah
+     * dibaca pada satu kunjungan.
+     */
+    public function acuan(Request $r)
     {
-        return Inertia::render('Smkp/Halaman', [
-            'mode' => 'acuan',
-            'elemen'  => Smkp::elemen(),
-            'meta'    => Smkp::meta(),
-            'kategori'=> Smkp::kategori(),
-            'tingkat' => Smkp::tingkat(),
+        /* Nilai audit yang sedang berjalan disandingkan bila memang ada.
+           Acuan yang dibaca sambil menilai lebih berguna daripada acuan
+           yang dibaca sendirian: yang dicari auditor adalah butir yang
+           BELUM ia nilai, dan itu tidak terlihat pada daftar tanpa
+           angka. */
+        $audit = $r->filled('audit')
+            ? SmkpAudit::find($r->integer('audit'))
+            : SmkpAudit::orderByDesc('tahun')->orderByDesc('id')->first();
+
+        $hasil = (array) ($audit->hasil ?? []);
+
+        $elemen = [];
+        foreach (Smkp::elemen() as $e) {
+            $sub = [];
+
+            foreach ($e['sub'] as $s) {
+                $rekap = Smkp::rekapSub($s, $hasil);
+                $butir = [];
+
+                foreach (Smkp::butirSub($s) as $b) {
+                    $nilai = Smkp::nilaiButir($hasil, $b['kode']);
+
+                    $butir[] = [
+                        'kode'    => $b['kode'],
+                        'nama'    => $b['nama'] ?? '',
+                        'maks'    => (int) ($b['maks'] ?? 0),
+                        'nilai'   => $nilai,
+                        'rubrik'  => SmkpRubrik::ada($b['kode']),
+                        'halaman' => SmkpRubrik::halaman($b['kode']),
+
+                        /* Butir yang bunyi rubriknya berhenti sebelum
+                           nilai maksimumnya ditandai apa adanya, tidak
+                           ditambal karangan. Auditor yang memberi nilai
+                           di sana perlu tahu bahwa ia melakukannya tanpa
+                           acuan tertulis. */
+                        'tanggung' => in_array($b['kode'], SmkpRubrik::TANGGA_TAK_LENGKAP, true),
+                    ];
+                }
+
+                $sub[] = [
+                    'kode'     => $s['kode'],
+                    'nama'     => $s['nama'] ?? '',
+                    'ref'      => $s['ref'] ?? null,
+                    'rinci'    => ! empty($s['subsub']),
+                    'maks'     => Smkp::maksSub($s),
+                    'capaian'  => $audit ? round($rekap['capaian'] * 100, 1) : null,
+                    'dinilai'  => $rekap['dinilai'],
+                    'berlaku'  => $rekap['berlaku'],
+                    'butir'    => $butir,
+                ];
+            }
+
+            $elemen[] = [
+                'kode'  => $e['kode'],
+                'nama'  => $e['nama'],
+                'bobot' => (int) ($e['bobot'] ?? 0),
+                'maks'  => Smkp::maksElemen($e),
+                'sub'   => $sub,
+            ];
+        }
+
+        return Inertia::render('Smkp/Acuan', [
+            'elemen'   => $elemen,
+            'meta'     => Smkp::meta(),
+            'kategori' => Smkp::kategori(),
+            'tingkat'  => Smkp::tingkat(),
+            'skala'    => SmkpRubrik::skala(),
+            'sumber'   => SmkpRubrik::sumber(),
+            'ringkas'  => [
+                'elemen'  => count($elemen),
+                'sub'     => array_sum(array_map(fn ($e) => count($e['sub']), $elemen)),
+                'butir'   => Smkp::jumlahButir(),
+                'nilai'   => Smkp::totalNilai(),
+                'rubrik'  => SmkpRubrik::jumlahLengkap(),
+                'tanggung' => count(SmkpRubrik::TANGGA_TAK_LENGKAP),
+            ],
+            'audit'    => $audit?->only(['id', 'tahun', 'judul']),
+            'daftarAudit' => SmkpAudit::orderByDesc('tahun')->get(['id', 'tahun', 'judul'])->all(),
+            'urlRubrik' => route('smkp.rubrik'),
         ]);
     }
 
@@ -562,6 +659,415 @@ class SmkpController extends Controller
         }));
     }
 
+    /* ================= BUKTI BUTIR KRITERIA ================= */
+
+    /**
+     * Lampirkan satu berkas bukti pada sebuah butir kriteria.
+     *
+     * Berdampingan dengan kolom teks `bukti` yang sudah ada, tidak
+     * menggantikannya: yang satu menjawab "bukti apa", yang ini menjawab
+     * "mana buktinya". Berkas audit yang diminta Inspektur Tambang
+     * menuntut keduanya.
+     */
+    public function buktiUnggah(Request $r, SmkpAudit $smkp)
+    {
+        $d = $r->validate([
+            'kode'    => ['required', 'string', 'max:20', Rule::in(array_column(Smkp::butir(), 'kode'))],
+            'catatan' => ['nullable', 'string', 'max:300'],
+            'berkas'  => array_merge(['required'], Berkas::ATURAN_BUKTI),
+        ], [
+            'berkas.max'   => 'Berkas bukti paling besar '.(Berkas::MAKS_BUKTI_KB / 1024).' MB.',
+            'kode.in'      => 'Butir kriteria tidak dikenal.',
+        ]);
+
+        $berkas = $r->file('berkas');
+        $jalur  = Berkas::simpan($berkas, "smkp/{$smkp->id}");
+
+        if (! $jalur) {
+            return back()->withErrors(['berkas' => 'Berkas tidak dapat disimpan.']);
+        }
+
+        $smkp->bukti()->create([
+            'kode'      => $d['kode'],
+            'catatan'   => $d['catatan'] ?? null,
+            'file_path' => $jalur,
+            'file_name' => $berkas->getClientOriginalName(),
+            'file_size' => $berkas->getSize(),
+            'mime'      => $berkas->getClientMimeType(),
+            'user_id'   => auth()->id(),
+        ]);
+
+        return back()->with('ok', 'Bukti butir '.$d['kode'].' terunggah.');
+    }
+
+    public function buktiHapus(SmkpAudit $smkp, SmkpBukti $bukti)
+    {
+        /* Rute mengikat anaknya langsung, tanpa menyentuh auditnya.
+           Tanpa pemeriksaan ini, bukti milik audit lain — periode lain,
+           bahkan tahun lain di perusahaan yang sama — dapat dibuang
+           lewat alamat yang disusun tangan, dan yang terlihat hanyalah
+           bukti yang hilang. */
+        abort_unless($bukti->audit_id === $smkp->id, 404);
+
+        Berkas::buang($bukti->file_path);
+        $bukti->delete();
+
+        return back()->with('ok', 'Bukti dihapus.');
+    }
+
+    /* ================= OFI — PELUANG PERBAIKAN ================= */
+
+    public function ofi(SmkpAudit $smkp)
+    {
+        return Inertia::render('Smkp/Ofi', [
+            'audit'   => $smkp->load('company'),
+            'berhak'  => SmkpPeluang::berhak($smkp),
+            'baris'   => $this->barisOfi($smkp),
+            'rekap'   => $smkp->rekap(),
+            'STATUS'  => SmkpOfi::STATUS,
+            'LINGKUP' => SmkpOfi::LINGKUP,
+            'tautan'  => [
+                'audit'     => route('smkp.show', $smkp),
+                'penilaian' => route('smkp.penilaian', $smkp),
+                'cetak'     => route('smkp.ofi.cetak', $smkp),
+                'ekspor'    => route('smkp.ofi.ekspor', $smkp),
+            ],
+        ]);
+    }
+
+    public function ofiSimpan(Request $r, SmkpAudit $smkp)
+    {
+        $d = $r->validate([
+            'kode'             => ['required', 'string', 'max:20'],
+            'uraian'           => ['required', 'string', 'max:2000'],
+            'saran'            => ['nullable', 'string', 'max:2000'],
+            'penanggung_jawab' => ['nullable', 'string', 'max:150'],
+            'target'           => ['nullable', 'date'],
+            'status'           => ['nullable', Rule::in(array_keys(SmkpOfi::STATUS))],
+        ]);
+
+        /* SYARATNYA DIJAGA DI SINI, BUKAN DI LAYAR. Formulirnya memang
+           hanya menawarkan butir yang capaiannya penuh, tetapi penjagaan
+           yang hanya ada di peramban dilewati satu permintaan yang
+           disusun tangan — dan lembar OFI yang memuat butir bernilai 40%
+           menyatakan kebalikan dari keadaan sebenarnya, ditandatangani
+           ketua tim, lalu diserahkan kepada Inspektur Tambang. */
+        $berhak = SmkpPeluang::perKode($smkp)[$d['kode']] ?? null;
+
+        if (! $berhak) {
+            return back()->withErrors([
+                'kode' => 'Peluang perbaikan hanya dapat dicatat pada butir yang capaiannya 100%.',
+            ]);
+        }
+
+        $smkp->ofi()->updateOrCreate(['kode' => $d['kode']], [
+            'lingkup'          => $berhak['lingkup'],
+            'uraian'           => $d['uraian'],
+            'saran'            => $d['saran'] ?? null,
+            'penanggung_jawab' => $d['penanggung_jawab'] ?? null,
+            'target'           => $d['target'] ?? null,
+            'status'           => $d['status'] ?? 'terbuka',
+            'user_id'          => auth()->id(),
+        ]);
+
+        return back()->with('ok', 'Peluang perbaikan '.$d['kode'].' tersimpan.');
+    }
+
+    public function ofiHapus(SmkpAudit $smkp, SmkpOfi $ofi)
+    {
+        abort_unless($ofi->audit_id === $smkp->id, 404);
+
+        $ofi->delete();
+
+        return back()->with('ok', 'Peluang perbaikan dihapus.');
+    }
+
+    public function ofiCetak(SmkpAudit $smkp)
+    {
+        return Inertia::render('Print/SmkpOfi', [
+            'audit'   => $smkp->load('company'),
+            'baris'   => $this->barisOfi($smkp),
+            'rekap'   => $smkp->rekap(),
+            'dok'     => $this->kop($smkp, 'ofi'),
+            'ekspor'  => route('smkp.ofi.ekspor', $smkp),
+            'kembali' => route('smkp.ofi', $smkp),
+        ]);
+    }
+
+    public function ofiEkspor(SmkpAudit $smkp)
+    {
+        $baris = array_map(fn ($b) => [
+            $b['no'], $b['elemen'], $b['sub'], $b['kode'], $b['lingkup_label'],
+            $b['capaian'], $b['uraian'], $b['saran'],
+            $b['penanggung_jawab'], $b['target'], $b['status_label'],
+        ], $this->barisOfi($smkp));
+
+        return Ekspor::csv(
+            'ofi-smkp-'.$smkp->tahun,
+            ['No', 'Elemen', 'Sub-elemen', 'Kode', 'Lingkup', 'Capaian %',
+             'Peluang perbaikan', 'Saran', 'Penanggung jawab', 'Target', 'Status'],
+            $baris,
+        );
+    }
+
+    /**
+     * Satu baris per OFI — dipakai layar, lembar cetak, dan CSV.
+     *
+     * Dibentuk sekali di sini supaya ketiganya tidak pernah berbeda.
+     * Lembar yang ditandatangani dan berkas Excel yang disusun terpisah
+     * adalah dua daftar yang cepat atau lambat berselisih, dan yang
+     * membandingkan keduanya adalah auditor eksternal.
+     *
+     * @return list<array<string,mixed>>
+     */
+    private function barisOfi(SmkpAudit $smkp): array
+    {
+        $berhak = SmkpPeluang::perKode($smkp);
+        $urutan = Smkp::urutanKriteria();
+        $out    = [];
+
+        foreach ($smkp->ofi()->get() as $o) {
+            $b     = $berhak[$o->kode] ?? null;
+            $letak = $b ? [
+                'elemen' => $b['elemen'].'. '.$b['elemen_nama'],
+                'sub'    => $b['sub'] ?: $b['kode'].' '.$b['nama'],
+                'nama'   => $b['nama'],
+            ] : self::letakKode($o->kode);
+
+            $out[] = [
+                'id'            => $o->id,
+                'kode'          => $o->kode,
+                'lingkup'       => $o->lingkup,
+                'lingkup_label' => SmkpOfi::LINGKUP[$o->lingkup] ?? $o->lingkup,
+
+                /* Nama elemen dan sub-elemennya diambil dari acuan yang
+                   berlaku SEKARANG, bukan disalin saat OFI dibuat.
+                   Salinan yang dibekukan akan berselisih dengan acuan
+                   pada revisi lampiran pertama.
+
+                   Konsekuensinya: butir yang BERHENTI sempurna tidak
+                   lagi ada di daftar berhak, jadi namanya pun tidak ada
+                   di sini. Namanya dicari langsung ke acuan alih-alih
+                   dibiarkan kosong — lembar yang menyebut "V.5" tanpa
+                   judul menuntut pembacanya membuka berkas kriteria
+                   untuk tahu barisnya tentang apa. */
+                'elemen'      => $letak['elemen'] ?? '—',
+                'sub'         => $letak['sub'] ?? '—',
+                'nama'        => $letak['nama'] ?? '',
+                'capaian'     => $b['capaian'] ?? null,
+
+                /* Butir yang capaiannya sudah tidak penuh lagi tetap
+                   ditampilkan, DITANDAI. Menghapusnya diam-diam membuat
+                   lembar OFI menyusut antar cetakan tanpa ada yang tahu
+                   mengapa; menandainya membuat auditor memutuskan sendiri
+                   apakah barisnya masih berlaku. */
+                'gugur'       => $b === null,
+
+                'uraian'           => $o->uraian,
+                'saran'            => $o->saran,
+                'penanggung_jawab' => $o->penanggung_jawab,
+                'target'           => $o->target?->format('Y-m-d'),
+                'status'           => $o->status,
+                'status_label'     => SmkpOfi::STATUS[$o->status] ?? $o->status,
+                'urut'             => $urutan[$o->kode] ?? PHP_INT_MAX,
+            ];
+        }
+
+        /* Urut mengikuti berkas kriteria, bukan waktu pembuatan. Lembar
+           OFI dibaca berdampingan dengan Formulir Kriteria, dan dua
+           urutan yang berbeda memaksa pembacanya mencocokkan sendiri
+           baris per baris. */
+        usort($out, fn ($a, $b) => $a['urut'] <=> $b['urut']);
+
+        foreach ($out as $i => $_) $out[$i]['no'] = $i + 1;
+
+        return $out;
+    }
+
+    /**
+     * Di mana sebuah kode berada pada acuan: elemen, sub-elemen, namanya.
+     *
+     * Dipakai bagi butir yang sudah TIDAK berhak lagi — capaiannya
+     * turun sesudah peluangnya dicatat — sehingga namanya tidak lagi
+     * ada di daftar berhak. Barisnya tetap ditampilkan dan ditandai,
+     * dan lembar yang menyebut "V.5" tanpa judul menuntut pembacanya
+     * membuka berkas kriteria untuk tahu barisnya tentang apa.
+     *
+     * @return array{elemen:string,sub:string,nama:string}
+     */
+    private static function letakKode(string $kode): array
+    {
+        foreach (Smkp::elemen() as $e) {
+            foreach ($e['sub'] as $s) {
+                if ($s['kode'] === $kode) {
+                    return [
+                        'elemen' => $e['kode'].'. '.$e['nama'],
+                        'sub'    => $s['kode'].' '.($s['nama'] ?? ''),
+                        'nama'   => $s['nama'] ?? '',
+                    ];
+                }
+
+                foreach (Smkp::butirSub($s) as $b) {
+                    if ($b['kode'] !== $kode) continue;
+
+                    return [
+                        'elemen' => $e['kode'].'. '.$e['nama'],
+                        'sub'    => $s['kode'].' '.($s['nama'] ?? ''),
+                        'nama'   => $b['nama'] ?? '',
+                    ];
+                }
+            }
+        }
+
+        /* Kode yang tidak ada pada acuan sama sekali. Dapat terjadi
+           sesudah revisi lampiran menghapus sebuah butir; barisnya tetap
+           ditampilkan apa adanya alih-alih dibuang diam-diam. */
+        return ['elemen' => '—', 'sub' => $kode, 'nama' => ''];
+    }
+
+    /* ================= DASBOR ANTAR TAHUN ================= */
+
+    /**
+     * Performa satu perusahaan dari tahun ke tahun.
+     *
+     * Halaman awal modul, dan itu disengaja: yang dibuka manajemen bukan
+     * daftar periode melainkan pertanyaan "apakah kami membaik". Daftar
+     * periode menjawab "audit mana yang ada", pertanyaan yang hanya
+     * ditanyakan orang yang sudah tahu jawabannya.
+     */
+    public function dasbor(Request $r)
+    {
+        $perusahaan = $this->perusahaanDasbor($r);
+        $riwayat    = SmkpBanding::riwayat($perusahaan?->id);
+
+        $tahun   = [];
+        $akhir   = [];
+        $temuan  = [];
+
+        /* Kerangka deret per elemen disusun LEBIH DAHULU dari acuan,
+           bukan diisi sambil menelusuri riwayat. Perbedaannya terlihat
+           pada perusahaan yang baru punya satu audit dan pada elemen
+           yang seluruh butirnya N/A: diisi sambil jalan, elemen semacam
+           itu tidak pernah muncul sama sekali, dan grafik tren
+           kehilangan barisnya tanpa satu pun tanda bahwa elemennya ada.
+
+           Namanya juga diambil dari sini. Smkp::rekap() memulangkan
+           rekap per elemen TANPA nama — ia mesin hitung, bukan kamus —
+           dan membacanya dari situ akan menggambar tujuh baris berjudul
+           kode romawi. */
+        $elemen = [];
+        foreach (Smkp::elemen() as $e) {
+            $elemen[$e['kode']] = [
+                'nama'  => $e['nama'],
+                'bobot' => (int) ($e['bobot'] ?? 0),
+                'nilai' => [],
+            ];
+        }
+
+        $idAudit = $riwayat->pluck('id')->all();
+
+        /* Temuan dihitung dengan SATU kueri berkelompok, bukan satu
+           kueri per tahun. Halaman ini menggambar seluruh riwayat, dan
+           satu kueri per tahun berarti ongkosnya tumbuh setiap kali
+           perusahaan menyelesaikan satu audit lagi.
+
+           Jenisnya DISERAGAMKAN sesudah dibaca, bukan dicocokkan
+           mentah. Kolom `jenis` menyimpan dua bentuk — kode pendek dari
+           `angkatTemuan`, label penuh dari baris lama dan pemuat data
+           contoh — dan membandingkan dengan salah satunya saja
+           menghitung nol untuk separuh barisnya. Terjadi sungguhan:
+           dasbor melaporkan "0 mayor" atas audit yang tabelnya berisi
+           belasan temuan. */
+        $perAudit = SmkpFinding::query()
+            ->whereIn('audit_id', $idAudit ?: [0])
+            ->get(['audit_id', 'jenis'])
+            ->groupBy('audit_id')
+            ->map(fn ($g) => $g->countBy(fn ($t) => Smkp::kodeJenis($t->jenis)));
+
+        foreach ($riwayat as $a) {
+            $rekap = $a->rekap();
+
+            $tahun[] = (string) $a->tahun;
+            $akhir[] = $rekap['skor'];
+
+            foreach ($rekap['elemen'] as $kode => $e) {
+                if (! isset($elemen[$kode])) continue;
+
+                /* null, bukan nol, bagi elemen yang seluruh butirnya
+                   N/A pada tahun itu. Grafik garis menggambar lubang
+                   data sebagai PUTUS; digambar sebagai nol, ia
+                   menyatakan bahwa elemennya jatuh ke nol pada tahun
+                   itu — penurunan yang tidak pernah terjadi. */
+                $elemen[$kode]['nilai'][] = $e['berlaku'] > 0
+                    ? round($e['capaian'] * 100, 1)
+                    : null;
+            }
+
+            $baris = $perAudit[$a->id] ?? collect();
+
+            $temuan[] = [
+                'tahun'  => (string) $a->tahun,
+                'mayor'  => (int) ($baris['mayor'] ?? 0),
+                'minor'  => (int) ($baris['minor'] ?? 0),
+                'obs'    => (int) ($baris['obs'] ?? 0),
+                'id'     => $a->id,
+                'skor'   => $rekap['skor'],
+                'tingkat'=> $rekap['tingkat'],
+                'dinilai'=> $rekap['dinilai'],
+                'berlaku'=> $rekap['berlaku'],
+                'status' => $a->status,
+            ];
+        }
+
+        $terbaru = $riwayat->last();
+        $banding = $terbaru ? SmkpBanding::untuk($terbaru) : null;
+
+        return Inertia::render('Smkp/Dasbor', [
+            'perusahaan'  => $perusahaan?->only(['id', 'name']),
+            'pilihan'     => $this->pilihanPerusahaan(),
+            'tahun'       => $tahun,
+            'akhir'       => $akhir,
+            'elemen'      => array_map(
+                fn ($k, $v) => ['kode' => $k] + $v,
+                array_keys($elemen), array_values($elemen),
+            ),
+            'periode'     => $temuan,
+            'terbaru'     => $terbaru?->only(['id', 'tahun', 'status']),
+            'banding'     => $banding,
+            'konsistensi' => $banding ? SmkpBanding::konsistensi($banding) : null,
+            'tingkat'     => Smkp::tingkat(),
+            'meta'        => Smkp::meta(),
+        ]);
+    }
+
+    /**
+     * Perusahaan yang dasbornya digambar.
+     *
+     * Administrator EQOHSEE menjangkau seluruh perusahaan dan karena itu
+     * dapat memilih; pengguna biasa selalu melihat perusahaannya sendiri,
+     * dan pilihan `?perusahaan=` darinya diabaikan alih-alih ditolak —
+     * scope MilikPerusahaan sudah menjaga datanya, dan menolak dengan
+     * galat hanya memberi tahu bahwa perusahaan itu ada.
+     */
+    private function perusahaanDasbor(Request $r): ?Company
+    {
+        $u = auth()->user();
+
+        if ($u?->isAdmin() && $r->filled('perusahaan')) {
+            return Company::find($r->integer('perusahaan'));
+        }
+
+        return $u?->company;
+    }
+
+    /** @return list<array{id:int,name:string}> kosong bagi yang bukan admin */
+    private function pilihanPerusahaan(): array
+    {
+        if (! auth()->user()?->isAdmin()) return [];
+
+        return Company::orderBy('name')->get(['id', 'name'])->all();
+    }
+
     /* ---------- Formulir penilaian per elemen ---------- */
     public function nilai(SmkpAudit $smkp, string $elemen)
     {
@@ -667,6 +1173,8 @@ class SmkpController extends Controller
      */
     public function penilaian(SmkpAudit $smkp)
     {
+        $banding = SmkpBanding::untuk($smkp);
+
         return Inertia::render('Smkp/Penilaian', [
             'audit'     => $smkp->load('company'),
             'elemen'    => $this->butirPenilaian($smkp),
@@ -675,11 +1183,36 @@ class SmkpController extends Controller
             'keadaan'   => $this->keadaanPenilaian(),
             'rubrik'    => $this->rubrikPenilaian(),
             'prasyarat' => $this->prasyaratPenilaian($smkp),
+
+            /* Nilai tahun sebelumnya, sebaris dengan tahun berjalan.
+               Yang diperiksa auditor bukan hanya "berapa nilainya"
+               melainkan "apakah jawabannya konsisten dengan tahun lalu":
+               butir yang melompat dari 1 ke 4 tanpa perubahan bukti
+               adalah butir yang perlu ditanyakan ulang, dan tanpa angka
+               pembandingnya di layar tidak ada yang pernah menanyakannya. */
+            'banding'   => $banding,
+            'konsistensi' => SmkpBanding::konsistensi($banding),
+
+            /* Berkas bukti per butir, dikelompokkan menurut kodenya —
+               bukan satu daftar rata yang harus disaring ulang di
+               peramban untuk tiap baris dari 349 butir. */
+            'bukti'     => $this->buktiPerButir($smkp),
+            'maksBuktiKb' => Berkas::MAKS_BUKTI_KB,
+
+            /* Butir yang berhak memperoleh OFI: capaiannya penuh.
+               Ditawarkan di sini, tempat auditor baru saja memberi
+               nilainya — bukan hanya di halaman OFI, yang perlu dibuka
+               sendiri dan karena itu jarang dibuka. */
+            'peluang'   => SmkpPeluang::berhak($smkp),
+            'ofiAda'    => $smkp->ofi()->pluck('kode')->all(),
+
             'tautan'    => [
                 'audit'    => route('smkp.show', $smkp),
                 'kriteria' => route('smkp.kriteria', $smkp),
                 'ekspor'   => route('smkp.kriteria.ekspor', $smkp),
                 'temuan'   => route('smkp.temuan', $smkp),
+                'ofi'      => route('smkp.ofi', $smkp),
+                'acuan'    => route('smkp.acuan'),
             ],
         ]);
     }
@@ -771,6 +1304,34 @@ class SmkpController extends Controller
                 'berlaku' => $rekapE['berlaku'],
                 'capaian' => round($rekapE['capaian'] * 100, 1),
                 'sub'     => $sub,
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Berkas bukti dikelompokkan menurut kode butir.
+     *
+     * Dikelompokkan di server, bukan di peramban. Halaman penilaian
+     * menggambar 349 baris; menyaring satu daftar rata pada tiap baris
+     * berarti 349 penelusuran atas daftar yang sama setiap kali satu
+     * angka berubah.
+     *
+     * @return array<string,list<array<string,mixed>>>
+     */
+    private function buktiPerButir(SmkpAudit $smkp): array
+    {
+        $out = [];
+
+        foreach ($smkp->bukti()->get() as $b) {
+            $out[$b->kode][] = [
+                'id'      => $b->id,
+                'nama'    => $b->file_name,
+                'ukuran'  => $b->file_size,
+                'catatan' => $b->catatan,
+                'url'     => Berkas::url($b, 'smb'),
+                'unduh'   => route('berkas.unduh', ['jenis' => 'smb', 'baris' => $b->id]),
             ];
         }
 

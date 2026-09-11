@@ -29,7 +29,9 @@
  * bukan mengangkat dirinya sendiri menjadi temuan.
  */
 import { computed, reactive, ref, watch } from 'vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 
 type Butir = {
   kode: string; nama: string; maks: number;
@@ -59,6 +61,12 @@ type Rubrik = {
   alamat: string;
 };
 
+/** Satu berkas bukti yang sudah terlampir pada sebuah butir. */
+type Bukti = { id: number; nama: string; ukuran: number; catatan: string | null; url: string | null; unduh: string };
+
+/** Nilai butir yang sama pada audit tahun sebelumnya. */
+type Sanding = { lalu: number | string | null; lalu_maks: number | null; arah: string | null; selisih: number | null };
+
 const props = defineProps<{
   audit: any;
   elemen: Elemen[];
@@ -67,6 +75,17 @@ const props = defineProps<{
   keadaan: Keadaan[];
   rubrik: Rubrik;
   prasyarat: Array<{ kunci: string; judul: string; ket: string; selesai: boolean; tautan: string }>;
+
+  /** Sandingan dengan audit tahun sebelumnya; `ada` false bila ini yang pertama. */
+  banding: { ada: boolean; tahun: number | null; tahunKini: number; butir: Record<string, Sanding>; sub: Record<string, any>; elemen: Record<string, any>; akhir: any };
+  konsistensi: { naik: any[]; turun: any[]; tetap_rendah: any[]; tetap_baik: any[] };
+
+  bukti: Record<string, Bukti[]>;
+  maksBuktiKb: number;
+
+  peluang: Array<{ kode: string; lingkup: string; nama: string }>;
+  ofiAda: string[];
+
   tautan: Record<string, string>;
 }>();
 
@@ -101,6 +120,8 @@ const label = (kode?: string) => (kode ? rupa.value[kode]?.label ?? kode : '—'
 const warna = (kode?: string) => (kode ? rupa.value[kode]?.warna : null) ?? '#94A3B8';
 
 /* ---------- formulir ---------- */
+
+const { dialog, tanya, batal, lanjut } = useDialog();
 
 const form = useForm<{ k: Record<string, { v: string; ket: string; bukti: string }> }>({ k: {} });
 
@@ -206,6 +227,17 @@ const tampil = computed<Elemen[]>(() => {
   const lolos = (b: Butir) => {
     if (saring.value === 'belum-sesuai') {
       if (!['mayor', 'minor'].includes(keadaanButir.value[b.kode])) return false;
+
+    /* Dua penyaring yang membaca tahun lalu, bukan keadaan sekarang.
+       "Turun" adalah pertanyaan pertama pada audit ulangan: butir mana
+       yang tahun lalu lebih baik, dan mengapa. Ia tidak dapat dijawab
+       penyaring keadaan — butir yang turun dari 4 ke 3 tetap berlencana
+       Kesesuaian, dan karena itu tidak pernah muncul. */
+    } else if (saring.value === 'turun') {
+      if (sanding(b.kode)?.arah !== 'turun') return false;
+    } else if (saring.value === 'berubah') {
+      const a = sanding(b.kode)?.arah;
+      if (a !== 'naik' && a !== 'turun') return false;
     } else if (saring.value !== 'semua' && keadaanButir.value[b.kode] !== saring.value) {
       return false;
     }
@@ -340,6 +372,131 @@ function simpan() {
   form.post(`/smkp/${props.audit.id}/penilaian`, { preserveScroll: true });
 }
 
+/* ---------- sandingan dengan tahun sebelumnya ---------- */
+
+/**
+ * Nilai butir yang sama pada audit tahun lalu.
+ *
+ * Yang diperiksa auditor bukan hanya "berapa nilainya" melainkan
+ * "apakah jawabannya konsisten": butir yang melompat dari 1 ke 4 tanpa
+ * perubahan bukti adalah butir yang perlu ditanyakan ulang. Tanpa angka
+ * pembandingnya di layar, tidak ada yang pernah menanyakannya — dan
+ * membukanya di tab lain menuntut mencocokkan 349 baris dengan mata.
+ */
+const sanding = (kode: string): Sanding | null => props.banding?.butir?.[kode] ?? null;
+
+const PANAH: Record<string, string> = { naik: '▲', turun: '▼', tetap: '=', baru: '•' };
+
+/* Warna arah memakai palet keadaan yang sama dengan sisa halaman, bukan
+   hijau/merah tersendiri: dua sistem warna pada satu baris membuat
+   pembacanya menebak mana yang sedang berbicara. */
+function warnaArah(arah: string | null | undefined): string {
+  if (arah === 'naik')  return warna('kesesuaian');
+  if (arah === 'turun') return warna('mayor');
+  return '#94A3B8';
+}
+
+function teksSanding(b: Butir): string {
+  const d = sanding(b.kode);
+  if (!d || d.lalu === null || d.lalu === undefined) return '';
+
+  const lalu = String(d.lalu).toUpperCase() === NA ? 'N/A' : `${d.lalu}/${d.lalu_maks ?? b.maks}`;
+
+  return d.selisih === null || d.selisih === 0
+    ? `${props.banding.tahun}: ${lalu}`
+    : `${props.banding.tahun}: ${lalu} (${d.selisih > 0 ? '+' : ''}${d.selisih}%)`;
+}
+
+/* ---------- bukti berkas per butir ---------- */
+
+const berkasButir = (kode: string): Bukti[] => props.bukti?.[kode] ?? [];
+
+/** Butir yang sedang dibuka panel unggahnya. */
+const unggahTerbuka = reactive<Record<string, boolean>>({});
+const catatanBukti  = reactive<Record<string, string>>({});
+const galatBukti    = reactive<Record<string, string>>({});
+const sedangUnggah  = ref<string | null>(null);
+
+const maksMb = computed(() => Math.round((props.maksBuktiKb / 1024) * 10) / 10);
+
+/**
+ * Unggah satu berkas bukti.
+ *
+ * Dikirim lewat router, BUKAN lewat <form> bersarang. Seluruh lembar
+ * penilaian sudah berada di dalam satu <form>, dan form di dalam form
+ * bukan HTML yang sah: peramban menutup yang luar pada tag pembuka yang
+ * dalam, sehingga separuh isian penilaian berhenti terkirim sama sekali
+ * — tanpa satu pun galat, dan hanya pada butir yang kebetulan berada di
+ * bawah panel ini.
+ */
+function unggahBukti(kode: string, ev: Event) {
+  const input = ev.target as HTMLInputElement;
+  const berkas = input.files?.[0];
+  if (!berkas) return;
+
+  /* Diperiksa di sini SEKADAR supaya pesannya cepat; yang menegakkan
+     batasnya tetap server. Berkas 40 MB yang ditolak sesudah terkirim
+     seluruhnya adalah dua menit menunggu untuk sebuah penolakan. */
+  if (berkas.size > props.maksBuktiKb * 1024) {
+    galatBukti[kode] = `Berkas paling besar ${maksMb.value} MB. Yang dipilih ${(berkas.size / 1048576).toFixed(1)} MB.`;
+    input.value = '';
+    return;
+  }
+
+  delete galatBukti[kode];
+  sedangUnggah.value = kode;
+
+  router.post(`/smkp/${props.audit.id}/bukti`, {
+    kode,
+    catatan: catatanBukti[kode] ?? '',
+    berkas,
+  }, {
+    forceFormData: true,
+    preserveScroll: true,
+    preserveState: false,
+    onError: (e: any) => { galatBukti[kode] = e.berkas ?? e.kode ?? 'Berkas gagal diunggah.'; },
+    onFinish: () => { sedangUnggah.value = null; input.value = ''; },
+  });
+}
+
+/**
+ * Membuang satu berkas bukti — bertanya lebih dulu.
+ *
+ * Penghapusan yang terjadi pada ketukan pertama tidak menimbulkan galat:
+ * berkasnya hilang, halamannya menggambar ulang, dan tidak ada yang
+ * tahu sampai seseorang mencari bukti yang sudah tidak ada — biasanya
+ * auditor eksternal. Tombol × di sini berdempetan dengan tautan berkas
+ * dalam satu lencana selebar dua sentimeter.
+ */
+async function hapusBukti(kode: string, b: Bukti) {
+  if (!await tanya({
+    judul: 'Hapus berkas bukti ini?',
+    pesan: `${b.nama} akan dibuang dari butir ${kode} beserta berkasnya.`,
+    labelAksi: 'Hapus', nada: 'bahaya',
+  })) return;
+
+  router.delete(`/smkp/${props.audit.id}/bukti/${b.id}`, { preserveScroll: true, preserveState: false });
+}
+
+const ukuran = (b: number) => (b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
+
+/* ---------- peluang perbaikan ---------- */
+
+/** Berapa butir yang naik dan turun dibanding tahun lalu. */
+const arahJumlah = computed(() => {
+  const n = { naik: 0, turun: 0 };
+
+  for (const b of semuaButir.value) {
+    const a = sanding(b.kode)?.arah;
+    if (a === 'naik' || a === 'turun') n[a]++;
+  }
+
+  return n;
+});
+
+const peluangKode = computed(() => new Set(props.peluang.map((p) => p.kode)));
+const ofiKode     = computed(() => new Set(props.ofiAda));
+
 const angka = (v: unknown) =>
   typeof v === 'number' ? v.toLocaleString('id-ID', { maximumFractionDigits: 2 }) : (v ?? '—');
 
@@ -349,7 +506,14 @@ const kartu = computed(() => [
   {
     label: 'Nilai akhir tersimpan',
     nilai: `${angka(props.rekap?.skor ?? 0)}%`,
-    ket: props.rekap?.tingkat?.label ?? 'belum dinilai',
+
+    /* Selisih terhadap tahun lalu dituliskan pada kartu pertama, bukan
+       disembunyikan di panel yang harus dibuka. Angka 78% menjawab
+       "berapa"; yang ditanyakan rapat tinjauan manajemen adalah
+       "naik atau turun", dan itu pertanyaan yang berbeda. */
+    ket: props.banding?.ada && props.banding.akhir?.selisih !== null
+      ? `${props.rekap?.tingkat?.label ?? 'belum dinilai'} · ${props.banding.akhir.selisih > 0 ? '+' : ''}${angka(props.banding.akhir.selisih)} dari ${props.banding.tahun}`
+      : (props.rekap?.tingkat?.label ?? 'belum dinilai'),
   },
   {
     label: 'Sudah dinilai',
@@ -423,6 +587,48 @@ const kartu = computed(() => [
     <!-- Penyaring. Inilah alasan halaman ini ada: satu klik untuk melihat
          hanya yang belum sesuai, tanpa memuat ulang dan tanpa kehilangan
          isian yang belum disimpan. -->
+    <!-- ══════════ KONSISTENSI DENGAN AUDIT SEBELUMNYA ══════════
+         Tiga golongan, dan yang ketiga yang paling mudah hilang:
+         sub-elemen yang bertahan di bawah ambang mayor dua tahun
+         berturut-turut. Selisihnya nol, jadi setiap tampilan yang
+         mengurutkan menurut perubahan menaruhnya di tengah dan tidak
+         seorang pun melihatnya — padahal ia yang paling lama rusak. -->
+    <section v-if="props.banding?.ada" class="grid gap-3 lg:grid-cols-3">
+      <article v-for="g in [
+                 { kunci: 'turun',        judul: 'Turun dari ' + props.banding.tahun, warna: warna('mayor'),
+                   ket: 'Sub-elemen yang capaiannya lebih rendah daripada audit sebelumnya.' },
+                 { kunci: 'tetap_rendah', judul: 'Rendah dua tahun berturut', warna: warna('minor'),
+                   ket: 'Di bawah ambang mayor pada kedua audit — tidak memburuk, tetapi tidak pernah diperbaiki.' },
+                 { kunci: 'naik',         judul: 'Naik dari ' + props.banding.tahun, warna: warna('kesesuaian'),
+                   ket: 'Sub-elemen yang capaiannya membaik.' },
+               ]" :key="g.kunci"
+               class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
+        <header class="px-4 py-3 border-b border-stone-100">
+          <h3 class="text-[12.5px] font-bold flex items-center gap-2">
+            <i class="titik" :style="{ background: g.warna }"></i>
+            {{ g.judul }}
+            <span class="font-normal text-stone-400">
+              {{ (props.konsistensi as any)[g.kunci]?.length ?? 0 }}
+            </span>
+          </h3>
+          <p class="text-[10.5px] text-stone-500 mt-0.5 leading-snug">{{ g.ket }}</p>
+        </header>
+
+        <ul v-if="(props.konsistensi as any)[g.kunci]?.length" class="divide-y divide-stone-100 max-h-52 overflow-y-auto">
+          <li v-for="b in (props.konsistensi as any)[g.kunci].slice(0, 12)" :key="b.kode"
+              class="px-4 py-2 flex items-baseline gap-2 text-[11.5px]">
+            <b class="shrink-0">{{ b.kode }}</b>
+            <span class="min-w-0 flex-1 truncate text-stone-600" :title="b.nama">{{ b.nama }}</span>
+            <span class="shrink-0 num text-stone-400">{{ angka(b.lalu) }}%</span>
+            <span class="shrink-0 text-stone-300">→</span>
+            <span class="shrink-0 num font-bold" :style="{ color: g.warna }">{{ angka(b.kini) }}%</span>
+          </li>
+        </ul>
+
+        <p v-else class="px-4 py-6 text-center text-[11.5px] text-stone-400">Tidak ada.</p>
+      </article>
+    </section>
+
     <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5 space-y-3">
       <div class="flex flex-wrap items-center gap-2">
         <span class="text-[11px] uppercase tracking-wider font-bold text-stone-400 mr-1">Tampilkan</span>
@@ -444,6 +650,25 @@ const kartu = computed(() => [
           <i class="titik" :style="{ background: k.warna }"></i>
           {{ k.label }} <b>{{ jumlah[k.kode] ?? 0 }}</b>
         </button>
+
+        <!-- Dua penyaring yang membaca tahun lalu. "Turun" adalah
+             pertanyaan pertama pada audit ulangan, dan ia tidak dapat
+             dijawab penyaring keadaan: butir yang turun dari 4 ke 3
+             tetap berlencana Kesesuaian, jadi ia tidak pernah muncul di
+             daftar mana pun. -->
+        <template v-if="props.banding?.ada">
+          <button type="button" class="eq-saring" :class="{ aktif: saring === 'turun' }"
+                  @click="saring = 'turun'"
+                  :title="`Butir yang nilainya lebih rendah daripada audit ${props.banding.tahun}`">
+            <i class="titik" :style="{ background: warna('mayor') }"></i>
+            Turun dari {{ props.banding.tahun }} <b>{{ arahJumlah.turun }}</b>
+          </button>
+
+          <button type="button" class="eq-saring" :class="{ aktif: saring === 'berubah' }"
+                  @click="saring = 'berubah'">
+            Berubah <b>{{ arahJumlah.naik + arahJumlah.turun }}</b>
+          </button>
+        </template>
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
@@ -543,6 +768,18 @@ const kartu = computed(() => [
                     :style="{ color: warna(keadaanButir[b.kode]), borderColor: warna(keadaanButir[b.kode]) }">
                 {{ label(keadaanButir[b.kode]) }}
               </span>
+
+              <!-- Nilai butir yang sama tahun lalu. Ditaruh di sebelah
+                   lencana keadaan, bukan di panel yang harus dibuka:
+                   yang diperiksa adalah KONSISTENSINYA, dan pemeriksaan
+                   yang menuntut satu klik per butir tidak pernah
+                   dikerjakan untuk 349 butir. -->
+              <span v-if="teksSanding(b)" class="eq-keadaan"
+                    :style="{ color: warnaArah(sanding(b.kode)?.arah), borderColor: warnaArah(sanding(b.kode)?.arah) }"
+                    :title="`Nilai pada audit ${props.banding.tahun}`">
+                {{ PANAH[sanding(b.kode)?.arah ?? ''] ?? '' }} {{ teksSanding(b) }}
+              </span>
+
               <span v-if="!s.rinci && belumDisimpan(s)"
                     class="text-[10px] font-bold uppercase tracking-wide text-amber-700">
                 belum disimpan
@@ -637,6 +874,59 @@ const kartu = computed(() => [
             <button v-else type="button" class="eq-btn-mini mt-2" @click="terbuka[b.kode] = true">
               Tambah keterangan &amp; bukti
             </button>
+
+            <!-- ══════════ BERKAS BUKTI ══════════
+                 Berdampingan dengan kolom teks di atas, bukan
+                 menggantikannya: yang satu menjawab "bukti apa" — nomor
+                 dokumen, siapa yang diwawancarai — yang ini menjawab
+                 "mana buktinya". Berkas audit yang diminta Inspektur
+                 Tambang menuntut keduanya. -->
+            <div v-if="berkasButir(b.kode).length" class="mt-2 flex flex-wrap gap-1.5">
+              <span v-for="f in berkasButir(b.kode)" :key="f.id"
+                    class="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-stone-50 pl-2 pr-1 py-1 text-[11px]">
+                <a :href="f.url ?? f.unduh" target="_blank" rel="noopener"
+                   class="font-semibold text-cam-lime-deep hover:underline max-w-[220px] truncate"
+                   :title="f.catatan || f.nama">{{ f.nama }}</a>
+                <span class="text-stone-400">{{ ukuran(f.ukuran) }}</span>
+                <button type="button" class="text-stone-400 hover:text-red-600 px-1"
+                        :title="`Hapus ${f.nama}`" @click="hapusBukti(b.kode, f)">×</button>
+              </span>
+            </div>
+
+            <div v-if="unggahTerbuka[b.kode]" class="mt-2 rounded-xl border border-stone-200 p-3 grid gap-2">
+              <p class="text-[10.5px] text-stone-500">
+                Satu berkas paling besar <b>{{ maksMb }} MB</b>. PDF, dokumen kantor, atau gambar.
+                Tersimpan tertutup — hanya terbuka bagi yang dapat membuka audit ini.
+              </p>
+
+              <input v-model="catatanBukti[b.kode]" maxlength="300"
+                     placeholder="Keterangan berkas — nomor dokumen, tanggal terbit"
+                     class="rounded-lg border-stone-200 text-[12px]">
+
+              <input type="file" class="text-[11.5px]"
+                     :disabled="sedangUnggah === b.kode"
+                     @change="unggahBukti(b.kode, $event)">
+
+              <p v-if="sedangUnggah === b.kode" class="text-[11px] text-stone-500">Mengunggah…</p>
+              <p v-if="galatBukti[b.kode]" class="text-[11px] text-red-600">{{ galatBukti[b.kode] }}</p>
+            </div>
+
+            <div class="mt-2 flex flex-wrap items-center gap-2">
+              <button type="button" class="eq-btn-mini"
+                      @click="unggahTerbuka[b.kode] = !unggahTerbuka[b.kode]">
+                {{ unggahTerbuka[b.kode] ? 'Tutup unggahan' : 'Lampirkan berkas bukti' }}
+              </button>
+
+              <!-- Butir yang capaiannya penuh berhak memperoleh peluang
+                   perbaikan. Ditawarkan DI SINI, tempat auditor baru saja
+                   memberi nilainya — bukan hanya di halaman OFI, yang
+                   perlu dibuka sendiri dan karena itu jarang dibuka. -->
+              <Link v-if="peluangKode.has(b.kode)" :href="props.tautan.ofi"
+                    class="eq-btn-mini"
+                    :title="ofiKode.has(b.kode) ? 'Peluang perbaikan sudah dicatat' : 'Butir ini sudah sempurna — catat peluang perbaikannya'">
+                {{ ofiKode.has(b.kode) ? '✓ OFI tercatat' : '+ Peluang perbaikan' }}
+              </Link>
+            </div>
           </div>
         </section>
       </article>
@@ -661,4 +951,6 @@ const kartu = computed(() => [
       </div>
     </form>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

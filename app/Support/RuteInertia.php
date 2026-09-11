@@ -215,6 +215,9 @@ final class RuteInertia
         'smkp.create',
         'smkp.acuan',
 
+        /* Dasbor performa antar tahun — halaman awal modul. */
+        'smkp.dasbor',
+
         /* Keselamatan Operasi */
         'investigasi.dasbor',
         'investigasi.insiden',

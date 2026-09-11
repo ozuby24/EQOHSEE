@@ -494,6 +494,42 @@ class Smkp
      * CASE WHEN adalah SQL baku sehingga berlaku di SQLite, MySQL, maupun
      * PostgreSQL — berbeda dengan FIELD() yang khusus MySQL.
      */
+    /**
+     * Menyeragamkan nilai kolom `jenis` sebuah temuan menjadi kode.
+     *
+     * Kolomnya menyimpan DUA BENTUK, dan keduanya sah menurut asalnya:
+     * `angkatTemuan` menulis kode pendek ('mayor'), sedangkan pemuat
+     * data contoh dan baris lama menulis labelnya penuh
+     * ('Ketidaksesuaian Mayor'). Sebuah rekap yang membandingkan
+     * dengan salah satu bentuk saja akan MENGHITUNG NOL untuk separuh
+     * barisnya — tanpa satu galat, tanpa satu baris yang tampak salah;
+     * yang terlihat hanyalah perusahaan yang seolah tidak punya temuan.
+     *
+     * Terjadi sungguhan: dasbor performa melaporkan "0 mayor · 0 minor"
+     * atas audit yang tabelnya berisi belasan temuan.
+     *
+     * Labelnya dibaca dari berkas acuan, bukan ditulis ulang di sini —
+     * mengubah bunyi label pada acuan tidak boleh memutus pencocokan
+     * ini.
+     *
+     * @return string 'mayor' | 'minor' | 'obs'
+     */
+    public static function kodeJenis(?string $jenis): string
+    {
+        $j = trim((string) $jenis);
+        if ($j === '') return 'obs';
+
+        foreach (self::kategori() as $k) {
+            if (! in_array($k['kode'], ['mayor', 'minor'], true)) continue;
+
+            if (strcasecmp($j, $k['kode']) === 0 || strcasecmp($j, $k['label']) === 0) {
+                return $k['kode'];
+            }
+        }
+
+        return 'obs';
+    }
+
     public static function urutJenisSql(string $kolom = 'jenis'): string
     {
         return "CASE {$kolom} WHEN 'mayor' THEN 1 WHEN 'minor' THEN 2 ELSE 3 END";

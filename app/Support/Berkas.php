@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\Investigasi\Bukti as BuktiInvestigasi;
 use App\Models\Pembelian\Pembayaran as PembayaranBeli;
 use App\Models\Pjp\Laporan as LaporanPjp;
+use App\Models\SmkpBukti;
 use App\Models\{Document, GudangBarang, HazardReport, InspectionItem, PasporKartu, PasporKartuUnit, PasporMcu, PasporSertifikat, Signatory, SmkpFinding};
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -122,6 +123,16 @@ final class Berkas
            investigasi lalu insidennya. */
         $out['evd'] = [BuktiInvestigasi::class, 'berkas', false];
 
+        /* Bukti butir kriteria audit SMKP. Batas perusahaannya dijaga
+           BerindukPerusahaan pada SmkpBukti, yang menyaring lewat
+           auditnya.
+
+           Isinya SOP, notulen rapat, daftar hadir pelatihan, dan foto
+           lapangan milik perusahaan yang diaudit — berkas yang seluruhnya
+           hanya tampil di halaman yang menuntut login, jadi menutupnya
+           tidak menghilangkan apa pun. */
+        $out['smb'] = [SmkpBukti::class, 'file_path', false];
+
         /* Dokumen berkala perusahaan jasa — laporan bulanan, triwulan,
            data SPIP, TSP. Batas perusahaannya dijaga BerindukPerusahaan
            pada Laporan, yang menyaring lewat PJP-nya.
@@ -232,6 +243,36 @@ final class Berkas
      * \.php$` pada Nginx tidak membedakan berkas aplikasi dari berkas
      * unggahan: ia menjalankan keduanya.
      */
+    /**
+     * Aturan bagi berkas bukti butir kriteria audit.
+     *
+     * Batasnya 10 MB, LEBIH KETAT daripada ATURAN_DOKUMEN di bawah, dan
+     * bukan karena diska mahal. Satu audit SMKP menyentuh 349 butir;
+     * bukti yang dilampirkan pada tiap butir berupa satu SOP, satu
+     * notulen, atau satu foto lapangan — dan berkas 20 MB pada butir
+     * semacam itu hampir selalu berarti seseorang mengunggah seluruh
+     * bundel dokumen ke satu butir, tempat yang tidak akan dicari
+     * siapa pun ketika bundel itu dibutuhkan.
+     *
+     * Jenisnya sama dengan dokumen: bukti audit sering berupa lembar
+     * pindaian maupun tangkapan layar sistem.
+     */
+    public const MAKS_BUKTI_KB = 10240;
+
+    public const ATURAN_BUKTI = [
+        'file',
+        'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,csv,txt,jpg,jpeg,png,webp',
+
+        /* Dirangkai dari MAKS_BUKTI_KB, bukan ditulis ulang sebagai
+           angka. Layar penilaian juga menyebut batasnya kepada
+           pengunggah, dan dua angka untuk satu batas akan berselisih
+           pada perubahan pertama — dengan akibat yang paling
+           membingungkan: layar menjanjikan 20 MB, server menolak di 10,
+           dan pesannya berbicara tentang batas yang tidak tertulis di
+           mana pun. */
+        'max:'.self::MAKS_BUKTI_KB,
+    ];
+
     public const ATURAN_DOKUMEN = [
         'file',
         'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,csv,txt,jpg,jpeg,png,webp,zip',

@@ -6,7 +6,7 @@ use App\Models\Concerns\BerpemilikPerusahaan;
 use App\Models\Scopes\MilikPerusahaan;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 
-use App\Support\{Smkp, SmkpTahap};
+use App\Support\{Smkp, SmkpBanding, SmkpTahap};
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
 
@@ -49,6 +49,31 @@ class SmkpAudit extends Model
     {
         return $this->hasMany(SmkpAttendee::class, 'audit_id');
     }
+
+    /** Berkas bukti seluruh butir, urut butir lalu waktu unggah. */
+    public function bukti(): HasMany
+    {
+        return $this->hasMany(SmkpBukti::class, 'audit_id')->orderBy('kode')->orderBy('id');
+    }
+
+    public function ofi(): HasMany
+    {
+        return $this->hasMany(SmkpOfi::class, 'audit_id')->orderBy('kode');
+    }
+
+    /**
+     * Audit tahun sebelumnya milik perusahaan yang sama.
+     *
+     * Dihitung sekali lalu diingat: halaman penilaian menanyakannya
+     * untuk 349 butir, dan menanyakan ulang tiap kali berarti 349 kueri
+     * yang seluruhnya memulangkan baris yang sama.
+     */
+    public function sebelumnya(): ?SmkpAudit
+    {
+        return $this->banding ??= SmkpBanding::sebelumnya($this);
+    }
+
+    private ?SmkpAudit $banding = null;
 
     public function hadir(string $rapat)
     {
@@ -233,7 +258,17 @@ class SmkpAudit extends Model
         return (string) ($this->hasil[$kode]['ket'] ?? '');
     }
 
-    public function bukti(string $kode): string
+    /**
+     * Keterangan bukti yang DITULIS auditor pada sebuah butir.
+     *
+     * Dulu bernama bukti(); namanya diubah ketika relasi berkas bukti
+     * lahir. Dua anggota bernama sama pada satu kelas tidak dapat ada,
+     * dan yang menang bukan yang lebih benar melainkan yang ditulis
+     * belakangan — sebuah pemanggilan `$audit->bukti('II.2.1')` yang
+     * diam-diam berubah arti adalah galat yang tidak dilaporkan siapa
+     * pun sampai layarnya menggambar kosong.
+     */
+    public function buktiTeks(string $kode): string
     {
         return (string) ($this->hasil[$kode]['bukti'] ?? '');
     }

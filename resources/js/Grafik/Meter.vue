@@ -80,8 +80,18 @@ const keterangan = computed(() => {
 <template>
   <div>
     <div class="flex items-baseline gap-2 mb-2">
+      <!-- Warna tintanya dari KELAS, bukan dari gaya sebaris.
+           Sebelumnya angka besar ini dipatok '#292524' lewat :style, dan
+           gaya sebaris mengalahkan aturan [data-tema="gelap"] betapa pun
+           tegasnya — sehingga pada mode gelap angka pokoknya tercetak
+           hampir hitam di atas kartu gelap dan praktis tidak terbaca.
+           Terlihat di dasbor SMKP, dan berlaku pula pada Keselamatan
+           Operasi, Energi, serta Kesiapan Alat yang memakai meter yang
+           sama. Yang kosong tetap sebaris: abu-abunya memang sama
+           terbacanya pada kedua tema. -->
       <span class="text-[26px] font-bold leading-none num"
-            :style="{ color: nilai === null ? '#A8A29E' : '#292524' }">
+            :class="nilai === null ? '' : 'text-cam-ink'"
+            :style="nilai === null ? { color: '#A8A29E' } : undefined">
         {{ nilai === null ? '—' : ringkas(nilai) }}<span
           v-if="nilai !== null" class="text-[15px] font-semibold text-stone-400">{{ satuan }}</span>
       </span>

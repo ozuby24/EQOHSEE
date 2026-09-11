@@ -979,6 +979,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     /* ================= WEBSITE #4 — Audit SMKP Minerba ================= */
     Route::prefix('smkp')->name('smkp.')->group(function () {
+        /* Dasbor dulu, daftar periode kemudian. Yang dibuka manajemen
+           bukan "audit mana yang ada" melainkan "apakah kami membaik" —
+           dan pertanyaan kedua tidak terjawab oleh daftar. */
+        Route::get('dasbor',           [SmkpController::class,'dasbor'])->name('dasbor');
         Route::get('/',                [SmkpController::class,'index'])->name('index');
         Route::get('buat',             [SmkpController::class,'create'])->name('create');
         Route::post('/',               [SmkpController::class,'store'])->name('store');
@@ -997,6 +1001,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             /* Lima keluaran audit yang menyusul. */
             'kriteria' => 'kriteria', 'rekap-nc' => 'rekap-nc', 'respon' => 'respon',
             'rencana-tindak' => 'rencana-tindak', 'nc-tindak' => 'nc-tindak',
+            'ofi' => 'ofi',
         ] as $bagian => $ruas) {
             Route::get("lanjut/{$ruas}", [SmkpController::class,'lanjut'])
                 ->defaults('bagian', $bagian)->name('ke.'.$bagian);
@@ -1053,6 +1058,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // kesesuaian tiap parameter tanpa berpindah halaman per elemen.
         Route::get('{smkp}/penilaian',  [SmkpController::class,'penilaian'])->name('penilaian');
         Route::post('{smkp}/penilaian', [SmkpController::class,'simpanPenilaian'])->name('penilaian.simpan');
+
+        /* Berkas bukti per butir kriteria. Batas 10 MB ditegakkan
+           App\Support\Berkas::ATURAN_BUKTI, dan berkasnya disimpan pada
+           disk tertutup — bukti audit hanya tampil di halaman yang
+           menuntut login, jadi menutupnya tidak menghilangkan apa pun. */
+        Route::post('{smkp}/bukti',           [SmkpController::class,'buktiUnggah'])->name('bukti.unggah');
+        Route::delete('{smkp}/bukti/{bukti}', [SmkpController::class,'buktiHapus'])
+            ->middleware('can:admin')->name('bukti.hapus');
+
+        /* Peluang perbaikan atas butir yang capaiannya PENUH. Terpisah
+           dari temuan: yang di sini tidak menurunkan nilai apa pun dan
+           tidak wajib ditindaklanjuti. */
+        Route::get('{smkp}/ofi',            [SmkpController::class,'ofi'])->name('ofi');
+        Route::post('{smkp}/ofi',           [SmkpController::class,'ofiSimpan'])->name('ofi.simpan');
+        Route::delete('{smkp}/ofi/{ofi}',   [SmkpController::class,'ofiHapus'])
+            ->middleware('can:admin')->name('ofi.hapus');
+        Route::get('{smkp}/ofi/cetak',      [SmkpController::class,'ofiCetak'])->name('ofi.cetak');
+        Route::get('{smkp}/ofi/ekspor',     [SmkpController::class,'ofiEkspor'])->name('ofi.ekspor');
 
         // Formulir penilaian per elemen — ditaruh terakhir agar tidak menyerobot rute di atas
         Route::get('{smkp}/elemen/{elemen}',  [SmkpController::class,'nilai'])->name('nilai');

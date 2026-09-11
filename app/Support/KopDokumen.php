@@ -205,6 +205,16 @@ final class KopDokumen
                IZIN tetapi tetap bernomor FRM. Dua formulir bernomor sama
                tidak menimbulkan galat apa pun; yang menemukannya
                auditor. */
+            /* Lembar peluang perbaikan. Bernomor FRM, dan urutnya 17 —
+               016 sudah dipakai Register PJP. Dua formulir bernomor
+               sama tidak menimbulkan galat apa pun; yang menemukannya
+               auditor. */
+            'ofi' => [
+                'jenis' => 'FORMULIR',
+                'judul' => 'PELUANG PERBAIKAN (OPPORTUNITY FOR IMPROVEMENT)',
+                'kode'  => 'OHSE-IV.068',
+                'urut'  => 17,
+],
             'register-pjp' => [
                 'jenis' => 'FORM & CHECKLIST',
                 'judul' => 'REGISTER PEMANTAUAN PERUSAHAAN JASA PERTAMBANGAN',

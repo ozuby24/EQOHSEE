@@ -29,7 +29,7 @@ use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, 
                 KoUjiKelayakan, KoUnitMaster,
                 LedakHasil, LedakRencana, LedakTitik, LedakUkur, LingkunganArea,
                 LingkunganPantau, LingkunganParameter, MineOperationalRecord,
-                MineOperationalTarget, News, Procedure, ReklamasiKemajuan, SmkpAttendee, SmkpAudit,
+                MineOperationalTarget, News, Procedure, ReklamasiKemajuan, SmkpAttendee, SmkpAudit, SmkpBukti, SmkpOfi,
                 SmkpFinding, SopEvaluation, SopEvaluationAttempt,
                 SopEvaluationQuestion,
                 Certificate, Course, Enrollment, InspectionTemplate, InspectionTemplateItem,
@@ -111,6 +111,12 @@ final class DataContoh
            dulu di daftar atas. KoObject karena itu harus berada paling
            belakang, sesudah seluruh perujuknya. */
         InspectionItem::class, InspectionInspector::class, Inspection::class,
+        /* Bukti butir dan peluang perbaikan disebut SEBELUM auditnya:
+           penghapusan berkaskade dikerjakan basis data dan tidak ikut
+           terhitung pemanggilnya, sehingga jumlah "dibuang" tidak lagi
+           sebanding dengan jumlah "dibuat" — dan pemeriksaan penumpukan
+           bersandar pada perbandingan itu. */
+        SmkpBukti::class, SmkpOfi::class,
         SmkpFinding::class, SmkpAttendee::class, SmkpAudit::class,
         DocumentRevision::class, DocumentIso::class, Document::class,
         HazardReport::class,
@@ -474,8 +480,9 @@ final class DataContoh
             InspectionItem::class, InspectionInspector::class => $q->whereIn('inspection_id',
                 Inspection::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
 
-            SmkpFinding::class, SmkpAttendee::class => $q->whereIn('audit_id',
-                SmkpAudit::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+            SmkpFinding::class, SmkpAttendee::class, SmkpBukti::class, SmkpOfi::class
+                => $q->whereIn('audit_id',
+                    SmkpAudit::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
 
             DocumentRevision::class, DocumentIso::class => $q->whereIn('document_id',
                 Document::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
@@ -3813,6 +3820,15 @@ final class DataContoh
                     : null,
                 'ketua_auditor'   => $this->peninjau?->name ?? 'Ketua Auditor Internal',
                 'user_id'         => $this->pengaju?->id,
+
+                /* NILAINYA IKUT DIISI, dan itu perbaikan bukan hiasan.
+                   Sebelumnya kolom `hasil` dibiarkan kosong, sehingga
+                   sesudah "muat data contoh" seluruh keluaran audit —
+                   form penilaian, formulir kriteria, rekap
+                   ketidaksesuaian, dasbor performa — tetap menampilkan
+                   nol. Modulnya terlihat dipakai dari daftar periodenya
+                   dan tidak dapat diperiksa sama sekali dari isinya. */
+                'hasil'           => $this->smkpHasil($status === 'selesai'),
             ]);
             $n++;
 
@@ -3889,6 +3905,149 @@ final class DataContoh
                 ]);
                 $n++;
             }
+
+            $n += $this->smkpBukti($a);
+            $n += $this->smkpOfi($a);
+        }
+
+        return $n;
+    }
+
+    /**
+     * Nilai tiap butir kriteria, sebaran yang dapat dihitung ulang.
+     *
+     * DITENTUKAN DARI POSISI BUTIR, bukan diacak. Data contoh yang
+     * berubah tiap kali dimuat membuat dua orang yang membandingkan
+     * layarnya memperoleh angka berbeda, dan tidak ada cara mengetahui
+     * mana yang salah. Polanya sengaja sederhana sehingga skornya dapat
+     * diperiksa dengan tangan:
+     *
+     *   tiap butir ke-17  di luar lingkup perusahaan (N/A)
+     *   tiap butir ke-7   jatuh — inilah yang melahirkan temuan
+     *   sisanya           penuh atau hampir penuh
+     *
+     * Audit yang BELUM selesai hanya diisi sebagian: audit berjalan yang
+     * seluruh butirnya sudah dinilai adalah keadaan yang tidak mungkin,
+     * dan bilah kemajuan yang selalu penuh tidak membuktikan apa pun.
+     *
+     * @return array<string,array<string,mixed>>
+     */
+    private function smkpHasil(bool $tuntas): array
+    {
+        $hasil = [];
+        $butir = Smkp::butir();
+        $batas = $tuntas ? count($butir) : (int) round(count($butir) * 0.55);
+
+        foreach ($butir as $i => $b) {
+            if ($i >= $batas) break;                 // sisanya belum dinilai
+
+            $maks = (int) $b['maks'];
+            $urut = $i + 1;
+
+            if ($urut % 17 === 0) {
+                $hasil[$b['kode']] = ['v' => Smkp::NA];
+                continue;
+            }
+
+            $nilai = match (true) {
+                $urut % 7 === 0  => 0,                        // jatuh — calon temuan
+                $urut % 5 === 0  => (int) floor($maks / 2),    // separuh
+                $urut % 3 === 0  => max(0, $maks - 1),         // hampir penuh
+                default          => $maks,                    // penuh
+            };
+
+            $hasil[$b['kode']] = [
+                'v'     => $nilai,
+                'ket'   => $nilai === 0
+                    ? 'Bukti yang diminta tidak dapat ditunjukkan saat audit lapangan.'
+                    : '',
+                'bukti' => $nilai === 0 ? '' : 'Dokumen dan wawancara pemilik proses.',
+            ];
+        }
+
+        return $hasil;
+    }
+
+    /**
+     * Berkas bukti pada beberapa butir kriteria.
+     *
+     * BERKASNYA SENGAJA TIDAK ADA DI DISK. Data contoh tidak mengunggah
+     * apa pun, dan menaruh berkas palsu di disk tertutup berarti data
+     * contoh meninggalkan berkas yang tidak ikut terbuang saat data
+     * contohnya dibuang. Yang membukanya memperoleh 404 dari rute
+     * penyaji — jawaban yang benar bagi berkas yang memang tidak ada.
+     *
+     * Yang dibuktikan barisnya: bahwa lencana berkas tergambar pada
+     * butirnya, bahwa hitungannya benar, dan bahwa penghapusannya ikut
+     * terbawa saat auditnya dibuang.
+     */
+    private function smkpBukti(SmkpAudit $a): int
+    {
+        $n = 0;
+
+        foreach ([
+            ['I.1',    'SOP-HSE-001 Kebijakan Keselamatan rev.3',      'kebijakan-keselamatan-rev3.pdf', 412_000],
+            ['I.1',    'Notulen tinjauan manajemen 12 Maret',          'notulen-tinjauan-manajemen.pdf',  188_000],
+            ['II.2.1', 'Risalah komunikasi risiko lintas departemen',  'risalah-komunikasi-risiko.pdf',   264_000],
+            ['III.1',  'Struktur organisasi KP dan surat penunjukan',  'struktur-organisasi-kp.pdf',      356_000],
+            ['IV.2.1', 'Rekaman inspeksi jalan angkut dua bulan',      'inspeksi-jalan-angkut.xlsx',      144_000],
+        ] as [$kode, $catatan, $berkas, $ukuran]) {
+            $this->baru(SmkpBukti::class, [
+                'audit_id'  => $a->id,
+                'kode'      => $kode,
+                'catatan'   => $catatan,
+                'file_path' => "smkp/{$a->id}/contoh-".str($berkas)->slug().'.bin',
+                'file_name' => $berkas,
+                'file_size' => $ukuran,
+                'mime'      => str_ends_with($berkas, '.pdf') ? 'application/pdf' : null,
+                'user_id'   => $this->pengaju?->id,
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /**
+     * Peluang perbaikan atas butir yang capaiannya PENUH.
+     *
+     * Syaratnya sama dengan yang ditegakkan server, dan dipakai dari
+     * sumber yang sama — bukan dikarang ulang di sini. Data contoh yang
+     * mencatat peluang atas butir bernilai 40% akan membuat lembar OFI
+     * berbunyi kebalikan dari keadaannya, dan yang membaca data contoh
+     * biasanya sedang memutuskan apakah fiturnya bekerja.
+     *
+     * Kosong bila belum ada butir yang sempurna, dan itu benar: audit
+     * yang belum dinilai memang belum punya peluang perbaikan.
+     */
+    private function smkpOfi(SmkpAudit $a): int
+    {
+        $uraian = [
+            'Seluruh kriteria terpenuhi. Peninjauan masih dikerjakan manual tiap semester; '
+            .'pengingat otomatis akan melepas ketergantungan pada satu orang.',
+
+            'Sudah memenuhi seluruhnya. Cakupannya baru pada area produksi utama; '
+            .'peluangnya memperluas ke area penunjang pada periode berikutnya.',
+
+            'Terpenuhi penuh. Buktinya masih berupa berkas cetak; pemindaian ke sistem '
+            .'akan mempercepat penelusuran saat audit eksternal.',
+        ];
+
+        $n = 0;
+
+        foreach (array_slice(SmkpPeluang::berhak($a), 0, count($uraian)) as $i => $b) {
+            $this->baru(SmkpOfi::class, [
+                'audit_id'         => $a->id,
+                'kode'             => $b['kode'],
+                'lingkup'          => $b['lingkup'],
+                'uraian'           => $uraian[$i],
+                'saran'            => 'Tetapkan pemilik proses dan jadwal peninjauan tertulis.',
+                'penanggung_jawab' => $this->peninjau?->name ?? 'Kepala Teknik Tambang',
+                'target'           => $this->kini->copy()->addMonths(3 + $i)->toDateString(),
+                'status'           => ['terbuka', 'ditindaklanjuti', 'terbuka'][$i],
+                'user_id'          => $this->pengaju?->id,
+            ]);
+            $n++;
         }
 
         return $n;
