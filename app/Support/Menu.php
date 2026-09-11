@@ -122,9 +122,16 @@ final class Menu
           ['Ringkasan',       'miners.dasbor',    'miners/dasbor*'],
         ],
 
+        /* Urutannya MENGIKUTI RANTAINYA — MCU menentukan Mine Permit,
+           Mine Permit menentukan SIMPER — bukan abjad dan bukan urutan
+           pembuatannya. Bilah samping adalah tempat orang belajar
+           urutan sebuah proses tanpa membaca petunjuk; menyusunnya
+           menurut abjad membuang pelajaran itu. */
         'Pendaftaran' => [
-          ['MCU',       'miners.mcu.index',     'miners/mcu*'],
-          ['Induksi',   'miners.induksi.index', 'miners/induksi*'],
+          ['MCU',         'miners.mcu.index',     'miners/mcu*'],
+          ['Induksi',     'miners.induksi.index', 'miners/induksi*'],
+          ['Mine Permit', 'miners.permit.index',  'miners/permit*'],
+          ['SIMPER',      'miners.simper.index',  'miners/simper*'],
         ],
 
         /* Urutannya MENGIKUTI ALURNYA, bukan abjad dan bukan urutan

@@ -145,6 +145,31 @@ class Simper extends Model
     }
 
     /**
+     * Sudah masuk jendela perpanjangan.
+     *
+     * SOP membuka jendelanya sebulan sebelum berakhir. Di Project1
+     * ambang itu hanya mewarnai layar pemantauan dan tidak pernah
+     * membatasi kapan pengajuan boleh dibuat — sehingga perpanjangan
+     * dapat masuk sepanjang tahun, dan antrean OHSE terisi berkas yang
+     * belum waktunya.
+     *
+     * Yang dibaca habisEfektif(), bukan kolom tanggalnya: kartu yang
+     * SIMPOL-nya habis lebih dahulu memang sudah boleh diperpanjang
+     * meski tanggal kartunya sendiri masih jauh.
+     */
+    public function bolehDiperpanjang(): bool
+    {
+        $sisa = $this->sisaHari();
+
+        /* Tanpa masa berlaku sama sekali, tidak ada yang perlu
+           diperpanjang — dan membolehkannya berarti pengajuan yang
+           tidak pernah punya tenggat ikut memenuhi antrean. */
+        if ($sisa === null) return false;
+
+        return $sisa <= SimperAjuan::HARI_BOLEH_PERPANJANG;
+    }
+
+    /**
      * Apa yang lebih dahulu menghentikannya — untuk dijelaskan di layar.
      *
      * "Kartu habis 12 Maret" tidak memberi tahu apa yang harus
@@ -154,6 +179,16 @@ class Simper extends Model
     {
         $habis = $this->habisEfektif();
         if ($habis === null) return null;
+
+        /* MASA BERLAKUNYA SENDIRI DIPERIKSA LEBIH DAHULU, dan urutan
+           itu yang menentukan benar tidaknya kalimat di layar.
+           Diperiksa terakhir, kartu yang ketiga tanggalnya kebetulan
+           sama — hal biasa, sebab kartu dan permit sama-sama habis 31
+           Desember — akan dijelaskan sebagai "Mine Permit habis lebih
+           dahulu". Padahal tidak lebih dahulu; ia bersamaan. Yang
+           membaca lalu memperbarui permit dan mendapati kartunya tetap
+           habis pada tanggal yang sama. */
+        if ($this->berlaku_sampai?->eq($habis)) return 'simper';
 
         if ($this->simpol_berlaku_sampai?->eq($habis)) return 'simpol';
         if ($this->permit?->habisEfektif()?->eq($habis)) return 'permit';

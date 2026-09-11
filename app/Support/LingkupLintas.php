@@ -48,7 +48,21 @@ final class LingkupLintas
     public const KE_INDUK = [
         'hazard_reports',   // laporan bahaya lapangan
         'inspections',      // inspeksi rutin
-        'paspor',           // kompetensi, MCU, kartu masuk pekerjanya
+
+        /* Miners. Pemegang IUP bertanggung jawab atas keselamatan
+           pekerjaan yang dikerjakan mitranya, dan tanggung jawab itu
+           dijalankan justru lewat berkas-berkas ini: ia harus dapat
+           melihat siapa yang dibawa mitranya masuk ke areanya, MCU dan
+           induksi mana yang mendasarinya, kartu apa yang mereka pegang,
+           dan unit apa yang boleh mereka kemudikan.
+           Tanpa itu, Inspektur Tambang bertanya kepada pemegang IUP
+           tentang orang-orang yang tidak dapat dilihatnya sendiri. */
+        'mnr_pekerja',
+        'mnr_mcu',
+        'mnr_induksi',
+        'mnr_permit',
+        'mnr_simper',
+        'mnr_kompetensi',
     ];
 
     /**

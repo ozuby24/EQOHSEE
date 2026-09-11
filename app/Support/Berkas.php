@@ -257,6 +257,9 @@ final class Berkas
      * Jenisnya sama dengan dokumen: bukti audit sering berupa lembar
      * pindaian maupun tangkapan layar sistem.
      */
+    /** Batas unggahan dokumen biasa, dalam KB. */
+    public const MAKS_DOKUMEN_KB = 20480;
+
     public const MAKS_BUKTI_KB = 10240;
 
     public const ATURAN_BUKTI = [
@@ -276,7 +279,12 @@ final class Berkas
     public const ATURAN_DOKUMEN = [
         'file',
         'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,csv,txt,jpg,jpeg,png,webp,zip',
-        'max:20480',
+
+        /* Dirangkai dari MAKS_DOKUMEN_KB, bukan ditulis ulang sebagai
+           angka. Dua tempat yang menyebut batas yang sama akan berbeda
+           cepat atau lambat, dan yang berbeda adalah pesan galat yang
+           menyebut batas yang tidak berlaku. */
+        'max:'.self::MAKS_DOKUMEN_KB,
     ];
 
     /**

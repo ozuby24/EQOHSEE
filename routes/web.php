@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\InvestigasiController;
 use App\Http\Controllers\MinersController;
+use App\Http\Controllers\MinersDokumenController;
 use App\Http\Controllers\DasborController;
 use App\Http\Controllers\PembelianController;
 use App\Http\Controllers\PjpController;
@@ -219,79 +220,104 @@ Route::middleware(['auth', 'verified'])->group(function () {
        menyimpan seluruh berkas kelayakan kerjanya — kompetensi, MCU, dan
        kartu masuk tambang — dan menjawab satu pertanyaan yang ditanyakan
        setiap pagi di gerbang: boleh atau tidak orang ini bekerja hari ini. */
+    /* ================= MINERS =================
+     *
+     * MCU → Mine Permit → SIMPER, satu rantai berurutan. Rutenya
+     * mengikuti urutan itu, bukan abjad: bilah samping adalah tempat
+     * orang belajar urutan sebuah proses tanpa membaca petunjuk.
+     */
     Route::prefix('miners')->name('miners.')->group(function () {
-        Route::get('/',                [MinersController::class,'index'])->name('index');
-        Route::get('dasbor',           [MinersController::class,'dasbor'])->name('dasbor');
-        Route::post('/',               [MinersController::class,'store'])->name('store');
+        Route::get('dasbor', [MinersController::class, 'dasbor'])->name('dasbor');
 
-        /* Pengajuan MCU didaftarkan SEBELUM {paspor}, dan urutannya
-           bukan gaya penulisan: `authority/mcu` cocok dengan pola
-           `authority/{paspor}` juga, jadi yang terdaftar lebih dahulu
-           yang menang. Terbalik, halaman pengajuan akan mencari paspor
-           bernomor "mcu" dan memulangkan 404 yang membingungkan. */
+        /* Seluruh rute berkata-tetap didaftarkan SEBELUM rute
+           ber-{pekerja}. `miners/mcu` cocok pula dengan pola
+           `miners/{pekerja}`, dan yang terdaftar lebih dahulu yang
+           menang — terbalik, halaman MCU akan mencari pekerja bernomor
+           "mcu" lalu memulangkan 404 yang membingungkan. */
+
         Route::prefix('mcu')->name('mcu.')->group(function () {
-            Route::get('/',   [MinersController::class,'mcuIndex'])->name('index');
-            Route::post('/',  [MinersController::class,'mcuStore'])->name('store');
+            Route::get('/',  [MinersDokumenController::class, 'mcuIndex'])->name('index');
+            Route::post('/', [MinersDokumenController::class, 'mcuStore'])->name('store');
 
-            Route::put('{pengajuan}',    [MinersController::class,'mcuUpdate'])->name('update');
-            Route::delete('{pengajuan}', [MinersController::class,'mcuDestroy'])->name('destroy');
+            Route::put('{mcu}',    [MinersDokumenController::class, 'mcuUpdate'])->name('update');
+            Route::delete('{mcu}', [MinersDokumenController::class, 'mcuDestroy'])
+                ->middleware('can:admin')->name('destroy');
 
-            Route::post('{pengajuan}/nama',       [MinersController::class,'mcuTambahNama'])->name('nama.tambah');
-            Route::delete('{pengajuan}/nama/{mcu}', [MinersController::class,'mcuHapusNama'])->name('nama.hapus');
-            Route::put('{pengajuan}/hasil/{mcu}', [MinersController::class,'mcuIsiHasil'])->name('hasil');
-
-            Route::post('{pengajuan}/ajukan', [MinersController::class,'ajukanMcu'])->name('ajukan');
-            Route::post('{pengajuan}/tinjau', [MinersController::class,'tinjauMcu'])->name('tinjau');
-            Route::post('{pengajuan}/paraf',  [MinersController::class,'parafMcu'])->name('paraf');
+            Route::post('{mcu}/orang',          [MinersDokumenController::class, 'mcuTambahOrang'])->name('orang.tambah');
+            Route::delete('{mcu}/orang/{orang}', [MinersDokumenController::class, 'mcuHapusOrang'])->name('orang.hapus');
+            Route::post('{mcu}/orang/{orang}/hasil',   [MinersDokumenController::class, 'mcuHasil'])->name('hasil');
+            Route::post('{mcu}/orang/{orang}/rujukan', [MinersDokumenController::class, 'mcuRujukan'])->name('rujukan');
+            Route::post('{mcu}/tindak',         [MinersDokumenController::class, 'mcuTindak'])->name('tindak');
         });
 
-        /* Pengajuan induksi — kembar dengan pengajuan MCU di atas, dan
-           didaftarkan lebih dahulu daripada `{paspor}` untuk alasan yang
-           sama: `authority/induksi` cocok pula dengan pola
-           `authority/{paspor}`. */
         Route::prefix('induksi')->name('induksi.')->group(function () {
-            Route::get('/',   [MinersController::class,'induksiIndex'])->name('index');
-            Route::post('/',  [MinersController::class,'induksiStore'])->name('store');
+            Route::get('/',  [MinersDokumenController::class, 'induksiIndex'])->name('index');
+            Route::post('/', [MinersDokumenController::class, 'induksiStore'])->name('store');
 
-            Route::put('{pengajuan}',    [MinersController::class,'induksiUpdate'])->name('update');
-            Route::delete('{pengajuan}', [MinersController::class,'induksiDestroy'])->name('destroy');
+            Route::put('{induksi}',    [MinersDokumenController::class, 'induksiUpdate'])->name('update');
+            Route::delete('{induksi}', [MinersDokumenController::class, 'induksiDestroy'])
+                ->middleware('can:admin')->name('destroy');
 
-            Route::post('{pengajuan}/nama',             [MinersController::class,'induksiTambahNama'])->name('nama.tambah');
-            Route::delete('{pengajuan}/nama/{induksi}', [MinersController::class,'induksiHapusNama'])->name('nama.hapus');
-            Route::put('{pengajuan}/hasil/{induksi}',   [MinersController::class,'induksiIsiHasil'])->name('hasil');
-
-            Route::post('{pengajuan}/ajukan', [MinersController::class,'ajukanInduksiPengajuan'])->name('ajukan');
-            Route::post('{pengajuan}/tinjau', [MinersController::class,'tinjauInduksiPengajuan'])->name('tinjau');
-            Route::post('{pengajuan}/paraf',  [MinersController::class,'parafInduksi'])->name('paraf');
+            Route::post('{induksi}/orang',           [MinersDokumenController::class, 'induksiTambahOrang'])->name('orang.tambah');
+            Route::delete('{induksi}/orang/{orang}', [MinersDokumenController::class, 'induksiHapusOrang'])->name('orang.hapus');
+            Route::post('{induksi}/orang/{orang}/nilai', [MinersDokumenController::class, 'induksiNilai'])->name('nilai');
+            Route::post('{induksi}/tindak',          [MinersDokumenController::class, 'induksiTindak'])->name('tindak');
         });
 
-        /* Riwayat per tahap, urut mengikuti alurnya. Didaftarkan
-           sebelum {paspor} — `miners/riwayat/...` cocok pula dengan
-           pola itu.
+        Route::prefix('permit')->name('permit.')->group(function () {
+            Route::get('/',  [MinersDokumenController::class, 'permitIndex'])->name('index');
+            Route::post('/', [MinersDokumenController::class, 'permitStore'])->name('store');
 
-           Empat nama rute tersendiri, bukan satu rute berparameter.
-           Sebabnya bukan gaya: RuteInertiaTest memanggil SETIAP nama
-           rute terdaftar tanpa parameter untuk memastikan halamannya
-           benar-benar Inertia. Satu rute berparameter memaksa uji itu
-           menyimpan daftar parameter contoh — dan daftar semacam itu
-           adalah tempat pertama yang tertinggal saat rutenya berubah. */
+            Route::put('{permit}',    [MinersDokumenController::class, 'permitUpdate'])->name('update');
+            Route::delete('{permit}', [MinersDokumenController::class, 'permitDestroy'])
+                ->middleware('can:admin')->name('destroy');
+
+            Route::post('{permit}/berkas', [MinersDokumenController::class, 'permitBerkas'])->name('berkas');
+            Route::post('{permit}/cabut',  [MinersDokumenController::class, 'permitCabut'])->name('cabut');
+            Route::post('{permit}/tindak', [MinersDokumenController::class, 'permitTindak'])->name('tindak');
+        });
+
+        Route::prefix('simper')->name('simper.')->group(function () {
+            Route::get('/',  [MinersDokumenController::class, 'simperIndex'])->name('index');
+            Route::post('/', [MinersDokumenController::class, 'simperStore'])->name('store');
+
+            Route::put('{simper}',    [MinersDokumenController::class, 'simperUpdate'])->name('update');
+            Route::delete('{simper}', [MinersDokumenController::class, 'simperDestroy'])
+                ->middleware('can:admin')->name('destroy');
+
+            Route::post('{simper}/unit',          [MinersDokumenController::class, 'simperUnit'])->name('unit.tambah');
+            Route::put('{simper}/unit/{unit}',    [MinersDokumenController::class, 'simperUnitUbah'])->name('unit.ubah');
+            Route::delete('{simper}/unit/{unit}', [MinersDokumenController::class, 'simperUnitHapus'])
+                ->middleware('can:admin')->name('unit.hapus');
+
+            Route::post('{simper}/tindak', [MinersDokumenController::class, 'simperTindak'])->name('tindak');
+            Route::post('{simper}/ajuan',  [MinersDokumenController::class, 'ajuanStore'])->name('ajuan.store');
+        });
+
+        Route::prefix('ajuan')->name('ajuan.')->group(function () {
+            Route::post('{ajuan}/unit',   [MinersDokumenController::class, 'ajuanUnit'])->name('unit');
+            Route::post('{ajuan}/tindak', [MinersDokumenController::class, 'ajuanTindak'])->name('tindak');
+            Route::delete('{ajuan}',      [MinersDokumenController::class, 'ajuanDestroy'])
+                ->middleware('can:admin')->name('destroy');
+        });
+
+        /* Riwayat per tahap, urut mengikuti alurnya.
+         *
+         * Lima nama rute tersendiri, bukan satu rute berparameter.
+         * Sebabnya bukan gaya: RuteInertiaTest memanggil SETIAP nama
+         * rute terdaftar tanpa parameter untuk memastikan halamannya
+         * benar-benar Inertia. Satu rute berparameter memaksa uji itu
+         * menyimpan daftar parameter contoh — dan daftar semacam itu
+         * adalah tempat pertama yang tertinggal saat rutenya berubah. */
         foreach (['mcu', 'induksi', 'mine-permit', 'mine-license', 'authority'] as $tahap) {
             Route::get('riwayat/'.$tahap, [MinersController::class, 'riwayat'])
                 ->defaults('tahap', $tahap)
                 ->name('riwayat.'.$tahap);
         }
 
-        /* Daftar menyilang orang: antrean di meja saya, SIMPER
-           lanjutan, rujukan, dan kartu siap cetak.
-
-           Satu nama rute per jenis, bukan satu rute berparameter —
-           alasannya sama dengan riwayat di atas: RuteInertiaTest
-           memanggil SETIAP nama rute terdaftar tanpa parameter, dan
-           satu rute berparameter memaksa uji itu menyimpan daftar
-           parameter contoh yang akan tertinggal saat jenisnya berubah.
-
-           Didaftarkan SEBELUM rute ber-{paspor}: `miners/daftar/...`
-           cocok pula dengan pola `miners/{paspor}`. */
+        /* Daftar menyilang orang — antrean di meja saya, SIMPER
+           lanjutan, rujukan, dan kartu siap cetak. Satu nama rute per
+           jenis, dengan alasan yang sama seperti riwayat di atas. */
         foreach ([
             'outstanding-mcu', 'outstanding-permit', 'outstanding-simper', 'outstanding-induksi',
             'penambahan-unit', 'upgrade-simper', 'perpanjangan',
@@ -302,55 +328,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->name('daftar.'.$jenis);
         }
 
-        /* Pemantauan masa berlaku kartu — halaman tersendiri, sebab
+        /* Pemantauan masa berlaku — halaman tersendiri, sebab
            pertanyaannya berbeda dari daftar orang: bukan "siapa saja
            pekerja kita" melainkan "siapa yang hari ini tidak boleh
-           masuk". Didaftarkan SEBELUM rute ber-{paspor} supaya
-           "kedaluwarsa" tidak terbaca sebagai nomor paspor. */
-        Route::get('kedaluwarsa', [MinersController::class,'kedaluwarsa'])->name('kedaluwarsa');
+           masuk". */
+        Route::get('kedaluwarsa', [MinersController::class, 'kedaluwarsa'])->name('kedaluwarsa');
 
-        /* Unggah berkas SIM lalu baca masa berlakunya. Menjawab JSON,
-           bukan Inertia: pemanggilnya sebuah kolom pada formulir yang
-           sedang diisi, dan memuat ulang halamannya akan membuang
-           seluruh isian lain yang belum tersimpan. */
-        Route::post('sim', [MinersController::class,'unggahSim'])->name('sim.unggah');
-        Route::post('lampiran', [MinersController::class,'unggahLampiran'])->name('lampiran.unggah');
+        Route::get('/',  [MinersController::class, 'index'])->name('index');
+        Route::post('/', [MinersController::class, 'store'])->name('store');
 
-        Route::get('{paspor}',         [MinersController::class,'show'])->name('show');
-        Route::put('{paspor}',         [MinersController::class,'update'])->name('update');
-        Route::delete('{paspor}',      [MinersController::class,'destroy'])
+        Route::get('{pekerja}',    [MinersController::class, 'show'])->name('show');
+        Route::put('{pekerja}',    [MinersController::class, 'update'])->name('update');
+        Route::delete('{pekerja}', [MinersController::class, 'destroy'])
             ->middleware('can:admin')->name('destroy');
-
-        Route::post('{paspor}/sertifikat',              [MinersController::class,'simpanSertifikat'])->name('sertifikat.simpan');
-        Route::delete('{paspor}/sertifikat/{sertifikat}', [MinersController::class,'hapusSertifikat'])->name('sertifikat.hapus');
-
-        /* MCU yang dicatat LANGSUNG pada orangnya, tanpa surat pengajuan:
-           pekerja baru dan pemeriksaan khusus. Namanya sengaja dibedakan
-           dari miners.mcu.* di atas — keduanya menyimpan hasil MCU,
-           tetapi yang satu bagian dari rombongan yang disetujui bersama
-           dan yang satu berdiri sendiri. */
-        Route::post('{paspor}/mcu',        [MinersController::class,'simpanMcu'])->name('mcuLangsung.simpan');
-        Route::delete('{paspor}/mcu/{mcu}', [MinersController::class,'hapusMcu'])->name('mcuLangsung.hapus');
-
-        Route::post('{paspor}/kartu',          [MinersController::class,'simpanKartu'])->name('kartu.simpan');
-        Route::put('{paspor}/kartu/{kartu}',    [MinersController::class,'ubahKartu'])->name('kartu.ubah');
-        Route::put('{paspor}/kartu/{kartu}/lampiran', [MinersController::class,'lekatkanLampiran'])->name('kartu.lampiran');
-        Route::delete('{paspor}/kartu/{kartu}', [MinersController::class,'hapusKartu'])->name('kartu.hapus');
-        Route::post('{paspor}/kartu/{kartu}/ajukan', [MinersController::class,'ajukanKartu'])->name('kartu.ajukan');
-        Route::post('{paspor}/kartu/{kartu}/tinjau', [MinersController::class,'tinjauKartu'])->name('kartu.tinjau');
-        Route::post('{paspor}/kartu/{kartu}/paraf',  [MinersController::class,'parafKartu'])->name('kartu.paraf');
-        Route::get('{paspor}/kartu/{kartu}/cetak',   [MinersController::class,'cetakPermit'])->name('permit.cetak');
-
-        /* Unit SIMPER — satu baris per unit yang boleh dikemudikan,
-           masing-masing dengan nilai dan berkas ujinya sendiri.
-           Penghapusan menuntut admin, sama seperti penghapusan merusak
-           lainnya di aplikasi ini. */
-        Route::post('{paspor}/kartu/{kartu}/unit',        [MinersController::class,'simpanUnitKartu'])->name('kartu.unit.simpan');
-        Route::put('{paspor}/kartu/{kartu}/unit/{unit}',  [MinersController::class,'ubahUnitKartu'])->name('kartu.unit.ubah');
-        Route::delete('{paspor}/kartu/{kartu}/unit/{unit}', [MinersController::class,'hapusUnitKartu'])->middleware('can:admin')->name('kartu.unit.hapus');
-
-        Route::post('{paspor}/induksi',              [MinersController::class,'simpanInduksi'])->name('induksi.simpan');
-        Route::delete('{paspor}/induksi/{induksi}',  [MinersController::class,'hapusInduksi'])->name('induksi.hapus');
     });
 
 

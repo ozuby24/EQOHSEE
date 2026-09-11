@@ -2,8 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Miners\Pekerja;
 use App\Models\{BiayaAkun, Company, Document, GudangLokasi, HazardReport,
-                Inspection, Paspor, Procedure, User};
+                Inspection, Procedure, User};
 use App\Support\LingkupLintas;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -105,14 +106,14 @@ class LingkupIupIujpTest extends TestCase
             'company_id' => $this->a->id, 'kode' => 'INS-A', 'judul' => 'Inspeksi Mitra A',
             'tanggal' => now()->toDateString(), 'status' => 'Selesai',
         ]);
-        Paspor::withoutGlobalScopes()->create([
+        Pekerja::withoutGlobalScopes()->create([
             'company_id' => $this->a->id, 'nama' => 'Pekerja Mitra A',
         ]);
 
         $this->masuk($this->iup);
 
         $this->assertSame(['Inspeksi Mitra A'], Inspection::pluck('judul')->all());
-        $this->assertSame(['Pekerja Mitra A'],  Paspor::pluck('nama')->all());
+        $this->assertSame(['Pekerja Mitra A'],  Pekerja::pluck('nama')->all());
     }
 
     /* ═══════════ ke atas: mitra membaca acuan induknya ═══════════ */
@@ -305,7 +306,20 @@ class LingkupIupIujpTest extends TestCase
     public function test_daftar_tabel_lintas_perusahaan_tetap_sempit(): void
     {
         $this->assertSame(
-            ['hazard_reports', 'inspections', 'paspor'],
+            [
+                'hazard_reports', 'inspections',
+
+                /* Enam tabel Miners menggantikan satu `paspor` yang
+                   lama. Bertambahnya BUKAN pelebaran lingkup: berkas
+                   yang dulu tersimpan sebagai satu tabel beserta
+                   anak-anaknya kini tersimpan sebagai enam tabel yang
+                   masing-masing berkolom company_id sendiri. Yang
+                   terlihat pemegang IUP tetap sama — pekerja mitranya
+                   beserta MCU, induksi, kartu, SIMPER, dan
+                   kompetensinya. */
+                'mnr_pekerja', 'mnr_mcu', 'mnr_induksi',
+                'mnr_permit', 'mnr_simper', 'mnr_kompetensi',
+            ],
             LingkupLintas::KE_INDUK);
 
         $this->assertSame(['procedures', 'documents'], LingkupLintas::KE_ANAK);

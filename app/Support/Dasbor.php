@@ -5,11 +5,13 @@ namespace App\Support;
 use App\Models\Investigasi\{Insiden, Tindakan as TindakanInvestigasi};
 use App\Models\Pembelian\Pesanan as PesananBeli;
 use App\Models\Pjp\{Laporan as LaporanPjp, Pjp};
+use App\Models\Miners\{Alur as MnrAlur, Pekerja as MnrPekerja, Permit as MnrPermit};
+use App\Support\Miners\Keadaan;
 use App\Models\{
     AngkutMuatan, BiayaRealisasi, Document, GeoBacaan, GudangBarang,
     HazardReport, Inspection, IzinKerja, KoObject, LedakRencana,
     LingkunganPantau, MineOperationalRecord, MinerbaConservationRecord,
-    Paspor, PasporKartu, Procedure, SmkpAudit, SmkpFinding,
+    Procedure, SmkpAudit, SmkpFinding,
     TpkkpAssessment, WaterLog, WorkOrder, EnergyFuelLog
 };
 use Illuminate\Support\Carbon;
@@ -160,14 +162,16 @@ final class Dasbor
                 'modul' => 'miners', 'nama' => 'Masa Berlaku Berkas',
                 'ket'   => 'MCU, permit, atau SIMPER sudah lewat',
                 'nilai' => self::berkasHabis(),
-                'total' => Paspor::count(),
+                'total' => MnrPekerja::count(),
                 'rute'  => 'miners.kedaluwarsa', 'nada' => 'gawat',
             ],
             [
                 'modul' => 'miners', 'nama' => 'Kartu Menunggu Tinjauan',
                 'ket'   => 'Diajukan, belum diputus',
-                'nilai' => PasporKartu::where('status', Alur::DIAJUKAN)->count(),
-                'total' => PasporKartu::count(),
+                'nilai' => MnrPermit::query()->whereIn('id', MnrAlur::query()
+                    ->where('dokumen', 'permit')->where('keadaan', 'menunggu')
+                    ->select('dokumen_id'))->count(),
+                'total' => MnrPermit::count(),
                 'rute'  => 'miners.riwayat.mine-permit', 'nada' => 'ingat',
             ],
 
@@ -349,10 +353,27 @@ final class Dasbor
      */
     private static function berkasHabis(): int
     {
-        $orang = Paspor::with(['kartu', 'mcu', 'company'])->get();
-        $baris = PemantauanBerkas::baris($orang);
+        /* Dihitung dari keempat berkasnya sekaligus, dan yang dibaca
+           adalah tanggal EFEKTIF: kartu yang MCU-nya sudah lewat ikut
+           terhitung meski tanggal cetaknya masih panjang. Itu memang
+           angka yang berlaku di gerbang, dan bukan angka yang dapat
+           dibaca dari satu kolom mana pun. */
+        return MnrPekerja::query()
+            ->with(['mcu', 'induksi', 'permit.mcuOrang', 'simper.permit.mcuOrang'])
+            ->get()
+            ->filter(function (MnrPekerja $p) {
+                foreach ([
+                    Keadaan::mcu($p->mcu->first()),
+                    Keadaan::induksi($p->induksi->first()),
+                    Keadaan::permit($p->permit->first()),
+                    Keadaan::simper($p->simper->first()),
+                ] as $k) {
+                    if ($k === Keadaan::HABIS) return true;
+                }
 
-        return PemantauanBerkas::ringkas($baris)['habis'];
+                return false;
+            })
+            ->count();
     }
 
     /**

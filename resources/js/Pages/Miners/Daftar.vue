@@ -1,11 +1,16 @@
 <script setup lang="ts">
 /**
- * Pemantauan masa berlaku.
+ * Daftar pekerja beserta keadaan keempat berkasnya.
  *
- * Menjawab "siapa yang hari ini tidak boleh masuk, dan apa yang harus
- * diurus" — bukan "siapa saja pekerja kita". Karena itu yang ditampilkan
- * bukan seluruh orang melainkan yang berkasnya bermasalah, dan sebab
- * tiap kartu gugur ditulis sebagai kalimat, bukan diwakili warna saja.
+ * KEEMPATNYA BERDAMPINGAN, bukan diringkas menjadi satu kolom. Yang
+ * menentukan boleh tidaknya seseorang masuk memang keadaan terburuknya
+ * — satu angka — tetapi satu angka tidak memberi tahu apa yang harus
+ * diurus. Orang yang tertahan karena MCU dan orang yang tertahan karena
+ * SIMPOL sama-sama merah, dan yang harus dikerjakan berbeda sama sekali.
+ *
+ * Penyaringan dikerjakan server. Daftar pekerja dapat tumbuh melewati
+ * satu layar, dan penyaring yang hanya bekerja atas baris yang sudah
+ * terkirim akan diam-diam menyembunyikan sisanya.
  */
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
@@ -17,34 +22,35 @@ const props = propHalaman();
 const baris = computed<any[]>(() => (props.baris ?? []) as any[]);
 
 const cari       = ref(String(props.saring?.cari ?? ''));
-const jenis      = ref(String(props.saring?.jenis ?? ''));
-const keadaan    = ref(String(props.saring?.keadaan ?? ''));
 const status     = ref(String(props.saring?.status ?? ''));
-const perusahaan = ref(String(props.saring?.perusahaan ?? ''));
+const keadaan    = ref(String(props.saring?.keadaan ?? ''));
+const departemen = ref(String(props.saring?.departemen ?? ''));
 
 let tunda: ReturnType<typeof setTimeout> | undefined;
 
-watch([cari, jenis, keadaan, status, perusahaan], () => {
+/* preserveState menahan kotak isian tetap terisi di tengah pengetikan;
+   tanpanya tiap ketukan huruf memasang ulang komponennya. */
+watch([cari, status, keadaan, departemen], () => {
   clearTimeout(tunda);
 
   tunda = setTimeout(() => {
-    router.get('/miners/kedaluwarsa', {
+    router.get('/miners', {
       cari: cari.value || undefined,
-      jenis: jenis.value || undefined,
-      keadaan: keadaan.value || undefined,
       status: status.value || undefined,
-      perusahaan: perusahaan.value || undefined,
+      keadaan: keadaan.value || undefined,
+      departemen: departemen.value || undefined,
     }, { preserveState: true, preserveScroll: true, replace: true });
   }, 300);
 });
 
-const JENIS: [string, string][] = [
+const JENIS = [
   ['mcu', 'MCU'],
   ['induksi', 'Induksi'],
   ['permit', 'Mine Permit'],
   ['simper', 'SIMPER'],
-];
+] as const;
 
+/** Sebab kartu gugur, dijelaskan — bukan hanya diwarnai. */
 const SEBAB: Record<string, string> = {
   mcu:    'MCU habis lebih dahulu',
   simpol: 'SIMPOL habis lebih dahulu',
@@ -63,37 +69,14 @@ const SEBAB: Record<string, string> = {
         <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
       </div>
 
-      <Link href="/miners" class="eq-btn-lain">Daftar pekerja</Link>
-    </section>
-
-    <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      <div v-for="[kode, nama] in JENIS" :key="kode"
-           class="rounded-2xl bg-white border border-stone-100 shadow-card p-4">
-        <div class="text-[11px] font-semibold uppercase tracking-wide text-stone-400">{{ nama }}</div>
-
-        <dl class="mt-2 space-y-1 text-[11.5px]">
-          <div v-for="(label, k) in (props.KEADAAN ?? {})" :key="k" class="flex justify-between gap-2">
-            <dt class="text-stone-500">{{ label }}</dt>
-            <dd class="num font-semibold"
-                :class="Number(props.ringkas?.[kode]?.[k] ?? 0) > 0 && k !== 'berlaku'
-                  ? 'text-cam-ink' : 'text-stone-300'">
-              {{ props.ringkas?.[kode]?.[k] ?? 0 }}
-            </dd>
-          </div>
-        </dl>
-      </div>
+      <Link href="/miners/kedaluwarsa" class="eq-btn-lain">Pemantauan masa berlaku</Link>
     </section>
 
     <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
       <header class="px-5 py-3.5 border-b border-stone-100 flex flex-wrap items-center gap-3">
         <h3 class="text-[13.5px] font-bold text-cam-ink flex-1 min-w-0">
-          Perlu diurus <span class="font-normal text-stone-400">| {{ baris.length }} orang</span>
+          Pekerja <span class="font-normal text-stone-400">| {{ baris.length }} orang</span>
         </h3>
-
-        <select v-model="jenis" class="rounded-lg border-stone-200 text-[12px]" aria-label="Saring jenis berkas">
-          <option value="">Semua berkas</option>
-          <option v-for="(label, kode) in (props.JENIS ?? {})" :key="kode" :value="kode">{{ label }}</option>
-        </select>
 
         <select v-model="keadaan" class="rounded-lg border-stone-200 text-[12px]" aria-label="Saring keadaan">
           <option value="">Semua keadaan</option>
@@ -105,8 +88,13 @@ const SEBAB: Record<string, string> = {
           <option v-for="(label, kode) in (props.STATUS ?? {})" :key="kode" :value="kode">{{ label }}</option>
         </select>
 
-        <input v-model="cari" placeholder="Cari nama, NIK…"
-               class="rounded-lg border-stone-200 text-[12px] w-48" aria-label="Cari pekerja">
+        <select v-model="departemen" class="rounded-lg border-stone-200 text-[12px]" aria-label="Saring departemen">
+          <option value="">Semua departemen</option>
+          <option v-for="(nama, id) in (props.departemen ?? {})" :key="id" :value="id">{{ nama }}</option>
+        </select>
+
+        <input v-model="cari" placeholder="Cari nama, NIK, no induk…"
+               class="rounded-lg border-stone-200 text-[12px] w-56" aria-label="Cari pekerja">
       </header>
 
       <div class="overflow-x-auto">
@@ -115,9 +103,10 @@ const SEBAB: Record<string, string> = {
             <tr class="text-stone-400 border-b border-stone-200 bg-stone-50/70">
               <th class="px-4 py-2 font-semibold w-10">No</th>
               <th class="px-4 py-2 font-semibold">Nama</th>
+              <th class="px-4 py-2 font-semibold whitespace-nowrap">Jabatan</th>
               <th v-for="[, label] in JENIS" :key="label"
                   class="px-4 py-2 font-semibold whitespace-nowrap">{{ label }}</th>
-              <th class="px-4 py-2 font-semibold">Yang menghentikannya</th>
+              <th class="px-4 py-2 font-semibold whitespace-nowrap">Catatan</th>
             </tr>
           </thead>
 
@@ -129,12 +118,16 @@ const SEBAB: Record<string, string> = {
                 <Link :href="`/miners/${b.id}`" class="font-bold text-cam-lime-deep hover:underline">
                   {{ b.nama }}
                 </Link>
-                <div class="text-[10.5px] text-stone-400">{{ b.perusahaan || '—' }}</div>
+                <div class="text-[10.5px] text-stone-400">{{ b.nik || '—' }} · {{ b.departemen || '—' }}</div>
               </td>
 
+              <td class="px-4 py-2.5 text-stone-600">{{ b.jabatan || '—' }}</td>
+
               <td v-for="[kode] in JENIS" :key="kode" class="px-4 py-2.5">
-                <Lencana :keadaan="b[kode].keadaan" :label="props.KEADAAN?.[b[kode].keadaan]"
-                         :nada="props.NADA" :sisa="b[kode].sisa" />
+                <Lencana :keadaan="b[kode].keadaan"
+                         :label="props.KEADAAN?.[b[kode].keadaan]"
+                         :nada="props.NADA"
+                         :sisa="b[kode].sisa" />
               </td>
 
               <td class="px-4 py-2.5 text-[10.5px] text-stone-500">
@@ -143,8 +136,8 @@ const SEBAB: Record<string, string> = {
             </tr>
 
             <tr v-if="!baris.length">
-              <td colspan="7" class="px-4 py-10 text-center text-stone-400">
-                Tidak ada berkas yang perlu diurus dengan penyaring ini.
+              <td colspan="8" class="px-4 py-10 text-center text-stone-400">
+                Tidak ada pekerja yang cocok dengan penyaring ini.
               </td>
             </tr>
           </tbody>

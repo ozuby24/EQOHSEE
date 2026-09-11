@@ -164,22 +164,30 @@ class DasborTest extends TestCase
 
         $buat = function (int $n) {
             for ($i = 0; $i < $n; $i++) {
-                $p = \App\Models\Paspor::create([
+                $p = \App\Models\Miners\Pekerja::create([
                     'company_id' => $this->c->id, 'nama' => 'Dasbor'.uniqid(),
-                    'nik' => 'DB'.uniqid(), 'jabatan' => 'Operator', 'status' => 'aktif',
+                    'nik' => 'DB'.uniqid(), 'status' => 'aktif',
                 ]);
 
-                $p->mcu()->create([
-                    'tgl_periksa' => now(), 'tgl_expired' => now()->addYear(), 'hasil' => 'Fit',
+                $surat = \App\Models\Miners\Mcu::create([
+                    'company_id' => $this->c->id, 'tanggal' => now()->startOfDay(),
+                    'kepada' => 'Klinik', 'status' => 'selesai',
                 ]);
 
-                $k = $p->kartu()->create([
-                    'jenis' => \App\Support\AlurMiner::KARTU_PERMIT, 'nomor' => 'DB/'.uniqid(),
-                    'tgl_terbit' => now(), 'tgl_expired' => now()->addYear(),
+                $mcu = \App\Models\Miners\McuOrang::create([
+                    'mcu_id' => $surat->id, 'pekerja_id' => $p->id, 'nama' => $p->nama,
+                    'tanggal_periksa' => now()->startOfDay(),
+                    'berlaku_sampai'  => now()->startOfDay()->addYear(),
+                    'aktif' => true,
                 ]);
 
-                \App\Models\PasporKartu::whereKey($k->id)
-                    ->update(['status' => \App\Support\Alur::DISETUJUI]);
+                \App\Models\Miners\Permit::create([
+                    'company_id' => $this->c->id, 'pekerja_id' => $p->id,
+                    'mcu_orang_id' => $mcu->id, 'no_registrasi' => 'DB/'.uniqid(),
+                    'tanggal' => now()->startOfDay(),
+                    'berlaku_sampai' => now()->startOfDay()->endOfYear()->startOfDay(),
+                    'status' => 'terbit',
+                ]);
 
                 \App\Models\GudangBarang::create([
                     'company_id' => $this->c->id, 'kode' => 'BR'.uniqid(),

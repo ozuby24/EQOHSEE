@@ -44,6 +44,23 @@ final class Waktu
      * 18.00 WITA disapa "Selamat pagi" — salah delapan jam, dan justru
      * bagian halaman yang paling pertama dibaca orang.
      */
+    /**
+     * Tanggal WITA tengah malam dari isian formulir.
+     *
+     * Cast `date` Laravel memangkas jam saat DIBACA, tidak saat
+     * DITULIS — sehingga "2026-09-02T14:30" yang lolos aturan `date`
+     * tersimpan berikut jamnya pada kolom bertipe DATE. MySQL
+     * memangkasnya di tingkat kolom, SQLite tidak, dan kueri rentang
+     * karena itu menjawab BERBEDA di server dan di mesin penguji.
+     * Lihat KolomTanggalTest.
+     */
+    public static function tanggal(string|\DateTimeInterface|null $nilai): ?Carbon
+    {
+        if ($nilai === null || $nilai === '') return null;
+
+        return Carbon::parse($nilai, self::zona())->startOfDay();
+    }
+
     public static function sapaan(?Carbon $saat = null): string
     {
         $jam = (int) ($saat ?? self::kini())->format('G');

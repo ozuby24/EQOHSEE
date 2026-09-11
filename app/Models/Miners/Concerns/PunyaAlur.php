@@ -19,6 +19,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 trait PunyaAlur
 {
+    /** Kata pendek yang menandai jenis dokumen ini pada mnr_alur. */
+    public static function jenisDokumen(): string
+    {
+        return static::$jenisDokumen;
+    }
+
     public function alur(): HasMany
     {
         return $this->hasMany(Alur::class, 'dokumen_id')
