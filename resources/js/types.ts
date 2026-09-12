@@ -18,6 +18,18 @@ export interface Pengguna {
 
   /** Null bagi pengguna lintas perusahaan — bukan berarti datanya hilang. */
   perusahaan: string | null;
+
+  /**
+   * Perusahaan yang boleh dipilih. KOSONG bagi pengguna biasa.
+   *
+   * Kosong itu yang membedakan pemilih dari label: daftar berisi satu
+   * akan menggambar tombol yang dapat dibuka dan tidak dapat mengubah
+   * apa pun.
+   */
+  perusahaanPilihan?: { id: number; nama: string }[];
+
+  /** Perusahaan yang sedang dilihat; null berarti seluruhnya. */
+  perusahaanDilihat?: number | null;
 }
 
 /** Satu butir menu: label, alamat, dan apakah ia sedang dibuka. */

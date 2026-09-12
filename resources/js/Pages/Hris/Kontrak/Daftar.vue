@@ -496,7 +496,7 @@ const sedangPilih = ref<number | null>(null);
     </section>
   </div>
 
-  <Dialog :model="dialog" @batal="batal" @lanjut="lanjut" />
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>
 
 <style>

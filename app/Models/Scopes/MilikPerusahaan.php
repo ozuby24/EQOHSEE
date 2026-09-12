@@ -3,6 +3,7 @@
 namespace App\Models\Scopes;
 
 use App\Support\LingkupLintas;
+use App\Support\Perusahaan;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
@@ -19,9 +20,11 @@ use Illuminate\Database\Eloquent\Scope;
  * justru kebalikannya: melepas batas harus ditulis dengan tegas
  * (`withoutGlobalScope`), sehingga terlihat saat ditinjau.
  *
- * Administrator EQOHSEE menjangkau seluruh perusahaan; penyaringan
- * `?perusahaan=` yang sudah ada di beberapa modul tetap bekerja karena
- * scope ini tidak ikut campur bagi admin.
+ * Administrator EQOHSEE menjangkau seluruh perusahaan — KECUALI bila ia
+ * sedang memilih satu lewat pemilih di bilah atas, dan sepanjang itu ia
+ * dibatasi persis seperti pengguna perusahaan tersebut. Penyaringan
+ * `?perusahaan=` yang sudah ada di beberapa modul tetap bekerja di
+ * atasnya.
  *
  * Baris tanpa perusahaan (company_id NULL) terlihat oleh semua orang.
  * Itu bukan kelonggaran, melainkan arti kolomnya: baris yang belum
@@ -63,19 +66,35 @@ class MilikPerusahaan implements Scope
            Menyaring di situ akan membuat pekerjaan terjadwal diam-diam
            memproses sebagian data saja — kegagalan yang jauh lebih sulit
            dilacak daripada kebocoran yang sedang dicegah di sini. */
-        if (!$u || $u->isAdmin()) return;
+        if (!$u) return;
 
         $tabel = $model->getTable();
         $kolom = $tabel.'.company_id';
 
-        $builder->where(function (Builder $q) use ($kolom, $tabel, $u) {
+        /* Administrator yang sedang MELIHAT SATU PERUSAHAAN dibatasi
+           persis seperti pengguna perusahaan itu — termasuk keturunan
+           IUP/IUJP-nya. Tujuannya melihat apa yang mereka lihat, dan
+           batas yang lebih longgar daripada milik mereka akan
+           memperlihatkan halaman yang tidak pernah ada bagi siapa pun.
+
+           Pemeriksaan perannya diulang DI SINI, tidak diserahkan pada
+           Perusahaan::terpilih saja: lingkup data adalah tempat
+           terakhir yang menahan, dan ia tidak boleh bergantung pada
+           satu pemeriksaan pun yang berada di luar dirinya. */
+        $lihat = $u->isAdmin() ? Perusahaan::terpilih($u) : null;
+
+        if ($u->isAdmin() && $lihat === null) return;
+
+        $milik = $lihat ?? $u->company_id;
+
+        $builder->where(function (Builder $q) use ($kolom, $tabel, $milik) {
             $q->whereNull($kolom);
 
-            if (!$u->company_id) return;
+            if (!$milik) return;
 
-            $q->orWhere($kolom, $u->company_id);
+            $q->orWhere($kolom, $milik);
 
-            $saya = $u->company;
+            $saya = \App\Models\Company::withoutGlobalScopes()->find($milik);
             if (!$saya) return;
 
             /* Ke atas: baris induk saya, bila tabelnya memang dibuka
@@ -90,8 +109,8 @@ class MilikPerusahaan implements Scope
                dimuat ke memori: sebuah IUP dapat menaungi puluhan
                mitra. */
             if (LingkupLintas::keInduk($tabel)) {
-                $q->orWhereIn($kolom, \App\Models\Company::query()
-                    ->where('parent_id', $u->company_id)->select('id'));
+                $q->orWhereIn($kolom, \App\Models\Company::withoutGlobalScopes()
+                    ->where('parent_id', $milik)->select('id'));
             }
         });
     }

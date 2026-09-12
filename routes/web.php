@@ -7,6 +7,7 @@ use App\Http\Controllers\Hris\AbsensiController;
 use App\Http\Controllers\Hris\CutiController;
 use App\Http\Controllers\Hris\GajiController;
 use App\Http\Controllers\Hris\KontrakController;
+use App\Http\Controllers\PerusahaanDilihatController;
 use App\Http\Controllers\Hris\LemburController;
 use App\Http\Controllers\Hris\HrisController;
 use App\Http\Controllers\Hris\RosterController;
@@ -376,6 +377,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
      * pos jaga. Dilebur, satu daftar berkas K3 yang diminta Inspektur
      * Tambang harus dicari lewat layar penggajian.
      */
+    /* Perusahaan yang sedang dilihat seorang administrator.
+       Penjagaannya di Perusahaan::pilih dan sekali lagi di lingkup
+       datanya; di sini tidak ada pemeriksaan peran supaya tidak ada
+       dua sumber kebenaran yang dapat berselisih. */
+    Route::post('perusahaan-dilihat', PerusahaanDilihatController::class)
+        ->name('perusahaan.dilihat');
+
     Route::prefix('hris')->name('hris.')->group(function () {
 
         /* ---- Roster & shift ---- */

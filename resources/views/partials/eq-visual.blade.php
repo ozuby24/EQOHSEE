@@ -1142,14 +1142,140 @@ main a{transition:color .16s}
   box-shadow:0 0 0 3px rgba(245,124,0,.13)}
 @media (max-width:860px){.eq-cari{display:none}}
 
-/* ── Perusahaan yang sedang dilihat ── */
+/* ── Perusahaan yang sedang dilihat ──
+   LEBARNYA MENGIKUTI NAMANYA, TIDAK DIPATOK. Batas 190px yang dulu
+   ada memotong "PT Tampilan Pertambangan Jaya Persada" menjadi "PT
+   Tampilan Pertamb…", dan nama perusahaan adalah hal yang paling
+   tidak boleh ditebak-tebak pada aplikasi yang dipakai beberapa
+   perusahaan sekaligus. Batas atasnya kini mengikuti lebar layar dan
+   baru bekerja ketika bilahnya benar-benar sempit. */
 .eq-perusahaan{display:flex;align-items:center;gap:8px;height:40px;padding:0 13px;
   border-radius:12px;font-size:12.5px;font-weight:700;flex:none;
   color:var(--eq-judul,#0F1720);border:1px solid var(--eq-garis,#E4E8EC);
-  background:var(--eq-kartu,#fff);max-width:190px}
+  background:var(--eq-kartu,#fff);max-width:min(340px,32vw)}
 .eq-perusahaan svg{width:16px;height:16px;flex:none;color:var(--eq-aksen,#F57C00)}
 .eq-perusahaan span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:640px){.eq-perusahaan span{display:none}}
+
+/* ── Petunjuk pintasan di kotak cari ── */
+.eq-cari-kunci{flex:none;margin-left:auto;padding:3px 7px;border-radius:7px;
+  font-family:inherit;font-size:10.5px;font-weight:700;letter-spacing:.02em;
+  color:var(--eq-redup,#9AA5B1);background:var(--eq-dasar,#F6F7F9);
+  border:1px solid var(--eq-garis,#E4E8EC)}
+@media (max-width:1100px){.eq-cari-kunci{display:none}}
+:root[data-tema="gelap"] .eq-cari-kunci{background:rgba(255,255,255,.06);
+  border-color:rgba(255,255,255,.10);color:rgba(255,255,255,.45)}
+
+/* ── Akun di bilah atas ── */
+.eq-akun{position:relative;flex:none}
+
+.eq-akun-tombol{position:relative;display:block;padding:0;border:0;background:none;
+  cursor:pointer;border-radius:50%;line-height:0}
+.eq-akun-tombol:focus-visible{outline:2px solid var(--eq-aksen,#F57C00);outline-offset:3px}
+
+.eq-akun-avatar{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;
+  font-size:13px;font-weight:800;letter-spacing:.01em;color:#fff;
+  background:linear-gradient(140deg,var(--eq-aksen,#F57C00),var(--eq-aksen-gelap,#C75F00));
+  box-shadow:0 2px 10px -2px rgba(245,124,0,.5)}
+.eq-akun-foto{object-fit:cover}
+.eq-akun-avatar-besar{width:42px;height:42px;font-size:14px;flex:none}
+
+/* Titik hijau: penanda sesi aktif, bukan hiasan. Diberi cincin sewarna
+   bilahnya supaya ia terbaca sebagai lencana di atas avatar dan bukan
+   sebagai noda pada fotonya. */
+.eq-akun-titik{position:absolute;right:0;bottom:0;width:11px;height:11px;border-radius:50%;
+  background:#22C55E;border:2.5px solid var(--eq-kartu,#fff)}
+
+.eq-akun-panel{position:absolute;top:calc(100% + 8px);right:0;z-index:41;min-width:212px;
+  padding:6px;border-radius:14px;background:var(--eq-kartu,#fff);
+  border:1px solid var(--eq-garis,#E4E8EC);box-shadow:0 18px 44px -12px rgba(15,23,32,.22)}
+
+.eq-akun-kepala{display:flex;align-items:center;gap:10px;padding:8px 9px 11px;
+  margin-bottom:5px;border-bottom:1px solid var(--eq-garis,#E4E8EC)}
+.eq-akun-kepala strong{display:block;font-size:12.5px;font-weight:700;line-height:1.3;
+  color:var(--eq-judul,#0F1720);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eq-akun-kepala small{display:block;font-size:11px;color:var(--eq-redup,#9AA5B1)}
+
+.eq-akun-butir{display:flex;align-items:center;gap:9px;width:100%;padding:8px 9px;
+  border:0;border-radius:9px;background:none;font:inherit;font-size:12.5px;font-weight:600;
+  text-align:left;cursor:pointer;text-decoration:none;color:var(--eq-teks,#44505C)}
+.eq-akun-butir svg{width:16px;height:16px;flex:none;opacity:.65}
+.eq-akun-butir:hover{background:var(--eq-aksen-tipis,rgba(245,124,0,.10));
+  color:var(--eq-judul,#0F1720)}
+.eq-akun-butir:focus-visible{outline:2px solid var(--eq-aksen,#F57C00);outline-offset:-2px}
+.eq-akun-keluar:hover{background:rgba(220,38,38,.10);color:#B91C1C}
+
+:root[data-tema="gelap"] .eq-akun-panel{background:var(--eq-kartu,#141A21);
+  border-color:var(--eq-garis,rgba(255,255,255,.10));
+  box-shadow:0 18px 44px -12px rgba(0,0,0,.6)}
+:root[data-tema="gelap"] .eq-akun-kepala{border-bottom-color:rgba(255,255,255,.10)}
+:root[data-tema="gelap"] .eq-akun-kepala strong{color:var(--eq-judul,#E8ECF0)}
+:root[data-tema="gelap"] .eq-akun-butir{color:var(--eq-teks,#A8B2B8)}
+:root[data-tema="gelap"] .eq-akun-butir:hover{color:var(--eq-judul,#E8ECF0)}
+:root[data-tema="gelap"] .eq-akun-keluar:hover{background:rgba(220,38,38,.16);color:#F5A9A9}
+:root[data-tema="gelap"] .eq-akun-titik{border-color:var(--eq-kartu,#141A21)}
+
+/* ── Kartu semboyan di kaki bilah samping ──
+   DISEMBUNYIKAN LEBIH DAHULU DARIPADA APA PUN saat ruangnya menyempit:
+   ia hiasan, dan hiasan yang mendorong butir menu keluar dari layar
+   membuat butir itu tidak pernah ditemukan siapa pun. */
+.eq-semboyan{position:relative;margin-top:12px;border-radius:14px;overflow:hidden;
+  min-height:132px;display:flex;flex-direction:column;justify-content:flex-end;
+  padding:13px 14px 14px;isolation:isolate;background:#0A1114}
+.eq-semboyan-gambar{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  object-position:62% 30%;z-index:-2}
+.eq-semboyan-tirai{position:absolute;inset:0;z-index:-1;
+  background:linear-gradient(0deg,rgba(8,14,17,.93) 18%,rgba(8,14,17,.55) 58%,rgba(8,14,17,.2) 100%)}
+.eq-semboyan-teks{margin:0;font-size:12.5px;font-weight:800;line-height:1.34;color:#fff;
+  letter-spacing:-.01em;text-shadow:0 1px 10px rgba(0,0,0,.5)}
+.eq-semboyan-garis{display:block;width:52px;height:3px;margin-top:9px;border-radius:999px;
+  background:var(--eq-aksen,#F57C00)}
+
+body.eq-sempit .eq-semboyan{display:none}
+@media (max-height:760px){.eq-semboyan{display:none}}
+
+/* ── Pemilih perusahaan (administrator) ── */
+.eq-perusahaan-pilih{position:relative;flex:none}
+
+.eq-perusahaan-tombol{cursor:pointer;font-family:inherit;text-align:left;
+  transition:border-color .15s ease,box-shadow .15s ease}
+.eq-perusahaan-tombol:hover{border-color:var(--eq-aksen,#F57C00)}
+.eq-perusahaan-tombol:focus-visible{outline:none;border-color:var(--eq-aksen,#F57C00);
+  box-shadow:0 0 0 3px rgba(245,124,0,.13)}
+
+.eq-perusahaan-panah{width:14px;height:14px;margin-left:auto;opacity:.5;
+  color:var(--eq-judul,#0F1720);transition:transform .18s ease}
+.eq-perusahaan-buka .eq-perusahaan-panah{transform:rotate(180deg)}
+
+/* Tirai penutup: menangkap klik di mana pun supaya daftarnya tertutup.
+   Tanpa ini, daftar yang terbuka hanya dapat ditutup dengan menekan
+   tombolnya lagi — dan yang menekan di luar mengira aplikasinya
+   membeku. */
+.eq-perusahaan-tirai{position:fixed;inset:0;z-index:40}
+
+.eq-perusahaan-daftar{position:absolute;top:calc(100% + 6px);right:0;z-index:41;
+  min-width:100%;max-width:min(340px,80vw);max-height:min(380px,60vh);overflow-y:auto;
+  margin:0;padding:5px;list-style:none;border-radius:13px;
+  background:var(--eq-kartu,#fff);border:1px solid var(--eq-garis,#E4E8EC);
+  box-shadow:0 18px 44px -12px rgba(15,23,32,.22)}
+
+.eq-perusahaan-butir{display:block;width:100%;padding:8px 11px;border:0;border-radius:9px;
+  background:none;font:inherit;font-size:12.5px;font-weight:600;text-align:left;cursor:pointer;
+  color:var(--eq-teks,#44505C);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eq-perusahaan-butir:hover{background:var(--eq-aksen-tipis,rgba(245,124,0,.10));
+  color:var(--eq-judul,#0F1720)}
+.eq-perusahaan-butir:focus-visible{outline:2px solid var(--eq-aksen,#F57C00);outline-offset:-2px}
+
+.eq-perusahaan-kini{background:var(--eq-aksen-tipis,rgba(245,124,0,.13));
+  color:var(--eq-aksen,#F57C00)}
+
+:root[data-tema="gelap"] .eq-perusahaan-daftar{
+  background:var(--eq-kartu,#141A21);
+  border-color:var(--eq-garis,rgba(255,255,255,.10));
+  box-shadow:0 18px 44px -12px rgba(0,0,0,.6)}
+:root[data-tema="gelap"] .eq-perusahaan-butir{color:var(--eq-teks,#A8B2B8)}
+:root[data-tema="gelap"] .eq-perusahaan-butir:hover{color:var(--eq-judul,#E8ECF0)}
+:root[data-tema="gelap"] .eq-perusahaan-panah{color:var(--eq-judul,#E8ECF0)}
 
 /* ── Pasangan mode gelap ──
    Ketiganya memakai --eq-kartu dan --eq-garis yang memang sudah

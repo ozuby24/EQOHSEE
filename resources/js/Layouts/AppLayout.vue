@@ -9,7 +9,7 @@
  * atau lambat, dan bedanya baru ketahuan saat orang membandingkan dua
  * halaman berdampingan.
  */
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import type { PropBersama } from '../types';
 
@@ -46,6 +46,61 @@ const pengumuman = computed(() => halaman.props.pengumuman ?? 0);
 
 const lacisTerbuka = ref(false);
 const sempit       = ref(false);
+
+/* ─────────── Akun ─────────── */
+
+const akunTerbuka = ref(false);
+
+/**
+ * Inisial: satu huruf dari dua kata pertama namanya.
+ *
+ * Bukan satu huruf saja. Pada daftar pengguna sungguhan, "Budi" dan
+ * "Bambang" menghasilkan lingkaran yang sama persis — dan lingkaran
+ * itulah satu-satunya penanda akun siapa yang sedang dibuka.
+ */
+const inisial = computed(() => (pengguna.value?.nama ?? '?')
+  .split(/\s+/).filter(Boolean).slice(0, 2)
+  .map((k) => k.charAt(0).toUpperCase()).join('') || '?');
+
+/* ─────────── Pintasan pencarian ─────────── */
+
+const kotakCari = ref<HTMLInputElement | null>(null);
+
+/**
+ * Lambang pintasannya mengikuti papan ketiknya.
+ *
+ * "Ctrl + K" yang dicetak pada Mac menyebut tombol yang memang ada
+ * tetapi bukan yang bekerja — dan yang menekannya lalu menyimpulkan
+ * pintasannya rusak.
+ */
+const kunciCari = ref('Ctrl K');
+
+/* ─────────── Perusahaan yang sedang dilihat ─────────── */
+
+const perusahaanTerbuka = ref(false);
+
+const pilihanPerusahaan = computed(() => pengguna.value?.perusahaanPilihan ?? []);
+
+/**
+ * Nama yang ditulis di bilah atas.
+ *
+ * "Semua perusahaan" bukan teks cadangan melainkan keadaan yang sah:
+ * administrator yang belum menyempitkan pandangannya memang sedang
+ * melihat seluruhnya, dan kotak kosong di tempat itu terbaca sebagai
+ * data yang gagal dimuat.
+ */
+const namaPerusahaan = computed(() => pengguna.value?.perusahaan ?? 'Semua perusahaan');
+
+function gantiPerusahaan(id: number | null) {
+  perusahaanTerbuka.value = false;
+
+  // Seluruh halaman dimuat ulang, bukan sebagian: yang berubah adalah
+  // lingkup DATA, sehingga tiap angka di layar — termasuk yang di bilah
+  // samping dan di dasbor — harus dihitung ulang. Menjaga sebagian
+  // keadaan akan menyisakan angka perusahaan sebelumnya di samping
+  // angka perusahaan yang baru.
+  router.post('/perusahaan-dilihat', { perusahaan: id });
+}
 
 /**
  * Panel pemindah modul.
@@ -118,7 +173,34 @@ onMounted(() => {
   } catch { /* mode privat */ }
 
   if (sempit.value) document.body.classList.add('eq-sempit');
+
+  // Lambangnya ditentukan papan ketiknya, bukan ditebak: pada Mac yang
+  // bekerja adalah Cmd, dan mencetak "Ctrl" di situ menyebut tombol
+  // yang memang ada tetapi tidak melakukan apa pun.
+  if (/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)) {
+    kunciCari.value = '\u2318 K';
+  }
+
+  window.addEventListener('keydown', pintasan);
 });
+
+onBeforeUnmount(() => window.removeEventListener('keydown', pintasan));
+
+function pintasan(e: KeyboardEvent) {
+  if (e.key?.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault();
+    kotakCari.value?.focus();
+    return;
+  }
+
+  // Escape menutup apa pun yang sedang terbuka. Tanpa ini, panel yang
+  // terbuka hanya dapat ditutup dengan menekan ke luar — dan yang
+  // menekan Escape lebih dahulu menyimpulkan panelnya macet.
+  if (e.key === 'Escape') {
+    akunTerbuka.value = false;
+    perusahaanTerbuka.value = false;
+  }
+}
 
 function lipat() {
   sempit.value = !sempit.value;
@@ -165,8 +247,23 @@ function keluar() {
     <div v-show="lacisTerbuka" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 lg:hidden"
          @click="lacisTerbuka = false"></div>
 
+    <!-- SETINGGI LAYAR DAN MELEKAT, bukan setinggi halaman.
+
+         Dengan `lg:static` di dalam pembungkus `min-h-screen`, bilah ini
+         ikut memanjang mengikuti isi halaman: pada halaman sepanjang
+         1300px ia menjadi setinggi 1300px, dan kakinya — tombol bantuan,
+         kartu semboyan, tombol lipat — berhenti di titik yang tidak
+         pernah terlihat tanpa menggulir sampai dasar halaman. Daftar
+         menunya pun tidak pernah bergulir sendiri, sebab ia tidak pernah
+         kehabisan ruang.
+
+         Dipaku setinggi layar, kakinya selalu terlihat dan menunya
+         bergulir di dalam dirinya sendiri. `sticky`, bukan `fixed`:
+         fixed melepasnya dari aliran dan kolom isi di sebelahnya
+         kehilangan lebarnya. -->
     <aside id="eqSidebar"
-           class="brand-gradient fixed lg:static inset-y-0 left-0 z-40 w-[248px] shrink-0 flex flex-col
+           class="brand-gradient fixed lg:sticky lg:top-0 lg:h-screen inset-y-0 left-0 z-40
+                  w-[248px] shrink-0 flex flex-col
                   text-white/70 transition-transform duration-300"
            :class="lacisTerbuka ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
 
@@ -242,16 +339,16 @@ function keluar() {
 
       <!-- ── Kaki bilah samping ──
 
-           Chip pengguna turun ke sini dari kepala halaman. Kepala
-           halaman sekarang menyapa orangnya dengan namanya; menaruh
-           nama yang sama sekali lagi di sebelah kanan membuatnya
-           tercetak dua kali pada satu baris pandang.
+           Chip pengguna NAIK dari sini ke bilah atas, dan tempatnya
+           diisi kartu semboyan bergambar. Yang naik hanyalah
+           lingkarannya: sapaan di bilah atas sudah menyebut namanya,
+           dan nama yang tercetak dua kali pada satu baris pandang
+           adalah persis alasan chip itu dulu diturunkan ke sini.
 
-           Kartu "Butuh Bantuan?" yang dulu di sini dipindah menjadi
-           satu tombol saja. Kartu setinggi 96px yang isinya tidak
-           pernah berubah memakan ruang yang dibutuhkan menu, dan menu
-           yang terpotong membuat butir terbawahnya tidak pernah
-           ditemukan. -->
+           Kartu "Butuh Bantuan?" yang dulu di sini tetap berupa satu
+           tombol. Kartu setinggi 96px yang isinya tidak pernah berubah
+           memakan ruang yang dibutuhkan menu, dan menu yang terpotong
+           membuat butir terbawahnya tidak pernah ditemukan. -->
       <div class="eq-sisi-kaki">
         <Link href="/bantuan" class="eq-bantuan-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
@@ -261,23 +358,15 @@ function keluar() {
           Butuh bantuan?
         </Link>
 
-        <div v-if="pengguna" class="eq-sisi-akun">
-          <a href="/personalia" class="eq-sisi-akun-tautan" title="Data diri">
-            <img v-if="pengguna.avatar" class="eq-sisi-avatar eq-sisi-avatar-foto"
-                 :src="pengguna.avatar" alt="" width="34" height="34">
-            <span v-else class="eq-sisi-avatar">{{ pengguna.nama.charAt(0).toUpperCase() }}</span>
-            <span class="eq-sisi-akun-teks">
-              <strong>{{ pengguna.nama }}</strong>
-              <small>{{ pengguna.peran }}</small>
-            </span>
-          </a>
-
-          <button type="button" class="eq-sisi-keluar" aria-label="Keluar" @click="keluar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
-                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/>
-            </svg>
-          </button>
+        <!-- Semboyan bergambar. Disembunyikan saat bilahnya dilipat dan
+             saat tingginya tidak cukup — kartu hiasan tidak boleh
+             mendorong satu pun butir menu keluar dari layar. -->
+        <div class="eq-semboyan" aria-hidden="true">
+          <img class="eq-semboyan-gambar" src="/brand/tambang.jpg" alt=""
+               loading="lazy" decoding="async">
+          <div class="eq-semboyan-tirai" />
+          <p class="eq-semboyan-teks">People<br>Safety<br>Productivity<br>A Better Tomorrow</p>
+          <span class="eq-semboyan-garis" />
         </div>
 
         <div class="eq-sisi-bawah">
@@ -321,8 +410,13 @@ function keluar() {
                stroke-linecap="round" aria-hidden="true">
             <circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/>
           </svg>
-          <input v-model="cari" type="search" aria-label="Cari pekerja"
+          <input ref="kotakCari" v-model="cari" type="search" aria-label="Cari pekerja"
                  placeholder="Cari pekerja menurut nama, NIK, atau jabatan…">
+
+          <!-- Petunjuk pintasannya ditulis DI TEMPAT pintasannya bekerja.
+               Ditaruh di halaman bantuan, ia hanya ditemukan orang yang
+               sudah tahu pintasan itu ada. -->
+          <kbd class="eq-cari-kunci" aria-hidden="true">{{ kunciCari }}</kbd>
         </form>
 
         <div class="eq-topbar-aksi">
@@ -352,20 +446,112 @@ function keluar() {
             </a>
           </div>
 
-          <!-- Perusahaan yang sedang dilihat. Bukan pemilih: lingkup
-               perusahaan ditentukan akun, bukan dipilih di layar, dan
-               tombol yang terlihat dapat ditekan tetapi tidak mengubah
-               apa pun lebih membingungkan daripada label biasa.
+          <!-- Perusahaan yang sedang dilihat.
 
-               Pengguna lintas perusahaan berbunyi "Semua perusahaan",
-               bukan kosong — kotak kosong terbaca sebagai data hilang. -->
-          <span v-if="pengguna" class="eq-perusahaan" :title="pengguna.perusahaan ?? 'Semua perusahaan'">
+               PEMILIH HANYA BAGI YANG BENAR-BENAR PUNYA PILIHAN.
+               Administrator menjangkau seluruh perusahaan dan dapat
+               menyempitkannya ke salah satu; pengguna biasa terikat
+               satu perusahaan dan mendapat label, bukan tombol —
+               tombol yang dapat ditekan tetapi tidak mengubah apa pun
+               lebih membingungkan daripada tulisan.
+
+               Yang kosong berbunyi "Semua perusahaan", bukan dibiarkan
+               kosong: kotak kosong terbaca sebagai data yang hilang. -->
+          <div v-if="pengguna && pilihanPerusahaan.length > 1" class="eq-perusahaan-pilih"
+               :class="{ 'eq-perusahaan-buka': perusahaanTerbuka }">
+            <button type="button" class="eq-perusahaan eq-perusahaan-tombol"
+                    :aria-expanded="perusahaanTerbuka" aria-haspopup="listbox"
+                    @click="perusahaanTerbuka = !perusahaanTerbuka">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 20V7.5L12 4l8 3.5V20M9 20v-4.5h6V20M8 10.5h.01M12 10.5h.01M16 10.5h.01"/>
+              </svg>
+              <span>{{ namaPerusahaan }}</span>
+              <svg class="eq-perusahaan-panah" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m6 9.5 6 6 6-6"/>
+              </svg>
+            </button>
+
+            <div v-if="perusahaanTerbuka" class="eq-perusahaan-tirai" @click="perusahaanTerbuka = false" />
+
+            <ul v-if="perusahaanTerbuka" class="eq-perusahaan-daftar" role="listbox">
+              <li>
+                <button type="button" class="eq-perusahaan-butir"
+                        :class="{ 'eq-perusahaan-kini': !pengguna.perusahaanDilihat }"
+                        role="option" :aria-selected="!pengguna.perusahaanDilihat"
+                        @click="gantiPerusahaan(null)">
+                  Semua perusahaan
+                </button>
+              </li>
+
+              <li v-for="p in pilihanPerusahaan.filter((x) => x.id !== null)" :key="p.id ?? 'semua'">
+                <button type="button" class="eq-perusahaan-butir"
+                        :class="{ 'eq-perusahaan-kini': pengguna.perusahaanDilihat === p.id }"
+                        role="option" :aria-selected="pengguna.perusahaanDilihat === p.id"
+                        @click="gantiPerusahaan(p.id)">
+                  {{ p.nama }}
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          <span v-else-if="pengguna" class="eq-perusahaan" :title="namaPerusahaan">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M4 20V7.5L12 4l8 3.5V20M9 20v-4.5h6V20M8 10.5h.01M12 10.5h.01M16 10.5h.01"/>
             </svg>
-            <span>{{ pengguna.perusahaan ?? 'Semua perusahaan' }}</span>
+            <span>{{ namaPerusahaan }}</span>
           </span>
+
+          <!-- ── Akun ──
+
+               HANYA LINGKARANNYA, tanpa nama di sebelahnya. Sapaan di
+               ujung kiri bilah ini sudah menyebut nama orangnya; nama
+               yang sama dicetak lagi di ujung kanan membuatnya muncul
+               dua kali pada satu baris pandang yang sama. Namanya tetap
+               ada — di dalam menunya, tempat ia memang dibutuhkan untuk
+               memastikan akun siapa yang sedang dibuka. -->
+          <div v-if="pengguna" class="eq-akun" :class="{ 'eq-akun-buka': akunTerbuka }">
+            <button type="button" class="eq-akun-tombol" :aria-expanded="akunTerbuka"
+                    aria-haspopup="menu" :aria-label="`Akun ${pengguna.nama}`"
+                    @click="akunTerbuka = !akunTerbuka">
+              <img v-if="pengguna.avatar" class="eq-akun-avatar eq-akun-foto"
+                   :src="pengguna.avatar" alt="" width="38" height="38">
+              <span v-else class="eq-akun-avatar">{{ inisial }}</span>
+              <span class="eq-akun-titik" aria-hidden="true" />
+            </button>
+
+            <div v-if="akunTerbuka" class="eq-perusahaan-tirai" @click="akunTerbuka = false" />
+
+            <div v-if="akunTerbuka" class="eq-akun-panel" role="menu">
+              <div class="eq-akun-kepala">
+                <span class="eq-akun-avatar eq-akun-avatar-besar">{{ inisial }}</span>
+                <span class="min-w-0">
+                  <strong>{{ pengguna.nama }}</strong>
+                  <small>{{ pengguna.peran }}</small>
+                </span>
+              </div>
+
+              <a href="/personalia" class="eq-akun-butir" role="menuitem">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M19 20v-1.6a5 5 0 0 0-5-5h-4a5 5 0 0 0-5 5V20"/>
+                  <path d="M12 11.5a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/>
+                </svg>
+                Data diri
+              </a>
+
+              <button type="button" class="eq-akun-butir eq-akun-keluar" role="menuitem"
+                      @click="akunTerbuka = false; keluar()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/>
+                </svg>
+                Keluar
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 

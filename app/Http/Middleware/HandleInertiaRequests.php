@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
 use App\Support\Berkas;
+use App\Support\Perusahaan;
 
 /**
  * Data yang dibagikan ke seluruh halaman Inertia.
@@ -43,7 +44,22 @@ class HandleInertiaRequests extends Middleware
                    mana pun — admin lintas perusahaan — memulangkan null,
                    dan kepala halamannya menuliskan "Semua perusahaan"
                    alih-alih kotak kosong yang terbaca sebagai galat. */
-                'perusahaan' => $u->company?->name,
+                /* Bagi administrator, null berarti "semua perusahaan"
+                   dan harus tetap null — jatuh ke nama perusahaannya
+                   sendiri membuat "seluruhnya" tidak dapat dibedakan
+                   dari "perusahaan saya", dan pilihan yang tidak dapat
+                   dibedakan dari pilihan lain adalah pilihan yang
+                   tidak pernah terlihat berpindah. */
+                'perusahaan' => $u->isAdmin()
+                    ? Perusahaan::namaTerpilih($u)
+                    : $u->company?->name,
+
+                /* Daftar KOSONG bagi pengguna biasa, dan bilah atasnya
+                   menggambar label biasa alih-alih pemilih. Pemilih
+                   yang dapat dibuka tetapi tidak dapat mengubah apa pun
+                   lebih membingungkan daripada tulisan. */
+                'perusahaanPilihan'  => Perusahaan::dapatDipilih($u),
+                'perusahaanDilihat'  => Perusahaan::terpilih($u),
             ] : null,
 
             'menu' => fn () => $this->menu($u),
