@@ -1163,30 +1163,32 @@ main a{transition:color .16s}
 @media (max-width:640px){.eq-perusahaan span{display:none}}
 
 /* ── Bilah pindah sub-halaman (beranda modul) ── */
-.eq-pindah{display:flex;flex-wrap:wrap;gap:8px}
+.eq-pindah{display:flex;gap:8px}
 
-/* SATU BARIS YANG DIGESER, BUKAN ENAM BARIS YANG MEMBUNGKUS.
-   Pada layar sempit, empat belas pil membungkus menjadi enam baris
-   setinggi hampir 300px — mendorong isi halaman sampai ke luar layar,
-   sehingga yang pertama dilihat orang yang membuka modul bukan isinya
-   melainkan daftar isinya. Digeser mendatar, tingginya tetap satu
-   baris berapa pun jumlah pilnya.
+/* SATU BARIS YANG DIGESER — PADA LEBAR MANA PUN, bukan hanya di layar
+   sempit.
+   Versi pertama aturan ini memakai titik henti 900px, dan itu mengulang
+   kesalahan yang sama dengan kisi ubin: yang diukur lebar LAYAR,
+   padahal pilnya duduk di kolom isi yang sudah dipotong bilah samping
+   selebar 248px. Pada layar 1024px — di atas ambang, jadi membungkus —
+   sembilan belas pil menjadi LIMA baris setinggi 240px, mendorong isi
+   halaman jauh ke bawah persis seperti sebelumnya.
 
-   Tepinya diberi bayangan yang memudar supaya terlihat masih ada yang
-   di kanan: baris yang terpotong rapi di tepi layar terbaca sebagai
-   baris yang memang berakhir di situ. */
-@media (max-width:900px){
-  .eq-pindah{
-    flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x proximity;
-    padding-bottom:4px;margin-inline:-4px;padding-inline:4px;
-    -webkit-overflow-scrolling:touch;
-    scrollbar-width:none;
-    -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);
-            mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);
-  }
-  .eq-pindah::-webkit-scrollbar{display:none}
-  .eq-pindah-pil{scroll-snap-align:start;flex:none}
+   Digeser pada tiap lebar, tingginya selalu satu baris berapa pun
+   jumlah pil dan berapa pun lebar layarnya. Tepinya diberi bayangan
+   yang memudar supaya terlihat masih ada yang di kanan: baris yang
+   terpotong rapi di tepi terbaca sebagai baris yang memang berakhir di
+   situ. */
+.eq-pindah{
+  flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x proximity;
+  padding-bottom:4px;margin-inline:-4px;padding-inline:4px;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 32px),transparent);
+          mask-image:linear-gradient(90deg,#000 calc(100% - 32px),transparent);
 }
+.eq-pindah::-webkit-scrollbar{display:none}
+.eq-pindah-pil{scroll-snap-align:start;flex:none}
 
 .eq-pindah-pil{display:inline-flex;align-items:center;gap:7px;
   padding:8px 14px 8px 11px;border-radius:11px;font-size:12.5px;font-weight:600;

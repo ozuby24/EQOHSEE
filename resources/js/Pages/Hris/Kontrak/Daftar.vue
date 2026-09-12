@@ -171,7 +171,7 @@ const sedangPilih = ref<number | null>(null);
 
   <div class="space-y-4">
 
-    <section class="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+    <section class="ubin-kisi">
       <UbinAngka :angka="ringkas.berjalan ?? 0" label="Kontrak berjalan">
         <template #ikon><Ikon nama="berjalan" /></template>
       </UbinAngka>

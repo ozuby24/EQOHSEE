@@ -176,7 +176,7 @@ const rinci = ref<number | null>(null);
             </div>
           </div>
 
-          <div v-if="ringkas.orang" class="mt-4 grid gap-2 grid-cols-2 lg:grid-cols-3">
+          <div v-if="ringkas.orang" class="mt-4 ubin-kisi ubin-kisi-lebar">
             <UbinAngka :angka="ringkas.orang" label="Orang">
               <template #ikon><Ikon nama="orang" /></template>
             </UbinAngka>

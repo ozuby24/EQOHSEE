@@ -78,7 +78,46 @@ const lebar = computed(() => {
 </template>
 
 <style>
+/**
+ * Kisi ubin, yang lebar kolomnya ditentukan RUANG YANG ADA — bukan
+ * lebar layar.
+ *
+ * Titik henti Tailwind mengukur viewport, sedangkan ubinnya duduk di
+ * kolom isi yang sudah dipotong bilah samping selebar 248px. Pada
+ * layar 1024px — titik `lg:` — yang tersisa hanya sekitar 700px, dan
+ * `lg:grid-cols-5` membaginya menjadi ubin selebar 129px. Labelnya
+ * lalu membungkus sampai TIGA baris dan angkanya terdorong jauh ke
+ * bawah: sepuluh dari lima belas ubin pada satu halaman, tanpa satu
+ * pun galat.
+ *
+ * `auto-fit` dengan lebar terkecil menghapus seluruh kelas persoalan
+ * itu. Tidak ada titik henti yang perlu dicocokkan dengan lebar bilah
+ * samping, dan ubinnya tidak pernah lebih sempit daripada isinya —
+ * termasuk pada bilah yang dilipat, pada laci ponsel, dan pada lebar
+ * mana pun yang belum terpikirkan.
+ */
+.ubin-kisi {
+  display: grid;
+  gap: .625rem;
+  grid-template-columns: repeat(auto-fit, minmax(var(--ubin-min, 150px), 1fr));
+}
+
+/* Untuk ubin berisi rupiah penuh, yang menuntut lebih banyak ruang. */
+.ubin-kisi-lebar { --ubin-min: 216px; }
+
+/* Di bawah lebar ini, dua kolom lebih terbaca daripada satu kolom
+   melar — ubin selebar layar menyisakan angka kecil di tengah padang
+   kosong. */
+@media (max-width: 420px) { .ubin-kisi { --ubin-min: 132px; } }
+
 .ubin {
+  /* Ubinnya menjadi wadah ukur bagi isinya sendiri. Itu yang membuat
+     tata letaknya dapat menanggapi LEBAR UBIN — bukan lebar layar,
+     yang sudah dua kali terbukti menyesatkan di berkas ini: bilah
+     samping memakan 248px, sehingga titik henti viewport selalu
+     berselisih dengan ruang yang sebenarnya ada. */
+  container-type: inline-size;
+
   border-radius: 1rem;
   padding: .95rem 1rem .85rem;
   background: var(--ubin-latar, #FAFAF9);
@@ -127,6 +166,19 @@ const lebar = computed(() => {
   line-height: 1.1;
   letter-spacing: -.015em;
   color: var(--ubin-angka, #1C1917);
+}
+
+/* UBIN SEMPIT MENUMPUK IKONNYA DI ATAS TEKS.
+   Bersebelahan, ikon selebar 42px beserta selanya memakan 52px dari
+   ubin yang mungkin hanya 150px — menyisakan 98px untuk label seperti
+   "Belum tap pulang", yang lalu membungkus tiga baris dan mendorong
+   angkanya jauh ke bawah. Ditumpuk, labelnya mendapat seluruh lebar
+   ubin. */
+@container (max-width: 172px) {
+  .ubin-atas { flex-direction: column; align-items: flex-start; gap: .5rem; }
+  .ubin-ikon { width: 34px; height: 34px; border-radius: .65rem; }
+  .ubin-ikon svg { width: 17px; height: 17px; }
+  .ubin-angka { font-size: 20px; }
 }
 
 .ubin-catatan {

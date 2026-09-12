@@ -104,7 +104,7 @@ const perluDitindak = computed(() =>
         <span class="num text-[11px] text-stone-400">{{ props.tanggal }}</span>
       </header>
 
-      <div class="grid gap-2.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+      <div class="ubin-kisi">
         <UbinAngka :angka="jadwal.kerja ?? 0" label="Total pekerja" nada="serius">
           <template #ikon><Ikon nama="orang" /></template>
         </UbinAngka>
@@ -138,7 +138,7 @@ const perluDitindak = computed(() =>
           <span class="text-[11px] text-stone-400">shift berjalan</span>
         </header>
 
-        <div class="grid gap-2.5 grid-cols-2 sm:grid-cols-3">
+        <div class="ubin-kisi">
           <UbinAngka :angka="hadir.hadir ?? 0" label="Hadir" nada="baik" :dari="jadwal.kerja ?? 0">
             <template #ikon><Ikon nama="hadir" /></template>
           </UbinAngka>
@@ -240,7 +240,7 @@ const perluDitindak = computed(() =>
         <Link href="/hris/absensi/mesin" class="text-[11px] text-sky-700 hover:underline">Kelola mesin</Link>
       </header>
 
-      <div class="grid gap-2.5 grid-cols-2 sm:grid-cols-4">
+      <div class="ubin-kisi">
         <UbinAngka :angka="mesin.aktif ?? 0" label="Mesin aktif" nada="netral">
           <template #ikon><Ikon nama="mesin" /></template>
         </UbinAngka>

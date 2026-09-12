@@ -154,7 +154,7 @@ const kartu = computed(() => {
         </button>
       </div>
 
-      <div class="mt-4 grid gap-2.5 grid-cols-2 sm:grid-cols-4 lg:grid-cols-7">
+      <div class="mt-4 ubin-kisi">
         <UbinAngka v-for="k in kartu" :key="k.kunci"
                    :angka="ringkas[k.kunci] ?? 0" :label="k.label" :nada="k.nada" :dari="k.dari">
           <template #ikon><Ikon :nama="k.ikon" /></template>

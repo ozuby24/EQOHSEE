@@ -269,7 +269,14 @@ withDefaults(defineProps<{
   align-items: flex-start;
   justify-content: space-between;
   gap: 1.5rem;
-  flex-wrap: wrap;
+
+  /* TIDAK MEMBUNGKUS. Dibiarkan membungkus, kolom kanan — cap tanggal
+     dan tagline — jatuh ke barisnya sendiri begitu kolom kiri melebar,
+     dan kopnya tumbuh setinggi kedua kolom dijumlahkan: 370px pada
+     layar 1024px, dengan rongga foto kosong menganga di tengahnya.
+     Keduanya kini menyusut bersama; taglinenya memang sudah berbatas
+     lebar, dan di bawah 760px ia disembunyikan sama sekali. */
+  flex-wrap: nowrap;
 }
 
 .kop-label {
@@ -485,6 +492,11 @@ withDefaults(defineProps<{
   .kop-isi { padding: .95rem 1.1rem 1.05rem; }
   .kop-tagline { display: none; }
   .kop-kanan { align-items: flex-start; margin-left: 0; }
+
+  /* Di bawah ambang ini taglinenya sudah hilang, sehingga kolom kanan
+     tinggal satu cap kecil — dan membungkus menjadi pilihan yang lebih
+     baik daripada memeras judulnya. */
+  .kop-baris { flex-wrap: wrap; }
 
   /* Tirainya dipekatkan sampai ujung kanan: tanpa tagline, sisi itu
      tidak lagi punya tulisan yang perlu kontras — tetapi fotonya

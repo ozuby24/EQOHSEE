@@ -262,6 +262,46 @@ class LapisanTampilanTest extends TestCase
             'Halaman menggambar spanduknya sendiri di bawah kop kerangka: '.implode(', ', $liar));
     }
 
+    public function test_kisi_ubin_tidak_memakai_titik_henti_viewport(): void
+    {
+        $liar = [];
+
+        foreach ($this->halamanVue() as $f) {
+            $isi = file_get_contents($f->getPathname());
+
+            if (! str_contains($isi, 'UbinAngka')) continue;
+
+            /* TITIK HENTI TAILWIND MENGUKUR LAYAR, BUKAN RUANG YANG ADA.
+               Ubinnya duduk di kolom isi yang sudah dipotong bilah
+               samping selebar 248px, sehingga `lg:` — 1024px — hanya
+               menyisakan sekitar 700px. `lg:grid-cols-5` di situ
+               membaginya menjadi ubin selebar 129px, labelnya membungkus
+               tiga baris, dan angkanya terdorong jauh ke bawah: sepuluh
+               dari lima belas ubin pada satu halaman, tanpa satu pun
+               galat. Kesalahan yang sama terulang pada bilah pilnya.
+
+               `.ubin-kisi` memakai auto-fit dengan lebar terkecil, dan
+               karena itu tidak punya titik henti yang perlu dicocokkan
+               dengan lebar bilah samping. */
+            /* Yang diperiksa hanya kisi yang BENAR-BENAR BERISI UBIN.
+               Kisi kartu — dua kolom berisi panel besar — memang tepat
+               memakai titik henti viewport, dan menandainya di sini
+               hanya akan membuat penjaga ini diabaikan orang. */
+            preg_match_all('/class="([^"]*\bgrid\b[^"]*)"(.{0,260})/s', $isi, $c);
+
+            foreach ($c[1] as $i => $kelas) {
+                if (! str_contains($c[2][$i], '<UbinAngka')) continue;
+                if (! preg_match('/\b(?:sm|md|lg|xl):grid-cols-\d+/', $kelas)) continue;
+
+                $liar[] = $this->nama($f).': '.trim($kelas);
+            }
+        }
+
+        $this->assertSame([], $liar,
+            'Kisi berisi ubin memakai titik henti viewport alih-alih .ubin-kisi: '
+            .implode(' | ', $liar));
+    }
+
     /**
      * BATAS PENJAGA DI ATAS, disebutkan supaya tidak disalahpahami.
      *

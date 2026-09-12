@@ -106,7 +106,7 @@ function rupiah(n: number | null | undefined): string {
         </Link>
       </header>
 
-      <div class="mt-3 grid gap-2 grid-cols-2 lg:grid-cols-4">
+      <div class="mt-3 ubin-kisi">
         <UbinAngka :angka="saldo.hak ?? 0" label="Hak setahun">
           <template #ikon><Ikon nama="hak" /></template>
         </UbinAngka>
