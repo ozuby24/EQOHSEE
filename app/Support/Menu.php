@@ -259,6 +259,18 @@ final class Menu
         'Kontrak Kerja' => [
           ['PKWT & PKWTT', 'hris.kontrak.index', 'hris/kontrak'],
         ],
+
+        /* Layanan mandiri diletakkan PALING BAWAH, bukan paling atas.
+           Bagi staf HR yang membuka modul ini sepanjang hari, halaman
+           "milik saya" adalah yang paling jarang dituju; yang paling
+           sering justru layar yang mengurus orang lain. */
+        'Milik Saya' => [
+          ['Beranda Saya',   'hris.saya.index',     'hris/saya'],
+          ['Kehadiran Saya', 'hris.saya.kehadiran', 'hris/saya/kehadiran'],
+          ['Cuti Saya',      'hris.saya.cuti',      'hris/saya/cuti'],
+          ['Slip Gaji Saya', 'hris.saya.gaji',      'hris/saya/gaji'],
+          ['Kontrak Saya',   'hris.saya.kontrak',   'hris/saya/kontrak'],
+        ],
       ],
     ],
 

@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Hris;
 use App\Http\Controllers\Controller;
 use App\Models\Hr\{Absensi, Cuti, JenisCuti, Kontrak, Lembur, Roster, SlipGaji};
 use App\Support\Berkas;
-use App\Support\Hr\{Ess, KebijakanCuti, KontrakPkwt};
+use App\Support\Hr\{Ess, JalurCuti, KebijakanCuti, KontrakPkwt};
 use App\Support\Waktu;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -57,7 +57,10 @@ class SayaController extends Controller
 
         $hariIni = $jadwal->firstWhere(fn (Roster $x) => $x->tanggal->isSameDay($hari));
 
-        $saldo = KebijakanCuti::ringkas($p, (int) $hari->format('Y'));
+        $tahunan = $this->cutiTahunan();
+        $saldo   = $tahunan
+            ? KebijakanCuti::ringkas($p, $tahunan, (int) $hari->format('Y'))
+            : ['hak' => 0, 'carry_over' => 0, 'terpakai' => 0, 'tertunda' => 0, 'sisa' => 0, 'tersedia' => 0];
 
         $kontrak = Ess::milik(Kontrak::query(), $p)->hidup()->orderByDesc('mulai')->first();
 
@@ -175,8 +178,12 @@ class SayaController extends Controller
 
         if ($p === null) return $this->tanpaPekerja('Cuti Saya');
 
-        $tahun = (int) Waktu::kini()->format('Y');
-        $saldo = KebijakanCuti::ringkas($p, $tahun);
+        $tahun   = (int) Waktu::kini()->format('Y');
+        $tahunan = $this->cutiTahunan();
+
+        $saldo = $tahunan
+            ? KebijakanCuti::ringkas($p, $tahunan, $tahun)
+            : ['hak' => 0, 'carry_over' => 0, 'terpakai' => 0, 'tertunda' => 0, 'sisa' => 0, 'tersedia' => 0];
 
         $riwayat = Ess::milik(Cuti::query(), $p)
             ->with('jenis')->orderByDesc('mulai')->get();
@@ -212,7 +219,7 @@ class SayaController extends Controller
                 'hari'    => $c->hari,
                 'status'  => $c->status,
                 'alasan'  => $c->alasan,
-                'catatan' => $c->catatan_tindakan,
+                'catatan' => $c->catatan_tindak,
             ])->values(),
 
             'jenis' => JenisCuti::query()->orderBy('nama')
@@ -328,7 +335,118 @@ class SayaController extends Controller
         ]);
     }
 
+    /**
+     * Ajukan cuti untuk DIRI SENDIRI.
+     *
+     * Pekerjanya TIDAK diambil dari formulir. Layar admin mengirim
+     * `pekerja_id` karena memang ia mengajukan atas nama orang lain; di
+     * sini, menerima `pekerja_id` berarti seorang pekerja dapat
+     * mengajukan cuti atas nama rekannya dengan menyunting satu kolom
+     * tersembunyi — dan cuti itu akan memotong saldo rekannya.
+     *
+     * Seluruh aturan kebijakannya dipakai ulang apa adanya: tumpang
+     * tindih, saldo, bukti wajib, dan hari kerja yang benar-benar
+     * terpotong menurut rosternya sendiri. Ditulis ulang di sini,
+     * pengajuan lewat layanan mandiri akan tunduk pada aturan yang
+     * berbeda dari pengajuan lewat layar admin — dan yang berbeda
+     * diam-diam adalah yang paling sulit dijelaskan kemudian.
+     */
+    public function ajukanCuti(Request $r)
+    {
+        $p = Ess::pekerja($r->user());
+
+        if ($p === null) {
+            return back()->withErrors(['jenis_cuti_id' => 'Akun ini belum tertaut ke data pekerja.']);
+        }
+
+        $data = $r->validate([
+            'jenis_cuti_id' => ['required', 'integer'],
+            'mulai'         => ['required', 'date'],
+            'selesai'       => ['required', 'date'],
+            'alasan'        => ['nullable', 'string', 'max:500'],
+            'bukti'         => Berkas::ATURAN_BUKTI,
+        ]);
+
+        $jenis = JenisCuti::query()->find($data['jenis_cuti_id']);
+
+        if ($jenis === null) {
+            return back()->withErrors(['jenis_cuti_id' => 'Jenis cuti tidak dikenal.']);
+        }
+
+        $mulai   = Waktu::tanggal($data['mulai']);
+        $selesai = Waktu::tanggal($data['selesai']);
+
+        if ($jenis->perlu_bukti && ! $r->hasFile('bukti')) {
+            return back()->withErrors([
+                'bukti' => $jenis->nama.' menuntut bukti — '.($jenis->dasar ?: 'sesuai kebijakan').'.',
+            ]);
+        }
+
+        if (($alasan = KebijakanCuti::periksa($p, $jenis, $mulai, $selesai)) !== null) {
+            return back()->withErrors(['mulai' => $alasan]);
+        }
+
+        $n = KebijakanCuti::hariTerpotong($p, $mulai, $selesai);
+
+        Cuti::create([
+            'company_id'    => $p->company_id,
+            'pekerja_id'    => $p->id,
+            'jenis_cuti_id' => $jenis->id,
+            'mulai'         => $mulai,
+            'selesai'       => $selesai,
+            'hari'          => $n['hari'],
+            'kalender'      => $n['kalender'],
+            'alasan'        => $data['alasan'] ?? null,
+            'berkas_bukti'  => $r->hasFile('bukti') ? Berkas::simpan($r->file('bukti'), 'hris/cuti') : null,
+            'status'        => 'menunggu',
+            'diajukan_oleh' => $r->user()?->id,
+            'diajukan_pada' => Waktu::kiniSimpan(),
+        ]);
+
+        return back()->with('sukses', sprintf(
+            'Pengajuan %s %s – %s dikirim: %d hari kerja terpotong dari %d hari kalender.',
+            $jenis->nama, $mulai->toDateString(), $selesai->toDateString(), $n['hari'], $n['kalender'],
+        ));
+    }
+
+    /**
+     * Batalkan pengajuan SAYA SENDIRI.
+     *
+     * Barisnya dicari lewat Ess::satu, bukan lewat pengikatan model
+     * rute: `Cuti $cuti` pada tanda tangan metode akan menemukan baris
+     * siapa pun yang idnya diketik di alamat.
+     */
+    public function batalkanCuti(Request $r, int $id)
+    {
+        $p = Ess::pekerja($r->user());
+
+        if ($p === null) return back()->withErrors(['cuti' => 'Akun ini belum tertaut ke data pekerja.']);
+
+        $cuti = Ess::satu(Cuti::query(), $p, $id);
+
+        if ($cuti === null) return back()->withErrors(['cuti' => 'Pengajuan tidak ditemukan.']);
+
+        $galat = JalurCuti::batalkan($cuti, $r->user());
+
+        return $galat === null
+            ? back()->with('sukses', 'Pengajuan dibatalkan.')
+            : back()->withErrors(['cuti' => $galat]);
+    }
+
     /* ═══════════════════ perkakas ═══════════════════ */
+
+    /**
+     * Jenis "cuti tahunan", yang saldonya ditampilkan di beranda.
+     *
+     * Hanya SATU jenis yang punya saldo untuk dipamerkan: izin khusus
+     * pasal 93 timbul dari kejadiannya dan tidak pernah bersaldo.
+     * Menampilkan saldo gabungan dari seluruh jenis akan memberi angka
+     * yang tidak dapat dipakai mengajukan apa pun.
+     */
+    private function cutiTahunan(): ?JenisCuti
+    {
+        return JenisCuti::query()->where('kunci', 'tahunan')->first();
+    }
 
     private function tanpaPekerja(string $judul)
     {

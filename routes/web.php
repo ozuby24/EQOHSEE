@@ -7,6 +7,7 @@ use App\Http\Controllers\Hris\AbsensiController;
 use App\Http\Controllers\Hris\CutiController;
 use App\Http\Controllers\Hris\GajiController;
 use App\Http\Controllers\Hris\KontrakController;
+use App\Http\Controllers\Hris\SayaController;
 use App\Http\Controllers\PerusahaanDilihatController;
 use App\Http\Controllers\Hris\LemburController;
 use App\Http\Controllers\Hris\HrisController;
@@ -494,6 +495,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->middleware('can:admin')->name('kunci');
 
             Route::get('/', [GajiController::class, 'index'])->name('index');
+        });
+
+        /* ---- Layanan mandiri pekerja ----
+
+           SELURUH PENJAGAANNYA DI SayaController LEWAT Ess, bukan di
+           middleware. Middleware peran akan menjawab "boleh membuka
+           halaman ini atau tidak"; yang perlu dijawab di sini adalah
+           "baris siapa yang boleh terbaca", dan jawabannya berbeda bagi
+           tiap orang yang membukanya. */
+        Route::prefix('saya')->name('saya.')->group(function () {
+            Route::get('kehadiran', [SayaController::class, 'kehadiran'])->name('kehadiran');
+            Route::get('cuti',      [SayaController::class, 'cuti'])->name('cuti');
+            Route::get('gaji',      [SayaController::class, 'gaji'])->name('gaji');
+            Route::get('kontrak',   [SayaController::class, 'kontrak'])->name('kontrak');
+
+            Route::post('cuti',             [SayaController::class, 'ajukanCuti'])->name('cuti.ajukan');
+            Route::post('cuti/{id}/batal',  [SayaController::class, 'batalkanCuti'])->name('cuti.batal');
+
+            Route::get('/', [SayaController::class, 'index'])->name('index');
         });
 
         /* ---- Kontrak kerja ---- */
