@@ -16,14 +16,23 @@ class SystemController extends Controller
 {
     public function index()
     {
+        /* TIDAK SATU PUN UBIN BOLEH KOSONG.
+           Nilai yang kosong menggambar kotak berlabel tanpa isi, dan
+           kotak semacam itu terbaca sebagai halaman yang gagal dimuat —
+           bukan sebagai pengaturan yang belum diisi. Terlihat pada satu
+           pemasangan yang `.env`-nya memuat APP_NAME=production tanpa
+           APP_ENV: ubin "Lingkungan" berdiri kosong di samping tujuh
+           ubin yang terisi, dan yang tampak rusak adalah halamannya. */
+        $isi = fn ($v) => trim((string) $v) === '' ? 'belum diisi' : (string) $v;
+
         $server = [
-            'Aplikasi'     => config('app.name'),
+            'Aplikasi'     => $isi(config('app.name')),
             'Laravel'      => app()->version(),
             'PHP'          => PHP_VERSION,
-            'Basis data'   => config('database.default'),
-            'Lingkungan'   => app()->environment(),
+            'Basis data'   => $isi(config('database.default')),
+            'Lingkungan'   => $isi(app()->environment()),
             'Mode debug'   => config('app.debug') ? 'AKTIF' : 'nonaktif',
-            'Zona waktu'   => config('app.timezone'),
+            'Zona waktu'   => $isi(config('app.timezone')),
             'Waktu server' => now()->format('d M Y · H:i:s'),
         ];
         try {

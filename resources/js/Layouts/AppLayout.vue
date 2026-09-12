@@ -431,7 +431,18 @@ function keluar() {
         </div>
       </div>
 
-      <nav class="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+      <!-- BOLEH MENYUSUT, TIDAK BOLEH MEMBESAR.
+
+           Dengan `flex-1`, nav menyerap seluruh sisa ruang kolom —
+           sehingga pada modul bermenu pendek seperti Administrasi,
+           antara butir terakhir dan kaki bilah terbentang rongga gelap
+           setinggi sepertiga layar. Yang mengisi rongga itu tidak ada,
+           dan sudut kiri bawah terbaca sepi.
+
+           Sekarang sisanya jatuh ke kaki, tempat kartu semboyan
+           memuainya. Menu yang panjang tetap menyusut dan bergulir
+           seperti sebelumnya. -->
+      <nav class="min-h-0 shrink basis-auto grow-0 overflow-y-auto px-3 py-3">
         <template v-for="(g, i) in menu.grup" :key="i">
           <p v-if="g.nama" class="px-3 mt-3 mb-1 text-[9.5px] font-semibold uppercase
                                   tracking-[0.12em] text-white/55">{{ g.nama }}</p>

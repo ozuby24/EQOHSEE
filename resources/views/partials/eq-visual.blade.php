@@ -149,7 +149,8 @@ body{
 .eq-merek small{font-size:9.5px;color:rgba(255,255,255,.42);margin-top:3px;letter-spacing:.005em}
 
 /* ── Kaki bilah samping ── */
-.eq-sisi-kaki{flex:none;padding:10px 12px 14px}
+.eq-sisi-kaki{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;
+  padding:10px 12px 14px}
 .eq-bantuan{display:flex;gap:11px;align-items:flex-start;
   background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);
   border-radius:14px;padding:13px}
@@ -161,7 +162,7 @@ body{
 .eq-bantuan-teks strong{display:block;font-size:12.5px;color:#fff;font-weight:700}
 .eq-bantuan-teks small{display:block;font-size:11px;color:rgba(255,255,255,.45);
   margin-top:2px;line-height:1.45}
-.eq-bantuan-btn{display:flex;align-items:center;justify-content:center;gap:8px;
+.eq-bantuan-btn{flex:none;display:flex;align-items:center;justify-content:center;gap:8px;
   margin-top:9px;padding:10px 12px;border-radius:12px;
   font-size:12px;font-weight:700;color:#fff;
   background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.11);
@@ -169,8 +170,12 @@ body{
 .eq-bantuan-btn:hover{background:rgba(255,255,255,.17);border-color:rgba(255,255,255,.2)}
 .eq-bantuan-btn svg{width:15px;height:15px}
 
-.eq-sisi-bawah{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;
-  margin-top:13px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)}
+.eq-sisi-bawah{flex:none;display:flex;align-items:flex-end;justify-content:space-between;gap:10px;
+  /* `auto`, bukan angka tetap: sisa ruang yang tidak terserap kartu
+     semboyan — kartunya berbatas 260px — jatuh DI ATAS baris ini,
+     sehingga hak cipta dan tombol lipat selalu memeluk dasar kolom
+     alih-alih menggantung di tengah dengan rongga di bawahnya. */
+  margin-top:auto;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)}
 /* Teks hak cipta. Sebelumnya .34 alfa di atas navy — sekitar 2,4:1,
    di bawah ambang keterbacaan mana pun. Dinaikkan ke .58 supaya masih
    jelas berperan sekunder tetapi tetap dapat dibaca. */
@@ -1253,7 +1258,10 @@ main a{transition:color .16s}
    ia hiasan, dan hiasan yang mendorong butir menu keluar dari layar
    membuat butir itu tidak pernah ditemukan siapa pun. */
 .eq-semboyan{position:relative;margin-top:12px;border-radius:14px;overflow:hidden;
-  min-height:132px;display:flex;flex-direction:column;justify-content:flex-end;
+  /* Memuai mengisi sisa ruang kaki, dengan batas atas supaya ia tidak
+     menjadi poster setinggi layar pada modul bermenu satu butir. */
+  flex:1 1 auto;min-height:132px;max-height:260px;
+  display:flex;flex-direction:column;justify-content:flex-end;
   padding:13px 14px 14px;isolation:isolate;background:#0A1114}
 .eq-semboyan-gambar{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
   object-position:62% 30%;z-index:-2}
@@ -1264,8 +1272,38 @@ main a{transition:color .16s}
 .eq-semboyan-garis{display:block;width:52px;height:3px;margin-top:9px;border-radius:999px;
   background:var(--eq-aksen,#F57C00)}
 
+/* Bilah yang dilipat tidak punya lebar untuk teksnya sama sekali. */
 body.eq-sempit .eq-semboyan{display:none}
-@media (max-height:760px){.eq-semboyan{display:none}}
+
+/* MENGECIL LEBIH DAHULU, BARU HILANG.
+   Ambang 760px yang dipakai semula terlalu galak: peramban di tablet
+   dan di layar laptop pendek menyisakan tinggi CSS di bawah itu, dan
+   kartunya lenyap justru pada perangkat yang paling banyak dipakai di
+   lapangan — meninggalkan sudut kiri bawah kosong, yang persis
+   keadaan yang hendak diperbaikinya. */
+@media (max-height:820px){
+  .eq-semboyan{min-height:104px;padding:11px 12px 12px}
+  .eq-semboyan-teks{font-size:11.5px;line-height:1.3}
+}
+@media (max-height:660px){
+  .eq-semboyan{min-height:82px}
+  .eq-semboyan-teks{font-size:11px}
+  .eq-semboyan-garis{margin-top:7px;width:42px}
+}
+
+/* Di bawah ini menunya sendiri yang kehabisan ruang, dan hiasan tidak
+   boleh mendorong satu pun butir menu keluar dari layar. */
+@media (max-height:540px){.eq-semboyan{display:none}}
+
+/* ── Batang gulir bilah samping ──
+   Bawaan peramban menggambar batang abu-abu terang selebar 15px di
+   atas kolom gelap — terbaca sebagai garis yang tidak disengaja,
+   persis di sebelah butir menu. */
+#eqSidebar nav{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.18) transparent}
+#eqSidebar nav::-webkit-scrollbar{width:6px}
+#eqSidebar nav::-webkit-scrollbar-track{background:transparent}
+#eqSidebar nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:999px}
+#eqSidebar nav::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.28)}
 
 /* ── Pemilih perusahaan (administrator) ── */
 .eq-perusahaan-pilih{position:relative;flex:none}

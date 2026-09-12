@@ -33,6 +33,7 @@ use App\Models\Hr\{Absensi as HrAbsensi, AbsensiJejak as HrJejak, Cuti as HrCuti
     ReguAnggota as HrReguAnggota, Roster as HrRoster};
 use App\Support\Hr\{JalurCuti, JalurLembur, KebijakanCuti, MasterCuti, MasterPajak, MasterRoster,
     Penggajian, Penyusun, Rekonsiliasi};
+use Illuminate\Support\Facades\Hash;
 use App\Support\Miners\Acuan;
 use App\Support\Miners\MasterMiners;
 use App\Support\Pjp\DaftarPeriksaSmkp;
@@ -1059,7 +1060,17 @@ final class DataContoh
                 'sub_blok_id'      => $namaSub ? ($subBlok[$namaSub]->id ?? null) : null,
                 'status_kerja'     => $kerja,
                 'status'           => 'aktif',
-                'user_id'          => $this->pengaju?->id,
+
+                /* AKUN SENDIRI-SENDIRI, bukan satu akun untuk semua.
+                   Layanan mandiri menjawab "pekerja mana yang dimaksud
+                   akun ini" lebih dahulu; enam baris yang menunjuk satu
+                   akun membuat jawabannya diambil sembarang, dan yang
+                   membuka slip gajinya membaca slip rekannya. Sejak
+                   migrasi satu-akun-satu-pekerja, tautan berlebih
+                   memang ditolak basis data — tetapi data contoh yang
+                   memperagakan layanan mandiri harus punya orang yang
+                   benar-benar dapat masuk sebagai dirinya. */
+                'user_id'          => $this->akunPekerja($nama, $i)?->id,
             ]);
             $n++;
         }
@@ -1940,6 +1951,44 @@ final class DataContoh
         }
 
         return $n;
+    }
+
+    /**
+     * Akun milik seorang pekerja contoh.
+     *
+     * Kata sandinya sama dengan akun contoh lain supaya layanan
+     * mandirinya dapat benar-benar dicoba; ini data contoh, dan seluruh
+     * isinya memang dibuat untuk dilihat orang lain.
+     *
+     * Akun yang sudah ada dipakai ulang alih-alih dibuat dua kali:
+     * memuat ulang data contoh tidak boleh meninggalkan tumpukan akun
+     * yatim yang tidak menunjuk siapa pun.
+     */
+    private function akunPekerja(string $nama, int $i): ?User
+    {
+        /* ALAMATNYA MEMUAT ID PERUSAHAAN.
+           Tanpa itu, memuat data contoh bagi perusahaan kedua memakai
+           ulang akun yang sudah menunjuk pekerja perusahaan pertama —
+           dan sejak satu akun hanya boleh menunjuk satu pekerja,
+           pemuatannya gugur di tengah. Ditemukan oleh uji dua
+           perusahaan, bukan oleh mata. */
+        $surel = 'pekerja'.($i + 1).'.p'.$this->c->id.'.miners@contoh.test';
+
+        $u = User::withoutGlobalScopes()->where('email', $surel)->first();
+
+        if ($u) {
+            $u->forceFill(['company_id' => $this->c->id, 'name' => $nama])->save();
+
+            return $u;
+        }
+
+        return User::withoutGlobalScopes()->create([
+            'company_id' => $this->c->id,
+            'name'       => $nama,
+            'email'      => $surel,
+            'password'   => Hash::make('rahasia123'),
+            'lms_role'   => 'peserta',
+        ]);
     }
 
     /* ─────────── Kontrak kerja ─────────── */
