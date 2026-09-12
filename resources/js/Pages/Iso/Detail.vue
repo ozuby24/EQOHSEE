@@ -20,8 +20,6 @@ defineProps<HalamanDetailIso>();
     <section class="kartu-lux rounded-2xl p-6">
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div class="min-w-0">
-          <h2 class="font-display text-[19px] font-black text-cam-ink leading-tight">{{ judul }}</h2>
-          <p class="text-[12.5px] text-stone-500 mt-1">{{ subjudul }}</p>
         </div>
         <div class="flex flex-wrap gap-2 shrink-0">
           <a :href="tautan.cetak" class="rounded-xl border border-stone-200 px-3.5 py-2 text-[12px]

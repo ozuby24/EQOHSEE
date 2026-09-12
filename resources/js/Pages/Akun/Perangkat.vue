@@ -44,8 +44,6 @@ async function putusLain() {
       <div class="absolute -right-20 -top-20 w-56 h-56 rounded-full bg-cam-lime/20 blur-3xl"></div>
       <div class="relative">
         <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-cam-lime-light">Akun</span>
-        <h2 class="stat mt-1.5">{{ judul }}</h2>
-        <p class="text-[12px] text-white/70 mt-1.5 max-w-xl leading-relaxed">{{ subjudul }}</p>
         <p v-if="masukTerakhir.kapan" class="text-[11.5px] text-white/60 mt-2">
           Masuk terakhir {{ masukTerakhir.kapan }}
           <span v-if="masukTerakhir.ip">dari {{ masukTerakhir.ip }}</span>

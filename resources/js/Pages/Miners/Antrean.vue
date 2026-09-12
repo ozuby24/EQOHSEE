@@ -21,10 +21,6 @@ const baris = computed<any[]>(() => (props.baris ?? []) as any[]);
   <Head :title="props.judul" />
 
   <div class="max-w-[1200px] mx-auto space-y-5">
-    <section>
-      <h2 class="text-xl font-bold text-cam-ink">{{ props.judul }}</h2>
-      <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
-    </section>
 
     <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
       <div class="overflow-x-auto">

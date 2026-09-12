@@ -34,7 +34,6 @@ function simpan() {
 
   <div class="max-w-[860px] mx-auto space-y-5">
     <section>
-      <h2 class="text-xl font-bold text-cam-ink">{{ props.judul }}</h2>
       <p class="text-[12.5px] text-stone-500 mt-0.5">
         Data dasar mitra. Prakualifikasi SMKP, dokumen berkala, dan evaluasi kinerjanya
         diisi dari halaman rincian sesudah tersimpan.
@@ -51,26 +50,26 @@ function simpan() {
 
         <div class="px-5 py-4 grid gap-3 sm:grid-cols-2">
           <label class="grid gap-1 sm:col-span-2">
-            <span class="text-[11.5px] font-semibold text-stone-600">Nama perusahaan</span>
+            <span class="block text-[11.5px] font-semibold text-stone-600">Nama perusahaan</span>
             <input v-model="f.nama_perusahaan" required maxlength="200"
                    class="rounded-lg border-stone-200 text-[12.5px]">
             <small v-if="f.errors.nama_perusahaan" class="text-[11px] text-red-600">{{ f.errors.nama_perusahaan }}</small>
           </label>
 
           <label class="grid gap-1">
-            <span class="text-[11.5px] font-semibold text-stone-600">NIB</span>
+            <span class="block text-[11.5px] font-semibold text-stone-600">NIB</span>
             <input v-model="f.nib" maxlength="60" class="rounded-lg border-stone-200 text-[12.5px] num">
             <small v-if="f.errors.nib" class="text-[11px] text-red-600">{{ f.errors.nib }}</small>
           </label>
 
           <label class="grid gap-1">
-            <span class="text-[11.5px] font-semibold text-stone-600">Penanggung jawab</span>
+            <span class="block text-[11.5px] font-semibold text-stone-600">Penanggung jawab</span>
             <input v-model="f.penanggung_jawab" maxlength="150" class="rounded-lg border-stone-200 text-[12.5px]">
             <small v-if="f.errors.penanggung_jawab" class="text-[11px] text-red-600">{{ f.errors.penanggung_jawab }}</small>
           </label>
 
           <label class="grid gap-1 sm:col-span-2">
-            <span class="text-[11.5px] font-semibold text-stone-600">Alamat</span>
+            <span class="block text-[11.5px] font-semibold text-stone-600">Alamat</span>
             <textarea v-model="f.alamat" rows="2" class="rounded-lg border-stone-200 text-[12.5px]" />
             <small v-if="f.errors.alamat" class="text-[11px] text-red-600">{{ f.errors.alamat }}</small>
           </label>
@@ -86,7 +85,7 @@ function simpan() {
 
         <div class="px-5 py-4 grid gap-3">
           <label class="grid gap-1 sm:max-w-xs">
-            <span class="text-[11.5px] font-semibold text-stone-600">Status</span>
+            <span class="block text-[11.5px] font-semibold text-stone-600">Status</span>
             <select v-model="f.status" class="rounded-lg border-stone-200 text-[12.5px]">
               <option v-for="(label, kode) in (props.STATUS ?? {})" :key="kode" :value="kode">{{ label }}</option>
             </select>
@@ -97,7 +96,7 @@ function simpan() {
           </label>
 
           <label class="grid gap-1">
-            <span class="text-[11.5px] font-semibold text-stone-600">Catatan</span>
+            <span class="block text-[11.5px] font-semibold text-stone-600">Catatan</span>
             <textarea v-model="f.catatan" rows="3" class="rounded-lg border-stone-200 text-[12.5px]" />
             <small v-if="f.errors.catatan" class="text-[11px] text-red-600">{{ f.errors.catatan }}</small>
           </label>

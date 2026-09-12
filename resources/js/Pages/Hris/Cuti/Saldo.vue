@@ -11,7 +11,6 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { propHalaman } from '../../../halaman';
-import KopHalaman from '../../../Components/KopHalaman.vue';
 
 const props = propHalaman();
 
@@ -49,9 +48,6 @@ function masaKerja(bulan: number | null) {
   <Head :title="props.judul" />
 
   <div class="max-w-[1200px] mx-auto space-y-5">
-    <KopHalaman :judul="props.judul as string" :subjudul="props.subjudul as string"
-                tagline="Every Day Accounted"
-                :remah="[['HRIS', '/hris'], ['Cuti & Izin', null], ['Saldo Cuti', null]]" ringkas />
 
     <section class="-mt-2 flex flex-wrap items-end justify-end gap-3">
 

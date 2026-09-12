@@ -241,7 +241,7 @@ function nilaiAwal(kode: string) { return { ...(audit.value.hasil?.[kode] ?? {})
             <button type="button" class="eq-btn-mini" @click="tambahAuditor">Tambah auditor</button>
           </div>
           <div v-for="(nama, i) in tahapForm.permulaan.tim" :key="i" class="flex items-center gap-2 mt-2">
-            <span class="eq-keadaan shrink-0 w-24 justify-center"
+            <span class="block eq-keadaan shrink-0 w-24 justify-center"
                   :style="{ color: Number(i) === 0 ? '#0F766E' : '#7C8894', borderColor: Number(i) === 0 ? '#0F766E' : '#C9CFD4' }">
               {{ Number(i) === 0 ? 'Lead Auditor' : `Auditor ${Number(i) + 1}` }}
             </span>

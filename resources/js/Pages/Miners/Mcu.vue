@@ -63,33 +63,29 @@ const bolehTindak = computed(() =>
   <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 
   <div class="max-w-[1400px] mx-auto space-y-5">
-    <section>
-      <h2 class="text-xl font-bold text-cam-ink">{{ props.judul }}</h2>
-      <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
-    </section>
 
     <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
       <h3 class="text-[13.5px] font-bold text-cam-ink mb-3">Surat pengajuan baru</h3>
 
       <form class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" @submit.prevent="simpanSurat">
         <label class="block">
-          <span class="text-[11px] text-stone-500">Nomor</span>
+          <span class="block text-[11px] text-stone-500">Nomor</span>
           <input v-model="surat.no_registrasi" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Tanggal</span>
+          <span class="block text-[11px] text-stone-500">Tanggal</span>
           <input v-model="surat.tanggal" type="date" required
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Kepada (klinik)</span>
+          <span class="block text-[11px] text-stone-500">Kepada (klinik)</span>
           <input v-model="surat.kepada" required class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Perihal</span>
+          <span class="block text-[11px] text-stone-500">Perihal</span>
           <input v-model="surat.perihal" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
@@ -188,7 +184,7 @@ const bolehTindak = computed(() =>
       <footer v-if="buka === m.id" class="px-5 py-4 border-t border-stone-100 space-y-3">
         <form class="flex flex-wrap items-end gap-2" @submit.prevent="tambahOrang(m.id)">
           <label class="block">
-            <span class="text-[11px] text-stone-500">Tambah nama</span>
+            <span class="block text-[11px] text-stone-500">Tambah nama</span>
             <select v-model="tambah.pekerja_id" required
                     class="mt-1 rounded-lg border-stone-200 text-[12px] w-64">
               <option value="">Pilih pekerja…</option>

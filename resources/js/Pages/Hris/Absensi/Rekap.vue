@@ -11,7 +11,6 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { propHalaman } from '../../../halaman';
-import KopHalaman from '../../../Components/KopHalaman.vue';
 
 const props = propHalaman();
 
@@ -43,9 +42,6 @@ const jumlah = computed(() => {
   <Head :title="props.judul" />
 
   <div class="max-w-[1280px] mx-auto space-y-5">
-    <KopHalaman :judul="props.judul as string" :subjudul="props.subjudul as string"
-                tagline="Numbers That Hold"
-                :remah="[['HRIS', '/hris'], ['Absensi', null], ['Rekap Periode', null]]" ringkas />
 
     <section class="-mt-2 flex flex-wrap items-end justify-end gap-3">
 

@@ -65,12 +65,11 @@ const lebar = computed(() => {
       <span class="ubin-ikon" aria-hidden="true"><slot name="ikon" /></span>
 
       <span class="min-w-0">
-        <span class="ubin-angka num">{{ angka }}</span>
         <span class="ubin-label">{{ label }}</span>
+        <span class="ubin-angka num">{{ angka }}</span>
+        <span v-if="catatan" class="ubin-catatan">{{ catatan }}</span>
       </span>
     </div>
-
-    <p v-if="catatan" class="ubin-catatan">{{ catatan }}</p>
 
     <div v-if="lebar !== null" class="ubin-bilah" aria-hidden="true">
       <span :style="{ width: lebar + '%' }" />
@@ -80,49 +79,65 @@ const lebar = computed(() => {
 
 <style>
 .ubin {
-  border-radius: .85rem;
-  padding: .8rem .85rem .7rem;
+  border-radius: 1rem;
+  padding: .95rem 1rem .85rem;
   background: var(--ubin-latar, #FAFAF9);
   border: 1px solid var(--ubin-garis, #F0EFED);
   display: flex;
   flex-direction: column;
-  gap: .45rem;
+  gap: .6rem;
 }
 
-.ubin-atas { display: flex; align-items: center; gap: .6rem; }
+/* Ikon disejajarkan ke ATAS, bukan ke tengah. Ubin yang catatannya
+   panjang tumbuh ke bawah, dan ikon yang tertaut ke tengah ikut
+   melorot — sehingga sederet ubin bercatatan beragam menampilkan
+   ikon yang tingginya berbeda-beda pada baris yang sama. */
+.ubin-atas { display: flex; align-items: flex-start; gap: .7rem; }
 
 .ubin-ikon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px; height: 34px;
-  border-radius: .65rem;
+  width: 42px; height: 42px;
+  border-radius: .8rem;
   flex: none;
   background: var(--ubin-ikon-latar, #F0EFED);
   color: var(--ubin-ikon-warna, #57534E);
 }
 
-.ubin-ikon svg { width: 18px; height: 18px; }
+.ubin-ikon svg { width: 20px; height: 20px; }
 
-.ubin-angka {
-  display: block;
-  font-size: 19px;
-  font-weight: 800;
-  line-height: 1.05;
-  color: var(--ubin-angka, #1C1917);
-}
-
+/* LABEL DI ATAS ANGKA, bukan di bawahnya.
+   Angka tanpa label yang mendahuluinya menuntut pembacanya menahan
+   bilangan itu di kepala sampai ia tahu bilangan apa — dan pada
+   sederet enam ubin, yang terjadi adalah membaca seluruhnya dua kali. */
 .ubin-label {
   display: block;
-  font-size: 10.5px;
-  margin-top: .15rem;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .005em;
   color: var(--ubin-label, #78716C);
 }
 
-.ubin-catatan { margin: 0; font-size: 10.5px; color: var(--ubin-label, #78716C); }
+.ubin-angka {
+  display: block;
+  margin-top: .2rem;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -.015em;
+  color: var(--ubin-angka, #1C1917);
+}
+
+.ubin-catatan {
+  display: block;
+  margin-top: .2rem;
+  font-size: 10.5px;
+  color: var(--ubin-label, #78716C);
+}
 
 .ubin-bilah {
-  height: 3px;
+  height: 4px;
   border-radius: 999px;
   background: var(--ubin-bilah-latar, #EAE8E5);
   overflow: hidden;

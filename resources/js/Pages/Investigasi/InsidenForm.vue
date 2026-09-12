@@ -86,7 +86,7 @@ function simpan() {
             </label>
 
             <label class="grid gap-1">
-              <span class="text-[10px] uppercase tracking-wide text-stone-400">Waktu</span>
+              <span class="block text-[10px] uppercase tracking-wide text-stone-400">Waktu</span>
               <input v-model="f.waktu_kejadian" type="time" class="rounded-lg border-stone-200 text-[12.5px]">
               <!-- Tenggat regulasi dihitung dari waktu ini, bukan dari
                    waktu pelaporan — dan itu disebutkan supaya yang
@@ -95,7 +95,7 @@ function simpan() {
             </label>
 
             <label class="grid gap-1">
-              <span class="text-[10px] uppercase tracking-wide text-stone-400">Jenis kejadian</span>
+              <span class="block text-[10px] uppercase tracking-wide text-stone-400">Jenis kejadian</span>
               <select v-model="f.jenis_insiden_id" class="rounded-lg border-stone-200 text-[12.5px]">
                 <option value="">—</option>
                 <option v-for="j in (props.opsi?.jenisInsiden ?? [])" :key="j.id" :value="j.id">{{ j.nama }}</option>
@@ -105,7 +105,7 @@ function simpan() {
 
           <div class="grid gap-3 md:grid-cols-3">
             <label class="grid gap-1">
-              <span class="text-[10px] uppercase tracking-wide text-stone-400">Lokasi</span>
+              <span class="block text-[10px] uppercase tracking-wide text-stone-400">Lokasi</span>
               <select v-model="f.lokasi_id" class="rounded-lg border-stone-200 text-[12.5px]">
                 <option value="">—</option>
                 <option v-for="l in (props.opsi?.lokasi ?? [])" :key="l.id" :value="l.id">{{ l.nama }}</option>
@@ -113,7 +113,7 @@ function simpan() {
             </label>
 
             <label class="grid gap-1 md:col-span-2">
-              <span class="text-[10px] uppercase tracking-wide text-stone-400">Titik rinci</span>
+              <span class="block text-[10px] uppercase tracking-wide text-stone-400">Titik rinci</span>
               <input v-model="f.lokasi_rinci" class="rounded-lg border-stone-200 text-[12.5px]"
                      placeholder="Tikungan menurun sesudah simpang workshop">
             </label>
@@ -121,13 +121,13 @@ function simpan() {
 
           <div class="grid gap-3 md:grid-cols-2">
             <label class="grid gap-1">
-              <span class="text-[10px] uppercase tracking-wide text-stone-400">Aktivitas saat kejadian</span>
+              <span class="block text-[10px] uppercase tracking-wide text-stone-400">Aktivitas saat kejadian</span>
               <input v-model="f.aktivitas" class="rounded-lg border-stone-200 text-[12.5px]"
                      placeholder="Hauling overburden ke disposal">
             </label>
 
             <label class="grid gap-1">
-              <span class="text-[10px] uppercase tracking-wide text-stone-400">Klasifikasi cedera</span>
+              <span class="block text-[10px] uppercase tracking-wide text-stone-400">Klasifikasi cedera</span>
               <select v-model="f.klasifikasi_cedera_id" class="rounded-lg border-stone-200 text-[12.5px]">
                 <option value="">—</option>
                 <option v-for="c in (props.opsi?.cedera ?? [])" :key="c.id" :value="c.id">{{ c.nama }}</option>
@@ -136,7 +136,7 @@ function simpan() {
           </div>
 
           <label class="grid gap-1">
-            <span class="text-[10px] uppercase tracking-wide text-stone-400">Uraian kejadian</span>
+            <span class="block text-[10px] uppercase tracking-wide text-stone-400">Uraian kejadian</span>
             <textarea v-model="f.kronologi" rows="5" class="rounded-lg border-stone-200 text-[12.5px]"
                       placeholder="Ceritakan urutannya dari sebelum sampai sesudah kejadian."></textarea>
             <span class="text-[10.5px] text-stone-400">
@@ -145,7 +145,7 @@ function simpan() {
           </label>
 
           <label class="grid gap-1">
-            <span class="text-[10px] uppercase tracking-wide text-stone-400">Tindakan segera yang sudah dilakukan</span>
+            <span class="block text-[10px] uppercase tracking-wide text-stone-400">Tindakan segera yang sudah dilakukan</span>
             <textarea v-model="f.tindakan_segera" rows="2" class="rounded-lg border-stone-200 text-[12.5px]"></textarea>
           </label>
         </div>

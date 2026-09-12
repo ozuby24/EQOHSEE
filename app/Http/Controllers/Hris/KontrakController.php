@@ -68,8 +68,16 @@ class KontrakController extends Controller
                 'pkwtt'     => $semua->where('status', 'berjalan')->where('jenis', 'pkwtt')->count(),
                 'gawat'     => count(array_filter($temuan, fn ($t) => $t['berat'] === 'gawat')),
                 'berakhir'  => $akanBerakhir->count(),
-                'kompensasi'=> round((float) $semua->whereNull('kompensasi_dibayar_pada')
-                    ->sum('kompensasi_nilai'), 2),
+                /* DIHITUNG DARI SUMBER YANG SAMA DENGAN BARISNYA,
+                   bukan dari kolom tersimpan. Kolom itu baru terisi
+                   ketika kontraknya diakhiri lewat layar; sebelum itu ia
+                   null, dan ubinnya berbunyi "Rp 0 belum dibayar" tepat
+                   di atas tabel yang menyebut jutaan pada tiap baris.
+                   Dua angka yang berselisih pada satu layar membuat
+                   pembacanya berhenti memercayai keduanya. */
+                'kompensasi' => round($semua
+                    ->filter(fn (Kontrak $k) => $k->kompensasi_dibayar_pada === null)
+                    ->sum(fn (Kontrak $k) => KontrakPkwt::kompensasi($k)['nilai']), 2),
             ],
 
             'pekerja' => Pekerja::query()->where('status', 'aktif')

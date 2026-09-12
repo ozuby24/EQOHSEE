@@ -64,7 +64,6 @@ const bolehTindak = computed(() =>
 
   <div class="max-w-[1400px] mx-auto space-y-5">
     <section>
-      <h2 class="text-xl font-bold text-cam-ink">{{ props.judul }}</h2>
       <p class="text-[12.5px] text-stone-500 mt-0.5">
         {{ props.subjudul }} Ambang kelulusan {{ props.NILAI_LULUS }}, paling banyak
         {{ props.MAKS_PERCOBAAN }} kali ujian.
@@ -76,18 +75,18 @@ const bolehTindak = computed(() =>
 
       <form class="grid gap-3 sm:grid-cols-3" @submit.prevent="simpanJadwal">
         <label class="block">
-          <span class="text-[11px] text-stone-500">Nomor</span>
+          <span class="block text-[11px] text-stone-500">Nomor</span>
           <input v-model="jadwal.no_registrasi" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Tanggal</span>
+          <span class="block text-[11px] text-stone-500">Tanggal</span>
           <input v-model="jadwal.tanggal" type="date" required
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Perihal</span>
+          <span class="block text-[11px] text-stone-500">Perihal</span>
           <input v-model="jadwal.perihal" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
@@ -172,7 +171,7 @@ const bolehTindak = computed(() =>
       <footer v-if="buka === i.id" class="px-5 py-4 border-t border-stone-100 space-y-3">
         <form class="flex flex-wrap items-end gap-2" @submit.prevent="tambahOrang(i.id)">
           <label class="block">
-            <span class="text-[11px] text-stone-500">Tambah peserta</span>
+            <span class="block text-[11px] text-stone-500">Tambah peserta</span>
             <select v-model="tambah.pekerja_id" required
                     class="mt-1 rounded-lg border-stone-200 text-[12px] w-64">
               <option value="">Pilih pekerja…</option>

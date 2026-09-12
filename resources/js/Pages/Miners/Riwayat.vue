@@ -33,10 +33,6 @@ watch(cari, () => {
   <Head :title="props.judul" />
 
   <div class="max-w-[1400px] mx-auto space-y-5">
-    <section>
-      <h2 class="text-xl font-bold text-cam-ink">{{ props.judul }}</h2>
-      <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
-    </section>
 
     <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
       <header class="px-5 py-3.5 border-b border-stone-100 flex flex-wrap items-center gap-3">

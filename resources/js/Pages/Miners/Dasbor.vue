@@ -67,10 +67,6 @@ const jumlah  = computed(() => props.jumlah ?? {});
   <Head :title="props.judul" />
 
   <div class="max-w-[1400px] mx-auto space-y-5">
-    <section>
-      <h2 class="text-xl font-bold text-cam-ink">{{ props.judul }}</h2>
-      <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
-    </section>
 
     <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <Link href="/miners/kedaluwarsa"

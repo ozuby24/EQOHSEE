@@ -83,17 +83,13 @@ const simpolDituntut = computed(() =>
   <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 
   <div class="max-w-[1400px] mx-auto space-y-5">
-    <section>
-      <h2 class="text-xl font-bold text-cam-ink">{{ props.judul }}</h2>
-      <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
-    </section>
 
     <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
       <h3 class="text-[13.5px] font-bold text-cam-ink mb-3">SIMPER baru</h3>
 
       <form class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" @submit.prevent="simpan">
         <label class="block lg:col-span-2">
-          <span class="text-[11px] text-stone-500">Mine Permit yang mendasarinya</span>
+          <span class="block text-[11px] text-stone-500">Mine Permit yang mendasarinya</span>
           <select v-model="buat.permit_id" required class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option value="">Pilih kartu…</option>
             <option v-for="p in (props.permit ?? [])" :key="p.id" :value="p.id">
@@ -103,25 +99,25 @@ const simpolDituntut = computed(() =>
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Nomor SIMPER</span>
+          <span class="block text-[11px] text-stone-500">Nomor SIMPER</span>
           <input v-model="buat.no_simper" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Tanggal terbit</span>
+          <span class="block text-[11px] text-stone-500">Tanggal terbit</span>
           <input v-model="buat.tanggal" type="date" required
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Kelas SIMPER</span>
+          <span class="block text-[11px] text-stone-500">Kelas SIMPER</span>
           <select v-model="buat.kelas" required class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option v-for="(label, kode) in (props.KELAS ?? {})" :key="kode" :value="kode">{{ label }}</option>
           </select>
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Kelas SIM Kepolisian</span>
+          <span class="block text-[11px] text-stone-500">Kelas SIM Kepolisian</span>
           <select v-model="buat.jenis_simpol" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option value="">Pilih kelas…</option>
             <option v-for="s in (props.SIMPOL ?? [])" :key="s" :value="s">{{ s }}</option>
@@ -129,12 +125,12 @@ const simpolDituntut = computed(() =>
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Nomor SIM</span>
+          <span class="block text-[11px] text-stone-500">Nomor SIM</span>
           <input v-model="buat.no_simpol" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">SIM berlaku sampai</span>
+          <span class="block text-[11px] text-stone-500">SIM berlaku sampai</span>
           <input v-model="buat.simpol_berlaku_sampai" type="date"
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>

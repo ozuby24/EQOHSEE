@@ -54,7 +54,7 @@ function lanjut() {
     </div>
 
     <label class="text-[11.5px] font-semibold text-stone-600">
-      Nama lengkap <span class="text-cam-lime-deep">*</span>
+      Nama lengkap <span class="block text-cam-lime-deep">*</span>
       <input v-model="isi.nama" required autocomplete="name" placeholder="mis. Budi Santoso"
              class="mt-1 w-full rounded-xl border-stone-200 text-[13px]">
       <span v-if="isi.errors.nama" class="text-[11px] text-red-600">{{ isi.errors.nama }}</span>
@@ -62,7 +62,7 @@ function lanjut() {
 
     <div class="grid gap-4 sm:grid-cols-2">
       <label class="text-[11.5px] font-semibold text-stone-600">
-        Jabatan <span class="text-cam-lime-deep">*</span>
+        Jabatan <span class="block text-cam-lime-deep">*</span>
         <select v-model="isi.jabatan" required class="mt-1 w-full rounded-xl border-stone-200 text-[13px]">
           <option value="">— pilih jabatan —</option>
           <optgroup v-for="(kel, kode) in (props.identitas?.positionGroups ?? {})" :key="kode"
@@ -74,7 +74,7 @@ function lanjut() {
       </label>
 
       <label class="text-[11.5px] font-semibold text-stone-600">
-        Departemen <span class="text-cam-lime-deep">*</span>
+        Departemen <span class="block text-cam-lime-deep">*</span>
         <select v-model="isi.dept" required class="mt-1 w-full rounded-xl border-stone-200 text-[13px]">
           <option value="">— pilih —</option>
           <option v-for="d in (props.identitas?.departments ?? [])" :key="d">{{ d }}</option>
@@ -83,7 +83,7 @@ function lanjut() {
       </label>
 
       <label class="text-[11.5px] font-semibold text-stone-600">
-        Perusahaan <span class="text-cam-lime-deep">*</span>
+        Perusahaan <span class="block text-cam-lime-deep">*</span>
         <select v-model="isi.perusahaan" required class="mt-1 w-full rounded-xl border-stone-200 text-[13px]">
           <option value="">— pilih —</option>
           <option v-for="c in (props.identitas?.companies ?? [])" :key="c">{{ c }}</option>
@@ -92,7 +92,7 @@ function lanjut() {
       </label>
 
       <label class="text-[11.5px] font-semibold text-stone-600">
-        NRP / NIK <span class="font-normal text-stone-400">— boleh dikosongkan</span>
+        NRP / NIK <span class="block font-normal text-stone-400">— boleh dikosongkan</span>
         <input v-model="isi.nrp" class="mt-1 w-full rounded-xl border-stone-200 text-[13px]">
       </label>
     </div>

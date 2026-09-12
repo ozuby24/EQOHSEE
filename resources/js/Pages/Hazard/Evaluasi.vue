@@ -44,7 +44,7 @@ const pilihan =
   <div class="max-w-6xl mx-auto space-y-5">
 
     <div class="bg-white rounded-2xl shadow-card border border-stone-100 p-3 flex flex-wrap items-center gap-2">
-      <span class="text-[12.5px] font-semibold text-stone-500 px-1">Saring</span>
+      <span class="block text-[12.5px] font-semibold text-stone-500 px-1">Saring</span>
 
       <select v-model="isi.bulan" :class="pilihan" @change="kirim" aria-label="Bulan">
         <option :value="null">Semua bulan</option>

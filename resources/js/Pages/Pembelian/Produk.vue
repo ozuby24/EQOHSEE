@@ -77,8 +77,6 @@ function berubah(b: Baris) {
 
     <section class="flex flex-wrap items-end gap-3">
       <div>
-        <h2 class="text-xl font-bold text-cam-ink">{{ props.judul }}</h2>
-        <p class="text-[12.5px] text-stone-500 mt-1">{{ props.subjudul }}</p>
       </div>
       <a :href="props.tautanEtalase" target="_blank" rel="noopener"
          class="ml-auto eq-btn-lain">Lihat etalase publik</a>

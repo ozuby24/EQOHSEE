@@ -126,7 +126,7 @@ function mulai() {
     </div>
 
     <label class="text-[11.5px] font-semibold text-stone-600">
-      NRP / NIK <span class="font-normal text-stone-400">— boleh dikosongkan</span>
+      NRP / NIK <span class="block font-normal text-stone-400">— boleh dikosongkan</span>
       <input v-model="isi.nrp" class="mt-1 w-full rounded-xl border-stone-200 text-[13px]">
     </label>
 

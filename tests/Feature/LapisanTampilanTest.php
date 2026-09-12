@@ -31,6 +31,43 @@ class LapisanTampilanTest extends TestCase
         return file_get_contents(resource_path('js/Components/UbinAngka.vue'));
     }
 
+    private function nama(\SplFileInfo $f): string
+    {
+        return basename(dirname($f->getPathname())).'/'.$f->getFilename();
+    }
+
+    /**
+     * Seluruh halaman Vue, kecuali yang memang di luar kerangka.
+     *
+     * Halaman cetak digambar di atas kertas dan tidak pernah memakai
+     * kerangka aplikasi; halaman masuk dan halaman tamu pun tidak.
+     * Ikut diperiksa, ketiganya akan dituntut memakai kop yang memang
+     * tidak berlaku bagi mereka.
+     *
+     * @return list<\SplFileInfo>
+     */
+    private function halamanVue(): array
+    {
+        $it = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(resource_path('js/Pages')));
+
+        $berkas = [];
+        foreach ($it as $f) {
+            if (! $f->isFile() || $f->getExtension() !== 'vue') continue;
+            if (str_contains($f->getFilename(), '.bak-')) continue;
+
+            $jalur = $f->getPathname();
+            if (str_contains($jalur, '/Pages/Print/')) continue;
+            if (str_contains($jalur, '/Pages/Auth/')) continue;
+
+            $berkas[] = clone $f;
+        }
+
+        sort($berkas);
+
+        return $berkas;
+    }
+
     /** @return list<\SplFileInfo> */
     private function halamanHris(): array
     {
@@ -139,31 +176,67 @@ class LapisanTampilanTest extends TestCase
             'UbinAngka masih membagi angka terformat langsung.');
     }
 
-    public function test_setiap_halaman_hris_memakai_kop_halaman(): void
+    public function test_kerangka_merender_kop_halaman(): void
     {
-        $tanpa = [];
+        // Kop adalah kerangka, sama seperti bilah atas dan bilah
+        // samping. Digambar di sini, dua ratusan halaman mendapatkannya
+        // sekaligus dan seluruhnya setinggi, sejarak, dan seukuran yang
+        // sama — dan halaman baru mendapatkannya tanpa satu baris pun
+        // ditulis.
+        $this->assertStringContainsString('<KopHalaman',
+            file_get_contents(resource_path('js/Layouts/AppLayout.vue')),
+            'Kerangka tidak lagi menggambar kop; seluruh halaman kehilangan kopnya sekaligus.');
+    }
 
-        foreach ($this->halamanHris() as $f) {
+    public function test_tidak_ada_halaman_yang_menggambar_kopnya_sendiri(): void
+    {
+        $liar = [];
+
+        foreach ($this->halamanVue() as $f) {
             $isi = file_get_contents($f->getPathname());
 
-            // Komponen bersama di bawah Hris/ boleh tanpa kop; yang
-            // dijaga adalah halaman, yaitu berkas yang punya <Head>.
-            if (! str_contains($isi, '<Head')) continue;
+            if (! str_contains($isi, '<KopHalaman')) continue;
 
-            if (! str_contains($isi, 'KopHalaman')) {
-                $tanpa[] = basename(dirname($f->getPathname())).'/'.$f->getFilename();
-            }
+            // Halaman yang memang perlu kop khusus menolak kop kerangka
+            // dengan `kop: false` dari controllernya, dan menyebutkannya
+            // di berkasnya sendiri supaya yang membacanya tahu mengapa
+            // ada dua kop yang mungkin.
+            if (str_contains($isi, 'kop: false')) continue;
+
+            $liar[] = $this->nama($f);
         }
 
-        $this->assertSame([], $tanpa,
-            'Halaman HRIS tanpa KopHalaman: '.implode(', ', $tanpa));
+        $this->assertSame([], $liar,
+            'Halaman menggambar kopnya sendiri di atas kop kerangka — judulnya tercetak dua kali: '
+            .implode(', ', $liar));
+    }
+
+    public function test_tidak_ada_halaman_yang_mencetak_ulang_judulnya(): void
+    {
+        $liar = [];
+
+        foreach ($this->halamanVue() as $f) {
+            $isi = file_get_contents($f->getPathname());
+
+            // Kop kerangka sudah mencetak `judul` dan `subjudul`.
+            // Halaman yang mencetaknya lagi menampilkan kalimat yang
+            // sama dua kali dengan jarak dua sentimeter — dan itu
+            // terbaca sebagai galat penyusunan, bukan sebagai
+            // penekanan.
+            if (! preg_match('/<h[12][^>]*>\{\{ (?:props\.)?judul \}\}<\/h[12]>/', $isi)) continue;
+
+            $liar[] = $this->nama($f);
+        }
+
+        $this->assertSame([], $liar,
+            'Halaman mencetak ulang judul yang sudah ada di kop: '.implode(', ', $liar));
     }
 
     public function test_label_kolom_isian_berdiri_di_atas_kolomnya(): void
     {
         $liar = [];
 
-        foreach ($this->halamanHris() as $f) {
+        foreach ($this->halamanVue() as $f) {
             $isi = file_get_contents($f->getPathname());
 
             // Kolom isian bertipe inline-block. Sebuah <span> tanpa
@@ -175,7 +248,7 @@ class LapisanTampilanTest extends TestCase
 
             foreach ($c[0] as [$cocok, $pos]) {
                 $baris = substr_count(substr($isi, 0, $pos), "\n") + 1;
-                $liar[] = basename(dirname($f->getPathname())).'/'.$f->getFilename().':'.$baris;
+                $liar[] = $this->nama($f).':'.$baris;
             }
         }
 

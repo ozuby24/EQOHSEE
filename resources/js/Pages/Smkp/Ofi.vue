@@ -194,7 +194,7 @@ const warnaStatus = (s: string) => WARNA_STATUS[s] ?? KEADAAN.netral;
 
           <form class="px-5 py-4 grid gap-3" @submit.prevent="simpan">
             <label class="grid gap-1">
-              <span class="text-[11.5px] font-semibold text-stone-600">Peluang perbaikan yang diamati</span>
+              <span class="block text-[11.5px] font-semibold text-stone-600">Peluang perbaikan yang diamati</span>
               <textarea v-model="f.uraian" rows="3" :disabled="!f.kode" required
                         placeholder="Apa yang sudah baik, dan di mana ia masih dapat ditingkatkan."
                         class="rounded-lg border-stone-200 text-[12.5px]" />
@@ -202,7 +202,7 @@ const warnaStatus = (s: string) => WARNA_STATUS[s] ?? KEADAAN.netral;
             </label>
 
             <label class="grid gap-1">
-              <span class="text-[11.5px] font-semibold text-stone-600">Saran auditor</span>
+              <span class="block text-[11.5px] font-semibold text-stone-600">Saran auditor</span>
               <textarea v-model="f.saran" rows="2" :disabled="!f.kode"
                         placeholder="Langkah yang disarankan — tidak wajib dikerjakan auditi."
                         class="rounded-lg border-stone-200 text-[12.5px]" />
@@ -210,19 +210,19 @@ const warnaStatus = (s: string) => WARNA_STATUS[s] ?? KEADAAN.netral;
 
             <div class="grid gap-3 sm:grid-cols-3">
               <label class="grid gap-1">
-                <span class="text-[11.5px] font-semibold text-stone-600">Penanggung jawab</span>
+                <span class="block text-[11.5px] font-semibold text-stone-600">Penanggung jawab</span>
                 <input v-model="f.penanggung_jawab" :disabled="!f.kode" maxlength="150"
                        class="rounded-lg border-stone-200 text-[12.5px]">
               </label>
 
               <label class="grid gap-1">
-                <span class="text-[11.5px] font-semibold text-stone-600">Target</span>
+                <span class="block text-[11.5px] font-semibold text-stone-600">Target</span>
                 <input v-model="f.target" type="date" :disabled="!f.kode"
                        class="rounded-lg border-stone-200 text-[12.5px]">
               </label>
 
               <label class="grid gap-1">
-                <span class="text-[11.5px] font-semibold text-stone-600">Status</span>
+                <span class="block text-[11.5px] font-semibold text-stone-600">Status</span>
                 <select v-model="f.status" :disabled="!f.kode" class="rounded-lg border-stone-200 text-[12.5px]">
                   <option v-for="(label, kode) in (props.STATUS ?? {})" :key="kode" :value="kode">{{ label }}</option>
                 </select>

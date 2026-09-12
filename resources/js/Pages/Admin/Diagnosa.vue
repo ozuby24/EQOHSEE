@@ -88,7 +88,6 @@ function periksaUlang() {
             <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-cam-lime-light">
               Pemeriksaan Mandiri
             </span>
-            <h2 class="stat mt-1.5">{{ judul }}</h2>
             <p class="text-[12px] text-white/70 mt-1.5 max-w-xl leading-relaxed">
               {{ subjudul }} — mode debug yang tertinggal menyala, migrasi yang belum jalan,
               tautan berkas yang putus. Semuanya membuat sistem tetap terlihat sehat.

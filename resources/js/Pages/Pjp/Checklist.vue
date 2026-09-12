@@ -193,7 +193,7 @@ function nada(persen: number | null | undefined): string {
 
             <div class="grid gap-2 sm:grid-cols-[minmax(0,240px)_1fr] items-start">
               <label class="grid gap-1">
-                <span class="text-[10.5px] uppercase tracking-wide text-stone-400">
+                <span class="block text-[10.5px] uppercase tracking-wide text-stone-400">
                   {{ k.legalitas ? 'Ketersediaan' : `Nilai · bobot ${b.bobot}` }}
                 </span>
 
@@ -210,7 +210,7 @@ function nada(persen: number | null | undefined): string {
               </label>
 
               <label class="grid gap-1">
-                <span class="text-[10.5px] uppercase tracking-wide text-stone-400">Penjelasan / bukti</span>
+                <span class="block text-[10.5px] uppercase tracking-wide text-stone-400">Penjelasan / bukti</span>
                 <textarea v-model="jawaban[b.id].penjelasan" rows="2"
                           class="rounded-lg border-stone-200 text-[12px]" />
               </label>

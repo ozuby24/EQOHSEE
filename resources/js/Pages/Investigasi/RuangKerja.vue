@@ -214,7 +214,7 @@ const WARNA_STATUS: Record<string, string> = {
                 @submit.prevent="kirim(fKronologi, 'kronologi')">
             <div class="grid gap-3 md:grid-cols-[180px_1fr]">
               <label class="grid gap-1">
-                <span class="text-[10px] uppercase tracking-wide text-stone-400">Waktu</span>
+                <span class="block text-[10px] uppercase tracking-wide text-stone-400">Waktu</span>
                 <input v-model="fKronologi.waktu" type="datetime-local" class="rounded-lg border-stone-200 text-[12px]">
               </label>
               <label class="grid gap-1">
@@ -227,7 +227,7 @@ const WARNA_STATUS: Record<string, string> = {
             </div>
 
             <label class="grid gap-1">
-              <span class="text-[10px] uppercase tracking-wide text-stone-400">Keterangan</span>
+              <span class="block text-[10px] uppercase tracking-wide text-stone-400">Keterangan</span>
               <input v-model="fKronologi.keterangan" class="rounded-lg border-stone-200 text-[12px]">
             </label>
 
@@ -415,7 +415,7 @@ const WARNA_STATUS: Record<string, string> = {
                          lapangan, dan hanya kolom ini yang membuatnya
                          terlihat dari jauh. -->
                     <label class="grid gap-1">
-                      <span class="text-[10px] uppercase tracking-wide text-stone-400">Hierarki kendali</span>
+                      <span class="block text-[10px] uppercase tracking-wide text-stone-400">Hierarki kendali</span>
                       <select v-model="fTindakan[t.id].hierarki_id" class="rounded-lg border-stone-200 text-[12px]">
                         <option value="">—</option>
                         <option v-for="h in (props.opsi?.hierarki ?? [])" :key="h.id" :value="h.id">
@@ -425,7 +425,7 @@ const WARNA_STATUS: Record<string, string> = {
                     </label>
 
                     <label class="grid gap-1">
-                      <span class="text-[10px] uppercase tracking-wide text-stone-400">PIC</span>
+                      <span class="block text-[10px] uppercase tracking-wide text-stone-400">PIC</span>
                       <select v-model="fTindakan[t.id].pic_id" class="rounded-lg border-stone-200 text-[12px]">
                         <option value="">—</option>
                         <option v-for="o in (props.opsi?.orang ?? [])" :key="o.id" :value="o.id">{{ o.name }}</option>
@@ -433,7 +433,7 @@ const WARNA_STATUS: Record<string, string> = {
                     </label>
 
                     <label class="grid gap-1">
-                      <span class="text-[10px] uppercase tracking-wide text-stone-400">Tenggat</span>
+                      <span class="block text-[10px] uppercase tracking-wide text-stone-400">Tenggat</span>
                       <input v-model="fTindakan[t.id].tenggat" type="date" class="rounded-lg border-stone-200 text-[12px]">
                     </label>
                   </div>
@@ -461,20 +461,20 @@ const WARNA_STATUS: Record<string, string> = {
             </label>
 
             <label class="grid gap-1">
-              <span class="text-[10px] uppercase tracking-wide text-stone-400">Rekomendasi</span>
+              <span class="block text-[10px] uppercase tracking-wide text-stone-400">Rekomendasi</span>
               <input v-model="fTemuan.rekomendasi" class="rounded-lg border-stone-200 text-[12px]">
             </label>
 
             <div class="grid gap-3 md:grid-cols-[160px_1fr_auto] items-end">
               <label class="grid gap-1">
-                <span class="text-[10px] uppercase tracking-wide text-stone-400">Tingkat</span>
+                <span class="block text-[10px] uppercase tracking-wide text-stone-400">Tingkat</span>
                 <select v-model="fTemuan.tingkat" class="rounded-lg border-stone-200 text-[12px]">
                   <option v-for="(nama, k) in (props.opsi?.tingkatTemuan ?? {})" :key="k" :value="k">{{ nama }}</option>
                 </select>
               </label>
 
               <label class="grid gap-1">
-                <span class="text-[10px] uppercase tracking-wide text-stone-400">Dari akar masalah</span>
+                <span class="block text-[10px] uppercase tracking-wide text-stone-400">Dari akar masalah</span>
                 <select v-model="fTemuan.akar_id" class="rounded-lg border-stone-200 text-[12px]">
                   <option value="">—</option>
                   <option v-for="a in (props.inv?.akar ?? [])" :key="a.id" :value="a.id">
@@ -551,7 +551,7 @@ const WARNA_STATUS: Record<string, string> = {
                 @submit.prevent="kirim(fBukti, 'bukti', { forceFormData: true })">
             <div class="grid gap-3 md:grid-cols-[130px_1fr]">
               <label class="grid gap-1">
-                <span class="text-[10px] uppercase tracking-wide text-stone-400">Jenis</span>
+                <span class="block text-[10px] uppercase tracking-wide text-stone-400">Jenis</span>
                 <select v-model="fBukti.jenis" class="rounded-lg border-stone-200 text-[12px]">
                   <option v-for="(nama, k) in (props.opsi?.jenisBukti ?? {})" :key="k" :value="k">{{ nama }}</option>
                 </select>
@@ -567,12 +567,12 @@ const WARNA_STATUS: Record<string, string> = {
             </div>
 
             <label class="grid gap-1">
-              <span class="text-[10px] uppercase tracking-wide text-stone-400">Sumber</span>
+              <span class="block text-[10px] uppercase tracking-wide text-stone-400">Sumber</span>
               <input v-model="fBukti.sumber" class="rounded-lg border-stone-200 text-[12px]">
             </label>
 
             <label class="grid gap-1">
-              <span class="text-[10px] uppercase tracking-wide text-stone-400">Berkas</span>
+              <span class="block text-[10px] uppercase tracking-wide text-stone-400">Berkas</span>
               <input type="file" class="w-full rounded-lg border-stone-200 text-[11.5px]"
                      @change="fBukti.berkas = ($event.target as HTMLInputElement).files?.[0] ?? null">
               <span class="text-[10.5px] text-stone-400">
@@ -635,7 +635,7 @@ const WARNA_STATUS: Record<string, string> = {
                 @submit.prevent="fKeterangan.post(`${basis()}/keterangan`, { preserveScroll: true })">
             <div class="grid gap-3 sm:grid-cols-2">
               <label class="grid gap-1">
-                <span class="text-[10px] uppercase tracking-wide text-stone-400">Ketua investigasi</span>
+                <span class="block text-[10px] uppercase tracking-wide text-stone-400">Ketua investigasi</span>
                 <select v-model="fKeterangan.ketua_id" class="rounded-lg border-stone-200 text-[12px]">
                   <option value="">—</option>
                   <option v-for="o in (props.opsi?.orang ?? [])" :key="o.id" :value="o.id">{{ o.name }}</option>
@@ -643,13 +643,13 @@ const WARNA_STATUS: Record<string, string> = {
               </label>
 
               <label class="grid gap-1">
-                <span class="text-[10px] uppercase tracking-wide text-stone-400">Target selesai</span>
+                <span class="block text-[10px] uppercase tracking-wide text-stone-400">Target selesai</span>
                 <input v-model="fKeterangan.target_selesai" type="date" class="rounded-lg border-stone-200 text-[12px]">
               </label>
             </div>
 
             <label class="grid gap-1">
-              <span class="text-[10px] uppercase tracking-wide text-stone-400">Prioritas</span>
+              <span class="block text-[10px] uppercase tracking-wide text-stone-400">Prioritas</span>
               <select v-model="fKeterangan.prioritas" class="rounded-lg border-stone-200 text-[12px]">
                 <option value="rendah">Rendah</option>
                 <option value="sedang">Sedang</option>
@@ -658,12 +658,12 @@ const WARNA_STATUS: Record<string, string> = {
             </label>
 
             <label class="grid gap-1">
-              <span class="text-[10px] uppercase tracking-wide text-stone-400">Tujuan</span>
+              <span class="block text-[10px] uppercase tracking-wide text-stone-400">Tujuan</span>
               <textarea v-model="fKeterangan.tujuan" rows="2" class="rounded-lg border-stone-200 text-[12px]"></textarea>
             </label>
 
             <label class="grid gap-1">
-              <span class="text-[10px] uppercase tracking-wide text-stone-400">Ruang lingkup</span>
+              <span class="block text-[10px] uppercase tracking-wide text-stone-400">Ruang lingkup</span>
               <textarea v-model="fKeterangan.ruang_lingkup" rows="2" class="rounded-lg border-stone-200 text-[12px]"></textarea>
             </label>
 

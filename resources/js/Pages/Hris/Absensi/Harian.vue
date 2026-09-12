@@ -12,7 +12,6 @@
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, h, ref } from 'vue';
 import { propHalaman } from '../../../halaman';
-import KopHalaman from '../../../Components/KopHalaman.vue';
 import UbinAngka from '../../../Components/UbinAngka.vue';
 import Keadaan from './Keadaan.vue';
 
@@ -126,9 +125,6 @@ const kartu = computed(() => {
   <Head :title="props.judul" />
 
   <div class="max-w-[1280px] mx-auto space-y-5">
-    <KopHalaman :judul="props.judul as string" :subjudul="props.subjudul as string"
-                tagline="Every Tap Counts"
-                :remah="[['HRIS', '/hris'], ['Absensi', null], ['Pemantauan Harian', null]]" ringkas />
 
     <section class="-mt-2 flex flex-wrap items-end justify-end gap-3">
 

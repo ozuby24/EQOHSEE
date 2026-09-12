@@ -13,7 +13,6 @@
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { propHalaman } from '../../../halaman';
-import KopHalaman from '../../../Components/KopHalaman.vue';
 
 const props = propHalaman();
 
@@ -44,9 +43,6 @@ const belumAda = computed(() => baris.value.filter((b) => !b.berlaku && !b.kecua
   <Head :title="props.judul" />
 
   <div class="max-w-[1200px] mx-auto space-y-5">
-    <KopHalaman :judul="props.judul as string" :subjudul="props.subjudul as string"
-                tagline="Fair By The Rule"
-                :remah="[['HRIS', '/hris'], ['Lembur', null], ['Upah Dasar', null]]" ringkas />
 
     <section class="-mt-2 flex flex-wrap items-end justify-end gap-3">
 

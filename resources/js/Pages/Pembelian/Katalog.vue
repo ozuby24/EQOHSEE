@@ -57,10 +57,6 @@ function kirim() {
 
   <div class="max-w-[1400px] mx-auto space-y-5">
 
-    <section>
-      <h2 class="text-xl font-bold text-cam-ink">{{ props.judul }}</h2>
-      <p class="text-[12.5px] text-stone-500 mt-1">{{ props.subjudul }}</p>
-    </section>
 
     <!-- Katalog kosong menyebut SEBABNYA. Halaman putih tanpa
          keterangan terbaca sebagai aplikasi yang rusak. -->

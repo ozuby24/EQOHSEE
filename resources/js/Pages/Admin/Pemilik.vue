@@ -56,8 +56,6 @@ async function tetapkan(kunci: string) {
           <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-cam-lime-light">
             Pusat Kendali
           </span>
-          <h2 class="stat mt-1.5">{{ judul }}</h2>
-          <p class="text-[12px] text-white/70 mt-1.5 max-w-xl leading-relaxed">{{ subjudul }}</p>
         </div>
         <Link :href="tautan.sistem"
               class="glass rounded-xl px-3.5 py-2 text-[11.5px] font-bold text-white hover:bg-white/20 transition shrink-0">
@@ -123,7 +121,7 @@ async function tetapkan(kunci: string) {
 
         <div class="flex flex-wrap items-end gap-2.5 pt-3.5 mt-3.5 border-t border-stone-100">
           <label class="block">
-            <span class="text-[11.5px] font-semibold text-cam-ink">Tetapkan sebagai milik</span>
+            <span class="block text-[11.5px] font-semibold text-cam-ink">Tetapkan sebagai milik</span>
             <select v-model="pilihan[j.kunci].company_id"
                     class="mt-1 w-64 rounded-xl border-stone-200 text-[12.5px]">
               <option :value="null">— pilih perusahaan —</option>

@@ -61,7 +61,6 @@ async function salin(teks: string) {
         <p class="text-[11.5px] text-stone-400">
           <Link href="/pembelian/tagihan" class="hover:underline">← Semua tagihan</Link>
         </p>
-        <h2 class="text-xl font-bold text-cam-ink">{{ props.judul }}</h2>
         <p class="text-[12.5px] text-stone-500 mt-0.5">{{ p().pembeli }}
           <span v-if="p().perusahaan">· {{ p().perusahaan }}</span>
         </p>

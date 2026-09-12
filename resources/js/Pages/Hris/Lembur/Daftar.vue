@@ -11,7 +11,6 @@
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { propHalaman } from '../../../halaman';
-import KopHalaman from '../../../Components/KopHalaman.vue';
 import Dialog from '../../../Components/Dialog.vue';
 import { useDialog } from '../../../dialog';
 
@@ -103,9 +102,6 @@ function faktorTeks(rincian: any[]) {
   <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 
   <div class="max-w-[1240px] mx-auto space-y-5">
-    <KopHalaman :judul="props.judul as string" :subjudul="props.subjudul as string"
-                tagline="Paid For Every Hour"
-                :remah="[['HRIS', '/hris'], ['Lembur', null], ['Perintah Lembur', null]]" ringkas />
 
     <section class="-mt-2 flex flex-wrap items-end justify-end gap-3">
 

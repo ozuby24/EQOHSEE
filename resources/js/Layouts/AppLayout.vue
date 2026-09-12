@@ -12,6 +12,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import type { PropBersama } from '../types';
+import KopHalaman from '../Components/KopHalaman.vue';
 
 /*
   `<Link>` HANYA untuk tujuan yang benar-benar dirender Inertia.
@@ -36,16 +37,69 @@ import type { PropBersama } from '../types';
 const tautan = (inertia: boolean) => (inertia ? Link : 'a');
 
 const halaman = usePage<PropBersama>();
+const menu    = computed(() => halaman.props.menu);
 
-const judul      = computed(() => (halaman.props as Record<string, unknown>).judul as string ?? 'Dashboard');
+/** Butir menu yang sedang dibuka, untuk remah roti dan judul cadangan. */
+const butirAktif = computed(() => menu.value?.grup
+  ?.flatMap((g) => g.butir).find((b) => b.aktif) ?? null);
+
+/**
+ * Judul halaman.
+ *
+ * CADANGANNYA BUKAN KATA UMUM. "Dashboard" sebagai cadangan membuat
+ * enam modul berbeda — Energi, Lingkungan, Biaya, Geoteknik, Peledakan,
+ * Angkutan — mencetak judul yang sama persis di kopnya, sebab keenam
+ * controllernya memang tidak mengirim `judul`. Yang terbaca bukan
+ * "judulnya belum diisi" melainkan "saya sedang di dasbor", pada enam
+ * halaman yang bukan dasbor.
+ *
+ * Jatuhnya ke butir menu yang sedang dibuka, lalu ke nama modulnya:
+ * keduanya selalu ada, dan keduanya selalu menyebut tempat yang benar.
+ */
+const judul = computed(() => (halaman.props as Record<string, unknown>).judul as string
+  || butirAktif.value?.label
+  || menu.value?.label
+  || 'EQOHSEE');
 const subjudul   = computed(() => (halaman.props as Record<string, unknown>).subjudul as string | undefined);
 const pengguna   = computed(() => halaman.props.pengguna);
-const menu       = computed(() => halaman.props.menu);
 const kilat      = computed(() => halaman.props.kilat);
 const pengumuman = computed(() => halaman.props.pengumuman ?? 0);
 
 const lacisTerbuka = ref(false);
 const sempit       = ref(false);
+
+/* ─────────── Kop halaman ───────────
+ *
+ * DIRENDER DI SINI, BUKAN DI TIAP HALAMAN. Kop adalah kerangka, sama
+ * seperti bilah atas dan bilah samping: ia menyebut di mana pembacanya
+ * berada. Ditulis ulang pada dua ratusan halaman, tingginya akan
+ * berselisih, jarak remahnya berselisih, dan ukuran judulnya
+ * berselisih — dan selisih itu terbaca sebagai aplikasi yang
+ * dikerjakan beberapa orang yang tidak pernah bertemu.
+ *
+ * Halaman yang memang perlu kop khusus mengirim `kop: false` dari
+ * controllernya lalu menggambar kopnya sendiri.
+ */
+
+const kopSendiri = computed(() => (halaman.props as Record<string, unknown>).kop === false);
+
+const remahKop = computed<[string, string | null][]>(() => {
+  const r: [string, string | null][] = [];
+  const m = menu.value;
+
+  if (!m) return r;
+
+  // Akar modul menjadi tautan HANYA bila pembacanya tidak sedang
+  // berdiri di sana. Remah yang menautkan ke halaman yang sedang
+  // dibuka terlihat dapat ditekan dan tidak membawa ke mana pun.
+  r.push([m.label, butirAktif.value && m.akar && !butirAktif.value.aktif ? m.akar : null]);
+
+  if (butirAktif.value && butirAktif.value.label !== m.label) {
+    r.push([butirAktif.value.label, null]);
+  }
+
+  return r;
+});
 
 /* ─────────── Akun ─────────── */
 
@@ -573,7 +627,13 @@ function keluar() {
           </div>
         </div>
 
-        <slot />
+        <div class="max-w-[1400px] mx-auto space-y-4">
+          <KopHalaman v-if="!kopSendiri" :judul="judul" :subjudul="subjudul ?? null"
+                      :label="menu?.label ?? null" :tagline="menu?.semboyan ?? null"
+                      :remah="remahKop" ringkas />
+
+          <slot />
+        </div>
       </main>
     </div>
   </div>

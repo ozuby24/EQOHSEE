@@ -218,14 +218,14 @@ async function hapusMitra() {
               @submit.prevent="kirimDokumen">
           <div class="grid gap-3 sm:grid-cols-2">
             <label class="grid gap-1">
-              <span class="text-[11.5px] font-semibold text-stone-600">Jenis dokumen</span>
+              <span class="block text-[11.5px] font-semibold text-stone-600">Jenis dokumen</span>
               <select v-model="unggah.jenis" class="rounded-lg border-stone-200 text-[12.5px]">
                 <option v-for="(label, kode) in (props.JENIS ?? {})" :key="kode" :value="kode">{{ label }}</option>
               </select>
             </label>
 
             <label class="grid gap-1">
-              <span class="text-[11.5px] font-semibold text-stone-600">Periode</span>
+              <span class="block text-[11.5px] font-semibold text-stone-600">Periode</span>
               <input v-model="unggah.periode" maxlength="60" placeholder="mis. September 2026"
                      class="rounded-lg border-stone-200 text-[12.5px]">
             </label>
@@ -237,13 +237,13 @@ async function hapusMitra() {
           </p>
 
           <label class="grid gap-1">
-            <span class="text-[11.5px] font-semibold text-stone-600">Berkas</span>
+            <span class="block text-[11.5px] font-semibold text-stone-600">Berkas</span>
             <input ref="berkasInput" type="file" required class="text-[12px]" @change="pilihBerkas">
             <small v-if="unggah.errors.berkas" class="text-[11px] text-red-600">{{ unggah.errors.berkas }}</small>
           </label>
 
           <label class="grid gap-1">
-            <span class="text-[11.5px] font-semibold text-stone-600">Catatan</span>
+            <span class="block text-[11.5px] font-semibold text-stone-600">Catatan</span>
             <textarea v-model="unggah.catatan" rows="2" class="rounded-lg border-stone-200 text-[12.5px]" />
           </label>
 
@@ -308,13 +308,13 @@ async function hapusMitra() {
               @submit.prevent="kirimEvaluasi">
           <div class="grid gap-3 sm:grid-cols-2">
             <label class="grid gap-1">
-              <span class="text-[11.5px] font-semibold text-stone-600">Tahun</span>
+              <span class="block text-[11.5px] font-semibold text-stone-600">Tahun</span>
               <input v-model.number="evaluasi.tahun" type="number" min="2000" max="2100"
                      class="rounded-lg border-stone-200 text-[12.5px] num">
             </label>
 
             <label class="grid gap-1">
-              <span class="text-[11.5px] font-semibold text-stone-600">Semester</span>
+              <span class="block text-[11.5px] font-semibold text-stone-600">Semester</span>
               <select v-model.number="evaluasi.semester" class="rounded-lg border-stone-200 text-[12.5px]">
                 <option v-for="(label, kode) in (props.SEMESTER ?? {})" :key="kode" :value="Number(kode)">{{ label }}</option>
               </select>
@@ -326,14 +326,14 @@ async function hapusMitra() {
                    ['skor_keselamatan_kesehatan', 'Keselamatan & kesehatan'],
                    ['skor_lingkungan', 'Lingkungan'],
                  ]" :key="s[0]" class="grid gap-1">
-            <span class="text-[11.5px] font-semibold text-stone-600">{{ s[1] }} (0–100)</span>
+            <span class="block text-[11.5px] font-semibold text-stone-600">{{ s[1] }} (0–100)</span>
             <input v-model.number="(evaluasi as any)[s[0]]" type="number" min="0" max="100"
                    class="rounded-lg border-stone-200 text-[12.5px] num">
             <small v-if="(evaluasi.errors as any)[s[0]]" class="text-[11px] text-red-600">{{ (evaluasi.errors as any)[s[0]] }}</small>
           </label>
 
           <label class="grid gap-1">
-            <span class="text-[11.5px] font-semibold text-stone-600">Catatan</span>
+            <span class="block text-[11.5px] font-semibold text-stone-600">Catatan</span>
             <textarea v-model="evaluasi.catatan" rows="2" class="rounded-lg border-stone-200 text-[12.5px]" />
           </label>
 

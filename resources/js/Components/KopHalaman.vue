@@ -23,6 +23,17 @@ withDefaults(defineProps<{
   judul: string;
   subjudul?: string | null;
 
+  /**
+   * Label kecil beraksen di atas judul — nama modulnya.
+   *
+   * Judul halaman menyebut HALAMANNYA; label ini menyebut DI MANA
+   * halaman itu berada. Tanpa keduanya, "Rekapitulasi" pada modul
+   * penilaian dan "Rekapitulasi" pada modul gudang tercetak sama
+   * persis, dan yang membedakannya hanyalah remah roti setinggi
+   * sebelas piksel di atasnya.
+   */
+  label?: string | null;
+
   /** Remah roti: [label, alamat]. Alamat null berarti halaman ini. */
   remah?: [string, string | null][];
 
@@ -39,7 +50,7 @@ withDefaults(defineProps<{
   /** Lebih pendek: untuk halaman daftar yang isinya panjang. */
   ringkas?: boolean;
 }>(), {
-  subjudul: null, remah: () => [], tagline: null, pil: () => [],
+  subjudul: null, label: null, remah: () => [], tagline: null, pil: () => [],
   kanan: null, kananKecil: null, ringkas: false,
 });
 </script>
@@ -66,6 +77,7 @@ withDefaults(defineProps<{
 
       <div class="kop-baris">
         <div class="min-w-0">
+          <p v-if="label" class="kop-label">{{ label }}</p>
           <h1 class="kop-judul">{{ judul }}</h1>
           <p v-if="subjudul" class="kop-subjudul">{{ subjudul }}</p>
 
@@ -196,6 +208,27 @@ withDefaults(defineProps<{
   flex-wrap: wrap;
 }
 
+.kop-label {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  margin: 0 0 .4rem;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--eq-aksen, #F57C00);
+}
+
+.kop-label::before {
+  content: "";
+  width: 14px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  flex: none;
+}
+
 .kop-judul {
   font-size: clamp(1.4rem, 2.8vw, 2.05rem);
   font-weight: 800;
@@ -278,7 +311,11 @@ withDefaults(defineProps<{
   text-align: right;
   color: rgba(255,255,255,.92);
   text-shadow: 0 1px 12px rgba(0,0,0,.45);
-  max-width: 12ch;
+
+  /* Cukup lebar untuk semboyan empat kata tanpa memecahnya menjadi
+     empat baris, dan tetap dibatasi lebar layar supaya ia tidak pernah
+     menyeberangi judul di sebelah kirinya. */
+  max-width: min(17ch, 30vw);
 }
 
 .kop-tagline::after {

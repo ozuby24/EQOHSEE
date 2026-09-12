@@ -154,8 +154,6 @@ function cetak() {
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-cam-orange">Minerba · Environment</p>
-        <h2 class="text-2xl font-extrabold tracking-tight text-stone-800">{{ props.judul }}</h2>
-        <p class="text-[12px] text-stone-500 mt-1">{{ props.subjudul }}</p>
       </div>
       <label class="text-[11px] font-semibold text-stone-500">Periode data
         <select v-model="tahun" class="ml-2 rounded-lg border-stone-200 text-[12px] font-semibold">

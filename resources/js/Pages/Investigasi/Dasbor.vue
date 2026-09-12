@@ -37,8 +37,6 @@ function tautan(b: any): string {
   <div class="max-w-[1400px] mx-auto space-y-5">
     <section class="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h2 class="text-xl font-bold text-cam-ink">{{ props.judul }}</h2>
-        <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
       </div>
 
       <span class="inline-flex">

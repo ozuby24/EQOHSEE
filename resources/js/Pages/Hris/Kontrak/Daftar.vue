@@ -16,7 +16,6 @@
 import { Head, useForm } from '@inertiajs/vue3';
 import { computed, h, ref } from 'vue';
 import { propHalaman } from '../../../halaman';
-import KopHalaman from '../../../Components/KopHalaman.vue';
 import UbinAngka from '../../../Components/UbinAngka.vue';
 import Dialog from '../../../Components/Dialog.vue';
 import { useDialog } from '../../../dialog';
@@ -171,9 +170,6 @@ const sedangPilih = ref<number | null>(null);
   <Head :title="props.judul as string" />
 
   <div class="space-y-4">
-    <KopHalaman :judul="props.judul as string" :subjudul="props.subjudul as string"
-                tagline="Signed And Sound"
-                :remah="[['HRIS', '/hris'], ['Kontrak Kerja', null], ['PKWT & PKWTT', null]]" ringkas />
 
     <section class="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
       <UbinAngka :angka="ringkas.berjalan ?? 0" label="Kontrak berjalan">

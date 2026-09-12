@@ -66,8 +66,6 @@ async function pangkasJejak() {
           <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-cam-lime-light">
             Pusat Kendali
           </span>
-          <h2 class="stat mt-1.5">{{ judul }}</h2>
-          <p class="text-[12px] text-white/70 mt-1.5 max-w-xl leading-relaxed">{{ subjudul }}</p>
         </div>
         <div class="flex items-center gap-2 shrink-0">
           <Link :href="tautan.diagnosa"

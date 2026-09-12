@@ -70,6 +70,12 @@ export interface KerangkaMenu {
    * prop berarti dua tempat yang harus sama selamanya.
    */
   tema?: string | null;
+
+  /** Semboyan modul, untuk tagline di kop halaman. */
+  semboyan?: string | null;
+
+  /** Alamat akar modul, untuk remah roti di kop. */
+  akar?: string | null;
 }
 
 export interface Kilat {

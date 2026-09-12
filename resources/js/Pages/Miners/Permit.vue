@@ -71,17 +71,13 @@ const WARNA_LABEL = computed<Record<string, any>>(() => (props.WARNA ?? {}) as R
   <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 
   <div class="max-w-[1400px] mx-auto space-y-5">
-    <section>
-      <h2 class="text-xl font-bold text-cam-ink">{{ props.judul }}</h2>
-      <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
-    </section>
 
     <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
       <h3 class="text-[13.5px] font-bold text-cam-ink mb-3">Mine Permit baru</h3>
 
       <form class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" @submit.prevent="simpan">
         <label class="block">
-          <span class="text-[11px] text-stone-500">Pekerja</span>
+          <span class="block text-[11px] text-stone-500">Pekerja</span>
           <select v-model="buat.pekerja_id" required class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option value="">Pilih pekerja…</option>
             <option v-for="pk in (props.pekerja ?? [])" :key="pk.id" :value="pk.id">{{ pk.nama }}</option>
@@ -89,18 +85,18 @@ const WARNA_LABEL = computed<Record<string, any>>(() => (props.WARNA ?? {}) as R
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Nomor kartu</span>
+          <span class="block text-[11px] text-stone-500">Nomor kartu</span>
           <input v-model="buat.no_registrasi" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Tanggal terbit</span>
+          <span class="block text-[11px] text-stone-500">Tanggal terbit</span>
           <input v-model="buat.tanggal" type="date" required
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Jenis permit</span>
+          <span class="block text-[11px] text-stone-500">Jenis permit</span>
           <select v-model="buat.tipe_permit_id" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option value="">Pilih jenis…</option>
             <option v-for="t in (props.tipe ?? [])" :key="t.id" :value="t.id">
@@ -110,7 +106,7 @@ const WARNA_LABEL = computed<Record<string, any>>(() => (props.WARNA ?? {}) as R
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Kategori</span>
+          <span class="block text-[11px] text-stone-500">Kategori</span>
           <select v-model="buat.kategori_permit_id" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option value="">Pilih kategori…</option>
             <option v-for="k in kategoriTipe" :key="k.id" :value="k.id">{{ k.nama }}</option>
@@ -118,7 +114,7 @@ const WARNA_LABEL = computed<Record<string, any>>(() => (props.WARNA ?? {}) as R
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Zona akses</span>
+          <span class="block text-[11px] text-stone-500">Zona akses</span>
           <select v-model="buat.cakupan_area" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option value="">Pilih zona…</option>
             <option v-for="(z, kode) in (props.CAKUPAN ?? {})" :key="kode" :value="kode">{{ z.label }}</option>
@@ -126,7 +122,7 @@ const WARNA_LABEL = computed<Record<string, any>>(() => (props.WARNA ?? {}) as R
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Warna kartu</span>
+          <span class="block text-[11px] text-stone-500">Warna kartu</span>
           <select v-model="buat.kode_warna" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option value="">Pilih warna…</option>
             <option v-for="(w, kode) in WARNA_LABEL" :key="kode" :value="kode">{{ w.label }}</option>

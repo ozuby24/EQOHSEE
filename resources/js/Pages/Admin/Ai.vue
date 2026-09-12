@@ -70,8 +70,6 @@ async function hapus(kode: string, nama: string) {
           <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-cam-lime-light">
             Pusat Kendali
           </span>
-          <h2 class="stat mt-1.5">{{ judul }}</h2>
-          <p class="text-[12px] text-white/70 mt-1.5 max-w-xl leading-relaxed">{{ subjudul }}</p>
         </div>
         <div class="flex items-center gap-2 shrink-0">
           <span class="glass rounded-xl px-3 py-2 text-[11.5px] font-bold text-white">
@@ -125,7 +123,7 @@ async function hapus(kode: string, nama: string) {
 
       <form class="space-y-4" @submit.prevent="simpan">
         <label class="block">
-          <span class="text-[12px] font-semibold text-cam-ink">Kunci API</span>
+          <span class="block text-[12px] font-semibold text-cam-ink">Kunci API</span>
           <input v-model="form.kunci" type="password" autocomplete="off" spellcheck="false"
                  :placeholder="terpilih?.terpasang
                    ? 'Terpasang ' + terpilih?.ekor + ' — biarkan kosong untuk mempertahankannya'
@@ -142,7 +140,7 @@ async function hapus(kode: string, nama: string) {
 
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="block">
-            <span class="text-[12px] font-semibold text-cam-ink">Model</span>
+            <span class="block text-[12px] font-semibold text-cam-ink">Model</span>
             <input v-model="form.model" list="model-contoh" spellcheck="false"
                    class="mt-1 w-full rounded-xl border-stone-200 text-[12.5px] font-mono">
             <datalist id="model-contoh">
@@ -156,7 +154,7 @@ async function hapus(kode: string, nama: string) {
           </label>
 
           <label class="block">
-            <span class="text-[12px] font-semibold text-cam-ink">Batas token jawaban</span>
+            <span class="block text-[12px] font-semibold text-cam-ink">Batas token jawaban</span>
             <input v-model.number="form.maks_token" type="number" min="100" max="4000"
                    class="mt-1 w-full rounded-xl border-stone-200 text-[12.5px]">
             <span class="block text-[11px] text-stone-500 mt-1.5">

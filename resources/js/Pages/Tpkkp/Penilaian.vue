@@ -324,7 +324,7 @@ const bukaTarget = reactive<Record<string, boolean>>({});
             <div class="flex flex-wrap gap-2">
               <label v-for="sel in kunciSel" :key="sel"
                      class="flex items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 px-2.5 py-1.5">
-                <span class="text-[11px] text-stone-500 whitespace-nowrap">
+                <span class="block text-[11px] text-stone-500 whitespace-nowrap">
                   {{ sel === '_' ? 'Nilai' : sel }}
                 </span>
                 <select v-model="nilai[it.kode][sel]" :disabled="!bisaSunting"

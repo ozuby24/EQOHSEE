@@ -17,7 +17,6 @@ import { computed, h } from 'vue';
 import { propHalaman } from '../../halaman';
 import KartuGrafik from '../../Grafik/KartuGrafik.vue';
 import Batang from '../../Grafik/Batang.vue';
-import KopHalaman from '../../Components/KopHalaman.vue';
 import UbinAngka from '../../Components/UbinAngka.vue';
 import KutipanKaki from '../../Components/KutipanKaki.vue';
 
@@ -86,12 +85,6 @@ const perluDitindak = computed(() =>
   <Head :title="props.judul" />
 
   <div class="max-w-[1200px] mx-auto space-y-5">
-    <KopHalaman
-      judul="HRIS — Ringkasan Tenaga Kerja"
-      subjudul="Siapa yang seharusnya di site hari ini, dan apakah mereka benar-benar ada."
-      tagline="People Drive Progress"
-      :remah="[['HRIS', '/hris'], ['Ringkasan', null]]"
-      :kanan="props.tanggal as string" kanan-kecil="hari ini" />
 
     <p v-if="perluDitindak === 0"
        class="rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-[12.5px] text-emerald-800">

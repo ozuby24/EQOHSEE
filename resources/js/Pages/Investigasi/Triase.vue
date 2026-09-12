@@ -134,7 +134,7 @@ function simpan() {
         <!-- Keparahan potensial: medan tersendiri, dengan alasannya. -->
         <div class="px-5 pb-5">
           <label class="grid gap-1">
-            <span class="text-[10px] uppercase tracking-wide text-stone-400">Keparahan potensial</span>
+            <span class="block text-[10px] uppercase tracking-wide text-stone-400">Keparahan potensial</span>
             <select v-model="f.keparahan_potensial" class="rounded-lg border-stone-200 text-[12.5px]">
               <option :value="null">— sama dengan keparahan nyata</option>
               <option v-for="p in 5" :key="p" :value="p">{{ p }} · {{ props.label?.keparahan?.[p] }}</option>
@@ -213,7 +213,7 @@ function simpan() {
 
           <div class="px-5 pb-5">
             <label class="grid gap-1">
-              <span class="text-[10px] uppercase tracking-wide text-stone-400">Klasifikasi menurut regulasi</span>
+              <span class="block text-[10px] uppercase tracking-wide text-stone-400">Klasifikasi menurut regulasi</span>
               <select v-model="f.klasifikasi_regulasi_id" class="rounded-lg border-stone-200 text-[12.5px]">
                 <option value="">—</option>
                 <option v-for="r in (props.opsi?.regulasi ?? [])" :key="r.id" :value="r.id">

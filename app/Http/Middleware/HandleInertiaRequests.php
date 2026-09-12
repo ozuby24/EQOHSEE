@@ -164,6 +164,16 @@ class HandleInertiaRequests extends Middleware
                tema adalah lembar gayanya, dan mengirim warnanya lewat
                prop berarti dua tempat yang harus sama selamanya. */
             'tema'  => $aktif['tema'] ?? null,
+
+            /* Semboyan modul, untuk kop halaman. Ditulis sekali di
+               tempat modulnya didefinisikan, bukan diulang di tiap
+               halaman — diulang, ia akan berselisih antar halaman pada
+               modul yang sama, dan selisih itu terbaca sebagai halaman
+               yang dikerjakan orang berbeda. */
+            'semboyan' => $aktif['semboyan'] ?? null,
+
+            /* Alamat akar modul, untuk remah roti di kop. */
+            'akar' => ($r = Menu::ruteAwal($aktif)) ? route($r) : null,
         ];
     }
 }
