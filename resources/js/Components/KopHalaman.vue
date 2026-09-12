@@ -1,0 +1,299 @@
+<script setup lang="ts">
+/**
+ * Kop halaman bergambar — remah, judul, dan tagline.
+ *
+ * GAMBARNYA SELALU DITUTUP LAPISAN GELAP, bukan dipasang apa adanya.
+ * Foto tambang berlatar matahari terbenam punya bagian terang dan
+ * gelap sekaligus; tulisan putih di atasnya terbaca pada separuh
+ * lebarnya dan lenyap pada separuh yang lain. Lapisan itu yang
+ * membuat kontrasnya dapat dijamin, bukan pilihan fotonya.
+ *
+ * TIDAK PERNAH MEMBAWA ANGKA. Kop ini hiasan yang menyebut DI MANA
+ * pembacanya berada; angka yang perlu ditindak tinggal di kartu di
+ * bawahnya, yang dapat dibaca ulang, disalin, dan diurutkan. Angka di
+ * dalam gambar tidak dapat diperlakukan begitu — dan yang paling
+ * penting selalu berakhir menjadi yang paling sulit dibaca.
+ *
+ * SATU RUPA DI SELURUH APLIKASI. Ditulis ulang tiap halaman, kopnya
+ * akan berselisih tingginya, jarak remahnya, dan ukuran judulnya —
+ * dan selisih itu terbaca sebagai halaman yang dikerjakan orang
+ * berbeda pada aplikasi yang sama.
+ */
+withDefaults(defineProps<{
+  judul: string;
+  subjudul?: string | null;
+
+  /** Remah roti: [label, alamat]. Alamat null berarti halaman ini. */
+  remah?: [string, string | null][];
+
+  /** Tagline tulisan tangan di kanan atas. */
+  tagline?: string | null;
+
+  /** Pil fitur di bawah subjudul: [judul, keterangan, nada]. */
+  pil?: [string, string, ('lime' | 'sky' | 'orange')?][];
+
+  /** Keterangan kecil di kanan — tanggal, periode, jumlah. */
+  kanan?: string | null;
+  kananKecil?: string | null;
+
+  /** Lebih pendek: untuk halaman daftar yang isinya panjang. */
+  ringkas?: boolean;
+}>(), {
+  subjudul: null, remah: () => [], tagline: null, pil: () => [],
+  kanan: null, kananKecil: null, ringkas: false,
+});
+</script>
+
+<template>
+  <section class="kop" :class="ringkas ? 'kop-ringkas' : null">
+    <img class="kop-gambar" src="/brand/tambang.jpg" alt="" aria-hidden="true"
+         loading="lazy" decoding="async">
+    <div class="kop-tirai" aria-hidden="true" />
+
+    <div class="kop-isi">
+      <nav v-if="remah.length" class="kop-remah" aria-label="Remah roti">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m3 10.5 9-7 9 7V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1Z"/>
+        </svg>
+
+        <template v-for="([label, alamat], i) in remah" :key="i">
+          <span v-if="i" class="kop-panah" aria-hidden="true">›</span>
+          <a v-if="alamat" :href="alamat">{{ label }}</a>
+          <span v-else class="kop-kini">{{ label }}</span>
+        </template>
+      </nav>
+
+      <div class="kop-baris">
+        <div class="min-w-0">
+          <h1 class="kop-judul">{{ judul }}</h1>
+          <p v-if="subjudul" class="kop-subjudul">{{ subjudul }}</p>
+
+          <div v-if="pil.length" class="kop-pil-baris">
+            <span v-for="([atas, bawah, nada], i) in pil" :key="i" class="kop-pil">
+              <span class="kop-pil-ikon" :class="'kop-pil-' + (nada ?? 'lime')" aria-hidden="true">
+                <slot :name="'pil-' + i">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m5 12.5 4.5 4.5L19 7.5"/>
+                  </svg>
+                </slot>
+              </span>
+              <span class="min-w-0">
+                <strong>{{ atas }}</strong>
+                <small>{{ bawah }}</small>
+              </span>
+            </span>
+          </div>
+        </div>
+
+        <div class="kop-kanan">
+          <span v-if="kanan" class="kop-cap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M8 3v3m8-3v3M3.5 9.5h17M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v12A1.5 1.5 0 0 1 19 20.5H5A1.5 1.5 0 0 1 3.5 19V7A1.5 1.5 0 0 1 5 5.5Z"/>
+            </svg>
+            <span>
+              <strong>{{ kanan }}</strong>
+              <small v-if="kananKecil">{{ kananKecil }}</small>
+            </span>
+          </span>
+
+          <p v-if="tagline" class="kop-tagline" aria-hidden="true">{{ tagline }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</template>
+
+<style>
+/**
+ * Palet kop, sadar tema.
+ *
+ * Ditulis sebagai kelas dan bukan gaya sebaris supaya aturan mode
+ * gelap dapat menimpanya. Latarnya sendiri memang selalu gelap —
+ * itulah sebabnya warna tulisannya tidak ikut berganti tema; yang
+ * berganti hanyalah pekat tidaknya tirai di atas fotonya, sebab
+ * halaman terang di sekelilingnya membuat kop yang sama terbaca
+ * lebih mencolok.
+ */
+.kop {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  min-height: 176px;
+  display: flex;
+  align-items: stretch;
+  isolation: isolate;
+
+  /* Latar gelapnya sendiri, bukan warisan fotonya. Tirai di atas
+     gambar menipis sampai bening di ujung kanan — tepat di tempat
+     taglinenya berdiri — sehingga bila fotonya gagal dimuat, tulisan
+     putih itu jatuh di atas latar halaman yang krem dan lenyap. Foto
+     adalah hiasan di atas dasar ini, bukan dasarnya. */
+  background: #0A1114;
+}
+
+.kop-ringkas { min-height: 150px; }
+
+.kop-gambar {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(1.08) brightness(1.06);
+  /* Sunsetnya berada di sepertiga ATAS gambar potret ini; diambil
+     dari tengah, yang tampak hanyalah tumpukan batu gelap. */
+  object-position: 62% 26%;
+  z-index: -2;
+}
+
+/* Tirai: gelap penuh di kiri tempat tulisannya, menipis ke kanan
+   tempat fotonya dibiarkan terlihat. */
+.kop-tirai {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(100deg, rgba(10,17,20,.92) 0%, rgba(10,17,20,.78) 32%, rgba(10,17,20,.26) 60%, rgba(10,17,20,0) 100%);
+}
+
+:root[data-tema="gelap"] .kop-tirai {
+  background:
+    linear-gradient(100deg, rgba(6,11,13,.94) 0%, rgba(6,11,13,.84) 32%, rgba(6,11,13,.40) 60%, rgba(6,11,13,.12) 100%);
+}
+
+.kop-isi {
+  position: relative;
+  width: 100%;
+  padding: 1.15rem 1.35rem 1.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: .55rem;
+  color: #fff;
+}
+
+.kop-remah {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: 11.5px;
+  color: rgba(255,255,255,.72);
+}
+
+.kop-remah svg { width: 14px; height: 14px; }
+.kop-remah a { color: rgba(255,255,255,.78); text-decoration: none; }
+.kop-remah a:hover { color: #fff; text-decoration: underline; }
+.kop-kini { color: #fff; font-weight: 600; }
+.kop-panah { opacity: .55; }
+
+.kop-baris {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.kop-judul {
+  font-size: clamp(1.4rem, 2.8vw, 2.05rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -.02em;
+  margin: 0;
+}
+
+.kop-subjudul {
+  margin: .3rem 0 0;
+  font-size: 12.5px;
+  color: rgba(255,255,255,.82);
+  max-width: 62ch;
+}
+
+.kop-pil-baris { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: .75rem; }
+
+.kop-pil {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  border-radius: .7rem;
+  padding: .38rem .7rem .38rem .4rem;
+  background: rgba(255,255,255,.10);
+  border: 1px solid rgba(255,255,255,.14);
+  backdrop-filter: blur(2px);
+}
+
+.kop-pil strong { display: block; font-size: 11.5px; font-weight: 700; line-height: 1.2; }
+.kop-pil small  { display: block; font-size: 10.5px; color: rgba(255,255,255,.68); line-height: 1.25; }
+
+.kop-pil-ikon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px; height: 26px;
+  border-radius: .55rem;
+  flex: none;
+}
+
+.kop-pil-ikon svg { width: 15px; height: 15px; }
+
+.kop-pil-lime   { background: rgba(163,209,54,.22);  color: #C7E86B; }
+.kop-pil-sky    { background: rgba(56,141,219,.24);  color: #9CC9F5; }
+.kop-pil-orange { background: rgba(245,124,0,.24);   color: #FFB870; }
+
+.kop-kanan {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: .6rem;
+  margin-left: auto;
+}
+
+.kop-cap {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  border-radius: .7rem;
+  padding: .4rem .7rem;
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.16);
+  white-space: nowrap;
+}
+
+.kop-cap svg { width: 15px; height: 15px; opacity: .85; }
+.kop-cap strong { display: block; font-size: 11.5px; font-weight: 700; }
+.kop-cap small  { display: block; font-size: 10.5px; color: rgba(255,255,255,.7); }
+
+/* Tagline tulisan tangan. Miring dan berbobot ringan supaya ia
+   terbaca sebagai hiasan, bukan sebagai kalimat yang harus dibaca —
+   karena itu pula ia aria-hidden. */
+.kop-tagline {
+  margin: 0;
+  font-family: ui-rounded, "Segoe UI", system-ui, sans-serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: clamp(.95rem, 1.7vw, 1.3rem);
+  line-height: 1.15;
+  text-align: right;
+  color: rgba(255,255,255,.92);
+  text-shadow: 0 1px 12px rgba(0,0,0,.45);
+  max-width: 12ch;
+}
+
+.kop-tagline::after {
+  content: "";
+  display: block;
+  height: 3px;
+  width: 78%;
+  margin: .4rem 0 0 auto;
+  border-radius: 999px;
+  background: #F57C00;
+}
+
+@media (max-width: 640px) {
+  .kop { min-height: 0; }
+  .kop-tagline { display: none; }
+  .kop-kanan { align-items: flex-start; margin-left: 0; }
+}
+</style>

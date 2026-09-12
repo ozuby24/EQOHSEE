@@ -12,6 +12,7 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { propHalaman } from '../../../halaman';
+import KopHalaman from '../../../Components/KopHalaman.vue';
 import Dialog from '../../../Components/Dialog.vue';
 import { useDialog } from '../../../dialog';
 
@@ -88,11 +89,11 @@ Authorization: Bearer <token>
   <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 
   <div class="max-w-[1100px] mx-auto space-y-5">
-    <section class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h2 class="text-xl font-bold text-cam-ink">{{ props.judul }}</h2>
-        <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
-      </div>
+    <KopHalaman :judul="props.judul as string" :subjudul="props.subjudul as string"
+                tagline="Always Connected"
+                :remah="[['HRIS', '/hris'], ['Absensi', null], ['Mesin Lapangan', null]]" ringkas />
+
+    <section class="-mt-2 flex flex-wrap items-end justify-end gap-3">
 
       <Link href="/hris/absensi" class="eq-btn-lain">Pemantauan harian</Link>
     </section>
@@ -160,30 +161,30 @@ Authorization: Bearer <token>
 
       <form class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5" @submit.prevent="simpanUbah">
         <label class="block">
-          <span class="text-[11px] text-stone-500">Nama</span>
+          <span class="block text-[11px] text-stone-500">Nama</span>
           <input v-model="ubah.nama" type="text" required class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Merek</span>
+          <span class="block text-[11px] text-stone-500">Merek</span>
           <select v-model="ubah.merek" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option v-for="(label, kode) in (props.MEREK ?? {})" :key="kode" :value="kode">{{ label }}</option>
           </select>
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Nomor seri</span>
+          <span class="block text-[11px] text-stone-500">Nomor seri</span>
           <input v-model="ubah.nomor_seri" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-          <span v-if="ubah.errors.nomor_seri" class="text-[11px] text-red-600">{{ ubah.errors.nomor_seri }}</span>
+          <span v-if="ubah.errors.nomor_seri" class="block text-[11px] text-red-600">{{ ubah.errors.nomor_seri }}</span>
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Alamat IP</span>
+          <span class="block text-[11px] text-stone-500">Alamat IP</span>
           <input v-model="ubah.ip" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Area</span>
+          <span class="block text-[11px] text-stone-500">Area</span>
           <select v-model="ubah.blok_id" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option value="">—</option>
             <option v-for="(nama, id) in (props.blok ?? {})" :key="id" :value="id">{{ nama }}</option>
@@ -207,31 +208,31 @@ Authorization: Bearer <token>
 
       <form class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5" @submit.prevent="simpan">
         <label class="block">
-          <span class="text-[11px] text-stone-500">Nama</span>
+          <span class="block text-[11px] text-stone-500">Nama</span>
           <input v-model="form.nama" type="text" required placeholder="Pos Jaga 1"
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Merek</span>
+          <span class="block text-[11px] text-stone-500">Merek</span>
           <select v-model="form.merek" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option v-for="(label, kode) in (props.MEREK ?? {})" :key="kode" :value="kode">{{ label }}</option>
           </select>
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Nomor seri</span>
+          <span class="block text-[11px] text-stone-500">Nomor seri</span>
           <input v-model="form.nomor_seri" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-          <span v-if="form.errors.nomor_seri" class="text-[11px] text-red-600">{{ form.errors.nomor_seri }}</span>
+          <span v-if="form.errors.nomor_seri" class="block text-[11px] text-red-600">{{ form.errors.nomor_seri }}</span>
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Alamat IP</span>
+          <span class="block text-[11px] text-stone-500">Alamat IP</span>
           <input v-model="form.ip" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Area</span>
+          <span class="block text-[11px] text-stone-500">Area</span>
           <select v-model="form.blok_id" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option value="">—</option>
             <option v-for="(nama, id) in (props.blok ?? {})" :key="id" :value="id">{{ nama }}</option>

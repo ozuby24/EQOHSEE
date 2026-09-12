@@ -10,8 +10,10 @@
  * pun — padahal justru itu yang perlu dilihat.
  */
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, h, ref } from 'vue';
 import { propHalaman } from '../../../halaman';
+import KopHalaman from '../../../Components/KopHalaman.vue';
+import UbinAngka from '../../../Components/UbinAngka.vue';
 import Keadaan from './Keadaan.vue';
 
 const props = propHalaman();
@@ -83,26 +85,52 @@ function telatTeks(m: number | null) {
   return `${m} mnt`;
 }
 
-const kartu = computed(() => [
-  { kunci: 'dijadwalkan', label: 'Dijadwalkan kerja', kelas: 'ab-k-netral' },
-  { kunci: 'hadir',       label: 'Hadir',             kelas: 'ab-k-baik' },
-  { kunci: 'terlambat',   label: 'Terlambat',         kelas: 'ab-k-ingat' },
-  { kunci: 'belum_pulang',label: 'Belum tap pulang',  kelas: 'ab-k-serius' },
-  { kunci: 'absen',       label: 'Absen',             kelas: 'ab-k-gawat' },
-  { kunci: 'luar_roster', label: 'Di luar roster',    kelas: 'ab-k-luar' },
-  { kunci: 'luar_area',   label: 'Di luar geofence',  kelas: 'ab-k-gawat' },
-]);
+/**
+ * Ikon ubin, digambar sebagai path inline.
+ *
+ * Bukan dari pustaka ikon: repo ini sudah sekali melepas pustaka dari
+ * CDN, dan ikon yang gagal dimuat pada jaringan site tambang
+ * meninggalkan kotak kosong di tempat angka yang seharusnya terbaca.
+ */
+const IKON: Record<string, string[]> = {
+  jadwal: ['M8 3v3m8-3v3M3.5 9.5h17M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v12A1.5 1.5 0 0 1 19 20.5H5A1.5 1.5 0 0 1 3.5 19V7A1.5 1.5 0 0 1 5 5.5Z'],
+  hadir:  ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z', 'm8.5 12.2 2.4 2.4 4.6-4.9'],
+  telat:  ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z', 'M12 7.5v5l3.2 1.9'],
+  belum:  ['M3.5 12h6l2-3 2.5 6 2-3h4.5'],
+  absen:  ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z', 'm9 9 6 6M15 9l-6 6'],
+  luar:   ['M16 20v-1.5a4 4 0 0 0-8 0V20', 'M12 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z', 'M19 7.5 21 5M21 9.5 19 12'],
+  area:   ['M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11Z', 'M12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z'],
+};
+
+const Ikon = (p: { nama: string }) => h('svg', {
+  viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 1.9,
+  'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true',
+}, (IKON[p.nama] ?? []).map((d) => h('path', { d })));
+
+const kartu = computed(() => {
+  const n = ringkas.value.dijadwalkan ?? 0;
+
+  return [
+    { kunci: 'dijadwalkan', label: 'Dijadwalkan kerja', nada: 'serius', ikon: 'jadwal', dari: null },
+    { kunci: 'hadir',       label: 'Hadir',             nada: 'baik',   ikon: 'hadir',  dari: n },
+    { kunci: 'terlambat',   label: 'Terlambat',         nada: 'ingat',  ikon: 'telat',  dari: n },
+    { kunci: 'belum_pulang',label: 'Belum tap pulang',  nada: 'serius', ikon: 'belum',  dari: n },
+    { kunci: 'absen',       label: 'Absen',             nada: 'gawat',  ikon: 'absen',  dari: n },
+    { kunci: 'luar_roster', label: 'Di luar roster',    nada: 'luar',   ikon: 'luar',   dari: null },
+    { kunci: 'luar_area',   label: 'Di luar geofence',  nada: 'gawat',  ikon: 'area',   dari: null },
+  ] as const;
+});
 </script>
 
 <template>
   <Head :title="props.judul" />
 
   <div class="max-w-[1280px] mx-auto space-y-5">
-    <section class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h2 class="text-xl font-bold text-cam-ink">{{ props.judul }}</h2>
-        <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
-      </div>
+    <KopHalaman :judul="props.judul as string" :subjudul="props.subjudul as string"
+                tagline="Every Tap Counts"
+                :remah="[['HRIS', '/hris'], ['Absensi', null], ['Pemantauan Harian', null]]" ringkas />
+
+    <section class="-mt-2 flex flex-wrap items-end justify-end gap-3">
 
       <div class="flex gap-2">
         <Link href="/hris/absensi/rekap" class="eq-btn-lain">Rekap periode</Link>
@@ -113,12 +141,12 @@ const kartu = computed(() => [
     <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-4">
       <div class="flex flex-wrap items-end gap-3">
         <label class="block">
-          <span class="text-[11px] text-stone-500">Tanggal</span>
+          <span class="block text-[11px] text-stone-500">Tanggal</span>
           <input v-model="tanggal" type="date" class="mt-1 rounded-lg border-stone-200 text-[12px]" @change="muat">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Area</span>
+          <span class="block text-[11px] text-stone-500">Area</span>
           <select v-model="blok" class="mt-1 rounded-lg border-stone-200 text-[12px]" @change="muat">
             <option value="">Semua area</option>
             <option v-for="(nama, id) in (props.blok ?? {})" :key="id" :value="id">{{ nama }}</option>
@@ -130,11 +158,11 @@ const kartu = computed(() => [
         </button>
       </div>
 
-      <div class="mt-4 grid gap-2 grid-cols-2 sm:grid-cols-4 lg:grid-cols-7">
-        <div v-for="k in kartu" :key="k.kunci" class="ab-kartu" :class="k.kelas">
-          <div class="num text-[17px] font-bold leading-none">{{ ringkas[k.kunci] ?? 0 }}</div>
-          <div class="text-[10.5px] mt-1 leading-tight">{{ k.label }}</div>
-        </div>
+      <div class="mt-4 grid gap-2.5 grid-cols-2 sm:grid-cols-4 lg:grid-cols-7">
+        <UbinAngka v-for="k in kartu" :key="k.kunci"
+                   :angka="ringkas[k.kunci] ?? 0" :label="k.label" :nada="k.nada" :dari="k.dari">
+          <template #ikon><Ikon :nama="k.ikon" /></template>
+        </UbinAngka>
       </div>
     </section>
 
@@ -210,21 +238,21 @@ const kartu = computed(() => [
 
       <form class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" @submit.prevent="simpanKoreksi">
         <label class="block">
-          <span class="text-[11px] text-stone-500">Jam masuk</span>
+          <span class="block text-[11px] text-stone-500">Jam masuk</span>
           <input v-model="koreksi.masuk" type="time" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Jam keluar</span>
+          <span class="block text-[11px] text-stone-500">Jam keluar</span>
           <input v-model="koreksi.keluar" type="time" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block lg:col-span-2">
-          <span class="text-[11px] text-stone-500">Alasan koreksi</span>
+          <span class="block text-[11px] text-stone-500">Alasan koreksi</span>
           <input v-model="koreksi.alasan" type="text" required minlength="5"
                  placeholder="Mesin pos 2 mati; jam dicatat pengawas shift."
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-          <span v-if="koreksi.errors.alasan" class="text-[11px] text-red-600">{{ koreksi.errors.alasan }}</span>
+          <span v-if="koreksi.errors.alasan" class="block text-[11px] text-red-600">{{ koreksi.errors.alasan }}</span>
         </label>
 
         <div class="sm:col-span-2 lg:col-span-4 flex gap-2">
@@ -243,7 +271,7 @@ const kartu = computed(() => [
 
       <form class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5" @submit.prevent="simpanCatat">
         <label class="block lg:col-span-2">
-          <span class="text-[11px] text-stone-500">Pekerja</span>
+          <span class="block text-[11px] text-stone-500">Pekerja</span>
           <select v-model="catat.pekerja_id" required class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option value="">—</option>
             <option v-for="p in (props.pekerja ?? [])" :key="p.id" :value="p.id">{{ p.nama }} · {{ p.nik }}</option>
@@ -251,24 +279,24 @@ const kartu = computed(() => [
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Tanggal</span>
+          <span class="block text-[11px] text-stone-500">Tanggal</span>
           <input v-model="catat.tanggal" type="date" required class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Jam</span>
+          <span class="block text-[11px] text-stone-500">Jam</span>
           <input v-model="catat.jam" type="time" required class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Arah</span>
+          <span class="block text-[11px] text-stone-500">Arah</span>
           <select v-model="catat.arah" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option v-for="(label, kode) in (props.ARAH ?? {})" :key="kode" :value="kode">{{ label }}</option>
           </select>
         </label>
 
         <label class="block sm:col-span-2 lg:col-span-4">
-          <span class="text-[11px] text-stone-500">Catatan</span>
+          <span class="block text-[11px] text-stone-500">Catatan</span>
           <input v-model="catat.catatan" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
@@ -280,27 +308,4 @@ const kartu = computed(() => [
   </div>
 </template>
 
-<style>
-/**
- * Kartu ringkasan, sadar tema.
- *
- * Ditulis sebagai kelas dan bukan gaya sebaris supaya aturan mode
- * gelap dapat menimpanya. Nilai gelapnya dipilih agar tetap terbaca
- * pada latar #0D1417 tanpa menyilaukan.
- */
-.ab-kartu { border-radius: 0.75rem; padding: 0.625rem 0.75rem; }
 
-.ab-k-netral { background: #F5F5F4; color: #44403C; }
-.ab-k-baik   { background: #D1FAE5; color: #065F46; }
-.ab-k-ingat  { background: #FEF3C7; color: #78350F; }
-.ab-k-serius { background: #DBEAFE; color: #1E3A5F; }
-.ab-k-gawat  { background: #FEE2E2; color: #7F1D1D; }
-.ab-k-luar   { background: #EDE9FE; color: #4C1D95; }
-
-:root[data-tema="gelap"] .ab-k-netral { background: #1C262B; color: #C7D0D5; }
-:root[data-tema="gelap"] .ab-k-baik   { background: #143A2C; color: #8FE3BE; }
-:root[data-tema="gelap"] .ab-k-ingat  { background: #4A3810; color: #F6D488; }
-:root[data-tema="gelap"] .ab-k-serius { background: #1E3F5E; color: #A8CDF0; }
-:root[data-tema="gelap"] .ab-k-gawat  { background: #4E1D1D; color: #F5A9A9; }
-:root[data-tema="gelap"] .ab-k-luar   { background: #34255E; color: #C8B6F5; }
-</style>

@@ -16,6 +16,7 @@
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { propHalaman } from '../../../halaman';
+import KopHalaman from '../../../Components/KopHalaman.vue';
 import { KEADAAN } from '../../../Grafik/warna';
 
 const props = propHalaman();
@@ -118,11 +119,11 @@ const ringkas = computed<any>(() => props.ringkas ?? {});
   <Head :title="props.judul" />
 
   <div class="max-w-[1600px] mx-auto space-y-5">
-    <section class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h2 class="text-xl font-bold text-cam-ink">{{ props.judul }}</h2>
-        <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
-      </div>
+    <KopHalaman :judul="props.judul as string" :subjudul="props.subjudul as string"
+                tagline="Plan Every Shift"
+                :remah="[['HRIS', '/hris'], ['Roster & Shift', null], ['Kalender Regu', null]]" ringkas />
+
+    <section class="-mt-2 flex flex-wrap items-end justify-end gap-3">
 
       <Link href="/hris/roster/pola" class="eq-btn-lain">Pola &amp; regu</Link>
     </section>
@@ -130,7 +131,7 @@ const ringkas = computed<any>(() => props.ringkas ?? {});
     <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-4">
       <div class="flex flex-wrap items-end gap-3">
         <label class="block">
-          <span class="text-[11px] text-stone-500">Regu</span>
+          <span class="block text-[11px] text-stone-500">Regu</span>
           <select v-model="regu" class="mt-1 rounded-lg border-stone-200 text-[12px] w-56" @change="muat">
             <option value="">Pilih regu…</option>
             <option v-for="g in (props.regu ?? [])" :key="g.id" :value="g.id">
@@ -140,12 +141,12 @@ const ringkas = computed<any>(() => props.ringkas ?? {});
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Dari</span>
+          <span class="block text-[11px] text-stone-500">Dari</span>
           <input v-model="dari" type="date" class="mt-1 rounded-lg border-stone-200 text-[12px]" @change="muat">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Sampai</span>
+          <span class="block text-[11px] text-stone-500">Sampai</span>
           <input v-model="sampai" type="date" class="mt-1 rounded-lg border-stone-200 text-[12px]" @change="muat">
         </label>
 

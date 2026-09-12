@@ -11,6 +11,7 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { propHalaman } from '../../../halaman';
+import KopHalaman from '../../../Components/KopHalaman.vue';
 
 const props = propHalaman();
 
@@ -48,15 +49,15 @@ function masaKerja(bulan: number | null) {
   <Head :title="props.judul" />
 
   <div class="max-w-[1200px] mx-auto space-y-5">
-    <section class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h2 class="text-xl font-bold text-cam-ink">{{ props.judul }}</h2>
-        <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
-      </div>
+    <KopHalaman :judul="props.judul as string" :subjudul="props.subjudul as string"
+                tagline="Every Day Accounted"
+                :remah="[['HRIS', '/hris'], ['Cuti & Izin', null], ['Saldo Cuti', null]]" ringkas />
+
+    <section class="-mt-2 flex flex-wrap items-end justify-end gap-3">
 
       <div class="flex flex-wrap items-end gap-2">
         <label class="block">
-          <span class="text-[11px] text-stone-500">Tahun</span>
+          <span class="block text-[11px] text-stone-500">Tahun</span>
           <input v-model="tahun" type="number" min="2020" max="2100"
                  class="mt-1 w-24 rounded-lg border-stone-200 text-[12px]" @change="muat">
         </label>

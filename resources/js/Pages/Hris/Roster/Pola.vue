@@ -11,6 +11,7 @@
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { propHalaman } from '../../../halaman';
+import KopHalaman from '../../../Components/KopHalaman.vue';
 import Dialog from '../../../Components/Dialog.vue';
 import { useDialog } from '../../../dialog';
 
@@ -94,11 +95,11 @@ const langgarBaru = computed(() => {
   <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 
   <div class="max-w-[1400px] mx-auto space-y-5">
-    <section class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h2 class="text-xl font-bold text-cam-ink">{{ props.judul }}</h2>
-        <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
-      </div>
+    <KopHalaman :judul="props.judul as string" :subjudul="props.subjudul as string"
+                tagline="Built To Rotate"
+                :remah="[['HRIS', '/hris'], ['Roster & Shift', null], ['Pola & Regu', null]]" ringkas />
+
+    <section class="-mt-2 flex flex-wrap items-end justify-end gap-3">
 
       <Link href="/hris/roster" class="eq-btn-lain">Kalender regu</Link>
     </section>
@@ -108,63 +109,63 @@ const langgarBaru = computed(() => {
 
       <form class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" @submit.prevent="simpanPola">
         <label class="block">
-          <span class="text-[11px] text-stone-500">Kode</span>
+          <span class="block text-[11px] text-stone-500">Kode</span>
           <input v-model="formPola.kode" required placeholder="14:7"
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block lg:col-span-2">
-          <span class="text-[11px] text-stone-500">Nama</span>
+          <span class="block text-[11px] text-stone-500">Nama</span>
           <input v-model="formPola.nama" required placeholder="Empat belas hari kerja, tujuh hari libur"
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Satuan</span>
+          <span class="block text-[11px] text-stone-500">Satuan</span>
           <select v-model="formPola.satuan" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option v-for="(label, kode) in (props.SATUAN ?? {})" :key="kode" :value="kode">{{ label }}</option>
           </select>
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Kerja</span>
+          <span class="block text-[11px] text-stone-500">Kerja</span>
           <input v-model="formPola.kerja" type="number" min="1" required
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Libur</span>
+          <span class="block text-[11px] text-stone-500">Libur</span>
           <input v-model="formPola.libur" type="number" min="0" required
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Jam per hari</span>
+          <span class="block text-[11px] text-stone-500">Jam per hari</span>
           <input v-model="formPola.jam" type="number" min="1" max="24" required
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Shift</span>
+          <span class="block text-[11px] text-stone-500">Shift</span>
           <select v-model="formPola.shift" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option v-for="(label, kode) in (props.SHIFT ?? {})" :key="kode" :value="kode">{{ label }}</option>
           </select>
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Mulai shift siang</span>
+          <span class="block text-[11px] text-stone-500">Mulai shift siang</span>
           <input v-model="formPola.mulai_siang" type="time"
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Mulai shift malam</span>
+          <span class="block text-[11px] text-stone-500">Mulai shift malam</span>
           <input v-model="formPola.mulai_malam" type="time"
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Toleransi telat (menit)</span>
+          <span class="block text-[11px] text-stone-500">Toleransi telat (menit)</span>
           <input v-model="formPola.toleransi_menit" type="number" min="0" max="180"
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
@@ -261,13 +262,13 @@ const langgarBaru = computed(() => {
 
       <form class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5" @submit.prevent="simpanRegu">
         <label class="block">
-          <span class="text-[11px] text-stone-500">Nama</span>
+          <span class="block text-[11px] text-stone-500">Nama</span>
           <input v-model="formRegu.nama" required placeholder="Regu A"
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Pola</span>
+          <span class="block text-[11px] text-stone-500">Pola</span>
           <select v-model="formRegu.pola_roster_id" required
                   class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option value="">Pilih pola…</option>
@@ -276,7 +277,7 @@ const langgarBaru = computed(() => {
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Area kerja</span>
+          <span class="block text-[11px] text-stone-500">Area kerja</span>
           <select v-model="formRegu.blok_id" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option value="">—</option>
             <option v-for="(nama, id) in (props.blok ?? {})" :key="id" :value="id">{{ nama }}</option>
@@ -284,13 +285,13 @@ const langgarBaru = computed(() => {
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Mulai siklus</span>
+          <span class="block text-[11px] text-stone-500">Mulai siklus</span>
           <input v-model="formRegu.mulai" type="date" required
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Shift awal</span>
+          <span class="block text-[11px] text-stone-500">Shift awal</span>
           <select v-model="formRegu.shift" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option value="siang">Siang</option>
             <option value="malam">Malam</option>
@@ -338,7 +339,7 @@ const langgarBaru = computed(() => {
           <div v-if="bukaRegu === g.id" class="pt-2 border-t border-stone-100 space-y-2">
             <form class="flex flex-wrap items-end gap-2" @submit.prevent="tambahAnggota(g.id)">
               <label class="block">
-                <span class="text-[11px] text-stone-500">Pekerja</span>
+                <span class="block text-[11px] text-stone-500">Pekerja</span>
                 <select v-model="formAnggota.pekerja_id" required
                         class="mt-1 rounded-lg border-stone-200 text-[12px] w-56">
                   <option value="">Pilih pekerja…</option>
@@ -349,13 +350,13 @@ const langgarBaru = computed(() => {
               </label>
 
               <label class="block">
-                <span class="text-[11px] text-stone-500">Mulai</span>
+                <span class="block text-[11px] text-stone-500">Mulai</span>
                 <input v-model="formAnggota.mulai" type="date" required
                        class="mt-1 rounded-lg border-stone-200 text-[12px]">
               </label>
 
               <label class="block">
-                <span class="text-[11px] text-stone-500">Selesai (opsional)</span>
+                <span class="block text-[11px] text-stone-500">Selesai (opsional)</span>
                 <input v-model="formAnggota.selesai" type="date"
                        class="mt-1 rounded-lg border-stone-200 text-[12px]">
               </label>

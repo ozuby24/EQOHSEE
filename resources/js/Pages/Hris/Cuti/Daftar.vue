@@ -14,6 +14,7 @@
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { propHalaman } from '../../../halaman';
+import KopHalaman from '../../../Components/KopHalaman.vue';
 import Dialog from '../../../Components/Dialog.vue';
 import { useDialog } from '../../../dialog';
 
@@ -122,15 +123,15 @@ function kelas(status: string) {
   <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 
   <div class="max-w-[1240px] mx-auto space-y-5">
-    <section class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h2 class="text-xl font-bold text-cam-ink">{{ props.judul }}</h2>
-        <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
-      </div>
+    <KopHalaman :judul="props.judul as string" :subjudul="props.subjudul as string"
+                tagline="Rest Well Return Strong"
+                :remah="[['HRIS', '/hris'], ['Cuti & Izin', null], ['Pengajuan', null]]" ringkas />
+
+    <section class="-mt-2 flex flex-wrap items-end justify-end gap-3">
 
       <div class="flex flex-wrap items-end gap-2">
         <label class="block">
-          <span class="text-[11px] text-stone-500">Tahun</span>
+          <span class="block text-[11px] text-stone-500">Tahun</span>
           <input v-model="tahun" type="number" min="2020" max="2100"
                  class="mt-1 w-24 rounded-lg border-stone-200 text-[12px]" @change="muat">
         </label>
@@ -208,18 +209,18 @@ function kelas(status: string) {
 
       <form class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" @submit.prevent="ajukan">
         <label class="block lg:col-span-2">
-          <span class="text-[11px] text-stone-500">Pekerja</span>
+          <span class="block text-[11px] text-stone-500">Pekerja</span>
           <select v-model="form.pekerja_id" required class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option value="">—</option>
             <option v-for="p in (props.pekerja ?? [])" :key="p.id" :value="p.id">
               {{ p.nama }} · {{ p.nik }}<span v-if="!p.masuk"> (tanggal masuk belum diisi)</span>
             </option>
           </select>
-          <span v-if="form.errors.pekerja_id" class="text-[11px] text-red-600">{{ form.errors.pekerja_id }}</span>
+          <span v-if="form.errors.pekerja_id" class="block text-[11px] text-red-600">{{ form.errors.pekerja_id }}</span>
         </label>
 
         <label class="block lg:col-span-2">
-          <span class="text-[11px] text-stone-500">Jenis</span>
+          <span class="block text-[11px] text-stone-500">Jenis</span>
           <select v-model="form.jenis_cuti_id" required class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option value="">—</option>
             <option v-for="j in jenis" :key="j.id" :value="j.id">
@@ -229,28 +230,28 @@ function kelas(status: string) {
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Mulai</span>
+          <span class="block text-[11px] text-stone-500">Mulai</span>
           <input v-model="form.mulai" type="date" required class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-          <span v-if="form.errors.mulai" class="text-[11px] text-red-600">{{ form.errors.mulai }}</span>
+          <span v-if="form.errors.mulai" class="block text-[11px] text-red-600">{{ form.errors.mulai }}</span>
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Selesai</span>
+          <span class="block text-[11px] text-stone-500">Selesai</span>
           <input v-model="form.selesai" type="date" required class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block lg:col-span-2">
-          <span class="text-[11px] text-stone-500">
+          <span class="block text-[11px] text-stone-500">
             Bukti
             <span v-if="jenisTerpilih?.perluBukti" class="text-red-600">— wajib untuk jenis ini</span>
           </span>
           <input type="file" class="mt-1 w-full text-[12px]"
                  @change="form.bukti = ($event.target as HTMLInputElement).files?.[0] ?? null">
-          <span v-if="form.errors.bukti" class="text-[11px] text-red-600">{{ form.errors.bukti }}</span>
+          <span v-if="form.errors.bukti" class="block text-[11px] text-red-600">{{ form.errors.bukti }}</span>
         </label>
 
         <label class="block sm:col-span-2 lg:col-span-4">
-          <span class="text-[11px] text-stone-500">Alasan</span>
+          <span class="block text-[11px] text-stone-500">Alasan</span>
           <input v-model="form.alasan" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 

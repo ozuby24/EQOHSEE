@@ -13,6 +13,7 @@
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { propHalaman } from '../../../halaman';
+import KopHalaman from '../../../Components/KopHalaman.vue';
 
 const props = propHalaman();
 
@@ -43,11 +44,11 @@ const belumAda = computed(() => baris.value.filter((b) => !b.berlaku && !b.kecua
   <Head :title="props.judul" />
 
   <div class="max-w-[1200px] mx-auto space-y-5">
-    <section class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h2 class="text-xl font-bold text-cam-ink">{{ props.judul }}</h2>
-        <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
-      </div>
+    <KopHalaman :judul="props.judul as string" :subjudul="props.subjudul as string"
+                tagline="Fair By The Rule"
+                :remah="[['HRIS', '/hris'], ['Lembur', null], ['Upah Dasar', null]]" ringkas />
+
+    <section class="-mt-2 flex flex-wrap items-end justify-end gap-3">
 
       <Link href="/hris/lembur" class="eq-btn-lain">Perintah lembur</Link>
     </section>
@@ -115,7 +116,7 @@ const belumAda = computed(() => baris.value.filter((b) => !b.berlaku && !b.kecua
 
       <form class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" @submit.prevent="simpan">
         <label class="block">
-          <span class="text-[11px] text-stone-500">Pekerja</span>
+          <span class="block text-[11px] text-stone-500">Pekerja</span>
           <select v-model="form.pekerja_id" required class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option value="">—</option>
             <option v-for="b in baris" :key="b.id" :value="b.id">{{ b.nama }} · {{ b.nik }}</option>
@@ -123,32 +124,32 @@ const belumAda = computed(() => baris.value.filter((b) => !b.berlaku && !b.kecua
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Berlaku mulai</span>
+          <span class="block text-[11px] text-stone-500">Berlaku mulai</span>
           <input v-model="form.berlaku_mulai" type="date" required
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Gaji pokok</span>
+          <span class="block text-[11px] text-stone-500">Gaji pokok</span>
           <input v-model="form.pokok" type="number" min="0" step="1000" required
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-          <span v-if="form.errors.pokok" class="text-[11px] text-red-600">{{ form.errors.pokok }}</span>
+          <span v-if="form.errors.pokok" class="block text-[11px] text-red-600">{{ form.errors.pokok }}</span>
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Tunjangan tetap</span>
+          <span class="block text-[11px] text-stone-500">Tunjangan tetap</span>
           <input v-model="form.tunjangan_tetap" type="number" min="0" step="1000"
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Tunjangan tidak tetap</span>
+          <span class="block text-[11px] text-stone-500">Tunjangan tidak tetap</span>
           <input v-model="form.tunjangan_tidak_tetap" type="number" min="0" step="1000"
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Catatan</span>
+          <span class="block text-[11px] text-stone-500">Catatan</span>
           <input v-model="form.catatan" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 

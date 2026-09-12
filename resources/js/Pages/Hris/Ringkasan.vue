@@ -13,12 +13,46 @@
  * yang orangnya tidak datang" menuntutnya pagi itu juga.
  */
 import { Head, Link } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, h } from 'vue';
 import { propHalaman } from '../../halaman';
 import KartuGrafik from '../../Grafik/KartuGrafik.vue';
 import Batang from '../../Grafik/Batang.vue';
+import KopHalaman from '../../Components/KopHalaman.vue';
+import UbinAngka from '../../Components/UbinAngka.vue';
+import KutipanKaki from '../../Components/KutipanKaki.vue';
+
+/**
+ * Ikon ubin, digambar sebagai path inline.
+ *
+ * Bukan dari pustaka ikon: repo ini sudah sekali melepas pustaka dari
+ * CDN, dan ikon yang gagal dimuat pada jaringan site tambang
+ * meninggalkan kotak kosong di tempat angka yang seharusnya terbaca.
+ */
+const IKON: Record<string, string[]> = {
+  orang:  ['M16 20v-1.5a4 4 0 0 0-8 0V20', 'M12 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z'],
+  siang:  ['M12 17.5a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11Z', 'M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4'],
+  malam:  ['M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z'],
+  libur:  ['M4 9.5h16v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5Z', 'M9 9.5V7a3 3 0 0 1 6 0v2.5'],
+  berkas: ['M7 3.5h7L18 8v12.5H7a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1Z', 'M14 3.5V8h4', 'M9 13h6M9 16.5h4'],
+  hadir:  ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z', 'm8.5 12.2 2.4 2.4 4.6-4.9'],
+  telat:  ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z', 'M12 7.5v5l3.2 1.9'],
+  belum:  ['M3.5 12h6l2-3 2.5 6 2-3h4.5'],
+  absen:  ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z', 'm9 9 6 6M15 9l-6 6'],
+  luar:   ['M16 20v-1.5a4 4 0 0 0-8 0V20', 'M12 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z', 'M19 7.5 21 5M21 9.5 19 12'],
+  area:   ['M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11Z', 'M12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z'],
+  mesin:  ['M5.5 4.5h13a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1Z', 'M8.5 9h7M8.5 12.5h7M8.5 16h4'],
+  token:  ['M15 8.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z', 'M11.5 12v7.5l2 1.5 2-2-1.5-1.5 1.5-1.5-2-2'],
+  diam:   ['M12 9.4v4.2', 'M12 17h.01', 'M10.4 4.1 2.6 17.8a1.8 1.8 0 0 0 1.6 2.7h15.6a1.8 1.8 0 0 0 1.6-2.7L13.6 4.1a1.8 1.8 0 0 0-3.2 0Z'],
+  pindai: ['M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16', 'M4 12h16'],
+};
 
 const props = propHalaman();
+
+/** Pembungkus kecil supaya tiap ubin cukup menyebut nama ikonnya. */
+const Ikon = (p: { nama: string }) => h('svg', {
+  viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 1.9,
+  'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true',
+}, (IKON[p.nama] ?? []).map((d) => h('path', { d })));
 
 const jadwal  = computed<any>(() => props.jadwal ?? {});
 const hadir   = computed<any>(() => props.hadir ?? {});
@@ -52,17 +86,12 @@ const perluDitindak = computed(() =>
   <Head :title="props.judul" />
 
   <div class="max-w-[1200px] mx-auto space-y-5">
-    <section class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h2 class="text-xl font-bold text-cam-ink">{{ props.judul }}</h2>
-        <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
-      </div>
-
-      <div class="flex flex-wrap gap-2">
-        <Link href="/hris/roster" class="eq-btn-lain">Kalender regu</Link>
-        <Link href="/hris/absensi" class="eq-btn-lain">Pemantauan harian</Link>
-      </div>
-    </section>
+    <KopHalaman
+      judul="HRIS — Ringkasan Tenaga Kerja"
+      subjudul="Siapa yang seharusnya di site hari ini, dan apakah mereka benar-benar ada."
+      tagline="People Drive Progress"
+      :remah="[['HRIS', '/hris'], ['Ringkasan', null]]"
+      :kanan="props.tanggal as string" kanan-kecil="hari ini" />
 
     <p v-if="perluDitindak === 0"
        class="rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-[12.5px] text-emerald-800">
@@ -83,27 +112,23 @@ const perluDitindak = computed(() =>
         <span class="num text-[11px] text-stone-400">{{ props.tanggal }}</span>
       </header>
 
-      <div class="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-        <div class="hr-kartu hr-netral">
-          <div class="num text-[19px] font-bold leading-none">{{ jadwal.kerja ?? 0 }}</div>
-          <div class="text-[10.5px] mt-1">Kerja</div>
-        </div>
-        <div class="hr-kartu hr-netral">
-          <div class="num text-[19px] font-bold leading-none">{{ jadwal.siang ?? 0 }}</div>
-          <div class="text-[10.5px] mt-1">Shift siang</div>
-        </div>
-        <div class="hr-kartu hr-netral">
-          <div class="num text-[19px] font-bold leading-none">{{ jadwal.malam ?? 0 }}</div>
-          <div class="text-[10.5px] mt-1">Shift malam</div>
-        </div>
-        <div class="hr-kartu hr-netral">
-          <div class="num text-[19px] font-bold leading-none">{{ jadwal.libur ?? 0 }}</div>
-          <div class="text-[10.5px] mt-1">Libur / off-site</div>
-        </div>
-        <div class="hr-kartu" :class="(jadwal.terhalang ?? 0) > 0 ? 'hr-gawat' : 'hr-baik'">
-          <div class="num text-[19px] font-bold leading-none">{{ jadwal.terhalang ?? 0 }}</div>
-          <div class="text-[10.5px] mt-1">Terhalang berkas</div>
-        </div>
+      <div class="grid gap-2.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+        <UbinAngka :angka="jadwal.kerja ?? 0" label="Total pekerja" nada="serius">
+          <template #ikon><Ikon nama="orang" /></template>
+        </UbinAngka>
+        <UbinAngka :angka="jadwal.siang ?? 0" label="Shift siang" nada="ingat" :dari="jadwal.kerja ?? 0">
+          <template #ikon><Ikon nama="siang" /></template>
+        </UbinAngka>
+        <UbinAngka :angka="jadwal.malam ?? 0" label="Shift malam" nada="luar" :dari="jadwal.kerja ?? 0">
+          <template #ikon><Ikon nama="malam" /></template>
+        </UbinAngka>
+        <UbinAngka :angka="jadwal.libur ?? 0" label="Libur / off-site" nada="netral">
+          <template #ikon><Ikon nama="libur" /></template>
+        </UbinAngka>
+        <UbinAngka :angka="jadwal.terhalang ?? 0" label="Terhalang berkas"
+                   :nada="(jadwal.terhalang ?? 0) > 0 ? 'gawat' : 'baik'" :dari="jadwal.kerja ?? 0">
+          <template #ikon><Ikon nama="berkas" /></template>
+        </UbinAngka>
       </div>
 
       <p v-if="(jadwal.terhalang ?? 0) > 0" class="mt-3 text-[11.5px] text-red-700">
@@ -121,31 +146,27 @@ const perluDitindak = computed(() =>
           <span class="text-[11px] text-stone-400">shift berjalan</span>
         </header>
 
-        <div class="grid gap-2 grid-cols-2 sm:grid-cols-3">
-          <div class="hr-kartu hr-baik">
-            <div class="num text-[19px] font-bold leading-none">{{ hadir.hadir ?? 0 }}</div>
-            <div class="text-[10.5px] mt-1">Hadir</div>
-          </div>
-          <div class="hr-kartu hr-ingat">
-            <div class="num text-[19px] font-bold leading-none">{{ hadir.terlambat ?? 0 }}</div>
-            <div class="text-[10.5px] mt-1">Terlambat</div>
-          </div>
-          <div class="hr-kartu hr-serius">
-            <div class="num text-[19px] font-bold leading-none">{{ hadir.belum_pulang ?? 0 }}</div>
-            <div class="text-[10.5px] mt-1">Belum tap pulang</div>
-          </div>
-          <div class="hr-kartu" :class="(hadir.absen ?? 0) > 0 ? 'hr-gawat' : 'hr-netral'">
-            <div class="num text-[19px] font-bold leading-none">{{ hadir.absen ?? 0 }}</div>
-            <div class="text-[10.5px] mt-1">Absen</div>
-          </div>
-          <div class="hr-kartu hr-luar">
-            <div class="num text-[19px] font-bold leading-none">{{ hadir.luar_roster ?? 0 }}</div>
-            <div class="text-[10.5px] mt-1">Di luar roster</div>
-          </div>
-          <div class="hr-kartu" :class="(hadir.luar_area ?? 0) > 0 ? 'hr-gawat' : 'hr-netral'">
-            <div class="num text-[19px] font-bold leading-none">{{ hadir.luar_area ?? 0 }}</div>
-            <div class="text-[10.5px] mt-1">Di luar geofence</div>
-          </div>
+        <div class="grid gap-2.5 grid-cols-2 sm:grid-cols-3">
+          <UbinAngka :angka="hadir.hadir ?? 0" label="Hadir" nada="baik" :dari="jadwal.kerja ?? 0">
+            <template #ikon><Ikon nama="hadir" /></template>
+          </UbinAngka>
+          <UbinAngka :angka="hadir.terlambat ?? 0" label="Terlambat" nada="ingat" :dari="jadwal.kerja ?? 0">
+            <template #ikon><Ikon nama="telat" /></template>
+          </UbinAngka>
+          <UbinAngka :angka="hadir.belum_pulang ?? 0" label="Belum tap pulang" nada="serius" :dari="jadwal.kerja ?? 0">
+            <template #ikon><Ikon nama="belum" /></template>
+          </UbinAngka>
+          <UbinAngka :angka="hadir.absen ?? 0" label="Absen"
+                     :nada="(hadir.absen ?? 0) > 0 ? 'gawat' : 'netral'" :dari="jadwal.kerja ?? 0">
+            <template #ikon><Ikon nama="absen" /></template>
+          </UbinAngka>
+          <UbinAngka :angka="hadir.luar_roster ?? 0" label="Di luar roster" nada="luar">
+            <template #ikon><Ikon nama="luar" /></template>
+          </UbinAngka>
+          <UbinAngka :angka="hadir.luar_area ?? 0" label="Di luar geofence"
+                     :nada="(hadir.luar_area ?? 0) > 0 ? 'gawat' : 'netral'">
+            <template #ikon><Ikon nama="area" /></template>
+          </UbinAngka>
         </div>
 
         <p class="mt-3 text-[11.5px] text-stone-500">
@@ -227,23 +248,22 @@ const perluDitindak = computed(() =>
         <Link href="/hris/absensi/mesin" class="text-[11px] text-sky-700 hover:underline">Kelola mesin</Link>
       </header>
 
-      <div class="grid gap-2 grid-cols-2 sm:grid-cols-4">
-        <div class="hr-kartu hr-netral">
-          <div class="num text-[19px] font-bold leading-none">{{ mesin.aktif ?? 0 }}</div>
-          <div class="text-[10.5px] mt-1">Mesin aktif</div>
-        </div>
-        <div class="hr-kartu" :class="(mesin.aktif ?? 0) > (mesin.bertoken ?? 0) ? 'hr-ingat' : 'hr-baik'">
-          <div class="num text-[19px] font-bold leading-none">{{ mesin.bertoken ?? 0 }}</div>
-          <div class="text-[10.5px] mt-1">Sudah bertoken</div>
-        </div>
-        <div class="hr-kartu" :class="(mesin.diam ?? 0) > 0 ? 'hr-gawat' : 'hr-baik'">
-          <div class="num text-[19px] font-bold leading-none">{{ mesin.diam ?? 0 }}</div>
-          <div class="text-[10.5px] mt-1">Diam &gt; {{ props.DIAM_JAM }} jam</div>
-        </div>
-        <div class="hr-kartu hr-netral">
-          <div class="num text-[19px] font-bold leading-none">{{ mesin.jejak24 ?? 0 }}</div>
-          <div class="text-[10.5px] mt-1">Pindaian 24 jam</div>
-        </div>
+      <div class="grid gap-2.5 grid-cols-2 sm:grid-cols-4">
+        <UbinAngka :angka="mesin.aktif ?? 0" label="Mesin aktif" nada="netral">
+          <template #ikon><Ikon nama="mesin" /></template>
+        </UbinAngka>
+        <UbinAngka :angka="mesin.bertoken ?? 0" label="Sudah bertoken"
+                   :nada="(mesin.aktif ?? 0) > (mesin.bertoken ?? 0) ? 'ingat' : 'baik'"
+                   :dari="mesin.aktif ?? 0">
+          <template #ikon><Ikon nama="token" /></template>
+        </UbinAngka>
+        <UbinAngka :angka="mesin.diam ?? 0" :label="`Diam > ${props.DIAM_JAM} jam`"
+                   :nada="(mesin.diam ?? 0) > 0 ? 'gawat' : 'baik'" :dari="mesin.aktif ?? 0">
+          <template #ikon><Ikon nama="diam" /></template>
+        </UbinAngka>
+        <UbinAngka :angka="mesin.jejak24 ?? 0" label="Pindaian 24 jam" nada="netral">
+          <template #ikon><Ikon nama="pindai" /></template>
+        </UbinAngka>
       </div>
 
       <p v-if="(mesin.nama ?? []).length" class="mt-3 text-[11.5px] text-red-700">
@@ -260,30 +280,8 @@ const perluDitindak = computed(() =>
         rusak. Satu-satunya tanda bahwa yang rusak adalah alatnya ada di sini.
       </p>
     </section>
+
+    <KutipanKaki teks="Orang yang tepat, di tempat yang tepat, pada waktu yang tepat."
+                 kanan="People Drive&#10;Progress" />
   </div>
 </template>
-
-<style>
-/**
- * Kartu angka, sadar tema.
- *
- * Ditulis sebagai kelas dan bukan gaya sebaris supaya aturan mode
- * gelap dapat menimpanya. Nilai gelapnya dipilih agar tetap terbaca
- * pada latar #0D1417 tanpa menyilaukan.
- */
-.hr-kartu { border-radius: 0.75rem; padding: 0.7rem 0.8rem; }
-
-.hr-netral { background: #F5F5F4; color: #44403C; }
-.hr-baik   { background: #D1FAE5; color: #065F46; }
-.hr-ingat  { background: #FEF3C7; color: #78350F; }
-.hr-serius { background: #DBEAFE; color: #1E3A5F; }
-.hr-gawat  { background: #FEE2E2; color: #7F1D1D; }
-.hr-luar   { background: #EDE9FE; color: #4C1D95; }
-
-:root[data-tema="gelap"] .hr-netral { background: #1C262B; color: #C7D0D5; }
-:root[data-tema="gelap"] .hr-baik   { background: #143A2C; color: #8FE3BE; }
-:root[data-tema="gelap"] .hr-ingat  { background: #4A3810; color: #F6D488; }
-:root[data-tema="gelap"] .hr-serius { background: #1E3F5E; color: #A8CDF0; }
-:root[data-tema="gelap"] .hr-gawat  { background: #4E1D1D; color: #F5A9A9; }
-:root[data-tema="gelap"] .hr-luar   { background: #34255E; color: #C8B6F5; }
-</style>

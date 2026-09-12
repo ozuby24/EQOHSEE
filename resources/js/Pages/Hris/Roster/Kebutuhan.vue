@@ -10,6 +10,7 @@
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { propHalaman } from '../../../halaman';
+import KopHalaman from '../../../Components/KopHalaman.vue';
 import Dialog from '../../../Components/Dialog.vue';
 import { useDialog } from '../../../dialog';
 import { KEADAAN } from '../../../Grafik/warna';
@@ -53,18 +54,18 @@ function warna(selisih: number) {
   <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 
   <div class="max-w-[1200px] mx-auto space-y-5">
-    <section class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h2 class="text-xl font-bold text-cam-ink">{{ props.judul }}</h2>
-        <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
-      </div>
+    <KopHalaman :judul="props.judul as string" :subjudul="props.subjudul as string"
+                tagline="Right Crew Every Day"
+                :remah="[['HRIS', '/hris'], ['Roster & Shift', null], ['Manpower Plan', null]]" ringkas />
+
+    <section class="-mt-2 flex flex-wrap items-end justify-end gap-3">
 
       <Link href="/hris/roster" class="eq-btn-lain">Kalender regu</Link>
     </section>
 
     <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-4">
       <label class="block">
-        <span class="text-[11px] text-stone-500">Tanggal yang dibandingkan</span>
+        <span class="block text-[11px] text-stone-500">Tanggal yang dibandingkan</span>
         <input v-model="tanggal" type="date" class="mt-1 rounded-lg border-stone-200 text-[12px]" @change="muat">
       </label>
 
@@ -123,7 +124,7 @@ function warna(selisih: number) {
 
       <form class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6" @submit.prevent="simpan">
         <label class="block">
-          <span class="text-[11px] text-stone-500">Area</span>
+          <span class="block text-[11px] text-stone-500">Area</span>
           <select v-model="form.blok_id" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option value="">—</option>
             <option v-for="(nama, id) in (props.blok ?? {})" :key="id" :value="id">{{ nama }}</option>
@@ -131,7 +132,7 @@ function warna(selisih: number) {
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Jabatan</span>
+          <span class="block text-[11px] text-stone-500">Jabatan</span>
           <select v-model="form.jabatan_id" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option value="">Semua</option>
             <option v-for="(nama, id) in (props.jabatan ?? {})" :key="id" :value="id">{{ nama }}</option>
@@ -139,7 +140,7 @@ function warna(selisih: number) {
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Shift</span>
+          <span class="block text-[11px] text-stone-500">Shift</span>
           <select v-model="form.shift" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
             <option value="">—</option>
             <option v-for="(label, kode) in (props.SHIFT ?? {})" :key="kode" :value="kode">{{ label }}</option>
@@ -147,19 +148,19 @@ function warna(selisih: number) {
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Jumlah</span>
+          <span class="block text-[11px] text-stone-500">Jumlah</span>
           <input v-model="form.jumlah" type="number" min="0" required
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Mulai</span>
+          <span class="block text-[11px] text-stone-500">Mulai</span>
           <input v-model="form.mulai" type="date" required
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
         <label class="block">
-          <span class="text-[11px] text-stone-500">Selesai</span>
+          <span class="block text-[11px] text-stone-500">Selesai</span>
           <input v-model="form.selesai" type="date"
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>

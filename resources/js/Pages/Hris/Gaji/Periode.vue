@@ -9,12 +9,29 @@
  * membedakan keduanya adalah seseorang yang benar-benar memeriksanya.
  */
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, h, ref } from 'vue';
 import { propHalaman } from '../../../halaman';
+import KopHalaman from '../../../Components/KopHalaman.vue';
+import UbinAngka from '../../../Components/UbinAngka.vue';
 import Dialog from '../../../Components/Dialog.vue';
 import { useDialog } from '../../../dialog';
 
+const IKON: Record<string, string[]> = {
+  orang:  ['M16 20v-1.5a4 4 0 0 0-8 0V20', 'M12 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z'],
+  bruto:  ['M3.5 8.5h17a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-17a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z', 'M3.5 8.5 17 5.2l.9 3.3', 'M17.5 13.5h.01'],
+  site:   ['M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11Z', 'M12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z'],
+  lembur: ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z', 'M12 7.5v5l3.2 1.9'],
+  pajak:  ['M7 3.5h7L18 8v12.5H7a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1Z', 'M14 3.5V8h4', 'm10 16 4-5', 'M10 11h.01M14 16h.01'],
+  neto:   ['M4 7.5h13.5a2.5 2.5 0 0 1 2.5 2.5v7a2 2 0 0 1-2 2H5a1 1 0 0 1-1-1Z', 'M4 7.5V6a1.5 1.5 0 0 1 1.5-1.5h10', 'M16.5 13.5h.01'],
+};
+
 const props = propHalaman();
+
+/** Pembungkus kecil supaya tiap ubin cukup menyebut nama ikonnya. */
+const Ikon = (p: { nama: string }) => h('svg', {
+  viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 1.9,
+  'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true',
+}, (IKON[p.nama] ?? []).map((d) => h('path', { d })));
 const { dialog, tanya, batal, lanjut } = useDialog();
 
 const periode = computed<any[]>(() => (props.periode ?? []) as any[]);
@@ -74,11 +91,11 @@ const rinci = ref<number | null>(null);
   <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 
   <div class="max-w-[1280px] mx-auto space-y-5">
-    <section class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h2 class="text-xl font-bold text-cam-ink">{{ props.judul }}</h2>
-        <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
-      </div>
+    <KopHalaman :judul="props.judul as string" :subjudul="props.subjudul as string"
+                tagline="Paid Right On Time"
+                :remah="[['HRIS', '/hris'], ['Penggajian', null], ['Periode & Slip', null]]" ringkas />
+
+    <section class="-mt-2 flex flex-wrap items-end justify-end gap-3">
 
       <Link href="/hris/gaji/acuan" class="eq-btn-lain">Acuan pajak &amp; BPJS</Link>
     </section>
@@ -163,31 +180,34 @@ const rinci = ref<number | null>(null);
             </div>
           </div>
 
-          <div v-if="ringkas.orang" class="mt-4 grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
-            <div class="pg-kartu pg-netral">
-              <div class="num text-[15px] font-bold leading-none">{{ ringkas.orang }}</div>
-              <div class="text-[10.5px] mt-1">Orang</div>
-            </div>
-            <div class="pg-kartu pg-netral">
-              <div class="num text-[15px] font-bold leading-none">{{ rupiah(ringkas.bruto) }}</div>
-              <div class="text-[10.5px] mt-1">Bruto pajak</div>
-            </div>
-            <div class="pg-kartu pg-netral">
-              <div class="num text-[15px] font-bold leading-none">{{ rupiah(ringkas.site) }}</div>
-              <div class="text-[10.5px] mt-1">Tunjangan site</div>
-            </div>
-            <div class="pg-kartu pg-netral">
-              <div class="num text-[15px] font-bold leading-none">{{ rupiah(ringkas.lembur) }}</div>
-              <div class="text-[10.5px] mt-1">Lembur</div>
-            </div>
-            <div class="pg-kartu pg-ingat">
-              <div class="num text-[15px] font-bold leading-none">{{ rupiah(ringkas.pph21) }}</div>
-              <div class="text-[10.5px] mt-1">PPh 21</div>
-            </div>
-            <div class="pg-kartu pg-baik">
-              <div class="num text-[15px] font-bold leading-none">{{ rupiah(ringkas.neto) }}</div>
-              <div class="text-[10.5px] mt-1">Dibawa pulang</div>
-            </div>
+          <div v-if="ringkas.orang" class="mt-4 grid gap-2 grid-cols-2 lg:grid-cols-3">
+            <UbinAngka :angka="ringkas.orang" label="Orang">
+              <template #ikon><Ikon nama="orang" /></template>
+            </UbinAngka>
+
+            <UbinAngka :angka="rupiah(ringkas.bruto)" label="Bruto pajak">
+              <template #ikon><Ikon nama="bruto" /></template>
+            </UbinAngka>
+
+            <UbinAngka :angka="rupiah(ringkas.site)" label="Tunjangan site"
+                       :nilai="ringkas.site" :dari="ringkas.bruto">
+              <template #ikon><Ikon nama="site" /></template>
+            </UbinAngka>
+
+            <UbinAngka :angka="rupiah(ringkas.lembur)" label="Lembur"
+                       :nilai="ringkas.lembur" :dari="ringkas.bruto">
+              <template #ikon><Ikon nama="lembur" /></template>
+            </UbinAngka>
+
+            <UbinAngka nada="ingat" :angka="rupiah(ringkas.pph21)" label="PPh 21"
+                       :nilai="ringkas.pph21" :dari="ringkas.bruto">
+              <template #ikon><Ikon nama="pajak" /></template>
+            </UbinAngka>
+
+            <UbinAngka nada="baik" :angka="rupiah(ringkas.neto)" label="Dibawa pulang"
+                       :nilai="ringkas.neto" :dari="ringkas.bruto">
+              <template #ikon><Ikon nama="neto" /></template>
+            </UbinAngka>
           </div>
 
           <p v-if="ringkas.tanpaPtkp" class="mt-3 text-[11.5px] text-red-700">
@@ -317,16 +337,8 @@ const rinci = ref<number | null>(null);
 .pg-terhitung { background: #DBEAFE; color: #1E3A5F; }
 .pg-terkunci  { background: #D1FAE5; color: #065F46; }
 
-.pg-kartu  { border-radius: 0.75rem; padding: 0.6rem 0.7rem; }
-.pg-netral { background: #F5F5F4; color: #44403C; }
-.pg-baik   { background: #D1FAE5; color: #065F46; }
-.pg-ingat  { background: #FEF3C7; color: #78350F; }
-
 :root[data-tema="gelap"] .pg-draft     { background: #1C262B; color: #A8B2B8; }
 :root[data-tema="gelap"] .pg-terhitung { background: #1E3F5E; color: #A8CDF0; }
 :root[data-tema="gelap"] .pg-terkunci  { background: #143A2C; color: #8FE3BE; }
 
-:root[data-tema="gelap"] .pg-netral { background: #1C262B; color: #C7D0D5; }
-:root[data-tema="gelap"] .pg-baik   { background: #143A2C; color: #8FE3BE; }
-:root[data-tema="gelap"] .pg-ingat  { background: #4A3810; color: #F6D488; }
 </style>
