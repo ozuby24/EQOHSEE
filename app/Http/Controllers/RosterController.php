@@ -166,6 +166,9 @@ class RosterController extends Controller
                     'hariKerja'=> $p->hariKerja(),
                     'beruntun' => $p->maksBeruntun(),
                     'liburMingguan' => (int) ($p->libur_mingguan ?? 0),
+                    'mulaiSiang'    => $p->mulaiShift('siang'),
+                    'mulaiMalam'    => $p->mulaiShift('malam'),
+                    'toleransi'     => $p->toleransi(),
                     'jamSiklus'=> $p->jamPerSiklus(),
 
                     /* Pola yang melampaui batas ditandai SEJAK DI SINI,
@@ -529,6 +532,16 @@ class RosterController extends Controller
             'satuan'     => ['required', 'in:'.implode(',', array_keys(PolaRoster::SATUAN))],
             'jam'        => ['required', 'integer', 'min:1', 'max:24'],
             'shift'      => ['required', 'in:'.implode(',', array_keys(PolaRoster::SHIFT))],
+
+            /* Jam mulai shift dan toleransinya diatur DI SINI, bukan
+               pada layar absensi. Keterlambatan dihitung terhadap
+               keduanya; ditaruh di layar yang lain, yang mengubah pola
+               kerja tidak pernah melihat bahwa ia sekaligus mengubah
+               siapa yang tercatat terlambat. */
+            'mulai_siang'     => ['nullable', 'date_format:H:i'],
+            'mulai_malam'     => ['nullable', 'date_format:H:i'],
+            'toleransi_menit' => ['nullable', 'integer', 'min:0', 'max:180'],
+
             'keterangan' => ['nullable', 'string', 'max:300'],
             'aktif'      => ['boolean'],
         ]);

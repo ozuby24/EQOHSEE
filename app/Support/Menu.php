@@ -216,6 +216,30 @@ final class Menu
       ],
     ],
 
+    /* Absensi berdampingan dengan Roster, bukan di dalamnya. Roster
+       menjawab "kapan ia seharusnya bekerja", absensi menjawab "apakah
+       ia benar-benar bekerja" — dan keduanya dibaca orang berbeda pada
+       jam berbeda: roster oleh penyusun jadwal seminggu sebelumnya,
+       absensi oleh pengawas pos jaga pagi itu juga. */
+    'absensi' => [
+      'label' => 'Absensi',
+      'tema'  => 'safetrack',
+      'icon'  => 'M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z',
+      'groups' => [
+        '' => [
+          ['Pemantauan Harian', 'absensi.index', 'absensi'],
+        ],
+
+        'Rekapitulasi' => [
+          ['Rekap Periode', 'absensi.rekap', 'absensi/rekap'],
+        ],
+
+        'Perangkat' => [
+          ['Mesin Lapangan', 'absensi.mesin', 'absensi/mesin'],
+        ],
+      ],
+    ],
+
     /* Investigasi berdiri sendiri, BUKAN di bawah Miners maupun Hazard
        Report. Miners menjawab "boleh atau tidak orang ini bekerja hari
        ini"; Hazard Report menjawab "ada bahaya, tolong ditangani".
@@ -691,6 +715,7 @@ final class Menu
         [['mining-engineering-hub*'],              'meh'],
         [['miners*'],                           'miners'],
         [['roster*'],                           'roster'],
+        [['absensi*'],                          'absensi'],
 
         /* Investigasi didaftarkan SEBELUM pola 'ko*' di bawahnya. Pola
            itu berupa awalan satu kata dan tidak cocok dengan

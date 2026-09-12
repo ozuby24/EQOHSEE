@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AbsensiController;
 use App\Http\Controllers\InvestigasiController;
 use App\Http\Controllers\MinersController;
 use App\Http\Controllers\MinersDokumenController;
@@ -384,6 +385,38 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('{roster}', [RosterController::class, 'ubah'])->name('ubah');
 
         Route::get('/', [RosterController::class, 'index'])->name('index');
+    });
+
+
+    /* ================= ABSENSI =================
+     *
+     * Berdiri berdampingan dengan Roster, bukan di dalamnya. Roster
+     * menjawab "kapan ia seharusnya bekerja"; yang ini menjawab "apakah
+     * ia benar-benar bekerja" — dan pertemuan keduanya itulah yang
+     * berharga: hari kerja yang kosong adalah unit yang berhenti, dan
+     * hari libur yang dikerjakan adalah lembur yang belum
+     * diperintahkan. Dilebur menjadi satu layar, salah satu dari dua
+     * pertanyaan itu selalu kalah oleh yang lain.
+     */
+    Route::prefix('absensi')->name('absensi.')->group(function () {
+        /* Rute berkata-tetap lebih dahulu — `rekap` dan `mesin` cocok
+           pula dengan pola berparameter di bawahnya. */
+        Route::get('rekap', [AbsensiController::class, 'rekap'])->name('rekap');
+        Route::get('mesin', [AbsensiController::class, 'mesin'])->name('mesin');
+
+        Route::post('mesin',                 [AbsensiController::class, 'mesinSimpan'])->name('mesin.simpan');
+        Route::put('mesin/{mesin}',          [AbsensiController::class, 'mesinUbah'])->name('mesin.ubah');
+        Route::post('mesin/{mesin}/token',   [AbsensiController::class, 'mesinToken'])
+            ->middleware('can:admin')->name('mesin.token');
+        Route::delete('mesin/{mesin}',       [AbsensiController::class, 'mesinHapus'])
+            ->middleware('can:admin')->name('mesin.hapus');
+
+        Route::post('catat',        [AbsensiController::class, 'catat'])->name('catat');
+        Route::post('rekonsiliasi', [AbsensiController::class, 'rekonsiliasi'])->name('rekonsiliasi');
+
+        Route::put('{absensi}', [AbsensiController::class, 'koreksi'])->name('koreksi');
+
+        Route::get('/', [AbsensiController::class, 'index'])->name('index');
     });
 
 

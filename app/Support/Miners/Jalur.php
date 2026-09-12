@@ -70,7 +70,10 @@ final class Jalur
         $langkah->update([
             'keadaan'        => $keadaan,
             'user_id'        => $oleh->getKey(),
-            'bertindak_pada' => Waktu::kini(),
+            /* UTC, bukan WITA — lihat Waktu::simpan(). Disimpan apa
+               adanya, jam persetujuan tiap langkah alur terbaca delapan
+               jam lebih lambat daripada yang sebenarnya. */
+            'bertindak_pada' => Waktu::kiniSimpan(),
             'catatan'        => $catatan,
         ]);
 

@@ -29,7 +29,8 @@ use Illuminate\Support\Str;
 final class MasterRoster
 {
     /**
-     * kode, nama, kerja, libur, satuan, jam, shift, libur mingguan.
+     * kode, nama, kerja, libur, satuan, jam, shift, libur mingguan,
+     * jam mulai siang, jam mulai malam, toleransi menit.
      *
      * LIBUR MINGGUAN HANYA PADA POLA BERSATUAN MINGGU, dan itu bukan
      * selera. "10:2 minggu" berarti sepuluh minggu di site lalu dua
@@ -42,15 +43,22 @@ final class MasterRoster
      * Pola 14:7 berlibur nol: empat belas hari penuh memang dikerjakan
      * berturut-turut, dan itu sah selama tidak melampaui empat belas.
      *
-     * @var list<array{0:string,1:string,2:int,3:int,4:string,5:int,6:string,7:int}>
+     * JAM MULAI SHIFT IKUT DI SINI, tidak dibiarkan kosong. Kolomnya
+     * memang boleh kosong dan PolaRoster memakai bawaan bila demikian —
+     * tetapi bawaan 07.00 salah satu jam bagi pola sebelas jam, yang di
+     * lapangan mulai 06.00 supaya selesai 17.00. Dibiarkan kosong,
+     * seluruh regu lapangan tercatat datang satu jam lebih awal setiap
+     * hari, dan tidak satu pun keterlambatan pernah terlihat.
+     *
+     * @var list<array{0:string,1:string,2:int,3:int,4:string,5:int,6:string,7:int,8:string,9:string,10:int}>
      */
     public const POLA = [
-        ['14:7',  'Empat belas hari kerja, tujuh hari libur', 14, 7, 'hari',   11, 'putar', 0],
-        ['10:2',  'Sepuluh minggu di site, dua minggu pulang', 10, 2, 'minggu', 8, 'siang', 1],
-        ['8:2',   'Delapan minggu di site, dua minggu pulang',  8, 2, 'minggu', 8, 'siang', 1],
-        ['6:2',   'Enam minggu di site, dua minggu pulang',     6, 2, 'minggu', 8, 'siang', 1],
-        ['4:1',   'Empat hari kerja, satu hari libur',          4, 1, 'hari',    8, 'siang', 0],
-        ['5:2',   'Lima hari kerja kantor, dua hari libur',     5, 2, 'hari',    8, 'siang', 0],
+        ['14:7',  'Empat belas hari kerja, tujuh hari libur', 14, 7, 'hari',   11, 'putar', 0, '06:00', '18:00', 15],
+        ['10:2',  'Sepuluh minggu di site, dua minggu pulang', 10, 2, 'minggu', 8, 'siang', 1, '07:00', '19:00', 15],
+        ['8:2',   'Delapan minggu di site, dua minggu pulang',  8, 2, 'minggu', 8, 'siang', 1, '07:00', '19:00', 15],
+        ['6:2',   'Enam minggu di site, dua minggu pulang',     6, 2, 'minggu', 8, 'siang', 1, '07:00', '19:00', 15],
+        ['4:1',   'Empat hari kerja, satu hari libur',          4, 1, 'hari',    8, 'siang', 0, '07:00', '19:00', 15],
+        ['5:2',   'Lima hari kerja kantor, dua hari libur',     5, 2, 'hari',    8, 'siang', 0, '08:00', '20:00', 20],
     ];
 
     /** @return array<string,int> nama tabel => jumlah baris sesudahnya */
@@ -58,7 +66,7 @@ final class MasterRoster
     {
         $saat = now();
 
-        foreach (self::POLA as $i => [$kode, $nama, $kerja, $libur, $satuan, $jam, $shift, $liburMingguan]) {
+        foreach (self::POLA as $i => [$kode, $nama, $kerja, $libur, $satuan, $jam, $shift, $liburMingguan, $mulaiSiang, $mulaiMalam, $toleransi]) {
             $kunci = Str::slug($kode);
 
             $ada = DB::table('hr_pola_roster')->whereNull('company_id')
@@ -82,7 +90,10 @@ final class MasterRoster
                 'satuan' => $satuan,
                 'jam'    => $jam,
                 'shift'  => $shift,
-                'libur_mingguan' => $liburMingguan,
+                'libur_mingguan'  => $liburMingguan,
+                'mulai_siang'     => $mulaiSiang,
+                'mulai_malam'     => $mulaiMalam,
+                'toleransi_menit' => $toleransi,
                 'urutan' => ($i + 1) * 10,
             ];
 

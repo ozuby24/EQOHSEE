@@ -245,6 +245,10 @@ final class RuteInertia
         'roster.index',
         'roster.pola',
         'roster.kebutuhan',
+
+        'absensi.index',
+        'absensi.rekap',
+        'absensi.mesin',
         'miners.riwayat.mcu',
         'miners.riwayat.induksi',
         'miners.riwayat.mine-permit',

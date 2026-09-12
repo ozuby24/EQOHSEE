@@ -29,6 +29,40 @@ final class Waktu
         return Carbon::now(self::zona());
     }
 
+/**
+     * Sebuah waktu disiapkan untuk DISIMPAN — selalu UTC.
+     *
+     * Eloquent menyimpan ANGKA JAM PADA JAM DINDING, bukan saatnya.
+     * `Model::fromDateTime()` memanggil `format()` atas Carbon yang
+     * diberikan dan tidak memindahkan zonanya lebih dahulu — sehingga
+     * Carbon berzona WITA pukul 07.02 tersimpan sebagai untaian
+     * "07:02:00" pada kolom yang dibaca sebagai UTC. Dibaca kembali,
+     * ia menjadi pukul 15.02 WITA.
+     *
+     * TIDAK ADA GALAT SATU PUN. Barisnya tersimpan, layarnya menggambar,
+     * dan seluruhnya meleset delapan jam: pindaian pukul tujuh pagi
+     * tercatat terlambat 540 menit, tap pulang pukul empat sore jatuh
+     * ke hari berikutnya sehingga orangnya tercatat "belum tap pulang"
+     * selamanya, dan jam kerjanya nol. Terjadi sungguhan — seluruh data
+     * contoh absensi yang pertama dibangkitkan begitu.
+     *
+     * Bedakan dengan tanggal(): kolom DATE memang menyimpan tanggal
+     * setempat, jadi di sana yang benar justru jam dinding WITA tengah
+     * malam. Yang di sini untuk kolom TIMESTAMP, yang menyimpan saat.
+     */
+    public static function simpan(\DateTimeInterface|string|null $waktu): ?Carbon
+    {
+        if ($waktu === null || $waktu === '') return null;
+
+        return Carbon::parse($waktu)->utc();
+    }
+
+    /** Waktu sekarang, siap disimpan. */
+    public static function kiniSimpan(): Carbon
+    {
+        return Carbon::now('UTC');
+    }
+
     /** Sebuah waktu dipindah ke zona tampilan; null tetap null. */
     public static function lokal($waktu): ?Carbon
     {

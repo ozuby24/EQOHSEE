@@ -25,6 +25,7 @@ const bukaRegu = ref<number | null>(null);
 const formPola = useForm({
   kode: '', nama: '', kerja: 14, libur: 7,
   satuan: 'hari', jam: 11, shift: 'putar', keterangan: '', aktif: true,
+  mulai_siang: '06:00', mulai_malam: '18:00', toleransi_menit: 15,
 });
 
 function simpanPola() {
@@ -150,7 +151,30 @@ const langgarBaru = computed(() => {
           </select>
         </label>
 
+        <label class="block">
+          <span class="text-[11px] text-stone-500">Mulai shift siang</span>
+          <input v-model="formPola.mulai_siang" type="time"
+                 class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+        </label>
+
+        <label class="block">
+          <span class="text-[11px] text-stone-500">Mulai shift malam</span>
+          <input v-model="formPola.mulai_malam" type="time"
+                 class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+        </label>
+
+        <label class="block">
+          <span class="text-[11px] text-stone-500">Toleransi telat (menit)</span>
+          <input v-model="formPola.toleransi_menit" type="number" min="0" max="180"
+                 class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+        </label>
+
         <div class="sm:col-span-2 lg:col-span-4 space-y-2">
+          <p class="text-[11.5px] text-stone-500">
+            Absensi dihitung terhadap jam mulai di atas: yang datang lewat dari toleransinya
+            tercatat terlambat.
+          </p>
+
           <p class="text-[11.5px] text-stone-500">
             Siklus <span class="num font-semibold">{{ pratinjau.siklus }}</span> hari
             — <span class="num">{{ pratinjau.kerja }}</span> hari kerja,
@@ -185,6 +209,7 @@ const langgarBaru = computed(() => {
               <th class="px-4 py-2 font-semibold text-right">Jam/hari</th>
               <th class="px-4 py-2 font-semibold text-right">Jam/siklus</th>
               <th class="px-4 py-2 font-semibold">Shift</th>
+              <th class="px-4 py-2 font-semibold">Mulai</th>
               <th class="px-4 py-2 font-semibold text-right">Regu</th>
               <th class="px-4 py-2 font-semibold">Kepatuhan</th>
               <th class="px-4 py-2 font-semibold"></th>
@@ -203,6 +228,10 @@ const langgarBaru = computed(() => {
               <td class="px-4 py-2.5 num text-right">{{ p.jam }}</td>
               <td class="px-4 py-2.5 num text-right">{{ p.jamSiklus }}</td>
               <td class="px-4 py-2.5 text-stone-600">{{ props.SHIFT?.[p.shift] ?? p.shift }}</td>
+              <td class="px-4 py-2.5 num text-stone-600">
+                {{ p.mulaiSiang }} / {{ p.mulaiMalam }}
+                <span class="text-stone-400">±{{ p.toleransi }}′</span>
+              </td>
               <td class="px-4 py-2.5 num text-right">{{ p.regu }}</td>
               <td class="px-4 py-2.5">
                 <span v-if="!p.langgar?.length"
@@ -220,7 +249,7 @@ const langgarBaru = computed(() => {
             </tr>
 
             <tr v-if="!pola.length">
-              <td colspan="9" class="px-4 py-8 text-center text-stone-400">Belum ada pola roster.</td>
+              <td colspan="10" class="px-4 py-8 text-center text-stone-400">Belum ada pola roster.</td>
             </tr>
           </tbody>
         </table>

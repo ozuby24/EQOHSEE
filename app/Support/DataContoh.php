@@ -26,9 +26,10 @@ use App\Models\Pjp\{
     Evaluasi as PjpEvaluasi, Laporan as PjpLaporan, Pjp,
     SmkpItem as PjpSmkpItem, SmkpJawaban as PjpSmkpJawaban, SmkpKategori as PjpSmkpKategori,
 };
-use App\Models\Hr\{Kebutuhan as HrKebutuhan, PolaRoster as HrPola, Regu as HrRegu,
+use App\Models\Hr\{Absensi as HrAbsensi, AbsensiJejak as HrJejak, Kebutuhan as HrKebutuhan,
+    MesinAbsensi as HrMesin, PolaRoster as HrPola, Regu as HrRegu,
     ReguAnggota as HrReguAnggota, Roster as HrRoster};
-use App\Support\Hr\{MasterRoster, Penyusun};
+use App\Support\Hr\{MasterRoster, Penyusun, Rekonsiliasi};
 use App\Support\Miners\Acuan;
 use App\Support\Miners\MasterMiners;
 use App\Support\Pjp\DaftarPeriksaSmkp;
@@ -56,6 +57,7 @@ use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, 
                 Paspor, PasporInduksi, PasporKartu, PasporKartuUnit, PasporMcu, PasporSertifikat,
                 Percakapan, PersetujuanParaf,
                 Pesan, Signatory, TpkkpAssessment, TpkkpPengujian, TpkkpResponse, InduksiPengajuan};
+use App\Support\Waktu;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -288,6 +290,18 @@ final class DataContoh
            dipasang `roster:pasang`, dan membuangnya bersama data contoh
            satu perusahaan akan memutus regu perusahaan lain dari
            polanya. */
+        /* Absensi dibuang SEBELUM roster: `hr_absensi.roster_id`
+           menunjuk ke `hr_roster`, dan meski kunci asingnya
+           `nullOnDelete` — sehingga barisnya tidak ikut hilang — baris
+           yang tertinggal itu justru yang berbahaya. Ia menunjuk ke
+           pekerja yang sudah terhapus berkaskade, dan layar rekap
+           menggambar baris tanpa nama yang tidak dapat ditelusuri ke
+           mana pun.
+
+           Mesin dibuang paling belakang di antara ketiganya, sebab
+           jejak menunjuk kepadanya. */
+        HrAbsensi::class, HrJejak::class, HrMesin::class,
+
         HrRoster::class, HrKebutuhan::class,
         HrReguAnggota::class, HrRegu::class,
 
@@ -797,6 +811,13 @@ final class DataContoh
                dahulu, seluruh baris tertandai "terhalang" sebab
                berkasnya memang belum ada. */
             'Roster'         => $this->roster(),
+
+            /* Absensi SESUDAH roster, dan urutan itu mengikat pula:
+               jejak pindaiannya dibangkitkan DARI roster yang sudah
+               tersusun, lalu direkonsiliasi terhadapnya. Dibalik,
+               seluruh pindaian jatuh menjadi "di luar roster" — sebab
+               memang belum ada roster yang memuatnya. */
+            'Absensi'        => $this->absensi(),
             'Pembelian'      => $this->pembelian(),
             'Pesan'          => $this->pesan(),
             'Catatan'        => $this->catatan(),
@@ -1351,6 +1372,212 @@ final class DataContoh
         return $n;
     }
 
+
+
+    /* ─────────── Absensi ─────────── */
+
+    /**
+     * Pindaian yang dibangkitkan DARI roster, lalu direkonsiliasi
+     * terhadapnya.
+     *
+     * Dibangkitkan sempurna — tiap orang menempel tepat waktu tiap
+     * hari — layar ini tidak pernah memperlihatkan satu pun keadaan
+     * yang menuntut tindakan, dan justru keadaan itulah alasan
+     * modulnya ada. Karena itu data contoh memuat kelimanya sekaligus:
+     * yang tepat waktu, yang terlambat, yang lupa menempel saat
+     * pulang, yang tidak datang sama sekali, dan yang bekerja pada
+     * hari liburnya.
+     *
+     * PENYIMPANGANNYA DITENTUKAN CRC32, bukan rand(). Data contoh yang
+     * berubah tiap kali dimuat membuat tangkapan layar kemarin tidak
+     * dapat dibandingkan dengan hari ini — dan uji yang menghitungnya
+     * lulus atau gagal menurut undian.
+     */
+    private function absensi(): int
+    {
+        $n = 0;
+
+        $hari = $this->kini->copy()->startOfDay();
+
+        $blok = MnrBlok::withoutGlobalScopes()->whereNull('company_id')
+            ->get()->keyBy('kunci');
+
+        /* Dua mesin, dan sengaja berbeda keadaannya: yang satu sudah
+           bertoken dan pernah terhubung, yang lain belum. Seluruhnya
+           bertoken, layar mesin tidak pernah memperlihatkan bagaimana
+           alat yang belum siap dipasang digambar — padahal itulah
+           keadaan tiap alat pada hari pertamanya. */
+        $mesin = [];
+
+        foreach ([
+            ['Pos Jaga Utama',   'zkteco',    'POS-01', 'pit',      '10.20.7.11', true],
+            ['Gerbang Workshop', 'hikvision', 'WS-02',  'workshop', '10.20.7.12', false],
+        ] as [$nama, $merek, $seri, $kunciBlok, $ip, $bertoken]) {
+            $m = HrMesin::withoutGlobalScopes()->create([
+                'company_id' => $this->c->id,
+                'blok_id'    => $blok[$kunciBlok]->id ?? null,
+                'nama'       => $nama,
+                'merek'      => $merek,
+                'nomor_seri' => $seri,
+                'ip'         => $ip,
+                'aktif'      => true,
+                'terakhir_hubung' => $bertoken ? Waktu::simpan($this->kini->copy()->subMinutes(7)) : null,
+            ]);
+
+            if ($bertoken) $m->terbitkanToken();
+
+            $mesin[] = $m;
+            $n++;
+        }
+
+        $utama = $mesin[0];
+
+        $dari = $hari->copy()->subDays(20);
+
+        $roster = HrRoster::withoutGlobalScopes()
+            ->where('company_id', $this->c->id)
+            ->with('pola')
+            ->antara($dari->toDateString(), $hari->toDateString())
+            ->orderBy('tanggal')
+            ->get();
+
+        if ($roster->isEmpty()) return $n;
+
+        /* UNDIANNYA DIKUNCI PADA NOMOR REGISTRASI, bukan pada id baris.
+           Id berubah tiap kali data contoh dimuat ulang — dan bersama
+           itu berubah pula siapa yang absen dan siapa yang lupa
+           menempel saat pulang. Jumlah barisnya lalu berbeda antara dua
+           pemuatan yang seharusnya identik, dan uji penggandaan gagal
+           menurut undian, bukan menurut cacat. Terjadi sungguhan. */
+        $nomor = MnrPekerja::withoutGlobalScopes()
+            ->where('company_id', $this->c->id)
+            ->pluck('no_registrasi', 'id');
+
+        $orang = [];
+
+        foreach ($roster as $r) {
+            $tgl = $r->tanggal->toDateString();
+
+            $undian = (int) (crc32(($nomor[$r->pekerja_id] ?? $r->pekerja_id).'|'.$tgl) % 100);
+
+            $pasang = $r->bekerja()
+                ? $this->jamKerja($r, $tgl, $undian)
+
+                /* Hari libur yang dikerjakan — jarang, dan memang harus
+                   jarang: dibuat sering, "di luar roster" berhenti
+                   terbaca sebagai kejanggalan. */
+                : ($undian % 17 === 3 ? $this->jamLuarRoster($r, $tgl) : null);
+
+            if ($pasang === null) continue;
+
+            [$masuk, $keluar, $sumber, $luring, $dalamArea, $jarak] = $pasang;
+
+            foreach ([['masuk', $masuk], ['keluar', $keluar]] as [$arah, $saat]) {
+                if ($saat === null) continue;
+
+                /* Pindaian di masa depan tidak dibuat. Shift hari ini
+                   yang belum selesai memang belum punya tap pulang —
+                   dan layar pos jaga yang menampilkannya sebagai
+                   "belum tap pulang" pada pukul dua siang menyatakan
+                   yang sebenarnya. */
+                if ($saat->gt($this->kini)) continue;
+
+                HrJejak::withoutGlobalScopes()->create([
+                    'company_id' => $this->c->id,
+                    'pekerja_id' => $r->pekerja_id,
+                    'mesin_id'   => $sumber === 'mesin' ? $utama->id : null,
+                    'terjadi'    => Waktu::simpan($saat),
+                    'diterima'   => Waktu::simpan(
+                        $luring ? $saat->copy()->addHours(9) : $saat->copy()->addSeconds(4),
+                    ),
+                    'arah'       => $arah,
+                    'sumber'     => $sumber,
+                    'luring'     => $luring,
+                    'jarak_m'    => $jarak,
+                    'dalam_area' => $dalamArea,
+                    'kunci'      => 'contoh-'.$r->pekerja_id.'-'.$tgl.'-'.$arah,
+                ]);
+
+                $n++;
+            }
+
+            $orang[$r->pekerja_id] = $r->pekerja_id;
+        }
+
+        if ($orang === []) return $n;
+
+        /* Direkonsiliasi lewat jalan yang sama dengan yang dipakai
+           aplikasi, bukan ditulis baris demi baris di sini. Dua
+           penyusun untuk satu aturan akan berbeda cepat atau lambat,
+           dan yang di sini yang lebih dulu ketinggalan — data contoh
+           lalu memperlihatkan kesimpulan yang tidak pernah dihasilkan
+           tombolnya. */
+        $hasil = Rekonsiliasi::jalankan(array_values($orang), $dari, $hari, $this->pengaju?->id);
+
+        return $n + $hasil['dibuat'];
+    }
+
+    /**
+     * Jam masuk dan keluar sebuah hari kerja.
+     *
+     * @return array{0:?Carbon,1:?Carbon,2:string,3:bool,4:?bool,5:?int}|null
+     */
+    private function jamKerja(HrRoster $r, string $tgl, int $undian): ?array
+    {
+        /* Tidak datang sama sekali. */
+        if ($undian < 6) return null;
+
+        $mulai = Carbon::parse(
+            $tgl.' '.($r->pola?->mulaiShift($r->shift) ?? '07:00'),
+            Waktu::zona(),
+        );
+
+        $jam = (int) ($r->jam ?: 8);
+
+        /* Terlambat melewati toleransi. Geserannya diambil dari
+           undiannya sendiri supaya tetap sama tiap kali dimuat. */
+        $geser = $undian < 20
+            ? 18 + ($undian % 40)
+            : -($undian % 14);
+
+        $masuk = $mulai->copy()->addMinutes($geser);
+
+        /* Lupa menempel saat pulang. */
+        $keluar = $undian >= 94
+            ? null
+            : $mulai->copy()->addMinutes($jam * 60 + ($undian % 35));
+
+        /* Satu berkas absen ponsel dari luar geofence, dan satu
+           kiriman luring. Keduanya keadaan yang benar-benar terjadi di
+           site bersinyal buruk, dan keduanya digambar berbeda. */
+        /* Dipilih dengan modulo, bukan dengan kesamaan tepat: site
+           contoh berisi enam orang, dan satu nilai tertentu dari
+           seratus hampir tidak pernah muncul — keadaannya lalu tidak
+           pernah tergambar sekali pun pada layar. */
+        $ponsel = $undian % 19 === 7;
+        $luring = $undian % 23 === 4;
+
+        return [
+            $masuk,
+            $keluar,
+            $ponsel ? 'ponsel' : 'mesin',
+            $luring,
+            $ponsel ? false : true,
+            $ponsel ? 3_140 : 24,
+        ];
+    }
+
+    /**
+     * Jam masuk dan keluar sebuah hari LIBUR yang tetap dikerjakan.
+     *
+     * @return array{0:Carbon,1:Carbon,2:string,3:bool,4:?bool,5:?int}
+     */
+    private function jamLuarRoster(HrRoster $r, string $tgl): array
+    {
+        $mulai = Carbon::parse($tgl.' 07:05', Waktu::zona());
+
+        return [$mulai, $mulai->copy()->addMinutes(6 * 60 + 20), 'mesin', false, true, 31];
+    }
 
     /* ─────────── Roster & shift ─────────── */
 

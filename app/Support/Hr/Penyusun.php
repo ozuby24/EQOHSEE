@@ -181,7 +181,12 @@ final class Penyusun
         $terbit = Roster::withoutGlobalScopes()
             ->where('regu_id', $regu->id)
             ->antara($dari->toDateString(), $sampai->toDateString())
-            ->update(['terbit' => true, 'updated_at' => Waktu::kini()]);
+            /* UTC, bukan WITA. Eloquent menyimpan jam dinding Carbon
+               yang diberikan tanpa memindahkan zonanya — dan `updated_at`
+               berzona WITA tersimpan delapan jam di masa depan, sehingga
+               "diterbitkan pukul berapa" terbaca salah pada tiap baris
+               yang pernah diterbitkan. Lihat Waktu::simpan(). */
+            ->update(['terbit' => true, 'updated_at' => Waktu::kiniSimpan()]);
 
         return ['terbit' => $terbit, 'ditolak' => []];
     }

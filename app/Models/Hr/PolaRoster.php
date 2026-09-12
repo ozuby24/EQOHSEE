@@ -38,6 +38,12 @@ class PolaRoster extends Model
 
     protected $attributes = ['satuan' => 'hari', 'shift' => 'siang', 'jam' => 11];
 
+    /** Jam mulai shift bila polanya belum menyebutkan sendiri. */
+    public const MULAI_BAWAAN = ['siang' => '07:00', 'malam' => '19:00'];
+
+    /** Toleransi keterlambatan bila polanya tidak menyebutkan. */
+    public const TOLERANSI_BAWAAN = 15;
+
     protected function casts(): array
     {
         return [
@@ -45,6 +51,7 @@ class PolaRoster extends Model
             'libur' => 'integer',
             'jam'   => 'integer',
             'libur_mingguan' => 'integer',
+            'toleransi_menit' => 'integer',
             'aktif' => 'boolean',
         ];
     }
@@ -139,6 +146,35 @@ class PolaRoster extends Model
     public function jamPerSiklus(): int
     {
         return $this->hariKerjaBersih() * $this->jam;
+    }
+
+    /**
+     * Jam mulai shift, sebagai "HH:MM".
+     *
+     * Bawaan dipakai bila polanya belum menyebutkan sendiri — dan itu
+     * keadaan yang biasa, sebab kolomnya baru ditambahkan sesudah pola
+     * bawaannya terpasang. Memulangkan null, seluruh keterlambatan
+     * terhitung nol dan layar absensi menyatakan tidak ada yang
+     * terlambat pada hari mana pun.
+     */
+    public function mulaiShift(?string $shift): string
+    {
+        $shift = $shift === 'malam' ? 'malam' : 'siang';
+
+        $kolom = $shift === 'malam' ? $this->mulai_malam : $this->mulai_siang;
+
+        if ($kolom === null || $kolom === '') return self::MULAI_BAWAAN[$shift];
+
+        /* Kolom TIME terbaca sebagai "07:00:00"; yang dipakai hanya jam
+           dan menitnya. */
+        return substr((string) $kolom, 0, 5);
+    }
+
+    public function toleransi(): int
+    {
+        $n = $this->toleransi_menit;
+
+        return $n === null ? self::TOLERANSI_BAWAAN : (int) $n;
     }
 
     public function scopeTerpakai(Builder $q): Builder

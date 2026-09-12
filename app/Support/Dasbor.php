@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\Investigasi\{Insiden, Tindakan as TindakanInvestigasi};
 use App\Models\Pembelian\Pesanan as PesananBeli;
 use App\Models\Pjp\{Laporan as LaporanPjp, Pjp};
+use App\Models\Hr\Absensi as HrAbsensi;
 use App\Models\Hr\Roster as HrRoster;
 use App\Models\Miners\{Alur as MnrAlur, Pekerja as MnrPekerja, Permit as MnrPermit};
 use App\Support\Miners\Keadaan;
@@ -186,6 +187,23 @@ final class Dasbor
                     ->where('tanggal', '>=', \App\Support\Waktu::kini()->startOfDay()->toDateString())
                     ->count(),
                 'rute'  => 'roster.index', 'nada' => 'gawat',
+            ],
+
+            /* Yang dihitung adalah KETIDAKCOCOKAN, bukan kehadiran.
+               Angka "berapa yang hadir" tidak menuntut tindakan apa
+               pun; angka "berapa hari kerja terjadwal yang tidak ada
+               orangnya" menuntutnya hari itu juga. */
+            [
+                'modul' => 'absensi', 'nama' => 'Absensi Tak Cocok Roster',
+                'ket'   => 'Hari kerja terjadwal yang kosong, dan hari libur yang dikerjakan',
+                'nilai' => HrAbsensi::query()
+                    ->whereIn('keadaan', ['absen', 'luar_roster'])
+                    ->where('tanggal', '>=', \App\Support\Waktu::kini()->subDays(30)->startOfDay()->toDateString())
+                    ->count(),
+                'total' => HrAbsensi::query()
+                    ->where('tanggal', '>=', \App\Support\Waktu::kini()->subDays(30)->startOfDay()->toDateString())
+                    ->count(),
+                'rute'  => 'absensi.index', 'nada' => 'gawat',
             ],
 
             /* ═══ bahaya dan inspeksi ═══ */

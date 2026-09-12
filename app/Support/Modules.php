@@ -82,6 +82,16 @@ class Modules
              'ket'  => 'Pola kerja bergilir 14:7, 10:2 minggu, dan seterusnya — dengan validasi batas jam kerja Kepmenakertrans 234/2003 dan blokir dari berkas kelayakan yang habis.',
              'ikon' => 'M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z'],
 
+            /* Absensi berdiri sebagai modulnya sendiri, bukan sebagai
+               satu tab di dalam Roster. Yang membacanya bukan penyusun
+               jadwal melainkan pengawas pos jaga, pada jam yang lain,
+               untuk keputusan yang lain — siapa yang belum keluar site
+               ketika alarm berbunyi. */
+            ['nama' => 'Absensi & Rekonsiliasi', 'status' => 'aktif', 'pilar' => 'occhealth',
+             'rute' => 'absensi.index',
+             'ket'  => 'Pindaian mesin lapangan direkonsiliasi terhadap roster: shift malam yang melewati tengah malam, geofence absen ponsel, dan koreksi berjejak.',
+             'ikon' => 'M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z'],
+
             ['nama' => 'Safety Maturity Level', 'status' => 'aktif', 'pilar' => 'safety', 'rute' => 'tpkkp.index',
              'ket'  => 'Penilaian tingkat kematangan keselamatan: 194 item · 24 parameter · 4 indikator, lengkap Kalkulator Slovin.',
              'ikon' => 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6'],
