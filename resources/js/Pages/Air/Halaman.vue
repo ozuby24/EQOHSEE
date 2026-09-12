@@ -109,7 +109,7 @@ const warnaPompa: Record<string, string> = {
     <section class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <p class="text-[10px] font-bold uppercase tracking-[.16em] text-sky-600">Environment · Dewatering</p>
-        <h2 class="text-2xl font-extrabold tracking-tight text-stone-800">{{ judul[props.mode] }}</h2>
+        
         <p class="text-[12px] text-stone-500 mt-1">Hujan, level kolam, pompa, dan kualitas air. Pompa memakai registri Keselamatan Operasi.</p>
       </div>
       <div class="flex gap-2">

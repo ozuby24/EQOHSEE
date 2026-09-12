@@ -382,11 +382,6 @@ withDefaults(defineProps<{
 .kop-sisi-ingat { color: #F6D488; }
 .kop-sisi-gawat { color: #F5A9A9; }
 
-@media (max-width: 640px) {
-  .kop-angka strong { font-size: 21px; }
-  .kop-sisi { gap: 1rem; }
-}
-
 .kop-kanan {
   display: flex;
   flex-direction: column;
@@ -440,75 +435,35 @@ withDefaults(defineProps<{
   background: #F57C00;
 }
 
-@media (max-width: 640px) {
-  .kop { min-height: 0; }
+/* ── Layar sempit ──
+   TINGGINYA DIKURANGI, BUKAN DIBIARKAN. Taglinenya disembunyikan di
+   bawah 760px karena ia tidak muat di samping judul; tanpa mengurangi
+   tingginya, yang tersisa adalah kop setinggi 176px yang separuh
+   kanannya foto kosong — judul pendek di kiri dan tidak ada apa pun di
+   sisa lebarnya. Yang terbaca bukan kop yang lapang melainkan kop yang
+   isinya gagal dimuat. */
+@media (max-width: 760px) {
+  .kop { min-height: 132px; }
+  .kop-ringkas { min-height: 118px; }
+  .kop-isi { padding: .95rem 1.1rem 1.05rem; }
   .kop-tagline { display: none; }
-  .kop-angka-baris {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  gap: .7rem;
-  margin-top: .9rem;
+  .kop-kanan { align-items: flex-start; margin-left: 0; }
+
+  /* Tirainya dipekatkan sampai ujung kanan: tanpa tagline, sisi itu
+     tidak lagi punya tulisan yang perlu kontras — tetapi fotonya
+     menjadi terlalu terang di sebelah judul yang mengecil. */
+  .kop-tirai {
+    background:
+      linear-gradient(100deg, rgba(10,17,20,.94) 0%, rgba(10,17,20,.86) 45%, rgba(10,17,20,.55) 100%);
+  }
 }
 
-.kop-angka {
-  display: flex;
-  align-items: center;
-  gap: .75rem;
-  border-radius: .9rem;
-  padding: .65rem .95rem .7rem;
-  background: rgba(255,255,255,.11);
-  border: 1px solid rgba(255,255,255,.15);
-  backdrop-filter: blur(3px);
-}
-
-.kop-angka-ikon {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 38px; height: 38px; border-radius: .7rem; flex: none;
-  background: rgba(245,124,0,.26); color: #FFB870;
-}
-
-.kop-angka-ikon svg { width: 19px; height: 19px; }
-
-.kop-angka small {
-  display: block; font-size: 9.5px; font-weight: 800;
-  letter-spacing: .13em; text-transform: uppercase;
-  color: #FFB870;
-}
-
-.kop-angka strong {
-  display: block; font-size: 26px; font-weight: 800;
-  line-height: 1.08; letter-spacing: -.02em; color: #fff;
-}
-
-.kop-angka em {
-  display: block; font-style: normal; font-size: 10px;
-  color: rgba(255,255,255,.6);
-}
-
-.kop-sisi {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 1.4rem;
-  padding: .65rem .3rem;
-}
-
-.kop-sisi-butir small {
-  display: block; font-size: 10px; color: rgba(255,255,255,.62);
-}
-
-.kop-sisi-butir strong {
-  display: block; font-size: 15px; font-weight: 800;
-  line-height: 1.15; color: #fff;
-}
-
-.kop-sisi-baik  { color: #8FE3BE; }
-.kop-sisi-ingat { color: #F6D488; }
-.kop-sisi-gawat { color: #F5A9A9; }
-
-@media (max-width: 640px) {
-  .kop-angka strong { font-size: 21px; }
-  .kop-sisi { gap: 1rem; }
-}
-
-.kop-kanan { align-items: flex-start; margin-left: 0; }
+@media (max-width: 560px) {
+  .kop-angka-baris { gap: .5rem; }
+  .kop-angka { padding: .55rem .75rem .6rem; }
+  .kop-angka strong { font-size: 20px; }
+  .kop-angka-ikon { width: 32px; height: 32px; }
+  .kop-angka-ikon svg { width: 16px; height: 16px; }
+  .kop-sisi { gap: 1rem; padding: .4rem .2rem; }
 }
 </style>

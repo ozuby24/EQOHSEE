@@ -110,7 +110,7 @@ const warnaStatus: Record<string, string> = {
     <section class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <p class="text-[10px] font-bold uppercase tracking-[.16em] text-cam-orange">Engineering · Drill &amp; Blast</p>
-        <h2 class="text-2xl font-extrabold tracking-tight text-stone-800">{{ judul[props.mode] }}</h2>
+        
         <p class="text-[12px] text-stone-500 mt-1">Rancangan, getaran, dan hasil peledakan dalam satu alur persetujuan.</p>
       </div>
       <div class="flex gap-2">

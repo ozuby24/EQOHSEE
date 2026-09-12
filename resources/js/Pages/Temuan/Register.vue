@@ -77,7 +77,6 @@ const kartu = computed(() => [
 
       <div class="relative">
         <p class="text-[10.5px] font-bold uppercase tracking-[.18em] text-white/55">Lintas Modul</p>
-        <h2 class="font-display text-[22px] font-black mt-1.5">Register Temuan</h2>
         <p class="text-[12.5px] text-white/70 mt-2 max-w-2xl leading-relaxed">
           Temuan dari laporan bahaya, butir inspeksi, audit SMKP, keselamatan operasi, dan
           tindak lanjut sepuluh modul lainnya — dibaca dalam satu bentuk. Angkanya tidak

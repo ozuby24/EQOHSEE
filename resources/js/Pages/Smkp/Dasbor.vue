@@ -153,7 +153,6 @@ const adaData = computed(() => periode.value.length > 0);
 
     <section class="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h2 class="text-xl font-bold text-cam-ink">Performa SMKP</h2>
         <p class="text-[12.5px] text-stone-500 mt-1">
           <template v-if="props.perusahaan?.name">{{ props.perusahaan.name }} · </template>
           penerapan sistem manajemen keselamatan pertambangan dari tahun ke tahun.

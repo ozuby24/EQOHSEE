@@ -224,13 +224,46 @@ class LapisanTampilanTest extends TestCase
             // sama dua kali dengan jarak dua sentimeter — dan itu
             // terbaca sebagai galat penyusunan, bukan sebagai
             // penekanan.
-            if (! preg_match('/<h[12][^>]*>\{\{ (?:props\.)?judul \}\}<\/h[12]>/', $isi)) continue;
+            // Dua bentuk: gema langsung `{{ judul }}`, dan peta judul per
+            // mode yang isinya sama persis dengan label butir menunya —
+            // `{{ judul[props.mode] }}` pada sepuluh Halaman.vue, dan
+            // `{{ titles[props.mode] }}` pada dua yang lain.
+            $gema = '/<h[12][^>]*>\{\{ (?:props\.)?(?:judul|titles)'
+                  .'(?:\[props\.mode\])?[^<]*\}\}<\/h[12]>/';
+
+            if (! preg_match($gema, $isi)) continue;
 
             $liar[] = $this->nama($f);
         }
 
         $this->assertSame([], $liar,
             'Halaman mencetak ulang judul yang sudah ada di kop: '.implode(', ', $liar));
+    }
+
+    /**
+     * BATAS PENJAGA DI ATAS, disebutkan supaya tidak disalahpahami.
+     *
+     * Judul yang diketik sebagai TEKS TETAP di dalam `<h2>` — "Performa
+     * SMKP", "Register Temuan" — tidak dapat dibandingkan dengan judul
+     * yang dikirim controllernya tanpa menjalankan halamannya. Tiga
+     * puluh delapan halaman semacam itu ditemukan dengan menyapu
+     * seluruh 216 alamat Inertia di peramban dan membandingkan
+     * `.kop-judul` dengan tiap `<h2>` di badan halaman, bukan dengan
+     * berkas uji ini.
+     *
+     * Lulusnya uji di atas karena itu TIDAK berarti tidak ada judul
+     * ganda sama sekali; ia hanya berarti tidak ada yang berbentuk gema
+     * prop yang dapat dilihat dari kodenya.
+     */
+    public function test_penjaga_judul_ganda_hanya_melihat_gema_prop(): void
+    {
+        $contoh = '<h2 class="x">Performa SMKP</h2>';
+
+        $gema = '/<h[12][^>]*>\{\{ (?:props\.)?(?:judul|titles)'
+              .'(?:\[props\.mode\])?[^<]*\}\}<\/h[12]>/';
+
+        $this->assertSame(0, preg_match($gema, $contoh),
+            'Penjaga ternyata menangkap judul teks tetap — catatan batas ini sudah usang.');
     }
 
     public function test_butir_menu_sekelompok_tidak_berlabel_kembar(): void

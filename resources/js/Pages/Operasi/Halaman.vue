@@ -173,7 +173,7 @@ const warnaStatus: Record<string, string> = {
   <Head :title="judul[props.mode]" />
   <div class="max-w-[1400px] mx-auto space-y-5">
     <section class="flex flex-wrap items-end justify-between gap-4">
-      <div><p class="text-[10px] font-bold uppercase tracking-[.16em] text-cam-lime-deep">Engineering · Operations</p><h2 class="text-2xl font-extrabold tracking-tight text-stone-800">{{ judul[props.mode] }}</h2><p class="text-[12px] text-stone-500 mt-1">Satu sumber data untuk target, realisasi, delay, produktivitas, dan layer spasial tambang.</p></div>
+      <div><p class="text-[10px] font-bold uppercase tracking-[.16em] text-cam-lime-deep">Engineering · Operations</p><p class="text-[12px] text-stone-500 mt-1">Satu sumber data untuk target, realisasi, delay, produktivitas, dan layer spasial tambang.</p></div>
       <div v-if="props.mode === 'dashboard' || props.mode === 'data'" class="flex gap-2"><input v-model="props.dari" type="date" class="rounded-lg border-stone-200 text-[11px]" aria-label="Tanggal mulai"><input v-model="props.sampai" type="date" class="rounded-lg border-stone-200 text-[11px]" aria-label="Tanggal akhir"><button class="eq-btn-lain" type="button" @click="rentang">Terapkan</button></div>
     </section>
 

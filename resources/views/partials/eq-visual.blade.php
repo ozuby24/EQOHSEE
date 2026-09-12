@@ -1165,6 +1165,29 @@ main a{transition:color .16s}
 /* ── Bilah pindah sub-halaman (beranda modul) ── */
 .eq-pindah{display:flex;flex-wrap:wrap;gap:8px}
 
+/* SATU BARIS YANG DIGESER, BUKAN ENAM BARIS YANG MEMBUNGKUS.
+   Pada layar sempit, empat belas pil membungkus menjadi enam baris
+   setinggi hampir 300px — mendorong isi halaman sampai ke luar layar,
+   sehingga yang pertama dilihat orang yang membuka modul bukan isinya
+   melainkan daftar isinya. Digeser mendatar, tingginya tetap satu
+   baris berapa pun jumlah pilnya.
+
+   Tepinya diberi bayangan yang memudar supaya terlihat masih ada yang
+   di kanan: baris yang terpotong rapi di tepi layar terbaca sebagai
+   baris yang memang berakhir di situ. */
+@media (max-width:900px){
+  .eq-pindah{
+    flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x proximity;
+    padding-bottom:4px;margin-inline:-4px;padding-inline:4px;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+    -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);
+            mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);
+  }
+  .eq-pindah::-webkit-scrollbar{display:none}
+  .eq-pindah-pil{scroll-snap-align:start;flex:none}
+}
+
 .eq-pindah-pil{display:inline-flex;align-items:center;gap:7px;
   padding:8px 14px 8px 11px;border-radius:11px;font-size:12.5px;font-weight:600;
   text-decoration:none;white-space:nowrap;
