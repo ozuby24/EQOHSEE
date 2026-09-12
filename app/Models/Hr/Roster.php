@@ -66,6 +66,15 @@ class Roster extends Model
     public function blok(): BelongsTo    { return $this->belongsTo(Blok::class, 'blok_id'); }
     public function user(): BelongsTo    { return $this->belongsTo(User::class); }
 
+    /**
+     * Pengajuan cuti yang mengubah baris ini, bila ada.
+     *
+     * Yang membaca kalender berhak tahu MENGAPA sebuah hari berubah
+     * menjadi cuti, dan menelusurinya ke pengajuannya — bukan sekadar
+     * melihat hurufnya berganti.
+     */
+    public function cuti(): BelongsTo    { return $this->belongsTo(Cuti::class, 'cuti_id'); }
+
     public function bekerja(): bool
     {
         return in_array($this->keadaan, self::BEKERJA, true);

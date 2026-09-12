@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Support\Hr\MasterRoster;
+use App\Support\Hr\{MasterCuti, MasterRoster};
 use Illuminate\Console\Command;
 
 /**
@@ -17,13 +17,22 @@ class PasangRoster extends Command
 {
     protected $signature = 'roster:pasang';
 
-    protected $description = 'Pasang pola roster awal bersama (14:7, 10:2 minggu, dan seterusnya).';
+    protected $description = 'Pasang daftar awal HRIS: pola roster dan jenis cuti.';
 
+    /**
+     * Jenis cuti ikut dipasang di sini, bukan lewat perintah kedua.
+     *
+     * Keduanya daftar awal bersama modul yang sama, dan deploy/deploy.sh
+     * sudah memanggil perintah ini. Sebagai perintah tersendiri, ia
+     * harus ditambahkan ke skrip penerapan — dan skrip yang lupa
+     * diperbarui menghasilkan daftar pilih cuti yang kosong di server,
+     * sementara di mesin penguji ia terisi.
+     */
     public function handle(): int
     {
-        $this->info('Memasang pola roster…');
+        $this->info('Memasang daftar awal HRIS…');
 
-        foreach (MasterRoster::pasang() as $tabel => $jumlah) {
+        foreach (MasterRoster::pasang() + MasterCuti::pasang() as $tabel => $jumlah) {
             $this->line(sprintf('  %-24s %5d baris', $tabel, $jumlah));
         }
 

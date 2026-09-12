@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Hr\Cuti as HrCuti;
 use App\Models\Investigasi\Bukti as BuktiInvestigasi;
 use App\Models\Pembelian\Pembayaran as PembayaranBeli;
 use App\Models\Pjp\Laporan as LaporanPjp;
@@ -83,6 +84,15 @@ final class Berkas
            ia menyebut ke poli mana orangnya dirujuk, dan itu rincian
            medis. */
         'mcr' => [PasporMcu::class,      'berkas_rujukan', false],
+
+        /* Bukti pengajuan cuti. Terjaga seketat surat MCU, dan bukan
+           karena kehati-hatian berlebihan: bukti cuti sakit ADALAH
+           surat dokter, dan surat dokter menyebut diagnosisnya. UU PDP
+           27/2022 menempatkan data kesehatan sebagai data pribadi
+           spesifik — dibiarkan terbuka bagi seluruh pengguna yang
+           login, catatan medis seseorang dapat dibaca rekan sekamarnya
+           di mess. */
+        'cti' => [HrCuti::class,         'berkas_bukti',   false],
     ];
 
     /**
@@ -191,6 +201,13 @@ final class Berkas
     public const GERBANG = [
         'mcu' => ['isAdmin', 'isOhse', 'isParamedis'],
         'mcr' => ['isAdmin', 'isOhse', 'isParamedis'],
+
+        /* Bukti cuti sakit adalah surat dokter, dan surat dokter
+           menyebut diagnosisnya — data pribadi spesifik menurut UU PDP
+           27/2022. Dijaga sama ketatnya dengan surat MCU; atasan yang
+           menyetujui cukup melihat bahwa buktinya ADA, dan itulah yang
+           ditampilkan layar persetujuan. */
+        'cti' => ['isAdmin', 'isOhse', 'isParamedis'],
 
         /* Bukti bayar adalah tangkapan layar mutasi rekening: ia memuat
            nomor rekening pengirim, dan kerap saldonya. Hanya admin —

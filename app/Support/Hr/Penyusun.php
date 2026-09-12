@@ -87,7 +87,14 @@ final class Penyusun
                     $kunci = $a->pekerja_id.'|'.$hari;
                     $lama  = $ada->get($kunci);
 
-                    if ($lama && $lama->terbit) { $n['dilewati']++; continue; }
+                    /* BARIS YANG LAHIR DARI CUTI IKUT DILEWATI,
+                       bukan hanya yang sudah terbit. Tanpa penjagaan
+                       ini, menekan "susun ulang" karena satu orang
+                       pindah regu menghapus seluruh cuti yang sudah
+                       disetujui bulan itu — dan tidak ada satu galat
+                       pun yang menandainya, sebab barisnya memang
+                       tergantikan dengan benar oleh baseline. */
+                    if ($lama && ($lama->terbit || $lama->cuti_id)) { $n['dilewati']++; continue; }
 
                     $p = $a->pekerja;
 

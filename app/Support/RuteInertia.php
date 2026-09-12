@@ -249,6 +249,8 @@ final class RuteInertia
         'hris.absensi.index',
         'hris.absensi.rekap',
         'hris.absensi.mesin',
+        'hris.cuti.index',
+        'hris.cuti.saldo',
         'miners.riwayat.mcu',
         'miners.riwayat.induksi',
         'miners.riwayat.mine-permit',

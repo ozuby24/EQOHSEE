@@ -4,6 +4,7 @@ use App\Http\Controllers\InvestigasiController;
 use App\Http\Controllers\MinersController;
 use App\Http\Controllers\MinersDokumenController;
 use App\Http\Controllers\Hris\AbsensiController;
+use App\Http\Controllers\Hris\CutiController;
 use App\Http\Controllers\Hris\HrisController;
 use App\Http\Controllers\Hris\RosterController;
 use App\Http\Controllers\DasborController;
@@ -425,6 +426,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::put('{absensi}', [AbsensiController::class, 'koreksi'])->name('koreksi');
 
             Route::get('/', [AbsensiController::class, 'index'])->name('index');
+        });
+
+        /* ---- Cuti & izin ---- */
+        Route::prefix('cuti')->name('cuti.')->group(function () {
+            Route::get('saldo', [CutiController::class, 'saldo'])->name('saldo');
+
+            Route::post('/', [CutiController::class, 'store'])->name('simpan');
+
+            /* Tindakan atas pengajuan orang lain. Penjagaan "yang
+               mengajukan tidak boleh menyetujui sendiri" ada di
+               JalurCuti, bukan di middleware — middleware tidak tahu
+               siapa yang mengajukan baris ini. */
+            Route::post('{cuti}/setujui',  [CutiController::class, 'setujui'])->name('setujui');
+            Route::post('{cuti}/tolak',    [CutiController::class, 'tolak'])->name('tolak');
+            Route::post('{cuti}/teruskan', [CutiController::class, 'teruskan'])->name('teruskan');
+            Route::post('{cuti}/batalkan', [CutiController::class, 'batalkan'])->name('batalkan');
+
+            Route::get('/', [CutiController::class, 'index'])->name('index');
         });
 
         Route::get('/', [HrisController::class, 'index'])->name('index');

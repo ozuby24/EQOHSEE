@@ -26,10 +26,11 @@ use App\Models\Pjp\{
     Evaluasi as PjpEvaluasi, Laporan as PjpLaporan, Pjp,
     SmkpItem as PjpSmkpItem, SmkpJawaban as PjpSmkpJawaban, SmkpKategori as PjpSmkpKategori,
 };
-use App\Models\Hr\{Absensi as HrAbsensi, AbsensiJejak as HrJejak, Kebutuhan as HrKebutuhan,
+use App\Models\Hr\{Absensi as HrAbsensi, AbsensiJejak as HrJejak, Cuti as HrCuti,
+    JenisCuti as HrJenisCuti, Kebutuhan as HrKebutuhan, SaldoCuti as HrSaldoCuti,
     MesinAbsensi as HrMesin, PolaRoster as HrPola, Regu as HrRegu,
     ReguAnggota as HrReguAnggota, Roster as HrRoster};
-use App\Support\Hr\{MasterRoster, Penyusun, Rekonsiliasi};
+use App\Support\Hr\{JalurCuti, KebijakanCuti, MasterCuti, MasterRoster, Penyusun, Rekonsiliasi};
 use App\Support\Miners\Acuan;
 use App\Support\Miners\MasterMiners;
 use App\Support\Pjp\DaftarPeriksaSmkp;
@@ -301,6 +302,18 @@ final class DataContoh
            Mesin dibuang paling belakang di antara ketiganya, sebab
            jejak menunjuk kepadanya. */
         HrAbsensi::class, HrJejak::class, HrMesin::class,
+
+        /* Cuti dibuang SEBELUM roster, meski `hr_roster.cuti_id`
+           mengosongkan dirinya sendiri saat cutinya hilang. Yang
+           dijaga urutan ini bukan integritasnya melainkan
+           HITUNGANNYA: baris yang terhapus lewat kaskade tidak ikut
+           terhitung pemanggilnya, dan pemeriksaan penumpukan bersandar
+           pada perbandingan "dibuat" lawan "dibuang".
+
+           Jenis cutinya sendiri TIDAK dibuang — ia daftar awal bersama
+           tanpa pemilik, berisi pasal undang-undang yang berlaku sama
+           bagi setiap perusahaan. */
+        HrCuti::class, HrSaldoCuti::class,
 
         HrRoster::class, HrKebutuhan::class,
         HrReguAnggota::class, HrRegu::class,
@@ -812,6 +825,16 @@ final class DataContoh
                berkasnya memang belum ada. */
             'Roster'         => $this->roster(),
 
+            /* Cuti di ANTARA roster dan absensi, dan urutan itu
+               mengikat keduanya: cuti yang disetujui menuliskan
+               hari-harinya ke roster, dan absensi dibangkitkan dari
+               roster yang sudah memuat cuti itu. Dijalankan sesudah
+               absensi, orang yang sedang cuti tetap menghasilkan
+               pindaian — dan layar harian menampilkan seseorang
+               menempel kartu di pos jaga pada hari ia berada di
+               kampung halamannya. */
+            'Cuti'           => $this->cuti(),
+
             /* Absensi SESUDAH roster, dan urutan itu mengikat pula:
                jejak pindaiannya dibangkitkan DARI roster yang sudah
                tersusun, lalu direkonsiliasi terhadapnya. Dibalik,
@@ -966,6 +989,15 @@ final class DataContoh
                 'nik'             => $nik,
                 'no_induk'        => sprintf('IBP-%04d', 1200 + $i),
                 'tanggal_lahir'   => Carbon::create($lahir, ($i % 12) + 1, (($i * 3) % 27) + 1),
+
+                /* Masa kerja sengaja beragam, dan yang TERAKHIR belum
+                   genap dua belas bulan. Hak cuti tahunan baru timbul
+                   sesudah dua belas bulan bekerja terus-menerus (UU
+                   13/2003 pasal 79) — kalau semuanya sudah lama
+                   bekerja, layar saldo tidak pernah memperlihatkan
+                   bagaimana hak nol digambar, padahal itulah keadaan
+                   tiap karyawan baru. */
+                'tanggal_masuk'   => $hari->copy()->subMonths($i === 5 ? 5 : (14 + $i * 9))->startOfDay(),
                 'gol_darah'       => $darah,
                 'telepon'         => '0812'.str_pad((string) (3300000 + $i), 7, '0', STR_PAD_LEFT),
                 'telepon_darurat' => '0813'.str_pad((string) (4400000 + $i), 7, '0', STR_PAD_LEFT),
@@ -1373,6 +1405,118 @@ final class DataContoh
     }
 
 
+
+/* ─────────── Cuti & izin ─────────── */
+
+    /**
+     * Empat pengajuan yang sengaja berbeda nasibnya.
+     *
+     * Seluruhnya disetujui, layar ini tidak pernah memperlihatkan
+     * antrean yang menunggu — padahal antrean itulah satu-satunya
+     * alasan seseorang membuka layarnya. Seluruhnya cuti tahunan, ia
+     * tidak pernah memperlihatkan izin khusus yang TIDAK memotong
+     * saldo, dan yang membacanya menyangka setiap izin memakan jatah.
+     */
+    private function cuti(): int
+    {
+        MasterCuti::pasang();
+
+        $n = 0;
+
+        $hari = $this->kini->copy()->startOfDay();
+
+        $jenis = HrJenisCuti::withoutGlobalScopes()->whereNull('company_id')
+            ->get()->keyBy('kunci');
+
+        $pekerja = MnrPekerja::withoutGlobalScopes()
+            ->where('company_id', $this->c->id)->orderBy('nama')->get()->values();
+
+        if ($jenis->isEmpty() || $pekerja->isEmpty()) return 0;
+
+        /* Penindaknya HARUS bukan pengajunya — JalurCuti menolak
+           persetujuan atas pengajuan sendiri, dan data contoh yang
+           melanggarnya akan diam-diam gagal menyetujui apa pun. */
+        $penyetuju = $this->pengaju
+            ? User::where('id', '<>', $this->pengaju->id)->first()
+            : User::first();
+
+        $rencana = [
+            /* pekerja, kunci jenis, mulai (hari dari sekarang), lama, nasib */
+            [0, 'tahunan',    -21, 3, 'disetujui'],
+            [1, 'duka-inti',  -12, 2, 'disetujui'],
+            [2, 'tahunan',      9, 4, 'menunggu'],
+            [3, 'sakit',       -6, 2, 'ditolak'],
+        ];
+
+        foreach ($rencana as [$i, $kunciJenis, $geser, $lama, $nasib]) {
+            if (! isset($pekerja[$i]) || ! isset($jenis[$kunciJenis])) continue;
+
+            $p = $pekerja[$i];
+            $j = $jenis[$kunciJenis];
+
+            $mulai   = $hari->copy()->addDays($geser);
+            $selesai = $mulai->copy()->addDays($lama - 1);
+
+            $hitung = KebijakanCuti::hariTerpotong($p, $mulai, $selesai);
+
+            /* Rentang yang seluruhnya jatuh pada periode off-site tidak
+               memotong satu hari pun — dan pengajuan seperti itu memang
+               ditolak aturannya. Dilewati di sini supaya data contoh
+               tidak berisi baris yang tidak dapat dibuat lewat layarnya
+               sendiri. */
+            if ($hitung['hari'] === 0) continue;
+
+            $c = HrCuti::withoutGlobalScopes()->create([
+                'company_id'    => $this->c->id,
+                'pekerja_id'    => $p->id,
+                'jenis_cuti_id' => $j->id,
+                'mulai'         => $mulai,
+                'selesai'       => $selesai,
+                'hari'          => $hitung['hari'],
+                'kalender'      => $hitung['kalender'],
+                'alasan'        => match ($kunciJenis) {
+                    'duka-inti' => 'Orang tua meninggal dunia.',
+                    'sakit'     => 'Demam berdarah, dirawat di klinik site.',
+                    default     => 'Keperluan keluarga di kampung halaman.',
+                },
+                'status'        => 'menunggu',
+                'diajukan_oleh' => $this->pengaju?->id,
+                'diajukan_pada' => Waktu::kiniSimpan(),
+            ]);
+            $n++;
+
+            if (! $penyetuju) continue;
+
+            /* Ditindak lewat JALUR YANG SAMA dengan yang dipakai
+               layarnya, bukan dengan menulis kolom status langsung.
+               Ditulis langsung, saldo tidak terpotong dan rosternya
+               tidak ikut berubah — data contoh lalu memperlihatkan
+               keadaan yang tidak pernah dihasilkan tombolnya. */
+            if ($nasib === 'disetujui') {
+                JalurCuti::setujui($c->fresh(), $penyetuju, 'Disetujui; regu masih cukup orang.');
+            }
+
+            if ($nasib === 'ditolak') {
+                JalurCuti::tolak($c->fresh(), $penyetuju, 'Surat dokter belum dilampirkan.');
+            }
+        }
+
+        /* Saldo seluruh pekerja dilahirkan sekalian, bukan hanya milik
+           yang mengajukan. Layar saldo yang separuh barisnya kosong
+           terbaca seperti data yang gagal dimuat. */
+        $tahunan = $jenis['tahunan'] ?? null;
+
+        if ($tahunan) {
+            foreach ($pekerja as $p) {
+                KebijakanCuti::saldo($p, $tahunan, (int) $hari->format('Y'));
+            }
+
+            $n += HrSaldoCuti::withoutGlobalScopes()
+                ->where('company_id', $this->c->id)->count();
+        }
+
+        return $n;
+    }
 
     /* ─────────── Absensi ─────────── */
 

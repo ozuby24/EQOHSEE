@@ -139,6 +139,19 @@ class CakupanDataContohTest extends TestCase
            tanpa satu galat pun. */
         'hr_pola_roster' => 'pola acuan, dipasang roster:pasang',
 
+        /* Jenis cuti. Alasannya sama persis: isinya pasal UU 13/2003
+           — pasal 79, 81, 82, dan 93 ayat (4) — yang berlaku sama bagi
+           setiap perusahaan, dipasang `roster:pasang` bersama pola
+           rosternya. Membuangnya bersama data contoh satu perusahaan
+           akan memutus seluruh pengajuan cuti perusahaan lain dari
+           jenisnya, dan kunci asingnya justru menolak menghapus —
+           sehingga tombol muat ulang gagal dengan galat basis data.
+
+           Bahwa daftarnya benar-benar terisi tetap dijaga, bukan di
+           sini melainkan di CutiTest yang memeriksa lama dan sifat
+           tiap jenisnya. */
+        'hr_jenis_cuti' => 'jenis cuti UU 13/2003, dipasang roster:pasang',
+
         'beli_produk'              => 'katalog jual, master milik penjual',
         'inv_wawancara_pertanyaan' => 'bank soal wawancara, master bersama',
 

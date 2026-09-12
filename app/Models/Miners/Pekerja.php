@@ -60,6 +60,7 @@ class Pekerja extends Model
     {
         return [
             'tanggal_lahir'   => 'date',
+            'tanggal_masuk'   => 'date',
             'tanggal_resign'  => 'date',
         ];
     }

@@ -230,6 +230,11 @@ final class Menu
           ['Rekap Periode',     'hris.absensi.rekap', 'hris/absensi/rekap'],
           ['Mesin Lapangan',    'hris.absensi.mesin', 'hris/absensi/mesin'],
         ],
+
+        'Cuti & Izin' => [
+          ['Pengajuan & Persetujuan', 'hris.cuti.index', 'hris/cuti'],
+          ['Saldo Cuti',              'hris.cuti.saldo', 'hris/cuti/saldo'],
+        ],
       ],
     ],
 
