@@ -152,6 +152,16 @@ class CakupanDataContohTest extends TestCase
            tiap jenisnya. */
         'hr_jenis_cuti' => 'jenis cuti UU 13/2003, dipasang roster:pasang',
 
+        /* Acuan pajak dan tabel tarif efektifnya. Alasannya sama
+           persis, dengan satu tambahan yang lebih penting daripada
+           yang lain: penanda TERVERIFIKASI pada pay_acuan adalah
+           pekerjaan seseorang yang benar-benar membuka naskah
+           peraturannya. Terbuang bersama data contoh satu perusahaan,
+           pemeriksaan itu hilang tanpa jejak — dan periode gaji
+           seluruh perusahaan lain mendadak tidak dapat dikunci lagi. */
+        'pay_acuan' => 'acuan pajak & BPJS, dipasang roster:pasang',
+        'pay_ter'   => 'tabel tarif efektif PMK 168/2023, dipasang roster:pasang',
+
         'beli_produk'              => 'katalog jual, master milik penjual',
         'inv_wawancara_pertanyaan' => 'bank soal wawancara, master bersama',
 

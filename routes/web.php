@@ -5,6 +5,7 @@ use App\Http\Controllers\MinersController;
 use App\Http\Controllers\MinersDokumenController;
 use App\Http\Controllers\Hris\AbsensiController;
 use App\Http\Controllers\Hris\CutiController;
+use App\Http\Controllers\Hris\GajiController;
 use App\Http\Controllers\Hris\LemburController;
 use App\Http\Controllers\Hris\HrisController;
 use App\Http\Controllers\Hris\RosterController;
@@ -459,6 +460,31 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('{lembur}/batalkan', [LemburController::class, 'batalkan'])->name('batalkan');
 
             Route::get('/', [LemburController::class, 'index'])->name('index');
+        });
+
+        /* ---- Penggajian ---- */
+        Route::prefix('gaji')->name('gaji.')->group(function () {
+            Route::get('acuan', [GajiController::class, 'acuan'])->name('acuan');
+
+            /* MENANDAI ACUAN SUDAH DIPERIKSA HANYA UNTUK ADMIN, dan
+               itu bukan kerapian: tanda itulah yang membuka kunci
+               periode gaji. Dibuka untuk semua, siapa pun dapat
+               mencentangnya tanpa pernah membuka naskah peraturannya. */
+            Route::post('acuan/{acuan}', [GajiController::class, 'verifikasi'])
+                ->middleware('can:admin')->name('acuan.verifikasi');
+
+            Route::post('pekerja', [GajiController::class, 'pekerja'])->name('pekerja');
+
+            Route::post('/', [GajiController::class, 'buat'])->name('buat');
+
+            Route::post('{periode}/hitung', [GajiController::class, 'hitung'])->name('hitung');
+
+            /* Penguncian hanya admin: sesudah ini angkanya berhenti
+               menjadi pratinjau dan mulai menjadi dasar pembayaran. */
+            Route::post('{periode}/kunci', [GajiController::class, 'kunci'])
+                ->middleware('can:admin')->name('kunci');
+
+            Route::get('/', [GajiController::class, 'index'])->name('index');
         });
 
         Route::get('/', [HrisController::class, 'index'])->name('index');

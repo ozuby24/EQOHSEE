@@ -28,10 +28,11 @@ use App\Models\Pjp\{
 };
 use App\Models\Hr\{Absensi as HrAbsensi, AbsensiJejak as HrJejak, Cuti as HrCuti,
     JenisCuti as HrJenisCuti, Kebutuhan as HrKebutuhan, Lembur as HrLembur,
-    SaldoCuti as HrSaldoCuti, Upah as HrUpah,
+    PeriodeGaji as HrPeriodeGaji, SaldoCuti as HrSaldoCuti, SlipGaji as HrSlipGaji, Upah as HrUpah,
     MesinAbsensi as HrMesin, PolaRoster as HrPola, Regu as HrRegu,
     ReguAnggota as HrReguAnggota, Roster as HrRoster};
-use App\Support\Hr\{JalurCuti, JalurLembur, KebijakanCuti, MasterCuti, MasterRoster, Penyusun, Rekonsiliasi};
+use App\Support\Hr\{JalurCuti, JalurLembur, KebijakanCuti, MasterCuti, MasterPajak, MasterRoster,
+    Penggajian, Penyusun, Rekonsiliasi};
 use App\Support\Miners\Acuan;
 use App\Support\Miners\MasterMiners;
 use App\Support\Pjp\DaftarPeriksaSmkp;
@@ -308,6 +309,20 @@ final class DataContoh
            yang sudah terhapus berkaskade — lalu rekap lembur
            menggambar baris tanpa nama yang tidak dapat ditelusuri ke
            mana pun. */
+        /* Slip dibuang sebelum periodenya, dan keduanya sebelum
+           lembur: slip menunjuk ke periode, dan angka lemburnya sudah
+           tersalin ke dalam slip. Urutan ini menjaga HITUNGANNYA —
+           baris yang terhapus lewat kaskade tidak ikut terhitung
+           pemanggilnya, dan pemeriksaan penumpukan bersandar pada
+           perbandingan "dibuat" lawan "dibuang".
+
+           Acuan pajak dan tabel tarifnya TIDAK dibuang: keduanya
+           daftar awal bersama tanpa pemilik, berisi angka peraturan
+           yang berlaku sama bagi setiap perusahaan — dan penanda
+           verifikasinya adalah pekerjaan seseorang yang tidak boleh
+           hilang bersama data contoh. */
+        HrSlipGaji::class, HrPeriodeGaji::class,
+
         HrLembur::class, HrUpah::class,
 
         HrAbsensi::class, HrJejak::class, HrMesin::class,
@@ -857,6 +872,14 @@ final class DataContoh
                ada satu jam pun yang dapat dibandingkan dengan apa
                pun. */
             'Lembur'         => $this->lembur(),
+
+            /* Penggajian PALING AKHIR di antara modul HRIS: ia menarik
+               dari roster, absensi, cuti, dan lembur sekaligus.
+               Dijalankan lebih dahulu, slipnya lahir kosong — dan
+               layarnya memperlihatkan gaji tanpa tunjangan site
+               maupun lembur, yang justru dua komponen yang paling
+               membedakan penggajian tambang. */
+            'Penggajian'     => $this->penggajian(),
             'Pembelian'      => $this->pembelian(),
             'Pesan'          => $this->pesan(),
             'Catatan'        => $this->catatan(),
@@ -1744,6 +1767,87 @@ final class DataContoh
         $mulai = Carbon::parse($tgl.' 07:05', Waktu::zona());
 
         return [$mulai, $mulai->copy()->addMinutes(6 * 60 + 20), 'mesin', false, true, 31];
+    }
+
+    /* ─────────── Penggajian ─────────── */
+
+    /**
+     * Dua periode: yang lalu sudah terkunci, yang berjalan masih
+     * dapat dihitung ulang.
+     *
+     * Seluruhnya terkunci, layar ini tidak pernah memperlihatkan
+     * tombol "Hitung" bekerja; seluruhnya terbuka, ia tidak pernah
+     * memperlihatkan bagaimana periode yang sudah menjadi dasar
+     * pembayaran digambar berbeda.
+     *
+     * ACUAN PAJAKNYA TIDAK IKUT DITANDAI TERVERIFIKASI. Data contoh
+     * tidak berwenang menyatakan bahwa tabel tarif sudah dicocokkan
+     * dengan naskah peraturannya — dan periode contoh karena itu
+     * terkunci lewat jalan yang sama dengan yang akan ditempuh
+     * sungguhan: seseorang menandai acuannya lebih dahulu.
+     */
+    private function penggajian(): int
+    {
+        MasterPajak::pasang();
+
+        $n = 0;
+
+        $hari = $this->kini->copy()->startOfDay();
+
+        /* Status PTKP disebar supaya ketiga kategori TER terpakai —
+           layar yang seluruhnya TK/0 tidak pernah memperlihatkan bahwa
+           kategorinya memang berbeda-beda. */
+        $ptkp = ['TK/0', 'K/0', 'K/1', 'K/2', 'K/3', 'TK/2'];
+
+        $pekerja = MnrPekerja::withoutGlobalScopes()
+            ->where('company_id', $this->c->id)->orderBy('nama')->get()->values();
+
+        foreach ($pekerja as $i => $p) {
+            $p->forceFill([
+                'status_ptkp' => $ptkp[$i % count($ptkp)],
+                'npwp'        => $p->nik,
+            ])->save();
+        }
+
+        /* Tunjangan site harian, yang tidak dapat dihitung HRIS mana
+           pun yang tidak memegang absensinya sendiri. */
+        HrUpah::withoutGlobalScopes()
+            ->where('company_id', $this->c->id)
+            ->update(['tunjangan_site_harian' => 185_000]);
+
+        foreach ([$hari->copy()->subMonth(), $hari->copy()] as $k => $bulan) {
+            $periode = HrPeriodeGaji::withoutGlobalScopes()->create([
+                'company_id' => $this->c->id,
+                'tahun'      => (int) $bulan->format('Y'),
+                'bulan'      => (int) $bulan->format('n'),
+            ]);
+            $n++;
+
+            /* Dihitung lewat JALAN YANG SAMA dengan yang dipakai
+               tombolnya. Ditulis baris demi baris di sini, data contoh
+               memperlihatkan angka yang tidak pernah dihasilkan
+               mesinnya sendiri. */
+            $hasil = Penggajian::hitung($periode, $this->pengaju);
+
+            if (is_array($hasil)) $n += $hasil['dibuat'];
+
+            /* Periode yang lalu dikunci — dan untuk itu acuannya harus
+               ditandai lebih dahulu, persis seperti yang akan terjadi
+               sungguhan. Penandanya dicabut kembali sesudahnya supaya
+               data contoh tidak meninggalkan pernyataan bahwa tabel
+               tarifnya sudah diperiksa seseorang. */
+            if ($k === 0 && $this->pengaju) {
+                DB::table('pay_acuan')->update(['terverifikasi' => true]);
+
+                Penggajian::kunci($periode->fresh(), $this->pengaju);
+
+                DB::table('pay_acuan')->update([
+                    'terverifikasi' => false, 'diverifikasi_oleh' => null, 'diverifikasi_pada' => null,
+                ]);
+            }
+        }
+
+        return $n;
     }
 
     /* ─────────── Lembur ─────────── */

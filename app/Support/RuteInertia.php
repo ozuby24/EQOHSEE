@@ -253,6 +253,8 @@ final class RuteInertia
         'hris.cuti.saldo',
         'hris.lembur.index',
         'hris.lembur.upah',
+        'hris.gaji.index',
+        'hris.gaji.acuan',
         'miners.riwayat.mcu',
         'miners.riwayat.induksi',
         'miners.riwayat.mine-permit',

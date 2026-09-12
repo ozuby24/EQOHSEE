@@ -240,6 +240,11 @@ final class Menu
           ['Perintah Lembur', 'hris.lembur.index', 'hris/lembur'],
           ['Upah Dasar',      'hris.lembur.upah',  'hris/lembur/upah'],
         ],
+
+        'Penggajian' => [
+          ['Periode & Slip',   'hris.gaji.index', 'hris/gaji'],
+          ['Acuan Pajak & BPJS','hris.gaji.acuan', 'hris/gaji/acuan'],
+        ],
       ],
     ],
 
