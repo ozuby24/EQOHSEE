@@ -6,6 +6,7 @@ use App\Http\Controllers\MinersDokumenController;
 use App\Http\Controllers\Hris\AbsensiController;
 use App\Http\Controllers\Hris\CutiController;
 use App\Http\Controllers\Hris\GajiController;
+use App\Http\Controllers\Hris\KontrakController;
 use App\Http\Controllers\Hris\LemburController;
 use App\Http\Controllers\Hris\HrisController;
 use App\Http\Controllers\Hris\RosterController;
@@ -485,6 +486,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->middleware('can:admin')->name('kunci');
 
             Route::get('/', [GajiController::class, 'index'])->name('index');
+        });
+
+        /* ---- Kontrak kerja ---- */
+        Route::prefix('kontrak')->name('kontrak.')->group(function () {
+            Route::post('/', [KontrakController::class, 'simpan'])->name('simpan');
+
+            Route::post('{kontrak}/terbitkan',  [KontrakController::class, 'terbitkan'])->name('terbitkan');
+            Route::post('{kontrak}/perpanjang', [KontrakController::class, 'perpanjang'])->name('perpanjang');
+
+            /* MENGAKHIRI KONTRAK HANYA ADMIN. Yang terjadi di sini bukan
+               perubahan status: uang kompensasi dihitung dan dibekukan,
+               dan angkanya menjadi tagihan. */
+            Route::post('{kontrak}/akhiri', [KontrakController::class, 'akhiri'])
+                ->middleware('can:admin')->name('akhiri');
+
+            Route::post('{kontrak}/pkwtt', [KontrakController::class, 'jadikanPkwtt'])
+                ->middleware('can:admin')->name('pkwtt');
+
+            Route::get('/', [KontrakController::class, 'index'])->name('index');
         });
 
         Route::get('/', [HrisController::class, 'index'])->name('index');

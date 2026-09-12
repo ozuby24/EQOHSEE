@@ -255,6 +255,7 @@ final class RuteInertia
         'hris.lembur.upah',
         'hris.gaji.index',
         'hris.gaji.acuan',
+        'hris.kontrak.index',
         'miners.riwayat.mcu',
         'miners.riwayat.induksi',
         'miners.riwayat.mine-permit',

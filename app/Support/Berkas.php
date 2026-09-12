@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Hr\Cuti as HrCuti;
+use App\Models\Hr\Kontrak as HrKontrak;
 use App\Models\Investigasi\Bukti as BuktiInvestigasi;
 use App\Models\Pembelian\Pembayaran as PembayaranBeli;
 use App\Models\Pjp\Laporan as LaporanPjp;
@@ -93,6 +94,11 @@ final class Berkas
            login, catatan medis seseorang dapat dibaca rekan sekamarnya
            di mess. */
         'cti' => [HrCuti::class,         'berkas_bukti',   false],
+
+        /* Naskah kontrak memuat upah yang disepakati, nomor identitas,
+           dan alamat rumah. Terbuka, siapa pun yang menebak nomor baris
+           dapat membaca gaji rekannya. */
+        'knt' => [HrKontrak::class,      'berkas_naskah',  false],
     ];
 
     /**
@@ -208,6 +214,11 @@ final class Berkas
            menyetujui cukup melihat bahwa buktinya ADA, dan itulah yang
            ditampilkan layar persetujuan. */
         'cti' => ['isAdmin', 'isOhse', 'isParamedis'],
+
+        /* Naskah kontrak: hanya admin. Pengawas yang memperpanjang
+           cukup melihat tanggal dan nomornya, dan keduanya sudah ada di
+           layar tanpa membuka naskahnya. */
+        'knt' => ['isAdmin'],
 
         /* Bukti bayar adalah tangkapan layar mutasi rekening: ia memuat
            nomor rekening pengirim, dan kerap saldonya. Hanya admin —

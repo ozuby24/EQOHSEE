@@ -245,6 +245,10 @@ final class Menu
           ['Periode & Slip',   'hris.gaji.index', 'hris/gaji'],
           ['Acuan Pajak & BPJS','hris.gaji.acuan', 'hris/gaji/acuan'],
         ],
+
+        'Kontrak Kerja' => [
+          ['PKWT & PKWTT', 'hris.kontrak.index', 'hris/kontrak'],
+        ],
       ],
     ],
 

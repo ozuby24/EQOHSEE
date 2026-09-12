@@ -27,7 +27,7 @@ use App\Models\Pjp\{
     SmkpItem as PjpSmkpItem, SmkpJawaban as PjpSmkpJawaban, SmkpKategori as PjpSmkpKategori,
 };
 use App\Models\Hr\{Absensi as HrAbsensi, AbsensiJejak as HrJejak, Cuti as HrCuti,
-    JenisCuti as HrJenisCuti, Kebutuhan as HrKebutuhan, Lembur as HrLembur,
+    JenisCuti as HrJenisCuti, Kebutuhan as HrKebutuhan, Kontrak as HrKontrak, Lembur as HrLembur,
     PeriodeGaji as HrPeriodeGaji, SaldoCuti as HrSaldoCuti, SlipGaji as HrSlipGaji, Upah as HrUpah,
     MesinAbsensi as HrMesin, PolaRoster as HrPola, Regu as HrRegu,
     ReguAnggota as HrReguAnggota, Roster as HrRoster};
@@ -323,7 +323,7 @@ final class DataContoh
            hilang bersama data contoh. */
         HrSlipGaji::class, HrPeriodeGaji::class,
 
-        HrLembur::class, HrUpah::class,
+        HrKontrak::class, HrLembur::class, HrUpah::class,
 
         HrAbsensi::class, HrJejak::class, HrMesin::class,
 
@@ -880,6 +880,13 @@ final class DataContoh
                maupun lembur, yang justru dua komponen yang paling
                membedakan penggajian tambang. */
             'Penggajian'     => $this->penggajian(),
+
+            /* Kontrak SESUDAH absensi: pelanggaran PKWT harian
+               diturunkan dari hari yang benar-benar dijalani, bukan
+               dari roster. Dijalankan lebih dahulu, pekerja harian
+               contohnya tampak patuh sebab belum ada satu hari pun
+               yang dapat dihitung. */
+            'Kontrak'        => $this->kontrak(),
             'Pembelian'      => $this->pembelian(),
             'Pesan'          => $this->pesan(),
             'Catatan'        => $this->catatan(),
@@ -1930,6 +1937,134 @@ final class DataContoh
                 ->menunggu()->orderBy('tanggal')->get()->take(6) as $l) {
                 JalurLembur::setujui($l, $penyetuju, 'Diperintahkan pengawas shift.');
             }
+        }
+
+        return $n;
+    }
+
+    /* ─────────── Kontrak kerja ─────────── */
+
+    /**
+     * Empat kontrak yang memperlihatkan empat keadaan berbeda.
+     *
+     * DATA CONTOH YANG SELURUHNYA PATUH TIDAK MENGAJARKAN APA PUN.
+     * Layar kepatuhan yang selalu kosong tidak dapat dibedakan dari
+     * layar kepatuhan yang rusak, dan yang pertama kali melihat
+     * pelanggaran sungguhan sebaiknya bukan orang yang juga baru
+     * pertama kali melihat bentuk peringatannya.
+     *
+     * Karena itu di sini ada satu rantai yang sudah melewati lima
+     * tahun, satu PKWT jangka waktu tanpa alasan pasal 5, satu PKWTT
+     * yang bersih, dan satu PKWT harian yang sudah terlampaui batas
+     * 21 harinya — yang terakhir diturunkan dari absensi yang memang
+     * sudah dibuat langkah sebelumnya.
+     */
+    private function kontrak(): int
+    {
+        $orang = MnrPekerja::withoutGlobalScopes()
+            ->where('company_id', $this->c->id)
+            ->orderBy('no_registrasi')->get()->values();
+
+        if ($orang->isEmpty()) return 0;
+
+        $kini = Waktu::kini()->startOfDay();
+        $n    = 0;
+
+        $buat = function (array $isi) use (&$n): HrKontrak {
+            $n++;
+
+            return HrKontrak::withoutGlobalScopes()->create(array_merge([
+                'company_id' => $this->c->id,
+                'status'     => 'berjalan',
+            ], $isi));
+        };
+
+        /* ── rantai yang sudah melewati lima tahun ──
+           Tiga kontrak dua tahunan berturut-turut: tiap barisnya patuh
+           dan jumlahnya tidak. Inilah bentuk pelanggaran PKWT yang
+           paling sering terjadi dan paling jarang terlihat. */
+        $a = $buat([
+            'pekerja_id' => $orang[0]->id,
+            'nomor'      => 'PKWT/2020/001',
+            'jenis'      => 'pkwt_jangka',
+            'alasan'     => 'tidak_lama',
+            'mulai'      => $kini->copy()->subYears(6)->toDateString(),
+            'selesai'    => $kini->copy()->subYears(4)->toDateString(),
+            'status'     => 'selesai',
+            'ditandatangani_pada' => $kini->copy()->subYears(6)->subDays(3)->toDateString(),
+            'dicatatkan_pada'     => $kini->copy()->subYears(6)->subDay()->toDateString(),
+        ]);
+
+        $b = $buat([
+            'pekerja_id' => $orang[0]->id,
+            'nomor'      => 'PKWT/2022/014',
+            'jenis'      => 'pkwt_jangka',
+            'alasan'     => 'tidak_lama',
+            'mulai'      => $kini->copy()->subYears(4)->addDay()->toDateString(),
+            'selesai'    => $kini->copy()->subYears(2)->toDateString(),
+            'status'     => 'selesai',
+            'induk_id'   => $a->id,
+            'urutan'     => 2,
+            'ditandatangani_pada' => $kini->copy()->subYears(4)->toDateString(),
+            'dicatatkan_pada'     => $kini->copy()->subYears(4)->addDays(2)->toDateString(),
+        ]);
+
+        $buat([
+            'pekerja_id' => $orang[0]->id,
+            'nomor'      => 'PKWT/2024/031',
+            'jenis'      => 'pkwt_jangka',
+            'alasan'     => 'tidak_lama',
+            'mulai'      => $kini->copy()->subYears(2)->addDay()->toDateString(),
+            'selesai'    => $kini->copy()->addDays(45)->toDateString(),
+            'induk_id'   => $b->id,
+            'urutan'     => 3,
+            'ditandatangani_pada' => $kini->copy()->subYears(2)->toDateString(),
+            'dicatatkan_pada'     => $kini->copy()->subYears(2)->addDays(2)->toDateString(),
+        ]);
+
+        /* ── PKWT jangka waktu tanpa alasan pasal 5 ──
+           Kontraknya berjalan, gajinya terbayar, dan sejak hari pertama
+           ia sebenarnya PKWTT. */
+        if (isset($orang[1])) {
+            $buat([
+                'pekerja_id' => $orang[1]->id,
+                'nomor'      => 'PKWT/2026/007',
+                'jenis'      => 'pkwt_jangka',
+                'alasan'     => null,
+                'mulai'      => $kini->copy()->subMonths(8)->toDateString(),
+                'selesai'    => $kini->copy()->addMonths(4)->toDateString(),
+                'ditandatangani_pada' => $kini->copy()->subMonths(8)->subDays(30)->toDateString(),
+            ]);
+        }
+
+        /* ── PKWTT yang bersih, sebagai pembanding ── */
+        if (isset($orang[2])) {
+            $buat([
+                'pekerja_id' => $orang[2]->id,
+                'nomor'      => 'PKWTT/2023/002',
+                'jenis'      => 'pkwtt',
+                'mulai'      => $kini->copy()->subYears(3)->toDateString(),
+                'selesai'    => null,
+                'masa_percobaan_hari' => 90,
+                'ditandatangani_pada' => $kini->copy()->subYears(3)->subDays(2)->toDateString(),
+                'dicatatkan_pada'     => $kini->copy()->subYears(3)->toDateString(),
+            ]);
+        }
+
+        /* ── PKWT harian ──
+           Dibuat mencakup seluruh rentang absensi contoh, supaya
+           hari-hari yang memang sudah tercatat di langkah sebelumnya
+           terhitung terhadap batas 21 harinya. */
+        if (isset($orang[3])) {
+            $buat([
+                'pekerja_id' => $orang[3]->id,
+                'nomor'      => 'PKWT-H/2026/019',
+                'jenis'      => 'pkwt_harian',
+                'mulai'      => $kini->copy()->subMonths(6)->startOfMonth()->toDateString(),
+                'selesai'    => $kini->copy()->addMonths(3)->toDateString(),
+                'ditandatangani_pada' => $kini->copy()->subMonths(6)->toDateString(),
+                'dicatatkan_pada'     => $kini->copy()->subMonths(6)->addDays(2)->toDateString(),
+            ]);
         }
 
         return $n;
