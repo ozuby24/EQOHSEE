@@ -29,11 +29,6 @@ const kpi: Array<{ label: string; value: () => number | string; hint: string; to
 <template>
   <Head title="Dashboard" />
   <div class="max-w-[1400px] mx-auto space-y-5">
-    <section class="eq-hero">
-      <img v-if="hero" class="eq-hero-foto" :src="hero" alt="" loading="lazy">
-      <div class="eq-hero-isi"><h2>{{ sapa }}, {{ nama }} <span aria-hidden="true">👋</span></h2><p>Tingkatkan kompetensi dan budaya keselamatan Anda setiap hari.</p><Link :href="lanjut" class="eq-hero-btn">{{ enrollments.length ? 'Lanjutkan Pembelajaran' : 'Jelajahi Kursus' }} <span aria-hidden="true">→</span></Link></div>
-    </section>
-
     <div class="eq-kpi-baris">
       <article v-for="item in kpi" :key="item.label" class="eq-kpi"><span class="eq-kpi-ikon" :class="`t-${item.tone}`"><IkonStat :nama="item.ikon" :ukuran="18" /></span><span class="eq-kpi-isi"><span class="eq-kpi-label">{{ item.label }}</span><span class="eq-kpi-nilai">{{ item.value() }}</span><span class="eq-kpi-ket">{{ item.hint }}</span></span></article>
     </div>

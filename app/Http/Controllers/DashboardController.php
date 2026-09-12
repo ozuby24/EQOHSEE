@@ -16,15 +16,22 @@ class DashboardController extends Controller
 
         $enrollments = Enrollment::with('course')->where('user_id', $user->id)->latest()->get();
 
+        /* Dihitung SEBELUM literalnya: elemen larik tidak dapat
+           menunjuk elemen lain di dalam literal yang sama, dan kop
+           memerlukan tujuan yang sama dengan kartu di bawahnya. */
+
+        $lanjut = $enrollments->firstWhere('status', 'ongoing') ?? $enrollments->first();
+
+        $tujuanLanjut = $lanjut ? route('learn.show', $lanjut->course) : route('courses.index');
+
+
         $data = [
             'judul'       => 'Dashboard',
             'subjudul'    => 'Kelola pembelajaran dan tingkatkan kompetensi Anda',
             'sapa'        => Waktu::sapaan(),
             'nama'        => trim(explode(' ', $user->name)[0]),
             'hero'        => Media::url('galeri/budaya.jpg'),
-            'lanjut'      => ($lanjut = $enrollments->firstWhere('status', 'ongoing') ?? $enrollments->first())
-                ? route('learn.show', $lanjut->course)
-                : route('courses.index'),
+            'lanjut'      => $tujuanLanjut,
             'enrollments' => $enrollments->take(3)->map(function ($e) {
                 $c = $e->course;
                 $jumlah = $c?->modules()->count() ?? 0;
@@ -57,6 +64,21 @@ class DashboardController extends Controller
             'kategori'    => collect($this->ringkasKategori())->map(fn ($k) => $k + ['nada' => Kategori::nada($k['nama'])])->all(),
             'pekan'       => $this->kemajuanPekan($user->id),
             'admin'       => null,
+
+            /* SPANDUK HALAMAN INI DILIPAT KE DALAM KOP KERANGKA.
+               Sebelumnya halaman ini menggambar hero besarnya sendiri
+               tepat di bawah kop — dua spanduk bertumpuk setinggi
+               separuh layar, dengan sapaan yang sama tercetak tiga kali
+               (bilah atas, kop, spanduk). Yang tersisa dari spanduk itu
+               adalah satu-satunya bagian yang memang perlu: tombol
+               menuju kursus yang sedang dikerjakan. */
+            'kop' => [
+                'aksi' => [
+                    'label' => $enrollments->isNotEmpty()
+                        ? 'Lanjutkan Pembelajaran' : 'Jelajahi Kursus',
+                    'url'   => $tujuanLanjut,
+                ],
+            ],
         ];
         if ($user->isAdmin()) {
             $data['admin'] = [

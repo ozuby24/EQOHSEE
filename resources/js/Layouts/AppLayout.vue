@@ -40,6 +40,9 @@ const tautan = (inertia: boolean) => (inertia ? Link : 'a');
 const halaman = usePage<PropBersama>();
 const menu    = computed(() => halaman.props.menu);
 
+/** Ikon modul yang sedang dibuka, untuk kotak pemindah modul. */
+const ikonModul = computed(() => menu.value?.modul?.find((m) => m.aktif)?.ikon ?? null);
+
 /** Butir menu yang sedang dibuka, untuk remah roti dan judul cadangan. */
 const butirAktif = computed(() => menu.value?.grup
   ?.flatMap((g) => g.butir).find((b) => b.aktif) ?? null);
@@ -408,7 +411,18 @@ function keluar() {
            tidak ada yang perlu dihafal. -->
       <div class="px-3 pt-3.5">
         <button type="button" class="eq-modul-pilih" :aria-expanded="modulTerbuka"
-                aria-label="Pindah modul" @click="modulTerbuka = !modulTerbuka">
+                :title="menu.label" aria-label="Pindah modul"
+                @click="modulTerbuka = !modulTerbuka">
+          <!-- IKONNYA IKUT, DAN ITU YANG TERSISA SAAT BILAHNYA DILIPAT.
+               Tanpa ikon, kotak ini menjadi kotak kosong berisi satu
+               panah — tidak menyebutkan modul apa yang sedang dibuka,
+               padahal itulah satu-satunya tugasnya. -->
+          <svg v-if="ikonModul" class="eq-modul-ikon" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round"
+               stroke-linejoin="round" aria-hidden="true">
+            <path :d="ikonModul"/>
+          </svg>
+
           <span class="eq-modul-nama">{{ menu.label }}</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
@@ -481,12 +495,19 @@ function keluar() {
            memakan ruang yang dibutuhkan menu, dan menu yang terpotong
            membuat butir terbawahnya tidak pernah ditemukan. -->
       <div class="eq-sisi-kaki">
-        <Link href="/bantuan" class="eq-bantuan-btn">
+        <Link href="/bantuan" class="eq-bantuan-btn" title="Butuh bantuan?">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2 0 0 1 4 11.5a8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 8 8.4Z"/>
           </svg>
-          Butuh bantuan?
+
+          <!-- DIBUNGKUS SPAN, bukan dibiarkan sebagai teks telanjang.
+               Aturan mode terlipat menyembunyikan `span` di dalam tombol
+               ini; teks telanjang tidak dapat disembunyikan CSS mana pun,
+               sehingga pada bilah selebar 72px kalimatnya tetap tercetak
+               dan membungkus menjadi dua baris di dalam kotak yang tidak
+               cukup untuk satu kata pun. -->
+          <span>Butuh bantuan?</span>
         </Link>
 
         <!-- Semboyan bergambar. Disembunyikan saat bilahnya dilipat dan
@@ -710,6 +731,7 @@ function keluar() {
                       :remah="remahKop"
                       :angka="kopIsi.angka ?? null" :sisi="kopIsi.sisi ?? []"
                       :kanan="kopIsi.kanan ?? null" :kanan-kecil="kopIsi.kananKecil ?? null"
+                      :aksi="kopIsi.aksi ?? null"
                       :ringkas="!kopIsi.angka" />
 
           <nav v-if="pindahCepat.length" class="eq-pindah" aria-label="Isi modul">

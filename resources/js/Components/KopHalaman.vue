@@ -61,6 +61,16 @@ withDefaults(defineProps<{
   /** Angka pendamping di sebelahnya: [label, nilai, nada?]. */
   sisi?: [string, string, ('baik' | 'ingat' | 'gawat')?][];
 
+  /**
+   * Satu tindakan utama, di dalam kop.
+   *
+   * SATU SAJA. Kop yang memuat tiga tombol berhenti menjadi kop dan
+   * menjadi bilah perkakas — dan bilah perkakas yang bertumpuk di atas
+   * foto adalah tempat terburuk untuk menaruh tombol yang benar-benar
+   * ditekan orang. Tindakan lain tinggal di kartu yang memilikinya.
+   */
+  aksi?: { label: string; url: string } | null;
+
   /** Keterangan kecil di kanan — tanggal, periode, jumlah. */
   kanan?: string | null;
   kananKecil?: string | null;
@@ -69,7 +79,7 @@ withDefaults(defineProps<{
   ringkas?: boolean;
 }>(), {
   subjudul: null, label: null, remah: () => [], tagline: null, pil: () => [],
-  angka: null, sisi: () => [],
+  angka: null, sisi: () => [], aksi: null,
   kanan: null, kananKecil: null, ringkas: false,
 });
 </script>
@@ -158,6 +168,14 @@ withDefaults(defineProps<{
           </span>
 
           <p v-if="tagline" class="kop-tagline" aria-hidden="true">{{ tagline }}</p>
+
+          <a v-if="aksi" :href="aksi.url" class="kop-aksi">
+            {{ aksi.label }}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12h13M13 6.5 18.5 12 13 17.5"/>
+            </svg>
+          </a>
         </div>
       </div>
     </div>
@@ -424,6 +442,25 @@ withDefaults(defineProps<{
      menyeberangi judul di sebelah kirinya. */
   max-width: min(17ch, 30vw);
 }
+
+.kop-aksi {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .6rem 1rem;
+  border-radius: .75rem;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  color: #fff;
+  background: var(--eq-aksen, #F57C00);
+  box-shadow: 0 4px 16px -4px rgba(245,124,0,.6);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.kop-aksi:hover { transform: translateY(-1px); box-shadow: 0 6px 20px -4px rgba(245,124,0,.7); }
+.kop-aksi svg { width: 15px; height: 15px; }
 
 .kop-tagline::after {
   content: "";

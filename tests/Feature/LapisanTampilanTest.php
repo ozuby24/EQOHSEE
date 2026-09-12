@@ -240,6 +240,28 @@ class LapisanTampilanTest extends TestCase
             'Halaman mencetak ulang judul yang sudah ada di kop: '.implode(', ', $liar));
     }
 
+    public function test_tidak_ada_halaman_yang_menggambar_spanduk_sendiri(): void
+    {
+        $liar = [];
+
+        foreach ($this->halamanVue() as $f) {
+            $isi = file_get_contents($f->getPathname());
+
+            // `.eq-hero` adalah spanduk besar berfoto — bentuk yang sama
+            // dengan kop kerangka. Keduanya pada satu halaman menumpuk
+            // dua spanduk setinggi separuh layar, dengan sapaan yang
+            // sama tercetak tiga kali: di bilah atas, di kop, dan di
+            // spanduk. Satu tindakan utamanya kini muat di dalam kop.
+            if (! preg_match('/class="[^"]*\beq-hero\b/', $isi)) continue;
+            if (str_contains($isi, 'kop: false')) continue;
+
+            $liar[] = $this->nama($f);
+        }
+
+        $this->assertSame([], $liar,
+            'Halaman menggambar spanduknya sendiri di bawah kop kerangka: '.implode(', ', $liar));
+    }
+
     /**
      * BATAS PENJAGA DI ATAS, disebutkan supaya tidak disalahpahami.
      *
