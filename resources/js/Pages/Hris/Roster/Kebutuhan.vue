@@ -9,10 +9,10 @@
  */
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
-import { propHalaman } from '../../halaman';
-import Dialog from '../../Components/Dialog.vue';
-import { useDialog } from '../../dialog';
-import { KEADAAN } from '../../Grafik/warna';
+import { propHalaman } from '../../../halaman';
+import Dialog from '../../../Components/Dialog.vue';
+import { useDialog } from '../../../dialog';
+import { KEADAAN } from '../../../Grafik/warna';
 
 const props = propHalaman();
 const { dialog, tanya, batal, lanjut } = useDialog();
@@ -21,7 +21,7 @@ const baris   = computed<any[]>(() => (props.baris ?? []) as any[]);
 const tanggal = ref(String(props.tanggal ?? ''));
 
 function muat() {
-  router.get('/roster/kebutuhan', { tanggal: tanggal.value || undefined },
+  router.get('/hris/roster/kebutuhan', { tanggal: tanggal.value || undefined },
     { preserveState: true, preserveScroll: true, replace: true });
 }
 
@@ -30,13 +30,13 @@ const form = useForm({
 });
 
 function simpan() {
-  form.post('/roster/kebutuhan', { preserveScroll: true, onSuccess: () => form.reset() });
+  form.post('/hris/roster/kebutuhan', { preserveScroll: true, onSuccess: () => form.reset() });
 }
 
 async function hapus(id: number) {
   if (!await tanya('Hapus baris kebutuhan ini?')) return;
 
-  useForm({}).delete(`/roster/kebutuhan/${id}`, { preserveScroll: true });
+  useForm({}).delete(`/hris/roster/kebutuhan/${id}`, { preserveScroll: true });
 }
 
 const kurang = computed(() => baris.value.filter((b) => b.selisih < 0));
@@ -59,7 +59,7 @@ function warna(selisih: number) {
         <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
       </div>
 
-      <Link href="/roster" class="eq-btn-lain">Kalender regu</Link>
+      <Link href="/hris/roster" class="eq-btn-lain">Kalender regu</Link>
     </section>
 
     <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-4">

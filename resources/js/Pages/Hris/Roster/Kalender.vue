@@ -15,8 +15,8 @@
  */
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
-import { propHalaman } from '../../halaman';
-import { KEADAAN } from '../../Grafik/warna';
+import { propHalaman } from '../../../halaman';
+import { KEADAAN } from '../../../Grafik/warna';
 
 const props = propHalaman();
 
@@ -29,7 +29,7 @@ const sampai = ref(String(props.rentang?.sampai ?? ''));
 const regu   = ref(String(props.terpilih ?? ''));
 
 function muat() {
-  router.get('/roster', {
+  router.get('/hris/roster', {
     regu: regu.value || undefined,
     dari: dari.value || undefined,
     sampai: sampai.value || undefined,
@@ -69,14 +69,14 @@ const terbit = useForm({ terbit: '' });
 function jalankanSusun() {
   if (!regu.value) return;
 
-  susun.post(`/roster/regu/${regu.value}/susun?dari=${dari.value}&sampai=${sampai.value}`,
+  susun.post(`/hris/roster/regu/${regu.value}/susun?dari=${dari.value}&sampai=${sampai.value}`,
     { preserveScroll: true });
 }
 
 function jalankanTerbit() {
   if (!regu.value) return;
 
-  terbit.post(`/roster/regu/${regu.value}/terbitkan?dari=${dari.value}&sampai=${sampai.value}`,
+  terbit.post(`/hris/roster/regu/${regu.value}/terbitkan?dari=${dari.value}&sampai=${sampai.value}`,
     { preserveScroll: true });
 }
 
@@ -124,7 +124,7 @@ const ringkas = computed<any>(() => props.ringkas ?? {});
         <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
       </div>
 
-      <Link href="/roster/pola" class="eq-btn-lain">Pola &amp; regu</Link>
+      <Link href="/hris/roster/pola" class="eq-btn-lain">Pola &amp; regu</Link>
     </section>
 
     <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-4">

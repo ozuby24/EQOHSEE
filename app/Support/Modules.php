@@ -71,26 +71,15 @@ class Modules
              'ket'  => 'Kompetensi, MCU, dan kartu masuk tambang dalam satu berkas per orang, dengan pengingat masa berlaku berjenjang.',
              'ikon' => 'M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 14l2 2 4-4'],
 
-            /* Tepat sesudah Authority, dengan alasan yang sama: Authority
-               menjawab "boleh atau tidak orang ini bekerja", Roster
-               menjawab "kapan ia seharusnya bekerja". Yang kedua
-               menolak menjadwalkan orang yang berkasnya tidak berlaku
-               pada TANGGAL YANG DIRENCANAKAN — bukan pada hari
-               penyusunnya membuka layar. */
-            ['nama' => 'Roster & Shift', 'status' => 'aktif', 'pilar' => 'occhealth',
-             'rute' => 'roster.index',
-             'ket'  => 'Pola kerja bergilir 14:7, 10:2 minggu, dan seterusnya — dengan validasi batas jam kerja Kepmenakertrans 234/2003 dan blokir dari berkas kelayakan yang habis.',
-             'ikon' => 'M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z'],
-
-            /* Absensi berdiri sebagai modulnya sendiri, bukan sebagai
-               satu tab di dalam Roster. Yang membacanya bukan penyusun
-               jadwal melainkan pengawas pos jaga, pada jam yang lain,
-               untuk keputusan yang lain — siapa yang belum keluar site
-               ketika alarm berbunyi. */
-            ['nama' => 'Absensi & Rekonsiliasi', 'status' => 'aktif', 'pilar' => 'occhealth',
-             'rute' => 'absensi.index',
-             'ket'  => 'Pindaian mesin lapangan direkonsiliasi terhadap roster: shift malam yang melewati tengah malam, geofence absen ponsel, dan koreksi berjejak.',
-             'ikon' => 'M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z'],
+            /* SATU ENTRI UNTUK SELURUH HRIS. Roster dan absensi
+               dipasarkan bersama karena memang dipakai bersama: yang
+               satu menyusun jadwalnya, yang lain memeriksa apakah
+               jadwal itu dijalankan. Dipecah dua, etalase menyebut dua
+               produk untuk satu pekerjaan. */
+            ['nama' => 'HRIS — Roster, Shift & Absensi', 'status' => 'aktif', 'pilar' => 'occhealth',
+             'rute' => 'hris.index',
+             'ket'  => 'Pola bergilir 14:7 dan 10:2 minggu dengan batas jam kerja Kepmenakertrans 234/2003, blokir dari berkas kelayakan yang habis, dan pindaian mesin lapangan yang direkonsiliasi terhadap rosternya — termasuk shift malam yang melewati tengah malam.',
+             'ikon' => 'M17 20h5v-2a3 3 0 0 0-5.36-1.87M17 20H7m10 0v-2c0-.66-.13-1.3-.36-1.87m0 0a5 5 0 0 0-9.28 0M7 20H2v-2a3 3 0 0 1 5.36-1.87M7 20v-2c0-.66.13-1.3.36-1.87m0 0a5 5 0 0 1 9.28 0M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm6 3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM7 10a2 2 0 1 1-4 0 2 2 0 0 1 4 0z'],
 
             ['nama' => 'Safety Maturity Level', 'status' => 'aktif', 'pilar' => 'safety', 'rute' => 'tpkkp.index',
              'ket'  => 'Penilaian tingkat kematangan keselamatan: 194 item · 24 parameter · 4 indikator, lengkap Kalkulator Slovin.',

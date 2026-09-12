@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Hris;
 
+use App\Http\Controllers\Controller;
 use App\Models\Hr\{Absensi, AbsensiJejak, MesinAbsensi, Roster};
 use App\Models\Miners\{Blok, Pekerja};
 use App\Support\Hr\Rekonsiliasi;
@@ -118,7 +119,7 @@ class AbsensiController extends Controller
             ->sortBy(fn (array $b) => [self::URUTAN[$b['keadaan'] ?? ''] ?? 9, (string) $b['pekerja']])
             ->values();
 
-        return Inertia::render('Absensi/Harian', [
+        return Inertia::render('Hris/Absensi/Harian', [
             'judul'    => 'Absensi — Pemantauan Harian',
             'subjudul' => 'Kehadiran yang tercatat, dibandingkan dengan yang dijadwalkan.',
 
@@ -189,7 +190,7 @@ class AbsensiController extends Controller
             ->sortBy('pekerja')
             ->values();
 
-        return Inertia::render('Absensi/Rekap', [
+        return Inertia::render('Hris/Absensi/Rekap', [
             'judul'    => 'Absensi — Rekap Periode',
             'subjudul' => 'Hari kerja, jam tercatat, dan keterlambatan per orang.',
 
@@ -203,7 +204,7 @@ class AbsensiController extends Controller
 
     public function mesin()
     {
-        return Inertia::render('Absensi/Mesin', [
+        return Inertia::render('Hris/Absensi/Mesin', [
             'judul'    => 'Absensi — Mesin Lapangan',
             'subjudul' => 'Alat pindai di pos jaga, beserta tokennya.',
 

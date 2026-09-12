@@ -1,10 +1,11 @@
 <?php
 
-use App\Http\Controllers\AbsensiController;
 use App\Http\Controllers\InvestigasiController;
 use App\Http\Controllers\MinersController;
 use App\Http\Controllers\MinersDokumenController;
-use App\Http\Controllers\RosterController;
+use App\Http\Controllers\Hris\AbsensiController;
+use App\Http\Controllers\Hris\HrisController;
+use App\Http\Controllers\Hris\RosterController;
 use App\Http\Controllers\DasborController;
 use App\Http\Controllers\PembelianController;
 use App\Http\Controllers\PjpController;
@@ -346,80 +347,88 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
 
-    /* ================= ROSTER & SHIFT =================
+    /* ================= HRIS =================
      *
-     * Pola kerja bergilir di tambang terpencil — 14:7, 10:2 minggu,
-     * dan seterusnya. Berdiri sebagai modulnya sendiri, bukan di bawah
-     * Miners: Miners menjawab "boleh atau tidak orang ini bekerja",
-     * yang ini menjawab "kapan ia seharusnya bekerja". Keduanya
-     * bersinggungan justru di satu titik — roster menolak menjadwalkan
-     * orang yang berkasnya tidak berlaku — dan titik itu yang membuat
-     * keduanya harus tinggal di aplikasi yang sama.
-     */
-    Route::prefix('roster')->name('roster.')->group(function () {
-        /* Rute berkata-tetap didaftarkan lebih dahulu, sebab `pola` dan
-           `kebutuhan` cocok pula dengan pola berparameter di bawahnya. */
-        Route::get('pola',      [RosterController::class, 'pola'])->name('pola');
-        Route::get('kebutuhan', [RosterController::class, 'kebutuhan'])->name('kebutuhan');
-
-        Route::post('pola',          [RosterController::class, 'polaSimpan'])->name('pola.simpan');
-        Route::put('pola/{pola}',    [RosterController::class, 'polaUbah'])->name('pola.ubah');
-        Route::delete('pola/{pola}', [RosterController::class, 'polaHapus'])
-            ->middleware('can:admin')->name('pola.hapus');
-
-        Route::post('regu',          [RosterController::class, 'reguSimpan'])->name('regu.simpan');
-        Route::put('regu/{regu}',    [RosterController::class, 'reguUbah'])->name('regu.ubah');
-        Route::delete('regu/{regu}', [RosterController::class, 'reguHapus'])
-            ->middleware('can:admin')->name('regu.hapus');
-
-        Route::post('regu/{regu}/anggota',            [RosterController::class, 'anggotaTambah'])->name('anggota.tambah');
-        Route::delete('regu/{regu}/anggota/{anggota}', [RosterController::class, 'anggotaHapus'])->name('anggota.hapus');
-
-        Route::post('regu/{regu}/susun',    [RosterController::class, 'susun'])->name('susun');
-        Route::post('regu/{regu}/terbitkan',[RosterController::class, 'terbitkan'])->name('terbitkan');
-
-        Route::post('kebutuhan',              [RosterController::class, 'kebutuhanSimpan'])->name('kebutuhan.simpan');
-        Route::delete('kebutuhan/{kebutuhan}',[RosterController::class, 'kebutuhanHapus'])
-            ->middleware('can:admin')->name('kebutuhan.hapus');
-
-        Route::put('{roster}', [RosterController::class, 'ubah'])->name('ubah');
-
-        Route::get('/', [RosterController::class, 'index'])->name('index');
-    });
-
-
-    /* ================= ABSENSI =================
+     * SATU MODUL, BUKAN SATU PER FITUR. Roster menjawab kapan
+     * seseorang seharusnya bekerja; absensi menjawab apakah ia
+     * benar-benar bekerja. Keduanya membaca daftar orang yang sama,
+     * dijalankan bagian yang sama, dan saling merujuk pada tiap
+     * layarnya — dipisah menjadi dua modul bilah samping, yang
+     * mengurusnya berpindah-pindah antar dua tempat untuk satu
+     * pekerjaan.
      *
-     * Berdiri berdampingan dengan Roster, bukan di dalamnya. Roster
-     * menjawab "kapan ia seharusnya bekerja"; yang ini menjawab "apakah
-     * ia benar-benar bekerja" — dan pertemuan keduanya itulah yang
-     * berharga: hari kerja yang kosong adalah unit yang berhenti, dan
-     * hari libur yang dikerjakan adalah lembur yang belum
-     * diperintahkan. Dilebur menjadi satu layar, salah satu dari dua
-     * pertanyaan itu selalu kalah oleh yang lain.
+     * Dan yang berikutnya masih banyak: cuti, lembur, kontrak PKWT,
+     * penggajian. Tiap-tiapnya sebagai modul tersendiri akan
+     * menambahkan satu baris lagi ke bilah samping yang sudah berisi
+     * dua puluh delapan — sampai tidak ada lagi yang dapat menemukan
+     * apa pun di sana. Sebagai grup di dalam HRIS, bilahnya tidak
+     * bertambah panjang sama sekali.
+     *
+     * TETAP TERPISAH DARI MINERS, dan itu disengaja. Miners menjawab
+     * "BOLEH atau tidak orang ini bekerja" menurut Kepmen ESDM 1827 —
+     * MCU, induksi, Mine Permit, SIMPER — dan yang membacanya
+     * paramedis, OHSE, dan KTT. HRIS menjawab "KAPAN dan APAKAH ia
+     * bekerja", dan yang membacanya bagian personalia serta pengawas
+     * pos jaga. Dilebur, satu daftar berkas K3 yang diminta Inspektur
+     * Tambang harus dicari lewat layar penggajian.
      */
-    Route::prefix('absensi')->name('absensi.')->group(function () {
-        /* Rute berkata-tetap lebih dahulu — `rekap` dan `mesin` cocok
-           pula dengan pola berparameter di bawahnya. */
-        Route::get('rekap', [AbsensiController::class, 'rekap'])->name('rekap');
-        Route::get('mesin', [AbsensiController::class, 'mesin'])->name('mesin');
+    Route::prefix('hris')->name('hris.')->group(function () {
 
-        Route::post('mesin',                 [AbsensiController::class, 'mesinSimpan'])->name('mesin.simpan');
-        Route::put('mesin/{mesin}',          [AbsensiController::class, 'mesinUbah'])->name('mesin.ubah');
-        Route::post('mesin/{mesin}/token',   [AbsensiController::class, 'mesinToken'])
-            ->middleware('can:admin')->name('mesin.token');
-        Route::delete('mesin/{mesin}',       [AbsensiController::class, 'mesinHapus'])
-            ->middleware('can:admin')->name('mesin.hapus');
+        /* ---- Roster & shift ---- */
+        Route::prefix('roster')->name('roster.')->group(function () {
+            /* Rute berkata-tetap didaftarkan lebih dahulu, sebab `pola`
+               dan `kebutuhan` cocok pula dengan pola berparameter di
+               bawahnya. */
+            Route::get('pola',      [RosterController::class, 'pola'])->name('pola');
+            Route::get('kebutuhan', [RosterController::class, 'kebutuhan'])->name('kebutuhan');
 
-        Route::post('catat',        [AbsensiController::class, 'catat'])->name('catat');
-        Route::post('rekonsiliasi', [AbsensiController::class, 'rekonsiliasi'])->name('rekonsiliasi');
+            Route::post('pola',          [RosterController::class, 'polaSimpan'])->name('pola.simpan');
+            Route::put('pola/{pola}',    [RosterController::class, 'polaUbah'])->name('pola.ubah');
+            Route::delete('pola/{pola}', [RosterController::class, 'polaHapus'])
+                ->middleware('can:admin')->name('pola.hapus');
 
-        Route::put('{absensi}', [AbsensiController::class, 'koreksi'])->name('koreksi');
+            Route::post('regu',          [RosterController::class, 'reguSimpan'])->name('regu.simpan');
+            Route::put('regu/{regu}',    [RosterController::class, 'reguUbah'])->name('regu.ubah');
+            Route::delete('regu/{regu}', [RosterController::class, 'reguHapus'])
+                ->middleware('can:admin')->name('regu.hapus');
 
-        Route::get('/', [AbsensiController::class, 'index'])->name('index');
+            Route::post('regu/{regu}/anggota',             [RosterController::class, 'anggotaTambah'])->name('anggota.tambah');
+            Route::delete('regu/{regu}/anggota/{anggota}', [RosterController::class, 'anggotaHapus'])->name('anggota.hapus');
+
+            Route::post('regu/{regu}/susun',     [RosterController::class, 'susun'])->name('susun');
+            Route::post('regu/{regu}/terbitkan', [RosterController::class, 'terbitkan'])->name('terbitkan');
+
+            Route::post('kebutuhan',               [RosterController::class, 'kebutuhanSimpan'])->name('kebutuhan.simpan');
+            Route::delete('kebutuhan/{kebutuhan}', [RosterController::class, 'kebutuhanHapus'])
+                ->middleware('can:admin')->name('kebutuhan.hapus');
+
+            Route::put('{roster}', [RosterController::class, 'ubah'])->name('ubah');
+
+            Route::get('/', [RosterController::class, 'index'])->name('index');
+        });
+
+        /* ---- Absensi ---- */
+        Route::prefix('absensi')->name('absensi.')->group(function () {
+            Route::get('rekap', [AbsensiController::class, 'rekap'])->name('rekap');
+            Route::get('mesin', [AbsensiController::class, 'mesin'])->name('mesin');
+
+            Route::post('mesin',               [AbsensiController::class, 'mesinSimpan'])->name('mesin.simpan');
+            Route::put('mesin/{mesin}',        [AbsensiController::class, 'mesinUbah'])->name('mesin.ubah');
+            Route::post('mesin/{mesin}/token', [AbsensiController::class, 'mesinToken'])
+                ->middleware('can:admin')->name('mesin.token');
+            Route::delete('mesin/{mesin}',     [AbsensiController::class, 'mesinHapus'])
+                ->middleware('can:admin')->name('mesin.hapus');
+
+            Route::post('catat',        [AbsensiController::class, 'catat'])->name('catat');
+            Route::post('rekonsiliasi', [AbsensiController::class, 'rekonsiliasi'])->name('rekonsiliasi');
+
+            Route::put('{absensi}', [AbsensiController::class, 'koreksi'])->name('koreksi');
+
+            Route::get('/', [AbsensiController::class, 'index'])->name('index');
+        });
+
+        Route::get('/', [HrisController::class, 'index'])->name('index');
     });
-
-
     /* ================= INVESTIGASI KECELAKAAN =================
      *
      * Modul tersendiri, TERPISAH dari Miners. Miners menjawab "boleh

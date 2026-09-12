@@ -11,9 +11,9 @@
  */
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
-import { propHalaman } from '../../halaman';
-import Dialog from '../../Components/Dialog.vue';
-import { useDialog } from '../../dialog';
+import { propHalaman } from '../../../halaman';
+import Dialog from '../../../Components/Dialog.vue';
+import { useDialog } from '../../../dialog';
 
 const props = propHalaman();
 const page  = usePage();
@@ -28,7 +28,7 @@ const token = computed<any>(() => (page.props as any)?.flash?.token ?? null);
 const form = useForm({ nama: '', merek: 'zkteco', nomor_seri: '', ip: '', blok_id: '', aktif: true });
 
 function simpan() {
-  form.post('/absensi/mesin', { preserveScroll: true, onSuccess: () => form.reset() });
+  form.post('/hris/absensi/mesin', { preserveScroll: true, onSuccess: () => form.reset() });
 }
 
 const ubahId = ref<number | null>(null);
@@ -48,7 +48,7 @@ function bukaUbah(m: any) {
 function simpanUbah() {
   if (ubahId.value === null) return;
 
-  ubah.put(`/absensi/mesin/${ubahId.value}`, {
+  ubah.put(`/hris/absensi/mesin/${ubahId.value}`, {
     preserveScroll: true,
     onSuccess: () => { ubahId.value = null; },
   });
@@ -61,7 +61,7 @@ async function terbitkan(m: any) {
     labelAksi: 'Terbitkan',
   })) return;
 
-  useForm({}).post(`/absensi/mesin/${m.id}/token`, { preserveScroll: true });
+  useForm({}).post(`/hris/absensi/mesin/${m.id}/token`, { preserveScroll: true });
 }
 
 async function hapus(m: any) {
@@ -72,7 +72,7 @@ async function hapus(m: any) {
     labelAksi: 'Hapus',
   })) return;
 
-  useForm({}).delete(`/absensi/mesin/${m.id}`, { preserveScroll: true });
+  useForm({}).delete(`/hris/absensi/mesin/${m.id}`, { preserveScroll: true });
 }
 
 const contoh = computed(() => `POST /api/v1/absensi
@@ -94,7 +94,7 @@ Authorization: Bearer <token>
         <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
       </div>
 
-      <Link href="/absensi" class="eq-btn-lain">Pemantauan harian</Link>
+      <Link href="/hris/absensi" class="eq-btn-lain">Pemantauan harian</Link>
     </section>
 
     <section v-if="token" class="rounded-2xl bg-amber-50 border border-amber-200 p-4">

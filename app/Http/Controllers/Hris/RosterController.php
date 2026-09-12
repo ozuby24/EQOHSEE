@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Hris;
 
+use App\Http\Controllers\Controller;
 use App\Models\Hr\{Kebutuhan, PolaRoster, Regu, ReguAnggota, Roster};
 use App\Models\Miners\{Blok, Jabatan, Pekerja};
 use App\Support\Hr\{Fatigue, Kelayakan, Penyusun};
@@ -36,7 +37,7 @@ class RosterController extends Controller
 
         $baris = $terpilih ? $this->kalender($terpilih, $dari, $sampai) : [];
 
-        return Inertia::render('Roster/Kalender', [
+        return Inertia::render('Hris/Roster/Kalender', [
             'judul'    => 'Roster — Kalender Regu',
             'subjudul' => 'Pola kerja bergilir, beserta berkas yang menghalangi penjadwalannya.',
 
@@ -146,7 +147,7 @@ class RosterController extends Controller
 
     public function pola(Request $r)
     {
-        return Inertia::render('Roster/Pola', [
+        return Inertia::render('Hris/Roster/Pola', [
             'judul'    => 'Roster — Pola & Regu',
             'subjudul' => 'Pola bergilir beserta regu yang memakainya.',
 
@@ -298,7 +299,7 @@ class RosterController extends Controller
             ->groupBy(fn (Roster $x) => ($x->blok_id ?: 0).'|'.($x->pekerja?->jabatan_id ?: 0))
             ->map->count();
 
-        return Inertia::render('Roster/Kebutuhan', [
+        return Inertia::render('Hris/Roster/Kebutuhan', [
             'judul'    => 'Roster — Manpower Plan vs Actual',
             'subjudul' => 'Kebutuhan per area dan jabatan, dibandingkan dengan yang terjadwal.',
 

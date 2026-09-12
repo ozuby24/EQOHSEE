@@ -191,51 +191,44 @@ final class Menu
         ],
       ],
     ],
-    /* Tepat sesudah Miners, dan itu bukan urutan abjad. Miners
-       menjawab "boleh atau tidak orang ini bekerja"; Roster menjawab
-       "kapan ia seharusnya bekerja". Keduanya bersinggungan di satu
-       titik yang menentukan — roster menolak menjadwalkan orang yang
-       berkasnya tidak berlaku — dan berdampingan di bilah samping,
-       titik itu tidak perlu dijelaskan siapa pun. */
-    'roster' => [
-      'label' => 'Roster',
+    /* SATU MODUL UNTUK SELURUH HRIS, bukan satu per fiturnya.
+       Roster menjawab "kapan seseorang seharusnya bekerja", absensi
+       menjawab "apakah ia benar-benar bekerja" — dan keduanya membaca
+       daftar orang yang sama, dijalankan bagian yang sama, dan saling
+       merujuk pada tiap layarnya.
+
+       Yang berikutnya masih banyak: cuti, lembur, kontrak PKWT,
+       penggajian. Tiap-tiapnya sebagai modul tersendiri akan
+       menambahkan satu baris lagi ke bilah samping yang sudah berisi
+       dua puluh delapan — sampai tidak ada lagi yang dapat menemukan
+       apa pun di sana. Sebagai grup di dalam HRIS, bilahnya tidak
+       bertambah panjang sama sekali.
+
+       Ditaruh tepat sesudah Miners, dan itu bukan urutan abjad:
+       Miners menjawab "BOLEH atau tidak orang ini bekerja", HRIS
+       menjawab "KAPAN dan APAKAH ia bekerja". Keduanya bersinggungan
+       di satu titik yang menentukan — roster menolak menjadwalkan
+       orang yang berkasnya tidak berlaku — dan berdampingan di bilah
+       samping, titik itu tidak perlu dijelaskan siapa pun. */
+    'hris' => [
+      'label' => 'HRIS',
       'tema'  => 'safetrack',
-      'icon'  => 'M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z',
+      'icon'  => 'M17 20h5v-2a3 3 0 0 0-5.36-1.87M17 20H7m10 0v-2c0-.66-.13-1.3-.36-1.87m0 0a5 5 0 0 0-9.28 0M7 20H2v-2a3 3 0 0 1 5.36-1.87M7 20v-2c0-.66.13-1.3.36-1.87m0 0a5 5 0 0 1 9.28 0M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm6 3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM7 10a2 2 0 1 1-4 0 2 2 0 0 1 4 0z',
       'groups' => [
         '' => [
-          ['Kalender Regu', 'roster.index', 'roster'],
+          ['Ringkasan', 'hris.index', 'hris'],
         ],
 
-        'Penyusunan' => [
-          ['Pola & Regu', 'roster.pola', 'roster/pola'],
+        'Roster & Shift' => [
+          ['Kalender Regu',  'hris.roster.index',     'hris/roster'],
+          ['Pola & Regu',    'hris.roster.pola',      'hris/roster/pola'],
+          ['Manpower Plan',  'hris.roster.kebutuhan', 'hris/roster/kebutuhan'],
         ],
 
-        'Pemantauan' => [
-          ['Manpower Plan', 'roster.kebutuhan', 'roster/kebutuhan'],
-        ],
-      ],
-    ],
-
-    /* Absensi berdampingan dengan Roster, bukan di dalamnya. Roster
-       menjawab "kapan ia seharusnya bekerja", absensi menjawab "apakah
-       ia benar-benar bekerja" — dan keduanya dibaca orang berbeda pada
-       jam berbeda: roster oleh penyusun jadwal seminggu sebelumnya,
-       absensi oleh pengawas pos jaga pagi itu juga. */
-    'absensi' => [
-      'label' => 'Absensi',
-      'tema'  => 'safetrack',
-      'icon'  => 'M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z',
-      'groups' => [
-        '' => [
-          ['Pemantauan Harian', 'absensi.index', 'absensi'],
-        ],
-
-        'Rekapitulasi' => [
-          ['Rekap Periode', 'absensi.rekap', 'absensi/rekap'],
-        ],
-
-        'Perangkat' => [
-          ['Mesin Lapangan', 'absensi.mesin', 'absensi/mesin'],
+        'Absensi' => [
+          ['Pemantauan Harian', 'hris.absensi.index', 'hris/absensi'],
+          ['Rekap Periode',     'hris.absensi.rekap', 'hris/absensi/rekap'],
+          ['Mesin Lapangan',    'hris.absensi.mesin', 'hris/absensi/mesin'],
         ],
       ],
     ],
@@ -714,8 +707,7 @@ final class Menu
         [['gudang*'],                              'gudang'],
         [['mining-engineering-hub*'],              'meh'],
         [['miners*'],                           'miners'],
-        [['roster*'],                           'roster'],
-        [['absensi*'],                          'absensi'],
+        [['hris*'],                             'hris'],
 
         /* Investigasi didaftarkan SEBELUM pola 'ko*' di bawahnya. Pola
            itu berupa awalan satu kata dan tidak cocok dengan

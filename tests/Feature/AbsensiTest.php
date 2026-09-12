@@ -389,7 +389,7 @@ class AbsensiTest extends TestCase
         $a = $this->baris($p, $this->hari);
 
         $this->actingAs($this->admin)
-            ->put('/absensi/'.$a->id, [
+            ->put('/hris/absensi/'.$a->id, [
                 'masuk'  => '06:05',
                 'keluar' => '06:05',
                 'alasan' => 'Alat menempel dua kali pada saat yang sama.',
@@ -679,7 +679,7 @@ class AbsensiTest extends TestCase
     {
         $this->actingAs($this->admin);
 
-        foreach (['/absensi', '/absensi/rekap', '/absensi/mesin'] as $alamat) {
+        foreach (['/hris/absensi', '/hris/absensi/rekap', '/hris/absensi/mesin'] as $alamat) {
             $this->get($alamat)->assertOk();
         }
     }
@@ -698,7 +698,7 @@ class AbsensiTest extends TestCase
         $this->assertSame('belum_pulang', $a->keadaan);
 
         $this->actingAs($this->admin)
-            ->put('/absensi/'.$a->id, [
+            ->put('/hris/absensi/'.$a->id, [
                 'masuk'  => '06:05',
                 'keluar' => '17:05',
                 'alasan' => 'Mesin pos dua mati; jam dicatat pengawas shift.',
@@ -728,7 +728,7 @@ class AbsensiTest extends TestCase
         $a = $this->baris($p, $this->hari);
 
         $this->actingAs($this->admin)
-            ->put('/absensi/'.$a->id, [
+            ->put('/hris/absensi/'.$a->id, [
                 'masuk'  => '18:00',
                 'keluar' => '05:00',
                 'alasan' => 'Tap pulang tidak terbaca alat.',
@@ -747,7 +747,7 @@ class AbsensiTest extends TestCase
         $p = $this->pekerja();
         $this->roster($p, $this->hari);
 
-        $this->actingAs($this->admin)->post('/absensi/catat', [
+        $this->actingAs($this->admin)->post('/hris/absensi/catat', [
             'pekerja_id' => $p->id,
             'tanggal'    => $this->hari->toDateString(),
             'jam'        => '06:10',
@@ -766,8 +766,8 @@ class AbsensiTest extends TestCase
     {
         [$m] = $this->mesin();
 
-        $this->actingAs($this->pengguna)->post('/absensi/mesin/'.$m->id.'/token')->assertForbidden();
-        $this->actingAs($this->pengguna)->delete('/absensi/mesin/'.$m->id)->assertForbidden();
+        $this->actingAs($this->pengguna)->post('/hris/absensi/mesin/'.$m->id.'/token')->assertForbidden();
+        $this->actingAs($this->pengguna)->delete('/hris/absensi/mesin/'.$m->id)->assertForbidden();
 
         $this->assertNotNull(MesinAbsensi::withoutGlobalScopes()->find($m->id));
     }
@@ -777,7 +777,7 @@ class AbsensiTest extends TestCase
     {
         [$m, $lama] = $this->mesin();
 
-        $this->actingAs($this->admin)->post('/absensi/mesin/'.$m->id.'/token')->assertRedirect();
+        $this->actingAs($this->admin)->post('/hris/absensi/mesin/'.$m->id.'/token')->assertRedirect();
 
         $this->assertFalse($m->fresh()->tokenCocok($lama));
     }

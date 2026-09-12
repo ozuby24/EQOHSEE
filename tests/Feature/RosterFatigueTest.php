@@ -573,7 +573,7 @@ class RosterFatigueTest extends TestCase
     {
         $this->actingAs(User::factory()->create(['is_admin' => true]));
 
-        foreach (['/roster', '/roster/pola', '/roster/kebutuhan'] as $jalur) {
+        foreach (['/hris/roster', '/hris/roster/pola', '/hris/roster/kebutuhan'] as $jalur) {
             $this->get($jalur)->assertOk();
         }
     }
@@ -585,7 +585,7 @@ class RosterFatigueTest extends TestCase
 
         $pola = PolaRoster::withoutGlobalScopes()->where('kode', '14:7')->firstOrFail();
 
-        $this->delete('/roster/pola/'.$pola->id)->assertForbidden();
+        $this->delete('/hris/roster/pola/'.$pola->id)->assertForbidden();
         $this->assertDatabaseHas('hr_pola_roster', ['id' => $pola->id]);
     }
 }

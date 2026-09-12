@@ -10,9 +10,9 @@
  */
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
-import { propHalaman } from '../../halaman';
-import Dialog from '../../Components/Dialog.vue';
-import { useDialog } from '../../dialog';
+import { propHalaman } from '../../../halaman';
+import Dialog from '../../../Components/Dialog.vue';
+import { useDialog } from '../../../dialog';
 
 const props = propHalaman();
 const { dialog, tanya, batal, lanjut } = useDialog();
@@ -29,13 +29,13 @@ const formPola = useForm({
 });
 
 function simpanPola() {
-  formPola.post('/roster/pola', { preserveScroll: true, onSuccess: () => formPola.reset() });
+  formPola.post('/hris/roster/pola', { preserveScroll: true, onSuccess: () => formPola.reset() });
 }
 
 async function hapusPola(id: number, kode: string) {
   if (!await tanya(`Hapus pola ${kode}? Regu yang memakainya akan kehilangan polanya.`)) return;
 
-  useForm({}).delete(`/roster/pola/${id}`, { preserveScroll: true });
+  useForm({}).delete(`/hris/roster/pola/${id}`, { preserveScroll: true });
 }
 
 const formRegu = useForm({
@@ -43,19 +43,19 @@ const formRegu = useForm({
 });
 
 function simpanRegu() {
-  formRegu.post('/roster/regu', { preserveScroll: true, onSuccess: () => formRegu.reset() });
+  formRegu.post('/hris/roster/regu', { preserveScroll: true, onSuccess: () => formRegu.reset() });
 }
 
 async function hapusRegu(id: number, nama: string) {
   if (!await tanya(`Hapus regu ${nama} beserta keanggotaannya?`)) return;
 
-  useForm({}).delete(`/roster/regu/${id}`, { preserveScroll: true });
+  useForm({}).delete(`/hris/roster/regu/${id}`, { preserveScroll: true });
 }
 
 const formAnggota = useForm({ pekerja_id: '', mulai: '', selesai: '' });
 
 function tambahAnggota(id: number) {
-  formAnggota.post(`/roster/regu/${id}/anggota`, {
+  formAnggota.post(`/hris/roster/regu/${id}/anggota`, {
     preserveScroll: true, onSuccess: () => formAnggota.reset(),
   });
 }
@@ -100,7 +100,7 @@ const langgarBaru = computed(() => {
         <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
       </div>
 
-      <Link href="/roster" class="eq-btn-lain">Kalender regu</Link>
+      <Link href="/hris/roster" class="eq-btn-lain">Kalender regu</Link>
     </section>
 
     <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
@@ -328,7 +328,7 @@ const langgarBaru = computed(() => {
             </div>
 
             <div class="flex items-center gap-2">
-              <Link :href="`/roster?regu=${g.id}`" class="eq-btn-lain">Kalender</Link>
+              <Link :href="`/hris/roster?regu=${g.id}`" class="eq-btn-lain">Kalender</Link>
               <button class="eq-btn-lain" @click="bukaRegu = bukaRegu === g.id ? null : g.id">
                 {{ bukaRegu === g.id ? 'Tutup' : 'Anggota' }}
               </button>

@@ -10,7 +10,7 @@
  */
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
-import { propHalaman } from '../../halaman';
+import { propHalaman } from '../../../halaman';
 
 const props = propHalaman();
 
@@ -20,7 +20,7 @@ const dari   = ref(String((props.rentang as any)?.dari ?? ''));
 const sampai = ref(String((props.rentang as any)?.sampai ?? ''));
 
 function muat() {
-  router.get('/absensi/rekap', { dari: dari.value || undefined, sampai: sampai.value || undefined },
+  router.get('/hris/absensi/rekap', { dari: dari.value || undefined, sampai: sampai.value || undefined },
     { preserveState: true, preserveScroll: true, replace: true });
 }
 
@@ -48,7 +48,7 @@ const jumlah = computed(() => {
         <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
       </div>
 
-      <Link href="/absensi" class="eq-btn-lain">Pemantauan harian</Link>
+      <Link href="/hris/absensi" class="eq-btn-lain">Pemantauan harian</Link>
     </section>
 
     <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-4">

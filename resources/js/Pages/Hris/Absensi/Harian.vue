@@ -11,7 +11,7 @@
  */
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
-import { propHalaman } from '../../halaman';
+import { propHalaman } from '../../../halaman';
 import Keadaan from './Keadaan.vue';
 
 const props = propHalaman();
@@ -23,7 +23,7 @@ const tanggal = ref(String(props.tanggal ?? ''));
 const blok    = ref(String(props.terpilihBlok ?? ''));
 
 function muat() {
-  router.get('/absensi', {
+  router.get('/hris/absensi', {
     tanggal: tanggal.value || undefined,
     blok: blok.value || undefined,
   }, { preserveState: true, preserveScroll: true, replace: true });
@@ -34,7 +34,7 @@ function muat() {
 const ulang = useForm({});
 
 function rekonsiliasi() {
-  ulang.post(`/absensi/rekonsiliasi?dari=${tanggal.value}&sampai=${tanggal.value}`,
+  ulang.post(`/hris/absensi/rekonsiliasi?dari=${tanggal.value}&sampai=${tanggal.value}`,
     { preserveScroll: true });
 }
 
@@ -43,7 +43,7 @@ function rekonsiliasi() {
 const catat = useForm({ pekerja_id: '', tanggal: String(props.tanggal ?? ''), jam: '', arah: 'masuk', catatan: '' });
 
 function simpanCatat() {
-  catat.post('/absensi/catat', {
+  catat.post('/hris/absensi/catat', {
     preserveScroll: true,
     onSuccess: () => catat.reset('pekerja_id', 'jam', 'catatan'),
   });
@@ -65,7 +65,7 @@ function bukaKoreksi(b: any) {
 function simpanKoreksi() {
   if (koreksiId.value === null) return;
 
-  koreksi.put(`/absensi/${koreksiId.value}`, {
+  koreksi.put(`/hris/absensi/${koreksiId.value}`, {
     preserveScroll: true,
     onSuccess: () => { koreksiId.value = null; koreksi.reset(); },
   });
@@ -105,8 +105,8 @@ const kartu = computed(() => [
       </div>
 
       <div class="flex gap-2">
-        <Link href="/absensi/rekap" class="eq-btn-lain">Rekap periode</Link>
-        <Link href="/absensi/mesin" class="eq-btn-lain">Mesin lapangan</Link>
+        <Link href="/hris/absensi/rekap" class="eq-btn-lain">Rekap periode</Link>
+        <Link href="/hris/absensi/mesin" class="eq-btn-lain">Mesin lapangan</Link>
       </div>
     </section>
 

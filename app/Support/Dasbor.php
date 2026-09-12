@@ -178,7 +178,7 @@ final class Dasbor
             ],
 
             [
-                'modul' => 'roster', 'nama' => 'Roster Terhalang Berkas',
+                'modul' => 'hris', 'nama' => 'Roster Terhalang Berkas',
                 'ket'   => 'Hari kerja terjadwal yang berkasnya tidak berlaku',
                 'nilai' => HrRoster::query()->bekerja()->whereNotNull('halangan')
                     ->where('tanggal', '>=', \App\Support\Waktu::kini()->startOfDay()->toDateString())
@@ -186,7 +186,7 @@ final class Dasbor
                 'total' => HrRoster::query()->bekerja()
                     ->where('tanggal', '>=', \App\Support\Waktu::kini()->startOfDay()->toDateString())
                     ->count(),
-                'rute'  => 'roster.index', 'nada' => 'gawat',
+                'rute'  => 'hris.roster.index', 'nada' => 'gawat',
             ],
 
             /* Yang dihitung adalah KETIDAKCOCOKAN, bukan kehadiran.
@@ -194,7 +194,7 @@ final class Dasbor
                pun; angka "berapa hari kerja terjadwal yang tidak ada
                orangnya" menuntutnya hari itu juga. */
             [
-                'modul' => 'absensi', 'nama' => 'Absensi Tak Cocok Roster',
+                'modul' => 'hris', 'nama' => 'Absensi Tak Cocok Roster',
                 'ket'   => 'Hari kerja terjadwal yang kosong, dan hari libur yang dikerjakan',
                 'nilai' => HrAbsensi::query()
                     ->whereIn('keadaan', ['absen', 'luar_roster'])
@@ -203,7 +203,7 @@ final class Dasbor
                 'total' => HrAbsensi::query()
                     ->where('tanggal', '>=', \App\Support\Waktu::kini()->subDays(30)->startOfDay()->toDateString())
                     ->count(),
-                'rute'  => 'absensi.index', 'nada' => 'gawat',
+                'rute'  => 'hris.absensi.index', 'nada' => 'gawat',
             ],
 
             /* ═══ bahaya dan inspeksi ═══ */
