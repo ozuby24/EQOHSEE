@@ -1157,6 +1157,39 @@ main a{transition:color .16s}
 .eq-perusahaan span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:640px){.eq-perusahaan span{display:none}}
 
+/* ── Bilah pindah sub-halaman (beranda modul) ── */
+.eq-pindah{display:flex;flex-wrap:wrap;gap:8px}
+
+.eq-pindah-pil{display:inline-flex;align-items:center;gap:7px;
+  padding:8px 14px 8px 11px;border-radius:11px;font-size:12.5px;font-weight:600;
+  text-decoration:none;white-space:nowrap;
+  color:var(--eq-teks,#44505C);background:var(--eq-kartu,#fff);
+  border:1px solid var(--eq-garis,#E4E8EC);
+  transition:border-color .15s ease,color .15s ease,background .15s ease}
+.eq-pindah-pil svg{width:15px;height:15px;flex:none;opacity:.7}
+.eq-pindah-pil:hover{border-color:var(--eq-aksen,#F57C00);color:var(--eq-judul,#0F1720)}
+.eq-pindah-pil:focus-visible{outline:2px solid var(--eq-aksen,#F57C00);outline-offset:2px}
+
+/* Yang sedang dibuka berlatar aksen PENUH, bukan sekadar bertepi tebal.
+   Pada baris berisi belasan pil, tepi yang berbeda tipis tidak pernah
+   ditemukan mata — dan pembacanya kehilangan satu-satunya tanda di
+   mana ia sedang berdiri. */
+.eq-pindah-kini{background:var(--eq-aksen,#F57C00);border-color:var(--eq-aksen,#F57C00);
+  color:#fff;box-shadow:0 2px 10px -2px rgba(245,124,0,.45)}
+.eq-pindah-kini svg{opacity:1}
+.eq-pindah-kini:hover{color:#fff}
+
+.eq-pindah-lencana{display:inline-grid;place-items:center;min-width:17px;height:17px;
+  padding:0 5px;border-radius:999px;font-size:9.5px;font-weight:800;
+  background:#DC2626;color:#fff}
+.eq-pindah-kini .eq-pindah-lencana{background:rgba(255,255,255,.28)}
+
+:root[data-tema="gelap"] .eq-pindah-pil{background:var(--eq-kartu,#141A21);
+  border-color:var(--eq-garis,rgba(255,255,255,.10));color:var(--eq-teks,#A8B2B8)}
+:root[data-tema="gelap"] .eq-pindah-pil:hover{color:var(--eq-judul,#E8ECF0)}
+:root[data-tema="gelap"] .eq-pindah-kini{background:var(--eq-aksen,#F57C00);
+  border-color:var(--eq-aksen,#F57C00);color:#fff}
+
 /* ── Petunjuk pintasan di kotak cari ── */
 .eq-cari-kunci{flex:none;margin-left:auto;padding:3px 7px;border-radius:7px;
   font-family:inherit;font-size:10.5px;font-weight:700;letter-spacing:.02em;

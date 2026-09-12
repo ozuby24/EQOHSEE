@@ -116,6 +116,57 @@ const remahKop = computed<[string, string | null][]>(() => {
   return r;
 });
 
+/* ─────────── Bilah pindah sub-halaman ───────────
+ *
+ * HANYA DI HALAMAN BERANDA MODUL, bukan di tiap halaman. Bilah samping
+ * sudah memuat daftar yang sama persis dan selalu terlihat; digambar
+ * lagi di atas tiap halaman, yang bertambah bukan kemudahan berpindah
+ * melainkan dua salinan daftar yang sama pada satu layar — dan yang
+ * kedua memakan tiga baris tepat di tempat isi halaman seharusnya
+ * dimulai.
+ *
+ * Di beranda modul ia bukan salinan melainkan INDEKS: halaman itu
+ * memang bertugas memperkenalkan isi modulnya, dan di situlah daftar
+ * lengkap justru yang dicari.
+ */
+
+const diBeranda = computed(() => {
+  const pertama = menu.value?.grup?.[0]?.butir?.[0];
+
+  return !!pertama && !!butirAktif.value && pertama.url === butirAktif.value.url;
+});
+
+const pindahCepat = computed(() => {
+  if (!diBeranda.value) return [];
+
+  const grup = menu.value?.grup ?? [];
+  const semua = grup.flatMap((g) => g.butir.map((b) => ({ butir: b, grup: g.nama })));
+
+  // Satu butir tidak perlu bilah pindah: tidak ada tempat lain untuk
+  // dituju, dan barisnya hanya menggambar tombol menuju halaman yang
+  // sedang dibuka.
+  if (semua.length < 2) return [];
+
+  /* LABEL YANG BERULANG DIBERI NAMA GRUPNYA.
+   *
+   * Bilah samping membedakan butir bernama sama lewat judul grup di
+   * atasnya — Miners punya "MCU" pada Pendaftaran, pada Riwayat, dan
+   * pada Outstanding. Diratakan menjadi satu baris, judul grupnya
+   * hilang dan yang tersisa adalah tiga pil bertuliskan "MCU" yang
+   * menuju tiga tempat berbeda. Itu bukan navigasi yang padat,
+   * melainkan navigasi yang tidak dapat dipakai.
+   */
+  const hitung = new Map<string, number>();
+  for (const { butir } of semua) hitung.set(butir.label, (hitung.get(butir.label) ?? 0) + 1);
+
+  return semua.map(({ butir, grup: nama }) => ({
+    ...butir,
+    label: (hitung.get(butir.label) ?? 0) > 1 && nama
+      ? `${nama} · ${butir.label}`
+      : butir.label,
+  }));
+});
+
 /* ─────────── Akun ─────────── */
 
 const akunTerbuka = ref(false);
@@ -649,6 +700,20 @@ function keluar() {
                       :angka="kopIsi.angka ?? null" :sisi="kopIsi.sisi ?? []"
                       :kanan="kopIsi.kanan ?? null" :kanan-kecil="kopIsi.kananKecil ?? null"
                       :ringkas="!kopIsi.angka" />
+
+          <nav v-if="pindahCepat.length" class="eq-pindah" aria-label="Isi modul">
+            <component :is="tautan(b.inertia)" v-for="b in pindahCepat" :key="b.url"
+                       :href="b.url" class="eq-pindah-pil"
+                       :class="{ 'eq-pindah-kini': b.aktif }"
+                       :aria-current="b.aktif ? 'page' : undefined">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path :d="b.ikon" />
+              </svg>
+              <span>{{ b.label }}</span>
+              <span v-if="b.lencana" class="eq-pindah-lencana">{{ b.lencana }}</span>
+            </component>
+          </nav>
 
           <slot />
 

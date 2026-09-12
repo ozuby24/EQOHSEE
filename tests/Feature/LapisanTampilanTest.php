@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Support\Menu;
 use Tests\TestCase;
 
 /**
@@ -230,6 +231,50 @@ class LapisanTampilanTest extends TestCase
 
         $this->assertSame([], $liar,
             'Halaman mencetak ulang judul yang sudah ada di kop: '.implode(', ', $liar));
+    }
+
+    public function test_butir_menu_sekelompok_tidak_berlabel_kembar(): void
+    {
+        // Bilah pindah di beranda modul meratakan seluruh grup menjadi
+        // satu baris pil, dan butir bernama sama dibedakan dengan
+        // menambahkan nama grupnya — "Riwayat · MCU" di samping
+        // "Pendaftaran · MCU".
+        //
+        // Pembeda itu HANYA BEKERJA BILA GRUPNYA MEMANG BERBEDA. Dua
+        // butir berlabel sama di dalam satu grup menghasilkan dua pil
+        // yang sama persis menuju dua tempat berbeda, dan tidak ada
+        // satu pun tanda di layar yang menyebutkan bedanya.
+        $kembar = [];
+
+        foreach (Menu::all() as $kunci => $modul) {
+            foreach ($modul['groups'] ?? [] as $nama => $butir) {
+                $label = array_map(fn ($b) => $b[0], $butir);
+                $ulang = array_keys(array_filter(array_count_values($label), fn ($n) => $n > 1));
+
+                foreach ($ulang as $l) $kembar[] = "{$kunci}/{$nama}: {$l}";
+            }
+        }
+
+        $this->assertSame([], $kembar,
+            'Butir menu berlabel kembar di dalam satu grup: '.implode(', ', $kembar));
+    }
+
+    public function test_setiap_modul_punya_semboyan_dan_kutipan(): void
+    {
+        // Keduanya dipakai kerangka pada TIAP halaman modul itu. Yang
+        // kosong tidak menjatuhkan apa pun — kop kehilangan taglinenya
+        // dan halamannya kehilangan penutupnya, diam-diam, dan hanya
+        // pada modul yang kebetulan terlupakan.
+        $kurang = [];
+
+        foreach (Menu::all() as $kunci => $modul) {
+            foreach (['semboyan', 'kutipan'] as $k) {
+                if (trim((string) ($modul[$k] ?? '')) === '') $kurang[] = "{$kunci}.{$k}";
+            }
+        }
+
+        $this->assertSame([], $kurang,
+            'Modul tanpa semboyan atau kutipan: '.implode(', ', $kurang));
     }
 
     public function test_label_kolom_isian_berdiri_di_atas_kolomnya(): void
