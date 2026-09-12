@@ -5,6 +5,7 @@ use App\Http\Controllers\MinersController;
 use App\Http\Controllers\MinersDokumenController;
 use App\Http\Controllers\Hris\AbsensiController;
 use App\Http\Controllers\Hris\CutiController;
+use App\Http\Controllers\Hris\LemburController;
 use App\Http\Controllers\Hris\HrisController;
 use App\Http\Controllers\Hris\RosterController;
 use App\Http\Controllers\DasborController;
@@ -444,6 +445,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('{cuti}/batalkan', [CutiController::class, 'batalkan'])->name('batalkan');
 
             Route::get('/', [CutiController::class, 'index'])->name('index');
+        });
+
+        /* ---- Lembur (SPL) ---- */
+        Route::prefix('lembur')->name('lembur.')->group(function () {
+            Route::get('upah',  [LemburController::class, 'upah'])->name('upah');
+            Route::post('upah', [LemburController::class, 'upahSimpan'])->name('upah.simpan');
+
+            Route::post('usulkan', [LemburController::class, 'usulkan'])->name('usulkan');
+
+            Route::post('{lembur}/setujui',  [LemburController::class, 'setujui'])->name('setujui');
+            Route::post('{lembur}/tolak',    [LemburController::class, 'tolak'])->name('tolak');
+            Route::post('{lembur}/batalkan', [LemburController::class, 'batalkan'])->name('batalkan');
+
+            Route::get('/', [LemburController::class, 'index'])->name('index');
         });
 
         Route::get('/', [HrisController::class, 'index'])->name('index');

@@ -76,9 +76,9 @@ class Modules
                satu menyusun jadwalnya, yang lain memeriksa apakah
                jadwal itu dijalankan. Dipecah dua, etalase menyebut dua
                produk untuk satu pekerjaan. */
-            ['nama' => 'HRIS — Roster, Shift & Absensi', 'status' => 'aktif', 'pilar' => 'occhealth',
+            ['nama' => 'HRIS — Tenaga Kerja Tambang', 'status' => 'aktif', 'pilar' => 'occhealth',
              'rute' => 'hris.index',
-             'ket'  => 'Pola bergilir 14:7 dan 10:2 minggu dengan batas jam kerja Kepmenakertrans 234/2003, blokir dari berkas kelayakan yang habis, dan pindaian mesin lapangan yang direkonsiliasi terhadap rosternya — termasuk shift malam yang melewati tengah malam.',
+             'ket'  => 'Roster bergilir 14:7 dengan batas jam kerja Kepmenakertrans 234/2003, absensi mesin lapangan yang direkonsiliasi terhadapnya termasuk shift malam lewat tengah malam, cuti UU 13/2003 yang menulis ke kalender regu, dan lembur PP 35/2021 yang diusulkan dari jam yang benar-benar tercatat.',
              'ikon' => 'M17 20h5v-2a3 3 0 0 0-5.36-1.87M17 20H7m10 0v-2c0-.66-.13-1.3-.36-1.87m0 0a5 5 0 0 0-9.28 0M7 20H2v-2a3 3 0 0 1 5.36-1.87M7 20v-2c0-.66.13-1.3.36-1.87m0 0a5 5 0 0 1 9.28 0M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm6 3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM7 10a2 2 0 1 1-4 0 2 2 0 0 1 4 0z'],
 
             ['nama' => 'Safety Maturity Level', 'status' => 'aktif', 'pilar' => 'safety', 'rute' => 'tpkkp.index',

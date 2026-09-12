@@ -27,10 +27,11 @@ use App\Models\Pjp\{
     SmkpItem as PjpSmkpItem, SmkpJawaban as PjpSmkpJawaban, SmkpKategori as PjpSmkpKategori,
 };
 use App\Models\Hr\{Absensi as HrAbsensi, AbsensiJejak as HrJejak, Cuti as HrCuti,
-    JenisCuti as HrJenisCuti, Kebutuhan as HrKebutuhan, SaldoCuti as HrSaldoCuti,
+    JenisCuti as HrJenisCuti, Kebutuhan as HrKebutuhan, Lembur as HrLembur,
+    SaldoCuti as HrSaldoCuti, Upah as HrUpah,
     MesinAbsensi as HrMesin, PolaRoster as HrPola, Regu as HrRegu,
     ReguAnggota as HrReguAnggota, Roster as HrRoster};
-use App\Support\Hr\{JalurCuti, KebijakanCuti, MasterCuti, MasterRoster, Penyusun, Rekonsiliasi};
+use App\Support\Hr\{JalurCuti, JalurLembur, KebijakanCuti, MasterCuti, MasterRoster, Penyusun, Rekonsiliasi};
 use App\Support\Miners\Acuan;
 use App\Support\Miners\MasterMiners;
 use App\Support\Pjp\DaftarPeriksaSmkp;
@@ -301,6 +302,14 @@ final class DataContoh
 
            Mesin dibuang paling belakang di antara ketiganya, sebab
            jejak menunjuk kepadanya. */
+        /* Lembur dibuang SEBELUM absensi: `hr_lembur.absensi_id`
+           menunjuk ke sana, dan meski kunci asingnya mengosongkan
+           dirinya sendiri, baris yang tertinggal menunjuk ke pekerja
+           yang sudah terhapus berkaskade — lalu rekap lembur
+           menggambar baris tanpa nama yang tidak dapat ditelusuri ke
+           mana pun. */
+        HrLembur::class, HrUpah::class,
+
         HrAbsensi::class, HrJejak::class, HrMesin::class,
 
         /* Cuti dibuang SEBELUM roster, meski `hr_roster.cuti_id`
@@ -841,6 +850,13 @@ final class DataContoh
                seluruh pindaian jatuh menjadi "di luar roster" — sebab
                memang belum ada roster yang memuatnya. */
             'Absensi'        => $this->absensi(),
+
+            /* Lembur SESUDAH absensi, dan urutan itu mengikat: ia
+               diusulkan dari selisih jam yang benar-benar tercatat
+               terhadap jadwal shiftnya. Dijalankan lebih dahulu, tidak
+               ada satu jam pun yang dapat dibandingkan dengan apa
+               pun. */
+            'Lembur'         => $this->lembur(),
             'Pembelian'      => $this->pembelian(),
             'Pesan'          => $this->pesan(),
             'Catatan'        => $this->catatan(),
@@ -1406,7 +1422,7 @@ final class DataContoh
 
 
 
-/* ─────────── Cuti & izin ─────────── */
+    /* ─────────── Cuti & izin ─────────── */
 
     /**
      * Empat pengajuan yang sengaja berbeda nasibnya.
@@ -1691,6 +1707,13 @@ final class DataContoh
             ? null
             : $mulai->copy()->addMinutes($jam * 60 + ($undian % 35));
 
+        /* Sesekali lembur panjang, dan itu bukan hiasan: dengan
+           kelebihan setengah jam saja, tabel faktor lembur hari kerja
+           tidak pernah melewati tingkat pertama — layar lembur
+           memperlihatkan "1 jam x 1,5" pada tiap baris dan pembacanya
+           tidak pernah melihat bahwa jam kedua dihitung 2x. */
+        if ($keluar && $undian % 31 === 12) $keluar->addMinutes(175);
+
         /* Satu berkas absen ponsel dari luar geofence, dan satu
            kiriman luring. Keduanya keadaan yang benar-benar terjadi di
            site bersinyal buruk, dan keduanya digambar berbeda. */
@@ -1721,6 +1744,91 @@ final class DataContoh
         $mulai = Carbon::parse($tgl.' 07:05', Waktu::zona());
 
         return [$mulai, $mulai->copy()->addMinutes(6 * 60 + 20), 'mesin', false, true, 31];
+    }
+
+    /* ─────────── Lembur ─────────── */
+
+    /**
+     * Upah dasar, lalu lembur yang diusulkan dari absensinya sendiri.
+     *
+     * SUSUNAN UPAHNYA SENGAJA BERBEDA-BEDA, dan itu yang paling perlu
+     * terlihat: satu orang berupah pokok saja, satu bertunjangan tetap,
+     * dan satu bertunjangan tidak tetap yang besar sehingga dasarnya
+     * jatuh ke 75% (PP 35/2021 pasal 32 ayat 3). Seluruhnya berpokok
+     * saja, layar upah tidak pernah memperlihatkan bagaimana dasar 75%
+     * digambar — padahal di situlah kesalahan hitung paling sering
+     * terjadi.
+     */
+    private function lembur(): int
+    {
+        $n = 0;
+
+        $hari = $this->kini->copy()->startOfDay();
+
+        $pekerja = MnrPekerja::withoutGlobalScopes()
+            ->where('company_id', $this->c->id)->orderBy('nama')->get()->values();
+
+        if ($pekerja->isEmpty()) return 0;
+
+        /* pokok, tunjangan tetap, tunjangan tidak tetap */
+        $susunan = [
+            [6_500_000, 0,         0],          // pokok saja — dasar 100%
+            [5_800_000, 1_200_000, 0],          // bertunjangan tetap — dasar 100%
+            [3_200_000,   300_000, 2_500_000],  // tidak tetap besar — dasar 75%
+            [7_400_000,   800_000,   400_000],  // tidak tetap kecil — tetap 100%
+            [5_100_000,   600_000,         0],
+            [4_900_000,   500_000,         0],
+        ];
+
+        foreach ($pekerja as $i => $p) {
+            [$pokok, $tetap, $tidakTetap] = $susunan[$i % count($susunan)];
+
+            HrUpah::withoutGlobalScopes()->create([
+                'company_id' => $this->c->id,
+                'pekerja_id' => $p->id,
+
+                /* Berlaku sejak awal tahun lalu supaya seluruh lembur
+                   pada data contoh punya upah yang berlaku — bertanggal
+                   hari ini, lembur bulan lalu bernilai nol dan layarnya
+                   memperlihatkan keadaan yang terbaca seperti cacat. */
+                'berlaku_mulai' => $hari->copy()->subYear()->startOfYear(),
+
+                'pokok'                 => $pokok,
+                'tunjangan_tetap'       => $tetap,
+                'tunjangan_tidak_tetap' => $tidakTetap,
+            ]);
+            $n++;
+        }
+
+        /* Diusulkan lewat JALAN YANG SAMA dengan yang dipakai tombolnya,
+           bukan ditulis baris demi baris di sini. Dua penyusun untuk
+           satu aturan akan berbeda cepat atau lambat — dan yang di sini
+           yang lebih dulu ketinggalan. */
+        $hasil = JalurLembur::usulkan(
+            $pekerja->pluck('id')->all(),
+            $hari->copy()->subDays(20),
+            $hari,
+            $this->pengaju?->id,
+        );
+
+        $n += $hasil['dibuat'];
+
+        /* Sebagian disetujui, sebagian dibiarkan menunggu. Seluruhnya
+           disetujui, antrean persetujuan kosong — padahal antrean itu
+           satu-satunya alasan seseorang membuka layarnya. */
+        $penyetuju = $this->pengaju
+            ? User::where('id', '<>', $this->pengaju->id)->first()
+            : User::first();
+
+        if ($penyetuju) {
+            foreach (HrLembur::withoutGlobalScopes()
+                ->where('company_id', $this->c->id)
+                ->menunggu()->orderBy('tanggal')->get()->take(6) as $l) {
+                JalurLembur::setujui($l, $penyetuju, 'Diperintahkan pengawas shift.');
+            }
+        }
+
+        return $n;
     }
 
     /* ─────────── Roster & shift ─────────── */

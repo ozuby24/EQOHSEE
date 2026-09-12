@@ -235,6 +235,11 @@ final class Menu
           ['Pengajuan & Persetujuan', 'hris.cuti.index', 'hris/cuti'],
           ['Saldo Cuti',              'hris.cuti.saldo', 'hris/cuti/saldo'],
         ],
+
+        'Lembur' => [
+          ['Perintah Lembur', 'hris.lembur.index', 'hris/lembur'],
+          ['Upah Dasar',      'hris.lembur.upah',  'hris/lembur/upah'],
+        ],
       ],
     ],
 
