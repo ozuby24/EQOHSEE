@@ -18,7 +18,6 @@ import { propHalaman } from '../../halaman';
 import KartuGrafik from '../../Grafik/KartuGrafik.vue';
 import Batang from '../../Grafik/Batang.vue';
 import UbinAngka from '../../Components/UbinAngka.vue';
-import KutipanKaki from '../../Components/KutipanKaki.vue';
 
 /**
  * Ikon ubin, digambar sebagai path inline.
@@ -274,7 +273,5 @@ const perluDitindak = computed(() =>
       </p>
     </section>
 
-    <KutipanKaki teks="Orang yang tepat, di tempat yang tepat, pada waktu yang tepat."
-                 kanan="People Drive&#10;Progress" />
   </div>
 </template>

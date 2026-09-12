@@ -13,6 +13,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import type { PropBersama } from '../types';
 import KopHalaman from '../Components/KopHalaman.vue';
+import KutipanKaki from '../Components/KutipanKaki.vue';
 
 /*
   `<Link>` HANYA untuk tujuan yang benar-benar dirender Inertia.
@@ -82,6 +83,20 @@ const sempit       = ref(false);
  */
 
 const kopSendiri = computed(() => (halaman.props as Record<string, unknown>).kop === false);
+
+/**
+ * Isian tambahan kop yang dikirim halaman lewat controllernya.
+ *
+ * Kop dirender kerangka, sehingga halaman tidak dapat mengisi slotnya.
+ * Yang dapat dikirimnya adalah DATA — dan itu memang batas yang benar:
+ * kop yang dapat diisi markup sembarang akan segera berbeda-beda
+ * bentuknya, dan seluruh alasan memindahkannya ke kerangka hilang.
+ */
+const kopIsi = computed(() => {
+  const k = (halaman.props as Record<string, unknown>).kop;
+
+  return k && typeof k === 'object' ? k as Record<string, any> : {};
+});
 
 const remahKop = computed<[string, string | null][]>(() => {
   const r: [string, string | null][] = [];
@@ -630,9 +645,18 @@ function keluar() {
         <div class="max-w-[1400px] mx-auto space-y-4">
           <KopHalaman v-if="!kopSendiri" :judul="judul" :subjudul="subjudul ?? null"
                       :label="menu?.label ?? null" :tagline="menu?.semboyan ?? null"
-                      :remah="remahKop" ringkas />
+                      :remah="remahKop"
+                      :angka="kopIsi.angka ?? null" :sisi="kopIsi.sisi ?? []"
+                      :kanan="kopIsi.kanan ?? null" :kanan-kecil="kopIsi.kananKecil ?? null"
+                      :ringkas="!kopIsi.angka" />
 
           <slot />
+
+          <!-- Kutipan penutup. Di bawah slot, bukan di dalamnya: ia
+               menutup halaman, dan yang menutup halaman tidak boleh
+               ikut berpindah tempat mengikuti isi tiap halaman. -->
+          <KutipanKaki v-if="menu?.kutipan" :teks="menu.kutipan"
+                       :kanan="menu?.semboyan ?? null" />
         </div>
       </main>
     </div>

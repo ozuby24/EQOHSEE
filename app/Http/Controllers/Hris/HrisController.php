@@ -45,14 +45,50 @@ class HrisController extends Controller
         $hari    = Waktu::kini()->startOfDay();
         $kemarin = $hari->copy()->subDay();
 
+        $jadwal = $this->jadwal($hari);
+        $hadir  = $this->kehadiran($hari);
+
+        /* SATU ANGKA YANG MENJAWAB JUDUL HALAMAN, bukan tiga yang
+           menarik. Judulnya bertanya siapa yang seharusnya di site hari
+           ini dan apakah mereka ada; jawabannya adalah berapa dari yang
+           dijadwalkan benar-benar tercatat masuk. Angka lain — terlambat,
+           di luar geofence, terhalang berkas — tinggal di kartu di
+           bawahnya, tempat ia dapat dibaca ulang dan ditindak. */
+        $kerja  = (int) ($jadwal['kerja'] ?? 0);
+        $tercatat = (int) ($hadir['hadir'] ?? 0) + (int) ($hadir['terlambat'] ?? 0)
+                  + (int) ($hadir['belum_pulang'] ?? 0);
+
         return Inertia::render('Hris/Ringkasan', [
             'judul'    => 'HRIS — Ringkasan Tenaga Kerja',
             'subjudul' => 'Siapa yang seharusnya di site hari ini, dan apakah mereka benar-benar ada.',
 
+            'kop' => [
+                'angka' => [
+                    'label'   => 'Tercatat di site',
+                    'nilai'   => $tercatat.' / '.$kerja,
+                    'catatan' => 'dari yang dijadwalkan kerja hari ini',
+                ],
+                /* Ketiganya SELALU ditampilkan, termasuk yang bernilai
+                   nol. Nol pada "Absen" adalah kabar baik dan nol pada
+                   "Terlambat" juga; disembunyikan ketika nol, yang
+                   terjadi adalah baris yang jumlahnya berubah-ubah tiap
+                   hari — dan pembacanya kehilangan tempat tetap untuk
+                   mencari angka yang sama esok harinya. */
+                'sisi' => [
+                    ['Terlambat', (string) ($hadir['terlambat'] ?? 0),
+                        ($hadir['terlambat'] ?? 0) > 0 ? 'ingat' : null],
+                    ['Belum tap pulang', (string) ($hadir['belum_pulang'] ?? 0)],
+                    ['Absen', (string) ($hadir['absen'] ?? 0),
+                        ($hadir['absen'] ?? 0) > 0 ? 'gawat' : null],
+                ],
+                'kanan'      => $hari->format('Y-m-d'),
+                'kananKecil' => 'hari ini',
+            ],
+
             'tanggal' => $hari->toDateString(),
 
-            'jadwal'   => $this->jadwal($hari),
-            'hadir'    => $this->kehadiran($hari),
+            'jadwal'   => $jadwal,
+            'hadir'    => $hadir,
 
             /* Kemarin ikut ditampilkan, dan bukan sebagai pelengkap:
                hari ini shiftnya belum selesai, sehingga angkanya belum

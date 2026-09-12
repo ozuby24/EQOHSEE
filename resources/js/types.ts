@@ -74,6 +74,9 @@ export interface KerangkaMenu {
   /** Semboyan modul, untuk tagline di kop halaman. */
   semboyan?: string | null;
 
+  /** Kutipan penutup halaman. */
+  kutipan?: string | null;
+
   /** Alamat akar modul, untuk remah roti di kop. */
   akar?: string | null;
 }

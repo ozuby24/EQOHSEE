@@ -30,9 +30,31 @@ class GajiController extends Controller
             ? $periode->firstWhere('id', (int) $r->query('periode'))
             : $periode->first();
 
+        $ringkas = $terpilih ? $this->ringkas($terpilih) : null;
+
+        $rupiah = fn (float $n) => 'Rp '.number_format($n, 0, ',', '.');
+
         return Inertia::render('Hris/Gaji/Periode', [
             'judul'    => 'HRIS — Penggajian',
             'subjudul' => 'Ditarik dari roster, absensi, dan lembur yang sudah tercatat.',
+
+            /* Angka utamanya YANG DIBAWA PULANG, bukan bruto. Bruto
+               lebih besar dan lebih mudah membanggakan, tetapi yang
+               ditanyakan orang tentang penggajian selalu berapa yang
+               benar-benar diterima. */
+            'kop' => $ringkas === null ? null : [
+                'angka' => [
+                    'label'   => 'Dibawa pulang',
+                    'nilai'   => $rupiah($ringkas['neto']),
+                    'catatan' => $ringkas['orang'].' orang · '.($terpilih->bulan
+                        ? (PeriodeGaji::BULAN[$terpilih->bulan] ?? '').' '.$terpilih->tahun : ''),
+                ],
+                'sisi' => [
+                    ['Bruto pajak', $rupiah($ringkas['bruto'])],
+                    ['PPh 21', $rupiah($ringkas['pph21']), 'ingat'],
+                    ['BPJS karyawan', $rupiah($ringkas['bpjs'])],
+                ],
+            ],
 
             'periode' => $periode->map(fn (PeriodeGaji $p) => [
                 'id'        => $p->id,
@@ -48,7 +70,7 @@ class GajiController extends Controller
 
             'terpilih' => $terpilih?->id,
             'slip'     => $terpilih ? $this->slip($terpilih) : [],
-            'ringkas'  => $terpilih ? $this->ringkas($terpilih) : null,
+            'ringkas'  => $ringkas,
 
             'belumVerifikasi' => Penggajian::acuanBelumTerverifikasi(),
 

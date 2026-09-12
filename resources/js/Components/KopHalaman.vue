@@ -43,6 +43,24 @@ withDefaults(defineProps<{
   /** Pil fitur di bawah subjudul: [judul, keterangan, nada]. */
   pil?: [string, string, ('lime' | 'sky' | 'orange')?][];
 
+  /**
+   * Satu angka utama di dalam kop, beserta angka pendampingnya.
+   *
+   * HANYA SATU ANGKA, dan hanya angka yang memang menjadi jawaban
+   * halaman itu. Kop adalah tempat yang paling menarik perhatian dan
+   * paling sulit dibaca ulang: tulisannya putih di atas foto, tidak
+   * dapat disalin dengan rapi, tidak dapat diurutkan, dan tidak dapat
+   * dibandingkan dengan baris di sebelahnya. Angka yang perlu
+   * ditindak tinggal di kartu di bawahnya.
+   *
+   * Diisi dua atau tiga angka, yang terjadi bukan kop yang lebih
+   * informatif melainkan kop yang tidak punya jawaban.
+   */
+  angka?: { label: string; nilai: string; catatan?: string | null } | null;
+
+  /** Angka pendamping di sebelahnya: [label, nilai, nada?]. */
+  sisi?: [string, string, ('baik' | 'ingat' | 'gawat')?][];
+
   /** Keterangan kecil di kanan — tanggal, periode, jumlah. */
   kanan?: string | null;
   kananKecil?: string | null;
@@ -51,6 +69,7 @@ withDefaults(defineProps<{
   ringkas?: boolean;
 }>(), {
   subjudul: null, label: null, remah: () => [], tagline: null, pil: () => [],
+  angka: null, sisi: () => [],
   kanan: null, kananKecil: null, ringkas: false,
 });
 </script>
@@ -96,6 +115,33 @@ withDefaults(defineProps<{
                 <small>{{ bawah }}</small>
               </span>
             </span>
+          </div>
+
+          <!-- Panel angka. Di dalam kolom kiri, di bawah subjudul: ia
+               menjawab judulnya, jadi ia harus terbaca sesudah judulnya
+               — bukan di seberang halaman. -->
+          <div v-if="angka || sisi.length" class="kop-angka-baris">
+            <div v-if="angka" class="kop-angka">
+              <span class="kop-angka-ikon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                     stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 20V11M12 20V5M19 20v-6"/>
+                </svg>
+              </span>
+
+              <span class="min-w-0">
+                <small>{{ angka.label }}</small>
+                <strong class="num">{{ angka.nilai }}</strong>
+                <em v-if="angka.catatan">{{ angka.catatan }}</em>
+              </span>
+            </div>
+
+            <div v-if="sisi.length" class="kop-sisi">
+              <span v-for="([l, v, nada], i) in sisi" :key="i" class="kop-sisi-butir">
+                <small>{{ l }}</small>
+                <strong class="num" :class="nada ? 'kop-sisi-' + nada : null">{{ v }}</strong>
+              </span>
+            </div>
           </div>
         </div>
 
@@ -275,6 +321,72 @@ withDefaults(defineProps<{
 .kop-pil-sky    { background: rgba(56,141,219,.24);  color: #9CC9F5; }
 .kop-pil-orange { background: rgba(245,124,0,.24);   color: #FFB870; }
 
+.kop-angka-baris {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: .7rem;
+  margin-top: .9rem;
+}
+
+.kop-angka {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  border-radius: .9rem;
+  padding: .65rem .95rem .7rem;
+  background: rgba(255,255,255,.11);
+  border: 1px solid rgba(255,255,255,.15);
+  backdrop-filter: blur(3px);
+}
+
+.kop-angka-ikon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; border-radius: .7rem; flex: none;
+  background: rgba(245,124,0,.26); color: #FFB870;
+}
+
+.kop-angka-ikon svg { width: 19px; height: 19px; }
+
+.kop-angka small {
+  display: block; font-size: 9.5px; font-weight: 800;
+  letter-spacing: .13em; text-transform: uppercase;
+  color: #FFB870;
+}
+
+.kop-angka strong {
+  display: block; font-size: 26px; font-weight: 800;
+  line-height: 1.08; letter-spacing: -.02em; color: #fff;
+}
+
+.kop-angka em {
+  display: block; font-style: normal; font-size: 10px;
+  color: rgba(255,255,255,.6);
+}
+
+.kop-sisi {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 1.4rem;
+  padding: .65rem .3rem;
+}
+
+.kop-sisi-butir small {
+  display: block; font-size: 10px; color: rgba(255,255,255,.62);
+}
+
+.kop-sisi-butir strong {
+  display: block; font-size: 15px; font-weight: 800;
+  line-height: 1.15; color: #fff;
+}
+
+.kop-sisi-baik  { color: #8FE3BE; }
+.kop-sisi-ingat { color: #F6D488; }
+.kop-sisi-gawat { color: #F5A9A9; }
+
+@media (max-width: 640px) {
+  .kop-angka strong { font-size: 21px; }
+  .kop-sisi { gap: 1rem; }
+}
+
 .kop-kanan {
   display: flex;
   flex-direction: column;
@@ -331,6 +443,72 @@ withDefaults(defineProps<{
 @media (max-width: 640px) {
   .kop { min-height: 0; }
   .kop-tagline { display: none; }
-  .kop-kanan { align-items: flex-start; margin-left: 0; }
+  .kop-angka-baris {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: .7rem;
+  margin-top: .9rem;
+}
+
+.kop-angka {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  border-radius: .9rem;
+  padding: .65rem .95rem .7rem;
+  background: rgba(255,255,255,.11);
+  border: 1px solid rgba(255,255,255,.15);
+  backdrop-filter: blur(3px);
+}
+
+.kop-angka-ikon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; border-radius: .7rem; flex: none;
+  background: rgba(245,124,0,.26); color: #FFB870;
+}
+
+.kop-angka-ikon svg { width: 19px; height: 19px; }
+
+.kop-angka small {
+  display: block; font-size: 9.5px; font-weight: 800;
+  letter-spacing: .13em; text-transform: uppercase;
+  color: #FFB870;
+}
+
+.kop-angka strong {
+  display: block; font-size: 26px; font-weight: 800;
+  line-height: 1.08; letter-spacing: -.02em; color: #fff;
+}
+
+.kop-angka em {
+  display: block; font-style: normal; font-size: 10px;
+  color: rgba(255,255,255,.6);
+}
+
+.kop-sisi {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 1.4rem;
+  padding: .65rem .3rem;
+}
+
+.kop-sisi-butir small {
+  display: block; font-size: 10px; color: rgba(255,255,255,.62);
+}
+
+.kop-sisi-butir strong {
+  display: block; font-size: 15px; font-weight: 800;
+  line-height: 1.15; color: #fff;
+}
+
+.kop-sisi-baik  { color: #8FE3BE; }
+.kop-sisi-ingat { color: #F6D488; }
+.kop-sisi-gawat { color: #F5A9A9; }
+
+@media (max-width: 640px) {
+  .kop-angka strong { font-size: 21px; }
+  .kop-sisi { gap: 1rem; }
+}
+
+.kop-kanan { align-items: flex-start; margin-left: 0; }
 }
 </style>

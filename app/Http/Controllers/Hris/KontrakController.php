@@ -50,6 +50,27 @@ class KontrakController extends Controller
             'judul'    => 'HRIS — Kontrak Kerja',
             'subjudul' => 'PKWT dan PKWTT, beserta rantai perpanjangan dan batasnya.',
 
+            /* HEADLINE-nya "berjalan", bukan "melanggar". Angka
+               pelanggaran memang yang paling mendesak, tetapi ia nol
+               pada perusahaan yang tertib — dan kop yang berbunyi
+               "0" sebagai angka utamanya terbaca seperti halaman yang
+               belum punya data. Yang berjalan selalu ada, dan
+               pelanggarannya berdiri di sebelahnya dengan nada merah. */
+            'kop' => [
+                'angka' => [
+                    'label'   => 'Kontrak berjalan',
+                    'nilai'   => (string) $semua->where('status', 'berjalan')->count(),
+                    'catatan' => 'dari '.$semua->count().' kontrak tercatat',
+                ],
+                'sisi' => [
+                    ['Sudah berubah demi hukum',
+                        (string) count(array_filter($temuan, fn ($t) => $t['berat'] === 'gawat')),
+                        count(array_filter($temuan, fn ($t) => $t['berat'] === 'gawat')) > 0 ? 'gawat' : null],
+                    ['Berakhir 60 hari', (string) $akanBerakhir->count(),
+                        $akanBerakhir->count() > 0 ? 'ingat' : null],
+                ],
+            ],
+
             'baris' => $semua->map(fn (Kontrak $k) => $this->baris($k))->values(),
 
             'temuan' => $temuan,

@@ -172,6 +172,9 @@ class HandleInertiaRequests extends Middleware
                yang dikerjakan orang berbeda. */
             'semboyan' => $aktif['semboyan'] ?? null,
 
+            /* Kutipan penutup halaman, juga sekali per modul. */
+            'kutipan' => $aktif['kutipan'] ?? null,
+
             /* Alamat akar modul, untuk remah roti di kop. */
             'akar' => ($r = Menu::ruteAwal($aktif)) ? route($r) : null,
         ];

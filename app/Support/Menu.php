@@ -31,6 +31,7 @@ final class Menu
     'dasbor' => [
       'label' => 'Dasbor',
       'semboyan' => 'Everything At A Glance',
+      'kutipan' => 'Yang terukur dapat diperbaiki; yang tidak tercatat tidak pernah terjadi.',
       'icon'  => 'M4 13h6V4H4v9Zm10 7h6v-9h-6v9ZM4 20h6v-4H4v4Zm10-11h6V4h-6v5Z',
       'groups' => [
         '' => [
@@ -45,6 +46,7 @@ final class Menu
     'personalia' => [
       'label' => 'Personalia',
       'semboyan' => 'People First Always',
+      'kutipan' => 'Orang bukan sumber daya yang dipakai, melainkan orang yang harus pulang.',
       'icon'  => 'M12 12.2a4.1 4.1 0 1 0 0-8.2 4.1 4.1 0 0 0 0 8.2Zm-7.5 8c0-3.5 3.4-5.6 7.5-5.6s7.5 2.1 7.5 5.6',
       'groups' => [
         '' => [
@@ -58,6 +60,7 @@ final class Menu
     'lms' => [
       'label' => 'Learning Center',
       'semboyan' => 'Learn Before You Lead',
+      'kutipan' => 'Yang tidak pernah diajarkan tidak dapat dituntut untuk dipatuhi.',
       'icon'  => 'M12 4 3 8l9 4 9-4-9-4zM7 10.5V15c0 1.3 2.7 2.3 5 2.3s5-1 5-2.3v-4.5',
       'groups' => [
         '' => [
@@ -86,6 +89,7 @@ final class Menu
     'miners' => [
       'label' => 'Miners',
       'semboyan' => 'Fit To Work Today',
+      'kutipan' => 'Tidak ada pekerjaan yang begitu mendesak sampai boleh dikerjakan orang yang tidak layak.',
 
       /* Palet Safe Track — pasir, teal, coral — bukan navy-jingga milik
          seluruh aplikasi. Modul ini dan Investigasi mengurus dokumen
@@ -217,6 +221,7 @@ final class Menu
     'hris' => [
       'label' => 'HRIS',
       'semboyan' => 'People Drive Progress',
+      'kutipan' => 'Orang yang tepat, di tempat yang tepat, pada waktu yang tepat.',
       'tema'  => 'safetrack',
       'icon'  => 'M17 20h5v-2a3 3 0 0 0-5.36-1.87M17 20H7m10 0v-2c0-.66-.13-1.3-.36-1.87m0 0a5 5 0 0 0-9.28 0M7 20H2v-2a3 3 0 0 1 5.36-1.87M7 20v-2c0-.66.13-1.3.36-1.87m0 0a5 5 0 0 1 9.28 0M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm6 3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM7 10a2 2 0 1 1-4 0 2 2 0 0 1 4 0z',
       'groups' => [
@@ -269,6 +274,7 @@ final class Menu
     'investigasi' => [
       'label' => 'Investigasi',
       'semboyan' => 'Never Twice The Same',
+      'kutipan' => 'Yang dicari bukan siapa yang salah, melainkan apa yang membuatnya mungkin.',
       'tema'  => 'safetrack',
       'icon'  => 'M21 21l-5.2-5.2M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z',
       'groups' => [
@@ -294,6 +300,7 @@ final class Menu
     'pjp' => [
       'label' => 'Perusahaan Jasa',
       'semboyan' => 'Proven On Paper',
+      'kutipan' => 'Tanggung jawab keselamatan tidak ikut berpindah bersama pekerjaannya.',
       'tema'  => 'safetrack',
       'icon'  => 'M4 21h9M6 21V5a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v6M9 8h1M9 11.5h1M14.5 17.5l2.2 2.2 4.3-4.3',
       'groups' => [
@@ -309,6 +316,7 @@ final class Menu
     'tpkkp' => [
       'label' => 'Safety Maturity Level',
       'semboyan' => 'Measured Not Assumed',
+      'kutipan' => 'Angka yang jujur lebih berguna daripada angka yang bagus.',
       'icon'  => 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6',
       'groups' => [
         'Penilaian' => [
@@ -333,6 +341,7 @@ final class Menu
     'hazrep' => [
       'label' => 'Hazard & Inspeksi',
       'semboyan' => 'See It Say It',
+      'kutipan' => 'Bahaya yang dilaporkan sudah setengah dikendalikan.',
       'icon'  => 'M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z',
       'groups' => [
         'Hazard Report' => [
@@ -356,6 +365,7 @@ final class Menu
     'ko' => [
       'label' => 'Keselamatan Operasi',
       'semboyan' => 'Zero Is The Target',
+      'kutipan' => 'Nol kecelakaan bukan keberuntungan yang berulang, melainkan sistem yang bekerja.',
       'icon'  => 'M12 3l7.5 4v5c0 4.4-3.1 8.5-7.5 9.7C7.6 20.5 4.5 16.4 4.5 12V7L12 3zm-1.1 11.4l-2.2-2.2-1.3 1.4 3.5 3.5 6-6-1.4-1.4-4.6 4.7z',
       'groups' => [
         'Monitoring SPIP' => [
@@ -377,6 +387,7 @@ final class Menu
     'smkp' => [
       'label' => 'Audit SMKP',
       'semboyan' => 'Systems That Hold',
+      'kutipan' => 'Sistem yang hanya ada di dokumen akan gagal pada hari ia paling dibutuhkan.',
       'icon'  => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
       // Menu mengikuti tahapan audit, bukan satu daftar rata. Butir pada
       // kelompok "Tahap" dan "Berkas" disalurkan ke periode yang sedang
@@ -434,6 +445,7 @@ final class Menu
     'energi' => [
       'label' => 'Energy Performance',
       'semboyan' => 'Every Watt Counted',
+      'kutipan' => 'Energi yang paling murah adalah energi yang tidak jadi dipakai.',
       'icon'  => 'M13 2 4 14h7l-1 8 10-13h-7l0-7Z',
       'groups' => [
         'Pantau' => [
@@ -462,6 +474,7 @@ final class Menu
     'konservasi' => [
       'label' => 'Konservasi Minerba',
       'semboyan' => 'Take Only What Lasts',
+      'kutipan' => 'Cadangan yang ditinggalkan hari ini adalah tambang bagi yang datang kemudian.',
       'icon'  => 'M12.8 2.6a2 2 0 0 0-1.6 0L2.6 6.5a1 1 0 0 0 0 1.8l8.6 3.9a2 2 0 0 0 1.6 0l8.6-3.9a1 1 0 0 0 0-1.8ZM2 12.4a1 1 0 0 0 .6.9l8.6 3.9a2 2 0 0 0 1.6 0l8.6-3.9a1 1 0 0 0 .6-.9M2 17.2a1 1 0 0 0 .6.9l8.6 3.9a2 2 0 0 0 1.6 0l8.6-3.9a1 1 0 0 0 .6-.9',
       'groups' => [
         'Pengawasan' => [
@@ -474,6 +487,7 @@ final class Menu
     'operasi' => [
       'label' => 'Mine Operations',
       'semboyan' => 'Steady Every Shift',
+      'kutipan' => 'Produksi yang dikejar dengan memotong jalan selalu dibayar di tempat lain.',
       'icon'  => 'm3 6.5 6-3 6 3 6-3v14l-6 3-6-3-6 3zM9 3.5v14M15 6.5v14',
       'groups' => [
         'Control Tower' => [
@@ -495,6 +509,7 @@ final class Menu
     'air' => [
       'label' => 'Water & Dewatering',
       'semboyan' => 'Clean Water Downstream',
+      'kutipan' => 'Yang mengalir ke hilir adalah yang kita kerjakan di hulu.',
       'icon'  => 'M12 2.7s5.5 6 5.5 9.8a5.5 5.5 0 1 1-11 0C6.5 8.7 12 2.7 12 2.7Z',
       'groups' => [
         'Pengawasan' => [
@@ -510,6 +525,7 @@ final class Menu
     'lingkungan' => [
       'label' => 'Lingkungan & Reklamasi',
       'semboyan' => 'Leave It Better',
+      'kutipan' => 'Lahan dipinjam dari yang akan menempatinya sesudah kita.',
       'icon'  => 'M20 4c0 9-5.5 13-11 13a5 5 0 0 1-1.6-.3C6 15.6 5 13.4 5 11 5 6.6 10 4 20 4ZM4 20c2.5-4.5 6-7.5 11-9.5',
       'groups' => [
         'Pengawasan' => [
@@ -526,6 +542,7 @@ final class Menu
     'peledakan' => [
       'label' => 'Drill & Blast',
       'semboyan' => 'Precision Under Pressure',
+      'kutipan' => 'Ketelitian sebelum ledakan adalah satu-satunya kendali yang kita punya.',
       'icon'  => 'M12 2.5 9.5 9 3 11.5 9.5 14l2.5 6.5 2.5-6.5 6.5-2.5L14.5 9Z',
       'groups' => [
         'Perencanaan' => [
@@ -544,6 +561,7 @@ final class Menu
     'angkutan' => [
       'label' => 'Dispatch & Hauling',
       'semboyan' => 'Safe Load Safe Road',
+      'kutipan' => 'Muatan yang selamat sampai adalah muatan yang dimuat dengan benar.',
       'icon'  => 'M2.5 16.5V7a1 1 0 0 1 1-1h9v10.5m0 0h-9m9 0h2m6.5 0h-2m2 0V12l-2.5-3.5H15m6 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm-12.5 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z',
       'groups' => [
         'Pengawasan' => [
@@ -560,6 +578,7 @@ final class Menu
     'biaya' => [
       'label' => 'Pengendalian Biaya',
       'semboyan' => 'Every Rupiah Traced',
+      'kutipan' => 'Biaya keselamatan selalu lebih murah daripada harga kecelakaan.',
       'icon'  => 'M12 2.5v19M15.5 7.2c-.6-1.4-2-2.2-3.7-2.2-2.2 0-3.9 1.2-3.9 3s1.5 2.6 4 3.2c2.7.6 4.3 1.5 4.3 3.4 0 2-1.8 3.3-4.2 3.3-2 0-3.5-.9-4.1-2.4',
       'groups' => [
         'Pengawasan' => [
@@ -576,6 +595,7 @@ final class Menu
     'izin' => [
       'label' => 'Izin Kerja Aman',
       'semboyan' => 'Cleared Before Started',
+      'kutipan' => 'Izin kerja bukan formalitas; ia janji bahwa bahayanya sudah diperiksa.',
       'icon'  => 'M9 12.5l2 2 4.5-4.5M8.5 4.5h7a1 1 0 0 1 1 1v1h1.5a2 2 0 0 1 2 2v10.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2H7.5v-1a1 1 0 0 1 1-1Z',
       'groups' => [
         'Pengawasan' => [
@@ -592,6 +612,7 @@ final class Menu
     'geoteknik' => [
       'label' => 'Kestabilan Lereng',
       'semboyan' => 'Ground You Can Trust',
+      'kutipan' => 'Lereng memberi peringatan sebelum runtuh — bagi yang memantaunya.',
       'icon'  => 'M2.5 19.5h19L15 8l-3.2 5.2L9.4 9.8ZM9.4 9.8 5.6 4.5 2.5 9',
       'groups' => [
         'Pengawasan' => [
@@ -607,6 +628,7 @@ final class Menu
     'maintenance' => [
       'label' => 'Maintenance',
       'semboyan' => 'Fixed Before It Fails',
+      'kutipan' => 'Alat yang dirawat tepat waktu tidak pernah berhenti pada waktu yang salah.',
       'icon'  => 'M14.6 6.3a1 1 0 0 0 0 1.4l1.7 1.7a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9l-3.8 3.8Z',
       'groups' => [
         'Pengawasan' => [
@@ -623,6 +645,7 @@ final class Menu
     'meh' => [
       'label' => 'Mining Engineering',
       'semboyan' => 'Designed To Last',
+      'kutipan' => 'Rancangan yang baik menghilangkan bahaya sebelum ada yang harus menghindarinya.',
       'icon'  => 'M3.5 3.5h6.5v8H3.5zM14 3.5h6.5v5H14zM14 12.5h6.5v8H14zM3.5 16h6.5v4.5H3.5z',
       'groups' => [
         'Operasi' => [
@@ -646,6 +669,7 @@ final class Menu
     'gudang' => [
       'label' => 'Gudang & Penyimpanan',
       'semboyan' => 'Right Part Right Time',
+      'kutipan' => 'Suku cadang yang ada tetapi tidak ditemukan sama saja dengan tidak ada.',
       'icon'  => 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
       'groups' => [
         'Persediaan' => [
@@ -666,6 +690,7 @@ final class Menu
     'dokumen' => [
       'label' => 'ISO & Dokumen',
       'semboyan' => 'One Source Of Truth',
+      'kutipan' => 'Prosedur yang tidak dapat ditemukan tidak dapat diikuti.',
       'icon'  => 'M7 3h7l4 4v14H7a1 1 0 01-1-1V4a1 1 0 011-1zM14 3v4h4M9.5 12h5M9.5 15.5h3',
       // Dua sisi yang saling melengkapi: register menjawab dokumen apa yang
       // dipunya, ISO menjawab klausul mana yang belum punya dokumen.
@@ -690,6 +715,7 @@ final class Menu
     'pembelian' => [
       'label' => 'Pembelian',
       'semboyan' => 'Better Solutions Brighter Tomorrow',
+      'kutipan' => 'Yang dibeli murah tetapi tidak sesuai selalu dibayar dua kali.',
       'icon'  => 'M6.5 7.5h11l1.5 10.5a2 2 0 0 1-2 2.3H7a2 2 0 0 1-2-2.3L6.5 7.5Zm2.5 0V6a3 3 0 0 1 6 0v1.5',
       'groups' => [
         '' => [
@@ -703,6 +729,7 @@ final class Menu
     'admin' => [
       'label' => 'Administrasi',
       'semboyan' => 'Reliable System For A Safer Tomorrow',
+      'kutipan' => 'Sistem yang andal mendukung operasional tambang yang aman dan berkelanjutan.',
       'icon'  => 'M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Zm7.4-.9a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5v.2a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1h.2a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1Z',
       'admin' => true,
       'groups' => [
