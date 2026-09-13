@@ -210,10 +210,24 @@ final class KondisiSitus
     {
         if (!Schema::hasTable('mine_map_layers')) return null;
 
+        /* Diurutkan menurut `luas_m2` — nama kolom yang benar-benar ada
+           pada tabel ini. Sempat tertulis `luas_ha`, yang milik tabel
+           reklamasi, dan kekeliruan itu LOLOS SELURUH UJI.
+
+           Sebabnya perbedaan dialek yang tidak terlihat dari kode.
+           Laravel mengutip pengenal dengan kutip ganda pada SQLite, dan
+           SQLite memperlakukan kutip ganda yang tidak cocok dengan kolom
+           mana pun sebagai STRING BIASA — `order by "luas_ha"` menjadi
+           pengurutan terhadap tetapan, yang berhasil tanpa berefek. MySQL
+           memakai backtick dan menolaknya: "Unknown column 'luas_ha' in
+           'order clause'".
+
+           Akibatnya di produksi seluruh halaman awal modul menjawab 500,
+           sementara di SQLite semuanya hijau. */
         $layer = MineMapLayer::query()
             ->where('company_id', $perusahaan->id)
             ->whereNotNull('titik_lat')->whereNotNull('titik_lon')
-            ->orderByDesc('luas_ha')
+            ->orderByDesc('luas_m2')
             ->first(['titik_lat', 'titik_lon']);
 
         if (!$layer) return null;
