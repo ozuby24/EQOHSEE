@@ -13,7 +13,6 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import type { PropBersama } from '../types';
 import KopHalaman from '../Components/KopHalaman.vue';
-import SampulModul from '../Components/SampulModul.vue';
 import KutipanKaki from '../Components/KutipanKaki.vue';
 
 /*
@@ -755,11 +754,12 @@ function keluar() {
         </div>
 
         <div class="max-w-[1400px] mx-auto space-y-4">
-          <SampulModul v-if="sampul" :sampul="sampul" />
-
           <KopHalaman v-if="!kopSendiri" :judul="judul" :subjudul="subjudul ?? null"
                       :label="menu?.label ?? null" :tagline="menu?.semboyan ?? null"
                       :remah="remahKop"
+                      :gambar="sampul?.gambar ?? null" :webp="sampul?.webp ?? null"
+                      :keterangan="sampul?.keterangan ?? null"
+                      :kondisi="sampul?.kondisi ?? null"
                       :angka="kopIsi.angka ?? null" :sisi="kopIsi.sisi ?? []"
                       :kanan="kopIsi.kanan ?? null" :kanan-kecil="kopIsi.kananKecil ?? null"
                       :aksi="kopIsi.aksi ?? null"

@@ -189,6 +189,78 @@ class LapisanTampilanTest extends TestCase
             'Kerangka tidak lagi menggambar kop; seluruh halaman kehilangan kopnya sekaligus.');
     }
 
+    /**
+     * SATU pita berfoto di puncak halaman, bukan dua.
+     *
+     * Sampul modul — foto, geo tag, jam, dan cuaca — sempat berdiri
+     * sebagai bilahnya sendiri tepat di atas kop. Hasilnya dua pita
+     * berfoto bertumpuk setinggi hampir separuh layar sebelum satu baris
+     * isi pun terlihat, dan keduanya menjawab hal yang sama: di mana
+     * kita, sedang melihat apa. Pada halaman awal PJP nama modulnya
+     * bahkan tercetak empat kali dalam satu layar.
+     *
+     * Yang dijaga di sini bukan selera melainkan bentuknya: sampulnya
+     * masuk KE DALAM kop lewat prop, dan tidak ada komponen kedua yang
+     * menggambarnya sendiri. Kop sudah memiliki foto, tirai, dan aturan
+     * tingginya; pita kedua yang meniru ketiganya berarti dua tempat
+     * yang harus dijaga tetap sama selamanya.
+     */
+    public function test_kerangka_menggambar_satu_pita_berfoto(): void
+    {
+        $isi = file_get_contents(resource_path('js/Layouts/AppLayout.vue'));
+
+        $this->assertStringContainsString(':gambar="sampul', $isi,
+            'Sampul modul tidak lagi masuk ke dalam kop — fotonya hilang, '
+            .'atau digambar pita lain di luar kop.');
+
+        $this->assertStringNotContainsString('<SampulModul', $isi,
+            'Pita sampul terpisah kembali digambar di atas kop: dua pita berfoto '
+            .'bertumpuk, dan nama modulnya tercetak berkali-kali dalam satu layar.');
+    }
+
+    /**
+     * Garis aksen di bawah semboyan selebar TULISANNYA.
+     *
+     * Semula `width: 78%` — 78% dari kotak semboyan, bukan dari
+     * tulisannya. Keduanya hanya sama panjang bila semboyannya muat satu
+     * baris; begitu ia membungkus, kotaknya melebar sampai batas maksimum
+     * sementara barisnya tetap pendek. Terukur di peramban pada enam
+     * modul:
+     *
+     *   "Proven On Paper"        tulisan 197,2  garis 153,8   44 px kurang
+     *   "Clean Water Downstream" tulisan 148,0  garis 191,9   44 px lebih
+     *   "Systems That Hold"      tulisan 220,2  garis 171,7   49 px kurang
+     *
+     * Melesetnya ke DUA arah, jadi tidak ada satu pun kelipatan tetap
+     * yang membetulkan keduanya sekaligus — dan dari 27 semboyan modul
+     * yang terpanjang 36 karakter, sehingga "buat saja semuanya satu
+     * baris" juga bukan jalan keluar. Lebarnya karena itu diukur dari
+     * kotak baris tulisannya dan dikirim lewat peubah CSS.
+     *
+     * Diuji sebagai gaya, bukan sebagai piksel: pengukuran piksel yang
+     * sesungguhnya menuntut peramban, dan uji yang menuntut peramban akan
+     * dimatikan orang pada hari ia mulai rewel. Yang dijaga di sini
+     * bentuk aturannya — dan bentuk itulah yang dahulu salah.
+     */
+    public function test_garis_semboyan_selebar_tulisannya(): void
+    {
+        $isi = file_get_contents(resource_path('js/Components/KopHalaman.vue'));
+
+        $i = strpos($isi, '.kop-tagline::after');
+        $this->assertNotFalse($i, 'Aturan .kop-tagline::after hilang — garis aksennya tidak lagi digambar.');
+
+        $blok = substr($isi, $i, strpos($isi, '}', $i) - $i);
+
+        $this->assertStringContainsString('var(--kop-garis', $blok,
+            'Garis semboyan tidak lagi memakai lebar hasil ukur. Lebar tetap atau '
+            .'persentase hanya cocok pada semboyan satu baris; yang membungkus akan '
+            .'meleset puluhan piksel, dan ke dua arah.');
+
+        $this->assertDoesNotMatchRegularExpression('/width:\s*\d+(\.\d+)?%/', $blok,
+            'Lebar persentase kembali dipakai pada garis semboyan — itu persentase '
+            .'dari KOTAKNYA, bukan dari tulisannya.');
+    }
+
     public function test_tidak_ada_halaman_yang_menggambar_kopnya_sendiri(): void
     {
         $liar = [];

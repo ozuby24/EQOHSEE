@@ -16,6 +16,19 @@ import { computed } from 'vue';
  * pekerjaan di lereng dan jalan angkut; menyamakan warnanya dengan
  * gerimis menghapus perbedaan itu tepat di tempat orang membacanya
  * sekilas.
+ *
+ * `cuaca` boleh NULL, dan yang digambar untuk null bukan ketiadaan.
+ *
+ * Sebelumnya pemanggilnya menyembunyikan kartu ini seluruhnya bila
+ * situsnya belum mencatat hujan. Akibatnya bukan tampilan yang lebih
+ * bersih melainkan fitur yang tidak pernah terlihat: pemasangan yang
+ * belum pernah mengisi penirisan tidak punya cara mengetahui bahwa
+ * lencana cuaca ada, apalagi dari mana isinya datang.
+ *
+ * Yang tetap dipegang: TIDAK BOLEH mengaku "Cerah" tanpa catatan.
+ * Lencana itu terbaca sebagai bacaan alat, dan orang mengambil
+ * keputusan lapangan dari bacaan alat. Karena itu keadaan kosongnya
+ * menyebut dirinya kosong — bukan menebak, bukan menghilang.
  */
 const props = defineProps<{
   cuaca: {
@@ -26,7 +39,7 @@ const props = defineProps<{
     skala: number;
     tanggal: string | null;
     hariIni: boolean;
-  };
+  } | null;
 }>();
 
 /**
@@ -46,13 +59,13 @@ const AKSEN: Record<string, string> = {
   hujan_sangat_lebat: '#F87171',
 };
 
-const aksen = computed(() => AKSEN[props.cuaca.kunci] ?? '#D6D3D1');
+const aksen = computed(() => AKSEN[props.cuaca?.kunci ?? ''] ?? '#D6D3D1');
 
-const cerah = computed(() => props.cuaca.kunci === 'cerah');
+const cerah = computed(() => props.cuaca?.kunci === 'cerah');
 
 /** Kotak meter: yang sudah terlewati ikut menyala, sisanya redup. */
 const kotak = computed(() =>
-  Array.from({ length: props.cuaca.skala }, (_, i) => i <= props.cuaca.tingkat));
+  Array.from({ length: props.cuaca?.skala ?? 0 }, (_, i) => i <= (props.cuaca?.tingkat ?? 0)));
 
 /** Tiga tetes dengan tundaan berbeda supaya tidak jatuh serentak. */
 const TETES = [
@@ -63,7 +76,24 @@ const TETES = [
 </script>
 
 <template>
-  <div class="eq-cuaca flex items-center gap-3 rounded-xl px-3 py-2"
+  <!-- Belum ada catatan: disebut apa adanya, bukan ditebak dan bukan
+       dihilangkan. Kalimatnya menyebut DARI MANA isinya datang, sebab
+       "belum ada data" tanpa itu tidak dapat ditindaklanjuti siapa pun. -->
+  <div v-if="!props.cuaca" class="eq-cuaca flex items-center gap-2.5 rounded-xl px-3 py-2"
+       title="Lencana cuaca membaca curah hujan yang dicatat modul Penirisan">
+    <svg class="h-7 w-7 shrink-0" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.45)"
+         stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M7.4 15.6a3.9 3.9 0 0 1 .5-7.8 5.2 5.2 0 0 1 9.9 1.5 3.2 3.2 0 0 1-.7 6.3Z"/>
+      <path d="M9.5 19.2 8.7 20.8M14.5 19.2l-.8 1.6"/>
+    </svg>
+
+    <div class="min-w-0 leading-tight">
+      <p class="text-[11px] font-bold text-white/75">Belum ada catatan hujan</p>
+      <p class="mt-0.5 text-[9.5px] text-white/45">Diisi dari modul Penirisan</p>
+    </div>
+  </div>
+
+  <div v-else class="eq-cuaca flex items-center gap-3 rounded-xl px-3 py-2"
        :title="`Curah hujan tercatat ${props.cuaca.hujanMm} mm — ${props.cuaca.label}`">
     <!-- Ikon. Matahari berdenyut pelan, hujan menjatuhkan tetesnya;
          keduanya mati pada perangkat yang meminta gerak dikurangi. -->
