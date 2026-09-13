@@ -143,9 +143,29 @@ class SmkpAudit extends Model
         return $out;
     }
 
+    /**
+     * Hari kerja audit, dengan angka kinerja ikut dibawa.
+     *
+     * Kinerja tersimpan pada kolomnya sendiri, tetapi empat dari tujuh
+     * faktor penyesuaian dihitung darinya. Memanggil SmkpTahap dengan
+     * permulaan saja membuat keempatnya selalu jatuh ke centang manual —
+     * hitungannya ada, sumbernya tidak pernah sampai.
+     */
     public function mandays(): array
     {
-        return SmkpTahap::mandays((array) ($this->permulaan ?? []));
+        $p = (array) ($this->permulaan ?? []);
+        $p['kinerja'] = (array) ($this->kinerja ?? []);
+
+        return SmkpTahap::mandays($p);
+    }
+
+    /** Tujuh faktor penyesuaian beserta alasan bagi yang dihitung. */
+    public function faktorTerhitung(): array
+    {
+        return SmkpTahap::faktorTerhitung(
+            (array) ($this->kinerja ?? []),
+            (array) (($this->permulaan ?? [])['nasional'] ?? []),
+        );
     }
 
     public function rekapKecukupan(): array

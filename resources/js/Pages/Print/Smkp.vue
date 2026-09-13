@@ -16,6 +16,11 @@ const props = defineProps<{
   kelayakan?: Record<string, string>;
   faktor?: Record<string, string>;
   pengurang?: Record<string, string>;
+  /* Jawaban tujuh faktor penyesuaian yang BERLAKU — hitungan mengalahkan
+     centang — beserta alasan bagi yang terhitung. */
+  berlaku?: Record<string, boolean>;
+  terhitung?: Record<string, { nilai: boolean | null; alasan: string; terkunci: boolean }>;
+  nasional?: Record<string, { label: string }>;
   selaras?: Array<{ kunci: string; judul: string; selaras: boolean; ket: string }>;
   tim?: Array<Record<string, any>>;
   kinerja?: Record<string, any>;
@@ -128,8 +133,22 @@ const total = computed(() => props.totalLembar || (
         <h3 class="font-bold text-[13px] mb-2">D. Faktor Penyesuaian dan Kecukupan Dokumentasi</h3>
         <!-- Uraian faktornya, bukan kunci ruasnya. Daftar ini datang sebagai
              peta kunci → kalimat, jadi yang digambar nilainya. -->
-        <table class="w-full text-[11.5px] mb-5"><thead><tr class="bg-stone-100 text-left"><th class="p-2">Faktor penambah hari</th><th class="p-2 w-24">Hasil</th></tr></thead><tbody>
-          <tr v-for="(teks, key) in props.faktor || {}" :key="key" class="border-b border-stone-100"><td class="p-2">{{ teks }}</td><td class="p-2">{{ permulaan.faktor?.[key] ? 'Ya' : 'Tidak' }}</td></tr>
+        <!-- YANG TERCETAK ADALAH JAWABAN YANG BERLAKU, bukan centang mentah.
+             Empat dari tujuh butir dihitung dari angka kinerja, dan hitungan
+             mengalahkan centang. Mencetak centangnya membuat lembar ini
+             menyangkal mandays yang tercetak tepat di atasnya — misalnya
+             "Tidak" pada faktor kecelakaan, di bawah tabel yang sudah
+             menambahnya satu hari. -->
+        <table class="w-full text-[11.5px] mb-5"><thead><tr class="bg-stone-100 text-left">
+          <th class="p-2 w-8">No</th><th class="p-2">Kondisi</th>
+          <th class="p-2 w-12 text-center">Ya</th><th class="p-2 w-12 text-center">Tidak</th>
+        </tr></thead><tbody>
+          <tr v-for="(teks, key, i) in props.faktor || {}" :key="key" class="border-b border-stone-100">
+            <td class="p-2 align-top">{{ Number(i) + 1 }}</td>
+            <td class="p-2">{{ teks }}<span v-if="props.terhitung?.[key]?.terkunci" class="block text-[10px] text-stone-500 mt-0.5">{{ props.terhitung[key].alasan }}</span></td>
+            <td class="p-2 text-center align-top">{{ props.berlaku?.[key] ? '√' : '' }}</td>
+            <td class="p-2 text-center align-top">{{ props.berlaku?.[key] ? '' : '√' }}</td>
+          </tr>
         </tbody></table>
         <table class="w-full text-[11.5px] mb-5"><thead><tr class="bg-stone-100 text-left"><th class="p-2">Faktor pengurang hari</th><th class="p-2 w-24">Hasil</th></tr></thead><tbody>
           <tr v-for="(teks, key) in props.pengurang || {}" :key="key" class="border-b border-stone-100"><td class="p-2">{{ teks }}</td><td class="p-2">{{ permulaan.pengurang?.[key] ? 'Ya' : 'Tidak' }}</td></tr>

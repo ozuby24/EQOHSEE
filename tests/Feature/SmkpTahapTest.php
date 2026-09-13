@@ -1016,11 +1016,21 @@ class SmkpTahapTest extends TestCase
         /* Dibandingkan nilainya, bukan tipenya: JSON memulangkan 9.0
            sebagai 9, dan menuntut kesamaan tipe di sini hanya menguji
            perilaku json_encode. */
+        $rumus = SmkpTahap::mandays(['jumlah_pekerja' => 1098, 'kelas_risiko' => 'Tinggi',
+                                     'tim' => ['Auditor Satu', 'Auditor Dua']]);
+
         $this->assertEquals(
-            SmkpTahap::mandays(['jumlah_pekerja' => 1098, 'kelas_risiko' => 'Tinggi',
-                                'tim' => ['Auditor Satu', 'Auditor Dua']]),
-            $h,
+            $rumus,
+            array_intersect_key($h, $rumus),
             'Jawabannya harus datang dari rumus yang sama dengan yang menyimpannya.',
+        );
+
+        /* Dan membawa serta alasan tiap faktor yang dapat dihitung, supaya
+           kartunya tidak hanya berubah tetapi juga menerangkan mengapa. */
+        $this->assertArrayHasKey('terhitung', $h);
+        $this->assertSame(
+            ['kecelakaan', 'penyakit', 'kptk', 'berbahaya'],
+            array_keys($h['terhitung']),
         );
 
         /* Dan tidak boleh menyimpan apa pun: kartunya berubah saat
@@ -1039,5 +1049,165 @@ class SmkpTahapTest extends TestCase
         $this->get(route('smkp.tahap1', $a))->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->where('tautan.mandays', route('smkp.tahap1.mandays', $a)));
+    }
+    /* ═══════════ Tujuh faktor penyesuaian ═══════════
+     *
+     * Formulir Berita Acara Lampiran II menuntut tujuh kondisi, bukan enam.
+     * Yang terpasang sebelumnya kehilangan dua di antaranya — tingkat
+     * keparahan penyakit (ASR/MFR) dan kejadian akibat penyakit tenaga
+     * kerja — dan menambahkan satu yang tidak ada dalam ketentuan mana
+     * pun, "kompleksitas proses/teknologi tinggi".
+     *
+     * Akibatnya bukan kosmetik: dua kondisi yang seharusnya menambah hari
+     * kerja audit tidak pernah dapat ditandai, dan satu kondisi karangan
+     * dapat menambahnya tanpa dasar hukum.
+     */
+
+    public function test_faktor_penyesuaian_tujuh_butir_sesuai_lampiran_ii(): void
+    {
+        $f = SmkpTahap::faktorPenyesuaian();
+
+        $this->assertSame(
+            ['jarak', 'metode', 'pengolahan', 'kecelakaan', 'penyakit', 'berbahaya', 'kptk'],
+            array_keys($f),
+            'Urutan dan jumlahnya mengikuti formulir Dasar Faktor Penyesuaian.',
+        );
+
+        $this->assertStringContainsString('absence severity rate', $f['penyakit']);
+        $this->assertStringContainsString('morbidity frequency rate', $f['penyakit']);
+        $this->assertStringContainsString('penyakit akibat kerja', $f['kptk']);
+
+        $this->assertArrayNotHasKey('kompleksitas', $f,
+            'Kondisi di luar ketentuan tidak boleh menagih hari kerja auditor.');
+    }
+
+    public function test_faktor_kecelakaan_dihitung_terhadap_rata_rata_nasional(): void
+    {
+        $h = SmkpTahap::faktorTerhitung(
+            ['fr' => '12', 'sr' => '0'],
+            ['fr' => '4', 'sr' => '90'],
+        );
+
+        $this->assertTrue($h['kecelakaan']['nilai'], 'FR 12 di atas nasional 4.');
+        $this->assertTrue($h['kecelakaan']['terkunci']);
+        $this->assertStringContainsString('FR 12 vs nasional 4', $h['kecelakaan']['alasan']);
+
+        $rendah = SmkpTahap::faktorTerhitung(
+            ['fr' => '1', 'sr' => '10'],
+            ['fr' => '4', 'sr' => '90'],
+        );
+
+        $this->assertFalse($rendah['kecelakaan']['nilai']);
+        $this->assertTrue($rendah['kecelakaan']['terkunci']);
+    }
+
+    /**
+     * Tanpa rata-rata nasional, keputusannya tetap milik auditor.
+     *
+     * Rata-rata nasional terbit tiap tahun dari instansi pembina sektor.
+     * Menganggap yang kosong sebagai nol membuat setiap angka perusahaan
+     * terbaca "di atas rata-rata" — termasuk nol berhadapan dengan nol.
+     */
+    public function test_rata_rata_nasional_kosong_tidak_mengunci_apa_pun(): void
+    {
+        $h = SmkpTahap::faktorTerhitung(['fr' => '12', 'sr' => '5', 'asr' => '3', 'mfr' => '2'], []);
+
+        $this->assertNull($h['kecelakaan']['nilai']);
+        $this->assertFalse($h['kecelakaan']['terkunci']);
+        $this->assertNull($h['penyakit']['nilai']);
+        $this->assertFalse($h['penyakit']['terkunci']);
+    }
+
+    public function test_faktor_penyakit_tenaga_kerja_dihitung_dari_kejadiannya(): void
+    {
+        $ada = SmkpTahap::faktorTerhitung(['kptk' => '0', 'pak' => '2'], []);
+        $this->assertTrue($ada['kptk']['nilai']);
+        $this->assertTrue($ada['kptk']['terkunci']);
+
+        $nihil = SmkpTahap::faktorTerhitung(['kptk' => '0', 'pak' => '0'], []);
+        $this->assertFalse($nihil['kptk']['nilai']);
+        $this->assertTrue($nihil['kptk']['terkunci']);
+
+        $belum = SmkpTahap::faktorTerhitung([], []);
+        $this->assertNull($belum['kptk']['nilai']);
+        $this->assertFalse($belum['kptk']['terkunci']);
+    }
+
+    /**
+     * "Serupa dan berulang" adalah penilaian, bukan hitungan.
+     *
+     * Angkanya hanya dapat memutuskan satu arah: di bawah dua kejadian,
+     * berulang mustahil benar. Dua ke atas diserahkan kepada auditor
+     * beserta angkanya, sebab serupa atau tidaknya tidak ada di dalam
+     * angka itu.
+     */
+    public function test_kejadian_berbahaya_hanya_dapat_dikunci_pada_tidak(): void
+    {
+        $satu = SmkpTahap::faktorTerhitung(['berbahaya' => '1'], []);
+        $this->assertFalse($satu['berbahaya']['nilai']);
+        $this->assertTrue($satu['berbahaya']['terkunci']);
+
+        $tiga = SmkpTahap::faktorTerhitung(['berbahaya' => '3'], []);
+        $this->assertNull($tiga['berbahaya']['nilai'],
+            'Tiga kejadian belum tentu serupa — auditor yang menilai.');
+        $this->assertFalse($tiga['berbahaya']['terkunci']);
+    }
+
+    /** Hitungan mengalahkan centang, dan centang mengisi yang tidak terhitung. */
+    public function test_faktor_yang_terhitung_mengalahkan_centang_auditor(): void
+    {
+        $berlaku = SmkpTahap::faktorBerlaku([
+            'kinerja'  => ['fr' => '1', 'sr' => '1', 'kptk' => '0', 'pak' => '0', 'berbahaya' => '0'],
+            'nasional' => ['fr' => '4', 'sr' => '90', 'asr' => '200', 'mfr' => '200'],
+            'faktor'   => ['kecelakaan' => true, 'kptk' => true, 'berbahaya' => true, 'jarak' => true],
+        ]);
+
+        $this->assertFalse($berlaku['kecelakaan'], 'Angkanya di bawah nasional; centangnya diabaikan.');
+        $this->assertFalse($berlaku['kptk'],       'Nihil kejadian; centangnya diabaikan.');
+        $this->assertFalse($berlaku['berbahaya'],  'Nol kejadian; berulang mustahil.');
+        $this->assertTrue($berlaku['jarak'],       'Jarak tidak ada di angka mana pun — auditor yang menjawab.');
+    }
+
+    /** Dan hari kerja audit ikut angkanya, bukan ikut kotak yang lupa dicentang. */
+    public function test_mandays_bertambah_oleh_faktor_yang_dihitung_tanpa_dicentang(): void
+    {
+        $isian = [
+            'jumlah_pekerja' => 15,
+            'kelas_risiko'   => 'Tinggi',
+            'tim'            => ['Auditor Satu'],
+            'kinerja'        => ['fr' => '12', 'sr' => '200', 'kptk' => '3', 'pak' => '0'],
+            'nasional'       => ['fr' => '4', 'sr' => '90'],
+            'faktor'         => [],   // tidak satu pun dicentang
+        ];
+
+        $m = SmkpTahap::mandays($isian);
+
+        // Tabel: 15 pekerja kelas Tinggi = 5 hari dasar.
+        $this->assertSame(5, $m['dasar']);
+        $this->assertSame(2, $m['penambah'], 'kecelakaan dan kptk terhitung benar.');
+        $this->assertSame(7, $m['total']);
+    }
+
+    /** Rata-rata nasional tersimpan bersama isian Tahap I. */
+    public function test_rata_rata_nasional_tersimpan_pada_tahap_satu(): void
+    {
+        $this->masuk();
+        $a = $this->audit();
+
+        $this->post(route('smkp.tahap1.simpan', $a), [
+            'permulaan' => [
+                'jumlah_pekerja' => 15,
+                'kelas_risiko'   => 'Tinggi',
+                'nasional'       => ['fr' => '4,1', 'sr' => '90', 'asr' => ' 120 ', 'mfr' => ''],
+            ],
+            'kinerja' => ['fr' => '12', 'sr' => '10'],
+        ])->assertRedirect();
+
+        $p = $a->fresh()->permulaan;
+
+        $this->assertSame(['fr' => '4,1', 'sr' => '90', 'asr' => '120', 'mfr' => ''], $p['nasional']);
+
+        /* Dan hari kerjanya ikut naik: FR 12 di atas nasional 4,1. */
+        $this->assertSame(1, $a->fresh()->mandays()['penambah']);
     }
 }

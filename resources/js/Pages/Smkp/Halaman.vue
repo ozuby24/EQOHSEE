@@ -65,6 +65,7 @@ const form = useForm<Record<string, any>>({ tahun: audit.value.tahun ?? new Date
 const tahapForm = useForm<Record<string, any>>({ permulaan: { faktor: {}, pengurang: {}, ...(audit.value.permulaan ?? {}) }, kinerja: { ...(audit.value.kinerja ?? {}) }, kecukupan: { ...(audit.value.kecukupan ?? {}) } });
 tahapForm.permulaan.faktor    ??= {};
 tahapForm.permulaan.pengurang ??= {};
+tahapForm.permulaan.nasional  ??= {};
 /* Selalu ada sekurang-kurangnya satu baris: baris pertama adalah Lead
    Auditor, dan daftar kosong tidak memberi tempat untuk mengetiknya. */
 if (!Array.isArray(tahapForm.permulaan.tim) || !tahapForm.permulaan.tim.length) tahapForm.permulaan.tim = [''];
@@ -88,6 +89,17 @@ if (!Array.isArray(tahapForm.permulaan.tim) || !tahapForm.permulaan.tim.length) 
 const mandaysHidup = ref<Record<string, any> | null>(null);
 const mandaysTampil = computed(() => mandaysHidup.value ?? props.mandays);
 
+/* Keputusan tiap faktor yang dapat dihitung, beserta alasannya. Yang
+   hidup mengalahkan yang tersimpan, seperti kartu mandays di atasnya. */
+const terhitung = computed<Record<string, any>>(
+  () => (mandaysHidup.value?.terhitung as Record<string, any>) ?? props.terhitung ?? {},
+);
+function kunci_(k: string) { return terhitung.value[k]?.terkunci === true; }
+function jawab(k: string) {
+  const h = terhitung.value[k];
+  return h?.terkunci ? h.nilai === true : !!tahapForm.permulaan.faktor[k];
+}
+
 let jedaMandays: ReturnType<typeof setTimeout> | undefined;
 let permintaanKe = 0;
 
@@ -109,6 +121,10 @@ async function hitungMandays() {
         permulaan: {
           tim: p.tim, jumlah_pekerja: p.jumlah_pekerja, jumlah_auditor: p.jumlah_auditor,
           kelas_risiko: p.kelas_risiko, faktor: p.faktor, pengurang: p.pengurang,
+          /* Kinerja ikut dikirim: empat dari tujuh faktor penyesuaian
+             dihitung darinya, dan tanpa itu keempatnya selalu jatuh ke
+             centang manual meskipun angkanya sudah terisi di atas. */
+          kinerja: tahapForm.kinerja, nasional: p.nasional,
         },
       }),
     });
@@ -130,6 +146,8 @@ watch(
     JSON.stringify(tahapForm.permulaan.tim ?? []),
     JSON.stringify(tahapForm.permulaan.faktor ?? {}),
     JSON.stringify(tahapForm.permulaan.pengurang ?? {}),
+    JSON.stringify(tahapForm.kinerja ?? {}),
+    JSON.stringify(tahapForm.permulaan.nasional ?? {}),
   ],
   () => {
     clearTimeout(jedaMandays);
@@ -257,9 +275,55 @@ function nilaiAwal(kode: string) { return { ...(audit.value.hasil?.[kode] ?? {})
           </p>
         </div>
 
+        <!-- Rata-rata nasional. TIDAK ADA ANGKA BAWAAN: ia terbit tiap
+             tahun dari instansi pembina sektor, dan tebakan yang dipasang
+             sebagai bawaan diam-diam menentukan dua faktor penyesuaian —
+             dua hari kerja auditor — pada tiap audit yang memakainya. -->
+        <div class="rounded-xl border border-stone-200 p-4 mt-5">
+          <h4 class="text-[12px] font-bold">Pembanding rata-rata nasional</h4>
+          <p class="text-[11px] text-stone-500 mt-1 leading-relaxed">
+            Diisi dari angka yang diterbitkan instansi pembina sektor untuk tahun
+            terakhir. Dibiarkan kosong, faktor kecelakaan dan faktor penyakit tetap
+            menjadi penilaian auditor — bukan dianggap nol.
+          </p>
+          <div class="grid gap-2 sm:grid-cols-2 mt-3">
+            <label v-for="(butir, kunci) in props.nasional ?? {}" :key="kunci" class="text-[12px]">
+              <span class="block">{{ butir.label }}</span>
+              <input v-model="tahapForm.permulaan.nasional[kunci]"
+                     class="mt-1 w-full rounded-lg border-stone-200 text-[12px]" placeholder="belum diketahui">
+            </label>
+          </div>
+        </div>
+
         <div class="grid gap-4 md:grid-cols-2 mt-5">
+          <!-- Empat dari tujuh butir sudah terjawab angka kinerja di atas.
+               Yang terjawab dikunci dan menerangkan dirinya; yang tidak
+               tetap milik auditor. Meminta auditor menilai ulang dengan
+               centang membuka celah yang tidak perlu ada: FR 12 berhadapan
+               dengan rata-rata nasional 4, kotaknya dibiarkan kosong, dan
+               audit berjalan dua hari lebih pendek tanpa satu pun tanda. -->
           <div><h4 class="text-[12px] font-bold">Faktor penambah hari</h4>
-            <label v-for="(teks, kunci) in props.faktor ?? {}" :key="kunci" class="flex gap-2 items-start text-[12px] mt-2"><input v-model="tahapForm.permulaan.faktor[kunci]" type="checkbox" class="mt-0.5 accent-[#F57C00]"><span>{{ teks }}</span></label></div>
+            <div v-for="(teks, kunci) in props.faktor ?? {}" :key="kunci" class="mt-2.5">
+              <label class="flex gap-2 items-start text-[12px]"
+                     :class="kunci_(String(kunci)) ? 'opacity-95' : ''">
+                <!-- `:checked` + `@change`, bukan v-model: yang terkunci
+                     harus memperlihatkan JAWABAN HITUNGAN, sementara
+                     v-model memaksa kotaknya mengikuti centang tersimpan.
+                     Yang terkunci juga `disabled`, jadi @change tidak
+                     pernah menyentuhnya. -->
+                <input type="checkbox" class="mt-0.5 accent-[#F57C00]"
+                       :checked="jawab(String(kunci))" :disabled="kunci_(String(kunci))"
+                       @change="tahapForm.permulaan.faktor[kunci] = ($event.target as HTMLInputElement).checked">
+                <span>{{ teks }}</span>
+              </label>
+              <p v-if="terhitung[kunci]?.alasan"
+                 class="text-[11px] mt-1 ml-6 leading-relaxed"
+                 :class="kunci_(String(kunci)) ? 'text-cam-lime-deep' : 'text-stone-400'">
+                <b v-if="kunci_(String(kunci))">{{ jawab(String(kunci)) ? 'Ya' : 'Tidak' }} — terhitung.</b>
+                {{ terhitung[kunci].alasan }}
+              </p>
+            </div>
+          </div>
           <!-- Tanpa daftar pengurang, mandays hanya dapat bertambah:
                perusahaan yang sistemnya matang dan auditnya bersih tetap
                ditagih hari sebanyak yang paling bermasalah. -->

@@ -6,12 +6,66 @@
  * tanggal-tanggalnya tercetak pada kop tiap berkas audit, jadi isian yang
  * kosong akan terlihat di lembar yang keluar dari printer.
  */
+import { ref, watch } from 'vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import type { HalamanFormPerusahaan } from '../../../types';
 
 const props = defineProps<HalamanFormPerusahaan>();
 
 const form = useForm<Record<string, any>>({ ...props.awal, logo: null as File | null });
+
+/* ── Dasar hari kerja audit SMKP ──
+ *
+ * Jumlah pekerja dan kelas risiko adalah sifat perusahaan, dan keduanya
+ * diisi di halaman ini. Konsekuensinya — berapa hari kerja yang dituntut
+ * sebuah audit SMKP — dulu baru terlihat berhalaman-halaman kemudian, di
+ * Tahap I audit, tempat angkanya harus diketik ulang dan karena itu dapat
+ * berselisih dengan profil yang baru saja diisi.
+ *
+ * Sekarang konsekuensinya terlihat di tempat sebabnya diketik.
+ *
+ * TABELNYA TIDAK DISALIN KE SINI. Dua puluh baris angka yang menagih hari
+ * kerja auditor, hidup di dua bahasa sekaligus, akan berselisih pada baris
+ * yang paling jarang dilihat. Jawabannya datang dari tempat yang sama
+ * dengan yang dipakai audit.
+ */
+const mandays = ref({ ...props.mandays });
+let jeda: ReturnType<typeof setTimeout> | undefined;
+let permintaanKe = 0;
+
+async function hitungMandays() {
+  const ini = ++permintaanKe;
+
+  try {
+    const r = await fetch(props.tautan.mandays, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
+      },
+      body: JSON.stringify({
+        workers_employee: Number(form.workers_employee) || 0,
+        workers_sub:      Number(form.workers_sub) || 0,
+        risk_class:       form.risk_class,
+      }),
+    });
+    if (!r.ok) return;
+
+    /* Jawaban yang datang terlambat dibuang: mengetik 1, 10, lalu 109
+       melahirkan tiga permintaan, dan yang tiba terakhir belum tentu yang
+       terbaru. */
+    const hasil = await r.json();
+    if (ini === permintaanKe) mandays.value = hasil;
+  } catch {
+    /* Panelnya menahan angka sah terakhir, bukan menampilkan nol. */
+  }
+}
+
+watch(
+  () => [form.workers_employee, form.workers_sub, form.risk_class],
+  () => { clearTimeout(jeda); jeda = setTimeout(hitungMandays, 300); },
+);
 
 function pilihLogo(e: Event) {
   const f = (e.target as HTMLInputElement).files;
@@ -160,6 +214,39 @@ const kepala = 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400
             <label :class="label">Pekerja jasa pertambangan</label>
             <input v-model="form.workers_sub" type="number" min="0" :class="isian">
           </div>
+        </div>
+
+        <!-- Akibat dari dua angka di atas, diperlihatkan di tempat
+             keduanya diketik. -->
+        <div class="rounded-xl border border-cam-lime-soft bg-cam-lime-soft/40 p-4">
+          <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-cam-lime-deep">
+            Dasar Hari Kerja Audit SMKP
+          </p>
+
+          <div class="mt-3 flex flex-wrap items-end gap-x-6 gap-y-3">
+            <p class="leading-none">
+              <strong class="text-[26px] font-black text-cam-ink">{{ mandays.dasar }}</strong>
+              <span class="text-[12px] font-semibold text-stone-500"> mandays</span>
+            </p>
+            <dl class="text-[11.5px] text-stone-600 leading-relaxed">
+              <div class="flex gap-1.5">
+                <dt class="text-stone-400">Total pekerja</dt>
+                <dd class="font-semibold">{{ mandays.pekerja }}</dd>
+                <dd class="text-stone-400">(baris tabel {{ mandays.rentang }})</dd>
+              </div>
+              <div class="flex gap-1.5">
+                <dt class="text-stone-400">Kelas risiko</dt>
+                <dd class="font-semibold">{{ mandays.kelas }}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <p class="text-[11px] text-stone-500 mt-3 leading-relaxed">
+            Angka dasar, sebelum tujuh faktor penyesuaian. Faktor-faktor itu milik
+            tiap audit — jarak antar objek audit dan kinerja keselamatan pada periode
+            audit berubah tiap tahun — dan ditetapkan pada Tahap I audit, yang membaca
+            jumlah pekerja serta kelas risiko dari halaman ini.
+          </p>
         </div>
 
         <div class="grid sm:grid-cols-3 gap-4 pt-2 border-t border-stone-100">

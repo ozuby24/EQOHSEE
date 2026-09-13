@@ -10,6 +10,56 @@ use App\Support\Berkas;
 
 class CompanyController extends Controller
 {
+    /**
+     * Dasar hari kerja audit SMKP menurut profil yang sedang diketik.
+     *
+     * MANDAYS DIMULAI DI SINI, bukan di Tahap I audit. Jumlah pekerja dan
+     * kelas risiko adalah sifat perusahaan, bukan sifat sebuah audit:
+     * keduanya sudah diisi pada halaman ini, dan mengetiknya ulang pada
+     * tiap periode audit melahirkan dua angka yang dapat berselisih —
+     * profil mencatat 1.098 pekerja, Tahap I menyebut 150, dan hari kerja
+     * yang ditagih auditor meleset satu kelas penuh.
+     *
+     * Yang ditampilkan hanya DASARNYA. Tujuh faktor penyesuaian memang
+     * milik audit, bukan milik perusahaan — jarak antar objek audit dan
+     * kinerja keselamatan pada periode audit berubah tiap tahun.
+     *
+     * Rumusnya tidak disalin ke sisi peramban: ia satu-satunya tempat
+     * angka tabel dibaca, dan dua salinan akan berselisih.
+     */
+    public function mandays(Request $request)
+    {
+        $d = $request->validate([
+            'workers_employee' => ['nullable', 'integer', 'min:0', 'max:1000000'],
+            'workers_sub'      => ['nullable', 'integer', 'min:0', 'max:1000000'],
+            'risk_class'       => ['nullable', \Illuminate\Validation\Rule::in(\App\Support\SmkpTahap::kelasRisiko())],
+        ]);
+
+        return response()->json(self::dasarMandays(
+            (int) ($d['workers_employee'] ?? 0),
+            (int) ($d['workers_sub'] ?? 0),
+            $d['risk_class'] ?? null,
+        ));
+    }
+
+    /** @return array{pekerja:int,kelas:string,rentang:string,dasar:int} */
+    private static function dasarMandays(int $karyawan, int $jasa, ?string $kelas): array
+    {
+        $total = $karyawan + $jasa;
+
+        $m = \App\Support\SmkpTahap::mandays([
+            'jumlah_pekerja' => $total,
+            'kelas_risiko'   => $kelas ?: 'Tinggi',
+        ]);
+
+        return [
+            'pekerja' => $total,
+            'kelas'   => $m['kelas'],
+            'rentang' => $m['rentang'],
+            'dasar'   => $m['dasar'],
+        ];
+    }
+
     public function index(Request $request)
     {
         $q = trim((string) $request->get('q'));
@@ -125,9 +175,19 @@ class CompanyController extends Controller
                 'departemen' => \App\Support\KopDokumen::DEPARTEMEN,
             ],
 
+            /* Dasar hari kerja audit menurut profil YANG TERSIMPAN, supaya
+               panelnya sudah berisi angka pada pemuatan pertama alih-alih
+               menunggu ketikan berikutnya. */
+            'mandays' => self::dasarMandays(
+                (int) ($c->workers_employee ?? 0),
+                (int) ($c->workers_sub ?? 0),
+                $c->risk_class,
+            ),
+
             'tautan' => [
                 'simpan' => $c->exists ? route('admin.companies.update', $c) : route('admin.companies.store'),
                 'batal'  => route('admin.companies.index'),
+                'mandays'=> route('admin.companies.mandays'),
             ],
         ]);
     }

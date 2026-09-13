@@ -199,13 +199,198 @@ final class SmkpTahap
     public static function faktorPenyesuaian(): array
     {
         return [
-            'jarak'       => 'Lokasi/area kerja berjauhan (waktu tempuh ≥ 4 jam antar objek audit)',
-            'metode'      => 'Menggunakan lebih dari satu metode penambangan',
-            'pengolahan'  => 'Memiliki fasilitas pengolahan dan/atau pemurnian',
-            'kecelakaan'  => 'Severity/Frequency rate kecelakaan tahun terakhir > rata-rata nasional',
-            'berbahaya'   => 'Terjadi kejadian berbahaya serupa & berulang dalam 1 tahun terakhir',
-            'kompleksitas'=> 'Kompleksitas proses / teknologi pertambangan tinggi',
+            'jarak'      => 'Jarak antar objek audit yang saling berjauhan, dengan waktu tempuh ≥ 4 jam',
+            'metode'     => 'Perusahaan pertambangan menggunakan lebih dari satu metode penambangan',
+            'pengolahan' => 'Perusahaan pertambangan memiliki fasilitas pengolahan dan pemurnian',
+            'kecelakaan' => 'Tingkat keparahan (severity rate) dan tingkat kekerapan (frequency rate) '
+                           .'kecelakaan perusahaan tahun terakhir lebih tinggi dari tingkat rata-rata nasional',
+            'penyakit'   => 'Tingkat keparahan penyakit berdasarkan absensi (absence severity rate) dan '
+                           .'tingkat kekerapan kesakitan (morbidity frequency rate) perusahaan tahun '
+                           .'terakhir lebih tinggi dari tingkat rata-rata nasional',
+            'berbahaya'  => 'Terjadi kejadian berbahaya serupa dan berulang dalam satu tahun terakhir',
+            'kptk'       => 'Terjadi kejadian akibat penyakit tenaga kerja, dan/atau penyakit akibat kerja '
+                           .'dalam satu tahun terakhir',
         ];
+    }
+
+    /**
+     * Rata-rata nasional pembanding, diisi auditor dari angka instansi
+     * pembina sektor.
+     *
+     * TIDAK ADA ANGKA BAWAAN DI SINI, dan itu disengaja. Rata-rata nasional
+     * terbit tiap tahun dari Ditjen Minerba; angka tebakan yang dipasang
+     * sebagai bawaan akan diam-diam menentukan dua dari tujuh faktor
+     * penyesuaian, dan dua faktor itu menambah dua hari kerja auditor pada
+     * setiap audit yang memakainya. Kosong berarti belum dapat diputuskan
+     * oleh data — dan itu keterangan yang jujur, bukan kekurangan.
+     */
+    public static function butirNasional(): array
+    {
+        return [
+            'fr'  => ['label' => 'Frequency rate kecelakaan tambang — rata-rata nasional'],
+            'sr'  => ['label' => 'Severity rate kecelakaan tambang — rata-rata nasional'],
+            'asr' => ['label' => 'Absence severity rate — rata-rata nasional'],
+            'mfr' => ['label' => 'Morbidity frequency rate — rata-rata nasional'],
+        ];
+    }
+
+    /** Angka kinerja yang terisi; string kosong bukan nol. */
+    private static function angka(array $sumber, string $kunci): ?float
+    {
+        $v = $sumber[$kunci] ?? null;
+
+        if ($v === null || $v === '' || !is_numeric(str_replace(',', '.', (string) $v))) {
+            return null;
+        }
+
+        return (float) str_replace(',', '.', (string) $v);
+    }
+
+    /**
+     * Empat dari tujuh faktor penyesuaian sudah terjawab oleh angka kinerja.
+     *
+     * Formulir Berita Acara menanyakan hal yang, untuk empat butirnya, sudah
+     * diisi auditor sepuluh baris di atasnya. Meminta ia menilai ulang
+     * dengan centang membuka celah yang tidak perlu ada: angka FR 12
+     * berhadapan dengan rata-rata nasional 4, dan kotaknya tetap dapat
+     * dibiarkan kosong — audit berjalan dua hari lebih pendek dari yang
+     * seharusnya, tanpa satu pun tanda bahwa ada yang terlewat.
+     *
+     * Yang dapat diputuskan data, diputuskan data dan dikunci. Yang tidak
+     * dapat, tetap milik auditor:
+     *
+     *   kecelakaan  penuh — bila rata-rata nasional FR dan SR terisi
+     *   penyakit    penuh — bila rata-rata nasional ASR dan MFR terisi
+     *   kptk        penuh — kejadian akibat penyakit tenaga kerja atau PAK > 0
+     *   berbahaya   sebagian — "serupa dan berulang" adalah penilaian, bukan
+     *               hitungan. Di bawah dua kejadian ia mustahil benar, jadi
+     *               dikunci pada tidak; dua ke atas diserahkan ke auditor
+     *               beserta angkanya.
+     *
+     * @return array<string,array{nilai:?bool,alasan:string,terkunci:bool}>
+     */
+    public static function faktorTerhitung(array $kinerja, array $nasional): array
+    {
+        $out = [];
+
+        $frP = self::angka($kinerja, 'fr');
+        $srP = self::angka($kinerja, 'sr');
+        $frN = self::angka($nasional, 'fr');
+        $srN = self::angka($nasional, 'sr');
+
+        if ($frP !== null && $srP !== null && $frN !== null && $srN !== null) {
+            $lebih = $frP > $frN || $srP > $srN;
+            $out['kecelakaan'] = [
+                'nilai'    => $lebih,
+                'terkunci' => true,
+                'alasan'   => 'FR '.self::tulis($frP).' vs nasional '.self::tulis($frN)
+                             .'; SR '.self::tulis($srP).' vs nasional '.self::tulis($srN).'.',
+            ];
+        } else {
+            $out['kecelakaan'] = [
+                'nilai'    => null,
+                'terkunci' => false,
+                'alasan'   => 'Rata-rata nasional FR dan SR belum diisi — belum dapat dihitung.',
+            ];
+        }
+
+        $asrP = self::angka($kinerja, 'asr');
+        $mfrP = self::angka($kinerja, 'mfr');
+        $asrN = self::angka($nasional, 'asr');
+        $mfrN = self::angka($nasional, 'mfr');
+
+        if ($asrP !== null && $mfrP !== null && $asrN !== null && $mfrN !== null) {
+            $lebih = $asrP > $asrN || $mfrP > $mfrN;
+            $out['penyakit'] = [
+                'nilai'    => $lebih,
+                'terkunci' => true,
+                'alasan'   => 'ASR '.self::tulis($asrP).' vs nasional '.self::tulis($asrN)
+                             .'; MFR '.self::tulis($mfrP).' vs nasional '.self::tulis($mfrN).'.',
+            ];
+        } else {
+            $out['penyakit'] = [
+                'nilai'    => null,
+                'terkunci' => false,
+                'alasan'   => 'Rata-rata nasional ASR dan MFR belum diisi — belum dapat dihitung.',
+            ];
+        }
+
+        $kptk = self::angka($kinerja, 'kptk');
+        $pak  = self::angka($kinerja, 'pak');
+
+        if ($kptk !== null || $pak !== null) {
+            $ada = ($kptk ?? 0) > 0 || ($pak ?? 0) > 0;
+            $out['kptk'] = [
+                'nilai'    => $ada,
+                'terkunci' => true,
+                'alasan'   => 'Kejadian akibat penyakit tenaga kerja '.self::tulis($kptk ?? 0)
+                             .'; frekuensi penyakit akibat kerja '.self::tulis($pak ?? 0).'.',
+            ];
+        } else {
+            $out['kptk'] = [
+                'nilai'    => null,
+                'terkunci' => false,
+                'alasan'   => 'Angka kejadian akibat penyakit tenaga kerja belum diisi.',
+            ];
+        }
+
+        $bahaya = self::angka($kinerja, 'berbahaya');
+
+        if ($bahaya !== null && $bahaya < 2) {
+            $out['berbahaya'] = [
+                'nilai'    => false,
+                'terkunci' => true,
+                'alasan'   => self::tulis($bahaya).' kejadian berbahaya tercatat — '
+                             .'berulang menuntut sekurang-kurangnya dua.',
+            ];
+        } elseif ($bahaya !== null) {
+            $out['berbahaya'] = [
+                'nilai'    => null,
+                'terkunci' => false,
+                'alasan'   => self::tulis($bahaya).' kejadian berbahaya tercatat — auditor menilai '
+                             .'apakah kejadiannya serupa dan berulang.',
+            ];
+        } else {
+            $out['berbahaya'] = [
+                'nilai'    => null,
+                'terkunci' => false,
+                'alasan'   => 'Jumlah kejadian berbahaya belum diisi.',
+            ];
+        }
+
+        return $out;
+    }
+
+    /** Angka untuk dibaca manusia: 4.0 ditulis 4, 4.25 tetap 4,25. */
+    private static function tulis(float $n): string
+    {
+        return rtrim(rtrim(number_format($n, 2, ',', '.'), '0'), ',');
+    }
+
+    /**
+     * Jawaban tujuh faktor penyesuaian: hitungan mengalahkan centang.
+     *
+     * @return array<string,bool>
+     */
+    public static function faktorBerlaku(array $permulaan): array
+    {
+        $centang  = (array) ($permulaan['faktor'] ?? []);
+        $terhitung = self::faktorTerhitung(
+            (array) ($permulaan['kinerja'] ?? []),
+            (array) ($permulaan['nasional'] ?? []),
+        );
+
+        $out = [];
+
+        foreach (array_keys(self::faktorPenyesuaian()) as $k) {
+            $h = $terhitung[$k] ?? null;
+
+            $out[$k] = ($h && $h['terkunci'])
+                ? (bool) $h['nilai']
+                : !empty($centang[$k]);
+        }
+
+        return $out;
     }
 
     /**
@@ -384,7 +569,10 @@ final class SmkpTahap
         $baris = self::barisMandays($pekerja);
         $dasar = (int) $baris[self::KOLOM_RISIKO[$kelas]];
 
-        $penambah  = self::hitungFaktor($p['faktor'] ?? [], self::faktorPenyesuaian());
+        /* Faktor penyesuaian dibaca dari faktorBerlaku, bukan dari centang
+           mentah: empat dari tujuh butirnya sudah terjawab angka kinerja,
+           dan jawaban yang dihitung mengalahkan kotak yang lupa dicentang. */
+        $penambah  = count(array_filter(self::faktorBerlaku($p)));
         $pengurang = self::hitungFaktor($p['pengurang'] ?? [], self::faktorPengurang());
 
         // Sekurang-kurangnya satu hari: faktor pengurang tidak boleh

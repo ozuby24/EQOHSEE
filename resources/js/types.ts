@@ -1610,7 +1610,10 @@ export interface HalamanFormPerusahaan {
   logo: string | null;
   opsi: { induk: Pilihan[]; risiko: string[] };
   contoh: { prefiks: string; divisi: string; departemen: string };
-  tautan: { simpan: string; batal: string };
+  /* Dasar hari kerja audit SMKP menurut profil tersimpan. Dihitung server;
+     panel di formulir memperbaruinya lewat `tautan.mandays`. */
+  mandays: { pekerja: number; kelas: string; rentang: string; dasar: number };
+  tautan: { simpan: string; batal: string; mandays: string };
 }
 
 export interface HalamanSistem {

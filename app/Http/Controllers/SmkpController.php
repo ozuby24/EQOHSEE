@@ -273,6 +273,8 @@ class SmkpController extends Controller
             'risiko'    => SmkpTahap::kelasRisiko(),
             'tabelMandays' => SmkpTahap::MANDAYS_TABLE,
             'kinerja'   => SmkpTahap::butirKinerja(),
+            'nasional'  => SmkpTahap::butirNasional(),
+            'terhitung' => $smkp->faktorTerhitung(),
             'mandays'   => $smkp->mandays(),
             'rekap'     => $smkp->rekapKecukupan(),
 
@@ -323,9 +325,20 @@ class SmkpController extends Controller
             'permulaan.faktor.*'            => ['nullable'],
             'permulaan.pengurang'           => ['nullable', 'array'],
             'permulaan.pengurang.*'         => ['nullable'],
+            'permulaan.kinerja'             => ['nullable', 'array'],
+            'permulaan.kinerja.*'           => ['nullable', 'string', 'max:50'],
+            'permulaan.nasional'            => ['nullable', 'array'],
+            'permulaan.nasional.*'          => ['nullable', 'string', 'max:50'],
         ]);
 
-        return response()->json(SmkpTahap::mandays((array) ($d['permulaan'] ?? [])));
+        $p = (array) ($d['permulaan'] ?? []);
+
+        return response()->json(
+            SmkpTahap::mandays($p) + ['terhitung' => SmkpTahap::faktorTerhitung(
+                (array) ($p['kinerja'] ?? []),
+                (array) ($p['nasional'] ?? []),
+            )]
+        );
     }
 
     /**
@@ -364,6 +377,8 @@ class SmkpController extends Controller
             'permulaan.surat_tanggal'       => ['nullable','date'],
             'permulaan.jumlah_pekerja'      => ['nullable','integer','min:0','max:1000000'],
             'permulaan.kelas_risiko'        => ['nullable', Rule::in(SmkpTahap::kelasRisiko())],
+            'permulaan.nasional'            => ['nullable','array'],
+            'permulaan.nasional.*'          => ['nullable','string','max:50'],
             'permulaan.kesimpulan'          => ['nullable','string','max:2000'],
             'permulaan.kelayakan.*'         => ['nullable','string','max:500'],
             'permulaan.faktor.*'            => ['nullable'],
@@ -404,6 +419,18 @@ class SmkpController extends Controller
            penggunanya hanya menekan simpan pada bagian lain formulir. */
         if ($p['tim'] !== []) unset($p['jumlah_auditor']);
 
+        /* Rata-rata nasional disimpan apa adanya sebagai teks yang sudah
+           dipangkas. Kosong berarti belum diketahui — bukan nol, yang akan
+           membuat setiap angka perusahaan terbaca "di atas rata-rata" dan
+           menambah dua hari kerja audit tanpa dasar. */
+        $p['nasional'] = array_map(
+            fn ($v) => trim((string) $v),
+            array_intersect_key(
+                (array) ($p['nasional'] ?? []),
+                SmkpTahap::butirNasional(),
+            ),
+        );
+
         // Kecukupan hanya disimpan untuk elemen yang benar-benar ada.
         $kecukupan = [];
         foreach (Smkp::elemen() as $e) {
@@ -437,6 +464,11 @@ class SmkpController extends Controller
             'pengurang' => SmkpTahap::faktorPengurang(),
             'risiko'    => SmkpTahap::kelasRisiko(),
             'kinerja'   => SmkpTahap::butirKinerja(),
+            'nasional'  => SmkpTahap::butirNasional(),
+            'terhitung' => $smkp->faktorTerhitung(),
+            'berlaku'   => SmkpTahap::faktorBerlaku(
+                ((array) ($smkp->permulaan ?? [])) + ['kinerja' => (array) ($smkp->kinerja ?? [])],
+            ),
             'mandays'   => $smkp->mandays(),
             'tim'       => $smkp->tim(),
             'rekap'     => $smkp->rekapKecukupan(),

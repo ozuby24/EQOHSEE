@@ -1322,6 +1322,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     /* ---- Panel Admin ---- */
     Route::middleware('can:admin')->prefix('admin')->name('admin.')->group(function () {
         Route::resource('users', UserController::class)->except(['show']);
+        /* Ditaruh SEBELUM resource: 'companies/mandays' sebaliknya tertangkap
+           pola 'companies/{company}' dan Laravel mencari perusahaan bernama
+           "mandays". */
+        Route::post('companies/mandays', [CompanyController::class, 'mandays'])
+            ->name('companies.mandays');
         Route::resource('companies', CompanyController::class)->except(['show']);
         Route::get('system',        [SystemController::class, 'index'])->name('system');
         Route::delete('system/logs',[SystemController::class, 'clearLogs'])->name('system.logs.clear');
