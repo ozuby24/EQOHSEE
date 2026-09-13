@@ -60,6 +60,15 @@ final class KondisiSitus
     private const UMUR_MAKSIMAL_HARI = 2;
 
     /**
+     * Sedekat apa ke (0, 0) sebuah titik dianggap belum berkoordinat.
+     *
+     * 0,05° kurang lebih 5,5 km dari Null Island — cukup lebar untuk
+     * menampung seluruh bidang lokal yang berpusat di nol, dan tetap
+     * jauh dari setiap wilayah izin tambang yang sesungguhnya.
+     */
+    private const AMBANG_NOL = 0.05;
+
+    /**
      * Seluruh keterangan situs untuk sampul, atau null bila tidak ada
      * satu pun yang dapat disebut.
      */
@@ -209,7 +218,26 @@ final class KondisiSitus
 
         if (!$layer) return null;
 
-        return ['lat' => (float) $layer->titik_lat, 'lon' => (float) $layer->titik_lon];
+        $lat = (float) $layer->titik_lat;
+        $lon = (float) $layer->titik_lon;
+
+        /* Titik yang hampir tepat di (0, 0) DIBUANG, bukan digambar.
+           Di sana tidak ada tambang mana pun — itu Teluk Guinea — dan
+           nilai sedekat itu ke nol selalu berarti hal yang sama: lapisan
+           petanya digambar pada bidang lokal yang belum pernah diikat ke
+           koordinat sesungguhnya.
+
+           Yang berbahaya bukan angkanya melainkan tempatnya muncul.
+           Geo tag berdampingan dengan nama situs terbaca sebagai
+           koordinat situs itu, dan koordinat salah pada halaman yang
+           dapat dicetak dan diserahkan lebih buruk daripada tidak ada
+           koordinat sama sekali — yang kosong terlihat sebagai belum
+           diisi, yang salah tidak terlihat apa-apa. Alasannya sama
+           persis dengan lencana cuaca yang menolak mengaku "Cerah"
+           tanpa catatan hujan. */
+        if (abs($lat) < self::AMBANG_NOL && abs($lon) < self::AMBANG_NOL) return null;
+
+        return ['lat' => $lat, 'lon' => $lon];
     }
 
     /**

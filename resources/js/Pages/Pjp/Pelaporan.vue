@@ -86,7 +86,8 @@ const TAHAP = [
     <section class="space-y-3">
       <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h3 class="text-[15px] font-extrabold text-stone-800">Daftar Seluruh PJP</h3>
-        <Link :href="props.tautan.daftar" class="text-[11px] font-bold text-cam-orange">Kelola data PJP →</Link>
+        <Link :href="props.tautan.daftar"
+              class="inline-flex min-h-[24px] items-center rounded text-[11px] font-bold text-cam-orange">Kelola data PJP →</Link>
       </div>
 
       <PjpSaring :aksi="props.tautan.terapkan" :awal="props.saring" :status-opsi="props.statusOpsi" />

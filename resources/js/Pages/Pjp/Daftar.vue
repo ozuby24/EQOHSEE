@@ -94,10 +94,21 @@ async function hapus(pjp: Record<string, any>) {
               <td class="px-5 py-3">
                 <PjpLencanaStatus :status="pjp.status" :label="props.statusOpsi[pjp.status] ?? pjp.status" />
               </td>
+              <!-- Ketiganya setinggi 24px, batas terendah WCAG 2.2 AA
+                   (2.5.8), dan berjarak — bukan kerapian melainkan sebab
+                   "Hapus" bertetangga dengan "Detail" dalam satu baris.
+                   Terukur sebelum ini: 14px dan 17px berdempetan, dan
+                   ketukan yang meleset sejauh tiga piksel membuka
+                   penegasan penghapusan perusahaan yang salah. -->
               <td class="px-5 py-3 text-right whitespace-nowrap">
-                <Link :href="untuk(props.tautan.detail, pjp.id)" class="text-[11px] font-bold text-cam-orange">Detail</Link>
-                <Link :href="untuk(props.tautan.checklistUntuk, pjp.id)" class="ml-3 text-[11px] font-bold text-stone-500">Checklist</Link>
-                <button type="button" class="ml-3 text-[11px] font-bold text-red-600" @click="hapus(pjp)">Hapus</button>
+                <div class="inline-flex items-center gap-1">
+                  <Link :href="untuk(props.tautan.detail, pjp.id)"
+                        class="inline-flex min-h-[24px] items-center rounded px-2 text-[11px] font-bold text-cam-orange">Detail</Link>
+                  <Link :href="untuk(props.tautan.checklistUntuk, pjp.id)"
+                        class="inline-flex min-h-[24px] items-center rounded px-2 text-[11px] font-bold text-stone-500">Checklist</Link>
+                  <button type="button" @click="hapus(pjp)"
+                          class="inline-flex min-h-[24px] items-center rounded px-2 text-[11px] font-bold text-red-600">Hapus</button>
+                </div>
               </td>
             </tr>
           </tbody>
