@@ -372,10 +372,62 @@ case "$DB_CONN" in
             echo "!!  pg_dump tidak terpasang — migrasi berjalan tanpa cadangan."
         fi
         ;;
+    mysql|mariadb)
+        if command -v mysqldump >/dev/null 2>&1; then
+            DB_NAMA="$(grep -E '^DB_DATABASE=' "$REPO_DIR/.env" | cut -d= -f2- | tr -d '"')"
+            DB_USER="$(grep -E '^DB_USERNAME=' "$REPO_DIR/.env" | cut -d= -f2- | tr -d '"')"
+            DB_HOST="$(grep -E '^DB_HOST=' "$REPO_DIR/.env" | cut -d= -f2- | tr -d '"')"
+            DB_PORT="$(grep -E '^DB_PORT=' "$REPO_DIR/.env" | cut -d= -f2- | tr -d '"')"
+
+            # Sandi lewat peubah lingkungan, bukan --password= pada baris
+            # perintah: yang di baris perintah terbaca siapa pun lewat
+            # `ps aux` selama dump berjalan.
+            MYSQL_PWD="$(grep -E '^DB_PASSWORD=' "$REPO_DIR/.env" | cut -d= -f2- | tr -d '"')" \
+                mysqldump --single-transaction --routines --triggers --events \
+                    -h "${DB_HOST:-127.0.0.1}" -P "${DB_PORT:-3306}" -u "$DB_USER" "$DB_NAMA" \
+                    > "$CADANGAN/db-$STEMPEL.sql" \
+                && echo "    $CADANGAN/db-$STEMPEL.sql" \
+                || {
+                    echo "!!  mysqldump GAGAL — cadangan tidak terbentuk."
+                    rm -f "$CADANGAN/db-$STEMPEL.sql"
+                    CADANGAN_GAGAL=1
+                }
+        else
+            echo "!!  mysqldump tidak terpasang."
+            CADANGAN_GAGAL=1
+        fi
+        ;;
     *)
-        echo "    DB_CONNECTION '$DB_CONN' tidak dikenal — dilewati."
+        echo "!!  DB_CONNECTION '$DB_CONN' tidak dikenal — tidak ada cadangan."
+        CADANGAN_GAGAL=1
         ;;
 esac
+
+# ── Migrasi tanpa cadangan harus DIPUTUSKAN, bukan terjadi begitu saja ──
+#
+# Sebelumnya cabang yang tidak dikenal hanya mencetak "dilewati" lalu
+# migrasi berjalan terus. Baris itu tenggelam di antara ratusan baris
+# keluaran deploy, dan yang membacanya wajar menyangka cadangan sudah
+# diambil — kata "Mencadangkan basis data" tercetak tepat di atasnya.
+#
+# Itu benar-benar terjadi: DB_CONNECTION di server ini `mysql`, yang
+# tidak dikenal blok di atas sebelum ini ditambahkan, sehingga migrasi
+# pemindahan data PJP — yang MELEPAS enam tabel lama dan tidak punya
+# jalan pulang — berjalan tanpa satu pun cadangan otomatis.
+#
+# Sekarang deploy berhenti. Yang memang sengaja melanjutkan tanpa
+# cadangan menyatakannya, dan pernyataan itu tercatat di riwayat perintah
+# — bukan tersirat dari baris log yang terlewat.
+if [ "${CADANGAN_GAGAL:-0}" = "1" ] && [ "${EQOHSEE_TANPA_CADANGAN:-0}" != "1" ]; then
+    echo
+    echo "    Deploy DIHENTIKAN sebelum migrasi: tidak ada cadangan basis data."
+    echo '    Migrasi dapat menghapus tabel, dan down() tidak mengembalikan isinya.'
+    echo
+    echo "    Cadangkan sendiri lebih dulu, lalu ulangi deploy. Atau, bila Anda"
+    echo "    sudah punya cadangan di tempat lain dan menerima risikonya:"
+    echo "        EQOHSEE_TANPA_CADANGAN=1 bash deploy/deploy.sh"
+    exit 1
+fi
 
 # Sepuluh cadangan terakhir disimpan; selebihnya dibuang supaya disk VPS
 # tidak diam-diam penuh oleh berkas yang tidak pernah ada yang menghapus.
