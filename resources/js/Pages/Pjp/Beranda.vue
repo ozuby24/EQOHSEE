@@ -101,8 +101,10 @@ const aspek = [
       </p>
       <ul class="mt-3 flex flex-wrap gap-2">
         <li v-for="pjp in props.belumLaporan" :key="pjp.id">
+          <!-- min-h 24px: batas terendah WCAG 2.2 AA (2.5.8). Pil ini
+               berbaris rapat dan dibaca di lapangan, kerap dari ponsel. -->
           <Link :href="untuk(props.tautan.detail, pjp.id)"
-                class="rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-amber-800 hover:bg-amber-100">
+                class="inline-flex min-h-[24px] items-center rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-amber-800 hover:bg-amber-100">
             {{ pjp.nama_perusahaan }}
           </Link>
         </li>

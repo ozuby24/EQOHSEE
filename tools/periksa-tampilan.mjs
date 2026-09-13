@@ -81,6 +81,7 @@ const HALAMAN = [
   '/energi', '/smkp', '/tpkkp', '/ko', '/penirisan', '/geoteknik', '/lingkungan',
   '/izin-kerja', '/peledakan', '/biaya', '/konservasi', '/operasi-tambang',
   '/pemeliharaan', '/angkutan/muatan', '/miners', '/courses', '/personalia/direktori',
+  '/pjp', '/pjp/persyaratan', '/pjp/pelaporan', '/pjp/evaluasi', '/pjp/daftar',
 ];
 
 /** Dijalankan DI DALAM halaman; tidak boleh menyentuh apa pun dari luar. */

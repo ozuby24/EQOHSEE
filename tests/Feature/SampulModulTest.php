@@ -250,6 +250,37 @@ class SampulModulTest extends TestCase
         $this->assertStringContainsString('BT', $lokasi['koordinat'], 'Bujur timur untuk bujur positif.');
     }
 
+    /**
+     * Lapisan peta yang digambar pada bidang lokal berpusat nol tidak
+     * boleh keluar sebagai geo tag.
+     *
+     * Titik sedekat itu ke (0, 0) menunjuk Teluk Guinea, bukan sebuah
+     * tambang — selalu berarti petanya belum diikat ke koordinat
+     * sesungguhnya. Berdampingan dengan nama situs ia terbaca sebagai
+     * koordinat situs itu, dan lembar yang dicetak membawanya keluar.
+     * Yang kosong terlihat sebagai belum diisi; yang salah tidak
+     * terlihat apa-apa.
+     */
+    public function test_titik_peta_di_null_island_tidak_dipakai_sebagai_geo_tag(): void
+    {
+        $c = $this->perusahaan();
+
+        MineMapLayer::create([
+            'company_id' => $c->id, 'nama' => 'Batas Pit Utara', 'tipe' => 'pit',
+            'geojson' => json_encode([
+                'type' => 'Polygon',
+                'coordinates' => [[[0.0, 0.0], [0.008, 0.0], [0.008, 0.008], [0.0, 0.008], [0.0, 0.0]]],
+            ]),
+        ]);
+
+        $lokasi = KondisiSitus::lokasi($c->fresh());
+
+        $this->assertSame('Site Sangatta', $lokasi['nama'],
+            'Nama situsnya tetap disebut — yang dibuang hanya koordinatnya.');
+        $this->assertNull($lokasi['koordinat'],
+            'Titik di sekitar (0,0) berarti belum berkoordinat, bukan berkoordinat nol.');
+    }
+
     public function test_tanpa_perusahaan_tidak_ada_keterangan_situs(): void
     {
         $this->assertNull(KondisiSitus::untuk(User::factory()->create(['company_id' => null])));

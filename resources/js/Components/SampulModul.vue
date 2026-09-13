@@ -14,13 +14,18 @@ import KartuCuaca from './KartuCuaca.vue';
  * daripada bidang kosong: ia terbaca sebagai bacaan alat, dan orang
  * mengambil keputusan lapangan dari bacaan alat.
  *
- * Yang tertulis besar di sini adalah NAMA MODUL, bukan judul halaman.
- * Judul halaman sudah tergambar dua kali — pada bilah atas dan pada
- * kepala halaman itu sendiri — dan menuliskannya sekali lagi membuatnya
- * muncul tiga kali dalam satu layar. Lebih buruk lagi, sebagian halaman
- * awal modul berjudul "Dashboard": sampul setinggi ini yang hanya
- * berbunyi "Dashboard" tidak menerangkan modul apa yang sedang dibuka,
- * padahal justru itu satu-satunya hal yang perlu dijawabnya.
+ * Nama modulnya SENGAJA tidak ditulis di sini, dan itu bukan kelalaian.
+ * Kop halaman tepat di bawahnya sudah menyebutnya dua kali — pada remah
+ * dan pada label beraksen di atas judulnya — sehingga menuliskannya
+ * sekali lagi membuat satu nama yang sama muncul tiga kali dalam satu
+ * layar, dan pada modul yang judul halaman awalnya kebetulan sama
+ * dengan nama modulnya, empat kali. Terukur di peramban sebelum ini
+ * diubah, pada halaman awal PJP.
+ *
+ * Yang dibawa sampul ini justru yang TIDAK ada di kop: di mana situsnya,
+ * bagaimana cuacanya, pukul berapa di sana, dan foto apa yang sedang
+ * ditampilkan. Karena itu lokasinya yang tertulis besar — sampul ini
+ * adalah bilah keadaan situs, bukan judul kedua.
  */
 const props = defineProps<{
   sampul: {
@@ -44,7 +49,11 @@ const kondisi = computed(() => props.sampul?.kondisi ?? null);
 </script>
 
 <template>
+  <!-- Nama modulnya tidak tertulis, tetapi tetap disebut kepada pembaca
+       layar: tanpa itu bilah ini terbaca sebagai daerah tanpa nama yang
+       berisi sebuah nama tempat dan beberapa angka. -->
   <section v-if="props.sampul"
+           :aria-label="props.sampul.label ? `Keadaan situs — ${props.sampul.label}` : 'Keadaan situs'"
            class="relative overflow-hidden rounded-2xl border border-stone-200/60 shadow-card">
     <!--
       Tinggi dikunci lewat aspect-ratio bertingkat, bukan tinggi tetap.
@@ -80,26 +89,22 @@ const kondisi = computed(() => props.sampul?.kondisi ?? null);
         <KartuCuaca v-if="kondisi?.cuaca" :cuaca="kondisi.cuaca" />
       </div>
 
-      <div>
-        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-white/70">Modul</p>
-        <h2 v-if="props.sampul.label"
-            class="text-lg font-extrabold tracking-tight text-white drop-shadow sm:text-2xl">
-          {{ props.sampul.label }}
-        </h2>
+      <!-- Geo tag. Koordinatnya datang dari titik tengah layer peta
+           tambang yang sudah digambar, bukan diketik terpisah — yang
+           diketik terpisah akan berselisih dengan petanya sendiri. -->
+      <div v-if="kondisi?.lokasi">
+        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">Keadaan situs</p>
 
-        <!-- Geo tag. Koordinatnya datang dari titik tengah layer peta
-             tambang yang sudah digambar, bukan diketik terpisah — yang
-             diketik terpisah akan berselisih dengan petanya sendiri. -->
-        <div v-if="kondisi?.lokasi" class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/85">
-          <span class="flex items-center gap-1.5">
-            <svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z"/>
-              <circle cx="12" cy="10" r="2.6"/>
-            </svg>
-            <b class="font-bold">{{ kondisi.lokasi.nama ?? kondisi.lokasi.perusahaan }}</b>
-          </span>
+        <p class="mt-0.5 flex items-center gap-1.5 text-base font-extrabold tracking-tight text-white drop-shadow sm:text-lg">
+          <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z"/>
+            <circle cx="12" cy="10" r="2.6"/>
+          </svg>
+          {{ kondisi.lokasi.nama ?? kondisi.lokasi.perusahaan }}
+        </p>
 
+        <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/80">
           <span v-if="kondisi.lokasi.koordinat" class="font-mono text-[10.5px] text-white/70">
             {{ kondisi.lokasi.koordinat }}
           </span>
