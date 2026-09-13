@@ -1,16 +1,21 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
+use App\Support\Pjp\DaftarPeriksaSmkp;
 use Illuminate\Support\Facades\DB;
 
 /**
  * Data acuan checklist prakualifikasi SMKP: 17 kategori, 126 pertanyaan.
  *
- * Diisi lewat migrasi, bukan penyemai. Ini bukan data contoh melainkan
- * daftar pertanyaan resmi yang menjadi dasar seluruh perhitungan skor —
- * tanpa isinya, halaman Persyaratan terbuka dengan formulir kosong dan
- * skor 0% yang terlihat sah. Penyemai harus dipanggil terpisah dan yang
- * lupa memanggilnya tidak mendapat galat apa pun.
+ * Ditanam lewat migrasi supaya pemasangan BARU langsung punya daftarnya.
+ * Ini bukan data contoh melainkan daftar pertanyaan resmi yang menjadi
+ * dasar seluruh perhitungan skor — tanpa isinya, halaman Persyaratan
+ * terbuka dengan formulir kosong dan skor 0% yang terlihat sah.
+ *
+ * Migrasi saja TIDAK cukup, dan itu sebabnya `pjp:pasang` tetap ada dan
+ * dipanggil tiap deploy. Migrasi berjalan sekali seumur hidup basis
+ * data; sesudah tercatat, checklist-smkp.json yang direvisi tidak akan
+ * pernah sampai ke produksi. Keduanya memanggil kelas yang sama.
  *
  * Idempoten: baris yang sudah ada tidak digandakan. Migrasi ini pernah
  * dijalankan pada basis data yang sudah membawa tabelnya (mis. hasil
@@ -25,57 +30,16 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $data = json_decode(
-            file_get_contents(resource_path('data/pjp/checklist-smkp.json')),
-            true,
-        );
-
-        $now = now();
-        $idKategori = [];
-
-        foreach ($data['categories'] as $kategori) {
-            $idKategori[$kategori['kode']] = DB::table('smkp_checklist_categories')
-                ->where('kode', $kategori['kode'])->value('id')
-                ?? DB::table('smkp_checklist_categories')->insertGetId([
-                    'kode'       => $kategori['kode'],
-                    'nama'       => $kategori['nama'],
-                    'bobot'      => $kategori['bobot'],
-                    'urutan'     => $kategori['urutan'],
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ]);
-        }
-
-        foreach ($data['items'] as $item) {
-            $kategoriId = $idKategori[$item['kategori_kode']];
-
-            /*
-             * Dikenali dari (kategori, urutan), bukan dari teks
-             * pertanyaannya. Sembilan pertanyaan memuat baris baru di
-             * dalamnya, dan pencocokan teks pada kolom TEXT lintas
-             * SQLite/MySQL/PostgreSQL berbeda perlakuannya terhadap
-             * spasi — yang gagal cocok akan disisipkan lagi.
-             */
-            $ada = DB::table('smkp_checklist_items')
-                ->where('smkp_checklist_category_id', $kategoriId)
-                ->where('urutan', $item['urutan'])
-                ->exists();
-
-            if ($ada) continue;
-
-            DB::table('smkp_checklist_items')->insert([
-                'smkp_checklist_category_id' => $kategoriId,
-                'grup_kode'  => $item['grup_kode'],
-                'grup_nama'  => $item['grup_nama'],
-                'nomor'      => $item['nomor'],
-                'pertanyaan' => $item['pertanyaan'],
-                'petunjuk'   => $item['petunjuk'],
-                'bobot'      => $item['bobot'],
-                'urutan'     => $item['urutan'],
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
-        }
+        /*
+         * Isinya disusun App\Support\Pjp\DaftarPeriksaSmkp, bukan di
+         * sini — kelas yang sama dipanggil `pjp:pasang` tiap deploy.
+         *
+         * Dua salinan logika penyemaian akan berselisih cepat atau
+         * lambat, dan selisihnya tidak menimbulkan galat: yang satu
+         * menanam bentuk lama, yang lain bentuk baru, dan basis data
+         * mana yang mendapat yang mana bergantung pada kapan ia dibuat.
+         */
+        DaftarPeriksaSmkp::pasang();
     }
 
     public function down(): void
