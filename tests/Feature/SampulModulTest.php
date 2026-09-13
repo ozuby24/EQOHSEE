@@ -6,6 +6,7 @@ use App\Models\{Company, MineMapLayer, User, WaterLog, WaterSump};
 use App\Support\{KondisiSitus, Media, Menu, SampulModul, Waktu};
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -279,6 +280,58 @@ class SampulModulTest extends TestCase
             'Nama situsnya tetap disebut — yang dibuang hanya koordinatnya.');
         $this->assertNull($lokasi['koordinat'],
             'Titik di sekitar (0,0) berarti belum berkoordinat, bukan berkoordinat nol.');
+    }
+
+    /**
+     * Kolom yang dipakai KondisiSitus harus BENAR-BENAR ADA.
+     *
+     * Uji fungsional tidak dapat menangkap ini, dan itu bukan kelalaian
+     * melainkan perbedaan dialek. Laravel mengutip pengenal dengan kutip
+     * ganda pada SQLite, dan SQLite memperlakukan kutip ganda yang tidak
+     * cocok dengan kolom mana pun sebagai STRING BIASA: `order by
+     * "luas_ha"` menjadi pengurutan terhadap tetapan — berhasil, tanpa
+     * berefek, tanpa satu pun peringatan. MySQL memakai backtick dan
+     * menolaknya dengan "Unknown column".
+     *
+     * Terukur: `luas_ha` (milik tabel reklamasi) tertulis pada query
+     * `mine_map_layers`, lolos 2.200 uji beserta penelusuran peramban di
+     * SQLite, lalu menjawab 500 pada SETIAP halaman awal modul di
+     * produksi yang memakai MySQL.
+     *
+     * Nama kolomnya dibaca DARI berkasnya, bukan ditulis ulang di sini —
+     * daftar yang ditulis ulang akan tetap cocok dengan dirinya sendiri
+     * meski querynya berubah.
+     */
+    public function test_kolom_yang_diurutkan_kondisi_situs_ada_di_tabelnya(): void
+    {
+        $isi = file_get_contents(app_path('Support/KondisiSitus.php'));
+
+        preg_match_all(
+            "/->(?:orderBy|orderByDesc)\(\s*'([a-z_][a-z0-9_]*)'/i",
+            $isi, $m,
+        );
+
+        $this->assertNotEmpty($m[1], 'Tidak ada pengurutan yang terbaca — polanya perlu disesuaikan.');
+
+        $hilang = [];
+
+        foreach (array_unique($m[1]) as $kolom) {
+            $adaDiSalahSatu = false;
+
+            foreach (['mine_map_layers', 'water_logs'] as $tabel) {
+                if (Schema::hasColumn($tabel, $kolom)) { $adaDiSalahSatu = true; break; }
+            }
+
+            if (!$adaDiSalahSatu) $hilang[] = $kolom;
+        }
+
+        sort($hilang);
+
+        $this->assertSame([], $hilang,
+            "KondisiSitus mengurutkan memakai kolom yang tidak ada:\n  ".implode("\n  ", $hilang)
+            ."\nDi SQLite ini lolos diam-diam — kutip ganda yang tak dikenal dibaca sebagai "
+            ."string — sedangkan MySQL menjawab \"Unknown column\", dan setiap halaman awal "
+            ."modul menjadi 500.");
     }
 
     public function test_tanpa_perusahaan_tidak_ada_keterangan_situs(): void
