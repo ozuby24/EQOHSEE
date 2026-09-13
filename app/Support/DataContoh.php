@@ -22,9 +22,11 @@ use App\Models\Miners\{Alur as MnrAlur, Blok as MnrBlok, Departemen as MnrDepart
     Simper as MnrSimper, SimperAjuan as MnrSimperAjuan, SimperAjuanUnit as MnrSimperAjuanUnit,
     SimperUnit as MnrSimperUnit, SubBlok as MnrSubBlok, Subkontraktor as MnrSubkontraktor,
     TipePermit as MnrTipePermit};
-use App\Models\Pjp\{
-    Evaluasi as PjpEvaluasi, Laporan as PjpLaporan, Pjp,
-    SmkpItem as PjpSmkpItem, SmkpJawaban as PjpSmkpJawaban, SmkpKategori as PjpSmkpKategori,
+use App\Models\{
+    Pjp, PjpEvaluasi, PjpLaporan,
+    SmkpChecklistItem as PjpSmkpItem,
+    SmkpChecklistAnswer as PjpSmkpJawaban,
+    SmkpChecklistCategory as PjpSmkpKategori,
 };
 use App\Models\Hr\{Absensi as HrAbsensi, AbsensiJejak as HrJejak, Cuti as HrCuti,
     JenisCuti as HrJenisCuti, Kebutuhan as HrKebutuhan, Kontrak as HrKontrak, Lembur as HrLembur,
@@ -36,7 +38,6 @@ use App\Support\Hr\{JalurCuti, JalurLembur, KebijakanCuti, MasterCuti, MasterPaj
 use Illuminate\Support\Facades\Hash;
 use App\Support\Miners\Acuan;
 use App\Support\Miners\MasterMiners;
-use App\Support\Pjp\DaftarPeriksaSmkp;
 use App\Support\Pembelian;
 use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, BiayaRealisasi,
                 Company, Document, DocumentIso, DocumentRevision, EnergyEquipment,
@@ -2324,16 +2325,17 @@ final class DataContoh
      */
     private function pjp(): int
     {
-        /* Daftar periksanya dipasang lebih dulu, dan pemasangannya
-           idempoten. Tanpa ini, data contoh pada pemasangan yang belum
-           pernah menjalankan `pjp:pasang` akan menghasilkan mitra tanpa
-           satu pun jawaban — dan skornya 0% bagi semuanya, tanpa satu
-           galat pun yang menandai bahwa masternya yang belum ada. */
-        DaftarPeriksaSmkp::pasang();
-
         $n = 0;
 
-        $butir = PjpSmkpItem::query()->with('kategori')->orderBy('urutan')->get();
+        /* Daftar periksanya diisi migrasi 2026_09_13_000002, bukan oleh
+           perintah tersendiri, jadi tidak ada yang perlu dipasang di
+           sini. Yang tetap dijaga adalah akibatnya bila masternya
+           kosong: mitra contoh akan lahir tanpa satu pun jawaban dan
+           berskor 0% bagi semuanya — angka yang terlihat sah dan tidak
+           menyebut sebabnya. Lebih baik tidak membuat apa pun. */
+        $butir = PjpSmkpItem::query()->with('category')->orderBy('urutan')->get();
+
+        if ($butir->isEmpty()) return 0;
 
         /* Dua mitra, dan nilai daftar periksanya ditentukan oleh satu
            angka: berapa dari setiap tiga butir yang dinilai penuh.
@@ -2359,12 +2361,12 @@ final class DataContoh
             $n++;
 
             foreach ($butir as $i => $satu) {
-                $legalitas = $satu->kategori?->kode === PjpSmkpKategori::LEGALITAS;
+                $legalitas = $satu->category?->kode === PjpSmkpKategori::LEGALITAS;
                 $penuh     = $i % $b['tiap'] === 0;
 
                 PjpSmkpJawaban::withoutGlobalScopes()->create([
                     'pjp_id'  => $pjp->id,
-                    'item_id' => $satu->id,
+                    'smkp_checklist_item_id' => $satu->id,
 
                     /* Kategori LEGALITAS dijawab ada/tidak ada; A–P
                        dinilai 0–3. Mengisi keduanya dengan kolom yang

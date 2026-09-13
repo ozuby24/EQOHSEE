@@ -1,81 +1,49 @@
 <script setup lang="ts">
-/**
- * Daftar perusahaan jasa beserta ketiga skornya.
- *
- * Ketiga skor ditampilkan berdampingan, bukan diringkas menjadi satu
- * kolom. Achievement memang satu angka, tetapi angka itu sengaja
- * merupakan yang TERENDAH di antara ketiganya — dan tanpa ketiganya
- * terlihat, pembacanya tidak dapat tahu sisi mana yang menariknya turun.
- *
- * Penyaringan dikerjakan server, bukan di peramban. Daftar mitra dapat
- * tumbuh melewati satu layar, dan penyaring yang hanya bekerja atas
- * baris yang sudah terkirim akan diam-diam menyembunyikan sisanya.
- */
 import { Head, Link, router } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
-import { propHalaman } from '../../halaman';
-import { KEADAAN } from '../../Grafik/warna';
+import PjpBilahStatus from '../../Components/PjpBilahStatus.vue';
+import PjpLencanaStatus from '../../Components/PjpLencanaStatus.vue';
+import PjpNav from '../../Components/PjpNav.vue';
+import PjpSaring from '../../Components/PjpSaring.vue';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
 
-const props = propHalaman();
+const { dialog, tanya, batal, lanjut } = useDialog();
 
-/* Ditegaskan sebagai daftar. Tanpa itu `v-for="(b, i) in props.baris"`
-   membuat indeksnya bertipe string|number — Vue memperbolehkan
-   perulangan atas objek — dan `i + 1` gagal diperiksa. */
-const baris = computed<any[]>(() => (props.baris ?? []) as any[]);
+const props = defineProps<{
+  judul: string;
+  subjudul: string;
+  pjps: {
+    data: Array<Record<string, any>>;
+    links: Array<{ url: string | null; label: string; active: boolean }>;
+    total: number;
+    from: number | null;
+    to: number | null;
+  };
+  saring: { cari: string; status: string };
+  statusJumlah: Record<string, number>;
+  statusOpsi: Record<string, string>;
+  tautan: Record<string, string>;
+}>();
 
-const cari   = ref(String(props.saring?.cari ?? ''));
-const status = ref(String(props.saring?.status ?? ''));
+const untuk = (pola: string, id: number) => String(pola).replace('__ID__', String(id));
 
-let tunda: ReturnType<typeof setTimeout> | undefined;
+/* Nama perusahaannya harus diketik ulang sebelum tombolnya hidup.
+   Yang terhapus di sini bukan satu baris melainkan seluruh riwayat
+   pemantauannya — dokumen yang diunggah berbulan-bulan, 126 jawaban
+   daftar periksa, dan evaluasi tiap semester — dan di daftar yang
+   barisnya berdempetan, perusahaan yang salah tertekan terlihat persis
+   sama dengan yang benar sampai penegasannya menyebut namanya. */
+async function hapus(pjp: Record<string, any>) {
+  if (!await tanya({
+    judul: `Hapus data PJP “${pjp.nama_perusahaan}”?`,
+    pesan: 'Seluruh dokumen, checklist, dan evaluasinya ikut terhapus. '
+      + 'Tindakan ini tidak dapat dibatalkan.',
+    nada: 'bahaya',
+    labelAksi: 'Hapus',
+    tegasNama: pjp.nama_perusahaan,
+  })) return;
 
-/**
- * Menunda pengiriman, dan menahan gulirannya.
- *
- * Tanpa preserveState, tiap ketukan huruf memasang ulang komponennya
- * dan mengosongkan kotak isian di tengah pengetikan.
- */
-watch([cari, status], () => {
-  clearTimeout(tunda);
-
-  tunda = setTimeout(() => {
-    router.get('/pjp/daftar',
-      { cari: cari.value || undefined, status: status.value || undefined },
-      { preserveState: true, preserveScroll: true, replace: true });
-  }, 300);
-});
-
-function nada(skor: number | null | undefined): string {
-  if (skor === null || skor === undefined) return KEADAAN.netral;
-  if (skor >= 80) return KEADAAN.baik;
-  if (skor >= 55) return KEADAAN.ingat;
-  return KEADAAN.gawat;
-}
-
-const angka = (v: number | null | undefined) => (v === null || v === undefined ? '—' : v);
-
-/**
- * Warna lencana status.
- *
- * Dipetakan langsung dari statusnya, bukan dititipkan pada nada() dengan
- * angka karangan. "Tidak Aktif" bukan skor rendah — ia mitra yang memang
- * tidak lagi dipantau, dan mewarnainya merah menyuruh orang mengurus
- * sesuatu yang tidak perlu diurus.
- */
-const WARNA_STATUS: Record<string, string> = {
-  aktif:               KEADAAN.baik,
-  perlu_tindak_lanjut: KEADAAN.serius,
-  tidak_aktif:         KEADAAN.netral,
-};
-
-const warnaStatus = (s: string) => WARNA_STATUS[s] ?? KEADAAN.netral;
-
-function tautanUnduh(dasar: string): string {
-  const q = new URLSearchParams();
-  if (cari.value) q.set('cari', cari.value);
-  if (status.value) q.set('status', status.value);
-  const s = q.toString();
-
-  return s ? `${dasar}?${s}` : dasar;
+  router.delete(untuk(props.tautan.hapusPola, pjp.id), { preserveScroll: true });
 }
 </script>
 
@@ -83,89 +51,90 @@ function tautanUnduh(dasar: string): string {
   <Head :title="props.judul" />
 
   <div class="max-w-[1400px] mx-auto space-y-5">
-    <section class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <p class="text-[12.5px] text-stone-500 mt-0.5">
-          Skor terendah dari ketiga sisi yang menentukan angka achievement-nya.
-        </p>
+    <!--
+      Judul dan tombol menumpuk pada layar sempit. Dipaksa sebaris,
+      deretan tombol ini meluber keluar layar di lebar ~390px — tanpa
+      galat, hanya teks yang terpotong di tepi kanan.
+    -->
+    <!-- Judul dan subjudulnya ada di kop kerangka; yang tersisa di sini
+         hanya tindakannya. -->
+    <div class="flex flex-wrap items-end justify-end gap-4">
+      <div class="flex w-full flex-wrap gap-2 sm:w-auto">
+        <a :href="props.tautan.ekspor" class="eq-btn-lain px-5 !flex-none">Ekspor CSV</a>
+        <Link :href="props.tautan.baru" class="eq-btn-utama px-5 !flex-none">+ Tambah PJP</Link>
       </div>
+    </div>
 
-      <span class="inline-flex flex-wrap gap-2">
-        <a :href="tautanUnduh('/pjp/csv')" class="eq-btn-lain">Unduh CSV</a>
-        <Link :href="tautanUnduh('/pjp/cetak')" class="eq-btn-lain">Cetak</Link>
-        <Link href="/pjp/baru" class="eq-btn-utama">+ Tambah mitra</Link>
-      </span>
-    </section>
+    <PjpNav :tautan="props.tautan" aktif="daftar" />
 
-    <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
-      <header class="px-5 py-3.5 border-b border-stone-100 flex flex-wrap items-center gap-3">
-        <h3 class="text-[13.5px] font-bold text-cam-ink flex-1 min-w-0">
-          Perusahaan jasa <span class="font-normal text-stone-400">| {{ baris.length }} data</span>
-        </h3>
+    <PjpBilahStatus judul="Sebaran Status Seluruh PJP" :jumlah="props.statusJumlah" :opsi="props.statusOpsi" />
 
-        <select v-model="status" class="rounded-lg border-stone-200 text-[12px]" aria-label="Saring status">
-          <option value="">Semua status</option>
-          <option v-for="(label, kode) in (props.STATUS ?? {})" :key="kode" :value="kode">{{ label }}</option>
-        </select>
+    <PjpSaring :aksi="props.tautan.daftar" :awal="props.saring" :status-opsi="props.statusOpsi" />
 
-        <input v-model="cari" placeholder="Cari nama, NIB, penanggung jawab…"
-               class="rounded-lg border-stone-200 text-[12px] w-64" aria-label="Cari perusahaan jasa">
-      </header>
-
+    <section v-if="props.pjps.data.length" class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="min-w-full text-left text-[11.5px]">
+        <table class="min-w-full text-left text-[12px]">
           <thead>
-            <tr class="text-stone-400 border-b border-stone-200 bg-stone-50/70">
-              <th class="px-4 py-2 font-semibold w-10">No</th>
-              <th class="px-4 py-2 font-semibold">Perusahaan Jasa</th>
-              <th class="px-4 py-2 font-semibold whitespace-nowrap">NIB</th>
-              <th class="px-4 py-2 font-semibold whitespace-nowrap">Penanggung Jawab</th>
-              <th class="px-4 py-2 font-semibold whitespace-nowrap text-right">SMKP</th>
-              <th class="px-4 py-2 font-semibold whitespace-nowrap text-right">Pelaporan</th>
-              <th class="px-4 py-2 font-semibold whitespace-nowrap text-right">Evaluasi</th>
-              <th class="px-4 py-2 font-semibold whitespace-nowrap text-right">Achievement</th>
-              <th class="px-4 py-2 font-semibold whitespace-nowrap">Status</th>
+            <tr class="border-b border-stone-100 text-stone-400">
+              <th class="px-5 py-3">Nama Perusahaan</th>
+              <th class="px-5 py-3">NIB</th>
+              <th class="px-5 py-3">Penanggung Jawab</th>
+              <th class="px-5 py-3">Status</th>
+              <th class="px-5 py-3 text-right">Aksi</th>
             </tr>
           </thead>
-
           <tbody>
-            <tr v-for="(b, i) in baris" :key="b.id"
-                class="border-b border-stone-100 hover:bg-stone-50/60">
-              <td class="px-4 py-2.5 num text-stone-400">{{ i + 1 }}</td>
-
-              <td class="px-4 py-2.5">
-                <Link :href="`/pjp/${b.id}`" class="font-bold text-cam-lime-deep hover:underline">
-                  {{ b.nama_perusahaan }}
-                </Link>
+            <tr v-for="pjp in props.pjps.data" :key="pjp.id" class="border-b border-stone-50">
+              <td class="px-5 py-3 font-semibold text-stone-700">
+                {{ pjp.nama_perusahaan }}
+                <small v-if="pjp.company" class="block text-[10px] text-stone-400">{{ pjp.company.name }}</small>
               </td>
-
-              <td class="px-4 py-2.5 num text-stone-500 whitespace-nowrap">{{ b.nib || '—' }}</td>
-              <td class="px-4 py-2.5 text-stone-500 whitespace-nowrap">{{ b.penanggung_jawab || '—' }}</td>
-
-              <td class="px-4 py-2.5 num text-right whitespace-nowrap" :style="{ color: nada(b.smkp) }">{{ angka(b.smkp) }}</td>
-              <td class="px-4 py-2.5 num text-right whitespace-nowrap" :style="{ color: nada(b.pelaporan) }">{{ angka(b.pelaporan) }}</td>
-              <td class="px-4 py-2.5 num text-right whitespace-nowrap" :style="{ color: nada(b.evaluasi) }">{{ angka(b.evaluasi) }}</td>
-
-              <td class="px-4 py-2.5 text-right whitespace-nowrap">
-                <span class="num font-bold" :style="{ color: nada(b.achievement) }">{{ angka(b.achievement) }}</span>
+              <td class="px-5 py-3 text-stone-500">{{ pjp.nib || '—' }}</td>
+              <td class="px-5 py-3 text-stone-500">{{ pjp.penanggung_jawab || '—' }}</td>
+              <td class="px-5 py-3">
+                <PjpLencanaStatus :status="pjp.status" :label="props.statusOpsi[pjp.status] ?? pjp.status" />
               </td>
-
-              <td class="px-4 py-2.5 whitespace-nowrap">
-                <span class="rounded px-1.5 py-0.5 text-[10px] font-bold"
-                      :style="{ background: warnaStatus(b.status) + '1F', color: warnaStatus(b.status) }">
-                  {{ (props.STATUS ?? {})[b.status] ?? b.status }}
-                </span>
-              </td>
-            </tr>
-
-            <tr v-if="!baris.length">
-              <td colspan="9" class="px-4 py-10 text-center text-[12px] text-stone-400">
-                {{ cari || status ? 'Tidak ada yang cocok dengan penyaring ini.' : 'Belum ada perusahaan jasa terdaftar.' }}
+              <td class="px-5 py-3 text-right whitespace-nowrap">
+                <Link :href="untuk(props.tautan.detail, pjp.id)" class="text-[11px] font-bold text-cam-orange">Detail</Link>
+                <Link :href="untuk(props.tautan.checklistUntuk, pjp.id)" class="ml-3 text-[11px] font-bold text-stone-500">Checklist</Link>
+                <button type="button" class="ml-3 text-[11px] font-bold text-red-600" @click="hapus(pjp)">Hapus</button>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+
+      <div v-if="props.pjps.links.length > 3" class="flex flex-wrap items-center justify-between gap-3 border-t border-stone-100 px-5 py-3">
+        <span class="text-[11px] text-stone-400">
+          Menampilkan {{ props.pjps.from ?? 0 }}–{{ props.pjps.to ?? 0 }} dari {{ props.pjps.total }} PJP
+        </span>
+        <div class="flex flex-wrap gap-1">
+          <!--
+            Label halaman datang dari Laravel dan memuat entitas HTML
+            (&laquo;, &raquo;), jadi digambar dengan v-html. Aman: isinya
+            dibuat paginator, bukan masukan pengguna.
+          -->
+          <component
+            :is="tautan.url ? Link : 'span'"
+            v-for="(tautan, i) in props.pjps.links"
+            :key="i"
+            :href="tautan.url || undefined"
+            class="rounded-lg px-3 py-1.5 text-[11px] font-bold"
+            :class="tautan.active
+              ? 'bg-cam-ink text-white'
+              : tautan.url ? 'bg-white text-stone-500 border border-stone-200' : 'text-stone-300'"
+            v-html="tautan.label"
+          />
+        </div>
+      </div>
     </section>
+
+    <p v-else class="rounded-2xl bg-white border border-stone-100 shadow-card p-10 text-center text-[12px] text-stone-400">
+      {{ props.saring.cari || props.saring.status
+        ? 'Tidak ada PJP yang cocok dengan penyaring.'
+        : 'Belum ada data PJP. Tambahkan data untuk mulai memantau dan mengelola PJP.' }}
+    </p>
+
+    <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
   </div>
 </template>

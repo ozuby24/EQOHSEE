@@ -13,6 +13,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import type { PropBersama } from '../types';
 import KopHalaman from '../Components/KopHalaman.vue';
+import SampulModul from '../Components/SampulModul.vue';
 import KutipanKaki from '../Components/KutipanKaki.vue';
 
 /*
@@ -39,6 +40,14 @@ const tautan = (inertia: boolean) => (inertia ? Link : 'a');
 
 const halaman = usePage<PropBersama>();
 const menu    = computed(() => halaman.props.menu);
+
+/*
+  Sampul hanya dikirim server pada halaman AWAL tiap modul — lihat
+  HandleInertiaRequests::sampul(). Di sini tidak ada aturan kedua tentang
+  kapan ia muncul: aturan yang ditulis di dua tempat akan berselisih, dan
+  yang di sisi peramban adalah yang paling sulit diperiksa.
+*/
+const sampul  = computed(() => (halaman.props as Record<string, unknown>).sampul as any ?? null);
 
 /** Ikon modul yang sedang dibuka, untuk kotak pemindah modul. */
 const ikonModul = computed(() => menu.value?.modul?.find((m) => m.aktif)?.ikon ?? null);
@@ -746,6 +755,8 @@ function keluar() {
         </div>
 
         <div class="max-w-[1400px] mx-auto space-y-4">
+          <SampulModul v-if="sampul" :sampul="sampul" />
+
           <KopHalaman v-if="!kopSendiri" :judul="judul" :subjudul="subjudul ?? null"
                       :label="menu?.label ?? null" :tagline="menu?.semboyan ?? null"
                       :remah="remahKop"

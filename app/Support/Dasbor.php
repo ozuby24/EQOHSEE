@@ -4,7 +4,7 @@ namespace App\Support;
 
 use App\Models\Investigasi\{Insiden, Tindakan as TindakanInvestigasi};
 use App\Models\Pembelian\Pesanan as PesananBeli;
-use App\Models\Pjp\{Laporan as LaporanPjp, Pjp};
+use App\Models\{Pjp, PjpLaporan as LaporanPjp};
 use App\Models\Hr\Absensi as HrAbsensi;
 use App\Models\Hr\Roster as HrRoster;
 use App\Models\Miners\{Alur as MnrAlur, Pekerja as MnrPekerja, Permit as MnrPermit};
@@ -125,17 +125,17 @@ final class Dasbor
              * pada halaman yang justru harus terbuka cepat. */
             [
                 'modul' => 'pjp', 'nama' => 'Laporan Bulanan Menunggak',
-                'ket'   => 'Lewat tanggal '.LaporanPjp::BATAS_TANGGAL.', belum diterima',
+                'ket'   => 'Lewat tanggal '.LaporanPjp::BATAS_TANGGAL_LAPORAN.', belum diterima',
                 'nilai' => Pjp::belumLaporanBulananBulanIni()->count(),
                 'total' => Pjp::where('status', '!=', 'tidak_aktif')->count(),
-                'rute'  => 'pjp.dasbor', 'nada' => 'gawat',
+                'rute'  => 'pjp.pelaporan', 'nada' => 'gawat',
             ],
             [
                 'modul' => 'pjp', 'nama' => 'Dokumen Belum Dinilai',
                 'ket'   => 'Sudah diunggah, kesesuaian isinya belum diperiksa',
                 'nilai' => LaporanPjp::whereNull('kesesuaian_isi')->count(),
                 'total' => LaporanPjp::count(),
-                'rute'  => 'pjp.index', 'nada' => 'serius',
+                'rute'  => 'pjp.pelaporan', 'nada' => 'serius',
             ],
 
             /* ═══ uang masuk ═══

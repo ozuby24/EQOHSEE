@@ -310,18 +310,38 @@ final class Menu
        menu SMKP membuat orang yang mencari berkas mitra membuka
        audit internal, dan sebaliknya. */
     'pjp' => [
-      'label' => 'Perusahaan Jasa',
+      /* "Pertambangan" bukan hiasan pada namanya. Perusahaan jasa
+         pertambangan adalah sebutan yang dipakai regulasinya sendiri —
+         Kepdirjen Minerba 185/2019 — untuk badan usaha yang wajib
+         diprakualifikasi sebelum dipekerjakan di wilayah izin. Tanpa
+         kata itu namanya terbaca sebagai vendor mana pun, termasuk
+         pemasok alat tulis, dan modul ini justru tidak mengurusi
+         mereka. */
+      'label' => 'Perusahaan Jasa Pertambangan',
       'semboyan' => 'Proven On Paper',
       'kutipan' => 'Tanggung jawab keselamatan tidak ikut berpindah bersama pekerjaannya.',
       'tema'  => 'safetrack',
       'icon'  => 'M4 21h9M6 21V5a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v6M9 8h1M9 11.5h1M14.5 17.5l2.2 2.2 4.3-4.3',
+      /* Ketiga aspek berdiri sebagai kelompoknya sendiri, bukan
+         dilipat ke bawah Ringkasan. Ketiganya berjalan BERSAMAAN untuk
+         tiap mitra — persyaratan, pelaporan, dan evaluasi diisi kapan
+         saja tanpa menunggu yang lain — dan menaruhnya sebagai satu
+         butir membuat modul ini terbaca seolah bertahap. */
       'groups' => [
         '' => [
-          ['Ringkasan', 'pjp.dasbor', 'pjp'],
+          ['Ringkasan', 'pjp.index', 'pjp'],
+        ],
+        'Aspek Pemantauan' => [
+          ['Persyaratan & Penetapan', 'pjp.persyaratan', 'pjp/persyaratan'],
+          ['Pemantauan & Pelaporan',  'pjp.pelaporan',   'pjp/pelaporan'],
+          ['Evaluasi Kinerja',        'pjp.evaluasi',    'pjp/evaluasi'],
         ],
         'Mitra' => [
-          ['Daftar Perusahaan Jasa', 'pjp.index', 'pjp/daftar*'],
-          ['Tambah Perusahaan Jasa', 'pjp.baru',  'pjp/baru'],
+          ['Daftar Perusahaan Jasa', 'pjp.daftar', 'pjp/daftar'],
+          ['Tambah Perusahaan Jasa', 'pjp.baru',   'pjp/daftar/baru'],
+        ],
+        'Acuan' => [
+          ['Bantuan', 'pjp.bantuan', 'pjp/bantuan'],
         ],
       ],
     ],

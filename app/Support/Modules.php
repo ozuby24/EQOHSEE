@@ -109,7 +109,7 @@ class Modules
                Menggabungkan keduanya dalam satu kartu membuat pembeli
                mengira sudah memiliki yang sebenarnya belum dibeli. */
             ['nama' => 'Pemantauan Perusahaan Jasa (PJP)', 'status' => 'aktif', 'pilar' => 'safety',
-             'rute' => 'pjp.dasbor',
+             'rute' => 'pjp.index',
              'ket'  => 'Prakualifikasi SMKP 17 kategori dan 126 butir, dokumen berkala beserta ketepatan waktunya, dan evaluasi kinerja semesteran tiap mitra kerja — satu berkas yang siap diminta Inspektur Tambang.',
              'ikon' => 'M4 21h9M6 21V5a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v6M9 8h1M9 11.5h1M14.5 17.5l2.2 2.2 4.3-4.3'],
 
