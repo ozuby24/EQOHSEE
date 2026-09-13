@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\{MineOperationalRecord, User};
 use App\Support\Alur;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -18,6 +19,40 @@ use Tests\TestCase;
 class AlurTinjauanTest extends TestCase
 {
     use RefreshDatabase;
+
+    /**
+     * Isian uji ini bertanggal tetap, sementara halaman Operasi menyaring
+     * BULAN BERJALAN (now()->startOfMonth() .. endOfMonth()). Selama
+     * bulannya kebetulan sama, uji lulus; begitu kalender berganti bulan,
+     * datanya jatuh di luar rentang bawaan dan dua uji KPI gagal — tanpa
+     * ada satu baris kode pun yang berubah.
+     *
+     * Persis itu yang terjadi: ditulis pada Agustus 2026, merah sendiri
+     * pada September 2026. Kegagalan semacam itu paling mahal bukan
+     * karena sulit diperbaiki, melainkan karena ia menuduh perubahan yang
+     * tidak bersalah — orang mencari sebabnya di kode yang baru disentuh,
+     * padahal yang berubah hanya tanggal di dinding.
+     *
+     * Membekukan jam membuat uji ini menjawab pertanyaannya sendiri —
+     * alur tinjauan — bukan pertanyaan tentang hari ini tanggal berapa.
+     * Dipilih daripada sekadar menggeser tanggalnya ke bulan berjalan,
+     * sebab yang terakhir masih dapat pecah bila uji berjalan tepat pada
+     * pergantian bulan: barisnya lahir di bulan lama, dan penyaring
+     * halamannya sudah membaca bulan baru.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Carbon::setTestNow(Carbon::parse('2026-08-14 09:00:00'));
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
+    }
 
     private function operator(): User
     {
