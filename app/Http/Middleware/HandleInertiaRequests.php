@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Support\{IkonNav, Lencana, Media, Menu, RuteInertia, Tema};
+use App\Support\{IkonNav, KondisiSitus, Lencana, Media, Menu, RuteInertia, SampulModul, Tema};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
@@ -54,6 +54,12 @@ class HandleInertiaRequests extends Middleware
                 ? \App\Models\News::where('created_at', '>=', now()->subDays(30))->count()
                 : 0,
 
+            /* Sampul halaman awal modul: foto, geo tag, dan kondisi cuaca.
+               Ditutup dalam closure supaya kueri cuacanya tidak berjalan
+               pada kunjungan sebagian (partial reload) yang tidak
+               memintanya. */
+            'sampul' => fn () => $this->sampul($u),
+
             'tema'  => Tema::pilihan($u),
             'warna' => [
                 'aksen' => Tema::aksen($u),
@@ -70,6 +76,37 @@ class HandleInertiaRequests extends Middleware
                 'poster' => Media::masukPoster(),
             ],
         ]);
+    }
+
+    /**
+     * Sampul modul — hanya pada HALAMAN AWAL modulnya, bukan tiap subhalaman.
+     *
+     * Sebuah foto setinggi dua ratus piksel di atas setiap subhalaman
+     * berhenti menjadi sambutan dan berubah menjadi penghalang: orang
+     * yang sedang mengisi formulir menggulir melewati pemandangan yang
+     * sama berulang kali. Di halaman awal ia menjawab "saya ada di modul
+     * apa, di situs mana, dan hari ini bagaimana"; di halaman kelima ia
+     * tidak menjawab apa pun.
+     */
+    private function sampul($u): ?array
+    {
+        $kunci = Menu::modulAktif();
+        $modul = Menu::modul($kunci);
+
+        $ruteAwal = Menu::ruteAwal($modul);
+
+        if ($ruteAwal === null || request()->route()?->getName() !== $ruteAwal) {
+            return null;
+        }
+
+        $gambar = SampulModul::untuk($kunci);
+
+        if ($gambar === null) return null;
+
+        return $gambar + [
+            'label'   => $modul['label'] ?? null,
+            'kondisi' => KondisiSitus::untuk($u),
+        ];
     }
 
     /**

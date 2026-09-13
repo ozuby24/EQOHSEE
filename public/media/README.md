@@ -59,6 +59,39 @@ kotak kosong membuat galerinya terbaca sebagai rusak, bukan sebagai belum
 lengkap. Bila belum ada satu pun berkas, semua kartu muncul sebagai tempat
 foto agar bagian ini tidak hilang sama sekali.
 
+## Sampul modul
+
+Semua di folder `sampul/`, satu pasang per foto: `<nama>.jpg` dan
+`<nama>.webp`. Dipakai sebagai sampul halaman AWAL tiap modul — bukan
+tiap subhalaman. Pemetaan modul → foto ada di `App\Support\SampulModul`.
+
+| Berkas | Isi | Dipakai modul |
+|---|---|---|
+| `pelabuhan-muat.*`  | Pemuatan di dermaga curah        | Perusahaan Jasa Pertambangan, Gudang |
+| `jalan-angkut.*`    | Jalan angkut dan armada          | Dispatch & Hauling, Maintenance, Hazard, Izin Kerja |
+| `pelabuhan-senja.*` | Terminal dan konveyor pemuatan   | Biaya, Energi, Dokumen, Administrasi |
+| `pit-pemuatan.*`    | Pemuatan di area penambangan     | Mine Operations, Air, Konservasi, Keselamatan Operasi |
+| `pit-panorama.*`    | Panorama area penambangan        | Kestabilan Lereng, Lingkungan, Peledakan, Mining Engineering |
+| `pengawasan-pit.*`  | Pengawasan area penambangan      | Personalia, LMS, Safety Maturity, Audit SMKP |
+
+Anjuran: 16∶9, **1600×900**, JPG mutu 82 dan WebP mutu 80, masing-masing
+di bawah 300 KB. Aslinya PNG 2,4 MB per gambar; di jaringan site tambang
+dua puluh halaman awal bersampul sebesar itu bukan kesan mewah melainkan
+halaman yang tidak kunjung muncul.
+
+Sampul yang berkasnya belum ada tidak menggambar apa pun — halamannya
+tetap utuh, tanpa gambar rusak. Modul baru yang belum dipetakan memakai
+`pit-panorama` sebagai sampul bawaan.
+
+Di atas fotonya dipasang **geo tag dan kondisi cuaca**
+(`App\Support\KondisiSitus`). Keduanya dibaca dari data yang sudah
+tercatat sendiri — lokasi dari data perusahaan, koordinat dari titik
+tengah layer peta tambang, dan cuaca dari kolom `curah_hujan_mm` pada
+catatan harian kolam — bukan dari layanan ramalan di luar. Tanpa catatan,
+lencana cuacanya tidak muncul sama sekali; menuliskan "Cerah" untuk hari
+yang tidak seorang pun mengukurnya adalah mengarang di tempat yang
+terlihat seperti bacaan alat.
+
 ## Logo perusahaan pengguna
 
 Taruh di `klien/`, satu berkas per perusahaan — `adaro.svg`,

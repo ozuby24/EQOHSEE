@@ -240,7 +240,7 @@
       </div>
     </header>
 
-    <main class="flex-1 p-5 md:p-7 animate-fadeIn">@yield('content')</main>
+    <main class="flex-1 p-5 md:p-7 animate-fadeIn">@include('partials.sampul-modul')@yield('content')</main>
   </div>
 </div>
 

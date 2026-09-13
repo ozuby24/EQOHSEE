@@ -12,6 +12,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import type { PropBersama } from '../types';
+import SampulModul from '../Components/SampulModul.vue';
 
 /*
   `<Link>` HANYA untuk tujuan yang benar-benar dirender Inertia.
@@ -43,6 +44,14 @@ const pengguna   = computed(() => halaman.props.pengguna);
 const menu       = computed(() => halaman.props.menu);
 const kilat      = computed(() => halaman.props.kilat);
 const pengumuman = computed(() => halaman.props.pengumuman ?? 0);
+
+/*
+  Sampul hanya dikirim server pada halaman AWAL tiap modul — lihat
+  HandleInertiaRequests::sampul(). Di sini tidak ada aturan kedua tentang
+  kapan ia muncul: aturan yang ditulis di dua tempat akan berselisih, dan
+  yang di sisi peramban adalah yang paling sulit diperiksa.
+*/
+const sampul = computed(() => (halaman.props as Record<string, unknown>).sampul as any ?? null);
 
 const lacisTerbuka = ref(false);
 const sempit       = ref(false);
@@ -261,6 +270,10 @@ function keluar() {
       </header>
 
       <main class="flex-1 p-4 lg:p-6">
+        <div v-if="sampul" class="max-w-[1400px] mx-auto mb-5">
+          <SampulModul :sampul="sampul" />
+        </div>
+
         <div v-if="kilat.sukses" class="max-w-[1400px] mx-auto mb-5">
           <div class="rounded-xl px-4 py-3 text-[12.5px] font-semibold flex items-center gap-2.5"
                style="background:var(--eq-aksen-tipis,rgba(14,116,126,.12));color:var(--eq-aksen,#F57C00)">
