@@ -281,14 +281,14 @@ class SmkpTest extends TestCase
            dipakai dalam surat-menyurat antar-perusahaan, tempat "NC-01"
            saja tidak cukup menunjuk temuan siapa. */
         $this->assertSame(['NC-01','NC-02','NC-03'], array_column($t, 'nomor'));
-        $this->assertSame(['CAM-MAY-01','CAM-MAY-02','CAM-MIN-01'], array_column($t, 'kode_nc'));
+        $this->assertSame(['CAM-MYR-01','CAM-MYR-02','CAM-MIN-01'], array_column($t, 'kode_nc'));
     }
 
     public function test_kode_nc_jatuh_ke_awalan_bawaan_bila_perusahaan_tak_berkode(): void
     {
         $t = Smkp::beriNomor(Smkp::temuan(['I.1'=>['v'=>0]]), '');
 
-        $this->assertSame('NC-MAY-01', $t[0]['kode_nc']);
+        $this->assertSame('NC-MYR-01', $t[0]['kode_nc']);
     }
 
     public function test_hitung_temuan_per_jenis(): void

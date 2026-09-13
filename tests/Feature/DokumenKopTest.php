@@ -241,21 +241,29 @@ class DokumenKopTest extends TestCase
         $this->masuk($c);
         $a = $this->audit($c);
 
-        /* DUA lembar tetap — ringkasan nilai lalu pelaksanaan audit dan tim
-           auditornya — sebelum daftar temuan mulai berlembar sendiri tiap
-           enam baris. Yang dijaga uji ini pertumbuhannya, bukan angka
-           tetapnya: penomoran "Halaman 2 dari 2" pada berkas terkendali
-           tidak boleh menyebut lembar yang tidak ada. */
-        $this->get(route('smkp.laporan', $a))->assertOk()->assertInertia(fn (AssertableInertia $p) => $p->where('totalLembar', 3));
+        /* ENAM lembar tetap, mengikuti urutan berkas acuan — sampul dan
+           latar belakang, gambaran umum, penerapan tiap elemen, lingkup
+           dan penilaian, pelaksanaan audit, praktik terbaik — lalu daftar
+           ketidaksesuaian yang berlembar sendiri tiap delapan baris, lalu
+           satu lembar penutup berisi lampiran, distribusi, dan tanda
+           tangan.
 
-        for ($i = 1; $i <= 8; $i++) {
+           Yang dijaga uji ini PERTUMBUHANNYA, bukan angka tetapnya:
+           penomoran "Halaman 2 dari 2" pada berkas terkendali tidak boleh
+           menyebut lembar yang tidak ada. */
+        $this->get(route('smkp.laporan', $a))->assertOk()
+            ->assertInertia(fn (AssertableInertia $p) => $p->where('totalLembar', 6 + 1 + 1));
+
+        // Delapan ketidaksesuaian masih muat satu lembar; yang kesembilan tidak.
+        for ($i = 1; $i <= 9; $i++) {
             $a->findings()->create([
                 'kode_kriteria' => 'I.'.$i, 'jenis' => 'minor',
                 'uraian' => 'Temuan '.$i, 'status' => 'Open',
             ]);
         }
 
-        $this->get(route('smkp.laporan', $a))->assertOk()->assertInertia(fn (AssertableInertia $p) => $p->where('totalLembar', 4));
+        $this->get(route('smkp.laporan', $a))->assertOk()
+            ->assertInertia(fn (AssertableInertia $p) => $p->where('totalLembar', 6 + 2 + 1));
     }
 
     public function test_lembar_terakhir_tidak_memaksa_halaman_baru(): void

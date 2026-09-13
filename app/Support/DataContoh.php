@@ -5464,20 +5464,26 @@ final class DataContoh
                satu temuan sengaja MELEWATI target tanggalnya —
                keterlambatan yang tidak pernah muncul di data contoh
                tidak membuktikan penghitung keterlambatannya bekerja. */
+            /* KODE, bukan label. Kolom jenis hanya menyimpan 'mayor',
+               'minor', atau 'obs' — label panjang membuat tiap hitungan
+               `where('jenis','mayor')` menghasilkan nol atas audit yang
+               tabelnya berisi temuan. Model menyeragamkannya pada
+               penulisan; ditulis benar di sini supaya sumbernya pun
+               tidak lagi menyesatkan pembacanya. */
             $temuan = [
-                ['I.1.1', 'Ketidaksesuaian Mayor',
+                ['I.1.1', 'mayor',
                  'Kebijakan keselamatan belum ditinjau ulang dalam tiga tahun terakhir.',
                  'Tinjauan manajemen tidak dijadwalkan dalam program tahunan.',
                  'Closed', -60, -35],
-                ['II.3.2', 'Ketidaksesuaian Minor',
+                ['II.3.2', 'minor',
                  'Sebagian identifikasi bahaya belum memuat pengendalian yang dapat diverifikasi.',
                  'Format IBPR lama masih dipakai di dua departemen.',
                  'In Progress', 20, null],
-                ['IV.2.1', 'Ketidaksesuaian Minor',
+                ['IV.2.1', 'minor',
                  'Rekaman inspeksi jalan angkut tidak lengkap pada dua bulan berjalan.',
                  'Pengawas belum mendapat pelatihan pengisian formulir baru.',
                  'Open', -8, null],
-                ['V.1.4', 'Observasi',
+                ['V.1.4', 'obs',
                  'Papan informasi keselamatan di simpang timbang tertutup material.',
                  null, 'Closed', -25, -21],
             ];

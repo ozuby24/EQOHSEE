@@ -557,11 +557,38 @@ main a{transition:color .16s}
    berbagi ruang seperti sebelumnya — yang hilang hanya kemampuannya
    menyusut sampai lebih kecil daripada tulisannya, dan itu memang tidak
    pernah berguna. */
-.eq-btn-utama{display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:1;
-  min-width:fit-content;
+/* TOMBOL SELEBAR ISINYA, bukan selebar barisnya.
+ *
+ * Aturan ini dulu berbunyi `flex:1`, dimaksudkan untuk baris berisi dua
+ * tombol yang membagi lebarnya rata. Tetapi ia berlaku pada SETIAP wadah
+ * flex, dan sebagian besar tombol utama tidak duduk di baris semacam itu
+ * — ia duduk di samping penyaring, di samping kalimat keterangan, atau
+ * sendirian di ujung baris.
+ *
+ * Terukur dengan menyapu 244 halaman: 57 di antaranya memuat tombol yang
+ * memuai jauh melampaui isinya. "Terbitkan" pada Kalender Regu selebar
+ * 444px berdampingan dengan "Susun baseline" selebar 129px; "Simpan
+ * produksi" pada Input Energi selebar 520px. Keduanya terbaca sebagai
+ * bilah, bukan sebagai tombol, dan keduanya membuat baris yang memuatnya
+ * kehilangan proporsinya.
+ *
+ * Baris yang memang hendak membagi rata sekarang menyebutkannya sendiri
+ * lewat `.eq-btn-baris` di bawah. Yang menyatakan maksudnya satu tempat;
+ * yang diam mendapat perilaku yang benar. */
+.eq-btn-utama{display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  flex:0 0 auto;min-width:fit-content;
   padding:10px 14px;border-radius:11px;font-size:12.5px;font-weight:700;
   background:linear-gradient(135deg,#F57C00,#DC6E00);color:#fff;
   transition:filter .18s,transform .18s cubic-bezier(.21,.6,.35,1)}
+
+/* Baris tombol yang SENGAJA dibagi rata — dua tindakan setara pada kaki
+   dialog atau kartu, tempat lebar yang sama menandakan bobot yang sama. */
+/* `> *`, bukan `> .eq-btn-utama, > .eq-btn-lain`. Di dalam baris ini
+   semuanya memang tombol, dan menyebut nama kelasnya sekali lagi
+   melahirkan aturan kedua bernama sama — yang membuat penjaga lantai
+   lebar tombol membaca aturan yang salah. */
+.eq-btn-baris{display:flex;gap:8px;flex-wrap:wrap}
+.eq-btn-baris > *{flex:1 1 0%}
 .eq-btn-utama:hover{filter:brightness(1.08)}
 .eq-btn-utama:active{transform:scale(.97)}
 .eq-btn-utama svg{width:13px;height:13px}

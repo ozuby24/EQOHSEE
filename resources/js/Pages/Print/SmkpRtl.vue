@@ -23,6 +23,8 @@ const props = defineProps<{
   audit: any;
   temuan: any[];
   ringkas: Record<string, number>;
+  /** Penanda tangan formulir: Nama Auditor dan Nama Auditi. */
+  ttd?: Array<{ peran: string; nama: string }>;
   meta?: any;
   dok?: any;
   kembali?: string;
@@ -82,56 +84,95 @@ function sisa(t: Record<string, any>): string {
         </div>
       </div>
 
-      <table class="w-full text-[10.5px] border border-stone-300">
+      <!-- `table-fixed`: lebar kolom ditetapkan persen, bukan ditawar dari
+           isi. Dengan tata letak otomatis, delapan kolom berlebar tetap
+           menjumlah satu piksel lebih lebar daripada lembarnya — dan satu
+           piksel itu cukup untuk memotong judul kolom terakhir di tepi
+           kertas. Terukur: tabel 817px di dalam lembar 816px. -->
+      <table class="w-full table-fixed text-[10.5px] border border-stone-300">
         <thead>
-          <tr class="bg-stone-100 text-left">
-            <th class="p-1.5 border-b border-stone-300 w-8">No</th>
-            <th class="p-1.5 border-b border-stone-300 w-14">Kriteria</th>
-            <th class="p-1.5 border-b border-stone-300">Ketidaksesuaian</th>
-            <th class="p-1.5 border-b border-stone-300">Tindakan perbaikan</th>
-            <th class="p-1.5 border-b border-stone-300 w-24">Penanggung jawab</th>
-            <th class="p-1.5 border-b border-stone-300 w-20">Tenggat</th>
-            <th class="p-1.5 border-b border-stone-300 w-24">Keadaan</th>
+          <!-- Kolomnya mengikuti Formulir Rencana Tindak Lanjut acuan:
+               Nomor Ketidaksesuaian dan AKAR PERMASALAHAN ikut tercetak.
+               Tanpa akar permasalahan, lembar ini hanya memuat apa yang
+               akan dikerjakan tanpa mengapa — dan tindakan koreksi yang
+               tidak menjawab akar masalahnya adalah tindakan yang akan
+               diulang pada audit berikutnya. -->
+          <!-- `break-words` pada baris judul, bukan hanya pada isinya:
+               "Ketidaksesuaian" satu kata sepanjang 15 aksara, dan pada
+               kolom selebar 90px ia meluber menimpa judul kolom
+               sebelahnya — terbaca "Nomor KetidakseKriteria". -->
+          <tr class="bg-stone-100 text-left align-bottom break-words">
+            <th class="p-1.5 border-b border-stone-300 w-[4%]">No</th>
+            <th class="p-1.5 border-b border-stone-300 w-[13%]">Nomor Ketidaksesuaian</th>
+            <th class="p-1.5 border-b border-stone-300 w-[7%]">Kriteria</th>
+            <th class="p-1.5 border-b border-stone-300 w-[17%]">Deskripsi Ketidaksesuaian</th>
+            <th class="p-1.5 border-b border-stone-300 w-[17%]">Akar Permasalahan</th>
+            <th class="p-1.5 border-b border-stone-300 w-[17%]">Tindakan Koreksi</th>
+            <th class="p-1.5 border-b border-stone-300 w-[11%]">Penanggung Jawab</th>
+            <!-- Kolom terakhir Formulir acuan adalah Batas Waktu
+                 Perbaikan; tidak ada kolom "Keadaan". Kolom kesembilan
+                 membuat tabelnya lebih lebar daripada lembarnya, dan dua
+                 kolom terakhir terpotong di tepi kertas. Keterlambatan
+                 tetap terlihat: tenggat yang lewat ditebalkan. -->
+            <th class="p-1.5 border-b border-stone-300 w-[13%]">Batas Waktu Perbaikan</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="t in props.temuan" :key="t.id" class="border-b border-stone-100 align-top">
+          <tr v-for="t in props.temuan" :key="t.id" class="border-b border-stone-100 align-top break-words">
             <td class="p-1.5">{{ t.urut }}</td>
+            <td class="p-1.5 font-semibold">{{ t.kode_nc }}</td>
             <td class="p-1.5 font-semibold">{{ t.kode_kriteria }}</td>
             <td class="p-1.5">{{ t.uraian }}</td>
+            <td class="p-1.5">
+              <template v-if="t.akar_masalah">{{ t.akar_masalah }}</template>
+              <span v-else class="block h-4 border-b border-dashed border-stone-300"></span>
+            </td>
             <td class="p-1.5">
               <template v-if="t.tindakan">{{ t.tindakan }}</template>
               <span v-else class="block h-4 border-b border-dashed border-stone-300"></span>
             </td>
             <td class="p-1.5">{{ t.penanggung_jawab || '—' }}</td>
-            <td class="p-1.5">{{ tanggal(t.target_selesai) }}</td>
-            <!-- Yang lewat tenggat ditebalkan; warnanya sengaja tidak
-                 dipakai sebagai satu-satunya penanda, sebab lembar ini
-                 sering dicetak hitam putih. -->
+            <!-- Yang lewat tenggat ditebalkan dan diberi keterangannya;
+                 warnanya sengaja tidak dipakai sebagai satu-satunya
+                 penanda, sebab lembar ini sering dicetak hitam putih. -->
             <td class="p-1.5" :class="t.lewat ? 'font-bold' : ''">
-              {{ sisa(t) }}
+              {{ tanggal(t.target_selesai) }}
+              <span v-if="t.lewat" class="block">({{ sisa(t) }})</span>
             </td>
           </tr>
           <tr v-if="!props.temuan?.length">
-            <td colspan="7" class="p-8 text-center text-stone-400">
+            <td colspan="8" class="p-8 text-center text-stone-400">
               Tidak ada tindak lanjut tercatat pada periode ini.
             </td>
           </tr>
         </tbody>
       </table>
 
-      <section class="grid grid-cols-2 gap-8 text-[11px] mt-8">
-        <div class="text-center">
-          <p class="mb-14">Disusun oleh — Ketua tim auditor,</p>
-          <p class="font-bold border-t border-stone-400 pt-1">
-            {{ props.audit?.ketua_auditor || '………………………………' }}
-          </p>
-        </div>
-        <div class="text-center">
-          <p class="mb-14">Disetujui oleh — Kepala Teknik Tambang,</p>
-          <p class="border-t border-stone-400 pt-1">………………………………</p>
-        </div>
-      </section>
+      <!-- Dua baris penanda tangan, sesuai Formulir Rencana Tindak
+           Lanjut acuan: Nama Auditor dan Nama Auditi, masing-masing
+           dengan kolom tanda tangan dan tanggal.
+
+           KTT TIDAK menandatangani formulir ini. Ia mengesahkan Rencana
+           Audit dan mengetahui Laporan Audit; rencana tindak lanjut
+           adalah kesepakatan antara auditor dan auditi atas perbaikan
+           yang menjadi tanggung jawab auditi. Kolom "Disetujui oleh —
+           Kepala Teknik Tambang" menuntut tanda tangan yang formulir ini
+           memang tidak minta, dan formulir yang kolomnya kosong terbaca
+           sebagai formulir yang belum lengkap. -->
+      <table class="w-full text-[11px] mt-8">
+        <tbody>
+          <tr v-for="b in props.ttd || []" :key="b.peran">
+            <td class="p-2 w-32 align-bottom">{{ b.peran }}</td>
+            <td class="p-2 w-52 align-bottom font-semibold border-b border-stone-400">
+              {{ b.nama || '&nbsp;' }}
+            </td>
+            <td class="p-2 w-28 align-bottom">Tanda Tangan</td>
+            <td class="p-2 w-44 align-bottom border-b border-stone-400">&nbsp;</td>
+            <td class="p-2 w-20 align-bottom">Tanggal</td>
+            <td class="p-2 align-bottom border-b border-stone-400">&nbsp;</td>
+          </tr>
+        </tbody>
+      </table>
     </section>
   </PrintShell>
 </template>

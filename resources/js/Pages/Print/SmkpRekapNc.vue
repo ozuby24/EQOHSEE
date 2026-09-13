@@ -19,6 +19,8 @@ const props = defineProps<{
   temuan: any[];
   perElemen: Array<Record<string, any>>;
   ringkas: Record<string, number>;
+  /** Penanda tangan formulir: Nama Lead Auditor, sesuai berkas acuan. */
+  ttd?: { peran: string; nama: string };
   meta?: any;
   dok?: any;
   kembali?: string;
@@ -63,8 +65,11 @@ const tanggal = (v: unknown) =>
 
       <!-- ringkasan angka -->
       <div class="grid grid-cols-5 gap-2 mb-5 text-center">
+        <!-- Kritikal ikut dihitung walau nihil, sebagaimana Formulir
+             Rekapitulasi acuan yang mencetak "Jumlah Temuan Kritikal 0".
+             Baris yang hilang tidak dapat dibedakan dari baris yang nol. -->
         <div v-for="r in [
-               ['Total', props.ringkas?.total],
+               ['Kritikal', props.ringkas?.kritikal ?? 0],
                ['Mayor', props.ringkas?.mayor],
                ['Minor', props.ringkas?.minor],
                ['Observasi', props.ringkas?.obs],
@@ -128,6 +133,26 @@ const tanggal = (v: unknown) =>
             <td colspan="6" class="p-8 text-center text-stone-400">
               Tidak ada ketidaksesuaian tercatat pada periode ini.
             </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Satu baris penanda tangan, sesuai berkas acuan: Nama Lead
+           Auditor, tanda tangan, tanggal. Rekapitulasi adalah keluaran
+           tim audit, bukan kesepakatan dengan auditi — blok dua kolom
+           "disusun/disetujui" akan menuntut tanda tangan yang formulir
+           ini memang tidak minta. -->
+      <table class="w-full text-[11px] mt-8">
+        <tbody>
+          <tr>
+            <td class="p-2 w-40 align-bottom">{{ props.ttd?.peran || 'Nama Lead Auditor' }}</td>
+            <td class="p-2 w-56 align-bottom font-semibold border-b border-stone-400">
+              {{ props.ttd?.nama || '&nbsp;' }}
+            </td>
+            <td class="p-2 w-28 align-bottom">Tanda Tangan</td>
+            <td class="p-2 w-44 align-bottom border-b border-stone-400">&nbsp;</td>
+            <td class="p-2 w-20 align-bottom">Tanggal</td>
+            <td class="p-2 align-bottom border-b border-stone-400">&nbsp;</td>
           </tr>
         </tbody>
       </table>

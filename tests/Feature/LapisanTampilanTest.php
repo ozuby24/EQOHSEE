@@ -436,4 +436,70 @@ class LapisanTampilanTest extends TestCase
             'Kaki bilah samping boleh memuai, tidak boleh menyusut: pakai `flex:1 0 auto` '
             .'(atau flex-shrink:0). Yang tertulis sekarang: "'.trim($c[1]).'".');
     }
+
+    /**
+     * Tombol selebar isinya, bukan selebar barisnya.
+     *
+     * `.eq-btn-utama` pernah membawa `flex:1`, dimaksudkan bagi baris
+     * berisi dua tombol yang membagi lebarnya rata. Aturan itu berlaku
+     * pada SETIAP wadah flex, dan sebagian besar tombol utama tidak duduk
+     * di baris semacam itu — ia duduk di samping penyaring, di samping
+     * kalimat keterangan, atau sendirian di ujung baris.
+     *
+     * Terukur dengan menyapu 244 halaman di peramban: 57 memuat tombol
+     * yang memuai jauh melampaui isinya. "Terbitkan" pada Kalender Regu
+     * selebar 444px berdampingan dengan "Susun baseline" selebar 129px.
+     * Tidak ada galat, tidak ada uji yang gagal — yang terlihat hanya
+     * baris yang kehilangan proporsinya.
+     *
+     * Baris yang memang hendak membagi rata menyebutkannya lewat
+     * `.eq-btn-baris`.
+     */
+    public function test_tombol_utama_tidak_memuai_memenuhi_barisnya(): void
+    {
+        $css = file_get_contents(resource_path('views/partials/eq-visual.blade.php'));
+
+        preg_match('/\n\.eq-btn-utama\{([^}]*)\}/', $css, $c);
+
+        $this->assertNotEmpty($c, 'Aturan .eq-btn-utama tidak ditemukan.');
+
+        $deklarasi = preg_replace('/\s+/', '', $c[1]);
+
+        $this->assertStringNotContainsString('flex:1', $deklarasi,
+            'Tombol utama tidak boleh memuai memenuhi barisnya. Baris yang hendak '
+            .'membagi rata memakai .eq-btn-baris pada wadahnya.');
+
+        $this->assertStringContainsString('.eq-btn-baris', $css,
+            'Jalan keluar bagi baris yang sengaja dibagi rata harus tetap ada — '
+            .'tanpa itu, `flex:1` akan dipasang kembali pada kelas tombolnya.');
+    }
+
+    /**
+     * Judul kolom pada lembar cetak harus boleh membungkus.
+     *
+     * `th{white-space:nowrap}` berlaku bagi tabel layar, yang dibungkus
+     * `.tabel-scroll` dan karena itu dapat digeser mendatar. Lembar cetak
+     * tidak punya jalan keluar itu: judul yang tidak boleh membungkus
+     * MELUBER menimpa judul kolom sebelahnya, dan yang tercetak di atas
+     * kertas berbunyi "Nomor KetidakseKriteria".
+     *
+     * Terukur pada Formulir Rencana Tindak Lanjut sebelum perbaikan: th
+     * selebar 101px memuat judul selebar 128px, dan selisih 27px itu
+     * jatuh ke kolom tetangganya. Tidak ada galat, tidak ada uji yang
+     * gagal — hanya berkas resmi yang tidak dapat dibaca.
+     */
+    public function test_judul_kolom_lembar_cetak_boleh_membungkus(): void
+    {
+        $css = file_get_contents(resource_path('css/app.css'));
+
+        $this->assertMatchesRegularExpression(
+            '/\bth\s*\{[^}]*white-space:\s*nowrap/', $css,
+            'Aturan nowrap bagi tabel layar tidak lagi ada — penjaga ini kehilangan '
+            .'dasarnya dan perlu ditinjau ulang, bukan dihapus begitu saja.');
+
+        $this->assertMatchesRegularExpression(
+            '/\.lembar\s+th\s*\{[^}]*white-space:\s*normal/', $css,
+            'Lembar cetak tidak dapat digulir mendatar; judul kolomnya harus boleh '
+            .'membungkus, jika tidak ia meluber menimpa kolom sebelahnya.');
+    }
 }

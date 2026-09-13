@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Company, SmkpAttendee, SmkpAudit, SmkpBukti, SmkpFinding, SmkpOfi};
-use App\Support\{Ekspor, KopDokumen, Smkp, SmkpBanding, SmkpPeluang, SmkpRubrik, SmkpTahap};
+use App\Support\{Ekspor, KopDokumen, Smkp, SmkpBanding, SmkpLaporan, SmkpPeluang, SmkpRubrik, SmkpSampel, SmkpTahap};
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -110,12 +110,14 @@ class SmkpController extends Controller
         $rute = [
             'tahap1'        => 'smkp.tahap1',
             'rencana'       => 'smkp.rencana',
+            'sampel'        => 'smkp.sampel',
             'penilaian'     => 'smkp.penilaian',
             'rapat'         => 'smkp.rapat',
             'temuan'        => 'smkp.temuan',
             'berita'        => 'smkp.berita-acara',
             'rencana-cetak' => 'smkp.rencana.cetak',
             'laporan'       => 'smkp.laporan',
+            'laporan-susun' => 'smkp.laporan.susun',
 
             /* Lima keluaran audit yang menyusul. Dilewatkan router yang
                sama supaya menu samping tidak perlu membawa id audit —
@@ -348,6 +350,78 @@ class SmkpController extends Controller
      * yang terlihat oleh semua penyewa. Membaca profilnya tanpa penjagaan
      * merobohkan seluruh halaman Tahap I pada audit semacam itu.
      */
+    /**
+     * Blok tanda tangan satu berkas audit, sesuai jenis auditinya.
+     *
+     * Satu tempat bagi keempat berkas — Berita Acara, Rencana Audit,
+     * Laporan Audit, dan formulir tindak lanjut. Empat blok yang ditulis
+     * sendiri-sendiri akan berselisih: Rencana Audit menyediakan kolom
+     * PJO sementara Laporan tidak, pada auditi yang sama.
+     *
+     * @return array{jenis:string,baris:list<array{kunci:string,peran:string,nama:string,tanggal:?string}>,catatan:list<string>}
+     */
+    private function tandaTangan(SmkpAudit $smkp, string $berkas, ?array $tersimpan = null): array
+    {
+        $c     = $smkp->company;
+        $jenis = SmkpTahap::jenisAuditi($c?->izin_type);
+        $simpan = (array) ($tersimpan ?? (($smkp->rencana ?? [])['pengesahan'] ?? []));
+
+        /* Nama diambil dari yang tersimpan pada berkasnya dulu, baru dari
+           profil perusahaan. Yang tersimpan adalah siapa yang benar-benar
+           menandatangani saat itu; profil dapat berubah setelahnya, dan
+           berkas yang sudah ditandatangani tidak boleh ikut berubah. */
+        $bawaan = [
+            'ketua' => (string) ($smkp->ketua_auditor ?? ''),
+            'pjo'   => (string) ($c?->pjo ?? ''),
+            'ktt'   => (string) ($c?->ktt ?? ''),
+            'ptl'   => (string) ($c?->ktt ?? ''),
+        ];
+
+        /* Organisasi tiap penanda tangan, sebab tidak semuanya milik
+           auditi. Pada audit perusahaan jasa pertambangan, KTT adalah
+           KTT PEMEGANG IUP/IUPK — perusahaan induk tempat auditi bekerja
+           — bukan KTT auditi, yang memang tidak punya. Mencetak
+           "Kepala Teknik Tambang PT Jasa Anu" menyebut jabatan yang tidak
+           ada pada perusahaan itu. */
+        $induk = trim((string) ($c?->parent ?? ''));
+
+        $organisasi = [
+            'ketua' => '',
+            'pjo'   => (string) ($c?->name ?? ''),
+            'ktt'   => $induk !== '' ? $induk : (string) ($c?->name ?? ''),
+            'ptl'   => (string) ($c?->name ?? ''),
+        ];
+
+        /* Peran ringkas untuk laporan, yang menyebut organisasinya
+           sendiri di sebelahnya; peran panjang untuk Berita Acara dan
+           Rencana Audit, yang mencetaknya dalam kolom Jabatan apa adanya
+           seperti berkas acuan. */
+        $ringkas = [
+            'ketua' => 'Ketua Tim Audit',
+            'pjo'   => 'Penanggung Jawab Operasional',
+            'ktt'   => 'Kepala Teknik Tambang',
+            'ptl'   => 'Penanggung Jawab Teknik dan Lingkungan',
+        ];
+
+        $baris = [];
+        foreach (SmkpTahap::pengesahUntuk($jenis) as $kunci => $def) {
+            $baris[] = [
+                'kunci'      => $kunci,
+                'peran'      => $def['peran'],
+                'peranRingkas' => $ringkas[$kunci],
+                'organisasi' => $organisasi[$kunci],
+                'nama'       => trim((string) ($simpan[$kunci]['nama'] ?? '')) ?: $bawaan[$kunci],
+                'tanggal'    => $simpan[$kunci]['tanggal'] ?? null,
+            ];
+        }
+
+        return [
+            'jenis'   => $jenis,
+            'baris'   => $baris,
+            'catatan' => SmkpTahap::catatanTandaTangan($berkas),
+        ];
+    }
+
     private function pekerjaPerusahaan(SmkpAudit $smkp): array
     {
         $c   = $smkp->company;
@@ -472,12 +546,59 @@ class SmkpController extends Controller
             'mandays'   => $smkp->mandays(),
             'tim'       => $smkp->tim(),
             'rekap'     => $smkp->rekapKecukupan(),
+            'ttd'       => $this->tandaTangan($smkp, 'Berita Acara ini'),
             'dok'       => $this->kop($smkp, 'berita-acara'),
             'kembali'   => route('smkp.tahap1', $smkp),
         ]);
     }
 
     /* ================= RENCANA AUDIT ================= */
+
+    /**
+     * Matriks Metode dan Sampel Audit — komponen ke-8 Rencana Audit.
+     *
+     * Halamannya sendiri, bukan satu bagian lagi pada halaman Rencana.
+     * Delapan puluh kriteria dengan tiga kolom sampel masing-masing
+     * adalah pekerjaan tersendiri, ditulis auditor dalam satu duduk
+     * sebelum turun ke lapangan, dan menumpuknya di bawah delapan
+     * komponen lain membuat formulirnya bergulir tanpa ujung.
+     */
+    public function sampel(SmkpAudit $smkp)
+    {
+        return Inertia::render('Smkp/Sampel', [
+            'audit'    => $smkp,
+            'kriteria' => SmkpSampel::kriteria(),
+            'metode'   => SmkpSampel::METODE,
+            'elemen'   => Smkp::elemen(),
+            'rekap'    => $smkp->rekapSampel(),
+            'tautan'   => [
+                'simpan'  => route('smkp.sampel.simpan', $smkp),
+                'rencana' => route('smkp.rencana', $smkp),
+                'cetak'   => route('smkp.rencana.cetak', $smkp),
+                'nilai'   => route('smkp.penilaian', $smkp),
+            ],
+        ]);
+    }
+
+    public function simpanSampel(Request $request, SmkpAudit $smkp)
+    {
+        $d = $request->validate([
+            'sampel'             => ['nullable', 'array', 'max:400'],
+            'sampel.*.na'        => ['nullable'],
+            'sampel.*.dokumen'   => ['nullable', 'string', 'max:2000'],
+            'sampel.*.wawancara' => ['nullable', 'string', 'max:2000'],
+            'sampel.*.observasi' => ['nullable', 'string', 'max:2000'],
+            'sampel.*.ket'       => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $smkp->update(['sampel' => SmkpSampel::bersihkan((array) ($d['sampel'] ?? []))]);
+
+        $r = $smkp->fresh()->rekapSampel();
+
+        return redirect()->route('smkp.sampel', $smkp)->with('ok', $r['lengkap']
+            ? 'Matriks metode dan sampel lengkap — '.$r['total'].' kriteria terencana.'
+            : 'Matriks tersimpan. '.$r['kurang'].' dari '.$r['total'].' kriteria belum punya metode pembuktian.');
+    }
 
     public function rencana(SmkpAudit $smkp)
     {
@@ -499,6 +620,13 @@ class SmkpController extends Controller
             // Susunan tim Tahap I, agar pembagian tugas dapat diisi dari
             // sana alih-alih diketik ulang menjadi daftar kedua.
             'timTahap1' => $smkp->tim(),
+
+            /* Matriks metode dan sampel punya halamannya sendiri; yang
+               dibawa ke sini hanya sejauh mana ia terisi. Komponen ke-8
+               Rencana Audit tidak dapat dinyatakan lengkap oleh satu
+               kalimat bebas sementara delapan puluh kriterianya kosong. */
+            'rekapSampel'  => $smkp->rekapSampel(),
+            'tautanSampel' => route('smkp.sampel', $smkp),
         ]);
     }
 
@@ -579,9 +707,44 @@ class SmkpController extends Controller
     /** Laporan Rencana Audit — sembilan komponen wajib, siap cetak. */
     public function rencanaCetak(SmkpAudit $smkp)
     {
+        /* Matriks metode dan sampel ikut tercetak sebagai lembar tersendiri,
+           seperti pada Rencana Audit acuan — di sana ia tabel bertajuk
+           "METODE DAN SAMPEL AUDIT SISTEM MANAJEMEN KESELAMATAN
+           PERTAMBANGAN", langsung sesudah susunan kegiatan.
+
+           Yang dicetak hanya kriteria yang sudah direncanakan. Delapan
+           puluh baris kosong pada berkas yang dibagikan ke auditi
+           menenggelamkan yang terisi di antara yang tidak. */
+        $barisSampel = [];
+
+        foreach (SmkpSampel::kriteria() as $k) {
+            $baris = ((array) ($smkp->sampel ?? []))[$k['kode']] ?? null;
+
+            if ($baris === null) continue;
+
+            $metode = [];
+
+            foreach (SmkpSampel::METODE as $kunci => $label) {
+                $isi = trim((string) ($baris[$kunci] ?? ''));
+                if ($isi !== '') $metode[] = ['label' => $label, 'sampel' => $isi];
+            }
+
+            if (empty($baris['na']) && $metode === []) continue;
+
+            $barisSampel[] = [
+                'kode'   => $k['kode'],
+                'nama'   => $k['nama'],
+                'elemen' => $k['elemen'],
+                'elemenNama' => $k['elemenNama'],
+                'na'     => !empty($baris['na']),
+                'ket'    => (string) ($baris['ket'] ?? ''),
+                'metode' => $metode,
+            ];
+        }
+
         return Inertia::render('Print/Smkp', [
             'mode'       => 'rencana',
-            'totalLembar'=> 3,
+            'totalLembar'=> $barisSampel === [] ? 3 : 4,
             'audit'    => $smkp,
             'komponen' => SmkpTahap::komponenRencana(),
             'pengesah' => SmkpTahap::pengesah(),
@@ -589,6 +752,9 @@ class SmkpController extends Controller
             'rekap'    => $smkp->rekapRencana(),
             'mandays'  => $smkp->mandays(),
             'selaras'  => $smkp->selarasRencana(),
+            'matriks'  => $barisSampel,
+            'ttd'      => $this->tandaTangan($smkp, 'Rencana Audit'),
+            'rekapSampel' => $smkp->rekapSampel(),
             'dok'      => $this->kop($smkp, 'rencana-audit'),
             'kembali'  => route('smkp.rencana', $smkp),
         ]);
@@ -1203,6 +1369,75 @@ class SmkpController extends Controller
      * kesesuaiannya, dan penyaringnya bekerja di sisi peramban sehingga
      * "tampilkan yang belum sesuai" tidak memuat ulang halaman.
      */
+    /**
+     * @return array{total:int,belum:list<string>,bentrok:list<string>,terpakai:int}
+     */
+    private function rekapPengecualian(SmkpAudit $smkp): array
+    {
+        $hasil   = (array) ($smkp->hasil ?? []);
+        $belum   = [];
+        $bentrok = [];
+        $terpakai = 0;
+
+        foreach ($smkp->dikecualikan() as $kode) {
+            $v = $hasil[$kode]['v'] ?? null;
+
+            if ($v === Smkp::NA)                      { $terpakai++; continue; }
+            if ($v === null || trim((string) $v) === '') { $belum[] = $kode; continue; }
+
+            $bentrok[] = $kode;
+        }
+
+        return [
+            'total'    => count($smkp->dikecualikan()),
+            'belum'    => $belum,
+            'bentrok'  => $bentrok,
+            'terpakai' => $terpakai,
+        ];
+    }
+
+    /**
+     * Menuliskan pengecualian Rencana Audit ke hasil penilaian sebagai N/A.
+     *
+     * SATU TOMBOL, BUKAN OTOMATIS. Menulisi hasil diam-diam setiap kali
+     * halaman dibuka akan menimpa angka yang sudah diberikan auditor —
+     * dan mengubah nilai akhir audit — tanpa ia pernah memintanya, tanpa
+     * satu pun jejak bahwa mesin yang melakukannya.
+     *
+     * BUTIR YANG SUDAH BERNILAI ANGKA TIDAK DISENTUH. Pertentangan antara
+     * "dikecualikan pada rencana" dan "sudah dinilai 3" adalah pertentangan
+     * yang harus diselesaikan orang: mungkin rencananya keliru, mungkin
+     * penilaiannya. Mesin yang memilih salah satunya menghapus bukti bahwa
+     * pertentangan itu pernah ada.
+     */
+    public function terapkanPengecualian(SmkpAudit $smkp)
+    {
+        $hasil = (array) ($smkp->hasil ?? []);
+        $rekap = $this->rekapPengecualian($smkp);
+        $sampel = (array) ($smkp->sampel ?? []);
+
+        foreach ($rekap['belum'] as $kode) {
+            $ket = trim((string) ($sampel[$kode]['ket'] ?? ''));
+
+            $hasil[$kode] = [
+                'v'   => Smkp::NA,
+                'ket' => $ket !== '' ? $ket : 'Dikecualikan pada Rencana Audit.',
+                'bukti' => (string) ($hasil[$kode]['bukti'] ?? ''),
+            ];
+        }
+
+        $smkp->update(['hasil' => $hasil]);
+
+        $pesan = count($rekap['belum']).' butir ditandai N/A menurut Rencana Audit.';
+
+        if ($rekap['bentrok'] !== []) {
+            $pesan .= ' '.count($rekap['bentrok']).' butir dibiarkan karena sudah bernilai angka: '
+                     .implode(', ', $rekap['bentrok']).'. Selesaikan sendiri mana yang benar.';
+        }
+
+        return redirect()->route('smkp.penilaian', $smkp)->with('ok', $pesan);
+    }
+
     public function penilaian(SmkpAudit $smkp)
     {
         $banding = SmkpBanding::untuk($smkp);
@@ -1238,6 +1473,13 @@ class SmkpController extends Controller
             'peluang'   => SmkpPeluang::berhak($smkp),
             'ofiAda'    => $smkp->ofi()->pluck('kode')->all(),
 
+            /* Pengecualian ruang lingkup: berapa yang ditetapkan, berapa
+               yang belum tertulis sebagai N/A pada hasil, dan mana yang
+               justru sudah terlanjur bernilai angka. Yang terakhir itu
+               pertentangan yang harus dilihat orang, bukan diselesaikan
+               diam-diam oleh mesin ke salah satu arah. */
+            'pengecualian' => $this->rekapPengecualian($smkp),
+
             'tautan'    => [
                 'audit'    => route('smkp.show', $smkp),
                 'kriteria' => route('smkp.kriteria', $smkp),
@@ -1245,6 +1487,8 @@ class SmkpController extends Controller
                 'temuan'   => route('smkp.temuan', $smkp),
                 'ofi'      => route('smkp.ofi', $smkp),
                 'acuan'    => route('smkp.acuan'),
+                'sampel'   => route('smkp.sampel', $smkp),
+                'kecuali'  => route('smkp.penilaian.kecuali', $smkp),
             ],
         ]);
     }
@@ -1275,6 +1519,13 @@ class SmkpController extends Controller
         $hasil = (array) ($smkp->hasil ?? []);
         $out   = [];
 
+        /* Pengecualian ruang lingkup, ditetapkan sekali pada Matriks Metode
+           dan Sampel. Dibawa ke sini sebagai penanda, BUKAN sebagai nilai:
+           menuliskannya langsung ke hasil akan menimpa angka yang sudah
+           diberikan auditor tanpa ia pernah memintanya. */
+        $kecuali = array_flip($smkp->dikecualikan());
+        $sampel  = (array) ($smkp->sampel ?? []);
+
         foreach (Smkp::elemen() as $e) {
             $rekapE = Smkp::rekapElemen($e, $hasil);
             $sub    = [];
@@ -1301,6 +1552,8 @@ class SmkpController extends Controller
                         'bukti'   => (string) ($hasil[$kode]['bukti'] ?? ''),
                         'keadaan' => $sifat['kode'],
                         'capaian' => $sifat['capaian'],
+                        'kecuali' => isset($kecuali[$kode]),
+                        'alasan'  => (string) ($sampel[$kode]['ket'] ?? ''),
                     ];
                 }
 
@@ -1591,19 +1844,159 @@ class SmkpController extends Controller
     }
 
     /* ---------- Laporan siap cetak ---------- */
+    /**
+     * Penyusunan bagian naratif Laporan Audit.
+     *
+     * Laporan yang dibaca inspektur tambang bukan hanya angka. Berkas
+     * acuan menempuh urutan: latar belakang beserta dasar hukumnya,
+     * gambaran umum auditi, lingkup audit, pelaksanaan dan tim, lalu
+     * baru penilaiannya. Tanpa bagian itu, "39,14%" adalah angka tanpa
+     * perusahaan di belakangnya.
+     */
+    public function susunLaporan(SmkpAudit $smkp)
+    {
+        return Inertia::render('Smkp/Laporan', [
+            'audit'   => $smkp->load('company'),
+            'isi'     => $smkp->isiLaporan(),
+            'ruas'    => SmkpLaporan::ruas(),
+            'elemen'  => Smkp::elemen(),
+            'rekap'   => $smkp->rekap(),
+            'rekapNarasi' => $smkp->rekapLaporan(),
+            'dasarHukum'  => SmkpLaporan::DASAR_HUKUM,
+
+            /* Ditawarkan sebagai isian awal, bukan dipasang diam-diam:
+               daftar bawaan yang tercetak tanpa pernah dibaca auditor
+               adalah lampiran yang disebutkan padahal tidak dilampirkan. */
+            'bawaan'  => [
+                'lampiran'   => SmkpLaporan::LAMPIRAN,
+                'distribusi' => SmkpLaporan::DISTRIBUSI,
+            ],
+
+            'tautan'  => [
+                'simpan' => route('smkp.laporan.simpan', $smkp),
+                'cetak'  => route('smkp.laporan', $smkp),
+                'audit'  => route('smkp.show', $smkp),
+            ],
+        ]);
+    }
+
+    public function simpanLaporan(Request $request, SmkpAudit $smkp)
+    {
+        $d = $request->validate([
+            'domisili'   => ['nullable', 'string', 'max:5000'],
+            'kegiatan'   => ['nullable', 'string', 'max:5000'],
+            'penerapan'  => ['nullable', 'string', 'max:5000'],
+            'lingkup'    => ['nullable', 'string', 'max:5000'],
+            'kesimpulan' => ['nullable', 'string', 'max:5000'],
+
+            'elemen'     => ['nullable', 'array'],
+            'elemen.*'   => ['nullable', 'string', 'max:5000'],
+
+            'peralatan'          => ['nullable', 'array', 'max:60'],
+            'peralatan.*.jenis'  => ['nullable', 'string', 'max:150'],
+            'peralatan.*.jumlah' => ['nullable', 'string', 'max:50'],
+
+            'lampiran'   => ['nullable', 'array', 'max:40'],
+            'lampiran.*' => ['nullable', 'string', 'max:300'],
+            'distribusi' => ['nullable', 'array', 'max:40'],
+            'distribusi.*' => ['nullable', 'string', 'max:300'],
+        ]);
+
+        $kode = array_column(Smkp::elemen(), 'kode');
+
+        $laporan = [
+            'domisili'   => trim((string) ($d['domisili']   ?? '')),
+            'kegiatan'   => trim((string) ($d['kegiatan']   ?? '')),
+            'penerapan'  => trim((string) ($d['penerapan']  ?? '')),
+            'lingkup'    => trim((string) ($d['lingkup']    ?? '')),
+            'kesimpulan' => trim((string) ($d['kesimpulan'] ?? '')),
+
+            /* Hanya elemen yang benar-benar ada. Kode karangan dari
+               formulir tidak boleh menumpang di berkas audit. */
+            'elemen' => array_map(
+                fn ($t) => trim((string) $t),
+                array_intersect_key((array) ($d['elemen'] ?? []), array_flip($kode)),
+            ),
+
+            'peralatan' => array_values(array_filter(
+                array_map(fn ($b) => [
+                    'jenis'  => trim((string) ($b['jenis']  ?? '')),
+                    'jumlah' => trim((string) ($b['jumlah'] ?? '')),
+                ], (array) ($d['peralatan'] ?? [])),
+                fn ($b) => $b['jenis'] !== '',
+            )),
+
+            /* Baris kosong dibuang; daftar yang pernah disimpan — termasuk
+               yang menjadi kosong — tetap menang atas bawaannya, sebab
+               menghapus seluruh lampiran adalah keputusan yang sah. */
+            'lampiran' => array_values(array_filter(
+                array_map(fn ($t) => trim((string) $t), (array) ($d['lampiran'] ?? [])),
+                fn ($t) => $t !== '',
+            )),
+            'distribusi' => array_values(array_filter(
+                array_map(fn ($t) => trim((string) $t), (array) ($d['distribusi'] ?? [])),
+                fn ($t) => $t !== '',
+            )),
+        ];
+
+        $smkp->update(['laporan' => $laporan]);
+
+        $r = $smkp->fresh()->rekapLaporan();
+
+        return redirect()->route('smkp.laporan.susun', $smkp)->with('ok', $r['lengkap']
+            ? 'Bagian naratif laporan lengkap.'
+            : 'Tersimpan. Belum diisi: '.implode(', ', $r['kurang']).'.');
+    }
+
     public function laporan(SmkpAudit $smkp)
     {
+        $kategori = SmkpLaporan::temuanPerKategori($smkp);
+
+        /* Praktik terbaik dikelompokkan per elemen, seperti pada laporan
+           acuan — ia mencantumkannya di bawah judul "Informasi Praktek
+           Terbaik: Elemen I", bukan sebagai satu daftar rata. */
+        $praktik = [];
+        foreach (SmkpLaporan::praktikTerbaik($smkp) as $b) {
+            $praktik[$b['elemen']][] = $b;
+        }
+
+        /* Daftar ketidaksesuaian dirata-kan menjadi satu deret bernomor,
+           urut Kritikal → Mayor → Minor, supaya pemenggalan halamannya
+           tidak perlu memikirkan batas kategori. Kategorinya ikut pada
+           tiap baris, jadi tidak hilang saat barisnya berpindah lembar. */
+        $barisTemuan = [];
+        foreach ($kategori as $g) {
+            foreach ($g['baris'] as $b) $barisTemuan[] = $b;
+        }
+
         return Inertia::render('Print/Smkp', [
             'mode'   => 'laporan',
 
-            /* Dua lembar tetap sebelum daftar temuan: ringkasan nilai, lalu
-               pelaksanaan audit beserta tim auditornya. Pelaksanaan diberi
-               lembarnya sendiri karena tabel dasar hari kerja dan tabel tim
-               bersama-sama tidak muat di bawah rekapitulasi elemen, dan
-               tabel yang terpotong di tengah halaman cetak tidak dapat
-               dibaca sebagai satu keterangan. */
-            'totalLembar' => 2 + max(1, (int) ceil($smkp->findings()->count() / 6)),
-            'audit'  => $smkp,
+            /* Empat lembar tetap sebelum daftar temuan: latar belakang dan
+               gambaran umum, ringkasan nilai, pelaksanaan audit beserta tim
+               auditornya, lalu praktik terbaik. Masing-masing diberi
+               lembarnya sendiri karena tabel yang terpotong di tengah
+               halaman cetak tidak dapat dibaca sebagai satu keterangan.
+               Lembar penutup memuat lampiran, distribusi, dan tanda tangan. */
+            /* Enam lembar tetap — sampul & latar belakang, gambaran umum,
+               ringkasan penerapan tiap elemen, penilaian, pelaksanaan
+               audit, praktik terbaik — lalu daftar ketidaksesuaian, lalu
+               satu lembar penutup berisi lampiran, distribusi, dan tanda
+               tangan. Masing-masing diberi lembarnya sendiri karena tabel
+               yang terpotong di tengah halaman cetak tidak dapat dibaca
+               sebagai satu keterangan. */
+            'totalLembar' => 6 + max(1, (int) ceil(count($barisTemuan) / 8)) + 1,
+            'audit'  => $smkp->loadMissing('company'),
+
+            /* Bagian naratif: latar belakang, gambaran umum auditi,
+               ringkasan penerapan tiap elemen, lampiran, distribusi. */
+            'narasi'     => $smkp->isiLaporan(),
+            'dasarHukum' => SmkpLaporan::DASAR_HUKUM,
+            'kategori'   => $kategori,
+            'barisTemuan'=> $barisTemuan,
+            'praktik'    => $praktik,
+            'pekerja'    => $this->pekerjaPerusahaan($smkp),
+            'ttd'        => $this->tandaTangan($smkp, 'Laporan Audit'),
             'rekap'  => $smkp->rekap(),
             'elemen' => Smkp::elemen(),
             'temuan' => $smkp->findings()->orderByRaw(Smkp::urutJenisSql())->get(),
@@ -1761,6 +2154,8 @@ class SmkpController extends Controller
             ];
         }
 
+        $peta = SmkpLaporan::petaNomor($smkp);
+
         return Inertia::render('Print/SmkpRekapNc', [
             'audit'  => $smkp,
 
@@ -1774,20 +2169,36 @@ class SmkpController extends Controller
                {kode dokumen perusahaan}-MAY/MIN-xx sebagai urutan per
                jenis. Yang kedua yang dipakai antar-perusahaan, tempat
                "NC-01" saja tidak cukup menunjuk temuan siapa. */
-            'temuan' => collect(Smkp::beriNomor(
-                $temuan->map(fn (SmkpFinding $t) => $t->toArray())->all(),
-                (string) ($smkp->company?->doc_no_prefix ?: 'NC'),
-            ))->map(fn (array $t, int $i) => $t + ['urut' => $i + 1])->values(),
+            /* Kode NC dibaca dari peta bersama, bukan dihitung di sini.
+               Tiga berkas menyebut temuan yang sama dengan urutan yang
+               berbeda-beda; menomori masing-masing dari urutannya sendiri
+               melahirkan tiga kode bagi satu temuan. */
+            'temuan' => $temuan->values()->map(fn (SmkpFinding $t, int $i) => $t->toArray() + [
+                'nomor'   => sprintf('NC-%02d', $i + 1),
+                'kode_nc' => $peta[$t->id] ?? '',
+                'urut'    => $i + 1,
+            ])->values(),
             'perElemen' => $perElemen,
             'ringkas' => [
                 'total'   => $temuan->count(),
+                /* Kritikal ikut dihitung walau rubrik tidak pernah
+                   menghasilkannya: berkas acuan mencetak "Jumlah Temuan
+                   Kritikal 0", dan baris yang hilang tidak dapat
+                   dibedakan dari baris yang nol. */
+                'kritikal' => $temuan->where('jenis', 'kritikal')->count(),
                 'mayor'   => $temuan->where('jenis', 'mayor')->count(),
                 'minor'   => $temuan->where('jenis', 'minor')->count(),
-                'obs'     => $temuan->whereNotIn('jenis', ['mayor', 'minor'])->count(),
+                'obs'     => $temuan->whereNotIn('jenis', ['kritikal', 'mayor', 'minor'])->count(),
                 'tertutup' => $temuan->where('status', SmkpFinding::TUTUP)->count(),
                 'terbuka'  => $temuan->where('status', '!=', SmkpFinding::TUTUP)->count(),
             ],
             'meta'    => Smkp::meta(),
+
+            /* Satu penanda tangan, sesuai Formulir Rekapitulasi acuan:
+               Nama Lead Auditor. Rekapitulasi adalah keluaran tim audit,
+               bukan kesepakatan dengan auditi. */
+            'ttd'     => ['peran' => 'Nama Lead Auditor', 'nama' => (string) ($smkp->ketua_auditor ?? '')],
+
             'dok'     => $this->kop($smkp, 'rekap-ketidaksesuaian'),
             'kembali' => route('smkp.show', $smkp),
         ]);
@@ -1836,11 +2247,17 @@ class SmkpController extends Controller
             ->get();
 
         $kini = now()->startOfDay();
+        $peta = SmkpLaporan::petaNomor($smkp);
 
         return Inertia::render('Print/SmkpRtl', [
             'audit'  => $smkp,
             'temuan' => $temuan->values()->map(fn (SmkpFinding $t, int $i) => $t->toArray() + [
                 'urut' => $i + 1,
+                /* Kode NC dari peta bersama. Lembar ini diurutkan menurut
+                   TENGGAT, bukan urutan kriteria — menomorinya dari
+                   urutannya sendiri akan memberi temuan yang sama kode
+                   yang berbeda dari yang tercetak di Rekapitulasi. */
+                'kode_nc' => $peta[$t->id] ?? '',
                 /* Sisa hari dihitung di server supaya lembar cetak dan
                    layar tidak pernah berbeda karena zona waktu
                    perambannya. */
@@ -1860,6 +2277,17 @@ class SmkpController extends Controller
                 'tanpaTarget' => $temuan->whereNull('target_selesai')->count(),
             ],
             'meta'   => Smkp::meta(),
+
+            /* Dua penanda tangan saja, sesuai Formulir Rencana Tindak
+               Lanjut acuan: Nama Auditor dan Nama Auditi. KTT tidak
+               menandatangani formulir ini — ia mengesahkan Rencana Audit
+               dan mengetahui Laporan, bukan rencana tindak lanjut yang
+               menjadi tanggung jawab auditi. */
+            'ttd'    => [
+                ['peran' => 'Nama Auditor', 'nama' => (string) ($smkp->ketua_auditor ?? '')],
+                ['peran' => 'Nama Auditi',  'nama' => (string) ($smkp->company?->pjo ?: $smkp->company?->ktt ?: '')],
+            ],
+
             'dok'    => $this->kop($smkp, 'rencana-tindak-lanjut'),
             'kembali'=> route('smkp.show', $smkp),
         ]);

@@ -1177,7 +1177,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Pintasan menu samping: tanpa parameter, disalurkan ke audit berjalan.
         foreach ([
-            'tahap1' => 'tahap-1', 'rencana' => 'rencana', 'penilaian' => 'penilaian',
+            'tahap1' => 'tahap-1', 'rencana' => 'rencana', 'sampel' => 'metode-sampel',
+            'penilaian' => 'penilaian', 'laporan-susun' => 'susun-laporan',
             'rapat' => 'rapat', 'temuan' => 'temuan',
             'berita' => 'berita-acara', 'rencana-cetak' => 'laporan-rencana', 'laporan' => 'laporan-audit',
 
@@ -1196,6 +1197,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('{smkp}',        [SmkpController::class,'destroy'])->middleware('can:admin')->name('destroy');
 
         Route::get('{smkp}/laporan',   [SmkpController::class,'laporan'])->name('laporan');
+
+        // Bagian naratif laporan: latar belakang, gambaran umum, lampiran.
+        Route::get('{smkp}/laporan/susun',  [SmkpController::class,'susunLaporan'])->name('laporan.susun');
+        Route::post('{smkp}/laporan/susun', [SmkpController::class,'simpanLaporan'])->name('laporan.simpan');
 
         /* Lima keluaran audit yang sebelumnya belum ada, plus ekspor
            formulir kriteria ke CSV. Nomornya mengikuti urutan berkas
@@ -1225,6 +1230,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('{smkp}/rencana',      [SmkpController::class,'simpanRencana'])->name('rencana.simpan');
         Route::get('{smkp}/rencana/cetak', [SmkpController::class,'rencanaCetak'])->name('rencana.cetak');
 
+        // Komponen ke-8 Rencana Audit: matriks metode dan sampel per kriteria.
+        Route::get('{smkp}/sampel',  [SmkpController::class,'sampel'])->name('sampel');
+        Route::post('{smkp}/sampel', [SmkpController::class,'simpanSampel'])->name('sampel.simpan');
+
         // Tahap II — rapat pembukaan & penutupan
         Route::get('{smkp}/rapat',                [SmkpController::class,'rapat'])->name('rapat');
         Route::post('{smkp}/rapat',               [SmkpController::class,'simpanHadir'])->name('rapat.simpan');
@@ -1241,6 +1250,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // kesesuaian tiap parameter tanpa berpindah halaman per elemen.
         Route::get('{smkp}/penilaian',  [SmkpController::class,'penilaian'])->name('penilaian');
         Route::post('{smkp}/penilaian', [SmkpController::class,'simpanPenilaian'])->name('penilaian.simpan');
+
+        /* Menuliskan pengecualian Rencana Audit ke hasil sebagai N/A —
+           satu tombol, bukan otomatis saat halaman dibuka. */
+        Route::post('{smkp}/penilaian/pengecualian',
+            [SmkpController::class,'terapkanPengecualian'])->name('penilaian.kecuali');
 
         /* Berkas bukti per butir kriteria. Batas 10 MB ditegakkan
            App\Support\Berkas::ATURAN_BUKTI, dan berkasnya disimpan pada

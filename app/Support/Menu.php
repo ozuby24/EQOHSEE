@@ -424,9 +424,11 @@ final class Menu
         'Tahap Audit' => [
           ['Permulaan Audit',   'smkp.ke.tahap1',    'smkp/lanjut/tahap-1'],
           ['Rencana Audit',     'smkp.ke.rencana',   'smkp/lanjut/rencana'],
+          ['Metode & Sampel',   'smkp.ke.sampel',    'smkp/lanjut/metode-sampel'],
           ['Form Penilaian Audit','smkp.ke.penilaian','smkp/lanjut/penilaian'],
           ['Rapat & Daftar Hadir','smkp.ke.rapat',   'smkp/lanjut/rapat'],
           ['Temuan & Tindakan', 'smkp.ke.temuan',    'smkp/lanjut/temuan'],
+          ['Penyusunan Laporan','smkp.ke.laporan-susun','smkp/lanjut/susun-laporan'],
         ],
         /* Delapan keluaran audit, URUT SESUAI BERKASNYA — bukan urut
            abjad dan bukan urut pembuatannya di sini. Berkas audit

@@ -90,9 +90,13 @@ class SmkpFormPenilaianTest extends TestCase
             ->pluck(1)->values()->all();
 
         $this->assertSame(
-            ['smkp.ke.tahap1', 'smkp.ke.rencana', 'smkp.ke.penilaian', 'smkp.ke.rapat', 'smkp.ke.temuan'],
+            ['smkp.ke.tahap1', 'smkp.ke.rencana', 'smkp.ke.sampel',
+             'smkp.ke.penilaian', 'smkp.ke.rapat', 'smkp.ke.temuan',
+             'smkp.ke.laporan-susun'],
             $tahap,
-            'Form Penilaian harus berdiri sesudah Permulaan Audit dan Rencana Audit.'
+            'Form Penilaian harus berdiri sesudah Permulaan Audit, Rencana Audit, '
+            .'dan Matriks Metode & Sampel — matriks itulah yang menetapkan pengecualian '
+            .'ruang lingkup yang dibaca form penilaian.'
         );
     }
 

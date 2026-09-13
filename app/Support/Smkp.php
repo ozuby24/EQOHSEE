@@ -450,7 +450,7 @@ class Smkp
      *   nomor  NC-01, NC-02, …   satu urutan berjalan untuk seluruh temuan,
      *                            apa pun jenisnya. Inilah yang disebut dalam
      *                            rapat penutupan: "temuan nomor 3".
-     *   kode   {AWALAN}-MAY-01   urutan terpisah per jenis, berawalan kode
+     *   kode   {AWALAN}-MYR-01   urutan terpisah per jenis, berawalan kode
      *          {AWALAN}-MIN-01   dokumen perusahaan yang diaudit. Inilah yang
      *                            dipakai dalam surat-menyurat antar-perusahaan,
      *                            tempat "NC-01" saja tidak cukup menunjuk.
@@ -481,10 +481,26 @@ class Smkp
         return $temuan;
     }
 
-    /** Format kode satu ketidaksesuaian: CAM-MAY-01 / CAM-MIN-01. */
+    /**
+     * Singkatan kategori pada kode ketidaksesuaian.
+     *
+     * MYR, bukan MAY. Ejaannya disalin dari berkas audit acuan
+     * (ISM-MYR-01 … ISM-MYR-28, ISM-MIN-01 … ISM-MIN-14): kode inilah
+     * yang disebut dalam rapat penutupan dan surat-menyurat sesudahnya,
+     * dan kode yang mengeja berbeda dari berkas yang beredar di lapangan
+     * membuat "temuan MYR-03" tidak dapat dicocokkan dengan "MAY-03".
+     */
+    public const SINGKAT_JENIS = [
+        'kritikal' => 'KRT',
+        'mayor'    => 'MYR',
+        'minor'    => 'MIN',
+        'obs'      => 'OBS',
+    ];
+
+    /** Format kode satu ketidaksesuaian: ISM-MYR-01 / ISM-MIN-01. */
     public static function nomorTemuan(string $jenis, int $urutan, string $awalan = 'NC'): string
     {
-        $bagian = $jenis === 'mayor' ? 'MAY' : ($jenis === 'minor' ? 'MIN' : 'OBS');
+        $bagian = self::SINGKAT_JENIS[$jenis] ?? self::SINGKAT_JENIS['obs'];
 
         return sprintf('%s-%s-%02d', strtoupper(trim($awalan)) ?: 'NC', $bagian, $urutan);
     }

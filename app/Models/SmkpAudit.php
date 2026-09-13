@@ -6,7 +6,7 @@ use App\Models\Concerns\BerpemilikPerusahaan;
 use App\Models\Scopes\MilikPerusahaan;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 
-use App\Support\{Smkp, SmkpBanding, SmkpTahap};
+use App\Support\{Smkp, SmkpBanding, SmkpLaporan, SmkpSampel, SmkpTahap};
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
 
@@ -21,7 +21,7 @@ class SmkpAudit extends Model
         'company_id', 'tahun', 'judul', 'status', 'tahap',
         'tanggal_mulai', 'tanggal_selesai', 'ketua_auditor',
         'hasil', 'auditor', 'profil', 'user_id',
-        'permulaan', 'rencana', 'kecukupan', 'kinerja', 'risiko',
+        'permulaan', 'rencana', 'kecukupan', 'kinerja', 'risiko', 'sampel', 'laporan',
     ];
 
     protected function casts(): array
@@ -35,6 +35,8 @@ class SmkpAudit extends Model
             'kecukupan'       => 'array',
             'kinerja'         => 'array',
             'risiko'          => 'array',
+            'sampel'          => 'array',
+            'laporan'         => 'array',
             'tahap'           => 'integer',
             'tanggal_mulai'   => 'date',
             'tanggal_selesai' => 'date',
@@ -159,6 +161,37 @@ class SmkpAudit extends Model
         return SmkpTahap::mandays($p);
     }
 
+    /** Bagian naratif laporan, dilengkapi bawaannya. */
+    public function isiLaporan(): array
+    {
+        return SmkpLaporan::isi($this->laporan);
+    }
+
+    /** Sejauh mana bagian naratif laporan terisi. */
+    public function rekapLaporan(): array
+    {
+        return SmkpLaporan::rekap($this->laporan);
+    }
+
+    /** Sejauh mana Matriks Metode dan Sampel terisi. */
+    public function rekapSampel(): array
+    {
+        return SmkpSampel::rekap($this->sampel);
+    }
+
+    /**
+     * Kriteria yang dinyatakan tidak berlaku pada Rencana Audit.
+     *
+     * Ditetapkan sekali di sana, dibaca formulir penilaian. Menyatakannya
+     * ulang butir demi butir membuka jalan bagi butir yang sudah
+     * dikecualikan untuk tetap ikut membagi nilai akhir hanya karena
+     * penandanya terlewat.
+     */
+    public function dikecualikan(): array
+    {
+        return SmkpSampel::dikecualikan($this->sampel);
+    }
+
     /** Tujuh faktor penyesuaian beserta alasan bagi yang dihitung. */
     public function faktorTerhitung(): array
     {
@@ -175,7 +208,14 @@ class SmkpAudit extends Model
 
     public function rekapRencana(): array
     {
-        return SmkpTahap::rekapRencana($this->rencana);
+        /* Matriks metode dan sampel ikut menentukan komponen ke-8. Ia
+           tersimpan di kolomnya sendiri, jadi harus dibawa masuk — tanpa
+           itu, rencana yang matriksnya lengkap tetap terbaca kurang satu
+           komponen selama kotak teks bebasnya kosong. */
+        return SmkpTahap::rekapRencana(
+            $this->rencana,
+            SmkpSampel::rekap($this->sampel)['terisi'] > 0,
+        );
     }
 
     /** Apakah Rencana Audit selaras dengan hitungan hari kerja Tahap I. */
@@ -208,6 +248,12 @@ class SmkpAudit extends Model
         $kj = array_filter((array) ($this->kinerja ?? []), fn ($v) => trim((string) $v) !== '');
         $kc = $this->rekapKecukupan();
         $rr = $this->rekapRencana();
+
+        /* Dihitung sekali. Keduanya menelusuri seratus kriteria dan tujuh
+           ruas naratif; memanggilnya ulang di tiap baris status membuat
+           satu pemuatan halaman menelusurinya lima kali. */
+        $rs = $this->rekapSampel();
+        $rl = $this->rekapLaporan();
         $rk = $this->rekap();
         $md = $this->mandays();
 
@@ -247,7 +293,16 @@ class SmkpAudit extends Model
             'lingkup'   => $this->langkah($ren(['tujuan','kriteria','ruang_lingkup']), 'Tujuan · Kriteria · Ruang lingkup'),
             'jadwal'    => $this->langkah($ren(['tanggal','susunan']), 'Tanggal pelaksanaan dan susunan kegiatan'),
             'tim'       => $this->langkah($ren(['tugas']), count((array) ($this->rencana['tugas'] ?? [])).' auditor dengan lingkupnya'),
-            'sampel'    => $this->langkah($ren(['metode']), count((array) ($this->risiko['present'] ?? [])).' risiko periode berjalan tercatat'),
+            'sampel'    => $this->langkah(
+                trim((string) ($this->rencana['sumberdaya'] ?? '')) !== ''
+                && count((array) ($this->risiko['present'] ?? [])) > 0,
+                count((array) ($this->risiko['present'] ?? [])).' risiko periode berjalan tercatat',
+            ),
+            'matriks'   => $this->langkah(
+                $rs['lengkap'],
+                $rs['terisi'].' dari '.$rs['total'].' kriteria terencana'
+                .($rs['na'] ? ' · '.$rs['na'].' tidak berlaku' : ''),
+            ),
             'sah'       => $this->langkah($ren(['pengesahan']), 'Pengesahan KTT dan Ketua Tim'),
             'rencana-cetak' => $this->langkah($rr['lengkap'], $rr['jumlah'].' dari '.$rr['total'].' komponen wajib'),
 
@@ -256,6 +311,10 @@ class SmkpAudit extends Model
             'temuan'    => $this->langkah($temuan > 0, $temuan ? $temuan.' temuan diangkat' : 'Belum ada temuan diangkat'),
             'penutupan' => $this->langkah($hadirTutup > 0, $hadirTutup.' peserta tercatat'),
 
+            'narasi'      => $this->langkah(
+                $rl['lengkap'],
+                $rl['terisi'].' dari '.$rl['total'].' bagian naratif terisi',
+            ),
             'laporan'     => $this->langkah($rk['dinilai'] > 0, 'Nilai akhir '.number_format($rk['skor'], 2).' · '.$rk['tingkat']['label']),
             'hadir-buka'  => $this->langkah($hadirBuka > 0, $hadirBuka.' peserta'),
             'hadir-tutup' => $this->langkah($hadirTutup > 0, $hadirTutup.' peserta'),

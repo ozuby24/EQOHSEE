@@ -37,6 +37,8 @@ type Butir = {
   kode: string; nama: string; maks: number;
   v: string; ket: string; bukti: string;
   keadaan: string; capaian: number | null;
+  /** Dinyatakan tidak berlaku bagi auditi pada Matriks Metode & Sampel. */
+  kecuali: boolean; alasan: string;
 };
 type Sub = {
   kode: string; nama: string; ref: string | null; rinci: boolean;
@@ -85,6 +87,9 @@ const props = defineProps<{
 
   peluang: Array<{ kode: string; lingkup: string; nama: string }>;
   ofiAda: string[];
+
+  /** Pengecualian ruang lingkup yang ditetapkan pada Matriks Metode & Sampel. */
+  pengecualian: { total: number; belum: string[]; bentrok: string[]; terpakai: number };
 
   tautan: Record<string, string>;
 }>();
@@ -554,6 +559,49 @@ const kartu = computed(() => [
       </div>
     </section>
 
+    <!-- ── Pengecualian ruang lingkup ──
+         Ditetapkan sekali pada Matriks Metode & Sampel, dituliskan ke sini
+         lewat satu tombol. TIDAK OTOMATIS: menulisi hasil diam-diam tiap
+         kali halaman dibuka akan menimpa angka yang sudah diberikan auditor
+         — dan mengubah nilai akhir audit — tanpa ia pernah memintanya. -->
+    <section v-if="props.pengecualian.total"
+             class="rounded-2xl border p-4 text-[12.5px]"
+             :class="props.pengecualian.bentrok.length
+                     ? 'border-amber-200 bg-amber-50' : 'border-stone-200 bg-stone-50'">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div class="min-w-0">
+          <p class="font-bold text-cam-ink">
+            {{ props.pengecualian.total }} kriteria dinyatakan tidak berlaku pada Rencana Audit
+          </p>
+          <!-- KETIGA KEADAANNYA DIBEDAKAN. "Seluruhnya sudah N/A" di atas
+               daftar butir yang bertentangan adalah kalimat yang menyangkal
+               dirinya sendiri satu baris kemudian. -->
+          <p class="text-stone-600 mt-1 leading-relaxed">
+            <template v-if="props.pengecualian.belum.length">
+              {{ props.pengecualian.belum.length }} di antaranya belum tertulis N/A di sini, jadi
+              masih ikut membagi nilai akhir dan menekan skor tanpa sebab.
+            </template>
+            <template v-else-if="props.pengecualian.bentrok.length">
+              {{ props.pengecualian.terpakai }} sudah tertulis N/A dan keluar dari pembagi nilai.
+            </template>
+            <template v-else>
+              Seluruhnya sudah tertulis N/A dan keluar dari pembagi nilai.
+            </template>
+          </p>
+          <p v-if="props.pengecualian.bentrok.length" class="text-amber-800 mt-2 leading-relaxed">
+            <b>{{ props.pengecualian.bentrok.length }} butir bertentangan</b> — dikecualikan pada rencana,
+            tetapi sudah bernilai angka di sini: {{ props.pengecualian.bentrok.join(', ') }}.
+            Tombol di samping tidak menyentuhnya; mana yang benar diputuskan auditor.
+          </p>
+        </div>
+        <div class="flex gap-2 shrink-0">
+          <Link :href="props.tautan.sampel" class="eq-btn-lain">Matriks Metode &amp; Sampel</Link>
+          <Link v-if="props.pengecualian.belum.length" :href="props.tautan.kecuali" method="post" as="button"
+                class="eq-btn-utama">Tandai {{ props.pengecualian.belum.length }} butir N/A</Link>
+        </div>
+      </div>
+    </section>
+
     <!-- Urutan yang mendahului penilaian. Ditampilkan, bukan mengunci:
          auditor lazim membaca kriteria lebih dulu untuk menyiapkan
          sampel, dan menutup halaman ini justru menghalangi pekerjaan
@@ -761,6 +809,21 @@ const kartu = computed(() => [
                 <p class="text-[11px] text-stone-500 mt-0.5">
                   Nilai maksimum {{ b.maks }}
                   <span v-if="!s.rinci && s.ref"> · acuan {{ s.ref }}</span>
+                </p>
+                <!-- Butir yang sudah dinyatakan tidak berlaku pada Rencana
+                     Audit, ditandai di tempat nilainya diberikan. Tanpa ini,
+                     satu-satunya cara mengetahuinya adalah membuka matriks
+                     di halaman lain dan mencocokkan delapan puluh kode
+                     sendiri. -->
+                <p v-if="b.kecuali"
+                   class="text-[11px] mt-1 leading-relaxed"
+                   :class="String(form.k[b.kode]?.v ?? '').trim() && form.k[b.kode]?.v !== NA
+                           ? 'text-amber-700' : 'text-stone-500'">
+                  <b>Dikecualikan pada Rencana Audit.</b>
+                  {{ b.alasan }}
+                  <span v-if="String(form.k[b.kode]?.v ?? '').trim() && form.k[b.kode]?.v !== NA">
+                    Butir ini tetap bernilai angka — putuskan mana yang benar.
+                  </span>
                 </p>
               </div>
 

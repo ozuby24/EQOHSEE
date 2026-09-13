@@ -46,6 +46,19 @@ p,li,td,th,dd,dt,h1,h2,h3,h4{ overflow-wrap:break-word; }
    Yang panjang tetap dapat digulir lewat .tabel-scroll di atasnya. */
 th{ white-space:nowrap; }
 
+/* KECUALI PADA LEMBAR CETAK, yang tidak dapat digulir mendatar.
+ *
+ * Aturan di atas bersandar pada .tabel-scroll: judul kolom yang panjang
+ * boleh melampaui lebar kartunya karena pembacanya dapat menggeser.
+ * Lembar cetak tidak punya jalan keluar itu — judul yang tidak boleh
+ * membungkus meluber MENIMPA judul kolom sebelahnya, dan yang tercetak
+ * di atas kertas berbunyi "Nomor KetidakseKriteria".
+ *
+ * Terukur pada Formulir Rencana Tindak Lanjut: th selebar 101px memuat
+ * judul selebar 128px, dan selisih 27px itu jatuh ke kolom tetangganya.
+ */
+.lembar th{ white-space:normal; }
+
 /* Pembungkus baku untuk tabel lebar: geser di dalam kartunya sendiri,
    lengkap dengan momentum di iOS. */
 .tabel-scroll{

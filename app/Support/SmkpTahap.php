@@ -107,8 +107,10 @@ final class SmkpTahap
                      'ket'=>'Jadwal dari rapat pembukaan sampai rapat penutupan, dengan auditi dan auditor pada tiap sesi.'],
                     ['kunci'=>'tim',      'judul'=>'Pembagian Tugas Tim Audit',       'jenis'=>'kerja','rute'=>'smkp.rencana',
                      'ket'=>'Siapa mengaudit elemen apa, lengkap dengan nomor registrasi auditor DBT.'],
-                    ['kunci'=>'sampel',   'judul'=>'Metode, Sampel & Top Risks',      'jenis'=>'kerja','rute'=>'smkp.rencana',
-                     'ket'=>'Cara pembuktian dan dasar pengambilan sampel, mengacu risiko tertinggi periode berjalan dan rencana kegiatan berikutnya.'],
+                    ['kunci'=>'sampel',   'judul'=>'Top Risks & Alokasi Sumber Daya', 'jenis'=>'kerja','rute'=>'smkp.rencana',
+                     'ket'=>'Risiko tertinggi periode berjalan dan rencana kegiatan berikutnya, yang menjadi dasar pengambilan sampel.'],
+                    ['kunci'=>'matriks',  'judul'=>'Matriks Metode & Sampel',         'jenis'=>'kerja','rute'=>'smkp.sampel',
+                     'ket'=>'Tiap kriteria dibuktikan dengan apa — dokumen, wawancara, observasi — beserta sampelnya, dan mana yang tidak berlaku bagi auditi.'],
                     ['kunci'=>'sah',      'judul'=>'Pengesahan KTT & Ketua Tim',      'jenis'=>'kerja','rute'=>'smkp.rencana',
                      'ket'=>'Tanda tangan Kepala Teknik Tambang, Penanggung Jawab Operasional bila auditi perusahaan jasa, dan Ketua Tim Audit.'],
                     ['kunci'=>'rencana-cetak','judul'=>'Laporan Rencana Audit',       'jenis'=>'cetak','rute'=>'smkp.rencana.cetak',
@@ -139,6 +141,8 @@ final class SmkpTahap
                 'ket'   => 'Berkas akhir audit dan tindak lanjut yang menjadi tanggung jawab auditi.',
                 'warna' => '#FF7F50',
                 'langkah' => [
+                    ['kunci'=>'narasi',    'judul'=>'Penyusunan Laporan',            'jenis'=>'kerja','rute'=>'smkp.laporan.susun',
+                     'ket'=>'Latar belakang, gambaran umum auditi, ringkasan penerapan tiap elemen, lampiran, dan distribusi laporan.'],
                     ['kunci'=>'laporan',   'judul'=>'Laporan Audit Internal',        'jenis'=>'cetak','rute'=>'smkp.laporan',
                      'ket'=>'Nilai akhir, tingkat penerapan, rekapitulasi tujuh elemen, dan seluruh temuan dalam satu berkas bernomor.'],
                     ['kunci'=>'hadir-buka','judul'=>'Daftar Hadir Rapat Pembukaan',  'jenis'=>'cetak','rute'=>'smkp.hadir.cetak','arg'=>'pembukaan',
@@ -178,6 +182,16 @@ final class SmkpTahap
      * menjadi sumbernya menyatakannya sendiri demikian. Angkanya berada di
      * satu tempat ini supaya dapat diganti begitu ketentuan yang berlaku
      * bagi perusahaan diketahui pasti.
+     *
+     * SELISIH YANG SUDAH TERAMATI, dicatat di sini supaya tidak hilang:
+     * Berita Acara PT Indo Sejahtera Manunggal Site PT Multi Harapan Utama
+     * (2023) memakai 4,5 mandays bagi 15 pekerja kelas risiko Tinggi,
+     * sementara baris [11,15] di bawah memberi 5. Satu titik data tidak
+     * cukup untuk menurunkan dua puluh baris tabel — menebaknya justru
+     * yang paling berbahaya, sebab angka yang salah di sini menagih hari
+     * kerja yang salah pada setiap audit. Tabel yang berlaku perlu
+     * dipasok utuh; sampai itu terjadi, pola ISO/IEC 17021 dipakai dan
+     * dinyatakan apa adanya.
      */
     public const MANDAYS_TABLE = [
         [1, 5, 3, 2, 2],          [6, 10, 4, 3, 2],         [11, 15, 5, 4, 3],
@@ -580,8 +594,24 @@ final class SmkpTahap
         $total = max(1, $dasar + $penambah - $pengurang);
 
         $durasi = round($total / $auditor, 1);
-        $tahap1 = max(1.0, round($durasi * 0.10, 1));
-        $tahap2 = max(0.0, round($durasi - $tahap1, 1));
+
+        /* "MAKSIMAL 10% DARI TOTAL" — sebuah batas atas, bukan batas bawah.
+         *
+         * Sebelumnya ada lantai satu hari di sini, dengan alasan bahwa
+         * 0,2 hari "tidak masuk akal sebagai kunjungan". Alasan itu masuk
+         * akal dan tetap saja salah: formulir Berita Acara yang menjadi
+         * acuan menuliskan sendiri "Alokasi Mandays untuk Tahap I Audit
+         * (Maksimal 10% dari Total)" dan mengisinya 0,23 hari atas audit
+         * berdurasi 2,25 hari. Lantai satu hari melanggar batas itu —
+         * pada audit kecil ia mengalokasikan 44% durasi ke Tahap I.
+         *
+         * Dibulatkan dua angka di belakang koma, sebagaimana formulir
+         * acuan: 0,23 dan 2,02, bukan 0,2 dan 2,1.
+         *
+         * Tahap I adalah peninjauan dokumen, bukan kunjungan lapangan;
+         * ia memang dapat berlangsung beberapa jam saja. */
+        $tahap1 = round($durasi * 0.10, 2);
+        $tahap2 = max(0.0, round($durasi - $tahap1, 2));
 
         return [
             'pekerja'   => $pekerja,
@@ -831,12 +861,100 @@ final class SmkpTahap
     }
 
     /** Pihak yang mengesahkan Rencana Audit. */
+    /* ── Penanda tangan berkas audit ──
+     *
+     * Urutan, bunyi peran, dan siapa yang ikut menandatangani diambil
+     * apa adanya dari berkas audit acuan. Ketiganya berbeda menurut
+     * JENIS AUDITI, dan berkas acuan mencantumkan aturannya sendiri
+     * sebagai catatan di bawah kolom tanda tangan:
+     *
+     *   perusahaan jasa pertambangan  → Ketua Tim Audit, PJO, dan KTT/PTL
+     *   perusahaan pertambangan       → Ketua Tim Audit dan KTT
+     *   pengolahan dan/atau pemurnian → Ketua Tim Audit dan PTL
+     *
+     * Blok tanda tangan yang ditulis mati akan menyediakan kolom bagi
+     * jabatan yang tidak ada pada auditi — dan berkas yang menyediakan
+     * kolom kosong bagi PJO pada perusahaan pertambangan terbaca sebagai
+     * berkas yang belum lengkap ditandatangani.
+     */
+
+    public const JASA    = 'jasa';      // pemegang IUJP
+    public const TAMBANG = 'tambang';   // pemegang IUP / IUPK
+    public const OLAH    = 'olah';      // pengolahan dan/atau pemurnian
+
+    /** Jenis auditi menurut jenis perizinannya. */
+    public static function jenisAuditi(?string $izin): string
+    {
+        $t = mb_strtolower(trim((string) $izin));
+
+        if ($t === '') return self::TAMBANG;
+
+        if (str_contains($t, 'iujp') || str_contains($t, 'jasa')) return self::JASA;
+
+        if (str_contains($t, 'pengolahan') || str_contains($t, 'pemurnian')
+            || str_contains($t, 'smelter')  || str_contains($t, 'opk')) return self::OLAH;
+
+        return self::TAMBANG;
+    }
+
+    /**
+     * Seluruh jabatan penanda tangan yang mungkin, urut seperti berkas acuan.
+     *
+     * Ketua Tim Audit lebih dahulu — ia yang membuat berkasnya; PJO dan
+     * KTT mengetahuinya.
+     */
     public static function pengesah(): array
     {
         return [
-            'ktt'   => ['peran' => 'Kepala Teknik Tambang', 'wajib' => true],
-            'pjo'   => ['peran' => 'Penanggung Jawab Operasional', 'wajib' => false],
-            'ketua' => ['peran' => 'Ketua Tim Audit', 'wajib' => true],
+            'ketua' => ['peran' => 'Ketua Tim Audit',              'wajib' => true],
+            'pjo'   => ['peran' => 'Penanggung Jawab Operasional dari Auditi', 'wajib' => false],
+            'ktt'   => ['peran' => 'Kepala Teknik Tambang',        'wajib' => true],
+            'ptl'   => ['peran' => 'Penanggung Jawab Teknik dan Lingkungan', 'wajib' => false],
+        ];
+    }
+
+    /**
+     * Penanda tangan yang berlaku bagi satu jenis auditi, urut.
+     *
+     * @return array<string,array{peran:string,wajib:bool}>
+     */
+    public static function pengesahUntuk(string $jenis): array
+    {
+        $semua = self::pengesah();
+
+        $kunci = match ($jenis) {
+            self::JASA => ['ketua', 'pjo', 'ktt'],
+            self::OLAH => ['ketua', 'ptl'],
+            default    => ['ketua', 'ktt'],
+        };
+
+        $out = [];
+        foreach ($kunci as $k) {
+            // Yang tercantum bagi jenis ini selalu wajib — PJO tidak
+            // "opsional" pada audit perusahaan jasa pertambangan, ia
+            // hanya tidak ada pada jenis auditi yang lain.
+            $out[$k] = ['peran' => $semua[$k]['peran'], 'wajib' => true];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Catatan yang tercetak di bawah kolom tanda tangan.
+     *
+     * Bunyinya disalin dari berkas acuan. Ia bukan hiasan: pembaca berkas
+     * memakainya untuk memeriksa apakah tanda tangan yang ada sudah
+     * lengkap bagi jenis auditi yang bersangkutan.
+     */
+    public static function catatanTandaTangan(string $berkas = 'Berkas ini'): array
+    {
+        return [
+            'Untuk audit perusahaan jasa pertambangan, '.$berkas
+            .' ditandatangani oleh Ketua Tim Audit, PJO, dan KTT/PTL.',
+            'Untuk audit perusahaan pertambangan, '.$berkas
+            .' ditandatangani oleh Ketua Tim Audit dan KTT.',
+            'Untuk audit perusahaan pengolahan dan/atau pemurnian, '.$berkas
+            .' ditandatangani oleh Ketua Tim Audit dan PTL.',
         ];
     }
 
@@ -849,7 +967,7 @@ final class SmkpTahap
      *
      * @return array{terisi:array<string,bool>,jumlah:int,total:int,lengkap:bool,kurang:array<int,string>}
      */
-    public static function rekapRencana(?array $rencana): array
+    public static function rekapRencana(?array $rencana, bool $matriksTerisi = false): array
     {
         $r = $rencana ?? [];
         $terisi = [];
@@ -859,7 +977,19 @@ final class SmkpTahap
                 'tanggal'    => !empty($r['tanggal_mulai']) && !empty($r['tanggal_selesai']),
                 'susunan'    => self::adaBaris($r['susunan'] ?? [], ['kegiatan']),
                 'tugas'      => self::adaBaris($r['tugas'] ?? [], ['nama']),
-                'metode'     => trim((string) ($r['metode'] ?? '')) !== '',
+                /* Komponen ke-8 terpenuhi oleh matriksnya, bukan oleh satu
+                   kalimat bebas. Rencana Audit acuan memuat metode dan
+                   sampel sebagai tabel sepanjang delapan puluh baris —
+                   satu tiap kriteria — dan kalimat "wawancara, tinjauan
+                   dokumen, observasi lapangan" tidak memberi tahu auditor
+                   mana pun apa yang harus ia minta hari Senin.
+
+                   Kalimat bebasnya tetap diterima bagi audit yang sudah
+                   berjalan sebelum matriksnya ada: mencabutnya akan
+                   membuat rencana yang kemarin lengkap mendadak kurang
+                   satu komponen, pada audit yang berkasnya sudah
+                   ditandatangani. */
+                'metode'     => $matriksTerisi || trim((string) ($r['metode'] ?? '')) !== '',
                 'pengesahan' => self::pengesahanLengkap($r['pengesahan'] ?? []),
                 default      => trim((string) ($r[$k] ?? '')) !== '',
             };
@@ -892,12 +1022,24 @@ final class SmkpTahap
         return false;
     }
 
-    private static function pengesahanLengkap($p): bool
+    /**
+     * Pengesahan lengkap bila SELURUH penanda tangan yang berlaku terisi.
+     *
+     * Yang berlaku bergantung pada jenis auditi; tanpa jenisnya, yang
+     * diperiksa adalah dua jabatan yang selalu ada pada setiap jenis —
+     * Ketua Tim Audit dan KTT — supaya audit yang jenis auditinya belum
+     * tercatat tidak selamanya terbaca belum sah.
+     */
+    private static function pengesahanLengkap($p, ?string $jenis = null): bool
     {
-        foreach (self::pengesah() as $k => $def) {
-            if (!$def['wajib']) continue;
+        $daftar = $jenis !== null
+            ? self::pengesahUntuk($jenis)
+            : ['ketua' => [], 'ktt' => []];
+
+        foreach (array_keys($daftar) as $k) {
             if (trim((string) (((array) $p)[$k]['nama'] ?? '')) === '') return false;
         }
+
         return true;
     }
 

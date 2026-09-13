@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Models\Concerns\BerindukPerusahaan;
+use App\Support\Smkp;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -51,6 +53,28 @@ class SmkpFinding extends Model
                belum pernah mereka nyatakan. */
             'respon_diterima' => 'boolean',
         ];
+    }
+
+    /**
+     * KOLOM INI HANYA MENYIMPAN KODE, tidak pernah label.
+     *
+     * Aplikasi menulis 'mayor' dan 'minor'; sebagian sumber lain menulis
+     * "Ketidaksesuaian Mayor". Keduanya sah dibaca manusia dan keduanya
+     * tersimpan tanpa galat — tetapi setiap hitungan yang memakai
+     * `where('jenis','mayor')` menghasilkan nol atas tabel yang berisi
+     * belasan temuan, dan seluruhnya jatuh ke keranjang "observasi".
+     *
+     * Terjadi sungguhan pada data contoh: satu audit dengan satu temuan
+     * mayor dan satu minor terbaca "0 mayor · 0 minor · 2 observasi".
+     *
+     * Penyeragamannya ditaruh di sini, di pintu masuk kolomnya, bukan
+     * pada tiap pembaca. Penulis berikutnya — perintah artisan, importir
+     * CSV, data contoh — tidak dapat menghindarinya tanpa sengaja
+     * melewati Eloquent.
+     */
+    protected function jenis(): Attribute
+    {
+        return Attribute::set(fn ($v) => $v === null ? null : Smkp::kodeJenis((string) $v));
     }
 
     public function audit(): BelongsTo        { return $this->belongsTo(SmkpAudit::class, 'audit_id'); }

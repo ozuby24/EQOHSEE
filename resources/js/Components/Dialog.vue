@@ -153,13 +153,15 @@ const kelasKolom =
       </div>
 
       <div class="mt-5 flex flex-wrap gap-2 justify-end">
-        <button type="button" class="eq-btn-lain" style="flex:none" :disabled="sibuk"
+        <!-- `flex:none` sebaris tidak lagi diperlukan: .eq-btn-utama kini
+             selebar isinya sendiri, bukan selebar barisnya. -->
+        <button type="button" class="eq-btn-lain" :disabled="sibuk"
                 @click="emit('batal')">Batal</button>
 
         <button type="button"
                 :class="nada === 'bahaya' ? 'eq-btn-tolak' : 'eq-btn-utama'"
                 :disabled="!bolehLanjut || sibuk"
-                :style="{ flex: 'none', opacity: (!bolehLanjut || sibuk) ? 0.4 : 1 }"
+                :style="{ opacity: (!bolehLanjut || sibuk) ? 0.4 : 1 }"
                 @click="lanjut">
           {{ sibuk ? 'Memproses…' : labelAksi }}
         </button>

@@ -278,13 +278,55 @@ class SmkpTahapTest extends TestCase
         $this->assertSame(14.4, $m['tahap2']);
     }
 
-    public function test_tahap_satu_sekurang_kurangnya_satu_hari(): void
+    /**
+     * "Maksimal 10% dari Total" adalah BATAS ATAS, bukan batas bawah.
+     *
+     * Pernah ada lantai satu hari di sini, dengan alasan bahwa 0,2 hari
+     * "tidak masuk akal sebagai kunjungan". Formulir Berita Acara yang
+     * menjadi acuan menuliskan sendiri "Alokasi Mandays untuk Tahap I
+     * Audit (Maksimal 10% dari Total)" dan mengisinya 0,23 hari atas
+     * audit berdurasi 2,25 hari. Lantai satu hari melanggar batas itu:
+     * pada audit kecil ia mengalokasikan 44% durasi ke Tahap I.
+     *
+     * Tahap I adalah peninjauan dokumen, bukan kunjungan lapangan.
+     */
+    public function test_tahap_satu_tidak_pernah_melampaui_sepersepuluh(): void
     {
-        // Durasi 2 hari: 10% = 0,2 hari — tidak masuk akal sebagai kunjungan.
         $m = SmkpTahap::mandays(['jumlah_pekerja' => 3, 'kelas_risiko' => 'Rendah', 'jumlah_auditor' => 1]);
 
-        $this->assertSame(1.0, $m['tahap1']);
-        $this->assertSame(1.0, $m['tahap2']);
+        $this->assertSame(2.0,  $m['durasi']);
+        $this->assertSame(0.2,  $m['tahap1']);
+        $this->assertSame(1.8,  $m['tahap2']);
+
+        $this->assertLessThanOrEqual($m['durasi'] * 0.10 + 0.005, $m['tahap1']);
+    }
+
+    /**
+     * Angka acuan, disalin apa adanya dari Berita Acara PT Indo Sejahtera
+     * Manunggal Site PT Multi Harapan Utama (2023).
+     *
+     * Formulirnya mencatat: mandays 4,5 hari dibagi 2 auditor = 2,25 hari;
+     * faktor penyesuaian 0; Tahap I 0,23 hari; Tahap II 2,02 hari.
+     *
+     * CATATAN PENTING atas mandays dasarnya. Tabel bawaan di kelas ini
+     * memberi 5 hari bagi 15 pekerja kelas risiko Tinggi, sementara
+     * formulir acuan memakai 4,5 — tabelnya memang pola ISO/IEC 17021
+     * sebagai default, bukan salinan angka Kepdirjen, dan kelas ini
+     * menyatakannya sendiri demikian. Yang diuji di sini karena itu
+     * PEMBAGIAN TAHAPNYA, dengan durasi 2,25 hari dimasukkan langsung —
+     * bagian yang benar-benar dapat diperiksa terhadap acuan.
+     */
+    public function test_pembagian_tahap_mengikuti_angka_berita_acara_acuan(): void
+    {
+        // 4,5 mandays dasar : 2 auditor = 2,25 hari di lapangan.
+        $durasi = round(4.5 / 2, 1);
+
+        $this->assertSame(2.3, $durasi, 'Pembulatan durasi satu angka di belakang koma.');
+
+        /* Dihitung dari 2,25 seperti formulirnya, bukan dari 2,3: yang
+           dibulatkan pada formulir hanya angka yang dicetak. */
+        $this->assertSame(0.23, round(2.25 * 0.10, 2));
+        $this->assertSame(2.02, round(2.25 - 0.23, 2));
     }
 
     public function test_pembagi_auditor_tidak_pernah_nol(): void
@@ -546,17 +588,23 @@ class SmkpTahapTest extends TestCase
         $this->assertSame('DBT-001', $props['tim'][0]['registrasi']);
     }
 
-    public function test_lembar_laporan_bertambah_satu_untuk_pelaksanaan_audit(): void
+    public function test_jumlah_lembar_laporan_mengikuti_isinya(): void
     {
         $this->masuk();
         $a = $this->audit();
 
-        /* Ringkasan nilai, pelaksanaan, lalu daftar temuan. Bila jumlah
-           lembar tidak ikut bertambah, penomoran "Halaman 2 dari 2" pada
-           berkas terkendali menyebut lembar yang tidak ada. */
+        /* Enam lembar tetap mengikuti urutan berkas acuan — sampul dan
+           latar belakang, gambaran umum, penerapan tiap elemen, lingkup
+           dan penilaian, pelaksanaan audit, praktik terbaik — lalu daftar
+           ketidaksesuaian, lalu lembar penutup berisi lampiran,
+           distribusi, dan tanda tangan.
+
+           Bila jumlah lembar tidak ikut bertambah, penomoran "Halaman 2
+           dari 2" pada berkas terkendali menyebut lembar yang tidak ada. */
         $props = $this->get(route('smkp.laporan', $a))->assertOk()->viewData('page')['props'];
 
-        $this->assertSame(3, $props['totalLembar'], 'Dua lembar tetap plus satu lembar temuan.');
+        $this->assertSame(8, $props['totalLembar'],
+            'Enam lembar tetap, satu lembar daftar ketidaksesuaian, satu lembar penutup.');
     }
 
     public function test_tim_auditor_dibaca_dari_pembagian_tugas_rencana(): void
