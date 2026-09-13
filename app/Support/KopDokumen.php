@@ -221,6 +221,24 @@ final class KopDokumen
                 'kode'  => 'OHSE-IV.051',
                 'urut'  => 16,
 ],
+            /* Lembar pemantauan SATU perusahaan jasa, berbeda dari
+               register di atas yang mendaftar semuanya sekaligus.
+               Keduanya memang sekeluarga, karena itu kodenya bersubhuruf
+               seperti OHSE-IV.067h dan 067g pada berkas acuan.
+
+               Tanpa entri ini kop lembarnya tetap tergambar — justru itu
+               persoalannya: `untuk()` jatuh ke bentuk cadangan bernomor
+               urut 0, sehingga tiap PJP tercetak membawa nomor dokumen
+               yang sama dengan setiap dokumen tak terdaftar lainnya.
+               Lembar yang diserahkan kepada Inspektur Tambang tidak dapat
+               ditelusuri di daftar induk, dan tidak ada galat yang
+               memberitahukannya. */
+            'laporan-pjp' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN PEMANTAUAN PERUSAHAAN JASA PERTAMBANGAN',
+                'kode'  => 'OHSE-IV.051a',
+                'urut'  => 13,
+],
             'laporan-konservasi' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN KONSERVASI MINERAL DAN BATUBARA',

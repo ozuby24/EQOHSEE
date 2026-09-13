@@ -909,6 +909,14 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] main .text-emerald-800{color:#8FEFC8}
 :root[data-tema="gelap"] main .text-red-800{color:#FDBDBD}
 
+/* Jingga menandai capaian 40–59 pada modul PJP — tepat di antara amber
+   (cukup) dan merah (kritis). Nadanya dijaga tetap di antara keduanya di
+   sini juga: kalau ia bergeser terlalu dekat ke salah satunya, ketiga
+   tingkat itu berhenti dapat dibedakan justru pada mode yang dipakai
+   saat bekerja malam. */
+:root[data-tema="gelap"] main .text-orange-600{color:#FDBA74}
+:root[data-tema="gelap"] main .text-orange-800{color:#FED7AA}
+
 /* ── Bidang bernada terang di mode gelap ──
    Kotak catatan dan kartu peringatan memakai latar bernada sangat muda
    (bg-red-50, bg-amber-50, bg-cam-orange-soft). Latar itu tidak ikut
@@ -2416,6 +2424,48 @@ body.eq-sempit .eq-semboyan{display:none}
   .jual-aspek:hover .jual-aspek-foto{transform:none}
   .jual-tombol:active{transform:none}
   .jual-bilah-enter-from,.jual-bilah-leave-to{transform:none;opacity:1}
+}
+
+/* ── Kartu cuaca pada sampul modul ───────────────────────────────────
+   Ditulis di sini, bukan di dalam komponen Vue, dengan alasan yang sama
+   seperti seluruh berkas ini: dua salinan aturan yang sama akan berbeda
+   isinya cepat atau lambat.
+
+   Gerak di sini murni hiasan — angka dan labelnya sudah lengkap tanpa
+   animasi apa pun. Karena itu pada perangkat yang meminta gerak
+   dikurangi, seluruhnya dimatikan tanpa ada keterangan yang hilang. */
+.eq-cuaca{
+  background:rgba(12,10,9,.42);
+  border:1px solid rgba(255,255,255,.18);
+  backdrop-filter:blur(10px) saturate(140%);
+  -webkit-backdrop-filter:blur(10px) saturate(140%);
+  box-shadow:0 8px 24px -12px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.12);
+}
+
+/* Sinar matahari berdenyut pelan. */
+.eq-cuaca-surya{transform-origin:center;animation:eq-surya 4.5s ease-in-out infinite}
+@keyframes eq-surya{
+  0%,100%{opacity:.55;transform:scale(.92)}
+  50%    {opacity:1;  transform:scale(1.06)}
+}
+
+/* Tetes hujan jatuh bergantian. Tiap tetes diberi tundaan sendiri lewat
+   --eq-tunda supaya tidak jatuh serentak seperti satu benda. */
+.eq-cuaca-tetes{animation:eq-tetes 1.5s linear infinite;animation-delay:var(--eq-tunda,0s)}
+@keyframes eq-tetes{
+  0%  {opacity:0;   transform:translateY(-2px)}
+  25% {opacity:.95}
+  100%{opacity:0;   transform:translateY(7px)}
+}
+
+/* Kotak meter yang sedang aktif berdenyut samar, sisanya diam. */
+.eq-cuaca-aktif{animation:eq-cuaca-aktif 2.4s ease-in-out infinite}
+@keyframes eq-cuaca-aktif{0%,100%{opacity:1}50%{opacity:.62}}
+
+@media (prefers-reduced-motion: reduce){
+  .eq-cuaca-surya,.eq-cuaca-tetes,.eq-cuaca-aktif{animation:none}
+  .eq-cuaca-surya{opacity:1;transform:none}
+  .eq-cuaca-tetes{opacity:.95;transform:none}
 }
 
 </style>

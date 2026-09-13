@@ -2,467 +2,362 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Pjp\{Evaluasi, Laporan, Pjp, SmkpItem, SmkpJawaban, SmkpKategori};
-use App\Support\{Berkas, Ekspor, KopDokumen};
+use App\Models\ActivityLog;
+use App\Models\Company;
+use App\Models\Pjp;
+use App\Models\PjpLaporan;
+use App\Support\Ekspor;
+use App\Support\KopDokumen;
+use App\Support\PjpEkspor;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 /**
- * Pemantauan Perusahaan Jasa Pertambangan.
+ * Register Perusahaan Jasa Pertambangan: daftar, formulir, detail, ekspor.
  *
- * SATU CONTROLLER UNTUK SELURUH MODUL, sama seperti Investigasi.
- * Daftar periksa, dokumen berkala, dan evaluasi semesteran adalah tiga
- * sisi dari satu berkas mitra yang dibuka orang yang sama dalam satu
- * duduk; memecahnya menjadi empat controller berarti empat tempat yang
- * harus diubah bersamaan setiap kali bentuk berkasnya bergeser.
- *
- * EKSPOR TIDAK MEMAKAI PUSTAKA TAMBAHAN. Kit asalnya membawa
- * maatwebsite/excel dan barryvdh/dompdf; keduanya tidak dipasang di
- * sini dan tidak ditambahkan. EQOHSEE sudah punya jawabannya sendiri —
- * CSV lewat App\Support\Ekspor dan halaman siap cetak lewat
- * Pages/Print — dan dua pustaka besar demi dua tombol adalah harga yang
- * dibayar setiap `composer install` berikutnya.
+ * Ketiga halaman aspek ada di PjpAspekController; yang di sini adalah
+ * data induknya. Pemisahan itu mengikuti bentuk modulnya — aspek
+ * menjawab "bagaimana capaian seluruh PJP", register menjawab "siapa
+ * saja PJP-nya dan apa isinya".
  */
 class PjpController extends Controller
 {
-    /* ═══════════════════ DASBOR ═══════════════════ */
-
-    /**
-     * Ringkasan yang menjawab "mitra mana yang menunggu saya".
-     *
-     * Bukan "berapa banyak mitra". Angka besar tanpa tautan hanya
-     * memberi tahu bahwa datanya banyak; yang dicari pembacanya selalu
-     * barisnya.
-     */
-    public function dasbor()
+    public function daftar(Request $request)
     {
-        $jumlah = Pjp::statusCountsFor();
+        $cari   = $request->query('cari');
+        $status = $request->query('status');
 
-        /* denganSkor() memuat ketiga relasi sekali jalan. Tanpa itu tiap
-           baris membaca basis data tiga kali lagi hanya untuk menghitung
-           achievement-nya — 36 kueri untuk 7 mitra, terukur pada kit
-           asalnya, dan memburuk lurus seiring bertambahnya mitra. */
-        $perhatian = Pjp::query()->denganSkor()->get()
-            ->map(fn (Pjp $p) => [
-                'id'          => $p->id,
-                'nama'        => $p->nama_perusahaan,
-                'achievement' => $p->achievement(),
-            ])
-            ->filter(fn (array $b) => $b['achievement'] !== null
-                && $b['achievement'] < Pjp::AMBANG_PERHATIAN)
-            ->sortBy('achievement')
-            ->take(8)
-            ->values();
-
-        return Inertia::render('Pjp/Dasbor', [
-            'judul'    => 'Pemantauan Perusahaan Jasa Pertambangan',
-            'subjudul' => 'Prakualifikasi SMKP, dokumen berkala, dan evaluasi kinerja mitra.',
-
-            'ringkas' => [
-                'total'             => array_sum($jumlah),
-                'aktif'             => $jumlah['aktif'],
-                'perluTindakLanjut' => $jumlah['perlu_tindak_lanjut'],
-                'tidakAktif'        => $jumlah['tidak_aktif'],
-                'perluPerhatian'    => $perhatian->count(),
-            ],
-
-            'statusCounts'   => $jumlah,
-            'perluPerhatian' => $perhatian,
-            'menunggak'      => Pjp::belumLaporanBulananBulanIni(),
-            'batasTanggal'   => Laporan::BATAS_TANGGAL,
-
-            /* Dokumen yang sudah masuk tetapi belum dibuka siapa pun.
-               Menuntut tindakan orang yang BERBEDA dari daftar
-               menunggak di atasnya: yang itu menuntut mitranya
-               mengirim, yang ini menuntut pemegang IUP menilai. Digabung
-               menjadi satu angka kepatuhan, tidak satu pun dari keduanya
-               terpanggil. */
-            'belumDinilai' => Laporan::query()
-                ->whereNull('kesesuaian_isi')
-                ->with('pjp:id,nama_perusahaan')
-                ->latest()
-                ->take(8)
-                ->get()
-                ->map(fn (Laporan $l) => [
-                    'id'          => $l->pjp_id,
-                    'mitra'       => $l->pjp?->nama_perusahaan,
-                    'jenis'       => Laporan::JENIS[$l->jenis] ?? $l->jenis,
-                    'periode'     => $l->periode,
-                    'tepat_waktu' => $l->tepat_waktu,
-                ]),
-        ]);
-    }
-
-    /* ═══════════════════ DAFTAR ═══════════════════ */
-
-    public function index(Request $r)
-    {
-        $baris = Pjp::query()
-            ->denganSkor()
-            ->filter($r->query('cari'), $r->query('status'))
-            ->orderBy('nama_perusahaan')
-            ->get()
-            ->map(fn (Pjp $p) => [
-                'id'               => $p->id,
-                'nama_perusahaan'  => $p->nama_perusahaan,
-                'nib'              => $p->nib,
-                'penanggung_jawab' => $p->penanggung_jawab,
-                'status'           => $p->status,
-                'smkp'             => $p->smkpScore()['persentase'],
-                'pelaporan'        => $p->pelaporanScore(),
-                'evaluasi'         => $p->evaluasi->first()?->skor_rata_rata,
-                'achievement'      => $p->achievement(),
-            ]);
+        $pjps = Pjp::query()
+            ->with('company:id,name')
+            ->filter($cari, $status)
+            ->latest()
+            ->paginate(15)
+            ->withQueryString();
 
         return Inertia::render('Pjp/Daftar', [
-            'judul'        => 'Daftar Perusahaan Jasa',
-            'baris'        => $baris,
-            'saring'       => ['cari' => $r->query('cari', ''), 'status' => $r->query('status', '')],
-            'statusCounts' => Pjp::statusCountsFor(),
-            'STATUS'       => Pjp::STATUS,
-            'ambang'       => Pjp::AMBANG_PERHATIAN,
+            'judul'    => 'Data Perusahaan Jasa Pertambangan',
+            'subjudul' => 'Seluruh PJP yang terdaftar dan dipantau pemegang izin.',
+
+            'pjps'    => $pjps,
+            'saring'  => ['cari' => $cari ?? '', 'status' => $status ?? ''],
+            'statusJumlah' => Pjp::statusCountsFor(),
+            'statusOpsi'   => Pjp::STATUS,
+
+            'tautan' => $this->tautanUmum() + [
+                /* Penyaring yang sedang aktif ikut ke berkas unduhan:
+                   tombol Ekspor yang mengabaikannya mengirim seluruh
+                   data padahal layar menunjukkan sebagian, dan selisih
+                   itu baru ketahuan setelah berkasnya beredar. */
+                'ekspor' => route('pjp.ekspor', array_filter([
+                    'cari' => $cari, 'status' => $status,
+                ])),
+                'hapusPola' => route('pjp.hapus', ['pjp' => '__ID__']),
+            ],
         ]);
     }
 
-    public function csv(Request $r)
+    /**
+     * Berkas CSV, bukan XLSX.
+     *
+     * Aplikasi asal memakai maatwebsite/excel; EQOHSEE tidak memasang
+     * pustaka itu dan sudah punya App\Support\Ekspor yang dipakai
+     * seluruh modul lain. Menambah satu pustaka untuk satu modul berarti
+     * dua cara mengekspor yang harus dirawat bersama, dan yang satu
+     * pasti tertinggal.
+     */
+    public function ekspor(Request $request)
     {
-        $baris = Pjp::query()
-            ->denganSkor()
-            ->filter($r->query('cari'), $r->query('status'))
-            ->orderBy('nama_perusahaan')
-            ->get()
-            ->map(fn (Pjp $p) => [
-                $p->nama_perusahaan,
-                $p->nib,
-                $p->penanggung_jawab,
-                $p->alamat,
-                Pjp::STATUS[$p->status] ?? $p->status,
-                $p->smkpScore()['persentase'],
-                $p->smkpScore()['kelayakan'],
-                $p->pelaporanScore(),
-                $p->evaluasi->first()?->skor_rata_rata,
-                $p->achievement(),
-                $p->catatan,
-            ]);
+        $pjps = Pjp::query()
+            ->filter($request->query('cari'), $request->query('status'))
+            ->latest()
+            ->get();
 
-        return Ekspor::csv('pjp-'.date('Ymd-Hi'), [
-            'Nama Perusahaan', 'NIB', 'Penanggung Jawab', 'Alamat', 'Status',
-            'Skor SMKP (%)', 'Layak s.d. Risiko', 'Skor Pelaporan (%)',
-            'Skor Evaluasi Terakhir', 'Achievement', 'Catatan',
-        ], $baris);
+        ActivityLog::write('Ekspor data PJP', $pjps->count().' perusahaan', 'pjp');
+
+        return Ekspor::csv(
+            PjpEkspor::namaBerkas(),
+            PjpEkspor::judul(),
+            $pjps->map(fn (Pjp $pjp) => PjpEkspor::baris($pjp)),
+        );
     }
-
-    public function cetak(Request $r)
-    {
-        return Inertia::render('Print/Pjp', [
-            'dok'     => KopDokumen::untuk('register-pjp', $this->perusahaanKop($r)),
-            'data'    => Pjp::query()->denganSkor()
-                ->filter($r->query('cari'), $r->query('status'))
-                ->orderBy('nama_perusahaan')->get()
-                ->map(fn (Pjp $p) => [
-                    'nama_perusahaan'  => $p->nama_perusahaan,
-                    'nib'              => $p->nib,
-                    'penanggung_jawab' => $p->penanggung_jawab,
-                    'status'           => Pjp::STATUS[$p->status] ?? $p->status,
-                    'smkp'             => $p->smkpScore()['persentase'],
-                    'pelaporan'        => $p->pelaporanScore(),
-                    'evaluasi'         => $p->evaluasi->first()?->skor_rata_rata,
-                    'achievement'      => $p->achievement(),
-                ]),
-            'filters' => $r->query(),
-            'kembali' => route('pjp.index', $r->query()),
-        ]);
-    }
-
-    /* ═══════════════════ SATU MITRA ═══════════════════ */
 
     public function baru()
     {
-        return Inertia::render('Pjp/Form', [
-            'judul'  => 'Tambah Perusahaan Jasa',
-            'pjp'    => null,
-            'STATUS' => Pjp::STATUS,
-        ]);
+        return $this->formulir(new Pjp(['status' => 'aktif']));
     }
 
-    public function simpan(Request $r)
+    public function ubah(Pjp $pjp)
     {
-        $pjp = Pjp::create($this->pemilik($this->validasi($r)));
-
-        return redirect()->route('pjp.rincian', $pjp)
-            ->with('sukses', 'Perusahaan jasa berhasil ditambahkan.');
+        return $this->formulir($pjp);
     }
 
-    public function sunting(Pjp $pjp)
+    public function simpan(Request $request)
     {
-        return Inertia::render('Pjp/Form', [
-            'judul'  => 'Ubah Perusahaan Jasa',
-            'pjp'    => $pjp,
-            'STATUS' => Pjp::STATUS,
-        ]);
+        $pjp = Pjp::create($this->pemilik($this->validasi($request)));
+
+        ActivityLog::write('Tambah PJP', $pjp->nama_perusahaan, 'pjp');
+
+        return redirect()->route('pjp.detail', $pjp)
+            ->with('ok', 'Data Perusahaan Jasa Pertambangan tersimpan.');
     }
 
-    public function perbarui(Request $r, Pjp $pjp)
+    public function perbarui(Request $request, Pjp $pjp)
     {
-        $pjp->update($this->pemilik($this->validasi($r)));
+        $pjp->update($this->pemilik($this->validasi($request)));
 
-        return redirect()->route('pjp.rincian', $pjp)
-            ->with('sukses', 'Perusahaan jasa berhasil diperbarui.');
+        ActivityLog::write('Ubah PJP', $pjp->nama_perusahaan, 'pjp');
+
+        return redirect()->route('pjp.detail', $pjp)
+            ->with('ok', 'Data Perusahaan Jasa Pertambangan diperbarui.');
     }
 
     public function hapus(Pjp $pjp)
     {
-        /* Berkasnya dibuang satu per satu lewat jalur yang tersimpan,
-           bukan dengan menghapus foldernya. Nama folder dibentuk dari
-           id, dan menghapus folder berdasarkan id yang salah — atau id
-           yang sudah dipakai ulang — membuang berkas milik baris lain
-           tanpa satu pun galat. */
-        foreach ($pjp->laporan()->get() as $l) Berkas::buang($l->file_path);
+        $nama = $pjp->nama_perusahaan;
 
+        /*
+         * Berkasnya ikut dihapus, bukan hanya barisnya. Kunci asing
+         * menghapus baris dokumen secara berantai, tetapi berkas di disk
+         * tidak ikut mati bersamanya — ia tinggal sebagai dokumen
+         * perusahaan yang tidak lagi terdaftar, masih terbuka bagi siapa
+         * pun yang menyimpan tautannya.
+         */
+        Storage::disk('public')->deleteDirectory("pjp-laporan/{$pjp->id}");
         $pjp->delete();
 
-        return redirect()->route('pjp.index')
-            ->with('sukses', 'Perusahaan jasa berhasil dihapus.');
+        ActivityLog::write('Hapus PJP', $nama, 'pjp');
+
+        return redirect()->route('pjp.daftar')
+            ->with('ok', 'Data Perusahaan Jasa Pertambangan dihapus.');
     }
 
-    public function rincian(Pjp $pjp)
+    public function detail(Pjp $pjp)
     {
-        $pjp->load(['laporan', 'evaluasi', 'smkpJawaban']);
+        $laporans = $pjp->laporans()->get();
 
-        return Inertia::render('Pjp/Rincian', [
-            'judul' => $pjp->nama_perusahaan,
-            'pjp'   => $pjp->only([
-                'id', 'nama_perusahaan', 'nib', 'penanggung_jawab',
-                'alamat', 'status', 'catatan',
-            ]),
+        return Inertia::render('Pjp/Detail', [
+            'pjp' => [
+                'id'               => $pjp->id,
+                'nama_perusahaan'  => $pjp->nama_perusahaan,
+                'nib'              => $pjp->nib,
+                'penanggung_jawab' => $pjp->penanggung_jawab,
+                'alamat'           => $pjp->alamat,
+                'status'           => $pjp->status,
+                'statusLabel'      => Pjp::STATUS[$pjp->status] ?? $pjp->status,
+                'catatan'          => $pjp->catatan,
+                'perusahaan'       => $pjp->company?->name,
+            ],
 
-            'laporan' => $pjp->laporan->map(fn (Laporan $l) => [
-                'id'             => $l->id,
-                'jenis'          => $l->jenis,
-                'jenis_label'    => Laporan::JENIS[$l->jenis] ?? $l->jenis,
-                'periode'        => $l->periode,
-                'catatan'        => $l->catatan,
-                'kesesuaian_isi' => $l->kesesuaian_isi,
-                'tepat_waktu'    => $l->tepat_waktu,
-                'file_name'      => $l->file_name,
-                'file_size'      => $l->file_size,
-                'url'            => Berkas::url($l, 'pjl'),
-                'dibuat'         => $l->created_at?->toIso8601String(),
-            ]),
-
-            'evaluasi' => $pjp->evaluasi->map(fn (Evaluasi $e) => [
+            /*
+             * Dokumen dikelompokkan per jenis di server, bukan disaring
+             * ulang di sisi peramban dari satu daftar rata. Label tiap
+             * jenis ikut dibawa di dalam kelompoknya, sehingga tampilan
+             * tidak perlu mengulang peta jenis→label dan mengambil
+             * kuncinya — kunci itu bentuk dalam, bukan bahasa yang layak
+             * tampil di layar.
+             */
+            'kelompokLaporan' => $this->kelompokLaporan($laporans),
+            'evaluasis' => $pjp->evaluasis()->get()->map(fn ($e) => [
                 'id'                         => $e->id,
                 'tahun'                      => $e->tahun,
                 'semester'                   => $e->semester,
-                'semester_label'             => Evaluasi::SEMESTER[$e->semester] ?? $e->semester,
+                'semesterLabel'              => \App\Models\PjpEvaluasi::SEMESTER[$e->semester] ?? $e->semester,
                 'skor_teknis'                => $e->skor_teknis,
                 'skor_keselamatan_kesehatan' => $e->skor_keselamatan_kesehatan,
                 'skor_lingkungan'            => $e->skor_lingkungan,
                 'skor_rata_rata'             => $e->skor_rata_rata,
                 'catatan'                    => $e->catatan,
-            ]),
+            ])->values()->all(),
 
-            'smkp'      => $pjp->smkpScore(),
-            'legalitas' => $pjp->smkpLegalitasStatus(),
-            'pelaporan' => $pjp->pelaporanScore(),
-            'achievement' => $pjp->achievement(),
+            'smkpScore'       => $pjp->smkpScore(),
+            'legalitasStatus' => $pjp->smkpLegalitasStatus(),
+            'pelaporanScore'  => $pjp->pelaporanScore(),
 
-            'JENIS'       => Laporan::JENIS,
-            'KESESUAIAN'  => Laporan::KESESUAIAN,
-            'SEMESTER'    => Evaluasi::SEMESTER,
-            'STATUS'      => Pjp::STATUS,
-            'ambang'      => Pjp::AMBANG_PERHATIAN,
+            /*
+             * Jendela triwulan dikirim ke tampilan supaya formulir
+             * unggahnya disembunyikan di luar bulan yang dibuka. Server
+             * tetap memeriksanya sendiri di PjpLaporanController —
+             * penjagaan di sisi peramban hanya menjelaskan, bukan
+             * menegakkan.
+             */
+            'triwulanTerbuka'     => PjpLaporan::triwulanSedangDibuka(),
+            'bulanTriwulanDibuka' => PjpLaporan::bulanTriwulanDibuka(),
 
-            'triwulanDibuka' => Laporan::triwulanSedangDibuka(),
-            'bulanTriwulan'  => implode(', ', Laporan::BULAN_TRIWULAN),
-            'batasTanggal'   => Laporan::BATAS_TANGGAL,
+            'kesesuaianOpsi'  => PjpLaporan::KESESUAIAN,
+            'semesterOpsi'    => \App\Models\PjpEvaluasi::SEMESTER,
+            'tahunSekarang'   => (int) now()->year,
+
+            'tautan' => $this->tautanUmum() + [
+                'checklist'      => route('pjp.checklist', $pjp),
+                'ubah'           => route('pjp.ubah', $pjp),
+                'hapus'          => route('pjp.hapus', $pjp),
+                'cetak'          => route('pjp.cetak', $pjp),
+                'laporanSimpan'  => route('pjp.laporan.simpan', $pjp),
+                'laporanNilai'   => route('pjp.laporan.nilai', ['pjp' => $pjp->id, 'laporan' => '__ID__']),
+                'laporanHapus'   => route('pjp.laporan.hapus', ['pjp' => $pjp->id, 'laporan' => '__ID__']),
+                'evaluasiSimpan' => route('pjp.evaluasi.simpan', $pjp),
+                'evaluasiHapus'  => route('pjp.evaluasi.hapus', ['pjp' => $pjp->id, 'evaluasi' => '__ID__']),
+            ],
         ]);
     }
 
-    /* ═══════════════════ DOKUMEN BERKALA ═══════════════════ */
-
-    public function laporanSimpan(Request $r, Pjp $pjp)
+    /** Lembar siap cetak untuk satu PJP. */
+    public function cetak(Pjp $pjp)
     {
-        $data = $r->validate([
-            'jenis'   => ['required', Rule::in(array_keys(Laporan::JENIS))],
-            'periode' => ['nullable', 'string', 'max:60'],
-            'catatan' => ['nullable', 'string', 'max:2000'],
-            'berkas'  => array_merge(['required'], Berkas::ATURAN_DOKUMEN),
-        ]);
+        $perusahaan = $pjp->company ?: (auth()->user()?->company ?: Company::first());
 
-        if ($data['jenis'] === 'laporan_triwulan' && ! Laporan::triwulanSedangDibuka()) {
-            return back()->withErrors([
-                'berkas' => 'Laporan Triwulan hanya dapat diunggah pada bulan '
-                    .implode(', ', Laporan::BULAN_TRIWULAN).'.',
-            ]);
-        }
+        return Inertia::render('Print/Pjp', [
+            'dok' => KopDokumen::untuk('laporan-pjp', $perusahaan),
 
-        $berkas = $r->file('berkas');
-        $jalur  = Berkas::simpan($berkas, "pjp/{$pjp->id}");
+            'pjp' => [
+                'nama_perusahaan'  => $pjp->nama_perusahaan,
+                'nib'              => $pjp->nib,
+                'penanggung_jawab' => $pjp->penanggung_jawab,
+                'alamat'           => $pjp->alamat,
+                'statusLabel'      => Pjp::STATUS[$pjp->status] ?? $pjp->status,
+                'catatan'          => $pjp->catatan,
+                'terdaftar'        => $pjp->created_at?->format('d-m-Y'),
+            ],
 
-        if (! $jalur) {
-            return back()->withErrors(['berkas' => 'Berkas tidak dapat disimpan.']);
-        }
+            'smkpScore'        => $pjp->smkpScore(),
+            'rincianKategori'  => $pjp->smkpCategoryBreakdown(),
+            'legalitasStatus'  => $pjp->smkpLegalitasStatus(),
+            'pelaporanScore'   => $pjp->pelaporanScore(),
+            'achievement'      => $pjp->achievement(),
 
-        $pjp->laporan()->create([
-            'jenis'     => $data['jenis'],
-            'periode'   => $data['periode'] ?? null,
-            'catatan'   => $data['catatan'] ?? null,
-            'file_path' => $jalur,
-            'file_name' => $berkas->getClientOriginalName(),
-            'file_size' => $berkas->getSize(),
-        ]);
+            'kelompokLaporan' => $this->kelompokLaporan($pjp->laporans()->get()),
 
-        return back()->with('sukses', 'Dokumen berhasil diunggah.');
-    }
+            'evaluasis' => $pjp->evaluasis()->get()->map(fn ($e) => [
+                'periode'                    => $e->periodeSingkat(),
+                'semesterLabel'              => \App\Models\PjpEvaluasi::SEMESTER[$e->semester] ?? $e->semester,
+                'tahun'                      => $e->tahun,
+                'skor_teknis'                => $e->skor_teknis,
+                'skor_keselamatan_kesehatan' => $e->skor_keselamatan_kesehatan,
+                'skor_lingkungan'            => $e->skor_lingkungan,
+                'skor_rata_rata'             => $e->skor_rata_rata,
+                'catatan'                    => $e->catatan,
+            ])->values()->all(),
 
-    public function laporanNilai(Request $r, Pjp $pjp, Laporan $laporan)
-    {
-        $this->pastikanMilik($laporan->pjp_id, $pjp->id);
-
-        $laporan->update($r->validate([
-            'kesesuaian_isi' => ['nullable', Rule::in(array_keys(Laporan::KESESUAIAN))],
-        ]));
-
-        return back()->with('sukses', 'Penilaian dokumen berhasil disimpan.');
-    }
-
-    public function laporanHapus(Pjp $pjp, Laporan $laporan)
-    {
-        $this->pastikanMilik($laporan->pjp_id, $pjp->id);
-
-        Berkas::buang($laporan->file_path);
-        $laporan->delete();
-
-        return back()->with('sukses', 'Dokumen berhasil dihapus.');
-    }
-
-    /* ═══════════════════ EVALUASI SEMESTERAN ═══════════════════ */
-
-    public function evaluasiSimpan(Request $r, Pjp $pjp)
-    {
-        $data = $r->validate([
-            'tahun'                      => ['required', 'integer', 'min:2000', 'max:2100'],
-            'semester'                   => ['required', 'integer', Rule::in(array_keys(Evaluasi::SEMESTER))],
-            'skor_teknis'                => ['required', 'integer', 'min:0', 'max:100'],
-            'skor_keselamatan_kesehatan' => ['required', 'integer', 'min:0', 'max:100'],
-            'skor_lingkungan'            => ['required', 'integer', 'min:0', 'max:100'],
-            'catatan'                    => ['nullable', 'string', 'max:2000'],
-        ]);
-
-        /* Menimpa, bukan menambah baris. Dua penilaian atas satu semester
-           membuat grafik trennya menggambar dua titik pada satu sumbu
-           dengan nilai yang berselisih, dan tidak ada cara membaca mana
-           yang berlaku. */
-        $pjp->evaluasi()->updateOrCreate(
-            ['tahun' => $data['tahun'], 'semester' => $data['semester']],
-            array_diff_key($data, ['tahun' => null, 'semester' => null])
-                + ['catatan' => $data['catatan'] ?? null],
-        );
-
-        return back()->with('sukses', 'Evaluasi kinerja berhasil disimpan.');
-    }
-
-    public function evaluasiHapus(Pjp $pjp, Evaluasi $evaluasi)
-    {
-        $this->pastikanMilik($evaluasi->pjp_id, $pjp->id);
-
-        $evaluasi->delete();
-
-        return back()->with('sukses', 'Evaluasi kinerja berhasil dihapus.');
-    }
-
-    /* ═══════════════════ DAFTAR PERIKSA SMKP ═══════════════════ */
-
-    public function checklist(Pjp $pjp)
-    {
-        $jawaban = $pjp->smkpJawaban()->get()->keyBy('item_id');
-
-        $kategori = SmkpKategori::query()->orderBy('urutan')->with('items')->get()
-            ->map(fn (SmkpKategori $k) => [
-                'id'    => $k->id,
-                'kode'  => $k->kode,
-                'nama'  => $k->nama,
-                'bobot' => $k->bobot,
-                'legalitas' => $k->kode === SmkpKategori::LEGALITAS,
-                'butir' => $k->items->map(fn (SmkpItem $b) => [
-                    'id'         => $b->id,
-                    'grup_kode'  => $b->grup_kode,
-                    'grup_nama'  => $b->grup_nama,
-                    'nomor'      => $b->nomor,
-                    'pertanyaan' => $b->pertanyaan,
-                    'petunjuk'   => $b->petunjuk,
-                    'bobot'      => $b->bobot,
-                    'jawaban'    => $jawaban->get($b->id)?->jawaban,
-                    'nilai'      => $jawaban->get($b->id)?->nilai,
-                    'penjelasan' => $jawaban->get($b->id)?->penjelasan,
-                ])->values(),
-            ]);
-
-        return Inertia::render('Pjp/Checklist', [
-            'judul'     => 'Prakualifikasi SMKP — '.$pjp->nama_perusahaan,
-            'pjp'       => $pjp->only(['id', 'nama_perusahaan']),
-            'kategori'  => $kategori,
-            'skor'      => $pjp->smkpScore(),
-            'rincian'   => $pjp->smkpCategoryBreakdown(),
-            'legalitas' => $pjp->smkpLegalitasStatus(),
-            'JAWABAN'   => SmkpJawaban::JAWABAN,
-            'NILAI'     => SmkpJawaban::NILAI,
+            'kembali' => route('pjp.detail', $pjp),
         ]);
     }
 
-    public function checklistSimpan(Request $r, Pjp $pjp)
+    /* ---------- bantu ---------- */
+
+    private function formulir(Pjp $pjp)
     {
-        $data = $r->validate([
-            'jawaban'              => ['required', 'array', 'max:200'],
-            'jawaban.*.item_id'    => ['required', 'integer', 'exists:pjp_smkp_item,id'],
-            'jawaban.*.jawaban'    => ['nullable', Rule::in(array_keys(SmkpJawaban::JAWABAN))],
-            'jawaban.*.nilai'      => ['nullable', Rule::in(array_keys(SmkpJawaban::NILAI))],
-            'jawaban.*.penjelasan' => ['nullable', 'string', 'max:2000'],
-        ]);
+        return Inertia::render('Pjp/Form', [
+            'judul' => $pjp->exists
+                ? 'Ubah Perusahaan Jasa Pertambangan'
+                : 'Tambah Perusahaan Jasa Pertambangan',
 
-        foreach ($data['jawaban'] as $j) {
-            SmkpJawaban::updateOrCreate(
-                ['pjp_id' => $pjp->id, 'item_id' => $j['item_id']],
-                [
-                    'jawaban'    => $j['jawaban'] ?? null,
-                    'nilai'      => $j['nilai'] ?? null,
-                    'penjelasan' => $j['penjelasan'] ?? null,
-                ],
-            );
-        }
+            'pjp' => [
+                'id'               => $pjp->id,
+                'nama_perusahaan'  => $pjp->nama_perusahaan ?? '',
+                'nib'              => $pjp->nib ?? '',
+                'penanggung_jawab' => $pjp->penanggung_jawab ?? '',
+                'alamat'           => $pjp->alamat ?? '',
+                'status'           => $pjp->status ?? 'aktif',
+                'catatan'          => $pjp->catatan ?? '',
+                'company_id'       => $pjp->company_id,
+            ],
 
-        return back()->with('sukses', 'Daftar periksa berhasil disimpan.');
-    }
+            'statusOpsi'  => Pjp::STATUS,
+            'perusahaans' => auth()->user()?->isAdmin()
+                ? Company::orderBy('name')->get(['id', 'name'])
+                : [],
 
-    /* ═══════════════════ pembantu ═══════════════════ */
-
-    private function validasi(Request $r): array
-    {
-        return $r->validate([
-            'nama_perusahaan'  => ['required', 'string', 'max:200'],
-            'nib'              => ['nullable', 'string', 'max:60'],
-            'penanggung_jawab' => ['nullable', 'string', 'max:150'],
-            'alamat'           => ['nullable', 'string', 'max:2000'],
-            'status'           => ['required', Rule::in(array_keys(Pjp::STATUS))],
-            'catatan'          => ['nullable', 'string', 'max:2000'],
+            'tautan' => $this->tautanUmum() + [
+                'kirim'   => $pjp->exists ? route('pjp.perbarui', $pjp) : route('pjp.simpan'),
+                'metode'  => $pjp->exists ? 'put' : 'post',
+                'batal'   => $pjp->exists ? route('pjp.detail', $pjp) : route('pjp.daftar'),
+            ],
         ]);
     }
 
     /**
-     * Anak yang diikat rute memang milik induk yang diikat rute.
+     * Dokumen per jenis, dalam urutan tetap PjpLaporan::JENIS.
      *
-     * Laravel mengikat `{laporan}` sendiri-sendiri, tanpa memeriksa
-     * hubungannya dengan `{pjp}` di depannya. Tanpa pemeriksaan ini,
-     * `DELETE /pjp/1/laporan/99` menghapus dokumen milik mitra nomor
-     * lain — batas perusahaannya memang tetap dijaga BerindukPerusahaan,
-     * jadi kebocorannya berhenti di dalam satu perusahaan, tetapi di
-     * dalamnya siapa pun dapat menghapus dokumen mitra yang salah dan
-     * yang terlihat hanyalah dokumen yang hilang.
+     * Setiap jenis selalu muncul, termasuk yang belum punya dokumen sama
+     * sekali: kartu yang hilang saat kosong membaca sebagai "jenis ini
+     * tidak diwajibkan", padahal justru yang kosong itu yang perlu
+     * ditagih.
+     *
+     * @param  \Illuminate\Support\Collection<int,PjpLaporan>  $laporans
      */
-    private function pastikanMilik(?int $milik, int $harus): void
+    private function kelompokLaporan($laporans): array
     {
-        abort_unless($milik === $harus, 404);
+        return collect(PjpLaporan::JENIS)
+            ->map(fn (string $label, string $jenis) => [
+                'jenis'  => $jenis,
+                'label'  => $label,
+                'berkas' => $laporans->where('jenis', $jenis)
+                    ->map(fn (PjpLaporan $l) => $this->laporanView($l))->values()->all(),
+
+                /* Alasan penutupan dihitung di sini supaya jendela
+                   triwulan hanya ditulis di satu tempat; tampilan
+                   cukup menggambarkan apa yang diterimanya. */
+                'terkunci' => $jenis === 'laporan_triwulan' && !PjpLaporan::triwulanSedangDibuka()
+                    ? 'Laporan Triwulan hanya dapat diunggah pada bulan '
+                      .PjpLaporan::bulanTriwulanDibuka().'.'
+                    : null,
+            ])
+            ->values()->all();
+    }
+
+    private function laporanView(PjpLaporan $l): array
+    {
+        return [
+            'id'             => $l->id,
+            'jenis'          => $l->jenis,
+            'jenisLabel'     => PjpLaporan::JENIS[$l->jenis] ?? $l->jenis,
+            'periode'        => $l->periode,
+            'file_name'      => $l->file_name,
+            'file_size'      => $l->file_size,
+            'file_url'       => Storage::disk('public')->url($l->file_path),
+            'catatan'        => $l->catatan,
+            'kesesuaian_isi' => $l->kesesuaian_isi,
+            'tepat_waktu'    => $l->tepat_waktu,
+            'diunggah'       => $l->created_at?->format('d-m-Y'),
+        ];
+    }
+
+    /** Tautan yang dipakai hampir setiap halaman modul. */
+    private function tautanUmum(): array
+    {
+        return [
+            'beranda'     => route('pjp.index'),
+            'persyaratan' => route('pjp.persyaratan'),
+            'pelaporan'   => route('pjp.pelaporan'),
+            'evaluasi'    => route('pjp.evaluasi'),
+            'daftar'      => route('pjp.daftar'),
+            'baru'        => route('pjp.baru'),
+            'bantuan'     => route('pjp.bantuan'),
+            'detail'      => route('pjp.detail', ['pjp' => '__ID__']),
+            'checklistUntuk' => route('pjp.checklist', ['pjp' => '__ID__']),
+        ];
+    }
+
+    /*
+     * `pemilik()` TIDAK ditulis ulang di sini: kelas Controller induk
+     * sudah memuatnya, dipakai bersama seluruh modul lain. Salinan
+     * keempat dari aturan yang sama akan berbeda isinya cepat atau
+     * lambat, dan yang berbeda di sini berarti satu modul membiarkan
+     * data lahir di perusahaan yang salah.
+     */
+
+    private function validasi(Request $request): array
+    {
+        return $request->validate([
+            'company_id'       => ['nullable', 'exists:companies,id'],
+            'nama_perusahaan'  => ['required', 'string', 'max:255'],
+            'nib'              => ['nullable', 'string', 'max:255'],
+            'penanggung_jawab' => ['nullable', 'string', 'max:255'],
+            'alamat'           => ['nullable', 'string', 'max:1000'],
+            'status'           => ['required', Rule::in(array_keys(Pjp::STATUS))],
+            'catatan'          => ['nullable', 'string', 'max:3000'],
+        ]);
     }
 }

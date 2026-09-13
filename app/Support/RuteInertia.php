@@ -229,10 +229,13 @@ final class RuteInertia
            nama di sini tanpa argumen, dan rute ber-{pjp} tidak dapat
            dibangun begitu. Tautan ke halaman rinci ditulis langsung
            sebagai <Link href="/pjp/…"> di sisi Vue. */
-        'pjp.dasbor',
         'pjp.index',
+        'pjp.persyaratan',
+        'pjp.pelaporan',
+        'pjp.evaluasi',
+        'pjp.daftar',
         'pjp.baru',
-        'pjp.cetak',
+        'pjp.bantuan',
 
         'miners.index',
         'miners.dasbor',

@@ -168,7 +168,7 @@ class CakupanDataContohTest extends TestCase
         /* Daftar periksa prakualifikasi SMKP modul PJP. Alasannya sama
            persis dengan master Investigasi di atas: isinya lampiran
            Kepdirjen Minerba 185/2019 — 17 kategori dan 126 butir — yang
-           berlaku sama bagi setiap pemegang IUP. Dipasang `pjp:pasang`,
+           berlaku sama bagi setiap pemegang IUP. Ia ditanam migrasi,
            bukan oleh data contoh.
 
            Membuangnya bersama data contoh satu perusahaan tidak sekadar
@@ -178,10 +178,10 @@ class CakupanDataContohTest extends TestCase
            pun.
 
            Bahwa keduanya benar-benar terisi tetap dijaga — bukan di sini
-           melainkan di PjpAksiTest, yang memeriksa 17 kategori, 126
+           melainkan di PjpSkorSmkpTest, yang memeriksa 17 kategori, 126
            butir, dan bobot A–P berjumlah 178. */
-        'pjp_smkp_kategori' => 'daftar periksa Kepdirjen 185/2019, dipasang pjp:pasang',
-        'pjp_smkp_item'     => 'daftar periksa Kepdirjen 185/2019, dipasang pjp:pasang',
+        'smkp_checklist_categories' => 'daftar periksa Kepdirjen 185/2019, ditanam migrasi',
+        'smkp_checklist_items'      => 'daftar periksa Kepdirjen 185/2019, ditanam migrasi',
 
         /* Penghitung nomor. SENGAJA tidak ikut dibuang: mengosongkannya
            membuat deret nomor mulai dari satu lagi, sehingga INC-2026-0001

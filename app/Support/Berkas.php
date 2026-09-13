@@ -6,7 +6,7 @@ use App\Models\Hr\Cuti as HrCuti;
 use App\Models\Hr\Kontrak as HrKontrak;
 use App\Models\Investigasi\Bukti as BuktiInvestigasi;
 use App\Models\Pembelian\Pembayaran as PembayaranBeli;
-use App\Models\Pjp\Laporan as LaporanPjp;
+use App\Models\PjpLaporan as LaporanPjp;
 use App\Models\SmkpBukti;
 use App\Models\{Document, GudangBarang, HazardReport, InspectionItem, PasporKartu, PasporKartuUnit, PasporMcu, PasporSertifikat, Signatory, SmkpFinding};
 use Illuminate\Http\UploadedFile;

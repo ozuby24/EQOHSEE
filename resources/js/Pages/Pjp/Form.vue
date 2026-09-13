@@ -1,114 +1,122 @@
 <script setup lang="ts">
-/**
- * Formulir data perusahaan jasa — dipakai menambah maupun mengubah.
- *
- * Satu berkas untuk keduanya, sebab medannya memang sama persis.
- * Dua berkas yang disalin akan berselisih pada perubahan pertama, dan
- * yang tertinggal tidak menimbulkan galat — hanya satu kolom yang
- * tidak dapat diisi lagi pada salah satu jalan masuknya.
- */
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { propHalaman } from '../../halaman';
+import PjpNav from '../../Components/PjpNav.vue';
 
-const props = propHalaman();
+const props = defineProps<{
+  judul: string;
+  pjp: Record<string, any>;
+  statusOpsi: Record<string, string>;
+  perusahaans: Array<{ id: number; name: string }>;
+  tautan: Record<string, string>;
+}>();
 
-const lama = props.pjp as Record<string, any> | null;
-
-const f = useForm({
-  nama_perusahaan:  lama?.nama_perusahaan  ?? '',
-  nib:              lama?.nib              ?? '',
-  penanggung_jawab: lama?.penanggung_jawab ?? '',
-  alamat:           lama?.alamat           ?? '',
-  status:           lama?.status           ?? 'aktif',
-  catatan:          lama?.catatan          ?? '',
+/*
+ * Tidak ada isian "tahapan" di sini, dan itu disengaja.
+ *
+ * Aplikasi asal punya kolom itu beserta tombol "Lanjutkan ke Tahap
+ * Berikutnya", sehingga satu PJP hanya muncul di satu halaman aspek.
+ * Ketiga aspek berjalan bersamaan — memilih salah satunya di formulir
+ * pendaftaran berarti menyembunyikan dua aspek lain untuk perusahaan itu.
+ */
+const form = useForm({
+  company_id:       props.pjp.company_id ?? '',
+  nama_perusahaan:  props.pjp.nama_perusahaan ?? '',
+  nib:              props.pjp.nib ?? '',
+  penanggung_jawab: props.pjp.penanggung_jawab ?? '',
+  alamat:           props.pjp.alamat ?? '',
+  status:           props.pjp.status ?? 'aktif',
+  catatan:          props.pjp.catatan ?? '',
 });
 
-function simpan() {
-  if (lama) f.put(`/pjp/${lama.id}`, { preserveScroll: true });
-  else f.post('/pjp/baru', { preserveScroll: true });
+function kirim() {
+  if (props.tautan.metode === 'put') {
+    form.put(props.tautan.kirim);
+    return;
+  }
+
+  form.post(props.tautan.kirim);
 }
 </script>
 
 <template>
   <Head :title="props.judul" />
 
-  <div class="max-w-[860px] mx-auto space-y-5">
-    <section>
-      <p class="text-[12.5px] text-stone-500 mt-0.5">
-        Data dasar mitra. Prakualifikasi SMKP, dokumen berkala, dan evaluasi kinerjanya
-        diisi dari halaman rincian sesudah tersimpan.
+  <div class="max-w-[900px] mx-auto space-y-5">
+    <div>
+      <!-- Judul dan nama modulnya digambar kop kerangka. Kalimat di
+           bawah BUKAN subjudul yang sama: ia menerangkan urutan
+           pengisian, yang tidak muat di kop. -->
+      <p class="text-[12px] text-stone-500">
+        Data induk perusahaan jasa. Checklist persyaratan, dokumen pelaporan, dan evaluasi kinerja diisi
+        setelahnya dari halaman detail — ketiganya dapat diisi kapan saja, tanpa urutan.
       </p>
-    </section>
+    </div>
 
-    <form class="grid gap-4" @submit.prevent="simpan">
-      <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
-        <header class="px-5 py-3.5 border-b border-stone-100">
-          <h3 class="text-[13.5px] font-bold text-cam-ink">
-            Identitas <span class="font-normal text-stone-400">| siapa mitranya</span>
-          </h3>
-        </header>
+    <PjpNav :tautan="props.tautan" aktif="daftar" />
 
-        <div class="px-5 py-4 grid gap-3 sm:grid-cols-2">
-          <label class="grid gap-1 sm:col-span-2">
-            <span class="block text-[11.5px] font-semibold text-stone-600">Nama perusahaan</span>
-            <input v-model="f.nama_perusahaan" required maxlength="200"
-                   class="rounded-lg border-stone-200 text-[12.5px]">
-            <small v-if="f.errors.nama_perusahaan" class="text-[11px] text-red-600">{{ f.errors.nama_perusahaan }}</small>
-          </label>
+    <form class="rounded-2xl bg-white border border-stone-100 shadow-card p-5 grid gap-4 md:grid-cols-2"
+          @submit.prevent="kirim">
+      <label class="md:col-span-2">
+        <span class="block text-[11px] font-semibold text-stone-500">Nama perusahaan</span>
+        <input v-model="form.nama_perusahaan" required type="text" maxlength="255"
+               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+        <small v-if="form.errors.nama_perusahaan" class="text-[11px] text-red-600">{{ form.errors.nama_perusahaan }}</small>
+      </label>
 
-          <label class="grid gap-1">
-            <span class="block text-[11.5px] font-semibold text-stone-600">NIB</span>
-            <input v-model="f.nib" maxlength="60" class="rounded-lg border-stone-200 text-[12.5px] num">
-            <small v-if="f.errors.nib" class="text-[11px] text-red-600">{{ f.errors.nib }}</small>
-          </label>
+      <label>
+        <span class="block text-[11px] font-semibold text-stone-500">NIB</span>
+        <input v-model="form.nib" type="text" maxlength="255"
+               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+        <small v-if="form.errors.nib" class="text-[11px] text-red-600">{{ form.errors.nib }}</small>
+      </label>
 
-          <label class="grid gap-1">
-            <span class="block text-[11.5px] font-semibold text-stone-600">Penanggung jawab</span>
-            <input v-model="f.penanggung_jawab" maxlength="150" class="rounded-lg border-stone-200 text-[12.5px]">
-            <small v-if="f.errors.penanggung_jawab" class="text-[11px] text-red-600">{{ f.errors.penanggung_jawab }}</small>
-          </label>
+      <label>
+        <span class="block text-[11px] font-semibold text-stone-500">Penanggung jawab</span>
+        <input v-model="form.penanggung_jawab" type="text" maxlength="255"
+               class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+        <small v-if="form.errors.penanggung_jawab" class="text-[11px] text-red-600">{{ form.errors.penanggung_jawab }}</small>
+      </label>
 
-          <label class="grid gap-1 sm:col-span-2">
-            <span class="block text-[11.5px] font-semibold text-stone-600">Alamat</span>
-            <textarea v-model="f.alamat" rows="2" class="rounded-lg border-stone-200 text-[12.5px]" />
-            <small v-if="f.errors.alamat" class="text-[11px] text-red-600">{{ f.errors.alamat }}</small>
-          </label>
-        </div>
-      </section>
+      <label class="md:col-span-2">
+        <span class="block text-[11px] font-semibold text-stone-500">Alamat</span>
+        <textarea v-model="form.alamat" rows="2" maxlength="1000"
+                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></textarea>
+        <small v-if="form.errors.alamat" class="text-[11px] text-red-600">{{ form.errors.alamat }}</small>
+      </label>
 
-      <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
-        <header class="px-5 py-3.5 border-b border-stone-100">
-          <h3 class="text-[13.5px] font-bold text-cam-ink">
-            Pemantauan <span class="font-normal text-stone-400">| bagaimana mitra ini diperlakukan</span>
-          </h3>
-        </header>
+      <label>
+        <span class="block text-[11px] font-semibold text-stone-500">Status pemantauan</span>
+        <select v-model="form.status" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+          <option v-for="(label, nilai) in props.statusOpsi" :key="nilai" :value="nilai">{{ label }}</option>
+        </select>
+        <small v-if="form.errors.status" class="text-[11px] text-red-600">{{ form.errors.status }}</small>
+      </label>
 
-        <div class="px-5 py-4 grid gap-3">
-          <label class="grid gap-1 sm:max-w-xs">
-            <span class="block text-[11.5px] font-semibold text-stone-600">Status</span>
-            <select v-model="f.status" class="rounded-lg border-stone-200 text-[12.5px]">
-              <option v-for="(label, kode) in (props.STATUS ?? {})" :key="kode" :value="kode">{{ label }}</option>
-            </select>
-            <small class="text-[11px] text-stone-500">
-              Mitra "Tidak Aktif" tidak lagi dihitung menunggak laporan bulanan.
-            </small>
-            <small v-if="f.errors.status" class="text-[11px] text-red-600">{{ f.errors.status }}</small>
-          </label>
+      <!--
+        Pemilih perusahaan hanya muncul bagi administrator; server tetap
+        memaksakan perusahaan pengguna bagi yang lain, apa pun isi kiriman
+        formulirnya.
+      -->
+      <label v-if="props.perusahaans.length">
+        <span class="block text-[11px] font-semibold text-stone-500">Dipantau oleh</span>
+        <select v-model="form.company_id" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
+          <option value="">Belum ditentukan</option>
+          <option v-for="p in props.perusahaans" :key="p.id" :value="p.id">{{ p.name }}</option>
+        </select>
+      </label>
 
-          <label class="grid gap-1">
-            <span class="block text-[11.5px] font-semibold text-stone-600">Catatan</span>
-            <textarea v-model="f.catatan" rows="3" class="rounded-lg border-stone-200 text-[12.5px]" />
-            <small v-if="f.errors.catatan" class="text-[11px] text-red-600">{{ f.errors.catatan }}</small>
-          </label>
-        </div>
-      </section>
+      <label class="md:col-span-2">
+        <span class="block text-[11px] font-semibold text-stone-500">Catatan</span>
+        <textarea v-model="form.catatan" rows="3" maxlength="3000"
+                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></textarea>
+        <small v-if="form.errors.catatan" class="text-[11px] text-red-600">{{ form.errors.catatan }}</small>
+      </label>
 
-      <div class="flex flex-wrap items-center gap-2">
-        <button type="submit" class="eq-btn-utama" :disabled="f.processing">
-          {{ lama ? 'Simpan perubahan' : 'Simpan' }}
+      <div class="md:col-span-2 flex flex-wrap gap-2">
+        <button :disabled="form.processing" class="eq-btn-utama px-6 !flex-none">
+          {{ form.processing ? 'Menyimpan…' : 'Simpan' }}
         </button>
-
-        <Link :href="lama ? `/pjp/${lama.id}` : '/pjp/daftar'" class="eq-btn-lain">Batal</Link>
+        <Link :href="props.tautan.batal" class="eq-btn-lain px-6 !flex-none">Batal</Link>
       </div>
     </form>
   </div>
