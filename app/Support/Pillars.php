@@ -90,8 +90,10 @@ class Pillars
                     ['Pelaporan bahaya lapangan', 'Siapa pun boleh melapor, setiap laporan punya pemilik tindak lanjut.'],
                     ['Inspeksi terjadwal',        'Parameter per jenis inspeksi, temuan naik jadi tindakan.'],
                     ['Tingkat kematangan',        '194 item penilaian, dari Dasar sampai Resilient.'],
+                    ['Kendali perusahaan jasa',   'Prakualifikasi, kepatuhan pelaporan, dan evaluasi kinerja PJP.'],
                 ],
-                'modul' => ['Hazard Report & Inspeksi', 'Safety Maturity Level', 'SMKP Audit'],
+                'modul' => ['Hazard Report & Inspeksi', 'Safety Maturity Level', 'SMKP Audit',
+                            'Perusahaan Jasa Pertambangan'],
             ],
 
             'environment' => [

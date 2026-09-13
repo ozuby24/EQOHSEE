@@ -140,6 +140,27 @@ final class Menu
         ],
       ],
     ],
+    /* Perusahaan jasa berdiri sebagai modulnya sendiri, bukan sebagai
+       satu butir di bawah Audit SMKP. Checklist prakualifikasinya
+       memang memakai kriteria SMKP, tetapi yang dinilai bukan sistem
+       milik pemegang izin melainkan rekanan yang bekerja di
+       wilayahnya — beserta dokumen dan evaluasi kinerjanya sendiri. */
+    'pjp' => [
+      'label' => 'Perusahaan Jasa Pertambangan',
+      'icon'  => 'M4 20.5V4.5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v5h6a1 1 0 0 1 1 1v10ZM7 7.5h3M7 11h3M7 14.5h3M16 13h1.5M16 16.5h1.5',
+      'groups' => [
+        'Pemantauan' => [
+          ['Beranda',     'pjp.index',       'perusahaan-jasa'],
+          ['Persyaratan', 'pjp.persyaratan', 'perusahaan-jasa/persyaratan'],
+          ['Pelaporan',   'pjp.pelaporan',   'perusahaan-jasa/pelaporan'],
+          ['Evaluasi',    'pjp.evaluasi',    'perusahaan-jasa/evaluasi'],
+        ],
+        'Data & Acuan' => [
+          ['Data PJP', 'pjp.daftar',  'perusahaan-jasa/daftar*'],
+          ['Bantuan',  'pjp.bantuan', 'perusahaan-jasa/bantuan'],
+        ],
+      ],
+    ],
     'energi' => [
       'label' => 'Energy Performance',
       'icon'  => 'M13 2 4 14h7l-1 8 10-13h-7l0-7Z',
@@ -401,6 +422,7 @@ final class Menu
          : (Request::is('hazard*') || Request::is('inspeksi*') ? 'hazrep'
          : (Request::is('tpkkp*') ? 'tpkkp'
          : (Request::is('smkp*') ? 'smkp'
+         : (Request::is('perusahaan-jasa*') ? 'pjp'
          : (Request::is('dokumen*') || Request::is('iso*') || Request::is('struktur-dokumen') || Request::is('daftar-induk') ? 'dokumen'
          : (Request::is('energi*') ? 'energi'
          : (Request::is('konservasi*') ? 'konservasi'
@@ -416,7 +438,7 @@ final class Menu
          : (Request::is('gudang*') ? 'gudang'
          : (Request::is('mining-engineering-hub*') ? 'meh'
          : (Request::is('ko*') ? 'ko'
-         : (Request::is('admin*') || Request::is('signatories*') ? 'admin' : 'lms')))))))))))))))))));
+         : (Request::is('admin*') || Request::is('signatories*') ? 'admin' : 'lms'))))))))))))))))))));
 
         return isset(self::all()[$kunci]) ? $kunci : 'lms';
     }

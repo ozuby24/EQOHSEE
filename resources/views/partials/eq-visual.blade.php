@@ -684,7 +684,9 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] main .text-violet-700{color:#C4B5FD}
 :root[data-tema="gelap"] main .text-emerald-700{color:#6EE7B7}
 :root[data-tema="gelap"] main .text-amber-700{color:#FCD34D}
-:root[data-tema="gelap"] main .text-orange-700{color:#FDBA74}
+:root[data-tema="gelap"] main .text-orange-700,
+:root[data-tema="gelap"] main .text-orange-600{color:#FDBA74}
+:root[data-tema="gelap"] main .text-orange-800{color:#FED0A8}
 :root[data-tema="gelap"] main .text-red-700,
 :root[data-tema="gelap"] main .text-red-600{color:#FCA5A5}
 :root[data-tema="gelap"] main .text-emerald-600{color:#5EEAD4}

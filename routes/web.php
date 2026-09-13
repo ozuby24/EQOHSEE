@@ -10,6 +10,8 @@ use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiT
     BlastingController, CostController, DispatchController, PermitController, EnergyController, EngineeringController, EnvironmentController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\{BantuanController, ChatController};
+use App\Http\Controllers\{PjpAspekController, PjpChecklistController, PjpController,
+    PjpEvaluasiController, PjpLaporanController};
 use App\Http\Controllers\Admin\{CompanyController, SystemController, UserController};
 use Illuminate\Support\Facades\Route;
 
@@ -665,6 +667,46 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('system.demo.tandai');
         Route::post('system/demo/{company}/muat',   [SystemController::class,'muatContoh'])
             ->name('system.demo.muat');
+    });
+
+    /* ---- Perusahaan Jasa Pertambangan (PJP) ----
+
+       Urutan pendaftaran di dalam grup ini menentukan jalannya, dan
+       urutan itu TIDAK terlihat pada `route:list` — daftar itu berurut
+       menurut abjad, bukan menurut pendaftaran. Seluruh ruas tetap
+       ('daftar', 'persyaratan', 'pelaporan', 'evaluasi', 'bantuan')
+       harus dicoba lebih dulu; kalau tidak, masing-masing tertangkap
+       oleh '{pjp}' sebagai id perusahaan, pengikatan modelnya gagal, dan
+       setiap butir menu modul ini berujung 404. */
+    Route::prefix('perusahaan-jasa')->name('pjp.')->group(function () {
+        Route::get('/',            [PjpAspekController::class, 'index'])->name('index');
+        Route::get('persyaratan',  [PjpAspekController::class, 'persyaratan'])->name('persyaratan');
+        Route::get('pelaporan',    [PjpAspekController::class, 'pelaporan'])->name('pelaporan');
+        Route::get('evaluasi',     [PjpAspekController::class, 'evaluasi'])->name('evaluasi');
+        Route::get('bantuan',      [PjpAspekController::class, 'bantuan'])->name('bantuan');
+
+        /* 'daftar/ekspor' dan 'daftar/baru' sebelum 'daftar/{pjp}' —
+           alasan yang sama seperti di atas. */
+        Route::get('daftar',        [PjpController::class, 'daftar'])->name('daftar');
+        Route::get('daftar/ekspor', [PjpController::class, 'ekspor'])->name('ekspor');
+        Route::get('daftar/baru',   [PjpController::class, 'baru'])->name('baru');
+        Route::post('daftar',       [PjpController::class, 'simpan'])->name('simpan');
+
+        Route::get('{pjp}',         [PjpController::class, 'detail'])->name('detail');
+        Route::get('{pjp}/ubah',    [PjpController::class, 'ubah'])->name('ubah');
+        Route::put('{pjp}',         [PjpController::class, 'perbarui'])->name('perbarui');
+        Route::delete('{pjp}',      [PjpController::class, 'hapus'])->name('hapus');
+        Route::get('{pjp}/cetak',   [PjpController::class, 'cetak'])->name('cetak');
+
+        Route::get('{pjp}/persyaratan',  [PjpChecklistController::class, 'tampil'])->name('checklist');
+        Route::post('{pjp}/persyaratan', [PjpChecklistController::class, 'simpan'])->name('checklist.simpan');
+
+        Route::post('{pjp}/laporan',            [PjpLaporanController::class, 'simpan'])->name('laporan.simpan');
+        Route::patch('{pjp}/laporan/{laporan}', [PjpLaporanController::class, 'nilai'])->name('laporan.nilai');
+        Route::delete('{pjp}/laporan/{laporan}',[PjpLaporanController::class, 'hapus'])->name('laporan.hapus');
+
+        Route::post('{pjp}/evaluasi',             [PjpEvaluasiController::class, 'simpan'])->name('evaluasi.simpan');
+        Route::delete('{pjp}/evaluasi/{evaluasi}',[PjpEvaluasiController::class, 'hapus'])->name('evaluasi.hapus');
     });
 
     /* ---- Gudang & Penyimpanan ---- */

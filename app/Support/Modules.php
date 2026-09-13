@@ -109,6 +109,11 @@ class Modules
              'ket'  => 'Pemantauan gerakan lereng, kebalikan laju, penyimpangan geometri terbangun, dan acuan kajian geoteknik — alat bantu keputusan, bukan pengganti penilaian tenaga kompeten.',
              'ikon' => 'M2.5 19.5h19L15 8l-3.2 5.2L9.4 9.8ZM9.4 9.8 5.6 4.5 2.5 9'],
 
+            ['nama' => 'Perusahaan Jasa Pertambangan', 'status' => 'aktif', 'pilar' => 'safety',
+             'rute' => 'pjp.index',
+             'ket'  => 'Pemantauan PJP lewat tiga aspek sekaligus: checklist prakualifikasi SMKP berbobot, kepatuhan pelaporan dokumen wajib, dan evaluasi kinerja per semester.',
+             'ikon' => 'M4 20.5V4.5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v5h6a1 1 0 0 1 1 1v10ZM7 7.5h3M7 11h3M7 14.5h3M16 13h1.5M16 16.5h1.5'],
+
             ['nama' => 'ISO & Dokumen', 'status' => 'aktif', 'pilar' => 'quality', 'rute' => 'dokumen.index',
              'ket'  => 'Register dokumen terkendali: nomor revisi, masa berlaku, riwayat perubahan, dan pengingat peninjauan berkala.',
              'ikon' => 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.59a1 1 0 01.7.29l4.42 4.42a1 1 0 01.29.7V19a2 2 0 01-2 2z'],

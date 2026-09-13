@@ -123,6 +123,11 @@ final class KopDokumen
                 'judul' => 'LAPORAN KONSERVASI MINERAL DAN BATUBARA',
                 'kode'  => 'OHSE-V.041',
             ],
+            'laporan-pjp' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN PEMANTAUAN PERUSAHAAN JASA PERTAMBANGAN',
+                'kode'  => 'OHSE-IV.131',
+            ],
         ];
     }
 

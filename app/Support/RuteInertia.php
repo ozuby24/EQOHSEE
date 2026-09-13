@@ -204,6 +204,15 @@ final class RuteInertia
         'smkp.create',
         'smkp.acuan',
 
+        /* Perusahaan Jasa Pertambangan */
+        'pjp.index',
+        'pjp.persyaratan',
+        'pjp.pelaporan',
+        'pjp.evaluasi',
+        'pjp.daftar',
+        'pjp.baru',
+        'pjp.bantuan',
+
         /* Keselamatan Operasi */
         'ko.index',
         'ko.register',
