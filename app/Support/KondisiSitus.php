@@ -142,6 +142,13 @@ final class KondisiSitus
             'label'   => $kelas['label'],
             'hujanMm' => round($mm, 1),
 
+            /* Kedudukan pada skala BMKG, untuk meter intensitas di
+               sampul. Angka 34 mm tidak berarti apa-apa bagi pembaca
+               yang tidak hafal ambangnya; meter yang menunjukkan "tiga
+               dari lima" menjawabnya tanpa perlu dihafal. */
+            'tingkat' => self::tingkat($kelas['kunci']),
+            'skala'   => count(self::KELAS_HUJAN),
+
             /* Tanggal catatannya ikut disebut. Sampul yang hanya menulis
                "Hujan Lebat" tidak dapat dibedakan antara hujan pagi tadi
                dan hujan kemarin — dan keduanya menuntut keputusan yang
@@ -160,6 +167,33 @@ final class KondisiSitus
 
         // Curah hujan negatif tidak ada artinya; diperlakukan seperti nol.
         return self::KELAS_HUJAN[array_key_last(self::KELAS_HUJAN)];
+    }
+
+    /**
+     * Skala kelas hujan dari yang teringan ke yang terberat.
+     *
+     * Dipakai menggambar meter intensitas pada sampul. Dibaca dari
+     * tetapan yang sama dengan penggolongannya, bukan ditulis ulang di
+     * sisi peramban: skala yang disalin ke sana akan tetap menunjuk lima
+     * kotak yang sama setelah ambangnya diubah, dan meter yang
+     * menunjukkan tingkat yang salah lebih buruk daripada tidak ada
+     * meter sama sekali.
+     *
+     * @return list<array{kunci:string,label:string,min:float}>
+     */
+    public static function skala(): array
+    {
+        return array_reverse(self::KELAS_HUJAN);
+    }
+
+    /** Urutan sebuah kelas pada skala, 0 untuk yang teringan. */
+    public static function tingkat(string $kunci): int
+    {
+        foreach (self::skala() as $i => $kelas) {
+            if ($kelas['kunci'] === $kunci) return $i;
+        }
+
+        return 0;
     }
 
     /** Titik tengah area tambang dari layer peta yang sudah digambar. */

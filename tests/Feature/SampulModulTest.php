@@ -97,6 +97,45 @@ class SampulModulTest extends TestCase
         $this->assertSame('Cerah', KondisiSitus::kelasHujan(-5)['label']);
     }
 
+    /**
+     * Meter intensitas pada sampul membaca skala ini. Skala yang urutannya
+     * terbalik membuat hujan sangat lebat tergambar sebagai satu kotak
+     * menyala dan cerah sebagai lima — persis kebalikan dari artinya,
+     * tanpa satu pun galat muncul.
+     */
+    public function test_skala_hujan_urut_dari_teringan_ke_terberat(): void
+    {
+        $urut = array_column(KondisiSitus::skala(), 'kunci');
+
+        $this->assertSame(
+            ['cerah', 'hujan_ringan', 'hujan_sedang', 'hujan_lebat', 'hujan_sangat_lebat'],
+            $urut,
+        );
+    }
+
+    public function test_tingkat_menunjuk_kedudukan_pada_skala(): void
+    {
+        $this->assertSame(0, KondisiSitus::tingkat('cerah'));
+        $this->assertSame(4, KondisiSitus::tingkat('hujan_sangat_lebat'));
+
+        // Kunci tak dikenal jatuh ke tingkat teringan, bukan ke luar batas
+        // larik — meter yang menerima indeks -1 tidak menggambar apa pun.
+        $this->assertSame(0, KondisiSitus::tingkat('entah'));
+    }
+
+    public function test_cuaca_membawa_tingkat_dan_panjang_skala_untuk_meter(): void
+    {
+        $c = $this->perusahaan();
+        $this->catatHujan($c, 120, now()->toDateString());
+
+        $cuaca = KondisiSitus::cuaca($c);
+
+        $this->assertSame(4, $cuaca['tingkat']);
+        $this->assertSame(5, $cuaca['skala']);
+        $this->assertLessThan($cuaca['skala'], $cuaca['tingkat'],
+            'Tingkat harus selalu di dalam panjang skalanya.');
+    }
+
     /* ---------- cuaca dibaca dari catatan, bukan dikarang ---------- */
 
     private function perusahaan(): Company

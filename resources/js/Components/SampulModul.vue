@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import KartuCuaca from './KartuCuaca.vue';
 
 /**
  * Sampul halaman awal modul: foto, geo tag, dan kondisi cuaca.
@@ -29,30 +30,17 @@ const props = defineProps<{
     label: string | null;
     kondisi: {
       lokasi: { nama: string | null; perusahaan: string; koordinat: string | null } | null;
-      cuaca: { kunci: string; label: string; hujanMm: number; tanggal: string | null; hariIni: boolean } | null;
+      cuaca: {
+        kunci: string; label: string; hujanMm: number;
+        tingkat: number; skala: number;
+        tanggal: string | null; hariIni: boolean;
+      } | null;
       waktu: { jam: string; zona: string; tanggal: string };
     } | null;
   } | null;
 }>();
 
 const kondisi = computed(() => props.sampul?.kondisi ?? null);
-
-/**
- * Warna lencana cuaca mengikuti beratnya hujan, bukan satu warna netral.
- * Hujan sangat lebat menghentikan pekerjaan di lereng dan jalan angkut;
- * yang menyamakan warnanya dengan gerimis menghapus perbedaan itu tepat
- * di tempat orang membacanya sekilas.
- */
-const WARNA_CUACA: Record<string, string> = {
-  cerah:              'bg-amber-400/90 text-amber-950',
-  hujan_ringan:       'bg-sky-300/90 text-sky-950',
-  hujan_sedang:       'bg-sky-500/90 text-white',
-  hujan_lebat:        'bg-blue-600/90 text-white',
-  hujan_sangat_lebat: 'bg-red-600/90 text-white',
-};
-
-const warnaCuaca = computed(() =>
-  WARNA_CUACA[kondisi.value?.cuaca?.kunci ?? ''] ?? 'bg-stone-500/90 text-white');
 </script>
 
 <template>
@@ -77,37 +65,19 @@ const warnaCuaca = computed(() =>
 
     <div class="absolute inset-0 flex flex-col justify-between p-4 sm:p-5">
       <div class="flex flex-wrap items-start justify-end gap-2">
-        <div class="flex flex-wrap items-center gap-2">
-          <!-- Cuaca dari catatan hujan situs sendiri. Tanggalnya ikut
-               disebut: hujan pagi tadi dan hujan kemarin menuntut
-               keputusan yang berbeda. -->
-          <span v-if="kondisi?.cuaca"
-                class="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold backdrop-blur-sm"
-                :class="warnaCuaca"
-                :title="`Curah hujan tercatat ${kondisi.cuaca.hujanMm} mm`">
-            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <template v-if="kondisi.cuaca.kunci === 'cerah'">
-                <circle cx="12" cy="12" r="4.2"/>
-                <path d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/>
-              </template>
-              <template v-else>
-                <path d="M7 16.5a4.2 4.2 0 0 1 .6-8.4 5.6 5.6 0 0 1 10.7 1.6 3.4 3.4 0 0 1-.8 6.8Z"/>
-                <path d="M9 19.5l-.8 2M13 19.5l-.8 2M17 19.5l-.8 2"/>
-              </template>
-            </svg>
-            {{ kondisi.cuaca.label }}
-            <small class="font-semibold opacity-80">
-              {{ kondisi.cuaca.hujanMm }} mm<template v-if="!kondisi.cuaca.hariIni && kondisi.cuaca.tanggal">
-                · {{ kondisi.cuaca.tanggal }}</template>
-            </small>
-          </span>
-
-          <span v-if="kondisi?.waktu"
-                class="rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm">
-            {{ kondisi.waktu.jam }} {{ kondisi.waktu.zona }}
-          </span>
+        <!-- Jam dan tanggal berdiri sendiri dari kartu cuaca: keduanya
+             selalu ada, sedangkan cuacanya hanya ada bila situsnya
+             benar-benar mencatat hujan. Menyatukannya membuat jam ikut
+             hilang pada situs yang belum mencatat apa pun. -->
+        <div v-if="kondisi?.waktu"
+             class="eq-cuaca flex flex-col items-end rounded-xl px-3 py-2 leading-none">
+          <b class="text-[15px] font-extrabold tabular-nums text-white">{{ kondisi.waktu.jam }}</b>
+          <small class="mt-1 text-[9.5px] font-bold uppercase tracking-wider text-white/60">
+            {{ kondisi.waktu.zona }}
+          </small>
         </div>
+
+        <KartuCuaca v-if="kondisi?.cuaca" :cuaca="kondisi.cuaca" />
       </div>
 
       <div>

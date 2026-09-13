@@ -775,4 +775,48 @@ main a{transition:color .16s}
 .brand-gradient{background:linear-gradient(165deg,var(--eq-dasar,#0B1117),
                                            color-mix(in srgb,var(--eq-dasar,#0B1117) 62%,#12403E))}
 
+/* ── Kartu cuaca pada sampul modul ───────────────────────────────────
+   Dipakai bersama halaman Vue dan Blade. Ditulis di sini, bukan di
+   dalam komponen Vue, dengan alasan yang sama seperti seluruh berkas
+   ini: dua salinan aturan yang sama akan berbeda isinya cepat atau
+   lambat, dan bedanya baru ketahuan saat dua halaman dibandingkan
+   berdampingan.
+
+   Gerak di sini murni hiasan — angka dan labelnya sudah lengkap tanpa
+   animasi apa pun. Karena itu pada perangkat yang meminta gerak
+   dikurangi, seluruhnya dimatikan tanpa ada keterangan yang hilang. */
+.eq-cuaca{
+  background:rgba(12,10,9,.42);
+  border:1px solid rgba(255,255,255,.18);
+  backdrop-filter:blur(10px) saturate(140%);
+  -webkit-backdrop-filter:blur(10px) saturate(140%);
+  box-shadow:0 8px 24px -12px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.12);
+}
+
+/* Sinar matahari berdenyut pelan. */
+.eq-cuaca-surya{transform-origin:center;animation:eq-surya 4.5s ease-in-out infinite}
+@keyframes eq-surya{
+  0%,100%{opacity:.55;transform:scale(.92)}
+  50%    {opacity:1;  transform:scale(1.06)}
+}
+
+/* Tetes hujan jatuh bergantian. Tiap tetes diberi tundaan sendiri
+   lewat --eq-tunda supaya tidak jatuh serentak seperti satu benda. */
+.eq-cuaca-tetes{animation:eq-tetes 1.5s linear infinite;animation-delay:var(--eq-tunda,0s)}
+@keyframes eq-tetes{
+  0%  {opacity:0;   transform:translateY(-2px)}
+  25% {opacity:.95}
+  100%{opacity:0;   transform:translateY(7px)}
+}
+
+/* Kotak meter yang sedang aktif berdenyut samar, sisanya diam. */
+.eq-cuaca-aktif{animation:eq-cuaca-aktif 2.4s ease-in-out infinite}
+@keyframes eq-cuaca-aktif{0%,100%{opacity:1}50%{opacity:.62}}
+
+@media (prefers-reduced-motion: reduce){
+  .eq-cuaca-surya,.eq-cuaca-tetes,.eq-cuaca-aktif{animation:none}
+  .eq-cuaca-surya{opacity:1;transform:none}
+  .eq-cuaca-tetes{opacity:.95;transform:none}
+}
+
 </style>

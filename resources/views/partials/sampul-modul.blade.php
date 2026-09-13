@@ -22,12 +22,13 @@
 
   $eqKondisi = $eqSampul ? \App\Support\KondisiSitus::untuk(auth()->user()) : null;
 
-  $eqWarnaCuaca = [
-      'cerah'              => 'background:rgba(251,191,36,.9);color:#451a03',
-      'hujan_ringan'       => 'background:rgba(125,211,252,.9);color:#082f49',
-      'hujan_sedang'       => 'background:rgba(14,165,233,.9);color:#fff',
-      'hujan_lebat'        => 'background:rgba(37,99,235,.9);color:#fff',
-      'hujan_sangat_lebat' => 'background:rgba(220,38,38,.9);color:#fff',
+  /* Warna aksen per kelas — sepadan dengan AKSEN di KartuCuaca.vue. */
+  $eqAksen = [
+      'cerah'              => '#FBBF24',
+      'hujan_ringan'       => '#67E8F9',
+      'hujan_sedang'       => '#38BDF8',
+      'hujan_lebat'        => '#818CF8',
+      'hujan_sangat_lebat' => '#F87171',
   ];
 @endphp
 
@@ -46,26 +47,75 @@
 
   <div class="absolute inset-0 flex flex-col justify-between p-4 sm:p-5">
     <div class="flex flex-wrap items-start justify-end gap-2">
-      <div class="flex flex-wrap items-center gap-2">
-        @if($eqKondisi && $eqKondisi['cuaca'])
-          @php $c = $eqKondisi['cuaca']; @endphp
-          <span class="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold"
-                style="{{ $eqWarnaCuaca[$c['kunci']] ?? 'background:rgba(120,113,108,.9);color:#fff' }};backdrop-filter:blur(4px)"
-                title="Curah hujan tercatat {{ $c['hujanMm'] }} mm">
-            {{ $c['label'] }}
-            <small style="font-weight:600;opacity:.8">
-              {{ $c['hujanMm'] }} mm@unless($c['hariIni']) @if($c['tanggal']) · {{ $c['tanggal'] }} @endif @endunless
-            </small>
-          </span>
-        @endif
+      @if($eqKondisi)
+        {{-- Jam berdiri sendiri dari kartu cuaca: jam selalu ada,
+             cuacanya hanya ada bila situsnya mencatat hujan. --}}
+        <div class="eq-cuaca flex flex-col items-end rounded-xl px-3 py-2 leading-none">
+          <b class="text-[15px] font-extrabold tabular-nums text-white">{{ $eqKondisi['waktu']['jam'] }}</b>
+          <small class="mt-1 text-[9.5px] font-bold uppercase tracking-wider" style="color:rgba(255,255,255,.6)">
+            {{ $eqKondisi['waktu']['zona'] }}
+          </small>
+        </div>
+      @endif
 
-        @if($eqKondisi)
-          <span class="rounded-full px-3 py-1 text-[11px] font-bold text-white"
-                style="background:rgba(255,255,255,.15);backdrop-filter:blur(4px)">
-            {{ $eqKondisi['waktu']['jam'] }} {{ $eqKondisi['waktu']['zona'] }}
-          </span>
-        @endif
-      </div>
+      @if($eqKondisi && $eqKondisi['cuaca'])
+        @php
+          $c      = $eqKondisi['cuaca'];
+          $aksen  = $eqAksen[$c['kunci']] ?? '#D6D3D1';
+          $cerah  = $c['kunci'] === 'cerah';
+        @endphp
+
+        {{-- Angka, nama, dan kedudukan pada skala lima tingkat digambar
+             sekaligus — lihat KartuCuaca.vue untuk alasannya. --}}
+        <div class="eq-cuaca flex items-center gap-3 rounded-xl px-3 py-2"
+             title="Curah hujan tercatat {{ $c['hujanMm'] }} mm — {{ $c['label'] }}">
+          <svg class="h-8 w-8 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            @if($cerah)
+              <g class="eq-cuaca-surya" stroke="{{ $aksen }}" stroke-width="1.8" stroke-linecap="round">
+                <circle cx="12" cy="12" r="4" fill="{{ $aksen }}" fill-opacity=".28"/>
+                <path d="M12 3.2v2.1M12 18.7v2.1M4.8 4.8l1.5 1.5M17.7 17.7l1.5 1.5M3.2 12h2.1M18.7 12h2.1M4.8 19.2l1.5-1.5M17.7 6.3l1.5-1.5"/>
+              </g>
+            @else
+              <path d="M7.4 15.6a3.9 3.9 0 0 1 .5-7.8 5.2 5.2 0 0 1 9.9 1.5 3.2 3.2 0 0 1-.7 6.3Z"
+                    fill="{{ $aksen }}" fill-opacity=".22" stroke="{{ $aksen }}" stroke-width="1.6"
+                    stroke-linejoin="round"/>
+              <g stroke="{{ $aksen }}" stroke-width="1.9" stroke-linecap="round">
+                @foreach([[7,'0s'],[12,'.35s'],[17,'.7s']] as [$x, $tunda])
+                  <line class="eq-cuaca-tetes" x1="{{ $x }}" y1="17.6" x2="{{ $x - 1 }}" y2="20.4"
+                        style="--eq-tunda:{{ $tunda }}"/>
+                @endforeach
+              </g>
+            @endif
+          </svg>
+
+          <div class="min-w-0">
+            <p class="flex items-baseline gap-1 leading-none">
+              <b class="text-[19px] font-extrabold tabular-nums text-white">{{ $c['hujanMm'] }}</b>
+              <small class="text-[10px] font-bold uppercase tracking-wider" style="color:rgba(255,255,255,.6)">mm</small>
+            </p>
+
+            <p class="mt-1 truncate text-[11px] font-bold leading-none" style="color:{{ $aksen }}">
+              {{ $c['label'] }}
+            </p>
+
+            <div class="mt-1.5 flex items-center gap-2">
+              <div class="flex gap-[3px]" role="img"
+                   aria-label="Tingkat {{ $c['tingkat'] + 1 }} dari {{ $c['skala'] }} pada skala curah hujan">
+                @for($i = 0; $i < $c['skala']; $i++)
+                  <i class="block h-[3px] w-3.5 rounded-full {{ $i === $c['tingkat'] ? 'eq-cuaca-aktif' : '' }}"
+                     style="background:{{ $i <= $c['tingkat'] ? $aksen : 'rgba(255,255,255,.22)' }}"></i>
+                @endfor
+              </div>
+
+              @unless($c['hariIni'])
+                @if($c['tanggal'])
+                  <small class="text-[9.5px] font-semibold" style="color:rgba(255,255,255,.55)">{{ $c['tanggal'] }}</small>
+                @endif
+              @endunless
+            </div>
+          </div>
+        </div>
+      @endif
     </div>
 
     <div>
