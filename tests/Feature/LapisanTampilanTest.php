@@ -504,6 +504,133 @@ class LapisanTampilanTest extends TestCase
     }
 
     /**
+     * Tiap kunci `keadaan` pada kelas data grafik harus ada pada palet.
+     *
+     * Grafik batang dan donat mewarnai barisnya dengan
+     * `KEADAAN[b.keadaan]`. Kunci yang tidak ada memulangkan
+     * `undefined`, dan `undefined` yang dijahit ke dalam
+     * `linear-gradient(90deg, undefined 0%, …)` menghasilkan isian yang
+     * TIDAK VALID — batangnya digambar tanpa warna sama sekali, grafik
+     * lainnya tetap benar, dan tidak ada satu pun galat di konsol.
+     *
+     * Terjadi sekali pada BelajarGrafik: 'awas' dan 'buruk' ditulis di
+     * sisi PHP sementara palet menyebutnya 'ingat', 'serius', 'gawat'.
+     *
+     * DUA BERKAS SAJA, dan itu disengaja. `keadaan` adalah kata yang
+     * dipakai ulang di aplikasi ini untuk hal yang sama sekali lain —
+     * keadaan hari pada roster bernilai 'kerja' dan 'libur', keadaan
+     * izin bernilai 'aman'. Menyapu seluruh app/ akan menuntut kata
+     * domain itu tunduk pada palet warna grafik, dan penjaga yang
+     * menuntut yang keliru akan dimatikan orang, bukan diperbaiki.
+     * Kedua berkas di bawah seluruh isinya memang data grafik.
+     */
+    public function test_kunci_keadaan_pada_kelas_grafik_ada_pada_palet_warna(): void
+    {
+        $warna = file_get_contents(resource_path('js/Grafik/warna.ts'));
+
+        preg_match('/export const KEADAAN[^{]*\\{(.*?)\\}/s', $warna, $blok);
+        $this->assertNotEmpty($blok, 'Palet KEADAAN tidak ditemukan pada warna.ts.');
+
+        preg_match_all('/^\\s*([a-z]+)\\s*:/m', $blok[1], $m);
+        $dikenal = $m[1];
+
+        $this->assertNotEmpty($dikenal, 'Palet KEADAAN terbaca kosong.');
+
+        $lepas = [];
+
+        foreach (['DasborGrafik.php', 'BelajarGrafik.php'] as $nama) {
+            $jalur = app_path('Support/'.$nama);
+            if (! is_file($jalur)) continue;
+
+            $isi = file_get_contents($jalur);
+
+            /* Pengindeksan larik dibuang lebih dulu: `$p['keadaan']`
+               membaca kunci, ia tidak menuliskannya, dan menghitungnya
+               sebagai nilai membuat penjaga ini menuduh kodenya sendiri. */
+            $isi = preg_replace("/\\[\\s*'[a-z_]+'\\s*\\]/", '[]', $isi);
+
+            preg_match_all("/'keadaan'\\s*=>\\s*([^\\n]+)/", $isi, $baris);
+
+            foreach ($baris[1] as $sisi) {
+                preg_match_all("/'([a-z]+)'/", $sisi, $kunci);
+
+                foreach ($kunci[1] as $k) {
+                    if (in_array($k, $dikenal, true)) continue;
+
+                    $lepas[] = $nama.": '".$k."'";
+                }
+            }
+        }
+
+        $lepas = array_values(array_unique($lepas));
+
+        $this->assertSame([], $lepas,
+            "Kunci keadaan yang tidak ada pada palet warna. Batangnya akan "
+            ."digambar TANPA WARNA, tanpa galat apa pun:\n  "
+            .implode("\n  ", $lepas)
+            ."\n\nYang dikenal: ".implode(', ', $dikenal));
+    }
+
+    /**
+     * Pengaman geser-ke-samping harus `clip`, bukan `hidden`.
+     *
+     * Keduanya sama-sama memotong yang meluber ke samping, dan justru
+     * karena itu bedanya tidak pernah terlihat pada tangkapan layar
+     * mana pun. Yang berbeda: `overflow-x:hidden` pada html atau body
+     * menjadikan halaman WADAH GULIR tersendiri, dan `position:sticky`
+     * di dalam wadah gulir yang tidak pernah benar-benar bergulir tidak
+     * punya apa pun untuk dilekati.
+     *
+     * Bilah samping menanggung akibatnya. Ia menyatakan dirinya
+     * `lg:sticky lg:top-0 lg:h-screen` — "dipaku setinggi layar, kakinya
+     * selalu terlihat" — lalu ikut hanyut bersama halaman: top 0 pada
+     * puncak, −600 sesudah digulir 600, dan −1611 di dasar halaman.
+     * Yang terlihat pengguna: bilah samping ada di bagian atas halaman
+     * dan HILANG SAMA SEKALI di bagian bawah, meninggalkan kolom kosong
+     * selebar 248px.
+     *
+     * Tidak ada galat, tidak ada uji yang gagal, dan tangkapan layar
+     * pada puncak halaman — satu-satunya yang biasanya diambil —
+     * terlihat benar sepenuhnya.
+     */
+    public function test_pengaman_geser_samping_tidak_mematikan_sticky(): void
+    {
+        $css = file_get_contents(resource_path('css/app.css'));
+
+        $this->assertMatchesRegularExpression(
+            '/html\s*,\s*body\s*\{[^}]*overflow-x:\s*clip/', $css,
+            'Pengaman geser-ke-samping pada html/body harus overflow-x:clip.');
+
+        $this->assertDoesNotMatchRegularExpression(
+            '/html\s*,\s*body\s*\{[^}]*overflow-x:\s*hidden/', $css,
+            'overflow-x:hidden pada html/body menjadikan halaman wadah gulir dan '
+            .'mematikan position:sticky di SELURUH aplikasi — bilah sampingnya ikut '
+            .'hanyut sampai hilang di bagian bawah halaman. Pakai clip.');
+    }
+
+    /**
+     * Bilah samping memang menyatakan dirinya melekat setinggi layar.
+     *
+     * Penjaga di atas menjaga sebabnya; yang ini menjaga bahwa masih ada
+     * yang bergantung padanya. Tanpa pasangan ini, `sticky` pada bilah
+     * samping dapat hilang tanpa suara dan penjaga overflow di atas
+     * berdiri menjaga sesuatu yang sudah tidak ada.
+     */
+    public function test_bilah_samping_dipaku_setinggi_layar(): void
+    {
+        $vue = file_get_contents(resource_path('js/Layouts/AppLayout.vue'));
+
+        $this->assertMatchesRegularExpression(
+            '/id="eqSidebar"[^>]*lg:sticky/s', $vue,
+            'Bilah samping tidak lagi lg:sticky.');
+
+        $this->assertMatchesRegularExpression(
+            '/id="eqSidebar"[^>]*lg:h-screen/s', $vue,
+            'Bilah samping tidak lagi setinggi layar; melekat tanpa tinggi tetap '
+            .'membuat kakinya tetap tidak terlihat.');
+    }
+
+    /**
      * Tiap komponen yang dipakai template HARUS dikenal script-nya.
      *
      * `<script setup>` menyelesaikan nama komponen dari lingkup

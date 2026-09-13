@@ -4,15 +4,24 @@ namespace App\Http\Controllers;
 use App\Models\{Course, Enrollment, Certificate, HazardReport, Inspection, KoObject,
     Document, News, Procedure, SmkpAudit, SmkpFinding, SopEvaluationAttempt,
     TpkkpAssessment, User};
-use App\Support\{Kategori, Media, Sampul, Waktu};
+use App\Support\{BelajarGrafik, Kategori, Media, Sampul, Waktu};
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
+        $kini = Carbon::now();
+
+        /* Rentang dipilih dari layar dan dibatasi daftar tertutup. Nilai
+           bebas dari URL berarti seseorang dapat meminta 100.000 hari
+           dan menunggu selamanya sambil mengunci basis datanya. */
+        $hari = (int) $request->get('hari', BelajarGrafik::RENTANG_BAWAAN);
+        if (!in_array($hari, BelajarGrafik::RENTANG, true)) $hari = BelajarGrafik::RENTANG_BAWAAN;
 
         $enrollments = Enrollment::with('course')->where('user_id', $user->id)->latest()->get();
 
@@ -62,8 +71,26 @@ class DashboardController extends Controller
             ])->all(),
             'ringkas'     => $this->ringkasBelajar($enrollments),
             'kategori'    => collect($this->ringkasKategori())->map(fn ($k) => $k + ['nada' => Kategori::nada($k['nama'])])->all(),
-            'pekan'       => $this->kemajuanPekan($user->id),
             'admin'       => null,
+
+            'hari'     => $hari,
+            'opsiHari' => BelajarGrafik::RENTANG,
+
+            /* ── grafik ──
+               Milik orang ini, bukan seluruh situs; angka seluruh situs
+               sudah punya rumahnya di /dasbor. `penyelesaian` adalah
+               satu-satunya yang melihat orang lain, dan karena itu ia
+               hanya diisi bagi pelatih dan administrator. */
+            'grafik' => [
+                'kegiatan'    => BelajarGrafik::kegiatan($user->id, $kini, $hari),
+                'kemajuan'    => BelajarGrafik::kemajuanKursus($enrollments),
+                'status'      => BelajarGrafik::statusKursus($enrollments, Course::count()),
+                'nilai'       => BelajarGrafik::sebaranNilai($user->id),
+                'sertifikat'  => BelajarGrafik::sertifikatBulanan($user->id, $kini),
+                'penyelesaian' => $user->isAdmin() || $user->isTrainer()
+                    ? BelajarGrafik::penyelesaianKursus()
+                    : null,
+            ],
 
             /* SPANDUK HALAMAN INI DILIPAT KE DALAM KOP KERANGKA.
                Sebelumnya halaman ini menggambar hero besarnya sendiri
@@ -124,36 +151,6 @@ class DashboardController extends Controller
             ->groupBy('category')->orderByDesc('jumlah')
             ->get()->map(fn ($r) => ['nama' => $r->category, 'jumlah' => (int) $r->jumlah])
             ->all();
-    }
-
-    /**
-     * Kemajuan tujuh hari terakhir.
-     *
-     * Yang dihitung adalah modul yang diselesaikan tiap hari, bukan
-     * kemajuan rata-rata — rata-rata hanya bergerak saat kursus baru
-     * didaftarkan dan menghasilkan garis datar yang menyesatkan.
-     */
-    private function kemajuanPekan(int $userId): array
-    {
-        $mulai = now()->subDays(6)->startOfDay();
-
-        $perHari = \Illuminate\Support\Facades\Schema::hasTable('module_completions')
-            ? \Illuminate\Support\Facades\DB::table('module_completions')
-                ->where('user_id', $userId)
-                ->where('created_at', '>=', $mulai)
-                ->selectRaw('DATE(created_at) as hari, COUNT(*) as jumlah')
-                ->groupBy('hari')->pluck('jumlah', 'hari')
-            : collect();
-
-        $out = [];
-        for ($i = 6; $i >= 0; $i--) {
-            $t = now()->subDays($i);
-            $out[] = [
-                'label' => $t->translatedFormat('D'),
-                'nilai' => (int) ($perHari[$t->toDateString()] ?? 0),
-            ];
-        }
-        return $out;
     }
 
     /**

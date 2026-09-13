@@ -4458,6 +4458,27 @@ final class DataContoh
      * yang perusahaannya belum tentu — dan biasanya bukan — perusahaan
      * yang sedang dimuati.
      */
+    /**
+     * Mundurkan tanggal catat sebuah baris.
+     *
+     * `created_at` tidak dapat dikirim lewat `create()`: ia bukan kolom
+     * fillable pada model mana pun di sini, dan Eloquent menimpanya
+     * dengan waktu sekarang sesudahnya. Menuliskannya lewat forceFill
+     * adalah satu-satunya jalan yang tidak menuntut tiap model
+     * membocorkan kolom stempel waktunya ke daftar fillable.
+     *
+     * DIPAKAI DENGAN SENGAJA, bukan demi kerapian. Seluruh data contoh
+     * yang bertanggal hari ini menggambar tiap grafik bertren sebagai
+     * satu paku di tepi kanan — bentuk yang benar menurut datanya dan
+     * tidak berguna untuk memeriksa apa pun.
+     */
+    private function bertanggal($model, int $mundurHari): void
+    {
+        $t = $this->kini->copy()->subDays(max(0, $mundurHari));
+
+        $model->forceFill(['created_at' => $t, 'updated_at' => $t])->save();
+    }
+
     private function baru(string $kelas, array $isi)
     {
         $model = new $kelas;
@@ -5752,20 +5773,26 @@ final class DataContoh
                 $n++;
             }
 
-            /* Satu percobaan pengerjaan, supaya halaman hasil dan
-               rekapitulasi kelulusan punya sesuatu untuk dihitung. */
+            /* Percobaan pengerjaan: DUA, bertanggal mundur dan berbeda
+               hasil. Satu percobaan yang gagal saja membuat rekapitulasi
+               kelulusan selalu menjawab 0% — angka yang tidak dapat
+               dibedakan dari penyaring kelulusan yang rusak. */
             if ($this->pengaju) {
-                SopEvaluationAttempt::withoutGlobalScopes()->create([
-                    'user_id'       => $this->pengaju->id,
-                    'evaluation_id' => $ev->id,
-                    'procedure_id'  => $p->id,
-                    'score'         => 67,
-                    'total'         => count($soal),
-                    'correct'       => 2,
-                    'passed'        => false,
-                    'answers'       => [0, 1, 2],
-                ]);
-                $n++;
+                foreach ([[67, 2, false, 18], [100, 3, true, 4]] as [$nilai, $benar, $lulusSop, $mundur]) {
+                    $percobaan = SopEvaluationAttempt::withoutGlobalScopes()->create([
+                        'user_id'       => $this->pengaju->id,
+                        'evaluation_id' => $ev->id,
+                        'procedure_id'  => $p->id,
+                        'score'         => $nilai,
+                        'total'         => count($soal),
+                        'correct'       => $benar,
+                        'passed'        => $lulusSop,
+                        'answers'       => [0, 1, 2],
+                    ]);
+
+                    $this->bertanggal($percobaan, $mundur + ($i * 5));
+                    $n++;
+                }
             }
         }
 
@@ -5850,6 +5877,37 @@ final class DataContoh
         ]);
         $n++;
 
+        /* DUA KURSUS PENDAMPING, tanpa modul dan tanpa kuis.
+         *
+         * Ada bukan sebagai pengisi melainkan karena satu kursus tidak
+         * dapat membuktikan apa pun yang membedakan kursus. Grafik
+         * "Kemajuan tiap kursus" berbatang tunggal terlihat benar
+         * apapun urutannya; sebaran status berisi satu kursus tidak
+         * dapat memperlihatkan selisih antara selesai, berjalan, dan
+         * belum diikuti. Keduanya berkategori berbeda pula, sehingga
+         * pintasan kategori di kaki dasbor punya lebih dari satu baris.
+         */
+        $pendamping = [];
+
+        foreach ([
+            ['Pengoperasian Alat Angkut yang Aman', 'Operasional',
+             'Kursus contoh: jarak aman, blind spot, dan aturan jalan hauling.'],
+            ['Pengelolaan Lingkungan Tambang', 'Lingkungan',
+             'Kursus contoh: kolam pengendap, baku mutu, dan reklamasi.'],
+        ] as [$judulKursus, $kategoriKursus, $uraianKursus]) {
+            $pendamping[] = Course::withoutGlobalScopes()->create([
+                'title'            => $judulKursus,
+                'description'      => $uraianKursus,
+                'category'         => $kategoriKursus,
+                'cert_template'    => 'default',
+                'auto_certificate' => false,
+                'require_code'     => false,
+                'require_evaluation' => false,
+                'demo_company_id'  => $this->c->id,
+            ]);
+            $n++;
+        }
+
         foreach ([
             ['Pengenalan Bahaya Tambang', 'Jenis bahaya di area tambang terbuka.'],
             ['Alat Pelindung Diri',       'Pemilihan dan pemakaian APD sesuai pekerjaan.'],
@@ -5908,18 +5966,59 @@ final class DataContoh
         foreach ($peserta as $i => $orang) {
             $lulus = $i === 0;
 
+            /* 'finished' / 'ongoing' — EJAAN YANG DIPAKAI APLIKASI, bukan
+               'completed' / 'in_progress'. Keduanya pernah tertulis di
+               sini, dan tidak satu baris kode pun membacanya: LearnController
+               menulis 'finished' saat kemajuan mencapai 100, dan halaman
+               sertifikat, halaman evaluasi, serta dasbor seluruhnya
+               menyaring dengan ejaan itu.
+
+               Kegagalannya diam sepenuhnya. Data contohnya tersimpan,
+               kursusnya muncul di daftar, dan hanya angkanya yang salah:
+               "Kursus Selesai 0" pada peserta yang seluruh modulnya sudah
+               tuntas, sertifikat yang tidak pernah dapat diklaim, dan
+               tombol "Lanjutkan Pembelajaran" yang membuka kursus
+               sembarang alih-alih yang sedang dikerjakan. */
             Enrollment::withoutGlobalScopes()->create([
                 'user_id' => $orang->id, 'course_id' => $kursus->id,
                 'progress' => $lulus ? 100 : 60,
-                'status'   => $lulus ? 'completed' : 'in_progress',
+                'status'   => $lulus ? 'finished' : 'ongoing',
             ]);
             $n++;
 
-            QuizAttempt::withoutGlobalScopes()->create([
-                'user_id' => $orang->id, 'quiz_id' => $kuis->id,
-                'score' => $lulus ? 100 : 67, 'passed' => $lulus,
-            ]);
-            $n++;
+            /* Pendaftaran pada kursus pendamping: satu berjalan, satu
+               belum disentuh sama sekali. Yang belum disentuh sengaja
+               TIDAK didaftarkan — "belum diikuti" adalah keadaan yang
+               harus dapat dibedakan dari "diikuti tetapi 0%". */
+            if (isset($pendamping[0])) {
+                Enrollment::withoutGlobalScopes()->create([
+                    'user_id' => $orang->id, 'course_id' => $pendamping[0]->id,
+                    'progress' => $lulus ? 35 : 10, 'status' => 'ongoing',
+                ]);
+                $n++;
+            }
+
+            /* BEBERAPA PERCOBAAN, BERTANGGAL MUNDUR.
+             *
+             * Satu percobaan bertanggal hari ini menggambar grafik
+             * kegiatan sebagai satu paku di tepi kanan dan sebaran
+             * nilai sebagai satu batang — keduanya benar dan keduanya
+             * tidak dapat dipakai memeriksa apa pun. Nilainya menaik
+             * sebagaimana orang yang mengulang: gagal, nyaris, lalu
+             * lulus. */
+            $riwayat = $lulus
+                ? [[52, 34], [68, 21], [100, 6]]
+                : [[45, 26], [67, 9]];
+
+            foreach ($riwayat as $k => [$nilai, $mundur]) {
+                $a = QuizAttempt::withoutGlobalScopes()->create([
+                    'user_id' => $orang->id, 'quiz_id' => $kuis->id,
+                    'score' => $nilai, 'passed' => $nilai >= 70,
+                ]);
+
+                $this->bertanggal($a, $mundur);
+                $n++;
+            }
 
             /* Kemajuan belajar dicatat per modul, bukan hanya sebagai
                persen pada pendaftaran. Halaman belajar menandai modul
@@ -5928,10 +6027,17 @@ final class DataContoh
                modulnya belum tercentang. */
             $selesai = $lulus ? $modulKursus : array_slice($modulKursus, 0, 2);
 
-            foreach ($selesai as $m) {
-                ModuleCompletion::withoutGlobalScopes()->create([
+            /* Bertanggal mundur dan BERJARAK, bukan seluruhnya hari ini.
+               Tiga modul yang tercatat pada detik yang sama menggambarkan
+               orang yang menyelesaikan kursus dalam satu tarikan napas —
+               dan pada grafik kegiatan ia menjadi satu batang tunggal di
+               tepi kanan, tanpa ada yang dapat dibandingkan dengannya. */
+            foreach ($selesai as $k => $m) {
+                $mc = ModuleCompletion::withoutGlobalScopes()->create([
                     'user_id' => $orang->id, 'module_id' => $m->id,
                 ]);
+
+                $this->bertanggal($mc, 30 - ($k * 9) - ($i * 3));
                 $n++;
             }
 
@@ -5948,7 +6054,7 @@ final class DataContoh
                 'recipient_name'    => $orang->name,
                 'course_title'      => $kursus->title,
                 'final_score'       => 100,
-                'issued_at'         => $this->kini->copy()->subDays(7),
+                'issued_at'         => $this->kini->copy()->subDays(7 + ($i * 45)),
                 'verification_code' => strtoupper(substr(md5($kursus->id.'-'.$orang->id), 0, 10)),
                 'template'          => 'default',
             ]);

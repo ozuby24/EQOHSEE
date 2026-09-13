@@ -122,7 +122,11 @@ const disorot = ref<string | null>(null);
       </div>
     </div>
 
-    <ul class="min-w-0 flex-1 space-y-1" @pointerleave="disorot = null">
+    <!-- `min-w-[9rem]` supaya keterangannya TURUN KE BAWAH donat saat
+         kartunya sempit alih-alih menyusut sampai labelnya terpotong.
+         Terlihat pada kolom sisi selebar 250px: "Belum diikuti"
+         tercetak "Belum di…" sementara ada ruang kosong di bawahnya. -->
+    <ul class="min-w-[9rem] flex-1 space-y-1" @pointerleave="disorot = null">
       <li v-for="p in potongan" :key="p.label">
         <button type="button"
                 class="w-full flex items-center gap-2 text-[12px] rounded px-1 py-1

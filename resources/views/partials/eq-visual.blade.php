@@ -1362,6 +1362,13 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] .eq-akun-keluar:hover{background:rgba(220,38,38,.16);color:#F5A9A9}
 :root[data-tema="gelap"] .eq-akun-titik{border-color:var(--eq-kartu,#141A21)}
 
+/* Jalur redup di belakang batang grafik.
+   Abu-abu terang #F5F5F4 tepat di atas kartu putih; di atas kartu
+   gelap ia menjadi balok TERANG yang lebih menonjol daripada batangnya
+   sendiri. Paling kentara pada grafik yang nilainya nol: enam baris
+   tanpa data menggambar enam balok terang berderet. */
+:root[data-tema="gelap"] .grafik-jalur{background:rgba(255,255,255,.07)}
+
 /* ── Kartu semboyan di kaki bilah samping ──
    DISEMBUNYIKAN LEBIH DAHULU DARIPADA APA PUN saat ruangnya menyempit:
    ia hiasan, dan hiasan yang mendorong butir menu keluar dari layar
@@ -2174,17 +2181,21 @@ body.eq-sempit .eq-semboyan{display:none}
  *
  * Sekarang ia setinggi isinya sendiri.
  *
- * TIDAK melekat saat digulir, meski itu godaan yang wajar untuk panel
- * harga. `position:sticky` tidak bekerja di sini: app.css memasang
- * `overflow-x:hidden` pada html dan body sebagai pengaman agar halaman
- * tidak pernah tergeser ke samping, dan itu menjadikan body wadah gulir
- * tersendiri — sticky lalu tidak punya apa pun untuk dilekati. Dicoba dan
- * diukur: panelnya tetap lewat begitu saja ke atas layar (top 333 → 33 →
- * −67 → −167), bukan berhenti pada 88.
+ * TIDAK melekat saat digulir, dan itu sekarang PILIHAN, bukan lagi
+ * keterpaksaan.
  *
- * Aturannya dibuang, bukan dibiarkan. CSS yang tertulis tetapi tidak
- * mengerjakan apa pun adalah janji yang akan dipercaya orang berikutnya
- * yang membacanya.
+ * Dulu `position:sticky` memang tidak dapat bekerja di halaman mana pun:
+ * app.css memasang `overflow-x:hidden` pada html dan body sebagai
+ * pengaman geser-ke-samping, dan itu menjadikan halaman wadah gulir
+ * tersendiri sehingga sticky tidak punya apa pun untuk dilekati. Terukur
+ * di sini (top 333 → 33 → −67 → −167, bukan berhenti pada 88) dan
+ * kemudian terukur jauh lebih mahal pada bilah samping, yang mengaku
+ * dipaku setinggi layar tetapi ikut hanyut sampai hilang sama sekali.
+ *
+ * Pengamannya kini `overflow-x:clip`, yang memotong tanpa membuat wadah
+ * gulir — sticky bekerja lagi di seluruh aplikasi. Panel harga tetap
+ * tidak dibuat melekat: sebabnya isinya, bukan CSS-nya. Ia setinggi
+ * isinya sendiri dan sudah terlihat utuh tanpa perlu mengikuti gulir.
  */
 .jual-paket-harga{background:var(--j-gelap);color:#fff;border-radius:12px;padding:2rem;
   display:flex;flex-direction:column;align-self:start}

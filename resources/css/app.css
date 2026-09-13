@@ -16,8 +16,24 @@ body{
 /* ---------- Pengaman responsif global ----------
    Halaman tidak boleh pernah menggeser ke samping. Konten yang memang lebar
    (tabel, diagram) discroll di dalam pembungkusnya sendiri, bukan menyeret
-   seluruh halaman. */
-html,body{ max-width:100%; overflow-x:hidden; }
+   seluruh halaman.
+
+   `clip`, BUKAN `hidden`. Keduanya sama-sama memotong yang meluber ke
+   samping, tetapi `hidden` menjadikan halaman ini WADAH GULIR tersendiri
+   — dan `position:sticky` di dalam wadah gulir yang tidak pernah
+   benar-benar bergulir tidak punya apa pun untuk dilekati.
+
+   Akibatnya terukur pada bilah samping: ia mengaku "dipaku setinggi
+   layar" tetapi ikut hanyut ke atas bersama halaman (top 0 → −600 →
+   −1611), sehingga di bagian atas halaman ia terlihat dan di bagian
+   bawah ia hilang sama sekali, meninggalkan kolom kosong di sebelah
+   kiri. Hal yang sama sudah tercatat sekali pada panel harga di
+   halaman jual — lihat .jual-paket-harga — dan di sana jalan keluarnya
+   adalah menyerah memakai sticky.
+
+   `clip` tidak membuat wadah gulir, jadi sticky kembali melekat pada
+   viewport sementara pengaman geser-ke-samping tetap terpasang. */
+html,body{ max-width:100%; overflow-x:clip; }
 
 /* Kontrol formulir punya lebar bawaan dari isi terpanjangnya sehingga menolak
    menyusut di dalam flexbox — inilah penyebab bilah filter meluber di layar
