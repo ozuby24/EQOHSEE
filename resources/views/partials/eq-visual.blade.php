@@ -148,8 +148,29 @@ body{
 .eq-merek strong em{font-style:normal;color:#F57C00}
 .eq-merek small{font-size:9.5px;color:rgba(255,255,255,.42);margin-top:3px;letter-spacing:.005em}
 
-/* ── Kaki bilah samping ── */
-.eq-sisi-kaki{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;
+/* ── Kaki bilah samping ──
+ *
+ * `1 0 auto`, bukan `1 1 auto`. Kakinya BOLEH MEMUAI mengisi rongga pada
+ * modul bermenu pendek, tetapi TIDAK BOLEH MENYUSUT di bawah tinggi
+ * isinya sendiri.
+ *
+ * Dengan flex-shrink 1 ia ikut menanggung kekurangan ruang bersama nav,
+ * dibagi menurut besar masing-masing. Tetapi anak-anaknya tidak dapat
+ * menyusut: tombol bantuan `flex:none`, kartu semboyan berbatas bawah
+ * 132px, baris hak cipta `flex:none`. Yang menyusut hanya kotaknya,
+ * bukan isinya — dan #eqSidebar yang `overflow:hidden` memotong
+ * selisihnya.
+ *
+ * Terukur pada 1440x820 sebelum ini: kaki 152px memuat isi setinggi
+ * 244px. Kartu semboyan berakhir di 843px dan baris hak cipta beserta
+ * tombol lipat terhampar di 843–886px — seluruhnya di luar layar.
+ * Yang terlihat pengguna: kartu terpotong di tengah kalimat, dan tombol
+ * lipat yang hilang sama sekali.
+ *
+ * Sekarang seluruh kekurangan ruang jatuh ke nav, satu-satunya anak yang
+ * memang dirancang menanggungnya: ia `min-h-0` dan `overflow-y-auto`,
+ * jadi menyusut baginya berarti bergulir, bukan terpotong. */
+.eq-sisi-kaki{flex:1 0 auto;min-height:0;display:flex;flex-direction:column;
   padding:10px 12px 14px}
 .eq-bantuan{display:flex;gap:11px;align-items:flex-start;
   background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);

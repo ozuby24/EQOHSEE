@@ -396,4 +396,44 @@ class LapisanTampilanTest extends TestCase
             'Label yang tidak block, sehingga duduk sebaris dengan kolom isiannya: '
             .implode(', ', $liar));
     }
+
+    /**
+     * Kaki bilah samping tidak boleh ikut menanggung kekurangan ruang.
+     *
+     * #eqSidebar memotong (`overflow:hidden`), dan tiga anak kaki bilah
+     * tidak dapat menyusut: tombol bantuan `flex:none`, kartu semboyan
+     * berbatas bawah `min-height`, baris hak cipta `flex:none`. Bila
+     * kotak kakinya sendiri diberi flex-shrink 1, ia menyusut di bawah
+     * tinggi isinya, isinya meluber, dan pemotongnya membuang selisih
+     * itu diam-diam.
+     *
+     * Terukur sekali pada 1440x820: kaki 152px memuat isi 244px, kartu
+     * semboyan terpotong di tengah kalimat, dan baris hak cipta beserta
+     * tombol lipat terhampar seluruhnya di luar layar pada 843–886px.
+     * Tidak ada galat, tidak ada uji yang gagal.
+     *
+     * Yang diperiksa bukan angkanya, melainkan syaratnya: selama
+     * pemotongnya ada, kakinya harus tidak-menyusut.
+     */
+    public function test_kaki_bilah_samping_tidak_menyusut_di_dalam_pemotong(): void
+    {
+        $css = file_get_contents(resource_path('views/partials/eq-visual.blade.php'));
+
+        $this->assertMatchesRegularExpression(
+            '/#eqSidebar\{[^}]*overflow:\s*hidden/', $css,
+            'Bilah samping tidak lagi memotong isinya — penjaga ini kehilangan dasarnya '
+            .'dan perlu ditinjau ulang, bukan dihapus begitu saja.');
+
+        preg_match('/\.eq-sisi-kaki\{([^}]*)\}/', $css, $c);
+
+        $this->assertNotEmpty($c, 'Aturan .eq-sisi-kaki tidak ditemukan.');
+
+        $deklarasi = preg_replace('/\s+/', '', $c[1]);
+
+        $this->assertTrue(
+            str_contains($deklarasi, 'flex:10auto')
+            || preg_match('/flex-shrink:0/', $deklarasi) === 1,
+            'Kaki bilah samping boleh memuai, tidak boleh menyusut: pakai `flex:1 0 auto` '
+            .'(atau flex-shrink:0). Yang tertulis sekarang: "'.trim($c[1]).'".');
+    }
 }
