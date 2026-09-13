@@ -502,4 +502,70 @@ class LapisanTampilanTest extends TestCase
             'Lembar cetak tidak dapat digulir mendatar; judul kolomnya harus boleh '
             .'membungkus, jika tidak ia meluber menimpa kolom sebelahnya.');
     }
+
+    /**
+     * Tiap komponen yang dipakai template HARUS dikenal script-nya.
+     *
+     * `<script setup>` menyelesaikan nama komponen dari lingkup
+     * skripnya. Nama yang tidak ada di sana TIDAK menimbulkan galat:
+     * Vue menganggapnya elemen kustom, menuliskannya apa adanya ke DOM
+     * — `<kopcetak dok="[object Object]"></kopcetak>` — dan peramban
+     * menggambarnya sebagai kotak kosong setinggi nol.
+     *
+     * Persis itu yang terjadi pada SEPULUH lembar cetak sekaligus:
+     * KopCetak dipakai tanpa diimpor, dan kop dokumen terkendali —
+     * nama perusahaan, nomor dokumen, tanggal terbit, nomor revisi —
+     * hilang dari seluruh laporan angkutan, biaya, geoteknik, izin
+     * kerja, konservasi, lingkungan, operasi, peledakan, pemeliharaan,
+     * dan penirisan. Halamannya tetap tampil rapi, tetap lolos seluruh
+     * uji yang ada, dan tetap dapat dicetak; yang hilang hanya satu
+     * hal — keterangan MILIK SIAPA lembar itu, pada berkas yang
+     * diserahkan ke luar.
+     *
+     * Yang diperiksa keberadaan namanya di dalam <script>, bukan bentuk
+     * impornya: komponen boleh datang dari `import`, dari `defineProps`,
+     * maupun dibangun dengan `h()` seperti pada Print/Smkp.vue.
+     */
+    public function test_setiap_komponen_yang_dipakai_template_dikenal_skripnya(): void
+    {
+        /* Elemen SVG dan MathML berhuruf besar bukan komponen Vue. Ia
+           ditulis persis begitu oleh spesifikasinya, dan menuntutnya
+           diimpor berarti menuntut yang mustahil. */
+        $bawaan = ['Fragment', 'Teleport', 'Transition', 'TransitionGroup', 'KeepAlive',
+                   'Suspense', 'Component', 'Slot', 'Template'];
+
+        $it = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(resource_path('js')));
+
+        $lepas = [];
+
+        foreach ($it as $f) {
+            if (! $f->isFile() || $f->getExtension() !== 'vue') continue;
+            if (str_contains($f->getFilename(), '.bak')) continue;
+
+            $isi = file_get_contents($f->getPathname());
+
+            // Template dan skrip dipisah: nama komponen di dalam komentar
+            // skrip tidak boleh dihitung sebagai pemakaian.
+            if (! preg_match('/<template>(.*)<\/template>/s', $isi, $t)) continue;
+
+            $skrip = preg_replace('/<template>.*<\/template>/s', '', $isi);
+
+            preg_match_all('/<([A-Z][A-Za-z0-9_]*)[\s\/>]/', $t[1], $m);
+
+            foreach (array_unique($m[1]) as $nama) {
+                if (in_array($nama, $bawaan, true)) continue;
+
+                // `\b` supaya "Kop" tidak dianggap mengenalkan "KopCetak".
+                if (preg_match('/\b'.preg_quote($nama, '/').'\b/', $skrip)) continue;
+
+                $lepas[] = $this->nama($f).' memakai <'.$nama.'>';
+            }
+        }
+
+        $this->assertSame([], $lepas,
+            "Komponen dipakai template tetapi tidak dikenal skripnya. Vue TIDAK "
+            ."akan mengeluh — ia menuliskannya sebagai elemen kustom yang tidak "
+            ."menggambar apa pun:\n  ".implode("\n  ", $lepas));
+    }
 }

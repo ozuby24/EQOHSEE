@@ -158,6 +158,42 @@ class SmkpAudit extends Model
         $p = (array) ($this->permulaan ?? []);
         $p['kinerja'] = (array) ($this->kinerja ?? []);
 
+        /* PROFIL PERUSAHAAN SEBAGAI CADANGAN.
+         *
+         * Jumlah pekerja dan kelas risiko didaftarkan sekali pada profil
+         * perusahaan — di sanalah panel dasar hari kerja audit berada —
+         * dan audit yang belum mengetiknya sendiri mewarisinya dari sana.
+         *
+         * Tanpa cadangan ini, Rencana Audit yang baru dibuat mencetak
+         * "Jumlah tenaga kerja auditi 0 orang" beserta hari kerja
+         * terkecil pada tabel, pada perusahaan yang profilnya menyebut
+         * 460 pekerja kelas Tinggi. Angkanya bukan sekadar kosong: ia
+         * TERLIHAT SAH, tercetak pada berkas terkendali yang keluar, dan
+         * meleset dari yang seharusnya 16 hari menjadi 3.
+         *
+         * CADANGAN, bukan penimpa: angka yang sudah diketik auditor
+         * selalu menang. Auditi dapat memang berbeda dari profil yang
+         * terdaftar — ruang lingkup audit yang hanya mencakup satu site,
+         * misalnya — dan menimpanya berarti mengubah rencana yang sudah
+         * disusun tanpa ada yang meminta.
+         *
+         * Nol diperlakukan sebagai BELUM DIISI, bukan sebagai jawaban.
+         * Perusahaan tambang yang sedang diaudit tidak berpekerja nol,
+         * dan membedakan "nol yang disengaja" dari "nol bawaan" pada
+         * kolom ini tidak mungkin sekaligus tidak berguna.
+         */
+        $c = $this->relationLoaded('company') ? $this->company : $this->company()->first();
+
+        if ($c) {
+            if ((int) ($p['jumlah_pekerja'] ?? 0) <= 0) {
+                $p['jumlah_pekerja'] = (int) $c->workers_employee + (int) $c->workers_sub;
+            }
+
+            if (($p['kelas_risiko'] ?? '') === '' && $c->risk_class) {
+                $p['kelas_risiko'] = $c->risk_class;
+            }
+        }
+
         return SmkpTahap::mandays($p);
     }
 

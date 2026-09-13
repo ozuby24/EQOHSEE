@@ -189,15 +189,6 @@ const inisial = computed(() => (pengguna.value?.nama ?? '?')
 
 const kotakCari = ref<HTMLInputElement | null>(null);
 
-/**
- * Lambang pintasannya mengikuti papan ketiknya.
- *
- * "Ctrl + K" yang dicetak pada Mac menyebut tombol yang memang ada
- * tetapi bukan yang bekerja — dan yang menekannya lalu menyimpulkan
- * pintasannya rusak.
- */
-const kunciCari = ref('Ctrl K');
-
 /* ─────────── Perusahaan yang sedang dilihat ─────────── */
 
 const perusahaanTerbuka = ref(false);
@@ -237,6 +228,22 @@ function gantiPerusahaan(id: number | null) {
 const modulTerbuka = ref(false);
 
 /**
+ * Tanggal hari ini, ditulis lengkap dalam bahasa Indonesia.
+ *
+ * Menggantikan nama penyapa di baris kecil ini. Namanya PINDAH ke chip
+ * akun di ujung kanan — dicetak di kedua ujung, nama yang sama muncul
+ * dua kali pada satu baris pandang.
+ *
+ * Dihitung di peramban dengan alasan yang sama seperti sapaannya:
+ * server berjalan pada UTC, dan tanggal UTC berganti pukul delapan pagi
+ * di lokasi tambang — "Senin" yang tercetak sepanjang Minggu malam
+ * terbaca sebagai kalender aplikasi yang salah.
+ */
+const hariIni = computed(() => new Intl.DateTimeFormat('id-ID', {
+  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+}).format(new Date()));
+
+/**
  * Sapaan menurut jam setempat.
  *
  * Dihitung di peramban, bukan di server. Server berjalan pada UTC,
@@ -254,27 +261,9 @@ const sapaan = computed(() => {
   return 'Selamat malam';
 });
 
-/**
- * Nama depan saja — sapaan bernama lengkap berbunyi seperti surat resmi.
- *
- * GELARNYA DILEWATI. Memenggal pada spasi pertama terlihat benar sampai
- * ada nama yang berawalan gelar: "Miss Fleta Lehner" menghasilkan
- * sapaan "Selamat siang, Miss" — terbaca sebagai aplikasi yang tidak
- * tahu siapa yang sedang memakainya. Daftarnya sengaja pendek dan hanya
- * berisi gelar yang benar-benar muncul di depan nama; kata yang tidak
- * dikenali diperlakukan sebagai nama, bukan dibuang.
- */
-const GELAR = ['mr', 'mrs', 'ms', 'miss', 'dr', 'drs', 'ir', 'h', 'hj', 'prof'];
-
-const namaDepan = computed(() => {
-  const kata = (pengguna.value?.nama ?? '').trim().split(/\s+/).filter(Boolean);
-
-  for (const k of kata) {
-    if (!GELAR.includes(k.toLowerCase().replace(/\.$/, ''))) return k;
-  }
-
-  return kata[0] || 'Anda';
-});
+/* Penggal nama depan DIBUANG bersama sapaan bernamanya. Chip akun
+   mencetak nama LENGKAP beserta gelarnya — di sana gelar memang bagian
+   dari identitas, bukan sisipan yang mengganggu seperti pada sapaan. */
 
 const cari = ref('');
 
@@ -296,13 +285,6 @@ onMounted(() => {
   } catch { /* mode privat */ }
 
   if (sempit.value) document.body.classList.add('eq-sempit');
-
-  // Lambangnya ditentukan papan ketiknya, bukan ditebak: pada Mac yang
-  // bekerja adalah Cmd, dan mencetak "Ctrl" di situ menyebut tombol
-  // yang memang ada tetapi tidak melakukan apa pun.
-  if (/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)) {
-    kunciCari.value = '\u2318 K';
-  }
 
   window.addEventListener('keydown', pintasan);
 });
@@ -510,25 +492,38 @@ function keluar() {
           <span>Butuh bantuan?</span>
         </Link>
 
-        <!-- Semboyan bergambar. Disembunyikan saat bilahnya dilipat dan
-             saat tingginya tidak cukup — kartu hiasan tidak boleh
-             mendorong satu pun butir menu keluar dari layar. -->
-        <div class="eq-semboyan" aria-hidden="true">
-          <img class="eq-semboyan-gambar" src="/brand/tambang.jpg" alt=""
-               loading="lazy" decoding="async">
-          <div class="eq-semboyan-tirai" />
-          <p class="eq-semboyan-teks">People<br>Safety<br>Productivity<br>A Better Tomorrow</p>
-          <span class="eq-semboyan-garis" />
-        </div>
+        <!-- Kartu kaki: semboyan bergambar dengan baris hak cipta di
+             dalamnya, satu kotak yang TURUN SAMPAI TEPI PALING BAWAH
+             bilah — tanpa sudut membulat dan tanpa jarak di bawahnya.
 
-        <div class="eq-sisi-bawah">
-          <small>&copy; {{ new Date().getFullYear() }} EQOHSEE</small>
-          <button type="button" class="eq-lipat" aria-label="Lipat bilah samping" @click="lipat">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"
-                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M13 7l-5 5 5 5M18 7l-5 5 5 5"/>
-            </svg>
-          </button>
+             `aria-hidden` DUDUK PADA SEMBOYANNYA, bukan pada kartunya.
+             Baris hak cipta memuat tombol lipat, dan tombol yang dapat
+             difokus di dalam wadah ber-aria-hidden adalah cacat yang
+             sungguhan: Tab tetap sampai ke sana, pembaca layar tidak
+             pernah menyebutkan apa yang sedang difokus.
+
+             Semboyannya pula yang disembunyikan saat bilahnya dilipat
+             dan saat layarnya pendek — kartunya tetap ada, sebab tombol
+             lipat itulah satu-satunya jalan keluar dari keadaan
+             terlipat. -->
+        <div class="eq-sisi-kartu">
+          <div class="eq-semboyan" aria-hidden="true">
+            <img class="eq-semboyan-gambar" src="/brand/tambang.jpg" alt=""
+                 loading="lazy" decoding="async">
+            <div class="eq-semboyan-tirai" />
+            <p class="eq-semboyan-teks">People<br>Safety<br>Productivity<br>A Better Tomorrow</p>
+            <span class="eq-semboyan-garis" />
+          </div>
+
+          <div class="eq-sisi-bawah">
+            <small>&copy; {{ new Date().getFullYear() }} EQOHSEE</small>
+            <button type="button" class="eq-lipat" aria-label="Lipat bilah samping" @click="lipat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M13 7l-5 5 5 5M18 7l-5 5 5 5"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </aside>
@@ -548,10 +543,15 @@ function keluar() {
              keduanya bersebelahan membuat kalimat yang sama muncul dua
              kali dengan jarak dua sentimeter — terlihat pada
              /miners/dasbor: "Miners — Ringkasan" tercetak di kepala
-             halaman dan langsung diulang di bawahnya. -->
+             halaman dan langsung diulang di bawahnya.
+
+             NAMANYA PINDAH KE CHIP AKUN di ujung kanan, tempat ia
+             berdampingan dengan jabatannya. Dibiarkan di kedua ujung,
+             nama yang sama tercetak dua kali pada satu baris pandang —
+             persis alasan ia dulu dikeluarkan dari chip. -->
         <div class="eq-sapa min-w-0">
-          <small>{{ sapaan }},</small>
-          <strong>{{ namaDepan }} <span aria-hidden="true">&#128075;</span></strong>
+          <small>{{ hariIni }}</small>
+          <strong>{{ sapaan }} <span aria-hidden="true">&#128075;</span></strong>
         </div>
 
         <!-- Kotak cari menuju daftar pekerja: nama, NIK, jabatan.
@@ -565,10 +565,11 @@ function keluar() {
           <input ref="kotakCari" v-model="cari" type="search" aria-label="Cari pekerja"
                  placeholder="Cari pekerja menurut nama, NIK, atau jabatan…">
 
-          <!-- Petunjuk pintasannya ditulis DI TEMPAT pintasannya bekerja.
-               Ditaruh di halaman bantuan, ia hanya ditemukan orang yang
-               sudah tahu pintasan itu ada. -->
-          <kbd class="eq-cari-kunci" aria-hidden="true">{{ kunciCari }}</kbd>
+          <!-- Lencana "Ctrl K" DIBUANG dari kotak ini. Pintasannya tetap
+               bekerja — lihat pemasangan pendengar papan tik di atas —
+               yang hilang hanya petunjuknya, yang pada kotak selebar ini
+               lebih banyak mengambil ruang teks pencarian daripada
+               menolong. -->
         </form>
 
         <div class="eq-topbar-aksi">
@@ -658,20 +659,39 @@ function keluar() {
 
           <!-- ── Akun ──
 
-               HANYA LINGKARANNYA, tanpa nama di sebelahnya. Sapaan di
-               ujung kiri bilah ini sudah menyebut nama orangnya; nama
-               yang sama dicetak lagi di ujung kanan membuatnya muncul
-               dua kali pada satu baris pandang yang sama. Namanya tetap
-               ada — di dalam menunya, tempat ia memang dibutuhkan untuk
-               memastikan akun siapa yang sedang dibuka. -->
+               NAMA DAN JABATAN dicetak di samping lingkarannya. Sapaan
+               di ujung kiri tidak lagi menyebut nama — ia menyebut
+               tanggal — sehingga namanya hanya muncul sekali pada satu
+               baris pandang.
+
+               Teksnya disembunyikan pada layar sempit (lihat
+               `.eq-akun-nama` di eq-visual.blade.php): jabatan yang
+               membungkus menjadi dua baris menaikkan tinggi seluruh
+               bilah atas, dan yang tersisa cuma lingkarannya — persis
+               bentuk lama. -->
           <div v-if="pengguna" class="eq-akun" :class="{ 'eq-akun-buka': akunTerbuka }">
             <button type="button" class="eq-akun-tombol" :aria-expanded="akunTerbuka"
-                    aria-haspopup="menu" :aria-label="`Akun ${pengguna.nama}`"
+                    aria-haspopup="menu"
+                    :aria-label="`Akun ${pengguna.nama}, ${pengguna.peran}`"
                     @click="akunTerbuka = !akunTerbuka">
-              <img v-if="pengguna.avatar" class="eq-akun-avatar eq-akun-foto"
-                   :src="pengguna.avatar" alt="" width="38" height="38">
-              <span v-else class="eq-akun-avatar">{{ inisial }}</span>
-              <span class="eq-akun-titik" aria-hidden="true" />
+              <span class="eq-akun-rupa">
+                <img v-if="pengguna.avatar" class="eq-akun-avatar eq-akun-foto"
+                     :src="pengguna.avatar" alt="" width="38" height="38">
+                <span v-else class="eq-akun-avatar">{{ inisial }}</span>
+                <span class="eq-akun-titik" aria-hidden="true" />
+              </span>
+
+              <!-- `aria-hidden` sebab nama dan jabatan yang sama sudah
+                   dibacakan lewat aria-label tombolnya; dibiarkan
+                   terbaca, pembaca layar menyebut namanya dua kali. -->
+              <span class="eq-akun-nama" aria-hidden="true">
+                <strong>{{ pengguna.nama }}</strong>
+                <small>{{ pengguna.peran }}</small>
+              </span>
+
+              <svg class="eq-akun-panah" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
             </button>
 
             <div v-if="akunTerbuka" class="eq-perusahaan-tirai" @click="akunTerbuka = false" />

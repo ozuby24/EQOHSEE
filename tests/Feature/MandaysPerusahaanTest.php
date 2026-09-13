@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\{Company, User};
+use App\Models\{Company, SmkpAudit, User};
 use App\Support\SmkpTahap;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia;
@@ -128,5 +128,100 @@ class MandaysPerusahaanTest extends TestCase
         $this->postJson(route('admin.companies.mandays'), [
             'workers_employee' => 1, 'risk_class' => 'Tinggi',
         ])->assertOk()->assertJsonStructure(['pekerja', 'kelas', 'rentang', 'dasar']);
+    }
+
+    /* ═══════ Audit mewarisi profil perusahaannya ═══════ */
+
+    private function audit(Company $c, array $permulaan = []): SmkpAudit
+    {
+        return SmkpAudit::create([
+            'company_id' => $c->id, 'tahun' => 2026, 'judul' => 'Audit Uji',
+            'status' => 'draft', 'tahap' => 1, 'permulaan' => $permulaan,
+        ]);
+    }
+
+    /**
+     * Audit yang Tahap I-nya belum dibuka mewarisi profil perusahaannya.
+     *
+     * Ini yang dulu diam-diam salah. Audit baru menyimpan permulaan
+     * kosong, `SmkpTahap::mandays` membaca nol pekerja dan jatuh ke
+     * baris terkecil tabel, dan Rencana Audit tercetak menagih TIGA
+     * hari untuk perusahaan berpekerja 460 kelas Tinggi — yang
+     * seharusnya enam belas. Tidak ada galat: nol adalah angka yang
+     * sah, tiga hari adalah hasil yang sah, dan lembarnya keluar
+     * tertandatangani.
+     */
+    public function test_audit_tanpa_isian_mewarisi_pekerja_dan_kelas_perusahaan(): void
+    {
+        $c = Company::create([
+            'name' => 'PT Warisan Profil', 'workers_employee' => 120,
+            'workers_sub' => 340, 'risk_class' => 'Tinggi',
+        ]);
+
+        $m = $this->audit($c)->mandays();
+
+        // 460 pekerja, kelas Tinggi: baris 426–625 menagih 16 hari.
+        $this->assertSame(460, $m['pekerja']);
+        $this->assertSame('Tinggi', $m['kelas']);
+        $this->assertSame(16, $m['dasar']);
+    }
+
+    /**
+     * Kelas risiko pun diwarisi, bukan jatuh ke 'Tinggi' bawaan.
+     *
+     * Cadangan yang berhenti di jumlah pekerja saja menagih kelas
+     * tertinggi kepada tambang batuan kelas Rendah — 40 pekerja
+     * kelas Rendah menuntut 4 hari, kelas Tinggi menuntut 6.
+     */
+    public function test_kelas_risiko_perusahaan_ikut_diwarisi(): void
+    {
+        $c = Company::create([
+            'name' => 'PT Batu Kelas Rendah', 'workers_employee' => 18,
+            'workers_sub' => 22, 'risk_class' => 'Rendah',
+        ]);
+
+        $m = $this->audit($c)->mandays();
+
+        $this->assertSame(40, $m['pekerja']);
+        $this->assertSame('Rendah', $m['kelas']);
+        $this->assertSame(4, $m['dasar']);
+    }
+
+    /**
+     * CADANGAN, BUKAN PENIMPA.
+     *
+     * Lingkup audit dapat memang lebih sempit daripada perusahaannya —
+     * satu site dari tiga. Angka yang sudah diketik auditor menang, dan
+     * profil tidak boleh menariknya kembali diam-diam pada pemuatan
+     * halaman berikutnya.
+     */
+    public function test_isian_auditor_mengalahkan_profil_perusahaan(): void
+    {
+        $c = Company::create([
+            'name' => 'PT Tiga Site', 'workers_employee' => 500,
+            'workers_sub' => 400, 'risk_class' => 'Tinggi',
+        ]);
+
+        $m = $this->audit($c, ['jumlah_pekerja' => 40, 'kelas_risiko' => 'Rendah'])->mandays();
+
+        $this->assertSame(40, $m['pekerja']);
+        $this->assertSame('Rendah', $m['kelas']);
+        $this->assertSame(4, $m['dasar']);
+    }
+
+    /**
+     * Perusahaan yang profilnya sendiri kosong tidak menjadi galat.
+     *
+     * Ia memang belum tahu jumlah pekerjanya; yang benar adalah
+     * memulangkan baris terkecil apa adanya, bukan melempar.
+     */
+    public function test_profil_kosong_tetap_memulangkan_hitungan(): void
+    {
+        $c = Company::create(['name' => 'PT Belum Didata']);
+
+        $m = $this->audit($c)->mandays();
+
+        $this->assertSame(0, $m['pekerja']);
+        $this->assertIsInt($m['dasar']);
     }
 }

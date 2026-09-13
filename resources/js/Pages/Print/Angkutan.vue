@@ -2,6 +2,7 @@
 import { Head } from '@inertiajs/vue3';
 import BlankLayout from '../../Layouts/BlankLayout.vue';
 import PrintShell from '../../Components/PrintShell.vue';
+import KopCetak from '../../Components/KopCetak.vue';
 
 defineOptions({ layout: BlankLayout });
 

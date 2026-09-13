@@ -171,7 +171,11 @@ body{
  * memang dirancang menanggungnya: ia `min-h-0` dan `overflow-y-auto`,
  * jadi menyusut baginya berarti bergulir, bukan terpotong. */
 .eq-sisi-kaki{flex:1 0 auto;min-height:0;display:flex;flex-direction:column;
-  padding:10px 12px 14px}
+  /* TANPA jarak bawah: kartu semboyan di dalamnya yang turun sampai
+     tepi paling bawah bilah. Jarak 14px di sini meninggalkan segaris
+     navy di bawah kartu, yang terbaca sebagai kartu yang berhenti
+     sebelum ujungnya. */
+  padding:10px 12px 0}
 .eq-bantuan{display:flex;gap:11px;align-items:flex-start;
   background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);
   border-radius:14px;padding:13px}
@@ -191,12 +195,13 @@ body{
 .eq-bantuan-btn:hover{background:rgba(255,255,255,.17);border-color:rgba(255,255,255,.2)}
 .eq-bantuan-btn svg{width:15px;height:15px}
 
-.eq-sisi-bawah{flex:none;display:flex;align-items:flex-end;justify-content:space-between;gap:10px;
-  /* `auto`, bukan angka tetap: sisa ruang yang tidak terserap kartu
-     semboyan — kartunya berbatas 260px — jatuh DI ATAS baris ini,
-     sehingga hak cipta dan tombol lipat selalu memeluk dasar kolom
-     alih-alih menggantung di tengah dengan rongga di bawahnya. */
-  margin-top:auto;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)}
+/* Baris hak cipta dan tombol lipat, DI DALAM kartu semboyan.
+   Jaraknya sendiri yang menjauhkannya dari tepi — kaki bilahnya sudah
+   tidak berjarak bawah — dan garis atasnya memisahkannya dari gambar
+   tanpa memotong kartunya. */
+.eq-sisi-bawah{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin-top:auto;padding:9px 13px 11px;border-top:1px solid rgba(255,255,255,.10);
+  background:rgba(8,14,17,.72)}
 /* Teks hak cipta. Sebelumnya .34 alfa di atas navy — sekitar 2,4:1,
    di bawah ambang keterbacaan mana pun. Dinaikkan ke .58 supaya masih
    jelas berperan sekunder tetapi tetap dapat dibaca. */
@@ -280,7 +285,7 @@ body{
  * tidak berpengaruh apa pun.
  */
 @media (max-width:1023.98px){
-  .eq-sisi-kaki{padding:8px 12px 10px}
+  .eq-sisi-kaki{padding:8px 12px 0}
   .eq-bantuan{display:none}
   .eq-lipat{display:none}
   .eq-sisi-bawah{justify-content:center}
@@ -1268,21 +1273,49 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] .eq-pindah-kini{background:var(--eq-aksen,#F57C00);
   border-color:var(--eq-aksen,#F57C00);color:#fff}
 
-/* ── Petunjuk pintasan di kotak cari ── */
-.eq-cari-kunci{flex:none;margin-left:auto;padding:3px 7px;border-radius:7px;
-  font-family:inherit;font-size:10.5px;font-weight:700;letter-spacing:.02em;
-  color:var(--eq-redup,#9AA5B1);background:var(--eq-dasar,#F6F7F9);
-  border:1px solid var(--eq-garis,#E4E8EC)}
-@media (max-width:1100px){.eq-cari-kunci{display:none}}
-:root[data-tema="gelap"] .eq-cari-kunci{background:rgba(255,255,255,.06);
-  border-color:rgba(255,255,255,.10);color:rgba(255,255,255,.45)}
-
 /* ── Akun di bilah atas ── */
 .eq-akun{position:relative;flex:none}
 
-.eq-akun-tombol{position:relative;display:block;padding:0;border:0;background:none;
-  cursor:pointer;border-radius:50%;line-height:0}
+/* Tombolnya membawa nama dan jabatan, bukan lingkarannya saja.
+   `max-width` ada supaya nama sepanjang apa pun tidak mendorong kotak
+   cari; yang lebih panjang dipotong dengan elipsis di `.eq-akun-nama`. */
+.eq-akun-tombol{position:relative;display:flex;align-items:center;gap:9px;
+  max-width:250px;padding:4px 8px 4px 4px;border:1px solid transparent;
+  background:none;cursor:pointer;border-radius:999px;line-height:0;
+  transition:background .15s ease,border-color .15s ease}
+.eq-akun-tombol:hover{background:var(--eq-aksen-tipis,rgba(245,124,0,.10));
+  border-color:var(--eq-garis,#E6EBF0)}
+.eq-akun-buka .eq-akun-tombol{background:var(--eq-aksen-tipis,rgba(245,124,0,.10));
+  border-color:var(--eq-garis,#E6EBF0)}
 .eq-akun-tombol:focus-visible{outline:2px solid var(--eq-aksen,#F57C00);outline-offset:3px}
+
+/* Pembungkus avatar. Titik hijaunya berjangkar ke SINI, bukan ke
+   tombolnya: sejak tombolnya melebar, `right:0` pada tombol menaruh
+   titik itu di ujung kanan chip, jauh dari avatar yang ditandainya. */
+.eq-akun-rupa{position:relative;display:block;flex:none;line-height:0}
+
+.eq-akun-nama{display:flex;flex-direction:column;gap:1px;min-width:0;
+  line-height:1.25;text-align:left}
+.eq-akun-nama strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:12.5px;font-weight:700;color:var(--eq-judul,#0F1720)}
+.eq-akun-nama small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:10.5px;font-weight:600;letter-spacing:.01em;text-transform:uppercase;
+  color:var(--eq-redup,#7C8894)}
+
+.eq-akun-panah{width:15px;height:15px;flex:none;opacity:.5;
+  color:var(--eq-redup,#7C8894);transition:transform .18s ease}
+.eq-akun-buka .eq-akun-panah{transform:rotate(180deg)}
+
+/* Pada layar sempit chip kembali menjadi lingkaran saja. Jabatan yang
+   membungkus dua baris menaikkan tinggi SELURUH bilah atas, dan itu
+   terlihat pada tiap halaman sekaligus. */
+@media (max-width:1180px){
+  .eq-akun-nama,.eq-akun-panah{display:none}
+  .eq-akun-tombol{gap:0;max-width:none;padding:0;border-radius:50%;
+    background:none;border-color:transparent}
+  .eq-akun-tombol:hover,.eq-akun-buka .eq-akun-tombol{background:none;
+    border-color:transparent}
+}
 
 .eq-akun-avatar{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;
   font-size:13px;font-weight:800;letter-spacing:.01em;color:#fff;
@@ -1316,6 +1349,9 @@ main a{transition:color .16s}
 .eq-akun-butir:focus-visible{outline:2px solid var(--eq-aksen,#F57C00);outline-offset:-2px}
 .eq-akun-keluar:hover{background:rgba(220,38,38,.10);color:#B91C1C}
 
+:root[data-tema="gelap"] .eq-akun-nama strong{color:var(--eq-judul,#E8ECF0)}
+:root[data-tema="gelap"] .eq-akun-tombol:hover,
+:root[data-tema="gelap"] .eq-akun-buka .eq-akun-tombol{border-color:rgba(255,255,255,.12)}
 :root[data-tema="gelap"] .eq-akun-panel{background:var(--eq-kartu,#141A21);
   border-color:var(--eq-garis,rgba(255,255,255,.10));
   box-shadow:0 18px 44px -12px rgba(0,0,0,.6)}
@@ -1330,10 +1366,23 @@ main a{transition:color .16s}
    DISEMBUNYIKAN LEBIH DAHULU DARIPADA APA PUN saat ruangnya menyempit:
    ia hiasan, dan hiasan yang mendorong butir menu keluar dari layar
    membuat butir itu tidak pernah ditemukan siapa pun. */
-.eq-semboyan{position:relative;margin-top:12px;border-radius:14px;overflow:hidden;
-  /* Memuai mengisi sisa ruang kaki, dengan batas atas supaya ia tidak
-     menjadi poster setinggi layar pada modul bermenu satu butir. */
-  flex:1 1 auto;min-height:132px;max-height:260px;
+/* Kartunya: membulat HANYA di atas, dan tanpa jarak bawah, supaya ia
+   menyatu dengan tepi paling bawah bilah alih-alih melayang di atasnya.
+   Ia yang memuai mengisi sisa ruang kaki — batas atas 260px yang dulu
+   ada di semboyan sengaja dilepas, sebab rongga navy yang tersisa di
+   bawah kartu itulah yang hendak dihilangkan. */
+.eq-sisi-kartu{position:relative;flex:1 1 auto;min-height:0;margin-top:12px;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  border-radius:14px 14px 0 0;overflow:hidden;background:#0A1114}
+
+/* Kartu tanpa gambar adalah kotak gelap tanpa isi: saat semboyannya
+   disembunyikan, latar dan sudutnya ikut dilepas sehingga yang tersisa
+   hanya baris hak cipta seperti sebelum kartu ini ada. */
+body.eq-sempit .eq-sisi-kartu{margin-top:6px;border-radius:0;background:none}
+body.eq-sempit .eq-sisi-bawah{background:none}
+
+.eq-semboyan{position:relative;overflow:hidden;
+  flex:1 1 auto;min-height:132px;
   display:flex;flex-direction:column;justify-content:flex-end;
   padding:13px 14px 14px;isolation:isolate;background:#0A1114}
 .eq-semboyan-gambar{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
@@ -1366,7 +1415,11 @@ body.eq-sempit .eq-semboyan{display:none}
 
 /* Di bawah ini menunya sendiri yang kehabisan ruang, dan hiasan tidak
    boleh mendorong satu pun butir menu keluar dari layar. */
-@media (max-height:540px){.eq-semboyan{display:none}}
+@media (max-height:540px){
+  .eq-semboyan{display:none}
+  .eq-sisi-kartu{margin-top:6px;border-radius:0;background:none}
+  .eq-sisi-bawah{background:none}
+}
 
 /* ── Batang gulir bilah samping ──
    Bawaan peramban menggambar batang abu-abu terang selebar 15px di
