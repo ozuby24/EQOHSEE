@@ -43,6 +43,14 @@ const props = defineProps<{
   terbuka: boolean;
 
   /**
+   * Sampul modul yang sedang dibuka, bila halamannya membawanya.
+   *
+   * Dipakai mengisi rongga di bawah daftar langkah pada rel. Boleh null
+   * — subhalaman tidak membawa sampul, dan rel tanpa foto tetap utuh.
+   */
+  sampul?: { gambar: string; webp?: string | null; keterangan?: string | null } | null;
+
+  /**
    * Langkah yang sudah dibawa halaman.
    *
    * Bila ada, tidak ada yang perlu diambil dari jaringan dan karena itu
@@ -260,8 +268,11 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
            satu pun kata tambahan di badan isinya. -->
       <aside class="eq-tur-rel" aria-hidden="true">
         <div class="eq-tur-merek">
-          <img src="/brand/eqohsee-lockup-white.png"
-               alt="" width="585" height="202">
+          <img src="/brand/eqohsee-mark-128.png" alt="" width="40" height="40">
+          <span>
+            <strong>E<em>Q</em>OHSEE</strong>
+            <small>Safe Today &middot; Sustainable Tomorrow</small>
+          </span>
         </div>
 
         <ol class="eq-tur-tangga">
@@ -281,6 +292,19 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
             </button>
           </li>
         </ol>
+
+        <!-- Foto pengisi rongga.
+             `aria-hidden` pada seluruh rel sudah menutupinya dari
+             pembaca layar; alt dikosongkan supaya tidak dibacakan dua
+             kali oleh peramban yang mengabaikan aria-hidden. -->
+        <figure v-if="props.sampul?.gambar" class="eq-tur-rel-foto">
+          <picture>
+            <source v-if="props.sampul.webp" :srcset="props.sampul.webp" type="image/webp">
+            <img :src="props.sampul.gambar" alt="" loading="lazy" decoding="async">
+          </picture>
+          <span class="eq-tur-rel-tirai" />
+          <figcaption v-if="props.sampul.keterangan">{{ props.sampul.keterangan }}</figcaption>
+        </figure>
 
         <p class="eq-tur-rel-kaki">
           Pengenalan ini selalu dapat dibuka lagi dari menu akun.
@@ -477,26 +501,66 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   pointer-events: none;
 }
 
-/* LOCKUP utuh, bukan lambang kecil ditambah tulisan yang diketik ulang.
+/* LOGO YANG SAMA DENGAN SELURUH SITUS — lambang berwarna beserta
+ * wordmark dan semboyannya, persis seperti yang tergambar di kepala
+ * bilah samping (lihat .eq-merek pada partials/eq-visual.blade.php).
  *
- * Lockup-nya sudah memuat wordmark DAN semboyannya sendiri sebagai satu
- * gambar. Menaruh lambang di sebelah <strong>EQOHSEE</strong> yang
- * diketik tangan berarti huruf yang sama dibuat dua kali dengan dua
- * cara — satu oleh perancang mereknya, satu oleh font apa pun yang
- * kebetulan terpasang di peramban — dan yang kedua tidak akan pernah
- * sama dengan yang pertama.
+ * Sempat dipakai lockup tersendiri berupa satu berkas PNG. Ia memuat
+ * huruf bergaya stensil dan semboyan "Sustaining Performance, Shaping
+ * the Future" — dua-duanya BUKAN yang dipakai situs ini. Akibatnya
+ * pengenalan yang seharusnya memperkenalkan EQOHSEE justru membuka
+ * dengan merek yang tidak akan ditemukan lagi di halaman mana pun
+ * sesudahnya: bentuk hurufnya lain, semboyannya lain.
  *
- * Lebar penuh rel, tinggi mengikuti nisbah aslinya (585 × 202).
+ * Satu identitas, bukan tiga. Yang dipakai di sini karena itu berkas
+ * lambang yang sama dan teks yang sama dengan bilah sampingnya.
  */
 .eq-tur-merek {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: .7rem;
 }
 
 .eq-tur-merek img {
   display: block;
-  width: 100%;
-  max-width: 11.5rem;
-  height: auto;
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.eq-tur-merek span {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.12;
+  min-width: 0;
+}
+
+.eq-tur-merek strong {
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: -.015em;
+  color: #E8ECF0;
+}
+
+/* Q jingga — satu-satunya huruf berwarna, sama seperti di bilah
+   samping. Dimatikan gaya miringnya: <em> dipakai sebagai penanda
+   warna, bukan sebagai penekanan yang dibaca. */
+.eq-tur-merek strong em {
+  font-style: normal;
+  color: #F57C00;
+}
+
+/* Satu baris, bukan dua. Rel ini 15,5rem — lebih sempit daripada bilah
+   samping — dan semboyan yang membungkus menjadi "Safe Today ·
+   Sustainable / Tomorrow" memisahkan satu kalimat pendek di tempat yang
+   tidak berarti apa-apa. */
+.eq-tur-merek small {
+  font-size: .56rem;
+  color: rgb(255 255 255 / .42);
+  margin-top: .19rem;
+  letter-spacing: 0;
+  white-space: nowrap;
 }
 
 .eq-tur-tangga {
@@ -570,6 +634,68 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
 
 .is-kini .eq-tur-tangga-nama { color: #FFFFFF; font-weight: 700; }
 
+/* ══ pengisi rongga rel ══
+ *
+ * Rel setinggi panel, daftar langkahnya setinggi empat baris. Selisihnya
+ * — terukur 240px pada 1440x900 — adalah bidang navy kosong di antara
+ * langkah terakhir dan catatan kakinya, dan yang terbaca dari situ
+ * bukan kelapangan melainkan ada sesuatu yang gagal dimuat.
+ *
+ * Diisi sampul modul yang sedang dibuka, bukan satu foto tetap: yang
+ * membuka pengenalan dari Peledakan melihat sampul Peledakan. `flex`
+ * 1 1 auto membuatnya MEMUAI mengisi berapa pun sisanya dan MENYUSUT
+ * ketika tidak ada sisa, jadi ia tidak pernah mendorong catatan kaki
+ * keluar dari rel.
+ */
+.eq-tur-rel-foto {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 1.5rem 0 0;
+  position: relative;
+  border-radius: .85rem;
+  overflow: hidden;
+  isolation: isolate;
+  background: #0A1114;
+  display: flex;
+  align-items: flex-end;
+}
+
+.eq-tur-rel-foto picture,
+.eq-tur-rel-foto img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -2;
+}
+
+/* Tirai gelap dari bawah: keterangan kecil di atas foto senja tidak
+   terbaca tanpa sesuatu yang menahannya. */
+.eq-tur-rel-tirai {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(0deg, rgb(8 14 17 / .92) 16%, rgb(8 14 17 / .45) 62%,
+                                    rgb(8 14 17 / .12) 100%);
+}
+
+.eq-tur-rel-foto figcaption {
+  position: relative;
+  padding: .6rem .7rem;
+  font-size: .625rem;
+  line-height: 1.35;
+  color: rgb(255 255 255 / .82);
+  text-shadow: 0 1px 8px rgb(0 0 0 / .55);
+}
+
+/* Rel yang pendek tidak menyisakan ruang untuk foto sama sekali:
+   digambar setinggi 40px ia berhenti menjadi foto dan menjadi garis
+   berwarna. Di bawah ambang itu ia tidak digambar. */
+@media (max-height: 640px) {
+  .eq-tur-rel-foto { display: none; }
+}
+
 .eq-tur-rel-kaki {
   margin: auto 0 0;
   padding-top: 1.25rem;
@@ -577,6 +703,20 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   line-height: 1.5;
   color: rgb(231 229 228 / .42);
   position: relative;
+}
+
+/* Tanpa foto, catatan kaki yang dipaku ke dasar meninggalkan rongga di
+   TENGAH rel — bentuk yang sama yang baru saja dihilangkan, hanya lebih
+   kecil. Dilepas pakunya, ia menempel di bawah daftar langkah dan sisa
+   ruangnya jatuh di bawah keduanya, tempat ia terbaca sebagai jarak
+   biasa.
+
+   DITULIS SESUDAH aturan dasarnya, bukan di dalam blok media di atas:
+   kekhususan keduanya sama persis, dan `margin: auto 0 0` yang tertulis
+   belakangan akan menimpanya tanpa jejak apa pun. Sempat begitu — blok
+   medianya terpasang rapi dan tidak mengerjakan apa-apa. */
+@media (max-height: 640px) {
+  .eq-tur-rel-kaki { margin-top: 1.25rem; }
 }
 
 /* ══ badan ══ */

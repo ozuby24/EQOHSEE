@@ -644,6 +644,57 @@ class LapisanTampilanTest extends TestCase
     }
 
     /**
+     * Pengenalan memakai MEREK YANG SAMA dengan situsnya.
+     *
+     * Rel pengenalan sempat memuat lockup tersendiri berupa satu berkas
+     * PNG: huruf bergaya stensil dan semboyan "Sustaining Performance,
+     * Shaping the Future". Dua-duanya tidak dipakai di halaman mana pun
+     * selain itu. Akibatnya halaman yang tugasnya memperkenalkan
+     * EQOHSEE justru membuka dengan merek ketiga — bentuk huruf lain,
+     * semboyan lain — lalu setiap halaman sesudahnya menampilkan yang
+     * asli.
+     *
+     * Tidak ada galat, tidak ada uji yang merah, dan tangkapan layar
+     * pengenalannya sendiri terlihat rapi; yang salah hanya terlihat
+     * bila dua halaman dibandingkan berdampingan.
+     *
+     * Yang dijaga BUKAN berkasnya melainkan kesamaannya: lambang dan
+     * semboyan pada pengenalan harus persis yang dipakai bilah samping.
+     * Mengganti merek situs karena itu tetap boleh — asal keduanya
+     * diganti bersama.
+     */
+    public function test_pengenalan_memakai_merek_yang_sama_dengan_bilah_samping(): void
+    {
+        $kerangka = file_get_contents(resource_path('js/Layouts/AppLayout.vue'));
+        $tur      = file_get_contents(resource_path('js/Components/TurSelamatDatang.vue'));
+
+        preg_match('/<img src="(\/brand\/[^"]+)"[^>]*>\s*<span>\s*<strong>/s', $kerangka, $m);
+
+        $this->assertNotEmpty($m,
+            'Blok merek pada bilah samping tidak lagi berbentuk yang dikenal penjaga '
+            .'ini — tinjau ulang penjaganya, jangan hapus begitu saja.');
+
+        $lambang = $m[1];
+
+        $this->assertStringContainsString($lambang, $tur,
+            "Rel pengenalan tidak memakai lambang yang sama dengan bilah samping "
+            ."($lambang). Merek kedua pada halaman yang tugasnya memperkenalkan "
+            .'merek pertama.');
+
+        /* Semboyannya dibandingkan sesudah entitas HTML dipulangkan:
+           bilah samping menulis "·" apa adanya, pengenalan menulis
+           &middot;, dan keduanya adalah tanda yang sama. */
+        $bersih = static fn (string $t): string => html_entity_decode($t, ENT_QUOTES, 'UTF-8');
+
+        preg_match('/<small>([^<]+)<\/small>/', $kerangka, $sm);
+        $this->assertNotEmpty($sm, 'Semboyan bilah samping tidak ditemukan.');
+
+        $this->assertStringContainsString(
+            trim($bersih($sm[1])), $bersih($tur),
+            'Semboyan pada rel pengenalan berbeda dari semboyan bilah samping.');
+    }
+
+    /**
      * Pengaman geser-ke-samping harus `clip`, bukan `hidden`.
      *
      * Keduanya sama-sama memotong yang meluber ke samping, dan justru
