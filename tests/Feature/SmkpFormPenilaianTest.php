@@ -28,7 +28,14 @@ class SmkpFormPenilaianTest extends TestCase
 
         $c = Company::create(['name' => 'PT Uji Penilaian', 'doc_no_prefix' => 'UP']);
 
+        /* Nama dan surel DIPATOK, tidak dibiarkan diundi factory.
+           Keduanya ikut terkirim pada prop `pengguna`, sehingga panjang
+           muatan halaman ini berubah tiap jalankan mengikuti panjang nama
+           yang kebetulan terundi — dan uji ukuran muatan di bawah, yang
+           ambangnya ketat, lulus atau gagal bergantung undian itu. */
         $this->actingAs(User::factory()->create([
+            'name'     => 'Auditor Uji',
+            'email'    => 'auditor.uji@contoh.test',
             'is_admin' => true, 'company_id' => $c->id, 'email_verified_at' => now(),
         ]));
 
