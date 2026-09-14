@@ -39,7 +39,9 @@ class PasangDemo extends Command
     protected $signature = 'demo:pasang
         {--hanya= : Kode perusahaan yang dikerjakan saja, dipisah koma (mis. CDI,ABG)}
         {--tanpa-isi : Buat perusahaan dan penggunanya saja, tanpa memuat data contohnya}
-        {--kosongkan : Buang data contohnya, tanpa mengisi ulang}';
+        {--kosongkan : Buang data contohnya, tanpa mengisi ulang}
+        {--hapus : Buang data contohnya, akun-akunnya, DAN perusahaannya}
+        {--paksa : Jangan bertanya lebih dulu pada --hapus}';
 
     protected $description = 'Pasang beberapa perusahaan contoh berprofil berbeda beserta pengguna dan data contohnya.';
 
@@ -121,8 +123,23 @@ class PasangDemo extends Command
             return self::FAILURE;
         }
 
+        $ditolak = 0;
+
         foreach ($profil as $p) {
             $c = $this->perusahaan($p);
+
+            if ($c === null) {
+                $ditolak++;
+                $this->line('');
+                $this->warn(sprintf('%s  (%s) DILEWATI', $p['nama'], $p['kode']));
+                $this->line(sprintf('  %-14s kode %s sudah dipakai perusahaan yang BUKAN perusahaan contoh.',
+                    'alasan', $p['kode']));
+                $this->line(sprintf('  %-14s pakai --hanya untuk melewati kode ini, atau ganti kodenya lebih dulu.',
+                    ''));
+
+                continue;
+            }
+
             [$ktt, $pjo] = $this->pengguna($c, $p);
 
             $this->line('');
@@ -130,6 +147,12 @@ class PasangDemo extends Command
             $this->line(sprintf('  %-14s %s, kelas %s, %d pekerja',
                 'profil', $p['komoditas'], $p['risiko'], $p['karyawan'] + $p['jasa']));
             $this->line(sprintf('  %-14s %s / %s', 'akun', $ktt->email, $pjo->email));
+
+            if ($this->option('hapus')) {
+                $this->hapus($c, $p);
+
+                continue;
+            }
 
             if ($this->option('kosongkan')) {
                 $hasil = DB::transaction(fn () => DataContoh::buang($c));
@@ -155,6 +178,11 @@ class PasangDemo extends Command
         }
 
         $this->line('');
+
+        if ($ditolak) {
+            $this->warn("{$ditolak} profil dilewati karena kodenya dipakai perusahaan sungguhan.");
+        }
+
         $this->info('Selesai. Kata sandi seluruh akun contoh: '.self::SANDI);
 
         return self::SUCCESS;
@@ -168,9 +196,27 @@ class PasangDemo extends Command
      * ini akan membuat perusahaan KEDUA di samping yang sudah ada,
      * lengkap dengan data contoh berganda yang keduanya terlihat sah.
      */
-    private function perusahaan(array $p): Company
+    /**
+     * Perusahaan contohnya, atau NULL bila kodenya sudah dipakai
+     * perusahaan sungguhan.
+     *
+     * Barisnya dicari menurut `code`, dan kode itu tidak dijamin milik
+     * data contoh. Tanpa penjagaan di bawah, menjalankan perintah ini
+     * pada pemasangan yang dipakai sungguhan — yang perusahaannya
+     * kebetulan berkode CDI, BMU, SNP, HBS, atau ABG — akan MENIMPA
+     * namanya, lokasinya, komoditasnya, kelas risikonya, jumlah
+     * pekerjanya, prefiks dokumennya, KTT dan PJO-nya, lalu menandainya
+     * sebagai perusahaan contoh dan mengisinya dengan data karangan.
+     *
+     * Tidak ada galat yang muncul dari itu. Yang terlihat hanyalah
+     * perusahaan yang mendadak berganti identitas — dan sesudah
+     * ditandai contoh, ia ikut terhapus oleh `--hapus`.
+     */
+    private function perusahaan(array $p): ?Company
     {
         $c = Company::withoutGlobalScopes()->firstOrNew(['code' => $p['kode']]);
+
+        if ($c->exists && !$c->demo) return null;
 
         $c->fill([
             'name'             => $p['nama'],
@@ -210,6 +256,70 @@ class PasangDemo extends Command
      *
      * @return array{0:User,1:User}
      */
+    /**
+     * Buang perusahaan contoh beserta isinya DAN akun-akunnya.
+     *
+     * `--kosongkan` hanya mengosongkan isinya; perusahaannya dan kedua
+     * akunnya tetap tinggal. Itu memang yang dimaui saat menyiapkan
+     * ulang pratinjau, tetapi bukan saat membersihkan setelahnya —
+     * terutama di pemasangan yang dipakai sungguhan, tempat lima
+     * perusahaan karangan menumpuk di pemilih perusahaan dan sepuluh
+     * akun berkata sandi seragam yang lemah tetap dapat masuk.
+     *
+     * DUA PENJAGA, dan keduanya harus terpenuhi bersama: kodenya ada
+     * dalam PROFIL di berkas ini, DAN barisnya bertanda perusahaan
+     * contoh. Yang pertama saja tidak cukup — perusahaan sungguhan boleh
+     * saja kebetulan berkode "CDI".
+     */
+    private function hapus(Company $c, array $p): void
+    {
+        if (!$c->demo) {
+            $this->warn(sprintf('  %-14s BUKAN perusahaan contoh — tidak disentuh.', 'hapus'));
+
+            return;
+        }
+
+        if (Company::count() <= 1) {
+            $this->warn(sprintf('  %-14s perusahaan terakhir, dibiarkan supaya aplikasinya tidak kehilangan semuanya.', 'hapus'));
+
+            return;
+        }
+
+        if (!$this->option('paksa')
+            && !$this->confirm("Hapus {$c->name} beserta isinya dan kedua akunnya?", false)) {
+            $this->line(sprintf('  %-14s dilewati', 'hapus'));
+
+            return;
+        }
+
+        DB::transaction(function () use ($c) {
+            $dibuang = DataContoh::buang($c)['dihapus'];
+
+            /* SELURUH pengguna perusahaan ini, bukan hanya KTT dan PJO.
+               Data contoh Miners menerbitkan enam akun pekerja lagi per
+               perusahaan, dan `DataContoh::buang()` sengaja tidak
+               menyentuh pengguna — tabel users memang berada di luar
+               jangkauannya.
+
+               Id-nya dikumpulkan SEBELUM perusahaannya dihapus. Sesudah
+               itu company_id mereka menjadi NULL, sehingga tidak ada lagi
+               cara menghubungkan mereka dengan perusahaan mana pun —
+               terukur: dua perusahaan contoh yang dihapus meninggalkan
+               dua belas akun pekerja tanpa perusahaan, seluruhnya masih
+               aktif dan masih dapat masuk dengan sandi contoh yang
+               seragam dan lemah.
+
+               Akunnya DIHAPUS, bukan dilepas seperti pada penghapusan
+               perusahaan biasa: yang dilepas tetap dapat masuk. */
+            $id   = User::where('company_id', $c->id)->pluck('id');
+            $akun = User::whereIn('id', $id)->delete();
+
+            $c->delete();
+
+            $this->line(sprintf('  %-14s %d baris, %d akun, dan perusahaannya dihapus', 'hapus', $dibuang, $akun));
+        });
+    }
+
     private function pengguna(Company $c, array $p): array
     {
         $kode = strtolower($p['kode']);
