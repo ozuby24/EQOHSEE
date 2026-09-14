@@ -316,6 +316,32 @@ class KendaliKeamananTest extends TestCase
      * situs yang kehilangan https tidak dapat dibuka sama sekali —
      * bukan sekadar tidak terenkripsi.
      */
+    /**
+     * Cookie sesi menandai dirinya Secure begitu situsnya HTTPS.
+     *
+     * Tanpa nilai bawaan, env('SESSION_SECURE_COOKIE') memulangkan null
+     * dan cookienya terkirim juga lewat HTTP polos. Pada situs yang sudah
+     * ber-HTTPS, satu permintaan http:// saja — tautan lama, ketikan
+     * tanpa skema, gambar yang tertinggal — cukup membawa cookie sesinya
+     * melintasi jaringan tanpa sandi, dan siapa pun yang menumpang di
+     * jaringan yang sama dapat memakainya untuk masuk sebagai pemiliknya.
+     *
+     * Diikatkan ke APP_URL dan bukan dipaksa true: pemasangan yang masih
+     * HTTP polos akan kehilangan kemampuan masuk sama sekali bila
+     * cookienya ditandai Secure — dan gagalnya berupa formulir masuk yang
+     * berhasil lalu memulangkan orang ke halaman masuk lagi, tanpa satu
+     * pun pesan.
+     */
+    public function test_cookie_sesi_menjadi_secure_pada_situs_https(): void
+    {
+        $isi = file_get_contents(config_path('session.php'));
+
+        $this->assertStringContainsString("str_starts_with((string) env('APP_URL'), 'https://')", $isi,
+            "Bawaan session.secure tidak lagi mengikuti APP_URL. Dikembalikan ke "
+            ."env('SESSION_SECURE_COOKIE') tanpa bawaan, cookie sesinya terkirim juga "
+            ."lewat HTTP polos pada situs yang sudah ber-HTTPS.");
+    }
+
     public function test_hsts_mati_secara_bawaan(): void
     {
         $this->get('/')->assertHeaderMissing('Strict-Transport-Security');

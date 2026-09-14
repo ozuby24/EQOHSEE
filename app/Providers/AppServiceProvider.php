@@ -87,6 +87,36 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour(5)->by('surel:'.Str::lower((string) $r->input('email'))),
         ]);
 
+        /* ── Atap untuk SELURUH lalu lintas web ──
+         *
+         * Pembatas di atas menjaga pintu-pintu yang menerima rahasia.
+         * Yang ini menjaga sisanya: halaman biasa yang tidak menerima
+         * rahasia apa pun, tetapi masing-masing menyusun kueri, membaca
+         * basis data, dan menggambar muatan Inertia. Diminta beribu kali
+         * per menit, ia menghabiskan proses PHP-FPM tanpa satu pun
+         * percobaan masuk — dan seluruh pembatas di atas tidak melihat
+         * apa-apa sebab tidak satu pun pintu itu disentuh.
+         *
+         * Nginx sudah membatasi 30/detik per alamat lebih dulu (lihat
+         * deploy/nginx-eqohsee-limits.conf). Batas ini TIDAK
+         * menggantikannya melainkan menutup dua hal yang tidak dilihat
+         * nginx: pemakaian berkelanjutan di bawah ambang per-detik, dan
+         * satu AKUN yang dipakai dari banyak alamat sekaligus — kunci
+         * yang dicuri, dipakai bersama-sama.
+         *
+         * Yang sudah masuk dapat jatah jauh lebih longgar daripada tamu.
+         * Ia memang membuka lebih banyak halaman, dan ia dapat
+         * dipertanggungjawabkan: kuncinya id akun, bukan alamat yang
+         * dibagi sekantor lewat satu NAT.
+         */
+        RateLimiter::for('web', function (Request $r) {
+            $u = $r->user();
+
+            return $u
+                ? Limit::perMinute(600)->by('akun:'.$u->getAuthIdentifier())
+                : Limit::perMinute(180)->by('tamu:'.$r->ip());
+        });
+
         /* Penukaran token setel ulang, dan penegasan sandi. Keduanya
            menerima rahasia yang dapat ditebak berulang-ulang. */
         RateLimiter::for('sandi', fn (Request $r) => [

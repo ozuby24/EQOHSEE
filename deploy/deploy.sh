@@ -284,6 +284,21 @@ echo "    Using socket: $PHP_SOCK"
 # yang sudah pernah dialihkan ke https menerima ERR_CONNECTION_REFUSED.
 # Karena Laravel tidak pernah dijalankan, lognya bersih dan penyebabnya tidak
 # terlihat sama sekali dari sisi aplikasi.
+# ── Zona pembatas laju ──
+#
+# Konteks http, jadi berkasnya terpisah dari vhost — `limit_req_zone`
+# ditaruh di dalam blok server membuat nginx menolak SELURUH
+# konfigurasinya, dan situsnya tidak menyala sama sekali.
+#
+# Disalin SEBELUM vhost ditulis, sebab vhost di bawah merujuk zona yang
+# didefinisikan di sini. Urutan terbalik membuat `nginx -t` gagal dengan
+# "unknown limit_req_zone" — yang terbaca seperti vhost-nya yang rusak,
+# padahal yang belum ada zonanya.
+BERKAS_ZONA="/etc/nginx/conf.d/eqohsee-limits.conf"
+
+[ -f "$BERKAS_ZONA" ] && cp "$BERKAS_ZONA" "$BERKAS_ZONA.sebelumnya"
+cp "$REPO_DIR/deploy/nginx-eqohsee-limits.conf" "$BERKAS_ZONA"
+
 BERKAS_VHOST="/etc/nginx/sites-available/eqohsee"
 SERTIFIKAT="/etc/letsencrypt/live/$DOMAIN_UTAMA/fullchain.pem"
 
@@ -316,13 +331,29 @@ mkdir -p /var/www/html/.well-known/acme-challenge
 
 echo "==> Testing Nginx config"
 if ! nginx -t; then
-    echo "!!  Konfigurasi baru ditolak nginx — vhost dikembalikan ke yang lama."
+    echo "!!  Konfigurasi baru ditolak nginx — vhost DAN zona pembatas dikembalikan."
+
+    # KEDUANYA dikembalikan, bukan hanya vhost. Keduanya ditulis pada
+    # deploy yang sama dan saling merujuk; mengembalikan satu saja
+    # menyisakan pasangan yang tidak pernah diuji bersama — vhost lama
+    # yang tidak mengenal zona baru, atau sebaliknya.
+    if [ -f "$BERKAS_ZONA.sebelumnya" ]; then
+        mv "$BERKAS_ZONA.sebelumnya" "$BERKAS_ZONA"
+    else
+        # Belum pernah ada sebelumnya: yang benar membuangnya, bukan
+        # meninggalkan berkas yang baru saja ditolak.
+        rm -f "$BERKAS_ZONA"
+    fi
+
     if [ -f "$BERKAS_VHOST.sebelumnya" ]; then
         mv "$BERKAS_VHOST.sebelumnya" "$BERKAS_VHOST"
-        nginx -t && systemctl reload nginx
     fi
+
+    nginx -t && systemctl reload nginx
     exit 1
 fi
+
+rm -f "$BERKAS_ZONA.sebelumnya"
 
 echo "==> Restarting services"
 systemctl restart nginx

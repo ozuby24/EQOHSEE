@@ -169,7 +169,25 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    /*
+     * Bawaannya MENGIKUTI APP_URL, bukan false.
+     *
+     * Tanpa nilai, env() memulangkan null dan cookie sesinya terkirim
+     * juga lewat HTTP polos. Pada situs yang sudah ber-HTTPS itu berarti
+     * satu permintaan http:// saja — tautan lama, ketikan tanpa skema,
+     * gambar yang tertinggal — cukup untuk membawa cookie sesinya
+     * melintasi jaringan tanpa sandi, dan siapa pun yang menumpang di
+     * jaringan yang sama dapat memakainya untuk masuk sebagai pemiliknya.
+     *
+     * Diikatkan ke APP_URL, bukan dipaksa true: pemasangan yang memang
+     * masih HTTP polos akan kehilangan kemampuan masuk sama sekali bila
+     * cookie-nya ditandai Secure — dan kegagalannya berupa formulir
+     * masuk yang berhasil lalu memulangkan orang ke halaman masuk lagi,
+     * tanpa satu pun pesan galat.
+     *
+     * SESSION_SECURE_COOKIE di .env tetap menang atas keduanya.
+     */
+    'secure' => env('SESSION_SECURE_COOKIE', str_starts_with((string) env('APP_URL'), 'https://')),
 
     /*
     |--------------------------------------------------------------------------

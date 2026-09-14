@@ -28,6 +28,15 @@ return Application::configure(basePath: dirname(__DIR__))
         /* Hanya menyentuh permintaan yang benar-benar mengembalikan
            Inertia::render(); halaman Blade melewatinya tanpa berubah,
            jadi 170-an halaman lama tidak ikut terpengaruh. */
+        /* Atap lalu lintas web — lihat AppServiceProvider::batasLaju().
+           Ditaruh di DEPAN grup web supaya permintaan yang melewati
+           batas ditolak sebelum sesi dibuka dan basis data disentuh;
+           ditaruh di belakang, biayanya sudah telanjur dikeluarkan
+           justru untuk permintaan yang akan ditolak. */
+        $middleware->web(prepend: [
+            \Illuminate\Routing\Middleware\ThrottleRequests::class.':web',
+        ]);
+
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
 
