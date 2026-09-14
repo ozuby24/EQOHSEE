@@ -28,6 +28,7 @@ use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiT
 use App\Http\Controllers\{BantuanController, BerkasController, ChatController, TemuanController};
 use App\Http\Controllers\Admin\{AiController, CompanyController, KeamananController, PemilikController, SystemController, UserController};
 use App\Http\Controllers\PerangkatSayaController;
+use App\Http\Controllers\TurController;
 use Illuminate\Support\Facades\Route;
 
 /* ============ PENEMUAN (publik) ============
@@ -99,6 +100,20 @@ Route::get('/', fn () => auth()->check()
 Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    /* Pengenalan situs bagi akun baru.
+     *
+     * Isinya diambil terpisah, bukan dititipkan pada prop bersama:
+     * sembilan setengah kilobita yang ikut pada tiap pembukaan halaman
+     * adalah harga yang dibayar terus-menerus untuk sesuatu yang dibaca
+     * sekali. Lihat TurController.
+     *
+     * Berada di dalam grup 'verified' seperti halaman lain — pengenalan
+     * modul bagi akun yang emailnya belum terbukti dimiliki pendaftarnya
+     * memperkenalkan situs kepada orang yang belum tentu berhak ada di
+     * dalamnya. */
+    Route::get('/tur', [TurController::class, 'isi'])->name('tur.isi');
+    Route::post('/tur/selesai', [TurController::class, 'selesai'])->name('tur.selesai');
 
     /* Dasbor menyeluruh, TERPISAH dari dasbor pembelajaran di atas.
        Yang satu menjawab pertanyaan seorang peserta tentang kursusnya;

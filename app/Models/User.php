@@ -50,6 +50,13 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at'  => 'datetime',
             'kode_verifikasi_at' => 'datetime',
             'masuk_terakhir_at'  => 'datetime',
+
+            /* Sengaja TIDAK ikut $fillable. Penandanya hanya boleh
+               dipasang oleh rute penyelesaian tur, bukan ikut terbawa
+               pembaruan profil mana pun — akun yang belum pernah
+               melihat pengenalannya tidak boleh diam-diam terhitung
+               sudah. */
+            'tur_selesai_pada'  => 'datetime',
             'password'          => 'hashed',
             'is_admin'          => 'boolean',
             'active'            => 'boolean',

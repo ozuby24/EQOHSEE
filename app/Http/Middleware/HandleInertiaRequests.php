@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Support\{IkonNav, KondisiSitus, Lencana, Media, Menu, RuteInertia, SampulModul, Tema};
+use App\Support\{IkonNav, KondisiSitus, Lencana, Media, Menu, RuteInertia, SampulModul, Tema, Tur};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
@@ -79,6 +79,17 @@ class HandleInertiaRequests extends Middleware
             ],
 
             'status' => fn () => $request->session()->get('status'),
+
+            /* Hanya PENANDANYA, bukan isinya.
+             *
+             * Langkah pengenalan beserta delapan pilar dan seluruh
+             * modulnya berbobot sekitar sembilan setengah kilobita.
+             * Dibagikan dari sini, ia ikut terkirim pada tiap pembukaan
+             * halaman oleh akun yang belum menyelesaikannya — termasuk
+             * saat orangnya sedang mengisi formulir dan tidak sedang
+             * melihat pengenalan apa pun. Isinya diambil sekali lewat
+             * /tur, ketika pengenalannya benar-benar dibuka. */
+            'turPerlu' => Tur::perlu($u),
 
             'pengumuman' => fn () => Schema::hasTable('news')
                 ? \App\Models\News::where('created_at', '>=', now()->subDays(30))->count()

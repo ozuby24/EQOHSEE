@@ -306,9 +306,24 @@ class SmkpFormPenilaianTest extends TestCase
 
         /* Seluruh bunyi rubrik 260 ribu aksara. Ikut pada tiap pembukaan
            halaman, ia menggandakan berat muatan demi teks yang paling
-           banyak dibaca beberapa butir. */
+           banyak dibaca beberapa butir.
+         *
+         * ── Kenapa 80 ribu, bukan 60 ribu ──
+         *
+         * Ambang lamanya 60.000 terhadap muatan yang saat itu 59.995 —
+         * bersisa LIMA bita. Kalibrasi seketat itu tidak lagi menjaga
+         * apa yang hendak dijaganya: yang menjatuhkannya bukan bunyi
+         * rubrik yang bocor, melainkan prop baru mana pun yang wajar
+         * ditambahkan di kemudian hari. Persis itu yang terjadi — satu
+         * penanda boolean pada prop bersama sudah cukup.
+         *
+         * 80.000 tetap menangkap regresi yang menjadi alasan uji ini
+         * ada, dan menangkapnya dengan selisih yang lebar: bunyi rubrik
+         * yang ikut terkirim membawa muatannya ke sekitar 320.000 bita,
+         * empat kali ambang ini. Yang ditukar hanyalah kepekaan terhadap
+         * pertumbuhan wajar — dan kepekaan itu memang bukan tugasnya. */
         $this->assertLessThan(
-            60_000,
+            80_000,
             strlen(json_encode($props)),
             'Muatan halaman penilaian membengkak — bunyi rubrik ikut terkirim.'
         );

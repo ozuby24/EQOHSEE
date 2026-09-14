@@ -14,6 +14,7 @@ import { Link, router, usePage } from '@inertiajs/vue3';
 import type { PropBersama } from '../types';
 import KopHalaman from '../Components/KopHalaman.vue';
 import KutipanKaki from '../Components/KutipanKaki.vue';
+import TurSelamatDatang from '../Components/TurSelamatDatang.vue';
 
 /*
   `<Link>` HANYA untuk tujuan yang benar-benar dirender Inertia.
@@ -47,6 +48,23 @@ const menu    = computed(() => halaman.props.menu);
   yang di sisi peramban adalah yang paling sulit diperiksa.
 */
 const sampul  = computed(() => (halaman.props as Record<string, unknown>).sampul as any ?? null);
+
+/*
+  Pengenalan situs.
+
+  Dimulai dari penanda yang dikirim server, lalu SEPENUHNYA dipegang di
+  sini. Dibiarkan terikat pada prop-nya, ia akan terbuka kembali pada tiap
+  perpindahan halaman berikutnya — penandanya baru berubah di server
+  setelah permintaan penyelesaiannya sampai, dan sepanjang jeda itu tiap
+  halaman baru menyalakan ulang sambutan yang baru saja ditutup orangnya.
+*/
+const turTerbuka = ref(Boolean((halaman.props as Record<string, unknown>).turPerlu));
+
+/** Membuka lagi dari menu akun, bagi yang terlanjur melewatinya. */
+function bukaTur() {
+  akunTerbuka.value = false;
+  turTerbuka.value  = true;
+}
 
 /** Ikon modul yang sedang dibuka, untuk kotak pemindah modul. */
 const ikonModul = computed(() => menu.value?.modul?.find((m) => m.aktif)?.ikon ?? null);
@@ -722,6 +740,16 @@ function keluar() {
                 Data diri
               </a>
 
+              <button type="button" class="eq-akun-butir" role="menuitem" @click="bukaTur">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/>
+                  <path d="M9.6 9.4a2.5 2.5 0 1 1 3.3 2.4c-.6.2-.9.7-.9 1.3v.4"/>
+                  <path d="M12 17h.01"/>
+                </svg>
+                Pengenalan fitur
+              </button>
+
               <button type="button" class="eq-akun-butir eq-akun-keluar" role="menuitem"
                       @click="akunTerbuka = false; keluar()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
@@ -789,5 +817,11 @@ function keluar() {
         </div>
       </main>
     </div>
+
+    <!-- Pengenalan situs. Di sini, bukan di tiap halaman: yang menentukan
+         munculnya adalah akunnya, bukan halaman mana yang kebetulan
+         sedang dibuka — dan satu halaman yang lupa memasangnya berarti
+         pengguna baru yang mendarat di sana tidak pernah disambut. -->
+    <TurSelamatDatang :terbuka="turTerbuka" @tutup="turTerbuka = false" />
   </div>
 </template>
