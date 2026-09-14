@@ -1580,7 +1580,16 @@ export interface HalamanDaftarPengguna {
 export interface HalamanFormPengguna {
   judul: string; subjudul: string;
   tersimpan: boolean;
-  awal: Record<string, string | boolean>;
+
+  /* `password` disebut terpisah, dan itu bukan kerapian.
+   *
+   * Record<string, string | boolean> membuat SETIAP kolomnya terbaca
+   * mungkin-boolean, termasuk yang jelas-jelas teks. Selama kolomnya
+   * digambar <input> polos hal itu tidak terasa — v-model bawaannya
+   * menerima apa saja. Begitu kolom sandi berpindah ke komponen yang
+   * modelnya bertipe string, kelonggaran itu langsung terlihat sebagai
+   * galat tipe: kolom sandi yang mungkin berisi boolean. */
+  awal: Record<string, string | boolean> & { password?: string };
   opsi: {
     lms: Pilihan[]; audit: Pilihan[]; ohse: Pilihan[]; perusahaan: Pilihan[];
     jabatan: string[]; departemen: string[];

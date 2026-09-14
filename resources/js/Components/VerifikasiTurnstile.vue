@@ -104,7 +104,11 @@ async function gambar(): Promise<void> {
 
   if (!window.turnstile || !kotak.value) return;
 
-  id.value = window.turnstile.render(kotak.value, {
+  /* Dicor ke HTMLElement dengan sengaja.
+     vue-tsc menyusun bentuk elemennya sendiri untuk ref templat, dan
+     bentuk itu tidak pernah sama persis dengan HTMLElement milik
+     lib.dom — sekalipun keduanya elemen yang sama pada saat berjalan. */
+  id.value = window.turnstile.render(kotak.value as HTMLElement, {
     sitekey: props.kunci,
     theme: props.tema,
     language: 'id',
