@@ -52,7 +52,14 @@ class TurController extends Controller
         /* 204: penutupan pengenalan tidak mengubah apa pun di halaman
            yang sedang dibuka. Mengembalikan redirect akan membuat Inertia
            memuat ulang seluruh halamannya — dan yang terlihat pengguna
-           adalah situs yang berkedip tepat setelah ia menekan Selesai. */
+           adalah situs yang berkedip tepat setelah ia menekan Selesai.
+
+           Karena 204 BUKAN jawaban Inertia, sisi peramban memanggilnya
+           dengan fetch biasa, bukan lewat router Inertia. Dipanggil lewat
+           router, jawaban tanpa tajuk X-Inertia dianggapnya halaman galat
+           dan ia membuka dialog galat selayar penuh — persis di hadapan
+           orang yang baru saja menekan "Lewati pengenalan". Lihat
+           resources/js/Components/TurSelamatDatang.vue. */
         return response()->noContent();
     }
 }

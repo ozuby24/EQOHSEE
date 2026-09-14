@@ -236,6 +236,52 @@ class TurPengenalanTest extends TestCase
 
     /* ═══════════ menandai selesai ═══════════ */
 
+    /**
+     * Penutupannya TIDAK boleh lewat router Inertia.
+     *
+     * `/tur/selesai` memulangkan 204 No Content, dan itu tepat: menutup
+     * sambutan memang tidak mengubah apa pun di halaman yang sedang
+     * dibuka. Tetapi router Inertia memeriksa tiap jawaban — yang tidak
+     * bertajuk X-Inertia dianggapnya halaman galat, dan ia membuka
+     * dialog galat SELAYAR PENUH di atas situsnya.
+     *
+     * Terukur di peramban: akun baru menekan "Lewati pengenalan", lalu
+     * yang muncul kotak galat hitam. Penandanya tetap tersimpan dan
+     * dialognya hilang begitu halaman disegarkan — itulah sebabnya ia
+     * lolos dari tangkapan layar sesudah penyegaran, dan sebabnya uji
+     * ini membaca berkasnya, bukan menunggu ada yang memotretnya lagi.
+     */
+    public function test_penutupan_tidak_lewat_router_inertia(): void
+    {
+        $berkas = resource_path('js/Components/TurSelamatDatang.vue');
+
+        $this->assertFileExists($berkas);
+
+        $isi = file_get_contents($berkas);
+
+        $this->assertStringNotContainsString("router.post('/tur/selesai'", $isi,
+            'Penutupan pengenalan dikirim lewat router Inertia. Jawaban 204 dari '
+            .'rute itu bukan jawaban Inertia, sehingga router membuka dialog galat '
+            .'selayar penuh tepat di hadapan orang yang baru saja menekan Lewati.');
+
+        $this->assertStringContainsString("fetch('/tur/selesai'", $isi,
+            'Penutupan pengenalan tidak lagi dikirim dengan fetch; bila diganti '
+            .'cara lain, pastikan cara itu tidak melewatkan jawabannya ke '
+            .'pemeriksaan router Inertia.');
+
+        $this->assertStringContainsString('keepalive', $isi,
+            'fetch penutupan tanpa keepalive. Tautan pada langkah terakhir menutup '
+            .'pengenalan lalu berpindah halaman pada napas yang sama — peramban '
+            .'membatalkan permintaan yang belum selesai, dan sambutan muncul lagi '
+            .'justru bagi orang yang membacanya sampai habis.');
+
+        $this->assertStringContainsString('X-XSRF-TOKEN', $isi,
+            'fetch penutupan tidak membawa token CSRF; penandanya tidak akan '
+            .'pernah tersimpan, dan gagalnya tidak terlihat sebagai galat — hanya '
+            .'sambutan yang muncul lagi tiap kali halaman disegarkan.');
+    }
+
+
     public function test_menandai_selesai_menghentikan_pengenalan(): void
     {
         $u = $this->baru();

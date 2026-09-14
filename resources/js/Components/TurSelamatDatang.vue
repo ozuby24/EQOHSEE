@@ -37,7 +37,6 @@
  * tidak bisa disingkirkan pemakainya. Lihat App\Support\Tur.
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
-import { router } from '@inertiajs/vue3';
 import IkonPilar from './IkonPilar.vue';
 
 const props = defineProps<{
@@ -75,6 +74,37 @@ const panel   = ref<HTMLElement | null>(null);
 
 const kini    = computed(() => langkah.value[ke.value] ?? null);
 const terakhir = computed(() => ke.value >= langkah.value.length - 1);
+
+/* Nama pendek tiap langkah untuk rel penunjuk jalan di sisi kiri.
+ *
+ * Dipetakan dari KUNCI, bukan dari judulnya. Judul langkah pertama
+ * berbunyi "Selamat datang, Bambang" — menaruhnya di rel berarti nama
+ * orangnya tercetak dua kali di satu layar, dan rel yang seharusnya
+ * menjawab "saya di mana" berubah menjadi sapaan kedua.
+ *
+ * Kunci yang tidak dikenal jatuh ke nomor urut. Langkah baru yang
+ * ditambahkan di App\Support\Tur karena itu tetap tergambar — tanpa
+ * nama, tetapi tidak menghilang dan tidak mengosongkan relnya. */
+const NAMA_LANGKAH: Record<string, string> = {
+  sambutan: 'Selamat datang',
+  pilar:    'Delapan aspek',
+  modul:    'Modul Anda',
+  mulai:    'Langkah pertama',
+};
+
+const relLangkah = computed(() => langkah.value.map((l, i) => ({
+  kunci: l.kunci,
+  nama:  NAMA_LANGKAH[l.kunci] ?? `Langkah ${i + 1}`,
+  usai:  i < ke.value,
+  kini:  i === ke.value,
+})));
+
+/* Melompat ke langkah yang sudah dilewati. Rel yang menampilkan
+   keempat langkah tetapi tidak dapat diklik hanya menggoda; yang BELUM
+   dibaca sengaja tidak dapat dilompati supaya urutannya tetap berarti. */
+function keLangkah(i: number): void {
+  if (i < ke.value) ke.value = i;
+}
 
 async function ambilIsi(): Promise<void> {
   /* Yang sudah dibawa halaman dipakai apa adanya. Inilah sebabnya
@@ -124,21 +154,48 @@ async function ambilIsi(): Promise<void> {
  * muncul sekali lagi nanti, dan sebuah pesan galat soal itu jauh lebih
  * mengganggu daripada akibatnya sendiri.
  */
+/** Token CSRF dari kuki yang dipasang Laravel. */
+function xsrf(): string {
+  const k = document.cookie.split('; ').find((c) => c.startsWith('XSRF-TOKEN='));
+
+  return k ? decodeURIComponent(k.slice('XSRF-TOKEN='.length)) : '';
+}
+
 function selesai(): void {
-  /* Lewat router Inertia, bukan fetch mentah.
+  /* TIDAK lewat router Inertia, dan itu diperbaiki setelah terlihat
+   * di peramban.
    *
-   * Router-lah yang sudah mengurus token CSRF, cookie sesi, dan
-   * pengalihan — tiga hal yang pada fetch mentah harus disusun ulang
-   * dengan tangan, dan yang satu terlewat membuat penandanya tidak
-   * pernah tersimpan. Akibatnya tidak terlihat sebagai galat: hanya
-   * sambutan yang muncul lagi setiap kali halaman disegarkan.
+   * `/tur/selesai` memulangkan 204 No Content — jawaban yang tepat,
+   * sebab menutup sambutan memang tidak mengubah apa pun di halaman
+   * yang sedang dibuka. Tetapi router Inertia MEMERIKSA tiap jawaban:
+   * yang tidak bertajuk `X-Inertia` dianggapnya halaman galat, dan ia
+   * membuka dialog galat selayar penuh di atas situsnya.
    *
-   * preserveState/preserveScroll supaya menutup sambutan tidak
-   * memulangkan orangnya ke puncak halaman yang sedang ia baca. */
-  router.post('/tur/selesai', {}, {
-    preserveState: true,
-    preserveScroll: true,
-    only: [],
+   * Akibatnya persis kebalikan dari maksud sambutan: orang yang baru
+   * mendaftar menekan "Lewati pengenalan" dan yang muncul adalah kotak
+   * galat hitam. Penandanya TERSIMPAN — jadi tidak ada yang rusak di
+   * basis data, dan dialognya hilang begitu halaman disegarkan. Itulah
+   * sebabnya ia lolos dari tangkapan layar saya sebelumnya: yang saya
+   * potret adalah keadaan SESUDAH penyegaran.
+   *
+   * `keepalive` bukan hiasan. Menekan tautan pada langkah terakhir
+   * memanggil selesai() lalu berpindah halaman pada napas yang sama;
+   * tanpa keepalive, peramban membatalkan permintaan yang belum selesai
+   * dan penandanya tidak pernah tersimpan — sambutan muncul lagi justru
+   * bagi orang yang sudah membacanya sampai habis. */
+  fetch('/tur/selesai', {
+    method: 'POST',
+    credentials: 'same-origin',
+    keepalive: true,
+    headers: {
+      'X-XSRF-TOKEN': xsrf(),
+      'X-Requested-With': 'XMLHttpRequest',
+      Accept: 'application/json',
+    },
+  }).catch(() => {
+    /* Sengaja dibiarkan. Akibat terburuknya sambutan muncul sekali lagi
+       nanti, dan pesan galat soal itu lebih mengganggu daripada
+       akibatnya sendiri. */
   });
 
   emit('tutup');
@@ -196,108 +253,173 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
        aria-labelledby="eq-tur-judul">
     <div ref="panel" class="eq-tur" tabindex="-1">
 
-      <!-- ── kepala ─────────────────────────────────────────────── -->
-      <div class="eq-tur-kepala">
-        <div class="eq-tur-langkah" aria-hidden="true">
-          <span v-for="(l, i) in langkah" :key="l.kunci"
-                class="eq-tur-titik" :class="{ 'is-kini': i === ke, 'is-lewat': i < ke }" />
+      <!-- ══ rel penunjuk jalan ══════════════════════════════════
+           Bukan hiasan. Pengenalan yang tidak ketahuan ujungnya
+           ditutup di langkah kedua; rel ini menjawab "berapa lama
+           lagi" dan "tadi saya sudah lihat apa" sekaligus, tanpa
+           satu pun kata tambahan di badan isinya. -->
+      <aside class="eq-tur-rel" aria-hidden="true">
+        <div class="eq-tur-merek">
+          <img src="/brand/eqohsee-mark-128.png" alt="" width="36" height="36">
+          <div>
+            <strong>EQOHSEE</strong>
+            <small>Safe Today · Sustainable Tomorrow</small>
+          </div>
         </div>
 
-        <p v-if="langkah.length" class="eq-tur-hitung">
-          Langkah {{ ke + 1 }} dari {{ langkah.length }}
+        <ol class="eq-tur-tangga">
+          <li v-for="(l, i) in relLangkah" :key="l.kunci"
+              :class="{ 'is-usai': l.usai, 'is-kini': l.kini }">
+            <button type="button" class="eq-tur-tangga-btn"
+                    :disabled="!l.usai" :tabindex="l.usai ? 0 : -1"
+                    @click="keLangkah(i)">
+              <span class="eq-tur-tangga-tanda">
+                <svg v-if="l.usai" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m5 13 4 4L19 7"/>
+                </svg>
+                <template v-else>{{ i + 1 }}</template>
+              </span>
+              <span class="eq-tur-tangga-nama">{{ l.nama }}</span>
+            </button>
+          </li>
+        </ol>
+
+        <p class="eq-tur-rel-kaki">
+          Pengenalan ini selalu dapat dibuka lagi dari menu akun.
         </p>
+      </aside>
 
-        <button type="button" class="eq-tur-tutup" aria-label="Tutup pengenalan"
-                @click="selesai">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-               stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
-        </button>
-      </div>
+      <!-- ══ badan ═══════════════════════════════════════════════ -->
+      <div class="eq-tur-badan">
 
-      <!-- ── isi ────────────────────────────────────────────────── -->
-      <div class="eq-tur-isi">
-        <p v-if="memuat" class="eq-tur-tunggu">Menyiapkan pengenalan…</p>
+        <div class="eq-tur-kepala">
+          <div class="eq-tur-larik" aria-hidden="true">
+            <span v-for="(l, i) in langkah" :key="l.kunci"
+                  class="eq-tur-titik" :class="{ 'is-kini': i === ke, 'is-lewat': i < ke }" />
+          </div>
 
-        <div v-else-if="gagal" class="eq-tur-gagal">
-          <h2 id="eq-tur-judul" class="eq-tur-judul">Pengenalan gagal dimuat</h2>
-          <p class="eq-tur-teks">
-            Sambungannya terputus. Anda tetap dapat memakai situs seperti biasa —
-            pengenalan ini ada di menu akun bila ingin dibuka lagi nanti.
+          <p v-if="langkah.length" class="eq-tur-hitung">
+            Langkah {{ ke + 1 }} dari {{ langkah.length }}
           </p>
-          <button type="button" class="eq-btn-lain" @click="ambilIsi">Coba lagi</button>
+
+          <button type="button" class="eq-tur-tutup" aria-label="Tutup pengenalan"
+                  @click="selesai">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                 stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+          </button>
         </div>
 
-        <template v-else-if="kini">
-          <h2 id="eq-tur-judul" class="eq-tur-judul">{{ kini.judul }}</h2>
-          <p class="eq-tur-teks">{{ kini.teks }}</p>
+        <div class="eq-tur-isi">
+          <p v-if="memuat" class="eq-tur-tunggu">
+            <span class="eq-tur-putar" aria-hidden="true" />
+            Menyiapkan pengenalan…
+          </p>
 
-          <!-- sambutan -->
-          <ul v-if="kini.poin" class="eq-tur-poin">
-            <li v-for="[kepala, isi] in kini.poin" :key="kepala">
-              <strong>{{ kepala }}</strong>
-              <span>{{ isi }}</span>
-            </li>
-          </ul>
+          <div v-else-if="gagal" class="eq-tur-gagal">
+            <h2 id="eq-tur-judul" class="eq-tur-judul">Pengenalan gagal dimuat</h2>
+            <p class="eq-tur-teks">
+              Sambungannya terputus. Anda tetap dapat memakai situs seperti biasa —
+              pengenalan ini ada di menu akun bila ingin dibuka lagi nanti.
+            </p>
+            <button type="button" class="eq-btn-lain" @click="ambilIsi">Coba lagi</button>
+          </div>
 
-          <!-- delapan pilar -->
-          <ul v-if="kini.pilar" class="eq-tur-pilar">
-            <li v-for="p in kini.pilar" :key="p.kunci" :title="p.ringkas">
-              <span class="eq-tur-lencana" :style="{ background: p.warna }">
-                <IkonPilar :nama="p.ikon" :ukuran="17" />
-              </span>
-              <span class="min-w-0">
-                <strong>{{ p.nama }}</strong>
-                <small>{{ p.ket }}</small>
-              </span>
-            </li>
-          </ul>
+          <Transition name="eq-tur-geser" mode="out-in">
+            <div v-if="!memuat && !gagal && kini" :key="kini.kunci">
+              <h2 id="eq-tur-judul" class="eq-tur-judul">{{ kini.judul }}</h2>
+              <p class="eq-tur-teks">{{ kini.teks }}</p>
 
-          <!-- modul yang terbuka -->
-          <ul v-if="kini.modul" class="eq-tur-modul">
-            <li v-for="m in kini.modul" :key="m.kunci">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
-                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path :d="m.ikon" />
-              </svg>
-              <span class="min-w-0">
-                <strong>{{ m.label }}</strong>
-                <small v-if="m.semboyan">{{ m.semboyan }}</small>
-              </span>
-            </li>
-          </ul>
+              <!-- sambutan -->
+              <ul v-if="kini.poin" class="eq-tur-poin">
+                <li v-for="[kepala, isi] in kini.poin" :key="kepala">
+                  <strong>{{ kepala }}</strong>
+                  <span>{{ isi }}</span>
+                </li>
+              </ul>
 
-          <!-- langkah pertama -->
-          <ol v-if="kini.butir" class="eq-tur-mulai">
-            <li v-for="([judul, isi, url], i) in kini.butir" :key="judul">
-              <span class="eq-tur-angka" aria-hidden="true">{{ i + 1 }}</span>
-              <span class="min-w-0">
-                <a :href="url" class="eq-tur-tautan" @click="selesai">{{ judul }}</a>
-                <small>{{ isi }}</small>
-              </span>
-            </li>
-          </ol>
-        </template>
-      </div>
+              <!-- delapan pilar -->
+              <ul v-if="kini.pilar" class="eq-tur-pilar">
+                <li v-for="p in kini.pilar" :key="p.kunci" :title="p.ringkas">
+                  <span class="eq-tur-lencana" :style="{ background: p.warna }">
+                    <IkonPilar :nama="p.ikon" :ukuran="17" />
+                  </span>
+                  <span class="min-w-0">
+                    <strong>{{ p.nama }}</strong>
+                    <small>{{ p.ket }}</small>
+                  </span>
+                </li>
+              </ul>
 
-      <!-- ── kaki ───────────────────────────────────────────────── -->
-      <div v-if="!memuat && !gagal && kini" class="eq-tur-kaki">
-        <button type="button" class="eq-tur-lewati" @click="selesai">
-          {{ terakhir ? 'Tutup' : 'Lewati pengenalan' }}
-        </button>
+              <!-- modul yang terbuka -->
+              <ul v-if="kini.modul" class="eq-tur-modul">
+                <li v-for="m in kini.modul" :key="m.kunci">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+                       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path :d="m.ikon" />
+                  </svg>
+                  <span class="min-w-0">
+                    <strong>{{ m.label }}</strong>
+                    <small v-if="m.semboyan">{{ m.semboyan }}</small>
+                  </span>
+                </li>
+              </ul>
 
-        <span class="eq-tur-sela" />
+              <!-- langkah pertama -->
+              <ol v-if="kini.butir" class="eq-tur-mulai">
+                <li v-for="([judul, isi, url], i) in kini.butir" :key="judul">
+                  <span class="eq-tur-angka" aria-hidden="true">{{ i + 1 }}</span>
+                  <span class="min-w-0">
+                    <a :href="url" class="eq-tur-tautan" @click="selesai">
+                      {{ judul }}
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M5 12h13M13 6l6 6-6 6"/>
+                      </svg>
+                    </a>
+                    <small>{{ isi }}</small>
+                  </span>
+                </li>
+              </ol>
+            </div>
+          </Transition>
+        </div>
 
-        <button v-if="ke > 0" type="button" class="eq-btn-lain" @click="mundur">Kembali</button>
+        <div v-if="!memuat && !gagal && kini" class="eq-tur-kaki">
+          <button type="button" class="eq-tur-lewati" @click="selesai">
+            {{ terakhir ? 'Tutup' : 'Lewati pengenalan' }}
+          </button>
 
-        <button type="button" class="eq-btn-utama" @click="maju">
-          {{ terakhir ? 'Mulai bekerja' : 'Lanjut' }}
-        </button>
+          <span class="eq-tur-sela" />
+
+          <button v-if="ke > 0" type="button" class="eq-btn-lain" @click="mundur">Kembali</button>
+
+          <button type="button" class="eq-tur-maju" @click="maju">
+            {{ terakhir ? 'Mulai bekerja' : 'Lanjut' }}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12h13M13 6l6 6-6 6"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+/* ══════════════════════════════════════════════════════════════
+   Pengenalan situs — rel gelap di kiri, isi terang di kanan.
+
+   Rancangan satu kolom yang lama menggambar kotak putih polos:
+   kabar yang disampaikannya benar, tetapi kesan pertamanya adalah
+   kotak pemberitahuan peramban, bukan halaman sambutan sebuah
+   sistem yang mengurus keselamatan tambang. Rel gelapnya memakai
+   gradien yang sama persis dengan bilah samping situs (.brand-gradient),
+   sehingga sambutan ini terbaca sebagai bagian dari aplikasinya —
+   bukan sebagai sesuatu yang ditempelkan di atasnya.
+   ══════════════════════════════════════════════════════════════ */
+
 .eq-tur-tirai {
   position: fixed;
   inset: 0;
@@ -305,40 +427,190 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgb(12 18 32 / .62);
-  backdrop-filter: blur(2px);
+  background:
+    radial-gradient(70rem 40rem at 50% -10%, rgb(245 124 0 / .16), transparent 60%),
+    rgb(9 13 20 / .72);
+  backdrop-filter: blur(4px);
+  animation: eq-tur-tirai-masuk .22s ease-out;
 }
+
+@keyframes eq-tur-tirai-masuk { from { opacity: 0; } }
 
 .eq-tur {
   width: 100%;
-  max-width: 41rem;
-  max-height: min(88vh, 46rem);
+  max-width: 56rem;
+  max-height: min(90vh, 47rem);
+  display: grid;
+  grid-template-columns: 15.5rem 1fr;
+  background: #FFFFFF;
+  border-radius: 1.35rem;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / .06),
+    0 32px 80px -12px rgb(0 0 0 / .55);
+  overflow: hidden;
+  animation: eq-tur-masuk .26s cubic-bezier(.2, .8, .3, 1);
+}
+
+@keyframes eq-tur-masuk {
+  from { opacity: 0; transform: translateY(1rem) scale(.975); }
+}
+
+.eq-tur:focus { outline: none; }
+
+/* ══ rel penunjuk jalan ══ */
+.eq-tur-rel {
   display: flex;
   flex-direction: column;
-  background: #FFFFFF;
-  border: 1px solid #E7E5E4;
-  border-radius: 1.15rem;
-  box-shadow: 0 22px 60px rgb(0 0 0 / .3);
-  overflow: hidden;
+  padding: 1.5rem 1.25rem 1.25rem;
+  color: #E7E5E4;
+
+  /* Gradien yang sama dengan bilah samping situs. */
+  background: linear-gradient(160deg, #0B1117 0%, #141C25 55%, #1B2530 100%);
+  position: relative;
 }
 
-.eq-tur:focus {
-  outline: none;
+/* Cahaya jingga tipis di sudut atas — menandai ini "milik EQOHSEE"
+   tanpa menambah satu elemen pun yang harus dibaca. */
+.eq-tur-rel::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 11rem;
+  background: radial-gradient(18rem 9rem at 18% 0%, rgb(255 152 0 / .22), transparent 70%);
+  pointer-events: none;
 }
 
-/* ── kepala ── */
+/* Lambang DI ATAS tulisan, bukan di sampingnya.
+ *
+ * Berdampingan, semboyan "Safe Today · Sustainable Tomorrow" hanya
+ * kebagian sisa lebar rel dan terpatah jadi dua baris di tengah kata —
+ * yang mula-mula terbaca sebagai teks yang meluber, bukan sebagai
+ * semboyan. Ditumpuk, ia mendapat lebar penuh dan muat dalam satu baris. */
+.eq-tur-merek {
+  display: grid;
+  gap: .6rem;
+  justify-items: start;
+  position: relative;
+}
+
+.eq-tur-merek img { width: 2.25rem; height: 2.25rem; }
+
+.eq-tur-merek strong {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  color: #FFFFFF;
+}
+
+.eq-tur-merek small {
+  display: block;
+  font-size: 9.5px;
+  letter-spacing: .03em;
+  white-space: nowrap;
+  color: rgb(231 229 228 / .55);
+  margin-top: .1rem;
+}
+
+.eq-tur-tangga {
+  list-style: none;
+  margin: 1.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: .15rem;
+  position: relative;
+}
+
+.eq-tur-tangga-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  padding: .5rem .55rem;
+  border: 0;
+  border-radius: .6rem;
+  background: transparent;
+  text-align: left;
+  cursor: default;
+  transition: background-color .16s;
+}
+
+.is-usai .eq-tur-tangga-btn { cursor: pointer; }
+.is-usai .eq-tur-tangga-btn:hover { background: rgb(255 255 255 / .06); }
+
+.eq-tur-tangga-btn:focus-visible {
+  outline: 2px solid #FF9800;
+  outline-offset: -2px;
+}
+
+.eq-tur-tangga-tanda {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 99px;
+  border: 1.5px solid rgb(231 229 228 / .24);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: rgb(231 229 228 / .5);
+  transition: all .18s;
+}
+
+.eq-tur-tangga-tanda svg { width: .72rem; height: .72rem; }
+
+.eq-tur-tangga-nama {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgb(231 229 228 / .5);
+  transition: color .18s;
+}
+
+.is-usai .eq-tur-tangga-tanda {
+  background: rgb(255 152 0 / .16);
+  border-color: rgb(255 152 0 / .45);
+  color: #FFB74D;
+}
+
+.is-usai .eq-tur-tangga-nama { color: rgb(231 229 228 / .8); }
+
+.is-kini .eq-tur-tangga-tanda {
+  background: linear-gradient(135deg, #DC6E00, #FF9800);
+  border-color: transparent;
+  color: #FFFFFF;
+  box-shadow: 0 0 0 4px rgb(255 152 0 / .16);
+}
+
+.is-kini .eq-tur-tangga-nama { color: #FFFFFF; font-weight: 700; }
+
+.eq-tur-rel-kaki {
+  margin: auto 0 0;
+  padding-top: 1.25rem;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: rgb(231 229 228 / .42);
+  position: relative;
+}
+
+/* ══ badan ══ */
+.eq-tur-badan {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .eq-tur-kepala {
   display: flex;
   align-items: center;
   gap: .8rem;
-  padding: .85rem 1.15rem;
+  padding: .9rem 1.2rem;
   border-bottom: 1px solid #F5F5F4;
 }
 
-.eq-tur-langkah {
-  display: flex;
-  gap: .3rem;
-}
+/* Larik titik ini KEMBAR dengan tangga di rel, dan itu disengaja:
+   pada layar sempit relnya tersembunyi, dan tanpa larik ini kemajuan
+   langkah menghilang sama sekali di tempat ia paling dibutuhkan. */
+.eq-tur-larik { display: none; gap: .3rem; }
 
 .eq-tur-titik {
   width: 1.45rem;
@@ -352,9 +624,11 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
 .eq-tur-titik.is-kini  { background: #F57C00; }
 
 .eq-tur-hitung {
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #78716C;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #A8A29E;
   margin: 0;
 }
 
@@ -362,66 +636,95 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   margin-left: auto;
   display: grid;
   place-items: center;
-  width: 1.9rem;
-  height: 1.9rem;
+  width: 1.95rem;
+  height: 1.95rem;
   border: 0;
-  border-radius: .55rem;
+  border-radius: .6rem;
   background: transparent;
-  color: #78716C;
+  color: #A8A29E;
   cursor: pointer;
+  transition: all .16s;
 }
 
 .eq-tur-tutup svg { width: 1rem; height: 1rem; }
-.eq-tur-tutup:hover { background: rgb(0 0 0 / .05); color: #292524; }
+.eq-tur-tutup:hover { background: #F5F5F4; color: #292524; }
 
-/* ── isi ── */
+/* ══ isi ══ */
 .eq-tur-isi {
-  padding: 1.35rem 1.45rem;
+  padding: 1.6rem 1.7rem;
   overflow-y: auto;
+  flex: 1;
 }
 
 .eq-tur-judul {
-  font-size: 1.32rem;
-  font-weight: 700;
-  line-height: 1.25;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -.015em;
+  line-height: 1.2;
   color: #1C1917;
-  margin: 0 0 .45rem;
+  margin: 0 0 .5rem;
 }
 
 .eq-tur-teks {
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: 13.5px;
+  line-height: 1.65;
   color: #57534E;
   margin: 0;
+  max-width: 34rem;
 }
 
 .eq-tur-tunggu {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .55rem;
   font-size: 13px;
   color: #78716C;
   margin: 0;
-  padding: 2rem 0;
-  text-align: center;
+  padding: 3rem 0;
 }
+
+.eq-tur-putar {
+  width: .9rem;
+  height: .9rem;
+  border-radius: 99px;
+  border: 2px solid rgb(245 124 0 / .25);
+  border-top-color: #F57C00;
+  animation: eq-tur-putar .62s linear infinite;
+}
+
+@keyframes eq-tur-putar { to { transform: rotate(360deg); } }
 
 .eq-tur-gagal .eq-btn-lain { margin-top: 1rem; }
 
-/* ── sambutan ── */
+/* Pergantian langkah bergeser mendatar — arahnya menegaskan bahwa
+   yang berganti adalah HALAMAN pengenalan, bukan isinya yang berubah
+   sendiri di tempat. */
+.eq-tur-geser-enter-active { transition: opacity .2s ease-out, transform .2s ease-out; }
+.eq-tur-geser-leave-active { transition: opacity .12s ease-in,  transform .12s ease-in; }
+.eq-tur-geser-enter-from { opacity: 0; transform: translateX(.9rem); }
+.eq-tur-geser-leave-to   { opacity: 0; transform: translateX(-.6rem); }
+
+/* ══ sambutan ══ */
 .eq-tur-poin {
   list-style: none;
-  margin: 1.15rem 0 0;
+  margin: 1.4rem 0 0;
   padding: 0;
   display: grid;
-  gap: .7rem;
+  gap: .55rem;
 }
 
 .eq-tur-poin li {
+  padding: .7rem .85rem .7rem 1rem;
+  border-radius: .7rem;
+  background: linear-gradient(90deg, rgb(255 152 0 / .07), transparent 70%);
   border-left: 3px solid #F57C00;
-  padding-left: .8rem;
 }
 
 .eq-tur-poin strong {
   display: block;
   font-size: 12.5px;
+  font-weight: 700;
   color: #1C1917;
 }
 
@@ -430,17 +733,17 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   font-size: 12px;
   line-height: 1.55;
   color: #78716C;
-  margin-top: .12rem;
+  margin-top: .15rem;
 }
 
-/* ── pilar dan modul ── */
+/* ══ pilar dan modul ══ */
 .eq-tur-pilar,
 .eq-tur-modul {
   list-style: none;
-  margin: 1.15rem 0 0;
+  margin: 1.4rem 0 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(14.5rem, 1fr));
   gap: .5rem;
 }
 
@@ -448,17 +751,26 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
 .eq-tur-modul li {
   display: flex;
   align-items: center;
-  gap: .6rem;
-  padding: .5rem .6rem;
-  border: 1px solid #F5F5F4;
-  border-radius: .7rem;
-  background: #FAFAF9;
+  gap: .65rem;
+  padding: .6rem .7rem;
+  border: 1px solid #EFEDEB;
+  border-radius: .75rem;
+  background: #FFFFFF;
+  transition: border-color .16s, box-shadow .16s, transform .16s;
+}
+
+.eq-tur-pilar li:hover,
+.eq-tur-modul li:hover {
+  border-color: #FDBA74;
+  box-shadow: 0 4px 14px -4px rgb(245 124 0 / .3);
+  transform: translateY(-1px);
 }
 
 .eq-tur-pilar strong,
 .eq-tur-modul strong {
   display: block;
   font-size: 12.5px;
+  font-weight: 700;
   color: #1C1917;
   white-space: nowrap;
   overflow: hidden;
@@ -469,7 +781,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
 .eq-tur-modul small {
   display: block;
   font-size: 11px;
-  color: #78716C;
+  color: #A8A29E;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -479,55 +791,78 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   flex: none;
   display: grid;
   place-items: center;
-  width: 1.85rem;
-  height: 1.85rem;
-  border-radius: .55rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: .6rem;
   color: #FFFFFF;
+  box-shadow: 0 2px 8px -2px rgb(0 0 0 / .35);
 }
 
 .eq-tur-modul svg {
   flex: none;
-  width: 1.15rem;
-  height: 1.15rem;
-  color: #A8A29E;
+  width: 1.2rem;
+  height: 1.2rem;
+  color: #C7C2BD;
 }
 
-/* ── langkah pertama ── */
+.eq-tur-modul li:hover svg { color: #F57C00; }
+
+/* ══ langkah pertama ══ */
 .eq-tur-mulai {
   list-style: none;
-  margin: 1.15rem 0 0;
+  margin: 1.4rem 0 0;
   padding: 0;
   display: grid;
-  gap: .75rem;
+  gap: .5rem;
 }
 
 .eq-tur-mulai li {
   display: flex;
   align-items: flex-start;
-  gap: .7rem;
+  gap: .75rem;
+  padding: .75rem .85rem;
+  border: 1px solid #EFEDEB;
+  border-radius: .75rem;
+  transition: border-color .16s, box-shadow .16s;
+}
+
+.eq-tur-mulai li:hover {
+  border-color: #FDBA74;
+  box-shadow: 0 4px 14px -4px rgb(245 124 0 / .28);
 }
 
 .eq-tur-angka {
   flex: none;
   display: grid;
   place-items: center;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.6rem;
+  height: 1.6rem;
   border-radius: 99px;
-  background: #F57C00;
+  background: linear-gradient(135deg, #DC6E00, #FF9800);
   color: #FFFFFF;
   font-size: 11.5px;
-  font-weight: 700;
+  font-weight: 800;
+  box-shadow: 0 2px 8px -2px rgb(245 124 0 / .6);
 }
 
 .eq-tur-tautan {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
   font-size: 13px;
   font-weight: 700;
   color: #C2410C;
   text-decoration: none;
 }
 
+.eq-tur-tautan svg {
+  width: .85rem;
+  height: .85rem;
+  transition: transform .16s;
+}
+
 .eq-tur-tautan:hover { text-decoration: underline; }
+.eq-tur-mulai li:hover .eq-tur-tautan svg { transform: translateX(.15rem); }
 
 .eq-tur-mulai small {
   display: block;
@@ -537,15 +872,15 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   margin-top: .15rem;
 }
 
-/* ── kaki ── */
+/* ══ kaki ══ */
 .eq-tur-kaki {
   display: flex;
   align-items: center;
   gap: .5rem;
   flex-wrap: wrap;
-  padding: .85rem 1.15rem;
+  padding: .9rem 1.2rem;
   border-top: 1px solid #F5F5F4;
-  background: #FAFAF9;
+  background: #FCFBFA;
 }
 
 .eq-tur-sela { flex: 1 1 auto; }
@@ -556,31 +891,55 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   padding: .5rem .2rem;
   font-size: 12px;
   font-weight: 600;
-  color: #78716C;
+  color: #A8A29E;
   cursor: pointer;
 }
 
 .eq-tur-lewati:hover { color: #292524; text-decoration: underline; }
 
-/* ── mode gelap ── */
-:global([data-tema='gelap']) .eq-tur {
-  background: #14202F;
-  border-color: #24364C;
+.eq-tur-maju {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .55rem 1.05rem;
+  border: 0;
+  border-radius: .65rem;
+  background: linear-gradient(135deg, #DC6E00, #FF9800);
+  color: #FFFFFF;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px -3px rgb(245 124 0 / .55);
+  transition: box-shadow .16s, transform .16s, filter .16s;
 }
 
-:global([data-tema='gelap']) .eq-tur-kepala,
-:global([data-tema='gelap']) .eq-tur-kaki {
-  border-color: #1E2E42;
+.eq-tur-maju svg { width: .9rem; height: .9rem; transition: transform .16s; }
+
+.eq-tur-maju:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 6px 18px -3px rgb(245 124 0 / .65);
 }
+
+.eq-tur-maju:hover svg { transform: translateX(.15rem); }
+.eq-tur-maju:active { transform: translateY(1px); }
+
+.eq-tur-maju:focus-visible {
+  outline: 2px solid #C2410C;
+  outline-offset: 2px;
+}
+
+/* ══ mode gelap ══ */
+:global([data-tema='gelap']) .eq-tur { background: #14202F; }
+
+:global([data-tema='gelap']) .eq-tur-kepala,
+:global([data-tema='gelap']) .eq-tur-kaki { border-color: #1E2E42; }
 
 :global([data-tema='gelap']) .eq-tur-kaki { background: #101A26; }
 
 :global([data-tema='gelap']) .eq-tur-judul,
 :global([data-tema='gelap']) .eq-tur-poin strong,
 :global([data-tema='gelap']) .eq-tur-pilar strong,
-:global([data-tema='gelap']) .eq-tur-modul strong {
-  color: #F5F5F4;
-}
+:global([data-tema='gelap']) .eq-tur-modul strong { color: #F5F5F4; }
 
 :global([data-tema='gelap']) .eq-tur-teks,
 :global([data-tema='gelap']) .eq-tur-poin span,
@@ -589,21 +948,19 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
 :global([data-tema='gelap']) .eq-tur-mulai small,
 :global([data-tema='gelap']) .eq-tur-hitung,
 :global([data-tema='gelap']) .eq-tur-tunggu,
-:global([data-tema='gelap']) .eq-tur-lewati {
-  color: #A8A29E;
-}
+:global([data-tema='gelap']) .eq-tur-lewati { color: #A8A29E; }
 
 :global([data-tema='gelap']) .eq-tur-pilar li,
-:global([data-tema='gelap']) .eq-tur-modul li {
+:global([data-tema='gelap']) .eq-tur-modul li,
+:global([data-tema='gelap']) .eq-tur-mulai li {
   background: #101A26;
   border-color: #1E2E42;
 }
 
 :global([data-tema='gelap']) .eq-tur-titik { background: #2A3D55; }
-
 :global([data-tema='gelap']) .eq-tur-tautan { color: #FDBA74; }
-
 :global([data-tema='gelap']) .eq-tur-tutup { color: #A8A29E; }
+
 :global([data-tema='gelap']) .eq-tur-tutup:hover {
   background: rgb(255 255 255 / .08);
   color: #F5F5F4;
@@ -611,18 +968,47 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
 
 :global([data-tema='gelap']) .eq-tur-lewati:hover { color: #F5F5F4; }
 
-/* ── layar sempit ── */
+/* ══ layar sempit ══
+
+   Relnya disembunyikan, BUKAN ditumpuk di atas isinya. Ditumpuk, ia
+   memakan sepertiga layar 360 piksel untuk mengulang kabar yang sudah
+   tertulis di kepala — dan yang tergeser turun adalah tombol "Lanjut",
+   satu-satunya yang benar-benar dipakai. Larik titik di kepala
+   mengambil alih tugasnya. */
+@media (max-width: 52rem) {
+  .eq-tur { grid-template-columns: 1fr; max-width: 34rem; }
+  .eq-tur-rel { display: none; }
+  .eq-tur-larik { display: flex; }
+}
+
 @media (max-width: 30rem) {
   .eq-tur-tirai { padding: .5rem; }
-  .eq-tur { max-height: 94vh; }
-  .eq-tur-isi { padding: 1.1rem; }
-  .eq-tur-judul { font-size: 1.15rem; }
+  .eq-tur { max-height: 94vh; border-radius: 1rem; }
+  .eq-tur-isi { padding: 1.15rem 1.2rem; }
+  .eq-tur-judul { font-size: 1.22rem; }
+  .eq-tur-pilar,
+  .eq-tur-modul { grid-template-columns: 1fr; }
 
-  /* Kaki ikut menumpuk: pada 360px, tiga tombol berdampingan membuat
-     yang paling kanan — "Lanjut", satu-satunya yang benar-benar
-     dipakai — terpotong tepi layar. */
   .eq-tur-sela { display: none; }
   .eq-tur-kaki { justify-content: flex-end; }
   .eq-tur-lewati { order: 3; width: 100%; text-align: center; }
+}
+
+/* ══ yang meminta gerakan seminimal mungkin ══ */
+@media (prefers-reduced-motion: reduce) {
+  .eq-tur,
+  .eq-tur-tirai { animation: none; }
+  .eq-tur-putar { animation: none; }
+
+  .eq-tur-geser-enter-active,
+  .eq-tur-geser-leave-active { transition: opacity .1s linear; }
+
+  .eq-tur-geser-enter-from,
+  .eq-tur-geser-leave-to { transform: none; }
+
+  .eq-tur-pilar li:hover,
+  .eq-tur-modul li:hover,
+  .eq-tur-maju:hover,
+  .eq-tur-maju:active { transform: none; }
 }
 </style>

@@ -96,8 +96,16 @@ createInertiaApp({
       .mount(el);
   },
 
-  progress: {
-    color: '#FF9800',
-    showSpinner: false,
-  },
+  /* Bilah bawaan Inertia DIMATIKAN — bukan karena tidak dipakai,
+     melainkan karena penggantinya sudah terpasang.
+     `resources/js/Components/MuatBerjalan.vue` menggambar bilah puncak
+     DAN keping "Memuat…", dan yang kedua itulah alasannya: muat ulang
+     sebagian (pemilih perusahaan, saringan tanggal, kotak cari) tidak
+     mengganti halaman sama sekali, sehingga bilah setipis dua piksel di
+     tepi atas layar lewat tanpa pernah terlihat.
+
+     Dibiarkan menyala, keduanya akan tergambar bersamaan: dua bilah
+     dengan jeda, panjang, dan lengkung waktu yang berbeda di tempat
+     yang sama. */
+  progress: false,
 });

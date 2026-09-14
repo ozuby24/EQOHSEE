@@ -15,6 +15,7 @@ import type { PropBersama } from '../types';
 import KopHalaman from '../Components/KopHalaman.vue';
 import KutipanKaki from '../Components/KutipanKaki.vue';
 import TurSelamatDatang from '../Components/TurSelamatDatang.vue';
+import MuatBerjalan from '../Components/MuatBerjalan.vue';
 
 /*
   `<Link>` HANYA untuk tujuan yang benar-benar dirender Inertia.
@@ -385,6 +386,12 @@ function keluar() {
 
 <template>
   <div class="min-h-screen flex">
+
+    <!-- Penanda "sedang memuat". Di tata letak, bukan di tiap halaman:
+         yang paling perlu ditandai justru muat ulang sebagian, dan itu
+         terjadi di dua belas modul lewat pemilih dan saringan yang
+         masing-masing tidak tahu satu sama lain. -->
+    <MuatBerjalan />
 
     <!-- ═══════════ BILAH SAMPING ═══════════ -->
     <div v-show="lacisTerbuka" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 lg:hidden"
