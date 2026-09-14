@@ -39,8 +39,35 @@ const props = defineProps<{
     skala: number;
     tanggal: string | null;
     hariIni: boolean;
+
+    /** 'situs' = terukur alat sendiri; 'perkiraan' = dari koordinat. */
+    sumber?: string;
+    tempat?: string | null;
+    kasar?: boolean;
   } | null;
 }>();
+
+/**
+ * Sumbernya SELALU disebut, dan itu bukan keterangan tambahan.
+ *
+ * Yang tercatat di situs adalah bacaan alat milik perusahaan itu —
+ * boleh dipakai menghentikan pekerjaan di lereng. Yang perkiraan
+ * bukan, dan jarak antara keduanya kadang puluhan kilometer. Angka
+ * yang sama persis tergambar untuk keduanya; satu-satunya pembeda
+ * adalah baris ini.
+ */
+const sumber = computed(() => {
+  const c = props.cuaca;
+  if (!c) return null;
+  if (c.sumber !== 'perkiraan') return 'Tercatat di situs';
+
+  /* Tempatnya ikut disebut. Nama yang ketemu kerap berbeda dari nama
+     yang dicari, dan selisih itulah satu-satunya tanda bagi pembacanya
+     bahwa koordinatnya meleset. */
+  const t = c.tempat ? ` · ${c.tempat}` : '';
+
+  return (c.kasar ? 'Perkiraan wilayah' : 'Perkiraan') + t;
+});
 
 /**
  * Warna aksen per kelas — dipakai ikon, angka, dan meter sekaligus.
@@ -146,6 +173,8 @@ const TETES = [
         <small v-if="!props.cuaca.hariIni && props.cuaca.tanggal"
                class="text-[9.5px] font-semibold text-white/55">{{ props.cuaca.tanggal }}</small>
       </div>
+
+      <p v-if="sumber" class="mt-1 truncate text-[9px] leading-none text-white/45">{{ sumber }}</p>
     </div>
   </div>
 </template>

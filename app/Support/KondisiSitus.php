@@ -141,7 +141,12 @@ final class KondisiSitus
             ->orderByDesc('tanggal')->orderByDesc('id')
             ->first(['tanggal', 'curah_hujan_mm']);
 
-        if (!$catatan) return null;
+        /* Tidak ada catatan sendiri → perkiraan otomatis dari koordinat
+           situs. Catatan sendiri SELALU didahulukan: itu hujan yang
+           benar-benar terukur di lokasi, oleh alat milik perusahaan itu.
+           Perkiraan hanya mengisi kekosongan, dan ia menyebut dirinya
+           perkiraan. */
+        if (!$catatan) return self::dariPerkiraan($perusahaan);
 
         $mm    = (float) $catatan->curah_hujan_mm;
         $kelas = self::kelasHujan($mm);
@@ -164,6 +169,37 @@ final class KondisiSitus
                berbeda di lapangan. */
             'tanggal' => $catatan->tanggal?->translatedFormat('j M'),
             'hariIni' => $catatan->tanggal?->isSameDay(Waktu::kini()) ?? false,
+
+            /* Sumbernya ikut disebut, dan itu bukan keterangan tambahan
+               melainkan inti perbedaannya: yang tercatat di situs adalah
+               bacaan alat yang boleh dipakai mengambil keputusan, yang
+               perkiraan bukan. */
+            'sumber'  => 'situs',
+            'tempat'  => null,
+            'kasar'   => false,
+        ];
+    }
+
+    /** Lencana dari perkiraan otomatis — lihat App\Support\Cuaca. */
+    private static function dariPerkiraan(?Company $perusahaan): ?array
+    {
+        $p = Cuaca::untuk($perusahaan);
+
+        if ($p === null) return null;
+
+        $kelas = self::kelasHujan($p['hujanMm']);
+
+        return [
+            'kunci'   => $kelas['kunci'],
+            'label'   => $kelas['label'],
+            'hujanMm' => $p['hujanMm'],
+            'tingkat' => self::tingkat($kelas['kunci']),
+            'skala'   => count(self::KELAS_HUJAN),
+            'tanggal' => null,
+            'hariIni' => true,
+            'sumber'  => $p['sumber'],
+            'tempat'  => $p['tempat'],
+            'kasar'   => $p['kasar'],
         ];
     }
 
@@ -206,6 +242,20 @@ final class KondisiSitus
     }
 
     /** Titik tengah area tambang dari layer peta yang sudah digambar. */
+    /**
+     * Sama dengan titikPeta(), dibuka untuk App\Support\Cuaca.
+     *
+     * Perkiraan otomatis memakai titik yang SAMA dengan geo tag. Dua
+     * jalan berbeda menuju koordinat situs akan berselisih cepat atau
+     * lambat, dan selisihnya tidak menimbulkan galat — geo tag menyebut
+     * satu tempat sementara cuacanya milik tempat lain, keduanya pada
+     * satu bilah yang sama.
+     */
+    public static function titikPetaPublik(Company $perusahaan): ?array
+    {
+        return self::titikPeta($perusahaan);
+    }
+
     private static function titikPeta(Company $perusahaan): ?array
     {
         if (!Schema::hasTable('mine_map_layers')) return null;
