@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import GuestLayout from '../../Layouts/GuestLayout.vue';
+import InputSandi from '../../Components/InputSandi.vue';
 
 defineOptions({ layout: GuestLayout });
 
@@ -28,8 +29,8 @@ function daftar() { form.post('/register', { onFinish: () => form.reset('passwor
     <div class="grid grid-cols-2 gap-3"><div><label class="label">NRP / Employee ID</label><input v-model="form.employee_id" class="input"></div><div><label class="label">Departemen</label><input v-model="form.department" list="departments" class="input"><datalist id="departments"><option v-for="d in departments" :key="d" :value="d" /></datalist></div></div>
     <div><label class="label">Jabatan</label><select v-model="form.position" required class="input" aria-label="Jabatan"><option value="">— pilih jabatan —</option><option v-for="p in positions" :key="p" :value="p">{{ p }}</option></select></div>
     <div><label class="label">Perusahaan</label><select v-model="form.company_id" class="input" aria-label="Perusahaan"><option value="">— pilih perusahaan —</option><option v-for="c in companies" :key="c.id" :value="String(c.id)">{{ c.name }}</option></select></div>
-    <div><label class="label">Kata sandi</label><input v-model="form.password" type="password" required autocomplete="new-password" class="input"></div>
-    <div><label class="label">Ulangi kata sandi</label><input v-model="form.password_confirmation" type="password" required autocomplete="new-password" class="input"></div>
+    <div><label class="label">Kata sandi</label><InputSandi v-model="form.password" required autocomplete="new-password" kelas="input" label="baru" /></div>
+    <div><label class="label">Ulangi kata sandi</label><InputSandi v-model="form.password_confirmation" required autocomplete="new-password" kelas="input" label="ulangan" /></div>
     <button type="submit" :disabled="form.processing" class="w-full rounded-xl bg-[#F57C00] hover:bg-[#DC6E00] text-white py-3 font-bold transition disabled:opacity-50">{{ form.processing ? 'Mendaftarkan…' : 'Daftar' }}</button>
   </form>
   <p class="text-center text-sm text-stone-500 mt-6">Sudah punya akun? <Link href="/login" class="font-bold text-[#D96500] hover:underline">Masuk</Link></p>

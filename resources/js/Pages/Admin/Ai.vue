@@ -12,6 +12,7 @@ import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import type { HalamanAi } from '../../types';
 import Dialog from '../../Components/Dialog.vue';
+import InputSandi from '../../Components/InputSandi.vue';
 import { useDialog } from '../../dialog';
 const { dialog, tanya, batal, lanjut } = useDialog();
 
@@ -124,11 +125,11 @@ async function hapus(kode: string, nama: string) {
       <form class="space-y-4" @submit.prevent="simpan">
         <label class="block">
           <span class="block text-[12px] font-semibold text-cam-ink">Kunci API</span>
-          <input v-model="form.kunci" type="password" autocomplete="off" spellcheck="false"
-                 :placeholder="terpilih?.terpasang
-                   ? 'Terpasang ' + terpilih?.ekor + ' — biarkan kosong untuk mempertahankannya'
-                   : 'Tempelkan kunci di sini'"
-                 class="mt-1 w-full rounded-xl border-stone-200 text-[12.5px] font-mono">
+          <InputSandi v-model="form.kunci" autocomplete="off" sebutan="kunci API"
+                      :placeholder="terpilih?.terpasang
+                        ? 'Terpasang ' + terpilih?.ekor + ' — biarkan kosong untuk mempertahankannya'
+                        : 'Tempelkan kunci di sini'"
+                      kelas="mt-1 w-full rounded-xl border-stone-200 text-[12.5px] font-mono" />
           <span class="block text-[11px] text-stone-500 mt-1.5 leading-relaxed">
             Disimpan terenkripsi dan tidak pernah dikirim kembali ke peramban — termasuk kepada Anda.
             Ambil kuncinya di

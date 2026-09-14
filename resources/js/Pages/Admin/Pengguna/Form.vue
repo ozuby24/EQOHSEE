@@ -7,6 +7,7 @@
  * kali ada yang membetulkan nomor teleponnya.
  */
 import { Head, useForm } from '@inertiajs/vue3';
+import InputSandi from '../../../Components/InputSandi.vue';
 import type { HalamanFormPengguna } from '../../../types';
 
 const props = defineProps<HalamanFormPengguna>();
@@ -53,7 +54,7 @@ const kepala = 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400
           <label :class="label">
             Kata sandi <template v-if="tersimpan">(kosongkan bila tidak diubah)</template>
           </label>
-          <input v-model="form.password" type="password" autocomplete="new-password" :class="isian">
+          <InputSandi v-model="form.password" autocomplete="new-password" :kelas="isian" />
           <p class="text-[11px] text-stone-400 mt-1">
             Minimal 8 karakter. Default bila kosong: <code class="text-cam-lime-deep">password</code>
           </p>

@@ -1,13 +1,40 @@
 <script setup lang="ts">
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import GuestLayout from '../../Layouts/GuestLayout.vue';
+import InputSandi from '../../Components/InputSandi.vue';
+import VerifikasiTurnstile from '../../Components/VerifikasiTurnstile.vue';
 
 defineOptions({ layout: GuestLayout });
 
-const form = useForm({ email: '', password: '', remember: false });
+/* Kunci situs dari server. null berarti verifikasinya tidak dipasang,
+   dan halaman ini menggambar dirinya seperti sebelum fitur itu ada. */
+const kunciTurnstile = computed(
+  () => (usePage().props as Record<string, unknown>).turnstile as string | null ?? null,
+);
+
+const form = useForm({
+  email: '',
+  password: '',
+  remember: false,
+
+  /* Namanya ditentukan Cloudflare, bukan kami — widget-nya mengisi kolom
+     dengan nama persis ini, dan aturan validasi di server mencarinya
+     dengan nama yang sama. */
+  'cf-turnstile-response': '',
+});
+
+/* Penghitung, bukan boolean.
+   Dua kali salah sandi berturut-turut menghasilkan boolean yang sama,
+   sehingga widget-nya tidak disetel ulang pada percobaan kedua — dan
+   tokennya sudah habis sejak percobaan pertama. */
+const gagalKe = ref(0);
 
 function masuk() {
-  form.post('/login', { onFinish: () => form.reset('password') });
+  form.post('/login', {
+    onError: () => { gagalKe.value += 1; },
+    onFinish: () => form.reset('password'),
+  });
 }
 </script>
 
@@ -29,9 +56,13 @@ function masuk() {
     </div>
     <div>
       <label for="password" class="block text-[11.5px] font-bold uppercase tracking-wide text-stone-500 mb-1.5">Kata sandi</label>
-      <input id="password" v-model="form.password" type="password" autocomplete="current-password" required class="ring-focus w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm transition">
+      <InputSandi id="password" v-model="form.password" autocomplete="current-password" required
+                  kelas="ring-focus w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm transition" />
       <p v-if="form.errors.password" class="text-xs text-red-600 mt-1">{{ form.errors.password }}</p>
     </div>
+    <VerifikasiTurnstile v-model="form['cf-turnstile-response']"
+                        :kunci="kunciTurnstile" :galat="gagalKe" />
+
     <div class="flex items-center justify-between text-sm">
       <label class="flex items-center gap-2 text-stone-600 cursor-pointer"><input v-model="form.remember" type="checkbox" class="accent-[#F57C00]"> Ingat saya</label>
       <Link href="/forgot-password" class="text-stone-500 hover:text-stone-900 underline underline-offset-4">Lupa sandi?</Link>

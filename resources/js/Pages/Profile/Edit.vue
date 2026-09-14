@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
+import InputSandi from '../../Components/InputSandi.vue';
 
 interface ProfileUser {
   name: string;
@@ -95,8 +96,10 @@ function hapusAkun() {
           ['password_confirmation', 'Konfirmasi Kata Sandi'],
         ]" :key="field[0]">
           <label :for="`password-${field[0]}`" class="block text-[12px] font-semibold text-cam-ink mb-1.5">{{ field[1] }}</label>
-          <input :id="`password-${field[0]}`" v-model="password[field[0]]" type="password" required
-                 class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
+          <InputSandi :id="`password-${field[0]}`" v-model="password[field[0]]" required
+                      :label="field[1].toLowerCase()"
+                      :autocomplete="field[0] === 'current_password' ? 'current-password' : 'new-password'"
+                      kelas="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]" />
           <p v-if="password.errors[field[0]]" class="text-[11.5px] text-red-600 mt-1">{{ password.errors[field[0]] }}</p>
         </div>
         <button type="submit" :disabled="password.processing" class="eq-btn-utama disabled:opacity-40">
@@ -120,8 +123,8 @@ function hapusAkun() {
     <form class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" @submit.prevent="hapusAkun">
       <h2 class="text-lg font-bold text-cam-ink">Konfirmasi penghapusan akun</h2>
       <p class="mt-2 text-sm text-stone-600">Masukkan kata sandi untuk mengonfirmasi tindakan permanen ini.</p>
-      <input v-model="hapus.password" type="password" autocomplete="current-password" required placeholder="Kata sandi"
-             class="mt-5 w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
+      <InputSandi v-model="hapus.password" autocomplete="current-password" required placeholder="Kata sandi"
+                  kelas="mt-5 w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]" />
       <p v-if="hapus.errors.password" class="text-[11.5px] text-red-600 mt-1">{{ hapus.errors.password }}</p>
       <div class="mt-5 flex justify-end gap-3">
         <button type="button" class="rounded-xl border border-stone-200 px-4 py-2.5 text-[12px] font-semibold" @click="modalHapus = false">Batal</button>
