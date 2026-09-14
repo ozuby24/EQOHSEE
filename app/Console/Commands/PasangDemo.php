@@ -49,6 +49,14 @@ class PasangDemo extends Command
      *  akun ini hanya ada pada pemasangan contoh. */
     private const SANDI = 'rahasia123';
 
+    /** Surel kedua akun penjajal.
+     *
+     *  Ditulis sekali supaya yang membuat dan yang menghapus tidak dapat
+     *  berselisih: berselisih, `--hapus` akan mengaku bersih sambil
+     *  meninggalkan akun administrator berkata sandi contoh. */
+    public const PENJAJAL_ADMIN = 'demo@contoh.test';
+    public const PENJAJAL_BIASA = 'test@contoh.test';
+
     /**
      * Profil perusahaan contoh.
      *
@@ -181,6 +189,16 @@ class PasangDemo extends Command
 
         if ($ditolak) {
             $this->warn("{$ditolak} profil dilewati karena kodenya dipakai perusahaan sungguhan.");
+        }
+
+        /* Pada --hapus keduanya DIBUANG, bukan dibuat ulang. Tanpa
+           percabangan ini, perintah yang barusan menghapus seluruh
+           perusahaan contoh menutup dirinya dengan menerbitkan kembali
+           akun administrator contohnya. */
+        if ($this->option('hapus')) {
+            $this->buangPenjajal();
+        } else {
+            $this->penjajal();
         }
 
         $this->info('Selesai. Kata sandi seluruh akun contoh: '.self::SANDI);
@@ -343,6 +361,119 @@ class PasangDemo extends Command
         ]);
 
         return [$ktt, $pjo];
+    }
+
+    /**
+     * Dua akun untuk MENJAJAL situsnya, bukan untuk mengisinya.
+     *
+     * Disebut "penjajal" dan bukan "peninjau" dengan sengaja: di dalam
+     * aplikasi ini peninjau adalah orang yang MENYETUJUI pengajuan —
+     * lihat App\Support\Alur dan trait Ditinjau — dan memakai kata
+     * yang sama untuk "orang yang sedang mencoba-coba situsnya" membuat
+     * dua hal yang sama sekali berbeda terbaca sama pada tiap komentar
+     * dan tiap pesan kegagalan uji.
+     *
+     * Akun KTT dan PJO tiap perusahaan sudah ada, tetapi keduanya
+     * pengguna biasa: modul Administrasi tertutup bagi mereka, dan
+     * separuh halaman yang ingin diperiksa orang justru ada di situ.
+     * Yang hendak menguji "apakah tiap fitur jalan" karena itu selalu
+     * berakhir meminjam akun administrator sungguhan — akun yang paling
+     * tidak pantas dipinjamkan.
+     *
+     * Maka dua akun, sengaja dibedakan perannya:
+     *
+     *   demo@contoh.test  administrator, melihat SELURUH perusahaan dan
+     *                     seluruh modul termasuk Administrasi
+     *   test@contoh.test  pengguna biasa di satu perusahaan berdata,
+     *                     untuk memeriksa apa yang benar-benar dilihat
+     *                     pemakai harian — termasuk modul yang MEMANG
+     *                     harus tertutup baginya
+     *
+     * Keduanya menumpang data yang sudah dipasang di atas; tidak ada
+     * baris tambahan yang dibuat untuk mereka. Yang satu tanpa
+     * company_id supaya pemilih "Semua perusahaan" benar-benar dapat
+     * dicoba; yang satu terikat perusahaan berdata supaya halamannya
+     * tidak kosong.
+     *
+     * Keduanya juga sengaja dibiarkan BELUM menyelesaikan pengenalan
+     * situs — sambutan bagi akun baru itu sendiri salah satu fitur yang
+     * hendak dicoba, dan akun penjajal yang melewatinya diam-diam
+     * membuatnya satu-satunya fitur yang tidak dapat diperiksa dari
+     * sini. `akun()` tidak menyentuh penandanya pada akun yang sudah
+     * ada, jadi yang sudah menutupnya tidak dibuka paksa tiap pemasangan
+     * ulang.
+     */
+    private function penjajal(): void
+    {
+        $berdata = Company::withoutGlobalScopes()
+            ->where('demo', true)->orderBy('id')->first();
+
+        if ($berdata === null) {
+            $this->warn('Akun penjajal dilewati: tidak ada perusahaan contoh.');
+
+            return;
+        }
+
+        $this->akun(self::PENJAJAL_ADMIN, [
+            'name'       => 'Demo Penjajal',
+            'company_id' => null,
+            'position'   => 'Penjajal Sistem',
+            'department' => 'Administrasi',
+            'is_admin'   => true,
+            'lms_role'   => 'ktt',
+            'active'     => true,
+        ]);
+
+        $this->akun(self::PENJAJAL_BIASA, [
+            'name'       => 'Penguji Lapangan',
+            'company_id' => $berdata->id,
+            'position'   => 'Pengawas Operasional',
+            'department' => 'Operasi Tambang',
+            'is_admin'   => false,
+            'lms_role'   => 'peserta',
+            'active'     => true,
+        ]);
+
+        $this->line('');
+        $this->line('  akun penjajal');
+        $this->line('    '.self::PENJAJAL_ADMIN.'  administrator, seluruh perusahaan dan seluruh modul');
+        $this->line('    '.self::PENJAJAL_BIASA.'  pengguna biasa di '.$berdata->name);
+    }
+
+    /**
+     * Keduanya ikut dibuang oleh `--hapus`.
+     *
+     * Ini BUKAN kerapian. `hapus()` membuang akun lewat company_id
+     * perusahaan yang dihapusnya, dan akun penjajal administrator
+     * sengaja tidak punya company_id — tanpa penghapusan tersendiri ia
+     * selamat dari tiap `--hapus`, dan yang tertinggal adalah akun
+     * ADMINISTRATOR berkata sandi contoh yang seragam dan lemah, pada
+     * pemasangan yang pemiliknya baru saja diberi tahu sudah bersih.
+     * Terukur: satu akun tersisa, is_admin, dan masih dapat masuk.
+     *
+     * Dihapus lewat surelnya, bukan lewat penjaga berlapis seperti
+     * perusahaannya. Perusahaan sungguhan boleh saja kebetulan berkode
+     * "CDI"; akun sungguhan tidak akan pernah bersurel di contoh.test —
+     * `.test` adalah ranah yang dicadangkan RFC 6761 dan tidak dapat
+     * menerima surat, sehingga tidak ada orang yang dapat mendaftar
+     * dengannya walau mencoba.
+     *
+     * Dibuang seluruhnya bahkan pada `--hapus --hanya=X`, walau
+     * perusahaan contoh lain masih tinggal. Menyisakan kredensial
+     * karena penghapusannya kebetulan sebagian adalah galat yang
+     * mahal; menerbitkannya kembali cukup dengan menjalankan
+     * `demo:pasang` sekali lagi.
+     */
+    private function buangPenjajal(): void
+    {
+        $dibuang = User::withoutGlobalScopes()
+            ->whereIn('email', [self::PENJAJAL_ADMIN, self::PENJAJAL_BIASA])
+            ->delete();
+
+        if ($dibuang) {
+            $this->line('');
+            $this->line(sprintf('  %-14s %d akun penjajal dihapus', 'penjajal', $dibuang));
+        }
     }
 
     /**

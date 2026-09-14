@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Console\Commands\PasangDemo;
 use App\Models\{Company, SmkpAudit, User};
 use App\Support\SmkpTahap;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -74,13 +75,23 @@ class DemoPerusahaanTest extends TestCase
             .'berbeda; profilnya terlalu mirip untuk membuktikan apa pun.');
     }
 
-    /** Dua akun per perusahaan, dan yang satu boleh meninjau yang lain. */
+    /**
+     * Dua akun per perusahaan, dan yang satu boleh meninjau yang lain.
+     *
+     * Akun PENJAJAL tidak dihitung. Ia menumpang di perusahaan contoh
+     * pertama supaya halamannya tidak kosong, tetapi ia bukan bagian
+     * dari pasangan pengaju-peninjau yang diuji di sini — dan menghitungnya
+     * membuat uji ini mengabarkan "perusahaan pertama punya tiga akun"
+     * setiap kali, sebuah kegagalan yang tidak menunjuk apa pun yang rusak.
+     */
     public function test_tiap_perusahaan_punya_pengaju_dan_peninjau(): void
     {
         $this->artisan('demo:pasang', ['--tanpa-isi' => true])->assertSuccessful();
 
         foreach (Company::withoutGlobalScopes()->whereNotNull('code')->get() as $c) {
-            $u = User::withoutGlobalScopes()->where('company_id', $c->id)->get();
+            $u = User::withoutGlobalScopes()->where('company_id', $c->id)
+                ->whereNotIn('email', [PasangDemo::PENJAJAL_ADMIN, PasangDemo::PENJAJAL_BIASA])
+                ->get();
 
             $this->assertCount(2, $u, $c->name.' tidak punya dua akun.');
             $this->assertTrue($u->contains(fn (User $x) => $x->isKtt() || $x->isAdmin()),
@@ -95,7 +106,18 @@ class DemoPerusahaanTest extends TestCase
         $this->artisan('demo:pasang', ['--tanpa-isi' => true])->assertSuccessful();
 
         $this->assertSame(5, Company::withoutGlobalScopes()->whereNotNull('code')->count());
-        $this->assertSame(10, User::withoutGlobalScopes()->whereNotNull('company_id')->count());
+
+        /* Dua akun kali lima perusahaan. Akun penjajal dikecualikan dengan
+           alasan yang sama seperti di atas: ia satu baris tetap, bukan
+           bagian dari hitungan per perusahaan yang sedang dijaga di sini —
+           yang dijaga adalah bahwa pemasangan kedua tidak MENGGANDAKAN. */
+        $this->assertSame(10, User::withoutGlobalScopes()->whereNotNull('company_id')
+            ->whereNotIn('email', [PasangDemo::PENJAJAL_ADMIN, PasangDemo::PENJAJAL_BIASA])
+            ->count());
+
+        /* Dan penjajalnya sendiri juga tidak berganda. */
+        $this->assertSame(1, User::withoutGlobalScopes()
+            ->where('email', PasangDemo::PENJAJAL_ADMIN)->count());
     }
 
     /**

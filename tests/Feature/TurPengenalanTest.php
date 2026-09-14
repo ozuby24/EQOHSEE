@@ -174,6 +174,54 @@ class TurPengenalanTest extends TestCase
         $this->assertSame('Selamat datang, Bambang', $judul);
     }
 
+    /**
+     * Administrator tidak disuruh menghubungi administrator.
+     *
+     * Administrator lintas perusahaan sengaja tidak terikat perusahaan
+     * mana pun. Dengan hanya dua cabang, ia jatuh ke cabang "belum
+     * terikat" dan kalimat pertama yang dibacanya adalah nasihat untuk
+     * menghubungi dirinya sendiri, tentang keadaan yang memang
+     * dikehendaki baginya.
+     */
+    public function test_sambutan_administrator_tidak_menyuruhnya_menghubungi_administrator(): void
+    {
+        $a = $this->baru();
+        $a->is_admin   = true;
+        $a->company_id = null;
+        $a->saveQuietly();
+
+        $teks = collect(Tur::langkah($a->fresh()))->firstWhere('kunci', 'sambutan')['teks'];
+
+        $this->assertStringNotContainsString('Hubungi administrator', $teks,
+            'Administrator disuruh menghubungi administrator tentang keadaan '
+            .'yang justru disengaja baginya.');
+
+        $this->assertStringContainsString('Semua perusahaan', $teks,
+            'Sambutan administrator tidak menyebut pemilih perusahaan — '
+            .'satu-satunya hal yang menjelaskan mengapa akunnya tanpa perusahaan.');
+    }
+
+    /** Pengguna biasa tanpa perusahaan TETAP diberi nasihat yang benar. */
+    public function test_pengguna_biasa_tanpa_perusahaan_tetap_diarahkan(): void
+    {
+        $b = $this->baru();
+        $b->is_admin   = false;
+        $b->company_id = null;
+        $b->saveQuietly();
+
+        $teks = collect(Tur::langkah($b->fresh()))->firstWhere('kunci', 'sambutan')['teks'];
+
+        $this->assertStringContainsString('Hubungi administrator', $teks);
+    }
+
+    /** Yang punya perusahaan disebutkan nama perusahaannya. */
+    public function test_sambutan_menyebut_nama_perusahaannya(): void
+    {
+        $teks = collect(Tur::langkah($this->baru()))->firstWhere('kunci', 'sambutan')['teks'];
+
+        $this->assertStringContainsString('PT Uji Tur', $teks);
+    }
+
     /** Tiap tautan langkah pertama menunjuk rute yang benar-benar ada. */
     public function test_tautan_langkah_pertama_semuanya_hidup(): void
     {

@@ -102,6 +102,38 @@ class Tur
         return trim($nama);
     }
 
+    /**
+     * Kalimat pembuka tentang perusahaannya — TIGA keadaan, bukan dua.
+     *
+     * Semula hanya dua: punya perusahaan, atau tidak. Administrator
+     * lintas perusahaan jatuh ke cabang kedua dan disambut dengan
+     * "Hubungi administrator bila laporan Anda seharusnya masuk ke
+     * sebuah perusahaan" — nasihat yang diberikan kepada satu-satunya
+     * orang yang dimaksud nasihat itu, tentang keadaan yang justru
+     * disengaja baginya. Kalimat pertama yang dibaca seorang
+     * administrator baru karena itu adalah kalimat yang salah,
+     * dan salahnya terbaca sebagai aplikasi yang tidak mengenali
+     * penggunanya sendiri.
+     */
+    private static function keterikatan(User $u): string
+    {
+        if ($u->company?->name) {
+            return "Akun Anda terdaftar di bawah {$u->company->name}. Seluruh data yang "
+                .'Anda isi tersimpan pada perusahaan itu, dan hanya terlihat oleh '
+                .'rekan satu perusahaan.';
+        }
+
+        if ($u->isAdmin()) {
+            return 'Akun Anda administrator dan tidak terikat satu perusahaan pun — '
+                .'itu disengaja. Pemilih perusahaan di bilah atas menentukan '
+                .'perusahaan mana yang sedang Anda lihat; "Semua perusahaan" '
+                .'menampilkan seluruhnya sekaligus.';
+        }
+
+        return 'Akun Anda belum terikat perusahaan mana pun. Hubungi administrator '
+            .'bila laporan Anda seharusnya masuk ke sebuah perusahaan.';
+    }
+
     /** Sambutan — menyebut namanya dan perusahaannya. */
     private static function sambutan(User $u): array
     {
@@ -110,12 +142,7 @@ class Tur
         return [
             'kunci' => 'sambutan',
             'judul' => $depan !== '' ? "Selamat datang, {$depan}" : 'Selamat datang',
-            'teks'  => $u->company?->name
-                ? "Akun Anda terdaftar di bawah {$u->company->name}. Seluruh data yang "
-                    .'Anda isi tersimpan pada perusahaan itu, dan hanya terlihat oleh '
-                    .'rekan satu perusahaan.'
-                : 'Akun Anda belum terikat perusahaan mana pun. Hubungi administrator '
-                    .'bila laporan Anda seharusnya masuk ke sebuah perusahaan.',
+            'teks'  => self::keterikatan($u),
             'poin' => [
                 ['EQOHSEE mengurus delapan aspek sekaligus',
                  'Satu situs untuk energi, mutu, kesehatan kerja, higiene, keselamatan, '
