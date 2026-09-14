@@ -137,33 +137,50 @@ class HandleInertiaRequests extends Middleware
      * diperiksa.
      */
     /**
-     * Sampul modul — hanya pada HALAMAN AWAL modulnya, bukan tiap subhalaman.
+     * Sampul modul — fotonya di SELURUH halaman modul, bilah keadaan
+     * situs hanya di halaman awalnya.
      *
-     * Sebuah foto setinggi dua ratus piksel di atas setiap subhalaman
-     * berhenti menjadi sambutan dan berubah menjadi penghalang: orang
-     * yang sedang mengisi formulir menggulir melewati pemandangan yang
-     * sama berulang kali. Di halaman awal ia menjawab "saya ada di modul
-     * apa, di situs mana, dan hari ini bagaimana"; di halaman kelima ia
-     * tidak menjawab apa pun.
+     * Dua hal yang dulu satu, dan memisahkannya yang membuat keduanya
+     * benar:
+     *
+     * FOTONYA identitas modul. Sebelumnya subhalaman kembali ke satu
+     * foto merek yang sama untuk seluruh aplikasi, sehingga dua puluh
+     * modul yang berbeda terlihat sama persis begitu orangnya menekan
+     * butir menu kedua — dan satu-satunya pembeda tinggal judul kecil
+     * di pojok. Sekarang tiap halaman membawa foto modulnya sendiri.
+     *
+     * BILAH KEADAAN — lokasi, jam, curah hujan, cuaca — tetap hanya di
+     * halaman awal. Ia menjawab "saya ada di modul apa, di situs mana,
+     * dan hari ini bagaimana", dan pertanyaan itu ditanyakan sekali saat
+     * masuk modulnya, bukan pada tiap formulir yang dibuka sesudahnya.
+     *
+     * Itu pula yang menjaga keberatan aslinya tetap dihormati: yang dulu
+     * mengganggu bukan fotonya melainkan TINGGINYA. Kop bersitus 212px;
+     * tanpa `kondisi` KopHalaman menggambar kop pendek 150px — lihat
+     * kelas `kop-bersitus` di sana — jadi subhalaman tidak bertambah
+     * tinggi satu piksel pun dibanding sebelumnya.
      */
     private function sampul($u): ?array
     {
         $kunci = Menu::modulAktif();
         $modul = Menu::modul($kunci);
 
-        $ruteAwal = Menu::ruteAwal($modul);
-
-        if ($ruteAwal === null || request()->route()?->getName() !== $ruteAwal) {
-            return null;
-        }
-
         $gambar = SampulModul::untuk($kunci);
 
         if ($gambar === null) return null;
 
+        $ruteAwal = Menu::ruteAwal($modul);
+        $diAwal   = $ruteAwal !== null && request()->route()?->getName() === $ruteAwal;
+
         return $gambar + [
             'label'   => $modul['label'] ?? null,
-            'kondisi' => KondisiSitus::untuk($u),
+
+            /* Null di subhalaman, dan itu yang menentukan tinggi kopnya.
+               Dihitung pula HANYA di halaman awal: KondisiSitus menyentuh
+               basis data dan layanan cuaca, dan membayarnya pada tiap
+               permintaan demi bilah yang tidak digambar adalah biaya yang
+               tidak dibelanjakan untuk apa pun. */
+            'kondisi' => $diAwal ? KondisiSitus::untuk($u) : null,
         ];
     }
 

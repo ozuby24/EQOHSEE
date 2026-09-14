@@ -352,15 +352,67 @@ class SampulModulTest extends TestCase
     }
 
     /**
-     * Di subhalaman ia tidak menjawab apa pun lagi — hanya menggeser isi
-     * ke bawah pada tiap formulir yang dibuka.
+     * Subhalaman membawa FOTO modulnya, tanpa bilah keadaan situs.
+     *
+     * Aturannya sempat sebaliknya — subhalaman tidak membawa sampul sama
+     * sekali — dan akibatnya seluruh subhalaman di dua puluh modul
+     * memakai satu foto merek yang sama: begitu orangnya menekan butir
+     * menu kedua, modul mana pun terlihat persis sama.
+     *
+     * Keberatan aslinya tetap dijaga, dan letaknya memang bukan pada
+     * fotonya melainkan pada TINGGINYA: `kondisi` null di sini, dan
+     * itulah yang membuat KopHalaman menggambar kop pendek alih-alih
+     * kop bersitus setinggi 212px. Uji di bawah menjaga keduanya
+     * sekaligus.
      */
-    public function test_sampul_tidak_diulang_pada_subhalaman(): void
+    public function test_subhalaman_membawa_foto_modulnya_tanpa_bilah_keadaan(): void
     {
         $this->actingAs(User::factory()->create(['is_admin' => true]));
 
         $this->get(route('pjp.daftar'))
-            ->assertInertia(fn (Assert $page) => $page->where('sampul', null));
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('sampul.gambar')
+                ->where('sampul.kondisi', null));
+    }
+
+    /**
+     * Foto subhalaman adalah foto MODULNYA, bukan foto modul lain.
+     *
+     * Pemetaan yang meleset tidak menimbulkan galat: halamannya tetap
+     * bergambar, hanya bergambar milik modul yang salah — dan itu justru
+     * lebih menyesatkan daripada tidak bergambar sama sekali.
+     */
+    public function test_foto_subhalaman_mengikuti_modulnya_sendiri(): void
+    {
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+
+        $this->get(route('pjp.daftar'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('sampul.gambar',
+                    fn ($g) => str_contains((string) $g, \App\Support\SampulModul::nama('pjp'))));
+    }
+
+    /**
+     * Bilah keadaan situs TIDAK dihitung pada subhalaman.
+     *
+     * Bukan sekadar tidak digambar: KondisiSitus menyentuh basis data
+     * dan layanan cuaca, dan membayarnya pada tiap permintaan demi bilah
+     * yang tidak muncul adalah biaya yang tidak dibelanjakan untuk apa
+     * pun. Yang dijaga di sini hasilnya — null — sebab itulah satu-
+     * satunya bukti yang tidak ikut berubah bila cara menghitungnya
+     * diganti.
+     */
+    public function test_halaman_awal_tetap_membawa_bilah_keadaan(): void
+    {
+        $c = Company::create([
+            'name' => 'PT Situs Berkondisi', 'code' => 'PSB',
+            'location' => 'Kutai Timur, Kalimantan Timur',
+        ]);
+
+        $this->actingAs(User::factory()->create(['is_admin' => true, 'company_id' => $c->id]));
+
+        $this->get(route('pjp.index'))
+            ->assertInertia(fn (Assert $page) => $page->has('sampul.kondisi'));
     }
 
     /**

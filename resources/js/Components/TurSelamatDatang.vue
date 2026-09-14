@@ -78,6 +78,20 @@ const langkah = ref<Langkah[]>([]);
 const ke      = ref(0);
 const memuat  = ref(false);
 const gagal   = ref(false);
+
+/**
+ * SEBAB kegagalannya, bukan sekadar bahwa ia gagal.
+ *
+ * Kotaknya dulu selalu berbunyi "Sambungannya terputus" — kalimat yang
+ * menyebut satu sebab tertentu untuk kegagalan apa pun. Pada tangkapan
+ * layar dari produksi ia menutup satu-satunya keterangan yang dapat
+ * dipakai menelusurinya: 404 (rutenya tidak sampai ke peladen), 419
+ * (sesinya kedaluwarsa), 429 (tertahan pembatas laju), dan 500
+ * seluruhnya terbaca sebagai gangguan jaringan — dan yang membacanya
+ * menekan "Coba lagi" untuk sesuatu yang akan gagal dengan cara yang
+ * sama persis.
+ */
+const sebab = ref<string>('');
 const panel   = ref<HTMLElement | null>(null);
 
 const kini    = computed(() => langkah.value[ke.value] ?? null);
@@ -114,6 +128,25 @@ function keLangkah(i: number): void {
   if (i < ke.value) ke.value = i;
 }
 
+/**
+ * Status yang punya arti tersendiri bagi yang membacanya.
+ *
+ * Yang tidak terdaftar disebut apa adanya beserta angkanya — angka yang
+ * tidak dikenali tetap jauh lebih berguna daripada kalimat yang
+ * menyebut sebab yang salah.
+ */
+const PESAN_STATUS: Record<number, string> = {
+  401: 'Sesi Anda sudah habis. Muat ulang halaman, lalu coba lagi.',
+  419: 'Sesi Anda sudah habis. Muat ulang halaman, lalu coba lagi.',
+  403: 'Pengenalan ini tidak terbuka bagi akun Anda.',
+  404: 'Alamat pengenalannya tidak ditemukan di peladen.',
+  429: 'Terlalu banyak permintaan. Tunggu sebentar, lalu coba lagi.',
+  500: 'Peladen gagal menyusun pengenalannya.',
+  502: 'Peladen tidak menjawab.',
+  503: 'Layanan sedang tidak tersedia.',
+  504: 'Peladen tidak menjawab tepat waktu.',
+};
+
 async function ambilIsi(): Promise<void> {
   /* Yang sudah dibawa halaman dipakai apa adanya. Inilah sebabnya
      sambutan bagi akun baru tidak pernah lagi bisa gagal dimuat. */
@@ -127,6 +160,8 @@ async function ambilIsi(): Promise<void> {
   memuat.value = true;
   gagal.value  = false;
 
+  sebab.value = '';
+
   try {
     const r = await fetch('/tur', {
       headers: { Accept: 'application/json' },
@@ -136,7 +171,21 @@ async function ambilIsi(): Promise<void> {
          jawabannya bukan JSON sama sekali. */
       credentials: 'same-origin',
     });
-    if (!r.ok) throw new Error(String(r.status));
+
+    if (!r.ok) {
+      sebab.value = PESAN_STATUS[r.status] ?? `Peladen menjawab ${r.status}.`;
+      throw new Error(String(r.status));
+    }
+
+    /* Jawaban 200 yang BUKAN JSON tetap kegagalan, dan sebabnya berbeda
+       lagi: yang sampai biasanya halaman masuk karena sesinya habis,
+       atau halaman galat dari pelantara di depan peladen. */
+    const jenis = r.headers.get('content-type') ?? '';
+
+    if (!jenis.includes('json')) {
+      sebab.value = 'Jawabannya bukan data pengenalan — sesi Anda mungkin sudah habis.';
+      throw new Error('bukan-json');
+    }
 
     langkah.value = (await r.json()).langkah ?? [];
     ke.value = 0;
@@ -144,6 +193,8 @@ async function ambilIsi(): Promise<void> {
     /* Hanya terjadi pada buka-ulang manual. Pengenalan yang gagal dimuat
        tidak boleh menyandera halamannya: yang ditawarkan cuma dua —
        coba lagi, atau tutup dan bekerja. */
+    if (sebab.value === '') sebab.value = 'Sambungannya terputus.';
+
     gagal.value = true;
   } finally {
     memuat.value = false;
@@ -340,7 +391,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
           <div v-else-if="gagal" class="eq-tur-gagal">
             <h2 id="eq-tur-judul" class="eq-tur-judul">Pengenalan gagal dimuat</h2>
             <p class="eq-tur-teks">
-              Sambungannya terputus. Anda tetap dapat memakai situs seperti biasa —
+              {{ sebab }} Anda tetap dapat memakai situs seperti biasa —
               pengenalan ini ada di menu akun bila ingin dibuka lagi nanti.
             </p>
             <button type="button" class="eq-btn-lain" @click="ambilIsi">Coba lagi</button>
