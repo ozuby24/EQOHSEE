@@ -260,11 +260,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
            satu pun kata tambahan di badan isinya. -->
       <aside class="eq-tur-rel" aria-hidden="true">
         <div class="eq-tur-merek">
-          <img src="/brand/eqohsee-mark-128.png" alt="" width="36" height="36">
-          <div>
-            <strong>EQOHSEE</strong>
-            <small>Safe Today · Sustainable Tomorrow</small>
-          </div>
+          <img src="/brand/eqohsee-lockup-white.png"
+               alt="" width="585" height="202">
         </div>
 
         <ol class="eq-tur-tangga">
@@ -480,36 +477,26 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   pointer-events: none;
 }
 
-/* Lambang DI ATAS tulisan, bukan di sampingnya.
+/* LOCKUP utuh, bukan lambang kecil ditambah tulisan yang diketik ulang.
  *
- * Berdampingan, semboyan "Safe Today · Sustainable Tomorrow" hanya
- * kebagian sisa lebar rel dan terpatah jadi dua baris di tengah kata —
- * yang mula-mula terbaca sebagai teks yang meluber, bukan sebagai
- * semboyan. Ditumpuk, ia mendapat lebar penuh dan muat dalam satu baris. */
+ * Lockup-nya sudah memuat wordmark DAN semboyannya sendiri sebagai satu
+ * gambar. Menaruh lambang di sebelah <strong>EQOHSEE</strong> yang
+ * diketik tangan berarti huruf yang sama dibuat dua kali dengan dua
+ * cara — satu oleh perancang mereknya, satu oleh font apa pun yang
+ * kebetulan terpasang di peramban — dan yang kedua tidak akan pernah
+ * sama dengan yang pertama.
+ *
+ * Lebar penuh rel, tinggi mengikuti nisbah aslinya (585 × 202).
+ */
 .eq-tur-merek {
-  display: grid;
-  gap: .6rem;
-  justify-items: start;
   position: relative;
 }
 
-.eq-tur-merek img { width: 2.25rem; height: 2.25rem; }
-
-.eq-tur-merek strong {
+.eq-tur-merek img {
   display: block;
-  font-size: 13.5px;
-  font-weight: 800;
-  letter-spacing: .06em;
-  color: #FFFFFF;
-}
-
-.eq-tur-merek small {
-  display: block;
-  font-size: 9.5px;
-  letter-spacing: .03em;
-  white-space: nowrap;
-  color: rgb(231 229 228 / .55);
-  margin-top: .1rem;
+  width: 100%;
+  max-width: 11.5rem;
+  height: auto;
 }
 
 .eq-tur-tangga {
