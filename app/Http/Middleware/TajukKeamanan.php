@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Turnstile;
+
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Vite;
@@ -150,6 +152,26 @@ class TajukKeamanan
     {
         $skrip  = "'self' 'nonce-$nonce'";
         $sambung = "'self'";
+        $bingkai = "'none'";
+
+        /* Cloudflare Turnstile — hanya ketika kuncinya benar-benar
+           terpasang. Kelonggaran yang tidak dipakai tetap kelonggaran.
+         *
+         * Ketiganya diperlukan bersama, dan yang paling mudah terlewat
+         * adalah `frame-src`: widget-nya menggambar dirinya di dalam
+         * iframe, sedangkan tanpa direktif itu ia jatuh ke
+         * `default-src 'self'` yang memblokirnya. Yang terjadi kemudian
+         * bukan pesan galat melainkan ruang kosong di halaman masuk —
+         * dan karena tokennya tidak pernah terbit, SETIAP percobaan
+         * masuk ditolak dengan alasan yang tidak menyebut CSP sama
+         * sekali. */
+        if (Turnstile::aktif()) {
+            $asal = rtrim((string) config('turnstile.asal'), '/');
+
+            $skrip   .= " $asal";
+            $sambung .= " $asal";
+            $bingkai  = "$asal";
+        }
 
         /* Saat `npm run dev` berjalan, berkas dilayani dari server Vite
            pada porta lain — asal yang berbeda menurut CSP. Tanpa
@@ -167,6 +189,7 @@ class TajukKeamanan
             "base-uri 'self'",
             "object-src 'none'",
             "frame-ancestors 'self'",
+            "frame-src $bingkai",
             "form-action 'self'",
             "script-src $skrip",
             /* Tidak ada lagi asal luar. Huruf disajikan sendiri dari

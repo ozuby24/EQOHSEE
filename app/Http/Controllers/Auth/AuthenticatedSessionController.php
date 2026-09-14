@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Support\Turnstile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,7 +18,20 @@ class AuthenticatedSessionController extends Controller
      */
     public function create()
     {
-        return Inertia::render('Auth/Login');
+        return Inertia::render('Auth/Login', [
+            /* Kunci SITUS Turnstile — yang memang dirancang publik;
+             * rahasianya tidak pernah meninggalkan server.
+             *
+             * Dikirim dari sini, BUKAN dari prop bersama. Halaman masuk
+             * satu-satunya yang memakainya, sedangkan prop bersama ikut
+             * pada tiap pembukaan halaman oleh semua orang — dan muatan
+             * halaman di aplikasi ini sudah punya ambangnya sendiri
+             * yang dijaga uji.
+             *
+             * null berarti fiturnya mati, dan halaman masuk menggambar
+             * dirinya persis seperti sebelum fitur ini ada. */
+            'turnstile' => Turnstile::kunciSitus(),
+        ]);
     }
 
     /**

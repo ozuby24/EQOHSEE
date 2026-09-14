@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Rules\TurnstileSah;
+use App\Support\Turnstile;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -30,6 +32,17 @@ class LoginRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
+
+            /* Verifikasi Cloudflare — hanya ketika kuncinya terpasang.
+             *
+             * Aturannya tidak dipasang sama sekali saat fitur itu mati,
+             * bukan dipasang lalu meluluskan semuanya: `required` pada
+             * kolom yang widget-nya tidak pernah digambar akan menolak
+             * SETIAP percobaan masuk, dan pesannya menyebut sebuah
+             * kolom yang tidak terlihat di layar mana pun. */
+            Turnstile::KOLOM => Turnstile::aktif()
+                ? ['required', new TurnstileSah]
+                : [],
         ];
     }
 
