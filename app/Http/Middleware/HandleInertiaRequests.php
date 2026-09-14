@@ -80,16 +80,26 @@ class HandleInertiaRequests extends Middleware
 
             'status' => fn () => $request->session()->get('status'),
 
-            /* Hanya PENANDANYA, bukan isinya.
+            /* Sambutan otomatis dibawa UTUH di sini, bukan diambil
+             * kemudian lewat jaringan.
              *
-             * Langkah pengenalan beserta delapan pilar dan seluruh
-             * modulnya berbobot sekitar sembilan setengah kilobita.
-             * Dibagikan dari sini, ia ikut terkirim pada tiap pembukaan
-             * halaman oleh akun yang belum menyelesaikannya — termasuk
-             * saat orangnya sedang mengisi formulir dan tidak sedang
-             * melihat pengenalan apa pun. Isinya diambil sekali lewat
-             * /tur, ketika pengenalannya benar-benar dibuka. */
-            'turPerlu' => Tur::perlu($u),
+             * Semula hanya penandanya yang dikirim, dan isinya diambil
+             * dengan fetch('/tur') saat pop-out terbuka. Rancangan itu
+             * salah, dan salahnya terbukti di produksi: begitu permintaan
+             * itu gagal — sebab apa pun — yang dilihat pengguna barunya
+             * adalah kotak "Pengenalan gagal dimuat" yang muncul LAGI
+             * pada setiap kali halaman disegarkan. Sambutan berubah
+             * menjadi penghalang yang tidak bisa ia singkirkan.
+             *
+             * Dibawa sebagai prop, tidak ada yang tersisa untuk gagal:
+             * isinya sudah ada bersama halaman yang menggambarnya.
+             *
+             * Biayanya nol bagi hampir semua orang. Closure-nya baru
+             * menyusun apa pun ketika Tur::perlu() benar — yaitu hanya
+             * bagi akun yang belum pernah menyelesaikannya, dan hanya
+             * sampai ia menutupnya sekali. Bagi seluruh pengguna lain
+             * yang terkirim cuma `null`. */
+            'tur' => fn () => Tur::perlu($u) ? Tur::langkah($u) : null,
 
             'pengumuman' => fn () => Schema::hasTable('news')
                 ? \App\Models\News::where('created_at', '>=', now()->subDays(30))->count()

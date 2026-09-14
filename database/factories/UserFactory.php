@@ -30,6 +30,19 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+
+            /* Factory membuat PENGGUNA YANG SUDAH ADA, bukan pendaftar baru.
+             *
+             * Dibiarkan null, tiap akun buatan factory terhitung belum
+             * melihat pengenalan situs — sehingga seluruh uji yang
+             * membuka halaman ikut membawa langkah pengenalan sembilan
+             * setengah kilobita pada propnya, dan uji muatan halaman
+             * penilaian jatuh karena hal yang tidak ada hubungannya
+             * dengan apa yang sedang diujinya.
+             *
+             * Uji yang memang menguji pengenalan meng-null-kannya
+             * sendiri secara tegas; lihat TurPengenalanTest::baru(). */
+            'tur_selesai_pada' => now(),
         ];
     }
 

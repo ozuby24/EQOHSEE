@@ -52,15 +52,27 @@ const sampul  = computed(() => (halaman.props as Record<string, unknown>).sampul
 /*
   Pengenalan situs.
 
-  Dimulai dari penanda yang dikirim server, lalu SEPENUHNYA dipegang di
-  sini. Dibiarkan terikat pada prop-nya, ia akan terbuka kembali pada tiap
-  perpindahan halaman berikutnya — penandanya baru berubah di server
-  setelah permintaan penyelesaiannya sampai, dan sepanjang jeda itu tiap
-  halaman baru menyalakan ulang sambutan yang baru saja ditutup orangnya.
-*/
-const turTerbuka = ref(Boolean((halaman.props as Record<string, unknown>).turPerlu));
+  Server mengirim LANGKAHNYA, bukan sekadar penanda, dan hanya kepada
+  akun yang memang belum menyelesaikannya. Karena isinya sudah ada
+  bersama halaman, sambutan bagi pengguna baru tidak menyentuh jaringan
+  sama sekali — tidak ada permintaan yang dapat gagal, dan tidak ada
+  kotak galat yang muncul lagi pada tiap penyegaran.
 
-/** Membuka lagi dari menu akun, bagi yang terlanjur melewatinya. */
+  Terbukanya DIPEGANG DI SINI sesudah itu, tidak terus terikat pada
+  prop-nya: penanda di server baru berubah setelah permintaan
+  penyelesaiannya sampai, dan sepanjang jeda itu tiap perpindahan
+  halaman akan menyalakan ulang sambutan yang baru saja ditutup orangnya.
+*/
+const turBawaan  = computed(() => (halaman.props as Record<string, unknown>).tur as any[] | null ?? null);
+const turTerbuka = ref(Boolean(turBawaan.value?.length));
+
+/* Membuka lagi dari menu akun.
+ *
+ * Pengguna lama tidak membawa `tur` pada propnya — server hanya
+ * menyusunnya bagi yang belum menyelesaikan pengenalan — sehingga di
+ * sini isinya memang diambil lewat /tur. Itu satu-satunya jalur yang
+ * masih menyentuh jaringan, dan satu-satunya yang pantas menampilkan
+ * pesan bila gagal. */
 function bukaTur() {
   akunTerbuka.value = false;
   turTerbuka.value  = true;
@@ -724,7 +736,14 @@ function keluar() {
 
             <div v-if="akunTerbuka" class="eq-akun-panel" role="menu">
               <div class="eq-akun-kepala">
-                <span class="eq-akun-avatar eq-akun-avatar-besar">{{ inisial }}</span>
+                <!-- Fotonya ikut di sini, bukan hanya pada tombol di luar.
+                     Sebelumnya kepala menu ini SELALU menggambar inisial,
+                     sehingga orang yang sudah memasang foto melihatnya di
+                     tombol lalu kehilangannya begitu menu dibuka — tepat
+                     di tempat yang paling menegaskan "ini akun siapa". -->
+                <img v-if="pengguna.avatar" class="eq-akun-avatar eq-akun-avatar-besar eq-akun-foto"
+                     :src="pengguna.avatar" alt="" width="46" height="46">
+                <span v-else class="eq-akun-avatar eq-akun-avatar-besar">{{ inisial }}</span>
                 <span class="min-w-0">
                   <strong>{{ pengguna.nama }}</strong>
                   <small>{{ pengguna.peran }}</small>
@@ -822,6 +841,7 @@ function keluar() {
          munculnya adalah akunnya, bukan halaman mana yang kebetulan
          sedang dibuka — dan satu halaman yang lupa memasangnya berarti
          pengguna baru yang mendarat di sana tidak pernah disambut. -->
-    <TurSelamatDatang :terbuka="turTerbuka" @tutup="turTerbuka = false" />
+    <TurSelamatDatang :terbuka="turTerbuka" :bawaan="turBawaan"
+                      @tutup="turTerbuka = false" />
   </div>
 </template>

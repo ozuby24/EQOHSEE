@@ -21,17 +21,41 @@
  * Tidak ada yang hilang karenanya: menu akun memuat "Pengenalan fitur"
  * yang membukanya kembali kapan saja.
  *
- * ── Isinya diambil saat dibuka ──
+ * ── Dua jalur isi, dan bedanya disengaja ──
  *
- * Bukan dititipkan pada prop bersama. Sembilan setengah kilobita yang
- * ikut pada tiap pembukaan halaman adalah harga yang dibayar terus-
- * menerus untuk sesuatu yang dibaca sekali. Lihat App\Support\Tur.
+ * Sambutan OTOMATIS bagi akun baru memakai `bawaan` — langkahnya sudah
+ * ikut bersama halaman, sehingga tidak ada permintaan jaringan dan
+ * karena itu tidak ada yang dapat gagal.
+ *
+ * Buka-ulang MANUAL dari menu akun mengambilnya lewat /tur. Di sana
+ * orangnya memang baru saja menekan sesuatu dan sedang menunggu, jadi
+ * kegagalan pantas diberitahukan kepadanya.
+ *
+ * Semula keduanya lewat fetch, dan itu salah: begitu permintaannya
+ * gagal di produksi, kotak "Pengenalan gagal dimuat" muncul lagi pada
+ * SETIAP penyegaran halaman — sambutan berubah menjadi penghalang yang
+ * tidak bisa disingkirkan pemakainya. Lihat App\Support\Tur.
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { router } from '@inertiajs/vue3';
 import IkonPilar from './IkonPilar.vue';
 
-const props = defineProps<{ terbuka: boolean }>();
-const emit  = defineEmits<{ tutup: [] }>();
+const props = defineProps<{
+  terbuka: boolean;
+
+  /**
+   * Langkah yang sudah dibawa halaman.
+   *
+   * Bila ada, tidak ada yang perlu diambil dari jaringan dan karena itu
+   * tidak ada yang dapat gagal — inilah jalur sambutan otomatis bagi
+   * akun baru. Bila null, isinya diambil lewat /tur; itu jalur "buka
+   * ulang dari menu akun", tempat orangnya memang sedang menunggu
+   * sesuatu dan pantas diberi tahu bila gagal.
+   */
+  bawaan?: Langkah[] | null;
+}>();
+
+const emit = defineEmits<{ tutup: [] }>();
 
 type Langkah = {
   kunci: string;
@@ -53,18 +77,35 @@ const kini    = computed(() => langkah.value[ke.value] ?? null);
 const terakhir = computed(() => ke.value >= langkah.value.length - 1);
 
 async function ambilIsi(): Promise<void> {
+  /* Yang sudah dibawa halaman dipakai apa adanya. Inilah sebabnya
+     sambutan bagi akun baru tidak pernah lagi bisa gagal dimuat. */
+  if (props.bawaan && props.bawaan.length) {
+    langkah.value = props.bawaan;
+    ke.value = 0;
+    gagal.value = false;
+    return;
+  }
+
   memuat.value = true;
   gagal.value  = false;
 
   try {
-    const r = await fetch('/tur', { headers: { Accept: 'application/json' } });
+    const r = await fetch('/tur', {
+      headers: { Accept: 'application/json' },
+
+      /* Disebut tegas, tidak diandalkan pada bawaan peramban: tanpa
+         cookie sesi, /tur memulangkan pengalihan ke halaman masuk dan
+         jawabannya bukan JSON sama sekali. */
+      credentials: 'same-origin',
+    });
     if (!r.ok) throw new Error(String(r.status));
 
     langkah.value = (await r.json()).langkah ?? [];
     ke.value = 0;
   } catch {
-    /* Pengenalan yang gagal dimuat tidak boleh menyandera halamannya.
-       Yang ditawarkan cuma dua: coba lagi, atau tutup dan bekerja. */
+    /* Hanya terjadi pada buka-ulang manual. Pengenalan yang gagal dimuat
+       tidak boleh menyandera halamannya: yang ditawarkan cuma dua —
+       coba lagi, atau tutup dan bekerja. */
     gagal.value = true;
   } finally {
     memuat.value = false;
@@ -84,12 +125,21 @@ async function ambilIsi(): Promise<void> {
  * mengganggu daripada akibatnya sendiri.
  */
 function selesai(): void {
-  const token = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
-
-  void fetch('/tur/selesai', {
-    method: 'POST',
-    headers: { 'X-CSRF-TOKEN': token, Accept: 'application/json' },
-  }).catch(() => {});
+  /* Lewat router Inertia, bukan fetch mentah.
+   *
+   * Router-lah yang sudah mengurus token CSRF, cookie sesi, dan
+   * pengalihan — tiga hal yang pada fetch mentah harus disusun ulang
+   * dengan tangan, dan yang satu terlewat membuat penandanya tidak
+   * pernah tersimpan. Akibatnya tidak terlihat sebagai galat: hanya
+   * sambutan yang muncul lagi setiap kali halaman disegarkan.
+   *
+   * preserveState/preserveScroll supaya menutup sambutan tidak
+   * memulangkan orangnya ke puncak halaman yang sedang ia baca. */
+  router.post('/tur/selesai', {}, {
+    preserveState: true,
+    preserveScroll: true,
+    only: [],
+  });
 
   emit('tutup');
 }

@@ -49,31 +49,52 @@ class TurPengenalanTest extends TestCase
     }
 
     /**
-     * Penandanya sampai ke halaman sebagai BOOLEAN, bukan isinya.
+     * Akun baru membawa langkahnya bersama halaman.
      *
-     * Ini penjagaan atas berat muatan, bukan atas fiturnya. Langkah
-     * pengenalan beserta delapan pilar dan seluruh modulnya berbobot
-     * sekitar sembilan setengah kilobita; dibagikan dari middleware, ia
-     * ikut pada TIAP pembukaan halaman oleh akun yang belum
-     * menyelesaikannya.
+     * Inilah yang membuat sambutan otomatis tidak dapat gagal dimuat.
+     * Semula yang dikirim hanya sebuah boolean dan isinya diambil lewat
+     * fetch('/tur'); begitu permintaan itu gagal di produksi, yang
+     * dilihat pengguna barunya adalah kotak "Pengenalan gagal dimuat"
+     * yang muncul LAGI setiap kali halaman disegarkan.
      *
-     * Bukan kekhawatiran teoretis: halaman Form Penilaian Audit punya
-     * ambang muatannya sendiri, dan sembilan kilobita tambahan pada tiap
-     * halaman menjatuhkannya.
+     * Bahwa muatan ini tidak ikut pada pengguna lain dijaga uji
+     * berikutnya.
      */
-    public function test_yang_dibagikan_hanya_penandanya(): void
+    public function test_akun_baru_membawa_langkahnya_bersama_halaman(): void
     {
         $u = $this->baru();
 
         $props = $this->actingAs($u)->get(route('dasbor'))
             ->assertOk()->viewData('page')['props'];
 
-        $this->assertArrayHasKey('turPerlu', $props);
-        $this->assertIsBool($props['turPerlu'],
-            'Isi pengenalan ikut dibagikan ke tiap halaman. Yang boleh dikirim dari '
-            .'middleware hanya penandanya; isinya diambil lewat /tur saat dibuka.');
+        $this->assertArrayHasKey('tur', $props);
+        $this->assertIsArray($props['tur'],
+            'Akun baru tidak membawa langkah pengenalannya. Bila isinya harus '
+            .'diambil lewat jaringan, satu permintaan yang gagal mengubah sambutan '
+            .'menjadi kotak galat yang muncul lagi pada tiap penyegaran halaman.');
+    }
 
-        $this->assertArrayNotHasKey('tur', $props);
+    /**
+     * Yang sudah selesai tidak membayar apa pun.
+     *
+     * Langkahnya berbobot sekitar sembilan setengah kilobita. Terkirim
+     * kepada semua orang pada tiap pembukaan halaman, ia menjadi ongkos
+     * tetap untuk sesuatu yang dibaca sekali seumur akun — dan halaman
+     * Form Penilaian Audit punya ambang muatannya sendiri yang akan
+     * jatuh karenanya.
+     */
+    public function test_yang_sudah_selesai_tidak_membawa_muatannya(): void
+    {
+        $u = $this->baru();
+        $u->tur_selesai_pada = now();
+        $u->saveQuietly();
+
+        $props = $this->actingAs($u->fresh())->get(route('dasbor'))
+            ->assertOk()->viewData('page')['props'];
+
+        $this->assertNull($props['tur'],
+            'Langkah pengenalan ikut terkirim kepada pengguna yang sudah '
+            .'menyelesaikannya — ongkos tetap untuk sesuatu yang tidak akan dibuka.');
     }
 
     public function test_isi_diambil_lewat_rutenya_sendiri(): void
