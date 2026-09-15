@@ -19,6 +19,7 @@ class ProfileController extends Controller
         $user = $request->user();
 
         return Inertia::render('Profile/Edit', [
+            'sandiMinimal' => \App\Support\AturanSandi::MINIMAL,
             'judul' => 'Profil Pengguna',
             'subjudul' => 'Kelola informasi akun dan keamanan akses Anda',
             'user' => [

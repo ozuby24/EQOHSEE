@@ -4,6 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use App\Notifications\KodeVerifikasiEmail;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -29,10 +30,16 @@ class EmailVerificationTest extends TestCase
     {
         Notification::fake();
 
+        /* Daftar bocoran dipalsukan: uji ini menguji surel verifikasinya,
+           bukan pemeriksaan HIBP — yang diuji tersendiri di
+           AturanSandiTest. Tanpa ini, tiap jalannya menembak layanan
+           luar yang sungguhan. */
+        Http::fake(['api.pwnedpasswords.com/*' => Http::response('')]);
+
         $this->post('/register', [
             'name' => 'Budi Santoso', 'email' => 'budi@contoh.test',
             'position' => 'Safety Officer',
-            'password' => 'Rahasia123!', 'password_confirmation' => 'Rahasia123!',
+            'password' => 'sandi uji yang panjang', 'password_confirmation' => 'sandi uji yang panjang',
         ])->assertRedirect(route('verification.notice', absolute: false));
 
         $u = User::where('email', 'budi@contoh.test')->firstOrFail();

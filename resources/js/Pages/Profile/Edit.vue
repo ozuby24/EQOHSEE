@@ -13,6 +13,9 @@ const props = defineProps<{
   judul: string;
   subjudul: string;
   user: ProfileUser;
+
+  /** Panjang sandi terpendek yang diterima, dari AturanSandi::MINIMAL. */
+  sandiMinimal: number;
 }>();
 
 const profile = useForm<Record<string, string>>({
@@ -100,6 +103,7 @@ function hapusAkun() {
                       :label="field[1].toLowerCase()"
                       :autocomplete="field[0] === 'current_password' ? 'current-password' : 'new-password'"
                       kelas="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]" />
+          <p v-if="field[0] === 'password'" class="text-[11.5px] leading-relaxed text-stone-500 mt-1.5">Minimal {{ sandiMinimal }} huruf, tanpa syarat huruf besar atau angka. Kalimat pendek seperti &laquo;kopi pagi di tambang&raquo; lebih mudah diingat sekaligus lebih sulit ditebak daripada satu kata bercampur angka.</p>
           <p v-if="password.errors[field[0]]" class="text-[11.5px] text-red-600 mt-1">{{ password.errors[field[0]] }}</p>
         </div>
         <button type="submit" :disabled="password.processing" class="eq-btn-utama disabled:opacity-40">

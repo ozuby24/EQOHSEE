@@ -99,7 +99,15 @@ class TurnstileGerbangTamuTest extends TestCase
             ->assertRedirect(route('verification.notice', absolute: false));
 
         $this->assertAuthenticated();
-        Http::assertNothingSent();
+
+        /* Yang dijaga: tidak ada permintaan ke CLOUDFLARE, bukan tidak
+           ada permintaan sama sekali. Pendaftaran memang menghubungi
+           satu layanan luar yang lain — daftar bocoran HIBP untuk aturan
+           sandi — dan assertNothingSent() akan menjatuhkan uji ini atas
+           panggilan yang justru diinginkan. */
+        Http::assertNotSent(fn ($permintaan) => str_contains(
+            $permintaan->url(), (string) config('turnstile.asal')
+        ));
     }
 
     public function test_tanpa_kunci_lupa_sandi_berjalan_seperti_biasa(): void

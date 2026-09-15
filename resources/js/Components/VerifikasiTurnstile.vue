@@ -122,6 +122,16 @@ async function gambar(): Promise<void> {
   id.value = window.turnstile.render(kotak.value as HTMLElement, {
     sitekey: props.kunci,
     action: props.tindakan ?? undefined,
+
+    /* 'flexible', bukan 'normal'.
+     *
+     * Bawaannya menggambar kotak selebar 300px tetap, dan pada formulir
+     * yang seluruh isiannya selebar penuh, kotak itu berdiri sendirian
+     * lebih pendek daripada baris di atas dan di bawahnya — satu-satunya
+     * unsur yang tidak sejajar. 'flexible' membuatnya mengikuti lebar
+     * wadahnya, dengan 300px sebagai batas terkecil. */
+    size: 'flexible',
+
     theme: props.tema,
     language: 'id',
     callback: (t: string) => { model.value = t; },
@@ -166,17 +176,28 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .eq-turnstile {
+  /* Selebar penuh, sejajar dengan isian di atas dan di bawahnya. Lebar
+     sesungguhnya diatur Cloudflare lewat size: 'flexible'; yang disetel
+     di sini wadahnya, supaya iframe-nya punya lebar yang bisa diikuti. */
+  width: 100%;
+
   /* Tinggi widget-nya dipesan sejak awal supaya tombol di bawahnya tidak
      melompat ketika kotaknya selesai digambar — lompatan yang paling
      sering berakhir sebagai klik yang meleset. */
   min-height: 65px;
 }
 
+/* Sudut yang sama dengan isian di sekitarnya. Kotak verifikasi yang
+   sudutnya sendiri terbaca sebagai tempelan, bukan bagian formulirnya. */
+.eq-turnstile :deep(iframe) {
+  border-radius: .75rem;
+}
+
 .eq-turnstile-halang {
   margin: 0;
   border: 1px solid #FDE68A;
   border-left: 3px solid #F59E0B;
-  border-radius: .7rem;
+  border-radius: .75rem;
   background: #FFFBEB;
   padding: .6rem .8rem;
   font-size: 12px;

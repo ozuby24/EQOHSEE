@@ -17,6 +17,16 @@ const props = defineProps<{
 
   /** Penanda pintu dari Turnstile::TINDAKAN, agar tokennya terikat ke sini. */
   tindakan?: string | null;
+
+  /**
+   * Panjang sandi terpendek yang diterima, dari AturanSandi::MINIMAL.
+   *
+   * Dikirim server, tidak ditulis di sini. Angka yang ditulis di dua
+   * tempat akan berbeda pada suatu hari, dan yang membacanya diberi
+   * tahu batas yang salah oleh formulir yang menolaknya dengan batas
+   * yang lain.
+   */
+  sandiMinimal: number;
 }>();
 
 const form = useForm({
@@ -57,7 +67,11 @@ function daftar() {
     <div class="grid grid-cols-2 gap-3"><div><label class="label">NRP / Employee ID</label><input v-model="form.employee_id" class="input"></div><div><label class="label">Departemen</label><input v-model="form.department" list="departments" class="input"><datalist id="departments"><option v-for="d in departments" :key="d" :value="d" /></datalist></div></div>
     <div><label class="label">Jabatan</label><select v-model="form.position" required class="input" aria-label="Jabatan"><option value="">— pilih jabatan —</option><option v-for="p in positions" :key="p" :value="p">{{ p }}</option></select></div>
     <div><label class="label">Perusahaan</label><select v-model="form.company_id" class="input" aria-label="Perusahaan"><option value="">— pilih perusahaan —</option><option v-for="c in companies" :key="c.id" :value="String(c.id)">{{ c.name }}</option></select></div>
-    <div><label class="label">Kata sandi</label><InputSandi v-model="form.password" required autocomplete="new-password" kelas="input" label="baru" /></div>
+    <div>
+      <label class="label">Kata sandi</label>
+      <InputSandi v-model="form.password" required autocomplete="new-password" kelas="input" label="baru" />
+      <p class="petunjuk">Minimal {{ sandiMinimal }} huruf, tanpa syarat huruf besar atau angka. Kalimat pendek seperti &laquo;kopi pagi di tambang&raquo; lebih mudah diingat sekaligus lebih sulit ditebak daripada satu kata bercampur angka.</p>
+    </div>
     <div><label class="label">Ulangi kata sandi</label><InputSandi v-model="form.password_confirmation" required autocomplete="new-password" kelas="input" label="ulangan" /></div>
     <VerifikasiTurnstile v-model="form['cf-turnstile-response']"
                          :kunci="props.turnstile ?? null" :tindakan="props.tindakan ?? null"
@@ -71,4 +85,5 @@ function daftar() {
 .label { display:block; margin-bottom:.375rem; font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#78716c }
 .input { width:100%; border:1px solid #e7e5e4; border-radius:.75rem; background:#fff; padding:.7rem 1rem; font-size:.875rem; transition:box-shadow .15s,border-color .15s }
 .input:focus { outline:none; border-color:#f57c00; box-shadow:0 0 0 3px rgb(245 124 0 / .15) }
+.petunjuk { margin:.4rem 0 0; font-size:11.5px; line-height:1.5; color:#78716c }
 </style>

@@ -4,6 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -49,6 +50,12 @@ class PasswordResetTest extends TestCase
 
     public function test_password_can_be_reset_with_valid_token(): void
     {
+        /* Daftar bocoran dipalsukan: uji ini menguji alur penggantian
+           sandinya, bukan pemeriksaan HIBP — yang diuji tersendiri di
+           AturanSandiTest. Tanpa ini, tiap jalannya menembak layanan
+           luar yang sungguhan. */
+        Http::fake(['api.pwnedpasswords.com/*' => Http::response('')]);
+
         Notification::fake();
 
         $user = User::factory()->create();
@@ -59,8 +66,8 @@ class PasswordResetTest extends TestCase
             $response = $this->post('/reset-password', [
                 'token' => $notification->token,
                 'email' => $user->email,
-                'password' => 'password',
-                'password_confirmation' => 'password',
+                'password' => 'sandi uji yang panjang',
+                'password_confirmation' => 'sandi uji yang panjang',
             ]);
 
             $response

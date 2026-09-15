@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\{Company, User};
-use App\Support\Turnstile;
+use App\Support\{AturanSandi, Turnstile};
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -31,6 +31,7 @@ class RegisteredUserController extends Controller
                fitur itu ada. */
             'turnstile'   => Turnstile::kunciSitus(),
             'tindakan'    => Turnstile::TINDAKAN['daftar'],
+            'sandiMinimal' => AturanSandi::MINIMAL,
         ]);
     }
 
@@ -52,7 +53,7 @@ class RegisteredUserController extends Controller
                akun, masing-masing memicu satu surel verifikasi dari
                server ini. */
             Turnstile::KOLOM => Turnstile::aturan(Turnstile::TINDAKAN['daftar']),
-        ]);
+        ], AturanSandi::pesan());
 
         /* Tokennya sengaja TIDAK dibuang dari $data di sini.
            User::$fillable adalah daftar putih, jadi cf-turnstile-response
