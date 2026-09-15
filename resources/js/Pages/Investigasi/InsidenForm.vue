@@ -48,7 +48,7 @@ function simpan() {
 <template>
   <Head title="Lapor Insiden" />
 
-  <div class="max-w-[1000px] mx-auto space-y-5">
+  <div class="space-y-5">
     <section>
       <h2 class="text-xl font-bold text-cam-ink">Lapor Insiden</h2>
       <p class="text-[12.5px] text-stone-500 mt-0.5">

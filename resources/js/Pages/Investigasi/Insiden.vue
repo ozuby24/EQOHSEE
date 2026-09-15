@@ -45,7 +45,7 @@ function saring(kunci: string, nilai: string) {
 <template>
   <Head :title="props.judul" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
     <section class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <h2 class="text-xl font-bold text-cam-ink">Register Insiden</h2>

@@ -30,7 +30,7 @@ const lebar = (nilai: number | null, bobot: number) =>
 <template>
   <Head title="PTPKKP — Summary" />
 
-  <div class="max-w-6xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <PickerTpkkp v-bind="picker" />
 

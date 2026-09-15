@@ -73,7 +73,7 @@ const pilihan =
 <template>
   <Head title="Monitor Hazard Report" />
 
-  <div class="max-w-6xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <div class="grid gap-3 grid-cols-2 lg:grid-cols-5">
       <div v-for="k in kartu" :key="k.kunci"

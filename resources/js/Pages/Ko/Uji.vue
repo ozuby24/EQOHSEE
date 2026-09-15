@@ -84,7 +84,7 @@ async function hapus(id: number, kode: string) {
 <template>
   <Head title="Uji Kelayakan SPIP" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <section class="flex flex-wrap items-end justify-between gap-4">
       <div>

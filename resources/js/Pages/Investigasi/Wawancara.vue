@@ -94,7 +94,7 @@ const NAMA_TINGKAT: Record<number, string> = {
 <template>
   <Head :title="`Wawancara · ${props.inv?.nomor ?? ''}`" />
 
-  <div class="max-w-[1500px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <!-- ══════════ kepala ══════════ -->
     <section class="flex flex-wrap items-start justify-between gap-4">

@@ -59,7 +59,7 @@ const label = 'block text-[11px] font-bold uppercase tracking-wide text-stone-50
 <template>
   <Head :title="`Inspeksi ${i.kode}`" />
 
-  <div class="max-w-6xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <div class="bg-white rounded-2xl shadow-card border border-stone-100 p-5">
       <div class="flex flex-wrap items-start justify-between gap-3">

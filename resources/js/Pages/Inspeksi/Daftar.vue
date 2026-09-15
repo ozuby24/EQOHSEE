@@ -36,7 +36,7 @@ const pilihan =
 <template>
   <Head title="Daftar Inspeksi" />
 
-  <div class="max-w-6xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <div class="bg-white rounded-2xl shadow-card border border-stone-100 p-3 flex flex-wrap items-center gap-2">
       <select v-model="isi.status" :class="pilihan" @change="kirim" aria-label="Status">

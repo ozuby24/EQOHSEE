@@ -36,7 +36,7 @@ const chip = 'text-[9.5px] font-bold uppercase tracking-wide px-2 py-0.5 rounded
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-5xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <div class="grid gap-3 grid-cols-2 lg:grid-cols-4">
       <div v-for="k in kpi" :key="k.label"

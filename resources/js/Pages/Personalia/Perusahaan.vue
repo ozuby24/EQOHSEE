@@ -84,7 +84,7 @@ async function hapusLogo() {
 <template>
   <Head title="Data Perusahaan" />
 
-  <div class="max-w-[900px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <div v-if="admin" class="bg-white rounded-2xl shadow-card border border-stone-100 p-4">
       <div class="flex flex-wrap items-end gap-3">

@@ -34,7 +34,7 @@ const chip = 'text-[9.5px] font-bold px-2 py-0.5 rounded tracking-wide uppercase
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-6xl mx-auto">
+  <div class="">
 
     <div class="flex flex-wrap items-center gap-2.5 mb-5">
       <form class="flex-1 min-w-0 basis-[200px]" @submit.prevent="cari">

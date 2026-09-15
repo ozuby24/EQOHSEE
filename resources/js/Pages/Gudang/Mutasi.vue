@@ -51,7 +51,7 @@ const label = 'block text-[12px] font-semibold text-cam-ink mb-1.5';
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
     <div class="grid gap-5 lg:grid-cols-3">
 
       <section v-if="bolehCatat" class="eq-panel lg:col-span-1 self-start">

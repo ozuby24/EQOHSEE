@@ -29,7 +29,7 @@ async function hapus(url: string, nama: string, dipakai: number) {
 <template>
   <Head title="Jenis & Parameter Inspeksi" />
 
-  <div class="max-w-5xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <div class="bg-white rounded-2xl shadow-card border border-stone-100 p-3 flex items-center gap-2">
       <p class="text-[12px] text-stone-500 px-1">

@@ -78,7 +78,7 @@ const kpi: Array<{ label: string; value: () => number | string; hint: string; to
 
 <template>
   <Head title="Dashboard" />
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
     <div class="eq-kpi-baris">
       <article v-for="item in kpi" :key="item.label" class="eq-kpi"><span class="eq-kpi-ikon" :class="`t-${item.tone}`"><IkonStat :nama="item.ikon" :ukuran="18" /></span><span class="eq-kpi-isi"><span class="eq-kpi-label">{{ item.label }}</span><span class="eq-kpi-nilai">{{ item.value() }}</span><span class="eq-kpi-ket">{{ item.hint }}</span></span></article>
     </div>

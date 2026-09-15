@@ -695,6 +695,92 @@ class LapisanTampilanTest extends TestCase
     }
 
     /**
+     * SATU LEBAR KOLOM, dinyatakan sekali di kerangka.
+     *
+     * AppLayout membungkus kop, bilah pindah, dan slot halaman dalam
+     * satu kolom `max-w-[1400px] mx-auto`. Halaman yang menyatakan
+     * pembatas lebarnya SENDIRI pada akar templatnya melawan kolom itu,
+     * dan yang terlihat adalah isi yang menciut di bawah kepala yang
+     * jauh lebih lebar — kop terhampar 1400px sementara badannya 1024,
+     * dengan rongga kosong ratusan piksel di kedua sisi.
+     *
+     * Terukur sebelum ini: 90 dari 204 halaman begitu, dengan sembilan
+     * angka berbeda — 2xl, 3xl, 4xl, 5xl, 6xl, 900px, 1000px, 1100px,
+     * 1200px, 1240px, 1280px. Tidak satu pun disengaja sebagai
+     * keputusan bersama; masing-masing ditulis pada harinya sendiri.
+     *
+     * Yang di ATAS 1400px lebih buruk lagi: ia tidak mengerjakan apa
+     * pun. Kalender roster meminta 1600px dan diam-diam dijepit
+     * kerangka menjadi 1400 — niat yang tertulis, terbaca orang
+     * berikutnya, dan tidak pernah berlaku.
+     *
+     * YANG MASIH BOLEH: pembatas di bawah 896px. Itu ukuran BACA untuk
+     * formulir satu kolom dan halaman naskah — merentangkan tumpukan
+     * kolom isian sampai 1400px membuatnya lebih buruk, bukan lebih
+     * proporsional. Yang dijaga di sini hanya rentang yang tidak punya
+     * pembenaran: cukup lebar untuk jelas dimaksudkan sebagai wadah
+     * halaman, tetapi lebih sempit daripada kolomnya sendiri.
+     */
+    public function test_halaman_tidak_menyatakan_lebar_kolomnya_sendiri(): void
+    {
+        $px = ['max-w-2xl' => 672, 'max-w-3xl' => 768, 'max-w-4xl' => 896,
+               'max-w-5xl' => 1024, 'max-w-6xl' => 1152, 'max-w-7xl' => 1280];
+
+        $kerangka = file_get_contents(resource_path('js/Layouts/AppLayout.vue'));
+
+        preg_match('/max-w-\[(\d+)px\]\s+mx-auto/', $kerangka, $m);
+        $this->assertNotEmpty($m, 'Kolom kerangka tidak lagi berbentuk yang dikenal penjaga ini.');
+
+        $kolom = (int) $m[1];
+
+        /* Halaman di luar kerangka punya geometrinya sendiri: lembar
+           cetak diukur kertas, halaman masuk dan halaman pemasaran
+           berdiri sendiri tanpa bilah samping. */
+        $luar = ['/Print/', '/Auth/', 'Pilar.vue', 'Landing.vue', 'Lembar.vue'];
+
+        $it = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(resource_path('js/Pages')));
+
+        $salah = [];
+
+        foreach ($it as $f) {
+            if (! $f->isFile() || $f->getExtension() !== 'vue') continue;
+
+            $jalur = str_replace('\\', '/', $f->getPathname());
+            foreach ($luar as $x) if (str_contains($jalur, trim($x, '/'))) continue 2;
+
+            $isi = file_get_contents($f->getPathname());
+            $t   = strpos($isi, '<template>');
+            if ($t === false) continue;
+
+            if (! preg_match('/\n  <div class="([^"]*\bmax-w-[^\s"]+\b[^"]*)"/',
+                             substr($isi, $t), $mm)) continue;
+
+            foreach (explode(' ', $mm[1]) as $kelas) {
+                if (! str_starts_with($kelas, 'max-w-')) continue;
+
+                $w = $px[$kelas] ?? null;
+
+                if ($w === null && preg_match('/max-w-\[(\d+)px\]/', $kelas, $mp)) {
+                    $w = (int) $mp[1];
+                }
+
+                if ($w === null || $w < 896) break;   // ukuran baca — sah
+
+                $salah[] = basename(dirname($jalur)).'/'.$f->getFilename()
+                    ." memakai {$kelas} ({$w}px)";
+                break;
+            }
+        }
+
+        $this->assertSame([], $salah,
+            "Akar halaman menyatakan lebar kolomnya sendiri. Lebih sempit daripada "
+            ."{$kolom}px membuat isi menciut di bawah kopnya; lebih lebar tidak "
+            ."mengerjakan apa pun sebab kerangka menjepitnya. Kolomnya dinyatakan "
+            ."sekali saja, di AppLayout:\n  ".implode("\n  ", $salah));
+    }
+
+    /**
      * Pengaman geser-ke-samping harus `clip`, bukan `hidden`.
      *
      * Keduanya sama-sama memotong yang meluber ke samping, dan justru

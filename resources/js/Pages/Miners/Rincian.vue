@@ -43,7 +43,7 @@ const SEBAB: Record<string, string> = {
 <template>
   <Head :title="props.judul" />
 
-  <div class="max-w-[1200px] mx-auto space-y-5">
+  <div class="space-y-5">
     <section class="flex flex-wrap items-end justify-between gap-4">
       <div class="min-w-0">
         <Link href="/miners" class="text-[11.5px] text-stone-400 hover:underline">← Daftar pekerja</Link>

@@ -15,7 +15,7 @@ defineProps<HalamanDetailIso>();
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-4xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <section class="kartu-lux rounded-2xl p-6">
       <div class="flex flex-wrap items-start justify-between gap-3">

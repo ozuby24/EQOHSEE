@@ -89,7 +89,7 @@ const angka = (n: number) => (n >= 0 ? '+' : '') + n.toFixed(3);
 <template>
   <Head title="PTPKKP — Program Improvement" />
 
-  <div class="max-w-5xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <PickerTpkkp v-bind="picker" />
 

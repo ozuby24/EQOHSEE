@@ -180,7 +180,7 @@ const berisi = (baris: any[] | undefined) =>
 <template>
   <Head :title="props.judul" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <!-- ═══ 1 · apa yang harus dikerjakan hari ini ═══ -->
     <section v-if="mendesak.length" class="rounded-2xl border p-4 sm:p-5"

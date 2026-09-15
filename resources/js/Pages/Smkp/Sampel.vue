@@ -103,7 +103,7 @@ const isian = 'ring-focus w-full rounded-lg border border-stone-200 px-3 py-2 te
 <template>
   <Head title="Matriks Metode & Sampel Audit" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
     <!-- Ringkasan hidup. Angka yang paling dibutuhkan bukan berapa yang
          sudah diisi melainkan berapa yang BELUM — itulah pekerjaan yang
          tersisa sebelum tim turun ke lapangan. -->

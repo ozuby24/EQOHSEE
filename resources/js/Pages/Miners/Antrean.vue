@@ -20,7 +20,7 @@ const baris = computed<any[]>(() => (props.baris ?? []) as any[]);
 <template>
   <Head :title="props.judul" />
 
-  <div class="max-w-[1200px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
       <div class="overflow-x-auto">

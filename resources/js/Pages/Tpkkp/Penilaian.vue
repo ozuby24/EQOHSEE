@@ -184,7 +184,7 @@ const bukaTarget = reactive<Record<string, boolean>>({});
 <template>
   <Head title="PTPKKP — Penilaian" />
 
-  <div class="max-w-6xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <PickerTpkkp v-bind="picker" />
 

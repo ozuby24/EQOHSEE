@@ -80,7 +80,7 @@ const label = 'block text-[11px] font-bold uppercase tracking-wide text-stone-50
 <template>
   <Head title="Penyusunan Laporan Audit" />
 
-  <div class="max-w-[1100px] mx-auto space-y-5">
+  <div class="space-y-5">
     <section class="rounded-2xl border border-stone-200 bg-stone-50 p-4 text-[12.5px]">
       <p class="font-bold text-cam-ink">
         {{ props.rekapNarasi?.terisi ?? 0 }} dari {{ props.rekapNarasi?.total ?? 0 }} bagian naratif terisi

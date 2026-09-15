@@ -30,7 +30,7 @@ const angka = (n: number) => Number.isInteger(n) ? String(n) : n.toFixed(1);
 <template>
   <Head :title="props.judul" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <!-- "Aspek 3 dari 3" tetap di sini: kop kerangka menyebut judul
            dan modulnya, tetapi tidak tahu bahwa halaman ini satu dari

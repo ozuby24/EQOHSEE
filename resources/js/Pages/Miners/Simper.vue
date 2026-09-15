@@ -82,7 +82,7 @@ const simpolDituntut = computed(() =>
   <Head :title="props.judul" />
   <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
       <h3 class="text-[13.5px] font-bold text-cam-ink mb-3">SIMPER baru</h3>

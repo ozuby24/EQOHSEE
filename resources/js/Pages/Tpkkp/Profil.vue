@@ -48,11 +48,22 @@ function simpan() {
 <template>
   <Head title="PTPKKP — Profil" />
 
-  <div class="max-w-3xl mx-auto space-y-5">
+  <!-- Halaman mengisi kolomnya, kotak isian tidak.
+       Pembatas lebar dulu dipasang pada AKAR halaman, dan yang ikut
+       tersempit bukan hanya kolom isiannya: bilah pindah di atas —
+       dua puluh satu pil — terhimpit menjadi tiga baris sementara kop
+       di atasnya terhampar selebar 1400px. Yang terlihat: isi halaman
+       menciut di bawah kepala yang jauh lebih lebar.
+
+       Pembatasnya kini duduk pada KOTAK ISIAN saja. Kolom teks tetap
+       punya ukuran baca yang wajar, sementara bilah pindah, kop, dan
+       apa pun yang memang ingin lebar memakai kolom yang sama dengan
+       seluruh aplikasi. -->
+  <div class="space-y-5">
 
     <PickerTpkkp v-bind="picker" />
 
-    <div class="bg-white rounded-2xl border border-stone-200 p-6 space-y-4">
+    <div class="bg-white rounded-2xl border border-stone-200 p-6 space-y-4 max-w-3xl">
       <h3 class="text-[14px] font-bold text-cam-ink">Profil Penilaian {{ tahun }}</h3>
 
       <div v-for="[nama, label] in medan" :key="nama">

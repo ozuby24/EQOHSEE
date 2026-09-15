@@ -62,7 +62,7 @@ const bolehTindak = computed(() =>
   <Head :title="props.judul" />
   <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
     <section>
       <p class="text-[12.5px] text-stone-500 mt-0.5">
         {{ props.subjudul }} Ambang kelulusan {{ props.NILAI_LULUS }}, paling banyak

@@ -50,7 +50,7 @@ async function hapus(pjp: Record<string, any>) {
 <template>
   <Head :title="props.judul" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
     <!--
       Judul dan tombol menumpuk pada layar sempit. Dipaksa sebaris,
       deretan tombol ini meluber keluar layar di lebar ~390px — tanpa

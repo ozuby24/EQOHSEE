@@ -94,7 +94,7 @@ const HURUF = ['A', 'B', 'C', 'D'];
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-4xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>

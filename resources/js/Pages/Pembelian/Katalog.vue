@@ -55,7 +55,7 @@ function kirim() {
 <template>
   <Head :title="props.judul" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
 
 
     <!-- Katalog kosong menyebut SEBABNYA. Halaman putih tanpa

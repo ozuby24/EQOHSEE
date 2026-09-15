@@ -83,7 +83,7 @@ const perluDitindak = computed(() =>
 <template>
   <Head :title="props.judul" />
 
-  <div class="max-w-[1200px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <p v-if="perluDitindak === 0"
        class="rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-[12.5px] text-emerald-800">

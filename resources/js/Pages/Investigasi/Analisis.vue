@@ -117,7 +117,7 @@ const WARNA_LAPIS: Record<number, string> = { 1: '#B45309', 2: '#0F766E', 3: '#7
 <template>
   <Head :title="`Analisis SCAT · ${props.inv?.nomor ?? ''}`" />
 
-  <div class="max-w-[1500px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <!-- ══════════ kepala ══════════ -->
     <section class="flex flex-wrap items-start justify-between gap-4">

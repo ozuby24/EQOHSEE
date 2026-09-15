@@ -18,7 +18,7 @@ const nadaSisa = (sisa: number) => (sisa < 0 ? 't-merah' : sisa <= 30 ? 't-kunin
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <section class="eq-panel">
       <div class="eq-panel-kepala">

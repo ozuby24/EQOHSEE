@@ -34,7 +34,7 @@ function tautan(b: any): string {
 <template>
   <Head :title="props.judul" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
     <section class="flex flex-wrap items-end justify-between gap-4">
       <div>
       </div>

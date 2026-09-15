@@ -14,7 +14,7 @@ defineProps<HalamanDaftarEvaluasi>();
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-5xl mx-auto">
+  <div class="">
 
     <div v-if="bolehMenilai" class="flex flex-wrap items-center justify-between gap-3 mb-5">
       <p class="text-[12.5px] text-stone-400">Penilaian peserta setelah pelatihan selesai.</p>

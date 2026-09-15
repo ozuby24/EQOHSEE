@@ -57,7 +57,7 @@ const rinci: Array<[string, string | null]> = [
 <template>
   <Head :title="`Laporan ${r.kode}`" />
 
-  <div class="max-w-4xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <div class="bg-white rounded-2xl shadow-card border border-stone-100 p-5">
       <div class="flex flex-wrap items-start justify-between gap-3">
