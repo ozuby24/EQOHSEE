@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pembelian\{Pembayaran, Pesanan, Produk};
-use App\Support\{Berkas, Media, Modules, Pembelian, Pillars};
+use App\Support\{Berkas, Media, Modules, Pembelian, Pillars, Waktu};
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -307,12 +307,82 @@ class PembelianController extends Controller
             'saring'   => ['status' => $request->get('status')],
             'opsiStatus' => Pesanan::LABEL,
             'baris'    => $baris->map(fn (Pesanan $p) => $this->barisPesanan($p))->values(),
-            'ringkas'  => [
-                ['Menunggu bayar',      $baris->where('status', Pesanan::MENUNGGU_BAYAR)->count(), 'netral'],
-                ['Menunggu verifikasi', $baris->where('status', Pesanan::MENUNGGU_VERIFIKASI)->count(), 'ingat'],
-                ['Lunas',               $baris->where('status', Pesanan::LUNAS)->count(), 'baik'],
-            ],
+
+            /* Dihitung dari SELURUH tagihan, bukan dari $baris.
+             *
+               $baris sudah disaring penyaring status di atas, jadi
+               menghitung ringkasannya dari situ membuat angkanya berubah
+               setiap kali penyaringnya digeser: menyaring "Lunas"
+               menampilkan "Menunggu bayar 0" padahal ada tujuh. Tidak ada
+               galat yang muncul — hanya angka yang salah, pada halaman
+               yang dipakai memutuskan uang. */
+            'ringkas'  => $this->ringkasKeadaan(),
+
+            /* Panel uang. Ada di halaman ini, bukan di halaman
+               tersendiri: yang memutuskan penagihan sedang membaca daftar
+               tagihannya, dan angka yang harus dibuka di tempat lain
+               adalah angka yang tidak ikut menentukan keputusan. */
+            'arusKas'  => $this->arusKas(),
         ]);
+    }
+
+    /** @return list<array{0:string,1:int,2:string}> */
+    private function ringkasKeadaan(): array
+    {
+        $n = Pembelian::jumlahPerKeadaan();
+
+        return [
+            ['Menunggu bayar',      $n[Pesanan::MENUNGGU_BAYAR] ?? 0, 'netral'],
+            ['Menunggu verifikasi', $n[Pesanan::MENUNGGU_VERIFIKASI] ?? 0, 'ingat'],
+            ['Lunas',               $n[Pesanan::LUNAS] ?? 0, 'baik'],
+        ];
+    }
+
+    /**
+     * Angka uang untuk panel arus kas, berikut kalimat yang
+     * menerangkannya.
+     *
+     * Keterangannya disusun di sini, bukan di Vue: yang menerangkan
+     * angka harus lahir dari tempat yang sama dengan angkanya, supaya
+     * keduanya tidak dapat menceritakan hal yang berbeda.
+     */
+    private function arusKas(): array
+    {
+        $k = Pembelian::arusKas();
+
+        return [
+            [
+                'label'  => 'Pendapatan masuk',
+                'nilai'  => $k['masuk']['nilai'],
+                'ket'    => $k['masuk']['jumlah'].' tagihan lunas',
+                'nada'   => 'baik',
+                'utama'  => true,
+            ],
+            [
+                'label'  => 'Belum masuk',
+                'nilai'  => $k['ditunggu']['nilai'],
+                'ket'    => $k['ditunggu']['jumlah'] > 0
+                    ? $k['ditunggu']['jumlah'].' tagihan masih berlaku'
+                    : 'Tidak ada tagihan berjalan',
+                'nada'   => 'ingat',
+                'utama'  => false,
+            ],
+            [
+                'label'  => 'Masuk bulan ini',
+                'nilai'  => $k['bulanIni']['nilai'],
+                'ket'    => Waktu::kini()->translatedFormat('F Y')
+                    .' · '.$k['bulanIni']['jumlah'].' tagihan',
+                'nada'   => 'netral',
+                'utama'  => false,
+            ],
+            [
+                'label'  => 'Tidak tertagih',
+                'nilai'  => $k['hangus']['nilai'],
+                'ket'    => $k['hangus']['jumlah'].' ditolak, batal, atau lewat tenggat',
+                'nada'   => 'netral',
+                'utama'  => false,
+            ],
+        ];
     }
 
     private function barisPesanan(Pesanan $p): array

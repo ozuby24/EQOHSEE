@@ -96,6 +96,120 @@ final class Pembelian
     }
 
     /**
+     * Arus kas: yang sudah masuk, yang masih ditunggu, dan bulan ini.
+     *
+     * ── DIHITUNG DARI SELURUH TAGIHAN, BUKAN DARI YANG SEDANG TAMPIL ──
+     *
+     * Halaman tagihan punya penyaring status. Angka uang yang dihitung
+     * dari baris yang sedang tampil akan berubah setiap kali penyaringnya
+     * digeser — menyaring "Lunas" membuat piutangnya nol, menyaring
+     * "Menunggu bayar" membuat pendapatannya nol. Yang membacanya tidak
+     * melihat galat; ia melihat angka yang salah, pada halaman yang
+     * dipakai memutuskan uang.
+     *
+     * ── YANG DIANGGAP MASIH AKAN MASUK ──
+     *
+     * Bukan sekadar "belum lunas". Tagihan yang lewat tenggat tetap
+     * berstatus menunggu_bayar di basis data sampai pembersihnya
+     * dijalankan, sedangkan daftarnya sudah menuliskannya sebagai
+     * KEDALUWARSA — lihat Pesanan::keadaan(). Menghitungnya sebagai
+     * piutang membuat panel uang berselisih dengan tabel tepat di
+     * bawahnya, dan yang membacanya akan mempercayai angka yang lebih
+     * besar.
+     *
+     * Menunggu verifikasi tetap dihitung: uangnya boleh jadi sudah
+     * ditransfer, hanya buktinya yang belum diperiksa.
+     *
+     * ── KAPAN UANG DISEBUT MASUK ──
+     *
+     * Pada diverifikasi_pada — saat seseorang memeriksa bukti bayarnya —
+     * bukan pada created_at. Tagihan yang terbit Desember dan dibayar
+     * Januari adalah pendapatan Januari; memakai tanggal terbitnya
+     * memindahkan uang ke bulan yang tidak pernah menerimanya.
+     *
+     * @return array<string, array{nilai: int, jumlah: int}>
+     */
+    public static function arusKas(): array
+    {
+        $kini = now();
+
+        $hitung = fn ($q) => (array) $q
+            ->selectRaw('COALESCE(SUM(total), 0) AS nilai, COUNT(*) AS jumlah')
+            ->first()?->only(['nilai', 'jumlah']);
+
+        $rapi = fn (array $a) => [
+            'nilai'  => (int) ($a['nilai'] ?? 0),
+            'jumlah' => (int) ($a['jumlah'] ?? 0),
+        ];
+
+        return [
+            'masuk' => $rapi($hitung(
+                Pesanan::query()->where('status', Pesanan::LUNAS)
+            )),
+
+            'ditunggu' => $rapi($hitung(
+                Pesanan::query()->where(function ($q) use ($kini) {
+                    $q->where('status', Pesanan::MENUNGGU_VERIFIKASI)
+                        ->orWhere(function ($w) use ($kini) {
+                            $w->where('status', Pesanan::MENUNGGU_BAYAR)
+                                ->where(function ($e) use ($kini) {
+                                    $e->whereNull('kedaluwarsa_pada')
+                                        ->orWhere('kedaluwarsa_pada', '>=', $kini);
+                                });
+                        });
+                })
+            )),
+
+            'bulanIni' => $rapi($hitung(
+                Pesanan::query()->where('status', Pesanan::LUNAS)
+                    ->whereBetween('diverifikasi_pada', [
+                        $kini->copy()->startOfMonth(),
+                        $kini->copy()->endOfMonth(),
+                    ])
+            )),
+
+            /* Yang tidak akan pernah masuk: ditolak, dibatalkan, dan yang
+               lewat tenggat. Ditampilkan supaya kebocoran penagihan
+               terlihat sebagai angka, bukan disimpulkan dari selisih. */
+            'hangus' => $rapi($hitung(
+                Pesanan::query()->where(function ($q) use ($kini) {
+                    $q->whereIn('status', [
+                        Pesanan::DITOLAK, Pesanan::BATAL, Pesanan::KEDALUWARSA,
+                    ])->orWhere(function ($w) use ($kini) {
+                        $w->where('status', Pesanan::MENUNGGU_BAYAR)
+                            ->whereNotNull('kedaluwarsa_pada')
+                            ->where('kedaluwarsa_pada', '<', $kini);
+                    });
+                })
+            )),
+        ];
+    }
+
+    /**
+     * Banyaknya tagihan per keadaan, dari SELURUH tagihan.
+     *
+     * Alasannya sama dengan arusKas(): angka ringkasan yang dihitung dari
+     * baris yang sedang tampil berubah mengikuti penyaringnya.
+     *
+     * @return array<string, int>
+     */
+    public static function jumlahPerKeadaan(): array
+    {
+        $kini = now();
+
+        $menungguBayar = Pesanan::where('status', Pesanan::MENUNGGU_BAYAR)
+            ->where(function ($e) use ($kini) {
+                $e->whereNull('kedaluwarsa_pada')->orWhere('kedaluwarsa_pada', '>=', $kini);
+            })->count();
+
+        return [
+            Pesanan::MENUNGGU_BAYAR      => $menungguBayar,
+            Pesanan::MENUNGGU_VERIFIKASI => Pesanan::where('status', Pesanan::MENUNGGU_VERIFIKASI)->count(),
+            Pesanan::LUNAS               => Pesanan::where('status', Pesanan::LUNAS)->count(),
+        ];
+    }
+
+    /**
      * Kirim tagihan: statusnya berpindah, dan tenggatnya mulai berjalan.
      *
      * Pesanan tanpa satu baris pun tidak dapat dikirim. Tagihan nol
