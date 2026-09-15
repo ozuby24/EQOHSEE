@@ -70,9 +70,23 @@ final class Pembelian
                 'produk_id'  => $produk->id,
                 'nama'       => $produk->nama,
                 'harga'      => $produk->harga,
+
+                /* Ikut disalin, seperti harganya. Tanpa angka ini,
+                   subtotal yang tersimpan tidak dapat lagi diterangkan
+                   dari data mana pun yang masih ada begitu harga
+                   tambahannya diubah — dan tagihan yang totalnya tidak
+                   dapat diterangkan adalah tagihan yang tidak dapat
+                   dipertanggungjawabkan kepada pembelinya. */
+                'harga_tambahan' => $produk->harga_tambahan,
+
                 'masa_bulan' => $produk->masa_bulan,
                 'jumlah'     => $jumlah,
-                'subtotal'   => $produk->harga * $jumlah,
+
+                /* Dihitung Produk::subtotal, bukan dikalikan di sini.
+                   Perkalian yang ditulis ulang di tempat kedua akan
+                   melewatkan harga bertingkatnya, dan tagihannya tetap
+                   terlihat wajar — hanya angkanya yang salah. */
+                'subtotal'   => $produk->subtotal($jumlah),
             ]);
         }
 

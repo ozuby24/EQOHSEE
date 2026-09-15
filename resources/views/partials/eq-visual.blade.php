@@ -2209,6 +2209,27 @@ body.eq-sempit .eq-semboyan{display:none}
   display:flex;flex-direction:column;align-self:start}
 .jual-paket-tombol{margin-top:1.75rem}
 
+/* Harga website kedua dan seterusnya, di dalam kartu harga yang gelap.
+   Dipisahkan garis atas, bukan sekadar diberi jarak: ia aturan harga
+   yang lain, bukan keterangan tambahan atas angka di atasnya. */
+.jual-paket-tambahan{margin-top:1.25rem;padding-top:1.25rem;
+  border-top:1px solid rgb(255 255 255 / .16);
+  font-size:12.5px;line-height:1.6;color:rgb(255 255 255 / .72)}
+.jual-paket-tambahan b{color:#fff;font-weight:700}
+
+/* Kartu layanan tahunan: berdampingan dengan paketnya, bukan di
+   halaman lain. Biaya yang datang lagi tiap tahun dan baru diketahui
+   sesudah menandatangani adalah biaya yang merusak kepercayaan,
+   seberapa pun wajar angkanya. */
+.jual-layanan{background:var(--j-kartu);border:1px solid var(--j-garis);border-radius:12px;
+  padding:1.75rem;margin-top:1.25rem;display:grid;gap:.85rem}
+.jual-layanan-kepala{display:flex;align-items:baseline;justify-content:space-between;
+  gap:1rem;flex-wrap:wrap}
+.jual-layanan-harga{font-size:1.5rem;font-weight:800;letter-spacing:-.02em;white-space:nowrap}
+.jual-layanan-spek{display:flex;flex-wrap:wrap;gap:.4rem}
+.jual-layanan-spek span{border:1px solid var(--j-garis);border-radius:999px;
+  padding:.2rem .7rem;font-size:11.5px;font-weight:600}
+
 .jual-kosong{background:var(--j-kartu);border:1px solid var(--j-garis);border-radius:12px;
   padding:2.5rem;max-width:42rem}
 

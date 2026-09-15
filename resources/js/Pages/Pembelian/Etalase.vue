@@ -39,6 +39,7 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import BlankLayout from '../../Layouts/BlankLayout.vue';
 import Wordmark from '../../Components/Wordmark.vue';
+import { rincianBertingkat, subtotalBertingkat } from '../../hargaBertingkat';
 
 defineOptions({ layout: BlankLayout });
 
@@ -51,10 +52,19 @@ type Pilar = {
   nama: string; ket: string; warna: string; deep: string; light: string;
   ikon: string; foto: string | null; jumlah: number;
 };
-type Paket = { id: number; nama: string; ket: string | null; harga: number; masa: string };
+type Paket = {
+  id: number; nama: string; ket: string | null; harga: number; masa: string;
+
+  /** Harga website kedua dan seterusnya. null berarti tidak bertingkat. */
+  harga_tambahan?: number | null;
+};
+
+/** Server dan hosting, diperpanjang tiap tahun. */
+type Layanan = { id: number; nama: string; ket: string | null; harga: number; masa: string };
 
 const props = defineProps<{
   paket: Paket | null;
+  layanan: Layanan | null;
   aplikasi: Aplikasi[];
   pilar: Record<string, Pilar>;
   adaHarga: boolean;
@@ -77,16 +87,31 @@ const kelompok = computed(() => pilarList.value.map(([slug, w]) => ({
   butir: props.aplikasi.filter((a) => a.pilar === slug),
 })).filter((k) => k.butir.length > 0));
 
-/** Semua yang dapat dibeli, paket dan satuan, dalam satu daftar. */
-const semua = computed<{ id: number; nama: string; harga: number }[]>(() => [
-  ...(props.paket ? [{ id: props.paket.id, nama: props.paket.nama, harga: props.paket.harga }] : []),
+/** Semua yang dapat dibeli: paket, layanan tahunan, dan satuan. */
+const semua = computed<{ id: number; nama: string; harga: number; harga_tambahan?: number | null }[]>(() => [
+  ...(props.paket ? [{
+    id: props.paket.id, nama: props.paket.nama, harga: props.paket.harga,
+    harga_tambahan: props.paket.harga_tambahan ?? null,
+  }] : []),
+  ...(props.layanan ? [{ id: props.layanan.id, nama: props.layanan.nama, harga: props.layanan.harga }] : []),
   ...terjual.value.map((a) => ({ id: a.id as number, nama: a.nama, harga: a.harga as number })),
 ]);
 
 const terpilih = computed(() => semua.value.filter((p) => (pilih[p.id] ?? 0) > 0));
 
+/* Lewat subtotalBertingkat — aturan yang sama dengan yang menagih.
+   Perkalian yang ditulis ulang di sini membuat halaman jual
+   menjanjikan angka yang berbeda dari tagihan yang terbit. */
+function subtotal(p: { id: number; harga: number; harga_tambahan?: number | null }): number {
+  return subtotalBertingkat(p.harga, p.harga_tambahan, pilih[p.id] ?? 0);
+}
+
+function rincian(p: { id: number; harga: number; harga_tambahan?: number | null }): string | null {
+  return rincianBertingkat(p.harga, p.harga_tambahan, pilih[p.id] ?? 0, (n) => rupiah(n));
+}
+
 const total = computed(() =>
-  terpilih.value.reduce((n, p) => n + p.harga * (pilih[p.id] ?? 0), 0));
+  terpilih.value.reduce((n, p) => n + subtotal(p), 0));
 
 const jumlahButir = computed(() =>
   terpilih.value.reduce((n, p) => n + (pilih[p.id] ?? 0), 0));
@@ -392,6 +417,16 @@ onBeforeUnmount(() => {
             </p>
             <p class="jual-tubuh-kecil jual-tubuh-terang mt-2">{{ paket.masa }}</p>
 
+            <!-- Harga website kedua disebut di tempat harga pertamanya
+                 dibaca. Diskon yang baru muncul di keranjang adalah
+                 diskon yang tidak ikut menentukan keputusan orang. -->
+            <p v-if="paket.harga_tambahan !== null && paket.harga_tambahan !== undefined"
+               class="jual-paket-tambahan">
+              Ambil lebih dari satu website?
+              <b>{{ rupiah(paket.harga_tambahan) }}</b> untuk website ke-2 dan seterusnya,
+              masing-masing.
+            </p>
+
             <div class="flex items-center gap-3 mt-7">
               <span class="jual-hitung">
                 <button type="button" aria-label="Kurangi" @click="ubah(paket.id, -1)">−</button>
@@ -418,6 +453,50 @@ onBeforeUnmount(() => {
           <a v-if="tanya" :href="tanya" :target="waUrl ? '_blank' : undefined" rel="noopener"
              class="jual-tombol mt-7">Minta penawaran</a>
           <a v-else href="#harga" class="jual-tombol mt-7">Lihat aplikasinya</a>
+        </div>
+
+        <!-- ── Layanan tahunan ──
+             Ditaruh di bawah paketnya, terbaca pada tarikan mata yang
+             sama. Biaya yang datang lagi tiap tahun dan baru diketahui
+             sesudah menandatangani adalah biaya yang merusak
+             kepercayaan, seberapa pun wajar angkanya. -->
+        <div v-if="layanan" v-singkap="100" class="jual-layanan">
+          <div class="jual-layanan-kepala">
+            <div>
+              <p class="jual-mata">Layanan tahunan</p>
+              <h3 class="jual-h3 mt-1.5">Professional — server &amp; hosting</h3>
+            </div>
+            <p class="jual-layanan-harga">
+              {{ rupiah(layanan.harga) }}<span class="jual-angka-kecil"> / tahun</span>
+            </p>
+          </div>
+
+          <div class="jual-layanan-spek">
+            <span>1 vCPU</span>
+            <span>RAM 1 GB</span>
+            <span>NVMe 60 GB</span>
+            <span>HTTPS</span>
+            <span>Cadangan berkala</span>
+            <span>Pemantauan</span>
+          </div>
+
+          <p class="jual-tubuh-kecil">
+            Berlaku untuk <b>seluruh website</b> pada akun yang sama — bukan per website.
+            Sudah termasuk hosting, pemasangan nama domain, sertifikat HTTPS, cadangan
+            berkala, dan pembaruan keamanan. Diperpanjang setiap tahun.
+          </p>
+
+          <div class="flex items-center gap-3 flex-wrap">
+            <span class="jual-hitung">
+              <button type="button" aria-label="Kurangi" @click="ubah(layanan.id, -1)">−</button>
+              <span class="num">{{ pilih[layanan.id] ?? 0 }}</span>
+              <button type="button" aria-label="Tambah" @click="ubah(layanan.id, 1)">+</button>
+            </span>
+            <button type="button" class="jual-tombol jual-tombol-kecil"
+                    @click="ubah(layanan.id, 1); ke('pesan')">
+              Tambahkan
+            </button>
+          </div>
         </div>
       </div>
     </section>
@@ -547,7 +626,9 @@ onBeforeUnmount(() => {
               <li v-for="p in terpilih" :key="p.id">
                 <span class="jual-pesanan-teks">
                   <span class="jual-baris-nama">{{ p.nama }}</span>
-                  <span class="jual-baris-masa">{{ rupiah(p.harga) }} per butir</span>
+                  <span class="jual-baris-masa">
+                    {{ rincian(p) ?? (rupiah(p.harga) + ' per butir') }}
+                  </span>
                 </span>
                 <span class="jual-pesanan-aksi">
                   <span class="jual-hitung">
@@ -555,7 +636,7 @@ onBeforeUnmount(() => {
                     <span class="num">{{ pilih[p.id] }}</span>
                     <button type="button" aria-label="Tambah" @click="ubah(p.id, 1)">+</button>
                   </span>
-                  <span class="jual-pesanan-jumlah">{{ rupiah(p.harga * pilih[p.id]) }}</span>
+                  <span class="jual-pesanan-jumlah">{{ rupiah(subtotal(p)) }}</span>
                   <button type="button" class="jual-buang" aria-label="Buang" @click="buang(p.id)">×</button>
                 </span>
               </li>

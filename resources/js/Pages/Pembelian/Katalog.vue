@@ -14,6 +14,7 @@
 import { Head, useForm } from '@inertiajs/vue3';
 import { computed, reactive } from 'vue';
 import { propHalaman } from '../../halaman';
+import { rincianBertingkat, subtotalBertingkat } from '../../hargaBertingkat';
 
 const props = propHalaman();
 
@@ -22,14 +23,27 @@ const pilih = reactive<Record<number, number>>({});
 
 const semua = computed<any[]>(() => [
   ...(props.website ?? []),
+  ...(props.layanan ?? []),
   ...(props.aplikasi ?? []),
 ]);
 
 const terpilih = computed(() =>
   semua.value.filter((p) => (pilih[p.id] ?? 0) > 0));
 
+/* Lewat subtotalBertingkat, BUKAN p.harga × banyaknya.
+   Perkalian yang ditulis di sini akan melewatkan harga website kedua
+   dan seterusnya, lalu layar menjanjikan angka yang berbeda dari
+   tagihan yang benar-benar terbit. */
+function subtotal(p: any): number {
+  return subtotalBertingkat(p.harga, p.harga_tambahan, pilih[p.id] ?? 0);
+}
+
+function rincian(p: any): string | null {
+  return rincianBertingkat(p.harga, p.harga_tambahan, pilih[p.id] ?? 0, rupiah);
+}
+
 const total = computed(() =>
-  terpilih.value.reduce((n, p) => n + p.harga * (pilih[p.id] ?? 0), 0));
+  terpilih.value.reduce((n, p) => n + subtotal(p), 0));
 
 function rupiah(n: number) {
   return 'Rp ' + Number(n || 0).toLocaleString('id-ID');
@@ -90,10 +104,53 @@ function kirim() {
                     {{ p.keterangan }}
                   </span>
                   <span class="block text-[11px] text-stone-400 mt-1">{{ p.masa }}</span>
+
+                  <!-- Harga tambahan disebut di baris barangnya, bukan hanya
+                       di ringkasan. Yang membaca daftar harga memutuskan
+                       berapa banyak yang diambil DI SINI. -->
+                  <span v-if="p.harga_tambahan !== null && p.harga_tambahan !== undefined"
+                        class="mt-2 inline-block rounded-lg bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                    Website ke-2 dan seterusnya {{ rupiah(p.harga_tambahan) }} masing-masing
+                  </span>
                 </span>
 
                 <span class="shrink-0 text-right">
                   <span class="block text-[14px] font-bold num text-cam-ink">{{ rupiah(p.harga) }}</span>
+                  <span class="inline-flex items-center gap-2 mt-1.5">
+                    <button type="button" class="beli-plusmin" aria-label="Kurangi"
+                            @click="ubah(p.id, -1)">−</button>
+                    <span class="num w-6 text-center text-[13px] font-semibold">{{ pilih[p.id] ?? 0 }}</span>
+                    <button type="button" class="beli-plusmin" aria-label="Tambah"
+                            @click="ubah(p.id, 1)">+</button>
+                  </span>
+                </span>
+              </li>
+            </ul>
+          </section>
+
+          <!-- layanan tahunan: server, hosting, perpanjangan -->
+          <section v-if="(props.layanan ?? []).length"
+                   class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
+            <header class="px-5 py-3.5 border-b border-stone-100">
+              <h3 class="text-[13.5px] font-bold text-cam-ink">Layanan tahunan</h3>
+              <p class="text-[11.5px] text-stone-500 mt-0.5">
+                Server dan hosting, diperpanjang setiap tahun
+              </p>
+            </header>
+
+            <ul class="divide-y divide-stone-100">
+              <li v-for="p in props.layanan" :key="p.id" class="px-5 py-4 flex items-start gap-4">
+                <span class="min-w-0 flex-1">
+                  <span class="block text-[13px] font-bold text-cam-ink">{{ p.nama }}</span>
+                  <span v-if="p.keterangan" class="block text-[11.5px] text-stone-500 mt-0.5 leading-relaxed">
+                    {{ p.keterangan }}
+                  </span>
+                  <span class="block text-[11px] text-stone-400 mt-1">{{ p.masa }}</span>
+                </span>
+
+                <span class="shrink-0 text-right">
+                  <span class="block text-[14px] font-bold num text-cam-ink">{{ rupiah(p.harga) }}</span>
+                  <span class="block text-[10.5px] text-stone-400">per tahun</span>
                   <span class="inline-flex items-center gap-2 mt-1.5">
                     <button type="button" class="beli-plusmin" aria-label="Kurangi"
                             @click="ubah(p.id, -1)">−</button>
@@ -144,10 +201,19 @@ function kirim() {
           </header>
 
           <ul v-if="terpilih.length" class="px-5 py-3 space-y-1.5 border-b border-stone-100">
-            <li v-for="p in terpilih" :key="p.id" class="flex items-baseline gap-2 text-[12px]">
-              <span class="min-w-0 flex-1 text-stone-600 truncate">{{ p.nama }}</span>
-              <span class="num text-stone-400">×{{ pilih[p.id] }}</span>
-              <span class="num font-semibold text-cam-ink">{{ rupiah(p.harga * pilih[p.id]) }}</span>
+            <li v-for="p in terpilih" :key="p.id" class="text-[12px]">
+              <span class="flex items-baseline gap-2">
+                <span class="min-w-0 flex-1 text-stone-600 truncate">{{ p.nama }}</span>
+                <span class="num text-stone-400">×{{ pilih[p.id] }}</span>
+                <span class="num font-semibold text-cam-ink">{{ rupiah(subtotal(p)) }}</span>
+              </span>
+
+              <!-- Total yang tidak sama dengan harga × banyaknya akan
+                   dibaca sebagai salah hitung kalau tidak diterangkan
+                   tepat di tempat angkanya muncul. -->
+              <span v-if="rincian(p)" class="block text-[10.5px] text-emerald-700 mt-0.5">
+                {{ rincian(p) }}
+              </span>
             </li>
           </ul>
           <p v-else class="px-5 py-4 text-[12px] text-stone-400">Belum ada yang dipilih.</p>

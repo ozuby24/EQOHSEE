@@ -54,6 +54,13 @@ class PembelianController extends Controller
         $paket  = Produk::aktif()->where('jenis', Produk::WEBSITE)
             ->orderBy('urutan')->first();
 
+        /* Layanan tahunan ditampilkan berdampingan dengan paketnya, bukan
+           disembunyikan di halaman lain. Biaya yang datang lagi setiap
+           tahun dan baru diketahui sesudah menandatangani adalah biaya
+           yang merusak kepercayaan, seberapa pun wajar angkanya. */
+        $layanan = Produk::aktif()->where('jenis', Produk::LAYANAN)
+            ->orderBy('urutan')->first();
+
         $pilar = Pillars::all();
 
         /* Foto lapangan per aspek, dipakai kartu pilar dan latar bagian
@@ -104,7 +111,16 @@ class PembelianController extends Controller
                 'nama'  => $paket->nama,
                 'ket'   => $paket->keterangan,
                 'harga' => $paket->harga,
+                'harga_tambahan' => $paket->harga_tambahan,
                 'masa'  => $paket->masaBerlaku(),
+            ] : null,
+
+            'layanan' => $layanan ? [
+                'id'    => $layanan->id,
+                'nama'  => $layanan->nama,
+                'ket'   => $layanan->keterangan,
+                'harga' => $layanan->harga,
+                'masa'  => $layanan->masaBerlaku(),
             ] : null,
 
             'aplikasi' => $aplikasi,
@@ -224,12 +240,15 @@ class PembelianController extends Controller
             'subjudul' => 'Website EQOHSEE dan aplikasi di dalamnya',
 
             'website'  => $this->barisProduk($katalog[Produk::WEBSITE] ?? []),
+            'layanan'  => $this->barisProduk($katalog[Produk::LAYANAN] ?? []),
             'aplikasi' => $this->barisProduk($katalog[Produk::APLIKASI] ?? []),
 
             /* Katalog kosong disebut sebabnya, bukan dibiarkan sebagai
                halaman putih. Yang membacanya harus tahu bahwa yang
                kurang adalah datanya, bukan aplikasinya. */
-            'kosong' => (! ($katalog[Produk::WEBSITE] ?? [])) && (! ($katalog[Produk::APLIKASI] ?? [])),
+            'kosong' => (! ($katalog[Produk::WEBSITE] ?? []))
+                && (! ($katalog[Produk::LAYANAN] ?? []))
+                && (! ($katalog[Produk::APLIKASI] ?? [])),
         ]);
     }
 
@@ -242,6 +261,14 @@ class PembelianController extends Controller
             'nama'       => $p->nama,
             'keterangan' => $p->keterangan,
             'harga'      => $p->harga,
+
+            /* Ikut dikirim supaya layar menghitung dengan aturan yang
+               SAMA dengan yang menagih. Tanpa angka ini, layar hanya
+               bisa mengalikan — dan pembeli membaca total yang berbeda
+               dari tagihan yang ia terima, tanpa satu pun galat yang
+               menyebutkannya. */
+            'harga_tambahan' => $p->harga_tambahan,
+
             'masa'       => $p->masaBerlaku(),
         ])->values()->all();
     }

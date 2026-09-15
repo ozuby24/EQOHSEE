@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * Satu baris tagihan.
  *
- * `nama` dan `harga` DISALIN dari produk saat dipesan, bukan dibaca
+ * `nama`, `harga`, dan `harga_tambahan` DISALIN dari produk saat dipesan, bukan dibaca
  * ulang lewat relasi. Menaikkan harga daftar bulan depan tidak boleh
  * mengubah nilai tagihan yang sudah terkirim — termasuk yang sudah
  * dibayar, yang akan berubah menjadi kurang bayar tanpa ada yang
@@ -18,13 +18,15 @@ class Item extends Model
     protected $table = 'beli_item';
 
     protected $fillable = [
-        'pesanan_id', 'produk_id', 'nama', 'harga', 'masa_bulan', 'jumlah', 'subtotal',
+        'pesanan_id', 'produk_id', 'nama', 'harga', 'harga_tambahan',
+        'masa_bulan', 'jumlah', 'subtotal',
     ];
 
     protected function casts(): array
     {
         return [
-            'harga' => 'integer', 'jumlah' => 'integer',
+            'harga' => 'integer', 'harga_tambahan' => 'integer',
+            'jumlah' => 'integer',
             'subtotal' => 'integer', 'masa_bulan' => 'integer',
         ];
     }
