@@ -2233,6 +2233,100 @@ body.eq-sempit .eq-semboyan{display:none}
 .jual-kosong{background:var(--j-kartu);border:1px solid var(--j-garis);border-radius:12px;
   padding:2.5rem;max-width:42rem}
 
+/* ══════════ PILAR: kisi di kiri, rincian di kanan ══════════
+
+   Rinciannya dulu terbuka DI BAWAH kisinya, mendorong seluruh halaman
+   turun — dan yang baru menekan sebuah kartu kehilangan kartu itu dari
+   pandangan tepat saat ia ingin membandingkannya dengan yang lain.
+
+   Kolom kanannya tetap ada bahkan sebelum ada yang ditekan (aspek
+   pertama terbuka sejak awal), supaya lebar kisinya tidak berubah
+   mendadak pada penekanan pertama. */
+.jual-pilar-tata{display:grid;gap:.75rem;align-items:start}
+@media (min-width:1024px){
+  .jual-pilar-tata{grid-template-columns:minmax(0,1fr) minmax(0,25rem)}
+}
+
+.jual-pilar-kisi{display:grid;gap:.75rem;grid-template-columns:1fr}
+@media (min-width:640px){.jual-pilar-kisi{grid-template-columns:repeat(2,1fr)}}
+
+/* Kartu aspek.
+   Seragam — tanpa ubin dan tautan berwarna sendiri-sendiri. Delapan
+   kartu yang masing-masing membawa warnanya terbaca sebagai pelangi:
+   tidak ada yang menonjol karena semuanya menonjol. Yang berwarna penuh
+   hanya kartu yang sedang dipilih, satu pada satu waktu. */
+.jual-pilar-kartu{display:grid;grid-template-columns:auto 1fr;gap:.2rem .85rem;
+  align-items:center;text-align:left;width:100%;
+  /* Nilai gelapnya ditulis seperti .jual-gelap-kartu, BUKAN lewat
+     var(--j-kartu): variabel itu bernilai #FFFFFF — ia milik bagian
+     terang. Dipakai di sini, kartunya tergambar putih dengan tulisan
+     putih di atasnya, dan yang tersisa di layar hanya kotak kosong.
+     Tertangkap pada tangkapan layar pertama, bukan oleh uji mana pun. */
+  background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);
+  border-radius:12px;padding:1rem 1.1rem;cursor:pointer;
+  transition:border-color .18s ease,background .18s ease,transform .18s ease}
+.jual-pilar-kartu:hover{border-color:rgba(255,255,255,.2);
+  background:rgba(255,255,255,.075);transform:translateY(-1px)}
+.jual-pilar-kartu:focus-visible{outline:2px solid #F57C00;outline-offset:2px}
+
+.jual-pilar-tanda{grid-row:span 2;display:grid;place-items:center;width:38px;height:38px;
+  border-radius:10px;background:rgb(255 255 255 / .06);color:rgb(255 255 255 / .62);
+  transition:background .18s ease,color .18s ease}
+.jual-pilar-nama{font-size:13.5px;font-weight:700;line-height:1.3}
+.jual-pilar-ket{font-size:11.5px;line-height:1.45;color:rgb(255 255 255 / .55)}
+
+.jual-pilar-kartu-aktif{background:rgb(245 124 0 / .10);border-color:rgb(245 124 0 / .55)}
+.jual-pilar-kartu-aktif .jual-pilar-tanda{background:rgb(245 124 0 / .18);color:#FF9800}
+.jual-pilar-kartu-aktif .jual-pilar-ket{color:rgb(255 255 255 / .72)}
+
+/* Panel rincian. Melekat saat digulir pada layar lebar supaya tetap
+   terbaca ketika kisinya lebih panjang daripada panelnya. */
+.jual-pilar-panel{background:rgba(255,255,255,.045);
+  border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:1.5rem}
+@media (min-width:1024px){.jual-pilar-panel{position:sticky;top:5.5rem}}
+
+.jual-pilar-panel-tanda{display:grid;place-items:center;width:44px;height:44px;
+  border-radius:12px;background:color-mix(in srgb, var(--c) 18%, transparent);color:var(--c)}
+
+.jual-pilar-cakupan{display:grid;gap:.9rem;margin-top:1.35rem;list-style:none;padding:0}
+.jual-pilar-cakupan li{border-left:2px solid var(--c);padding-left:.7rem}
+.jual-pilar-cakupan b{display:block;font-size:12.5px;font-weight:700;line-height:1.35}
+.jual-pilar-cakupan span{display:block;font-size:11.5px;line-height:1.5;
+  color:rgb(255 255 255 / .58);margin-top:.15rem}
+
+.jual-pilar-modul-judul{margin-top:1.4rem;font-size:10px;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;color:rgb(255 255 255 / .42)}
+
+/* Perpindahan antaraspek: satu gerakan pendek, bukan pantulan.
+   mode="out-in" pada Vue membuat yang lama keluar dulu, jadi tidak ada
+   dua panel yang sesaat bertumpuk. */
+.jual-panel-enter-active{transition:opacity .22s ease,transform .22s ease}
+.jual-panel-leave-active{transition:opacity .13s ease,transform .13s ease}
+.jual-panel-enter-from{opacity:0;transform:translateX(10px)}
+.jual-panel-leave-to{opacity:0;transform:translateX(-6px)}
+@media (max-width:1023px){
+  .jual-panel-enter-from{transform:translateY(8px)}
+  .jual-panel-leave-to{transform:translateY(-4px)}
+}
+@media (prefers-reduced-motion:reduce){
+  .jual-panel-enter-active,.jual-panel-leave-active{transition:opacity .12s ease}
+  .jual-panel-enter-from,.jual-panel-leave-to{transform:none}
+  .jual-pilar-kartu:hover{transform:none}
+}
+
+/* ══════════ pemutar video ══════════ */
+.jual-pemutar{position:fixed;inset:0;z-index:50;display:grid;place-items:center;
+  background:rgb(0 0 0 / .86);padding:1.25rem}
+.jual-pemutar-isi{width:100%;max-width:56rem}
+.jual-pemutar-kepala{display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;margin-bottom:.75rem;color:#fff}
+.jual-pemutar-kepala span{font-size:13px;font-weight:700}
+.jual-pemutar-kepala button{font-size:1.5rem;line-height:1;color:#fff;
+  background:none;border:0;cursor:pointer;padding:0 .25rem}
+.jual-pemutar-video{width:100%;border-radius:14px;display:block;background:#000}
+.jual-pemutar-enter-active,.jual-pemutar-leave-active{transition:opacity .18s ease}
+.jual-pemutar-enter-from,.jual-pemutar-leave-to{opacity:0}
+
 /* ── cakupan ── */
 
 .jual-aspek-kisi{display:grid;gap:1rem;grid-template-columns:1fr}
