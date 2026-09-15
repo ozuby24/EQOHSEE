@@ -36,6 +36,17 @@ menumpuk versi baru di sampingnya — riwayat git menyimpan tiap salinan
 selamanya. Kalau kelak terasa berat, pindahkan folder ini ke git LFS atau
 keluarkan dari repositori.
 
+## Etalasenya sendiri
+
+| Folder | Isi |
+|---|---|
+| [`00-halaman-depan`](./00-halaman-depan/) | Beranda, halaman delapan aspek, dan etalase harga — pada lebar layar dan ponsel |
+
+Dipisahkan dari folder fitur dengan sengaja: yang di sana layar **di
+dalam** aplikasi, yang di sini etalasenya. Keduanya juga berubah pada
+waktu yang berbeda, dan menyatukannya berarti menerbitkan ulang 188
+gambar hanya karena satu kalimat pada beranda diperbaiki.
+
 ## Isinya
 
 | Folder | Aplikasi | Halaman | Harga katalog |
