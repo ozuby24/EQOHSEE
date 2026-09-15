@@ -21,6 +21,7 @@ import Donat from '../../Grafik/Donat.vue';
 import Garis from '../../Grafik/Garis.vue';
 import Cincin from '../../Grafik/Cincin.vue';
 import Legenda from './Legenda.vue';
+import IkonPadat from '../../Components/IkonPadat.vue';
 
 const props = propHalaman();
 
@@ -488,11 +489,8 @@ const berisi = (baris: any[] | undefined) =>
         <Link v-for="item in perluDiurus" :key="item.nama" :href="item.url">
           <span class="eq-modul-atas">
             <span class="eq-modul-nilai" :style="{ color: item.warna }">{{ item.nilai }}</span>
-            <span class="eq-modul-ikon" :style="{ background: `${item.warna}18`, color: item.warna }">
-              <svg v-if="item.ikon" viewBox="0 0 24 24" width="18" height="18" fill="none"
-                   stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" :d="item.ikon" />
-              </svg>
+            <span class="eq-modul-ikon ikon-3d" :style="{ '--c': item.warna }">
+              <IkonPadat :jalur="item.ikonPadat" :ukuran="21" />
             </span>
           </span>
           <strong>{{ item.nama }}</strong>
@@ -523,11 +521,8 @@ const berisi = (baris: any[] | undefined) =>
         <Link v-for="m in props.ringkasanModul" :key="m.modul" :href="m.url ?? '#'"
               class="eq-mdl" :style="{ '--c': m.perlu ? m.warna : '#16A34A' }">
           <span class="eq-mdl-kepala">
-            <span class="eq-mdl-ikon">
-              <svg v-if="m.ikon" viewBox="0 0 24 24" width="17" height="17" fill="none"
-                   stroke="currentColor" stroke-width="1.9" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" :d="m.ikon" />
-              </svg>
+            <span class="eq-mdl-ikon ikon-3d">
+              <IkonPadat :jalur="m.ikonPadat" :ukuran="19" />
             </span>
             <span class="eq-mdl-nama">{{ m.label }}</span>
 
@@ -567,13 +562,9 @@ const berisi = (baris: any[] | undefined) =>
           <span class="eq-modul-atas">
             <span class="eq-modul-nilai"
                   :style="{ color: item.nilai ? item.warna : '#16A34A' }">{{ item.nilai }}</span>
-            <span class="eq-modul-ikon"
-                  :style="{ background: `${item.nilai ? item.warna : '#16A34A'}18`,
-                            color: item.nilai ? item.warna : '#16A34A' }">
-              <svg v-if="item.ikon" viewBox="0 0 24 24" width="18" height="18" fill="none"
-                   stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" :d="item.ikon" />
-              </svg>
+            <span class="eq-modul-ikon ikon-3d"
+                  :style="{ '--c': item.nilai ? item.warna : '#16A34A' }">
+              <IkonPadat :jalur="item.ikonPadat" :ukuran="21" />
             </span>
           </span>
           <strong>{{ item.nama }}</strong>

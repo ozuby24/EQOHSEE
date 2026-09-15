@@ -21,10 +21,26 @@ class ArusKasTagihanTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Penghitung kode produk.
+     *
+     * Semula 'W'.random_int(1000, 9999), dan itu membuat berkas ini
+     * gagal sesekali dengan galat UNIQUE pada beli_produk.kode —
+     * sembilan ribu kemungkinan, beberapa produk per uji, jadi dua di
+     * antaranya bertabrakan cepat atau lambat. Kegagalan yang muncul
+     * satu kali dari sekian puluh jalan adalah yang paling mahal:
+     * yang membacanya menyalahkan perubahan yang sedang dikerjakan,
+     * bukan uji yang memang goyah.
+     *
+     * Berurutan, jadi tidak pernah bertabrakan dan tidak pernah
+     * bergantung pada keberuntungan.
+     */
+    private static int $nomorProduk = 0;
+
     private function produk(int $harga): Produk
     {
         return Produk::create([
-            'kode' => 'W'.random_int(1000, 9999), 'nama' => 'Website', 'jenis' => Produk::WEBSITE,
+            'kode' => 'W'.(++self::$nomorProduk), 'nama' => 'Website', 'jenis' => Produk::WEBSITE,
             'harga' => $harga, 'masa_bulan' => 12, 'aktif' => true, 'urutan' => 0,
         ]);
     }

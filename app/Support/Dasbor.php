@@ -67,7 +67,10 @@ final class Dasbor
                berbeda dari ikon sampingnya memaksa orang mempelajari dua
                lambang untuk satu modul — dan daftar ikon kedua adalah
                tempat pertama yang tertinggal saat modulnya berubah. */
-            fn (array $m) => $m + ['ikon' => $menu[$m['modul']]['icon'] ?? null],
+            fn (array $m) => $m + [
+                'ikon'      => $menu[$m['modul']]['icon'] ?? null,
+                'ikonPadat' => IkonPadat::untuk($m['modul']),
+            ],
             array_values(array_filter(
                 [...self::semua(), ...self::beralur()],
                 fn (array $m) => in_array($m['modul'], $boleh, true),
@@ -495,6 +498,7 @@ final class Dasbor
                 'modul'   => $kunci,
                 'label'   => Menu::all()[$kunci]['label'] ?? $kunci,
                 'ikon'    => Menu::all()[$kunci]['icon'] ?? null,
+                'ikonPadat' => IkonPadat::untuk($kunci),
                 'semboyan'=> Menu::all()[$kunci]['semboyan'] ?? null,
                 'perlu'   => 0,
                 'kabar'   => 0,

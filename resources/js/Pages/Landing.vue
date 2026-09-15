@@ -4,6 +4,8 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import BlankLayout from '../Layouts/BlankLayout.vue';
 import Wordmark from '../Components/Wordmark.vue';
 import IkonPilar from '../Components/IkonPilar.vue';
+import IkonPadat from '../Components/IkonPadat.vue';
+import { ikonPadat, type JalurPadat } from '../ikonPadat';
 
 defineOptions({ layout: BlankLayout });
 
@@ -18,6 +20,9 @@ type Pillar = {
 type Module = {
   nama: string; status: string; ket: string; ikon: string; pilar: string;
   pilarNama: string; pilarWarna: string; pilarDeep: string; url: string | null;
+  /* Glyph padat untuk ubin berdimensi; `ikon` yang lama tetap ada
+     karena halaman /pilar masih menggambarnya sebagai garis. */
+  ikonPadat: JalurPadat[];
 };
 
 const props = defineProps<{
@@ -116,16 +121,10 @@ const pilarList = computed(() => Object.entries(props.pilar));
  */
 const warnaFitur = ['#F57C00', '#1E88E5', '#16883F', '#7E57C2', '#C2410C', '#0891B2'];
 
-const ikonFitur: string[][] = [
-  ['M12 2.8 4.6 5.7v5.6c0 4.5 3.1 8.6 7.4 9.9 4.3-1.3 7.4-5.4 7.4-9.9V5.7L12 2.8Z',
-   'm8.9 11.9 2.2 2.2 4-4.4'],
-  ['M4 5.5h16v13H4zM4 9.5h16', 'M8 13h8M8 16h5'],
-  ['M12 3.5 3.5 8l8.5 4.5L20.5 8 12 3.5Z', 'M3.5 12 12 16.5 20.5 12', 'M3.5 16 12 20.5 20.5 16'],
-  ['M16.5 20v-1.6a3.4 3.4 0 0 0-3.4-3.4H6.9a3.4 3.4 0 0 0-3.4 3.4V20',
-   'M10 11.6a3.6 3.6 0 1 0 0-7.2 3.6 3.6 0 0 0 0 7.2Z', 'M17 8.5h4'],
-  ['M7 11V8a5 5 0 0 1 10 0v3', 'M5.5 11h13v9.5h-13z', 'M12 15v2.5'],
-  ['M3.5 3.5h6.5v6.5H3.5zM14 3.5h6.5v6.5H14zM3.5 14h6.5v6.5H3.5zM14 14h6.5v6.5H14z'],
-];
+/* Nama glyph padat untuk keenam kartu fitur. Nama, bukan jalur:
+   bentuknya tinggal di resources/js/ikonPadat.ts supaya satu gambar
+   tidak pernah punya dua salinan yang boleh berbeda. */
+const ikonFitur: string[] = ['shield', 'dokumen', 'layers', 'orang', 'gembok', 'kisi'];
 
 /**
  * Angka contoh untuk tiruan dasbor di hero.
@@ -166,13 +165,9 @@ const tentang: [string, string][] = [
   ['Keamanan data', 'Data terenkripsi dalam pengiriman dan terpisah per perusahaan.'],
 ];
 
-const ikonTentang: string[][] = [
-  ['M9 3.5h9.5v17H5.5v-14', 'M5.5 6.5 9 3.5v3H5.5Z', 'M9 11h6M9 14.5h6'],
-  ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z', 'M3.2 12h17.6', 'M12 3.2a14 14 0 0 1 0 17.6a14 14 0 0 1 0-17.6'],
-  ['M16.5 20v-1.6a3.4 3.4 0 0 0-3.4-3.4H6.9a3.4 3.4 0 0 0-3.4 3.4V20',
-   'M10 11.6a3.6 3.6 0 1 0 0-7.2 3.6 3.6 0 0 0 0 7.2Z', 'M20.5 20v-1.6a3.4 3.4 0 0 0-2.5-3.3'],
-  ['M7 11V8a5 5 0 0 1 10 0v3', 'M5.5 11h13v9.5h-13z', 'M12 15v2.5'],
-];
+/* Searah dengan daftar `tentang` di bawah — urutannya yang memasangkan
+   ikon dengan judulnya, jadi keduanya harus ikut berubah bersama. */
+const ikonTentang: string[] = ['regulasi', 'globe', 'orang', 'gembok'];
 
 const alasanHero: [string, string][] = [
   ['Sesuai regulasi', 'Mengacu pada Kepdirjen 185.K/2019, SMKP Minerba, dan standar ISO.'],
@@ -473,8 +468,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
           <Transition name="jual-panel" mode="out-in">
             <aside v-if="pilarTerpilih && pilar[pilarTerpilih]" :key="pilarTerpilih"
                    class="jual-pilar-panel">
-              <span class="jual-pilar-panel-tanda" :style="{ '--c': pilar[pilarTerpilih].warna }">
-                <IkonPilar :nama="pilar[pilarTerpilih].ikon" :ukuran="22" />
+              <span class="jual-pilar-panel-tanda ikon-3d" :style="{ '--c': pilar[pilarTerpilih].warna }">
+                <IkonPadat :jalur="ikonPadat(pilar[pilarTerpilih].ikon)" :ukuran="26" />
               </span>
 
               <h3 class="jual-h3 mt-4">{{ pilar[pilarTerpilih].nama }}</h3>
@@ -520,11 +515,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
                      :class="item.url ? '' : 'jual-modul-mati'"
                      :style="{ '--c': item.url ? item.pilarWarna : '#D4DAD3' }">
             <div class="flex items-start justify-between gap-3">
-              <span class="jual-tanda" :style="{ '--c': item.url ? item.pilarWarna : '#9AA3A0' }">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
-                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path :d="item.ikon" />
-                </svg>
+              <span class="jual-tanda ikon-3d" :style="{ '--c': item.url ? item.pilarWarna : '#9AA3A0' }">
+                <IkonPadat :jalur="item.ikonPadat" :ukuran="22" />
               </span>
               <span class="jual-status"
                     :class="item.status === 'aktif' ? 'jual-status-hidup' : 'jual-status-nanti'">
@@ -632,11 +624,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-10">
           <div v-for="(item, i) in fitur" :key="item.judul" class="jual-kartu"
                :style="{ '--c': warnaFitur[i % warnaFitur.length] }">
-            <span class="jual-tanda">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path v-for="(d, k) in ikonFitur[i % ikonFitur.length]" :key="k" :d="d" />
-              </svg>
+            <span class="jual-tanda ikon-3d">
+              <IkonPadat :jalur="ikonPadat(ikonFitur[i % ikonFitur.length])" :ukuran="22" />
             </span>
             <h3 class="jual-h4 mt-4">{{ item.judul }}</h3>
             <p class="jual-tubuh-kecil mt-2">{{ item.ket }}</p>
@@ -677,11 +666,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
                                  mt-16 pt-12 scroll-mt-[66px]"
              style="border-top:1px solid #E3E7E2">
           <div v-for="(t, i) in tentang" :key="t[0]">
-            <span class="jual-tanda" :style="{ '--c': warnaFitur[i % warnaFitur.length] }">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path v-for="(d, k) in ikonTentang[i]" :key="k" :d="d" />
-              </svg>
+            <span class="jual-tanda ikon-3d" :style="{ '--c': warnaFitur[i % warnaFitur.length] }">
+              <IkonPadat :jalur="ikonPadat(ikonTentang[i])" :ukuran="22" />
             </span>
             <h3 class="jual-h4 mt-4">{{ t[0] }}</h3>
             <p class="jual-tubuh-kecil mt-2">{{ t[1] }}</p>

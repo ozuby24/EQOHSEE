@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pembelian\Produk;
-use App\Support\{Media, Modules, Pillars, Smkp};
+use App\Support\{IkonPadat, Media, Modules, Pillars, Smkp};
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -23,6 +23,7 @@ class LandingController extends Controller
                 'pilarWarna' => $pillar['warna'],
                 'pilarDeep' => $pillar['deep'],
                 'url' => $route && Route::has($route) ? route($route) : null,
+                'ikonPadat' => IkonPadat::untuk(Modules::kunci($module['nama'])),
             ];
         }, Modules::all());
 
