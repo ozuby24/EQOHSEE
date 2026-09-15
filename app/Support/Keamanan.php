@@ -41,6 +41,14 @@ final class Keamanan
     public const SANDI_BERUBAH  = 'Sandi diubah';
     public const SESI_DIPUTUS   = 'Sesi diputus';
 
+    /* Dua faktor. Ketiganya dicatat, termasuk yang MEMATIKAN — justru
+       terutama yang itu: mematikan lapisan kedua adalah tindakan
+       pertama yang dilakukan orang yang baru saja mengambil alih sebuah
+       akun, dan baris inilah satu-satunya tempat ia akan terlihat. */
+    public const DF_NYALA       = 'Dua faktor dinyalakan';
+    public const DF_MATI        = 'Dua faktor dimatikan';
+    public const DF_PEMULIHAN   = 'Kode pemulihan diterbitkan ulang';
+
     /** Peristiwa yang menandakan kegagalan — dihitung sebagai tekanan. */
     public const PERISTIWA_GAGAL = [self::MASUK_GAGAL, self::TERKUNCI];
 

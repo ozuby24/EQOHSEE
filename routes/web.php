@@ -27,6 +27,7 @@ use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiT
     TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\{BantuanController, BerkasController, ChatController, TemuanController};
 use App\Http\Controllers\Admin\{AiController, CompanyController, KeamananController, PemilikController, SystemController, UserController};
+use App\Http\Controllers\DuaFaktorController;
 use App\Http\Controllers\PerangkatSayaController;
 use App\Http\Controllers\TurController;
 use Illuminate\Support\Facades\Route;
@@ -1419,6 +1420,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('akun/perangkat',        [PerangkatSayaController::class,'index'])->name('keamanan.perangkat');
     Route::delete('akun/perangkat',     [PerangkatSayaController::class,'putus'])->name('keamanan.perangkat.putus');
     Route::post('akun/perangkat/lain',  [PerangkatSayaController::class,'putusLain'])->name('keamanan.perangkat.putus-lain');
+
+    /* ---- Verifikasi dua langkah ----
+       Di luar grup admin atas alasan yang sama seperti perangkat:
+       memasang pengaman pada akun sendiri tidak boleh perlu izin
+       siapa pun. Mematikannya menuntut sandi lagi — lihat
+       DuaFaktorController. */
+    Route::get('akun/dua-faktor',            [DuaFaktorController::class,'index'])->name('keamanan.dua-faktor');
+    Route::post('akun/dua-faktor/mulai',     [DuaFaktorController::class,'mulai'])->name('keamanan.dua-faktor.mulai');
+    Route::post('akun/dua-faktor/sahkan',    [DuaFaktorController::class,'sahkan'])->name('keamanan.dua-faktor.sahkan');
+    Route::delete('akun/dua-faktor',         [DuaFaktorController::class,'matikan'])->name('keamanan.dua-faktor.matikan');
+    Route::post('akun/dua-faktor/pemulihan', [DuaFaktorController::class,'terbitkanUlang'])->name('keamanan.dua-faktor.pemulihan');
 
     /* ---- Gudang & Penyimpanan ---- */
     Route::prefix('gudang')->name('gudang.')->group(function () {

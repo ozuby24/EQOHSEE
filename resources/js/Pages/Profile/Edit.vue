@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import InputSandi from '../../Components/InputSandi.vue';
 
 interface ProfileUser {
@@ -16,6 +16,9 @@ const props = defineProps<{
 
   /** Panjang sandi terpendek yang diterima, dari AturanSandi::MINIMAL. */
   sandiMinimal: number;
+
+  /** Apakah verifikasi dua langkah sudah menyala untuk akun ini. */
+  duaFaktorMenyala: boolean;
 }>();
 
 const profile = useForm<Record<string, string>>({
@@ -110,6 +113,44 @@ function hapusAkun() {
           {{ password.processing ? 'Menyimpan…' : 'Perbarui Kata Sandi' }}
         </button>
       </form>
+    </section>
+
+    <!-- Keamanan akun.
+         Kedua halaman di bawah sebelumnya tidak punya satu pun tautan di
+         seluruh antarmuka — hanya terjangkau dengan mengetik alamatnya.
+         Pengaman yang tidak dapat ditemukan adalah pengaman yang tidak
+         dipakai siapa pun. -->
+    <section class="bg-white rounded-2xl shadow-card border border-stone-100 overflow-hidden">
+      <div class="px-6 py-5 border-b border-stone-100">
+        <h2 class="text-[15px] font-bold text-cam-ink">Keamanan Akun</h2>
+        <p class="text-[12.5px] text-stone-500 mt-1">Lapisan kedua saat masuk, dan perangkat yang sedang memakai akun Anda.</p>
+      </div>
+
+      <div class="divide-y divide-stone-100">
+        <Link href="/akun/dua-faktor" class="flex items-center justify-between gap-4 px-6 py-4 hover:bg-stone-50 transition">
+          <div>
+            <p class="text-[13.5px] font-semibold text-cam-ink">Verifikasi Dua Langkah</p>
+            <p class="text-[12px] text-stone-500 mt-0.5 leading-relaxed">
+              Kode dari ponsel Anda, diminta sesudah kata sandi. Menahan orang yang
+              sudah memegang kata sandi Anda.
+            </p>
+          </div>
+          <span class="shrink-0 rounded-full px-3 py-1 text-[11px] font-bold"
+                :class="duaFaktorMenyala ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-500'">
+            {{ duaFaktorMenyala ? 'Menyala' : 'Belum menyala' }}
+          </span>
+        </Link>
+
+        <Link href="/akun/perangkat" class="flex items-center justify-between gap-4 px-6 py-4 hover:bg-stone-50 transition">
+          <div>
+            <p class="text-[13.5px] font-semibold text-cam-ink">Perangkat &amp; Riwayat Masuk</p>
+            <p class="text-[12px] text-stone-500 mt-0.5 leading-relaxed">
+              Lihat perangkat yang sedang masuk dengan akun Anda, dan putus yang tidak Anda kenali.
+            </p>
+          </div>
+          <span class="shrink-0 text-stone-300">›</span>
+        </Link>
+      </div>
     </section>
 
     <section class="bg-white rounded-2xl shadow-card border border-red-100 overflow-hidden">

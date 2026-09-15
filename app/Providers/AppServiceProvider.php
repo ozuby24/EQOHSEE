@@ -132,6 +132,23 @@ class AppServiceProvider extends ServiceProvider
            henti — dan tiap akun memicu satu surel keluar, sehingga
            kuota SMTP habis dan surel yang sungguh-sungguh dinantikan
            berhenti terkirim. */
+        /* Jaring kasar untuk halaman kode dua faktor, PER ALAMAT.
+         *
+         * Batas yang sebenarnya menjaga ada di dalam
+         * DuaFaktorTantanganController, berkunci nomor akun. Yang di
+         * sini hanya lapis luar, dan sengaja longgar: satu alamat di
+         * site tambang dipakai bersama lewat NAT, jadi angka yang ketat
+         * di sini akan menahan orang yang tidak menebak apa pun.
+         *
+         * Mengunci per SESI di tempat ini TIDAK BISA, dan itu sudah
+         * dicoba. Middleware throttle berjalan sebelum sesinya dimuat,
+         * sehingga session()->getId() memulangkan pengenal baru pada
+         * setiap permintaan — kuncinya tidak pernah sama dua kali, dan
+         * pembatasnya lulus tanpa menahan satu tebakan pun. Tidak ada
+         * galat, tidak ada gejala; yang terlihat hanya baris middleware
+         * yang tampak menjaga. */
+        RateLimiter::for('dua-faktor', fn (Request $r) => Limit::perMinute(30)->by('ip:'.$r->ip()));
+
         RateLimiter::for('daftar', fn (Request $r) => Limit::perHour(5)->by($r->ip()));
 
         /* Permintaan tautan setel ulang. Batasnya per ALAMAT SUREL, bukan

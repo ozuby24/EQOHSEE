@@ -42,7 +42,15 @@ class User extends Authenticatable implements MustVerifyEmail
 
     // Kode verifikasi tidak pernah ikut terserialisasi — ia rahasia
     // sekali pakai, dan halaman Inertia mengirim seluruh prop ke peramban.
-    protected $hidden = ['password', 'remember_token', 'kode_verifikasi'];
+    /* Rahasia dan kode pemulihan dua faktor TIDAK PERNAH ikut
+       terserialisasi. Halaman Inertia mengirim seluruh prop ke peramban,
+       dan satu $request->user() yang lolos ke prop membocorkan rahasia
+       yang membuat lapisan keduanya tidak berarti apa-apa — tanpa gejala
+       apa pun, karena situsnya tetap bekerja persis sama. */
+    protected $hidden = [
+        'password', 'remember_token', 'kode_verifikasi',
+        'dua_faktor_rahasia', 'dua_faktor_pemulihan',
+    ];
 
     protected function casts(): array
     {
@@ -58,6 +66,12 @@ class User extends Authenticatable implements MustVerifyEmail
                sudah. */
             'tur_selesai_pada'  => 'datetime',
             'password'          => 'hashed',
+
+            /* Tersandi di basis data. Cadangan yang bocor tidak boleh
+               memberi siapa pun kemampuan membuat kode yang sah. */
+            'dua_faktor_rahasia'   => 'encrypted',
+            'dua_faktor_pemulihan' => 'encrypted:array',
+            'dua_faktor_aktif_at'  => 'datetime',
             'is_admin'          => 'boolean',
             'active'            => 'boolean',
         ];

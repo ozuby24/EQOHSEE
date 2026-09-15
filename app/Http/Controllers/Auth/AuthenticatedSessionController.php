@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use App\Support\Turnstile;
+use App\Support\{DuaFaktor, Turnstile};
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -40,6 +40,28 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
+        /* Akun berdua faktor mengambil jalan memutar SEBELUM Auth::attempt.
+         *
+         * Attempt akan memasukkannya dan membangkitkan peristiwa Login,
+         * yang menulis satu baris "masuk" pada jejak akses dan
+         * memperbarui masuk_terakhir_at. Untuk akun ini keduanya belum
+         * benar: sandinya memang benar, tetapi orangnya belum masuk dan
+         * mungkin tidak akan pernah — ia masih harus menunjukkan kode.
+         *
+         * Memasukkannya dulu lalu mengeluarkannya kembali akan lebih
+         * ringkas ditulis dan meninggalkan jejak yang berbohong, pada
+         * halaman yang justru dibaca orang ketika ia curiga akunnya
+         * dipakai orang lain. */
+        $calon = $request->calonDuaFaktor();
+
+        if ($calon !== null) {
+            $request->sahkanTanpaMasuk($calon);
+
+            return DuaFaktorTantanganController::titipkan(
+                $request, $calon, $request->boolean('remember'),
+            );
+        }
+
         $request->authenticate();
 
         /* regenerate(true), bukan regenerate().

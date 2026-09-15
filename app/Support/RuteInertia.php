@@ -103,6 +103,7 @@ final class RuteInertia
         'admin.pemilik',
         'admin.ai',
         'keamanan.perangkat',
+        'keamanan.dua-faktor',
         'admin.users.index',
         'admin.users.create',
         'admin.companies.index',
