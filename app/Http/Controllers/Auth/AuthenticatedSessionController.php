@@ -31,6 +31,7 @@ class AuthenticatedSessionController extends Controller
              * null berarti fiturnya mati, dan halaman masuk menggambar
              * dirinya persis seperti sebelum fitur ini ada. */
             'turnstile' => Turnstile::kunciSitus(),
+            'tindakan'  => Turnstile::TINDAKAN['masuk'],
         ]);
     }
 

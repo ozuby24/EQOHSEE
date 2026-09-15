@@ -48,6 +48,25 @@ class Turnstile
     public const KOLOM = 'cf-turnstile-response';
 
     /**
+     * Penanda pintu, ikut ditandatangani Cloudflare ke dalam tokennya.
+     *
+     * Tanpa ini sebuah token sah untuk SEMUA pintu. Halaman masuk
+     * terbuka untuk siapa saja, jadi penyerang dapat memanen token dari
+     * sana dengan peramban sungguhan — satu per satu, gratis — lalu
+     * memakainya pada pintu daftar atau lupa sandi yang sedang ia
+     * banjiri lewat skrip. Verifikasinya tetap menjawab success, karena
+     * tokennya memang sah; ia hanya sah untuk pintu yang lain.
+     *
+     * Nilainya dibatasi Cloudflare: paling panjang 32 huruf, hanya
+     * a-z A-Z 0-9 _ dan -.
+     */
+    public const TINDAKAN = [
+        'masuk'      => 'masuk',
+        'daftar'     => 'daftar',
+        'lupa-sandi' => 'lupa-sandi',
+    ];
+
+    /**
      * Menyala hanya bila KEDUA kuncinya ada.
      *
      * Satu kunci saja tidak cukup dan tidak boleh dianggap cukup: kunci
@@ -76,9 +95,35 @@ class Turnstile
      *
      * @return array<int, mixed>
      */
-    public static function aturan(): array
+    public static function aturan(string $tindakan): array
     {
-        return self::aktif() ? ['required', new TurnstileSah] : [];
+        return self::aktif() ? ['required', new TurnstileSah($tindakan)] : [];
+    }
+
+    /**
+     * Daftar nama inang yang boleh menerbitkan token.
+     *
+     * Kosong berarti tidak diperiksa, dan itu bawaannya — dengan sengaja.
+     * Isi yang salah di sini tidak menghasilkan peringatan melainkan
+     * penolakan atas SETIAP kiriman dari situs yang benar, dan yang
+     * pertama menyadarinya adalah orang yang tidak bisa masuk.
+     *
+     * Lapisan ini juga bukan yang pertama: Cloudflare sudah mengikat
+     * kunci situs ke domain yang didaftarkan di dasbornya, dan menolak
+     * menggambar widget di domain lain. Yang ditambahkan di sini adalah
+     * jaring kedua, untuk hari ketika sebuah domain ikut ditambahkan di
+     * dasbor tanpa sepengetahuan yang memasang ini.
+     *
+     * @return array<int, string>
+     */
+    public static function inang(): array
+    {
+        $daftar = array_filter(array_map(
+            'trim',
+            explode(',', (string) config('turnstile.inang'))
+        ));
+
+        return array_values($daftar);
     }
 
     public static function kunciSitus(): ?string
@@ -98,10 +143,11 @@ class Turnstile
     /**
      * Menukar token widget ke Cloudflare.
      *
-     * @param  string|null  $token  isi kolom cf-turnstile-response
-     * @param  string|null  $ip     alamat pengirimnya, untuk pemeriksaan silang
+     * @param  string|null  $token     isi kolom cf-turnstile-response
+     * @param  string|null  $ip        alamat pengirimnya, untuk pemeriksaan silang
+     * @param  string|null  $tindakan  pintu yang seharusnya menerbitkan token ini
      */
-    public static function sah(?string $token, ?string $ip = null): bool
+    public static function sah(?string $token, ?string $ip = null, ?string $tindakan = null): bool
     {
         if (! self::aktif()) return true;
 
@@ -122,10 +168,57 @@ class Turnstile
 
             if ($jawab->failed()) return self::saatGagal('balasan '.$jawab->status());
 
-            return (bool) $jawab->json('success', false);
+            if (! (bool) $jawab->json('success', false)) return false;
+
+            /* Sesudah success, dua hal masih perlu dicocokkan. Keduanya
+               diperiksa DI SINI dan bukan di pemanggilnya, supaya tidak
+               ada pintu yang memeriksa success saja lalu lupa sisanya. */
+
+            if ($tindakan !== null) {
+                $dijawab = $jawab->json('action');
+
+                if ($dijawab !== $tindakan) {
+                    return self::ditolak('tindakan tidak cocok', [
+                        'diminta'  => $tindakan,
+                        'dijawab'  => $dijawab,
+                    ]);
+                }
+            }
+
+            $inang = self::inang();
+
+            if ($inang !== []) {
+                $dijawab = (string) $jawab->json('hostname');
+
+                if (! in_array($dijawab, $inang, true)) {
+                    return self::ditolak('inang tidak terdaftar', [
+                        'dijawab'   => $dijawab,
+                        'terdaftar' => $inang,
+                    ]);
+                }
+            }
+
+            return true;
         } catch (\Throwable $e) {
             return self::saatGagal($e->getMessage());
         }
+    }
+
+    /**
+     * Token yang sah, tetapi bukan untuk permintaan ini.
+     *
+     * Dicatat, tidak seperti token yang memang palsu. Token palsu adalah
+     * derau sehari-hari; token SAH yang datang ke pintu yang salah
+     * berarti seseorang sedang memindahkannya dengan sengaja, dan itu
+     * satu-satunya tanda yang akan pernah ada.
+     *
+     * @param  array<string, mixed>  $rinci
+     */
+    private static function ditolak(string $sebab, array $rinci = []): bool
+    {
+        Log::warning('Turnstile menolak token yang sah', ['sebab' => $sebab] + $rinci);
+
+        return false;
     }
 
     /**

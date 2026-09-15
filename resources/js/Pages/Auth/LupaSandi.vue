@@ -9,6 +9,9 @@ defineOptions({ layout: GuestLayout });
 const props = defineProps<{
   /** Kunci situs Turnstile. null berarti verifikasinya tidak dipasang. */
   turnstile?: string | null;
+
+  /** Penanda pintu dari Turnstile::TINDAKAN, agar tokennya terikat ke sini. */
+  tindakan?: string | null;
 }>();
 
 const form = useForm({
@@ -57,7 +60,8 @@ function kirim() {
     </div>
 
     <VerifikasiTurnstile v-model="form['cf-turnstile-response']"
-                         :kunci="props.turnstile ?? null" :galat="putaran" />
+                         :kunci="props.turnstile ?? null" :tindakan="props.tindakan ?? null"
+                         :galat="putaran" />
 
     <button type="submit" :disabled="form.processing" class="w-full rounded-xl bg-[#F57C00] hover:bg-[#DC6E00] text-white py-3 font-bold transition disabled:opacity-50">{{ form.processing ? 'Mengirim…' : 'Kirim tautan' }}</button>
   </form>

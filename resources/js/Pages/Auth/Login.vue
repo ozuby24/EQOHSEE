@@ -13,6 +13,11 @@ const kunciTurnstile = computed(
   () => (usePage().props as Record<string, unknown>).turnstile as string | null ?? null,
 );
 
+/* Penanda pintu, juga dari server. Lihat Turnstile::TINDAKAN. */
+const tindakan = computed(
+  () => (usePage().props as Record<string, unknown>).tindakan as string | null ?? null,
+);
+
 const form = useForm({
   email: '',
   password: '',
@@ -61,7 +66,7 @@ function masuk() {
       <p v-if="form.errors.password" class="text-xs text-red-600 mt-1">{{ form.errors.password }}</p>
     </div>
     <VerifikasiTurnstile v-model="form['cf-turnstile-response']"
-                        :kunci="kunciTurnstile" :galat="gagalKe" />
+                        :kunci="kunciTurnstile" :tindakan="tindakan" :galat="gagalKe" />
 
     <div class="flex items-center justify-between text-sm">
       <label class="flex items-center gap-2 text-stone-600 cursor-pointer"><input v-model="form.remember" type="checkbox" class="accent-[#F57C00]"> Ingat saya</label>

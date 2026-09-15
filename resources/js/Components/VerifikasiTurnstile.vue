@@ -36,8 +36,19 @@ const props = withDefaults(defineProps<{
   /** Dinaikkan halaman tiap kali kiriman ditolak, agar widget disetel ulang. */
   galat?: number;
 
+  /**
+   * Penanda pintu, dikirim server dari Turnstile::TINDAKAN.
+   *
+   * Datang dari server dan bukan ditulis di sini supaya kedua sisinya
+   * tidak dapat berbeda. Ditulis di sini, ia akan berbeda pada suatu
+   * hari — dan bedanya tidak menimbulkan galat apa pun, hanya seluruh
+   * kiriman dari halaman ini ditolak dengan alasan yang tidak
+   * menyebutnya.
+   */
+  tindakan?: string | null;
+
   tema?: 'auto' | 'light' | 'dark';
-}>(), { kunci: null, galat: 0, tema: 'auto' });
+}>(), { kunci: null, galat: 0, tindakan: null, tema: 'auto' });
 
 const model = defineModel<string>({ default: '' });
 
@@ -110,6 +121,7 @@ async function gambar(): Promise<void> {
      lib.dom — sekalipun keduanya elemen yang sama pada saat berjalan. */
   id.value = window.turnstile.render(kotak.value as HTMLElement, {
     sitekey: props.kunci,
+    action: props.tindakan ?? undefined,
     theme: props.tema,
     language: 'id',
     callback: (t: string) => { model.value = t; },

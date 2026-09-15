@@ -46,6 +46,26 @@ class TurnstileGerbangTamuTest extends TestCase
         ]);
     }
 
+    /**
+     * Balasan sukses Cloudflare, lengkap dengan penanda pintunya.
+     *
+     * Ditulis lengkap dan bukan cuma ['success' => true], karena
+     * balasan yang sungguhan selalu menyebut action dan hostname —
+     * dan tiruan yang lebih ramah daripada aslinya menguji jalur yang
+     * tidak pernah dilewati di produksi.
+     *
+     * @return array<string, mixed>
+     */
+    private function jawabSukses(string $tindakan): array
+    {
+        return [
+            'success'      => true,
+            'action'       => Turnstile::TINDAKAN[$tindakan],
+            'hostname'     => 'eqohsee.id',
+            'challenge_ts' => now()->toIso8601String(),
+        ];
+    }
+
     private function matikan(): void
     {
         config(['turnstile.situs' => null, 'turnstile.rahasia' => null]);
@@ -101,7 +121,7 @@ class TurnstileGerbangTamuTest extends TestCase
     public function test_dengan_token_sah_pendaftaran_tetap_berhasil(): void
     {
         $this->nyalakan();
-        Http::fake([config('turnstile.url') => Http::response(['success' => true])]);
+        Http::fake([config('turnstile.url') => Http::response($this->jawabSukses('daftar'))]);
 
         $this->post('/register', $this->isianDaftar([
             'cf-turnstile-response' => 'token-dari-widget',
@@ -131,7 +151,7 @@ class TurnstileGerbangTamuTest extends TestCase
     public function test_token_tidak_ikut_tersimpan_sebagai_kolom_pengguna(): void
     {
         $this->nyalakan();
-        Http::fake([config('turnstile.url') => Http::response(['success' => true])]);
+        Http::fake([config('turnstile.url') => Http::response($this->jawabSukses('daftar'))]);
 
         $this->post('/register', $this->isianDaftar([
             'cf-turnstile-response' => 'token-dari-widget',
@@ -185,7 +205,7 @@ class TurnstileGerbangTamuTest extends TestCase
     {
         $this->nyalakan();
         Notification::fake();
-        Http::fake([config('turnstile.url') => Http::response(['success' => true])]);
+        Http::fake([config('turnstile.url') => Http::response($this->jawabSukses('lupa-sandi'))]);
 
         $pengguna = User::factory()->create();
 
@@ -287,6 +307,126 @@ class TurnstileGerbangTamuTest extends TestCase
             "Prop turnstile berisi nilai di {$alamat} padahal fiturnya mati.");
     }
 
+    /* ═══════════ token sah, pintu yang salah ═══════════ */
+
+    /**
+     * Token dari pintu lain ditolak, meski Cloudflare menjawab success.
+     *
+     * Inilah yang ditutup penanda tindakan. Halaman masuk terbuka untuk
+     * siapa saja, jadi token sah dapat dipanen dari sana dengan peramban
+     * sungguhan — satu per satu, gratis — lalu dipakai pada pintu daftar
+     * yang sedang dibanjiri skrip. Tanpa pemeriksaan ini, verifikasinya
+     * meloloskannya: tokennya memang sah, hanya sah untuk pintu lain.
+     */
+    public function test_token_dari_pintu_lain_ditolak(): void
+    {
+        $this->nyalakan();
+
+        /* Cloudflare menjawab success, tetapi menyebut pintu tempat
+           token itu sebenarnya terbit. */
+        Http::fake([config('turnstile.url') => Http::response([
+            'success'  => true,
+            'action'   => Turnstile::TINDAKAN['masuk'],
+            'hostname' => 'eqohsee.id',
+        ])]);
+
+        $this->post('/register', $this->isianDaftar([
+            'cf-turnstile-response' => 'token-dipanen-dari-halaman-masuk',
+        ]))->assertSessionHasErrors(Turnstile::KOLOM);
+
+        $this->assertGuest();
+        $this->assertDatabaseMissing('users', ['email' => 'pekerja.baru@contoh.test']);
+    }
+
+    public function test_setiap_pintu_menerima_tokennya_sendiri(): void
+    {
+        $this->nyalakan();
+        Notification::fake();
+
+        foreach ([
+            'daftar'     => fn () => $this->post('/register', $this->isianDaftar([
+                Turnstile::KOLOM => 'token',
+            ])),
+            'lupa-sandi' => fn () => $this->post('/forgot-password', [
+                'email'          => User::factory()->create()->email,
+                Turnstile::KOLOM => 'token',
+            ]),
+        ] as $tindakan => $kirim) {
+            Http::fake([config('turnstile.url') => Http::response([
+                'success'  => true,
+                'action'   => Turnstile::TINDAKAN[$tindakan],
+                'hostname' => 'eqohsee.id',
+            ])]);
+
+            $kirim()->assertSessionHasNoErrors();
+        }
+    }
+
+    /* ═══════════ inang yang menerbitkan token ═══════════ */
+
+    /**
+     * Daftar inang KOSONG berarti tidak diperiksa.
+     *
+     * Bawaannya, dan yang paling penting dijaga: daftar yang tidak diisi
+     * tidak boleh berubah menjadi daftar kosong yang menolak semuanya.
+     */
+    public function test_inang_kosong_tidak_memeriksa_apa_pun(): void
+    {
+        $this->nyalakan();
+        config(['turnstile.inang' => null]);
+
+        Http::fake([config('turnstile.url') => Http::response([
+            'success'  => true,
+            'action'   => Turnstile::TINDAKAN['daftar'],
+            'hostname' => 'inang-yang-tidak-pernah-didaftarkan.test',
+        ])]);
+
+        $this->post('/register', $this->isianDaftar([
+            'cf-turnstile-response' => 'token',
+        ]))->assertSessionHasNoErrors();
+    }
+
+    public function test_inang_di_luar_daftar_ditolak(): void
+    {
+        $this->nyalakan();
+        config(['turnstile.inang' => 'eqohsee.id, www.eqohsee.id']);
+
+        Http::fake([config('turnstile.url') => Http::response([
+            'success'  => true,
+            'action'   => Turnstile::TINDAKAN['daftar'],
+            'hostname' => 'eqohsee.id.penyerang.test',
+        ])]);
+
+        $this->post('/register', $this->isianDaftar([
+            'cf-turnstile-response' => 'token',
+        ]))->assertSessionHasErrors(Turnstile::KOLOM);
+    }
+
+    /**
+     * Spasi di sekitar koma tidak boleh mengunci siapa pun.
+     *
+     * "eqohsee.id, www.eqohsee.id" adalah cara orang menulis daftar.
+     * Dibaca mentah, entri keduanya menjadi " www.eqohsee.id" berikut
+     * spasinya, dan tidak akan pernah cocok dengan apa pun.
+     */
+    public function test_spasi_di_daftar_inang_tidak_dihitung(): void
+    {
+        $this->nyalakan();
+        config(['turnstile.inang' => ' eqohsee.id ,  www.eqohsee.id ']);
+
+        $this->assertSame(['eqohsee.id', 'www.eqohsee.id'], Turnstile::inang());
+
+        Http::fake([config('turnstile.url') => Http::response([
+            'success'  => true,
+            'action'   => Turnstile::TINDAKAN['daftar'],
+            'hostname' => 'www.eqohsee.id',
+        ])]);
+
+        $this->post('/register', $this->isianDaftar([
+            'cf-turnstile-response' => 'token',
+        ]))->assertSessionHasNoErrors();
+    }
+
     /* ═══════════ penjagaan statis ═══════════ */
 
     /**
@@ -309,7 +449,7 @@ class TurnstileGerbangTamuTest extends TestCase
         foreach ($pintu as $berkas) {
             $isi = file_get_contents(base_path($berkas));
 
-            $this->assertStringContainsString('Turnstile::KOLOM => Turnstile::aturan()', $isi,
+            $this->assertStringContainsString('Turnstile::KOLOM => Turnstile::aturan(Turnstile::TINDAKAN[', $isi,
                 "{$berkas} tidak memasang verifikasi Turnstile lewat Turnstile::aturan(). "
                 .'Pintu tamu tanpa kotak verifikasi adalah pintu yang penjaganya tidak ada.');
         }
@@ -336,6 +476,30 @@ class TurnstileGerbangTamuTest extends TestCase
 
             $this->assertStringContainsString("form['cf-turnstile-response']", $isi,
                 "{$berkas} tidak mengirimkan kolom cf-turnstile-response.");
+
+            $this->assertStringContainsString(':tindakan=', $isi,
+                "{$berkas} tidak meneruskan penanda tindakan ke widget-nya, sehingga "
+                .'tokennya terbit tanpa penanda dan server akan menolak setiap kiriman '
+                .'dari halaman ini.');
+        }
+    }
+
+    /**
+     * Penanda tindakan memenuhi batas yang ditetapkan Cloudflare.
+     *
+     * Paling panjang 32 huruf, hanya a-z A-Z 0-9 _ dan -. Nilai di luar
+     * itu tidak ditolak saat widget digambar; ia hanya tidak ikut pada
+     * tokennya, lalu setiap kiriman ditolak karena tindakannya tidak
+     * cocok — dengan pesan yang tidak menyebut satu pun dari semua ini.
+     */
+    public function test_penanda_tindakan_sesuai_batas_cloudflare(): void
+    {
+        foreach (Turnstile::TINDAKAN as $kunci => $nilai) {
+            $this->assertSame($kunci, $nilai,
+                'Kunci dan nilai TINDAKAN berbeda; salah satunya pasti terlupa saat diubah.');
+
+            $this->assertMatchesRegularExpression('/^[a-zA-Z0-9_-]{1,32}$/', $nilai,
+                "Penanda tindakan '{$nilai}' di luar batas yang diterima Cloudflare.");
         }
     }
 }

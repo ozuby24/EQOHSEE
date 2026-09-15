@@ -98,7 +98,11 @@ class TurnstileMasukTest extends TestCase
     public function test_dengan_token_sah_tetap_dapat_masuk(): void
     {
         $this->nyalakan();
-        Http::fake([config('turnstile.url') => Http::response(['success' => true])]);
+        Http::fake([config('turnstile.url') => Http::response([
+            'success'  => true,
+            'action'   => Turnstile::TINDAKAN['masuk'],
+            'hostname' => 'eqohsee.id',
+        ])]);
 
         $this->post('/login', [
             'email'                 => $this->pengguna()->email,

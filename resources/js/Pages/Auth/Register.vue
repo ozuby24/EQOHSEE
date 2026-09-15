@@ -14,6 +14,9 @@ const props = defineProps<{
 
   /** Kunci situs Turnstile. null berarti verifikasinya tidak dipasang. */
   turnstile?: string | null;
+
+  /** Penanda pintu dari Turnstile::TINDAKAN, agar tokennya terikat ke sini. */
+  tindakan?: string | null;
 }>();
 
 const form = useForm({
@@ -57,7 +60,8 @@ function daftar() {
     <div><label class="label">Kata sandi</label><InputSandi v-model="form.password" required autocomplete="new-password" kelas="input" label="baru" /></div>
     <div><label class="label">Ulangi kata sandi</label><InputSandi v-model="form.password_confirmation" required autocomplete="new-password" kelas="input" label="ulangan" /></div>
     <VerifikasiTurnstile v-model="form['cf-turnstile-response']"
-                         :kunci="props.turnstile ?? null" :galat="gagalKe" />
+                         :kunci="props.turnstile ?? null" :tindakan="props.tindakan ?? null"
+                         :galat="gagalKe" />
     <button type="submit" :disabled="form.processing" class="w-full rounded-xl bg-[#F57C00] hover:bg-[#DC6E00] text-white py-3 font-bold transition disabled:opacity-50">{{ form.processing ? 'Mendaftarkan…' : 'Daftar' }}</button>
   </form>
   <p class="text-center text-sm text-stone-500 mt-6">Sudah punya akun? <Link href="/login" class="font-bold text-[#D96500] hover:underline">Masuk</Link></p>

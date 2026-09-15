@@ -30,6 +30,7 @@ class RegisteredUserController extends Controller
                mati, dan halaman ini menggambar dirinya seperti sebelum
                fitur itu ada. */
             'turnstile'   => Turnstile::kunciSitus(),
+            'tindakan'    => Turnstile::TINDAKAN['daftar'],
         ]);
     }
 
@@ -50,7 +51,7 @@ class RegisteredUserController extends Controller
                skrip yang memakai pintu yang sama untuk menanam ratusan
                akun, masing-masing memicu satu surel verifikasi dari
                server ini. */
-            Turnstile::KOLOM => Turnstile::aturan(),
+            Turnstile::KOLOM => Turnstile::aturan(Turnstile::TINDAKAN['daftar']),
         ]);
 
         /* Tokennya sengaja TIDAK dibuang dari $data di sini.

@@ -44,6 +44,34 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Nama inang yang boleh menerbitkan token
+    |--------------------------------------------------------------------------
+    |
+    | Dipisah koma, misalnya: eqohsee.id,www.eqohsee.id
+    |
+    | KOSONG berarti tidak diperiksa, dan itu bawaannya. Isi yang salah
+    | di sini — satu subdomain yang terlupa, www yang tidak ikut ditulis
+    | — tidak menghasilkan peringatan melainkan penolakan atas SETIAP
+    | kiriman dari situs yang benar. Gejalanya sama persis dengan
+    | "verifikasi keamanan gagal" yang lain, dan sebabnya hanya terbaca
+    | di log.
+    |
+    | Ia juga bukan lapisan pertama. Cloudflare sudah mengikat kunci
+    | situs ke domain yang didaftarkan di dasbornya dan menolak
+    | menggambar widget di domain lain; yang ditambahkan di sini adalah
+    | jaring kedua, untuk hari ketika sebuah domain ikut ditambahkan di
+    | dasbor tanpa sepengetahuan yang memasang ini.
+    |
+    | Isi di server produksi, biarkan kosong di mesin pengembang —
+    | tokennya di sana terbit dari localhost atau 127.0.0.1, yang tidak
+    | pernah pantas ikut ke daftar produksi.
+    |
+    */
+
+    'inang' => env('TURNSTILE_INANG'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Bila Cloudflare tidak dapat dihubungi
     |--------------------------------------------------------------------------
     |

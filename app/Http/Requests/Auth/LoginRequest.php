@@ -35,7 +35,7 @@ class LoginRequest extends FormRequest
             /* Verifikasi Cloudflare — hanya ketika kuncinya terpasang.
                Aturannya disusun di satu tempat, dipakai sama persis oleh
                masuk, daftar, dan lupa sandi. */
-            Turnstile::KOLOM => Turnstile::aturan(),
+            Turnstile::KOLOM => Turnstile::aturan(Turnstile::TINDAKAN['masuk']),
         ];
     }
 

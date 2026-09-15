@@ -21,6 +21,7 @@ class PasswordResetLinkController extends Controller
             /* Kunci SITUS Turnstile; rahasianya tidak pernah meninggalkan
                server. null berarti fiturnya mati. */
             'turnstile' => Turnstile::kunciSitus(),
+            'tindakan'  => Turnstile::TINDAKAN['lupa-sandi'],
         ]);
     }
 
@@ -42,7 +43,7 @@ class PasswordResetLinkController extends Controller
                dengan server ini yang menanggung reputasi pengirimnya.
                Pembatas laju menahan kecepatannya; kotak ini menahan
                skripnya. */
-            Turnstile::KOLOM => Turnstile::aturan(),
+            Turnstile::KOLOM => Turnstile::aturan(Turnstile::TINDAKAN['lupa-sandi']),
         ]);
 
         // We will send the password reset link to this user. Once we have attempted
