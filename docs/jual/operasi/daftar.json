@@ -1,0 +1,38 @@
+{
+  "kunci": "operasi",
+  "label": "Mine Operations",
+  "jual": "Mine Operations & GIS",
+  "harga": 13500000,
+  "ket": "Control Tower operasi: target dan realisasi produksi, OB, strip ratio, delay, ramalan akhir periode, serta peta dan luas area tambang.",
+  "semboyan": "Steady Every Shift",
+  "halaman": [
+    {
+      "berkas": "01-operasi-tambang.jpg",
+      "label": "Dashboard Operasi",
+      "grup": "Control Tower",
+      "path": "operasi-tambang",
+      "status": "ok"
+    },
+    {
+      "berkas": "02-operasi-tambang-data.jpg",
+      "label": "Input Data Shift",
+      "grup": "Control Tower",
+      "path": "operasi-tambang/data",
+      "status": "ok"
+    },
+    {
+      "berkas": "03-operasi-tambang-target.jpg",
+      "label": "Target Bulanan",
+      "grup": "Control Tower",
+      "path": "operasi-tambang/target",
+      "status": "ok"
+    },
+    {
+      "berkas": "04-operasi-tambang-gis.jpg",
+      "label": "GIS & Layer Tambang",
+      "grup": "Spatial Operations",
+      "path": "operasi-tambang/gis",
+      "status": "ok"
+    }
+  ]
+}

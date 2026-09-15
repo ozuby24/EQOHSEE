@@ -1,0 +1,157 @@
+{
+  "kunci": "miners",
+  "label": "Miners",
+  "jual": "Authority — Kelayakan Kerja",
+  "harga": 2500000,
+  "ket": "Kompetensi, MCU, dan kartu masuk tambang dalam satu berkas per orang, dengan pengingat masa berlaku berjenjang.",
+  "semboyan": "Fit To Work Today",
+  "halaman": [
+    {
+      "berkas": "01-miners-dasbor.jpg",
+      "label": "Ringkasan",
+      "grup": "",
+      "path": "miners/dasbor",
+      "status": "ok"
+    },
+    {
+      "berkas": "02-miners-mcu.jpg",
+      "label": "MCU",
+      "grup": "Pendaftaran",
+      "path": "miners/mcu",
+      "status": "ok"
+    },
+    {
+      "berkas": "03-miners-induksi.jpg",
+      "label": "Induksi",
+      "grup": "Pendaftaran",
+      "path": "miners/induksi",
+      "status": "ok"
+    },
+    {
+      "berkas": "04-miners-permit.jpg",
+      "label": "Mine Permit",
+      "grup": "Pendaftaran",
+      "path": "miners/permit",
+      "status": "ok"
+    },
+    {
+      "berkas": "05-miners-simper.jpg",
+      "label": "SIMPER",
+      "grup": "Pendaftaran",
+      "path": "miners/simper",
+      "status": "ok"
+    },
+    {
+      "berkas": "06-miners-riwayat-mcu.jpg",
+      "label": "MCU",
+      "grup": "Riwayat",
+      "path": "miners/riwayat/mcu",
+      "status": "ok"
+    },
+    {
+      "berkas": "07-miners-riwayat-induksi.jpg",
+      "label": "Induksi",
+      "grup": "Riwayat",
+      "path": "miners/riwayat/induksi",
+      "status": "ok"
+    },
+    {
+      "berkas": "08-miners-riwayat-mine-permit.jpg",
+      "label": "Mine Permit",
+      "grup": "Riwayat",
+      "path": "miners/riwayat/mine-permit",
+      "status": "ok"
+    },
+    {
+      "berkas": "09-miners-riwayat-mine-license.jpg",
+      "label": "SIMPER",
+      "grup": "Riwayat",
+      "path": "miners/riwayat/mine-license",
+      "status": "ok"
+    },
+    {
+      "berkas": "10-miners-riwayat-authority.jpg",
+      "label": "Kompetensi",
+      "grup": "Riwayat",
+      "path": "miners/riwayat/authority",
+      "status": "ok"
+    },
+    {
+      "berkas": "11-miners-daftar-outstanding-mcu.jpg",
+      "label": "MCU",
+      "grup": "Outstanding",
+      "path": "miners/daftar/outstanding-mcu",
+      "status": "ok"
+    },
+    {
+      "berkas": "12-miners-daftar-outstanding-permit.jpg",
+      "label": "Mine Permit",
+      "grup": "Outstanding",
+      "path": "miners/daftar/outstanding-permit",
+      "status": "ok"
+    },
+    {
+      "berkas": "13-miners-daftar-outstanding-simper.jpg",
+      "label": "SIMPER",
+      "grup": "Outstanding",
+      "path": "miners/daftar/outstanding-simper",
+      "status": "ok"
+    },
+    {
+      "berkas": "14-miners-daftar-outstanding-induksi.jpg",
+      "label": "Induksi",
+      "grup": "Outstanding",
+      "path": "miners/daftar/outstanding-induksi",
+      "status": "ok"
+    },
+    {
+      "berkas": "15-miners-daftar-penambahan-unit.jpg",
+      "label": "Penambahan Unit",
+      "grup": "SIMPER Lanjutan",
+      "path": "miners/daftar/penambahan-unit",
+      "status": "ok"
+    },
+    {
+      "berkas": "16-miners-daftar-upgrade-simper.jpg",
+      "label": "Upgrade SIMPER",
+      "grup": "SIMPER Lanjutan",
+      "path": "miners/daftar/upgrade-simper",
+      "status": "ok"
+    },
+    {
+      "berkas": "17-miners-daftar-perpanjangan.jpg",
+      "label": "Perpanjangan",
+      "grup": "SIMPER Lanjutan",
+      "path": "miners/daftar/perpanjangan",
+      "status": "ok"
+    },
+    {
+      "berkas": "18-miners.jpg",
+      "label": "Manpower",
+      "grup": "Data",
+      "path": "miners",
+      "status": "ok"
+    },
+    {
+      "berkas": "19-miners-daftar-rujukan.jpg",
+      "label": "Rujukan",
+      "grup": "Data",
+      "path": "miners/daftar/rujukan",
+      "status": "ok"
+    },
+    {
+      "berkas": "20-miners-kedaluwarsa.jpg",
+      "label": "Masa Berlaku",
+      "grup": "Pemantauan",
+      "path": "miners/kedaluwarsa",
+      "status": "ok"
+    },
+    {
+      "berkas": "21-miners-daftar-cetak-kartu.jpg",
+      "label": "Cetak Kartu",
+      "grup": "Pemantauan",
+      "path": "miners/daftar/cetak-kartu",
+      "status": "ok"
+    }
+  ]
+}

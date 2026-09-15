@@ -1,0 +1,45 @@
+{
+  "kunci": "izin",
+  "label": "Izin Kerja Aman",
+  "jual": "Izin Kerja Aman",
+  "harga": 7500000,
+  "ket": "Izin kerja panas, ruang terbatas, ketinggian, dan lainnya: daftar periksa yang dapat disusun sendiri, uji gas beserta kesegarannya, penutupan izin, dan penyaring dua izin yang tidak boleh berbarengan di satu lokasi.",
+  "semboyan": "Cleared Before Started",
+  "halaman": [
+    {
+      "berkas": "01-izin-kerja.jpg",
+      "label": "Dashboard Izin",
+      "grup": "Pengawasan",
+      "path": "izin-kerja",
+      "status": "ok"
+    },
+    {
+      "berkas": "02-izin-kerja-daftar.jpg",
+      "label": "Daftar Izin",
+      "grup": "Pengawasan",
+      "path": "izin-kerja/daftar",
+      "status": "ok"
+    },
+    {
+      "berkas": "03-izin-kerja-syarat.jpg",
+      "label": "Daftar Periksa",
+      "grup": "Acuan & Data",
+      "path": "izin-kerja/syarat",
+      "status": "ok"
+    },
+    {
+      "berkas": "04-izin-kerja-ambang-gas.jpg",
+      "label": "Ambang Gas",
+      "grup": "Acuan & Data",
+      "path": "izin-kerja/ambang-gas",
+      "status": "ok"
+    },
+    {
+      "berkas": "05-izin-kerja-cetak.jpg",
+      "label": "Laporan Izin",
+      "grup": "Acuan & Data",
+      "path": "izin-kerja/cetak",
+      "status": "ok"
+    }
+  ]
+}

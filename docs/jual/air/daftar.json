@@ -1,0 +1,38 @@
+{
+  "kunci": "air",
+  "label": "Water & Dewatering",
+  "jual": "Water & Dewatering",
+  "harga": 6500000,
+  "ket": "Curah hujan, level kolam, debit dan pompa, kualitas air, serta perkiraan luapan dalam milimeter hujan yang masih sanggup ditahan.",
+  "semboyan": "Clean Water Downstream",
+  "halaman": [
+    {
+      "berkas": "01-penirisan.jpg",
+      "label": "Dashboard Air",
+      "grup": "Pengawasan",
+      "path": "penirisan",
+      "status": "ok"
+    },
+    {
+      "berkas": "02-penirisan-catatan.jpg",
+      "label": "Catatan Harian",
+      "grup": "Pengawasan",
+      "path": "penirisan/catatan",
+      "status": "ok"
+    },
+    {
+      "berkas": "03-penirisan-kolam.jpg",
+      "label": "Kolam & Pompa",
+      "grup": "Pengawasan",
+      "path": "penirisan/kolam",
+      "status": "ok"
+    },
+    {
+      "berkas": "04-penirisan-cetak.jpg",
+      "label": "Laporan Air",
+      "grup": "Data",
+      "path": "penirisan/cetak",
+      "status": "ok"
+    }
+  ]
+}

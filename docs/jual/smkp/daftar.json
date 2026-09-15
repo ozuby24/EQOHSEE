@@ -1,0 +1,150 @@
+{
+  "kunci": "smkp",
+  "label": "Audit SMKP",
+  "jual": "SMKP Audit",
+  "harga": 2500000,
+  "ket": "Audit 7 elemen SMKP Minerba sesuai Kepdirjen 185.K/2019: penilaian per kriteria, temuan berjenjang, dan laporan siap cetak.",
+  "semboyan": "Systems That Hold",
+  "halaman": [
+    {
+      "berkas": "01-smkp-dasbor.jpg",
+      "label": "Performa SMKP",
+      "grup": "",
+      "path": "smkp/dasbor",
+      "status": "ok"
+    },
+    {
+      "berkas": "02-smkp.jpg",
+      "label": "Daftar Audit",
+      "grup": "Periode",
+      "path": "smkp",
+      "status": "ok"
+    },
+    {
+      "berkas": "03-smkp-buat.jpg",
+      "label": "Buat Periode",
+      "grup": "Periode",
+      "path": "smkp/buat",
+      "status": "ok"
+    },
+    {
+      "berkas": "04-smkp-lanjut-tahap-1.jpg",
+      "label": "Permulaan Audit",
+      "grup": "Tahap Audit",
+      "path": "smkp/lanjut/tahap-1",
+      "status": "ok"
+    },
+    {
+      "berkas": "05-smkp-lanjut-rencana.jpg",
+      "label": "Rencana Audit",
+      "grup": "Tahap Audit",
+      "path": "smkp/lanjut/rencana",
+      "status": "ok"
+    },
+    {
+      "berkas": "06-smkp-lanjut-metode-sampel.jpg",
+      "label": "Metode & Sampel",
+      "grup": "Tahap Audit",
+      "path": "smkp/lanjut/metode-sampel",
+      "status": "ok"
+    },
+    {
+      "berkas": "07-smkp-lanjut-penilaian.jpg",
+      "label": "Form Penilaian Audit",
+      "grup": "Tahap Audit",
+      "path": "smkp/lanjut/penilaian",
+      "status": "ok"
+    },
+    {
+      "berkas": "08-smkp-lanjut-rapat.jpg",
+      "label": "Rapat & Daftar Hadir",
+      "grup": "Tahap Audit",
+      "path": "smkp/lanjut/rapat",
+      "status": "ok"
+    },
+    {
+      "berkas": "09-smkp-lanjut-temuan.jpg",
+      "label": "Temuan & Tindakan",
+      "grup": "Tahap Audit",
+      "path": "smkp/lanjut/temuan",
+      "status": "ok"
+    },
+    {
+      "berkas": "10-smkp-lanjut-susun-laporan.jpg",
+      "label": "Penyusunan Laporan",
+      "grup": "Tahap Audit",
+      "path": "smkp/lanjut/susun-laporan",
+      "status": "ok"
+    },
+    {
+      "berkas": "11-smkp-lanjut-kriteria.jpg",
+      "label": "1 · Formulir Kriteria",
+      "grup": "Berkas Resmi",
+      "path": "smkp/lanjut/kriteria",
+      "status": "ok"
+    },
+    {
+      "berkas": "12-smkp-lanjut-rekap-nc.jpg",
+      "label": "2 · Rekap Ketidaksesuaian",
+      "grup": "Berkas Resmi",
+      "path": "smkp/lanjut/rekap-nc",
+      "status": "ok"
+    },
+    {
+      "berkas": "13-smkp-lanjut-respon.jpg",
+      "label": "3 · Respon Manajemen",
+      "grup": "Berkas Resmi",
+      "path": "smkp/lanjut/respon",
+      "status": "ok"
+    },
+    {
+      "berkas": "14-smkp-lanjut-rencana-tindak.jpg",
+      "label": "4 · Rencana Tindak Lanjut",
+      "grup": "Berkas Resmi",
+      "path": "smkp/lanjut/rencana-tindak",
+      "status": "ok"
+    },
+    {
+      "berkas": "15-smkp-lanjut-berita-acara.jpg",
+      "label": "5 · Berita Acara Tahap I",
+      "grup": "Berkas Resmi",
+      "path": "smkp/lanjut/berita-acara",
+      "status": "ok"
+    },
+    {
+      "berkas": "16-smkp-lanjut-laporan-rencana.jpg",
+      "label": "6 · Laporan Rencana Audit",
+      "grup": "Berkas Resmi",
+      "path": "smkp/lanjut/laporan-rencana",
+      "status": "ok"
+    },
+    {
+      "berkas": "17-smkp-lanjut-laporan-audit.jpg",
+      "label": "7 · Laporan Audit",
+      "grup": "Berkas Resmi",
+      "path": "smkp/lanjut/laporan-audit",
+      "status": "ok"
+    },
+    {
+      "berkas": "18-smkp-lanjut-nc-tindak.jpg",
+      "label": "8 · NC & Tindak Lanjut",
+      "grup": "Berkas Resmi",
+      "path": "smkp/lanjut/nc-tindak",
+      "status": "ok"
+    },
+    {
+      "berkas": "19-smkp-lanjut-ofi.jpg",
+      "label": "Peluang Perbaikan (OFI)",
+      "grup": "Berkas Resmi",
+      "path": "smkp/lanjut/ofi",
+      "status": "ok"
+    },
+    {
+      "berkas": "20-smkp-acuan.jpg",
+      "label": "Kriteria Kepdirjen",
+      "grup": "Acuan",
+      "path": "smkp/acuan",
+      "status": "ok"
+    }
+  ]
+}

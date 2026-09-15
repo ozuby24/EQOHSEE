@@ -1,0 +1,31 @@
+{
+  "kunci": "konservasi",
+  "label": "Konservasi Minerba",
+  "jual": "Konservasi Minerba",
+  "harga": 7500000,
+  "ket": "Pemantauan produksi, recovery, kehilangan material, dilusi, stockpile, mineral ikutan, dan tindak lanjut perbaikan.",
+  "semboyan": "Take Only What Lasts",
+  "halaman": [
+    {
+      "berkas": "01-konservasi.jpg",
+      "label": "Dashboard",
+      "grup": "Pengawasan",
+      "path": "konservasi",
+      "status": "ok"
+    },
+    {
+      "berkas": "02-konservasi-data.jpg",
+      "label": "Data Konservasi",
+      "grup": "Pengawasan",
+      "path": "konservasi/data",
+      "status": "ok"
+    },
+    {
+      "berkas": "03-konservasi-laporan.jpg",
+      "label": "Laporan Konservasi",
+      "grup": "Pengawasan",
+      "path": "konservasi/laporan",
+      "status": "ok"
+    }
+  ]
+}
