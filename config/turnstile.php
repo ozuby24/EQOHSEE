@@ -4,8 +4,14 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Verifikasi Cloudflare Turnstile pada halaman masuk
+    | Verifikasi Cloudflare Turnstile pada pintu tamu
     |--------------------------------------------------------------------------
+    |
+    | Berlaku pada tiga halaman sekaligus — masuk, daftar, dan lupa sandi
+    | — yang menyala dan mati bersama dari satu pasang kunci ini. Pintu
+    | keempat, penyetelan ulang sandi lewat tautan, sengaja dibiarkan:
+    | tautannya sudah membuktikan penerimanya memegang kotak surat yang
+    | dituju.
     |
     | MATI selama kuncinya belum diisi, dan itu disengaja.
     |
@@ -13,7 +19,8 @@ return [
     | kuncinya belum terpasang di server, akibatnya bukan peringatan
     | melainkan SELURUH ORANG tidak dapat masuk — termasuk administrator
     | yang seharusnya memperbaikinya. Maka selama salah satu kunci masih
-    | kosong, halaman masuk bekerja persis seperti sebelum fitur ini ada.
+    | kosong, ketiga halaman itu bekerja persis seperti sebelum fitur ini
+    | ada.
     |
     | Kuncinya diambil di dash.cloudflare.com → Turnstile → Add site.
     | Situsnya TIDAK perlu diproksikan lewat Cloudflare untuk memakainya.
@@ -66,5 +73,45 @@ return [
     |
     */
     'saat_gagal' => env('TURNSTILE_SAAT_GAGAL', 'lolos'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Bila sesudah kuncinya dipasang tidak ada yang bisa masuk
+    |--------------------------------------------------------------------------
+    |
+    | Ditulis di sini, dan bukan di halaman masuk, karena yang perlu
+    | membacanya bukan orang yang sedang mencoba masuk melainkan orang
+    | yang harus memulihkannya — dan orang itu justru yang ikut terkunci
+    | di luar.
+    |
+    | 'saat_gagal' di atas TIDAK menolong dalam keadaan ini, dan penting
+    | untuk melihat kenapa. Ia mengurus satu arah saja: SERVER ini yang
+    | tidak dapat menghubungi Cloudflare. Arah yang satu lagi tidak
+    | pernah melewati server ini sama sekali — PERAMBAN pemakainya yang
+    | tidak dapat mengambil challenges.cloudflare.com, karena jaringan
+    | site tambang menyaring domain luar, karena pemblokir iklan, atau
+    | karena domain itu diblokir di negara tempat ia berada.
+    |
+    | Rantainya lalu berjalan sendiri sampai habis: skripnya tidak
+    | sampai, widget-nya tidak digambar, tokennya tidak pernah terbit,
+    | dan server menolak setiap kiriman tanpa token — persis seperti yang
+    | seharusnya ia lakukan terhadap skrip penebak sandi. Permintaan
+    | tanpa token dari peramban yang terhalang memang tidak dapat
+    | dibedakan dari permintaan tanpa token yang dikirim penyerang, jadi
+    | tidak ada jalan pintas yang aman di sisi server. Halaman masuk
+    | menyebutkan sebabnya kepada yang membacanya, tetapi menyebutkan
+    | sebab bukan memulihkan.
+    |
+    | Pemulihannya satu langkah, dan tidak menyentuh basis data:
+    |
+    |   1. Kosongkan TURNSTILE_SITE_KEY pada .env di server.
+    |   2. php artisan config:clear   (deploy.sh sudah melakukannya)
+    |
+    | Verifikasinya mati seketika — aktif() menuntut KEDUA kuncinya — dan
+    | ketiga pintu kembali seperti sebelum fitur ini ada. Tidak ada yang
+    | hilang, dan kuncinya dapat dipasang lagi kapan saja sesudah
+    | jaringannya dibereskan.
+    |
+    */
 
 ];

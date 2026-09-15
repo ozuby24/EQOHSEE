@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\{Company, User};
+use App\Support\Turnstile;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,6 +24,12 @@ class RegisteredUserController extends Controller
             'companies'   => Company::orderBy('name')->get(['id', 'name']),
             'departments' => \App\Support\Hazard::DEPARTEMEN,
             'positions'   => \App\Support\Hazard::JABATAN,
+
+            /* Kunci SITUS Turnstile — memang dirancang publik; rahasianya
+               tidak pernah meninggalkan server. null berarti fiturnya
+               mati, dan halaman ini menggambar dirinya seperti sebelum
+               fitur itu ada. */
+            'turnstile'   => Turnstile::kunciSitus(),
         ]);
     }
 
@@ -36,7 +43,23 @@ class RegisteredUserController extends Controller
             'position'    => ['required','string','max:100'],
             'department'  => ['nullable','string','max:100'],
             'company_id'  => ['nullable','exists:companies,id'],
+
+            /* Pendaftaran terbuka untuk siapa saja yang membuka
+               halamannya, dan itu memang disengaja — pekerja baru di site
+               mendaftarkan dirinya sendiri. Yang tidak disengaja adalah
+               skrip yang memakai pintu yang sama untuk menanam ratusan
+               akun, masing-masing memicu satu surel verifikasi dari
+               server ini. */
+            Turnstile::KOLOM => Turnstile::aturan(),
         ]);
+
+        /* Tokennya sengaja TIDAK dibuang dari $data di sini.
+           User::$fillable adalah daftar putih, jadi cf-turnstile-response
+           tidak akan pernah sampai ke perintah insert — dan membuangnya
+           lagi di sini hanya menambah satu baris yang tampak menjaga
+           sesuatu padahal tidak, sehingga tidak ada cara membuktikannya
+           masih bekerja. Yang menjaganya adalah daftar putih itu, dan
+           itulah yang dijaga uji. */
 
         $data['lms_role'] = 'trainee';
         $data['active']   = true;

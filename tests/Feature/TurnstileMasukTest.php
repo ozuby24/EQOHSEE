@@ -213,7 +213,15 @@ class TurnstileMasukTest extends TestCase
 
         $isi = $this->get('/login')->assertOk()->getContent();
 
-        $this->assertStringNotContainsString('turnstile&quot;:&quot;', $isi);
+        /* Dicari kunci situsnya sendiri. Prop Inertia diserialkan sebagai
+           JSON dengan tanda kutip biasa, jadi pola ber-&quot; yang
+           sebelumnya dipakai di sini tidak pernah ada di halamannya —
+           dan ujinya lulus tanpa memeriksa apa pun. */
+        $this->assertStringNotContainsString(self::SITUS, $isi,
+            'Kunci situs Turnstile dikirim ke halaman masuk padahal fiturnya mati.');
+
+        $this->assertStringNotContainsString('"turnstile":"', $isi,
+            'Prop turnstile berisi nilai padahal fiturnya mati.');
     }
 
     /* ═══════════ CSP ═══════════ */

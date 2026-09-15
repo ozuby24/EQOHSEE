@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Rules\TurnstileSah;
 use Illuminate\Support\Facades\{Http, Log};
 
 /**
@@ -11,6 +12,21 @@ use Illuminate\Support\Facades\{Http, Log};
  * ribuan pasangan surel dan sandi hasil kebocoran situs lain. Pembatas
  * laju menahan KECEPATANNYA; yang ditahan di sini adalah pelakunya,
  * sebelum satu pun percobaan menyentuh basis data.
+ *
+ * ── Tiga pintu, satu pasang kunci ──
+ *
+ * Dipasang pada masuk, daftar, dan lupa sandi. Ketiganya menerima
+ * kiriman dari orang yang belum dikenal, dan masing-masing punya
+ * penyalahgunaannya sendiri: menebak sandi pada yang pertama, membuat
+ * akun massal pada yang kedua, dan pada yang ketiga — yang paling
+ * mudah terlewat — memakai server ini sebagai pengirim surel ke alamat
+ * siapa pun yang diketik penyerang, berkali-kali, dengan nama kita
+ * pada bagian pengirimnya.
+ *
+ * Pintu keempat, penyetelan ulang sandi lewat tautan, sengaja
+ * dibiarkan: tautannya sendiri sudah membuktikan penerimanya memegang
+ * kotak surat yang dituju, dan kotak verifikasi di sana hanya
+ * menambah satu rintangan pada orang yang sudah terbukti berhak.
  *
  * Berbeda dari captcha bergambar, Turnstile umumnya tidak meminta
  * pemakainya mengerjakan apa pun: ia menilai perilaku peramban dan
@@ -43,6 +59,26 @@ class Turnstile
     public static function aktif(): bool
     {
         return self::kunciSitus() !== null && self::rahasia() !== null;
+    }
+
+    /**
+     * Aturan validasi untuk kolom tokennya.
+     *
+     * Ditulis sekali di sini, bukan disalin ke tiap formulir. Yang
+     * disalin akan berbeda pada suatu hari — satu formulir memakai
+     * `nullable` "sementara", lalu tetap begitu — dan perbedaan itu
+     * tidak menimbulkan galat, hanya satu pintu yang penjaganya sudah
+     * lama pulang.
+     *
+     * Kosong ketika fiturnya mati: `required` pada kolom yang widget-nya
+     * tidak pernah digambar menolak SETIAP kiriman, dengan pesan yang
+     * menyebut kolom yang tidak terlihat di layar mana pun.
+     *
+     * @return array<int, mixed>
+     */
+    public static function aturan(): array
+    {
+        return self::aktif() ? ['required', new TurnstileSah] : [];
     }
 
     public static function kunciSitus(): ?string

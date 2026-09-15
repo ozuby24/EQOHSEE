@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Support\Turnstile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
@@ -16,7 +17,11 @@ class PasswordResetLinkController extends Controller
      */
     public function create()
     {
-        return Inertia::render('Auth/LupaSandi');
+        return Inertia::render('Auth/LupaSandi', [
+            /* Kunci SITUS Turnstile; rahasianya tidak pernah meninggalkan
+               server. null berarti fiturnya mati. */
+            'turnstile' => Turnstile::kunciSitus(),
+        ]);
     }
 
     /**
@@ -28,6 +33,16 @@ class PasswordResetLinkController extends Controller
     {
         $request->validate([
             'email' => ['required', 'email'],
+
+            /* Pintu ini mengirim surel ke alamat yang diketik pengirim
+               permintaannya, dan itulah yang membuatnya menarik untuk
+               disalahgunakan: bukan untuk masuk, melainkan untuk
+               membanjiri kotak surat orang lain dengan surel yang
+               membawa nama perusahaan ini pada bagian pengirimnya —
+               dengan server ini yang menanggung reputasi pengirimnya.
+               Pembatas laju menahan kecepatannya; kotak ini menahan
+               skripnya. */
+            Turnstile::KOLOM => Turnstile::aturan(),
         ]);
 
         // We will send the password reset link to this user. Once we have attempted
