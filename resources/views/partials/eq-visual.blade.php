@@ -715,6 +715,29 @@ main a{transition:color .16s}
 .eq-admin-angka small{font-size:11.5px;color:var(--eq-redup2,#98A2AE)}
 
 /* ── Pintasan modul ── */
+/* ══════════ keadaan tiap modul ══════════
+   Satu kartu per MODUL, bukan per butir. Lebih rapat daripada .eq-modul
+   karena jumlahnya dua puluh lima dan tugasnya berbeda: bukan menjelaskan
+   satu hal, melainkan memberi gambaran seluruhnya dalam satu tarikan
+   mata. Warna sisi kirinya memikul seluruh beban penandaan. */
+.eq-mdl-kisi{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(232px,1fr))}
+.eq-mdl{display:grid;gap:8px;padding:13px 14px;border-radius:14px;background:#fff;
+  border:1px solid rgba(27,32,36,.08);border-left:3px solid var(--c);
+  transition:transform .18s cubic-bezier(.21,.6,.35,1),box-shadow .18s,border-color .18s}
+.eq-mdl:hover{transform:translateY(-2px);box-shadow:0 14px 26px -20px rgba(27,32,36,.5)}
+.eq-mdl-kepala{display:flex;align-items:center;gap:9px}
+.eq-mdl-ikon{display:grid;place-items:center;width:28px;height:28px;border-radius:9px;
+  flex:none;background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--c)}
+.eq-mdl-nama{flex:1;min-width:0;font-size:12.5px;font-weight:700;line-height:1.25;
+  color:var(--eq-judul,#0F1720);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eq-mdl-angka{font-size:19px;font-weight:800;letter-spacing:-.03em;line-height:1;color:var(--c)}
+.eq-mdl-butir{display:grid;gap:3px}
+.eq-mdl-butir span{font-size:11px;line-height:1.4;color:var(--eq-lemah,#6B7785);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eq-mdl-butir b{font-weight:700;color:var(--eq-judul,#0F1720)}
+.eq-mdl-bersih{font-size:11px;line-height:1.4;color:#16A34A;font-weight:600}
+@media (prefers-reduced-motion:reduce){.eq-mdl:hover{transform:none}}
+
 .eq-modul{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(206px,1fr))}
 .eq-modul a{display:block;padding:16px;border:1px solid rgba(27,32,36,.08);border-radius:15px;
   background:#fff;transition:border-color .2s,transform .2s cubic-bezier(.21,.6,.35,1),box-shadow .2s}
@@ -793,6 +816,7 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] .eq-kpi,
 :root[data-tema="gelap"] .eq-kursus,
 :root[data-tema="gelap"] .eq-modul a,
+:root[data-tema="gelap"] .eq-mdl,
 :root[data-tema="gelap"] .eq-warta,
 :root[data-tema="gelap"] .eq-kategori > a,
 :root[data-tema="gelap"] .eq-admin-angka,

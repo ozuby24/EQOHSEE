@@ -29,13 +29,19 @@ final class Menu
        yang menjawab pertanyaan seorang peserta tentang kursusnya
        sendiri, bukan pertanyaan seorang pengawas tentang situsnya. */
     'dasbor' => [
-      'label' => 'Dasbor',
+      /* Ditulis "Dashboard", bukan "Dasbor".
+         Seluruh antarmuka memakai istilah Inggris yang sudah terlanjur
+         jadi kosakata kerja sehari-hari di tambang — dashboard, report,
+         shift — dan menerjemahkan satu di antaranya membuat orang
+         mencari menu yang namanya tidak pernah ia dengar disebut siapa
+         pun di lapangan. */
+      'label' => 'Dashboard',
       'semboyan' => 'Everything At A Glance',
       'kutipan' => 'Yang terukur dapat diperbaiki; yang tidak tercatat tidak pernah terjadi.',
       'icon'  => 'M4 13h6V4H4v9Zm10 7h6v-9h-6v9ZM4 20h6v-4H4v4Zm10-11h6V4h-6v5Z',
       'groups' => [
         '' => [
-          ['Ringkasan Situs', 'dasbor', 'dasbor'],
+          ['Ringkasan Situs', 'dashboard', 'dashboard'],
         ],
       ],
     ],
@@ -64,7 +70,7 @@ final class Menu
       'icon'  => 'M12 4 3 8l9 4 9-4-9-4zM7 10.5V15c0 1.3 2.7 2.3 5 2.3s5-1 5-2.3v-4.5',
       'groups' => [
         '' => [
-          ['Dashboard',      'dashboard',          'dashboard'],
+          ['Dashboard',      'lms.dasbor',         'lms'],
           ['Kursus',         'courses.index',      'courses*'],
           ['Prosedur & SOP', 'procedures.index',   'procedures*'],
           ['Evaluasi SOP',   'sop.index',          'sop*'],
@@ -794,7 +800,7 @@ final class Menu
      * @var list<array{0:list<string>,1:string}>
      */
     private const PETA_ALAMAT = [
-        [['dasbor'],                               'dasbor'],
+        [['dashboard', 'dasbor'],                  'dasbor'],
         [['personalia*', 'pesan*'],                'personalia'],
         [['hazard*', 'inspeksi*', 'temuan*'],      'hazrep'],
         [['tpkkp*'],                               'tpkkp'],
@@ -851,8 +857,11 @@ final class Menu
             }
         }
 
-        /* LMS adalah beranda: alamat yang tidak dikenali satu pun pola
-           di atas memang berada di sana (dashboard, kursus, profil). */
+        /* LMS menampung alamat yang tidak dikenali satu pun pola di atas
+           — kursus, sertifikat, profil. Sejak /dashboard menjadi
+           ringkasan situs, ia TIDAK lagi ikut ke sini: polanya disebut
+           tersendiri pada PETA_ALAMAT, dan tanpa itu ringkasan situs akan
+           menggambar bilah samping Learning Center di sekelilingnya. */
         return 'lms';
     }
 

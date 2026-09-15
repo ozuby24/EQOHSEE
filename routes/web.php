@@ -100,7 +100,25 @@ Route::get('/', fn () => auth()->check()
    supaya tidak menghalangi jalan menuju dirinya sendiri. */
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    /* /dashboard adalah RINGKASAN SITUS, bukan dasbor pembelajaran.
+     *
+       Sebelumnya terbalik: seluruh pengalihan sesudah masuk menuju
+       route('dashboard'), dan nama itu dipegang dasbor LMS. Akibatnya
+       setiap orang — kepala teknik tambang sekalipun — mendarat di
+       halaman kursusnya sendiri, dan harus mencari sendiri jalan ke
+       ringkasan situs yang seharusnya ia lihat lebih dulu.
+
+       Ditukar di sini, bukan dengan mengubah kedelapan pemanggil
+       route('dashboard') satu per satu: nama rutenya yang salah tuju,
+       bukan pemanggilnya. Menukarnya di satu tempat membuat kedelapannya
+       benar sekaligus, dan tidak ada yang tertinggal. */
+    Route::get('/dashboard', [DasborController::class, 'index'])->name('dashboard');
+
+    /* Dasbor pembelajaran, sekarang beralamat sesuai modulnya.
+       Ia menjawab pertanyaan seorang PESERTA tentang kursusnya sendiri —
+       pertanyaan yang sah, tetapi bukan pertanyaan pertama yang dibawa
+       orang saat membuka aplikasi ini. */
+    Route::get('/lms', [DashboardController::class, 'index'])->name('lms.dasbor');
 
     /* Pengenalan situs bagi akun baru.
      *
@@ -116,13 +134,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/tur', [TurController::class, 'isi'])->name('tur.isi');
     Route::post('/tur/selesai', [TurController::class, 'selesai'])->name('tur.selesai');
 
-    /* Dasbor menyeluruh, TERPISAH dari dasbor pembelajaran di atas.
-       Yang satu menjawab pertanyaan seorang peserta tentang kursusnya;
-       yang ini menjawab pertanyaan seorang pengawas tentang situsnya.
-       Menggabungkannya membuat angka kursus dan angka izin kerja
-       berebut tempat yang sama, dan yang kalah selalu yang tidak
-       sedang dicari orangnya. */
-    Route::get('/dasbor', [DasborController::class, 'index'])->name('dasbor');
+    /* /dasbor dipertahankan sebagai PENGALIHAN, bukan dihapus.
+       Alamat ini sudah beredar — ditandai orang di peramban, ditempel di
+       grup WhatsApp, dan tertulis pada tangkapan layar yang sudah
+       dikirim. Menghapusnya mengubah tautan yang pernah dibagikan
+       menjadi halaman galat, dan yang membukanya menyimpulkan
+       aplikasinya rusak, bukan alamatnya yang pindah. */
+    Route::redirect('/dasbor', '/dashboard')->name('dasbor');
 
     /* Register temuan lintas modul. Berdiri di luar modul mana pun karena
        ia justru menyatukan kelimanya — menaruhnya di dalam salah satu modul

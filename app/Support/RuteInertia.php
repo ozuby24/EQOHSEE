@@ -28,7 +28,7 @@ final class RuteInertia
     public const NAMA = [
         'pilar',
         'dashboard',
-        'dasbor',
+        'lms.dasbor',
         'temuan.index',
         'password.confirm',
 

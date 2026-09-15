@@ -51,6 +51,12 @@ const tenang = computed<any[]>(() =>
   (props.modul ?? []).filter((m: any) =>
     !(m.nada === 'gawat' && m.nilai > 0) && !(m.nada === 'ingat' && m.nilai > 0)));
 
+/* Berapa modul yang benar-benar bersih. Disebut di kepala bagiannya
+   supaya kabar baiknya punya angka juga — dasbor yang hanya menghitung
+   masalah membuat pembacanya merasa tidak pernah maju. */
+const modulBersih = computed(() =>
+  (props.ringkasanModul ?? []).filter((m: any) => !m.perlu).length);
+
 const jumlahMendesak = computed(() =>
   mendesak.value.reduce((n, m) => n + m.nilai, 0));
 
@@ -495,9 +501,65 @@ const berisi = (baris: any[] | undefined) =>
       </div>
     </section>
 
+    <!-- ═══ 5 · ringkasan tiap modul ═══
+         Satu kartu per MODUL, bukan per ubin. Daftar ubin di bawahnya
+         menyebut hal yang harus dikerjakan; bagian ini menjawab
+         pertanyaan yang lebih dulu ditanyakan orang saat membuka dasbor:
+         modul mana yang sedang bermasalah, dan modul mana yang tenang.
+
+         Semua modul disebut, termasuk yang bersih. Modul yang hilang saat
+         semuanya beres tidak dapat dibedakan dari modul yang memang tidak
+         ada di dasbor — dan itulah cara dua modul luput selama ini tanpa
+         ada yang menyadarinya. -->
+    <section v-if="(props.ringkasanModul ?? []).length" class="eq-panel">
+      <div class="eq-panel-kepala">
+        <h3>Keadaan tiap modul</h3>
+        <span class="eq-panel-ket">
+          {{ modulBersih }} dari {{ props.ringkasanModul.length }} modul tidak menyisakan apa pun hari ini.
+        </span>
+      </div>
+
+      <div class="eq-mdl-kisi">
+        <Link v-for="m in props.ringkasanModul" :key="m.modul" :href="m.url ?? '#'"
+              class="eq-mdl" :style="{ '--c': m.perlu ? m.warna : '#16A34A' }">
+          <span class="eq-mdl-kepala">
+            <span class="eq-mdl-ikon">
+              <svg v-if="m.ikon" viewBox="0 0 24 24" width="17" height="17" fill="none"
+                   stroke="currentColor" stroke-width="1.9" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" :d="m.ikon" />
+              </svg>
+            </span>
+            <span class="eq-mdl-nama">{{ m.label }}</span>
+
+            <!-- Angka nol ditulis sebagai angka nol, bukan diganti
+                 lencana "aman". Orang membandingkan kartu ini satu sama
+                 lain dengan mata, dan satu kartu yang bentuknya berbeda
+                 memutus perbandingan itu. -->
+            <span class="eq-mdl-angka">{{ m.perlu }}</span>
+          </span>
+
+          <span v-if="m.perlu" class="eq-mdl-butir">
+            <span v-for="b in m.butir.filter((x: any) => x.nilai > 0 && x.nada !== 'kabar')"
+                  :key="b.nama">
+              <b>{{ b.nilai }}</b> {{ b.nama }}
+            </span>
+          </span>
+
+          <!-- Modul yang tidak menunggak tetapi punya catatan: angkanya
+               ditulis sebagai catatan, bukan sebagai tunggakan. "420
+               catatan" dan "420 tertunggak" adalah dua kabar yang sangat
+               berbeda, dan slot yang sama membuat keduanya terbaca sama. -->
+          <span v-else-if="m.kabar" class="eq-mdl-bersih">
+            Tidak ada tunggakan · {{ m.kabar.toLocaleString('id-ID') }} catatan
+          </span>
+          <span v-else class="eq-mdl-bersih">Tidak ada yang tertunggak</span>
+        </Link>
+      </div>
+    </section>
+
     <section class="eq-panel">
       <div class="eq-panel-kepala">
-        <h3>Seluruh modul</h3>
+        <h3>Seluruh butir</h3>
         <span class="eq-panel-ket">Nol berarti tidak ada yang tertunggak — bukan tidak ada datanya.</span>
       </div>
       <div class="eq-modul">

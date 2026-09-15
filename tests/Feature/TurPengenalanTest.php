@@ -64,7 +64,7 @@ class TurPengenalanTest extends TestCase
     {
         $u = $this->baru();
 
-        $props = $this->actingAs($u)->get(route('dasbor'))
+        $props = $this->actingAs($u)->get(route('dashboard'))
             ->assertOk()->viewData('page')['props'];
 
         $this->assertArrayHasKey('tur', $props);
@@ -89,7 +89,7 @@ class TurPengenalanTest extends TestCase
         $u->tur_selesai_pada = now();
         $u->saveQuietly();
 
-        $props = $this->actingAs($u->fresh())->get(route('dasbor'))
+        $props = $this->actingAs($u->fresh())->get(route('dashboard'))
             ->assertOk()->viewData('page')['props'];
 
         $this->assertNull($props['tur'],
