@@ -742,77 +742,57 @@ main a{transition:color .16s}
    seperti lubang, bukan menonjol — ini satu-satunya hal pada blok ini
    yang kalau tertukar langsung terlihat salah tanpa dapat dijelaskan
    penyebabnya oleh yang melihatnya. */
-.ikon-3d{position:relative;isolation:isolate;
-  /* Dua warna turunan, dihitung sekali lalu dipakai gradien maupun
-     bayangan jatuhnya. Ditaruh pada peubah supaya yang mengganti --c
-     cukup mengganti satu nilai, bukan enam. */
-  --ikon-puncak:color-mix(in srgb,var(--c,#F57C00) 62%,#fff);
-  --ikon-dasar:color-mix(in srgb,var(--c,#F57C00) 94%,#0B1114);
-  background:linear-gradient(158deg,
-    var(--ikon-puncak) 0%,
-    var(--c,#F57C00) 58%,
-    var(--ikon-dasar) 100%);
+.ikon-3d{
+  /* Ujung terang gradiennya: --c-terang bila ubinnya menyebutnya,
+     kalau tidak dihitung dari --c.
+
+     Dua peubah dan bukan satu, karena sebuah custom property tidak
+     boleh menyebut DIRINYA SENDIRI di dalam var()-nya. Rantai seperti
+     itu dianggap tidak sah dan nilainya hilang sama sekali — bukan
+     jatuh ke cadangannya — sehingga ubinnya kehilangan gradien tanpa
+     satu pun galat yang tercatat. */
+  --ikon-hitung:color-mix(in srgb,var(--c,#F57C00) 62%,#fff);
+  --ikon-puncak:var(--c-terang,var(--ikon-hitung));
+  background:linear-gradient(145deg,var(--ikon-puncak),var(--c,#F57C00));
   color:#fff;
   box-shadow:
-    inset 0 1.5px 0 rgba(255,255,255,.66),
-    inset 0 -1.5px 0 rgba(255,255,255,.22),
-    inset 0 -6px 10px -8px rgba(7,12,16,.34),
-    0 1px 2px rgba(10,16,20,.1),
-    0 3px 6px -3px color-mix(in srgb,var(--c,#F57C00) 42%,transparent),
-    0 7px 12px -7px color-mix(in srgb,var(--c,#F57C00) 30%,transparent)}
+    0 8px 16px -9px color-mix(in srgb,var(--c,#F57C00) 85%,transparent),
+    inset 0 1px 0 rgba(255,255,255,.35)}
 
-/* ── Warna dalam yang tetap berwarna ──
+/* ── Kenapa hanya segini, padahal "3D" ──
 
-   Menggelapkan dengan mencampurkan hitam membuat warnanya ikut pudar:
-   merah menjadi merah bata, hijau menjadi hijau lumut. Yang dicari di
-   sini justru kebalikannya — tepi bawah ubin harus lebih PEKAT, bukan
-   lebih kusam, seperti benda berwarna yang bagian bawahnya kurang
-   cahaya. oklch() memisahkan terang dari pekat, jadi keduanya dapat
-   digeser ke arah yang berlawanan dalam satu langkah.
+   Percobaan sebelumnya menumpuk sorot cahaya di sudut kiri atas,
+   kilau di separuh atas, pantulan di tepi bawah, dan bayangan pada
+   glyph-nya. Masing-masing masuk akal sendiri-sendiri; bersama-sama
+   mereka menuang putih ke atas warnanya sampai ubin kuning tampak
+   berkabut, dan yang hilang justru warnanya — hal yang paling
+   diperhatikan orang.
 
-   Digerbangi @supports karena aturan di atasnya sudah dapat berdiri
-   sendiri: peramban yang belum mengerti sintaks ini memakai campuran
-   srgb tadi dan tetap mendapat ubin bergradien, hanya kurang pekat. */
-@supports (color:oklch(from #fff l c h)){
-  .ikon-3d{
-    --ikon-puncak:oklch(from var(--c,#F57C00) calc(l + .17) calc(c * .92) h);
-    --ikon-dasar:oklch(from var(--c,#F57C00) calc(l - .04) calc(c * 1.12) h)}
-}
+   Ditaruh berdampingan dengan acuannya, bedanya langsung terlihat:
+   acuannya hanya punya gradien, satu garis cahaya setebal satu piksel
+   di tepi atas, dan bayangan jatuh yang mengambil warna ubinnya.
+   Kedalamannya datang dari gradien itu, bukan dari lapisan di atasnya.
 
-/* Sorot cahaya di sudut kiri atas. Satu TITIK, bukan sapuan rata —
-   itulah yang membuat permukaannya terbaca melengkung. */
-.ikon-3d::before{content:'';position:absolute;inset:0;border-radius:inherit;
-  background:radial-gradient(116% 90% at 24% 2%,
-    rgba(255,255,255,.6) 0%,rgba(255,255,255,.22) 28%,rgba(255,255,255,0) 60%);
-  pointer-events:none;z-index:-1}
+   Jadi tidak ada ::before dan ::after di sini. Bukan karena
+   disederhanakan, melainkan karena keduanya membuat hasilnya lebih
+   buruk — dan itu baru ketahuan sesudah dibandingkan berdampingan,
+   bukan sesudah dilihat sendirian. */
 
-/* Kilau separuh atas, lalu pantulan cahaya di tepi bawah. Yang kedua
-   paling sering dilupakan padahal ia yang menahan ubinnya supaya tidak
-   tampak terpotong rata di bawah. */
-.ikon-3d::after{content:'';position:absolute;inset:0;border-radius:inherit;
-  background:
-    linear-gradient(180deg,rgba(255,255,255,.28) 0%,
-      rgba(255,255,255,.05) 44%,rgba(255,255,255,0) 54%),
-    radial-gradient(132% 62% at 50% 124%,
-      rgba(255,255,255,.3) 0%,rgba(255,255,255,0) 62%);
-  pointer-events:none;z-index:-1}
-
-/* Glyph-nya ditebalkan dan diberi bayangan sendiri, supaya terbaca
-   duduk DI ATAS ubin, bukan tercetak rata pada permukaannya. */
-.ikon-3d svg{filter:drop-shadow(0 1px 1.5px rgba(6,11,15,.3));stroke-width:2.1}
-
-/* Mode gelap: cahaya tepinya diredupkan. Sorot putih penuh di atas
-   latar gelap terbaca seperti garis neon, bukan seperti pantulan. */
+/* Mode gelap: bayangan berwarnanya diredupkan. Yang setebal 85% di
+   atas kartu gelap berubah dari bayangan menjadi cahaya neon. */
 :root[data-tema="gelap"] .ikon-3d{
   box-shadow:
-    inset 0 1.5px 0 rgba(255,255,255,.38),
-    inset 0 -1.5px 0 rgba(255,255,255,.14),
-    inset 0 -6px 10px -8px rgba(0,0,0,.42),
-    0 4px 9px -3px color-mix(in srgb,var(--c,#F57C00) 42%,transparent),
-    0 10px 18px -9px color-mix(in srgb,var(--c,#F57C00) 30%,transparent)}
-:root[data-tema="gelap"] .ikon-3d::before{
-  background:radial-gradient(116% 90% at 24% 2%,
-    rgba(255,255,255,.42) 0%,rgba(255,255,255,.14) 28%,rgba(255,255,255,0) 60%)}
+    0 8px 18px -10px color-mix(in srgb,var(--c,#F57C00) 62%,transparent),
+    inset 0 1px 0 rgba(255,255,255,.22)}
+
+/* CATATAN: jangan menyetel stroke-width pada .ikon-3d svg.
+
+   Sebagian besar glyph-nya diisi, jadi aturan itu tampak tidak
+   berakibat apa-apa — kecuali pada satu ikon. Batang beliung di ikon
+   Mine Operations digambar dengan GARIS setebal 2.5, dan CSS menang
+   atas atribut presentasi pada SVG. Menyetelnya di sini menimpa tebal
+   itu diam-diam, dan beliungnya berubah kurus tanpa ada yang tahu
+   sebabnya. */
 
 @media (prefers-reduced-motion:reduce){.ikon-3d{transition:none}}
 

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{Document, KoObject, Paspor, SmkpFinding};
-use App\Support\{Authority, Dasbor, DasborGrafik, PemantauanBerkas};
+use App\Support\{Authority, Dasbor, DasborGrafik, NadaWarna, PemantauanBerkas};
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
@@ -122,9 +122,8 @@ class DasborController extends Controller
             ],
 
             'modul' => $ubin->map(fn ($m) => $m + [
-                'url'   => route($m['rute']),
-                'warna' => self::NADA[$m['nada']] ?? self::NADA['kabar'],
-            ])->all(),
+                'url' => route($m['rute']),
+            ] + self::warna($m['nada'] ?? null))->all(),
 
             /* Ringkasan SELURUH modul, termasuk yang sedang bersih.
              *
@@ -136,20 +135,32 @@ class DasborController extends Controller
                modul luput selama ini tanpa ada yang menyadarinya. */
             'ringkasanModul' => collect(Dasbor::ringkasanModul($ubin->all()))
                 ->map(fn ($m) => $m + [
-                    'url'   => $m['rute'] ? route($m['rute']) : null,
-                    'warna' => self::NADA[$m['nada']] ?? self::NADA['kabar'],
-                ])->values()->all(),
+                    'url' => $m['rute'] ? route($m['rute']) : null,
+                ] + self::warna($m['nada'] ?? null))->values()->all(),
         ]);
     }
 
-    /** Warna tiap nada ubin — artinya dipesan, dan hanya empat. */
-    private const NADA = [
-        'gawat'  => '#DC2626',
-        'serius' => '#EA580C',
-        'ingat'  => '#D97706',
-        'kabar'  => '#0EA5E9',
-        'baik'   => '#16A34A',
-    ];
+    /**
+     * Ketiga warna sebuah nada, siap dipakai layar.
+     *
+     * `warna` tetap bernama begitu karena itulah yang dipakai tulisan
+     * dan bilah tepi kartu — dua tempat yang paling banyak
+     * memanggilnya. Dua nilai ubinnya ditambahkan di sebelahnya, bukan
+     * menggantikan, supaya halaman yang hanya butuh satu warna tidak
+     * perlu tahu ada tiga.
+     *
+     * @return array{warna: string, warnaUbin: string, warnaTerang: string}
+     */
+    private static function warna(?string $nada): array
+    {
+        $w = NadaWarna::untuk($nada);
+
+        return [
+            'warna'       => $w['teks'],
+            'warnaUbin'   => $w['ubin'],
+            'warnaTerang' => $w['terang'],
+        ];
+    }
 
     /**
      * Tiga angka kepatuhan, sebagai persentase.

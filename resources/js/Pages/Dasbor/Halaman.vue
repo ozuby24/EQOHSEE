@@ -489,8 +489,9 @@ const berisi = (baris: any[] | undefined) =>
         <Link v-for="item in perluDiurus" :key="item.nama" :href="item.url">
           <span class="eq-modul-atas">
             <span class="eq-modul-nilai" :style="{ color: item.warna }">{{ item.nilai }}</span>
-            <span class="eq-modul-ikon ikon-3d" :style="{ '--c': item.warna }">
-              <IkonPadat :jalur="item.ikonPadat" :ukuran="21" />
+            <span class="eq-modul-ikon ikon-3d"
+                  :style="{ '--c': item.warnaUbin, '--c-terang': item.warnaTerang }">
+              <IkonPadat :jalur="item.ikonPadat" :ukuran="24" />
             </span>
           </span>
           <strong>{{ item.nama }}</strong>
@@ -519,10 +520,13 @@ const berisi = (baris: any[] | undefined) =>
 
       <div class="eq-mdl-kisi">
         <Link v-for="m in props.ringkasanModul" :key="m.modul" :href="m.url ?? '#'"
-              class="eq-mdl" :style="{ '--c': m.perlu ? m.warna : '#16A34A' }">
+              class="eq-mdl" :style="{ '--c': m.perlu ? m.warna : '#0E8746' }">
           <span class="eq-mdl-kepala">
-            <span class="eq-mdl-ikon ikon-3d">
-              <IkonPadat :jalur="m.ikonPadat" :ukuran="19" />
+            <span class="eq-mdl-ikon ikon-3d"
+                  :style="m.perlu
+                    ? { '--c': m.warnaUbin, '--c-terang': m.warnaTerang }
+                    : { '--c': '#0F9D52', '--c-terang': '#3FD382' }">
+              <IkonPadat :jalur="m.ikonPadat" :ukuran="21" />
             </span>
             <span class="eq-mdl-nama">{{ m.label }}</span>
 
@@ -561,10 +565,12 @@ const berisi = (baris: any[] | undefined) =>
         <Link v-for="item in tenang" :key="item.nama" :href="item.url">
           <span class="eq-modul-atas">
             <span class="eq-modul-nilai"
-                  :style="{ color: item.nilai ? item.warna : '#16A34A' }">{{ item.nilai }}</span>
+                  :style="{ color: item.nilai ? item.warna : '#0E8746' }">{{ item.nilai }}</span>
             <span class="eq-modul-ikon ikon-3d"
-                  :style="{ '--c': item.nilai ? item.warna : '#16A34A' }">
-              <IkonPadat :jalur="item.ikonPadat" :ukuran="21" />
+                  :style="item.nilai
+                    ? { '--c': item.warnaUbin, '--c-terang': item.warnaTerang }
+                    : { '--c': '#0F9D52', '--c-terang': '#3FD382' }">
+              <IkonPadat :jalur="item.ikonPadat" :ukuran="24" />
             </span>
           </span>
           <strong>{{ item.nama }}</strong>

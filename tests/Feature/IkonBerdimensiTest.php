@@ -163,6 +163,49 @@ class IkonBerdimensiTest extends TestCase
     }
 
     #[Test]
+    public function css_tidak_menyetel_tebal_garis_pada_glyph_ubin(): void
+    {
+        /* Hampir semua glyph padat memang diisi, jadi menyetel
+           stroke-width pada .ikon-3d svg tampak tidak berakibat apa-apa
+           — kecuali pada satu ikon. Batang beliung di Mine Operations
+           digambar dengan GARIS setebal 2.5, dan CSS menang atas
+           atribut presentasi pada SVG. Aturan itu menimpanya diam-diam;
+           beliungnya jadi kurus dan tidak ada galat apa pun.
+
+           Pernah ada di berkas ini, dan tidak ada yang menangkapnya
+           sampai ikon beliungnya masuk. */
+        $css = file_get_contents(base_path('resources/views/partials/eq-visual.blade.php'));
+
+        $salah = [];
+
+        foreach (self::aturan($css) as [$pemilih, $badan]) {
+            if (! str_contains($pemilih, '.ikon-3d')) continue;
+            if (preg_match('/(^|;)\s*stroke-width\s*:/', $badan)) $salah[] = $pemilih;
+        }
+
+        $this->assertSame([], $salah,
+            'Aturan ini menyetel stroke-width pada glyph ubin berdimensi. '
+            .'CSS menang atas atribut SVG, jadi bagian yang memang digambar '
+            .'dengan garis — batang beliung Mine Operations — ikut tertimpa.');
+    }
+
+    #[Test]
+    public function glyph_bergaris_membawa_tebalnya_sendiri(): void
+    {
+        /* Kebalikan dari uji di atas: tebalnya harus tetap ADA di
+           datanya. Hilang dari sana, bagian itu ikut diisi dan berubah
+           dari batang lurus menjadi coretan — persis yang terjadi saat
+           set ini pertama diubah dari sprite-nya. */
+        $beliung = IkonPadat::untuk('operasi');
+
+        $bergaris = array_values(array_filter($beliung, fn ($j) => isset($j['garis'])));
+
+        $this->assertCount(1, $bergaris,
+            'Ikon Mine Operations kehilangan bagian yang digambar dengan garis.');
+        $this->assertGreaterThan(0, $bergaris[0]['garis']);
+    }
+
+    #[Test]
     public function bilah_nada_kartu_modul_bertahan_di_mode_gelap(): void
     {
         /* Aturan latar mode gelap menyetel border-color untuk KEEMPAT

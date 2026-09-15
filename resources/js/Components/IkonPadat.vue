@@ -12,7 +12,14 @@
  * ulang di sini. Satu modul karena itu tidak pernah dapat punya dua
  * ikon padat yang berbeda di dua halaman.
  */
-type Jalur = { d: string; evenodd?: boolean };
+type Jalur = {
+  d: string;
+  evenodd?: boolean;
+  /** Tebal garis, bila bagian ini memang digambar dengan garis. */
+  garis?: number;
+  /** Nilai transform SVG, mis. 'rotate(45 17.4 6.6)'. */
+  putar?: string;
+};
 
 const props = withDefaults(defineProps<{
   jalur?: Jalur[] | null;
@@ -26,9 +33,18 @@ const props = withDefaults(defineProps<{
        memberi tahu hal yang keliru tentang modulnya. -->
   <svg v-if="props.jalur && props.jalur.length" :width="props.ukuran" :height="props.ukuran"
        viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
-    <!-- evenodd menahan lubang di dalam bentuk tetap berlubang:
-         gerigi roda gigi, jendela gedung, kaca pembesar. -->
+    <!-- Sebagian besar bagian diisi. Yang membawa `garis` digambar
+         dengan garis — batang beliung pada ikon Mine Operations
+         misalnya; diisi, ia berubah jadi coretan. evenodd menahan
+         lubang di dalam bentuk tetap berlubang: gerigi roda gigi,
+         jendela gedung, kaca pembesar. -->
     <path v-for="(j, i) in props.jalur" :key="i" :d="j.d"
+          :transform="j.putar"
+          :fill="j.garis ? 'none' : undefined"
+          :stroke="j.garis ? 'currentColor' : undefined"
+          :stroke-width="j.garis"
+          :stroke-linecap="j.garis ? 'round' : undefined"
+          :stroke-linejoin="j.garis ? 'round' : undefined"
           :fill-rule="j.evenodd ? 'evenodd' : undefined"
           :clip-rule="j.evenodd ? 'evenodd' : undefined" />
   </svg>
