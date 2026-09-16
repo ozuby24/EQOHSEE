@@ -514,6 +514,17 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   max-height: min(90vh, 47rem);
   display: grid;
   grid-template-columns: 15.5rem 1fr;
+  /* Barisnya harus ikut dibatasi, bukan cuma kotaknya.
+     ─────────────────────────────────────────────────
+
+     max-height membatasi KOTAKNYA; baris petak yang tingginya auto
+     tetap mengambil setinggi isinya dan tumpah keluar — lalu dipotong
+     overflow: hidden. min-height: 0 pada anak-anaknya saja tidak
+     menolong: mereka sudah boleh menyusut, hanya saja tidak pernah
+     ada yang MEMINTA mereka menyusut.
+
+     minmax(0, 1fr) yang memintanya. */
+  grid-template-rows: minmax(0, 1fr);
   background: #FFFFFF;
   border-radius: 1.35rem;
   box-shadow:
@@ -535,6 +546,12 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   flex-direction: column;
   padding: 1.5rem 1.25rem 1.25rem;
   color: #E7E5E4;
+  /* Rel ikut dibatasi, kalau tidak ia sendiri yang meninggikan baris
+     petaknya dan mengembalikan persoalan yang sama dari sisi kiri.
+     Fotonya sudah siap menyusut (flex: 1 1 auto; min-height: 0),
+     tetapi tidak pernah diminta karena relnya tidak pernah sempit. */
+  min-height: 0;
+  overflow: hidden;
 
   /* Gradien yang sama dengan bilah samping situs. */
   background: linear-gradient(160deg, #0B1117 0%, #141C25 55%, #1B2530 100%);
@@ -771,10 +788,31 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
 }
 
 /* ══ badan ══ */
+
+/* min-height: 0 DI SINI yang membuat daftarnya dapat digulir.
+   ───────────────────────────────────────────────────────────
+
+   .eq-tur dibatasi max-height, dan .eq-tur-isi sudah punya
+   overflow-y: auto. Tampak lengkap, tetapi tidak pernah bekerja: petak
+   dan lentur sama-sama memberi anaknya min-height: auto, artinya
+   "jangan menyusut lebih kecil daripada isimu". Jadi .eq-tur-badan
+   tumbuh setinggi SELURUH isinya, .eq-tur-isi ikut kebagian ruang
+   seluas yang ia minta, dan karena tidak pernah kekurangan ruang, ia
+   tidak pernah menggulir.
+
+   Kelebihannya dipotong overflow: hidden pada .eq-tur. Yang hilang
+   bukan hanya sisa daftarnya melainkan KAKI-nya — tombol "Lanjut" ikut
+   terdorong ke luar layar, sehingga pengenalannya berhenti di langkah
+   ketiga tanpa jalan maju maupun mundur.
+
+   Terukur pada layar 1440x960, langkah 3: .eq-tur setinggi 752,
+   badannya 1181. Empat ratus dua puluh sembilan piksel terpotong, dan
+   tidak ada satu pun galat. */
 .eq-tur-badan {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
 }
 
 .eq-tur-kepala {
@@ -832,6 +870,10 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   padding: 1.6rem 1.7rem;
   overflow-y: auto;
   flex: 1;
+  /* Sama sebabnya dengan .eq-tur-badan di atas: tanpa ini, butir
+     lentur menolak menyusut di bawah tinggi isinya, dan overflow-y
+     yang sudah tertulis tidak pernah terpakai. */
+  min-height: 0;
 }
 
 .eq-tur-judul {
