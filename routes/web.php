@@ -93,6 +93,31 @@ Route::get('/', fn () => auth()->check()
     ? redirect()->route('dashboard')
     : app(LandingController::class)->index())->name('beranda');
 
+/* ── Kebijakan privasi ──
+ *
+ * DI LUAR grup 'auth' dengan sengaja, dan uji penjagaannya memastikan
+ * ia tetap begitu. Google Play memeriksa alamat ini dari perangkat
+ * peninjau yang tidak punya akun di sini; begitu halamannya mengalihkan
+ * ke /login, peninjauan gagal dengan pesan yang tidak menyinggung
+ * sebabnya sama sekali — dan yang membacanya akan mencari di Play
+ * Console, bukan di berkas rute.
+ *
+ * Dua bahasa pada dua alamat, bukan satu halaman dengan pengalih:
+ * Play menyimpan SATU alamat, dan alamat yang isinya berubah menurut
+ * tebakan bahasa peramban menyulitkan pembuktian isi mana yang dinilai.
+ *
+ * Digambar dengan Blade biasa, bukan Inertia: tidak ada bundel JS yang
+ * harus dimuat lebih dulu, jadi tetap terbuka di jaringan site tambang
+ * dan pada peramban peninjau yang mematikan JavaScript.
+ */
+Route::view('/kebijakan-privasi', 'hukum.kebijakan-privasi', [
+    'surel' => config('hukum.surel'),
+])->name('hukum.privasi');
+
+Route::view('/privacy-policy', 'hukum.privacy-policy', [
+    'surel' => config('hukum.surel'),
+])->name('hukum.privacy');
+
 /* 'verified' dipasang di sini, bukan per rute: halaman yang lupa
    memakainya tidak menimbulkan galat apa pun — ia hanya diam-diam
    terbuka bagi akun yang emailnya belum terbukti dimiliki pendaftarnya.

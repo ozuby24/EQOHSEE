@@ -97,6 +97,16 @@ class TampilanHidupTest extends TestCase
                 foreach ([
                     "/(?:view|make|markdown)\(\s*'([a-z0-9_.\-]+)'/i",
                     "/rootView[^=]*=\s*'([a-z0-9_.\-]+)'/",
+
+                    /* Route::view() menaruh nama view-nya di argumen KEDUA;
+                       yang pertama alamat URL. Pola pertama di atas mencari
+                       kutipan tepat sesudah "view(" dan karena itu menemukan
+                       '/kebijakan-privasi' — yang diawali garis miring,
+                       tidak ada di kelas karakternya, jadi tidak cocok sama
+                       sekali. Akibatnya halaman yang dilayani Route::view
+                       dianggap TIDAK DAPAT DICAPAI meski ia justru salah satu
+                       dari sedikit halaman yang terbuka untuk umum. */
+                    "/Route::view\(\s*'[^']*'\s*,\s*'([a-z0-9_.\-]+)'/i",
                 ] as $pola) {
                     if (!preg_match_all($pola, $isi, $m)) continue;
                     foreach ($m[1] as $v) $out[$v] ??= $dari;
