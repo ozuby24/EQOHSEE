@@ -1,0 +1,1368 @@
+{
+ "categories": [
+  {
+   "kode": "LEGALITAS",
+   "nama": "DOKUMEN LEGALITAS DAN PERIZINAN BERUSAHA",
+   "bobot": 4,
+   "urutan": 1
+  },
+  {
+   "kode": "A",
+   "nama": "KEBIJAKAN, KEPEMIMPINAN & KOMITMEN",
+   "bobot": 4,
+   "urutan": 2
+  },
+  {
+   "kode": "B",
+   "nama": "MANAJEMEN RISIKO",
+   "bobot": 9,
+   "urutan": 3
+  },
+  {
+   "kode": "C",
+   "nama": "PERATURAN PERUNDANGAN DAN PERSYARATAN LAINNYA (P3L)",
+   "bobot": 4,
+   "urutan": 4
+  },
+  {
+   "kode": "D",
+   "nama": "TUJUAN, SASARAN & PROGRAM KPLH",
+   "bobot": 4,
+   "urutan": 5
+  },
+  {
+   "kode": "E",
+   "nama": "ORGANISASI DAN SUMBER DAYA",
+   "bobot": 8,
+   "urutan": 6
+  },
+  {
+   "kode": "F",
+   "nama": "SELEKSI DAN PENEMPATAN PERSONIL",
+   "bobot": 2,
+   "urutan": 7
+  },
+  {
+   "kode": "G",
+   "nama": "KOMPETENSI PEKERJA",
+   "bobot": 9,
+   "urutan": 8
+  },
+  {
+   "kode": "H",
+   "nama": "KOMUNIKASI",
+   "bobot": 7,
+   "urutan": 9
+  },
+  {
+   "kode": "I",
+   "nama": "TANGGUNG JAWAB KPLH",
+   "bobot": 4,
+   "urutan": 10
+  },
+  {
+   "kode": "J",
+   "nama": "IMPLEMENTASI",
+   "bobot": 88,
+   "urutan": 11
+  },
+  {
+   "kode": "K",
+   "nama": "KEJADIAN, KECELAKAAN & PENYELIDIKAN",
+   "bobot": 8,
+   "urutan": 12
+  },
+  {
+   "kode": "L",
+   "nama": "STATISTIK KPLH",
+   "bobot": 4,
+   "urutan": 13
+  },
+  {
+   "kode": "M",
+   "nama": "RENCANA TANGGAP DARURAT",
+   "bobot": 11,
+   "urutan": 14
+  },
+  {
+   "kode": "N",
+   "nama": "SUBKONTRAKTOR",
+   "bobot": 7,
+   "urutan": 15
+  },
+  {
+   "kode": "O",
+   "nama": "AUDIT INTERNAL",
+   "bobot": 5,
+   "urutan": 16
+  },
+  {
+   "kode": "P",
+   "nama": "TINJAUAN MANAJEMEN",
+   "bobot": 4,
+   "urutan": 17
+  }
+ ],
+ "items": [
+  {
+   "kategori_kode": "LEGALITAS",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan Anda telah memiliki Akta Pendirian & Perubahan?",
+   "petunjuk": "Lampirkan salinan dokumen Akta Pendirian & Perubahan",
+   "bobot": 1,
+   "urutan": 1
+  },
+  {
+   "kategori_kode": "LEGALITAS",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 2,
+   "pertanyaan": "Apakah perusahaan Anda telah memiliki NIB (kode KBLI sesuai lingkup pekerjaan)?",
+   "petunjuk": "Lampirkan salinan dokumen Nomor Induk Berusaha",
+   "bobot": 1,
+   "urutan": 2
+  },
+  {
+   "kategori_kode": "LEGALITAS",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 3,
+   "pertanyaan": "Apakah perusahaan Anda telah memiliki IUJP atau izin instansi terkait (jika bukan termasuk usaha jasa pertambangan inti) yang berlaku?",
+   "petunjuk": "Lampirkan salinan dokumen IUJP atau izin instansi terkait",
+   "bobot": 1,
+   "urutan": 3
+  },
+  {
+   "kategori_kode": "LEGALITAS",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 4,
+   "pertanyaan": "Apakah perusahaan Anda telah memiliki nomor NPWP?",
+   "petunjuk": "Lampirkan salinan dokumen NPWP",
+   "bobot": 1,
+   "urutan": 4
+  },
+  {
+   "kategori_kode": "A",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan anda memiliki kebijakan terkait keselamatan pertambangan dan lingkungan hidup (KPLH / HSE / K3LH)?",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 5
+  },
+  {
+   "kategori_kode": "A",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 2,
+   "pertanyaan": "Isi kebijakan:\n- Visi, misi dan tujuan perusahaan?\n- Komitmen melaksanakan kebijakan?\n- Kerangka dan program kerja?\n- Komitmen terhadap sistem manajemen keselamatan pertambangan dan lingkungan hidup?\n- Komitmen terhadap KPLH?\n- Komitmen mendorong keterlibatan pekerja tambang?\n- Komitmen pemenuhan peraturan perundangan dan persyaratan lain yang berlaku?",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 6
+  },
+  {
+   "kategori_kode": "A",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 3,
+   "pertanyaan": "Atribut dan metodologi kebijakan\n- Mempunyai tanggal?\n- Bersifat dinamis?\n- Ditandatangani oleh posisi tertinggi dalam perusahaan?\n- Ditinjau secara berkala?",
+   "petunjuk": "Lampirkan salinan kebijakan KPLH (HSE/K3LH) terakhir",
+   "bobot": 1,
+   "urutan": 7
+  },
+  {
+   "kategori_kode": "A",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 4,
+   "pertanyaan": "Apakah kebijakan KPLH telah dikomunikasikan kepada seluruh pekerja? Jelaskan metode yang dipakai dalam komunikasi Kebijakan KPLH.",
+   "petunjuk": "Lampirkan salah satu salinan bukti sosialisasi / komunikasi kebijakan KPLH (HSE/K3LH)",
+   "bobot": 1,
+   "urutan": 8
+  },
+  {
+   "kategori_kode": "B",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan anda melakukan penelaahan awal pada proses manajemen risiko?",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 9
+  },
+  {
+   "kategori_kode": "B",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 2,
+   "pertanyaan": "Apakah terdapat prosedur yang mengatur mengenai proses manajemen risiko?",
+   "petunjuk": "Lampirkan salinan prosedur tentang manajemen risiko",
+   "bobot": 1,
+   "urutan": 10
+  },
+  {
+   "kategori_kode": "B",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 3,
+   "pertanyaan": "Apakah kriteria risiko ditetapkan dalam proses manajemen risiko?",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 11
+  },
+  {
+   "kategori_kode": "B",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 4,
+   "pertanyaan": "Apakah setiap jenis kriteria risiko yang ditetapkan tersebut ada tindak lanjutnya? Jelaskan.",
+   "petunjuk": "Lampirkan salinan penjelasan tentang kriteria risiko yang dipakai serta tindak lanjut untuk setiap kriteria risiko",
+   "bobot": 1,
+   "urutan": 12
+  },
+  {
+   "kategori_kode": "B",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 5,
+   "pertanyaan": "Apakah ada standar kompetensi untuk petugas Penilai Risiko?",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 13
+  },
+  {
+   "kategori_kode": "B",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 6,
+   "pertanyaan": "Apakah setiap aktivitas telah dilakukan analisis risiko dan pengendaliannya?",
+   "petunjuk": "Lampirkan 1 (satu) salinan catatan identifikasi, analisis, evaluasi dan perlakuan risiko yang ada",
+   "bobot": 1,
+   "urutan": 14
+  },
+  {
+   "kategori_kode": "B",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 7,
+   "pertanyaan": "Apakah hasil analisis risiko dan perlakuan risiko dimasukkan dalam program kerja?",
+   "petunjuk": "Lampirkan 1 (satu) salinan program kerja yang bersumber dari rekomendasi dari perlakuan risiko",
+   "bobot": 1,
+   "urutan": 15
+  },
+  {
+   "kategori_kode": "B",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 8,
+   "pertanyaan": "Apakah perusahaan melakukan analisis peluang dari setiap aktivitas?",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 16
+  },
+  {
+   "kategori_kode": "B",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 9,
+   "pertanyaan": "Apakah dilakukan Analisa Keselamatan Kerja / JSA di perusahaan anda?",
+   "petunjuk": "Lampirkan 2 (dua) salinan Analisa Keselamatan Kerja / JSA",
+   "bobot": 1,
+   "urutan": 17
+  },
+  {
+   "kategori_kode": "C",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 1,
+   "pertanyaan": "Apakah ada prosedur tentang peraturan perundangan dan persyaratan lainnya (P3L)?",
+   "petunjuk": "Lampirkan salinan prosedur tersebut",
+   "bobot": 2,
+   "urutan": 18
+  },
+  {
+   "kategori_kode": "C",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 2,
+   "pertanyaan": "Apakah dilakukan identifikasi P3L yang relevan dengan aktivitas perusahaan?",
+   "petunjuk": "Lampirkan tabel identifikasi Peraturan Perundangan dan Persyaratan Lainnya yang relevan dan berlaku untuk perusahaan",
+   "bobot": 1,
+   "urutan": 19
+  },
+  {
+   "kategori_kode": "C",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 3,
+   "pertanyaan": "Apakah kajian terhadap relevansi P3L dengan aktivitas perusahaan dilakukan?",
+   "petunjuk": "Lampirkan salinan proses kajian kesesuaian / relevansi P3L",
+   "bobot": 1,
+   "urutan": 20
+  },
+  {
+   "kategori_kode": "D",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan anda memiliki Tujuan, Sasaran dan Program (TSP) KPLH yang selaras dengan kebijakan KPLH?",
+   "petunjuk": null,
+   "bobot": 2,
+   "urutan": 21
+  },
+  {
+   "kategori_kode": "D",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 2,
+   "pertanyaan": "Apakah penyusunan TSP mempertimbangkan:\n- Peraturan perundangan dan persyaratan lainnya?\n- Kinerja KPLH?\n- Skala prioritas?\n- Upaya pengendalian risiko?\n- Sumber daya yang tersedia?\n- Jangka waktu?\n- Indikator pencapaian?\n- Petugas yang bertanggung jawab dalam pelaksanaan?",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 22
+  },
+  {
+   "kategori_kode": "D",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 3,
+   "pertanyaan": "Apakah TSP ditandatangani oleh Komite Keselamatan Pertambangan?",
+   "petunjuk": "Lampirkan salinan TSP terakhir",
+   "bobot": 1,
+   "urutan": 23
+  },
+  {
+   "kategori_kode": "E",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 1,
+   "pertanyaan": "Apakah Perusahaan anda memiliki struktur organisasi penanggung jawab KPLH (HSE/K3LH)?",
+   "petunjuk": "Lampirkan salinan struktur organisasi KPLH yang masih berlaku",
+   "bobot": 2,
+   "urutan": 24
+  },
+  {
+   "kategori_kode": "E",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 2,
+   "pertanyaan": "Apakah perusahaan telah memiliki Penanggung Jawab Operasi?",
+   "petunjuk": "Lampirkan salinan surat persetujuan Penanggung Jawab Operasi",
+   "bobot": 1,
+   "urutan": 25
+  },
+  {
+   "kategori_kode": "E",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 3,
+   "pertanyaan": "Apakah perusahaan memiliki petugas kesehatan keselamatan kerja dan lingkungan hidup?",
+   "petunjuk": null,
+   "bobot": 2,
+   "urutan": 26
+  },
+  {
+   "kategori_kode": "E",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 4,
+   "pertanyaan": "Apakah perusahaan memiliki tenaga teknis yang kompeten untuk melakukan KO (Keselamatan Operasi / Keselamatan Sarana, Prasarana, Instalasi & Peralatan)?",
+   "petunjuk": null,
+   "bobot": 2,
+   "urutan": 27
+  },
+  {
+   "kategori_kode": "E",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 5,
+   "pertanyaan": "Apakah perusahaan memiliki tenaga Pengawas Operasional dan Pengawas Teknis?",
+   "petunjuk": "Jika ya, jelaskan secara rinci kualifikasi para petugas tersebut (poin E.2, E.3, E.4 dan E.5), lebih baik jika dapat melampirkan salinan CV terakhir\nNama",
+   "bobot": 1,
+   "urutan": 28
+  },
+  {
+   "kategori_kode": "F",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan mempertimbangkan kompetensi KPLH (HSE / K3LH) dalam perekrutan personil baru? Jelaskan kompetensi KPLH yang dipertimbangkan.",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 29
+  },
+  {
+   "kategori_kode": "F",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 2,
+   "pertanyaan": "Apakah perusahaan mempertimbangkan kompetensi KPLH (HSE / K3LH) dalam program promosi, rotasi, mutasi? Jelaskan upaya tersebut.",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 30
+  },
+  {
+   "kategori_kode": "G",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan memiliki Peta Kompetensi/ matriks kompetensi/kamus kompetensi?",
+   "petunjuk": null,
+   "bobot": 2,
+   "urutan": 31
+  },
+  {
+   "kategori_kode": "G",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 2,
+   "pertanyaan": "Apakah perusahaan memiliki analisa kebutuhan training (TNA)? ",
+   "petunjuk": null,
+   "bobot": 2,
+   "urutan": 32
+  },
+  {
+   "kategori_kode": "G",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 3,
+   "pertanyaan": "Apakah semua pekerja dan subkontraktor telah menerima pelatihan KPLH, pelatihan penyegaran dan pelatihan ulang sesuai dengan persyaratan peraturan perundangan yang berlaku?",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 33
+  },
+  {
+   "kategori_kode": "G",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 4,
+   "pertanyaan": "Apakah perusahaan anda memiliki program pelatihan KPLH untuk karyawan?",
+   "petunjuk": "Jika ya, lampirkan  salinan daftar pelatihan KPLH untuk karyawan tersebut atau lampirkan salinan program pelatihan KPLH untuk para pengawas, karyawan, karyawan baru dan subkontraktor",
+   "bobot": 2,
+   "urutan": 34
+  },
+  {
+   "kategori_kode": "G",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 5,
+   "pertanyaan": "Apakah perusahaan melakukan evaluasi pelaksanaan dan efektifitas hasil pelatihan?",
+   "petunjuk": "Jika ya, lampirkan salah satu salinan hasil evaluasi pelaksanaan dan evaluasi efektivitas hasil pelatihan tersebut.",
+   "bobot": 1,
+   "urutan": 35
+  },
+  {
+   "kategori_kode": "G",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 6,
+   "pertanyaan": "Apakah salinan rekaman pelatihan K3LH karyawan dan subkontraktor disimpan dan dipelihara?",
+   "petunjuk": "Jika ya, lampirkan minimal masing-masing 1 (satu) salinan program pelatihan KPLH (HSE/K3LH) untuk para pengawas, karyawan dan karyawan baru",
+   "bobot": 1,
+   "urutan": 36
+  },
+  {
+   "kategori_kode": "H",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 1,
+   "pertanyaan": "Apakah komunikasi SMKP dilakukan ke semua karyawan di perusahaan anda? Jelaskan bentuk-bentuk komunikasi KPLH di perusahaan anda?",
+   "petunjuk": null,
+   "bobot": 2,
+   "urutan": 37
+  },
+  {
+   "kategori_kode": "H",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 2,
+   "pertanyaan": "Apakah dilakukan induksi KPLH terhadap karyawan baru dan tamu di perusahaan anda?",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 38
+  },
+  {
+   "kategori_kode": "H",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 3,
+   "pertanyaan": "Apakah ada Buku Petunjuk KPLH (HSE / K3LH) di perusahaan anda yang dibagikan kepada seluruh karyawan?",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 39
+  },
+  {
+   "kategori_kode": "H",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 4,
+   "pertanyaan": "Apakah ada program reguler pertemuan KPLH untuk::\n- Karyawan di kantor\n- Pekerja lapangan\n- Karyawan baru\n- Subkontraktor",
+   "petunjuk": "*Jika ya, jelaskan jenis pertemuan KPLH tersebut dan frekuensinya\nJenis pertemuan KPLH",
+   "bobot": 2,
+   "urutan": 40
+  },
+  {
+   "kategori_kode": "H",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 5,
+   "pertanyaan": "Apakah rekaman kehadiran dan catatan dari pertemuan KPLH disimpan dan dipelihara?",
+   "petunjuk": "Lampirkan 2 (dua) salinan catatan kehadiran pertemuan / rapat KPLH",
+   "bobot": 1,
+   "urutan": 41
+  },
+  {
+   "kategori_kode": "I",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 1,
+   "pertanyaan": "Apakah ada deskripsi pekerjaan untuk setiap karyawan?",
+   "petunjuk": null,
+   "bobot": 2,
+   "urutan": 42
+  },
+  {
+   "kategori_kode": "I",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 2,
+   "pertanyaan": "Apakah dalam deskripsi pekerjaan menjelaskan mengenai tanggung jawab KPLH?",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 43
+  },
+  {
+   "kategori_kode": "I",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 3,
+   "pertanyaan": "Sebutkan posisi tertinggi penanggung jawab KPLH di perusahaan anda.",
+   "petunjuk": "Lampirkan 2 (dua) salinan deskripsi pekerjaan",
+   "bobot": 1,
+   "urutan": 44
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.1",
+   "grup_nama": "KAMPANYE",
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan memiliki program kampanye tentang keselamatan pertambangan?",
+   "petunjuk": "Lampirkan salinan proram kampanye yang masih berlaku",
+   "bobot": 1,
+   "urutan": 45
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.1",
+   "grup_nama": "KAMPANYE",
+   "nomor": 2,
+   "pertanyaan": "Apakah ada upaya mengevaluasi keefektifan hasil kampanye?",
+   "petunjuk": "Jika ya, lampirkan salinan hasil evaluasi tersebut",
+   "bobot": 1,
+   "urutan": 46
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.2",
+   "grup_nama": "INSPEKSI",
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan memiliki prosedur terkait inspeksi?",
+   "petunjuk": "Lampirkan salinan prosedur tersebut",
+   "bobot": 2,
+   "urutan": 47
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.2",
+   "grup_nama": "INSPEKSI",
+   "nomor": 2,
+   "pertanyaan": "Apakah perusahaan memiliki program inspeksi?",
+   "petunjuk": "Lampirkan salinan program inspeksi yang terakhir",
+   "bobot": 2,
+   "urutan": 48
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.2",
+   "grup_nama": "INSPEKSI",
+   "nomor": 3,
+   "pertanyaan": "Apakah hasil inspeksi ditindaklanjuti?",
+   "petunjuk": "Lampirkan salinan salah satu rekomendasi hasil inspeksi dan bukti tindaklanjutnya",
+   "bobot": 2,
+   "urutan": 49
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.2",
+   "grup_nama": "INSPEKSI",
+   "nomor": 4,
+   "pertanyaan": "Apakah implementasi kegiatan inspeksi dievaluasi?",
+   "petunjuk": "Jika ya, lampirkan salinan hasil evaluasi kegiatan inspeksi",
+   "bobot": 1,
+   "urutan": 50
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.3",
+   "grup_nama": "PENGELOLAAN KESEHATAN KERJA",
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan memiliki prosedur untuk program pengelolaan kesehatan kerja?",
+   "petunjuk": "Jika ya, lampirkan salinan prosedur tersebut",
+   "bobot": 2,
+   "urutan": 51
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.3",
+   "grup_nama": "PENGELOLAAN KESEHATAN KERJA",
+   "nomor": 2,
+   "pertanyaan": "Apakah dilakukan pemeriksaan kesehatan awal dan berkala (MCU) terhadap karyawan?",
+   "petunjuk": "Lampirkan masing-masing 1 (satu) salinan hasil pemeriksaan kesehatan awal dan berkala untuk 1 (satu) orang pekerja lapangan (nama pekerja dapat ditutup/dihapus)",
+   "bobot": 1,
+   "urutan": 52
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.3",
+   "grup_nama": "PENGELOLAAN KESEHATAN KERJA",
+   "nomor": 3,
+   "pertanyaan": "Apakah perusahaan memiliki program pemeriksaan kesehatan khusus untuk karyawan berisiko kesehatan tinggi?",
+   "petunjuk": "Jika ya, lampirkan salinan prosedur untuk program pemeriksaan kesehatan khusus tersebut",
+   "bobot": 1,
+   "urutan": 53
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.3",
+   "grup_nama": "PENGELOLAAN KESEHATAN KERJA",
+   "nomor": 4,
+   "pertanyaan": "Apakah laporan pemeriksaan kesehatan dikomunikasikan kepada pekerja?",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 54
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.3",
+   "grup_nama": "PENGELOLAAN KESEHATAN KERJA",
+   "nomor": 5,
+   "pertanyaan": "Apakah perusahaan memiliki program pengelolaan kesehatan berbasis 4 pilar?",
+   "petunjuk": "Jika ya, lampirkan salinan program pengelolaan kesehatan berbasis 4 pilar (promotif, preventif, kuratif, rehabilitatif)",
+   "bobot": 1,
+   "urutan": 55
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.3",
+   "grup_nama": "PENGELOLAAN KESEHATAN KERJA",
+   "nomor": 6,
+   "pertanyaan": "Apakah perusahaan melakukan pemeriksaan kesehatan akhir untuk karyawan yang akan keluar?",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 56
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.3",
+   "grup_nama": "PENGELOLAAN KESEHATAN KERJA",
+   "nomor": 7,
+   "pertanyaan": "Apakah perusahaan anda memiliki peraturan tentang alkohol dan obat terlarang di tempat kerja?",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 57
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.3",
+   "grup_nama": "PENGELOLAAN KESEHATAN KERJA",
+   "nomor": 8,
+   "pertanyaan": "Apakah ada dokter perusahaan selaku penasehat kesehatan karyawan?",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 58
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.3",
+   "grup_nama": "PENGELOLAAN KESEHATAN KERJA",
+   "nomor": 9,
+   "pertanyaan": "Apakah perusahaan memiliki tenaga kesehatan tetap selain dokter perusahaan?",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 59
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.3.1",
+   "grup_nama": "PENGELOLAAN KELELAHAN",
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan memiliki program pengelolaan kelelahan?",
+   "petunjuk": "Lampirkan salinan prosedur atau program pengelolaan kelelahan beserta salinan media komunikasi yang pernah diberikan terkait kelelahan",
+   "bobot": 2,
+   "urutan": 60
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.3.1",
+   "grup_nama": "PENGELOLAAN KELELAHAN",
+   "nomor": 2,
+   "pertanyaan": "Apakah perusahaan menerapkan pola gilir kerja (shift)?\nJika ya, jelaskan pengaturan pola gilir kerja yang diterapkan (dapat lebih dari satu pola gilir kerja)",
+   "petunjuk": null,
+   "bobot": 2,
+   "urutan": 61
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.3.2",
+   "grup_nama": "PENGELOLAAN ERGONOMI",
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan memiliki prosedur pengelolaan ergonomi?",
+   "petunjuk": "Lampirkan salinan prosedur(-prosedur) terkait ergonomi dan 1 (satu) salinan program terkait ergonomi",
+   "bobot": 1,
+   "urutan": 62
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.3.2",
+   "grup_nama": "PENGELOLAAN ERGONOMI",
+   "nomor": 2,
+   "pertanyaan": "Apakah perusahaan melakukan inspeksi ergonomi?",
+   "petunjuk": "Lampirkan 1 (satu) salinan inspeksi ergonomi",
+   "bobot": 1,
+   "urutan": 63
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.3.3",
+   "grup_nama": "PENGELOLAAN HIGIENE",
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan memiliki prosedur pengelolaan higiene?",
+   "petunjuk": "Lampirkan salinan prosedur(-prosedur) terkait pengelolaan higiene",
+   "bobot": 1,
+   "urutan": 64
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.3.3",
+   "grup_nama": "PENGELOLAAN HIGIENE",
+   "nomor": 2,
+   "pertanyaan": "Apakah perusahaan memiliki petugas higiene industri?",
+   "petunjuk": "Jika ya, lampirkan salinan penunjukan petugas higiene industri dan salinan sertifikat / kompetensi yang dimiliki",
+   "bobot": 1,
+   "urutan": 65
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.3.3",
+   "grup_nama": "PENGELOLAAN HIGIENE",
+   "nomor": 3,
+   "pertanyaan": "Apakah perusahaan memiliki program pengelolaan higiene?",
+   "petunjuk": "Lampirkan salinan program pengelolaan higiene yang terakhir",
+   "bobot": 1,
+   "urutan": 66
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.4",
+   "grup_nama": "PENGELOLAAN LINGKUNGAN KERJA",
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan memiliki prosedur pengelolaan pengelolaan lingkungan kerja?",
+   "petunjuk": "Lampirkan salinan prosedur tersebut",
+   "bobot": 2,
+   "urutan": 67
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.4",
+   "grup_nama": "PENGELOLAAN LINGKUNGAN KERJA",
+   "nomor": 2,
+   "pertanyaan": "Apakah perusahaan melakukan analisa, evaluasi dan penanganan terkait risiko dari lingkungan kerja?",
+   "petunjuk": "Lampirkan salinan hasil analisa, evaluasi dan perlakuan risiko dari lingkungan kerja tersebut",
+   "bobot": 1,
+   "urutan": 68
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.4",
+   "grup_nama": "PENGELOLAAN LINGKUNGAN KERJA",
+   "nomor": 3,
+   "pertanyaan": "Apakah perusahaan memiliki program pengelolaan lingkungan kerja?",
+   "petunjuk": "Lampirkan salinan program pengelolaan lingkungan kerja",
+   "bobot": 2,
+   "urutan": 69
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.5.1",
+   "grup_nama": "TENAGA TEKNIS",
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan memiliki tenaga teknis untuk keselamatan operasi?",
+   "petunjuk": "Jika ya, jelaskan pada tabel di bawah ini, tenaga teknis yang dimiliki serta jumlahnya\nJabatan Tenaga Teknis",
+   "bobot": 4,
+   "urutan": 70
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.5.2",
+   "grup_nama": "SARANA PRASARANA, INSTALASI & PERALATAN",
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan memiliki daftar sarana, prasarana, instalasi & peralatan (SPIP)?",
+   "petunjuk": "Lampirkan salinan daftar SPIP yang terakhir",
+   "bobot": 2,
+   "urutan": 71
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.5.2",
+   "grup_nama": "SARANA PRASARANA, INSTALASI & PERALATAN",
+   "nomor": 2,
+   "pertanyaan": "Apakah perusahaan memiliki prosedur pemeliharaan untuk setiap jenis SPIP tersebut?",
+   "petunjuk": "Lampirkan salinan prosedur tersebut",
+   "bobot": 2,
+   "urutan": 72
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.5.2",
+   "grup_nama": "SARANA PRASARANA, INSTALASI & PERALATAN",
+   "nomor": 3,
+   "pertanyaan": "Apakah perusahaan memiliki program pemeliharaan untuk setiap jenis SPIP tersebut?",
+   "petunjuk": "Lampirkan salinan program pemeliharaan SPIP yang terakhir",
+   "bobot": 2,
+   "urutan": 73
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.5.2",
+   "grup_nama": "SARANA PRASARANA, INSTALASI & PERALATAN",
+   "nomor": 4,
+   "pertanyaan": "Apakah perusahaan melakukan evaluasi hasil pelaksanaan pemeliharaan?",
+   "petunjuk": "Lampirkan salinan hasil evaluasi pemeliharaan SPIP yang terakhir",
+   "bobot": 1,
+   "urutan": 74
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.5.3",
+   "grup_nama": "PENGAMANAN INSTALASI",
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan mengidentifikasi kebutuhan pengamanan untuk setiap instalasi?",
+   "petunjuk": "Jika ya, lampirkan salinan hasil identifikasi kebutuhan pengamanan instalasi",
+   "bobot": 1,
+   "urutan": 75
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.5.3",
+   "grup_nama": "PENGAMANAN INSTALASI",
+   "nomor": 2,
+   "pertanyaan": "Apakah perusahaan telah menetapkan disain pengamanan instalasi?",
+   "petunjuk": "Jika ya, lampirkan 1 (satu) salinan disain pengamanan instalasi yang ada",
+   "bobot": 1,
+   "urutan": 76
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.5.3",
+   "grup_nama": "PENGAMANAN INSTALASI",
+   "nomor": 3,
+   "pertanyaan": "Apakah perusahaan memiliki prosedur pemasangan dan pemeliharaan sistem pengamanan instalasi?",
+   "petunjuk": "Jika ya, lampirkan salinan prosedur tersebut",
+   "bobot": 1,
+   "urutan": 77
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.5.3",
+   "grup_nama": "PENGAMANAN INSTALASI",
+   "nomor": 4,
+   "pertanyaan": "Apakah sistem pengamanan dievaluasi oleh Tenaga Teknis yang ditunjuk?",
+   "petunjuk": "Jika ya, lampirkan 1 (satu) salinan hasil evaluasi sistem pengamanan oleh Tenaga Teknis",
+   "bobot": 1,
+   "urutan": 78
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.5.4",
+   "grup_nama": "KELAYAKAN SPIP",
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan memiliki prosedur yang mengatur kelayakan SPIP?",
+   "petunjuk": "Jika ya, lampirkan salinan prosedur tersebut",
+   "bobot": 2,
+   "urutan": 79
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.5.4",
+   "grup_nama": "KELAYAKAN SPIP",
+   "nomor": 2,
+   "pertanyaan": "Apakah perusahaan memiliki jadwal pengujian kelayakan berkala SPIP?",
+   "petunjuk": "Jika ya, lampirkan salinan jadwal pengujian kelayakan berkala SPIP",
+   "bobot": 2,
+   "urutan": 80
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.5.4",
+   "grup_nama": "KELAYAKAN SPIP",
+   "nomor": 3,
+   "pertanyaan": "Apakah perusahaan memiliki standar kelayakan SPIP?",
+   "petunjuk": "Jika ya, lampirkan salinan standar kelayakan SPIP tersebut",
+   "bobot": 2,
+   "urutan": 81
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.6",
+   "grup_nama": "SISTEM IZIN KERJA",
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan anda menjalankan sistem izin kerja untuk pekerjaan-pekerjaan bersifat kritis?",
+   "petunjuk": null,
+   "bobot": 3,
+   "urutan": 82
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.6",
+   "grup_nama": "SISTEM IZIN KERJA",
+   "nomor": 2,
+   "pertanyaan": "Jenis-jenis izin kerja apa saja yang berlaku di perusahaan anda?",
+   "petunjuk": "Lampirkan salinan prosedur terkait izin kerja dan formulir-formulir izin kerja tersebut",
+   "bobot": 2,
+   "urutan": 83
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.7",
+   "grup_nama": "PENGELOLAAN PERLINDUNGAN LINGKUNGAN",
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan memiliki dokumen izin lingkungan?",
+   "petunjuk": "Jelaskan dokumen izin lingkungan yang dimiliki dibawah ini:\nDokumen lingkungan",
+   "bobot": 0,
+   "urutan": 84
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.7.1",
+   "grup_nama": "LIMBAH BAHAN BERBAHAYA DAN BERACUN",
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan memiliki prosedur pengendalian limbah bahan berbahaya dan beracun (LB3)?",
+   "petunjuk": "Jika ya, lampirkan salinan prosedur tersebut",
+   "bobot": 2,
+   "urutan": 85
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.7.1",
+   "grup_nama": "LIMBAH BAHAN BERBAHAYA DAN BERACUN",
+   "nomor": 2,
+   "pertanyaan": "Apakah perusahaan memiliki petugas yang kompeten dalam pengelolaan LB3?",
+   "petunjuk": "Jika ya, lampirkan salinan CV petugas tersebut",
+   "bobot": 1,
+   "urutan": 86
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.7.1",
+   "grup_nama": "LIMBAH BAHAN BERBAHAYA DAN BERACUN",
+   "nomor": 3,
+   "pertanyaan": "Apakah semua bahan berbahaya dan beracun yang digunakan di perusahaan anda mempunyai Lembar Data Keselamatan Bahan / MSDS?",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 87
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.7.1",
+   "grup_nama": "LIMBAH BAHAN BERBAHAYA DAN BERACUN",
+   "nomor": 4,
+   "pertanyaan": "Apakah perusahaan anda pernah mengalami kasus pencemaran lingkungan? Jika ya, jelaskan jenis insiden pencemaran serta langkah-langkah yang dilakukan dalam penanggulangan pencemaran serta dampaknya.",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 88
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.7.1",
+   "grup_nama": "LIMBAH BAHAN BERBAHAYA DAN BERACUN",
+   "nomor": 5,
+   "pertanyaan": "Apakah perusahaan anda memiliki sistem pelaporan untuk kasus pencemaran lingkungan?",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 89
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.7.2",
+   "grup_nama": "PENCEMARAN LINGKUNGAN",
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan telah melakukan identifikasi potensi sumber-sumber pencemar?",
+   "petunjuk": "Jika ya, lampirkan salinan hasil identifikasi sumber-sumber pencemar",
+   "bobot": 2,
+   "urutan": 90
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.7.2",
+   "grup_nama": "PENCEMARAN LINGKUNGAN",
+   "nomor": 2,
+   "pertanyaan": "Apakah perusahaan telah melakukan upaya pengendalian sumber-sumber pencemar?",
+   "petunjuk": "Jika ya, lampirkan 1 (satu) salinan upaya pengendalian yang telah dilakukan",
+   "bobot": 2,
+   "urutan": 91
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.7.2",
+   "grup_nama": "PENCEMARAN LINGKUNGAN",
+   "nomor": 3,
+   "pertanyaan": "Apakah perusahaan melakukan pemantauan hasil pengendalian dari sumber pencemaran?",
+   "petunjuk": "Jika ya, lampirkan 1 (satu) salinan hasil pemantauan",
+   "bobot": 2,
+   "urutan": 92
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.8",
+   "grup_nama": "PROSEDUR KERJA",
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan mengidentifikasi prosedur pengendalian operasional (SOP) yang dibutuhkan dalam seluruh aktivitasnya?",
+   "petunjuk": "Jika ya, lampirkan salinan daftar seluruh prosedur pengendalian operasional",
+   "bobot": 3,
+   "urutan": 93
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.8",
+   "grup_nama": "PROSEDUR KERJA",
+   "nomor": 2,
+   "pertanyaan": "Apakah metode perusahaan dalam mengidentifikasi prosedur pengendalian operasional yang diperlukan?",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 94
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.8",
+   "grup_nama": "PROSEDUR KERJA",
+   "nomor": 2,
+   "pertanyaan": "Apakah semua prosedur pengendalian operasional yang dibutuhkan tersebut telah ada? Jika belum semua, jelaskan kendala pembuatan prosedur dan rencana pemenuhannya.",
+   "petunjuk": null,
+   "bobot": 3,
+   "urutan": 95
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.8",
+   "grup_nama": "PROSEDUR KERJA",
+   "nomor": 3,
+   "pertanyaan": "Apakah dilakukan tinjauan berkala untuk setiap prosedur pengendalian operasional?",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 96
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.8",
+   "grup_nama": "PROSEDUR KERJA",
+   "nomor": 4,
+   "pertanyaan": "Apakah setiap prosedur pengendalian operasional dikomunikasikan kepada setiap pekerja yang terkait dengan prosedur tersebut?",
+   "petunjuk": "Jika ya, lampirkan salinan komunikasi prosedur pengendalian operasional kepada para pekerja",
+   "bobot": 3,
+   "urutan": 97
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.9",
+   "grup_nama": "ALAT PELINDUNG DIRI",
+   "nomor": 1,
+   "pertanyaan": "Apakah ada prosedur tentang Alat Pelindung Diri (APD) di perusahaan anda?",
+   "petunjuk": "Jika ya, lampirkan salinan prosedur tersebut",
+   "bobot": 2,
+   "urutan": 98
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.9",
+   "grup_nama": "ALAT PELINDUNG DIRI",
+   "nomor": 2,
+   "pertanyaan": "Apakah terdapat program untuk memastikan APD yang digunakan berfungsi baik dan terpelihara?",
+   "petunjuk": "Jika ya, lampirkan salinan inspeksi / evaluasi / permintaan penggantian APD tersebut",
+   "bobot": 1,
+   "urutan": 99
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.9",
+   "grup_nama": "ALAT PELINDUNG DIRI",
+   "nomor": 3,
+   "pertanyaan": "Apakah daftar distribusi / penggantian APD didokumentasikan?",
+   "petunjuk": "Jika ya, lampirkan salinan distribusi APD tersebut",
+   "bobot": 1,
+   "urutan": 100
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.9",
+   "grup_nama": "ALAT PELINDUNG DIRI",
+   "nomor": 4,
+   "pertanyaan": "Apakah dalam pekerjaan anda menggunakan APD khusus (selain sepatu, helmet dan rompi reflektif)? Jika ya, jelaskan jenis-jenis APD khusus tersebut.",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 101
+  },
+  {
+   "kategori_kode": "J",
+   "grup_kode": "J.9",
+   "grup_nama": "ALAT PELINDUNG DIRI",
+   "nomor": 5,
+   "pertanyaan": "Apakah dilakukan pelatihan penggunaan APD khusus tersebut secara benar?",
+   "petunjuk": "Jika ya, lampirkan salinan pelaksanaan pelatihan penggunaan APD khusus tersebut",
+   "bobot": 1,
+   "urutan": 102
+  },
+  {
+   "kategori_kode": "K",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan anda mempunyai prosedur untuk kejadian, kecelakaan dan penyelidikan?",
+   "petunjuk": "Jika ya, lampirkan salinan prosedur tersebut",
+   "bobot": 3,
+   "urutan": 103
+  },
+  {
+   "kategori_kode": "K",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 2,
+   "pertanyaan": "Apakah perusahaan anda melaporkan dan mencatat setiap ada kejadian dan kecelakaan di tempat kerja?",
+   "petunjuk": null,
+   "bobot": 2,
+   "urutan": 104
+  },
+  {
+   "kategori_kode": "K",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 3,
+   "pertanyaan": "Apakah dilakukan penyelidikan (investigasi) jika terjadi insiden?",
+   "petunjuk": "Lampirkan 1 (satu) salinan dokumen investigasi insiden",
+   "bobot": 2,
+   "urutan": 105
+  },
+  {
+   "kategori_kode": "K",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 4,
+   "pertanyaan": "Apakah hasil penyelidikan kecelakaan disosialisasikan kepada pekerja? Jika ya, sebutkan media dan jenis sosialisasi yang dilakukan.",
+   "petunjuk": "Jika ya, lampirkan 1 (satu) salinan lembar / arsip fisik atau elektronik sosialisasi insiden dan salinan peserta sosialisasinya",
+   "bobot": 1,
+   "urutan": 106
+  },
+  {
+   "kategori_kode": "L",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan anda memiliki statistik kejadian dan kecelakaan di tempat kerja?",
+   "petunjuk": "Lampirkan salinan laporan statistik insiden terakhir",
+   "bobot": 2,
+   "urutan": 107
+  },
+  {
+   "kategori_kode": "L",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 2,
+   "pertanyaan": "Apakah perusahaan anda pernah mendapatkan penghargaan KPLH?",
+   "petunjuk": "*Jika ya, sebutkan penghargaan-penghargaan yang diterima dalam 3 tahun terakhir\nPenghargaan\nLampirkan 2 (dua) salinan deskripsi pekerjaan",
+   "bobot": 2,
+   "urutan": 108
+  },
+  {
+   "kategori_kode": "M",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan anda memiliki rencana tanggap darurat?",
+   "petunjuk": "Lampirkan salinan dokumen rencana tanggap darurat yang berlaku",
+   "bobot": 2,
+   "urutan": 109
+  },
+  {
+   "kategori_kode": "M",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 2,
+   "pertanyaan": "Apakah rencana tanggap darurat mencakup insiden pencemaran lingkungan? Jika ya, jelaskan jenis insiden pencemaran lingkungan yang dimaksudkan",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 110
+  },
+  {
+   "kategori_kode": "M",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 3,
+   "pertanyaan": "Apakah anda memiliki petugas terlatih pertolongan pertama pada kecelakaan?",
+   "petunjuk": "Jika ya, lampirkan daftar petugas tim tanggap darurat pada kecelakaan dengan salinan CV / kompetensinya.",
+   "bobot": 1,
+   "urutan": 111
+  },
+  {
+   "kategori_kode": "M",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 4,
+   "pertanyaan": "Apakah pekerja dilatih mengenai tanggap darurat? Jika ya, jelaskan nama-nama pelatihan terkait tanggap darurat yang diberikan kepada pekerja",
+   "petunjuk": "Nama pelatihan",
+   "bobot": 2,
+   "urutan": 112
+  },
+  {
+   "kategori_kode": "M",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 5,
+   "pertanyaan": "Apakah perusahaan memiliki struktur organisasi tanggap darurat",
+   "petunjuk": "Jika ya, lampirkan salinan struktur organisasi tanggap darurat yang ada",
+   "bobot": 1,
+   "urutan": 113
+  },
+  {
+   "kategori_kode": "M",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 6,
+   "pertanyaan": "Apakah perusahaan anda memiliki alat pengendalian kebakaran? Jika ya, jelaskan jenis dan lokasi alat pengendalian kebakaran tersebut",
+   "petunjuk": null,
+   "bobot": 2,
+   "urutan": 114
+  },
+  {
+   "kategori_kode": "M",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 7,
+   "pertanyaan": "Apakah ada program rutin untuk pemeriksaan alat pengendalian kebakaran?",
+   "petunjuk": "Jika ya, lampirkan salinan jadwal pemeriksaan alat pengendalian kebakaran",
+   "bobot": 1,
+   "urutan": 115
+  },
+  {
+   "kategori_kode": "M",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 8,
+   "pertanyaan": "Apakah semua karyawan diberikan pelatihan untuk penggunaan alat pengendalian kebakaran?",
+   "petunjuk": "Jika ya, lampirkan salinan pelaksanaan pelatihan tersebut",
+   "bobot": 1,
+   "urutan": 116
+  },
+  {
+   "kategori_kode": "N",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan anda memiliki prosedur untuk menyeleksi kontraktor / subkontraktor?",
+   "petunjuk": "Jika ya, lampirkan salinan prosedur pengendalian kontraktor / subkontraktor tersebut",
+   "bobot": 2,
+   "urutan": 117
+  },
+  {
+   "kategori_kode": "N",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 2,
+   "pertanyaan": "Jelaskan bagaimana perusahaan anda melakukan pengawasan dan pengendalian kontraktor / subkontraktor?",
+   "petunjuk": "Lampirkan 2 (dua) salinan contoh pelaksanaan pengawasan dan pengendalian kontraktor / subkontraktor",
+   "bobot": 2,
+   "urutan": 118
+  },
+  {
+   "kategori_kode": "N",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 3,
+   "pertanyaan": "Apakah kinerja dan program KPLH subkontraktor dievaluasi minimal setiap tahun?",
+   "petunjuk": "Jika ya, lampirkan 1 (satu) salinan hasil evaluasi kinerja kontraktor / subkontraktor ersebut",
+   "bobot": 1,
+   "urutan": 119
+  },
+  {
+   "kategori_kode": "N",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 4,
+   "pertanyaan": "Apakah perusahaan anda melakukan audit KPLH terhadap kontraktor / subkontraktor?",
+   "petunjuk": "Jika ya, lampirkan 1 (satu) salinan laporan audit KPLH kontraktor tersebut",
+   "bobot": 2,
+   "urutan": 120
+  },
+  {
+   "kategori_kode": "O",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 1,
+   "pertanyaan": "Apakah perusahaan anda memiliki prosedur atau program audit internal?",
+   "petunjuk": "Jika ya, lampirkan salinan prosedur atau program audit internal tersebut",
+   "bobot": 2,
+   "urutan": 121
+  },
+  {
+   "kategori_kode": "O",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 2,
+   "pertanyaan": "Apakah perusahaan anda memiliki auditor internal?",
+   "petunjuk": "Jika ya, lampirkan salinan CV / kompetensi auditor internal tersebut",
+   "bobot": 2,
+   "urutan": 122
+  },
+  {
+   "kategori_kode": "O",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 3,
+   "pertanyaan": "Apakah audit internal dijadwalkan secara teratur?",
+   "petunjuk": "Jika ya, lampirkan salinan jadwal audit internal",
+   "bobot": 1,
+   "urutan": 123
+  },
+  {
+   "kategori_kode": "P",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 1,
+   "pertanyaan": "Apakah ada prosedur untuk rapat tinjauan manajemen?",
+   "petunjuk": "Jika ya, lampirkan salinan prosedur rapat tinjauan manajemen",
+   "bobot": 2,
+   "urutan": 124
+  },
+  {
+   "kategori_kode": "P",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 2,
+   "pertanyaan": "Jelaskan apa saja yang menjadi agenda dalam rapat tinjauan manajemen.",
+   "petunjuk": null,
+   "bobot": 1,
+   "urutan": 125
+  },
+  {
+   "kategori_kode": "P",
+   "grup_kode": null,
+   "grup_nama": null,
+   "nomor": 3,
+   "pertanyaan": "Jelaskan bagaimana proses hasil rekomendasi dari rapat tinjauan manajemen ditindaklanjuti?",
+   "petunjuk": "Lampirkan salinan hasil rekomendasi / notulen dari rapat tinjauan manajemen terakhir",
+   "bobot": 1,
+   "urutan": 126
+  }
+ ]
+}

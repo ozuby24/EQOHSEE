@@ -10,6 +10,7 @@ use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiT
     BlastingController, CostController, DispatchController, PermitController, EnergyController, EngineeringController, EnvironmentController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\{BantuanController, ChatController};
+use App\Http\Controllers\{PjpBerandaController, PjpController, PjpCatatanController, PjpEvaluasiController, PjpLaporanController, PjpTahapanController, SmkpChecklistController};
 use App\Http\Controllers\Admin\{CompanyController, SystemController, UserController};
 use Illuminate\Support\Facades\Route;
 
@@ -729,6 +730,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile',    [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile',  [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    /* ---- Perusahaan Jasa Pertambangan (PJP) ---- */
+    Route::get('perusahaan-jasa-tambang', PjpBerandaController::class)->name('pjp.beranda');
+
+    Route::get('pjp/export',          [PjpController::class, 'export'])->name('pjp.export');
+    Route::get('pjp/import-template', [PjpController::class, 'importTemplate'])->name('pjp.import-template');
+    Route::post('pjp/import',         [PjpController::class, 'import'])->name('pjp.import');
+    Route::get('pjp/{pjp}/export-pdf',[PjpController::class, 'exportPdf'])->name('pjp.export-pdf');
+
+    Route::resource('pjp', PjpController::class);
+
+    Route::post('pjp/{pjp}/laporan',            [PjpLaporanController::class, 'store'])->name('pjp.laporan.store');
+    Route::patch('pjp/{pjp}/laporan/{laporan}', [PjpLaporanController::class, 'update'])->name('pjp.laporan.update');
+    Route::delete('pjp/{pjp}/laporan/{laporan}',[PjpLaporanController::class, 'destroy'])->name('pjp.laporan.destroy');
+
+    Route::post('pjp/{pjp}/catatan',   [PjpCatatanController::class, 'store'])->name('pjp.catatan.store');
+    Route::delete('pjp/{pjp}/catatan/{catatan}', [PjpCatatanController::class, 'destroy'])->name('pjp.catatan.destroy');
+
+    Route::get('pjp/{pjp}/checklist-smkp',  [SmkpChecklistController::class, 'show'])->name('pjp.checklist-smkp.show');
+    Route::post('pjp/{pjp}/checklist-smkp', [SmkpChecklistController::class, 'update'])->name('pjp.checklist-smkp.update');
+
+    Route::post('pjp/{pjp}/evaluasi',   [PjpEvaluasiController::class, 'store'])->name('pjp.evaluasi.store');
+    Route::delete('pjp/{pjp}/evaluasi/{evaluasi}', [PjpEvaluasiController::class, 'destroy'])->name('pjp.evaluasi.destroy');
+
+    Route::get('pjp-tahapan/persyaratan', [PjpTahapanController::class, 'persyaratanSeleksiPenetapan'])->name('pjp.tahapan.persyaratan');
+    Route::get('pjp-tahapan/pelaporan',   [PjpTahapanController::class, 'tanggungJawabPemantauanPelaporan'])->name('pjp.tahapan.pelaporan');
+    Route::get('pjp-tahapan/evaluasi',    [PjpTahapanController::class, 'evaluasi'])->name('pjp.tahapan.evaluasi');
 });
 
 require __DIR__.'/auth.php';

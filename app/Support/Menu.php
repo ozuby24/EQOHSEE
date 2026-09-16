@@ -378,6 +378,21 @@ final class Menu
         ],
       ],
     ],
+    'pjp' => [
+      'label' => 'Perusahaan Jasa Pertambangan',
+      'icon'  => 'M3 21h18M5 21V7l8-4v18M13 21V11l6 3v7M9 9v.01M9 12v.01M9 15v.01',
+      'groups' => [
+        'Pemantauan' => [
+          ['Beranda',      'pjp.beranda', 'perusahaan-jasa-tambang'],
+          ['Daftar PJP',   'pjp.index',   'pjp'],
+        ],
+        'Tahapan' => [
+          ['Persyaratan, Seleksi & Penetapan', 'pjp.tahapan.persyaratan', 'pjp-tahapan/persyaratan'],
+          ['Tanggung Jawab Pemantauan & Pelaporan', 'pjp.tahapan.pelaporan', 'pjp-tahapan/pelaporan'],
+          ['Evaluasi Kinerja', 'pjp.tahapan.evaluasi', 'pjp-tahapan/evaluasi'],
+        ],
+      ],
+    ],
     'admin' => [
       'label' => 'Administrasi',
       'icon'  => 'M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Zm7.4-.9a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5v.2a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1h.2a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1Z',
@@ -416,7 +431,8 @@ final class Menu
          : (Request::is('gudang*') ? 'gudang'
          : (Request::is('mining-engineering-hub*') ? 'meh'
          : (Request::is('ko*') ? 'ko'
-         : (Request::is('admin*') || Request::is('signatories*') ? 'admin' : 'lms')))))))))))))))))));
+         : (Request::is('admin*') || Request::is('signatories*') ? 'admin'
+        : (Request::is('pjp*') || Request::is('perusahaan-jasa-tambang*') ? 'pjp' : 'lms'))))))))))))))))))));
 
         return isset(self::all()[$kunci]) ? $kunci : 'lms';
     }
