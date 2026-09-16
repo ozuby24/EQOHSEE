@@ -206,6 +206,16 @@ function keluar() {
           Hubungi Kami
         </Link>
 
+        <div class="eq-sisi-banner">
+          <img src="/media/hero/tambang.jpg" alt="" loading="lazy">
+          <div class="eq-sisi-banner-teks">
+            <span>People</span>
+            <span>Safety</span>
+            <span>Productivity</span>
+            <strong>A Better Tomorrow</strong>
+          </div>
+        </div>
+
         <div class="eq-sisi-bawah">
           <small>© {{ new Date().getFullYear() }} EQOHSEE<br>All rights reserved.</small>
           <button type="button" class="eq-lipat" aria-label="Lipat bilah samping" @click="lipat">

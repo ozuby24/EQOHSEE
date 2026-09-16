@@ -1,6 +1,71 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted, ref } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import PjpStatusStackedBar from '../../Components/PjpStatusStackedBar.vue';
+
+/*
+  Lokasi acuan cuaca (Kalimantan Tengah, area pertambangan) — belum ada
+  data lokasi per-perusahaan yang bisa dipakai di sini, jadi dipatok satu
+  titik yang representatif daripada tidak menampilkan apa pun.
+*/
+const LOKASI_LABEL = 'Kalimantan Tengah';
+const LOKASI = { lat: -2.21, lon: 113.92 };
+const ZONA_WAKTU = 'Asia/Makassar';
+
+const WMO_CUACA: Record<number, { label: string; ikon: 'cerah' | 'berawan' | 'hujan' | 'petir' | 'kabut' }> = {
+  0: { label: 'Cerah', ikon: 'cerah' },
+  1: { label: 'Cerah Berawan', ikon: 'cerah' },
+  2: { label: 'Berawan', ikon: 'berawan' },
+  3: { label: 'Mendung', ikon: 'berawan' },
+  45: { label: 'Berkabut', ikon: 'kabut' },
+  48: { label: 'Berkabut', ikon: 'kabut' },
+  51: { label: 'Gerimis', ikon: 'hujan' },
+  53: { label: 'Gerimis', ikon: 'hujan' },
+  55: { label: 'Gerimis Lebat', ikon: 'hujan' },
+  61: { label: 'Hujan Ringan', ikon: 'hujan' },
+  63: { label: 'Hujan', ikon: 'hujan' },
+  65: { label: 'Hujan Lebat', ikon: 'hujan' },
+  80: { label: 'Hujan Ringan', ikon: 'hujan' },
+  81: { label: 'Hujan', ikon: 'hujan' },
+  82: { label: 'Hujan Lebat', ikon: 'hujan' },
+  95: { label: 'Badai Petir', ikon: 'petir' },
+  96: { label: 'Badai Petir', ikon: 'petir' },
+  99: { label: 'Badai Petir', ikon: 'petir' },
+};
+
+const jamSekarang = ref('--:--');
+const tanggalSekarang = ref('');
+const cuaca = ref<{ suhu: number; hujan: number; label: string; ikon: string } | null>(null);
+const cuacaGagal = ref(false);
+
+let timer: ReturnType<typeof setInterval> | undefined;
+
+function perbaruiJam() {
+  const now = new Date();
+  jamSekarang.value = now.toLocaleTimeString('id-ID', { timeZone: ZONA_WAKTU, hour: '2-digit', minute: '2-digit' });
+  tanggalSekarang.value = now.toLocaleDateString('id-ID', { timeZone: ZONA_WAKTU, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+onMounted(() => {
+  perbaruiJam();
+  timer = setInterval(perbaruiJam, 15000);
+
+  fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LOKASI.lat}&longitude=${LOKASI.lon}&current=temperature_2m,precipitation,weather_code&timezone=${encodeURIComponent(ZONA_WAKTU)}`)
+    .then((r) => { if (!r.ok) throw new Error('gagal'); return r.json(); })
+    .then((data) => {
+      const kode = data?.current?.weather_code as number | undefined;
+      const info = WMO_CUACA[kode ?? -1] ?? { label: 'Tidak diketahui', ikon: 'berawan' };
+      cuaca.value = {
+        suhu: Math.round(data?.current?.temperature_2m ?? 0),
+        hujan: data?.current?.precipitation ?? 0,
+        label: info.label,
+        ikon: info.ikon,
+      };
+    })
+    .catch(() => { cuacaGagal.value = true; });
+});
+
+onUnmounted(() => { if (timer) clearInterval(timer); });
 
 interface MiniPjp { id: number; nama_perusahaan: string }
 interface PerluPerhatian { id: number; nama_perusahaan: string; achievement: number }
@@ -39,14 +104,37 @@ const tahapan = [
   <Head title="Beranda PJP" />
 
   <div class="max-w-5xl mx-auto">
-    <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
-      <div>
-        <h2 class="font-serif text-xl font-bold text-cam-ink">Beranda Pemantauan PJP</h2>
-        <p class="text-[12.5px] text-stone-500 mt-1">
-          Memantau dan mengelola Perusahaan Jasa Pertambangan (PJP) di seluruh tahapan pengelolaannya.
-        </p>
+    <div class="relative overflow-hidden rounded-2xl mb-6 min-h-[190px] flex flex-col justify-end p-5"
+         style="background:linear-gradient(0deg,rgba(11,17,23,.92) 20%,rgba(11,17,23,.45) 65%,rgba(11,17,23,.15) 100%),
+                url('/media/hero/tambang.jpg') center/cover no-repeat">
+      <p class="text-[10.5px] font-bold uppercase tracking-[0.14em] text-cam-lime-light flex items-center gap-2">
+        <span class="w-4 h-[2px] bg-cam-lime-light rounded-full"></span>
+        Perusahaan Jasa Pertambangan
+      </p>
+      <h2 class="font-serif text-2xl font-extrabold text-white mt-1">Beranda Pemantauan PJP</h2>
+      <p class="text-[12.5px] text-white/75 mt-1 max-w-[46ch]">
+        Memantau dan mengelola PJP di seluruh tahapan pengelolaannya.
+      </p>
+
+      <div class="flex flex-wrap items-center gap-2.5 mt-4">
+        <div class="rounded-xl bg-black/35 border border-white/10 px-3.5 py-2 backdrop-blur-sm">
+          <p class="text-[15px] font-extrabold text-white leading-none">{{ jamSekarang }} <span class="text-[10px] font-bold text-white/60">WITA</span></p>
+          <p class="text-[10.5px] text-white/65 mt-1">{{ tanggalSekarang }}</p>
+        </div>
+        <div v-if="cuaca" class="rounded-xl bg-black/35 border border-white/10 px-3.5 py-2 backdrop-blur-sm flex items-center gap-2.5">
+          <svg class="w-6 h-6 text-amber-300 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle v-if="cuaca.ikon === 'cerah'" cx="12" cy="12" r="4.2"/>
+            <path v-if="cuaca.ikon === 'cerah'" d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/>
+            <path v-else d="M7 17.5a4 4 0 0 1-.5-7.97 5.5 5.5 0 0 1 10.6-2.03A4.5 4.5 0 0 1 17 17.5Z"/>
+          </svg>
+          <div>
+            <p class="text-[13px] font-extrabold text-white leading-none">{{ cuaca.suhu }}°C <span class="text-[10.5px] font-semibold text-amber-300">{{ cuaca.label }}</span></p>
+            <p class="text-[10.5px] text-white/65 mt-1">{{ cuaca.hujan }} mm · {{ LOKASI_LABEL }}</p>
+          </div>
+        </div>
+        <div v-else-if="!cuacaGagal" class="rounded-xl bg-black/35 border border-white/10 px-3.5 py-2 text-[11px] text-white/60">Memuat cuaca…</div>
+        <Link href="/pjp" class="lime-gradient shadow-glow rounded-xl text-white px-4 py-2.5 text-[12.5px] font-bold ml-auto">Lihat Data PJP →</Link>
       </div>
-      <Link href="/pjp" class="lime-gradient shadow-glow rounded-xl text-white px-4 py-2.5 text-[12.5px] font-bold">Lihat Data PJP →</Link>
     </div>
 
     <div v-if="pjpBelumLaporanBulanan.length" class="rounded-2xl border border-amber-200 bg-amber-50 p-5 mb-6">

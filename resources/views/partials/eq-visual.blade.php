@@ -164,6 +164,18 @@ body{
 .eq-bantuan-btn:hover{background:rgba(255,255,255,.17);border-color:rgba(255,255,255,.2)}
 .eq-bantuan-btn svg{width:15px;height:15px}
 
+.eq-sisi-banner{position:relative;margin-top:11px;border-radius:14px;overflow:hidden;
+  aspect-ratio:16/10;isolation:isolate}
+.eq-sisi-banner img{width:100%;height:100%;object-fit:cover;display:block}
+.eq-sisi-banner::after{content:"";position:absolute;inset:0;z-index:1;
+  background:linear-gradient(0deg,rgba(11,17,23,.92) 10%,rgba(11,17,23,.35) 58%,rgba(11,17,23,.05) 100%)}
+.eq-sisi-banner-teks{position:absolute;left:11px;right:11px;bottom:11px;z-index:2}
+.eq-sisi-banner-teks span{display:block;font-size:12.5px;font-weight:800;color:#fff;line-height:1.28}
+.eq-sisi-banner-teks strong{display:block;margin-top:3px;font-size:10px;font-weight:700;
+  color:var(--eq-aksen-lembut,#F9AA59)}
+.eq-sisi-banner-teks::after{content:"";display:block;width:26px;height:2.5px;margin-top:7px;
+  border-radius:2px;background:var(--eq-aksen,#F57C00)}
+
 .eq-sisi-bawah{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;
   margin-top:13px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)}
 /* Teks hak cipta. Sebelumnya .34 alfa di atas navy — sekitar 2,4:1,
@@ -213,6 +225,7 @@ body{
   body.eq-sempit #eqSidebar nav a span:not(.nav-accent),
   body.eq-sempit .eq-bantuan-teks,
   body.eq-sempit .eq-bantuan-btn span,
+  body.eq-sempit .eq-sisi-banner,
   body.eq-sempit .eq-sisi-bawah small,
   body.eq-sempit #eqSidebar nav p,
   body.eq-sempit #eqSidebar .glass + div{display:none}
