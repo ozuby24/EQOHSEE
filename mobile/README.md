@@ -66,6 +66,11 @@ flutter build apk --release --dart-define=EQOHSEE_URL=https://staging.eqohsee.id
 > menghasilkan tiga berkas yang masing-masing ±13–17 MB. AAB tidak
 > perlu dipecah: Play Store yang mengerjakannya.
 
+## Menerbitkan
+
+Urutan kerjanya — dari keystore, gabung AAB, uji coba lewat APK, sampai
+unggah ke Play Store dan rilis berikutnya — ada di **[RILIS.md](RILIS.md)**.
+
 ## Penandatanganan rilis
 
 **Tanpa `android/key.properties`, build rilis memakai KUNCI DEBUG.**
