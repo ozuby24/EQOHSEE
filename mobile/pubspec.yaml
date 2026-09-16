@@ -1,0 +1,29 @@
+name: eqohsee
+description: "EQOHSEE — HSE & K3 pertambangan"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Dipilih menggantikan webview_flutter karena tiga hal yang dipakai
+  # EQOHSEE setiap hari tidak ditangani paket bawaan itu: pemilih berkas
+  # untuk <input type="file">, unduhan yang memakai Content-Disposition,
+  # dan izin kamera dari dalam halaman. Ketiganya bukan tambahan manis —
+  # tanpa unggahan, laporan bahaya tidak dapat dikirim dari lapangan.
+  flutter_inappwebview: ^6.1.5
+  permission_handler: ^11.3.1
+  connectivity_plus: ^6.1.0
+  url_launcher: ^6.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

@@ -1,0 +1,17 @@
+gradle-wrapper.jar
+/.gradle
+/captures/
+/gradlew
+/gradlew.bat
+/local.properties
+GeneratedPluginRegistrant.java
+
+# ── JANGAN PERNAH dikomit ──
+# key.properties memuat kata sandi keystore, dan *.jks/*.keystore adalah
+# kunci penandatanganannya sendiri. Yang memegangnya dapat menerbitkan
+# pembaruan yang diterima ponsel pemakai sebagai EQOHSEE yang asli.
+# Hilang, aplikasinya tidak akan pernah dapat diperbarui lagi di Play
+# Store — harus terbit ulang dengan nama paket baru.
+key.properties
+*.jks
+*.keystore
