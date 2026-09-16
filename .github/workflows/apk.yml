@@ -1,4 +1,4 @@
-name: Bangun APK
+name: Bangun APK dan AAB
 
 # Dijalankan manual dan pada tag versi. TIDAK pada tiap push: satu build
 # APK memakan belasan menit dan mengunduh SDK Android; menjalankannya
@@ -55,26 +55,61 @@ jobs:
           storeFile=$RUNNER_TEMP/rilis.jks
           EOF
 
+      # APK per-arsitektur: satu berkas gemuk ±43 MB, tiga berkas terpisah
+      # masing-masing ±13-17 MB. Yang dibagikan untuk uji coba lapangan
+      # sebaiknya yang kecil — jaringan site tambang bukan kantor.
       - name: Bangun APK
         working-directory: mobile
-        run: flutter build apk --release
+        run: flutter build apk --release --split-per-abi
 
-      - name: Periksa tanda tangannya
+      - name: Bangun AAB
+        working-directory: mobile
+        run: flutter build appbundle --release
+
+      - name: Periksa tanda tangan APK
         working-directory: mobile
         run: |
-          APK=build/app/outputs/flutter-apk/app-release.apk
+          APK=build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
           SIGNER=$("$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "$APK" \
                    | grep -m1 "certificate DN")
           echo "$SIGNER"
-          # Dicetak, bukan digagalkan: APK berkunci debug memang sah untuk
-          # uji coba. Yang berbahaya adalah tidak tahu yang mana yang
-          # sedang dibagikan — keduanya kelihatan persis sama.
+          # Dicetak, bukan digagalkan: APK berkunci debug memang SAH untuk
+          # uji coba — ia tetap dapat dipasang. Yang berbahaya adalah tidak
+          # tahu yang mana yang sedang dibagikan; keduanya kelihatan sama.
           case "$SIGNER" in
             *"Android Debug"*) echo "::warning::APK ini berkunci DEBUG — jangan diunggah ke Play Store." ;;
+          esac
+
+      - name: Periksa tanda tangan AAB
+        working-directory: mobile
+        run: |
+          AAB=build/app/outputs/bundle/release/app-release.aab
+          # AAB ditandatangani jarsigner, bukan apksigner.
+          SIGNER=$(jarsigner -verify -verbose:summary -certs "$AAB" | grep -m1 "Signed by")
+          echo "$SIGNER"
+          # DIGAGALKAN, tidak sekadar diperingatkan — di sinilah AAB
+          # berbeda dari APK. APK berkunci debug masih berguna: dipasang
+          # sideload untuk uji coba. AAB berkunci debug tidak berguna
+          # untuk apa pun: ia tidak dapat dipasang ke ponsel sama sekali
+          # (bukan format pasang), dan Play Console menolak unggahan yang
+          # ditandatangani sertifikat debug. Menyerahkannya sebagai hasil
+          # build berarti menyerahkan berkas yang tidak dapat dipakai
+          # siapa pun, dan itu baru ketahuan di Play Console.
+          case "$SIGNER" in
+            *"Android Debug"*)
+              echo "::error::AAB ditandatangani KUNCI DEBUG. Play Console menolaknya, dan AAB tidak dapat dipasang ke ponsel. Pasang secrets ANDROID_KEYSTORE_BASE64 dkk."
+              exit 1
+              ;;
           esac
 
       - uses: actions/upload-artifact@v4
         with:
           name: eqohsee-apk
-          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+          path: mobile/build/app/outputs/flutter-apk/app-*-release.apk
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eqohsee-aab
+          path: mobile/build/app/outputs/bundle/release/app-release.aab
           retention-days: 30

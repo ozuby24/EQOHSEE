@@ -37,6 +37,25 @@ flutter build apk --release
 
 Hasilnya: `build/app/outputs/flutter-apk/app-release.apk`
 
+### APK atau AAB?
+
+| | APK | AAB (Android App Bundle) |
+|---|---|---|
+| Perintah | `flutter build apk --release` | `flutter build appbundle --release` |
+| Hasil | `flutter-apk/app-release.apk` | `bundle/release/app-release.aab` |
+| Dipasang langsung ke ponsel | ya (sideload) | **tidak bisa** |
+| Diunggah ke Play Store | tidak | ya |
+| Berkunci debug | tetap berguna untuk uji coba | **tidak berguna sama sekali** |
+
+AAB bukan format pasang — ia paket yang dipecah Play Store menjadi APK
+sesuai perangkat tiap pemakai. Karena itu ia tidak dapat dicoba dengan
+menyalinnya ke ponsel; untuk uji coba lapangan, pakai APK.
+
+Dan karena satu-satunya tujuan AAB adalah Play Store, **AAB berkunci
+debug tidak dapat dipakai untuk apa pun**: dipasang tidak bisa,
+diunggah ditolak. CI karena itu MENGGAGALKAN build ketika AAB-nya
+berkunci debug, sedangkan untuk APK ia hanya memperingatkan.
+
 Menunjuk ke server lain tanpa menyunting kode:
 
 ```bash
@@ -44,7 +63,8 @@ flutter build apk --release --dart-define=EQOHSEE_URL=https://staging.eqohsee.id
 ```
 
 > Satu APK memuat semua arsitektur (±43 MB). `--split-per-abi`
-> menghasilkan tiga berkas yang masing-masing ±15 MB.
+> menghasilkan tiga berkas yang masing-masing ±13–17 MB. AAB tidak
+> perlu dipecah: Play Store yang mengerjakannya.
 
 ## Penandatanganan rilis
 
