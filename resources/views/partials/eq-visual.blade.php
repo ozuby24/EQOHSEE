@@ -691,11 +691,35 @@ main a{transition:color .16s}
 
 /* ── Pengumuman ── */
 .eq-warta li + li{border-top:1px solid rgba(27,32,36,.07)}
-.eq-warta a{display:flex;gap:11px;align-items:flex-start;padding:12px 2px;
+
+/* `a` DAN `.eq-warta-buka`. Pengumuman kini dibuka sebagai pop-out,
+   jadi barisnya sebuah tombol — tautan yang tidak pernah menuju ke mana
+   pun menipu menu klik-kanan, Ctrl+klik, dan pembaca layar sekaligus.
+   Baris lain di panel ini tetap tautan sungguhan; keduanya harus tampak
+   sama persis, sebab yang membedakannya bukan rupanya melainkan apa
+   yang terjadi sesudah ditekan. */
+.eq-warta a,
+.eq-warta .eq-warta-buka{display:flex;gap:11px;align-items:flex-start;padding:12px 2px;
   border-radius:10px;transition:background-color .18s}
-.eq-warta a:hover{background:#F7F9FA}
+.eq-warta .eq-warta-buka{width:100%;text-align:left;background:none;border:0;
+  font:inherit;color:inherit;cursor:pointer}
+.eq-warta a:hover,
+.eq-warta .eq-warta-buka:hover{background:#F7F9FA}
+
+/* Sorotan mode gelap. Tanpa ini barisnya berkedip PUTIH di atas panel
+   gelap tiap kali tetikus melewatinya — cacat yang sudah ada sejak
+   panel ini ditulis dan tidak pernah terlihat karena hover memang
+   tidak muncul pada tangkapan layar. */
+:root[data-tema="gelap"] .eq-warta a:hover,
+:root[data-tema="gelap"] .eq-warta .eq-warta-buka:hover{background:rgba(255,255,255,.055)}
 .eq-warta-ikon{width:34px;height:34px;flex:none;border-radius:11px;display:grid;place-items:center}
 .eq-warta-ikon svg{width:16px;height:16px}
+
+/* Sampul kecil, bila pengumumannya punya. Yang tanpa gambar TIDAK
+   mendapat kotak abu-abu pengganti — teksnya melebar menempati
+   ruangnya, dan barisnya tidak menjadi lebih pendek. */
+.eq-warta-gambar{width:44px;height:44px;flex:none;border-radius:10px;object-fit:cover;
+  background:rgba(27,32,36,.06)}
 .eq-warta-teks{flex:1;min-width:0}
 .eq-warta-teks strong{display:block;font-size:12.5px;font-weight:700;color:var(--eq-judul,#0F1720);line-height:1.4}
 .eq-warta-teks small{display:block;font-size:11.5px;color:var(--eq-redup2,#98A2AE);margin-top:2px;line-height:1.5}

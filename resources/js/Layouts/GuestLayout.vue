@@ -29,6 +29,18 @@ const prop = propHalaman();
 const media = computed<any>(() => prop.mediaMasuk ?? {});
 
 /**
+ * Pesan kilat pada halaman yang belum masuk.
+ *
+ * Sebelumnya bilah ini HANYA ada di AppLayout — yaitu di balik login.
+ * Akibatnya setiap pesan yang ditujukan kepada orang yang belum masuk
+ * hilang tanpa jejak, dan yang paling merugikan adalah pesan sesudah
+ * verifikasi email berhasil: sesinya ditutup, orangnya dipulangkan ke
+ * halaman masuk, dan halaman itu menyambutnya persis seperti kalau
+ * kodenya salah.
+ */
+const kilat = computed<any>(() => prop.kilat ?? {});
+
+/**
  * Cocokkan satu media query dan ikuti perubahannya.
  *
  * Diikuti, bukan dibaca sekali. Memutar layar ponsel ke lanskap
@@ -113,6 +125,23 @@ const jam = new Intl.DateTimeFormat('id-ID', {
     <section class="flex items-center justify-center px-6 py-10 sm:px-12 lg:px-16">
       <div class="w-full max-w-md">
         <div class="font-extrabold text-2xl tracking-wide mb-8">E<span class="text-[#F57C00]">Q</span>OHSEE</div>
+
+        <!-- role=status, bukan alert: kabarnya baik, dan alert merebut
+             pembacaan di tengah orang membaca judul halamannya. -->
+        <div v-if="kilat.sukses" role="status"
+             class="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3
+                    flex items-start gap-2.5 text-emerald-800">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+               stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 mt-0.5 shrink-0"
+               aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+          <p class="text-[12.5px] font-semibold leading-relaxed">{{ kilat.sukses }}</p>
+        </div>
+
+        <div v-if="kilat.galat" role="alert"
+             class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+          <p class="text-[12.5px] font-semibold leading-relaxed">{{ kilat.galat }}</p>
+        </div>
+
         <slot />
       </div>
     </section>

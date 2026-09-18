@@ -8,7 +8,7 @@ use App\Models\Investigasi\Bukti as BuktiInvestigasi;
 use App\Models\Pembelian\Pembayaran as PembayaranBeli;
 use App\Models\PjpLaporan as LaporanPjp;
 use App\Models\SmkpBukti;
-use App\Models\{Document, GudangBarang, HazardReport, InspectionItem, PasporKartu, PasporKartuUnit, PasporMcu, PasporSertifikat, Signatory, SmkpFinding};
+use App\Models\{Document, GudangBarang, HazardReport, InspectionItem, News, PasporKartu, PasporKartuUnit, PasporMcu, PasporSertifikat, Signatory, SmkpFinding};
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -99,6 +99,22 @@ final class Berkas
            dan alamat rumah. Terbuka, siapa pun yang menebak nomor baris
            dapat membaca gaji rekannya. */
         'knt' => [HrKontrak::class,      'berkas_naskah',  false],
+
+        /* Sampul dan lampiran pengumuman.
+           TERTUTUP, meski sampul kursus yang bentuknya serupa terbuka.
+           Bedanya bukan jenis berkasnya melainkan siapa pemiliknya:
+           sampul kursus tampil di katalog yang memang dibuka calon
+           pembeli tanpa akun, sedangkan pengumuman melekat pada satu
+           perusahaan dan tidak pernah tampil di luar halaman yang
+           menuntut login. Isinya denah titik kumpul, rambu simpang
+           hauling, dan surat edaran ber-kop — dibiarkan di /storage/…
+           seluruhnya terbaca perusahaan lain pada pemasangan yang sama.
+
+           Batas perusahaannya ditegakkan MilikPerusahaan pada News:
+           baris milik perusahaan lain memang tidak dapat ditemukan
+           oleh findOrFail di BerkasController. */
+        'brt' => [News::class,           'cover',          false],
+        'brl' => [News::class,           'lampiran',       false],
     ];
 
     /**

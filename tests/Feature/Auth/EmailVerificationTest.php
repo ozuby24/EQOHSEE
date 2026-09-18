@@ -54,9 +54,56 @@ class EmailVerificationTest extends TestCase
         $kode = $u->buatKodeVerifikasi();
 
         $this->actingAs($u)->post('/verify-email', ['kode' => $kode])
-            ->assertRedirect(route('dashboard', absolute: false));
+            ->assertRedirect(route('login', absolute: false));
 
         $this->assertNotNull($u->fresh()->email_verified_at);
+    }
+
+    public function test_kode_yang_benar_tidak_memasukkan_siapa_pun(): void
+    {
+        /* Terverifikasi BUKAN berarti masuk.
+         *
+         * Yang dibuktikan orangnya dengan kode enam angka hanyalah bahwa
+         * ia memegang kotak surat itu. Sandi yang dipilihnya saat
+         * mendaftar tidak pernah diminta sekali pun, jadi tidak pernah
+         * teruji — dan kotak surat yang tertinggal terbuka di ponsel
+         * bersama menjadi cukup untuk masuk. */
+        $u = $this->belumTerverifikasi();
+        $kode = $u->buatKodeVerifikasi();
+
+        $this->actingAs($u)->post('/verify-email', ['kode' => $kode]);
+
+        $this->assertGuest();
+    }
+
+    public function test_sesi_sesudah_verifikasi_tidak_dapat_membuka_dasbor(): void
+    {
+        /* Penjagaan yang sesungguhnya, bukan sekadar assertGuest().
+         *
+         * Pengalihan ke halaman masuk TANPA menutup sesinya akan lolos
+         * dari pemeriksaan pengalihan mana pun, dan tetap meninggalkan
+         * orangnya masuk di belakang halaman itu: mengetik alamat dasbor
+         * langsung membukanya. Yang diuji di sini adalah akibatnya, bukan
+         * bentuk jawabannya. */
+        $u = $this->belumTerverifikasi();
+        $kode = $u->buatKodeVerifikasi();
+
+        $this->actingAs($u)->post('/verify-email', ['kode' => $kode]);
+
+        $this->get('/dashboard')->assertRedirect(route('login', absolute: false));
+    }
+
+    public function test_halaman_masuk_mengabarkan_verifikasinya_berhasil(): void
+    {
+        /* Sesi ditutup, dan pesan kilat biasanya ikut terbuang bersama
+           isinya. Tanpa pesan ini halaman masuk menyambut persis seperti
+           kalau kodenya salah — pada saat orangnya justru paling perlu
+           tahu bahwa ia berhasil. */
+        $u = $this->belumTerverifikasi();
+        $kode = $u->buatKodeVerifikasi();
+
+        $this->actingAs($u)->post('/verify-email', ['kode' => $kode])
+            ->assertSessionHas('sukses');
     }
 
     public function test_kode_tidak_disimpan_apa_adanya(): void

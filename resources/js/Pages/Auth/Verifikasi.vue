@@ -11,6 +11,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import type { HalamanVerifikasi } from '../../types';
 import GuestLayout from '../../Layouts/GuestLayout.vue';
+import Putaran from '../../Components/Putaran.vue';
 
 defineOptions({ layout: GuestLayout });
 
@@ -72,12 +73,24 @@ onMounted(() => {
 
 onBeforeUnmount(() => { if (jam) clearInterval(jam); });
 
+/* Penanda tersendiri, bukan `form.processing`. Keduanya mengirim ke
+   alamat berbeda, dan memakai satu penanda untuk dua permintaan membuat
+   tombol verifikasi ikut terkunci setiap kali kode baru diminta. */
+const mengirimUlang = ref(false);
+
 function kirimUlang() {
-  if (sisa.value > 0) return;
+  if (sisa.value > 0 || mengirimUlang.value) return;
+
+  mengirimUlang.value = true;
 
   router.post('/email/verification-notification', {}, {
     preserveScroll: true,
     onSuccess: () => { sisa.value = 60; },
+
+    /* onFinish, bukan onSuccess: jeda server yang menolak permintaan
+       ini mengembalikan galat validasi, dan tombol yang hanya dilepas
+       pada keberhasilan akan tinggal terkunci selamanya. */
+    onFinish: () => { mengirimUlang.value = false; },
   });
 }
 </script>
@@ -126,18 +139,28 @@ function kirimUlang() {
       <p v-if="form.errors.kode" class="text-[12px] text-red-600 mt-3">{{ form.errors.kode }}</p>
       <p v-else class="text-[11.5px] text-stone-400 mt-3">Kode berlaku {{ berlaku }} menit.</p>
 
+      <!-- Kode lengkap terkirim sendiri, jadi tombol ini kerap sudah
+           berjalan sebelum sempat ditekan. Justru karena itu keadaan
+           bekerjanya harus terlihat: tanpa penanda, enam angka terakhir
+           yang diketik tampak tidak menghasilkan apa-apa. -->
       <button type="button" :disabled="!lengkap || form.processing" @click="kirim"
-              class="eq-btn-utama w-full justify-center mt-5 disabled:opacity-40 disabled:cursor-not-allowed"
+              class="eq-btn-utama w-full justify-center mt-5
+                     disabled:opacity-40 disabled:cursor-not-allowed"
+              :class="form.processing ? 'cursor-wait' : ''"
               style="padding:11px 18px">
-        {{ form.processing ? 'Memeriksa…' : 'Verifikasi' }}
+        <Putaran v-if="form.processing" />
+        {{ form.processing ? 'Memverifikasi kode…' : 'Verifikasi' }}
       </button>
 
       <div class="mt-5 pt-4 border-t border-stone-100">
-        <button type="button" :disabled="sisa > 0" @click="kirimUlang"
-                class="text-[12.5px] font-bold transition"
-                :class="sisa > 0 ? 'text-stone-300 cursor-not-allowed'
-                                 : 'text-[color:var(--eq-aksen,#F57C00)] hover:underline'">
-          {{ sisa > 0 ? `Kirim ulang dalam ${sisa} detik` : 'Kirim ulang kode' }}
+        <button type="button" :disabled="sisa > 0 || mengirimUlang" @click="kirimUlang"
+                class="text-[12.5px] font-bold transition inline-flex items-center gap-1.5"
+                :class="sisa > 0 || mengirimUlang
+                          ? 'text-stone-300 cursor-not-allowed'
+                          : 'text-[color:var(--eq-aksen,#F57C00)] hover:underline'">
+          <Putaran v-if="mengirimUlang" :ukuran="12" />
+          <template v-if="mengirimUlang">Mengirim kode baru…</template>
+          <template v-else>{{ sisa > 0 ? `Kirim ulang dalam ${sisa} detik` : 'Kirim ulang kode' }}</template>
         </button>
       </div>
 

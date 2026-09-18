@@ -1732,12 +1732,37 @@ export interface HalamanRegisterTemuan {
 
 /* ══════════════ Berita, Prosedur, Penanda Tangan ══════════════ */
 
+/**
+ * Satu pengumuman, dalam bentuk yang sama di mana pun ia muncul.
+ *
+ * Disusun App\Support\Pengumuman di server. Panel dasbor, daftar
+ * berita, halaman penuh, dan pop-out memakai bentuk ini tanpa kecuali —
+ * sebelumnya panel dasbor dan daftar berita menyusun muatannya
+ * sendiri-sendiri dan sudah berselisih pada panjang cuplikan maupun
+ * format tanggalnya.
+ */
+export interface Pengumuman {
+  id: number;
+  judul: string;
+  /** 'd F Y' — untuk pop-out dan halaman penuh. */
+  tanggal: string | null;
+  /** 'd M' — untuk panel sempit di dasbor. */
+  tanggalPendek: string | null;
+  ringkasan: string;
+  /** Isi utuh, teks polos. Digambar dengan whitespace-pre-line, bukan v-html. */
+  isi: string;
+  sampul: string | null;
+  lampiran: { nama: string; url: string } | null;
+  /** Halaman penuhnya. Tetap hidup supaya alamat yang sudah disalin orang tidak mati. */
+  url: string;
+  urlBaca: string;
+  sudahDibaca: boolean;
+  jumlahDibaca: number;
+}
+
 export interface HalamanDaftarBerita {
   judul: string; subjudul: string;
-  berita: Array<{
-    id: number; judul: string; tanggal: string | null; cuplikan: string;
-    url: string; urlUbah: string; urlHapus: string;
-  }>;
+  berita: Array<Pengumuman & { urlUbah: string; urlHapus: string }>;
   halaman: { kini: number; akhir: number; total: number; tautan: TautanHalaman[] };
   bolehUbah: boolean;
   tautan: { buat: string };
@@ -1745,7 +1770,7 @@ export interface HalamanDaftarBerita {
 
 export interface HalamanDetailBerita {
   judul: string; subjudul: string;
-  berita: { judul: string; tanggal: string | null; isi: string };
+  berita: Pengumuman;
   tautan: { daftar: string };
 }
 
@@ -1753,6 +1778,7 @@ export interface HalamanFormBerita {
   judul: string; subjudul: string;
   tersimpan: boolean;
   awal: Record<string, string>;
+  berkas: { sampul: string | null; lampiran: { nama: string; url: string } | null };
   tautan: { simpan: string; batal: string };
 }
 

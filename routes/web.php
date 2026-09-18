@@ -251,6 +251,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('news', NewsController::class)->except(['index','show'])->middleware('can:admin');
     Route::resource('news', NewsController::class)->only(['index','show']);
 
+    /* Tandai sudah dibaca. DI LUAR grup admin: yang menandainya adalah
+       pembacanya, bukan yang menerbitkannya. Pengumuman keselamatan
+       yang hanya dapat ditandai administrator tidak menjawab satu pun
+       pertanyaan yang membuatnya dicatat. */
+    Route::post('news/{news}/baca', [NewsController::class, 'baca'])->name('news.baca');
+
     /* ---- Evaluasi Pasca-Pelatihan (oleh trainer) ---- */
     Route::get('evaluations',              [EvaluationController::class, 'index'])->name('evaluations.index');
     Route::get('evaluations/{evaluation}', [EvaluationController::class, 'show'])->name('evaluations.show');
