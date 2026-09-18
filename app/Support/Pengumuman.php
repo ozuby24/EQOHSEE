@@ -26,6 +26,24 @@ use Illuminate\Database\Eloquent\Builder;
 final class Pengumuman
 {
     /**
+     * Batas panjang isi yang dibawa bersama halaman, dalam huruf.
+     *
+     * Dua belas ribu huruf kira-kira dua ribu kata — jauh lebih panjang
+     * daripada surat edaran mana pun, sehingga pengumuman sungguhan
+     * tidak pernah menyentuhnya. Angkanya ada untuk menjaga kasus yang
+     * tidak wajar, bukan untuk membatasi penulisnya.
+     */
+    public const BATAS_ISI = 12000;
+
+    /** Penggal di batas, tanpa menambahkan apa pun. */
+    private static function penggal(string $isi): string
+    {
+        return mb_strlen($isi) > self::BATAS_ISI
+            ? mb_substr($isi, 0, self::BATAS_ISI)
+            : $isi;
+    }
+
+    /**
      * Kueri yang sudah membawa jumlah pembaca dan penanda terbaca.
      *
      * Dipakai SEBELUM mengambil barisnya, bukan sesudah. Memeriksa
@@ -69,8 +87,18 @@ final class Pengumuman
                pop-out yang masih harus mengambil isinya lewat jaringan
                akan gagal terbuka justru di sambungan site yang lambat —
                cacat yang persis sama pernah menimpa pop-out pengenalan
-               dan membuatnya berubah menjadi kotak galat berulang. */
-            'isi' => (string) $n->content,
+               dan membuatnya berubah menjadi kotak galat berulang.
+
+               Dengan satu batas. Halaman daftar membawa sepuluh baris
+               sekaligus, dan isi tanpa batas berarti satu pengumuman
+               yang ditempeli seluruh naskah prosedur membuat halaman itu
+               berat bagi semua orang yang membukanya — termasuk yang
+               tidak membuka pengumuman itu. Di atas batas, pop-outnya
+               MENGATAKAN bahwa isinya terpotong dan menunjuk halaman
+               penuhnya; potongan diam-diam adalah pengumuman yang
+               kehilangan bagian akhirnya tanpa ada yang tahu. */
+            'isi'       => self::penggal((string) $n->content),
+            'terpotong' => mb_strlen((string) $n->content) > self::BATAS_ISI,
 
             'sampul' => Berkas::url($n, 'brt'),
 

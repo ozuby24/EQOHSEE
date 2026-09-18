@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{ActivityLog, Course, Material, Module, Quiz, QuizQuestion};
+use App\Models\{ActivityLog, Course, Material, MaterialAttachment, Module, Quiz, QuizQuestion};
+use App\Support\Materi;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -32,6 +33,18 @@ class CourseContentController extends Controller
                     'id'       => $x->id,
                     'judul'    => $x->title,
                     'jenis'    => $x->type ?: 'file',
+                    'label'    => Materi::label($x->type),
+
+                    /* Penanda materi yang belum punya ikhtisar.
+                       Tanpa ini, satu-satunya cara mengetahui materi mana
+                       yang masih kosong ikhtisarnya adalah membuka
+                       keduapuluhnya satu per satu — dan yang terlewat
+                       baru ketahuan dari peserta. */
+                    'lengkap'  => $x->description
+                                  && !empty($x->outcomes)
+                                  && $x->duration_minutes,
+
+                    'urlAtur'  => route('manage.material.edit', $x),
                     'urlHapus' => route('manage.material.destroy', $x),
                 ])->all(),
                 'urlHapus'       => route('manage.module.destroy', $m),
@@ -113,10 +126,143 @@ class CourseContentController extends Controller
         return back()->with('ok', 'Materi ditambahkan.');
     }
 
+    /**
+     * Ikhtisar satu materi: apa yang dipelajari, prasyarat, durasi, lampiran.
+     *
+     * Halaman TERSENDIRI, bukan tambahan medan pada formulir sebaris di
+     * halaman kelola. Formulir sebaris itu dipakai untuk menambah materi
+     * cepat-cepat sambil menyusun kerangka kursus; menempelkan tujuh
+     * medan lagi ke sana akan membuat pekerjaan yang paling sering
+     * dilakukan menjadi yang paling berat.
+     */
+    public function editMaterial(Material $material)
+    {
+        $material->load(['lampiran', 'module', 'course']);
+
+        return Inertia::render('Kursus/Materi', [
+            'judul'    => 'Ikhtisar: '.$material->title,
+            'subjudul' => trim(($material->course?->title ?? '').' · '.($material->module?->title ?? '')," ·"),
+
+            'awal' => [
+                'title'            => (string) $material->title,
+                'type'             => (string) ($material->type ?: 'document'),
+                'url'              => (string) ($material->url ?? ''),
+                'description'      => (string) ($material->description ?? ''),
+
+                /* Dikirim sebagai TEKS berbaris, bukan larik.
+                   Kotak isian berbaris adalah cara paling wajar menulis
+                   daftar, dan mengubahnya menjadi larik di sisi Vue
+                   berarti aturan pemisahnya hidup di tempat yang tidak
+                   dapat diuji sisi server. Pemisahannya di v() di bawah. */
+                'outcomes'         => implode("\n", (array) ($material->outcomes ?? [])),
+
+                'prerequisite'     => (string) ($material->prerequisite ?? ''),
+                'duration_minutes' => $material->duration_minutes ? (string) $material->duration_minutes : '',
+                'content'          => (string) ($material->content ?? ''),
+                'sop_url'          => (string) ($material->sop_url ?? ''),
+            ],
+
+            /* Pratinjau keputusan semat, ditampilkan di formulirnya.
+               Pengelola yang menempelkan tautan Google Drive perlu tahu
+               SEKARANG bahwa materinya akan tergambar sebagai kartu
+               tautan, bukan sesudah dua puluh peserta bertanya kenapa
+               videonya tidak muncul. */
+            'semat' => Materi::semat($material->url),
+
+            'lampiran' => $material->lampiran->map(fn ($l) => [
+                'id' => $l->id, 'judul' => $l->title, 'url' => $l->url,
+                'urlHapus' => route('manage.attachment.destroy', $l),
+            ])->all(),
+
+            'tautan' => [
+                'simpan'         => route('manage.material.update', $material),
+                'tambahLampiran' => route('manage.attachment.store', $material),
+                'pratinjau'      => route('learn.materi', ['course' => $material->course_id, 'material' => $material->id]),
+                'batal'          => route('manage.course', $material->course_id),
+            ],
+        ]);
+    }
+
+    public function updateMaterial(Request $r, Material $material)
+    {
+        $material->update($this->medanMateri($r));
+
+        return redirect()->route('manage.course', $material->course_id)
+            ->with('ok', 'Ikhtisar materi diperbarui.');
+    }
+
+    public function storeAttachment(Request $r, Material $material)
+    {
+        $d = $r->validate([
+            'title' => ['required', 'string', 'max:200'],
+            'url'   => ['required', 'url', 'max:1000'],
+        ], [], ['title' => 'judul lampiran', 'url' => 'tautan lampiran']);
+
+        $d['order_index'] = (int) $material->lampiran()->max('order_index') + 1;
+        $material->lampiran()->create($d);
+
+        return back()->with('ok', 'Lampiran ditambahkan.');
+    }
+
+    public function destroyAttachment(MaterialAttachment $attachment)
+    {
+        $attachment->delete();
+
+        return back()->with('ok', 'Lampiran dihapus.');
+    }
+
     public function destroyMaterial(Material $material)
     {
         $material->delete();
         return back()->with('ok', 'Materi dihapus.');
+    }
+
+    /**
+     * Medan ikhtisar materi, sesudah divalidasi dan dirapikan.
+     *
+     * `outcomes` datang sebagai teks berbaris dan keluar sebagai larik.
+     * Baris kosong dan spasi menggantung dibuang di sini — bukan di
+     * sisi Vue: yang dikirim langsung lewat API, atau lewat formulir
+     * yang belum ditulis, harus menerima pembersihan yang sama.
+     */
+    private function medanMateri(Request $r): array
+    {
+        $d = $r->validate([
+            'title'            => ['required', 'string', 'max:200'],
+            'type'             => ['nullable', 'in:pptx,video,pdf,document'],
+            'url'              => ['nullable', 'url', 'max:500'],
+            'description'      => ['nullable', 'string', 'max:1000'],
+            'outcomes'         => ['nullable', 'string', 'max:2000'],
+            'prerequisite'     => ['nullable', 'string', 'max:1000'],
+            'duration_minutes' => ['nullable', 'integer', 'min:1', 'max:1440'],
+            'content'          => ['nullable', 'string'],
+            'sop_url'          => ['nullable', 'url', 'max:500'],
+        ], [], [
+            'outcomes'         => 'yang akan dipelajari',
+            'prerequisite'     => 'prasyarat',
+            'duration_minutes' => 'durasi',
+            'sop_url'          => 'tautan SOP',
+        ]);
+
+        $d['outcomes'] = array_values(array_filter(array_map(
+            'trim', preg_split('/\r\n|\r|\n/', (string) ($d['outcomes'] ?? '')) ?: [],
+        ), fn ($b) => $b !== ''));
+
+        /* Larik kosong disimpan sebagai null, bukan sebagai [].
+           Keduanya terbaca sama di layar, tetapi [] pada kolom JSON
+           membuat `whereNull('outcomes')` — cara paling wajar mencari
+           materi yang belum diisi ikhtisarnya — melewatkan seluruhnya. */
+        if ($d['outcomes'] === []) $d['outcomes'] = null;
+
+        /* `??`, bukan `?:`.
+           validate() hanya mengembalikan kunci yang MEMANG ada pada
+           permintaannya, dan medan durasi yang dikosongkan tidak ikut
+           terkirim sama sekali. `?:` pada kunci yang tidak ada adalah
+           galat, dan galatnya menjatuhkan penyimpanan seluruh ikhtisar
+           — bukan hanya durasinya. */
+        $d['duration_minutes'] = ($d['duration_minutes'] ?? null) ?: null;
+
+        return $d;
     }
 
     /* ---------- KUIS ---------- */

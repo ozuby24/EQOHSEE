@@ -214,6 +214,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     /* ---- Belajar ---- */
     Route::post('courses/{course}/enroll',  [LearnController::class, 'enroll'])->name('courses.enroll');
     Route::get('learn/{course}',            [LearnController::class, 'show'])->name('learn.show');
+
+    /* Satu materi punya alamatnya sendiri, di bawah kursusnya.
+       Kursusnya ikut di alamat — bukan demi kerapian melainkan supaya
+       ada yang dapat diperiksa: materi milik kursus lain yang nomornya
+       kebetulan ditebak harus 404, dan pemeriksaan itu butuh kedua
+       nomornya. */
+    Route::get('learn/{course}/materi/{material}', [LearnController::class, 'materi'])->name('learn.materi');
+
+    Route::post('materials/{material}/complete', [LearnController::class, 'selesaiMateri'])->name('materials.complete');
+    Route::post('materials/{material}/tanya',    [LearnController::class, 'tanya'])->name('materials.tanya');
+    Route::delete('diskusi/{discussion}',        [LearnController::class, 'hapusTanya'])->name('materials.tanya.hapus');
+
     Route::post('modules/{module}/complete',[LearnController::class, 'complete'])->name('modules.complete');
     Route::post('notes/{module}',           [LearnController::class, 'saveNote'])->name('notes.save');
 
@@ -275,6 +287,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('modules/{module}',             [CourseContentController::class,'updateModule'])->name('manage.module.update');
         Route::delete('modules/{module}',          [CourseContentController::class,'destroyModule'])->name('manage.module.destroy');
         Route::post('modules/{module}/materials',  [CourseContentController::class,'storeMaterial'])->name('manage.material.store');
+
+        /* 'materials/{material}/kelola', bukan 'materials/{material}/edit'.
+           Alamat '…/edit' sudah dipakai konvensi resource di modul lain
+           dan mengundang orang mengira ada resource controller penuh di
+           sini — padahal yang ada hanya satu formulir ikhtisar. */
+        Route::get('materials/{material}/kelola',  [CourseContentController::class,'editMaterial'])->name('manage.material.edit');
+        Route::put('materials/{material}',         [CourseContentController::class,'updateMaterial'])->name('manage.material.update');
+        Route::post('materials/{material}/lampiran',[CourseContentController::class,'storeAttachment'])->name('manage.attachment.store');
+        Route::delete('lampiran/{attachment}',     [CourseContentController::class,'destroyAttachment'])->name('manage.attachment.destroy');
+
         Route::delete('materials/{material}',      [CourseContentController::class,'destroyMaterial'])->name('manage.material.destroy');
         Route::post('courses/{course}/quizzes',    [CourseContentController::class,'storeQuiz'])->name('manage.quiz.store');
         Route::delete('quizzes/{quiz}',            [CourseContentController::class,'destroyQuiz'])->name('manage.quiz.destroy');

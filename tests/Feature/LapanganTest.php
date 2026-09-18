@@ -365,13 +365,37 @@ class LapanganTest extends TestCase
             $kode = preg_replace('#/\*.*?\*/#s', '', $isi);
             $kode = preg_replace('#(?m)^\s*//.*$#', '', $kode);
 
+            /* Nama fungsi penegasnya DIBACA dari berkasnya sendiri,
+               bukan ditulis harfiah di sini.
+               useDialog() kerap didestrukturisasi dengan nama lain —
+               halaman materi sudah punya prop bernama `tanya`, jadi
+               penegasnya di sana bernama `konfirmasi`. Daftar nama yang
+               ditulis tangan membuat uji ini menuduh halaman yang
+               justru sudah bertanya, dan tuduhan palsu adalah cara
+               tercepat sebuah penjagaan dimatikan orang. */
+            $penegas = ['tanya', 'minta'];
+
+            if (preg_match('/useDialog\(\)/', $kode)
+                && preg_match('/const\s*\{([^}]*)\}\s*=\s*useDialog\(\)/', $kode, $d)) {
+                foreach (explode(',', $d[1]) as $bagian) {
+                    /* "tanya: konfirmasi" → konfirmasi; "tanya" → tanya. */
+                    $nama = trim(explode(':', $bagian)[1] ?? $bagian);
+                    if ($nama !== '') $penegas[] = $nama;
+                }
+            }
+
             preg_match_all('/(?m)^\s*(?:async\s+)?function\s+(\w+)\s*\([^)]*\)\s*\{/', $kode, $m, PREG_OFFSET_CAPTURE);
 
             foreach ($m[0] as $i => [$cocok, $mulai]) {
                 $badan = $this->badanFungsi($kode, $mulai);
 
                 if (!preg_match('/\.delete\s*\(/', $badan)) continue;
-                if (str_contains($badan, 'await tanya(') || str_contains($badan, 'await minta(')) continue;
+
+                $bertanya = false;
+                foreach ($penegas as $nama) {
+                    if (str_contains($badan, "await {$nama}(")) { $bertanya = true; break; }
+                }
+                if ($bertanya) continue;
 
                 $nama = $m[1][$i][0];
 

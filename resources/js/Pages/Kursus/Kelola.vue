@@ -152,11 +152,25 @@ const HURUF = ['A', 'B', 'C', 'D'];
                 class="flex items-center justify-between gap-2 text-[12.5px] bg-stone-50 rounded-lg px-3 py-2">
               <span class="flex items-center gap-2 min-w-0">
                 <span class="text-[9.5px] uppercase font-bold bg-cam-lime-soft text-cam-lime-deep
-                             px-1.5 py-0.5 rounded tracking-wide">{{ x.jenis }}</span>
+                             px-1.5 py-0.5 rounded tracking-wide">{{ x.label }}</span>
                 <span class="text-stone-600 clamp-1">{{ x.judul }}</span>
+
+                <!-- Penanda materi yang ikhtisarnya belum diisi. Tanpa ini
+                     satu-satunya cara mengetahui mana yang masih kosong
+                     adalah membuka keduapuluhnya satu per satu — dan yang
+                     terlewat baru ketahuan dari pesertanya. -->
+                <span v-if="!x.lengkap"
+                      class="shrink-0 text-[9.5px] font-bold uppercase tracking-wide
+                             text-amber-700 bg-amber-50 border border-amber-200
+                             rounded px-1.5 py-0.5">Ikhtisar kosong</span>
               </span>
-              <button type="button" @click="hapus(x.urlHapus, `Hapus materi “${x.judul}”?`)"
-                      class="text-[11px] text-red-400 hover:text-red-600">✕</button>
+
+              <span class="flex items-center gap-1.5 shrink-0">
+                <a :href="x.urlAtur"
+                   class="text-[11px] font-semibold text-cam-lime-deep hover:underline">Atur</a>
+                <button type="button" @click="hapus(x.urlHapus, `Hapus materi “${x.judul}”?`)"
+                        class="text-[11px] text-red-400 hover:text-red-600">✕</button>
+              </span>
             </li>
           </ul>
 

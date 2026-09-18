@@ -62,6 +62,13 @@ function tandaiBaca() {
            tugasnya menggantikan isi di daftar, bukan mendahuluinya. -->
       <div class="text-[13.5px] text-stone-600 leading-[1.75] mt-5 whitespace-pre-line">{{ berita.isi }}</div>
 
+      <p v-if="berita.terpotong"
+         class="mt-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3
+                text-[12px] text-amber-800 leading-relaxed">
+        Pengumuman ini melebihi batas panjang yang dapat ditampilkan. Bagian akhirnya
+        tidak tergambar di sini — mintalah berkas lengkapnya kepada penerbitnya.
+      </p>
+
       <a v-if="berita.lampiran" :href="berita.lampiran.url"
          class="mt-7 flex items-center gap-3 rounded-2xl border border-stone-200 px-4 py-3
                 hover:border-[color:var(--eq-aksen,#F57C00)]/50 transition">

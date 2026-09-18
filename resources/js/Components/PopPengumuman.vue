@@ -189,6 +189,14 @@ onBeforeUnmount(() => {
           <div v-if="item.isi" class="eq-pop-badan">{{ item.isi }}</div>
           <p v-else class="eq-pop-badan eq-pop-hampa">Pengumuman ini belum berisi keterangan.</p>
 
+          <!-- Dikatakan, bukan dipotong diam-diam. Pengumuman yang
+               kehilangan bagian akhirnya tanpa ada yang tahu lebih buruk
+               daripada pengumuman yang mengaku terpotong. -->
+          <p v-if="item.terpotong" class="eq-pop-potong">
+            Pengumuman ini terlalu panjang untuk ditampilkan seluruhnya di sini.
+            <Link :href="item.url">Buka halaman penuhnya</Link> untuk membaca sisanya.
+          </p>
+
           <a v-if="item.lampiran" :href="item.lampiran.url" class="eq-pop-lampiran">
             <span class="eq-pop-lampiran-ikon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -342,6 +350,19 @@ onBeforeUnmount(() => {
 }
 
 .eq-pop-hampa { color: #A8A29E; font-style: italic; }
+
+.eq-pop-potong {
+  margin: .9rem 0 0;
+  padding: .6rem .75rem;
+  border-radius: 10px;
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #92400E;
+}
+
+.eq-pop-potong a { font-weight: 800; color: inherit; }
 
 .eq-pop-lampiran {
   display: flex;
