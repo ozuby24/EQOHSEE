@@ -113,7 +113,19 @@ class HazardController extends Controller
                 'tanggal'     => $r->tanggal?->format('d M Y'),
                 'tujuan'      => $r->company?->name ?: ($r->terlapor ?: null),
                 'terlapor'    => $r->terlapor && $r->company ? $r->terlapor : null,
-                'foto'        => Berkas::url($r, 'hzd', 0),
+                /* SELURUH fotonya, bukan yang pertama saja — dan yang
+                   tindak lanjut ikut.
+
+                   Monitor ini dibaca untuk menjawab satu pertanyaan:
+                   bahaya ini sudah ditangani atau belum. Foto temuan
+                   sendirian tidak menjawabnya; yang menjawabnya adalah
+                   ADA atau TIDAK ADA foto tindak lanjut di sebelahnya.
+                   Sebelum ini keduanya hanya terlihat sesudah membuka
+                   laporannya satu per satu — lima belas kali membuka
+                   dan kembali untuk satu pertanyaan yang seharusnya
+                   terjawab sekali lihat. */
+                'fotoTemuan'  => Berkas::daftarUrl($r, 'hzd'),
+                'fotoTindak'  => Berkas::daftarUrl($r, 'hzt'),
                 'url'         => route('hazard.show', $r),
             ], $reports->items()),
 

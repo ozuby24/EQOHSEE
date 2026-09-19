@@ -1102,7 +1102,12 @@ export interface LaporanBahaya {
   tujuan: string | null;
   /** Terisi hanya bila terlapor dan perusahaan sama-sama ada. */
   terlapor: string | null;
-  foto: string | null;
+  /** Foto temuan — seluruhnya, terurut sebagaimana diunggah. */
+  fotoTemuan: string[];
+
+  /** Foto tindak lanjut. Kosong berarti belum ada bukti perbaikan. */
+  fotoTindak: string[];
+
   url: string;
 }
 

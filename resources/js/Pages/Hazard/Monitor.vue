@@ -10,10 +10,34 @@
  * ulang prop daftarnya, sehingga fokusnya tidak hilang di tengah orang
  * mengetik. Saringan pilihan dikirim seketika — orang sudah selesai
  * memutuskan begitu ia melepas pilihan.
+ *
+ * ── Kenapa tabel, bukan kartu ──
+ *
+ * Halaman ini bernama MONITOR, dan yang dilakukan orang di sini bukan
+ * membaca satu laporan melainkan membandingkan lima belas sekaligus:
+ * mana yang risikonya tinggi tetapi masih Open, mana yang sudah
+ * ditutup tetapi tidak punya bukti foto perbaikan. Kartu menjawab
+ * "apa isi laporan ini"; yang ditanyakan di sini "laporan mana yang
+ * perlu saya kejar", dan itu pertanyaan perbandingan — kolom yang
+ * sejajar menjawabnya, tumpukan kartu tidak.
+ *
+ * Dua kolom fotonya yang paling berbobot. Foto temuan sendirian tidak
+ * memberi tahu apakah bahayanya sudah ditangani; yang memberi tahu
+ * adalah ADA atau TIDAK ADA foto tindak lanjut di sebelahnya. Sebelum
+ * ini keduanya baru terlihat sesudah laporannya dibuka satu per satu.
+ *
+ * ── Di layar sempit tabelnya menumpuk, tidak menggeser ──
+ *
+ * Satu markup, dua rupa: di bawah 64rem tiap baris menjadi kartu
+ * berlabel lewat CSS. Tabel sebelas kolom yang digeser mendatar di
+ * ponsel berarti kode laporan hilang dari layar tepat ketika orangnya
+ * menggulir untuk melihat statusnya — dan laporan bahaya memang
+ * dibaca dari ponsel di lapangan.
  */
 import { onBeforeUnmount, reactive, ref, watch } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import type { HalamanMonitorBahaya } from '../../types';
+import GaleriFoto from '../../Components/GaleriFoto.vue';
 import DialogRegister from '../../Components/DialogRegister.vue';
 
 const props = defineProps<HalamanMonitorBahaya>();
@@ -81,6 +105,9 @@ const pilihan =
 <template>
   <Head title="Monitor Hazard Report" />
 
+  <!-- Lebar penuh, tanpa max-w. Sebelas kolom di dalam max-w-6xl
+       mendorong Foto Tindak dan Aksi keluar layar — dua kolom yang
+       justru paling dicari. -->
   <div class="space-y-5">
 
     <div class="grid gap-3 grid-cols-2 lg:grid-cols-5">
@@ -171,48 +198,80 @@ const pilihan =
       </div>
     </div>
 
-    <div class="space-y-2.5 transition-opacity" :class="memuat ? 'opacity-50' : ''">
-      <Link v-for="r in laporan" :key="r.id" :href="r.url"
-            class="block bg-white rounded-2xl shadow-card border border-stone-100 p-5
-                   hover:border-cam-lime/40 transition">
-        <div class="flex items-start justify-between gap-4">
-          <div class="min-w-0">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="text-[10px] font-bold bg-cam-ink text-white px-2 py-0.5 rounded num">{{ r.kode }}</span>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
-                    :style="{ background: r.warnaRisiko }">{{ r.risiko }}</span>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
-                    :style="{ background: r.warnaStatus }">{{ r.status }}</span>
-              <span v-if="r.kategori"
-                    class="text-[10px] font-semibold bg-stone-100 text-stone-500 px-2 py-0.5 rounded-full">
-                {{ r.kategori }}
-              </span>
-            </div>
+    <div class="bg-white rounded-2xl shadow-card border border-stone-100 overflow-hidden
+                transition-opacity" :class="memuat ? 'opacity-50' : ''">
+      <div class="eq-gulung">
+        <table v-if="laporan.length" class="eq-tabel">
+          <thead>
+            <tr>
+              <th>ID Laporan</th>
+              <th>Tanggal</th>
+              <th>Pelapor</th>
+              <th>Perusahaan Terlapor</th>
+              <th>Lokasi</th>
+              <th>Risiko</th>
+              <th>Kategori</th>
+              <th>Status</th>
+              <th class="eq-th-foto">Foto Temuan</th>
+              <th class="eq-th-foto">Foto Tindak</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
 
-            <p class="text-[13.5px] font-semibold text-cam-ink mt-2 clamp-2 leading-relaxed">{{ r.deskripsi }}</p>
+          <tbody>
+            <tr v-for="r in laporan" :key="r.id">
+              <td data-kolom="ID Laporan" class="eq-sel-kode">
+                <span class="eq-kode">{{ r.kode }}</span>
 
-            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-stone-400 mt-2">
-              <span>📍 {{ r.lokasi ?? '—' }}</span>
-              <span>👤 {{ r.pelapor }}</span>
-              <span>{{ r.tanggal }}</span>
-            </div>
+                <!-- Uraiannya tidak ada pada acuan, dan sengaja tetap di sini:
+                     itulah satu-satunya kolom yang memberi tahu bahaya APA
+                     yang sedang dibicarakan barisnya. Tanpa itu, tiap baris
+                     harus dibuka dulu untuk diketahui isinya. -->
+                <span class="eq-uraian">{{ r.deskripsi }}</span>
+              </td>
 
-            <div class="mt-2 inline-flex items-center gap-1.5 bg-stone-50 rounded-lg px-2.5 py-1.5">
-              <svg class="w-3.5 h-3.5 text-stone-400 shrink-0" fill="none" stroke="currentColor"
-                   stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-              </svg>
-              <span class="text-[11.5px] text-stone-400">Ditujukan kepada</span>
-              <span class="text-[12px] font-bold text-cam-ink">{{ r.tujuan ?? '— belum diisi —' }}</span>
-              <span v-if="r.terlapor" class="text-[11px] text-stone-400">· {{ r.terlapor }}</span>
-            </div>
-          </div>
+              <td data-kolom="Tanggal" class="eq-nowrap num">{{ r.tanggal ?? '—' }}</td>
+              <td data-kolom="Pelapor">{{ r.pelapor ?? '—' }}</td>
 
-          <img v-if="r.foto" :src="r.foto" alt="" class="w-20 h-20 object-cover rounded-xl shrink-0">
-        </div>
-      </Link>
+              <td data-kolom="Perusahaan Terlapor">
+                <span :class="r.tujuan ? '' : 'text-stone-300'">{{ r.tujuan ?? '— belum diisi —' }}</span>
+                <span v-if="r.terlapor" class="eq-terlapor">{{ r.terlapor }}</span>
+              </td>
 
-      <div v-if="!laporan.length" class="bg-white rounded-2xl border border-dashed border-stone-200 p-14 text-center">
+              <td data-kolom="Lokasi">{{ r.lokasi ?? '—' }}</td>
+
+              <td data-kolom="Risiko">
+                <span class="eq-pil" :style="{ background: r.warnaRisiko }">{{ r.risiko }}</span>
+              </td>
+
+              <td data-kolom="Kategori">
+                <span v-if="r.kategori" class="eq-pil-abu">{{ r.kategori }}</span>
+                <span v-else class="text-stone-300">—</span>
+              </td>
+
+              <td data-kolom="Status">
+                <span class="eq-pil" :style="{ background: r.warnaStatus }">{{ r.status }}</span>
+              </td>
+
+              <td data-kolom="Foto Temuan">
+                <GaleriFoto :foto="r.fotoTemuan" :label="`Foto temuan ${r.kode}`"
+                            kosong="Tidak ada foto temuan" />
+              </td>
+
+              <td data-kolom="Foto Tindak">
+                <GaleriFoto :foto="r.fotoTindak" :label="`Foto tindak lanjut ${r.kode}`"
+                            kosong="Belum ada bukti tindak lanjut" />
+              </td>
+
+              <td data-kolom="Aksi">
+                <Link :href="r.url" class="eq-detail">Detail</Link>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div v-if="!laporan.length" class="p-14 text-center">
         <template v-if="adaSaringan">
           <p class="text-[13px] text-stone-400">Tidak ada laporan yang cocok dengan saringan.</p>
           <button type="button" @click="reset"
@@ -246,3 +305,187 @@ const pilihan =
                   :url-unduh="tautan.register" :url-jumlah="tautan.registerJumlah"
                   @tutup="registerTerbuka = false" />
 </template>
+
+<style scoped>
+/* ══════════════════════════════════════════════════════════════
+   Tabel monitor. Lebar di layar besar, menumpuk di layar sempit.
+   ══════════════════════════════════════════════════════════════ */
+
+.eq-gulung { overflow-x: auto; }
+
+.eq-tabel {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.eq-tabel thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: .7rem .6rem;
+  background: #1C1917;
+  color: #E7E5E4;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.eq-th-foto { text-align: center; }
+
+.eq-tabel tbody td {
+  padding: .6rem .6rem;
+  border-top: 1px solid #F5F5F4;
+  color: #57534E;
+  vertical-align: middle;
+}
+
+.eq-tabel tbody tr:hover td { background: #FEFCE8; }
+
+.eq-nowrap { white-space: nowrap; }
+
+/* ── kolom pertama: kode + uraian ── */
+.eq-sel-kode { min-width: 13rem; max-width: 20rem; }
+
+.eq-kode {
+  display: inline-block;
+  padding: .1rem .4rem;
+  border-radius: .3rem;
+  background: #1C1917;
+  color: #FFFFFF;
+  font-size: 10.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .02em;
+}
+
+.eq-uraian {
+  margin-top: .25rem;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1C1917;
+  line-height: 1.4;
+
+  /* Dua baris, lalu dipotong. Uraian bahaya kadang satu paragraf penuh,
+     dan satu baris setinggi paragraf menghancurkan kesejajaran yang
+     menjadi satu-satunya alasan tabel ini ada. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.eq-terlapor {
+  display: block;
+  font-size: 11px;
+  color: #A8A29E;
+  margin-top: .1rem;
+}
+
+/* ── pil ── */
+.eq-pil {
+  display: inline-block;
+  padding: .12rem .5rem;
+  border-radius: 99px;
+  color: #FFFFFF;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.eq-pil-abu {
+  display: inline-block;
+  padding: .12rem .5rem;
+  border-radius: 99px;
+  background: #F5F5F4;
+  color: #78716C;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ── aksi ── */
+.eq-detail {
+  display: inline-block;
+  padding: .3rem .7rem;
+  border: 1px solid #E7E5E4;
+  border-radius: .5rem;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #57534E;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all .15s;
+}
+
+.eq-detail:hover { border-color: #F57C00; background: #FFF7ED; color: #C2410C; }
+
+/* ══ layar sempit: tiap baris menjadi kartu berlabel ══
+
+   Bukan gulung mendatar. Sebelas kolom yang digeser di ponsel membuat
+   kode laporan hilang dari layar tepat saat orangnya menggulir untuk
+   melihat status — dan laporan bahaya memang dibaca dari ponsel di
+   lapangan. */
+@media (max-width: 64rem) {
+  .eq-gulung { overflow-x: visible; }
+
+  .eq-tabel, .eq-tabel tbody, .eq-tabel tr, .eq-tabel td { display: block; width: 100%; }
+  .eq-tabel thead { display: none; }
+
+  .eq-tabel tbody tr {
+    border-top: 1px solid #F5F5F4;
+    padding: .85rem 1rem;
+  }
+
+  .eq-tabel tbody tr:hover td { background: transparent; }
+
+  .eq-tabel tbody td {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .2rem 0;
+    border-top: 0;
+  }
+
+  .eq-tabel tbody td::before {
+    content: attr(data-kolom);
+    flex: none;
+    width: 8.5rem;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    color: #A8A29E;
+  }
+
+  /* Kode dan uraian jadi kepala kartu — tanpa label, karena label
+     "ID Laporan" di atas kode laporan tidak memberi tahu apa pun.
+
+     Pemilihnya disebut LENGKAP sampai `td`, bukan `.eq-sel-kode` saja:
+     aturan `.eq-tabel tbody td` di atas lebih spesifik, jadi yang
+     pendek kalah dan selnya tetap flex — kode dan uraian berdampingan
+     pada satu baris, dan uraian bahayanya terhimpit di sisa lebar
+     yang tinggal separuh. */
+  .eq-tabel tbody td.eq-sel-kode {
+    display: block;
+    max-width: none;
+    margin-bottom: .45rem;
+  }
+
+  .eq-tabel tbody td.eq-sel-kode::before { display: none; }
+
+  .eq-uraian { -webkit-line-clamp: 3; }
+}
+
+/* ══ mode gelap ══ */
+:global([data-tema='gelap']) .eq-tabel tbody td { border-color: #1E2E42; color: #A8A29E; }
+:global([data-tema='gelap']) .eq-tabel tbody tr:hover td { background: #101A26; }
+:global([data-tema='gelap']) .eq-uraian { color: #F5F5F4; }
+:global([data-tema='gelap']) .eq-pil-abu { background: #1E2E42; color: #A8A29E; }
+:global([data-tema='gelap']) .eq-detail { border-color: #1E2E42; color: #A8A29E; }
+:global([data-tema='gelap']) .eq-detail:hover { background: #1E2E42; color: #FDBA74; }
+:global([data-tema='gelap']) .eq-tabel tbody tr { border-color: #1E2E42; }
+</style>
