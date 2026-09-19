@@ -1126,6 +1126,10 @@ export interface OpsiBahaya {
   kategori: string[];
   bulan: Array<{ nilai: string; label: string }>;
   perusahaan: PilihanPerusahaan[];
+  /** Lokasi yang benar-benar ada di data, untuk saringan register. */
+  lokasi: string[];
+  /** Urutan penyusunan register — dibaca dari RegisterPerbaikan::URUTAN. */
+  urutan: Array<{ nilai: string; label: string }>;
 }
 
 export interface BarisGolongan {
@@ -1229,6 +1233,13 @@ export interface HalamanDetailBahaya {
     kategori: string | null; deskripsi: string;
     rekomendasi: string | null; hirarki: string | null;
     lokasi: string | null; tanggal: string | null; waktu: string | null;
+
+    /** Tenggat perbaikan. `batasAkhir` untuk dibaca, `batasAkhirIso` untuk <input type=date>. */
+    batasAkhir: string | null;
+    batasAkhirIso: string | null;
+    /** Dihitung di SERVER — jam perangkat lapangan kerap meleset sehari. */
+    lewatTenggat: boolean;
+
     pelapor: {
       nama: string | null; nrp: string | null; jabatan: string | null;
       departemen: string | null; perusahaan: string | null;
@@ -1276,7 +1287,10 @@ export interface HalamanMonitorBahaya {
   opsi: OpsiBahaya;
   laporan: LaporanBahaya[];
   halaman: { kini: number; akhir: number; total: number; tautan: TautanHalaman[] };
-  tautan: { buat: string; csv: string; cetak: string; wa: string; pengingat: string };
+  tautan: {
+    buat: string; csv: string; cetak: string; wa: string; pengingat: string;
+    register: string; registerJumlah: string;
+  };
 }
 
 /* ══════════════ Gudang & Penyimpanan ══════════════ */
@@ -1737,12 +1751,39 @@ export interface HalamanRegisterTemuan {
 
 /* ══════════════ Berita, Prosedur, Penanda Tangan ══════════════ */
 
+/**
+ * Satu pengumuman, dalam bentuk yang sama di mana pun ia muncul.
+ *
+ * Disusun App\Support\Pengumuman di server. Panel dasbor, daftar
+ * berita, halaman penuh, dan pop-out memakai bentuk ini tanpa kecuali —
+ * sebelumnya panel dasbor dan daftar berita menyusun muatannya
+ * sendiri-sendiri dan sudah berselisih pada panjang cuplikan maupun
+ * format tanggalnya.
+ */
+export interface Pengumuman {
+  id: number;
+  judul: string;
+  /** 'd F Y' — untuk pop-out dan halaman penuh. */
+  tanggal: string | null;
+  /** 'd M' — untuk panel sempit di dasbor. */
+  tanggalPendek: string | null;
+  ringkasan: string;
+  /** Isi, teks polos. Digambar dengan whitespace-pre-line, bukan v-html. */
+  isi: string;
+  /** true bila `isi` dipenggal di batas muatan — pop-out mengatakannya. */
+  terpotong: boolean;
+  sampul: string | null;
+  lampiran: { nama: string; url: string } | null;
+  /** Halaman penuhnya. Tetap hidup supaya alamat yang sudah disalin orang tidak mati. */
+  url: string;
+  urlBaca: string;
+  sudahDibaca: boolean;
+  jumlahDibaca: number;
+}
+
 export interface HalamanDaftarBerita {
   judul: string; subjudul: string;
-  berita: Array<{
-    id: number; judul: string; tanggal: string | null; cuplikan: string;
-    url: string; urlUbah: string; urlHapus: string;
-  }>;
+  berita: Array<Pengumuman & { urlUbah: string; urlHapus: string }>;
   halaman: { kini: number; akhir: number; total: number; tautan: TautanHalaman[] };
   bolehUbah: boolean;
   tautan: { buat: string };
@@ -1750,7 +1791,7 @@ export interface HalamanDaftarBerita {
 
 export interface HalamanDetailBerita {
   judul: string; subjudul: string;
-  berita: { judul: string; tanggal: string | null; isi: string };
+  berita: Pengumuman;
   tautan: { daftar: string };
 }
 
@@ -1758,6 +1799,7 @@ export interface HalamanFormBerita {
   judul: string; subjudul: string;
   tersimpan: boolean;
   awal: Record<string, string>;
+  berkas: { sampul: string | null; lampiran: { nama: string; url: string } | null };
   tautan: { simpan: string; batal: string };
 }
 
@@ -1890,6 +1932,102 @@ export interface MateriKursus {
   url?: string | null;
 }
 
+/** Satu baris materi di daftar kursus maupun di kurikulum ruang belajar. */
+export interface BarisMateri {
+  id: number;
+  judul: string;
+  jenis: string;
+  /** Nama jenis yang pantas dibaca — "Video", bukan "video". */
+  label: string;
+  /** Kunci ikon yang dikenal IkonStat. Dijaga MateriSematTest. */
+  ikon: string;
+  durasi: string | null;
+  selesai: boolean;
+  url: string;
+}
+
+export interface ModulKurikulum {
+  id: number;
+  urutan: number;
+  judul: string;
+  selesai: boolean;
+  materi: Array<BarisMateri & { kini: boolean }>;
+}
+
+export interface PesanDiskusi {
+  id: number;
+  isi: string;
+  nama: string;
+  jabatan: string | null;
+  waktu: string | null;
+  bolehHapus: boolean;
+  urlHapus: string;
+}
+
+export interface HalamanMateriBelajar {
+  judul: string; subjudul: string;
+
+  kursus: {
+    judul: string; progres: number; url: string;
+    /* Angka MATERI, terpisah dari `progres` yang dihitung dari modul.
+       Bilah di kurikulum berdiri tepat di atas centang per materi;
+       menyebut persentase modul di situ membantah centangnya sendiri. */
+    materiTuntas: number; materiTotal: number;
+  };
+
+  materi: {
+    id: number;
+    judul: string;
+    keterangan: string | null;
+    jenis: string;
+    jenisLabel: string;
+    jenisIkon: string;
+    jenisNada: string;
+    durasi: string | null;
+    /** "Yang akan Anda pelajari". Kosong berarti belum diisi, dan bloknya tidak digambar. */
+    hasil: string[];
+    prasyarat: string | null;
+    isiRingkas: Array<{ jenis: string; label: string; ikon: string; ket: string }>;
+
+    bacaan: string | null;
+    tautan: string | null;
+    /** Alamat semat yang sudah disaring App\Support\Materi. null = jangan pernah di-iframe. */
+    semat: string | null;
+    sop: string | null;
+
+    lampiran: Array<{ id: number; judul: string; url: string }>;
+
+    selesai: boolean;
+    urlSelesai: string;
+    urlTanya: string;
+
+    nomor: number | null;
+    dari: number;
+  };
+
+  modul: { urutan: number; judul: string } | null;
+  kurikulum: ModulKurikulum[];
+
+  /** Catatan melekat pada MODUL, bukan pada materi — `modul` menyebut yang mana. */
+  catatan: { isi: string; url: string | null; modul: string | null };
+
+  tanya: Array<PesanDiskusi & { milikku: boolean; jawaban: PesanDiskusi[] }>;
+
+  jelajah: {
+    sebelum: { judul: string; url: string } | null;
+    sesudah: { judul: string; url: string } | null;
+  };
+}
+
+export interface HalamanKelolaMateri {
+  judul: string; subjudul: string;
+  awal: Record<string, string>;
+  /** Pratinjau keputusan semat, supaya pengelola tahu sebelum pesertanya bertanya. */
+  semat: string | null;
+  lampiran: Array<{ id: number; judul: string; url: string; urlHapus: string }>;
+  tautan: { simpan: string; tambahLampiran: string; pratinjau: string; batal: string };
+}
+
 export interface HalamanDetailKursus {
   judul: string; subjudul: string;
   kursus: {
@@ -1918,7 +2056,7 @@ export interface HalamanKelolaKursus {
   kursus: { judul: string; kode: string | null; perluKode: boolean };
   modul: Array<{
     id: number; urutan: number; judul: string; keterangan: string | null;
-    materi: Array<MateriKursus & { urlHapus: string }>;
+    materi: Array<MateriKursus & { label: string; lengkap: boolean; urlAtur: string; urlHapus: string }>;
     urlHapus: string; urlTambahMateri: string;
   }>;
   kuis: Array<{
@@ -1941,7 +2079,7 @@ export interface HalamanBelajarKursus {
   kursus: { judul: string; keterangan: string | null; progres: number; selesai: boolean };
   modul: Array<{
     id: number; urutan: number; judul: string; keterangan: string | null;
-    selesai: boolean; catatan: string; materi: MateriKursus[];
+    selesai: boolean; catatan: string; materi: BarisMateri[];
     urlSelesai: string; urlCatatan: string;
   }>;
   kuis: Array<{ id: number; judul: string; nilaiLulus: number; url: string }>;

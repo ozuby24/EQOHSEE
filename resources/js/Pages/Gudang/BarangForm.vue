@@ -33,7 +33,7 @@ const label = 'block text-[12px] font-semibold text-cam-ink mb-1.5';
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-[900px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <div v-if="Object.keys(form.errors).length"
          class="rounded-xl bg-red-50 border border-red-100 px-4 py-3">

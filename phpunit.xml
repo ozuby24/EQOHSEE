@@ -46,5 +46,24 @@
              sungguhan, pada tiap kali dijalankan. -->
         <env name="GEMINI_API_KEY" value=""/>
         <env name="GEMINI_MODEL" value=""/>
+
+        <!-- Turnstile dimatikan untuk seluruh suite, dengan alasan yang
+             sama dan satu tambahan.
+
+             Alasan yang sama: kuncinya dibaca dari .env mesin yang
+             menjalankannya, sehingga suite-nya lulus di mesin yang belum
+             memasang kunci dan gagal di mesin yang sudah.
+
+             Tambahannya: yang gagal bukan uji Turnstile-nya, melainkan
+             uji masuk, daftar, dan lupa sandi yang ditulis bertahun
+             sebelum fitur ini ada dan tidak menyebutnya sama sekali.
+             Pesannya pun tidak menyebut Turnstile — hanya "The user is
+             not authenticated" pada uji masuk yang isinya benar. Sebabnya
+             dicari di tempat yang sama sekali salah.
+
+             Uji yang memang menguji fitur ini menyalakannya sendiri lewat
+             config() di dalam ujinya, bukan dari sini. -->
+        <env name="TURNSTILE_SITE_KEY" value=""/>
+        <env name="TURNSTILE_SECRET_KEY" value=""/>
     </php>
 </phpunit>

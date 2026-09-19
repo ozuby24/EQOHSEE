@@ -66,7 +66,7 @@ const label = 'block text-[12px] font-semibold text-cam-ink mb-1.5';
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-[1200px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <p v-if="form.errors.fisik" class="rounded-xl bg-red-50 border border-red-100 px-4 py-3
                                        text-[12.5px] font-semibold text-red-700">

@@ -73,7 +73,7 @@ function berubah(b: Baris) {
 <template>
   <Head :title="props.judul" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <section class="flex flex-wrap items-end gap-3">
       <div>

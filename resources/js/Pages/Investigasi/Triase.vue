@@ -72,7 +72,7 @@ function simpan() {
 <template>
   <Head title="Triase Insiden" />
 
-  <div class="max-w-[1200px] mx-auto space-y-5">
+  <div class="space-y-5">
     <section>
       <p class="text-[11.5px] text-stone-400 num">{{ props.insiden?.nomor }}</p>
       <h2 class="text-xl font-bold text-cam-ink">{{ props.insiden?.judul }}</h2>

@@ -28,7 +28,7 @@ const persen = (r: number | null | undefined) =>
 <template>
   <Head title="PTPKKP — Hasil" />
 
-  <div class="max-w-6xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <PickerTpkkp v-bind="picker" />
 

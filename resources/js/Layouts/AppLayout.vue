@@ -65,6 +65,9 @@ const sampul  = computed(() => (halaman.props as Record<string, unknown>).sampul
   halaman akan menyalakan ulang sambutan yang baru saja ditutup orangnya.
 */
 const turBawaan  = computed(() => (halaman.props as Record<string, unknown>).tur as any[] | null ?? null);
+const sampulHalaman = computed(() =>
+  ((halaman.props as Record<string, unknown>).sampul as
+    { gambar: string; webp?: string | null; keterangan?: string | null } | null) ?? null);
 const turTerbuka = ref(Boolean(turBawaan.value?.length));
 
 /* Membuka lagi dari menu akun.
@@ -848,7 +851,12 @@ function keluar() {
          munculnya adalah akunnya, bukan halaman mana yang kebetulan
          sedang dibuka — dan satu halaman yang lupa memasangnya berarti
          pengguna baru yang mendarat di sana tidak pernah disambut. -->
+    <!-- Sampul halaman ikut diteruskan: rel pengenalan memakainya untuk
+         mengisi rongga di bawah daftar langkahnya. Tidak ada muatan
+         tambahan — prop `sampul` memang sudah dikirim halaman ini, dan
+         pada halaman yang tidak membawanya rel-nya sekadar tanpa foto. -->
     <TurSelamatDatang :terbuka="turTerbuka" :bawaan="turBawaan"
+                      :sampul="sampulHalaman"
                       @tutup="turTerbuka = false" />
   </div>
 </template>

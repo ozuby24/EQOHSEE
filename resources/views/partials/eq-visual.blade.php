@@ -691,11 +691,35 @@ main a{transition:color .16s}
 
 /* ── Pengumuman ── */
 .eq-warta li + li{border-top:1px solid rgba(27,32,36,.07)}
-.eq-warta a{display:flex;gap:11px;align-items:flex-start;padding:12px 2px;
+
+/* `a` DAN `.eq-warta-buka`. Pengumuman kini dibuka sebagai pop-out,
+   jadi barisnya sebuah tombol — tautan yang tidak pernah menuju ke mana
+   pun menipu menu klik-kanan, Ctrl+klik, dan pembaca layar sekaligus.
+   Baris lain di panel ini tetap tautan sungguhan; keduanya harus tampak
+   sama persis, sebab yang membedakannya bukan rupanya melainkan apa
+   yang terjadi sesudah ditekan. */
+.eq-warta a,
+.eq-warta .eq-warta-buka{display:flex;gap:11px;align-items:flex-start;padding:12px 2px;
   border-radius:10px;transition:background-color .18s}
-.eq-warta a:hover{background:#F7F9FA}
+.eq-warta .eq-warta-buka{width:100%;text-align:left;background:none;border:0;
+  font:inherit;color:inherit;cursor:pointer}
+.eq-warta a:hover,
+.eq-warta .eq-warta-buka:hover{background:#F7F9FA}
+
+/* Sorotan mode gelap. Tanpa ini barisnya berkedip PUTIH di atas panel
+   gelap tiap kali tetikus melewatinya — cacat yang sudah ada sejak
+   panel ini ditulis dan tidak pernah terlihat karena hover memang
+   tidak muncul pada tangkapan layar. */
+:root[data-tema="gelap"] .eq-warta a:hover,
+:root[data-tema="gelap"] .eq-warta .eq-warta-buka:hover{background:rgba(255,255,255,.055)}
 .eq-warta-ikon{width:34px;height:34px;flex:none;border-radius:11px;display:grid;place-items:center}
 .eq-warta-ikon svg{width:16px;height:16px}
+
+/* Sampul kecil, bila pengumumannya punya. Yang tanpa gambar TIDAK
+   mendapat kotak abu-abu pengganti — teksnya melebar menempati
+   ruangnya, dan barisnya tidak menjadi lebih pendek. */
+.eq-warta-gambar{width:44px;height:44px;flex:none;border-radius:10px;object-fit:cover;
+  background:rgba(27,32,36,.06)}
 .eq-warta-teks{flex:1;min-width:0}
 .eq-warta-teks strong{display:block;font-size:12.5px;font-weight:700;color:var(--eq-judul,#0F1720);line-height:1.4}
 .eq-warta-teks small{display:block;font-size:11.5px;color:var(--eq-redup2,#98A2AE);margin-top:2px;line-height:1.5}
@@ -707,14 +731,122 @@ main a{transition:color .16s}
   border:1px solid rgba(27,32,36,.08);border-radius:14px;background:#fff;
   transition:border-color .2s,transform .2s cubic-bezier(.21,.6,.35,1)}
 .eq-kategori a:hover{border-color:rgba(18,137,127,.4);transform:translateY(-2px)}
-.eq-kategori-ikon{width:36px;height:36px;flex:none;border-radius:11px;display:grid;place-items:center}
-.eq-kategori-ikon svg{width:17px;height:17px}
+.eq-kategori-ikon{width:38px;height:38px;flex:none;border-radius:13px;display:grid;place-items:center}
+.eq-kategori-ikon svg{width:18px;height:18px}
 .eq-kategori strong{display:block;font-size:12.5px;font-weight:700;color:var(--eq-judul,#0F1720)}
 .eq-kategori small{display:block;font-size:11px;color:var(--eq-redup2,#98A2AE);margin-top:1px}
 .eq-admin-angka{flex-direction:column;align-items:flex-start;gap:2px}
 .eq-admin-angka small{font-size:11.5px;color:var(--eq-redup2,#98A2AE)}
 
 /* ── Pintasan modul ── */
+/* ══════════ UBIN IKON BERDIMENSI ══════════
+
+   Satu kelas, dipakai tiap ubin ikon di seluruh aplikasi.
+
+   ── KENAPA VEKTOR, BUKAN GAMBAR 3D ──
+
+   Ikon 3D hasil render terlihat mahal pada satu tangkapan layar dan
+   mahal betulan sesudahnya: tiga puluh tiga berkas raster, buram pada
+   layar beresolusi tinggi, tidak ikut berubah saat mode gelap menyala,
+   dan tebal garisnya tidak pernah persis sama antara satu ikon dan yang
+   lain karena masing-masing dirender terpisah. Ia juga menjadi berkas
+   yang harus ikut diunduh tiap pemakai di jaringan site tambang.
+
+   Yang dikerjakan di sini caranya sendiri: glyph garis yang sudah ada
+   — semuanya digambar pada kanvas 24x24 dengan tebal yang sama —
+   ditaruh di atas ubin bergradien dengan cahaya di tepi atas, bayangan
+   di tepi bawah, dan bayangan jatuh yang mengambil warna ubinnya. Mata
+   membaca susunan itu sebagai benda yang punya tebal, dan hasilnya
+   tetap tajam pada ukuran apa pun, ikut mode gelap, serta tidak
+   menambah satu berkas pun.
+
+   ── URUTAN BAYANGANNYA MENENTUKAN ──
+
+   Cahaya di ATAS dan gelap di BAWAH. Dibalik, ubinnya terbaca cekung
+   seperti lubang, bukan menonjol — ini satu-satunya hal pada blok ini
+   yang kalau tertukar langsung terlihat salah tanpa dapat dijelaskan
+   penyebabnya oleh yang melihatnya. */
+.ikon-3d{
+  /* Ujung terang gradiennya: --c-terang bila ubinnya menyebutnya,
+     kalau tidak dihitung dari --c.
+
+     Dua peubah dan bukan satu, karena sebuah custom property tidak
+     boleh menyebut DIRINYA SENDIRI di dalam var()-nya. Rantai seperti
+     itu dianggap tidak sah dan nilainya hilang sama sekali — bukan
+     jatuh ke cadangannya — sehingga ubinnya kehilangan gradien tanpa
+     satu pun galat yang tercatat. */
+  --ikon-hitung:color-mix(in srgb,var(--c,#F57C00) 62%,#fff);
+  --ikon-puncak:var(--c-terang,var(--ikon-hitung));
+  background:linear-gradient(145deg,var(--ikon-puncak),var(--c,#F57C00));
+  color:#fff;
+  box-shadow:
+    0 8px 16px -9px color-mix(in srgb,var(--c,#F57C00) 85%,transparent),
+    inset 0 1px 0 rgba(255,255,255,.35)}
+
+/* ── Kenapa hanya segini, padahal "3D" ──
+
+   Percobaan sebelumnya menumpuk sorot cahaya di sudut kiri atas,
+   kilau di separuh atas, pantulan di tepi bawah, dan bayangan pada
+   glyph-nya. Masing-masing masuk akal sendiri-sendiri; bersama-sama
+   mereka menuang putih ke atas warnanya sampai ubin kuning tampak
+   berkabut, dan yang hilang justru warnanya — hal yang paling
+   diperhatikan orang.
+
+   Ditaruh berdampingan dengan acuannya, bedanya langsung terlihat:
+   acuannya hanya punya gradien, satu garis cahaya setebal satu piksel
+   di tepi atas, dan bayangan jatuh yang mengambil warna ubinnya.
+   Kedalamannya datang dari gradien itu, bukan dari lapisan di atasnya.
+
+   Jadi tidak ada ::before dan ::after di sini. Bukan karena
+   disederhanakan, melainkan karena keduanya membuat hasilnya lebih
+   buruk — dan itu baru ketahuan sesudah dibandingkan berdampingan,
+   bukan sesudah dilihat sendirian. */
+
+/* Mode gelap: bayangan berwarnanya diredupkan. Yang setebal 85% di
+   atas kartu gelap berubah dari bayangan menjadi cahaya neon. */
+:root[data-tema="gelap"] .ikon-3d{
+  box-shadow:
+    0 8px 18px -10px color-mix(in srgb,var(--c,#F57C00) 62%,transparent),
+    inset 0 1px 0 rgba(255,255,255,.22)}
+
+/* CATATAN: jangan menyetel stroke-width pada .ikon-3d svg.
+
+   Sebagian besar glyph-nya diisi, jadi aturan itu tampak tidak
+   berakibat apa-apa — kecuali pada satu ikon. Batang beliung di ikon
+   Mine Operations digambar dengan GARIS setebal 2.5, dan CSS menang
+   atas atribut presentasi pada SVG. Menyetelnya di sini menimpa tebal
+   itu diam-diam, dan beliungnya berubah kurus tanpa ada yang tahu
+   sebabnya. */
+
+@media (prefers-reduced-motion:reduce){.ikon-3d{transition:none}}
+
+/* ══════════ keadaan tiap modul ══════════
+   Satu kartu per MODUL, bukan per butir. Lebih rapat daripada .eq-modul
+   karena jumlahnya dua puluh lima dan tugasnya berbeda: bukan menjelaskan
+   satu hal, melainkan memberi gambaran seluruhnya dalam satu tarikan
+   mata. Warna sisi kirinya memikul seluruh beban penandaan. */
+.eq-mdl-kisi{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(232px,1fr))}
+.eq-mdl{display:grid;gap:8px;padding:13px 14px;border-radius:14px;background:#fff;
+  border:1px solid rgba(27,32,36,.08);border-left:4px solid var(--c);
+  box-shadow:0 1px 2px rgba(27,32,36,.05),0 8px 18px -16px rgba(27,32,36,.4);
+  transition:transform .18s cubic-bezier(.21,.6,.35,1),box-shadow .18s,border-color .18s}
+.eq-mdl:hover{transform:translateY(-2px);
+  box-shadow:0 2px 4px rgba(27,32,36,.06),0 16px 28px -18px rgba(27,32,36,.5)}
+.eq-mdl-kepala{display:flex;align-items:center;gap:9px}
+.eq-mdl-ikon{display:grid;place-items:center;width:38px;height:38px;border-radius:13px;
+  flex:none}
+.eq-mdl-ikon svg{width:21px;height:21px}
+.eq-mdl-nama{flex:1;min-width:0;font-size:12.5px;font-weight:700;line-height:1.25;
+  color:var(--eq-judul,#0F1720);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eq-mdl-angka{font-size:22px;font-weight:800;letter-spacing:-.035em;line-height:1;
+  color:var(--c);font-variant-numeric:tabular-nums}
+.eq-mdl-butir{display:grid;gap:3px}
+.eq-mdl-butir span{font-size:11px;line-height:1.4;color:var(--eq-lemah,#6B7785);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eq-mdl-butir b{font-weight:700;color:var(--eq-judul,#0F1720)}
+.eq-mdl-bersih{font-size:11px;line-height:1.4;color:#16A34A;font-weight:600}
+@media (prefers-reduced-motion:reduce){.eq-mdl:hover{transform:none}}
+
 .eq-modul{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(206px,1fr))}
 .eq-modul a{display:block;padding:16px;border:1px solid rgba(27,32,36,.08);border-radius:15px;
   background:#fff;transition:border-color .2s,transform .2s cubic-bezier(.21,.6,.35,1),box-shadow .2s}
@@ -723,8 +855,8 @@ main a{transition:color .16s}
 .eq-modul-atas{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
 .eq-modul-nilai{font-size:27px;font-weight:800;letter-spacing:-.03em;line-height:1;
   font-variant-numeric:tabular-nums}
-.eq-modul-ikon{width:38px;height:38px;flex:none;border-radius:12px;display:grid;place-items:center}
-.eq-modul-ikon svg{width:18px;height:18px}
+.eq-modul-ikon{width:44px;height:44px;flex:none;border-radius:15px;display:grid;place-items:center}
+.eq-modul-ikon svg{width:24px;height:24px}
 .eq-modul strong{display:block;font-size:12.5px;font-weight:700;color:var(--eq-judul,#0F1720);margin-top:12px}
 .eq-modul small{display:block;font-size:11px;color:var(--eq-redup2,#98A2AE);margin-top:2px;line-height:1.5}
 
@@ -793,11 +925,20 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] .eq-kpi,
 :root[data-tema="gelap"] .eq-kursus,
 :root[data-tema="gelap"] .eq-modul a,
+:root[data-tema="gelap"] .eq-mdl,
 :root[data-tema="gelap"] .eq-warta,
 :root[data-tema="gelap"] .eq-kategori > a,
 :root[data-tema="gelap"] .eq-admin-angka,
 :root[data-tema="gelap"] .kartu-lux{
   background:#141F23;border-color:#223238;color:#D6DEE2}
+
+/* Bilah warna di tepi kiri kartu modul dikembalikan.
+   Aturan di atas menyetel border-color untuk KEEMPAT sisinya, jadi
+   tepi kiri yang memikul seluruh penandaan nada ikut jadi abu-abu —
+   dan dasbor mode gelap kehilangan satu-satunya petunjuk mana modul
+   yang gawat dan mana yang bersih, tanpa satu pun tanda bahwa ada
+   yang hilang. */
+:root[data-tema="gelap"] .eq-mdl{border-left-color:var(--c)}
 
 /* Warna teks diganti lewat variabel, bukan dengan menulis ulang tiap
    pemilih. Judul dan teks redup muncul di belasan komponen, dan daftar
@@ -1986,14 +2127,12 @@ body.eq-sempit .eq-semboyan{display:none}
 
    color-mix menghitungnya dari satu nilai, sehingga menambah pilar baru
    tidak menuntut satu baris CSS pun ditulis. */
-.jual-tanda{width:2.4rem;height:2.4rem;border-radius:10px;flex:none;
+.jual-tanda{width:2.55rem;height:2.55rem;border-radius:14px;flex:none;
   display:grid;place-items:center;
-  background:color-mix(in srgb,var(--c,#F57C00) 13%,#fff);
-  color:color-mix(in srgb,var(--c,#F57C00) 78%,#12161A);
   transition:background .3s var(--j-lengkung)}
-.jual-kartu:hover .jual-tanda,.jual-modul:hover .jual-tanda{
+.jual-kartu:hover .jual-tanda:not(.ikon-3d),.jual-modul:hover .jual-tanda:not(.ikon-3d){
   background:color-mix(in srgb,var(--c,#F57C00) 20%,#fff)}
-.jual-tanda svg{width:1.25rem;height:1.25rem}
+.jual-tanda svg{width:1.3rem;height:1.3rem}
 
 .jual-label{display:inline-flex;align-items:center;gap:.35rem;border-radius:40px;
   padding:.22rem .6rem;font-size:11px;font-weight:600;letter-spacing:.01em;
@@ -2209,8 +2348,136 @@ body.eq-sempit .eq-semboyan{display:none}
   display:flex;flex-direction:column;align-self:start}
 .jual-paket-tombol{margin-top:1.75rem}
 
+/* Harga website kedua dan seterusnya, di dalam kartu harga yang gelap.
+   Dipisahkan garis atas, bukan sekadar diberi jarak: ia aturan harga
+   yang lain, bukan keterangan tambahan atas angka di atasnya. */
+.jual-paket-tambahan{margin-top:1.25rem;padding-top:1.25rem;
+  border-top:1px solid rgb(255 255 255 / .16);
+  font-size:12.5px;line-height:1.6;color:rgb(255 255 255 / .72)}
+.jual-paket-tambahan b{color:#fff;font-weight:700}
+
+/* Kartu layanan tahunan: berdampingan dengan paketnya, bukan di
+   halaman lain. Biaya yang datang lagi tiap tahun dan baru diketahui
+   sesudah menandatangani adalah biaya yang merusak kepercayaan,
+   seberapa pun wajar angkanya. */
+.jual-layanan{background:var(--j-kartu);border:1px solid var(--j-garis);border-radius:12px;
+  padding:1.75rem;margin-top:1.25rem;display:grid;gap:.85rem}
+.jual-layanan-kepala{display:flex;align-items:baseline;justify-content:space-between;
+  gap:1rem;flex-wrap:wrap}
+.jual-layanan-harga{font-size:1.5rem;font-weight:800;letter-spacing:-.02em;white-space:nowrap}
+.jual-layanan-spek{display:flex;flex-wrap:wrap;gap:.4rem}
+.jual-layanan-spek span{border:1px solid var(--j-garis);border-radius:999px;
+  padding:.2rem .7rem;font-size:11.5px;font-weight:600}
+
 .jual-kosong{background:var(--j-kartu);border:1px solid var(--j-garis);border-radius:12px;
   padding:2.5rem;max-width:42rem}
+
+/* ══════════ PILAR: kisi di kiri, rincian di kanan ══════════
+
+   Rinciannya dulu terbuka DI BAWAH kisinya, mendorong seluruh halaman
+   turun — dan yang baru menekan sebuah kartu kehilangan kartu itu dari
+   pandangan tepat saat ia ingin membandingkannya dengan yang lain.
+
+   Kolom kanannya tetap ada bahkan sebelum ada yang ditekan (aspek
+   pertama terbuka sejak awal), supaya lebar kisinya tidak berubah
+   mendadak pada penekanan pertama. */
+.jual-pilar-tata{display:grid;gap:.75rem;align-items:start}
+@media (min-width:1024px){
+  .jual-pilar-tata{grid-template-columns:minmax(0,1fr) minmax(0,25rem)}
+}
+
+.jual-pilar-kisi{display:grid;gap:.75rem;grid-template-columns:1fr}
+@media (min-width:640px){.jual-pilar-kisi{grid-template-columns:repeat(2,1fr)}}
+
+/* Kartu aspek.
+   Seragam — tanpa ubin dan tautan berwarna sendiri-sendiri. Delapan
+   kartu yang masing-masing membawa warnanya terbaca sebagai pelangi:
+   tidak ada yang menonjol karena semuanya menonjol. Yang berwarna penuh
+   hanya kartu yang sedang dipilih, satu pada satu waktu. */
+.jual-pilar-kartu{display:grid;grid-template-columns:auto 1fr;gap:.2rem .85rem;
+  align-items:center;text-align:left;width:100%;
+  /* Nilai gelapnya ditulis seperti .jual-gelap-kartu, BUKAN lewat
+     var(--j-kartu): variabel itu bernilai #FFFFFF — ia milik bagian
+     terang. Dipakai di sini, kartunya tergambar putih dengan tulisan
+     putih di atasnya, dan yang tersisa di layar hanya kotak kosong.
+     Tertangkap pada tangkapan layar pertama, bukan oleh uji mana pun. */
+  background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);
+  border-radius:12px;padding:1rem 1.1rem;cursor:pointer;
+  transition:border-color .18s ease,background .18s ease,transform .18s ease}
+.jual-pilar-kartu:hover{border-color:rgba(255,255,255,.2);
+  background:rgba(255,255,255,.075);transform:translateY(-1px)}
+.jual-pilar-kartu:focus-visible{outline:2px solid #F57C00;outline-offset:2px}
+
+.jual-pilar-tanda{grid-row:span 2;display:grid;place-items:center;width:38px;height:38px;
+  border-radius:10px;background:rgb(255 255 255 / .06);color:rgb(255 255 255 / .62);
+  transition:background .18s ease,color .18s ease}
+.jual-pilar-nama{font-size:13.5px;font-weight:700;line-height:1.3}
+.jual-pilar-ket{font-size:11.5px;line-height:1.45;color:rgb(255 255 255 / .55)}
+
+.jual-pilar-kartu-aktif{background:rgb(245 124 0 / .10);border-color:rgb(245 124 0 / .55)}
+.jual-pilar-kartu-aktif .jual-pilar-tanda{background:rgb(245 124 0 / .18);color:#FF9800}
+.jual-pilar-kartu-aktif .jual-pilar-ket{color:rgb(255 255 255 / .72)}
+
+/* Panel rincian. Melekat saat digulir pada layar lebar supaya tetap
+   terbaca ketika kisinya lebih panjang daripada panelnya. */
+.jual-pilar-panel{background:rgba(255,255,255,.045);
+  border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:1.5rem}
+@media (min-width:1024px){.jual-pilar-panel{position:sticky;top:5.5rem}}
+
+.jual-pilar-panel-tanda{display:grid;place-items:center;width:48px;height:48px;
+  border-radius:15px}
+
+/* ── Cat hanya untuk ubin yang TIDAK berdimensi ──
+
+   Kedua aturan di bawah ditulis SESUDAH .ikon-3d di berkas ini, dan
+   kekhususannya sama. Tanpa :not(), latar datarnya menang atas gradien
+   .ikon-3d semata-mata karena urutan barisnya — yang tersisa di layar
+   hanya bayangannya, sehingga ubinnya tampak punya bayangan tanpa punya
+   badan. Tertangkap pada tangkapan layar, bukan oleh uji. */
+.jual-tanda:not(.ikon-3d){
+  background:color-mix(in srgb,var(--c,#F57C00) 13%,#fff);
+  color:color-mix(in srgb,var(--c,#F57C00) 78%,#12161A)}
+.jual-pilar-panel-tanda:not(.ikon-3d){
+  background:color-mix(in srgb,var(--c) 18%,transparent);color:var(--c)}
+
+.jual-pilar-cakupan{display:grid;gap:.9rem;margin-top:1.35rem;list-style:none;padding:0}
+.jual-pilar-cakupan li{border-left:2px solid var(--c);padding-left:.7rem}
+.jual-pilar-cakupan b{display:block;font-size:12.5px;font-weight:700;line-height:1.35}
+.jual-pilar-cakupan span{display:block;font-size:11.5px;line-height:1.5;
+  color:rgb(255 255 255 / .58);margin-top:.15rem}
+
+.jual-pilar-modul-judul{margin-top:1.4rem;font-size:10px;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;color:rgb(255 255 255 / .42)}
+
+/* Perpindahan antaraspek: satu gerakan pendek, bukan pantulan.
+   mode="out-in" pada Vue membuat yang lama keluar dulu, jadi tidak ada
+   dua panel yang sesaat bertumpuk. */
+.jual-panel-enter-active{transition:opacity .22s ease,transform .22s ease}
+.jual-panel-leave-active{transition:opacity .13s ease,transform .13s ease}
+.jual-panel-enter-from{opacity:0;transform:translateX(10px)}
+.jual-panel-leave-to{opacity:0;transform:translateX(-6px)}
+@media (max-width:1023px){
+  .jual-panel-enter-from{transform:translateY(8px)}
+  .jual-panel-leave-to{transform:translateY(-4px)}
+}
+@media (prefers-reduced-motion:reduce){
+  .jual-panel-enter-active,.jual-panel-leave-active{transition:opacity .12s ease}
+  .jual-panel-enter-from,.jual-panel-leave-to{transform:none}
+  .jual-pilar-kartu:hover{transform:none}
+}
+
+/* ══════════ pemutar video ══════════ */
+.jual-pemutar{position:fixed;inset:0;z-index:50;display:grid;place-items:center;
+  background:rgb(0 0 0 / .86);padding:1.25rem}
+.jual-pemutar-isi{width:100%;max-width:56rem}
+.jual-pemutar-kepala{display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;margin-bottom:.75rem;color:#fff}
+.jual-pemutar-kepala span{font-size:13px;font-weight:700}
+.jual-pemutar-kepala button{font-size:1.5rem;line-height:1;color:#fff;
+  background:none;border:0;cursor:pointer;padding:0 .25rem}
+.jual-pemutar-video{width:100%;border-radius:14px;display:block;background:#000}
+.jual-pemutar-enter-active,.jual-pemutar-leave-active{transition:opacity .18s ease}
+.jual-pemutar-enter-from,.jual-pemutar-leave-to{opacity:0}
 
 /* ── cakupan ── */
 

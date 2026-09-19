@@ -22,7 +22,7 @@ function buka() {
 <template>
   <Head :title="props.insiden?.nomor ?? 'Insiden'" />
 
-  <div class="max-w-[1200px] mx-auto space-y-5">
+  <div class="space-y-5">
     <section class="flex flex-wrap items-start justify-between gap-4">
       <div class="min-w-0">
         <p class="text-[11.5px] text-stone-400 num">{{ props.insiden?.nomor }}</p>

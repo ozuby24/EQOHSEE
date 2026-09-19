@@ -27,6 +27,7 @@ use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiT
     TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\{BantuanController, BerkasController, ChatController, TemuanController};
 use App\Http\Controllers\Admin\{AiController, CompanyController, KeamananController, PemilikController, SystemController, UserController};
+use App\Http\Controllers\DuaFaktorController;
 use App\Http\Controllers\PerangkatSayaController;
 use App\Http\Controllers\TurController;
 use Illuminate\Support\Facades\Route;
@@ -92,6 +93,31 @@ Route::get('/', fn () => auth()->check()
     ? redirect()->route('dashboard')
     : app(LandingController::class)->index())->name('beranda');
 
+/* ── Kebijakan privasi ──
+ *
+ * DI LUAR grup 'auth' dengan sengaja, dan uji penjagaannya memastikan
+ * ia tetap begitu. Google Play memeriksa alamat ini dari perangkat
+ * peninjau yang tidak punya akun di sini; begitu halamannya mengalihkan
+ * ke /login, peninjauan gagal dengan pesan yang tidak menyinggung
+ * sebabnya sama sekali — dan yang membacanya akan mencari di Play
+ * Console, bukan di berkas rute.
+ *
+ * Dua bahasa pada dua alamat, bukan satu halaman dengan pengalih:
+ * Play menyimpan SATU alamat, dan alamat yang isinya berubah menurut
+ * tebakan bahasa peramban menyulitkan pembuktian isi mana yang dinilai.
+ *
+ * Digambar dengan Blade biasa, bukan Inertia: tidak ada bundel JS yang
+ * harus dimuat lebih dulu, jadi tetap terbuka di jaringan site tambang
+ * dan pada peramban peninjau yang mematikan JavaScript.
+ */
+Route::view('/kebijakan-privasi', 'hukum.kebijakan-privasi', [
+    'surel' => config('hukum.surel'),
+])->name('hukum.privasi');
+
+Route::view('/privacy-policy', 'hukum.privacy-policy', [
+    'surel' => config('hukum.surel'),
+])->name('hukum.privacy');
+
 /* 'verified' dipasang di sini, bukan per rute: halaman yang lupa
    memakainya tidak menimbulkan galat apa pun — ia hanya diam-diam
    terbuka bagi akun yang emailnya belum terbukti dimiliki pendaftarnya.
@@ -99,7 +125,25 @@ Route::get('/', fn () => auth()->check()
    supaya tidak menghalangi jalan menuju dirinya sendiri. */
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    /* /dashboard adalah RINGKASAN SITUS, bukan dasbor pembelajaran.
+     *
+       Sebelumnya terbalik: seluruh pengalihan sesudah masuk menuju
+       route('dashboard'), dan nama itu dipegang dasbor LMS. Akibatnya
+       setiap orang — kepala teknik tambang sekalipun — mendarat di
+       halaman kursusnya sendiri, dan harus mencari sendiri jalan ke
+       ringkasan situs yang seharusnya ia lihat lebih dulu.
+
+       Ditukar di sini, bukan dengan mengubah kedelapan pemanggil
+       route('dashboard') satu per satu: nama rutenya yang salah tuju,
+       bukan pemanggilnya. Menukarnya di satu tempat membuat kedelapannya
+       benar sekaligus, dan tidak ada yang tertinggal. */
+    Route::get('/dashboard', [DasborController::class, 'index'])->name('dashboard');
+
+    /* Dasbor pembelajaran, sekarang beralamat sesuai modulnya.
+       Ia menjawab pertanyaan seorang PESERTA tentang kursusnya sendiri —
+       pertanyaan yang sah, tetapi bukan pertanyaan pertama yang dibawa
+       orang saat membuka aplikasi ini. */
+    Route::get('/lms', [DashboardController::class, 'index'])->name('lms.dasbor');
 
     /* Pengenalan situs bagi akun baru.
      *
@@ -115,13 +159,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/tur', [TurController::class, 'isi'])->name('tur.isi');
     Route::post('/tur/selesai', [TurController::class, 'selesai'])->name('tur.selesai');
 
-    /* Dasbor menyeluruh, TERPISAH dari dasbor pembelajaran di atas.
-       Yang satu menjawab pertanyaan seorang peserta tentang kursusnya;
-       yang ini menjawab pertanyaan seorang pengawas tentang situsnya.
-       Menggabungkannya membuat angka kursus dan angka izin kerja
-       berebut tempat yang sama, dan yang kalah selalu yang tidak
-       sedang dicari orangnya. */
-    Route::get('/dasbor', [DasborController::class, 'index'])->name('dasbor');
+    /* /dasbor dipertahankan sebagai PENGALIHAN, bukan dihapus.
+       Alamat ini sudah beredar — ditandai orang di peramban, ditempel di
+       grup WhatsApp, dan tertulis pada tangkapan layar yang sudah
+       dikirim. Menghapusnya mengubah tautan yang pernah dibagikan
+       menjadi halaman galat, dan yang membukanya menyimpulkan
+       aplikasinya rusak, bukan alamatnya yang pindah. */
+    Route::redirect('/dasbor', '/dashboard')->name('dasbor');
 
     /* Register temuan lintas modul. Berdiri di luar modul mana pun karena
        ia justru menyatukan kelimanya — menaruhnya di dalam salah satu modul
@@ -170,6 +214,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     /* ---- Belajar ---- */
     Route::post('courses/{course}/enroll',  [LearnController::class, 'enroll'])->name('courses.enroll');
     Route::get('learn/{course}',            [LearnController::class, 'show'])->name('learn.show');
+
+    /* Satu materi punya alamatnya sendiri, di bawah kursusnya.
+       Kursusnya ikut di alamat — bukan demi kerapian melainkan supaya
+       ada yang dapat diperiksa: materi milik kursus lain yang nomornya
+       kebetulan ditebak harus 404, dan pemeriksaan itu butuh kedua
+       nomornya. */
+    Route::get('learn/{course}/materi/{material}', [LearnController::class, 'materi'])->name('learn.materi');
+
+    Route::post('materials/{material}/complete', [LearnController::class, 'selesaiMateri'])->name('materials.complete');
+    Route::post('materials/{material}/tanya',    [LearnController::class, 'tanya'])->name('materials.tanya');
+    Route::delete('diskusi/{discussion}',        [LearnController::class, 'hapusTanya'])->name('materials.tanya.hapus');
+
     Route::post('modules/{module}/complete',[LearnController::class, 'complete'])->name('modules.complete');
     Route::post('notes/{module}',           [LearnController::class, 'saveNote'])->name('notes.save');
 
@@ -207,6 +263,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('news', NewsController::class)->except(['index','show'])->middleware('can:admin');
     Route::resource('news', NewsController::class)->only(['index','show']);
 
+    /* Tandai sudah dibaca. DI LUAR grup admin: yang menandainya adalah
+       pembacanya, bukan yang menerbitkannya. Pengumuman keselamatan
+       yang hanya dapat ditandai administrator tidak menjawab satu pun
+       pertanyaan yang membuatnya dicatat. */
+    Route::post('news/{news}/baca', [NewsController::class, 'baca'])->name('news.baca');
+
     /* ---- Evaluasi Pasca-Pelatihan (oleh trainer) ---- */
     Route::get('evaluations',              [EvaluationController::class, 'index'])->name('evaluations.index');
     Route::get('evaluations/{evaluation}', [EvaluationController::class, 'show'])->name('evaluations.show');
@@ -225,6 +287,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('modules/{module}',             [CourseContentController::class,'updateModule'])->name('manage.module.update');
         Route::delete('modules/{module}',          [CourseContentController::class,'destroyModule'])->name('manage.module.destroy');
         Route::post('modules/{module}/materials',  [CourseContentController::class,'storeMaterial'])->name('manage.material.store');
+
+        /* 'materials/{material}/kelola', bukan 'materials/{material}/edit'.
+           Alamat '…/edit' sudah dipakai konvensi resource di modul lain
+           dan mengundang orang mengira ada resource controller penuh di
+           sini — padahal yang ada hanya satu formulir ikhtisar. */
+        Route::get('materials/{material}/kelola',  [CourseContentController::class,'editMaterial'])->name('manage.material.edit');
+        Route::put('materials/{material}',         [CourseContentController::class,'updateMaterial'])->name('manage.material.update');
+        Route::post('materials/{material}/lampiran',[CourseContentController::class,'storeAttachment'])->name('manage.attachment.store');
+        Route::delete('lampiran/{attachment}',     [CourseContentController::class,'destroyAttachment'])->name('manage.attachment.destroy');
+
         Route::delete('materials/{material}',      [CourseContentController::class,'destroyMaterial'])->name('manage.material.destroy');
         Route::post('courses/{course}/quizzes',    [CourseContentController::class,'storeQuiz'])->name('manage.quiz.store');
         Route::delete('quizzes/{quiz}',            [CourseContentController::class,'destroyQuiz'])->name('manage.quiz.destroy');
@@ -1315,6 +1387,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('pengingat',          [HazardExportController::class,'pengingat'])->name('pengingat');
         Route::get('ekspor/csv',         [HazardExportController::class,'hazardCsv'])->name('ekspor.csv');
         Route::get('ekspor/cetak',       [HazardExportController::class,'hazardCetak'])->name('ekspor.cetak');
+
+        /* Register Tindakan Perbaikan — lembar terkendali yang diserahkan
+           ke rapat, bukan ekspor data. Jumlahnya punya rutenya sendiri
+           supaya dialog pilihan dapat menghitung tanpa memuat ulang
+           seluruh halaman monitor pada tiap pilihan yang digeser. */
+        Route::get('register',           [HazardExportController::class,'register'])->name('register');
+        Route::get('register/jumlah',    [HazardExportController::class,'registerJumlah'])->name('register.jumlah');
         Route::get('{hazard}',           [HazardController::class,'show'])->name('show');
         Route::post('{hazard}/tindak',   [HazardController::class,'follow'])->name('follow');
         Route::delete('{hazard}',        [HazardController::class,'destroy'])->middleware('can:admin')->name('destroy');
@@ -1419,6 +1498,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('akun/perangkat',        [PerangkatSayaController::class,'index'])->name('keamanan.perangkat');
     Route::delete('akun/perangkat',     [PerangkatSayaController::class,'putus'])->name('keamanan.perangkat.putus');
     Route::post('akun/perangkat/lain',  [PerangkatSayaController::class,'putusLain'])->name('keamanan.perangkat.putus-lain');
+
+    /* ---- Verifikasi dua langkah ----
+       Di luar grup admin atas alasan yang sama seperti perangkat:
+       memasang pengaman pada akun sendiri tidak boleh perlu izin
+       siapa pun. Mematikannya menuntut sandi lagi — lihat
+       DuaFaktorController. */
+    Route::get('akun/dua-faktor',            [DuaFaktorController::class,'index'])->name('keamanan.dua-faktor');
+    Route::post('akun/dua-faktor/mulai',     [DuaFaktorController::class,'mulai'])->name('keamanan.dua-faktor.mulai');
+    Route::post('akun/dua-faktor/sahkan',    [DuaFaktorController::class,'sahkan'])->name('keamanan.dua-faktor.sahkan');
+    Route::delete('akun/dua-faktor',         [DuaFaktorController::class,'matikan'])->name('keamanan.dua-faktor.matikan');
+    Route::post('akun/dua-faktor/pemulihan', [DuaFaktorController::class,'terbitkanUlang'])->name('keamanan.dua-faktor.pemulihan');
 
     /* ---- Gudang & Penyimpanan ---- */
     Route::prefix('gudang')->name('gudang.')->group(function () {

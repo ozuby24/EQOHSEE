@@ -71,7 +71,7 @@ onBeforeUnmount(() => { if (jeda) clearTimeout(jeda); });
 <template>
   <Head title="Direktori" />
 
-  <div class="max-w-[1200px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <div class="bg-white rounded-2xl shadow-card border border-stone-100 p-3 flex items-center gap-2.5">
       <input v-model="cari" placeholder="Cari nama, jabatan, atau departemen…"

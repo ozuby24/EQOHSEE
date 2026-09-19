@@ -17,6 +17,13 @@ function saring(status: string) {
 /* Warna mengikuti ARTINYA, bukan urutan status. Lunas hijau, yang
    menunggu tindakan jingga, yang mati abu — supaya daftar panjang
    dapat dipindai dengan mata tanpa membaca tiap katanya. */
+/* Nada warna panel uang, dipakai bersama ubin jumlah di bawahnya. */
+const NADA: Record<string, string> = {
+  baik: '#16A34A',
+  ingat: '#EA580C',
+  netral: '#44403C',
+};
+
 const WARNA: Record<string, string> = {
   lunas: '#16A34A',
   menunggu_verifikasi: '#EA580C',
@@ -31,11 +38,39 @@ const WARNA: Record<string, string> = {
 <template>
   <Head :title="props.judul" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
     <section class="flex flex-wrap items-end justify-between gap-4">
       <div>
       </div>
       <Link href="/pembelian" class="eq-btn-utama">Buat tagihan</Link>
+    </section>
+
+    <!-- ══════════ arus kas ══════════
+         Angka uang, di halaman yang sama dengan daftar tagihannya. Yang
+         memutuskan penagihan sedang membaca daftar ini; angka yang harus
+         dibuka di halaman lain adalah angka yang tidak ikut menentukan
+         keputusan.
+
+         TIDAK ikut berubah saat penyaring status digeser — dihitung
+         server dari SELURUH tagihan, bukan dari baris yang sedang
+         tampil. -->
+    <section v-if="(props.arusKas ?? []).length" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div v-for="k in props.arusKas" :key="k.label"
+           class="rounded-2xl border shadow-card px-5 py-4"
+           :class="k.utama ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-stone-100'">
+        <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-stone-500">{{ k.label }}</p>
+
+        <!-- Nominal tidak pernah disingkat. "Rp 150 jt" enak dibaca
+             sekilas dan salah sebagai angka: yang membacanya tidak tahu
+             apakah 150.000.000 atau 150.400.000 yang dibulatkan, dan
+             pertanyaan itu tidak boleh ada pada panel uang. -->
+        <p class="text-[19px] font-bold leading-tight num mt-1.5 break-words"
+           :style="{ color: NADA[k.nada] ?? NADA.netral }">
+          {{ rupiah(k.nilai) }}
+        </p>
+
+        <p class="text-[11px] text-stone-500 mt-1 leading-relaxed">{{ k.ket }}</p>
+      </div>
     </section>
 
     <section class="grid gap-3 sm:grid-cols-3">

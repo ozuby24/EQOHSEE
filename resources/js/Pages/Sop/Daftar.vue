@@ -11,7 +11,7 @@ defineProps<HalamanDaftarSop>();
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-4xl mx-auto">
+  <div class="">
     <div class="glass-light rounded-xl border border-stone-200/60 px-4 py-3 mb-5">
       <p class="text-[12px] text-stone-500 leading-relaxed">
         Uji pemahamanmu terhadap prosedur kerja.

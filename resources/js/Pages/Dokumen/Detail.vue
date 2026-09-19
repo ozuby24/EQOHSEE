@@ -54,7 +54,7 @@ const chip = 'text-[9.5px] font-bold uppercase tracking-wide px-2 py-0.5 rounded
 <template>
   <Head :title="d.kode" />
 
-  <div class="max-w-4xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <section class="bg-white rounded-2xl shadow-card border border-stone-100 p-6">
       <div class="flex flex-wrap items-start justify-between gap-4">

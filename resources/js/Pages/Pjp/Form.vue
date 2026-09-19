@@ -41,7 +41,7 @@ function kirim() {
 <template>
   <Head :title="props.judul" />
 
-  <div class="max-w-[900px] mx-auto space-y-5">
+  <div class="space-y-5">
     <div>
       <!-- Judul dan nama modulnya digambar kop kerangka. Kalimat di
            bawah BUKAN subjudul yang sama: ia menerangkan urutan

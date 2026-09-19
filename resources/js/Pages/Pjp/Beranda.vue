@@ -61,7 +61,7 @@ const aspek = [
 <template>
   <Head :title="props.judul" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
     <!-- Judul dan subjudulnya digambar kop kerangka.
 
          PjpNav juga tidak dipasang DI SINI. Kerangka sudah menggambar

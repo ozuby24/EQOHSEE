@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
+use App\Http\Controllers\Auth\DuaFaktorTantanganController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\VerifikasiKodeController;
 use App\Http\Controllers\Auth\PasswordController;
@@ -25,6 +26,20 @@ Route::middleware('guest')->group(function () {
 
     Route::post('login', [AuthenticatedSessionController::class, 'store'])
         ->middleware('throttle:masuk');
+
+    /* Halaman kode dua faktor.
+       Tetap di dalam grup 'guest': yang membukanya BELUM masuk — ia
+       hanya membawa setengah-masuk di sesinya. Dipasang di luar grup,
+       ia akan terjangkau oleh orang yang sudah masuk dan tertutup bagi
+       satu-satunya orang yang membutuhkannya. */
+    Route::get('dua-faktor', [DuaFaktorTantanganController::class, 'tampil'])
+        ->name('dua-faktor.tantangan');
+
+    Route::post('dua-faktor', [DuaFaktorTantanganController::class, 'kirim'])
+        ->middleware('throttle:dua-faktor');
+
+    Route::post('dua-faktor/batal', [DuaFaktorTantanganController::class, 'batal'])
+        ->name('dua-faktor.batal');
 
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');

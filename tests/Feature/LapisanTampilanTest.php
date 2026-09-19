@@ -644,6 +644,143 @@ class LapisanTampilanTest extends TestCase
     }
 
     /**
+     * Pengenalan memakai MEREK YANG SAMA dengan situsnya.
+     *
+     * Rel pengenalan sempat memuat lockup tersendiri berupa satu berkas
+     * PNG: huruf bergaya stensil dan semboyan "Sustaining Performance,
+     * Shaping the Future". Dua-duanya tidak dipakai di halaman mana pun
+     * selain itu. Akibatnya halaman yang tugasnya memperkenalkan
+     * EQOHSEE justru membuka dengan merek ketiga — bentuk huruf lain,
+     * semboyan lain — lalu setiap halaman sesudahnya menampilkan yang
+     * asli.
+     *
+     * Tidak ada galat, tidak ada uji yang merah, dan tangkapan layar
+     * pengenalannya sendiri terlihat rapi; yang salah hanya terlihat
+     * bila dua halaman dibandingkan berdampingan.
+     *
+     * Yang dijaga BUKAN berkasnya melainkan kesamaannya: lambang dan
+     * semboyan pada pengenalan harus persis yang dipakai bilah samping.
+     * Mengganti merek situs karena itu tetap boleh — asal keduanya
+     * diganti bersama.
+     */
+    public function test_pengenalan_memakai_merek_yang_sama_dengan_bilah_samping(): void
+    {
+        $kerangka = file_get_contents(resource_path('js/Layouts/AppLayout.vue'));
+        $tur      = file_get_contents(resource_path('js/Components/TurSelamatDatang.vue'));
+
+        preg_match('/<img src="(\/brand\/[^"]+)"[^>]*>\s*<span>\s*<strong>/s', $kerangka, $m);
+
+        $this->assertNotEmpty($m,
+            'Blok merek pada bilah samping tidak lagi berbentuk yang dikenal penjaga '
+            .'ini — tinjau ulang penjaganya, jangan hapus begitu saja.');
+
+        $lambang = $m[1];
+
+        $this->assertStringContainsString($lambang, $tur,
+            "Rel pengenalan tidak memakai lambang yang sama dengan bilah samping "
+            ."($lambang). Merek kedua pada halaman yang tugasnya memperkenalkan "
+            .'merek pertama.');
+
+        /* Semboyannya dibandingkan sesudah entitas HTML dipulangkan:
+           bilah samping menulis "·" apa adanya, pengenalan menulis
+           &middot;, dan keduanya adalah tanda yang sama. */
+        $bersih = static fn (string $t): string => html_entity_decode($t, ENT_QUOTES, 'UTF-8');
+
+        preg_match('/<small>([^<]+)<\/small>/', $kerangka, $sm);
+        $this->assertNotEmpty($sm, 'Semboyan bilah samping tidak ditemukan.');
+
+        $this->assertStringContainsString(
+            trim($bersih($sm[1])), $bersih($tur),
+            'Semboyan pada rel pengenalan berbeda dari semboyan bilah samping.');
+    }
+
+    /**
+     * SATU LEBAR KOLOM, dinyatakan sekali di kerangka.
+     *
+     * AppLayout membungkus kop, bilah pindah, dan slot halaman dalam
+     * satu kolom `max-w-[1400px] mx-auto`. Halaman yang menyatakan
+     * pembatas lebarnya SENDIRI pada akar templatnya melawan kolom itu,
+     * dan yang terlihat adalah isi yang menciut di bawah kepala yang
+     * jauh lebih lebar — kop terhampar 1400px sementara badannya 1024,
+     * dengan rongga kosong ratusan piksel di kedua sisi.
+     *
+     * Terukur sebelum ini: 90 dari 204 halaman begitu, dengan sembilan
+     * angka berbeda — 2xl, 3xl, 4xl, 5xl, 6xl, 900px, 1000px, 1100px,
+     * 1200px, 1240px, 1280px. Tidak satu pun disengaja sebagai
+     * keputusan bersama; masing-masing ditulis pada harinya sendiri.
+     *
+     * Yang di ATAS 1400px lebih buruk lagi: ia tidak mengerjakan apa
+     * pun. Kalender roster meminta 1600px dan diam-diam dijepit
+     * kerangka menjadi 1400 — niat yang tertulis, terbaca orang
+     * berikutnya, dan tidak pernah berlaku.
+     *
+     * YANG MASIH BOLEH: pembatas di bawah 896px. Itu ukuran BACA untuk
+     * formulir satu kolom dan halaman naskah — merentangkan tumpukan
+     * kolom isian sampai 1400px membuatnya lebih buruk, bukan lebih
+     * proporsional. Yang dijaga di sini hanya rentang yang tidak punya
+     * pembenaran: cukup lebar untuk jelas dimaksudkan sebagai wadah
+     * halaman, tetapi lebih sempit daripada kolomnya sendiri.
+     */
+    public function test_halaman_tidak_menyatakan_lebar_kolomnya_sendiri(): void
+    {
+        $px = ['max-w-2xl' => 672, 'max-w-3xl' => 768, 'max-w-4xl' => 896,
+               'max-w-5xl' => 1024, 'max-w-6xl' => 1152, 'max-w-7xl' => 1280];
+
+        $kerangka = file_get_contents(resource_path('js/Layouts/AppLayout.vue'));
+
+        preg_match('/max-w-\[(\d+)px\]\s+mx-auto/', $kerangka, $m);
+        $this->assertNotEmpty($m, 'Kolom kerangka tidak lagi berbentuk yang dikenal penjaga ini.');
+
+        $kolom = (int) $m[1];
+
+        /* Halaman di luar kerangka punya geometrinya sendiri: lembar
+           cetak diukur kertas, halaman masuk dan halaman pemasaran
+           berdiri sendiri tanpa bilah samping. */
+        $luar = ['/Print/', '/Auth/', 'Pilar.vue', 'Landing.vue', 'Lembar.vue'];
+
+        $it = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(resource_path('js/Pages')));
+
+        $salah = [];
+
+        foreach ($it as $f) {
+            if (! $f->isFile() || $f->getExtension() !== 'vue') continue;
+
+            $jalur = str_replace('\\', '/', $f->getPathname());
+            foreach ($luar as $x) if (str_contains($jalur, trim($x, '/'))) continue 2;
+
+            $isi = file_get_contents($f->getPathname());
+            $t   = strpos($isi, '<template>');
+            if ($t === false) continue;
+
+            if (! preg_match('/\n  <div class="([^"]*\bmax-w-[^\s"]+\b[^"]*)"/',
+                             substr($isi, $t), $mm)) continue;
+
+            foreach (explode(' ', $mm[1]) as $kelas) {
+                if (! str_starts_with($kelas, 'max-w-')) continue;
+
+                $w = $px[$kelas] ?? null;
+
+                if ($w === null && preg_match('/max-w-\[(\d+)px\]/', $kelas, $mp)) {
+                    $w = (int) $mp[1];
+                }
+
+                if ($w === null || $w < 896) break;   // ukuran baca — sah
+
+                $salah[] = basename(dirname($jalur)).'/'.$f->getFilename()
+                    ." memakai {$kelas} ({$w}px)";
+                break;
+            }
+        }
+
+        $this->assertSame([], $salah,
+            "Akar halaman menyatakan lebar kolomnya sendiri. Lebih sempit daripada "
+            ."{$kolom}px membuat isi menciut di bawah kopnya; lebih lebar tidak "
+            ."mengerjakan apa pun sebab kerangka menjepitnya. Kolomnya dinyatakan "
+            ."sekali saja, di AppLayout:\n  ".implode("\n  ", $salah));
+    }
+
+    /**
      * Pengaman geser-ke-samping harus `clip`, bukan `hidden`.
      *
      * Keduanya sama-sama memotong yang meluber ke samping, dan justru

@@ -118,7 +118,7 @@ const tren = computed(() => {
 <template>
   <Head :title="props.pjp.nama_perusahaan" />
 
-  <div class="max-w-[1100px] mx-auto space-y-5">
+  <div class="space-y-5">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-cam-orange">Perusahaan Jasa Pertambangan</p>

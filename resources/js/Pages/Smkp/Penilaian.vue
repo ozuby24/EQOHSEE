@@ -541,7 +541,7 @@ const kartu = computed(() => [
 <template>
   <Head title="Form Penilaian Audit SMKP" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <section class="flex flex-wrap items-end justify-between gap-4">
       <div>

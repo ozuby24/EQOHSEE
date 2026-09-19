@@ -54,7 +54,7 @@ async function salin(teks: string) {
 <template>
   <Head :title="props.judul" />
 
-  <div class="max-w-[1100px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <section class="flex flex-wrap items-start justify-between gap-4">
       <div class="min-w-0">

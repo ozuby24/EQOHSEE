@@ -24,7 +24,7 @@ function alih(id: number) {
 <template>
   <Head title="Pengingat Tindak Lanjut" />
 
-  <div class="max-w-5xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <div class="glass-light rounded-xl border border-stone-200/60 px-4 py-3">
       <p class="text-[12px] text-stone-500 leading-relaxed">

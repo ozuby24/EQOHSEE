@@ -150,7 +150,7 @@ function cetak() {
 <template>
   <Head :title="props.judul" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-cam-orange">Minerba · Environment</p>

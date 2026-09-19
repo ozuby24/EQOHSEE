@@ -17,7 +17,7 @@ const lebar = (urutan: number) => 46 + (urutan - 1) * 10.8;
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-4xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <section class="kartu-lux rounded-2xl p-6">
       <p class="text-[12.5px] text-stone-500 mt-1.5 leading-relaxed">

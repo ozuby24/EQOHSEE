@@ -33,7 +33,7 @@ function warnaStatus(s: string): string {
 <template>
   <Head title="Berkas Investigasi" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
     <section>
       <h2 class="text-xl font-bold text-cam-ink">Berkas Investigasi</h2>
       <p class="text-[12.5px] text-stone-500 mt-0.5">

@@ -101,7 +101,7 @@ function faktorTeks(rincian: any[]) {
   <Head :title="props.judul" />
   <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 
-  <div class="max-w-[1240px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <section class="-mt-2 flex flex-wrap items-end justify-end gap-3">
 

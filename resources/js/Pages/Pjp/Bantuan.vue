@@ -23,7 +23,7 @@ defineProps<{
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-[900px] mx-auto space-y-5">
+  <div class="space-y-5">
     <!-- Judul, subjudul, dan nama modulnya digambar kop kerangka.
          Mencetaknya lagi di sini menaruh kalimat yang sama dua kali
          berjarak dua sentimeter — terbaca sebagai salah susun, bukan

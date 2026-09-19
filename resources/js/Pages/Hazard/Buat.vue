@@ -27,6 +27,7 @@ const form = useForm<Record<string, any>>({
   unsafe_condition: [] as string[],
   hirarki: '',
   rekomendasi: '',
+  batas_akhir: '',
   foto: [] as File[],
 });
 
@@ -234,6 +235,20 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
       <div class="mt-3">
         <label :class="label">Rekomendasi perbaikan</label>
         <textarea v-model="form.rekomendasi" rows="3" :class="isian" style="resize:none"></textarea>
+      </div>
+
+      <div class="mt-3 sm:max-w-[240px]">
+        <label :class="label" for="batas-akhir">Batas akhir perbaikan</label>
+        <input id="batas-akhir" v-model="form.batas_akhir" type="date" :class="isian"
+              >
+        <!-- Dikatakan bahwa ia boleh kosong, dan apa akibatnya bila
+             kosong. Medan tanggal tanpa keterangan mengundang orang
+             mengisinya asal supaya formulirnya "lengkap", dan tenggat
+             asal adalah tenggat yang tidak ditagih siapa pun. -->
+        <p class="text-[11px] text-stone-400 mt-1.5 leading-relaxed">
+          Boleh dikosongkan bila tenggatnya belum disepakati. Yang terisi
+          akan muncul pada Register Tindakan Perbaikan dan ditandai bila lewat.
+        </p>
       </div>
     </div>
 

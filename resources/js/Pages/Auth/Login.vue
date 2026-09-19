@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import GuestLayout from '../../Layouts/GuestLayout.vue';
 import InputSandi from '../../Components/InputSandi.vue';
+import Putaran from '../../Components/Putaran.vue';
 import VerifikasiTurnstile from '../../Components/VerifikasiTurnstile.vue';
 
 defineOptions({ layout: GuestLayout });
@@ -11,6 +12,11 @@ defineOptions({ layout: GuestLayout });
    dan halaman ini menggambar dirinya seperti sebelum fitur itu ada. */
 const kunciTurnstile = computed(
   () => (usePage().props as Record<string, unknown>).turnstile as string | null ?? null,
+);
+
+/* Penanda pintu, juga dari server. Lihat Turnstile::TINDAKAN. */
+const tindakan = computed(
+  () => (usePage().props as Record<string, unknown>).tindakan as string | null ?? null,
 );
 
 const form = useForm({
@@ -61,13 +67,24 @@ function masuk() {
       <p v-if="form.errors.password" class="text-xs text-red-600 mt-1">{{ form.errors.password }}</p>
     </div>
     <VerifikasiTurnstile v-model="form['cf-turnstile-response']"
-                        :kunci="kunciTurnstile" :galat="gagalKe" />
+                        :kunci="kunciTurnstile" :tindakan="tindakan" :galat="gagalKe" />
 
     <div class="flex items-center justify-between text-sm">
       <label class="flex items-center gap-2 text-stone-600 cursor-pointer"><input v-model="form.remember" type="checkbox" class="accent-[#F57C00]"> Ingat saya</label>
       <Link href="/forgot-password" class="text-stone-500 hover:text-stone-900 underline underline-offset-4">Lupa sandi?</Link>
     </div>
-    <button type="submit" :disabled="form.processing" class="w-full rounded-xl bg-[#F57C00] hover:bg-[#DC6E00] text-white py-3 font-bold transition disabled:opacity-50">{{ form.processing ? 'Memproses…' : 'Masuk' }}</button>
+    <!-- Tombolnya menyebut PEKERJAAN yang sedang berjalan, bukan
+         "Memproses…". Yang menunggu di sambungan site yang lambat perlu
+         tahu apa yang ditunggu: kredensialnya sedang diperiksa, bukan
+         halamannya sedang digambar. Cincinnya bergerak supaya tombol
+         yang terkunci tidak terbaca sebagai tombol yang rusak. -->
+    <button type="submit" :disabled="form.processing"
+            class="w-full rounded-xl bg-[#F57C00] hover:bg-[#DC6E00] text-white py-3 font-bold transition
+                   disabled:opacity-60 disabled:cursor-wait
+                   inline-flex items-center justify-center gap-2">
+      <Putaran v-if="form.processing" />
+      {{ form.processing ? 'Memeriksa kredensial…' : 'Masuk' }}
+    </button>
   </form>
 
   <p class="text-center text-sm text-stone-500 mt-6">Belum punya akun? <Link href="/register" class="font-bold text-[#D96500] hover:underline">Daftar di sini</Link></p>

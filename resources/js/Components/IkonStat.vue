@@ -41,6 +41,14 @@ const jalur: Record<string, string[]> = {
 
   /* ---- kategori kursus ---- */
   kursus:   ['M12 3.6 2.8 8 12 12.4 21.2 8Z', 'M6.4 10v4.4c0 1.6 2.5 2.9 5.6 2.9s5.6-1.3 5.6-2.9V10'],
+
+  /* ---- jenis materi ---- */
+  // Video — bingkai dengan tombol putar
+  video:    ['M3.5 6.5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-9a2 2 0 0 1-2-2Z', 'm16.5 10 4-2.4v8.8l-4-2.4Z', 'M8 9.6v4.8l4-2.4Z'],
+  // Presentasi — layar di atas kaki
+  slaid:    ['M3.5 4.5h17v10h-17Z', 'M12 14.5v3', 'M9 20.5l3-3 3 3'],
+  // SOP — papan jepit berbaris
+  sop:      ['M9 4.5h6v2H9Z', 'M15 5.5h2a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1h2', 'M9.5 11h5', 'M9.5 14.5h5', 'M9.5 18h3'],
 };
 
 /** Bentuk cadangan: kotak bertitik, jelas bahwa ikonnya belum dipetakan. */

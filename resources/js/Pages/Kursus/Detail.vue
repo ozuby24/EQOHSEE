@@ -11,7 +11,7 @@ defineProps<HalamanDetailKursus>();
 <template>
   <Head :title="kursus.judul" />
 
-  <div class="max-w-4xl mx-auto space-y-5">
+  <div class="space-y-5">
     <div class="brand-gradient rounded-2xl overflow-hidden text-white shadow-card">
       <div class="md:flex">
         <div class="md:w-52 h-36 md:h-auto bg-black/25 shrink-0">

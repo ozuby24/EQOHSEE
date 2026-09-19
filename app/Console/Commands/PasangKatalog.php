@@ -30,14 +30,43 @@ use Illuminate\Console\Command;
  */
 class PasangKatalog extends Command
 {
+    /** Paket layanan tahunan: server, hosting, dan perpanjangan. */
+    private const KODE_LAYANAN  = 'LAYANAN-PRO';
+
+    /**
+     * Rp 3.000.000 per tahun, untuk seluruh akun.
+     *
+     * Bukan per website: satu peladen menampung seluruh website milik
+     * pelanggan yang sama. Pelanggan dengan tiga website tetap membayar
+     * tiga juta setahun, bukan sembilan.
+     */
+    private const HARGA_LAYANAN = 3_000_000;
+
+    private const KETERANGAN_LAYANAN =
+        'Satu peladen khusus: 1 vCPU, RAM 1 GB, penyimpanan NVMe 60 GB. '
+        .'Sudah termasuk hosting, nama domain terpasang, sertifikat HTTPS, '
+        .'cadangan berkala, pemantauan, dan pembaruan keamanan. '
+        .'Berlaku untuk seluruh website pada akun yang sama — bukan per website. '
+        .'Diperpanjang setiap tahun.';
+
     protected $signature = 'pembelian:katalog';
 
     protected $description = 'Pasang katalog produk dari daftar modul aplikasi';
+
+    /** @var list<string> kode butir baru yang terbit berharga nol */
+    private array $tanpaHarga = [];
 
     public function handle(): int
     {
         $baru = 0;
         $ada  = 0;
+
+        /* Dihitung terpisah dari $baru: sejak paket layanan terbit
+           berikut harganya, "ada butir baru" tidak lagi berarti "ada
+           butir yang harganya perlu diisi". Peringatan yang menyuruh
+           mengisi harga yang sudah terisi mengajari pembacanya
+           mengabaikan peringatan. */
+        $this->tanpaHarga = [];
 
         /* Paket menyeluruh. Tidak menunjuk satu modul pun — ia mewakili
            platformnya sebagai satu kesatuan. */
@@ -48,6 +77,28 @@ class PasangKatalog extends Command
             'keterangan'  => 'Seluruh aplikasi di dalamnya, pembaruan, dan pendampingan pemasangan.',
             'urutan'      => 0,
         ], $baru);
+
+        /* ── Layanan tahunan: server, hosting, dan perpanjangan ──
+
+           Satu-satunya butir yang harganya DITETAPKAN di sini, dan
+           pengecualian itu perlu alasannya sendiri. Aturan di kepala
+           berkas ini — butir baru berharga nol dan mati — menjaga
+           pemrogram dari menebak harga dagang. Angka di bawah bukan
+           tebakan: ia keputusan pemiliknya, diberikan langsung, berikut
+           spesifikasi peladen yang ditanggungnya. Menerbitkannya nol dan
+           mati justru membuat pemiliknya harus mengetik ulang angka yang
+           sudah ia putuskan, pada layar yang berbeda, dengan peluang
+           salah ketik yang tidak perlu ada.
+
+           Menjalankan ulang tetap TIDAK menimpa harga yang sudah ada —
+           lihat pasang() di bawah. */
+        $ada += $this->pasang(self::KODE_LAYANAN, [
+            'nama'        => 'Professional — server, hosting & perpanjangan',
+            'jenis'       => Produk::LAYANAN,
+            'modul_kunci' => null,
+            'keterangan'  => self::KETERANGAN_LAYANAN,
+            'urutan'      => 5,
+        ], $baru, harga: self::HARGA_LAYANAN, aktif: true, masaBulan: 12);
 
         /* Keterangan jualnya diambil dari Modules — daftar yang sama
            dengan yang menggambar halaman depan — supaya katalog dan
@@ -62,7 +113,7 @@ class PasangKatalog extends Command
         $jual = Modules::perKunciMenu();
 
         $urutan = 10;
-        $hidup  = ['WEBSITE'];
+        $hidup  = ['WEBSITE', self::KODE_LAYANAN];
 
         foreach (Menu::all() as $kunci => $modul) {
             /* Dasbor dan Admin tidak dijual terpisah: keduanya bagian
@@ -140,17 +191,28 @@ class PasangKatalog extends Command
                 .implode(', ', $dimatikan).'.');
         }
 
-        if ($baru > 0) {
-            $this->warn('Butir baru berharga nol dan belum aktif. '
+        if ($this->tanpaHarga) {
+            $this->warn(count($this->tanpaHarga).' butir baru terbit berharga nol dan belum aktif: '
+                .implode(', ', $this->tanpaHarga).'. '
                 .'Isi harganya lebih dulu, lalu aktifkan — butir tak aktif tidak muncul di katalog.');
         }
 
         return self::SUCCESS;
     }
 
-    /** @return int 1 bila barisnya memang sudah ada sebelumnya */
-    private function pasang(string $kode, array $data, int &$baru): int
-    {
+    /**
+     * @param  int|null  $harga  harga awal bila barisnya baru; null berarti
+     *                           nol dan tidak aktif, sesuai aturan bawaan
+     * @return int 1 bila barisnya memang sudah ada sebelumnya
+     */
+    private function pasang(
+        string $kode,
+        array $data,
+        int &$baru,
+        ?int $harga = null,
+        bool $aktif = false,
+        int $masaBulan = 12,
+    ): int {
         $lama = Produk::where('kode', $kode)->first();
 
         if ($lama) {
@@ -169,11 +231,18 @@ class PasangKatalog extends Command
             return 1;
         }
 
+        if (($harga ?? 0) < 1) $this->tanpaHarga[] = $kode;
+
         Produk::create($data + [
             'kode'       => $kode,
-            'harga'      => 0,
-            'masa_bulan' => 12,
-            'aktif'      => false,
+            'harga'      => $harga ?? 0,
+            'masa_bulan' => $masaBulan,
+
+            /* Tetap mati bila harganya nol, apa pun yang diminta
+               pemanggilnya. Butir berharga nol yang aktif dapat terjual
+               tanpa uang masuk, dan tagihannya terlihat wajar
+               sepenuhnya — sebab angka nol itu memang yang tersimpan. */
+            'aktif'      => $aktif && ($harga ?? 0) > 0,
         ]);
 
         $baru++;

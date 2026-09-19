@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import IkonStat from '../Components/IkonStat.vue';
 import KartuGrafik from '../Grafik/KartuGrafik.vue';
@@ -7,19 +7,20 @@ import Garis from '../Grafik/Garis.vue';
 import Batang from '../Grafik/Batang.vue';
 import Donat from '../Grafik/Donat.vue';
 import Legenda from './Dasbor/Legenda.vue';
+import PopPengumuman from '../Components/PopPengumuman.vue';
+import type { Pengumuman } from '../types';
 
 interface Enrollment {
   judul: string; deskripsi: string | null; sampul: string | null; kategori: string | null;
   nada: string | null; status: string; progress: number; modul: number; menit: number;
   belajar: string; detail: string;
 }
-interface NewsItem { judul: string; cuplikan: string; tanggal: string | null; url: string }
 interface ModuleItem { nama: string; ket: string; nilai: number; total: number; warna: string; url: string; ikon: string }
 
 const props = defineProps<{
   judul: string; subjudul: string; sapa: string; nama: string; hero: string | null; lanjut: string;
   enrollments: Enrollment[]; certificates: number; ringkas: { total: number; diikuti: number; selesai: number; berjalan: number; kemajuan: number; belum: number };
-  news: NewsItem[]; modul: ModuleItem[]; kategori: Array<{ nama: string; jumlah: number; nada?: string }>;
+  news: Pengumuman[]; modul: ModuleItem[]; kategori: Array<{ nama: string; jumlah: number; nada?: string }>;
   admin: { users: number; courses: number; procedures: number; certs: number } | null;
   hari: number; opsiHari: number[];
   grafik: {
@@ -45,6 +46,18 @@ function pilihHari(h: number) {
 }
 
 const g = computed(() => props.grafik);
+
+/* ── pengumuman ──
+
+   Dibuka sebagai pop-out, bukan sebagai perpindahan halaman. Yang
+   membacanya sedang melihat progres kursusnya; berpindah halaman penuh
+   untuk empat paragraf berarti kehilangan tempatnya, dan tombol kembali
+   peramban mengembalikannya ke puncak dasbor.
+
+   Yang disimpan barisnya sendiri, bukan indeksnya. Menyimpan indeks
+   membuat pop-out menunjuk pengumuman LAIN begitu daftarnya bergeser —
+   satu pengumuman baru terbit, dan yang terbuka bukan yang diklik. */
+const pengumuman = ref<Pengumuman | null>(null);
 
 /* Dua deret pada satu sumbu, dan keduanya memang sebanding: masing-masing
    menghitung BANYAKNYA kejadian per hari, bukan dua besaran berbeda
@@ -78,7 +91,7 @@ const kpi: Array<{ label: string; value: () => number | string; hint: string; to
 
 <template>
   <Head title="Dashboard" />
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
     <div class="eq-kpi-baris">
       <article v-for="item in kpi" :key="item.label" class="eq-kpi"><span class="eq-kpi-ikon" :class="`t-${item.tone}`"><IkonStat :nama="item.ikon" :ukuran="18" /></span><span class="eq-kpi-isi"><span class="eq-kpi-label">{{ item.label }}</span><span class="eq-kpi-nilai">{{ item.value() }}</span><span class="eq-kpi-ket">{{ item.hint }}</span></span></article>
     </div>
@@ -116,7 +129,32 @@ const kpi: Array<{ label: string; value: () => number | string; hint: string; to
             </table>
           </template>
         </KartuGrafik>
-        <section class="eq-panel"><div class="eq-panel-kepala"><h3>Pengumuman</h3><Link href="/news" class="eq-tautan">Lihat Semua →</Link></div><ul v-if="news.length" class="eq-warta"><li v-for="item in news" :key="item.url"><Link :href="item.url"><span class="eq-warta-teks"><strong>{{ item.judul }}</strong><small>{{ item.cuplikan }}</small></span><time>{{ item.tanggal }}</time></Link></li></ul><div v-else class="eq-kosong eq-kosong-kecil"><p>Belum ada pengumuman.</p></div></section></div>
+        <section class="eq-panel">
+          <div class="eq-panel-kepala">
+            <h3>Pengumuman</h3>
+            <Link href="/news" class="eq-tautan">Lihat Semua →</Link>
+          </div>
+
+          <!-- <button>, bukan <Link>. Yang dibuka pop-out di halaman ini,
+               bukan alamat lain — dan tautan yang tidak pernah menuju ke
+               mana pun menipu menu klik-kanan, Ctrl+klik, dan pembaca
+               layar sekaligus. Halaman penuhnya tetap terjangkau dari
+               dalam pop-out. -->
+          <ul v-if="news.length" class="eq-warta">
+            <li v-for="item in news" :key="item.id">
+              <button type="button" class="eq-warta-buka" @click="pengumuman = item">
+                <img v-if="item.sampul" :src="item.sampul" alt="" aria-hidden="true" class="eq-warta-gambar">
+                <span class="eq-warta-teks">
+                  <strong>{{ item.judul }}</strong>
+                  <small>{{ item.ringkasan }}</small>
+                </span>
+                <time>{{ item.tanggalPendek }}</time>
+              </button>
+            </li>
+          </ul>
+
+          <div v-else class="eq-kosong eq-kosong-kecil"><p>Belum ada pengumuman.</p></div>
+        </section></div>
     </div>
 
     <!-- ═══ Grafik pembelajaran ═══
@@ -266,4 +304,6 @@ const kpi: Array<{ label: string; value: () => number | string; hint: string; to
     <section class="eq-panel"><div class="eq-panel-kepala"><h3>Modul Lainnya</h3><span class="eq-panel-ket">Angka yang ditampilkan adalah yang butuh perhatian.</span></div><div class="eq-modul"><Link v-for="item in modul" :key="item.nama" :href="item.url"><span class="eq-modul-atas"><span class="eq-modul-nilai" :style="{ color: item.warna }">{{ item.nilai }}</span><span class="eq-modul-ikon" :style="{ background: `${item.warna}18`, color: item.warna }"><IkonStat :nama="item.ikon" :ukuran="18" /></span></span><strong>{{ item.nama }}</strong><small>{{ item.ket }}<template v-if="item.total > 0"> · dari {{ item.total }}</template></small></Link></div></section>
     <section v-if="admin" class="eq-panel"><div class="eq-panel-kepala"><h3>Ringkasan Sistem</h3></div><div class="eq-kategori"><div v-for="item in [['Pengguna', admin.users], ['Kursus', admin.courses], ['Prosedur', admin.procedures], ['Sertifikat terbit', admin.certs]]" :key="item[0]" class="eq-admin-angka"><span class="eq-kpi-nilai">{{ item[1] }}</span><small>{{ item[0] }}</small></div></div></section>
   </div>
+
+  <PopPengumuman :item="pengumuman" @tutup="pengumuman = null" />
 </template>

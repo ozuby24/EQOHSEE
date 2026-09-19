@@ -91,7 +91,7 @@ const WARNA_STATUS: Record<string, string> = {
 <template>
   <Head :title="props.inv?.nomor ?? 'Investigasi'" />
 
-  <div class="max-w-[1500px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <!-- ══════════ kepala ══════════ -->
     <section class="flex flex-wrap items-start justify-between gap-4">

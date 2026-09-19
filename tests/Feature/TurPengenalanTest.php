@@ -64,7 +64,7 @@ class TurPengenalanTest extends TestCase
     {
         $u = $this->baru();
 
-        $props = $this->actingAs($u)->get(route('dasbor'))
+        $props = $this->actingAs($u)->get(route('dashboard'))
             ->assertOk()->viewData('page')['props'];
 
         $this->assertArrayHasKey('tur', $props);
@@ -89,7 +89,7 @@ class TurPengenalanTest extends TestCase
         $u->tur_selesai_pada = now();
         $u->saveQuietly();
 
-        $props = $this->actingAs($u->fresh())->get(route('dasbor'))
+        $props = $this->actingAs($u->fresh())->get(route('dashboard'))
             ->assertOk()->viewData('page')['props'];
 
         $this->assertNull($props['tur'],
@@ -330,5 +330,76 @@ class TurPengenalanTest extends TestCase
         $this->assertNull($u->tur_selesai_pada,
             'tur_selesai_pada dapat diisi massal; formulir mana pun dapat melewatkan '
             .'pengenalan tanpa orangnya pernah melihatnya.');
+    }
+
+    /* ════════════ tata letak: yang membuat isinya dapat digulir ════════════ */
+
+    /**
+     * Ketiga deklarasi di bawah adalah SATU perbaikan, dan hilang salah
+     * satunya mengembalikan cacat yang sama.
+     *
+     * Langkah ketiga memuat dua puluh tujuh kartu modul. Pengenalannya
+     * dibatasi max-height dan .eq-tur-isi sudah punya overflow-y: auto,
+     * jadi di atas kertas semuanya lengkap. Tetapi petak dan lentur
+     * memberi anaknya min-height: auto — "jangan menyusut lebih kecil
+     * daripada isimu" — dan baris petak yang tingginya auto mengambil
+     * setinggi isinya tanpa peduli max-height induknya.
+     *
+     * Akibatnya wadah gulirnya tidak pernah kekurangan ruang, jadi tidak
+     * pernah menggulir; kelebihannya dipotong overflow: hidden. Yang
+     * ikut terpotong bukan cuma sisa daftarnya melainkan KAKI-nya —
+     * tombol "Lanjut" terdorong keluar layar, dan pengenalannya berhenti
+     * di langkah ketiga tanpa jalan maju maupun mundur.
+     *
+     * Terukur di peramban pada enam ukuran layar: langkah 3 rusak di
+     * SEMUA ukuran, dari 429 piksel terpotong pada 1440x960 sampai 1270
+     * piksel pada 390x844. Tidak ada satu pun galat yang tercatat.
+     */
+    public function test_tata_letak_pengenalan_membiarkan_isinya_digulir(): void
+    {
+        $vue = file_get_contents(base_path('resources/js/Components/TurSelamatDatang.vue'));
+
+        $wajib = [
+            '.eq-tur'       => ['grid-template-rows' => 'minmax(0, 1fr)'],
+            '.eq-tur-badan' => ['min-height' => '0'],
+            '.eq-tur-isi'   => ['min-height' => '0', 'overflow-y' => 'auto'],
+        ];
+
+        foreach ($wajib as $pemilih => $deklarasi) {
+            $badan = self::badanAturan($vue, $pemilih);
+
+            $this->assertNotNull($badan, "Aturan {$pemilih} tidak ada lagi di TurSelamatDatang.vue.");
+
+            foreach ($deklarasi as $sifat => $nilai) {
+                $this->assertMatchesRegularExpression(
+                    '/;\s*'.preg_quote($sifat, '/').'\s*:\s*'.preg_quote($nilai, '/').'\s*;/',
+                    ';'.$badan.';',
+                    "{$pemilih} kehilangan `{$sifat}: {$nilai}`. Tanpa itu daftar "
+                    ."langkah ketiga berhenti dapat digulir dan tombol Lanjut "
+                    ."terdorong ke luar layar.",
+                );
+            }
+        }
+    }
+
+    /**
+     * Isi sebuah aturan CSS, dicari menurut pemilih yang PERSIS.
+     *
+     * Dicocokkan di awal baris supaya '.eq-tur' tidak ikut menangkap
+     * '.eq-tur-badan' — keduanya berawalan sama, dan pencocokan yang
+     * longgar akan memeriksa aturan yang salah lalu lulus.
+     */
+    private static function badanAturan(string $css, string $pemilih): ?string
+    {
+        /* Komentar dibuang lebih dulu. Isinya menyebut nama sifat yang
+           sedang dicari — blok ini justru menjelaskan kenapa deklarasi
+           itu ada — jadi dibiarkan, ia akan cocok pada penjelasannya,
+           bukan pada aturannya. Komentar juga memutus batas titik koma
+           yang dipakai pencocokan di bawah. */
+        $css = (string) preg_replace('#/\*.*?\*/#s', '', $css);
+
+        $pola = '/^'.preg_quote($pemilih, '/').'\s*\{([^}]*)\}/m';
+
+        return preg_match($pola, $css, $m) ? $m[1] : null;
     }
 }

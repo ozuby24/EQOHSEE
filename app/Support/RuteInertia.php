@@ -28,7 +28,7 @@ final class RuteInertia
     public const NAMA = [
         'pilar',
         'dashboard',
-        'dasbor',
+        'lms.dasbor',
         'temuan.index',
         'password.confirm',
 
@@ -103,6 +103,7 @@ final class RuteInertia
         'admin.pemilik',
         'admin.ai',
         'keamanan.perangkat',
+        'keamanan.dua-faktor',
         'admin.users.index',
         'admin.users.create',
         'admin.companies.index',

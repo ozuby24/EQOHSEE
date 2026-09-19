@@ -1,0 +1,59 @@
+{
+  "kunci": "pjp",
+  "label": "Perusahaan Jasa Pertambangan",
+  "jual": "Pemantauan Perusahaan Jasa (PJP)",
+  "harga": 2500000,
+  "ket": "Prakualifikasi SMKP 17 kategori dan 126 butir, dokumen berkala beserta ketepatan waktunya, dan evaluasi kinerja semesteran tiap mitra kerja — satu berkas yang siap diminta Inspektur Tambang.",
+  "semboyan": "Proven On Paper",
+  "halaman": [
+    {
+      "berkas": "01-pjp.jpg",
+      "label": "Ringkasan",
+      "grup": "",
+      "path": "pjp",
+      "status": "ok"
+    },
+    {
+      "berkas": "02-pjp-persyaratan.jpg",
+      "label": "Persyaratan & Penetapan",
+      "grup": "Aspek Pemantauan",
+      "path": "pjp/persyaratan",
+      "status": "ok"
+    },
+    {
+      "berkas": "03-pjp-pelaporan.jpg",
+      "label": "Pemantauan & Pelaporan",
+      "grup": "Aspek Pemantauan",
+      "path": "pjp/pelaporan",
+      "status": "ok"
+    },
+    {
+      "berkas": "04-pjp-evaluasi.jpg",
+      "label": "Evaluasi Kinerja",
+      "grup": "Aspek Pemantauan",
+      "path": "pjp/evaluasi",
+      "status": "ok"
+    },
+    {
+      "berkas": "05-pjp-daftar.jpg",
+      "label": "Daftar Perusahaan Jasa",
+      "grup": "Mitra",
+      "path": "pjp/daftar",
+      "status": "ok"
+    },
+    {
+      "berkas": "06-pjp-daftar-baru.jpg",
+      "label": "Tambah Perusahaan Jasa",
+      "grup": "Mitra",
+      "path": "pjp/daftar/baru",
+      "status": "ok"
+    },
+    {
+      "berkas": "07-pjp-bantuan.jpg",
+      "label": "Bantuan",
+      "grup": "Acuan",
+      "path": "pjp/bantuan",
+      "status": "ok"
+    }
+  ]
+}

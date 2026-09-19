@@ -203,7 +203,7 @@ class BelajarGrafikTest extends TestCase
     {
         $this->actingAs($this->peserta());
 
-        $this->get(route('dashboard'))->assertOk()->assertInertia(
+        $this->get(route('lms.dasbor'))->assertOk()->assertInertia(
             fn (AssertableInertia $p) => $p->component('Dashboard')
                 ->where('hari', BelajarGrafik::RENTANG_BAWAAN)
                 ->where('opsiHari', BelajarGrafik::RENTANG)
@@ -219,7 +219,7 @@ class BelajarGrafikTest extends TestCase
     {
         $this->actingAs($this->peserta());
 
-        $this->get(route('dashboard', ['hari' => 100000]))->assertOk()->assertInertia(
+        $this->get(route('lms.dasbor', ['hari' => 100000]))->assertOk()->assertInertia(
             fn (AssertableInertia $p) => $p->where('hari', BelajarGrafik::RENTANG_BAWAAN)
                 ->count('grafik.kegiatan.label', BelajarGrafik::RENTANG_BAWAAN));
     }
@@ -236,12 +236,12 @@ class BelajarGrafikTest extends TestCase
     {
         $this->actingAs($this->peserta(['is_admin' => false, 'lms_role' => 'peserta']));
 
-        $this->get(route('dashboard'))->assertOk()->assertInertia(
+        $this->get(route('lms.dasbor'))->assertOk()->assertInertia(
             fn (AssertableInertia $p) => $p->where('grafik.penyelesaian', null));
 
         $this->actingAs($this->peserta(['is_admin' => true]));
 
-        $this->get(route('dashboard'))->assertOk()->assertInertia(
+        $this->get(route('lms.dasbor'))->assertOk()->assertInertia(
             fn (AssertableInertia $p) => $p->has('grafik.penyelesaian'));
     }
 

@@ -508,14 +508,41 @@ class PembelianTest extends TestCase
         $this->assertTrue($p->aktif, 'Menjalankan ulang pemasang mematikan katalog.');
     }
 
-    /** Butir baru lahir tidak aktif dan berharga nol — tidak dapat terjual tanpa sengaja. */
+    /**
+     * Tidak ada butir AKTIF yang berharga nol — itu jaminan sebenarnya.
+     *
+     * Semula uji ini menuntut nol butir aktif sama sekali, dan itu benar
+     * selama seluruh katalog memang lahir tanpa harga. Sejak paket
+     * layanan tahunan terbit berikut harganya — angka yang diputuskan
+     * pemiliknya, bukan ditebak pemrogram — tuntutan itu menjadi lebih
+     * luas daripada yang perlu dijaga.
+     *
+     * Yang berbahaya bukan "ada butir aktif", melainkan "ada butir aktif
+     * yang berharga nol": butir semacam itu dapat terjual tanpa uang
+     * masuk, dan tagihannya terlihat wajar sepenuhnya di layar admin
+     * sebab angka nol itu memang yang tersimpan. Itulah yang dijaga
+     * sekarang, dan itu berlaku untuk butir mana pun — termasuk yang
+     * ditambahkan bertahun kemudian.
+     */
     #[Test]
     public function butir_baru_belum_aktif(): void
     {
         $this->artisan('pembelian:katalog')->assertSuccessful();
 
         $this->assertGreaterThan(0, Produk::count());
-        $this->assertSame(0, Produk::where('aktif', true)->count(),
-            'Katalog terpasang langsung aktif dengan harga nol.');
+
+        $nolTapiAktif = Produk::where('aktif', true)->where('harga', '<=', 0)
+            ->pluck('kode')->all();
+
+        $this->assertSame([], $nolTapiAktif,
+            'Butir berharga nol terpasang dalam keadaan aktif: '
+            .implode(', ', $nolTapiAktif).'. Butir semacam itu dapat terjual '
+            .'tanpa uang masuk, dan tagihannya tidak akan terlihat janggal.');
+
+        /* Seluruh modul aplikasi tetap lahir tanpa harga dan tanpa
+           keaktifan — pengecualiannya hanya paket layanan. */
+        $this->assertSame(0,
+            Produk::where('jenis', Produk::APLIKASI)->where('aktif', true)->count(),
+            'Aplikasi terpasang langsung aktif; harganya belum pernah ditetapkan siapa pun.');
     }
 }

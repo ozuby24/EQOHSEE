@@ -60,7 +60,7 @@ async function hapusFoto() {
 <template>
   <Head title="Data Diri" />
 
-  <div class="max-w-[900px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <div class="bg-white rounded-2xl shadow-card border border-stone-100 overflow-hidden">
       <div class="px-6 py-5 border-b border-stone-100">

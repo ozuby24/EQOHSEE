@@ -671,3 +671,74 @@ input,select,textarea{ outline:none; }
 .scrollbar-halus::-webkit-scrollbar-track{ background:transparent; }
 .scrollbar-halus::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.22); border-radius:99px; }
 .scrollbar-halus::-webkit-scrollbar-thumb:hover{ background:rgba(255,255,255,.35); }
+
+/* ══════════════════════════════════════════════════════════════
+   KERANGKA POP-OUT
+
+   Latar, tombol silang, pil label, dan geraknya — dipakai bersama
+   oleh setiap pop-out aplikasi ini (pengumuman, pilihan register,
+   dan seterusnya).
+
+   Tinggal di sini, bukan di dalam blok `scoped` salah satu
+   komponennya. Style `scoped` hanya berlaku pada komponen tempat ia
+   ditulis, jadi pop-out kedua yang memakai kelas yang sama akan
+   tergambar TANPA satu pun aturannya — kotak putih tanpa latar gelap,
+   yang tampak seperti halaman rusak alih-alih seperti style yang
+   tidak terpasang. Menyalinnya ke tiap komponen menyelesaikan itu,
+   tetapi menyisakan tiga salinan yang harus berubah bersama-sama
+   setiap kali temanya bergeser — dan yang ketiga selalu ketinggalan.
+   ══════════════════════════════════════════════════════════════ */
+
+.eq-pop-latar{
+  position:fixed; inset:0; z-index:70;
+  display:grid; place-items:center; padding:1rem;
+  background:rgb(12 17 23 / .62);
+  backdrop-filter:blur(3px);
+}
+
+/* Tombol silang selalu berlatar gelap tembus pandang — ia berdiri di
+   atas foto sampul pada satu pop-out dan di atas putih pada yang lain,
+   dan satu-satunya warna yang terbaca pada keduanya adalah ini. */
+.eq-pop-silang{
+  position:absolute; top:.7rem; right:.7rem; z-index:2;
+  display:grid; place-items:center;
+  width:2rem; height:2rem;
+  border-radius:99px; border:0;
+  color:#fff; background:rgb(12 17 23 / .55);
+  backdrop-filter:blur(4px);
+  cursor:pointer;
+  transition:background .15s ease;
+}
+.eq-pop-silang:hover{ background:rgb(12 17 23 / .78); }
+.eq-pop-silang svg{ width:1rem; height:1rem; }
+
+.eq-pop-pil{
+  display:inline-block;
+  padding:.2rem .55rem;
+  border-radius:99px;
+  font-size:9.5px; font-weight:800;
+  letter-spacing:.14em; text-transform:uppercase;
+  color:var(--eq-aksen, #D96500);
+  background:color-mix(in srgb, var(--eq-aksen, #F57C00) 13%, transparent);
+}
+
+/* ── gerak ── */
+.eq-pop-enter-active, .eq-pop-leave-active{ transition:opacity .16s ease; }
+.eq-pop-enter-from, .eq-pop-leave-to{ opacity:0; }
+.eq-pop-enter-active .eq-pop,
+.eq-pop-enter-active .eq-reg{ transition:transform .18s cubic-bezier(.2,.8,.3,1); }
+.eq-pop-enter-from .eq-pop,
+.eq-pop-enter-from .eq-reg{ transform:translateY(.9rem) scale(.985); }
+
+@media (prefers-reduced-motion: reduce){
+  .eq-pop-enter-active, .eq-pop-leave-active,
+  .eq-pop-enter-active .eq-pop, .eq-pop-enter-active .eq-reg{ transition:none; }
+  .eq-pop-enter-from .eq-pop, .eq-pop-enter-from .eq-reg{ transform:none; }
+}
+
+/* Di layar sempit pop-out menempel ke bawah: kotak melayang di tengah
+   layar ponsel menyisakan pita kosong di atas dan di bawah sementara
+   isinya sendiri terhimpit. */
+@media (max-width: 520px){
+  .eq-pop-latar{ padding:0; place-items:end stretch; }
+}

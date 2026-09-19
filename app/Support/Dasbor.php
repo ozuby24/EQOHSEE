@@ -4,6 +4,8 @@ namespace App\Support;
 
 use App\Models\Investigasi\{Insiden, Tindakan as TindakanInvestigasi};
 use App\Models\Pembelian\Pesanan as PesananBeli;
+use App\Models\Enrollment;
+use App\Models\User as PenggunaSitus;
 use App\Models\{Pjp, PjpLaporan as LaporanPjp};
 use App\Models\Hr\Absensi as HrAbsensi;
 use App\Models\Hr\Roster as HrRoster;
@@ -65,7 +67,10 @@ final class Dasbor
                berbeda dari ikon sampingnya memaksa orang mempelajari dua
                lambang untuk satu modul — dan daftar ikon kedua adalah
                tempat pertama yang tertinggal saat modulnya berubah. */
-            fn (array $m) => $m + ['ikon' => $menu[$m['modul']]['icon'] ?? null],
+            fn (array $m) => $m + [
+                'ikon'      => $menu[$m['modul']]['icon'] ?? null,
+                'ikonPadat' => IkonPadat::untuk($m['modul']),
+            ],
             array_values(array_filter(
                 [...self::semua(), ...self::beralur()],
                 fn (array $m) => in_array($m['modul'], $boleh, true),
@@ -299,6 +304,30 @@ final class Dasbor
                 'total' => WorkOrder::count(),
                 'rute'  => 'maintenance.index', 'nada' => 'ingat',
             ],
+
+            /* ═══ learning center ═══
+             *
+             * Dua modul sebelumnya tidak punya satu ubin pun di dasbor —
+             * LMS dan Personalia — sehingga ringkasan situs diam sama
+             * sekali tentang keduanya. Diam bukan berarti aman: kursus
+             * wajib yang tidak pernah diselesaikan adalah kelalaian yang
+             * sama seriusnya dengan izin kerja yang lewat jam. */
+            [
+                'modul' => 'lms', 'nama' => 'Kursus Belum Selesai',
+                'ket'   => 'Sudah didaftarkan, belum tuntas',
+                'nilai' => Enrollment::where('status', '<>', 'finished')->count(),
+                'total' => Enrollment::count(),
+                'rute'  => 'courses.index', 'nada' => 'ingat',
+            ],
+
+            /* ═══ personalia ═══ */
+            [
+                'modul' => 'personalia', 'nama' => 'Akun Belum Aktif',
+                'ket'   => 'Terdaftar, belum dapat dipakai masuk',
+                'nilai' => PenggunaSitus::where('active', false)->count(),
+                'total' => PenggunaSitus::count(),
+                'rute'  => 'personalia.index', 'nada' => 'ingat',
+            ],
         ];
     }
 
@@ -426,6 +455,127 @@ final class Dasbor
             ->filter(fn (GudangBarang $b) => in_array(
                 Gudang::statusStok($b)['kode'], ['habis', 'menipis'], true))
             ->count();
+    }
+
+    /**
+     * Ringkasan SELURUH modul, satu baris per modul.
+     *
+     * Panel "hal yang menuntut tindakan" di atasnya sengaja hanya
+     * menampilkan yang nilainya bukan nol — itu memang gunanya. Tetapi
+     * akibatnya ringkasan situs diam sama sekali tentang modul yang
+     * sedang bersih, dan yang membacanya tidak dapat membedakan
+     * "modul ini aman" dari "modul ini tidak ada di sini".
+     *
+     * Keduanya terlihat sama: tidak ada. Dan yang kedua adalah bagaimana
+     * dua modul — LMS dan Personalia — luput dari dasbor selama ini tanpa
+     * ada yang menyadarinya.
+     *
+     * Bagian ini menyebut semuanya, termasuk yang nol. Modul yang bersih
+     * berhak ditulis bersih.
+     *
+     * Dihitung dari ubin yang SAMA, bukan dari kueri tersendiri: dua
+     * sumber angka untuk satu modul akan berselisih pada suatu hari, dan
+     * yang berselisih di dasbor adalah yang paling sulit dipercaya lagi
+     * sesudahnya.
+     *
+     * @param  list<array<string,mixed>>  $ubin  hasil Dasbor::modul()
+     * @return list<array<string,mixed>>
+     */
+    public static function ringkasanModul(array $ubin): array
+    {
+        /* Urutan nada, dari yang paling menuntut. Dipakai memilih nada
+           modulnya: satu ubin gawat membuat modulnya gawat, seberapa pun
+           tenang ubin lainnya. */
+        $urutan = ['gawat' => 4, 'serius' => 3, 'ingat' => 2, 'kabar' => 1, 'baik' => 0];
+
+        $perModul = [];
+
+        foreach ($ubin as $u) {
+            $kunci = $u['modul'] ?? null;
+            if ($kunci === null) continue;
+
+            $perModul[$kunci] ??= [
+                'modul'   => $kunci,
+                'label'   => Menu::all()[$kunci]['label'] ?? $kunci,
+                'ikon'    => Menu::all()[$kunci]['icon'] ?? null,
+                'ikonPadat' => IkonPadat::untuk($kunci),
+                'semboyan'=> Menu::all()[$kunci]['semboyan'] ?? null,
+                'perlu'   => 0,
+                'kabar'   => 0,
+                'butir'   => [],
+                'nada'    => 'baik',
+                'rute'    => $u['rute'] ?? null,
+            ];
+
+            $nilai = (int) ($u['nilai'] ?? 0);
+            $nada  = $u['nada'] ?? 'kabar';
+
+            /* Ubin bernada 'kabar' TIDAK ikut dijumlahkan.
+             *
+               Nada itu menandai hitungan yang sekadar memberi kabar —
+               "Catatan tersimpan", "Penilaian tercatat" — bukan pekerjaan
+               yang tertunggak. Dijumlahkan bersama yang lain, Energy
+               Performance tampil "420" tepat di sebelah HRIS "181", dan
+               keduanya terbaca sebagai hal yang sama. Padahal yang satu
+               berarti empat ratus dua puluh catatan yang sehat, yang lain
+               seratus delapan puluh satu hari kerja yang terhalang.
+
+               Angka kabarnya tidak dibuang, hanya dipisahkan ke barisnya
+               sendiri. Yang salah bukan menampilkannya, melainkan
+               menampilkannya sebagai tunggakan. */
+            if ($nada === 'kabar') {
+                $perModul[$kunci]['kabar'] += $nilai;
+            } else {
+                $perModul[$kunci]['perlu'] += $nilai;
+            }
+
+            $perModul[$kunci]['butir'][] = [
+                'nama'  => $u['nama'] ?? '',
+                'nilai' => $nilai,
+                'total' => (int) ($u['total'] ?? 0),
+                'nada'  => $u['nada'] ?? 'kabar',
+                'rute'  => $u['rute'] ?? null,
+            ];
+
+            /* Nada modulnya hanya dinaikkan oleh ubin yang nilainya
+               BUKAN nol. Ubin "gawat" yang angkanya nol berarti tidak ada
+               yang gawat — menandai modulnya merah karena ubin itu ada
+               akan mewarnai seluruh dasbor merah sepanjang waktu, dan
+               warna yang selalu merah berhenti dibaca sebagai peringatan. */
+            if ($nilai > 0 && ($urutan[$nada] ?? 0) > ($urutan[$perModul[$kunci]['nada']] ?? 0)) {
+                $perModul[$kunci]['nada'] = $nada;
+            }
+        }
+
+        /* Butirnya diurutkan menurun supaya yang terbesar terbaca lebih
+           dulu, lalu dipotong dua: kartu ringkasan yang memuat enam baris
+           berhenti menjadi ringkasan. */
+        foreach ($perModul as &$m) {
+            usort($m['butir'], function ($a, $b) {
+                /* Yang menuntut tindakan selalu di depan, seberapa pun
+                   kecil angkanya — satu izin kerja yang lewat jam lebih
+                   perlu dibaca daripada empat ratus catatan yang sehat. */
+                $ka = ($a['nada'] ?? '') === 'kabar' ? 1 : 0;
+                $kb = ($b['nada'] ?? '') === 'kabar' ? 1 : 0;
+
+                return $ka !== $kb ? $ka <=> $kb : $b['nilai'] <=> $a['nilai'];
+            });
+            $m['butir'] = array_slice($m['butir'], 0, 2);
+        }
+        unset($m);
+
+        /* Yang paling menuntut di depan; di antara yang sama nadanya,
+           yang angkanya lebih besar. Modul bersih turun ke bawah — bukan
+           disembunyikan, hanya tidak lagi merebut perhatian pertama. */
+        $hasil = array_values($perModul);
+
+        usort($hasil, function ($a, $b) use ($urutan) {
+            $n = ($urutan[$b['nada']] ?? 0) <=> ($urutan[$a['nada']] ?? 0);
+
+            return $n !== 0 ? $n : ($b['perlu'] <=> $a['perlu']);
+        });
+
+        return $hasil;
     }
 
     /** Berapa hari lagi dianggap "sudah dekat". */

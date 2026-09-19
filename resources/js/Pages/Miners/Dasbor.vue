@@ -66,7 +66,7 @@ const jumlah  = computed(() => props.jumlah ?? {});
 <template>
   <Head :title="props.judul" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <Link href="/miners/kedaluwarsa"

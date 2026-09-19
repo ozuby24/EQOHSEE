@@ -4,6 +4,8 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import BlankLayout from '../Layouts/BlankLayout.vue';
 import Wordmark from '../Components/Wordmark.vue';
 import IkonPilar from '../Components/IkonPilar.vue';
+import IkonPadat from '../Components/IkonPadat.vue';
+import { ikonPadat, type JalurPadat } from '../ikonPadat';
 
 defineOptions({ layout: BlankLayout });
 
@@ -18,6 +20,9 @@ type Pillar = {
 type Module = {
   nama: string; status: string; ket: string; ikon: string; pilar: string;
   pilarNama: string; pilarWarna: string; pilarDeep: string; url: string | null;
+  /* Glyph padat untuk ubin berdimensi; `ikon` yang lama tetap ada
+     karena halaman /pilar masih menggambarnya sebagai garis. */
+  ikonPadat: JalurPadat[];
 };
 
 const props = defineProps<{
@@ -40,7 +45,29 @@ const props = defineProps<{
 }>();
 
 const pilarTerpilih = ref<string | null>(null);
-const videoTerbuka = ref(false);
+
+/**
+ * Video yang sedang diputar — bukan sekadar penanda "modal terbuka".
+ *
+ * Semula berupa boolean, dan modalnya selalu memutar hero.video dengan
+ * judul yang dipaku "Operasional Tambang". Keenam kartu galeri sudah
+ * membawa videoUrl-nya masing-masing — inspeksi, survei, pajanan kerja,
+ * higiene, mutu, reklamasi — dan tidak satu pun pernah terpakai: menekan
+ * "Putar video" pada kartu mana pun memutar video yang sama.
+ *
+ * Yang membacanya tidak melihat galat. Ia melihat enam janji berbeda
+ * yang semuanya membuka rekaman yang sama, lalu berhenti menekan
+ * tombolnya.
+ */
+type VideoAktif = { judul: string; src: string; poster: string | null };
+
+const videoAktif = ref<VideoAktif | null>(null);
+
+function putar(judul: string, src: string | null, poster: string | null = null) {
+  if (!src) return;
+
+  videoAktif.value = { judul, src, poster };
+}
 
 /**
  * Kepala berubah setelah halaman digulir.
@@ -94,16 +121,10 @@ const pilarList = computed(() => Object.entries(props.pilar));
  */
 const warnaFitur = ['#F57C00', '#1E88E5', '#16883F', '#7E57C2', '#C2410C', '#0891B2'];
 
-const ikonFitur: string[][] = [
-  ['M12 2.8 4.6 5.7v5.6c0 4.5 3.1 8.6 7.4 9.9 4.3-1.3 7.4-5.4 7.4-9.9V5.7L12 2.8Z',
-   'm8.9 11.9 2.2 2.2 4-4.4'],
-  ['M4 5.5h16v13H4zM4 9.5h16', 'M8 13h8M8 16h5'],
-  ['M12 3.5 3.5 8l8.5 4.5L20.5 8 12 3.5Z', 'M3.5 12 12 16.5 20.5 12', 'M3.5 16 12 20.5 20.5 16'],
-  ['M16.5 20v-1.6a3.4 3.4 0 0 0-3.4-3.4H6.9a3.4 3.4 0 0 0-3.4 3.4V20',
-   'M10 11.6a3.6 3.6 0 1 0 0-7.2 3.6 3.6 0 0 0 0 7.2Z', 'M17 8.5h4'],
-  ['M7 11V8a5 5 0 0 1 10 0v3', 'M5.5 11h13v9.5h-13z', 'M12 15v2.5'],
-  ['M3.5 3.5h6.5v6.5H3.5zM14 3.5h6.5v6.5H14zM3.5 14h6.5v6.5H3.5zM14 14h6.5v6.5H14z'],
-];
+/* Nama glyph padat untuk keenam kartu fitur. Nama, bukan jalur:
+   bentuknya tinggal di resources/js/ikonPadat.ts supaya satu gambar
+   tidak pernah punya dua salinan yang boleh berbeda. */
+const ikonFitur: string[] = ['shield', 'dokumen', 'layers', 'orang', 'gembok', 'kisi'];
 
 /**
  * Angka contoh untuk tiruan dasbor di hero.
@@ -144,13 +165,9 @@ const tentang: [string, string][] = [
   ['Keamanan data', 'Data terenkripsi dalam pengiriman dan terpisah per perusahaan.'],
 ];
 
-const ikonTentang: string[][] = [
-  ['M9 3.5h9.5v17H5.5v-14', 'M5.5 6.5 9 3.5v3H5.5Z', 'M9 11h6M9 14.5h6'],
-  ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z', 'M3.2 12h17.6', 'M12 3.2a14 14 0 0 1 0 17.6a14 14 0 0 1 0-17.6'],
-  ['M16.5 20v-1.6a3.4 3.4 0 0 0-3.4-3.4H6.9a3.4 3.4 0 0 0-3.4 3.4V20',
-   'M10 11.6a3.6 3.6 0 1 0 0-7.2 3.6 3.6 0 0 0 0 7.2Z', 'M20.5 20v-1.6a3.4 3.4 0 0 0-2.5-3.3'],
-  ['M7 11V8a5 5 0 0 1 10 0v3', 'M5.5 11h13v9.5h-13z', 'M12 15v2.5'],
-];
+/* Searah dengan daftar `tentang` di bawah — urutannya yang memasangkan
+   ikon dengan judulnya, jadi keduanya harus ikut berubah bersama. */
+const ikonTentang: string[] = ['regulasi', 'globe', 'orang', 'gembok'];
 
 const alasanHero: [string, string][] = [
   ['Sesuai regulasi', 'Mengacu pada Kepdirjen 185.K/2019, SMKP Minerba, dan standar ISO.'],
@@ -166,9 +183,33 @@ const jaminan = [
   { teks: 'Data terpisah per perusahaan' },
 ];
 
-function togglePilar(slug: string) {
-  pilarTerpilih.value = pilarTerpilih.value === slug ? null : slug;
+/**
+ * Memilih aspek — TIDAK menutupnya lagi bila ditekan dua kali.
+ *
+ * Selama rinciannya terbuka di bawah kisi, "tekan lagi untuk menutup"
+ * masuk akal: ia mengembalikan halaman ke tinggi semula. Sesudah pindah
+ * ke samping, menutupnya hanya menyisakan kolom kosong di sebelah kanan
+ * — dan yang menekannya dua kali karena ragu justru kehilangan isi yang
+ * baru saja ia baca. Panel itu selalu berisi sesuatu.
+ */
+function pilihPilar(slug: string) {
+  pilarTerpilih.value = slug;
 }
+
+/* Aspek pertama terbuka sejak awal.
+   Kolom kanan yang kosong saat halaman dibuka membuat kisi di kiri
+   tampak salah lebar, dan yang membacanya tidak punya petunjuk bahwa
+   kartunya memang dapat ditekan. */
+pilarTerpilih.value = Object.keys(props.pilar)[0] ?? null;
+
+/* Esc menutup pemutar video. Modal yang hanya dapat ditutup dengan
+   menekan tepat pada silangnya adalah modal yang terasa menjebak. */
+function tekanTombol(e: KeyboardEvent) {
+  if (e.key === 'Escape') videoAktif.value = null;
+}
+
+onMounted(() => window.addEventListener('keydown', tekanTombol));
+onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
 </script>
 
 <template>
@@ -346,7 +387,7 @@ function togglePilar(slug: string) {
               <div class="text-[13px] font-bold">{{ g.judul }}</div>
               <p class="jual-tubuh-kecil jual-tubuh-terang mt-1">{{ g.ket }}</p>
               <button v-if="g.videoUrl" type="button" class="jual-tautan jual-tautan-terang mt-2.5"
-                      @click="videoTerbuka = true">Putar video</button>
+                      @click="putar(g.judul, g.videoUrl, g.gambarUrl)">Putar video</button>
             </div>
           </article>
         </div>
@@ -395,44 +436,63 @@ function togglePilar(slug: string) {
           </p>
         </div>
 
-        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mt-10">
-          <button v-for="[slug, item] in pilarList" :key="slug" type="button"
-                  class="jual-gelap-kartu text-left"
-                  :class="pilarTerpilih === slug ? 'jual-gelap-kartu-aktif' : ''"
-                  @click="togglePilar(slug)">
-            <span class="jual-tanda-gelap" :style="{ '--c': item.warna }">
-              <IkonPilar :nama="item.ikon" :ukuran="20" />
-            </span>
-            <h3 class="text-[14px] font-bold mt-4">{{ item.nama }}</h3>
-            <p class="jual-tubuh-kecil jual-tubuh-terang mt-1.5">{{ item.ket }}</p>
-            <span class="block text-[11.5px] font-bold mt-4"
-                  :style="{ color: pilarTerpilih === slug ? '#F57C00' : item.light }">
-              {{ pilarTerpilih === slug ? 'Tutup rincian' : 'Lihat rincian' }}
-            </span>
-          </button>
-        </div>
+        <!-- Kisi di kiri, rincian di KANAN — bukan di bawah.
+             Rincian yang terbuka di bawah kisi mendorong seluruh halaman
+             turun, dan yang baru saja menekan kartunya kehilangan kartu
+             itu dari pandangan tepat pada saat ia ingin membandingkannya
+             dengan yang lain. Di samping, kartunya tetap terlihat dan
+             perpindahan antaraspek terbaca sebagai satu gerakan.
 
-        <div v-if="pilarTerpilih && pilar[pilarTerpilih]" class="jual-gelap-kartu mt-3"
-             style="padding:1.75rem">
-          <template v-for="[slug, item] in pilarList" :key="slug">
-            <div v-if="slug === pilarTerpilih">
-              <h3 class="jual-h3">{{ item.nama }}</h3>
-              <p class="jual-tubuh jual-tubuh-terang mt-3 max-w-2xl">{{ item.ringkas }}</p>
+             Di bawah 1024px tidak ada "samping" yang tersisa, jadi
+             panelnya turun ke bawah kisinya — tetap dengan transisi yang
+             sama. -->
+        <div class="jual-pilar-tata mt-10">
+          <div class="jual-pilar-kisi">
+            <button v-for="[slug, item] in pilarList" :key="slug" type="button"
+                    class="jual-pilar-kartu"
+                    :class="pilarTerpilih === slug ? 'jual-pilar-kartu-aktif' : ''"
+                    :aria-pressed="pilarTerpilih === slug"
+                    @click="pilihPilar(slug)">
+              <!-- Warna aspeknya tinggal pada GORESAN ikonnya saja.
+                   Sebelumnya tiap kartu membawa ubin dan tautan berwarna
+                   sendiri, dan delapan kartu berdampingan terbaca sebagai
+                   pelangi — tidak ada yang menonjol karena semuanya
+                   menonjol. Yang berwarna penuh sekarang hanya kartu yang
+                   sedang dipilih, satu pada satu waktu. -->
+              <span class="jual-pilar-tanda"><IkonPilar :nama="item.ikon" :ukuran="19" /></span>
+              <span class="jual-pilar-nama">{{ item.nama }}</span>
+              <span class="jual-pilar-ket">{{ item.ket }}</span>
+            </button>
+          </div>
 
-              <div class="grid md:grid-cols-3 gap-5 mt-6">
-                <div v-for="c in item.cakupan" :key="c[0]" class="pl-3"
-                     :style="{ borderLeft: `2px solid ${item.warna}` }">
-                  <div class="text-[12.5px] font-bold">{{ c[0] }}</div>
-                  <div class="jual-tubuh-kecil jual-tubuh-terang mt-1">{{ c[1] }}</div>
-                </div>
+          <Transition name="jual-panel" mode="out-in">
+            <aside v-if="pilarTerpilih && pilar[pilarTerpilih]" :key="pilarTerpilih"
+                   class="jual-pilar-panel">
+              <span class="jual-pilar-panel-tanda ikon-3d" :style="{ '--c': pilar[pilarTerpilih].warna }">
+                <IkonPadat :jalur="ikonPadat(pilar[pilarTerpilih].ikon)" :ukuran="26" />
+              </span>
+
+              <h3 class="jual-h3 mt-4">{{ pilar[pilarTerpilih].nama }}</h3>
+              <p class="jual-tubuh-kecil jual-tubuh-terang mt-2.5">
+                {{ pilar[pilarTerpilih].ringkas }}
+              </p>
+
+              <ul class="jual-pilar-cakupan">
+                <li v-for="c in pilar[pilarTerpilih].cakupan" :key="c[0]"
+                    :style="{ '--c': pilar[pilarTerpilih].warna }">
+                  <b>{{ c[0] }}</b>
+                  <span>{{ c[1] }}</span>
+                </li>
+              </ul>
+
+              <p class="jual-pilar-modul-judul">Ditopang modul</p>
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                <span v-for="m in pilar[pilarTerpilih].modul" :key="m" class="jual-label"
+                      :style="{ background: `${pilar[pilarTerpilih].warna}1F`,
+                                color: pilar[pilarTerpilih].light }">{{ m }}</span>
               </div>
-
-              <div class="flex flex-wrap gap-1.5 mt-6">
-                <span v-for="m in item.modul" :key="m" class="jual-label"
-                      :style="{ background: `${item.warna}26`, color: item.light }">{{ m }}</span>
-              </div>
-            </div>
-          </template>
+            </aside>
+          </Transition>
         </div>
       </div>
     </section>
@@ -455,11 +515,8 @@ function togglePilar(slug: string) {
                      :class="item.url ? '' : 'jual-modul-mati'"
                      :style="{ '--c': item.url ? item.pilarWarna : '#D4DAD3' }">
             <div class="flex items-start justify-between gap-3">
-              <span class="jual-tanda" :style="{ '--c': item.url ? item.pilarWarna : '#9AA3A0' }">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
-                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path :d="item.ikon" />
-                </svg>
+              <span class="jual-tanda ikon-3d" :style="{ '--c': item.url ? item.pilarWarna : '#9AA3A0' }">
+                <IkonPadat :jalur="item.ikonPadat" :ukuran="22" />
               </span>
               <span class="jual-status"
                     :class="item.status === 'aktif' ? 'jual-status-hidup' : 'jual-status-nanti'">
@@ -567,11 +624,8 @@ function togglePilar(slug: string) {
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-10">
           <div v-for="(item, i) in fitur" :key="item.judul" class="jual-kartu"
                :style="{ '--c': warnaFitur[i % warnaFitur.length] }">
-            <span class="jual-tanda">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path v-for="(d, k) in ikonFitur[i % ikonFitur.length]" :key="k" :d="d" />
-              </svg>
+            <span class="jual-tanda ikon-3d">
+              <IkonPadat :jalur="ikonPadat(ikonFitur[i % ikonFitur.length])" :ukuran="22" />
             </span>
             <h3 class="jual-h4 mt-4">{{ item.judul }}</h3>
             <p class="jual-tubuh-kecil mt-2">{{ item.ket }}</p>
@@ -612,11 +666,8 @@ function togglePilar(slug: string) {
                                  mt-16 pt-12 scroll-mt-[66px]"
              style="border-top:1px solid #E3E7E2">
           <div v-for="(t, i) in tentang" :key="t[0]">
-            <span class="jual-tanda" :style="{ '--c': warnaFitur[i % warnaFitur.length] }">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path v-for="(d, k) in ikonTentang[i]" :key="k" :d="d" />
-              </svg>
+            <span class="jual-tanda ikon-3d" :style="{ '--c': warnaFitur[i % warnaFitur.length] }">
+              <IkonPadat :jalur="ikonPadat(ikonTentang[i])" :ukuran="22" />
             </span>
             <h3 class="jual-h4 mt-4">{{ t[0] }}</h3>
             <p class="jual-tubuh-kecil mt-2">{{ t[1] }}</p>
@@ -655,5 +706,20 @@ function togglePilar(slug: string) {
     </footer>
   </div>
 
-  <div v-if="videoTerbuka && hero.video" class="fixed inset-0 z-50 grid place-items-center bg-black/85 p-5" @click.self="videoTerbuka = false"><div class="w-full max-w-4xl"><div class="flex items-center justify-between mb-3"><span class="text-[13px] font-bold text-white">Operasional Tambang</span><button type="button" class="text-white text-xl" @click="videoTerbuka = false">×</button></div><video :src="hero.video" :poster="hero.poster ?? undefined" class="w-full rounded-2xl" controls autoplay playsinline></video></div></div>
+  <!-- Pemutar video: judul dan berkasnya dari kartu yang ditekan.
+       Ditutup dengan Esc, latar, atau tombol silangnya. -->
+  <Transition name="jual-pemutar">
+    <div v-if="videoAktif" class="jual-pemutar" role="dialog" aria-modal="true"
+         :aria-label="videoAktif.judul" @click.self="videoAktif = null">
+      <div class="jual-pemutar-isi">
+        <div class="jual-pemutar-kepala">
+          <span>{{ videoAktif.judul }}</span>
+          <button type="button" aria-label="Tutup video" @click="videoAktif = null">&times;</button>
+        </div>
+        <video :key="videoAktif.src" :src="videoAktif.src"
+               :poster="videoAktif.poster ?? undefined"
+               class="jual-pemutar-video" controls autoplay playsinline></video>
+      </div>
+    </div>
+  </Transition>
 </template>

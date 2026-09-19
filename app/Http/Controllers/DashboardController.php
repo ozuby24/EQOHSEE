@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 use App\Models\{Course, Enrollment, Certificate, HazardReport, Inspection, KoObject,
     Document, News, Procedure, SmkpAudit, SmkpFinding, SopEvaluationAttempt,
     TpkkpAssessment, User};
-use App\Support\{BelajarGrafik, Kategori, Media, Sampul, Waktu};
+use App\Support\{BelajarGrafik, Kategori, Media, Pengumuman, Sampul, Waktu};
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
@@ -60,12 +60,19 @@ class DashboardController extends Controller
             })->values()->all(),
             'certificates'=> Certificate::where('user_id',$user->id)->count(),
             'sopPassed'   => SopEvaluationAttempt::where('user_id',$user->id)->where('passed',true)->count(),
-            'news'        => News::latest('published_at')->take(3)->get()->map(fn ($n) => [
-                'judul'    => $n->title,
-                'cuplikan' => Str::limit(strip_tags($n->content), 74),
-                'tanggal'  => optional($n->published_at ?? $n->created_at)->translatedFormat('d M'),
-                'url'      => route('news.show', $n),
-            ])->values()->all(),
+            /* Muatan PENUH, bukan sekadar cuplikan bertaut.
+               Pengumuman kini terbuka sebagai pop-out di halaman ini,
+               dan pop-out yang masih harus mengambil isinya lewat
+               jaringan akan gagal terbuka justru di sambungan site yang
+               lambat. Cacat itu sudah pernah terjadi pada pop-out
+               pengenalan dan berubah menjadi kotak galat yang muncul
+               lagi setiap kali halamannya disegarkan.
+
+               Tiga baris, dan hanya tiga. Isi utuh sepuluh pengumuman
+               pada setiap pembukaan dasbor adalah harga yang dibayar
+               terus-menerus; tiga adalah yang memang tergambar. */
+            'news' => Pengumuman::kueri($user->id)->latest('published_at')->take(3)->get()
+                ->map(fn ($n) => Pengumuman::muatan($n, 74))->values()->all(),
             'modul'       => collect($this->ringkasModul())->map(fn ($m) => $m + [
                 'url' => route($m['rute']),
             ])->all(),

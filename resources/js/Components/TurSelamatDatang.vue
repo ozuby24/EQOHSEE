@@ -43,6 +43,14 @@ const props = defineProps<{
   terbuka: boolean;
 
   /**
+   * Sampul modul yang sedang dibuka, bila halamannya membawanya.
+   *
+   * Dipakai mengisi rongga di bawah daftar langkah pada rel. Boleh null
+   * — subhalaman tidak membawa sampul, dan rel tanpa foto tetap utuh.
+   */
+  sampul?: { gambar: string; webp?: string | null; keterangan?: string | null } | null;
+
+  /**
    * Langkah yang sudah dibawa halaman.
    *
    * Bila ada, tidak ada yang perlu diambil dari jaringan dan karena itu
@@ -70,6 +78,20 @@ const langkah = ref<Langkah[]>([]);
 const ke      = ref(0);
 const memuat  = ref(false);
 const gagal   = ref(false);
+
+/**
+ * SEBAB kegagalannya, bukan sekadar bahwa ia gagal.
+ *
+ * Kotaknya dulu selalu berbunyi "Sambungannya terputus" — kalimat yang
+ * menyebut satu sebab tertentu untuk kegagalan apa pun. Pada tangkapan
+ * layar dari produksi ia menutup satu-satunya keterangan yang dapat
+ * dipakai menelusurinya: 404 (rutenya tidak sampai ke peladen), 419
+ * (sesinya kedaluwarsa), 429 (tertahan pembatas laju), dan 500
+ * seluruhnya terbaca sebagai gangguan jaringan — dan yang membacanya
+ * menekan "Coba lagi" untuk sesuatu yang akan gagal dengan cara yang
+ * sama persis.
+ */
+const sebab = ref<string>('');
 const panel   = ref<HTMLElement | null>(null);
 
 const kini    = computed(() => langkah.value[ke.value] ?? null);
@@ -106,6 +128,25 @@ function keLangkah(i: number): void {
   if (i < ke.value) ke.value = i;
 }
 
+/**
+ * Status yang punya arti tersendiri bagi yang membacanya.
+ *
+ * Yang tidak terdaftar disebut apa adanya beserta angkanya — angka yang
+ * tidak dikenali tetap jauh lebih berguna daripada kalimat yang
+ * menyebut sebab yang salah.
+ */
+const PESAN_STATUS: Record<number, string> = {
+  401: 'Sesi Anda sudah habis. Muat ulang halaman, lalu coba lagi.',
+  419: 'Sesi Anda sudah habis. Muat ulang halaman, lalu coba lagi.',
+  403: 'Pengenalan ini tidak terbuka bagi akun Anda.',
+  404: 'Alamat pengenalannya tidak ditemukan di peladen.',
+  429: 'Terlalu banyak permintaan. Tunggu sebentar, lalu coba lagi.',
+  500: 'Peladen gagal menyusun pengenalannya.',
+  502: 'Peladen tidak menjawab.',
+  503: 'Layanan sedang tidak tersedia.',
+  504: 'Peladen tidak menjawab tepat waktu.',
+};
+
 async function ambilIsi(): Promise<void> {
   /* Yang sudah dibawa halaman dipakai apa adanya. Inilah sebabnya
      sambutan bagi akun baru tidak pernah lagi bisa gagal dimuat. */
@@ -119,6 +160,8 @@ async function ambilIsi(): Promise<void> {
   memuat.value = true;
   gagal.value  = false;
 
+  sebab.value = '';
+
   try {
     const r = await fetch('/tur', {
       headers: { Accept: 'application/json' },
@@ -128,7 +171,21 @@ async function ambilIsi(): Promise<void> {
          jawabannya bukan JSON sama sekali. */
       credentials: 'same-origin',
     });
-    if (!r.ok) throw new Error(String(r.status));
+
+    if (!r.ok) {
+      sebab.value = PESAN_STATUS[r.status] ?? `Peladen menjawab ${r.status}.`;
+      throw new Error(String(r.status));
+    }
+
+    /* Jawaban 200 yang BUKAN JSON tetap kegagalan, dan sebabnya berbeda
+       lagi: yang sampai biasanya halaman masuk karena sesinya habis,
+       atau halaman galat dari pelantara di depan peladen. */
+    const jenis = r.headers.get('content-type') ?? '';
+
+    if (!jenis.includes('json')) {
+      sebab.value = 'Jawabannya bukan data pengenalan — sesi Anda mungkin sudah habis.';
+      throw new Error('bukan-json');
+    }
 
     langkah.value = (await r.json()).langkah ?? [];
     ke.value = 0;
@@ -136,6 +193,8 @@ async function ambilIsi(): Promise<void> {
     /* Hanya terjadi pada buka-ulang manual. Pengenalan yang gagal dimuat
        tidak boleh menyandera halamannya: yang ditawarkan cuma dua —
        coba lagi, atau tutup dan bekerja. */
+    if (sebab.value === '') sebab.value = 'Sambungannya terputus.';
+
     gagal.value = true;
   } finally {
     memuat.value = false;
@@ -260,8 +319,11 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
            satu pun kata tambahan di badan isinya. -->
       <aside class="eq-tur-rel" aria-hidden="true">
         <div class="eq-tur-merek">
-          <img src="/brand/eqohsee-lockup-white.png"
-               alt="" width="585" height="202">
+          <img src="/brand/eqohsee-mark-128.png" alt="" width="40" height="40">
+          <span>
+            <strong>E<em>Q</em>OHSEE</strong>
+            <small>Safe Today &middot; Sustainable Tomorrow</small>
+          </span>
         </div>
 
         <ol class="eq-tur-tangga">
@@ -281,6 +343,19 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
             </button>
           </li>
         </ol>
+
+        <!-- Foto pengisi rongga.
+             `aria-hidden` pada seluruh rel sudah menutupinya dari
+             pembaca layar; alt dikosongkan supaya tidak dibacakan dua
+             kali oleh peramban yang mengabaikan aria-hidden. -->
+        <figure v-if="props.sampul?.gambar" class="eq-tur-rel-foto">
+          <picture>
+            <source v-if="props.sampul.webp" :srcset="props.sampul.webp" type="image/webp">
+            <img :src="props.sampul.gambar" alt="" loading="lazy" decoding="async">
+          </picture>
+          <span class="eq-tur-rel-tirai" />
+          <figcaption v-if="props.sampul.keterangan">{{ props.sampul.keterangan }}</figcaption>
+        </figure>
 
         <p class="eq-tur-rel-kaki">
           Pengenalan ini selalu dapat dibuka lagi dari menu akun.
@@ -316,7 +391,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
           <div v-else-if="gagal" class="eq-tur-gagal">
             <h2 id="eq-tur-judul" class="eq-tur-judul">Pengenalan gagal dimuat</h2>
             <p class="eq-tur-teks">
-              Sambungannya terputus. Anda tetap dapat memakai situs seperti biasa —
+              {{ sebab }} Anda tetap dapat memakai situs seperti biasa —
               pengenalan ini ada di menu akun bila ingin dibuka lagi nanti.
             </p>
             <button type="button" class="eq-btn-lain" @click="ambilIsi">Coba lagi</button>
@@ -439,6 +514,17 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   max-height: min(90vh, 47rem);
   display: grid;
   grid-template-columns: 15.5rem 1fr;
+  /* Barisnya harus ikut dibatasi, bukan cuma kotaknya.
+     ─────────────────────────────────────────────────
+
+     max-height membatasi KOTAKNYA; baris petak yang tingginya auto
+     tetap mengambil setinggi isinya dan tumpah keluar — lalu dipotong
+     overflow: hidden. min-height: 0 pada anak-anaknya saja tidak
+     menolong: mereka sudah boleh menyusut, hanya saja tidak pernah
+     ada yang MEMINTA mereka menyusut.
+
+     minmax(0, 1fr) yang memintanya. */
+  grid-template-rows: minmax(0, 1fr);
   background: #FFFFFF;
   border-radius: 1.35rem;
   box-shadow:
@@ -460,6 +546,12 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   flex-direction: column;
   padding: 1.5rem 1.25rem 1.25rem;
   color: #E7E5E4;
+  /* Rel ikut dibatasi, kalau tidak ia sendiri yang meninggikan baris
+     petaknya dan mengembalikan persoalan yang sama dari sisi kiri.
+     Fotonya sudah siap menyusut (flex: 1 1 auto; min-height: 0),
+     tetapi tidak pernah diminta karena relnya tidak pernah sempit. */
+  min-height: 0;
+  overflow: hidden;
 
   /* Gradien yang sama dengan bilah samping situs. */
   background: linear-gradient(160deg, #0B1117 0%, #141C25 55%, #1B2530 100%);
@@ -477,26 +569,66 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   pointer-events: none;
 }
 
-/* LOCKUP utuh, bukan lambang kecil ditambah tulisan yang diketik ulang.
+/* LOGO YANG SAMA DENGAN SELURUH SITUS — lambang berwarna beserta
+ * wordmark dan semboyannya, persis seperti yang tergambar di kepala
+ * bilah samping (lihat .eq-merek pada partials/eq-visual.blade.php).
  *
- * Lockup-nya sudah memuat wordmark DAN semboyannya sendiri sebagai satu
- * gambar. Menaruh lambang di sebelah <strong>EQOHSEE</strong> yang
- * diketik tangan berarti huruf yang sama dibuat dua kali dengan dua
- * cara — satu oleh perancang mereknya, satu oleh font apa pun yang
- * kebetulan terpasang di peramban — dan yang kedua tidak akan pernah
- * sama dengan yang pertama.
+ * Sempat dipakai lockup tersendiri berupa satu berkas PNG. Ia memuat
+ * huruf bergaya stensil dan semboyan "Sustaining Performance, Shaping
+ * the Future" — dua-duanya BUKAN yang dipakai situs ini. Akibatnya
+ * pengenalan yang seharusnya memperkenalkan EQOHSEE justru membuka
+ * dengan merek yang tidak akan ditemukan lagi di halaman mana pun
+ * sesudahnya: bentuk hurufnya lain, semboyannya lain.
  *
- * Lebar penuh rel, tinggi mengikuti nisbah aslinya (585 × 202).
+ * Satu identitas, bukan tiga. Yang dipakai di sini karena itu berkas
+ * lambang yang sama dan teks yang sama dengan bilah sampingnya.
  */
 .eq-tur-merek {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: .7rem;
 }
 
 .eq-tur-merek img {
   display: block;
-  width: 100%;
-  max-width: 11.5rem;
-  height: auto;
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.eq-tur-merek span {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.12;
+  min-width: 0;
+}
+
+.eq-tur-merek strong {
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: -.015em;
+  color: #E8ECF0;
+}
+
+/* Q jingga — satu-satunya huruf berwarna, sama seperti di bilah
+   samping. Dimatikan gaya miringnya: <em> dipakai sebagai penanda
+   warna, bukan sebagai penekanan yang dibaca. */
+.eq-tur-merek strong em {
+  font-style: normal;
+  color: #F57C00;
+}
+
+/* Satu baris, bukan dua. Rel ini 15,5rem — lebih sempit daripada bilah
+   samping — dan semboyan yang membungkus menjadi "Safe Today ·
+   Sustainable / Tomorrow" memisahkan satu kalimat pendek di tempat yang
+   tidak berarti apa-apa. */
+.eq-tur-merek small {
+  font-size: .56rem;
+  color: rgb(255 255 255 / .42);
+  margin-top: .19rem;
+  letter-spacing: 0;
+  white-space: nowrap;
 }
 
 .eq-tur-tangga {
@@ -570,6 +702,68 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
 
 .is-kini .eq-tur-tangga-nama { color: #FFFFFF; font-weight: 700; }
 
+/* ══ pengisi rongga rel ══
+ *
+ * Rel setinggi panel, daftar langkahnya setinggi empat baris. Selisihnya
+ * — terukur 240px pada 1440x900 — adalah bidang navy kosong di antara
+ * langkah terakhir dan catatan kakinya, dan yang terbaca dari situ
+ * bukan kelapangan melainkan ada sesuatu yang gagal dimuat.
+ *
+ * Diisi sampul modul yang sedang dibuka, bukan satu foto tetap: yang
+ * membuka pengenalan dari Peledakan melihat sampul Peledakan. `flex`
+ * 1 1 auto membuatnya MEMUAI mengisi berapa pun sisanya dan MENYUSUT
+ * ketika tidak ada sisa, jadi ia tidak pernah mendorong catatan kaki
+ * keluar dari rel.
+ */
+.eq-tur-rel-foto {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 1.5rem 0 0;
+  position: relative;
+  border-radius: .85rem;
+  overflow: hidden;
+  isolation: isolate;
+  background: #0A1114;
+  display: flex;
+  align-items: flex-end;
+}
+
+.eq-tur-rel-foto picture,
+.eq-tur-rel-foto img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -2;
+}
+
+/* Tirai gelap dari bawah: keterangan kecil di atas foto senja tidak
+   terbaca tanpa sesuatu yang menahannya. */
+.eq-tur-rel-tirai {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(0deg, rgb(8 14 17 / .92) 16%, rgb(8 14 17 / .45) 62%,
+                                    rgb(8 14 17 / .12) 100%);
+}
+
+.eq-tur-rel-foto figcaption {
+  position: relative;
+  padding: .6rem .7rem;
+  font-size: .625rem;
+  line-height: 1.35;
+  color: rgb(255 255 255 / .82);
+  text-shadow: 0 1px 8px rgb(0 0 0 / .55);
+}
+
+/* Rel yang pendek tidak menyisakan ruang untuk foto sama sekali:
+   digambar setinggi 40px ia berhenti menjadi foto dan menjadi garis
+   berwarna. Di bawah ambang itu ia tidak digambar. */
+@media (max-height: 640px) {
+  .eq-tur-rel-foto { display: none; }
+}
+
 .eq-tur-rel-kaki {
   margin: auto 0 0;
   padding-top: 1.25rem;
@@ -579,11 +773,46 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   position: relative;
 }
 
+/* Tanpa foto, catatan kaki yang dipaku ke dasar meninggalkan rongga di
+   TENGAH rel — bentuk yang sama yang baru saja dihilangkan, hanya lebih
+   kecil. Dilepas pakunya, ia menempel di bawah daftar langkah dan sisa
+   ruangnya jatuh di bawah keduanya, tempat ia terbaca sebagai jarak
+   biasa.
+
+   DITULIS SESUDAH aturan dasarnya, bukan di dalam blok media di atas:
+   kekhususan keduanya sama persis, dan `margin: auto 0 0` yang tertulis
+   belakangan akan menimpanya tanpa jejak apa pun. Sempat begitu — blok
+   medianya terpasang rapi dan tidak mengerjakan apa-apa. */
+@media (max-height: 640px) {
+  .eq-tur-rel-kaki { margin-top: 1.25rem; }
+}
+
 /* ══ badan ══ */
+
+/* min-height: 0 DI SINI yang membuat daftarnya dapat digulir.
+   ───────────────────────────────────────────────────────────
+
+   .eq-tur dibatasi max-height, dan .eq-tur-isi sudah punya
+   overflow-y: auto. Tampak lengkap, tetapi tidak pernah bekerja: petak
+   dan lentur sama-sama memberi anaknya min-height: auto, artinya
+   "jangan menyusut lebih kecil daripada isimu". Jadi .eq-tur-badan
+   tumbuh setinggi SELURUH isinya, .eq-tur-isi ikut kebagian ruang
+   seluas yang ia minta, dan karena tidak pernah kekurangan ruang, ia
+   tidak pernah menggulir.
+
+   Kelebihannya dipotong overflow: hidden pada .eq-tur. Yang hilang
+   bukan hanya sisa daftarnya melainkan KAKI-nya — tombol "Lanjut" ikut
+   terdorong ke luar layar, sehingga pengenalannya berhenti di langkah
+   ketiga tanpa jalan maju maupun mundur.
+
+   Terukur pada layar 1440x960, langkah 3: .eq-tur setinggi 752,
+   badannya 1181. Empat ratus dua puluh sembilan piksel terpotong, dan
+   tidak ada satu pun galat. */
 .eq-tur-badan {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
 }
 
 .eq-tur-kepala {
@@ -641,6 +870,10 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   padding: 1.6rem 1.7rem;
   overflow-y: auto;
   flex: 1;
+  /* Sama sebabnya dengan .eq-tur-badan di atas: tanpa ini, butir
+     lentur menolak menyusut di bawah tinggi isinya, dan overflow-y
+     yang sudah tertulis tidak pernah terpakai. */
+  min-height: 0;
 }
 
 .eq-tur-judul {

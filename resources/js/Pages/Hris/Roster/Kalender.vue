@@ -117,7 +117,7 @@ const ringkas = computed<any>(() => props.ringkas ?? {});
 <template>
   <Head :title="props.judul" />
 
-  <div class="max-w-[1600px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <section class="-mt-2 flex flex-wrap items-end justify-end gap-3">
 

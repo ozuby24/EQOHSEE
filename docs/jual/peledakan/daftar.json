@@ -1,0 +1,45 @@
+{
+  "kunci": "peledakan",
+  "label": "Drill & Blast",
+  "jual": "Drill & Blast",
+  "harga": 9500000,
+  "ket": "Rancangan peledakan, powder factor, perkiraan getaran dengan tetapan situs yang dikalibrasi sendiri, isi maksimum per tundaan, radius lemparan, dan fragmentasi.",
+  "semboyan": "Precision Under Pressure",
+  "halaman": [
+    {
+      "berkas": "01-peledakan.jpg",
+      "label": "Dashboard Peledakan",
+      "grup": "Perencanaan",
+      "path": "peledakan",
+      "status": "ok"
+    },
+    {
+      "berkas": "02-peledakan-rencana.jpg",
+      "label": "Rencana Peledakan",
+      "grup": "Perencanaan",
+      "path": "peledakan/rencana",
+      "status": "ok"
+    },
+    {
+      "berkas": "03-peledakan-titik.jpg",
+      "label": "Titik Terlindung",
+      "grup": "Pemantauan",
+      "path": "peledakan/titik",
+      "status": "ok"
+    },
+    {
+      "berkas": "04-peledakan-getaran.jpg",
+      "label": "Getaran Terukur",
+      "grup": "Pemantauan",
+      "path": "peledakan/getaran",
+      "status": "ok"
+    },
+    {
+      "berkas": "05-peledakan-cetak.jpg",
+      "label": "Laporan Peledakan",
+      "grup": "Data",
+      "path": "peledakan/cetak",
+      "status": "ok"
+    }
+  ]
+}

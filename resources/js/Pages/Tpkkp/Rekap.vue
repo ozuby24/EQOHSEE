@@ -46,7 +46,7 @@ const fmt = (n: number | null | undefined, d = 2) =>
 <template>
   <Head title="PTPKKP — Rekapitulasi" />
 
-  <div class="max-w-6xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <PickerTpkkp v-bind="picker" />
 

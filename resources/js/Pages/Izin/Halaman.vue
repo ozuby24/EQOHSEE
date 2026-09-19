@@ -114,7 +114,7 @@ const warnaWaktu: Record<string, string> = {
 <template>
   <Head :title="judul[props.mode]" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
     <section class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <p class="text-[10px] font-bold uppercase tracking-[.16em] text-cam-orange">Safety · Permit to Work</p>

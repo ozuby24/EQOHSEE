@@ -149,7 +149,7 @@ const adaData = computed(() => periode.value.length > 0);
 <template>
   <Head title="Performa SMKP" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <section class="flex flex-wrap items-end justify-between gap-4">
       <div>

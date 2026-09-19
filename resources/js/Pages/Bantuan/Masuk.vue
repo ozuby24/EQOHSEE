@@ -61,7 +61,7 @@ const label: Record<string, string> = { asisten: 'Asisten AI', admin: 'Admin' };
 <template>
   <Head title="Kotak Masuk Bantuan" />
 
-  <div class="max-w-6xl mx-auto grid gap-4 lg:grid-cols-[300px_1fr]"
+  <div class="grid gap-4 lg:grid-cols-[300px_1fr]"
        style="height:calc(100vh - 190px); min-height:460px">
 
     <div class="bg-white rounded-2xl shadow-card border border-stone-100 overflow-hidden flex flex-col">

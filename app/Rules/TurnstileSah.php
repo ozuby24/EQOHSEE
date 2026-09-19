@@ -17,9 +17,15 @@ use Illuminate\Contracts\Validation\ValidationRule;
  */
 class TurnstileSah implements ValidationRule
 {
+    /**
+     * @param  string  $tindakan  pintu yang seharusnya menerbitkan tokennya —
+     *                            token dari pintu lain ditolak meski sah
+     */
+    public function __construct(private string $tindakan) {}
+
     public function validate(string $atribut, mixed $nilai, Closure $gagal): void
     {
-        if (Turnstile::sah(is_string($nilai) ? $nilai : null, request()->ip())) {
+        if (Turnstile::sah(is_string($nilai) ? $nilai : null, request()->ip(), $this->tindakan)) {
             return;
         }
 

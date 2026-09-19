@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Listeners\CatatPeristiwaAuth;
 use App\Models\User;
+use App\Support\AturanSandi;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\{Failed, Lockout, Login, Logout, PasswordReset};
 use Illuminate\Support\Carbon;
@@ -11,6 +12,7 @@ use Illuminate\Support\Str;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{Event, Gate, RateLimiter};
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -18,6 +20,58 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         //
+    }
+
+    /**
+     * Aturan sandi untuk pendaftaran, penggantian, dan penyetelan ulang.
+     *
+     * Sebelum ini, Password::defaults() tidak pernah disetel sama sekali,
+     * jadi yang berlaku bawaan Laravel: minimal delapan huruf, tanpa
+     * pemeriksaan apa pun. Akibatnya nyata dan dapat dicoba sendiri —
+     * "password" diterima sebagai sandi.
+     *
+     * ── Panjang, bukan aturan susunan ──
+     *
+     * Tidak ada tuntutan huruf besar, angka, atau tanda baca, dan itu
+     * disengaja. Tuntutan susunan menghasilkan "Sandi123!" berulang kali:
+     * pola yang sulit diingat orangnya tetapi termasuk yang PERTAMA
+     * dicoba mesin penebak, karena semua orang menuruti aturan yang sama
+     * dengan cara yang sama. NIST SP 800-63B menyarankan justru
+     * sebaliknya — panjangkan, lalu cocokkan ke daftar bocoran.
+     *
+     * Dua belas huruf (AturanSandi::MINIMAL) tanpa aturan susunan lebih mudah bagi orang yang
+     * mengetik di ponsel dalam sarung tangan kerja ("kopi pagi tambang")
+     * dan jauh lebih mahal ditebak daripada delapan huruf bercampur.
+     *
+     * ── Pemeriksaan daftar bocoran ──
+     *
+     * uncompromised() mencocokkan sandinya ke Have I Been Pwned. Yang
+     * dikirim ke sana HANYA lima huruf pertama sirip SHA-1-nya; HIBP
+     * memulangkan semua sirip berawalan itu, dan pencocokan terakhirnya
+     * terjadi di server ini. Sandinya sendiri tidak pernah meninggalkan
+     * mesin ini, dan HIBP tidak pernah tahu sandi mana yang ditanyakan.
+     *
+     * Ini yang menutup celah yang tidak disentuh Turnstile maupun
+     * pembatas laju: penyerang yang memegang sandi bocoran tidak perlu
+     * menebak berkali-kali. Ia cukup mencoba sekali, dengan tebakan yang
+     * benar.
+     *
+     * Bila HIBP tidak dapat dihubungi, Laravel MELOLOSKAN sandinya —
+     * sama seperti sikap Turnstile pada 'lolos', dan atas alasan yang
+     * sama: gangguan pada layanan pihak ketiga tidak boleh berubah
+     * menjadi situs yang tidak dapat dipakai mendaftar.
+     *
+     * ── Yang TIDAK dilakukannya ──
+     *
+     * Aturan ini hanya berlaku saat sandi dibuat atau diganti. Sandi
+     * lemah yang sudah terlanjur ada tetap berlaku sampai pemiliknya
+     * menggantinya; tidak ada yang dipaksa keluar. Memaksa seluruh
+     * pengguna menyetel ulang sandinya adalah keputusan yang harus
+     * diambil orang, bukan efek samping dari satu deploy.
+     */
+    private function aturanSandi(): void
+    {
+        Password::defaults(fn () => Password::min(AturanSandi::MINIMAL)->uncompromised());
     }
 
     public function boot(): void
@@ -30,6 +84,8 @@ class AppServiceProvider extends ServiceProvider
         // bergantung pada APP_LOCALE yang berbeda-beda antar server.
         Carbon::setLocale('id');
         CarbonImmutable::setLocale('id');
+
+        $this->aturanSandi();
 
         /* Jejak akses dipasang pada peristiwa auth, bukan pada
            controller — lihat CatatPeristiwaAuth untuk alasannya. */
@@ -76,6 +132,23 @@ class AppServiceProvider extends ServiceProvider
            henti — dan tiap akun memicu satu surel keluar, sehingga
            kuota SMTP habis dan surel yang sungguh-sungguh dinantikan
            berhenti terkirim. */
+        /* Jaring kasar untuk halaman kode dua faktor, PER ALAMAT.
+         *
+         * Batas yang sebenarnya menjaga ada di dalam
+         * DuaFaktorTantanganController, berkunci nomor akun. Yang di
+         * sini hanya lapis luar, dan sengaja longgar: satu alamat di
+         * site tambang dipakai bersama lewat NAT, jadi angka yang ketat
+         * di sini akan menahan orang yang tidak menebak apa pun.
+         *
+         * Mengunci per SESI di tempat ini TIDAK BISA, dan itu sudah
+         * dicoba. Middleware throttle berjalan sebelum sesinya dimuat,
+         * sehingga session()->getId() memulangkan pengenal baru pada
+         * setiap permintaan — kuncinya tidak pernah sama dua kali, dan
+         * pembatasnya lulus tanpa menahan satu tebakan pun. Tidak ada
+         * galat, tidak ada gejala; yang terlihat hanya baris middleware
+         * yang tampak menjaga. */
+        RateLimiter::for('dua-faktor', fn (Request $r) => Limit::perMinute(30)->by('ip:'.$r->ip()));
+
         RateLimiter::for('daftar', fn (Request $r) => Limit::perHour(5)->by($r->ip()));
 
         /* Permintaan tautan setel ulang. Batasnya per ALAMAT SUREL, bukan

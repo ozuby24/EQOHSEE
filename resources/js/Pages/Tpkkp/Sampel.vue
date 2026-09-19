@@ -31,7 +31,7 @@ const desimal = (n: number | null) =>
 <template>
   <Head title="PTPKKP — Rencana Sampel" />
 
-  <div class="max-w-6xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <PickerTpkkp v-bind="picker" />
 

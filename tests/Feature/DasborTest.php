@@ -138,7 +138,7 @@ class DasborTest extends TestCase
     {
         $this->actingAs($this->admin());
 
-        $this->get(route('dasbor'))
+        $this->get(route('dashboard'))
             ->assertOk()
             ->assertInertia(fn (Assert $h) => $h
                 ->has('modul', fn (Assert $m) => $m

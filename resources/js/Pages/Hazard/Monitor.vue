@@ -38,6 +38,7 @@ import { onBeforeUnmount, reactive, ref, watch } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import type { HalamanMonitorBahaya } from '../../types';
 import GaleriFoto from '../../Components/GaleriFoto.vue';
+import DialogRegister from '../../Components/DialogRegister.vue';
 
 const props = defineProps<HalamanMonitorBahaya>();
 
@@ -90,6 +91,13 @@ const kartu = [
   { kunci: 'tinggi' as const, label: 'Risiko tinggi belum tutup',   kelas: 'text-red-600' },
 ];
 
+/* Register punya dialognya sendiri, terpisah dari deretan ekspor di
+   sebelahnya. Ketiga tombol di bilah itu — CSV, PDF, WA — mengambil
+   hasil saringan layar apa adanya; register tidak, dan menyandingkannya
+   sebagai tombol keempat yang sama bentuknya akan membuat perbedaan itu
+   tidak terlihat oleh siapa pun. */
+const registerTerbuka = ref(false);
+
 const pilihan =
   'ring-focus rounded-xl border border-stone-200 px-3.5 py-2.5 text-[12.5px] font-semibold text-stone-600';
 </script>
@@ -97,14 +105,10 @@ const pilihan =
 <template>
   <Head title="Monitor Hazard Report" />
 
-  <!-- Lebih lebar daripada halaman lain, dan itu bukan selera.
-       Sebelas kolom di dalam max-w-6xl mendorong dua kolom terakhir —
-       Foto Tindak dan Aksi — keluar layar, dan keduanya justru yang
-       paling dicari: yang satu menjawab "sudah ditangani atau belum",
-       yang satu membuka laporannya. Tabel yang menyembunyikan kolom
-       terpentingnya di balik gulungan mendatar sama saja dengan tidak
-       punya kolom itu. -->
-  <div class="max-w-[100rem] mx-auto space-y-5">
+  <!-- Lebar penuh, tanpa max-w. Sebelas kolom di dalam max-w-6xl
+       mendorong Foto Tindak dan Aksi keluar layar — dua kolom yang
+       justru paling dicari. -->
+  <div class="space-y-5">
 
     <div class="grid gap-3 grid-cols-2 lg:grid-cols-5">
       <div v-for="k in kartu" :key="k.kunci"
@@ -175,6 +179,22 @@ const pilihan =
         <a :href="tautan.pengingat"
            class="ml-auto rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-[11.5px]
                   font-bold text-amber-700 hover:bg-amber-100 transition">Pengingat PIC →</a>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2 mt-2.5 pt-2.5 border-t border-stone-100">
+        <span class="text-[11px] font-bold uppercase tracking-wide text-stone-400 px-1">
+          Lembar terkendali
+        </span>
+
+        <button type="button" @click="registerTerbuka = true"
+                class="rounded-lg border border-cam-lime bg-cam-lime-soft px-3 py-1.5 text-[11.5px]
+                       font-bold text-cam-lime-deep hover:brightness-95 transition">
+          ⤓ Register Tindakan Perbaikan (.xlsx)
+        </button>
+
+        <span class="text-[11px] text-stone-400">
+          Berfoto tertanam, siap dicetak dan dibawa ke rapat bulanan.
+        </span>
       </div>
     </div>
 
@@ -280,6 +300,10 @@ const pilihan =
                  v-html="t.label" />
     </div>
   </div>
+
+  <DialogRegister :terbuka="registerTerbuka" :opsi="opsi"
+                  :url-unduh="tautan.register" :url-jumlah="tautan.registerJumlah"
+                  @tutup="registerTerbuka = false" />
 </template>
 
 <style scoped>

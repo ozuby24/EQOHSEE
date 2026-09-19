@@ -187,4 +187,49 @@ class Modules
              'ikon' => 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.59a1 1 0 01.7.29l4.42 4.42a1 1 0 01.29.7V19a2 2 0 01-2 2z'],
         ];
     }
+
+    /**
+     * Nama modul di halaman depan ke kunci modul di dalam aplikasi.
+     *
+     * Dua daftar modul memang hidup berdampingan di repo ini: yang di
+     * Menu memakai kunci pendek dan dipakai bilah samping, sedangkan
+     * yang di sini memakai nama jualan lengkap ("Authority — Kelayakan
+     * Kerja") untuk orang yang belum pernah memakai aplikasinya.
+     * Jembatannya ditulis apa adanya di sini, bukan ditebak dari
+     * awalan nama rutenya: 'courses.index' menuju modul 'lms' dan
+     * 'hazard.index' menuju 'hazrep', jadi tebakan itu meleset diam-diam
+     * pada dua modul dan tidak pernah memulangkan galat — hanya ikon
+     * yang hilang di kartu yang benar.
+     */
+    public const KUNCI = [
+        'LMS — Learning Center'                  => 'lms',
+        'Authority — Kelayakan Kerja'            => 'miners',
+        'HRIS — Tenaga Kerja Tambang'            => 'hris',
+        'Safety Maturity Level'                  => 'tpkkp',
+        'Hazard Report & Inspeksi'               => 'hazrep',
+        'Keselamatan Operasi (KO)'               => 'ko',
+        'Investigasi Insiden'                    => 'investigasi',
+        'Pemantauan Perusahaan Jasa (PJP)'       => 'pjp',
+        'SMKP Audit'                             => 'smkp',
+        'Sistem Informasi Gudang & Penyimpanan'  => 'gudang',
+        'Energy Performance Center'              => 'energi',
+        'Konservasi Minerba'                     => 'konservasi',
+        'Mining Engineering Hub'                 => 'meh',
+        'Mine Operations & GIS'                  => 'operasi',
+        'Water & Dewatering'                     => 'air',
+        'Maintenance & Reliability'              => 'maintenance',
+        'Lingkungan & Reklamasi'                 => 'lingkungan',
+        'Drill & Blast'                          => 'peledakan',
+        'Dispatch & Hauling'                     => 'angkutan',
+        'Pengendalian Biaya'                     => 'biaya',
+        'Izin Kerja Aman'                        => 'izin',
+        'Kestabilan Lereng'                      => 'geoteknik',
+        'ISO & Dokumen'                          => 'dokumen',
+    ];
+
+    /** Kunci modul untuk sebuah nama jualan, atau null bila belum dipetakan. */
+    public static function kunci(string $nama): ?string
+    {
+        return self::KUNCI[$nama] ?? null;
+    }
 }

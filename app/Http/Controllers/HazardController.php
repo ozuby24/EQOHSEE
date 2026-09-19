@@ -49,6 +49,14 @@ class HazardController extends Controller
         $bulanOpsi = HazardReport::selectRaw(Db::ym('tanggal') . ' as b')
                         ->whereNotNull('tanggal')->distinct()->orderByDesc('b')->pluck('b');
 
+        /* Lokasi diambil dari data, bukan dari daftar tetap. Register
+           disaring per area kerja, dan area kerja satu tambang tidak
+           sama dengan tambang lain — daftar tetap berarti pilihan yang
+           tidak pernah cocok pada pemasangan mana pun kecuali yang
+           pertama. */
+        $lokasiOpsi = HazardReport::whereNotNull('lokasi')->where('lokasi', '<>', '')
+                        ->distinct()->orderBy('lokasi')->pluck('lokasi');
+
         /* Ringkasan WhatsApp disusun di server, bukan di peramban: isinya
            mengikuti hasil saringan yang sama dengan daftar di layar, dan
            menyusunnya ulang di sisi klien berarti dua tempat yang harus
@@ -79,6 +87,16 @@ class HazardController extends Controller
                 ])->all(),
                 'perusahaan' => Company::orderBy('name')->get(['id', 'name'])
                     ->map(fn ($c) => ['id' => $c->id, 'nama' => $c->name])->all(),
+                'lokasi'  => $lokasiOpsi->all(),
+
+                /* Urutan register dibaca dari penyusunnya sendiri.
+                   Menyalinnya ke sini membuat pilihan keenam yang
+                   ditambahkan nanti tampil di layar tanpa pernah
+                   dikenali sisi server — dan yang dipilih orang diam-diam
+                   berubah menjadi urutan bawaan. */
+                'urutan'  => collect(\App\Support\RegisterPerbaikan::URUTAN)
+                    ->map(fn ($label, $nilai) => ['nilai' => $nilai, 'label' => $label])
+                    ->values()->all(),
             ],
 
             'laporan' => array_map(fn (HazardReport $r) => [
@@ -128,6 +146,14 @@ class HazardController extends Controller
                 'cetak'    => route('hazard.ekspor.cetak', $request->query()),
                 'wa'       => \App\Support\Ekspor::waLink($ringkasWa),
                 'pengingat'=> route('hazard.pengingat'),
+
+                /* TANPA query saringan layar. Register punya pilihannya
+                   sendiri di dalam dialognya, dan mewarisi saringan
+                   monitor berarti lembar yang diserahkan ke rapat
+                   diam-diam terpotong oleh kotak cari yang kebetulan
+                   masih terisi. */
+                'register'       => route('hazard.register'),
+                'registerJumlah' => route('hazard.register.jumlah'),
             ],
         ]);
     }
@@ -248,6 +274,16 @@ class HazardController extends Controller
                 'tanggal'   => $hazard->tanggal?->format('d M Y'),
                 'waktu'     => $hazard->waktu,
 
+                'batasAkhir'  => $hazard->batas_akhir?->format('d M Y'),
+                'batasAkhirIso' => $hazard->batas_akhir?->format('Y-m-d'),
+
+                /* Dihitung di server, bukan dibandingkan di peramban.
+                   Perbandingan tanggal di sisi klien memakai jam
+                   PERANGKATNYA, dan ponsel lapangan yang jamnya meleset
+                   sehari akan menandai temuan yang masih dalam tenggat
+                   sebagai terlambat — atau sebaliknya. */
+                'lewatTenggat' => $hazard->lewatTenggat(),
+
                 'pelapor' => [
                     'nama'       => $hazard->user?->name ?: $hazard->pelapor_nama,
                     'nrp'        => $hazard->pelapor_nrp,
@@ -289,7 +325,16 @@ class HazardController extends Controller
         $d = $request->validate([
             'status'            => ['required','in:Open,In Progress,Closed'],
             'catatan_penutupan' => ['nullable','string','max:2000'],
+            'batas_akhir'       => ['nullable','date'],
         ]);
+
+        /* Medan yang TIDAK dikirim tidak ikut menimpa.
+           validate() hanya mengembalikan kunci yang ada pada
+           permintaannya, tetapi formulir tindak lanjut mengirim
+           batas_akhir kosong ketika belum diisi — dan nilai kosong yang
+           diteruskan apa adanya menghapus tenggat yang sudah disepakati,
+           hanya karena seseorang mengubah statusnya. */
+        if (($d['batas_akhir'] ?? '') === '') unset($d['batas_akhir']);
 
         $baru = $this->simpanFoto($request, 'foto_tindaklanjut');
         if ($baru) $d['foto_tindaklanjut'] = array_merge((array) $hazard->foto_tindaklanjut, $baru);
@@ -471,6 +516,13 @@ class HazardController extends Controller
             'lokasi_lain'        => ['nullable','string','max:200'],
             'hirarki'            => ['nullable','string','max:50'],
             'rekomendasi'        => ['nullable','string','max:2000'],
+
+            /* after_or_equal:tanggal, bukan after_or_equal:today.
+               Laporan kerap diisikan beberapa hari sesudah temuannya —
+               "today" akan menolak tenggat yang memang sudah disepakati
+               saat temuannya ditemukan. Yang tidak masuk akal adalah
+               tenggat SEBELUM temuannya ada, dan itulah yang dijaga. */
+            'batas_akhir'        => ['nullable','date','after_or_equal:tanggal'],
         ]);
     }
 

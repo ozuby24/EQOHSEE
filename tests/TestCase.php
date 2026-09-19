@@ -5,6 +5,32 @@ namespace Tests;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Testing\TestResponse;
 
+/**
+ * Induk seluruh uji.
+ *
+ * ── JANGAN menjalankan dua proses `php artisan test` sekaligus ──
+ *
+ * Ujinya berjalan berurutan dalam satu proses, dan itu memang aman.
+ * Yang TIDAK aman adalah dua proses phpunit yang hidup bersamaan —
+ * misalnya satu suite penuh di latar belakang sementara satu `--filter`
+ * dijalankan untuk memeriksa sesuatu.
+ *
+ * Keduanya memakai satu tempat yang sama: `Storage::fake('local')`
+ * selalu berakar di storage/framework/testing/disks/local, apa pun
+ * prosesnya, dan tiap pemanggilan MENGOSONGKAN folder itu lebih dulu.
+ * Proses kedua karena itu menghapus berkas yang baru saja ditulis proses
+ * pertama, di antara `put()` dan permintaannya sendiri.
+ *
+ * Akibatnya menyesatkan justru karena tampak nyata: BerkasTertutupTest
+ * gagal dengan "Unable to retrieve the file_size for file at location:
+ * signatures/…" — tepat seperti cacat sungguhan pada penyajian berkas
+ * tertutup — lalu hijau kembali saat dijalankan sendirian, sehingga
+ * terbaca sebagai uji yang rapuh, bukan sebagai dua proses yang
+ * bertabrakan. Basis datanya pun satu dan sama.
+ *
+ * Jalankan satu per satu. Bila perlu berlatar belakang, tunggu yang
+ * sebelumnya selesai.
+ */
 abstract class TestCase extends BaseTestCase
 {
     /**

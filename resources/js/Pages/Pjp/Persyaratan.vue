@@ -34,7 +34,7 @@ const TAHAP = [
 <template>
   <Head :title="props.judul" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <!-- Judul dan subjudulnya digambar kop kerangka; "Aspek 1 dari 3"
            tidak, dan itulah yang tersisa di sini. -->

@@ -41,7 +41,7 @@ const isian = 'rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px] ring
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <form class="bg-white rounded-2xl shadow-card border border-stone-100 p-3
                  grid gap-2.5 sm:grid-cols-2 lg:grid-cols-5"

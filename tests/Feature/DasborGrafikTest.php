@@ -131,12 +131,12 @@ class DasborGrafikTest extends TestCase
     public function rentang_di_luar_daftar_ditolak(): void
     {
         foreach ([99999, 0, -30, 13] as $nakal) {
-            $this->get('/dasbor?hari='.$nakal)
+            $this->get('/dashboard?hari='.$nakal)
                 ->assertOk()
                 ->assertInertia(fn ($h) => $h->where('hari', DasborGrafik::RENTANG_BAWAAN)->etc());
         }
 
-        $this->get('/dasbor?hari=90')
+        $this->get('/dashboard?hari=90')
             ->assertOk()
             ->assertInertia(fn ($h) => $h->where('hari', 90)->etc());
     }

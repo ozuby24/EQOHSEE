@@ -36,8 +36,6 @@ use App\Models\Hr\{Absensi as HrAbsensi, AbsensiJejak as HrJejak, Cuti as HrCuti
 use App\Support\Hr\{JalurCuti, JalurLembur, KebijakanCuti, MasterCuti, MasterPajak, MasterRoster,
     Penggajian, Penyusun, Rekonsiliasi};
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
-use App\Support\Berkas;
 use App\Support\Miners\Acuan;
 use App\Support\Miners\MasterMiners;
 use App\Support\Pembelian;
@@ -54,7 +52,8 @@ use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, 
                 SmkpFinding, SopEvaluation, SopEvaluationAttempt,
                 SopEvaluationQuestion,
                 Certificate, Course, Enrollment, InspectionTemplate, InspectionTemplateItem,
-                Material, Module, ModuleCompletion,
+                Material, MaterialAttachment, MaterialCompletion, MaterialDiscussion,
+                Module, ModuleCompletion, NewsRead,
                 PostTrainingEvaluation, Quiz, QuizAttempt, QuizQuestion,
                 TindakLanjut, User, WaterLog, WaterSump, WaterSumpPump, WorkOrder, WorkOrderPart,
                 EnergyBaseline, EnergyFuelRecon, EnergyOpportunity, EnergyOtherLog,
@@ -68,6 +67,7 @@ use App\Support\Waktu;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Pemuat data contoh untuk satu perusahaan.
@@ -210,7 +210,13 @@ final class DataContoh
            anak-anaknya mendahuluinya. */
         SopEvaluationAttempt::class, SopEvaluationQuestion::class, SopEvaluation::class,
         Procedure::class,
-        News::class,
+
+        /* Bacaan mendahului pengumumannya. Urutannya bukan soal kunci
+           asing — kaskade sudah menjaganya — melainkan soal hitungan:
+           yang dibuang basis data sendiri tidak ikut terhitung, dan
+           pemeriksaan penumpukan membandingkan "dibuat" dengan
+           "dibuang". */
+        NewsRead::class, News::class,
 
         /* LMS. Sertifikat, pendaftaran, percobaan, dan evaluasi pelatihan
            menggantung pada kursus, jadi semuanya dibuang lebih dulu.
@@ -220,6 +226,7 @@ final class DataContoh
         Certificate::class, PostTrainingEvaluation::class,
         QuizAttempt::class, Enrollment::class,
         QuizQuestion::class, Quiz::class,
+        MaterialDiscussion::class, MaterialAttachment::class, MaterialCompletion::class,
         ModuleCompletion::class, Material::class, Module::class, Course::class,
         InspectionTemplateItem::class, InspectionTemplate::class,
 
@@ -485,16 +492,43 @@ final class DataContoh
 
     /* ═══════════ penghapusan ═══════════ */
 
+    /**
+     * Tabel yang menunjuk DIRINYA SENDIRI, beserta kolom penunjuknya.
+     *
+     * Aturan pemuat ini — "sebut anaknya lebih dulu supaya ia ikut
+     * terhitung" — tidak dapat diikuti tabel semacam ini: induk dan anak
+     * berada di tabel yang SAMA, jadi satu pernyataan DELETE mengenai
+     * keduanya sekaligus. Basis data membuang induknya, kaskade membawa
+     * serta anaknya, dan pernyataan itu melaporkan SATU baris terhapus
+     * meski dua yang hilang.
+     *
+     * Terukur, dan tidak muncul sebagai galat: pemeriksaan penumpukan
+     * melaporkan 1730 dibuat melawan 1729 dibuang — tanpa satu pun baris
+     * yang sungguh tertinggal, sehingga tidak ada halaman yang tampak
+     * rusak dan tidak ada yang dapat ditelusuri dari layar mana pun.
+     *
+     * Dibuang dua langkah: anaknya lebih dulu dalam pernyataannya
+     * sendiri, lalu sisanya. Berlaku untuk SATU tingkat — dan memang
+     * hanya satu tingkat yang mungkin ada: LearnController menolak
+     * balasan atas balasan, dan penolakan itu dijaga uji.
+     *
+     * @var array<class-string,string> kelas => kolom penunjuk induk
+     */
+    private const MENUNJUK_DIRI = [
+        MaterialDiscussion::class => 'parent_id',
+    ];
+
     private function bersihkan(): int
     {
         $n = 0;
 
-        /* Berkasnya lebih dulu, selagi barisnya masih ada. Sesudah
-           barisnya hilang tidak ada lagi yang menghubungkan berkas itu
-           dengan perusahaan mana pun. */
-        $this->bersihkanBerkas();
-
         foreach (self::URUTAN_HAPUS as $kelas) {
+            /* Anak lebih dulu, dalam pernyataannya sendiri, supaya ia
+               terhitung alih-alih ditelan kaskade induknya. */
+            if ($kolom = self::MENUNJUK_DIRI[$kelas] ?? null) {
+                $n += self::kueri($kelas, $this->c)->whereNotNull($kolom)->delete();
+            }
+
             $q = self::kueri($kelas, $this->c);
 
             /* Model bertanda hapus-lunak DIBUANG SUNGGUHAN di sini.
@@ -511,6 +545,14 @@ final class DataContoh
                 ? $q->forceDelete()
                 : $q->delete();
         }
+
+        /* Foto contoh ikut terbuang bersama barisnya.
+           Baris yang hilang tidak membawa serta berkasnya: yang
+           tertinggal adalah folder foto yang tidak lagi ditunjuk baris
+           mana pun, pada diska yang sama tempat foto bahaya sungguhan
+           disimpan. Ia tidak terlihat dari layar mana pun — dan karena
+           itu akan tetap di sana. */
+        Storage::disk(Berkas::TERTUTUP)->deleteDirectory($this->folderFotoBahaya());
 
         return $n;
     }
@@ -738,6 +780,34 @@ final class DataContoh
                 Module::withoutGlobalScopes()->whereIn('course_id',
                     Course::withoutGlobalScopes()->where('demo_company_id', $c->id)->select('id')
                 )->select('id')),
+
+            /* Keduanya menggantung pada MATERI, dan materi pada kursus.
+               Didaftarkan meski kunci asingnya sudah berkaskade: yang
+               dibuang basis data sendiri TIDAK ikut terhitung pemanggilnya,
+               dan pemeriksaan penumpukan bersandar pada perbandingan
+               "dibuat" dengan "dibuang". */
+            MaterialCompletion::class, MaterialAttachment::class
+                => $q->whereIn('material_id',
+                    Material::withoutGlobalScopes()->whereIn('course_id',
+                        Course::withoutGlobalScopes()->where('demo_company_id', $c->id)->select('id')
+                    )->select('id')),
+
+            /* Tanya jawab. Penyaringnya sama dengan keduanya di atas;
+               yang khusus adalah URUTAN pembuangannya — lihat
+               MENUNJUK_DIRI dan bersihkan(). */
+            MaterialDiscussion::class
+                => $q->whereIn('material_id',
+                    Material::withoutGlobalScopes()->whereIn('course_id',
+                        Course::withoutGlobalScopes()->where('demo_company_id', $c->id)->select('id')
+                    )->select('id')),
+
+            /* Bacaan pengumuman menggantung pada pengumumannya, dan
+               pengumuman punya company_id sendiri — jadi penyaringnya
+               beritanya, bukan penggunanya. Menyaring lewat pengguna akan
+               membuang catatan baca atas pengumuman SUNGGUHAN yang
+               kebetulan dibaca orang yang sama. */
+            NewsRead::class => $q->whereIn('news_id',
+                News::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
 
             SopEvaluation::class => $q->whereIn('procedure_id',
                 Procedure::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
@@ -4619,26 +4689,50 @@ final class DataContoh
     {
         $n = 0;
 
+        /* Rekomendasinya ditulis satu per satu, bukan satu kalimat yang
+           dipakai enam kali. Register Tindakan Perbaikan adalah lembar
+           yang dibawa ke rapat bulanan untuk menagih orang; kolom
+           tindakan yang berbunyi sama pada seluruh barisnya tidak
+           menagih apa pun, dan lembar contohnya tidak akan pernah
+           memperlihatkan bahwa kolom itu memang terbaca. */
         $daftar = [
-            ['Unsafe Condition', 'Tinggi', 'Open',        'Tanggul jalan hauling KM 4 tergerus hujan',        'Rekayasa'],
-            ['Unsafe Action',    'Sedang', 'In Progress', 'Operator tidak memakai sabuk pengaman di kabin',   'Administratif'],
-            ['Near Miss',        'Tinggi', 'Closed',      'Batu jatuh dari bak dump truck di simpang timbang','Rekayasa'],
-            ['Unsafe Condition', 'Rendah', 'Closed',      'Lampu penerangan front loading mati satu titik',   'Rekayasa'],
-            ['Bahaya Lingkungan','Sedang', 'Open',        'Ceceran oli di area workshop belum ditampung',     'Administratif'],
+            ['Unsafe Condition', 'Tinggi', 'Open', 'Tanggul jalan hauling KM 4 tergerus hujan', 'Rekayasa',
+             'Tanggul dibangun ulang setinggi setengah diameter ban unit terbesar dan dipadatkan.', 7],
+            ['Unsafe Action', 'Sedang', 'In Progress', 'Operator tidak memakai sabuk pengaman di kabin', 'Administratif',
+             'Teguran tertulis, pengarahan ulang di P5M, dan pemeriksaan acak tiap pergantian gilir.', 14],
+            ['Near Miss', 'Tinggi', 'Closed', 'Batu jatuh dari bak dump truck di simpang timbang', 'Rekayasa',
+             'Muatan diratakan di bawah bibir bak dan pemasangan jaring penahan pada unit pengangkut.', 10],
+            ['Unsafe Condition', 'Rendah', 'Closed', 'Lampu penerangan front loading mati satu titik', 'Rekayasa',
+             'Penggantian lampu dan pemeriksaan seluruh titik penerangan front tiap awal gilir malam.', 5],
+            ['Bahaya Lingkungan', 'Sedang', 'Open', 'Ceceran oli di area workshop belum ditampung', 'Administratif',
+             'Pemasangan bak penampung di bawah titik bocor dan penjadwalan pembuangan limbah B3.', 7],
             ['Unsafe Action & Unsafe Condition', 'Tinggi', 'In Progress',
-             'Pengisian bahan bakar dilakukan saat mesin hidup',                                              'Eliminasi'],
+             'Pengisian bahan bakar dilakukan saat mesin hidup', 'Eliminasi',
+             'Pengisian hanya boleh saat mesin mati; kunci kontak diserahkan ke petugas pengisian.', 3],
         ];
 
-        foreach ($daftar as $i => [$kategori, $risiko, $status, $uraian, $hirarki]) {
+        /* Pelapornya BERBEDA-BEDA, bukan satu orang enam kali.
+
+           Register Tindakan Perbaikan punya rekap per pelapor di
+           kakinya, dan rekap satu baris tidak memperlihatkan apa pun:
+           urutannya tidak teruji, pengelompokan identitasnya tidak
+           teruji, dan kolom "paling banyak melapor" selalu benar. Yang
+           pertama melapor tiga kali supaya urutannya punya sesuatu untuk
+           diurutkan. */
+        $pelapor = $this->pelaporBahaya();
+
+        foreach ($daftar as $i => [$kategori, $risiko, $status, $uraian, $hirarki, $rekomendasi, $tenggat]) {
             $tanggal = $this->kini->copy()->subDays(3 + $i * 5);
+            $orang   = $pelapor[$i % count($pelapor)];
 
             $b = $this->baru(HazardReport::class, [
                 'kode'          => Nomor::susun('Formulir', $this->c, 100 + $i + 1)
                     ?: 'HZ-'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT),
-                'user_id'       => $this->pengaju?->id,
-                'pelapor_nama'  => $this->pengaju?->name ?? 'Pengawas Lapangan',
-                'pelapor_departemen' => 'Produksi',
-                'pelapor_jabatan'    => 'Pengawas',
+                'user_id'       => $orang?->id,
+                'pelapor_nama'  => $orang?->name ?? 'Pengawas Lapangan',
+                'pelapor_nrp'   => $orang?->employee_id,
+                'pelapor_departemen' => $orang?->department ?: 'Produksi',
+                'pelapor_jabatan'    => $orang?->position ?: 'Pengawas',
                 'tanggal'       => $tanggal->toDateString(),
                 'waktu'         => '09:'.str_pad((string) (10 + $i * 7), 2, '0', STR_PAD_LEFT),
                 'lokasi'        => ['Pit Utara', 'Jalan Hauling KM 4', 'Workshop', 'Disposal Selatan'][$i % 4],
@@ -4646,25 +4740,19 @@ final class DataContoh
                 'kategori'      => $kategori,
                 'deskripsi'     => $uraian,
                 'hirarki'       => $hirarki,
-                'rekomendasi'   => 'Perbaikan dijadwalkan dan diawasi pengawas area.',
+                'rekomendasi'   => $rekomendasi,
+
+                /* Tenggatnya dihitung dari tanggal temuannya, bukan dari
+                   hari ini. Yang kedua membuat seluruh temuan contoh
+                   selalu belum lewat waktu berapa pun lamanya ia
+                   didiamkan — dan penanda "lewat tenggat" yang tidak
+                   pernah menyala tidak dapat dibedakan dari penanda yang
+                   rusak. Dengan cara ini, temuan ke lima yang berumur 23
+                   hari dengan tenggat 7 hari memang terlambat. */
+                'batas_akhir'   => $tanggal->copy()->addDays($tenggat)->toDateString(),
                 'status'        => $status,
+                'foto'          => $this->fotoBahaya('temuan', $i, self::FOTO_TEMUAN[$i % count(self::FOTO_TEMUAN)]),
             ]);
-
-            /* Foto temuan, dan foto tindak lanjut HANYA bagi yang sudah
-               ditangani.
-               
-               Sengaja tidak semuanya berfoto lengkap. Monitor bahaya
-               dibaca untuk menemukan baris yang temuannya berfoto tetapi
-               tindak lanjutnya belum — dan bila seluruh contohnya punya
-               kedua-duanya, kolom yang dibuat justru untuk memperlihatkan
-               selisih itu tidak pernah memperlihatkan apa pun. */
-            $foto = ['foto' => $this->fotoContoh($b, 'temuan', $i, 1 + ($i % 2))];
-
-            if ($status !== 'Open') {
-                $foto['foto_tindaklanjut'] = $this->fotoContoh($b, 'tindak', $i, 1);
-            }
-
-            $b->forceFill($foto)->saveQuietly();
 
             /* Yang sudah ditutup harus punya penutup dan waktunya.
                Tanpa keduanya, halaman menghitung waktu penutupan dari
@@ -4674,6 +4762,15 @@ final class DataContoh
                     'closed_by'         => $this->peninjau?->id ?? $this->pengaju?->id,
                     'closed_at'         => $tanggal->copy()->addDays(4),
                     'catatan_penutupan' => 'Perbaikan selesai dan diperiksa ulang di lapangan.',
+
+                    /* Foto perbaikan HANYA pada yang sudah ditutup.
+                       Memberikannya pada seluruh baris membuat kolom
+                       "Gambar Perbaikan" penuh pada register contoh, dan
+                       register yang tiap barisnya berisi tidak pernah
+                       memperlihatkan seperti apa baris yang belum
+                       dikerjakan — padahal barisan itulah yang dicari
+                       orang saat membuka lembarnya. */
+                    'foto_tindaklanjut' => $this->fotoBahaya('perbaikan', $i, self::FOTO_PERBAIKAN),
                 ])->saveQuietly();
             }
 
@@ -4683,72 +4780,82 @@ final class DataContoh
         return $n;
     }
 
-    /** Folder berkas contoh. Dipisah supaya pembersihannya dapat menyebut
-     *  satu tempat, bukan menebak nama berkas satu per satu. */
-    private const FOLDER_FOTO = 'hazard/contoh';
-
     /**
-     * Foto contoh untuk laporan bahaya.
+     * Urutan pelapor temuan bahaya — sengaja tidak rata.
      *
-     * Berkasnya DISALIN, bukan ditautkan: `foto` dibaca lewat rute
-     * berjaga yang membacanya dari disk tertutup, dan jalur yang
-     * menunjuk ke luar disk itu memulangkan 404 — kolom foto yang
-     * terlihat kosong tanpa satu pun galat.
+     * Bila perusahaannya hanya punya satu pengguna, daftarnya berisi
+     * satu orang dan rekapnya memang satu baris. Itu keadaan yang benar,
+     * bukan yang perlu dipaksa: memaksakan nama karangan agar rekapnya
+     * terlihat ramai akan memasukkan orang yang tidak ada ke lembar yang
+     * dibawa ke rapat.
      *
-     * Namanya DITENTUKAN dari id barisnya, tidak diacak. `demo:pasang`
-     * dijalankan ulang tiap kali data contohnya disegarkan; dengan nama
-     * acak, tiap pemasangan meninggalkan satu rombongan berkas yatim di
-     * disk yang tidak ada lagi barisnya dan karena itu tidak ada lagi
-     * yang tahu boleh menghapusnya. Ditentukan, pemasangan kedua
-     * menimpa yang pertama.
-     *
-     * @return string[] jalur relatif pada disk tertutup
+     * @return list<User|null>
      */
-    private function fotoContoh(object $baris, string $jenis, int $urut, int $jumlah): array
+    private function pelaporBahaya(): array
     {
-        /* Foto tambang sungguhan yang sudah ada di repositori. Memakai
-           gambar berwarna polos akan membuat kolomnya terlihat benar
-           tanpa membuktikan bahwa fotonya benar-benar tersaji. */
-        $sumber = glob(public_path('media/sampul/*.jpg')) ?: [];
+        $orang = User::withoutGlobalScopes()
+            ->where('company_id', $this->c->id)
+            ->orderBy('id')->limit(3)->get()->all();
 
-        if ($sumber === []) return [];
+        if (!$orang) return [$this->pengaju];
 
-        sort($sumber);
-
-        $jalur = [];
-
-        for ($k = 0; $k < $jumlah; $k++) {
-            $asal = $sumber[($urut + $k) % count($sumber)];
-            $nama = self::FOLDER_FOTO."/{$this->c->id}-{$baris->getKey()}-{$jenis}-{$k}.jpg";
-
-            Storage::disk(Berkas::TERTUTUP)->put($nama, (string) file_get_contents($asal));
-
-            $jalur[] = $nama;
-        }
-
-        return $jalur;
+        /* Yang pertama muncul dua kali lebih sering. Enam temuan yang
+           dibagi rata kepada tiga orang memberi 2-2-2 — dan urutan
+           "paling banyak melapor" atas tiga angka yang sama tidak
+           membuktikan bahwa ia benar-benar mengurutkan. */
+        return [$orang[0], $orang[1] ?? $orang[0], $orang[0],
+                $orang[2] ?? $orang[0], $orang[1] ?? $orang[0], $orang[0]];
     }
 
-    /**
-     * Berkas contoh milik perusahaan ini, dibuang bersama barisnya.
-     *
-     * Tanpa ini, tiap pemuatan ulang meninggalkan berkas yang barisnya
-     * sudah tidak ada. Yang tertinggal tidak menimbulkan galat dan tidak
-     * terlihat di mana pun di aplikasi — ia hanya memakan disk, diam,
-     * selamanya.
-     *
-     * Disaring pada awalan id perusahaan: hanya berkas milik perusahaan
-     * yang sedang dibuang yang ikut terhapus, bukan seluruh folder
-     * contoh milik perusahaan contoh lain yang masih hidup.
-     */
-    private function bersihkanBerkas(): void
-    {
-        $disk  = Storage::disk(Berkas::TERTUTUP);
-        $awal  = $this->c->id.'-';
+    /* ─────────── foto contoh ─────────── */
 
-        foreach ($disk->files(self::FOLDER_FOTO) as $jalur) {
-            if (str_starts_with(basename($jalur), $awal)) $disk->delete($jalur);
-        }
+    /**
+     * Foto temuan contoh, disalin dari media bawaan aplikasi.
+     *
+     * Bukan gambar kosong berwarna. Halaman monitor, lightbox-nya, dan
+     * kolom gambar pada Register Tindakan Perbaikan sama-sama tidak
+     * dapat diperiksa dengan kotak abu-abu 1×1: thumbnail yang salah
+     * nisbah, gambar yang meluber keluar selnya, dan foto tegak yang
+     * meregangkan barisnya tiga kali lipat semuanya terlihat benar bila
+     * sumbernya bujur sangkar sekecil itu.
+     */
+    private const FOTO_TEMUAN = [
+        'media/sampul/jalan-angkut.jpg',
+        'media/sampul/pengawasan-pit.jpg',
+        'media/sampul/pit-pemuatan.jpg',
+        'media/sampul/pit-panorama.jpg',
+    ];
+
+    private const FOTO_PERBAIKAN = 'media/sampul/pelabuhan-muat.jpg';
+
+    /**
+     * Salin satu foto contoh ke diska tertutup, lalu pulangkan jalurnya.
+     *
+     * Namanya TETAP bagi tiap perusahaan dan tiap temuan — bukan nama
+     * acak seperti unggahan sungguhan. Unggahan sungguhan memang harus
+     * acak supaya alamatnya tidak dapat ditebak, tetapi data contoh
+     * dimuat ulang berkali-kali, dan nama acak membuat tiap pemuatan
+     * meninggalkan satu salinan lagi di diska yang tidak lagi ditunjuk
+     * baris mana pun. Nama tetap menimpa dirinya sendiri.
+     *
+     * @return list<string>
+     */
+    private function fotoBahaya(string $awalan, int $i, string $sumber): array
+    {
+        $asal = public_path($sumber);
+        if (!is_file($asal)) return [];
+
+        $tujuan = $this->folderFotoBahaya().'/'.$awalan.'-'.($i + 1).'.jpg';
+
+        Storage::disk(Berkas::TERTUTUP)->put($tujuan, (string) file_get_contents($asal));
+
+        return [$tujuan];
+    }
+
+    /** Folder foto contoh satu perusahaan — terpisah dari unggahan nyata. */
+    private function folderFotoBahaya(): string
+    {
+        return 'hazard/contoh/'.$this->c->id;
     }
 
     /* ─────────── inspeksi ─────────── */
@@ -5912,15 +6019,53 @@ final class DataContoh
             ['Simulasi Tanggap Darurat Bulan Depan', 9],
         ];
 
-        foreach ($daftar as [$judul, $geser]) {
-            $this->baru(News::class, [
+        /* Pembacanya DUA ORANG YANG SUDAH DIPEGANG kelas ini, bukan
+           seluruh pengguna perusahaan yang dibaca dari basis data.
+           Bacaan dari basis data bergantung pada berapa pengguna yang
+           kebetulan ada saat pemuatan berjalan — dan jumlah itu tumbuh
+           tiap kali data contoh dimuat ulang, sehingga barisnya
+           bertambah pada muat kedua meski yang lama sudah dibuang.
+           Terukur: empat baris menjadi dua puluh satu. */
+        $pembaca = array_values(array_filter([
+            $this->pengaju?->id, $this->peninjau?->id,
+        ]));
+
+        foreach ($daftar as $ke => [$judul, $geser]) {
+            $berita = $this->baru(News::class, [
                 'title'        => $judul,
+
+                /* Ringkasan DITULIS pada sebagian, dikosongkan pada
+                   sisanya. Keduanya jalur yang berbeda di server —
+                   News::ringkasan() memakai yang ditulis bila ada dan
+                   memotong isinya bila tidak — dan jalur yang tidak
+                   pernah dilewati data contoh adalah jalur yang tidak
+                   pernah terlihat rusak. */
+                'excerpt'      => $ke % 2 === 0
+                    ? 'Ringkasan contoh yang ditulis penulisnya sendiri, bukan potongan otomatis.'
+                    : null,
+
                 'content'      => "Pengumuman contoh untuk memeriksa tampilan halaman berita.\n\n"
                     ."Isinya sengaja beberapa paragraf agar potongan ringkasnya pada daftar "
                     ."benar-benar terpotong, bukan tampak utuh karena kebetulan pendek.",
                 'published_at' => $this->kini->copy()->addDays($geser)->toDateString(),
             ]);
             $n++;
+
+            /* Yang TERJADWAL tidak punya pembaca sama sekali — ia belum
+               terbit. Yang sudah terbit dibaca sebagian saja: "dibaca
+               seluruh regu" dan "belum dibaca siapa pun" sama-sama tidak
+               dapat memperlihatkan selisih yang justru ditanyakan
+               pengawas. */
+            if (!$berita || $geser > 0) continue;
+
+            foreach (array_slice($pembaca, 0, max(1, count($pembaca) - $ke)) as $idPembaca) {
+                $bacaan = NewsRead::withoutGlobalScopes()->create([
+                    'news_id' => $berita->id, 'user_id' => $idPembaca,
+                ]);
+
+                $this->bertanggal($bacaan, abs($geser) - 1);
+                $n++;
+            }
         }
 
         return $n;
@@ -5957,6 +6102,9 @@ final class DataContoh
 
         /** @var list<Module> dipakai mencatat penyelesaian per peserta */
         $modulKursus = [];
+
+        /** @var list<Material> dipakai mencatat penyelesaian dan tanya jawab */
+        $materiKursus = [];
 
         $kursus = Course::withoutGlobalScopes()->create([
             'title'            => 'Keselamatan Kerja Tambang Dasar',
@@ -6012,19 +6160,79 @@ final class DataContoh
             ]);
             $n++;
 
-            Material::withoutGlobalScopes()->create([
-                'course_id'   => $kursus->id,
-                'module_id'   => $modul->id,
-                'title'       => 'Materi '.$judul,
-                'description' => 'Materi contoh untuk memeriksa tampilan halaman belajar.',
-                'type'        => 'teks',
-                'content'     => 'Isi materi contoh. Beberapa paragraf agar halaman belajar '
-                    ."benar-benar punya sesuatu untuk digulir.\n\n"
-                    .'Bahaya di area tambang tidak selalu terlihat; yang paling sering '
-                    .'melukai justru yang sudah biasa dilewati setiap hari.',
-                'order_index' => 1,
-            ]);
-            $n++;
+            /* DUA materi per modul, dan jenisnya berbeda.
+             *
+             * Satu materi per modul tidak dapat membuktikan apa pun yang
+             * membedakan materi: kurikulum berbutir tunggal terlihat
+             * benar apapun urutannya, "Materi 2 dari 6" tidak pernah
+             * tergambar, dan tombol sebelumnya-berikutnya tidak punya
+             * tujuan di dalam modulnya sendiri.
+             *
+             * Jenis pertama 'video' dengan tautan YouTube: itu
+             * satu-satunya jalur yang melewati penyaring sematan
+             * App\Support\Materi, dan jalur yang tidak pernah dilewati
+             * data contoh adalah jalur yang tidak pernah terlihat rusak. */
+            $materiModul = [
+                ['Pengantar '.$judul, 'video', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 12],
+                ['Praktik '.$judul,   'document', null, 25],
+            ];
+
+            foreach ($materiModul as $urut => [$judulMateri, $jenisMateri, $tautanMateri, $menit]) {
+                $materi = Material::withoutGlobalScopes()->create([
+                    'course_id'   => $kursus->id,
+                    'module_id'   => $modul->id,
+                    'title'       => $judulMateri,
+                    'description' => 'Materi contoh untuk memeriksa tampilan halaman belajar.',
+                    'type'        => $jenisMateri,
+                    'url'         => $tautanMateri,
+
+                    'outcomes'    => [
+                        'Mengenali '.lcfirst($judul).' di area kerja sendiri',
+                        'Menyebutkan langkah pertama ketika menemukannya',
+                        'Melaporkannya lewat jalur yang benar',
+                    ],
+
+                    /* Prasyarat hanya pada materi KEDUA tiap modul.
+                       Seluruhnya berprasyarat membuat kotak kuning
+                       "Sebelum mulai" muncul di setiap halaman, dan yang
+                       muncul di mana-mana berhenti dibaca. */
+                    'prerequisite' => $urut === 1
+                        ? 'Selesaikan materi sebelumnya pada modul ini lebih dulu.' : null,
+
+                    'duration_minutes' => $menit,
+
+                    'content' => $tautanMateri ? null
+                        : 'Isi materi contoh. Beberapa paragraf agar halaman belajar '
+                          ."benar-benar punya sesuatu untuk digulir.\n\n"
+                          .'Bahaya di area tambang tidak selalu terlihat; yang paling sering '
+                          .'melukai justru yang sudah biasa dilewati setiap hari.',
+
+                    'sop_url'     => $urut === 0 ? 'https://contoh.test/sop-'.($i + 1).'.pdf' : null,
+                    'order_index' => $urut + 1,
+                ]);
+                $n++;
+
+                $materiKursus[] = $materi;
+
+                /* Lampiran hanya pada materi pertama kursus. Tab
+                   "Lampiran" yang selalu berisi tidak dapat
+                   memperlihatkan bagaimana rupanya ketika kosong — dan
+                   kosong adalah keadaan yang paling sering terjadi. */
+                if ($i === 0 && $urut === 0) {
+                    foreach ([
+                        ['Lembar periksa harian (PDF)', 'https://contoh.test/lembar-periksa.pdf'],
+                        ['Formulir izin kerja khusus',  'https://contoh.test/izin-kerja.docx'],
+                    ] as $ke => [$judulLampiran, $tautanLampiran]) {
+                        MaterialAttachment::withoutGlobalScopes()->create([
+                            'material_id' => $materi->id,
+                            'title'       => $judulLampiran,
+                            'url'         => $tautanLampiran,
+                            'order_index' => $ke + 1,
+                        ]);
+                        $n++;
+                    }
+                }
+            }
 
             $modulKursus[] = $modul;
         }
@@ -6132,6 +6340,36 @@ final class DataContoh
 
                 $this->bertanggal($mc, 30 - ($k * 9) - ($i * 3));
                 $n++;
+
+                /* Materi modul itu ikut tercatat tuntas.
+                   Modul yang tercentang sementara seluruh materinya masih
+                   kosong adalah keadaan yang TIDAK dapat terjadi lewat
+                   aplikasinya — modul menjadi selesai justru karena
+                   materinya tuntas — dan data contoh yang menampilkannya
+                   mengajari pembacanya aturan yang salah. */
+                foreach ($m->materials as $materi) {
+                    $sel = MaterialCompletion::withoutGlobalScopes()->create([
+                        'user_id' => $orang->id, 'material_id' => $materi->id,
+                    ]);
+
+                    $this->bertanggal($sel, 30 - ($k * 9) - ($i * 3));
+                    $n++;
+                }
+            }
+
+            /* SATU materi setengah jalan: modul berikutnya baru tersentuh
+               materi pertamanya. Tanpa ini tidak ada satu pun modul yang
+               "2 dari 3 materi" — dan justru keadaan itulah yang paling
+               banyak dilihat peserta sungguhan. */
+            $berikutnya = $modulKursus[count($selesai)] ?? null;
+
+            if ($berikutnya && $awalnya = $berikutnya->materials->first()) {
+                $sel = MaterialCompletion::withoutGlobalScopes()->create([
+                    'user_id' => $orang->id, 'material_id' => $awalnya->id,
+                ]);
+
+                $this->bertanggal($sel, 3 + $i);
+                $n++;
             }
 
             if (!$lulus) continue;
@@ -6165,6 +6403,35 @@ final class DataContoh
                 'strengths'       => 'Disiplin memakai APD dan aktif melaporkan bahaya.',
                 'improvements'    => 'Perlu latihan tambahan pada prosedur tanggap darurat.',
             ]);
+            $n++;
+        }
+
+        /* Satu utas tanya jawab, LENGKAP DENGAN JAWABANNYA.
+         *
+         * Pertanyaan tanpa jawaban adalah keadaan yang paling mudah
+         * dibuat dan paling sedikit membuktikan: ia tidak memperlihatkan
+         * bagaimana jawaban tergambar bersarang, siapa yang boleh
+         * menghapusnya, maupun bahwa utasnya memang satu tingkat saja. */
+        if ($this->peninjau && ($materiTanya = $materiKursus[1] ?? null)) {
+            $tanyaContoh = MaterialDiscussion::withoutGlobalScopes()->create([
+                'material_id' => $materiTanya->id,
+                'user_id'     => $this->pengaju->id,
+                'body'        => 'Kalau rambu di lapangan berbeda dengan yang ada di materi ini, '
+                    .'mana yang dipakai sebagai acuan?',
+            ]);
+
+            $this->bertanggal($tanyaContoh, 5);
+            $n++;
+
+            $jawabContoh = MaterialDiscussion::withoutGlobalScopes()->create([
+                'material_id' => $materiTanya->id,
+                'user_id'     => $this->peninjau->id,
+                'parent_id'   => $tanyaContoh->id,
+                'body'        => 'Yang dipakai selalu rambu terpasang di lapangan. Materi ini '
+                    .'diperbarui setiap kuartal; bila selisihnya tetap ada, laporkan ke pengawas area.',
+            ]);
+
+            $this->bertanggal($jawabContoh, 4);
             $n++;
         }
 

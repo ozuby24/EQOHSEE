@@ -4,6 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use App\Notifications\KodeVerifikasiEmail;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -29,10 +30,16 @@ class EmailVerificationTest extends TestCase
     {
         Notification::fake();
 
+        /* Daftar bocoran dipalsukan: uji ini menguji surel verifikasinya,
+           bukan pemeriksaan HIBP — yang diuji tersendiri di
+           AturanSandiTest. Tanpa ini, tiap jalannya menembak layanan
+           luar yang sungguhan. */
+        Http::fake(['api.pwnedpasswords.com/*' => Http::response('')]);
+
         $this->post('/register', [
             'name' => 'Budi Santoso', 'email' => 'budi@contoh.test',
             'position' => 'Safety Officer',
-            'password' => 'Rahasia123!', 'password_confirmation' => 'Rahasia123!',
+            'password' => 'sandi uji yang panjang', 'password_confirmation' => 'sandi uji yang panjang',
         ])->assertRedirect(route('verification.notice', absolute: false));
 
         $u = User::where('email', 'budi@contoh.test')->firstOrFail();
@@ -47,9 +54,56 @@ class EmailVerificationTest extends TestCase
         $kode = $u->buatKodeVerifikasi();
 
         $this->actingAs($u)->post('/verify-email', ['kode' => $kode])
-            ->assertRedirect(route('dashboard', absolute: false));
+            ->assertRedirect(route('login', absolute: false));
 
         $this->assertNotNull($u->fresh()->email_verified_at);
+    }
+
+    public function test_kode_yang_benar_tidak_memasukkan_siapa_pun(): void
+    {
+        /* Terverifikasi BUKAN berarti masuk.
+         *
+         * Yang dibuktikan orangnya dengan kode enam angka hanyalah bahwa
+         * ia memegang kotak surat itu. Sandi yang dipilihnya saat
+         * mendaftar tidak pernah diminta sekali pun, jadi tidak pernah
+         * teruji — dan kotak surat yang tertinggal terbuka di ponsel
+         * bersama menjadi cukup untuk masuk. */
+        $u = $this->belumTerverifikasi();
+        $kode = $u->buatKodeVerifikasi();
+
+        $this->actingAs($u)->post('/verify-email', ['kode' => $kode]);
+
+        $this->assertGuest();
+    }
+
+    public function test_sesi_sesudah_verifikasi_tidak_dapat_membuka_dasbor(): void
+    {
+        /* Penjagaan yang sesungguhnya, bukan sekadar assertGuest().
+         *
+         * Pengalihan ke halaman masuk TANPA menutup sesinya akan lolos
+         * dari pemeriksaan pengalihan mana pun, dan tetap meninggalkan
+         * orangnya masuk di belakang halaman itu: mengetik alamat dasbor
+         * langsung membukanya. Yang diuji di sini adalah akibatnya, bukan
+         * bentuk jawabannya. */
+        $u = $this->belumTerverifikasi();
+        $kode = $u->buatKodeVerifikasi();
+
+        $this->actingAs($u)->post('/verify-email', ['kode' => $kode]);
+
+        $this->get('/dashboard')->assertRedirect(route('login', absolute: false));
+    }
+
+    public function test_halaman_masuk_mengabarkan_verifikasinya_berhasil(): void
+    {
+        /* Sesi ditutup, dan pesan kilat biasanya ikut terbuang bersama
+           isinya. Tanpa pesan ini halaman masuk menyambut persis seperti
+           kalau kodenya salah — pada saat orangnya justru paling perlu
+           tahu bahwa ia berhasil. */
+        $u = $this->belumTerverifikasi();
+        $kode = $u->buatKodeVerifikasi();
+
+        $this->actingAs($u)->post('/verify-email', ['kode' => $kode])
+            ->assertSessionHas('sukses');
     }
 
     public function test_kode_tidak_disimpan_apa_adanya(): void

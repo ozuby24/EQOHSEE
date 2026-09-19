@@ -53,6 +53,54 @@ class PengerasanNginxTest extends TestCase
         }
     }
 
+    /**
+     * `server_tokens` DI VHOST, TIDAK di zona pembatas.
+     *
+     * Berkas zona dimuat pada konteks `http`, dan di situ pula nginx.conf
+     * bawaan distribusi menyatakan `server_tokens`. Dua pernyataan pada
+     * satu konteks fatal:
+     *
+     *   [emerg] "server_tokens" directive is duplicate in
+     *           /etc/nginx/conf.d/eqohsee-limits.conf:76
+     *
+     * Dan `nginx -t` yang gagal membuat deploy.sh mengembalikan SELURUH
+     * konfigurasi baru — vhost beserta zona pembatasnya. Akibatnya bukan
+     * kehilangan satu baris pengerasan melainkan kehilangan SELURUHNYA,
+     * pada tiap deploy, sementara situsnya tetap menyala dengan
+     * konfigurasi lama dan tidak ada satu pun yang terlihat gagal.
+     *
+     * Terjadi di produksi dan berulang pada tiap deploy sampai
+     * ketahuan dari log deploy-nya sendiri.
+     *
+     * Blok `server` adalah konteks yang menimpa nilai http tanpa
+     * bertabrakan dengannya, jadi pengerasannya tetap berlaku.
+     */
+    public function test_server_tokens_dinyatakan_di_vhost_bukan_di_zona(): void
+    {
+        $zona = file_get_contents(base_path('deploy/nginx-eqohsee-limits.conf'));
+
+        /* Baris berkomentar tidak dihitung: catatan yang menjelaskan
+           kenapa direktifnya tidak ada di sini memang menyebut namanya. */
+        $baris = array_filter(
+            array_map('trim', explode("\n", $zona)),
+            static fn (string $b): bool => $b !== '' && ! str_starts_with($b, '#')
+        );
+
+        foreach ($baris as $b) {
+            $this->assertStringNotContainsString('server_tokens', $b,
+                'server_tokens dinyatakan pada konteks http di berkas zona. Ia '
+                .'bertabrakan dengan nginx.conf bawaan distribusi, `nginx -t` gagal, '
+                .'dan deploy.sh mengembalikan SELURUH konfigurasi baru — pengerasannya '
+                .'tidak pernah terpasang sama sekali.');
+        }
+
+        foreach ($this->vhost() as $nama => $isi) {
+            $this->assertMatchesRegularExpression('/^\s+server_tokens\s+off;/m', $isi,
+                "{$nama} tidak menyembunyikan versi nginx. Dinyatakan di blok server, "
+                .'sebab konteks http sudah dipakai nginx.conf bawaan distribusi.');
+        }
+    }
+
     public function test_kedua_vhost_membatasi_laju_dan_koneksi(): void
     {
         foreach ($this->vhost() as $nama => $isi) {

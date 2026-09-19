@@ -69,7 +69,7 @@ const kartu = computed(() => [
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-5xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <section class="brand-gradient rounded-2xl p-6 text-white shadow-card relative overflow-hidden">
       <div class="absolute -right-12 -top-16 w-56 h-56 rounded-full"

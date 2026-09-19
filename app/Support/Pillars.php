@@ -17,6 +17,21 @@ namespace App\Support;
  *
  * Tiap pilar membawa: palet tiga tingkat (deep/base/light) untuk gradien,
  * ringkasan, cakupan kerja, dan modul yang menopangnya.
+ *
+ * ── `ket` MENYEBUT PEKERJAANNYA, BUKAN CITA-CITANYA ──
+ *
+ * Kalimat satu baris di bawah nama tiap aspek sempat berisi semboyan:
+ * "Zero compromise, zero tolerance", "Jaga alam untuk masa depan",
+ * "Solusi andal & efisien". Kalimat semacam itu dapat dipasang pada
+ * perusahaan mana pun di industri mana pun tanpa satu kata pun berubah —
+ * dan justru karena itu ia tidak memberi tahu pembacanya apa pun.
+ *
+ * Yang membaca halaman ini kepala teknik tambang yang sedang menimbang
+ * membeli. Ia tidak sedang mencari perusahaan yang berjanji peduli
+ * keselamatan; ia mencari tahu apakah aplikasinya menghitung recovery
+ * penambangan atau tidak. Maka tiap `ket` sekarang menyebut hal yang
+ * benar-benar dikerjakan aspek itu — dan tiap kata di dalamnya harus
+ * dapat ditemukan lagi pada `cakupan` di bawahnya.
  */
 class Pillars
 {
@@ -26,7 +41,7 @@ class Pillars
         return [
             'energy' => [
                 'nama'  => 'Energy',
-                'ket'   => 'Optimasi energi berkelanjutan',
+                'ket'   => 'Konsumsi energi per ton produksi',
                 'deep'  => '#B85C00', 'warna' => '#F57C00', 'light' => '#FF9800',
                 'ikon'  => 'bolt',
                 'ringkas' => 'Mengelola konsumsi dan keandalan energi di seluruh rantai operasi tambang — dari pembangkit, distribusi, hingga alat berat di lapangan.',
@@ -40,7 +55,7 @@ class Pillars
 
             'quality' => [
                 'nama'  => 'Quality',
-                'ket'   => 'Mutu di setiap pekerjaan',
+                'ket'   => 'Satu versi prosedur yang berlaku',
                 'deep'  => '#1B7FA8', 'warna' => '#29ABE2', 'light' => '#5FC5EE',
                 'ikon'  => 'gem',
                 'ringkas' => 'Menjaga hasil kerja tetap konsisten terhadap standar — lewat prosedur yang terkendali, kompetensi terverifikasi, dan pemeriksaan berkala.',
@@ -54,7 +69,7 @@ class Pillars
 
             'occhealth' => [
                 'nama'  => 'Occupational Health',
-                'ket'   => 'Lindungi kesehatan kerja',
+                'ket'   => 'Pemeriksaan kesehatan dan kebugaran kerja',
                 'deep'  => '#16883F', 'warna' => '#22C55E', 'light' => '#4ADE80',
                 'ikon'  => 'health',
                 'ringkas' => 'Menjaga pekerja pulang dalam keadaan sehat — mengendalikan pajanan di lingkungan kerja sebelum menjadi penyakit akibat kerja.',
@@ -68,7 +83,7 @@ class Pillars
 
             'hygiene' => [
                 'nama'  => 'Hygiene',
-                'ket'   => 'Kendalikan pajanan di tempat kerja',
+                'ket'   => 'Debu, bising, getaran, dan bahan kimia',
                 'deep'  => '#B85C00', 'warna' => '#F57C00', 'light' => '#FF9800',
                 'ikon'  => 'droplet',
                 'ringkas' => 'Higiene industri: mengukur pajanan di lingkungan kerja lalu menekannya pada sumbernya, sebelum tubuh pekerja yang menanggung.',
@@ -82,7 +97,7 @@ class Pillars
 
             'safety' => [
                 'nama'  => 'Safety',
-                'ket'   => 'Zero compromise, zero tolerance',
+                'ket'   => 'Pelaporan bahaya dan inspeksi terjadwal',
                 'deep'  => '#1B7FA8', 'warna' => '#29ABE2', 'light' => '#5FC5EE',
                 'ikon'  => 'shield',
                 'ringkas' => 'Inti dari seluruh kerangka: mengenali bahaya lebih dulu, mengendalikannya berjenjang, dan memastikan tindak lanjut benar-benar menutup risiko.',
@@ -97,7 +112,7 @@ class Pillars
 
             'environment' => [
                 'nama'  => 'Environment',
-                'ket'   => 'Jaga alam untuk masa depan',
+                'ket'   => 'Limbah, air, dan reklamasi lahan',
                 'deep'  => '#16883F', 'warna' => '#22C55E', 'light' => '#4ADE80',
                 'ikon'  => 'leaf',
                 'ringkas' => 'Menekan dampak operasi terhadap lingkungan sekitar tambang, dari pengelolaan limbah hingga pemulihan lahan pascatambang.',
@@ -111,7 +126,7 @@ class Pillars
 
             'engineering' => [
                 'nama'  => 'Engineering',
-                'ket'   => 'Solusi andal & efisien',
+                'ket'   => 'Kelayakan sarana dan perawatannya',
                 'deep'  => '#B85C00', 'warna' => '#F57C00', 'light' => '#FF9800',
                 'ikon'  => 'gear',
                 'ringkas' => 'Memastikan sarana, prasarana, instalasi, dan peralatan tambang layak dioperasikan — dan tetap layak sepanjang umur pakainya.',
@@ -127,7 +142,7 @@ class Pillars
             // pertambangan yang baik, bukan turunan dari huruf mana pun.
             'konservasi' => [
                 'nama'  => 'Konservasi Minerba',
-                'ket'   => 'Cadangan dipakai seoptimalnya',
+                'ket'   => 'Recovery tambang dan neraca cadangan',
                 'deep'  => '#1B7FA8', 'warna' => '#29ABE2', 'light' => '#5FC5EE',
                 'ikon'  => 'layers',
                 'ringkas' => 'Memastikan mineral dan batubara terambil seoptimal mungkin dan tidak terbuang percuma — termasuk yang berkadar rendah dan mineral ikutannya.',

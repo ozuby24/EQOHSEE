@@ -39,7 +39,7 @@ const isian = 'ring-focus rounded-xl border border-stone-200 px-3.5 py-2.5 text-
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-6xl mx-auto">
+  <div class="">
 
     <form class="bg-white rounded-2xl shadow-card border border-stone-100 p-3 mb-5"
           @submit.prevent="terapkan">

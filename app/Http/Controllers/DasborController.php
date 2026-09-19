@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{Document, KoObject, Paspor, SmkpFinding};
-use App\Support\{Authority, Dasbor, DasborGrafik, PemantauanBerkas};
+use App\Support\{Authority, Dasbor, DasborGrafik, NadaWarna, PemantauanBerkas};
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
@@ -11,11 +11,17 @@ use Inertia\Inertia;
 /**
  * Dasbor menyeluruh — satu layar untuk keadaan seluruh situs.
  *
- * TERPISAH DARI DASBOR PEMBELAJARAN. Halaman /dashboard menjawab
- * pertanyaan seorang peserta tentang kursusnya sendiri; halaman ini
- * menjawab pertanyaan seorang pengawas tentang situsnya. Menggabungkan
- * keduanya membuat angka kursus dan angka izin kerja berebut tempat yang
- * sama, dan yang kalah selalu yang tidak sedang dicari orangnya.
+ * MEMEGANG /dashboard, dan itu berubah belakangan. Nama rute itu
+ * sebelumnya dipegang dasbor pembelajaran, sedangkan seluruh pengalihan
+ * sesudah masuk menuju route('dashboard') — sehingga setiap orang,
+ * termasuk kepala teknik tambang, mendarat di halaman kursusnya sendiri
+ * dan harus mencari sendiri jalan ke ringkasan situs.
+ *
+ * Dasbor pembelajaran kini di /lms. Keduanya tetap TERPISAH: yang satu
+ * menjawab pertanyaan seorang peserta tentang kursusnya, yang ini
+ * pertanyaan seorang pengawas tentang situsnya. Menggabungkannya membuat
+ * angka kursus dan angka izin kerja berebut tempat yang sama, dan yang
+ * kalah selalu yang tidak sedang dicari orangnya.
  *
  * SUSUNANNYA MENGIKUTI URUTAN MENDESAKNYA, bukan urutan modulnya:
  * apa yang harus dikerjakan hari ini, lalu bagaimana keadaan
@@ -36,12 +42,18 @@ class DasborController extends Controller
         $hari = (int) $request->get('hari', DasborGrafik::RENTANG_BAWAAN);
         if (!in_array($hari, DasborGrafik::RENTANG, true)) $hari = DasborGrafik::RENTANG_BAWAAN;
 
+        /* Ubin dihitung SEKALI lalu dipakai dua kali — untuk panel
+           tindakan dan untuk ringkasan per modul. Memanggilnya dua kali
+           berarti menjalankan seluruh kueri dasbor dua kali, pada halaman
+           yang justru harus terbuka cepat. */
+        $ubin = collect(Dasbor::modul($user));
+
         $orang  = Paspor::with(['kartu', 'mcu', 'company'])->get();
         $baris  = PemantauanBerkas::baris($orang);
         $berkas = PemantauanBerkas::ringkas($baris);
 
         return Inertia::render('Dasbor/Halaman', [
-            'judul'    => 'Dasbor EQOHSEE',
+            'judul'    => 'Dashboard',
             'subjudul' => 'Keadaan seluruh situs dalam satu layar',
 
             'hari'       => $hari,
@@ -109,20 +121,46 @@ class DasborController extends Controller
                 ],
             ],
 
-            'modul' => collect(Dasbor::modul($user))->map(fn ($m) => $m + [
-                'url'   => route($m['rute']),
-                'warna' => self::NADA[$m['nada']] ?? self::NADA['kabar'],
-            ])->all(),
+            'modul' => $ubin->map(fn ($m) => $m + [
+                'url' => route($m['rute']),
+            ] + self::warna($m['nada'] ?? null))->all(),
+
+            /* Ringkasan SELURUH modul, termasuk yang sedang bersih.
+             *
+               Panel di atasnya hanya menampilkan yang menuntut tindakan —
+               itu memang gunanya. Akibatnya dasbor diam sama sekali
+               tentang modul yang tenang, dan yang membacanya tidak dapat
+               membedakan "modul ini aman" dari "modul ini tidak ada di
+               sini". Keduanya terlihat sama: tidak ada. Begitulah dua
+               modul luput selama ini tanpa ada yang menyadarinya. */
+            'ringkasanModul' => collect(Dasbor::ringkasanModul($ubin->all()))
+                ->map(fn ($m) => $m + [
+                    'url' => $m['rute'] ? route($m['rute']) : null,
+                ] + self::warna($m['nada'] ?? null))->values()->all(),
         ]);
     }
 
-    /** Warna tiap nada ubin — artinya dipesan, dan hanya empat. */
-    private const NADA = [
-        'gawat' => '#DC2626',
-        'ingat' => '#D97706',
-        'kabar' => '#0EA5E9',
-        'baik'  => '#16A34A',
-    ];
+    /**
+     * Ketiga warna sebuah nada, siap dipakai layar.
+     *
+     * `warna` tetap bernama begitu karena itulah yang dipakai tulisan
+     * dan bilah tepi kartu — dua tempat yang paling banyak
+     * memanggilnya. Dua nilai ubinnya ditambahkan di sebelahnya, bukan
+     * menggantikan, supaya halaman yang hanya butuh satu warna tidak
+     * perlu tahu ada tiga.
+     *
+     * @return array{warna: string, warnaUbin: string, warnaTerang: string}
+     */
+    private static function warna(?string $nada): array
+    {
+        $w = NadaWarna::untuk($nada);
+
+        return [
+            'warna'       => $w['teks'],
+            'warnaUbin'   => $w['ubin'],
+            'warnaTerang' => $w['terang'],
+        ];
+    }
 
     /**
      * Tiga angka kepatuhan, sebagai persentase.

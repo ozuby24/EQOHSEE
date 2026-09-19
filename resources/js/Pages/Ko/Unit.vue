@@ -59,7 +59,7 @@ function ubahAktif(u: any) {
 <template>
   <Head title="Jenis Unit SPIP" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <section class="flex flex-wrap items-end justify-between gap-4">
       <div>
