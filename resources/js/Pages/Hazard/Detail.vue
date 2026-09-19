@@ -20,6 +20,7 @@ const props = defineProps<HalamanDetailBahaya>();
 const form = useForm({
   status: props.r.status,
   catatan_penutupan: props.r.catatanPenutupan ?? '',
+  batas_akhir: props.r.batasAkhirIso ?? '',
   foto_tindaklanjut: [] as File[],
 });
 
@@ -138,13 +139,24 @@ const rinci: Array<[string, string | null]> = [
         </a>
       </div>
 
-      <div class="grid gap-3 sm:grid-cols-[200px_1fr]">
+      <div class="grid gap-3 sm:grid-cols-[200px_200px_1fr]">
         <div>
           <label class="block text-[11.5px] font-bold uppercase tracking-wide text-stone-500 mb-1.5">Status</label>
           <select v-model="form.status"
                   class="ring-focus w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]" aria-label="Status">
             <option v-for="s in opsi.status" :key="s" :value="s">{{ s }}</option>
           </select>
+        </div>
+
+        <div>
+          <label class="block text-[11.5px] font-bold uppercase tracking-wide text-stone-500 mb-1.5">
+            Batas akhir
+          </label>
+          <input v-model="form.batas_akhir" type="date" aria-label="Batas akhir perbaikan"
+                 class="ring-focus w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
+          <p v-if="r.lewatTenggat" class="text-[11px] font-bold text-red-600 mt-1.5">
+            Lewat tenggat sejak {{ r.batasAkhir }}.
+          </p>
         </div>
 
         <div>

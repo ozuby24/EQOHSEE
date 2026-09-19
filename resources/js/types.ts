@@ -1121,6 +1121,10 @@ export interface OpsiBahaya {
   kategori: string[];
   bulan: Array<{ nilai: string; label: string }>;
   perusahaan: PilihanPerusahaan[];
+  /** Lokasi yang benar-benar ada di data, untuk saringan register. */
+  lokasi: string[];
+  /** Urutan penyusunan register — dibaca dari RegisterPerbaikan::URUTAN. */
+  urutan: Array<{ nilai: string; label: string }>;
 }
 
 export interface BarisGolongan {
@@ -1224,6 +1228,13 @@ export interface HalamanDetailBahaya {
     kategori: string | null; deskripsi: string;
     rekomendasi: string | null; hirarki: string | null;
     lokasi: string | null; tanggal: string | null; waktu: string | null;
+
+    /** Tenggat perbaikan. `batasAkhir` untuk dibaca, `batasAkhirIso` untuk <input type=date>. */
+    batasAkhir: string | null;
+    batasAkhirIso: string | null;
+    /** Dihitung di SERVER — jam perangkat lapangan kerap meleset sehari. */
+    lewatTenggat: boolean;
+
     pelapor: {
       nama: string | null; nrp: string | null; jabatan: string | null;
       departemen: string | null; perusahaan: string | null;
@@ -1271,7 +1282,10 @@ export interface HalamanMonitorBahaya {
   opsi: OpsiBahaya;
   laporan: LaporanBahaya[];
   halaman: { kini: number; akhir: number; total: number; tautan: TautanHalaman[] };
-  tautan: { buat: string; csv: string; cetak: string; wa: string; pengingat: string };
+  tautan: {
+    buat: string; csv: string; cetak: string; wa: string; pengingat: string;
+    register: string; registerJumlah: string;
+  };
 }
 
 /* ══════════════ Gudang & Penyimpanan ══════════════ */

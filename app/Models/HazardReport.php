@@ -15,13 +15,14 @@ class HazardReport extends Model
     protected $fillable = [
         'kode','user_id','pelapor_nama','pelapor_nrp','pelapor_perusahaan','pelapor_departemen','pelapor_jabatan',
         'company_id','terlapor','tanggal','waktu','lokasi','risiko','kategori','deskripsi',
-        'unsafe_action','unsafe_condition','hirarki','rekomendasi','status',
+        'unsafe_action','unsafe_condition','hirarki','rekomendasi','batas_akhir','status',
         'foto','foto_tindaklanjut','catatan_penutupan','closed_by','closed_at',
     ];
 
     protected function casts(): array
     {
-        return ['tanggal'=>'date', 'closed_at'=>'datetime', 'foto'=>'array', 'foto_tindaklanjut'=>'array'];
+        return ['tanggal'=>'date', 'batas_akhir'=>'date', 'closed_at'=>'datetime',
+                'foto'=>'array', 'foto_tindaklanjut'=>'array'];
     }
 
     /**
@@ -43,6 +44,22 @@ class HazardReport extends Model
     public function closer(): BelongsTo  { return $this->belongsTo(User::class, 'closed_by'); }
 
     public function golongan(): string { return \App\Support\Hazard::golongan($this->pelapor_jabatan); }
+
+    /**
+     * Lewat tenggat dan belum ditutup?
+     *
+     * Yang sudah CLOSED tidak pernah terlambat, seberapa pun lewatnya —
+     * temuan yang ditutup pada hari kesepuluh dari tenggat tujuh hari
+     * memang terlambat ditutup, tetapi ia sudah selesai, dan daftar
+     * "perlu dikejar" yang memuatnya menyuruh orang mengerjakan sesuatu
+     * yang sudah dikerjakan.
+     */
+    public function lewatTenggat(): bool
+    {
+        return $this->batas_akhir !== null
+            && $this->status !== 'Closed'
+            && $this->batas_akhir->isBefore(\App\Support\Waktu::kini()->startOfDay());
+    }
 
     public static function kodeBaru(): string
     {

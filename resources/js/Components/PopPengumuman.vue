@@ -232,16 +232,16 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.eq-pop-latar {
-  position: fixed;
-  inset: 0;
-  z-index: 70;
-  display: grid;
-  place-items: center;
-  padding: 1rem;
-  background: rgb(12 17 23 / .62);
-  backdrop-filter: blur(3px);
-}
+/*
+  Kerangka pop-out — latar, tombol silang, pil label, dan geraknya —
+  tinggal di app.css, bukan di sini.
+
+  Ia dipakai lebih dari satu pop-out (pengumuman, pilihan register,
+  lightbox foto), dan style di blok `scoped` TIDAK dapat dipakai
+  komponen lain. Menyalinnya ke tiap pop-out berarti tiga salinan yang
+  harus diubah bersama-sama tiap kali temanya bergeser — dan yang
+  ketiga selalu ketinggalan.
+*/
 
 /*
   Tinggi kotak dibatasi, dan BADANNYA yang bergulir — bukan halamannya.
@@ -279,27 +279,6 @@ onBeforeUnmount(() => {
    silang yang melayang di atas putih perlu latarnya sendiri agar tetap
    terbaca. Keduanya diselesaikan satu aturan: tombolnya selalu berlatar
    gelap tembus pandang, di atas foto maupun di atas putih. */
-.eq-pop-silang {
-  position: absolute;
-  top: .7rem;
-  right: .7rem;
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 99px;
-  border: 0;
-  color: #fff;
-  background: rgb(12 17 23 / .55);
-  backdrop-filter: blur(4px);
-  cursor: pointer;
-  transition: background .15s ease;
-}
-
-.eq-pop-silang:hover { background: rgb(12 17 23 / .78); }
-.eq-pop-silang svg { width: 1rem; height: 1rem; }
-
 .eq-pop-isi {
   grid-row: 2;
 
@@ -309,18 +288,6 @@ onBeforeUnmount(() => {
   min-height: 0;
   overflow-y: auto;
   padding: 1.35rem 1.5rem .4rem;
-}
-
-.eq-pop-pil {
-  display: inline-block;
-  padding: .2rem .55rem;
-  border-radius: 99px;
-  font-size: 9.5px;
-  font-weight: 800;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: var(--eq-aksen, #D96500);
-  background: color-mix(in srgb, var(--eq-aksen, #F57C00) 13%, transparent);
 }
 
 .eq-pop-judul {
@@ -463,23 +430,10 @@ onBeforeUnmount(() => {
   background: linear-gradient(to bottom, rgb(17 28 39 / 0), #111C27 88%);
 }
 
-/* ── gerak ── */
-.eq-pop-enter-active, .eq-pop-leave-active { transition: opacity .16s ease; }
-.eq-pop-enter-from, .eq-pop-leave-to { opacity: 0; }
-.eq-pop-enter-active .eq-pop { transition: transform .18s cubic-bezier(.2, .8, .3, 1); }
-.eq-pop-enter-from .eq-pop { transform: translateY(.9rem) scale(.985); }
-
-@media (prefers-reduced-motion: reduce) {
-  .eq-pop-enter-active, .eq-pop-leave-active,
-  .eq-pop-enter-active .eq-pop { transition: none; }
-  .eq-pop-enter-from .eq-pop { transform: none; }
-}
-
 /* Di layar sempit pop-out menempel ke bawah dan memakai hampir seluruh
    tinggi: kotak melayang di tengah layar ponsel menyisakan pita kosong
    di atas dan di bawah, sementara isinya sendiri terhimpit. */
 @media (max-width: 520px) {
-  .eq-pop-latar { padding: 0; place-items: end stretch; }
   .eq-pop {
     width: 100%;
     max-height: 92dvh;

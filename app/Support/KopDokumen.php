@@ -194,6 +194,18 @@ final class KopDokumen
                 'kode'  => 'OHSE-IV.031',
                 'urut'  => 8,
 ],
+            /* Lembar yang diserahkan kepada perusahaan terlapor dan
+               dibawa ke rapat bulanan. BERBEDA dari register laporan
+               bahaya di atas: yang itu mendaftar temuannya, yang ini
+               mendaftar apa yang harus dikerjakan atas temuan itu —
+               beserta hirarki pengendalian, penanggung jawab, dan
+               tenggatnya. */
+            'register-perbaikan' => [
+                'jenis' => 'FORM & CHECKLIST',
+                'judul' => 'REGISTER TINDAKAN PERBAIKAN',
+                'kode'  => 'OHSE-IV.054',
+                'urut'  => 24,
+],
             'register-inspeksi' => [
                 'jenis' => 'FORM & CHECKLIST',
                 'judul' => 'REGISTER INSPEKSI KESELAMATAN',

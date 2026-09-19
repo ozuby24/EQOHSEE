@@ -67,6 +67,7 @@ use App\Support\Waktu;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Pemuat data contoh untuk satu perusahaan.
@@ -544,6 +545,14 @@ final class DataContoh
                 ? $q->forceDelete()
                 : $q->delete();
         }
+
+        /* Foto contoh ikut terbuang bersama barisnya.
+           Baris yang hilang tidak membawa serta berkasnya: yang
+           tertinggal adalah folder foto yang tidak lagi ditunjuk baris
+           mana pun, pada diska yang sama tempat foto bahaya sungguhan
+           disimpan. Ia tidak terlihat dari layar mana pun — dan karena
+           itu akan tetap di sana. */
+        Storage::disk(Berkas::TERTUTUP)->deleteDirectory($this->folderFotoBahaya());
 
         return $n;
     }
@@ -4680,26 +4689,50 @@ final class DataContoh
     {
         $n = 0;
 
+        /* Rekomendasinya ditulis satu per satu, bukan satu kalimat yang
+           dipakai enam kali. Register Tindakan Perbaikan adalah lembar
+           yang dibawa ke rapat bulanan untuk menagih orang; kolom
+           tindakan yang berbunyi sama pada seluruh barisnya tidak
+           menagih apa pun, dan lembar contohnya tidak akan pernah
+           memperlihatkan bahwa kolom itu memang terbaca. */
         $daftar = [
-            ['Unsafe Condition', 'Tinggi', 'Open',        'Tanggul jalan hauling KM 4 tergerus hujan',        'Rekayasa'],
-            ['Unsafe Action',    'Sedang', 'In Progress', 'Operator tidak memakai sabuk pengaman di kabin',   'Administratif'],
-            ['Near Miss',        'Tinggi', 'Closed',      'Batu jatuh dari bak dump truck di simpang timbang','Rekayasa'],
-            ['Unsafe Condition', 'Rendah', 'Closed',      'Lampu penerangan front loading mati satu titik',   'Rekayasa'],
-            ['Bahaya Lingkungan','Sedang', 'Open',        'Ceceran oli di area workshop belum ditampung',     'Administratif'],
+            ['Unsafe Condition', 'Tinggi', 'Open', 'Tanggul jalan hauling KM 4 tergerus hujan', 'Rekayasa',
+             'Tanggul dibangun ulang setinggi setengah diameter ban unit terbesar dan dipadatkan.', 7],
+            ['Unsafe Action', 'Sedang', 'In Progress', 'Operator tidak memakai sabuk pengaman di kabin', 'Administratif',
+             'Teguran tertulis, pengarahan ulang di P5M, dan pemeriksaan acak tiap pergantian gilir.', 14],
+            ['Near Miss', 'Tinggi', 'Closed', 'Batu jatuh dari bak dump truck di simpang timbang', 'Rekayasa',
+             'Muatan diratakan di bawah bibir bak dan pemasangan jaring penahan pada unit pengangkut.', 10],
+            ['Unsafe Condition', 'Rendah', 'Closed', 'Lampu penerangan front loading mati satu titik', 'Rekayasa',
+             'Penggantian lampu dan pemeriksaan seluruh titik penerangan front tiap awal gilir malam.', 5],
+            ['Bahaya Lingkungan', 'Sedang', 'Open', 'Ceceran oli di area workshop belum ditampung', 'Administratif',
+             'Pemasangan bak penampung di bawah titik bocor dan penjadwalan pembuangan limbah B3.', 7],
             ['Unsafe Action & Unsafe Condition', 'Tinggi', 'In Progress',
-             'Pengisian bahan bakar dilakukan saat mesin hidup',                                              'Eliminasi'],
+             'Pengisian bahan bakar dilakukan saat mesin hidup', 'Eliminasi',
+             'Pengisian hanya boleh saat mesin mati; kunci kontak diserahkan ke petugas pengisian.', 3],
         ];
 
-        foreach ($daftar as $i => [$kategori, $risiko, $status, $uraian, $hirarki]) {
+        /* Pelapornya BERBEDA-BEDA, bukan satu orang enam kali.
+
+           Register Tindakan Perbaikan punya rekap per pelapor di
+           kakinya, dan rekap satu baris tidak memperlihatkan apa pun:
+           urutannya tidak teruji, pengelompokan identitasnya tidak
+           teruji, dan kolom "paling banyak melapor" selalu benar. Yang
+           pertama melapor tiga kali supaya urutannya punya sesuatu untuk
+           diurutkan. */
+        $pelapor = $this->pelaporBahaya();
+
+        foreach ($daftar as $i => [$kategori, $risiko, $status, $uraian, $hirarki, $rekomendasi, $tenggat]) {
             $tanggal = $this->kini->copy()->subDays(3 + $i * 5);
+            $orang   = $pelapor[$i % count($pelapor)];
 
             $b = $this->baru(HazardReport::class, [
                 'kode'          => Nomor::susun('Formulir', $this->c, 100 + $i + 1)
                     ?: 'HZ-'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT),
-                'user_id'       => $this->pengaju?->id,
-                'pelapor_nama'  => $this->pengaju?->name ?? 'Pengawas Lapangan',
-                'pelapor_departemen' => 'Produksi',
-                'pelapor_jabatan'    => 'Pengawas',
+                'user_id'       => $orang?->id,
+                'pelapor_nama'  => $orang?->name ?? 'Pengawas Lapangan',
+                'pelapor_nrp'   => $orang?->employee_id,
+                'pelapor_departemen' => $orang?->department ?: 'Produksi',
+                'pelapor_jabatan'    => $orang?->position ?: 'Pengawas',
                 'tanggal'       => $tanggal->toDateString(),
                 'waktu'         => '09:'.str_pad((string) (10 + $i * 7), 2, '0', STR_PAD_LEFT),
                 'lokasi'        => ['Pit Utara', 'Jalan Hauling KM 4', 'Workshop', 'Disposal Selatan'][$i % 4],
@@ -4707,8 +4740,18 @@ final class DataContoh
                 'kategori'      => $kategori,
                 'deskripsi'     => $uraian,
                 'hirarki'       => $hirarki,
-                'rekomendasi'   => 'Perbaikan dijadwalkan dan diawasi pengawas area.',
+                'rekomendasi'   => $rekomendasi,
+
+                /* Tenggatnya dihitung dari tanggal temuannya, bukan dari
+                   hari ini. Yang kedua membuat seluruh temuan contoh
+                   selalu belum lewat waktu berapa pun lamanya ia
+                   didiamkan — dan penanda "lewat tenggat" yang tidak
+                   pernah menyala tidak dapat dibedakan dari penanda yang
+                   rusak. Dengan cara ini, temuan ke lima yang berumur 23
+                   hari dengan tenggat 7 hari memang terlambat. */
+                'batas_akhir'   => $tanggal->copy()->addDays($tenggat)->toDateString(),
                 'status'        => $status,
+                'foto'          => $this->fotoBahaya('temuan', $i, self::FOTO_TEMUAN[$i % count(self::FOTO_TEMUAN)]),
             ]);
 
             /* Yang sudah ditutup harus punya penutup dan waktunya.
@@ -4719,6 +4762,15 @@ final class DataContoh
                     'closed_by'         => $this->peninjau?->id ?? $this->pengaju?->id,
                     'closed_at'         => $tanggal->copy()->addDays(4),
                     'catatan_penutupan' => 'Perbaikan selesai dan diperiksa ulang di lapangan.',
+
+                    /* Foto perbaikan HANYA pada yang sudah ditutup.
+                       Memberikannya pada seluruh baris membuat kolom
+                       "Gambar Perbaikan" penuh pada register contoh, dan
+                       register yang tiap barisnya berisi tidak pernah
+                       memperlihatkan seperti apa baris yang belum
+                       dikerjakan — padahal barisan itulah yang dicari
+                       orang saat membuka lembarnya. */
+                    'foto_tindaklanjut' => $this->fotoBahaya('perbaikan', $i, self::FOTO_PERBAIKAN),
                 ])->saveQuietly();
             }
 
@@ -4726,6 +4778,84 @@ final class DataContoh
         }
 
         return $n;
+    }
+
+    /**
+     * Urutan pelapor temuan bahaya — sengaja tidak rata.
+     *
+     * Bila perusahaannya hanya punya satu pengguna, daftarnya berisi
+     * satu orang dan rekapnya memang satu baris. Itu keadaan yang benar,
+     * bukan yang perlu dipaksa: memaksakan nama karangan agar rekapnya
+     * terlihat ramai akan memasukkan orang yang tidak ada ke lembar yang
+     * dibawa ke rapat.
+     *
+     * @return list<User|null>
+     */
+    private function pelaporBahaya(): array
+    {
+        $orang = User::withoutGlobalScopes()
+            ->where('company_id', $this->c->id)
+            ->orderBy('id')->limit(3)->get()->all();
+
+        if (!$orang) return [$this->pengaju];
+
+        /* Yang pertama muncul dua kali lebih sering. Enam temuan yang
+           dibagi rata kepada tiga orang memberi 2-2-2 — dan urutan
+           "paling banyak melapor" atas tiga angka yang sama tidak
+           membuktikan bahwa ia benar-benar mengurutkan. */
+        return [$orang[0], $orang[1] ?? $orang[0], $orang[0],
+                $orang[2] ?? $orang[0], $orang[1] ?? $orang[0], $orang[0]];
+    }
+
+    /* ─────────── foto contoh ─────────── */
+
+    /**
+     * Foto temuan contoh, disalin dari media bawaan aplikasi.
+     *
+     * Bukan gambar kosong berwarna. Halaman monitor, lightbox-nya, dan
+     * kolom gambar pada Register Tindakan Perbaikan sama-sama tidak
+     * dapat diperiksa dengan kotak abu-abu 1×1: thumbnail yang salah
+     * nisbah, gambar yang meluber keluar selnya, dan foto tegak yang
+     * meregangkan barisnya tiga kali lipat semuanya terlihat benar bila
+     * sumbernya bujur sangkar sekecil itu.
+     */
+    private const FOTO_TEMUAN = [
+        'media/sampul/jalan-angkut.jpg',
+        'media/sampul/pengawasan-pit.jpg',
+        'media/sampul/pit-pemuatan.jpg',
+        'media/sampul/pit-panorama.jpg',
+    ];
+
+    private const FOTO_PERBAIKAN = 'media/sampul/pelabuhan-muat.jpg';
+
+    /**
+     * Salin satu foto contoh ke diska tertutup, lalu pulangkan jalurnya.
+     *
+     * Namanya TETAP bagi tiap perusahaan dan tiap temuan — bukan nama
+     * acak seperti unggahan sungguhan. Unggahan sungguhan memang harus
+     * acak supaya alamatnya tidak dapat ditebak, tetapi data contoh
+     * dimuat ulang berkali-kali, dan nama acak membuat tiap pemuatan
+     * meninggalkan satu salinan lagi di diska yang tidak lagi ditunjuk
+     * baris mana pun. Nama tetap menimpa dirinya sendiri.
+     *
+     * @return list<string>
+     */
+    private function fotoBahaya(string $awalan, int $i, string $sumber): array
+    {
+        $asal = public_path($sumber);
+        if (!is_file($asal)) return [];
+
+        $tujuan = $this->folderFotoBahaya().'/'.$awalan.'-'.($i + 1).'.jpg';
+
+        Storage::disk(Berkas::TERTUTUP)->put($tujuan, (string) file_get_contents($asal));
+
+        return [$tujuan];
+    }
+
+    /** Folder foto contoh satu perusahaan — terpisah dari unggahan nyata. */
+    private function folderFotoBahaya(): string
+    {
+        return 'hazard/contoh/'.$this->c->id;
     }
 
     /* ─────────── inspeksi ─────────── */

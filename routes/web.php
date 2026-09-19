@@ -1387,6 +1387,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('pengingat',          [HazardExportController::class,'pengingat'])->name('pengingat');
         Route::get('ekspor/csv',         [HazardExportController::class,'hazardCsv'])->name('ekspor.csv');
         Route::get('ekspor/cetak',       [HazardExportController::class,'hazardCetak'])->name('ekspor.cetak');
+
+        /* Register Tindakan Perbaikan — lembar terkendali yang diserahkan
+           ke rapat, bukan ekspor data. Jumlahnya punya rutenya sendiri
+           supaya dialog pilihan dapat menghitung tanpa memuat ulang
+           seluruh halaman monitor pada tiap pilihan yang digeser. */
+        Route::get('register',           [HazardExportController::class,'register'])->name('register');
+        Route::get('register/jumlah',    [HazardExportController::class,'registerJumlah'])->name('register.jumlah');
         Route::get('{hazard}',           [HazardController::class,'show'])->name('show');
         Route::post('{hazard}/tindak',   [HazardController::class,'follow'])->name('follow');
         Route::delete('{hazard}',        [HazardController::class,'destroy'])->middleware('can:admin')->name('destroy');

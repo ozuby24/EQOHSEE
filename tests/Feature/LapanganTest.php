@@ -145,6 +145,22 @@ class LapanganTest extends TestCase
                benar akan dimatikan orang pada hari pertama, dan
                bersamanya hilang pula penjagaan atas yang sungguh
                salah. */
+            /* <label for="x"> juga label yang sah, sama sahnya dengan
+               kendali yang dibungkus <label>.
+
+               Semula hanya pembungkusan yang diakui, sehingga halaman
+               yang memasangkan `for` dengan `id` — cara yang justru
+               dianjurkan ketika labelnya perlu berdiri sendiri di atas
+               kendalinya — dilaporkan sebagai tanpa label. Jalan keluar
+               yang ditempuh orang atas laporan itu adalah menambahkan
+               `aria-label` di samping <label> yang sudah ada, dan itu
+               MEMBURUKKAN keadaannya: aria-label menimpa teks <label>
+               bagi pembaca layar, sehingga sejak saat itu ada dua teks
+               yang harus diubah bersama-sama, dan yang terdengar adalah
+               yang lebih mudah terlupa. */
+            preg_match_all('/<label\b[^>]*\bfor="([^"]+)"/', $isi, $cocok);
+            $berpasangan = array_flip($cocok[1]);
+
             $dalamLabel = 0;
             $tanda = preg_split(
                 '/(<label\b|<\/label>|<input\b[^>]*>|<select\b[^>]*>)/',
@@ -162,6 +178,9 @@ class LapanganTest extends TestCase
                 if ($dalamLabel > 0) continue;
                 if ($adalahInput && !str_contains($potong, 'type="date"')) continue;
                 if (preg_match('/aria-label|placeholder=|title=/', $potong)) continue;
+
+                if (preg_match('/\bid="([^"]+)"/', $potong, $id)
+                    && isset($berpasangan[$id[1]])) continue;
 
                 $baris = substr_count(substr($isi, 0, $pos), "\n") + 1;
                 $tanpa[] = str_replace(base_path().'/', '', $berkas).':'.$baris;

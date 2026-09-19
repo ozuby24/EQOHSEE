@@ -87,7 +87,7 @@ const bantu = 'text-[11px] text-stone-400 mt-1.5 leading-relaxed';
         </div>
         <div>
           <label :class="label" for="jenis-materi">Jenis</label>
-          <select id="jenis-materi" v-model="form.type" :class="isian" aria-label="Jenis materi">
+          <select id="jenis-materi" v-model="form.type" :class="isian">
             <option value="document">Dokumen</option>
             <option value="pdf">PDF</option>
             <option value="pptx">Presentasi</option>
