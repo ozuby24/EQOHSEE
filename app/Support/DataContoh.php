@@ -36,6 +36,8 @@ use App\Models\Hr\{Absensi as HrAbsensi, AbsensiJejak as HrJejak, Cuti as HrCuti
 use App\Support\Hr\{JalurCuti, JalurLembur, KebijakanCuti, MasterCuti, MasterPajak, MasterRoster,
     Penggajian, Penyusun, Rekonsiliasi};
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use App\Support\Berkas;
 use App\Support\Miners\Acuan;
 use App\Support\Miners\MasterMiners;
 use App\Support\Pembelian;
@@ -486,6 +488,11 @@ final class DataContoh
     private function bersihkan(): int
     {
         $n = 0;
+
+        /* Berkasnya lebih dulu, selagi barisnya masih ada. Sesudah
+           barisnya hilang tidak ada lagi yang menghubungkan berkas itu
+           dengan perusahaan mana pun. */
+        $this->bersihkanBerkas();
 
         foreach (self::URUTAN_HAPUS as $kelas) {
             $q = self::kueri($kelas, $this->c);
@@ -4643,6 +4650,22 @@ final class DataContoh
                 'status'        => $status,
             ]);
 
+            /* Foto temuan, dan foto tindak lanjut HANYA bagi yang sudah
+               ditangani.
+               
+               Sengaja tidak semuanya berfoto lengkap. Monitor bahaya
+               dibaca untuk menemukan baris yang temuannya berfoto tetapi
+               tindak lanjutnya belum — dan bila seluruh contohnya punya
+               kedua-duanya, kolom yang dibuat justru untuk memperlihatkan
+               selisih itu tidak pernah memperlihatkan apa pun. */
+            $foto = ['foto' => $this->fotoContoh($b, 'temuan', $i, 1 + ($i % 2))];
+
+            if ($status !== 'Open') {
+                $foto['foto_tindaklanjut'] = $this->fotoContoh($b, 'tindak', $i, 1);
+            }
+
+            $b->forceFill($foto)->saveQuietly();
+
             /* Yang sudah ditutup harus punya penutup dan waktunya.
                Tanpa keduanya, halaman menghitung waktu penutupan dari
                nilai kosong dan memulangkan angka yang tidak masuk akal. */
@@ -4658,6 +4681,74 @@ final class DataContoh
         }
 
         return $n;
+    }
+
+    /** Folder berkas contoh. Dipisah supaya pembersihannya dapat menyebut
+     *  satu tempat, bukan menebak nama berkas satu per satu. */
+    private const FOLDER_FOTO = 'hazard/contoh';
+
+    /**
+     * Foto contoh untuk laporan bahaya.
+     *
+     * Berkasnya DISALIN, bukan ditautkan: `foto` dibaca lewat rute
+     * berjaga yang membacanya dari disk tertutup, dan jalur yang
+     * menunjuk ke luar disk itu memulangkan 404 — kolom foto yang
+     * terlihat kosong tanpa satu pun galat.
+     *
+     * Namanya DITENTUKAN dari id barisnya, tidak diacak. `demo:pasang`
+     * dijalankan ulang tiap kali data contohnya disegarkan; dengan nama
+     * acak, tiap pemasangan meninggalkan satu rombongan berkas yatim di
+     * disk yang tidak ada lagi barisnya dan karena itu tidak ada lagi
+     * yang tahu boleh menghapusnya. Ditentukan, pemasangan kedua
+     * menimpa yang pertama.
+     *
+     * @return string[] jalur relatif pada disk tertutup
+     */
+    private function fotoContoh(object $baris, string $jenis, int $urut, int $jumlah): array
+    {
+        /* Foto tambang sungguhan yang sudah ada di repositori. Memakai
+           gambar berwarna polos akan membuat kolomnya terlihat benar
+           tanpa membuktikan bahwa fotonya benar-benar tersaji. */
+        $sumber = glob(public_path('media/sampul/*.jpg')) ?: [];
+
+        if ($sumber === []) return [];
+
+        sort($sumber);
+
+        $jalur = [];
+
+        for ($k = 0; $k < $jumlah; $k++) {
+            $asal = $sumber[($urut + $k) % count($sumber)];
+            $nama = self::FOLDER_FOTO."/{$this->c->id}-{$baris->getKey()}-{$jenis}-{$k}.jpg";
+
+            Storage::disk(Berkas::TERTUTUP)->put($nama, (string) file_get_contents($asal));
+
+            $jalur[] = $nama;
+        }
+
+        return $jalur;
+    }
+
+    /**
+     * Berkas contoh milik perusahaan ini, dibuang bersama barisnya.
+     *
+     * Tanpa ini, tiap pemuatan ulang meninggalkan berkas yang barisnya
+     * sudah tidak ada. Yang tertinggal tidak menimbulkan galat dan tidak
+     * terlihat di mana pun di aplikasi — ia hanya memakan disk, diam,
+     * selamanya.
+     *
+     * Disaring pada awalan id perusahaan: hanya berkas milik perusahaan
+     * yang sedang dibuang yang ikut terhapus, bukan seluruh folder
+     * contoh milik perusahaan contoh lain yang masih hidup.
+     */
+    private function bersihkanBerkas(): void
+    {
+        $disk  = Storage::disk(Berkas::TERTUTUP);
+        $awal  = $this->c->id.'-';
+
+        foreach ($disk->files(self::FOLDER_FOTO) as $jalur) {
+            if (str_starts_with(basename($jalur), $awal)) $disk->delete($jalur);
+        }
     }
 
     /* ─────────── inspeksi ─────────── */
