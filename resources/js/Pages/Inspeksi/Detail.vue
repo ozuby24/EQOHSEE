@@ -87,9 +87,12 @@ const label = 'block text-[11px] font-bold uppercase tracking-wide text-stone-50
           <a :href="tautan.ubah"
              class="rounded-xl border border-stone-200 px-3.5 py-2 text-[12px] font-bold text-stone-600
                     hover:bg-stone-50 transition">Ubah</a>
-          <a :href="tautan.cetak" target="_blank" rel="noopener"
+          <a :href="tautan.lembar" target="_blank" rel="noopener"
+             class="lime-gradient shadow-glow rounded-xl text-white px-3.5 py-2 text-[12px]
+                    font-bold hover:brightness-105 transition">⎙ Cetak Lembar Inspeksi</a>
+          <a :href="tautan.register" target="_blank" rel="noopener"
              class="rounded-xl border border-stone-200 px-3.5 py-2 text-[12px] font-bold text-stone-600
-                    hover:bg-stone-50 transition">⎙ Cetak</a>
+                    hover:bg-stone-50 transition">Register</a>
           <a :href="tautan.kembali"
              class="px-3 py-2 text-[12px] font-semibold text-stone-400 hover:text-cam-ink">← Kembali</a>
         </div>

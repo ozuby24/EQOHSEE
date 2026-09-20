@@ -172,7 +172,15 @@ class InspectionController extends Controller
                 'tambahItem'    => route('inspeksi.item.store', $inspeksi),
                 'tambahPetugas' => route('inspeksi.inspector.store', $inspeksi),
                 'ubah'          => route('inspeksi.edit', $inspeksi),
-                'cetak'         => route('inspeksi.ekspor.cetak'),
+
+                /* Lembar INSPEKSI INI, bukan register seluruhnya.
+                   Tombol cetak di halaman satu inspeksi dulu menunjuk
+                   ke register — yang menekannya sambil membaca satu
+                   inspeksi mendapat daftar seluruh inspeksi perusahaan,
+                   dan tidak ada apa pun di layar yang menjelaskan
+                   kenapa. */
+                'lembar'        => route('inspeksi.lembar', $inspeksi),
+                'register'      => route('inspeksi.ekspor.cetak'),
                 'kembali'       => route('inspeksi.index'),
             ],
         ]);

@@ -1047,7 +1047,11 @@ export interface HalamanDetailInspeksi {
   };
   tautan: {
     simpanItem: string; tambahItem: string; tambahPetugas: string;
-    ubah: string; cetak: string; kembali: string;
+    ubah: string; kembali: string;
+    /** Lembar inspeksi INI — dokumen terkendali yang ditandatangani. */
+    lembar: string;
+    /** Register seluruh inspeksi; berbeda dari lembar di atas. */
+    register: string;
   };
 }
 

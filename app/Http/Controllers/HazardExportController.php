@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{Company, HazardReport, Inspection};
-use App\Support\{Db, Ekspor, Hazard, RegisterPerbaikan, Waktu};
+use App\Support\{Berkas, Db, Ekspor, Hazard, RegisterPerbaikan, Waktu};
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -137,6 +137,86 @@ class HazardExportController extends Controller
             'data' => $data,
             'filters' => $r->query(),
             'kembali' => route('hazard.index', $r->query()),
+        ]);
+    }
+
+    /**
+     * Lembar SATU inspeksi — dokumen terkendali yang ditandatangani.
+     *
+     * Berbeda dari `inspeksiCetak` di bawahnya, yang mendaftar seluruh
+     * inspeksi sebagai register. Register menjawab "apa saja yang sudah
+     * diperiksa bulan ini"; lembar ini menjawab "apa yang ditemukan pada
+     * pemeriksaan tanggal sekian, oleh siapa, dan siapa yang bertanda
+     * tangan atasnya" — dan hanya yang kedua yang dapat diarsipkan
+     * sebagai bukti pemeriksaan.
+     *
+     * Butirnya dikirim SUDAH TERKELOMPOK. Mengelompokkannya di peramban
+     * berarti urutan kelompok ditentukan urutan kemunculan baris, yang
+     * berubah begitu satu butir disisipkan di tengah — dan lembar yang
+     * kelompoknya berpindah-pindah antar penerbitan tidak dapat
+     * dibandingkan dengan terbitan sebelumnya.
+     */
+    public function inspeksiLembar(Request $r, Inspection $inspeksi)
+    {
+        $inspeksi->load(['items', 'inspectors', 'company', 'template', 'user']);
+
+        $kelompok = [];
+
+        foreach ($inspeksi->items->sortBy('order_index') as $b) {
+            $nama = $b->kelompok ?: 'Umum';
+
+            $kelompok[$nama][] = [
+                'uraian'   => $b->uraian,
+                'acuan'    => $b->acuan,
+                'risiko'   => $b->risiko,
+                'kondisi'  => $b->kondisi,
+                'temuan'   => $b->temuan,
+                'tindakan' => $b->tindakan,
+                'foto'     => Berkas::daftarUrl($b, 'ins'),
+            ];
+        }
+
+        $butir = $inspeksi->items;
+
+        return Inertia::render('Print/InspeksiLembar', [
+            'dok' => \App\Support\KopDokumen::untuk('lembar-inspeksi', $inspeksi->company ?: $this->perusahaanKop($r)),
+
+            'i' => [
+                'kode'      => $inspeksi->kode,
+                'judul'     => $inspeksi->judul,
+                'jenis'     => $inspeksi->jenis,
+                'lokasi'    => $inspeksi->lokasi,
+                'tanggal'   => $inspeksi->tanggal?->translatedFormat('d F Y'),
+                'status'    => $inspeksi->status,
+                'catatan'   => $inspeksi->catatan,
+                'template'  => $inspeksi->template?->nama,
+                'perusahaan'=> $inspeksi->company?->name,
+            ],
+
+            /* Rekapitulasi dihitung di server, satu kali, dari kumpulan
+               yang sama yang dicetak di bawahnya. Menghitungnya di
+               peramban membuat angka di kepala lembar dan baris di
+               badannya bersumber pada dua jalan yang harus sepakat. */
+            'rekap' => [
+                'total'       => $butir->count(),
+                'sesuai'      => $butir->where('kondisi', 'Sesuai')->count(),
+                'tidakSesuai' => $butir->where('kondisi', 'Tidak Sesuai')->count(),
+                'na'          => $butir->where('kondisi', 'N/A')->count(),
+                'belum'       => $butir->whereNull('kondisi')->count(),
+            ],
+
+            'kelompok' => collect($kelompok)->map(fn ($b, $nama) => [
+                'nama'  => $nama,
+                'butir' => $b,
+            ])->values()->all(),
+
+            'pemeriksa' => $inspeksi->inspectors->map(fn ($p) => [
+                'nama'    => $p->nama,
+                'jabatan' => $p->jabatan,
+                'peran'   => $p->peran,
+            ])->all(),
+
+            'kembali' => route('inspeksi.show', $inspeksi),
         ]);
     }
 

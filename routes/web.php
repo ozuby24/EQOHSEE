@@ -1418,6 +1418,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('ekspor/csv',   [HazardExportController::class,'inspeksiCsv'])->name('ekspor.csv');
         Route::get('ekspor/cetak', [HazardExportController::class,'inspeksiCetak'])->name('ekspor.cetak');
 
+        /* Lembar satu inspeksi — dokumen terkendali yang ditandatangani
+           dan diarsipkan, bukan register seluruh inspeksi. */
+        Route::get('{inspeksi}/lembar', [HazardExportController::class,'inspeksiLembar'])->name('lembar');
+
         // Pelaksanaan
         Route::get('/',                   [InspectionController::class,'index'])->name('index');
         Route::get('buat',                [InspectionController::class,'create'])->name('create');

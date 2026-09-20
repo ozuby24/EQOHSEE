@@ -149,6 +149,40 @@ class LapanganTest extends TestCase
         );
     }
 
+    /**
+     * Tiap halaman cetak melepas kerangka aplikasinya.
+     *
+     * Halaman di Pages/Print dirender ke KERTAS. Yang lupa menyatakan
+     * `layout: BlankLayout` mewarisi AppLayout, sehingga bilah atas,
+     * sampul modul, lencana notifikasi, dan chip akun ikut tercetak di
+     * kepala dokumen terkendali — di atas kop perusahaan, pada lembar
+     * yang diserahkan kepada auditor.
+     *
+     * Cacatnya TIDAK terlihat di layar: di layar semua hiasan itu
+     * memang wajar ada, dan halamannya tampak benar sepenuhnya. Yang
+     * pertama menemukannya adalah orang yang sudah menekan cetak —
+     * kalau perlu sesudah kertasnya keluar.
+     */
+    public function test_setiap_halaman_cetak_memakai_blank_layout(): void
+    {
+        $tanpa = [];
+
+        foreach (glob(resource_path('js/Pages/Print/*.vue')) as $berkas) {
+            $isi = (string) file_get_contents($berkas);
+
+            if (!preg_match('/defineOptions\\(\\s*\\{[^}]*layout:\\s*BlankLayout/s', $isi)) {
+                $tanpa[] = basename($berkas);
+            }
+        }
+
+        sort($tanpa);
+
+        $this->assertSame([], $tanpa,
+            "Halaman cetak berikut belum menyatakan layout: BlankLayout, sehingga\n"
+            ."kerangka aplikasi ikut tercetak di atas kop dokumennya:\n  "
+            .implode("\n  ", $tanpa));
+    }
+
     public function test_tidak_ada_kendali_tanpa_label(): void
     {
         $tanpa = [];

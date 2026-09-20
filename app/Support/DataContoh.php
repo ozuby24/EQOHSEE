@@ -36,6 +36,7 @@ use App\Models\Hr\{Absensi as HrAbsensi, AbsensiJejak as HrJejak, Cuti as HrCuti
 use App\Support\Hr\{JalurCuti, JalurLembur, KebijakanCuti, MasterCuti, MasterPajak, MasterRoster,
     Penggajian, Penyusun, Rekonsiliasi};
 use Illuminate\Support\Facades\Hash;
+use App\Support\MasterInspeksi;
 use App\Support\Miners\Acuan;
 use App\Support\Miners\MasterMiners;
 use App\Support\Pembelian;
@@ -4882,29 +4883,23 @@ final class DataContoh
 
         $template = [];
 
-        $pustaka = [
-            ['Inspeksi Harian Jalan Angkut', 'Harian', 'Jalan Tambang', [
-                ['Badan jalan', 'Lebar jalan minimal 3,5 kali lebar alat terbesar', 'Kepmen 1827 K/2018', 'Tinggi'],
-                ['Badan jalan', 'Superelevasi tikungan dan kemiringan memanjang', 'Kepmen 1827 K/2018', 'Sedang'],
-                ['Tanggul',     'Tanggul pengaman setinggi setengah diameter ban terbesar', 'Kepmen 1827 K/2018', 'Tinggi'],
-                ['Drainase',    'Saluran samping tidak tersumbat dan mengalir', null, 'Sedang'],
-                ['Rambu',       'Rambu batas kecepatan dan peringatan terbaca', null, 'Rendah'],
-            ]],
-            ['Inspeksi Bulanan Gudang Bahan Peledak', 'Bulanan', 'Gudang Handak', [
-                ['Keamanan',   'Pagar, gembok, dan penerangan keliling berfungsi', 'Kepmen 1827 K/2018', 'Tinggi'],
-                ['Penyimpanan','Detonator dan bahan peledak terpisah sesuai jarak aman', 'Kepmen 1827 K/2018', 'Tinggi'],
-                ['Administrasi','Kartu persediaan cocok dengan hitungan fisik', null, 'Sedang'],
-                ['Kebakaran',  'APAR bertekanan cukup dan belum kedaluwarsa', null, 'Tinggi'],
-            ]],
-        ];
+        /* Daftar periksanya datang dari pustaka baku, bukan diketik
+           lagi di sini.
 
-        foreach ($pustaka as [$nama, $jenis, $kategori, $butir]) {
+           Sebelumnya dua salinan hidup berdampingan: satu di kelas ini
+           berisi lima butir, satu lagi di bawah tanpa butir sama sekali.
+           Data contoh karena itu memperlihatkan modul inspeksi yang
+           daftar periksanya dangkal — dan yang memilih template kosong
+           mendapat inspeksi tanpa satu pun baris untuk diisi. */
+        $pustaka = MasterInspeksi::PUSTAKA;
+
+        foreach ($pustaka as [$nama, $jenis, $kategori, $deskripsi, $butir]) {
             $t = InspectionTemplate::withoutGlobalScopes()->create([
                 'demo_company_id' => $this->c->id,
                 'nama'      => $nama,
                 'jenis'     => $jenis,
                 'kategori'  => $kategori,
-                'deskripsi' => 'Template contoh; butirnya mengikuti acuan yang disebut di tiap baris.',
+                'deskripsi' => $deskripsi,
                 'is_active' => true,
             ]);
             $n++;
@@ -4921,17 +4916,29 @@ final class DataContoh
                 $n++;
             }
 
-            $template[$jenis] = $t;
+            /* Dikunci menurut NAMA, bukan jenis. Sejak pustaka memuat
+               dua template "Bulanan" — kantor dan gudang handak — kunci
+               menurut jenis membuat yang kedua menimpa yang pertama
+               diam-diam, dan inspeksi kantor pada data contoh akan
+               memakai daftar periksa gudang bahan peledak. */
+            $template[$nama] = $t;
         }
 
         /* ── pelaksanaannya ── */
 
+        /* [template, jenis, judul, lokasi, status]
+
+           Template disebut dengan NAMANYA supaya jelas daftar periksa
+           mana yang dipakai tiap baris. Yang terakhir sengaja tanpa
+           template: inspeksi mendadak sesudah hujan deras memang tidak
+           punya daftar periksa baku, dan modul ini harus memperlihatkan
+           bahwa keadaan itu pun tertangani. */
         $daftar = [
-            ['Harian',   'Inspeksi Jalan Angkut Pagi',     'Jalan Hauling KM 0–6', 'Selesai'],
-            ['Harian',   'Inspeksi Front Loading',         'Pit Utara',            'Selesai'],
-            ['Mingguan', 'Inspeksi Tanggul dan Drainase',  'Pit Selatan',          'Berjalan'],
-            ['Bulanan',  'Inspeksi Gudang Bahan Peledak',  'Gudang Handak',        'Berjalan'],
-            ['Khusus',   'Inspeksi Pasca Hujan Deras',     'Disposal Selatan',     'Selesai'],
+            ['Inspeksi K3 Perkantoran',              'Bulanan',  'Inspeksi K3 Kantor Site',        'Kantor Site — Lantai 1 dan 2', 'Selesai'],
+            ['Inspeksi Harian Jalan Angkut',         'Harian',   'Inspeksi Jalan Angkut Pagi',     'Jalan Hauling KM 0–6',         'Selesai'],
+            ['Inspeksi Mingguan Alat Berat',         'Mingguan', 'Inspeksi Mingguan Unit Produksi','Workshop dan Pit Utara',       'Berjalan'],
+            ['Inspeksi Bulanan Gudang Bahan Peledak','Bulanan',  'Inspeksi Gudang Bahan Peledak',  'Gudang Handak',                'Berjalan'],
+            [null,                                   'Khusus',   'Inspeksi Pasca Hujan Deras',     'Disposal Selatan',             'Selesai'],
         ];
 
         /* Tidak semua butir "Sesuai". Rekapitulasi temuan yang seluruh
@@ -4939,8 +4946,24 @@ final class DataContoh
            bekerja — sama saja dengan tidak menghitung apa pun. */
         $kondisi = ['Sesuai', 'Sesuai', 'Tidak Sesuai', 'Sesuai', 'N/A'];
 
-        foreach ($daftar as $i => [$jenis, $judul, $lokasi, $status]) {
-            $t = $template[$jenis] ?? null;
+        /* Temuan yang KHAS bagi butirnya, bukan satu kalimat untuk
+           semua. Lembar contoh yang enam temuannya berbunyi sama persis
+           memperlihatkan kolom yang terisi, bukan kolom yang berguna —
+           dan justru kolom inilah yang menentukan apakah lembarnya dapat
+           ditindaklanjuti orang lain tanpa bertanya lagi. */
+        $temuanKhas = MasterInspeksi::temuanKhas();
+
+        /* Tindakannya mengikuti RISIKO butirnya. Temuan berisiko tinggi
+           yang tindak lanjutnya berbunyi sama dengan temuan berisiko
+           rendah adalah lembar yang tidak memprioritaskan apa pun. */
+        $tindakan = [
+            'Tinggi' => 'Dihentikan sementara dan diperbaiki hari ini juga; diperiksa ulang pengawas sebelum dipakai kembali.',
+            'Sedang' => 'Diperbaiki paling lambat tujuh hari dan dilaporkan pada inspeksi berikutnya.',
+            'Rendah' => 'Dimasukkan ke daftar perbaikan berkala area.',
+        ];
+
+        foreach ($daftar as $i => [$namaTemplate, $jenis, $judul, $lokasi, $status]) {
+            $t = $namaTemplate ? ($template[$namaTemplate] ?? null) : null;
 
             $ins = $this->baru(Inspection::class, [
                 'kode'        => Nomor::susun('Formulir', $this->c, 200 + $i + 1)
@@ -4982,8 +5005,12 @@ final class DataContoh
                     'acuan'            => $acuan,
                     'kondisi'          => $k,
                     'risiko'           => $risiko,
-                    'temuan'  => $k === 'Tidak Sesuai' ? 'Tidak memenuhi acuan saat diperiksa.' : null,
-                    'tindakan'=> $k === 'Tidak Sesuai' ? 'Diperbaiki dan diperiksa ulang pengawas area.' : null,
+                    'temuan'  => $k === 'Tidak Sesuai'
+                        ? ($temuanKhas[$uraian] ?? 'Tidak memenuhi acuan saat diperiksa.')
+                        : null,
+                    'tindakan'=> $k === 'Tidak Sesuai'
+                        ? ($tindakan[$risiko] ?? $tindakan['Sedang'])
+                        : null,
                     'order_index'      => $j + 1,
                 ]);
                 $n++;
@@ -6435,19 +6462,16 @@ final class DataContoh
             $n++;
         }
 
-        /* Template inspeksi — dipakai modul Inspeksi, dan ditandai demo
-           dengan alasan yang sama seperti kursus. */
-        foreach ([
-            ['Inspeksi Harian Jalan Angkut', 'Harian', 'Jalan tambang'],
-            ['Inspeksi Mingguan Alat Berat', 'Mingguan', 'Peralatan'],
-        ] as [$nama, $jenis, $kategori]) {
-            InspectionTemplate::withoutGlobalScopes()->create([
-                'nama' => $nama, 'jenis' => $jenis, 'kategori' => $kategori,
-                'deskripsi' => 'Template contoh untuk memeriksa alur inspeksi.',
-                'is_active' => true, 'demo_company_id' => $this->c->id,
-            ]);
-            $n++;
-        }
+        /* Template inspeksi TIDAK dibuat di sini.
+
+           Blok ini dulu membuat dua template lagi tanpa satu pun butir,
+           dan salah satunya berganda dengan template yang sudah dibuat
+           lengkap oleh inspeksi() di atas. Akibatnya dua-duanya buruk:
+           daftar template memuat nama yang sama dua kali sehingga yang
+           memilih tidak tahu mana yang benar, dan yang memilih salah
+           mendapat inspeksi tanpa daftar periksa — halaman yang terbuka
+           rapi dengan nol baris, yang terbaca sebagai modul rusak, bukan
+           sebagai template yang memang kosong. */
 
         return $n;
     }

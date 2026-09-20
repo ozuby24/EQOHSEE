@@ -212,6 +212,17 @@ final class KopDokumen
                 'kode'  => 'OHSE-IV.041',
                 'urut'  => 9,
 ],
+            /* Lembar SATU inspeksi — yang ditandatangani dan diarsipkan,
+               berbeda dari register di atas yang mendaftar seluruhnya.
+               Urut 18, bukan 9: keduanya berprefiks FRM dan dipakai
+               berdampingan pada rapat yang sama, jadi nomor yang kembar
+               di antara keduanya justru yang paling cepat ketahuan. */
+            'lembar-inspeksi' => [
+                'jenis' => 'FORM & CHECKLIST',
+                'judul' => 'LEMBAR INSPEKSI KESELAMATAN',
+                'kode'  => 'OHSE-IV.042',
+                'urut'  => 18,
+],
             /* urut 16, bukan 10. Prefiks nomornya FRM, dan FRM 001–015
                sudah dipakai — termasuk oleh 'mine-permit' yang berjenis
                IZIN tetapi tetap bernomor FRM. Dua formulir bernomor sama
