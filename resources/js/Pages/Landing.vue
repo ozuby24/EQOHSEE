@@ -4,6 +4,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import BlankLayout from '../Layouts/BlankLayout.vue';
 import Wordmark from '../Components/Wordmark.vue';
 import IkonPilar from '../Components/IkonPilar.vue';
+import CincinTeks from '../Components/CincinTeks.vue';
 import IkonPadat from '../Components/IkonPadat.vue';
 import { ikonPadat, type JalurPadat } from '../ikonPadat';
 
@@ -45,6 +46,21 @@ const props = defineProps<{
 }>();
 
 const pilarTerpilih = ref<string | null>(null);
+
+/* Tiga foto galeri pertama yang benar-benar punya gambar.
+   Disaring, bukan diambil tiga teratas begitu saja: kartu galeri boleh
+   saja bergambar null, dan <img src="null"> menggambar ikon gambar
+   rusak — tepat di sebelah angka yang seharusnya meyakinkan orang. */
+const fotoTumpuk = computed(() =>
+  props.galeri.map((g) => g.gambarUrl).filter((u): u is string => !!u).slice(0, 3));
+
+const pilarJumlah = computed(() => Object.keys(props.pilar).length);
+
+/* Foto untuk tanda lingkar. Sengaja bukan hero.poster: poster itulah
+   yang sedang terbentang sebagai latar di belakangnya, dan lingkaran
+   berisi gambar yang sama dengan latarnya terbaca sebagai noda pada
+   layar, bukan sebagai unsur rancangan. */
+const fotoCincin = computed(() => fotoTumpuk.value[1] ?? fotoTumpuk.value[0] ?? props.hero.poster);
 
 /**
  * Video yang sedang diputar — bukan sekadar penanda "modal terbuka".
@@ -265,12 +281,21 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
       <div class="jual-lebar relative">
         <div class="grid lg:grid-cols-[minmax(0,1fr)_20rem] gap-x-14 gap-y-12 items-center
                     pt-32 pb-16 md:pt-40 md:pb-24">
-          <div class="max-w-[40rem]">
+          <div class="max-w-[46rem]">
             <p class="jual-mata jual-mata-terang">Delapan aspek · satu platform</p>
 
+            <!-- Pil panahnya MENGGULIR ke bagian modul, bukan sekadar
+                 hiasan berbentuk tombol. Bentuk yang terlihat dapat
+                 ditekan tetapi tidak melakukan apa pun mengajari
+                 orang bahwa tombol di situs ini memang begitu. -->
             <h1 class="jual-judul mt-6">
               Keselamatan tambang,<br>
-              <span class="jual-judul-tipis">terukur dan terbukti.</span>
+              <a href="#modul" class="jual-pil-panah" aria-label="Lihat modulnya">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M5 12h13M13 6l6 6-6 6"/>
+                </svg>
+              </a><span class="jual-judul-tipis">terukur dan terbukti.</span>
             </h1>
 
             <p class="jual-tubuh-besar jual-tubuh-terang mt-7 max-w-xl">
@@ -284,9 +309,23 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
               <Link href="/login" class="jual-tombol jual-tombol-garis">Masuk ke platform</Link>
             </div>
 
-            <div class="jual-statistik mt-12 max-w-2xl">
-              <div v-for="s in [[jumlahItem, 'Item penilaian'], [elemenSmkp.length, 'Elemen SMKP'],
-                                [modul.length, 'Modul terpadu'], ['24/7', 'Akses platform']]"
+            <!-- Angka pertama dibawa keluar dari deret dan diberi foto.
+                 Empat angka sejajar tanpa gambar terbaca sebagai empat
+                 klaim; satu yang berfoto menjadikan ketiganya terbaca
+                 sebagai isi yang benar-benar ada di dalam platform. -->
+            <div v-if="fotoTumpuk.length" class="jual-tumpuk mt-11">
+              <span class="jual-tumpuk-foto" aria-hidden="true">
+                <img v-for="g in fotoTumpuk" :key="g" :src="g" alt="" loading="lazy" decoding="async">
+              </span>
+              <span>
+                <b class="num">{{ jumlahItem }}</b>
+                <span>Item penilaian terstandar</span>
+              </span>
+            </div>
+
+            <div class="jual-statistik mt-9 max-w-2xl">
+              <div v-for="s in [[elemenSmkp.length, 'Elemen SMKP'], [modul.length, 'Modul terpadu'],
+                                [pilarJumlah, 'Aspek dijaga'], ['24/7', 'Akses platform']]"
                    :key="String(s[1])">
                 <b>{{ s[0] }}</b><span>{{ s[1] }}</span>
               </div>
@@ -299,7 +338,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
 
                Angkanya contoh, dan terbaca sebagai contoh: tanpa nama
                perusahaan dan tanpa klaim, hanya bentuk layarnya. -->
-          <aside class="jual-dasbor">
+          <!-- Dasbor dan cincin berbagi SATU sel, bukan dua baris grid.
+               Sebagai dua baris, cincinnya membuka baris kedua yang
+               kolom kirinya kosong — empat ratus piksel rongga yang
+               tidak memuat apa pun, tepat di bagian halaman yang paling
+               banyak dilihat. -->
+          <div class="flex flex-col items-center lg:items-end gap-8">
+          <aside class="jual-dasbor w-full">
             <div class="jual-dasbor-kepala">
               <span class="jual-dasbor-judul">Dasbor HSE</span>
               <span class="jual-dasbor-masa">Sep 2026</span>
@@ -322,6 +367,24 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
               <span class="num">2025–2026</span>
             </div>
           </aside>
+
+          <!-- Tanda lingkar bersemboyan.
+
+               Diletakkan DI BAWAH dasbor, bukan menggantikannya: yang
+               meyakinkan calon pembeli adalah potongan layar produknya,
+               dan menukar bukti dengan hiasan adalah pertukaran yang
+               salah arah. Cincin ini menambahkan apa yang tidak
+               dilakukan dasbor — menyebutkan untuk apa platform ini ada
+               — pada bagian halaman yang paling lama dipandangi.
+
+               Disembunyikan di layar sempit: di sana ia memakan satu
+               layar penuh untuk satu kalimat yang sudah tertulis di
+               paragraf pembuka. -->
+          <div v-if="fotoCincin" class="hidden lg:block w-[17rem]">
+            <CincinTeks :gambar="fotoCincin" nada="terang"
+                        teks="· KESELAMATAN PERTAMBANGAN · TERUKUR DAN TERBUKTI " />
+          </div>
+          </div>
         </div>
       </div>
     </section>
@@ -386,8 +449,17 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
             <div class="mt-3.5">
               <div class="text-[13px] font-bold">{{ g.judul }}</div>
               <p class="jual-tubuh-kecil jual-tubuh-terang mt-1">{{ g.ket }}</p>
-              <button v-if="g.videoUrl" type="button" class="jual-tautan jual-tautan-terang mt-2.5"
-                      @click="putar(g.judul, g.videoUrl, g.gambarUrl)">Putar video</button>
+              <!-- Bilah jingga, bukan tautan bergaris bawah. Enam kartu
+                   berfoto besar dengan tautan setipis itu di kakinya
+                   membuat fotonya terbaca sebagai gambar hiasan, bukan
+                   sebagai sesuatu yang dapat dibuka. -->
+              <button v-if="g.videoUrl" type="button" class="jual-bilah-aksi"
+                      @click="putar(g.judul, g.videoUrl, g.gambarUrl)">
+                <span>Putar video</span>
+                <i aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                </i>
+              </button>
             </div>
           </article>
         </div>
@@ -635,7 +707,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
     </section>
 
     <!-- ══════════ ALUR ══════════ -->
-    <section id="alur" class="jual-lugas scroll-mt-[66px]" style="background:#FFFFFF">
+    <!-- Latar krem, bukan putih. Bulatan nomor dan kartu putih di
+         dalamnya hanya terbaca sebagai bentuk bila latarnya bukan
+         putih juga — di atas putih, keduanya lenyap jadi teks
+         melayang. -->
+    <section id="alur" class="jual-lugas scroll-mt-[66px]">
       <div class="jual-lebar py-16 md:py-24">
         <div class="max-w-2xl">
           <p class="jual-mata jual-mata-aksen">Cara kerja</p>
