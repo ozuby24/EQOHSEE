@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pembelian\Produk;
-use App\Support\{Ekspor, IkonPadat, Media, Modules, Pillars, Smkp};
+use App\Support\{Ekspor, IkonPadat, Media, Modules, Pillars, Smkp, TanyaJawab};
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -62,7 +62,7 @@ class LandingController extends Controller
             ],
             'masalah' => $this->masalah(),
             'aman' => $this->aman(),
-            'tanya' => $this->tanya(),
+            'tanya' => TanyaJawab::semua(),
             'kontak' => [
                 'whatsapp' => Ekspor::nomorWa(config('pembelian.kontak.whatsapp')) ?? '',
                 'email' => (string) config('pembelian.kontak.email'),
@@ -225,48 +225,6 @@ class LandingController extends Controller
         ];
     }
 
-    /**
-     * Enam pertanyaan yang memang ditanyakan sebelum membeli.
-     *
-     * ── JAWABAN SINYAL SENGAJA MENGAKU ──
-     *
-     * EQOHSEE menuntut koneksi; tidak ada penyimpanan luring maupun
-     * antrean sinkronisasi di dalamnya. Menuliskannya sebagai "siap
-     * dipakai tanpa sinyal" akan menjadi janji yang runtuh pada hari
-     * pertama pemakaian di site — pada produk keselamatan, tepat pada
-     * saat orang paling bergantung padanya.
-     *
-     * @return array<int, array{t: string, j: string}>
-     */
-    private function tanya(): array
-    {
-        return [
-            ['t' => 'Apakah seluruh modulnya harus diambil sekaligus?',
-             'j' => 'Tidak. Modulnya dapat dibeli satuan dan dinyalakan bertahap — modul yang '
-                  . 'ditambahkan kemudian tetap berbagi data perusahaan, pengguna, dan peran '
-                  . 'yang sama, jadi tidak ada data yang perlu dipindahkan.'],
-            ['t' => 'Apakah EQOHSEE menjamin perusahaan lulus audit SMKP?',
-             'j' => 'Tidak, dan tidak ada perangkat lunak yang dapat menjaminnya. EQOHSEE '
-                  . 'adalah alat bantu menyusun dan menyimpan bukti penerapan SMKP. Kewajiban '
-                  . 'hukum serta hasil penilaiannya tetap berada pada perusahaan dan KTT.'],
-            ['t' => 'Bagaimana kalau site tidak ada sinyal?',
-             'j' => 'EQOHSEE berjalan di peramban dan menuntut koneksi saat data dikirim; '
-                  . 'belum ada perekaman luring. Halamannya dibuat ringan agar tetap terbuka '
-                  . 'pada jaringan site yang lambat, tetapi pengisian di titik tanpa sinyal '
-                  . 'sama sekali masih perlu diulang ketika kembali terhubung.'],
-            ['t' => 'Apakah perlu dipasang di server sendiri?',
-             'j' => 'Tidak. Cukup peramban — dari kantor pusat maupun dari site. Pemasangan '
-                  . 'di server sendiri dapat dibicarakan terpisah bila kebijakan TI menuntutnya.'],
-            ['t' => 'Bagaimana data antar-perusahaan dipisahkan?',
-             'j' => 'Setiap catatan terikat pada perusahaan pemiliknya dan disaring di server '
-                  . 'pada setiap permintaan, bukan disembunyikan di tampilan. Peran pengguna '
-                  . 'menentukan lebih lanjut apa yang boleh dibuka dan diubah.'],
-            ['t' => 'Apakah harganya terbuka?',
-             'j' => 'Ya. Harga paket menyeluruh dan harga tiap aplikasi satuan tercantum di '
-                  . 'katalog, lengkap dengan masa berlakunya. Pemesanannya tidak menuntut akun '
-                  . 'dan pembayarannya lewat QRIS.'],
-        ];
-    }
 
     /**
      * Dua angka untuk bagian harga: paketnya, dan yang termurah satuan.
