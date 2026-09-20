@@ -39,6 +39,7 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import BlankLayout from '../../Layouts/BlankLayout.vue';
 import Wordmark from '../../Components/Wordmark.vue';
+import IkonPilar from '../../Components/IkonPilar.vue';
 import { rincianBertingkat, subtotalBertingkat } from '../../hargaBertingkat';
 
 defineOptions({ layout: BlankLayout });
@@ -518,7 +519,18 @@ onBeforeUnmount(() => {
             <span class="jual-aspek-bingkai">
               <img v-if="w.foto" :src="w.foto" alt="" loading="lazy" decoding="async"
                    class="jual-aspek-foto">
-              <span v-else class="jual-aspek-foto jual-aspek-polos" :style="{ '--w': w.deep }"></span>
+              <!-- Aspek yang fotonya belum ditaruh mendapat ikonnya,
+                   bukan bidang warna kosong.
+
+                   Bidang warna polos di antara lima kartu berfoto
+                   terbaca sebagai gambar yang gagal dimuat — persis
+                   kesan yang paling merugikan pada halaman jual, karena
+                   yang disimpulkan bukan "fotonya belum ada" melainkan
+                   "situsnya rusak". Ikon aspeknya membuat ubin itu
+                   terbaca sebagai pilihan, bukan sebagai kegagalan. -->
+              <span v-else class="jual-aspek-foto jual-aspek-polos" :style="{ '--w': w.deep }">
+                <IkonPilar :nama="w.ikon" :ukuran="34" />
+              </span>
               <span class="jual-aspek-tirai"></span>
             </span>
 

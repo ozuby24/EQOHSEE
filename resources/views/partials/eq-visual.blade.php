@@ -1850,30 +1850,7 @@ body.eq-sempit .eq-semboyan{display:none}
    gerakan sentuh harus terasa berasal dari satu tangan.
    ═══════════════════════════════════════════════════════════ */
 
-.jual{
-  /* Krem hangat, bukan abu dingin.
-     #F7F8F6 berlatar biru-abu, dan foto tambang — tanah merah, debu,
-     besi kuning — duduk di atasnya seperti ditempel pada kertas
-     laboratorium. Krem ini senada dengan warna material yang ada di
-     tiap fotonya, sehingga halamannya terbaca sebagai satu benda. */
-  --j-dasar:#F4F3EC;
-  --j-kartu:#FFFFFF;
-  --j-tinta:#1C1817;
-  --j-redup:#6B635E;
-  --j-samar:#958D87;
-  --j-garis:#E5E1D8;
-  --j-garis-tebal:#D6D1C5;
-  --j-aksen:#F36F0F;
-  --j-aksen-lembut:#FDEDE0;
-  --j-hijau:#12BE15;
-  --j-hijau-lembut:#E4FBE4;
-  --j-hijau-tua:#095F0A;
-  --j-gelap:#1C1817;
-  --j-lengkung:cubic-bezier(.22,1,.36,1);
 
-  background:var(--j-dasar);color:var(--j-tinta);
-  font-feature-settings:"kern" 1,"liga" 1,"cv11" 1;
-}
 
 /* Bagian harga di halaman depan MEMINJAM kosakata ini.
 
@@ -1882,6 +1859,22 @@ body.eq-sempit .eq-semboyan{display:none}
    pernah ditetapkan, dan yang tergambar kartu tanpa warna sama sekali.
    `.jual-lugas` memberi peubah yang sama tanpa membawa latar halamannya
    — halaman depan sudah punya latarnya sendiri. */
+/* ── SATU DAFTAR TOKEN UNTUK KEDUA PEMBUNGKUS ──
+
+   Blok ini sebelumnya ditulis DUA KALI: sekali pada .jual (dipakai
+   /katalog) dan sekali lagi pada .jual-lugas (dipakai halaman depan),
+   dengan isi yang identik byte-per-byte.
+
+   Dan itulah persis jenis duplikasi yang tidak pernah terasa salah
+   sampai tiba-tiba salah. Menaikkan --j-samar agar terbaca hanya
+   mengenai satu blok, sehingga /katalog mendapat abu yang baru dan
+   halaman depan tetap memakai yang lama — dua warna berbeda untuk hal
+   yang sama, pada dua halaman yang saling bertautan satu klik, tanpa
+   satu pun galat. Ketahuan hanya karena kontrasnya diukur, bukan
+   dilihat.
+
+   Satu selektor untuk keduanya menutup kemungkinan itu. */
+.jual,
 .jual-lugas{
   /* Krem hangat, bukan abu dingin.
      #F7F8F6 berlatar biru-abu, dan foto tambang — tanah merah, debu,
@@ -1892,19 +1885,34 @@ body.eq-sempit .eq-semboyan{display:none}
   --j-kartu:#FFFFFF;
   --j-tinta:#1C1817;
   --j-redup:#6B635E;
-  --j-samar:#958D87;
+  /* Dinaikkan dari #958D87. Warna ini dipakai sebagai TULISAN — kepala
+     tabel, keterangan kartu aspek, kode elemen, "Berlaku 1 tahun",
+     baris sumber — dan pada krem ia hanya 2,93:1, pada putih 3,26:1.
+     Keduanya di bawah 4,5:1 yang dituntut teks berukuran biasa, dan
+     yang paling dirugikan justru pembaca di layar lapangan yang silau.
+     Sekarang 4,56:1 pada krem dan 5,08:1 pada putih. */
+  --j-samar:#756D66;
   --j-garis:#E5E1D8;
   --j-garis-tebal:#D6D1C5;
   --j-aksen:#F36F0F;
+  /* Jingga merek #F36F0F dipakai pada dua pekerjaan yang berbeda
+     tuntutannya. Sebagai LATAR tombol ia sempurna. Sebagai TULISAN
+     kecil — label monospace berjarak .2em, pita "Paling lengkap",
+     satuan angka — ia hanya 2,66:1 pada krem: terbaca sebagai jingga,
+     tidak terbaca sebagai huruf.
+     Jadi tulisannya memakai jingga yang lebih dalam. Masih jingga yang
+     sama keluarganya, tetapi 5,21:1 pada krem dan 5,80:1 pada putih. */
+  --j-aksen-teks:#A8490A;
   --j-aksen-lembut:#FDEDE0;
   --j-hijau:#12BE15;
   --j-hijau-lembut:#E4FBE4;
   --j-hijau-tua:#095F0A;
   --j-gelap:#1C1817;
   --j-lengkung:cubic-bezier(.22,1,.36,1);
-
+  font-feature-settings:"kern" 1,"liga" 1,"cv11" 1;
   background:var(--j-dasar);color:var(--j-tinta);
 }
+
 
 .jual-lugas-gelap{background:var(--j-gelap);color:#fff}
 
@@ -1936,7 +1944,7 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
 .jual-mata{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
   font-size:12px;font-weight:600;letter-spacing:.2em;line-height:1.4;
   text-transform:uppercase;color:var(--j-samar)}
-.jual-mata-aksen{color:var(--j-aksen)}
+.jual-mata-aksen{color:var(--j-aksen-teks)}
 .jual-mata-terang{color:rgba(255,255,255,.5)}
 
 /* Ukurannya ditahan supaya tetap dua baris pada lebar meja kerja.
@@ -1944,9 +1952,29 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
    Dibiarkan naik, baris kedua pecah dan menyisakan satu kata sendirian di
    baris ketiga — janda, yang pada judul setebal ini terbaca sebagai
    kalimat terpotong, bukan sebagai baris baru. Diukur, bukan dikira. */
+/* ── WARNANYA DIWARISI, TIDAK DIPAKU ──
+   Semula `color:var(--j-tinta)`, dan itu benar selama satu-satunya
+   pemakainya halaman depan yang berlatar krem. Etalase memakai kelas
+   yang sama di atas .jual-lugas-gelap — dan di sana tinta gelap
+   digambar tepat di atas latar gelap yang sama persis: rasio 1:1, judul
+   utama halaman jual lenyap sepenuhnya.
+
+   Tidak ada galat, tidak ada peringatan; tulisannya ADA di DOM, dapat
+   dipilih, dibaca pembaca layar, dan terindeks mesin pencari. Yang
+   tidak bisa melihatnya hanya orang.
+
+   `inherit` membuatnya mengambil warna dari pembungkusnya — tinta pada
+   .jual-lugas, putih pada .jual-lugas-gelap — sehingga bug yang sama
+   tidak dapat terjadi lagi pada pembungkus mana pun yang dibuat nanti. */
 .jual-judul{font-size:clamp(2.35rem,4.3vw,3.5rem);font-weight:800;line-height:1.06;
-  letter-spacing:-.03em;color:var(--j-tinta)}
-.jual-judul-tipis{color:rgba(28,24,23,.42)}
+  letter-spacing:-.03em;color:inherit}
+/* Sama alasannya dengan .jual-judul di atas, dan sama kerasnya
+   akibatnya: rgba(28,24,23,.42) yang dipaku membuat separuh judul
+   etalase hilang di atas hero gelap. Diturunkan dari currentColor, ia
+   selalu setengah-pudar TERHADAP warna yang berlaku di sekitarnya —
+   abu pada halaman krem, putih redup pada hero gelap — tanpa satu pun
+   selektor tambahan yang harus diingat untuk pembungkus berikutnya. */
+.jual-judul-tipis{color:color-mix(in srgb,currentColor 45%,transparent)}
 
 .jual-h2{font-size:clamp(2rem,4.2vw,3.4rem);font-weight:800;line-height:1.08;
   letter-spacing:-.028em;margin-top:1.25rem}
@@ -1964,8 +1992,13 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
    Rp 9.500.000 dan Rp 13.500.000 tidak saling menggeser. */
 .jual-angka{font-size:clamp(2rem,3.6vw,2.75rem);font-weight:700;line-height:1;
   letter-spacing:-.035em;font-variant-numeric:tabular-nums}
+/* Menempel pada angkanya, jadi warnanya harus ikut angkanya. Abu yang
+   dipaku terbaca cukup di atas kartu putih, tetapi di hero gelap
+   etalase ia jatuh ke 3,47:1 — "Rp" yang nyaris lenyap tepat di
+   sebelah harga yang justru ingin ditonjolkan. */
 .jual-angka-kecil{font-size:.44em;font-weight:600;letter-spacing:-.01em;
-  margin-right:.3em;vertical-align:.5em;color:var(--j-samar)}
+  margin-right:.3em;vertical-align:.5em;
+  color:color-mix(in srgb,currentColor 62%,transparent)}
 
 /* ── tombol ── */
 
@@ -2060,7 +2093,7 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
 .jual-hero .jual-tumpuk b{color:#fff}
 .jual-hero .jual-tumpuk b+span{color:rgba(255,255,255,.58)}
 
-.jual-ajakan{background:var(--j-kartu);border:1px solid var(--j-garis);
+.jual-ajakan{background:var(--j-kartu);color:var(--j-tinta);border:1px solid var(--j-garis);
   box-shadow:0 30px 70px -40px rgba(28,24,23,.4)}
 
 .jual-tombol-aksen{background:var(--j-aksen);color:#fff;border-color:var(--j-aksen);
@@ -2164,7 +2197,7 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
 
    Angkanya contoh, dan memang terbaca sebagai contoh: tanpa nama
    perusahaan, tanpa klaim, hanya bentuk layarnya. */
-.jual-dasbor{background:var(--j-kartu);border-radius:22px;overflow:hidden;
+.jual-dasbor{background:var(--j-kartu);color:var(--j-tinta);border-radius:22px;overflow:hidden;
   box-shadow:0 34px 68px -34px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.16);
   width:min(23rem,100%);color:var(--j-tinta)}
 .jual-dasbor-kepala{display:flex;align-items:center;justify-content:space-between;gap:1rem;
@@ -2203,7 +2236,17 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
    nomor tagihan, barisnya, totalnya, dan cara membayarnya. Halaman jual
    yang memperlihatkan barangnya lebih meyakinkan daripada halaman jual
    yang memperlihatkan ikon tentang barangnya. */
-.jual-mock{background:var(--j-kartu);border-radius:16px;padding:1.25rem;
+/* ── LATAR TERANG MEMBAWA TINTANYA SENDIRI ──
+   .jual-lugas-gelap memasang color:#fff untuk seluruh isinya. Kartu ini
+   memasang latar PUTIH di dalamnya, lalu membiarkan warna tulisannya
+   diwarisi — jadi seluruh isi tagihan contoh tergambar putih di atas
+   putih: nomor invoice, kedua baris aplikasi beserta harganya, total,
+   dan "Bayar dengan QRIS". Yang tampak hanya kartu kosong berlencana
+   "Lunas", dan yang membacanya menyimpulkan tagihannya gagal dimuat.
+
+   Aturannya sederhana dan berlaku untuk semuanya di bawah: kelas yang
+   memasang latar terang wajib memasang tintanya juga. */
+.jual-mock{background:var(--j-kartu);color:var(--j-tinta);border-radius:16px;padding:1.25rem;
   box-shadow:0 30px 60px -30px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.14);
   width:min(23rem,100%)}
 .jual-mock-kepala{display:flex;align-items:center;justify-content:space-between;gap:1rem;
@@ -2270,7 +2313,11 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
 .jual-label{display:inline-flex;align-items:center;gap:.35rem;border-radius:40px;
   padding:.22rem .6rem;font-size:11px;font-weight:600;letter-spacing:.01em;
   background:color-mix(in srgb,var(--c,#F36F0F) 12%,#fff);
-  color:color-mix(in srgb,var(--c,#F36F0F) 80%,#1C1817)}
+  /* 80% warna pilar meninggalkan label kuning (Energy, #FF9800) pada
+     1,94:1 — terbaca sebagai noda warna, bukan sebagai nama modul.
+     Lebih banyak tinta membuat tiap pilar tetap dikenali warnanya
+     sambil hurufnya benar-benar terbaca. */
+  color:color-mix(in srgb,var(--c,#F36F0F) 45%,#1C1817)}
 
 /* Goresan warna di tepi atas kartu modul. Dua piksel penuh, bukan
    gradien: gradien pada garis setipis ini hanya terbaca sebagai warna
@@ -2314,7 +2361,16 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
   .jual-pita-galeri{grid-auto-flow:row;grid-template-columns:repeat(3,1fr);
     overflow:visible;padding-bottom:0}
 }
-.jual-pita-galeri>article{scroll-snap-align:start}
+/* Kartu setinggi barisnya, dengan tombol didorong ke kaki.
+
+   Tanpa ini, tombol "Putar video" duduk tepat di bawah keterangannya —
+   dan keterangan yang panjangnya berbeda membuat enam tombol berhenti
+   pada enam ketinggian berbeda. Deretan yang tepinya tidak sejajar
+   terbaca sebagai halaman yang tidak dirapikan, dan mata ikut mencari
+   pola yang tidak ada alih-alih membaca fotonya. */
+.jual-pita-galeri>article{scroll-snap-align:start;display:flex;flex-direction:column}
+.jual-pita-galeri>article>div{display:flex;flex-direction:column;flex:1}
+.jual-pita-galeri>article .jual-bilah-aksi{margin-top:auto;align-self:flex-start}
 
 .jual-galeri-bingkai{position:relative;display:block;overflow:hidden;
   border-radius:12px;aspect-ratio:4/3;background:#1B2126}
@@ -2393,7 +2449,7 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
    dalam sekali lihat — dan jumlahnya memang tepat seratus, jadi bilahnya
    jujur secara harfiah. */
 .jual-takaran{display:flex;height:2.75rem;border-radius:8px;overflow:hidden;
-  border:1px solid rgba(255,255,255,.12)}
+  border:1px solid var(--j-garis-tebal)}
 .jual-takaran>i{display:block;height:100%;position:relative;
   border-right:1px solid rgba(18,22,26,.35);
   transition:filter .3s var(--j-lengkung)}
@@ -2413,12 +2469,12 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
    saja tidak terbaca oleh yang tidak membedakan jingga dan abu. */
 .jual-pita{display:inline-flex;align-items:center;align-self:flex-start;
   border-radius:40px;padding:.28rem .7rem;font-size:11px;font-weight:700;
-  letter-spacing:.02em;background:var(--j-aksen-lembut);color:var(--j-aksen)}
+  letter-spacing:.02em;background:var(--j-aksen-lembut);color:var(--j-aksen-teks)}
 .jual-pita-sunyi{background:var(--j-dasar);color:var(--j-redup)}
 
 /* ── kartu ── */
 
-.jual-kartu{background:var(--j-kartu);border:1px solid var(--j-garis);border-radius:12px;
+.jual-kartu{background:var(--j-kartu);color:var(--j-tinta);border:1px solid var(--j-garis);border-radius:12px;
   padding:1.65rem;
   transition:border-color .3s var(--j-lengkung),box-shadow .3s var(--j-lengkung),
   transform .3s var(--j-lengkung)}
@@ -2430,7 +2486,7 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
 .jual-paket{display:grid;gap:1rem;align-items:stretch}
 @media (min-width:1024px){.jual-paket{grid-template-columns:minmax(0,1fr) 21rem}}
 
-.jual-paket-isi{background:var(--j-kartu);border:1px solid var(--j-garis);
+.jual-paket-isi{background:var(--j-kartu);color:var(--j-tinta);border:1px solid var(--j-garis);
   border-radius:12px;padding:2rem}
 @media (min-width:768px){.jual-paket-isi{padding:2.5rem}}
 
@@ -2529,20 +2585,30 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
    hanya kartu yang sedang dipilih, satu pada satu waktu. */
 .jual-pilar-kartu{display:grid;grid-template-columns:auto 1fr;gap:.2rem .85rem;
   align-items:center;text-align:left;width:100%;
-  /* Nilai gelapnya ditulis seperti .jual-gelap-kartu, BUKAN lewat
-     var(--j-kartu): variabel itu bernilai #FFFFFF — ia milik bagian
-     terang. Dipakai di sini, kartunya tergambar putih dengan tulisan
-     putih di atasnya, dan yang tersisa di layar hanya kotak kosong.
-     Tertangkap pada tangkapan layar pertama, bukan oleh uji mana pun. */
-  background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);
+  /* Catatan di sini dulu berbunyi sebaliknya: JANGAN pakai var(--j-kartu)
+     karena kartunya akan putih dengan tulisan putih. Itu benar selama
+     bagian ini masih gelap. Sesudah halaman depan menjadi krem,
+     nasihatnya berbalik menjadi penyebab — putih 4,5% di atas krem
+     tidak menggambar apa pun, sehingga tujuh dari delapan kartu aspek
+     berdiri tanpa bingkai dan tanpa petunjuk bahwa ia dapat ditekan.
+
+     Catatan yang benar pada satu keadaan dan menyesatkan pada keadaan
+     berikutnya lebih berbahaya daripada tidak ada catatan sama sekali,
+     karena ia menghentikan orang berikutnya dari memeriksa sendiri. */
+  background:var(--j-kartu);border:1px solid var(--j-garis);
   border-radius:12px;padding:1rem 1.1rem;cursor:pointer;
-  transition:border-color .18s ease,background .18s ease,transform .18s ease}
-.jual-pilar-kartu:hover{border-color:rgba(255,255,255,.2);
-  background:rgba(255,255,255,.075);transform:translateY(-1px)}
+  transition:border-color .18s ease,background .18s ease,transform .18s ease,
+             box-shadow .18s ease}
+.jual-pilar-kartu:hover{border-color:var(--j-garis-tebal);
+  transform:translateY(-1px);box-shadow:0 10px 26px -20px rgba(18,22,26,.45)}
 .jual-pilar-kartu:focus-visible{outline:2px solid #F36F0F;outline-offset:2px}
 
 .jual-pilar-tanda{grid-row:span 2;display:grid;place-items:center;width:38px;height:38px;
-  border-radius:10px;background:rgb(255 255 255 / .06);color:rgb(255 255 255 / .62);
+  /* Putih 6% dengan ikon putih 62%: benar di atas kartu gelap, sama
+     sekali tak terlihat di atas kartu krem. Tujuh dari delapan ikon
+     aspek lenyap karenanya — dan ikon yang hilang tidak menimbulkan
+     galat, hanya kartu yang tampak belum selesai dibuat. */
+  border-radius:10px;background:var(--j-dasar);color:var(--j-redup);
   transition:background .18s ease,color .18s ease}
 .jual-pilar-nama{font-size:13.5px;font-weight:700;line-height:1.3}
 .jual-pilar-ket{font-size:11.5px;line-height:1.45;color:var(--j-samar)}
@@ -2553,8 +2619,9 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
 
 /* Panel rincian. Melekat saat digulir pada layar lebar supaya tetap
    terbaca ketika kisinya lebih panjang daripada panelnya. */
-.jual-pilar-panel{background:rgba(255,255,255,.045);
-  border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:1.5rem}
+.jual-pilar-panel{background:var(--j-kartu);color:var(--j-tinta);
+  border:1px solid var(--j-garis);border-radius:12px;padding:1.5rem;
+  box-shadow:0 18px 40px -32px rgba(18,22,26,.5)}
 @media (min-width:1024px){.jual-pilar-panel{position:sticky;top:5.5rem}}
 
 .jual-pilar-panel-tanda{display:grid;place-items:center;width:48px;height:48px;
@@ -2645,15 +2712,22 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
 .jual-aspek:hover .jual-aspek-foto{transform:scale(1.05)}
 .jual-aspek-polos{background:
   linear-gradient(155deg,rgba(255,255,255,.09),rgba(0,0,0,.32)),
-  color-mix(in srgb,var(--w,#2A323B) 55%,#1B2126)}
+  color-mix(in srgb,var(--w,#2A323B) 55%,#1B2126);
+  display:grid;place-items:center}
+/* Cukup terlihat untuk menandai ubinnya disengaja, cukup redup supaya
+   nama aspek di bawahnya tetap yang pertama dibaca. */
+.jual-aspek-polos svg{color:rgba(255,255,255,.34)}
 .jual-aspek-tirai{position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(180deg,transparent 50%,#1C181766 100%)}
 
 .jual-aspek-baris{display:flex;align-items:center;justify-content:space-between;gap:1rem;
   padding:1rem 1.15rem}
 .jual-aspek-nama{font-size:15px;font-weight:700;letter-spacing:-.012em}
+/* .42 memberi 4,07:1 di atas ubin gelap — di bawah 4,5:1 yang dituntut
+   teks 11px. .58 membawanya ke 5,6:1 tanpa membuat angkanya bersaing
+   dengan nama aspek di sebelahnya. */
 .jual-aspek-jumlah{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-  font-size:11px;color:rgba(255,255,255,.42);font-variant-numeric:tabular-nums}
+  font-size:11px;color:rgba(255,255,255,.58);font-variant-numeric:tabular-nums}
 
 /* ── daftar harga ── */
 
@@ -2952,9 +3026,18 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
    Pada acuannya, harga dan tautan duduk di dalam satu bilah jingga di
    kaki kartu, bukan sebagai tautan telanjang. Bilah itu yang membuat
    kartunya terbaca sebagai sesuatu yang dapat ditekan. */
+/* Memeluk isinya. Semula `display:flex;width:100%`, dan hasilnya bilah
+   jingga selebar kartu di kaki tiap foto — enam batang mencolok yang
+   menarik pandangan lebih kuat daripada foto yang seharusnya mereka
+   layani, dan pada kartu berketerangan satu baris, tepinya tidak
+   sejajar dengan kartu di sebelahnya.
+
+   Yang dipesan dari tombol ini menonjol dibanding tautan bergaris
+   bawah, bukan mendominasi kartunya. Pil sepanjang tulisannya sudah
+   cukup untuk itu. */
 .jual-bilah-aksi{
-  display:flex;align-items:center;justify-content:space-between;gap:.75rem;
-  width:100%;margin-top:.85rem;padding:.45rem .5rem .45rem .95rem;
+  display:inline-flex;align-items:center;gap:.6rem;
+  width:auto;max-width:100%;margin-top:.85rem;padding:.45rem .5rem .45rem .95rem;
   border:0;border-radius:99px;
   background:linear-gradient(135deg,#C85804,var(--j-aksen));
   color:#fff;font-size:12.5px;font-weight:700;
@@ -3004,7 +3087,7 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
   box-shadow:0 14px 32px -22px rgba(18,22,26,.4)}
 .jual-masalah-nomor{
   display:inline-grid;place-items:center;width:2.3rem;height:2.3rem;border-radius:12px;
-  background:var(--j-aksen-lembut);color:#B4500A;
+  background:var(--j-aksen-lembut);color:#8F3D07;
   font-size:12.5px;font-weight:800;letter-spacing:.02em;
 }
 /* Sumber duduk di KAKI kartu, dipisah garis — bukan menyambung
@@ -3069,7 +3152,7 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
 .jual-sangkal strong{color:#5E2D04}
 .jual-sangkal>span:first-child{
   flex:none;display:grid;place-items:center;width:1.35rem;height:1.35rem;border-radius:99px;
-  background:var(--j-aksen);color:#fff;font-size:12px;font-weight:900;line-height:1;
+  background:var(--j-aksen-teks);color:#fff;font-size:12px;font-weight:900;line-height:1;
 }
 
 /* ── deret angka cakupan ── */
@@ -3080,7 +3163,7 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
 .jual-angka-satuan{
   margin-top:.5rem;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
   font-size:10.5px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;
-  color:var(--j-aksen);
+  color:var(--j-aksen-teks);
 }
 
 /* ── tanya jawab ── */
