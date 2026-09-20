@@ -30,11 +30,7 @@ class Company extends Model {
     /** Nomor WhatsApp dinormalkan ke format internasional tanpa tanda. */
     public function waNumber(): ?string
     {
-        $n = preg_replace('/\D/', '', (string) $this->pic_phone);
-        if (!$n) return null;
-        if (str_starts_with($n, '0'))  $n = '62'.substr($n, 1);
-        if (!str_starts_with($n, '62')) $n = '62'.$n;
-        return $n;
+        return \App\Support\Ekspor::nomorWa($this->pic_phone);
     }
 
     public function isJasa(): bool
