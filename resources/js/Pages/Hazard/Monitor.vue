@@ -98,8 +98,22 @@ const kartu = [
    tidak terlihat oleh siapa pun. */
 const registerTerbuka = ref(false);
 
+/* pr-9, bukan px-3.5 di kedua sisi.
+
+   Lebar bawaan <select> diukur dari pilihan TERPANJANGNYA tanpa
+   memperhitungkan anak panahnya. Pada saringan yang pilihan
+   terpanjangnya justru label bawaannya — "Semua risiko" lebih panjang
+   daripada Tinggi/Sedang/Rendah — panah itu tergambar menimpa huruf
+   terakhirnya. Tetangganya tampak benar hanya karena kebetulan punya
+   pilihan yang lebih panjang daripada labelnya, sehingga cacatnya
+   terbaca sebagai satu-dua kotak yang aneh alih-alih aturan yang kurang.
+
+   Diperbaiki pada kelasnya, bukan lewat aturan `select{...}` global:
+   utilitas Tailwind berupa KELAS, dan kelas selalu mengalahkan pemilih
+   elemen berapa pun urutannya — aturan global itu sempat ditulis, tidak
+   mengubah apa pun, lalu dibuang. */
 const pilihan =
-  'ring-focus rounded-xl border border-stone-200 px-3.5 py-2.5 text-[12.5px] font-semibold text-stone-600';
+  'ring-focus rounded-xl border border-stone-200 pl-3.5 pr-9 py-2.5 text-[12.5px] font-semibold text-stone-600';
 </script>
 
 <template>
@@ -331,7 +345,24 @@ const pilihan =
   letter-spacing: .04em;
   text-transform: uppercase;
   text-align: left;
-  white-space: nowrap;
+
+  /* Judul kolom BOLEH turun baris.
+
+     Dengan nowrap, lebar tiap kolom ditentukan judulnya, bukan isinya:
+     "PERUSAHAAN TERLAPOR" memaksa 160 piksel untuk menampung nama yang
+     rata-rata jauh lebih pendek, dan "FOTO TEMUAN" memaksa 101 piksel
+     untuk petak gambar selebar 56. Ditotal, tabelnya menjadi 1188
+     piksel — lebih lebar daripada ruang yang tersedia pada layar 1366,
+     yang adalah ukuran layar kebanyakan orang yang membukanya, sehingga
+     kolom Aksi hanya dapat dicapai dengan menggeser ke samping.
+
+     Ditulis TEGAS sebagai `normal`, bukan dengan menghapus deklarasi
+     nowrap dari sini: ada aturan `th{ white-space:nowrap }` global di
+     app.css, jadi judul yang tidak diberi nilai akan mewarisinya dan
+     tetap tidak membungkus. Lembar cetak menempuh jalan yang sama lewat
+     `.lembar th`. */
+  white-space: normal;
+  vertical-align: bottom;
 }
 
 .eq-th-foto { text-align: center; }
@@ -348,7 +379,10 @@ const pilihan =
 .eq-nowrap { white-space: nowrap; }
 
 /* ── kolom pertama: kode + uraian ── */
-.eq-sel-kode { min-width: 13rem; max-width: 20rem; }
+/* Cukup memuat lencana kodenya utuh; uraiannya di bawahnya boleh
+   turun baris. 13rem sebelumnya menjadikan kolom ini yang terlebar
+   sendirian, demi ruang kosong di kanan lencana. */
+.eq-sel-kode { min-width: 11rem; max-width: 20rem; }
 
 .eq-kode {
   display: inline-block;
@@ -428,8 +462,18 @@ const pilihan =
    Bukan gulung mendatar. Sebelas kolom yang digeser di ponsel membuat
    kode laporan hilang dari layar tepat saat orangnya menggulir untuk
    melihat status — dan laporan bahaya memang dibaca dari ponsel di
-   lapangan. */
-@media (max-width: 64rem) {
+   lapangan.
+
+   Ambangnya 84rem (1344px), BUKAN 64rem (1024px), dan angka itu
+   terukur bukan dipilih. Lebar terkecil tabel ini — ketika tiap kolom
+   sudah sesempit isinya — adalah 1029px, sementara ruang yang tersisa
+   sesudah bilah samping dan tepian kartunya adalah lebar layar dikurangi
+   sekitar 298px. Di bawah 1327px keduanya tidak lagi bertemu, sehingga
+   tabelnya HARUS digeser ke samping untuk mencapai kolom Aksi di ujung
+   kanan. Ambang 64rem membiarkan seluruh rentang 1024–1327 — laptop 11
+   inci dan tablet mendatar — jatuh ke keadaan itu: tampak sebagai tabel
+   utuh, padahal tiga kolom terakhirnya di luar layar. */
+@media (max-width: 84rem) {
   .eq-gulung { overflow-x: visible; }
 
   .eq-tabel, .eq-tabel tbody, .eq-tabel tr, .eq-tabel td { display: block; width: 100%; }
@@ -441,6 +485,16 @@ const pilihan =
   }
 
   .eq-tabel tbody tr:hover td { background: transparent; }
+
+  /* Angka berhenti rata kanan begitu tabelnya menjadi kartu.
+
+     Rata kanan berguna pada KOLOM tabel — digit tanggal berbaris rapi
+     di bawah satu sama lain. Di mode kartu tiap sel berdiri sendiri,
+     jadi tidak ada yang berbaris dengannya; yang tersisa hanyalah label
+     "TANGGAL" yang menggantung ke kanan sementara PELAPOR, LOKASI, dan
+     seterusnya rata kiri, karena label ::before mewarisi perataan
+     selnya. */
+  .eq-tabel tbody td.num { text-align: start; }
 
   .eq-tabel tbody td {
     display: flex;

@@ -34,8 +34,22 @@ const kartu = [
   { k: 'naikJadiHazard' as const, l: 'Dinaikkan jadi hazard', c: 'text-amber-600' },
 ];
 
+/* pr-9, bukan px-3.5 di kedua sisi.
+
+   Lebar bawaan <select> diukur dari pilihan TERPANJANGNYA tanpa
+   memperhitungkan anak panahnya. Pada saringan yang pilihan
+   terpanjangnya justru label bawaannya — "Semua risiko" lebih panjang
+   daripada Tinggi/Sedang/Rendah — panah itu tergambar menimpa huruf
+   terakhirnya. Tetangganya tampak benar hanya karena kebetulan punya
+   pilihan yang lebih panjang daripada labelnya, sehingga cacatnya
+   terbaca sebagai satu-dua kotak yang aneh alih-alih aturan yang kurang.
+
+   Diperbaiki pada kelasnya, bukan lewat aturan `select{...}` global:
+   utilitas Tailwind berupa KELAS, dan kelas selalu mengalahkan pemilih
+   elemen berapa pun urutannya — aturan global itu sempat ditulis, tidak
+   mengubah apa pun, lalu dibuang. */
 const pilihan =
-  'ring-focus rounded-xl border border-stone-200 px-3.5 py-2.5 text-[12.5px] font-semibold text-stone-600';
+  'ring-focus rounded-xl border border-stone-200 pl-3.5 pr-9 py-2.5 text-[12.5px] font-semibold text-stone-600';
 </script>
 
 <template>

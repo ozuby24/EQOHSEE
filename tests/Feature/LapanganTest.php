@@ -127,12 +127,34 @@ class LapanganTest extends TestCase
      * yang biasanya punya placeholder. Halaman cetak dikecualikan: ia
      * dibaca di kertas, bukan dengan pembaca layar.
      */
+    /**
+     * Buang ISI komentar, pertahankan panjang dan pergantian barisnya.
+     *
+     * Penjaga ini memindai teks berkas apa adanya, sehingga komentar yang
+     * KEBETULAN menyebut <select> atau <input> — misalnya catatan yang
+     * menerangkan kenapa lebar bawaannya bermasalah — terbaca sebagai
+     * kendali sungguhan tanpa label. Laporannya lalu menunjuk baris yang
+     * tidak memuat kendali apa pun, dan yang membacanya wajar menyimpulkan
+     * penjaganya yang rusak, lalu mematikannya.
+     *
+     * Diganti spasi, BUKAN dihapus: nomor baris dihitung dari posisi bita,
+     * dan memangkas teks menggeser seluruh laporan sesudahnya.
+     */
+    private static function tanpaKomentar(string $isi): string
+    {
+        return (string) preg_replace_callback(
+            '~/\\*.*?\\*/|<!--.*?-->~s',
+            fn ($c) => preg_replace('/[^\\n]/', ' ', $c[0]),
+            $isi,
+        );
+    }
+
     public function test_tidak_ada_kendali_tanpa_label(): void
     {
         $tanpa = [];
 
         foreach ($this->berkasVue() as $berkas) {
-            $isi = file_get_contents($berkas);
+            $isi = self::tanpaKomentar((string) file_get_contents($berkas));
 
             /* Kedalaman <label> dihitung dari awal berkas, bukan ditebak
                dari jendela beberapa ratus karakter sebelumnya.
