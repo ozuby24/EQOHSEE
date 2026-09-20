@@ -325,6 +325,14 @@ const pilihan =
    Tabel monitor. Lebar di layar besar, menumpuk di layar sempit.
    ══════════════════════════════════════════════════════════════ */
 
+/* Pengaman terakhir, bukan cara kerja sehari-hari.
+
+   Sesudah tabelnya dirapatkan dan ambang kartunya dipasang pada lebar
+   tempat keduanya bertemu, tidak ada satu pun lebar layar yang menuntut
+   geseran mendatar. Yang tersisa di sini hanya jaring pengaman untuk
+   data yang tidak terduga — nama perusahaan sepanjang enam kata,
+   misalnya — supaya kolomnya tetap dapat dicapai alih-alih terpotong
+   diam-diam. */
 .eq-gulung { overflow-x: auto; }
 
 .eq-tabel {
@@ -375,8 +383,6 @@ const pilihan =
 }
 
 .eq-tabel tbody tr:hover td { background: #FEFCE8; }
-
-.eq-nowrap { white-space: nowrap; }
 
 /* ── kolom pertama: kode + uraian ── */
 /* Cukup memuat lencana kodenya utuh; uraiannya di bawahnya boleh
@@ -457,6 +463,50 @@ const pilihan =
 
 .eq-detail:hover { border-color: #F57C00; background: #FFF7ED; color: #C2410C; }
 
+/* ══ layar sedang: tabel yang sama, dirapatkan supaya MUAT ══
+
+   Antara 64rem dan 84rem tabel sebelas kolom ini lebih lebar daripada
+   ruang yang tersedia — 1028 piksel berbanding 852 pada layar 1150.
+   Yang dikurangi adalah KEPADATANNYA, bukan kolomnya: tepian sel,
+   ukuran huruf, dan ukuran petak fotonya. Membuang kolom akan
+   menghilangkan justru yang dicari orang di halaman ini, sementara
+   merapatkan hanya membuat barisnya lebih ringkas — dan tabel inspeksi
+   memang biasa dibaca dalam kerapatan seperti itu.
+
+   Lencana dibiarkan turun baris di sini. "In Progress" dan "Unsafe
+   Condition" yang tidak boleh terpotong sendirian memaksa dua kolom
+   selebar 209 piksel untuk teks yang, dalam dua baris, cukup 130. */
+@media (min-width: 65.5625rem) and (max-width: 84rem) {
+  .eq-tabel { font-size: 11px; }
+
+  .eq-tabel thead th { padding: .5rem .3rem; font-size: 9px; }
+  .eq-tabel tbody td { padding: .4rem .3rem; }
+
+  /* 7,5rem cukup memuat lencana kode terpanjang (FRM/HBS/OHSE/101).
+     Ini LANTAI, bukan lebar tetap: tabelnya width:100%, jadi begitu
+     ruangnya melebihi jumlah lantai seluruh kolom, kolom ini ikut
+     melebar sendiri. Menurunkan lantainya karena itu tidak membuat
+     tampilan di layar lebar menjadi sempit — ia hanya menentukan sampai
+     selebar apa tabelnya masih sanggup menyusut sebelum harus digeser. */
+  .eq-sel-kode { min-width: 7.5rem; }
+
+  /* Lencana kodenya ikut mengecil, dan itulah yang benar-benar
+     menentukan lantai kolom pertama. `min-width` di atas tidak berlaku
+     selama lencananya sendiri lebih lebar: kode terpanjang
+     (FRM/HBS/OHSE/101) memakan 125 piksel pada 10,5px, sehingga
+     kolomnya tidak pernah menyusut di bawah itu berapa pun lantai yang
+     ditulis. Ini pelajaran yang sempat terlewat sekali: menurunkan
+     min-width tidak mengubah apa pun sampai isinya ikut diturunkan. */
+  .eq-kode { font-size: 9.5px; padding: .1rem .3rem; letter-spacing: 0; }
+
+  .eq-pil, .eq-pil-abu { white-space: normal; font-size: 9.5px; padding: .1rem .35rem; }
+
+  .eq-nowrap { white-space: normal; }
+
+  .eq-tabel tbody td img,
+  .eq-tabel tbody td .eq-petak { width: 30px; height: 30px; }
+}
+
 /* ══ layar sempit: tiap baris menjadi kartu berlabel ══
 
    Bukan gulung mendatar. Sebelas kolom yang digeser di ponsel membuat
@@ -464,16 +514,36 @@ const pilihan =
    melihat status — dan laporan bahaya memang dibaca dari ponsel di
    lapangan.
 
-   Ambangnya 84rem (1344px), BUKAN 64rem (1024px), dan angka itu
-   terukur bukan dipilih. Lebar terkecil tabel ini — ketika tiap kolom
-   sudah sesempit isinya — adalah 1029px, sementara ruang yang tersisa
-   sesudah bilah samping dan tepian kartunya adalah lebar layar dikurangi
-   sekitar 298px. Di bawah 1327px keduanya tidak lagi bertemu, sehingga
-   tabelnya HARUS digeser ke samping untuk mencapai kolom Aksi di ujung
-   kanan. Ambang 64rem membiarkan seluruh rentang 1024–1327 — laptop 11
-   inci dan tablet mendatar — jatuh ke keadaan itu: tampak sebagai tabel
-   utuh, padahal tiga kolom terakhirnya di luar layar. */
-@media (max-width: 84rem) {
+   Ambangnya 64rem (1024px) — dan angka itu sempat dinaikkan ke 84rem,
+   lalu DIKEMBALIKAN.
+
+   Alasan menaikkannya terdengar benar: lebar terkecil tabel ini 1029px
+   sementara ruang yang tersisa sesudah bilah samping adalah lebar layar
+   dikurangi sekitar 298px, sehingga di bawah 1327px tabelnya harus
+   digeser ke samping untuk mencapai kolom Aksi. Yang keliru adalah
+   kesimpulannya: menggeser tabel ke samping DIPILIH orang, sedangkan
+   dipaksa membaca kartu tidak.
+
+   Sebelas kolom yang berjajar memperlihatkan pola — lima laporan Pit
+   Utara berisiko tinggi terbaca sebagai satu blok merah dalam sekali
+   pandang. Kartu memecah pola yang sama menjadi sebelas baris berlabel
+   per laporan, sehingga lima laporan menjadi lima puluh lima baris yang
+   harus dibaca satu per satu. Pada tablet mendatar, yang justru
+   perangkat paling lazim dipakai pengawas di ruang rapat, itu
+   pertukaran yang salah arah.
+
+   Ambang tepatnya 65,5rem (1048px), dan angka itu DITURUNKAN dari
+   pengukuran, bukan dipilih dari daftar ambang yang lazim. Sesudah
+   dirapatkan, lebar terkecil tabel ini 744px; ruang yang tersedia
+   adalah lebar layar dikurangi bilah samping dan tepian kartunya,
+   sekitar 298px. Keduanya bertemu tepat di 1042px. Ambang 64rem
+   (1024px) menyisakan pita 1024–1042 yang tetap harus digeser dua
+   piksel — selisih yang terlalu kecil untuk terlihat saat diperiksa
+   sekilas, dan justru karena itu tidak akan pernah diperbaiki.
+
+   Di bawahnya kartu, tempat tabel sebelas kolom memang tidak dapat
+   dibaca dengan cara apa pun. */
+@media (max-width: 65.5rem) {
   .eq-gulung { overflow-x: visible; }
 
   .eq-tabel, .eq-tabel tbody, .eq-tabel tr, .eq-tabel td { display: block; width: 100%; }
@@ -485,6 +555,7 @@ const pilihan =
   }
 
   .eq-tabel tbody tr:hover td { background: transparent; }
+
 
   /* Angka berhenti rata kanan begitu tabelnya menjadi kartu.
 
