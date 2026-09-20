@@ -274,7 +274,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
       <video v-if="hero.video && !kurangiGerak"
              :src="hero.video" :poster="hero.poster ?? undefined"
              autoplay muted loop playsinline preload="metadata" aria-hidden="true"
-             class="jual-hero-media"></video>
+             v-paralaks="-0.12" class="jual-hero-media"></video>
       <img v-else-if="hero.poster" :src="hero.poster" alt="" class="jual-hero-media">
 
       <div class="jual-hero-tirai"></div>
@@ -284,7 +284,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
           <div class="max-w-[48rem]">
             <p v-singkap class="jual-mata jual-mata-aksen">Delapan aspek · satu platform</p>
 
-            <h1 v-singkap="60" class="jual-judul jual-judul-hero mt-6">
+            <h1 v-belah="60" class="jual-judul jual-judul-hero mt-6">
               Keselamatan tambang,<br>
               <a href="#modul" class="jual-pil-panah" aria-label="Lihat modulnya">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
@@ -310,7 +310,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
                menandai acuannya. Ketiganya menjawab pertanyaan yang
                berbeda: seberapa banyak isinya, seperti apa layarnya,
                dan harus mulai dari mana. -->
-          <div v-singkap="260" class="jual-pita-hero mt-14 md:mt-20">
+          <div v-singkap="260" v-paralaks="0.045" class="jual-pita-hero mt-14 md:mt-20">
             <div v-if="fotoTumpuk.length" class="jual-tumpuk">
               <span class="jual-tumpuk-foto" aria-hidden="true">
                 <img v-for="g in fotoTumpuk" :key="g" :src="g" alt="" loading="lazy" decoding="async">
@@ -355,7 +355,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
         <div class="grid lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] gap-x-14 gap-y-10 items-start">
           <div>
             <p class="jual-mata jual-mata-aksen">Kerangka</p>
-            <h2 v-singkap="60" class="jual-h2">SMKP Minerba</h2>
+            <h2 v-belah="60" class="jual-h2">SMKP Minerba</h2>
             <p class="jual-tubuh mt-4">
               Tujuh elemen wajib menurut Kepdirjen 185.K/37.04/DJB/2019. Bobotnya berjumlah
               tepat seratus — dan Implementasi sendirian menanggung sepertiganya.
@@ -392,7 +392,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
         <div class="flex flex-wrap items-end justify-between gap-4 max-w-3xl">
           <div>
             <p class="jual-mata jual-mata-aksen">Lapangan</p>
-            <h2 v-singkap="60" class="jual-h2">Potret kegiatan</h2>
+            <h2 v-belah="60" class="jual-h2">Potret kegiatan</h2>
           </div>
         </div>
 
@@ -460,7 +460,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
       <div class="jual-lebar py-16 md:py-24">
         <div class="max-w-2xl">
           <p class="jual-mata jual-mata-aksen">Kerangka kerja</p>
-          <h2 v-singkap="60" class="jual-h2">Delapan aspek, satu sistem</h2>
+          <h2 v-belah="60" class="jual-h2">Delapan aspek, satu sistem</h2>
           <p class="jual-tubuh mt-5">
             Tujuh huruf pada <strong style="color:var(--j-tinta)">EQOHSEE</strong> mewakili satu aspek
             masing-masing, ditambah Konservasi Minerba di luar akronim.
@@ -533,7 +533,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
       <div class="jual-lebar py-16 md:py-24">
         <div class="max-w-2xl">
           <p v-singkap class="jual-mata jual-mata-aksen">Aplikasi di dalamnya</p>
-          <h2 v-singkap="60" class="jual-h2">{{ modul.length }} modul, satu akun</h2>
+          <h2 v-belah="60" class="jual-h2">{{ modul.length }} modul, satu akun</h2>
           <p class="jual-tubuh mt-5">
             {{ modul.filter((m) => m.status === 'aktif').length }} modul sudah aktif dan siap
             dipakai. Semua modul berbagi data perusahaan, pengguna, dan peran yang sama.
@@ -583,7 +583,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
       <div class="jual-lebar py-16 md:py-24">
         <div class="max-w-xl">
           <p v-singkap class="jual-mata jual-mata-aksen">Pembelian</p>
-          <h2 v-singkap="60" class="jual-h2">Miliki platformnya</h2>
+          <h2 v-belah="60" class="jual-h2">Miliki platformnya</h2>
           <p class="jual-tubuh mt-5">
             Ambil paket menyeluruh, atau beli aplikasi satuan yang benar-benar Anda pakai.
             Pemesanannya tidak menuntut akun, dan pembayarannya lewat QRIS.
@@ -649,7 +649,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
       <div class="jual-lebar py-16 md:py-24">
         <div class="max-w-2xl">
           <p v-singkap class="jual-mata jual-mata-aksen">Fitur unggulan</p>
-          <h2 v-singkap="60" class="jual-h2">Dibuat untuk lapangan, bukan sekadar laporan</h2>
+          <h2 v-belah="60" class="jual-h2">Dibuat untuk lapangan, bukan sekadar laporan</h2>
         </div>
 
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-10">
@@ -674,7 +674,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
       <div class="jual-lebar py-16 md:py-24">
         <div class="max-w-2xl">
           <p v-singkap class="jual-mata jual-mata-aksen">Cara kerja</p>
-          <h2 v-singkap="60" class="jual-h2">Empat langkah, satu siklus</h2>
+          <h2 v-belah="60" class="jual-h2">Empat langkah, satu siklus</h2>
         </div>
 
         <!-- Rel penghubung hanya digambar pada lebar yang benar-benar
@@ -717,7 +717,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
         <div class="jual-lugas jual-ajakan rounded-[26px] px-7 py-12 md:px-14 md:py-16">
           <div class="max-w-2xl">
             <p class="jual-mata jual-mata-aksen">Mulai</p>
-            <h2 v-singkap="60" class="jual-h2">Siap menaikkan level keselamatan?</h2>
+            <h2 v-belah="60" class="jual-h2">Siap menaikkan level keselamatan?</h2>
             <p class="jual-tubuh mt-5">
               Ambil paketnya, atau mulai dari satu aplikasi yang paling dibutuhkan lebih dulu.
               Pemesanannya tidak menuntut akun.
