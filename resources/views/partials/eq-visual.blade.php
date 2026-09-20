@@ -2977,4 +2977,175 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
 .jual-galeri-bingkai{border-radius:20px}
 .jual-modul{border-radius:18px}
 
+
+/* ═══════════════════════════════════════════════════════════════
+   BAGIAN BARU MENGIKUTI PRD — masalah, peta SMKP, angka, tanya
+   jawab, dan jalur WhatsApp.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── masalah lapangan ──
+   Lima kartu, dan yang PERTAMA melebar dua kolom pada layar lebar.
+   Lima kartu seukuran di kisi tiga kolom meninggalkan dua lubang di
+   baris kedua — dan lubang di tengah halaman terbaca sebagai sesuatu
+   yang gagal dimuat, bukan sebagai ruang yang disengaja. */
+.jual-masalah{display:grid;gap:.75rem;grid-template-columns:1fr}
+@media (min-width:640px){.jual-masalah{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (min-width:1024px){
+  .jual-masalah{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .jual-masalah-kartu:first-child{grid-column:span 2}
+}
+.jual-masalah-kartu{
+  background:var(--j-kartu);border:1px solid var(--j-garis);border-radius:18px;
+  padding:1.65rem;display:flex;flex-direction:column;
+  transition:border-color .3s var(--j-lengkung),box-shadow .3s var(--j-lengkung),
+             transform .3s var(--j-lengkung);
+}
+.jual-masalah-kartu:hover{border-color:var(--j-garis-tebal);transform:translateY(-2px);
+  box-shadow:0 14px 32px -22px rgba(18,22,26,.4)}
+.jual-masalah-nomor{
+  display:inline-grid;place-items:center;width:2.3rem;height:2.3rem;border-radius:12px;
+  background:var(--j-aksen-lembut);color:#B4500A;
+  font-size:12.5px;font-weight:800;letter-spacing:.02em;
+}
+/* Sumber duduk di KAKI kartu, dipisah garis — bukan menyambung
+   langsung ke kalimatnya. Menyambung, ia terbaca sebagai bagian dari
+   klaimnya; dipisah, ia terbaca sebagai tempat memeriksanya. */
+.jual-sumber{
+  margin-top:auto;padding-top:.85rem;border-top:1px dashed var(--j-garis-tebal);
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:10.5px;line-height:1.5;letter-spacing:.01em;color:var(--j-samar);
+}
+.jual-masalah-kartu .jual-sumber{margin-top:1.1rem}
+
+/* ── peta elemen SMKP ↔ modul ── */
+.jual-peta{width:100%;border-collapse:collapse;font-size:13px}
+.jual-peta thead th{
+  text-align:left;padding:0 .85rem .7rem;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--j-samar);border-bottom:1px solid var(--j-garis-tebal);
+}
+.jual-peta tbody td{padding:.85rem;border-bottom:1px solid var(--j-garis);vertical-align:top}
+.jual-peta tbody tr:last-child td{border-bottom:0}
+.jual-peta tbody tr{transition:background .2s}
+.jual-peta tbody tr:hover{background:var(--j-kartu)}
+.jual-peta tbody td:first-child{display:flex;align-items:flex-start;gap:.5rem}
+.jual-peta-titik{flex:none;width:.55rem;height:.55rem;border-radius:99px;margin-top:.42rem}
+.jual-peta-kode{flex:none;width:1.6rem;color:var(--j-samar);font-size:11px;font-weight:700;
+  text-align:right;padding-top:.06rem}
+.jual-peta-nama{font-weight:700;letter-spacing:-.008em}
+.jual-peta-bobot{white-space:nowrap;font-weight:800;color:var(--j-tinta)}
+.jual-peta-modul{color:var(--j-redup);line-height:1.55}
+
+/* Di bawah 48rem tabelnya runtuh jadi kartu berlabel — TIDAK digeser
+   ke samping. Tabel yang harus digeser di ponsel adalah tabel yang
+   tidak dibaca, dan ini justru tabel yang dicari pembacanya. */
+@media (max-width:48rem){
+  .jual-peta thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  .jual-peta tbody tr{
+    display:block;background:var(--j-kartu);border:1px solid var(--j-garis);
+    border-radius:14px;padding:.35rem .25rem;margin-bottom:.6rem;
+  }
+  .jual-peta tbody td,
+  .jual-peta tbody td:first-child{display:flex;gap:.9rem;border-bottom:0;padding:.42rem .85rem;
+    align-items:flex-start}
+  .jual-peta tbody td:first-child .jual-peta-titik{margin-top:.38rem}
+  .jual-peta tbody td::before{
+    content:attr(data-kolom);flex:none;width:6.2rem;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--j-samar);padding-top:.16rem;
+  }
+}
+
+/* ── penyangkalan kepatuhan ──
+   Tidak boleh terbaca sebagai catatan kaki yang boleh dilewati:
+   berlatar, bertanda seru, dan selebar tabel di atasnya. */
+.jual-sangkal{
+  display:flex;gap:.85rem;margin-top:1.4rem;padding:1rem 1.15rem;
+  background:var(--j-aksen-lembut);border:1px solid #F7D8BF;border-radius:14px;
+  font-size:12.5px;line-height:1.6;color:#7A3B06;
+}
+.jual-sangkal strong{color:#5E2D04}
+.jual-sangkal>span:first-child{
+  flex:none;display:grid;place-items:center;width:1.35rem;height:1.35rem;border-radius:99px;
+  background:var(--j-aksen);color:#fff;font-size:12px;font-weight:900;line-height:1;
+}
+
+/* ── deret angka cakupan ── */
+.jual-angka-deret{display:grid;gap:2rem 1.5rem;grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (min-width:900px){.jual-angka-deret{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.jual-angka-besar{font-size:clamp(2.4rem,4.6vw,3.5rem);font-weight:800;line-height:1;
+  letter-spacing:-.035em;color:var(--j-tinta)}
+.jual-angka-satuan{
+  margin-top:.5rem;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:10.5px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--j-aksen);
+}
+
+/* ── tanya jawab ── */
+.jual-tanya{border-top:1px solid var(--j-garis)}
+.jual-tanya-butir{border-bottom:1px solid var(--j-garis)}
+.jual-tanya-kepala{
+  width:100%;display:flex;align-items:center;justify-content:space-between;gap:1.5rem;
+  padding:1.15rem 0;background:none;border:0;cursor:pointer;text-align:left;
+  font-size:14.5px;font-weight:700;letter-spacing:-.012em;color:var(--j-tinta);
+  transition:color .2s;
+}
+.jual-tanya-kepala:hover{color:var(--j-aksen)}
+.jual-tanya-kepala i{
+  flex:none;display:grid;place-items:center;width:1.8rem;height:1.8rem;border-radius:99px;
+  border:1px solid var(--j-garis-tebal);color:var(--j-redup);
+  transition:transform .3s var(--j-lengkung),background .2s,border-color .2s,color .2s;
+}
+.jual-tanya-kepala svg{width:.85rem;height:.85rem}
+.jual-tanya-buka .jual-tanya-kepala i{
+  transform:rotate(180deg);background:var(--j-aksen);border-color:var(--j-aksen);color:#fff;
+}
+/* grid-template-rows 0fr→1fr, bukan max-height bertebak.
+   max-height menuntut angka yang harus lebih besar dari jawaban
+   terpanjang — dan jawaban yang tumbuh sedikit melewatinya terpotong
+   diam-diam, tanpa galat apa pun yang memberi tahu siapa pun. */
+.jual-tanya-isi{
+  display:grid;grid-template-rows:0fr;
+  transition:grid-template-rows .32s var(--j-lengkung);
+}
+.jual-tanya-buka .jual-tanya-isi{grid-template-rows:1fr}
+.jual-tanya-isi>p{
+  overflow:hidden;font-size:13.5px;line-height:1.7;color:var(--j-redup);
+}
+.jual-tanya-buka .jual-tanya-isi>p{padding-bottom:1.2rem}
+
+/* ── jalur WhatsApp ── */
+.jual-tombol-wa{display:inline-flex;align-items:center;gap:.5rem}
+.jual-tombol-wa svg{width:1.05rem;height:1.05rem;flex:none}
+
+/* Kaki halaman memesan ruang untuk tombol mengambang di atasnya.
+   Tanpa ini, tombolnya duduk tepat di atas baris terakhir — dan yang
+   tertutup adalah nama platform serta tahunnya. */
+.jual-kaki-apung{padding-bottom:4.5rem}
+
+/* Tombol mengambang. z-index di bawah pemutar video (.jual-pemutar),
+   supaya ia tidak menempel di atas rekaman yang sedang diputar. */
+.jual-apung{
+  position:fixed;right:1.1rem;bottom:1.1rem;z-index:60;
+  display:inline-flex;align-items:center;gap:.55rem;
+  padding:.72rem 1.05rem;border-radius:99px;
+  background:#25D366;color:#0A2E17;
+  font-size:13px;font-weight:800;letter-spacing:-.01em;text-decoration:none;
+  box-shadow:0 12px 30px -10px rgba(37,211,102,.85);
+  transition:transform .2s var(--j-lengkung),box-shadow .2s;
+}
+.jual-apung:hover{transform:translateY(-2px);box-shadow:0 16px 36px -10px rgba(37,211,102,.95)}
+.jual-apung svg{width:1.25rem;height:1.25rem;flex:none}
+/* Di ponsel tinggal bulatannya. Pil berteks di sudut kanan bawah
+   menutupi tombol terakhir tiap kartu pada lebar sempit. */
+@media (max-width:640px){
+  .jual-apung{padding:.85rem;gap:0}
+  .jual-apung span{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .jual-apung,.jual-masalah-kartu,.jual-tanya-isi,.jual-tanya-kepala i{transition:none}
+}
+
 </style>
