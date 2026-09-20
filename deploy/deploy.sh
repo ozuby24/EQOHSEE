@@ -123,7 +123,34 @@ if [ -z "${EQOHSEE_DIMUAT_ULANG:-}" ] \
 fi
 
 echo "==> Installing PHP dependencies"
-composer install --no-dev --optimize-autoloader
+# ── COMPOSER TIDAK BOLEH BERTANYA ──
+#
+# Skrip ini memang dijalankan sebagai root: ia memanggil apt-get, menulis
+# konfigurasi nginx, dan memiliki /var/www/EQOHSEE. Tetapi Composer
+# menolak berjalan sebagai root tanpa bertanya lebih dulu:
+#
+#   Do not run Composer as root/super user!
+#   Continue as root/super user [yes]?
+#
+# Dan di sinilah kerusakannya, yang sama sekali tidak terlihat sebagai
+# kerusakan. Deploy tidak gagal — ia BERHENTI, menunggu satu huruf yang
+# tidak akan pernah datang bila dijalankan lewat SSH tanpa TTY, lewat
+# cron, atau lewat kirim.sh. Tidak ada galat, tidak ada kode keluar
+# bukan-nol yang ditangkap `set -e`, tidak ada baris merah di mana pun.
+#
+# Akibatnya seluruh langkah SESUDAH baris ini tidak pernah berjalan:
+# npm ci, npm run build, migrasi, config:cache, view:cache. Situs tetap
+# hidup menyajikan bundel JS dan Blade LAMA, jadi yang membuka eqohsee.id
+# melihat halaman yang sama persis seperti sebelum deploy — dan
+# menyimpulkan kodenya yang tidak berubah, bukan deploy-nya yang tidak
+# pernah selesai.
+#
+# COMPOSER_ALLOW_SUPERUSER=1 adalah jawaban resmi Composer untuk keadaan
+# ini: ia menjalankan langkah yang sama tanpa prompt. --no-interaction
+# memastikan tidak ada pertanyaan LAIN yang dapat menghentikannya dengan
+# cara yang sama.
+COMPOSER_ALLOW_SUPERUSER=1 composer install \
+    --no-dev --optimize-autoloader --no-interaction
 
 if ! command -v npm >/dev/null 2>&1; then
     echo "==> npm not found, installing nodejs/npm"
