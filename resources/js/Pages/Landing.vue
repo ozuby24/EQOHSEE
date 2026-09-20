@@ -603,8 +603,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
               <p class="jual-pilar-modul-judul">Ditopang modul</p>
               <div class="flex flex-wrap gap-1.5 mt-2">
                 <span v-for="m in pilar[pilarTerpilih].modul" :key="m" class="jual-label"
-                      :style="{ background: `${pilar[pilarTerpilih].warna}1F`,
-                                color: pilar[pilarTerpilih].light }">{{ m }}</span>
+                      :style="{ '--c': pilar[pilarTerpilih].warna }">{{ m }}</span>
               </div>
             </aside>
           </Transition>
