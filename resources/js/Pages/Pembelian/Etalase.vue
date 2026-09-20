@@ -40,6 +40,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import BlankLayout from '../../Layouts/BlankLayout.vue';
 import Wordmark from '../../Components/Wordmark.vue';
 import IkonPilar from '../../Components/IkonPilar.vue';
+import { bolehLatarVideo } from '../../latarVideo';
 import { rincianBertingkat, subtotalBertingkat } from '../../hargaBertingkat';
 
 defineOptions({ layout: BlankLayout });
@@ -167,10 +168,7 @@ function ambilSemua() {
  * pada sebagian orang. Dibaca sekali saat pemasangan — bukan lewat
  * kelas CSS — supaya videonya memang tidak diunduh sama sekali.
  */
-const kurangiGerak = ref(
-  typeof window !== 'undefined'
-  && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true,
-);
+const pakaiVideo = ref(bolehLatarVideo());
 
 const f = useForm<Record<string, any>>({
   pembeli_nama: '', pembeli_perusahaan: '', pembeli_email: '',
@@ -307,9 +305,11 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
+    <main>
+
     <!-- ══════════ hero ══════════ -->
     <section class="jual-hero">
-      <video v-if="latar.video && !kurangiGerak"
+      <video v-if="latar.video && pakaiVideo"
              :src="latar.video" :poster="latar.poster ?? undefined"
              autoplay muted loop playsinline preload="metadata" aria-hidden="true"
              class="jual-hero-media"></video>
@@ -555,11 +555,18 @@ onBeforeUnmount(() => {
         </div>
 
         <div v-for="grup in kelompok" :id="'grup-' + grup.slug" :key="grup.slug" class="jual-grup">
-          <header v-singkap class="jual-grup-kepala">
+          <!-- <div>, bukan <header>.
+
+               <header> hanya BUKAN tengara `banner` bila ia berada di
+               dalam article/aside/main/nav/section. Di dalam <div>
+               polos seperti ini, keenamnya diumumkan pembaca layar
+               sebagai banner — tujuh banner pada satu halaman, dan
+               yang sungguhan tenggelam di antaranya. -->
+          <div v-singkap class="jual-grup-kepala">
             <span class="jual-grup-titik" :style="{ background: grup.pilar.warna }"></span>
             <h3 class="jual-grup-nama">{{ grup.pilar.nama }}</h3>
             <span class="jual-grup-jumlah">{{ grup.butir.length }} aplikasi</span>
-          </header>
+          </div>
 
           <ul>
             <li v-for="a in grup.butir" :key="a.nama" v-singkap class="jual-baris">
@@ -670,24 +677,28 @@ onBeforeUnmount(() => {
 
             <label class="jual-isian">
               <span>Nama</span>
-              <input v-model="f.pembeli_nama" required placeholder="Nama pembeli" />
+              <input v-model="f.pembeli_nama" required placeholder="Nama pembeli"
+                     autocomplete="name" />
             </label>
             <p v-if="f.errors.pembeli_nama" class="jual-galat">{{ f.errors.pembeli_nama }}</p>
 
             <label class="jual-isian">
               <span>Perusahaan</span>
-              <input v-model="f.pembeli_perusahaan" placeholder="Opsional" />
+              <input v-model="f.pembeli_perusahaan" placeholder="Opsional"
+                     autocomplete="organization" />
             </label>
 
             <label class="jual-isian">
               <span>Email</span>
-              <input v-model="f.pembeli_email" type="email" placeholder="Opsional" />
+              <input v-model="f.pembeli_email" type="email" placeholder="Opsional"
+                     autocomplete="email" />
             </label>
             <p v-if="f.errors.pembeli_email" class="jual-galat">{{ f.errors.pembeli_email }}</p>
 
             <label class="jual-isian">
               <span>Telepon</span>
-              <input v-model="f.pembeli_telepon" placeholder="Opsional" />
+              <input v-model="f.pembeli_telepon" placeholder="Opsional"
+                     autocomplete="tel" />
             </label>
 
             <label class="jual-isian">
@@ -710,6 +721,8 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </section>
+
+    </main>
 
     <footer class="jual-kaki">
       <div class="jual-lebar flex flex-wrap items-center justify-between gap-4">

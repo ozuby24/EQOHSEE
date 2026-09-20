@@ -2131,8 +2131,12 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
    tidak memicu tata letak dihitung ulang, jadi sapuannya tetap halus
    meski ada dua puluh satu tautan di layar. */
 .jual-tautan{display:inline-block;font-size:14px;font-weight:600;color:var(--j-tinta);
-  padding-bottom:2px;
+  padding-bottom:2px;min-height:24px;
   background-image:linear-gradient(currentColor,currentColor);
+  /* content-box, supaya garis bawahnya tetap menempel pada hurufnya
+     ketika kotak sentuhnya ditinggikan — tanpa ini garisnya ikut turun
+     dan tampak melayang di bawah kata. */
+  background-origin:content-box;
   background-repeat:no-repeat;background-position:0 100%;background-size:100% 1.5px;
   transition:background-size .4s var(--j-lengkung),color .3s var(--j-lengkung)}
 .jual-tautan:hover{color:var(--j-aksen);background-size:0% 1.5px;background-position:100% 100%}
@@ -2175,7 +2179,17 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
 .jual-kepala-turun{background:var(--j-dasar);color:var(--j-tinta);
   border-bottom-color:var(--j-garis)}
 
-.jual-nav{font-size:14px;font-weight:500;color:currentColor;opacity:.66;
+/* ── SASARAN SENTUH, BUKAN SEKADAR TULISAN ──
+   Setinggi 21px, tautan ini di bawah 24×24px yang dituntut WCAG 2.5.8
+   (AA). Bukan soal aturan: sebelas tautan sekecil itu di bilah atas dan
+   kaki halaman adalah sebelas kali seseorang meleset — dan yang
+   membukanya dari ponsel di lapangan sering memakai sarung tangan.
+
+   Tautan di DALAM kalimat dikecualikan aturan ini karena tingginya
+   ditentukan baris di sekitarnya; yang di sini berdiri sendiri, jadi
+   tidak dikecualikan. */
+.jual-nav{display:inline-flex;align-items:center;min-height:24px;
+  font-size:14px;font-weight:500;color:currentColor;opacity:.66;
   transition:opacity .28s var(--j-lengkung)}
 .jual-nav:hover{opacity:1}
 

@@ -6,6 +6,7 @@ import Wordmark from '../Components/Wordmark.vue';
 import IkonPilar from '../Components/IkonPilar.vue';
 import IkonPadat from '../Components/IkonPadat.vue';
 import { ikonPadat, type JalurPadat } from '../ikonPadat';
+import { bolehLatarVideo } from '../latarVideo';
 
 defineOptions({ layout: BlankLayout });
 
@@ -104,18 +105,7 @@ onBeforeUnmount(() => {
   if (onScroll) window.removeEventListener('scroll', onScroll);
 });
 
-/**
- * Pengguna yang meminta gerakan dikurangi mendapat poster diam.
- *
- * Bukan sekadar sopan santun: latar bergerak memicu mual dan pusing pada
- * sebagian orang, dan halaman depan adalah tempat mereka tidak punya
- * pilihan untuk menghindarinya. Dibaca sekali saat pemasangan — bukan
- * lewat kelas CSS — supaya videonya memang tidak diunduh sama sekali.
- */
-const kurangiGerak = ref(
-  typeof window !== 'undefined'
-  && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true,
-);
+const pakaiVideo = ref(bolehLatarVideo());
 const pilarList = computed(() => Object.entries(props.pilar));
 
 /**
@@ -335,6 +325,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
       </div>
     </header>
 
+    <!-- Tengara <main>.
+
+         Tanpa ini tidak ada satu pun unsur yang menyatakan "di sinilah
+         isinya": pembaca layar hanya menemukan banner dan contentinfo,
+         lalu harus menyusuri seluruh halaman dari awal tiap kali
+         kembali. Pintasan "lompat ke isi" yang dipakai orang setiap
+         hari bersandar pada tengara ini. -->
+    <main>
+
     <!-- ══════════ HERO ══════════ -->
     <!-- Video KEMBALI menjadi latar penuh.
 
@@ -344,7 +343,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
          rekaman. Tirainya condong ke kiri — gelap tempat tulisan
          berada, membuka tempat gambarnya perlu terlihat. -->
     <section id="beranda" class="jual-hero jual-lugas relative overflow-hidden">
-      <video v-if="hero.video && !kurangiGerak"
+      <video v-if="hero.video && pakaiVideo"
              :src="hero.video" :poster="hero.poster ?? undefined"
              autoplay muted loop playsinline preload="metadata" aria-hidden="true"
              v-paralaks="-0.12" class="jual-hero-media"></video>
@@ -442,9 +441,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
         <div class="grid lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] gap-x-12 gap-y-7 items-center">
           <div>
             <p v-singkap class="jual-mata jual-mata-aksen">{{ klien.length ? 'Dipercaya' : 'Acuan' }}</p>
-            <h3 class="jual-h4 mt-2">
+            <!-- h2, bukan h3: bagian ini setingkat dengan bagian lain
+                 di halaman, dan h1 → h3 adalah sendi yang terlewat.
+                 Pembaca layar yang menelusuri daftar judul membaca
+                 lompatan itu sebagai satu tingkat yang hilang, bukan
+                 sebagai judul yang sengaja dibuat kecil. Ukurannya
+                 tetap dari kelas .jual-h4. -->
+            <h2 class="jual-h4 mt-2">
               {{ klien.length ? 'Terpercaya di industri' : 'Mengacu pada standar' }}
-            </h3>
+            </h2>
             <p class="jual-tubuh-kecil mt-2">
               {{ klien.length
                 ? 'Dipakai perusahaan pertambangan di seluruh Indonesia.'
@@ -1007,6 +1012,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
         </div>
       </div>
     </section>
+
+    </main>
 
     <footer class="jual-lugas" style="background:#FFFFFF;border-top:1px solid #E5E1D8">
       <div class="jual-lebar py-8 flex flex-wrap items-center justify-between gap-x-8 gap-y-4"
