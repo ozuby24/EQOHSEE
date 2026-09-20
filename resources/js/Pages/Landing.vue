@@ -236,7 +236,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
          atas rekaman tergambar putih dengan tulisan putih di atasnya —
          terbaca sebagai menu yang hilang, bukan sebagai warna yang
          keliru. -->
-    <header class="jual-kepala jual-kepala-turun" :class="digulir ? 'jual-kepala-berbayang' : ''">
+    <!-- Menumpang DI ATAS video, bukan sebagai bilah krem di atasnya.
+         Sebagai bilah tersendiri ia memotong hero dengan garis keras
+         tepat di bawah logo, dan yang terbaca bukan satu halaman
+         melainkan dua yang kebetulan bertumpuk. -->
+    <header class="jual-kepala" :class="digulir ? 'jual-kepala-turun' : ''">
       <div class="jual-lebar flex items-center gap-8 h-full">
         <Link href="/" class="shrink-0 opacity-90 hover:opacity-100 transition-opacity duration-300">
           <Wordmark :tinggi="26" />
@@ -248,44 +252,66 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
         </nav>
 
         <Link href="/login" class="jual-nav ml-auto md:ml-0">Masuk</Link>
-        <!-- SATU-SATUNYA hitam di halaman ini, dan itu disengaja.
-             Yang paling gelap di layar seharusnya cuma satu benda;
-             dipakai juga oleh tombol lain, ia berhenti menandai apa
-             pun. Tombol ajakan di badan halaman karena itu jingga. -->
-        <Link href="/katalog" class="jual-tombol jual-tombol-kecil">Beli sekarang</Link>
+        <!-- Hitam hanya di sini, dan hanya setelah bilahnya turun ke
+             krem. Di atas video yang gelap, hitam tidak terbaca sama
+             sekali — yang dipesan untuk tombol ini adalah perannya
+             sebagai satu-satunya benda paling pekat di layar, bukan
+             kode warnanya pada keadaan yang membuatnya lenyap. -->
+        <Link href="/katalog" class="jual-tombol jual-tombol-kecil"
+              :class="digulir ? '' : 'jual-tombol-terang'">Beli sekarang</Link>
       </div>
     </header>
 
     <!-- ══════════ HERO ══════════ -->
-    <section id="beranda" class="jual-lugas relative overflow-hidden">
+    <!-- Video KEMBALI menjadi latar penuh.
+
+         Dibingkai di kolom kanan, ia kehilangan gunanya: yang membuat
+         orang berhenti di halaman tambang adalah melihat tambangnya
+         bergerak selebar layar, bukan melihat sebuah kotak berisi
+         rekaman. Tirainya condong ke kiri — gelap tempat tulisan
+         berada, membuka tempat gambarnya perlu terlihat. -->
+    <section id="beranda" class="jual-hero jual-lugas relative overflow-hidden">
+      <video v-if="hero.video && !kurangiGerak"
+             :src="hero.video" :poster="hero.poster ?? undefined"
+             autoplay muted loop playsinline preload="metadata" aria-hidden="true"
+             class="jual-hero-media"></video>
+      <img v-else-if="hero.poster" :src="hero.poster" alt="" class="jual-hero-media">
+
+      <div class="jual-hero-tirai"></div>
+
       <div class="jual-lebar relative">
-        <div class="grid lg:grid-cols-[minmax(0,1fr)_30rem] gap-x-14 gap-y-14 items-center
-                    pt-32 pb-16 md:pt-40 md:pb-24">
-          <div class="max-w-[46rem]">
+        <div class="pt-36 pb-12 md:pt-44 md:pb-16">
+          <div class="max-w-[48rem]">
             <p v-singkap class="jual-mata jual-mata-aksen">Delapan aspek · satu platform</p>
 
-            <h1 v-singkap="60" class="jual-judul mt-6">
+            <h1 v-singkap="60" class="jual-judul jual-judul-hero mt-6">
               Keselamatan tambang,<br>
               <a href="#modul" class="jual-pil-panah" aria-label="Lihat modulnya">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
                      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M5 12h13M13 6l6 6-6 6"/>
                 </svg>
-              </a><span class="jual-judul-tipis">terukur dan terbukti.</span>
+              </a><span class="jual-judul-tipis-hero">terukur dan terbukti.</span>
             </h1>
 
-            <p v-singkap="120" class="jual-tubuh-besar mt-7 max-w-xl">
-              Platform keselamatan pertambangan terpadu untuk pembelajaran, penilaian kinerja,
-              inspeksi, kinerja energi, hingga sertifikasi — mengikuti regulasi keselamatan
+            <p v-singkap="120" class="jual-tubuh-besar jual-hero-teks mt-7 max-w-2xl">
+              Platform keselamatan pertambangan terpadu — pembelajaran, penilaian kinerja,
+              inspeksi, kinerja energi, hingga sertifikasi. Mengikuti regulasi keselamatan
               pertambangan Indonesia.
             </p>
 
             <div v-singkap="180" class="flex flex-wrap items-center gap-3 mt-9">
               <Link href="/katalog" class="jual-tombol jual-tombol-aksen">Beli platform</Link>
-              <Link href="/login" class="jual-tombol jual-tombol-lain">Masuk ke platform</Link>
+              <Link href="/login" class="jual-tombol jual-tombol-garis">Masuk ke platform</Link>
             </div>
+          </div>
 
-            <div v-if="fotoTumpuk.length" v-singkap="240" class="jual-tumpuk mt-11">
+          <!-- Pita tiga bagian di kaki hero — bentuk yang paling
+               menandai acuannya. Ketiganya menjawab pertanyaan yang
+               berbeda: seberapa banyak isinya, seperti apa layarnya,
+               dan harus mulai dari mana. -->
+          <div v-singkap="260" class="jual-pita-hero mt-14 md:mt-20">
+            <div v-if="fotoTumpuk.length" class="jual-tumpuk">
               <span class="jual-tumpuk-foto" aria-hidden="true">
                 <img v-for="g in fotoTumpuk" :key="g" :src="g" alt="" loading="lazy" decoding="async">
               </span>
@@ -295,54 +321,28 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tekanTombol));
               </span>
             </div>
 
-            <div v-singkap="300" class="jual-statistik mt-9 max-w-2xl">
-              <div v-for="s in [[elemenSmkp.length, 'Elemen SMKP'], [modul.length, 'Modul terpadu'],
-                                [pilarJumlah, 'Aspek dijaga'], ['24/7', 'Akses platform']]"
-                   :key="String(s[1])">
-                <b>{{ s[0] }}</b><span>{{ s[1] }}</span>
+            <Link href="/katalog" class="jual-keping">
+              <span class="jual-keping-teks">
+                <b>Dasbor HSE</b>
+                <small>Hazard, temuan, dan kepatuhan MCU dalam satu layar</small>
+              </span>
+              <span v-if="fotoTumpuk[0]" class="jual-keping-foto">
+                <img :src="fotoTumpuk[0]" alt="" loading="lazy" decoding="async">
+              </span>
+            </Link>
+
+            <div class="jual-mulai">
+              <div>
+                <b>Mulai dari satu modul</b>
+                <small>{{ modul.length }} modul terpadu, dipakai terpisah maupun sekaligus.</small>
               </div>
+              <a href="#modul" class="jual-bulat-panah" aria-label="Lihat daftar modul">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M5 12h13M13 6l6 6-6 6"/>
+                </svg>
+              </a>
             </div>
-          </div>
-
-          <!-- Videonya DIBINGKAI, bukan lagi terbentang sebagai latar.
-
-               Di halaman krem, video di belakang tulisan gelap tidak
-               menyisakan beda terang yang cukup untuk dibaca — berapa
-               pun tirai yang ditumpuk di atasnya, yang didapat cuma
-               krem yang kotor. Dibingkai, ia tetap bergerak dan tetap
-               memperlihatkan tambangnya, dan dasbornya menumpang di
-               sudutnya sebagai bukti produk. -->
-          <div v-singkap="360" class="relative">
-            <div class="jual-tayang">
-              <video v-if="hero.video && !kurangiGerak"
-                     :src="hero.video" :poster="hero.poster ?? undefined"
-                     autoplay muted loop playsinline preload="metadata" aria-hidden="true"></video>
-              <img v-else-if="hero.poster" :src="hero.poster" alt="">
-            </div>
-
-            <aside class="jual-dasbor absolute -bottom-12 -left-4 w-[17rem] hidden sm:block lg:-left-32">
-              <div class="jual-dasbor-kepala">
-                <span class="jual-dasbor-judul">Dasbor HSE</span>
-                <span class="jual-dasbor-masa">Sep 2026</span>
-              </div>
-
-              <div v-for="a in angkaDasbor" :key="a.nama" class="jual-dasbor-angka">
-                <span>{{ a.nama }}</span>
-                <span class="jual-dasbor-nilai">
-                  <b>{{ a.nilai }}</b>
-                  <span v-if="a.delta" class="jual-delta"
-                        :class="a.baik ? 'jual-delta-naik' : 'jual-delta-turun'">{{ a.delta }}</span>
-                </span>
-              </div>
-
-              <div class="jual-dasbor-bagan" aria-hidden="true">
-                <i v-for="(t, k) in batangDasbor" :key="k" :style="{ height: t + '%' }"></i>
-              </div>
-              <div class="jual-dasbor-kaki">
-                <span>Hazard dilaporkan · 12 bulan</span>
-                <span class="num">2025–2026</span>
-              </div>
-            </aside>
           </div>
         </div>
       </div>

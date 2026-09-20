@@ -1991,6 +1991,75 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
    ini hitam sudah dipesan untuk tombol navigasi, dan dipakai dua kali
    ia berhenti menandai keduanya. Putih di atas krem memisahkan dengan
    cara yang sama tanpa meminjam warna yang sudah ada tugasnya. */
+/* ══════════ hero bervideo ══════════ */
+
+/* Tirai condong ke KIRI, bukan rata gelap.
+   Rata gelap membuat videonya hanya jadi tekstur; condong, sisi kanan
+   tetap memperlihatkan tambangnya sementara sisi kiri cukup pekat
+   untuk menahan tulisan putih di atasnya. */
+.jual-hero{background:var(--j-gelap);color:#fff}
+.jual-hero .jual-hero-tirai{
+  background:linear-gradient(100deg,
+    rgba(20,17,16,.95) 0%, rgba(20,17,16,.88) 38%,
+    rgba(20,17,16,.55) 68%, rgba(20,17,16,.35) 100%);
+}
+.jual-judul-hero{color:#fff}
+.jual-judul-tipis-hero{color:rgba(255,255,255,.55)}
+.jual-hero-teks{color:rgba(255,255,255,.72)}
+.jual-hero .jual-mata-aksen{color:#FFAE5E}
+
+/* ── pita tiga bagian di kaki hero ──
+   Ketiganya menjawab pertanyaan yang berbeda: seberapa banyak isinya,
+   seperti apa layarnya, dan harus mulai dari mana. Dipisah garis tipis
+   dari judul di atasnya supaya terbaca sebagai lapis kedua, bukan
+   sebagai ekor paragraf. */
+.jual-pita-hero{
+  display:grid;gap:1.5rem;align-items:center;
+  padding-top:2rem;border-top:1px solid rgba(255,255,255,.14);
+}
+@media (min-width:900px){
+  .jual-pita-hero{grid-template-columns:auto minmax(0,1fr) auto;gap:2.5rem}
+}
+
+/* Keping fitur: kartu putih berbentuk pil dengan foto di ujungnya —
+   bentuk yang dipakai acuannya, dan yang membuat pita ini punya satu
+   benda terang sebagai jangkar mata. */
+.jual-keping{
+  display:flex;align-items:center;gap:1rem;
+  max-width:26rem;padding:.55rem .55rem .55rem 1.15rem;
+  border-radius:99px;background:var(--j-kartu);
+  text-decoration:none;color:var(--j-tinta);
+  box-shadow:0 18px 40px -22px rgba(0,0,0,.75);
+  transition:transform .18s var(--j-lengkung),box-shadow .18s var(--j-lengkung);
+}
+.jual-keping:hover{transform:translateY(-2px);box-shadow:0 22px 46px -22px rgba(0,0,0,.85)}
+.jual-keping-teks{min-width:0}
+.jual-keping-teks b{display:block;font-size:13px;font-weight:700;line-height:1.3}
+.jual-keping-teks small{display:block;font-size:11.5px;line-height:1.45;
+  color:var(--j-redup);margin-top:.12rem}
+.jual-keping-foto{flex:none;width:3.4rem;height:3.4rem;border-radius:99px;overflow:hidden}
+.jual-keping-foto img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* Ajakan ketiga: teks kecil dengan satu tombol bulat jingga. */
+.jual-mulai{display:flex;align-items:center;gap:1.1rem}
+.jual-mulai b{display:block;font-size:13px;font-weight:700;color:#fff}
+.jual-mulai small{display:block;font-size:11.5px;line-height:1.45;
+  color:rgba(255,255,255,.58);margin-top:.12rem;max-width:15rem}
+.jual-bulat-panah{
+  display:grid;place-items:center;flex:none;
+  width:3.1rem;height:3.1rem;border-radius:99px;
+  background:linear-gradient(135deg,#C85804,var(--j-aksen));color:#fff;
+  box-shadow:0 10px 26px -8px rgba(243,111,15,.9);
+  transition:filter .16s,transform .16s;
+}
+.jual-bulat-panah svg{width:1.15rem;height:1.15rem}
+.jual-bulat-panah:hover{filter:brightness(1.07);transform:translateY(-1px)}
+
+/* Di hero, tumpukan fotonya bertepi gelap dan berketerangan terang. */
+.jual-hero .jual-tumpuk-foto img{border-color:rgba(20,17,16,.9)}
+.jual-hero .jual-tumpuk b{color:#fff}
+.jual-hero .jual-tumpuk b+span{color:rgba(255,255,255,.58)}
+
 .jual-ajakan{background:var(--j-kartu);border:1px solid var(--j-garis);
   box-shadow:0 30px 70px -40px rgba(28,24,23,.4)}
 
