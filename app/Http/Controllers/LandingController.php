@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pembelian\Produk;
-use App\Support\{IkonPadat, Media, Modules, Pillars, Smkp};
+use App\Support\{Ekspor, IkonPadat, Media, Modules, Pillars, Smkp};
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -64,7 +64,7 @@ class LandingController extends Controller
             'aman' => $this->aman(),
             'tanya' => $this->tanya(),
             'kontak' => [
-                'whatsapp' => preg_replace('/\\D/', '', (string) config('pembelian.kontak.whatsapp')),
+                'whatsapp' => Ekspor::nomorWa(config('pembelian.kontak.whatsapp')) ?? '',
                 'email' => (string) config('pembelian.kontak.email'),
             ],
             'elemenSmkp' => $this->elemenSmkp(),
