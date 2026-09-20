@@ -91,16 +91,33 @@ return [
      * Cara menghubungi penjual, untuk yang belum berharga di katalog
      * dan untuk penawaran khusus.
      *
-     * Kosong seperti nomor rekening di atas, dan karena alasan yang
-     * sama: nomor telepon dan alamat surel adalah data pribadi
-     * pemiliknya. Halaman katalog memakai kekosongan ini untuk memutuskan
-     * apakah tombol "Minta penawaran" digambar sama sekali — jadi yang
-     * terjadi bila belum diisi bukan tautan mati, melainkan tombol yang
-     * memang tidak ada.
+     * ── BERBEDA DARI NOMOR REKENING DI ATAS, DAN INILAH BEDANYA ──
+     *
+     * Nomor rekening dibiarkan kosong karena ia RAHASIA: tidak pernah
+     * dimaksudkan tampil di layar siapa pun kecuali pembeli yang sedang
+     * membayar, dan contoh yang lupa diganti berarti uang pelanggan
+     * masuk ke rekening orang lain.
+     *
+     * Kedua nilai di bawah kebalikannya. Keduanya kontak PENJUALAN yang
+     * memang dicetak besar-besar di halaman depan dan di etalase, untuk
+     * dibaca siapa saja yang membuka situsnya. Menyembunyikannya di .env
+     * server tidak melindungi apa pun — ia hanya menambah satu langkah
+     * pemasangan yang, bila terlewat, membuat halaman jualan berdiri
+     * tanpa satu pun cara menghubungi penjualnya, dan tidak ada galat
+     * yang memberitahukannya: tombolnya sekadar tidak digambar.
+     *
+     * Jadi bawaannya diisi, dan tetap dapat ditimpa lewat .env bila
+     * nomornya berganti. Kekosongan tetap punya arti yang sama seperti
+     * dulu — bila ditimpa menjadi kosong, tombolnya tidak digambar sama
+     * sekali, bukan digambar sebagai tautan mati.
+     *
+     * Nomor ditulis dalam bentuk internasional tanpa tanda, tetapi tidak
+     * harus: Ekspor::nomorWa() menormalkan 0812…, +62 812…, dan 62812…
+     * ke bentuk yang sama.
      */
     'kontak' => [
-        'whatsapp' => env('PEMBELIAN_WHATSAPP', ''),
-        'email'    => env('PEMBELIAN_EMAIL', ''),
+        'whatsapp' => env('PEMBELIAN_WHATSAPP', '6281214407991'),
+        'email'    => env('PEMBELIAN_EMAIL', 'febrian@eqohsee.id'),
     ],
 
 ];
