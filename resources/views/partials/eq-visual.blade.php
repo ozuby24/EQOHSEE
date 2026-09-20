@@ -46,7 +46,7 @@ body{
   color:#1B2024;background:#fff;border:1px solid rgba(27,32,36,.09);
   box-shadow:0 1px 2px rgba(27,32,36,.05);
   transition:border-color .18s,color .18s,transform .18s cubic-bezier(.21,.6,.35,1)}
-.eq-menu-btn:hover{border-color:#DC6E00;color:#DC6E00}
+.eq-menu-btn:hover{border-color:#C85804;color:#C85804}
 .eq-menu-btn:active{transform:scale(.94)}
 .eq-menu-btn svg{width:19px;height:19px}
 @media (min-width:1024px){.eq-menu-btn{display:none}}
@@ -63,7 +63,7 @@ body{
   color:var(--eq-redup,#7C8894);background:#fff;border:1px solid rgba(27,32,36,.09);
   box-shadow:0 1px 2px rgba(27,32,36,.05);
   transition:color .18s,border-color .18s,transform .18s cubic-bezier(.21,.6,.35,1)}
-.eq-bulat:hover{color:#DC6E00;border-color:#DC6E00}
+.eq-bulat:hover{color:#C85804;border-color:#C85804}
 .eq-bulat:active{transform:scale(.94)}
 .eq-bulat svg{width:19px;height:19px}
 .eq-lonceng-titik{position:absolute;top:-2px;right:-2px;min-width:19px;height:19px;padding:0 5px;
@@ -72,7 +72,7 @@ body{
 
 .eq-profil{display:flex;align-items:center;gap:10px;padding-left:2px}
 .eq-avatar{width:40px;height:40px;flex:none;border-radius:50%;display:grid;place-items:center;
-  background:linear-gradient(135deg,#F57C00,#FF9800);color:#fff;font-weight:800;font-size:14px}
+  background:linear-gradient(135deg,#F36F0F,#FF9800);color:#fff;font-weight:800;font-size:14px}
 /* Varian berfoto. Tanpa `object-fit`, potret yang tidak persegi
    dipipihkan ke dalam lingkaran 40px alih-alih dipotong — dan `.eq-avatar`
    sendiri tidak dapat memakainya, sebab varian berhuruf memakai `grid`
@@ -87,13 +87,13 @@ body{
   font-size:12.5px;font-weight:600;color:var(--eq-redup,#7C8894);
   border:1px solid rgba(27,32,36,.09);background:#fff;
   transition:color .18s,border-color .18s,background-color .18s}
-.eq-keluar:hover{color:#DC6E00;border-color:#DC6E00;background:rgba(18,137,127,.06)}
+.eq-keluar:hover{color:#C85804;border-color:#C85804;background:rgba(18,137,127,.06)}
 .eq-keluar svg{width:17px;height:17px}
 
 .eq-topbar h1{letter-spacing:-.012em}
 .eq-topbar::after{
   content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;
-  background:linear-gradient(90deg,#1F6FB8,#2FA3DE,#F08A22,#DC6E00,#5EAE38,#FF9800);
+  background:linear-gradient(90deg,#1F6FB8,#2FA3DE,#F08A22,#C85804,#5EAE38,#FF9800);
   opacity:.5;
 }
 
@@ -145,7 +145,7 @@ body{
 .eq-merek img{display:block;flex:none}
 .eq-merek span{display:flex;flex-direction:column;line-height:1.12;min-width:0}
 .eq-merek strong{font-size:20px;font-weight:900;letter-spacing:-.015em;color:#E8ECF0}
-.eq-merek strong em{font-style:normal;color:#F57C00}
+.eq-merek strong em{font-style:normal;color:#F36F0F}
 .eq-merek small{font-size:9.5px;color:rgba(255,255,255,.42);margin-top:3px;letter-spacing:.005em}
 
 /* ── Kaki bilah samping ──
@@ -181,7 +181,7 @@ body{
   border-radius:14px;padding:13px}
 .eq-bantuan-ikon{width:34px;height:34px;border-radius:11px;flex:none;
   display:grid;place-items:center;color:#fff;
-  background:linear-gradient(135deg,#F57C00,#FF9800)}
+  background:linear-gradient(135deg,#F36F0F,#FF9800)}
 .eq-bantuan-ikon svg{width:17px;height:17px}
 .eq-bantuan-teks{min-width:0}
 .eq-bantuan-teks strong{display:block;font-size:12.5px;color:#fff;font-weight:700}
@@ -349,7 +349,7 @@ main .brand-gradient::after{              /* siluet punggungan di tepi bawah */
    6 · PITA SPEKTRUM ENAM PILAR — penanda halus di kepala kartu
    ═══════════════════════════════════════════════════════════ */
 .eq-seam{height:3px;border-radius:3px;
-  background:linear-gradient(90deg,#1F6FB8,#2FA3DE,#F08A22,#DC6E00,#5EAE38,#FF9800)}
+  background:linear-gradient(90deg,#1F6FB8,#2FA3DE,#F08A22,#C85804,#5EAE38,#FF9800)}
 
 /* ═══════════════════════════════════════════════════════════
    7 · KENYAMANAN BACA
@@ -379,7 +379,7 @@ main a{transition:color .16s}
 /* ── Nada warna kartu ── */
 .t-hijau {background:rgba(94,174,56,.13);color:#4A8E2C}
 .t-biru  {background:rgba(31,111,184,.12);color:#1F6FB8}
-.t-toska {background:rgba(18,137,127,.13);color:#F57C00}
+.t-toska {background:rgba(18,137,127,.13);color:#F36F0F}
 .t-kuning{background:rgba(240,138,34,.14);color:#C96F12}
 .t-ungu  {background:rgba(124,92,206,.13);color:#6B4FBE}
 .t-merah {background:rgba(214,69,69,.12);color:#C03A3A}
@@ -408,7 +408,7 @@ main a{transition:color .16s}
 .eq-hero-isi p{font-size:14px;color:rgba(255,255,255,.72);margin-top:10px;line-height:1.6;max-width:44ch}
 .eq-hero-btn{
   display:inline-flex;align-items:center;gap:9px;margin-top:22px;
-  padding:12px 22px;border-radius:13px;background:#F57C00;color:#fff;
+  padding:12px 22px;border-radius:13px;background:#F36F0F;color:#fff;
   font-size:13.5px;font-weight:700;
   transition:transform .18s cubic-bezier(.21,.6,.35,1),box-shadow .18s;
 }
@@ -444,7 +444,7 @@ main a{transition:color .16s}
 .eq-panel-kepala h3{font-size:16px;font-weight:800;color:var(--eq-judul,#0F1720);letter-spacing:-.015em}
 .eq-panel-ket{font-size:11.5px;color:var(--eq-redup2,#98A2AE)}
 .eq-panel-kaki{font-size:11.5px;color:var(--eq-redup,#7C8894);margin-top:12px}
-.eq-tautan{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#F57C00;
+.eq-tautan{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#F36F0F;
   transition:gap .18s;
   /* Sasaran sentuh: padding tegak memperbesar area ketuk, margin negatif
      mengembalikan tinggi tata letaknya persis seperti semula. */
@@ -546,10 +546,10 @@ main a{transition:color .16s}
 .eq-kursus-meta svg{width:14px;height:14px}
 .eq-kursus-maju{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
   margin-top:14px;font-size:11.5px;color:var(--eq-redup,#7C8894)}
-.eq-kursus-maju b{font-size:12.5px;font-weight:800;color:#F57C00;font-variant-numeric:tabular-nums}
+.eq-kursus-maju b{font-size:12.5px;font-weight:800;color:#F36F0F;font-variant-numeric:tabular-nums}
 .eq-bilah{height:7px;border-radius:999px;background:#EDF0F2;overflow:hidden;margin-top:6px}
 .eq-bilah i{display:block;height:100%;border-radius:999px;
-  background:linear-gradient(90deg,#F57C00,#FF9800);transition:width 1s cubic-bezier(.21,.6,.35,1)}
+  background:linear-gradient(90deg,#F36F0F,#FF9800);transition:width 1s cubic-bezier(.21,.6,.35,1)}
 .eq-kursus-aksi{display:flex;gap:8px;margin-top:auto;padding-top:15px}
 
 /* `flex:1` berarti flex-basis:0 — tombolnya mulai dari lebar NOL lalu
@@ -583,7 +583,7 @@ main a{transition:color .16s}
 .eq-btn-utama{display:inline-flex;align-items:center;justify-content:center;gap:7px;
   flex:0 0 auto;min-width:fit-content;
   padding:10px 14px;border-radius:11px;font-size:12.5px;font-weight:700;
-  background:linear-gradient(135deg,#F57C00,#DC6E00);color:#fff;
+  background:linear-gradient(135deg,#F36F0F,#C85804);color:#fff;
   transition:filter .18s,transform .18s cubic-bezier(.21,.6,.35,1)}
 
 /* Baris tombol yang SENGAJA dibagi rata — dua tindakan setara pada kaki
@@ -602,7 +602,7 @@ main a{transition:color .16s}
   padding:10px 14px;border-radius:11px;font-size:12.5px;font-weight:600;
   color:#5C6874;background:#fff;border:1px solid rgba(27,32,36,.11);
   transition:border-color .18s,color .18s}
-.eq-btn-lain:hover{border-color:#DC6E00;color:#F57C00}
+.eq-btn-lain:hover{border-color:#C85804;color:#F36F0F}
 .eq-btn-blok{width:100%;margin-top:13px}
 
 /* ── Tombol keputusan ──
@@ -651,7 +651,7 @@ main a{transition:color .16s}
   border:1.5px solid transparent;cursor:pointer;
   transition:background-color .18s,color .18s,border-color .18s}
 .eq-saring:hover{background:#E7E5E4;color:#1B2024}
-.eq-saring.aktif{background:#fff;border-color:#DC6E00;color:#B45309;box-shadow:0 1px 2px rgba(0,0,0,.07)}
+.eq-saring.aktif{background:#fff;border-color:#C85804;color:#B45309;box-shadow:0 1px 2px rgba(0,0,0,.07)}
 .eq-saring b{font-weight:800}
 .eq-saring .titik{width:8px;height:8px;border-radius:999px;display:inline-block;flex:none}
 .eq-keadaan{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;
@@ -775,12 +775,12 @@ main a{transition:color .16s}
      itu dianggap tidak sah dan nilainya hilang sama sekali — bukan
      jatuh ke cadangannya — sehingga ubinnya kehilangan gradien tanpa
      satu pun galat yang tercatat. */
-  --ikon-hitung:color-mix(in srgb,var(--c,#F57C00) 62%,#fff);
+  --ikon-hitung:color-mix(in srgb,var(--c,#F36F0F) 62%,#fff);
   --ikon-puncak:var(--c-terang,var(--ikon-hitung));
-  background:linear-gradient(145deg,var(--ikon-puncak),var(--c,#F57C00));
+  background:linear-gradient(145deg,var(--ikon-puncak),var(--c,#F36F0F));
   color:#fff;
   box-shadow:
-    0 8px 16px -9px color-mix(in srgb,var(--c,#F57C00) 85%,transparent),
+    0 8px 16px -9px color-mix(in srgb,var(--c,#F36F0F) 85%,transparent),
     inset 0 1px 0 rgba(255,255,255,.35)}
 
 /* ── Kenapa hanya segini, padahal "3D" ──
@@ -806,7 +806,7 @@ main a{transition:color .16s}
    atas kartu gelap berubah dari bayangan menjadi cahaya neon. */
 :root[data-tema="gelap"] .ikon-3d{
   box-shadow:
-    0 8px 18px -10px color-mix(in srgb,var(--c,#F57C00) 62%,transparent),
+    0 8px 18px -10px color-mix(in srgb,var(--c,#F36F0F) 62%,transparent),
     inset 0 1px 0 rgba(255,255,255,.22)}
 
 /* CATATAN: jangan menyetel stroke-width pada .ikon-3d svg.
@@ -987,7 +987,7 @@ main a{transition:color .16s}
    sama terbacanya di kedua latar. */
 :root[data-tema="gelap"] .eq-saring{background:#1A272C;color:#C4D2D7}
 :root[data-tema="gelap"] .eq-saring:hover{background:#22333A;color:#E8F0F2}
-:root[data-tema="gelap"] .eq-saring.aktif{background:#22333A;border-color:#DC6E00;color:#FFC078}
+:root[data-tema="gelap"] .eq-saring.aktif{background:#22333A;border-color:#C85804;color:#FFC078}
 :root[data-tema="gelap"] .eq-nilai{background:#131F24;border-color:#26363C;color:#98A8AF}
 :root[data-tema="gelap"] .eq-nilai b{color:#E8F0F2}
 :root[data-tema="gelap"] .eq-nilai:hover{background:#1A272C;border-color:#33474F}
@@ -1128,10 +1128,10 @@ main a{transition:color .16s}
    logo yang kebetulan sangat terang atau sangat pekat akan membuat teks
    di atasnya tidak terbaca kalau dijadikan latar. */
 .eq-btn-utama,
-.eq-bilah i{background:linear-gradient(135deg,var(--eq-aksen,#F57C00),
-                                       color-mix(in srgb,var(--eq-aksen,#F57C00) 78%,#FF9800))}
+.eq-bilah i{background:linear-gradient(135deg,var(--eq-aksen,#F36F0F),
+                                       color-mix(in srgb,var(--eq-aksen,#F36F0F) 78%,#FF9800))}
 .eq-kursus-maju b,
-.eq-panel-lihat{color:var(--eq-aksen,#F57C00)}
+.eq-panel-lihat{color:var(--eq-aksen,#F36F0F)}
 .eq-panel-lihat{padding-block:5px;margin-block:-5px}
 .brand-gradient{background:linear-gradient(165deg,var(--eq-dasar,#0B1117),
                                            color-mix(in srgb,var(--eq-dasar,#0B1117) 62%,#12403E))}
@@ -1313,7 +1313,7 @@ main a{transition:color .16s}
 .eq-sisi-akun-tautan{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
 .eq-sisi-avatar{width:34px;height:34px;border-radius:11px;flex:none;display:grid;
   place-items:center;font-size:14px;font-weight:800;color:#fff;
-  background:linear-gradient(135deg,#F57C00,#FF9F35)}
+  background:linear-gradient(135deg,#F36F0F,#FF9F35)}
 .eq-sisi-avatar-foto{object-fit:cover}
 .eq-sisi-akun-teks{min-width:0;display:flex;flex-direction:column;line-height:1.25}
 .eq-sisi-akun-teks strong{font-size:12.5px;color:#fff;font-weight:700;
@@ -1345,7 +1345,7 @@ main a{transition:color .16s}
   border:1px solid var(--eq-garis,#E4E8EC);background:var(--eq-kartu,#fff);
   transition:border-color .15s,box-shadow .15s}
 .eq-cari input::placeholder{color:var(--eq-redup,#9AA5B1)}
-.eq-cari input:focus{outline:none;border-color:var(--eq-aksen,#F57C00);
+.eq-cari input:focus{outline:none;border-color:var(--eq-aksen,#F36F0F);
   box-shadow:0 0 0 3px rgba(245,124,0,.13)}
 @media (max-width:860px){.eq-cari{display:none}}
 
@@ -1360,7 +1360,7 @@ main a{transition:color .16s}
   border-radius:12px;font-size:12.5px;font-weight:700;flex:none;
   color:var(--eq-judul,#0F1720);border:1px solid var(--eq-garis,#E4E8EC);
   background:var(--eq-kartu,#fff);max-width:min(340px,32vw)}
-.eq-perusahaan svg{width:16px;height:16px;flex:none;color:var(--eq-aksen,#F57C00)}
+.eq-perusahaan svg{width:16px;height:16px;flex:none;color:var(--eq-aksen,#F36F0F)}
 .eq-perusahaan span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:640px){.eq-perusahaan span{display:none}}
 
@@ -1399,14 +1399,14 @@ main a{transition:color .16s}
   border:1px solid var(--eq-garis,#E4E8EC);
   transition:border-color .15s ease,color .15s ease,background .15s ease}
 .eq-pindah-pil svg{width:15px;height:15px;flex:none;opacity:.7}
-.eq-pindah-pil:hover{border-color:var(--eq-aksen,#F57C00);color:var(--eq-judul,#0F1720)}
-.eq-pindah-pil:focus-visible{outline:2px solid var(--eq-aksen,#F57C00);outline-offset:2px}
+.eq-pindah-pil:hover{border-color:var(--eq-aksen,#F36F0F);color:var(--eq-judul,#0F1720)}
+.eq-pindah-pil:focus-visible{outline:2px solid var(--eq-aksen,#F36F0F);outline-offset:2px}
 
 /* Yang sedang dibuka berlatar aksen PENUH, bukan sekadar bertepi tebal.
    Pada baris berisi belasan pil, tepi yang berbeda tipis tidak pernah
    ditemukan mata — dan pembacanya kehilangan satu-satunya tanda di
    mana ia sedang berdiri. */
-.eq-pindah-kini{background:var(--eq-aksen,#F57C00);border-color:var(--eq-aksen,#F57C00);
+.eq-pindah-kini{background:var(--eq-aksen,#F36F0F);border-color:var(--eq-aksen,#F36F0F);
   color:#fff;box-shadow:0 2px 10px -2px rgba(245,124,0,.45)}
 .eq-pindah-kini svg{opacity:1}
 .eq-pindah-kini:hover{color:#fff}
@@ -1419,8 +1419,8 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] .eq-pindah-pil{background:var(--eq-kartu,#141A21);
   border-color:var(--eq-garis,rgba(255,255,255,.10));color:var(--eq-teks,#A8B2B8)}
 :root[data-tema="gelap"] .eq-pindah-pil:hover{color:var(--eq-judul,#E8ECF0)}
-:root[data-tema="gelap"] .eq-pindah-kini{background:var(--eq-aksen,#F57C00);
-  border-color:var(--eq-aksen,#F57C00);color:#fff}
+:root[data-tema="gelap"] .eq-pindah-kini{background:var(--eq-aksen,#F36F0F);
+  border-color:var(--eq-aksen,#F36F0F);color:#fff}
 
 /* ── Akun di bilah atas ── */
 .eq-akun{position:relative;flex:none}
@@ -1436,7 +1436,7 @@ main a{transition:color .16s}
   border-color:var(--eq-garis,#E6EBF0)}
 .eq-akun-buka .eq-akun-tombol{background:var(--eq-aksen-tipis,rgba(245,124,0,.10));
   border-color:var(--eq-garis,#E6EBF0)}
-.eq-akun-tombol:focus-visible{outline:2px solid var(--eq-aksen,#F57C00);outline-offset:3px}
+.eq-akun-tombol:focus-visible{outline:2px solid var(--eq-aksen,#F36F0F);outline-offset:3px}
 
 /* Pembungkus avatar. Titik hijaunya berjangkar ke SINI, bukan ke
    tombolnya: sejak tombolnya melebar, `right:0` pada tombol menaruh
@@ -1468,7 +1468,7 @@ main a{transition:color .16s}
 
 .eq-akun-avatar{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;
   font-size:13px;font-weight:800;letter-spacing:.01em;color:#fff;
-  background:linear-gradient(140deg,var(--eq-aksen,#F57C00),var(--eq-aksen-gelap,#C75F00));
+  background:linear-gradient(140deg,var(--eq-aksen,#F36F0F),var(--eq-aksen-gelap,#C75F00));
   box-shadow:0 2px 10px -2px rgba(245,124,0,.5)}
 .eq-akun-foto{object-fit:cover}
 .eq-akun-avatar-besar{width:42px;height:42px;font-size:14px;flex:none}
@@ -1495,7 +1495,7 @@ main a{transition:color .16s}
 .eq-akun-butir svg{width:16px;height:16px;flex:none;opacity:.65}
 .eq-akun-butir:hover{background:var(--eq-aksen-tipis,rgba(245,124,0,.10));
   color:var(--eq-judul,#0F1720)}
-.eq-akun-butir:focus-visible{outline:2px solid var(--eq-aksen,#F57C00);outline-offset:-2px}
+.eq-akun-butir:focus-visible{outline:2px solid var(--eq-aksen,#F36F0F);outline-offset:-2px}
 .eq-akun-keluar:hover{background:rgba(220,38,38,.10);color:#B91C1C}
 
 :root[data-tema="gelap"] .eq-akun-nama strong{color:var(--eq-judul,#E8ECF0)}
@@ -1548,7 +1548,7 @@ body.eq-sempit .eq-sisi-bawah{background:none}
 .eq-semboyan-teks{margin:0;font-size:12.5px;font-weight:800;line-height:1.34;color:#fff;
   letter-spacing:-.01em;text-shadow:0 1px 10px rgba(0,0,0,.5)}
 .eq-semboyan-garis{display:block;width:52px;height:3px;margin-top:9px;border-radius:999px;
-  background:var(--eq-aksen,#F57C00)}
+  background:var(--eq-aksen,#F36F0F)}
 
 /* Bilah yang dilipat tidak punya lebar untuk teksnya sama sekali. */
 body.eq-sempit .eq-semboyan{display:none}
@@ -1592,8 +1592,8 @@ body.eq-sempit .eq-semboyan{display:none}
 
 .eq-perusahaan-tombol{cursor:pointer;font-family:inherit;text-align:left;
   transition:border-color .15s ease,box-shadow .15s ease}
-.eq-perusahaan-tombol:hover{border-color:var(--eq-aksen,#F57C00)}
-.eq-perusahaan-tombol:focus-visible{outline:none;border-color:var(--eq-aksen,#F57C00);
+.eq-perusahaan-tombol:hover{border-color:var(--eq-aksen,#F36F0F)}
+.eq-perusahaan-tombol:focus-visible{outline:none;border-color:var(--eq-aksen,#F36F0F);
   box-shadow:0 0 0 3px rgba(245,124,0,.13)}
 
 .eq-perusahaan-panah{width:14px;height:14px;margin-left:auto;opacity:.5;
@@ -1617,10 +1617,10 @@ body.eq-sempit .eq-semboyan{display:none}
   color:var(--eq-teks,#44505C);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .eq-perusahaan-butir:hover{background:var(--eq-aksen-tipis,rgba(245,124,0,.10));
   color:var(--eq-judul,#0F1720)}
-.eq-perusahaan-butir:focus-visible{outline:2px solid var(--eq-aksen,#F57C00);outline-offset:-2px}
+.eq-perusahaan-butir:focus-visible{outline:2px solid var(--eq-aksen,#F36F0F);outline-offset:-2px}
 
 .eq-perusahaan-kini{background:var(--eq-aksen-tipis,rgba(245,124,0,.13));
-  color:var(--eq-aksen,#F57C00)}
+  color:var(--eq-aksen,#F36F0F)}
 
 :root[data-tema="gelap"] .eq-perusahaan-daftar{
   background:var(--eq-kartu,#141A21);
@@ -1695,7 +1695,7 @@ body.eq-sempit .eq-semboyan{display:none}
 /* Kaki kartu: tautan, bukan hiasan. Tiap kartu ringkasan menjawab
    sebagian pertanyaan; barisnya selalu ada di halaman lain. */
 .miners-kaki{display:flex;align-items:center;justify-content:space-between;
-  padding:11px 18px;font-size:12px;font-weight:700;color:var(--eq-aksen,#F57C00);
+  padding:11px 18px;font-size:12px;font-weight:700;color:var(--eq-aksen,#F36F0F);
   border-top:1px solid var(--eq-garis,#EFEBE4);transition:background .15s}
 .miners-kaki:hover{background:var(--eq-lembut,rgba(245,124,0,.06))}
 
@@ -1721,7 +1721,7 @@ body.eq-sempit .eq-semboyan{display:none}
 .miners-ubin{display:flex;align-items:center;gap:13px;padding:16px 18px;border-radius:18px;
   background:var(--eq-kartu,#fff);border:1px solid var(--eq-garis,#EFEBE4);
   box-shadow:0 1px 2px rgba(16,24,40,.04);transition:border-color .15s,transform .15s}
-.miners-ubin:hover{border-color:var(--eq-aksen,#F57C00);transform:translateY(-1px)}
+.miners-ubin:hover{border-color:var(--eq-aksen,#F36F0F);transform:translateY(-1px)}
 .miners-ubin-angka{display:block;font-size:24px;font-weight:800;line-height:1}
 .miners-ubin-label{display:block;font-size:11.5px;color:var(--eq-redup,#7C8894);margin-top:3px}
 
@@ -1748,7 +1748,7 @@ body.eq-sempit .eq-semboyan{display:none}
   color:var(--eq-judul,#0F1720);border:1px solid var(--eq-garis,#E4E8EC);
   background:var(--eq-kartu,#fff);transition:border-color .15s,box-shadow .15s}
 .beli-isian::placeholder{color:var(--eq-redup,#9AA5B1)}
-.beli-isian:focus{outline:none;border-color:var(--eq-aksen,#F57C00);
+.beli-isian:focus{outline:none;border-color:var(--eq-aksen,#F36F0F);
   box-shadow:0 0 0 3px rgba(245,124,0,.13)}
 
 /* Tombol tambah/kurang. min-width menjaga agar angkanya tidak menggeser
@@ -1757,7 +1757,7 @@ body.eq-sempit .eq-semboyan{display:none}
   display:grid;place-items:center;font-size:15px;line-height:1;font-weight:700;
   color:var(--eq-judul,#0F1720);border:1px solid var(--eq-garis,#E4E8EC);
   background:var(--eq-kartu,#fff);cursor:pointer;transition:.15s}
-.beli-plusmin:hover{border-color:var(--eq-aksen,#F57C00);color:var(--eq-aksen,#F57C00)}
+.beli-plusmin:hover{border-color:var(--eq-aksen,#F36F0F);color:var(--eq-aksen,#F36F0F)}
 
 :root[data-tema="gelap"] .beli-isian,
 :root[data-tema="gelap"] .beli-plusmin{
@@ -1858,17 +1858,17 @@ body.eq-sempit .eq-semboyan{display:none}
      tiap fotonya, sehingga halamannya terbaca sebagai satu benda. */
   --j-dasar:#F4F3EC;
   --j-kartu:#FFFFFF;
-  --j-tinta:#12161A;
-  --j-redup:#5F6B66;
-  --j-samar:#8A948F;
-  --j-garis:#E3E7E2;
-  --j-garis-tebal:#D4DAD3;
-  --j-aksen:#F57C00;
-  --j-aksen-lembut:#FFF1E3;
+  --j-tinta:#1C1817;
+  --j-redup:#6B635E;
+  --j-samar:#958D87;
+  --j-garis:#E5E1D8;
+  --j-garis-tebal:#D6D1C5;
+  --j-aksen:#F36F0F;
+  --j-aksen-lembut:#FDEDE0;
   --j-hijau:#12BE15;
   --j-hijau-lembut:#E4FBE4;
   --j-hijau-tua:#095F0A;
-  --j-gelap:#12161A;
+  --j-gelap:#1C1817;
   --j-lengkung:cubic-bezier(.22,1,.36,1);
 
   background:var(--j-dasar);color:var(--j-tinta);
@@ -1890,23 +1890,40 @@ body.eq-sempit .eq-semboyan{display:none}
      tiap fotonya, sehingga halamannya terbaca sebagai satu benda. */
   --j-dasar:#F4F3EC;
   --j-kartu:#FFFFFF;
-  --j-tinta:#12161A;
-  --j-redup:#5F6B66;
-  --j-samar:#8A948F;
-  --j-garis:#E3E7E2;
-  --j-garis-tebal:#D4DAD3;
-  --j-aksen:#F57C00;
-  --j-aksen-lembut:#FFF1E3;
+  --j-tinta:#1C1817;
+  --j-redup:#6B635E;
+  --j-samar:#958D87;
+  --j-garis:#E5E1D8;
+  --j-garis-tebal:#D6D1C5;
+  --j-aksen:#F36F0F;
+  --j-aksen-lembut:#FDEDE0;
   --j-hijau:#12BE15;
   --j-hijau-lembut:#E4FBE4;
   --j-hijau-tua:#095F0A;
-  --j-gelap:#12161A;
+  --j-gelap:#1C1817;
   --j-lengkung:cubic-bezier(.22,1,.36,1);
 
   background:var(--j-dasar);color:var(--j-tinta);
 }
 
 .jual-lugas-gelap{background:var(--j-gelap);color:#fff}
+
+/* Gulir halus untuk tautan jangkar bilah atas.
+   Lompatan seketika dari Harga ke Fitur menghapus rasa bahwa keduanya
+   berada pada satu halaman yang sama; yang terlihat adalah dua layar
+   berbeda yang saling menggantikan. Dengan gulir, arah dan jaraknya
+   ikut terbaca.
+
+   `scroll-padding-top` menyetarai bilah atas yang melayang — tanpa
+   itu, judul bagian yang dituju berhenti persis DI BALIK bilahnya. */
+html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
+
+/* Diminta berhenti, ia berhenti. Gerakan gulir yang tidak diminta
+   memicu mual pada sebagian orang, dan halaman jual adalah tempat
+   mereka tidak punya pilihan menghindarinya. */
+@media (prefers-reduced-motion:reduce){
+  html:has(.jual-lugas){scroll-behavior:auto}
+}
 
 .jual-lebar{max-width:78rem;margin-inline:auto;padding-inline:1.25rem}
 @media (min-width:768px){.jual-lebar{padding-inline:2.5rem}}
@@ -1928,8 +1945,8 @@ body.eq-sempit .eq-semboyan{display:none}
    baris ketiga — janda, yang pada judul setebal ini terbaca sebagai
    kalimat terpotong, bukan sebagai baris baru. Diukur, bukan dikira. */
 .jual-judul{font-size:clamp(2.35rem,4.3vw,3.5rem);font-weight:800;line-height:1.06;
-  letter-spacing:-.03em;color:#fff}
-.jual-judul-tipis{color:rgba(255,255,255,.52)}
+  letter-spacing:-.03em;color:var(--j-tinta)}
+.jual-judul-tipis{color:rgba(28,24,23,.42)}
 
 .jual-h2{font-size:clamp(2rem,4.2vw,3.4rem);font-weight:800;line-height:1.08;
   letter-spacing:-.028em;margin-top:1.25rem}
@@ -1963,6 +1980,37 @@ body.eq-sempit .eq-semboyan{display:none}
 .jual-tombol:active{transform:translateY(1px)}
 .jual-tombol:disabled{opacity:.34;cursor:not-allowed;background:var(--j-gelap);
   border-color:var(--j-gelap);transform:none;box-shadow:none}
+
+/* Tombol utama JINGGA, bukan hitam.
+   Hitam pada palet ini disediakan untuk satu tempat saja — tombol di
+   bilah navigasi. Dipakai juga oleh tombol ajakan di badan halaman, ia
+   berhenti menandai apa pun: yang paling gelap di layar seharusnya
+   cuma satu, dan yang satu itu sudah dipakai. */
+/* Panel ajakan penutup: kartu PUTIH di atas krem, bukan blok hitam.
+   Blok hitam dulu dipakai untuk memisahkannya dari halaman; pada palet
+   ini hitam sudah dipesan untuk tombol navigasi, dan dipakai dua kali
+   ia berhenti menandai keduanya. Putih di atas krem memisahkan dengan
+   cara yang sama tanpa meminjam warna yang sudah ada tugasnya. */
+.jual-ajakan{background:var(--j-kartu);border:1px solid var(--j-garis);
+  box-shadow:0 30px 70px -40px rgba(28,24,23,.4)}
+
+.jual-tombol-aksen{background:var(--j-aksen);color:#fff;border-color:var(--j-aksen);
+  box-shadow:0 10px 24px -10px rgba(243,111,15,.85)}
+.jual-tombol-aksen:hover{filter:brightness(1.06);background:var(--j-aksen);
+  border-color:var(--j-aksen);box-shadow:0 12px 28px -10px rgba(243,111,15,.95)}
+
+/* Panel video hero. Pada halaman krem, video tidak lagi terbentang
+   sebagai latar — latar terang di belakang tulisan gelap tidak
+   menyisakan beda cukup untuk dibaca. Ia dibingkai, dan bingkainya
+   membuatnya terbaca sebagai tayangan produk, bukan sebagai tempelan
+   di belakang teks. */
+.jual-tayang{position:relative;border-radius:26px;overflow:hidden;
+  background:var(--j-gelap);aspect-ratio:4/3;
+  box-shadow:0 30px 70px -30px rgba(28,24,23,.55)}
+.jual-tayang video,.jual-tayang img{position:absolute;inset:0;
+  width:100%;height:100%;object-fit:cover}
+.jual-tayang::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,transparent 55%,rgba(28,24,23,.45) 100%)}
 
 .jual-tombol-lain{background:transparent;color:var(--j-tinta);border-color:var(--j-garis-tebal)}
 .jual-tombol-lain:hover{background:var(--j-tinta);border-color:var(--j-tinta);color:#fff;
@@ -2016,6 +2064,12 @@ body.eq-sempit .eq-semboyan{display:none}
   border-bottom:1px solid transparent;
   transition:background .4s var(--j-lengkung),border-color .4s var(--j-lengkung),
   color .4s var(--j-lengkung)}
+/* Bilah atas kini SELALU terang — halaman di bawahnya krem sejak
+   baris pertama. Yang berubah saat digulir hanya bayangannya: tanpa
+   itu, bilah dan halaman menyatu jadi satu bidang dan tepi bawahnya
+   hilang tepat ketika isi mulai lewat di belakangnya. */
+.jual-kepala-berbayang{box-shadow:0 1px 0 var(--j-garis),0 10px 30px -18px rgba(28,24,23,.35)}
+
 .jual-kepala-turun{background:var(--j-dasar);color:var(--j-tinta);
   border-bottom-color:var(--j-garis)}
 
@@ -2029,7 +2083,7 @@ body.eq-sempit .eq-semboyan{display:none}
 .jual-hero-media{position:absolute;inset:0;width:100%;height:100%;
   object-fit:cover;object-position:center 42%;opacity:.3}
 .jual-hero-tirai{position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(102deg,#12161AF7 0%,#12161AE0 46%,#12161A99 100%)}
+  background:linear-gradient(102deg,#1C1817F7 0%,#1C1817E0 46%,#1C181799 100%)}
 
 /* ── tiruan dasbor untuk hero halaman depan ──
 
@@ -2141,13 +2195,13 @@ body.eq-sempit .eq-semboyan{display:none}
   display:grid;place-items:center;
   transition:background .3s var(--j-lengkung)}
 .jual-kartu:hover .jual-tanda:not(.ikon-3d),.jual-modul:hover .jual-tanda:not(.ikon-3d){
-  background:color-mix(in srgb,var(--c,#F57C00) 20%,#fff)}
+  background:color-mix(in srgb,var(--c,#F36F0F) 20%,#fff)}
 .jual-tanda svg{width:1.3rem;height:1.3rem}
 
 .jual-label{display:inline-flex;align-items:center;gap:.35rem;border-radius:40px;
   padding:.22rem .6rem;font-size:11px;font-weight:600;letter-spacing:.01em;
-  background:color-mix(in srgb,var(--c,#F57C00) 12%,#fff);
-  color:color-mix(in srgb,var(--c,#F57C00) 80%,#12161A)}
+  background:color-mix(in srgb,var(--c,#F36F0F) 12%,#fff);
+  color:color-mix(in srgb,var(--c,#F36F0F) 80%,#1C1817)}
 
 /* Goresan warna di tepi atas kartu modul. Dua piksel penuh, bukan
    gradien: gradien pada garis setipis ini hanya terbaca sebagai warna
@@ -2158,7 +2212,7 @@ body.eq-sempit .eq-semboyan{display:none}
   transition:border-color .3s var(--j-lengkung),box-shadow .3s var(--j-lengkung),
   transform .3s var(--j-lengkung)}
 .jual-modul::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;
-  background:var(--c,#D4DAD3)}
+  background:var(--c,#D6D1C5)}
 .jual-modul:hover{border-color:var(--j-garis-tebal);transform:translateY(-2px);
   box-shadow:0 14px 32px -22px rgba(18,22,26,.4)}
 .jual-modul-mati{opacity:.72}
@@ -2227,8 +2281,8 @@ body.eq-sempit .eq-semboyan{display:none}
 
 .jual-tanda-gelap{width:2.4rem;height:2.4rem;border-radius:10px;flex:none;
   display:grid;place-items:center;
-  background:color-mix(in srgb,var(--c,#F57C00) 26%,transparent);
-  color:color-mix(in srgb,var(--c,#F57C00) 45%,#fff)}
+  background:color-mix(in srgb,var(--c,#F36F0F) 26%,transparent);
+  color:color-mix(in srgb,var(--c,#F36F0F) 45%,#fff)}
 .jual-tanda-gelap svg{width:1.25rem;height:1.25rem}
 
 /* Angka hero: dipisah garis rambut, bukan dikotakkan satu per satu.
@@ -2244,18 +2298,18 @@ body.eq-sempit .eq-semboyan{display:none}
 .jual-statistik{display:grid;grid-template-columns:repeat(2,1fr);
   border-top:1px solid rgba(255,255,255,.14)}
 .jual-statistik>div{padding:1.1rem 1.25rem 0 0;
-  border-right:1px solid rgba(255,255,255,.14)}
+  border-right:1px solid var(--j-garis)}
 .jual-statistik>div:nth-child(2n){border-right:0;padding-right:0;padding-left:1.25rem}
 
 @media (min-width:640px){
   .jual-statistik{grid-template-columns:repeat(4,1fr)}
-  .jual-statistik>div{padding:1.1rem 1.25rem 0;border-right:1px solid rgba(255,255,255,.14)}
+  .jual-statistik>div{padding:1.1rem 1.25rem 0;border-right:1px solid var(--j-garis)}
   .jual-statistik>div:first-child{padding-left:0}
   .jual-statistik>div:last-child{border-right:0;padding-right:0}
 }
 .jual-statistik b{display:block;font-size:1.6rem;font-weight:700;line-height:1;
   letter-spacing:-.03em;font-variant-numeric:tabular-nums}
-.jual-statistik span{display:block;font-size:11.5px;color:rgba(255,255,255,.5);
+.jual-statistik span{display:block;font-size:11.5px;color:var(--j-redup);
   margin-top:.5rem}
 
 /* ── bobot SMKP sebagai SATU bilah ──
@@ -2282,9 +2336,9 @@ body.eq-sempit .eq-semboyan{display:none}
 .jual-takaran-daftar li{display:flex;align-items:baseline;gap:.65rem;font-size:12.5px}
 .jual-takaran-titik{width:.5rem;height:.5rem;border-radius:2px;flex:none;
   transform:translateY(-1px)}
-.jual-takaran-nama{color:rgba(255,255,255,.72)}
+.jual-takaran-nama{color:var(--j-redup)}
 .jual-takaran-bobot{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:700;
-  color:#fff}
+  color:var(--j-tinta)}
 
 /* Pita penanda pada kartu rencana. Kata, bukan warna sendirian: warna
    saja tidak terbaca oleh yang tidak membedakan jingga dan abu. */
@@ -2416,17 +2470,17 @@ body.eq-sempit .eq-semboyan{display:none}
   transition:border-color .18s ease,background .18s ease,transform .18s ease}
 .jual-pilar-kartu:hover{border-color:rgba(255,255,255,.2);
   background:rgba(255,255,255,.075);transform:translateY(-1px)}
-.jual-pilar-kartu:focus-visible{outline:2px solid #F57C00;outline-offset:2px}
+.jual-pilar-kartu:focus-visible{outline:2px solid #F36F0F;outline-offset:2px}
 
 .jual-pilar-tanda{grid-row:span 2;display:grid;place-items:center;width:38px;height:38px;
   border-radius:10px;background:rgb(255 255 255 / .06);color:rgb(255 255 255 / .62);
   transition:background .18s ease,color .18s ease}
 .jual-pilar-nama{font-size:13.5px;font-weight:700;line-height:1.3}
-.jual-pilar-ket{font-size:11.5px;line-height:1.45;color:rgb(255 255 255 / .55)}
+.jual-pilar-ket{font-size:11.5px;line-height:1.45;color:var(--j-samar)}
 
 .jual-pilar-kartu-aktif{background:rgb(245 124 0 / .10);border-color:rgb(245 124 0 / .55)}
 .jual-pilar-kartu-aktif .jual-pilar-tanda{background:rgb(245 124 0 / .18);color:#FF9800}
-.jual-pilar-kartu-aktif .jual-pilar-ket{color:rgb(255 255 255 / .72)}
+.jual-pilar-kartu-aktif .jual-pilar-ket{color:var(--j-redup)}
 
 /* Panel rincian. Melekat saat digulir pada layar lebar supaya tetap
    terbaca ketika kisinya lebih panjang daripada panelnya. */
@@ -2445,8 +2499,8 @@ body.eq-sempit .eq-semboyan{display:none}
    hanya bayangannya, sehingga ubinnya tampak punya bayangan tanpa punya
    badan. Tertangkap pada tangkapan layar, bukan oleh uji. */
 .jual-tanda:not(.ikon-3d){
-  background:color-mix(in srgb,var(--c,#F57C00) 13%,#fff);
-  color:color-mix(in srgb,var(--c,#F57C00) 78%,#12161A)}
+  background:color-mix(in srgb,var(--c,#F36F0F) 13%,#fff);
+  color:color-mix(in srgb,var(--c,#F36F0F) 78%,#1C1817)}
 .jual-pilar-panel-tanda:not(.ikon-3d){
   background:color-mix(in srgb,var(--c) 18%,transparent);color:var(--c)}
 
@@ -2454,10 +2508,10 @@ body.eq-sempit .eq-semboyan{display:none}
 .jual-pilar-cakupan li{border-left:2px solid var(--c);padding-left:.7rem}
 .jual-pilar-cakupan b{display:block;font-size:12.5px;font-weight:700;line-height:1.35}
 .jual-pilar-cakupan span{display:block;font-size:11.5px;line-height:1.5;
-  color:rgb(255 255 255 / .58);margin-top:.15rem}
+  color:var(--j-redup);margin-top:.15rem}
 
 .jual-pilar-modul-judul{margin-top:1.4rem;font-size:10px;font-weight:700;
-  letter-spacing:.14em;text-transform:uppercase;color:rgb(255 255 255 / .42)}
+  letter-spacing:.14em;text-transform:uppercase;color:var(--j-samar)}
 
 /* Perpindahan antaraspek: satu gerakan pendek, bukan pantulan.
    mode="out-in" pada Vue membuat yang lama keluar dulu, jadi tidak ada
@@ -2524,7 +2578,7 @@ body.eq-sempit .eq-semboyan{display:none}
   linear-gradient(155deg,rgba(255,255,255,.09),rgba(0,0,0,.32)),
   color-mix(in srgb,var(--w,#2A323B) 55%,#1B2126)}
 .jual-aspek-tirai{position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(180deg,transparent 50%,#12161A66 100%)}
+  background:linear-gradient(180deg,transparent 50%,#1C181766 100%)}
 
 .jual-aspek-baris{display:flex;align-items:center;justify-content:space-between;gap:1rem;
   padding:1rem 1.15rem}
@@ -2588,7 +2642,7 @@ body.eq-sempit .eq-semboyan{display:none}
 .jual-langkah-angka{display:inline-flex;align-items:center;justify-content:center;
   width:2.3rem;height:2.3rem;border-radius:99px;
   font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums;
-  background:linear-gradient(135deg,#DC6E00,var(--j-aksen));color:#fff;
+  background:linear-gradient(135deg,#C85804,var(--j-aksen));color:#fff;
   box-shadow:0 6px 16px -5px rgba(245,124,0,.7)}
 
 .jual-jaminan{display:grid;gap:1rem;grid-template-columns:1fr}
@@ -2682,8 +2736,8 @@ body.eq-sempit .eq-semboyan{display:none}
 
    Ditulis tetap begini supaya niatnya terbaca, bukan disamarkan lewat
    peubah agar lolos pemeriksaan. */
-:root[data-tema="gelap"] .jual-tombol-terang{background:#fff;color:#12161A;border-color:#fff}
-:root[data-tema="gelap"] .jual-mock-qr{background:#fff;color:#12161A}
+:root[data-tema="gelap"] .jual-tombol-terang{background:#fff;color:#1C1817;border-color:#fff}
+:root[data-tema="gelap"] .jual-mock-qr{background:#fff;color:#1C1817}
 
 /* ── gerakan boleh diminta berhenti ──
 
@@ -2770,7 +2824,7 @@ body.eq-sempit .eq-semboyan{display:none}
   vertical-align:middle;
   width:4.6rem;height:2.5rem;margin:0 .55rem .35rem 0;
   border:0;border-radius:99px;
-  background:linear-gradient(135deg,#DC6E00,var(--j-aksen));
+  background:linear-gradient(135deg,#C85804,var(--j-aksen));
   color:#fff;cursor:pointer;
   box-shadow:0 8px 22px -6px rgba(245,124,0,.7);
   transition:filter .16s,box-shadow .16s,transform .16s;
@@ -2793,7 +2847,7 @@ body.eq-sempit .eq-semboyan{display:none}
 .jual-tumpuk-foto img{
   width:2.9rem;height:2.9rem;object-fit:cover;
   border-radius:50% 50% 50% 10px;
-  border:2px solid var(--j-gelap);
+  border:2px solid var(--j-dasar);
 }
 .jual-tumpuk-foto img+img{margin-left:-.85rem}
 .jual-tumpuk b{display:block;font-size:1.55rem;font-weight:800;letter-spacing:-.02em;line-height:1.1}
@@ -2802,7 +2856,7 @@ body.eq-sempit .eq-semboyan{display:none}
    dan spesifisitasnya (0,1,1) menang atas `.jual-tumpuk-foto` (0,1,0):
    wadahnya berhenti menjadi flex, ketiga fotonya menumpuk tegak, dan
    tidak ada satu pun galat yang menyebutkannya. */
-.jual-tumpuk b+span{display:block;font-size:12.5px;color:rgba(255,255,255,.55);margin-top:.1rem}
+.jual-tumpuk b+span{display:block;font-size:12.5px;color:var(--j-redup);margin-top:.1rem}
 
 /* ── nomor bulat pada gundukan lembut ──
    Acuannya menaruh 01 / 02 / 03 di atas bulatan putih kabur. Di sini
@@ -2819,7 +2873,7 @@ body.eq-sempit .eq-semboyan{display:none}
 .jual-nomor-bulat{
   display:inline-grid;place-items:center;
   width:2.3rem;height:2.3rem;border-radius:99px;
-  background:linear-gradient(135deg,#DC6E00,var(--j-aksen));
+  background:linear-gradient(135deg,#C85804,var(--j-aksen));
   color:#fff;font-size:12.5px;font-weight:800;
   font-variant-numeric:tabular-nums;
   box-shadow:0 6px 16px -5px rgba(245,124,0,.75);
@@ -2833,7 +2887,7 @@ body.eq-sempit .eq-semboyan{display:none}
   display:flex;align-items:center;justify-content:space-between;gap:.75rem;
   width:100%;margin-top:.85rem;padding:.45rem .5rem .45rem .95rem;
   border:0;border-radius:99px;
-  background:linear-gradient(135deg,#DC6E00,var(--j-aksen));
+  background:linear-gradient(135deg,#C85804,var(--j-aksen));
   color:#fff;font-size:12.5px;font-weight:700;
   text-decoration:none;cursor:pointer;
   box-shadow:0 8px 20px -9px rgba(245,124,0,.8);
@@ -2854,6 +2908,4 @@ body.eq-sempit .eq-semboyan{display:none}
 .jual-galeri-bingkai{border-radius:20px}
 .jual-modul{border-radius:18px}
 
-.jual-cincin-letak{display:flex;justify-content:center}
-@media (min-width:1024px){.jual-cincin-letak{justify-content:flex-end}}
 </style>
