@@ -2227,7 +2227,8 @@ export interface OpsiKepatuhan {
 }
 
 export interface TautanKepatuhan {
-  dasbor: string; register: string; rekap: string; buat: string; unggah: string;
+  dasbor: string; register: string; rekap: string; buat: string;
+  unggah: string; pustaka: string;
 }
 
 export interface BarisKepatuhan {
@@ -2322,4 +2323,19 @@ export interface HalamanKepatuhanUnggah {
   /** Apakah kunci AI terpasang; pemecahan pasalnya berjalan tanpa itu. */
   ai: boolean;
   tautan: TautanKepatuhan & { rangkum: string; simpan: string };
+}
+
+export interface HalamanKepatuhanPustaka {
+  judul: string; subjudul: string;
+  saring: { perusahaan: number | null; tahun: number };
+  opsi: OpsiKepatuhan;
+  pustaka: Array<{
+    kunci: string; nama: string; nomor: string; judul: string;
+    sumber: string; aspek: string; warna: string;
+    ket: string; acuan: string; jumlah: number;
+    /** id register yang sudah terbit untuk tahun ini; null bila belum. */
+    sudah: number | null;
+    contoh: Array<{ penunjuk: string; uraian: string }>;
+  }>;
+  tautan: TautanKepatuhan & { terbitkan: string };
 }

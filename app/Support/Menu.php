@@ -754,6 +754,7 @@ final class Menu
           ['Dasbor Pemenuhan', 'kepatuhan.dasbor', 'kepatuhan'],
           ['Register Kewajiban','kepatuhan.index', 'kepatuhan/register'],
           ['Rekap Bulanan',    'kepatuhan.rekap',  'kepatuhan/rekap'],
+          ['Pustaka Daftar Periksa', 'kepatuhan.pustaka', 'kepatuhan/pustaka'],
         ],
       ],
     ],

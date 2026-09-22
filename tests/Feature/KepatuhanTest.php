@@ -400,6 +400,81 @@ class KepatuhanTest extends TestCase
             'Butir hasil rangkuman sudah bernilai sebelum dibaca siapa pun.');
     }
 
+    /* ══════════════ pustaka daftar periksa ══════════════ */
+
+    public function test_pustaka_terbit_lengkap_dan_belum_dinilai(): void
+    {
+        $c = $this->perusahaan();
+        $this->masuk($c);
+
+        $this->post(route('kepatuhan.pustaka.terbitkan'), [
+            'kunci' => 'gap-45001-2027', 'tahun' => 2026, 'company_id' => $c->id,
+        ])->assertRedirect();
+
+        $s = ComplianceSubject::withoutGlobalScopes()
+            ->where('nomor', 'like', 'ISO 45001:2027%')->firstOrFail();
+
+        $harus = count(\App\Support\PustakaKepatuhan::satu('gap-45001-2027')['butir']);
+
+        $this->assertSame($harus, $s->points()->count(),
+            'Daftar periksa tidak tersalin seluruhnya.');
+        $this->assertSame(0, $s->points()->whereNotNull('status')->count(),
+            'Butir pustaka lahir sudah bernilai — daftar periksa yang tidak akan pernah dibaca.');
+        $this->assertSame('Tetap', $s->status);
+        $this->assertSame('45001', $s->iso_kode);
+    }
+
+    public function test_pustaka_yang_sudah_terbit_ditandai_agar_tidak_berganda(): void
+    {
+        $c = $this->perusahaan();
+        $this->masuk($c);
+
+        $this->post(route('kepatuhan.pustaka.terbitkan'), [
+            'kunci' => 'dokumen-wajib-smkp', 'tahun' => 2026, 'company_id' => $c->id,
+        ])->assertRedirect();
+
+        $this->get(route('kepatuhan.pustaka', ['tahun' => 2026, 'perusahaan' => $c->id]))->assertOk()
+            ->assertInertia(fn (AssertableInertia $p) => $p
+                ->component('Kepatuhan/Pustaka')
+                ->where('pustaka.1.sudah', fn ($v) => $v !== null)
+                ->where('pustaka.0.sudah', null)
+                ->etc());
+    }
+
+    public function test_pustaka_yang_tidak_dikenal_ditolak(): void
+    {
+        $c = $this->perusahaan();
+        $this->masuk($c);
+
+        $this->post(route('kepatuhan.pustaka.terbitkan'), [
+            'kunci' => 'entah-apa', 'tahun' => 2026,
+        ])->assertSessionHasErrors('kunci');
+    }
+
+    /**
+     * Tiap butir pustaka punya penunjuk dan uraian yang terisi.
+     *
+     * Butir berpenunjuk kosong tampil sebagai baris tanpa judul di
+     * tengah daftar lima puluh baris, dan yang menilainya tidak dapat
+     * mengetahui klausul mana yang sedang dinilainya.
+     */
+    public function test_tiap_butir_pustaka_terisi(): void
+    {
+        foreach (\App\Support\PustakaKepatuhan::semua() as $kunci => $p) {
+            $this->assertNotEmpty($p['butir'], "Pustaka '{$kunci}' tidak punya satu butir pun.");
+
+            foreach ($p['butir'] as $i => $b) {
+                $this->assertNotSame('', trim($b[0]), "Pustaka '{$kunci}' butir ke-".($i + 1).' tanpa penunjuk.');
+                $this->assertNotSame('', trim($b[1]), "Pustaka '{$kunci}' butir ke-".($i + 1).' tanpa uraian.');
+            }
+
+            $penunjuk = array_column($p['butir'], 0);
+
+            $this->assertSame(count($penunjuk), count(array_unique($penunjuk)),
+                "Pustaka '{$kunci}' punya penunjuk kembar — dua baris menunjuk butir yang sama.");
+        }
+    }
+
     /* ══════════════ aspek ══════════════ */
 
     /**

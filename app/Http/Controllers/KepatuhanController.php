@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, CompliancePoint, ComplianceRecap, ComplianceSubject, Company, Document};
-use App\Support\{Berkas, Iso, Kepatuhan, KopDokumen, PemecahPeraturan};
+use App\Support\{Berkas, Iso, Kepatuhan, KopDokumen, PemecahPeraturan, PustakaKepatuhan};
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -441,6 +441,69 @@ class KepatuhanController extends Controller
         return back()->with('ok', 'Rekap '.ComplianceRecap::BULAN[$d['bulan']].' tersimpan.');
     }
 
+    /* ══════════════════ pustaka daftar periksa ══════════════════ */
+
+    public function pustaka(Request $request)
+    {
+        [$perusahaan, $tahun] = $this->saringan($request);
+
+        return Inertia::render('Kepatuhan/Pustaka', [
+            'judul'    => 'Pustaka Daftar Periksa',
+            'subjudul' => 'Daftar periksa yang sudah jadi — terbitkan, lalu tinggal dinilai',
+
+            'saring' => compact('perusahaan', 'tahun'),
+            'opsi'   => $this->opsi(),
+
+            'pustaka' => array_map(fn (string $kunci) => [
+                'kunci'  => $kunci,
+                'nama'   => PustakaKepatuhan::semua()[$kunci]['nama'],
+                'nomor'  => PustakaKepatuhan::semua()[$kunci]['nomor'],
+                'judul'  => PustakaKepatuhan::semua()[$kunci]['judul'],
+                'sumber' => PustakaKepatuhan::semua()[$kunci]['sumber'],
+                'aspek'  => Kepatuhan::namaAspek(PustakaKepatuhan::semua()[$kunci]['aspek']),
+                'warna'  => Kepatuhan::warnaAspek(PustakaKepatuhan::semua()[$kunci]['aspek']),
+                'ket'    => PustakaKepatuhan::semua()[$kunci]['ket'],
+                'acuan'  => PustakaKepatuhan::semua()[$kunci]['sumberAcuan'],
+                'jumlah' => count(PustakaKepatuhan::semua()[$kunci]['butir']),
+
+                /* Sudah pernah diterbitkan untuk tahun dan perusahaan
+                   ini? Menerbitkannya dua kali tidak menimbulkan galat
+                   apa pun — ia hanya menggandakan tiga puluh butir yang
+                   dinilai dua orang berbeda dengan jawaban berbeda. */
+                'sudah'  => ComplianceSubject::query()
+                    ->where('tahun', $tahun)
+                    ->where('nomor', PustakaKepatuhan::semua()[$kunci]['nomor'])
+                    ->when($perusahaan, fn ($q) => $q->where('company_id', $perusahaan))
+                    ->value('id'),
+
+                'contoh' => array_map(
+                    fn ($b) => ['penunjuk' => $b[0], 'uraian' => $b[1]],
+                    array_slice(PustakaKepatuhan::semua()[$kunci]['butir'], 0, 4),
+                ),
+            ], array_keys(PustakaKepatuhan::semua())),
+
+            'tautan' => $this->tautan() + ['terbitkan' => route('kepatuhan.pustaka.terbitkan')],
+        ]);
+    }
+
+    public function terbitkanPustaka(Request $request)
+    {
+        $d = $request->validate([
+            'kunci'      => ['required', Rule::in(array_keys(PustakaKepatuhan::semua()))],
+            'tahun'      => ['required', 'integer', 'min:2000', 'max:2100'],
+            'company_id' => ['nullable', 'exists:companies,id'],
+        ]);
+
+        $companyId = $d['company_id'] ?? auth()->user()?->company_id;
+
+        $s = PustakaKepatuhan::terbitkan($d['kunci'], $companyId, $d['tahun'], auth()->id());
+
+        ActivityLog::write('Terbitkan daftar periksa', $s->nomor, 'iso');
+
+        return redirect()->route('kepatuhan.show', $s)
+            ->with('ok', $s->points()->count().' butir siap dinilai.');
+    }
+
     /* ══════════════════ unggah & rangkum ══════════════════ */
 
     public function unggah()
@@ -685,6 +748,7 @@ class KepatuhanController extends Controller
             'rekap'    => route('kepatuhan.rekap'),
             'buat'     => route('kepatuhan.create'),
             'unggah'   => route('kepatuhan.unggah'),
+            'pustaka'  => route('kepatuhan.pustaka'),
         ];
     }
 

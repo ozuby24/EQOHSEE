@@ -14,8 +14,8 @@
 import { Link } from '@inertiajs/vue3';
 
 defineProps<{
-  tautan: { dasbor: string; register: string; rekap: string; unggah: string };
-  kini: 'dasbor' | 'register' | 'rekap' | 'unggah';
+  tautan: { dasbor: string; register: string; rekap: string; unggah: string; pustaka: string };
+  kini: 'dasbor' | 'register' | 'rekap' | 'unggah' | 'pustaka';
 }>();
 
 const BUTIR = [
@@ -25,6 +25,9 @@ const BUTIR = [
     jalur: ['M5 4.5h11l3 3V19.5H5z', 'M8.5 9.5h7', 'M8.5 13h7', 'M8.5 16.5h4'] },
   { kunci: 'rekap',    label: 'Rekap Bulanan',
     jalur: ['M4.5 6.5h15v13h-15z', 'M4.5 10.5h15', 'M9 6.5v-2', 'M15 6.5v-2', 'M9 14h2', 'M13 14h2'] },
+  { kunci: 'pustaka',  label: 'Pustaka',
+    jalur: ['M4 5.5A1.5 1.5 0 0 1 5.5 4H19v13H5.5A1.5 1.5 0 0 0 4 18.5Z',
+            'M4 18.5A1.5 1.5 0 0 0 5.5 20H19', 'M8 8h7'] },
   { kunci: 'unggah',   label: 'Unggah & Rangkum',
     jalur: ['M6.5 16.5a3.5 3.5 0 0 1 .4-6.98 5 5 0 0 1 9.6-1.2 3.9 3.9 0 0 1 .5 7.68',
             'M12 12v7', 'm9.5 14.5 2.5-2.5 2.5 2.5'] },

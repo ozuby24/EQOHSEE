@@ -120,6 +120,7 @@ final class RuteInertia
         'kepatuhan.rekap',
         'kepatuhan.create',
         'kepatuhan.unggah',
+        'kepatuhan.pustaka',
 
         /* Berkas cetak HSE */
         'hazard.ekspor.cetak',

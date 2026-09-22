@@ -1265,6 +1265,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('rekap',        [KepatuhanController::class, 'rekap'])->name('rekap');
         Route::post('rekap',       [KepatuhanController::class, 'simpanRekap'])->name('rekap.simpan');
         Route::get('unggah',       [KepatuhanController::class, 'unggah'])->name('unggah');
+        Route::get('pustaka',      [KepatuhanController::class, 'pustaka'])->name('pustaka');
+        Route::post('pustaka',     [KepatuhanController::class, 'terbitkanPustaka'])->name('pustaka.terbitkan');
         Route::post('rangkum',     [KepatuhanController::class, 'rangkum'])->name('rangkum');
         Route::post('rangkum/simpan', [KepatuhanController::class, 'simpanRangkuman'])->name('rangkum.simpan');
         Route::get('buat',         [KepatuhanController::class, 'create'])->name('create');
