@@ -1151,6 +1151,14 @@ export interface BatangTren {
   nilai: number;
   /** Nilai tertinggi sepanjang tren, untuk menskalakan tinggi batang. */
   maks: number;
+  /**
+   * Pita bertumpuk menurut tingkat risiko — Tinggi, Sedang, Rendah.
+   *
+   * Ketiganya SELALU ada meski bernilai nol, dan urutannya ditetapkan
+   * server: batang bertumpuk yang urutan warnanya berubah dari bulan ke
+   * bulan tidak dapat dibaca sebagai perbandingan antar bulan.
+   */
+  tumpuk?: Array<{ label: string; nilai: number; warna: string }>;
 }
 
 export interface SebaranBahaya {
@@ -1168,6 +1176,30 @@ export interface BarisPelapor {
   pct: number;
 }
 
+/**
+ * Satu pelapor bahaya — sama seperti BarisPelapor, ditambah perusahaannya.
+ *
+ * Terpisah, bukan medan opsional pada BarisPelapor: bentuk yang sama
+ * dipakai KPI Inspeksi, yang tidak menyajikan perusahaan, dan medan
+ * opsional di sana hanya akan selamanya kosong tanpa ada yang tahu
+ * apakah itu disengaja.
+ */
+export interface BarisPelaporBahaya extends BarisPelapor {
+  /** null bila laporannya belum ditempatkan di sebuah perusahaan. */
+  perusahaan: string | null;
+}
+
+/** Satu angka ringkas di kartu atas — seluruhnya sudah berbentuk teks. */
+export interface KartuAnalitik {
+  kunci: string;
+  label: string;
+  /** Sudah jadi, termasuk tanda '—' bila belum dapat dihitung. */
+  nilai: string;
+  satuan: string | null;
+  ket: string;
+  nada: 'baik' | 'perhatian' | 'bahaya' | 'netral';
+}
+
 export interface HalamanAnalitikBahaya {
   judul: string;
   subjudul: string;
@@ -1175,10 +1207,18 @@ export interface HalamanAnalitikBahaya {
   bulanAktif: number;
   total: number;
   opsiBulan: Array<{ nilai: string; label: string }>;
+  kartu: KartuAnalitik[];
+  sorotan: Array<{ nada: 'baik' | 'perhatian' | 'bahaya' | 'netral'; teks: string }>;
+  donat: Array<{
+    judul: string;
+    potong: Array<{ label: string; nilai: number; pct: number; warna: string }>;
+  }>;
   golongan: BarisGolongan[];
   tren: BatangTren[];
   sebaran: SebaranBahaya[];
-  pelapor: BarisPelapor[];
+  teratas: BarisPelaporBahaya[];
+  pelapor: BarisPelaporBahaya[];
+  ekspor: string;
 }
 
 export interface PengingatPerusahaan {
