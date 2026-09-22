@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, CompliancePoint, ComplianceRecap, ComplianceSubject, Company, Document};
-use App\Support\{Berkas, Iso, Kepatuhan, KopDokumen, PemecahPeraturan, PustakaKepatuhan};
+use App\Support\{Berkas, Iso, Kepatuhan, KopDokumen, PemecahPeraturan, PustakaKepatuhan, RegisterKepatuhan};
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
@@ -670,6 +671,56 @@ class KepatuhanController extends Controller
         ]);
     }
 
+    /* ══════════════════ unduh register ══════════════════ */
+
+    /**
+     * Seluruh register satu tahun sebagai berkas Excel.
+     *
+     * Lembar cetak yang sudah ada memuat SATU peraturan beserta
+     * pasalnya — yang ditandatangani dan diarsipkan sebagai bukti
+     * evaluasi naskah itu. Yang dibawa ke rapat dan diminta auditor
+     * eksternal adalah kebalikannya: seluruh kewajiban berdampingan,
+     * dapat disaring dan diurutkan sendiri oleh yang menerimanya.
+     *
+     * Dikirim sebagai ALIRAN, bukan disimpan dulu ke berkas sementara:
+     * permintaan yang putus di tengah meninggalkan berkas yatim di
+     * diska server yang tidak ada yang membersihkannya.
+     */
+    public function ekspor(Request $request): StreamedResponse
+    {
+        [$perusahaan, $tahun, $sumber, $aspek] = $this->saringan($request);
+
+        /* Penyaringnya SAMA dengan penyaring register di layar, TANPA
+           kotak cari dan tanpa saringan status. Keduanya menjawab
+           pertanyaan yang berbeda: layar menjawab "apa yang sedang saya
+           lihat", berkas ini menjawab "apa yang saya serahkan". Kotak
+           cari yang kebetulan masih terisi akan diam-diam memotong
+           lembar yang diserahkan — dan yang menerimanya tidak punya cara
+           mengetahui bahwa ada yang hilang. */
+        $data = $this->kueri($perusahaan, $tahun, $sumber, $aspek)
+            ->with('points')
+            ->orderBy('aspek')->orderBy('kode')
+            ->get();
+
+        $penyusun = new RegisterKepatuhan(
+            $data,
+            $perusahaan ? Company::find($perusahaan) : null,
+            compact('tahun', 'sumber', 'aspek'),
+        );
+
+        $nama = $penyusun->namaBerkas();
+        $buku = $penyusun->spreadsheet();
+
+        return response()->streamDownload(function () use ($buku) {
+            (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($buku))->save('php://output');
+
+            $buku->disconnectWorksheets();
+        }, $nama, [
+            'Content-Type'  => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'no-store, no-cache',
+        ]);
+    }
+
     /* ══════════════════ dalaman ══════════════════ */
 
     /** @return array{0:?int,1:int,2:?string,3:?string} */
@@ -749,6 +800,7 @@ class KepatuhanController extends Controller
             'buat'     => route('kepatuhan.create'),
             'unggah'   => route('kepatuhan.unggah'),
             'pustaka'  => route('kepatuhan.pustaka'),
+            'ekspor'   => route('kepatuhan.ekspor'),
         ];
     }
 

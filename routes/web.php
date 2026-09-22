@@ -1273,6 +1273,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('buat',         [KepatuhanController::class, 'create'])->name('create');
         Route::post('/',           [KepatuhanController::class, 'store'])->name('store');
 
+        /* Unduhan register, DI ATAS rute {kepatuhan}: ditaruh di
+           bawahnya, "ekspor" terbaca sebagai nomor subjek dan
+           permintaannya berakhir sebagai 404 pada baris yang tidak
+           pernah ada. */
+        Route::get('ekspor',       [KepatuhanController::class, 'ekspor'])->name('ekspor');
+
         /* Butir berdiri di jalurnya sendiri, tidak bersarang di bawah
            subjeknya: satu butir dinilai berkali-kali sepanjang tahun,
            dan kiriman yang ikut membawa nomor subjeknya berarti satu

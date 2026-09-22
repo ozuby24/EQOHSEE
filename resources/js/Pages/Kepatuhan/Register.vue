@@ -8,7 +8,7 @@
  * mengetahui mana yang tertinggal.
  */
 import { Head, router } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { HalamanKepatuhanRegister } from '../../types';
 import PindahKepatuhan from './Pindah.vue';
 
@@ -31,6 +31,21 @@ let jeda: ReturnType<typeof setTimeout> | undefined;
 watch(cari, () => {
   clearTimeout(jeda);
   jeda = setTimeout(() => ubahSaring({}), 250);
+});
+
+/* Alamat unduhan membawa tahun, sumber, aspek, dan perusahaan — TAPI
+   BUKAN kotak cari maupun saringan status. Berkas yang diserahkan ke
+   rapat harus memuat seluruh kewajiban yang dipilih; kotak cari yang
+   kebetulan masih terisi akan memotongnya diam-diam, dan yang
+   menerimanya tidak punya cara mengetahui bahwa ada yang hilang. */
+const alamatEkspor = computed(() => {
+  const q = new URLSearchParams({ tahun: String(props.saring.tahun) });
+
+  if (props.saring.sumber)     q.set('sumber', props.saring.sumber);
+  if (props.saring.aspek)      q.set('aspek', props.saring.aspek);
+  if (props.saring.perusahaan) q.set('perusahaan', String(props.saring.perusahaan));
+
+  return `${props.tautan.ekspor}?${q.toString()}`;
 });
 
 const teksPersen = (p: number | null) => (p === null ? '—' : `${p}%`);
@@ -87,8 +102,18 @@ const teks  = 'ring-focus rounded-xl border border-stone-200 bg-white px-3 py-2 
           <input v-model="cari" :class="teks" placeholder="nomor / judul / instansi">
         </label>
 
-        <a :href="tautan.unggah" class="eq-btn-lain" style="flex:none">☁ Unggah &amp; Rangkum</a>
-        <a :href="tautan.buat" class="eq-btn-utama" style="flex:none">+ Tambah</a>
+        <!-- Ketiganya satu kelompok, bukan tiga anak terpisah dari bilah
+             saringan. Terpisah, pembungkusan baris memotong di antaranya:
+             satu tombol tertinggal di ujung baris saringan dan dua
+             sisanya turun sendirian ke baris berikutnya. -->
+        <div class="flex flex-wrap items-end gap-2 ml-auto">
+          <a :href="alamatEkspor" class="eq-btn-lain" style="flex:none"
+             title="Seluruh kewajiban tahun ini beserta butirnya, berkop dan berlembar rekap">
+            ⬇ Unduh Register (.xlsx)
+          </a>
+          <a :href="tautan.unggah" class="eq-btn-lain" style="flex:none">☁ Unggah &amp; Rangkum</a>
+          <a :href="tautan.buat" class="eq-btn-utama" style="flex:none">+ Tambah</a>
+        </div>
       </div>
     </div>
 

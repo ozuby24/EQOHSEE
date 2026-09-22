@@ -2228,7 +2228,7 @@ export interface OpsiKepatuhan {
 
 export interface TautanKepatuhan {
   dasbor: string; register: string; rekap: string; buat: string;
-  unggah: string; pustaka: string;
+  unggah: string; pustaka: string; ekspor: string;
 }
 
 export interface BarisKepatuhan {
