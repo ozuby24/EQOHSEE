@@ -351,12 +351,17 @@ function nilaiAwal(kode: string) { return { ...(audit.value.hasil?.[kode] ?? {})
                 </tr>
               </tbody>
             </table>
-            <!-- Peringatan sumber ikut tercetak. Angka ini menagih hari kerja
-                 auditor dan dibawa ke auditi; berkas acuannya sendiri
-                 menyebutnya default ilustratif, bukan angka Kepdirjen. -->
-            <p class="text-[11px] text-amber-700 mt-3 leading-relaxed">
-              Tabel ini pola ISO/IEC 17021 sebagai bawaan, bukan salinan angka Kepdirjen
-              185.K/37.04/DJB/2019. Sesuaikan bila ketentuan yang berlaku bagi perusahaan berbeda.
+            <!-- Asal-usulnya ikut tercetak, dan itu bukan kehati-hatian
+                 berlebihan: angka ini menagih hari kerja auditor dan
+                 dibawa ke auditi, jadi yang ditagih berhak tahu ia
+                 berpijak pada apa. Nadanya kini netral, bukan amber:
+                 tabel ini ketentuan yang dipakai, bukan penampung
+                 sementara yang menunggu diganti. -->
+            <p class="text-[11px] text-stone-500 mt-3 leading-relaxed">
+              Dasar hitungan: pola <b>ISO/IEC 17021</b> menurut jumlah pekerja dan kelas
+              risiko — bukan salinan angka Kepdirjen 185.K/37.04/DJB/2019. Penyimpangan
+              pada satu audit diselesaikan lewat faktor penambah dan pengurang di atas,
+              bukan dengan mengubah tabelnya.
             </p>
           </div>
         </details>

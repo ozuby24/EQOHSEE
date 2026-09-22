@@ -176,22 +176,33 @@ final class SmkpTahap
      * Tiap baris [pekerja minimum, pekerja maksimum, Tinggi, Menengah, Rendah].
      * Pekerja yang melampaui baris terakhir memakai baris terakhir.
      *
-     * CATATAN SUMBER, dan ini penting sebelum angkanya dipakai menagih hari
-     * kerja auditor: tabel ini pola ISO/IEC 17021 sebagai DEFAULT, bukan
-     * salinan angka Kepdirjen 185.K/37.04/DJB/2019. Berkas acuan yang
-     * menjadi sumbernya menyatakannya sendiri demikian. Angkanya berada di
-     * satu tempat ini supaya dapat diganti begitu ketentuan yang berlaku
-     * bagi perusahaan diketahui pasti.
+     * SUMBERNYA, dan ini penting sebelum angkanya dipakai menagih hari
+     * kerja auditor: tabel ini pola ISO/IEC 17021, BUKAN salinan angka
+     * Kepdirjen 185.K/37.04/DJB/2019. Berkas acuan yang menjadi sumbernya
+     * menyatakannya sendiri demikian.
      *
-     * SELISIH YANG SUDAH TERAMATI, dicatat di sini supaya tidak hilang:
-     * Berita Acara PT Indo Sejahtera Manunggal Site PT Multi Harapan Utama
-     * (2023) memakai 4,5 mandays bagi 15 pekerja kelas risiko Tinggi,
-     * sementara baris [11,15] di bawah memberi 5. Satu titik data tidak
-     * cukup untuk menurunkan dua puluh baris tabel — menebaknya justru
-     * yang paling berbahaya, sebab angka yang salah di sini menagih hari
-     * kerja yang salah pada setiap audit. Tabel yang berlaku perlu
-     * dipasok utuh; sampai itu terjadi, pola ISO/IEC 17021 dipakai dan
-     * dinyatakan apa adanya.
+     * DIPAKAI SEBAGAI KETENTUAN, bukan sebagai penampung sementara.
+     * Sebelumnya ditandai menunggu tabel Kepdirjen yang otoritatif;
+     * penantian itu ditutup atas keputusan pemilik sistem — tabel inilah
+     * yang berlaku. Angkanya tetap berada di satu tempat ini supaya dapat
+     * diganti bila ketentuan yang mengikat sebuah perusahaan berbeda, dan
+     * asal-usulnya tetap dinyatakan di layar supaya auditi tahu angka
+     * yang ditagihkan kepadanya berpijak pada apa.
+     *
+     * Angka pembanding yang SAMA sudah dipakai Safe Track (BaraSafety)
+     * pada Services\Smkp\Tahapan::tabelMandays() — kedua puluh barisnya
+     * identik. Jadi ini bukan dua taksiran yang kebetulan berdekatan,
+     * melainkan satu tabel yang dipakai dua aplikasi.
+     *
+     * SELISIH YANG SUDAH TERAMATI, tetap dicatat di sini supaya tidak
+     * hilang: Berita Acara PT Indo Sejahtera Manunggal Site PT Multi
+     * Harapan Utama (2023) memakai 4,5 mandays bagi 15 pekerja kelas
+     * risiko Tinggi, sementara baris [11,15] di bawah memberi 5. Satu
+     * titik data tetap tidak cukup untuk menurunkan dua puluh baris
+     * tabel — menebaknya justru yang paling berbahaya, sebab angka yang
+     * salah di sini menagih hari kerja yang salah pada setiap audit.
+     * Selisih itu diselesaikan lewat faktor penyesuaian pada auditnya,
+     * bukan dengan mengarang ulang tabelnya.
      */
     public const MANDAYS_TABLE = [
         [1, 5, 3, 2, 2],          [6, 10, 4, 3, 2],         [11, 15, 5, 4, 3],
