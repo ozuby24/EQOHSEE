@@ -15,6 +15,19 @@ class Inspection extends Model
 
     protected $fillable = ['kode','template_id','company_id','user_id','judul','jenis','lokasi','tanggal','pelaksana','status','catatan'];
 
+    /**
+     * Status yang sungguh-sungguh tersimpan di kolomnya.
+     *
+     * Daftar pilihan di layar dulu menyebut 'Draft', sementara yang
+     * ditulis `store()` dan diterima validasinya adalah 'Berjalan'.
+     * Akibatnya empat belas inspeksi berjalan menampilkan pemilih
+     * status KOSONG — nilainya tidak ada di antara pilihannya — dan
+     * saringan "Draft" di halaman daftar tidak pernah memulangkan satu
+     * baris pun. Didaftarkan di sini supaya pilihan, saringan, dan
+     * validasi membaca sumber yang sama.
+     */
+    public const STATUS = ['Berjalan', 'Selesai'];
+
     protected function casts(): array { return ['tanggal' => 'date']; }
 
     public function company(): BelongsTo { return $this->belongsTo(Company::class); }

@@ -1440,6 +1440,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('{inspeksi}/item',    [InspectionController::class,'storeItem'])->name('item.store');
         Route::delete('item/{item}',      [InspectionController::class,'destroyItem'])->middleware('can:admin')->name('item.destroy');
         Route::post('item/{item}/angkat', [InspectionController::class,'angkat'])->name('item.angkat');
+
+        /* Foto satu butir, terpisah dari penyimpanan seluruh baris:
+           mengunggah foto tidak boleh ikut mengirim dua puluh delapan
+           isian yang lain. */
+        Route::post('item/{item}/foto',   [InspectionController::class,'fotoItem'])->name('item.foto');
     });
 
     /* ---- Panel Admin ---- */

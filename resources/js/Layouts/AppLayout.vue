@@ -321,6 +321,17 @@ function kirimCari() {
   router.get('/miners', q ? { q } : {}, { preserveState: false });
 }
 
+/* Tinggi bilah atas diterbitkan sebagai `--eq-topbar-h`.
+
+   Halaman yang punya kepala MELEKAT sendiri — daftar periksa inspeksi,
+   misalnya — harus melekat tepat di bawah bilah ini, dan tingginya
+   tidak tetap: 66px di ponsel, 71px di layar lebar, dan berubah lagi
+   bila judul halamannya memerlukan dua baris. Angka yang ditulis
+   tangan di halaman itu benar pada satu lebar saja; pada lebar yang
+   lain kepalanya tersembunyi sebagian di balik bilah atas, atau
+   menyisakan celah tempat baris tabel lewat. */
+let ukur: ResizeObserver | null = null;
+
 onMounted(() => {
   try {
     sempit.value = localStorage.getItem('eq-sisi-sempit') === '1';
@@ -329,9 +340,27 @@ onMounted(() => {
   if (sempit.value) document.body.classList.add('eq-sempit');
 
   window.addEventListener('keydown', pintasan);
+
+  const bilah = document.querySelector('.eq-topbar');
+
+  if (bilah && typeof ResizeObserver !== 'undefined') {
+    /* `getBoundingClientRect`, bukan `contentRect`: yang dipakai
+       sebagai jarak melekat adalah tinggi kotak tepi — bilah atas
+       punya garis bawah 1px, dan kepala yang melekat setinggi kotak
+       isi berhenti satu piksel terlalu tinggi. */
+    ukur = new ResizeObserver(([e]) => {
+      document.documentElement.style.setProperty(
+        '--eq-topbar-h', `${Math.round(e.target.getBoundingClientRect().height)}px`,
+      );
+    });
+    ukur.observe(bilah);
+  }
 });
 
-onBeforeUnmount(() => window.removeEventListener('keydown', pintasan));
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', pintasan);
+  ukur?.disconnect();
+});
 
 function pintasan(e: KeyboardEvent) {
   if (e.key?.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey)) {

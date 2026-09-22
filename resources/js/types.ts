@@ -1029,7 +1029,7 @@ export interface ItemInspeksi {
   /** Kode hazard bila temuan ini sudah dinaikkan; null bila belum. */
   hazard: string | null;
   urlHazard: string | null;
-  urlAngkat: string; urlHapus: string;
+  urlAngkat: string; urlHapus: string; urlFoto: string;
 }
 
 export interface HalamanDetailInspeksi {
