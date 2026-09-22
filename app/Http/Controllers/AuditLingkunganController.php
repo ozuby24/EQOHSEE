@@ -160,6 +160,10 @@ class AuditLingkunganController extends Controller
 
             'tangga' => $bagian === 'd' ? AuditLingkungan::TANGGA['d'] : AuditLingkungan::TANGGA['umum'],
 
+            /* Batas keterangan dikirim, bukan ditulis ulang di layar:
+               lihat AuditLingkungan::MAKS_KETERANGAN. */
+            'maksKeterangan' => AuditLingkungan::MAKS_KETERANGAN,
+
             'tautan' => $this->tautan($audit) + ['simpanNilai' => route('audit-lingkungan.nilai', $audit)],
         ]);
     }
@@ -173,12 +177,24 @@ class AuditLingkunganController extends Controller
      */
     public function simpanNilai(Request $request, EnvAudit $audit)
     {
+        /* Pesannya menyebut KODE KRITERIANYA, bukan "nilai.3.b.keterangan".
+           Lembar bagian B berisi seratus lima puluh baris; pesan galat
+           yang menyebut nomor larik memaksa yang mengisinya menghitung
+           sendiri baris keberapa yang dimaksud, dan hampir selalu salah
+           hitung. */
+        $nama = [];
+        foreach (array_keys((array) $request->input('nilai', [])) as $kode) {
+            $nama["nilai.{$kode}.keterangan"] = "keterangan kriteria {$kode}";
+            $nama["nilai.{$kode}.nilai"]      = "nilai kriteria {$kode}";
+            $nama["nilai.{$kode}.verifikasi"] = "verifikasi kriteria {$kode}";
+        }
+
         $d = $request->validate([
             'nilai'                 => ['required', 'array'],
             'nilai.*.nilai'         => ['nullable', 'integer', 'min:0', 'max:3'],
             'nilai.*.verifikasi'    => ['nullable', 'integer', 'min:0', 'max:3'],
-            'nilai.*.keterangan'    => ['nullable', 'string', 'max:2000'],
-        ]);
+            'nilai.*.keterangan'    => ['nullable', 'string', 'max:'.AuditLingkungan::MAKS_KETERANGAN],
+        ], [], $nama);
 
         $sah = array_column(AuditLingkungan::kriteria($request->get('bagian', '')), 'kode');
         $sah = array_flip($sah);

@@ -46,6 +46,17 @@ final class AuditLingkungan
      *
      * @var array<string,string>
      */
+    /**
+     * Batas panjang keterangan satu kriteria.
+     *
+     * DISEBUT SEKALI di sini, lalu dipakai aturan validasi DAN medan
+     * isiannya. Dua angka yang mengatur hal yang sama pada dua sisi
+     * adalah cara paling pasti membuat layar menerima apa yang server
+     * tolak — dan pada lembar berisi seratus lima puluh kriteria,
+     * penolakan itu membuang seluruh isian sekaligus.
+     */
+    public const MAKS_KETERANGAN = 2000;
+
     public const PROFIL = [
         'alamat'            => 'Alamat lokasi kegiatan',
         'telepon'           => 'Telp. / Fax. lokasi',

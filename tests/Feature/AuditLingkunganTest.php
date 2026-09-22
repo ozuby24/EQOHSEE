@@ -593,4 +593,129 @@ class AuditLingkunganTest extends TestCase
 
         $this->assertSame([], AuditLingkungan::profil(null));
     }
+
+    /* ══════════════ kiriman yang ditolak ══════════════ */
+
+    /**
+     * Keterangan yang melampaui batas MEMBATALKAN seluruh kiriman bagian.
+     *
+     * Ini perilaku yang benar — separuh bagian tersimpan lebih buruk
+     * daripada tidak sama sekali — tetapi ia harus TERLIHAT. Sebelumnya
+     * tidak: halaman bagian tidak punya satu pun tempat menggambar
+     * galat, kiriman yang ditolak memulangkan 302, layar tidak berubah
+     * sedikit pun, dan yang mengisinya menyimpulkan nilainya sudah
+     * tersimpan. Pada lembar berisi seratus lima puluh kriteria, itu
+     * berarti satu hari kerja auditor yang hilang tanpa satu pun tanda.
+     */
+    public function test_keterangan_terlalu_panjang_membatalkan_kiriman(): void
+    {
+        $c = $this->perusahaan();
+        $this->masuk($c);
+        $a = $this->audit($c);
+
+        $kode = AuditLingkungan::kriteria('a')[0]['kode'];
+        $lain = AuditLingkungan::kriteria('a')[1]['kode'];
+
+        $this->post(route('audit-lingkungan.nilai', $a), [
+            'bagian' => 'a',
+            'nilai'  => [
+                $kode => ['nilai' => 3, 'verifikasi' => 3,
+                          'keterangan' => str_repeat('x', AuditLingkungan::MAKS_KETERANGAN + 1)],
+                $lain => ['nilai' => 3, 'verifikasi' => 3],
+            ],
+        ])->assertSessionHasErrors("nilai.{$kode}.keterangan");
+
+        /* TIDAK SATU PUN tersimpan — termasuk kriteria yang sah. */
+        $this->assertSame(0, EnvAuditScore::withoutGlobalScopes()->where('audit_id', $a->id)->count(),
+            'Sebagian nilai tersimpan meski kirimannya ditolak.');
+    }
+
+    /**
+     * Pesan galatnya menyebut KODE KRITERIANYA.
+     *
+     * "nilai.3.b.keterangan" memaksa yang mengisinya menghitung sendiri
+     * baris keberapa yang dimaksud di antara seratus lima puluh, dan
+     * hampir selalu salah hitung.
+     */
+    public function test_pesan_galat_menyebut_kode_kriteria(): void
+    {
+        $c = $this->perusahaan();
+        $this->masuk($c);
+        $a = $this->audit($c);
+
+        $kode = AuditLingkungan::kriteria('a')[0]['kode'];
+
+        $this->post(route('audit-lingkungan.nilai', $a), [
+            'bagian' => 'a',
+            'nilai'  => [$kode => ['keterangan' => str_repeat('x', AuditLingkungan::MAKS_KETERANGAN + 1)]],
+        ])->assertSessionHasErrors("nilai.{$kode}.keterangan");
+
+        /* Yang diperiksa ISI pesannya, bukan keberadaan kuncinya —
+           kuncinya tidak pernah dibaca orang, pesannyalah yang dibaca.
+           Dibaca lewat kedua bentuk yang mungkin dipulangkan sesi,
+           sebab bentuknya berbeda antara ViewErrorBag hidup dan yang
+           sudah tersimpan sebagai larik. */
+        $bag = session('errors');
+        $kunci = "nilai.{$kode}.keterangan";
+
+        $pesan = is_object($bag)
+            ? $bag->getBag('default')->first($kunci)
+            : ($bag['default']['messages'][$kunci][0] ?? '');
+
+        $this->assertStringContainsString("kriteria {$kode}", $pesan,
+            "Pesan galat tidak menyebut kriteria mana: {$pesan}");
+    }
+
+    /**
+     * Batas keterangan dikirim ke layar, tidak ditulis ulang di sana.
+     *
+     * Dua angka yang mengatur hal yang sama pada dua sisi adalah cara
+     * paling pasti membuat layar menerima apa yang server tolak.
+     */
+    public function test_batas_keterangan_dikirim_ke_layar(): void
+    {
+        $c = $this->perusahaan();
+        $this->masuk($c);
+        $a = $this->audit($c);
+
+        $this->get(route('audit-lingkungan.bagian', [$a, 'a']))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $p) => $p
+                ->where('maksKeterangan', AuditLingkungan::MAKS_KETERANGAN));
+    }
+
+    /** Keterangan tepat pada batasnya diterima. */
+    public function test_keterangan_tepat_pada_batas_diterima(): void
+    {
+        $c = $this->perusahaan();
+        $this->masuk($c);
+        $a = $this->audit($c);
+
+        $kode = AuditLingkungan::kriteria('a')[0]['kode'];
+
+        $this->post(route('audit-lingkungan.nilai', $a), [
+            'bagian' => 'a',
+            'nilai'  => [$kode => ['nilai' => 3, 'verifikasi' => 3,
+                                   'keterangan' => str_repeat('x', AuditLingkungan::MAKS_KETERANGAN)]],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(AuditLingkungan::MAKS_KETERANGAN, strlen(
+            (string) EnvAuditScore::withoutGlobalScopes()->where('audit_id', $a->id)->first()?->keterangan
+        ));
+    }
+
+    /** Halaman bagian punya tempat menggambar galat kirimannya. */
+    public function test_halaman_bagian_punya_tampilan_galat(): void
+    {
+        $vue = file_get_contents(resource_path('js/Pages/AuditLingkungan/Bagian.vue'));
+
+        $this->assertStringContainsString('onError', $vue,
+            'Kiriman yang ditolak tidak ditangkap sama sekali.');
+        $this->assertStringContainsString('TIDAK tersimpan', $vue,
+            'Tidak ada spanduk yang menyatakan bagiannya tidak tersimpan.');
+        $this->assertStringContainsString('preserveState', $vue,
+            'Isian hilang ketika kirimannya ditolak.');
+        $this->assertStringContainsString('maksKeterangan', $vue,
+            'Medan keterangan tidak dibatasi sepanjang batas server.');
+    }
 }

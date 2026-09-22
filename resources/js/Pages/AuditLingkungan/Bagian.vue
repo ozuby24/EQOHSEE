@@ -54,11 +54,28 @@ const hidup = computed(() => {
 
 const menyimpan = ref(false);
 
+/** Pesan galat per kriteria, dari kiriman yang ditolak server. */
+const galat = ref<string[]>([]);
+
 function simpan() {
   menyimpan.value = true;
+  galat.value = [];
 
   router.post(props.tautan.simpanNilai, { bagian: props.kini, nilai: isi }, {
+    /* preserveState: isian DIPERTAHANKAN ketika kiriman ditolak.
+       Tanpa ini halaman digambar ulang dari props, dan seluruh isian
+       yang belum tersimpan hilang — tepat pada saat yang paling
+       menyakitkan, yaitu sesudah seseorang mengisi seratus lima puluh
+       baris. */
+    preserveState: true,
     preserveScroll: true,
+
+    /* Galatnya DITAMPILKAN. Sebelumnya halaman ini tidak punya satu
+       pun tempat menggambar galat: kiriman yang ditolak memulangkan
+       302, layar tidak berubah sedikit pun, dan yang mengisinya
+       menyimpulkan nilainya sudah tersimpan — padahal tidak satu pun
+       tersimpan. */
+    onError: (e) => { galat.value = Object.values(e as Record<string, string>); },
     onFinish: () => { menyimpan.value = false; },
   });
 }
@@ -167,7 +184,13 @@ const isian = 'ring-focus w-full rounded-lg border border-stone-200 px-2 py-1.5 
               </td>
 
               <td class="akl-k-ket">
+                <!-- maxlength DARI SERVER, bukan angka yang ditulis
+                     ulang di sini. Tanpa batas sama sekali, keterangan
+                     yang melampaui batas server membuat SELURUH kiriman
+                     bagian ditolak — seratus lima puluh baris isian
+                     hilang karena satu kolom. -->
                 <input v-model="isi[b.kode].keterangan" :class="isian"
+                       :maxlength="props.maksKeterangan"
                        placeholder="Dokumen pendukung atau catatan"
                        :aria-label="`Keterangan ${b.kode}`">
 
@@ -179,6 +202,25 @@ const isian = 'ring-focus w-full rounded-lg border border-stone-200 px-2 py-1.5 
         </table>
       </div>
     </section>
+
+    <!-- Galat kiriman. Menyebut KRITERIANYA, bukan nomor larik: lembar
+         bagian B berisi seratus lima puluh baris, dan pesan yang tidak
+         menyebut kriteria mana memaksa yang mengisinya mencari sendiri.
+
+         TIDAK ADA satu pun nilai yang tersimpan ketika ini muncul —
+         kiriman bagian ditolak seluruhnya — jadi kalimatnya menyebutkan
+         itu secara tegas. Yang mengisinya perlu tahu bahwa menutup
+         halaman sekarang berarti kehilangan seluruhnya. -->
+    <div v-if="galat.length" role="alert"
+         class="rounded-2xl border border-red-200 bg-red-50 p-4 space-y-1">
+      <p class="text-[12.5px] font-semibold text-red-700">
+        Bagian ini TIDAK tersimpan — tidak satu pun nilainya masuk. Perbaiki
+        {{ galat.length === 1 ? 'satu hal' : `${galat.length} hal` }} berikut lalu simpan lagi.
+      </p>
+      <ul class="list-disc pl-5 text-[11.5px] text-red-700">
+        <li v-for="(g, i) in galat" :key="i">{{ g }}</li>
+      </ul>
+    </div>
 
     <div class="flex items-center gap-2">
       <button type="button" class="eq-btn-utama" style="flex:none;padding:9px 20px"

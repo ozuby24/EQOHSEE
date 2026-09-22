@@ -2516,6 +2516,7 @@ export interface HalamanAuditLingkunganBagian {
   skorBagian: SkorBagianAudit;
   skor: { akhir: number; belum: number; kriteria: number };
   tangga: Record<string, string>;
+  maksKeterangan: number;
   tautan: TautanAudit & { simpanNilai: string };
 }
 
