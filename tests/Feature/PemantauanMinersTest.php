@@ -362,4 +362,84 @@ class PemantauanMinersTest extends TestCase
         $this->assertStringNotContainsString('PemantauanBerkas', $sumber);
         $this->assertStringNotContainsString('Paspor::', $sumber);
     }
+
+    /**
+     * Ubin dan donat MCU berpijak pada kumpulan orang yang SAMA.
+     *
+     * Penjagaan di atas memeriksa sebuah NAMA tidak lagi disebut, dan
+     * karena itu ia lolos justru pada kesalahan yang paling mungkin
+     * terjadi: memindahkan ubinnya ke Miners tetapi meninggalkan
+     * bagannya di `paspor`. Dasbor lalu memuat 42 pada ubin dan 35 pada
+     * donat di bawahnya — keduanya tanpa galat, keduanya tampak wajar
+     * sendiri-sendiri, dan hanya ketahuan bila seseorang menjumlahkan
+     * potongan donatnya.
+     *
+     * Keduanya TIDAK harus sama angkanya, dan itu bukan kelalaian:
+     *
+     *   ubin  = orang yang MEMEGANG berkas terpantau
+     *   donat = SELURUH pekerja, termasuk yang belum pernah MCU
+     *
+     * Yang dijaga karena itu SELISIHNYA, bukan kesamaannya: selisih
+     * antara keduanya harus persis sebanyak pekerja yang belum
+     * memegang berkas apa pun. Selisih 35 lawan 42 dahulu tidak lolos
+     * uji ini, karena ia bukan selisih itu — ia dua tabel yang
+     * berlainan.
+     */
+    public function test_ubin_dan_donat_mcu_berpijak_pada_orang_yang_sama(): void
+    {
+        $this->masuk();
+
+        $a = $this->pekerja();
+        $this->mcu($a, now()->addMonths(6)->toDateString());
+
+        $b = $this->pekerja();
+        $this->mcu($b, now()->subDay()->toDateString());
+
+        /* Sengaja tanpa berkas sama sekali: orang inilah yang menjadi
+           selisih antara kedua angka, dan ia harus dapat dijelaskan. */
+        $this->pekerja();
+
+        $this->get('/dashboard')
+            ->assertOk()
+            ->assertInertia(function (AssertableInertia $p) {
+                $props = $p->toArray()['props'];
+
+                $ubin  = $props['ringkas']['manpower'];
+                $donat = array_sum(array_column($props['grafik']['orang']['mcuHasil'], 'nilai'));
+
+                $this->assertSame(Pekerja::count(), $donat,
+                    'Donat MCU kehilangan orang yang belum pernah MCU.');
+
+                $this->assertSame(2, $ubin,
+                    'Ubin menghitung pemegang berkas dengan cara yang lain.');
+
+                $this->assertSame($donat - $ubin, 1,
+                    "Selisih ubin ({$ubin}) dan donat ({$donat}) bukan sekadar "
+                    .'pekerja tanpa berkas — kemungkinan keduanya membaca sumber '
+                    .'yang berlainan.');
+            });
+    }
+
+    /**
+     * Donat MCU membaca Miners, bukan tabel paspor lama.
+     *
+     * Diperiksa lewat data, bukan lewat nama kelas: seorang pekerja
+     * Miners yang baru dibuat harus MUNCUL pada donatnya. Bila donat
+     * masih membaca `paspor`, ia tidak akan pernah melihat orang ini.
+     */
+    public function test_donat_mcu_melihat_pekerja_miners_yang_baru(): void
+    {
+        $this->masuk();
+
+        $sebelum = array_sum(array_column(
+            \App\Support\DasborGrafik::mcuHasil(), 'nilai'));
+
+        $this->mcu($this->pekerja(), now()->addYear()->toDateString());
+
+        $sesudah = array_sum(array_column(
+            \App\Support\DasborGrafik::mcuHasil(), 'nilai'));
+
+        $this->assertSame($sebelum + 1, $sesudah,
+            'Menambah pekerja Miners tidak mengubah donat MCU dasbor.');
+    }
 }

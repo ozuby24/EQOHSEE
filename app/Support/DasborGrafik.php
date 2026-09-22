@@ -5,8 +5,9 @@ namespace App\Support;
 use App\Models\{
     AngkutMuatan, BiayaRealisasi, Document, EnergyFuelLog, GudangBarang,
     HazardReport, Inspection, KoObject, LingkunganPantau, MineOperationalRecord,
-    Paspor, PasporMcu, PasporSertifikat, SmkpFinding, WaterLog, WorkOrder
+    SmkpFinding, WaterLog, WorkOrder
 };
+use App\Models\Miners\{Kompetensi, Pekerja};
 use Illuminate\Support\Carbon;
 
 /**
@@ -262,14 +263,28 @@ final class DasborGrafik
      * Yang TERAKHIR saja: memasukkan seluruh riwayat membuat orang yang
      * pernah "unfit" lalu dinyatakan pulih tetap terhitung unfit
      * selamanya.
+     *
+     * Dihitung dari MINERS, sumber yang sama dengan ubin "Tenaga kerja"
+     * di atasnya. Selama donat ini masih membaca `paspor`, satu layar
+     * memuat dua jumlah orang sekaligus: ubinnya menyebut 42 sedangkan
+     * seluruh potongan donat ini berjumlah 35. Tidak ada yang salah
+     * secara teknis pada keduanya — dan justru itu yang membuatnya
+     * sukar terlihat.
+     *
+     * "Belum Dinilai" dan "Belum ada MCU" sengaja dibiarkan terpisah:
+     * yang pertama sudah diperiksa tetapi hasilnya belum masuk, yang
+     * kedua belum diperiksa sama sekali. Yang pertama menunggu petugas
+     * klinik, yang kedua menunggu orangnya datang — dua tindakan yang
+     * berbeda, dan menggabungkannya menyembunyikan mana yang perlu
+     * dikejar.
      */
     public static function mcuHasil(): array
     {
         $per = [];
 
-        foreach (Paspor::with('mcu')->get() as $p) {
-            $m = $p->mcuTerakhir();
-            $kunci = $m?->hasil ?: 'Belum ada MCU';
+        foreach (Pekerja::with('mcu.hasil')->get() as $p) {
+            $m = $p->mcu->sortByDesc('tanggal_periksa')->first();
+            $kunci = $m?->hasil?->nama ?: 'Belum ada MCU';
 
             $per[$kunci] = ($per[$kunci] ?? 0) + 1;
         }
@@ -285,6 +300,12 @@ final class DasborGrafik
      * Dikelompokkan per bulan supaya terlihat bulan mana yang menumpuk —
      * itu yang menentukan kapan pelatihan ulang harus dijadwalkan, dan
      * jadwal pelatihan disusun berbulan-bulan sebelumnya.
+     *
+     * Dibaca dari `mnr_kompetensi`, bukan `paspor_sertifikat`. Yang
+     * kedua masih berisi tujuh puluh baris, tetapi tidak ada satu pun
+     * layar yang menulisinya lagi — bagan yang membacanya akan makin
+     * lama makin menggambarkan keadaan tahun lalu sambil tetap tampak
+     * mutakhir.
      */
     public static function sertifikatJatuhTempo(Carbon $kini, int $bulan = 6): array
     {
@@ -293,9 +314,9 @@ final class DasborGrafik
         foreach (DeretBulan::maju($kini, $bulan) as $b) {
 
             $label[] = $b->translatedFormat('M y');
-            $nilai[] = PasporSertifikat::whereNotNull('tgl_expired')
-                ->whereYear('tgl_expired', $b->year)
-                ->whereMonth('tgl_expired', $b->month)
+            $nilai[] = Kompetensi::whereNotNull('berlaku_sampai')
+                ->whereYear('berlaku_sampai', $b->year)
+                ->whereMonth('berlaku_sampai', $b->month)
                 ->count();
         }
 
