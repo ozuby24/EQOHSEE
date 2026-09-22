@@ -387,6 +387,7 @@ final class Menu
           ['Buat Laporan',    'hazard.create',    'hazard/buat'],
           ['Analitik & KPI',  'hazard.analytics', 'hazard/analitik'],
           ['Evaluasi Temuan', 'hazard.evaluasi',  'hazard/evaluasi'],
+          ['Temuan Berulang', 'hazard.berulang',  'hazard/berulang'],
           ['Pengingat PIC',   'hazard.pengingat', 'hazard/pengingat'],
         ],
         'Lintas Modul' => [

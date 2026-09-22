@@ -1460,6 +1460,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('analitik',           [HazardController::class,'analytics'])->name('analytics');
         Route::get('analitik/ekspor',    [HazardController::class,'analitikEkspor'])->name('analitik.ekspor');
         Route::get('evaluasi',           [EvaluasiTemuanController::class,'index'])->name('evaluasi');
+        Route::get('berulang',           [EvaluasiTemuanController::class,'berulang'])->name('berulang');
         Route::get('pengingat',          [HazardExportController::class,'pengingat'])->name('pengingat');
         Route::get('ekspor/csv',         [HazardExportController::class,'hazardCsv'])->name('ekspor.csv');
         Route::get('ekspor/cetak',       [HazardExportController::class,'hazardCetak'])->name('ekspor.cetak');

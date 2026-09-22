@@ -5083,6 +5083,97 @@ final class DataContoh
             $n++;
         }
 
+        return $n + $this->bahayaBerulang();
+    }
+
+    /**
+     * Satu temuan yang sengaja KEMBALI berkali-kali di tempat yang sama.
+     *
+     * Halaman Temuan Berulang menjawab pertanyaan yang tidak dapat
+     * dijawab daftar temuan: apakah perbaikannya bertahan. Tanpa contoh
+     * yang memang berulang, halaman itu selamanya kosong pada
+     * pemasangan contoh — dan halaman kosong tidak pernah salah, justru
+     * karena itu ia tidak membuktikan apa pun tentang benar-tidaknya
+     * hitungan di belakangnya.
+     *
+     * Pola yang dibuat di sini disengaja dan bukan sekadar pengulangan:
+     *
+     *   · Tersebar di EMPAT BULAN berbeda, bukan menumpuk pada satu
+     *     bulan. Lima temuan sejenis dalam satu bulan boleh jadi sekali
+     *     sapuan inspeksi; yang tersebar berbulan-bulan adalah masalah
+     *     yang tidak pernah tertutup.
+     *   · DUA di antaranya ditutup lalu muncul lagi — itulah yang
+     *     dihitung sebagai "kambuh", satu-satunya angka di halaman itu
+     *     yang menuduh sesuatu.
+     *   · Ditutup dengan pengendalian ADMINISTRATIF, yang justru
+     *     menjelaskan mengapa ia berulang: ia menuntut kehati-hatian
+     *     orang, dan kehati-hatian tidak bertahan melewati pergantian
+     *     regu.
+     */
+    private function bahayaBerulang(): int
+    {
+        $orang = $this->pelaporBahaya()[0];
+
+        /* [bulan ke belakang, status, ditutup berapa hari sesudahnya] */
+        $daur = [
+            [7, 'Closed', 6],
+            [5, 'Closed', 5],
+            [3, 'Open',   null],
+            [1, 'Open',   null],
+        ];
+
+        $n = 0;
+
+        foreach ($daur as $i => [$mundur, $status, $tutup]) {
+            $tanggal = $this->kini->copy()->subMonths($mundur)->startOfMonth()->addDays(9);
+
+            /* Nomornya menyambung dari enam temuan di atas, memakai
+               penomoran yang sama. Kode karangan sendiri lolos dari
+               layar tetapi tidak dari penjagaan pola penomoran — dan
+               yang dijaga di sana memang benar: satu modul yang
+               menomori sendiri membuat seluruh skemanya berhenti dapat
+               dipercaya. */
+            $b = $this->baru(HazardReport::class, [
+                'kode'          => Nomor::susun('Formulir', $this->c, 107 + $i)
+                    ?: 'HZ-'.str_pad((string) (107 + $i), 3, '0', STR_PAD_LEFT),
+                'user_id'       => $orang?->id,
+                'pelapor_nama'  => $orang?->name ?? 'Pengawas Lapangan',
+                'pelapor_nrp'   => $orang?->employee_id,
+                'pelapor_departemen' => $orang?->department ?: 'Produksi',
+                'pelapor_jabatan'    => $orang?->position ?: 'Pengawas',
+                'tanggal'       => $tanggal->toDateString(),
+                'waktu'         => '14:20',
+                'lokasi'        => 'Simpang Timbang',
+                'risiko'        => 'Tinggi',
+                'kategori'      => 'Unsafe Action',
+                'deskripsi'     => 'Unit melintas simpang timbang tanpa berhenti penuh.',
+                'hirarki'       => 'Administratif',
+                'rekomendasi'   => 'Pengarahan ulang di P5M dan penempatan pengatur lalu lintas.',
+                'batas_akhir'   => $tanggal->copy()->addDays(7)->toDateString(),
+                'status'        => $status,
+
+                /* Foto temuan pada SELURUH barisnya, seperti keenam
+                   temuan di atas. Kolom Foto Temuan yang kosong pada
+                   sebagian baris monitor tidak dapat dibedakan dari
+                   kolom yang rusak. Nomornya digeser sepuluh supaya
+                   berkasnya tidak menimpa foto temuan yang biasa. */
+                'foto'          => $this->fotoBahaya('temuan', $i + 10,
+                    self::FOTO_TEMUAN[$i % count(self::FOTO_TEMUAN)]),
+            ]);
+            $n++;
+
+            if ($tutup === null) continue;
+
+            $b->forceFill([
+                'closed_by'         => $this->peninjau?->id ?? $this->pengaju?->id,
+                'closed_at'         => $tanggal->copy()->addDays($tutup),
+                'catatan_penutupan' => 'Pengarahan ulang dilaksanakan dan ditandatangani seluruh operator.',
+                /* Bukti perbaikan HANYA pada yang sudah ditutup — dan
+                   pada yang ditutup, ia wajib ada. */
+                'foto_tindaklanjut' => $this->fotoBahaya('perbaikan', $i + 10, self::FOTO_PERBAIKAN),
+            ])->saveQuietly();
+        }
+
         return $n;
     }
 

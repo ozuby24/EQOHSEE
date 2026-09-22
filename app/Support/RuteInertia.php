@@ -74,6 +74,7 @@ final class RuteInertia
         'hazard.create',
         'hazard.analytics',
         'hazard.evaluasi',
+        'hazard.berulang',
         'hazard.pengingat',
 
         /* Inspeksi */

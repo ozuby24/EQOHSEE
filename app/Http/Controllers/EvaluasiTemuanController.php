@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Support\DeretBulan;
 
 use App\Models\{Company, HazardReport, Inspection, InspectionItem};
-use App\Support\{Db, Hazard};
+use App\Support\{Db, Hazard, TemuanBerulang};
 use Illuminate\Http\Request;
 
 /**
@@ -151,6 +151,64 @@ class EvaluasiTemuanController extends Controller
                 'inspeksi' => $t['inspeksi'],
                 'maks'     => $maksTren,
             ])->values()->all(),
+        ]);
+    }
+
+    /**
+     * Analisa kecenderungan temuan berulang.
+     *
+     * Halaman Evaluasi di atas menjawab "berapa banyak dan di mana".
+     * Yang di sini menjawab pertanyaan yang berbeda dan lebih tajam:
+     * temuan mana yang TERUS KEMBALI di tempat yang sama, dan apakah
+     * tindakan perbaikannya bertahan. Daftar temuan sepanjang apa pun
+     * tidak dapat menjawabnya — yang terlihat di sana hanya baris-baris
+     * yang masing-masing tampak baru.
+     *
+     * Jendela peninjauannya dua belas bulan dan TIDAK mengikuti
+     * saringan bulan: pengulangan hanya terlihat pada rentang panjang,
+     * dan menyaringnya ke satu bulan menghapus justru yang dicari.
+     */
+    public function berulang(Request $request)
+    {
+        $perusahaan = $request->get('perusahaan');
+        $sumber     = in_array($request->get('sumber'), ['Hazard', 'Inspeksi'], true)
+            ? $request->get('sumber') : null;
+
+        $sejak = now()->copy()->startOfMonth()->subMonths(TemuanBerulang::BULAN - 1)->toDateString();
+
+        $hazard = $sumber === 'Inspeksi' ? collect() : HazardReport::with('company')
+            ->whereNotNull('tanggal')->where('tanggal', '>=', $sejak)
+            ->when($perusahaan, fn ($b) => $b->where('company_id', $perusahaan))
+            ->get();
+
+        $item = $sumber === 'Hazard' ? collect() : InspectionItem::with('inspection.company')
+            ->where('kondisi', 'Tidak Sesuai')
+            ->whereHas('inspection', fn ($q) => $q
+                ->whereNotNull('tanggal')->where('tanggal', '>=', $sejak)
+                ->when($perusahaan, fn ($b) => $b->where('company_id', $perusahaan)))
+            ->get();
+
+        $mesin    = new TemuanBerulang($hazard, $item);
+        $kelompok = $mesin->kelompok();
+        $hirarki  = $mesin->hirarki($kelompok);
+
+        return \Inertia\Inertia::render('Hazard/Berulang', [
+            'judul'    => 'Temuan Berulang',
+            'subjudul' => 'Temuan yang kembali di lokasi dan perihal yang sama',
+
+            'saring' => compact('perusahaan', 'sumber'),
+            'opsi'   => [
+                'sumber'     => ['Hazard', 'Inspeksi'],
+                'perusahaan' => Company::orderBy('name')->get(['id', 'name'])
+                    ->map(fn ($c) => ['id' => $c->id, 'nama' => $c->name])->all(),
+            ],
+
+            'bulanTinjau' => TemuanBerulang::BULAN,
+
+            'kartu'    => $mesin->kartu($kelompok),
+            'sorotan'  => $mesin->insight($kelompok, $hirarki),
+            'hirarki'  => $hirarki,
+            'kelompok' => $kelompok,
         ]);
     }
 }

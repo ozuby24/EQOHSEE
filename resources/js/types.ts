@@ -1221,6 +1221,57 @@ export interface HalamanAnalitikBahaya {
   ekspor: string;
 }
 
+/** Satu kelompok temuan berulang — lokasi dan perihal yang sama. */
+export interface KelompokBerulang {
+  sumber: 'Hazard' | 'Inspeksi';
+  /**
+   * Perusahaan pemilik temuannya — ikut menjadi bagian kunci kelompok.
+   *
+   * Tanpanya, tujuh perusahaan yang masing-masing punya lokasi bernama
+   * sama dan diperiksa sekali menyatu menjadi satu kelompok berjumlah
+   * tujuh yang dilaporkan berulang.
+   */
+  perusahaan: string | null;
+  lokasi: string;
+  perihal: string;
+  jumlah: number;
+  /** Berapa BULAN BERBEDA ia muncul — pembeda "satu sapuan" dari "tidak pernah tertutup". */
+  bulan: number;
+  /** Kemunculan sesudah temuan sejenis di tempat yang sama sudah ditangani. */
+  kambuh: number;
+  tinggi: number;
+  selesai: number;
+  pertama: string;
+  terakhir: string;
+  /** Hari dari kemunculan pertama ke terakhir — bukan jeda rata-rata. */
+  rentang: number;
+  /** Hirarki pengendalian yang dipakai; kosong bagi butir inspeksi. */
+  hirarki: Record<string, number>;
+  /** Dua belas bulan, SELALU lengkap termasuk yang bernilai nol. */
+  bulanan: Array<{ label: string; nilai: number }>;
+  contoh: string[];
+}
+
+export interface HalamanTemuanBerulang {
+  judul: string;
+  subjudul: string;
+  saring: { perusahaan: string | number | null; sumber: string | null };
+  opsi: {
+    sumber: string[];
+    perusahaan: Array<{ id: number; nama: string }>;
+  };
+  bulanTinjau: number;
+  kartu: KartuAnalitik[];
+  sorotan: Array<{ nada: 'baik' | 'perhatian' | 'bahaya' | 'netral'; teks: string }>;
+  hirarki: {
+    potong: Array<{ label: string; nilai: number; pct: number; warna: string }>;
+    total: number;
+    lemah: number;
+    pctLemah: number;
+  };
+  kelompok: KelompokBerulang[];
+}
+
 export interface PengingatPerusahaan {
   id: number;
   nama: string;
