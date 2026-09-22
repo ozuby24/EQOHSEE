@@ -2,6 +2,8 @@ import { createApp, h, type DefineComponent } from 'vue';
 import { createInertiaApp } from '@inertiajs/vue3';
 import AppLayout from './Layouts/AppLayout.vue';
 import { singkap } from './singkap';
+import { belah } from './belah';
+import { paralaks } from './paralaks';
 
 /*
   Chart.js ikut dibundel (tidak lagi dari CDN), tetapi ditarik saat
@@ -93,6 +95,20 @@ createInertiaApp({
          jarak, dan jedanya sama di seluruh situs. Diimpor sendiri-sendiri,
          tiap halaman perlahan memilih angkanya masing-masing. */
       .directive('singkap', singkap)
+
+      /* Dua gerakan yang lebih berani, dipakai berhemat.
+
+         `belah` untuk JUDUL saja: hurufnya terangkat dari balik
+         topeng. Dipakai juga pada kartu berulang, lima belas kalimat
+         yang terangkat berbarengan berhenti terbaca sebagai gerakan
+         dan mulai terbaca sebagai halaman yang goyah.
+
+         `paralaks` untuk media besar saja, dan dengan laju kecil.
+         Laju besar membuat gambar berkejaran dengan tulisan di
+         sebelahnya, dan yang terbaca bukan kedalaman melainkan dua
+         lapis yang tidak sinkron. */
+      .directive('belah', belah)
+      .directive('paralaks', paralaks)
       .mount(el);
   },
 

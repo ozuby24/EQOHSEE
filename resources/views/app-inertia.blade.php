@@ -73,6 +73,15 @@
      penekanan, melainkan kekeliruan yang diulang dua ratus kali. --}}
 @if($eqSeo['indeks'] && request()->route()?->getName() === 'beranda')
 <script type="application/ld+json" nonce="{{ \App\Http\Middleware\TajukKeamanan::nonce() }}">{!! \App\Support\Seo::dataTerstruktur() !!}</script>
+{{-- FAQPage, diterbitkan HANYA di halaman yang benar-benar memuat
+     akordeon tanya jawabnya, dan dibangun dari daftar yang sama dengan
+     yang digambar di sana — lihat App\Support\TanyaJawab.
+
+     Google menjatuhkan sanksi manual atas data terstruktur yang tidak
+     sesuai dengan isi yang terlihat, jadi memasangnya di halaman yang
+     tidak punya FAQ-nya lebih merugikan daripada tidak memasangnya
+     sama sekali. --}}
+<script type="application/ld+json" nonce="{{ \App\Http\Middleware\TajukKeamanan::nonce() }}">{!! json_encode(\App\Support\TanyaJawab::dataTerstruktur(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
 @endif
 
 @inertiaHead

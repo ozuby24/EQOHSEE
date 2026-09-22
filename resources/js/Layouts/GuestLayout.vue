@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue';
+import { computed, ref } from 'vue';
+import { bolehLatarVideo } from '../latarVideo';
 import { Link } from '@inertiajs/vue3';
 import { propHalaman } from '../halaman';
 import Wordmark from '../Components/Wordmark.vue';
@@ -40,31 +41,16 @@ const media = computed<any>(() => prop.mediaMasuk ?? {});
  */
 const kilat = computed<any>(() => prop.kilat ?? {});
 
-/**
- * Cocokkan satu media query dan ikuti perubahannya.
- *
- * Diikuti, bukan dibaca sekali. Memutar layar ponsel ke lanskap
- * melewati ambang ini, dan nilai yang dibaca sekali membuat halaman
- * tetap memakai keputusan lama sampai dimuat ulang.
- */
-function cocok(kueri: string) {
-  const siap = typeof window !== 'undefined' && typeof window.matchMedia === 'function';
-  const mq = siap ? window.matchMedia(kueri) : null;
-  const nilai = ref(mq?.matches === true);
 
-  if (mq) {
-    const ubah = (e: MediaQueryListEvent) => { nilai.value = e.matches; };
-    mq.addEventListener('change', ubah);
-    onBeforeUnmount(() => mq.removeEventListener('change', ubah));
-  }
+/* Syaratnya tidak lagi hanya prefers-reduced-motion: masuk.mp4
+   berukuran 5,6 MB, dan halaman masuk adalah halaman yang dibuka setiap
+   orang setiap hari — termasuk dari ponsel di site. Lihat latarVideo.ts.
 
-  return nilai;
-}
-
-const kurangiGerak = cocok('(prefers-reduced-motion: reduce)');
-
+   Dibaca sekali, bukan lewat `cocok()` yang reaktif: nilai yang
+   berbalik saat jendela diperlebar justru memulai unduhan yang baru
+   saja berhasil dihindari. */
 const pakaiRekaman = computed(() =>
-  Boolean(media.value.video) && !kurangiGerak.value);
+  Boolean(media.value.video) && bolehLatarVideo());
 
 /** Waktu setempat, ditulis sekali saat halaman dibuka. */
 const jam = new Intl.DateTimeFormat('id-ID', {
