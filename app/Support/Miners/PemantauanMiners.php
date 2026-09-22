@@ -12,11 +12,12 @@ use Illuminate\Support\Collection;
 /**
  * Pemantauan masa berlaku berkas kelayakan — di atas data MINERS.
  *
- * Sepadan dengan App\Support\PemantauanBerkas, yang mengerjakan hal
- * yang sama di atas tabel `paspor_*` lama. Keduanya menjawab pertanyaan
- * yang sama, ditanyakan tiap pagi di gerbang: siapa yang hari ini tidak
- * boleh masuk, dan siapa yang minggu depan tidak boleh masuk kalau
- * tidak ada yang mengurusnya sekarang.
+ * Menggantikan App\Support\PemantauanBerkas, yang mengerjakan hal yang
+ * sama di atas tabel `paspor_*` lama dan sudah dibuang bersama
+ * perpindahan ini. Keduanya menjawab pertanyaan yang sama, ditanyakan
+ * tiap pagi di gerbang: siapa yang hari ini tidak boleh masuk, dan
+ * siapa yang minggu depan tidak boleh masuk kalau tidak ada yang
+ * mengurusnya sekarang.
  *
  * ── Kenapa ada dua, dan kenapa yang ini yang dipakai dasbor ──
  *
