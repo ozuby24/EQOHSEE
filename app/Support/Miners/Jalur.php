@@ -4,7 +4,9 @@ namespace App\Support\Miners;
 
 use App\Models\Miners\Alur;
 use App\Models\User;
+use App\Notifications\AlurMinersBerpindah;
 use App\Support\Waktu;
+use Illuminate\Support\Collection;
 
 /**
  * Menjalankan alur persetujuan satu dokumen Miners.
@@ -80,7 +82,112 @@ final class Jalur
         $dokumen->load('alur');
         $dokumen->forceFill(['status' => self::status($dokumen, $keadaan)])->save();
 
+        self::beriTahu($dokumen, $keadaan, $oleh, $catatan);
+
         return null;
+    }
+
+    /**
+     * Surati pihak yang perlu tahu bahwa alurnya berpindah.
+     *
+     * DIBUNGKUS try/catch, dan itu bukan kemalasan: SMTP yang mati
+     * membuat seluruh persetujuan gagal bila galatnya dibiarkan naik —
+     * artinya satu server surel yang bermasalah menghentikan penerbitan
+     * Mine Permit di gerbang. Persetujuannya sendiri sudah tersimpan
+     * pada baris di atas; pemberitahuan yang gagal dicatat di log dan
+     * tidak menarik apa pun ikut gagal.
+     */
+    private static function beriTahu(object $dokumen, string $keadaan, User $oleh, ?string $catatan): void
+    {
+        try {
+            $pemberitahuan = fn (string $k) => new AlurMinersBerpindah(
+                $dokumen::jenisDokumen(),
+                (int) $dokumen->getKey(),
+                self::nomor($dokumen),
+                $k,
+                $oleh->name,
+                $catatan,
+            );
+
+            /* Ditolak atau dikembalikan: yang perlu tahu PENGAJUNYA,
+               sebab dialah yang harus bertindak. Langkah berikutnya
+               tidak ada, jadi tidak ada giliran yang tiba. */
+            if (in_array($keadaan, ['tolak', 'dikembalikan'], true)) {
+                self::pengaju($dokumen)?->notify($pemberitahuan($keadaan));
+
+                return;
+            }
+
+            $berikut = $dokumen->langkahBerjalan();
+
+            /* Masih ada giliran berikutnya: yang disurati pemegang peran
+               itu saja. Dikirim ke semua orang, surel ini akan dibaca
+               tidak oleh siapa pun. */
+            if ($berikut !== null) {
+                foreach (self::pemegangPeran($berikut->peran, $dokumen) as $u) {
+                    $u->notify($pemberitahuan('menunggu'));
+                }
+
+                return;
+            }
+
+            /* Tidak ada lagi giliran — alurnya tuntas. Yang menunggu
+               kabar ini pengajunya. */
+            self::pengaju($dokumen)?->notify($pemberitahuan('setuju'));
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
+    private static function pengaju(object $dokumen): ?User
+    {
+        return $dokumen->user_id ? User::find($dokumen->user_id) : null;
+    }
+
+    private static function nomor(object $dokumen): ?string
+    {
+        return $dokumen->no_registrasi ?? $dokumen->no_simper ?? null;
+    }
+
+    /**
+     * Pengguna yang memegang sebuah peran alur, dalam perusahaan dokumen ini.
+     *
+     * DIBATASI PERUSAHAAN. Tanpa batas itu, OHSE perusahaan lain ikut
+     * disurati tiap kali sebuah pengajuan berpindah — dan isi surelnya
+     * menyebut nomor dokumen serta nama pemegangnya.
+     *
+     * Admin TIDAK ikut disurati hanya karena ia admin. Jalur::peran()
+     * memberi admin seluruh peran supaya ia dapat menolong bila
+     * antreannya tersendat, tetapi memakai daftar yang sama di sini akan
+     * menyurati setiap admin pada setiap perpindahan setiap dokumen.
+     *
+     * @return \Illuminate\Support\Collection<int,User>
+     */
+    private static function pemegangPeran(string $peran, object $dokumen): Collection
+    {
+        $kolom = match ($peran) {
+            'dokter' => ['ohse_role', 'paramedis'],
+            'ohse'   => ['ohse_role', 'ohse'],
+            'ktt'    => ['lms_role', 'ktt'],
+            default  => null,
+        };
+
+        /* Peran 'pjo' tidak punya kolomnya sendiri — ia peran sisa bagi
+           yang tidak memegang peran lain. Yang dimaksud pada dokumen
+           tertentu adalah pengajunya, dan itu yang disurati. */
+        if ($kolom === null) {
+            $p = self::pengaju($dokumen);
+
+            return $p ? collect([$p]) : collect();
+        }
+
+        [$medan, $nilai] = $kolom;
+
+        return User::query()
+            ->where($medan, $nilai)
+            ->when($dokumen->company_id, fn ($q, $c) => $q->where('company_id', $c))
+            ->whereNotNull('email')
+            ->get();
     }
 
     /**

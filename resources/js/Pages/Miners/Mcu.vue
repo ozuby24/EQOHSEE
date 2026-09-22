@@ -129,7 +129,13 @@ const bolehTindak = computed(() =>
       <header class="px-5 py-3.5 border-b border-stone-100 flex flex-wrap items-center gap-3">
         <div class="flex-1 min-w-0">
           <h3 class="text-[13.5px] font-bold text-cam-ink">
-            {{ m.nomor || 'Tanpa nomor' }}
+            <!-- Nomornya membawa ke halaman rincian. Daftar menjawab
+                 "mana yang perlu diurus"; rincian menjawab "apa isinya
+                 dan apa yang harus saya lakukan". Dua pertanyaan itu
+                 sebelumnya berebut lebar satu sel tabel. -->
+            <Link :href="`/miners/mcu/${m.id}`" class="text-cam-lime-deep hover:underline">
+              {{ m.nomor || 'Tanpa nomor' }}
+            </Link>
             <span class="font-normal text-stone-400">| {{ m.kepada }}</span>
           </h3>
           <p class="text-[11px] text-stone-500 num">{{ m.tanggal || '—' }} · {{ props.STATUS?.[m.status] ?? m.status }}</p>

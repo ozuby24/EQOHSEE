@@ -347,6 +347,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('{mcu}/orang/{orang}/hasil',   [MinersDokumenController::class, 'mcuHasil'])->name('hasil');
             Route::post('{mcu}/orang/{orang}/rujukan', [MinersDokumenController::class, 'mcuRujukan'])->name('rujukan');
             Route::post('{mcu}/tindak',         [MinersDokumenController::class, 'mcuTindak'])->name('tindak');
+
+            /* Halaman rincian. Didaftarkan SESUDAH seluruh rute
+               berkata-tetap di atas dan memakai whereNumber, supaya
+               `miners/mcu/tindak` tidak pernah tersesat ke sini. */
+            Route::get('{id}', [MinersDokumenController::class, 'rincian'])
+                ->defaults('jenis', 'mcu')->whereNumber('id')->name('rincian');
         });
 
         Route::prefix('induksi')->name('induksi.')->group(function () {
@@ -361,6 +367,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('{induksi}/orang/{orang}', [MinersDokumenController::class, 'induksiHapusOrang'])->name('orang.hapus');
             Route::post('{induksi}/orang/{orang}/nilai', [MinersDokumenController::class, 'induksiNilai'])->name('nilai');
             Route::post('{induksi}/tindak',          [MinersDokumenController::class, 'induksiTindak'])->name('tindak');
+
+            Route::get('{id}', [MinersDokumenController::class, 'rincian'])
+                ->defaults('jenis', 'induksi')->whereNumber('id')->name('rincian');
         });
 
         Route::prefix('permit')->name('permit.')->group(function () {
@@ -374,6 +383,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('{permit}/berkas', [MinersDokumenController::class, 'permitBerkas'])->name('berkas');
             Route::post('{permit}/cabut',  [MinersDokumenController::class, 'permitCabut'])->name('cabut');
             Route::post('{permit}/tindak', [MinersDokumenController::class, 'permitTindak'])->name('tindak');
+
+            Route::get('{id}', [MinersDokumenController::class, 'rincian'])
+                ->defaults('jenis', 'permit')->whereNumber('id')->name('rincian');
         });
 
         Route::prefix('simper')->name('simper.')->group(function () {
@@ -391,6 +403,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::post('{simper}/tindak', [MinersDokumenController::class, 'simperTindak'])->name('tindak');
             Route::post('{simper}/ajuan',  [MinersDokumenController::class, 'ajuanStore'])->name('ajuan.store');
+
+            Route::get('{id}', [MinersDokumenController::class, 'rincian'])
+                ->defaults('jenis', 'simper')->whereNumber('id')->name('rincian');
         });
 
         Route::prefix('ajuan')->name('ajuan.')->group(function () {

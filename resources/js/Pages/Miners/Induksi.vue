@@ -117,7 +117,11 @@ const bolehTindak = computed(() =>
              class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
       <header class="px-5 py-3.5 border-b border-stone-100 flex flex-wrap items-center gap-3">
         <div class="flex-1 min-w-0">
-          <h3 class="text-[13.5px] font-bold text-cam-ink">{{ i.nomor || 'Tanpa nomor' }}</h3>
+          <h3 class="text-[13.5px] font-bold text-cam-ink">
+            <Link :href="`/miners/induksi/${i.id}`" class="text-cam-lime-deep hover:underline">
+              {{ i.nomor || 'Tanpa nomor' }}
+            </Link>
+          </h3>
           <p class="text-[11px] text-stone-500 num">
             {{ i.tanggal || '—' }} · {{ props.STATUS?.[i.status] ?? i.status }}
           </p>

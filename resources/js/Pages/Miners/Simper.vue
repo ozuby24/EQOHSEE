@@ -172,7 +172,9 @@ const simpolDituntut = computed(() =>
           <Link v-if="s.pekerja_id" :href="`/miners/${s.pekerja_id}`"
                 class="text-[13.5px] font-bold text-cam-lime-deep hover:underline">{{ s.pekerja || '—' }}</Link>
           <p class="text-[11px] text-stone-500">
-            <span class="num">{{ s.nomor || 'tanpa nomor' }}</span> · kelas {{ s.kelas }}
+            <Link :href="`/miners/simper/${s.id}`"
+                  class="num text-cam-lime-deep hover:underline">{{ s.nomor || 'tanpa nomor' }}</Link>
+            · kelas {{ s.kelas }}
             · SIM {{ s.simpol || '—' }} · {{ props.STATUS?.[s.status] ?? s.status }}
           </p>
         </div>

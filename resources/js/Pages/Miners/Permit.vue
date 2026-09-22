@@ -174,7 +174,8 @@ const WARNA_LABEL = computed<Record<string, any>>(() => (props.WARNA ?? {}) as R
               <Link v-if="k.pekerja_id" :href="`/miners/${k.pekerja_id}`"
                     class="font-bold text-cam-lime-deep hover:underline">{{ k.pekerja || '—' }}</Link>
               <span class="text-[11.5px] text-stone-500">
-                · <span class="num">{{ k.nomor || 'tanpa nomor' }}</span>
+                · <Link :href="`/miners/permit/${k.id}`"
+                        class="num text-cam-lime-deep hover:underline">{{ k.nomor || 'tanpa nomor' }}</Link>
                 · {{ k.tipe || '—' }} · {{ k.cakupan || '—' }}
                 · {{ props.STATUS?.[k.status] ?? k.status }}
               </span>

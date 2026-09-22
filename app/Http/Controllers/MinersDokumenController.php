@@ -6,7 +6,7 @@ use App\Models\Miners\{HasilMcu, Induksi, InduksiOrang, JenisUnit, KategoriPermi
     Mcu, McuOrang, McuRujukan, Pekerja, Permit, PermitBerkas, Simper, SimperAjuan,
     SimperAjuanUnit, SimperUnit, TipePermit};
 use App\Support\Berkas;
-use App\Support\Miners\{Acuan, Jalur, Keadaan};
+use App\Support\Miners\{Acuan, Jalur, Keadaan, RincianDokumen};
 use App\Support\Waktu;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -842,6 +842,55 @@ class MinersDokumenController extends Controller
     }
 
     /** @return list<array<string,mixed>> */
+    /* ══════════════ halaman rincian per dokumen ══════════════ */
+
+    /**
+     * Rincian satu dokumen Miners.
+     *
+     * SATU METODE UNTUK EMPAT JENIS, dan itu bukan penghematan baris:
+     * empat metode yang menggambar bingkai yang sama akan berbeda satu
+     * per satu seiring waktu, dan yang tertinggal tidak menimbulkan
+     * galat — hanya satu jenis dokumen yang diam-diam berhenti
+     * menampilkan lampirannya. Persis begitu yang terjadi di Project1
+     * pada langkah pengesahan KTT.
+     */
+    public function rincian(Request $r, string $id)
+    {
+        /* Jenisnya dibaca dari DEFAULT RUTE, bukan dari tanda tangan.
+           Keduanya tampak setara, dan yang kedua salah diam-diam:
+           Laravel mengisi parameter controller menurut URUTAN, bukan
+           menurut nama, sehingga `rincian($r, $jenis, $id)` pada rute
+           `miners/mcu/{id}` membuat $jenis menerima "1" dan $id
+           menerima 0. Tidak ada galat — hanya 404 pada setiap dokumen
+           yang sah, sebab tidak ada jenis bernama "1".
+
+           Parameter rute juga selalu STRING, termasuk yang sudah
+           disaring whereNumber; menuliskannya `int` di tanda tangan
+           membuat PHP menolaknya sebagai TypeError. */
+        $jenis = (string) ($r->route()?->defaults['jenis'] ?? '');
+        $id    = (int) $id;
+
+        $kelas = [
+            'mcu'     => Mcu::class,
+            'induksi' => Induksi::class,
+            'permit'  => Permit::class,
+            'simper'  => Simper::class,
+        ][$jenis] ?? abort(404);
+
+        /* findOrFail DI BAWAH SCOPE-nya, bukan diikuti pemeriksaan
+           kepemilikan tersendiri: dokumen milik perusahaan lain memang
+           tidak dapat ditemukan oleh pengguna ini, sehingga jawabannya
+           404 dan bukan 403 — dan itu memang lebih tepat, sebab 403
+           mengakui bahwa dokumennya ada. */
+        $dokumen = $kelas::with(RincianDokumen::relasi($jenis))->findOrFail($id);
+
+        $dokumen->terbitkanAlur();
+        $dokumen->load('alur.user');
+
+        return Inertia::render('Miners/Dokumen',
+            RincianDokumen::susun($jenis, $dokumen, $r->user()));
+    }
+
     private function alur(object $dokumen): array
     {
         return $dokumen->alur->map(fn ($a) => [
