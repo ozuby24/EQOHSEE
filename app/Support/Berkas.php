@@ -7,6 +7,8 @@ use App\Models\Hr\Kontrak as HrKontrak;
 use App\Models\Investigasi\Bukti as BuktiInvestigasi;
 use App\Models\Pembelian\Pembayaran as PembayaranBeli;
 use App\Models\PjpLaporan as LaporanPjp;
+use App\Models\Miners\{InduksiOrang as MnrInduksiOrang, McuOrang as MnrMcuOrang,
+    McuRujukan as MnrMcuRujukan, PermitBerkas as MnrPermitBerkas, Simper as MnrSimper};
 use App\Models\SmkpBukti;
 use App\Models\{ComplianceSubject, Document, EnvAuditScore, GudangBarang, HazardReport, InspectionItem, News, PasporKartu, PasporKartuUnit, PasporMcu, PasporSertifikat, Signatory, SmkpFinding};
 use Illuminate\Http\UploadedFile;
@@ -124,6 +126,53 @@ final class Berkas
         /* Dokumen pendukung kriteria audit lingkungan: izin, neraca
            limbah, hasil uji laboratorium. TERTUTUP. */
         'akl' => [EnvAuditScore::class,     'berkas',       true],
+
+        /* ── Lampiran modul Miners ──
+           Kedelapan jenis di bawah ini SUDAH LAMA DIUNGGAH dan disimpan
+           di disk tertutup, tetapi tidak pernah didaftarkan di sini.
+           Akibatnya tidak ada satu pun alamat yang dapat menyajikannya:
+           berkasnya masuk, tersimpan, lalu tidak dapat dibuka lagi oleh
+           siapa pun — termasuk oleh yang mengunggahnya.
+           Layar permit bahkan sudah menampilkan centang "ada" untuk
+           lampiran yang tidak dapat ia buka.
+           Yang paling merugikan bukan pemborosan diska melainkan
+           pemeriksaan: Inspektur Tambang yang meminta surat MCU seorang
+           pekerja dijawab sistem dengan "ada" tanpa dapat menunjukkan
+           suratnya.
+
+           Surat hasil MCU, surat rekomendasi, hasil napza, dan surat
+           rujukan dijaga SEKETAT 'mcu' dan 'mcr' di atas, dan atas
+           alasan yang sama persis: yang disimpan di kolom hanya
+           kesimpulan kelayakannya, sedangkan suratnya memuat diagnosis
+           dan hasil laboratorium. Mendaftarkannya tanpa gerbang akan
+           membatalkan prinsip itu lewat pintu belakang. */
+        'mnh' => [MnrMcuOrang::class,       'berkas_hasil',        false],
+        'mnk' => [MnrMcuOrang::class,       'berkas_rekomendasi',  false],
+        'mnz' => [MnrMcuOrang::class,       'berkas_napza',        false],
+        'mnj' => [MnrMcuRujukan::class,     'berkas',              false],
+
+        /* Sertifikat induksi dan daftar hadirnya. TIDAK dijaga peran:
+           keduanya memang dimaksudkan ditunjukkan — sertifikatnya
+           dipegang pekerjanya sendiri, dan daftar hadir adalah bukti
+           pelatihan yang justru diminta diperlihatkan saat audit. */
+        'mns' => [MnrInduksiOrang::class,   'berkas_sertifikat',   false],
+        'mnd' => [MnrInduksiOrang::class,   'berkas_hadir',        false],
+
+        /* Salinan SIM kepolisian yang menjadi dasar SIMPER. Dijaga,
+           tetapi TIDAK sampai paramedis: ia dokumen identitas — memuat
+           NIK dan alamat rumah — bukan dokumen medis, jadi yang
+           membacanya sebagai bagian pekerjaannya hanya admin dan tim
+           OHSE yang menerbitkan SIMPER-nya. */
+        'mnp' => [MnrSimper::class,         'berkas_simpol',       false],
+
+        /* Lampiran Mine Permit. Dijaga seketat berkas medis, dan itu
+           bukan kehati-hatian berlebihan: satu baris lampiran dapat
+           berupa SIO atau hasil post test, tetapi dapat pula berupa
+           hasil uji alkohol dan narkoba — SOP menyebut keduanya dalam
+           daftar yang sama. Jenisnya tersimpan per BARIS, sedangkan
+           gerbang di sini berlaku per JENIS, jadi gerbangnya harus
+           cukup untuk baris yang paling peka di antaranya. */
+        'mnl' => [MnrPermitBerkas::class,   'berkas',              false],
     ];
 
     /**
@@ -253,7 +302,56 @@ final class Berkas
            halaman bayar tidak punya sesi yang dapat dipakai memastikan
            bahwa yang membuka memang dia. */
         'bkt' => ['isAdmin'],
+
+        /* Lampiran medis modul Miners — sama persis dengan 'mcu' dan
+           'mcr', sebab isinya sama: surat dari klinik, bukan
+           kesimpulannya. */
+        'mnh' => ['isAdmin', 'isOhse', 'isParamedis'],
+        'mnk' => ['isAdmin', 'isOhse', 'isParamedis'],
+        'mnz' => ['isAdmin', 'isOhse', 'isParamedis'],
+        'mnj' => ['isAdmin', 'isOhse', 'isParamedis'],
+
+        /* Lampiran permit dapat memuat hasil uji alkohol dan narkoba;
+           lihat alasannya di TERSAJI. */
+        'mnl' => ['isAdmin', 'isOhse', 'isParamedis'],
+
+        /* Salinan SIM kepolisian: dokumen identitas, bukan medis. */
+        'mnp' => ['isAdmin', 'isOhse'],
     ];
+
+    /**
+     * Keadaan satu lampiran bagi layar yang menampilkannya.
+     *
+     * Memulangkan DUA hal yang sengaja dipisah, sebab menggabungkannya
+     * membuat layar berbohong: `ada` mengatakan berkasnya terunggah,
+     * `url` hanya terisi bila pengguna ini memang boleh membukanya.
+     *
+     * Layar persetujuan cuti sudah lama memakai pembedaan itu — atasan
+     * cukup melihat bahwa bukti sakitnya ADA tanpa membaca diagnosis di
+     * dalamnya. Digabung menjadi satu url yang null, layar tidak dapat
+     * lagi membedakan "belum diunggah" dari "tidak boleh Anda buka",
+     * dan yang pertama menuntut tindakan sedangkan yang kedua tidak.
+     *
+     * Kolomnya dibaca dari TERSAJI, bukan dituliskan lagi oleh
+     * pemanggilnya: daftar itu sudah pernah berselisih antar tempat,
+     * dan alasan yang sama berlaku di sini.
+     *
+     * @return array{ada:bool,url:?string}
+     */
+    public static function lampiran(?object $u, ?object $baris, string $jenis, ?int $i = null): array
+    {
+        [, $kolom] = self::tersaji()[$jenis]
+            ?? throw new \InvalidArgumentException("Jenis berkas tidak dikenal: $jenis");
+
+        $ada = $baris !== null && filled($baris->{$kolom});
+
+        return [
+            'ada' => $ada,
+            'url' => $ada && self::bolehMembuka($u, $jenis)
+                ? self::url($baris, $jenis, $i)
+                : null,
+        ];
+    }
 
     /** Pengguna ini boleh membuka berkas jenis itu? */
     public static function bolehMembuka(?object $u, string $jenis): bool

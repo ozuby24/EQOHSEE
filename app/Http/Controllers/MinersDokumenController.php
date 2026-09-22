@@ -27,7 +27,7 @@ class MinersDokumenController extends Controller
 
     public function mcuIndex(Request $r)
     {
-        $surat = Mcu::query()->with(['orang.hasil', 'orang.pekerja', 'alur'])
+        $surat = Mcu::query()->with(['orang.hasil', 'orang.pekerja', 'orang.rujukan', 'alur'])
             ->when(trim((string) $r->query('cari')), fn ($q, $c) => $q->where(
                 fn ($w) => $w->where('no_registrasi', 'like', "%{$c}%")
                     ->orWhere('kepada', 'like', "%{$c}%")))
@@ -56,6 +56,24 @@ class MinersDokumenController extends Controller
                     'periksa' => $o->tanggal_periksa?->toDateString(),
                     'sampai'  => $o->berlaku_sampai?->toDateString(),
                     'keadaan' => Keadaan::mcu($o),
+
+                    /* Lampirannya SUDAH lama tersimpan; yang belum ada
+                       alamat untuk membukanya. `ada` dan `url` dipisah
+                       supaya layar dapat membedakan "belum diunggah"
+                       dari "tidak boleh Anda buka" — yang pertama
+                       menuntut tindakan, yang kedua tidak. */
+                    'berkas'  => [
+                        'hasil'       => Berkas::lampiran($r->user(), $o, 'mnh'),
+                        'rekomendasi' => Berkas::lampiran($r->user(), $o, 'mnk'),
+                        'napza'       => Berkas::lampiran($r->user(), $o, 'mnz'),
+                    ],
+                    'rujukan' => $o->rujukan->map(fn (McuRujukan $j) => [
+                        'id'        => $j->id,
+                        'tanggal'   => $j->tanggal_surat?->toDateString(),
+                        'dokter'    => $j->dokter,
+                        'poliklinik'=> $j->poliklinik,
+                        'berkas'    => Berkas::lampiran($r->user(), $j, 'mnj'),
+                    ]),
                 ]),
                 'alur' => $this->alur($m),
             ]),
@@ -146,12 +164,21 @@ class MinersDokumenController extends Controller
     {
         abort_unless((int) $orang->mcu_id === (int) $mcu->id, 404);
 
-        $data = $r->validate([
+        $data = self::tanpaBerkas($r->validate([
             'hasil_id'        => ['nullable', 'exists:mnr_hasil_mcu,id'],
             'tanggal_periksa' => ['nullable', 'date'],
             'hasil_napza'     => ['nullable', 'in:negatif,positif'],
             'catatan'         => ['nullable', 'string'],
-        ]);
+
+            /* Ketiganya SEBELUMNYA tidak divalidasi sama sekali —
+               Berkas::simpan() dipanggil langsung atas berkas mentah.
+               Ia memang menolak akhiran yang dapat dieksekusi, tetapi
+               tidak membatasi ukuran maupun jenis, sehingga satu unggahan
+               dapat sebesar apa pun yang diizinkan PHP. */
+            'berkas_hasil'        => ['nullable', ...Berkas::ATURAN_DOKUMEN],
+            'berkas_rekomendasi'  => ['nullable', ...Berkas::ATURAN_DOKUMEN],
+            'berkas_napza'        => ['nullable', ...Berkas::ATURAN_DOKUMEN],
+        ]));
 
         $periksa = $data['tanggal_periksa'] ? Waktu::tanggal($data['tanggal_periksa']) : null;
 
@@ -175,14 +202,15 @@ class MinersDokumenController extends Controller
     {
         abort_unless((int) $orang->mcu_id === (int) $mcu->id, 404);
 
-        $data = $r->validate([
+        $data = self::tanpaBerkas($r->validate([
             'tanggal_surat'  => ['required', 'date'],
             'dokter'         => ['required', 'string', 'max:150'],
             'poliklinik'     => ['nullable', 'string', 'max:150'],
             'rumah_sakit'    => ['nullable', 'string', 'max:150'],
             'diagnosis_awal' => ['nullable', 'string'],
             'keterangan'     => ['nullable', 'string'],
-        ]);
+            'berkas'         => ['nullable', ...Berkas::ATURAN_DOKUMEN],
+        ]));
 
         McuRujukan::create($data + [
             'mcu_orang_id'  => $orang->id,
@@ -226,6 +254,10 @@ class MinersDokumenController extends Controller
                     'bolehUlang'=> $o->bolehMengulang(),
                     'sampai'    => $o->berlaku_sampai?->toDateString(),
                     'keadaan'   => Keadaan::induksi($o),
+                    'berkas'    => [
+                        'sertifikat' => Berkas::lampiran($r->user(), $o, 'mns'),
+                        'hadir'      => Berkas::lampiran($r->user(), $o, 'mnd'),
+                    ],
                 ]),
                 'alur' => $this->alur($i),
             ]),
@@ -301,11 +333,13 @@ class MinersDokumenController extends Controller
     {
         abort_unless((int) $orang->induksi_id === (int) $induksi->id, 404);
 
-        $data = $r->validate([
+        $data = self::tanpaBerkas($r->validate([
             'nilai'   => ['required', 'integer', 'min:0', 'max:100'],
             'lokasi'  => ['nullable', 'string', 'max:150'],
             'catatan' => ['nullable', 'string'],
-        ]);
+            'berkas_sertifikat' => ['nullable', ...Berkas::ATURAN_DOKUMEN],
+            'berkas_hadir'      => ['nullable', ...Berkas::ATURAN_DOKUMEN],
+        ]));
 
         /* Percobaan bertambah tiap kali nilai dicatat ULANG, bukan tiap
            kali baris ini disimpan. Tanpa pembedaan itu, memperbaiki
@@ -376,10 +410,11 @@ class MinersDokumenController extends Controller
                 'gugurMcu' => $p->gugurKarenaMcu(),
                 'mcu'      => $p->mcuOrang?->berlaku_sampai?->toDateString(),
                 'simper'   => $p->simper->count(),
+                /* Sebelumnya HANYA 'ada' yang dikirim: layar menampilkan
+                   centang bagi lampiran yang tidak dapat ia buka. */
                 'berkas'   => $p->berkas->map(fn (PermitBerkas $b) => [
                     'id' => $b->id, 'jenis' => $b->jenis, 'catatan' => $b->catatan,
-                    'ada' => $b->berkas !== null,
-                ]),
+                ] + Berkas::lampiran($r->user(), $b, 'mnl')),
                 'keadaan'  => Keadaan::permit($p),
                 'alur'     => $this->alur($p),
             ]),
@@ -523,6 +558,7 @@ class MinersDokumenController extends Controller
                 'sisa'      => $s->sisaHari(),
                 'keadaan'   => Keadaan::simper($s),
                 'permit_id' => $s->permit_id,
+                'berkas'    => ['simpol' => Berkas::lampiran($r->user(), $s, 'mnp')],
                 'unit'      => $s->unit->map(fn (SimperUnit $u) => [
                     'id'         => $u->id,
                     'golongan'   => $u->kendaraan?->nama,
@@ -839,9 +875,34 @@ class MinersDokumenController extends Controller
     }
 
     /** @return array<string,mixed> */
+    /**
+     * Buang medan berkas dari data yang sudah tervalidasi.
+     *
+     * Aturan unggahan HARUS ikut di larik validasi yang sama supaya
+     * pesan galatnya muncul pada form yang sama dengan medan lain.
+     * Tetapi NILAINYA tidak boleh ikut terbawa ke create()/update():
+     * yang tervalidasi berupa objek UploadedFile, dan pada bentuk
+     * `$data + [...]` ruas KIRI yang menang — objek unggahan itu akan
+     * menimpa jalur hasil Berkas::simpan() dan disimpan sebagai isi
+     * kolom. Kolomnya lalu memuat sesuatu yang bukan jalur, dan
+     * berkasnya tetap tidak dapat dibuka meski sudah terunggah.
+     *
+     * @param  array<string,mixed>  $data
+     * @return array<string,mixed>
+     */
+    private static function tanpaBerkas(array $data): array
+    {
+        foreach (array_keys($data) as $k) {
+            if (str_starts_with($k, 'berkas')) unset($data[$k]);
+        }
+
+        return $data;
+    }
+
+    /** @return array<string,mixed> */
     private function validasiSimper(Request $r, ?Simper $simper = null): array
     {
-        return $r->validate([
+        return self::tanpaBerkas($r->validate([
             'permit_id'    => [$simper ? 'nullable' : 'required', 'exists:mnr_permit,id'],
             'no_simper'    => ['nullable', 'string', 'max:40'],
             'tanggal'      => ['required', 'date'],
@@ -852,7 +913,8 @@ class MinersDokumenController extends Controller
             'pengalaman_kerja' => ['nullable', 'string', 'max:100'],
             'email_atasan' => ['nullable', 'email', 'max:150'],
             'catatan'      => ['nullable', 'string'],
-        ]);
+            'berkas_simpol'=> ['nullable', ...Berkas::ATURAN_DOKUMEN],
+        ]));
     }
 
     /** @return array<string,mixed> */
