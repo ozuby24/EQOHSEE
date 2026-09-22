@@ -304,4 +304,81 @@ class SmkpTest extends TestCase
         $this->assertStringContainsString('CASE', $sql);
         $this->assertStringNotContainsString('FIELD(', $sql);
     }
+
+    /* ══════════════ keutuhan berkas acuan ══════════════ */
+
+    /**
+     * `meta.total_nilai` benar-benar sama dengan jumlah butirnya.
+     *
+     * Bukan pemeriksaan yang mengada-ada. Sistem rujukan yang menjadi
+     * cikal bakal aplikasi ini menyimpan nilai maksimum tiap elemen
+     * sebagai angka TERSENDIRI di samping rincian butirnya — dan pada
+     * tiga dari tujuh elemennya kedua angka itu sudah berselisih:
+     * elemen III tertulis 52 padahal butirnya berjumlah 76, IV tertulis
+     * 124 padahal 140, V tertulis 44 padahal 60. Totalnya 293 lawan 349.
+     *
+     * Selisih semacam itu tidak memulangkan galat apa pun. Ia hanya
+     * membuat setiap persentase audit dihitung terhadap pembagi yang
+     * salah — dan hasilnya tetap tampak masuk akal, sebab ia tetap
+     * berupa angka antara nol dan seratus.
+     *
+     * Di sini angkanya hanya disimpan sekali, pada rincian butirnya;
+     * `meta.total_nilai` adalah salinan yang dipakai di banyak tempat.
+     * Uji ini yang menjaga salinan itu tidak basi.
+     */
+    public function test_total_nilai_sama_dengan_jumlah_butirnya(): void
+    {
+        $jumlah = 0;
+        $butir  = 0;
+
+        foreach (Smkp::elemen() as $e) {
+            foreach ($e['sub'] as $s) {
+                foreach (Smkp::butirSub($s) as $b) {
+                    $jumlah += $b['maks'];
+                    $butir++;
+                }
+            }
+        }
+
+        $this->assertSame(349, $jumlah,
+            'Jumlah nilai maksimum seluruh butir berubah dari 349.');
+        $this->assertSame(Smkp::totalNilai(), $jumlah,
+            'meta.total_nilai tidak lagi sama dengan jumlah butirnya — '
+            .'seluruh persentase audit dihitung terhadap pembagi yang salah.');
+        $this->assertSame(100, $butir,
+            'Jumlah butir yang dinilai berubah dari 100.');
+    }
+
+    /**
+     * Bobot ketujuh elemen berjumlah tepat seratus persen.
+     *
+     * Berjumlah kurang, nilai akhir tidak pernah dapat mencapai seratus
+     * betapa pun sempurnanya audit; berjumlah lebih, ia dapat
+     * melewatinya.
+     */
+    public function test_bobot_elemen_berjumlah_seratus(): void
+    {
+        $this->assertSame(100, array_sum(array_column(Smkp::elemen(), 'bobot')));
+    }
+
+    /**
+     * Tiap butir menunjuk halaman acuannya di Kepdirjen.
+     *
+     * Butir tanpa rujukan halaman tidak dapat dibantah auditi maupun
+     * dibuktikan auditor — dan pada audit yang hasilnya disanggah,
+     * halaman acuan itulah yang pertama diminta.
+     */
+    public function test_tiap_sub_elemen_menunjuk_halaman_acuannya(): void
+    {
+        $tanpa = [];
+
+        foreach (Smkp::elemen() as $e) {
+            foreach ($e['sub'] as $s) {
+                if (trim((string) ($s['ref'] ?? '')) === '') $tanpa[] = $s['kode'];
+            }
+        }
+
+        $this->assertSame([], $tanpa,
+            'Sub-elemen tanpa rujukan halaman: '.implode(', ', $tanpa));
+    }
 }
