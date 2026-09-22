@@ -36,6 +36,8 @@ use App\Models\Hr\{Absensi as HrAbsensi, AbsensiJejak as HrJejak, Cuti as HrCuti
 use App\Support\Hr\{JalurCuti, JalurLembur, KebijakanCuti, MasterCuti, MasterPajak, MasterRoster,
     Penggajian, Penyusun, Rekonsiliasi};
 use Illuminate\Support\Facades\Hash;
+use App\Models\{CompliancePoint, ComplianceRecap, ComplianceSubject};
+use App\Support\Kepatuhan;
 use App\Support\MasterInspeksi;
 use App\Support\Miners\Acuan;
 use App\Support\Miners\MasterMiners;
@@ -142,6 +144,10 @@ final class DataContoh
            bersandar pada perbandingan itu. */
         SmkpBukti::class, SmkpOfi::class,
         SmkpFinding::class, SmkpAttendee::class, SmkpAudit::class,
+        /* Butir lebih dulu, lalu subjeknya. Rekapnya berdiri sendiri —
+           ia potret angka, bukan anak salah satu subjek. */
+        CompliancePoint::class, ComplianceSubject::class, ComplianceRecap::class,
+
         DocumentRevision::class, DocumentIso::class, Document::class,
         HazardReport::class,
 
@@ -627,6 +633,14 @@ final class DataContoh
             HrReguAnggota::class => $q->whereIn('regu_id',
                 HrRegu::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
 
+            /* Butir pemenuhan menumpang subjeknya. Tanpa cabang ini
+               penyaringnya tidak menemukan satu baris pun, butirnya
+               terbuang diam-diam lewat kaskade subjeknya, dan jumlah
+               "dibuang" berhenti sebanding dengan jumlah "dibuat" —
+               yang justru menjadi dasar pemeriksaan penumpukan. */
+            CompliancePoint::class => $q->whereIn('subject_id',
+                ComplianceSubject::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
             /* ── Miners ──
                Anaknya disaring lewat induknya yang berkolom
                company_id, sependek mungkin: unit SIMPER lewat
@@ -915,6 +929,12 @@ final class DataContoh
             'TPKKP'          => $this->tpkkp(),
             'Investigasi'    => $this->investigasi(),
             'PJP'            => $this->pjp(),
+
+            /* Evaluasi pemenuhan peraturan. Ditaruh SESUDAH dokumen,
+               karena sebagian kewajibannya menunjuk dokumen terkendali
+               sebagai bukti penerapannya — dan menunjuk baris yang
+               belum ada menghasilkan register bertaut kosong. */
+            'Kepatuhan'      => $this->kepatuhan(),
 
             /* Miners: MCU → Mine Permit → SIMPER. Satu rantai, dan
                yang paling perlu diperiksa orang justru sambungannya —
@@ -4569,6 +4589,175 @@ final class DataContoh
         }
 
         return $kelas::withoutGlobalScopes()->create($isi);
+    }
+
+    /* ─────────── evaluasi pemenuhan peraturan ─────────── */
+
+    /**
+     * Register pemenuhan beserta rekap bulanannya.
+     *
+     * Sengaja TIDAK semuanya comply, dan sengaja tidak semuanya sudah
+     * dinilai. Data contoh yang seratus persen rapi tidak
+     * memperlihatkan satu pun keadaan yang justru perlu diperiksa
+     * tampilannya: bar merah, tanggal target yang lewat, lencana draf,
+     * baris "belum dirinci", dan bulan yang belum direkap.
+     */
+    private function kepatuhan(): int
+    {
+        $n = 0;
+        $tahun = (int) date('Y');
+
+        /* [aspek, jenis, nomor, judul, instansi, terbit, status, butir…]
+           Butir: [penunjuk, rangkuman, penerapan, status, keterangan,
+                   tindak lanjut, PIC, hari dari sekarang ke target] */
+        $daftar = [
+            ['safety', 'Undang-Undang', 'Undang-Undang Nomor 1 Tahun 1970', 'Keselamatan Kerja',
+             'Pemerintah Republik Indonesia', '1970-01-12', 'Tetap', [
+                ['Pasal 3 Ayat (1)', 'Ditetapkan syarat-syarat keselamatan kerja untuk mencegah dan mengurangi kecelakaan.',
+                 'Tersedia SOP K3 lengkap, APAR terpasang di 34 titik, tim ERT bersertifikat 12 orang.',
+                 'Comply', 'SOP-K3-01 rev.3', null, null, null],
+                ['Pasal 9 Ayat (1)', 'Pengurus wajib menjelaskan kondisi dan bahaya di tempat kerja kepada tenaga kerja baru.',
+                 'Induksi K3 wajib bagi seluruh karyawan dan tamu, tercatat pada modul Induksi.',
+                 'Comply', 'Sertifikat induksi terbit otomatis', null, null, null],
+                ['Pasal 9 Ayat (3)', 'Pengurus wajib menyelenggarakan pembinaan pencegahan kecelakaan dan pemberantasan kebakaran.',
+                 'Program pelatihan tahunan fire fighting, P3K, dan defensive driving.',
+                 'Comply', null, null, null, null],
+                ['Pasal 14 huruf b', 'Memasang gambar keselamatan kerja di tempat kerja yang mudah terlihat.',
+                 null, 'Not Comply', 'Rambu di jalan hauling km 7-12 belum terpasang',
+                 'Pengadaan dan pemasangan 20 titik rambu peringatan', 'Dept. K3 — Taqwa Utama', -22],
+                ['Pasal 14 huruf c', 'Menyediakan alat perlindungan diri cuma-cuma bagi tenaga kerja.',
+                 'APD lengkap disediakan gratis; tamu dipinjami di pos security.',
+                 'Comply', 'Stok APD dikontrol gudang', null, null, null],
+                ['Pasal 16', 'Ketentuan peralihan bagi perusahaan yang sudah berjalan saat undang-undang ini terbit.',
+                 null, 'N/A', 'Tidak berlaku bagi kegiatan perusahaan', null, null, null],
+             ]],
+
+            ['safety', 'Peraturan Pemerintah', 'Peraturan Pemerintah Nomor 50 Tahun 2012',
+             'Penerapan Sistem Manajemen Keselamatan dan Kesehatan Kerja',
+             'Pemerintah Republik Indonesia', '2012-04-12', 'Tetap', [
+                ['Pasal 7 Ayat (1)', 'Penilaian penerapan SMK3 dilakukan oleh lembaga audit independen.',
+                 'Audit internal SMKP berjalan; audit eksternal dijadwalkan triwulan III.',
+                 'Comply', 'Laporan audit internal SMKP', null, null, null],
+                ['Pasal 15 Ayat (1)', 'Penilaian penerapan SMK3 dilaksanakan oleh lembaga audit yang ditunjuk Menteri.',
+                 null, 'Not Comply', 'Lembaga audit eksternal belum ditunjuk',
+                 'Penunjukan lembaga audit dan penjadwalan audit eksternal', 'Manager OHSE', 45],
+             ]],
+
+            ['occhealth', 'Peraturan Menteri', 'Permenaker Nomor 5 Tahun 2018',
+             'Keselamatan dan Kesehatan Kerja Lingkungan Kerja',
+             'Kementerian Ketenagakerjaan', '2018-04-27', 'Tetap', [
+                ['Pasal 5 Ayat (1)', 'Pengurus wajib melaksanakan syarat K3 lingkungan kerja.',
+                 'Pengukuran hiperkes semester I selesai untuk debit, bising, dan pencahayaan.',
+                 'Comply', 'Laporan hiperkes semester I', null, null, null],
+                ['Pasal 8 Ayat (1)', 'Pengendalian faktor biologi di tempat kerja termasuk penyediaan air bersih.',
+                 null, 'Not Comply', 'Hasil uji air bersih mess belum keluar',
+                 'Pengujian ulang air bersih di tiga titik mess', 'Dept. Health', 18],
+                ['Pasal 12', 'Penyediaan fasilitas kebersihan dan sanitasi yang memadai.',
+                 'Toilet dan wastafel tersedia; pembersihan terjadwal dua kali sehari.',
+                 'Comply', null, null, null, null],
+             ]],
+
+            ['environment', 'Peraturan Pemerintah', 'Peraturan Pemerintah Nomor 22 Tahun 2021',
+             'Penyelenggaraan Perlindungan dan Pengelolaan Lingkungan Hidup',
+             'Pemerintah Republik Indonesia', '2021-02-02', 'Tetap', [
+                ['Pasal 220', 'Kewajiban menyusun dokumen kajian teknis pemanfaatan limbah.',
+                 null, 'Not Comply', 'Kajian teknis pemanfaatan limbah B3 belum disusun',
+                 'Penyusunan kajian teknis bersama konsultan', 'Dept. Enviro', null],
+                ['Pasal 285', 'Kewajiban memiliki izin penyimpanan sementara limbah B3.',
+                 'Izin TPS limbah B3 terbit dan salinannya dipasang di lokasi.',
+                 'Comply', 'Izin TPS LB3 nomor 660/2024', null, null, null],
+                ['Pasal 298', 'Pelaporan neraca limbah B3 secara berkala.',
+                 'Neraca limbah B3 dilaporkan triwulanan lewat SIRAJA.',
+                 'Comply', null, null, null, null],
+             ]],
+
+            /* Sudah terdaftar tetapi BELUM DIRINCI — inilah baris yang
+               muncul di panel "Belum Dirinci Butirnya" pada dasbor. */
+            ['safety', 'Peraturan Menteri', 'Permen ESDM Nomor 26 Tahun 2018',
+             'Pelaksanaan Kaidah Pertambangan yang Baik dan Pengawasan Pertambangan Mineral dan Batubara',
+             'Kementerian ESDM', '2018-05-02', 'Tetap', []],
+
+            /* Draf hasil rangkuman yang belum diperiksa: isinya sengaja
+               tidak ikut dihitung di angka mana pun. */
+            ['environment', 'Peraturan Menteri', 'Permen LHK Nomor 6 Tahun 2021',
+             'Tata Cara dan Persyaratan Pengelolaan Limbah Bahan Berbahaya dan Beracun',
+             'Kementerian LHK', '2021-03-22', 'Draf', [
+                ['Pasal 3 Ayat (1)', 'Setiap orang yang menghasilkan limbah B3 wajib melakukan pengelolaan.',
+                 'Pengelolaan limbah B3 lewat TPS berizin dan pengangkut berizin.', null, null, null, null, null],
+                ['Pasal 12', 'Kewajiban pelabelan dan simbol pada kemasan limbah B3.',
+                 'Simbol dan label dipasang sesuai karakteristik limbah.', null, null, null, null, null],
+             ]],
+        ];
+
+        foreach ($daftar as [$aspek, $jenis, $nomor, $judul, $instansi, $terbit, $status, $butir]) {
+            $s = $this->baru(ComplianceSubject::class, [
+                'user_id'        => $this->pengaju?->id,
+                'sumber'         => 'Peraturan',
+                'kode'           => Kepatuhan::kodeBaru($aspek, $this->c->id, $tahun),
+                'jenis'          => $jenis,
+                'nomor'          => $nomor,
+                'judul'          => $judul,
+                'tanggal_terbit' => $terbit,
+                'instansi'       => $instansi,
+                'aspek'          => $aspek,
+                'tahun'          => $tahun,
+                'status'         => $status,
+                'dari_ai'        => $status === 'Draf',
+                'ruang_lingkup'  => 'Seluruh kegiatan operasional penambangan, pengangkutan, dan pengolahan batubara.',
+                'rangkuman'      => 'Rangkuman contoh untuk memeriksa tampilan register dan lembar cetaknya.',
+            ]);
+            $n++;
+
+            foreach ($butir as $i => [$tunjuk, $isi, $terap, $st, $ket, $tindak, $pic, $hari]) {
+                CompliancePoint::create([
+                    'subject_id'    => $s->id,
+                    'penunjuk'      => $tunjuk,
+                    'rangkuman'     => $isi,
+                    'penerapan'     => $terap,
+                    'status'        => $st,
+                    'keterangan'    => $ket,
+                    'tindak_lanjut' => $tindak,
+                    'pic'           => $pic,
+                    'target'        => $hari === null ? null : now()->addDays($hari)->toDateString(),
+                    'order_index'   => $i + 1,
+                ]);
+                $n++;
+            }
+        }
+
+        /* Rekap empat bulan pertama saja: sisanya sengaja dibiarkan
+           kosong supaya tampilan "belum direkap" ikut terlihat. */
+        $rekap = [
+            [1, 8,  7, 2, 3, 'Baru mulai identifikasi, banyak pasal belum dinilai.'],
+            [2, 9,  6, 2, 2, 'Dua temuan ditutup, rambu masih tertunda.'],
+            [3, 10, 5, 2, 1, 'Audit internal SMKP selesai.'],
+            [4, 11, 4, 2, 1, 'Pengukuran hiperkes semester I tuntas.'],
+        ];
+
+        foreach ($rekap as [$bulan, $comply, $nc, $na, $belum, $evaluasi]) {
+            /* updateOrCreate, bukan create: rekap bulanan punya kunci
+               unik (perusahaan, sumber, tahun, bulan), dan memuat data
+               contoh dua kali tanpa membuangnya lebih dulu akan
+               menabrak kunci itu — bukan menghasilkan baris kembar,
+               melainkan galat basis data di tengah pemuatan yang
+               meninggalkan sebagian modul terisi dan sebagian tidak. */
+            ComplianceRecap::withoutGlobalScopes()->updateOrCreate([
+                'company_id' => $this->c->id,
+                'sumber'     => 'Peraturan',
+                'tahun'      => $tahun,
+                'bulan'      => $bulan,
+            ], [
+                'comply'     => $comply,
+                'not_comply' => $nc,
+                'na'         => $na,
+                'belum'      => $belum,
+                'evaluasi'   => $evaluasi,
+                'rencana'    => 'Menutup temuan yang tersisa sesuai target masing-masing PIC.',
+            ]);
+            $n++;
+        }
+
+        return $n;
     }
 
     /* ─────────── dokumen terkendali ─────────── */

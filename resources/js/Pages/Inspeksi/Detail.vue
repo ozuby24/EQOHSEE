@@ -278,11 +278,16 @@ const label = 'block text-[11px] font-bold uppercase tracking-wide text-stone-50
           </div>
         </div>
 
-        <!-- Bilah kemajuan: satu garis, dibaca tanpa membaca angka. -->
+        <!-- Bilah kemajuan: satu garis, dibaca tanpa membaca angka.
+
+             Memakai komponen bawaan `.eq-bilah > i` dari eq-visual,
+             bukan salinan sendiri. Salinan berkelas sama akan mewarisi
+             diam-diam properti yang kebetulan tidak ditulis ulang, dan
+             warnanya berhenti mengikuti warna aksen perusahaan. -->
         <div class="eq-bilah" role="progressbar" :aria-valuenow="persenTerisi"
              aria-valuemin="0" aria-valuemax="100"
              :aria-label="`Kemajuan pengisian ${persenTerisi} persen`">
-          <div class="eq-bilah-isi" :style="{ width: persenTerisi + '%' }"></div>
+          <i :style="{ width: persenTerisi + '%' }"></i>
         </div>
       </div>
 
@@ -459,21 +464,6 @@ const label = 'block text-[11px] font-bold uppercase tracking-wide text-stone-50
     -webkit-backdrop-filter: saturate(180%) blur(12px);
             backdrop-filter: saturate(180%) blur(12px);
   }
-}
-
-.eq-bilah {
-  margin-top: .7rem;
-  height: 5px;
-  border-radius: 999px;
-  background: #ececea;
-  overflow: hidden;
-}
-
-.eq-bilah-isi {
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #DC6E00, #FF9800);
-  transition: width .25s cubic-bezier(.21, .6, .35, 1);
 }
 
 /* ── kelompok ──────────────────────────────────────────────────── */

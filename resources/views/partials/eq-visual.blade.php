@@ -1047,6 +1047,7 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] main .text-violet-600{color:#C4B5FD}
 :root[data-tema="gelap"] main .text-amber-600{color:#FCD34D}
 :root[data-tema="gelap"] main .text-amber-800{color:#FDE08A}
+:root[data-tema="gelap"] main .text-amber-900{color:#FCE4A6}
 :root[data-tema="gelap"] main .text-emerald-800{color:#8FEFC8}
 :root[data-tema="gelap"] main .text-red-800{color:#FDBDBD}
 

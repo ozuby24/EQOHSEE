@@ -2202,3 +2202,124 @@ export interface HalamanPemilik {
   perusahaan: Array<{ nilai: number; label: string }>;
   tautan: { tetapkan: string; sistem: string; diagnosa: string };
 }
+
+/* ── Identifikasi & Evaluasi Pemenuhan ──
+   Satu mesin untuk tiga sumber kewajiban: peraturan perundangan,
+   klausul standar ISO, dan dokumen terkendali. */
+
+export interface RekapPemenuhan {
+  total: number; comply: number; notComply: number; na: number;
+  belum: number; dinilai: number;
+  /** null berarti belum ada satu pun yang dinilai — bukan nol persen. */
+  persen: number | null;
+}
+
+export interface OpsiKepatuhan {
+  sumber: string[];
+  sumberNama: Record<string, string>;
+  jenis: string[];
+  status: string[];
+  aspek: Array<{ nilai: string; nama: string; warna: string }>;
+  tahun: number[];
+  perusahaan: Array<{ id: number; nama: string }>;
+  iso: Array<{ kode: string; nama: string }>;
+  dokumen: Array<{ id: number; nama: string }>;
+}
+
+export interface TautanKepatuhan {
+  dasbor: string; register: string; rekap: string; buat: string; unggah: string;
+}
+
+export interface BarisKepatuhan {
+  id: number; kode: string | null; sumber: string;
+  nomor: string; judul: string; jenis: string | null; instansi: string | null;
+  terbit: string | null;
+  aspek: string | null; aspekNama: string; aspekWarna: string;
+  tahun: number; status: string; dariAi: boolean;
+  rekap: RekapPemenuhan;
+  url: string;
+}
+
+export interface HalamanKepatuhanDasbor {
+  judul: string; subjudul: string;
+  saring: { perusahaan: number | null; tahun: number; sumber: string | null; aspek: string | null };
+  opsi: OpsiKepatuhan;
+  ringkas: RekapPemenuhan & { draf: number; subjek: number };
+  aspek: Array<RekapPemenuhan & { aspek: string | null; nama: string; warna: string }>;
+  kosong: Array<{ id: number; nomor: string; judul: string; url: string }>;
+  menunggu: Array<{
+    id: number; penunjuk: string; rangkuman: string | null;
+    tindak: string | null; pic: string | null; target: string | null; lewat: boolean;
+    nomor: string | null; judul: string | null; url: string | null;
+  }>;
+  tren: Array<{ bulan: string; comply: number; notComply: number; persen: number | null; evaluasi: string | null }>;
+  tautan: TautanKepatuhan;
+}
+
+export interface HalamanKepatuhanRegister {
+  judul: string; subjudul: string;
+  saring: {
+    perusahaan: number | null; tahun: number; sumber: string | null;
+    aspek: string | null; cari: string; punya: string | null;
+  };
+  opsi: OpsiKepatuhan;
+  daftar: BarisKepatuhan[];
+  halaman: {
+    kini: number; akhir: number; total: number;
+    tautan: Array<{ label: string; url: string | null; aktif: boolean }>;
+  };
+  tautan: TautanKepatuhan;
+}
+
+export interface ButirPemenuhan {
+  id: number; penunjuk: string;
+  rangkuman: string | null; penerapan: string | null;
+  status: string | null; keterangan: string | null;
+  tindak: string | null; pic: string | null; target: string | null; lewat: boolean;
+  urlUbah: string; urlHapus: string;
+}
+
+export interface HalamanKepatuhanPenilaian {
+  judul: string; subjudul: string;
+  s: BarisKepatuhan & {
+    jenis: string | null; instansi: string | null; tanggalTerbit: string | null;
+    ruangLingkup: string | null; rangkuman: string | null; perusahaan: string | null;
+    dokumen: string | null; urlDokumen: string | null;
+    isoKode: string | null; urlIso: string | null;
+    berkas: string[];
+  };
+  butir: ButirPemenuhan[];
+  opsi: OpsiKepatuhan;
+  tautan: TautanKepatuhan & {
+    tambahButir: string; ubah: string; hapus: string; salin: string; lembar: string;
+  };
+}
+
+export interface HalamanKepatuhanForm {
+  judul: string; subjudul: string;
+  awal: Record<string, string>;
+  sunting: boolean;
+  opsi: OpsiKepatuhan;
+  tautan: { simpan: string; batal: string };
+}
+
+export interface HalamanKepatuhanRekap {
+  judul: string; subjudul: string;
+  saring: { perusahaan: number | null; tahun: number; sumber: string | null };
+  opsi: OpsiKepatuhan;
+  bulan: Array<{
+    bulan: number; nama: string; terekap: boolean;
+    comply: number | null; notComply: number | null; na: number | null; belum: number | null;
+    persen: number | null; evaluasi: string; rencana: string;
+  }>;
+  kini: { comply: number; notComply: number; na: number; belum: number; persen: number | null };
+  tautan: TautanKepatuhan & { simpan: string };
+}
+
+export interface HalamanKepatuhanUnggah {
+  judul: string; subjudul: string;
+  opsi: OpsiKepatuhan;
+  /** Apakah kunci AI terpasang; pemecahan pasalnya berjalan tanpa itu. */
+  ai: boolean;
+  tautan: TautanKepatuhan & { rangkum: string; simpan: string };
+}

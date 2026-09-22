@@ -115,6 +115,11 @@ final class RuteInertia
         'dokumen.piramida',
         'dokumen.daftar-induk',
         'iso.index',
+        'kepatuhan.dasbor',
+        'kepatuhan.index',
+        'kepatuhan.rekap',
+        'kepatuhan.create',
+        'kepatuhan.unggah',
 
         /* Berkas cetak HSE */
         'hazard.ekspor.cetak',

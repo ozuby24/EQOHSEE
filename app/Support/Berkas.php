@@ -8,7 +8,7 @@ use App\Models\Investigasi\Bukti as BuktiInvestigasi;
 use App\Models\Pembelian\Pembayaran as PembayaranBeli;
 use App\Models\PjpLaporan as LaporanPjp;
 use App\Models\SmkpBukti;
-use App\Models\{Document, GudangBarang, HazardReport, InspectionItem, News, PasporKartu, PasporKartuUnit, PasporMcu, PasporSertifikat, Signatory, SmkpFinding};
+use App\Models\{ComplianceSubject, Document, GudangBarang, HazardReport, InspectionItem, News, PasporKartu, PasporKartuUnit, PasporMcu, PasporSertifikat, Signatory, SmkpFinding};
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -115,6 +115,11 @@ final class Berkas
            oleh findOrFail di BerkasController. */
         'brt' => [News::class,           'cover',          false],
         'brl' => [News::class,           'lampiran',       false],
+
+        /* Salinan peraturan, standar, atau dokumen yang sedang dinilai
+           pemenuhannya. TERTUTUP: sebagian di antaranya kontrak, izin,
+           dan surat kesepakatan yang menyebut nilai dan pihak. */
+        'kpt' => [ComplianceSubject::class, 'berkas',       true],
     ];
 
     /**

@@ -746,6 +746,15 @@ final class Menu
         'Standar ISO' => [
           ['Pemenuhan Klausul','iso.index', 'iso'],
         ],
+        /* Pertanyaan ketiga, dan yang paling sering ditanyakan auditor:
+           kewajiban apa yang mengikat kita, dan sudah dipenuhi belum.
+           Register dokumen menjawab apa yang dipunya, ISO menjawab
+           klausul mana yang kosong — keduanya tidak menjawab yang ini. */
+        'Pemenuhan' => [
+          ['Dasbor Pemenuhan', 'kepatuhan.dasbor', 'kepatuhan'],
+          ['Register Kewajiban','kepatuhan.index', 'kepatuhan/register'],
+          ['Rekap Bulanan',    'kepatuhan.rekap',  'kepatuhan/rekap'],
+        ],
       ],
     ],
     /* Pembelian berdiri sendiri, dan sengaja BUKAN di bawah Admin.
@@ -805,7 +814,12 @@ final class Menu
         [['hazard*', 'inspeksi*', 'temuan*'],      'hazrep'],
         [['tpkkp*'],                               'tpkkp'],
         [['smkp*'],                                'smkp'],
-        [['dokumen*', 'iso*', 'struktur-dokumen', 'daftar-induk'], 'dokumen'],
+        /* 'kepatuhan*' didaftarkan BERSAMA dokumen dan ISO, bukan
+           dibiarkan tanpa pasangan. Alamat yang tidak cocok dengan pola
+           mana pun tidak menimbulkan galat sama sekali: halamannya tetap
+           terbuka, hanya membawa sampul dan menu samping modul yang
+           salah — dan yang membukanya menyimpulkan ia tersesat. */
+        [['dokumen*', 'iso*', 'kepatuhan*', 'struktur-dokumen', 'daftar-induk'], 'dokumen'],
         [['energi*'],                              'energi'],
         [['konservasi*'],                          'konservasi'],
         [['operasi-tambang*'],                     'operasi'],

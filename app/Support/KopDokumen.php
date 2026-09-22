@@ -268,6 +268,27 @@ final class KopDokumen
                 'kode'  => 'OHSE-V.041',
                 'urut'  => 12,
 ],
+            /* Evaluasi pemenuhan satu peraturan, standar, atau dokumen.
+               Berjenis FORM & CHECKLIST karena itulah bentuknya di atas
+               kertas: satu baris per pasal dengan kolom penilaian yang
+               diisi dan ditandatangani, bukan uraian naratif.
+
+               Urut 19, menyusul 'lembar-inspeksi' yang 18: keduanya
+               berprefiks FRM dan sama-sama dilampirkan ke berkas audit,
+               jadi nomor yang kembar di antara keduanya adalah yang
+               paling cepat ditemukan auditor. */
+            'evaluasi-pemenuhan' => [
+                'jenis' => 'FORM & CHECKLIST',
+                'judul' => 'IDENTIFIKASI DAN EVALUASI PEMENUHAN PERATURAN PERUNDANGAN',
+                'kode'  => 'OHSE-II.021',
+                'urut'  => 19,
+],
+            'rekap-pemenuhan' => [
+                'jenis' => 'FORM & CHECKLIST',
+                'judul' => 'REKAPITULASI BULANAN EVALUASI PEMENUHAN',
+                'kode'  => 'OHSE-II.021a',
+                'urut'  => 20,
+],
         ];
     }
 

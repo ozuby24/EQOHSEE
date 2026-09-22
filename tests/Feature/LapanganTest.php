@@ -150,6 +150,92 @@ class LapanganTest extends TestCase
     }
 
     /**
+     * Kelas `<style scoped>` tidak boleh senama dengan kelas global.
+     *
+     * Vue menambahkan atribut pada selektor scoped, sehingga
+     * `.eq-nilai[data-v-x]` menang atas `.eq-nilai` global — TETAPI
+     * hanya untuk properti yang benar-benar ditulis ulang. Properti
+     * yang tidak disebut tetap diwarisi dari kelas global, dan itulah
+     * yang berbahaya: kelas global `.eq-nilai` adalah chip nilai
+     * ber-`display: inline-flex`, dan sebuah `<table class="eq-nilai">`
+     * yang mewarisinya berhenti menjadi tabel. Kepala kolomnya terlepas
+     * dari badannya, melayang di tengah dengan lebar sendiri, dan tidak
+     * satu pun galat muncul — halamannya terbuka dengan status 200,
+     * hanya isinya tidak sejajar.
+     *
+     * Bentrokan seperti ini lahir dari nama yang wajar: 'nilai',
+     * 'judul', 'reg'. Karena itu yang dijaga bukan kewaspadaan
+     * penulisnya melainkan daftar namanya.
+     */
+    public function test_kelas_scoped_tidak_senama_dengan_kelas_global(): void
+    {
+        $global = [];
+
+        foreach ([
+            resource_path('views/partials/eq-visual.blade.php'),
+            resource_path('css/app.css'),
+        ] as $berkas) {
+            if (!is_file($berkas)) continue;
+
+            preg_match_all('~\.(eq-[a-z0-9-]+)~', (string) file_get_contents($berkas), $m);
+            $global = array_merge($global, $m[1]);
+        }
+
+        $global = array_flip($global);
+
+        /* Penimpaan yang DISENGAJA, beserta alasannya.
+
+           Ketiganya memang bermaksud mewarisi bentuk komponen
+           globalnya lalu mengubah rupanya setempat — itu gunanya
+           penimpaan. Yang dijaga daftar ini adalah nama yang bentrok
+           TANPA disengaja: `.eq-nilai` global adalah chip
+           ber-`display:inline-flex`, dan sebuah <table> berkelas sama
+           berhenti menjadi tabel tanpa satu galat pun. */
+        $disengaja = [
+            'TurSelamatDatang.vue → .eq-merek',    // logo di kartu tur, bukan di bilah samping
+            'TurSelamatDatang.vue → .eq-btn-lain', // tombol tur mewarisi bentuk tombol biasa
+            'PopPengumuman.vue → .eq-pop',         // animasi pop-nya memang dari CSS global
+            'DialogRegister.vue → .eq-reg',        // dialog yang justru dianimasikan .eq-pop-* global
+        ];
+
+        $bentrok = [];
+
+        /* Halaman cetak IKUT diperiksa, meski `berkasVue()` melewatinya:
+           bentrokan pertama yang ditemukan justru ada di sana, dan
+           tabel yang rusak di atas kertas lebih sulit disadari
+           daripada tabel yang rusak di layar. */
+        $semua = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(resource_path('js')),
+        );
+
+        foreach ($semua as $f) {
+            if (!$f->isFile() || !str_ends_with($f->getFilename(), '.vue')) continue;
+
+            $berkas = $f->getPathname();
+            $isi    = (string) file_get_contents($berkas);
+
+            if (!str_contains($isi, '<style scoped>')) continue;
+
+            $blok = substr($isi, strpos($isi, '<style scoped>'));
+
+            preg_match_all('~\.(eq-[a-z0-9-]+)~', $blok, $m);
+
+            foreach (array_unique($m[1]) as $kelas) {
+                $tanda = basename($berkas).' → .'.$kelas;
+
+                if (isset($global[$kelas]) && !in_array($tanda, $disengaja, true)) {
+                    $bentrok[] = $tanda;
+                }
+            }
+        }
+
+        $this->assertSame([], $bentrok,
+            "Kelas berikut didefinisikan di <style scoped> padahal namanya sudah dipakai CSS global.\n"
+            ."Properti yang tidak ditulis ulang akan diwarisi diam-diam dari kelas global:\n  "
+            .implode("\n  ", $bentrok));
+    }
+
+    /**
      * Tiap halaman cetak melepas kerangka aplikasinya.
      *
      * Halaman di Pages/Print dirender ke KERTAS. Yang lupa menyatakan

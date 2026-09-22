@@ -28,6 +28,7 @@ use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiT
 use App\Http\Controllers\{BantuanController, BerkasController, ChatController, TemuanController};
 use App\Http\Controllers\Admin\{AiController, CompanyController, KeamananController, PemilikController, SystemController, UserController};
 use App\Http\Controllers\DuaFaktorController;
+use App\Http\Controllers\KepatuhanController;
 use App\Http\Controllers\PerangkatSayaController;
 use App\Http\Controllers\TurController;
 use Illuminate\Support\Facades\Route;
@@ -1249,6 +1250,46 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('targets', [MineOperationsController::class, 'simpanTarget'])->name('target.simpan');
         Route::post('layers', [MineOperationsController::class, 'simpanLayer'])->name('layer.simpan');
         Route::delete('layers/{layer}', [MineOperationsController::class, 'hapusLayer'])->middleware('can:admin')->name('layer.hapus');
+    });
+
+    /* ================= Identifikasi & Evaluasi Pemenuhan =================
+
+       Satu modul untuk tiga sumber kewajiban: peraturan perundangan,
+       klausul standar ISO, dan dokumen terkendali. Dasbor lebih dulu,
+       register kemudian — yang dibuka manajemen bukan "kewajiban apa
+       saja yang terdaftar" melainkan "berapa yang sudah dipenuhi", dan
+       pertanyaan kedua tidak terjawab oleh daftar. */
+    Route::prefix('kepatuhan')->name('kepatuhan.')->group(function () {
+        Route::get('/',            [KepatuhanController::class, 'dasbor'])->name('dasbor');
+        Route::get('register',     [KepatuhanController::class, 'index'])->name('index');
+        Route::get('rekap',        [KepatuhanController::class, 'rekap'])->name('rekap');
+        Route::post('rekap',       [KepatuhanController::class, 'simpanRekap'])->name('rekap.simpan');
+        Route::get('unggah',       [KepatuhanController::class, 'unggah'])->name('unggah');
+        Route::post('rangkum',     [KepatuhanController::class, 'rangkum'])->name('rangkum');
+        Route::post('rangkum/simpan', [KepatuhanController::class, 'simpanRangkuman'])->name('rangkum.simpan');
+        Route::get('buat',         [KepatuhanController::class, 'create'])->name('create');
+        Route::post('/',           [KepatuhanController::class, 'store'])->name('store');
+
+        /* Butir berdiri di jalurnya sendiri, tidak bersarang di bawah
+           subjeknya: satu butir dinilai berkali-kali sepanjang tahun,
+           dan kiriman yang ikut membawa nomor subjeknya berarti satu
+           penilaian dapat menunjuk subjek yang bukan pemiliknya. */
+        Route::post('{kepatuhan}/butir',  [KepatuhanController::class, 'storeButir'])->name('butir.store');
+        Route::put('butir/{butir}',       [KepatuhanController::class, 'updateButir'])->name('butir.update');
+        Route::delete('butir/{butir}',    [KepatuhanController::class, 'destroyButir'])
+            ->middleware('can:admin')->name('butir.destroy');
+
+        Route::get('{kepatuhan}',         [KepatuhanController::class, 'show'])->name('show');
+        Route::get('{kepatuhan}/ubah',    [KepatuhanController::class, 'edit'])->name('edit');
+        Route::put('{kepatuhan}',         [KepatuhanController::class, 'update'])->name('update');
+        /* Penghapusan hanya untuk administrator, seperti seluruh modul
+           lain. Register pemenuhan adalah rekaman audit: barisnya
+           dirujuk berita acara dan laporan tahun sebelumnya, dan yang
+           terhapus tidak dapat dipulihkan dari layar mana pun. */
+        Route::delete('{kepatuhan}',      [KepatuhanController::class, 'destroy'])
+            ->middleware('can:admin')->name('destroy');
+        Route::post('{kepatuhan}/salin',  [KepatuhanController::class, 'salin'])->name('salin');
+        Route::get('{kepatuhan}/lembar',  [KepatuhanController::class, 'lembar'])->name('lembar');
     });
 
     /* ================= WEBSITE #5b — ISO: pemenuhan klausul ================= */
