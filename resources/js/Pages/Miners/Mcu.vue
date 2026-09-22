@@ -19,6 +19,20 @@ const props = propHalaman();
 const { dialog, tanya, batal, lanjut } = useDialog();
 
 const baris = computed<any[]>(() => (props.baris ?? []) as any[]);
+
+/* Ditulis sekali, dipakai kepala kolom dan barisnya. Dua daftar yang
+   menyebut hal yang sama akan berbeda cepat atau lambat. */
+const berkasMcu = [
+  { kunci: 'hasil',       label: 'Surat' },
+  { kunci: 'rekomendasi', label: 'Rekomendasi' },
+  { kunci: 'napza',       label: 'Napza' },
+] as const;
+
+const unggahMcu = [
+  { medan: 'berkas_hasil',       label: 'Surat hasil' },
+  { medan: 'berkas_rekomendasi', label: 'Rekomendasi' },
+  { medan: 'berkas_napza',       label: 'Hasil napza' },
+] as const;
 const buka  = ref<number | null>(null);
 
 const surat = useForm({ no_registrasi: '', tanggal: '', kepada: '', perihal: '' });
@@ -33,10 +47,24 @@ function tambahOrang(id: number) {
   tambah.post(`/miners/mcu/${id}/orang`, { preserveScroll: true, onSuccess: () => tambah.reset() });
 }
 
-const hasil = useForm({ hasil_id: '', tanggal_periksa: '', hasil_napza: '', catatan: '' });
+const hasil = useForm<{
+  hasil_id: string; tanggal_periksa: string; hasil_napza: string; catatan: string;
+  berkas_hasil: File | null; berkas_rekomendasi: File | null; berkas_napza: File | null;
+}>({
+  hasil_id: '', tanggal_periksa: '', hasil_napza: '', catatan: '',
+  berkas_hasil: null, berkas_rekomendasi: null, berkas_napza: null,
+});
+
+function berkasHasil(medan: 'berkas_hasil' | 'berkas_rekomendasi' | 'berkas_napza', e: Event) {
+  hasil[medan] = (e.target as HTMLInputElement).files?.[0] ?? null;
+}
 
 function simpanHasil(mcuId: number, orangId: number) {
+  /* forceFormData BUKAN pilihan gaya. Tanpa itu Inertia mengirim JSON,
+     dan objek File menjadi `{}` di sisi server — permintaannya berhasil,
+     hasilnya tersimpan, dan hanya berkasnya yang diam-diam hilang. */
   hasil.post(`/miners/mcu/${mcuId}/orang/${orangId}/hasil`, {
+    forceFormData: true,
     preserveScroll: true, onSuccess: () => hasil.reset(),
   });
 }
@@ -116,7 +144,13 @@ const bolehTindak = computed(() =>
         <Langkah :alur="m.alur" />
       </div>
 
-      <div class="overflow-x-auto">
+      <!-- `relative` bukan hiasan. Kolom Berkas memuat .sr-only, dan
+           .sr-only berposisi ABSOLUTE; elemen absolute hanya terpotong
+           oleh leluhur yang BERPOSISI. Tanpa ini ia dapat lolos dari
+           overflow-x-auto dan melebarkan documentElement — layar
+           Berulang pernah kena persis begitu, dan gejalanya hanya
+           tampak di lebar telepon. -->
+      <div class="overflow-x-auto relative">
         <table class="min-w-full text-left text-[11.5px]">
           <thead>
             <tr class="text-stone-400 border-b border-stone-200 bg-stone-50/70">
@@ -125,6 +159,7 @@ const bolehTindak = computed(() =>
               <th class="px-4 py-2 font-semibold whitespace-nowrap">Berlaku sampai</th>
               <th class="px-4 py-2 font-semibold">Hasil</th>
               <th class="px-4 py-2 font-semibold">Napza</th>
+              <th class="px-4 py-2 font-semibold">Berkas</th>
               <th class="px-4 py-2 font-semibold">Keadaan</th>
               <th v-if="buka === m.id" class="px-4 py-2 font-semibold"></th>
             </tr>
@@ -145,12 +180,45 @@ const bolehTindak = computed(() =>
                 <span v-if="o.hasil && !o.layak" class="text-red-600">· tidak layak</span>
               </td>
               <td class="px-4 py-2.5">{{ o.napza || '—' }}</td>
+
+              <!-- Surat dari klinik, bukan kesimpulannya.
+                   `ada` dan `url` dikirim TERPISAH supaya baris ini dapat
+                   membedakan "belum diunggah" dari "tidak boleh Anda
+                   buka": yang pertama menuntut tindakan, yang kedua
+                   tidak. Disamakan, petugas akan terus mencari berkas
+                   yang sebenarnya sudah ada. -->
+              <td class="px-4 py-2.5">
+                <div class="flex flex-wrap gap-x-2 gap-y-0.5">
+                  <template v-for="b in berkasMcu" :key="b.kunci">
+                    <a v-if="o.berkas?.[b.kunci]?.url" :href="o.berkas[b.kunci].url" target="_blank"
+                       rel="noopener" class="text-cam-lime-deep hover:underline">{{ b.label }}</a>
+
+                    <span v-else-if="o.berkas?.[b.kunci]?.ada" class="text-stone-400"
+                          :title="`${b.label} sudah diunggah, tetapi hanya dapat dibuka paramedis, tim OHSE, atau administrator.`">
+                      {{ b.label }} <span aria-hidden="true">·</span>
+                      <span class="sr-only">terjaga, tidak dapat Anda buka</span>
+                      <span aria-hidden="true">terjaga</span>
+                    </span>
+                  </template>
+
+                  <span v-if="!berkasMcu.some(b => o.berkas?.[b.kunci]?.ada)"
+                        class="text-stone-300">—</span>
+                </div>
+
+                <div v-for="j in (o.rujukan ?? [])" :key="j.id" class="text-[10.5px] text-stone-500">
+                  <a v-if="j.berkas?.url" :href="j.berkas.url" target="_blank" rel="noopener"
+                     class="text-cam-lime-deep hover:underline">Rujukan {{ j.tanggal }}</a>
+                  <span v-else-if="j.berkas?.ada">Rujukan {{ j.tanggal }} · terjaga</span>
+                </div>
+              </td>
+
               <td class="px-4 py-2.5">
                 <Lencana :keadaan="o.keadaan" :label="props.KEADAAN?.[o.keadaan]" :nada="props.NADA" />
               </td>
 
               <td v-if="buka === m.id" class="px-4 py-2.5">
-                <form class="flex flex-wrap items-end gap-2" @submit.prevent="simpanHasil(m.id, o.id)">
+                <form class="space-y-2" @submit.prevent="simpanHasil(m.id, o.id)">
+                  <div class="flex flex-wrap items-end gap-2">
                   <select v-model="hasil.hasil_id" class="rounded-lg border-stone-200 text-[11px]"
                           aria-label="Hasil MCU">
                     <option value="">Hasil…</option>
@@ -167,13 +235,33 @@ const bolehTindak = computed(() =>
                     <option value="positif">Positif</option>
                   </select>
 
-                  <button type="submit" class="eq-btn-lain">Simpan</button>
+                    <button type="submit" class="eq-btn-lain">Simpan</button>
+                  </div>
+
+                  <!-- Berkas pada barisnya sendiri, bukan disisipkan di
+                       antara medan pilihan: tiga kotak "Choose File"
+                       yang membungkus di tengah flex-wrap membuat
+                       tombol Simpan berpindah-pindah tempat menurut
+                       panjang nama berkas yang kebetulan dipilih. -->
+                  <div class="flex flex-wrap gap-x-3 gap-y-1 border-t border-stone-100 pt-2">
+                    <label v-for="b in unggahMcu" :key="b.medan"
+                           class="flex flex-col text-[10px] text-stone-500">
+                      {{ b.label }}
+                      <input type="file" class="text-[10.5px] max-w-[11rem]"
+                             @change="berkasHasil(b.medan, $event)">
+                    </label>
+                  </div>
                 </form>
+
+                <p v-if="hasil.errors.berkas_hasil || hasil.errors.berkas_rekomendasi || hasil.errors.berkas_napza"
+                   class="mt-1 text-[10.5px] text-red-600">
+                  {{ hasil.errors.berkas_hasil || hasil.errors.berkas_rekomendasi || hasil.errors.berkas_napza }}
+                </p>
               </td>
             </tr>
 
             <tr v-if="!m.orang?.length">
-              <td :colspan="buka === m.id ? 7 : 6" class="px-4 py-6 text-center text-stone-400">
+              <td :colspan="buka === m.id ? 8 : 7" class="px-4 py-6 text-center text-stone-400">
                 Belum ada nama pada surat ini.
               </td>
             </tr>

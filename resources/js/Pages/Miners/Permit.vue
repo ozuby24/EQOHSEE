@@ -47,6 +47,23 @@ function tindak(id: number, keadaan: string) {
 
 const cabut = useForm({ alasan_cabut: '' });
 
+const lampiran = useForm<{
+  jenis: string; nomor: string; catatan: string; berkas: File | null;
+}>({ jenis: '', nomor: '', catatan: '', berkas: null });
+
+function pilihLampiran(e: Event) {
+  lampiran.berkas = (e.target as HTMLInputElement).files?.[0] ?? null;
+}
+
+function simpanLampiran(permitId: number) {
+  /* forceFormData: tanpa itu objek File menjadi `{}` di sisi server,
+     barisnya tetap terbuat, dan hanya berkasnya yang hilang. */
+  lampiran.post(`/miners/permit/${permitId}/berkas`, {
+    forceFormData: true,
+    preserveScroll: true, onSuccess: () => lampiran.reset(),
+  });
+}
+
 async function cabutKartu(id: number, nomor: string) {
   if (!await tanya(`Cabut Mine Permit ${nomor || 'ini'}? Pemegangnya tidak lagi boleh masuk.`)) return;
 
@@ -193,6 +210,40 @@ const WARNA_LABEL = computed<Record<string, any>>(() => (props.WARNA ?? {}) as R
             </div>
 
             <p v-if="tindakan.errors.keadaan" class="text-[11.5px] text-red-600">{{ tindakan.errors.keadaan }}</p>
+
+            <!-- Lampiran Mine Permit: SOP merinci 9–12 berkas per jenis
+                 pengajuan. Rutenya sudah lama ada, tetapi tidak satu pun
+                 layar yang memanggilnya — sehingga lampiran hanya dapat
+                 masuk lewat data contoh, dan tidak pernah dapat dibuka. -->
+            <div class="border-t border-stone-100 pt-3 space-y-2">
+              <p class="text-[11px] font-semibold text-stone-500">Lampiran</p>
+
+              <ul v-if="k.berkas?.length" class="flex flex-wrap gap-x-3 gap-y-1 text-[11.5px]">
+                <li v-for="b in k.berkas" :key="b.id">
+                  <a v-if="b.url" :href="b.url" target="_blank" rel="noopener"
+                     class="text-cam-lime-deep hover:underline">{{ b.jenis }}</a>
+                  <span v-else-if="b.ada" class="text-stone-400"
+                        title="Sudah diunggah, tetapi hanya dapat dibuka paramedis, tim OHSE, atau administrator.">
+                    {{ b.jenis }} · terjaga
+                  </span>
+                  <span v-else class="text-stone-300">{{ b.jenis }} · belum diunggah</span>
+                </li>
+              </ul>
+              <p v-else class="text-[11.5px] text-stone-400">Belum ada lampiran.</p>
+
+              <form class="flex flex-wrap items-end gap-2" @submit.prevent="simpanLampiran(k.id)">
+                <input v-model="lampiran.jenis" required placeholder="Jenis lampiran"
+                       class="w-44 rounded-lg border-stone-200 text-[12px]" aria-label="Jenis lampiran">
+                <input v-model="lampiran.nomor" placeholder="Nomor"
+                       class="w-32 rounded-lg border-stone-200 text-[12px]" aria-label="Nomor lampiran">
+                <input type="file" class="text-[11.5px] max-w-[12rem]" @change="pilihLampiran">
+                <button type="submit" class="eq-btn-lain" :disabled="lampiran.processing">Simpan lampiran</button>
+              </form>
+
+              <p v-if="lampiran.errors.jenis || lampiran.errors.berkas" class="text-[11.5px] text-red-600">
+                {{ lampiran.errors.jenis || lampiran.errors.berkas }}
+              </p>
+            </div>
 
             <div class="flex flex-wrap items-end gap-3">
               <input v-model="cabut.alasan_cabut" placeholder="Alasan pencabutan"

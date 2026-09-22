@@ -495,8 +495,14 @@ class MinersDokumenController extends Controller
             'nomor'   => ['nullable', 'string', 'max:100'],
             'tanggal' => ['nullable', 'date'],
             'catatan' => ['nullable', 'string'],
-            'berkas'  => ['nullable', 'file', 'max:'.Berkas::MAKS_DOKUMEN_KB],
+
+            /* Disamakan dengan unggahan lain. Sebelumnya hanya `file`
+               dan batas ukuran, tanpa daftar jenis yang diizinkan. */
+            'berkas'  => ['nullable', ...Berkas::ATURAN_DOKUMEN],
         ]);
+
+        $lama = PermitBerkas::where('permit_id', $permit->id)
+            ->where('jenis', $data['jenis'])->first();
 
         PermitBerkas::updateOrCreate(
             ['permit_id' => $permit->id, 'jenis' => $data['jenis']],
@@ -504,7 +510,18 @@ class MinersDokumenController extends Controller
                 'nomor'   => $data['nomor'] ?? null,
                 'tanggal' => isset($data['tanggal']) ? Waktu::tanggal($data['tanggal']) : null,
                 'catatan' => $data['catatan'] ?? null,
-                'berkas'  => Berkas::simpan($r->file('berkas'), 'miners/permit'),
+
+                /* `?? $lama?->berkas` BUKAN kehati-hatian berlebihan.
+                   Tanpa itu, menyimpan ulang lampiran yang sama —
+                   memperbaiki nomornya, menambah catatan — mengosongkan
+                   kolom berkasnya, sebab Berkas::simpan() memulangkan
+                   null ketika tidak ada unggahan baru. Barisnya tetap
+                   ada, catatannya tersimpan benar, dan hanya berkasnya
+                   yang lenyap tanpa satu pun galat. Seluruh medan lain
+                   di controller ini sudah memakai pola yang sama;
+                   hanya yang ini terlewat. */
+                'berkas'  => Berkas::simpan($r->file('berkas'), 'miners/permit')
+                    ?? $lama?->berkas,
             ],
         );
 

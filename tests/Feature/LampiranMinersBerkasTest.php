@@ -300,6 +300,46 @@ class LampiranMinersBerkasTest extends TestCase
     }
 
     /**
+     * Menyimpan ulang lampiran permit tidak menghapus berkasnya.
+     *
+     * updateOrCreate menulis SELURUH medan yang diberikan. Karena
+     * Berkas::simpan() memulangkan null ketika tidak ada unggahan baru,
+     * memperbaiki nomor atau menambah catatan pada lampiran yang sudah
+     * ada mengosongkan kolom berkasnya: barisnya tetap ada, catatannya
+     * tersimpan benar, dan hanya berkasnya yang lenyap — tanpa satu pun
+     * galat, dan tanpa apa pun di layar yang berubah sampai seseorang
+     * mencoba membukanya.
+     */
+    public function test_menyimpan_ulang_lampiran_permit_tidak_menghapus_berkasnya(): void
+    {
+        $permit = Permit::withoutGlobalScopes()->create([
+            'company_id' => $this->c->id, 'pekerja_id' => $this->pekerja()->id,
+            'no_registrasi' => 'MP/9', 'tanggal' => now()->startOfDay(), 'status' => 'terbit',
+        ]);
+
+        $admin = $this->pengguna(['is_admin' => true]);
+
+        $this->actingAs($admin)->post("/miners/permit/{$permit->id}/berkas", [
+            'jenis'  => 'SIO',
+            'berkas' => UploadedFile::fake()->create('sio.pdf', 10, 'application/pdf'),
+        ])->assertRedirect();
+
+        $jalur = PermitBerkas::where('permit_id', $permit->id)->first()->berkas;
+        $this->assertIsString($jalur);
+
+        /* Simpan ULANG jenis yang sama, kali ini hanya menambah catatan. */
+        $this->actingAs($admin)->post("/miners/permit/{$permit->id}/berkas", [
+            'jenis'   => 'SIO',
+            'catatan' => 'Nomor diperbaiki.',
+        ])->assertRedirect();
+
+        $b = PermitBerkas::where('permit_id', $permit->id)->first();
+
+        $this->assertSame('Nomor diperbaiki.', $b->catatan);
+        $this->assertSame($jalur, $b->berkas, 'Berkas lampiran hilang saat barisnya disimpan ulang.');
+    }
+
+    /**
      * Setiap jenis Miners punya penyaji yang bekerja.
      *
      * Diperiksa dengan benar-benar memanggil alamatnya, bukan dengan

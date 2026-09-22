@@ -33,10 +33,27 @@ function tambahOrang(id: number) {
   tambah.post(`/miners/induksi/${id}/orang`, { preserveScroll: true, onSuccess: () => tambah.reset() });
 }
 
-const nilai = useForm({ nilai: '', lokasi: '', catatan: '' });
+const nilai = useForm<{
+  nilai: string; lokasi: string; catatan: string;
+  berkas_sertifikat: File | null; berkas_hadir: File | null;
+}>({ nilai: '', lokasi: '', catatan: '', berkas_sertifikat: null, berkas_hadir: null });
+
+/* Ditulis sekali, dipakai baris tabel dan medan unggahnya. */
+const berkasInduksi = [
+  { kunci: 'sertifikat', medan: 'berkas_sertifikat', label: 'Sertifikat' },
+  { kunci: 'hadir',      medan: 'berkas_hadir',      label: 'Daftar hadir' },
+] as const;
+
+function berkasNilai(medan: 'berkas_sertifikat' | 'berkas_hadir', e: Event) {
+  nilai[medan] = (e.target as HTMLInputElement).files?.[0] ?? null;
+}
 
 function simpanNilai(induksiId: number, orangId: number) {
+  /* forceFormData: tanpa itu Inertia mengirim JSON dan objek File
+     menjadi `{}` di sisi server — permintaannya berhasil, nilainya
+     tersimpan, dan hanya berkasnya yang diam-diam hilang. */
   nilai.post(`/miners/induksi/${induksiId}/orang/${orangId}/nilai`, {
+    forceFormData: true,
     preserveScroll: true, onSuccess: () => nilai.reset(),
   });
 }
@@ -123,6 +140,7 @@ const bolehTindak = computed(() =>
               <th class="px-4 py-2 font-semibold text-right">Nilai</th>
               <th class="px-4 py-2 font-semibold text-right">Percobaan</th>
               <th class="px-4 py-2 font-semibold whitespace-nowrap">Berlaku sampai</th>
+              <th class="px-4 py-2 font-semibold">Berkas</th>
               <th class="px-4 py-2 font-semibold">Keadaan</th>
               <th v-if="buka === i.id" class="px-4 py-2 font-semibold"></th>
             </tr>
@@ -143,24 +161,56 @@ const bolehTindak = computed(() =>
                 <span v-if="!o.lulus && !o.bolehUlang" class="text-red-600"> · habis</span>
               </td>
               <td class="px-4 py-2.5 num">{{ o.sampai || '—' }}</td>
+
+              <td class="px-4 py-2.5">
+                <div class="flex flex-wrap gap-x-2">
+                  <a v-for="b in berkasInduksi" :key="b.kunci"
+                     v-show="o.berkas?.[b.kunci]?.url" :href="o.berkas?.[b.kunci]?.url"
+                     target="_blank" rel="noopener"
+                     class="text-cam-lime-deep hover:underline">{{ b.label }}</a>
+
+                  <span v-if="!berkasInduksi.some(b => o.berkas?.[b.kunci]?.ada)"
+                        class="text-stone-300">—</span>
+                </div>
+              </td>
+
               <td class="px-4 py-2.5">
                 <Lencana :keadaan="o.keadaan" :label="props.KEADAAN?.[o.keadaan]" :nada="props.NADA" />
               </td>
 
               <td v-if="buka === i.id" class="px-4 py-2.5">
-                <form class="flex flex-wrap items-end gap-2" @submit.prevent="simpanNilai(i.id, o.id)">
-                  <input v-model="nilai.nilai" type="number" min="0" max="100" required
-                         placeholder="Nilai" class="w-20 rounded-lg border-stone-200 text-[11px]"
-                         aria-label="Nilai post test">
-                  <input v-model="nilai.lokasi" placeholder="Lokasi"
-                         class="w-32 rounded-lg border-stone-200 text-[11px]" aria-label="Lokasi induksi">
-                  <button type="submit" class="eq-btn-lain">Simpan</button>
+                <form class="space-y-2" @submit.prevent="simpanNilai(i.id, o.id)">
+                  <div class="flex flex-wrap items-end gap-2">
+                    <input v-model="nilai.nilai" type="number" min="0" max="100" required
+                           placeholder="Nilai" class="w-20 rounded-lg border-stone-200 text-[11px]"
+                           aria-label="Nilai post test">
+                    <input v-model="nilai.lokasi" placeholder="Lokasi"
+                           class="w-32 rounded-lg border-stone-200 text-[11px]" aria-label="Lokasi induksi">
+                    <button type="submit" class="eq-btn-lain">Simpan</button>
+                  </div>
+
+                  <!-- Berkas pada barisnya sendiri: kotak "Choose File"
+                       yang membungkus di tengah flex-wrap membuat tombol
+                       Simpan berpindah menurut panjang nama berkas. -->
+                  <div class="flex flex-wrap gap-x-3 gap-y-1 border-t border-stone-100 pt-2">
+                    <label v-for="b in berkasInduksi" :key="b.medan"
+                           class="flex flex-col text-[10px] text-stone-500">
+                      {{ b.label }}
+                      <input type="file" class="text-[10.5px] max-w-[11rem]"
+                             @change="berkasNilai(b.medan, $event)">
+                    </label>
+                  </div>
+
+                  <p v-if="nilai.errors.berkas_sertifikat || nilai.errors.berkas_hadir"
+                     class="text-[10.5px] text-red-600">
+                    {{ nilai.errors.berkas_sertifikat || nilai.errors.berkas_hadir }}
+                  </p>
                 </form>
               </td>
             </tr>
 
             <tr v-if="!i.orang?.length">
-              <td :colspan="buka === i.id ? 6 : 5" class="px-4 py-6 text-center text-stone-400">
+              <td :colspan="buka === i.id ? 7 : 6" class="px-4 py-6 text-center text-stone-400">
                 Belum ada peserta.
               </td>
             </tr>

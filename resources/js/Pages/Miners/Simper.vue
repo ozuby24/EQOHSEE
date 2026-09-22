@@ -21,13 +21,27 @@ const { dialog, tanya, batal, lanjut } = useDialog();
 const baris = computed<any[]>(() => (props.baris ?? []) as any[]);
 const buka  = ref<number | null>(null);
 
-const buat = useForm({
+const buat = useForm<{
+  permit_id: string; no_simper: string; tanggal: string; kelas: string;
+  no_simpol: string; jenis_simpol: string; simpol_berlaku_sampai: string;
+  pengalaman_kerja: string; berkas_simpol: File | null;
+}>({
   permit_id: '', no_simper: '', tanggal: '', kelas: 'F',
   no_simpol: '', jenis_simpol: '', simpol_berlaku_sampai: '', pengalaman_kerja: '',
+  berkas_simpol: null,
 });
 
+function pilihSimpol(e: Event) {
+  buat.berkas_simpol = (e.target as HTMLInputElement).files?.[0] ?? null;
+}
+
 function simpan() {
-  buat.post('/miners/simper', { preserveScroll: true, onSuccess: () => buat.reset() });
+  /* forceFormData: tanpa itu objek File menjadi `{}` di sisi server —
+     SIMPER-nya tetap terbuat, dan hanya salinan SIM-nya yang hilang. */
+  buat.post('/miners/simper', {
+    forceFormData: true,
+    preserveScroll: true, onSuccess: () => buat.reset(),
+  });
 }
 
 const unit = useForm({
@@ -135,9 +149,18 @@ const simpolDituntut = computed(() =>
                  class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
         </label>
 
+        <label class="block">
+          <span class="block text-[11px] text-stone-500">Salinan SIM</span>
+          <input type="file" class="mt-1 w-full text-[11.5px]" @change="pilihSimpol">
+          <span class="text-[10.5px] text-stone-400">
+            Tersimpan tertutup — hanya terbuka bagi tim OHSE dan administrator.
+          </span>
+        </label>
+
         <div class="sm:col-span-2 lg:col-span-4">
           <button type="submit" class="eq-btn-utama" :disabled="buat.processing">Buat SIMPER (draf)</button>
           <span v-if="buat.errors.permit_id" class="ml-3 text-[11.5px] text-red-600">{{ buat.errors.permit_id }}</span>
+          <span v-if="buat.errors.berkas_simpol" class="ml-3 text-[11.5px] text-red-600">{{ buat.errors.berkas_simpol }}</span>
         </div>
       </form>
     </section>
@@ -166,6 +189,16 @@ const simpolDituntut = computed(() =>
           Berlaku sampai <span class="num">{{ s.efektif || '—' }}</span>
           <span v-if="s.sebab"> — yang menghentikannya: <strong>{{ SEBAB[s.sebab] ?? s.sebab }}</strong></span>
           <span v-if="s.simpolSampai"> · SIM habis <span class="num">{{ s.simpolSampai }}</span></span>
+
+          <!-- Salinan SIM kepolisian. Dijaga tetapi TIDAK sampai
+               paramedis: ia dokumen identitas — memuat NIK dan alamat
+               rumah — bukan dokumen medis. -->
+          <a v-if="s.berkas?.simpol?.url" :href="s.berkas.simpol.url" target="_blank" rel="noopener"
+             class="ml-1 text-cam-lime-deep hover:underline">· salinan SIM</a>
+          <span v-else-if="s.berkas?.simpol?.ada" class="ml-1 text-stone-400"
+                title="Salinan SIM sudah diunggah, tetapi hanya dapat dibuka tim OHSE atau administrator.">
+            · salinan SIM terjaga
+          </span>
         </p>
 
         <Langkah :alur="s.alur" />
