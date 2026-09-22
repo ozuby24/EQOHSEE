@@ -2339,3 +2339,99 @@ export interface HalamanKepatuhanPustaka {
   }>;
   tautan: TautanKepatuhan & { terbitkan: string };
 }
+
+/* ── Audit Kinerja Pengelolaan dan Pemantauan Lingkungan (ISO 14001) ── */
+
+export interface SkorBagianAudit {
+  kunci: string; judul: string; bobot: number; maks: number;
+  nilai: number; kriteria: number; belum: number;
+  persen: number; penuh: boolean; hasil: number;
+}
+
+export interface SkorAudit {
+  bagian: Record<string, SkorBagianAudit>;
+  pemenuhan: number; pengurang: number; akhir: number;
+  belum: number; kriteria: number; penuhWajib: boolean;
+  predikat: { nama: string | null; alasan: string | null };
+  peringkat: { nama: string; kriteria: string; warna: string };
+  rincianKurang: Array<{ kunci: string; label: string; poin: number }>;
+}
+
+export interface BarisAudit {
+  id: number; kode: string; judul: string; tahun: number;
+  lokasi: string | null; tanggal: string | null; status: string;
+  perusahaan: string | null; pengurang: string[];
+  akhir: number; pemenuhan: number; belum: number; kriteria: number;
+  predikat: { nama: string | null; alasan: string | null };
+  peringkat: { nama: string; kriteria: string; warna: string };
+  url: string;
+}
+
+export interface OpsiAudit {
+  tahun: number[];
+  status: string[];
+  nilai: number[];
+  pengurang: Array<{ kunci: string; label: string; poin: number }>;
+  profil: Array<{ kunci: string; label: string }>;
+  predikat: Array<{ nama: string; min: number; maks: number }>;
+  peringkat: Array<{ nama: string; kriteria: string; min: number; warna: string }>;
+  perusahaan: Array<{ id: number; nama: string }>;
+}
+
+export interface TautanAudit {
+  index: string; ikhtisar: string; ubah: string; hapus: string;
+  lembar: string; pengurang: string;
+  bagian: Record<string, string>;
+}
+
+export interface HalamanAuditLingkunganDaftar {
+  judul: string; subjudul: string;
+  saring: { tahun: number };
+  opsi: OpsiAudit;
+  daftar: BarisAudit[];
+  bagian: Array<{ kunci: string; huruf: string; judul: string; bobot: number;
+                  maks: number; kriteria: number; wajib: boolean }>;
+  tautan: { buat: string; index: string };
+}
+
+export interface HalamanAuditLingkunganIkhtisar {
+  judul: string; subjudul: string;
+  a: BarisAudit & {
+    profil: Array<{ kunci: string; label: string; nilai: string }>;
+    catatan: string | null;
+  };
+  skor: SkorAudit;
+  opsi: OpsiAudit;
+  tautan: TautanAudit;
+}
+
+export interface HalamanAuditLingkunganBagian {
+  judul: string; subjudul: string;
+  a: BarisAudit;
+  kini: string;
+  bagian: Array<{ kunci: string; huruf: string; judul: string; bobot: number;
+                  maks: number; kriteria: number; wajib: boolean }>;
+  susun: Array<{
+    nama: string;
+    kelompok: Array<{
+      nama: string;
+      butir: Array<{
+        kode: string; huruf: string | null; uraian: string; kosong: boolean;
+        nilai: number | null; verifikasi: number | null; keterangan: string;
+        selisih: boolean; berkas: string[]; urlBerkas: string | null;
+      }>;
+    }>;
+  }>;
+  skorBagian: SkorBagianAudit;
+  skor: { akhir: number; belum: number; kriteria: number };
+  tangga: Record<string, string>;
+  tautan: TautanAudit & { simpanNilai: string };
+}
+
+export interface HalamanAuditLingkunganForm {
+  judul: string; subjudul: string;
+  awal: Record<string, string> & { profil: Record<string, string> };
+  sunting: boolean;
+  opsi: OpsiAudit;
+  tautan: { simpan: string; batal: string };
+}

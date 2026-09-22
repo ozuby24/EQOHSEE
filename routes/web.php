@@ -28,6 +28,7 @@ use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiT
 use App\Http\Controllers\{BantuanController, BerkasController, ChatController, TemuanController};
 use App\Http\Controllers\Admin\{AiController, CompanyController, KeamananController, PemilikController, SystemController, UserController};
 use App\Http\Controllers\DuaFaktorController;
+use App\Http\Controllers\AuditLingkunganController;
 use App\Http\Controllers\KepatuhanController;
 use App\Http\Controllers\PerangkatSayaController;
 use App\Http\Controllers\TurController;
@@ -1292,6 +1293,31 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->middleware('can:admin')->name('destroy');
         Route::post('{kepatuhan}/salin',  [KepatuhanController::class, 'salin'])->name('salin');
         Route::get('{kepatuhan}/lembar',  [KepatuhanController::class, 'lembar'])->name('lembar');
+    });
+
+    /* ============ Audit Kinerja Pengelolaan & Pemantauan Lingkungan ============
+
+       Bagiannya dibuka SATU PER SATU. Bagian B sendirian berisi seratus
+       lima puluh kriteria, dan satu halaman berisi dua ratus baris
+       berpenilaian tiga kolom adalah halaman yang tidak pernah selesai
+       dimuat maupun selesai diisi. */
+    Route::prefix('audit-lingkungan')->name('audit-lingkungan.')->group(function () {
+        Route::get('/',                 [AuditLingkunganController::class, 'index'])->name('index');
+        Route::get('buat',              [AuditLingkunganController::class, 'create'])->name('create');
+        Route::post('/',                [AuditLingkunganController::class, 'store'])->name('store');
+
+        Route::post('berkas/{skor}',    [AuditLingkunganController::class, 'berkas'])->name('berkas');
+
+        Route::get('{audit}',           [AuditLingkunganController::class, 'show'])->name('show');
+        Route::get('{audit}/ubah',      [AuditLingkunganController::class, 'edit'])->name('edit');
+        Route::put('{audit}',           [AuditLingkunganController::class, 'update'])->name('update');
+        Route::delete('{audit}',        [AuditLingkunganController::class, 'destroy'])
+            ->middleware('can:admin')->name('destroy');
+
+        Route::get('{audit}/lembar',    [AuditLingkunganController::class, 'lembar'])->name('lembar');
+        Route::post('{audit}/pengurang',[AuditLingkunganController::class, 'pengurang'])->name('pengurang');
+        Route::post('{audit}/nilai',    [AuditLingkunganController::class, 'simpanNilai'])->name('nilai');
+        Route::get('{audit}/bagian/{bagian}', [AuditLingkunganController::class, 'bagian'])->name('bagian');
     });
 
     /* ================= WEBSITE #5b — ISO: pemenuhan klausul ================= */

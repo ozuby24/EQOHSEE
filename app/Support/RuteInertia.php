@@ -121,6 +121,8 @@ final class RuteInertia
         'kepatuhan.create',
         'kepatuhan.unggah',
         'kepatuhan.pustaka',
+        'audit-lingkungan.index',
+        'audit-lingkungan.create',
 
         /* Berkas cetak HSE */
         'hazard.ekspor.cetak',

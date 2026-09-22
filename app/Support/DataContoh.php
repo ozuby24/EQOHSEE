@@ -37,6 +37,8 @@ use App\Support\Hr\{JalurCuti, JalurLembur, KebijakanCuti, MasterCuti, MasterPaj
     Penggajian, Penyusun, Rekonsiliasi};
 use Illuminate\Support\Facades\Hash;
 use App\Models\{CompliancePoint, ComplianceRecap, ComplianceSubject};
+use App\Models\{EnvAudit, EnvAuditScore};
+use App\Support\AuditLingkungan;
 use App\Support\Kepatuhan;
 use App\Support\MasterInspeksi;
 use App\Support\Miners\Acuan;
@@ -147,6 +149,10 @@ final class DataContoh
         /* Butir lebih dulu, lalu subjeknya. Rekapnya berdiri sendiri —
            ia potret angka, bukan anak salah satu subjek. */
         CompliancePoint::class, ComplianceSubject::class, ComplianceRecap::class,
+
+        /* Nilai lebih dulu, lalu auditnya — sama alasannya: kaskade
+           basis data tidak terhitung pemanggilnya. */
+        EnvAuditScore::class, EnvAudit::class,
 
         DocumentRevision::class, DocumentIso::class, Document::class,
         HazardReport::class,
@@ -641,6 +647,11 @@ final class DataContoh
             CompliancePoint::class => $q->whereIn('subject_id',
                 ComplianceSubject::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
 
+            /* Nilai kriteria audit menumpang auditnya, sebab yang
+               bermilik perusahaan adalah pelaksanaan auditnya. */
+            EnvAuditScore::class => $q->whereIn('audit_id',
+                EnvAudit::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
             /* ── Miners ──
                Anaknya disaring lewat induknya yang berkolom
                company_id, sependek mungkin: unit SIMPER lewat
@@ -935,6 +946,13 @@ final class DataContoh
                sebagai bukti penerapannya — dan menunjuk baris yang
                belum ada menghasilkan register bertaut kosong. */
             'Kepatuhan'      => $this->kepatuhan(),
+
+            /* Audit lingkungan berdiri sendiri: kriterianya master
+               statis di resources, bukan tautan ke modul lain. Ditaruh
+               berdampingan dengan Kepatuhan karena keduanya dibaca dari
+               menu yang sama — dan yang memeriksa data contoh mencari
+               keduanya di satu tempat. */
+            'Audit lingkungan' => $this->auditLingkungan(),
 
             /* Miners: MCU → Mine Permit → SIMPER. Satu rantai, dan
                yang paling perlu diperiksa orang justru sambungannya —
@@ -4755,6 +4773,104 @@ final class DataContoh
                 'rencana'    => 'Menutup temuan yang tersisa sesuai target masing-masing PIC.',
             ]);
             $n++;
+        }
+
+        return $n;
+    }
+
+    /* ─────────── audit kinerja pengelolaan lingkungan ─────────── */
+
+    /**
+     * Satu pelaksanaan Audit Kinerja Pengelolaan dan Pemantauan Lingkungan.
+     *
+     * Sengaja TIDAK sempurna, dan sengaja belum tuntas. Audit contoh
+     * yang seluruh dua ratus satu kriterianya bernilai tiga hanya
+     * memperlihatkan satu keadaan — ADITAMA dengan bar penuh — dan
+     * menyembunyikan justru yang perlu diperiksa tampilannya: bagian
+     * yang capaiannya rendah, kriteria yang belum diverifikasi, selisih
+     * antara penilaian mandiri mitra dan hasil verifikasi auditor, dan
+     * predikat yang turun satu tingkat karena nilai pengurang.
+     *
+     * Susunannya dipilih supaya syarat "bagian A dan B harus penuh"
+     * TERPENUHI — kalau tidak, predikatnya tidak terbit sama sekali dan
+     * layar ikhtisarnya hanya memperlihatkan satu cabang dari dua.
+     */
+    private function auditLingkungan(): int
+    {
+        $n = 0;
+        $tahun = (int) date('Y');
+
+        /* Pola nilai per bagian, diputar sepanjang kriterianya.
+           Bagian A, B, dan D penuh; C, E, dan F tidak — dan empat
+           kriteria terakhir bagian F sengaja dibiarkan kosong. */
+        $pola = [
+            'a' => [3],
+            'b' => [3],
+            'c' => [3, 2, 2, 2, 2, 2, 2, 1, 1],
+            'd' => [3],
+            'e' => [2, 2, 3, 1],
+            'f' => [1],
+        ];
+
+        /* Berapa kriteria TERAKHIR tiap bagian yang dibiarkan belum
+           diverifikasi. Angka "4 dari 201 kriteria belum diverifikasi"
+           di layar ikhtisar hanya dapat diperiksa kalau memang ada
+           yang belum. */
+        $sisakan = ['f' => 4];
+
+        $a = $this->baru(EnvAudit::class, [
+            'user_id'  => $this->pengaju?->id,
+            'kode'     => EnvAudit::kodeBaru($tahun),
+            'tahun'    => $tahun,
+            'judul'    => 'Audit Kinerja Pengelolaan dan Pemantauan Lingkungan '.$tahun,
+            'lokasi'   => 'Site Utara',
+            'tanggal'  => now()->toDateString(),
+            'status'   => 'Berjalan',
+            'pengurang' => ['sanksi-tindak'],
+            'catatan'  => 'Audit contoh untuk memeriksa tampilan, perhitungan bobot, dan lembar cetaknya.',
+            'profil'   => [
+                'alamat'            => 'Jl. Hauling KM 12, Kutai Kartanegara',
+                'telepon'           => '0541-770123',
+                'alamatPusat'       => 'Gedung Menara Hijau Lt. 8, Jakarta Selatan',
+                'teleponPusat'      => '021-5550123',
+                'tahunBerdiri'      => '2014',
+                'karyawanTotal'     => '248',
+                'karyawanStaff'     => '42',
+                'karyawanNonStaff'  => '206',
+                'karyawanPria'      => '221',
+                'karyawanWanita'    => '27',
+                'petugasLingkungan' => '6',
+                'kontak1'           => 'Taqwa Utama',
+                'kontak1Hp'         => '0812-5550-1188 / hse@mitra.co.id',
+            ],
+        ]);
+        $n++;
+
+        foreach (AuditLingkungan::bagian() as $kunci => $_) {
+            $kriteria = AuditLingkungan::kriteria($kunci);
+            $putar = $pola[$kunci] ?? [3];
+            $batas = count($kriteria) - ($sisakan[$kunci] ?? 0);
+
+            foreach ($kriteria as $i => $k) {
+                $v = $i < $batas ? $putar[$i % count($putar)] : null;
+
+                /* Penilaian mandiri mitra sengaja LEBIH TINGGI pada
+                   sebagian baris. Kolom verifikasi yang selalu sama
+                   dengan kolom nilai tidak membuktikan bahwa keduanya
+                   memang dua kolom yang berbeda — dan justru selisih
+                   itulah yang dicari auditor saat meninjau. */
+                $mandiri = $v === null ? null : min(3, $v + ($i % 5 === 0 ? 1 : 0));
+
+                EnvAuditScore::create([
+                    'audit_id'   => $a->id,
+                    'kode'       => $k['kode'],
+                    'nilai'      => $mandiri,
+                    'verifikasi' => $v,
+                    'keterangan' => $v === null || $v >= 2 ? null
+                        : 'Bukti dokumen tersedia, implementasi lapangan belum lengkap.',
+                ]);
+                $n++;
+            }
         }
 
         return $n;

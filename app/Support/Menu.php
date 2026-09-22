@@ -755,6 +755,7 @@ final class Menu
           ['Register Kewajiban','kepatuhan.index', 'kepatuhan/register'],
           ['Rekap Bulanan',    'kepatuhan.rekap',  'kepatuhan/rekap'],
           ['Pustaka Daftar Periksa', 'kepatuhan.pustaka', 'kepatuhan/pustaka'],
+          ['Audit Kinerja Lingkungan', 'audit-lingkungan.index', 'audit-lingkungan*'],
         ],
       ],
     ],
@@ -820,7 +821,7 @@ final class Menu
            mana pun tidak menimbulkan galat sama sekali: halamannya tetap
            terbuka, hanya membawa sampul dan menu samping modul yang
            salah — dan yang membukanya menyimpulkan ia tersesat. */
-        [['dokumen*', 'iso*', 'kepatuhan*', 'struktur-dokumen', 'daftar-induk'], 'dokumen'],
+        [['dokumen*', 'iso*', 'kepatuhan*', 'audit-lingkungan*', 'struktur-dokumen', 'daftar-induk'], 'dokumen'],
         [['energi*'],                              'energi'],
         [['konservasi*'],                          'konservasi'],
         [['operasi-tambang*'],                     'operasi'],

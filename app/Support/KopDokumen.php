@@ -283,6 +283,12 @@ final class KopDokumen
                 'kode'  => 'OHSE-II.021',
                 'urut'  => 19,
 ],
+            'audit-lingkungan' => [
+                'jenis' => 'FORM & CHECKLIST',
+                'judul' => 'DAFTAR PERIKSA AUDIT INTERNAL KINERJA PENGELOLAAN DAN PEMANTAUAN LINGKUNGAN',
+                'kode'  => 'OHSE-V.061',
+                'urut'  => 21,
+],
             'rekap-pemenuhan' => [
                 'jenis' => 'FORM & CHECKLIST',
                 'judul' => 'REKAPITULASI BULANAN EVALUASI PEMENUHAN',
