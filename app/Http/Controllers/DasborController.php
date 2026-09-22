@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Document, KoObject, Paspor, SmkpFinding};
-use App\Support\{Authority, Dasbor, DasborGrafik, NadaWarna, PemantauanBerkas};
+use App\Models\{Document, KoObject, SmkpFinding};
+use App\Support\{Authority, Dasbor, DasborGrafik, NadaWarna};
+use App\Support\Miners\PemantauanMiners;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
@@ -48,9 +49,22 @@ class DasborController extends Controller
            yang justru harus terbuka cepat. */
         $ubin = collect(Dasbor::modul($user));
 
-        $orang  = Paspor::with(['kartu', 'mcu', 'company'])->get();
-        $baris  = PemantauanBerkas::baris($orang);
-        $berkas = PemantauanBerkas::ringkas($baris);
+        /* Dibaca dari MINERS, bukan dari tabel `paspor` lama.
+
+           Sebelumnya dasbor membaca `paspor` sementara modul Miners
+           membaca `mnr_pekerja`, dan keduanya berisi. Akibatnya ubin
+           "Tenaga kerja" di sini menyebut 35 sedangkan layar Miners
+           menyebut 42 — satu situs, dua angka, dua layar berurutan.
+           Angka dasbor itu pula yang dipakai memperkirakan mandays
+           audit, jadi selisihnya tidak berhenti sebagai kejanggalan
+           tampilan.
+
+           Miners yang menang karena ia yang masih diisi: seluruh alur
+           MCU, Mine Permit, dan SIMPER berjalan di sana, sedangkan
+           `paspor_*` tidak lagi punya satu pun layar yang menulisinya. */
+        $orang  = PemantauanMiners::muat();
+        $baris  = PemantauanMiners::baris($orang);
+        $berkas = PemantauanMiners::ringkas($baris);
 
         return Inertia::render('Dasbor/Halaman', [
             'judul'    => 'Dashboard',
@@ -64,7 +78,7 @@ class DasborController extends Controller
                 'manpowerAktif' => $berkas['manpowerAktif'],
                 'berkasHabis'   => $berkas['habis'],
                 'berkasDekat'   => $berkas['mendekati'],
-                'perusahaan'    => count(PemantauanBerkas::perPerusahaan($baris)),
+                'perusahaan'    => count(PemantauanMiners::perPerusahaan($baris)),
             ],
 
             /* Sebaran masa berlaku seluruh berkas kelayakan, memakai
@@ -79,7 +93,7 @@ class DasborController extends Controller
                 'nilai' => $berkas['perKeadaan'][$k] ?? 0,
             ])->values()->all(),
 
-            'perPerusahaan' => collect(PemantauanBerkas::perPerusahaan($baris))
+            'perPerusahaan' => collect(PemantauanMiners::perPerusahaan($baris))
                 ->take(8)
                 ->map(fn ($c) => [
                     'label'     => $c['perusahaan'],
