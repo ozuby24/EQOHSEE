@@ -2413,7 +2413,29 @@ export interface HalamanKepatuhanUnggah {
   opsi: OpsiKepatuhan;
   /** Apakah kunci AI terpasang; pemecahan pasalnya berjalan tanpa itu. */
   ai: boolean;
-  tautan: TautanKepatuhan & { rangkum: string; simpan: string };
+  /** Penyedia dan model yang dipakai, mis. "Google Gemini · gemini-flash-latest". */
+  aiLabel: string | null;
+  batas: { perGiliran: number; halamanPerBaca: number; maksButir: number };
+  tautan: TautanKepatuhan & { rangkum: string; aiButir: string; identitas: string; baca: string; simpan: string };
+}
+
+/** Jawaban POST kepatuhan/rangkum. */
+export interface HasilRangkum {
+  butir: Array<{ no: number; penunjuk: string; isi: string }>;
+  total: number;
+  identitas: IdentitasPeraturan | null;
+  catatan: string[];
+  halaman: number | null;
+  halamanGambar: number[];
+  perHalaman: string[] | null;
+  token: string | null;
+  naskah: string;
+  ai: boolean;
+}
+
+export interface IdentitasPeraturan {
+  jenis: string; nomor: string; judul: string; tanggal_terbit: string; instansi: string;
+  aspek?: string; ruang_lingkup?: string; rangkuman?: string;
 }
 
 export interface HalamanKepatuhanPustaka {

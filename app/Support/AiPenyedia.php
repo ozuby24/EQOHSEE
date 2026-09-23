@@ -76,10 +76,13 @@ final class AiPenyedia
      */
     public static function permintaan(
         string $kode, string $kunci, string $model, string $peranSistem,
-        array $riwayat, int $maksToken,
+        array $riwayat, int $maksToken, array $opsi = [],
     ): array {
         $p = self::satu($kode);
         $alamat = rtrim($p['alamat'], '/');
+        $json = (bool) ($opsi['json'] ?? false);
+        $lampiran = array_values($opsi['lampiran'] ?? []);
+        $akhir = array_key_last($riwayat);
 
         return match ($kode) {
             self::ANTHROPIC => [
@@ -96,10 +99,15 @@ final class AiPenyedia
                     'model'      => $model,
                     'max_tokens' => $maksToken,
                     'system'     => $peranSistem,
-                    'messages'   => array_map(fn ($g) => [
+                    'messages'   => array_map(fn ($g, $i) => [
                         'role'    => $g['peran'] === 'pengguna' ? 'user' : 'assistant',
-                        'content' => $g['isi'],
-                    ], $riwayat),
+                        'content' => $i === $akhir && $lampiran
+                            ? array_merge(array_map(fn ($l) => [
+                                  'type'   => 'document',
+                                  'source' => ['type' => 'base64', 'media_type' => $l['mime'], 'data' => $l['data']],
+                              ], $lampiran), [['type' => 'text', 'text' => $g['isi']]])
+                            : $g['isi'],
+                    ], $riwayat, array_keys($riwayat)),
                 ],
             ],
 
@@ -113,12 +121,22 @@ final class AiPenyedia
                        chat/completions. */
                     'messages' => array_merge(
                         [['role' => 'system', 'content' => $peranSistem]],
-                        array_map(fn ($g) => [
+                        array_map(fn ($g, $i) => [
                             'role'    => $g['peran'] === 'pengguna' ? 'user' : 'assistant',
-                            'content' => $g['isi'],
-                        ], $riwayat),
+                            'content' => $i === $akhir && $lampiran
+                                ? array_merge(array_map(fn ($l) => [
+                                      'type' => 'file',
+                                      'file' => ['filename' => $l['nama'] ?? 'berkas.pdf',
+                                                 'file_data' => 'data:'.$l['mime'].';base64,'.$l['data']],
+                                  ], $lampiran), [['type' => 'text', 'text' => $g['isi']]])
+                                : $g['isi'],
+                        ], $riwayat, array_keys($riwayat)),
                     ),
-                ] + self::batasTokenOpenAi($model, $maksToken),
+                ] + self::batasTokenOpenAi($model, $maksToken)
+                  /* json_object menuntut akar berupa OBJEK dan kata "JSON"
+                     di dalam pesannya — pemanggil yang meminta json wajib
+                     memenuhi keduanya. */
+                  + ($json ? ['response_format' => ['type' => 'json_object']] : []),
             ],
 
             self::GEMINI => [
@@ -126,12 +144,18 @@ final class AiPenyedia
                 'tajuk' => ['x-goog-api-key' => $kunci],
                 'badan' => [
                     'systemInstruction' => ['parts' => [['text' => $peranSistem]]],
-                    'contents' => array_map(fn ($g) => [
+                    'contents' => array_map(fn ($g, $i) => [
                         // Gemini hanya mengenal 'user' dan 'model'.
                         'role'  => $g['peran'] === 'pengguna' ? 'user' : 'model',
-                        'parts' => [['text' => $g['isi']]],
-                    ], $riwayat),
-                    'generationConfig' => ['maxOutputTokens' => $maksToken],
+                        'parts' => array_merge(
+                            $i === $akhir ? array_map(fn ($l) => [
+                                'inlineData' => ['mimeType' => $l['mime'], 'data' => $l['data']],
+                            ], $lampiran) : [],
+                            [['text' => $g['isi']]],
+                        ),
+                    ], $riwayat, array_keys($riwayat)),
+                    'generationConfig' => ['maxOutputTokens' => $maksToken]
+                        + ($json ? ['responseMimeType' => 'application/json'] : []),
                 ],
             ],
         };
@@ -189,6 +213,16 @@ final class AiPenyedia
             self::ANTHROPIC => data_get($json, 'stop_reason'),
             self::OPENAI    => data_get($json, 'choices.0.finish_reason'),
             self::GEMINI    => data_get($json, 'candidates.0.finishReason'),
+        };
+    }
+
+    /** Apakah jawabannya berhenti karena batas token, bukan karena selesai. */
+    public static function terpotong(string $kode, ?string $alasan): bool
+    {
+        return match ($kode) {
+            self::ANTHROPIC => $alasan === 'max_tokens',
+            self::OPENAI    => $alasan === 'length',
+            self::GEMINI    => $alasan === 'MAX_TOKENS',
         };
     }
 

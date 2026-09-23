@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, CompliancePoint, ComplianceRecap, ComplianceSubject, Company, Document};
-use App\Support\{Berkas, Iso, Kepatuhan, KopDokumen, PemecahPeraturan, PustakaKepatuhan, RegisterKepatuhan};
+use App\Support\{Ai, AnalisisPeraturan, Berkas, Iso, Kepatuhan, KopDokumen, PemecahPeraturan, PustakaKepatuhan, RegisterKepatuhan};
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Validation\Rule;
@@ -511,78 +511,251 @@ class KepatuhanController extends Controller
     {
         return Inertia::render('Kepatuhan/Unggah', [
             'judul'    => 'Unggah & Rangkum',
-            'subjudul' => 'Baca naskah peraturan, pecah jadi butir, periksa, lalu simpan',
+            'subjudul' => 'Baca naskah peraturan, pecah jadi butir, analisis dengan AI, periksa, lalu simpan',
 
             'opsi' => $this->opsi(),
 
             /* Diberi tahu dari awal, bukan sesudah menunggu.
                Tanpa kunci AI, pemecahan pasalnya tetap berjalan penuh —
                yang tidak ada hanya usulan rangkuman dan penerapannya. */
-            'ai' => \App\Support\Ai::aktif(),
+            'ai'      => Ai::aktif(),
+            'aiLabel' => Ai::aktif() ? Ai::label() : null,
+            'batas'   => [
+                'perGiliran'     => AnalisisPeraturan::PER_GILIRAN,
+                'halamanPerBaca' => AnalisisPeraturan::HALAMAN_PER_BACA,
+                'maksButir'      => PemecahPeraturan::MAKS_BUTIR,
+            ],
 
             'tautan' => $this->tautan() + [
-                'rangkum' => route('kepatuhan.rangkum'),
-                'simpan'  => route('kepatuhan.rangkum.simpan'),
+                'rangkum'   => route('kepatuhan.rangkum'),
+                'aiButir'   => route('kepatuhan.rangkum.ai'),
+                'identitas' => route('kepatuhan.rangkum.identitas'),
+                'baca'      => route('kepatuhan.rangkum.baca'),
+                'simpan'    => route('kepatuhan.rangkum.simpan'),
             ],
         ]);
     }
 
     /**
-     * Baca naskahnya dan usulkan butir-butirnya — TANPA menyimpan.
+     * Baca naskahnya dan pecah menjadi butir — TANPA menyimpan.
      *
-     * Hasilnya dipulangkan ke layar untuk diperiksa, disunting, dan
-     * dicentang. Yang menyimpan langsung akan memasukkan pasal yang
-     * belum pernah dibaca siapa pun ke dalam angka pemenuhan.
+     * Memulangkan JSON, bukan pengalihan. Sebelumnya hasilnya dititipkan
+     * lewat flash 'rangkuman', yang tidak pernah dibagikan ke halaman:
+     * tombol "Baca & Rangkum" berputar sebentar, lalu kolom hasil tetap
+     * kosong — tanpa galat di mana pun. Dengan JSON, yang dipulangkan
+     * server langsung sampai ke halaman yang memintanya.
+     *
+     * AI TIDAK dipanggil di sini. Analisisnya dijalankan halaman per
+     * selusin butir lewat rangkumAi(), supaya peraturan panjang tidak
+     * menjadi satu permintaan yang melampaui batas waktu server.
      */
     public function rangkum(Request $request)
     {
-        $d = $request->validate([
-            'teks'     => ['nullable', 'string', 'max:400000'],
-            'kegiatan' => ['nullable', 'string', 'max:500'],
+        [$d, $tolak] = $this->validasiJson($request, [
+            'teks'     => ['nullable', 'string', 'max:'.PemecahPeraturan::MAKS_AKSARA],
             'berkas'   => ['nullable', 'file', 'mimes:pdf,docx,txt,md', 'max:20480'],
-        ]);
+        ], ['teks' => 'teks peraturan', 'berkas' => 'berkas']);
+        if ($tolak) return $tolak;
 
-        $catatan = null;
+        $catatan = [];
         $naskah  = trim((string) ($d['teks'] ?? ''));
+        $baca    = null;
 
         /* Kotak teks MENANG atas berkasnya, tidak digabung.
            Yang menempelkan naskah sudah melakukannya justru karena
            berkasnya tidak terbaca; menambahkan hasil bacaan berkas ke
            bawahnya menghasilkan naskah rangkap dengan pasal berulang. */
         if ($naskah === '' && $request->hasFile('berkas')) {
-            $hasil   = PemecahPeraturan::dariBerkas($request->file('berkas'));
-            $naskah  = $hasil['teks'];
-            $catatan = $hasil['catatan'];
+            $baca   = PemecahPeraturan::dariBerkas($request->file('berkas'));
+            $naskah = $baca['teks'];
+            if ($baca['catatan']) $catatan[] = $baca['catatan'];
         }
 
-        if ($naskah === '') {
-            return back()->with('rangkuman', [
-                'butir'   => [],
-                'catatan' => $catatan ?: 'Tidak ada naskah yang dapat dibaca. '
-                                        .'Unggah berkasnya atau tempelkan teksnya.',
-                'ai'      => false,
-            ]);
+        if ($naskah === '' && !$baca) {
+            return response()->json(['errors' => ['teks' => ['Unggah berkasnya atau tempelkan teks peraturannya.']],
+                                     'message' => 'Naskah kosong.'], 422);
         }
 
-        $butir = PemecahPeraturan::pecah($naskah);
+        /* Halaman gambar dapat dibaca AI: berkasnya disimpan sebentar
+           supaya halaman itu dapat diminta satu per satu. */
+        $token = null;
+        if ($baca && $baca['halamanGambar']) {
+            $berkas = $request->file('berkas');
 
-        if (!$butir) {
-            return back()->with('rangkuman', [
-                'butir'   => [],
-                'catatan' => 'Naskahnya terbaca tetapi tidak ditemukan penanda "Pasal". '
-                            .'Tambahkan butirnya satu per satu di halaman penilaian.',
-                'ai'      => false,
-            ]);
+            if (!Ai::aktif()) {
+                $catatan[] = 'Pasang kunci AI di Pusat Kendali agar halaman gambar dapat dibaca otomatis, '
+                            .'atau tempelkan teks halaman itu di kotak teks.';
+            } elseif ($berkas->getSize() > AnalisisPeraturan::MAKS_PDF_BYTE) {
+                $catatan[] = 'PDF-nya lebih besar dari '.(AnalisisPeraturan::MAKS_PDF_BYTE / 1048576).' MB, terlalu besar '
+                            .'untuk dibaca AI. Tempelkan teks halaman itu di kotak teks.';
+            } else {
+                $token = $this->simpanSementara($berkas);
+                $catatan[] = 'Halaman gambar itu dibaca dengan AI.';
+            }
         }
 
-        $pakaiAi = \App\Support\Ai::aktif();
-        $usul    = PemecahPeraturan::usul($butir, $d['kegiatan'] ?? null);
+        $semua = PemecahPeraturan::pecah($naskah);
+        $total = count($semua);
+        $butir = array_slice($semua, 0, PemecahPeraturan::MAKS_BUTIR);
 
-        return back()->with('rangkuman', [
-            'butir'   => $usul,
+        if ($naskah !== '' && !$semua) {
+            $catatan[] = 'Naskahnya terbaca tetapi tidak ditemukan penanda "Pasal" yang berdiri di barisnya sendiri. '
+                        .'Periksa teksnya di kotak kiri, atau tambahkan butirnya satu per satu di halaman penilaian.';
+        }
+        if ($total > count($butir)) {
+            $catatan[] = "Naskah ini memuat {$total} butir; yang ditampilkan {$this->angka(count($butir))} pertama. "
+                        .'Sisanya — '.($total - count($butir)).' butir — simpan sebagai peraturan terpisah '
+                        .'dengan menempelkan bagian naskah berikutnya.';
+        }
+
+        return response()->json([
+            'butir' => array_map(fn ($b, $i) => ['no' => $i + 1] + $b, $butir, array_keys($butir)),
+            'total' => $total,
+            'identitas' => $naskah === '' ? null : PemecahPeraturan::identitas($naskah),
             'catatan' => $catatan,
-            'ai'      => $pakaiAi,
+            'halaman' => $baca['halaman'] ?? null,
+            'halamanGambar' => $baca['halamanGambar'] ?? [],
+            /* Teks per halaman hanya dikirim bila ada halaman yang akan
+               dibaca AI: halaman hasil bacaan itu disisipkan pada
+               tempatnya, bukan ditempel di ujung naskah. */
+            'perHalaman' => $token ? $baca['perHalaman'] : null,
+            'token' => $token,
+            'naskah' => $naskah,
+            'ai' => Ai::aktif(),
         ]);
+    }
+
+    /** Analisis AI untuk satu giliran butir. */
+    public function rangkumAi(Request $request)
+    {
+        [$d, $tolak] = $this->validasiJson($request, [
+            'kegiatan'         => ['nullable', 'string', 'max:500'],
+            'butir'            => ['required', 'array', 'min:1', 'max:'.AnalisisPeraturan::PER_GILIRAN],
+            'butir.*.no'       => ['required', 'integer', 'min:1'],
+            'butir.*.penunjuk' => ['required', 'string', 'max:200'],
+            'butir.*.isi'      => ['required', 'string', 'max:3000'],
+        ]);
+        if ($tolak) return $tolak;
+
+        if (!Ai::aktif()) return $this->aiMati();
+
+        @set_time_limit(115);
+
+        return response()->json($this->saring(AnalisisPeraturan::butir($d['butir'], $d['kegiatan'] ?? null)));
+    }
+
+    /** Identitas peraturan dianalisis AI dari kepala dan penutup naskahnya. */
+    public function rangkumIdentitas(Request $request)
+    {
+        [$d, $tolak] = $this->validasiJson($request, [
+            'naskah' => ['required', 'string', 'max:'.PemecahPeraturan::MAKS_AKSARA],
+        ]);
+        if ($tolak) return $tolak;
+
+        if (!Ai::aktif()) return $this->aiMati();
+
+        @set_time_limit(115);
+
+        return response()->json($this->saring(
+            AnalisisPeraturan::identitas($d['naskah'], PemecahPeraturan::identitas($d['naskah'])),
+        ));
+    }
+
+    /** Halaman PDF yang berupa gambar dibaca AI, beberapa sekali jalan. */
+    public function rangkumBaca(Request $request)
+    {
+        [$d, $tolak] = $this->validasiJson($request, [
+            'token'   => ['required', 'uuid'],
+            'dari'    => ['required', 'integer', 'min:1', 'max:2000'],
+            'sampai'  => ['required', 'integer', 'gte:dari', 'max:2000'],
+        ]);
+        if ($tolak) return $tolak;
+
+        if (!Ai::aktif()) return $this->aiMati();
+
+        /* Berkasnya hanya dapat diminta pengunggahnya sendiri: jalurnya
+           memuat id pengguna, dan token orang lain tidak menemukan apa-apa. */
+        $jalur = $this->jalurSementara($d['token']);
+        if (!is_file($jalur)) {
+            return response()->json(['ok' => false, 'halaman' => [],
+                'pesan' => 'Berkas sementara sudah tidak ada — unggah ulang berkasnya.'], 404);
+        }
+
+        @set_time_limit(115);
+
+        $sampai = min($d['sampai'], $d['dari'] + AnalisisPeraturan::HALAMAN_PER_BACA - 1);
+
+        return response()->json($this->saring(AnalisisPeraturan::bacaHalaman($jalur, $d['dari'], $sampai)));
+    }
+
+    /**
+     * Validasi yang SELALU memulangkan JSON bila gagal.
+     *
+     * bootstrap/app.php merender galat sebagai JSON hanya untuk api/*.
+     * Pada rute web, `$request->validate()` yang gagal memulangkan
+     * pengalihan ke halaman sebelumnya — dan fetch mengikutinya lalu
+     * menerima HTML ber-status 200, yang terbaca sebagai "berhasil tetapi
+     * kosong". Berkas .jpg yang diunggah ke sini berakhir begitu.
+     *
+     * @return array{0:?array,1:?\Illuminate\Http\JsonResponse}
+     */
+    private function validasiJson(Request $request, array $aturan, array $nama = []): array
+    {
+        $v = \Illuminate\Support\Facades\Validator::make($request->all(), $aturan, [], $nama);
+
+        if ($v->fails()) {
+            return [null, response()->json([
+                'message' => $v->errors()->first(),
+                'errors'  => $v->errors()->toArray(),
+            ], 422)];
+        }
+
+        return [$v->validated(), null];
+    }
+
+    /**
+     * Rincian galat penyedia hanya untuk administrator.
+     *
+     * Pesan penyedia kadang memuat nama proyek atau potongan konfigurasi;
+     * pengguna biasa cukup membaca bahwa AI gagal dan dapat diulang.
+     */
+    private function saring(array $hasil): array
+    {
+        if (!auth()->user()?->isAdmin()) unset($hasil['galat']);
+
+        return $hasil;
+    }
+
+    private function aiMati()
+    {
+        return response()->json(['ok' => false,
+            'pesan' => 'AI belum diaktifkan. Masukkan kunci API di Pusat Kendali → Integrasi AI.'], 409);
+    }
+
+    private function angka(int $n): string
+    {
+        return number_format($n, 0, ',', '.');
+    }
+
+    private function jalurSementara(string $token): string
+    {
+        return storage_path('app/private/rangkum/'.auth()->id().'/'.$token.'.pdf');
+    }
+
+    /** Simpan PDF sebentar untuk dibaca AI per halaman; yang lewat sehari dibuang. */
+    private function simpanSementara(\Illuminate\Http\UploadedFile $berkas): string
+    {
+        $akar = storage_path('app/private/rangkum');
+        foreach (glob($akar.'/*/*.pdf') ?: [] as $f) {
+            if (@filemtime($f) < time() - 86400) @unlink($f);
+        }
+
+        $token = (string) \Illuminate\Support\Str::uuid();
+        $jalur = $this->jalurSementara($token);
+        @mkdir(dirname($jalur), 0770, true);
+        copy($berkas->getRealPath(), $jalur);
+
+        return $token;
     }
 
     /**
@@ -597,7 +770,7 @@ class KepatuhanController extends Controller
         $d = $this->v($request);
 
         $butir = $request->validate([
-            'butir'               => ['required', 'array', 'min:1', 'max:200'],
+            'butir'               => ['required', 'array', 'min:1', 'max:'.PemecahPeraturan::MAKS_BUTIR],
             'butir.*.penunjuk'    => ['required', 'string', 'max:200'],
             'butir.*.rangkuman'   => ['nullable', 'string', 'max:3000'],
             'butir.*.penerapan'   => ['nullable', 'string', 'max:3000'],

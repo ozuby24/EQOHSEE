@@ -158,10 +158,26 @@ final class Ai
     /**
      * Menjawab satu giliran percakapan.
      *
+     * `$opsi` untuk pekerjaan analisis yang lebih berat daripada kotak
+     * bantuan — tanpanya perilakunya sama persis seperti sebelumnya:
+     *
+     * - maksToken: batas keluaran untuk permintaan ini saja. Batas pada
+     *   Pusat Kendali (bawaan 900) dirancang untuk jawaban bantuan; satu
+     *   larik JSON berisi selusin rangkuman pasal sudah melampauinya, dan
+     *   model yang "berpikir" dulu (Gemini 2.5) menghabiskan sebagian
+     *   batas itu sebelum menulis satu huruf pun. Hasilnya jawaban
+     *   terpotong atau kosong — persis yang tercatat di log sebagai
+     *   "AI memulangkan jawaban kosong · MAX_TOKENS".
+     * - jeda: batas waktu dalam detik.
+     * - json: minta jawaban JSON murni bila penyedianya mendukung.
+     * - lampiran: berkas untuk giliran terakhir, list<{mime,data,nama}>
+     *   dengan data base64 — dipakai membaca halaman PDF hasil pindaian.
+     *
      * @param  list<array{peran:string,isi:string}>  $riwayat  terlama lebih dulu
+     * @param  array{maksToken?:int,jeda?:int,json?:bool,lampiran?:list<array{mime:string,data:string,nama?:string}>}  $opsi
      * @return array{ok:bool,isi:string,galat?:string}
      */
-    public static function jawab(array $riwayat, string $peranSistem, int $maksRiwayat = 12): array
+    public static function jawab(array $riwayat, string $peranSistem, int $maksRiwayat = 12, array $opsi = []): array
     {
         $penyedia = self::penyedia();
         $kunci    = self::kunci();
@@ -177,11 +193,13 @@ final class Ai
         }
 
         $minta = AiPenyedia::permintaan(
-            $penyedia, $kunci, self::model(), $peranSistem, $riwayat, self::maksToken(),
+            $penyedia, $kunci, self::model(), $peranSistem, $riwayat,
+            (int) ($opsi['maksToken'] ?? self::maksToken()),
+            ['json' => (bool) ($opsi['json'] ?? false), 'lampiran' => $opsi['lampiran'] ?? []],
         );
 
         try {
-            $r = Http::timeout((int) config('bantuan.ai.jeda', 30))
+            $r = Http::timeout((int) ($opsi['jeda'] ?? config('bantuan.ai.jeda', 30)))
                 ->withHeaders($minta['tajuk'])
                 ->asJson()
                 ->post($minta['url'], $minta['badan']);
@@ -212,9 +230,20 @@ final class Ai
         }
 
         $teks = AiPenyedia::jawaban($penyedia, $json);
+        $alasan = AiPenyedia::alasanBerhenti($penyedia, $json);
+
+        /* Jawaban yang BERHENTI karena batas token bukan jawaban utuh.
+           Untuk jawaban JSON itu berarti larik yang terpotong di tengah
+           — tidak dapat diurai, dan tanpa tanda ini kegagalannya
+           terbaca sebagai "model menjawab ngawur". */
+        if ($teks !== '' && ($opsi['json'] ?? false) && AiPenyedia::terpotong($penyedia, $alasan)) {
+            Log::warning('AI memulangkan jawaban terpotong', ['penyedia' => $penyedia, 'alasan' => $alasan]);
+
+            return ['ok' => false, 'isi' => 'Jawaban AI terpotong karena batas panjang jawaban.',
+                    'galat' => 'terpotong · '.$alasan];
+        }
 
         if ($teks === '') {
-            $alasan = AiPenyedia::alasanBerhenti($penyedia, $json);
 
             Log::warning('AI memulangkan jawaban kosong', ['penyedia' => $penyedia, 'alasan' => $alasan]);
 
@@ -306,6 +335,37 @@ final class Ai
     }
 
     /* ═══════════ perkakas ═══════════ */
+
+    /** Nama penyedia dan model yang sedang dipakai, untuk ditampilkan. */
+    public static function label(): string
+    {
+        return AiPenyedia::satu(self::penyedia())['nama'].' · '.self::model();
+    }
+
+    /**
+     * Urai jawaban JSON dari model.
+     *
+     * Model kerap membungkus JSON-nya dengan pagar ```json, atau
+     * mendahuluinya dengan satu kalimat pengantar meskipun diminta
+     * tidak. Diambil dari kurung pembuka pertama sampai kurung penutup
+     * terakhir, lalu diurai; null bila tetap tidak dapat diurai.
+     */
+    public static function uraiJson(string $teks): ?array
+    {
+        $teks = trim(preg_replace('~^```(?:json)?\s*|\s*```$~m', '', trim($teks)) ?? $teks);
+
+        $data = json_decode($teks, true);
+        if (is_array($data)) return $data;
+
+        $a = strcspn($teks, '[{');
+        $z = max(strrpos($teks, ']') ?: -1, strrpos($teks, '}') ?: -1);
+
+        if ($a >= strlen($teks) || $z <= $a) return null;
+
+        $data = json_decode(substr($teks, $a, $z - $a + 1), true);
+
+        return is_array($data) ? $data : null;
+    }
 
     /**
      * Buang kunci dari teks apa pun sebelum ia ditampilkan atau dicatat.

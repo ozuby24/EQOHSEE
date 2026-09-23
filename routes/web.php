@@ -1327,6 +1327,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('pustaka',     [KepatuhanController::class, 'terbitkanPustaka'])->name('pustaka.terbitkan');
         Route::post('rangkum',     [KepatuhanController::class, 'rangkum'])->name('rangkum');
         Route::post('rangkum/simpan', [KepatuhanController::class, 'simpanRangkuman'])->name('rangkum.simpan');
+        /* Analisis AI dipanggil halaman per giliran kecil. Dibatasi per
+           menit: tiap permintaan dibayar dengan kunci API pemasangnya. */
+        Route::post('rangkum/ai',        [KepatuhanController::class, 'rangkumAi'])->middleware('throttle:40,1')->name('rangkum.ai');
+        Route::post('rangkum/identitas', [KepatuhanController::class, 'rangkumIdentitas'])->middleware('throttle:10,1')->name('rangkum.identitas');
+        Route::post('rangkum/baca',      [KepatuhanController::class, 'rangkumBaca'])->middleware('throttle:40,1')->name('rangkum.baca');
         Route::get('buat',         [KepatuhanController::class, 'create'])->name('create');
         Route::post('/',           [KepatuhanController::class, 'store'])->name('store');
 
