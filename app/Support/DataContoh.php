@@ -38,6 +38,7 @@ use App\Support\Hr\{JalurCuti, JalurLembur, KebijakanCuti, MasterCuti, MasterPaj
 use Illuminate\Support\Facades\Hash;
 use App\Models\{CompliancePoint, ComplianceRecap, ComplianceSubject};
 use App\Models\{EnvAudit, EnvAuditScore};
+use App\Models\Frop\{Coaching as FropCoaching, Observasi as FropObservasi};
 use App\Support\AuditLingkungan;
 use App\Support\Kepatuhan;
 use App\Support\MasterInspeksi;
@@ -153,6 +154,10 @@ final class DataContoh
         /* Nilai lebih dulu, lalu auditnya — sama alasannya: kaskade
            basis data tidak terhitung pemanggilnya. */
         EnvAuditScore::class, EnvAudit::class,
+
+        /* Coaching menunjuk sesi observasi (nullOnDelete), jadi dibuang
+           lebih dulu agar hitungannya tetap sebanding. */
+        FropCoaching::class, FropObservasi::class,
 
         DocumentRevision::class, DocumentIso::class, Document::class,
         HazardReport::class,
@@ -953,6 +958,9 @@ final class DataContoh
                menu yang sama — dan yang memeriksa data contoh mencari
                keduanya di satu tempat. */
             'Audit lingkungan' => $this->auditLingkungan(),
+
+            /* Observasi operator loader (FROP) di Learning Center. */
+            'Observasi operator' => $this->frop(),
 
             /* Miners: MCU → Mine Permit → SIMPER. Satu rantai, dan
                yang paling perlu diperiksa orang justru sambungannya —
@@ -4868,6 +4876,100 @@ final class DataContoh
                     'verifikasi' => $v,
                     'keterangan' => $v === null || $v >= 2 ? null
                         : 'Bukti dokumen tersedia, implementasi lapangan belum lengkap.',
+                ]);
+                $n++;
+            }
+        }
+
+        return $n;
+    }
+
+    /* ─────────── observasi operator loader (FROP) ─────────── */
+
+    /**
+     * Sesi observasi cycle time beberapa operator selama sebulan.
+     *
+     * Sengaja tidak seluruhnya ON TARGET, tidak seluruhnya ber-PTY, dan
+     * temuannya sengaja berulang pada unit yang sama: halaman performa,
+     * KPI, dan tracker temuan hanya dapat diperiksa kalau ada operator
+     * yang tertinggal, sesi yang belum dinilai produksinya, dan masalah
+     * yang kembali.
+     */
+    private function frop(): int
+    {
+        $n = 0;
+        $operator = ['Operator Contoh A', 'Operator Contoh B', 'Operator Contoh C',
+                     'Operator Contoh D', 'Operator Contoh E', 'Operator Contoh F'];
+        $unit  = ['Ex 699 / PC 1250', 'Ex 700 / PC 1250', 'Ex 731 / PC 1250', 'Ex 750 / R-850'];
+        $level = ['easy', 'average', 'severe', 'easy'];
+        $temuan = [
+            'Front undulating; hauler menggantung',
+            'Material keras; sudut swing besar',
+            'Track sejajar bench; bucket tidak heap',
+            'Jalan disposal berdebu',
+            null,
+            'Boulder di front; spotting lama',
+        ];
+
+        for ($i = 0; $i < 24; $i++) {
+            $lv   = $level[$i % 4];
+            $plan = \App\Support\Frop\Penilaian::PLAN_CT[$lv];
+            // Operator E dan F lebih lambat; sisanya berayun di sekitar plan.
+            $geser = in_array($i % 6, [4, 5], true) ? 3.5 : (($i % 3) - 1.2);
+            $dig   = round($plan * 9 / 22 + $geser, 1);
+
+            $o = $this->baru(FropObservasi::class, [
+                'user_id'       => $this->pengaju?->id,
+                'tanggal'       => $this->kini->copy()->subDays(29 - $i)->toDateString(),
+                'shift'         => 1 + $i % 2,
+                'jam_observasi' => sprintf('%02d.00 – %02d.00', 8 + $i % 4, 9 + $i % 4),
+                'unit'          => $unit[$i % 4],
+                'operator'      => $operator[$i % 6],
+                'gl_front'      => 'GL Contoh',
+                'observer'      => 'Observer Contoh',
+                'verified_by'   => 'GL Contoh',
+                'kondisi_mesin' => 'Normal',
+                'mode_kerja'    => 'P (Power)',
+                'level'         => $lv,
+                'material'      => ['easy' => 'Soft Soil', 'average' => 'Clay Alot', 'severe' => 'OB Non Blasting'][$lv],
+                'metode_loading'=> 'Side Loading',
+                'operating_condition' => 'Average',
+                'tinggi_jenjang'=> 3,
+                'lebar_front'   => 25,
+                'cuaca'         => $i % 7 === 3 ? 'Hujan Ringan' : 'Cerah',
+                'spotting'      => 8 + $i % 6,
+                'digging'       => $dig,
+                'swl'           => round($plan * 6 / 22, 1),
+                'dump'          => round($plan * 3 / 22, 1),
+                'swe'           => round($plan * 4 / 22, 1),
+                'plan_ct'       => $plan,
+                'loading_detik' => 70 + ($i * 7) % 45,
+                'n_passing'     => (string) (4 + $i % 3),
+                'bucket_heap'   => $i % 5 !== 2,
+                'target_pty'    => 600,
+                // Sesi terakhir belum menerima PTY dari Engineering.
+                'aktual_pty'    => $i >= 22 ? null : 470 + ($i * 37) % 170,
+                'temuan'        => $temuan[$i % 6],
+                'corrective_action' => $temuan[$i % 6] ? 'Arahkan operator dan GL front; verifikasi pada observasi berikutnya' : null,
+                'status_ca'     => $temuan[$i % 6] === null ? 'Open' : ($i < 16 ? 'Closed' : ($i % 2 ? 'In Progress' : 'Open')),
+                'selesai_ca'    => $temuan[$i % 6] && $i < 16 ? $this->kini->copy()->subDays(27 - $i)->toDateString() : null,
+                'deadline_ca'   => $temuan[$i % 6] && $i >= 16 ? $this->kini->copy()->subDays(20 - $i)->toDateString() : null,
+            ]);
+            $n++;
+
+            if ($i % 6 === 4 && $i < 20) {
+                $this->baru(FropCoaching::class, [
+                    'user_id'      => $this->pengaju?->id,
+                    'observasi_id' => $o->id,
+                    'tanggal'      => $o->tanggal->toDateString(),
+                    'operator'     => $o->operator,
+                    'unit'         => $o->unit,
+                    'materi'       => 'Teknik Digging – kurangi beban bucket',
+                    'respons'      => 'Operator memahami dan akan mencoba',
+                    'coach'        => 'Observer Contoh',
+                    'follow_up'    => 'Monitor pada observasi berikutnya',
+                    'target_selesai' => $this->kini->copy()->subDays(20 - $i)->toDateString(),
+                    'status'       => $i < 12 ? 'Closed' : 'Open',
                 ]);
                 $n++;
             }

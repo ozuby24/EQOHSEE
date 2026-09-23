@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\InvestigasiController;
+use App\Http\Controllers\FropController;
 use App\Http\Controllers\MinersController;
 use App\Http\Controllers\MinersDokumenController;
 use App\Http\Controllers\Hris\AbsensiController;
@@ -250,6 +251,35 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('sop/{evaluation}',        [SopController::class, 'show'])->name('sop.show');
     Route::post('sop/{evaluation}/grade', [SopController::class, 'grade'])->name('sop.grade');
     Route::get('sop/{evaluation}/hasil/{attempt}', [SopController::class, 'hasil'])->name('sop.result');
+
+    /* ---- Observasi operator loader (FROP) ----
+       Program pembinaan operator excavator: sesi observasi cycle time,
+       performa per operator, KPI bulanan, temuan & CA, coaching log. */
+    Route::prefix('frop')->name('frop.')->group(function () {
+        Route::get('sesi',                     [FropController::class, 'index'])->name('index');
+        Route::get('sesi/buat',                [FropController::class, 'create'])->name('create');
+        Route::post('sesi',                    [FropController::class, 'store'])->name('store');
+        Route::get('sesi/{observasi}',         [FropController::class, 'show'])->whereNumber('observasi')->name('show');
+        Route::get('sesi/{observasi}/ubah',    [FropController::class, 'edit'])->whereNumber('observasi')->name('edit');
+        Route::put('sesi/{observasi}',         [FropController::class, 'update'])->whereNumber('observasi')->name('update');
+        Route::delete('sesi/{observasi}',      [FropController::class, 'destroy'])->whereNumber('observasi')
+            ->middleware('can:admin')->name('destroy');
+        Route::put('sesi/{observasi}/ca',      [FropController::class, 'ca'])->whereNumber('observasi')->name('ca');
+
+        Route::get('operator',                 [FropController::class, 'operator'])->name('operator');
+        Route::get('kpi',                      [FropController::class, 'kpi'])->name('kpi');
+        Route::get('tracker',                  [FropController::class, 'tracker'])->name('tracker');
+
+        Route::get('coaching',                 [FropController::class, 'coaching'])->name('coaching');
+        Route::post('coaching',                [FropController::class, 'simpanCoaching'])->name('coaching.store');
+        Route::put('coaching/{coaching}',      [FropController::class, 'ubahCoaching'])->whereNumber('coaching')->name('coaching.update');
+        Route::delete('coaching/{coaching}',   [FropController::class, 'hapusCoaching'])->whereNumber('coaching')
+            ->middleware('can:admin')->name('coaching.destroy');
+
+        Route::get('impor',                    [FropController::class, 'impor'])->name('impor');
+        Route::post('impor',                   [FropController::class, 'kirimImpor'])->name('impor.kirim');
+        Route::get('panduan',                  [FropController::class, 'panduan'])->name('panduan');
+    });
 
     /* ---- Sertifikat ---- */
     Route::get('certificates',               [CertificateController::class, 'index'])->name('certificates.index');

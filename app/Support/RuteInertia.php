@@ -96,6 +96,14 @@ final class RuteInertia
         'courses.index',
         'courses.create',
         'sop.index',
+        'frop.index',
+        'frop.create',
+        'frop.operator',
+        'frop.kpi',
+        'frop.tracker',
+        'frop.coaching',
+        'frop.impor',
+        'frop.panduan',
 
         /* Admin */
         'admin.system',

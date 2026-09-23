@@ -108,6 +108,10 @@ final class IkonNav
         'opname' => 'timbang', 'stok opname' => 'timbang',
         'b3' => 'bahaya', 'register b3' => 'bahaya',
         'laporan stok' => 'dokumen',
+
+        // Observasi operator (FROP).
+        'observasi' => 'evaluasi', 'operator' => 'orang', 'coaching' => 'obrolan',
+        'impor' => 'tukar', 'panduan' => 'buku',
     ];
 
     /** Nama ikon untuk sebuah label menu. */

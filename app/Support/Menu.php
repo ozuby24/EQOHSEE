@@ -78,6 +78,20 @@ final class Menu
           ['Berita',         'news.index',         'news*'],
           ['Evaluasi',       'evaluations.index',  'evaluations*'],
         ],
+        /* Pembinaan operator di lapangan — observasi cycle time loader.
+           Satu grup tersendiri, bukan satu butir: tiap halamannya
+           menjawab pertanyaan yang berbeda (sesi ini, operator ini,
+           bulan ini, temuan ini), dan yang disatukan menjadi satu
+           halaman tidak menjawab satu pun dengan baik. */
+        'Observasi Operator (FROP)' => [
+          ['Sesi Observasi',    'frop.index',    'frop/sesi*'],
+          ['Performa Operator', 'frop.operator', 'frop/operator*'],
+          ['KPI Bulanan',       'frop.kpi',      'frop/kpi*'],
+          ['Temuan & CA',       'frop.tracker',  'frop/tracker*'],
+          ['Coaching Log',      'frop.coaching', 'frop/coaching*'],
+          ['Impor Berkas',      'frop.impor',    'frop/impor*'],
+          ['Panduan & Acuan',   'frop.panduan',  'frop/panduan*'],
+        ],
       ],
     ],
     /* Tepat sesudah LMS: keduanya berbicara tentang orang yang sama.

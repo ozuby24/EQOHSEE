@@ -144,7 +144,8 @@ function tindak(keadaan: string) {
       </div>
 
       <!-- Yang KURANG disebut apa adanya, bukan disembunyikan di balik
-           angka. Persetujuan OHSE ditahan sampai daftar ini penuh, jadi
+           angka. PJO tidak dapat meneruskan berkas ke OHSE sampai daftar
+           ini penuh, jadi
            yang mengurusnya berhak tahu persis apa yang menahannya —
            tanpa itu berkas bolak-balik antara mitra dan OHSE
            berhari-hari, yang persis keluhan pemakai Safe Track. -->
@@ -161,8 +162,8 @@ function tindak(keadaan: string) {
       </ul>
 
       <p v-if="kurang.length" class="mt-3 text-[11.5px] text-amber-700">
-        Persetujuan OHSE ditahan sampai seluruhnya terpenuhi. Menolak atau
-        mengembalikan tetap dapat dilakukan.
+        Berkas belum dapat disetujui PJO dan diteruskan ke OHSE sampai seluruhnya
+        terpenuhi. Menolak atau mengembalikan tetap dapat dilakukan.
       </p>
     </section>
 
