@@ -309,6 +309,28 @@ class KendaliKeamananTest extends TestCase
     }
 
     /**
+     * Pemutar video materi boleh dibingkai — hanya asal yang memang
+     * dihasilkan Materi::semat(). Sebelumnya frame-src 'none', sehingga
+     * setiap video materi tergambar sebagai kotak kosong.
+     */
+    public function test_csp_mengizinkan_pemutar_video_materi_saja(): void
+    {
+        $csp = (string) $this->get('/')->headers->get('Content-Security-Policy');
+        $bingkai = collect(explode('; ', $csp))->first(fn ($d) => str_starts_with($d, 'frame-src '));
+
+        $this->assertNotNull($bingkai);
+        foreach ([\App\Support\Materi::semat('https://www.youtube.com/watch?v=abc123DEF45'),
+                  \App\Support\Materi::semat('https://vimeo.com/123456789')] as $url) {
+            $this->assertNotNull($url);
+            $asal = parse_url($url, PHP_URL_SCHEME).'://'.parse_url($url, PHP_URL_HOST);
+            $this->assertStringContainsString($asal, $bingkai, "Sematan {$asal} diblokir CSP.");
+        }
+
+        $this->assertStringNotContainsString('*', $bingkai, 'frame-src tidak boleh memakai wildcard.');
+        $this->assertStringNotContainsString('https://www.youtube.com ', $bingkai.' ');
+    }
+
+    /**
      * HSTS mati secara bawaan.
      *
      * Meneruskan keputusan yang tertulis pada berkas nginx: pemasangan

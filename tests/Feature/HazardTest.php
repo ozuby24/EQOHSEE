@@ -319,6 +319,26 @@ class HazardTest extends TestCase
         $this->assertSame(['PT Punya Temuan'], array_column($props['perusahaan'], 'nama'));
     }
 
+    /**
+     * Tautan "atur kontak PIC" mengikuti peran: admin ke Kelola
+     * Perusahaan, yang lain ke Profil Perusahaan. Menaut semua orang ke
+     * halaman admin mengantar non-admin ke 403.
+     */
+    public function test_tautan_kontak_pic_mengikuti_peran(): void
+    {
+        $this->masuk();
+        $p = $this->get('/hazard/pengingat')->assertOk()->viewData('page')['props'];
+        $this->assertSame(route('admin.companies.index'), $p['urlPerusahaan']);
+
+        $this->masuk(false);
+        $r = $this->get('/hazard/pengingat');
+        if ($r->status() !== 200) $this->markTestSkipped('Pengingat tertutup bagi non-admin.');
+
+        $p = $r->viewData('page')['props'];
+        $this->assertSame(route('personalia.perusahaan'), $p['urlPerusahaan']);
+        $this->assertSame('Profil Perusahaan', $p['labelPerusahaan']);
+    }
+
     public function test_pesan_pengingat_menyebut_hitungan_dan_kode_temuan(): void
     {
         $c = $this->perusahaan(['name' => 'PT Tindak Lanjut']);

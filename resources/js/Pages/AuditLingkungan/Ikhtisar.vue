@@ -156,7 +156,7 @@ const warnaPeringkat = computed(() =>
           </p>
         </div>
 
-        <div class="flex flex-wrap gap-2 shrink-0">
+        <div class="flex flex-wrap gap-2 min-w-0 max-w-full">
           <a :href="tautan.ubah" class="eq-btn-mini">✎ Ubah Identitas</a>
           <a :href="tautan.lembar" target="_blank" rel="noopener" class="eq-btn-lain" style="flex:none">⎙ Lembar Audit</a>
           <a v-if="sertifikat.aktif" :href="sertifikat.aktif.url" class="eq-btn-utama" style="flex:none">★ Sertifikat</a>

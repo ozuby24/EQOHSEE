@@ -325,7 +325,12 @@ class HazardExportController extends Controller
             'subjudul' => 'Temuan yang belum ditutup, per perusahaan',
 
             'perusahaan'  => $daftar,
-            'urlPerusahaan' => route('admin.companies.index'),
+            /* Kontak PIC diatur administrator di Kelola Perusahaan, dan
+               oleh pengguna perusahaan di Profil Perusahaan. Menaut semua
+               orang ke halaman admin mengantar non-admin ke 403. */
+            'urlPerusahaan'   => auth()->user()?->isAdmin()
+                ? route('admin.companies.index') : route('personalia.perusahaan'),
+            'labelPerusahaan' => auth()->user()?->isAdmin() ? 'Kelola Perusahaan' : 'Profil Perusahaan',
         ]);
     }
 

@@ -332,6 +332,24 @@ class EtalasePublikTest extends TestCase
             'Bukan admin berhasil mengubah harga.');
     }
 
+    /**
+     * Butir menu Daftar Harga hanya dibagikan kepada administrator.
+     * Sebelumnya pengguna biasa melihatnya di bilah samping Pembelian dan
+     * berakhir di halaman 403 — ditemukan lewat perayapan akun KTT.
+     */
+    public function test_butir_daftar_harga_hanya_untuk_admin(): void
+    {
+        $butir = fn () => collect($this->get('/pembelian')->viewData('page')['props']['menu']['grup'] ?? [])
+            ->flatMap(fn ($g) => $g['butir'])->pluck('label')->all();
+
+        $this->actingAs(User::factory()->create(['is_admin' => false, 'email_verified_at' => now()]));
+        $this->assertNotContains('Daftar Harga', $butir());
+        $this->assertContains('Katalog', $butir());
+
+        $this->actingAs(User::factory()->create(['is_admin' => true, 'email_verified_at' => now()]));
+        $this->assertContains('Daftar Harga', $butir());
+    }
+
     public function test_admin_dapat_mengubah_harga(): void
     {
         $p = $this->produk(5_000_000);

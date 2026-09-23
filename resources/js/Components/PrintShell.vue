@@ -11,6 +11,9 @@ const cetak = () => window.print();
         <div class="flex items-center gap-3"><span class="hidden sm:block text-[11px] text-stone-400">{{ title }}</span><button type="button" class="lime-gradient rounded-xl text-white px-4 py-2 text-[12px] font-bold" @click="cetak">Cetak / Simpan PDF</button></div>
       </div>
     </div>
-    <main class="max-w-[850px] mx-auto px-4 py-5 print:p-0 print:max-w-none"><slot /></main>
+    <!-- Di layar sempit lembarnya digeser di sini. Tanpa ini tabel lembar
+         A4 terpotong di tepi kanan HP (overflow-x:clip pada body) dan
+         kolom terakhirnya — status, paraf — tidak pernah terlihat. -->
+    <main class="max-w-[850px] mx-auto px-4 py-5 overflow-x-auto print:overflow-visible print:p-0 print:max-w-none"><slot /></main>
   </div>
 </template>

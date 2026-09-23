@@ -152,7 +152,13 @@ class TajukKeamanan
     {
         $skrip  = "'self' 'nonce-$nonce'";
         $sambung = "'self'";
-        $bingkai = "'none'";
+
+        /* Pemutar video materi pembelajaran — tepat dua asal yang
+           dihasilkan Materi::semat(), bukan seluruh YouTube/Vimeo.
+           Sebelumnya `'none'`, sehingga setiap video materi yang sudah
+           diisi pengajar tergambar sebagai kotak kosong dan peserta
+           tidak pernah dapat menontonnya. */
+        $bingkai = 'https://www.youtube-nocookie.com https://player.vimeo.com';
 
         /* Cloudflare Turnstile — hanya ketika kuncinya benar-benar
            terpasang. Kelonggaran yang tidak dipakai tetap kelonggaran.
@@ -170,7 +176,7 @@ class TajukKeamanan
 
             $skrip   .= " $asal";
             $sambung .= " $asal";
-            $bingkai  = "$asal";
+            $bingkai .= " $asal";
         }
 
         /* Saat `npm run dev` berjalan, berkas dilayani dari server Vite

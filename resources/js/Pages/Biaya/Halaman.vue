@@ -386,6 +386,7 @@ const warnaSerapan: Record<string, string> = {
       </section>
 
       <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
+        <div class="overflow-x-auto">
         <table class="w-full text-[11.5px]">
           <thead class="bg-stone-50 text-left text-stone-400 uppercase text-[10px] tracking-wide">
             <tr><th class="px-5 py-2.5">Akun</th><th class="px-5 py-2.5">Pusat biaya</th>
@@ -404,6 +405,7 @@ const warnaSerapan: Record<string, string> = {
             <tr v-if="!(props.daftarAnggaran || []).length"><td colspan="6" class="px-5 py-8 text-center text-stone-400">Belum ada pagu untuk {{ props.tahun }}.</td></tr>
           </tbody>
         </table>
+        </div>
       </section>
     </template>
 
@@ -441,6 +443,7 @@ const warnaSerapan: Record<string, string> = {
       </section>
 
       <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
+        <div class="overflow-x-auto">
         <table class="w-full text-[11.5px]">
           <thead class="bg-stone-50 text-left text-stone-400 uppercase text-[10px] tracking-wide">
             <tr><th class="px-5 py-2.5">Kode</th><th class="px-5 py-2.5">Nama</th><th class="px-5 py-2.5">Kelompok</th>
@@ -461,6 +464,7 @@ const warnaSerapan: Record<string, string> = {
             <tr v-if="!(props.daftarAkun || []).length"><td colspan="6" class="px-5 py-8 text-center text-stone-400">Belum ada akun terdaftar.</td></tr>
           </tbody>
         </table>
+        </div>
       </section>
     </template>
 
@@ -483,6 +487,7 @@ const warnaSerapan: Record<string, string> = {
         <button class="eq-btn-utama self-end" :disabled="tindak.processing">Tambah</button>
       </form>
 
+      <div class="overflow-x-auto">
       <table class="w-full mt-4 text-[11.5px]">
         <tbody>
           <tr v-for="t in props.tindak || []" :key="t.id" class="border-t border-stone-50">
@@ -500,6 +505,7 @@ const warnaSerapan: Record<string, string> = {
           <tr v-if="!(props.tindak || []).length"><td colspan="4" class="py-6 text-center text-stone-400">Belum ada tindak lanjut.</td></tr>
         </tbody>
       </table>
+      </div>
     </section>
   </div>
 

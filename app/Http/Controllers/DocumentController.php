@@ -215,7 +215,9 @@ class DocumentController extends Controller
                 'kode'   => (string) $kode,
                 'nama'   => Iso::get((string) $kode)['nama'] ?? (string) $kode,
                 'warna'  => Iso::warna((string) $kode),
-                'url'    => route('iso.show', $kode),
+                // Hanya standar yang punya halaman yang ditautkan; kode
+                // lama di luar daftar tetap tampil, tanpa tautan 404.
+                'url'    => Iso::get((string) $kode) ? route('iso.show', (string) $kode) : null,
                 'butir'  => $dokumen->klausul()[$kode],
             ], array_keys($dokumen->klausul())),
 

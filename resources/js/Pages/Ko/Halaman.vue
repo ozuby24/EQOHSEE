@@ -30,6 +30,17 @@ const { dialog, tanya, batal, lanjut } = useDialog();
   hilang diam-diam. Dibacanya hidup: lihat resources/js/halaman.ts.
 */
 const props = propHalaman();
+
+/* Tab Pengaturan hanya bagi administrator — controller-nya menolak
+   yang lain dengan 403, jadi tab yang terlihat semua orang hanya
+   mengantar mereka ke halaman galat. */
+const tabKo = computed(() => [
+  ['dashboard', 'Dashboard', '/ko'], ['register', 'Register', '/ko/register'],
+  ['kelayakan', 'Kelayakan', '/ko/kelayakan'], ['perawatan', 'Perawatan', '/ko/perawatan'],
+  ['pengaman', 'Pengaman', '/ko/pengaman'], ['kajian', 'Kajian', '/ko/kajian'],
+  ['tenaga', 'Tenaga', '/ko/tenaga'], ['tindak', 'Tindak lanjut', '/ko/tindak'],
+  ...(props.pengguna?.admin ? [['pengaturan', 'Pengaturan', '/ko/pengaturan']] : []),
+]);
 const titles: Record<string, string> = { dashboard: 'Keselamatan Operasi', register: 'Register Objek KO', form: 'Objek Keselamatan Operasi', rincian: 'Rincian Objek', kelayakan: 'Kelayakan Operasi', perawatan: 'Perawatan dan Pemeliharaan', pengaman: 'Perangkat Pengaman', kajian: 'Kajian Teknis', tenaga: 'Tenaga Teknis', tindak: 'Tindak Lanjut', pengaturan: 'Pengaturan KO' };
 const kategori = ['Sarana', 'Prasarana', 'Instalasi', 'Peralatan'];
 const kritis = ['Tinggi', 'Sedang', 'Rendah'];
@@ -113,7 +124,7 @@ async function hapus(path: string) { if (await tanya('Hapus data ini?')) router.
   <Head :title="titles[props.mode] ?? 'KO'" />
   <div class="space-y-5">
     <section class="flex flex-wrap items-end justify-between gap-4"><div><p class="text-[12.5px] text-stone-500 mt-1">Register objek, kelayakan, perawatan, pengaman, dan tindakan keselamatan operasi.</p></div><div class="flex gap-2"><Link v-if="props.mode === 'register' && props.bolehUbah" href="/ko/objek/baru" class="eq-btn-utama">Tambah Objek</Link><button v-if="props.mode === 'tindak' && props.bolehUbah" type="button" class="eq-btn-lain" @click="tarikPeringatan">Tarik peringatan</button></div></section>
-    <nav class="flex gap-1 overflow-x-auto rounded-xl bg-stone-100 p-1 text-[11px]"><Link v-for="tab in [['dashboard','Dashboard','/ko'],['register','Register','/ko/register'],['kelayakan','Kelayakan','/ko/kelayakan'],['perawatan','Perawatan','/ko/perawatan'],['pengaman','Pengaman','/ko/pengaman'],['kajian','Kajian','/ko/kajian'],['tenaga','Tenaga','/ko/tenaga'],['tindak','Tindak lanjut','/ko/tindak'],['pengaturan','Pengaturan','/ko/pengaturan']]" :key="tab[0]" :href="tab[2]" class="whitespace-nowrap rounded-lg px-3 py-2 text-stone-500 hover:bg-white" :class="props.mode === tab[0] ? 'bg-white font-bold text-cam-ink shadow-sm' : ''">{{ tab[1] }}</Link></nav>
+    <nav class="flex gap-1 overflow-x-auto rounded-xl bg-stone-100 p-1 text-[11px]"><Link v-for="tab in tabKo" :key="tab[0]" :href="tab[2]" class="whitespace-nowrap rounded-lg px-3 py-2 text-stone-500 hover:bg-white" :class="props.mode === tab[0] ? 'bg-white font-bold text-cam-ink shadow-sm' : ''">{{ tab[1] }}</Link></nav>
 
     <Dasbor v-if="props.mode === 'dashboard'"
             :c="props.c ?? {}" :sub="props.sub ?? {}" :peringatan="props.peringatan ?? []"

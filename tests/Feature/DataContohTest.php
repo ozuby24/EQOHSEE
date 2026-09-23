@@ -230,6 +230,27 @@ class DataContohTest extends TestCase
         $this->assertSame(0, $draf, 'Masih ada catatan operasi yang belum disetujui.');
     }
 
+    /**
+     * Pemetaan klausul dokumen hanya boleh berisi standar dan butir yang
+     * dapat dipilih di formulir dokumen. Kode karangan ('SMKP',
+     * 'ISO 45001') menghasilkan tautan /iso/SMKP yang 404, dan dibuang
+     * diam-diam saat dokumennya disimpan ulang lewat formulir.
+     */
+    public function test_pemetaan_klausul_dokumen_memakai_kode_standar_sah(): void
+    {
+        $this->muat();
+
+        $peta = \App\Models\DocumentIso::query()->get(['standar', 'klausul']);
+        $this->assertNotEmpty($peta);
+
+        foreach ($peta as $m) {
+            $this->assertContains((string) $m->standar, \App\Support\Iso::kodeSah(),
+                "Standar '{$m->standar}' tidak dikenal halaman ISO.");
+            $this->assertContains($m->klausul, array_column(\App\Support\Iso::butir((string) $m->standar), 'no'),
+                "Klausul {$m->klausul} bukan butir standar {$m->standar}.");
+        }
+    }
+
     public function test_pengaju_bukan_peninjau(): void
     {
         $this->muat();

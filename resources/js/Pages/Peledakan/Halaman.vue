@@ -361,6 +361,7 @@ const warnaStatus: Record<string, string> = {
             <input v-model="ukur.alat_ukur" type="text" placeholder="Alat" class="rounded-lg border-stone-200 text-[11px]">
             <button class="eq-btn-lain text-[11px]" :disabled="ukur.processing">+ Ukur</button>
           </form>
+          <div class="overflow-x-auto">
           <table v-if="(r.ukur || []).length" class="w-full mt-3 text-[11.5px]">
             <tbody>
               <tr v-for="u in r.ukur" :key="u.id" class="border-t border-stone-100">
@@ -372,6 +373,7 @@ const warnaStatus: Record<string, string> = {
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
       </section>
     </template>
@@ -406,6 +408,7 @@ const warnaStatus: Record<string, string> = {
       </section>
 
       <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
+        <div class="overflow-x-auto">
         <table class="w-full text-[11.5px]">
           <thead class="bg-stone-50 text-left text-stone-400 uppercase text-[10px] tracking-wide">
             <tr><th class="px-5 py-2.5">Kode</th><th class="px-5 py-2.5">Nama</th><th class="px-5 py-2.5">Jenis</th>
@@ -426,6 +429,7 @@ const warnaStatus: Record<string, string> = {
             <tr v-if="!(props.titik || []).length"><td colspan="6" class="px-5 py-8 text-center text-stone-400">Belum ada titik terdaftar.</td></tr>
           </tbody>
         </table>
+        </div>
       </section>
     </template>
 
@@ -439,6 +443,7 @@ const warnaStatus: Record<string, string> = {
             tetapan situs adalah sifat batuannya, bukan sifat periodenya.
           </p>
         </div>
+        <div class="overflow-x-auto">
         <table class="w-full text-[11.5px]">
           <thead class="bg-stone-50 text-left text-stone-400 uppercase text-[10px] tracking-wide">
             <tr><th class="px-5 py-2.5">Peledakan</th><th class="px-5 py-2.5">Titik</th>
@@ -457,6 +462,7 @@ const warnaStatus: Record<string, string> = {
             <tr v-if="!(props.ukur || []).length"><td colspan="6" class="px-5 py-8 text-center text-stone-400">Belum ada pengukuran getaran.</td></tr>
           </tbody>
         </table>
+        </div>
       </section>
     </template>
 
@@ -479,6 +485,7 @@ const warnaStatus: Record<string, string> = {
         <button class="eq-btn-utama self-end" :disabled="tindak.processing">Tambah</button>
       </form>
 
+      <div class="overflow-x-auto">
       <table class="w-full mt-4 text-[11.5px]">
         <tbody>
           <tr v-for="t in props.tindak || []" :key="t.id" class="border-t border-stone-50">
@@ -496,6 +503,7 @@ const warnaStatus: Record<string, string> = {
           <tr v-if="!(props.tindak || []).length"><td colspan="4" class="py-6 text-center text-stone-400">Belum ada tindak lanjut.</td></tr>
         </tbody>
       </table>
+      </div>
     </section>
   </div>
 

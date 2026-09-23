@@ -787,7 +787,10 @@ final class Menu
         '' => [
           ['Katalog', 'pembelian.katalog', 'pembelian'],
           ['Tagihan', 'pembelian.daftar',  'pembelian/tagihan*'],
-          ['Daftar Harga', 'pembelian.produk', 'pembelian/produk*'],
+          /* Unsur keempat `true`: hanya untuk administrator. Tanpanya
+             pengguna biasa melihat butir yang berujung 403 — halamannya
+             sendiri menolak siapa pun selain admin. */
+          ['Daftar Harga', 'pembelian.produk', 'pembelian/produk*', true],
         ],
       ],
     ],

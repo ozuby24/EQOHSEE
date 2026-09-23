@@ -1294,6 +1294,7 @@ export interface HalamanPengingat {
   subjudul: string;
   perusahaan: PengingatPerusahaan[];
   urlPerusahaan: string;
+  labelPerusahaan: string;
 }
 
 export interface OrangManpower {
@@ -1618,7 +1619,7 @@ export interface HalamanDetailDokumen {
     id: number; label: string; tanggal: string | null;
     oleh: string | null; ringkasan: string | null;
   }>;
-  klausul: Array<{ kode: string; nama: string; warna: string; url: string; butir: string[] }>;
+  klausul: Array<{ kode: string; nama: string; warna: string; url: string | null; butir: string[] }>;
   bolehHapus: boolean;
   tautan: { ubah: string; unduh: string | null; revisi: string; hapus: string; daftar: string };
 }

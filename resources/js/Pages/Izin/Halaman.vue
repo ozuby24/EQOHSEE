@@ -410,7 +410,7 @@ const warnaWaktu: Record<string, string> = {
         <p v-for="(e, k) in syarat.errors" :key="k" class="mt-2 text-[11px] text-red-600">{{ e }}</p>
       </section>
 
-      <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
+      <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-x-auto">
         <table class="w-full text-[11.5px]">
           <thead class="bg-stone-50 text-left text-stone-400 uppercase text-[10px] tracking-wide">
             <tr><th class="px-5 py-2.5">Jenis</th><th class="px-5 py-2.5 text-right">Urutan</th>
@@ -460,7 +460,7 @@ const warnaWaktu: Record<string, string> = {
         <p v-for="(e, k) in ambang.errors" :key="k" class="mt-2 text-[11px] text-red-600">{{ e }}</p>
       </section>
 
-      <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
+      <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-x-auto">
         <table class="w-full text-[11.5px]">
           <thead class="bg-stone-50 text-left text-stone-400 uppercase text-[10px] tracking-wide">
             <tr><th class="px-5 py-2.5">Parameter</th><th class="px-5 py-2.5 text-right">Batas bawah</th>
@@ -507,7 +507,8 @@ const warnaWaktu: Record<string, string> = {
         <button class="eq-btn-utama self-end" :disabled="tindak.processing">Tambah</button>
       </form>
 
-      <table class="w-full mt-4 text-[11.5px]">
+      <div class="mt-4 overflow-x-auto">
+      <table class="w-full text-[11.5px]">
         <tbody>
           <tr v-for="t in props.tindak || []" :key="t.id" class="border-t border-stone-50">
             <td class="py-2"><b>{{ t.judul }}</b>
@@ -524,6 +525,7 @@ const warnaWaktu: Record<string, string> = {
           <tr v-if="!(props.tindak || []).length"><td colspan="4" class="py-6 text-center text-stone-400">Belum ada tindak lanjut.</td></tr>
         </tbody>
       </table>
+      </div>
     </section>
   </div>
 

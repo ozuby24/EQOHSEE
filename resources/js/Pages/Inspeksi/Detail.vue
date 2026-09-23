@@ -181,7 +181,9 @@ const label = 'block text-[11px] font-bold uppercase tracking-wide text-stone-50
           </div>
         </div>
 
-        <div class="flex flex-wrap gap-2 shrink-0">
+        <!-- max-w-full, bukan shrink-0: grup yang tidak boleh menyusut juga
+             tidak pernah turun baris, dan di HP melebar sampai 461 px. -->
+        <div class="flex flex-wrap gap-2 min-w-0 max-w-full">
           <a :href="tautan.ubah"
              class="rounded-xl border border-stone-200 px-3.5 py-2 text-[12px] font-bold text-stone-600
                     hover:bg-stone-50 transition">Ubah</a>

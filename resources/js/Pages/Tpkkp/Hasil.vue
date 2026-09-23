@@ -37,6 +37,7 @@ const persen = (r: number | null | undefined) =>
       <div class="bg-white rounded-2xl border border-stone-200 p-5">
         <h3 class="text-[13px] font-bold text-cam-ink mb-3">Kategori Tingkat Pencapaian</h3>
 
+        <div class="overflow-x-auto">
         <table class="w-full text-[12px]">
           <tbody>
             <tr v-for="r in rentang" :key="r.kategori" class="border-b border-stone-50 last:border-0">
@@ -45,6 +46,7 @@ const persen = (r: number | null | undefined) =>
             </tr>
           </tbody>
         </table>
+        </div>
 
         <div class="mt-5 pt-4 border-t border-stone-100">
           <div class="text-[10px] uppercase tracking-wider text-stone-400 font-bold">
@@ -69,6 +71,7 @@ const persen = (r: number | null | undefined) =>
           <h3 class="text-[13px] font-bold text-cam-ink">Pencapaian per Indikator</h3>
         </div>
 
+        <div class="overflow-x-auto">
         <table class="w-full text-[12px]">
           <thead class="text-[10px] uppercase tracking-wider text-stone-400 bg-stone-50">
             <tr>
@@ -96,6 +99,7 @@ const persen = (r: number | null | undefined) =>
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
     </div>
 

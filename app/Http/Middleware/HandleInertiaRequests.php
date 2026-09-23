@@ -214,7 +214,13 @@ class HandleInertiaRequests extends Middleware
         $grup = [];
         foreach ($aktif['groups'] as $nama => $butir) {
             $isi = [];
-            foreach ($butir as [$label, $rute, $cocok]) {
+            foreach ($butir as $b) {
+                [$label, $rute, $cocok] = $b;
+
+                // Butir khusus administrator (unsur keempat) tidak
+                // ditampilkan kepada yang pasti ditolak halamannya.
+                if (($b[3] ?? false) && !$u?->isAdmin()) continue;
+
                 $isi[] = [
                     'label'   => $label,
                     'url'     => route($rute),

@@ -155,7 +155,8 @@ class KepatuhanController extends Controller
                 'dokumen'       => $kepatuhan->document?->kode,
                 'urlDokumen'    => $kepatuhan->document ? route('dokumen.show', $kepatuhan->document) : null,
                 'isoKode'       => $kepatuhan->iso_kode,
-                'urlIso'        => $kepatuhan->iso_kode ? route('iso.show', $kepatuhan->iso_kode) : null,
+                'urlIso'        => $kepatuhan->iso_kode && Iso::get((string) $kepatuhan->iso_kode)
+                    ? route('iso.show', (string) $kepatuhan->iso_kode) : null,
                 'berkas'        => Berkas::daftarUrl($kepatuhan, 'kpt'),
             ],
 

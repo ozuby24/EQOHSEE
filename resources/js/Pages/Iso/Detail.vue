@@ -21,7 +21,7 @@ defineProps<HalamanDetailIso>();
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div class="min-w-0">
         </div>
-        <div class="flex flex-wrap gap-2 shrink-0">
+        <div class="flex flex-wrap gap-2 min-w-0 max-w-full">
           <a :href="tautan.cetak" class="rounded-xl border border-stone-200 px-3.5 py-2 text-[12px]
                                           font-bold text-stone-600 hover:bg-stone-50 transition">Matriks Cetak</a>
           <Link :href="tautan.daftar" class="rounded-xl border border-stone-200 px-3.5 py-2 text-[12px]

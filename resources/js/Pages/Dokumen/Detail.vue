@@ -68,7 +68,7 @@ const chip = 'text-[9.5px] font-bold uppercase tracking-wide px-2 py-0.5 rounded
           <h2 class="text-[17px] font-bold text-cam-ink mt-2 leading-snug">{{ d.judul }}</h2>
           <p v-if="d.ringkasan" class="text-[12.5px] text-stone-500 mt-2 leading-relaxed">{{ d.ringkasan }}</p>
         </div>
-        <div class="flex flex-wrap gap-2 shrink-0">
+        <div class="flex flex-wrap gap-2 min-w-0 max-w-full">
           <a v-if="tautan.unduh" :href="tautan.unduh"
              class="rounded-xl border border-stone-200 px-4 py-2.5 text-[12.5px] font-bold
                     text-stone-600 hover:bg-stone-50 transition">Unduh</a>
@@ -169,7 +169,8 @@ const chip = 'text-[9.5px] font-bold uppercase tracking-wide px-2 py-0.5 rounded
         <div v-for="s in klausul" :key="s.kode">
           <div class="flex items-center gap-2 mb-1.5">
             <span class="shrink-0 w-2.5 h-2.5 rounded-full" :style="{ background: s.warna }"></span>
-            <a :href="s.url" class="text-[12px] font-bold text-cam-ink hover:underline">{{ s.nama }}</a>
+            <a v-if="s.url" :href="s.url" class="text-[12px] font-bold text-cam-ink hover:underline">{{ s.nama }}</a>
+            <span v-else class="text-[12px] font-bold text-cam-ink">{{ s.nama }}</span>
           </div>
           <div class="flex flex-wrap gap-1.5">
             <span v-for="no in s.butir" :key="no"

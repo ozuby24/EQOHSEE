@@ -185,7 +185,7 @@ function kelas(status: string) {
             </div>
           </div>
 
-          <div class="flex flex-wrap gap-2 shrink-0">
+          <div class="flex flex-wrap gap-2 min-w-0 max-w-full">
             <button type="button" class="eq-btn-utama" @click="setujui(c)">Setujui</button>
             <button type="button" class="eq-btn-lain" @click="tolak(c)">Tolak</button>
             <button v-if="!c.jenjang" type="button" class="eq-btn-lain" @click="teruskan(c)">Teruskan</button>

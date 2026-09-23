@@ -31,7 +31,7 @@ function alih(id: number) {
         Kirim pengingat temuan yang <b>belum ditutup</b> kepada PIC tiap perusahaan lewat
         <b>WhatsApp</b> atau <b>email</b>. Isi pesan disusun otomatis berisi daftar temuan,
         tingkat risiko, dan lokasinya. Atur kontak PIC di
-        <a :href="urlPerusahaan" class="font-bold text-cam-lime-deep hover:underline">Kelola Perusahaan</a>.
+        <a :href="urlPerusahaan" class="font-bold text-cam-lime-deep hover:underline">{{ labelPerusahaan }}</a>.
       </p>
     </div>
 
@@ -62,7 +62,7 @@ function alih(id: number) {
           </div>
         </div>
 
-        <div class="flex flex-wrap gap-2 shrink-0">
+        <div class="flex flex-wrap gap-2 min-w-0 max-w-full">
           <a :href="p.wa" target="_blank" rel="noopener"
              class="rounded-xl bg-[#25D366] text-white px-4 py-2.5 text-[12px] font-bold
                     hover:brightness-105 transition">

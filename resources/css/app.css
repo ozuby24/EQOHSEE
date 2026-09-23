@@ -40,6 +40,21 @@ html,body{ max-width:100%; overflow-x:clip; }
    sempit. min-width:0 mengembalikan kendali lebar ke tata letak. */
 input,select,textarea,button{ min-width:0; max-width:100%; }
 
+/* Anak grid boleh menyusut di bawah lebar isinya.
+
+   Grid tanpa kolom dasar (`grid gap-4 sm:grid-cols-2`) memakai satu
+   kolom tersirat di layar HP, dan kolom tersirat selebar isi
+   min-content-nya. Satu teks `truncate` atau baris `whitespace-nowrap`
+   di dalamnya cukup untuk melebarkan seluruh kartu melewati layar —
+   lalu terpotong diam-diam oleh `overflow-x:clip` di atas, karena
+   halamannya tidak pernah menggeser. Terukur di layar 390 px: kartu
+   Dasbor 434 px, ringkasan Kuesioner 568 px, panel Gudang 439 px,
+   dokumen PJP 510 px.
+
+   `:where()` membuat aturannya berbobot nol: kelas `min-w-*` yang
+   sengaja dipasang pada satu anak tetap menang. */
+:where(.grid) > *{ min-width:0; }
+
 /* Media tidak pernah melampaui kolomnya. */
 img,svg,video,canvas{ max-width:100%; height:auto; }
 

@@ -201,9 +201,12 @@ const berisi = (baris: any[] | undefined) =>
         </span>
       </div>
 
-      <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <!-- grid-cols-1, bukan kolom tersirat: kolom tersirat selebar isi
+           min-content-nya, dan teks `truncate` tidak boleh dipatah —
+           di layar 390 px kartunya melebar sampai 434 px dan terpotong. -->
+      <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
         <Link v-for="m in mendesak" :key="m.nama" :href="m.url"
-              class="flex items-center gap-3 rounded-xl bg-white/70 px-3 py-2.5 transition hover:bg-white">
+              class="flex min-w-0 items-center gap-3 rounded-xl bg-white/70 px-3 py-2.5 transition hover:bg-white">
           <strong class="num text-xl" style="color:#B91C1C;min-width:2.2rem">{{ m.nilai }}</strong>
           <span class="min-w-0">
             <span class="block text-[12.5px] font-semibold text-cam-ink truncate">{{ m.nama }}</span>

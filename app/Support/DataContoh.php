@@ -5114,14 +5114,21 @@ final class DataContoh
 
                Daftar induk yang tidak menyebut klausul memaksa auditor
                memetakannya sendiri, dan pemetaan yang dikerjakan
-               auditor adalah pemetaan yang tidak pernah sama dua kali. */
+               auditor adalah pemetaan yang tidak pernah sama dua kali.
+
+               Kodenya HARUS kode standar yang dikenal Iso::kodeSah() dan
+               klausulnya butir standar itu — persis yang dapat dipilih
+               di formulir dokumen. Kode karangan seperti 'SMKP' atau
+               'ISO 45001' pernah ditulis di sini: tautannya berujung 404,
+               cakupan standarnya tidak ikut terhitung, dan menyimpan ulang
+               dokumen lewat formulir diam-diam membuang pemetaannya. */
             foreach ([
-                'Kebijakan'       => [['SMKP', 'I.1'], ['ISO 45001', '5.2']],
-                'Manual'          => [['SMKP', 'II.1']],
-                'Prosedur'        => [['SMKP', 'III.2'], ['ISO 45001', '8.1']],
-                'Instruksi Kerja' => [['SMKP', 'III.2']],
-                'Formulir'        => [['SMKP', 'IV.2']],
-                'Rekaman'         => [['SMKP', 'VI.1']],
+                'Kebijakan'       => [['45001', '5.2'], ['14001', '5.2']],
+                'Manual'          => [['45001', '4.4'], ['14001', '4.4']],
+                'Prosedur'        => [['45001', '8.1'], ['14001', '8.1']],
+                'Instruksi Kerja' => [['45001', '8.1.2']],
+                'Formulir'        => [['45001', '7.5'], ['14001', '7.5.3']],
+                'Rekaman'         => [['45001', '9.1'], ['14001', '9.1.1']],
             ][$jenis] ?? [] as [$standar, $klausul]) {
                 $this->baru(DocumentIso::class, [
                     'document_id' => $d->id,

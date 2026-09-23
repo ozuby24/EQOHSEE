@@ -141,9 +141,9 @@ async function hapus(id: number) {
       </div>
     </div>
 
-    <div class="grid gap-4 sm:grid-cols-2">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div v-for="r in ringkas" :key="r.kunci"
-           class="bg-white rounded-2xl shadow-card border border-stone-100 p-5">
+           class="min-w-0 bg-white rounded-2xl shadow-card border border-stone-100 p-5">
         <div class="flex items-center justify-between mb-3">
           <div>
             <div class="text-[13.5px] font-bold text-cam-ink">{{ r.label }}</div>
