@@ -2411,12 +2411,10 @@ export interface HalamanKepatuhanRekap {
 export interface HalamanKepatuhanUnggah {
   judul: string; subjudul: string;
   opsi: OpsiKepatuhan;
-  /** Apakah kunci AI terpasang; pemecahan pasalnya berjalan tanpa itu. */
-  ai: boolean;
-  /** Penyedia dan model yang dipakai, mis. "Google Gemini · gemini-flash-latest". */
-  aiLabel: string | null;
+  /** Apakah analisis otomatis terpasang; pemecahan pasalnya berjalan tanpa itu. */
+  otomatis: boolean;
   batas: { perGiliran: number; halamanPerBaca: number; maksButir: number };
-  tautan: TautanKepatuhan & { rangkum: string; aiButir: string; identitas: string; baca: string; simpan: string };
+  tautan: TautanKepatuhan & { rangkum: string; analisis: string; identitas: string; gambar: string; baca: string; simpan: string };
 }
 
 /** Jawaban POST kepatuhan/rangkum. */
@@ -2430,7 +2428,7 @@ export interface HasilRangkum {
   perHalaman: string[] | null;
   token: string | null;
   naskah: string;
-  ai: boolean;
+  otomatis: boolean;
 }
 
 export interface IdentitasPeraturan {

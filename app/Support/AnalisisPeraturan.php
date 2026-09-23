@@ -2,44 +2,59 @@
 
 namespace App\Support;
 
+use Illuminate\Support\Facades\Log;
+
 /**
- * Analisis peraturan dengan AI yang terpasang di Pusat Kendali.
+ * Analisis otomatis peraturan, memakai mesin yang terpasang di Pusat
+ * Kendali (App\Support\Ai) — sambungan yang sama dengan Bantuan dan
+ * Diagnosa, sehingga fitur ini ikut berpindah bila pemasangnya berganti.
  *
- * Memakai sambungan yang SAMA dengan asisten Bantuan dan Diagnosa
- * (App\Support\Ai): penyedia, model, dan kuncinya diatur di satu tempat,
- * dan fitur ini ikut berpindah bila pemasangnya berganti penyedia.
+ * ── Tidak menyebut mesinnya ──
  *
- * Tiga pekerjaan, masing-masing kecil supaya satu permintaan tidak
- * pernah melampaui batas waktu server (Nginx 120 detik):
+ * Penyedia dan model yang dipakai urusan pemasang, bukan pemakai. Pesan
+ * yang dipulangkan ke halaman selalu netral ("analisis otomatis sedang
+ * sibuk"), dan rincian galat penyedia — yang sering menyebut nama
+ * penyedia, model, bahkan proyeknya — hanya dicatat di log server.
  *
- * - `butir()`     selusin butir sekali jalan: rangkuman kewajiban, apakah
- *                 butir itu mewajibkan perusahaan, dan usulan penerapan.
- * - `identitas()` jenis, nomor, judul, tanggal, instansi, aspek, ruang
- *                 lingkup, dan rangkuman satu peraturan.
- * - `bacaHalaman()` menyalin teks halaman PDF yang berupa gambar.
+ * ── Kecil-kecil, supaya tidak pernah melampaui batas waktu ──
  *
- * Seluruh hasilnya USULAN. Disajikan untuk diperiksa dan disunting, dan
- * subjeknya tersimpan berstatus Draf — rangkuman mesin salah dengan cara
- * yang meyakinkan.
+ * - `butir()`       sepuluh butir sekali jalan: rangkuman, kewajiban atau
+ *                   bukan, dan usulan penerapan.
+ * - `identitas()`   jenis, nomor, judul, tanggal, instansi, aspek, ruang
+ *                   lingkup, dan rangkuman satu peraturan.
+ * - `bacaGambar()`  menyalin teks halaman hasil pindaian yang dikirim
+ *                   peramban sebagai JPEG — bukan PDF utuh. PDF utuh
+ *                   berarti seluruh halamannya dihitung ulang pada setiap
+ *                   permintaan, dan batas laju penyedia habis dalam
+ *                   beberapa permintaan saja.
+ * - `bacaHalaman()` jalan cadangan untuk PDF yang tidak dapat dibaca di
+ *                   peramban: berkasnya diunggah dan dibaca per halaman.
  *
- * Sebelumnya seluruh butir dikirim dalam SATU permintaan dengan batas
- * keluaran 900 token. Seratus butir tidak pernah muat di situ: jawabannya
- * terpotong, JSON-nya tidak dapat diurai, dan fitur ini diam-diam jatuh
- * ke kutipan naskah — tanpa satu pun pesan yang menjelaskan mengapa AI
- * "tidak jalan".
+ * Tiap permintaan diulang sendiri bila penyedianya sedang sibuk (429,
+ * 5xx, 529) — galat yang hampir selalu sembuh dalam hitungan detik.
+ *
+ * Seluruh hasilnya USULAN, disajikan untuk diperiksa dan disunting, dan
+ * subjeknya tersimpan berstatus Draf.
  */
 final class AnalisisPeraturan
 {
     /** Butir per permintaan. */
-    public const PER_GILIRAN = 12;
+    public const PER_GILIRAN = 10;
 
-    /** Halaman gambar per permintaan baca. */
+    /** Halaman per permintaan baca. */
     public const HALAMAN_PER_BACA = 2;
 
     /** Batas ukuran PDF yang dikirim untuk dibaca (base64 menambah ±33%). */
     public const MAKS_PDF_BYTE = 14 * 1024 * 1024;
 
-    private const JEDA = 100;
+    /** Batas satu gambar halaman, dalam aksara base64 (±3 MB). */
+    public const MAKS_GAMBAR = 4_000_000;
+
+    private const JEDA  = 75;
+    private const ULANG = 2;
+
+    public const PESAN_SIBUK = 'Analisis otomatis sedang sibuk atau tidak dapat dihubungi. Butirnya dapat diulang sebentar lagi.';
+    public const PESAN_BENTUK = 'Hasil analisis otomatis tidak dapat dibaca. Butirnya dapat diulang.';
 
     /* ═══════════════ rangkuman butir ═══════════════ */
 
@@ -67,10 +82,12 @@ final class AnalisisPeraturan
 
     /**
      * @param  list<array{no:int,penunjuk:string,isi:string}>  $butir
-     * @return array{ok:bool,butir:list<array{no:int,kewajiban:?bool,rangkuman:string,penerapan:string}>,hilang:list<int>,pesan:?string,galat:?string}
+     * @return array{ok:bool,butir:list<array{no:int,kewajiban:?bool,rangkuman:string,penerapan:string}>,hilang:list<int>,pesan:?string}
      */
     public static function butir(array $butir, ?string $kegiatan = null): array
     {
+        $nomor = array_map(fn ($b) => (int) $b['no'], $butir);
+
         $daftar = implode("\n", array_map(
             fn ($b) => $b['no'].'. ['.$b['penunjuk'].'] '.mb_substr(trim($b['isi']), 0, 1500),
             $butir,
@@ -80,19 +97,20 @@ final class AnalisisPeraturan
             ."\n\nButir:\n".$daftar;
 
         $jawab = Ai::jawab([['peran' => 'pengguna', 'isi' => $tanya]], self::PERAN_BUTIR, 1, [
-            'maksToken' => 8192, 'jeda' => self::JEDA, 'json' => true,
+            'maksToken' => 8192, 'jeda' => self::JEDA, 'json' => true, 'ulang' => self::ULANG,
         ]);
 
-        $nomor = array_map(fn ($b) => (int) $b['no'], $butir);
-
-        if (!$jawab['ok']) return self::gagal($jawab, $nomor);
+        if (!$jawab['ok']) {
+            self::catat('butir', $jawab);
+            return ['ok' => false, 'butir' => [], 'hilang' => $nomor, 'pesan' => self::PESAN_SIBUK];
+        }
 
         $data = Ai::uraiJson($jawab['isi']);
-        $larik = is_array($data['butir'] ?? null) ? $data['butir'] : (array_is_list($data ?? []) ? $data : null);
+        $larik = is_array($data['butir'] ?? null) ? $data['butir'] : (is_array($data) && array_is_list($data) ? $data : null);
 
         if (!is_array($larik)) {
-            return self::gagal(['isi' => 'Jawaban AI tidak berbentuk JSON yang dapat dibaca.',
-                                'galat' => mb_substr($jawab['isi'], 0, 200)], $nomor);
+            self::catat('butir', ['galat' => 'bukan JSON: '.mb_substr($jawab['isi'], 0, 200)]);
+            return ['ok' => false, 'butir' => [], 'hilang' => $nomor, 'pesan' => self::PESAN_BENTUK];
         }
 
         /* Dipasangkan menurut NOMOR, bukan urutan. Model yang melewatkan
@@ -100,6 +118,7 @@ final class AnalisisPeraturan
            yang terlewat disebut, dan dapat diulang sendiri. */
         $out = [];
         foreach ($larik as $r) {
+            if (!is_array($r)) continue;
             $no = (int) ($r['no'] ?? 0);
             if (!in_array($no, $nomor, true) || isset($out[$no])) continue;
 
@@ -118,8 +137,7 @@ final class AnalisisPeraturan
             'ok'     => $out !== [],
             'butir'  => array_values($out),
             'hilang' => $hilang,
-            'pesan'  => $hilang ? count($hilang).' butir tidak dijawab AI dan dapat diulang.' : null,
-            'galat'  => null,
+            'pesan'  => $hilang ? count($hilang).' butir belum teranalisis dan dapat diulang.' : null,
         ];
     }
 
@@ -133,10 +151,10 @@ final class AnalisisPeraturan
     Jawab HANYA dengan JSON objek berkunci:
     - "jenis": salah satu persis dari daftar jenis yang diberikan, atau "" bila tidak jelas.
     - "nomor": bentuk singkat lazim, mis. "Permen ESDM Nomor 26 Tahun 2018",
-      "PP Nomor 50 Tahun 2012", "Kepmen ESDM Nomor 1827 K/30/MEM/2018".
+      "PP Nomor 50 Tahun 2012", "UU Nomor 2 Tahun 2025", "Kepmen ESDM Nomor 1827 K/30/MEM/2018".
       Kosongkan bila nomornya TIDAK tertulis pada naskah — jangan menebak.
     - "judul": judul resmi sesudah kata "tentang", huruf kapital di awal kata utama.
-    - "tanggal_terbit": tanggal ditetapkan, format YYYY-MM-DD, atau "" bila tidak tertulis.
+    - "tanggal_terbit": tanggal ditetapkan/disahkan, format YYYY-MM-DD, atau "" bila tidak tertulis.
     - "instansi": instansi penerbit, mis. "Kementerian Energi dan Sumber Daya Mineral".
     - "aspek": satu kunci dari daftar aspek yang diberikan yang paling sesuai, atau "".
     - "ruang_lingkup": maksimal 40 kata, apa dan siapa yang diatur.
@@ -145,7 +163,7 @@ final class AnalisisPeraturan
 
     /**
      * @param  array<string,string>  $awal  hasil PemecahPeraturan::identitas()
-     * @return array{ok:bool,identitas:array<string,string>,pesan:?string,galat:?string}
+     * @return array{ok:bool,identitas:array<string,string>,pesan:?string}
      */
     public static function identitas(string $naskah, array $awal = []): array
     {
@@ -162,17 +180,18 @@ final class AnalisisPeraturan
             ."\n\nNaskah:\n".$potongan;
 
         $jawab = Ai::jawab([['peran' => 'pengguna', 'isi' => $tanya]], self::PERAN_IDENTITAS, 1, [
-            'maksToken' => 4096, 'jeda' => self::JEDA, 'json' => true,
+            'maksToken' => 4096, 'jeda' => self::JEDA, 'json' => true, 'ulang' => self::ULANG,
         ]);
 
         if (!$jawab['ok']) {
-            return ['ok' => false, 'identitas' => [], 'pesan' => $jawab['isi'], 'galat' => $jawab['galat'] ?? null];
+            self::catat('identitas', $jawab);
+            return ['ok' => false, 'identitas' => [], 'pesan' => self::PESAN_SIBUK];
         }
 
         $d = Ai::uraiJson($jawab['isi']);
         if (!is_array($d)) {
-            return ['ok' => false, 'identitas' => [], 'pesan' => 'Jawaban AI tidak berbentuk JSON yang dapat dibaca.',
-                    'galat' => mb_substr($jawab['isi'], 0, 200)];
+            self::catat('identitas', ['galat' => 'bukan JSON: '.mb_substr($jawab['isi'], 0, 200)]);
+            return ['ok' => false, 'identitas' => [], 'pesan' => self::PESAN_BENTUK];
         }
 
         $teks = fn (string $k, int $maks) => mb_substr(trim((string) ($d[$k] ?? '')), 0, $maks);
@@ -195,14 +214,13 @@ final class AnalisisPeraturan
                 'rangkuman'      => $teks('rangkuman', 5000),
             ],
             'pesan' => null,
-            'galat' => null,
         ];
     }
 
-    /* ═══════════════ membaca halaman gambar ═══════════════ */
+    /* ═══════════════ membaca halaman hasil pindaian ═══════════════ */
 
     private const PERAN_BACA = <<<'TXT'
-    Anda menyalin teks dari halaman PDF hasil pindaian sebuah peraturan perundangan Indonesia.
+    Anda menyalin teks dari halaman hasil pindaian sebuah peraturan perundangan Indonesia.
     Salin teksnya APA ADANYA — jangan meringkas, jangan memperbaiki isi, jangan menambah.
     Pertahankan susunan naskah: "Pasal N" pada barisnya sendiri, ayat "(1)", "(2)" di awal
     baris, dan butir "a.", "b." di awal baris. Abaikan nomor halaman, gambar lambang,
@@ -211,21 +229,43 @@ final class AnalisisPeraturan
     TXT;
 
     /**
-     * Salin teks halaman $dari..$sampai dari PDF di $jalur.
+     * Salin teks halaman yang dikirim sebagai gambar.
      *
-     * @return array{ok:bool,halaman:array<int,string>,pesan:?string,galat:?string}
+     * @param  list<array{no:int,data:string}>  $halaman  JPEG base64
+     * @return array{ok:bool,halaman:array<int,string>,pesan:?string}
+     */
+    public static function bacaGambar(array $halaman): array
+    {
+        $nomor = array_map(fn ($h) => (int) $h['no'], $halaman);
+
+        $tanya = 'Salin teks '.(count($nomor) === 1
+            ? 'halaman '.$nomor[0].' (gambar terlampir).'
+            : 'halaman '.implode(' dan ', $nomor).' (gambar terlampir, berurutan), masing-masing halaman terpisah.');
+
+        $jawab = Ai::jawab([['peran' => 'pengguna', 'isi' => $tanya]], self::PERAN_BACA, 1, [
+            'maksToken' => 12000, 'jeda' => self::JEDA, 'json' => true, 'ulang' => self::ULANG,
+            'lampiran'  => array_map(fn ($h) => ['mime' => 'image/jpeg', 'data' => $h['data'],
+                                                 'nama' => 'halaman-'.$h['no'].'.jpg'], $halaman),
+        ]);
+
+        return self::uraiHalaman($jawab, $nomor);
+    }
+
+    /**
+     * Jalan cadangan: salin teks halaman $dari..$sampai dari PDF di $jalur.
+     *
+     * @return array{ok:bool,halaman:array<int,string>,pesan:?string}
      */
     public static function bacaHalaman(string $jalur, int $dari, int $sampai): array
     {
         $isi = @file_get_contents($jalur);
 
         if ($isi === false) {
-            return ['ok' => false, 'halaman' => [], 'pesan' => 'Berkas sementara tidak ditemukan — unggah ulang berkasnya.', 'galat' => null];
+            return ['ok' => false, 'halaman' => [], 'pesan' => 'Berkas sementara tidak ditemukan — unggah ulang berkasnya.'];
         }
         if (strlen($isi) > self::MAKS_PDF_BYTE) {
             return ['ok' => false, 'halaman' => [],
-                    'pesan' => 'PDF lebih besar dari '.(self::MAKS_PDF_BYTE / 1024 / 1024).' MB, terlalu besar untuk dibaca AI. Tempelkan teksnya.',
-                    'galat' => null];
+                    'pesan' => 'PDF lebih besar dari '.(self::MAKS_PDF_BYTE / 1024 / 1024).' MB. Tempelkan teksnya.'];
         }
 
         $tanya = $dari === $sampai
@@ -233,37 +273,58 @@ final class AnalisisPeraturan
             : "Salin teks halaman {$dari} sampai {$sampai} dari PDF terlampir, masing-masing halaman terpisah.";
 
         $jawab = Ai::jawab([['peran' => 'pengguna', 'isi' => $tanya]], self::PERAN_BACA, 1, [
-            'maksToken' => 12000, 'jeda' => self::JEDA, 'json' => true,
+            'maksToken' => 12000, 'jeda' => self::JEDA, 'json' => true, 'ulang' => self::ULANG,
             'lampiran'  => [['mime' => 'application/pdf', 'data' => base64_encode($isi), 'nama' => 'peraturan.pdf']],
         ]);
 
+        return self::uraiHalaman($jawab, range($dari, $sampai));
+    }
+
+    /** @return array{ok:bool,halaman:array<int,string>,pesan:?string} */
+    private static function uraiHalaman(array $jawab, array $nomor): array
+    {
         if (!$jawab['ok']) {
-            return ['ok' => false, 'halaman' => [], 'pesan' => $jawab['isi'], 'galat' => $jawab['galat'] ?? null];
+            self::catat('baca', $jawab);
+            return ['ok' => false, 'halaman' => [], 'pesan' => self::PESAN_SIBUK];
         }
 
         $d = Ai::uraiJson($jawab['isi']);
-        $larik = is_array($d['halaman'] ?? null) ? $d['halaman'] : null;
-
-        if ($larik === null) {
-            return ['ok' => false, 'halaman' => [], 'pesan' => 'Jawaban AI tidak berbentuk JSON yang dapat dibaca.',
-                    'galat' => mb_substr($jawab['isi'], 0, 200)];
+        if (!is_array($d['halaman'] ?? null)) {
+            self::catat('baca', ['galat' => 'bukan JSON: '.mb_substr($jawab['isi'], 0, 200)]);
+            return ['ok' => false, 'halaman' => [], 'pesan' => self::PESAN_BENTUK];
         }
 
         $out = [];
-        foreach ($larik as $h) {
+        foreach ($d['halaman'] as $h) {
+            if (!is_array($h)) continue;
             $no = (int) ($h['no'] ?? 0);
-            if ($no >= $dari && $no <= $sampai) {
+            if (in_array($no, $nomor, true)) {
                 $out[$no] = trim(PemecahPeraturan::bersihkanHalaman((string) ($h['teks'] ?? '')));
             }
         }
 
+        /* Satu gambar tanpa nomor yang cocok: jawabannya tetap milik
+           halaman itu — sebagian model menomori halaman gambar mulai 1. */
+        if (!$out && count($nomor) === 1 && count($d['halaman']) === 1 && is_array($d['halaman'][0] ?? null)) {
+            $out[$nomor[0]] = trim(PemecahPeraturan::bersihkanHalaman((string) ($d['halaman'][0]['teks'] ?? '')));
+        }
+
         return ['ok' => $out !== [], 'halaman' => $out,
-                'pesan' => $out ? null : 'AI tidak memulangkan teks untuk halaman itu.', 'galat' => null];
+                'pesan' => $out ? null : 'Halaman itu tidak dapat dibaca. Tempelkan teksnya di kotak teks.'];
     }
 
-    /** @return array{ok:false,butir:array,hilang:list<int>,pesan:string,galat:?string} */
-    private static function gagal(array $jawab, array $nomor): array
+    /**
+     * Rincian kegagalan hanya untuk log server.
+     *
+     * Pesan penyedia sering menyebut nama penyedia, model, dan proyeknya;
+     * yang dikirim ke halaman selalu pesan netral.
+     */
+    private static function catat(string $langkah, array $jawab): void
     {
-        return ['ok' => false, 'butir' => [], 'hilang' => $nomor, 'pesan' => $jawab['isi'], 'galat' => $jawab['galat'] ?? null];
+        Log::warning('Analisis peraturan gagal', [
+            'langkah' => $langkah,
+            'galat'   => $jawab['galat'] ?? null,
+            'isi'     => isset($jawab['isi']) ? mb_substr((string) $jawab['isi'], 0, 200) : null,
+        ]);
     }
 }

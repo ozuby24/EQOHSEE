@@ -103,7 +103,8 @@ final class AiPenyedia
                         'role'    => $g['peran'] === 'pengguna' ? 'user' : 'assistant',
                         'content' => $i === $akhir && $lampiran
                             ? array_merge(array_map(fn ($l) => [
-                                  'type'   => 'document',
+                                  // PDF sebagai dokumen, JPEG/PNG sebagai gambar.
+                                  'type'   => str_starts_with($l['mime'], 'image/') ? 'image' : 'document',
                                   'source' => ['type' => 'base64', 'media_type' => $l['mime'], 'data' => $l['data']],
                               ], $lampiran), [['type' => 'text', 'text' => $g['isi']]])
                             : $g['isi'],
@@ -124,11 +125,13 @@ final class AiPenyedia
                         array_map(fn ($g, $i) => [
                             'role'    => $g['peran'] === 'pengguna' ? 'user' : 'assistant',
                             'content' => $i === $akhir && $lampiran
-                                ? array_merge(array_map(fn ($l) => [
-                                      'type' => 'file',
-                                      'file' => ['filename' => $l['nama'] ?? 'berkas.pdf',
-                                                 'file_data' => 'data:'.$l['mime'].';base64,'.$l['data']],
-                                  ], $lampiran), [['type' => 'text', 'text' => $g['isi']]])
+                                ? array_merge(array_map(fn ($l) => str_starts_with($l['mime'], 'image/')
+                                      ? ['type' => 'image_url',
+                                         'image_url' => ['url' => 'data:'.$l['mime'].';base64,'.$l['data']]]
+                                      : ['type' => 'file',
+                                         'file' => ['filename' => $l['nama'] ?? 'berkas.pdf',
+                                                    'file_data' => 'data:'.$l['mime'].';base64,'.$l['data']]],
+                                  $lampiran), [['type' => 'text', 'text' => $g['isi']]])
                                 : $g['isi'],
                         ], $riwayat, array_keys($riwayat)),
                     ),

@@ -147,7 +147,7 @@ const teks  = 'ring-focus rounded-xl border border-stone-200 bg-white px-3 py-2 
               <td class="kpt-k-nomor">
                 <a :href="d.url" class="kpt-nomor">{{ d.nomor }}</a>
                 <span v-if="d.status === 'Draf'" class="kpt-tanda kpt-draf">Draf</span>
-                <span v-if="d.dariAi" class="kpt-tanda kpt-ai" title="Hasil rangkuman otomatis">AI</span>
+                <span v-if="d.dariAi" class="kpt-tanda kpt-ai" title="Hasil rangkuman otomatis">Otomatis</span>
                 <span class="kpt-judul">{{ d.judul }}</span>
               </td>
 

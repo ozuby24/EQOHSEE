@@ -171,10 +171,15 @@ final class Ai
      * - jeda: batas waktu dalam detik.
      * - json: minta jawaban JSON murni bila penyedianya mendukung.
      * - lampiran: berkas untuk giliran terakhir, list<{mime,data,nama}>
-     *   dengan data base64 — dipakai membaca halaman PDF hasil pindaian.
+     *   dengan data base64 — PDF, atau JPEG halaman hasil pindaian.
+     * - ulang: berapa kali permintaan diulang bila penyedianya sedang
+     *   sibuk (429, 5xx, 529 "overloaded") atau sambungannya putus.
+     *   Galat semacam itu hampir selalu sembuh sendiri dalam hitungan
+     *   detik, dan tanpa pengulangan setiap satu di antaranya muncul di
+     *   layar sebagai kegagalan.
      *
      * @param  list<array{peran:string,isi:string}>  $riwayat  terlama lebih dulu
-     * @param  array{maksToken?:int,jeda?:int,json?:bool,lampiran?:list<array{mime:string,data:string,nama?:string}>}  $opsi
+     * @param  array{maksToken?:int,jeda?:int,json?:bool,ulang?:int,lampiran?:list<array{mime:string,data:string,nama?:string}>}  $opsi
      * @return array{ok:bool,isi:string,galat?:string}
      */
     public static function jawab(array $riwayat, string $peranSistem, int $maksRiwayat = 12, array $opsi = []): array
@@ -198,18 +203,51 @@ final class Ai
             ['json' => (bool) ($opsi['json'] ?? false), 'lampiran' => $opsi['lampiran'] ?? []],
         );
 
-        try {
-            $r = Http::timeout((int) ($opsi['jeda'] ?? config('bantuan.ai.jeda', 30)))
-                ->withHeaders($minta['tajuk'])
-                ->asJson()
-                ->post($minta['url'], $minta['badan']);
-        } catch (\Throwable $e) {
-            Log::warning('AI gagal dihubungi', ['penyedia' => $penyedia, 'galat' => $e->getMessage()]);
+        $jeda  = (int) ($opsi['jeda'] ?? config('bantuan.ai.jeda', 30));
+        $ulang = max(0, (int) ($opsi['ulang'] ?? 0));
+        $mulai = microtime(true);
+
+        for ($ke = 0; ; $ke++) {
+            $putus = null;
+            $r = null;
+
+            /* Pengulangan hanya memakai sisa waktunya: seluruh permintaan
+               tetap harus selesai sebelum Nginx memutusnya (120 detik) —
+               bila tidak, yang sampai ke halaman bukan jawaban, melainkan
+               504 tanpa isi. */
+            $batas = $ke === 0 ? $jeda : (int) max(15, min($jeda, 100 - (microtime(true) - $mulai)));
+
+            try {
+                $r = Http::timeout($batas)
+                    ->withHeaders($minta['tajuk'])
+                    ->asJson()
+                    ->post($minta['url'], $minta['badan']);
+            } catch (\Throwable $e) {
+                $putus = $e;
+            }
+
+            $sementara = $putus !== null || in_array($r->status(), [408, 429, 500, 502, 503, 504, 529], true);
+            if (!$sementara || $ke >= $ulang) break;
+
+            /* Tunggu sebelum mengulang: Retry-After bila penyedianya
+               menyebutnya (dibatasi 20 detik), selain itu 3, 6 detik.
+               Tidak diulang bila waktunya sudah habis separuh — satu
+               permintaan halaman tetap harus selesai di bawah batas
+               Nginx 120 detik. */
+            $tunggu = min(20, (int) ($r?->header('retry-after') ?: 3 * 2 ** $ke));
+            if (microtime(true) - $mulai + $tunggu > 60) break;
+
+            Log::info('AI sibuk, diulang', ['penyedia' => $penyedia, 'status' => $r?->status(), 'ke' => $ke + 1]);
+            \Illuminate\Support\Sleep::for($tunggu)->seconds();
+        }
+
+        if ($putus !== null) {
+            Log::warning('AI gagal dihubungi', ['penyedia' => $penyedia, 'galat' => $putus->getMessage()]);
 
             return [
                 'ok'    => false,
                 'isi'   => 'Asisten AI tidak dapat dihubungi. Coba lagi, atau kirim pertanyaan ini ke admin.',
-                'galat' => self::samarkan($e->getMessage(), $kunci),
+                'galat' => self::samarkan($putus->getMessage(), $kunci),
             ];
         }
 

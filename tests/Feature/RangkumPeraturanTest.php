@@ -7,7 +7,8 @@ use App\Support\{Ai, AiPenyedia, AnalisisPeraturan, PemecahPeraturan};
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as PermintaanHttp;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\{Http, Log};
+use Illuminate\Support\Sleep;
 use Tests\TestCase;
 
 /**
@@ -152,7 +153,7 @@ class RangkumPeraturanTest extends TestCase
           ->assertJsonPath('butir.0.no', 1)
           ->assertJsonPath('butir.1.penunjuk', 'Pasal 3 Ayat (1)')
           ->assertJsonPath('identitas.nomor', 'Permen ESDM Nomor 26 Tahun 2018')
-          ->assertJsonPath('ai', false)
+          ->assertJsonPath('otomatis', false)
           ->assertJsonPath('token', null);
     }
 
@@ -222,7 +223,7 @@ class RangkumPeraturanTest extends TestCase
             ['no' => 99, 'kewajiban' => true, 'rangkuman' => 'Butir yang tidak diminta.', 'penerapan' => 'x'],
         ]]))]);
 
-        $r = $this->postJson(route('kepatuhan.rangkum.ai'), ['butir' => [
+        $r = $this->postJson(route('kepatuhan.rangkum.analisis'), ['butir' => [
             ['no' => 3, 'penunjuk' => 'Pasal 3 Ayat (1)', 'isi' => 'Pemegang IUP wajib melaksanakan kaidah pertambangan.'],
             ['no' => 4, 'penunjuk' => 'Pasal 3 Ayat (2)', 'isi' => 'Kaidah meliputi teknik.'],
             ['no' => 5, 'penunjuk' => 'Pasal 1', 'isi' => 'KTT adalah seseorang yang memimpin.'],
@@ -246,24 +247,25 @@ class RangkumPeraturanTest extends TestCase
     {
         $this->masuk();
         $this->aiGemini();
+        Sleep::fake();
 
         Http::fake(['generativelanguage.googleapis.com/*' => Http::response([
             'candidates' => [['content' => ['parts' => [['text' => '{"butir":[{"no":1,"rangk']]], 'finishReason' => 'MAX_TOKENS']],
         ])]);
 
-        $this->postJson(route('kepatuhan.rangkum.ai'), ['butir' => [
+        $this->postJson(route('kepatuhan.rangkum.analisis'), ['butir' => [
             ['no' => 1, 'penunjuk' => 'Pasal 3', 'isi' => 'Pemegang IUP wajib.'],
         ]])->assertOk()
           ->assertJsonPath('ok', false)
           ->assertJsonPath('hilang', [1])
-          ->assertJsonPath('pesan', 'Jawaban AI terpotong karena batas panjang jawaban.');
+          ->assertJsonPath('pesan', AnalisisPeraturan::PESAN_SIBUK);
     }
 
     public function test_analisis_tanpa_kunci_ai_menjawab_409(): void
     {
         $this->masuk();
 
-        $this->postJson(route('kepatuhan.rangkum.ai'), ['butir' => [
+        $this->postJson(route('kepatuhan.rangkum.analisis'), ['butir' => [
             ['no' => 1, 'penunjuk' => 'Pasal 3', 'isi' => 'Pemegang IUP wajib.'],
         ]])->assertStatus(409)->assertJsonPath('ok', false);
     }
@@ -276,23 +278,73 @@ class RangkumPeraturanTest extends TestCase
         $butir = array_map(fn ($i) => ['no' => $i, 'penunjuk' => "Pasal {$i}", 'isi' => 'Wajib.'],
             range(1, AnalisisPeraturan::PER_GILIRAN + 1));
 
-        $this->postJson(route('kepatuhan.rangkum.ai'), ['butir' => $butir])->assertStatus(422);
+        $this->postJson(route('kepatuhan.rangkum.analisis'), ['butir' => $butir])->assertStatus(422);
     }
 
-    public function test_galat_penyedia_hanya_untuk_administrator(): void
+    /**
+     * Halaman ini dipakai pengguna biasa. Pesan penyedia menyebut nama
+     * penyedia, model, bahkan proyeknya — tidak satu pun boleh sampai ke
+     * halaman, juga untuk administrator. Rinciannya hanya di log server.
+     */
+    public function test_galat_penyedia_tidak_pernah_sampai_ke_halaman(): void
     {
+        Sleep::fake();
+        Log::spy();
         $this->aiGemini();
-        Http::fake(['generativelanguage.googleapis.com/*' => Http::response(['error' => ['message' => 'quota proyek-rahasia']], 429)]);
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::response(
+            ['error' => ['message' => 'quota gemini-flash-latest proyek-rahasia']], 429)]);
         $isi = ['butir' => [['no' => 1, 'penunjuk' => 'Pasal 3', 'isi' => 'Pemegang IUP wajib.']]];
 
-        $this->masuk(true);
-        $admin = $this->postJson(route('kepatuhan.rangkum.ai'), $isi)->assertOk()->json();
-        $this->assertStringContainsString('proyek-rahasia', $admin['galat']);
+        foreach ([true, false] as $admin) {
+            $this->masuk($admin);
+            $r = $this->postJson(route('kepatuhan.rangkum.analisis'), $isi)->assertOk();
 
-        $this->masuk(false);
-        $biasa = $this->postJson(route('kepatuhan.rangkum.ai'), $isi)->assertOk()->json();
-        $this->assertArrayNotHasKey('galat', $biasa);
-        $this->assertFalse($biasa['ok']);
+            $r->assertJsonPath('ok', false)
+              ->assertJsonPath('hilang', [1])
+              ->assertJsonPath('pesan', AnalisisPeraturan::PESAN_SIBUK)
+              ->assertJsonMissingPath('galat');
+            $this->assertDoesNotMatchRegularExpression('/gemini|google|anthropic|claude|openai|gpt|proyek-rahasia|\bAI\b/i', $r->getContent());
+        }
+
+        Log::shouldHaveReceived('warning')->withArgs(fn ($pesan, $isi = []) =>
+            $pesan === 'Analisis peraturan gagal' && str_contains((string) ($isi['galat'] ?? ''), 'proyek-rahasia'));
+    }
+
+    public function test_penyedia_sibuk_diulang_lalu_berhasil(): void
+    {
+        $this->masuk();
+        $this->aiGemini();
+        Sleep::fake();
+
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::sequence()
+            ->push(['error' => ['message' => 'overloaded']], 503)
+            ->push(['error' => ['message' => 'rate']], 429, ['Retry-After' => '5'])
+            ->push($this->jawabGemini(['butir' => [
+                ['no' => 1, 'kewajiban' => true, 'rangkuman' => 'Wajib kaidah.', 'penerapan' => 'SOP.'],
+            ]]))]);
+
+        $this->postJson(route('kepatuhan.rangkum.analisis'), ['butir' => [
+            ['no' => 1, 'penunjuk' => 'Pasal 3', 'isi' => 'Pemegang IUP wajib.'],
+        ]])->assertOk()->assertJsonPath('ok', true)->assertJsonPath('butir.0.rangkuman', 'Wajib kaidah.');
+
+        Http::assertSentCount(3);
+        Sleep::assertSequence([Sleep::for(3)->seconds(), Sleep::for(5)->seconds()]);
+    }
+
+    public function test_galat_yang_bukan_sementara_tidak_diulang(): void
+    {
+        $this->masuk();
+        $this->aiGemini();
+        Sleep::fake();
+
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::response(['error' => ['message' => 'API key not valid']], 400)]);
+
+        $this->postJson(route('kepatuhan.rangkum.analisis'), ['butir' => [
+            ['no' => 1, 'penunjuk' => 'Pasal 3', 'isi' => 'Pemegang IUP wajib.'],
+        ]])->assertOk()->assertJsonPath('ok', false);
+
+        Http::assertSentCount(1);
+        Sleep::assertNeverSlept();
     }
 
     public function test_identitas_ai_disaring_ke_daftar_yang_sah(): void
@@ -401,6 +453,66 @@ class RangkumPeraturanTest extends TestCase
         $this->assertSame('Pasal 1', $r->json('butir.0.penunjuk'));
     }
 
+    /* ═══════════════ halaman gambar dari peramban ═══════════════ */
+
+    /** JPEG 1×1 — cukup untuk memeriksa bentuk permintaannya. */
+    private const JPEG = '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAAA//EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AN//Z';
+
+    public function test_halaman_gambar_dari_peramban_dikirim_sebagai_gambar(): void
+    {
+        $this->masuk();
+        Ai::simpanKunci(AiPenyedia::ANTHROPIC, 'kunci-uji-anthropic-1234');
+        Ai::simpanPengaturan(AiPenyedia::ANTHROPIC, null, null);
+
+        Http::fake(['api.anthropic.com/*' => Http::response([
+            'content' => [['type' => 'text', 'text' => json_encode(['halaman' => [
+                ['no' => 1, 'teks' => "Pasal 3\n(1) Pemegang IUP wajib melapor.\n- 3 -"],
+            ]])]],
+            'stop_reason' => 'end_turn',
+        ])]);
+
+        /* Model yang menomori gambarnya mulai 1: jawabannya tetap milik
+           halaman 46 yang diminta. */
+        $this->postJson(route('kepatuhan.rangkum.gambar'), ['halaman' => [['no' => 46, 'data' => self::JPEG]]])
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('halaman.46', "Pasal 3\n(1) Pemegang IUP wajib melapor.");
+
+        Http::assertSent(function (PermintaanHttp $q) {
+            $isi = $q->data()['messages'][0]['content'] ?? [];
+
+            return is_array($isi)
+                && ($isi[0]['type'] ?? '') === 'image'
+                && ($isi[0]['source']['media_type'] ?? '') === 'image/jpeg'
+                && ($isi[0]['source']['data'] ?? '') === self::JPEG
+                && str_contains($isi[1]['text'] ?? '', 'halaman 46');
+        });
+    }
+
+    public function test_halaman_gambar_divalidasi(): void
+    {
+        $this->masuk();
+        $this->aiGemini();
+
+        $this->postJson(route('kepatuhan.rangkum.gambar'), ['halaman' => [['no' => 1, 'data' => '<script>']]])
+            ->assertStatus(422)->assertJsonValidationErrors('halaman.0.data');
+
+        $tiga = array_map(fn ($i) => ['no' => $i, 'data' => self::JPEG], [1, 2, 3]);
+        $this->postJson(route('kepatuhan.rangkum.gambar'), ['halaman' => $tiga])
+            ->assertStatus(422)->assertJsonValidationErrors('halaman');
+
+        $this->postJson(route('kepatuhan.rangkum.gambar'), ['halaman' => [['no' => 1, 'data' => str_repeat('A', AnalisisPeraturan::MAKS_GAMBAR + 4)]]])
+            ->assertStatus(422);
+    }
+
+    public function test_halaman_gambar_tanpa_analisis_otomatis_menjawab_409(): void
+    {
+        $this->masuk();
+
+        $this->postJson(route('kepatuhan.rangkum.gambar'), ['halaman' => [['no' => 1, 'data' => self::JPEG]]])
+            ->assertStatus(409)->assertJsonPath('ok', false);
+    }
+
     /* ═══════════════ bentuk permintaan penyedia lain ═══════════════ */
 
     public function test_openai_menerima_mode_json_dan_lampiran_berkas(): void
@@ -414,6 +526,18 @@ class RangkumPeraturanTest extends TestCase
         $this->assertSame('file', $pesan[0]['type']);
         $this->assertSame('data:application/pdf;base64,QUJD', $pesan[0]['file']['file_data']);
         $this->assertSame(['type' => 'text', 'text' => 'Salin JSON.'], $pesan[1]);
+    }
+
+    public function test_lampiran_gambar_untuk_openai_dan_gemini(): void
+    {
+        $lampiran = ['json' => true, 'lampiran' => [['mime' => 'image/jpeg', 'data' => 'QUJD', 'nama' => 'h.jpg']]];
+
+        $o = AiPenyedia::permintaan(AiPenyedia::OPENAI, 'k', 'm', 'peran', [['peran' => 'pengguna', 'isi' => 'Salin.']], 4000, $lampiran);
+        $this->assertSame(['type' => 'image_url', 'image_url' => ['url' => 'data:image/jpeg;base64,QUJD']],
+            $o['badan']['messages'][1]['content'][0]);
+
+        $g = AiPenyedia::permintaan(AiPenyedia::GEMINI, 'k', 'm', 'peran', [['peran' => 'pengguna', 'isi' => 'Salin.']], 4000, $lampiran);
+        $this->assertSame(['inlineData' => ['mimeType' => 'image/jpeg', 'data' => 'QUJD']], $g['badan']['contents'][0]['parts'][0]);
     }
 
     public function test_tanpa_opsi_permintaan_tetap_seperti_semula(): void
@@ -445,16 +569,28 @@ class RangkumPeraturanTest extends TestCase
         $this->assertTrue((bool) $s->dari_ai);
     }
 
-    public function test_halaman_unggah_membawa_tautan_dan_label_ai(): void
+    /** Hanya ya/tidak: penyedia dan model mesinnya tidak pernah dikirim ke halaman. */
+    public function test_halaman_unggah_tidak_menyebut_penyedia_maupun_model(): void
     {
         $this->masuk();
         $this->aiGemini();
 
-        $this->get(route('kepatuhan.unggah'))->assertOk()->assertInertia(fn ($p) => $p
+        $r = $this->get(route('kepatuhan.unggah'))->assertOk()->assertInertia(fn ($p) => $p
             ->component('Kepatuhan/Unggah')
-            ->where('ai', true)
-            ->where('aiLabel', 'Google Gemini · gemini-flash-latest')
+            ->where('otomatis', true)
+            ->missing('ai')->missing('aiLabel')
             ->where('batas.perGiliran', AnalisisPeraturan::PER_GILIRAN)
-            ->has('tautan.aiButir')->has('tautan.identitas')->has('tautan.baca'));
+            ->has('tautan.analisis')->has('tautan.identitas')->has('tautan.gambar')->has('tautan.baca'));
+
+        $this->assertDoesNotMatchRegularExpression('/gemini|google gemini|anthropic|claude|openai/i', $r->getContent());
+    }
+
+    /** Teks halamannya sendiri pun tidak menyebut AI maupun penyedianya. */
+    public function test_tampilan_unggah_tidak_menyebut_ai(): void
+    {
+        $vue = file_get_contents(resource_path('js/Pages/Kepatuhan/Unggah.vue'));
+        $templat = substr($vue, strpos($vue, '<template>'), strrpos($vue, '</template>') - strpos($vue, '<template>'));
+
+        $this->assertDoesNotMatchRegularExpression('/\bAI\b|Claude|Anthropic|OpenAI|Gemini|GPT/', $templat);
     }
 }

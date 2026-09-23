@@ -27,6 +27,7 @@
     },
     "dependencies": {
         "chart.js": "^4.4.1",
+        "pdfjs-dist": "^6.3.289",
         "qrcode": "^1.5.4"
     }
 }

@@ -2,6 +2,36 @@ import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import vue from '@vitejs/plugin-vue';
 import fs from 'node:fs';
+import path from 'node:path';
+
+/*
+  Pengurai gambar pdf.js (JBIG2, JPEG 2000) untuk Unggah & Rangkum.
+
+  PDF hasil pindaian lazimnya menyimpan halamannya sebagai JBIG2 atau
+  JPEG 2000, dan pdf.js memuat penguraiannya dari satu folder yang
+  disebut `wasmUrl` — nama berkasnya tetap, tidak dapat diberi hash oleh
+  Vite. Tanpa folder itu halaman pindaiannya tergambar KOSONG, dan yang
+  dikirim untuk dibaca hanyalah kertas putih.
+
+  Folder itu ditaruh di samping pekerja pdf.js, bernama menurut versinya:
+  berkas statis di sini disimpan peramban setahun (lihat nginx), jadi
+  nama yang sama untuk isi yang berbeda tidak boleh terjadi.
+*/
+function penguraiPdfjs() {
+    const asal = path.resolve('node_modules/pdfjs-dist/wasm');
+    const versi = JSON.parse(fs.readFileSync(path.resolve('node_modules/pdfjs-dist/package.json'), 'utf-8')).version;
+    const berkas = ['jbig2.wasm', 'jbig2_nowasm_fallback.js', 'openjpeg.wasm', 'openjpeg_nowasm_fallback.js', 'qcms_bg.wasm'];
+
+    return {
+        name: 'eqohsee-pengurai-pdfjs',
+        apply: 'build',
+        generateBundle() {
+            for (const b of berkas) {
+                this.emitFile({ type: 'asset', fileName: `assets/pdfjs-${versi}/${b}`, source: fs.readFileSync(path.join(asal, b)) });
+            }
+        },
+    };
+}
 
 /*
   Satu titik masuk.
@@ -19,7 +49,21 @@ import fs from 'node:fs';
   `prefers-reduced-motion` yang dulu ditangani di sana.
 */
 export default defineConfig({
+    build: {
+        rollupOptions: {
+            output: {
+                /* Pekerja pdf.js berakhiran .mjs. nginx yang lebih tua tidak
+                   mengenal .mjs dan menyajikannya sebagai octet-stream, dan
+                   pekerja modul dengan jenis itu ditolak peramban (ditambah
+                   nosniff) — PDF-nya lalu tidak terbaca sama sekali. */
+                assetFileNames: (a) => ((a.names?.[0] ?? a.name ?? '').endsWith('.mjs')
+                    ? 'assets/[name]-[hash].js'
+                    : 'assets/[name]-[hash][extname]'),
+            },
+        },
+    },
     plugins: [
+        penguraiPdfjs(),
         laravel({
             input: [
                 'resources/css/app.css',

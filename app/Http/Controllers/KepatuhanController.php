@@ -511,15 +511,18 @@ class KepatuhanController extends Controller
     {
         return Inertia::render('Kepatuhan/Unggah', [
             'judul'    => 'Unggah & Rangkum',
-            'subjudul' => 'Baca naskah peraturan, pecah jadi butir, analisis dengan AI, periksa, lalu simpan',
+            'subjudul' => 'Baca naskah peraturan, pecah jadi butir, analisis otomatis, periksa, lalu simpan',
 
             'opsi' => $this->opsi(),
 
-            /* Diberi tahu dari awal, bukan sesudah menunggu.
-               Tanpa kunci AI, pemecahan pasalnya tetap berjalan penuh —
-               yang tidak ada hanya usulan rangkuman dan penerapannya. */
-            'ai'      => Ai::aktif(),
-            'aiLabel' => Ai::aktif() ? Ai::label() : null,
+            /* Diberi tahu dari awal, bukan sesudah menunggu. Tanpa
+               analisis otomatis, pemecahan pasalnya tetap berjalan penuh
+               — yang tidak ada hanya usulan rangkuman dan penerapannya.
+
+               Hanya ya/tidak. Penyedia dan model mesinnya tidak pernah
+               dikirim ke halaman: itu urusan pemasang di Pusat Kendali,
+               dan halaman ini dipakai pengguna biasa. */
+            'otomatis' => Ai::aktif(),
             'batas'   => [
                 'perGiliran'     => AnalisisPeraturan::PER_GILIRAN,
                 'halamanPerBaca' => AnalisisPeraturan::HALAMAN_PER_BACA,
@@ -528,8 +531,9 @@ class KepatuhanController extends Controller
 
             'tautan' => $this->tautan() + [
                 'rangkum'   => route('kepatuhan.rangkum'),
-                'aiButir'   => route('kepatuhan.rangkum.ai'),
+                'analisis'  => route('kepatuhan.rangkum.analisis'),
                 'identitas' => route('kepatuhan.rangkum.identitas'),
+                'gambar'    => route('kepatuhan.rangkum.gambar'),
                 'baca'      => route('kepatuhan.rangkum.baca'),
                 'simpan'    => route('kepatuhan.rangkum.simpan'),
             ],
@@ -557,6 +561,8 @@ class KepatuhanController extends Controller
         ], ['teks' => 'teks peraturan', 'berkas' => 'berkas']);
         if ($tolak) return $tolak;
 
+        @set_time_limit(115);
+
         $catatan = [];
         $naskah  = trim((string) ($d['teks'] ?? ''));
         $baca    = null;
@@ -583,14 +589,14 @@ class KepatuhanController extends Controller
             $berkas = $request->file('berkas');
 
             if (!Ai::aktif()) {
-                $catatan[] = 'Pasang kunci AI di Pusat Kendali agar halaman gambar dapat dibaca otomatis, '
+                $catatan[] = 'Aktifkan analisis otomatis di Pusat Kendali agar halaman gambar dapat dibaca, '
                             .'atau tempelkan teks halaman itu di kotak teks.';
             } elseif ($berkas->getSize() > AnalisisPeraturan::MAKS_PDF_BYTE) {
                 $catatan[] = 'PDF-nya lebih besar dari '.(AnalisisPeraturan::MAKS_PDF_BYTE / 1048576).' MB, terlalu besar '
-                            .'untuk dibaca AI. Tempelkan teks halaman itu di kotak teks.';
+                            .'untuk dibaca otomatis. Tempelkan teks halaman itu di kotak teks.';
             } else {
                 $token = $this->simpanSementara($berkas);
-                $catatan[] = 'Halaman gambar itu dibaca dengan AI.';
+                $catatan[] = 'Halaman gambar itu dibaca otomatis.';
             }
         }
 
@@ -621,7 +627,7 @@ class KepatuhanController extends Controller
             'perHalaman' => $token ? $baca['perHalaman'] : null,
             'token' => $token,
             'naskah' => $naskah,
-            'ai' => Ai::aktif(),
+            'otomatis' => Ai::aktif(),
         ]);
     }
 
@@ -641,7 +647,7 @@ class KepatuhanController extends Controller
 
         @set_time_limit(115);
 
-        return response()->json($this->saring(AnalisisPeraturan::butir($d['butir'], $d['kegiatan'] ?? null)));
+        return response()->json(AnalisisPeraturan::butir($d['butir'], $d['kegiatan'] ?? null));
     }
 
     /** Identitas peraturan dianalisis AI dari kepala dan penutup naskahnya. */
@@ -656,9 +662,9 @@ class KepatuhanController extends Controller
 
         @set_time_limit(115);
 
-        return response()->json($this->saring(
+        return response()->json(
             AnalisisPeraturan::identitas($d['naskah'], PemecahPeraturan::identitas($d['naskah'])),
-        ));
+        );
     }
 
     /** Halaman PDF yang berupa gambar dibaca AI, beberapa sekali jalan. */
@@ -685,7 +691,30 @@ class KepatuhanController extends Controller
 
         $sampai = min($d['sampai'], $d['dari'] + AnalisisPeraturan::HALAMAN_PER_BACA - 1);
 
-        return response()->json($this->saring(AnalisisPeraturan::bacaHalaman($jalur, $d['dari'], $sampai)));
+        return response()->json(AnalisisPeraturan::bacaHalaman($jalur, $d['dari'], $sampai));
+    }
+
+    /**
+     * Halaman hasil pindaian, dikirim peramban sebagai JPEG.
+     *
+     * Jalan utama untuk PDF: peramban membaca teksnya sendiri dan hanya
+     * mengirim gambar halaman yang tidak bertulisan — satu atau dua,
+     * ratusan kilobita, bukan PDF utuh beberapa megabita.
+     */
+    public function rangkumGambar(Request $request)
+    {
+        [$d, $tolak] = $this->validasiJson($request, [
+            'halaman'        => ['required', 'array', 'min:1', 'max:'.AnalisisPeraturan::HALAMAN_PER_BACA],
+            'halaman.*.no'   => ['required', 'integer', 'min:1', 'max:2000'],
+            'halaman.*.data' => ['required', 'string', 'max:'.AnalisisPeraturan::MAKS_GAMBAR, 'regex:/^[A-Za-z0-9+\/=]+$/'],
+        ], ['halaman.*.data' => 'gambar halaman']);
+        if ($tolak) return $tolak;
+
+        if (!Ai::aktif()) return $this->aiMati();
+
+        @set_time_limit(115);
+
+        return response()->json(AnalisisPeraturan::bacaGambar($d['halaman']));
     }
 
     /**
@@ -713,23 +742,10 @@ class KepatuhanController extends Controller
         return [$v->validated(), null];
     }
 
-    /**
-     * Rincian galat penyedia hanya untuk administrator.
-     *
-     * Pesan penyedia kadang memuat nama proyek atau potongan konfigurasi;
-     * pengguna biasa cukup membaca bahwa AI gagal dan dapat diulang.
-     */
-    private function saring(array $hasil): array
-    {
-        if (!auth()->user()?->isAdmin()) unset($hasil['galat']);
-
-        return $hasil;
-    }
-
     private function aiMati()
     {
         return response()->json(['ok' => false,
-            'pesan' => 'AI belum diaktifkan. Masukkan kunci API di Pusat Kendali → Integrasi AI.'], 409);
+            'pesan' => 'Analisis otomatis belum diaktifkan. Aktifkan di Pusat Kendali.'], 409);
     }
 
     private function angka(int $n): string

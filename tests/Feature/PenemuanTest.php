@@ -299,10 +299,23 @@ class PenemuanTest extends TestCase
             $this->markTestSkipped('Belum ada hasil build; jalankan npm run build.');
         }
 
-        $berkas = glob(public_path('build/assets/*.js'));
+        $peta = json_decode(file_get_contents($manifest), true);
+
+        /* Berkas yang hanya berupa "aset" pada manifest bukan kode
+           halaman: pekerja pdf.js (±1,3 MB) dijalankan di Web Worker dan
+           baru diunduh saat PDF dibaca di Unggah & Rangkum. Yang dijaga
+           di sini tetap potongan kode halaman. */
+        $aset = array_merge(...array_values(array_map(fn ($e) => $e['assets'] ?? [], $peta)));
+        $berkas = array_values(array_filter(glob(public_path('build/assets/*.js')),
+            fn ($b) => !in_array('assets/'.basename($b), $aset, true)));
 
         $this->assertGreaterThan(50, count($berkas),
             'Seluruh halaman masih menyatu dalam satu berkas.');
+
+        /* pdf.js sendiri pun tidak ikut dimuat setiap halaman. */
+        $masuk = $peta['resources/js/inertia.ts']['imports'] ?? [];
+        $this->assertSame([], array_values(array_filter($masuk, fn ($i) => str_contains($i, 'pdfjs'))),
+            'pdf.js ikut dimuat pada setiap halaman.');
 
         $terbesar = max(array_map('filesize', $berkas));
 
