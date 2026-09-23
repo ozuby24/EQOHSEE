@@ -83,6 +83,16 @@ final class RincianDokumen
                lalu bertanya-tanya. */
             'bolehTindak' => self::bolehTindak($d, $u),
 
+            /* Daftar periksa SOP. Kosong bagi MCU dan induksi, yang
+               memang tidak punya daftar wajib — lampirannya melekat
+               pada ORANG di dalam suratnya, bukan pada suratnya. */
+            'wajib' => Kelengkapan::daftar($d),
+
+            /* Tombol "ajukan ulang" hanya bagi pengaju (atau admin) atas
+               pengajuan yang DIKEMBALIKAN. Yang DITOLAK tidak muncul:
+               ditolak dan dikembalikan bukan dua kata untuk satu hal. */
+            'bolehAjukanUlang' => self::bolehAjukanUlang($d, $u),
+
             'KEADAAN' => Keadaan::LABEL,
             'NADA'    => Keadaan::NADA,
             'PERAN'   => Alur::PERAN,
@@ -317,6 +327,13 @@ final class RincianDokumen
             'pada'    => $a->bertindak_pada ? Waktu::lokal($a->bertindak_pada)->toDateTimeString() : null,
             'catatan' => $a->catatan,
         ])->values()->all();
+    }
+
+    private static function bolehAjukanUlang(object $d, ?User $u): bool
+    {
+        if (! $u || ! method_exists($d, 'dikembalikan') || ! $d->dikembalikan()) return false;
+
+        return $u->isAdmin() || ! $d->user_id || (int) $d->user_id === (int) $u->getKey();
     }
 
     private static function bolehTindak(object $d, ?User $u): bool

@@ -870,6 +870,45 @@ class MinersDokumenController extends Controller
         $jenis = (string) ($r->route()?->defaults['jenis'] ?? '');
         $id    = (int) $id;
 
+        /* Dokumen milik perusahaan lain memang tidak dapat ditemukan
+           oleh pengguna ini, sehingga jawabannya 404 dan bukan 403 —
+           dan itu memang lebih tepat, sebab 403 mengakui bahwa
+           dokumennya ada. */
+        $dokumen = $this->dokumen($jenis, $id, RincianDokumen::relasi($jenis));
+
+        $dokumen->terbitkanAlur();
+        $dokumen->load('alur.user');
+
+        return Inertia::render('Miners/Dokumen',
+            RincianDokumen::susun($jenis, $dokumen, $r->user()));
+    }
+
+    /**
+     * Ajukan ulang pengajuan yang dikembalikan.
+     *
+     * Jenisnya dibaca dari default rute, sama seperti rincian(): lihat
+     * alasannya di sana — Laravel mengisi parameter menurut urutan,
+     * bukan menurut nama.
+     */
+    public function ajukanUlang(Request $r, string $id)
+    {
+        $jenis   = (string) ($r->route()?->defaults['jenis'] ?? '');
+        $dokumen = $this->dokumen($jenis, (int) $id);
+
+        if ($alasan = Jalur::ajukanUlang($dokumen, $r->user())) {
+            return back()->withErrors(['ajukanUlang' => $alasan]);
+        }
+
+        return back()->with('sukses', 'Pengajuan dikirim ulang; alurnya diulang dari awal.');
+    }
+
+    /**
+     * Satu dokumen Miners menurut jenisnya, di bawah batas perusahaannya.
+     *
+     * @return \Illuminate\Database\Eloquent\Model
+     */
+    private function dokumen(string $jenis, int $id, array $relasi = [])
+    {
         $kelas = [
             'mcu'     => Mcu::class,
             'induksi' => Induksi::class,
@@ -879,16 +918,8 @@ class MinersDokumenController extends Controller
 
         /* findOrFail DI BAWAH SCOPE-nya, bukan diikuti pemeriksaan
            kepemilikan tersendiri: dokumen milik perusahaan lain memang
-           tidak dapat ditemukan oleh pengguna ini, sehingga jawabannya
-           404 dan bukan 403 — dan itu memang lebih tepat, sebab 403
-           mengakui bahwa dokumennya ada. */
-        $dokumen = $kelas::with(RincianDokumen::relasi($jenis))->findOrFail($id);
-
-        $dokumen->terbitkanAlur();
-        $dokumen->load('alur.user');
-
-        return Inertia::render('Miners/Dokumen',
-            RincianDokumen::susun($jenis, $dokumen, $r->user()));
+           tidak dapat ditemukan oleh pengguna ini. */
+        return $kelas::with($relasi ?: ['alur'])->findOrFail($id);
     }
 
     private function alur(object $dokumen): array

@@ -3,13 +3,14 @@
 namespace Tests\Feature;
 
 use App\Models\Company;
-use App\Models\Miners\{Induksi, InduksiOrang, Mcu, McuOrang, Pekerja, Permit, Simper};
+use App\Models\Miners\{Induksi, InduksiOrang, Mcu, McuOrang, Pekerja, Permit, PermitBerkas, Simper};
 use App\Models\User;
 use App\Notifications\AlurMinersBerpindah;
 use App\Support\Berkas;
-use App\Support\Miners\Jalur;
+use App\Support\Miners\{Acuan, Jalur, Kelengkapan};
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
@@ -82,6 +83,27 @@ class RincianDokumenMinersTest extends TestCase
             'no_registrasi' => 'MP-UJI-1',
             'tanggal' => now()->startOfDay(), 'status' => 'diajukan',
         ]);
+    }
+
+    /**
+     * Lengkapi lampiran wajib SOP.
+     *
+     * Jalur menahan langkah PJO selama daftar SOP belum penuh. Uji yang
+     * menguji hal LAIN — surel, alur, ajukan ulang — harus melewati
+     * syarat itu lebih dahulu; kalau tidak, yang diujinya diam-diam
+     * berubah menjadi gerbang kelengkapan.
+     */
+    private function lengkapiBerkas(Permit $p): Permit
+    {
+        foreach (Acuan::berkasWajib(Kelengkapan::kunci($p) ?? 'permit_baru') as $label) {
+            PermitBerkas::create([
+                'permit_id' => $p->id,
+                'jenis'     => Str::slug($label),
+                'berkas'    => 'miners/permit/'.Str::slug($label).'.pdf',
+            ]);
+        }
+
+        return $p->load('berkas', 'tipe');
     }
 
     /* ══════════════ halaman rincian ══════════════ */
@@ -220,7 +242,7 @@ class RincianDokumenMinersTest extends TestCase
     {
         Notification::fake();
 
-        $permit = $this->permit();
+        $permit = $this->lengkapiBerkas($this->permit());
         $permit->terbitkanAlur();
         $permit->load('alur');
 
@@ -251,7 +273,7 @@ class RincianDokumenMinersTest extends TestCase
         ]);
         $ohseKita = $this->pengguna(['ohse_role' => 'ohse']);
 
-        $permit = $this->permit();
+        $permit = $this->lengkapiBerkas($this->permit());
         $permit->terbitkanAlur();
         $permit->load('alur');
 
@@ -288,7 +310,7 @@ class RincianDokumenMinersTest extends TestCase
      */
     public function test_surel_gagal_tidak_membatalkan_persetujuan(): void
     {
-        $permit = $this->permit();
+        $permit = $this->lengkapiBerkas($this->permit());
         $permit->terbitkanAlur();
         $permit->load('alur');
 
@@ -350,5 +372,194 @@ class RincianDokumenMinersTest extends TestCase
         $this->actingAs($this->pengguna(['is_admin' => true]));
 
         $this->get('/miners/mcu/999999')->assertNotFound();
+    }
+
+    /* ══════════════ ajukan ulang ══════════════ */
+
+    /**
+     * Pengajuan yang dikembalikan dapat diajukan ulang, dan alurnya
+     * diulang DARI AWAL.
+     *
+     * Bukan dilanjutkan dari langkah yang mengembalikannya: berkas yang
+     * sudah diperbaiki adalah berkas yang berbeda dari yang pernah
+     * dilihat langkah-langkah sebelumnya, dan membiarkan persetujuan
+     * lama tetap berlaku berarti PJO menyetujui satu berkas lalu OHSE
+     * menerima berkas yang lain dengan persetujuan yang sama.
+     */
+    public function test_yang_dikembalikan_dapat_diajukan_ulang(): void
+    {
+        $pengaju = $this->pengguna();
+        $permit  = $this->permit();
+        $permit->forceFill(['user_id' => $pengaju->id])->save();
+        $permit->terbitkanAlur();
+        $permit->load('alur');
+
+        Jalur::setujui($permit, $this->pengguna(['is_admin' => true]));
+        Jalur::kembalikan($permit, $this->pengguna(['is_admin' => true]), 'SPDK belum ditandatangani.');
+
+        $permit->refresh()->load('alur');
+        $this->assertSame('draf', $permit->status);
+
+        $this->assertNull(Jalur::ajukanUlang($permit, $pengaju));
+
+        $permit->refresh()->load('alur');
+
+        $this->assertSame('diajukan', $permit->status);
+        $this->assertTrue($permit->alur->every(fn ($a) => $a->keadaan === 'menunggu'),
+            'Alurnya tidak diulang dari awal.');
+        $this->assertTrue($permit->alur->every(fn ($a) => $a->catatan === null),
+            'Catatan pengembalian lama masih menempel pada alur yang baru.');
+    }
+
+    /**
+     * Yang DITOLAK tidak dapat diajukan ulang.
+     *
+     * Ditolak dan dikembalikan bukan dua kata untuk satu hal. Membiarkan
+     * yang ditolak diajukan ulang lewat pintu ini membuat keputusan
+     * menolak tidak berarti apa-apa — cukup ditekan sekali lagi.
+     */
+    public function test_yang_ditolak_tidak_dapat_diajukan_ulang(): void
+    {
+        $pengaju = $this->pengguna();
+        $permit  = $this->permit();
+        $permit->forceFill(['user_id' => $pengaju->id])->save();
+        $permit->terbitkanAlur();
+        $permit->load('alur');
+
+        Jalur::tolak($permit, $this->pengguna(['is_admin' => true]), 'Tidak memenuhi syarat.');
+        $permit->refresh()->load('alur');
+
+        $this->assertNotNull(Jalur::ajukanUlang($permit, $pengaju),
+            'Pengajuan yang ditolak dapat dihidupkan lagi.');
+        $this->assertSame('ditolak', $permit->refresh()->status);
+    }
+
+    /** Hanya pengaju (atau admin) yang dapat mengajukan ulang. */
+    public function test_hanya_pengaju_yang_dapat_mengajukan_ulang(): void
+    {
+        $pengaju = $this->pengguna();
+        $permit  = $this->permit();
+        $permit->forceFill(['user_id' => $pengaju->id])->save();
+        $permit->terbitkanAlur();
+        $permit->load('alur');
+
+        Jalur::kembalikan($permit, $this->pengguna(['is_admin' => true]), 'Kurang.');
+        $permit->refresh()->load('alur');
+
+        $this->assertNotNull(Jalur::ajukanUlang($permit, $this->pengguna(['ohse_role' => 'ohse'])),
+            'Peninjau dapat mengajukan ulang berkas yang bukan miliknya.');
+    }
+
+    /* ══════════════ lampiran wajib SOP ══════════════ */
+
+    /**
+     * Berkas tidak dapat DIKIRIM ke OHSE selama lampiran wajib kurang.
+     *
+     * Ditegakkan pada langkah PJO, bukan pada langkah OHSE, dan
+     * pembedaan itu menentukan siapa yang terhalang: lampirannya
+     * diunggah mitra kerja, bukan OHSE. Ditegakkan di OHSE, yang
+     * terhalang adalah orang yang tidak dapat memperbaikinya.
+     *
+     * Di Project1 pengajuan tetap dapat naik dengan lampiran kurang, dan
+     * akibatnya persis yang dikeluhkan pemakainya — berkas bolak-balik
+     * antara mitra dan OHSE berhari-hari.
+     */
+    public function test_tidak_dapat_dikirim_ke_ohse_saat_lampiran_kurang(): void
+    {
+        $permit = $this->permit();
+        $permit->terbitkanAlur();
+        $permit->load('alur');
+
+        $alasan = Jalur::setujui($permit, $this->pengguna(['is_admin' => true]));
+
+        $this->assertNotNull($alasan, 'Kartu tanpa lampiran wajib tetap naik ke OHSE.');
+        $this->assertStringContainsString('Lampiran wajib', (string) $alasan);
+
+        /* Langkah pertamanya tetap menunggu — tidak ada yang bergerak. */
+        $this->assertSame('menunggu',
+            $permit->refresh()->load('alur')->alur->firstWhere('peran', 'pjo')->keadaan);
+    }
+
+    /** Lampiran lengkap membuka langkah pertamanya. */
+    public function test_lampiran_lengkap_membuka_kiriman_ke_ohse(): void
+    {
+        $permit = $this->lengkapiBerkas($this->permit());
+        $permit->terbitkanAlur();
+        $permit->load('alur');
+
+        $this->assertNull(Jalur::setujui($permit, $this->pengguna(['is_admin' => true])),
+            'Kartu berlampiran lengkap tetap tertahan.');
+    }
+
+    /**
+     * Menolak dan mengembalikan TETAP boleh meski lampirannya kurang.
+     *
+     * Justru itulah tindakan yang tepat bagi berkas yang tidak lengkap.
+     * Ikut ditahan, OHSE tidak punya cara menyampaikan apa pun.
+     */
+    public function test_mengembalikan_tetap_boleh_saat_lampiran_kurang(): void
+    {
+        $permit = $this->permit();
+        $permit->terbitkanAlur();
+        $permit->load('alur');
+
+        $this->assertNull(
+            Jalur::kembalikan($permit, $this->pengguna(['ohse_role' => 'ohse']), 'Lengkapi SPDK.'),
+            'Berkas yang kurang tidak dapat dikembalikan sama sekali.'
+        );
+
+        $this->assertTrue($permit->refresh()->load('alur')->dikembalikan());
+    }
+
+    /** Visitor Permit memakai daftar TIGA lampiran, bukan sembilan. */
+    public function test_visitor_permit_memakai_daftarnya_sendiri(): void
+    {
+        $tipe = \App\Models\Miners\TipePermit::withoutGlobalScopes()
+            ->firstOrCreate(['nama' => 'Visitor Permit'], ['aktif' => true]);
+
+        $permit = $this->permit();
+        $permit->forceFill(['tipe_permit_id' => $tipe->id])->save();
+        $permit->load('tipe');
+
+        $daftar = \App\Support\Miners\Kelengkapan::daftar($permit);
+
+        $this->assertCount(count(\App\Support\Miners\Acuan::berkasWajib('permit_visitor')), $daftar);
+        $this->assertLessThan(
+            count(\App\Support\Miners\Acuan::berkasWajib('permit_baru')),
+            count($daftar),
+            'Tamu ditagih daftar Full Permit.'
+        );
+    }
+
+    /** Lampiran yang tercatat tanpa berkas dihitung BELUM ada. */
+    public function test_baris_lampiran_tanpa_berkas_dihitung_kurang(): void
+    {
+        $permit = $this->permit();
+
+        $wajib = \App\Support\Miners\Acuan::berkasWajib('permit_baru')[0];
+
+        \App\Models\Miners\PermitBerkas::create([
+            'permit_id' => $permit->id,
+            'jenis'     => \Illuminate\Support\Str::slug($wajib),
+            'berkas'    => null,
+        ]);
+        $permit->load('tipe', 'berkas');
+
+        $kurang = \App\Support\Miners\Kelengkapan::kurang($permit);
+
+        $this->assertContains($wajib, $kurang,
+            'Baris kosong dihitung sebagai lampiran yang sudah ada.');
+    }
+
+    /** Daftar periksa SOP sampai ke layar rincian. */
+    public function test_daftar_wajib_sampai_ke_layar(): void
+    {
+        $this->actingAs($this->pengguna(['is_admin' => true]));
+        $permit = $this->permit();
+
+        $props = $this->get("/miners/permit/{$permit->id}")->viewData('page')['props'];
+
+        $this->assertNotEmpty($props['wajib']);
+        $this->assertArrayHasKey('ada', $props['wajib'][0]);
     }
 }

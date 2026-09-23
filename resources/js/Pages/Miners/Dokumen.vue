@@ -46,7 +46,17 @@ const judulDaftar = computed(() =>
   : d.value.jenis === 'induksi' ? 'Peserta'
   : 'Nama pada surat');
 
+const wajib  = computed<any[]>(() => (props.wajib ?? []) as any[]);
+const kurang = computed(() => wajib.value.filter(w => !w.ada));
+
 const tindakan = useForm({ keadaan: 'setuju', catatan: '' });
+/* Bentuknya disebut supaya `errors.ajukanUlang` dikenali TypeScript;
+   useForm({}) kosong tidak punya kunci galat apa pun. */
+const ulang = useForm<{ ajukanUlang?: string }>({});
+
+function ajukanUlang() {
+  ulang.post(`/miners/${d.value.jenis}/${d.value.id}/ajukan-ulang`, { preserveScroll: true });
+}
 
 function tindak(keadaan: string) {
   tindakan.keadaan = keadaan;
@@ -121,6 +131,39 @@ function tindak(keadaan: string) {
 
         </li>
       </ul>
+    </section>
+
+    <!-- ══════════ daftar periksa SOP ══════════ -->
+    <section v-if="wajib.length" class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
+      <div class="flex flex-wrap items-baseline justify-between gap-2">
+        <h3 class="font-bold text-[14px] text-cam-ink">Lampiran wajib menurut SOP</h3>
+        <span class="text-[11.5px]"
+              :class="kurang.length ? 'text-amber-700 font-semibold' : 'text-emerald-700 font-semibold'">
+          {{ wajib.length - kurang.length }} / {{ wajib.length }} terpenuhi
+        </span>
+      </div>
+
+      <!-- Yang KURANG disebut apa adanya, bukan disembunyikan di balik
+           angka. Persetujuan OHSE ditahan sampai daftar ini penuh, jadi
+           yang mengurusnya berhak tahu persis apa yang menahannya —
+           tanpa itu berkas bolak-balik antara mitra dan OHSE
+           berhari-hari, yang persis keluhan pemakai Safe Track. -->
+      <ul class="mt-3 grid gap-x-6 gap-y-1 sm:grid-cols-2">
+        <li v-for="w in wajib" :key="w.kunci" class="flex items-baseline gap-2 text-[12px]">
+          <span aria-hidden="true" :class="w.ada ? 'text-emerald-600' : 'text-amber-600'">
+            {{ w.ada ? '✓' : '○' }}
+          </span>
+          <span :class="w.ada ? 'text-stone-500' : 'text-cam-ink'">
+            {{ w.label }}
+            <span class="sr-only">{{ w.ada ? '— sudah dilampirkan' : '— belum dilampirkan' }}</span>
+          </span>
+        </li>
+      </ul>
+
+      <p v-if="kurang.length" class="mt-3 text-[11.5px] text-amber-700">
+        Persetujuan OHSE ditahan sampai seluruhnya terpenuhi. Menolak atau
+        mengembalikan tetap dapat dilakukan.
+      </p>
     </section>
 
     <!-- ══════════ orang / unit ══════════ -->
@@ -216,9 +259,27 @@ function tindak(keadaan: string) {
         <button class="eq-btn-lain" :disabled="tindakan.processing" @click="tindak('tolak')">Tolak</button>
       </div>
 
-      <p v-else class="text-[11.5px] text-stone-400 border-t border-stone-100 pt-3">
+      <p v-else-if="!props.bolehAjukanUlang" class="text-[11.5px] text-stone-400 border-t border-stone-100 pt-3">
         Tidak ada langkah yang menunggu tindakan Anda.
       </p>
+
+      <!-- Pengajuan yang DIKEMBALIKAN dapat dikirim ulang. Sebelum ini
+           ia hanya turun menjadi draf dan berhenti di sana: alurnya
+           menyimpan langkah "dikembalikan", tidak ada langkah yang
+           menunggu siapa pun, dan tidak ada tindakan yang dapat
+           menjalankannya lagi. -->
+      <div v-if="props.bolehAjukanUlang" class="border-t border-stone-100 pt-3 space-y-2">
+        <p class="text-[11.5px] text-stone-600">
+          Pengajuan ini dikembalikan untuk diperbaiki. Sesudah lampirannya
+          dilengkapi, kirim ulang — alurnya diulang dari langkah pertama.
+        </p>
+        <button class="eq-btn-utama" :disabled="ulang.processing" @click="ajukanUlang">
+          Ajukan ulang
+        </button>
+        <p v-if="ulang.errors.ajukanUlang" class="text-[11.5px] text-red-600">
+          {{ ulang.errors.ajukanUlang }}
+        </p>
+      </div>
 
       <p v-if="tindakan.errors.keadaan" class="text-[11.5px] text-red-600">{{ tindakan.errors.keadaan }}</p>
     </section>

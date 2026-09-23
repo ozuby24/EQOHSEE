@@ -474,4 +474,68 @@ final class Acuan
     {
         return self::BERKAS_WAJIB[$jenis] ?? [];
     }
+
+    /**
+     * Kunci daftar lampiran wajib bagi sebuah Mine Permit.
+     *
+     * TIDAK selalu 'permit_baru'. Visitor Permit menuntut TIGA lampiran,
+     * bukan sembilan — menagihkan daftar Full Permit kepada tamu yang
+     * datang rapat setengah hari berarti daftar periksanya tidak akan
+     * pernah lengkap, dan daftar periksa yang tidak pernah lengkap
+     * berhenti dibaca sebagai daftar periksa.
+     *
+     * Perpanjangan dibedakan dari pengajuan baru karena induksinya
+     * berbeda: yang satu induksi awal, yang lain refresh.
+     */
+    public static function kunciBerkasPermit(?string $tipe, bool $perpanjangan = false): string
+    {
+        $t = mb_strtolower(trim((string) $tipe));
+
+        if (str_contains($t, 'visitor')) return 'permit_visitor';
+
+        return $perpanjangan ? 'permit_perpanjangan' : 'permit_baru';
+    }
+
+    /** Kunci daftar lampiran wajib bagi sebuah SIMPER. */
+    public static function kunciBerkasSimper(?string $jenisAjuan = null): string
+    {
+        return match ($jenisAjuan) {
+            'perpanjangan' => 'simper_perpanjangan',
+            'penambahan', 'upgrade' => 'simper_penambahan',
+            default => 'simper_baru',
+        };
+    }
+
+    /**
+     * Kelengkapan lampiran terhadap daftar wajibnya.
+     *
+     * Dicocokkan lewat SLUG label, bukan lewat teksnya apa adanya:
+     * yang tersimpan di kolom `jenis` memang slug, dan mencocokkan
+     * kalimat lengkap akan gagal pada satu huruf besar yang berbeda.
+     *
+     * @param  list<string>  $wajib   label lampiran menurut SOP
+     * @param  iterable      $punya   baris lampiran yang sudah ada
+     * @return list<array{label:string,kunci:string,ada:bool}>
+     */
+    public static function kelengkapan(array $wajib, iterable $punya): array
+    {
+        $ada = [];
+
+        foreach ($punya as $b) {
+            /* Yang dihitung ADA hanyalah baris yang benar-benar
+               membawa berkas. Baris yang dibuat sebagai tempat kosong —
+               tercatat jenisnya tetapi belum diunggah apa pun — adalah
+               justru yang harus tampil kurang. */
+            if (filled($b->berkas ?? null)) $ada[(string) $b->jenis] = true;
+        }
+
+        $out = [];
+
+        foreach ($wajib as $label) {
+            $kunci = \Illuminate\Support\Str::slug($label);
+            $out[] = ['label' => $label, 'kunci' => $kunci, 'ada' => isset($ada[$kunci])];
+        }
+
+        return $out;
+    }
 }

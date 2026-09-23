@@ -55,6 +55,42 @@ trait PunyaAlur
         }
     }
 
+    /**
+     * Kembalikan seluruh langkah ke keadaan menunggu.
+     *
+     * Dipakai ketika pengajuan yang DIKEMBALIKAN diajukan lagi. Alurnya
+     * diulang DARI AWAL, bukan dilanjutkan dari langkah yang
+     * mengembalikannya: berkas yang sudah diperbaiki adalah berkas yang
+     * berbeda dari yang pernah dilihat langkah-langkah sebelumnya, dan
+     * membiarkan persetujuan lama tetap berlaku berarti PJO menyetujui
+     * satu berkas lalu OHSE menerima berkas yang lain dengan
+     * persetujuan yang sama.
+     *
+     * Catatan peninjau lama IKUT DIHAPUS. Ia menempel pada kiriman yang
+     * sudah tidak ada; dibiarkan, layar akan menampilkan alasan
+     * pengembalian di sebelah langkah yang kini menunggu, seolah
+     * pengajuan yang baru sudah ditolak sebelum dibaca.
+     */
+    public function ulangAlur(): void
+    {
+        $this->terbitkanAlur();
+
+        $this->alur()->update([
+            'keadaan'        => 'menunggu',
+            'user_id'        => null,
+            'bertindak_pada' => null,
+            'catatan'        => null,
+        ]);
+
+        $this->load('alur');
+    }
+
+    /** Ada langkah yang mengembalikan pengajuan ini. */
+    public function dikembalikan(): bool
+    {
+        return $this->alur->contains(fn (Alur $a) => $a->keadaan === 'dikembalikan');
+    }
+
     /** Langkah yang sedang menunggu tindakan, atau null bila tuntas. */
     public function langkahBerjalan(): ?Alur
     {

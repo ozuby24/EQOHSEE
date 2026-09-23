@@ -46,6 +46,51 @@ final class Jalur
     }
 
     /**
+     * Ajukan ulang pengajuan yang DIKEMBALIKAN.
+     *
+     * Sebelum ini, dokumen yang dikembalikan hanya turun statusnya
+     * menjadi 'draf' dan berhenti di sana: alurnya tetap menyimpan
+     * langkah 'dikembalikan', tidak ada langkah yang menunggu siapa
+     * pun, dan tidak ada satu pun tindakan yang dapat menjalankannya
+     * lagi. Yang memperbaiki berkasnya tidak punya cara memberitahu
+     * bahwa ia sudah diperbaiki — ia menelepon OHSE, dan OHSE membuka
+     * pengajuan baru. Safe Track menyebut tindakan ini resubmit.
+     *
+     * YANG DITOLAK TIDAK DAPAT DIAJUKAN ULANG. Ditolak dan
+     * dikembalikan bukan dua kata untuk satu hal: yang dikembalikan
+     * kurang lengkap dan diminta dilengkapi, yang ditolak sudah
+     * diputus tidak memenuhi syarat. Membiarkan yang ditolak diajukan
+     * ulang lewat pintu ini membuat keputusan menolak tidak berarti
+     * apa-apa — cukup ditekan sekali lagi.
+     *
+     * @return string|null alasan penolakan, atau null bila berhasil
+     */
+    public static function ajukanUlang(object $dokumen, User $oleh): ?string
+    {
+        $dokumen->terbitkanAlur();
+        $dokumen->load('alur');
+
+        if (! $dokumen->dikembalikan()) {
+            return 'Hanya pengajuan yang dikembalikan yang dapat diajukan ulang.';
+        }
+
+        /* Yang mengajukan ulang haruslah pihak pengaju, bukan peninjau
+           yang mengembalikannya. Peninjau yang dapat mengajukan ulang
+           sendiri berarti ia menyetujui berkas yang tidak pernah
+           diperbaiki siapa pun. */
+        if (! $oleh->isAdmin() && $dokumen->user_id && (int) $dokumen->user_id !== (int) $oleh->getKey()) {
+            return 'Hanya pengaju yang dapat mengajukan ulang berkas ini.';
+        }
+
+        $dokumen->ulangAlur();
+        $dokumen->forceFill(['status' => 'diajukan'])->save();
+
+        self::beriTahu($dokumen, 'setuju', $oleh, null);
+
+        return null;
+    }
+
+    /**
      * @param  'setuju'|'tolak'|'dikembalikan'  $keadaan
      * @return string|null alasan penolakan, atau null bila berhasil
      */
@@ -67,6 +112,27 @@ final class Jalur
            adalah persis yang diperiksa auditor. */
         if (! $oleh->isAdmin() && $dokumen->user_id && (int) $dokumen->user_id === (int) $oleh->getKey()) {
             return 'Pengaju tidak dapat menyetujui pengajuannya sendiri.';
+        }
+
+        /* Kelengkapan lampiran ditegakkan pada langkah PJO — yaitu saat
+           mitra kerja MENGIRIM berkasnya ke OHSE — bukan pada langkah
+           OHSE.
+           Pembedaan itu menentukan siapa yang terhalang. Ditegakkan di
+           OHSE, yang terhalang adalah orang yang TIDAK DAPAT
+           memperbaikinya: lampirannya diunggah mitra kerja, bukan OHSE,
+           sehingga OHSE hanya dapat menatap tombol yang menolak ditekan.
+           Ditegakkan di PJO, yang terhalang justru orang yang memegang
+           berkasnya, dan pesan kurangnya langsung dapat ditindaklanjuti.
+           Itu pula yang sudah lama dijanjikan Acuan::BERKAS_WAJIB:
+           "tombol kirim ke OHSE baru terbuka setelah yang wajib
+           terpenuhi".
+           Menolak dan MENGEMBALIKAN tetap boleh meski kurang: itulah
+           tindakan yang tepat bagi berkas yang tidak lengkap. */
+        if ($keadaan === 'setuju' && $langkah->peran === 'pjo'
+            && ($kurang = Kelengkapan::kurang($dokumen)) !== []) {
+            return 'Lampiran wajib menurut SOP belum lengkap: '
+                .implode('; ', array_slice($kurang, 0, 3))
+                .(count($kurang) > 3 ? ', dan '.(count($kurang) - 3).' lagi.' : '.');
         }
 
         $langkah->update([

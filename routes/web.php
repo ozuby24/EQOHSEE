@@ -353,6 +353,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
                `miners/mcu/tindak` tidak pernah tersesat ke sini. */
             Route::get('{id}', [MinersDokumenController::class, 'rincian'])
                 ->defaults('jenis', 'mcu')->whereNumber('id')->name('rincian');
+
+            Route::post('{id}/ajukan-ulang', [MinersDokumenController::class, 'ajukanUlang'])
+                ->defaults('jenis', 'mcu')->whereNumber('id')->name('ajukan-ulang');
         });
 
         Route::prefix('induksi')->name('induksi.')->group(function () {
@@ -370,6 +373,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::get('{id}', [MinersDokumenController::class, 'rincian'])
                 ->defaults('jenis', 'induksi')->whereNumber('id')->name('rincian');
+
+            Route::post('{id}/ajukan-ulang', [MinersDokumenController::class, 'ajukanUlang'])
+                ->defaults('jenis', 'induksi')->whereNumber('id')->name('ajukan-ulang');
         });
 
         Route::prefix('permit')->name('permit.')->group(function () {
@@ -386,6 +392,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::get('{id}', [MinersDokumenController::class, 'rincian'])
                 ->defaults('jenis', 'permit')->whereNumber('id')->name('rincian');
+
+            Route::post('{id}/ajukan-ulang', [MinersDokumenController::class, 'ajukanUlang'])
+                ->defaults('jenis', 'permit')->whereNumber('id')->name('ajukan-ulang');
         });
 
         Route::prefix('simper')->name('simper.')->group(function () {
@@ -406,6 +415,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::get('{id}', [MinersDokumenController::class, 'rincian'])
                 ->defaults('jenis', 'simper')->whereNumber('id')->name('rincian');
+
+            Route::post('{id}/ajukan-ulang', [MinersDokumenController::class, 'ajukanUlang'])
+                ->defaults('jenis', 'simper')->whereNumber('id')->name('ajukan-ulang');
         });
 
         Route::prefix('ajuan')->name('ajuan.')->group(function () {

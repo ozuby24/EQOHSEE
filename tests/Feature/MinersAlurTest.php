@@ -4,11 +4,12 @@ namespace Tests\Feature;
 
 use App\Models\Company;
 use App\Models\Miners\{Alur, HasilMcu, Induksi, InduksiOrang, JenisUnit, Kendaraan,
-    Mcu, McuOrang, Pekerja, Permit, Simper, SimperAjuan, SimperUnit, TipePermit};
+    Mcu, McuOrang, Pekerja, Permit, PermitBerkas, Simper, SimperAjuan, SimperUnit, TipePermit};
 use App\Models\User;
-use App\Support\Miners\{Jalur, MasterMiners};
+use App\Support\Miners\{Acuan, Jalur, Kelengkapan, MasterMiners};
 use App\Support\Waktu;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -68,6 +69,27 @@ class MinersAlurTest extends TestCase
         return $p;
     }
 
+    /**
+     * Lengkapi lampiran wajib SOP sebuah permit.
+     *
+     * SOP menuntut sembilan lampiran sebelum permohonan dikirim ke OHSE,
+     * dan Jalur menegakkannya pada langkah PJO. Uji yang menguji ALURNYA
+     * karena itu harus melewati syarat itu lebih dahulu — kalau tidak,
+     * yang diujinya bukan alur melainkan gerbang kelengkapan.
+     */
+    private function lengkapiBerkas(Permit $p): Permit
+    {
+        foreach (Acuan::berkasWajib(Kelengkapan::kunci($p) ?? 'permit_baru') as $label) {
+            PermitBerkas::create([
+                'permit_id' => $p->id,
+                'jenis'     => Str::slug($label),
+                'berkas'    => 'miners/permit/'.Str::slug($label).'.pdf',
+            ]);
+        }
+
+        return $p->load('berkas', 'tipe');
+    }
+
     /* ═══════════ halaman terbuka ═══════════ */
 
     #[Test]
@@ -110,7 +132,11 @@ class MinersAlurTest extends TestCase
     #[Test]
     public function test_permit_tidak_terbit_sebelum_seluruh_langkah_disetujui(): void
     {
-        $p = $this->permit();
+        /* Lampirannya dilengkapi lebih dahulu: yang diuji di sini
+           ALURNYA, bukan gerbang kelengkapan yang menjaga langkah
+           pertama. Tanpa ini, kartunya tertahan pada PJO dan uji ini
+           diam-diam berhenti menguji langkah KTT. */
+        $p = $this->lengkapiBerkas($this->permit());
 
         Jalur::setujui($p, $this->admin);
         $this->assertNotSame('terbit', $p->fresh()->status, 'Terbit sesudah satu langkah saja.');
