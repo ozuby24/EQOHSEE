@@ -61,3 +61,4 @@ Thumbs.db
 # membacanya tidak punya cara mengetahui mana yang benar-benar dipakai.
 *.bak-*
 *.bak
+tsconfig.periksa.tmp.json

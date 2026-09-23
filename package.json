@@ -6,6 +6,7 @@
         "build": "vite build",
         "dev": "vite",
         "typecheck": "vue-tsc --noEmit",
+        "typecheck:hemat": "node tools/periksa-tipe.mjs",
         "periksa-tampilan": "node tools/periksa-tampilan.mjs"
     },
     "devDependencies": {

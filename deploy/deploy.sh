@@ -193,13 +193,19 @@ npm ci
 # terhadap sisa pemasangan sebelumnya.
 # ── Jatah memori pemeriksa tipe ──
 #
-# vue-tsc memuat SELURUH grafik tipe proyek sekaligus — 150-an halaman Vue
-# beserta seluruh d.ts dependensinya. Node memilih batas old-space-nya dari
-# memori yang terlihat saat ia mulai, dan pada VPS kecil batas itu jatuh di
-# sekitar 480 MB: cukup untuk proyek yang lebih kecil, tidak cukup untuk
-# yang ini. Yang terjadi kemudian bukan galat tipe melainkan
-# "FATAL ERROR: Reached heap limit — JavaScript heap out of memory", dan
-# prosesnya mati dengan status bukan-nol persis seperti galat tipe.
+# vue-tsc memuat SELURUH grafik tipe proyek sekaligus. Pada ukuran proyek
+# sekarang — hampir tiga ratus halaman Vue — satu kali jalan memerlukan
+# sekitar 1,2 GB heap, dan pada VPS dengan jatah 1 GB yang terjadi bukan
+# galat tipe melainkan "FATAL ERROR: Reached heap limit — JavaScript heap
+# out of memory". Menambah swap hanya menunda: tiap halaman baru menambah
+# kira-kira 4,5 MB.
+#
+# Karena itu pemeriksaannya dijalankan tools/periksa-tipe.mjs, yang
+# memeriksa halaman BERGILIR — beberapa puluh sekali jalan, masing-masing
+# beserta seluruh yang diimpornya — dengan ukuran giliran yang dihitung
+# dari jatah di bawah. Giliran yang tetap kehabisan memori dibelah dua dan
+# diulang. Hasilnya sama dengan `npm run typecheck`; yang berbeda hanya
+# puncak memorinya.
 #
 # Jatahnya dihitung dari memori yang BENAR-BENAR tersedia, bukan angka
 # tetap: angka tetap yang terlalu besar membuat kernel membunuh prosesnya
@@ -215,27 +221,23 @@ TIPE_MB=$(( TIPE_TERSEDIA_MB * 7 / 10 ))
 
 TIPE_LOG=$(mktemp)
 
-# Jatahnya hanya DINAIKKAN, tidak pernah diturunkan.
-#
-# Tanpa NODE_OPTIONS, Node memilih batasnya sendiri dari memori yang
-# terlihat. Memasang angka yang lebih kecil daripada pilihannya sendiri
-# akan MEMPERBURUK keadaan — mesin sempit yang sudah nyaris tidak cukup
-# dibuat lebih sempit lagi oleh perintah yang dimaksudkan menolong.
-# Karena itu batasnya hanya dipasang bila memang lebih lapang daripada
-# yang biasa dipilih Node pada mesin sekelas ini.
-if [ "$TIPE_MB" -ge 768 ]; then
-    echo "==> Memeriksa tipe (tersedia ${TIPE_TERSEDIA_MB} MB, jatah ${TIPE_MB} MB)"
-    export NODE_OPTIONS="--max-old-space-size=${TIPE_MB}"
+# Di bawah 400 MB bahkan grafik bersamanya (Layout, Components, types.ts,
+# ≈ 260 MB) tidak muat dengan ruang GC yang wajar; jatahnya tidak disebut
+# dan Node memilih batasnya sendiri, seperti sebelum langkah ini ada.
+if [ "$TIPE_MB" -ge 400 ]; then
+    echo "==> Memeriksa tipe (tersedia ${TIPE_TERSEDIA_MB} MB, jatah ${TIPE_MB} MB per giliran)"
+    export EQOHSEE_TIPE_MB="$TIPE_MB"
 else
     echo "==> Memeriksa tipe (tersedia ${TIPE_TERSEDIA_MB} MB — sempit, memakai bawaan Node)"
 fi
 
-if npm run --silent typecheck >"$TIPE_LOG" 2>&1; then
-    unset NODE_OPTIONS
+if node tools/periksa-tipe.mjs >"$TIPE_LOG" 2>&1; then
+    unset EQOHSEE_TIPE_MB
+    grep -E "^Memeriksa|giliran" "$TIPE_LOG" | sed 's/^/    /'
     echo "==> Tipe TypeScript & Vue bersih"
     rm -f "$TIPE_LOG"
 else
-    unset NODE_OPTIONS
+    unset EQOHSEE_TIPE_MB
     # ── Kehabisan memori BUKAN galat tipe ──
     #
     # Keduanya keluar dengan status bukan-nol, dan sebelum pembedaan ini
@@ -246,7 +248,7 @@ else
     if grep -qE "heap out of memory|Reached heap limit|JavaScript heap" "$TIPE_LOG"; then
         echo "==> GAGAL: pemeriksa tipe kehabisan memori — BUKAN galat tipe"
         echo
-        echo "    vue-tsc berhenti sebelum sempat memeriksa apa pun, jadi tidak"
+        echo "    Bahkan giliran terkecil (lima halaman) tidak muat, jadi tidak"
         echo "    ada yang perlu diperbaiki pada kodenya. Yang kurang memori"
         echo "    mesin ini — tersedia ${TIPE_TERSEDIA_MB} MB saat deploy berjalan."
         echo
