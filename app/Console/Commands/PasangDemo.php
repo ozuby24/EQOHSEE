@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Support\DataContoh;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Pasang beberapa perusahaan contoh sekaligus, beserta isinya.
@@ -261,7 +262,28 @@ class PasangDemo extends Command
             'parent'           => $c->parent ?? '',
         ])->save();
 
+        $this->pasangLogo($c, $p['kode']);
+
         return $c;
+    }
+
+    /**
+     * Logo karangan untuk perusahaan contoh.
+     *
+     * Tanpa logo, kop dokumen dan sertifikat perusahaan contoh tergambar
+     * dengan lambang cadangan — bukan tampilan yang akan dilihat
+     * perusahaan sungguhan, yang logonya diunggah di Profil Perusahaan.
+     * Logo yang sudah diganti lewat Profil Perusahaan tidak ditimpa.
+     */
+    private function pasangLogo(Company $c, string $kode): void
+    {
+        $asal   = resource_path("demo/logo/{$kode}.png");
+        $tujuan = 'logo/contoh-'.strtolower($kode).'.png';
+
+        if (!is_file($asal) || ($c->logo && $c->logo !== $tujuan)) return;
+
+        Storage::disk('public')->put($tujuan, (string) file_get_contents($asal));
+        $c->forceFill(['logo' => $tujuan])->save();
     }
 
     /**
@@ -331,6 +353,10 @@ class PasangDemo extends Command
                perusahaan biasa: yang dilepas tetap dapat masuk. */
             $id   = User::where('company_id', $c->id)->pluck('id');
             $akun = User::whereIn('id', $id)->delete();
+
+            if ($c->logo && str_starts_with($c->logo, 'logo/contoh-')) {
+                Storage::disk('public')->delete($c->logo);
+            }
 
             $c->delete();
 

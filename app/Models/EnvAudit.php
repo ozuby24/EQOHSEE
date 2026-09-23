@@ -7,7 +7,7 @@ use App\Models\Scopes\MilikPerusahaan;
 use App\Support\AuditLingkungan;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
+use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany, HasOne};
 
 /**
  * Satu pelaksanaan Audit Kinerja Pengelolaan dan Pemantauan Lingkungan.
@@ -38,6 +38,19 @@ class EnvAudit extends Model
     public function user(): BelongsTo    { return $this->belongsTo(User::class); }
     public function scores(): HasMany    { return $this->hasMany(EnvAuditScore::class, 'audit_id'); }
 
+    /** Seluruh terbitan sertifikat, termasuk yang sudah dicabut. */
+    public function sertifikat(): HasMany
+    {
+        return $this->hasMany(EnvAuditSertifikat::class, 'audit_id');
+    }
+
+    /** Sertifikat yang berlaku — paling banyak satu pada satu waktu. */
+    public function sertifikatAktif(): HasOne
+    {
+        return $this->hasOne(EnvAuditSertifikat::class, 'audit_id')
+            ->ofMany(['id' => 'max'], fn ($q) => $q->whereNull('dicabut_at'));
+    }
+
     /**
      * Skor lengkap: per bagian, tertimbang, dikurangi, berpredikat.
      *
@@ -56,10 +69,22 @@ class EnvAudit extends Model
         );
     }
 
+    /**
+     * AKL-2026-007 — nomor urut tertinggi tahun itu, ditambah satu.
+     *
+     * Bukan jumlah baris: sesudah satu audit dihapus, jumlahnya turun dan
+     * nomor berikutnya menabrak nomor yang masih dipakai. Pernah terjadi —
+     * lima audit berkode AKL-2026-006 sekaligus.
+     */
     public static function kodeBaru(int $tahun): string
     {
-        $n = static::withoutGlobalScopes()->where('tahun', $tahun)->count() + 1;
+        $akhir = static::withoutGlobalScopes()
+            ->where('tahun', $tahun)
+            ->where('kode', 'like', "AKL-{$tahun}-%")
+            ->pluck('kode')
+            ->map(fn ($k) => (int) substr((string) strrchr((string) $k, '-'), 1))
+            ->max() ?? 0;
 
-        return sprintf('AKL-%d-%03d', $tahun, $n);
+        return sprintf('AKL-%d-%03d', $tahun, $akhir + 1);
     }
 }

@@ -7,6 +7,7 @@ use App\Models\{Company, SmkpAudit, User};
 use App\Support\SmkpTahap;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -138,6 +139,24 @@ class DemoPerusahaanTest extends TestCase
         $this->artisan('demo:pasang', ['--tanpa-isi' => true])->assertSuccessful();
 
         $this->assertTrue(Hash::check('sandi-baru-yang-panjang', $u->fresh()->password));
+    }
+
+    /**
+     * Perusahaan contoh berlogo, tetapi logo yang sudah diganti lewat
+     * Profil Perusahaan tidak ditimpa saat perintahnya dijalankan ulang.
+     */
+    public function test_logo_contoh_terpasang_tanpa_menimpa_logo_pilihan(): void
+    {
+        $this->artisan('demo:pasang', ['--tanpa-isi' => true, '--hanya' => 'CDI'])->assertSuccessful();
+
+        $c = Company::withoutGlobalScopes()->where('code', 'CDI')->firstOrFail();
+        $this->assertSame('logo/contoh-cdi.png', $c->logo);
+        Storage::disk('public')->assertExists('logo/contoh-cdi.png');
+
+        $c->forceFill(['logo' => 'logo/unggahan-sendiri.png'])->save();
+        $this->artisan('demo:pasang', ['--tanpa-isi' => true, '--hanya' => 'CDI'])->assertSuccessful();
+
+        $this->assertSame('logo/unggahan-sendiri.png', $c->fresh()->logo);
     }
 
     public function test_hanya_mengerjakan_kode_yang_diminta(): void

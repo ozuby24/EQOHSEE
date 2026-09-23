@@ -37,7 +37,7 @@ use App\Support\Hr\{JalurCuti, JalurLembur, KebijakanCuti, MasterCuti, MasterPaj
     Penggajian, Penyusun, Rekonsiliasi};
 use Illuminate\Support\Facades\Hash;
 use App\Models\{CompliancePoint, ComplianceRecap, ComplianceSubject};
-use App\Models\{EnvAudit, EnvAuditScore};
+use App\Models\{EnvAudit, EnvAuditScore, EnvAuditSertifikat};
 use App\Models\Frop\{Coaching as FropCoaching, Observasi as FropObservasi};
 use App\Support\AuditLingkungan;
 use App\Support\Kepatuhan;
@@ -153,7 +153,7 @@ final class DataContoh
 
         /* Nilai lebih dulu, lalu auditnya — sama alasannya: kaskade
            basis data tidak terhitung pemanggilnya. */
-        EnvAuditScore::class, EnvAudit::class,
+        EnvAuditSertifikat::class, EnvAuditScore::class, EnvAudit::class,
 
         /* Coaching menunjuk sesi observasi (nullOnDelete), jadi dibuang
            lebih dulu agar hitungannya tetap sebanding. */
@@ -4808,35 +4808,85 @@ final class DataContoh
         $n = 0;
         $tahun = (int) date('Y');
 
-        /* Pola nilai per bagian, diputar sepanjang kriterianya.
-           Bagian A, B, dan D penuh; C, E, dan F tidak — dan empat
-           kriteria terakhir bagian F sengaja dibiarkan kosong. */
-        $pola = [
-            'a' => [3],
-            'b' => [3],
-            'c' => [3, 2, 2, 2, 2, 2, 2, 1, 1],
-            'd' => [3],
-            'e' => [2, 2, 3, 1],
-            'f' => [1],
-        ];
+        /* Tiga audit, tiga keadaan yang masing-masing perlu dapat
+           diperiksa tampilannya:
 
-        /* Berapa kriteria TERAKHIR tiap bagian yang dibiarkan belum
-           diverifikasi. Angka "4 dari 201 kriteria belum diverifikasi"
-           di layar ikhtisar hanya dapat diperiksa kalau memang ada
-           yang belum. */
-        $sisakan = ['f' => 4];
+             1. Berjalan — empat kriteria terakhir bagian F belum
+                diverifikasi; skornya masih sementara.
+             2. Lengkap dan ADITAMA — sertifikatnya sudah terbit, jadi
+                lembar sertifikat, QR, dan halaman verifikasinya dapat
+                dibuka.
+             3. Lengkap, skornya tinggi, tetapi satu kriteria bagian A
+                tidak penuh — predikatnya tertahan, dan daftar periksa
+                syarat sertifikat menunjuk tepat ke sebabnya. */
+        $n += $this->satuAuditLingkungan($tahun, 'Site Utara', 'Berjalan', ['sanksi-tindak'], [
+            'a' => [3], 'b' => [3], 'c' => [3, 2, 2, 2, 2, 2, 2, 1, 1], 'd' => [3], 'e' => [2, 2, 3, 1], 'f' => [1],
+        ], ['f' => 4], 'Audit contoh untuk memeriksa tampilan, perhitungan bobot, dan lembar cetaknya.');
+
+        $n += $this->satuAuditLingkungan($tahun, 'Site Selatan', 'Selesai', [], [
+            'a' => [3], 'b' => [3], 'c' => [3, 3, 2], 'd' => [3], 'e' => [3, 2], 'f' => [3, 2],
+        ], [], 'Seluruh kriteria terverifikasi; bagian Administrasi dan Implementasi penuh.');
+        $aditama = $this->auditTerakhir;
+
+        $n += $this->satuAuditLingkungan($tahun, 'Workshop & Port', 'Berjalan', [], [
+            'a' => [2, 3, 3, 3, 3, 3, 3], 'b' => [3, 3, 3, 2], 'c' => [2], 'd' => [3, 2], 'e' => [2], 'f' => [2, 1],
+        ], [], 'Satu kriteria administrasi belum penuh — predikat tertahan walau skornya tinggi.');
+
+        /* Sertifikat untuk audit ADITAMA, lewat jalur yang sama dengan
+           penerbitan sebenarnya: syarat, potret, nomor, kode. */
+        $aditama->load(['scores', 'company.owner']);
+        $skor = $aditama->skor();
+
+        if (SertifikatLingkungan::kelayakan($aditama, $skor)['layak']) {
+            $ttd = Signatory::withoutGlobalScopes()->where('company_id', $this->c->id)
+                ->where('is_active', true)->orderBy('id')->first();
+
+            $this->baru(EnvAuditSertifikat::class, [
+                'audit_id'     => $aditama->id,
+                'user_id'      => $this->pengaju?->id,
+                'signatory_id' => $ttd?->id,
+                'nomor'        => EnvAuditSertifikat::nomorBaru(
+                    KopDokumen::prefiksDari(SertifikatLingkungan::penerbit($aditama) ?? $this->c->name), $tahun),
+                'kode'         => EnvAuditSertifikat::kodeBaru(),
+                'terbit'       => now()->toDateString(),
+                'berlaku'      => now()->addYear()->subDay()->toDateString(),
+                'tempat'       => $this->c->location ?: 'Site Selatan',
+                'predikat'     => $skor['predikat']['nama'],
+                'peringkat'    => $skor['peringkat']['nama'],
+                'skor'         => $skor['akhir'],
+                'data'         => SertifikatLingkungan::potret($aditama, $skor, $ttd),
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /** Audit contoh yang dibuat terakhir — dipakai penerbitan sertifikat contoh. */
+    private ?EnvAudit $auditTerakhir = null;
+
+    /**
+     * Satu audit contoh.
+     *
+     * @param  array<string,list<int>>  $pola     nilai per bagian, diputar sepanjang kriterianya
+     * @param  array<string,int>        $sisakan  berapa kriteria TERAKHIR tiap bagian dibiarkan kosong
+     */
+    private function satuAuditLingkungan(int $tahun, string $lokasi, string $status, array $pengurang,
+                                         array $pola, array $sisakan, string $catatan): int
+    {
+        $n = 0;
 
         $a = $this->baru(EnvAudit::class, [
-            'user_id'  => $this->pengaju?->id,
-            'kode'     => EnvAudit::kodeBaru($tahun),
-            'tahun'    => $tahun,
-            'judul'    => 'Audit Kinerja Pengelolaan dan Pemantauan Lingkungan '.$tahun,
-            'lokasi'   => 'Site Utara',
-            'tanggal'  => now()->toDateString(),
-            'status'   => 'Berjalan',
-            'pengurang' => ['sanksi-tindak'],
-            'catatan'  => 'Audit contoh untuk memeriksa tampilan, perhitungan bobot, dan lembar cetaknya.',
-            'profil'   => [
+            'user_id'   => $this->pengaju?->id,
+            'kode'      => EnvAudit::kodeBaru($tahun),
+            'tahun'     => $tahun,
+            'judul'     => 'Audit Kinerja Pengelolaan dan Pemantauan Lingkungan '.$tahun,
+            'lokasi'    => $lokasi,
+            'tanggal'   => now()->toDateString(),
+            'status'    => $status,
+            'pengurang' => $pengurang,
+            'catatan'   => $catatan,
+            'profil'    => [
                 'alamat'            => 'Jl. Hauling KM 12, Kutai Kartanegara',
                 'telepon'           => '0541-770123',
                 'alamatPusat'       => 'Gedung Menara Hijau Lt. 8, Jakarta Selatan',
@@ -4853,6 +4903,7 @@ final class DataContoh
             ],
         ]);
         $n++;
+        $this->auditTerakhir = $a;
 
         foreach (AuditLingkungan::bagian() as $kunci => $_) {
             $kriteria = AuditLingkungan::kriteria($kunci);

@@ -30,6 +30,7 @@ use App\Http\Controllers\{BantuanController, BerkasController, ChatController, T
 use App\Http\Controllers\Admin\{AiController, CompanyController, KeamananController, PemilikController, SystemController, UserController};
 use App\Http\Controllers\DuaFaktorController;
 use App\Http\Controllers\AuditLingkunganController;
+use App\Http\Controllers\SertifikatLingkunganController;
 use App\Http\Controllers\KepatuhanController;
 use App\Http\Controllers\PerangkatSayaController;
 use App\Http\Controllers\TurController;
@@ -46,6 +47,8 @@ Route::get('sitemap.xml', [\App\Http\Controllers\PenemuanController::class, 'sit
 
 /* ============ VERIFIKASI SERTIFIKAT (publik) ============ */
 Route::get('verifikasi/{kode}', [\App\Http\Controllers\CertificateController::class,'verify'])->name('certificates.verify');
+Route::get('verifikasi-lingkungan/{kode}', [\App\Http\Controllers\SertifikatLingkunganController::class, 'verifikasi'])
+    ->middleware('throttle:30,1')->name('audit-lingkungan.verifikasi');
 
 /* ============ KUESIONER PUBLIK (tanpa login) ============ */
 Route::get('q/{token}',              [KuesionerController::class,'pilih'])->name('kuesioner.pilih');
@@ -1376,6 +1379,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/',                [AuditLingkunganController::class, 'store'])->name('store');
 
         Route::post('berkas/{skor}',    [AuditLingkunganController::class, 'berkas'])->name('berkas');
+
+        /* Sertifikat Penghargaan — disebut SEBELUM {audit}, supaya
+           "sertifikat" tidak pernah dibaca sebagai id audit. Pencabutan
+           hanya oleh administrator: sertifikat yang dicabut mengubah
+           bunyi halaman verifikasi yang dibaca pihak luar. */
+        Route::get('sertifikat/{sertifikat}',        [SertifikatLingkunganController::class, 'lihat'])->name('sertifikat.lihat');
+        Route::post('sertifikat/{sertifikat}/cabut', [SertifikatLingkunganController::class, 'cabut'])
+            ->middleware('can:admin')->name('sertifikat.cabut');
+        Route::post('{audit}/sertifikat',            [SertifikatLingkunganController::class, 'terbitkan'])->name('sertifikat.terbitkan');
 
         Route::get('{audit}',           [AuditLingkunganController::class, 'show'])->name('show');
         Route::get('{audit}/ubah',      [AuditLingkunganController::class, 'edit'])->name('edit');

@@ -393,7 +393,7 @@ final class AuditLingkungan
             if (!$penuhWajib) {
                 return [
                     'nama'   => null,
-                    'alasan' => 'Nilai '.number_format($akhir, 2).' mencapai ambang '.$p['nama']
+                    'alasan' => 'Nilai '.number_format($akhir, 2, ',', '.').' mencapai ambang '.$p['nama']
                                .', tetapi syarat minimalnya belum terpenuhi: bagian Administrasi '
                                .'Lingkungan dan Implementasi Pengelolaan & Pemantauan Lingkungan '
                                .'harus bernilai PENUH.',
@@ -405,7 +405,7 @@ final class AuditLingkungan
 
         return [
             'nama'   => null,
-            'alasan' => 'Nilai akhir '.number_format($akhir, 2).' belum mencapai 70, '
+            'alasan' => 'Nilai akhir '.number_format($akhir, 2, ',', '.').' belum mencapai 70, '
                        .'ambang terendah untuk mendapatkan predikat penghargaan.',
         ];
     }

@@ -2475,7 +2475,58 @@ export interface BarisAudit {
   akhir: number; pemenuhan: number; belum: number; kriteria: number;
   predikat: { nama: string | null; alasan: string | null };
   peringkat: { nama: string; kriteria: string; warna: string };
+  /** Capaian per bagian (persen), berkunci huruf kecil bagiannya. */
+  bagianPersen: Record<string, number>;
+  sertifikat: { nomor: string; url: string } | null;
   url: string;
+}
+
+/** Isi satu lembar Sertifikat Penghargaan Kinerja Lingkungan. */
+export interface DataSertifikatLingkungan {
+  id?: number | null;
+  nomor: string; kode: string;
+  terbit: string | null; berlaku: string | null; tempat: string | null;
+  predikat: string; bintang: number;
+  peringkat: string; peringkatKriteria: string; warna: string;
+  tema: 'emas' | 'hijau' | 'biru';
+  skor: number; pemenuhan: number; pengurang: number; kriteria: number;
+  perusahaan: string; penerbit: string | null; judul: string;
+  kodeAudit: string | null; lokasi: string | null; tahun: number; tanggalAudit: string | null;
+  bagian: Array<{ kunci: string; judul: string; bobot: number; persen: number }>;
+  ttdNama: string | null; ttdJabatan: string | null; ttdGambar: string | null;
+  logoPenerbit: string | null; logoPenerima: string | null;
+  status: 'sah' | 'kedaluwarsa' | 'dicabut';
+  dicabutPada: string | null; alasanCabut: string | null;
+  urlVerifikasi: string;
+}
+
+export interface SertifikatAudit {
+  aktif: (DataSertifikatLingkungan & { url: string; urlCabut: string; berubah: boolean }) | null;
+  riwayat: Array<{ id: number; nomor: string; terbit: string | null; dicabut: string | null;
+                   alasan: string | null; predikat: string; url: string }>;
+  layak: boolean;
+  alasan: string | null;
+  pratinjau: DataSertifikatLingkungan | null;
+  penandatangan: Array<{ id: number; nama: string; jabatan: string | null }>;
+  bawaan: { terbit: string; berlaku: string; tempat: string; signatory_id: number | null };
+  urlTerbit: string;
+  urlLogo: string;
+  bolehCabut: boolean;
+}
+
+export interface HalamanSertifikatLingkungan {
+  judul: string;
+  s: DataSertifikatLingkungan;
+  kembali: string;
+}
+
+export interface HalamanVerifikasiLingkungan {
+  kode: string;
+  catatanKaki?: string;
+  s: Pick<DataSertifikatLingkungan, 'nomor' | 'kode' | 'terbit' | 'berlaku' | 'tempat' | 'predikat'
+    | 'bintang' | 'peringkat' | 'peringkatKriteria' | 'warna' | 'tema' | 'skor' | 'perusahaan'
+    | 'penerbit' | 'lokasi' | 'tahun' | 'ttdNama' | 'ttdJabatan' | 'status' | 'dicabutPada'
+    | 'alasanCabut' | 'logoPenerbit' | 'logoPenerima'> | null;
 }
 
 export interface OpsiAudit {
@@ -2513,6 +2564,7 @@ export interface HalamanAuditLingkunganIkhtisar {
   };
   skor: SkorAudit;
   opsi: OpsiAudit;
+  sertifikat: SertifikatAudit;
   tautan: TautanAudit;
 }
 

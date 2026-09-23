@@ -1350,6 +1350,23 @@ main a{transition:color .16s}
   box-shadow:0 0 0 3px rgba(245,124,0,.13)}
 @media (max-width:860px){.eq-cari{display:none}}
 
+/* Ponsel sempit: sapaan boleh MENYUSUT, bukan mendorong chip akun keluar
+   layar. Di 390 px bilah atas administrator (tema, lonceng, pemilih
+   perusahaan, akun) melebar 55 px dan avatar akun terpotong — menu akun
+   tidak dapat dijangkau sama sekali, karena halaman tidak dapat digeser
+   mendatar. Tanggal disembunyikan lebih dulu; sapaan dipotong dengan
+   elipsis bila masih kurang. */
+@media (max-width:480px){
+  .eq-topbar{gap:10px;padding-left:12px;padding-right:12px}
+  .eq-sapa{flex:0 1 auto;min-width:0}
+  .eq-sapa small{display:none}
+  .eq-sapa strong{font-size:15px}
+  .eq-topbar-aksi{gap:6px}
+}
+@media (max-width:380px){
+  .eq-topbar-aksi .eq-bulat{width:36px;height:36px}
+}
+
 /* ── Perusahaan yang sedang dilihat ──
    LEBARNYA MENGIKUTI NAMANYA, TIDAK DIPATOK. Batas 190px yang dulu
    ada memotong "PT Tampilan Pertambangan Jaya Persada" menjadi "PT

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{ActivityLog, Company, EnvAudit, EnvAuditScore};
-use App\Support\{AuditLingkungan, Berkas, KopDokumen};
+use App\Models\{ActivityLog, Company, EnvAudit, EnvAuditScore, EnvAuditSertifikat, Signatory};
+use App\Support\{AuditLingkungan, Berkas, KopDokumen, SertifikatLingkungan};
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -26,7 +26,7 @@ class AuditLingkunganController extends Controller
     {
         $tahun = (int) ($request->get('tahun') ?: now()->year);
 
-        $daftar = EnvAudit::with('scores', 'company')
+        $daftar = EnvAudit::with('scores', 'company', 'sertifikatAktif')
             ->where('tahun', $tahun)
             ->latest('tanggal')->latest('id')
             ->get();
@@ -82,18 +82,95 @@ class AuditLingkunganController extends Controller
     /** Ikhtisar: skor per bagian, pengurang, predikat, peringkat. */
     public function show(EnvAudit $audit)
     {
-        $audit->load(['scores', 'company']);
+        $audit->load(['scores', 'company.owner', 'sertifikatAktif.company.owner', 'sertifikatAktif.signatory']);
+        $skor = $audit->skor();
 
         return Inertia::render('AuditLingkungan/Ikhtisar', [
             'judul'    => $audit->kode,
             'subjudul' => $audit->judul,
 
             'a'     => $this->baris($audit) + ['profil' => AuditLingkungan::profil($audit->profil), 'catatan' => $audit->catatan],
-            'skor'  => $audit->skor(),
+            'skor'  => $skor,
             'opsi'  => $this->opsi(),
+
+            'sertifikat' => $this->sertifikat($audit, $skor),
 
             'tautan' => $this->tautan($audit),
         ]);
+    }
+
+    /**
+     * Keadaan sertifikat pada ikhtisar: yang berlaku, riwayat yang
+     * dicabut, dan — bila boleh terbit — pratinjau lembarnya.
+     *
+     * Pratinjau digambar dari potret yang SAMA dengan yang akan
+     * dibekukan saat terbit, jadi yang dilihat sebelum menekan tombol
+     * adalah yang akan tercetak.
+     */
+    private function sertifikat(EnvAudit $audit, array $skor): array
+    {
+        $aktif = $audit->sertifikatAktif;
+        $k = SertifikatLingkungan::kelayakan($audit, $skor, $aktif);
+
+        $penandatangan = Signatory::untukPerusahaan($audit->company_id)->get();
+
+        $pratinjau = null;
+        if ($k['layak']) {
+            $contoh = new EnvAuditSertifikat([
+                'company_id' => $audit->company_id,
+                'nomor'      => 'AKL-SERT/'.KopDokumen::prefiksDari(SertifikatLingkungan::penerbit($audit) ?? $audit->company?->name)
+                               .'/'.now()->year.'/···',
+                'kode'       => 'PRATINJAU000',
+                'terbit'     => now()->toDateString(),
+                'berlaku'    => now()->addYear()->subDay()->toDateString(),
+                'tempat'     => $audit->company?->location ?: $audit->lokasi,
+                'predikat'   => $skor['predikat']['nama'],
+                'peringkat'  => $skor['peringkat']['nama'],
+                'skor'       => $skor['akhir'],
+                'data'       => SertifikatLingkungan::potret($audit, $skor, $penandatangan->first()),
+            ]);
+            $contoh->setRelation('company', $audit->company);
+            $contoh->setRelation('signatory', $penandatangan->first());
+
+            $pratinjau = SertifikatLingkungan::lembar($contoh);
+        }
+
+        return [
+            'aktif' => $aktif ? SertifikatLingkungan::lembar($aktif) + [
+                'url'      => route('audit-lingkungan.sertifikat.lihat', $aktif),
+                'urlCabut' => route('audit-lingkungan.sertifikat.cabut', $aktif),
+                'berubah'  => SertifikatLingkungan::berubah($aktif, $skor),
+            ] : null,
+
+            'riwayat' => $audit->sertifikat()->whereNotNull('dicabut_at')->latest('id')->get()
+                ->map(fn (EnvAuditSertifikat $s) => [
+                    'id'      => $s->id,
+                    'nomor'   => $s->nomor,
+                    'terbit'  => $s->terbit?->translatedFormat('j M Y'),
+                    'dicabut' => $s->dicabut_at?->translatedFormat('j M Y'),
+                    'alasan'  => $s->alasan_cabut,
+                    'predikat'=> $s->predikat,
+                    'url'     => route('audit-lingkungan.sertifikat.lihat', $s),
+                ])->all(),
+
+            'layak'     => $k['layak'],
+            'alasan'    => $k['alasan'],
+            'pratinjau' => $pratinjau,
+
+            'penandatangan' => $penandatangan->map(fn (Signatory $t) => [
+                'id' => $t->id, 'nama' => $t->name, 'jabatan' => $t->title,
+            ])->all(),
+            'bawaan' => [
+                'terbit'  => now()->toDateString(),
+                'berlaku' => now()->addYear()->subDay()->toDateString(),
+                'tempat'  => (string) ($audit->company?->location ?: $audit->lokasi),
+                'signatory_id' => $penandatangan->first()?->id,
+            ],
+
+            'urlTerbit'  => route('audit-lingkungan.sertifikat.terbitkan', $audit),
+            'urlLogo'    => route('personalia.perusahaan'),
+            'bolehCabut' => (bool) auth()->user()?->isAdmin(),
+        ];
     }
 
     /** Satu bagian beserta kriterianya. */
@@ -289,6 +366,14 @@ class AuditLingkunganController extends Controller
 
     public function destroy(EnvAudit $audit)
     {
+        /* Audit yang sertifikatnya masih berlaku tidak dihapus diam-diam:
+           QR-nya sudah tercetak, dan pemegangnya berhak atas halaman
+           verifikasi yang menyatakan keadaan sebenarnya. Cabut dulu —
+           jejak terbitannya tetap tersimpan sesudah auditnya dihapus. */
+        if ($s = $audit->sertifikatAktif()->first()) {
+            return back()->with('galat', 'Audit ini memiliki sertifikat berlaku ('.$s->nomor.'). Cabut sertifikatnya lebih dulu.');
+        }
+
         $kode = $audit->kode;
         $audit->delete();
 
@@ -364,6 +449,11 @@ class AuditLingkunganController extends Controller
             'kriteria'   => $s['kriteria'],
             'predikat'   => $s['predikat'],
             'peringkat'  => $s['peringkat'],
+            'bagianPersen' => array_map(fn ($b) => $b['persen'], $s['bagian']),
+            'sertifikat' => ($z = $a->sertifikatAktif) ? [
+                'nomor' => $z->nomor,
+                'url'   => route('audit-lingkungan.sertifikat.lihat', $z),
+            ] : null,
             'url'        => route('audit-lingkungan.show', $a),
         ];
     }

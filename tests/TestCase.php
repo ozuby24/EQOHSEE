@@ -2,7 +2,9 @@
 
 namespace Tests;
 
+use App\Support\Berkas;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 
 /**
@@ -33,6 +35,30 @@ use Illuminate\Testing\TestResponse;
  */
 abstract class TestCase extends BaseTestCase
 {
+    /**
+     * Kedua disk dipalsukan untuk SETIAP uji, bukan hanya yang ingat.
+     *
+     * Empat belas berkas uji memuat data contoh — dan data contoh
+     * menyalin foto bahaya, logo, dan lampiran ke disk. Tanpa pemalsuan,
+     * semuanya ditulis ke storage/app yang SUNGGUHAN, lalu `buang()` pada
+     * uji berikutnya menghapus folder yang sama. Pada mesin pengembang
+     * itu berarti menjalankan suite menghapus foto data contoh yang
+     * sedang dipakai server lokal: halaman Bahaya memuat gambar yang
+     * mendadak 404 selama suite berjalan, lalu kembali sesudah perintah
+     * `demo:pasang` berikutnya — cacat yang tampak seperti galat
+     * penyajian berkas padahal bukan.
+     *
+     * Uji yang memanggil Storage::fake() sendiri tetap berjalan seperti
+     * biasa; pemalsuan kedua hanya mengosongkan disk palsu yang sama.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Storage::fake(Berkas::TERTUTUP);
+        Storage::fake(Berkas::TERBUKA);
+    }
+
     /**
      * Tegaskan halaman tidak mencetak "NaN" — pada ISINYA, bukan pada
      * kerangkanya.
