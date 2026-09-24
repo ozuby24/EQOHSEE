@@ -307,7 +307,13 @@ const tempatTanggal = computed(() => {
 }
 
 .sl-logo { height: 58px; display: flex; align-items: center; justify-content: center; gap: 16px; }
-.sl-logo img { max-height: 58px; max-width: 230px; object-fit: contain; }
+/* Logo yang diunggah kerap JPG berlatar putih. Di atas kertas krem,
+   latar itu tampil sebagai kotak putih yang menempel. Multiply membuat
+   putihnya mengambil warna kertas (berikut guilloche di bawahnya),
+   sementara hitam dan warna logonya tetap. Logo PNG transparan tidak
+   berubah. Berlaku juga saat dicetak: .sl-lembar-lah konteks
+   tumpuknya, jadi kertasnya ikut menjadi latar campuran. */
+.sl-logo img { max-height: 58px; max-width: 230px; object-fit: contain; mix-blend-mode: multiply; }
 .sl-logo-sekat { width: 1px; height: 34px; background: #C9BE9C; }
 .sl-kop-nama {
   font-size: 13px; font-weight: 800; letter-spacing: .28em; padding: 8px 0 8px .28em; text-transform: uppercase;

@@ -202,15 +202,17 @@ const berisi = (baris: any[] | undefined) =>
       </div>
 
       <!-- grid-cols-1, bukan kolom tersirat: kolom tersirat selebar isi
-           min-content-nya, dan teks `truncate` tidak boleh dipatah —
-           di layar 390 px kartunya melebar sampai 434 px dan terpotong. -->
+           min-content-nya — di layar 390 px kartunya melebar sampai
+           434 px dan terpotong. Nama dan keterangannya turun baris,
+           tidak dipotong titik: keterangan inilah yang menjelaskan
+           angkanya. -->
       <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
         <Link v-for="m in mendesak" :key="m.nama" :href="m.url"
               class="flex min-w-0 items-center gap-3 rounded-xl bg-white/70 px-3 py-2.5 transition hover:bg-white">
           <strong class="num text-xl" style="color:#B91C1C;min-width:2.2rem">{{ m.nilai }}</strong>
           <span class="min-w-0">
-            <span class="block text-[12.5px] font-semibold text-cam-ink truncate">{{ m.nama }}</span>
-            <small class="block text-[11px] text-stone-500 truncate">{{ m.ket }}</small>
+            <span class="block text-[12.5px] font-semibold leading-snug text-cam-ink [overflow-wrap:anywhere]">{{ m.nama }}</span>
+            <small class="block text-[11px] leading-snug text-stone-500 [overflow-wrap:anywhere]">{{ m.ket }}</small>
           </span>
         </Link>
       </div>

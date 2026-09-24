@@ -628,7 +628,10 @@ function keluar() {
              persis alasan ia dulu dikeluarkan dari chip. -->
         <div class="eq-sapa min-w-0">
           <small>{{ hariIni }}</small>
-          <strong>{{ sapaan }} <span aria-hidden="true">&#128075;</span></strong>
+          <!-- &nbsp;: di ponsel sapaannya boleh turun baris, tetapi
+               lambaian tangan tidak boleh tertinggal sendirian di baris
+               kedua. -->
+          <strong>{{ sapaan }}&nbsp;<span aria-hidden="true">&#128075;</span></strong>
         </div>
 
         <!-- Kotak cari menuju daftar pekerja: nama, NIK, jabatan.

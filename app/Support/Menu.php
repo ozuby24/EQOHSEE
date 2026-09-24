@@ -588,6 +588,13 @@ final class Menu
           ['Petak & Reklamasi',    'lingkungan.lahan',      'lingkungan/lahan*'],
           ['Pemantauan Mutu',      'lingkungan.pemantauan', 'lingkungan/pemantauan*'],
         ],
+        /* Audit Kinerja Pengelolaan & Pemantauan Lingkungan tinggal di
+           modul lingkungan, tempat orang mencarinya. Sebelumnya ia
+           terselip di bawah Pemenuhan pada ISO & Dokumen, dan yang
+           membuka modul Lingkungan menyimpulkan fiturnya tidak ada. */
+        'Audit & Penghargaan' => [
+          ['Audit Kinerja Lingkungan', 'audit-lingkungan.index', 'audit-lingkungan*'],
+        ],
         'Acuan & Data' => [
           ['Baku Mutu',            'lingkungan.baku',  'lingkungan/baku-mutu*'],
           ['Laporan Lingkungan',   'lingkungan.cetak', 'lingkungan/cetak'],
@@ -770,7 +777,6 @@ final class Menu
           ['Register Kewajiban','kepatuhan.index', 'kepatuhan/register'],
           ['Rekap Bulanan',    'kepatuhan.rekap',  'kepatuhan/rekap'],
           ['Pustaka Daftar Periksa', 'kepatuhan.pustaka', 'kepatuhan/pustaka'],
-          ['Audit Kinerja Lingkungan', 'audit-lingkungan.index', 'audit-lingkungan*'],
         ],
       ],
     ],
@@ -839,7 +845,7 @@ final class Menu
            mana pun tidak menimbulkan galat sama sekali: halamannya tetap
            terbuka, hanya membawa sampul dan menu samping modul yang
            salah — dan yang membukanya menyimpulkan ia tersesat. */
-        [['dokumen*', 'iso*', 'kepatuhan*', 'audit-lingkungan*', 'struktur-dokumen', 'daftar-induk'], 'dokumen'],
+        [['dokumen*', 'iso*', 'kepatuhan*', 'struktur-dokumen', 'daftar-induk'], 'dokumen'],
         [['energi*'],                              'energi'],
         [['konservasi*'],                          'konservasi'],
         [['operasi-tambang*'],                     'operasi'],
@@ -849,7 +855,7 @@ final class Menu
         [['angkutan*'],                            'angkutan'],
         [['biaya*'],                               'biaya'],
         [['izin-kerja*'],                          'izin'],
-        [['lingkungan*'],                          'lingkungan'],
+        [['lingkungan*', 'audit-lingkungan*'],     'lingkungan'],
         [['pemeliharaan*'],                        'maintenance'],
         [['gudang*'],                              'gudang'],
         [['mining-engineering-hub*'],              'meh'],

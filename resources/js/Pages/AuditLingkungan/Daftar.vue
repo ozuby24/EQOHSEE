@@ -216,9 +216,11 @@ const warnaPeringkat = (p: { nama: string; warna: string }) => (p.nama === 'HITA
 
 .akl-sebaran { display: grid; gap: .55rem; }
 .akl-sebaran > li { display: grid; grid-template-columns: minmax(150px, 1.1fr) minmax(0, 1fr) 2rem; align-items: center; gap: .7rem; }
-.akl-sebaran-nama { display: flex; align-items: center; gap: .45rem; min-width: 0; }
+/* Keterangan ambang di baris kedua, sejajar dengan namanya — utuh,
+   tidak dipotong titik ("melebihi ketaat…"). */
+.akl-sebaran-nama { display: flex; flex-wrap: wrap; align-items: center; column-gap: .45rem; row-gap: 0; min-width: 0; }
 .akl-sebaran-nama b { font-size: 11.5px; letter-spacing: .04em; color: var(--akl-tinta); }
-.akl-sebaran-nama small { font-size: 10px; color: var(--akl-tinta-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.akl-sebaran-nama small { flex-basis: 100%; padding-left: 1rem; font-size: 10px; line-height: 1.35; color: var(--akl-tinta-3); }
 .akl-sebaran-pita { height: 12px; border-radius: 0 4px 4px 0; background: var(--akl-jalur); overflow: hidden; }
 .akl-sebaran-pita > span { display: block; height: 100%; border-radius: 0 4px 4px 0; min-width: 0; }
 .akl-sebaran-n { font-size: 13px; text-align: right; color: var(--akl-tinta); }
@@ -251,7 +253,6 @@ const warnaPeringkat = (p: { nama: string; warna: string }) => (p.nama === 'HITA
   .akl-struktur-baris { grid-template-columns: 30px minmax(0, 1fr) 84px; }
   .akl-struktur-bobot { grid-column: 2 / -1; grid-row: 2; }
   .akl-cari { width: 100%; }
-  .akl-sebaran > li { grid-template-columns: minmax(110px, auto) minmax(0, 1fr) 1.6rem; }
-  .akl-sebaran-nama small { display: none; }
+  .akl-sebaran > li { grid-template-columns: minmax(120px, auto) minmax(0, 1fr) 1.6rem; }
 }
 </style>

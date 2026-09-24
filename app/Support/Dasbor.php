@@ -12,7 +12,7 @@ use App\Models\Hr\Roster as HrRoster;
 use App\Models\Miners\{Alur as MnrAlur, Pekerja as MnrPekerja, Permit as MnrPermit};
 use App\Support\Miners\Keadaan;
 use App\Models\{
-    AngkutMuatan, BiayaRealisasi, Document, GeoBacaan, GudangBarang,
+    AngkutMuatan, BiayaRealisasi, Document, EnvAudit, GeoBacaan, GudangBarang,
     HazardReport, Inspection, IzinKerja, KoObject, LedakRencana,
     LingkunganPantau, MineOperationalRecord, MinerbaConservationRecord,
     Procedure, SmkpAudit, SmkpFinding,
@@ -285,6 +285,18 @@ final class Dasbor
                 'nilai' => self::pantauMelanggar(),
                 'total' => LingkunganPantau::count(),
                 'rute'  => 'lingkungan.index', 'nada' => 'gawat',
+            ],
+            /* Audit Kinerja Lingkungan yang dibuka tetapi belum
+               diselesaikan. Sejajar dengan "Kursus Belum Selesai":
+               pekerjaan yang sudah dimulai dan menunggu orangnya. Tanpa
+               ubin ini auditnya tidak tampak di dasbor sama sekali, dan
+               modul yang tidak tampak disangka tidak ada. */
+            [
+                'modul' => 'lingkungan', 'nama' => 'Audit Lingkungan Belum Selesai',
+                'ket'   => 'Audit Kinerja Lingkungan masih berjalan',
+                'nilai' => EnvAudit::where('status', 'Berjalan')->count(),
+                'total' => EnvAudit::count(),
+                'rute'  => 'audit-lingkungan.index', 'nada' => 'ingat',
             ],
 
             /* ═══ logistik ═══ */

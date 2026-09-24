@@ -826,23 +826,30 @@ main a{transition:color .16s}
    satu hal, melainkan memberi gambaran seluruhnya dalam satu tarikan
    mata. Warna sisi kirinya memikul seluruh beban penandaan. */
 .eq-mdl-kisi{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(232px,1fr))}
-.eq-mdl{display:grid;gap:8px;padding:13px 14px;border-radius:14px;background:#fff;
+/* Satu kolom yang boleh menyempit (minmax 0), isi dirapatkan ke atas.
+   Tanpa itu kolom kisi mengikuti lebar judul yang tidak boleh patah,
+   dan angka di ujung kanan terdorong keluar kartu ("Perusahaan Jasa
+   Pertambangan"); kartu yang ditarik setinggi barisnya pun membagi sisa
+   tingginya ke kepala, sehingga kepala kartu sebaris tidak sejajar. */
+.eq-mdl{display:grid;grid-template-columns:minmax(0,1fr);align-content:start;
+  gap:8px;padding:13px 14px;border-radius:14px;background:#fff;
   border:1px solid rgba(27,32,36,.08);border-left:4px solid var(--c);
   box-shadow:0 1px 2px rgba(27,32,36,.05),0 8px 18px -16px rgba(27,32,36,.4);
   transition:transform .18s cubic-bezier(.21,.6,.35,1),box-shadow .18s,border-color .18s}
 .eq-mdl:hover{transform:translateY(-2px);
   box-shadow:0 2px 4px rgba(27,32,36,.06),0 16px 28px -18px rgba(27,32,36,.5)}
-.eq-mdl-kepala{display:flex;align-items:center;gap:9px}
+.eq-mdl-kepala{display:flex;align-items:center;gap:9px;min-width:0;min-height:38px}
 .eq-mdl-ikon{display:grid;place-items:center;width:38px;height:38px;border-radius:13px;
   flex:none}
 .eq-mdl-ikon svg{width:21px;height:21px}
+/* Nama modul dibaca utuh: boleh turun satu baris, tidak dipotong titik. */
 .eq-mdl-nama{flex:1;min-width:0;font-size:12.5px;font-weight:700;line-height:1.25;
-  color:var(--eq-judul,#0F1720);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.eq-mdl-angka{font-size:22px;font-weight:800;letter-spacing:-.035em;line-height:1;
+  color:var(--eq-judul,#0F1720);overflow-wrap:anywhere;text-wrap:balance}
+.eq-mdl-angka{flex:none;font-size:22px;font-weight:800;letter-spacing:-.035em;line-height:1;
   color:var(--c);font-variant-numeric:tabular-nums}
-.eq-mdl-butir{display:grid;gap:3px}
+.eq-mdl-butir{display:grid;gap:3px;min-width:0}
 .eq-mdl-butir span{font-size:11px;line-height:1.4;color:var(--eq-lemah,#6B7785);
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  overflow-wrap:anywhere}
 .eq-mdl-butir b{font-weight:700;color:var(--eq-judul,#0F1720)}
 .eq-mdl-bersih{font-size:11px;line-height:1.4;color:#16A34A;font-weight:600}
 @media (prefers-reduced-motion:reduce){.eq-mdl:hover{transform:none}}
@@ -1294,8 +1301,10 @@ main a{transition:color .16s}
   background:rgba(255,255,255,.06);color:#fff;cursor:pointer;transition:background .18s}
 .eq-modul-pilih:hover{background:rgba(255,255,255,.11)}
 .eq-modul-pilih svg{width:15px;height:15px;flex:none;opacity:.7;transition:transform .18s}
-.eq-modul-nama{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
-  color:var(--eq-lime,#B7E44B);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Nama modul boleh turun baris: "LINGKUNGAN & RE…" dan "PERUSAHAAN
+   JASA PER…" tidak menjawab di modul mana orangnya berada. */
+.eq-modul-nama{flex:1;min-width:0;text-align:left;font-size:11px;font-weight:800;letter-spacing:.16em;
+  line-height:1.35;text-transform:uppercase;color:var(--eq-lime,#B7E44B);overflow-wrap:anywhere}
 
 .eq-modul-daftar{margin-top:6px;max-height:280px;overflow-y:auto;
   border-radius:12px;background:rgba(0,0,0,.22);padding:4px}
@@ -1303,7 +1312,7 @@ main a{transition:color .16s}
   font-size:12px;font-weight:600;color:rgba(255,255,255,.62);position:relative;transition:.15s}
 .eq-modul-butir:hover{background:rgba(255,255,255,.08);color:#fff}
 .eq-modul-butir svg{width:15px;height:15px;flex:none}
-.eq-modul-butir span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eq-modul-butir span{min-width:0;line-height:1.3;overflow-wrap:anywhere}
 .eq-modul-aktif{background:rgba(255,255,255,.13);color:#fff}
 .eq-modul-titik{position:absolute;right:8px;width:6px;height:6px;border-radius:50%;
   background:var(--eq-lime,#B7E44B);flex:none}
@@ -1354,13 +1363,13 @@ main a{transition:color .16s}
    layar. Di 390 px bilah atas administrator (tema, lonceng, pemilih
    perusahaan, akun) melebar 55 px dan avatar akun terpotong — menu akun
    tidak dapat dijangkau sama sekali, karena halaman tidak dapat digeser
-   mendatar. Tanggal disembunyikan lebih dulu; sapaan dipotong dengan
-   elipsis bila masih kurang. */
+   mendatar. Tanggal disembunyikan lebih dulu; sapaan turun menjadi dua
+   baris bila masih kurang — "Selamat pa…" bukan sapaan. */
 @media (max-width:480px){
   .eq-topbar{gap:10px;padding-left:12px;padding-right:12px}
   .eq-sapa{flex:0 1 auto;min-width:0}
   .eq-sapa small{display:none}
-  .eq-sapa strong{font-size:15px}
+  .eq-sapa strong{font-size:14px;line-height:1.15;white-space:normal;overflow:visible;overflow-wrap:anywhere}
   .eq-topbar-aksi{gap:6px}
 }
 @media (max-width:380px){
