@@ -469,6 +469,125 @@ class AuditLingkunganTest extends TestCase
         $this->assertNull($skor->fresh()->berkas);
     }
 
+    /* ═══════════ dokumen bukti per kriteria ═══════════ */
+
+    private function pdf(string $nama = 'bukti.pdf'): \Illuminate\Http\UploadedFile
+    {
+        return \Illuminate\Http\UploadedFile::fake()->create($nama, 12, 'application/pdf');
+    }
+
+    /** Bukti dapat diunggah pada kriteria yang BELUM pernah dinilai. */
+    public function test_unggah_bukti_pada_kriteria_yang_belum_dinilai(): void
+    {
+        $c = $this->perusahaan();
+        $this->masuk($c, admin: false);
+        $a = $this->audit($c);
+        $kode = AuditLingkungan::kriteria('b')[0]['kode'];
+
+        $this->post("/audit-lingkungan/{$a->id}/bukti/{$kode}", [
+            'berkas' => [$this->pdf('Izin TPS LB3.pdf'), $this->pdf('Foto pintu air.pdf')],
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $s = EnvAuditScore::where('audit_id', $a->id)->where('kode', $kode)->firstOrFail();
+        $this->assertCount(2, $s->berkas);
+        $this->assertSame(['Izin TPS LB3.pdf', 'Foto pintu air.pdf'], $s->berkas_nama);
+        foreach ($s->berkas as $j) \Illuminate\Support\Facades\Storage::disk(\App\Support\Berkas::TERTUTUP)->assertExists($j);
+
+        // Nilainya tetap kosong: mengunggah bukti bukan menilai.
+        $this->assertNull($s->verifikasi);
+
+        $this->get("/audit-lingkungan/{$a->id}/bagian/b")->assertInertia(fn (AssertableInertia $p) => $p
+            ->where('susun.0.kelompok.0.butir.0.bukti.0.nama', 'Izin TPS LB3.pdf')
+            ->where('susun.0.kelompok.0.butir.0.bukti.1.nama', 'Foto pintu air.pdf')
+            ->where('susun.0.kelompok.0.butir.0.urlBukti', route('audit-lingkungan.bukti', [$a, $kode]))
+            ->where('maksBukti', \App\Http\Controllers\AuditLingkunganController::MAKS_BUKTI));
+    }
+
+    /** Kode yang bukan kriteria ditolak dan tidak dibuatkan baris. */
+    public function test_unggah_bukti_kode_asing_ditolak(): void
+    {
+        $c = $this->perusahaan();
+        $this->masuk($c, admin: false);
+        $a = $this->audit($c);
+
+        $this->post("/audit-lingkungan/{$a->id}/bukti/z.9.9", ['berkas' => [$this->pdf()]])->assertNotFound();
+        $this->assertSame(0, EnvAuditScore::where('audit_id', $a->id)->count());
+    }
+
+    /** Batas bukti per kriteria dijaga, termasuk yang sudah ada. */
+    public function test_batas_bukti_per_kriteria(): void
+    {
+        $c = $this->perusahaan();
+        $this->masuk($c, admin: false);
+        $a = $this->audit($c);
+        $kode = AuditLingkungan::kriteria('a')[0]['kode'];
+        $maks = \App\Http\Controllers\AuditLingkunganController::MAKS_BUKTI;
+
+        $this->post("/audit-lingkungan/{$a->id}/bukti/{$kode}", [
+            'berkas' => array_map(fn ($i) => $this->pdf("b{$i}.pdf"), range(1, $maks - 1)),
+        ])->assertSessionHasNoErrors();
+
+        $this->post("/audit-lingkungan/{$a->id}/bukti/{$kode}", [
+            'berkas' => [$this->pdf('lebih1.pdf'), $this->pdf('lebih2.pdf')],
+        ])->assertSessionHasErrors('berkas');
+
+        $this->assertCount($maks - 1, EnvAuditScore::where('audit_id', $a->id)->where('kode', $kode)->first()->berkas);
+    }
+
+    /** Jenis berkas berbahaya ditolak. */
+    public function test_unggah_bukti_menolak_berkas_berbahaya(): void
+    {
+        $c = $this->perusahaan();
+        $this->masuk($c, admin: false);
+        $a = $this->audit($c);
+        $kode = AuditLingkungan::kriteria('a')[0]['kode'];
+
+        $this->post("/audit-lingkungan/{$a->id}/bukti/{$kode}", [
+            'berkas' => [\Illuminate\Http\UploadedFile::fake()->create('skrip.php', 1, 'application/x-php')],
+        ])->assertSessionHasErrors();
+
+        $this->assertNull(EnvAuditScore::where('audit_id', $a->id)->where('kode', $kode)->first()?->berkas);
+    }
+
+    /** Menghapus satu bukti membuang berkasnya dan menjaga nama tetap sejajar. */
+    public function test_hapus_bukti(): void
+    {
+        $c = $this->perusahaan();
+        $this->masuk($c, admin: false);
+        $a = $this->audit($c);
+        $kode = AuditLingkungan::kriteria('a')[0]['kode'];
+
+        $this->post("/audit-lingkungan/{$a->id}/bukti/{$kode}", [
+            'berkas' => [$this->pdf('satu.pdf'), $this->pdf('dua.pdf'), $this->pdf('tiga.pdf')],
+        ]);
+        $s = EnvAuditScore::where('audit_id', $a->id)->where('kode', $kode)->first();
+        $dibuang = $s->berkas[1];
+
+        $this->post("/audit-lingkungan/{$a->id}/bukti/{$kode}/hapus", ['indeks' => 1])->assertRedirect();
+
+        $s->refresh();
+        $this->assertSame(['satu.pdf', 'tiga.pdf'], $s->berkas_nama);
+        $this->assertCount(2, $s->berkas);
+        \Illuminate\Support\Facades\Storage::disk(\App\Support\Berkas::TERTUTUP)->assertMissing($dibuang);
+
+        $this->post("/audit-lingkungan/{$a->id}/bukti/{$kode}/hapus", ['indeks' => 9])->assertNotFound();
+    }
+
+    /** Bukti pada audit perusahaan lain tidak dapat ditambah maupun dihapus. */
+    public function test_bukti_audit_perusahaan_lain_tidak_ditemukan(): void
+    {
+        $milik = $this->audit($this->perusahaan());
+        $kode  = AuditLingkungan::kriteria('a')[0]['kode'];
+        EnvAuditScore::create(['audit_id' => $milik->id, 'kode' => $kode, 'berkas' => ['audit-lingkungan/x.pdf']]);
+
+        $this->masuk($this->perusahaan(), admin: false);
+
+        $this->post("/audit-lingkungan/{$milik->id}/bukti/{$kode}", ['berkas' => [$this->pdf()]])->assertNotFound();
+        $this->post("/audit-lingkungan/{$milik->id}/bukti/{$kode}/hapus", ['indeks' => 0])->assertNotFound();
+        $this->assertSame(['audit-lingkungan/x.pdf'],
+            EnvAuditScore::where('audit_id', $milik->id)->first()->berkas);
+    }
+
     /** Tamu tidak dapat membuka daftar auditnya. */
     public function test_tamu_tidak_dapat_membuka_daftar(): void
     {

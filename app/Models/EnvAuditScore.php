@@ -14,11 +14,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class EnvAuditScore extends Model
 {
-    protected $fillable = ['audit_id', 'kode', 'nilai', 'verifikasi', 'keterangan', 'berkas'];
+    protected $fillable = ['audit_id', 'kode', 'nilai', 'verifikasi', 'keterangan', 'berkas', 'berkas_nama'];
 
     protected function casts(): array
     {
-        return ['nilai' => 'integer', 'verifikasi' => 'integer', 'berkas' => 'array'];
+        return ['nilai' => 'integer', 'verifikasi' => 'integer', 'berkas' => 'array', 'berkas_nama' => 'array'];
     }
 
     public function audit(): BelongsTo { return $this->belongsTo(EnvAudit::class, 'audit_id'); }

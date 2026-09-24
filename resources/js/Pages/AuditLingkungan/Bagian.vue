@@ -157,6 +157,68 @@ function simpan() {
   });
 }
 
+/* ═══════════ dokumen bukti ═══════════
+
+   Diunggah per kriteria, LANGSUNG tersimpan — terpisah dari tombol
+   Simpan bagian. Kirimannya membawa preserveState, jadi nilai yang
+   belum disimpan tidak ikut hilang saat halaman memuat ulang daftar
+   buktinya. */
+
+const TERIMA = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,.jpg,.jpeg,.png,.webp,.zip';
+const mengunggah = ref<string | null>(null);
+const galatBukti = reactive<Record<string, string>>({});
+const seret = ref<string | null>(null);
+
+function unggahBukti(b: { kode: string; urlBukti: string; bukti: unknown[] }, daftar: FileList | File[] | null) {
+  const berkas = Array.from(daftar ?? []);
+  if (!berkas.length || mengunggah.value) return;
+  delete galatBukti[b.kode];
+
+  const sisa = props.maksBukti - b.bukti.length;
+  if (berkas.length > sisa) {
+    galatBukti[b.kode] = sisa > 0
+      ? `Hanya ${sisa} dokumen lagi yang dapat ditambahkan (paling banyak ${props.maksBukti}).`
+      : `Sudah ${props.maksBukti} dokumen. Hapus salah satu lebih dulu.`;
+    return;
+  }
+  const besar = berkas.find((f) => f.size > props.maksBuktiMb * 1024 * 1024);
+  if (besar) {
+    galatBukti[b.kode] = `"${besar.name}" lebih dari ${props.maksBuktiMb} MB.`;
+    return;
+  }
+
+  mengunggah.value = b.kode;
+  router.post(b.urlBukti, { berkas }, {
+    forceFormData: true, preserveState: true, preserveScroll: true,
+    onError: (e) => { galatBukti[b.kode] = Object.values(e as Record<string, string>).join(' '); },
+    onFinish: () => { mengunggah.value = null; },
+  });
+}
+
+function pilihBerkas(b: { kode: string; urlBukti: string; bukti: unknown[] }, e: Event) {
+  const input = e.target as HTMLInputElement;
+  unggahBukti(b, input.files);
+  input.value = '';
+}
+
+function jatuhkan(b: { kode: string; urlBukti: string; bukti: unknown[] }, e: DragEvent) {
+  seret.value = null;
+  unggahBukti(b, e.dataTransfer?.files ?? null);
+}
+
+function hapusBukti(b: { kode: string; urlHapusBukti: string }, i: number, nama: string) {
+  tanya({
+    judul: 'Hapus dokumen bukti?',
+    pesan: `"${nama}" dihapus dari kriteria ${b.kode} dan tidak dapat dipulihkan.`,
+    labelAksi: 'Hapus', nada: 'bahaya',
+  }).then((ok) => {
+    if (!ok) return;
+    router.post(b.urlHapusBukti, { indeks: i }, { preserveState: true, preserveScroll: true });
+  });
+}
+
+const ikonBerkas = (nama: string) => (/\.(jpe?g|png|webp)$/i.test(nama) ? '🖼' : /\.pdf$/i.test(nama) ? '📄' : '📎');
+
 /* ═══════════ aksi kelompok ═══════════ */
 
 function terima(butir: Array<{ kode: string }>) {
@@ -246,7 +308,7 @@ const warnaBagian = computed(() => WARNA_BAGIAN[props.kini] ?? '#DC6E00');
         </header>
 
         <div class="akb-kolom" aria-hidden="true">
-          <span>#</span><span>Kriteria penilaian</span><span>Mitra</span><span>Verifikasi auditor</span><span>Keterangan</span>
+          <span>#</span><span>Kriteria penilaian</span><span>Mitra</span><span>Verifikasi auditor</span><span>Catatan &amp; bukti</span>
         </div>
 
         <div v-for="b in g.butir" v-show="tampak(b.kode)" :key="b.kode" class="akb-baris"
@@ -277,15 +339,33 @@ const warnaBagian = computed(() => WARNA_BAGIAN[props.kini] ?? '#DC6E00');
             </div>
           </div>
 
-          <div class="akb-ket-kolom">
+          <div class="akb-ket-kolom" :class="{ seret: seret === b.kode }"
+               @dragover.prevent="seret = b.kode" @dragleave="seret = null" @drop.prevent="jatuhkan(b, $event)">
             <!-- maxlength DARI SERVER: keterangan yang melampaui batas
                  server membuat SELURUH kiriman bagian ditolak. -->
             <input v-model="isi[b.kode].keterangan" class="akl-isian akb-ket-isian"
-                   :maxlength="props.maksKeterangan" placeholder="Dokumen pendukung / catatan"
+                   :maxlength="props.maksKeterangan" placeholder="Catatan"
                    :aria-label="`Keterangan ${b.kode}`">
-            <a v-if="b.berkas.length" :href="b.berkas[0]" target="_blank" rel="noopener" class="akb-lampiran">
-              📎 {{ b.berkas.length }} lampiran
-            </a>
+
+            <ul v-if="b.bukti.length" class="akb-bukti">
+              <li v-for="(d, i) in b.bukti" :key="d.url">
+                <a :href="d.url" target="_blank" rel="noopener" :title="d.nama">
+                  <span aria-hidden="true">{{ ikonBerkas(d.nama) }}</span>{{ d.nama }}
+                </a>
+                <button type="button" class="akb-bukti-hapus" :aria-label="`Hapus ${d.nama}`"
+                        @click="hapusBukti(b, i, d.nama)">×</button>
+              </li>
+            </ul>
+
+            <label v-if="b.bukti.length < props.maksBukti" class="akb-unggah"
+                   :class="{ sibuk: mengunggah === b.kode }">
+              <input type="file" multiple :accept="TERIMA" class="sr-only"
+                     :disabled="!!mengunggah" @change="pilihBerkas(b, $event)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                   stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m0 0-4.5 4.5M12 4l4.5 4.5M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+              {{ mengunggah === b.kode ? 'Mengunggah…' : b.bukti.length ? 'Tambah bukti' : 'Unggah bukti' }}
+            </label>
+            <p v-if="galatBukti[b.kode]" role="alert" class="akb-bukti-galat">{{ galatBukti[b.kode] }}</p>
           </div>
         </div>
       </div>
@@ -414,8 +494,34 @@ const warnaBagian = computed(() => WARNA_BAGIAN[props.kini] ?? '#DC6E00');
 .akb-seg.mitra button.pilih { opacity: .78; }
 
 .akb-ket-isian { padding: .4rem .55rem; font-size: 11.5px; }
-.akb-lampiran { display: block; margin-top: .2rem; font-size: 10.5px; color: #DC6E00; }
-.akb-lampiran:hover { text-decoration: underline; }
+/* ─── dokumen bukti ─── */
+.akb-ket-kolom { display: grid; gap: .35rem; min-width: 0; border-radius: .6rem; transition: box-shadow .12s, background-color .12s; }
+.akb-ket-kolom.seret { background: #FFF7ED; box-shadow: 0 0 0 2px #F59E0B; }
+.akb-bukti { display: grid; gap: .25rem; }
+.akb-bukti li {
+  display: flex; align-items: center; gap: .3rem; min-width: 0;
+  border: 1px solid var(--akl-garis); border-radius: .45rem; background: var(--akl-permukaan); padding: .2rem .25rem .2rem .45rem;
+}
+.akb-bukti a {
+  flex: 1; min-width: 0; display: flex; gap: .3rem; font-size: 11px; font-weight: 600; line-height: 1.35;
+  color: var(--akl-tinta); overflow-wrap: anywhere;
+}
+.akb-bukti a:hover { color: #C2410C; text-decoration: underline; }
+.akb-bukti-hapus {
+  flex: none; width: 22px; height: 22px; border-radius: .35rem; font-size: 15px; line-height: 1;
+  color: var(--akl-tinta-3);
+}
+.akb-bukti-hapus:hover { background: #FEE2E2; color: #B91C1C; }
+.akb-unggah {
+  display: inline-flex; align-items: center; justify-content: center; gap: .35rem; min-height: 32px;
+  border: 1px dashed #D6A96A; border-radius: .5rem; background: #FFFBF5; padding: .3rem .6rem;
+  font-size: 11px; font-weight: 700; color: #B45309; cursor: pointer; transition: background-color .12s, border-color .12s;
+}
+.akb-unggah:hover { background: #FFF3E0; border-color: #DC6E00; }
+.akb-unggah:focus-within { outline: 2px solid #F57C00; outline-offset: 1px; }
+.akb-unggah svg { width: 14px; height: 14px; flex: none; }
+.akb-unggah.sibuk { opacity: .6; cursor: progress; }
+.akb-bukti-galat { font-size: 10.5px; line-height: 1.4; color: #B91C1C; }
 
 @media (max-width: 64rem) {
   .akb-kolom { display: none; }
@@ -440,6 +546,10 @@ const warnaBagian = computed(() => WARNA_BAGIAN[props.kini] ?? '#DC6E00');
 :global(:root[data-tema="gelap"] .akb-baris.berubah) { background: rgba(245, 158, 11, .07); }
 :global(:root[data-tema="gelap"] .akb-baris.selisih) { background: rgba(245, 158, 11, .1); }
 :global(:root[data-tema="gelap"] .akb-tanda) { background: rgba(245, 158, 11, .16); color: #FCD34D; }
+:global(:root[data-tema="gelap"] .akb-unggah) { background: rgba(245, 158, 11, .08); border-color: rgba(245, 158, 11, .45); color: #FCD34D; }
+:global(:root[data-tema="gelap"] .akb-ket-kolom.seret) { background: rgba(245, 158, 11, .1); }
+:global(:root[data-tema="gelap"] .akb-bukti-hapus:hover) { background: rgba(220, 38, 38, .2); color: #FCA5A5; }
+:global(:root[data-tema="gelap"] .akb-bukti-galat) { color: #FCA5A5; }
 :global(:root[data-tema="gelap"] .akb-tanda.selisih) { background: rgba(234, 88, 12, .18); color: #FDBA74; }
 :global(:root[data-tema="gelap"] .akl-saring-pil button.kini) { background: #EEF3F4; border-color: #EEF3F4; color: #0F1720; }
 :global(:root[data-tema="gelap"] .is-belum) { color: #FCD34D; }

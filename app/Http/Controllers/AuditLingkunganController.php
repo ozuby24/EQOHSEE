@@ -212,6 +212,14 @@ class AuditLingkunganController extends Controller
                 'selisih'    => $s?->berselisih() ?? false,
                 'berkas'     => $s ? Berkas::daftarUrl($s, 'akl') : [],
                 'urlBerkas'  => $s ? route('audit-lingkungan.berkas', $s) : null,
+                /* Nama asli tiap bukti, sejajar dengan `berkas`. Baris
+                   yang diunggah sebelum nama disimpan memakai urutannya. */
+                'bukti'      => $s ? array_map(fn ($url, $i) => [
+                    'url'  => $url,
+                    'nama' => ((array) $s->berkas_nama)[$i] ?? '' ?: 'Dokumen '.($i + 1),
+                ], $url = Berkas::daftarUrl($s, 'akl'), array_keys($url)) : [],
+                'urlBukti'      => route('audit-lingkungan.bukti', [$audit, $k['kode']]),
+                'urlHapusBukti' => route('audit-lingkungan.bukti.hapus', [$audit, $k['kode']]),
             ];
         }
 
@@ -240,6 +248,8 @@ class AuditLingkunganController extends Controller
             /* Batas keterangan dikirim, bukan ditulis ulang di layar:
                lihat AuditLingkungan::MAKS_KETERANGAN. */
             'maksKeterangan' => AuditLingkungan::MAKS_KETERANGAN,
+            'maksBukti'      => self::MAKS_BUKTI,
+            'maksBuktiMb'    => intdiv(Berkas::MAKS_DOKUMEN_KB, 1024),
 
             'tautan' => $this->tautan($audit) + ['simpanNilai' => route('audit-lingkungan.nilai', $audit)],
         ]);
@@ -307,11 +317,102 @@ class AuditLingkunganController extends Controller
            perusahaan lain harus tidak dapat ditemukan. */
         EnvAudit::findOrFail($skor->audit_id);
 
-        if ($baru = Berkas::simpanBanyak($request->file('berkas'), 'audit-lingkungan')) {
-            $skor->update(['berkas' => array_merge((array) $skor->berkas, $baru)]);
-        }
+        $this->lampirkan($skor, (array) $request->file('berkas'));
 
         return back()->with('ok', 'Dokumen pendukung tersimpan.');
+    }
+
+    /** Batas bukti per kriteria. Lebih dari ini hampir selalu berarti
+     *  satu bundel dokumen dipecah ke satu butir yang tidak akan dicari
+     *  siapa pun ketika bundel itu dibutuhkan. */
+    public const MAKS_BUKTI = 10;
+
+    /**
+     * Unggah dokumen bukti untuk satu kriteria.
+     *
+     * Dikunci pada kode kriteria, dan baris nilainya dibuat bila belum
+     * ada: bukti biasanya diunggah SEBELUM nilainya diberikan, dan
+     * tombol unggah yang baru muncul sesudah bagian disimpan adalah
+     * tombol yang tidak pernah ditemukan.
+     */
+    public function buktiUnggah(Request $request, EnvAudit $audit, string $kode)
+    {
+        $this->pastikanKriteria($kode);
+
+        $skor = EnvAuditScore::firstOrNew(['audit_id' => $audit->id, 'kode' => $kode]);
+        $ada  = count((array) $skor->berkas);
+        $sisa = max(0, self::MAKS_BUKTI - $ada);
+
+        $request->validate(
+            ['berkas' => ['required', 'array', 'max:'.max(1, $sisa)], 'berkas.*' => Berkas::ATURAN_DOKUMEN],
+            ['berkas.max' => $sisa
+                ? "Kriteria {$kode} hanya dapat menerima {$sisa} dokumen lagi (paling banyak ".self::MAKS_BUKTI.').'
+                : "Kriteria {$kode} sudah memuat ".self::MAKS_BUKTI.' dokumen. Hapus salah satu lebih dulu.'],
+            ['berkas.*' => 'dokumen bukti'],
+        );
+        abort_if($sisa === 0, 422, 'Batas dokumen bukti tercapai.');
+
+        $n = $this->lampirkan($skor, (array) $request->file('berkas'));
+
+        return back()->with('ok', $n === 1 ? "1 dokumen bukti tersimpan pada kriteria {$kode}."
+                                           : "{$n} dokumen bukti tersimpan pada kriteria {$kode}.");
+    }
+
+    /** Hapus satu dokumen bukti — berkasnya ikut dibuang dari disk. */
+    public function buktiHapus(Request $request, EnvAudit $audit, string $kode)
+    {
+        $this->pastikanKriteria($kode);
+        $i = (int) $request->validate(['indeks' => ['required', 'integer', 'min:0']])['indeks'];
+
+        $skor   = EnvAuditScore::where('audit_id', $audit->id)->where('kode', $kode)->firstOrFail();
+        $berkas = array_values((array) $skor->berkas);
+        $nama   = array_values((array) $skor->berkas_nama);
+        abort_unless(isset($berkas[$i]), 404);
+
+        Berkas::buang($berkas[$i]);
+        array_splice($berkas, $i, 1);
+        if (array_key_exists($i, $nama)) array_splice($nama, $i, 1);
+
+        $skor->update(['berkas' => $berkas ?: null, 'berkas_nama' => $nama ?: null]);
+
+        return back()->with('ok', 'Dokumen bukti dihapus.');
+    }
+
+    /** Kode yang bukan kriteria mana pun ditolak, bukan dibuatkan baris. */
+    private function pastikanKriteria(string $kode): void
+    {
+        $bagian = strtok($kode, '.');
+        abort_unless(
+            in_array($kode, array_column(AuditLingkungan::kriteria((string) $bagian), 'kode'), true),
+            404,
+        );
+    }
+
+    /**
+     * Simpan unggahan pada satu baris nilai, berikut nama aslinya.
+     *
+     * @param  array<int, \Illuminate\Http\UploadedFile>  $unggah
+     */
+    private function lampirkan(EnvAuditScore $skor, array $unggah): int
+    {
+        $berkas = array_values((array) $skor->berkas);
+        /* Baris lama belum punya daftar nama: diisi kosong sepanjang
+           berkasnya supaya indeks keduanya tetap sejajar. */
+        $nama = array_pad(array_values((array) $skor->berkas_nama), count($berkas), '');
+
+        $n = 0;
+        foreach ($unggah as $f) {
+            if (!$j = Berkas::simpan($f, 'audit-lingkungan')) continue;
+            $berkas[] = $j;
+            $nama[]   = mb_substr(basename((string) $f->getClientOriginalName()), 0, 150);
+            $n++;
+        }
+
+        if ($n) {
+            $skor->fill(['berkas' => $berkas, 'berkas_nama' => $nama])->save();
+        }
+
+        return $n;
     }
 
     public function edit(EnvAudit $audit)

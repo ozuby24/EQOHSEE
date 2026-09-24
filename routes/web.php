@@ -1380,6 +1380,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::post('berkas/{skor}',    [AuditLingkunganController::class, 'berkas'])->name('berkas');
 
+        /* Bukti per kriteria, dikunci pada KODE kriteria — bukan pada
+           baris nilai. Kriteria yang belum pernah dinilai belum punya
+           baris, dan justru bukti itulah yang biasanya diunggah lebih
+           dulu sebelum nilainya diberikan. */
+        Route::post('{audit}/bukti/{kode}',       [AuditLingkunganController::class, 'buktiUnggah'])
+            ->where('kode', '[a-z0-9.]+')->name('bukti');
+        Route::post('{audit}/bukti/{kode}/hapus', [AuditLingkunganController::class, 'buktiHapus'])
+            ->where('kode', '[a-z0-9.]+')->name('bukti.hapus');
+
         /* Sertifikat Penghargaan — disebut SEBELUM {audit}, supaya
            "sertifikat" tidak pernah dibaca sebagai id audit. Pencabutan
            hanya oleh administrator: sertifikat yang dicabut mengubah

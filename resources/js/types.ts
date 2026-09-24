@@ -2583,6 +2583,7 @@ export interface HalamanAuditLingkunganBagian {
         kode: string; huruf: string | null; uraian: string; kosong: boolean;
         nilai: number | null; verifikasi: number | null; keterangan: string;
         selisih: boolean; berkas: string[]; urlBerkas: string | null;
+        bukti: Array<{ url: string; nama: string }>; urlBukti: string; urlHapusBukti: string;
       }>;
     }>;
   }>;
@@ -2590,6 +2591,8 @@ export interface HalamanAuditLingkunganBagian {
   skor: { akhir: number; belum: number; kriteria: number };
   tangga: Record<string, string>;
   maksKeterangan: number;
+  maksBukti: number;
+  maksBuktiMb: number;
   tautan: TautanAudit & { simpanNilai: string };
 }
 
