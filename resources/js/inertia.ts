@@ -4,6 +4,7 @@ import AppLayout from './Layouts/AppLayout.vue';
 import { singkap } from './singkap';
 import { belah } from './belah';
 import { paralaks } from './paralaks';
+import { pasangTabelPas } from './tabelPas';
 
 /*
   Chart.js ikut dibundel (tidak lagi dari CDN), tetapi ditarik saat
@@ -110,6 +111,10 @@ createInertiaApp({
       .directive('belah', belah)
       .directive('paralaks', paralaks)
       .mount(el);
+
+    /* Tabel yang tidak muat di layar menjadi kartu bertumpuk —
+       lihat tabelPas.ts. Sekali untuk seluruh aplikasi. */
+    pasangTabelPas();
   },
 
   /* Bilah bawaan Inertia DIMATIKAN — bukan karena tidak dipakai,

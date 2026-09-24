@@ -14,6 +14,6 @@ const cetak = () => window.print();
     <!-- Di layar sempit lembarnya digeser di sini. Tanpa ini tabel lembar
          A4 terpotong di tepi kanan HP (overflow-x:clip pada body) dan
          kolom terakhirnya — status, paraf — tidak pernah terlihat. -->
-    <main class="max-w-[850px] mx-auto px-4 py-5 overflow-x-auto print:overflow-visible print:p-0 print:max-w-none"><slot /></main>
+    <main data-cetak class="max-w-[850px] mx-auto px-4 py-5 overflow-x-auto print:overflow-visible print:p-0 print:max-w-none"><slot /></main>
   </div>
 </template>
