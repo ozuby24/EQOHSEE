@@ -230,6 +230,62 @@ else
     hijau "    Bersih."
 fi
 
+# Yang terpasang di VPS harus termasuk riwayat cabang yang dikirim.
+#
+# Repo ini pernah punya dua jalur yang berkembang terpisah — `main` dan
+# cabang kerja yang memang terpasang di VPS — dan keduanya membuat tabel
+# yang sama lewat migrasi yang berbeda (modul PJP: `pjps` dibuat di dua
+# berkas dengan tanggal berlainan). Mengirim jalur yang satu ke server
+# yang menjalankan jalur lainnya menghentikan deploy di tengah migrasi
+# dengan "table already exists", dan situsnya tertinggal di halaman
+# perawatan.
+#
+# Karena itu posisinya dibandingkan lebih dulu:
+#   maju      — commit VPS termasuk riwayat cabang ini: deploy biasa.
+#   mundur    — cabang ini lebih lama dari VPS: diteruskan, sebab itulah
+#               cara memulihkan versi sebelumnya (lihat VPS.md). Basis
+#               data tidak ikut mundur, jadi diingatkan.
+#   bercabang — tidak satu pun memuat yang lain: ditolak tanpa --paksa.
+tahap "Membandingkan dengan yang terpasang di VPS"
+POSISI="$($SSH "$VPS_HOST" "cd '$VPS_DIR' && git rev-parse --abbrev-ref HEAD && git rev-parse HEAD" 2>/dev/null || true)"
+VPS_CABANG="$(printf '%s\n' "$POSISI" | sed -n 1p)"
+VPS_COMMIT="$(printf '%s\n' "$POSISI" | sed -n 2p)"
+
+if [ -z "$VPS_COMMIT" ]; then
+    kuning "    Posisi repo di VPS tidak terbaca — perbandingan dilewati."
+else
+    echo "    VPS kini: $VPS_CABANG @ ${VPS_COMMIT:0:8}"
+    if ! git cat-file -e "${VPS_COMMIT}^{commit}" 2>/dev/null; then
+        GIT_TERMINAL_PROMPT=0 git fetch -q origin 2>/dev/null || true
+    fi
+
+    if [ "$(git rev-parse --is-shallow-repository 2>/dev/null)" = "true" ]; then
+        # Riwayat yang terpotong tidak dapat membuktikan dua commit
+        # bercabang — jalurnya mungkin hanya belum terunduh.
+        kuning "    Repo lokal dangkal (shallow) — perbandingan dilewati."
+        kuning "    Untuk memeriksanya: git fetch --unshallow origin"
+    elif ! git cat-file -e "${VPS_COMMIT}^{commit}" 2>/dev/null; then
+        kuning "    Commit itu tidak ada di repo lokal maupun GitHub — tidak dapat dibandingkan."
+    elif [ "$VPS_COMMIT" = "$COMMIT" ]; then
+        hijau "    Sama dengan yang terpasang — dipasang ulang."
+    elif git merge-base --is-ancestor "$VPS_COMMIT" "$COMMIT"; then
+        hijau "    Maju dari yang terpasang."
+    elif git merge-base --is-ancestor "$COMMIT" "$VPS_COMMIT"; then
+        kuning "    Mundur ke commit yang lebih lama. Basis data TIDAK ikut mundur —"
+        kuning "    bila commit yang ditinggalkan membawa migrasi, pulihkan cadangannya (VPS.md)."
+    elif [ "$PAKSA" = "1" ]; then
+        kuning "    '$CABANG' tidak memuat commit yang terpasang — riwayatnya bercabang."
+        kuning "    Diteruskan karena --paksa. Migrasi dari jalur lain dapat bertabrakan."
+    else
+        merah "    '$CABANG' tidak memuat commit yang terpasang di VPS ($VPS_CABANG)."
+        echo  "    Riwayat keduanya bercabang: migrasi dari jalur lain dapat membuat"
+        echo  "    tabel yang sudah ada, dan deploy berhenti di tengah migrasi."
+        echo  "    Gabungkan dulu '$VPS_CABANG' ke '$CABANG', atau teruskan dengan --paksa"
+        echo  "    bila memang sengaja berpindah jalur."
+        exit 1
+    fi
+fi
+
 # ── 6. Pasang di VPS ──────────────────────────────────────────────
 tahap "Memasang di VPS"
 if [ "$KERING" = "1" ]; then
