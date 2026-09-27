@@ -55,7 +55,7 @@ class HalamanDepanPilarTest extends TestCase
     public function test_pemutar_tidak_dipaku_ke_video_hero(): void
     {
         $isi = $this->landing();
-        $awal = strpos($isi, 'jual-pemutar');
+        $awal = strpos($isi, 'ld-pemutar"');
 
         $this->assertNotFalse($awal, 'Blok pemutar video tidak ditemukan.');
 

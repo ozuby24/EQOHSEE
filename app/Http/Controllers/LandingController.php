@@ -60,7 +60,6 @@ class LandingController extends Controller
                 ['kode' => 'SNI ISO 50001', 'ket' => 'Manajemen energi'],
                 ['kode' => 'SNI ISO 9001', 'ket' => 'Manajemen mutu'],
             ],
-            'masalah' => $this->masalah(),
             'aman' => $this->aman(),
             'tanya' => TanyaJawab::semua(),
             'kontak' => [
@@ -72,14 +71,6 @@ class LandingController extends Controller
             'jumlahItem' => 194,
             'modul' => $modules,
             'pilar' => Pillars::all(),
-            'fitur' => [
-                ['judul' => 'Sertifikat ber-barcode', 'ket' => 'Terbit otomatis saat kursus selesai, empat ragam desain, berlogo perusahaan, dan dapat diverifikasi publik lewat pemindaian.'],
-                ['judul' => 'Penilaian PTPKKP lengkap', 'ket' => '194 item pengukuran, bobot resmi per parameter, level Dasar hingga Resilient, plus rekapitulasi siap cetak.'],
-                ['judul' => 'Kuesioner bebas akses', 'ket' => 'Sebar tautan ke pekerja dan pimpinan unit kerja tanpa perlu akun — hasil langsung terangkum per parameter.'],
-                ['judul' => 'Evaluasi trainer', 'ket' => 'Peserta yang menyelesaikan kursus otomatis masuk daftar tunggu penilaian trainer pada empat aspek kompetensi.'],
-                ['judul' => 'Kunci jawaban aman', 'ket' => 'Soal evaluasi SOP dinilai sepenuhnya di server — kunci jawaban tidak pernah dikirim ke perangkat peserta.'],
-                ['judul' => 'Kendali penuh admin', 'ket' => 'Kelola perusahaan, pengguna, peran, penanda tangan, hingga pemeliharaan sistem dari satu pusat kendali.'],
-            ],
             'alur' => [
                 ['judul' => 'Daftarkan perusahaan', 'ket' => 'Lengkapi spesifikasi IUP/IUJP, KTT, PJO, dan jumlah tenaga kerja.'],
                 ['judul' => 'Susun materi & prosedur', 'ket' => 'Buat kursus, modul, kuis, serta prosedur dan evaluasi SOP.'],
@@ -87,6 +78,23 @@ class LandingController extends Controller
                 ['judul' => 'Terbitkan & tindak lanjut', 'ket' => 'Sertifikat terbit otomatis, program peningkatan tersusun dari hasil.'],
             ],
             'jual' => $jual,
+            'katalog' => $this->katalog(),
+
+            /* Dua tangkapan layar ponsel untuk bagian aplikasi lapangan.
+               Layar sungguhan dari platform ini, bukan gambar karangan —
+               dan null bila berkasnya belum ditaruh, supaya bagian itu
+               tetap berdiri tanpa bingkai gambar rusak. */
+            'layarPonsel' => array_values(array_filter([
+                ($u = Media::url('aplikasi/beranda.webp')) ? ['url' => $u, 'alt' => 'Layar beranda EQOHSEE di ponsel'] : null,
+                ($u = Media::url('aplikasi/lapor.webp'))   ? ['url' => $u, 'alt' => 'Layar laporan bahaya EQOHSEE di ponsel'] : null,
+            ])),
+
+            'tautan' => [
+                'masuk'   => route('login'),
+                'katalog' => route('katalog.publik'),
+                'pesan'   => route('katalog.pesan'),
+                'privasi' => url('/kebijakan-privasi'),
+            ],
             'tahun' => now()->year,
         ]);
     }
@@ -134,63 +142,6 @@ class LandingController extends Controller
     }
 
     /**
-     * Lima keadaan yang membuat orang mencari alat seperti ini.
-     *
-     * ── SETIAP ANGKA MEMBAWA SUMBERNYA ──
-     *
-     * Angka tanpa sumber pada halaman jualan terbaca sebagai angka yang
-     * dikarang, dan pada produk keselamatan kerugiannya bukan sekadar
-     * kredibilitas: pembacanya adalah KTT yang akan mengutip angka itu ke
-     * atasannya. Karena itu 'sumber' bukan kolom hiasan — butir tanpa
-     * angka boleh tidak punya, butir berangka wajib punya.
-     *
-     * Yang sengaja TIDAK ada di sini: keterbatasan sinyal. Itu memang
-     * masalah nyata di site, tetapi EQOHSEE belum menjawabnya (lihat
-     * jawaban FAQ tentang sinyal) — dan masalah yang dipajang pada
-     * halaman jualan terbaca sebagai masalah yang dipecahkan produknya.
-     *
-     * @return array<int, array{judul: string, ket: string, sumber: string}>
-     */
-    private function masalah(): array
-    {
-        return [
-            [
-                'judul' => 'Laporan berhenti di kertas',
-                'ket' => 'Laporan bahaya, lembar inspeksi, dan izin kerja masih ditulis di formulir '
-                       . 'kertas, lalu difoto, lalu dikirim lewat pesan pribadi. Yang sampai ke '
-                       . 'pengawas adalah gambar; yang dibutuhkan saat audit adalah angka. '
-                       . 'Antar-site, satu temuan yang sama bisa tercatat tiga kali dengan tiga '
-                       . 'nomor berbeda — dan tidak ada yang tahu mana yang sudah ditutup.',
-                'sumber' => '',
-            ],
-            [
-                'judul' => 'Bukti audit dikumpulkan mendadak',
-                'ket' => 'Audit internal SMKP wajib dilakukan paling sedikit satu kali dalam satu '
-                       . 'tahun — dan buktinya baru dicari ketika auditor sudah dijadwalkan.',
-                'sumber' => 'Permen ESDM 26/2018 Pasal 18; Kepdirjen Minerba 185.K/37.04/DJB/2019',
-            ],
-            [
-                'judul' => 'Risiko bertumpu pada kontraktor',
-                'ket' => '80,95% korban kecelakaan fatal tambang adalah pekerja kontraktor dan '
-                       . 'subkontraktor, dan 88,84% di antaranya berpengalaman 0–3 tahun.',
-                'sumber' => 'Kementerian ESDM, data per 30 November 2024 (dilaporkan Kompas)',
-            ],
-            [
-                'judul' => 'Temuan kehilangan jejaknya',
-                'ket' => 'Temuan tercatat, lalu progres tindak lanjutnya tidak terlacak sampai '
-                       . 'ke manajemen — sampai temuan yang sama muncul lagi tahun berikutnya.',
-                'sumber' => '',
-            ],
-            [
-                'judul' => 'Angka fatal belum turun',
-                'ket' => 'Sepanjang 2024 tercatat 49 kecelakaan tambang yang menelan korban jiwa, '
-                       . 'naik dari 48 kejadian pada 2023, ditambah 80 kecelakaan kategori berat.',
-                'sumber' => 'Rekapitulasi Ditjen Minerba, Kementerian ESDM (via Bloomberg Technoz)',
-            ],
-        ];
-    }
-
-    /**
      * Empat pernyataan keamanan — masing-masing menunjuk mekanisme yang
      * benar-benar ada di kode ini.
      *
@@ -225,6 +176,54 @@ class LandingController extends Controller
         ];
     }
 
+
+    /**
+     * Isi keranjang di bagian harga: paket, layanan tahunan, dan setiap
+     * aplikasi yang berharga.
+     *
+     * Hanya ID, nama, dan harga yang dikirim — harga di layar sekadar
+     * pengingat. Tagihannya dihitung ulang oleh App\Support\Pembelian
+     * dari ID dan banyaknya, persis seperti pesanan dari /katalog.
+     *
+     * Urutan aplikasinya mengikuti Menu (Modules::perKunciMenu), bukan
+     * urutan tabel produk, supaya daftar di keranjang sama urutannya
+     * dengan daftar modul tepat di atasnya. Gagal membaca produk berarti
+     * "harga belum diumumkan", sama seperti hargaJual() di bawah.
+     *
+     * @return array{paket: ?array<string, mixed>, layanan: ?array<string, mixed>, aplikasi: list<array<string, mixed>>}|null
+     */
+    private function katalog(): ?array
+    {
+        try {
+            $aktif = Produk::aktif()->where('harga', '>', 0)->get();
+
+            $satu = function (string $jenis) use ($aktif): ?array {
+                $p = $aktif->where('jenis', $jenis)->sortBy('urutan')->first();
+
+                return $p ? ['id' => $p->id, 'nama' => $p->nama, 'ket' => $p->keterangan,
+                             'harga' => (int) $p->harga, 'masa' => $p->masaBerlaku()] : null;
+            };
+
+            $perKunci = $aktif->where('jenis', Produk::APLIKASI)->keyBy('modul_kunci');
+            $aplikasi = [];
+
+            foreach (Modules::perKunciMenu() as $kunci => $modul) {
+                if (!$p = $perKunci->get($kunci)) continue;
+
+                $aplikasi[] = ['id' => $p->id, 'nama' => $modul['nama'], 'harga' => (int) $p->harga,
+                               'masa' => $p->masaBerlaku()];
+            }
+
+            $katalog = ['paket' => $satu(Produk::WEBSITE), 'layanan' => $satu(Produk::LAYANAN),
+                        'aplikasi' => $aplikasi];
+
+            return $katalog['paket'] || $katalog['layanan'] || $aplikasi ? $katalog : null;
+        } catch (QueryException $e) {
+            report($e);
+
+            return null;
+        }
+    }
 
     /**
      * Dua angka untuk bagian harga: paketnya, dan yang termurah satuan.

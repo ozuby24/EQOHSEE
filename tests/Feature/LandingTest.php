@@ -191,8 +191,21 @@ class LandingTest extends TestCase
     {
         $isi = file_get_contents(resource_path('js/Pages/Landing.vue'));
 
-        foreach (['beranda', 'pilar', 'modul', 'fitur', 'alur', 'tentang'] as $id) {
-            $this->assertStringContainsString('id="'.$id.'"', $isi, "Bagian #{$id} tidak ada di halaman.");
+        /* Diambil dari berkasnya sendiri, bukan daftar yang ditulis di
+           sini: tautan baru yang menunjuk bagian yang tidak ada adalah
+           tepat kesalahan yang tidak menimbulkan galat apa pun — klik
+           hanya tidak membawa ke mana-mana. */
+        preg_match_all('/href="#([a-z-]+)"/', $isi, $langsung);
+        preg_match_all("/\\['([a-z-]+)', '[^']+'\\]/", $isi, $nav);
+        $tujuan = array_unique(array_merge($langsung[1], $nav[1]));
+
+        $this->assertContains('kerangka', $tujuan, 'Navigasi tidak terbaca dari berkasnya.');
+        foreach (['beranda', 'modul', 'smkp', 'harga', 'kontak'] as $wajib) {
+            $this->assertContains($wajib, $tujuan);
+        }
+
+        foreach ($tujuan as $id) {
+            $this->assertMatchesRegularExpression('/id="'.$id.'"/', $isi, "Tautan #{$id} menunjuk bagian yang tidak ada.");
         }
     }
 }

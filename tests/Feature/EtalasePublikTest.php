@@ -540,6 +540,38 @@ class EtalasePublikTest extends TestCase
         $this->assertNull($props['jual']['paket']);
         $this->assertNull($props['jual']['termurah']);
         $this->assertSame(0, $props['jual']['jumlah']);
+
+        // Keranjang halaman depan jatuh ke "harga sesuai kebutuhan".
+        $this->assertNull($props['katalog']);
+    }
+
+    /**
+     * Keranjang halaman depan: hanya butir aktif berharga, urut menurut
+     * menu, dan paket/layanan dipisah dari aplikasi satuan.
+     */
+    public function test_keranjang_halaman_depan_membaca_produk_yang_dijual(): void
+    {
+        Produk::create(['kode' => 'WEBSITE', 'nama' => 'Paket Menyeluruh', 'jenis' => Produk::WEBSITE,
+            'harga' => 25_000_000, 'masa_bulan' => 12, 'aktif' => true, 'urutan' => 0]);
+        Produk::create(['kode' => 'PRO', 'nama' => 'Professional', 'jenis' => Produk::LAYANAN,
+            'harga' => 3_000_000, 'masa_bulan' => 12, 'aktif' => true, 'urutan' => 0]);
+
+        $kunci = array_keys(\App\Support\Modules::perKunciMenu());
+        /* Dibuat TERBALIK dari urutan menu: keranjang harus mengikuti
+           menu, bukan urutan baris di tabel produk. */
+        $b = $this->produk(7_500_000, true, ['modul_kunci' => $kunci[1]]);
+        $a = $this->produk(2_500_000, true, ['modul_kunci' => $kunci[0]]);
+        $this->produk(0, true, ['modul_kunci' => $kunci[2]]);          // berharga nol
+        $this->produk(9_000_000, false, ['modul_kunci' => $kunci[3]]); // tak aktif
+
+        $k = $this->get('/')->assertOk()->viewData('page')['props']['katalog'];
+
+        $this->assertSame('Paket Menyeluruh', $k['paket']['nama']);
+        $this->assertSame(25_000_000, $k['paket']['harga']);
+        $this->assertSame('Per tahun', $k['layanan']['masa']);
+        $this->assertSame([$a->id, $b->id], array_column($k['aplikasi'], 'id'),
+            'Keranjang memuat butir berharga nol atau tak aktif, atau tidak mengikuti urutan menu.');
+        $this->assertSame([2_500_000, 7_500_000], array_column($k['aplikasi'], 'harga'));
     }
 
     /** Ketika tabelnya ada dan berisi, angkanya memang tampil. */
