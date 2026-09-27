@@ -56,8 +56,8 @@ function daftar() {
 
 <template>
   <Head title="Daftar" />
-  <h2 class="font-serif text-3xl font-semibold mb-1">Buat akun</h2>
-  <p class="text-sm text-stone-500 mb-6">Daftar untuk mulai mengikuti pelatihan.</p>
+  <h2 class="auth-judul">Buat akun</h2>
+  <p class="auth-ket mb-7">Daftar untuk mulai mengikuti pelatihan di perusahaan Anda.</p>
 
   <div v-if="Object.keys(form.errors).length" class="mb-4 rounded-xl bg-red-50 border border-red-100 text-red-700 px-4 py-3 text-[12.5px]"><ul class="space-y-0.5"><li v-for="(pesan, k) in form.errors" :key="k">• {{ pesan }}</li></ul></div>
 
@@ -76,14 +76,16 @@ function daftar() {
     <VerifikasiTurnstile v-model="form['cf-turnstile-response']"
                          :kunci="props.turnstile ?? null" :tindakan="props.tindakan ?? null"
                          :galat="gagalKe" />
-    <button type="submit" :disabled="form.processing" class="w-full rounded-xl bg-[#F57C00] hover:bg-[#DC6E00] text-white py-3 font-bold transition disabled:opacity-50">{{ form.processing ? 'Mendaftarkan…' : 'Daftar' }}</button>
+    <button type="submit" :disabled="form.processing" class="auth-tombol">{{ form.processing ? 'Mendaftarkan…' : 'Daftar' }}</button>
   </form>
-  <p class="text-center text-sm text-stone-500 mt-6">Sudah punya akun? <Link href="/login" class="font-bold text-[#D96500] hover:underline">Masuk</Link></p>
+  <p class="text-center text-sm text-[#5E6875] mt-6">Sudah punya akun? <Link href="/login" class="auth-tautan">Masuk</Link></p>
 </template>
 
 <style scoped>
-.label { display:block; margin-bottom:.375rem; font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#78716c }
-.input { width:100%; border:1px solid #e7e5e4; border-radius:.75rem; background:#fff; padding:.7rem 1rem; font-size:.875rem; transition:box-shadow .15s,border-color .15s }
-.input:focus { outline:none; border-color:#f57c00; box-shadow:0 0 0 3px rgb(245 124 0 / .15) }
-.petunjuk { margin:.4rem 0 0; font-size:11.5px; line-height:1.5; color:#78716c }
+/* Label, isian, dan petunjuk memakai bentuk bersama dari app.css
+   (.auth-label/.auth-isian) supaya seluruh pintu masuk seragam. */
+.label { display:block; margin-bottom:.4rem; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#5E6875 }
+.input { width:100%; min-height:46px; border:1px solid #D9DEE4; border-radius:.75rem; background:#fff; padding:.65rem 1rem; font-size:14.5px; color:#0F1720; transition:box-shadow .15s,border-color .15s }
+.input:focus { outline:none; border-color:#f57c00; box-shadow:0 0 0 3px rgb(245 124 0 / .18) }
+.petunjuk { margin:.45rem 0 0; font-size:11.5px; line-height:1.5; color:#5E6875 }
 </style>

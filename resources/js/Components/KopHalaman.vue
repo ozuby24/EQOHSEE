@@ -530,12 +530,13 @@ picture > .kop-gambar { object-position: 50% 50%; }
   display: flex;
   align-items: center;
   gap: .45rem;
-  margin: 0 0 .4rem;
+  margin: 0 0 .45rem;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
   font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: .16em;
+  font-weight: 600;
+  letter-spacing: .12em;
   text-transform: uppercase;
-  color: var(--eq-aksen, #F57C00);
+  color: var(--eq-aksen-lembut, #FFB870);
 }
 
 .kop-label::before {
@@ -547,12 +548,19 @@ picture > .kop-gambar { object-position: 50% 50%; }
   flex: none;
 }
 
+/* Judul berhuruf Archivo — muka huruf merek yang sama dengan halaman
+   depan dan halaman masuk. Dipersempit sedikit lewat sumbu lebarnya
+   supaya judul panjang ("Monitor Hazard Report") tetap satu baris di
+   samping jam dan kartu cuaca. */
 .kop-judul {
-  font-size: clamp(1.4rem, 2.8vw, 2.05rem);
-  font-weight: 800;
-  line-height: 1.15;
-  letter-spacing: -.02em;
+  font-family: 'Archivo', system-ui, sans-serif;
+  font-size: clamp(1.55rem, 3vw, 2.3rem);
+  font-weight: 700;
+  font-stretch: 88%;
+  line-height: 1.05;
+  letter-spacing: -.025em;
   margin: 0;
+  text-wrap: balance;
 }
 
 .kop-subjudul {
@@ -680,21 +688,29 @@ picture > .kop-gambar { object-position: 50% 50%; }
 /* Tagline tulisan tangan. Miring dan berbobot ringan supaya ia
    terbaca sebagai hiasan, bukan sebagai kalimat yang harus dibaca —
    karena itu pula ia aria-hidden. */
+/* Semboyan modul. Dulu miring berhuruf sistem "ui-rounded" — pada
+   tiap sistem operasi bentuknya berbeda, dan miring tebal di atas foto
+   terbaca seperti stiker. Kini Archivo rapat berhuruf kapital dengan
+   jarak antarhuruf, seperti label bagian di halaman depan: tegas, tetapi
+   jelas bukan judul. */
 .kop-tagline {
   margin: 0;
-  font-family: ui-rounded, "Segoe UI", system-ui, sans-serif;
-  font-style: italic;
+  font-family: 'Archivo', system-ui, sans-serif;
+  font-style: normal;
   font-weight: 700;
-  font-size: clamp(.95rem, 1.7vw, 1.3rem);
-  line-height: 1.15;
+  font-stretch: 80%;
+  font-size: clamp(.9rem, 1.5vw, 1.15rem);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  line-height: 1.2;
   text-align: right;
-  color: rgba(255,255,255,.92);
+  color: rgba(255,255,255,.94);
   text-shadow: 0 1px 12px rgba(0,0,0,.45);
 
   /* Cukup lebar untuk semboyan empat kata tanpa memecahnya menjadi
      empat baris, dan tetap dibatasi lebar layar supaya ia tidak pernah
      menyeberangi judul di sebelah kirinya. */
-  max-width: min(17ch, 30vw);
+  max-width: min(22ch, 30vw);
 
   /* Barisnya dibagi rata, bukan diisi penuh lalu sisanya menggantung.
      "Reliable System For A Safer Tomorrow" tanpa ini terpecah menjadi
@@ -726,7 +742,7 @@ picture > .kop-gambar { object-position: 50% 50%; }
 .kop-tagline::after {
   content: "";
   display: block;
-  height: 3px;
+  height: 2px;
 
   /* Selebar baris terlebar semboyannya — diukur, lihat ukurGaris().
      Cadangannya 100%, bukan persentase sembarang: bila pengukurannya
@@ -736,9 +752,9 @@ picture > .kop-gambar { object-position: 50% 50%; }
 
   /* Rata kanan bersama semboyannya. Keduanya berbagi satu tepi kanan,
      dan justru tepi itulah yang membuat pasangan ini terbaca rapi. */
-  margin: .45rem 0 0 auto;
+  margin: .5rem 0 0 auto;
   border-radius: 999px;
-  background: #F57C00;
+  background: var(--eq-aksen, #F57C00);
 }
 
 /* ── Layar sempit ──

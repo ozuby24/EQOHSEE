@@ -133,7 +133,7 @@ const pilihan =
     </div>
 
     <div class="bg-white rounded-2xl shadow-card border border-stone-100 p-3">
-      <div class="flex flex-wrap items-center gap-2">
+      <div class="eq-saring-baris flex flex-wrap items-center gap-2">
         <input v-model="isi.q" placeholder="Cari kode, lokasi, deskripsi, pelapor…"
                class="ring-focus flex-1 min-w-0 basis-[180px] rounded-xl border border-stone-200
                       px-4 py-2.5 text-[13px] transition">

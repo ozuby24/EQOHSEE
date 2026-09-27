@@ -53,10 +53,8 @@ function masuk() {
 <template>
   <Head title="Masuk" />
 
-  <h2 class="sm:hidden text-[22px] font-bold tracking-tight text-[#0B1117] mb-1">Masuk</h2>
-  <p class="sm:hidden text-[14px] text-[#667080] mb-5">Gunakan akun dari admin perusahaan Anda.</p>
-  <h2 class="hidden sm:block font-serif text-3xl font-semibold mb-1">Selamat datang kembali</h2>
-  <p class="hidden sm:block text-sm text-stone-500 mb-6">Masuk untuk melanjutkan.</p>
+  <h2 class="auth-judul">Masuk ke platform</h2>
+  <p class="auth-ket mb-7">Gunakan akun yang diberikan admin perusahaan Anda.</p>
 
   <div v-if="Object.keys(form.errors).length" class="mb-4 rounded-xl bg-red-50 border border-red-100 text-red-700 px-4 py-3 text-[12.5px]">
     <ul class="space-y-0.5"><li v-for="(pesan, k) in form.errors" :key="k">• {{ pesan }}</li></ul>
@@ -64,36 +62,33 @@ function masuk() {
 
   <form class="space-y-4" @submit.prevent="masuk">
     <div>
-      <label for="email" class="block text-[11.5px] font-bold uppercase tracking-wide text-stone-500 mb-1.5">Email</label>
-      <input id="email" v-model="form.email" type="email" autocomplete="username" autofocus required class="ring-focus w-full min-h-[48px] rounded-xl border border-stone-200 bg-white px-4 py-3 text-[15px] sm:text-sm transition">
+      <label for="email" class="auth-label">Email</label>
+      <input id="email" v-model="form.email" type="email" autocomplete="username" autofocus required class="auth-isian">
       <p v-if="form.errors.email" class="text-xs text-red-600 mt-1">{{ form.errors.email }}</p>
     </div>
     <div>
-      <label for="password" class="block text-[11.5px] font-bold uppercase tracking-wide text-stone-500 mb-1.5">Kata sandi</label>
+      <label for="password" class="auth-label">Kata sandi</label>
       <InputSandi id="password" v-model="form.password" autocomplete="current-password" required
-                  kelas="ring-focus w-full min-h-[48px] rounded-xl border border-stone-200 bg-white px-4 py-3 text-[15px] sm:text-sm transition" />
+                  kelas="auth-isian" />
       <p v-if="form.errors.password" class="text-xs text-red-600 mt-1">{{ form.errors.password }}</p>
     </div>
     <VerifikasiTurnstile v-model="form['cf-turnstile-response']"
                         :kunci="kunciTurnstile" :tindakan="tindakan" :galat="gagalKe" />
 
     <div class="flex items-center justify-between text-sm">
-      <label class="flex items-center gap-2 text-stone-600 cursor-pointer min-h-[44px]"><input v-model="form.remember" type="checkbox" class="accent-[#0B1117] w-5 h-5"> Ingat perangkat ini</label>
-      <Link href="/forgot-password" class="font-semibold text-[#A85400] sm:font-normal sm:text-stone-500 hover:text-stone-900 sm:underline underline-offset-4 min-h-[44px] inline-flex items-center">Lupa sandi?</Link>
+      <label class="flex items-center gap-2 text-[#3A4450] cursor-pointer min-h-[44px]"><input v-model="form.remember" type="checkbox" class="accent-[#F57C00] w-4 h-4 rounded"> Ingat perangkat ini</label>
+      <Link href="/forgot-password" class="auth-tautan min-h-[44px] inline-flex items-center">Lupa sandi?</Link>
     </div>
     <!-- Tombolnya menyebut PEKERJAAN yang sedang berjalan, bukan
          "Memproses…". Yang menunggu di sambungan site yang lambat perlu
          tahu apa yang ditunggu: kredensialnya sedang diperiksa, bukan
          halamannya sedang digambar. Cincinnya bergerak supaya tombol
          yang terkunci tidak terbaca sebagai tombol yang rusak. -->
-    <button type="submit" :disabled="form.processing"
-            class="w-full min-h-[54px] sm:min-h-0 rounded-xl bg-[#F57C00] hover:bg-[#DC6E00] text-[#0B1117] py-3 text-[16px] sm:text-base font-bold transition
-                   disabled:opacity-60 disabled:cursor-wait
-                   inline-flex items-center justify-center gap-2">
+    <button type="submit" :disabled="form.processing" class="auth-tombol">
       <Putaran v-if="form.processing" />
       {{ form.processing ? 'Memeriksa kredensial…' : 'Masuk' }}
     </button>
   </form>
 
-  <p class="text-center text-sm text-stone-500 mt-6">Belum punya akun? <Link href="/register" class="font-bold text-[#D96500] hover:underline">Daftar di sini</Link></p>
+  <p class="text-center text-sm text-[#5E6875] mt-6">Belum punya akun? <Link href="/register" class="auth-tautan">Daftar di sini</Link></p>
 </template>

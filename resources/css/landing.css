@@ -137,6 +137,8 @@
 }
 @media (max-width: 480px) {
   .ld-kepala-aksi .ld-tombol { display: none; }
+  /* Label hero: jarak antarhuruf dirapatkan supaya muat satu baris. */
+  .ld-hero-mata { font-size: 11px; letter-spacing: .05em; }
 }
 
 /* ═══════════ hero ═══════════ */

@@ -21,8 +21,13 @@ export default {
         extend: {
             fontFamily: {
                 sans: ['Inter', ...defaultTheme.fontFamily.sans],
+                /* Archivo: muka huruf merek — judul halaman depan, kop, dan
+                   halaman tamu. Dimuat lewat huruf-archivo.css. */
+                brand: ['Archivo', ...defaultTheme.fontFamily.sans],
+                mono: ['"IBM Plex Mono"', ...defaultTheme.fontFamily.mono],
+                /* Playfair hanya untuk lembar sertifikat — dokumen resmi
+                   memang pantas berhuruf serif. */
                 display: ['"Playfair Display"', 'serif'],
-                sign: ['"Dancing Script"', 'cursive'],
             },
             /**
              * Palet: Dark Navy + Orange + Silver — mengikuti logo EQOHSEE.
@@ -98,7 +103,7 @@ export default {
             boxShadow: {
                 soft: '0 1px 2px rgba(34,49,47,.04),0 8px 24px -12px rgba(34,49,47,.18)',
                 card: '0 1px 3px rgba(34,49,47,.05),0 14px 40px -18px rgba(34,49,47,.20)',
-                glow: '0 10px 40px -12px rgba(15,118,110,.42)',
+                glow: '0 10px 40px -12px rgba(245,124,0,.42)',
                 // Bayangan berlapis: satu garis rambut, satu jatuh dalam.
                 // Inilah yang membuat kartu terbaca mahal, bukan blur tebal.
                 lux:  '0 0 0 1px rgba(34,49,47,.05),0 2px 4px rgba(34,49,47,.04),0 24px 60px -28px rgba(34,49,47,.34)',

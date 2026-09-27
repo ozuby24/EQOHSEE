@@ -44,8 +44,8 @@ function kirim() {
 <template>
   <Head title="Lupa Kata Sandi" />
 
-  <h2 class="font-serif text-3xl font-semibold mb-1">Lupa kata sandi?</h2>
-  <p class="text-sm text-stone-500 mb-6">Masukkan email Anda untuk menerima tautan pengaturan ulang.</p>
+  <h2 class="auth-judul">Lupa kata sandi?</h2>
+  <p class="auth-ket mb-7">Masukkan email Anda untuk menerima tautan pengaturan ulang.</p>
 
   <div v-if="form.recentlySuccessful" class="mb-4 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 px-4 py-3 text-sm">Tautan reset sudah dikirim jika email terdaftar.</div>
 
@@ -63,14 +63,14 @@ function kirim() {
                          :kunci="props.turnstile ?? null" :tindakan="props.tindakan ?? null"
                          :galat="putaran" />
 
-    <button type="submit" :disabled="form.processing" class="w-full rounded-xl bg-[#F57C00] hover:bg-[#DC6E00] text-white py-3 font-bold transition disabled:opacity-50">{{ form.processing ? 'Mengirim…' : 'Kirim tautan' }}</button>
+    <button type="submit" :disabled="form.processing" class="auth-tombol">{{ form.processing ? 'Mengirim…' : 'Kirim tautan' }}</button>
   </form>
 
-  <p class="text-center text-sm text-stone-500 mt-6"><Link href="/login" class="font-bold text-[#D96500] hover:underline">Kembali ke masuk</Link></p>
+  <p class="text-center text-sm text-stone-500 mt-6"><Link href="/login" class="auth-tautan">Kembali ke masuk</Link></p>
 </template>
 
 <style scoped>
-.label { display:block; margin-bottom:.375rem; font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#78716c }
-.input { width:100%; border:1px solid #e7e5e4; border-radius:.75rem; background:#fff; padding:.75rem 1rem; font-size:.875rem; transition:box-shadow .15s,border-color .15s }
+.label { display:block; margin-bottom:.4rem; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#5E6875 }
+.input { width:100%; min-height:46px; border:1px solid #D9DEE4; border-radius:.75rem; background:#fff; padding:.65rem 1rem; font-size:14.5px; color:#0F1720; transition:box-shadow .15s,border-color .15s }
 .input:focus { outline:none; border-color:#f57c00; box-shadow:0 0 0 3px rgb(245 124 0 / .15) }
 </style>

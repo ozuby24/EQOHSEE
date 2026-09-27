@@ -1,5 +1,11 @@
 /* Huruf disajikan sendiri — lihat fonts.css. */
 @import './fonts.css';
+/* Archivo dan IBM Plex Mono — muka huruf merek yang dipakai halaman depan.
+   Dimuat di sini juga supaya judul di dalam aplikasi (kop halaman, halaman
+   masuk, halaman pilar) berbentuk sama dengan judul di halaman depan: satu
+   identitas dari pintu depan sampai ke dalam. Berkasnya subset latin dan
+   dimuat malas per unicode-range, jadi ongkosnya kecil. */
+@import './huruf-archivo.css';
 
 @tailwind base;
 @tailwind components;
@@ -219,7 +225,7 @@ th{ white-space:nowrap; }
 }
 
 /* ---------- Navigasi ---------- */
-.nav-active{ background:linear-gradient(135deg,rgba(21,141,153,.20),rgba(44,176,188,.10)); color:#fff; }
+.nav-active{ background:linear-gradient(135deg,rgba(245,124,0,.22),rgba(255,152,0,.08)); color:#fff; }
 .nav-active .nav-accent{ opacity:1; }
 
 /* ---------- Kartu ---------- */
@@ -227,7 +233,7 @@ th{ white-space:nowrap; }
 .card-hover:hover{ transform:translateY(-4px); }
 
 /* ---------- Fokus input ---------- */
-.ring-focus:focus{ box-shadow:0 0 0 3px rgba(21,141,153,.30); border-color:#158D99; }
+.ring-focus:focus{ box-shadow:0 0 0 3px rgba(245,124,0,.22); border-color:#F57C00; }
 
 /* ---------- Animasi ---------- */
 @keyframes fadeUp{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
@@ -238,6 +244,50 @@ th{ white-space:nowrap; }
 .animate-fadeIn{ animation:fadeIn .4s ease both; }
 .animate-pop{ animation:pop .35s cubic-bezier(.21,.6,.35,1) both; }
 .floaty{ animation:floaty 5s ease-in-out infinite; }
+
+/* ---------- Huruf merek (Archivo) ----------
+   Satu kelas untuk judul yang harus terbaca sebagai EQOHSEE: dipakai
+   halaman masuk/daftar, kop halaman, dan halaman pilar. Dipersempit lewat
+   sumbu lebar Archivo, sama seperti .ld-h1/.ld-h2 di halaman depan. */
+.huruf-merek{
+  font-family:'Archivo',system-ui,sans-serif;
+  font-weight:700;
+  font-stretch:86%;
+  letter-spacing:-.025em;
+  line-height:1.05;
+  text-wrap:balance;
+}
+.auth-judul{
+  font-family:'Archivo',system-ui,sans-serif;
+  font-weight:700;
+  font-stretch:88%;
+  font-size:30px;
+  letter-spacing:-.022em;
+  line-height:1.1;
+  color:#0B1117;
+}
+.auth-ket{ font-size:13.5px; line-height:1.55; color:#5E6875; margin-top:6px; }
+.auth-label{
+  display:block; margin-bottom:.4rem;
+  font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#5E6875;
+}
+.auth-isian{
+  width:100%; min-height:48px; border:1px solid #D9DEE4; border-radius:.75rem; background:#fff;
+  padding:.7rem 1rem; font-size:15px; color:#0F1720;
+  transition:border-color .15s, box-shadow .15s;
+}
+.auth-isian:focus{ outline:none; border-color:#F57C00; box-shadow:0 0 0 3px rgba(245,124,0,.18); }
+.auth-tombol{
+  width:100%; min-height:50px; display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+  border-radius:.75rem; background:#F57C00; color:#0B1117; font-size:15px; font-weight:700;
+  transition:background-color .15s, transform .15s, box-shadow .15s;
+  box-shadow:0 10px 24px -14px rgba(245,124,0,.7);
+}
+.auth-tombol:hover{ background:#FF9800; }
+.auth-tombol:active{ transform:translateY(1px); }
+.auth-tombol:disabled{ opacity:.6; cursor:wait; }
+.auth-tautan{ font-weight:700; color:#A85400; text-decoration:underline; text-underline-offset:3px; text-decoration-color:rgba(168,84,0,.35); }
+.auth-tautan:hover{ color:#0B1117; text-decoration-color:currentColor; }
 
 /* ---------- Sistem angka (rata & proporsional) ---------- */
 .num{ font-variant-numeric:tabular-nums lining-nums; font-feature-settings:'tnum' 1,'lnum' 1; }
@@ -529,7 +579,7 @@ input,select,textarea{ outline:none; }
      color:transparent, sehingga currentColor ikut menjadi transparan dan
      seluruh teks lenyap. */
   --sheen-base: #FFFFFF;
-  --sheen-hi:   #9FEFF4;
+  --sheen-hi:   #FFD3A1;
   background-image: linear-gradient(100deg,
     var(--sheen-base) 0%,  var(--sheen-base) 38%,
     var(--sheen-hi)   50%,
@@ -559,7 +609,7 @@ input,select,textarea{ outline:none; }
 /* ── Garis pemisah bergradien ── */
 .rule-grad{
   height:1px; border:0;
-  background:linear-gradient(90deg,transparent,rgba(44,176,188,.55),transparent);
+  background:linear-gradient(90deg,transparent,rgba(245,124,0,.55),transparent);
 }
 
 /* ── Kartu kaca gelap ── */
