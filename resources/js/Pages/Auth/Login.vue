@@ -53,42 +53,43 @@ function masuk() {
 <template>
   <Head title="Masuk" />
 
-  <h2 class="auth-judul">Masuk ke platform</h2>
-  <p class="auth-ket mb-7">Gunakan akun yang diberikan admin perusahaan Anda.</p>
+  <h2 class="ms-judul">Masuk</h2>
+  <p class="ms-sub">Gunakan akun dari admin perusahaan Anda.</p>
 
-  <div v-if="Object.keys(form.errors).length" class="mb-4 rounded-xl bg-red-50 border border-red-100 text-red-700 px-4 py-3 text-[12.5px]">
-    <ul class="space-y-0.5"><li v-for="(pesan, k) in form.errors" :key="k">• {{ pesan }}</li></ul>
+  <div v-if="Object.keys(form.errors).length" class="mb-5 rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-[13px]">
+    <ul class="space-y-0.5"><li v-for="(pesan, k) in form.errors" :key="k">{{ pesan }}</li></ul>
   </div>
 
-  <form class="space-y-4" @submit.prevent="masuk">
+  <form class="space-y-5" @submit.prevent="masuk">
     <div>
-      <label for="email" class="auth-label">Email</label>
-      <input id="email" v-model="form.email" type="email" autocomplete="username" autofocus required class="auth-isian">
-      <p v-if="form.errors.email" class="text-xs text-red-600 mt-1">{{ form.errors.email }}</p>
+      <label for="email" class="ms-label">Email</label>
+      <input id="email" v-model="form.email" type="email" autocomplete="username" autofocus required class="ms-isian"
+             :aria-invalid="form.errors.email ? 'true' : undefined">
     </div>
     <div>
-      <label for="password" class="auth-label">Kata sandi</label>
-      <InputSandi id="password" v-model="form.password" autocomplete="current-password" required
-                  kelas="auth-isian" />
-      <p v-if="form.errors.password" class="text-xs text-red-600 mt-1">{{ form.errors.password }}</p>
+      <label for="password" class="ms-label">Kata sandi</label>
+      <InputSandi id="password" v-model="form.password" autocomplete="current-password" required kelas="ms-isian" />
     </div>
     <VerifikasiTurnstile v-model="form['cf-turnstile-response']"
                         :kunci="kunciTurnstile" :tindakan="tindakan" :galat="gagalKe" />
 
-    <div class="flex items-center justify-between text-sm">
-      <label class="flex items-center gap-2 text-[#3A4450] cursor-pointer min-h-[44px]"><input v-model="form.remember" type="checkbox" class="accent-[#F57C00] w-4 h-4 rounded"> Ingat perangkat ini</label>
-      <Link href="/forgot-password" class="auth-tautan min-h-[44px] inline-flex items-center">Lupa sandi?</Link>
+    <div class="flex items-center justify-between gap-4 text-[14.5px]">
+      <label class="flex items-center gap-2.5 text-[#3A4450] cursor-pointer min-h-[44px]">
+        <input v-model="form.remember" type="checkbox" class="accent-[#0B1117] w-[18px] h-[18px]"> Ingat perangkat ini
+      </label>
+      <Link href="/forgot-password" class="ms-tautan min-h-[44px] inline-flex items-center">Lupa sandi?</Link>
     </div>
     <!-- Tombolnya menyebut PEKERJAAN yang sedang berjalan, bukan
          "Memproses…". Yang menunggu di sambungan site yang lambat perlu
          tahu apa yang ditunggu: kredensialnya sedang diperiksa, bukan
          halamannya sedang digambar. Cincinnya bergerak supaya tombol
          yang terkunci tidak terbaca sebagai tombol yang rusak. -->
-    <button type="submit" :disabled="form.processing" class="auth-tombol">
+    <button type="submit" :disabled="form.processing" class="ms-tombol">
       <Putaran v-if="form.processing" />
       {{ form.processing ? 'Memeriksa kredensial…' : 'Masuk' }}
+      <svg v-if="!form.processing" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5" /></svg>
     </button>
   </form>
 
-  <p class="text-center text-sm text-[#5E6875] mt-6">Belum punya akun? <Link href="/register" class="auth-tautan">Daftar di sini</Link></p>
+  <p class="mt-6 text-[14.5px] text-[#4A5563]">Belum punya akun? <Link href="/register" class="ms-tautan">Daftar sebagai pekerja</Link></p>
 </template>

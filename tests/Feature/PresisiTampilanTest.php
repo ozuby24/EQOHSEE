@@ -94,27 +94,27 @@ class PresisiTampilanTest extends TestCase
                 "{$nama}: teks putih di atas jingga (kontras 2,7:1). Tombol jingga berteks ink.");
         }
 
-        $tombol = $this->aturan(file_get_contents(resource_path('css/app.css')), '.auth-tombol');
-        $this->assertStringContainsString('color:#0B1117', str_replace(' ', '', $tombol),
-            'Tombol halaman tamu tidak lagi berteks ink di atas jingga.');
+        $tataLetak = file_get_contents(resource_path('js/Layouts/GuestLayout.vue'));
+        $this->assertStringContainsString("import '../../css/masuk.css'", $tataLetak,
+            'GuestLayout tidak memuat masuk.css — halaman tamu kembali ke huruf aplikasi.');
+        foreach (['Safe Today', 'Sustainable Tomorrow', 'Innovation Always'] as $semboyan) {
+            $this->assertStringNotContainsString($semboyan, $tataLetak,
+                "Panel halaman masuk kembali memuat semboyan \"{$semboyan}\" — rancangan yang disetujui tanpa semboyan.");
+        }
+
+        // Halaman Daftar, Lupa sandi, dan lainnya diseragamkan dari masuk.css.
+        $css = file_get_contents(resource_path('css/masuk.css'));
+        foreach (['.ms .auth-judul', '.ms form .label', '.ms form .input', '.ms .auth-tombol'] as $pemilih) {
+            $this->assertStringContainsString($pemilih, $css,
+                "masuk.css tidak lagi menyeragamkan {$pemilih} — halaman tamu lain berbeda gaya dari halaman Masuk.");
+        }
     }
 
     public function test_panel_foto_halaman_tamu_menempel_di_layar_lebar(): void
     {
         $tataLetak = file_get_contents(resource_path('js/Layouts/GuestLayout.vue'));
-        $this->assertMatchesRegularExpression(
-            '/@media\s*\(min-width:\s*1024px\)\s*\{\s*\.tamu-panel\s*\{[^}]*position:\s*sticky/',
-            $tataLetak,
+        $this->assertMatchesRegularExpression('/class="pendar-rekaman[^"]*lg:sticky[^"]*lg:h-\\[100dvh\\]/', $tataLetak,
             'Panel foto halaman tamu tidak menempel: pada formulir Daftar judulnya jatuh di bawah lipatan.');
-
-        // Aturan layar pendek harus SESUDAH aturan dasar .tamu-aspek —
-        // sebelumnya ia kalah urutan dan label judulnya tetap menempel
-        // ke baris logo di tablet mendatar 1176×620.
-        $dasar = strpos($tataLetak, '.tamu-aspek{');
-        $pendek = strpos($tataLetak, '(max-height:760px)');
-        $this->assertNotFalse($pendek, 'Aturan layar lebar yang pendek untuk panel tamu hilang.');
-        $this->assertGreaterThan($dasar, $pendek,
-            'Aturan layar pendek ditulis sebelum aturan dasar .tamu-aspek dan kalah urutan.');
     }
 
     public function test_halaman_masuk_merender_bahasa_baru(): void
