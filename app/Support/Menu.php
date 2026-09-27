@@ -697,6 +697,7 @@ final class Menu
           ['Dashboard Keandalan', 'maintenance.index',  'pemeliharaan'],
           ['Perintah Kerja',      'maintenance.order',  'pemeliharaan/order*'],
           ['Armada',              'maintenance.armada', 'pemeliharaan/armada'],
+          ['P2H Unit',            'maintenance.p2h',    'pemeliharaan/p2h'],
         ],
         'Data' => [
           ['Laporan Keandalan', 'maintenance.cetak', 'pemeliharaan/cetak'],

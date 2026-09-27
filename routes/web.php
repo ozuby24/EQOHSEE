@@ -96,7 +96,7 @@ Route::post('katalog/pesan', [PembelianController::class, 'pesanPublik'])
     ->middleware('throttle:6,1')->name('katalog.pesan');
 
 Route::get('/', fn () => auth()->check()
-    ? redirect()->route('dashboard')
+    ? redirect(\App\Support\Lapangan::berandaUntuk())
     : app(LandingController::class)->index())->name('beranda');
 
 /* ── Kebijakan privasi ──
@@ -1246,6 +1246,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
        sini adalah catatan gangguan dan perbaikannya. */
     Route::prefix('pemeliharaan')->name('maintenance.')->group(function () {
         Route::get('/',       [MaintenanceController::class, 'index'])->name('index');
+
+        /* P2H unit — register unit dan catatan pemeriksaan pra-operasi. */
+        Route::get('p2h',          [\App\Http\Controllers\P2hController::class, 'index'])->name('p2h');
+        Route::post('p2h',         [\App\Http\Controllers\P2hController::class, 'simpan'])->name('p2h.simpan');
+        Route::put('p2h/{unit}',   [\App\Http\Controllers\P2hController::class, 'ubah'])->name('p2h.ubah');
         Route::get('order',   [MaintenanceController::class, 'order'])->name('order');
         Route::get('armada',  [MaintenanceController::class, 'armada'])->name('armada');
 
@@ -1537,6 +1542,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     /* ================= WEBSITE #3 — Hazard Report & Inspeksi ================= */
+    /* ============ Mode Lapangan (pendamping seluler) ============
+       Layar ringkas untuk muka tambang. Kiriman laporan dan P2H
+       menerima JSON dari antrean luring perangkat; kiriman ulangnya
+       dikenali lewat klien_id, jadi tidak pernah menggandakan catatan. */
+    Route::prefix('lapangan')->name('lapangan.')->group(function () {
+        Route::get('/',                 [\App\Http\Controllers\LapanganController::class, 'beranda'])->name('beranda');
+        Route::get('modul',             [\App\Http\Controllers\LapanganController::class, 'modul'])->name('modul');
+        Route::get('tugas',             [\App\Http\Controllers\LapanganController::class, 'tugas'])->name('tugas');
+        Route::get('profil',            [\App\Http\Controllers\LapanganController::class, 'profil'])->name('profil');
+        Route::get('lapor',             [\App\Http\Controllers\LapanganController::class, 'lapor'])->name('lapor');
+        Route::post('lapor',            [\App\Http\Controllers\LapanganController::class, 'laporSimpan'])
+            ->middleware('throttle:30,1')->name('lapor.simpan');
+        Route::get('laporan/{hazard}',  [\App\Http\Controllers\LapanganController::class, 'laporan'])->name('laporan');
+        Route::get('izin',              [\App\Http\Controllers\LapanganController::class, 'izin'])->name('izin');
+        Route::get('sertifikat',        [\App\Http\Controllers\LapanganController::class, 'sertifikat'])->name('sertifikat');
+        Route::get('p2h',               [\App\Http\Controllers\LapanganController::class, 'p2h'])->name('p2h');
+        Route::get('p2h/{unit}',        [\App\Http\Controllers\LapanganController::class, 'p2hIsi'])->name('p2h.isi');
+        Route::post('p2h/{unit}',       [\App\Http\Controllers\LapanganController::class, 'p2hSimpan'])
+            ->middleware('throttle:30,1')->name('p2h.simpan');
+        Route::post('p2h/{unit}/lepas', [\App\Http\Controllers\LapanganController::class, 'p2hLepas'])->name('p2h.lepas');
+    });
+
     Route::prefix('hazard')->name('hazard.')->group(function () {
         Route::get('/',                  [HazardController::class,'index'])->name('index');
         Route::get('buat',               [HazardController::class,'create'])->name('create');

@@ -47,7 +47,13 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        /* Kiriman mode lapangan datang dari antrean perangkat (fetch,
+           Accept: application/json). Galatnya harus berupa JSON dengan
+           status aslinya — 422, 401, 419 — bukan pengalihan: pengalihan
+           diikuti fetch sampai halaman masuk berstatus 200, dan antrean
+           akan menganggap laporan yang ditolak sebagai laporan terkirim. */
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
+            fn (Request $request) => $request->is('api/*')
+                || ($request->is('lapangan', 'lapangan/*') && $request->expectsJson()),
         );
     })->create();

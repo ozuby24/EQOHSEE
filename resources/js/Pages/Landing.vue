@@ -758,11 +758,13 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
         </div>
       </section>
 
-      <!-- ══════════ 08 TANYA JAWAB ══════════ -->
+      <!-- ══════════ TANYA JAWAB ══════════
+           Tidak bernomor: bagian ini tambahan di luar desain, dan nomor
+           08 milik Kontak sebagaimana di desainnya. -->
       <section v-if="tanya.length" id="tanya" class="ld-abu ld-garis-atas">
         <div class="ld-lebar ld-blok ld-tanya-grid">
           <div class="ld-muncul">
-            <p class="ld-mata">08 — Tanya jawab</p>
+            <p class="ld-mata">Tanya jawab</p>
             <h2 class="ld-h2">Yang biasa ditanyakan.</h2>
             <p class="ld-lead" style="margin-top:18px;font-size:16px">
               Belum terjawab? Sebutkan keadaan site Anda — kami balas dengan jawaban yang menyebut
@@ -781,11 +783,11 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
         </div>
       </section>
 
-      <!-- ══════════ 09 KONTAK ══════════ -->
+      <!-- ══════════ 08 KONTAK ══════════ -->
       <section id="kontak" class="ld-putih ld-garis-atas">
         <div class="ld-lebar ld-blok ld-kontak-grid" style="padding-top:clamp(64px,8vw,112px);padding-bottom:clamp(64px,8vw,112px)">
           <div class="ld-muncul">
-            <p class="ld-mata">09 — Hubungi kami</p>
+            <p class="ld-mata">08 — Hubungi kami</p>
             <h2 class="ld-h2" style="font-size:clamp(32px,3.8vw,52px)">Butuh penawaran khusus atau bantuan pemasangan?</h2>
             <p class="ld-lead" style="margin-top:18px;max-width:460px">
               Pemilihan paket, pemasangan di site, dan pertanyaan tagihan dijawab langsung oleh tim EQOHSEE.

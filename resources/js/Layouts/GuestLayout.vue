@@ -67,7 +67,11 @@ const jam = new Intl.DateTimeFormat('id-ID', {
       dan supaya keduanya ikut berhenti pada satu tempat ketika pengguna
       meminta gerakan dikurangi.
     -->
-    <section class="pendar-rekaman sapuan bg-[#0B1117] text-white p-8 sm:p-12 lg:p-14 flex flex-col justify-between min-h-[330px] lg:min-h-screen">
+    <!-- Di ponsel panelnya menjadi foto setinggi sepertiga layar dengan
+         lembar putih yang menumpuk di bawahnya (rancangan seluler 1a):
+         formulirnya di jangkauan ibu jari, bukan di bawah satu layar
+         penuh kalimat pembuka. -->
+    <section class="pendar-rekaman sapuan bg-[#0B1117] text-white px-6 pt-5 pb-12 sm:p-12 lg:p-14 flex flex-col justify-between min-h-[300px] sm:min-h-[330px] lg:min-h-screen">
       <video
         v-if="pakaiRekaman"
         :src="media.video" :poster="media.poster ?? undefined"
@@ -95,7 +99,13 @@ const jam = new Intl.DateTimeFormat('id-ID', {
         </span>
       </div>
 
-      <div class="relative z-10 max-w-xl mt-12 lg:mt-0">
+      <!-- Ponsel: satu kalimat, bukan manifesto. -->
+      <div class="relative z-10 sm:hidden mt-10">
+        <p class="text-[11px] tracking-[.08em] uppercase text-white/75" style="font-family:'IBM Plex Mono',ui-monospace,monospace">Platform keselamatan tambang</p>
+        <h1 class="mt-2 text-[29px] leading-[1.06] font-bold tracking-tight">Satu akun untuk seluruh modul dan site.</h1>
+      </div>
+
+      <div class="relative z-10 max-w-xl mt-12 lg:mt-0 hidden sm:block">
         <p class="text-[10px] font-bold uppercase tracking-[.22em] text-white/50 mb-4">Delapan Aspek · Satu Sistem</p>
         <div class="w-14 h-0.5 bg-gradient-to-r from-[#F57C00] to-[#FF9800] mb-5"></div>
         <h1 class="font-serif text-4xl sm:text-5xl leading-tight max-w-md">Menjaga kinerja, membentuk <em class="not-italic text-[#FF9800]">masa depan</em>.</h1>
@@ -108,9 +118,9 @@ const jam = new Intl.DateTimeFormat('id-ID', {
       </div>
     </section>
 
-    <section class="flex items-center justify-center px-6 py-10 sm:px-12 lg:px-16">
+    <section class="relative z-10 -mt-7 sm:mt-0 rounded-t-[26px] sm:rounded-none bg-white sm:bg-transparent flex items-start sm:items-center justify-center px-6 pt-6 pb-10 sm:py-10 sm:px-12 lg:px-16">
       <div class="w-full max-w-md">
-        <div class="font-extrabold text-2xl tracking-wide mb-8">E<span class="text-[#F57C00]">Q</span>OHSEE</div>
+        <div class="hidden sm:block font-extrabold text-2xl tracking-wide mb-8">E<span class="text-[#F57C00]">Q</span>OHSEE</div>
 
         <!-- role=status, bukan alert: kabarnya baik, dan alert merebut
              pembacaan di tengah orang membaca judul halamannya. -->

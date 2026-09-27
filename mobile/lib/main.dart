@@ -44,10 +44,15 @@ void main() {
 ///
 /// Berguna untuk menguji APK terhadap server uji tanpa membuat cabang
 /// kode tersendiri — cabang seperti itu selalu tertinggal.
-const String alamatAwal = String.fromEnvironment(
+const String alamatSitus = String.fromEnvironment(
   'EQOHSEE_URL',
   defaultValue: 'https://eqohsee.id',
 );
+
+/// Halaman pertama: mode lapangan — beranda awal shift, lapor bahaya,
+/// P2H, izin kerja. Yang belum masuk dibawa ke halaman masuk lalu
+/// kembali ke sini; versi web lengkap tetap terbuka dari tab Profil.
+const String alamatAwal = '$alamatSitus/lapangan';
 
 /// Inang yang boleh dibuka DI DALAM aplikasi.
 ///
@@ -134,8 +139,12 @@ class _LayarUtamaState extends State<LayarUtama> {
   /// ketika pemakai menekan "ambil foto" pada laporan bahaya, WebView
   /// menanyakannya ke aplikasi, dan aplikasi yang belum berizin hanya
   /// dapat menjawab tidak — tanpa satu pun tanda kenapa.
+  ///
+  /// Lokasi ikut diminta untuk laporan bahaya dari mode lapangan: titik
+  /// GPS temuannya ikut tercatat. Tanpa izin ini, halaman tetap jalan —
+  /// pelapor menuliskan lokasinya sendiri.
   Future<void> _mintaIzin() async {
-    await [Permission.camera, Permission.microphone].request();
+    await [Permission.camera, Permission.microphone, Permission.locationWhenInUse].request();
   }
 
   Future<bool> _adaJaringan() async {
@@ -144,7 +153,11 @@ class _LayarUtamaState extends State<LayarUtama> {
   }
 
   Future<void> _muatUlang() async {
-    if (!await _adaJaringan()) {
+    // Tanpa jaringan pun halaman tetap dicoba dimuat: mode lapangan
+    // menyimpan layarnya di perangkat (service worker), dan laporan yang
+    // disusun tanpa sinyal tersimpan di sana sampai terkirim. Layar
+    // gagal hanya muncul bila memang tidak ada yang tersimpan.
+    if (!await _adaJaringan() && _web == null) {
       setState(() {
         _gagal = true;
         _sebabGagal = 'Tidak ada sambungan internet.';
@@ -210,8 +223,22 @@ class _LayarUtamaState extends State<LayarUtama> {
             allowsInlineMediaPlayback: true,
             // Unggahan foto dari kamera lewat halaman web.
             javaScriptCanOpenWindowsAutomatically: true,
+            // Titik GPS laporan bahaya dan draf luring (IndexedDB).
+            geolocationEnabled: true,
+            databaseEnabled: true,
+            domStorageEnabled: true,
             userAgent: 'EQOHSEE-Android/1.0 (WebView)',
           ),
+          onGeolocationPermissionsShowPrompt: (_, asal) async {
+            // Izin sistemnya sudah diminta di _mintaIzin(); di sini hanya
+            // situs EQOHSEE sendiri yang diizinkan membaca lokasi.
+            final izinkan = bukaDiDalam(Uri.parse(asal));
+            return GeolocationPermissionShowPromptResponse(
+              origin: asal,
+              allow: izinkan,
+              retain: izinkan,
+            );
+          },
           onWebViewCreated: (c) async {
             _web = c;
             await _mintaIzin();

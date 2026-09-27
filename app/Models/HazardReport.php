@@ -13,8 +13,8 @@ class HazardReport extends Model
     use BerpemilikPerusahaan;
 
     protected $fillable = [
-        'kode','user_id','pelapor_nama','pelapor_nrp','pelapor_perusahaan','pelapor_departemen','pelapor_jabatan',
-        'company_id','terlapor','tanggal','waktu','lokasi','risiko','kategori','deskripsi',
+        'kode','klien_id','user_id','pelapor_nama','pelapor_nrp','pelapor_perusahaan','pelapor_departemen','pelapor_jabatan',
+        'company_id','terlapor','tanggal','waktu','lokasi','lat','lng','akurasi_m','risiko','kemungkinan','keparahan','kategori','deskripsi',
         'unsafe_action','unsafe_condition','hirarki','rekomendasi','batas_akhir','status',
         'foto','foto_tindaklanjut','catatan_penutupan','closed_by','closed_at',
     ];
@@ -22,7 +22,9 @@ class HazardReport extends Model
     protected function casts(): array
     {
         return ['tanggal'=>'date', 'batas_akhir'=>'date', 'closed_at'=>'datetime',
-                'foto'=>'array', 'foto_tindaklanjut'=>'array'];
+                'foto'=>'array', 'foto_tindaklanjut'=>'array',
+                'kemungkinan'=>'integer', 'keparahan'=>'integer',
+                'lat'=>'float', 'lng'=>'float', 'akurasi_m'=>'integer'];
     }
 
     /**

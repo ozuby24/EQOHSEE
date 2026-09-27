@@ -172,6 +172,9 @@ final class DataContoh
         /* KO. Suku cadang mendahului perintah kerjanya, dan
            KoInspection menunjuk ko_safeguard_id sekaligus
            ko_personnel_id — jadi keduanya dibuang sesudahnya. */
+        /* P2H mendahului perintah kerja yang diterbitkannya, dan unitnya
+           menunjuk objek KO — keduanya dibuang sebelum KoObject. */
+        \App\Models\P2hPeriksa::class, \App\Models\P2hUnit::class,
         WorkOrderPart::class, WorkOrder::class,
         KoInspection::class, KoAction::class, KoReview::class,
         KoSafeguard::class, KoPersonnel::class,
@@ -958,6 +961,12 @@ final class DataContoh
                menu yang sama — dan yang memeriksa data contoh mencari
                keduanya di satu tempat. */
             'Audit lingkungan' => $this->auditLingkungan(),
+
+            /* P2H: lima unit, satu DITAHAN oleh butir kritis beserta
+               perintah kerjanya, satu sudah diperiksa shift ini, sisanya
+               menunggu — supaya daftar di mode lapangan punya ketiga
+               keadaannya. */
+            'P2H'             => $this->p2h(),
 
             /* Observasi operator loader (FROP) di Learning Center. */
             'Observasi operator' => $this->frop(),
@@ -4803,6 +4812,67 @@ final class DataContoh
      * TERPENUHI — kalau tidak, predikatnya tidak terbit sama sekali dan
      * layar ikhtisarnya hanya memperlihatkan satu cabang dari dua.
      */
+    private function p2h(): int
+    {
+        $unit = [];
+        foreach ([
+            ['DT-1142', 'Komatsu HD785-7', 'dump_truck', 'Dump truck 91 t', 18442],
+            ['DT-1127', 'Komatsu HD785-7', 'dump_truck', 'Dump truck 91 t', 21310],
+            ['EX-2201', 'Komatsu PC2000-8', 'excavator', 'Excavator 12 m³', 9820],
+            ['GD-03',   'Komatsu GD825A-2', 'grader', 'Motor grader jalan angkut', 14205],
+            ['LV-018',  'Toyota Hilux 4×4', 'light_vehicle', 'Kendaraan pengawas', 61230],
+        ] as [$kode, $nama, $jenis, $ket, $hm]) {
+            $unit[$kode] = $this->baru(\App\Models\P2hUnit::class, [
+                'kode' => $kode, 'nama' => $nama, 'jenis' => $jenis, 'keterangan' => $ket,
+                'hm' => $hm, 'status' => P2h::LAIK, 'aktif' => true,
+            ]);
+        }
+        $n = count($unit);
+
+        /* Jam setempat, bukan jam server: shift dan tanggal P2H dibaca
+           layar menurut Waktu::kini(), dan pukul 02.00 UTC sudah shift
+           pagi di site. */
+        $setempat = Waktu::kini();
+        $shift = P2h::shiftSekarang($setempat);
+        $semua = fn (string $jenis, array $ubah = []) => array_merge(
+            array_fill_keys(array_column(P2h::butir($jenis), 'kode'), P2h::OK), $ubah);
+
+        foreach ([
+            // unit, hari lalu, shift, jawaban khusus, catatan
+            ['DT-1127', 0, $shift, [], null],
+            ['EX-2201', 1, 'pagi', ['kuku' => P2h::TIDAK], 'Satu kuku bucket aus, dijadwalkan ganti.'],
+            ['GD-03',   0, $shift, ['rem' => P2h::TIDAK], 'Rem berdecit dan tarikannya lemah di turunan R-04.'],
+        ] as [$kode, $hari, $sh, $ubah, $catatan]) {
+            $u = $unit[$kode];
+            $nilai = P2h::nilai($u->jenis, $semua($u->jenis, $ubah));
+            $tanggal = $setempat->copy()->subDays($hari);
+
+            $p = $this->baru(\App\Models\P2hPeriksa::class, [
+                'p2h_unit_id' => $u->id, 'user_id' => $this->pengaju?->getKey(),
+                'operator' => $this->pengaju?->name ?? 'Operator contoh', 'shift' => $sh,
+                'tanggal' => $tanggal->toDateString(), 'hm' => $u->hm, 'jawaban' => $nilai['jawaban'],
+                'jumlah_ok' => $nilai['ok'], 'jumlah_tidak' => $nilai['tidak'], 'jumlah_na' => $nilai['na'],
+                'hasil' => $nilai['hasil'], 'catatan' => $catatan,
+            ]);
+            $n++;
+
+            if ($nilai['hasil'] === P2h::DITAHAN) {
+                $wo = $this->baru(WorkOrder::class, [
+                    'user_id' => $this->pengaju?->getKey(), 'jenis' => 'korektif', 'prioritas' => 'kritis',
+                    'status' => 'dibuka', 'dilaporkan_pada' => $tanggal,
+                    'gejala' => "P2H {$u->kode} ({$u->nama}) — unit ditahan: ".implode('; ', $nilai['kritisGagal']).". {$catatan}",
+                    'hm_saat_rusak' => $u->hm,
+                ]);
+                $p->update(['work_order_id' => $wo->id]);
+                $u->update(['status' => P2h::DITAHAN, 'ditahan_sejak' => $tanggal,
+                            'ditahan_karena' => implode('; ', $nilai['kritisGagal'])]);
+                $n++;
+            }
+        }
+
+        return $n;
+    }
+
     private function auditLingkungan(): int
     {
         $n = 0;

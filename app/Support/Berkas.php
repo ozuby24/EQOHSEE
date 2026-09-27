@@ -70,6 +70,9 @@ final class Berkas
         'hzd' => [HazardReport::class,   'foto',              true],
         'hzt' => [HazardReport::class,   'foto_tindaklanjut', true],
         'ins' => [InspectionItem::class, 'foto',      true],
+
+        /* Foto bukti P2H — butir kritis yang gagal wajib berfoto. */
+        'p2h' => [\App\Models\P2hPeriksa::class, 'foto', true],
         'sds' => [GudangBarang::class,   'msds',      false],
 
         /* Bukti temuan SMKP punya DUA jalur pada satu baris — sebelum
@@ -369,7 +372,7 @@ final class Berkas
     }
 
     /** Folder tempat tiap jenis disimpan, dipakai pemindah berkas lama. */
-    public const FOLDER_TERTUTUP = ['dokumen', 'signatures', 'hazard', 'inspeksi', 'gudang/msds'];
+    public const FOLDER_TERTUTUP = ['dokumen', 'signatures', 'hazard', 'inspeksi', 'gudang/msds', 'p2h'];
 
     /**
      * Aturan bagi unggahan gambar.

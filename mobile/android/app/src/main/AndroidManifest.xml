@@ -2,19 +2,23 @@
     <!-- INTERNET: seluruh isi aplikasi datang dari server.
          KAMERA: unggahan foto pada laporan bahaya dan inspeksi.
          MEDIA_IMAGES: memilih foto lama dari galeri (Android 13+).
-         Tidak ada izin lokasi: tidak ada satu pun fitur yang memakainya,
-         dan izin yang diminta tanpa dipakai adalah alasan penolakan
-         paling sering di Play Console. -->
+         LOKASI: titik GPS laporan bahaya di mode lapangan — hanya saat
+         aplikasi dibuka (tanpa ACCESS_BACKGROUND_LOCATION). Lokasi yang
+         diminta tanpa dipakai adalah alasan penolakan paling sering di
+         Play Console; yang ini dipakai, dan disebut alasannya. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 
     <!-- Kamera TIDAK wajib ada: tablet kantor tanpa kamera tetap boleh
          memasang aplikasinya dan memakai seluruh modul selain unggah foto. -->
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <uses-feature android:name="android.hardware.location.gps" android:required="false"/>
 
     <!-- Android 11+ menyembunyikan aplikasi lain kecuali disebutkan.
          Tanpa blok ini, canLaunchUrl() selalu menjawab false dan tautan

@@ -167,7 +167,19 @@ final class RuteInertia
         'maintenance.index',
         'maintenance.order',
         'maintenance.armada',
+        'maintenance.p2h',
         'maintenance.cetak',
+
+        /* Mode lapangan — hanya yang tanpa parameter; detail laporan dan
+           isian P2H per unit dicapai dari dalam layar lapangan sendiri. */
+        'lapangan.beranda',
+        'lapangan.modul',
+        'lapangan.tugas',
+        'lapangan.profil',
+        'lapangan.lapor',
+        'lapangan.izin',
+        'lapangan.sertifikat',
+        'lapangan.p2h',
 
         /* Air & Penirisan */
         'air.index',

@@ -81,7 +81,7 @@ class AuthenticatedSessionController extends Controller
          */
         $request->session()->regenerate(true);
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        return redirect()->intended(\App\Support\Lapangan::berandaUntuk($request));
     }
 
     /**

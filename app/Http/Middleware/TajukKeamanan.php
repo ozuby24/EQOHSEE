@@ -61,10 +61,18 @@ class TajukKeamanan
            situs yang ditautkan. */
         'Referrer-Policy' => 'strict-origin-when-cross-origin',
 
-        /* Perangkat keras dimatikan seluruhnya. Aplikasi ini tidak
-           meminta kamera, mikrofon, maupun lokasi di mana pun; menutup
-           pintu yang tidak dipakai lebih murah daripada mengawasinya. */
-        'Permissions-Policy' => 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()',
+        /* Perangkat keras dimatikan, kecuali lokasi untuk situs ini
+           sendiri. Laporan bahaya dari mode lapangan mencatat titik GPS
+           temuannya — pengawas yang menerima "tanggul tergerus" perlu
+           tahu tanggul yang mana. `(self)`, bukan `*`: bingkai dari asal
+           lain (pemutar video, verifikasi Turnstile) tetap tertutup, dan
+           peramban tetap menanyakannya dulu kepada penggunanya.
+
+           Kamera TIDAK perlu dibuka: foto diambil lewat <input
+           type="file" capture>, yang diserahkan ke aplikasi kamera
+           perangkat, bukan lewat getUserMedia. Menutup pintu yang tidak
+           dipakai lebih murah daripada mengawasinya. */
+        'Permissions-Policy' => 'camera=(), microphone=(), geolocation=(self), payment=(), usb=(), interest-cohort=()',
     ];
 
     public function handle(Request $request, Closure $next): Response

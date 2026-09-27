@@ -149,7 +149,7 @@ class DuaFaktorTantanganController extends Controller
            sebagai tamu tidak diteruskan ke sesi yang sudah masuk. */
         $request->session()->regenerate(true);
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        return redirect()->intended(\App\Support\Lapangan::berandaUntuk($request));
     }
 
     /**

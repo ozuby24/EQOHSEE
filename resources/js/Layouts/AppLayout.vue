@@ -11,6 +11,7 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
+import { bersihkanSimpanan } from '../lapangan/pekerja';
 import type { PropBersama } from '../types';
 import KopHalaman from '../Components/KopHalaman.vue';
 import KutipanKaki from '../Components/KutipanKaki.vue';
@@ -411,7 +412,10 @@ function gantiTema() {
   });
 }
 
-function keluar() {
+async function keluar() {
+  /* Salinan layar mode lapangan di perangkat ini ikut dibuang —
+     lihat lapangan/pekerja.ts. */
+  await bersihkanSimpanan();
   router.post('/logout');
 }
 </script>
@@ -799,6 +803,18 @@ function keluar() {
                   <path d="M12 11.5a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/>
                 </svg>
                 Data diri
+              </a>
+
+              <!-- Tautan biasa, bukan <Link>: mode lapangan adalah cangkang
+                   lain dengan pekerja latarnya sendiri, dan halaman itu
+                   harus dimuat penuh supaya dapat dipasang. -->
+              <a href="/lapangan" class="eq-akun-butir" role="menuitem">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/>
+                  <path d="M11 18.5h2"/>
+                </svg>
+                Mode lapangan
               </a>
 
               <button type="button" class="eq-akun-butir" role="menuitem" @click="bukaTur">
