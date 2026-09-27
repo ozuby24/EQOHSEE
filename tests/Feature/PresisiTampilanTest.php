@@ -60,6 +60,43 @@ class PresisiTampilanTest extends TestCase
             'Kartu temuan kembali menjorok keluar bingkai foto (left negatif).');
     }
 
+    public function test_menu_ponsel_dapat_digulir_di_layar_mendatar(): void
+    {
+        $menu = $this->aturan(file_get_contents(resource_path('css/landing.css')), '.ld-menu');
+        $this->assertStringContainsString('overflow-y: auto', $menu,
+            'Menu ponsel tidak dapat digulir: di ponsel mendatar (±375 px) tautan bawahnya di luar layar.');
+        $this->assertMatchesRegularExpression('/max-height:\s*calc\(100dvh/', $menu);
+    }
+
+    public function test_ringkasan_pembelian_tidak_melekat_di_layar_pendek(): void
+    {
+        $css = preg_replace('#/\*.*?\*/#s', '', file_get_contents(resource_path('css/landing.css')));
+        $this->assertMatchesRegularExpression('/@media\s*\(max-height:\s*760px\)\s*\{\s*\.ld-ringkas\s*\{\s*position:\s*static/', $css,
+            'Kartu ringkasan setinggi ±610 px melekat di layar 636 px dan menutupi tombol "Buat tagihan"-nya.');
+    }
+
+    public function test_rasio_foto_hero_layar_sempit_ditulis_sesudah_aturan_dasar(): void
+    {
+        $css = preg_replace('#/\*.*?\*/#s', '', file_get_contents(resource_path('css/landing.css')));
+        $dasar = strpos($css, '.ld-hero-bingkai { position: relative; aspect-ratio: 4 / 4.3;');
+        $sempit = strpos($css, '@media (max-width: 919px) { .ld-hero-bingkai { aspect-ratio: 16 / 11; } }');
+        $this->assertNotFalse($dasar);
+        $this->assertNotFalse($sempit, 'Rasio 16:11 untuk layar bertumpuk hilang.');
+        $this->assertGreaterThan($dasar, $sempit,
+            'Rasio foto hero untuk layar sempit ditulis sebelum aturan dasarnya dan kalah urutan (foto ponsel tetap 4:4,3).');
+    }
+
+    public function test_kisi_kartu_berkolom_pasti_tanpa_kartu_yatim(): void
+    {
+        $css = file_get_contents(resource_path('css/landing.css'));
+        // auto-fit pada empat/tiga kartu menyisakan satu kartu sendirian di
+        // baris terakhir pada sebagian lebar layar (3 + 1, 2 + 1).
+        foreach (['.ld-angka-deret', '.ld-langkah', '.ld-jaminan', '.ld-kategori', '.ld-pilar-isi'] as $pemilih) {
+            $this->assertStringNotContainsString('auto-fit', $this->aturan($css, $pemilih),
+                "{$pemilih} kembali memakai auto-fit dan menyisakan kartu yatim di baris terakhir.");
+        }
+    }
+
     public function test_tombol_whatsapp_tidak_menutupi_layar_pertama(): void
     {
         $vue = file_get_contents(resource_path('js/Pages/Landing.vue'));
