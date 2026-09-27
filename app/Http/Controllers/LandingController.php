@@ -85,8 +85,8 @@ class LandingController extends Controller
                dan null bila berkasnya belum ditaruh, supaya bagian itu
                tetap berdiri tanpa bingkai gambar rusak. */
             'layarPonsel' => array_values(array_filter([
-                ($u = Media::url('aplikasi/beranda.webp')) ? ['url' => $u, 'alt' => 'Layar beranda EQOHSEE di ponsel'] : null,
-                ($u = Media::url('aplikasi/lapor.webp'))   ? ['url' => $u, 'alt' => 'Layar laporan bahaya EQOHSEE di ponsel'] : null,
+                ($u = Media::url('aplikasi/beranda.webp')) ? ['url' => $u, 'alt' => 'Beranda mode lapangan EQOHSEE di ponsel: peringatan site dan tugas bertenggat'] : null,
+                ($u = Media::url('aplikasi/lapor.webp'))   ? ['url' => $u, 'alt' => 'Lapor bahaya di mode lapangan: foto dan titik GPS terisi sendiri'] : null,
             ])),
 
             'tautan' => [

@@ -1,0 +1,121 @@
+@import './huruf-archivo.css';
+
+/*
+  Halaman masuk, daftar, lupa sandi, dan dua faktor (GuestLayout).
+
+  Bahasanya sama dengan halaman depan (landing.css): Archivo yang
+  dipersempit untuk judul, IBM Plex Mono untuk label, garis rambut,
+  sudut 8 px, tombol jingga berteks ink. Orang yang menekan "Masuk ke
+  Platform" di halaman depan tidak boleh mendarat di halaman yang
+  hurufnya berganti menjadi serif dan semboyannya berbahasa Inggris.
+
+  Dicakup di bawah .ms supaya tidak bocor ke aplikasi, yang tetap
+  memakai Inter lewat app.css.
+*/
+.ms {
+  --ms-hitam: #0B1117;
+  --ms-tinta: #0F1720;
+  --ms-isi: #3A4450;
+  --ms-redup: #4A5563;
+  --ms-samar: #5E6875;
+  --ms-garis: #E2E6EB;
+  --ms-garis-2: #CDD3DA;
+  --ms-latar: #F5F7F9;
+  --ms-aksen: #F57C00;
+  --ms-aksen-2: #FF9800;
+  --ms-aksen-teks: #A85400;
+  --ms-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  font-family: 'Archivo', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color: var(--ms-tinta);
+}
+.ms-mono { font-family: var(--ms-mono); }
+
+/* Mata judul: garis jingga lalu huruf mono berjarak, persis .ld-hero-mata. */
+.ms-mata {
+  display: flex; align-items: center; gap: 10px; margin: 0;
+  font-family: var(--ms-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+}
+.ms-mata::before { content: ''; width: 22px; height: 2px; background: var(--ms-aksen); flex: none; }
+
+/* Judul panel foto — .ld-h1 dalam ukuran yang lebih kecil. */
+.ms-h1 {
+  margin: 16px 0 0; font-size: clamp(34px, min(4.4vw, 8vh), 64px); line-height: 1.02; font-weight: 700;
+  font-stretch: 80%; letter-spacing: -.022em; word-spacing: .07em; text-wrap: balance;
+}
+.ms-h1 em { font-style: normal; color: var(--ms-aksen-2); }
+
+/* Judul kolom formulir, dipakai seluruh halaman tamu. */
+/* Tanpa margin sendiri: halaman tamu lain menata jaraknya dengan kelas
+   Tailwind (mb-2), dan berkas ini dimuat sesudah Tailwind — margin di
+   sini akan menimpanya diam-diam. */
+.ms-judul {
+  font-size: clamp(32px, 3vw, 40px); line-height: 1; font-weight: 700; font-stretch: 82%;
+  letter-spacing: -.02em; color: var(--ms-hitam);
+}
+.ms-sub { margin: 10px 0 28px; font-size: 15px; line-height: 1.5; color: var(--ms-redup); }
+
+.ms-label {
+  display: block; margin-bottom: 6px; font-family: var(--ms-mono); font-size: 11.5px; font-weight: 500;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--ms-redup);
+}
+.ms-isian {
+  width: 100%; min-width: 0; height: 50px; padding: 0 14px; border: 1px solid var(--ms-garis-2); border-radius: 8px;
+  background: #FFFFFF; font: inherit; font-size: 16px; color: var(--ms-tinta);
+  transition: border-color .15s, box-shadow .15s;
+}
+.ms-isian:hover { border-color: #AEB6C0; }
+.ms-isian:focus { outline: none; border-color: var(--ms-aksen); box-shadow: 0 0 0 3px rgba(245, 124, 0, .18); }
+
+.ms-tombol {
+  width: 100%; height: 52px; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  border: 0; border-radius: 8px; background: var(--ms-aksen); color: var(--ms-hitam);
+  font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; transition: background-color .15s;
+}
+.ms-tombol:hover:not(:disabled) { background: var(--ms-aksen-2); }
+.ms-tombol:disabled { opacity: .65; cursor: wait; }
+.ms-tombol svg { width: 18px; height: 18px; flex: none; transition: transform .15s; }
+.ms-tombol:hover:not(:disabled) svg { transform: translateX(3px); }
+
+.ms-tautan { color: var(--ms-aksen-teks); font-weight: 600; text-decoration: underline; text-decoration-color: rgba(168, 84, 0, .35); text-underline-offset: 3px; }
+.ms-tautan:hover { text-decoration-color: currentColor; }
+
+.ms :focus-visible { outline: 2px solid var(--ms-aksen); outline-offset: 3px; }
+
+/* Halaman tamu lain (daftar, lupa sandi, …) masih memakai .label/.input
+   bercakupan sendiri; judul, huruf, dan warna fokusnya diselaraskan di
+   sini tanpa menyentuh logika formulirnya. */
+.ms .input:focus { border-color: var(--ms-aksen); box-shadow: 0 0 0 3px rgba(245, 124, 0, .18); }
+.ms .ring-focus:focus { border-color: var(--ms-aksen); box-shadow: 0 0 0 3px rgba(245, 124, 0, .18); }
+
+/* Deret delapan huruf — bayangan kecil dari deret kerangka di halaman
+   depan. Tanpa `display` di sini: tampil-tidaknya diatur kelas Tailwind
+   (hidden sm:grid), dan display pada berkas ini akan menimpanya. Nama
+   aspeknya tidak ditulis per huruf — "Environment" tidak muat di kolom
+   selebar 60 px dan terpotong menjadi "Environme…". */
+.ms-huruf { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 0 6px; border-top: 1px solid rgba(255, 255, 255, .16); padding-top: 16px; }
+.ms-huruf b { display: block; font-size: clamp(24px, 2.2vw, 32px); line-height: 1; font-weight: 800; font-stretch: 78%; color: rgba(255, 255, 255, .32); }
+.ms-huruf b.ini { color: #FFFFFF; }
+
+/* ── Halaman tamu lain: Daftar, Lupa sandi, Atur ulang, Dua faktor,
+   Konfirmasi sandi ──
+   Markahnya memakai .auth-* dari app.css dan .label/.input bercakupan
+   sendiri. Bentuknya diseragamkan di sini dengan halaman Masuk — judul
+   Archivo rapat, label mono, kolom dan tombol bersudut 8 px — tanpa
+   menyentuh formulirnya. `form` pada pemilih menaikkan bobotnya di atas
+   .label[data-v-…] bercakupan, yang urutan muatnya tidak dapat dipegang. */
+.ms .auth-judul {
+  font-size: clamp(32px, 3vw, 40px); line-height: 1; font-weight: 700; font-stretch: 82%;
+  letter-spacing: -.02em; color: var(--ms-hitam);
+}
+.ms .auth-ket { font-size: 15px; line-height: 1.5; color: var(--ms-redup); }
+.ms form .label, .ms form .auth-label {
+  font-family: var(--ms-mono); font-size: 11.5px; font-weight: 500; letter-spacing: .06em; color: var(--ms-redup);
+}
+.ms form .input, .ms form .auth-isian {
+  min-height: 50px; border-color: var(--ms-garis-2); border-radius: 8px; font-size: 16px; color: var(--ms-tinta);
+}
+.ms form .input:hover, .ms form .auth-isian:hover { border-color: #AEB6C0; }
+.ms form .input:focus, .ms form .auth-isian:focus { border-color: var(--ms-aksen); box-shadow: 0 0 0 3px rgba(245, 124, 0, .18); }
+.ms .auth-tombol { min-height: 52px; border-radius: 8px; font-size: 16px; box-shadow: none; }

@@ -10,11 +10,11 @@
  * halaman ini tidak pernah menyebut "19 modul" ketika yang aktif dua
  * puluh tiga, atau harga yang berbeda dari tagihan yang akhirnya terbit.
  *
- * Tiga klaim desain sengaja TIDAK dipakai karena tidak benar untuk
- * produk ini: bekerja tanpa sinyal (aplikasi Android-nya pembungkus
- * web, tanpa perekaman luring — lihat jawaban tanya-jawab tentang
- * sinyal), harga satuan yang seragam, dan semboyan berbahasa Inggris
- * sebagai keterangan aspek.
+ * Dua klaim desain sengaja TIDAK dipakai karena tidak benar untuk
+ * produk ini: harga satuan yang seragam, dan semboyan berbahasa Inggris
+ * sebagai keterangan aspek. "Bekerja tanpa sinyal" dipakai HANYA untuk
+ * mode lapangan (lapor bahaya dan P2H), satu-satunya bagian yang memang
+ * mengantre kiriman di perangkat — lihat TanyaJawab.
  */
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
@@ -212,6 +212,18 @@ function buatTagihan() {
 /* ═══════════ tanya jawab ═══════════ */
 
 const tanyaBuka = ref<number | null>(0);
+
+/* ═══════════ tombol WhatsApp melayang ═══════════
+
+   Baru muncul sesudah layar pertama dilewati. Di hero ia menutupi foto
+   dan kartu temuannya, padahal di sana sudah ada tombol Masuk dan
+   tautan Kontak di kepala. */
+const apungTampak = ref(false);
+let rafApung = 0;
+function periksaApung() {
+  cancelAnimationFrame(rafApung);
+  rafApung = requestAnimationFrame(() => { apungTampak.value = window.scrollY > window.innerHeight * 0.6; });
+}
 const bukaTanya = (i: number) => { tanyaBuka.value = tanyaBuka.value === i ? null : i; };
 
 /* ═══════════ kontak ═══════════ */
@@ -246,6 +258,8 @@ let pengamatBagian: IntersectionObserver | null = null;
 
 onMounted(() => {
   window.addEventListener('keydown', tekan);
+  window.addEventListener('scroll', periksaApung, { passive: true });
+  periksaApung();
 
   /* Muncul saat digulir. Tanpa IntersectionObserver semuanya langsung
      tampak — isi tidak boleh bergantung pada efek. */
@@ -272,6 +286,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', tekan);
+  window.removeEventListener('scroll', periksaApung);
+  cancelAnimationFrame(rafApung);
   pengamatMuncul?.disconnect();
   pengamatBagian?.disconnect();
 });
@@ -506,7 +522,7 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
           <div class="ld-bobot" role="img"
                :aria-label="'Bobot elemen: ' + elemenSmkp.map((e) => `${e.kode} ${e.nama} ${e.bobot}%`).join(', ')">
             <div v-for="e in elemenSmkp" :key="e.kode" :title="`${e.nama} — ${e.bobot}%`"
-                 :style="{ flex: `${e.bobot} 1 0`, background: warnaBobot(e.bobot), color: teksBobot(e.bobot) }">{{ e.kode }}</div>
+                 :style="{ flex: `${e.bobot} 1 0`, background: warnaBobot(e.bobot), color: teksBobot(e.bobot) }"><span>{{ e.kode }}</span></div>
           </div>
 
           <div class="ld-elemen-kisi">
@@ -548,7 +564,8 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
 
       <!-- ══════════ 04 APLIKASI LAPANGAN ══════════
            Hanya yang benar: aplikasi Android membungkus platform web yang
-           sama. Tidak ada janji bekerja tanpa sinyal. -->
+           sama. Kerja tanpa sinyal dijanjikan untuk mode lapangan saja —
+           lapor bahaya dan P2H — bukan untuk seluruh modul. -->
       <section id="aplikasi" class="ld-gelap" style="overflow:hidden">
         <div class="ld-lebar ld-blok ld-app-grid">
           <div class="ld-muncul">
@@ -569,7 +586,7 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
               </div>
               <div class="ld-app-butir">
                 <span class="ld-mono">C</span>
-                <div><b>Jujur saat jaringan putus</b><small>Tanpa jaringan, aplikasi mengatakannya dan menyediakan tombol coba lagi — bukan layar kosong yang disangka data hilang.</small></div>
+                <div><b>Tetap jalan saat sinyal putus</b><small>Laporan bahaya dan P2H tersimpan di ponsel beserta fotonya, lalu terkirim sendiri begitu sinyal kembali — tidak ada yang terkirim dua kali. Modul lain tetap memerlukan jaringan.</small></div>
               </div>
             </div>
             <a href="#kontak" class="ld-panah-teks" style="margin-top:28px">
@@ -854,7 +871,8 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
       </div>
     </footer>
 
-    <a v-if="waUrl" :href="waUrl" target="_blank" rel="noopener" class="ld-apung" aria-label="Chat WhatsApp">
+    <a v-if="waUrl" :href="waUrl" target="_blank" rel="noopener" class="ld-apung" :class="{ sembunyi: !apungTampak }"
+       aria-label="Chat WhatsApp" :tabindex="apungTampak ? undefined : -1">
       <span><svg viewBox="0 0 24 24" fill="none" stroke="#0B1117" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="WA" /></svg></span>
       <span>WhatsApp</span>
     </a>
