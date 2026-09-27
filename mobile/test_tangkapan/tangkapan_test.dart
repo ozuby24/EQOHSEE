@@ -16,19 +16,27 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const _huruf = '/opt/sdk/flutter/bin/cache/artifacts/material_fonts';
+const _ikon = '/opt/sdk/flutter/bin/cache/artifacts/material_fonts';
 
 // ignore_for_file: invalid_use_of_visible_for_testing_member
 
+/// flutter test tidak memuat huruf dari pubspec; dimuat sendiri dari
+/// berkas yang sama supaya tangkapannya persis seperti di ponsel.
 Future<void> _muatHuruf() async {
-  final roboto = FontLoader('Roboto');
-  for (final b in ['Regular', 'Medium', 'Bold', 'Black']) {
-    roboto.addFont(Future.value(ByteData.sublistView(File('$_huruf/Roboto-$b.ttf').readAsBytesSync())));
+  ByteData baca(String p) => ByteData.sublistView(File(p).readAsBytesSync());
+  final keluarga = {
+    Huruf.isi: ['Archivo-Regular', 'Archivo-SemiBold', 'Archivo-Bold', 'Archivo-ExtraBold'],
+    Huruf.judul: ['ArchivoRapat-Bold', 'ArchivoRapat-ExtraBold'],
+    Huruf.mono: ['PlexMono-500', 'PlexMono-600'],
+  };
+  for (final MapEntry(key: nama, value: berkas) in keluarga.entries) {
+    final l = FontLoader(nama);
+    for (final b in berkas) {
+      l.addFont(Future.value(baca('fonts/$b.ttf')));
+    }
+    await l.load();
   }
-  await roboto.load();
-  final ikon = FontLoader('MaterialIcons')
-    ..addFont(Future.value(ByteData.sublistView(File('$_huruf/MaterialIcons-Regular.otf').readAsBytesSync())));
-  await ikon.load();
+  await (FontLoader('MaterialIcons')..addFont(Future.value(baca('$_ikon/MaterialIcons-Regular.otf')))).load();
 }
 
 final _kunciTangkap = GlobalKey();
@@ -66,7 +74,14 @@ void main() {
   Future<void> ukuran(WidgetTester tester) async {
     tester.view.physicalSize = const Size(390 * 3, 844 * 3);
     tester.view.devicePixelRatio = 3;
-    addTearDown(tester.view.reset);
+    // Denyut (cincin akurasi, sorot sel) berulang tanpa henti; dimatikan
+    // lewat jalur aksesibilitas yang sama dengan di ponsel, supaya
+    // pumpAndSettle selesai dan tangkapannya tetap.
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(() {
+      tester.view.reset();
+      tester.platformDispatcher.clearAccessibilityFeaturesTestValue();
+    });
   }
 
   testWidgets('pengenalan', (tester) async {

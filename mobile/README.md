@@ -149,11 +149,13 @@ storeFile=/jalur/mutlak/ke/eqohsee-rilis.jks
 | `lib/pengenalan.dart` | pengenalan pertama dan penjelasan izin lokasi |
 | `lib/kunci.dart` | pengaturan tersimpan, `perluKunci()`, layar kunci |
 | `lib/pengaturan.dart` | lembar pengaturan aplikasi |
-| `lib/tema.dart` | warna dan tema, sama dengan web `/lapangan` |
+| `lib/tema.dart` | warna, huruf, dan tema — sama dengan web `/lapangan` |
+| `lib/lukisan.dart` | gambar yang dilukis sendiri: kontur pit, matriks 5×5, stempel, retikel GPS, sidik jari |
+| `fonts/` | Archivo + IBM Plex Mono, di-instance dari font variabel di `public/fonts` |
 | `android/app/src/main/kotlin/…/MainActivity.kt` | saluran unduhan (DownloadManager + cookie sesi) |
 | `test/widget_test.dart` | uji aturan inang, pintasan, dan kunci |
 | `test_tangkapan/` | render layar native menjadi PNG |
 | `android/app/build.gradle.kts` | penandatanganan rilis, targetSdk 36, 16 KB |
 | `android/app/src/main/AndroidManifest.xml` | izin, FileProvider kamera, `queries` |
-| `playstore/grafik/` | ikon 512, feature graphic, 8 tangkapan layar listing |
+| `playstore/grafik/` | ikon 512, feature graphic, 8 tangkapan layar listing (disusun dari HTML, isi ponselnya tangkapan aplikasi sungguhan) |
 | [`PLAYSTORE.md`](PLAYSTORE.md) | seluruh isian Play Console |

@@ -204,13 +204,26 @@ Semua ada di `mobile/playstore/grafik/`, sudah sesuai ukuran Play:
 | Feature graphic | `feature-graphic-1024x500.png` | 1024 × 500 |
 | Phone screenshots (urut) | `ponsel-01.png` … `ponsel-08.png` | 1080 × 1920 (9:16) |
 
-Urutan tangkapan layar sudah disusun untuk dibaca dari kiri: beranda →
-lapor → matriks → luring → P2H → izin kerja → linimasa → privasi.
+Urutan tangkapan layar sudah disusun untuk dibaca dari kiri:
+
+| # | Layar | Judul pada gambar |
+|---|---|---|
+| 1 | Beranda awal shift | Awal shift: lereng, kolam, tenggat. Satu layar. |
+| 2 | Lapor bahaya (foto, GPS) | Foto dari kamera. GPS terisi sendiri. |
+| 3 | Matriks 5×5 | Ketuk satu sel. Tenggatnya ikut ditentukan. |
+| 4 | Tanpa sinyal | Sinyal hilang. Laporan tidak. |
+| 5 | P2H butir kritis | Rem parkir gagal. Unit ditahan, bukan dicatat. |
+| 6 | Izin kerja, uji gas | Gas masih segar? Sisa menitnya tertulis. |
+| 7 | Linimasa laporan | Setiap laporan punya linimasa. |
+| 8 | Layar izin (native) | Satu izin. Ini alasannya. |
+
 Dua atau tiga yang pertama adalah yang terlihat di hasil pencarian, jadi
 jangan diacak.
 
-Isi tangkapan layar diambil dari aplikasi yang sebenarnya berjalan
-dengan data contoh (bukan gambar rekaan), sesuai aturan metadata Play.
+Isi tiap ponsel pada gambar adalah tangkapan aplikasi yang sebenarnya
+berjalan dengan data contoh (bukan gambar rekaan), sesuai aturan
+metadata Play; anotasi di sekelilingnya hanya menunjuk fitur yang
+memang tampak di layar itu.
 
 ### 3.4 Rincian kontak dan kategori
 

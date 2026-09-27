@@ -3,6 +3,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'kunci.dart';
+import 'lukisan.dart';
 import 'tema.dart';
 
 /// Lembar pengaturan aplikasi — dibuka dari Profil di mode lapangan.
@@ -22,8 +23,9 @@ Future<void> bukaLembarPengaturan(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.white,
-    showDragHandle: true,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+    showDragHandle: false,
+    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(18))),
+    clipBehavior: Clip.antiAlias,
     builder: (_) => _LembarPengaturan(
       pengaturan: pengaturan,
       versi: versi,
@@ -100,73 +102,130 @@ class _LembarPengaturanState extends State<_LembarPengaturan> {
   @override
   Widget build(BuildContext context) {
     final lokasiAda = _lokasi?.isGranted == true || _lokasi?.isLimited == true;
+    final kunci = widget.pengaturan.kunciAktif;
 
     return SafeArea(
       top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const GarisBahaya(tinggi: 5),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                const Expanded(
-                  child: Text('Pengaturan aplikasi',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Warna.ink, letterSpacing: -.3)),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('PERANGKAT INI', style: gayaMono(ukuran: 10.5, warna: Warna.jingga)),
+                    const SizedBox(height: 4),
+                    Text('Pengaturan aplikasi', style: gayaJudul(ukuran: 26, warna: Warna.ink)),
+                  ]),
                 ),
-                Text('Versi ${widget.versi}', style: const TextStyle(color: Warna.abu3, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                Text('v${widget.versi}', style: gayaMono(ukuran: 11, warna: Warna.abu3, tebal: FontWeight.w500)),
               ],
             ),
-            const SizedBox(height: 14),
-            _Kartu(children: [
-              SwitchListTile.adaptive(
-                value: widget.pengaturan.kunciAktif,
-                onChanged: _bisaBiometrik == true ? _ubahKunci : null,
-                activeThumbColor: Warna.sinyal,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                secondary: const _Petak(ikon: Icons.fingerprint_rounded),
-                title: const Text('Kunci dengan sidik jari', style: _judul),
-                subtitle: Text(
-                  _bisaBiometrik == false
-                      ? 'Ponsel ini belum punya sidik jari atau kunci layar.'
-                      : 'Diminta saat aplikasi dibuka lagi setelah 2 menit di latar.',
-                  style: _ket,
-                ),
+          ),
+          const SizedBox(height: 10),
+          _Baris(
+            ikon: Icons.fingerprint_rounded,
+            judul: 'Kunci sidik jari',
+            ket: _bisaBiometrik == false
+                ? 'Ponsel ini belum punya sidik jari atau kunci layar.'
+                : 'Diminta saat aplikasi dibuka lagi setelah 2 menit di latar.',
+            status: _bisaBiometrik == false ? 'TIDAK ADA' : (kunci ? 'AKTIF' : 'MATI'),
+            statusKuat: kunci,
+            onTap: _bisaBiometrik == true ? () => _ubahKunci(!kunci) : null,
+            ekor: Switch.adaptive(
+              value: kunci,
+              onChanged: _bisaBiometrik == true ? _ubahKunci : null,
+              activeTrackColor: Warna.sinyal,
+              activeThumbColor: Warna.ink,
+            ),
+          ),
+          _Baris(
+            ikon: Icons.my_location_rounded,
+            judul: 'Izin lokasi',
+            ket: _lokasi == null
+                ? 'Memeriksa…'
+                : lokasiAda
+                    ? 'Saat aplikasi dipakai — untuk titik laporan bahaya.'
+                    : 'Belum diizinkan. Laporan tetap dapat dikirim dengan menulis lokasinya.',
+            status: _lokasi == null ? '' : (lokasiAda ? 'DIIZINKAN' : 'DITOLAK'),
+            statusKuat: lokasiAda,
+            onTap: _aturLokasi,
+            ekor: Text(lokasiAda ? 'Atur' : 'Izinkan',
+                style: const TextStyle(fontFamily: Huruf.isi, color: Warna.jingga, fontWeight: FontWeight.w700, fontSize: 14)),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
+            child: Text('TAUTAN', style: gayaMono(ukuran: 10.5, warna: Warna.abu3, tebal: FontWeight.w500)),
+          ),
+          _Tautan(ikon: Icons.privacy_tip_outlined, judul: 'Kebijakan privasi', ket: 'eqohsee.id/kebijakan-privasi', onTap: () => _buka('/kebijakan-privasi')),
+          _Tautan(ikon: Icons.person_remove_outlined, judul: 'Hapus akun', ket: 'Profil › Akun & kata sandi', onTap: () => _buka('/profile#hapus-akun')),
+          _Tautan(
+            ikon: Icons.mail_outline_rounded,
+            judul: 'Hubungi dukungan',
+            ket: 'privasi@eqohsee.id',
+            onTap: () => launchUrl(
+              Uri.parse('mailto:privasi@eqohsee.id?subject=${Uri.encodeComponent('Bantuan aplikasi EQOHSEE v${widget.versi}')}'),
+              mode: LaunchMode.externalApplication,
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
+      ),
+    );
+  }
+}
+
+class _Baris extends StatelessWidget {
+  const _Baris({
+    required this.ikon,
+    required this.judul,
+    required this.ket,
+    required this.status,
+    required this.statusKuat,
+    required this.onTap,
+    required this.ekor,
+  });
+
+  final IconData ikon;
+  final String judul, ket, status;
+  final bool statusKuat;
+  final VoidCallback? onTap;
+  final Widget ekor;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 12, 14, 12),
+        decoration: const BoxDecoration(border: Border(top: BorderSide(color: Warna.garisTerang))),
+        child: Row(
+          children: [
+            Icon(ikon, size: 22, color: Warna.ink),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Text(judul, style: const TextStyle(fontFamily: Huruf.isi, fontSize: 15, fontWeight: FontWeight.w700, color: Warna.ink)),
+                    if (status.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      Text(status, style: gayaMono(ukuran: 9, warna: statusKuat ? Warna.jingga : Warna.abu4)),
+                    ],
+                  ]),
+                  const SizedBox(height: 2),
+                  Text(ket, style: const TextStyle(fontFamily: Huruf.isi, fontSize: 12.5, height: 1.4, color: Warna.abu1)),
+                ],
               ),
-              const Divider(height: 1, indent: 14, endIndent: 14),
-              ListTile(
-                onTap: _aturLokasi,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                leading: const _Petak(ikon: Icons.my_location_rounded),
-                title: const Text('Izin lokasi', style: _judul),
-                subtitle: Text(
-                  _lokasi == null
-                      ? 'Memeriksa…'
-                      : lokasiAda
-                          ? 'Diizinkan saat aplikasi dipakai — untuk titik laporan bahaya.'
-                          : 'Belum diizinkan. Laporan tetap dapat dikirim dengan menulis lokasinya.',
-                  style: _ket,
-                ),
-                trailing: Text(lokasiAda ? 'Atur' : 'Izinkan',
-                    style: const TextStyle(color: Warna.jingga, fontWeight: FontWeight.w700, fontSize: 14)),
-              ),
-            ]),
-            const SizedBox(height: 12),
-            _Kartu(children: [
-              _Tautan(ikon: Icons.privacy_tip_outlined, judul: 'Kebijakan privasi', onTap: () => _buka('/kebijakan-privasi')),
-              const Divider(height: 1, indent: 14, endIndent: 14),
-              _Tautan(ikon: Icons.person_remove_outlined, judul: 'Hapus akun', onTap: () => _buka('/profile#hapus-akun')),
-              const Divider(height: 1, indent: 14, endIndent: 14),
-              _Tautan(
-                ikon: Icons.mail_outline_rounded,
-                judul: 'Hubungi dukungan',
-                onTap: () => launchUrl(
-                  Uri.parse('mailto:privasi@eqohsee.id?subject=${Uri.encodeComponent('Bantuan aplikasi EQOHSEE v${widget.versi}')}'),
-                  mode: LaunchMode.externalApplication,
-                ),
-              ),
-            ]),
+            ),
+            const SizedBox(width: 8),
+            ekor,
           ],
         ),
       ),
@@ -174,57 +233,31 @@ class _LembarPengaturanState extends State<_LembarPengaturan> {
   }
 }
 
-const _judul = TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Warna.ink);
-const _ket = TextStyle(fontSize: 12.5, height: 1.4, color: Warna.abu1);
-
-class _Kartu extends StatelessWidget {
-  const _Kartu({required this.children});
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E6EB)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(mainAxisSize: MainAxisSize.min, children: children),
-    );
-  }
-}
-
-class _Petak extends StatelessWidget {
-  const _Petak({required this.ikon});
-  final IconData ikon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 38,
-      height: 38,
-      decoration: BoxDecoration(color: const Color(0xFFFFF0DE), borderRadius: BorderRadius.circular(10)),
-      child: Icon(ikon, size: 20, color: Warna.jingga),
-    );
-  }
-}
-
 class _Tautan extends StatelessWidget {
-  const _Tautan({required this.ikon, required this.judul, required this.onTap});
+  const _Tautan({required this.ikon, required this.judul, required this.ket, required this.onTap});
   final IconData ikon;
-  final String judul;
+  final String judul, ket;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
+    return InkWell(
       onTap: onTap,
-      minTileHeight: 56,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14),
-      leading: Icon(ikon, color: Warna.abu1),
-      title: Text(judul, style: _judul),
-      trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF9AA3AE)),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 11, 14, 11),
+        decoration: const BoxDecoration(border: Border(top: BorderSide(color: Warna.garisTerang))),
+        child: Row(children: [
+          Icon(ikon, size: 21, color: Warna.abu1),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(judul, style: const TextStyle(fontFamily: Huruf.isi, fontSize: 15, fontWeight: FontWeight.w700, color: Warna.ink)),
+              Text(ket, style: gayaMono(ukuran: 10, warna: Warna.abu3, tebal: FontWeight.w500, jarak: .02)),
+            ]),
+          ),
+          const Icon(Icons.arrow_outward_rounded, size: 18, color: Warna.abu4),
+        ]),
+      ),
     );
   }
 }

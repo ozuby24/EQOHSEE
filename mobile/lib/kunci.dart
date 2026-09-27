@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'lukisan.dart';
 import 'tema.dart';
 
 /// Pengaturan perangkat yang disimpan di ponsel: sudah melihat pengenalan
@@ -112,44 +113,50 @@ class _LayarKunciState extends State<LayarKunci> {
       ),
       child: Material(
         color: Warna.ink,
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(26, 18, 26, 22),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Wordmark(ukuran: 17),
-                const Spacer(),
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(color: Warna.sinyal, borderRadius: BorderRadius.circular(20)),
-                  child: const Icon(Icons.lock_outline_rounded, size: 34, color: Warna.ink),
-                ),
-                const SizedBox(height: 26),
-                const Text('Aplikasi terkunci',
-                    style: TextStyle(color: Colors.white, fontSize: 29, fontWeight: FontWeight.w800, letterSpacing: -.6)),
-                const SizedBox(height: 10),
-                Text(
-                  _gagal
-                      ? 'Belum terbuka. Coba lagi dengan sidik jari atau kunci layar ponsel.'
-                      : 'Data pekerja dan laporan dilindungi sidik jari atau kunci layar ponsel ini.',
-                  style: const TextStyle(color: Color(0xB3FFFFFF), fontSize: 15, height: 1.5),
-                ),
-                const Spacer(),
-                FilledButton(
-                  onPressed: _mencoba ? null : _coba,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Icon(Icons.fingerprint_rounded, size: 22),
-                      SizedBox(width: 8),
-                      Text('Buka kunci'),
-                    ],
+        child: Kontur(
+          pusat: const Offset(.2, .78),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(22, 18, 22, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    const Wordmark(ukuran: 17),
+                    const Spacer(),
+                    Text('TERKUNCI', style: gayaMono(ukuran: 11)),
+                  ]),
+                  const Spacer(),
+                  SidikJari(ukuran: 118, kemajuan: _mencoba ? .5 : (_gagal ? .15 : 1)),
+                  const SizedBox(height: 22),
+                  Row(children: [
+                    Container(width: 18, height: 2, color: Warna.sinyal),
+                    const SizedBox(width: 8),
+                    Text(_gagal ? 'BELUM TERBUKA' : 'DATA PEKERJA · LAPORAN · P2H', style: gayaMono(ukuran: 11)),
+                  ]),
+                  const SizedBox(height: 10),
+                  Text(_gagal ? 'Coba sekali lagi.' : 'Terkunci.', style: gayaJudul(ukuran: 40)),
+                  const SizedBox(height: 10),
+                  Text(
+                    _gagal
+                        ? 'Sidik jari atau kunci layar ponsel ini membuka EQOHSEE. Tidak ada kata sandi tambahan.'
+                        : 'Aplikasi dikunci setelah dua menit ditinggal. Buka dengan sidik jari atau kunci layar ponsel ini.',
+                    style: gayaIsi(ukuran: 15),
                   ),
-                ),
-              ],
+                  const Spacer(),
+                  FilledButton(
+                    onPressed: _mencoba ? null : _coba,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.fingerprint_rounded, size: 22),
+                        SizedBox(width: 8),
+                        Text('Buka kunci'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

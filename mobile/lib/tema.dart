@@ -11,24 +11,55 @@ import 'package:flutter/material.dart';
 class Warna {
   static const ink = Color(0xFF0B1117);
   static const inkLembut = Color(0xFF151D26);
+  static const inkTepi = Color(0xFF1C2631);
   static const garisGelap = Color(0x1FFFFFFF);
+  static const garisTerang = Color(0xFFE2E6EB);
   static const kertas = Color(0xFFF5F7F9);
   static const sinyal = Color(0xFFF57C00);
   static const sinyalTerang = Color(0xFFFF9800);
   static const jingga = Color(0xFFA85400);
+  static const jinggaLunak = Color(0xFFFFF0DE);
   static const abu1 = Color(0xFF3A4450);
   static const abu3 = Color(0xFF667080);
+  static const abu4 = Color(0xFF9AA3AE);
   static const abuTerang = Color(0xFFB8C0C9);
   static const aman = Color(0xFF22C55E);
+  static const waspada = Color(0xFFEAB308);
   static const bahaya = Color(0xFFDC2626);
+  static const putih70 = Color(0xB3FFFFFF);
+  static const putih50 = Color(0x80FFFFFF);
 }
+
+/// Keluarga huruf yang dibundel (lihat pubspec.yaml).
+class Huruf {
+  static const isi = 'Archivo';
+  static const judul = 'ArchivoRapat';
+  static const mono = 'PlexMono';
+}
+
+/// Judul besar: Archivo rapat, tebal, spasi huruf negatif — bentuk yang
+/// sama dengan `.lp-judul` di web.
+TextStyle gayaJudul({double ukuran = 32, Color warna = Colors.white, double tinggi = 1.0}) => TextStyle(
+      fontFamily: Huruf.judul,
+      fontSize: ukuran,
+      height: tinggi,
+      fontWeight: FontWeight.w800,
+      letterSpacing: -ukuran * .022,
+      color: warna,
+    );
+
+/// Label teknis: Plex Mono huruf kapital berjarak — nomor unit, kode
+/// laporan, koordinat, langkah.
+TextStyle gayaMono({double ukuran = 12, Color warna = Warna.sinyalTerang, FontWeight tebal = FontWeight.w600, double jarak = .08}) =>
+    TextStyle(fontFamily: Huruf.mono, fontSize: ukuran, fontWeight: tebal, letterSpacing: ukuran * jarak, color: warna, height: 1.3);
+
+TextStyle gayaIsi({double ukuran = 15.5, Color warna = Warna.putih70, double tinggi = 1.5, FontWeight tebal = FontWeight.w400}) =>
+    TextStyle(fontFamily: Huruf.isi, fontSize: ukuran, height: tinggi, color: warna, fontWeight: tebal);
 
 ThemeData temaEqohsee() {
   final dasar = ThemeData(
     useMaterial3: true,
-    // Huruf sistem Android, disebut namanya supaya tombol dan teks
-    // memakai keluarga yang sama di semua layar native.
-    fontFamily: 'Roboto',
+    fontFamily: Huruf.isi,
     colorScheme: ColorScheme.fromSeed(
       seedColor: Warna.sinyal,
       primary: Warna.sinyal,
@@ -43,9 +74,11 @@ ThemeData temaEqohsee() {
       style: FilledButton.styleFrom(
         backgroundColor: Warna.sinyal,
         foregroundColor: Warna.ink,
-        minimumSize: const Size.fromHeight(54),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        textStyle: const TextStyle(fontFamily: 'Roboto', fontSize: 16, fontWeight: FontWeight.w700),
+        disabledBackgroundColor: const Color(0xFF6B4A24),
+        disabledForegroundColor: const Color(0x99000000),
+        minimumSize: const Size.fromHeight(56),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        textStyle: const TextStyle(fontFamily: Huruf.isi, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -.1),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
@@ -53,16 +86,31 @@ ThemeData temaEqohsee() {
         foregroundColor: Colors.white,
         minimumSize: const Size.fromHeight(52),
         side: const BorderSide(color: Color(0x3DFFFFFF)),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        textStyle: const TextStyle(fontFamily: 'Roboto', fontSize: 15, fontWeight: FontWeight.w600),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        textStyle: const TextStyle(fontFamily: Huruf.isi, fontSize: 15, fontWeight: FontWeight.w600),
       ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: Warna.jingga,
+        textStyle: const TextStyle(fontFamily: Huruf.isi, fontSize: 15, fontWeight: FontWeight.w700),
+      ),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      titleTextStyle: const TextStyle(fontFamily: Huruf.isi, fontSize: 19, fontWeight: FontWeight.w800, color: Warna.ink, letterSpacing: -.3),
+      contentTextStyle: const TextStyle(fontFamily: Huruf.isi, fontSize: 14.5, height: 1.5, color: Warna.abu1),
     ),
     snackBarTheme: const SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
       backgroundColor: Warna.ink,
-      contentTextStyle: TextStyle(color: Colors.white, fontSize: 14),
+      contentTextStyle: TextStyle(fontFamily: Huruf.isi, color: Colors.white, fontSize: 14, height: 1.4),
       actionTextColor: Warna.sinyalTerang,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
     ),
+    dividerTheme: const DividerThemeData(color: Warna.garisTerang, thickness: 1, space: 1),
   );
 }
 
@@ -87,7 +135,7 @@ class Wordmark extends StatelessWidget {
             const TextSpan(text: 'Q', style: TextStyle(color: Warna.sinyalTerang)),
             TextSpan(text: 'OHSEE', style: TextStyle(color: warna)),
           ]),
-          style: TextStyle(fontSize: ukuran, fontWeight: FontWeight.w800, letterSpacing: -.2),
+          style: TextStyle(fontFamily: Huruf.isi, fontSize: ukuran, fontWeight: FontWeight.w800, letterSpacing: -.3),
         ),
       ],
     );

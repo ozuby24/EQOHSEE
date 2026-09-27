@@ -50,14 +50,14 @@ certutil -hashfile EQOHSEE-1.1.0.aab SHA256
 Hasilnya **harus** persis:
 
 ```
-58159482dd341d943ed5e9e90a4a652bd5246524140610eae8c945d062108fdc
+4c5e964bafddba892d6e9b22c88f620107a0eec4ced9c3dae48a6b31d23a1b42
 ```
 
-Ukuran: 41.622.087 byte.
+Ukuran: 41.793.108 byte.
 
 | Rilis | versionCode | SHA-256 AAB |
 |---|---|---|
-| 1.1.0 | 2 | `58159482…62108fdc` |
+| 1.1.0 | 2 | `4c5e964b…d23a1b42` |
 | 1.0.0 | 1 | `a06914be…57c9c2d` (tidak dipakai lagi) |
 
 Kalau tidak cocok, satu bagian rusak atau belum terunduh penuh. **Jangan

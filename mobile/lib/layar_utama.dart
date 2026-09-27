@@ -9,6 +9,7 @@ import 'package:quick_actions/quick_actions.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'kunci.dart';
+import 'lukisan.dart';
 import 'main.dart';
 import 'pengaturan.dart';
 import 'tema.dart';
@@ -131,7 +132,7 @@ class _LayarUtamaState extends State<LayarUtama> {
       final setuju = await showDialog<bool>(
         context: context,
         builder: (c) => AlertDialog(
-          icon: const Icon(Icons.my_location_rounded, color: Warna.jingga),
+          icon: const Align(alignment: Alignment.centerLeft, child: PinLokasi(ukuran: 34)),
           title: const Text('Catat lokasi temuan?'),
           content: const Text(
             'EQOHSEE mengumpulkan titik lokasi saat Anda membuat laporan bahaya, supaya '
@@ -391,42 +392,51 @@ class _LayarUtamaState extends State<LayarUtama> {
   Widget _layarGagal() {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(systemNavigationBarColor: Warna.ink),
-      child: Container(
+      child: Material(
         color: Warna.ink,
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(26, 26, 26, 26),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Wordmark(ukuran: 17),
-            const Spacer(),
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(color: Warna.inkLembut, borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Warna.garisGelap)),
-              child: const Icon(Icons.cloud_off_rounded, size: 30, color: Warna.sinyalTerang),
+        child: Kontur(
+          pusat: const Offset(.15, .3),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  const Wordmark(ukuran: 17),
+                  const Spacer(),
+                  Text('LURING', style: gayaMono(ukuran: 11)),
+                ]),
+                const Spacer(),
+                const BatangSinyal(hidup: 0, ukuran: 52),
+                const SizedBox(height: 22),
+                Row(children: [
+                  Container(width: 18, height: 2, color: Warna.sinyal),
+                  const SizedBox(width: 8),
+                  Text('HALAMAN INI BELUM TERSIMPAN', style: gayaMono(ukuran: 11)),
+                ]),
+                const SizedBox(height: 10),
+                Text('Belum ada sinyal.', style: gayaJudul(ukuran: 38)),
+                const SizedBox(height: 10),
+                Text(
+                  'Laporan dan P2H yang sudah disusun tetap aman di ponsel dan terkirim '
+                  'sendiri begitu sinyal kembali. Layar ini dicoba lagi otomatis.',
+                  style: gayaIsi(ukuran: 15),
+                ),
+                if (_sebabGagal.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(_sebabGagal.toUpperCase(), style: gayaMono(ukuran: 9.5, warna: Warna.putih50, tebal: FontWeight.w500)),
+                ],
+                const Spacer(),
+                FilledButton(
+                  onPressed: _muatUlang,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [Icon(Icons.refresh_rounded, size: 20), SizedBox(width: 8), Text('Coba lagi')],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 22),
-            const Text('Belum ada sinyal',
-                style: TextStyle(color: Colors.white, fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -.5)),
-            const SizedBox(height: 10),
-            Text(
-              'Layar ini belum tersimpan di perangkat. Laporan dan P2H yang sudah disusun tetap aman '
-              'di ponsel dan terkirim otomatis begitu sinyal kembali.'
-              '${_sebabGagal.isEmpty ? '' : '\n\n($_sebabGagal)'}',
-              style: const TextStyle(color: Color(0xB3FFFFFF), fontSize: 15, height: 1.5),
-            ),
-            const Spacer(),
-            FilledButton(
-              onPressed: _muatUlang,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [Icon(Icons.refresh_rounded, size: 20), SizedBox(width: 8), Text('Coba lagi')],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
