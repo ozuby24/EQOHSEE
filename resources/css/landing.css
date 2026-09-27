@@ -141,21 +141,32 @@
 
 /* ═══════════ hero ═══════════ */
 .ld-hero-grid {
-  padding-top: clamp(48px, 7vw, 96px);
+  /* vh ikut menentukan: layar lebar yang pendek (tablet mendatar,
+     laptop 1366×768) tidak boleh mendorong tombol di bawah lipatan. */
+  padding-top: clamp(32px, min(7vw, 8vh), 96px);
   display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
   gap: clamp(40px, 5vw, 72px); align-items: center;
 }
 /* Bertumpuk satu kolom: foto setinggi 4:4,3 selebar layar menjadi satu
    layar penuh foto sebelum angka pertama terbaca. */
 @media (max-width: 919px) { .ld-hero-bingkai { aspect-ratio: 16 / 11; } }
+/* Dua kolom: fotonya tidak boleh lebih tinggi daripada layar yang
+   tersisa di bawah kepala, supaya judul, tombol, dan kartu temuan
+   terbaca dalam satu layar pertama. */
+@media (min-width: 920px) {
+  .ld-hero-bingkai { max-height: max(400px, calc(100svh - var(--ld-kepala) - 112px)); }
+}
 .ld-hero-mata {
   display: flex; align-items: center; gap: 10px; font-family: var(--ld-mono); font-size: 12.5px;
   letter-spacing: .08em; color: rgba(255, 255, 255, .72);
 }
 .ld-hero-mata::before { content: ''; width: 24px; height: 2px; background: var(--ld-aksen); flex: none; }
+/* Judul rapat, tetapi kata tetap terpisah dan baris tidak saling makan:
+   pada -.035em spasi antarkata tinggal ±3 px ("danterbukti"), dan pada
+   tinggi baris .95 ekor "g" menyentuh huruf di baris bawahnya. */
 .ld-h1 {
-  margin: 22px 0 0; font-size: clamp(46px, 6.6vw, 92px); line-height: .95; font-weight: 700;
-  font-stretch: 80%; letter-spacing: -.035em; text-wrap: balance;
+  margin: 22px 0 0; font-size: clamp(44px, min(6.2vw, 10.5vh), 82px); line-height: 1.02; font-weight: 700;
+  font-stretch: 80%; letter-spacing: -.022em; word-spacing: .07em; text-wrap: balance;
 }
 .ld-h1 em { font-style: normal; color: var(--ld-aksen-2); }
 .ld-hero-teks {
@@ -163,6 +174,9 @@
   color: rgba(255, 255, 255, .76); text-wrap: pretty;
 }
 .ld-hero-aksi { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+/* Ponsel: dua tombol bertumpuk sama lebar, bukan dua lebar berbeda
+   yang rata kiri. */
+@media (max-width: 520px) { .ld-hero-aksi .ld-tombol { flex: 1 1 100%; } }
 .ld-hero-media { position: relative; padding-bottom: 40px; }
 .ld-hero-bingkai { position: relative; aspect-ratio: 4 / 4.3; border-radius: 6px; overflow: hidden; background: #1E2835; }
 .ld-hero-bingkai img, .ld-hero-bingkai video {
@@ -179,7 +193,10 @@
 }
 .ld-chip-status i { width: 8px; height: 8px; border-radius: 4px; background: #EAB308; }
 .ld-kartu-temuan {
-  position: absolute; z-index: 1; left: clamp(-28px, -2vw, -8px); bottom: 0; width: min(360px, 88%);
+  /* Sejajar tepi dalam foto, 16 px — sama dengan chip status di kanan
+     atas. Sebelumnya menjorok keluar bingkai; di ponsel keluar dari
+     tepi isi halaman. */
+  position: absolute; z-index: 1; left: 16px; bottom: 0; width: min(360px, calc(100% - 32px));
   background: #FFFFFF; color: var(--ld-tinta); border-radius: 8px; padding: 18px 20px;
   box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .6), 0 0 0 1px rgba(11, 17, 23, .06);
 }
@@ -199,6 +216,10 @@
   border-top: 1px solid rgba(255, 255, 255, .14); margin-top: clamp(48px, 6vw, 80px);
 }
 .ld-angka-deret > div { padding: 24px 24px 32px 0; }
+@media (max-width: 560px) {
+  .ld-angka-deret { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ld-angka-deret > div { padding: 22px 16px 26px 0; }
+}
 .ld-angka { font-size: clamp(36px, 3.6vw, 48px); font-weight: 700; font-stretch: 82%; line-height: 1; letter-spacing: -.02em; }
 .ld-angka small { font-size: .5em; color: rgba(255, 255, 255, .6); margin-left: 6px; font-weight: 600; }
 .ld-angka-ket { font-size: 14.5px; color: rgba(255, 255, 255, .72); margin-top: 10px; line-height: 1.45; }
@@ -211,21 +232,29 @@
 .ld-acuan-klien { height: 28px; width: auto; object-fit: contain; opacity: .72; }
 
 /* ═══════════ kerangka ═══════════ */
+/* Kisi berkolom sama: delapan sejajar di layar lebar, 4 × 2 di ponsel.
+   Dengan flex-wrap, deretnya patah menjadi "E Q O H S" dan "E E +K"
+   yang tidak segaris dengan apa pun. */
 .ld-huruf-deret {
-  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px clamp(6px, 1.4vw, 22px);
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: end; gap: 18px clamp(6px, 1.4vw, 22px);
   margin-top: clamp(40px, 5vw, 64px); border-bottom: 1px solid var(--ld-garis-2);
 }
+@media (min-width: 720px) { .ld-huruf-deret { grid-template-columns: repeat(8, minmax(0, 1fr)); } }
 .ld-huruf {
   border: 0; background: transparent; padding: 0 0 14px; cursor: pointer; display: flex; flex-direction: column;
   align-items: flex-start; gap: 6px; border-bottom: 3px solid transparent; margin-bottom: -2px;
   transition: border-color .2s;
 }
 .ld-huruf b {
-  font-size: clamp(56px, 10.5vw, 156px); line-height: .85; font-weight: 800; font-stretch: 78%;
+  font-size: clamp(56px, 10vw, 150px); line-height: .85; font-weight: 800; font-stretch: 78%;
   letter-spacing: -.02em; color: #B8C0C9; transition: color .2s;
 }
-.ld-huruf.kecil b { font-size: clamp(40px, 7vw, 104px); }
-.ld-huruf span { font-family: var(--ld-mono); font-size: 11.5px; letter-spacing: .04em; color: var(--ld-samar); white-space: nowrap; }
+.ld-huruf.kecil b { font-size: clamp(40px, 6.6vw, 100px); }
+.ld-huruf span {
+  font-family: var(--ld-mono); font-size: 11.5px; letter-spacing: .04em; color: var(--ld-samar); white-space: nowrap;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+}
+@media (max-width: 719px) { .ld-huruf span { font-size: 10.5px; letter-spacing: 0; } }
 .ld-huruf:hover b { color: #8A949F; }
 .ld-huruf.pilih { border-bottom-color: var(--ld-aksen); }
 .ld-huruf.pilih b, .ld-huruf.pilih span { color: var(--ld-hitam); }
@@ -290,7 +319,13 @@
 .ld-bobot > div {
   min-width: 0; display: flex; align-items: flex-end; padding: 8px 10px; font-family: var(--ld-mono);
   font-size: 12.5px; font-weight: 600; overflow: hidden; white-space: nowrap; color: #FFFFFF;
+  container-type: inline-size;
 }
+/* Batang 3–5 % di ponsel lebarnya belasan piksel: "VII" terpotong
+   separuh. Labelnya disembunyikan di sana — daftar di bawah batang
+   menyebut tiap elemen lengkap dengan bobotnya. */
+@container (max-width: 16px) { .ld-bobot span { visibility: hidden; } }
+@media (max-width: 560px) { .ld-bobot > div { padding: 8px 6px; font-size: 11.5px; } }
 .ld-elemen-kisi { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 0 48px; margin-top: 28px; }
 .ld-elemen { display: flex; align-items: baseline; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--ld-garis); }
 .ld-elemen > .ld-mono:first-child { font-size: 12.5px; font-weight: 600; color: var(--ld-redup); width: 32px; flex: none; }
@@ -397,7 +432,14 @@ button.ld-galeri-foto:hover img { transform: scale(1.05); }
 .ld-satuan-kepala { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; padding: 18px 24px; border-bottom: 1px solid var(--ld-garis); }
 .ld-satuan-kepala b { font-size: 18px; font-weight: 700; color: var(--ld-hitam); }
 .ld-satuan-kepala span { font-family: var(--ld-mono); font-size: 12.5px; color: var(--ld-redup); }
-.ld-satuan-daftar { max-height: 460px; overflow: auto; overscroll-behavior: contain; }
+.ld-satuan-daftar {
+  max-height: 460px; overflow: auto; overscroll-behavior: contain;
+  /* Baris terakhir memudar: daftar yang terpotong rata di tengah baris
+     terbaca sebagai tampilan rusak, bukan sebagai daftar yang digulir. */
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 36px), transparent);
+  mask-image: linear-gradient(180deg, #000 calc(100% - 36px), transparent);
+  padding-bottom: 28px;
+}
 .ld-satuan-baris { display: flex; align-items: center; gap: 14px; padding: 6px 12px 6px 24px; border-top: 1px solid #EEF1F4; transition: background-color .15s; }
 .ld-satuan-baris:first-child { border-top: 0; }
 .ld-satuan-baris.ada { background: #FFF6E8; }
@@ -489,9 +531,13 @@ button.ld-galeri-foto:hover img { transform: scale(1.05); }
   position: fixed; right: 20px; bottom: 20px; z-index: 50; height: 52px; display: flex; align-items: center; gap: 10px;
   padding: 0 18px 0 12px; border-radius: 26px; background: var(--ld-hitam); color: #FFFFFF; font-size: 14.5px;
   font-weight: 700; white-space: nowrap; font-family: 'Archivo', system-ui, sans-serif;
-  box-shadow: 0 14px 30px -12px rgba(11, 17, 23, .55), 0 0 0 1px rgba(255, 255, 255, .12); transition: background-color .15s, transform .15s;
+  box-shadow: 0 14px 30px -12px rgba(11, 17, 23, .55), 0 0 0 1px rgba(255, 255, 255, .12);
+  transition: background-color .15s, transform .25s, opacity .25s, visibility .25s;
 }
 .ld-apung:hover { background: #1E2835; transform: translateY(-2px); }
+/* Di layar pertama tombolnya menutupi foto dan kartu temuan hero —
+   di sana sudah ada tombol Masuk dan tautan Kontak di kepala. */
+.ld-apung.sembunyi { opacity: 0; transform: translateY(14px); pointer-events: none; visibility: hidden; }
 .ld-apung span:first-child { width: 30px; height: 30px; border-radius: 15px; background: #22C55E; display: grid; place-items: center; }
 .ld-apung svg { width: 17px; height: 17px; }
 @media (max-width: 520px) { .ld-apung { padding: 0 11px; } .ld-apung span:last-child { display: none; } }

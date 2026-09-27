@@ -19,13 +19,15 @@ namespace App\Support;
  *
  * Karena itu daftarnya tinggal di sini, dan keduanya membacanya.
  *
- * ── JAWABAN SINYAL SENGAJA MENGAKU ──
+ * ── JAWABAN SINYAL MENYEBUT BATASNYA ──
  *
- * EQOHSEE menuntut koneksi; tidak ada penyimpanan luring maupun antrean
- * sinkronisasi di dalamnya. Menuliskannya sebagai "siap dipakai tanpa
- * sinyal" akan menjadi janji yang runtuh pada hari pertama pemakaian di
- * site — pada produk keselamatan, tepat saat orang paling bergantung
- * padanya.
+ * Sejak mode lapangan, lapor bahaya dan P2H diantre di perangkat saat
+ * sinyal putus dan terkirim sendiri sesudahnya (satu klien_id per
+ * kiriman, jadi tidak ada yang tercatat dua kali). Modul lain TIDAK:
+ * roster, audit, penggajian, dan seterusnya tetap menuntut koneksi.
+ * Jawabannya menyebut keduanya — "siap dipakai tanpa sinyal" tanpa
+ * batas itu akan menjadi janji yang runtuh pada hari pertama di site,
+ * pada produk keselamatan tepat saat orang paling bergantung padanya.
  */
 class TanyaJawab
 {
@@ -44,10 +46,11 @@ class TanyaJawab
                   . 'adalah alat bantu menyusun dan menyimpan bukti penerapan SMKP. Kewajiban '
                   . 'hukum serta hasil penilaiannya tetap berada pada perusahaan dan KTT.'],
             ['t' => 'Bagaimana kalau site tidak ada sinyal?',
-             'j' => 'EQOHSEE berjalan di peramban dan menuntut koneksi saat data dikirim; '
-                  . 'belum ada perekaman luring. Halamannya dibuat ringan agar tetap terbuka '
-                  . 'pada jaringan site yang lambat, tetapi pengisian di titik tanpa sinyal '
-                  . 'sama sekali masih perlu diulang ketika kembali terhubung.'],
+             'j' => 'Laporan bahaya dan P2H dari mode lapangan tetap dapat diisi tanpa sinyal: '
+                  . 'laporannya beserta foto disimpan di ponsel dan terkirim sendiri begitu '
+                  . 'sinyal kembali, tanpa tercatat dua kali. Modul lainnya — roster, audit, '
+                  . 'penggajian, dan seterusnya — masih menuntut koneksi saat data dikirim; '
+                  . 'halamannya dibuat ringan agar tetap terbuka pada jaringan site yang lambat.'],
             ['t' => 'Apakah perlu dipasang di server sendiri?',
              'j' => 'Tidak. Cukup peramban — dari kantor pusat maupun dari site. Pemasangan '
                   . 'di server sendiri dapat dibicarakan terpisah bila kebijakan TI menuntutnya.'],

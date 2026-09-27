@@ -46,7 +46,7 @@ function kirim() {
 <template>
   <Head title="Verifikasi Dua Langkah" />
 
-  <h2 class="font-serif text-3xl font-semibold mb-1">Satu langkah lagi</h2>
+  <h2 class="ms-judul mb-2">Satu langkah lagi</h2>
   <p class="text-sm text-stone-500 mb-6">
     Masukkan kode dari aplikasi autentikator Anda<span v-if="props.surel">
       untuk <span class="font-semibold text-stone-700">{{ props.surel }}</span></span>.
@@ -70,7 +70,7 @@ function kirim() {
     </div>
 
     <button type="submit" :disabled="form.processing"
-            class="w-full rounded-xl bg-[#F57C00] hover:bg-[#DC6E00] text-white py-3 font-bold transition disabled:opacity-50">
+            class="w-full rounded-lg bg-[#F57C00] hover:bg-[#FF9800] text-[#0B1117] min-h-[52px] py-3 font-bold transition disabled:opacity-50">
       {{ form.processing ? 'Memeriksa…' : 'Lanjutkan' }}
     </button>
   </form>

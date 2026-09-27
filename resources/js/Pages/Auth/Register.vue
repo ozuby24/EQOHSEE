@@ -56,7 +56,7 @@ function daftar() {
 
 <template>
   <Head title="Daftar" />
-  <h2 class="font-serif text-3xl font-semibold mb-1">Buat akun</h2>
+  <h2 class="ms-judul mb-2">Buat akun</h2>
   <p class="text-sm text-stone-500 mb-6">Daftar untuk mulai mengikuti pelatihan.</p>
 
   <div v-if="Object.keys(form.errors).length" class="mb-4 rounded-xl bg-red-50 border border-red-100 text-red-700 px-4 py-3 text-[12.5px]"><ul class="space-y-0.5"><li v-for="(pesan, k) in form.errors" :key="k">• {{ pesan }}</li></ul></div>
@@ -76,7 +76,7 @@ function daftar() {
     <VerifikasiTurnstile v-model="form['cf-turnstile-response']"
                          :kunci="props.turnstile ?? null" :tindakan="props.tindakan ?? null"
                          :galat="gagalKe" />
-    <button type="submit" :disabled="form.processing" class="w-full rounded-xl bg-[#F57C00] hover:bg-[#DC6E00] text-white py-3 font-bold transition disabled:opacity-50">{{ form.processing ? 'Mendaftarkan…' : 'Daftar' }}</button>
+    <button type="submit" :disabled="form.processing" class="w-full rounded-lg bg-[#F57C00] hover:bg-[#FF9800] text-[#0B1117] min-h-[52px] py-3 font-bold transition disabled:opacity-50">{{ form.processing ? 'Mendaftarkan…' : 'Daftar' }}</button>
   </form>
   <p class="text-center text-sm text-stone-500 mt-6">Sudah punya akun? <Link href="/login" class="font-bold text-[#D96500] hover:underline">Masuk</Link></p>
 </template>

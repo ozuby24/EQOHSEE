@@ -44,7 +44,7 @@ function kirim() {
 <template>
   <Head title="Lupa Kata Sandi" />
 
-  <h2 class="font-serif text-3xl font-semibold mb-1">Lupa kata sandi?</h2>
+  <h2 class="ms-judul mb-2">Lupa kata sandi?</h2>
   <p class="text-sm text-stone-500 mb-6">Masukkan email Anda untuk menerima tautan pengaturan ulang.</p>
 
   <div v-if="form.recentlySuccessful" class="mb-4 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 px-4 py-3 text-sm">Tautan reset sudah dikirim jika email terdaftar.</div>
@@ -63,7 +63,7 @@ function kirim() {
                          :kunci="props.turnstile ?? null" :tindakan="props.tindakan ?? null"
                          :galat="putaran" />
 
-    <button type="submit" :disabled="form.processing" class="w-full rounded-xl bg-[#F57C00] hover:bg-[#DC6E00] text-white py-3 font-bold transition disabled:opacity-50">{{ form.processing ? 'Mengirim…' : 'Kirim tautan' }}</button>
+    <button type="submit" :disabled="form.processing" class="w-full rounded-lg bg-[#F57C00] hover:bg-[#FF9800] text-[#0B1117] min-h-[52px] py-3 font-bold transition disabled:opacity-50">{{ form.processing ? 'Mengirim…' : 'Kirim tautan' }}</button>
   </form>
 
   <p class="text-center text-sm text-stone-500 mt-6"><Link href="/login" class="font-bold text-[#D96500] hover:underline">Kembali ke masuk</Link></p>
