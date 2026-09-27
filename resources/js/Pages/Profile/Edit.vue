@@ -153,7 +153,7 @@ function hapusAkun() {
       </div>
     </section>
 
-    <section class="bg-white rounded-2xl shadow-card border border-red-100 overflow-hidden">
+    <section id="hapus-akun" class="bg-white rounded-2xl shadow-card border border-red-100 overflow-hidden scroll-mt-24">
       <div class="px-6 py-5">
         <h2 class="text-[15px] font-bold text-red-700">Hapus Akun</h2>
         <p class="text-[12.5px] text-stone-500 mt-1">Penghapusan akun bersifat permanen. Pastikan data yang diperlukan sudah disimpan.</p>

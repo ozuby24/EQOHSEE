@@ -37,23 +37,28 @@ Berkas AAB dikirim dalam dua bagian karena batas ukuran lampiran.
 
 **Linux / macOS**
 ```bash
-cat EQOHSEE-1.0.0.aab.bagian00 EQOHSEE-1.0.0.aab.bagian01 > EQOHSEE-1.0.0.aab
-sha256sum EQOHSEE-1.0.0.aab
+cat EQOHSEE-1.1.0.aab.bagian00 EQOHSEE-1.1.0.aab.bagian01 > EQOHSEE-1.1.0.aab
+sha256sum EQOHSEE-1.1.0.aab
 ```
 
 **Windows (Command Prompt)**
 ```cmd
-copy /b EQOHSEE-1.0.0.aab.bagian00+EQOHSEE-1.0.0.aab.bagian01 EQOHSEE-1.0.0.aab
-certutil -hashfile EQOHSEE-1.0.0.aab SHA256
+copy /b EQOHSEE-1.1.0.aab.bagian00+EQOHSEE-1.1.0.aab.bagian01 EQOHSEE-1.1.0.aab
+certutil -hashfile EQOHSEE-1.1.0.aab SHA256
 ```
 
 Hasilnya **harus** persis:
 
 ```
-a06914be7584f6e68c3e8cc8991b92da882eae2701ff52bff339646ab57c9c2d
+58159482dd341d943ed5e9e90a4a652bd5246524140610eae8c945d062108fdc
 ```
 
-Ukuran: 38.986.869 byte.
+Ukuran: 41.622.087 byte.
+
+| Rilis | versionCode | SHA-256 AAB |
+|---|---|---|
+| 1.1.0 | 2 | `58159482…62108fdc` |
+| 1.0.0 | 1 | `a06914be…57c9c2d` (tidak dipakai lagi) |
 
 Kalau tidak cocok, satu bagian rusak atau belum terunduh penuh. **Jangan
 diunggah** — Play Console akan menolaknya dengan pesan yang tidak
@@ -66,7 +71,7 @@ yang salah.
 
 AAB tidak dapat dipasang ke ponsel. Untuk mencoba aplikasinya, pakai APK.
 
-1. Kirim `EQOHSEE-1.0.0-arm64.apk` ke ponsel penguji (WhatsApp, Drive,
+1. Kirim `EQOHSEE-1.1.0-arm64.apk` ke ponsel penguji (WhatsApp, Drive,
    kabel — bebas).
 2. Di ponsel: **Setelan → Aplikasi → Akses khusus → Instal aplikasi
    tidak dikenal** → izinkan aplikasi yang dipakai membuka berkasnya.
@@ -76,63 +81,59 @@ AAB tidak dapat dipasang ke ponsel. Untuk mencoba aplikasinya, pakai APK.
 > untuk perangkat lama. Salah pilih akan ditolak saat pasang, tidak
 > merusak apa pun.
 
-**Penting:** APK yang bertanda tangan kunci debug (yang dibagikan
-sebelum keystore ini ada) **tidak dapat ditimpa** oleh APK ini — tanda
-tangannya berbeda. Copot dulu yang lama.
+**Penting:**
+
+- APK yang bertanda tangan kunci debug (yang dibagikan sebelum keystore
+  ini ada) **tidak dapat ditimpa** oleh APK ini — tanda tangannya
+  berbeda. Copot dulu yang lama.
+- APK 1.0.0 bertanda tangan kunci rilis **dapat** ditimpa langsung oleh
+  1.1.0; data masuk tetap.
+- APK uji coba **tidak dapat** diperbarui dari Play Store, dan
+  sebaliknya: Play menandatangani ulang dengan kunci Google (Play App
+  Signing), dan APK hasil `--split-per-abi` bernomor versi lebih tinggi
+  (1002/2002) daripada AAB (2). Sebelum memasang dari Play, **copot APK
+  uji cobanya**.
 
 Yang perlu dicoba di lapangan, bukan di kantor:
 
-- [ ] Masuk dengan akun sungguhan
-- [ ] Tombol kembali menyusuri halaman, bukan langsung keluar
-- [ ] Unggah foto pada Hazard Report — dari kamera **dan** dari galeri
-- [ ] Unduh satu berkas (ekspor CSV atau lampiran dokumen)
-- [ ] Matikan data seluler → layar "tidak ada sambungan" muncul, tombol
-      Coba lagi bekerja
+- [ ] Pertama dibuka: tiga layar pengenalan, lalu penjelasan izin lokasi
+      **sebelum** dialog izin Android muncul; "Nanti saja" tetap
+      membuka aplikasi
+- [ ] Masuk dengan akun sungguhan → langsung mendarat di mode lapangan
+- [ ] Lapor bahaya: foto dari **kamera** dan dari **galeri**, titik GPS
+      terisi, satu sel matriks 5×5 menetapkan tenggat
+- [ ] Mode pesawat → kirim laporan → "Tersimpan di perangkat"; matikan
+      mode pesawat → laporan terkirim sendiri
+- [ ] P2H: gagalkan satu butir kritis → unit ditahan
+- [ ] Tekan lama ikon aplikasi → tiga pintasan (Lapor bahaya, P2H unit,
+      Tugas saya) membuka layarnya masing-masing
+- [ ] Profil → Pengaturan aplikasi → nyalakan kunci sidik jari → tinggal
+      aplikasi > 2 menit → terkunci; < 2 menit (misalnya ke kamera) →
+      tidak
+- [ ] Unduh satu berkas (ekspor atau lampiran) → notifikasi unduhan,
+      berkas di folder Download/EQOHSEE
+- [ ] Tombol kembali menyusuri halaman; di halaman awal menanyakan
+      keluar
 - [ ] Tekan nomor telepon di halaman → membuka aplikasi telepon
 
 ---
 
 ## 3. Mengunggah ke Play Store
 
-### 3.1 Akun pengembang
+Semua isian Play Console — listing, grafik, Data safety, content rating,
+akun peninjau, deklarasi, catatan rilis, dan apa yang dilakukan bila
+ditolak — ada di **[PLAYSTORE.md](PLAYSTORE.md)**. Kerjakan bagian 1
+di sana (deploy web + akun peninjau) **sebelum** mengunggah.
 
-Sekali saja: daftar di [play.google.com/console](https://play.google.com/console),
-biaya USD 25 sekali seumur akun. Verifikasi identitas perusahaan makan
-waktu beberapa hari — mulai lebih awal daripada yang dikira perlu.
+Ringkasnya:
 
-### 3.2 Buat aplikasinya
-
-**Create app** → nama tampilan, bahasa bawaan, tipe **App**, dan
-**Free**. Nama paketnya sudah tetap: `id.eqohsee.eqohsee`.
-
-### 3.3 Isi dulu yang wajib sebelum boleh rilis
-
-Play Console menahan rilis sampai semuanya hijau. Yang paling sering
-menahan proyek seperti ini:
-
-- **Kebijakan privasi** — wajib URL publik. Aplikasi ini memuat data
-  pekerja (nama, NIK, hasil MCU), jadi ini bukan formalitas.
-- **Data safety** — deklarasikan apa yang dikumpulkan. Jawab apa adanya:
-  aplikasi mengirim data yang diketik pemakai ke server EQOHSEE.
-- **Content rating** — kuesioner singkat.
-- **Target audience** — dewasa, bukan anak-anak.
-- **App access** — aplikasi ini **wajib login**, jadi Play meminta akun
-  uji. Sediakan satu akun demo beserta sandinya di kolom itu, kalau
-  tidak peninjau hanya melihat halaman masuk dan menolaknya.
-
-### 3.4 Unggah
-
-**Testing → Internal testing** dulu, jangan langsung Production.
-
-1. **Create new release**
-2. Unggah `EQOHSEE-1.0.0.aab`
-3. Saat ditanya soal penandatanganan, pilih **Let Google manage my app
-   signing key** (Play App Signing). Keystore Anda menjadi *upload key*.
-4. Isi catatan rilis
-5. **Review release** → **Start rollout**
-
-Bagikan tautan penguji internal ke beberapa orang lebih dulu. Baru
-setelah itu naikkan ke Closed testing, lalu Production.
+1. Akun pengembang **Organisasi** (tanpa syarat uji tertutup 14 hari).
+2. **Create app** → nama `EQOHSEE: HSE & K3 Tambang`, bahasa Indonesia,
+   **App**, **Free**. Nama paket sudah tetap: `id.eqohsee.eqohsee`.
+3. Selesaikan seluruh **App content** sampai hijau.
+4. **Internal testing** → unggah `EQOHSEE-1.1.0.aab` → pilih **Play App
+   Signing** (keystore Anda menjadi *upload key*).
+5. Setelah diuji, **Promote** ke Production.
 
 ---
 
@@ -142,7 +143,7 @@ Play Console menolak unggahan dengan `versionCode` yang sama. Nomornya
 diambil dari satu tempat: `pubspec.yaml`.
 
 ```yaml
-version: 1.0.1+2
+version: 1.1.1+3
 #        ^^^^^ versionName — yang dilihat orang
 #              ^ versionCode — yang diperiksa Play, WAJIB naik
 ```
@@ -189,7 +190,7 @@ repository secret**. Empat buah:
 **Actions → Bangun APK dan AAB → Run workflow.** Atau dorong tag versi:
 
 ```bash
-git tag v1.0.1 && git push origin v1.0.1
+git tag v1.1.1 && git push origin v1.1.1
 ```
 
 Hasilnya diunduh dari bagian **Artifacts** pada halaman run: satu

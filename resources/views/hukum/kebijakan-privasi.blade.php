@@ -1,7 +1,7 @@
 @extends('hukum.tata', [
   'lang'    => 'id',
   'judul'   => 'Kebijakan Privasi',
-  'tanggal' => 'Berlaku sejak 16 September 2026',
+  'tanggal' => 'Berlaku sejak 27 September 2026',
   'ringkas' => 'Bagaimana EQOHSEE mengumpulkan, memakai, dan melindungi data pada aplikasi HSE dan K3 pertambangan.',
   'alih'    => 'English version: <a href="/privacy-policy">Privacy Policy</a>',
   'kaki'    => 'Aplikasi pengelolaan HSE dan K3 pertambangan',
@@ -42,7 +42,7 @@ disimpan aplikasi — bukan daftar umum.</p>
   </tr>
   <tr>
     <td>Data pekerja</td>
-    <td>Nama, NIK, nomor induk, jabatan, kompetensi, masa berlaku sertifikat dan izin</td>
+    <td>Nama, NIK, nomor induk, jabatan, kompetensi, masa berlaku sertifikat dan izin, serta NPWP dan status PTKP bila perusahaan memakai modul penggajian</td>
     <td>Dimasukkan HRD/HSE perusahaan</td>
   </tr>
   <tr>
@@ -74,6 +74,18 @@ disimpan aplikasi — bukan daftar umum.</p>
     <td>Jadwal roster, jam masuk dan keluar, keterlambatan, cuti, lembur,
         dan perhitungan gaji yang mengikutinya</td>
     <td>Mesin absensi dan entri HRD</td>
+  </tr>
+  <tr>
+    <td><strong>Lokasi laporan bahaya</strong></td>
+    <td>Titik koordinat dan perkiraan akurasinya, dilekatkan pada laporan bahaya
+        yang Anda buat dari mode lapangan — hanya bila Anda mengizinkan lokasi</td>
+    <td>Perangkat Anda, saat membuat laporan</td>
+  </tr>
+  <tr>
+    <td>Foto temuan dan P2H</td>
+    <td>Foto yang Anda ambil atau pilih sendiri untuk laporan bahaya, bukti
+        perbaikan, dan pemeriksaan pra-operasi (P2H) unit</td>
+    <td>Kamera atau galeri perangkat Anda</td>
   </tr>
   <tr>
     <td>Dokumen unggahan</td>
@@ -135,8 +147,45 @@ absensi memang dilakukan orang yang bersangkutan di lokasi kerjanya, bukan
 dititipkan.</p>
 
 <p>Perekaman ini terjadi <strong>pada saat absensi saja</strong>. EQOHSEE tidak
-melacak posisi siapa pun secara terus-menerus, dan aplikasi Android-nya tidak
-meminta izin lokasi sama sekali.</p>
+melacak posisi siapa pun secara terus-menerus.</p>
+
+<p><strong>Lokasi pada laporan bahaya.</strong> Saat Anda membuat laporan bahaya
+dari mode lapangan, aplikasi meminta titik lokasi perangkat supaya pengawas tahu
+persis di mana temuannya. Lokasi dibaca <strong>hanya saat Anda membuka layar
+laporan</strong>, tidak pernah di latar belakang, dan hanya disimpan sebagai
+bagian dari laporan itu. Izin ini boleh ditolak: laporan tetap dapat dikirim
+dengan menuliskan nama lokasinya sendiri.</p>
+
+<h2>4a. Izin pada aplikasi Android</h2>
+
+<table>
+  <tr><th>Izin</th><th>Untuk apa</th></tr>
+  <tr>
+    <td>Internet dan status jaringan</td>
+    <td>Membuka EQOHSEE dan mengetahui kapan sinyal kembali untuk mengirim
+        laporan yang tertunda</td>
+  </tr>
+  <tr>
+    <td>Lokasi (hanya saat aplikasi dipakai)</td>
+    <td>Titik koordinat laporan bahaya, seperti dijelaskan di atas. Aplikasi
+        tidak meminta lokasi latar belakang.</td>
+  </tr>
+  <tr>
+    <td>Biometrik (opsional)</td>
+    <td>Mengunci aplikasi dengan sidik jari atau kunci layar perangkat bila Anda
+        menyalakannya. Pencocokannya dikerjakan sistem Android;
+        <em>data sidik jari tidak pernah sampai ke EQOHSEE</em>.</td>
+  </tr>
+</table>
+
+<p>Aplikasi <strong>tidak meminta izin kamera maupun izin membaca galeri</strong>.
+Saat Anda menekan tombol kamera, foto diambil oleh aplikasi kamera perangkat dan
+hanya foto yang Anda pilih yang dikirim.</p>
+
+<p><strong>Data di perangkat.</strong> Agar tetap dapat dipakai tanpa sinyal,
+draf laporan, laporan yang belum terkirim beserta fotonya, dan salinan layar
+mode lapangan disimpan sementara di perangkat. Laporan dihapus dari perangkat
+begitu sampai di server; salinan layar dihapus saat Anda keluar dari akun.</p>
 
 <h2>5. Penyimpanan dan keamanan</h2>
 
@@ -193,10 +242,12 @@ bertentangan dengan kewajiban penyimpanan.</p>
 
 <h2>9. Penghapusan akun</h2>
 
-<p>Permintaan penghapusan akun beserta data pribadi yang melekat padanya dapat
-diajukan melalui alamat pada bagian 11, atau melalui administrator perusahaan
-Anda. Permintaan diproses dalam waktu wajar setelah identitas pemohon
-dipastikan.</p>
+<p>Akun dapat dihapus sendiri dari dalam aplikasi: <strong>Profil → Akun &amp;
+kata sandi → Hapus akun</strong>. Tanpa aplikasi, permintaan penghapusan akun
+beserta data pribadi yang melekat padanya dapat diajukan lewat halaman
+<a href="/hapus-akun">eqohsee.id/hapus-akun</a>, melalui alamat pada bagian 11,
+atau melalui administrator perusahaan Anda. Permintaan diproses paling lambat
+30 hari setelah identitas pemohon dipastikan.</p>
 
 <p>Catatan yang wajib disimpan menurut peraturan — misalnya catatan kecelakaan
 kerja, pemeriksaan kesehatan, dan dokumen ketenagakerjaan — tetap disimpan

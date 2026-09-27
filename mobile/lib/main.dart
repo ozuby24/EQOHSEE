@@ -1,11 +1,12 @@
-import 'dart:async';
-
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'kunci.dart';
+import 'layar_utama.dart';
+import 'pengenalan.dart';
+import 'tema.dart';
 
 /// EQOHSEE untuk Android.
 ///
@@ -18,9 +19,12 @@ import 'package:url_launcher/url_launcher.dart';
 /// dapat dilakukan peramban seluler biasa:
 ///
 ///   • tombol kembali perangkat yang menyusuri riwayat halaman,
-///   • unggahan berkas dari kamera dan galeri,
-///   • unduhan yang menghormati Content-Disposition,
-///   • layar "tidak ada jaringan" yang jujur, bukan galat peramban,
+///   • unggahan foto dari kamera dan galeri — tanpa izin kamera/galeri,
+///   • unduhan yang membawa sesi masuk, ke folder Download,
+///   • titik GPS laporan bahaya, dengan penjelasan sebelum izin diminta,
+///   • pintasan ikon: Lapor bahaya, P2H unit, Tugas saya,
+///   • kunci sidik jari opsional untuk data pekerja,
+///   • layar "belum ada sinyal" yang jujur, bukan galat peramban,
 ///   • tautan telepon, surel, dan WhatsApp yang keluar ke aplikasinya.
 ///
 /// Menulis ulang dua puluh tujuh modul dalam Dart akan memakan waktu
@@ -28,13 +32,21 @@ import 'package:url_launcher/url_launcher.dart';
 /// aturan lembur PP 35/2021, TER PPh 21, batas fatigue roster — yang
 /// sejak hari pertama boleh berbeda dari aslinya tanpa ada yang tahu.
 /// Satu sumber kebenaran lebih berharga daripada layar yang asli.
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Tepi-ke-tepi (wajib sejak Android 15): aplikasi menggambar di balik
+  // bilah sistem, dan tiap layar menyetel warna ikon bilahnya sendiri.
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Color(0xFF0B1117),
+    statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,
   ));
-  runApp(const AplikasiEqohsee());
+
+  final pref = await SharedPreferences.getInstance();
+  final info = await PackageInfo.fromPlatform();
+
+  runApp(AplikasiEqohsee(pengaturan: Pengaturan(pref), versi: info.version));
 }
 
 /// Alamat situsnya.
@@ -88,281 +100,66 @@ bool bukaDiDalam(Uri alamat) {
   return inangSendiri.contains(alamat.host);
 }
 
-const Color oranye = Color(0xFFF57C00);
-const Color gelap = Color(0xFF0B1117);
+class AplikasiEqohsee extends StatefulWidget {
+  const AplikasiEqohsee({super.key, required this.pengaturan, required this.versi});
 
-class AplikasiEqohsee extends StatelessWidget {
-  const AplikasiEqohsee({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'EQOHSEE',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: oranye),
-        useMaterial3: true,
-      ),
-      home: const LayarUtama(),
-    );
-  }
-}
-
-class LayarUtama extends StatefulWidget {
-  const LayarUtama({super.key});
+  final Pengaturan pengaturan;
+  final String versi;
 
   @override
-  State<LayarUtama> createState() => _LayarUtamaState();
+  State<AplikasiEqohsee> createState() => _AplikasiEqohseeState();
 }
 
-class _LayarUtamaState extends State<LayarUtama> {
-  InAppWebViewController? _web;
-  PullToRefreshController? _tarikSegar;
-
-  bool _memuat = true;
-  bool _gagal = false;
-  String _sebabGagal = '';
-  double _laju = 0;
+class _AplikasiEqohseeState extends State<AplikasiEqohsee> with WidgetsBindingObserver {
+  late bool _terkunci = widget.pengaturan.kunciAktif;
+  DateTime? _keLatar;
 
   @override
   void initState() {
     super.initState();
-    _tarikSegar = PullToRefreshController(
-      settings: PullToRefreshSettings(color: oranye),
-      onRefresh: () async => _web?.reload(),
-    );
+    WidgetsBinding.instance.addObserver(this);
+    widget.pengaturan.addListener(_segarkan);
   }
 
-  /// Izin diminta saat aplikasi siap, bukan saat kamera dibuka.
-  ///
-  /// Halaman web tidak dapat menampilkan dialog izin Android sendiri:
-  /// ketika pemakai menekan "ambil foto" pada laporan bahaya, WebView
-  /// menanyakannya ke aplikasi, dan aplikasi yang belum berizin hanya
-  /// dapat menjawab tidak — tanpa satu pun tanda kenapa.
-  ///
-  /// Lokasi ikut diminta untuk laporan bahaya dari mode lapangan: titik
-  /// GPS temuannya ikut tercatat. Tanpa izin ini, halaman tetap jalan —
-  /// pelapor menuliskan lokasinya sendiri.
-  Future<void> _mintaIzin() async {
-    await [Permission.camera, Permission.microphone, Permission.locationWhenInUse].request();
+  @override
+  void dispose() {
+    widget.pengaturan.removeListener(_segarkan);
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
-  Future<bool> _adaJaringan() async {
-    final hasil = await Connectivity().checkConnectivity();
-    return !hasil.contains(ConnectivityResult.none);
-  }
+  void _segarkan() => setState(() {});
 
-  Future<void> _muatUlang() async {
-    // Tanpa jaringan pun halaman tetap dicoba dimuat: mode lapangan
-    // menyimpan layarnya di perangkat (service worker), dan laporan yang
-    // disusun tanpa sinyal tersimpan di sana sampai terkirim. Layar
-    // gagal hanya muncul bila memang tidak ada yang tersimpan.
-    if (!await _adaJaringan() && _web == null) {
-      setState(() {
-        _gagal = true;
-        _sebabGagal = 'Tidak ada sambungan internet.';
-        _memuat = false;
-      });
-      return;
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState keadaan) {
+    if (keadaan == AppLifecycleState.paused) {
+      _keLatar = DateTime.now();
+    } else if (keadaan == AppLifecycleState.resumed) {
+      if (perluKunci(aktif: widget.pengaturan.kunciAktif, keLatar: _keLatar, kini: DateTime.now())) {
+        setState(() => _terkunci = true);
+      }
+      _keLatar = null;
     }
-    setState(() {
-      _gagal = false;
-      _memuat = true;
-    });
-    if (_web == null) return;
-    await _web!.loadUrl(
-      urlRequest: URLRequest(url: WebUri(alamatAwal)),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      // Tombol kembali perangkat menyusuri riwayat HALAMAN lebih dulu.
-      // Tanpa ini ia langsung menutup aplikasi, dan orang yang masuk
-      // tiga tingkat ke dalam modul kehilangan seluruh jalannya sekali
-      // tekan — keluhan pertama pada tiap pembungkus WebView.
-      canPop: false,
-      onPopInvokedWithResult: (sudahKeluar, _) async {
-        if (sudahKeluar) return;
-        if (_web != null && await _web!.canGoBack()) {
-          _web!.goBack();
-          return;
-        }
-        if (!mounted) return;
-        final keluar = await _tanyaKeluar();
-        if (keluar && mounted) SystemNavigator.pop();
-      },
-      child: Scaffold(
-        backgroundColor: gelap,
-        body: SafeArea(
-          bottom: false,
-          child: _gagal ? _layarGagal() : _layarWeb(),
-        ),
-      ),
-    );
-  }
+    final p = widget.pengaturan;
 
-  Widget _layarWeb() {
-    return Stack(
-      children: [
-        InAppWebView(
-          initialUrlRequest: URLRequest(url: WebUri(alamatAwal)),
-          pullToRefreshController: _tarikSegar,
-          initialSettings: InAppWebViewSettings(
-            // Diperlukan agar <input type="file"> dan unduhan bekerja.
-            useOnDownloadStart: true,
-            useShouldOverrideUrlLoading: true,
-            javaScriptEnabled: true,
-            supportZoom: false,
-            // Halaman EQOHSEE sudah punya tata letak selulernya sendiri;
-            // "desktop mode" justru mengecilkan tulisannya sampai tidak
-            // terbaca di lapangan.
-            useWideViewPort: false,
-            mediaPlaybackRequiresUserGesture: false,
-            allowsInlineMediaPlayback: true,
-            // Unggahan foto dari kamera lewat halaman web.
-            javaScriptCanOpenWindowsAutomatically: true,
-            // Titik GPS laporan bahaya dan draf luring (IndexedDB).
-            geolocationEnabled: true,
-            databaseEnabled: true,
-            domStorageEnabled: true,
-            userAgent: 'EQOHSEE-Android/1.0 (WebView)',
-          ),
-          onGeolocationPermissionsShowPrompt: (_, asal) async {
-            // Izin sistemnya sudah diminta di _mintaIzin(); di sini hanya
-            // situs EQOHSEE sendiri yang diizinkan membaca lokasi.
-            final izinkan = bukaDiDalam(Uri.parse(asal));
-            return GeolocationPermissionShowPromptResponse(
-              origin: asal,
-              allow: izinkan,
-              retain: izinkan,
-            );
-          },
-          onWebViewCreated: (c) async {
-            _web = c;
-            await _mintaIzin();
-          },
-          onLoadStart: (_, __) => setState(() => _memuat = true),
-          onLoadStop: (_, __) async {
-            _tarikSegar?.endRefreshing();
-            setState(() => _memuat = false);
-          },
-          onProgressChanged: (_, laju) {
-            if (laju == 100) _tarikSegar?.endRefreshing();
-            setState(() => _laju = laju / 100);
-          },
-          onReceivedError: (_, permintaan, galat) {
-            // Hanya kegagalan BINGKAI UTAMA yang menutup layar. Satu
-            // gambar yang gagal dimuat bukan alasan menyembunyikan
-            // seluruh halaman yang sudah tergambar baik-baik saja.
-            if (!permintaan.isForMainFrame!) return;
-            setState(() {
-              _gagal = true;
-              _sebabGagal = galat.description;
-              _memuat = false;
-            });
-          },
-          onPermissionRequest: (_, permintaan) async {
-            return PermissionResponse(
-              resources: permintaan.resources,
-              action: PermissionResponseAction.GRANT,
-            );
-          },
-          shouldOverrideUrlLoading: (c, aksi) async {
-            final url = aksi.request.url;
-            if (url == null) return NavigationActionPolicy.ALLOW;
-
-            // tel:, mailto:, wa.me, dan situs luar keluar ke aplikasinya.
-            if (!bukaDiDalam(Uri.parse(url.toString()))) {
-              await _bukaDiLuar(url);
-              return NavigationActionPolicy.CANCEL;
-            }
-            return NavigationActionPolicy.ALLOW;
-          },
-          onDownloadStartRequest: (c, unduhan) async {
-            // Unduhan (CSV ekspor, lampiran berkas, cetak PDF) diserahkan
-            // ke pengelola unduhan sistem: ia menaruhnya di folder Unduhan
-            // dan menampilkan pemberitahuan, yang keduanya tidak dapat
-            // dilakukan WebView sendiri.
-            await _bukaDiLuar(unduhan.url);
-          },
-        ),
-        if (_memuat)
-          LinearProgressIndicator(
-            value: _laju == 0 ? null : _laju,
-            minHeight: 2.5,
-            backgroundColor: Colors.transparent,
-            valueColor: const AlwaysStoppedAnimation(oranye),
-          ),
-      ],
-    );
-  }
-
-  Future<void> _bukaDiLuar(WebUri url) async {
-    final uri = Uri.parse(url.toString());
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  Future<bool> _tanyaKeluar() async {
-    final jawab = await showDialog<bool>(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: const Text('Keluar dari EQOHSEE?'),
-        content: const Text('Anda akan menutup aplikasi.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c, false),
-            child: const Text('Batal'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(c, true),
-            child: const Text('Keluar'),
-          ),
-        ],
-      ),
-    );
-    return jawab ?? false;
-  }
-
-  Widget _layarGagal() {
-    return Container(
-      color: gelap,
-      width: double.infinity,
-      padding: const EdgeInsets.all(28),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.cloud_off_rounded, size: 58, color: oranye),
-          const SizedBox(height: 18),
-          const Text(
-            'Tidak dapat memuat EQOHSEE',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _sebabGagal.isEmpty
-                ? 'Periksa sambungan internet Anda, lalu coba lagi.'
-                : _sebabGagal,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFF9AA6B0), fontSize: 13.5),
-          ),
-          const SizedBox(height: 22),
-          FilledButton.icon(
-            onPressed: _muatUlang,
-            icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Coba lagi'),
-            style: FilledButton.styleFrom(backgroundColor: oranye),
-          ),
-        ],
-      ),
+    return MaterialApp(
+      title: 'EQOHSEE',
+      debugShowCheckedModeBanner: false,
+      theme: temaEqohsee(),
+      home: !p.sudahPengenalan
+          ? LayarPengenalan(selesai: p.selesaiPengenalan)
+          /* Layar kunci DITUMPUK di atas WebView, bukan menggantikannya:
+             halaman yang sedang diisi — P2H setengah jadi, laporan dengan
+             tiga foto — tetap utuh di baliknya. */
+          : Stack(children: [
+              LayarUtama(pengaturan: p, versi: widget.versi),
+              if (_terkunci && p.kunciAktif)
+                Positioned.fill(child: LayarKunci(terbuka: () => setState(() => _terkunci = false))),
+            ]),
     );
   }
 }

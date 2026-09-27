@@ -57,10 +57,16 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+        $foto = $user->avatar;
 
         Auth::logout();
 
         $user->delete();
+
+        /* Foto profil ikut dibuang. Halaman hapus akun menjanjikan foto
+           profil terhapus bersama akunnya; tanpa baris ini barisnya hilang
+           tetapi berkasnya tetap tinggal di disk publik. */
+        if ($foto) \Illuminate\Support\Facades\Storage::disk('public')->delete($foto);
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

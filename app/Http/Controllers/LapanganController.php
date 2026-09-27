@@ -148,6 +148,8 @@ class LapanganController extends Controller
             'tautan' => [
                 'lengkap'    => route('dashboard'),
                 'akun'       => \Illuminate\Support\Facades\Route::has('profile.edit') ? route('profile.edit') : null,
+                'hapusAkun'  => \Illuminate\Support\Facades\Route::has('profile.edit') ? route('profile.edit').'#hapus-akun' : null,
+                'privasi'    => route('hukum.privasi'),
                 'keluar'     => route('logout'),
                 'sertifikat' => route('lapangan.sertifikat'),
                 'izin'       => route('lapangan.izin'),

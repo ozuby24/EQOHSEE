@@ -1,3 +1,5 @@
+import 'package:eqohsee/kunci.dart';
+import 'package:eqohsee/layar_utama.dart';
 import 'package:eqohsee/main.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -44,4 +46,43 @@ void main() {
       expect(bukaDiDalam(Uri.parse('javascript:alert(1)')), isFalse);
     });
   });
+
+  group('alamatPintasan — pintasan ikon membuka layar yang benar', () {
+    test('ketiga pintasan menuju mode lapangan di situs sendiri', () {
+      for (final jenis in ['lapor', 'p2h', 'tugas']) {
+        final url = alamatPintasan(jenis)!;
+        expect(url, startsWith('$alamatSitus/lapangan/'));
+        expect(bukaDiDalam(Uri.parse(url)), isTrue, reason: 'pintasan $jenis harus terbuka di dalam aplikasi');
+      }
+      expect(alamatPintasan('lapor'), endsWith('/lapangan/lapor'));
+    });
+
+    test('jenis tak dikenal tidak membuka apa pun', () {
+      expect(alamatPintasan('hapus'), isNull);
+      expect(alamatPintasan(null), isNull);
+    });
+  });
+
+  group('perluKunci — kapan aplikasi dikunci lagi', () {
+    final t = DateTime(2026, 9, 27, 7, 0);
+
+    test('kunci mati: tidak pernah dikunci', () {
+      expect(perluKunci(aktif: false, keLatar: t, kini: t.add(const Duration(hours: 3))), isFalse);
+    });
+
+    test('di bawah jeda: tidak dikunci — kembali dari aplikasi kamera', () {
+      expect(perluKunci(aktif: true, keLatar: t, kini: t.add(const Duration(seconds: 40))), isFalse);
+    });
+
+    test('tepat di jeda dan sesudahnya: dikunci', () {
+      expect(perluKunci(aktif: true, keLatar: t, kini: t.add(jedaKunci)), isTrue);
+      expect(perluKunci(aktif: true, keLatar: t, kini: t.add(const Duration(minutes: 30))), isTrue);
+    });
+
+    test('tanpa catatan ke latar atau jam mundur: tidak dikunci', () {
+      expect(perluKunci(aktif: true, keLatar: null, kini: t), isFalse);
+      expect(perluKunci(aktif: true, keLatar: t, kini: t.subtract(const Duration(minutes: 5))), isFalse);
+    });
+  });
 }
+

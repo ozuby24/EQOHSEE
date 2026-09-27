@@ -124,6 +124,20 @@ Route::view('/privacy-policy', 'hukum.privacy-policy', [
     'surel' => config('hukum.surel'),
 ])->name('hukum.privacy');
 
+/* ── Hapus akun ──
+ *
+ * Google Play mewajibkan aplikasi yang dapat membuat akun menyediakan
+ * alamat web tempat penghapusan akun dapat DIMINTA tanpa memasang
+ * aplikasinya. Sama seperti kebijakan privasi: di luar grup 'auth',
+ * Blade biasa, terbuka tanpa JavaScript. */
+Route::view('/hapus-akun', 'hukum.hapus-akun', [
+    'surel' => config('hukum.surel'),
+])->name('hukum.hapus-akun');
+
+Route::view('/delete-account', 'hukum.delete-account', [
+    'surel' => config('hukum.surel'),
+])->name('hukum.delete-account');
+
 /* 'verified' dipasang di sini, bukan per rute: halaman yang lupa
    memakainya tidak menimbulkan galat apa pun — ia hanya diam-diam
    terbuka bagi akun yang emailnya belum terbukti dimiliki pendaftarnya.

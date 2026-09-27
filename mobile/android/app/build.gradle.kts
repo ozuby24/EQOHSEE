@@ -23,14 +23,23 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "id.eqohsee.eqohsee"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        /* Ditulis angkanya, bukan diwarisi dari Flutter: Play menolak
+           unggahan yang target API-nya di bawah batas tahun berjalan, dan
+           batas itu tidak boleh ikut turun diam-diam bila versi Flutter di
+           mesin build lebih tua. */
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    /* Pustaka native tidak dikompres dan disejajarkan 16 KB — syarat Play
+       untuk aplikasi bertarget Android 15+ sejak November 2025. */
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
     }
 
     /*
@@ -97,4 +106,9 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Tema AppCompat untuk BiometricPrompt pada Android 8 ke bawah.
+    implementation("androidx.appcompat:appcompat:1.7.1")
 }

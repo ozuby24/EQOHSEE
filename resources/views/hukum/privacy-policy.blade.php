@@ -1,7 +1,7 @@
 @extends('hukum.tata', [
   'lang'    => 'en',
   'judul'   => 'Privacy Policy',
-  'tanggal' => 'Effective 16 September 2026',
+  'tanggal' => 'Effective 27 September 2026',
   'ringkas' => 'How EQOHSEE collects, uses and protects data in its mining HSE and occupational safety application.',
   'alih'    => 'Versi Bahasa Indonesia: <a href="/kebijakan-privasi">Kebijakan Privasi</a>',
   'kaki'    => 'Mining HSE and occupational safety management',
@@ -42,7 +42,8 @@ stores — not a generic list.</p>
   <tr>
     <td>Worker records</td>
     <td>Name, national ID number, employee number, position, competencies,
-        certificate and permit expiry dates</td>
+        certificate and permit expiry dates, and tax ID (NPWP) and tax status
+        (PTKP) where the company uses the payroll module</td>
     <td>Entered by company HR/HSE</td>
   </tr>
   <tr>
@@ -74,6 +75,18 @@ stores — not a generic list.</p>
     <td>Roster schedules, clock-in and clock-out times, lateness, leave,
         overtime, and the payroll calculations derived from them</td>
     <td>Attendance terminals and HR entry</td>
+  </tr>
+  <tr>
+    <td><strong>Hazard report location</strong></td>
+    <td>Coordinates and their estimated accuracy, attached to a hazard report you
+        create in field mode — only if you allow location access</td>
+    <td>Your device, while creating a report</td>
+  </tr>
+  <tr>
+    <td>Finding and pre-start check photos</td>
+    <td>Photos you take or choose yourself for hazard reports, repair evidence
+        and equipment pre-start checks (P2H)</td>
+    <td>Your device camera or gallery</td>
   </tr>
   <tr>
     <td>Uploaded documents</td>
@@ -134,8 +147,45 @@ attendance was performed by that person at their work location, rather than
 delegated to someone else.</p>
 
 <p>This recording happens <strong>only at the moment of the attendance
-scan</strong>. EQOHSEE does not track anyone's position continuously, and the
-Android application does not request location permission at all.</p>
+scan</strong>. EQOHSEE does not track anyone's position continuously.</p>
+
+<p><strong>Location on hazard reports.</strong> When you create a hazard report
+in field mode, the app asks for the device location so that supervisors know
+exactly where the finding is. Location is read <strong>only while you have the
+report screen open</strong>, never in the background, and is stored only as part
+of that report. You may refuse: the report can still be sent with a typed
+location name.</p>
+
+<h2>4a. Android app permissions</h2>
+
+<table>
+  <tr><th>Permission</th><th>Purpose</th></tr>
+  <tr>
+    <td>Internet and network state</td>
+    <td>Opening EQOHSEE and detecting when signal returns so pending reports can
+        be sent</td>
+  </tr>
+  <tr>
+    <td>Location (while the app is in use)</td>
+    <td>Coordinates of hazard reports, as described above. The app does not
+        request background location.</td>
+  </tr>
+  <tr>
+    <td>Biometric (optional)</td>
+    <td>Locking the app with your fingerprint or device screen lock if you turn
+        it on. Matching is performed by Android; <em>fingerprint data never
+        reaches EQOHSEE</em>.</td>
+  </tr>
+</table>
+
+<p>The app <strong>does not request camera or photo-library permissions</strong>.
+When you tap the camera button, the photo is taken by your device's camera app
+and only the photos you choose are sent.</p>
+
+<p><strong>Data on your device.</strong> So that it keeps working without signal,
+report drafts, unsent reports with their photos, and copies of field-mode screens
+are stored temporarily on the device. Reports are removed from the device once
+they reach the server; screen copies are removed when you sign out.</p>
 
 <h2>5. Storage and security</h2>
 
@@ -188,10 +238,12 @@ obligations.</p>
 
 <h2>9. Account deletion</h2>
 
-<p>You may request deletion of your account and the personal data attached to it
-via the address in section 11, or through your company administrator. Requests
-are processed within a reasonable period once the requester's identity is
-confirmed.</p>
+<p>You can delete your account yourself inside the app: <strong>Profile →
+Account &amp; password → Delete account</strong>. Without the app, you may request
+deletion of your account and the personal data attached to it on the page
+<a href="/delete-account">eqohsee.id/delete-account</a>, via the address in
+section 11, or through your company administrator. Requests are processed within
+30 days once the requester's identity is confirmed.</p>
 
 <p>Records that must be retained by law — such as workplace accident records,
 medical check-ups and employment documents — are kept until their statutory
