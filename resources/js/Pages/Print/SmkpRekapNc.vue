@@ -44,7 +44,7 @@ const tanggal = (v: unknown) =>
         Rekapitulasi Ketidaksesuaian
       </h1>
 
-      <table class="w-full text-[11px] border border-stone-300 mb-5">
+      <table class="lembar-pasangan w-full text-[11px] border border-stone-300 mb-5">
         <tbody>
           <tr>
             <td class="p-2 border-b border-r border-stone-200 w-36 text-stone-500">Perusahaan</td>
@@ -64,7 +64,7 @@ const tanggal = (v: unknown) =>
       </table>
 
       <!-- ringkasan angka -->
-      <div class="grid grid-cols-5 gap-2 mb-5 text-center">
+      <div class="grid grid-cols-3 sm:grid-cols-5 print:grid-cols-5 gap-2 mb-5 text-center">
         <!-- Kritikal ikut dihitung walau nihil, sebagaimana Formulir
              Rekapitulasi acuan yang mencetak "Jumlah Temuan Kritikal 0".
              Baris yang hilang tidak dapat dibedakan dari baris yang nol. -->
@@ -122,9 +122,9 @@ const tanggal = (v: unknown) =>
         </thead>
         <tbody>
           <tr v-for="t in props.temuan" :key="t.id" class="border-b border-stone-100 align-top">
-            <td class="p-1.5">{{ t.nomor }}</td>
-            <td class="p-1.5 font-semibold">{{ t.kode_nc }}</td>
-            <td class="p-1.5 font-semibold">{{ t.kode_kriteria }}</td>
+            <td class="p-1.5 whitespace-nowrap">{{ t.nomor }}</td>
+            <td class="p-1.5 font-semibold whitespace-nowrap">{{ t.kode_nc }}</td>
+            <td class="p-1.5 font-semibold whitespace-nowrap">{{ t.kode_kriteria }}</td>
             <td class="p-1.5 uppercase">{{ t.jenis }}</td>
             <td class="p-1.5">{{ t.uraian }}</td>
             <td class="p-1.5">{{ t.status }}</td>
@@ -142,7 +142,7 @@ const tanggal = (v: unknown) =>
            tim audit, bukan kesepakatan dengan auditi — blok dua kolom
            "disusun/disetujui" akan menuntut tanda tangan yang formulir
            ini memang tidak minta. -->
-      <table class="w-full text-[11px] mt-8">
+      <table class="lembar-ttd w-full text-[11px] mt-8">
         <tbody>
           <tr>
             <td class="p-2 w-40 align-bottom">{{ props.ttd?.peran || 'Nama Lead Auditor' }}</td>

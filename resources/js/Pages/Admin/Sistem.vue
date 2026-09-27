@@ -420,7 +420,10 @@ function lepasTanda(c: Perusahaan) {
         <div v-for="c in perusahaanContoh" :key="c.id"
              class="rounded-xl border border-amber-100 bg-amber-50/60 px-4 py-3
                     flex flex-wrap items-center gap-3">
-          <div class="min-w-0 flex-1">
+          <!-- `grow basis-56`, bukan `flex-1`: basis 0 membuat kotak nama
+               menyusut sampai 30px di ponsel sementara tombolnya tetap
+               sebaris. Dengan basis 14rem, tombolnya yang turun baris. -->
+          <div class="min-w-0 grow basis-56">
             <div class="text-[13px] font-bold text-cam-ink">{{ c.nama }}</div>
             <div class="text-[11px] text-stone-500 mt-0.5">
               <span class="num font-semibold">{{ jumlahIsi(c) }}</span> baris ·

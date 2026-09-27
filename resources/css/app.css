@@ -93,6 +93,8 @@ th{ white-space:nowrap; }
 @media screen and (max-width: 1279.98px){
   #app table:not(.lembar table){ min-width:0 !important; }
   #app :is(th, td):not(.lembar *){ white-space:normal !important; min-width:0 !important; }
+  /* ...kecuali angka: lihat td.num di bawah. */
+  #app td.num:not(.lembar *), #app td .num:not(.lembar *), #app td.sel-angka:not(.lembar *){ white-space:nowrap !important; }
   #app :is(th, td):not(.lembar *):not(.tabel-tumpuk *):not(:first-child):not(:last-child){
     padding-left:.45rem !important; padding-right:.45rem !important;
   }
@@ -104,12 +106,15 @@ th{ white-space:nowrap; }
    kecil di atas nilainya, beberapa kolom per kartu — supaya tabel dua
    belas kolom tidak berubah menjadi kartu setinggi layar. Sel berisi
    teks panjang atau tombol (.sel-lebar, dipasang tabelPas.ts) mengambil
-   selebar kartu. */
+   selebar kartu. Kolom kisi paling sempit 8.5rem, atau 40% kartu bila
+   kartunya sendiri sempit (di dalam lembar cetak di ponsel) — tanpa
+   itu kartu selebar 230 px hanya memuat satu kolom dan tiap angka
+   mengambil satu baris penuh. */
 @media screen{
   table.tabel-tumpuk, table.tabel-tumpuk > tbody, table.tabel-tumpuk > tfoot{ display:block; width:100% !important; min-width:0 !important; }
   table.tabel-tumpuk > thead{ display:none; }
   table.tabel-tumpuk > :is(tbody, tfoot) > tr{
-    display:grid; grid-template-columns:repeat(auto-fill, minmax(8.5rem, 1fr)); column-gap:1rem; row-gap:.15rem;
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(min(8.5rem, 40%), 1fr)); column-gap:1rem; row-gap:.15rem;
     margin:.6rem 0; padding:.55rem .85rem; border:1px solid #E7E5E4; border-radius:.8rem;
   }
   table.tabel-tumpuk > tbody > tr:first-child{ margin-top:.2rem; }
@@ -307,6 +312,31 @@ th{ white-space:nowrap; }
 
 table .num, td.num, th.num{ text-align:right; font-variant-numeric:tabular-nums; }
 
+/* Judul kolom yang isinya rata kanan ikut rata kanan — dipasang oleh
+   resources/js/tabelPas.ts setelah mengukur isi kolomnya. */
+th.th-rata-kanan{ text-align:right !important; }
+
+/* Dipasang sesaat oleh tabelPas.ts saat MENGUKUR apakah sebuah tabel
+   muat. Tabel ber-table-layout:fixed tidak pernah melebar melampaui
+   wadahnya — ia memotong kata di dalam kolomnya — sehingga tanpa ini
+   lembar delapan kolom di ponsel lolos dari pengukuran dan tampil
+   "Nom / or / Ketid / akse". Diukur dengan tata letak otomatis, tabel
+   yang tidak muat tanpa memotong kata terdeteksi dan menjadi kartu. */
+table.tabel-ukur{ table-layout:auto !important; }
+
+/* Angka tidak dipatah di tengah.
+   "Rp 6.500.000" yang turun menjadi "Rp" dan "6.500.000", "9,9 bln"
+   menjadi "9,9" dan "bln", "24 Sep 2026" menjadi tiga baris — terukur di
+   tabel gaji, kontrak, register kepatuhan, dan monitor hazard. Sel angka
+   selebar isinya; tabel yang karenanya tidak muat berubah menjadi kartu
+   bertumpuk lewat tabelPas.ts, bukan memeras angkanya. */
+td.num, td .num, th.num, td.sel-angka{ white-space:nowrap; }
+/* Angka dan tanggal sebaris di dalam kalimat ("jangkar 2026-08-01",
+   "efektif habis 2026-12-31") tidak boleh terbelah pada tanda
+   hubungnya di ponsel: "2026-08-" di ujung baris dan "01" di baris
+   berikutnya terbaca sebagai dua nilai. Isinya selalu pendek. */
+span.num{ white-space:nowrap; }
+
 /* ---------- Utilitas teks ---------- */
 .clamp-1{ display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
 .clamp-2{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
@@ -327,6 +357,59 @@ input,select,textarea{ outline:none; }
    ══════════════════════════════════════════════════════════════ */
 
 .lembar{ position:relative; }
+
+/* Kop dokumen di layar ponsel: tiga kolom sebaris (logo, judul, blok
+   nomor dokumen) lebih lebar dari lembarnya, dan nomor seperti
+   "FRM/CDI/OHSE/019" menembus bingkai kanan. Blok nomor dokumen turun
+   menjadi baris kedua selebar kop. Kertas tetap tiga kolom. */
+@media screen and (max-width:639.98px){
+  table.kop-cetak, table.kop-cetak > tbody{ display:block; }
+  table.kop-cetak > tbody > tr{ display:grid; grid-template-columns:5.5rem minmax(0, 1fr); }
+  table.kop-cetak > tbody > tr > td{ width:auto !important; }
+  table.kop-cetak > tbody > tr > td:nth-child(2){ border-left:0; }
+  table.kop-cetak > tbody > tr > td:last-child{ grid-column:1 / -1; border-top:0; }
+  table.kop-cetak td td{ overflow-wrap:anywhere; }
+}
+
+/* Tabel keterangan formulir SMKP (dua pasang label–isi per baris) dan
+   baris penanda tangan (nama, tanda tangan, tanggal sebaris) di layar
+   ponsel: tiap pasang menjadi baris sendiri, bukan empat atau enam
+   kolom selebar 60 px yang membuat "PT Borneo Mandiri Utama" empat
+   baris. Kertas tetap memakai tata letaknya. */
+@media screen and (max-width:639.98px){
+  table.lembar-pasangan, table.lembar-pasangan > tbody,
+  table.lembar-ttd, table.lembar-ttd > tbody{ display:block; }
+  table.lembar-pasangan > tbody > tr{ display:grid; grid-template-columns:minmax(6.5rem, 34%) minmax(0, 1fr); }
+  table.lembar-pasangan > tbody > tr > td{ width:auto !important; border-bottom:1px solid #E7E5E4; }
+  table.lembar-pasangan > tbody > tr > td:nth-child(even){ border-right:0; }
+  table.lembar-pasangan > tbody > tr:last-child > td:last-child{ border-bottom:0; }
+  table.lembar-ttd > tbody > tr{ display:grid; grid-template-columns:minmax(6.5rem, 38%) minmax(0, 1fr); row-gap:.25rem; }
+  table.lembar-ttd > tbody > tr + tr{ margin-top:1rem; }
+  table.lembar-ttd > tbody > tr > td{ width:auto !important; }
+  table.lembar-ttd > tbody > tr > td:nth-child(4){ min-height:2.75rem; }
+}
+
+/* Tabel identitas lembar (tiga pasang label–isi per baris, kolom
+   persen) di layar ponsel: label selebar 11% menjadi 30 px dan tiap
+   kata terpotong per dua huruf ("NOM OR", "TAN GGA L"). Di layar sempit
+   setiap pasang label–isi menjadi satu baris sendiri; kertas tetap
+   memakai tata letak enam kolomnya. */
+@media screen and (max-width:639.98px){
+  table.lembar-identitas{
+    display:block; width:100%; border:1px solid #D6D3D1; border-bottom:0;
+  }
+  table.lembar-identitas > tbody{ display:block; }
+  table.lembar-identitas > tbody > tr{
+    display:grid; grid-template-columns:minmax(6.5rem, 34%) minmax(0, 1fr);
+  }
+  table.lembar-identitas > tbody > tr > :is(th, td){
+    width:auto !important; border:0 !important; border-bottom:1px solid #D6D3D1 !important;
+    overflow-wrap:anywhere;
+  }
+  table.lembar-identitas > tbody > tr > th{
+    border-right:1px solid #D6D3D1 !important; overflow-wrap:normal; hyphens:auto;
+  }
+}
 
 /* Tabel di dalam lembar tidak boleh terbelah antar halaman cetak. */
 .lembar table{ break-inside:auto; }

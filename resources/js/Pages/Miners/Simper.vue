@@ -168,12 +168,14 @@ const simpolDituntut = computed(() =>
     <section v-for="s in baris" :key="s.id"
              class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
       <header class="px-5 py-3.5 border-b border-stone-100 flex flex-wrap items-center gap-3">
-        <div class="flex-1 min-w-0">
+        <!-- basis 14rem: nama & nomor SIMPER tidak diperas di samping
+             lencana dan tombol; di ponsel keduanya yang turun baris. -->
+        <div class="grow basis-56 min-w-0">
           <Link v-if="s.pekerja_id" :href="`/miners/${s.pekerja_id}`"
                 class="text-[13.5px] font-bold text-cam-lime-deep hover:underline">{{ s.pekerja || '—' }}</Link>
           <p class="text-[11px] text-stone-500">
             <Link :href="`/miners/simper/${s.id}`"
-                  class="num text-cam-lime-deep hover:underline">{{ s.nomor || 'tanpa nomor' }}</Link>
+                  class="num whitespace-nowrap text-cam-lime-deep hover:underline">{{ s.nomor || 'tanpa nomor' }}</Link>
             · kelas {{ s.kelas }}
             · SIM {{ s.simpol || '—' }} · {{ props.STATUS?.[s.status] ?? s.status }}
           </p>

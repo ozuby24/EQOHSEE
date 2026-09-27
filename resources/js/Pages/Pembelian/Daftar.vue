@@ -6,7 +6,7 @@ import { propHalaman } from '../../halaman';
 const props = propHalaman();
 
 function rupiah(n: number) {
-  return 'Rp ' + Number(n || 0).toLocaleString('id-ID');
+  return 'Rp\u00A0' + Number(n || 0).toLocaleString('id-ID');
 }
 
 function saring(status: string) {

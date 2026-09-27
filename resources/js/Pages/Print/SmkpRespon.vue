@@ -53,7 +53,7 @@ const tanggal = (v: unknown) =>
         yang ditolak dibawa ke pembahasan berikutnya.
       </p>
 
-      <table class="w-full text-[11px] border border-stone-300 mb-5">
+      <table class="lembar-pasangan w-full text-[11px] border border-stone-300 mb-5">
         <tbody>
           <tr>
             <td class="p-2 border-b border-r border-stone-200 w-36 text-stone-500">Perusahaan</td>

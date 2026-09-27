@@ -131,7 +131,7 @@ const termurah = computed(() => {
 });
 
 function rupiah(n: number | null) {
-  return n === null ? '' : 'Rp ' + Number(n || 0).toLocaleString('id-ID');
+  return n === null ? '' : 'Rp\u00A0' + Number(n || 0).toLocaleString('id-ID');
 }
 
 /**

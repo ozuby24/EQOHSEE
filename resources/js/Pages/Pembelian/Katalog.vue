@@ -46,7 +46,7 @@ const total = computed(() =>
   terpilih.value.reduce((n, p) => n + subtotal(p), 0));
 
 function rupiah(n: number) {
-  return 'Rp ' + Number(n || 0).toLocaleString('id-ID');
+  return 'Rp\u00A0' + Number(n || 0).toLocaleString('id-ID');
 }
 
 function ubah(id: number, n: number) {

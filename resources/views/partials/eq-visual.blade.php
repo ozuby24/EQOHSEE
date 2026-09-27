@@ -885,6 +885,23 @@ main a{transition:color .16s}
 .eq-modul strong{display:block;font-size:12.5px;font-weight:700;color:var(--eq-judul,#0F1720);margin-top:12px}
 .eq-modul small{display:block;font-size:11px;color:var(--eq-redup2,#98A2AE);margin-top:2px;line-height:1.5}
 
+/* ── Keterangan data gabungan (administrator, "Semua perusahaan") ── */
+.eq-gabungan{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:9px 10px 9px 14px;border-radius:12px;
+  background:#FFF6E8;border:1px solid #F6D9AE;color:#6B3A00;font-size:12.5px;line-height:1.45}
+.eq-gabungan > svg{width:17px;height:17px;flex:none;color:#C85804}
+.eq-gabungan p{flex:1 1 16rem;min-width:0;margin:0}
+.eq-gabungan b{font-weight:700;color:#4A2800}
+.eq-gabungan-pilih{flex:none;padding:6px 12px;border-radius:9px;font-size:12px;font-weight:700;
+  background:#fff;border:1px solid #F0C98C;color:#A85400;transition:background-color .15s,border-color .15s}
+.eq-gabungan-pilih:hover{background:#FFF0DA;border-color:#C85804}
+.eq-gabungan-tutup{flex:none;width:30px;height:30px;display:grid;place-items:center;border-radius:8px;color:#A85400}
+.eq-gabungan-tutup:hover{background:rgba(245,124,0,.12)}
+.eq-gabungan-tutup svg{width:15px;height:15px}
+:root[data-tema="gelap"] .eq-gabungan{background:rgba(245,124,0,.10);border-color:rgba(245,124,0,.28);color:#F6D3A6}
+:root[data-tema="gelap"] .eq-gabungan b{color:#FFE2BD}
+:root[data-tema="gelap"] .eq-gabungan-pilih{background:transparent;border-color:rgba(245,124,0,.4);color:#FFB870}
+
 /* ═══════════════════════════════════════════════════════════
    10 · TEMA GELAP DAN WARNA PERUSAHAAN
    ═══════════════════════════════════════════════════════════

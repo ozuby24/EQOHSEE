@@ -89,7 +89,7 @@ async function batalkan(l: any) {
 
 function rupiah(n: number | null) {
   if (n === null || n === undefined) return '—';
-  return 'Rp ' + Math.round(n).toLocaleString('id-ID');
+  return 'Rp\u00A0' + Math.round(n).toLocaleString('id-ID');
 }
 
 function faktorTeks(rincian: any[]) {

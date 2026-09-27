@@ -58,7 +58,7 @@ function sisa(t: Record<string, any>): string {
         Rencana Tindak Lanjut Audit SMKP
       </h1>
 
-      <table class="w-full text-[11px] border border-stone-300 mb-4">
+      <table class="lembar-pasangan w-full text-[11px] border border-stone-300 mb-4">
         <tbody>
           <tr>
             <td class="p-2 border-b border-r border-stone-200 w-36 text-stone-500">Perusahaan</td>
@@ -159,7 +159,7 @@ function sisa(t: Record<string, any>): string {
            Kepala Teknik Tambang" menuntut tanda tangan yang formulir ini
            memang tidak minta, dan formulir yang kolomnya kosong terbaca
            sebagai formulir yang belum lengkap. -->
-      <table class="w-full text-[11px] mt-8">
+      <table class="lembar-ttd w-full text-[11px] mt-8">
         <tbody>
           <tr v-for="b in props.ttd || []" :key="b.peran">
             <td class="p-2 w-32 align-bottom">{{ b.peran }}</td>

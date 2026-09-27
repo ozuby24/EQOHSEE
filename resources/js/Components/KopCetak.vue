@@ -35,7 +35,7 @@ const tanggal = (v: unknown) =>
 </script>
 
 <template>
-  <table class="w-full border-collapse text-[10px] mb-5">
+  <table class="kop-cetak w-full border-collapse text-[10px] mb-5">
     <tbody>
       <tr>
         <td class="border border-stone-300 p-2 w-[18%] text-center align-middle">

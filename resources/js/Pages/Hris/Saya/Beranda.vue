@@ -40,7 +40,7 @@ function tgl(t: string)  { return t.slice(8, 10); }
 
 function rupiah(n: number | null | undefined): string {
   if (n === null || n === undefined) return '—';
-  return 'Rp ' + Math.round(Number(n)).toLocaleString('id-ID');
+  return 'Rp\u00A0' + Math.round(Number(n)).toLocaleString('id-ID');
 }
 </script>
 

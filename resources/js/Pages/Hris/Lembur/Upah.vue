@@ -33,7 +33,7 @@ function simpan() {
 
 function rupiah(n: number | null) {
   if (n === null || n === undefined) return '—';
-  return 'Rp ' + Math.round(n).toLocaleString('id-ID');
+  return 'Rp\u00A0' + Math.round(n).toLocaleString('id-ID');
 }
 
 const belumAda = computed(() => baris.value.filter((b) => !b.berlaku && !b.kecuali).length);

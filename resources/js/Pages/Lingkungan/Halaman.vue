@@ -40,7 +40,7 @@ const judul: Record<string, string> = {
 
 const angka = (v: unknown, d = 0) => new Intl.NumberFormat('id-ID', { maximumFractionDigits: d, minimumFractionDigits: d }).format(Number(v || 0));
 const label = (v: string) => String(v || '').replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-const rupiah = (v: unknown) => `Rp ${angka(v)}`;
+const rupiah = (v: unknown) => `Rp\u00A0${angka(v)}`;
 
 const tautan = computed(() => props.tautan || {});
 const untuk = (pola: string | undefined, id: number | string) => String(pola || '').replace('__ID__', String(id));

@@ -239,6 +239,39 @@ const perusahaanTerbuka = ref(false);
 const pilihanPerusahaan = computed(() => pengguna.value?.perusahaanPilihan ?? []);
 
 /**
+ * Keterangan "data gabungan" bagi administrator.
+ *
+ * Administrator yang belum menyempitkan pandangannya melihat data SELURUH
+ * perusahaan sekaligus, dan sebagian besar daftar tidak menyebut
+ * perusahaan pemilik barisnya. Pada pemasangan contoh — lima perusahaan
+ * dengan isi yang sama — hasilnya setiap barang, kontrak, periode gaji,
+ * dan pekerja tampil berulang tanpa pembeda, dan yang terbaca adalah
+ * data yang tergandakan, bukan data lima perusahaan.
+ *
+ * Pengguna perusahaan tidak pernah melihat bilah ini: datanya memang
+ * selalu satu perusahaan. Ditutup sekali, ia diam sampai sesi peramban
+ * berakhir — cukup untuk tidak mengganggu, tidak cukup untuk terlupa.
+ */
+const KUNCI_GABUNGAN = 'eq-gabungan-ditutup';
+const gabunganDitutup = ref(false);
+try { gabunganDitutup.value = sessionStorage.getItem(KUNCI_GABUNGAN) === '1'; } catch { /* mode privat */ }
+
+const tampilGabungan = computed(() => !!pengguna.value?.admin
+  && pilihanPerusahaan.value.length > 1
+  && !pengguna.value?.perusahaanDilihat
+  && !gabunganDitutup.value);
+
+function tutupGabungan() {
+  gabunganDitutup.value = true;
+  try { sessionStorage.setItem(KUNCI_GABUNGAN, '1'); } catch { /* mode privat */ }
+}
+
+function pilihDariGabungan() {
+  perusahaanTerbuka.value = true;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/**
  * Nama yang ditulis di bilah atas.
  *
  * "Semua perusahaan" bukan teks cadangan melainkan keadaan yang sah:
@@ -859,6 +892,22 @@ async function keluar() {
         </div>
 
         <div class="max-w-[1400px] mx-auto space-y-4">
+          <div v-if="tampilGabungan" class="eq-gabungan" role="note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 20V7.5L12 4l8 3.5V20M9 20v-4.5h6V20M8 10.5h.01M12 10.5h.01M16 10.5h.01"/>
+            </svg>
+            <p>
+              <b>Gabungan {{ pilihanPerusahaan.length }} perusahaan.</b>
+              Baris yang tampak kembar berasal dari perusahaan yang berbeda.
+            </p>
+            <button type="button" class="eq-gabungan-pilih" @click="pilihDariGabungan">Pilih perusahaan</button>
+            <button type="button" class="eq-gabungan-tutup" aria-label="Tutup keterangan" @click="tutupGabungan">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                   stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+
           <KopHalaman v-if="!kopSendiri" :judul="judul" :subjudul="subjudul ?? null"
                       :label="menu?.label ?? null" :tagline="menu?.semboyan ?? null"
                       :remah="remahKop"

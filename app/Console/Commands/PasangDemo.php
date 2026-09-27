@@ -382,7 +382,7 @@ class PasangDemo extends Command
             'company_id' => $c->id,
             'position'   => 'Penanggung Jawab Operasional',
             'department' => 'Occupational Health, Safety and Environment',
-            'lms_role'   => 'peserta',
+            'lms_role'   => 'trainee',
             'active'     => true,
         ]);
 
@@ -456,7 +456,7 @@ class PasangDemo extends Command
             'position'   => 'Pengawas Operasional',
             'department' => 'Operasi Tambang',
             'is_admin'   => false,
-            'lms_role'   => 'peserta',
+            'lms_role'   => 'trainee',
             'active'     => true,
         ]);
 

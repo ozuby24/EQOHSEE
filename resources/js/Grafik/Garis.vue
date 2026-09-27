@@ -24,7 +24,7 @@
  *   pernah dilakukan, dan pada data lingkungan itu berarti melaporkan
  *   angka yang tidak ada.
  */
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { BINGKAI, ringkas, batasBulat, warnaDeret, AKSEN } from './warna';
 
 type Titik = number | null;
@@ -46,7 +46,40 @@ const P = { atas: 12, kanan: 12, bawah: 22, kiri: 44 };
    memakai id landaian sama akan saling menimpa, dan yang kedua mewarisi
    warna yang pertama tanpa satu pun galat. */
 const uid = Math.random().toString(36).slice(2, 8);
-const L = 640;
+
+/* LEBAR KANVAS = LEBAR WADAHNYA, diukur — bukan 640 yang tetap.
+
+   Dengan viewBox selebar 640 dan tinggi CSS yang tetap, grafik pada
+   wadah 320px di ponsel diperkecil setengahnya: label sumbu tinggal
+   setinggi 5px dan tidak terbaca, lalu sisa tingginya menjadi pita
+   kosong di atas dan di bawah grafik. Dengan satu satuan viewBox sama
+   dengan satu piksel layar, huruf 10px tetap 10px di layar mana pun, dan
+   yang berubah hanyalah jarak antartitik. */
+const wadah = ref<HTMLElement | null>(null);
+const lebar = ref(640);
+let pengukur: ResizeObserver | null = null;
+
+onMounted(() => {
+  const ukur = () => {
+    const w = Math.round(wadah.value?.getBoundingClientRect().width ?? 0);
+    if (w > 0 && w !== lebar.value) lebar.value = w;
+  };
+  ukur();
+  if (typeof ResizeObserver !== 'undefined' && wadah.value) {
+    pengukur = new ResizeObserver(ukur);
+    pengukur.observe(wadah.value as unknown as Element);
+  }
+});
+
+onBeforeUnmount(() => pengukur?.disconnect());
+
+const L = computed(() => Math.max(240, lebar.value));
+
+/* Berapa label tanggal muat di sumbu datar: satu label ~48px. */
+const langkahLabel = computed(() => {
+  const muat = Math.max(2, Math.floor((L.value - P.kiri - P.kanan) / 48));
+  return props.label.length <= muat ? 1 : Math.ceil(props.label.length / muat);
+});
 
 const T = computed(() => props.tinggi);
 
@@ -62,7 +95,7 @@ const maks = computed(() => {
 const x = (i: number) => {
   const n = Math.max(1, props.label.length - 1);
 
-  return P.kiri + (i / n) * (L - P.kiri - P.kanan);
+  return P.kiri + (i / n) * (L.value - P.kiri - P.kanan);
 };
 
 const y = (v: number) =>
@@ -125,9 +158,9 @@ function arahkan(e: PointerEvent | FocusEvent) {
   if (!(e instanceof PointerEvent)) return;
 
   const kotak = el.getBoundingClientRect();
-  const px    = ((e.clientX - kotak.left) / kotak.width) * L;
+  const px    = ((e.clientX - kotak.left) / kotak.width) * L.value;
   const n     = Math.max(1, props.label.length - 1);
-  const rasio = (px - P.kiri) / (L - P.kiri - P.kanan);
+  const rasio = (px - P.kiri) / (L.value - P.kiri - P.kanan);
 
   bidik.value = Math.min(props.label.length - 1, Math.max(0, Math.round(rasio * n)));
 }
@@ -160,7 +193,7 @@ const kosong = computed(() =>
     Belum ada pengukuran pada rentang ini.
   </div>
 
-  <div v-else class="relative">
+  <div v-else ref="wadah" class="relative">
     <svg ref="svgEl" :viewBox="`0 0 ${L} ${T}`" class="w-full block"
          :style="{ height: T + 'px' }" role="img"
          :aria-label="`Grafik garis: ${deret.map(d => d.nama).join(', ')}`"
@@ -175,7 +208,7 @@ const kosong = computed(() =>
             font-size="10" :fill="BINGKAI.redupTinta">{{ ringkas(g.nilai) }}</text>
 
       <text v-for="(l, i) in label" :key="'x' + i"
-            v-show="label.length <= 8 || i % Math.ceil(label.length / 7) === 0"
+            v-show="i % langkahLabel === 0"
             :x="x(i)" :y="T - 6" text-anchor="middle"
             font-size="10" :fill="BINGKAI.redupTinta">{{ l }}</text>
 

@@ -229,7 +229,7 @@ const angka = (v: unknown) =>
 
       <section v-for="s in e.sub" :key="s.kode" class="border-b border-stone-100 last:border-b-0">
         <div class="px-5 py-3 bg-stone-100 flex flex-wrap items-center gap-x-3 gap-y-1">
-          <div class="min-w-0 flex-1">
+          <div class="min-w-0 grow basis-56">
             <h4 class="font-bold text-[12.5px]">{{ s.kode }} · {{ s.nama }}</h4>
             <p class="text-[11px] text-stone-500 mt-0.5">
               {{ s.rinci ? `${s.butir.length} rincian` : 'dinilai langsung' }}
@@ -251,7 +251,7 @@ const angka = (v: unknown) =>
              :class="s.rinci ? 'pl-12' : ''">
 
           <div class="flex flex-wrap items-start gap-x-3 gap-y-1">
-            <div class="min-w-0 flex-1">
+            <div class="min-w-0 grow basis-56">
               <!-- Sub-elemen tanpa rincian dinilai LANGSUNG: butirnya
                    adalah dirinya sendiri, dan kepala di atas sudah
                    menyebut kode dan namanya. Diulang di sini, tiap

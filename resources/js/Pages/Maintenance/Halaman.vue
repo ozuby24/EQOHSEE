@@ -46,7 +46,7 @@ const angka = (v: unknown, d = 0) => new Intl.NumberFormat('id-ID', { maximumFra
    "0,0%" — terbaca sebagai kepatuhan buruk padahal tidak ada
    satu pun alat berjadwal untuk dinilai. */
 const persen = (v: unknown) => (v === null || v === undefined ? '—' : `${angka(v, 1)}%`);
-const rupiah = (v: unknown) => `Rp ${angka(v, 0)}`;
+const rupiah = (v: unknown) => `Rp\u00A0${angka(v, 0)}`;
 const label = (v: string) => String(v || '').replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 const jam = (v: unknown) => v === null || v === undefined ? '—' : `${angka(v, 1)} jam`;
 

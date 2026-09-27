@@ -2121,7 +2121,7 @@ final class DataContoh
             'name'       => $nama,
             'email'      => $surel,
             'password'   => Hash::make('rahasia123'),
-            'lms_role'   => 'peserta',
+            'lms_role'   => 'trainee',
         ]);
     }
 

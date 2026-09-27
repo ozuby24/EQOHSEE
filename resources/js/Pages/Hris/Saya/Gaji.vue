@@ -24,7 +24,7 @@ const dibuka = ref<number | null>(null);
 
 function rupiah(n: number | null | undefined): string {
   if (n === null || n === undefined) return '—';
-  return 'Rp ' + Math.round(Number(n)).toLocaleString('id-ID');
+  return 'Rp\u00A0' + Math.round(Number(n)).toLocaleString('id-ID');
 }
 
 /** Baris rincian sebuah slip: [label, nilai, tanda]. */

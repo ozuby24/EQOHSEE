@@ -38,8 +38,12 @@ const nadaSisa = (sisa: number) => (sisa < 0 ? 't-merah' : sisa <= 30 ? 't-kunin
               <!-- Judul kolom ditegakkan: sepuluh nama kelas mendatar
                    membuat tabelnya jauh lebih lebar daripada layar. -->
               <th v-for="k in judulKolom" :key="k" class="p-1.5 align-bottom">
-                <span class="block whitespace-nowrap text-stone-500 font-semibold"
-                      style="writing-mode:vertical-rl;transform:rotate(180deg);max-height:120px">{{ k }}</span>
+                <!-- Boleh membungkus, bukan nowrap: dengan batas tinggi 120px,
+                     "Berbahaya bagi Lingkungan Perairan" terpotong menjadi
+                     "Berbahaya bagi Lingkun". Dalam tulisan tegak, baris
+                     kedua menjadi kolom kedua di sebelahnya. -->
+                <span class="block text-stone-500 font-semibold leading-tight" :title="k"
+                      style="writing-mode:vertical-rl;transform:rotate(180deg);max-height:128px">{{ k }}</span>
               </th>
             </tr>
           </thead>
