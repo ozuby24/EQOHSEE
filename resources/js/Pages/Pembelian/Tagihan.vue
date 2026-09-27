@@ -21,7 +21,7 @@ const bukaTolak = ref(false);
 const alasan = ref('');
 
 function rupiah(n: number) {
-  return 'Rp ' + Number(n || 0).toLocaleString('id-ID');
+  return 'Rp\u00A0' + Number(n || 0).toLocaleString('id-ID');
 }
 
 const basis = () => `/pembelian/tagihan/${p().id}`;

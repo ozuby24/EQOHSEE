@@ -79,7 +79,16 @@ async function kunci(p: any) {
 
 function rupiah(n: number | null) {
   if (n === null || n === undefined) return '—';
-  return 'Rp ' + Math.round(n).toLocaleString('id-ID');
+  return 'Rp\u00A0' + Math.round(n).toLocaleString('id-ID');
+}
+
+/* Angka rupiah TANPA awalan, untuk sel tabel slip. "Rp" diulang di tiap
+   sel memakan sepertiga lebar kolom, dan di panel selebar ini tabelnya
+   lalu memeras angka menjadi dua baris ("Rp" / "6.500.000"). Mata uangnya
+   disebut sekali di kepala tabel. */
+function nominal(n: number | null) {
+  if (n === null || n === undefined) return '—';
+  return Math.round(n).toLocaleString('id-ID');
 }
 
 const rinci = ref<number | null>(null);
@@ -215,16 +224,17 @@ const rinci = ref<number | null>(null);
         <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
           <div class="overflow-x-auto">
             <table class="min-w-full text-left text-[11.5px]">
+              <caption class="caption-top text-right px-3 pt-2 text-[10.5px] text-stone-400">Nilai dalam rupiah (Rp)</caption>
               <thead>
                 <tr class="text-stone-400 border-b border-stone-200 bg-stone-50/70">
                   <th class="px-4 py-2 font-semibold">Pekerja</th>
-                  <th class="px-4 py-2 font-semibold text-right">Pokok</th>
-                  <th class="px-4 py-2 font-semibold text-right">Site</th>
-                  <th class="px-4 py-2 font-semibold text-right">Lembur</th>
-                  <th class="px-4 py-2 font-semibold text-right">Bruto</th>
-                  <th class="px-4 py-2 font-semibold text-right">BPJS</th>
-                  <th class="px-4 py-2 font-semibold text-right">PPh 21</th>
-                  <th class="px-4 py-2 font-semibold text-right">Dibawa pulang</th>
+                  <th class="px-3 py-2 font-semibold text-right">Pokok</th>
+                  <th class="px-3 py-2 font-semibold text-right">Site</th>
+                  <th class="px-3 py-2 font-semibold text-right">Lembur</th>
+                  <th class="px-3 py-2 font-semibold text-right">Bruto</th>
+                  <th class="px-3 py-2 font-semibold text-right">BPJS</th>
+                  <th class="px-3 py-2 font-semibold text-right">PPh 21</th>
+                  <th class="px-3 py-2 font-semibold text-right">Dibawa pulang</th>
                   <th class="px-4 py-2 font-semibold"></th>
                 </tr>
               </thead>
@@ -240,22 +250,22 @@ const rinci = ref<number | null>(null);
                         <span v-else class="text-red-600"> · PTKP belum diisi</span>
                       </div>
                     </td>
-                    <td class="px-4 py-2.5 num text-right">{{ rupiah(s.pokok + s.tetap) }}</td>
-                    <td class="px-4 py-2.5 num text-right">
-                      {{ rupiah(s.site) }}
+                    <td class="px-3 py-2.5 num text-right">{{ nominal(s.pokok + s.tetap) }}</td>
+                    <td class="px-3 py-2.5 num text-right">
+                      {{ nominal(s.site) }}
                       <div class="text-[10px] text-stone-400">{{ s.hariSite }} hari</div>
                     </td>
-                    <td class="px-4 py-2.5 num text-right">
-                      {{ rupiah(s.lembur) }}
+                    <td class="px-3 py-2.5 num text-right">
+                      {{ nominal(s.lembur) }}
                       <div v-if="s.lemburJam" class="text-[10px] text-stone-400">{{ s.lemburJam }} jam</div>
                     </td>
-                    <td class="px-4 py-2.5 num text-right font-semibold text-cam-ink">{{ rupiah(s.bruto) }}</td>
-                    <td class="px-4 py-2.5 num text-right text-stone-500">{{ rupiah(s.bpjs) }}</td>
-                    <td class="px-4 py-2.5 num text-right" :class="s.pph21 < 0 ? 'text-emerald-700' : 'text-amber-700'">
-                      {{ rupiah(s.pph21) }}
+                    <td class="px-3 py-2.5 num text-right font-semibold text-cam-ink">{{ nominal(s.bruto) }}</td>
+                    <td class="px-3 py-2.5 num text-right text-stone-500">{{ nominal(s.bpjs) }}</td>
+                    <td class="px-3 py-2.5 num text-right" :class="s.pph21 < 0 ? 'text-emerald-700' : 'text-amber-700'">
+                      {{ nominal(s.pph21) }}
                       <div v-if="s.tarif" class="text-[10px] text-stone-400">{{ s.tarif }}%</div>
                     </td>
-                    <td class="px-4 py-2.5 num text-right font-bold text-cam-ink">{{ rupiah(s.neto) }}</td>
+                    <td class="px-3 py-2.5 num text-right font-bold text-cam-ink">{{ nominal(s.neto) }}</td>
                     <td class="px-4 py-2.5 text-right">
                       <button type="button" class="text-[11px] text-sky-700 hover:underline"
                               @click="rinci = rinci === s.id ? null : s.id">Rincian</button>

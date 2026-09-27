@@ -76,7 +76,7 @@ function elemenBaru(bagian: any[], i: number): boolean {
           {{ props.meta?.basis || 'Sistem Manajemen Keselamatan Pertambangan Minerba' }}
         </p>
 
-        <table class="w-full text-[11px] border border-stone-300 mb-4">
+        <table class="lembar-pasangan w-full text-[11px] border border-stone-300 mb-4">
           <tbody>
             <tr>
               <td class="p-2 border-b border-r border-stone-200 w-36 text-stone-500">Perusahaan</td>

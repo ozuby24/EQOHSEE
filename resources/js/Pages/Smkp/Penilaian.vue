@@ -768,7 +768,7 @@ const kartu = computed(() => [
                berturut-turut, dan lembar 100 butir ini menjadi dua kali
                lebih panjang tanpa satu pun keterangan tambahan. -->
           <div v-if="s.rinci" class="px-5 py-3 bg-stone-100 flex flex-wrap items-center gap-x-3 gap-y-2">
-            <div class="min-w-0 flex-1">
+            <div class="min-w-0 grow basis-56">
               <h4 class="font-bold text-[12.5px]">{{ s.kode }} · {{ s.nama }}</h4>
               <p class="text-[11px] text-stone-500 mt-0.5">
                 {{ s.butir.length }} butir ·
@@ -804,7 +804,10 @@ const kartu = computed(() => [
                :class="s.rinci ? 'pl-12 pr-5' : 'px-5'">
 
             <div class="flex flex-wrap items-start gap-x-3 gap-y-2">
-              <div class="min-w-0 flex-1">
+              <!-- `grow basis-56`: dengan `flex-1` (basis 0) nama kriteria
+                   menyusut sampai 45px di ponsel sementara tangga nilainya
+                   tetap sebaris, dan tiap kata terpotong per suku kata. -->
+              <div class="min-w-0 grow basis-56">
                 <p class="text-[12.5px] leading-snug"><b>{{ b.kode }}</b> · {{ b.nama }}</p>
                 <p class="text-[11px] text-stone-500 mt-0.5">
                   Nilai maksimum {{ b.maks }}

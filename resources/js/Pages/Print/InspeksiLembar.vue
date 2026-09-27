@@ -122,7 +122,7 @@ const nada = (k: string | null) =>
 
       <!-- Identitas: apa, di mana, kapan, oleh siapa. Empat pertanyaan
            yang harus terjawab sebelum satu baris hasil pun dibaca. -->
-      <table class="eq-identitas">
+      <table class="eq-identitas lembar-identitas">
         <tbody>
           <tr>
             <th>Nomor</th><td class="num">{{ i.kode }}</td>
@@ -183,7 +183,7 @@ const nada = (k: string | null) =>
       <section v-if="temuan.length" class="eq-temuan">
         <div class="eq-temuan-judul">TEMUAN DAN TINDAKAN PERBAIKAN</div>
 
-        <table>
+        <table data-tumpuk-bawah="560">
           <thead>
             <tr>
               <th class="eq-t-no">No</th>

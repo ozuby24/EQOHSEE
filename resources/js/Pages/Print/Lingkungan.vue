@@ -21,7 +21,7 @@ const props = defineProps<{
 const angka = (v: unknown, d = 0) => new Intl.NumberFormat('id-ID', { maximumFractionDigits: d, minimumFractionDigits: d }).format(Number(v || 0));
 const tanggal = (v: unknown) => v ? new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(String(v))) : '—';
 const label = (v: string) => String(v || '').replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-const rupiah = (v: unknown) => `Rp ${angka(v)}`;
+const rupiah = (v: unknown) => `Rp\u00A0${angka(v)}`;
 
 const langgar = props.pantau.filter((x) => x.melanggar);
 </script>

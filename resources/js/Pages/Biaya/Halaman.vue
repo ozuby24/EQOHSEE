@@ -24,7 +24,7 @@ const judul: Record<string, string> = {
 };
 
 const angka = (v: unknown, d = 0) => new Intl.NumberFormat('id-ID', { maximumFractionDigits: d, minimumFractionDigits: d }).format(Number(v || 0));
-const rp = (v: unknown) => v === null || v === undefined ? '—' : `Rp ${angka(v)}`;
+const rp = (v: unknown) => v === null || v === undefined ? '—' : `Rp\u00A0${angka(v)}`;
 const label = (v: string) => String(v || '').replaceAll('-', ' ').replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 const namaBulan = (b: number) => ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][b] || String(b);
 

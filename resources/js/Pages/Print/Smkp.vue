@@ -345,14 +345,14 @@ const total = computed(() => props.totalLembar || (
         </tr></thead><tbody>
           <template v-for="baris in props.matriks || []" :key="baris.kode">
             <tr v-if="baris.na" class="border-b border-stone-100">
-              <td class="p-2 align-top font-semibold">{{ baris.kode }}</td>
+              <td class="p-2 align-top font-semibold whitespace-nowrap">{{ baris.kode }}</td>
               <td class="p-2 align-top">{{ baris.nama }}</td>
               <td class="p-2 align-top">N/A</td>
               <td class="p-2 align-top text-stone-500">{{ baris.ket || 'Tidak berlaku bagi auditi.' }}</td>
             </tr>
             <tr v-for="(m, i) in baris.metode" v-else :key="baris.kode + m.label"
                 class="border-b border-stone-100">
-              <td class="p-2 align-top font-semibold">{{ i === 0 ? baris.kode : '' }}</td>
+              <td class="p-2 align-top font-semibold whitespace-nowrap">{{ i === 0 ? baris.kode : '' }}</td>
               <td class="p-2 align-top">{{ i === 0 ? baris.nama : '' }}</td>
               <td class="p-2 align-top">{{ m.label }}</td>
               <td class="p-2 align-top whitespace-pre-line">{{ m.sampel }}</td>
@@ -646,8 +646,8 @@ const total = computed(() => props.totalLembar || (
           <tbody>
             <tr v-for="(b, i) in bagian" :key="b.nomor" class="border-b border-stone-100">
               <td class="p-2 align-top">{{ Number(page) * 8 + Number(i) + 1 }}</td>
-              <td class="p-2 align-top font-semibold">{{ b.nomor }}</td>
-              <td class="p-2 align-top">{{ b.kode }}</td>
+              <td class="p-2 align-top font-semibold whitespace-nowrap">{{ b.nomor }}</td>
+              <td class="p-2 align-top whitespace-nowrap">{{ b.kode }}</td>
               <td class="p-2 align-top">{{ b.uraian }}</td>
               <td class="p-2 align-top">{{ b.kategori }}</td>
             </tr>

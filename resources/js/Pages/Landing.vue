@@ -54,7 +54,7 @@ const props = defineProps<{
   tahun: number;
 }>();
 
-const rp = (n: number) => 'Rp ' + n.toLocaleString('id-ID');
+const rp = (n: number) => 'Rp\u00A0' + n.toLocaleString('id-ID');
 
 /* Bilangan kecil di judul ditulis dengan kata: "Tujuh huruf, delapan
    aspek" — bukan "Tujuh huruf, 8 aspek". Tetap dihitung dari datanya. */

@@ -36,7 +36,7 @@ watch(cari, () => {
 
     <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
       <header class="px-5 py-3.5 border-b border-stone-100 flex flex-wrap items-center gap-3">
-        <h3 class="text-[13.5px] font-bold text-cam-ink flex-1 min-w-0">
+        <h3 class="text-[13.5px] font-bold text-cam-ink grow basis-40 min-w-0">
           Riwayat <span class="font-normal text-stone-400">| {{ baris.length }} baris</span>
         </h3>
 

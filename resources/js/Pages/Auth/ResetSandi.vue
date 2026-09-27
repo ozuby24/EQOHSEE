@@ -10,10 +10,10 @@ function reset() { form.post('/reset-password', { onFinish: () => form.reset('pa
 
 <template>
   <Head title="Atur Ulang Kata Sandi" />
-  <h2 class="ms-judul mb-2">Atur ulang kata sandi</h2>
-  <p class="text-sm text-stone-500 mb-6">Buat kata sandi baru untuk akun Anda.</p>
+  <h2 class="auth-judul">Atur ulang kata sandi</h2>
+  <p class="auth-ket mb-7">Buat kata sandi baru untuk akun Anda.</p>
   <div v-if="Object.keys(form.errors).length" class="mb-4 rounded-xl bg-red-50 border border-red-100 text-red-700 px-4 py-3 text-[12.5px]"><ul><li v-for="(pesan,k) in form.errors" :key="k">• {{ pesan }}</li></ul></div>
-  <form class="space-y-4" @submit.prevent="reset"><div><label class="label">Email</label><input v-model="form.email" type="email" required class="input"></div><div><label class="label">Kata sandi baru</label><InputSandi v-model="form.password" required autocomplete="new-password" kelas="input" label="baru" /><p class="petunjuk">Minimal {{ props.sandiMinimal }} huruf, tanpa syarat huruf besar atau angka. Kalimat pendek seperti &laquo;kopi pagi di tambang&raquo; lebih mudah diingat sekaligus lebih sulit ditebak daripada satu kata bercampur angka.</p></div><div><label class="label">Ulangi kata sandi</label><InputSandi v-model="form.password_confirmation" required autocomplete="new-password" kelas="input" label="ulangan" /></div><button type="submit" :disabled="form.processing" class="w-full rounded-lg bg-[#F57C00] hover:bg-[#FF9800] text-[#0B1117] min-h-[52px] py-3 font-bold disabled:opacity-50">Atur ulang</button></form>
+  <form class="space-y-4" @submit.prevent="reset"><div><label class="label">Email</label><input v-model="form.email" type="email" required class="input"></div><div><label class="label">Kata sandi baru</label><InputSandi v-model="form.password" required autocomplete="new-password" kelas="input" label="baru" /><p class="petunjuk">Minimal {{ props.sandiMinimal }} huruf, tanpa syarat huruf besar atau angka. Kalimat pendek seperti &laquo;kopi pagi di tambang&raquo; lebih mudah diingat sekaligus lebih sulit ditebak daripada satu kata bercampur angka.</p></div><div><label class="label">Ulangi kata sandi</label><InputSandi v-model="form.password_confirmation" required autocomplete="new-password" kelas="input" label="ulangan" /></div><button type="submit" :disabled="form.processing" class="auth-tombol">Atur ulang</button></form>
 </template>
 
 <style scoped>.label{display:block;margin-bottom:.375rem;font-size:11.5px;font-weight:700;text-transform:uppercase;color:#78716c}.input{width:100%;border:1px solid #e7e5e4;border-radius:.75rem;background:#fff;padding:.75rem 1rem;font-size:.875rem}.petunjuk{margin:.4rem 0 0;font-size:11.5px;line-height:1.5;color:#78716c}</style>

@@ -192,7 +192,7 @@ const kartu = computed(() => [
     label: 'Emisi',
     nilai: n(Number(props.r?.tco2e ?? 0), 1),
     satuan: 'tCO₂e',
-    catatan: `Rp ${ringkas(Number(props.r?.rupiah ?? 0))} biaya energi`,
+    catatan: `Rp\u00A0${ringkas(Number(props.r?.rupiah ?? 0))} biaya energi`,
     garis: [],
   },
 ]);

@@ -46,8 +46,8 @@ function kirim() {
 <template>
   <Head title="Verifikasi Dua Langkah" />
 
-  <h2 class="ms-judul mb-2">Satu langkah lagi</h2>
-  <p class="text-sm text-stone-500 mb-6">
+  <h2 class="auth-judul">Satu langkah lagi</h2>
+  <p class="auth-ket mb-7">
     Masukkan kode dari aplikasi autentikator Anda<span v-if="props.surel">
       untuk <span class="font-semibold text-stone-700">{{ props.surel }}</span></span>.
   </p>
@@ -70,7 +70,7 @@ function kirim() {
     </div>
 
     <button type="submit" :disabled="form.processing"
-            class="w-full rounded-lg bg-[#F57C00] hover:bg-[#FF9800] text-[#0B1117] min-h-[52px] py-3 font-bold transition disabled:opacity-50">
+            class="auth-tombol">
       {{ form.processing ? 'Memeriksa…' : 'Lanjutkan' }}
     </button>
   </form>
@@ -81,7 +81,7 @@ function kirim() {
   </p>
 
   <p class="text-center text-sm text-stone-500 mt-3">
-    <button type="button" class="font-bold text-[#D96500] hover:underline"
+    <button type="button" class="auth-tautan"
             @click="batal.post('/dua-faktor/batal')">
       Masuk dengan akun lain
     </button>
@@ -89,8 +89,8 @@ function kirim() {
 </template>
 
 <style scoped>
-.label { display:block; margin-bottom:.375rem; font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#78716c }
-.input { width:100%; border:1px solid #e7e5e4; border-radius:.75rem; background:#fff; padding:.75rem 1rem; font-size:.875rem; transition:box-shadow .15s,border-color .15s }
+.label { display:block; margin-bottom:.4rem; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#5E6875 }
+.input { width:100%; min-height:46px; border:1px solid #D9DEE4; border-radius:.75rem; background:#fff; padding:.65rem 1rem; font-size:14.5px; color:#0F1720; transition:box-shadow .15s,border-color .15s }
 .input:focus { outline:none; border-color:#f57c00; box-shadow:0 0 0 3px rgb(245 124 0 / .15) }
 
 /* Angka berjarak dan monospasi: enam angka rapat sulit diperiksa ulang

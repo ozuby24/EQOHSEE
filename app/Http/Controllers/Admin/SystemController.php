@@ -68,15 +68,36 @@ class SystemController extends Controller
             ],
         ];
 
-        $roles = [
-            'Administrator' => User::where('is_admin', true)->count(),
-            'Trainer'       => User::where('lms_role', 'trainer')->count(),
-            'KTT'           => User::where('lms_role', 'ktt')->count(),
-            'Auditor'       => User::where('audit_role', 'auditor')->count(),
-            'Perusahaan'    => User::where('audit_role', 'company')->count(),
-            'Peserta'       => User::where(fn($q) => $q->whereNull('lms_role')->orWhere('lms_role','trainee'))->count(),
-            'Nonaktif'      => User::where('active', false)->count(),
-        ];
+        /* Sebaran peran: SATU peran per orang, jumlahnya = seluruh pengguna.
+
+           Sebelumnya tiap peran dihitung dengan kuerinya sendiri. Kategorinya
+           saling tumpang tindih — administrator yang juga KTT terhitung dua
+           kali, akun nonaktif terhitung lagi di perannya — sehingga donatnya
+           tidak proporsional dan angka "N pengguna" di atasnya tidak sama
+           dengan kartu Pengguna di bawahnya. "Peserta" pun hanya mencari
+           'trainee' atau null, jadi akun berperan lain yang bukan pelatih
+           maupun KTT jatuh ke luar semua kategori dan hilang dari donat.
+
+           Urutannya prioritas: yang nonaktif lebih dulu (perannya tidak
+           berlaku selama nonaktif), lalu hak terluas, lalu sisanya Peserta. */
+        $roles = array_fill_keys(['Administrator', 'Trainer', 'KTT', 'Auditor', 'Perusahaan', 'Peserta', 'Nonaktif'], 0);
+
+        User::query()
+            ->selectRaw('is_admin, lms_role, audit_role, active, count(*) as n')
+            ->groupBy('is_admin', 'lms_role', 'audit_role', 'active')
+            ->get()
+            ->each(function ($b) use (&$roles) {
+                $peran = match (true) {
+                    $b->active === false         => 'Nonaktif',
+                    (bool) $b->is_admin          => 'Administrator',
+                    $b->lms_role === 'trainer'   => 'Trainer',
+                    $b->lms_role === 'ktt'       => 'KTT',
+                    $b->audit_role === 'auditor' => 'Auditor',
+                    $b->audit_role === 'company' => 'Perusahaan',
+                    default                      => 'Peserta',
+                };
+                $roles[$peran] += (int) $b->n;
+            });
 
         $companies = Company::withCount('users')->orderBy('name')->get();
         $logs = ActivityLog::latest()->take(30)->get();

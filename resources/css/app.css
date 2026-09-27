@@ -1,5 +1,11 @@
 /* Huruf disajikan sendiri — lihat fonts.css. */
 @import './fonts.css';
+/* Archivo dan IBM Plex Mono — muka huruf merek yang dipakai halaman depan.
+   Dimuat di sini juga supaya judul di dalam aplikasi (kop halaman, halaman
+   masuk, halaman pilar) berbentuk sama dengan judul di halaman depan: satu
+   identitas dari pintu depan sampai ke dalam. Berkasnya subset latin dan
+   dimuat malas per unicode-range, jadi ongkosnya kecil. */
+@import './huruf-archivo.css';
 
 @tailwind base;
 @tailwind components;
@@ -87,6 +93,8 @@ th{ white-space:nowrap; }
 @media screen and (max-width: 1279.98px){
   #app table:not(.lembar table){ min-width:0 !important; }
   #app :is(th, td):not(.lembar *){ white-space:normal !important; min-width:0 !important; }
+  /* ...kecuali angka: lihat td.num di bawah. */
+  #app td.num:not(.lembar *), #app td .num:not(.lembar *), #app td.sel-angka:not(.lembar *){ white-space:nowrap !important; }
   #app :is(th, td):not(.lembar *):not(.tabel-tumpuk *):not(:first-child):not(:last-child){
     padding-left:.45rem !important; padding-right:.45rem !important;
   }
@@ -98,12 +106,15 @@ th{ white-space:nowrap; }
    kecil di atas nilainya, beberapa kolom per kartu — supaya tabel dua
    belas kolom tidak berubah menjadi kartu setinggi layar. Sel berisi
    teks panjang atau tombol (.sel-lebar, dipasang tabelPas.ts) mengambil
-   selebar kartu. */
+   selebar kartu. Kolom kisi paling sempit 8.5rem, atau 40% kartu bila
+   kartunya sendiri sempit (di dalam lembar cetak di ponsel) — tanpa
+   itu kartu selebar 230 px hanya memuat satu kolom dan tiap angka
+   mengambil satu baris penuh. */
 @media screen{
   table.tabel-tumpuk, table.tabel-tumpuk > tbody, table.tabel-tumpuk > tfoot{ display:block; width:100% !important; min-width:0 !important; }
   table.tabel-tumpuk > thead{ display:none; }
   table.tabel-tumpuk > :is(tbody, tfoot) > tr{
-    display:grid; grid-template-columns:repeat(auto-fill, minmax(8.5rem, 1fr)); column-gap:1rem; row-gap:.15rem;
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(min(8.5rem, 40%), 1fr)); column-gap:1rem; row-gap:.15rem;
     margin:.6rem 0; padding:.55rem .85rem; border:1px solid #E7E5E4; border-radius:.8rem;
   }
   table.tabel-tumpuk > tbody > tr:first-child{ margin-top:.2rem; }
@@ -219,7 +230,7 @@ th{ white-space:nowrap; }
 }
 
 /* ---------- Navigasi ---------- */
-.nav-active{ background:linear-gradient(135deg,rgba(21,141,153,.20),rgba(44,176,188,.10)); color:#fff; }
+.nav-active{ background:linear-gradient(135deg,rgba(245,124,0,.22),rgba(255,152,0,.08)); color:#fff; }
 .nav-active .nav-accent{ opacity:1; }
 
 /* ---------- Kartu ---------- */
@@ -227,7 +238,7 @@ th{ white-space:nowrap; }
 .card-hover:hover{ transform:translateY(-4px); }
 
 /* ---------- Fokus input ---------- */
-.ring-focus:focus{ box-shadow:0 0 0 3px rgba(21,141,153,.30); border-color:#158D99; }
+.ring-focus:focus{ box-shadow:0 0 0 3px rgba(245,124,0,.22); border-color:#F57C00; }
 
 /* ---------- Animasi ---------- */
 @keyframes fadeUp{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
@@ -238,6 +249,50 @@ th{ white-space:nowrap; }
 .animate-fadeIn{ animation:fadeIn .4s ease both; }
 .animate-pop{ animation:pop .35s cubic-bezier(.21,.6,.35,1) both; }
 .floaty{ animation:floaty 5s ease-in-out infinite; }
+
+/* ---------- Huruf merek (Archivo) ----------
+   Satu kelas untuk judul yang harus terbaca sebagai EQOHSEE: dipakai
+   halaman masuk/daftar, kop halaman, dan halaman pilar. Dipersempit lewat
+   sumbu lebar Archivo, sama seperti .ld-h1/.ld-h2 di halaman depan. */
+.huruf-merek{
+  font-family:'Archivo',system-ui,sans-serif;
+  font-weight:700;
+  font-stretch:86%;
+  letter-spacing:-.025em;
+  line-height:1.05;
+  text-wrap:balance;
+}
+.auth-judul{
+  font-family:'Archivo',system-ui,sans-serif;
+  font-weight:700;
+  font-stretch:88%;
+  font-size:30px;
+  letter-spacing:-.022em;
+  line-height:1.1;
+  color:#0B1117;
+}
+.auth-ket{ font-size:13.5px; line-height:1.55; color:#5E6875; margin-top:6px; }
+.auth-label{
+  display:block; margin-bottom:.4rem;
+  font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#5E6875;
+}
+.auth-isian{
+  width:100%; min-height:48px; border:1px solid #D9DEE4; border-radius:.75rem; background:#fff;
+  padding:.7rem 1rem; font-size:15px; color:#0F1720;
+  transition:border-color .15s, box-shadow .15s;
+}
+.auth-isian:focus{ outline:none; border-color:#F57C00; box-shadow:0 0 0 3px rgba(245,124,0,.18); }
+.auth-tombol{
+  width:100%; min-height:50px; display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+  border-radius:.75rem; background:#F57C00; color:#0B1117; font-size:15px; font-weight:700;
+  transition:background-color .15s, transform .15s, box-shadow .15s;
+  box-shadow:0 10px 24px -14px rgba(245,124,0,.7);
+}
+.auth-tombol:hover{ background:#FF9800; }
+.auth-tombol:active{ transform:translateY(1px); }
+.auth-tombol:disabled{ opacity:.6; cursor:wait; }
+.auth-tautan{ font-weight:700; color:#A85400; text-decoration:underline; text-underline-offset:3px; text-decoration-color:rgba(168,84,0,.35); }
+.auth-tautan:hover{ color:#0B1117; text-decoration-color:currentColor; }
 
 /* ---------- Sistem angka (rata & proporsional) ---------- */
 .num{ font-variant-numeric:tabular-nums lining-nums; font-feature-settings:'tnum' 1,'lnum' 1; }
@@ -256,6 +311,31 @@ th{ white-space:nowrap; }
 .stat-unit{ font-weight:700; font-size:.55em; letter-spacing:0; opacity:.65; margin-left:1px; }
 
 table .num, td.num, th.num{ text-align:right; font-variant-numeric:tabular-nums; }
+
+/* Judul kolom yang isinya rata kanan ikut rata kanan — dipasang oleh
+   resources/js/tabelPas.ts setelah mengukur isi kolomnya. */
+th.th-rata-kanan{ text-align:right !important; }
+
+/* Dipasang sesaat oleh tabelPas.ts saat MENGUKUR apakah sebuah tabel
+   muat. Tabel ber-table-layout:fixed tidak pernah melebar melampaui
+   wadahnya — ia memotong kata di dalam kolomnya — sehingga tanpa ini
+   lembar delapan kolom di ponsel lolos dari pengukuran dan tampil
+   "Nom / or / Ketid / akse". Diukur dengan tata letak otomatis, tabel
+   yang tidak muat tanpa memotong kata terdeteksi dan menjadi kartu. */
+table.tabel-ukur{ table-layout:auto !important; }
+
+/* Angka tidak dipatah di tengah.
+   "Rp 6.500.000" yang turun menjadi "Rp" dan "6.500.000", "9,9 bln"
+   menjadi "9,9" dan "bln", "24 Sep 2026" menjadi tiga baris — terukur di
+   tabel gaji, kontrak, register kepatuhan, dan monitor hazard. Sel angka
+   selebar isinya; tabel yang karenanya tidak muat berubah menjadi kartu
+   bertumpuk lewat tabelPas.ts, bukan memeras angkanya. */
+td.num, td .num, th.num, td.sel-angka{ white-space:nowrap; }
+/* Angka dan tanggal sebaris di dalam kalimat ("jangkar 2026-08-01",
+   "efektif habis 2026-12-31") tidak boleh terbelah pada tanda
+   hubungnya di ponsel: "2026-08-" di ujung baris dan "01" di baris
+   berikutnya terbaca sebagai dua nilai. Isinya selalu pendek. */
+span.num{ white-space:nowrap; }
 
 /* ---------- Utilitas teks ---------- */
 .clamp-1{ display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
@@ -277,6 +357,59 @@ input,select,textarea{ outline:none; }
    ══════════════════════════════════════════════════════════════ */
 
 .lembar{ position:relative; }
+
+/* Kop dokumen di layar ponsel: tiga kolom sebaris (logo, judul, blok
+   nomor dokumen) lebih lebar dari lembarnya, dan nomor seperti
+   "FRM/CDI/OHSE/019" menembus bingkai kanan. Blok nomor dokumen turun
+   menjadi baris kedua selebar kop. Kertas tetap tiga kolom. */
+@media screen and (max-width:639.98px){
+  table.kop-cetak, table.kop-cetak > tbody{ display:block; }
+  table.kop-cetak > tbody > tr{ display:grid; grid-template-columns:5.5rem minmax(0, 1fr); }
+  table.kop-cetak > tbody > tr > td{ width:auto !important; }
+  table.kop-cetak > tbody > tr > td:nth-child(2){ border-left:0; }
+  table.kop-cetak > tbody > tr > td:last-child{ grid-column:1 / -1; border-top:0; }
+  table.kop-cetak td td{ overflow-wrap:anywhere; }
+}
+
+/* Tabel keterangan formulir SMKP (dua pasang label–isi per baris) dan
+   baris penanda tangan (nama, tanda tangan, tanggal sebaris) di layar
+   ponsel: tiap pasang menjadi baris sendiri, bukan empat atau enam
+   kolom selebar 60 px yang membuat "PT Borneo Mandiri Utama" empat
+   baris. Kertas tetap memakai tata letaknya. */
+@media screen and (max-width:639.98px){
+  table.lembar-pasangan, table.lembar-pasangan > tbody,
+  table.lembar-ttd, table.lembar-ttd > tbody{ display:block; }
+  table.lembar-pasangan > tbody > tr{ display:grid; grid-template-columns:minmax(6.5rem, 34%) minmax(0, 1fr); }
+  table.lembar-pasangan > tbody > tr > td{ width:auto !important; border-bottom:1px solid #E7E5E4; }
+  table.lembar-pasangan > tbody > tr > td:nth-child(even){ border-right:0; }
+  table.lembar-pasangan > tbody > tr:last-child > td:last-child{ border-bottom:0; }
+  table.lembar-ttd > tbody > tr{ display:grid; grid-template-columns:minmax(6.5rem, 38%) minmax(0, 1fr); row-gap:.25rem; }
+  table.lembar-ttd > tbody > tr + tr{ margin-top:1rem; }
+  table.lembar-ttd > tbody > tr > td{ width:auto !important; }
+  table.lembar-ttd > tbody > tr > td:nth-child(4){ min-height:2.75rem; }
+}
+
+/* Tabel identitas lembar (tiga pasang label–isi per baris, kolom
+   persen) di layar ponsel: label selebar 11% menjadi 30 px dan tiap
+   kata terpotong per dua huruf ("NOM OR", "TAN GGA L"). Di layar sempit
+   setiap pasang label–isi menjadi satu baris sendiri; kertas tetap
+   memakai tata letak enam kolomnya. */
+@media screen and (max-width:639.98px){
+  table.lembar-identitas{
+    display:block; width:100%; border:1px solid #D6D3D1; border-bottom:0;
+  }
+  table.lembar-identitas > tbody{ display:block; }
+  table.lembar-identitas > tbody > tr{
+    display:grid; grid-template-columns:minmax(6.5rem, 34%) minmax(0, 1fr);
+  }
+  table.lembar-identitas > tbody > tr > :is(th, td){
+    width:auto !important; border:0 !important; border-bottom:1px solid #D6D3D1 !important;
+    overflow-wrap:anywhere;
+  }
+  table.lembar-identitas > tbody > tr > th{
+    border-right:1px solid #D6D3D1 !important; overflow-wrap:normal; hyphens:auto;
+  }
+}
 
 /* Tabel di dalam lembar tidak boleh terbelah antar halaman cetak. */
 .lembar table{ break-inside:auto; }
@@ -529,7 +662,7 @@ input,select,textarea{ outline:none; }
      color:transparent, sehingga currentColor ikut menjadi transparan dan
      seluruh teks lenyap. */
   --sheen-base: #FFFFFF;
-  --sheen-hi:   #9FEFF4;
+  --sheen-hi:   #FFD3A1;
   background-image: linear-gradient(100deg,
     var(--sheen-base) 0%,  var(--sheen-base) 38%,
     var(--sheen-hi)   50%,
@@ -559,7 +692,7 @@ input,select,textarea{ outline:none; }
 /* ── Garis pemisah bergradien ── */
 .rule-grad{
   height:1px; border:0;
-  background:linear-gradient(90deg,transparent,rgba(44,176,188,.55),transparent);
+  background:linear-gradient(90deg,transparent,rgba(245,124,0,.55),transparent);
 }
 
 /* ── Kartu kaca gelap ── */

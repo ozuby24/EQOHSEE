@@ -56,7 +56,7 @@ const berkas = (p: unknown) => (p ? String(p) : null);
         Ketidaksesuaian dan Tindak Lanjut
       </h1>
 
-      <table class="w-full text-[11px] border border-stone-300 mb-4">
+      <table class="lembar-pasangan w-full text-[11px] border border-stone-300 mb-4">
         <tbody>
           <tr>
             <td class="p-2 border-b border-r border-stone-200 w-32 text-stone-500">Perusahaan</td>
@@ -156,10 +156,10 @@ const berkas = (p: unknown) => (p ? String(p) : null);
         </tbody>
       </table>
 
-      <section class="grid grid-cols-3 gap-6 text-[10.5px] mt-6">
+      <section class="grid grid-cols-3 gap-3 sm:gap-6 print:gap-6 text-[10.5px] mt-6">
         <div class="text-center">
           <p class="mb-12">Auditor,</p>
-          <p class="border-t border-stone-400 pt-1">………………………</p>
+          <p class="border-t border-stone-400 pt-1 overflow-hidden whitespace-nowrap">………………………</p>
         </div>
         <div class="text-center">
           <p class="mb-12">Penanggung jawab tindakan,</p>

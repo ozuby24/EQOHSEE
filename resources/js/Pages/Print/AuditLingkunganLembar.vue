@@ -54,7 +54,7 @@ defineProps<{
     <article class="akl-lembar lembar">
       <KopCetak :dok="dok" />
 
-      <table class="akl-identitas">
+      <table class="akl-identitas lembar-identitas">
         <tbody>
           <tr>
             <th>Nomor Audit</th><td class="num">{{ a.kode }}</td>
@@ -83,10 +83,10 @@ defineProps<{
             <tr>
               <th class="akl-t-no">No</th>
               <th class="akl-t-par">Parameter Penilaian</th>
-              <th class="akl-t-n">Nilai Maksimal</th>
-              <th class="akl-t-n">Hasil Verifikasi</th>
-              <th class="akl-t-n">Bobot</th>
-              <th class="akl-t-n">Hasil</th>
+              <th class="akl-t-n"><span class="akl-tegak">Nilai Maksimal</span></th>
+              <th class="akl-t-n"><span class="akl-tegak">Hasil Verifikasi</span></th>
+              <th class="akl-t-n"><span class="akl-tegak">Bobot</span></th>
+              <th class="akl-t-n"><span class="akl-tegak">Hasil</span></th>
             </tr>
           </thead>
           <tbody>
@@ -151,8 +151,8 @@ defineProps<{
             <tr>
               <th class="akl-b-no">No</th>
               <th class="akl-b-uraian">Kriteria Penilaian</th>
-              <th class="akl-b-n">Nilai</th>
-              <th class="akl-b-n">Verifikasi</th>
+              <th class="akl-b-n"><span class="akl-tegak">Nilai</span></th>
+              <th class="akl-b-n"><span class="akl-tegak">Verifikasi</span></th>
               <th class="akl-b-ket">Keterangan</th>
             </tr>
           </thead>
@@ -259,6 +259,26 @@ defineProps<{
 .akl-b-n   { width: 8%; text-align: center; font-weight: 700; }
 .akl-b-n.is-kosong { color: #A8A29E; font-weight: 400; }
 .akl-b-ket { width: 26%; color: #57534E; }
+
+/* Layar ponsel: dua ratus kriteria sebagai kartu membuat lembar ini
+   empat kali lebih panjang, jadi tetap tabel. Yang terperas hanya judul
+   kolomnya ("N O", "NI LA I", "VE RIF IK AS I"): kolom nomor sedikit
+   dilebarkan dan dua judul kolom nilai ditulis tegak, seperti matriks
+   B3. Tabel total skor diperlakukan sama: empat kolom angkanya selebar
+   12% membuat "10.00" menembus bingkai kanan. Kertas tidak berubah. */
+@media screen and (max-width: 639.98px) {
+  .akl-b-no { width: 6%; }
+  .akl-b-uraian { width: 52%; }
+  .akl-b-n { width: 9%; }
+  .akl-b-ket { width: 24%; }
+  .akl-butir thead th { padding: .25rem .15rem; letter-spacing: 0; overflow-wrap: normal; word-break: normal; vertical-align: bottom; }
+  .akl-t-no { width: 6%; }
+  .akl-t-par { width: auto; }
+  .akl-t-n { width: 13%; }
+  .akl-total th, .akl-total td { padding-left: .25rem; padding-right: .25rem; }
+  .akl-total thead th { vertical-align: bottom; letter-spacing: 0; overflow-wrap: normal; word-break: normal; }
+  .akl-tegak { display: inline-block; writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; }
+}
 
 .akl-sub  td { background: #1C1917; color: #E7E5E4; font-size: 7.5px; font-weight: 800; letter-spacing: .06em; }
 .akl-grup td { background: #F5F5F4; font-size: 8px; font-weight: 800; }

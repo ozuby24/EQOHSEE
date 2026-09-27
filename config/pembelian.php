@@ -115,9 +115,19 @@ return [
      * harus: Ekspor::nomorWa() menormalkan 0812…, +62 812…, dan 62812…
      * ke bentuk yang sama.
      */
+    /*
+     * `?:`, bukan argumen kedua env().
+     *
+     * Argumen kedua hanya dipakai bila variabelnya TIDAK ADA. Baris kosong
+     * `PEMBELIAN_WHATSAPP=` — persis yang ada di .env.example dan disalin
+     * setiap pemasangan — menghasilkan string kosong, bukan bawaan, dan
+     * halaman depan berdiri tanpa tombol WhatsApp maupun email tanpa satu
+     * pun galat. Kini kosong berarti "pakai bawaan", seperti yang dijanjikan
+     * .env.example; untuk MEMATIKAN tombolnya isi dengan tanda minus (-).
+     */
     'kontak' => [
-        'whatsapp' => env('PEMBELIAN_WHATSAPP', '6281214407991'),
-        'email'    => env('PEMBELIAN_EMAIL', 'febrian@eqohsee.id'),
+        'whatsapp' => (($v = env('PEMBELIAN_WHATSAPP')) === '-') ? '' : ($v ?: '6281214407991'),
+        'email'    => (($v = env('PEMBELIAN_EMAIL')) === '-') ? '' : ($v ?: 'febrian@eqohsee.id'),
     ],
 
 ];

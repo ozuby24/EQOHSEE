@@ -51,7 +51,7 @@ const persen = props.rekap.persen;
     <article class="kpt-lembar lembar">
       <KopCetak :dok="dok" />
 
-      <table class="kpt-identitas">
+      <table class="kpt-identitas lembar-identitas">
         <tbody>
           <tr>
             <th>Kode Register</th><td class="num">{{ s.kode ?? '—' }}</td>
@@ -91,7 +91,7 @@ const persen = props.rekap.persen;
         </span>
       </div>
 
-      <table class="kpt-nilai">
+      <table class="kpt-nilai" data-tumpuk-bawah="560">
         <thead>
           <tr>
             <th rowspan="2" class="kpt-k-no">No</th>

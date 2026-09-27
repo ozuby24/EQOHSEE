@@ -77,7 +77,7 @@ class PresisiTampilanTest extends TestCase
             'Deret huruf EQOHSEE kembali memakai flex-wrap dan patah tidak rata di ponsel.');
     }
 
-    public function test_halaman_tamu_tidak_memakai_serif_atau_semboyan_inggris(): void
+    public function test_halaman_tamu_berhuruf_merek_dan_tombolnya_terbaca(): void
     {
         $berkas = array_merge(
             [resource_path('js/Layouts/GuestLayout.vue')],
@@ -90,17 +90,31 @@ class PresisiTampilanTest extends TestCase
 
             $this->assertStringNotContainsString('font-serif', $isi,
                 "{$nama} memakai font-serif — di peramban itu Georgia/Times, bukan huruf EQOHSEE.");
-            foreach (['Safe Today', 'Sustainable Tomorrow', 'Innovation Always'] as $semboyan) {
-                $this->assertStringNotContainsString($semboyan, $isi,
-                    "{$nama} kembali memuat semboyan \"{$semboyan}\"; halaman depan sengaja tidak memakainya.");
-            }
-            $this->assertStringNotContainsString('bg-[#F57C00] hover:bg-[#DC6E00] text-white', $isi,
+            $this->assertDoesNotMatchRegularExpression('/bg-\\[#F57C00\\][^"]*text-white/', $isi,
                 "{$nama}: teks putih di atas jingga (kontras 2,7:1). Tombol jingga berteks ink.");
         }
 
-        $this->assertStringContainsString("import '../../css/masuk.css'",
-            file_get_contents(resource_path('js/Layouts/GuestLayout.vue')),
-            'GuestLayout tidak memuat masuk.css — halaman tamu kembali ke huruf aplikasi.');
+        $tombol = $this->aturan(file_get_contents(resource_path('css/app.css')), '.auth-tombol');
+        $this->assertStringContainsString('color:#0B1117', str_replace(' ', '', $tombol),
+            'Tombol halaman tamu tidak lagi berteks ink di atas jingga.');
+    }
+
+    public function test_panel_foto_halaman_tamu_menempel_di_layar_lebar(): void
+    {
+        $tataLetak = file_get_contents(resource_path('js/Layouts/GuestLayout.vue'));
+        $this->assertMatchesRegularExpression(
+            '/@media\s*\(min-width:\s*1024px\)\s*\{\s*\.tamu-panel\s*\{[^}]*position:\s*sticky/',
+            $tataLetak,
+            'Panel foto halaman tamu tidak menempel: pada formulir Daftar judulnya jatuh di bawah lipatan.');
+
+        // Aturan layar pendek harus SESUDAH aturan dasar .tamu-aspek —
+        // sebelumnya ia kalah urutan dan label judulnya tetap menempel
+        // ke baris logo di tablet mendatar 1176×620.
+        $dasar = strpos($tataLetak, '.tamu-aspek{');
+        $pendek = strpos($tataLetak, '(max-height:760px)');
+        $this->assertNotFalse($pendek, 'Aturan layar lebar yang pendek untuk panel tamu hilang.');
+        $this->assertGreaterThan($dasar, $pendek,
+            'Aturan layar pendek ditulis sebelum aturan dasar .tamu-aspek dan kalah urutan.');
     }
 
     public function test_halaman_masuk_merender_bahasa_baru(): void

@@ -16,6 +16,10 @@
  *
  * Dikecualikan: tabel tanpa baris judul (tidak ada label yang dapat
  * dipasang), lembar sertifikat, dan tabel bertanda `data-tabel-tetap`.
+ * Tabel bertanda `data-tumpuk-bawah="560"` juga ditumpuk bila lebarnya
+ * di bawah angka itu walau tidak meluap: tabel lembar cetak berkolom
+ * persen memeras kolomnya alih-alih meluap, jadi luapan tidak pernah
+ * terukur.
  * Lembar cetak IKUT disesuaikan di layar sempit; aturan kartunya hanya
  * berlaku untuk @media screen, jadi hasil cetak kertasnya tidak berubah.
  *
@@ -39,6 +43,26 @@ function wadah(t: HTMLElement): HTMLElement {
     c = c.parentElement;
   }
   return document.documentElement;
+}
+
+/**
+ * Lebar yang disediakan induk bagi tabel: lebar isi induknya, ditambah
+ * margin negatif bila tabel sengaja dilebarkan sampai tepi kartu.
+ *
+ * Pembanding wadah gulir saja tidak cukup. Tabel di dalam lembar cetak
+ * atau kartu berbantalan dapat melewati bingkai kartunya sementara
+ * masih lebih sempit dari layar — "Terbuka" dan "10.00" menembus garis
+ * kanan lembar di ponsel tanpa satu piksel pun luapan halaman.
+ */
+function lebarDiberi(t: HTMLTableElement): number {
+  const induk = t.parentElement;
+  if (!induk || !induk.clientWidth) return Infinity;
+  const ci = getComputedStyle(induk);
+  if (ci.display.startsWith('inline') || ci.display === 'contents') return Infinity;
+  const ct = getComputedStyle(t);
+  return induk.clientWidth
+    - (parseFloat(ci.paddingLeft) || 0) - (parseFloat(ci.paddingRight) || 0)
+    - (parseFloat(ct.marginLeft) || 0) - (parseFloat(ct.marginRight) || 0);
 }
 
 /** Label per kolom dari seluruh baris judul, dengan rowspan/colspan. */
@@ -107,13 +131,30 @@ function periksa(): void {
   const tadi = tabel.map((t) => t.classList.contains(KELAS));
   tabel.forEach((t) => t.classList.remove(KELAS));
 
+  // Sel tanggal/angka ditandai SEBELUM lebarnya diukur: tabel yang
+  // karenanya tidak muat lagi harus ikut menjadi kartu, bukan meluap.
+  tabel.forEach(tandaiSelAngka);
+
+  // Diukur dengan tata letak otomatis — lihat `table.tabel-ukur` di app.css.
+  tabel.forEach((t) => t.classList.add('tabel-ukur'));
+
   const tumpuk = tabel.map((t) => {
     const w = wadah(t);
     // Wadah yang berubah lebar tanpa perubahan DOM — bilah samping
     // dilipat, huruf selesai dimuat — memicu pemeriksaan ulang.
     if (ukuran && !diamati.has(w)) { diamati.add(w); ukuran.observe(w); }
-    return t.offsetParent !== null && t.scrollWidth > w.clientWidth + 1;
+    if (t.offsetParent === null) return false;
+    if (t.scrollWidth > w.clientWidth + 1) return true;
+    if (t.offsetWidth > lebarDiberi(t) + 1) return true;
+    // Tabel lembar cetak berkolom persen (table-layout: fixed) SELALU
+    // "muat": kolomnya dipersempit, bukan diluapkan, sampai "No" menjadi
+    // "N O" dan "Evaluasi" menjadi "EVA LUA SI". Lebar yang masih layak
+    // untuk tabel semacam itu dinyatakan oleh lembarnya sendiri.
+    const batas = Number(t.dataset.tumpukBawah) || 0;
+    return batas > 0 && t.clientWidth < batas;
   });
+
+  tabel.forEach((t) => t.classList.remove('tabel-ukur'));
 
   tabel.forEach((t, i) => {
     if (tumpuk[i]) {
@@ -131,6 +172,113 @@ function periksa(): void {
     for (const sel of Array.from(t.querySelectorAll<HTMLElement>(':scope > tbody > tr > td, :scope > tfoot > tr > td'))) {
       if (sel.scrollWidth > sel.clientWidth + 1) sel.classList.add('sel-lebar');
     }
+  });
+
+  tabel.forEach((t, i) => { if (!tumpuk[i]) samakanRataJudul(t); });
+}
+
+/* ─────────── Tanggal dan angka pendek tidak dipatah ───────────
+ *
+ * "24 Sep 2026" yang turun menjadi tiga baris, "2026-09-01 05:30"
+ * menjadi dua, "83.800 ton" menjadi "83.800" dan "ton" — terukur di
+ * pemantauan lingkungan, perintah kerja, P2H, dan laporan konservasi.
+ * Sel-sel itu tidak memakai kelas `.num`, jadi aturan angka di app.css
+ * tidak menjangkaunya; yang dikenali di sini BENTUK isinya.
+ *
+ * Hanya isi yang pendek dan seluruhnya berupa tanggal, jam, atau angka
+ * bersatuan. Kalimat yang kebetulan mengandung angka tetap boleh
+ * membungkus.
+ */
+const SEL_ANGKA = 'sel-angka';
+const POLA_ANGKA = new RegExp(
+  '^(?:'
+  + 'Rp\\s?[\\d.,]+'                                                 // uang
+  + '|[+−-]?[\\d.,]+\\s?(?:%|[a-zA-Z/²³°]{1,6})?'                   // angka bersatuan
+  + '|\\d{1,2}\\s[A-Za-z]{3,9}\\s\\d{2,4}(?:,?\\s\\d{1,2}[.:]\\d{2})?' // 24 Sep 2026 [05:30]
+  + '|\\d{4}-\\d{2}-\\d{2}(?:\\s\\d{1,2}:\\d{2})?'                  // 2026-09-01 [05:30]
+  + '|\\d{1,2}[-/.]\\d{1,2}[-/.]\\d{2,4}'                           // 02-02-2021
+  + '|\\d{1,2}[.:]\\d{2}(?:\\s?[–-]\\s?\\d{1,2}[.:]\\d{2})?'        // 05:30 [– 17:30]
+  + '|[A-Z][A-Z0-9]{0,7}(?:[-/.][A-Z0-9]{1,10}){1,5}'               // KO-PRA-001, PKWT/2026/007, II.3.2
+  + ')$',
+);
+
+function tandaiSelAngka(t: HTMLTableElement): void {
+  if (t.closest('.lembar')) return;
+
+  for (const tb of Array.from(t.tBodies)) {
+    for (const tr of Array.from(tb.rows).slice(0, 300)) {
+      for (const sel of Array.from(tr.cells)) {
+        const jalan = document.createTreeWalker(sel, NodeFilter.SHOW_TEXT, {
+          acceptNode: (n) => ((n.textContent ?? '').trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP),
+        });
+        const pertama = jalan.nextNode();
+        const teks = (pertama?.textContent ?? '').replace(/\s+/g, ' ').trim();
+        sel.classList.toggle(SEL_ANGKA, teks.length > 0 && teks.length <= 22 && POLA_ANGKA.test(teks));
+      }
+    }
+  }
+}
+
+/* ─────────── Judul kolom mengikuti perataan isinya ───────────
+ *
+ * Angka di dalam tabel dirata-kanankan oleh aturan global `.num` di
+ * app.css — dan itu benar untuk angka. Tetapi judul kolomnya ditulis
+ * sendiri-sendiri di tiap halaman, dan sebagian besar bawaannya rata
+ * kiri. Hasilnya terukur di puluhan halaman: judul "Tanggal", "Nomor",
+ * "Terbit", "Masa" menempel di kiri sementara isinya di kanan, dan mata
+ * yang membaca ke bawah kehilangan kolomnya.
+ *
+ * Yang disamakan JUDULNYA, bukan isinya: isi yang rata kanan memang
+ * disengaja (angka sejajar per digit), sedangkan judul yang rata kiri
+ * hanyalah bawaan yang tidak pernah dipilih.
+ *
+ * Diukur dari baris isi yang tampak, bukan dari kelasnya: sebuah sel
+ * dapat dirata-kanankan lewat `.num`, `text-right`, atau gaya sebaris,
+ * dan ketiganya sama saja bagi yang membaca.
+ */
+const RATA_KANAN = 'th-rata-kanan';
+
+function rataTeks(td: HTMLElement): string | null {
+  const jalan = document.createTreeWalker(td, NodeFilter.SHOW_TEXT, {
+    acceptNode: (n) => ((n.textContent ?? '').trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP),
+  });
+  const teks = jalan.nextNode();
+  if (!teks) return null;
+
+  let el = teks.parentElement;
+  while (el && el !== td && getComputedStyle(el).display.startsWith('inline')) el = el.parentElement;
+
+  const a = getComputedStyle(el ?? td).textAlign;
+  return a === 'right' || a === 'end' ? 'kanan' : a === 'center' ? 'tengah' : 'kiri';
+}
+
+function samakanRataJudul(t: HTMLTableElement): void {
+  const kepala = t.tHead?.rows[t.tHead.rows.length - 1];
+  if (!kepala || t.closest('.lembar')) return;
+
+  const judul = Array.from(kepala.cells) as HTMLTableCellElement[];
+  if (judul.some((c) => c.colSpan > 1)) return;
+
+  const baris = Array.from(t.tBodies[0]?.rows ?? [])
+    .filter((r) => r.cells.length === judul.length)
+    .slice(0, 12);
+  if (!baris.length) return;
+
+  judul.forEach((th, i) => {
+    th.classList.remove(RATA_KANAN);
+    if (!(th.textContent ?? '').trim()) return;
+    if (getComputedStyle(th).textAlign !== 'left' && getComputedStyle(th).textAlign !== 'start') return;
+
+    let isi = 0;
+    let kanan = 0;
+    for (const r of baris) {
+      const a = rataTeks(r.cells[i] as HTMLElement);
+      if (!a) continue;
+      isi++;
+      if (a === 'kanan') kanan++;
+    }
+
+    if (isi && kanan / isi > 0.6) th.classList.add(RATA_KANAN);
   });
 }
 

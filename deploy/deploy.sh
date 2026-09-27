@@ -686,6 +686,23 @@ if [ "$APP_URL_KINI" != "$APP_URL_HARAP" ]; then
     echo "!!  Sebaiknya '$APP_URL_HARAP' — lalu jalankan: php artisan config:cache"
 fi
 
+# ── Pemeriksaan APP_LOCALE ────────────────────────────────────────
+# Pesan validasi, masuk, sandi, dan paginasi berbahasa Indonesia ada di
+# lang/id. `.env` yang dibuat dari .env.example lama memuat APP_LOCALE=en,
+# dan dengan itu seluruh terjemahan tersebut tidak pernah dipakai: formulir
+# berbahasa Indonesia menampilkan "The email field is required." dan
+# tombol halaman "Previous / Next".
+#
+# Hanya diingatkan, tidak diubah otomatis, sama seperti APP_URL di atas:
+# .env milik server, dan isinya diputuskan oleh yang mengelolanya. Baris
+# yang tidak ada tidak diingatkan — bawaannya di config/app.php sudah 'id'.
+APP_LOCALE_KINI="$(grep -E '^APP_LOCALE=' "$REPO_DIR/.env" | cut -d= -f2- | tr -d '"' || true)"
+
+if [ -n "$APP_LOCALE_KINI" ] && [ "$APP_LOCALE_KINI" != "id" ]; then
+    echo "!!  APP_LOCALE di .env masih '$APP_LOCALE_KINI'; terjemahan lang/id tidak terpakai."
+    echo "!!  Ubah menjadi APP_LOCALE=id — lalu jalankan: php artisan config:cache"
+fi
+
 echo "==> Keluar dari mode perawatan"
 php artisan up
 

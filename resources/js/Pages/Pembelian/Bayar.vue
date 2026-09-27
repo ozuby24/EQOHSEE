@@ -44,7 +44,7 @@ const kanvas = ref<HTMLCanvasElement | null>(null);
 const gagalQr = ref<string | null>(null);
 
 function rupiah(n: number) {
-  return 'Rp ' + Number(n || 0).toLocaleString('id-ID');
+  return 'Rp\u00A0' + Number(n || 0).toLocaleString('id-ID');
 }
 
 /** Gambar QR-nya ke kanvas. */

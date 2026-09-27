@@ -43,7 +43,7 @@ const menyimpan = reactive<Record<number, boolean>>({});
 const jumlahAktif = computed(() => baris.value.filter((b) => b.aktif).length);
 
 function rupiah(n: number) {
-  return 'Rp ' + Number(n || 0).toLocaleString('id-ID');
+  return 'Rp\u00A0' + Number(n || 0).toLocaleString('id-ID');
 }
 
 function simpan(b: Baris) {

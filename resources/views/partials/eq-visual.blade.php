@@ -13,8 +13,8 @@
 body{
   background-color:#FBFAF7;
   background-image:
-    radial-gradient(1100px 520px at 88% -8%, rgba(44,176,188,.055), transparent 62%),
-    radial-gradient(760px 420px at -6% 104%, rgba(94,174,56,.045), transparent 60%),
+    radial-gradient(1100px 520px at 88% -8%, rgba(245,124,0,.06), transparent 62%),
+    radial-gradient(760px 420px at -6% 104%, rgba(11,17,23,.05), transparent 60%),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.028'/%3E%3C/svg%3E");
   background-attachment:fixed,fixed,fixed;
 }
@@ -87,14 +87,19 @@ body{
   font-size:12.5px;font-weight:600;color:var(--eq-redup,#7C8894);
   border:1px solid rgba(27,32,36,.09);background:#fff;
   transition:color .18s,border-color .18s,background-color .18s}
-.eq-keluar:hover{color:#C85804;border-color:#C85804;background:rgba(18,137,127,.06)}
+.eq-keluar:hover{color:#C85804;border-color:#C85804;background:rgba(245,124,0,.06)}
 .eq-keluar svg{width:17px;height:17px}
 
 .eq-topbar h1{letter-spacing:-.012em}
+/* Garis aksen di tepi bawah bilah atas.
+   Dulu pita enam warna (biru–jingga–hijau) — pelangi setipis satu piksel
+   yang terbaca sebagai hiasan, bukan sebagai merek. Kini satu warna
+   merek yang melarut ke kanan: cukup untuk menandai batas, tidak cukup
+   untuk bersaing dengan isi di bawahnya. */
 .eq-topbar::after{
-  content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;
-  background:linear-gradient(90deg,#1F6FB8,#2FA3DE,#F08A22,#C85804,#5EAE38,#FF9800);
-  opacity:.5;
+  content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;
+  background:linear-gradient(90deg,var(--eq-aksen,#F36F0F) 0%,rgba(245,124,0,.35) 38%,transparent 78%);
+  opacity:.9;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -123,14 +128,14 @@ body{
   content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
   background-image:
     radial-gradient(78% 30% at 18% 4%,  rgba(245,124,0,.16), transparent 72%),
-    radial-gradient(70% 26% at 88% 34%, rgba(44,176,188,.10), transparent 74%),
+    radial-gradient(70% 26% at 88% 34%, rgba(255,255,255,.05), transparent 74%),
     radial-gradient(90% 34% at 50% 96%, rgba(255,255,255,.045), transparent 76%);
 }
 #eqSidebar::after{                        /* panorama bukit + jenjang tambang */
   content:"";position:absolute;left:0;right:0;bottom:0;height:190px;z-index:1;
   pointer-events:none;opacity:.5;
   background:no-repeat bottom/100% auto
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 248 190' preserveAspectRatio='none'%3E%3Cpath d='M0 150h60v-14h48v-16h56v-14h84V190H0z' fill='%23ffffff' fill-opacity='.045'/%3E%3Cpath d='M0 150h60v-14h48v-16h56v-14h84' fill='none' stroke='%23ffffff' stroke-opacity='.14' stroke-width='1.2'/%3E%3Cpath d='M60 136v14M108 120v16M164 106v14' stroke='%23ffffff' stroke-opacity='.09' stroke-width='1'/%3E%3Cpath d='M0 172h248' stroke='%232CB0BC' stroke-opacity='.28' stroke-width='1.4'/%3E%3Cg fill='%23ffffff' fill-opacity='.10'%3E%3Cpath d='M28 168h34l6-9h16l4 9h10v-14h-8l-5-8H60l-6 8H28z'/%3E%3Ccircle cx='44' cy='170' r='5'/%3E%3Ccircle cx='86' cy='170' r='5'/%3E%3C/g%3E%3C/svg%3E");
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 248 190' preserveAspectRatio='none'%3E%3Cpath d='M0 150h60v-14h48v-16h56v-14h84V190H0z' fill='%23ffffff' fill-opacity='.045'/%3E%3Cpath d='M0 150h60v-14h48v-16h56v-14h84' fill='none' stroke='%23ffffff' stroke-opacity='.14' stroke-width='1.2'/%3E%3Cpath d='M60 136v14M108 120v16M164 106v14' stroke='%23ffffff' stroke-opacity='.09' stroke-width='1'/%3E%3Cpath d='M0 172h248' stroke='%23F57C00' stroke-opacity='.32' stroke-width='1.4'/%3E%3Cg fill='%23ffffff' fill-opacity='.10'%3E%3Cpath d='M28 168h34l6-9h16l4 9h10v-14h-8l-5-8H60l-6 8H28z'/%3E%3Ccircle cx='44' cy='170' r='5'/%3E%3Ccircle cx='86' cy='170' r='5'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 /* ── Kepala: lambang, nama, tagline ──
@@ -146,7 +151,12 @@ body{
 .eq-merek span{display:flex;flex-direction:column;line-height:1.12;min-width:0}
 .eq-merek strong{font-size:20px;font-weight:900;letter-spacing:-.015em;color:#E8ECF0}
 .eq-merek strong em{font-style:normal;color:#F36F0F}
-.eq-merek small{font-size:9.5px;color:rgba(255,255,255,.42);margin-top:3px;letter-spacing:.005em}
+/* Semboyan di bawah nama: SATU BARIS. Sebelumnya patah menjadi
+   "Sustainable / Tomorrow" pada lebar bilah 248px. Hurufnya dikecilkan
+   sedikit dan tidak dikapitalkan — kapital berjarak lebar justru
+   membuatnya terpotong. */
+.eq-merek small{font-size:8.5px;color:rgba(255,255,255,.5);margin-top:3px;letter-spacing:.02em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ── Kaki bilah samping ──
  *
@@ -295,7 +305,7 @@ body{
 #eqSidebar nav a{gap:10px}
 .eq-navico{width:15px;height:15px;flex:none;opacity:.55;transition:opacity .18s,transform .18s}
 #eqSidebar nav a:hover .eq-navico{opacity:.95;transform:translateX(1px)}
-#eqSidebar nav a.nav-active .eq-navico{opacity:1;color:#C7DE30}
+#eqSidebar nav a.nav-active .eq-navico{opacity:1;color:#FFB870}
 #eqSidebar nav a{position:relative;overflow:hidden}
 #eqSidebar nav a::before{                 /* sapuan halus saat disentuh */
   content:"";position:absolute;inset:0;border-radius:inherit;
@@ -336,7 +346,7 @@ main .brand-gradient::before{             /* pendar bidang, bukan kisi */
   content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
   background-image:
     radial-gradient(52% 62% at 16% 6%,  rgba(245,124,0,.14), transparent 70%),
-    radial-gradient(44% 54% at 84% 40%, rgba(44,176,188,.09), transparent 72%);
+    radial-gradient(44% 54% at 84% 40%, rgba(255,255,255,.06), transparent 72%);
 }
 main .brand-gradient::after{              /* siluet punggungan di tepi bawah */
   content:"";position:absolute;left:0;right:0;bottom:0;height:78px;z-index:-1;
@@ -349,7 +359,7 @@ main .brand-gradient::after{              /* siluet punggungan di tepi bawah */
    6 · PITA SPEKTRUM ENAM PILAR — penanda halus di kepala kartu
    ═══════════════════════════════════════════════════════════ */
 .eq-seam{height:3px;border-radius:3px;
-  background:linear-gradient(90deg,#1F6FB8,#2FA3DE,#F08A22,#C85804,#5EAE38,#FF9800)}
+  background:linear-gradient(90deg,#0B1117 0%,#C85804 40%,#F36F0F 70%,#FF9800 100%)}
 
 /* ═══════════════════════════════════════════════════════════
    7 · KENYAMANAN BACA
@@ -357,7 +367,7 @@ main .brand-gradient::after{              /* siluet punggungan di tepi bawah */
 main h1,main h2,main h3{letter-spacing:-.011em}
 main input,main select,main textarea{transition:border-color .16s,box-shadow .16s}
 main a{transition:color .16s}
-::selection{background:rgba(44,176,188,.22)}
+::selection{background:rgba(245,124,0,.24)}
 
 /* gulir lebih halus di panel gelap */
 #eqSidebar nav::-webkit-scrollbar{width:5px}
@@ -379,7 +389,7 @@ main a{transition:color .16s}
 /* ── Nada warna kartu ── */
 .t-hijau {background:rgba(94,174,56,.13);color:#4A8E2C}
 .t-biru  {background:rgba(31,111,184,.12);color:#1F6FB8}
-.t-toska {background:rgba(18,137,127,.13);color:#F36F0F}
+.t-toska {background:rgba(18,137,127,.13);color:#0F766E}
 .t-kuning{background:rgba(240,138,34,.14);color:#C96F12}
 .t-ungu  {background:rgba(124,92,206,.13);color:#6B4FBE}
 .t-merah {background:rgba(214,69,69,.12);color:#C03A3A}
@@ -469,7 +479,7 @@ main a{transition:color .16s}
 .eq-kursus{border:1px solid rgba(27,32,36,.08);border-radius:16px;overflow:hidden;background:#fff;
   display:flex;flex-direction:column;
   transition:transform .22s cubic-bezier(.21,.6,.35,1),box-shadow .22s,border-color .22s}
-.eq-kursus:hover{transform:translateY(-3px);border-color:rgba(18,137,127,.35);
+.eq-kursus:hover{transform:translateY(-3px);border-color:rgba(245,124,0,.45);
   box-shadow:0 18px 34px -22px rgba(27,32,36,.5)}
 .eq-kursus-gambar{position:relative;aspect-ratio:16/10;overflow:hidden;background:#EDF0F2}
 .eq-kursus-gambar img{width:100%;height:100%;object-fit:cover;
@@ -496,7 +506,7 @@ main a{transition:color .16s}
 
 /* Warna dibawa sebagai semburat tipis, bukan blok penuh — cukup untuk
    membedakan sekilas tanpa menutup fotonya. */
-.l-utama{background:linear-gradient(135deg,rgba(14,116,126,.42),rgba(14,74,68,.30))}
+.l-utama{background:linear-gradient(135deg,rgba(11,17,23,.55),rgba(30,40,53,.42))}
 .l-ikut{background:linear-gradient(135deg,rgba(31,111,184,.44),rgba(20,80,140,.30))}
 .l-selesai{background:linear-gradient(135deg,rgba(107,178,58,.44),rgba(74,142,44,.30))}
 
@@ -527,7 +537,7 @@ main a{transition:color .16s}
 /* Peramban tanpa backdrop-filter menampilkan lencana nyaris tanpa latar,
    jadi warnanya dinaikkan agar tulisannya tetap terbaca. */
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
-  .l-utama{background:rgba(14,74,68,.82)}
+  .l-utama{background:rgba(11,17,23,.84)}
   .l-ikut{background:rgba(31,111,184,.82)}
   .l-selesai{background:rgba(74,142,44,.84)}
   .k-toska {background:rgba(14,116,126,.86)}
@@ -654,6 +664,14 @@ main a{transition:color .16s}
 .eq-saring.aktif{background:#fff;border-color:#C85804;color:#B45309;box-shadow:0 1px 2px rgba(0,0,0,.07)}
 .eq-saring b{font-weight:800}
 .eq-saring .titik{width:8px;height:8px;border-radius:999px;display:inline-block;flex:none}
+/* Baris saringan di layar sempit: tiap kendali mengambil separuh baris,
+   kotak carinya selebar baris. Tanpa ini enam <select> berlebar isinya
+   masing-masing berjajar tidak rata — "Semua bulan" 180px di samping
+   "Semua status" 140px — dan barisnya terbaca acak. */
+@media (max-width:640px){
+  .eq-saring-baris > select{flex:1 1 calc(50% - 4px);min-width:0}
+  .eq-saring-baris > input{flex:1 1 100%}
+}
 .eq-keadaan{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;
   font-size:10.5px;font-weight:700;line-height:1.5;border:1.5px solid;white-space:nowrap}
 
@@ -730,7 +748,7 @@ main a{transition:color .16s}
 .eq-kategori a,.eq-admin-angka{display:flex;align-items:center;gap:11px;padding:13px 15px;
   border:1px solid rgba(27,32,36,.08);border-radius:14px;background:#fff;
   transition:border-color .2s,transform .2s cubic-bezier(.21,.6,.35,1)}
-.eq-kategori a:hover{border-color:rgba(18,137,127,.4);transform:translateY(-2px)}
+.eq-kategori a:hover{border-color:rgba(245,124,0,.5);transform:translateY(-2px)}
 .eq-kategori-ikon{width:38px;height:38px;flex:none;border-radius:13px;display:grid;place-items:center}
 .eq-kategori-ikon svg{width:18px;height:18px}
 .eq-kategori strong{display:block;font-size:12.5px;font-weight:700;color:var(--eq-judul,#0F1720)}
@@ -857,7 +875,7 @@ main a{transition:color .16s}
 .eq-modul{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(206px,1fr))}
 .eq-modul a{display:block;padding:16px;border:1px solid rgba(27,32,36,.08);border-radius:15px;
   background:#fff;transition:border-color .2s,transform .2s cubic-bezier(.21,.6,.35,1),box-shadow .2s}
-.eq-modul a:hover{border-color:rgba(18,137,127,.36);transform:translateY(-3px);
+.eq-modul a:hover{border-color:rgba(245,124,0,.5);transform:translateY(-3px);
   box-shadow:0 16px 30px -22px rgba(27,32,36,.45)}
 .eq-modul-atas{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
 .eq-modul-nilai{font-size:27px;font-weight:800;letter-spacing:-.03em;line-height:1;
@@ -866,6 +884,23 @@ main a{transition:color .16s}
 .eq-modul-ikon svg{width:24px;height:24px}
 .eq-modul strong{display:block;font-size:12.5px;font-weight:700;color:var(--eq-judul,#0F1720);margin-top:12px}
 .eq-modul small{display:block;font-size:11px;color:var(--eq-redup2,#98A2AE);margin-top:2px;line-height:1.5}
+
+/* ── Keterangan data gabungan (administrator, "Semua perusahaan") ── */
+.eq-gabungan{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:9px 10px 9px 14px;border-radius:12px;
+  background:#FFF6E8;border:1px solid #F6D9AE;color:#6B3A00;font-size:12.5px;line-height:1.45}
+.eq-gabungan > svg{width:17px;height:17px;flex:none;color:#C85804}
+.eq-gabungan p{flex:1 1 16rem;min-width:0;margin:0}
+.eq-gabungan b{font-weight:700;color:#4A2800}
+.eq-gabungan-pilih{flex:none;padding:6px 12px;border-radius:9px;font-size:12px;font-weight:700;
+  background:#fff;border:1px solid #F0C98C;color:#A85400;transition:background-color .15s,border-color .15s}
+.eq-gabungan-pilih:hover{background:#FFF0DA;border-color:#C85804}
+.eq-gabungan-tutup{flex:none;width:30px;height:30px;display:grid;place-items:center;border-radius:8px;color:#A85400}
+.eq-gabungan-tutup:hover{background:rgba(245,124,0,.12)}
+.eq-gabungan-tutup svg{width:15px;height:15px}
+:root[data-tema="gelap"] .eq-gabungan{background:rgba(245,124,0,.10);border-color:rgba(245,124,0,.28);color:#F6D3A6}
+:root[data-tema="gelap"] .eq-gabungan b{color:#FFE2BD}
+:root[data-tema="gelap"] .eq-gabungan-pilih{background:transparent;border-color:rgba(245,124,0,.4);color:#FFB870}
 
 /* ═══════════════════════════════════════════════════════════
    10 · TEMA GELAP DAN WARNA PERUSAHAAN
@@ -898,8 +933,8 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] body{
   background-color:#0D1417;
   background-image:
-    radial-gradient(1100px 520px at 88% -8%, rgba(44,176,188,.10), transparent 62%),
-    radial-gradient(760px 420px at -6% 104%, rgba(94,174,56,.06), transparent 60%);
+    radial-gradient(1100px 520px at 88% -8%, rgba(245,124,0,.09), transparent 62%),
+    radial-gradient(760px 420px at -6% 104%, rgba(255,255,255,.035), transparent 60%);
   color:#D6DEE2;
 }
 :root[data-tema="gelap"] .eq-topbar{background:rgba(16,25,29,.88);border-bottom-color:#1E2C31}
