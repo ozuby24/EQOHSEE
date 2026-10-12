@@ -33,5 +33,16 @@ bukan data pelanggan.
 | `19-smkp-lanjut-ofi.jpg` | Peluang Perbaikan (OFI) | Berkas Resmi |  |
 | `20-smkp-acuan.jpg` | Kriteria Kepdirjen | Acuan |  |
 
+## Deck promosi
+
+| Berkas | Isi |
+|---|---|
+| `Promosi-Audit-SMKP-EQOHSEE.pptx` | 15 slide penawaran: tantangan, alur 8 tahap, penilaian, berkas resmi, harga, cara membeli — dengan catatan pembicara |
+| `Promosi-Audit-SMKP-EQOHSEE.pdf` | Salinan PDF untuk dikirim lewat WhatsApp atau surel |
+
+Tangkapan layar di dalamnya diambil dari folder ini (data contoh). Harga
+mengikuti katalog saat deck dibuat — periksa **Pembelian → Daftar Harga**
+sebelum mengirim penawaran.
+
 ---
 Diterbitkan ulang dengan `node tools/tembak-fitur.mjs` — lihat `docs/jual/README.md`.
