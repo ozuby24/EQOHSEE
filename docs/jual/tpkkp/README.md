@@ -24,5 +24,13 @@ bukan data pelanggan.
 | `10-tpkkp-metode.jpg` | Metode Data | Alat Bantu |  |
 | `11-tpkkp-tentang.jpg` | Tentang Regulasi | Alat Bantu |  |
 
+## Deck promosi
+
+PTPKKP dijual bersama Audit SMKP dalam satu deck:
+[`../smkp/Promosi-Audit-SMKP-PTPKKP-EQOHSEE.pptx`](../smkp/Promosi-Audit-SMKP-PTPKKP-EQOHSEE.pptx)
+(slide 13–15). Struktur 4 indikator · 24 parameter · 194 item dan
+ambang tingkat pencapaiannya sudah dicocokkan dengan Kepdirjen
+10.K/MB.01/DJB.T/2023.
+
 ---
 Diterbitkan ulang dengan `node tools/tembak-fitur.mjs` — lihat `docs/jual/README.md`.
