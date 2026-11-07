@@ -32,4 +32,6 @@ Schedule::command('cuaca:segarkan')
  */
 Schedule::command('smkp:pengingat-tindak-lanjut')
     ->dailyAt(\App\Services\PengingatTindakLanjut::JAM)
+    // Jam kirim Aurorasys (07.15 WIB); zona aplikasi EQOHSEE UTC.
+    ->timezone('Asia/Jakarta')
     ->withoutOverlapping();
