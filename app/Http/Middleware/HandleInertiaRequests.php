@@ -39,6 +39,11 @@ class HandleInertiaRequests extends Middleware
                 'admin'  => $u->isAdmin(),
                 'avatar' => $u->avatar ? Berkas::terbuka($u->avatar) : null,
 
+                /* Peran audit SMKP (porting Aurorasys): auditor/administrator
+                   mengisi audit, auditi membaca dan menyampaikan tindak lanjut. */
+                'auditor' => $u->bisaAudit(),
+                'auditi'  => $u->isAuditi(),
+
                 /* Nama perusahaannya ikut dikirim karena kepala halaman
                    menyebutkannya. Pengguna yang tidak terikat perusahaan
                    mana pun — admin lintas perusahaan — memulangkan null,
@@ -79,6 +84,21 @@ class HandleInertiaRequests extends Middleware
             ],
 
             'status' => fn () => $request->session()->get('status'),
+
+            /* Asisten AI audit SMKP — hanya status dan nama model; kunci API
+               tetap di server. */
+            'asisten' => fn () => $u ? [
+                'aktif' => \App\Services\Asisten\LayananAsisten::aktif(),
+                'model' => \App\Services\Asisten\KonfigurasiAsisten::model(),
+            ] : ['aktif' => false, 'model' => null],
+
+            /* Temuan audit SMKP lewat target yang belum ditutup, dalam
+               jangkauan pengguna (lencana menu modul SMKP). */
+            'peringatan' => fn () => $u ? \App\Models\SmkpFinding::query()
+                ->where('status', '<>', 'Closed')
+                ->whereNotNull('target_selesai')
+                ->whereDate('target_selesai', '<', now()->toDateString())
+                ->count() : 0,
 
             /* Sambutan otomatis dibawa UTUH di sini, bukan diambil
              * kemudian lewat jaringan.

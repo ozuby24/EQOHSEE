@@ -36,12 +36,9 @@ class DemoPerusahaanTest extends TestCase
     }
 
     /**
-     * Kelas risikonya harus ejaan yang dikenal tabel mandays.
-     *
-     * 'Sedang' alih-alih 'Menengah' tidak menimbulkan galat apa pun:
-     * SmkpTahap jatuh ke kolom cadangan dan menagih hari kerja kelas
-     * TERTINGGI kepada perusahaan kelas menengah, pada tiap lembar
-     * rencana audit yang tercetak.
+     * Kelas risikonya harus ejaan yang dikenal modul audit SMKP
+     * (SmkpTahap::kelasRisiko — Rendah, Sedang, Tinggi). Ejaan lain
+     * ditolak validasi profil perusahaan dan Tahap I audit.
      */
     public function test_kelas_risiko_tiap_profil_dikenal_tabel_mandays(): void
     {
@@ -57,22 +54,19 @@ class DemoPerusahaanTest extends TestCase
      * Profilnya BERJAUHAN, bukan lima salinan bernama berbeda.
      *
      * Inilah satu-satunya alasan perintah ini ada. Lima perusahaan yang
-     * jumlah pekerja dan kelas risikonya seragam menghasilkan lima
-     * rencana audit yang identik — dan kolom tabel mandays yang salah
-     * tetap tidak akan terlihat.
+     * jumlah pekerja dan kelas risikonya seragam menghasilkan lima Tahap I
+     * audit yang identik.
      */
-    public function test_profilnya_menghasilkan_hari_kerja_audit_yang_berbeda(): void
+    public function test_profilnya_berjauhan(): void
     {
         $this->artisan('demo:pasang', ['--tanpa-isi' => true])->assertSuccessful();
 
-        $dasar = Company::withoutGlobalScopes()->whereNotNull('code')->get()
-            ->map(fn (Company $c) => SmkpTahap::mandays([
-                'jumlah_pekerja' => (int) $c->workers_employee + (int) $c->workers_sub,
-                'kelas_risiko'   => $c->risk_class,
-            ])['dasar'])->unique()->values();
+        $profil = Company::withoutGlobalScopes()->whereNotNull('code')->get()
+            ->map(fn (Company $c) => ((int) $c->workers_employee + (int) $c->workers_sub).'|'.$c->risk_class)
+            ->unique()->values();
 
-        $this->assertGreaterThanOrEqual(4, $dasar->count(),
-            'Lima profil hanya menghasilkan '.$dasar->count().' dasar hari kerja yang '
+        $this->assertGreaterThanOrEqual(4, $profil->count(),
+            'Lima profil hanya '.$profil->count().' kombinasi pekerja & kelas risiko yang '
             .'berbeda; profilnya terlalu mirip untuk membuktikan apa pun.');
     }
 
@@ -193,8 +187,8 @@ class DemoPerusahaanTest extends TestCase
 
         $this->assertNotNull($audit, 'Audit SMKP tidak ikut terisi.');
 
-        // 40 pekerja kelas Rendah: baris 26–45 menagih 4 hari.
-        $this->assertSame(40, $audit->mandays()['pekerja']);
-        $this->assertSame(4, $audit->mandays()['dasar']);
+        // Tahap I mewarisi profilnya: 40 pekerja kelas Rendah.
+        $this->assertSame('40', $audit->permulaan['jumlah_pekerja']);
+        $this->assertSame('Rendah', $audit->permulaan['kelas_risiko']);
     }
 }

@@ -240,13 +240,11 @@ final class RuteInertia
         'meh.tools',
         'meh.regulations',
 
-        /* Audit SMKP */
+        /* Audit SMKP (porting Aurorasys) */
         'smkp.index',
         'smkp.create',
         'smkp.acuan',
-
-        /* Dasbor performa antar tahun — halaman awal modul. */
-        'smkp.dasbor',
+        'smkp.tindak-lanjut',
 
         /* Keselamatan Operasi */
         'investigasi.dasbor',

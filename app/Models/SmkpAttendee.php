@@ -2,24 +2,18 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\BerindukPerusahaan;
-
+use App\Models\Scopes\IndukAuditTerjangkau;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/**
- * Satu baris daftar hadir rapat pembukaan atau penutupan audit Tahap II.
- */
+/** Satu baris daftar hadir rapat pembukaan atau penutupan Tahap II. */
+#[ScopedBy(IndukAuditTerjangkau::class)]
 class SmkpAttendee extends Model
 {
-    use BerindukPerusahaan;
-
-    /** Pemiliknya ada pada induknya; lihat BerindukPerusahaan. */
-    protected static string $indukPerusahaan = 'audit';
-
     protected $table = 'smkp_attendees';
 
-    protected $fillable = ['audit_id', 'rapat', 'nama', 'jabatan', 'perusahaan', 'tanda_tangan'];
+    protected $fillable = ['audit_id', 'rapat', 'nama', 'jabatan', 'perusahaan'];
 
     public function audit(): BelongsTo
     {

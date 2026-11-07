@@ -62,9 +62,8 @@ class PasangDemo extends Command
      * Profil perusahaan contoh.
      *
      * `risiko` HARUS salah satu dari SmkpTahap::kelasRisiko() —
-     * 'Tinggi', 'Menengah', 'Rendah'. Ejaan yang meleset sedikit saja
-     * ("Sedang") membuat perusahaannya jatuh ke kolom cadangan tabel
-     * mandays dan ditagih hari kerja kelas tertinggi tanpa peringatan.
+     * 'Rendah', 'Sedang', 'Tinggi'. Ejaan yang meleset sedikit saja
+     * ("Menengah") ditolak validasi profil perusahaan dan Tahap I audit.
      */
     private const PROFIL = [
         [
@@ -81,7 +80,7 @@ class PasangDemo extends Command
             'izin' => 'IUP Operasi Produksi', 'komoditas' => 'Nikel',
             'lokasi' => 'Kabupaten Kutai Timur, Kalimantan Timur',
             'alamat' => 'Jalan Poros Sangatta–Bengalon KM 14, Sangatta, Kalimantan Timur 75683',
-            'risiko' => 'Menengah', 'karyawan' => 85, 'jasa' => 210,
+            'risiko' => 'Sedang', 'karyawan' => 85, 'jasa' => 210,
             'ktt' => 'Ir. Slamet Riyadi', 'pjo' => 'Dewi Kartika, S.T.',
             'prefiks' => 'BMU', 'dept' => 'OHSE',
         ],
@@ -99,7 +98,7 @@ class PasangDemo extends Command
             'izin' => 'IUP Operasi Produksi', 'komoditas' => 'Emas',
             'lokasi' => 'Kabupaten Halmahera Tengah, Maluku Utara',
             'alamat' => 'Desa Lelilef Sawai, Weda Tengah, Halmahera Tengah, Maluku Utara 97853',
-            'risiko' => 'Menengah', 'karyawan' => 45, 'jasa' => 95,
+            'risiko' => 'Sedang', 'karyawan' => 45, 'jasa' => 95,
             'ktt' => 'Ir. Yosef Tanamal', 'pjo' => 'Nurul Fadhilah, S.T.',
             'prefiks' => 'HBS', 'dept' => 'OHSE',
         ],

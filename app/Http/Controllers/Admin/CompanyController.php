@@ -10,56 +10,6 @@ use App\Support\Berkas;
 
 class CompanyController extends Controller
 {
-    /**
-     * Dasar hari kerja audit SMKP menurut profil yang sedang diketik.
-     *
-     * MANDAYS DIMULAI DI SINI, bukan di Tahap I audit. Jumlah pekerja dan
-     * kelas risiko adalah sifat perusahaan, bukan sifat sebuah audit:
-     * keduanya sudah diisi pada halaman ini, dan mengetiknya ulang pada
-     * tiap periode audit melahirkan dua angka yang dapat berselisih —
-     * profil mencatat 1.098 pekerja, Tahap I menyebut 150, dan hari kerja
-     * yang ditagih auditor meleset satu kelas penuh.
-     *
-     * Yang ditampilkan hanya DASARNYA. Tujuh faktor penyesuaian memang
-     * milik audit, bukan milik perusahaan — jarak antar objek audit dan
-     * kinerja keselamatan pada periode audit berubah tiap tahun.
-     *
-     * Rumusnya tidak disalin ke sisi peramban: ia satu-satunya tempat
-     * angka tabel dibaca, dan dua salinan akan berselisih.
-     */
-    public function mandays(Request $request)
-    {
-        $d = $request->validate([
-            'workers_employee' => ['nullable', 'integer', 'min:0', 'max:1000000'],
-            'workers_sub'      => ['nullable', 'integer', 'min:0', 'max:1000000'],
-            'risk_class'       => ['nullable', \Illuminate\Validation\Rule::in(\App\Support\SmkpTahap::kelasRisiko())],
-        ]);
-
-        return response()->json(self::dasarMandays(
-            (int) ($d['workers_employee'] ?? 0),
-            (int) ($d['workers_sub'] ?? 0),
-            $d['risk_class'] ?? null,
-        ));
-    }
-
-    /** @return array{pekerja:int,kelas:string,rentang:string,dasar:int} */
-    private static function dasarMandays(int $karyawan, int $jasa, ?string $kelas): array
-    {
-        $total = $karyawan + $jasa;
-
-        $m = \App\Support\SmkpTahap::mandays([
-            'jumlah_pekerja' => $total,
-            'kelas_risiko'   => $kelas ?: 'Tinggi',
-        ]);
-
-        return [
-            'pekerja' => $total,
-            'kelas'   => $m['kelas'],
-            'rentang' => $m['rentang'],
-            'dasar'   => $m['dasar'],
-        ];
-    }
-
     public function index(Request $request)
     {
         $q = trim((string) $request->get('q'));
@@ -143,6 +93,7 @@ class CompanyController extends Controller
                 'commodity'        => $teks($c->commodity),
                 'location'         => $teks($c->location),
                 'risk_class'       => $c->risk_class ?: 'Tinggi',
+                'kategori'         => (string) ($c->kategori ?: $c->kategoriTurunan()),
                 'address'          => $teks($c->address),
                 'ktt'              => $teks($c->ktt),
                 'pjo'              => $teks($c->pjo),
@@ -161,12 +112,15 @@ class CompanyController extends Controller
                 // berputar tanpa henti.
                 'induk'  => Company::whereKeyNot($c->id ?? 0)->orderBy('name')->get()
                     ->map(fn ($o) => ['nilai' => (string) $o->id, 'label' => $o->name])->all(),
-                /* Diambil dari SmkpTahap, bukan ditulis ulang: kelas risiko
-                   di sini memilih KOLOM tabel mandays audit SMKP. Daftar
-                   yang berbeda sedikit saja — "Sedang" alih-alih
-                   "Menengah" — membuat perusahaan jatuh ke kolom cadangan
-                   dan ditagih hari kerja kelas tertinggi tanpa peringatan. */
+                /* Diambil dari SmkpTahap, bukan ditulis ulang: daftar kelas
+                   risiko yang sama dipakai Tahap I audit SMKP (Rendah,
+                   Sedang, Tinggi — porting Aurorasys). */
                 'risiko' => \App\Support\SmkpTahap::kelasRisiko(),
+
+                /* Kategori audit SMKP: menentukan pengesah PJO, distribusi
+                   laporan, dan penanda tangan berkas audit. */
+                'kategori' => collect(Company::KATEGORI)
+                    ->map(fn ($l, $k) => ['nilai' => $k, 'label' => $l])->values()->all(),
             ],
 
             'contoh' => [
@@ -175,19 +129,9 @@ class CompanyController extends Controller
                 'departemen' => \App\Support\KopDokumen::DEPARTEMEN,
             ],
 
-            /* Dasar hari kerja audit menurut profil YANG TERSIMPAN, supaya
-               panelnya sudah berisi angka pada pemuatan pertama alih-alih
-               menunggu ketikan berikutnya. */
-            'mandays' => self::dasarMandays(
-                (int) ($c->workers_employee ?? 0),
-                (int) ($c->workers_sub ?? 0),
-                $c->risk_class,
-            ),
-
             'tautan' => [
                 'simpan' => $c->exists ? route('admin.companies.update', $c) : route('admin.companies.store'),
                 'batal'  => route('admin.companies.index'),
-                'mandays'=> route('admin.companies.mandays'),
             ],
         ]);
     }
@@ -231,6 +175,7 @@ class CompanyController extends Controller
             'workers_employee' => ['nullable','integer','min:0'],
             'workers_sub'      => ['nullable','integer','min:0'],
             'risk_class'       => ['nullable', \Illuminate\Validation\Rule::in(\App\Support\SmkpTahap::kelasRisiko())],
+            'kategori'         => ['nullable', \Illuminate\Validation\Rule::in(array_keys(Company::KATEGORI))],
             'doc_no_prefix'    => ['nullable','string','max:20'],
             'divisi'           => ['nullable','string','max:150'],
             'departemen'       => ['nullable','string','max:150'],

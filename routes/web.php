@@ -34,6 +34,7 @@ use App\Http\Controllers\SertifikatLingkunganController;
 use App\Http\Controllers\KepatuhanController;
 use App\Http\Controllers\PerangkatSayaController;
 use App\Http\Controllers\TurController;
+use App\Http\Controllers\{BuktiAuditController, RencanaImporController, SmkpFormulirController, TindakLanjutController};
 use Illuminate\Support\Facades\Route;
 
 /* ============ PENEMUAN (publik) ============
@@ -1436,124 +1437,94 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('{standar}/cetak',   [IsoController::class,'cetak'])->name('cetak');
     });
 
-    /* ================= WEBSITE #4 — Audit SMKP Minerba ================= */
+    /* ================= WEBSITE #4 — Audit SMKP Minerba =================
+       Modul porting Aurorasys (7 Nov 2026). Urutan penting: alamat statis
+       sebelum {smkp}. Peran: can:audit (administrator & auditor) mengisi
+       audit; auditi membaca, mengunggah bukti, dan menyampaikan tindak
+       lanjut. Batas perusahaan ditegakkan global scope model
+       (Scopes\JangkauanAudit) lewat route model binding. */
     Route::prefix('smkp')->name('smkp.')->group(function () {
-        /* Dasbor dulu, daftar periode kemudian. Yang dibuka manajemen
-           bukan "audit mana yang ada" melainkan "apakah kami membaik" —
-           dan pertanyaan kedua tidak terjawab oleh daftar. */
-        Route::get('dasbor',           [SmkpController::class,'dasbor'])->name('dasbor');
-        Route::get('/',                [SmkpController::class,'index'])->name('index');
-        Route::get('buat',             [SmkpController::class,'create'])->name('create');
-        Route::post('/',               [SmkpController::class,'store'])->name('store');
-        Route::get('acuan',            [SmkpController::class,'acuan'])->name('acuan');
+        Route::get('/',      [SmkpController::class, 'index'])->name('index');
+        Route::get('acuan',  [SmkpController::class, 'acuan'])->name('acuan');
+        Route::get('lanjut/{bagian}', [SmkpController::class, 'lanjut'])->name('lanjut');
+        Route::get('tindak-lanjut', [TindakLanjutController::class, 'index'])->name('tindak-lanjut');
 
-        // Bunyi rubrik butir — teks peraturan, diambil terpisah dari halaman
-        // penilaian supaya 260 ribu aksara tidak ikut tiap kali dibuka.
-        Route::get('rubrik',           [SmkpController::class,'rubrik'])->name('rubrik');
+        Route::middleware('can:audit')->group(function () {
+            Route::get('buat', [SmkpController::class, 'create'])->name('create');
+            Route::post('/',   [SmkpController::class, 'store'])->name('store');
+        });
 
-        // Pintasan menu samping: tanpa parameter, disalurkan ke audit berjalan.
-        foreach ([
-            'tahap1' => 'tahap-1', 'rencana' => 'rencana', 'sampel' => 'metode-sampel',
-            'penilaian' => 'penilaian', 'laporan-susun' => 'susun-laporan',
-            'rapat' => 'rapat', 'temuan' => 'temuan',
-            'berita' => 'berita-acara', 'rencana-cetak' => 'laporan-rencana', 'laporan' => 'laporan-audit',
+        Route::get('{smkp}',                       [SmkpController::class, 'show'])->name('show');
+        Route::get('{smkp}/tahap-1',               [SmkpController::class, 'tahap1'])->name('tahap1');
+        Route::get('{smkp}/berita-acara',          [SmkpController::class, 'beritaAcara'])->name('berita-acara');
+        Route::get('{smkp}/rencana',               [SmkpController::class, 'rencana'])->name('rencana');
+        Route::get('{smkp}/rencana/cetak',         [SmkpController::class, 'rencanaCetak'])->name('rencana.cetak');
+        Route::get('{smkp}/rapat',                 [SmkpController::class, 'rapat'])->name('rapat');
+        Route::get('{smkp}/daftar-hadir/{rapat}',  [SmkpController::class, 'daftarHadir'])->name('hadir.cetak');
+        Route::get('{smkp}/temuan',                [SmkpController::class, 'temuan'])->name('temuan');
+        Route::get('{smkp}/elemen/{elemen}',       [SmkpController::class, 'nilai'])->name('nilai');
+        Route::get('{smkp}/laporan',               [SmkpController::class, 'laporan'])->name('laporan');
+        Route::get('{smkp}/laporan/isian',         [SmkpController::class, 'laporanIsian'])->name('laporan.isian');
+        Route::get('{smkp}/formulir',              [SmkpFormulirController::class, 'halaman'])->name('formulir');
+        Route::get('{smkp}/formulir/{jenis}/cetak', [SmkpFormulirController::class, 'cetak'])
+            ->whereIn('jenis', array_keys(SmkpFormulirController::CETAK))->name('formulir.cetak');
+        Route::get('{smkp}/formulir/ttd/{pihak}',  [SmkpFormulirController::class, 'lihatTtd'])
+            ->whereIn('pihak', SmkpFormulirController::PIHAK)->name('formulir.ttd');
+        // Tanda tangan formulir: auditor & auditi (untuk tanda tangannya sendiri) — izin per pihak di pengendali.
+        Route::post('{smkp}/formulir/tanggal',     [SmkpFormulirController::class, 'simpanTanggal'])
+            ->middleware('throttle:60,1,ttd-isian')->name('formulir.tanggal');
+        Route::post('{smkp}/formulir/ttd/bubuh',   [SmkpFormulirController::class, 'bubuhTtd'])
+            ->middleware('throttle:60,1,ttd-isian')->name('formulir.ttd.bubuh');
+        Route::post('{smkp}/formulir/ttd',         [SmkpFormulirController::class, 'unggahTtd'])
+            ->middleware('throttle:20,1,ttd-formulir')->name('formulir.ttd.unggah');
+        Route::delete('{smkp}/formulir/ttd/{pihak}', [SmkpFormulirController::class, 'hapusTtd'])
+            ->whereIn('pihak', SmkpFormulirController::PIHAK)->name('formulir.ttd.hapus');
 
-            /* Lima keluaran audit yang menyusul. */
-            'kriteria' => 'kriteria', 'rekap-nc' => 'rekap-nc', 'respon' => 'respon',
-            'rencana-tindak' => 'rencana-tindak', 'nc-tindak' => 'nc-tindak',
-            'ofi' => 'ofi',
-        ] as $bagian => $ruas) {
-            Route::get("lanjut/{$ruas}", [SmkpController::class,'lanjut'])
-                ->defaults('bagian', $bagian)->name('ke.'.$bagian);
-        }
+        // Bukti kelengkapan per butir: auditi mengunggah sesuai Rencana Audit; auditor memverifikasi.
+        Route::get('{smkp}/bukti',                         [BuktiAuditController::class, 'halaman'])->name('bukti');
+        Route::post('{smkp}/bukti',                        [BuktiAuditController::class, 'unggah'])
+            ->middleware('throttle:20,1,bukti-audit')->name('bukti.unggah');
+        Route::get('{smkp}/bukti/{bukti}/berkas',          [BuktiAuditController::class, 'unduh'])->whereNumber('bukti')->name('bukti.unduh');
+        Route::delete('{smkp}/bukti/{bukti}',              [BuktiAuditController::class, 'hapus'])->whereNumber('bukti')->name('bukti.hapus');
+        Route::post('{smkp}/bukti/{bukti}/verifikasi',     [BuktiAuditController::class, 'verifikasi'])
+            ->whereNumber('bukti')->middleware('can:audit')->name('bukti.verifikasi');
 
-        Route::get('{smkp}',           [SmkpController::class,'show'])->name('show');
-        Route::get('{smkp}/ubah',      [SmkpController::class,'edit'])->name('edit');
-        Route::put('{smkp}',           [SmkpController::class,'update'])->name('update');
-        Route::delete('{smkp}',        [SmkpController::class,'destroy'])->middleware('can:admin')->name('destroy');
+        // Tindak lanjut temuan: auditi mengirim isian & bukti; auditor memverifikasi.
+        Route::get('{smkp}/temuan/{temuan}/tindak-lanjut/{kiriman}/berkas/{berkas}', [TindakLanjutController::class, 'unduh'])
+            ->where(['kiriman' => '[0-9]{1,9}', 'berkas' => '[0-9]{1,2}'])->name('tindak-lanjut.unduh');
+        Route::post('{smkp}/temuan/{temuan}/tindak-lanjut', [TindakLanjutController::class, 'kirim'])
+            ->middleware(['can:tindak-lanjut', 'throttle:10,1,tindak-lanjut'])->name('tindak-lanjut.kirim');
+        Route::delete('{smkp}/temuan/{temuan}/tindak-lanjut/{kiriman}', [TindakLanjutController::class, 'hapus'])
+            ->where('kiriman', '[0-9]{1,9}')->name('tindak-lanjut.hapus');
 
-        Route::get('{smkp}/laporan',   [SmkpController::class,'laporan'])->name('laporan');
+        Route::middleware('can:audit')->group(function () {
+            Route::get('{smkp}/ubah',                [SmkpController::class, 'edit'])->name('edit');
+            Route::put('{smkp}',                     [SmkpController::class, 'update'])->name('update');
+            Route::post('{smkp}/tahap',              [SmkpController::class, 'ubahTahap'])->name('tahap');
+            Route::post('{smkp}/tahap-1',            [SmkpController::class, 'simpanTahap1'])->name('tahap1.simpan');
+            Route::post('{smkp}/rencana',            [SmkpController::class, 'simpanRencana'])->name('rencana.simpan');
+            Route::post('{smkp}/laporan',            [SmkpController::class, 'simpanLaporan'])->name('laporan.simpan');
+            // Pakai ulang Rencana Audit: salin dari audit lain, templat & impor CSV/XLSX.
+            Route::get('{smkp}/rencana/sumber',          [RencanaImporController::class, 'sumber'])->name('rencana.sumber');
+            Route::get('{smkp}/rencana/sumber/{sumber}', [RencanaImporController::class, 'salin'])->whereNumber('sumber')->name('rencana.salin');
+            Route::get('{smkp}/rencana/templat',         [RencanaImporController::class, 'templat'])->name('rencana.templat');
+            Route::post('{smkp}/rencana/impor',          [RencanaImporController::class, 'impor'])
+                ->middleware('throttle:20,1,rencana-impor')->name('rencana.impor');
+            Route::post('{smkp}/rapat',              [SmkpController::class, 'simpanHadir'])->name('rapat.simpan');
+            Route::delete('{smkp}/rapat/{hadir}',    [SmkpController::class, 'hapusHadir'])->name('rapat.hapus');
+            Route::post('{smkp}/temuan/angkat',      [SmkpController::class, 'angkatTemuan'])->name('temuan.angkat');
+            Route::post('{smkp}/temuan/nomor-ulang', [SmkpController::class, 'nomorUlangTemuan'])->name('temuan.nomorUlang');
+            Route::put('{smkp}/temuan/{temuan}',     [SmkpController::class, 'simpanTemuan'])->name('temuan.simpan');
+            Route::delete('{smkp}/temuan/{temuan}',  [SmkpController::class, 'hapusTemuan'])->name('temuan.hapus');
+            Route::post('{smkp}/elemen/{elemen}',    [SmkpController::class, 'simpanNilai'])->name('nilai.simpan');
+            Route::post('{smkp}/formulir',           [SmkpFormulirController::class, 'simpan'])->name('formulir.simpan');
+        });
 
-        // Bagian naratif laporan: latar belakang, gambaran umum, lampiran.
-        Route::get('{smkp}/laporan/susun',  [SmkpController::class,'susunLaporan'])->name('laporan.susun');
-        Route::post('{smkp}/laporan/susun', [SmkpController::class,'simpanLaporan'])->name('laporan.simpan');
-
-        /* Lima keluaran audit yang sebelumnya belum ada, plus ekspor
-           formulir kriteria ke CSV. Nomornya mengikuti urutan berkas
-           audit, bukan urutan pembuatannya di sini. */
-        Route::get('{smkp}/kriteria',        [SmkpController::class,'kriteria'])->name('kriteria');
-        Route::get('{smkp}/kriteria/ekspor', [SmkpController::class,'kriteriaEkspor'])->name('kriteria.ekspor');
-        Route::get('{smkp}/rekap-nc',        [SmkpController::class,'rekapNc'])->name('rekapNc');
-        Route::get('{smkp}/respon',          [SmkpController::class,'responManajemen'])->name('respon');
-        Route::get('{smkp}/rencana-tindak',  [SmkpController::class,'rencanaTindak'])->name('rencanaTindak');
-        Route::get('{smkp}/nc-tindak',       [SmkpController::class,'ncTindak'])->name('ncTindak');
-        Route::put('{smkp}/temuan/{temuan}/respon',
-            [SmkpController::class,'simpanRespon'])->name('temuan.respon');
-        Route::post('{smkp}/tahap',    [SmkpController::class,'ubahTahap'])->name('tahap');
-
-        // Tahap I — permulaan audit, peninjauan dokumen, persiapan lapangan
-        Route::get('{smkp}/tahap-1',       [SmkpController::class,'tahap1'])->name('tahap1');
-        Route::post('{smkp}/tahap-1',      [SmkpController::class,'simpanTahap1'])->name('tahap1.simpan');
-
-        /* Hitung ulang hari kerja audit tanpa menyimpan apa pun, supaya
-           kartunya mengikuti isian yang sedang diketik. Rumusnya satu dan
-           tetap di server; yang dikirim ke sini hanya isiannya. */
-        Route::post('{smkp}/tahap-1/mandays', [SmkpController::class,'hitungMandays'])->name('tahap1.mandays');
-        Route::get('{smkp}/berita-acara',  [SmkpController::class,'beritaAcara'])->name('berita-acara');
-
-        // Rencana Audit — sembilan komponen wajib, plus laporannya
-        Route::get('{smkp}/rencana',       [SmkpController::class,'rencana'])->name('rencana');
-        Route::post('{smkp}/rencana',      [SmkpController::class,'simpanRencana'])->name('rencana.simpan');
-        Route::get('{smkp}/rencana/cetak', [SmkpController::class,'rencanaCetak'])->name('rencana.cetak');
-
-        // Komponen ke-8 Rencana Audit: matriks metode dan sampel per kriteria.
-        Route::get('{smkp}/sampel',  [SmkpController::class,'sampel'])->name('sampel');
-        Route::post('{smkp}/sampel', [SmkpController::class,'simpanSampel'])->name('sampel.simpan');
-
-        // Tahap II — rapat pembukaan & penutupan
-        Route::get('{smkp}/rapat',                [SmkpController::class,'rapat'])->name('rapat');
-        Route::post('{smkp}/rapat',               [SmkpController::class,'simpanHadir'])->name('rapat.simpan');
-        Route::delete('{smkp}/rapat/{hadir}',     [SmkpController::class,'hapusHadir'])->name('rapat.hapus');
-        Route::get('{smkp}/daftar-hadir/{rapat}', [SmkpController::class,'daftarHadir'])->name('hadir.cetak');
-
-        // Temuan / tindakan perbaikan
-        Route::get('{smkp}/temuan',            [SmkpController::class,'temuan'])->name('temuan');
-        Route::post('{smkp}/temuan/angkat',    [SmkpController::class,'angkatTemuan'])->name('temuan.angkat');
-        Route::put('{smkp}/temuan/{temuan}',   [SmkpController::class,'simpanTemuan'])->name('temuan.simpan');
-        Route::delete('{smkp}/temuan/{temuan}',[SmkpController::class,'hapusTemuan'])->name('temuan.hapus');
-
-        // Form Penilaian Audit — tujuh elemen sekaligus, untuk memeriksa
-        // kesesuaian tiap parameter tanpa berpindah halaman per elemen.
-        Route::get('{smkp}/penilaian',  [SmkpController::class,'penilaian'])->name('penilaian');
-        Route::post('{smkp}/penilaian', [SmkpController::class,'simpanPenilaian'])->name('penilaian.simpan');
-
-        /* Menuliskan pengecualian Rencana Audit ke hasil sebagai N/A —
-           satu tombol, bukan otomatis saat halaman dibuka. */
-        Route::post('{smkp}/penilaian/pengecualian',
-            [SmkpController::class,'terapkanPengecualian'])->name('penilaian.kecuali');
-
-        /* Berkas bukti per butir kriteria. Batas 10 MB ditegakkan
-           App\Support\Berkas::ATURAN_BUKTI, dan berkasnya disimpan pada
-           disk tertutup — bukti audit hanya tampil di halaman yang
-           menuntut login, jadi menutupnya tidak menghilangkan apa pun. */
-        Route::post('{smkp}/bukti',           [SmkpController::class,'buktiUnggah'])->name('bukti.unggah');
-        Route::delete('{smkp}/bukti/{bukti}', [SmkpController::class,'buktiHapus'])
-            ->middleware('can:admin')->name('bukti.hapus');
-
-        /* Peluang perbaikan atas butir yang capaiannya PENUH. Terpisah
-           dari temuan: yang di sini tidak menurunkan nilai apa pun dan
-           tidak wajib ditindaklanjuti. */
-        Route::get('{smkp}/ofi',            [SmkpController::class,'ofi'])->name('ofi');
-        Route::post('{smkp}/ofi',           [SmkpController::class,'ofiSimpan'])->name('ofi.simpan');
-        Route::delete('{smkp}/ofi/{ofi}',   [SmkpController::class,'ofiHapus'])
-            ->middleware('can:admin')->name('ofi.hapus');
-        Route::get('{smkp}/ofi/cetak',      [SmkpController::class,'ofiCetak'])->name('ofi.cetak');
-        Route::get('{smkp}/ofi/ekspor',     [SmkpController::class,'ofiEkspor'])->name('ofi.ekspor');
-
-        // Formulir penilaian per elemen — ditaruh terakhir agar tidak menyerobot rute di atas
-        Route::get('{smkp}/elemen/{elemen}',  [SmkpController::class,'nilai'])->name('nilai');
-        Route::post('{smkp}/elemen/{elemen}', [SmkpController::class,'simpanNilai'])->name('nilai.simpan');
+        Route::delete('{smkp}', [SmkpController::class, 'destroy'])->middleware('can:admin')->name('destroy');
     });
+
+    // Asisten AI audit SMKP — rekomendasi, akar masalah, RTP (routes/asisten.php).
+    Route::prefix('asisten')->name('asisten.')->group(base_path('routes/asisten.php'));
 
     /* ================= WEBSITE #3 — Hazard Report & Inspeksi ================= */
     /* ============ Mode Lapangan (pendamping seluler) ============
@@ -1652,11 +1623,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     /* ---- Panel Admin ---- */
     Route::middleware('can:admin')->prefix('admin')->name('admin.')->group(function () {
         Route::resource('users', UserController::class)->except(['show']);
-        /* Ditaruh SEBELUM resource: 'companies/mandays' sebaliknya tertangkap
-           pola 'companies/{company}' dan Laravel mencari perusahaan bernama
-           "mandays". */
-        Route::post('companies/mandays', [CompanyController::class, 'mandays'])
-            ->name('companies.mandays');
         Route::resource('companies', CompanyController::class)->except(['show']);
         Route::get('system',        [SystemController::class, 'index'])->name('system');
         Route::delete('system/logs',[SystemController::class, 'clearLogs'])->name('system.logs.clear');

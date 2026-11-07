@@ -190,6 +190,25 @@ return [
         'avatar'                => 'foto profil',
         'kode'                  => 'kode',
         'token'                 => 'token',
+
+        /* Audit SMKP (porting Aurorasys) — hanya ruas bertitik yang
+           khas modul itu; nama ruas umum tidak diubah di sini karena
+           dipakai bersama modul lain. */
+        'permulaan.tanggal_kontak' => 'tanggal kontak awal',
+        'permulaan.media_kontak'   => 'media kontak',
+        'permulaan.wakil_auditi'   => 'wakil auditi',
+        'permulaan.jabatan_wakil'  => 'jabatan wakil auditi',
+        'permulaan.surat_nomor'    => 'nomor surat',
+        'permulaan.surat_tanggal'  => 'tanggal surat',
+        'permulaan.jumlah_pekerja' => 'jumlah pekerja',
+        'permulaan.kelas_risiko'   => 'kelas risiko',
+        'permulaan.mandays_dasar'  => 'mandays dasar',
+        'permulaan.jumlah_auditor' => 'jumlah auditor',
+        'permulaan.penyesuaian'    => 'faktor penyesuaian',
+        'permulaan.kesimpulan'     => 'kesimpulan',
+        'risiko.*.*.nilai'         => 'nilai risiko',
+        'susunan.*.tanggal'        => 'tanggal susunan kegiatan',
+        'pengesahan.*.tanggal'     => 'tanggal pengesahan',
     ],
 
 ];

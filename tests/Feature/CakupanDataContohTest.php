@@ -58,6 +58,13 @@ class CakupanDataContohTest extends TestCase
         'users'        => 'pengguna dibuat pemasangnya, bukan data contoh',
         'companies'    => 'perusahaannya sendiri',
         'app_settings' => 'pengaturan, bukan data lapangan',
+
+        /* Audit SMKP (porting Aurorasys). Pengingat terisi sendiri saat
+           email pengingat tindak lanjut terkirim; arsip hanya berisi isian
+           lama yang dipindahkan migrasi 2026_11_07_000003, bukan data
+           yang dibuat siapa pun. */
+        'smkp_pengingat'     => 'terisi sendiri saat pengingat tindak lanjut dikirim',
+        'smkp_arsip_eqohsee' => 'arsip migrasi SMKP lama, bukan data lapangan',
         'activity_logs'=> 'jejak perbuatan; terisi sendiri saat dipakai',
         'jejak_akses'  => 'jejak masuk; terisi sendiri saat dipakai',
 

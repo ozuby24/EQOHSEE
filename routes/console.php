@@ -24,3 +24,12 @@ Schedule::command('cuaca:segarkan')
     ->everyThirtyMinutes()
     ->withoutOverlapping()
     ->runInBackground();
+
+/*
+ * Pengingat email batas waktu tindak lanjut temuan audit SMKP ke akun
+ * auditi (porting Aurorasys). Aman dijalankan ulang — pengingat yang
+ * sudah terkirim tidak dikirim lagi; penjadwal yang terlewat menyusul.
+ */
+Schedule::command('smkp:pengingat-tindak-lanjut')
+    ->dailyAt(\App\Services\PengingatTindakLanjut::JAM)
+    ->withoutOverlapping();

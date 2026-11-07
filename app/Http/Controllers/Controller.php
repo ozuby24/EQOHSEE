@@ -4,6 +4,14 @@ namespace App\Http\Controllers;
 
 abstract class Controller
 {
+    /** Parameter kueri sebagai teks; larik (?q[]=…) dibaca sebagai bawaan, bukan galat 500. */
+    protected function teks(\Illuminate\Http\Request $request, string $kunci, string $bawaan = ''): string
+    {
+        $v = $request->query($kunci, $bawaan);
+
+        return is_scalar($v) ? trim((string) $v) : $bawaan;
+    }
+
     /**
      * Paksa kepemilikan perusahaan pada data yang akan disimpan.
      *
