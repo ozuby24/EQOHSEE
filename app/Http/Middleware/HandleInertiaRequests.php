@@ -86,11 +86,14 @@ class HandleInertiaRequests extends Middleware
             'status' => fn () => $request->session()->get('status'),
 
             /* Asisten AI audit SMKP — hanya status dan nama model; kunci API
-               tetap di server. */
-            'asisten' => fn () => $u ? [
+               tetap di server. HANYA di halaman modul audit SMKP, yang
+               panel asistennya menyebut modelnya (perilaku Aurorasys);
+               halaman lain EQOHSEE sengaja tidak pernah menerima nama
+               penyedia maupun model (lihat RangkumPeraturanTest). */
+            'asisten' => fn () => $u && $request->routeIs('smkp.*') ? [
                 'aktif' => \App\Services\Asisten\LayananAsisten::aktif(),
                 'model' => \App\Services\Asisten\KonfigurasiAsisten::model(),
-            ] : ['aktif' => false, 'model' => null],
+            ] : null,
 
             /* Temuan audit SMKP lewat target yang belum ditutup, dalam
                jangkauan pengguna (lencana menu modul SMKP). */

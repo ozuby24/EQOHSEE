@@ -100,15 +100,18 @@ class AsistenTest extends TestCase
         $this->actingAs($u)->postJson($this->urlTemuan())->assertStatus(503);
 
         $this->assertSame([], $this->palsu->diminta);
-        $this->actingAs($u)->get('/dashboard')->assertInertia(fn (Inertia $p) => $p
+        $this->actingAs($u)->get('/smkp')->assertInertia(fn (Inertia $p) => $p
             ->where('asisten.aktif', false)->where('asisten.model', 'gemini-uji')->missing('asisten.kunci'));
     }
 
     public function test_status_aktif_dibagikan_tanpa_kunci(): void
     {
-        $this->actingAs($this->auditor())->get('/dashboard')
+        $this->actingAs($this->auditor())->get('/smkp')
             ->assertInertia(fn (Inertia $p) => $p->where('asisten.aktif', true)->where('asisten', fn ($a) => count($a) === 2))
             ->assertDontSee('kunci-uji-rahasia');
+
+        // EQOHSEE: di luar modul audit SMKP nama penyedia & model tidak dikirim ke halaman.
+        $this->actingAs($this->auditor())->get('/dashboard')->assertInertia(fn (Inertia $p) => $p->where('asisten', null));
     }
 
     public function test_tamu_dan_auditi_ditolak(): void

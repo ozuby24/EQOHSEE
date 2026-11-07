@@ -127,6 +127,15 @@ return new class extends Migration
 
     public function down(): void
     {
+        /* MySQL dapat membuang diam-diam indeks yang dibuatnya sendiri untuk
+           kunci asing begitu ada indeks gabungan berawalan kolom yang sama;
+           indeks gabungan itu lalu tidak dapat dibuang. Indeks tunggalnya
+           dipastikan ada lebih dulu. */
+        $this->pastikanIndeks('smkp_bukti', 'audit_id');
+        $this->pastikanIndeks('smkp_bukti', 'user_id');
+        $this->pastikanIndeks('smkp_findings', 'audit_id');
+        $this->pastikanIndeks('smkp_attendees', 'audit_id');
+
         Schema::dropIfExists('smkp_arsip_eqohsee');
         Schema::dropIfExists('smkp_pengingat');
         Schema::dropIfExists('smkp_tindak_lanjut');
@@ -166,5 +175,12 @@ return new class extends Migration
             $t->dropColumn(array_values(array_filter(['kesesuaian', 'rekomendasi', 'ttd_formulir', 'mandays_tetap'],
                 fn ($k) => Schema::hasColumn('smkp_audits', $k))));
         });
+    }
+
+    private function pastikanIndeks(string $tabel, string $kolom): void
+    {
+        if (!Schema::hasIndex($tabel, [$kolom])) {
+            Schema::table($tabel, fn (Blueprint $t) => $t->index($kolom));
+        }
     }
 };

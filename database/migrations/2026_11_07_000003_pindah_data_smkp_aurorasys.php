@@ -794,6 +794,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        // Lihat migrasi skema: indeks kunci asing tunggal dipastikan ada (MySQL).
+        if (!Schema::hasIndex('smkp_findings', ['audit_id'])) {
+            Schema::table('smkp_findings', fn (Blueprint $t) => $t->index('audit_id'));
+        }
         if (Schema::hasIndex('smkp_findings', ['audit_id', 'nomor'], 'unique')) {
             Schema::table('smkp_findings', fn (Blueprint $t) => $t->dropUnique(['audit_id', 'nomor']));
         }
