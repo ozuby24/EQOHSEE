@@ -30,4 +30,13 @@ class SimperAjuanUnit extends Model
     public function ajuan(): BelongsTo      { return $this->belongsTo(SimperAjuan::class, 'ajuan_id'); }
     public function kendaraan(): BelongsTo  { return $this->belongsTo(Kendaraan::class, 'kendaraan_id'); }
     public function jenisUnit(): BelongsTo  { return $this->belongsTo(JenisUnit::class, 'jenis_unit_id'); }
+
+    /** Unit kartu yang ditingkatkan — hanya pada pengajuan upgrade. */
+    public function simperUnit(): BelongsTo { return $this->belongsTo(SimperUnit::class, 'simper_unit_id'); }
+
+    public function jenisUnitBanyak(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(JenisUnit::class, 'mnr_simper_ajuan_unit_jenis', 'ajuan_unit_id', 'jenis_unit_id')
+            ->withTimestamps();
+    }
 }

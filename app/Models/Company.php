@@ -3,7 +3,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 class Company extends Model {
-    protected $fillable = ['name','demo','code','parent','izin_type','commodity','location','address','ktt','pjo','workers_employee','workers_sub','risk_class','logo','theme_color','theme_dark','doc_no_prefix','parent_id','pic_name','pic_email','pic_phone','divisi','departemen', 'dept_kode','doc_terbit','doc_setuju','doc_revisi'];
+    protected $fillable = ['name','demo','code','parent','izin_type','commodity','location','address','ktt','pjo','workers_employee','workers_sub','risk_class','logo','theme_color','theme_dark','doc_no_prefix','parent_id','pic_name','pic_email','pic_phone','divisi','departemen', 'dept_kode','doc_terbit','doc_setuju','doc_revisi',
+        // identitas kartu dan label alur Miners — padanan `corps` Safe Track
+        'nama_pendek','logo_grup','jabatan_ktt','ttd_ktt','no_izin','channel_darurat'];
 
     protected function casts(): array
     {

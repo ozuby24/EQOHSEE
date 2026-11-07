@@ -34,7 +34,11 @@ class Mcu extends Model
         'diperiksa' => 'Sedang Diperiksa',
         'selesai'   => 'Selesai',
         'ditolak'   => 'Ditolak',
+        'kedaluwarsa' => 'Kedaluwarsa',
     ];
+
+    /** Pilihan masa berlaku yang ditetapkan dokter saat menutup surat. */
+    public const BULAN_BERLAKU = [3, 6, 12];
 
     protected $table = 'mnr_mcu';
 
@@ -44,7 +48,7 @@ class Mcu extends Model
 
     protected function casts(): array
     {
-        return ['tanggal' => 'date'];
+        return ['tanggal' => 'date', 'bulan_berlaku' => 'integer'];
     }
 
     public function company(): BelongsTo { return $this->belongsTo(Company::class); }

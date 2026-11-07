@@ -85,14 +85,19 @@ class Permit extends Model
 
     protected $guarded = ['id'];
 
-    protected $attributes = ['status' => 'draf'];
+    protected $attributes = ['status' => 'draf', 'aktif' => true];
+
+    /** Jenis kartu — `typecard` Safe Track. */
+    public const JENIS_KARTU = ['Mine Permit', 'Magazine', 'Blasting'];
 
     protected function casts(): array
     {
         return [
-            'tanggal'        => 'date',
-            'berlaku_sampai' => 'date',
-            'tanggal_cabut'  => 'date',
+            'tanggal'          => 'date',
+            'berlaku_sampai'   => 'date',
+            'tanggal_cabut'    => 'date',
+            'tanggal_nonaktif' => 'date',
+            'aktif'            => 'boolean',
         ];
     }
 
@@ -115,6 +120,11 @@ class Permit extends Model
     public function simper(): HasMany
     {
         return $this->hasMany(Simper::class, 'permit_id')->orderByDesc('tanggal');
+    }
+
+    public function perpanjangan(): HasMany
+    {
+        return $this->hasMany(PermitPerpanjangan::class, 'permit_id')->orderByDesc('tanggal');
     }
 
     /* ═══════════ masa berlaku ═══════════ */

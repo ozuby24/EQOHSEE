@@ -27,6 +27,26 @@ class SimperUnit extends Model
         'trainer'  => 'Trainer',
     ];
 
+    /**
+     * Kewenangan per unit yang dicetak di belakang kartu — `authority`
+     * Safe Track. T dipertahankan untuk data yang sudah memakainya.
+     */
+    public const AUTHORITY = [
+        'F' => 'F — Full',
+        'R' => 'R — Restricted',
+        'P' => 'P — Probation',
+        'I' => 'I — Instructor',
+        'T' => 'T',
+    ];
+
+    /** Arti huruf kewenangan pada kartu — ARTI_KELAS Safe Track. */
+    public const ARTI_AUTHORITY = [
+        'F' => 'PENUH',
+        'R' => 'KEADAAN DARURAT',
+        'P' => 'PERCOBAAN',
+        'I' => 'PELATIHAN',
+    ];
+
     public const ASAL = [
         'baru'         => 'Pengajuan baru',
         'penambahan'   => 'Penambahan unit',
@@ -56,6 +76,13 @@ class SimperUnit extends Model
     public function simper(): BelongsTo     { return $this->belongsTo(Simper::class, 'simper_id'); }
     public function kendaraan(): BelongsTo  { return $this->belongsTo(Kendaraan::class, 'kendaraan_id'); }
     public function jenisUnit(): BelongsTo  { return $this->belongsTo(JenisUnit::class, 'jenis_unit_id'); }
+
+    /** Seluruh type unit pada baris ini — satu baris dapat memuat beberapa. */
+    public function jenisUnitBanyak(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(JenisUnit::class, 'mnr_simper_unit_jenis', 'simper_unit_id', 'jenis_unit_id')
+            ->withTimestamps();
+    }
 
     /**
      * Seluruh nilai yang terisi sudah mencapai ambang kelulusan.

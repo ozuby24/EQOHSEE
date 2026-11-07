@@ -67,7 +67,7 @@ class Simper extends Model
 
     protected $guarded = ['id'];
 
-    protected $attributes = ['status' => 'draf'];
+    protected $attributes = ['status' => 'draf', 'aktif' => true];
 
     protected function casts(): array
     {
@@ -75,6 +75,9 @@ class Simper extends Model
             'tanggal'                => 'date',
             'berlaku_sampai'         => 'date',
             'simpol_berlaku_sampai'  => 'date',
+            'tanggal_nonaktif'       => 'date',
+            'aktif'                  => 'boolean',
+            'simpol_meta'            => 'array',
         ];
     }
 

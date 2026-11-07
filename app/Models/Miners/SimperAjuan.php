@@ -34,8 +34,9 @@ class SimperAjuan extends Model
     ];
 
     public const STATUS = [
-        'draf'     => 'Draf',
-        'diajukan' => 'Diajukan',
+        'draf'      => 'Draf',
+        'diajukan'  => 'Diajukan',
+        'diperiksa' => 'Pemeriksaan Dokter',
         'ohse'     => 'Verifikasi OHSE',
         'ktt'      => 'Menunggu Pengesahan KTT',
         'selesai'  => 'Selesai',
@@ -61,7 +62,42 @@ class SimperAjuan extends Model
 
     protected function casts(): array
     {
-        return ['tanggal' => 'date', 'simpol_berlaku_sampai' => 'date'];
+        return ['tanggal' => 'date', 'simpol_berlaku_sampai' => 'date', 'tanggal_mcu' => 'date'];
+    }
+
+    /**
+     * Rantainya menurut jenis pengajuan — RANTAI Safe Track: penambahan
+     * HSE→KTT, upgrade HSE saja, perpanjangan dokter→HSE→KTT.
+     */
+    public function kunciRantai(): string
+    {
+        return match ($this->jenis) {
+            'upgrade'      => 'upgrade',
+            'perpanjangan' => 'perpanjangan',
+            default        => 'penambahan',
+        };
+    }
+
+    /** IUP penerbit ikut SIMPER-nya, bukan perusahaan pembuat pengajuan. */
+    public function iupPenerbitAwal(): ?int
+    {
+        $iup = $this->simper_id
+            ? Simper::withoutGlobalScopes()->whereKey($this->simper_id)->value('iup_id')
+            : null;
+
+        return $iup ? (int) $iup : \App\Support\Miners\Penyetuju::iupDari(auth()->user()?->company_id);
+    }
+
+    /**
+     * Syarat kirim — penambahan dan upgrade harus memuat unitnya.
+     *
+     * @return list<string>
+     */
+    public function syaratKirim(): array
+    {
+        return in_array($this->jenis, ['penambahan', 'upgrade'], true) && ! $this->unit()->exists()
+            ? ['belum ada satu pun unit pada pengajuan ini']
+            : [];
     }
 
     public function simper(): BelongsTo { return $this->belongsTo(Simper::class, 'simper_id'); }

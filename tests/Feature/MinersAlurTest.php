@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Company;
 use App\Models\Miners\{Alur, HasilMcu, Induksi, InduksiOrang, JenisUnit, Kendaraan,
-    Mcu, McuOrang, Pekerja, Permit, PermitBerkas, Simper, SimperAjuan, SimperUnit, TipePermit};
+    Mcu, McuOrang, Pekerja, Permit, PermitBerkas, Simper, SimperAjuan, SimperUnit, Skema, TipePermit};
 use App\Models\User;
 use App\Support\Miners\{Acuan, Jalur, Kelengkapan, MasterMiners};
 use App\Support\Waktu;
@@ -32,6 +32,8 @@ class MinersAlurTest extends TestCase
     private Company $c;
     private User $pengaju;
     private User $ohse;
+    private User $ktt;
+    private User $dokter;
     private User $admin;
 
     protected function setUp(): void
@@ -43,7 +45,18 @@ class MinersAlurTest extends TestCase
         $this->c       = Company::create(['name' => 'PT Uji Miners']);
         $this->pengaju = User::factory()->create(['company_id' => $this->c->id]);
         $this->ohse    = User::factory()->create(['company_id' => $this->c->id, 'ohse_role' => 'ohse']);
+        $this->ktt     = User::factory()->create(['company_id' => $this->c->id, 'lms_role' => 'ktt']);
+        $this->dokter  = User::factory()->create(['company_id' => $this->c->id, 'ohse_role' => 'paramedis']);
         $this->admin   = User::factory()->create(['company_id' => $this->c->id, 'is_admin' => true]);
+
+        /* Penyetuju BERNAMA per IUP — skema Safe Track. Tanpa baris ini
+           tidak ada berkas yang dapat dikirim. */
+        Skema::create([
+            'company_id'     => $this->c->id,
+            'dokter_user_id' => $this->dokter->id,
+            'ohse_user_id'   => $this->ohse->id,
+            'ktt_user_id'    => $this->ktt->id,
+        ]);
     }
 
     private function pekerja(array $ganti = []): Pekerja
@@ -122,60 +135,99 @@ class MinersAlurTest extends TestCase
     {
         $p = $this->permit();
 
-        /* Perbedaan paling penting dari Project1: di sana Mine Permit
-           terbit sesudah OHSE saja, tanpa pengesahan Kepala Teknik
-           Tambang — orang yang justru bertanggung jawab atas kartu itu
-           di hadapan Inspektur Tambang. */
-        $this->assertSame(['pjo', 'ohse', 'ktt'], $p->alur->pluck('peran')->all());
+        /* Rantai Safe Track: pengaju → HSE → KTT. Langkah pertama milik
+           pengajunya, sisanya penyetuju BERNAMA pada skema IUP. */
+        $this->assertSame(['pengaju', 'ohse', 'ktt'], $p->alur->pluck('peran')->all());
+        $this->assertSame(
+            [$this->pengaju->id, $this->ohse->id, $this->ktt->id],
+            $p->alur->pluck('ditugaskan_user_id')->map(fn ($v) => (int) $v)->all(),
+        );
     }
 
     #[Test]
     public function test_permit_tidak_terbit_sebelum_seluruh_langkah_disetujui(): void
     {
-        /* Lampirannya dilengkapi lebih dahulu: yang diuji di sini
-           ALURNYA, bukan gerbang kelengkapan yang menjaga langkah
-           pertama. Tanpa ini, kartunya tertahan pada PJO dan uji ini
-           diam-diam berhenti menguji langkah KTT. */
         $p = $this->lengkapiBerkas($this->permit());
 
-        Jalur::setujui($p, $this->admin);
-        $this->assertNotSame('terbit', $p->fresh()->status, 'Terbit sesudah satu langkah saja.');
+        $this->assertNull(Jalur::kirim($p, $this->pengaju));
+        $this->assertSame('ohse', $p->fresh()->status, 'Berkas terkirim tidak sampai di meja HSE.');
 
-        Jalur::setujui($p->fresh(), $this->admin);
-        $this->assertNotSame('terbit', $p->fresh()->status, 'Terbit sebelum langkah KTT.');
+        $this->assertNull(Jalur::setujui($p->fresh(), $this->ohse));
+        $this->assertSame('ktt', $p->fresh()->status, 'Terbit sebelum langkah KTT.');
 
-        Jalur::setujui($p->fresh(), $this->admin);
+        $this->assertNull(Jalur::setujui($p->fresh(), $this->ktt));
         $this->assertSame('terbit', $p->fresh()->status);
     }
 
     #[Test]
     public function test_pengaju_tidak_dapat_menyetujui_pengajuannya_sendiri(): void
     {
-        $p = $this->permit();
+        $p = $this->lengkapiBerkas($this->permit());
+        Jalur::kirim($p, $this->pengaju);
 
-        $salah = Jalur::setujui($p, $this->pengaju);
+        $salah = Jalur::setujui($p->fresh(), $this->pengaju);
 
         $this->assertNotNull($salah, 'Pengaju berhasil menyetujui pengajuannya sendiri.');
-        $this->assertSame('menunggu', $p->fresh()->alur->first()->keadaan);
+        $this->assertSame('menunggu', $p->fresh()->alur->firstWhere('peran', 'ohse')->keadaan);
+    }
+
+    #[Test]
+    public function test_hanya_yang_ditugasi_dapat_menyetujui(): void
+    {
+        /* `flow.users_id === Auth::id()` Safe Track. OHSE lain di
+           perusahaan yang sama BUKAN penyetujunya — sebelum ini siapa pun
+           pemegang peran dapat mengirim persetujuannya langsung. */
+        $p = $this->lengkapiBerkas($this->permit());
+        Jalur::kirim($p, $this->pengaju);
+
+        $ohseLain = User::factory()->create(['company_id' => $this->c->id, 'ohse_role' => 'ohse']);
+
+        $this->assertSame('Persetujuan ini bukan giliran Anda.', Jalur::setujui($p->fresh(), $ohseLain));
+        $this->assertNotNull(Jalur::setujui($p->fresh(), $this->ktt), 'KTT melompati giliran HSE.');
+        $this->assertSame('ohse', $p->fresh()->status);
+
+        $this->actingAs($ohseLain)
+            ->post("/miners/permit/{$p->id}/tindak", ['keadaan' => 'setuju'])
+            ->assertSessionHasErrors('keadaan');
+        $this->assertSame('ohse', $p->fresh()->status, 'Permintaan langsung melewati penjagaan.');
+    }
+
+    #[Test]
+    public function test_admin_bertindak_atas_nama_yang_ditugasi(): void
+    {
+        $p = $this->lengkapiBerkas($this->permit());
+        Jalur::kirim($p, $this->pengaju);
+
+        $this->assertNull(Jalur::setujui($p->fresh(), $this->admin));
+
+        $l = $p->fresh()->alur->firstWhere('peran', 'ohse');
+
+        /* Yang menindak dan yang ditugasi dicatat terpisah. */
+        $this->assertSame($this->admin->id, (int) $l->user_id);
+        $this->assertSame($this->ohse->id, (int) $l->ditugaskan_user_id);
     }
 
     #[Test]
     public function test_penolakan_mengembalikan_status_ke_ditolak(): void
     {
-        $p = $this->permit();
+        $p = $this->lengkapiBerkas($this->permit());
+        Jalur::kirim($p, $this->pengaju);
 
-        Jalur::tolak($p, $this->ohse, 'Lampiran kurang.');
+        $this->assertSame('Alasan penolakan wajib diisi.', Jalur::tolak($p->fresh(), $this->ohse));
+
+        $this->assertNull(Jalur::tolak($p->fresh(), $this->ohse, 'Lampiran kurang.'));
 
         $this->assertSame('ditolak', $p->fresh()->status);
-        $this->assertSame('Lampiran kurang.', $p->fresh()->alur->first()->catatan);
+        $this->assertSame('Lampiran kurang.', $p->fresh()->alur->firstWhere('peran', 'ohse')->catatan);
     }
 
     #[Test]
     public function test_dikembalikan_menjadikannya_draf_lagi(): void
     {
-        $p = $this->permit();
+        $p = $this->lengkapiBerkas($this->permit());
+        Jalur::kirim($p, $this->pengaju);
 
-        Jalur::kembalikan($p, $this->ohse);
+        Jalur::kembalikan($p->fresh(), $this->ohse, 'SPDK belum ditandatangani.');
 
         $this->assertSame('draf', $p->fresh()->status);
     }
@@ -190,21 +242,38 @@ class MinersAlurTest extends TestCase
             'kepada' => 'Klinik', 'user_id' => $this->pengaju->id,
         ]);
         $m->terbitkanAlur();
+        McuOrang::create(['mcu_id' => $m->id, 'pekerja_id' => $this->pekerja()->id, 'nama' => 'Operator Uji']);
 
-        foreach (range(1, 3) as $_) Jalur::setujui($m->fresh(), $this->admin);
+        $this->assertNull(Jalur::kirim($m->fresh(), $this->pengaju));
+        $this->assertNull(Jalur::setujui($m->fresh(), $this->dokter));
 
         $this->assertSame('selesai', $m->fresh()->status);
     }
 
     #[Test]
-    public function test_alur_mcu_lewat_dokter_lebih_dahulu(): void
+    public function test_alur_mcu_berhenti_di_dokter(): void
     {
+        /* Safe Track menutup MCU di dokter: yang dinyatakan sebuah MCU
+           adalah penilaian medis, dan langkah HSE sesudahnya dulu hanya
+           cap yang tidak menambah keputusan apa pun. */
         $m = Mcu::withoutGlobalScopes()->create([
             'company_id' => $this->c->id, 'tanggal' => Waktu::kini()->startOfDay(), 'kepada' => 'Klinik',
         ]);
         $m->terbitkanAlur();
 
-        $this->assertSame(['pjo', 'dokter', 'ohse'], $m->alur->pluck('peran')->all());
+        $this->assertSame(['pengaju', 'dokter'], $m->alur->pluck('peran')->all());
+    }
+
+    #[Test]
+    public function test_mcu_tanpa_manpower_tidak_dapat_dikirim(): void
+    {
+        $m = Mcu::withoutGlobalScopes()->create([
+            'company_id' => $this->c->id, 'tanggal' => Waktu::kini()->startOfDay(),
+            'kepada' => 'Klinik', 'user_id' => $this->pengaju->id,
+        ]);
+
+        $this->assertStringContainsString('manpower', (string) Jalur::kirim($m, $this->pengaju));
+        $this->assertSame('draf', $m->fresh()->status);
     }
 
     /* ═══════════ aturan SOP ═══════════ */
@@ -398,7 +467,7 @@ class MinersAlurTest extends TestCase
     public function test_peran_dibaca_dari_jabatan_yang_sudah_ada(): void
     {
         $this->assertSame(['ohse'], Jalur::peran($this->ohse));
-        $this->assertSame(['pjo'], Jalur::peran($this->pengaju));
+        $this->assertSame(['pengaju'], Jalur::peran($this->pengaju));
         $this->assertSame(array_keys(Alur::PERAN), Jalur::peran($this->admin));
         $this->assertSame([], Jalur::peran(null));
     }

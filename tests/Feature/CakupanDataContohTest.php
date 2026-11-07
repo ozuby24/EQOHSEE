@@ -130,6 +130,12 @@ class CakupanDataContohTest extends TestCase
         'mnr_kategori_permit' => 'kategori izin khusus, dipasang miners:pasang',
         'mnr_hasil_mcu'       => 'daftar hasil MCU acuan, dipasang miners:pasang',
 
+        /* Dua tabel Miners yang diisi oleh TINDAKAN, bukan oleh data:
+           riwayat perpanjangan tercatat saat perpanjangan disahkan, dan
+           tata cetak saat petugas menyimpan pola lembar kartunya. */
+        'mnr_riwayat_perpanjangan' => 'terisi saat perpanjangan disahkan',
+        'mnr_tata_cetak'           => 'pengaturan lembar cetak kartu',
+
         /* Pola roster awal bersama — 14:7, 10:2 minggu, dan seterusnya.
            Alasannya sama persis dengan master Miners di atas: ia daftar
            acuan tanpa pemilik, dipasang `roster:pasang`, dan

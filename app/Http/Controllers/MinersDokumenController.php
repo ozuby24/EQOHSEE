@@ -6,7 +6,7 @@ use App\Models\Miners\{HasilMcu, Induksi, InduksiOrang, JenisUnit, KategoriPermi
     Mcu, McuOrang, McuRujukan, Pekerja, Permit, PermitBerkas, Simper, SimperAjuan,
     SimperAjuanUnit, SimperUnit, TipePermit};
 use App\Support\Berkas;
-use App\Support\Miners\{Acuan, Jalur, Keadaan, RincianDokumen};
+use App\Support\Miners\{Acuan, AksesMiners, Jalur, Keadaan, RincianDokumen};
 use App\Support\Waktu;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -106,6 +106,8 @@ class MinersDokumenController extends Controller
 
     public function mcuUpdate(Request $r, Mcu $mcu)
     {
+        AksesMiners::tegakkan(AksesMiners::ubahDraf($mcu, $r->user()) || AksesMiners::kelola($r->user()));
+
         $data = $r->validate([
             'no_registrasi' => ['nullable', 'string', 'max:40'],
             'tanggal'       => ['required', 'date'],
@@ -129,6 +131,8 @@ class MinersDokumenController extends Controller
 
     public function mcuTambahOrang(Request $r, Mcu $mcu)
     {
+        AksesMiners::tegakkan(AksesMiners::ubahDraf($mcu, $r->user()));
+
         $data = $r->validate(['pekerja_id' => ['required', 'exists:mnr_pekerja,id']]);
 
         $p = Pekerja::findOrFail($data['pekerja_id']);
@@ -151,9 +155,10 @@ class MinersDokumenController extends Controller
         return back()->with('sukses', $p->nama.' ditambahkan ke surat.');
     }
 
-    public function mcuHapusOrang(Mcu $mcu, McuOrang $orang)
+    public function mcuHapusOrang(Request $r, Mcu $mcu, McuOrang $orang)
     {
         abort_unless((int) $orang->mcu_id === (int) $mcu->id, 404);
+        AksesMiners::tegakkan(AksesMiners::ubahDraf($mcu, $r->user()));
 
         $orang->delete();
 
@@ -163,6 +168,17 @@ class MinersDokumenController extends Controller
     public function mcuHasil(Request $r, Mcu $mcu, McuOrang $orang)
     {
         abort_unless((int) $orang->mcu_id === (int) $mcu->id, 404);
+
+        /* Hasil pemeriksaan adalah penilaian medis: hanya dokter yang
+           ditugasi pada surat ini (atau admin) — `bolehNilai` Safe Track.
+           Pengaju masih boleh melengkapi tanggal dan berkasnya selama
+           suratnya belum dikirim, tetapi tidak menetapkan hasilnya. */
+        $dokter = AksesMiners::penyetujuLangkah($mcu, $r->user(), 'dokter');
+        AksesMiners::tegakkan($dokter || AksesMiners::ubahDraf($mcu, $r->user()));
+
+        if (! $dokter && $r->filled('hasil_id')) {
+            return back()->withErrors(['hasil_id' => 'Hasil MCU hanya dapat ditetapkan dokter pemeriksa surat ini.']);
+        }
 
         $data = self::tanpaBerkas($r->validate([
             'hasil_id'        => ['nullable', 'exists:mnr_hasil_mcu,id'],
@@ -201,6 +217,8 @@ class MinersDokumenController extends Controller
     public function mcuRujukan(Request $r, Mcu $mcu, McuOrang $orang)
     {
         abort_unless((int) $orang->mcu_id === (int) $mcu->id, 404);
+        AksesMiners::tegakkan(AksesMiners::penyetujuLangkah($mcu, $r->user(), 'dokter'),
+            'Rujukan hanya dapat dicatat dokter pemeriksa surat ini.');
 
         $data = self::tanpaBerkas($r->validate([
             'tanggal_surat'  => ['required', 'date'],
@@ -292,6 +310,8 @@ class MinersDokumenController extends Controller
 
     public function induksiUpdate(Request $r, Induksi $induksi)
     {
+        AksesMiners::tegakkan(AksesMiners::ubahDraf($induksi, $r->user()) || AksesMiners::kelola($r->user()));
+
         $data = $r->validate([
             'no_registrasi' => ['nullable', 'string', 'max:40'],
             'tanggal'       => ['required', 'date'],
@@ -313,6 +333,8 @@ class MinersDokumenController extends Controller
 
     public function induksiTambahOrang(Request $r, Induksi $induksi)
     {
+        AksesMiners::tegakkan(AksesMiners::ubahDraf($induksi, $r->user()));
+
         $data = $r->validate(['pekerja_id' => ['required', 'exists:mnr_pekerja,id']]);
 
         $p = Pekerja::findOrFail($data['pekerja_id']);
@@ -332,6 +354,11 @@ class MinersDokumenController extends Controller
     public function induksiNilai(Request $r, Induksi $induksi, InduksiOrang $orang)
     {
         abort_unless((int) $orang->induksi_id === (int) $induksi->id, 404);
+
+        /* Lulus atau tidaknya peserta dinilai HSE yang ditugasi pada
+           pendaftaran ini, bukan oleh pendaftarnya. */
+        AksesMiners::tegakkan(AksesMiners::penyetujuLangkah($induksi, $r->user(), 'ohse'),
+            'Nilai induksi hanya dapat diisi HSE yang ditugasi pada pendaftaran ini.');
 
         $data = self::tanpaBerkas($r->validate([
             'nilai'   => ['required', 'integer', 'min:0', 'max:100'],
@@ -361,9 +388,10 @@ class MinersDokumenController extends Controller
         return back()->with('sukses', 'Nilai induksi disimpan.');
     }
 
-    public function induksiHapusOrang(Induksi $induksi, InduksiOrang $orang)
+    public function induksiHapusOrang(Request $r, Induksi $induksi, InduksiOrang $orang)
     {
         abort_unless((int) $orang->induksi_id === (int) $induksi->id, 404);
+        AksesMiners::tegakkan(AksesMiners::ubahDraf($induksi, $r->user()));
 
         $orang->delete();
 
@@ -464,6 +492,10 @@ class MinersDokumenController extends Controller
 
     public function permitUpdate(Request $r, Permit $permit)
     {
+        /* Suntingan Mine Permit hanya oleh admin (Safe Track sejak
+           22 Okt 2026); pengaju masih boleh selama drafnya belum dikirim. */
+        AksesMiners::tegakkan(AksesMiners::kelola($r->user()) || AksesMiners::ubahDraf($permit, $r->user()));
+
         $data = $this->validasiPermit($r);
 
         $tipe   = TipePermit::find($data['tipe_permit_id'] ?? null);
@@ -490,6 +522,8 @@ class MinersDokumenController extends Controller
 
     public function permitBerkas(Request $r, Permit $permit)
     {
+        AksesMiners::tegakkan(AksesMiners::kelola($r->user()) || AksesMiners::ubahDraf($permit, $r->user()));
+
         $data = $r->validate([
             'jenis'   => ['required', 'string', 'max:100'],
             'nomor'   => ['nullable', 'string', 'max:100'],
@@ -530,6 +564,8 @@ class MinersDokumenController extends Controller
 
     public function permitCabut(Request $r, Permit $permit)
     {
+        AksesMiners::tegakkan(AksesMiners::kelola($r->user()));
+
         $data = $r->validate(['alasan_cabut' => ['required', 'string', 'max:200']]);
 
         $permit->update($data + [
@@ -642,6 +678,8 @@ class MinersDokumenController extends Controller
 
     public function simperUpdate(Request $r, Simper $simper)
     {
+        AksesMiners::tegakkan(AksesMiners::kelola($r->user()) || AksesMiners::ubahDraf($simper, $r->user()));
+
         $data = $this->validasiSimper($r, $simper);
 
         $simper->update($data + [
@@ -664,6 +702,8 @@ class MinersDokumenController extends Controller
 
     public function simperUnit(Request $r, Simper $simper)
     {
+        AksesMiners::tegakkan(AksesMiners::kelola($r->user()) || AksesMiners::ubahDraf($simper, $r->user()));
+
         $data = $this->validasiUnit($r);
 
         /* Kelas SIM yang dituntut golongan unitnya DIPERIKSA, bukan
@@ -682,6 +722,10 @@ class MinersDokumenController extends Controller
     public function simperUnitUbah(Request $r, Simper $simper, SimperUnit $unit)
     {
         abort_unless((int) $unit->simper_id === (int) $simper->id, 404);
+
+        /* Admin boleh menyunting baris unit walau SIMPER-nya sudah
+           disahkan penuh (Safe Track 8601bfe); pengaju hanya pada draf. */
+        AksesMiners::tegakkan(AksesMiners::kelola($r->user()) || AksesMiners::ubahDraf($simper, $r->user()));
 
         $unit->update($this->validasiUnit($r));
 
@@ -742,6 +786,8 @@ class MinersDokumenController extends Controller
 
     public function ajuanUnit(Request $r, SimperAjuan $ajuan)
     {
+        AksesMiners::tegakkan(AksesMiners::kelola($r->user()) || AksesMiners::ubahDraf($ajuan, $r->user()));
+
         SimperAjuanUnit::create($this->validasiUnit($r) + ['ajuan_id' => $ajuan->id]);
 
         return back()->with('sukses', 'Unit ditambahkan ke pengajuan.');
@@ -820,11 +866,53 @@ class MinersDokumenController extends Controller
             return back()->withErrors(['keadaan' => $salah]);
         }
 
-        return back()->with('sukses', $sebutan.' — '.match ($data['keadaan']) {
+        return $this->balas($sebutan.' — '.match ($data['keadaan']) {
             'setuju'       => 'disetujui.',
             'tolak'        => 'ditolak.',
             default        => 'dikembalikan ke pengaju.',
         });
+    }
+
+    /**
+     * Pesan sukses beserta peringatan pemberitahuan, bila ada.
+     *
+     * Dua pesan, bukan satu kalimat panjang — cara Safe Track
+     * (st_sukses dan st_gagal): yang hijau mengatakan pekerjaannya
+     * selesai, yang merah mengatakan apa yang masih perlu ditindaklanjuti.
+     * Digabung, bagian keduanya terbaca sebagai catatan kaki dan
+     * diabaikan — padahal justru itu yang menahan dokumennya.
+     */
+    private function balas(string $sukses)
+    {
+        $balas = back()->with('sukses', $sukses);
+
+        return ($pesan = Jalur::pesanSurel()) ? $balas->with('galat', $pesan) : $balas;
+    }
+
+    /**
+     * Kirim berkas ke penyetuju pertama — tombol "Kirim" / "Sending".
+     *
+     * Jenisnya dibaca dari default rute, sama seperti rincian().
+     */
+    public function kirim(Request $r, string $id)
+    {
+        $jenis   = (string) ($r->route()?->defaults['jenis'] ?? '');
+        $dokumen = $this->dokumen($jenis, (int) $id);
+
+        if ($alasan = Jalur::kirim($dokumen, $r->user())) {
+            return back()->withErrors(['kirim' => $alasan]);
+        }
+
+        return $this->balas((RincianDokumen::LABEL[$jenis] ?? 'Berkas').' terkirim ke penyetuju.');
+    }
+
+    public function ajuanKirim(Request $r, SimperAjuan $ajuan)
+    {
+        if ($alasan = Jalur::kirim($ajuan, $r->user())) {
+            return back()->withErrors(['kirim' => $alasan]);
+        }
+
+        return $this->balas('Pengajuan '.$ajuan->jenisLabel().' terkirim ke penyetuju.');
     }
 
     /**
@@ -899,7 +987,7 @@ class MinersDokumenController extends Controller
             return back()->withErrors(['ajukanUlang' => $alasan]);
         }
 
-        return back()->with('sukses', 'Pengajuan dikirim ulang; alurnya diulang dari awal.');
+        return $this->balas('Pengajuan dikirim ulang; alurnya diulang dari awal.');
     }
 
     /**
@@ -924,14 +1012,7 @@ class MinersDokumenController extends Controller
 
     private function alur(object $dokumen): array
     {
-        return $dokumen->alur->map(fn ($a) => [
-            'urutan'  => $a->urutan,
-            'peran'   => $a->peran,
-            'label'   => \App\Models\Miners\Alur::PERAN[$a->peran] ?? $a->peran,
-            'keadaan' => $a->keadaan,
-            'pada'    => $a->bertindak_pada ? Waktu::lokal($a->bertindak_pada)->toDateTimeString() : null,
-            'catatan' => $a->catatan,
-        ])->all();
+        return RincianDokumen::alur($dokumen);
     }
 
     /**

@@ -21,7 +21,7 @@ use App\Models\Miners\{Alur as MnrAlur, Blok as MnrBlok, Departemen as MnrDepart
     Pekerja as MnrPekerja, Permit as MnrPermit, PermitBerkas as MnrPermitBerkas, Pjo as MnrPjo,
     Simper as MnrSimper, SimperAjuan as MnrSimperAjuan, SimperAjuanUnit as MnrSimperAjuanUnit,
     SimperUnit as MnrSimperUnit, SubBlok as MnrSubBlok, Subkontraktor as MnrSubkontraktor,
-    TipePermit as MnrTipePermit};
+    TipePermit as MnrTipePermit, Skema as MnrSkema, PermitPerpanjangan as MnrPermitPerpanjangan};
 use App\Models\{
     Pjp, PjpEvaluasi, PjpLaporan,
     SmkpChecklistItem as PjpSmkpItem,
@@ -377,11 +377,16 @@ final class DataContoh
         MnrAlur::class,
         MnrSimperAjuanUnit::class, MnrSimperAjuan::class,
         MnrSimperUnit::class, MnrSimper::class,
-        MnrPermitBerkas::class, MnrPermit::class,
+        MnrPermitBerkas::class, MnrPermitPerpanjangan::class, MnrPermit::class,
         MnrInduksiOrang::class, MnrInduksi::class,
         MnrMcuRujukan::class, MnrMcuOrang::class, MnrMcu::class,
         MnrKompetensi::class,
         MnrPekerja::class, MnrSubBlok::class, MnrPjo::class, MnrSubkontraktor::class,
+
+        /* Penyetuju bernama perusahaan contoh. Dibuang bersama datanya:
+           ia menunjuk akun perusahaan itu, dan skema yang tertinggal
+           akan menugaskan dokumen sungguhan kepada akun contoh. */
+        MnrSkema::class,
     ];
 
     /** @var list<string> hal yang perlu diketahui pemanggilnya */
@@ -701,6 +706,7 @@ final class DataContoh
                     'induksi' => MnrInduksi::class,
                     'permit'  => MnrPermit::class,
                     'simper'  => MnrSimper::class,
+                    'perpanjangan_permit' => MnrPermitPerpanjangan::class,
                 ] as $jenis => $kelas) {
                     $w->orWhere(fn ($x) => $x->where('dokumen', $jenis)
                         ->whereIn('dokumen_id',
@@ -1076,6 +1082,25 @@ final class DataContoh
         MasterMiners::pasang();
 
         $n = 0;
+
+        /* Penyetuju BERNAMA lebih dulu — skema Safe Track. Dokumen yang
+           dibuat sebelum skemanya ada lahir tanpa penyetuju, dan antrean
+           "Perlu Approval Saya" pada data contoh kosong bagi siapa pun.
+           Pemegang peran perusahaan itu dipakai bila ada; selebihnya
+           peninjau yang memuat data contoh, supaya ia dapat menelusuri
+           alurnya sendiri. */
+        $penyetuju = fn (string $kolom, string $nilai) => User::withoutGlobalScopes()
+            ->where('company_id', $this->c->id)->where($kolom, $nilai)->orderBy('id')->value('id')
+            ?? $this->peninjau?->id;
+
+        MnrSkema::query()->updateOrCreate(['company_id' => $this->c->id], [
+            'dokter_user_id' => $penyetuju('ohse_role', 'paramedis'),
+            'ohse_user_id'   => $penyetuju('ohse_role', 'ohse'),
+            'ktt_user_id'    => $penyetuju('lms_role', 'ktt'),
+            'ohse_cc'        => 'hse.tembusan@contoh.test',
+            'user_id'        => $this->peninjau?->id,
+        ]);
+        $n++;
 
         /* TENGAH MALAM, dan itu bukan kerapian.
          *
@@ -1579,7 +1604,9 @@ final class DataContoh
             'user_id'               => $this->pengaju?->id,
         ]);
         $n++;
-        $n += $this->minersAlur($perpanjang, ['setuju', 'setuju', 'menunggu']);
+        /* Perpanjangan menempuh dokter → HSE → KTT; yang ini sudah
+           sampai di KTT. */
+        $n += $this->minersAlur($perpanjang, ['setuju', 'setuju', 'setuju', 'menunggu']);
 
         MnrSimperAjuanUnit::create([
             'ajuan_id'      => $perpanjang->id,
@@ -1591,6 +1618,41 @@ final class DataContoh
             'nilai_teori'   => 89,
         ]);
         $n++;
+
+        /* ── perpanjangan Mine Permit ──
+           Satu yang masih di meja dokter: rantainya pengaju → dokter →
+           HSE → KTT, dan layar antrean perpanjangan tidak dapat diperiksa
+           tanpa satu pun yang berjalan. */
+        $panjang = MnrPermitPerpanjangan::withoutGlobalScopes()->create([
+            'company_id'    => $this->c->id,
+            'permit_id'     => $permit['Yulianto']->id,
+            'no_registrasi' => 'PPJ-'.$hari->format('Y').'-001',
+            'tanggal'       => $hari->copy()->subDays(2),
+            'tanggal_mcu'   => $hari->copy()->subDays(6),
+            'berlaku_baru'  => $hari->copy()->addYear(),
+            'status'        => 'diperiksa',
+            'user_id'       => $this->pengaju?->id,
+        ]);
+        $n++;
+        $n += $this->minersAlur($panjang, ['setuju', 'menunggu', 'menunggu', 'menunggu']);
+
+        /* Huruf kewenangan per unit dan type unit pada tabel pasangannya
+           — bentuk Safe Track. Pasangannya ikut terbuang lewat kaskade
+           unitnya, jadi tidak dihitung tersendiri. */
+        $huruf = ['operator' => 'F', 'pengawas' => 'R', 'trainer' => 'I'];
+        $idSimper = MnrSimper::withoutGlobalScopes()->where('company_id', $this->c->id)->select('id');
+
+        foreach (MnrSimperUnit::withoutGlobalScopes()->whereIn('simper_id', $idSimper)->get() as $u) {
+            $u->update(['authority' => $huruf[$u->kewenangan] ?? 'F']);
+            if ($u->jenis_unit_id) $u->jenisUnitBanyak()->syncWithoutDetaching([$u->jenis_unit_id]);
+        }
+
+        foreach (MnrSimperAjuanUnit::withoutGlobalScopes()
+                     ->whereIn('ajuan_id', MnrSimperAjuan::withoutGlobalScopes()->whereIn('simper_id', $idSimper)->select('id'))
+                     ->get() as $u) {
+            $u->update(['authority' => $huruf[$u->kewenangan] ?? 'F']);
+            if ($u->jenis_unit_id) $u->jenisUnitBanyak()->syncWithoutDetaching([$u->jenis_unit_id]);
+        }
 
         return $n;
     }
@@ -2424,9 +2486,15 @@ final class DataContoh
         foreach ($langkah as $i => $l) {
             $k = $keadaan[$i] ?? 'menunggu';
 
+            /* Langkah pengaju ditindak pengajunya sendiri — "Kirim";
+               langkah lain oleh penyetuju yang ditugasi skema. */
+            $oleh = $l->peran === 'pengaju'
+                ? ($this->pengaju?->id ?? $this->peninjau?->id)
+                : ($l->ditugaskan_user_id ?? $this->peninjau?->id ?? $this->pengaju?->id);
+
             $l->update([
                 'keadaan'        => $k,
-                'user_id'        => $k === 'menunggu' ? null : ($this->peninjau?->id ?? $this->pengaju?->id),
+                'user_id'        => $k === 'menunggu' ? null : $oleh,
 
                 /* Kolom WAKTU, bukan tanggal — jamnya memang disimpan,
                    sebab "siapa menyetujui pukul berapa" adalah yang

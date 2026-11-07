@@ -24,6 +24,7 @@ class Induksi extends Model
         'draf'     => 'Draf',
         'diajukan' => 'Diajukan',
         'dijadwal' => 'Dijadwalkan',
+        'ohse'     => 'Verifikasi HSE',
         'selesai'  => 'Selesai',
         'ditolak'  => 'Ditolak',
     ];

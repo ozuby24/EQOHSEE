@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Company;
-use App\Models\Miners\{Induksi, InduksiOrang, Mcu, McuOrang, Pekerja, Permit, PermitBerkas, Simper};
+use App\Models\Miners\{Induksi, InduksiOrang, Mcu, McuOrang, Pekerja, Permit, PermitBerkas, Simper, Skema};
 use App\Models\User;
 use App\Notifications\AlurMinersBerpindah;
 use App\Support\Berkas;
@@ -51,6 +51,29 @@ class RincianDokumenMinersTest extends TestCase
         ], $x));
     }
 
+    /**
+     * Penyetuju bernama untuk IUP uji — skema Safe Track.
+     *
+     * @return array{ohse:User,ktt:User,dokter:User}
+     */
+    private function skema(): array
+    {
+        $o = [
+            'ohse'   => $this->pengguna(['ohse_role' => 'ohse']),
+            'ktt'    => $this->pengguna(['lms_role' => 'ktt']),
+            'dokter' => $this->pengguna(['ohse_role' => 'paramedis']),
+        ];
+
+        Skema::create([
+            'company_id'     => $this->c->id,
+            'ohse_user_id'   => $o['ohse']->id,
+            'ktt_user_id'    => $o['ktt']->id,
+            'dokter_user_id' => $o['dokter']->id,
+        ]);
+
+        return $o;
+    }
+
     private function pekerja(?Company $c = null): Pekerja
     {
         return Pekerja::withoutGlobalScopes()->create([
@@ -81,7 +104,7 @@ class RincianDokumenMinersTest extends TestCase
             'company_id' => ($c ?? $this->c)->id,
             'pekerja_id' => $this->pekerja($c)->id,
             'no_registrasi' => 'MP-UJI-1',
-            'tanggal' => now()->startOfDay(), 'status' => 'diajukan',
+            'tanggal' => now()->startOfDay(), 'status' => 'draf',
         ]);
     }
 
@@ -197,64 +220,65 @@ class RincianDokumenMinersTest extends TestCase
     }
 
     /**
-     * Tombol tindakan hanya digambar bagi yang gilirannya tiba.
+     * Tombol hanya digambar bagi yang gilirannya tiba.
      *
      * Penjagaan sebenarnya tetap di Jalur — tombol yang disembunyikan
      * masih dapat dikirim permintaannya — tetapi menggambar tombol yang
      * pasti ditolak hanya membuat orang menekannya lalu bertanya-tanya.
      *
-     * Pengguna TANPA peran khusus memang memegang peran 'pjo', dan itu
-     * disengaja: memulangkan daftar kosong akan membuat mitra kerja
-     * kehilangan tombol untuk mengajukan apa pun. Yang dijaga di sini
-     * karena itu bukan "tanpa peran berarti tidak boleh", melainkan
-     * dua hal yang benar-benar membedakan.
+     * Sebelum dikirim, yang punya tombol adalah PENGAJUNYA ("Kirim").
+     * Sesudah dikirim, hanya HSE yang DITUGASI pada skema IUP — bukan
+     * setiap pemegang peran OHSE.
      */
     public function test_boleh_tindak_hanya_bagi_pemegang_giliran(): void
     {
-        $permit = $this->permit();
+        $o = $this->skema();
 
-        $ambil = fn () => $this->get("/miners/permit/{$permit->id}")
-            ->viewData('page')['props']['bolehTindak'];
-
-        /* Langkah pertama permit adalah PJO, dan pengguna tanpa peran
-           khusus memegangnya. */
-        $this->actingAs($this->pengguna());
-        $this->assertTrue($ambil(), 'PJO kehilangan tombol pada gilirannya sendiri.');
-
-        /* OHSE baru giliran kedua — belum boleh. */
-        $this->actingAs($this->pengguna(['ohse_role' => 'ohse']));
-        $this->assertFalse($ambil(), 'OHSE dapat menindak sebelum gilirannya tiba.');
-
-        /* Yang MENGAJUKAN tidak boleh menyetujui pengajuannya sendiri,
-           meski ia memegang peran yang sedang ditunggu. Inilah yang
-           diperiksa auditor pada dokumen yang dibawa ke gerbang. */
         $pengaju = $this->pengguna();
+        $permit  = $this->lengkapiBerkas($this->permit());
         $permit->forceFill(['user_id' => $pengaju->id])->save();
 
+        $props = fn () => $this->get("/miners/permit/{$permit->id}")->viewData('page')['props'];
+
         $this->actingAs($pengaju);
-        $this->assertFalse($ambil(), 'Pengaju dapat menyetujui pengajuannya sendiri.');
+        $this->assertTrue($props()['bolehKirim'], 'Pengaju kehilangan tombol Kirim pada drafnya sendiri.');
+        $this->assertFalse($props()['bolehTindak']);
+
+        $this->actingAs($o['ohse']);
+        $this->assertFalse($props()['bolehTindak'], 'HSE dapat menindak berkas yang belum dikirim.');
+
+        $this->assertNull(Jalur::kirim($permit->fresh(), $pengaju));
+
+        $this->actingAs($o['ohse']);
+        $this->assertTrue($props()['bolehTindak'], 'HSE yang ditugasi kehilangan tombolnya.');
+
+        $this->actingAs($this->pengguna(['ohse_role' => 'ohse']));
+        $this->assertFalse($props()['bolehTindak'], 'OHSE yang tidak ditugasi mendapat tombol.');
+
+        $this->actingAs($pengaju);
+        $this->assertFalse($props()['bolehTindak'], 'Pengaju dapat menyetujui pengajuannya sendiri.');
+        $this->assertFalse($props()['bolehKirim'], 'Berkas yang sudah dikirim dapat dikirim lagi.');
     }
 
     /* ══════════════ surel alur ══════════════ */
 
-    /** Giliran yang tiba disurati, dan hanya pemegang peran itu. */
+    /** Yang disurati hanya penyetuju yang DITUGASI pada giliran berikutnya. */
     public function test_hanya_pemegang_giliran_berikutnya_disurati(): void
     {
         Notification::fake();
 
+        $o = $this->skema();
+        $ohseLain = $this->pengguna(['ohse_role' => 'ohse']);
+        $biasa    = $this->pengguna();
+
         $permit = $this->lengkapiBerkas($this->permit());
-        $permit->terbitkanAlur();
-        $permit->load('alur');
 
-        $ohse  = $this->pengguna(['ohse_role' => 'ohse']);
-        $ktt   = $this->pengguna(['lms_role' => 'ktt']);
-        $biasa = $this->pengguna();
+        /* Pengaju mengirim; giliran berikutnya HSE yang ditugasi. */
+        $this->assertNull(Jalur::kirim($permit, $this->pengguna(['is_admin' => true])));
 
-        /* PJO menyetujui; giliran berikutnya OHSE. */
-        $this->assertNull(Jalur::setujui($permit, $this->pengguna(['is_admin' => true])));
-
-        Notification::assertSentTo($ohse, AlurMinersBerpindah::class);
-        Notification::assertNotSentTo($ktt, AlurMinersBerpindah::class);
+        Notification::assertSentTo($o['ohse'], AlurMinersBerpindah::class);
+        Notification::assertNotSentTo($ohseLain, AlurMinersBerpindah::class);
+        Notification::assertNotSentTo($o['ktt'], AlurMinersBerpindah::class);
         Notification::assertNotSentTo($biasa, AlurMinersBerpindah::class);
     }
 
@@ -271,61 +295,69 @@ class RincianDokumenMinersTest extends TestCase
         $ohseLain = User::factory()->create([
             'is_admin' => false, 'company_id' => $lain->id, 'ohse_role' => 'ohse',
         ]);
-        $ohseKita = $this->pengguna(['ohse_role' => 'ohse']);
+        $o = $this->skema();
 
         $permit = $this->lengkapiBerkas($this->permit());
-        $permit->terbitkanAlur();
-        $permit->load('alur');
 
-        Jalur::setujui($permit, $this->pengguna(['is_admin' => true]));
+        Jalur::kirim($permit, $this->pengguna(['is_admin' => true]));
 
-        Notification::assertSentTo($ohseKita, AlurMinersBerpindah::class);
+        Notification::assertSentTo($o['ohse'], AlurMinersBerpindah::class);
         Notification::assertNotSentTo($ohseLain, AlurMinersBerpindah::class);
     }
 
     /** Yang dikembalikan menyurati PENGAJUNYA, bukan peran berikutnya. */
     public function test_dikembalikan_menyurati_pengajunya(): void
     {
+        $o = $this->skema();
+        $pengaju = $this->pengguna();
+
+        $permit = $this->lengkapiBerkas($this->permit());
+        $permit->forceFill(['user_id' => $pengaju->id])->save();
+        Jalur::kirim($permit, $pengaju);
+
         Notification::fake();
 
-        $pengaju = $this->pengguna();
-        $ohse    = $this->pengguna(['ohse_role' => 'ohse']);
-
-        $permit = $this->permit();
-        $permit->forceFill(['user_id' => $pengaju->id])->save();
-        $permit->terbitkanAlur();
-        $permit->load('alur');
-
-        Jalur::kembalikan($permit, $this->pengguna(['is_admin' => true]), 'SPDK belum ditandatangani.');
+        Jalur::kembalikan($permit->fresh(), $o['ohse'], 'SPDK belum ditandatangani.');
 
         Notification::assertSentTo($pengaju, AlurMinersBerpindah::class);
-        Notification::assertNotSentTo($ohse, AlurMinersBerpindah::class);
+        Notification::assertNotSentTo($o['ktt'], AlurMinersBerpindah::class);
     }
 
     /**
-     * Surel yang gagal tidak menggagalkan persetujuannya.
-     *
-     * SMTP yang mati tidak boleh menghentikan penerbitan Mine Permit di
-     * gerbang. Diperiksa dengan mailer yang memang dipastikan meledak.
+     * Surel yang gagal tidak menggagalkan persetujuannya — dan hal itu
+     * DIKATAKAN, bukan cuma dicatat di log.
      */
     public function test_surel_gagal_tidak_membatalkan_persetujuan(): void
     {
+        $this->skema();
         $permit = $this->lengkapiBerkas($this->permit());
-        $permit->terbitkanAlur();
-        $permit->load('alur');
 
         config(['mail.default' => 'smtp', 'mail.mailers.smtp.host' => '127.0.0.1',
                 'mail.mailers.smtp.port' => 1]);
 
-        $this->pengguna(['ohse_role' => 'ohse']);
+        $galat = Jalur::kirim($permit, $this->pengguna(['is_admin' => true]));
 
-        $galat = Jalur::setujui($permit, $this->pengguna(['is_admin' => true]));
-
-        $this->assertNull($galat, 'Persetujuan gagal hanya karena surelnya tidak terkirim.');
+        $this->assertNull($galat, 'Pengiriman gagal hanya karena surelnya tidak terkirim.');
+        $this->assertStringContainsString('SUDAH tercatat', (string) Jalur::pesanSurel());
 
         $permit->load('alur');
-        $this->assertSame('setuju', $permit->alur->firstWhere('peran', 'pjo')->keadaan,
-            'Langkah persetujuannya tidak tersimpan.');
+        $this->assertSame('setuju', $permit->alur->firstWhere('peran', 'pengaju')->keadaan,
+            'Langkah pengirimannya tidak tersimpan.');
+    }
+
+    /** Giliran tanpa penerima mengatakan "penerima tidak ditemukan". */
+    public function test_penerima_tidak_ditemukan_dikatakan(): void
+    {
+        Notification::fake();
+
+        $o = $this->skema();
+        $permit = $this->lengkapiBerkas($this->permit());
+
+        /* Akun HSE yang ditugasi kehilangan alamat surelnya. */
+        $o['ohse']->forceFill(['email' => ''])->save();
+
+        $this->assertNull(Jalur::kirim($permit, $this->pengguna(['is_admin' => true])));
+        $this->assertStringContainsString('penerima langkah berikutnya tidak ditemukan', (string) Jalur::pesanSurel());
     }
 
     /* ══════════════ lampiran pada halaman rincian ══════════════ */
@@ -378,24 +410,18 @@ class RincianDokumenMinersTest extends TestCase
 
     /**
      * Pengajuan yang dikembalikan dapat diajukan ulang, dan alurnya
-     * diulang DARI AWAL.
-     *
-     * Bukan dilanjutkan dari langkah yang mengembalikannya: berkas yang
-     * sudah diperbaiki adalah berkas yang berbeda dari yang pernah
-     * dilihat langkah-langkah sebelumnya, dan membiarkan persetujuan
-     * lama tetap berlaku berarti PJO menyetujui satu berkas lalu OHSE
-     * menerima berkas yang lain dengan persetujuan yang sama.
+     * diulang DARI AWAL — resubmit Safe Track.
      */
     public function test_yang_dikembalikan_dapat_diajukan_ulang(): void
     {
+        $o = $this->skema();
         $pengaju = $this->pengguna();
-        $permit  = $this->permit();
+        $permit  = $this->lengkapiBerkas($this->permit());
         $permit->forceFill(['user_id' => $pengaju->id])->save();
-        $permit->terbitkanAlur();
-        $permit->load('alur');
 
-        Jalur::setujui($permit, $this->pengguna(['is_admin' => true]));
-        Jalur::kembalikan($permit, $this->pengguna(['is_admin' => true]), 'SPDK belum ditandatangani.');
+        Jalur::kirim($permit, $pengaju);
+        Jalur::setujui($permit->fresh(), $o['ohse']);
+        Jalur::kembalikan($permit->fresh(), $o['ktt'], 'SPDK belum ditandatangani.');
 
         $permit->refresh()->load('alur');
         $this->assertSame('draf', $permit->status);
@@ -404,107 +430,120 @@ class RincianDokumenMinersTest extends TestCase
 
         $permit->refresh()->load('alur');
 
-        $this->assertSame('diajukan', $permit->status);
-        $this->assertTrue($permit->alur->every(fn ($a) => $a->keadaan === 'menunggu'),
+        $this->assertSame('ohse', $permit->status);
+        $this->assertSame('setuju', $permit->alur->firstWhere('peran', 'pengaju')->keadaan);
+        $this->assertTrue($permit->alur->where('peran', '!=', 'pengaju')->every(fn ($a) => $a->keadaan === 'menunggu'),
             'Alurnya tidak diulang dari awal.');
         $this->assertTrue($permit->alur->every(fn ($a) => $a->catatan === null),
             'Catatan pengembalian lama masih menempel pada alur yang baru.');
     }
 
     /**
-     * Yang DITOLAK tidak dapat diajukan ulang.
+     * Yang DITOLAK pun dapat diajukan ulang — perilaku Safe Track.
      *
-     * Ditolak dan dikembalikan bukan dua kata untuk satu hal. Membiarkan
-     * yang ditolak diajukan ulang lewat pintu ini membuat keputusan
-     * menolak tidak berarti apa-apa — cukup ditekan sekali lagi.
+     * Safe Track tidak punya penolakan yang final: reject menyetel status
+     * "reject" dan pengajunya dapat memperbaiki lalu resubmit. Yang
+     * membedakannya dari "dikembalikan" adalah statusnya yang tetap
+     * tercatat sebagai penolakan sampai dikirim ulang.
      */
-    public function test_yang_ditolak_tidak_dapat_diajukan_ulang(): void
+    public function test_yang_ditolak_dapat_diajukan_ulang(): void
     {
+        $o = $this->skema();
         $pengaju = $this->pengguna();
-        $permit  = $this->permit();
+        $permit  = $this->lengkapiBerkas($this->permit());
         $permit->forceFill(['user_id' => $pengaju->id])->save();
-        $permit->terbitkanAlur();
-        $permit->load('alur');
 
-        Jalur::tolak($permit, $this->pengguna(['is_admin' => true]), 'Tidak memenuhi syarat.');
-        $permit->refresh()->load('alur');
-
-        $this->assertNotNull(Jalur::ajukanUlang($permit, $pengaju),
-            'Pengajuan yang ditolak dapat dihidupkan lagi.');
+        Jalur::kirim($permit, $pengaju);
+        Jalur::tolak($permit->fresh(), $o['ohse'], 'Tidak memenuhi syarat.');
         $this->assertSame('ditolak', $permit->refresh()->status);
+
+        /* Selama ditolak, tidak ada yang dapat menyetujuinya. */
+        $this->assertNotNull(Jalur::setujui($permit->fresh(), $o['ohse']));
+
+        $this->assertNull(Jalur::ajukanUlang($permit->fresh(), $pengaju));
+        $this->assertSame('ohse', $permit->refresh()->status);
     }
 
     /** Hanya pengaju (atau admin) yang dapat mengajukan ulang. */
     public function test_hanya_pengaju_yang_dapat_mengajukan_ulang(): void
     {
+        $o = $this->skema();
         $pengaju = $this->pengguna();
-        $permit  = $this->permit();
+        $permit  = $this->lengkapiBerkas($this->permit());
         $permit->forceFill(['user_id' => $pengaju->id])->save();
-        $permit->terbitkanAlur();
-        $permit->load('alur');
 
-        Jalur::kembalikan($permit, $this->pengguna(['is_admin' => true]), 'Kurang.');
+        Jalur::kirim($permit, $pengaju);
+        Jalur::kembalikan($permit->fresh(), $o['ohse'], 'Kurang.');
         $permit->refresh()->load('alur');
 
-        $this->assertNotNull(Jalur::ajukanUlang($permit, $this->pengguna(['ohse_role' => 'ohse'])),
+        $this->assertNotNull(Jalur::ajukanUlang($permit, $o['ohse']),
             'Peninjau dapat mengajukan ulang berkas yang bukan miliknya.');
     }
 
     /* ══════════════ lampiran wajib SOP ══════════════ */
 
     /**
-     * Berkas tidak dapat DIKIRIM ke OHSE selama lampiran wajib kurang.
+     * Berkas tidak dapat DIKIRIM selama lampiran wajibnya kurang.
      *
-     * Ditegakkan pada langkah PJO, bukan pada langkah OHSE, dan
-     * pembedaan itu menentukan siapa yang terhalang: lampirannya
-     * diunggah mitra kerja, bukan OHSE. Ditegakkan di OHSE, yang
-     * terhalang adalah orang yang tidak dapat memperbaikinya.
-     *
-     * Di Project1 pengajuan tetap dapat naik dengan lampiran kurang, dan
-     * akibatnya persis yang dikeluhkan pemakainya — berkas bolak-balik
-     * antara mitra dan OHSE berhari-hari.
+     * Ditegakkan pada tombol Kirim — gerbang "Sending" Safe Track —
+     * sehingga yang terhalang adalah orang yang memegang berkasnya dan
+     * dapat memperbaikinya, bukan HSE.
      */
     public function test_tidak_dapat_dikirim_ke_ohse_saat_lampiran_kurang(): void
     {
+        $this->skema();
         $permit = $this->permit();
         $permit->terbitkanAlur();
         $permit->load('alur');
 
-        $alasan = Jalur::setujui($permit, $this->pengguna(['is_admin' => true]));
+        $alasan = Jalur::kirim($permit, $this->pengguna(['is_admin' => true]));
 
         $this->assertNotNull($alasan, 'Kartu tanpa lampiran wajib tetap naik ke OHSE.');
-        $this->assertStringContainsString('Lampiran wajib', (string) $alasan);
+        $this->assertStringContainsString('lampiran wajib', (string) $alasan);
 
         /* Langkah pertamanya tetap menunggu — tidak ada yang bergerak. */
         $this->assertSame('menunggu',
-            $permit->refresh()->load('alur')->alur->firstWhere('peran', 'pjo')->keadaan);
+            $permit->refresh()->load('alur')->alur->firstWhere('peran', 'pengaju')->keadaan);
     }
 
-    /** Lampiran lengkap membuka langkah pertamanya. */
+    /** Lampiran lengkap membuka kirimannya. */
     public function test_lampiran_lengkap_membuka_kiriman_ke_ohse(): void
     {
+        $this->skema();
         $permit = $this->lengkapiBerkas($this->permit());
-        $permit->terbitkanAlur();
-        $permit->load('alur');
 
-        $this->assertNull(Jalur::setujui($permit, $this->pengguna(['is_admin' => true])),
+        $this->assertNull(Jalur::kirim($permit, $this->pengguna(['is_admin' => true])),
             'Kartu berlampiran lengkap tetap tertahan.');
     }
 
+    /** Tanpa penyetuju pada skema IUP, berkas tidak dapat dikirim — dan pesannya menyebut menunya. */
+    public function test_tanpa_skema_berkas_tidak_dapat_dikirim(): void
+    {
+        $permit = $this->lengkapiBerkas($this->permit());
+
+        $alasan = (string) Jalur::kirim($permit, $this->pengguna(['is_admin' => true]));
+
+        $this->assertStringContainsString('belum lengkap', $alasan);
+        $this->assertStringContainsString('Alur Persetujuan', $alasan);
+        $this->assertSame('draf', $permit->fresh()->status);
+    }
+
     /**
-     * Menolak dan mengembalikan TETAP boleh meski lampirannya kurang.
+     * Mengembalikan TETAP boleh meski lampirannya ternyata kurang.
      *
      * Justru itulah tindakan yang tepat bagi berkas yang tidak lengkap.
-     * Ikut ditahan, OHSE tidak punya cara menyampaikan apa pun.
      */
     public function test_mengembalikan_tetap_boleh_saat_lampiran_kurang(): void
     {
-        $permit = $this->permit();
-        $permit->terbitkanAlur();
-        $permit->load('alur');
+        $o = $this->skema();
+        $permit = $this->lengkapiBerkas($this->permit());
+        Jalur::kirim($permit, $this->pengguna(['is_admin' => true]));
+
+        /* Satu lampiran ternyata kosong sesudah dikirim. */
+        $permit->berkas()->first()->update(['berkas' => null]);
 
         $this->assertNull(
-            Jalur::kembalikan($permit, $this->pengguna(['ohse_role' => 'ohse']), 'Lengkapi SPDK.'),
+            Jalur::kembalikan($permit->fresh(), $o['ohse'], 'Lengkapi SPDK.'),
             'Berkas yang kurang tidak dapat dikembalikan sama sekali.'
         );
 

@@ -44,6 +44,12 @@ class McuOrang extends Model
      */
     public const HARI_PERINGATAN = Acuan::MASA['peringatan_mcu_hari'];
 
+    /** Jenis pemeriksaan — `statusmcu` Safe Track. */
+    public const JENIS_MCU = ['Awal', 'Berkala', 'Khusus'];
+
+    /** Tingkat risiko pekerjaan — `levelresiko` Safe Track. */
+    public const LEVEL_RISIKO = ['Rendah', 'Sedang', 'Tinggi'];
+
     protected $table = 'mnr_mcu_orang';
 
     protected $guarded = ['id'];
@@ -60,6 +66,7 @@ class McuOrang extends Model
             'tanggal_nonaktif' => 'date',
             'aktif'            => 'boolean',
             'usia'             => 'integer',
+            'bulan_berlaku'    => 'integer',
         ];
     }
 

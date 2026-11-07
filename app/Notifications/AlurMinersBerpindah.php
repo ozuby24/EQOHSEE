@@ -54,6 +54,9 @@ class AlurMinersBerpindah extends Notification
         private readonly string $keadaan,
         private readonly ?string $oleh = null,
         private readonly ?string $catatan = null,
+        /** @var list<string> tembusan — penerima "cc" skema IUP dan tembusan tetap */
+        private readonly array $cc = [],
+        private readonly ?string $tautan = null,
     ) {}
 
     /** @return list<string> */
@@ -69,7 +72,7 @@ class AlurMinersBerpindah extends Notification
 
         $m = (new MailMessage())
             ->subject($this->judul($sebut))
-            ->greeting('Halo '.($notifiable->name ?? '').',')
+            ->greeting('Halo '.($notifiable->name ?? 'Bapak/Ibu').',')
             ->line($this->kalimat($sebut));
 
         if ($this->oleh) {
@@ -83,8 +86,14 @@ class AlurMinersBerpindah extends Notification
             $m->line('Catatan: '.$this->catatan);
         }
 
+        /* Tembusan per peran — `dokter_cc`, `hse_cc`, `ktt_cc` pada
+           skema IUP — hanya diberi tahu, tidak menyetujui. */
+        if ($this->cc !== []) {
+            $m->cc($this->cc);
+        }
+
         return $m
-            ->action('Buka '.$label, url("/miners/{$this->jenis}/{$this->dokumenId}"))
+            ->action('Buka '.$label, url($this->tautan ?? "/miners/{$this->jenis}/{$this->dokumenId}"))
             ->line('Surel ini dikirim otomatis oleh EQOHSEE. Tidak perlu dibalas.');
     }
 
@@ -116,7 +125,7 @@ class AlurMinersBerpindah extends Notification
      * kebetulan sama sekarang, dan menyatukannya akan membuat perubahan
      * label ikut mengubah siapa yang disurati.
      */
-    public const PERAN_PENERIMA = ['pjo', 'dokter', 'ohse', 'ktt'];
+    public const PERAN_PENERIMA = ['pengaju', 'dokter', 'ohse', 'ktt'];
 
     public static function peranDikenal(string $peran): bool
     {

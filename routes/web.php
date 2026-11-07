@@ -403,6 +403,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::post('{id}/ajukan-ulang', [MinersDokumenController::class, 'ajukanUlang'])
                 ->defaults('jenis', 'mcu')->whereNumber('id')->name('ajukan-ulang');
+
+            /* "Kirim" — langkah pengaju disetujui oleh pengajunya sendiri. */
+            Route::post('{id}/kirim', [MinersDokumenController::class, 'kirim'])
+                ->defaults('jenis', 'mcu')->whereNumber('id')->name('kirim');
         });
 
         Route::prefix('induksi')->name('induksi.')->group(function () {
@@ -423,6 +427,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::post('{id}/ajukan-ulang', [MinersDokumenController::class, 'ajukanUlang'])
                 ->defaults('jenis', 'induksi')->whereNumber('id')->name('ajukan-ulang');
+
+            /* "Kirim" — langkah pengaju disetujui oleh pengajunya sendiri. */
+            Route::post('{id}/kirim', [MinersDokumenController::class, 'kirim'])
+                ->defaults('jenis', 'induksi')->whereNumber('id')->name('kirim');
         });
 
         Route::prefix('permit')->name('permit.')->group(function () {
@@ -442,6 +450,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::post('{id}/ajukan-ulang', [MinersDokumenController::class, 'ajukanUlang'])
                 ->defaults('jenis', 'permit')->whereNumber('id')->name('ajukan-ulang');
+
+            /* "Kirim" — langkah pengaju disetujui oleh pengajunya sendiri. */
+            Route::post('{id}/kirim', [MinersDokumenController::class, 'kirim'])
+                ->defaults('jenis', 'permit')->whereNumber('id')->name('kirim');
         });
 
         Route::prefix('simper')->name('simper.')->group(function () {
@@ -465,11 +477,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::post('{id}/ajukan-ulang', [MinersDokumenController::class, 'ajukanUlang'])
                 ->defaults('jenis', 'simper')->whereNumber('id')->name('ajukan-ulang');
+
+            /* "Kirim" — langkah pengaju disetujui oleh pengajunya sendiri. */
+            Route::post('{id}/kirim', [MinersDokumenController::class, 'kirim'])
+                ->defaults('jenis', 'simper')->whereNumber('id')->name('kirim');
         });
 
         Route::prefix('ajuan')->name('ajuan.')->group(function () {
             Route::post('{ajuan}/unit',   [MinersDokumenController::class, 'ajuanUnit'])->name('unit');
             Route::post('{ajuan}/tindak', [MinersDokumenController::class, 'ajuanTindak'])->name('tindak');
+            Route::post('{ajuan}/kirim',  [MinersDokumenController::class, 'ajuanKirim'])->name('kirim');
             Route::delete('{ajuan}',      [MinersDokumenController::class, 'ajuanDestroy'])
                 ->middleware('can:admin')->name('destroy');
         });

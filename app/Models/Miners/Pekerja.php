@@ -62,8 +62,25 @@ class Pekerja extends Model
             'tanggal_lahir'   => 'date',
             'tanggal_masuk'   => 'date',
             'tanggal_resign'  => 'date',
+            'tanggal_nonaktif'=> 'date',
         ];
     }
+
+    /**
+     * Tabel yang menyimpan riwayat seseorang dan menunjuk barisnya.
+     *
+     * Sebagian besar berkunci `cascadeOnDelete` — absensi, cuti, lembur,
+     * slip gaji, kontrak — sehingga menghapus satu pekerja diam-diam ikut
+     * menghapus seluruh riwayat HR-nya. Safe Track tidak pernah menghapus
+     * manpower; ia menonaktifkannya (`status_aktif`, `tgl_nonaktif`).
+     * Daftar ini yang menentukan kapan penghapusan diganti penonaktifan.
+     */
+    public const TABEL_TERKAIT = [
+        'hr_regu_anggota', 'hr_roster', 'hr_absensi', 'hr_absensi_jejak',
+        'hr_saldo_cuti', 'hr_cuti', 'hr_lembur', 'hr_upah', 'pay_slip', 'hr_kontrak',
+        'frop_observasi',
+        'mnr_mcu_orang', 'mnr_induksi_orang', 'mnr_permit', 'mnr_simper', 'mnr_kompetensi',
+    ];
 
     /* ═══════════ relasi ═══════════ */
 
@@ -100,6 +117,35 @@ class Pekerja extends Model
     public function aktif(): bool
     {
         return $this->status === 'aktif';
+    }
+
+    /**
+     * Tabel yang masih menyimpan riwayat orang ini.
+     *
+     * @return list<string>
+     */
+    public function riwayatTerkait(): array
+    {
+        $ada = [];
+
+        foreach (self::TABEL_TERKAIT as $t) {
+            if (\Illuminate\Support\Facades\Schema::hasTable($t)
+                && \Illuminate\Support\Facades\DB::table($t)->where('pekerja_id', $this->getKey())->exists()) {
+                $ada[] = $t;
+            }
+        }
+
+        return $ada;
+    }
+
+    /** Nonaktifkan tanpa menghapus — `status_aktif = 0` Safe Track. */
+    public function nonaktifkan(?string $alasan = null, ?\DateTimeInterface $pada = null): void
+    {
+        $this->forceFill([
+            'status'           => 'nonaktif',
+            'tanggal_nonaktif' => $pada ?? \App\Support\Waktu::kini()->startOfDay(),
+            'alasan_nonaktif'  => $alasan,
+        ])->save();
     }
 
     /**

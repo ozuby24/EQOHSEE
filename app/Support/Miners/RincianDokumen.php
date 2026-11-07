@@ -40,6 +40,8 @@ final class RincianDokumen
         'induksi' => 'Induksi',
         'permit'  => 'Mine Permit',
         'simper'  => 'SIMPER',
+        'ajuan'   => 'SIMPER Lanjutan',
+        'perpanjangan_permit' => 'Perpanjangan Mine Permit',
     ];
 
     /** Alamat daftar tiap jenis, untuk tautan "kembali". */
@@ -49,6 +51,21 @@ final class RincianDokumen
         'permit'  => '/miners/permit',
         'simper'  => '/miners/simper',
     ];
+
+    /**
+     * Alamat rincian sebuah dokumen — untuk surel dan daftar antrean.
+     *
+     * Pengajuan lanjutan SIMPER dan perpanjangan Mine Permit belum punya
+     * halaman rinciannya sendiri; keduanya diarahkan ke kartu induknya.
+     */
+    public static function tautan(object $d): string
+    {
+        return match ($d::jenisDokumen()) {
+            'ajuan'               => '/miners/simper/'.$d->simper_id,
+            'perpanjangan_permit' => '/miners/permit/'.$d->permit_id,
+            default               => (self::DAFTAR[$d::jenisDokumen()] ?? '/miners').'/'.$d->getKey(),
+        };
+    }
 
     /**
      * Seluruh prop halaman rincian.
@@ -70,10 +87,23 @@ final class RincianDokumen
                 'daftar'  => self::DAFTAR[$jenis] ?? '/miners',
             ],
 
-            'rincian'  => self::rincian($jenis, $d),
+            'rincian'  => array_merge(self::rincian($jenis, $d), [
+                ['label' => 'IUP penerbit', 'nilai' => $d->iup?->name],
+                ['label' => 'Pengaju',      'nilai' => $d->user?->name],
+            ]),
             'lampiran' => self::lampiran($jenis, $d, $u),
             'orang'    => self::orang($jenis, $d, $u),
             'alur'     => self::alur($d),
+
+            /* Kalimat "sedang nyangkut di mana" — posisiSaatIni Safe
+               Track — dihitung dari alur yang sama dengan tabelnya. */
+            'posisi'   => Jalur::posisi($d),
+
+            'bolehKirim' => Jalur::bolehKirim($d, $u),
+
+            /* Halaman ini menggambar kepalanya sendiri — judul dan remah
+               roti gaya Safe Track — alih-alih kop bersampul. */
+            'kop' => false,
 
             /* Tombol tindakan hanya digambar bila ADA langkah yang
                menunggu DAN peran pengguna ini yang ditunggu. Penjagaan
@@ -91,7 +121,7 @@ final class RincianDokumen
             /* Tombol "ajukan ulang" hanya bagi pengaju (atau admin) atas
                pengajuan yang DIKEMBALIKAN. Yang DITOLAK tidak muncul:
                ditolak dan dikembalikan bukan dua kata untuk satu hal. */
-            'bolehAjukanUlang' => self::bolehAjukanUlang($d, $u),
+            'bolehAjukanUlang' => Jalur::bolehKirim($d, $u) && $d->alurTertahan(),
 
             'KEADAAN' => Keadaan::LABEL,
             'NADA'    => Keadaan::NADA,
@@ -315,44 +345,51 @@ final class RincianDokumen
         return [];
     }
 
-    /** @return list<array<string,mixed>> */
-    private static function alur(object $d): array
+    /**
+     * Kolom tabel persetujuan — kolomPersetujuan() Safe Track.
+     *
+     * Judul kolom adalah JABATAN beserta organisasinya ("HSE PT X"),
+     * bukan nama orang; nama dicetak di dalam kotaknya. Langkah pengaju
+     * yang sudah dikirim terbaca "Diajukan", bukan "Disetujui" — pengaju
+     * mengajukan, tidak menyetujui pengajuannya sendiri.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public static function alur(object $d): array
     {
-        return $d->alur->map(fn (Alur $a) => [
-            'urutan'  => $a->urutan,
-            'peran'   => $a->peran,
-            'label'   => Alur::PERAN[$a->peran] ?? $a->peran,
-            'keadaan' => $a->keadaan,
-            'oleh'    => $a->user?->name,
-            'pada'    => $a->bertindak_pada ? Waktu::lokal($a->bertindak_pada)->toDateTimeString() : null,
-            'catatan' => $a->catatan,
-        ])->values()->all();
-    }
+        $berjalan = $d->langkahBerjalan();
 
-    private static function bolehAjukanUlang(object $d, ?User $u): bool
-    {
-        if (! $u || ! method_exists($d, 'dikembalikan') || ! $d->dikembalikan()) return false;
+        return $d->alur->map(function (Alur $a) use ($d, $berjalan) {
+            $keadaan = $a->keadaan;
 
-        return $u->isAdmin() || ! $d->user_id || (int) $d->user_id === (int) $u->getKey();
+            $label = match (true) {
+                $a->peran === 'pengaju' && $keadaan === 'setuju' => 'Diajukan',
+                $berjalan && $berjalan->is($a)                    => 'Diproses',
+                default                                           => Alur::KEADAAN[$keadaan] ?? $keadaan,
+            };
+
+            return [
+                'urutan'     => $a->urutan,
+                'peran'      => $a->peran,
+                'sebutan'    => Alur::SEBUTAN[$a->peran] ?? '',
+                'label'      => Jalur::labelLangkah($d, $a),
+                'peranLabel' => Alur::PERAN[$a->peran] ?? $a->peran,
+                'keadaan'    => $keadaan,
+                'keadaanLabel' => $label,
+                'giliran'    => $berjalan !== null && $berjalan->is($a),
+                'oleh'       => $a->user?->name,
+                'ditugaskan' => $a->ditugaskan?->name,
+                'atasNama'   => $a->user_id && $a->ditugaskan_user_id
+                    && (int) $a->user_id !== (int) $a->ditugaskan_user_id,
+                'pada'       => $a->bertindak_pada ? Waktu::lokal($a->bertindak_pada)->format('d-m-Y H:i') : null,
+                'catatan'    => $a->catatan,
+            ];
+        })->values()->all();
     }
 
     private static function bolehTindak(object $d, ?User $u): bool
     {
-        if (! $u) return false;
-
-        $langkah = $d->langkahBerjalan();
-
-        if ($langkah === null) return false;
-
-        /* Pengaju tidak boleh menyetujui pengajuannya sendiri — sama
-           dengan yang ditegakkan Jalur. Diulang di sini HANYA untuk
-           menyembunyikan tombolnya; yang menolak permintaannya tetap
-           Jalur, sebab tombol yang disembunyikan masih dapat dikirim. */
-        if (! $u->isAdmin() && $d->user_id && (int) $d->user_id === (int) $u->getKey()) {
-            return false;
-        }
-
-        return in_array($langkah->peran, Jalur::peran($u), true);
+        return Jalur::bolehTindak($d, $u);
     }
 
     /**
@@ -368,11 +405,11 @@ final class RincianDokumen
     public static function relasi(string $jenis): array
     {
         return match ($jenis) {
-            'mcu'     => ['alur.user', 'orang.hasil', 'orang.pekerja', 'orang.rujukan'],
-            'induksi' => ['alur.user', 'orang.pekerja'],
-            'permit'  => ['alur.user', 'pekerja', 'tipe', 'kategori', 'mcuOrang', 'berkas'],
-            'simper'  => ['alur.user', 'pekerja', 'permit.mcuOrang', 'unit.kendaraan', 'unit.jenisUnit'],
-            default   => ['alur.user'],
+            'mcu'     => ['alur.user', 'alur.ditugaskan', 'user', 'iup', 'orang.hasil', 'orang.pekerja', 'orang.rujukan'],
+            'induksi' => ['alur.user', 'alur.ditugaskan', 'user', 'iup', 'orang.pekerja'],
+            'permit'  => ['alur.user', 'alur.ditugaskan', 'user', 'iup', 'pekerja', 'tipe', 'kategori', 'mcuOrang', 'berkas'],
+            'simper'  => ['alur.user', 'alur.ditugaskan', 'user', 'iup', 'pekerja', 'permit.mcuOrang', 'unit.kendaraan', 'unit.jenisUnit'],
+            default   => ['alur.user', 'alur.ditugaskan', 'user'],
         };
     }
 }
