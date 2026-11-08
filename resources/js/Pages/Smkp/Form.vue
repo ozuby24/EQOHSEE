@@ -41,8 +41,8 @@ async function hapus() {
     <form class="kartu max-w-3xl" @submit.prevent="simpan">
       <div class="p-5 sm:p-7 grid sm:grid-cols-2 gap-5">
         <div class="sm:col-span-2">
-          <label class="label">Perusahaan yang diaudit</label>
-          <select v-model="form.company_id" class="input" required>
+          <label class="label" for="audit-perusahaan">Perusahaan yang diaudit</label>
+          <select id="audit-perusahaan" v-model="form.company_id" class="input" required>
             <option value="" disabled>Pilih perusahaan…</option>
             <option v-for="p in perusahaan" :key="p.id" :value="p.id">{{ p.nama }} — {{ KAT[p.kategori] ?? p.kategori }}</option>
           </select>
@@ -60,20 +60,20 @@ async function hapus() {
           <p v-if="form.errors.tahun" class="galat">{{ form.errors.tahun }}</p>
         </div>
         <div>
-          <label class="label">Status</label>
-          <select v-model="form.status" class="input">
+          <label class="label" for="audit-status">Status</label>
+          <select id="audit-status" v-model="form.status" class="input">
             <option v-for="(label, k) in statusPilihan" :key="k" :value="k">{{ label }}</option>
           </select>
           <p v-if="form.errors.status" class="galat">{{ form.errors.status }}</p>
           <p v-else class="text-[11.5px] text-slate-400 mt-1">Audit berstatus Selesai saat dipindah ke tahap Pelaporan.</p>
         </div>
         <div>
-          <label class="label">Tanggal mulai</label>
-          <input v-model="form.tanggal_mulai" type="date" class="input">
+          <label class="label" for="audit-mulai">Tanggal mulai</label>
+          <input id="audit-mulai" v-model="form.tanggal_mulai" type="date" class="input">
         </div>
         <div>
-          <label class="label">Tanggal selesai</label>
-          <input v-model="form.tanggal_selesai" type="date" class="input">
+          <label class="label" for="audit-selesai">Tanggal selesai</label>
+          <input id="audit-selesai" v-model="form.tanggal_selesai" type="date" class="input">
           <p v-if="form.errors.tanggal_selesai" class="galat">{{ form.errors.tanggal_selesai }}</p>
         </div>
         <div class="sm:col-span-2">

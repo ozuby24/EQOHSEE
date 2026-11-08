@@ -10,7 +10,13 @@
  */
 import { reactive, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
+import Dialog from '../Dialog.vue';
+import { useDialog } from '../../dialog';
 import type { PihakTtd, TtdForm } from '../../smkp/types';
+
+/* Penegasan memakai dialog EQOHSEE (useDialog), pengganti window.confirm
+   Aurorasys: confirm() bawaan peramban dibungkam pada webview ponsel. */
+const { dialog, tanya, batal, lanjut } = useDialog();
 
 const props = defineProps<{
   /** `kunci` kosong: baris dicetak dengan kotak tanda tangan kosong, tanpa tanda tangan digital. */
@@ -61,13 +67,23 @@ function unggah(k: PihakTtd, e: Event) {
   if (berkas) router.post(`${props.ttd.url}/ttd`, { pihak: k, berkas }, { ...opsi, forceFormData: true });
 }
 
-function bubuh(k: PihakTtd, ttd: boolean, peran: string) {
-  if (!ttd && !window.confirm(`Batalkan tanda tangan ${peran.replace(/^Nama /, '')} pada bagian ini? Tanggalnya ikut dihapus.`)) return;
+async function bubuh(k: PihakTtd, ttd: boolean, peran: string) {
+  if (!ttd && !await tanya({
+    judul: `Batalkan tanda tangan ${peran.replace(/^Nama /, '')} pada bagian ini?`,
+    pesan: 'Tanggalnya ikut dihapus.',
+    labelAksi: 'Batalkan tanda tangan',
+    nada: 'bahaya',
+  })) return;
   router.post(`${props.ttd.url}/ttd/bubuh`, { bagian: props.bagian, pihak: k, ttd }, opsi);
 }
 
-function hapus(k: PihakTtd, peran: string) {
-  if (window.confirm(`Hapus tanda tangan digital ${peran.replace(/^Nama /, '')}? Tanda tangan ini dipakai di semua formulir audit ini.`)) {
+async function hapus(k: PihakTtd, peran: string) {
+  if (await tanya({
+    judul: `Hapus tanda tangan digital ${peran.replace(/^Nama /, '')}?`,
+    pesan: 'Tanda tangan ini dipakai di semua formulir audit ini.',
+    labelAksi: 'Hapus',
+    nada: 'bahaya',
+  })) {
     router.delete(`${props.ttd.url}/ttd/${k}`, opsi);
   }
 }
@@ -119,7 +135,7 @@ function hapus(k: PihakTtd, peran: string) {
         <td v-if="!blok && !daftar" class="w-[9%] text-slate-700 align-middle">Tanggal</td>
         <td v-if="!daftar" :class="blok ? 'h-20 !align-bottom' : 'align-middle'">
           <template v-if="p.kunci && bisaTanggal(p.kunci)">
-            <input type="date" class="no-print w-full border-0 bg-amber-50/60 p-0.5 text-[11px] focus:ring-1 focus:ring-navy-400"
+            <input type="date" :aria-label="`Tanggal tanda tangan ${p.peran}`" class="no-print w-full border-0 bg-amber-50/60 p-0.5 text-[11px] focus:ring-1 focus:ring-navy-400"
                    :value="dipilih[p.kunci] ?? tanggal(p.kunci)?.nilai ?? ''" :disabled="proses" @change="simpanTanggal(p.kunci, ($event.target as HTMLInputElement).value)">
             <span class="hidden print:inline">{{ tanggal(p.kunci)?.teks ?? '' }}</span>
           </template>
@@ -131,4 +147,5 @@ function hapus(k: PihakTtd, peran: string) {
     </tbody>
   </table>
   <p v-if="galat" class="no-print mt-1 text-[11px] text-red-600">{{ galat }}</p>
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

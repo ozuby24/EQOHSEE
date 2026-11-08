@@ -128,7 +128,7 @@ const bagian = 'kartu p-5 sm:p-6';
           <h2 class="kartu-judul">A. Kontak Awal &amp; Surat Penugasan</h2>
           <p class="kartu-sub">Pertemuan pertama dengan auditi dan surat pengangkatan tim audit.</p>
           <div class="mt-5 grid sm:grid-cols-2 gap-4">
-            <div><label class="label">Tanggal kontak awal</label><input v-model="form.permulaan.tanggal_kontak" type="date" class="input"></div>
+            <div><label class="label" for="t1-tgl-kontak">Tanggal kontak awal</label><input id="t1-tgl-kontak" v-model="form.permulaan.tanggal_kontak" type="date" class="input"></div>
             <div>
               <label class="label" for="t1-sifat">Sifat kontak awal</label>
               <select id="t1-sifat" v-model="form.permulaan.sifat_kontak" class="input"><option value="">—</option><option value="formal">Formal</option><option value="informal">Informal</option></select>
@@ -137,7 +137,7 @@ const bagian = 'kartu p-5 sm:p-6';
             <div><label class="label">Perwakilan auditi</label><input v-model="form.permulaan.wakil_auditi" class="input"></div>
             <div><label class="label">Jabatan perwakilan</label><input v-model="form.permulaan.jabatan_wakil" class="input"></div>
             <div><label class="label">Nomor surat pengangkatan tim</label><input v-model="form.permulaan.surat_nomor" class="input"></div>
-            <div><label class="label">Tanggal surat</label><input v-model="form.permulaan.surat_tanggal" type="date" class="input"></div>
+            <div><label class="label" for="t1-tgl-surat">Tanggal surat</label><input id="t1-tgl-surat" v-model="form.permulaan.surat_tanggal" type="date" class="input"></div>
             <div>
               <label class="label" for="t1-izin">Jenis perizinan</label>
               <input id="t1-izin" v-model="form.permulaan.izin" class="input" list="t1-izin-daftar" maxlength="150"
@@ -221,8 +221,8 @@ const bagian = 'kartu p-5 sm:p-6';
           <div class="mt-5 grid sm:grid-cols-2 gap-4">
             <div><label class="label">Jumlah pekerja auditi</label><input v-model="form.permulaan.jumlah_pekerja" inputmode="numeric" class="input tabular-nums"></div>
             <div>
-              <label class="label">Kelas risiko</label>
-              <select v-model="form.permulaan.kelas_risiko" class="input"><option value="">—</option><option v-for="k in kelasRisiko" :key="k" :value="k">{{ k }}</option></select>
+              <label class="label" for="t1-kelas-risiko">Kelas risiko</label>
+              <select id="t1-kelas-risiko" v-model="form.permulaan.kelas_risiko" class="input"><option value="">—</option><option v-for="k in kelasRisiko" :key="k" :value="k">{{ k }}</option></select>
               <p v-if="form.errors['permulaan.kelas_risiko']" class="galat">{{ form.errors['permulaan.kelas_risiko'] }}</p>
             </div>
             <div><label class="label">Mandays dasar (hari)</label><input v-model="form.permulaan.mandays_dasar" inputmode="decimal" class="input tabular-nums"></div>

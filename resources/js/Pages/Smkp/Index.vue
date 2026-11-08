@@ -79,7 +79,7 @@ const STATUS: Record<string, string> = {
           <Ikon nama="cari" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input v-model="q" type="search" placeholder="Cari judul audit, perusahaan, ketua tim…" class="input pl-10">
         </label>
-        <select v-model="pilihPerusahaan" class="input w-auto min-w-[220px]" @change="terapkan()">
+        <select v-model="pilihPerusahaan" class="input w-auto min-w-[220px]" aria-label="Saring perusahaan" @change="terapkan()">
           <option value="">Semua perusahaan</option>
           <option v-for="p in props.perusahaan" :key="p.id" :value="p.id">{{ p.nama }}</option>
         </select>
