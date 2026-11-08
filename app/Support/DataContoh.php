@@ -1405,7 +1405,10 @@ final class DataContoh
                 ? $hari->copy()->subMonths(3)->addDays(14)
                 : $hari->copy()->subDays(2);
 
-            [$habis, $asal] = MnrPermit::hitungBerlaku($tipeRow, $terbit);
+            /* Masa berlaku MENGIKUTI MCU dasarnya — aturan Safe Track
+               (`tgl_expired = nom`), bukan 31 Desember. */
+            $habis = $mcuOrang[$nama]->berlaku_sampai;
+            $asal  = 'mcu';
 
             $kategoriId = MnrKategoriPermit::where('tipe_permit_id', $tipeRow?->id)
                 ->where('kunci', $kKategori)->value('id');
@@ -1416,6 +1419,8 @@ final class DataContoh
                 'pekerja_id'         => $p->id,
                 'mcu_orang_id'       => $mcuOrang[$nama]->id,
                 'induksi_orang_id'   => $induksiOrang[$nama]->id,
+                'iup_id'             => $this->c->id,
+                'jenis_kartu'        => 'Mine Permit',
                 'no_registrasi'      => sprintf('MP-%s-%03d', $terbit->format('Y'), $i + 1),
                 'tanggal'            => $terbit,
                 'tipe_permit_id'     => $tipeRow?->id,

@@ -97,11 +97,16 @@ final class PemantauanMiners
 
             if ($jenis === null || $jenis === self::PERMIT) {
                 foreach ($p->permit as $k) {
-                    if (!self::terpakai($k->status)) continue;
+                    if (!self::terpakai($k->status) || !$k->aktif) continue;
+
+                    /* Kartu MENGIKUTI MCU-nya (aturan Safe Track). Bila tanggal
+                       MCU sudah bergeser sebelum sinkron malam menyalinnya,
+                       yang efektif adalah tanggal MCU — dan sebabnya disebut. */
+                    $efektif = $k->habisEfektif();
 
                     $keluar[] = self::barisKartu($p, self::PERMIT, $k->no_registrasi,
-                        $k->tanggal, $k->berlaku_sampai, $k->habisEfektif(),
-                        $k->gugurKarenaMcu() ? 'MCU' : null);
+                        $k->tanggal, $k->berlaku_sampai, $efektif,
+                        $efektif?->toDateString() !== $k->berlaku_sampai?->toDateString() ? 'MCU' : null);
                 }
             }
 
@@ -148,7 +153,10 @@ final class PemantauanMiners
 
     private static function terpakai(?string $status): bool
     {
-        return $status === self::TERBIT;
+        /* `kedaluwarsa` ditandai sinkron malam pada kartu yang lewat —
+           kartunya tetap kartu yang terbit, dan justru itulah yang harus
+           tampil sebagai habis. */
+        return $status === self::TERBIT || $status === 'kedaluwarsa';
     }
 
     /** @return array<string,mixed> */

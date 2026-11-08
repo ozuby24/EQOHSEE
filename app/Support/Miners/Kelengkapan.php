@@ -53,21 +53,48 @@ final class Kelengkapan
     }
 
     /**
-     * Daftar periksa lengkap: tiap lampiran wajib beserta ada/tidaknya.
+     * Daftar periksa lengkap: tiap lampiran beserta ada/tidaknya.
      *
-     * @return list<array{label:string,kunci:string,ada:bool}>
+     * MINE PERMIT mengikuti Safe Track (Acuan::LAMPIRAN_PERMIT): SPDK
+     * wajib, Induksi Khusus dan LOTO opsional. `wajib` ikut dikirim
+     * supaya layar dapat menulis "(opsional)" alih-alih menagihkannya.
+     *
+     * @return list<array{label:string,kunci:string,ada:bool,wajib:bool}>
      */
     public static function daftar(object $d): array
     {
+        if ($d instanceof Permit) {
+            $ada = [];
+
+            foreach ($d->berkas as $b) {
+                if (filled($b->berkas)) $ada[(string) $b->jenis] = true;
+            }
+
+            $out = [];
+
+            foreach (Acuan::LAMPIRAN_PERMIT as $kunci => $l) {
+                $punya = isset($ada[$kunci]);
+
+                foreach ($l['setara'] as $lama) {
+                    $punya = $punya || isset($ada[$lama]);
+                }
+
+                $out[] = ['label' => $l['label'], 'kunci' => $kunci, 'ada' => $punya, 'wajib' => $l['wajib']];
+            }
+
+            return $out;
+        }
+
         $kunci = self::kunci($d);
 
         if ($kunci === null) return [];
 
-        return Acuan::kelengkapan(Acuan::berkasWajib($kunci), self::lampiran($d));
+        return array_map(fn (array $b) => $b + ['wajib' => true],
+            Acuan::kelengkapan(Acuan::berkasWajib($kunci), self::lampiran($d)));
     }
 
     /**
-     * Label lampiran wajib yang BELUM ada.
+     * Label lampiran WAJIB yang BELUM ada.
      *
      * @return list<string>
      */
@@ -75,7 +102,7 @@ final class Kelengkapan
     {
         return array_values(array_map(
             fn (array $b) => $b['label'],
-            array_filter(self::daftar($d), fn (array $b) => ! $b['ada']),
+            array_filter(self::daftar($d), fn (array $b) => $b['wajib'] && ! $b['ada']),
         ));
     }
 

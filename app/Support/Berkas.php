@@ -7,8 +7,9 @@ use App\Models\Hr\Kontrak as HrKontrak;
 use App\Models\Investigasi\Bukti as BuktiInvestigasi;
 use App\Models\Pembelian\Pembayaran as PembayaranBeli;
 use App\Models\PjpLaporan as LaporanPjp;
-use App\Models\Miners\{InduksiOrang as MnrInduksiOrang, McuOrang as MnrMcuOrang,
-    McuRujukan as MnrMcuRujukan, PermitBerkas as MnrPermitBerkas, Simper as MnrSimper};
+use App\Models\Miners\{Induksi as MnrInduksi, InduksiOrang as MnrInduksiOrang, McuOrang as MnrMcuOrang,
+    McuRujukan as MnrMcuRujukan, Permit as MnrPermit, PermitBerkas as MnrPermitBerkas,
+    PermitPerpanjangan as MnrPermitPerpanjangan, Simper as MnrSimper};
 use App\Models\SmkpBukti;
 use App\Models\{ComplianceSubject, Document, EnvAuditScore, GudangBarang, HazardReport, InspectionItem, News, PasporKartu, PasporKartuUnit, PasporMcu, PasporSertifikat, Signatory, SmkpFinding};
 use Illuminate\Http\UploadedFile;
@@ -176,6 +177,35 @@ final class Berkas
            gerbang di sini berlaku per JENIS, jadi gerbangnya harus
            cukup untuk baris yang paling peka di antaranya. */
         'mnl' => [MnrPermitBerkas::class,   'berkas',              false],
+
+        /* ── Lampiran Safe Track (paket MCU, induksi, Mine Permit) ──
+
+           Berkas rujukan pada baris manpower — surat medis, dijaga
+           seketat surat hasil MCU. */
+        'mnr' => [MnrMcuOrang::class,       'berkas_rujukan',      false],
+
+        /* Form permohonan induksi — surat pengantar, bukan data medis
+           atau identitas; terbuka bagi yang dapat melihat barisnya. */
+        'mni' => [MnrInduksi::class,        'berkas_permohonan',   false],
+
+        /* Foto pemegang Mine Permit. TIDAK dijaga peran: ia tercetak
+           pada kartu yang dibawa ke gerbang, dan mitra pemiliknya harus
+           dapat memeriksa foto yang akan tercetak. Tetap tertutup lewat
+           batas perusahaan barisnya. */
+        'mnf' => [MnrPermit::class,         'foto',                false],
+
+        /* Salinan KTP — dokumen identitas (NIK, alamat rumah). Dijaga
+           sama dengan salinan SIM: admin dan tim OHSE. */
+        'mnt' => [MnrPermit::class,         'berkas_ktp',          false],
+
+        /* Surat permohonan Mine Permit — terbuka bagi yang dapat melihat
+           barisnya, sama seperti form permohonan induksi. */
+        'mnq' => [MnrPermit::class,         'berkas_permohonan',   false],
+
+        /* Perpanjangan Mine Permit: form pengajuan (terbuka) dan
+           sertifikat MCU baru (dijaga seketat berkas medis lain). */
+        'mpf' => [MnrPermitPerpanjangan::class, 'berkas_form',     false],
+        'mpm' => [MnrPermitPerpanjangan::class, 'berkas_mcu',      false],
     ];
 
     /**
@@ -320,6 +350,14 @@ final class Berkas
 
         /* Salinan SIM kepolisian: dokumen identitas, bukan medis. */
         'mnp' => ['isAdmin', 'isOhse'],
+
+        /* Berkas rujukan pada baris manpower dan sertifikat MCU
+           perpanjangan: dokumen medis. */
+        'mnr' => ['isAdmin', 'isOhse', 'isParamedis'],
+        'mpm' => ['isAdmin', 'isOhse', 'isParamedis'],
+
+        /* Salinan KTP pemegang Mine Permit: dokumen identitas. */
+        'mnt' => ['isAdmin', 'isOhse'],
     ];
 
     /**

@@ -81,25 +81,17 @@ class MinersDataContohTest extends TestCase
     /* ═══════════ keadaan yang harus tetap berbeda ═══════════ */
 
     #[Test]
-    public function test_ada_kartu_yang_gugur_karena_mcu_habis_lebih_dahulu(): void
+    public function test_kartu_contoh_mengikuti_masa_berlaku_mcu(): void
     {
-        $gugur = Permit::withoutGlobalScopes()->with('mcuOrang')->get()
-            ->filter(fn (Permit $p) => $p->gugurKarenaMcu());
+        /* Aturan Safe Track: masa berlaku Mine Permit = masa berlaku MCU
+           dasarnya (`tgl_expired = nom`), bukan 31 Desember. */
+        $permit = Permit::withoutGlobalScopes()->with('mcuOrang')->get();
 
-        $this->assertNotEmpty(
-            $gugur,
-            'Tidak ada satu pun kartu yang gugur karena MCU. Aturan SOP "MCU ulang lewat tenggat → '
-            .'permit dicabut tanpa toleransi" tidak dapat diperiksa di layar mana pun.',
-        );
+        $this->assertNotEmpty($permit);
 
-        /* Dan tanggalnya sendiri BELUM lewat — justru itu intinya.
-           Kartu yang tanggalnya sudah lewat gugur karena alasan yang
-           biasa, dan tidak memperlihatkan apa-apa tentang MCU. */
-        foreach ($gugur as $p) {
-            $this->assertTrue(
-                $p->berlaku_sampai->gte(now()->startOfDay()),
-                'Kartu yang gugur karena MCU seharusnya tanggalnya sendiri belum lewat.',
-            );
+        foreach ($permit as $p) {
+            $this->assertSame('mcu', $p->sumber_berlaku, 'Kartu contoh tidak mengikuti MCU.');
+            $this->assertSame($p->mcuOrang?->berlaku_sampai?->toDateString(), $p->habisEfektif()?->toDateString());
         }
     }
 
@@ -133,24 +125,6 @@ class MinersDataContohTest extends TestCase
         );
 
         $this->assertContains('permit', $sebab->all());
-    }
-
-    #[Test]
-    public function test_permit_tamu_masih_berada_dalam_jendela_tujuh_hari(): void
-    {
-        $tamu = Permit::withoutGlobalScopes()->with('tipe')->get()
-            ->first(fn (Permit $p) => $p->tipe?->hari_berlaku !== null);
-
-        $this->assertNotNull($tamu, 'Tidak ada permit berjangka hari; jenis Visitor/Temporary tidak terlihat.');
-
-        $this->assertSame('tipe', $tamu->sumber_berlaku);
-
-        $this->assertGreaterThanOrEqual(
-            0,
-            $tamu->sisaHari(),
-            'Permit tamu sudah kedaluwarsa sejak dimuat, sehingga jendela tujuh harinya tidak pernah tergambar.',
-        );
-        $this->assertLessThanOrEqual((int) $tamu->tipe->hari_berlaku, $tamu->sisaHari());
     }
 
     #[Test]

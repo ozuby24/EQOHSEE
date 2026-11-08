@@ -110,41 +110,45 @@ final class Keadaan
     }
 
     /**
-     * Keadaan sebuah induksi.
+     * Keadaan sebuah induksi — aturan Safe Track.
      *
-     * YANG TIDAK LULUS ADALAH "BELUM", BUKAN "HABIS". Keduanya
-     * sama-sama berarti orangnya tidak boleh masuk hari ini, tetapi
-     * yang harus dikerjakan berbeda — dan itulah yang dibaca dari
-     * layar ini. "Habis" menyuruh orang memperpanjang sesuatu yang
-     * tidak pernah berlaku; yang benar adalah menjadwalkan ujian
-     * ulang. Sertifikat yang pernah lulus lalu lewat tanggalnya tetap
-     * "habis", dan itu memang perpanjangan.
+     * Sudah diinduksi bila pendaftarannya DISETUJUI dan pesertanya tidak
+     * dinyatakan Tidak Lulus (InduksiOrang::sah). Induksi tidak punya
+     * masa berlaku: sertifikatnya berlaku selama orangnya bekerja di area
+     * operasional IUP penyelenggaranya. Tanggal `berlaku_sampai` lama
+     * (aturan SOP sebelumnya) tetap tersimpan, tetapi tidak lagi
+     * menentukan apa pun.
+     *
+     * YANG TIDAK LULUS ADALAH "BELUM", BUKAN "HABIS": yang harus
+     * dikerjakan adalah menjadwalkan induksi ulang, bukan memperpanjang
+     * sesuatu yang tidak pernah berlaku.
      */
     public static function induksi(?InduksiOrang $i, ?Carbon $pada = null): string
     {
-        if ($i === null)   return self::BELUM;
-        if (! $i->lulus()) return self::BELUM;
+        if ($i === null || ! $i->sah()) return self::BELUM;
 
-        return self::dariTanggal($i->berlaku_sampai, 30, $pada);
+        return self::BERLAKU;
     }
 
     /**
-     * Keadaan sebuah Mine Permit.
+     * Keadaan sebuah Mine Permit — aturan Safe Track.
      *
-     * Yang dibaca `habisEfektif()`, BUKAN kolom `berlaku_sampai`.
-     * Keduanya berbeda persis pada kartu yang paling perlu diperhatikan:
-     * kartu yang tanggalnya masih 31 Desember tetapi MCU-nya sudah
-     * lewat. Dibaca dari kolomnya saja, kartu itu tampil hijau — dan
-     * hijau di layar ini berarti "boleh masuk".
+     * Masa berlakunya MENGIKUTI MCU (atau tanggal yang dikunci admin /
+     * hasil perpanjangan) — dibaca lewat `habisEfektif()`, yang membaca
+     * tanggal MCU langsung bagi kartu yang mengikutinya.
+     *
+     * Yang belum terbit bukan yang habis: berkasnya sedang berjalan, dan
+     * yang harus dikerjakan adalah menagih peninjaunya. Kartu yang
+     * DINONAKTIFKAN admin (dicabut, hilang) tidak lagi berlaku apa pun
+     * tanggalnya.
      */
     public static function permit(?Permit $p, ?Carbon $pada = null): string
     {
         if ($p === null) return self::BELUM;
 
-        /* Yang belum terbit bukan yang habis: berkasnya sedang berjalan,
-           dan yang harus dikerjakan adalah menunggu atau menagih
-           peninjaunya — bukan mengajukan ulang. */
-        if ($p->status !== 'terbit') return self::BELUM;
+        if (! in_array($p->status, Permit::TERBIT, true)) return self::BELUM;
+
+        if (! $p->aktif) return self::HABIS;
 
         return self::dariTanggal($p->habisEfektif(), 30, $pada);
     }

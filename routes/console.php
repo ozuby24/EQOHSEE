@@ -24,3 +24,15 @@ Schedule::command('cuaca:segarkan')
     ->everyThirtyMinutes()
     ->withoutOverlapping()
     ->runInBackground();
+
+/*
+ * Masa berlaku Miners — `masa-berlaku:sync` 06:55 dan
+ * `app:update-mcu-status` 07:20 Safe Track, kini satu perintah.
+ *
+ * Pagi WAKTU TAMBANG, bukan UTC: kartu yang habis kemarin harus sudah
+ * terbaca expired sebelum regu pagi tiba di gerbang.
+ */
+Schedule::command('miners:sinkron')
+    ->dailyAt('06:55')
+    ->timezone(\App\Support\Waktu::zona())
+    ->withoutOverlapping();

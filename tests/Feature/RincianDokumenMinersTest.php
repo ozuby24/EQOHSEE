@@ -550,24 +550,20 @@ class RincianDokumenMinersTest extends TestCase
         $this->assertTrue($permit->refresh()->load('alur')->dikembalikan());
     }
 
-    /** Visitor Permit memakai daftar TIGA lampiran, bukan sembilan. */
-    public function test_visitor_permit_memakai_daftarnya_sendiri(): void
+    /**
+     * Lampiran Mine Permit mengikuti Safe Track: SPDK wajib, Induksi
+     * Khusus dan LOTO opsional — apa pun tipe permitnya.
+     */
+    public function test_lampiran_permit_mengikuti_safe_track(): void
     {
-        $tipe = \App\Models\Miners\TipePermit::withoutGlobalScopes()
-            ->firstOrCreate(['nama' => 'Visitor Permit'], ['aktif' => true]);
-
         $permit = $this->permit();
-        $permit->forceFill(['tipe_permit_id' => $tipe->id])->save();
-        $permit->load('tipe');
+        $permit->load('berkas');
 
         $daftar = \App\Support\Miners\Kelengkapan::daftar($permit);
 
-        $this->assertCount(count(\App\Support\Miners\Acuan::berkasWajib('permit_visitor')), $daftar);
-        $this->assertLessThan(
-            count(\App\Support\Miners\Acuan::berkasWajib('permit_baru')),
-            count($daftar),
-            'Tamu ditagih daftar Full Permit.'
-        );
+        $this->assertSame(['spdk', 'induksi-khusus', 'loto'], array_column($daftar, 'kunci'));
+        $this->assertSame([true, false, false], array_column($daftar, 'wajib'));
+        $this->assertSame(['SPDK'], \App\Support\Miners\Kelengkapan::kurang($permit));
     }
 
     /** Lampiran yang tercatat tanpa berkas dihitung BELUM ada. */
@@ -575,19 +571,25 @@ class RincianDokumenMinersTest extends TestCase
     {
         $permit = $this->permit();
 
-        $wajib = \App\Support\Miners\Acuan::berkasWajib('permit_baru')[0];
-
         \App\Models\Miners\PermitBerkas::create([
             'permit_id' => $permit->id,
-            'jenis'     => \Illuminate\Support\Str::slug($wajib),
+            'jenis'     => 'spdk',
             'berkas'    => null,
         ]);
         $permit->load('tipe', 'berkas');
 
-        $kurang = \App\Support\Miners\Kelengkapan::kurang($permit);
-
-        $this->assertContains($wajib, $kurang,
+        $this->assertContains('SPDK', \App\Support\Miners\Kelengkapan::kurang($permit),
             'Baris kosong dihitung sebagai lampiran yang sudah ada.');
+
+        /* SPDK lama dari daftar SOP tetap terhitung. */
+        \App\Models\Miners\PermitBerkas::create([
+            'permit_id' => $permit->id,
+            'jenis'     => 'form-spdk-bertanda-tangan-pemohon',
+            'berkas'    => 'miners/permit/spdk.pdf',
+        ]);
+        $permit->load('berkas');
+
+        $this->assertSame([], \App\Support\Miners\Kelengkapan::kurang($permit));
     }
 
     /** Daftar periksa SOP sampai ke layar rincian. */

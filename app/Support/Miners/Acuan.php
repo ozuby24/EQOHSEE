@@ -284,6 +284,28 @@ final class Acuan
         ['nama' => 'Fit With Note',   'nilai' => 80,  'layak' => true],
         ['nama' => 'Temporary Unfit', 'nilai' => 40,  'layak' => false],
         ['nama' => 'Unfit',           'nilai' => 0,   'layak' => false],
+
+        /* Rujukan — dokter menahan seseorang untuk pemeriksaan lanjutan
+           tanpa menyatakannya Unfit (`mcu_approve_hold` Safe Track).
+           Tidak layak bekerja selama rujukannya belum kembali. */
+        ['nama' => 'Rujukan',         'nilai' => 20,  'layak' => false],
+    ];
+
+    /**
+     * Lampiran Mine Permit — aturan Safe Track (f5aae7c): SPDK WAJIB,
+     * Induksi Khusus dan LOTO / Sertifikat Welder opsional. Berkas
+     * dapat dikirim begitu lampiran wajibnya ada.
+     *
+     * `setara` adalah kunci daftar SOP lama yang berarti berkas yang
+     * sama: Mine Permit yang dilampiri "Form SPDK bertanda tangan
+     * pemohon" sebelum aturan ini berlaku tetap terhitung punya SPDK.
+     *
+     * @var array<string,array{label:string,wajib:bool,setara:list<string>}>
+     */
+    public const LAMPIRAN_PERMIT = [
+        'spdk'           => ['label' => 'SPDK',                      'wajib' => true,  'setara' => ['form-spdk-bertanda-tangan-pemohon']],
+        'induksi-khusus' => ['label' => 'Induksi Khusus',            'wajib' => false, 'setara' => []],
+        'loto'           => ['label' => 'LOTO / Sertifikat Welder',  'wajib' => false, 'setara' => []],
     ];
 
     /* ═══════════════════ KELENGKAPAN BERKAS ═══════════════════ */

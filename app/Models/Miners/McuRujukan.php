@@ -32,4 +32,10 @@ class McuRujukan extends Model
     {
         return $this->belongsTo(McuOrang::class, 'mcu_orang_id');
     }
+
+    /** Yang membuat suratnya. */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class);
+    }
 }

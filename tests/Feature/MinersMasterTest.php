@@ -434,50 +434,33 @@ class MinersMasterTest extends TestCase
 
     /* ═══════════════ masa berlaku permit ═══════════════ */
 
+    /**
+     * Masa berlaku Mine Permit MENGIKUTI MCU — aturan Safe Track
+     * (keputusan pemilik), bukan 31 Desember atau hari per tipe permit.
+     * Kartu yang mengikuti MCU membaca tanggal MCU-nya LANGSUNG; kunci
+     * manual dan tanggal perpanjangan dibaca dari kolomnya sendiri.
+     */
     #[Test]
-    public function test_masa_berlaku_permit_mengikuti_tipenya(): void
+    public function test_masa_berlaku_permit_mengikuti_mcu(): void
     {
-        MasterMiners::pasang();
+        $mcu = new McuOrang(['berlaku_sampai' => '2027-03-10']);
 
-        $terbit = Waktu::kini()->setDate(2026, 3, 15);
+        $ikut = new Permit(['sumber_berlaku' => 'mcu', 'berlaku_sampai' => '2026-12-31']);
+        $ikut->setRelation('mcuOrang', $mcu);
+        $this->assertSame('2027-03-10', $ikut->habisEfektif()->toDateString(),
+            'Kartu yang mengikuti MCU masih membaca tanggal salinannya yang basi.');
 
-        $tahunan = TipePermit::withoutGlobalScopes()->whereRaw('LOWER(nama) = ?', ['full permit'])->first();
-        [$habis, $asal] = Permit::hitungBerlaku($tahunan, $terbit);
-        $this->assertSame('2026-12-31', $habis->toDateString(), 'Full Permit harus habis 31 Desember tahun terbit, bukan mengikuti MCU.');
-        $this->assertSame('tahunan', $asal);
+        $kunci = new Permit(['sumber_berlaku' => 'manual', 'berlaku_sampai' => '2026-12-31']);
+        $kunci->setRelation('mcuOrang', $mcu);
+        $this->assertSame('2026-12-31', $kunci->habisEfektif()->toDateString(), 'Kunci manual diabaikan.');
 
-        $visitor = TipePermit::withoutGlobalScopes()->whereRaw('LOWER(nama) = ?', ['visitor permit'])->first();
-        [$habis, $asal] = Permit::hitungBerlaku($visitor, $terbit);
-        $this->assertSame('2026-03-22', $habis->toDateString());
-        $this->assertSame('tipe', $asal);
+        $panjang = new Permit(['sumber_berlaku' => 'perpanjangan', 'berlaku_sampai' => '2027-09-01']);
+        $panjang->setRelation('mcuOrang', $mcu);
+        $this->assertSame('2027-09-01', $panjang->habisEfektif()->toDateString());
 
-        $sementara = TipePermit::withoutGlobalScopes()->whereRaw('LOWER(nama) = ?', ['temporary permit'])->first();
-        [$habis] = Permit::hitungBerlaku($sementara, $terbit);
-        $this->assertSame('2026-04-14', $habis->toDateString());
-    }
-
-    #[Test]
-    public function test_tipe_berhari_nol_tidak_jatuh_ke_aturan_tahunan(): void
-    {
-        MasterMiners::pasang();
-
-        $sehari = TipePermit::withoutGlobalScopes()->create([
-            'nama' => 'Izin Sehari', 'hari_berlaku' => 0,
-        ]);
-
-        [$habis, $asal] = Permit::hitungBerlaku($sehari, Waktu::kini()->setDate(2026, 3, 15));
-
-        $this->assertSame('2026-03-15', $habis->toDateString(), 'Tipe berhari nol diam-diam berlaku sampai 31 Desember.');
-        $this->assertSame('tipe', $asal);
-    }
-
-    #[Test]
-    public function test_tanpa_tipe_mengikuti_aturan_tahunan(): void
-    {
-        [$habis, $asal] = Permit::hitungBerlaku(null, Waktu::kini()->setDate(2026, 7, 1));
-
-        $this->assertSame('2026-12-31', $habis->toDateString());
-        $this->assertSame('tahunan', $asal);
+        $tanpa = new Permit(['sumber_berlaku' => 'mcu', 'berlaku_sampai' => null]);
+        $tanpa->setRelation('mcuOrang', new McuOrang(['berlaku_sampai' => null]));
+        $this->assertNull($tanpa->habisEfektif(), 'Tanpa tanggal MCU, kartu tidak boleh mengarang masa berlakunya.');
     }
 
     /* ═══════════════ perkakas ═══════════════ */

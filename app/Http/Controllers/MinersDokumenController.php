@@ -441,7 +441,6 @@ class MinersDokumenController extends Controller
                 'efektif'  => $p->habisEfektif()?->toDateString(),
                 'sumber'   => $p->sumber_berlaku,
                 'sisa'     => $p->sisaHari(),
-                'gugurMcu' => $p->gugurKarenaMcu(),
                 'mcu'      => $p->mcuOrang?->berlaku_sampai?->toDateString(),
                 'simper'   => $p->simper->count(),
                 /* Sebelumnya HANYA 'ada' yang dikirim: layar menampilkan
@@ -475,7 +474,9 @@ class MinersDokumenController extends Controller
         $tipe    = TipePermit::find($data['tipe_permit_id'] ?? null);
         $terbit  = Waktu::tanggal($data['tanggal']);
 
-        [$habis, $sumber] = Permit::hitungBerlaku($tipe, $terbit);
+        /* Masa berlaku MENGIKUTI MCU — aturan Safe Track. */
+        $mcuDasar = $pekerja->mcu()->first();
+        [$habis, $sumber] = [$mcuDasar?->berlaku_sampai, 'mcu'];
 
         /* MCU dan induksi terakhir DILEKATKAN saat kartu dibuat, bukan
            dicari ulang saat dibaca. Dicari ulang, kartu tahun lalu akan
@@ -507,13 +508,7 @@ class MinersDokumenController extends Controller
         $tipe   = TipePermit::find($data['tipe_permit_id'] ?? null);
         $terbit = Waktu::tanggal($data['tanggal']);
 
-        [$habis, $sumber] = Permit::hitungBerlaku($tipe, $terbit);
-
-        $permit->update($data + [
-            'tanggal'        => $terbit,
-            'berlaku_sampai' => $habis,
-            'sumber_berlaku' => $sumber,
-        ]);
+        $permit->update($data + ['tanggal' => $terbit]);
 
         return back()->with('sukses', 'Mine Permit diperbarui.');
     }

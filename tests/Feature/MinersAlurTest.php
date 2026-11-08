@@ -242,7 +242,8 @@ class MinersAlurTest extends TestCase
             'kepada' => 'Klinik', 'user_id' => $this->pengaju->id,
         ]);
         $m->terbitkanAlur();
-        McuOrang::create(['mcu_id' => $m->id, 'pekerja_id' => $this->pekerja()->id, 'nama' => 'Operator Uji']);
+        McuOrang::create(['mcu_id' => $m->id, 'pekerja_id' => $this->pekerja()->id, 'nama' => 'Operator Uji',
+            'hasil_id' => \App\Models\Miners\HasilMcu::withoutGlobalScopes()->where('layak', true)->value('id')]);
 
         $this->assertNull(Jalur::kirim($m->fresh(), $this->pengaju));
         $this->assertNull(Jalur::setujui($m->fresh(), $this->dokter));

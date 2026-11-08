@@ -9,7 +9,19 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Keikutsertaan satu orang pada satu induksi, beserta nilai post test.
+ * Keikutsertaan satu orang pada satu induksi.
+ *
+ * ATURAN SAFE TRACK (keputusan pemilik): yang dicatat per peserta adalah
+ * tanggal, lokasi, dan Lulus / Tidak Lulus yang dipilih HSE. Peserta
+ * dianggap SUDAH DIINDUKSI bila pendaftarannya disetujui dan ia tidak
+ * dinyatakan Tidak Lulus — yang belum dinilai ikut diloloskan, sama
+ * seperti Safe Track meloloskan status NULL. Induksi TIDAK punya masa
+ * berlaku: sertifikatnya "berlaku selama yang bersangkutan bekerja di
+ * area operasional" IUP penyelenggaranya.
+ *
+ * Kolom nilai post test dan percobaannya (aturan SOP lama EQOHSEE)
+ * TIDAK dibuang — riwayatnya tetap tersimpan — tetapi tidak lagi
+ * menentukan lulus atau tidaknya.
  *
  * NILAI DAN PERCOBAAN PUNYA KOLOMNYA SENDIRI. SOP menuntut kelulusan
  * post test dan membatasi remidi dua kali; di Project1 keduanya tidak
@@ -41,11 +53,14 @@ class InduksiOrang extends Model
     public const BULAN_BERLAKU = Acuan::MASA['induksi_bulan'];
 
     public const STATUS = [
-        'belum'  => 'Belum Induksi',
+        'belum'  => 'Belum Dinilai',
         'lulus'  => 'Lulus',
-        'remidi' => 'Remidi',
         'gagal'  => 'Tidak Lulus',
+        'remidi' => 'Remidi',
     ];
+
+    /** Pilihan HSE per peserta — Lulus / Tidak Lulus Safe Track. */
+    public const PILIHAN = ['lulus' => 'Lulus', 'gagal' => 'Tidak Lulus'];
 
     protected $table = 'mnr_induksi_orang';
 
@@ -88,6 +103,21 @@ class InduksiOrang extends Model
         return $this->status === 'lulus';
     }
 
+    /** Dinyatakan Tidak Lulus oleh HSE. */
+    public function tidakLulus(): bool
+    {
+        return $this->status === 'gagal';
+    }
+
+    /**
+     * Sudah diinduksi menurut Safe Track: pendaftarannya disetujui dan ia
+     * tidak dinyatakan Tidak Lulus. Syarat Mine Permit dan sertifikat.
+     */
+    public function sah(): bool
+    {
+        return $this->induksi?->status === 'selesai' && ! $this->tidakLulus();
+    }
+
     /** Masih boleh mengulang — remidi belum habis. */
     public function bolehMengulang(): bool
     {
@@ -100,14 +130,28 @@ class InduksiOrang extends Model
             && $this->berlaku_sampai->lt(Waktu::kini()->startOfDay());
     }
 
-    /** Induksi terbaru yang masih berlaku dan lulus bagi seorang pekerja. */
+    /** Induksi terbaru yang sah bagi seorang pekerja. */
     public static function berlakuUntuk(int $pekerjaId): ?self
     {
         return static::query()
             ->where('pekerja_id', $pekerjaId)
-            ->where('status', 'lulus')
-            ->whereDate('berlaku_sampai', '>=', Waktu::kini()->toDateString())
-            ->orderByDesc('berlaku_sampai')
+            ->where('status', '!=', 'gagal')
+            ->whereHas('induksi', fn ($q) => $q->where('status', 'selesai'))
+            ->orderByDesc('tanggal_induksi')->orderByDesc('id')
             ->first();
+    }
+
+    /**
+     * Nomor sertifikat — `IND/{kode IUP}/{id:04}/{mm}/{yyyy}` Safe Track.
+     *
+     * Dirakit, bukan disimpan: unik karena memuat id pesertanya, tanpa
+     * penomoran yang dapat bentrok saat dua orang menerbitkan bersamaan.
+     */
+    public function nomorSertifikat(): string
+    {
+        $waktu = $this->tanggal_induksi ?? $this->induksi?->tanggal ?? Waktu::kini();
+        $kode  = trim((string) $this->induksi?->iup?->code) ?: 'EQ';
+
+        return sprintf('IND/%s/%04d/%s/%s', $kode, $this->getKey(), $waktu->format('m'), $waktu->format('Y'));
     }
 }

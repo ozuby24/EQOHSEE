@@ -80,6 +80,66 @@ class McuOrang extends Model
         return $this->hasMany(McuRujukan::class, 'mcu_orang_id')->orderByDesc('tanggal_surat');
     }
 
+    /** Mine Permit yang berdasar MCU ini. */
+    public function permit(): HasMany
+    {
+        return $this->hasMany(Permit::class, 'mcu_orang_id')->orderByDesc('id');
+    }
+
+    /* ═══════════ aturan Safe Track ═══════════ */
+
+    /**
+     * Masa berlaku bawaan saat manpower ditambahkan: satu tahun sejak
+     * tanggal pemeriksaan (`masaBerlaku()` mcu_detailsController).
+     *
+     * Tanggal yang DIKIRIM dihormati bila memang tanggal dan tidak lebih
+     * awal daripada tanggal pemeriksaannya — "kedaluwarsa sebelum
+     * diperiksa" hampir pasti salah ketik (tertukar dengan tanggal
+     * lahir), dan dibiarkan jatuh ke bawaan daripada menyimpan tanggal
+     * yang jelas keliru. Dokter menetapkan masa yang sebenarnya (3, 6,
+     * atau 12 bulan) saat menyetujui suratnya.
+     */
+    public static function masaBerlaku(?\DateTimeInterface $periksa, ?\DateTimeInterface $kirim = null): ?\Illuminate\Support\Carbon
+    {
+        $periksa = $periksa ? \Illuminate\Support\Carbon::instance($periksa)->startOfDay() : null;
+
+        if ($kirim) {
+            $kirim = \Illuminate\Support\Carbon::instance($kirim)->startOfDay();
+
+            if ($periksa === null || $kirim->gte($periksa)) return $kirim;
+        }
+
+        return $periksa?->copy()->addYear();
+    }
+
+    /**
+     * Nomor induk SEMENTARA — `MCU-` + sepuluh angka terakhir NIK.
+     *
+     * MCU langkah paling awal; nomor induk yang sebenarnya baru ada saat
+     * Mine Permit terbit. Berbasis NIK supaya satu orang selalu mendapat
+     * nomor sementara yang sama walau MCU-nya diajukan berulang.
+     */
+    public static function nomorSementara(?string $nik): string
+    {
+        $nik = preg_replace('/[^0-9A-Za-z]/', '', (string) $nik);
+
+        return $nik === ''
+            ? 'MCU-'.strtoupper(\Illuminate\Support\Str::random(8))
+            : 'MCU-'.strtoupper(substr($nik, -10));
+    }
+
+    /** Hasilnya belum ditetapkan dokter — kosong, atau "Belum Dinilai". */
+    public function belumDinilai(): bool
+    {
+        return $this->hasil_id === null || (bool) $this->hasil?->belum();
+    }
+
+    /** Hasilnya "Rujukan". */
+    public function dirujuk(): bool
+    {
+        return mb_strtolower(trim((string) $this->hasil?->nama)) === 'rujukan';
+    }
+
     /* ═══════════ keadaan ═══════════ */
 
     /** Hasilnya membolehkan Mine Permit terbit. */

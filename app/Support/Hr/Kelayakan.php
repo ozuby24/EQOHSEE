@@ -94,7 +94,7 @@ final class Kelayakan
         return match ($halangan) {
             'nonaktif' => 'Pekerja sudah tidak aktif',
             'mcu'      => 'MCU habis atau belum ada',
-            'induksi'  => 'Induksi belum lulus atau habis',
+            'induksi'  => 'Induksi belum disetujui atau tidak lulus',
             'permit'   => 'Mine Permit habis atau belum terbit',
             'simper'   => 'SIMPER habis atau belum terbit',
             default    => $halangan,
@@ -113,6 +113,6 @@ final class Kelayakan
      */
     public static function relasi(): array
     {
-        return ['mcu', 'induksi', 'permit.mcuOrang', 'simper.permit.mcuOrang'];
+        return ['mcu', 'induksi.induksi', 'permit.mcuOrang', 'simper.permit.mcuOrang'];
     }
 }

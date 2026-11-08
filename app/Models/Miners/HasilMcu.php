@@ -20,6 +20,49 @@ class HasilMcu extends Master
         return parent::casts() + ['nilai' => 'integer', 'layak' => 'boolean'];
     }
 
+    /**
+     * Id "Belum Dinilai" — keadaan awal setiap manpower yang ditambahkan,
+     * bukan sebuah keputusan (`result::belumDinilai()` Safe Track).
+     *
+     * Dicari lewat NAMA, bukan id: id master berbeda di tiap pemasangan,
+     * dan Safe Track sudah tiga kali jatuh karena angka yang dipaku ke
+     * kunci asing.
+     */
+    public static function belumDinilai(): ?int
+    {
+        $id = static::withoutGlobalScopes()->whereRaw('LOWER(nama) = ?', ['belum dinilai'])
+            ->orderByRaw('company_id IS NOT NULL')->value('id');
+
+        return $id ? (int) $id : null;
+    }
+
+    /** Id "Rujukan" — orang yang ditahan untuk pemeriksaan lanjutan. */
+    public static function rujukan(): ?int
+    {
+        $id = static::withoutGlobalScopes()->whereRaw('LOWER(nama) = ?', ['rujukan'])
+            ->orderByRaw('company_id IS NOT NULL')->value('id');
+
+        return $id ? (int) $id : null;
+    }
+
+    /** Baris ini adalah "Belum Dinilai". */
+    public function belum(): bool
+    {
+        return mb_strtolower(trim((string) $this->nama)) === 'belum dinilai';
+    }
+
+    /**
+     * Pilihan yang boleh ditetapkan dokter: seluruh master KECUALI
+     * "Belum Dinilai" (`result::pilihanDokter()` Safe Track).
+     *
+     * @return \Illuminate\Support\Collection<int,static>
+     */
+    public static function pilihanDokter()
+    {
+        return static::query()->terpakai()->get(['id', 'nama', 'layak', 'nilai'])
+            ->reject(fn (self $h) => $h->belum())->values();
+    }
+
     /** @return array<int,string> hanya hasil yang membolehkan kartu terbit. */
     public static function pilihanLayak(): array
     {

@@ -24,19 +24,20 @@ use Illuminate\Support\Carbon;
  * disimpulkan dari tanggal, jawabannya berubah begitu MCU berikutnya
  * terbit — dan berubah justru pada kartu yang sedang dipersoalkan.
  *
- * MASA BERLAKU MENGIKUTI SOP, BUKAN MENGIKUTI MCU.
+ * MASA BERLAKU MENGIKUTI MCU — aturan Safe Track (keputusan pemilik,
+ * 7 Nov 2026). `berlaku_sampai` = masa berlaku MCU dasarnya
+ * (`sumber_berlaku = mcu`), diselaraskan setiap malam oleh
+ * `miners:sinkron`; admin dapat MENGUNCI tanggal tertentu (`manual`),
+ * dan perpanjangan yang disetujui menulis tanggal barunya
+ * (`perpanjangan`). Aturan lama — 31 Desember atau jumlah hari tipe
+ * permit — tidak dipakai lagi; tanggal lama kartu yang sudah ada
+ * tersimpan di `berlaku_asal`.
  *
- * Project1 menyalin `mine_permits.tgl_expired = mcu_details.nom`,
- * sehingga permit berlaku sampai MCU berikutnya. SOP menetapkan lain:
- * permit berlaku sampai 31 Desember tahun berjalan, dan MCU yang
- * kedaluwarsa MENCABUT permit lebih awal. Dokumen kesesuaian di
- * Project1 sendiri menandai perilakunya sebagai bertentangan dengan SOP
- * dan menyarankan yang dipakai di sini.
- *
- * Akibatnya nyata: MCU bulan Maret memberi permit sampai Maret tahun
- * berikutnya pada Project1, padahal menurut SOP permit itu habis 31
- * Desember — sembilan bulan lebih longgar daripada yang diizinkan, pada
- * dokumen yang diperiksa Inspektur Tambang.
+ * TIGA PEMILIK, TIGA ARTI. `iup_id` IUP penerbit (pemegang izin tambang
+ * tempat kartu berlaku), `kontraktor_id` IUJP pemberi kerja (kosong bagi
+ * karyawan IUP sendiri), `company_id` pemberi kerjanya — yang menentukan
+ * siapa melihat barisnya, sama seperti COALESCE(contractor_id, corps_id)
+ * Safe Track.
  */
 #[ScopedBy(MilikPerusahaan::class)]
 class Permit extends Model
@@ -53,7 +54,24 @@ class Permit extends Model
         'ktt'      => 'Menunggu Pengesahan KTT',
         'terbit'   => 'Terbit',
         'ditolak'  => 'Ditolak',
+
+        /* Ditandai `miners:sinkron` saat tanggalnya lewat — status 4
+           Safe Track. Perpanjangan yang disetujui mengembalikannya ke
+           terbit. */
+        'kedaluwarsa' => 'Expired',
+
+        /* Status lama EQOHSEE — kartu kini dinonaktifkan lewat `aktif`. */
         'dicabut'  => 'Dicabut',
+    ];
+
+    /** Status yang berarti kartunya pernah terbit dan punya masa berlaku. */
+    public const TERBIT = ['terbit', 'kedaluwarsa'];
+
+    /** Asal tanggal habis — `expired_source` Safe Track. */
+    public const SUMBER = [
+        'mcu'          => 'ikut MCU',
+        'manual'       => 'dikunci manual',
+        'perpanjangan' => 'perpanjangan',
     ];
 
     /**
@@ -130,56 +148,33 @@ class Permit extends Model
     /* ═══════════ masa berlaku ═══════════ */
 
     /**
-     * Tanggal habis menurut SOP, beserta dari mana ia berasal.
+     * Kapan kartu ini berhenti berlaku — `tgl_expired ?: nom` Safe Track.
      *
-     * Tipe yang punya `hari_berlaku` — Visitor 7 hari, Temporary sebulan —
-     * dihitung dari tanggal terbit. Sisanya mengikuti aturan tahunan:
-     * 31 Desember tahun terbit.
-     *
-     * @return array{0:\Illuminate\Support\Carbon,1:string}
-     */
-    public static function hitungBerlaku(?TipePermit $tipe, ?Carbon $terbit = null): array
-    {
-        $terbit ??= Waktu::kini();
-
-        $hari = $tipe?->hari_berlaku;
-
-        /* NULL yang membedakan, bukan nol. `$hari ? … : …` memperlakukan
-           0 sama dengan NULL, dan tipe permit berhari nol — izin sehari
-           untuk kunjungan satu hari — akan diam-diam berlaku sampai 31
-           Desember. Sepuluh bulan lebih panjang daripada yang tertulis
-           di formulirnya, pada dokumen yang dibaca petugas pos. */
-        return $hari === null
-            ? [$terbit->copy()->endOfYear()->startOfDay(), 'tahunan']
-            : [$terbit->copy()->addDays((int) $hari)->startOfDay(), 'tipe'];
-    }
-
-    /**
-     * Kapan kartu ini sesungguhnya berhenti berlaku.
-     *
-     * YANG MANA PUN YANG LEBIH DAHULU antara masa berlakunya sendiri dan
-     * masa berlaku MCU-nya. SOP: "MCU ulang paling lambat 2 minggu
-     * sebelum periode MCU tahunan berakhir, jika belum maka Mine Permit
-     * dan SIMPER akan dicabut dan tidak ada toleransi."
-     *
-     * Dihitung, bukan disimpan: MCU dapat kedaluwarsa kapan saja tanpa
-     * ada yang menyentuh baris permit, dan kolom yang disimpan akan
-     * menyatakan kartu masih berlaku sampai seseorang menyegarkannya.
+     * Kartu yang MENGIKUTI MCU membaca tanggal MCU-nya LANGSUNG, bukan
+     * salinan yang disimpan: perpanjangan dan ralat tanggal MCU berlaku
+     * seketika, tidak menunggu sinkron malam. Kunci manual dan tanggal
+     * perpanjangan dibaca dari kolomnya sendiri.
      */
     public function habisEfektif(): ?Carbon
     {
-        $sendiri = $this->berlaku_sampai;
-        $mcu     = $this->mcuOrang?->berlaku_sampai;
+        $mcu = $this->mcuOrang?->berlaku_sampai;
 
-        if ($sendiri === null) return $mcu;
-        if ($mcu === null)     return $sendiri;
+        if (in_array($this->sumber_berlaku, [null, 'mcu'], true) && $mcu) {
+            return $mcu;
+        }
 
-        return $mcu->lt($sendiri) ? $mcu : $sendiri;
+        return $this->berlaku_sampai ?? $mcu;
+    }
+
+    /** Tanggal yang SEHARUSNYA tersimpan bila kartu ini mengikuti MCU. */
+    public function tanggalDariMcu(): ?Carbon
+    {
+        return $this->mcuOrang?->berlaku_sampai;
     }
 
     public function berlaku(): bool
     {
-        if ($this->status !== 'terbit') return false;
+        if (! in_array($this->status, self::TERBIT, true) || ! $this->aktif) return false;
 
         $habis = $this->habisEfektif();
 
@@ -195,14 +190,27 @@ class Permit extends Model
             : (int) Waktu::kini()->startOfDay()->diffInDays($habis, false);
     }
 
-    /** Dicabut karena MCU-nya habis lebih dahulu. */
-    public function gugurKarenaMcu(): bool
-    {
-        $mcu = $this->mcuOrang?->berlaku_sampai;
+    /* ═══════════ nomor ═══════════ */
 
-        return $mcu !== null
-            && $mcu->lt(Waktu::kini()->startOfDay())
-            && ($this->berlaku_sampai === null || $this->berlaku_sampai->gte(Waktu::kini()->startOfDay()));
+    /**
+     * Nomor registrasi — `{IUP}.{IUJP}.{Ymd}00{id}` Safe Track.
+     *
+     * Bagian yang memang tidak ada DILEWATI, bukan diisi tanda hubung:
+     * karyawan IUP tidak punya bagian kontraktor, dan nomornya memang
+     * lebih pendek satu ruas — IBP.2026090600352 di samping
+     * IBP.PTP.2026090600353. Itu keterangan yang terbaca langsung dari
+     * nomornya, bukan nomor yang cacat. Unik karena memuat id barisnya.
+     */
+    public function susunNomor(): string
+    {
+        $bagian = array_values(array_filter([
+            trim((string) Company::query()->whereKey($this->iup_id)->value('code')),
+            trim((string) ($this->kontraktor_id ? Company::query()->whereKey($this->kontraktor_id)->value('code') : '')),
+        ], fn ($b) => $b !== ''));
+
+        $tanggal = ($this->tanggal ?? Waktu::kini())->format('Ymd');
+
+        return ($bagian ? implode('.', $bagian).'.' : '').$tanggal.'00'.$this->getKey();
     }
 
     /* ═══════════ kueri ═══════════ */
@@ -210,5 +218,11 @@ class Permit extends Model
     public function scopeTerbit(Builder $q): Builder
     {
         return $q->where('status', 'terbit');
+    }
+
+    /** Kartu aktif — belum dinonaktifkan admin. */
+    public function scopeAktif(Builder $q): Builder
+    {
+        return $q->where('aktif', true);
     }
 }

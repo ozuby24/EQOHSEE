@@ -47,4 +47,15 @@ class Induksi extends Model
     {
         return $this->hasMany(InduksiOrang::class, 'induksi_id')->orderBy('id');
     }
+
+    protected static function booted(): void
+    {
+        /* Nomor registrasi dibuatkan — `IND000{id}` Safe Track — bila
+           pendaftar tidak menulis nomornya sendiri. */
+        static::created(function (self $i) {
+            if (blank($i->no_registrasi)) {
+                $i->forceFill(['no_registrasi' => 'IND000'.$i->getKey()])->saveQuietly();
+            }
+        });
+    }
 }

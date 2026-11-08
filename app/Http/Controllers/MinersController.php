@@ -792,7 +792,7 @@ class MinersController extends Controller
             /* Sebab kartunya gugur ditulis tersendiri. "Kartu habis 12
                Maret" tidak memberi tahu apa yang harus diperbarui;
                "MCU habis 12 Maret" memberi tahu. */
-            'sebab'      => $permit?->gugurKarenaMcu() ? 'mcu' : ($simper?->penyebabHabis()),
+            'sebab'      => $simper?->penyebabHabis(),
 
             'terburuk'   => Keadaan::terburuk(array_column($k, 'keadaan')),
         ] + $k;
@@ -830,7 +830,6 @@ class MinersController extends Controller
             'efektif'   => $p->habisEfektif()?->toDateString(),
             'sumber'    => $p->sumber_berlaku,
             'sisa'      => $p->sisaHari(),
-            'gugurMcu'  => $p->gugurKarenaMcu(),
             'keadaan'   => Keadaan::permit($p),
             'berkas'    => $p->relationLoaded('berkas')
                 ? $p->berkas->map(fn ($b) => ['id' => $b->id, 'jenis' => $b->jenis, 'catatan' => $b->catatan])

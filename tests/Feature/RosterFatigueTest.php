@@ -319,8 +319,10 @@ class RosterFatigueTest extends TestCase
             'aktif' => true,
         ]);
 
+        /* Induksi yang SUDAH DISETUJUI — aturan Safe Track: peserta
+           baru terhitung diinduksi sesudah pendaftarannya disetujui HSE. */
         $ind = Induksi::withoutGlobalScopes()->create([
-            'company_id' => $this->c->id, 'tanggal' => Waktu::kini()->startOfDay(),
+            'company_id' => $this->c->id, 'tanggal' => Waktu::kini()->startOfDay(), 'status' => 'selesai',
         ]);
 
         InduksiOrang::create([

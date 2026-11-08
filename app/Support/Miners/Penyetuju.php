@@ -124,6 +124,30 @@ final class Penyetuju
     }
 
     /**
+     * Kotak surel tim OHSE bagi sebuah IUP — MAIL_OHSE Safe Track.
+     *
+     * Alamat pada pengaturan (`miners.surel.ohse`) bila diisi; bila tidak,
+     * HSE yang ditunjuk pada skema IUP beserta penerima "to"-nya — supaya
+     * pemberitahuan rujukan dan perpanjangan tetap sampai ke seseorang
+     * pada pemasangan yang belum mengisi pengaturannya.
+     *
+     * @return list<string>
+     */
+    public static function kotakOhse(?int $iupId): array
+    {
+        $tetap = self::pecahEmail((string) config('miners.surel.ohse'));
+
+        if ($tetap !== []) return $tetap;
+
+        $hse = self::id($iupId, 'ohse');
+        $alamat = $hse ? (string) User::query()->whereKey($hse)->value('email') : '';
+
+        return array_values(array_unique(array_filter(array_merge(
+            self::pecahEmail($alamat), self::penerima($iupId, 'ohse', 'to'),
+        ))));
+    }
+
+    /**
      * Pecah teks berisi banyak alamat menjadi larik.
      *
      * Koma DAN titik koma sama-sama diterima: daftar alamat yang disalin

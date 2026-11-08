@@ -92,6 +92,10 @@ final class Jalur
         /* Berkas yang pernah berjalan diulang dari awal; berkas yang baru
            pertama kali dikirim cukup dibaca ulang penyetujunya. */
         if ($dokumen->alur->contains(fn (Alur $a) => $a->keadaan !== 'menunggu')) {
+            /* Dokumen yang punya pekerjaan tambahan saat diulang — MCU
+               mengembalikan seluruh hasilnya ke "Belum Dinilai". */
+            if (method_exists($dokumen, 'saatDiulang')) $dokumen->saatDiulang();
+
             $dokumen->ulangAlur();
         } else {
             $dokumen->tugaskanUlang();
@@ -202,6 +206,12 @@ final class Jalur
 
         $dokumen->load('alur');
         $dokumen->forceFill(['status' => self::status($dokumen)])->save();
+
+        /* Pekerjaan tambahan sesudah SATU langkah disetujui — mis.
+           perpanjangan menulis balik MCU begitu dokter menyetujuinya. */
+        if ($keadaan === 'setuju' && method_exists($dokumen, 'setelahLangkahDisetujui')) {
+            $dokumen->setelahLangkahDisetujui($langkah, $oleh);
+        }
 
         if ($keadaan === 'setuju' && $dokumen->alurTuntas() && method_exists($dokumen, 'setelahAlurTuntas')) {
             $dokumen->setelahAlurTuntas($oleh);
