@@ -95,9 +95,10 @@
 .mn-zona-kosong{border-left-color:var(--mn-kosong)}   .mn-zona-kosong .mn-zona-num{color:var(--mn-redup-2)}
 
 /* ---------------------------------------------------------- saring */
-.mn-saring{display:grid;gap:10px 12px;align-items:end;grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
-.mn-saring-lebar{grid-column:span 2}
-@media (max-width:640px){.mn-saring-lebar{grid-column:auto}}
+.mn-saring{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:flex-end}
+.mn-saring > div{flex:1 1 150px;min-width:0}
+.mn-saring > .mn-saring-lebar{flex:2 1 220px}
+.mn-saring > .mn-saring-aksi{flex:0 0 auto}
 .mn-label{display:block;font-size:11.5px;font-weight:600;color:#4b5b73;margin-bottom:3px}
 :root[data-tema="gelap"] .mn-label{color:var(--mn-redup-2)}
 .mn-isian{display:block;width:100%;height:32px;padding:4px 10px;font-size:13px;line-height:1.5;color:var(--mn-teks);

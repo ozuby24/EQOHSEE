@@ -35,11 +35,13 @@ const nomor = (i: number | string) => Number(i) + 1;
     <div class="mn-alert mn-alert-info">
       <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/></svg>
       <div>
-        Urutan persetujuan: <b>Pengaju → Dokter MCU → HSE (verifikasi) → KTT</b>, dipakai sesuai rantai tiap dokumen
-        <span v-for="(r, i) in props.rantai" :key="r.kunci">{{ i ? '; ' : ' (' }}{{ r.label }}: {{ r.peran.join(' → ') }}</span>).
+        Urutan persetujuan: <b>Pengaju → Dokter MCU → HSE (verifikasi) → KTT</b>.
         <b>Selama belum lengkap, pengajuan tidak bisa dikirim</b> — pengguna diberi tahu peran mana yang masih kosong.
         Alamat pada kolom penerima tambahan dan tembusan boleh dipisah koma atau titik koma.
         Menyimpan alur memindahkan langkah yang sedang menunggu ke penyetuju baru.
+        <ul class="mt-1.5 grid gap-x-6 sm:grid-cols-2">
+          <li v-for="r in props.rantai" :key="r.kunci"><b>{{ r.label }}</b>: {{ r.peran.join(' → ') }}</li>
+        </ul>
       </div>
     </div>
 
@@ -63,7 +65,7 @@ const nomor = (i: number | string) => Number(i) + 1;
         <form @submit.prevent="simpan(k)">
           <div v-for="(p, i) in k.peran" :key="p.kunci" class="mb-3 pb-3" style="border-bottom:1px solid var(--mn-garis-tabel)">
             <Medan :label="`${nomor(i)}. ${p.label}`" :untuk="`${p.kunci}-${k.iup}`" :galat="forms[k.iup].errors[p.kolom]">
-              <select :id="`${p.kunci}-${k.iup}`" v-model="forms[k.iup][p.kolom]" class="mn-isian mb-2">
+              <select :id="`${p.kunci}-${k.iup}`" v-model="forms[k.iup][p.kolom]" class="mn-isian mb-2" :title="p.label">
                 <option :value="null">— belum ditentukan —</option>
                 <option v-for="u in k.pengguna" :key="u.id" :value="u.id">
                   {{ u.nama }} ({{ u.email }}){{ u.peran.length ? ' · ' + u.peran.join(', ') : '' }}

@@ -79,7 +79,7 @@ final class TugasMiners
     {
         $hasil = array_fill_keys(array_keys(self::MODUL), 0);
 
-        if (! $u || ! Schema::hasTable('mnr_alur') || ! Schema::hasColumn('mnr_alur', 'ditugaskan_user_id')) {
+        if (! $u || ! self::siap()) {
             return $hasil;
         }
 
@@ -113,6 +113,26 @@ final class TugasMiners
         }
 
         return $hasil;
+    }
+
+    /** @var bool|null kesiapan skema, sekali per proses */
+    private static ?bool $siap = null;
+
+    /**
+     * Skema alur sudah termigrasi.
+     *
+     * Lonceng ikut di SETIAP halaman, termasuk pada pemasangan yang belum
+     * menjalankan migrasi Miners; tanpa pemeriksaan ini seluruh aplikasi
+     * jatuh karena satu angka. Diingat per proses — berbeda dengan
+     * jumlahnya, keberadaan kolom tidak berubah di antara dua uji.
+     */
+    private static function siap(): bool
+    {
+        /* Hanya jawaban "siap" yang diingat: proses yang memeriksanya
+           sebelum migrasi berjalan tidak boleh terkunci pada "belum". */
+        if (self::$siap) return true;
+
+        return self::$siap = Schema::hasTable('mnr_alur') && Schema::hasColumn('mnr_alur', 'ditugaskan_user_id');
     }
 
     /**

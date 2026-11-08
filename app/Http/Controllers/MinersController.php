@@ -911,7 +911,11 @@ class MinersController extends Controller
 
         foreach (['mcu' => Mcu::class, 'induksi' => Induksi::class,
                   'permit' => Permit::class, 'simper' => Simper::class] as $jenis => $kelas) {
+            /* Hanya yang SUDAH DIKIRIM dan masih berjalan. Draf punya
+               langkah "menunggu" juga — langkah pengajunya — tetapi belum
+               menunggu siapa pun selain pembuatnya sendiri. */
             $n[$jenis] = $kelas::query()
+                ->whereIn('status', TugasMiners::BERJALAN)
                 ->whereIn('id', Alur::query()->where('dokumen', $jenis)
                     ->where('keadaan', 'menunggu')->select('dokumen_id'))
                 ->count();

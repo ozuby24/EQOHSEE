@@ -298,6 +298,8 @@ return new class extends Migration
             $t->text('pengaturan')->nullable();
             $t->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $t->timestamps();
+
+            $t->index(['company_id', 'nama']);
         });
     }
 

@@ -196,7 +196,13 @@ class MinersDokumenController extends Controller
             'berkas_napza'        => ['nullable', ...Berkas::ATURAN_DOKUMEN],
         ]));
 
-        $periksa = $data['tanggal_periksa'] ? Waktu::tanggal($data['tanggal_periksa']) : null;
+        /* Tanggal yang TIDAK dikirim dipertahankan. Dokter yang hanya
+           menetapkan hasil tidak boleh menghapus tanggal periksa yang
+           sudah diisi pengaju — sebelumnya kunci yang tidak dikirim
+           bahkan menjatuhkan permintaannya. */
+        $periksa = array_key_exists('tanggal_periksa', $data)
+            ? ($data['tanggal_periksa'] ? Waktu::tanggal($data['tanggal_periksa']) : null)
+            : $orang->tanggal_periksa;
 
         /* Masa berlakunya DIHITUNG dari tanggal periksa, bukan diisi
            tangan. Diisi tangan, dua orang yang diperiksa pada hari yang

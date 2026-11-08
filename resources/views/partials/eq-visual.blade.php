@@ -82,6 +82,14 @@ body{
 .eq-tugas-butir b{min-width:22px;height:20px;padding:0 6px;border-radius:999px;background:#F5B400;
   color:#1B2024;font-size:11px;display:grid;place-items:center}
 :root[data-tema="gelap"] .eq-tugas-daftar{background:#152126;border-color:#22343A}
+/* Ponsel: lonceng tugas menambah satu ikon di bilah atas. Ikon-ikonnya
+   dirapatkan supaya sapaan tidak terpotong di tengah kata. */
+@media (max-width:480px){
+  .eq-topbar-aksi:has(.eq-tugas){gap:4px}
+  .eq-topbar-aksi:has(.eq-tugas) .eq-bulat{width:34px;height:34px}
+  .eq-topbar-aksi:has(.eq-tugas) .eq-bulat svg{width:17px;height:17px}
+  .eq-tugas-daftar{right:-90px;width:min(290px,calc(100vw - 24px))}
+}
 
 .eq-profil{display:flex;align-items:center;gap:10px;padding-left:2px}
 .eq-avatar{width:40px;height:40px;flex:none;border-radius:50%;display:grid;place-items:center;

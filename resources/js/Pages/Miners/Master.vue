@@ -15,8 +15,11 @@ import TabelData from '../../Components/Miners/TabelData.vue';
 import TombolIkon from '../../Components/Miners/TombolIkon.vue';
 import Modal from '../../Components/Miners/Modal.vue';
 import Medan from '../../Components/Miners/Medan.vue';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
 
 const props = propHalaman();
+const { dialog, tanya, batal, lanjut } = useDialog();
 
 const medan = computed<any[]>(() => (props.medan ?? []) as any[]);
 const baris = computed<any[]>(() => ((props.baris ?? []) as any[]).map((b) => ({ ...b, ...b.tampil })));
@@ -70,13 +73,19 @@ function aktifkan(b: any) {
   router.put(`${alamat.value}/${b.id}`, isi, { preserveScroll: true });
 }
 
-const dihapus = ref<any>(null);
-
-function hapus() {
-  router.delete(`${alamat.value}/${dihapus.value.id}`, {
-    preserveScroll: true,
-    onFinish: () => { dihapus.value = null; },
+/* Baris yang masih dipakai dinonaktifkan server, bukan dihapus — dan
+   penegasannya mengatakan itu lebih dulu. */
+async function hapus(b: any) {
+  const ok = await tanya({
+    judul: `Hapus ${props.remah}`,
+    pesan: b.dipakai
+      ? `"${b.nama}" masih dipakai ${b.dipakai} data. Ia akan dinonaktifkan, tidak dihapus — dokumen lama tetap membaca namanya.`
+      : `"${b.nama}" akan dihapus.`,
+    labelAksi: b.dipakai ? 'Nonaktifkan' : 'Hapus',
+    nada: 'bahaya',
   });
+
+  if (ok) router.delete(`${alamat.value}/${b.id}`, { preserveScroll: true });
 }
 </script>
 
@@ -100,7 +109,7 @@ function hapus() {
         <div v-if="b.boleh" class="mn-aksi">
           <TombolIkon ikon="pensil" judul="Ubah" @click="ubah(b)" />
           <TombolIkon v-if="props.pakaiAktif && !b.aktif" ikon="cek" varian="sukses" judul="Aktifkan kembali" @click="aktifkan(b)" />
-          <TombolIkon v-else ikon="hapus" varian="garis" judul="Hapus atau nonaktifkan" @click="dihapus = b" />
+          <TombolIkon v-else ikon="hapus" varian="garis" judul="Hapus atau nonaktifkan" @click="hapus(b)" />
         </div>
         <span v-else class="mn-redup text-[11.5px]" title="Daftar bersama hanya diubah administrator.">bersama</span>
       </template>
@@ -110,7 +119,7 @@ function hapus() {
       <form class="mn-form" @submit.prevent="simpan">
         <Medan v-for="m in medan" :key="m.kunci" :label="m.label" :untuk="`m-${m.kunci}`" :wajib="m.wajib"
                :galat="form.errors[m.kunci]" :penuh="m.jenis === 'centang' || medan.length === 1">
-          <select v-if="m.jenis === 'pilih' || m.jenis === 'induk'" :id="`m-${m.kunci}`" v-model="form[m.kunci]" class="mn-isian">
+          <select v-if="m.jenis === 'pilih' || m.jenis === 'induk'" :id="`m-${m.kunci}`" v-model="form[m.kunci]" class="mn-isian" :title="m.label">
             <option value="">—</option>
             <option v-for="o in m.opsi" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
           </select>
@@ -128,18 +137,6 @@ function hapus() {
       </template>
     </Modal>
 
-    <Modal :terbuka="dihapus !== null" :judul="`Hapus ${props.remah}`" @tutup="dihapus = null">
-      <p class="text-[13px]">
-        <template v-if="dihapus?.dipakai">
-          "{{ dihapus?.nama }}" masih dipakai {{ dihapus?.dipakai }} data. Ia akan <b>dinonaktifkan</b>, tidak dihapus —
-          dokumen lama tetap membaca namanya.
-        </template>
-        <template v-else>"{{ dihapus?.nama }}" akan dihapus.</template>
-      </p>
-      <template #kaki>
-        <button type="button" class="mn-btn mn-btn-garis" @click="dihapus = null">Close</button>
-        <button type="button" class="mn-btn mn-btn-bahaya" @click="hapus">{{ dihapus?.dipakai ? 'Nonaktifkan' : 'Hapus' }}</button>
-      </template>
-    </Modal>
+    <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
   </div>
 </template>

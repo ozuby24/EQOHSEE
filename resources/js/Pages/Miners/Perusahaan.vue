@@ -77,7 +77,7 @@ function simpan() {
           <input id="pr-pendek" v-model="form.nama_pendek" class="mn-isian" maxlength="60">
         </Medan>
         <Medan label="IUP induk (bagi IUJP)" untuk="pr-induk" :galat="form.errors.parent_id" penuh>
-          <select id="pr-induk" v-model="form.parent_id" class="mn-isian">
+          <select id="pr-induk" v-model="form.parent_id" class="mn-isian" title="IUP induk">
             <option value="">— IUP (tanpa induk) —</option>
             <option v-for="o in iup" :key="o.nilai" :value="o.nilai" :disabled="o.nilai === diubah?.id">{{ o.label }}</option>
           </select>

@@ -182,7 +182,7 @@ function simpanStatus() {
           <input id="mp-nama" v-model="form.nama" class="mn-isian" maxlength="150" required>
         </Medan>
         <Medan label="Perusahaan" untuk="mp-perusahaan" :galat="form.errors.company_id">
-          <select id="mp-perusahaan" v-model="form.company_id" class="mn-isian">
+          <select id="mp-perusahaan" title="Perusahaan" v-model="form.company_id" class="mn-isian">
             <option value="">— perusahaan saya —</option>
             <option v-for="p in perusahaan" :key="p.nilai" :value="p.nilai">{{ p.label }}</option>
           </select>
@@ -194,28 +194,28 @@ function simpanStatus() {
           <input id="mp-noid" v-model="form.no_induk" class="mn-isian" maxlength="40">
         </Medan>
         <Medan label="Tanggal lahir" untuk="mp-lahir" :galat="form.errors.tanggal_lahir">
-          <input id="mp-lahir" v-model="form.tanggal_lahir" type="date" class="mn-isian">
+          <input id="mp-lahir" title="Tanggal lahir" v-model="form.tanggal_lahir" type="date" class="mn-isian">
         </Medan>
         <Medan label="Departemen" untuk="mp-dept" :galat="form.errors.departemen_id">
-          <select id="mp-dept" v-model="form.departemen_id" class="mn-isian">
+          <select id="mp-dept" title="Departemen" v-model="form.departemen_id" class="mn-isian">
             <option value="">—</option>
             <option v-for="(nama, id) in pilihan.departemen" :key="id" :value="Number(id)">{{ nama }}</option>
           </select>
         </Medan>
         <Medan label="Jabatan" untuk="mp-jabatan" :galat="form.errors.jabatan_id">
-          <select id="mp-jabatan" v-model="form.jabatan_id" class="mn-isian">
+          <select id="mp-jabatan" title="Jabatan" v-model="form.jabatan_id" class="mn-isian">
             <option value="">—</option>
             <option v-for="(nama, id) in pilihan.jabatan" :key="id" :value="Number(id)">{{ nama }}</option>
           </select>
         </Medan>
         <Medan label="Golongan darah" untuk="mp-darah" :galat="form.errors.gol_darah">
-          <select id="mp-darah" v-model="form.gol_darah" class="mn-isian">
+          <select id="mp-darah" title="Golongan darah" v-model="form.gol_darah" class="mn-isian">
             <option value="">—</option>
             <option v-for="g in pilihan.golDarah" :key="g" :value="g">{{ g }}</option>
           </select>
         </Medan>
         <Medan label="Status kerja" untuk="mp-statkerja" :galat="form.errors.status_kerja">
-          <select id="mp-statkerja" v-model="form.status_kerja" class="mn-isian">
+          <select id="mp-statkerja" title="Status kerja" v-model="form.status_kerja" class="mn-isian">
             <option value="">—</option>
             <option v-for="(label, k) in pilihan.statusKerja" :key="k" :value="k">{{ label }}</option>
           </select>
@@ -227,7 +227,7 @@ function simpanStatus() {
           <input id="mp-telp2" v-model="form.telepon_darurat" class="mn-isian" maxlength="30" inputmode="tel">
         </Medan>
         <Medan label="Subkontraktor" untuk="mp-subkon" :galat="form.errors.subkontraktor_id">
-          <select id="mp-subkon" v-model="form.subkontraktor_id" class="mn-isian">
+          <select id="mp-subkon" title="Subkontraktor" v-model="form.subkontraktor_id" class="mn-isian">
             <option value="">—</option>
             <option v-for="(nama, id) in pilihan.subkontraktor" :key="id" :value="Number(id)">{{ nama }}</option>
           </select>
@@ -252,7 +252,7 @@ function simpanStatus() {
       </p>
       <div v-if="!statusForm.aktif" class="mn-form">
         <Medan label="Tanggal non-aktif" untuk="st-tgl" :galat="statusForm.errors.tanggal">
-          <input id="st-tgl" v-model="statusForm.tanggal" type="date" class="mn-isian">
+          <input id="st-tgl" title="Tanggal non-aktif" v-model="statusForm.tanggal" type="date" class="mn-isian">
         </Medan>
         <Medan label="Alasan" untuk="st-alasan" :galat="statusForm.errors.alasan">
           <input id="st-alasan" v-model="statusForm.alasan" class="mn-isian" maxlength="200" placeholder="mis. resign, mutasi">
