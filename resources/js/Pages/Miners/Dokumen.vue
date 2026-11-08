@@ -1,31 +1,34 @@
 <script setup lang="ts">
 /**
- * Halaman rincian satu dokumen Miners.
+ * Halaman rincian satu dokumen Miners — susunan halaman detail Safe Track.
  *
  * SATU HALAMAN UNTUK EMPAT JENIS — MCU, induksi, Mine Permit, SIMPER.
- * Bingkainya sama bagi keempatnya; yang berbeda hanya isinya, dan
- * isinya sudah dinormalkan di App\Support\Miners\RincianDokumen menjadi
- * daftar baris label/nilai, daftar lampiran, dan daftar orang. Karena
- * itu halaman ini TIDAK PERLU TAHU sedang menggambar dokumen yang mana,
- * dan tidak punya satu pun cabang `v-if="jenis === ..."` untuk tata
- * letaknya.
+ * Isinya sudah dinormalkan di App\Support\Miners\RincianDokumen menjadi
+ * baris label/nilai, lampiran, dan daftar orang/unit, sehingga halaman
+ * ini tidak perlu tahu sedang menggambar dokumen yang mana.
  *
- * ── Susunannya ──
+ * Bagian PERSETUJUAN mengikuti include/persetujuan.blade.php: kalimat
+ * posisi, satu kolom per langkah dengan jabatan dan organisasinya, lalu
+ * tombol sesuai giliran pembukanya:
  *
- * Tiga bagian tetap, urutannya mengikuti pertanyaan yang benar-benar
- * diajukan orang yang membukanya:
+ *   · pengaju pada drafnya          → "Kirim"
+ *   · pengaju pada berkas ditolak / dikembalikan → "Ajukan Ulang"
+ *   · penyetuju yang ditugasi        → Approve / Kembalikan / Reject
  *
- *   1. Rincian     — dokumen apa ini, milik siapa, berlaku sampai kapan
- *   2. Lampiran    — berkas apa yang menyertainya, dan mana yang kurang
- *   3. Persetujuan — sudah sampai mana, dan apa yang harus saya lakukan
- *
- * Sebelumnya ketiganya berebut lebar satu sel tabel di halaman daftar.
+ * Kembalikan dan Reject meminta alasan lebih dulu — server pun
+ * menolaknya tanpa alasan.
  */
-import { Head, Link, useForm } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { Link, useForm } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 import { propHalaman } from '../../halaman';
-import Lencana from './Lencana.vue';
-import Langkah from './Langkah.vue';
+import KepalaHalaman from '../../Components/Miners/KepalaHalaman.vue';
+import Kartu from '../../Components/Miners/Kartu.vue';
+import LencanaStatus from '../../Components/Miners/LencanaStatus.vue';
+import LencanaMasaBerlaku from '../../Components/Miners/LencanaMasaBerlaku.vue';
+import TabelPersetujuan from '../../Components/Miners/TabelPersetujuan.vue';
+import Modal from '../../Components/Miners/Modal.vue';
+import Medan from '../../Components/Miners/Medan.vue';
+import { tglId } from '../../Components/Miners/zona';
 
 const props = propHalaman();
 
@@ -33,256 +36,209 @@ const d        = computed<any>(() => props.dokumen ?? {});
 const rincian  = computed<any[]>(() => (props.rincian ?? []) as any[]);
 const lampiran = computed<any[]>(() => (props.lampiran ?? []) as any[]);
 const orang    = computed<any[]>(() => (props.orang ?? []) as any[]);
+const wajib    = computed<any[]>(() => (props.wajib ?? []) as any[]);
+const kurang   = computed(() => wajib.value.filter((w) => !w.ada));
 
-/**
- * Judul daftar yang menempel pada dokumen.
- *
- * SIMPER membawa UNIT, bukan orang, pada kunci yang sama — keduanya
- * daftar baris yang menempel pada dokumennya, jadi tidak ada gunanya
- * dua kunci. Yang berbeda hanya sebutannya di layar.
- */
 const judulDaftar = computed(() =>
   d.value.jenis === 'simper' ? 'Unit yang diizinkan'
   : d.value.jenis === 'induksi' ? 'Peserta'
-  : 'Nama pada surat');
+  : 'Manpower pada surat');
 
-const wajib  = computed<any[]>(() => (props.wajib ?? []) as any[]);
-const kurang = computed(() => wajib.value.filter(w => !w.ada));
+const remah = computed<[string, string | null][]>(() => [
+  ['Home', '/miners/dasbor'],
+  [d.value.label ?? 'Miners', d.value.daftar ?? null],
+  [d.value.nomor || 'Detail', null],
+]);
 
-const tindakan = useForm({ keadaan: 'setuju', catatan: '' });
-/* Bentuknya disebut supaya `errors.ajukanUlang` dikenali TypeScript;
-   useForm({}) kosong tidak punya kunci galat apa pun. */
-const ulang = useForm<{ ajukanUlang?: string }>({});
+const tindakan = useForm<{ keadaan: string; catatan: string }>({ keadaan: 'setuju', catatan: '' });
+const kirimForm = useForm<{ kirim?: string; ajukanUlang?: string }>({});
 
-function ajukanUlang() {
-  ulang.post(`/miners/${d.value.jenis}/${d.value.id}/ajukan-ulang`, { preserveScroll: true });
-}
+const alasanTerbuka = ref<null | 'tolak' | 'dikembalikan'>(null);
 
 function tindak(keadaan: string) {
   tindakan.keadaan = keadaan;
-  tindakan.post(`/miners/${d.value.jenis}/${d.value.id}/tindak`, { preserveScroll: true });
+  tindakan.post(`/miners/${d.value.jenis}/${d.value.id}/tindak`, {
+    preserveScroll: true,
+    onSuccess: () => { alasanTerbuka.value = null; tindakan.reset('catatan'); },
+  });
+}
+
+function kirim() {
+  kirimForm.post(`/miners/${d.value.jenis}/${d.value.id}/kirim`, { preserveScroll: true });
+}
+
+function ajukanUlang() {
+  kirimForm.post(`/miners/${d.value.jenis}/${d.value.id}/ajukan-ulang`, { preserveScroll: true });
 }
 </script>
 
 <template>
-  <Head :title="props.judul" />
+  <div>
+    <KepalaHalaman :judul="`Detail ${d.label ?? ''}`" :remah="remah">
+      <template #aksi>
+        <Link :href="d.daftar" class="mn-btn mn-btn-garis">← Kembali</Link>
+      </template>
+    </KepalaHalaman>
 
-  <div class="space-y-5">
-    <section class="flex flex-wrap items-end justify-between gap-4">
-      <div class="min-w-0">
-        <Link :href="d.daftar" class="text-[11.5px] text-stone-400 hover:underline">
-          ← Daftar {{ d.label }}
-        </Link>
-        <h2 class="text-xl font-bold text-cam-ink mt-1">
-          {{ d.nomor || `${d.label} tanpa nomor` }}
-        </h2>
-        <p class="text-[12.5px] text-stone-500 mt-0.5">{{ props.subjudul }}</p>
-      </div>
+    <!-- ══════════ Rincian ══════════ -->
+    <Kartu :judul="d.nomor || `${d.label} tanpa nomor`" :keterangan="props.subjudul">
+      <template #kanan><LencanaStatus :status="d.status" /></template>
 
-      <span v-if="d.status" class="rounded-full bg-stone-100 px-3 py-1 text-[11.5px] text-stone-600">
-        {{ d.status }}
-      </span>
-    </section>
-
-    <!-- ══════════ 1. Rincian ══════════ -->
-    <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
-      <h3 class="font-bold text-[14px] text-cam-ink">Rincian</h3>
-
-      <dl class="mt-3 grid gap-x-6 gap-y-2.5 sm:grid-cols-2 lg:grid-cols-3">
+      <dl class="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
         <div v-for="b in rincian" :key="b.label" class="min-w-0">
-          <dt class="text-[11px] text-stone-400">{{ b.label }}</dt>
-          <dd class="text-[12.5px] break-words"
-              :class="b.nada === 'peringatan' ? 'text-amber-700 font-semibold' : 'text-cam-ink'">
+          <dt class="mn-label">{{ b.label }}</dt>
+          <dd class="text-[13px] break-words" :style="b.nada === 'peringatan' ? 'color:#b45309;font-weight:600' : ''">
             {{ b.nilai || '—' }}
           </dd>
-
-          <!-- Sebabnya ikut, bukan hanya tanggalnya. Tanggal efektif
-               yang lebih awal daripada yang tercetak di kartu adalah
-               pertanyaan pertama yang diajukan pemegangnya, dan
-               menjawabnya di sini menghemat satu telepon ke OHSE. -->
-          <dd v-if="b.sebab" class="text-[10.5px] text-amber-700/80 mt-0.5">{{ b.sebab }}</dd>
+          <dd v-if="b.sebab" class="mn-petunjuk" style="color:#b45309">{{ b.sebab }}</dd>
         </div>
       </dl>
-    </section>
+    </Kartu>
 
-    <!-- ══════════ 2. Lampiran ══════════ -->
-    <section v-if="lampiran.length" class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
-      <h3 class="font-bold text-[14px] text-cam-ink">Lampiran</h3>
+    <!-- ══════════ Lampiran ══════════ -->
+    <Kartu v-if="lampiran.length" judul="Lampiran">
+      <table class="mn-tabel">
+        <thead><tr><th style="width:42px">No</th><th>Lampiran</th><th>Nomor</th><th>Berkas</th></tr></thead>
+        <tbody>
+          <tr v-for="(b, i) in lampiran" :key="b.label">
+            <td>{{ i + 1 }}</td>
+            <td>{{ b.label }} <span v-if="b.kunci && b.kunci !== b.label" class="mn-redup">· {{ b.kunci }}</span></td>
+            <td>{{ b.nomor || '—' }}</td>
+            <td>
+              <a v-if="b.url" :href="b.url" target="_blank" rel="noopener" class="mn-tautan">Lihat</a>
+              <span v-else-if="b.ada" class="mn-redup"
+                    title="Sudah diunggah, tetapi hanya dapat dibuka paramedis, tim OHSE, atau administrator.">terjaga</span>
+              <span v-else class="mn-lencana mn-l-terang">belum diunggah</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </Kartu>
 
-      <ul class="mt-3 divide-y divide-stone-100">
-        <li v-for="b in lampiran" :key="b.label" class="flex flex-wrap items-baseline gap-x-3 py-2">
-          <span class="text-[12.5px] text-cam-ink font-medium">{{ b.label }}</span>
-          <span v-if="b.nomor" class="text-[11px] text-stone-400 num">{{ b.nomor }}</span>
-          <span v-if="b.kunci && b.kunci !== b.label" class="text-[10.5px] text-stone-300">{{ b.kunci }}</span>
-
-          <a v-if="b.url" :href="b.url" target="_blank" rel="noopener"
-             class="text-[11.5px] text-cam-lime-deep hover:underline">Buka</a>
-
-          <!-- "Terjaga" BUKAN sama dengan "belum ada". Yang pertama
-               sudah beres dan hanya tidak boleh dibaca oleh yang
-               membuka; yang kedua menuntut seseorang mengunggahnya.
-               Disamakan, petugas akan terus mencari berkas yang
-               sebenarnya sudah ada. -->
-          <span v-else-if="b.ada" class="text-[11.5px] text-stone-400"
-                title="Sudah diunggah, tetapi hanya dapat dibuka paramedis, tim OHSE, atau administrator.">
-            terjaga
-          </span>
-          <span v-else class="text-[11.5px] text-stone-300">belum diunggah</span>
-
+    <!-- ══════════ Lampiran wajib ══════════ -->
+    <Kartu v-if="wajib.length" judul="Lampiran wajib" :keterangan="`${wajib.length - kurang.length} / ${wajib.length} terpenuhi`">
+      <ul class="grid gap-x-6 gap-y-1 sm:grid-cols-2 text-[13px]">
+        <li v-for="w in wajib" :key="w.kunci" class="flex items-baseline gap-2">
+          <span aria-hidden="true" :style="{ color: w.ada ? '#198754' : '#fd7e14' }">{{ w.ada ? '✓' : '○' }}</span>
+          <span :class="{ 'mn-redup': w.ada }">{{ w.label }}</span>
+          <span class="sr-only">{{ w.ada ? '— sudah dilampirkan' : '— belum dilampirkan' }}</span>
         </li>
       </ul>
-    </section>
+      <p v-if="kurang.length" class="mn-petunjuk mt-2" style="color:#b45309">
+        Berkas belum dapat dikirim sampai seluruh lampiran wajib terpenuhi.
+      </p>
+    </Kartu>
 
-    <!-- ══════════ daftar periksa SOP ══════════ -->
-    <section v-if="wajib.length" class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
-      <div class="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 class="font-bold text-[14px] text-cam-ink">Lampiran wajib menurut SOP</h3>
-        <span class="text-[11.5px]"
-              :class="kurang.length ? 'text-amber-700 font-semibold' : 'text-emerald-700 font-semibold'">
-          {{ wajib.length - kurang.length }} / {{ wajib.length }} terpenuhi
+    <!-- ══════════ Manpower / peserta / unit ══════════ -->
+    <Kartu v-if="orang.length" :judul="judulDaftar" :keterangan="`${orang.length} data`">
+      <div class="mn-gulir">
+        <table class="mn-tabel">
+          <thead>
+            <tr>
+              <th style="width:42px">No</th>
+              <th>{{ d.jenis === 'simper' ? 'Unit' : 'Nama Employee' }}</th>
+              <th v-if="d.jenis === 'mcu'">NIK</th>
+              <th v-if="d.jenis === 'mcu'">Hasil MCU</th>
+              <th v-if="d.jenis === 'mcu'">Masa Berlaku MCU</th>
+              <th v-if="d.jenis === 'induksi'">Nilai</th>
+              <th v-if="d.jenis === 'induksi'">Keterangan</th>
+              <th v-if="d.jenis === 'simper'">Master Unit</th>
+              <th v-if="d.jenis === 'simper'">Kewenangan</th>
+              <th v-if="d.jenis === 'simper'">Nilai</th>
+              <th>Berkas</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(o, i) in orang" :key="o.id">
+              <td>{{ i + 1 }}</td>
+              <td>
+                <Link v-if="o.pekerja_id" :href="`/miners/${o.pekerja_id}`" class="mn-tautan">{{ o.nama }}</Link>
+                <span v-else>{{ o.nama || '—' }}</span>
+              </td>
+              <template v-if="d.jenis === 'mcu'">
+                <td>{{ o.nik || '—' }}</td>
+                <td>{{ o.hasil || 'Belum Dinilai' }}<span v-if="o.napza" class="mn-redup"> · napza {{ o.napza }}</span></td>
+                <td><LencanaMasaBerlaku :tanggal="o.sampai" /></td>
+              </template>
+              <template v-if="d.jenis === 'induksi'">
+                <td>{{ o.nilai ?? '—' }}</td>
+                <td>
+                  <span class="mn-lencana" :class="o.lulus ? 'mn-l-sukses' : 'mn-l-bahaya'">{{ o.lulus ? 'Lulus' : 'Tidak Lulus' }}</span>
+                  <span class="mn-redup"> · percobaan {{ o.percobaan }}</span>
+                </td>
+              </template>
+              <template v-if="d.jenis === 'simper'">
+                <td>{{ o.golongan || '—' }}</td>
+                <td>{{ o.kewenangan || '—' }}</td>
+                <td class="mn-redup">P2H {{ o.nilai?.P2H ?? '—' }} · praktik {{ o.nilai?.Praktik ?? '—' }}</td>
+              </template>
+              <td>
+                <template v-for="b in (o.berkas ?? [])" :key="b.jenis">
+                  <a v-if="b.url" :href="b.url" target="_blank" rel="noopener" class="mn-tautan mr-2">{{ b.label }}</a>
+                  <span v-else-if="b.ada" class="mn-redup mr-2">{{ b.label }} · terjaga</span>
+                </template>
+                <div v-for="j in (o.rujukan ?? [])" :key="j.id" class="mn-redup text-[11.5px]">
+                  Rujukan {{ tglId(j.tanggal) }} · {{ j.dokter }}
+                  <a v-if="j.url" :href="j.url" target="_blank" rel="noopener" class="mn-tautan">surat</a>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </Kartu>
+
+    <!-- ══════════ Persetujuan ══════════ -->
+    <Kartu judul="Persetujuan" keterangan="alur persetujuan dokumen ini">
+      <TabelPersetujuan :alur="props.alur ?? []" :posisi="props.posisi" />
+
+      <div class="mt-4 flex flex-wrap items-center gap-2">
+        <!-- Kirim: langkah pengaju disetujui oleh pengajunya sendiri. -->
+        <button v-if="props.bolehKirim && !props.bolehAjukanUlang" type="button" class="mn-btn mn-btn-sukses"
+                :disabled="kirimForm.processing" @click="kirim">Kirim</button>
+
+        <button v-if="props.bolehAjukanUlang" type="button" class="mn-btn mn-btn-utama"
+                :disabled="kirimForm.processing" @click="ajukanUlang">Ajukan Ulang</button>
+
+        <template v-if="props.bolehTindak">
+          <button type="button" class="mn-btn mn-btn-sukses" :disabled="tindakan.processing" @click="tindak('setuju')">Approve</button>
+          <button type="button" class="mn-btn mn-btn-peringatan" :disabled="tindakan.processing"
+                  @click="alasanTerbuka = 'dikembalikan'">Kembalikan</button>
+          <button type="button" class="mn-btn mn-btn-bahaya" :disabled="tindakan.processing"
+                  @click="alasanTerbuka = 'tolak'">Reject</button>
+        </template>
+
+        <span v-if="!props.bolehKirim && !props.bolehTindak && !props.bolehAjukanUlang" class="mn-petunjuk">
+          Tidak ada langkah yang menunggu tindakan Anda.
         </span>
       </div>
 
-      <!-- Yang KURANG disebut apa adanya, bukan disembunyikan di balik
-           angka. PJO tidak dapat meneruskan berkas ke OHSE sampai daftar
-           ini penuh, jadi
-           yang mengurusnya berhak tahu persis apa yang menahannya —
-           tanpa itu berkas bolak-balik antara mitra dan OHSE
-           berhari-hari, yang persis keluhan pemakai Safe Track. -->
-      <ul class="mt-3 grid gap-x-6 gap-y-1 sm:grid-cols-2">
-        <li v-for="w in wajib" :key="w.kunci" class="flex items-baseline gap-2 text-[12px]">
-          <span aria-hidden="true" :class="w.ada ? 'text-emerald-600' : 'text-amber-600'">
-            {{ w.ada ? '✓' : '○' }}
-          </span>
-          <span :class="w.ada ? 'text-stone-500' : 'text-cam-ink'">
-            {{ w.label }}
-            <span class="sr-only">{{ w.ada ? '— sudah dilampirkan' : '— belum dilampirkan' }}</span>
-          </span>
-        </li>
-      </ul>
-
-      <p v-if="kurang.length" class="mt-3 text-[11.5px] text-amber-700">
-        Berkas belum dapat disetujui PJO dan diteruskan ke OHSE sampai seluruhnya
-        terpenuhi. Menolak atau mengembalikan tetap dapat dilakukan.
+      <p v-if="kirimForm.errors.kirim || kirimForm.errors.ajukanUlang" class="mn-galat mt-2">
+        {{ kirimForm.errors.kirim || kirimForm.errors.ajukanUlang }}
       </p>
-    </section>
+      <p v-if="tindakan.errors.keadaan" class="mn-galat mt-2">{{ tindakan.errors.keadaan }}</p>
+    </Kartu>
 
-    <!-- ══════════ orang / unit ══════════ -->
-    <section v-if="orang.length" class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
-      <h3 class="font-bold text-[14px] text-cam-ink">{{ judulDaftar }}</h3>
-
-      <ul class="mt-3 divide-y divide-stone-100">
-        <li v-for="o in orang" :key="o.id" class="py-3">
-          <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <div class="min-w-0">
-              <Link v-if="o.pekerja_id" :href="`/miners/${o.pekerja_id}`"
-                    class="text-[13px] font-semibold text-cam-lime-deep hover:underline">{{ o.nama }}</Link>
-              <span v-else class="text-[13px] font-semibold text-cam-ink">{{ o.nama || '—' }}</span>
-
-              <span v-if="o.nik" class="ml-2 text-[10.5px] text-stone-400 num">{{ o.nik }}</span>
-              <span v-if="o.golongan" class="ml-2 text-[11px] text-stone-500">{{ o.golongan }}</span>
-            </div>
-
-            <Lencana v-if="o.keadaan" :keadaan="o.keadaan"
-                     :label="props.KEADAAN?.[o.keadaan]" :nada="props.NADA" />
-          </div>
-
-          <p class="mt-1 text-[11.5px] text-stone-500">
-            <template v-if="o.bentuk === 'mcu'">
-              {{ o.hasil || 'hasil belum masuk' }}
-              <span v-if="o.hasil && !o.layak" class="text-red-600">· tidak layak</span>
-              <span v-if="o.napza"> · napza {{ o.napza }}</span>
-              <span v-if="o.periksa"> · diperiksa <span class="num">{{ o.periksa }}</span></span>
-              <span v-if="o.sampai"> · sampai <span class="num">{{ o.sampai }}</span></span>
-            </template>
-
-            <template v-else-if="o.bentuk === 'induksi'">
-              nilai <span class="num">{{ o.nilai }}</span>
-              · percobaan {{ o.percobaan }}
-              <span v-if="!o.lulus" class="text-red-600"> · belum lulus</span>
-              <span v-if="o.sampai"> · sampai <span class="num">{{ o.sampai }}</span></span>
-            </template>
-
-            <template v-else-if="o.bentuk === 'unit'">
-              {{ o.kewenangan }}
-              <span v-if="o.nilai"> · P2H {{ o.nilai.P2H ?? '—' }}
-                · praktik {{ o.nilai.Praktik ?? '—' }} · teori {{ o.nilai.Teori ?? '—' }}</span>
-              <span v-if="!o.lulus" class="text-red-600"> · belum lulus</span>
-            </template>
-          </p>
-
-          <div v-if="o.berkas?.length" class="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
-            <template v-for="b in o.berkas" :key="b.jenis">
-              <a v-if="b.url" :href="b.url" target="_blank" rel="noopener"
-                 class="text-[11px] text-cam-lime-deep hover:underline">{{ b.label }}</a>
-              <span v-else-if="b.ada" class="text-[11px] text-stone-400">{{ b.label }} · terjaga</span>
-            </template>
-          </div>
-
-          <div v-for="j in (o.rujukan ?? [])" :key="j.id" class="mt-1 text-[11px] text-stone-500">
-            Rujukan <span class="num">{{ j.tanggal }}</span> · {{ j.dokter }}
-            <span v-if="j.poliklinik"> · {{ j.poliklinik }}</span>
-            <a v-if="j.url" :href="j.url" target="_blank" rel="noopener"
-               class="ml-1 text-cam-lime-deep hover:underline">buka surat</a>
-            <span v-else-if="j.ada" class="ml-1 text-stone-400">· terjaga</span>
-          </div>
-        </li>
-      </ul>
-    </section>
-
-    <!-- ══════════ 3. Persetujuan ══════════ -->
-    <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5 space-y-3">
-      <h3 class="font-bold text-[14px] text-cam-ink">Persetujuan</h3>
-
-      <Langkah :alur="props.alur" />
-
-      <!-- Catatan tiap langkah ditampilkan, bukan hanya keadaannya.
-           "Dikembalikan" tanpa alasan memaksa yang mengajukan menebak
-           apa yang kurang, lalu mengajukan ulang dengan kekurangan yang
-           sama. -->
-      <ul v-if="(props.alur as any[])?.some(l => l.catatan || l.pada)"
-          class="divide-y divide-stone-100 text-[11.5px]">
-        <li v-for="l in (props.alur as any[])" :key="l.urutan">
-          <div v-if="l.catatan || l.pada" class="py-2">
-            <span class="font-medium text-cam-ink">{{ l.label }}</span>
-            <span v-if="l.oleh" class="text-stone-500"> · {{ l.oleh }}</span>
-            <span v-if="l.pada" class="text-stone-400 num"> · {{ l.pada }}</span>
-            <p v-if="l.catatan" class="text-stone-600 mt-0.5">{{ l.catatan }}</p>
-          </div>
-        </li>
-      </ul>
-
-      <div v-if="props.bolehTindak" class="flex flex-wrap items-end gap-2 border-t border-stone-100 pt-3">
-        <input v-model="tindakan.catatan" placeholder="Catatan peninjau (opsional)"
-               class="w-72 rounded-lg border-stone-200 text-[12px]" aria-label="Catatan peninjau">
-        <button class="eq-btn-utama" :disabled="tindakan.processing" @click="tindak('setuju')">Setujui</button>
-        <button class="eq-btn-lain" :disabled="tindakan.processing" @click="tindak('dikembalikan')">Kembalikan</button>
-        <button class="eq-btn-lain" :disabled="tindakan.processing" @click="tindak('tolak')">Tolak</button>
-      </div>
-
-      <p v-else-if="!props.bolehAjukanUlang" class="text-[11.5px] text-stone-400 border-t border-stone-100 pt-3">
-        Tidak ada langkah yang menunggu tindakan Anda.
+    <Modal :terbuka="alasanTerbuka !== null" :judul="alasanTerbuka === 'tolak' ? 'Reject pengajuan' : 'Kembalikan untuk diperbaiki'"
+           @tutup="alasanTerbuka = null">
+      <p class="text-[13px] mb-3">
+        <template v-if="alasanTerbuka === 'tolak'">
+          Status menjadi <b>reject</b>. Pengaju dapat memperbaiki lalu mengajukan ulang; alurnya diulang dari awal.
+        </template>
+        <template v-else>
+          Berkas kembali menjadi draf pengaju untuk dilengkapi, lalu dikirim ulang.
+        </template>
       </p>
-
-      <!-- Pengajuan yang DIKEMBALIKAN dapat dikirim ulang. Sebelum ini
-           ia hanya turun menjadi draf dan berhenti di sana: alurnya
-           menyimpan langkah "dikembalikan", tidak ada langkah yang
-           menunggu siapa pun, dan tidak ada tindakan yang dapat
-           menjalankannya lagi. -->
-      <div v-if="props.bolehAjukanUlang" class="border-t border-stone-100 pt-3 space-y-2">
-        <p class="text-[11.5px] text-stone-600">
-          Pengajuan ini dikembalikan untuk diperbaiki. Sesudah lampirannya
-          dilengkapi, kirim ulang — alurnya diulang dari langkah pertama.
-        </p>
-        <button class="eq-btn-utama" :disabled="ulang.processing" @click="ajukanUlang">
-          Ajukan ulang
+      <Medan label="Alasan" untuk="alasan-tindak" wajib :galat="tindakan.errors.keadaan">
+        <textarea id="alasan-tindak" v-model="tindakan.catatan" class="mn-isian" rows="3" maxlength="500" />
+      </Medan>
+      <template #kaki>
+        <button type="button" class="mn-btn mn-btn-garis" @click="alasanTerbuka = null">Close</button>
+        <button type="button" class="mn-btn" :class="alasanTerbuka === 'tolak' ? 'mn-btn-bahaya' : 'mn-btn-peringatan'"
+                :disabled="tindakan.processing || !tindakan.catatan.trim()" @click="tindak(alasanTerbuka!)">
+          {{ alasanTerbuka === 'tolak' ? 'Reject' : 'Kembalikan' }}
         </button>
-        <p v-if="ulang.errors.ajukanUlang" class="text-[11.5px] text-red-600">
-          {{ ulang.errors.ajukanUlang }}
-        </p>
-      </div>
-
-      <p v-if="tindakan.errors.keadaan" class="text-[11.5px] text-red-600">{{ tindakan.errors.keadaan }}</p>
-    </section>
+      </template>
+    </Modal>
   </div>
 </template>

@@ -101,6 +101,11 @@ class HandleInertiaRequests extends Middleware
              * yang terkirim cuma `null`. */
             'tur' => fn () => Tur::perlu($u) ? Tur::langkah($u) : null,
 
+            /* Lonceng tugas persetujuan Miners — TugasSaya Safe Track.
+               Hanya modul yang memang ada isinya; kosong berarti tidak
+               ada yang menunggu orang ini. */
+            'tugasMiners' => fn () => \App\Support\Miners\TugasMiners::daftar($u),
+
             'pengumuman' => fn () => Schema::hasTable('news')
                 ? \App\Models\News::where('created_at', '>=', now()->subDays(30))->count()
                 : 0,
@@ -219,7 +224,11 @@ class HandleInertiaRequests extends Middleware
 
                 // Butir khusus administrator (unsur keempat) tidak
                 // ditampilkan kepada yang pasti ditolak halamannya.
-                if (($b[3] ?? false) && !$u?->isAdmin()) continue;
+                // 'kelolaMiners' = admin atau HSE perusahaan IUP ("admin" Safe Track).
+                $syarat = $b[3] ?? false;
+                if ($syarat === 'kelolaMiners'
+                    ? !\App\Support\Miners\AksesMiners::kelola($u)
+                    : ($syarat && !$u?->isAdmin())) continue;
 
                 $isi[] = [
                     'label'   => $label,

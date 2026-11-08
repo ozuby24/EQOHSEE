@@ -111,18 +111,17 @@ final class Menu
       'semboyan' => 'Fit To Work Today',
       'kutipan' => 'Tidak ada pekerjaan yang begitu mendesak sampai boleh dikerjakan orang yang tidak layak.',
 
-      /* Palet Safe Track — pasir, teal, coral — bukan navy-jingga milik
-         seluruh aplikasi. Modul ini dan Investigasi mengurus dokumen
-         yang sama-sama dibaca di luar kantor: kartu yang dicetak dan
-         dibawa ke gerbang, berkas yang diminta Inspektur Tambang. Warna
-         pasirnya membedakan keduanya dari modul harian, dan pembedaan
-         itu yang membuat orang tahu ia sedang berada di berkas resmi
-         tanpa membaca judulnya lebih dulu.
+      /* Rupa layar Safe Track (NiceAdmin) — latar biru pucat, judul
+         biru tua, kartu putih — lewat kelas `tema-miners` pada
+         resources/css/miners.css. Bukan lagi palet pasir-teal yang
+         dipakai bersama HRIS dan Investigasi: keputusan pemilik
+         (7 Nov 2026) meminta layar Miners meniru tampilan Safe Track,
+         dan HRIS serta Investigasi tidak ikut berubah karenanya.
 
          Ditulis di sini, bukan di tiap berkas Vue: satu modul punya
          belasan halaman, dan palet yang ditempelkan per halaman akan
          tertinggal pada halaman yang ditambahkan berikutnya. */
-      'tema'  => 'safetrack',
+      'tema'  => 'miners',
       'icon'  => 'M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 14l2 2 4-4',
       /* SUSUNANNYA MENGIKUTI PROJECT1, bukan urutan pembuatannya di sini.
          Di sana bilah sampingnya terbagi menurut PERTANYAAN yang dijawab
@@ -147,75 +146,75 @@ final class Menu
          entrinya galat membuat seluruh menunya berhenti dipercaya. */
       'groups' => [
         '' => [
-          ['Ringkasan',       'miners.dasbor',    'miners/dasbor*'],
+          ['Dashboard', 'miners.dasbor', 'miners/dasbor*'],
         ],
 
-        /* Urutannya MENGIKUTI RANTAINYA — MCU menentukan Mine Permit,
-           Mine Permit menentukan SIMPER — bukan abjad dan bukan urutan
-           pembuatannya. Bilah samping adalah tempat orang belajar
-           urutan sebuah proses tanpa membaca petunjuk; menyusunnya
-           menurut abjad membuang pelajaran itu. */
-        'Pendaftaran' => [
+        /* Yang diajukan pengaju — REGISTER pada bilah samping Safe
+           Track. Urutannya mengikuti rantainya: MCU menentukan induksi,
+           induksi menentukan Mine Permit, Mine Permit menentukan SIMPER. */
+        'Register' => [
           ['MCU',         'miners.mcu.index',     'miners/mcu*'],
-          ['Induksi',     'miners.induksi.index', 'miners/induksi*'],
+          ['Induction',   'miners.induksi.index', 'miners/induksi*'],
           ['Mine Permit', 'miners.permit.index',  'miners/permit*'],
           ['SIMPER',      'miners.simper.index',  'miners/simper*'],
         ],
 
-        /* Urutannya MENGIKUTI ALURNYA, bukan abjad dan bukan urutan
-           pembuatannya. Bilah samping adalah tempat orang belajar
-           urutan sebuah proses tanpa membaca petunjuk; menyusunnya
-           menurut abjad membuang pelajaran itu, dan yang menggantikannya
-           adalah tebakan.
-
-           Alurnya: MCU menentukan Mine Permit, Mine Permit menentukan
-           SIMPER. Kompetensi berdiri di sampingnya, bukan di dalamnya. */
-        'Riwayat' => [
-          ['MCU',           'miners.riwayat.mcu',          'miners/riwayat/mcu'],
-          ['Induksi',       'miners.riwayat.induksi',      'miners/riwayat/induksi'],
-          ['Mine Permit',   'miners.riwayat.mine-permit',  'miners/riwayat/mine-permit'],
-          ['SIMPER',        'miners.riwayat.mine-license', 'miners/riwayat/mine-license'],
-
-          /* Dulu bernama "Authority", dan itu keliru sejak awal:
-             rutenya memanggil riwayatKompetensi() dan yang ditampilkan
-             daftar sertifikat kompetensi. Nama lamanya berasal dari
-             Authority Passport milik DBEST — dokumen yang berbeda, dan
-             yang justru tidak dibawa Project1. */
-          ['Kompetensi',    'miners.riwayat.authority',    'miners/riwayat/authority'],
+        /* Riwayat seluruh dokumen — HISTORY Safe Track. "Authority"
+           adalah register kompetensi EQOHSEE, yang tidak dimiliki Safe
+           Track tetapi dipakai modul lain. */
+        'History' => [
+          ['MCU',         'miners.riwayat.mcu',          'miners/riwayat/mcu'],
+          ['Induction',   'miners.riwayat.induksi',      'miners/riwayat/induksi'],
+          ['Mine Permit', 'miners.riwayat.mine-permit',  'miners/riwayat/mine-permit'],
+          ['SIMPER',      'miners.riwayat.mine-license', 'miners/riwayat/mine-license'],
+          ['Authority',   'miners.riwayat.authority',    'miners/riwayat/authority'],
         ],
 
-        /* Antrean di meja SAYA. Berdiri sendiri, bukan di bawah
-           Riwayat: riwayat menjawab "apa yang pernah terjadi", yang ini
-           menjawab "apa yang menunggu keputusan saya pagi ini". Bagi
-           yang bukan peninjau, ketiganya kosong — dan itu jawaban yang
-           benar, bukan kerusakan. */
+        'Data MCU' => [
+          ['Manpower', 'miners.index',          'miners'],
+          ['Rujukan',  'miners.daftar.rujukan', 'miners/daftar/rujukan'],
+        ],
+
+        'SIMPER Lanjutan' => [
+          ['Penambahan Unit',     'miners.daftar.penambahan-unit',     'miners/daftar/penambahan-unit'],
+          ['Upgrade SIMPER',      'miners.daftar.upgrade-simper',      'miners/daftar/upgrade-simper'],
+          ['Perpanjangan SIMPER', 'miners.daftar.perpanjangan',        'miners/daftar/perpanjangan'],
+          ['Perpanjangan Permit', 'miners.daftar.perpanjangan-permit', 'miners/daftar/perpanjangan-permit'],
+        ],
+
+        /* Antrean di meja SAYA — OUTSTANDING Safe Track. Bawaannya
+           "Perlu Approval Saya", dan penanda angkanya sama dengan
+           lonceng tugas di bilah atas. */
         'Outstanding' => [
           ['MCU',         'miners.daftar.outstanding-mcu',     'miners/daftar/outstanding-mcu'],
+          ['Induction',   'miners.daftar.outstanding-induksi', 'miners/daftar/outstanding-induksi'],
           ['Mine Permit', 'miners.daftar.outstanding-permit',  'miners/daftar/outstanding-permit'],
           ['SIMPER',      'miners.daftar.outstanding-simper',  'miners/daftar/outstanding-simper'],
-          ['Induksi',     'miners.daftar.outstanding-induksi', 'miners/daftar/outstanding-induksi'],
         ],
 
-        /* Ketiganya sudah termodelkan sejak dulu — dua sebagai sebab
-           terbit kartu, satu sebagai baris unit — dan hanya belum punya
-           layarnya. */
-        'SIMPER Lanjutan' => [
-          ['Penambahan Unit', 'miners.daftar.penambahan-unit', 'miners/daftar/penambahan-unit'],
-          ['Upgrade SIMPER',  'miners.daftar.upgrade-simper',  'miners/daftar/upgrade-simper'],
-          ['Perpanjangan',    'miners.daftar.perpanjangan',    'miners/daftar/perpanjangan'],
+        /* MASTER DATA Safe Track. Unsur keempat 'kelolaMiners' berarti
+           admin atau HSE perusahaan IUP — "admin" Safe Track; mitra
+           tidak melihatnya. Perusahaan hanya administrator: layar itu
+           mengubah hubungan IUP–IUJP yang menjadi dasar batas data. */
+        'Master Data' => [
+          ['Master Unit',      'miners.master.unit',          'miners/master/unit',          'kelolaMiners'],
+          ['Type Unit SIMPER', 'miners.master.type-unit',     'miners/master/type-unit',     'kelolaMiners'],
+          ['Sub Unit',         'miners.master.sub-unit',      'miners/master/sub-unit',      'kelolaMiners'],
+          ['Jabatan',          'miners.master.jabatan',       'miners/master/jabatan',       'kelolaMiners'],
+          ['Departemen',       'miners.master.departemen',    'miners/master/departemen',    'kelolaMiners'],
+          ['Hasil MCU',        'miners.master.hasil-mcu',     'miners/master/hasil-mcu',     'kelolaMiners'],
+          ['PJO',              'miners.master.pjo',           'miners/master/pjo',           'kelolaMiners'],
+          ['Subkontraktor',    'miners.master.subkontraktor', 'miners/master/subkontraktor', 'kelolaMiners'],
+          ['Perusahaan',       'miners.master.perusahaan',    'miners/master/perusahaan',    true],
         ],
 
-        'Data' => [
-          ['Manpower', 'miners.index',           'miners'],
-          ['Rujukan',  'miners.daftar.rujukan',  'miners/daftar/rujukan'],
-        ],
-
-        /* Pemantauan berdiri sendiri, bukan di bawah Riwayat: riwayat
-           menjawab "apa yang pernah terjadi", yang ini menjawab "apa
-           yang harus dikerjakan hari ini". */
-        'Pemantauan' => [
+        'Monitoring' => [
           ['Masa Berlaku', 'miners.kedaluwarsa',        'miners/kedaluwarsa'],
           ['Cetak Kartu',  'miners.daftar.cetak-kartu', 'miners/daftar/cetak-kartu'],
+        ],
+
+        'Administrasi' => [
+          ['Alur Persetujuan', 'miners.alur.index', 'miners/alur-persetujuan*', 'kelolaMiners'],
         ],
       ],
     ],

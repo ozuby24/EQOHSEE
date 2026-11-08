@@ -7,7 +7,8 @@ use App\Models\Miners\{Alur, Blok, Departemen, HasilMcu, Induksi, InduksiOrang, 
     JenisUnit, KategoriPermit, Kendaraan, Kompetensi, Mcu, McuOrang, Pekerja, Permit,
     Pjo, Simper, SimperAjuan, Subkontraktor, TipePermit};
 use App\Models\KompetensiJenis;
-use App\Support\Miners\{Acuan, Keadaan};
+use App\Support\Miners\{Acuan, AksesMiners, Jalur, Keadaan, RincianDokumen, TugasMiners, Zona};
+use App\Support\Perusahaan;
 use App\Support\Waktu;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -90,42 +91,164 @@ class MinersController extends Controller
 
     /* ═══════════════════ pekerja ═══════════════════ */
 
+    /**
+     * Manpower — layar "Manpower MCU" Safe Track (manpower_mcu_admin).
+     *
+     * Kartu zona masa berlaku MCU yang sekaligus saringan, baris saring
+     * (cari, perusahaan, status karyawan, zona), rekap per perusahaan
+     * dengan bilah sebaran, lalu daftar manpower berhalaman.
+     *
+     * Masa berlaku yang dibaca adalah MCU TERAKHIR yang aktif tiap orang.
+     * Zona dihitung di PHP, bukan di SQL: rumus selisih tanggal berbeda
+     * pada SQLite, MySQL, dan PostgreSQL, dan jumlah manpower satu
+     * pemasangan berukuran ribuan, bukan jutaan.
+     */
     public function index(Request $r)
     {
-        $orang = $this->orangDenganBerkas()
-            ->cari(trim((string) $r->query('cari')))
-            ->when($r->query('status'), fn ($q, $s) => $q->where('status', $s))
-            ->when($r->query('departemen'), fn ($q, $d) => $q->where('departemen_id', $d))
-            ->get();
+        $u = $r->user();
 
-        $baris = $orang->map(fn (Pekerja $p) => $this->keadaanOrang($p));
+        $saring = [
+            'cari'       => trim((string) $r->query('cari', '')),
+            'perusahaan' => (string) $r->query('perusahaan', ''),
+            'aktif'      => (string) $r->query('aktif', ''),
+            'zona'       => in_array($r->query('zona'), Zona::KUNCI, true) ? (string) $r->query('zona') : '',
+        ];
 
-        /* Disaring SESUDAH dimuat, bukan lewat kueri. Keadaan terburuk
-           seseorang dihitung dari empat tabel anaknya sekaligus, dan
-           menuliskannya sebagai SQL menghasilkan kueri yang tidak dapat
-           dibaca siapa pun enam bulan lagi. Jumlah pekerja per
-           perusahaan berukuran ratusan, bukan jutaan. */
-        if ($keadaan = $r->query('keadaan')) {
-            $baris = $baris->filter(fn (array $b) => $b['terburuk'] === $keadaan)->values();
+        $mcuTerakhir = McuOrang::withoutGlobalScopes()->select('id')
+            ->whereColumn('pekerja_id', 'mnr_pekerja.id')->where('aktif', true)
+            ->orderByDesc('tanggal_periksa')->orderByDesc('id')->limit(1);
+
+        $semua = Pekerja::query()
+            ->select('mnr_pekerja.*')->addSelect(['mcu_terakhir_id' => $mcuTerakhir])
+            ->with(['company:id,name', 'departemen:id,nama', 'jabatan:id,nama'])
+            ->orderBy('nama')->get();
+
+        $mcu = McuOrang::withoutGlobalScopes()->with(['mcu', 'hasil'])
+            ->whereIn('id', $semua->pluck('mcu_terakhir_id')->filter())->get()->keyBy('id');
+
+        $baris = $semua->map(function (Pekerja $p) use ($mcu) {
+            $m    = $mcu[$p->mcu_terakhir_id] ?? null;
+            $sisa = Zona::sisa($m?->berlaku_sampai);
+
+            return [
+                'id'         => $p->id,
+                'nama'       => $p->nama,
+                'nik'        => $p->nik,
+                'noid'       => $p->no_induk ?: $p->nik,
+                'company_id' => $p->company_id,
+                'perusahaan' => $p->company?->name,
+                'departemen' => $p->departemen?->nama,
+                'jabatan'    => $p->jabatan?->nama,
+                'status'     => $p->status,
+                'aktif'      => $p->aktif(),
+                'nonaktifSejak' => $p->tanggal_nonaktif?->toDateString(),
+                'mcu_id'     => $m?->mcu_id,
+                'noMcu'      => $m?->mcu?->no_registrasi,
+                'hasil'      => $m?->hasil?->nama,
+                'berlaku'    => $m?->berlaku_sampai?->toDateString(),
+                'sisa'       => $sisa,
+                'zona'       => Zona::dariSisa($sisa),
+                'pengajuan'  => $m?->mcu?->status,
+                'cari'       => mb_strtolower($p->nama.' '.$p->nik.' '.$p->no_induk.' '.$p->no_registrasi.' '.$m?->mcu?->no_registrasi),
+
+                /* Isian formulir ubah — dikirim bersama barisnya supaya
+                   pensil di kolom "#" tidak perlu permintaan kedua. */
+                'isian' => [
+                    'company_id'       => $p->company_id ?? '',
+                    'nama'             => $p->nama,
+                    'nik'              => $p->nik ?? '',
+                    'no_induk'         => $p->no_induk ?? '',
+                    'tanggal_lahir'    => $p->tanggal_lahir?->toDateString() ?? '',
+                    'gol_darah'        => $p->gol_darah ?? '',
+                    'telepon'          => $p->telepon ?? '',
+                    'telepon_darurat'  => $p->telepon_darurat ?? '',
+                    'departemen_id'    => $p->departemen_id ?? '',
+                    'jabatan_id'       => $p->jabatan_id ?? '',
+                    'subkontraktor_id' => $p->subkontraktor_id ?? '',
+                    'status_kerja'     => $p->status_kerja ?? '',
+                    'catatan'          => $p->catatan ?? '',
+                ],
+            ];
+        });
+
+        /* Ringkasan manpower dihitung atas SELURUH orang dalam
+           jangkauan; kartu zona dan rekap mengikuti saringan selain
+           zona — memilih satu zona tidak boleh membuat kartu zona lain
+           ikut menjadi nol. */
+        $manpower = [
+            'total'    => $baris->count(),
+            'aktif'    => $baris->where('aktif', true)->count(),
+            'nonaktif' => $baris->where('aktif', false)->count(),
+        ];
+
+        $tersaring = $baris
+            ->when($saring['cari'] !== '', fn ($c) => $c->filter(fn ($b) => str_contains($b['cari'], mb_strtolower($saring['cari']))))
+            ->when($saring['perusahaan'] !== '', fn ($c) => $c->where('company_id', (int) $saring['perusahaan']))
+            ->when($saring['aktif'] !== '', fn ($c) => $c->where('aktif', $saring['aktif'] === '1'));
+
+        $ringkas = Zona::ringkas($tersaring->pluck('zona'));
+        $rekap   = Zona::rekapPerusahaan($tersaring->all(), true);
+
+        if ($saring['zona'] !== '') {
+            $tersaring = $tersaring->where('zona', $saring['zona']);
         }
 
+        $halaman = $this->halaman($r, $tersaring->values(), 15);
+
         return Inertia::render('Miners/Daftar', [
-            'judul'    => 'Miners — Pekerja',
-            'subjudul' => 'Daftar orang beserta keadaan keempat berkasnya.',
+            'judul' => 'Manpower MCU',
+            'kop'   => false,
 
-            'baris'  => $baris,
-            'saring' => [
-                'cari'       => $r->query('cari', ''),
-                'status'     => $r->query('status', ''),
-                'keadaan'    => $r->query('keadaan', ''),
-                'departemen' => $r->query('departemen', ''),
+            'saring'   => $saring,
+            'manpower' => $manpower,
+            'ringkas'  => $ringkas,
+            'rekap'    => $rekap,
+            'baris'    => $halaman,
+
+            'kelola'     => AksesMiners::kelola($u),
+            'perusahaan' => $this->perusahaanPilihan($u),
+            'pilihan'    => [
+                'departemen'    => Departemen::pilihan(),
+                'jabatan'       => Jabatan::pilihan(),
+                'subkontraktor' => Subkontraktor::query()->where('aktif', true)->orderBy('nama')->pluck('nama', 'id'),
+                'golDarah'      => Pekerja::GOL_DARAH,
+                'statusKerja'   => Pekerja::STATUS_KERJA,
             ],
-
-            'STATUS'     => Pekerja::STATUS,
-            'KEADAAN'    => Keadaan::LABEL,
-            'NADA'       => Keadaan::NADA,
-            'departemen' => Departemen::pilihan(),
+            'MCU_STATUS' => Mcu::STATUS,
         ]);
+    }
+
+    /**
+     * Satu halaman dari koleksi yang sudah tersaring, berbentuk paginator
+     * Laravel supaya layar memakai tautan yang sama dengan daftar lain.
+     */
+    private function halaman(Request $r, Collection $isi, int $per)
+    {
+        $kini = max(1, (int) $r->query('page', 1));
+
+        return new \Illuminate\Pagination\LengthAwarePaginator(
+            $isi->forPage($kini, $per)->values()->map(fn ($b) => \Illuminate\Support\Arr::except($b, ['cari'])),
+            $isi->count(), $per, $kini,
+            ['path' => $r->url(), 'query' => $r->except('page')],
+        );
+    }
+
+    /**
+     * Perusahaan yang dapat dipilih pada saringan dan formulir manpower.
+     *
+     * @return list<array{nilai:int,label:string}>
+     */
+    private function perusahaanPilihan($u): array
+    {
+        $q = Company::query()->orderBy('name');
+
+        if (! $u->isAdmin()) {
+            $q->where(fn ($w) => $w->whereKey($u->company_id)->orWhere('parent_id', $u->company_id));
+        } elseif ($lihat = Perusahaan::terpilih($u)) {
+            $q->where(fn ($w) => $w->whereKey($lihat)->orWhere('parent_id', $lihat));
+        }
+
+        return $q->get(['id', 'name'])->map(fn ($c) => ['nilai' => $c->id, 'label' => $c->name])->all();
     }
 
     public function show(Pekerja $pekerja)
@@ -222,24 +345,73 @@ class MinersController extends Controller
 
     public function store(Request $r)
     {
-        $pekerja = Pekerja::create($this->validasiPekerja($r) + ['user_id' => $r->user()?->id]);
+        $data = $this->validasiPekerja($r);
 
-        return redirect()->route('miners.show', $pekerja)
-            ->with('sukses', 'Pekerja ditambahkan.');
+        $pekerja = Pekerja::create($data + ['user_id' => $r->user()?->id, 'status' => 'aktif']);
+
+        return back()->with('sukses', 'Manpower '.$pekerja->nama.' ditambahkan.');
     }
 
     public function update(Request $r, Pekerja $pekerja)
     {
-        $pekerja->update($this->validasiPekerja($r));
+        $pekerja->update($this->validasiPekerja($r, $pekerja));
 
-        return back()->with('sukses', 'Data pekerja diperbarui.');
+        return back()->with('sukses', 'Data manpower '.$pekerja->nama.' diperbarui.');
     }
 
-    public function destroy(Pekerja $pekerja)
+    /**
+     * Aktif / tidak aktif — `masa-berlaku/manpower/{id}/status` Safe Track.
+     *
+     * Hanya "admin" (admin atau HSE IUP), sama dengan Safe Track sejak
+     * b39614d: status karyawan menentukan siapa yang dihitung di seluruh
+     * layar masa berlaku.
+     */
+    public function status(Request $r, Pekerja $pekerja)
     {
+        AksesMiners::tegakkan(AksesMiners::kelola($r->user()), 'Status karyawan hanya diubah admin atau HSE IUP.');
+
+        $data = $r->validate([
+            'aktif'   => ['required', 'boolean'],
+            'tanggal' => ['nullable', 'date'],
+            'alasan'  => ['nullable', 'string', 'max:200'],
+        ]);
+
+        if ($r->boolean('aktif')) {
+            $pekerja->forceFill(['status' => 'aktif', 'tanggal_nonaktif' => null, 'alasan_nonaktif' => null])->save();
+
+            return back()->with('sukses', $pekerja->nama.' kembali aktif.');
+        }
+
+        $pekerja->nonaktifkan($data['alasan'] ?? null,
+            ! empty($data['tanggal']) ? Waktu::tanggal($data['tanggal']) : null);
+
+        return back()->with('sukses', $pekerja->nama.' dinonaktifkan sejak '
+            .$pekerja->tanggal_nonaktif?->format('d-m-Y').'.');
+    }
+
+    /**
+     * Hapus — atau nonaktifkan bila orangnya masih punya riwayat.
+     *
+     * Absensi, cuti, lembur, slip gaji, dan kontrak menunjuk pekerja
+     * dengan cascadeOnDelete: menghapusnya diam-diam menghapus seluruh
+     * riwayat HR orang itu. Safe Track tidak pernah menghapus manpower;
+     * ia menonaktifkannya. Yang benar-benar dihapus hanya orang yang
+     * belum punya satu baris pun di mana pun — salah ketik, misalnya.
+     */
+    public function destroy(Request $r, Pekerja $pekerja)
+    {
+        AksesMiners::tegakkan(AksesMiners::kelola($r->user()), 'Manpower hanya dihapus admin atau HSE IUP.');
+
+        if ($riwayat = $pekerja->riwayatTerkait()) {
+            $pekerja->nonaktifkan('Dihapus dari daftar; riwayat dipertahankan.');
+
+            return back()->with('sukses', $pekerja->nama.' masih punya riwayat ('.count($riwayat)
+                .' tabel) — dinonaktifkan, tidak dihapus.');
+        }
+
         $pekerja->delete();
 
-        return redirect()->route('miners.index')->with('sukses', 'Pekerja dihapus.');
+        return redirect()->route('miners.index')->with('sukses', 'Manpower '.$pekerja->nama.' dihapus.');
     }
 
     /* ═══════════════════ pemantauan masa berlaku ═══════════════════ */
@@ -414,63 +586,149 @@ class MinersController extends Controller
 
     /* ═══════════════════ antrean ═══════════════════ */
 
+    /** Judul dan sumber tiap daftar antrean. */
+    private const ANTREAN = [
+        'outstanding-mcu'     => ['Data Outstanding MCU',         'Outstanding MCU Table',         'mcu',     null],
+        'outstanding-induksi' => ['Data Outstanding Induction',   'Outstanding Induction Table',   'induksi', null],
+        'outstanding-permit'  => ['Data Outstanding Mine Permit', 'Outstanding Mine Permit Table', 'permit',  null],
+        'outstanding-simper'  => ['Data Outstanding SIMPER',      'Outstanding SIMPER Table',      'simper',  null],
+        'penambahan-unit'     => ['Penambahan Unit',              'Penambahan Unit Table',         'ajuan',   'penambahan'],
+        'upgrade-simper'      => ['Upgrade SIMPER',               'Upgrade SIMPER Table',          'ajuan',   'upgrade'],
+        'perpanjangan'        => ['Perpanjangan SIMPER',          'Perpanjangan SIMPER Table',     'ajuan',   'perpanjangan'],
+        'perpanjangan-permit' => ['Perpanjangan Mine Permit',     'Perpanjangan Mine Permit Table','perpanjangan_permit', null],
+    ];
+
     /**
-     * Daftar menyilang orang — antrean, pengajuan lanjutan, rujukan,
-     * dan kartu siap cetak.
+     * Antrean persetujuan dan daftar menyilang — Outstanding Safe Track.
+     *
+     * Bawaannya "Perlu Approval Saya": dokumen yang langkahnya SEDANG
+     * menunggu orang ini — angka yang sama dengan lonceng tugasnya.
+     * `?semua=1` memperlihatkan seluruh yang masih berjalan dalam
+     * jangkauan perusahaannya (commit 72250f7, 9305535 Safe Track).
      */
     public function daftar(Request $r)
     {
         $jenis = $r->route('jenis');
 
+        if (isset(self::ANTREAN[$jenis])) {
+            return $this->antreanPersetujuan($r, $jenis);
+        }
+
         [$baris, $judul] = match ($jenis) {
-            'outstanding-mcu'     => [$this->antreanDokumen('mcu'), 'Antrean MCU'],
-            'outstanding-induksi' => [$this->antreanDokumen('induksi'), 'Antrean Induksi'],
-            'outstanding-permit'  => [$this->antreanDokumen('permit'), 'Antrean Mine Permit'],
-            'outstanding-simper'  => [$this->antreanDokumen('simper'), 'Antrean SIMPER'],
-
-            'penambahan-unit'  => [$this->ajuanJenis('penambahan'), 'Penambahan Unit'],
-            'upgrade-simper'   => [$this->ajuanJenis('upgrade'), 'Upgrade SIMPER'],
-            'perpanjangan'     => [$this->ajuanJenis('perpanjangan'), 'Perpanjangan SIMPER'],
-
             'rujukan' => [
-                McuOrang::query()->whereHas('rujukan')->with(['pekerja', 'rujukan', 'hasil'])
+                McuOrang::query()->whereHas('rujukan')->with(['pekerja.company', 'rujukan', 'hasil', 'mcu'])
                     ->orderByDesc('tanggal_periksa')->get()
                     ->map(fn (McuOrang $m) => [
-                        'id'      => $m->id,
-                        'pekerja_id' => $m->pekerja_id,
-                        'nama'    => $m->nama,
-                        'nomor'   => $m->rujukan->first()?->dokter,
-                        'tanggal' => $m->rujukan->first()?->tanggal_surat?->toDateString(),
-                        'ket'     => $m->rujukan->first()?->keterangan,
-                        'keadaan' => Keadaan::mcu($m),
+                        'id'         => $m->id,
+                        'url'        => $m->mcu_id ? '/miners/mcu/'.$m->mcu_id : null,
+                        'nomor'      => $m->mcu?->no_registrasi,
+                        'tanggal'    => $m->rujukan->first()?->tanggal_surat?->toDateString(),
+                        'judul'      => $m->nama.' — '.($m->rujukan->first()?->poliklinik ?: 'rujukan'),
+                        'perusahaan' => $m->pekerja?->company?->name,
+                        'status'     => $m->mcu?->status,
+                        'oleh'       => $m->rujukan->first()?->dokter,
+                        'posisi'     => $m->rujukan->first()?->keterangan,
                     ]),
-                'Rujukan Dokter',
+                'Data Rujukan MCU',
             ],
 
             default => [
-                Permit::query()->where('status', 'terbit')->with(['pekerja', 'tipe', 'mcuOrang'])
+                Permit::query()->where('status', 'terbit')->with(['pekerja.company', 'user'])
                     ->orderByDesc('tanggal')->get()
                     ->map(fn (Permit $p) => [
-                        'id'      => $p->id,
-                        'pekerja_id' => $p->pekerja_id,
-                        'nama'    => $p->pekerja?->nama,
-                        'nomor'   => $p->no_registrasi,
-                        'tanggal' => $p->tanggal?->toDateString(),
-                        'ket'     => $p->tipe?->nama.' · '.$p->cakupan_area,
-                        'keadaan' => Keadaan::permit($p),
+                        'id'         => $p->id,
+                        'url'        => '/miners/permit/'.$p->id,
+                        'nomor'      => $p->no_registrasi,
+                        'tanggal'    => $p->tanggal?->toDateString(),
+                        'judul'      => $p->pekerja?->nama,
+                        'perusahaan' => $p->pekerja?->company?->name,
+                        'status'     => $p->status,
+                        'oleh'       => $p->user?->name,
+                        'posisi'     => trim(($p->jenis_kartu ?: 'Mine Permit').' · '.$p->cakupan_area, ' ·'),
                     ]),
                 'Kartu Siap Cetak',
             ],
         };
 
         return Inertia::render('Miners/Antrean', [
-            'judul'    => 'Miners — '.$judul,
-            'subjudul' => 'Yang menunggu keputusan atau tindakan.',
+            'judul' => $judul,
+            'kop'   => false,
+            'jenis' => $jenis,
+            'tabel' => $judul.' Table',
+            'baris' => $baris->values(),
+            'pilih' => null,
+        ]);
+    }
 
-            'jenis'   => $jenis,
-            'baris'   => $baris,
-            'KEADAAN' => Keadaan::LABEL,
-            'NADA'    => Keadaan::NADA,
+    private function antreanPersetujuan(Request $r, string $jenis)
+    {
+        [$judul, $tabel, $dokumen, $ajuan] = self::ANTREAN[$jenis];
+
+        $kelas = TugasMiners::KELAS[$dokumen];
+        $u     = $r->user();
+
+        $berjalan = fn () => $kelas::query()
+            ->whereIn('status', TugasMiners::BERJALAN)
+            ->when($ajuan, fn ($q) => $q->where('jenis', $ajuan));
+
+        $milikSaya = Alur::query()->giliran()
+            ->where('dokumen', $dokumen)
+            ->where('ditugaskan_user_id', $u->getKey())
+            ->where('peran', '!=', 'pengaju')
+            ->select('dokumen_id');
+
+        /* Yang ditugaskan kepada orang ini dihitung TANPA batas
+           perusahaan, sama seperti lonceng: HSE IUP harus melihat berkas
+           mitranya yang menunggu dirinya. */
+        $saya = $kelas::withoutGlobalScopes()
+            ->whereIn('status', TugasMiners::BERJALAN)
+            ->when($ajuan, fn ($q) => $q->where('jenis', $ajuan))
+            ->whereIn('id', $milikSaya);
+
+        $semua = $r->boolean('semua');
+
+        $dok = ($semua ? $berjalan() : $saya)
+            ->with(array_merge(['user', 'alur.ditugaskan', 'alur.user'], match ($dokumen) {
+                'permit', 'simper' => ['pekerja.company'],
+                'ajuan'            => ['simper.pekerja.company'],
+                'perpanjangan_permit' => ['permit.pekerja.company'],
+                default            => ['company'],
+            }))
+            ->orderByDesc('tanggal')->orderByDesc('id')->get();
+
+        return Inertia::render('Miners/Antrean', [
+            'judul' => $judul,
+            'kop'   => false,
+            'jenis' => $jenis,
+            'tabel' => $tabel,
+            'baris' => $dok->map(fn ($d) => [
+                'id'         => $d->id,
+                'url'        => RincianDokumen::tautan($d),
+                'nomor'      => $d->no_registrasi ?? $d->no_simper ?? null,
+                'tanggal'    => $d->tanggal?->toDateString(),
+                'judul'      => match ($dokumen) {
+                    'mcu'                 => $d->perihal ?: $d->kepada,
+                    'induksi'             => $d->perihal,
+                    'permit', 'simper'    => $d->pekerja?->nama,
+                    'ajuan'               => $d->simper?->pekerja?->nama,
+                    'perpanjangan_permit' => $d->permit?->pekerja?->nama,
+                    default               => null,
+                },
+                'perusahaan' => match ($dokumen) {
+                    'permit', 'simper'    => $d->pekerja?->company?->name,
+                    'ajuan'               => $d->simper?->pekerja?->company?->name,
+                    'perpanjangan_permit' => $d->permit?->pekerja?->company?->name,
+                    default               => $d->company?->name,
+                },
+                'status'     => $d->status,
+                'oleh'       => $d->user?->name,
+                'posisi'     => Jalur::posisi($d)['pesan'],
+            ])->values(),
+            'pilih' => [
+                'aktif' => $semua ? 'semua' : 'saya',
+                'saya'  => (clone $saya)->count(),
+                'semua' => $berjalan()->count(),
+            ],
         ]);
     }
 
@@ -662,72 +920,30 @@ class MinersController extends Controller
         return $n;
     }
 
-    private function antreanDokumen(string $jenis): Collection
+    /**
+     * Isian manpower.
+     *
+     * NIK UNIK PER PERUSAHAAN. Safe Track menolak NIK ganda pada impor
+     * data lama; manpower yang tercatat dua kali berarti dua MCU, dua
+     * permit, dan dua baris di setiap rekap untuk satu orang.
+     *
+     * @return array<string,mixed>
+     */
+    private function validasiPekerja(Request $r, ?Pekerja $lama = null): array
     {
-        $menunggu = Alur::query()->where('dokumen', $jenis)
-            ->where('keadaan', 'menunggu')->pluck('dokumen_id');
+        $u = $r->user();
+        $bolehPerusahaan = array_column($this->perusahaanPilihan($u), 'nilai');
 
-        return match ($jenis) {
-            'mcu' => Mcu::query()->whereKey($menunggu)->with('orang')->orderByDesc('tanggal')->get()
-                ->map(fn (Mcu $m) => [
-                    'id' => $m->id, 'pekerja_id' => null,
-                    'nama' => $m->kepada, 'nomor' => $m->no_registrasi,
-                    'tanggal' => $m->tanggal?->toDateString(),
-                    'ket' => $m->orang->count().' orang · '.(Mcu::STATUS[$m->status] ?? $m->status),
-                    'keadaan' => Keadaan::BELUM,
-                ]),
+        $perusahaan = $r->filled('company_id') ? (int) $r->input('company_id')
+            : ($lama?->company_id ?? $u->company_id);
 
-            'induksi' => Induksi::query()->whereKey($menunggu)->with('orang')->orderByDesc('tanggal')->get()
-                ->map(fn (Induksi $i) => [
-                    'id' => $i->id, 'pekerja_id' => null,
-                    'nama' => $i->perihal, 'nomor' => $i->no_registrasi,
-                    'tanggal' => $i->tanggal?->toDateString(),
-                    'ket' => $i->orang->count().' orang · '.(Induksi::STATUS[$i->status] ?? $i->status),
-                    'keadaan' => Keadaan::BELUM,
-                ]),
-
-            'permit' => Permit::query()->whereKey($menunggu)->with(['pekerja', 'tipe'])->orderByDesc('tanggal')->get()
-                ->map(fn (Permit $p) => [
-                    'id' => $p->id, 'pekerja_id' => $p->pekerja_id,
-                    'nama' => $p->pekerja?->nama, 'nomor' => $p->no_registrasi,
-                    'tanggal' => $p->tanggal?->toDateString(),
-                    'ket' => $p->tipe?->nama.' · '.(Permit::STATUS[$p->status] ?? $p->status),
-                    'keadaan' => Keadaan::BELUM,
-                ]),
-
-            default => Simper::query()->whereKey($menunggu)->with(['pekerja', 'unit'])->orderByDesc('tanggal')->get()
-                ->map(fn (Simper $s) => [
-                    'id' => $s->id, 'pekerja_id' => $s->pekerja_id,
-                    'nama' => $s->pekerja?->nama, 'nomor' => $s->no_simper,
-                    'tanggal' => $s->tanggal?->toDateString(),
-                    'ket' => 'Kelas '.$s->kelas.' · '.(Simper::STATUS[$s->status] ?? $s->status),
-                    'keadaan' => Keadaan::BELUM,
-                ]),
-        };
-    }
-
-    private function ajuanJenis(string $jenis): Collection
-    {
-        return SimperAjuan::query()->where('jenis', $jenis)
-            ->with(['simper.pekerja', 'unit'])
-            ->orderByDesc('tanggal')->get()
-            ->map(fn (SimperAjuan $a) => [
-                'id'         => $a->id,
-                'pekerja_id' => $a->simper?->pekerja_id,
-                'nama'       => $a->simper?->pekerja?->nama,
-                'nomor'      => $a->no_registrasi,
-                'tanggal'    => $a->tanggal?->toDateString(),
-                'ket'        => $a->unit->count().' unit · '.(SimperAjuan::STATUS[$a->status] ?? $a->status),
-                'keadaan'    => $a->status === 'selesai' ? Keadaan::BERLAKU : Keadaan::BELUM,
-            ]);
-    }
-
-    /** @return array<string,mixed> */
-    private function validasiPekerja(Request $r): array
-    {
-        return $r->validate([
+        $data = $r->validate([
+            'company_id'       => ['nullable', 'integer', 'in:'.implode(',', $bolehPerusahaan ?: [0])],
             'nama'             => ['required', 'string', 'max:150'],
-            'nik'              => ['nullable', 'string', 'max:40'],
+            'nik'              => ['nullable', 'string', 'max:40',
+                \Illuminate\Validation\Rule::unique('mnr_pekerja', 'nik')
+                    ->where(fn ($q) => $perusahaan ? $q->where('company_id', $perusahaan) : $q->whereNull('company_id'))
+                    ->ignore($lama?->id)],
             'no_induk'         => ['nullable', 'string', 'max:40'],
             'no_registrasi'    => ['nullable', 'string', 'max:40'],
             'tanggal_lahir'    => ['nullable', 'date'],
@@ -740,8 +956,16 @@ class MinersController extends Controller
             'blok_id'          => ['nullable', 'exists:mnr_blok,id'],
             'sub_blok_id'      => ['nullable', 'exists:mnr_sub_blok,id'],
             'status_kerja'     => ['nullable', 'in:'.implode(',', array_keys(Pekerja::STATUS_KERJA))],
-            'status'           => ['required', 'in:'.implode(',', array_keys(Pekerja::STATUS))],
             'catatan'          => ['nullable', 'string'],
+        ], [
+            'nik.unique'    => 'NIK ini sudah terdaftar pada perusahaan yang sama.',
+            'company_id.in' => 'Perusahaan di luar jangkauan Anda.',
         ]);
+
+        if (! array_key_exists('company_id', $data) || $data['company_id'] === null) {
+            unset($data['company_id']);
+        }
+
+        return $data;
     }
 }

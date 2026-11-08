@@ -39,7 +39,9 @@ final class Lencana
             $peta['pesan.index'] = $n;
         }
 
-        return $peta;
+        /* Dokumen Miners yang menunggu persetujuan orang ini — angka yang
+           sama dengan lonceng tugas di bilah atas. */
+        return $peta + \App\Support\Miners\TugasMiners::lencana($pengguna);
     }
 
     /**

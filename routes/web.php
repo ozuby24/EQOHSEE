@@ -4,6 +4,9 @@ use App\Http\Controllers\InvestigasiController;
 use App\Http\Controllers\FropController;
 use App\Http\Controllers\MinersController;
 use App\Http\Controllers\MinersDokumenController;
+use App\Http\Controllers\Miners\AlurPersetujuanController as MinersAlurPersetujuanController;
+use App\Http\Controllers\Miners\MasterDataController as MinersMasterDataController;
+use App\Http\Controllers\Miners\PerusahaanController as MinersPerusahaanController;
 use App\Http\Controllers\Hris\AbsensiController;
 use App\Http\Controllers\Hris\CutiController;
 use App\Http\Controllers\Hris\GajiController;
@@ -510,7 +513,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
            jenis, dengan alasan yang sama seperti riwayat di atas. */
         foreach ([
             'outstanding-mcu', 'outstanding-permit', 'outstanding-simper', 'outstanding-induksi',
-            'penambahan-unit', 'upgrade-simper', 'perpanjangan',
+            'penambahan-unit', 'upgrade-simper', 'perpanjangan', 'perpanjangan-permit',
             'rujukan', 'cetak-kartu',
         ] as $jenis) {
             Route::get('daftar/'.$jenis, [MinersController::class, 'daftar'])
@@ -524,13 +527,41 @@ Route::middleware(['auth', 'verified'])->group(function () {
            masuk". */
         Route::get('kedaluwarsa', [MinersController::class, 'kedaluwarsa'])->name('kedaluwarsa');
 
+        /* Alur persetujuan per IUP — penyetuju bernama dan penerima
+           tembusannya (Administrasi Sistem → Alur Persetujuan Safe Track). */
+        Route::get('alur-persetujuan', [MinersAlurPersetujuanController::class, 'index'])->name('alur.index');
+        Route::put('alur-persetujuan/{iup}', [MinersAlurPersetujuanController::class, 'simpan'])
+            ->whereNumber('iup')->name('alur.simpan');
+
+        /* Master Data. Satu nama rute per daftar, dengan alasan yang sama
+           seperti riwayat di atas: RuteInertiaTest memanggil tiap nama
+           rute tanpa parameter. */
+        foreach (MinersMasterDataController::DAFTAR as $jenis) {
+            Route::get('master/'.$jenis, [MinersMasterDataController::class, 'index'])
+                ->defaults('jenis', $jenis)->name('master.'.$jenis);
+            Route::post('master/'.$jenis, [MinersMasterDataController::class, 'store'])
+                ->defaults('jenis', $jenis)->name('master.'.$jenis.'.store');
+            Route::put('master/'.$jenis.'/{id}', [MinersMasterDataController::class, 'update'])
+                ->defaults('jenis', $jenis)->whereNumber('id')->name('master.'.$jenis.'.update');
+            Route::delete('master/'.$jenis.'/{id}', [MinersMasterDataController::class, 'destroy'])
+                ->defaults('jenis', $jenis)->whereNumber('id')->name('master.'.$jenis.'.destroy');
+        }
+
+        Route::get('master/perusahaan', [MinersPerusahaanController::class, 'index'])
+            ->middleware('can:admin')->name('master.perusahaan');
+        Route::put('master/perusahaan/{company}', [MinersPerusahaanController::class, 'update'])
+            ->middleware('can:admin')->name('master.perusahaan.update');
+
         Route::get('/',  [MinersController::class, 'index'])->name('index');
         Route::post('/', [MinersController::class, 'store'])->name('store');
 
         Route::get('{pekerja}',    [MinersController::class, 'show'])->name('show');
+        /* Aktif / tidak aktif — `masa-berlaku/manpower/{id}/status`
+           Safe Track. Pekerja tidak pernah dihapus keras bila masih
+           punya riwayat. */
+        Route::post('{pekerja}/status', [MinersController::class, 'status'])->name('status');
         Route::put('{pekerja}',    [MinersController::class, 'update'])->name('update');
-        Route::delete('{pekerja}', [MinersController::class, 'destroy'])
-            ->middleware('can:admin')->name('destroy');
+        Route::delete('{pekerja}', [MinersController::class, 'destroy'])->name('destroy');
     });
 
 

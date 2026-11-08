@@ -1,61 +1,66 @@
 <script setup lang="ts">
 /**
- * Daftar menyilang orang — antrean, pengajuan lanjutan, rujukan.
+ * Antrean persetujuan — layar "Data Outstanding …" Safe Track.
  *
- * Menjawab "apa yang menunggu keputusan pagi ini". Bagi yang bukan
- * peninjau daftarnya kosong, dan itu jawaban yang BENAR — bukan
- * kerusakan. Layar kosong tanpa keterangan terbaca sebagai yang
- * ketiga, jadi keterangannya ditulis.
+ * Bawaannya "Perlu Approval Saya" (dokumen yang langkahnya sedang
+ * menunggu pembuka halaman ini — angka yang sama dengan lonceng
+ * tugasnya); "Semua" memperlihatkan seluruh yang masih berjalan. Kolom
+ * "Menunggu" menyebut posisinya dengan kalimat yang sama dengan tabel
+ * persetujuan di halaman detail.
+ *
+ * Daftar rujukan dan kartu siap cetak memakai halaman yang sama tanpa
+ * saklar Saya/Semua.
  */
-import { Head, Link } from '@inertiajs/vue3';
+import { Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { propHalaman } from '../../halaman';
-import Lencana from './Lencana.vue';
+import KepalaHalaman from '../../Components/Miners/KepalaHalaman.vue';
+import TabelData from '../../Components/Miners/TabelData.vue';
+import LencanaStatus from '../../Components/Miners/LencanaStatus.vue';
+import PilihSayaSemua from '../../Components/Miners/PilihSayaSemua.vue';
+import { tglId } from '../../Components/Miners/zona';
 
 const props = propHalaman();
 
 const baris = computed<any[]>(() => (props.baris ?? []) as any[]);
+const pilih = computed<any>(() => props.pilih ?? null);
+const alamat = computed(() => `/miners/daftar/${props.jenis}`);
+
+const kolom = [
+  { kunci: 'nomor', label: 'No Registrasi' },
+  { kunci: 'tanggal', label: 'Tanggal' },
+  { kunci: 'judul', label: 'Title' },
+  { kunci: 'perusahaan', label: 'Perusahaan' },
+  { kunci: 'status', label: 'Status' },
+  { kunci: 'oleh', label: 'Creator' },
+  { kunci: 'posisi', label: 'Menunggu' },
+];
+
+const remah = computed<[string, string | null][]>(() => [
+  ['Home', '/miners/dasbor'],
+  [pilih.value ? 'Outstanding' : 'Data', null],
+  [String(props.judul ?? '').replace('Data Outstanding ', ''), null],
+]);
 </script>
 
 <template>
-  <Head :title="props.judul" />
+  <div>
+    <KepalaHalaman :judul="props.judul" :remah="remah" />
 
-  <div class="space-y-5">
+    <TabelData :judul="props.tabel" :jumlah="baris.length" :kolom="kolom" :baris="baris"
+               :kosong="pilih?.aktif === 'saya' ? 'Tidak ada dokumen yang menunggu persetujuan Anda.' : 'Tidak ada dokumen.'">
+      <template v-if="pilih" #kanan>
+        <PilihSayaSemua :saya="pilih.saya" :semua="pilih.semua" :aktif="pilih.aktif"
+                        :href-saya="alamat" :href-semua="`${alamat}?semua=1`" />
+      </template>
 
-    <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-left text-[11.5px]">
-          <thead>
-            <tr class="text-stone-400 border-b border-stone-200 bg-stone-50/70">
-              <th class="px-4 py-2 font-semibold w-10">No</th>
-              <th class="px-4 py-2 font-semibold">Nama</th>
-              <th class="px-4 py-2 font-semibold whitespace-nowrap">Nomor</th>
-              <th class="px-4 py-2 font-semibold whitespace-nowrap">Tanggal</th>
-              <th class="px-4 py-2 font-semibold">Keterangan</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr v-for="(b, i) in baris" :key="b.id" class="border-b border-stone-100 hover:bg-stone-50/60">
-              <td class="px-4 py-2.5 num text-stone-400">{{ i + 1 }}</td>
-              <td class="px-4 py-2.5">
-                <Link v-if="b.pekerja_id" :href="`/miners/${b.pekerja_id}`"
-                      class="font-semibold text-cam-lime-deep hover:underline">{{ b.nama || '—' }}</Link>
-                <span v-else class="font-semibold text-cam-ink">{{ b.nama || '—' }}</span>
-              </td>
-              <td class="px-4 py-2.5 num text-stone-500">{{ b.nomor || '—' }}</td>
-              <td class="px-4 py-2.5 num">{{ b.tanggal || '—' }}</td>
-              <td class="px-4 py-2.5 text-stone-600">{{ b.ket || '—' }}</td>
-            </tr>
-
-            <tr v-if="!baris.length">
-              <td colspan="5" class="px-4 py-10 text-center text-stone-400">
-                Tidak ada yang menunggu. Kalau Anda bukan peninjau, daftar ini memang kosong.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+      <template #sel-nomor="{ baris: b }">
+        <Link v-if="b.url" :href="b.url" class="mn-tautan">{{ b.nomor || 'tanpa nomor' }}</Link>
+        <span v-else>{{ b.nomor || '—' }}</span>
+      </template>
+      <template #sel-tanggal="{ nilai }">{{ tglId(nilai) }}</template>
+      <template #sel-status="{ nilai }"><LencanaStatus :status="nilai" /></template>
+      <template #sel-posisi="{ nilai }"><span class="mn-redup text-[12px]">{{ nilai || '—' }}</span></template>
+    </TabelData>
   </div>
 </template>

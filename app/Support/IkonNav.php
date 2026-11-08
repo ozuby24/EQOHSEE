@@ -112,6 +112,14 @@ final class IkonNav
         // Observasi operator (FROP).
         'observasi' => 'evaluasi', 'operator' => 'orang', 'coaching' => 'obrolan',
         'impor' => 'tukar', 'panduan' => 'buku',
+
+        // Miners — label bilah samping Safe Track.
+        'induction' => 'kursus', 'authority' => 'sertifikat', 'manpower' => 'orang',
+        'unit' => 'armada', 'type unit' => 'armada', 'sub unit' => 'armada',
+        'jabatan' => 'orang', 'departemen' => 'gedung', 'pjo' => 'orang',
+        'subkontraktor' => 'gedung', 'alur persetujuan' => 'tukar',
+        'perpanjangan' => 'kalender', 'masa berlaku' => 'kalender',
+        'cetak kartu' => 'sertifikat', 'rujukan' => 'dokumen',
     ];
 
     /** Nama ikon untuk sebuah label menu. */

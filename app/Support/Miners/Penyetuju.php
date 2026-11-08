@@ -188,4 +188,92 @@ final class Penyetuju
             default  => Alur::PERAN[$peran] ?? strtoupper($peran),
         };
     }
+
+    /**
+     * IUP yang boleh diatur pengguna ini pada layar Alur Persetujuan.
+     *
+     * Admin: seluruh IUP (atau yang sedang ia lihat); HSE perusahaan IUP:
+     * IUP-nya sendiri. Mitra (IUJP) tidak mengatur siapa penyetujunya.
+     *
+     * @return \Illuminate\Support\Collection<int,Company>
+     */
+    public static function iupTerkelola(?User $u)
+    {
+        if (! AksesMiners::kelola($u)) return collect();
+
+        $q = Company::query()->whereNull('parent_id')->orderBy('name');
+
+        if (! $u->isAdmin()) {
+            return $q->whereKey($u->company_id)->get();
+        }
+
+        if ($lihat = \App\Support\Perusahaan::terpilih($u)) {
+            return $q->whereKey(self::iupDari($lihat))->get();
+        }
+
+        return $q->get()->reject(fn (Company $c) => $c->isJasa())->values();
+    }
+
+    /**
+     * Pengguna yang boleh ditunjuk sebagai penyetuju sebuah IUP: orang
+     * IUP itu dan mitra-mitranya, ditambah administrator.
+     *
+     * Tidak seluruh pengguna aplikasi seperti daftar Safe Track — EQOHSEE
+     * dipakai banyak perusahaan sekaligus, dan daftar seluruh akun akan
+     * membocorkan nama dan surel orang perusahaan lain.
+     *
+     * @return \Illuminate\Support\Collection<int,User>
+     */
+    public static function calon(?int $iupId)
+    {
+        $keluarga = $iupId
+            ? Company::query()->where('id', $iupId)->orWhere('parent_id', $iupId)->pluck('id')
+            : collect();
+
+        return User::query()
+            ->where(fn ($q) => $q->whereIn('company_id', $keluarga)->orWhere('is_admin', true))
+            ->orderBy('name')
+            ->get(['id', 'name', 'email', 'company_id', 'is_admin', 'ohse_role', 'lms_role']);
+    }
+
+    /**
+     * Terapkan skema IUP pada langkah yang SEDANG menunggu — padanan
+     * `approval-ktt:pindah` Safe Track.
+     *
+     * Mengganti KTT di skema tidak boleh meninggalkan puluhan Mine Permit
+     * yang menunggu KTT lama selamanya. Yang sudah ditindak tidak
+     * disentuh: itu riwayat, bukan pengaturan.
+     *
+     * @return int jumlah langkah yang dipindahkan
+     */
+    public static function terapkanKeAntrean(?int $iupId): int
+    {
+        $skema = self::untuk($iupId);
+        $pindah = 0;
+
+        foreach (TugasMiners::KELAS as $dokumen => $kelas) {
+            $q = $kelas::withoutGlobalScopes()->whereNotIn('status', ['terbit', 'selesai', 'dicabut']);
+
+            /* Alur umum berlaku bagi dokumen yang IUP-nya tidak punya
+               skema sendiri, termasuk yang tanpa IUP sama sekali. */
+            $iupId
+                ? $q->where('iup_id', $iupId)
+                : $q->where(fn ($w) => $w->whereNull('iup_id')
+                    ->orWhereNotIn('iup_id', Skema::query()->whereNotNull('company_id')->select('company_id')));
+
+            $ids = $q->pluck('id');
+            if ($ids->isEmpty()) continue;
+
+            foreach (Skema::KOLOM as $peran => $kolom) {
+                $pindah += Alur::query()
+                    ->where('dokumen', $dokumen)->whereIn('dokumen_id', $ids)
+                    ->where('peran', $peran)->where('keadaan', 'menunggu')
+                    ->where(fn ($w) => $w->whereNull('ditugaskan_user_id')
+                        ->orWhere('ditugaskan_user_id', '!=', $skema?->{$kolom} ?? 0))
+                    ->update(['ditugaskan_user_id' => $skema?->{$kolom}]);
+            }
+        }
+
+        return $pindah;
+    }
 }

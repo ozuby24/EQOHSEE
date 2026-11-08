@@ -78,7 +78,7 @@ async function hapus(id: number, nomor: string) {
 }
 
 const bolehTindak = computed(() =>
-  ((props.peranSaya ?? []) as string[]).some((p) => p !== 'pjo'));
+  ((props.peranSaya ?? []) as string[]).some((p) => p !== 'pengaju'));
 
 const WARNA_LABEL = computed<Record<string, any>>(() => (props.WARNA ?? {}) as Record<string, any>);
 </script>

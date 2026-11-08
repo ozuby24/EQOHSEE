@@ -79,7 +79,7 @@ async function hapusUnit(simperId: number, unitId: number, nama: string) {
 }
 
 const bolehTindak = computed(() =>
-  ((props.peranSaya ?? []) as string[]).some((p) => p !== 'pjo'));
+  ((props.peranSaya ?? []) as string[]).some((p) => p !== 'pengaju'));
 
 const SEBAB: Record<string, string> = {
   simpol: 'SIMPOL habis lebih dahulu',

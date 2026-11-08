@@ -69,6 +69,19 @@ body{
 .eq-lonceng-titik{position:absolute;top:-2px;right:-2px;min-width:19px;height:19px;padding:0 5px;
   border-radius:999px;background:#E5484D;color:#fff;font-size:10.5px;font-weight:700;
   line-height:19px;text-align:center;border:2px solid #FBFAF7}
+/* Lonceng tugas persetujuan Miners: angka kuning, seperti ikon tugas
+   Safe Track, supaya tidak tertukar dengan lonceng pengumuman. */
+.eq-tugas-titik{background:#F5B400;color:#1B2024}
+.eq-tugas-daftar{position:absolute;right:0;top:46px;z-index:60;width:290px;padding:6px;border-radius:12px;
+  background:#fff;border:1px solid rgba(27,32,36,.1);box-shadow:0 14px 40px -12px rgba(27,32,36,.35)}
+.eq-tugas-judul{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--eq-redup,#7C8894);padding:6px 10px 4px}
+.eq-tugas-butir{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;
+  border-radius:8px;font-size:12.5px;color:var(--eq-judul,#0F1720)}
+.eq-tugas-butir:hover{background:rgba(245,124,0,.08)}
+.eq-tugas-butir b{min-width:22px;height:20px;padding:0 6px;border-radius:999px;background:#F5B400;
+  color:#1B2024;font-size:11px;display:grid;place-items:center}
+:root[data-tema="gelap"] .eq-tugas-daftar{background:#152126;border-color:#22343A}
 
 .eq-profil{display:flex;align-items:center;gap:10px;padding-left:2px}
 .eq-avatar{width:40px;height:40px;flex:none;border-radius:50%;display:grid;place-items:center;

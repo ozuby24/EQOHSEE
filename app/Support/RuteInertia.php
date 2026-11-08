@@ -311,6 +311,17 @@ final class RuteInertia
         'miners.daftar.perpanjangan',
         'miners.daftar.rujukan',
         'miners.daftar.cetak-kartu',
+        'miners.daftar.perpanjangan-permit',
+        'miners.alur.index',
+        'miners.master.unit',
+        'miners.master.type-unit',
+        'miners.master.sub-unit',
+        'miners.master.jabatan',
+        'miners.master.departemen',
+        'miners.master.hasil-mcu',
+        'miners.master.pjo',
+        'miners.master.subkontraktor',
+        'miners.master.perusahaan',
 
         /* Pembelian. Halaman bayar TIDAK didaftarkan di sini: ia
            berparameter token dan berada di luar grup auth, sedangkan

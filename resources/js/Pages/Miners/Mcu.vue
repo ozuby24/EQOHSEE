@@ -83,7 +83,7 @@ async function hapusSurat(id: number, nomor: string) {
 }
 
 const bolehTindak = computed(() =>
-  ((props.peranSaya ?? []) as string[]).some((p) => p !== 'pjo'));
+  ((props.peranSaya ?? []) as string[]).some((p) => p !== 'pengaju'));
 </script>
 
 <template>

@@ -112,6 +112,14 @@ const pengguna   = computed(() => halaman.props.pengguna);
 const kilat      = computed(() => halaman.props.kilat);
 const pengumuman = computed(() => halaman.props.pengumuman ?? 0);
 
+/* Lonceng tugas persetujuan Miners — TugasSaya Safe Track: hanya modul
+   yang memang ada isinya, dan angka yang sama dengan penanda butir
+   "Outstanding" di bilah samping. Kosong berarti tidak digambar. */
+const tugasMiners = computed<{ kunci: string; label: string; jumlah: number; url: string; sebut: string }[]>(
+  () => ((halaman.props as Record<string, unknown>).tugasMiners as any[]) ?? []);
+const totalTugas = computed(() => tugasMiners.value.reduce((n, t) => n + t.jumlah, 0));
+const tugasTerbuka = ref(false);
+
 const lacisTerbuka = ref(false);
 const sempit       = ref(false);
 
@@ -716,6 +724,28 @@ async function keluar() {
             </a>
           </div>
 
+          <div v-if="totalTugas > 0" class="eq-lonceng eq-tugas">
+            <button type="button" class="eq-bulat" :aria-expanded="tugasTerbuka"
+                    :aria-label="`${totalTugas} dokumen menunggu persetujuan Anda`"
+                    title="Dokumen yang menunggu persetujuan Anda" @click="tugasTerbuka = !tugasTerbuka">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 9 2 2 4-4"/>
+              </svg>
+              <span class="eq-lonceng-titik eq-tugas-titik">{{ totalTugas > 99 ? '99+' : totalTugas }}</span>
+            </button>
+
+            <div v-if="tugasTerbuka" class="eq-perusahaan-tirai" @click="tugasTerbuka = false" />
+            <div v-if="tugasTerbuka" class="eq-tugas-daftar" role="menu">
+              <p class="eq-tugas-judul">Menunggu persetujuan Anda</p>
+              <component :is="tautan(true)" v-for="t in tugasMiners" :key="t.kunci" :href="t.url"
+                         class="eq-tugas-butir" role="menuitem" @click="tugasTerbuka = false">
+                <span>{{ t.label }}</span>
+                <b>{{ t.jumlah }}</b>
+              </component>
+            </div>
+          </div>
+
           <!-- Perusahaan yang sedang dilihat.
 
                PEMILIH HANYA BAGI YANG BENAR-BENAR PUNYA PILIHAN.
@@ -888,6 +918,21 @@ async function keluar() {
               <path d="m5 12.5 4.5 4.5L19 7.5"/>
             </svg>
             {{ kilat.sukses }}
+          </div>
+        </div>
+
+        <!-- Peringatan sesudah pekerjaan tercatat — mis. pemberitahuan
+             yang tidak terkirim karena penerimanya tidak ada. Dipisah
+             dari pesan sukses, cara Safe Track (st_sukses dan st_gagal):
+             digabung, bagian keduanya terbaca sebagai catatan kaki. -->
+        <div v-if="kilat.galat" class="max-w-[1400px] mx-auto mb-5">
+          <div class="rounded-xl px-4 py-3 text-[12.5px] font-semibold flex items-start gap-2.5"
+               style="background:#fdecec;color:#9b1c1c" role="alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                 stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 shrink-0 mt-px" aria-hidden="true">
+              <path d="M12 9v4m0 4h.01M10.3 3.9 2.4 17.6A2 2 0 0 0 4.1 20.6h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/>
+            </svg>
+            {{ kilat.galat }}
           </div>
         </div>
 
