@@ -373,24 +373,6 @@ input,select,textarea{ outline:none; }
   table.kop-cetak td td{ overflow-wrap:anywhere; }
 }
 
-/* Tabel keterangan formulir SMKP (dua pasang label–isi per baris) dan
-   baris penanda tangan (nama, tanda tangan, tanggal sebaris) di layar
-   ponsel: tiap pasang menjadi baris sendiri, bukan empat atau enam
-   kolom selebar 60 px yang membuat "PT Borneo Mandiri Utama" empat
-   baris. Kertas tetap memakai tata letaknya. */
-@media screen and (max-width:639.98px){
-  table.lembar-pasangan, table.lembar-pasangan > tbody,
-  table.lembar-ttd, table.lembar-ttd > tbody{ display:block; }
-  table.lembar-pasangan > tbody > tr{ display:grid; grid-template-columns:minmax(6.5rem, 34%) minmax(0, 1fr); }
-  table.lembar-pasangan > tbody > tr > td{ width:auto !important; border-bottom:1px solid #E7E5E4; }
-  table.lembar-pasangan > tbody > tr > td:nth-child(even){ border-right:0; }
-  table.lembar-pasangan > tbody > tr:last-child > td:last-child{ border-bottom:0; }
-  table.lembar-ttd > tbody > tr{ display:grid; grid-template-columns:minmax(6.5rem, 38%) minmax(0, 1fr); row-gap:.25rem; }
-  table.lembar-ttd > tbody > tr + tr{ margin-top:1rem; }
-  table.lembar-ttd > tbody > tr > td{ width:auto !important; }
-  table.lembar-ttd > tbody > tr > td:nth-child(4){ min-height:2.75rem; }
-}
-
 /* Tabel identitas lembar (tiga pasang label–isi per baris, kolom
    persen) di layar ponsel: label selebar 11% menjadi 30 px dan tiap
    kata terpotong per dua huruf ("NOM OR", "TAN GGA L"). Di layar sempit

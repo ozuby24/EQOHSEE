@@ -58,6 +58,7 @@ const kopTampil = computed(() => {
 const tgl = (v: string) => (v ? new Date(`${v}T00:00:00`).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '—');
 
 const isian = 'ring-focus w-full rounded-xl border border-stone-200 px-4 py-2.5 text-[13.5px] transition';
+const isianKecil = 'ring-focus w-full rounded-lg border border-stone-200 px-2.5 py-1.5 text-[12px] transition';
 const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-500 mb-1.5';
 const kepala = 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400';
 </script>
@@ -169,8 +170,8 @@ const kepala = 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400
           <table class="w-full min-w-[640px] text-[12px]" data-tabel-tetap>
             <thead>
               <tr class="text-left text-[10px] font-bold uppercase tracking-wide text-stone-500 bg-stone-50">
-                <th class="px-3 py-2 w-[30%]">Formulir</th>
-                <th class="px-3 py-2 w-[24%]">Kode</th>
+                <th class="px-3 py-2 w-[28%]">Formulir</th>
+                <th class="px-3 py-2 w-[28%]">Kode</th>
                 <th class="px-3 py-2">Judul pada kop</th>
               </tr>
             </thead>
@@ -180,11 +181,11 @@ const kepala = 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400
                 <td class="px-3 py-2 font-semibold text-stone-700">{{ d.nama }}</td>
                 <td class="px-3 py-1.5">
                   <input v-model="form.kop_formulir[k].kode" maxlength="40" :placeholder="nomorBawaan(String(k)) || d.kode"
-                         :class="[isian, 'py-1.5 text-[12px] num']" :aria-label="`Kode ${d.judul}`">
+                         :class="[isianKecil, 'num']" :aria-label="`Kode ${d.judul}`">
                 </td>
                 <td class="px-3 py-1.5">
                   <input v-model="form.kop_formulir[k].judul" maxlength="190" :placeholder="d.judul"
-                         :class="[isian, 'py-1.5 text-[12px]']" :aria-label="`Judul ${d.judul}`">
+                         :class="isianKecil" :aria-label="`Judul ${d.judul}`">
                 </td>
               </tr>
             </tbody>
