@@ -95,6 +95,14 @@ class HandleInertiaRequests extends Middleware
                 'model' => \App\Services\Asisten\KonfigurasiAsisten::model(),
             ] : null,
 
+            /* Halaman audit SMKP (porting Aurorasys) menggambar kepalanya
+               sendiri — KepalaHalaman / KepalaAudit: jejak, judul, tombol
+               aksi, dan tab audit — sehingga kop kerangka ditolak dengan
+               `kop: false` (lihat AppLayout). Tanpa ini judul halamannya
+               tercetak dua kali. Halaman yang mengirim `kop` sendiri tetap
+               menang: prop halaman menimpa prop bersama. */
+            ...($request->routeIs('smkp.*') ? ['kop' => false] : []),
+
             /* Temuan audit SMKP lewat target yang belum ditutup, dalam
                jangkauan pengguna (lencana menu modul SMKP). */
             'peringatan' => fn () => $u ? \App\Models\SmkpFinding::query()

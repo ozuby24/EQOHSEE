@@ -297,6 +297,17 @@ final class KopDokumen
         ];
     }
 
+    /**
+     * Formulir audit SMKP yang kopnya dapat disesuaikan per perusahaan
+     * (`companies.kop_formulir`, porting Aurorasys). Formulir modul lain
+     * tidak ikut: penomorannya milik daftar induk EQOHSEE.
+     */
+    public const FORMULIR_SMKP = [
+        'berita-acara', 'rencana-audit', 'daftar-hadir', 'penilaian-smkp', 'formulir-kesesuaian',
+        'formulir-ketidaksesuaian', 'rekapitulasi-ketidaksesuaian', 'rekomendasi-ofi',
+        'rencana-tindak-lanjut', 'laporan-audit',
+    ];
+
     public const DIVISI     = 'Occupational Health, Safety and Environment, External';
     public const DEPARTEMEN = 'Occupational Health, Safety and Environment';
 
@@ -336,11 +347,29 @@ final class KopDokumen
            yang diterbitkan berulang kali, dan nomor yang berubah tiap kali
            dicetak bukan nomor dokumen terkendali. */
         $jenisNomor = $d['jenis'] === 'LAPORAN' ? 'Laporan' : 'Formulir';
+        $nomor = Nomor::susun($jenisNomor, $c, (int) ($d['urut'] ?? 0));
+
+        /* Penyesuaian kop per perusahaan untuk formulir audit SMKP
+           (porting Aurorasys — Admin → Perusahaan → Kop formulir audit
+           SMKP). Jenis dan judul yang diisi menggantikan bawaan; KODE yang
+           diisi mengganti nomornya menjadi bentuk Aurorasys,
+           {kode singkat}-{kode}, mis. CAM-HSE-IV.067h. Tanpa isian,
+           penomoran EQOHSEE di atas tetap berlaku. */
+        $ubah = in_array($kunci, self::FORMULIR_SMKP, true)
+            ? (array) (((array) ($c?->kop_formulir ?? []))[$kunci] ?? [])
+            : [];
+        foreach (['jenis', 'judul'] as $k) {
+            $v = trim((string) ($ubah[$k] ?? ''));
+            if ($v !== '') $d[$k] = $v;
+        }
+        if (($kode = trim((string) ($ubah['kode'] ?? ''))) !== '') {
+            $nomor = self::prefiksAurorasys($c).'-'.$kode;
+        }
 
         return [
             'jenis'      => $d['jenis'],
             'judul'      => $d['judul'],
-            'nomor'      => Nomor::susun($jenisNomor, $c, (int) ($d['urut'] ?? 0)),
+            'nomor'      => $nomor,
             'terbit'     => $c?->doc_terbit,
             'setuju'     => $c?->doc_setuju,
             'revisi'     => str_pad((string) (int) ($c?->doc_revisi ?? 0), 2, '0', STR_PAD_LEFT),
@@ -376,6 +405,47 @@ final class KopDokumen
         }
 
         return $d;
+    }
+
+    /**
+     * Awalan nomor kop bergaya Aurorasys: Kode singkat perusahaan — sumber
+     * yang sama dengan nomor temuan/CAR (SmkpAudit::kodeNomorTemuan) —
+     * atau, bila kosong, huruf awal namanya.
+     */
+    public static function prefiksAurorasys(?Company $c): string
+    {
+        return trim((string) ($c?->code ?? '')) ?: self::prefiksDari($c?->name);
+    }
+
+    /**
+     * Daftar formulir SMKP untuk penyesuaian kop di Admin → Perusahaan:
+     * nama, jenis & judul bawaan, dan nomor bawaan EQOHSEE bagi
+     * perusahaan itu.
+     *
+     * @return array<string, array{nama:string,jenis:string,judul:string,kode:string,nomor:string,jenisNomor:string,urut:int}>
+     */
+    public static function formulirSmkp(?Company $c = null): array
+    {
+        $daftar = self::daftar();
+        $hasil = [];
+
+        foreach (self::FORMULIR_SMKP as $k) {
+            $d = $daftar[$k];
+            $jenisNomor = $d['jenis'] === 'LAPORAN' ? 'Laporan' : 'Formulir';
+            $hasil[$k] = [
+                'nama'  => $d['nama'] ?? $d['judul'],
+                'jenis' => $d['jenis'],
+                'judul' => $d['judul'],
+                /* Kode formulir Aurorasys (HSE-IV.067h): contoh isian bagi
+                   yang hendak menyamakan nomornya dengan berkas Aurorasys. */
+                'kode'  => preg_replace('/^OHSE-/', 'HSE-', $d['kode']),
+                'nomor' => Nomor::susun($jenisNomor, $c, (int) ($d['urut'] ?? 0)),
+                'jenisNomor' => Nomor::jenis($jenisNomor),
+                'urut'  => (int) ($d['urut'] ?? 0),
+            ];
+        }
+
+        return $hasil;
     }
 
     /**

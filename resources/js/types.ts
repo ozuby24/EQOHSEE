@@ -1730,14 +1730,17 @@ export interface HalamanDaftarPerusahaan {
 export interface HalamanFormPerusahaan {
   judul: string; subjudul: string;
   tersimpan: boolean;
-  awal: Record<string, string>;
+  /* Isian awal; `kop_formulir` berbentuk {kunci: {jenis, judul, kode}}. */
+  awal: Record<string, any>;
   logo: string | null;
-  opsi: { induk: Pilihan[]; risiko: string[] };
+  opsi: { induk: Pilihan[]; risiko: string[]; kategori: Pilihan[] };
   contoh: { prefiks: string; divisi: string; departemen: string };
-  /* Dasar hari kerja audit SMKP menurut profil tersimpan. Dihitung server;
-     panel di formulir memperbaruinya lewat `tautan.mandays`. */
-  mandays: { pekerja: number; kelas: string; rentang: string; dasar: number };
-  tautan: { simpan: string; batal: string; mandays: string };
+  /* Formulir audit SMKP yang kopnya dapat disesuaikan (KopDokumen::formulirSmkp). */
+  daftarFormulir: Record<string, {
+    nama: string; jenis: string; judul: string; kode: string;
+    nomor: string; jenisNomor: string; urut: number;
+  }>;
+  tautan: { simpan: string; batal: string };
 }
 
 export interface HalamanSistem {

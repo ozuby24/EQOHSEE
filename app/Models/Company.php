@@ -15,11 +15,11 @@ class Company extends Model {
         'lainnya' => 'Lainnya',
     ];
 
-    protected $fillable = ['name','demo','code','kategori','parent','izin_type','commodity','location','address','ktt','pjo','workers_employee','workers_sub','risk_class','logo','theme_color','theme_dark','doc_no_prefix','parent_id','pic_name','pic_email','pic_phone','divisi','departemen', 'dept_kode','doc_terbit','doc_setuju','doc_revisi'];
+    protected $fillable = ['name','demo','code','kategori','parent','izin_type','commodity','location','address','ktt','pjo','workers_employee','workers_sub','risk_class','logo','theme_color','theme_dark','doc_no_prefix','parent_id','pic_name','pic_email','pic_phone','divisi','departemen', 'dept_kode','doc_terbit','doc_setuju','doc_revisi','kop_formulir'];
 
     protected function casts(): array
     {
-        return ['doc_terbit' => 'date', 'doc_setuju' => 'date', 'demo' => 'boolean'];
+        return ['doc_terbit' => 'date', 'doc_setuju' => 'date', 'demo' => 'boolean', 'kop_formulir' => 'array'];
     }
 
     /**

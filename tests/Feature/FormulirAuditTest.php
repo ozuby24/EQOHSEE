@@ -496,4 +496,53 @@ class FormulirAuditTest extends TestCase
         $this->get("/smkp/{$a->id}/rencana")->assertInertia(fn (Inertia $p) => $p
             ->where('isian.pengecualian', 'Area pelabuhan')->has('kriteriaDaftar', 7)->has('jenisAudit', 2));
     }
+
+    /**
+     * Kop formulir audit SMKP per perusahaan (porting Aurorasys). Bawaannya
+     * tetap penomoran EQOHSEE (FRM/{prefiks}/OHSE/{urut}); kode yang diisi
+     * administrator mengganti nomornya menjadi bentuk Aurorasys
+     * {kode singkat}-{kode}.
+     */
+    public function test_kop_formulir_mengikuti_pengaturan_tiap_perusahaan(): void
+    {
+        $adm = $this->superadmin();
+        $this->actingAs($adm)->put("/admin/companies/{$this->induk->id}", [
+            'name' => $this->induk->name, 'kategori' => 'induk', 'code' => 'SPX', 'doc_no_prefix' => 'IU', 'doc_revisi' => 3,
+            'kop_formulir' => [
+                'formulir-kesesuaian' => ['kode' => 'K3-F-021', 'judul' => 'FORM KESESUAIAN AUDIT SMKP', 'jenis' => ''],
+                'tidak-dikenal'       => ['kode' => 'X'],
+                'laporan-energi'      => ['kode' => 'Y'],
+            ],
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->induk->refresh();
+        $this->assertSame(['formulir-kesesuaian' => ['judul' => 'FORM KESESUAIAN AUDIT SMKP', 'kode' => 'K3-F-021']], $this->induk->kop_formulir);
+
+        $a = $this->audit();
+        $this->actingAs($adm)->get("/smkp/{$a->id}/formulir/kesesuaian/cetak")->assertInertia(fn (Inertia $p) => $p
+            ->where('dok.nomor', 'SPX-K3-F-021')->where('dok.judul', 'FORM KESESUAIAN AUDIT SMKP')->where('dok.revisi', '03'));
+
+        // Formulir lain tetap memakai penomoran bawaan EQOHSEE.
+        $this->actingAs($adm)->get("/smkp/{$a->id}/formulir/rekapitulasi/cetak")->assertInertia(fn (Inertia $p) => $p
+            ->where('dok.nomor', 'FRM/IU/OHSE/012'));
+
+        // Perusahaan lain tidak terpengaruh.
+        $b = $this->audit($this->pjp);
+        $this->actingAs($adm)->get("/smkp/{$b->id}/formulir/kesesuaian/cetak")->assertInertia(fn (Inertia $p) => $p
+            ->where('dok.judul', 'FORMULIR KESESUAIAN AUDIT PENERAPAN SMKP'));
+
+        // Formulir admin perusahaan membawa isian kop untuk tiap formulir SMKP.
+        $this->actingAs($adm)->get("/admin/companies/{$this->induk->id}/edit")->assertInertia(fn (Inertia $p) => $p
+            ->component('Admin/Perusahaan/Form')
+            ->where('awal.kop_formulir.formulir-kesesuaian.kode', 'K3-F-021')
+            ->where('awal.kop_formulir.berita-acara.kode', '')
+            ->where('daftarFormulir.berita-acara.nomor', 'FRM/IU/OHSE/001')
+            ->has('daftarFormulir', 10)
+            ->has('opsi.kategori', 4));
+
+        // Simpan tanpa kop_formulir tidak menghapus penyesuaian yang ada.
+        $this->actingAs($adm)->put("/admin/companies/{$this->induk->id}", ['name' => $this->induk->name, 'doc_no_prefix' => 'IU'])
+            ->assertRedirect();
+        $this->assertSame('K3-F-021', $this->induk->refresh()->kop_formulir['formulir-kesesuaian']['kode']);
+    }
 }

@@ -1179,6 +1179,172 @@ main a{transition:color .16s}
 .brand-gradient{background:linear-gradient(165deg,var(--eq-dasar,#0B1117),
                                            color-mix(in srgb,var(--eq-dasar,#0B1117) 62%,#12403E))}
 
+/* ══════════ Audit SMKP — mode gelap ══════════
+   Aurorasys tidak punya mode gelap; pasangan di bawah memetakan palet
+   slate/navy/biru/teal/hijau ke permukaan gelap EQOHSEE (kartu #141F23,
+   garis #223238, teks #D6DEE2). Hanya di dalam `.smkp-ui`: lembar cetak
+   (`.smkp-cetak`) selalu kertas putih. Komponen yang di-teleport ke
+   <body> (toast galat, panel asisten) membawa `.smkp-ui` sendiri.
+   Ditulis di sini, bukan di app.css: kelas komponennya disusun dengan
+   @apply di app.css, dan Tailwind menolak @apply atas utilitas yang juga
+   muncul sebagai pemilih kustom di berkas yang sama (dependensi
+   melingkar). Daftar warna di bawah disusun dari kelas yang benar-benar
+   dipakai halaman SMKP — ModeGelapTest menjaga tiap pasangannya. */
+:root[data-tema="gelap"] .smkp-ui{ color:#D6DEE2; }
+:root[data-tema="gelap"] .smkp-ui :is(h1, h2, h3, h4){ color:#E8EFF2; }
+:root[data-tema="gelap"] .smkp-ui :is(.kartu, .kartu-pad){ background-color:#141F23; border-color:#223238; box-shadow:none; }
+:root[data-tema="gelap"] .smkp-ui .kartu-kepala{ border-color:#223238; }
+:root[data-tema="gelap"] .smkp-ui .kartu-judul{ color:#E8EFF2; }
+:root[data-tema="gelap"] .smkp-ui .kartu-sub,
+:root[data-tema="gelap"] .smkp-ui .bantu{ color:#93A3AA; }
+:root[data-tema="gelap"] .smkp-ui .btn-utama{ background-color:#235079; }
+:root[data-tema="gelap"] .smkp-ui .btn-utama:hover{ background-color:#2B5F8E; }
+:root[data-tema="gelap"] .smkp-ui .btn-garis{ background-color:#1A272C; border-color:#33474F; color:#D6DEE2; }
+:root[data-tema="gelap"] .smkp-ui .btn-garis:hover{ background-color:#22333A; border-color:#3E545D; }
+:root[data-tema="gelap"] .smkp-ui .btn-hantu{ color:#AEBCC2; }
+:root[data-tema="gelap"] .smkp-ui .btn-hantu:hover{ background-color:#1A272C; color:#E8EFF2; }
+:root[data-tema="gelap"] .smkp-ui .btn-garis-bahaya{ background-color:#241A1A; border-color:#5A2B27; color:#FF9B92; }
+:root[data-tema="gelap"] .smkp-ui .btn-garis-bahaya:hover{ background-color:#2E1F1F; }
+:root[data-tema="gelap"] .smkp-ui .label{ color:#C4D2D7; }
+:root[data-tema="gelap"] .smkp-ui :is(.input, .input-kecil){ background-color:#101A1E; border-color:#26363C; color:#D6DEE2; box-shadow:none; }
+:root[data-tema="gelap"] .smkp-ui :is(.input, .input-kecil)::placeholder{ color:#6B7B83; }
+:root[data-tema="gelap"] .smkp-ui :is(.input, .input-kecil):disabled{ background-color:#0D1417; color:#7E8E96; }
+:root[data-tema="gelap"] .smkp-ui .galat{ color:#FB9AAA; }
+:root[data-tema="gelap"] .smkp-ui .tabel thead th{ background-color:#101A1E; border-color:#223238; color:#93A3AA; }
+:root[data-tema="gelap"] .smkp-ui .tabel tbody td{ border-color:#1C2A2F; }
+:root[data-tema="gelap"] .smkp-ui .tabel-hover tbody tr:hover{ background-color:#1A272C; }
+:root[data-tema="gelap"] .smkp-ui .bilah{ background-color:#223238; }
+:root[data-tema="gelap"] .smkp-ui .eyebrow{ color:#50DFD4; }
+:root[data-tema="gelap"] .smkp-ui .tautan{ color:#7CC5F4; }
+:root[data-tema="gelap"] .smkp-ui .tautan:hover{ color:#B3DDF9; }
+:root[data-tema="gelap"] .smkp-ui .bg-amber-100{background-color:#3A2D12}
+:root[data-tema="gelap"] .smkp-ui .bg-amber-50{background-color:#2A2213}
+:root[data-tema="gelap"] .smkp-ui .bg-amber-50\/60{background-color:#2A2213}
+:root[data-tema="gelap"] .smkp-ui .bg-amber-50\/70{background-color:#2A2213}
+:root[data-tema="gelap"] .smkp-ui .bg-amber-50\/80{background-color:#2A2213}
+:root[data-tema="gelap"] .smkp-ui .bg-brand-50{background-color:#0F2533}
+:root[data-tema="gelap"] .smkp-ui .bg-brand-50\/50{background-color:#0F2533}
+:root[data-tema="gelap"] .smkp-ui .bg-brand-50\/60{background-color:#0F2533}
+:root[data-tema="gelap"] .smkp-ui .bg-brand-50\/70{background-color:#0F2533}
+:root[data-tema="gelap"] .smkp-ui .bg-brand-50\/85{background-color:#0F2533}
+:root[data-tema="gelap"] .smkp-ui .bg-emerald-50{background-color:#12251D}
+:root[data-tema="gelap"] .smkp-ui .bg-emerald-50\/60{background-color:#12251D}
+:root[data-tema="gelap"] .smkp-ui .bg-hijau-50{background-color:#12251D}
+:root[data-tema="gelap"] .smkp-ui .bg-hijau-50\/70{background-color:#12251D}
+:root[data-tema="gelap"] .smkp-ui .bg-navy-50{background-color:#12212E}
+:root[data-tema="gelap"] .smkp-ui .bg-navy-900{background-color:#17406A}
+:root[data-tema="gelap"] .smkp-ui .bg-rose-100{background-color:#3B1D21}
+:root[data-tema="gelap"] .smkp-ui .bg-rose-50{background-color:#2A1618}
+:root[data-tema="gelap"] .smkp-ui .bg-rose-50\/50{background-color:#2A1618}
+:root[data-tema="gelap"] .smkp-ui .bg-rose-50\/60{background-color:#2A1618}
+:root[data-tema="gelap"] .smkp-ui .bg-rose-50\/70{background-color:#2A1618}
+:root[data-tema="gelap"] .smkp-ui .bg-slate-100{background-color:#1A272C}
+:root[data-tema="gelap"] .smkp-ui .bg-slate-200{background-color:#26363C}
+:root[data-tema="gelap"] .smkp-ui .bg-slate-200\/70{background-color:#26363C}
+:root[data-tema="gelap"] .smkp-ui .bg-slate-300{background-color:#33474F}
+:root[data-tema="gelap"] .smkp-ui .bg-slate-50{background-color:#101A1E}
+:root[data-tema="gelap"] .smkp-ui .bg-slate-50\/50{background-color:#101A1E}
+:root[data-tema="gelap"] .smkp-ui .bg-slate-50\/60{background-color:#101A1E}
+:root[data-tema="gelap"] .smkp-ui .bg-slate-50\/70{background-color:#101A1E}
+:root[data-tema="gelap"] .smkp-ui .bg-slate-50\/80{background-color:#101A1E}
+:root[data-tema="gelap"] .smkp-ui .bg-teal-50{background-color:#0F2826}
+:root[data-tema="gelap"] .smkp-ui .bg-teal-50\/40{background-color:#0F2826}
+:root[data-tema="gelap"] .smkp-ui .bg-teal-50\/50{background-color:#0F2826}
+:root[data-tema="gelap"] .smkp-ui .bg-white{background-color:#141F23}
+:root[data-tema="gelap"] .smkp-ui .bg-white\/15{background-color:rgba(20,31,35,.9)}
+:root[data-tema="gelap"] .smkp-ui .bg-white\/80{background-color:rgba(20,31,35,.9)}
+:root[data-tema="gelap"] .smkp-ui .bg-white\/95{background-color:rgba(20,31,35,.9)}
+:root[data-tema="gelap"] .smkp-ui .border-amber-100{border-color:#4A3A18}
+:root[data-tema="gelap"] .smkp-ui .border-amber-200{border-color:#5A4618}
+:root[data-tema="gelap"] .smkp-ui .border-brand-100{border-color:#1D4A66}
+:root[data-tema="gelap"] .smkp-ui .border-brand-200{border-color:#1D4A66}
+:root[data-tema="gelap"] .smkp-ui .border-brand-300{border-color:#22587A}
+:root[data-tema="gelap"] .smkp-ui .border-emerald-100{border-color:#1D4034}
+:root[data-tema="gelap"] .smkp-ui .border-emerald-200{border-color:#1D4034}
+:root[data-tema="gelap"] .smkp-ui .border-hijau-200{border-color:#1D4034}
+:root[data-tema="gelap"] .smkp-ui .border-navy-900{border-color:#2B5F8E}
+:root[data-tema="gelap"] .smkp-ui .border-rose-200{border-color:#4A2226}
+:root[data-tema="gelap"] .smkp-ui .border-slate-100{border-color:#223238}
+:root[data-tema="gelap"] .smkp-ui .border-slate-200{border-color:#223238}
+:root[data-tema="gelap"] .smkp-ui .border-slate-200\/80{border-color:#223238}
+:root[data-tema="gelap"] .smkp-ui .border-slate-300{border-color:#33474F}
+:root[data-tema="gelap"] .smkp-ui .border-teal-100{border-color:#144440}
+:root[data-tema="gelap"] .smkp-ui .decoration-slate-300{text-decoration-color:#5F7078}
+:root[data-tema="gelap"] .smkp-ui .divide-slate-100 > :not([hidden]) ~ :not([hidden]){border-color:#223238}
+:root[data-tema="gelap"] .smkp-ui .divide-slate-200 > :not([hidden]) ~ :not([hidden]){border-color:#223238}
+:root[data-tema="gelap"] .smkp-ui .from-amber-50{--tw-gradient-from:#2A2213 var(--tw-gradient-from-position);--tw-gradient-to:#2A221300 var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}
+:root[data-tema="gelap"] .smkp-ui .from-navy-900{--tw-gradient-from:#17406A var(--tw-gradient-from-position);--tw-gradient-to:#17406A00 var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}
+:root[data-tema="gelap"] .smkp-ui .from-slate-300{--tw-gradient-from:#33474F var(--tw-gradient-from-position);--tw-gradient-to:#33474F00 var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}
+:root[data-tema="gelap"] .smkp-ui .ring-amber-100{--tw-ring-color:#4A3A18}
+:root[data-tema="gelap"] .smkp-ui .ring-amber-200{--tw-ring-color:#5A4618}
+:root[data-tema="gelap"] .smkp-ui .ring-brand-100{--tw-ring-color:#1D4A66}
+:root[data-tema="gelap"] .smkp-ui .ring-emerald-100{--tw-ring-color:#1D4034}
+:root[data-tema="gelap"] .smkp-ui .ring-emerald-200{--tw-ring-color:#1D4034}
+:root[data-tema="gelap"] .smkp-ui .ring-hijau-100{--tw-ring-color:#1D4034}
+:root[data-tema="gelap"] .smkp-ui .ring-rose-100{--tw-ring-color:#4A2226}
+:root[data-tema="gelap"] .smkp-ui .ring-rose-200{--tw-ring-color:#4A2226}
+:root[data-tema="gelap"] .smkp-ui .ring-slate-100{--tw-ring-color:#223238}
+:root[data-tema="gelap"] .smkp-ui .ring-slate-200{--tw-ring-color:#223238}
+:root[data-tema="gelap"] .smkp-ui .text-amber-500{color:#FCD34D}
+:root[data-tema="gelap"] .smkp-ui .text-amber-600{color:#FCD34D}
+:root[data-tema="gelap"] .smkp-ui .text-amber-700{color:#FCD34D}
+:root[data-tema="gelap"] .smkp-ui .text-amber-800{color:#FDE08A}
+:root[data-tema="gelap"] .smkp-ui .text-amber-900{color:#FCE4A6}
+:root[data-tema="gelap"] .smkp-ui .text-brand-500{color:#7CC5F4}
+:root[data-tema="gelap"] .smkp-ui .text-brand-600{color:#7CC5F4}
+:root[data-tema="gelap"] .smkp-ui .text-brand-700{color:#7CC5F4}
+:root[data-tema="gelap"] .smkp-ui .text-emerald-600{color:#6EE7B7}
+:root[data-tema="gelap"] .smkp-ui .text-emerald-700{color:#6EE7B7}
+:root[data-tema="gelap"] .smkp-ui .text-emerald-800{color:#8FEFC8}
+:root[data-tema="gelap"] .smkp-ui .text-hijau-600{color:#6EE7B7}
+:root[data-tema="gelap"] .smkp-ui .text-hijau-700{color:#6EE7B7}
+:root[data-tema="gelap"] .smkp-ui .text-hijau-800{color:#A7F3D0}
+:root[data-tema="gelap"] .smkp-ui .text-navy-700{color:#B9CFE4}
+:root[data-tema="gelap"] .smkp-ui .text-navy-800{color:#E8EFF2}
+:root[data-tema="gelap"] .smkp-ui .text-navy-900{color:#E8EFF2}
+:root[data-tema="gelap"] .smkp-ui .text-red-600{color:#FCA5A5}
+:root[data-tema="gelap"] .smkp-ui .text-rose-500{color:#FB9AAA}
+:root[data-tema="gelap"] .smkp-ui .text-rose-600{color:#FB9AAA}
+:root[data-tema="gelap"] .smkp-ui .text-rose-700{color:#FECDD3}
+:root[data-tema="gelap"] .smkp-ui .text-rose-800{color:#FECDD3}
+:root[data-tema="gelap"] .smkp-ui .text-slate-300{color:#5F7078}
+:root[data-tema="gelap"] .smkp-ui .text-slate-400{color:#7E8E96}
+:root[data-tema="gelap"] .smkp-ui .text-slate-500{color:#93A3AA}
+:root[data-tema="gelap"] .smkp-ui .text-slate-600{color:#AEBCC2}
+:root[data-tema="gelap"] .smkp-ui .text-slate-700{color:#D6DEE2}
+:root[data-tema="gelap"] .smkp-ui .text-slate-800{color:#E8EFF2}
+:root[data-tema="gelap"] .smkp-ui .text-slate-900{color:#E8EFF2}
+:root[data-tema="gelap"] .smkp-ui .text-teal-600{color:#50DFD4}
+:root[data-tema="gelap"] .smkp-ui .text-teal-700{color:#50DFD4}
+:root[data-tema="gelap"] .smkp-ui .text-teal-800{color:#8EECE4}
+:root[data-tema="gelap"] .smkp-ui .to-slate-300{--tw-gradient-to:#33474F var(--tw-gradient-to-position)}
+:root[data-tema="gelap"] .smkp-ui .to-white{--tw-gradient-to:#141F23 var(--tw-gradient-to-position)}
+:root[data-tema="gelap"] .smkp-ui .group:hover .group-hover\:text-brand-500{color:#7CC5F4}
+:root[data-tema="gelap"] .smkp-ui .group:hover .group-hover\:text-brand-600{color:#7CC5F4}
+:root[data-tema="gelap"] .smkp-ui .group:hover .group-hover\:text-brand-700{color:#7CC5F4}
+:root[data-tema="gelap"] .smkp-ui .hover\:bg-amber-100:hover{background-color:#3A2D12}
+:root[data-tema="gelap"] .smkp-ui .hover\:bg-brand-50\/40:hover{background-color:#12324A}
+:root[data-tema="gelap"] .smkp-ui .hover\:bg-emerald-100:hover{background-color:#1A3D30}
+:root[data-tema="gelap"] .smkp-ui .hover\:bg-hijau-100:hover{background-color:#1A3D30}
+:root[data-tema="gelap"] .smkp-ui .hover\:bg-rose-100:hover{background-color:#3B1D21}
+:root[data-tema="gelap"] .smkp-ui .hover\:bg-rose-50:hover{background-color:#2E1F1F}
+:root[data-tema="gelap"] .smkp-ui .hover\:bg-slate-100:hover{background-color:#22333A}
+:root[data-tema="gelap"] .smkp-ui .hover\:bg-slate-200:hover{background-color:#2A3B42}
+:root[data-tema="gelap"] .smkp-ui .hover\:bg-slate-50:hover{background-color:#1A272C}
+:root[data-tema="gelap"] .smkp-ui .hover\:bg-slate-50\/60:hover{background-color:#1A272C}
+:root[data-tema="gelap"] .smkp-ui .hover\:bg-slate-50\/70:hover{background-color:#1A272C}
+:root[data-tema="gelap"] .smkp-ui .hover\:bg-white:hover{background-color:#1A272C}
+:root[data-tema="gelap"] .smkp-ui .hover\:bg-white\/10:hover{background-color:#1A272C}
+:root[data-tema="gelap"] .smkp-ui .hover\:border-brand-300:hover{border-color:#22587A}
+:root[data-tema="gelap"] .smkp-ui .hover\:border-slate-300:hover{border-color:#33474F}
+:root[data-tema="gelap"] .smkp-ui .hover\:border-slate-400:hover{border-color:#3E545D}
+:root[data-tema="gelap"] .smkp-ui .hover\:ring-brand-300:hover{--tw-ring-color:#22587A}
+:root[data-tema="gelap"] .smkp-ui .hover\:text-brand-600:hover{color:#7CC5F4}
+:root[data-tema="gelap"] .smkp-ui .hover\:text-brand-700:hover{color:#7CC5F4}
+:root[data-tema="gelap"] .smkp-ui .hover\:text-navy-900:hover{color:#E8EFF2}
+:root[data-tema="gelap"] .smkp-ui .hover\:text-rose-600:hover{color:#FB9AAA}
+:root[data-tema="gelap"] .smkp-ui .hover\:text-rose-700:hover{color:#FECDD3}
+
 </style>
 
 <style>

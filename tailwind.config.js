@@ -92,6 +92,51 @@ export default {
                     amber:      '#FACC15',  // warning
                     'amber-dark': '#CA9A04',
                 },
+
+                /*
+                 * Palet modul Audit SMKP — dibawa utuh dari Aurorasys, sebab
+                 * halaman dan lembar cetak SMKP adalah porting persis Aurorasys
+                 * (navy · biru · teal · hijau di atas abu slate).
+                 *
+                 * Aman ditambahkan: di luar halaman SMKP tidak ada satu pun
+                 * kelas navy-, brand-, hijau-, teal-, atau cyan- di EQOHSEE
+                 * (diperiksa saat porting). `teal` dan `cyan` menimpa tangga
+                 * bawaan Tailwind dengan nilai Aurorasys. Pasangan mode gelap
+                 * tinggal di resources/views/partials/eq-visual.blade.php (bagian SMKP).
+                 */
+                navy: {
+                    50: '#F0F5FA', 100: '#DCE7F2', 200: '#B9CFE4', 300: '#8AAFCF', 400: '#5786B3',
+                    500: '#356695', 600: '#235079', 700: '#173F63', 800: '#103556', 900: '#0B2D4D', 950: '#071D33',
+                },
+                teal: {
+                    50: '#E8FBF9', 100: '#C5F5F0', 200: '#8EECE4', 300: '#50DFD4', 400: '#1FD1C5',
+                    500: '#00C6BB', 600: '#00A49C', 700: '#00837E', 800: '#066765', 900: '#0B5453',
+                },
+                cyan: {
+                    50: '#E8F8FF', 100: '#C6EEFF', 200: '#8DDDFF', 300: '#4FCBFF', 400: '#1CC2FF',
+                    500: '#00BFFF', 600: '#009AD6', 700: '#0079AB', 800: '#086189', 900: '#0C5070',
+                },
+                brand: {
+                    50: '#EEF8FE', 100: '#D8EEFC', 200: '#B3DDF9', 300: '#7CC5F4', 400: '#3DA8EA',
+                    500: '#1592D6', 600: '#0284C7', 700: '#036AA1', 800: '#075885', 900: '#0C496D',
+                },
+                hijau: {
+                    50: '#ECFDF5', 100: '#D1FAE5', 200: '#A7F3D0', 300: '#6EE7B7', 400: '#34D399',
+                    500: '#10B981', 600: '#059669', 700: '#047857', 800: '#065F46', 900: '#064E3B',
+                },
+            },
+            /* Token bentuk modul Audit SMKP (Aurorasys). */
+            fontSize: {
+                mikro: ['11px', { lineHeight: '16px' }],
+            },
+            borderRadius: {
+                kartu: '14px',
+            },
+            keyframes: {
+                muncul: { '0%': { opacity: 0, transform: 'translateY(6px)' }, '100%': { opacity: 1, transform: 'none' } },
+            },
+            animation: {
+                muncul: 'muncul .35s cubic-bezier(.2,.8,.2,1) both',
             },
             backgroundImage: {
                 'lime-grad':  'linear-gradient(135deg,#DC6E00 0%,#FF9800 100%)',
@@ -108,6 +153,10 @@ export default {
                 // Inilah yang membuat kartu terbaca mahal, bukan blur tebal.
                 lux:  '0 0 0 1px rgba(34,49,47,.05),0 2px 4px rgba(34,49,47,.04),0 24px 60px -28px rgba(34,49,47,.34)',
                 'coral-glow': '0 10px 36px -14px rgba(255,127,80,.55)',
+                /* Modul Audit SMKP (Aurorasys). */
+                kartu:  '0 1px 2px rgba(11,45,77,.05), 0 1px 1px rgba(11,45,77,.03)',
+                angkat: '0 16px 40px -16px rgba(11,45,77,.28), 0 2px 6px -2px rgba(11,45,77,.08)',
+                cahaya: '0 1px 2px rgba(11,45,77,.12)',
             },
         },
     },
