@@ -69,9 +69,7 @@ final class Keadaan
            sedang direncanakan. Dinilai terhadap hari ini saja,
            penyusunnya mendapati seluruh baris hijau lalu menerbitkan
            jadwal yang separuhnya tidak boleh dijalankan. */
-        $acuan = ($pada ?? \App\Support\Waktu::kini())->copy()->startOfDay();
-
-        $sisa = (int) $acuan->diffInDays($habis, false);
+        $sisa = \App\Support\Waktu::sisaHari($habis, $pada);
 
         if ($sisa < 0)        return self::HABIS;
         if ($sisa <= $ambang) return self::MENDEKATI;

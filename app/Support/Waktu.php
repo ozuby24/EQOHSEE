@@ -29,6 +29,27 @@ final class Waktu
         return Carbon::now(self::zona());
     }
 
+    /**
+     * Selisih HARI KALENDER dari $pada (bawaan: hari ini, waktu tambang)
+     * ke sebuah tanggal; negatif bila sudah lewat, null bila kosong.
+     *
+     * Dibandingkan sebagai TANGGAL, bukan saat. Kolom DATE terbaca sebagai
+     * tengah malam UTC, sedangkan "hari ini" tengah malam WITA — selisih
+     * delapan jam itu membuat `diffInDays()` menjawab −0,67 untuk tanggal
+     * KEMARIN, yang terpangkas menjadi 0: kartu yang habis kemarin
+     * terbaca "habis hari ini" dan masih dianggap berlaku sehari lagi.
+     */
+    public static function sisaHari(\DateTimeInterface|string|null $tanggal, ?Carbon $pada = null): ?int
+    {
+        if ($tanggal === null || $tanggal === '' || $tanggal === '0000-00-00') return null;
+
+        $zona  = self::zona();
+        $acuan = Carbon::parse(($pada ?? self::kini())->copy()->setTimezone($zona)->toDateString(), $zona);
+        $teks  = $tanggal instanceof \DateTimeInterface ? $tanggal->format('Y-m-d') : substr((string) $tanggal, 0, 10);
+
+        return (int) round($acuan->diffInDays(Carbon::parse($teks, $zona), false));
+    }
+
 /**
      * Sebuah waktu disiapkan untuk DISIMPAN — selalu UTC.
      *

@@ -165,9 +165,7 @@ class McuOrang extends Model
     /** Sisa hari sampai habis; negatif berarti sudah lewat. */
     public function sisaHari(): ?int
     {
-        return $this->berlaku_sampai === null
-            ? null
-            : (int) Waktu::kini()->startOfDay()->diffInDays($this->berlaku_sampai, false);
+        return Waktu::sisaHari($this->berlaku_sampai);
     }
 
     /** Sudah masuk ambang pengingat SOP — dua minggu sebelum berakhir. */

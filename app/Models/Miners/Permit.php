@@ -178,16 +178,12 @@ class Permit extends Model
 
         $habis = $this->habisEfektif();
 
-        return $habis === null || $habis->gte(Waktu::kini()->startOfDay());
+        return $habis === null || Waktu::sisaHari($habis) >= 0;
     }
 
     public function sisaHari(): ?int
     {
-        $habis = $this->habisEfektif();
-
-        return $habis === null
-            ? null
-            : (int) Waktu::kini()->startOfDay()->diffInDays($habis, false);
+        return Waktu::sisaHari($this->habisEfektif());
     }
 
     /* ═══════════ nomor ═══════════ */

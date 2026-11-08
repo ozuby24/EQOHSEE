@@ -55,14 +55,14 @@ final class RincianDokumen
     /**
      * Alamat rincian sebuah dokumen — untuk surel dan daftar antrean.
      *
-     * Pengajuan lanjutan SIMPER dan perpanjangan Mine Permit belum punya
-     * halaman rinciannya sendiri; keduanya diarahkan ke kartu induknya.
+     * Pengajuan lanjutan SIMPER belum punya halaman rinciannya sendiri;
+     * ia diarahkan ke kartu induknya.
      */
     public static function tautan(object $d): string
     {
         return match ($d::jenisDokumen()) {
             'ajuan'               => '/miners/simper/'.$d->simper_id,
-            'perpanjangan_permit' => '/miners/permit/'.$d->permit_id,
+            'perpanjangan_permit' => '/miners/perpanjangan-permit/'.$d->getKey(),
             default               => (self::DAFTAR[$d::jenisDokumen()] ?? '/miners').'/'.$d->getKey(),
         };
     }

@@ -65,19 +65,20 @@ final class SinkronMasaBerlaku
     /** Aturan 2. @return array{expired:int,pulih:int} */
     public static function tandaiPermit(): array
     {
-        $hari = Waktu::kini()->startOfDay();
         $hasil = ['expired' => 0, 'pulih' => 0];
 
         Permit::withoutGlobalScopes()->with('mcuOrang')
             ->where('aktif', true)->whereIn('status', Permit::TERBIT)
-            ->chunkById(500, function ($permit) use ($hari, &$hasil) {
+            ->chunkById(500, function ($permit) use (&$hasil) {
                 foreach ($permit as $p) {
                     $habis = $p->habisEfektif();
 
-                    if ($p->status === 'terbit' && $habis && $habis->lt($hari)) {
+                    $sisa = Waktu::sisaHari($habis);
+
+                    if ($p->status === 'terbit' && $sisa !== null && $sisa < 0) {
                         $p->forceFill(['status' => 'kedaluwarsa'])->save();
                         $hasil['expired']++;
-                    } elseif ($p->status === 'kedaluwarsa' && $habis && $habis->gte($hari)) {
+                    } elseif ($p->status === 'kedaluwarsa' && $sisa !== null && $sisa >= 0) {
                         $p->forceFill(['status' => 'terbit'])->save();
                         $hasil['pulih']++;
                     }

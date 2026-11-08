@@ -150,19 +150,22 @@ class RincianDokumenMinersTest extends TestCase
             'kelas' => array_key_first(Simper::KELAS), 'status' => 'diajukan',
         ]);
 
+        /* MCU, induksi, dan Mine Permit punya halaman rinciannya sendiri
+           — susunan layar detail Safe Track masing-masing; SIMPER masih
+           memakai halaman rincian bersama. Keempatnya membawa alur. */
         $alamat = [
-            "/miners/mcu/{$this->mcu()->id}",
-            "/miners/induksi/{$induksi->id}",
-            "/miners/permit/{$permit->id}",
-            "/miners/simper/{$simper->id}",
+            "/miners/mcu/{$this->mcu()->id}"    => ['Miners/McuRincian', 'mcu'],
+            "/miners/induksi/{$induksi->id}"    => ['Miners/InduksiRincian', 'induksi'],
+            "/miners/permit/{$permit->id}"      => ['Miners/PermitRincian', 'permit'],
+            "/miners/simper/{$simper->id}"      => ['Miners/Dokumen', 'rincian'],
         ];
 
-        foreach ($alamat as $a) {
+        foreach ($alamat as $a => [$komponen, $isi]) {
             $this->get($a)
                 ->assertOk()
                 ->assertInertia(fn (AssertableInertia $p) => $p
-                    ->component('Miners/Dokumen')
-                    ->has('rincian')
+                    ->component($komponen)
+                    ->has($isi)
                     ->has('alur'));
         }
     }
@@ -185,38 +188,35 @@ class RincianDokumenMinersTest extends TestCase
     }
 
     /**
-     * Rincian permit menyebut tanggal efektif HANYA bila ia berbeda.
-     *
-     * Selalu ditampilkan, baris itu menjadi baris yang diabaikan.
-     * Ditampilkan hanya saat berbeda, ia justru menjawab pertanyaan
-     * yang muncul — kenapa kartu yang tertulis berlaku sampai Desember
-     * sudah tidak berlaku hari ini.
+     * Masa berlaku Mine Permit di layar rincian MENGIKUTI MCU-nya —
+     * aturan Safe Track — beserta sumbernya; kunci manual dibaca dari
+     * kolomnya sendiri.
      */
-    public function test_tanggal_efektif_muncul_hanya_bila_berbeda(): void
+    public function test_masa_berlaku_rincian_mengikuti_mcu(): void
     {
         $this->actingAs($this->pengguna(['is_admin' => true]));
 
         $permit = $this->permit();
-        $permit->forceFill(['berlaku_sampai' => now()->addYear()->toDateString()])->save();
 
-        $label = fn (string $url) => collect(
-            $this->get($url)->viewData('page')['props']['rincian'] ?? []
-        )->pluck('label')->all();
-
-        $this->assertNotContains('Efektif habis', $label("/miners/permit/{$permit->id}"),
-            'Tanggal efektif tampil padahal sama dengan yang tercetak.');
-
-        /* MCU yang habis lebih dahulu memotong masa berlaku kartunya. */
         $orang = McuOrang::create([
             'mcu_id' => $this->mcu()->id, 'pekerja_id' => $permit->pekerja_id,
             'nama' => 'Pekerja Uji', 'aktif' => true,
             'tanggal_periksa' => now()->subMonths(11)->toDateString(),
             'berlaku_sampai'  => now()->addMonth()->toDateString(),
         ]);
-        $permit->forceFill(['mcu_orang_id' => $orang->id])->save();
+        $permit->forceFill(['mcu_orang_id' => $orang->id, 'sumber_berlaku' => 'mcu',
+            'berlaku_sampai' => now()->addYear()->toDateString()])->save();
 
-        $this->assertContains('Efektif habis', $label("/miners/permit/{$permit->id}"),
-            'Kartu yang dipotong MCU tidak menyebutkan tanggal efektifnya.');
+        $props = fn () => $this->get("/miners/permit/{$permit->id}")->viewData('page')['props']['permit'];
+
+        $this->assertSame(now()->addMonth()->toDateString(), $props()['berlaku'],
+            'Kartu yang mengikuti MCU masih membaca salinan tanggalnya yang basi.');
+        $this->assertSame('ikut MCU', $props()['sumber']);
+
+        $permit->forceFill(['sumber_berlaku' => 'manual'])->save();
+
+        $this->assertSame(now()->addYear()->toDateString(), $props()['berlaku']);
+        $this->assertSame('dikunci manual', $props()['sumber']);
     }
 
     /**
@@ -372,12 +372,12 @@ class RincianDokumenMinersTest extends TestCase
         $orang->forceFill(['berkas_hasil' => 'miners/mcu/ada.pdf'])->save();
 
         $props = $this->get("/miners/mcu/{$surat->id}")->viewData('page')['props'];
-        $berkas = collect($props['orang'][0]['berkas'])->keyBy('jenis');
+        $berkas = $props['orang'][0]['berkas'];
 
-        $this->assertTrue($berkas['mnh']['ada']);
-        $this->assertNotNull($berkas['mnh']['url']);
-        $this->assertFalse($berkas['mnk']['ada'], 'Lampiran yang belum ada dilaporkan ada.');
-        $this->assertNull($berkas['mnk']['url']);
+        $this->assertTrue($berkas['hasil']['ada']);
+        $this->assertNotNull($berkas['hasil']['url']);
+        $this->assertFalse($berkas['rujukan']['ada'], 'Lampiran yang belum ada dilaporkan ada.');
+        $this->assertNull($berkas['rujukan']['url']);
     }
 
     /** Pengguna tanpa hak melihat lampiran medis sebagai "ada tanpa alamat". */
@@ -390,11 +390,11 @@ class RincianDokumenMinersTest extends TestCase
         $this->actingAs($this->pengguna());
 
         $props = $this->get("/miners/mcu/{$surat->id}")->viewData('page')['props'];
-        $berkas = collect($props['orang'][0]['berkas'])->keyBy('jenis');
+        $berkas = $props['orang'][0]['berkas'];
 
-        $this->assertTrue($berkas['mnh']['ada'],
+        $this->assertTrue($berkas['hasil']['ada'],
             'Berkasnya ada; yang tidak boleh hanya membukanya.');
-        $this->assertNull($berkas['mnh']['url'],
+        $this->assertNull($berkas['hasil']['url'],
             'Alamat lampiran medis bocor ke pengguna tanpa hak.');
     }
 
@@ -600,7 +600,8 @@ class RincianDokumenMinersTest extends TestCase
 
         $props = $this->get("/miners/permit/{$permit->id}")->viewData('page')['props'];
 
-        $this->assertNotEmpty($props['wajib']);
-        $this->assertArrayHasKey('ada', $props['wajib'][0]);
+        $this->assertSame(['spdk', 'induksi-khusus', 'loto'], array_column($props['lampiran'], 'kunci'));
+        $this->assertArrayHasKey('ada', $props['lampiran'][0]);
+        $this->assertSame(['SPDK'], $props['kurang']);
     }
 }

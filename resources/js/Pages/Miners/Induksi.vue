@@ -1,261 +1,151 @@
 <script setup lang="ts">
 /**
- * Induksi keselamatan dan nilai post test-nya.
- *
- * NILAI DICATAT PER ORANG, dan tiap pencatatan ULANG menambah hitungan
- * percobaan. Pembedaan itu penting: memperbaiki salah ketik pada nilai
- * tidak boleh menghabiskan jatah remidi orangnya, sedangkan ujian
- * kedua memang harus terhitung.
+ * Data Master Induksi — `master_induction_user` (Register: "Induksi
+ * Table" dengan "+ Add Induksi") dan `master_induction_admin` (History:
+ * rentang tanggal + Export) Safe Track.
  */
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { propHalaman } from '../../halaman';
-import Dialog from '../../Components/Dialog.vue';
-import { useDialog } from '../../dialog';
-import Lencana from './Lencana.vue';
-import Langkah from './Langkah.vue';
+import KepalaHalaman from '../../Components/Miners/KepalaHalaman.vue';
+import Kartu from '../../Components/Miners/Kartu.vue';
+import Halaman from '../../Components/Miners/Halaman.vue';
+import LencanaStatus from '../../Components/Miners/LencanaStatus.vue';
+import TombolIkon from '../../Components/Miners/TombolIkon.vue';
+import Modal from '../../Components/Miners/Modal.vue';
+import Medan from '../../Components/Miners/Medan.vue';
+import { tglId } from '../../Components/Miners/zona';
 
 const props = propHalaman();
-const { dialog, tanya, batal, lanjut } = useDialog();
 
-const baris = computed<any[]>(() => (props.baris ?? []) as any[]);
-const buka  = ref<number | null>(null);
+const register = computed(() => props.mode === 'register');
+const halaman = computed<any>(() => props.baris ?? { data: [], links: [], from: 1, total: 0 });
+const alamat = computed(() => (register.value ? '/miners/induksi' : '/miners/riwayat/induksi'));
 
-const jadwal = useForm({ no_registrasi: '', tanggal: '', perihal: '' });
+const cari = ref(String(props.saring?.cari ?? ''));
+const dari = ref('');
+const sampai = ref('');
 
-function simpanJadwal() {
-  jadwal.post('/miners/induksi', { preserveScroll: true, onSuccess: () => jadwal.reset() });
+function telusuri() {
+  router.get(alamat.value, cari.value ? { cari: cari.value } : {}, { preserveState: true, preserveScroll: true });
 }
 
-const tambah = useForm({ pekerja_id: '' });
+const urlEkspor = computed(() => {
+  const q = new URLSearchParams({ mode: String(props.mode) });
+  if (dari.value) q.set('dari', dari.value);
+  if (sampai.value) q.set('sampai', sampai.value);
+  return `/miners/induksi/ekspor?${q.toString()}`;
+});
 
-function tambahOrang(id: number) {
-  tambah.post(`/miners/induksi/${id}/orang`, { preserveScroll: true, onSuccess: () => tambah.reset() });
+const terbuka = ref(false);
+const form = useForm({ tanggal: '', perihal: '', berkas_permohonan: null as File | null });
+
+function tambah() {
+  form.reset();
+  form.clearErrors();
+  form.tanggal = String(props.hariIni ?? '');
+  terbuka.value = true;
 }
 
-const nilai = useForm<{
-  nilai: string; lokasi: string; catatan: string;
-  berkas_sertifikat: File | null; berkas_hadir: File | null;
-}>({ nilai: '', lokasi: '', catatan: '', berkas_sertifikat: null, berkas_hadir: null });
-
-/* Ditulis sekali, dipakai baris tabel dan medan unggahnya. */
-const berkasInduksi = [
-  { kunci: 'sertifikat', medan: 'berkas_sertifikat', label: 'Sertifikat' },
-  { kunci: 'hadir',      medan: 'berkas_hadir',      label: 'Daftar hadir' },
-] as const;
-
-function berkasNilai(medan: 'berkas_sertifikat' | 'berkas_hadir', e: Event) {
-  nilai[medan] = (e.target as HTMLInputElement).files?.[0] ?? null;
+function simpan() {
+  form.post('/miners/induksi', { forceFormData: true, preserveScroll: true, onSuccess: () => { terbuka.value = false; } });
 }
 
-function simpanNilai(induksiId: number, orangId: number) {
-  /* forceFormData: tanpa itu Inertia mengirim JSON dan objek File
-     menjadi `{}` di sisi server — permintaannya berhasil, nilainya
-     tersimpan, dan hanya berkasnya yang diam-diam hilang. */
-  nilai.post(`/miners/induksi/${induksiId}/orang/${orangId}/nilai`, {
-    forceFormData: true,
-    preserveScroll: true, onSuccess: () => nilai.reset(),
-  });
+const hapusTerbuka = ref<any>(null);
+const hapusForm = useForm({});
+function hapus() {
+  hapusForm.delete(`/miners/induksi/${hapusTerbuka.value.id}`, { preserveScroll: true, onFinish: () => { hapusTerbuka.value = null; } });
 }
-
-const tindakan = useForm({ keadaan: 'setuju', catatan: '' });
-
-function tindak(id: number, keadaan: string) {
-  tindakan.keadaan = keadaan;
-  tindakan.post(`/miners/induksi/${id}/tindak`, { preserveScroll: true });
-}
-
-async function hapusJadwal(id: number, nomor: string) {
-  if (!await tanya(`Hapus jadwal induksi ${nomor || 'ini'} beserta seluruh nilainya?`)) return;
-
-  useForm({}).delete(`/miners/induksi/${id}`, { preserveScroll: true });
-}
-
-const bolehTindak = computed(() =>
-  ((props.peranSaya ?? []) as string[]).some((p) => p !== 'pengaju'));
 </script>
 
 <template>
-  <Head :title="props.judul" />
-  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
+  <div>
+    <KepalaHalaman :judul="props.judul" :remah="[['Home', '/miners/dasbor'], [register ? 'Register' : 'History', null], ['Induction', null]]" />
 
-  <div class="space-y-5">
-    <section>
-      <p class="text-[12.5px] text-stone-500 mt-0.5">
-        {{ props.subjudul }} Ambang kelulusan {{ props.NILAI_LULUS }}, paling banyak
-        {{ props.MAKS_PERCOBAAN }} kali ujian.
-      </p>
-    </section>
+    <div v-if="props.errors?.hapus" class="mn-alert mn-alert-bahaya" role="alert">{{ props.errors.hapus }}</div>
 
-    <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
-      <h3 class="text-[13.5px] font-bold text-cam-ink mb-3">Jadwal induksi baru</h3>
-
-      <form class="grid gap-3 sm:grid-cols-3" @submit.prevent="simpanJadwal">
-        <label class="block">
-          <span class="block text-[11px] text-stone-500">Nomor</span>
-          <input v-model="jadwal.no_registrasi" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-        </label>
-
-        <label class="block">
-          <span class="block text-[11px] text-stone-500">Tanggal</span>
-          <input v-model="jadwal.tanggal" type="date" required
-                 class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-        </label>
-
-        <label class="block">
-          <span class="block text-[11px] text-stone-500">Perihal</span>
-          <input v-model="jadwal.perihal" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-        </label>
-
-        <div class="sm:col-span-3">
-          <button type="submit" class="eq-btn-utama" :disabled="jadwal.processing">Buat jadwal</button>
-        </div>
-      </form>
-    </section>
-
-    <section v-for="i in baris" :key="i.id"
-             class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
-      <header class="px-5 py-3.5 border-b border-stone-100 flex flex-wrap items-center gap-3">
-        <div class="flex-1 min-w-0">
-          <h3 class="text-[13.5px] font-bold text-cam-ink">
-            <Link :href="`/miners/induksi/${i.id}`" class="text-cam-lime-deep hover:underline">
-              {{ i.nomor || 'Tanpa nomor' }}
-            </Link>
-          </h3>
-          <p class="text-[11px] text-stone-500 num">
-            {{ i.tanggal || '—' }} · {{ props.STATUS?.[i.status] ?? i.status }}
-          </p>
-        </div>
-
-        <button class="eq-btn-lain" @click="buka = buka === i.id ? null : i.id">
-          {{ buka === i.id ? 'Tutup' : 'Kelola' }}
-        </button>
-      </header>
-
-      <div class="px-5 py-3 border-b border-stone-100">
-        <Langkah :alur="i.alur" />
+    <Kartu :judul="register ? 'Induksi Table' : undefined">
+      <div v-if="register" class="mb-4">
+        <button type="button" class="mn-btn mn-btn-gelap" @click="tambah">+ Add Induksi</button>
       </div>
 
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-left text-[11.5px]">
+      <div class="mb-3 grid gap-2">
+        <div v-if="!register" class="mn-alat">
+          <input v-model="dari" type="date" class="mn-isian" title="Dari tanggal" aria-label="Dari tanggal">
+          <input v-model="sampai" type="date" class="mn-isian" title="Sampai tanggal" aria-label="Sampai tanggal">
+          <a :href="urlEkspor" class="mn-btn mn-btn-bahaya">Export</a>
+        </div>
+        <form class="mn-alat-cari" @submit.prevent="telusuri">
+          <input v-model="cari" class="mn-isian" placeholder="search.." aria-label="Cari nomor atau judul">
+          <button type="submit" class="mn-btn mn-btn-utama">search</button>
+        </form>
+      </div>
+
+      <div class="mn-gulir">
+        <table class="mn-tabel">
           <thead>
-            <tr class="text-stone-400 border-b border-stone-200 bg-stone-50/70">
-              <th class="px-4 py-2 font-semibold">Peserta</th>
-              <th class="px-4 py-2 font-semibold text-right">Nilai</th>
-              <th class="px-4 py-2 font-semibold text-right">Percobaan</th>
-              <th class="px-4 py-2 font-semibold whitespace-nowrap">Berlaku sampai</th>
-              <th class="px-4 py-2 font-semibold">Berkas</th>
-              <th class="px-4 py-2 font-semibold">Keadaan</th>
-              <th v-if="buka === i.id" class="px-4 py-2 font-semibold"></th>
+            <tr>
+              <th style="width:42px">No</th>
+              <th>Tanggal</th>
+              <th>No Registrasi</th>
+              <th>Title</th>
+              <th>Form Pengajuan</th>
+              <th>Status</th>
+              <th>Creator</th>
+              <th v-if="register">#</th>
             </tr>
           </thead>
-
           <tbody>
-            <tr v-for="o in i.orang" :key="o.id" class="border-b border-stone-100">
-              <td class="px-4 py-2.5">
-                <Link v-if="o.pekerja_id" :href="`/miners/${o.pekerja_id}`"
-                      class="font-semibold text-cam-lime-deep hover:underline">{{ o.nama || '—' }}</Link>
-                <span v-else class="font-semibold text-cam-ink">{{ o.nama || '—' }}</span>
+            <tr v-for="(b, i) in halaman.data" :key="b.id">
+              <td>{{ (halaman.from ?? 1) + i }}</td>
+              <td>{{ tglId(b.tanggal) }}</td>
+              <td><Link :href="`/miners/induksi/${b.id}`" class="mn-tautan">{{ b.nomor || 'tanpa nomor' }}</Link></td>
+              <td style="max-width:240px">{{ b.perihal || '—' }}<div class="mn-redup" style="font-size:11px">{{ b.peserta }} peserta</div></td>
+              <td>
+                <a v-if="b.permohonan?.url" :href="b.permohonan.url" target="_blank" rel="noopener" class="mn-tautan">unduh</a>
+                <span v-else class="mn-redup">—</span>
               </td>
-              <td class="px-4 py-2.5 num text-right" :class="o.lulus ? '' : 'text-red-600 font-semibold'">
-                {{ o.nilai ?? '—' }}
-              </td>
-              <td class="px-4 py-2.5 num text-right">
-                {{ o.percobaan }}
-                <span v-if="!o.lulus && !o.bolehUlang" class="text-red-600"> · habis</span>
-              </td>
-              <td class="px-4 py-2.5 num">{{ o.sampai || '—' }}</td>
-
-              <td class="px-4 py-2.5">
-                <div class="flex flex-wrap gap-x-2">
-                  <a v-for="b in berkasInduksi" :key="b.kunci"
-                     v-show="o.berkas?.[b.kunci]?.url" :href="o.berkas?.[b.kunci]?.url"
-                     target="_blank" rel="noopener"
-                     class="text-cam-lime-deep hover:underline">{{ b.label }}</a>
-
-                  <span v-if="!berkasInduksi.some(b => o.berkas?.[b.kunci]?.ada)"
-                        class="text-stone-300">—</span>
-                </div>
-              </td>
-
-              <td class="px-4 py-2.5">
-                <Lencana :keadaan="o.keadaan" :label="props.KEADAAN?.[o.keadaan]" :nada="props.NADA" />
-              </td>
-
-              <td v-if="buka === i.id" class="px-4 py-2.5">
-                <form class="space-y-2" @submit.prevent="simpanNilai(i.id, o.id)">
-                  <div class="flex flex-wrap items-end gap-2">
-                    <input v-model="nilai.nilai" type="number" min="0" max="100" required
-                           placeholder="Nilai" class="w-20 rounded-lg border-stone-200 text-[11px]"
-                           aria-label="Nilai post test">
-                    <input v-model="nilai.lokasi" placeholder="Lokasi"
-                           class="w-32 rounded-lg border-stone-200 text-[11px]" aria-label="Lokasi induksi">
-                    <button type="submit" class="eq-btn-lain">Simpan</button>
-                  </div>
-
-                  <!-- Berkas pada barisnya sendiri: kotak "Choose File"
-                       yang membungkus di tengah flex-wrap membuat tombol
-                       Simpan berpindah menurut panjang nama berkas. -->
-                  <div class="flex flex-wrap gap-x-3 gap-y-1 border-t border-stone-100 pt-2">
-                    <label v-for="b in berkasInduksi" :key="b.medan"
-                           class="flex flex-col text-[10px] text-stone-500">
-                      {{ b.label }}
-                      <input type="file" class="text-[10.5px] max-w-[11rem]"
-                             @change="berkasNilai(b.medan, $event)">
-                    </label>
-                  </div>
-
-                  <p v-if="nilai.errors.berkas_sertifikat || nilai.errors.berkas_hadir"
-                     class="text-[10.5px] text-red-600">
-                    {{ nilai.errors.berkas_sertifikat || nilai.errors.berkas_hadir }}
-                  </p>
-                </form>
+              <td><LencanaStatus :status="b.status" /></td>
+              <td>{{ b.oleh || '—' }}</td>
+              <td v-if="register">
+                <TombolIkon v-if="b.bolehHapus" ikon="hapus" varian="bahaya" judul="Hapus pengajuan induksi" @click="hapusTerbuka = b" />
               </td>
             </tr>
-
-            <tr v-if="!i.orang?.length">
-              <td :colspan="buka === i.id ? 7 : 6" class="px-4 py-6 text-center text-stone-400">
-                Belum ada peserta.
-              </td>
+            <tr v-if="!halaman.data.length">
+              <td :colspan="register ? 8 : 7" class="mn-kosong">Tidak ada pengajuan induksi.</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <footer v-if="buka === i.id" class="px-5 py-4 border-t border-stone-100 space-y-3">
-        <form class="flex flex-wrap items-end gap-2" @submit.prevent="tambahOrang(i.id)">
-          <label class="block">
-            <span class="block text-[11px] text-stone-500">Tambah peserta</span>
-            <select v-model="tambah.pekerja_id" required
-                    class="mt-1 rounded-lg border-stone-200 text-[12px] w-64">
-              <option value="">Pilih pekerja…</option>
-              <option v-for="pk in (props.pekerja ?? [])" :key="pk.id" :value="pk.id">
-                {{ pk.nama }} — {{ pk.nik || 'tanpa NIK' }}
-              </option>
-            </select>
-          </label>
+      <Halaman v-if="halaman.links?.length > 3" :tautan="halaman.links" />
+    </Kartu>
 
-          <button type="submit" class="eq-btn-lain">Tambahkan</button>
-        </form>
+    <Modal :terbuka="terbuka" judul="Add Induksi" @tutup="terbuka = false">
+      <form class="mn-form" @submit.prevent="simpan">
+        <Medan label="Tanggal Pengajuan" untuk="i-tgl" wajib :galat="form.errors.tanggal">
+          <input id="i-tgl" v-model="form.tanggal" type="date" class="mn-isian" readonly>
+        </Medan>
+        <Medan label="File Permohonan" untuk="i-berkas" wajib :galat="form.errors.berkas_permohonan">
+          <input id="i-berkas" type="file" class="mn-isian" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+                 @change="form.berkas_permohonan = ($event.target as HTMLInputElement).files?.[0] ?? null">
+        </Medan>
+        <Medan label="Title" untuk="i-title" wajib :galat="form.errors.perihal" penuh>
+          <input id="i-title" v-model="form.perihal" class="mn-isian" maxlength="500" placeholder="Permohonan Induksi Karyawan Baru" required>
+        </Medan>
+      </form>
+      <template #kaki>
+        <button type="button" class="mn-btn mn-btn-garis" @click="terbuka = false">Close</button>
+        <button type="button" class="mn-btn mn-btn-utama" :disabled="form.processing" @click="simpan">Save</button>
+      </template>
+    </Modal>
 
-        <div v-if="bolehTindak" class="flex flex-wrap items-end gap-2">
-          <input v-model="tindakan.catatan" placeholder="Catatan peninjau (opsional)"
-                 class="rounded-lg border-stone-200 text-[12px] w-72" aria-label="Catatan peninjau">
-          <button class="eq-btn-utama" @click="tindak(i.id, 'setuju')">Setujui</button>
-          <button class="eq-btn-lain" @click="tindak(i.id, 'dikembalikan')">Kembalikan</button>
-          <button class="eq-btn-lain" @click="tindak(i.id, 'tolak')">Tolak</button>
-        </div>
-
-        <p v-if="tindakan.errors.keadaan" class="text-[11.5px] text-red-600">{{ tindakan.errors.keadaan }}</p>
-
-        <button class="text-[11.5px] text-red-600 hover:underline" @click="hapusJadwal(i.id, i.nomor)">
-          Hapus jadwal ini
-        </button>
-      </footer>
-    </section>
-
-    <p v-if="!baris.length" class="rounded-2xl bg-white border border-stone-100 shadow-card px-5 py-10 text-center text-stone-400">
-      Belum ada jadwal induksi.
-    </p>
+    <Modal :terbuka="hapusTerbuka !== null" judul="Hapus pengajuan induksi" @tutup="hapusTerbuka = null">
+      <p class="text-[13px]">Hapus pengajuan <b>{{ hapusTerbuka?.nomor }}</b> beserta pesertanya?</p>
+      <template #kaki>
+        <button type="button" class="mn-btn mn-btn-garis" @click="hapusTerbuka = null">Close</button>
+        <button type="button" class="mn-btn mn-btn-bahaya" :disabled="hapusForm.processing" @click="hapus">Hapus</button>
+      </template>
+    </Modal>
   </div>
 </template>

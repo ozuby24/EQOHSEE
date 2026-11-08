@@ -1,268 +1,341 @@
 <script setup lang="ts">
 /**
- * Mine Permit — kartu yang dibawa ke gerbang.
+ * Mine Permit — `master_permit_users` (Register, v11: "Masa Berlaku Mine
+ * Permit Saya" + "+ add Permit") dan `master_permit_admin` (History, v04:
+ * rekap per perusahaan, Export, "Sinkronkan dari MCU", masa berlaku dan
+ * status per baris) Safe Track.
  *
- * MASA BERLAKU EFEKTIF DITAMPILKAN BERDAMPINGAN dengan tanggal kartunya.
- * Keduanya berbeda persis pada kartu yang paling perlu diperhatikan:
- * yang tanggalnya masih 31 Desember tetapi MCU-nya sudah lewat. Hanya
- * menampilkan tanggal kartunya membuat kartu itu terbaca sah — dan
- * yang membacanya adalah petugas pos.
+ * Masa berlaku tiap kartu MENGIKUTI MCU-nya (atau dikunci admin, atau
+ * hasil perpanjangan) — sumbernya tercetak di bawah lencananya.
  */
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { propHalaman } from '../../halaman';
-import Dialog from '../../Components/Dialog.vue';
-import { useDialog } from '../../dialog';
-import Lencana from './Lencana.vue';
-import Langkah from './Langkah.vue';
+import KepalaHalaman from '../../Components/Miners/KepalaHalaman.vue';
+import ZonaMasaBerlaku from '../../Components/Miners/ZonaMasaBerlaku.vue';
+import SaringBar from '../../Components/Miners/SaringBar.vue';
+import RekapPerusahaan from '../../Components/Miners/RekapPerusahaan.vue';
+import TabelData from '../../Components/Miners/TabelData.vue';
+import LencanaMasaBerlaku from '../../Components/Miners/LencanaMasaBerlaku.vue';
+import LencanaStatus from '../../Components/Miners/LencanaStatus.vue';
+import TombolIkon from '../../Components/Miners/TombolIkon.vue';
+import Modal from '../../Components/Miners/Modal.vue';
+import Medan from '../../Components/Miners/Medan.vue';
+import { tglId, URUTAN_ZONA, ZONA, type MedanSaring } from '../../Components/Miners/zona';
 
 const props = propHalaman();
-const { dialog, tanya, batal, lanjut } = useDialog();
 
-const baris = computed<any[]>(() => (props.baris ?? []) as any[]);
-const buka  = ref<number | null>(null);
+const register = computed(() => props.mode === 'register');
+const alamat = computed(() => (register.value ? '/miners/permit' : '/miners/riwayat/mine-permit'));
+const halaman = computed<any>(() => props.baris ?? { data: [], links: [], from: 1, total: 0 });
+const perusahaan = computed<any[]>(() => (props.perusahaan ?? []) as any[]);
+const pilihan = computed<any>(() => props.pilihan ?? {});
+const calon = computed<any[]>(() => (props.calon ?? []) as any[]);
 
-const cari   = ref(String(props.saring?.cari ?? ''));
-const status = ref(String(props.saring?.status ?? ''));
+/* ─────────── saringan ─────────── */
 
-const buat = useForm({
-  pekerja_id: '', no_registrasi: '', tanggal: '',
-  tipe_permit_id: '', kategori_permit_id: '', cakupan_area: '', kode_warna: '',
+const saring = ref<Record<string, string>>({ ...(props.saring ?? {}) });
+
+const medanSaring = computed<MedanSaring[]>(() => [
+  { kunci: 'cari', label: 'Cari', placeholder: 'Nama, No ID, atau nomor dokumen', lebar: true },
+  { kunci: 'perusahaan', label: 'Perusahaan', jenis: 'pilih', semua: 'Semua perusahaan', opsi: perusahaan.value, lebar: true },
+  { kunci: 'zona', label: 'Zona masa berlaku', jenis: 'pilih', semua: 'Semua zona',
+    opsi: URUTAN_ZONA.map((z) => ({ nilai: z, label: ZONA[z].pendek })) },
+]);
+
+function terapkan() {
+  const q: Record<string, string> = {};
+  for (const [k, v] of Object.entries(saring.value)) if (v) q[k] = v;
+  router.get(alamat.value, q, { preserveState: true, preserveScroll: true });
+}
+
+function bersihkan() {
+  saring.value = { cari: '', perusahaan: '', zona: '', aktif: '' };
+  router.get(alamat.value, {}, { preserveScroll: true });
+}
+
+function pilihZona(z: string | null) {
+  saring.value = { ...saring.value, zona: z ?? '' };
+  terapkan();
+}
+
+const kolom = computed(() => [
+  { kunci: 'nomor', label: 'No Registrasi' },
+  { kunci: 'tanggal', label: 'Tanggal' },
+  { kunci: 'noid', label: 'Noid' },
+  { kunci: 'nama', label: 'Nama Employee' },
+  { kunci: 'jabatan', label: 'Jabatan' },
+  { kunci: 'perusahaan', label: 'Perusahaan' },
+  { kunci: 'berlaku', label: 'Masa Berlaku' },
+  { kunci: 'status', label: 'Status' },
+  { kunci: 'aksi', label: '#' },
+]);
+
+/* ─────────── ekspor & sinkron ─────────── */
+
+const dari = ref('');
+const sampai = ref('');
+const urlEkspor = computed(() => {
+  const q = new URLSearchParams({ mode: String(props.mode) });
+  if (dari.value) q.set('dari', dari.value);
+  if (sampai.value) q.set('sampai', sampai.value);
+  return `/miners/permit/ekspor?${q.toString()}`;
 });
 
-/** Kategori yang ditawarkan mengikuti tipe yang dipilih, bukan seluruhnya. */
-const kategoriTipe = computed(() =>
-  ((props.kategori ?? []) as any[]).filter((k) => String(k.tipe_permit_id) === String(buat.tipe_permit_id)));
+const sinkronForm = useForm({});
+function sinkron() {
+  sinkronForm.post('/miners/permit/sinkron', { preserveScroll: true });
+}
+
+/* ─────────── tambah permit ─────────── */
+
+const tambahTerbuka = ref(false);
+const form = useForm({
+  induksi_orang_id: '' as string | number, iup_id: '' as string | number, kontraktor_id: '' as string | number,
+  jenis_kartu: 'Mine Permit', cakupan_area: 'FULL', kode_warna: '', departemen_id: '' as string | number,
+  tanggal_lahir: '', gol_darah: '', telepon: '', telepon_darurat: '',
+  foto: null as File | null, ktp: null as File | null, permohonan: null as File | null,
+});
+
+const terpilih = computed(() => calon.value.find((c) => c.id === Number(form.induksi_orang_id)) ?? null);
+
+function pilihCalon() {
+  const c = terpilih.value;
+  if (!c) return;
+  form.tanggal_lahir = c.lahir ?? '';
+  form.gol_darah = c.darah ?? '';
+  form.telepon = c.telepon ?? '';
+  form.telepon_darurat = c.darurat ?? '';
+  form.departemen_id = c.departemen_id ?? '';
+  /* Contractor ditentukan perusahaan karyawannya — diisi otomatis bila
+     ia mitra (IUJP), dikosongkan bila ia karyawan IUP sendiri. */
+  form.kontraktor_id = c.mitra ? c.company_id : '';
+  const k = (pilihan.value.kontraktor ?? []).find((x: any) => x.nilai === c.company_id);
+  if (k?.induk) form.iup_id = k.induk;
+  else if (!c.mitra && c.company_id) form.iup_id = c.company_id;
+}
+
+function bukaTambah() {
+  form.reset();
+  form.clearErrors();
+  if ((pilihan.value.iup ?? []).length === 1) form.iup_id = pilihan.value.iup[0].nilai;
+  tambahTerbuka.value = true;
+}
+
+function berkas(medan: 'foto' | 'ktp' | 'permohonan', e: Event) {
+  form[medan] = (e.target as HTMLInputElement).files?.[0] ?? null;
+}
 
 function simpan() {
-  buat.post('/miners/permit', { preserveScroll: true, onSuccess: () => buat.reset() });
+  form.post('/miners/permit', { forceFormData: true, preserveScroll: true, onSuccess: () => { tambahTerbuka.value = false; } });
 }
 
-const tindakan = useForm({ keadaan: 'setuju', catatan: '' });
+/* ─────────── masa berlaku & status (admin) ─────────── */
 
-function tindak(id: number, keadaan: string) {
-  tindakan.keadaan = keadaan;
-  tindakan.post(`/miners/permit/${id}/tindak`, { preserveScroll: true });
+const masaTerbuka = ref<any>(null);
+const masaForm = useForm({ sumber: 'mcu', tanggal: '' });
+function bukaMasa(b: any) {
+  masaTerbuka.value = b;
+  masaForm.sumber = b.sumberKode === 'manual' ? 'manual' : 'mcu';
+  masaForm.tanggal = b.berlaku ?? '';
+  masaForm.clearErrors();
+}
+function simpanMasa() {
+  masaForm.post(`/miners/permit/${masaTerbuka.value.id}/masa-berlaku`, { preserveScroll: true, onSuccess: () => { masaTerbuka.value = null; } });
 }
 
-const cabut = useForm({ alasan_cabut: '' });
-
-const lampiran = useForm<{
-  jenis: string; nomor: string; catatan: string; berkas: File | null;
-}>({ jenis: '', nomor: '', catatan: '', berkas: null });
-
-function pilihLampiran(e: Event) {
-  lampiran.berkas = (e.target as HTMLInputElement).files?.[0] ?? null;
+const statusTerbuka = ref<any>(null);
+const statusForm = useForm({ aktif: false as boolean, alasan: '' });
+function bukaStatus(b: any) {
+  statusTerbuka.value = b;
+  statusForm.aktif = !b.aktif;
+  statusForm.alasan = '';
+}
+function simpanStatus() {
+  statusForm.post(`/miners/permit/${statusTerbuka.value.id}/status`, { preserveScroll: true, onSuccess: () => { statusTerbuka.value = null; } });
 }
 
-function simpanLampiran(permitId: number) {
-  /* forceFormData: tanpa itu objek File menjadi `{}` di sisi server,
-     barisnya tetap terbuat, dan hanya berkasnya yang hilang. */
-  lampiran.post(`/miners/permit/${permitId}/berkas`, {
-    forceFormData: true,
-    preserveScroll: true, onSuccess: () => lampiran.reset(),
-  });
+const hapusForm = useForm({});
+function hapus(b: any) {
+  if (!window.confirm(`Hapus Mine Permit ${b.nomor} (${b.nama})?`)) return;
+  hapusForm.delete(`/miners/permit/${b.id}`, { preserveScroll: true });
 }
-
-async function cabutKartu(id: number, nomor: string) {
-  if (!await tanya(`Cabut Mine Permit ${nomor || 'ini'}? Pemegangnya tidak lagi boleh masuk.`)) return;
-
-  cabut.alasan_cabut = cabut.alasan_cabut || 'Dicabut oleh OHSE.';
-  cabut.post(`/miners/permit/${id}/cabut`, { preserveScroll: true });
-}
-
-async function hapus(id: number, nomor: string) {
-  if (!await tanya(`Hapus Mine Permit ${nomor || 'ini'}?`)) return;
-
-  useForm({}).delete(`/miners/permit/${id}`, { preserveScroll: true });
-}
-
-const bolehTindak = computed(() =>
-  ((props.peranSaya ?? []) as string[]).some((p) => p !== 'pengaju'));
-
-const WARNA_LABEL = computed<Record<string, any>>(() => (props.WARNA ?? {}) as Record<string, any>);
 </script>
 
 <template>
-  <Head :title="props.judul" />
-  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
+  <div>
+    <KepalaHalaman :judul="props.judul" :remah="[['Home', '/miners/dasbor'], [register ? 'Register' : 'History', null], ['Mine Permit', null]]" />
 
-  <div class="space-y-5">
+    <ZonaMasaBerlaku :judul="register ? 'Masa Berlaku Mine Permit Saya' : 'Masa Berlaku Mine Permit'" :ringkas="props.ringkas ?? {}"
+                     :aktif="props.saring?.zona || null" @pilih="pilihZona">
+      <SaringBar v-model="saring" :medan="medanSaring" @terapkan="terapkan" @bersihkan="bersihkan" />
+    </ZonaMasaBerlaku>
 
-    <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
-      <h3 class="text-[13.5px] font-bold text-cam-ink mb-3">Mine Permit baru</h3>
+    <RekapPerusahaan v-if="!register" judul="Mine Permit per Perusahaan" :baris="props.rekap ?? []" />
 
-      <form class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" @submit.prevent="simpan">
-        <label class="block">
-          <span class="block text-[11px] text-stone-500">Pekerja</span>
-          <select v-model="buat.pekerja_id" required class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-            <option value="">Pilih pekerja…</option>
-            <option v-for="pk in (props.pekerja ?? [])" :key="pk.id" :value="pk.id">{{ pk.nama }}</option>
-          </select>
-        </label>
-
-        <label class="block">
-          <span class="block text-[11px] text-stone-500">Nomor kartu</span>
-          <input v-model="buat.no_registrasi" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-        </label>
-
-        <label class="block">
-          <span class="block text-[11px] text-stone-500">Tanggal terbit</span>
-          <input v-model="buat.tanggal" type="date" required
-                 class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-        </label>
-
-        <label class="block">
-          <span class="block text-[11px] text-stone-500">Jenis permit</span>
-          <select v-model="buat.tipe_permit_id" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-            <option value="">Pilih jenis…</option>
-            <option v-for="t in (props.tipe ?? [])" :key="t.id" :value="t.id">
-              {{ t.nama }}<span v-if="t.hari_berlaku"> ({{ t.hari_berlaku }} hari)</span>
-            </option>
-          </select>
-        </label>
-
-        <label class="block">
-          <span class="block text-[11px] text-stone-500">Kategori</span>
-          <select v-model="buat.kategori_permit_id" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-            <option value="">Pilih kategori…</option>
-            <option v-for="k in kategoriTipe" :key="k.id" :value="k.id">{{ k.nama }}</option>
-          </select>
-        </label>
-
-        <label class="block">
-          <span class="block text-[11px] text-stone-500">Zona akses</span>
-          <select v-model="buat.cakupan_area" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-            <option value="">Pilih zona…</option>
-            <option v-for="(z, kode) in (props.CAKUPAN ?? {})" :key="kode" :value="kode">{{ z.label }}</option>
-          </select>
-        </label>
-
-        <label class="block">
-          <span class="block text-[11px] text-stone-500">Warna kartu</span>
-          <select v-model="buat.kode_warna" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-            <option value="">Pilih warna…</option>
-            <option v-for="(w, kode) in WARNA_LABEL" :key="kode" :value="kode">{{ w.label }}</option>
-          </select>
-        </label>
-
-        <div class="sm:col-span-2 lg:col-span-4">
-          <button type="submit" class="eq-btn-utama" :disabled="buat.processing">Buat kartu (draf)</button>
-          <span v-if="buat.errors.pekerja_id" class="ml-3 text-[11.5px] text-red-600">{{ buat.errors.pekerja_id }}</span>
+    <TabelData :judul="register ? 'Daftar Permit' : 'Daftar Mine Permit'" :jumlah="halaman.total" :kolom="kolom" :baris="halaman.data"
+               :nomor-awal="halaman.from ?? 1" :tautan="halaman.links">
+      <template #alat>
+        <div v-if="register">
+          <button type="button" class="mn-btn mn-btn-gelap" @click="bukaTambah">+ add Permit</button>
         </div>
+        <template v-else>
+          <div class="mn-alat">
+            <input v-model="dari" type="date" class="mn-isian" title="Dari tanggal" aria-label="Dari tanggal">
+            <input v-model="sampai" type="date" class="mn-isian" title="Sampai tanggal" aria-label="Sampai tanggal">
+            <a :href="urlEkspor" class="mn-btn mn-btn-bahaya">Export</a>
+          </div>
+          <button v-if="props.kelola" type="button" class="mn-btn mn-btn-garis-utama" :disabled="sinkronForm.processing" @click="sinkron">
+            ⟳ Sinkronkan dari MCU
+          </button>
+        </template>
+      </template>
+
+      <template #sel-nomor="{ baris: b }">
+        <Link :href="`/miners/permit/${b.id}`" class="mn-tautan" style="color:inherit">{{ b.nomor || 'tanpa nomor' }}</Link>
+      </template>
+      <template #sel-tanggal="{ nilai }">{{ tglId(nilai) }}</template>
+      <template #sel-nama="{ baris: b }">
+        <Link :href="`/miners/permit/${b.id}`" class="mn-tautan">{{ b.nama || '—' }}</Link>
+        <span v-if="!b.aktif" class="mn-lencana mn-l-abu ml-1" :title="b.alasanNonaktif || ''">non-aktif</span>
+      </template>
+      <template #sel-berlaku="{ baris: b }">
+        <LencanaMasaBerlaku :tanggal="b.berlaku" :sisa="b.sisa" :sumber="b.sumber" />
+      </template>
+      <template #sel-status="{ nilai }"><LencanaStatus :status="nilai" /></template>
+      <template #sel-aksi="{ baris: b }">
+        <div class="mn-aksi" style="justify-content:flex-start">
+          <template v-if="register">
+            <TombolIkon v-if="b.bolehHapus" ikon="hapus" varian="bahaya" judul="Hapus Mine Permit" @click="hapus(b)" />
+            <TombolIkon ikon="pensil" :href="`/miners/permit/${b.id}`" judul="Buka detail Mine Permit" />
+          </template>
+          <template v-else-if="props.kelola">
+            <TombolIkon ikon="kalender" varian="garis" judul="Masa berlaku" @click="bukaMasa(b)" />
+            <TombolIkon ikon="orang" varian="garis" :judul="b.aktif ? 'Nonaktifkan kartu' : 'Aktifkan kembali'" @click="bukaStatus(b)" />
+          </template>
+          <TombolIkon v-else ikon="mata" varian="garis" :href="`/miners/permit/${b.id}`" judul="Buka detail" />
+        </div>
+      </template>
+    </TabelData>
+
+    <!-- ══════════ tambah permit ══════════ -->
+    <Modal :terbuka="tambahTerbuka" judul="Add Mine Permit" lebar @tutup="tambahTerbuka = false">
+      <form class="mn-form" @submit.prevent="simpan">
+        <Medan label="Nama Employee" untuk="p-calon" wajib :galat="form.errors.induksi_orang_id" penuh
+               petunjuk="Karyawan yang induksinya sudah disetujui dan belum punya Mine Permit.">
+          <select v-if="calon.length" id="p-calon" v-model="form.induksi_orang_id" class="mn-isian" title="Nama employee" @change="pilihCalon">
+            <option value="">— pilih —</option>
+            <option v-for="c in calon" :key="c.id" :value="c.id">{{ c.noDaftar }} - {{ c.nama }}{{ c.perusahaan ? ` (${c.perusahaan})` : '' }}</option>
+          </select>
+          <div v-else class="mn-alert mn-alert-peringatan" style="margin:0">
+            Belum ada karyawan yang induksinya selesai. Selesaikan dulu induksi karyawannya; sesudah disetujui, namanya muncul di sini.
+          </div>
+        </Medan>
+        <Medan label="Nomor Induk" untuk="p-noid">
+          <input id="p-noid" class="mn-isian" value="Otomatis = nomor Mine Permit" readonly>
+        </Medan>
+        <Medan label="Tanggal Lahir" untuk="p-lahir" wajib :galat="form.errors.tanggal_lahir">
+          <input id="p-lahir" v-model="form.tanggal_lahir" type="date" class="mn-isian" required>
+        </Medan>
+        <Medan label="Golongan Darah" untuk="p-darah" :galat="form.errors.gol_darah">
+          <select id="p-darah" v-model="form.gol_darah" class="mn-isian" title="Golongan darah">
+            <option value="">—</option>
+            <option v-for="g in pilihan.golDarah" :key="g" :value="g">{{ g }}</option>
+          </select>
+        </Medan>
+        <Medan label="No.Telp" untuk="p-telp" :galat="form.errors.telepon">
+          <input id="p-telp" v-model="form.telepon" class="mn-isian" maxlength="30" inputmode="tel">
+        </Medan>
+        <Medan label="No Emergency" untuk="p-telp2" :galat="form.errors.telepon_darurat">
+          <input id="p-telp2" v-model="form.telepon_darurat" class="mn-isian" maxlength="30" inputmode="tel">
+        </Medan>
+        <Medan label="Cakupan Area" untuk="p-area" wajib :galat="form.errors.cakupan_area">
+          <select id="p-area" v-model="form.cakupan_area" class="mn-isian" title="Cakupan area">
+            <option v-for="c in pilihan.cakupan" :key="c.nilai" :value="c.nilai">{{ c.label }}</option>
+          </select>
+        </Medan>
+        <Medan label="Kode Warna Akses" untuk="p-warna" :galat="form.errors.kode_warna"
+               petunjuk="Kosongkan bila warnanya mengikuti unit yang boleh dioperasikan.">
+          <select id="p-warna" v-model="form.kode_warna" class="mn-isian" title="Kode warna akses">
+            <option value="">Ikuti unit SIMPER (otomatis)</option>
+            <option v-for="w in pilihan.warna" :key="w.nilai" :value="w.nilai">{{ w.label }}</option>
+          </select>
+        </Medan>
+        <Medan label="Type Card" untuk="p-jenis" wajib :galat="form.errors.jenis_kartu">
+          <select id="p-jenis" v-model="form.jenis_kartu" class="mn-isian" title="Type card">
+            <option v-for="j in pilihan.jenisKartu" :key="j" :value="j">{{ j }}</option>
+          </select>
+        </Medan>
+        <Medan label="Departemen" untuk="p-dept" wajib :galat="form.errors.departemen_id">
+          <select id="p-dept" v-model="form.departemen_id" class="mn-isian" title="Departemen">
+            <option value="">— pilih —</option>
+            <option v-for="d in pilihan.departemen" :key="d.nilai" :value="d.nilai">{{ d.label }}</option>
+          </select>
+        </Medan>
+        <Medan label="Perusahaan (IUP)" untuk="p-iup" wajib :galat="form.errors.iup_id" petunjuk="Pemegang izin tambang tempat kartu ini berlaku.">
+          <select id="p-iup" v-model="form.iup_id" class="mn-isian" title="Perusahaan (IUP)">
+            <option value="">— pilih —</option>
+            <option v-for="c in pilihan.iup" :key="c.nilai" :value="c.nilai">{{ c.label }}</option>
+          </select>
+        </Medan>
+        <Medan label="Contractor (IUJP)" untuk="p-kontraktor" :galat="form.errors.kontraktor_id"
+               petunjuk="Wajib bila karyawannya dari perusahaan jasa pertambangan; kosongkan bila ia karyawan IUP sendiri.">
+          <select id="p-kontraktor" v-model="form.kontraktor_id" class="mn-isian" title="Contractor (IUJP)">
+            <option value="">— Karyawan IUP, tanpa kontraktor —</option>
+            <option v-for="c in pilihan.kontraktor" :key="c.nilai" :value="c.nilai">{{ c.label }}</option>
+          </select>
+        </Medan>
+        <Medan label="Foto Employee" untuk="p-foto" wajib :galat="form.errors.foto" petunjuk="JPG atau PNG, maksimal 2 MB.">
+          <input id="p-foto" type="file" class="mn-isian" accept=".jpg,.jpeg,.png" @change="berkas('foto', $event)">
+        </Medan>
+        <Medan label="Foto KTP" untuk="p-ktp" wajib :galat="form.errors.ktp">
+          <input id="p-ktp" type="file" class="mn-isian" accept=".jpg,.jpeg,.png,.pdf" @change="berkas('ktp', $event)">
+        </Medan>
+        <Medan label="Permohonan Permit" untuk="p-mohon" wajib :galat="form.errors.permohonan">
+          <input id="p-mohon" type="file" class="mn-isian" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" @change="berkas('permohonan', $event)">
+        </Medan>
       </form>
+      <template #kaki>
+        <button type="button" class="mn-btn mn-btn-garis" @click="tambahTerbuka = false">Close</button>
+        <button type="button" class="mn-btn mn-btn-utama" :disabled="form.processing || !calon.length" @click="simpan">Save changes</button>
+      </template>
+    </Modal>
 
-      <p class="mt-3 text-[11px] text-stone-500">
-        Masa berlakunya dihitung sendiri menurut jenisnya — Visitor 7 hari, Temporary 30 hari,
-        selebihnya sampai 31 Desember tahun terbit. MCU dan induksi terakhir ikut dilekatkan
-        pada kartu, supaya pertanyaan "hasil MCU mana yang menjadi dasar kartu ini" tetap
-        terjawab setelah MCU berikutnya terbit.
+    <!-- ══════════ masa berlaku ══════════ -->
+    <Modal :terbuka="masaTerbuka !== null" judul="Masa Berlaku Mine Permit" @tutup="masaTerbuka = null">
+      <p class="text-[13px] mb-3"><b>{{ masaTerbuka?.nama }}</b> — {{ masaTerbuka?.nomor }}</p>
+      <div class="mn-form">
+        <Medan label="Sumber" untuk="m-sumber" penuh :galat="masaForm.errors.sumber">
+          <select id="m-sumber" v-model="masaForm.sumber" class="mn-isian" title="Sumber masa berlaku">
+            <option value="mcu">Ikuti masa berlaku MCU</option>
+            <option value="manual">Kunci tanggal manual</option>
+          </select>
+        </Medan>
+        <Medan v-if="masaForm.sumber === 'manual'" label="Berlaku sampai" untuk="m-tgl" wajib penuh :galat="masaForm.errors.tanggal">
+          <input id="m-tgl" v-model="masaForm.tanggal" type="date" class="mn-isian">
+        </Medan>
+      </div>
+      <template #kaki>
+        <button type="button" class="mn-btn mn-btn-garis" @click="masaTerbuka = null">Close</button>
+        <button type="button" class="mn-btn mn-btn-utama" :disabled="masaForm.processing" @click="simpanMasa">Simpan</button>
+      </template>
+    </Modal>
+
+    <!-- ══════════ status kartu ══════════ -->
+    <Modal :terbuka="statusTerbuka !== null" :judul="statusForm.aktif ? 'Aktifkan kembali' : 'Nonaktifkan Mine Permit'" @tutup="statusTerbuka = null">
+      <p class="text-[13px] mb-3"><b>{{ statusTerbuka?.nama }}</b> —
+        <template v-if="statusForm.aktif">kartunya kembali dihitung sebagai dokumen aktif.</template>
+        <template v-else>kartu ditutup (dicabut, hilang, dsb.). Datanya tidak dihapus, tetapi tidak lagi dihitung pada zona masa berlaku.</template>
       </p>
-    </section>
-
-    <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
-      <header class="px-5 py-3.5 border-b border-stone-100 flex flex-wrap items-center gap-3">
-        <h3 class="text-[13.5px] font-bold text-cam-ink grow basis-40 min-w-0">
-          Kartu <span class="font-normal text-stone-400">| {{ baris.length }} data</span>
-        </h3>
-      </header>
-
-      <ul class="divide-y divide-stone-100">
-        <li v-for="k in baris" :key="k.id" class="px-5 py-4 space-y-2">
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="min-w-0">
-              <Link v-if="k.pekerja_id" :href="`/miners/${k.pekerja_id}`"
-                    class="font-bold text-cam-lime-deep hover:underline">{{ k.pekerja || '—' }}</Link>
-              <span class="text-[11.5px] text-stone-500">
-                · <Link :href="`/miners/permit/${k.id}`"
-                        class="num text-cam-lime-deep hover:underline">{{ k.nomor || 'tanpa nomor' }}</Link>
-                · {{ k.tipe || '—' }} · {{ k.cakupan || '—' }}
-                · {{ props.STATUS?.[k.status] ?? k.status }}
-              </span>
-            </div>
-
-            <div class="flex items-center gap-2">
-              <Lencana :keadaan="k.keadaan" :label="props.KEADAAN?.[k.keadaan]" :nada="props.NADA" :sisa="k.sisa" />
-              <button class="eq-btn-lain" @click="buka = buka === k.id ? null : k.id">
-                {{ buka === k.id ? 'Tutup' : 'Kelola' }}
-              </button>
-            </div>
-          </div>
-
-          <p class="text-[11.5px] text-stone-500">
-            Terbit {{ k.tanggal || '—' }} · tertulis berlaku sampai
-            <span class="num">{{ k.sampai || '—' }}</span>
-            <span v-if="k.efektif && k.efektif !== k.sampai" class="text-amber-700">
-              — tetapi efektif habis <span class="num">{{ k.efektif }}</span>, sebab MCU-nya
-              habis <span class="num">{{ k.mcu }}</span>
-            </span>
-            <span v-if="k.gugurMcu" class="text-red-600 font-semibold"> · sudah gugur karena MCU</span>
-          </p>
-
-          <Langkah :alur="k.alur" />
-
-          <div v-if="buka === k.id" class="pt-2 space-y-3 border-t border-stone-100">
-            <div v-if="bolehTindak" class="flex flex-wrap items-end gap-2">
-              <input v-model="tindakan.catatan" placeholder="Catatan peninjau (opsional)"
-                     class="rounded-lg border-stone-200 text-[12px] w-72" aria-label="Catatan peninjau">
-              <button class="eq-btn-utama" @click="tindak(k.id, 'setuju')">Setujui</button>
-              <button class="eq-btn-lain" @click="tindak(k.id, 'dikembalikan')">Kembalikan</button>
-              <button class="eq-btn-lain" @click="tindak(k.id, 'tolak')">Tolak</button>
-            </div>
-
-            <p v-if="tindakan.errors.keadaan" class="text-[11.5px] text-red-600">{{ tindakan.errors.keadaan }}</p>
-
-            <!-- Lampiran Mine Permit: SOP merinci 9–12 berkas per jenis
-                 pengajuan. Rutenya sudah lama ada, tetapi tidak satu pun
-                 layar yang memanggilnya — sehingga lampiran hanya dapat
-                 masuk lewat data contoh, dan tidak pernah dapat dibuka. -->
-            <div class="border-t border-stone-100 pt-3 space-y-2">
-              <p class="text-[11px] font-semibold text-stone-500">Lampiran</p>
-
-              <ul v-if="k.berkas?.length" class="flex flex-wrap gap-x-3 gap-y-1 text-[11.5px]">
-                <li v-for="b in k.berkas" :key="b.id">
-                  <a v-if="b.url" :href="b.url" target="_blank" rel="noopener"
-                     class="text-cam-lime-deep hover:underline">{{ b.jenis }}</a>
-                  <span v-else-if="b.ada" class="text-stone-400"
-                        title="Sudah diunggah, tetapi hanya dapat dibuka paramedis, tim OHSE, atau administrator.">
-                    {{ b.jenis }} · terjaga
-                  </span>
-                  <span v-else class="text-stone-300">{{ b.jenis }} · belum diunggah</span>
-                </li>
-              </ul>
-              <p v-else class="text-[11.5px] text-stone-400">Belum ada lampiran.</p>
-
-              <form class="flex flex-wrap items-end gap-2" @submit.prevent="simpanLampiran(k.id)">
-                <input v-model="lampiran.jenis" required placeholder="Jenis lampiran"
-                       class="w-44 rounded-lg border-stone-200 text-[12px]" aria-label="Jenis lampiran">
-                <input v-model="lampiran.nomor" placeholder="Nomor"
-                       class="w-32 rounded-lg border-stone-200 text-[12px]" aria-label="Nomor lampiran">
-                <input type="file" class="text-[11.5px] max-w-[12rem]" @change="pilihLampiran">
-                <button type="submit" class="eq-btn-lain" :disabled="lampiran.processing">Simpan lampiran</button>
-              </form>
-
-              <p v-if="lampiran.errors.jenis || lampiran.errors.berkas" class="text-[11.5px] text-red-600">
-                {{ lampiran.errors.jenis || lampiran.errors.berkas }}
-              </p>
-            </div>
-
-            <div class="flex flex-wrap items-end gap-3">
-              <input v-model="cabut.alasan_cabut" placeholder="Alasan pencabutan"
-                     class="rounded-lg border-stone-200 text-[12px] w-72" aria-label="Alasan pencabutan">
-              <button class="text-[11.5px] text-amber-700 hover:underline" @click="cabutKartu(k.id, k.nomor)">
-                Cabut kartu
-              </button>
-              <button class="text-[11.5px] text-red-600 hover:underline" @click="hapus(k.id, k.nomor)">
-                Hapus kartu
-              </button>
-            </div>
-          </div>
-        </li>
-
-        <li v-if="!baris.length" class="px-5 py-10 text-center text-stone-400">
-          Belum ada Mine Permit.
-        </li>
-      </ul>
-    </section>
+      <Medan v-if="!statusForm.aktif" label="Alasan" untuk="st-alasan" :galat="statusForm.errors.alasan">
+        <input id="st-alasan" v-model="statusForm.alasan" class="mn-isian" maxlength="200" placeholder="mis. kartu hilang, mutasi">
+      </Medan>
+      <template #kaki>
+        <button type="button" class="mn-btn mn-btn-garis" @click="statusTerbuka = null">Close</button>
+        <button type="button" class="mn-btn" :class="statusForm.aktif ? 'mn-btn-sukses' : 'mn-btn-bahaya'" :disabled="statusForm.processing" @click="simpanStatus">
+          {{ statusForm.aktif ? 'Aktifkan' : 'Nonaktifkan' }}
+        </button>
+      </template>
+    </Modal>
   </div>
 </template>

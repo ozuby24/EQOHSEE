@@ -372,12 +372,14 @@ class MinersAlurTest extends TestCase
     #[Test]
     public function test_permit_melekatkan_mcu_dan_induksi_terakhir_saat_dibuat(): void
     {
+        \Illuminate\Support\Facades\Storage::fake('local');
         $this->actingAs($this->admin);
 
         $pk = $this->pekerja();
 
         $surat = Mcu::withoutGlobalScopes()->create([
             'company_id' => $this->c->id, 'tanggal' => Waktu::kini()->startOfDay(), 'kepada' => 'Klinik',
+            'status' => 'selesai',
         ]);
 
         $mcu = McuOrang::create([
@@ -388,18 +390,24 @@ class MinersAlurTest extends TestCase
         ]);
 
         $ind = Induksi::withoutGlobalScopes()->create([
-            'company_id' => $this->c->id, 'tanggal' => Waktu::kini()->startOfDay(),
+            'company_id' => $this->c->id, 'tanggal' => Waktu::kini()->startOfDay(), 'status' => 'selesai',
         ]);
 
         $io = InduksiOrang::create([
-            'induksi_id' => $ind->id, 'pekerja_id' => $pk->id,
-            'tanggal_induksi' => Waktu::kini()->startOfDay(), 'nilai' => 90,
-            'percobaan' => 1, 'status' => 'lulus',
+            'induksi_id' => $ind->id, 'pekerja_id' => $pk->id, 'mcu_orang_id' => $mcu->id,
+            'tanggal_induksi' => Waktu::kini()->startOfDay(), 'status' => 'lulus',
         ]);
 
         $this->post('/miners/permit', [
-            'pekerja_id' => $pk->id,
-            'tanggal'    => Waktu::kini()->toDateString(),
+            'induksi_orang_id' => $io->id,
+            'iup_id'           => $this->c->id,
+            'jenis_kartu'      => 'Mine Permit',
+            'cakupan_area'     => 'FULL',
+            'departemen_id'    => \App\Models\Miners\Departemen::withoutGlobalScopes()->value('id'),
+            'tanggal_lahir'    => '1990-05-01',
+            'foto'             => \Illuminate\Http\UploadedFile::fake()->image('foto.jpg'),
+            'ktp'              => \Illuminate\Http\UploadedFile::fake()->create('ktp.pdf', 20, 'application/pdf'),
+            'permohonan'       => \Illuminate\Http\UploadedFile::fake()->create('mohon.pdf', 20, 'application/pdf'),
         ])->assertSessionHasNoErrors();
 
         $p = Permit::withoutGlobalScopes()->where('pekerja_id', $pk->id)->firstOrFail();
@@ -413,22 +421,15 @@ class MinersAlurTest extends TestCase
     }
 
     #[Test]
-    public function test_masa_berlaku_permit_mengikuti_jenisnya(): void
+    public function test_masa_berlaku_permit_mengikuti_mcu_saat_dibuat(): void
     {
-        $this->actingAs($this->admin);
-
-        $visitor = TipePermit::withoutGlobalScopes()->where('kunci', 'visitor-permit')->firstOrFail();
-
-        $this->post('/miners/permit', [
-            'pekerja_id'     => $this->pekerja()->id,
-            'tanggal'        => '2026-03-15',
-            'tipe_permit_id' => $visitor->id,
-        ])->assertSessionHasNoErrors();
+        $this->test_permit_melekatkan_mcu_dan_induksi_terakhir_saat_dibuat();
 
         $p = Permit::withoutGlobalScopes()->latest('id')->firstOrFail();
 
-        $this->assertSame('2026-03-22', $p->berlaku_sampai->toDateString());
-        $this->assertSame('tipe', $p->sumber_berlaku);
+        /* Aturan Safe Track: `tgl_expired = nom`, bukan 31 Desember. */
+        $this->assertSame(Waktu::kini()->addMonths(10)->toDateString(), $p->berlaku_sampai->toDateString());
+        $this->assertSame('mcu', $p->sumber_berlaku);
     }
 
     /* ═══════════ otorisasi ═══════════ */

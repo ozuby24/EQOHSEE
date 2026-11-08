@@ -45,13 +45,7 @@ final class Zona
     /** Sisa hari sampai tanggal itu; negatif bila sudah lewat, null bila kosong. */
     public static function sisa(mixed $tanggal): ?int
     {
-        if ($tanggal === null || $tanggal === '' || $tanggal === '0000-00-00') return null;
-
-        $t = $tanggal instanceof \DateTimeInterface
-            ? Carbon::instance($tanggal)
-            : Carbon::parse((string) $tanggal);
-
-        return (int) Waktu::kini()->startOfDay()->diffInDays($t->copy()->startOfDay(), false);
+        return Waktu::sisaHari($tanggal);
     }
 
     /** Zona sebuah tanggal habis. */

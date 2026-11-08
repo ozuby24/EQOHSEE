@@ -615,15 +615,21 @@ class MinersController extends Controller
         }
 
         [$baris, $judul] = match ($jenis) {
+            /* `master_admin_rujukan` Safe Track: orang yang hasilnya
+               "Rujukan" — ditambah yang sudah punya surat rujukan, supaya
+               rujukan lama tetap terbaca. */
             'rujukan' => [
-                McuOrang::query()->whereHas('rujukan')->with(['pekerja.company', 'rujukan', 'hasil', 'mcu'])
+                McuOrang::query()
+                    ->where(fn ($q) => $q->whereHas('rujukan')
+                        ->when(HasilMcu::rujukan(), fn ($w, $id) => $w->orWhere('hasil_id', $id)))
+                    ->with(['pekerja.company', 'rujukan', 'hasil', 'mcu'])
                     ->orderByDesc('tanggal_periksa')->get()
                     ->map(fn (McuOrang $m) => [
                         'id'         => $m->id,
                         'url'        => $m->mcu_id ? '/miners/mcu/'.$m->mcu_id : null,
                         'nomor'      => $m->mcu?->no_registrasi,
                         'tanggal'    => $m->rujukan->first()?->tanggal_surat?->toDateString(),
-                        'judul'      => $m->nama.' — '.($m->rujukan->first()?->poliklinik ?: 'rujukan'),
+                        'judul'      => $m->nama.' — '.($m->rujukan->first()?->poliklinik ?: ($m->hasil?->nama ?? 'rujukan')),
                         'perusahaan' => $m->pekerja?->company?->name,
                         'status'     => $m->mcu?->status,
                         'oleh'       => $m->rujukan->first()?->dokter,

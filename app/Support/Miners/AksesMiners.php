@@ -55,6 +55,35 @@ final class AksesMiners
             && (int) $a->ditugaskan_user_id === (int) $u->getKey());
     }
 
+    /**
+     * Perusahaan pemberi kerja yang boleh dipilih pengguna ini —
+     * `pilihanPerusahaan()` Safe Track. Akun mitra hanya perusahaannya
+     * sendiri; akun IUP perusahaannya dan mitra-mitranya; admin seluruhnya
+     * (atau yang sedang ia lihat).
+     *
+     * @return \Illuminate\Support\Collection<int,\App\Models\Company>
+     */
+    public static function perusahaan(?User $u)
+    {
+        $q = \App\Models\Company::query()->orderBy('name');
+
+        if (! $u) return collect();
+
+        if (! $u->isAdmin()) {
+            $milik = $u->company;
+
+            if ($milik?->parent_id || $milik?->isJasa()) return $q->whereKey($u->company_id)->get();
+
+            return $q->where(fn ($w) => $w->whereKey($u->company_id)->orWhere('parent_id', $u->company_id))->get();
+        }
+
+        if ($lihat = \App\Support\Perusahaan::terpilih($u)) {
+            $q->where(fn ($w) => $w->whereKey($lihat)->orWhere('parent_id', $lihat));
+        }
+
+        return $q->get();
+    }
+
     /** Hentikan permintaan dengan 403 bila syaratnya tidak terpenuhi. */
     public static function tegakkan(bool $boleh, string $pesan = 'Anda tidak berwenang mengubah berkas ini.'): void
     {

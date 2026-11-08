@@ -7,6 +7,10 @@ use App\Http\Controllers\MinersDokumenController;
 use App\Http\Controllers\Miners\AlurPersetujuanController as MinersAlurPersetujuanController;
 use App\Http\Controllers\Miners\MasterDataController as MinersMasterDataController;
 use App\Http\Controllers\Miners\PerusahaanController as MinersPerusahaanController;
+use App\Http\Controllers\Miners\McuController as MinersMcuController;
+use App\Http\Controllers\Miners\InduksiController as MinersInduksiController;
+use App\Http\Controllers\Miners\PermitController as MinersPermitController;
+use App\Http\Controllers\Miners\PerpanjanganPermitController as MinersPerpanjanganPermitController;
 use App\Http\Controllers\Hris\AbsensiController;
 use App\Http\Controllers\Hris\CutiController;
 use App\Http\Controllers\Hris\GajiController;
@@ -384,25 +388,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
            menang — terbalik, halaman MCU akan mencari pekerja bernomor
            "mcu" lalu memulangkan 404 yang membingungkan. */
 
+        /* MCU — mcusController, mcu_detailsController, rujukan_formsController
+           Safe Track. Rute berkata-tetap (ekspor, orang/…, rujukan/…)
+           didaftarkan sebelum yang berparameter. */
         Route::prefix('mcu')->name('mcu.')->group(function () {
-            Route::get('/',  [MinersDokumenController::class, 'mcuIndex'])->name('index');
-            Route::post('/', [MinersDokumenController::class, 'mcuStore'])->name('store');
+            Route::get('/',  [MinersMcuController::class, 'index'])->name('index');
+            Route::post('/', [MinersMcuController::class, 'store'])->name('store');
+            Route::get('ekspor', [MinersMcuController::class, 'ekspor'])->name('ekspor');
 
-            Route::put('{mcu}',    [MinersDokumenController::class, 'mcuUpdate'])->name('update');
-            Route::delete('{mcu}', [MinersDokumenController::class, 'mcuDestroy'])
-                ->middleware('can:admin')->name('destroy');
+            Route::get('orang/{orang}/sertifikat', [MinersMcuController::class, 'sertifikat'])
+                ->whereNumber('orang')->name('sertifikat');
+            Route::get('rujukan/{rujukan}/surat', [MinersMcuController::class, 'suratRujukan'])
+                ->whereNumber('rujukan')->name('rujukan.surat');
+            Route::delete('rujukan/{rujukan}', [MinersMcuController::class, 'hapusRujukan'])
+                ->whereNumber('rujukan')->name('rujukan.hapus');
 
-            Route::post('{mcu}/orang',          [MinersDokumenController::class, 'mcuTambahOrang'])->name('orang.tambah');
-            Route::delete('{mcu}/orang/{orang}', [MinersDokumenController::class, 'mcuHapusOrang'])->name('orang.hapus');
-            Route::post('{mcu}/orang/{orang}/hasil',   [MinersDokumenController::class, 'mcuHasil'])->name('hasil');
-            Route::post('{mcu}/orang/{orang}/rujukan', [MinersDokumenController::class, 'mcuRujukan'])->name('rujukan');
-            Route::post('{mcu}/tindak',         [MinersDokumenController::class, 'mcuTindak'])->name('tindak');
+            Route::put('{mcu}',    [MinersMcuController::class, 'update'])->name('update');
+            Route::delete('{mcu}', [MinersMcuController::class, 'destroy'])->name('destroy');
 
-            /* Halaman rincian. Didaftarkan SESUDAH seluruh rute
-               berkata-tetap di atas dan memakai whereNumber, supaya
-               `miners/mcu/tindak` tidak pernah tersesat ke sini. */
-            Route::get('{id}', [MinersDokumenController::class, 'rincian'])
-                ->defaults('jenis', 'mcu')->whereNumber('id')->name('rincian');
+            Route::post('{mcu}/orang',                  [MinersMcuController::class, 'tambahOrang'])->name('orang.tambah');
+            Route::put('{mcu}/orang/{orang}',           [MinersMcuController::class, 'ubahOrang'])->name('orang.ubah');
+            Route::delete('{mcu}/orang/{orang}',        [MinersMcuController::class, 'hapusOrang'])->name('orang.hapus');
+            Route::post('{mcu}/orang/{orang}/hasil',    [MinersMcuController::class, 'hasil'])->name('hasil');
+            Route::post('{mcu}/orang/{orang}/perbaiki', [MinersMcuController::class, 'perbaiki'])->name('perbaiki');
+            Route::post('{mcu}/orang/{orang}/rujukan',  [MinersMcuController::class, 'rujukan'])->name('rujukan');
+            Route::post('{mcu}/tindak',                 [MinersMcuController::class, 'tindak'])->name('tindak');
+
+            Route::get('{id}', [MinersMcuController::class, 'rincian'])->whereNumber('id')->name('rincian');
 
             Route::post('{id}/ajukan-ulang', [MinersDokumenController::class, 'ajukanUlang'])
                 ->defaults('jenis', 'mcu')->whereNumber('id')->name('ajukan-ulang');
@@ -412,51 +424,69 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->defaults('jenis', 'mcu')->whereNumber('id')->name('kirim');
         });
 
+        /* Induksi — induction_registrationsController Safe Track. */
         Route::prefix('induksi')->name('induksi.')->group(function () {
-            Route::get('/',  [MinersDokumenController::class, 'induksiIndex'])->name('index');
-            Route::post('/', [MinersDokumenController::class, 'induksiStore'])->name('store');
+            Route::get('/',  [MinersInduksiController::class, 'index'])->name('index');
+            Route::post('/', [MinersInduksiController::class, 'store'])->name('store');
+            Route::get('ekspor', [MinersInduksiController::class, 'ekspor'])->name('ekspor');
 
-            Route::put('{induksi}',    [MinersDokumenController::class, 'induksiUpdate'])->name('update');
-            Route::delete('{induksi}', [MinersDokumenController::class, 'induksiDestroy'])
-                ->middleware('can:admin')->name('destroy');
+            Route::get('peserta/{orang}/sertifikat', [MinersInduksiController::class, 'sertifikat'])
+                ->whereNumber('orang')->name('sertifikat');
 
-            Route::post('{induksi}/orang',           [MinersDokumenController::class, 'induksiTambahOrang'])->name('orang.tambah');
-            Route::delete('{induksi}/orang/{orang}', [MinersDokumenController::class, 'induksiHapusOrang'])->name('orang.hapus');
-            Route::post('{induksi}/orang/{orang}/nilai', [MinersDokumenController::class, 'induksiNilai'])->name('nilai');
-            Route::post('{induksi}/tindak',          [MinersDokumenController::class, 'induksiTindak'])->name('tindak');
+            Route::put('{induksi}',    [MinersInduksiController::class, 'update'])->name('update');
+            Route::delete('{induksi}', [MinersInduksiController::class, 'destroy'])->name('destroy');
 
-            Route::get('{id}', [MinersDokumenController::class, 'rincian'])
-                ->defaults('jenis', 'induksi')->whereNumber('id')->name('rincian');
+            Route::post('{induksi}/orang',               [MinersInduksiController::class, 'tambahOrang'])->name('orang.tambah');
+            Route::delete('{induksi}/orang/{orang}',     [MinersInduksiController::class, 'hapusOrang'])->name('orang.hapus');
+            Route::post('{induksi}/orang/{orang}/nilai', [MinersInduksiController::class, 'nilai'])->name('nilai');
+            Route::post('{induksi}/jadwal',              [MinersInduksiController::class, 'jadwal'])->name('jadwal');
+            Route::post('{induksi}/tindak',              [MinersInduksiController::class, 'tindak'])->name('tindak');
+
+            Route::get('{id}', [MinersInduksiController::class, 'rincian'])->whereNumber('id')->name('rincian');
 
             Route::post('{id}/ajukan-ulang', [MinersDokumenController::class, 'ajukanUlang'])
                 ->defaults('jenis', 'induksi')->whereNumber('id')->name('ajukan-ulang');
 
-            /* "Kirim" — langkah pengaju disetujui oleh pengajunya sendiri. */
             Route::post('{id}/kirim', [MinersDokumenController::class, 'kirim'])
                 ->defaults('jenis', 'induksi')->whereNumber('id')->name('kirim');
         });
 
+        /* Mine Permit — mine_permitsController dan MasaBerlakuController Safe Track. */
         Route::prefix('permit')->name('permit.')->group(function () {
-            Route::get('/',  [MinersDokumenController::class, 'permitIndex'])->name('index');
-            Route::post('/', [MinersDokumenController::class, 'permitStore'])->name('store');
+            Route::get('/',  [MinersPermitController::class, 'index'])->name('index');
+            Route::post('/', [MinersPermitController::class, 'store'])->name('store');
+            Route::get('ekspor', [MinersPermitController::class, 'ekspor'])->name('ekspor');
+            Route::post('sinkron', [MinersPermitController::class, 'sinkron'])->name('sinkron');
 
-            Route::put('{permit}',    [MinersDokumenController::class, 'permitUpdate'])->name('update');
-            Route::delete('{permit}', [MinersDokumenController::class, 'permitDestroy'])
+            Route::put('{permit}',    [MinersPermitController::class, 'update'])->name('update');
+            Route::delete('{permit}', [MinersPermitController::class, 'destroy'])
                 ->middleware('can:admin')->name('destroy');
 
-            Route::post('{permit}/berkas', [MinersDokumenController::class, 'permitBerkas'])->name('berkas');
-            Route::post('{permit}/cabut',  [MinersDokumenController::class, 'permitCabut'])->name('cabut');
-            Route::post('{permit}/tindak', [MinersDokumenController::class, 'permitTindak'])->name('tindak');
+            Route::post('{permit}/berkas',       [MinersPermitController::class, 'berkas'])->name('berkas');
+            Route::post('{permit}/foto',         [MinersPermitController::class, 'foto'])->name('foto');
+            Route::post('{permit}/masa-berlaku', [MinersPermitController::class, 'masaBerlaku'])->name('masa-berlaku');
+            Route::post('{permit}/status',       [MinersPermitController::class, 'status'])->name('status');
+            Route::post('{permit}/cabut',        [MinersPermitController::class, 'cabut'])->name('cabut');
+            Route::post('{permit}/tindak',       [MinersPermitController::class, 'tindak'])->name('tindak');
 
-            Route::get('{id}', [MinersDokumenController::class, 'rincian'])
-                ->defaults('jenis', 'permit')->whereNumber('id')->name('rincian');
+            Route::get('{id}', [MinersPermitController::class, 'rincian'])->whereNumber('id')->name('rincian');
 
             Route::post('{id}/ajukan-ulang', [MinersDokumenController::class, 'ajukanUlang'])
                 ->defaults('jenis', 'permit')->whereNumber('id')->name('ajukan-ulang');
 
-            /* "Kirim" — langkah pengaju disetujui oleh pengajunya sendiri. */
             Route::post('{id}/kirim', [MinersDokumenController::class, 'kirim'])
                 ->defaults('jenis', 'permit')->whereNumber('id')->name('kirim');
+        });
+
+        /* Perpanjangan Mine Permit — extendcardsController Safe Track. */
+        Route::prefix('perpanjangan-permit')->name('perpanjangan-permit.')->group(function () {
+            Route::get('/',  [MinersPerpanjanganPermitController::class, 'index'])->name('index');
+            Route::post('/', [MinersPerpanjanganPermitController::class, 'store'])->name('store');
+            Route::get('{id}', [MinersPerpanjanganPermitController::class, 'rincian'])->whereNumber('id')->name('rincian');
+            Route::post('{perpanjangan}/tindak', [MinersPerpanjanganPermitController::class, 'tindak'])
+                ->whereNumber('perpanjangan')->name('tindak');
+            Route::post('{perpanjangan}/ajukan-ulang', [MinersPerpanjanganPermitController::class, 'ajukanUlang'])
+                ->whereNumber('perpanjangan')->name('ajukan-ulang');
         });
 
         Route::prefix('simper')->name('simper.')->group(function () {
@@ -502,8 +532,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
          * benar-benar Inertia. Satu rute berparameter memaksa uji itu
          * menyimpan daftar parameter contoh — dan daftar semacam itu
          * adalah tempat pertama yang tertinggal saat rutenya berubah. */
-        foreach (['mcu', 'induksi', 'mine-permit', 'mine-license', 'authority'] as $tahap) {
-            Route::get('riwayat/'.$tahap, [MinersController::class, 'riwayat'])
+        foreach ([
+            'mcu'          => [MinersMcuController::class, 'index'],
+            'induksi'      => [MinersInduksiController::class, 'index'],
+            'mine-permit'  => [MinersPermitController::class, 'index'],
+            'mine-license' => [MinersController::class, 'riwayat'],
+            'authority'    => [MinersController::class, 'riwayat'],
+        ] as $tahap => $aksi) {
+            Route::get('riwayat/'.$tahap, $aksi)
                 ->defaults('tahap', $tahap)
                 ->name('riwayat.'.$tahap);
         }

@@ -312,6 +312,7 @@ final class RuteInertia
         'miners.daftar.rujukan',
         'miners.daftar.cetak-kartu',
         'miners.daftar.perpanjangan-permit',
+        'miners.perpanjangan-permit.index',
         'miners.alur.index',
         'miners.master.unit',
         'miners.master.type-unit',

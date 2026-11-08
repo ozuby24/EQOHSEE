@@ -258,3 +258,51 @@ select.mn-isian{padding-right:28px}
 .mn-wajib{color:var(--mn-expired)}
 .mn-petunjuk{display:block;font-size:11px;color:var(--mn-redup-2);margin-top:3px}
 .mn-galat{display:block;font-size:11.5px;color:var(--mn-expired);margin-top:3px}
+
+/* ---------------------------------------------------------- kartu info (Manpower | Rujukan | Open) */
+.mn-info-grid{display:grid;gap:22px;margin-bottom:22px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.mn-info{position:relative;background:var(--mn-kartu);border-radius:5px;box-shadow:var(--mn-bayang);padding:20px 20px 24px}
+.mn-info h3{margin:0 0 16px;font-size:18px;font-weight:500;color:var(--mn-judul)}
+.mn-info h3 small{font-size:13px;font-weight:400;color:var(--mn-redup)}
+.mn-info-isi{display:flex;align-items:center;gap:16px}
+.mn-info-ikon{width:64px;height:64px;flex:none;border-radius:50%;display:grid;place-items:center}
+.mn-info-ikon svg{width:30px;height:30px}
+.mn-info-angka{font-size:28px;font-weight:700;color:var(--mn-judul);line-height:1}
+.mn-info-biru .mn-info-ikon{background:#f6f6fe;color:#4154f1}
+.mn-info-hijau .mn-info-ikon{background:#e0f8e9;color:#2eca6a}
+.mn-info-oranye .mn-info-ikon{background:#ffecdf;color:#ff771d}
+:root[data-tema="gelap"] .mn-info-ikon{background:#1d2a31!important}
+
+/* ---------------------------------------------------------- baris alat daftar (tanggal · ekspor · cari) */
+.mn-alat{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.mn-alat .mn-isian{width:auto;min-width:150px}
+.mn-alat-cari{display:flex;gap:6px;flex-wrap:wrap}
+.mn-alat-cari .mn-isian{min-width:200px}
+
+/* ---------------------------------------------------------- medan baca (rincian dokumen) */
+.mn-baca{display:grid;gap:12px 18px;grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:640px){.mn-baca{grid-template-columns:1fr}}
+.mn-baca > .mn-penuh{grid-column:1 / -1}
+.mn-baca .mn-label{font-size:13px;font-weight:500;color:var(--mn-teks)}
+.mn-isian[readonly],.mn-nilai-baca{background:#e9ecef;color:#212529}
+:root[data-tema="gelap"] .mn-isian[readonly],:root[data-tema="gelap"] .mn-nilai-baca{background:#1d2a31;color:var(--mn-teks)}
+.mn-nilai-baca{display:block;min-height:32px;padding:6px 10px;font-size:13px;border:1px solid #ced4da;border-radius:4px;white-space:pre-wrap;word-break:break-word}
+
+/* ---------------------------------------------------------- panel langkah (draf belum dikirim) */
+.mn-langkah{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;
+  padding:12px 16px;margin-bottom:22px;border-radius:6px;background:#eef4ff;border-left:4px solid var(--mn-utama)}
+.mn-langkah-label{font-size:13px;font-weight:700;color:var(--mn-judul)}
+.mn-langkah-teks{font-size:12.5px;color:#4b5b73;margin-top:2px}
+.mn-langkah-kurang{font-size:12.5px;color:#b45309;margin-top:2px}
+.mn-langkah-tolak{background:#fff0e9;border-left-color:var(--mn-kritis)}
+:root[data-tema="gelap"] .mn-langkah{background:#16222a}
+
+/* stempel validasi di layar */
+.mn-stempel{display:inline-flex;align-items:center;gap:4px;padding:.3em .55em;font-size:10px;font-weight:700;border-radius:4px;
+  border:2px double currentColor;letter-spacing:.04em;white-space:nowrap}
+.mn-stempel-sukses{color:#166534}
+.mn-stempel-bahaya{color:#b91c1c}
+.mn-stempel-abu{color:#6b7280}
+.mn-foto{width:auto;max-width:100%;height:200px;border-radius:4px;object-fit:cover;border:1px solid var(--mn-garis-tabel)}
+.mn-foto-kosong{display:grid;place-items:center;width:150px;height:200px;border-radius:4px;border:1px dashed #adb5bd;color:#6c757d;font-size:12px}
+.mn-tabel select.mn-isian,.mn-tabel input.mn-isian{height:28px;font-size:12px;padding:2px 6px;min-width:120px}

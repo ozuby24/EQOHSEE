@@ -179,7 +179,7 @@ final class Menu
           ['Penambahan Unit',     'miners.daftar.penambahan-unit',     'miners/daftar/penambahan-unit'],
           ['Upgrade SIMPER',      'miners.daftar.upgrade-simper',      'miners/daftar/upgrade-simper'],
           ['Perpanjangan SIMPER', 'miners.daftar.perpanjangan',        'miners/daftar/perpanjangan'],
-          ['Perpanjangan Permit', 'miners.daftar.perpanjangan-permit', 'miners/daftar/perpanjangan-permit'],
+          ['Perpanjangan Permit', 'miners.perpanjangan-permit.index', 'miners/perpanjangan-permit*'],
         ],
 
         /* Antrean di meja SAYA — OUTSTANDING Safe Track. Bawaannya

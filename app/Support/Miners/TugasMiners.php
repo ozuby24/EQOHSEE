@@ -36,7 +36,7 @@ final class TugasMiners
         'penambahan'          => ['label' => 'Approval Penambahan Unit',          'rute' => 'miners.daftar.penambahan-unit',     'sebut' => 'data Penambahan Unit'],
         'upgrade'             => ['label' => 'Approval Upgrade SIMPER',           'rute' => 'miners.daftar.upgrade-simper',      'sebut' => 'data Upgrade SIMPER'],
         'perpanjangan'        => ['label' => 'Approval Perpanjangan SIMPER',      'rute' => 'miners.daftar.perpanjangan',        'sebut' => 'data Perpanjangan SIMPER'],
-        'perpanjangan_permit' => ['label' => 'Approval Perpanjangan Mine Permit', 'rute' => 'miners.daftar.perpanjangan-permit', 'sebut' => 'data Perpanjangan Mine Permit'],
+        'perpanjangan_permit' => ['label' => 'Approval Perpanjangan Mine Permit', 'rute' => 'miners.perpanjangan-permit.index', 'sebut' => 'data Perpanjangan Mine Permit'],
     ];
 
     /** Kelas dokumen per kunci `mnr_alur.dokumen`. */
