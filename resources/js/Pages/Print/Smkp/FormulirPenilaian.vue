@@ -116,12 +116,12 @@ const RUMUS = [
               <td colspan="10"><span class="uppercase">{{ b.e.nama }}</span> <span class="font-normal italic text-slate-600">(lanjutan)</span></td>
             </tr>
             <tr v-else-if="b.jenis === 'sub'">
-              <td class="sambung" /><td class="text-center tabular-nums">{{ b.s.kode }}</td><td colspan="2">{{ b.s.nama }}</td>
+              <td class="smkp-sambung" /><td class="text-center tabular-nums">{{ b.s.kode }}</td><td colspan="2">{{ b.s.nama }}</td>
               <td /><td class="text-center tabular-nums">{{ b.s.na ? 'N/A' : b.s.maks }}</td><td />
               <td class="text-center tabular-nums">{{ nilaiSub(b.s) }}</td><td /><td /><td />
             </tr>
             <tr v-else>
-              <td class="sambung" /><td class="sambung" /><td class="text-center tabular-nums">{{ b.r.kode }}</td><td>{{ b.r.nama }}</td>
+              <td class="smkp-sambung" /><td class="smkp-sambung" /><td class="text-center tabular-nums">{{ b.r.kode }}</td><td>{{ b.r.nama }}</td>
               <td /><td /><td class="text-center tabular-nums">{{ b.r.na ? 'N/A' : b.r.maks }}</td>
               <td /><td class="text-center tabular-nums">{{ n(b.r.nilai) }}</td><td /><td />
             </tr>
@@ -150,8 +150,8 @@ const RUMUS = [
 
 <style scoped>
 /* Kepala kolom nilai ditulis tegak seperti matriks Kepdirjen. */
-.tabel-kriteria td.num { padding-left: 2px; padding-right: 2px; white-space: nowrap; overflow-wrap: normal; }
+.tabel-kriteria td.tabular-nums { padding-left: 2px; padding-right: 2px; white-space: nowrap; overflow-wrap: normal; }
 .tegak { writing-mode: vertical-rl; transform: rotate(180deg); display: inline-block; white-space: nowrap; }
 /* Sel kode induk pada baris anak tampak menyatu (seperti sel yang digabung pada matriks acuan). */
-.tabel-kriteria td.sambung { border-top-color: transparent; border-bottom-color: transparent; }
+.tabel-kriteria td.smkp-sambung { border-top-color: transparent; border-bottom-color: transparent; }
 </style>

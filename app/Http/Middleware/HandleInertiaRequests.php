@@ -100,8 +100,11 @@ class HandleInertiaRequests extends Middleware
                aksi, dan tab audit — sehingga kop kerangka ditolak dengan
                `kop: false` (lihat AppLayout). Tanpa ini judul halamannya
                tercetak dua kali. Halaman yang mengirim `kop` sendiri tetap
-               menang: prop halaman menimpa prop bersama. */
-            ...($request->routeIs('smkp.*') ? ['kop' => false] : []),
+               menang: prop halaman menimpa prop bersama. Selalu dikirim
+               (null di luar SMKP): prop bersama yang hanya ada pada
+               sebagian permintaan tertinggal di ResponseFactory untuk
+               permintaan berikutnya dalam proses yang sama. */
+            'kop' => fn () => $request->routeIs('smkp.*') ? false : null,
 
             /* Temuan audit SMKP lewat target yang belum ditutup, dalam
                jangkauan pengguna (lencana menu modul SMKP). */

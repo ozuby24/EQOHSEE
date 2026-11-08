@@ -1217,6 +1217,8 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] .smkp-ui .eyebrow{ color:#50DFD4; }
 :root[data-tema="gelap"] .smkp-ui .tautan{ color:#7CC5F4; }
 :root[data-tema="gelap"] .smkp-ui .tautan:hover{ color:#B3DDF9; }
+/* Lintasan cincin nilai akhir (Show.vue) ditulis sebagai atribut SVG terang. */
+:root[data-tema="gelap"] .smkp-ui circle[stroke="#EEF2F7"]{ stroke:#223238; }
 :root[data-tema="gelap"] .smkp-ui .bg-amber-100{background-color:#3A2D12}
 :root[data-tema="gelap"] .smkp-ui .bg-amber-50{background-color:#2A2213}
 :root[data-tema="gelap"] .smkp-ui .bg-amber-50\/60{background-color:#2A2213}

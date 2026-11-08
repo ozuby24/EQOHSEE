@@ -9,7 +9,13 @@ import { computed } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import KepalaAudit from '../../Components/Smkp/KepalaAudit.vue';
 import Ikon from '../../Components/Smkp/Ikon.vue';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
 import type { RingkasAudit } from '../../smkp/types';
+
+/* Penegasan memakai dialog EQOHSEE (useDialog), pengganti window.confirm Aurorasys:
+   confirm() bawaan peramban dibungkam pada webview ponsel dan memulangkan false. */
+const { dialog, tanya, batal, lanjut } = useDialog();
 
 interface Isian {
   status_perusahaan: string; sk_izin: string; wiup: string; legalitas: string; kegiatan: string; penerapan: string;
@@ -46,8 +52,15 @@ function simpan() {
 }
 
 // Cetak & Word memakai isian tersimpan; perubahan yang belum disimpan hilang saat halaman ditinggalkan.
-function bukaHasil(e: MouseEvent) {
-  if (form.isDirty && !window.confirm('Ada perubahan isian laporan yang belum disimpan dan tidak akan ikut ke dokumen. Tetap lanjutkan tanpa menyimpan?')) e.preventDefault();
+async function bukaHasil(e: MouseEvent) {
+  if (!form.isDirty) return;
+  e.preventDefault();
+  const tujuan = (e.currentTarget as HTMLAnchorElement).href;
+  if (await tanya({
+    judul: 'Lanjutkan tanpa menyimpan?',
+    pesan: 'Ada perubahan isian laporan yang belum disimpan dan tidak akan ikut ke dokumen. Tetap lanjutkan tanpa menyimpan?',
+    labelAksi: 'Tetap lanjutkan',
+  })) window.location.href = tujuan;
 }
 
 const bagian = 'kartu p-5 sm:p-6';
@@ -209,5 +222,6 @@ const kepala = 'text-left text-[10.5px] font-semibold uppercase tracking-[0.08em
         </div>
       </aside>
     </form>
+    <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
   </div>
 </template>
