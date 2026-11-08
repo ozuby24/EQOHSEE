@@ -2,11 +2,12 @@
 
 namespace App\Support;
 
-use App\Models\Pesan;
+use App\Models\{Pesan, SmkpFinding};
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Penanda jumlah pada butir menu — sejauh ini hanya pesan belum dibaca.
+ * Penanda jumlah pada butir menu — pesan belum dibaca, dan temuan audit
+ * SMKP yang lewat target (porting Aurorasys).
  *
  * Tanpa penanda, percakapan hanya ditemukan oleh orang yang kebetulan
  * membuka halaman Pesan; pesan yang masuk saat ia sedang di modul lain
@@ -24,6 +25,9 @@ use Illuminate\Support\Facades\Schema;
  */
 final class Lencana
 {
+    /** Rute butir menu yang membawa jumlah temuan SMKP lewat target. */
+    public const TEMUAN_SMKP = 'smkp.tindak-lanjut';
+
     /**
      * Peta nama rute → jumlah penanda.
      *
@@ -39,7 +43,28 @@ final class Lencana
             $peta['pesan.index'] = $n;
         }
 
+        if ($n = static::temuanSmkpLewatTarget()) {
+            $peta[self::TEMUAN_SMKP] = $n;
+        }
+
         return $peta;
+    }
+
+    /**
+     * Temuan audit SMKP yang belum ditutup dan targetnya sudah lewat, dalam
+     * jangkauan pengguna (global scope SmkpFinding) — angka lonceng
+     * `peringatan` Aurorasys. Tanggal dibandingkan menurut tanggal
+     * aplikasi, sama dengan SmkpFinding::terlambat().
+     */
+    private static function temuanSmkpLewatTarget(): int
+    {
+        if (!Schema::hasTable('smkp_findings')) return 0;
+
+        return SmkpFinding::query()
+            ->where('status', '<>', 'Closed')
+            ->whereNotNull('target_selesai')
+            ->whereDate('target_selesai', '<', now()->toDateString())
+            ->count();
     }
 
     /**

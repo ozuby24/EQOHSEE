@@ -446,11 +446,17 @@ final class Menu
          daftar audit, audit baru, tindak lanjut temuan lintas audit, dan
          acuan kriteria. Langkah per audit (Tahap I, Rencana, Rapat,
          Penilaian, Bukti, Temuan, Formulir, Laporan) dibuka dari halaman
-         audit itu sendiri — menu samping tidak membawa identitas audit. */
+         audit itu sendiri — menu samping tidak membawa identitas audit.
+
+         Daftar Audit tetap menyala di seluruh halaman satu audit (pola
+         `smkp/*`); butir lain yang polanya lebih khusus menang di
+         alamatnya sendiri — lihat HandleInertiaRequests::menu().
+         Audit Baru hanya bagi yang boleh mengisi audit (gerbang `audit`:
+         administrator & auditor) — auditi tidak pernah melihatnya. */
       'groups' => [
         '' => [
-          ['Daftar Audit',          'smkp.index',         'smkp'],
-          ['Audit Baru',            'smkp.create',        'smkp/buat'],
+          ['Daftar Audit',          'smkp.index',         ['smkp', 'smkp/*']],
+          ['Audit Baru',            'smkp.create',        'smkp/buat', 'audit'],
           ['Tindak Lanjut Temuan',  'smkp.tindak-lanjut', 'smkp/tindak-lanjut'],
           ['Kriteria & Acuan',      'smkp.acuan',         'smkp/acuan'],
         ],
@@ -755,7 +761,9 @@ final class Menu
           ['Tagihan', 'pembelian.daftar',  'pembelian/tagihan*'],
           /* Unsur keempat `true`: hanya untuk administrator. Tanpanya
              pengguna biasa melihat butir yang berujung 403 — halamannya
-             sendiri menolak siapa pun selain admin. */
+             sendiri menolak siapa pun selain admin. Bisa pula berupa nama
+             gerbang (mis. 'audit'): butir tampil bagi yang lolos gerbang
+             itu — sama dengan middleware `can:` rutenya. */
           ['Daftar Harga', 'pembelian.produk', 'pembelian/produk*', true],
         ],
       ],

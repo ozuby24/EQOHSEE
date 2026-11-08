@@ -27,7 +27,7 @@ use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiT
     BlastingController, CostController, DispatchController, PermitController, EnergyController, EngineeringController, EnvironmentController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, PengujianController, MineOperationsController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
 use App\Http\Controllers\{BantuanController, BerkasController, ChatController, TemuanController};
-use App\Http\Controllers\Admin\{AiController, CompanyController, KeamananController, PemilikController, SystemController, UserController};
+use App\Http\Controllers\Admin\{AiController, CompanyController, KeamananController, PemilikController, PengingatController, SystemController, UserController};
 use App\Http\Controllers\DuaFaktorController;
 use App\Http\Controllers\AuditLingkunganController;
 use App\Http\Controllers\SertifikatLingkunganController;
@@ -1639,6 +1639,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('ai/kunci',   [AiController::class,'hapus'])->name('ai.hapus');
         Route::post('ai/diagnosa',  [AiController::class,'tanyaDiagnosa'])->name('ai.diagnosa');
         Route::post('system/perbaiki/{aksi}',   [SystemController::class,'perbaiki'])->name('system.perbaiki');
+
+        /* Pengingat batas waktu tindak lanjut temuan audit SMKP (porting
+           Aurorasys). Server emailnya tetap MAIL_* di .env. */
+        Route::get('pengingat',        [PengingatController::class,'index'])->name('pengingat');
+        Route::middleware('throttle:20,1')->group(function () {
+            Route::post('pengingat',       [PengingatController::class,'simpan'])->name('pengingat.simpan');
+            Route::post('pengingat/kirim', [PengingatController::class,'kirim'])->name('pengingat.kirim');
+        });
 
         // Data contoh. Penandaan dan pemuatan sengaja dua rute terpisah:
         // menandai perusahaan sebagai perusahaan contoh harus menjadi

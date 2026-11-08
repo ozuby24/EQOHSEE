@@ -34,7 +34,7 @@ class KirimPengingatTindakLanjut extends Command
         }
 
         if (!PengingatTindakLanjut::aktif()) {
-            $this->info('Pengingat tindak lanjut dimatikan (pengaturan '.PengingatTindakLanjut::AKTIF.').');
+            $this->info('Pengingat tindak lanjut dimatikan (Admin → Pengingat Tindak Lanjut).');
 
             return self::SUCCESS;
         }

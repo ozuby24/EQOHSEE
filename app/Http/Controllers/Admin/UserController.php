@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\{ActivityLog, Company, User};
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class UserController extends Controller
@@ -36,7 +37,12 @@ class UserController extends Controller
                 'inisial'    => mb_strtoupper(mb_substr($u->name, 0, 1)),
                 'admin'      => (bool) $u->is_admin,
                 'lmsRole'    => $u->lms_role,
-                'auditRole'  => $u->audit_role,
+                // Label, bukan kunci: 'company' terbaca sebagai nama perusahaan.
+                'auditRole'  => match ($u->audit_role) {
+                    User::ROLE_AUDITOR => 'Auditor',
+                    User::ROLE_AUDITI  => 'Auditi',
+                    default            => $u->audit_role,
+                },
                 'ohseRole'   => $u->ohse_role,
                 'jabatan'    => $u->position ?: null,
                 'departemen' => $u->department ?: null,
@@ -62,6 +68,7 @@ class UserController extends Controller
     {
         $data = $this->validated($request, null);
         $data['password'] = $data['password'] ?: 'password';
+        $this->pastikanKuotaAuditi($data);
         $user = User::create($data);
         ActivityLog::write('Buat pengguna', $user->name.' ('.$user->email.')');
 
@@ -105,8 +112,8 @@ class UserController extends Controller
                     ['nilai' => 'ktt',     'label' => 'KTT'],
                 ],
                 'audit' => [
-                    ['nilai' => 'auditor', 'label' => 'Auditor'],
-                    ['nilai' => 'company', 'label' => 'Perusahaan'],
+                    ['nilai' => User::ROLE_AUDITOR, 'label' => User::ROLES[User::ROLE_AUDITOR]],
+                    ['nilai' => User::ROLE_AUDITI,  'label' => User::ROLES[User::ROLE_AUDITI]],
                 ],
                 'ohse' => [
                     ['nilai' => 'ohse',      'label' => 'Tim OHSE — memutuskan'],
@@ -118,11 +125,65 @@ class UserController extends Controller
                 'departemen' => \App\Support\Hazard::DEPARTEMEN,
             ],
 
+            /* Kuota auditi audit SMKP (Aurorasys): auditi aktif per
+               perusahaan, tanpa akun yang sedang diubah. */
+            'auditiAktif' => (object) $this->auditiAktif($u->exists ? $u : null),
+            'maksAuditi'  => User::MAKS_AUDITI,
+
             'tautan' => [
                 'simpan' => $u->exists ? route('admin.users.update', $u) : route('admin.users.store'),
                 'batal'  => route('admin.users.index'),
             ],
         ]);
+    }
+
+    /**
+     * Batas akun auditi aktif per perusahaan (Aurorasys, User::MAKS_AUDITI).
+     * Diperiksa hanya bila simpanan ini MENAMBAH auditi aktif di perusahaan
+     * tujuannya — akun baru, pindah perusahaan, diaktifkan lagi, atau
+     * berganti peran. Mengubah data akun yang sudah terhitung tetap boleh
+     * meski kuotanya telanjur terlampaui.
+     *
+     * @param array<string,mixed> $d data tervalidasi
+     */
+    private function pastikanKuotaAuditi(array $d, ?User $lama = null): void
+    {
+        $baru = [
+            'is_admin'   => array_key_exists('is_admin', $d) ? (bool) $d['is_admin'] : (bool) $lama?->is_admin,
+            'audit_role' => array_key_exists('audit_role', $d) ? $d['audit_role'] : $lama?->audit_role,
+            // Kolom `active` berdefault aktif: akun baru tanpa isian terhitung aktif.
+            'active'     => array_key_exists('active', $d) && $d['active'] !== null ? (bool) $d['active'] : (bool) ($lama?->active ?? true),
+            'company_id' => array_key_exists('company_id', $d) ? $d['company_id'] : $lama?->company_id,
+        ];
+        $dihitung = fn (array $u) => !$u['is_admin'] && $u['audit_role'] === User::ROLE_AUDITI && $u['active'] && $u['company_id'];
+
+        if (!$dihitung($baru)) return;
+        if ($lama && $dihitung([
+            'is_admin' => (bool) $lama->is_admin, 'audit_role' => $lama->audit_role,
+            'active' => (bool) $lama->active, 'company_id' => $lama->company_id,
+        ]) && (int) $lama->company_id === (int) $baru['company_id']) return;
+
+        $terpakai = User::where('company_id', $baru['company_id'])->where('is_admin', false)
+            ->where('audit_role', User::ROLE_AUDITI)->where('active', true)
+            ->when($lama, fn ($q) => $q->whereKeyNot($lama->id))->count();
+
+        if ($terpakai >= User::MAKS_AUDITI) {
+            $nama = Company::whereKey($baru['company_id'])->value('name');
+            throw ValidationException::withMessages(['company_id' => sprintf(
+                '%s sudah memiliki %d akun auditi aktif — batasnya %d akun per IUP/PJP. Nonaktifkan salah satunya lebih dulu.',
+                $nama, $terpakai, User::MAKS_AUDITI,
+            )]);
+        }
+    }
+
+    /** Jumlah auditi aktif per perusahaan, tanpa akun yang sedang diubah. @return array<int,int> */
+    private function auditiAktif(?User $kecuali): array
+    {
+        return User::where('is_admin', false)->where('audit_role', User::ROLE_AUDITI)->where('active', true)
+            ->whereNotNull('company_id')
+            ->when($kecuali?->id, fn ($q) => $q->whereKeyNot($kecuali->id))
+            ->selectRaw('company_id, COUNT(*) AS n')->groupBy('company_id')->pluck('n', 'company_id')
+            ->map(fn ($n) => (int) $n)->all();
     }
 
     /** Bentuk penomoran halaman yang sama untuk seluruh daftar Inertia. */
@@ -147,6 +208,8 @@ class UserController extends Controller
         if ($user->id === auth()->id() && empty($data['is_admin']) && User::where('is_admin', true)->count() <= 1) {
             return back()->withErrors(['is_admin' => 'Tidak dapat menonaktifkan admin terakhir.']);
         }
+
+        $this->pastikanKuotaAuditi($data, $user);
 
         $user->update($data);
         ActivityLog::write('Ubah pengguna', $user->name);
@@ -177,7 +240,7 @@ class UserController extends Controller
             'password'    => [$id ? 'nullable' : 'nullable', 'string','min:8'],
             'is_admin'    => ['nullable','boolean'],
             'lms_role'    => ['nullable', Rule::in(['trainee','trainer','ktt'])],
-            'audit_role'  => ['nullable', Rule::in(['auditor','company'])],
+            'audit_role'  => ['nullable', Rule::in([User::ROLE_AUDITOR, User::ROLE_AUDITI])],
 
             /* Peran di dalam tim keselamatan & kesehatan kerja. Dipisah
                dari kedua peran di atas dengan sengaja — lihat
@@ -190,12 +253,17 @@ class UserController extends Controller
                tahap paramedis ada supaya yang membaca hasil pemeriksaan
                bukan orang yang memutuskan kelayakannya. */
             'ohse_role'   => ['nullable', Rule::in(['ohse', 'paramedis'])],
-            'company_id'  => ['nullable','exists:companies,id'],
+            /* Auditi audit SMKP tanpa perusahaan tidak menjangkau audit
+               mana pun dan tidak menerima pengingat (Aurorasys). */
+            'company_id'  => [Rule::requiredIf(fn () => $request->input('audit_role') === User::ROLE_AUDITI && !$request->boolean('is_admin')),
+                              'nullable','exists:companies,id'],
             'employee_id' => ['nullable','string','max:50'],
             'position'    => ['nullable','string','max:100'],
             'department'  => ['nullable','string','max:100'],
             'phone'       => ['nullable','string','max:30'],
             'active'      => ['nullable','boolean'],
+        ], [
+            'company_id.required' => 'Pilih perusahaan (IUP/PJP) tempat auditi ini menyampaikan bukti dan tindak lanjut.',
         ]);
     }
 }

@@ -30,6 +30,13 @@ export interface Pengguna {
 
   /** Perusahaan yang sedang dilihat; null berarti seluruhnya. */
   perusahaanDilihat?: number | null;
+
+  /** Audit SMKP: boleh mengisi audit (administrator atau auditor). */
+  auditor?: boolean;
+  /** Audit SMKP: auditi — membaca, mengunggah bukti, menyampaikan tindak lanjut. */
+  auditi?: boolean;
+  /** false bila akun non-admin belum ditempatkan pada perusahaan mana pun. */
+  ditempatkan?: boolean;
 }
 
 /** Satu butir menu: label, alamat, dan apakah ia sedang dibuka. */
@@ -77,6 +84,9 @@ export interface KerangkaMenu {
   /** Kutipan penutup halaman. */
   kutipan?: string | null;
 
+  /** true di halaman awal modul (pola pertama butir pertamanya). */
+  beranda?: boolean;
+
   /** Alamat akar modul, untuk remah roti di kop. */
   akar?: string | null;
 }
@@ -97,6 +107,8 @@ export interface PropBersama {
   kilat: Kilat;
   status?: string | null;
   pengumuman: number;
+  /** Temuan audit SMKP lewat target yang belum ditutup, dalam jangkauan pengguna. */
+  peringatan?: number;
   tema: 'terang' | 'gelap' | null;
   warna: { aksen: string; dasar: string };
   ziggy?: Record<string, string>;
@@ -1709,6 +1721,10 @@ export interface HalamanFormPengguna {
     lms: Pilihan[]; audit: Pilihan[]; ohse: Pilihan[]; perusahaan: Pilihan[];
     jabatan: string[]; departemen: string[];
   };
+  /** Auditi audit SMKP aktif per perusahaan (kunci: id perusahaan), tanpa akun ini. */
+  auditiAktif: Record<string, number>;
+  /** Batas akun auditi aktif per perusahaan. */
+  maksAuditi: number;
   tautan: { simpan: string; batal: string };
 }
 
@@ -2287,6 +2303,19 @@ export interface HalamanPerangkat {
 }
 
 /* ── Penetapan pemilik ── */
+
+/** Admin → Pengingat Tindak Lanjut (audit SMKP, porting Aurorasys). */
+export interface HalamanPengingat {
+  judul: string; subjudul: string;
+  pengingat: { aktif: boolean; jadwal: string[]; pilihan: Record<string, string>; jam: string };
+  surel: { siap: boolean; mailer: string; dari: string };
+  mendatang: Array<{
+    tanggal: string; jadwal: string; temuan: string; perusahaan: string;
+    target: string; penerima: string[]; url: string;
+  }>;
+  riwayat: Array<{ id: number; oleh: string | null; aksi: string; detail: string | null; waktu: string | null }>;
+  tautan: { simpan: string; kirim: string; pengguna: string; sistem: string };
+}
 
 export interface HalamanPemilik {
   judul: string; subjudul: string;

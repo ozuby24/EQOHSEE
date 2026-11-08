@@ -389,7 +389,7 @@ final class Berkas
      * Aturan bagi berkas bukti butir kriteria audit.
      *
      * Batasnya 10 MB, LEBIH KETAT daripada ATURAN_DOKUMEN di bawah, dan
-     * bukan karena diska mahal. Satu audit SMKP menyentuh 349 butir;
+     * bukan karena diska mahal. Satu audit SMKP menyentuh 100 butir;
      * bukti yang dilampirkan pada tiap butir berupa satu SOP, satu
      * notulen, atau satu foto lapangan — dan berkas 20 MB pada butir
      * semacam itu hampir selalu berarti seseorang mengunggah seluruh

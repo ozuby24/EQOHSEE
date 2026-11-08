@@ -123,6 +123,15 @@ class User extends Authenticatable implements MustVerifyEmail
         self::ROLE_AUDITI  => 'Auditi (unggah bukti & tindak lanjut)',
     ];
 
+    /**
+     * Akun auditi aktif paling banyak per perusahaan (IUP/PJP); akun nonaktif
+     * tidak dihitung (Aurorasys). Yang dihitung hanya akun yang DITETAPKAN
+     * auditi (`audit_role` = ROLE_AUDITI) — akun EQOHSEE tanpa peran audit
+     * adalah pengguna modul lain, bukan wakil auditi, dan tidak menerima
+     * pengingat tindak lanjut.
+     */
+    public const MAKS_AUDITI = 2;
+
     /** @var array{untuk:string,isi:array<int>}|null */
     private ?array $jangkauanMemo = null;
 

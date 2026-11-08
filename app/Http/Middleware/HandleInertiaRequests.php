@@ -4,7 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Support\{IkonNav, KondisiSitus, Lencana, Media, Menu, RuteInertia, SampulModul, Tema, Tur};
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\{Gate, Schema};
 use Inertia\Middleware;
 use App\Support\Berkas;
 use App\Support\Perusahaan;
@@ -31,6 +31,15 @@ class HandleInertiaRequests extends Middleware
     {
         $u = $request->user();
 
+        /* Penanda menu dihitung SEKALI per permintaan dan dipakai dua
+           tempat: lencana butir menu dan `peringatan` (temuan SMKP lewat
+           target) di bilah atas. Dua closure yang masing-masing menghitung
+           sendiri berarti kueri yang sama dua kali pada tiap halaman. */
+        $lencana = null;
+        $ambilLencana = function () use ($u, &$lencana): array {
+            return $lencana ??= Lencana::semua($u);
+        };
+
         return array_merge(parent::share($request), [
             'pengguna' => $u ? [
                 'id'     => $u->id,
@@ -43,6 +52,12 @@ class HandleInertiaRequests extends Middleware
                    mengisi audit, auditi membaca dan menyampaikan tindak lanjut. */
                 'auditor' => $u->bisaAudit(),
                 'auditi'  => $u->isAuditi(),
+
+                /* Akun non-admin tanpa perusahaan tidak menjangkau audit
+                   SMKP mana pun (User::jangkauan); kerangka menuliskan
+                   sebabnya di halaman modul audit alih-alih daftar kosong
+                   yang terbaca sebagai galat (perilaku Aurorasys). */
+                'ditempatkan' => $u->isAdmin() || (bool) $u->company_id,
 
                 /* Nama perusahaannya ikut dikirim karena kepala halaman
                    menyebutkannya. Pengguna yang tidak terikat perusahaan
@@ -67,7 +82,7 @@ class HandleInertiaRequests extends Middleware
                 'perusahaanDilihat'  => Perusahaan::terpilih($u),
             ] : null,
 
-            'menu' => fn () => $this->menu($u),
+            'menu' => fn () => $this->menu($u, $ambilLencana()),
 
             /* Ditutup dalam closure supaya dibaca saat halaman disusun,
                bukan saat middleware dipasang — pesan kilat baru ada
@@ -107,12 +122,9 @@ class HandleInertiaRequests extends Middleware
             'kop' => fn () => $request->routeIs('smkp.*') ? false : null,
 
             /* Temuan audit SMKP lewat target yang belum ditutup, dalam
-               jangkauan pengguna (lencana menu modul SMKP). */
-            'peringatan' => fn () => $u ? \App\Models\SmkpFinding::query()
-                ->where('status', '<>', 'Closed')
-                ->whereNotNull('target_selesai')
-                ->whereDate('target_selesai', '<', now()->toDateString())
-                ->count() : 0,
+               jangkauan pengguna — lonceng bilah atas modul audit dan
+               lencana butir "Tindak Lanjut Temuan" (Lencana::semua). */
+            'peringatan' => fn () => (int) ($ambilLencana()[Lencana::TEMUAN_SMKP] ?? 0),
 
             /* Sambutan otomatis dibawa UTUH di sini, bukan diambil
              * kemudian lewat jaringan.
@@ -218,13 +230,29 @@ class HandleInertiaRequests extends Middleware
         ];
     }
 
-    private function menu($u): array
+    /**
+     * Panjang pola terpanjang yang cocok dengan alamat sekarang (0 bila
+     * tidak ada). Pola boleh satu teks atau daftar teks.
+     *
+     * @param string|list<string> $pola
+     */
+    private static function panjangCocok(string|array $pola): int
+    {
+        $panjang = 0;
+        foreach ((array) $pola as $p) {
+            if (request()->is($p)) $panjang = max($panjang, strlen($p));
+        }
+
+        return $panjang;
+    }
+
+    private function menu($u, ?array $lencana = null): array
     {
         $kunci = Menu::modulAktif();
         $aktif = Menu::modul($kunci);
 
         // Sekali per permintaan, bukan sekali per butir — lihat App\Support\Lencana.
-        $lencana = Lencana::semua($u);
+        $lencana ??= Lencana::semua($u);
 
         $modul = [];
         foreach (Menu::untuk($u) as $k => $m) {
@@ -246,26 +274,45 @@ class HandleInertiaRequests extends Middleware
         }
 
         $grup = [];
+        $cocokTerpanjang = 0;
         foreach ($aktif['groups'] as $nama => $butir) {
             $isi = [];
             foreach ($butir as $b) {
                 [$label, $rute, $cocok] = $b;
 
-                // Butir khusus administrator (unsur keempat) tidak
-                // ditampilkan kepada yang pasti ditolak halamannya.
-                if (($b[3] ?? false) && !$u?->isAdmin()) continue;
+                // Butir khusus administrator (unsur keempat `true`), atau
+                // khusus pemegang gerbang tertentu (unsur keempat berupa
+                // nama gerbang, mis. 'audit'), tidak ditampilkan kepada
+                // yang pasti ditolak halamannya.
+                $syarat = $b[3] ?? false;
+                if ($syarat === true && !$u?->isAdmin()) continue;
+                if (is_string($syarat) && !($u && Gate::forUser($u)->allows($syarat))) continue;
 
                 $isi[] = [
                     'label'   => $label,
                     'url'     => route($rute),
-                    'aktif'   => request()->is($cocok),
+                    'aktif'   => $panjang = self::panjangCocok($cocok),
                     'ikon'    => IkonNav::JALUR[IkonNav::nama($label)],
                     'inertia' => RuteInertia::ada($rute),
                     'lencana' => $lencana[$rute] ?? null,
                 ];
+                $cocokTerpanjang = max($cocokTerpanjang, $panjang);
             }
             $grup[] = ['nama' => (string) $nama, 'butir' => $isi];
         }
+
+        /* POLA PALING KHUSUS YANG MENANG. Satu butir boleh berpola lebar
+           (Daftar Audit: `smkp/*`, menyala di seluruh halaman satu audit)
+           selama butir lain yang polanya lebih panjang (`smkp/buat`)
+           tetap menang di alamatnya sendiri — dua butir menyala bersama
+           terbaca sebagai dua halaman yang sedang dibuka. Butir yang
+           polanya sama panjang tetap menyala bersama, seperti sebelumnya. */
+        foreach ($grup as &$g) {
+            foreach ($g['butir'] as &$b) {
+                $b['aktif'] = $b['aktif'] > 0 && $b['aktif'] === $cocokTerpanjang;
+            }
+        }
+        unset($g, $b);
 
         return [
             'modul' => $modul,
@@ -291,6 +338,25 @@ class HandleInertiaRequests extends Middleware
 
             /* Alamat akar modul, untuk remah roti di kop. */
             'akar' => ($r = Menu::ruteAwal($aktif)) ? route($r) : null,
+
+            /* Sedang di halaman awal modul: butir pertama menyala menurut
+               pola PERTAMANYA. Butir berpola ganda (Daftar Audit SMKP:
+               `smkp` lalu `smkp/*`) menyala di seluruh halaman audit,
+               tetapi hanya pola pertamanya yang beranda — bilah pindah
+               cepat tidak ikut tergambar di tiap halaman audit. */
+            'beranda' => $this->diBeranda($aktif, $grup),
         ];
+    }
+
+    /** @param list<array{nama:string,butir:list<array<string,mixed>>}> $grup */
+    private function diBeranda(array $aktif, array $grup): bool
+    {
+        $pertama = $grup[0]['butir'][0] ?? null;
+        $pola = null;
+        foreach ($aktif['groups'] as $butir) {
+            foreach ($butir as $b) { $pola = ((array) $b[2])[0]; break 2; }
+        }
+
+        return $pertama && $pertama['aktif'] && $pola !== null && request()->is($pola);
     }
 }

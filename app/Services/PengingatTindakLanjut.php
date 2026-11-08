@@ -26,9 +26,11 @@ use Throwable;
  * Perusahaan demo tidak pernah dikirimi.
  *
  * Penyesuaian EQOHSEE: pengaturan disimpan di app_settings (App\Models\
- * Pengaturan); server email memakai konfigurasi mail Laravel (.env) —
- * EQOHSEE tidak punya halaman Admin → Server → Email; auditi = akun
- * non-admin yang audit_role-nya bukan 'auditor'.
+ * Pengaturan) dan diubah di Admin → Pengingat Tindak Lanjut; server email
+ * memakai konfigurasi mail Laravel (.env). Penerima = akun yang DITETAPKAN
+ * auditi (`audit_role` = User::ROLE_AUDITI, paling banyak User::MAKS_AUDITI
+ * per perusahaan) — sama dengan `role = auditi` Aurorasys. Akun EQOHSEE
+ * tanpa peran audit adalah pengguna modul lain dan tidak dikirimi.
  */
 final class PengingatTindakLanjut
 {
@@ -185,8 +187,7 @@ final class PengingatTindakLanjut
     public function penerima(Company $c): Collection
     {
         $cari = fn (?int $id) => $id === null ? collect() : User::where('company_id', $id)->where('is_admin', false)
-            ->where(fn ($q) => $q->whereNull('audit_role')->orWhere('audit_role', '<>', User::ROLE_AUDITOR))
-            ->where('active', true)->orderBy('id')->get()
+            ->where('audit_role', User::ROLE_AUDITI)->where('active', true)->orderBy('id')->get()
             ->filter(fn (User $u) => filter_var($u->email, FILTER_VALIDATE_EMAIL) !== false)->values();
 
         $u = $cari($c->id);

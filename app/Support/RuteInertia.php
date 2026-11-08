@@ -111,6 +111,7 @@ final class RuteInertia
         'admin.keamanan',
         'admin.pemilik',
         'admin.ai',
+        'admin.pengingat',
         'keamanan.perangkat',
         'keamanan.dua-faktor',
         'admin.users.index',
