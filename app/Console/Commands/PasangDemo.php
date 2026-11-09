@@ -373,6 +373,10 @@ class PasangDemo extends Command
             'position'   => 'Kepala Teknik Tambang',
             'department' => 'Operasi Tambang',
             'lms_role'   => 'ktt',
+            // Audit SMKP: KTT dan PJO adalah dua akun auditi perusahaannya
+            // (batas User::MAKS_AUDITI) — membaca audit, mengunggah bukti,
+            // menyampaikan tindak lanjut, dan menerima pengingatnya.
+            'audit_role' => User::ROLE_AUDITI,
             'active'     => true,
         ]);
 
@@ -382,6 +386,7 @@ class PasangDemo extends Command
             'position'   => 'Penanggung Jawab Operasional',
             'department' => 'Occupational Health, Safety and Environment',
             'lms_role'   => 'trainee',
+            'audit_role' => User::ROLE_AUDITI,
             'active'     => true,
         ]);
 
@@ -456,13 +461,15 @@ class PasangDemo extends Command
             'department' => 'Operasi Tambang',
             'is_admin'   => false,
             'lms_role'   => 'trainee',
+            // Penjajal biasa dapat mencoba alur auditor audit SMKP tanpa hak admin.
+            'audit_role' => User::ROLE_AUDITOR,
             'active'     => true,
         ]);
 
         $this->line('');
         $this->line('  akun penjajal');
         $this->line('    '.self::PENJAJAL_ADMIN.'  administrator, seluruh perusahaan dan seluruh modul');
-        $this->line('    '.self::PENJAJAL_BIASA.'  pengguna biasa di '.$berdata->name);
+        $this->line('    '.self::PENJAJAL_BIASA.'  pengguna biasa di '.$berdata->name.' (auditor audit SMKP)');
     }
 
     /**

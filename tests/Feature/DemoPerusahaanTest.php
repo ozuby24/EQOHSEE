@@ -92,7 +92,15 @@ class DemoPerusahaanTest extends TestCase
             $this->assertTrue($u->contains(fn (User $x) => $x->isKtt() || $x->isAdmin()),
                 $c->name.' tidak punya peninjau; seluruh datanya akan tersimpan '
                 .'sebagai draf dan tidak masuk hitungan KPI.');
+
+            // Audit SMKP: KTT & PJO adalah dua akun auditi perusahaannya
+            // (batas Aurorasys), penerima pengingat tindak lanjut.
+            $this->assertSame([User::ROLE_AUDITI, User::ROLE_AUDITI], $u->pluck('audit_role')->all(), $c->name);
+            $this->assertCount(User::MAKS_AUDITI, $u->filter->isAuditi());
         }
+
+        // Penjajal biasa dapat mencoba alur auditor tanpa hak admin.
+        $this->assertTrue(User::where('email', PasangDemo::PENJAJAL_BIASA)->firstOrFail()->bisaAudit());
     }
 
     public function test_dijalankan_ulang_tidak_menggandakan(): void
