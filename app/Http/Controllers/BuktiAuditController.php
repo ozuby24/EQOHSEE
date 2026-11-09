@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, SmkpAudit, SmkpBukti, User};
 use App\Rules\LampiranBukti;
-use App\Support\{BerkasUnggah, Smkp};
+use App\Support\{BerkasUnggah, Smkp, Waktu};
 use Illuminate\Http\{Request, UploadedFile};
 use Illuminate\Support\Facades\{DB, Storage};
 use Illuminate\Support\Str;
@@ -251,9 +251,9 @@ class BuktiAuditController extends SmkpController
             'status'     => $b->status,
             'catatan'    => $b->catatan,
             'oleh'       => $b->pengunggah?->name,
-            'waktu'      => $b->created_at?->translatedFormat('d M Y H:i'),
+            'waktu'      => Waktu::lokal($b->created_at)?->translatedFormat('d M Y H:i'),
             'verifikator'=> $b->verifikator?->name,
-            'diverifikasi' => $b->diverifikasi_pada?->translatedFormat('d M Y H:i'),
+            'diverifikasi' => Waktu::lokal($b->diverifikasi_pada)?->translatedFormat('d M Y H:i'),
             'url'        => route('smkp.bukti.unduh', [$smkp, $b]),
             'bisaHapus'  => self::bisaHapus($u, $b, $smkp),
         ];

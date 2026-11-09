@@ -54,7 +54,7 @@ final class Lencana
      * Temuan audit SMKP yang belum ditutup dan targetnya sudah lewat, dalam
      * jangkauan pengguna (global scope SmkpFinding) — angka lonceng
      * `peringatan` Aurorasys. Tanggal dibandingkan menurut tanggal
-     * aplikasi, sama dengan SmkpFinding::terlambat().
+     * SETEMPAT (Waktu::kini), sama dengan SmkpFinding::terlambat().
      */
     private static function temuanSmkpLewatTarget(): int
     {
@@ -63,7 +63,7 @@ final class Lencana
         return SmkpFinding::query()
             ->where('status', '<>', 'Closed')
             ->whereNotNull('target_selesai')
-            ->whereDate('target_selesai', '<', now()->toDateString())
+            ->whereDate('target_selesai', '<', Waktu::kini()->toDateString())
             ->count();
     }
 

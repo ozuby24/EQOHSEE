@@ -194,6 +194,7 @@ return [
         /* Audit SMKP (porting Aurorasys) — hanya ruas bertitik yang
            khas modul itu; nama ruas umum tidak diubah di sini karena
            dipakai bersama modul lain. */
+        'ketua_auditor'            => 'ketua tim audit',
         'permulaan.tanggal_kontak' => 'tanggal kontak awal',
         'permulaan.media_kontak'   => 'media kontak',
         'permulaan.wakil_auditi'   => 'wakil auditi',

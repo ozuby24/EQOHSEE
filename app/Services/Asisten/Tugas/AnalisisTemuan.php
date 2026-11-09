@@ -164,7 +164,7 @@ final class AnalisisTemuan
         $preventif = self::aksi($d['preventif'] ?? [], 3);
         $hariAksi = max([0, ...array_column($korektif, 'hari'), ...array_column($preventif, 'hari')]);
         $hari     = Rapi::bulat($d['target_hari'] ?? null, 1, 365, $hariAksi ?: 30);
-        $tanggal  = now()->startOfDay()->addDays($hari)->toDateString();
+        $tanggal  = \App\Support\Waktu::kini()->startOfDay()->addDays($hari)->toDateString();
         $buktiTutup = Rapi::daftar($d['bukti_penutupan'] ?? [], 6, 300);
         $risiko   = Rapi::pilihan($d['tingkat_risiko'] ?? '', array_keys(self::RISIKO), 'sedang');
         $pernyataan = Rapi::teks($akar['pernyataan'] ?? '', 800);

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Mail\PengingatTindakLanjut as SuratPengingat;
 use App\Models\{Company, Pengaturan, SmkpFinding, SmkpPengingat, User};
+use App\Support\Waktu;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
@@ -275,6 +276,6 @@ final class PengingatTindakLanjut
 
     private static function hari(?CarbonInterface $hari): CarbonImmutable
     {
-        return CarbonImmutable::parse(($hari ?? now())->toDateString());
+        return CarbonImmutable::parse(($hari ?? Waktu::kini())->toDateString());
     }
 }

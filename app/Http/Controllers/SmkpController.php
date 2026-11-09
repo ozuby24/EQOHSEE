@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Company, SmkpAttendee, SmkpAudit, SmkpBukti, SmkpFinding, SmkpTindakLanjut, User};
-use App\Support\{KopDokumen, Smkp, SmkpTahap};
+use App\Support\{KopDokumen, Smkp, SmkpTahap, Waktu};
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\{DB, Storage};
@@ -91,7 +91,7 @@ class SmkpController extends Controller
 
         return Inertia::render('Smkp/Form', [
             'audit' => [
-                'id' => null, 'tahun' => (int) now()->year, 'judul' => '',
+                'id' => null, 'tahun' => (int) Waktu::kini()->year, 'judul' => '',
                 'company_id' => $daftar->count() === 1 ? $daftar->first()->id : '',
                 'status' => 'draft', 'tanggal_mulai' => '', 'tanggal_selesai' => '', 'ketua_auditor' => '',
             ],
@@ -1036,7 +1036,7 @@ class SmkpController extends Controller
                 'kiriman'          => $t->tindakLanjut->map(fn (SmkpTindakLanjut $k) => [
                     'id'       => $k->id,
                     'oleh'     => $k->pengirim?->name ?? 'Akun dihapus',
-                    'waktu'    => $k->created_at?->translatedFormat('d M Y · H:i'),
+                    'waktu'    => Waktu::lokal($k->created_at)?->translatedFormat('d M Y · H:i'),
                     'akar_masalah' => (string) $k->akar_masalah,
                     'tindakan' => $k->tindakan,
                     'bukti_perbaikan' => (string) $k->bukti_perbaikan,
@@ -1192,7 +1192,7 @@ class SmkpController extends Controller
         if ($d['status'] === 'Closed') {
             $d['tanggal_selesai'] = ($d['tanggal_selesai'] ?? null)
                 ?: ($temuan->status === 'Closed' ? $temuan->tanggal_selesai?->toDateString() : null)
-                ?: now()->toDateString();
+                ?: Waktu::kini()->toDateString();
         } else {
             $d['tanggal_selesai'] = null;
         }

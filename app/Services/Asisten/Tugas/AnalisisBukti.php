@@ -240,7 +240,7 @@ final class AnalisisBukti
     private function metadata(SmkpBukti $b): string
     {
         $baris = [
-            $b->nama.' — diunggah '.($b->pengunggah?->labelPeran() ?? 'pengguna').($b->created_at ? ' pada '.$b->created_at->format('d-m-Y') : '')
+            $b->nama.' — diunggah '.($b->pengunggah?->labelPeran() ?? 'pengguna').($b->created_at ? ' pada '.\App\Support\Waktu::lokal($b->created_at)->format('d-m-Y') : '')
                 .'; status verifikasi: '.(SmkpBukti::STATUS[$b->status] ?? $b->status),
         ];
         if (trim((string) $b->keterangan) !== '') $baris[] = '   Keterangan pengunggah: '.Prompt::data($b->keterangan);

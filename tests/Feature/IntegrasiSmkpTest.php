@@ -130,6 +130,27 @@ class IntegrasiSmkpTest extends TestCase
         $this->assertSame(2, $modul['lencana']);
     }
 
+    public function test_lewat_target_dan_jam_tampil_menurut_waktu_setempat(): void
+    {
+        // Server UTC, pembaca WITA: 20.00 UTC tanggal 8 = 04.00 WITA tanggal 9.
+        config(['waktu.zona' => 'Asia/Makassar']);
+        $this->travelTo(CarbonImmutable::parse('2026-11-08 20:00:00', 'UTC'));
+        $a = $this->audit($this->induk);
+        $t = $this->temuan($a, '2026-11-08');
+
+        $this->assertTrue($t->fresh()->terlambat(), 'Target kemarin (WITA) sudah lewat.');
+        $this->actingAs($this->auditor($this->induk))->get('/smkp')->assertInertia(fn (Inertia $p) => $p->where('peringatan', 1));
+
+        // Waktu kiriman tindak lanjut tercetak dalam jam setempat, bukan UTC.
+        \App\Models\SmkpTindakLanjut::create(['finding_id' => $t->id, 'tindakan' => 'Perbaikan', 'lampiran' => []]);
+        $this->actingAs($this->auditor($this->induk))->get("/smkp/{$a->id}/temuan")->assertInertia(fn (Inertia $p) => $p
+            ->where('temuan.0.kiriman.0.waktu', '09 Nov 2026 · 04:00'));
+
+        // Tanggal tanda tangan bawaan & tahun audit baru mengikuti kalender setempat.
+        $this->travelTo(CarbonImmutable::parse('2026-12-31 20:00:00', 'UTC'));
+        $this->actingAs($this->admin())->get('/smkp/buat')->assertInertia(fn (Inertia $p) => $p->where('audit.tahun', 2027));
+    }
+
     /* ───────────── Akun belum ditempatkan ───────────── */
 
     public function test_akun_tanpa_perusahaan_ditandai_belum_ditempatkan(): void

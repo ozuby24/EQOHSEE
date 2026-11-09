@@ -81,8 +81,11 @@ class SmkpFinding extends Model
     /** Lewat target penyelesaian dan belum ditutup. */
     public function terlambat(): bool
     {
+        // Menurut tanggal SETEMPAT (App\Support\Waktu): EQOHSEE berjalan UTC,
+        // dan "lewat target" pada pukul 00.00–08.00 WITA tidak boleh
+        // tertinggal sehari dari kalender orang yang membacanya.
         return $this->status !== 'Closed'
             && $this->target_selesai
-            && $this->target_selesai->copy()->endOfDay()->isPast();
+            && $this->target_selesai->toDateString() < \App\Support\Waktu::kini()->toDateString();
     }
 }

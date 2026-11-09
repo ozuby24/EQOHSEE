@@ -259,9 +259,9 @@ class AsistenTest extends TestCase
         $r->assertJson([
             'tugas' => 'temuan', 'id' => $this->temuan->id, 'kode' => 'II.2',
             'akar' => ['kategori' => 'metode', 'label' => 'Metode'],
-            'target' => ['hari' => 45, 'tanggal' => now()->startOfDay()->addDays(45)->toDateString()],
+            'target' => ['hari' => 45, 'tanggal' => \App\Support\Waktu::kini()->startOfDay()->addDays(45)->toDateString()],
             'risiko' => ['tingkat' => 'tinggi', 'label' => 'Tinggi'],
-            'isian' => ['penanggung_jawab' => 'Kepala Teknik Tambang', 'target_selesai' => now()->startOfDay()->addDays(45)->toDateString()],
+            'isian' => ['penanggung_jawab' => 'Kepala Teknik Tambang', 'target_selesai' => \App\Support\Waktu::kini()->startOfDay()->addDays(45)->toDateString()],
         ]);
         $this->assertSame(365, $r->json('preventif.0.hari'));
         $this->assertStringContainsString('[Metode] Prosedur manajemen risiko', $r->json('isian.akar_masalah'));

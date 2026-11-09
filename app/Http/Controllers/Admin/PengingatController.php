@@ -6,6 +6,7 @@ use App\Console\Commands\KirimPengingatTindakLanjut;
 use App\Http\Controllers\Controller;
 use App\Models\{ActivityLog, Pengaturan};
 use App\Services\PengingatTindakLanjut;
+use App\Support\Waktu;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -59,7 +60,7 @@ class PengingatController extends Controller
                     'oleh'   => $l->username ?: null,
                     'aksi'   => $l->action,
                     'detail' => $l->detail,
-                    'waktu'  => $l->created_at?->translatedFormat('d M Y · H:i'),
+                    'waktu'  => Waktu::lokal($l->created_at)?->translatedFormat('d M Y · H:i'),
                 ])->all(),
 
             'tautan' => [

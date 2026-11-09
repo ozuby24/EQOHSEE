@@ -110,7 +110,7 @@ class SmkpAudit extends Model
     /** Nomor ketidaksesuaian ke-$urutan untuk kategori itu (lihat Smkp::nomorTemuan). */
     public function nomorTemuanBaru(string $jenis, int $urutan): string
     {
-        return Smkp::nomorTemuan($jenis, $urutan, (int) ($this->tahun ?: now()->year), $this->kodeNomorTemuan());
+        return Smkp::nomorTemuan($jenis, $urutan, (int) ($this->tahun ?: \App\Support\Waktu::kini()->year), $this->kodeNomorTemuan());
     }
 
     /**

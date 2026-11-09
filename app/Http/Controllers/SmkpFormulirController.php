@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, SmkpAudit, SmkpFinding};
 use App\Rules\LampiranBukti;
-use App\Support\{BerkasUnggah, KopDokumen, Smkp};
+use App\Support\{BerkasUnggah, KopDokumen, Smkp, Waktu};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{DB, Storage};
 use Illuminate\Support\Str;
@@ -302,7 +302,7 @@ class SmkpFormulirController extends SmkpController
             $b = $d['bagian'];
             if ($d['ttd']) {
                 $t['bubuh'][$b][$pihak] = true;
-                $t['tanggal'][$b][$pihak] ??= now()->toDateString();
+                $t['tanggal'][$b][$pihak] ??= Waktu::kini()->toDateString();
             } else {
                 unset($t['bubuh'][$b], $t['tanggal'][$b][$pihak]);
                 if (empty($t['tanggal'][$b])) unset($t['tanggal'][$b]);

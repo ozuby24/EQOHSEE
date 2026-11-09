@@ -259,7 +259,7 @@ class FormulirAuditTest extends TestCase
         $this->actingAs($auditor)->post("{$url}/ttd/bubuh", ['bagian' => $perbaikan, 'ttd' => true])->assertForbidden();
         $this->actingAs($auditi)->post("{$url}/ttd/bubuh", ['bagian' => $perbaikan, 'ttd' => true])->assertRedirect()->assertSessionHasNoErrors();
         $this->assertTrue($a->fresh()->ttd_formulir['bubuh'][$perbaikan]['ktt']);
-        $this->assertSame(now()->toDateString(), $a->fresh()->ttd_formulir['tanggal'][$perbaikan]['ktt']);
+        $this->assertSame(\App\Support\Waktu::kini()->toDateString(), $a->fresh()->ttd_formulir['tanggal'][$perbaikan]['ktt']);
         $this->actingAs($auditi)->post("{$url}/tanggal", ['bagian' => $perbaikan, 'pihak' => 'ktt', 'tanggal' => '2026-10-20'])->assertRedirect();
         $this->actingAs($auditi)->post("{$url}/tanggal", ['bagian' => $verifikasi, 'pihak' => 'ketua', 'tanggal' => '2026-10-20'])->assertForbidden();
 
