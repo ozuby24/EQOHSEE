@@ -358,6 +358,24 @@ class MinersMcuSafetrackTest extends TestCase
                 ->where('bolehTambah', true)->where('orang.0.bolehNilai', false));
     }
 
+    /* ═══════════ tinjauan harian ═══════════ */
+
+    public function test_tinjauan_harian_mcu_menurut_tanggal_pengajuan(): void
+    {
+        $mcu = $this->suratMcu();
+        $this->post("/miners/mcu/{$mcu->id}/orang", $this->isianManpower(['nama' => 'Hari Ini']));
+        $this->post("/miners/mcu/{$mcu->id}/kirim");
+
+        $this->actingAs($this->admin)->get('/miners/dasbor')->assertOk()
+            ->assertInertia(fn (AssertableInertia $p) => $p
+                ->where('tinjauan.tanggal', Waktu::kini()->toDateString())
+                ->where('tinjauan.diajukan', 1)->where('tinjauan.menunggu', 1)
+                ->where('tinjauan.orang.0.nama', 'Hari Ini'));
+
+        $this->get('/miners/dasbor?tgl_tinjau='.Waktu::kini()->subDays(3)->toDateString())
+            ->assertInertia(fn (AssertableInertia $p) => $p->where('tinjauan.diajukan', 0));
+    }
+
     /* ═══════════ berkas ═══════════ */
 
     public function test_berkas_rujukan_manpower_dijaga_seketat_berkas_medis(): void

@@ -32,7 +32,7 @@ class MinersController extends Controller
 {
     /* ═══════════════════ ringkasan ═══════════════════ */
 
-    public function dasbor()
+    public function dasbor(Request $r)
     {
         $orang = $this->orangDenganBerkas()->get();
 
@@ -84,9 +84,56 @@ class MinersController extends Controller
                     'sisa'    => $k->sisaHari(),
                 ]),
 
+            'tinjauan' => $this->tinjauanHarian($r),
+
             'KEADAAN' => Keadaan::LABEL,
             'NADA'    => Keadaan::NADA,
         ]);
+    }
+
+    /**
+     * Tinjauan Harian MCU — dasbor Safe Track (b947f60): pengajuan MCU pada
+     * satu tanggal PENGAJUAN (bukan tanggal pemeriksaan) — diajukan,
+     * menunggu dokter, disetujui, ditolak — beserta daftar namanya.
+     *
+     * Tanggalnya hari tambang; rentangnya dihitung dalam UTC, zona
+     * penyimpanan `created_at`.
+     *
+     * @return array<string,mixed>
+     */
+    private function tinjauanHarian(Request $r): array
+    {
+        try {
+            $tanggal = \Illuminate\Support\Carbon::parse((string) $r->query('tgl_tinjau', Waktu::kini()->toDateString()), Waktu::zona());
+        } catch (\Throwable) {
+            $tanggal = Waktu::kini();
+        }
+
+        $dari   = $tanggal->copy()->startOfDay()->utc();
+        $sampai = $tanggal->copy()->endOfDay()->utc();
+
+        $surat = fn () => Mcu::query()->whereBetween('created_at', [$dari, $sampai]);
+
+        $orang = McuOrang::query()->with(['mcu.company:id,name'])
+            ->whereIn('mcu_id', $surat()->select('id'))
+            ->orderByDesc('created_at')->limit(50)->get()
+            ->map(fn (McuOrang $o) => [
+                'id'         => $o->id,
+                'mcu_id'     => $o->mcu_id,
+                'nama'       => $o->nama,
+                'perusahaan' => $o->mcu?->company?->name,
+                'jam'        => Waktu::lokal($o->created_at)?->format('H:i'),
+                'status'     => $o->mcu?->status,
+            ]);
+
+        return [
+            'tanggal'   => $tanggal->toDateString(),
+            'diajukan'  => $surat()->count(),
+            'menunggu'  => $surat()->whereIn('status', ['diajukan', 'diperiksa'])->count(),
+            'disetujui' => $surat()->whereIn('status', ['selesai', 'kedaluwarsa'])->count(),
+            'ditolak'   => $surat()->where('status', 'ditolak')->count(),
+            'orang'     => $orang,
+        ];
     }
 
     /* ═══════════════════ pekerja ═══════════════════ */

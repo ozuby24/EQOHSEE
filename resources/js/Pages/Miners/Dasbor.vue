@@ -7,12 +7,14 @@
  * tanpa itu hanya memberi tahu ukuran perusahaan — yang sudah diketahui
  * setiap orang yang membukanya.
  */
-import { Head, Link } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 import { propHalaman } from '../../halaman';
 import KartuGrafik from '../../Grafik/KartuGrafik.vue';
 import Batang from '../../Grafik/Batang.vue';
 import Lencana from './Lencana.vue';
+import Kartu from '../../Components/Miners/Kartu.vue';
+import LencanaStatus from '../../Components/Miners/LencanaStatus.vue';
 
 const props = propHalaman();
 
@@ -24,6 +26,13 @@ const JENIS: [string, string][] = [
 ];
 
 const mendesak = computed<any[]>(() => (props.mendesak ?? []) as any[]);
+
+/* Tinjauan Harian MCU — saring tanggal pengajuan (Safe Track b947f60). */
+const tinjau = computed<any>(() => props.tinjauan ?? null);
+const tglTinjau = ref(String(props.tinjauan?.tanggal ?? ''));
+function gantiTinjau() {
+  router.get('/miners/dasbor', { tgl_tinjau: tglTinjau.value }, { preserveScroll: true, preserveState: true, only: ['tinjauan'] });
+}
 const kompetensi = computed<any[]>(() => (props.kompetensiHabis ?? []) as any[]);
 
 /**
@@ -194,5 +203,34 @@ const jumlah  = computed(() => props.jumlah ?? {});
         </table>
       </div>
     </section>
+
+    <div v-if="tinjau" class="tema-miners" style="background:transparent">
+      <Kartu judul="Tinjauan Harian MCU" keterangan="pengajuan per tanggal">
+        <template #kanan>
+          <input v-model="tglTinjau" type="date" class="mn-isian" style="width:auto" aria-label="Tanggal pengajuan" @change="gantiTinjau">
+        </template>
+        <div class="mn-info-grid" style="margin-bottom:14px">
+          <div class="mn-zona mn-zona-total" style="cursor:default"><span class="mn-zona-num">{{ tinjau.diajukan }}</span><span class="mn-zona-lbl">Diajukan</span></div>
+          <div class="mn-zona mn-zona-kritis" style="cursor:default"><span class="mn-zona-num">{{ tinjau.menunggu }}</span><span class="mn-zona-lbl">Menunggu dokter</span></div>
+          <div class="mn-zona mn-zona-aman" style="cursor:default"><span class="mn-zona-num">{{ tinjau.disetujui }}</span><span class="mn-zona-lbl">Disetujui</span></div>
+          <div class="mn-zona mn-zona-expired" style="cursor:default"><span class="mn-zona-num">{{ tinjau.ditolak }}</span><span class="mn-zona-lbl">Ditolak</span></div>
+        </div>
+        <div class="mn-gulir">
+          <table class="mn-tabel" style="font-size:12px">
+            <thead><tr><th style="width:36px">No</th><th>Nama</th><th>Perusahaan</th><th>Jam</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr v-for="(o, i) in (tinjau.orang as any[])" :key="o.id">
+                <td>{{ Number(i) + 1 }}</td>
+                <td><Link :href="`/miners/mcu/${o.mcu_id}`" class="mn-tautan">{{ o.nama }}</Link></td>
+                <td>{{ o.perusahaan || '—' }}</td>
+                <td>{{ o.jam || '—' }}</td>
+                <td><LencanaStatus :status="o.status" /></td>
+              </tr>
+              <tr v-if="!tinjau.orang.length"><td colspan="5" class="mn-kosong">Tidak ada pengajuan MCU pada tanggal ini.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </Kartu>
+    </div>
   </div>
 </template>
