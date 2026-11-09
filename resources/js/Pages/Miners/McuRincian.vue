@@ -339,8 +339,8 @@ function tindak(keadaan: string) {
       <TabelPersetujuan :alur="props.alur ?? []" :posisi="props.posisi" />
 
       <div v-if="props.bolehTindak && props.langkahDokter && props.belumDinilai > 0" class="mn-alert mn-alert-peringatan mt-3">
-        <b>{{ props.belumDinilai }} manpower</b>&nbsp;belum ditetapkan hasil MCU-nya. Tetapkan lewat tombol pada kolom
-        <b>&nbsp;#&nbsp;</b> di tabel di atas; sesudah semuanya terisi, tombol <b>&nbsp;approve&nbsp;</b> muncul di sini.
+        <span><b>{{ props.belumDinilai }} manpower</b> belum ditetapkan hasil MCU-nya. Tetapkan lewat tombol pada kolom
+          <b>#</b> di tabel di atas; sesudah semuanya terisi, tombol <b>approve</b> muncul di sini.</span>
       </div>
 
       <div class="mt-4 flex flex-wrap items-center gap-2">

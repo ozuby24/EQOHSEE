@@ -42,7 +42,7 @@ const iup = computed(() => props.s?.namaIup || 'perusahaan');
 <template>
   <Head :title="`Sertifikat Induksi ${s?.nama ?? ''}`" />
 
-  <PrintShell title="Sertifikat Induksi" :kembali="props.kembali">
+  <PrintShell mendatar title="Sertifikat Induksi" :kembali="props.kembali">
     <div v-if="boleh && s" class="lembar" :style="{ '--warna': s.warna }">
       <div class="bingkai"></div>
       <div class="bingkai-dalam"></div>

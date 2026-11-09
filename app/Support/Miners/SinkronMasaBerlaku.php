@@ -9,10 +9,11 @@ use App\Support\Waktu;
  * Sinkron masa berlaku — `masa-berlaku:sync` dan `app:update-mcu-status`
  * Safe Track, dijalankan setiap pagi oleh `miners:sinkron`.
  *
- *   1. Mine Permit yang MENGIKUTI MCU disamakan dengan masa berlaku MCU
- *      dasarnya. Kunci manual dan tanggal perpanjangan tidak disentuh;
- *      kartu yang sudah dinonaktifkan dibiarkan membeku pada tanggal
- *      terakhirnya.
+ *   1. Mine Permit yang MENGIKUTI MCU — semua kecuali kunci manual —
+ *      disamakan dengan masa berlaku MCU dasarnya. Kartu yang sudah
+ *      dinonaktifkan dibiarkan membeku pada tanggal terakhirnya, dan
+ *      kartu yang perpanjangannya masih berjalan ditahan pada tanggal
+ *      lamanya sampai KTT menyetujui.
  *   2. Mine Permit terbit yang tanggalnya lewat ditandai `kedaluwarsa`
  *      (status 4 Safe Track); yang sudah diperpanjang — tanggalnya
  *      kembali ke depan — dikembalikan ke `terbit`.
@@ -46,13 +47,15 @@ final class SinkronMasaBerlaku
 
         Permit::withoutGlobalScopes()->with('mcuOrang')
             ->where('aktif', true)
-            ->where(fn ($q) => $q->whereNull('sumber_berlaku')->orWhere('sumber_berlaku', 'mcu'))
+            ->where(fn ($q) => $q->whereNull('sumber_berlaku')->orWhere('sumber_berlaku', '<>', 'manual'))
             ->whereNotNull('mcu_orang_id')
             ->chunkById(500, function ($permit) use (&$n) {
                 foreach ($permit as $p) {
                     $mcu = $p->mcuOrang?->berlaku_sampai;
 
                     if (! $mcu || $p->berlaku_sampai?->toDateString() === $mcu->toDateString()) continue;
+
+                    if ($p->sedangDiperpanjang()) continue;
 
                     $p->forceFill(['berlaku_sampai' => $mcu, 'sumber_berlaku' => 'mcu'])->save();
                     $n++;

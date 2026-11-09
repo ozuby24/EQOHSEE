@@ -40,7 +40,7 @@ const REKOM = [
 <template>
   <Head title="Medical Check Up Certificate" />
 
-  <PrintShell title="Sertifikat MCU" :kembali="props.kembali">
+  <PrintShell mendatar title="Sertifikat MCU" :kembali="props.kembali">
     <div class="lembar-mcu">
       <template v-if="s.boleh">
         <KopCetak :dok="s.kop" />

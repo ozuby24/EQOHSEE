@@ -103,8 +103,14 @@ class PermitPerpanjangan extends Model
         if (! $permit || ! $this->berlaku_baru) return;
 
         /* Keadaan lama diambil SEBELUM ditimpa — sesudah baris di bawah,
-           tanggal lamanya tidak terbaca lagi dari mana pun. */
+           tanggal lamanya tidak terbaca lagi dari mana pun. Tanggal
+           kartunya dari KOLOM: pengajuan ini sudah berstatus selesai,
+           sehingga habisEfektif() kini membaca MCU yang ditulis dokter —
+           yaitu tanggal barunya. Kolom itulah yang ditahan selama
+           perpanjangan berjalan. */
         $lama = RiwayatPerpanjangan::keadaanPermit($permit);
+
+        if ($permit->berlaku_sampai) $lama['berlaku'] = $permit->berlaku_sampai->toDateString();
 
         $permit->forceFill([
             'berlaku_sampai' => $this->berlaku_baru,

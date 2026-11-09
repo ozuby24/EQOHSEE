@@ -438,7 +438,8 @@ class MinersMasterTest extends TestCase
      * Masa berlaku Mine Permit MENGIKUTI MCU — aturan Safe Track
      * (keputusan pemilik), bukan 31 Desember atau hari per tipe permit.
      * Kartu yang mengikuti MCU membaca tanggal MCU-nya LANGSUNG; kunci
-     * manual dan tanggal perpanjangan dibaca dari kolomnya sendiri.
+     * manual dibaca dari kolomnya sendiri, begitu pula kartu yang
+     * perpanjangannya masih berjalan.
      */
     #[Test]
     public function test_masa_berlaku_permit_mengikuti_mcu(): void
@@ -454,9 +455,19 @@ class MinersMasterTest extends TestCase
         $kunci->setRelation('mcuOrang', $mcu);
         $this->assertSame('2026-12-31', $kunci->habisEfektif()->toDateString(), 'Kunci manual diabaikan.');
 
+        /* Seperti Safe Track (`expired_source <> 'manual'`): kartu hasil
+           perpanjangan tetap mengikuti MCU berikutnya. */
         $panjang = new Permit(['sumber_berlaku' => 'perpanjangan', 'berlaku_sampai' => '2027-09-01']);
         $panjang->setRelation('mcuOrang', $mcu);
-        $this->assertSame('2027-09-01', $panjang->habisEfektif()->toDateString());
+        $this->assertSame('2027-03-10', $panjang->habisEfektif()->toDateString(),
+            'Kartu hasil perpanjangan berhenti mengikuti MCU — hanya kunci manual yang boleh.');
+
+        /* Selama perpanjangannya berjalan, tanggal lamanya ditahan. */
+        $ditahan = new Permit(['sumber_berlaku' => 'mcu', 'berlaku_sampai' => '2026-12-31']);
+        $ditahan->setRelation('mcuOrang', $mcu);
+        $ditahan->setRelation('perpanjanganBerjalan', new \App\Models\Miners\PermitPerpanjangan(['status' => 'ohse']));
+        $this->assertSame('2026-12-31', $ditahan->habisEfektif()->toDateString(),
+            'Kartu yang sedang diperpanjang sudah membaca MCU baru sebelum KTT menyetujui.');
 
         $tanpa = new Permit(['sumber_berlaku' => 'mcu', 'berlaku_sampai' => null]);
         $tanpa->setRelation('mcuOrang', new McuOrang(['berlaku_sampai' => null]));

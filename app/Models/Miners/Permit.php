@@ -12,7 +12,7 @@ use App\Support\Waktu;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
+use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany, HasOne};
 use Illuminate\Support\Carbon;
 
 /**
@@ -29,7 +29,11 @@ use Illuminate\Support\Carbon;
  * (`sumber_berlaku = mcu`), diselaraskan setiap malam oleh
  * `miners:sinkron`; admin dapat MENGUNCI tanggal tertentu (`manual`),
  * dan perpanjangan yang disetujui menulis tanggal barunya
- * (`perpanjangan`). Aturan lama — 31 Desember atau jumlah hari tipe
+ * (`perpanjangan`). Seperti Safe Track, hanya kunci manual yang
+ * berhenti mengikuti MCU — kartu hasil perpanjangan tetap ikut MCU
+ * berikutnya. SELAMA PERPANJANGAN BERJALAN tanggal kartunya ditahan
+ * pada tanggal lamanya: dokter sudah menulis MCU baru, tetapi izin
+ * masuk tambang baru berpindah sesudah KTT menyetujui. Aturan lama — 31 Desember atau jumlah hari tipe
  * permit — tidak dipakai lagi; tanggal lama kartu yang sudah ada
  * tersimpan di `berlaku_asal`.
  *
@@ -71,7 +75,7 @@ class Permit extends Model
     public const SUMBER = [
         'mcu'          => 'ikut MCU',
         'manual'       => 'dikunci manual',
-        'perpanjangan' => 'perpanjangan',
+        'perpanjangan' => 'perpanjangan, ikut MCU',
     ];
 
     /**
@@ -145,25 +149,54 @@ class Permit extends Model
         return $this->hasMany(PermitPerpanjangan::class, 'permit_id')->orderByDesc('tanggal');
     }
 
+    /** Perpanjangan yang masih dalam persetujuan, tanpa batas perusahaan. */
+    public function perpanjanganBerjalan(): HasOne
+    {
+        return $this->hasOne(PermitPerpanjangan::class, 'permit_id')
+            ->withoutGlobalScopes()->whereIn('status', PermitPerpanjangan::BERJALAN);
+    }
+
+    /** Apakah kartu ini sedang diperpanjang (pengajuannya belum tuntas). */
+    public function sedangDiperpanjang(): bool
+    {
+        if ($this->relationLoaded('perpanjanganBerjalan')) return $this->perpanjanganBerjalan !== null;
+
+        return $this->exists && $this->perpanjanganBerjalan()->exists();
+    }
+
     /* ═══════════ masa berlaku ═══════════ */
 
     /**
      * Kapan kartu ini berhenti berlaku — `tgl_expired ?: nom` Safe Track.
      *
-     * Kartu yang MENGIKUTI MCU membaca tanggal MCU-nya LANGSUNG, bukan
-     * salinan yang disimpan: perpanjangan dan ralat tanggal MCU berlaku
-     * seketika, tidak menunggu sinkron malam. Kunci manual dan tanggal
-     * perpanjangan dibaca dari kolomnya sendiri.
+     * Kartu yang MENGIKUTI MCU (semua kecuali kunci manual — syarat
+     * `expired_source <> 'manual'` sinkron Safe Track) membaca tanggal
+     * MCU-nya LANGSUNG, bukan salinan yang disimpan: ralat tanggal MCU
+     * berlaku seketika, tidak menunggu sinkron malam.
+     *
+     * Satu pengecualian: SELAMA PERPANJANGAN BERJALAN kolomnya yang
+     * dibaca. Langkah dokter menulis MCU baru lebih dulu, padahal
+     * menurut Safe Track masa berlaku kartu "berpindah hanya setelah
+     * seluruh langkah ditindak — HSE lalu KTT". Tanpa penahanan ini
+     * dokter seorang diri sudah memperpanjang izin masuk tambang.
+     * Pemeriksaannya hanya dijalankan bila kolom dan MCU berbeda, jadi
+     * daftar ribuan kartu tidak menanggung satu kueri per baris.
      */
     public function habisEfektif(): ?Carbon
     {
         $mcu = $this->mcuOrang?->berlaku_sampai;
 
-        if (in_array($this->sumber_berlaku, [null, 'mcu'], true) && $mcu) {
-            return $mcu;
+        if ($this->sumber_berlaku === 'manual' || ! $mcu) {
+            return $this->berlaku_sampai ?? $mcu;
         }
 
-        return $this->berlaku_sampai ?? $mcu;
+        if ($this->berlaku_sampai
+            && $this->berlaku_sampai->toDateString() !== $mcu->toDateString()
+            && $this->sedangDiperpanjang()) {
+            return $this->berlaku_sampai;
+        }
+
+        return $mcu;
     }
 
     /** Tanggal yang SEHARUSNYA tersimpan bila kartu ini mengikuti MCU. */

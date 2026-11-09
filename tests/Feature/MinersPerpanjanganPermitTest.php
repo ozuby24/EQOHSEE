@@ -95,6 +95,12 @@ class MinersPerpanjanganPermitTest extends TestCase
         $this->assertSame('2028-01-31', $o->berlaku_sampai->toDateString(), 'Register MCU tidak ikut diperbarui dokter.');
         $this->assertSame(Waktu::kini()->toDateString(), $o->tanggal_periksa->toDateString());
         $this->assertSame($lama, $p->fresh()->berlaku_sampai->toDateString(), 'Tanggal kartu berpindah sebelum KTT.');
+        $this->assertSame($lama, $p->fresh()->habisEfektif()->toDateString(),
+            'Kartu yang ikut MCU sudah membaca MCU baru dari dokter — izin diperpanjang tanpa HSE dan KTT.');
+
+        /* Sinkron malam pun tidak memindahkannya selama pengajuan berjalan. */
+        \App\Support\Miners\SinkronMasaBerlaku::permitDariMcu();
+        $this->assertSame($lama, $p->fresh()->berlaku_sampai->toDateString(), 'Sinkron malam memindahkan kartu yang sedang diperpanjang.');
 
         /* HSE: kartu belum berpindah, giliran KTT dibuka. */
         $this->actingAs($this->ohse)->post("/miners/perpanjangan-permit/{$x->id}/tindak", ['keadaan' => 'setuju'])->assertSessionHasNoErrors();
@@ -113,6 +119,8 @@ class MinersPerpanjanganPermitTest extends TestCase
         $r = RiwayatPerpanjangan::query()->where('jenis', 'permit')->where('dokumen_id', $p->id)->sole();
         $this->assertSame(1, $r->urutan);
         $this->assertSame('2028-01-31', $r->berlaku_baru->toDateString());
+        $this->assertSame($lama, $r->berlaku_lama->toDateString(), 'Riwayat mencatat tanggal baru sebagai tanggal lama.');
+        $this->assertSame('2028-01-31', $p->habisEfektif()->toDateString());
         $this->assertSame($x->id, (int) $r->perpanjangan_id);
 
         /* Layar rincian membawa riwayatnya. */

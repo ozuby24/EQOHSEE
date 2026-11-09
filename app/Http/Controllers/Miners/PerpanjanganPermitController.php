@@ -104,6 +104,14 @@ class PerpanjanganPermitController extends Controller
             return back()->withErrors(['permit_id' => $pesan])->withInput();
         }
 
+        /* Tanggal kartu saat ini DIBEKUKAN ke kolomnya sebelum pengajuan
+           berjalan: selama itu kolom inilah yang dibaca, sebab langkah
+           dokter menulis MCU barunya lebih dulu (Permit::habisEfektif). */
+        if ($permit->sumber_berlaku !== 'manual' && ($kini = $permit->habisEfektif())
+            && $permit->berlaku_sampai?->toDateString() !== $kini->toDateString()) {
+            $permit->forceFill(['berlaku_sampai' => $kini])->save();
+        }
+
         $x = PermitPerpanjangan::create([
             'company_id'   => $permit->company_id,
             'iup_id'       => $iup,
