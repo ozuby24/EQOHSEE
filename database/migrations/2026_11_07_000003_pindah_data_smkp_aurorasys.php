@@ -794,8 +794,10 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Lihat migrasi skema: indeks kunci asing tunggal dipastikan ada (MySQL).
-        if (!Schema::hasIndex('smkp_findings', ['audit_id'])) {
+        // Lihat migrasi skema: kunci asing audit_id harus tetap terlayani
+        // indeks lain sebelum indeks unik (audit_id, nomor) dibuang (MySQL).
+        // Biasanya itu indeks (audit_id, status) yang sudah ada sejak awal.
+        if (!Schema::hasIndex('smkp_findings', ['audit_id']) && !Schema::hasIndex('smkp_findings', ['audit_id', 'status'])) {
             Schema::table('smkp_findings', fn (Blueprint $t) => $t->index('audit_id'));
         }
         if (Schema::hasIndex('smkp_findings', ['audit_id', 'nomor'], 'unique')) {
@@ -822,13 +824,14 @@ return new class extends Migration
             Schema::create('smkp_ofi', function (Blueprint $t) {
                 $t->id();
                 $t->foreignId('audit_id')->constrained('smkp_audits')->cascadeOnDelete();
-                $t->string('kode');
-                $t->string('lingkup')->default('sub');
+                // Bentuk persis 2026_09_10_000002_smkp_bukti_dan_ofi.
+                $t->string('kode', 20)->index();
+                $t->string('lingkup', 10)->default('sub');
                 $t->text('uraian');
                 $t->text('saran')->nullable();
-                $t->string('penanggung_jawab')->nullable();
+                $t->string('penanggung_jawab', 150)->nullable();
                 $t->date('target')->nullable();
-                $t->string('status')->default('terbuka');
+                $t->string('status', 20)->default('terbuka')->index();
                 $t->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
                 $t->timestamps();
                 $t->unique(['audit_id', 'kode']);

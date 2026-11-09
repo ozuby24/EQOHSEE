@@ -234,6 +234,33 @@ class SmkpPindahDataTest extends TestCase
         $this->assertEquals($sebelum, [DB::table('smkp_audits')->get()->toArray(), DB::table('smkp_findings')->get()->toArray(), DB::table('smkp_arsip_eqohsee')->count()]);
     }
 
+    /**
+     * Skema sesudah rollback sama dengan sebelum porting: indeks gabungan
+     * lama (audit_id, status/rapat/kode) tidak ikut dibuang, smkp_ofi
+     * dibuat ulang lengkap dengan indeksnya, dan tidak ada indeks tambahan.
+     * (Diperiksa pula pada MariaDB terhadap salinan basis data pra-porting.)
+     */
+    public function test_down_memulihkan_skema_lama_persis(): void
+    {
+        $potret = fn () => collect(['smkp_audits', 'smkp_findings', 'smkp_attendees', 'smkp_bukti', 'smkp_ofi'])
+            ->mapWithKeys(fn ($t) => [$t => [
+                collect(Schema::getColumns($t))->map(fn ($c) => $c['name'].':'.$c['type'].($c['nullable'] ? '?' : ''))->sort()->values()->all(),
+                collect(Schema::getIndexes($t))->map(fn ($i) => implode(',', $i['columns']).($i['unique'] ? '!' : ''))->sort()->values()->all(),
+            ]])->all();
+        $lama = $potret();
+
+        foreach ([['smkp_findings', 'audit_id,status'], ['smkp_attendees', 'audit_id,rapat'], ['smkp_bukti', 'audit_id,kode'], ['smkp_ofi', 'kode'], ['smkp_ofi', 'status'], ['smkp_ofi', 'audit_id,kode!']] as [$t, $i]) {
+            $this->assertContains($i, $lama[$t][1], "Indeks {$t}({$i}) skema lama.");
+        }
+
+        $this->dataLama();
+        $this->jalankan();
+        $this->pindah->down();
+        $this->skema->down();
+
+        $this->assertEquals($lama, $potret());
+    }
+
     public function test_down_memulihkan_data_lama(): void
     {
         $d = $this->dataLama();

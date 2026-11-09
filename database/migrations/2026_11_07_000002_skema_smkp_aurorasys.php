@@ -2,7 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\{DB, Schema};
 
 /**
  * Skema modul audit SMKP diganti total mengikuti Aurorasys — bagian
@@ -127,20 +127,30 @@ return new class extends Migration
 
     public function down(): void
     {
-        /* MySQL dapat membuang diam-diam indeks yang dibuatnya sendiri untuk
+        /* Indeks gabungan temuan (audit_id, status), daftar hadir
+           (audit_id, rapat), dan bukti (audit_id, kode) SUDAH ADA sebelum
+           migrasi ini (2026_08_08_000001, 2026_08_08_000005,
+           2026_09_10_000002) — up() hanya menambahkannya bila hilang —
+           sehingga TIDAK dibuang di sini: skema sesudah rollback harus sama
+           persis dengan sebelum porting, dan indeks itu pula yang melayani
+           kunci asing audit_id.
+
+           MySQL dapat membuang diam-diam indeks yang dibuatnya sendiri untuk
            kunci asing begitu ada indeks gabungan berawalan kolom yang sama;
-           indeks gabungan itu lalu tidak dapat dibuang. Indeks tunggalnya
-           dipastikan ada lebih dulu. */
-        $this->pastikanIndeks('smkp_bukti', 'audit_id');
-        $this->pastikanIndeks('smkp_bukti', 'user_id');
-        $this->pastikanIndeks('smkp_findings', 'audit_id');
-        $this->pastikanIndeks('smkp_attendees', 'audit_id');
+           indeks gabungan itu lalu tidak dapat dibuang. Untuk user_id bukti —
+           yang indeks gabungannya (user_id, created_at) dibuang di bawah —
+           indeks tunggalnya dipastikan ada lebih dulu — dengan nama indeks
+           yang dulu dibuat MySQL sendiri untuk kunci asing itu. SQLite tidak
+           membuat indeks kunci asing, jadi di sana tidak ditambah apa pun. */
+        if (DB::connection()->getDriverName() !== 'sqlite') {
+            $this->pastikanIndeks('smkp_bukti', 'user_id', 'smkp_bukti_user_id_foreign');
+        }
 
         Schema::dropIfExists('smkp_arsip_eqohsee');
         Schema::dropIfExists('smkp_pengingat');
         Schema::dropIfExists('smkp_tindak_lanjut');
 
-        foreach ([['user_id', 'created_at'], ['audit_id', 'status'], ['audit_id', 'kode']] as $kolom) {
+        foreach ([['user_id', 'created_at'], ['audit_id', 'status']] as $kolom) {
             if (Schema::hasIndex('smkp_bukti', $kolom)) {
                 Schema::table('smkp_bukti', fn (Blueprint $t) => $t->dropIndex($kolom));
             }
@@ -159,12 +169,12 @@ return new class extends Migration
                 Schema::table('smkp_bukti', fn (Blueprint $t) => $t->renameColumn($baru, $lama));
             }
         }
-
-        if (Schema::hasIndex('smkp_attendees', ['audit_id', 'rapat'])) {
-            Schema::table('smkp_attendees', fn (Blueprint $t) => $t->dropIndex(['audit_id', 'rapat']));
-        }
-        if (Schema::hasIndex('smkp_findings', ['audit_id', 'status'])) {
-            Schema::table('smkp_findings', fn (Blueprint $t) => $t->dropIndex(['audit_id', 'status']));
+        // Panjang asli catatan (300) — kecuali bila sudah ada keterangan yang
+        // lebih panjang sejak porting: memotongnya berarti membuang isian.
+        $panjang = DB::connection()->getDriverName() === 'sqlite' ? 'LENGTH' : 'CHAR_LENGTH';
+        if (Schema::hasColumn('smkp_bukti', 'catatan')
+            && !DB::table('smkp_bukti')->whereRaw("{$panjang}(catatan) > 300")->exists()) {
+            Schema::table('smkp_bukti', fn (Blueprint $t) => $t->string('catatan', 300)->nullable()->change());
         }
         Schema::table('smkp_findings', function (Blueprint $t) {
             $t->dropColumn(array_values(array_filter(
@@ -177,10 +187,10 @@ return new class extends Migration
         });
     }
 
-    private function pastikanIndeks(string $tabel, string $kolom): void
+    private function pastikanIndeks(string $tabel, string $kolom, ?string $nama = null): void
     {
         if (!Schema::hasIndex($tabel, [$kolom])) {
-            Schema::table($tabel, fn (Blueprint $t) => $t->index($kolom));
+            Schema::table($tabel, fn (Blueprint $t) => $t->index($kolom, $nama));
         }
     }
 };
