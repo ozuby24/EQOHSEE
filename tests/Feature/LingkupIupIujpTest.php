@@ -316,9 +316,11 @@ class LingkupIupIujpTest extends TestCase
                    masing-masing berkolom company_id sendiri. Yang
                    terlihat pemegang IUP tetap sama — pekerja mitranya
                    beserta MCU, induksi, kartu, SIMPER, dan
-                   kompetensinya. */
+                   kompetensinya. Perpanjangan Mine Permit menyusul
+                   (Safe Track bagian 2): ia pengajuan atas kartu yang
+                   sama, dan disetujui dokter, HSE, serta KTT milik IUP. */
                 'mnr_pekerja', 'mnr_mcu', 'mnr_induksi',
-                'mnr_permit', 'mnr_simper', 'mnr_kompetensi',
+                'mnr_permit', 'mnr_permit_perpanjangan', 'mnr_simper', 'mnr_kompetensi',
             ],
             LingkupLintas::KE_INDUK);
 

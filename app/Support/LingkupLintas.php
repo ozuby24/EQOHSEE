@@ -61,6 +61,7 @@ final class LingkupLintas
         'mnr_mcu',
         'mnr_induksi',
         'mnr_permit',
+        'mnr_permit_perpanjangan',
         'mnr_simper',
         'mnr_kompetensi',
     ];
