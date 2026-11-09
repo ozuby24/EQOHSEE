@@ -57,12 +57,19 @@ return new class extends Migration
         $this->permitPemberiKerja();
     }
 
-    /** Baris "Rujukan" pada master hasil MCU bersama, bila belum ada. */
+    /**
+     * Baris "Rujukan" pada master hasil MCU bersama, bila belum ada.
+     *
+     * Hanya pada pemasangan yang master bersamanya SUDAH terisi. Pada
+     * basis data baru tabelnya kosong dan diisi MasterMiners dari
+     * Acuan::HASIL_MCU — yang sudah memuat Rujukan; menyisipkannya di
+     * sini membuat satu baris acuan berdiri sendiri tanpa saudaranya.
+     */
     private function hasilRujukan(): void
     {
         $ada = DB::table('mnr_hasil_mcu')->whereRaw('LOWER(nama) = ?', ['rujukan'])->exists();
 
-        if ($ada) return;
+        if ($ada || ! DB::table('mnr_hasil_mcu')->whereNull('company_id')->exists()) return;
 
         $kini = now();
 

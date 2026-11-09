@@ -3,7 +3,8 @@
  * Sertifikat MCU — mcus/sertifikat-mcu.blade.php Safe Track, formulir
  * "Medical Check Up Certificate" Rev 02, A4 mendatar, satu halaman.
  *
- * Kop dan nomor dokumen mengikuti IUP penerbit. SATU tanda tangan:
+ * Kopnya KopCetak — bentuk yang sama dengan seluruh laporan — atas nama
+ * IUP penerbit (KopDokumen 'sertifikat-mcu'). SATU tanda tangan:
  * dokter — yang dinyatakan lembar ini penilaian medis. Tanda tangannya
  * QR, bukan gambar: memuat nomor, nama, penanda tangan, dan tautan
  * pemeriksaan. Stempel validasinya DIHITUNG dari datanya (TERVALIDASI,
@@ -15,6 +16,7 @@ import { onMounted, ref } from 'vue';
 import QRCode from 'qrcode';
 import BlankLayout from '../../Layouts/BlankLayout.vue';
 import PrintShell from '../../Components/PrintShell.vue';
+import KopCetak from '../../Components/KopCetak.vue';
 
 defineOptions({ layout: BlankLayout });
 
@@ -41,31 +43,7 @@ const REKOM = [
   <PrintShell title="Sertifikat MCU" :kembali="props.kembali">
     <div class="lembar-mcu">
       <template v-if="s.boleh">
-        <table class="kop">
-          <tbody>
-            <tr>
-              <td class="logo" rowspan="6">
-                <img v-if="s.kop.logo" :src="s.kop.logo" alt="">
-                <b v-else>{{ s.kop.perusahaan }}</b>
-              </td>
-              <td class="judul" colspan="2">FORM &amp; CHECKLIST</td>
-              <td style="width:135px">No. Dokumen</td>
-              <td style="width:200px">: {{ s.kop.nomor }}</td>
-            </tr>
-            <tr>
-              <td class="judul tebal" colspan="2" rowspan="4">{{ s.kop.judul }}</td>
-              <td>Tgl Penerbitan</td>
-              <td>: {{ s.kop.terbit }}</td>
-            </tr>
-            <tr><td>Tgl Persetujuan</td><td>: {{ s.kop.setuju }}</td></tr>
-            <tr><td>No. Revisi</td><td>: {{ s.kop.revisi }}</td></tr>
-            <tr><td>Halaman</td><td>: 1 dari 1</td></tr>
-            <tr>
-              <td class="tebal" style="width:120px">Departemen</td>
-              <td colspan="3">: Occupational, Health, Safety, Enviroment and Compliance</td>
-            </tr>
-          </tbody>
-        </table>
+        <KopCetak :dok="s.kop" />
 
         <table class="identitas">
           <tbody>
@@ -159,12 +137,6 @@ const REKOM = [
 .lembar-mcu{background:#fff;color:#000;font-family:'DejaVu Sans',Arial,sans-serif;font-size:10px;padding:18px 22px;width:1050px;max-width:none;margin:0 auto;border:1px solid #e7e5e4}
 @media print{.lembar-mcu{border:0;padding:0;width:auto}}
 table{border-collapse:collapse;width:100%}
-.kop,.kop td{border:1px solid #000}
-.kop td{padding:3px 6px;vertical-align:middle}
-.kop .judul{text-align:center;font-size:12px}
-.kop .tebal{font-weight:bold}
-.kop .logo{width:178px;text-align:center;padding:5px}
-.kop .logo img{max-width:152px;max-height:70px}
 .identitas{margin-top:14px}
 .identitas td{border:none;padding:3px 2px;font-size:10.5px}
 .identitas .lbl{width:105px}

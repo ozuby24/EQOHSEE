@@ -5,7 +5,8 @@
  * tanda tangan dokter, lalu lembar "Surat Rujukan Balik" yang diisi
  * dokter spesialis.
  *
- * Kop dan nomor formulir mengikuti IUP penerbit MCU-nya; penanda
+ * Kopnya KopCetak atas nama IUP penerbit MCU-nya (KopDokumen
+ * 'surat-rujukan'); penanda
  * tangannya dokter pemeriksa — bukan nama dokter perusahaan asal formulir.
  * Tanda tangan berupa QR berisi nomor, nama pasien, dan tanggal surat.
  */
@@ -14,6 +15,7 @@ import { onMounted, ref } from 'vue';
 import QRCode from 'qrcode';
 import BlankLayout from '../../Layouts/BlankLayout.vue';
 import PrintShell from '../../Components/PrintShell.vue';
+import KopCetak from '../../Components/KopCetak.vue';
 
 defineOptions({ layout: BlankLayout });
 
@@ -33,26 +35,7 @@ onMounted(async () => {
 
   <PrintShell title="Surat Rujukan" :kembali="props.kembali">
     <div class="lembar-rujukan">
-      <table class="kop">
-        <tbody>
-          <tr>
-            <td rowspan="6" class="logo">
-              <img v-if="s.kop.logo" :src="s.kop.logo" alt="">
-              <b v-else>{{ s.kop.perusahaan }}</b>
-            </td>
-            <td colspan="2" class="tengah"><b>FORMS &amp; CHECKLIST</b></td>
-            <td colspan="2"><b>No. {{ s.kop.nomor }}</b></td>
-          </tr>
-          <tr>
-            <td rowspan="3" colspan="2" class="tengah judul"><b>{{ s.kop.judul }}</b></td>
-            <td>Tgl Penerbitan :</td><td>{{ s.kop.terbit }}</td>
-          </tr>
-          <tr><td>Tgl Persetujuan :</td><td>{{ s.kop.setuju }}</td></tr>
-          <tr><td>No. Revisi :</td><td>{{ s.kop.revisi }}</td></tr>
-          <tr><td><b>DIVISI :</b></td><td><b>HSE</b></td><td>Halaman :</td><td>1 dari 1</td></tr>
-          <tr><td><b>DEPARTEMEN :</b></td><td colspan="3"><b>OCCUPATIONAL HEALTH AND SAFETY (OHS)</b></td></tr>
-        </tbody>
-      </table>
+      <KopCetak :dok="s.kop" />
 
       <p class="mt">Tanggal {{ s.tanggal }}</p>
       <table class="garis"><tbody><tr><td>PERUSAHAAN : {{ s.perusahaan }}</td></tr></tbody></table>
@@ -120,9 +103,6 @@ onMounted(async () => {
 .lembar-rujukan{background:#fff;color:#000;font-family:Arial,sans-serif;font-size:12px;padding:24px;border:1px solid #e7e5e4}
 @media print{.lembar-rujukan{border:0;padding:0}}
 table{border-collapse:collapse;width:100%}
-.kop td,.garis td{border:1px solid #000;padding:4px 6px}
-.kop .logo{width:150px;text-align:center}
-.kop .logo img{max-width:120px;max-height:70px}
 .tengah{text-align:center}
 .judul{font-size:13px}
 .mt{margin-top:12px}

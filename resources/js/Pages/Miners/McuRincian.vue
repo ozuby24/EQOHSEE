@@ -22,8 +22,14 @@ import TombolIkon from '../../Components/Miners/TombolIkon.vue';
 import Modal from '../../Components/Miners/Modal.vue';
 import Medan from '../../Components/Miners/Medan.vue';
 import { tglId } from '../../Components/Miners/zona';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
 
 const props = propHalaman();
+
+/* Penegasan memakai dialog aplikasi, bukan confirm() peramban — di
+   webview ponsel dialog bawaan dibungkam dan tindakannya diam-diam batal. */
+const { dialog, tanya, batal, lanjut } = useDialog();
 
 const m = computed<any>(() => props.mcu ?? {});
 const orang = computed<any[]>(() => (props.orang ?? []) as any[]);
@@ -87,11 +93,9 @@ function simpanOrang() {
 }
 
 const hapusOrangForm = useForm({});
-const hapusTerbuka = ref<any>(null);
-function hapusOrang() {
-  hapusOrangForm.delete(`/miners/mcu/${m.value.id}/orang/${hapusTerbuka.value.id}`, {
-    preserveScroll: true, onFinish: () => { hapusTerbuka.value = null; },
-  });
+async function hapusOrang(o: any) {
+  if (!await tanya({ judul: 'Hapus manpower', pesan: `Hapus ${o.nama} dari surat MCU ini?`, labelAksi: 'Hapus', nada: 'bahaya' })) return;
+  hapusOrangForm.delete(`/miners/mcu/${m.value.id}/orang/${o.id}`, { preserveScroll: true });
 }
 
 /* ─────────── hasil (dokter) ─────────── */
@@ -151,8 +155,8 @@ function simpanRujuk() {
 }
 
 const hapusRujukForm = useForm({});
-function hapusRujuk(j: any) {
-  if (!window.confirm(`Hapus surat rujukan ${j.nama} tanggal ${tglId(j.tanggal)}?`)) return;
+async function hapusRujuk(j: any) {
+  if (!await tanya({ judul: 'Hapus surat rujukan', pesan: `Hapus surat rujukan ${j.nama} tanggal ${tglId(j.tanggal)}?`, labelAksi: 'Hapus', nada: 'bahaya' })) return;
   hapusRujukForm.delete(`/miners/mcu/rujukan/${j.id}`, { preserveScroll: true });
 }
 
@@ -301,7 +305,7 @@ function tindak(keadaan: string) {
                   <TombolIkon v-if="o.bolehPerbaiki" ikon="kembali" varian="garis" judul="Kembalikan untuk diperbaiki (bukan hasil medis)" @click="bukaPerbaiki(o)" />
                   <TombolIkon v-if="o.bolehRujuk" ikon="plus" varian="bahaya" judul="Buat surat rujukan" @click="bukaRujuk(o)" />
                   <TombolIkon v-if="o.bolehUbah" ikon="pensil" judul="Ubah data manpower" @click="ubahOrang(o)" />
-                  <TombolIkon v-if="o.bolehHapus" ikon="hapus" varian="bahaya" judul="Hapus dari surat" @click="hapusTerbuka = o" />
+                  <TombolIkon v-if="o.bolehHapus" ikon="hapus" varian="bahaya" judul="Hapus dari surat" @click="hapusOrang(o)" />
                 </div>
               </td>
             </tr>
@@ -434,14 +438,6 @@ function tindak(keadaan: string) {
       <template #kaki>
         <button type="button" class="mn-btn mn-btn-garis" @click="orangTerbuka = false">Close</button>
         <button type="button" class="mn-btn mn-btn-bahaya" :disabled="orangForm.processing" @click="simpanOrang">Save Manpower</button>
-      </template>
-    </Modal>
-
-    <Modal :terbuka="hapusTerbuka !== null" judul="Hapus manpower" @tutup="hapusTerbuka = null">
-      <p class="text-[13px]">Hapus <b>{{ hapusTerbuka?.nama }}</b> dari surat MCU ini?</p>
-      <template #kaki>
-        <button type="button" class="mn-btn mn-btn-garis" @click="hapusTerbuka = null">Close</button>
-        <button type="button" class="mn-btn mn-btn-bahaya" :disabled="hapusOrangForm.processing" @click="hapusOrang">Hapus</button>
       </template>
     </Modal>
 
@@ -584,5 +580,6 @@ function tindak(keadaan: string) {
         </button>
       </template>
     </Modal>
+    <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
   </div>
 </template>

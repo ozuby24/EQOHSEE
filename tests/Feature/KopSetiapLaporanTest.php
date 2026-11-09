@@ -50,6 +50,13 @@ class KopSetiapLaporanTest extends TestCase
            sendiri sudah menyandang identitas penerbitnya pada kepalanya:
            nama perusahaan, jenis kartu, dan nomor kartunya. */
         'KartuTambang' => 'kartu identitas fisik, kopnya menyatu pada kepala kartu',
+        /* Sertifikat berbingkai ganda seperti piagam — bentuk Safe Track
+           (induction_registrations/sertifikat.blade.php), bukan formulir
+           yang diisi. Identitas penerbitnya sudah menjadi muka sertifikat:
+           logo dan warna IUP penyelenggara, nomor sertifikat
+           IND/{kode}/{id}/{bulan}/{tahun}, QR verifikasi, dan tanda tangan
+           KTT. Tabel kop terkendali di atasnya merusak bingkainya. */
+        'SertifikatInduksi' => 'sertifikat berbingkai, identitas penerbit menyatu pada muka sertifikat',
     ];
 
     /* ═══════════ sisi tampilan ═══════════ */

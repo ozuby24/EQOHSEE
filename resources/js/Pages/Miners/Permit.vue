@@ -22,8 +22,14 @@ import TombolIkon from '../../Components/Miners/TombolIkon.vue';
 import Modal from '../../Components/Miners/Modal.vue';
 import Medan from '../../Components/Miners/Medan.vue';
 import { tglId, URUTAN_ZONA, ZONA, type MedanSaring } from '../../Components/Miners/zona';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
 
 const props = propHalaman();
+
+/* Penegasan memakai dialog aplikasi, bukan confirm() peramban — di
+   webview ponsel dialog bawaan dibungkam dan tindakannya diam-diam batal. */
+const { dialog, tanya, batal, lanjut } = useDialog();
 
 const register = computed(() => props.mode === 'register');
 const alamat = computed(() => (register.value ? '/miners/permit' : '/miners/riwayat/mine-permit'));
@@ -156,8 +162,8 @@ function simpanStatus() {
 }
 
 const hapusForm = useForm({});
-function hapus(b: any) {
-  if (!window.confirm(`Hapus Mine Permit ${b.nomor} (${b.nama})?`)) return;
+async function hapus(b: any) {
+  if (!await tanya({ judul: 'Hapus Mine Permit', pesan: `Hapus Mine Permit ${b.nomor} (${b.nama})?`, labelAksi: 'Hapus', nada: 'bahaya' })) return;
   hapusForm.delete(`/miners/permit/${b.id}`, { preserveScroll: true });
 }
 </script>
@@ -337,5 +343,6 @@ function hapus(b: any) {
         </button>
       </template>
     </Modal>
+    <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
   </div>
 </template>

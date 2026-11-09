@@ -295,6 +295,24 @@ final class KopDokumen
                 'kode'  => 'OHSE-II.021a',
                 'urut'  => 20,
 ],
+            /* Dua lembar Miners yang di Safe Track berkop formulir
+               terkendali. Nomor, tanggal terbit, dan revisinya ikut
+               pengaturan IUP penerbitnya — bukan nomor dokumen
+               perusahaan asal Safe Track yang tertulis mati di
+               berkas Blade-nya. Sertifikat induksi TIDAK di sini:
+               ia sertifikat berbingkai, bukan formulir. */
+            'sertifikat-mcu' => [
+                'jenis' => 'FORM & CHECKLIST',
+                'judul' => 'MEDICAL CHECK UP CERTIFICATE',
+                'kode'  => 'OHSE-MCU.01',
+                'urut'  => 25,
+],
+            'surat-rujukan' => [
+                'jenis' => 'FORM & CHECKLIST',
+                'judul' => 'PENGANTAR RUJUKAN DOKTER PERUSAHAAN (INHOUSE CLINIC)',
+                'kode'  => 'OHSE-MCU.02',
+                'urut'  => 26,
+],
         ];
     }
 

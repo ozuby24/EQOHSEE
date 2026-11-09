@@ -5,6 +5,7 @@ namespace App\Support\Miners;
 use App\Models\Company;
 use App\Models\Miners\{InduksiOrang, McuOrang, McuRujukan, Permit, Simper};
 use App\Support\Berkas;
+use App\Support\KopDokumen;
 use App\Support\Waktu;
 use Illuminate\Support\Carbon;
 
@@ -60,7 +61,7 @@ final class Cetakan
 
         return [
             'boleh'      => in_array($o->mcu?->status, StempelValidasi::DISETUJUI, true),
-            'kop'        => self::kop($iup, 'HSE-IV.026', 'MEDICAL CHECK UP CERTIFICATE', '01 September 2023', '31 Mei 2026', '02'),
+            'kop'        => self::kop($iup, 'sertifikat-mcu'),
             'nama'       => $o->nama,
             'usia'       => $o->usia ? $o->usia.' Tahun' : '',
             'jabatan'    => $o->jabatan ?? '',
@@ -120,7 +121,7 @@ final class Cetakan
         $iup = $o?->mcu?->iup_id ? Company::query()->find($o->mcu->iup_id) : null;
 
         return [
-            'kop'         => self::kop($iup, 'OHS-4123', '“PENGANTAR RUJUKAN DOKTER PERUSAHAAN (INHOUSE CLINIC)”', '01 Juli 2022', '28 April 2023', '02'),
+            'kop'         => self::kop($iup, 'surat-rujukan'),
             'tanggal'     => self::tgl($j->tanggal_surat),
             'tanggalPanjang' => $j->tanggal_surat?->locale('id')->translatedFormat('d F Y') ?? '',
             'perusahaan'  => $o?->mcu?->company?->name ?? '',
@@ -213,27 +214,20 @@ final class Cetakan
     /* ═══════════════════ perkakas ═══════════════════ */
 
     /**
-     * Kop formulir: logo dan nomor dokumen mengikuti IUP penerbit.
+     * Kop formulir — bentuk yang sama dengan seluruh laporan EQOHSE
+     * (KopDokumen + komponen KopCetak), atas nama IUP penerbit.
      *
-     * Nomor dokumennya "<KODE IUP>-<nomor formulir>", bukan nomor
-     * perusahaan asal formulir yang disalin — nomor dokumen menyatakan
-     * siapa yang menerbitkannya.
+     * Safe Track menulis nomor dokumen, tanggal terbit, dan revisi
+     * perusahaan asalnya mati di Blade. Di sini ketiganya mengikuti
+     * pengaturan dokumen IUP yang menerbitkan lembarnya — nomor
+     * dokumen menyatakan siapa yang menerbitkannya. Logo grup IUP,
+     * bila ada, didahulukan seperti pada kop Safe Track.
      *
      * @return array<string,string|null>
      */
-    private static function kop(?Company $iup, string $nomor, string $judul, string $terbit, string $setuju, string $revisi): array
+    private static function kop(?Company $iup, string $kunci): array
     {
-        $kode = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string) ($iup?->code ?: Penyetuju::singkat($iup?->id)))) ?: 'EQ';
-
-        return [
-            'logo'       => self::logo($iup),
-            'perusahaan' => $iup?->name ?? '',
-            'nomor'      => $kode.'-'.$nomor,
-            'judul'      => $judul,
-            'terbit'     => $terbit,
-            'setuju'     => $setuju,
-            'revisi'     => $revisi,
-        ];
+        return ['logo' => self::logo($iup)] + KopDokumen::untuk($kunci, $iup);
     }
 
     private static function logo(?Company $iup): ?string

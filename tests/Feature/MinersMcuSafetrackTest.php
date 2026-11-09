@@ -262,11 +262,14 @@ class MinersMcuSafetrackTest extends TestCase
         Notification::assertSentOnDemand(PemberitahuanMiners::class,
             fn ($n, $kanal, AnonymousNotifiable $t) => in_array('ohse@contoh.test', (array) $t->routes['mail'], true));
 
-        /* Pemberi kerja pasien boleh mencetak suratnya. */
+        /* Pemberi kerja pasien boleh mencetak suratnya. Kopnya formulir
+           terkendali IUP penerbit — nomornya dari pengaturan dokumennya. */
+        $this->iup->forceFill(['doc_no_prefix' => 'TBU'])->save();
+
         $this->actingAs($this->pengaju)->get("/miners/mcu/rujukan/{$j->id}/surat")
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $p) => $p->component('Print/SuratRujukan')
-                ->where('s.nama', $o->nama)->where('s.kop.nomor', 'TBU-OHS-4123'));
+                ->where('s.nama', $o->nama)->where('s.kop.nomor', 'FRM/TBU/OHSE/026'));
 
         /* Daftar rujukan memuat orang yang hasilnya "Rujukan". */
         $this->actingAs($this->admin)->get('/miners/daftar/rujukan')->assertOk()
@@ -295,12 +298,14 @@ class MinersMcuSafetrackTest extends TestCase
     {
         $o = $this->mcuSelesai($this->mitra, 'Fit');
         $o->mcu->forceFill(['iup_id' => $this->iup->id])->save();
+        $this->iup->forceFill(['doc_no_prefix' => 'TBU'])->save();
 
         $this->actingAs($this->pengaju)->get("/miners/mcu/orang/{$o->id}/sertifikat")
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $p) => $p->component('Print/SertifikatMcu')
                 ->where('s.boleh', true)
-                ->where('s.kop.nomor', 'TBU-HSE-IV.026')
+                ->where('s.kop.nomor', 'FRM/TBU/OHSE/025')
+                ->where('s.kop.judul', 'MEDICAL CHECK UP CERTIFICATE')
                 ->where('s.centang', 'fit')
                 ->where('s.stempel.judul', 'TERVALIDASI')
                 ->where('s.dokter', $this->dokter->name));

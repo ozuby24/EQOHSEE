@@ -20,8 +20,22 @@ import TombolIkon from '../../Components/Miners/TombolIkon.vue';
 import Modal from '../../Components/Miners/Modal.vue';
 import Medan from '../../Components/Miners/Medan.vue';
 import { tglId } from '../../Components/Miners/zona';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
 
 const props = propHalaman();
+
+/* Penegasan memakai dialog aplikasi, bukan confirm() peramban — di
+   webview ponsel dialog bawaan dibungkam dan tindakannya diam-diam batal. */
+const { dialog, tanya, batal, lanjut } = useDialog();
+
+/* Pilihan kelulusan peserta — disebut satu per satu, bukan diulang
+   dari kunci objek server. Nilainya sama dengan InduksiOrang::PILIHAN
+   yang memvalidasinya di server. */
+const KELULUSAN = [
+  { nilai: 'lulus', label: 'Lulus' },
+  { nilai: 'gagal', label: 'Tidak Lulus' },
+] as const;
 
 const ind = computed<any>(() => props.induksi ?? {});
 const orang = computed<any[]>(() => (props.orang ?? []) as any[]);
@@ -56,8 +70,8 @@ function simpanPeserta() {
 }
 
 const hapusForm = useForm({});
-function hapusPeserta(o: any) {
-  if (!window.confirm(`Keluarkan ${o.nama} dari pengajuan induksi ini?`)) return;
+async function hapusPeserta(o: any) {
+  if (!await tanya({ judul: 'Keluarkan peserta', pesan: `Keluarkan ${o.nama} dari pengajuan induksi ini?`, labelAksi: 'Keluarkan', nada: 'bahaya' })) return;
   hapusForm.delete(`/miners/induksi/${ind.value.id}/orang/${o.id}`, { preserveScroll: true });
 }
 
@@ -74,8 +88,8 @@ function ajukanUlang() {
 
 const tindakan = useForm({ keadaan: 'setuju', catatan: '' });
 const alasanTerbuka = ref<null | 'tolak' | 'dikembalikan'>(null);
-function tindak(keadaan: string) {
-  if (keadaan === 'setuju' && !window.confirm('Confirm Approved?')) return;
+async function tindak(keadaan: string) {
+  if (keadaan === 'setuju' && !await tanya({ judul: 'Confirm Approved?', labelAksi: 'Approve' })) return;
   tindakan.keadaan = keadaan;
   tindakan.post(`/miners/induksi/${ind.value.id}/tindak`, {
     preserveScroll: true, onSuccess: () => { alasanTerbuka.value = null; tindakan.reset('catatan'); },
@@ -157,7 +171,7 @@ function tindak(keadaan: string) {
                 </td>
                 <td>
                   <select v-model="jadwal.peserta[i].status" class="mn-isian" :aria-label="`Kelulusan ${o.nama}`">
-                    <option v-for="(label, k) in props.PILIHAN" :key="k" :value="k">{{ label }}</option>
+                    <option v-for="p in KELULUSAN" :key="p.nilai" :value="p.nilai">{{ p.label }}</option>
                   </select>
                 </td>
               </template>
@@ -256,5 +270,6 @@ function tindak(keadaan: string) {
                 :disabled="tindakan.processing || !tindakan.catatan.trim()" @click="tindak(alasanTerbuka!)">Sending</button>
       </template>
     </Modal>
+    <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
   </div>
 </template>

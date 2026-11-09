@@ -15,8 +15,14 @@ import TombolIkon from '../../Components/Miners/TombolIkon.vue';
 import Modal from '../../Components/Miners/Modal.vue';
 import Medan from '../../Components/Miners/Medan.vue';
 import { tglId } from '../../Components/Miners/zona';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
 
 const props = propHalaman();
+
+/* Penegasan memakai dialog aplikasi, bukan confirm() peramban — di
+   webview ponsel dialog bawaan dibungkam dan tindakannya diam-diam batal. */
+const { dialog, tanya, batal, lanjut } = useDialog();
 
 const register = computed(() => props.mode === 'register');
 const halaman = computed<any>(() => props.baris ?? { data: [], links: [], from: 1, total: 0 });
@@ -51,10 +57,10 @@ function simpan() {
   form.post('/miners/induksi', { forceFormData: true, preserveScroll: true, onSuccess: () => { terbuka.value = false; } });
 }
 
-const hapusTerbuka = ref<any>(null);
 const hapusForm = useForm({});
-function hapus() {
-  hapusForm.delete(`/miners/induksi/${hapusTerbuka.value.id}`, { preserveScroll: true, onFinish: () => { hapusTerbuka.value = null; } });
+async function hapus(b: any) {
+  if (!await tanya({ judul: 'Hapus pengajuan induksi', pesan: `Hapus pengajuan ${b.nomor} beserta pesertanya?`, labelAksi: 'Hapus', nada: 'bahaya' })) return;
+  hapusForm.delete(`/miners/induksi/${b.id}`, { preserveScroll: true });
 }
 </script>
 
@@ -108,7 +114,7 @@ function hapus() {
               <td><LencanaStatus :status="b.status" /></td>
               <td>{{ b.oleh || '—' }}</td>
               <td v-if="register">
-                <TombolIkon v-if="b.bolehHapus" ikon="hapus" varian="bahaya" judul="Hapus pengajuan induksi" @click="hapusTerbuka = b" />
+                <TombolIkon v-if="b.bolehHapus" ikon="hapus" varian="bahaya" judul="Hapus pengajuan induksi" @click="hapus(b)" />
               </td>
             </tr>
             <tr v-if="!halaman.data.length">
@@ -140,12 +146,6 @@ function hapus() {
       </template>
     </Modal>
 
-    <Modal :terbuka="hapusTerbuka !== null" judul="Hapus pengajuan induksi" @tutup="hapusTerbuka = null">
-      <p class="text-[13px]">Hapus pengajuan <b>{{ hapusTerbuka?.nomor }}</b> beserta pesertanya?</p>
-      <template #kaki>
-        <button type="button" class="mn-btn mn-btn-garis" @click="hapusTerbuka = null">Close</button>
-        <button type="button" class="mn-btn mn-btn-bahaya" :disabled="hapusForm.processing" @click="hapus">Hapus</button>
-      </template>
-    </Modal>
+    <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
   </div>
 </template>

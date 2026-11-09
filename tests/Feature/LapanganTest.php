@@ -300,7 +300,11 @@ class LapanganTest extends TestCase
                bagi pembaca layar, sehingga sejak saat itu ada dua teks
                yang harus diubah bersama-sama, dan yang terdengar adalah
                yang lebih mudah terlupa. */
-            preg_match_all('/<label\b[^>]*\bfor="([^"]+)"/', $isi, $cocok);
+            /* <Medan untuk="x"> (Components/Miners/Medan.vue) sama dengan
+               <label for="x">: komponen itu menggambar label tersebut
+               di atas slot kendalinya. Menuntut aria-label tambahan di
+               sana justru melahirkan dua teks yang harus dijaga sama. */
+            preg_match_all('/<(?:label\b[^>]*\bfor|Medan\b[^>]*\buntuk)="([^"]+)"/', $isi, $cocok);
             $berpasangan = array_flip($cocok[1]);
 
             $dalamLabel = 0;

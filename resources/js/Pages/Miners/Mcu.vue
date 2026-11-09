@@ -20,8 +20,14 @@ import TombolIkon from '../../Components/Miners/TombolIkon.vue';
 import Modal from '../../Components/Miners/Modal.vue';
 import Medan from '../../Components/Miners/Medan.vue';
 import { tglId } from '../../Components/Miners/zona';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
 
 const props = propHalaman();
+
+/* Penegasan memakai dialog aplikasi, bukan confirm() peramban — di
+   webview ponsel dialog bawaan dibungkam dan tindakannya diam-diam batal. */
+const { dialog, tanya, batal, lanjut } = useDialog();
 
 const register = computed(() => props.mode === 'register');
 const halaman = computed<any>(() => props.baris ?? { data: [], links: [], from: 1, total: 0 });
@@ -76,11 +82,15 @@ function simpan() {
   else form.post('/miners/mcu', opsi);
 }
 
-const hapusTerbuka = ref<any>(null);
 const hapusForm = useForm({});
 
-function hapus() {
-  hapusForm.delete(`/miners/mcu/${hapusTerbuka.value.id}`, { preserveScroll: true, onFinish: () => { hapusTerbuka.value = null; } });
+async function hapus(b: any) {
+  if (!await tanya({
+    judul: 'Hapus surat MCU',
+    pesan: `Hapus surat ${b.nomor} beserta seluruh manpower di dalamnya? Surat yang namanya sudah menjadi dasar induksi atau Mine Permit tidak dapat dihapus.`,
+    labelAksi: 'Hapus', nada: 'bahaya',
+  })) return;
+  hapusForm.delete(`/miners/mcu/${b.id}`, { preserveScroll: true });
 }
 </script>
 
@@ -139,7 +149,7 @@ function hapus() {
               <td v-if="register">
                 <div class="mn-aksi" style="justify-content:flex-start">
                   <TombolIkon v-if="b.bolehUbah" ikon="pensil" judul="Ubah surat MCU" @click="ubah(b)" />
-                  <TombolIkon v-if="b.bolehHapus" ikon="hapus" varian="bahaya" judul="Hapus surat MCU" @click="hapusTerbuka = b" />
+                  <TombolIkon v-if="b.bolehHapus" ikon="hapus" varian="bahaya" judul="Hapus surat MCU" @click="hapus(b)" />
                 </div>
               </td>
             </tr>
@@ -184,13 +194,6 @@ function hapus() {
       </template>
     </Modal>
 
-    <Modal :terbuka="hapusTerbuka !== null" judul="Hapus surat MCU" @tutup="hapusTerbuka = null">
-      <p class="text-[13px]">Hapus surat <b>{{ hapusTerbuka?.nomor }}</b> beserta seluruh manpower di dalamnya?
-        Surat yang namanya sudah menjadi dasar induksi atau Mine Permit tidak dapat dihapus.</p>
-      <template #kaki>
-        <button type="button" class="mn-btn mn-btn-garis" @click="hapusTerbuka = null">Close</button>
-        <button type="button" class="mn-btn mn-btn-bahaya" :disabled="hapusForm.processing" @click="hapus">Hapus</button>
-      </template>
-    </Modal>
+    <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
   </div>
 </template>

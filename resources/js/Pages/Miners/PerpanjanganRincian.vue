@@ -14,16 +14,22 @@ import TabelPersetujuan from '../../Components/Miners/TabelPersetujuan.vue';
 import Modal from '../../Components/Miners/Modal.vue';
 import Medan from '../../Components/Miners/Medan.vue';
 import { tglId } from '../../Components/Miners/zona';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
 
 const props = propHalaman();
+
+/* Penegasan memakai dialog aplikasi, bukan confirm() peramban — di
+   webview ponsel dialog bawaan dibungkam dan tindakannya diam-diam batal. */
+const { dialog, tanya, batal, lanjut } = useDialog();
 const a = computed<any>(() => props.ajuan ?? {});
 const galat = computed<Record<string, string>>(() => (props.errors ?? {}) as Record<string, string>);
 
 const tindakan = useForm({ keadaan: 'setuju', catatan: '' });
 const alasanTerbuka = ref<null | 'tolak' | 'dikembalikan'>(null);
 
-function tindak(keadaan: string) {
-  if (keadaan === 'setuju' && !window.confirm('Confirm Approved?')) return;
+async function tindak(keadaan: string) {
+  if (keadaan === 'setuju' && !await tanya({ judul: 'Confirm Approved?', labelAksi: 'Approve' })) return;
   tindakan.keadaan = keadaan;
   tindakan.post(`/miners/perpanjangan-permit/${a.value.id}/tindak`, {
     preserveScroll: true, onSuccess: () => { alasanTerbuka.value = null; tindakan.reset('catatan'); },
@@ -107,5 +113,6 @@ function ajukanUlang() {
                 :disabled="tindakan.processing || !tindakan.catatan.trim()" @click="tindak(alasanTerbuka!)">Sending</button>
       </template>
     </Modal>
+    <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
   </div>
 </template>

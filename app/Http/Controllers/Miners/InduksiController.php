@@ -232,7 +232,6 @@ class InduksiController extends Controller
             'bolehKirim'       => Jalur::bolehKirim($induksi, $u) && ! $induksi->alurTertahan(),
             'bolehAjukanUlang' => Jalur::bolehKirim($induksi, $u) && $induksi->alurTertahan(),
             'bolehTindak'      => Jalur::bolehTindak($induksi, $u),
-            'PILIHAN'          => InduksiOrang::PILIHAN,
             'STATUS_ORANG'     => InduksiOrang::STATUS,
         ]);
     }
