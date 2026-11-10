@@ -44,7 +44,7 @@ const STATUS: Record<string, string> = {
         <LogoPerusahaan :logo="audit.perusahaan.logo" :nama="audit.perusahaan.nama" ukuran="w-12 h-12 hidden sm:grid" />
         <div class="min-w-0">
           <div class="flex flex-wrap items-center gap-2.5">
-            <h1 class="text-[20px] sm:text-[22px] font-bold tracking-tight text-navy-900 leading-tight">{{ audit.judul }}</h1>
+            <h1 class="text-[20px] sm:text-[22px] font-bold tracking-tight text-navy-900 leading-tight [text-wrap:balance]">{{ audit.judul }}</h1>
             <span class="lencana" :class="STATUS[audit.status] ?? STATUS.draft">{{ audit.labelStatus }}</span>
           </div>
           <p class="mt-1 text-[13px] text-slate-500">

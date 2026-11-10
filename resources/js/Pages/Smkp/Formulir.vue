@@ -183,9 +183,9 @@ function simpan() {
         </fieldset>
       </section>
 
-      <div v-if="bisaSunting" class="xl:col-span-2 sticky bottom-4 z-10 flex flex-wrap items-center justify-between gap-3 rounded-kartu bg-navy-900 text-white px-5 py-3 shadow-angkat">
-        <p class="text-[13px] text-white/80">{{ form.isDirty ? 'Ada perubahan yang belum disimpan.' : 'Kesesuaian dan rekomendasi tersimpan.' }}</p>
-        <button type="submit" class="btn-aksen btn-kecil" :disabled="form.processing || !form.isDirty"><Ikon nama="simpan" class="w-4 h-4" /> Simpan formulir</button>
+      <div v-if="bisaSunting" class="xl:col-span-2 sticky bottom-3 sm:bottom-4 z-10 flex items-center justify-between gap-3 rounded-kartu bg-navy-900 text-white px-3.5 py-2.5 sm:px-5 sm:py-3 shadow-angkat">
+        <p class="min-w-0 text-[12.5px] sm:text-[13px] leading-snug text-white/80">{{ form.isDirty ? 'Ada perubahan yang belum disimpan.' : 'Kesesuaian dan rekomendasi tersimpan.' }}</p>
+        <button type="submit" class="btn-aksen btn-kecil shrink-0" :disabled="form.processing || !form.isDirty"><Ikon nama="simpan" class="w-4 h-4" /> Simpan formulir</button>
       </div>
     </form>
   </div>

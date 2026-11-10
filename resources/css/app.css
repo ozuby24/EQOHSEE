@@ -997,6 +997,20 @@ input,select,textarea{ outline:none; }
 
   /* ---------- teks kecil berhuruf kapital, tautan ---------- */
   :where(.smkp-ui, .smkp-cetak) .eyebrow{ @apply text-[11px] font-semibold uppercase tracking-[0.1em] text-teal-700; }
+  /* Cincin fokus papan ketik untuk tautan & tombol buatan halaman (tab
+     langkah audit, tombol nilai 0–4, kartu sub-elemen) yang tidak
+     membawa cincin sendiri. Spesifisitasnya sengaja rendah (0,1,0):
+     tombol .btn-* tetap memakai cincin miliknya. */
+  :where(.smkp-ui :is(a, button, summary, [tabindex]:not([tabindex="-1"]))):focus-visible{
+    outline:2px solid #0284C7; outline-offset:2px;
+  }
+  :root[data-tema="gelap"] :where(.smkp-ui :is(a, button, summary, [tabindex]:not([tabindex="-1"]))):focus-visible{ outline-color:#7CC5F4; }
+  /* Di dalam wadah bergulir/terpotong (bilah tab langkah audit) garis luar
+     di luar kotak ikut terpotong — digambar di sisi dalam. */
+  :where(.smkp-ui :is(.overflow-x-auto, .overflow-auto, .gulir-x, .overflow-hidden) :is(a, button)):focus-visible{ outline-offset:-2px; }
+  :where(.smkp-ui, .smkp-cetak) :is(.btn, .btn-utama, .btn-aksen, .btn-hijau, .btn-garis, .btn-hantu, .btn-bahaya, .btn-garis-bahaya):focus-visible{
+    @apply ring-brand-500/45;
+  }
   :where(.smkp-ui, .smkp-cetak) .tautan{ @apply font-semibold text-brand-700 hover:text-brand-800 hover:underline underline-offset-2; }
 
   :where(.smkp-ui, .smkp-cetak) .scrollbar-tipis{ scrollbar-width:thin; scrollbar-color:rgba(148,163,184,.45) transparent; }
