@@ -6,15 +6,23 @@
  * TIDAK boleh masuk, dan karena apa. Ubin yang menyebut total pekerja
  * tanpa itu hanya memberi tahu ukuran perusahaan — yang sudah diketahui
  * setiap orang yang membukanya.
+ *
+ * Satu bahasa visual dengan layar Miners lain (miners.css): ubin KPI,
+ * donat zona masa berlaku MCU dan Mine Permit, berkas yang perlu
+ * diurus, antrean Outstanding, paling mendesak, dan Tinjauan Harian MCU.
  */
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { propHalaman } from '../../halaman';
-import KartuGrafik from '../../Grafik/KartuGrafik.vue';
 import Batang from '../../Grafik/Batang.vue';
-import Lencana from './Lencana.vue';
 import Kartu from '../../Components/Miners/Kartu.vue';
 import LencanaStatus from '../../Components/Miners/LencanaStatus.vue';
+import LencanaMasaBerlaku from '../../Components/Miners/LencanaMasaBerlaku.vue';
+import UbinKpi from '../../Components/Miners/UbinKpi.vue';
+import DonatZona from '../../Components/Miners/DonatZona.vue';
+import SelOrang from '../../Components/Miners/SelOrang.vue';
+import KeadaanKosong from '../../Components/Miners/KeadaanKosong.vue';
+import { IKON } from '../../Components/Miners/ikon';
 
 const props = propHalaman();
 
@@ -69,168 +77,140 @@ const tertahan = computed(() =>
   Math.max(0, ...perluDiurus.value.map((b) => b.nilai)));
 
 const antrean = computed(() => props.antrean ?? {});
+const zonaMcu = computed<any>(() => props.zonaMcu ?? {});
+const zonaPermit = computed<any>(() => props.zonaPermit ?? {});
+
+/* Keadaan berkas → pil lembut yang sama dengan zona masa berlaku. */
+const KELAS_KEADAAN: Record<string, string> = {
+  habis: 'mn-l-bahaya', belum: 'mn-l-abu', mendekati: 'mn-l-oranye', berlaku: 'mn-l-sukses',
+};
 const jumlah  = computed(() => props.jumlah ?? {});
 </script>
 
 <template>
   <Head :title="props.judul" />
 
-  <div class="space-y-5">
-
-    <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      <Link href="/miners/kedaluwarsa"
-            class="rounded-2xl bg-white border border-stone-100 shadow-card p-4 hover:border-stone-200">
-        <div class="text-[11px] font-semibold uppercase tracking-wide text-stone-400">Perlu diurus</div>
-        <div class="num text-2xl font-bold text-cam-ink mt-1">{{ tertahan }}</div>
-        <div class="text-[11px] text-stone-500">berkas habis atau belum ada</div>
-      </Link>
-
-      <Link href="/miners"
-            class="rounded-2xl bg-white border border-stone-100 shadow-card p-4 hover:border-stone-200">
-        <div class="text-[11px] font-semibold uppercase tracking-wide text-stone-400">Pekerja aktif</div>
-        <div class="num text-2xl font-bold text-cam-ink mt-1">{{ jumlah.pekerjaAktif ?? 0 }}</div>
-        <div class="text-[11px] text-stone-500">dari {{ jumlah.pekerja ?? 0 }} terdaftar</div>
-      </Link>
-
-      <Link href="/miners/permit"
-            class="rounded-2xl bg-white border border-stone-100 shadow-card p-4 hover:border-stone-200">
-        <div class="text-[11px] font-semibold uppercase tracking-wide text-stone-400">Mine Permit terbit</div>
-        <div class="num text-2xl font-bold text-cam-ink mt-1">{{ jumlah.permitTerbit ?? 0 }}</div>
-        <div class="text-[11px] text-stone-500">kartu masuk tambang</div>
-      </Link>
-
-      <Link href="/miners/simper"
-            class="rounded-2xl bg-white border border-stone-100 shadow-card p-4 hover:border-stone-200">
-        <div class="text-[11px] font-semibold uppercase tracking-wide text-stone-400">SIMPER terbit</div>
-        <div class="num text-2xl font-bold text-cam-ink mt-1">{{ jumlah.simperTerbit ?? 0 }}</div>
-        <div class="text-[11px] text-stone-500">izin mengemudikan unit</div>
-      </Link>
+  <div class="tema-miners">
+    <!-- ══════════ ubin KPI ══════════ -->
+    <section class="mn-kpi-grid" aria-label="Ringkasan">
+      <UbinKpi label="Perlu diurus" :angka="tertahan" sub="berkas habis atau belum ada" :ikon="IKON.awas"
+               :nada="tertahan > 0 ? 'bahaya' : 'aman'" href="/miners/kedaluwarsa" />
+      <UbinKpi label="Pekerja aktif" :angka="jumlah.pekerjaAktif ?? 0" :sub="`dari ${jumlah.pekerja ?? 0} terdaftar`" :ikon="IKON.orang"
+               nada="info" href="/miners" />
+      <UbinKpi label="Mine Permit terbit" :angka="jumlah.permitTerbit ?? 0" sub="kartu masuk tambang" :ikon="IKON.kartu"
+               nada="aman" href="/miners/permit" />
+      <UbinKpi label="SIMPER terbit" :angka="jumlah.simperTerbit ?? 0" sub="izin mengemudikan unit" :ikon="IKON.kartu"
+               nada="aksen" href="/miners/simper" />
     </section>
 
-    <KartuGrafik judul="Berkas yang perlu diurus"
-                 catatan="Habis atau belum ada. Dihitung atas seluruh pekerja, bukan atas yang tersaring — ringkasan yang mengikuti penyaring akan menyebut 100% habis begitu seseorang memilih &quot;habis&quot;."
-                 :angka="`${tertahan} orang terbanyak`">
-      <Batang :baris="perluDiurus" satuan=" orang" apa-adanya />
-
-      <template #tabel>
-        <table>
-          <thead>
-            <tr>
-              <th>Berkas</th>
-              <th v-for="(label, kode) in (props.KEADAAN ?? {})" :key="kode">{{ label }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="[kode, nama] in JENIS" :key="kode">
-              <td>{{ nama }}</td>
-              <td v-for="(label, k) in (props.KEADAAN ?? {})" :key="k" class="num">
-                {{ props.ringkas?.[kode]?.[k] ?? 0 }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </template>
-    </KartuGrafik>
-
-    <section class="grid gap-4 lg:grid-cols-2">
-      <div class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
-        <header class="px-5 py-3.5 border-b border-stone-100">
-          <h3 class="text-[13.5px] font-bold text-cam-ink">Menunggu tindakan</h3>
-          <p class="text-[11px] text-stone-500 mt-0.5">
-            Dokumen yang berhenti pada salah satu langkah persetujuan.
-          </p>
-        </header>
-
-        <ul class="divide-y divide-stone-100">
-          <li v-for="[kode, nama] in JENIS" :key="kode"
-              class="px-5 py-3 flex items-center justify-between gap-3">
-            <span class="text-[12px] text-stone-600">{{ nama }}</span>
-            <span class="num text-[13px] font-bold"
-                  :class="Number(antrean[kode] ?? 0) > 0 ? 'text-cam-ink' : 'text-stone-300'">
-              {{ antrean[kode] ?? 0 }}
-            </span>
-          </li>
-        </ul>
-      </div>
-
-      <div class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
-        <header class="px-5 py-3.5 border-b border-stone-100">
-          <h3 class="text-[13.5px] font-bold text-cam-ink">Paling mendesak</h3>
-          <p class="text-[11px] text-stone-500 mt-0.5">
-            Orang yang salah satu berkasnya habis atau belum ada.
-          </p>
-        </header>
-
-        <ul class="divide-y divide-stone-100">
-          <li v-for="m in mendesak" :key="m.id" class="px-5 py-3 flex items-center justify-between gap-3">
-            <Link :href="`/miners/${m.id}`" class="text-[12px] font-semibold text-cam-lime-deep hover:underline">
-              {{ m.nama }}
-            </Link>
-            <Lencana :keadaan="m.terburuk" :label="props.KEADAAN?.[m.terburuk]" :nada="props.NADA" />
-          </li>
-
-          <li v-if="!mendesak.length" class="px-5 py-8 text-center text-[12px] text-stone-400">
-            Tidak ada berkas yang habis. Seluruh pekerja lengkap hari ini.
-          </li>
-        </ul>
-      </div>
+    <!-- ══════════ donat zona ══════════ -->
+    <section class="mn-dua">
+      <Kartu judul="Masa Berlaku MCU" :keterangan="`${(zonaMcu.total ?? 0).toLocaleString('id-ID')} pekerja · MCU terakhir`">
+        <template #kanan><Link href="/miners" class="mn-btn mn-btn-hantu mn-btn-kecil">Manpower MCU →</Link></template>
+        <DonatZona :n="zonaMcu" />
+      </Kartu>
+      <Kartu judul="Masa Berlaku Mine Permit" :keterangan="`${(zonaPermit.total ?? 0).toLocaleString('id-ID')} pekerja`">
+        <template #kanan><Link href="/miners/permit" class="mn-btn mn-btn-hantu mn-btn-kecil">Mine Permit →</Link></template>
+        <DonatZona :n="zonaPermit" />
+      </Kartu>
     </section>
 
-    <section v-if="kompetensi.length"
-             class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
-      <header class="px-5 py-3.5 border-b border-stone-100">
-        <h3 class="text-[13.5px] font-bold text-cam-ink">Sertifikat kompetensi akan habis</h3>
-      </header>
-
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-left text-[11.5px]">
-          <thead>
-            <tr class="text-stone-400 border-b border-stone-200 bg-stone-50/70">
-              <th class="px-4 py-2 font-semibold">Pemegang</th>
-              <th class="px-4 py-2 font-semibold">Sertifikat</th>
-              <th class="px-4 py-2 font-semibold whitespace-nowrap">Berlaku sampai</th>
-              <th class="px-4 py-2 font-semibold whitespace-nowrap text-right">Sisa</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="k in kompetensi" :key="k.id" class="border-b border-stone-100">
-              <td class="px-4 py-2.5 font-semibold text-cam-ink">{{ k.pekerja || '—' }}</td>
-              <td class="px-4 py-2.5 text-stone-600">{{ k.nama }}</td>
-              <td class="px-4 py-2.5 num text-stone-500">{{ k.sampai || '—' }}</td>
-              <td class="px-4 py-2.5 num text-right">{{ k.sisa }} hari</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <div v-if="tinjau" class="tema-miners" style="background:transparent">
-      <Kartu judul="Tinjauan Harian MCU" keterangan="pengajuan per tanggal">
-        <template #kanan>
-          <input v-model="tglTinjau" type="date" class="mn-isian" style="width:auto" aria-label="Tanggal pengajuan" @change="gantiTinjau">
-        </template>
-        <div class="mn-info-grid" style="margin-bottom:14px">
-          <div class="mn-zona mn-zona-total" style="cursor:default"><span class="mn-zona-num">{{ tinjau.diajukan }}</span><span class="mn-zona-lbl">Diajukan</span></div>
-          <div class="mn-zona mn-zona-kritis" style="cursor:default"><span class="mn-zona-num">{{ tinjau.menunggu }}</span><span class="mn-zona-lbl">Menunggu dokter</span></div>
-          <div class="mn-zona mn-zona-aman" style="cursor:default"><span class="mn-zona-num">{{ tinjau.disetujui }}</span><span class="mn-zona-lbl">Disetujui</span></div>
-          <div class="mn-zona mn-zona-expired" style="cursor:default"><span class="mn-zona-num">{{ tinjau.ditolak }}</span><span class="mn-zona-lbl">Ditolak</span></div>
-        </div>
+    <!-- ══════════ berkas perlu diurus ══════════ -->
+    <Kartu judul="Berkas yang perlu diurus" :keterangan="`Habis atau belum ada · ${tertahan} orang terbanyak`">
+      <div class="mn-dua mn-dua-rapat">
+        <div class="min-w-0"><Batang :baris="perluDiurus" satuan=" orang" apa-adanya /></div>
         <div class="mn-gulir">
-          <table class="mn-tabel" style="font-size:12px">
-            <thead><tr><th style="width:36px">No</th><th>Nama</th><th>Perusahaan</th><th>Jam</th><th>Status</th></tr></thead>
-            <tbody>
-              <tr v-for="(o, i) in (tinjau.orang as any[])" :key="o.id">
-                <td>{{ Number(i) + 1 }}</td>
-                <td><Link :href="`/miners/mcu/${o.mcu_id}`" class="mn-tautan">{{ o.nama }}</Link></td>
-                <td>{{ o.perusahaan || '—' }}</td>
-                <td>{{ o.jam || '—' }}</td>
-                <td><LencanaStatus :status="o.status" /></td>
+          <table class="mn-tabel">
+            <thead>
+              <tr>
+                <th>Berkas</th>
+                <th v-for="(label, kode) in (props.KEADAAN ?? {})" :key="kode" class="mn-angka">{{ label }}</th>
               </tr>
-              <tr v-if="!tinjau.orang.length"><td colspan="5" class="mn-kosong">Tidak ada pengajuan MCU pada tanggal ini.</td></tr>
+            </thead>
+            <tbody>
+              <tr v-for="[kode, nama] in JENIS" :key="kode">
+                <td class="mn-rekap-nama">{{ nama }}</td>
+                <td v-for="(label, k) in (props.KEADAAN ?? {})" :key="k" class="mn-angka" :class="{ 'mn-nol': !props.ringkas?.[kode]?.[k] }">
+                  {{ props.ringkas?.[kode]?.[k] ?? 0 }}
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
+      </div>
+      <p class="mn-petunjuk">Dihitung atas seluruh pekerja, bukan atas yang tersaring — ringkasan yang mengikuti penyaring akan menyebut 100% habis begitu seseorang memilih "habis".</p>
+    </Kartu>
+
+    <!-- ══════════ antrean & mendesak ══════════ -->
+    <section class="mn-dua">
+      <Kartu judul="Menunggu tindakan" keterangan="Dokumen yang berhenti pada salah satu langkah persetujuan">
+        <ul class="mn-daftar">
+          <li v-for="[kode, nama] in JENIS" :key="kode">
+            <Link :href="`/miners/daftar/outstanding-${kode}`" class="mn-daftar-baris">
+              <span>Outstanding {{ nama }}</span>
+              <span class="mn-daftar-angka" :class="{ 'mn-nol': !Number(antrean[kode] ?? 0) }">{{ antrean[kode] ?? 0 }}</span>
+            </Link>
+          </li>
+        </ul>
       </Kartu>
-    </div>
+
+      <Kartu judul="Paling mendesak" keterangan="Orang yang salah satu berkasnya habis atau belum ada">
+        <ul v-if="mendesak.length" class="mn-daftar">
+          <li v-for="m in mendesak" :key="m.id" class="mn-daftar-baris">
+            <SelOrang :nama="m.nama" :sub="[m.jabatan, m.perusahaan].filter(Boolean).join(' · ') || null" :href="`/miners/${m.id}`" />
+            <span class="mn-lencana mn-titik" :class="KELAS_KEADAAN[m.terburuk] ?? 'mn-l-abu'">{{ props.KEADAAN?.[m.terburuk] ?? m.terburuk }}</span>
+          </li>
+        </ul>
+        <KeadaanKosong v-else :ikon="IKON.centang" judul="Seluruh pekerja lengkap hari ini" teks="Tidak ada berkas yang habis atau belum ada." />
+      </Kartu>
+    </section>
+
+    <!-- ══════════ kompetensi ══════════ -->
+    <Kartu v-if="kompetensi.length" judul="Sertifikat kompetensi akan habis" :keterangan="`${kompetensi.length} sertifikat`">
+      <div class="mn-gulir">
+        <table class="mn-tabel">
+          <thead><tr><th>Pemegang</th><th>Sertifikat</th><th>Berlaku sampai</th><th class="mn-angka">Sisa</th></tr></thead>
+          <tbody>
+            <tr v-for="k in kompetensi" :key="k.id">
+              <td><SelOrang :nama="k.pekerja" /></td>
+              <td>{{ k.nama }}</td>
+              <td><LencanaMasaBerlaku :tanggal="k.sampai" :sisa="k.sisa" /></td>
+              <td class="mn-angka">{{ k.sisa }} hari</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </Kartu>
+
+    <!-- ══════════ tinjauan harian MCU ══════════ -->
+    <Kartu v-if="tinjau" judul="Tinjauan Harian MCU" keterangan="Pengajuan per tanggal">
+      <template #kanan>
+        <label class="sr-only" for="tgl-tinjau">Tanggal pengajuan</label>
+        <input id="tgl-tinjau" v-model="tglTinjau" type="date" class="mn-isian mn-isian-pas" @change="gantiTinjau">
+      </template>
+      <div class="mn-kpi-grid mn-kpi-kecil">
+        <UbinKpi label="Diajukan" :angka="tinjau.diajukan" :ikon="IKON.dokumen" nada="info" />
+        <UbinKpi label="Menunggu dokter" :angka="tinjau.menunggu" :ikon="IKON.jam" nada="kritis" />
+        <UbinKpi label="Disetujui" :angka="tinjau.disetujui" :ikon="IKON.centang" nada="aman" />
+        <UbinKpi label="Ditolak" :angka="tinjau.ditolak" :ikon="IKON.silang" nada="bahaya" />
+      </div>
+      <div class="mn-gulir">
+        <table class="mn-tabel">
+          <thead><tr><th class="mn-kolom-sempit">No</th><th>Nama</th><th>Perusahaan</th><th>Jam</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr v-for="(o, i) in (tinjau.orang as any[])" :key="o.id">
+              <td class="mn-no">{{ Number(i) + 1 }}</td>
+              <td><SelOrang :nama="o.nama" :href="`/miners/mcu/${o.mcu_id}`" /></td>
+              <td>{{ o.perusahaan || '—' }}</td>
+              <td class="mn-num">{{ o.jam || '—' }}</td>
+              <td><LencanaStatus :status="o.status" /></td>
+            </tr>
+            <tr v-if="!tinjau.orang.length">
+              <td colspan="5" class="mn-kosong"><KeadaanKosong teks="Tidak ada pengajuan MCU pada tanggal ini." /></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </Kartu>
   </div>
 </template>

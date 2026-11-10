@@ -564,3 +564,19 @@ a.mn-berkas:hover{border-color:#94a3b8;background:var(--mn-kartu-2)}
 .mn-anak{padding-left:16px;color:var(--mn-teks)}
 .mn-induk{font-weight:600;color:var(--mn-judul)}
 .mn-logo{height:26px;width:auto;max-width:70px;object-fit:contain}
+
+/* ---------------------------------------------------------- dasbor */
+.mn-dua{display:grid;gap:0 20px;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr))}
+.mn-dua-rapat{gap:16px 24px;align-items:center;margin-bottom:8px}
+.mn-daftar{list-style:none;margin:-6px 0;padding:0}
+.mn-daftar > li + li{border-top:1px solid var(--mn-garis-halus)}
+.mn-daftar-baris{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:7px 4px;
+  color:var(--mn-teks);font-size:13.5px;border-radius:8px}
+a.mn-daftar-baris:hover{background:var(--mn-kartu-2);color:var(--mn-judul)}
+.mn-daftar-angka{min-width:34px;height:26px;padding:0 9px;display:grid;place-items:center;border-radius:999px;font-weight:700;
+  font-variant-numeric:tabular-nums;background:var(--mn-aksen-lembut);color:var(--mn-aksen-pekat)}
+.mn-daftar-angka.mn-nol{background:var(--mn-kartu-2);color:var(--mn-kosong)}
+.mn-kpi-kecil{gap:10px;margin-bottom:16px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.mn-kpi-kecil .mn-kpi{padding:12px 14px;box-shadow:none}
+.mn-kpi-kecil .mn-kpi-angka{font-size:22px}
+.mn-isian.mn-isian-pas{width:auto}

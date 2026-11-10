@@ -86,6 +86,12 @@ class MinersController extends Controller
 
             'tinjauan' => $this->tinjauanHarian($r),
 
+            /* Sebaran zona masa berlaku MCU dan Mine Permit untuk donat
+               dasbor — dari sisa hari yang sudah dihitung keadaanOrang(),
+               zona yang sama dengan kartu zona Manpower MCU. */
+            'zonaMcu'    => Zona::ringkas($baris->map(fn (array $b) => Zona::dariSisa($b['mcu']['sisa']))),
+            'zonaPermit' => Zona::ringkas($baris->map(fn (array $b) => Zona::dariSisa($b['permit']['sisa']))),
+
             'KEADAAN' => Keadaan::LABEL,
             'NADA'    => Keadaan::NADA,
         ]);
