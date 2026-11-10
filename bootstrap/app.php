@@ -38,6 +38,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->web(append: [
+            /* Akun nonaktif dikeluarkan pada permintaan berikutnya,
+               termasuk sesi terbuka dan cookie "Ingat saya" (Aurorasys). */
+            \App\Http\Middleware\PastikanAktif::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
 
             /* Ditaruh SESUDAH HandleInertiaRequests supaya ia melihat

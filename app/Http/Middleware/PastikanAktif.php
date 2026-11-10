@@ -25,7 +25,8 @@ class PastikanAktif
     {
         $u = $request->user();
 
-        if ($u && !$u->active) {
+        // null (model baru dalam memori tanpa kolom ini) = aktif: bawaan kolomnya true.
+        if ($u && $u->active === false) {
             Auth::guard('web')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -36,7 +37,8 @@ class PastikanAktif
                 return response()->json(['message' => self::PESAN], 401);
             }
 
-            return redirect()->route('login')->withErrors(['email' => self::PESAN]);
+            // Ditampilkan bilah kilat GuestLayout di halaman masuk.
+            return redirect()->route('login')->with('galat', self::PESAN);
         }
 
         return $next($request);
