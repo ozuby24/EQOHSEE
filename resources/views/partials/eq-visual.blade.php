@@ -1599,6 +1599,13 @@ main a{transition:color .16s}
 @media (max-width:380px){
   .eq-topbar-aksi .eq-bulat{width:36px;height:36px}
 }
+/* Modul audit SMKP menambah satu tombol bulat (temuan lewat target), dan
+   di 390 px sapaannya terdesak sampai terpotong di tengah kata
+   ("Selama / t malam"). Tombolnya dirapatkan lebih awal di sana. */
+@media (max-width:480px){
+  .eq-topbar-aksi:has(.eq-lonceng) {gap:4px}
+  .eq-topbar-aksi:has(.eq-lonceng) .eq-bulat{width:34px;height:34px}
+}
 
 /* ── Perusahaan yang sedang dilihat ──
    LEBARNYA MENGIKUTI NAMANYA, TIDAK DIPATOK. Batas 190px yang dulu

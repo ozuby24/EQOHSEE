@@ -60,7 +60,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', tombol));
                 <h3 class="text-[13.5px] font-semibold text-slate-900">Asisten AI belum diaktifkan</h3>
                 <p class="mt-1 text-[12.5px] leading-relaxed text-slate-500">
                   Administrator perlu memasang kunci API Claude, ChatGPT, atau Gemini dan menyalakan AI di menu
-                  Admin → Integrasi AI.
+                  Pusat Kendali → Integrasi AI.
                 </p>
               </div>
             </div>

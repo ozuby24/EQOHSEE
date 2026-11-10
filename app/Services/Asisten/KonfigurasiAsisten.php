@@ -10,7 +10,7 @@ use App\Support\Ai;
  * Aurorasys menyimpan penyedia, kunci, dan model asistennya sendiri
  * (Admin → Server → Asisten AI, tabel `pengaturan`). EQOHSEE sudah punya
  * satu sambungan AI untuk seluruh aplikasi — App\Support\Ai, diatur dari
- * Pusat Kendali → Asisten AI, kunci terenkripsi di `app_settings` — sehingga
+ * Pusat Kendali → Integrasi AI, kunci terenkripsi di `app_settings` — sehingga
  * di sini asisten audit MENUMPANG sambungan itu: tidak ada kunci kedua,
  * tidak ada paket SDK penyedia tambahan.
  *

@@ -59,6 +59,25 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+        $this->tolakBilaNonaktif(Auth::user());
+    }
+
+    /**
+     * Akun nonaktif ditolak sejak di pintu masuk (Aurorasys), bukan baru
+     * dikeluarkan PastikanAktif pada permintaan berikutnya. Hanya sesudah
+     * sandinya benar, sehingga tidak membocorkan status akun.
+     *
+     * @throws ValidationException
+     */
+    private function tolakBilaNonaktif(?\Illuminate\Contracts\Auth\Authenticatable $u): void
+    {
+        if ($u instanceof User && $u->active === false) {
+            if (Auth::guard('web')->check()) Auth::guard('web')->logout();
+
+            throw ValidationException::withMessages([
+                'email' => \App\Http\Middleware\PastikanAktif::PESAN,
+            ]);
+        }
     }
 
     /**
@@ -118,6 +137,7 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+        $this->tolakBilaNonaktif($pengguna);
     }
 
     /**

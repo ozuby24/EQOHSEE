@@ -27,7 +27,7 @@ defineProps<{
         </template>
       </nav>
       <p v-if="eyebrow" class="eyebrow mb-1.5">{{ eyebrow }}</p>
-      <h1 class="text-[20px] sm:text-[24px] font-bold tracking-tight text-navy-900 leading-tight">{{ judul }}</h1>
+      <h1 class="text-[20px] sm:text-[24px] font-bold tracking-tight text-navy-900 leading-tight [text-wrap:balance]">{{ judul }}</h1>
       <p v-if="sub" class="text-[13px] text-slate-500 mt-1 max-w-3xl leading-relaxed">{{ sub }}</p>
     </div>
     <div v-if="$slots.default" class="flex flex-wrap items-center gap-2"><slot /></div>
