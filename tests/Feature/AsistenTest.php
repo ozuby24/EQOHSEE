@@ -96,7 +96,7 @@ class AsistenTest extends TestCase
 
         $this->actingAs($u)->postJson($this->urlButir(), ['kode' => 'II.2.1'])
             ->assertStatus(503)->assertJson(['jenis' => 'nonaktif'])
-            ->assertJsonPath('pesan', fn ($p) => str_contains($p, 'Pusat Kendali → Asisten AI'));
+            ->assertJsonPath('pesan', fn ($p) => str_contains($p, 'Pusat Kendali → Integrasi AI'));
         $this->actingAs($u)->postJson($this->urlTemuan())->assertStatus(503);
 
         $this->assertSame([], $this->palsu->diminta);

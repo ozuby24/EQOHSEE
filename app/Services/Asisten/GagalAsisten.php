@@ -32,7 +32,7 @@ final class GagalAsisten extends RuntimeException
     public static function nonaktif(): self
     {
         return new self(
-            'Asisten AI belum diaktifkan. Administrator perlu memasang kunci API penyedia AI di Pusat Kendali → Asisten AI.',
+            'Asisten AI belum diaktifkan. Administrator perlu memasang kunci API penyedia AI di Pusat Kendali → Integrasi AI.',
             503, 'nonaktif',
         );
     }
@@ -40,12 +40,12 @@ final class GagalAsisten extends RuntimeException
     /** @param string $pembuat nama penyedia untuk pesan, mis. "Anthropic", "OpenAI", "Google" */
     public static function kunci(string $pembuat = 'Anthropic'): self
     {
-        return new self("Kunci API {$pembuat} tidak valid atau sudah dicabut. Minta administrator memeriksanya di Pusat Kendali → Asisten AI.", 502, 'kunci');
+        return new self("Kunci API {$pembuat} tidak valid atau sudah dicabut. Minta administrator memeriksanya di Pusat Kendali → Integrasi AI.", 502, 'kunci');
     }
 
     public static function izin(string $pembuat = 'Anthropic'): self
     {
-        return new self("Kunci API {$pembuat} tidak berhak memakai model ini. Minta administrator memeriksa nama model dan akun {$pembuat} di Pusat Kendali → Asisten AI.", 502, 'kunci');
+        return new self("Kunci API {$pembuat} tidak berhak memakai model ini. Minta administrator memeriksa nama model dan akun {$pembuat} di Pusat Kendali → Integrasi AI.", 502, 'kunci');
     }
 
     public static function sibuk(): self
@@ -65,7 +65,7 @@ final class GagalAsisten extends RuntimeException
 
     public static function permintaan(): self
     {
-        return new self('Permintaan ke layanan AI ditolak karena konfigurasi (model, parameter, atau saldo akun). Minta administrator memeriksa Pusat Kendali → Asisten AI.', 502, 'permintaan');
+        return new self('Permintaan ke layanan AI ditolak karena konfigurasi (model, parameter, atau saldo akun). Minta administrator memeriksa Pusat Kendali → Integrasi AI.', 502, 'permintaan');
     }
 
     public static function layanan(): self

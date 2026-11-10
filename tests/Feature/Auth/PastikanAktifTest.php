@@ -70,4 +70,16 @@ class PastikanAktifTest extends TestCase
         $this->withCookie($nama, $nilai)->get('/dashboard')->assertRedirect(route('login'));
         $this->assertGuest();
     }
+
+    public function test_masuk_dengan_sandi_benar_dan_akun_nonaktif_ditolak(): void
+    {
+        $mati = User::factory()->create(['active' => false]);
+        $this->post('/login', ['email' => $mati->email, 'password' => 'password'])
+            ->assertSessionHasErrors(['email' => PastikanAktif::PESAN]);
+        $this->assertGuest();
+
+        // Sandi salah tetap dijawab "kredensial salah": status akun tidak bocor.
+        $this->post('/login', ['email' => $mati->email, 'password' => 'salah'])
+            ->assertSessionHasErrors(['email' => trans('auth.failed')]);
+    }
 }
