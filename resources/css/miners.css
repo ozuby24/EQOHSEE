@@ -288,7 +288,7 @@ a.mn-l-gelap:hover{background:var(--mn-navy-hover)}
 .mn-rekap td{padding:9px 12px;font-size:13px}
 .mn-rekap .mn-rekap-nama{font-weight:600;color:var(--mn-judul)}
 .mn-rekap tfoot td{padding:10px 12px;font-weight:650;color:var(--mn-judul);background:var(--mn-kartu-2);border-top:1px solid var(--mn-garis)}
-.mn-rekap .mn-nol{color:#cbd5e1}
+.mn-rekap .mn-nol,.mn-tabel .mn-nol{color:#94a3b8}
 :root[data-tema="gelap"] .mn-rekap .mn-nol{color:#3a4d55}
 .mn-th-zona{display:inline-flex;align-items:center;gap:5px}
 .mn-th-zona i{width:7px;height:7px;border-radius:50%}
