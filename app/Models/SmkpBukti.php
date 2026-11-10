@@ -2,41 +2,44 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\BerindukPerusahaan;
+use App\Support\BerkasUnggah;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Berkas bukti yang melekat pada satu butir kriteria audit SMKP.
- *
- * Berdampingan dengan kolom teks `bukti` di dalam `smkp_audits.hasil`,
- * tidak menggantikannya: yang satu menjawab "bukti apa" — nomor
- * dokumen, siapa yang diwawancarai — yang ini menjawab "mana
- * buktinya". Berkas audit yang diminta Inspektur Tambang menuntut
- * keduanya.
- *
- * Batas perusahaannya menumpang induknya lewat BerindukPerusahaan.
- * Itu bukan kerapian: rute penyaji berkas mengikat BARIS INI langsung,
- * tanpa menyebut auditnya sama sekali, sehingga tanpa scope ini seluruh
- * bukti audit perusahaan lain terbaca oleh siapa pun yang menebak
- * nomornya.
+ * Satu berkas bukti kelengkapan untuk satu butir kriteria audit. Tidak
+ * bercakupan sendiri: selalu dibaca lewat audit induknya, yang membawa
+ * batas perusahaan pengguna.
  */
 class SmkpBukti extends Model
 {
-    use BerindukPerusahaan;
-
-    protected static string $indukPerusahaan = 'audit';
-
     protected $table = 'smkp_bukti';
 
-    protected $fillable = [
-        'audit_id', 'kode', 'file_path', 'file_name', 'file_size',
-        'mime', 'catatan', 'user_id',
+    /** Folder berkas di disk privat 'local'; satu folder per audit. */
+    public const FOLDER = 'bukti-audit';
+
+    public const MENUNGGU = 'menunggu';
+    public const DITERIMA = 'diterima';
+    public const DITOLAK  = 'ditolak';
+
+    public const STATUS = [
+        self::MENUNGGU => 'Menunggu verifikasi',
+        self::DITERIMA => 'Diterima',
+        self::DITOLAK  => 'Perlu perbaikan',
     ];
 
+    protected $fillable = [
+        'audit_id', 'kode', 'user_id', 'path', 'nama', 'mime', 'ukuran', 'keterangan',
+        'status', 'catatan', 'diverifikasi_oleh', 'diverifikasi_pada',
+    ];
+
+    /** Kunci asing bertipe bilangan: pencocokan audit & pengunggah memakai perbandingan ketat. */
     protected function casts(): array
     {
-        return ['file_size' => 'integer'];
+        return [
+            'audit_id' => 'integer', 'user_id' => 'integer', 'diverifikasi_oleh' => 'integer',
+            'ukuran' => 'integer', 'diverifikasi_pada' => 'datetime',
+        ];
     }
 
     public function audit(): BelongsTo
@@ -44,8 +47,24 @@ class SmkpBukti extends Model
         return $this->belongsTo(SmkpAudit::class, 'audit_id');
     }
 
-    public function user(): BelongsTo
+    public function pengunggah(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function verifikator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'diverifikasi_oleh');
+    }
+
+    public static function folder(int $auditId): string
+    {
+        return self::FOLDER.'/'.$auditId;
+    }
+
+    /** Sama dengan jenis yang boleh tampil langsung saat diunduh (?lihat). */
+    public function gambar(): bool
+    {
+        return in_array($this->mime, BerkasUnggah::PRATINJAU, true);
     }
 }

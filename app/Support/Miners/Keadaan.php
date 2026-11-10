@@ -55,6 +55,27 @@ final class Keadaan
     ];
 
     /**
+     * Relasi pekerja yang dibaca keempat keadaan di bawah — MCU, induksi,
+     * Mine Permit, SIMPER — untuk dimuat SEKALI JALAN.
+     *
+     * Satu daftar untuk semua pemuat massal (dasbor, roster, pemantauan):
+     * `induksi.induksi` dibaca `InduksiOrang::sah()`, dan
+     * `perpanjanganBerjalan` dibaca `Permit::habisEfektif()` saat tanggal
+     * kartu berbeda dari MCU-nya. Tanpa keduanya tiap baris menambah satu
+     * kueri, dan dasbor adalah halaman yang paling sering dibuka.
+     *
+     * @return list<string>
+     */
+    public static function relasi(): array
+    {
+        return [
+            'mcu', 'induksi.induksi',
+            'permit.mcuOrang', 'permit.perpanjanganBerjalan',
+            'simper.permit.mcuOrang', 'simper.permit.perpanjanganBerjalan',
+        ];
+    }
+
+    /**
      * Keadaan sebuah tanggal habis.
      *
      * @param  int  $ambang  berapa hari sebelum habis mulai diperingatkan

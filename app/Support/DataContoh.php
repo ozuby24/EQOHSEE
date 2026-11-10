@@ -54,7 +54,7 @@ use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, 
                 KoUjiKelayakan, KoUnitMaster,
                 LedakHasil, LedakRencana, LedakTitik, LedakUkur, LingkunganArea,
                 LingkunganPantau, LingkunganParameter, MineOperationalRecord,
-                MineOperationalTarget, News, Procedure, ReklamasiKemajuan, SmkpAttendee, SmkpAudit, SmkpBukti, SmkpOfi,
+                MineOperationalTarget, News, Procedure, ReklamasiKemajuan, SmkpAttendee, SmkpAudit, SmkpBukti, SmkpTindakLanjut,
                 SmkpFinding, SopEvaluation, SopEvaluationAttempt,
                 SopEvaluationQuestion,
                 Certificate, Course, Enrollment, InspectionTemplate, InspectionTemplateItem,
@@ -145,7 +145,7 @@ final class DataContoh
            terhitung pemanggilnya, sehingga jumlah "dibuang" tidak lagi
            sebanding dengan jumlah "dibuat" — dan pemeriksaan penumpukan
            bersandar pada perbandingan itu. */
-        SmkpBukti::class, SmkpOfi::class,
+        SmkpBukti::class, SmkpTindakLanjut::class,
         SmkpFinding::class, SmkpAttendee::class, SmkpAudit::class,
         /* Butir lebih dulu, lalu subjeknya. Rekapnya berdiri sendiri —
            ia potret angka, bukan anak salah satu subjek. */
@@ -741,9 +741,13 @@ final class DataContoh
             InspectionItem::class, InspectionInspector::class => $q->whereIn('inspection_id',
                 Inspection::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
 
-            SmkpFinding::class, SmkpAttendee::class, SmkpBukti::class, SmkpOfi::class
+            SmkpFinding::class, SmkpAttendee::class, SmkpBukti::class
                 => $q->whereIn('audit_id',
                     SmkpAudit::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            SmkpTindakLanjut::class => $q->whereIn('finding_id',
+                SmkpFinding::withoutGlobalScopes()->whereIn('audit_id',
+                    SmkpAudit::withoutGlobalScopes()->where('company_id', $c->id)->select('id'))->select('id')),
 
             DocumentRevision::class, DocumentIso::class => $q->whereIn('document_id',
                 Document::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
@@ -6366,11 +6370,18 @@ final class DataContoh
     /* ─────────── SMKP ─────────── */
 
     /**
-     * Satu audit SMKP per tahun berjalan dan satu tahun sebelumnya.
+     * Satu audit SMKP per tahun berjalan dan satu tahun sebelumnya, dalam
+     * bentuk modul audit Aurorasys.
      *
-     * Dua, bukan satu: halaman SMKP membandingkan nilai antar tahun,
-     * dan perbandingan dengan satu titik data tidak pernah salah — juga
-     * tidak pernah benar.
+     * Dua, bukan satu: Tahap I menyarankan "Data Audit Internal SMKP" dari
+     * audit tahun sebelumnya, dan saran itu hanya dapat diperiksa bila
+     * audit sebelumnya memang ada.
+     *
+     * Audit tahun lalu sudah sampai Pelaporan (Tahap I tuntas, Rencana
+     * Audit lengkap sembilan komponen, hari kerja dibekukan); audit tahun
+     * ini baru di Tahap I. Temuannya diangkat dari nilai — kode kriteria
+     * dan kategorinya karena itu selalu sah — dan bernomor seperti yang
+     * dibangkitkan aplikasi (KODE-MYR-01-2025).
      */
     private function smkp(): int
     {
@@ -6378,86 +6389,126 @@ final class DataContoh
 
         foreach ([['selesai', 1], ['berjalan', 0]] as [$status, $mundur]) {
             $tahun = $this->kini->year - $mundur;
+            $tuntas = $status === 'selesai';
+            $ketua = $this->peninjau?->name ?? 'Ketua Auditor Internal';
+            $mulai = Carbon::create($tahun, 3, 1);
+
+            $permulaan = [
+                'tanggal_kontak' => $mulai->copy()->subWeeks(3)->toDateString(),
+                'media_kontak'   => 'Rapat daring',
+                'wakil_auditi'   => $this->pengaju?->name ?? 'Wakil Auditi',
+                'jabatan_wakil'  => 'Kepala Teknik Tambang',
+                'periode'        => '1 Januari – 31 Desember '.($tahun - 1),
+                'sifat_kontak'   => 'formal',
+                'layak'          => $tuntas ? 'layak' : '',
+                'jumlah_pekerja' => (string) max(1, (int) $this->c->workers_employee + (int) $this->c->workers_sub),
+                'kelas_risiko'   => in_array($this->c->risk_class, SmkpTahap::kelasRisiko(), true) ? $this->c->risk_class : 'Tinggi',
+                'mandays_dasar'  => '12',
+                'jumlah_auditor' => '2',
+                'penyesuaian'    => '',
+                'kesimpulan'     => $tuntas ? 'Audit layak dilaksanakan; dokumentasi tujuh elemen lengkap.' : '',
+                'kelayakan'      => array_fill_keys(array_keys(SmkpTahap::indikatorKelayakan()), $tuntas ? 'Memadai' : ''),
+                'faktor'         => array_fill_keys(array_keys(SmkpTahap::faktorPenyesuaian()), false),
+            ];
 
             $a = $this->baru(SmkpAudit::class, [
                 'tahun'           => $tahun,
                 'judul'           => 'Audit Internal SMKP Minerba '.$tahun,
                 'status'          => $status,
-                'tahap'           => $status === 'selesai' ? 3 : 1,
-                'tanggal_mulai'   => Carbon::create($tahun, 3, 1)->toDateString(),
-                'tanggal_selesai' => $status === 'selesai'
-                    ? Carbon::create($tahun, 3, 14)->toDateString()
-                    : null,
-                'ketua_auditor'   => $this->peninjau?->name ?? 'Ketua Auditor Internal',
+                'tahap'           => $tuntas ? SmkpTahap::PELAPORAN : SmkpTahap::PERMULAAN,
+                'tanggal_mulai'   => $mulai->toDateString(),
+                'tanggal_selesai' => $tuntas ? Carbon::create($tahun, 3, 14)->toDateString() : null,
+                'ketua_auditor'   => $ketua,
                 'user_id'         => $this->pengaju?->id,
+                'hasil'           => $this->smkpHasil($tuntas),
+                'permulaan'       => $permulaan,
+                'kinerja'         => ['cidera_ringan' => '2', 'cidera_berat' => '0', 'mati' => '0', 'fr' => '0,85', 'sr' => '12', 'berbahaya' => '1'],
+                'kecukupan'       => $tuntas
+                    ? array_fill_keys(array_column(Smkp::elemen(), 'kode'), ['status' => SmkpTahap::LENGKAP, 'ket' => ''])
+                    : [],
+                'rencana'         => $tuntas ? [
+                    'nomor'           => '',
+                    'tujuan'          => 'Menilai kesesuaian penerapan SMKP Minerba terhadap Lampiran II Kepdirjen 185.K/37.04/DJB/2019.',
+                    'kriteria'        => SmkpTahap::KRITERIA_AUDIT,
+                    'ruang_lingkup'   => 'Seluruh area operasi penambangan, pengolahan, dan penunjang.',
+                    'tanggal_mulai'   => $mulai->toDateString(),
+                    'tanggal_selesai' => Carbon::create($tahun, 3, 14)->toDateString(),
+                    'susunan'         => array_map(fn ($k) => ['tanggal' => $mulai->toDateString(), 'waktu' => '08.00', 'kegiatan' => $k, 'auditi' => 'KTT', 'auditor' => 'Tim Audit'],
+                        SmkpTahap::kegiatanLapangan()),
+                    'tugas'           => [
+                        ['nama' => $ketua, 'peran' => 'Lead Auditor', 'registrasi' => 'REG-0001', 'lingkup' => 'Elemen I–IV'],
+                        ['nama' => $this->pengaju?->name ?? 'Auditor Internal', 'peran' => 'Auditor', 'registrasi' => 'REG-0002', 'lingkup' => 'Elemen V–VII'],
+                    ],
+                    'sumberdaya'      => SmkpTahap::fasilitasBawaan(),
+                    'metode'          => 'Tinjauan dokumen dan rekaman, wawancara, observasi lapangan.',
+                    'metode_sampel'   => ['I.1' => ['metode' => 'Tinjauan Dokumen dan Rekaman, Wawancara', 'sampel' => 'Kebijakan keselamatan; KTT']],
+                    'pengesahan'      => [
+                        'ktt'   => ['nama' => (string) ($this->c->ktt ?: 'Kepala Teknik Tambang'), 'jabatan' => 'Kepala Teknik Tambang', 'tanggal' => $mulai->toDateString()],
+                        'pjo'   => ['nama' => (string) ($this->c->pjo ?: ''), 'jabatan' => 'Penanggung Jawab Operasional', 'tanggal' => ''],
+                        'ketua' => ['nama' => $ketua, 'jabatan' => 'Ketua Tim Audit', 'tanggal' => $mulai->toDateString()],
+                    ],
+                ] : [],
+                'risiko'          => $tuntas ? ['present' => [['kegiatan' => 'Pengangkutan', 'risiko' => 'Tabrakan unit di jalan hauling', 'nilai' => '16']], 'future' => []] : [],
 
-                /* NILAINYA IKUT DIISI, dan itu perbaikan bukan hiasan.
-                   Sebelumnya kolom `hasil` dibiarkan kosong, sehingga
-                   sesudah "muat data contoh" seluruh keluaran audit —
-                   form penilaian, formulir kriteria, rekap
-                   ketidaksesuaian, dasbor performa — tetap menampilkan
-                   nol. Modulnya terlihat dipakai dari daftar periodenya
-                   dan tidak dapat diperiksa sama sekali dari isinya. */
-                'hasil'           => $this->smkpHasil($status === 'selesai'),
+                /* Formulir Kesesuaian dan Rekomendasi & OFI — praktik
+                   terbaik dan peluang perbaikan atas butir yang sudah
+                   penuh. */
+                'kesesuaian'      => $tuntas ? [
+                    ['elemen' => 'I', 'sub' => 'I.1', 'subsub' => '', 'keterangan' => 'Kebijakan keselamatan ditinjau tiap tahun dan dikomunikasikan pada seluruh induksi.'],
+                ] : [],
+                'rekomendasi'     => $tuntas ? [
+                    ['elemen' => 'I', 'sub' => 'I.2', 'subsub' => '', 'uraian' => 'Cakupan komunikasi kebijakan baru pada area produksi utama; perluas ke area penunjang pada periode berikutnya.'],
+                    ['elemen' => 'VI', 'sub' => 'VI.1', 'subsub' => '', 'uraian' => 'Bukti masih berupa berkas cetak; pemindaian ke sistem akan mempercepat penelusuran saat audit eksternal.'],
+                ] : [],
             ]);
+            if ($tuntas) {
+                $a->forceFill(['mandays_tetap' => SmkpTahap::mandays($permulaan)])->save();
+            }
             $n++;
 
             /* ── temuan ──
 
-               Audit tanpa temuan adalah audit yang tidak dapat
-               dibedakan dari audit yang belum dikerjakan. Ketiga
-               statusnya dipakai sekaligus supaya rekap "terbuka /
-               berjalan / tertutup" punya isi di ketiga kolomnya, dan
-               satu temuan sengaja MELEWATI target tanggalnya —
-               keterlambatan yang tidak pernah muncul di data contoh
-               tidak membuktikan penghitung keterlambatannya bekerja. */
-            /* KODE, bukan label. Kolom jenis hanya menyimpan 'mayor',
-               'minor', atau 'obs' — label panjang membuat tiap hitungan
-               `where('jenis','mayor')` menghasilkan nol atas audit yang
-               tabelnya berisi temuan. Model menyeragamkannya pada
-               penulisan; ditulis benar di sini supaya sumbernya pun
-               tidak lagi menyesatkan pembacanya. */
-            $temuan = [
-                ['I.1.1', 'mayor',
-                 'Kebijakan keselamatan belum ditinjau ulang dalam tiga tahun terakhir.',
-                 'Tinjauan manajemen tidak dijadwalkan dalam program tahunan.',
-                 'Closed', -60, -35],
-                ['II.3.2', 'minor',
-                 'Sebagian identifikasi bahaya belum memuat pengendalian yang dapat diverifikasi.',
-                 'Format IBPR lama masih dipakai di dua departemen.',
-                 'In Progress', 20, null],
-                ['IV.2.1', 'minor',
-                 'Rekaman inspeksi jalan angkut tidak lengkap pada dua bulan berjalan.',
-                 'Pengawas belum mendapat pelatihan pengisian formulir baru.',
-                 'Open', -8, null],
-                ['V.1.4', 'obs',
-                 'Papan informasi keselamatan di simpang timbang tertutup material.',
-                 null, 'Closed', -25, -21],
-            ];
+               Diangkat dari nilai seperti tombol "Angkat temuan": kode dan
+               kategorinya sah. Ketiga status dipakai sekaligus, dan satu
+               temuan sengaja MELEWATI targetnya — keterlambatan yang tidak
+               pernah muncul di data contoh tidak membuktikan penghitungnya
+               bekerja. */
+            $usulan = array_slice(Smkp::temuan((array) $a->hasil), 0, $tuntas ? 3 : 2);
+            $urut = [];
+            foreach ($usulan as $i => $u) {
+                [$st, $targetHari, $selesaiHari] = [['Closed', -60, -35], ['In Progress', 20, null], ['Open', -8, null]][$i];
+                $urut[$u['jenis']] = ($urut[$u['jenis']] ?? 0) + 1;
 
-            /* Tahun berjalan baru sampai tahap awal; temuannya belum
-               semuanya terbit. Audit yang belum selesai tetapi sudah
-               punya temuan lengkap adalah keadaan yang tidak mungkin. */
-            foreach (array_slice($temuan, 0, $status === 'selesai' ? 4 : 2) as $t) {
-                [$kode, $jenis, $uraian, $akar, $st, $targetHari, $selesaiHari] = $t;
-
-                $this->baru(SmkpFinding::class, [
+                $t = $this->baru(SmkpFinding::class, [
                     'audit_id'          => $a->id,
-                    'kode_kriteria'     => $kode,
-                    'jenis'             => $jenis,
-                    'uraian'            => $uraian,
-                    'akar_masalah'      => $akar,
-                    'tindakan'          => $st === 'Open'
-                        ? null : 'Perbaikan dijalankan dan buktinya dilampirkan.',
+                    'nomor'             => $a->nomorTemuanBaru($u['jenis'], $urut[$u['jenis']]),
+                    'kode_kriteria'     => $u['kode'],
+                    'jenis'             => $u['jenis'],
+                    'uraian'            => 'Bukti penerapan '.mb_strtolower($u['uraian']).' belum lengkap saat audit lapangan.',
+                    'lokasi'            => 'Kantor site',
+                    'akar_masalah'      => 'Pemilik proses belum menetapkan jadwal pemeliharaan rekaman.',
+                    'tindakan'          => $st === 'Open' ? null : 'Tetapkan pemilik proses dan jadwal pemeliharaan rekaman.',
                     'penanggung_jawab'  => $this->peninjau?->name ?? 'Kepala Teknik Tambang',
                     'target_selesai'    => $this->kini->copy()->addDays($targetHari)->toDateString(),
-                    'tanggal_selesai'   => $selesaiHari === null
-                        ? null : $this->kini->copy()->addDays($selesaiHari)->toDateString(),
+                    'tanggal_selesai'   => $selesaiHari === null ? null : $this->kini->copy()->addDays($selesaiHari)->toDateString(),
                     'status'            => $st,
-                    'verifikasi'        => $st === 'Closed'
-                        ? 'Diverifikasi ketua auditor; bukti memadai.' : null,
+                    'verifikasi'        => $st === 'Closed' ? 'Diverifikasi ketua auditor; bukti memadai.' : null,
                 ]);
                 $n++;
+
+                // Kiriman tindak lanjut auditi atas temuan yang sudah dikerjakan.
+                if ($st !== 'Open') {
+                    $this->baru(SmkpTindakLanjut::class, [
+                        'finding_id'       => $t->id,
+                        'user_id'          => $this->pengaju?->id,
+                        'akar_masalah'     => 'Pemilik proses belum menetapkan jadwal pemeliharaan rekaman.',
+                        'tindakan'         => 'Jadwal pemeliharaan rekaman ditetapkan dan disosialisasikan.',
+                        'bukti_perbaikan'  => 'Notulen sosialisasi dan jadwal yang ditandatangani KTT.',
+                        'penanggung_jawab' => 'Kepala Teknik Tambang',
+                        'lampiran'         => [],
+                    ]);
+                    $n++;
+                }
             }
 
             /* ── peserta rapat ── */
@@ -6468,22 +6519,20 @@ final class DataContoh
                 ['penutupan', 'Kepala Teknik Tambang',   'KTT'],
                 ['penutupan', 'Pengawas Operasional',    'Auditee'],
             ] as $j => [$rapat, $jabatan, $peran]) {
-                if ($status !== 'selesai' && $rapat === 'penutupan') continue;
+                if (!$tuntas && $rapat === 'penutupan') continue;
 
                 $this->baru(SmkpAttendee::class, [
-                    'audit_id'      => $a->id,
-                    'rapat'         => $rapat,
-                    'nama'          => [$this->peninjau?->name ?? 'Kepala Teknik Tambang',
-                                        $this->pengaju?->name  ?? 'Auditor Internal'][$j % 2],
-                    'jabatan'       => $jabatan,
-                    'perusahaan'    => $this->c->name,
-                    'tanda_tangan'  => null,
+                    'audit_id'   => $a->id,
+                    'rapat'      => $rapat,
+                    'nama'       => [$this->peninjau?->name ?? 'Kepala Teknik Tambang',
+                                     $this->pengaju?->name  ?? 'Auditor Internal'][$j % 2],
+                    'jabatan'    => $jabatan,
+                    'perusahaan' => $this->c->name,
                 ]);
                 $n++;
             }
 
             $n += $this->smkpBukti($a);
-            $n += $this->smkpOfi($a);
         }
 
         return $n;
@@ -6545,7 +6594,7 @@ final class DataContoh
     }
 
     /**
-     * Berkas bukti pada beberapa butir kriteria.
+     * Berkas bukti kelengkapan pada beberapa butir kriteria.
      *
      * BERKASNYA SENGAJA TIDAK ADA DI DISK. Data contoh tidak mengunggah
      * apa pun, dan menaruh berkas palsu di disk tertutup berarti data
@@ -6553,75 +6602,33 @@ final class DataContoh
      * contohnya dibuang. Yang membukanya memperoleh 404 dari rute
      * penyaji — jawaban yang benar bagi berkas yang memang tidak ada.
      *
-     * Yang dibuktikan barisnya: bahwa lencana berkas tergambar pada
-     * butirnya, bahwa hitungannya benar, dan bahwa penghapusannya ikut
-     * terbawa saat auditnya dibuang.
+     * Status verifikasinya dicampur supaya antrean verifikasi auditor
+     * punya isi: sebagian diterima, satu menunggu, satu perlu perbaikan.
      */
     private function smkpBukti(SmkpAudit $a): int
     {
         $n = 0;
 
         foreach ([
-            ['I.1',    'SOP-HSE-001 Kebijakan Keselamatan rev.3',      'kebijakan-keselamatan-rev3.pdf', 412_000],
-            ['I.1',    'Notulen tinjauan manajemen 12 Maret',          'notulen-tinjauan-manajemen.pdf',  188_000],
-            ['II.2.1', 'Risalah komunikasi risiko lintas departemen',  'risalah-komunikasi-risiko.pdf',   264_000],
-            ['III.1',  'Struktur organisasi KP dan surat penunjukan',  'struktur-organisasi-kp.pdf',      356_000],
-            ['IV.2.1', 'Rekaman inspeksi jalan angkut dua bulan',      'inspeksi-jalan-angkut.xlsx',      144_000],
-        ] as [$kode, $catatan, $berkas, $ukuran]) {
+            ['I.1',    'SOP-HSE-001 Kebijakan Keselamatan rev.3',      'kebijakan-keselamatan-rev3.pdf', 412_000, SmkpBukti::DITERIMA],
+            ['I.1',    'Notulen tinjauan manajemen 12 Maret',          'notulen-tinjauan-manajemen.pdf',  188_000, SmkpBukti::DITERIMA],
+            ['II.2.1', 'Risalah komunikasi risiko lintas departemen',  'risalah-komunikasi-risiko.pdf',   264_000, SmkpBukti::MENUNGGU],
+            ['III.1',  'Struktur organisasi KP dan surat penunjukan',  'struktur-organisasi-kp.pdf',      356_000, SmkpBukti::DITERIMA],
+            ['IV.2.1', 'Rekaman inspeksi jalan angkut dua bulan',      'inspeksi-jalan-angkut.pdf',       144_000, SmkpBukti::DITOLAK],
+        ] as [$kode, $keterangan, $berkas, $ukuran, $status]) {
             $this->baru(SmkpBukti::class, [
-                'audit_id'  => $a->id,
-                'kode'      => $kode,
-                'catatan'   => $catatan,
-                'file_path' => "smkp/{$a->id}/contoh-".str($berkas)->slug().'.bin',
-                'file_name' => $berkas,
-                'file_size' => $ukuran,
-                'mime'      => str_ends_with($berkas, '.pdf') ? 'application/pdf' : null,
-                'user_id'   => $this->pengaju?->id,
-            ]);
-            $n++;
-        }
-
-        return $n;
-    }
-
-    /**
-     * Peluang perbaikan atas butir yang capaiannya PENUH.
-     *
-     * Syaratnya sama dengan yang ditegakkan server, dan dipakai dari
-     * sumber yang sama — bukan dikarang ulang di sini. Data contoh yang
-     * mencatat peluang atas butir bernilai 40% akan membuat lembar OFI
-     * berbunyi kebalikan dari keadaannya, dan yang membaca data contoh
-     * biasanya sedang memutuskan apakah fiturnya bekerja.
-     *
-     * Kosong bila belum ada butir yang sempurna, dan itu benar: audit
-     * yang belum dinilai memang belum punya peluang perbaikan.
-     */
-    private function smkpOfi(SmkpAudit $a): int
-    {
-        $uraian = [
-            'Seluruh kriteria terpenuhi. Peninjauan masih dikerjakan manual tiap semester; '
-            .'pengingat otomatis akan melepas ketergantungan pada satu orang.',
-
-            'Sudah memenuhi seluruhnya. Cakupannya baru pada area produksi utama; '
-            .'peluangnya memperluas ke area penunjang pada periode berikutnya.',
-
-            'Terpenuhi penuh. Buktinya masih berupa berkas cetak; pemindaian ke sistem '
-            .'akan mempercepat penelusuran saat audit eksternal.',
-        ];
-
-        $n = 0;
-
-        foreach (array_slice(SmkpPeluang::berhak($a), 0, count($uraian)) as $i => $b) {
-            $this->baru(SmkpOfi::class, [
-                'audit_id'         => $a->id,
-                'kode'             => $b['kode'],
-                'lingkup'          => $b['lingkup'],
-                'uraian'           => $uraian[$i],
-                'saran'            => 'Tetapkan pemilik proses dan jadwal peninjauan tertulis.',
-                'penanggung_jawab' => $this->peninjau?->name ?? 'Kepala Teknik Tambang',
-                'target'           => $this->kini->copy()->addMonths(3 + $i)->toDateString(),
-                'status'           => ['terbuka', 'ditindaklanjuti', 'terbuka'][$i],
-                'user_id'          => $this->pengaju?->id,
+                'audit_id'          => $a->id,
+                'kode'              => $kode,
+                'keterangan'        => $keterangan,
+                'path'              => SmkpBukti::folder($a->id).'/contoh-'.str($berkas)->slug().'.pdf',
+                'nama'              => $berkas,
+                'ukuran'            => $ukuran,
+                'mime'              => 'application/pdf',
+                'user_id'           => $this->pengaju?->id,
+                'status'            => $status,
+                'catatan'           => $status === SmkpBukti::DITOLAK ? 'Rekaman bulan kedua belum ditandatangani pengawas.' : null,
+                'diverifikasi_oleh' => $status === SmkpBukti::MENUNGGU ? null : $this->peninjau?->id,
+                'diverifikasi_pada' => $status === SmkpBukti::MENUNGGU ? null : $this->kini,
             ]);
             $n++;
         }

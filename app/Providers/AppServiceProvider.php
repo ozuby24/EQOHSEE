@@ -19,7 +19,10 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        // Asisten AI audit SMKP (porting Aurorasys): satu klien di balik
+        // antarmuka KlienAi, menumpang sambungan AI pemasangan ini
+        // (App\Support\Ai — Pusat Kendali), bukan SDK penyedia sendiri.
+        $this->app->singleton(\App\Services\Asisten\KlienAi::class, fn () => \App\Services\Asisten\KonfigurasiAsisten::klien());
     }
 
     /**
@@ -78,6 +81,11 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::define('admin',   fn (User $u) => $u->isAdmin());
         Gate::define('trainer', fn (User $u) => $u->isAdmin() || $u->isTrainer());
+
+        // Audit SMKP (porting Aurorasys): administrator & auditor mengisi
+        // audit; auditi menyampaikan tindak lanjut temuan.
+        Gate::define('audit', fn (User $u) => $u->bisaAudit());
+        Gate::define('tindak-lanjut', fn (User $u) => $u->isAuditi());
 
         // Seluruh antarmuka dan berkas cetak berbahasa Indonesia, termasuk
         // nama bulan pada kop dokumen terkendali. Disetel di sini agar tidak
@@ -147,6 +155,21 @@ class AppServiceProvider extends ServiceProvider
          * pembatasnya lulus tanpa menahan satu tebakan pun. Tidak ada
          * galat, tidak ada gejala; yang terlihat hanya baris middleware
          * yang tampak menjaga. */
+        /* Asisten AI audit SMKP: batas permintaan per pengguna per jam —
+           biaya API dihitung per token, satu akun tidak boleh
+           menghabiskan kuota bersama. Jawabannya JSON, sebab pemanggilnya
+           fetch dari halaman, bukan kunjungan halaman. */
+        RateLimiter::for('asisten', function (Request $r) {
+            $batas = max(1, (int) config('asisten.batas_per_jam', 30));
+
+            return Limit::perHour($batas)
+                ->by('asisten:'.($r->user()?->id ?? $r->ip()))
+                ->response(fn (Request $q, array $kepala) => response()->json([
+                    'pesan' => "Batas pemakaian Asisten AI tercapai ({$batas} permintaan per jam). Coba lagi nanti.",
+                    'jenis' => 'batas',
+                ], 429, $kepala));
+        });
+
         RateLimiter::for('dua-faktor', fn (Request $r) => Limit::perMinute(30)->by('ip:'.$r->ip()));
 
         RateLimiter::for('daftar', fn (Request $r) => Limit::perHour(5)->by($r->ip()));

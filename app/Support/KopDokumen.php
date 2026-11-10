@@ -28,36 +28,43 @@ final class KopDokumen
     public static function daftar(): array
     {
         return [
+            /* ── Audit SMKP (porting Aurorasys) ──
+               Kunci, jenis, dan judul mengikuti paket formulir Aurorasys
+               (Lampiran Kepdirjen 185.K/37.04/DJB/2019); nomornya tetap
+               disusun Support\Nomor dari `urut`.
+
+               Formulir yang menggantikan formulir SMKP lama MEWARISI
+               nomor urutnya — FRM/…/011 tetap formulir kriteria/penilaian,
+               012 rekapitulasi ketidaksesuaian, 014 rencana tindak lanjut,
+               015 ketidaksesuaian & tindak lanjut, 017 rekomendasi & OFI —
+               sehingga daftar induk dokumen tidak berubah arti. Formulir
+               Kesesuaian belum punya padanan dan memakai slot baru 22.
+
+               Slot 4 (formulir kriteria lama), 5 (rencana tindak lanjut
+               lama), dan 13 (respon manajemen) DIPENSIUNKAN: formulirnya
+               sudah tidak diterbitkan, dan nomor yang pernah beredar
+               tidak boleh dipakai ulang dokumen lain. */
             'berita-acara' => [
-                'jenis' => 'FORM & CHECKLIST',
+                'nama'  => 'Berita Acara Tahapan Awal',
+                'jenis' => 'FORMULIR',
                 'judul' => 'BERITA ACARA HASIL PELAKSANAAN TAHAPAN AWAL AUDIT INTERNAL SMKP',
                 'kode'  => 'OHSE-IV.067h',
                 'urut'  => 1,
-],
+            ],
             'rencana-audit' => [
-                'jenis' => 'FORM & CHECKLIST',
+                'nama'  => 'Rencana Audit',
+                'jenis' => 'FORMULIR',
                 'judul' => 'RENCANA AUDIT INTERNAL SMKP MINERBA',
                 'kode'  => 'OHSE-IV.059',
                 'urut'  => 2,
-],
+            ],
             'daftar-hadir' => [
-                'jenis' => 'FORM & CHECKLIST',
+                'nama'  => 'Daftar Hadir Rapat',
+                'jenis' => 'FORMULIR',
                 'judul' => 'DAFTAR HADIR AUDIT INTERNAL SMKP MINERBA',
                 'kode'  => 'OHSE-IV.067g',
                 'urut'  => 3,
-],
-            'kriteria' => [
-                'jenis' => 'FORM & CHECKLIST',
-                'judul' => 'FORMULIR KRITERIA AUDIT SMKP MINERBA',
-                'kode'  => 'OHSE-IV.067j',
-                'urut'  => 4,
-],
-            'tindak-lanjut' => [
-                'jenis' => 'FORM & CHECKLIST',
-                'judul' => 'RENCANA TINDAK LANJUT AUDIT SMKP MINERBA',
-                'kode'  => 'OHSE-IV.067f',
-                'urut'  => 5,
-],
+            ],
             'iso-matriks' => [
                 'jenis' => 'FORM & CHECKLIST',
                 'judul' => 'MATRIKS PEMENUHAN KLAUSUL STANDAR',
@@ -70,49 +77,51 @@ final class KopDokumen
                 'kode'  => 'OHSE-II.001',
                 'urut'  => 7,
 ],
-            /* Lima keluaran audit yang sebelumnya belum punya kop.
-               Nomornya mengikuti urutan berkas audit, bukan urutan
-               pembuatannya di sini.
-
-               `urut` WAJIB unik dalam satu awalan nomor: ia yang
-               menyusun FRM/CAM/OHSE/0NN. Lima formulir bernomor sama
-               tidak menimbulkan galat — hanya lima lembar berbeda yang
-               masuk daftar induk dokumen dengan satu nomor, dan
-               daftar induk itulah yang diperiksa auditor eksternal.
-               Slot 1–9 sudah terpakai formulir lain dan 10 oleh Mine
-               Permit, jadi kelimanya mulai dari 11. */
-            'formulir-kriteria' => [
+            'penilaian-smkp' => [
+                'nama'  => 'Formulir Kriteria Audit (Penilaian)',
                 'jenis' => 'FORMULIR',
-                'judul' => 'FORMULIR KRITERIA AUDIT SMKP',
-                'kode'  => 'OHSE-IV.141',
+                'judul' => 'FORMULIR KRITERIA AUDIT SMKP MINERBA',
+                'kode'  => 'OHSE-IV.067a',
                 'urut'  => 11,
             ],
-            'rekap-ketidaksesuaian' => [
+            'formulir-kesesuaian' => [
+                'nama'  => 'Formulir Kesesuaian',
                 'jenis' => 'FORMULIR',
-                'judul' => 'REKAPITULASI KETIDAKSESUAIAN',
-                'kode'  => 'OHSE-IV.142',
+                'judul' => 'FORMULIR KESESUAIAN AUDIT PENERAPAN SMKP',
+                'kode'  => 'OHSE-IV.067b',
+                'urut'  => 22,
+            ],
+            'formulir-ketidaksesuaian' => [
+                'nama'  => 'Formulir Ketidaksesuaian & Tindak Lanjut',
+                'jenis' => 'FORMULIR',
+                'judul' => 'FORMULIR KETIDAKSESUAIAN DAN TINDAK LANJUT KETIDAKSESUAIAN AUDIT',
+                'kode'  => 'OHSE-IV.067c',
+                'urut'  => 15,
+            ],
+            'rekapitulasi-ketidaksesuaian' => [
+                'nama'  => 'Rekapitulasi Ketidaksesuaian',
+                'jenis' => 'FORMULIR',
+                'judul' => 'FORMULIR REKAPITULASI KETIDAKSESUAIAN',
+                'kode'  => 'OHSE-IV.067d',
                 'urut'  => 12,
             ],
-            'respon-manajemen' => [
+            'rekomendasi-ofi' => [
+                'nama'  => 'Rekomendasi & OFI',
                 'jenis' => 'FORMULIR',
-                'judul' => 'RESPON MANAJEMEN ATAS KETIDAKSESUAIAN',
-                'kode'  => 'OHSE-IV.143',
-                'urut'  => 13,
+                'judul' => 'FORMULIR REKOMENDASI DAN PELUANG UNTUK PERBAIKAN',
+                'kode'  => 'OHSE-IV.067e',
+                'urut'  => 17,
             ],
             'rencana-tindak-lanjut' => [
+                'nama'  => 'Rencana Tindak Lanjut',
                 'jenis' => 'FORMULIR',
-                'judul' => 'RENCANA TINDAK LANJUT AUDIT SMKP',
-                'kode'  => 'OHSE-IV.144',
+                'judul' => 'FORMULIR RENCANA TINDAK LANJUT KETIDAKSESUAIAN AUDIT',
+                'kode'  => 'OHSE-IV.067f',
                 'urut'  => 14,
-            ],
-            'ketidaksesuaian-tindak-lanjut' => [
-                'jenis' => 'FORMULIR',
-                'judul' => 'KETIDAKSESUAIAN DAN TINDAK LANJUTNYA',
-                'kode'  => 'OHSE-IV.145',
-                'urut'  => 15,
             ],
 
             'laporan-audit' => [
+                'nama'  => 'Laporan Audit',
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN AUDIT INTERNAL PENERAPAN SMKP MINERBA',
                 'kode'  => 'OHSE-IV.067',
@@ -228,16 +237,6 @@ final class KopDokumen
                IZIN tetapi tetap bernomor FRM. Dua formulir bernomor sama
                tidak menimbulkan galat apa pun; yang menemukannya
                auditor. */
-            /* Lembar peluang perbaikan. Bernomor FRM, dan urutnya 17 —
-               016 sudah dipakai Register PJP. Dua formulir bernomor
-               sama tidak menimbulkan galat apa pun; yang menemukannya
-               auditor. */
-            'ofi' => [
-                'jenis' => 'FORMULIR',
-                'judul' => 'PELUANG PERBAIKAN (OPPORTUNITY FOR IMPROVEMENT)',
-                'kode'  => 'OHSE-IV.068',
-                'urut'  => 17,
-],
             'register-pjp' => [
                 'jenis' => 'FORM & CHECKLIST',
                 'judul' => 'REGISTER PEMANTAUAN PERUSAHAAN JASA PERTAMBANGAN',
@@ -316,6 +315,17 @@ final class KopDokumen
         ];
     }
 
+    /**
+     * Formulir audit SMKP yang kopnya dapat disesuaikan per perusahaan
+     * (`companies.kop_formulir`, porting Aurorasys). Formulir modul lain
+     * tidak ikut: penomorannya milik daftar induk EQOHSEE.
+     */
+    public const FORMULIR_SMKP = [
+        'berita-acara', 'rencana-audit', 'daftar-hadir', 'penilaian-smkp', 'formulir-kesesuaian',
+        'formulir-ketidaksesuaian', 'rekapitulasi-ketidaksesuaian', 'rekomendasi-ofi',
+        'rencana-tindak-lanjut', 'laporan-audit',
+    ];
+
     public const DIVISI     = 'Occupational Health, Safety and Environment, External';
     public const DEPARTEMEN = 'Occupational Health, Safety and Environment';
 
@@ -355,11 +365,29 @@ final class KopDokumen
            yang diterbitkan berulang kali, dan nomor yang berubah tiap kali
            dicetak bukan nomor dokumen terkendali. */
         $jenisNomor = $d['jenis'] === 'LAPORAN' ? 'Laporan' : 'Formulir';
+        $nomor = Nomor::susun($jenisNomor, $c, (int) ($d['urut'] ?? 0));
+
+        /* Penyesuaian kop per perusahaan untuk formulir audit SMKP
+           (porting Aurorasys — Admin → Perusahaan → Kop formulir audit
+           SMKP). Jenis dan judul yang diisi menggantikan bawaan; KODE yang
+           diisi mengganti nomornya menjadi bentuk Aurorasys,
+           {kode singkat}-{kode}, mis. CAM-HSE-IV.067h. Tanpa isian,
+           penomoran EQOHSEE di atas tetap berlaku. */
+        $ubah = in_array($kunci, self::FORMULIR_SMKP, true)
+            ? (array) (((array) ($c?->kop_formulir ?? []))[$kunci] ?? [])
+            : [];
+        foreach (['jenis', 'judul'] as $k) {
+            $v = trim((string) ($ubah[$k] ?? ''));
+            if ($v !== '') $d[$k] = $v;
+        }
+        if (($kode = trim((string) ($ubah['kode'] ?? ''))) !== '') {
+            $nomor = self::prefiksAurorasys($c).'-'.$kode;
+        }
 
         return [
             'jenis'      => $d['jenis'],
             'judul'      => $d['judul'],
-            'nomor'      => Nomor::susun($jenisNomor, $c, (int) ($d['urut'] ?? 0)),
+            'nomor'      => $nomor,
             'terbit'     => $c?->doc_terbit,
             'setuju'     => $c?->doc_setuju,
             'revisi'     => str_pad((string) (int) ($c?->doc_revisi ?? 0), 2, '0', STR_PAD_LEFT),
@@ -372,6 +400,70 @@ final class KopDokumen
             'logo'       => ($l = $c?->effectiveLogo()) ? Berkas::terbuka($l) : null,
             'perusahaan' => $c?->name ?: 'Perusahaan',
         ];
+    }
+
+    /**
+     * Kop untuk lembar cetak audit SMKP (porting Aurorasys).
+     *
+     * Isinya sama dengan untuk(), tetapi tanggal terbit dan persetujuan
+     * sudah ditulis ("01 September 2023"): lembar cetak SMKP menampilkan
+     * kop apa adanya, sedangkan untuk() memulangkan tanggal sebagai objek
+     * yang di peramban terbaca sebagai cap waktu ISO.
+     *
+     * @return array{jenis:string,judul:string,nomor:string,terbit:?string,setuju:?string,revisi:string,divisi:string,departemen:string,logo:?string,perusahaan:string}
+     */
+    public static function cetak(string $kunci, ?Company $c = null): array
+    {
+        $d = self::untuk($kunci, $c);
+
+        foreach (['terbit', 'setuju'] as $k) {
+            $d[$k] = $d[$k] instanceof \DateTimeInterface
+                ? \Illuminate\Support\Carbon::instance($d[$k])->translatedFormat('d F Y')
+                : (filled($d[$k]) ? (string) $d[$k] : null);
+        }
+
+        return $d;
+    }
+
+    /**
+     * Awalan nomor kop bergaya Aurorasys: Kode singkat perusahaan — sumber
+     * yang sama dengan nomor temuan/CAR (SmkpAudit::kodeNomorTemuan) —
+     * atau, bila kosong, huruf awal namanya.
+     */
+    public static function prefiksAurorasys(?Company $c): string
+    {
+        return trim((string) ($c?->code ?? '')) ?: self::prefiksDari($c?->name);
+    }
+
+    /**
+     * Daftar formulir SMKP untuk penyesuaian kop di Admin → Perusahaan:
+     * nama, jenis & judul bawaan, dan nomor bawaan EQOHSEE bagi
+     * perusahaan itu.
+     *
+     * @return array<string, array{nama:string,jenis:string,judul:string,kode:string,nomor:string,jenisNomor:string,urut:int}>
+     */
+    public static function formulirSmkp(?Company $c = null): array
+    {
+        $daftar = self::daftar();
+        $hasil = [];
+
+        foreach (self::FORMULIR_SMKP as $k) {
+            $d = $daftar[$k];
+            $jenisNomor = $d['jenis'] === 'LAPORAN' ? 'Laporan' : 'Formulir';
+            $hasil[$k] = [
+                'nama'  => $d['nama'] ?? $d['judul'],
+                'jenis' => $d['jenis'],
+                'judul' => $d['judul'],
+                /* Kode formulir Aurorasys (HSE-IV.067h): contoh isian bagi
+                   yang hendak menyamakan nomornya dengan berkas Aurorasys. */
+                'kode'  => preg_replace('/^OHSE-/', 'HSE-', $d['kode']),
+                'nomor' => Nomor::susun($jenisNomor, $c, (int) ($d['urut'] ?? 0)),
+                'jenisNomor' => Nomor::jenis($jenisNomor),
+                'urut'  => (int) ($d['urut'] ?? 0),
+            ];
+        }
+
+        return $hasil;
     }
 
     /**

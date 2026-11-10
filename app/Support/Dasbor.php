@@ -431,7 +431,7 @@ final class Dasbor
            angka yang berlaku di gerbang, dan bukan angka yang dapat
            dibaca dari satu kolom mana pun. */
         return MnrPekerja::query()
-            ->with(['mcu', 'induksi', 'permit.mcuOrang', 'simper.permit.mcuOrang'])
+            ->with(Keadaan::relasi())
             ->get()
             ->filter(function (MnrPekerja $p) {
                 foreach ([

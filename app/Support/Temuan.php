@@ -208,7 +208,7 @@ final class Temuan
             uraian: $f->tindakan ?: $f->akar_masalah,
             // Ketidaksesuaian besar menuntut lebih cepat daripada observasi.
             prioritas: match (strtolower((string) $f->jenis)) {
-                'major', 'mayor' => 'kritis',
+                'kritikal', 'major', 'mayor' => 'kritis',
                 'minor'          => 'tinggi',
                 default          => 'sedang',
             },

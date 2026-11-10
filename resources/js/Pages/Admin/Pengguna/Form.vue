@@ -6,6 +6,7 @@
  * mengirimnya kosong sebagai nilai baru akan mengunci akun orang setiap
  * kali ada yang membetulkan nomor teleponnya.
  */
+import { computed } from 'vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import InputSandi from '../../../Components/InputSandi.vue';
 import type { HalamanFormPengguna } from '../../../types';
@@ -13,6 +14,15 @@ import type { HalamanFormPengguna } from '../../../types';
 const props = defineProps<HalamanFormPengguna>();
 
 const form = useForm({ ...props.awal });
+
+/* Kuota auditi audit SMKP (Aurorasys): paling banyak `maksAuditi` akun
+   auditi aktif per perusahaan. Perusahaan asal auditi yang sedang diubah
+   tetap boleh dipilih — akunnya sudah terhitung. */
+const auditi = computed(() => form.audit_role === 'company' && !form.is_admin);
+const terhitung = props.awal.audit_role === 'company' && !props.awal.is_admin && props.awal.active && props.awal.company_id !== ''
+  ? String(props.awal.company_id) : null;
+const terpakai = (id: string | number | boolean) => props.auditiAktif?.[String(id)] ?? 0;
+const penuh = (id: string) => auditi.value && !!form.active && id !== terhitung && terpakai(id) >= props.maksAuditi;
 
 function simpan() {
   if (props.tersimpan) form.put(props.tautan.simpan);
@@ -95,10 +105,18 @@ const kepala = 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400
         </div>
         <div>
           <label :class="label">Perusahaan</label>
-          <select v-model="form.company_id" :class="isian" aria-label="Perusahaan">
+          <select v-model="form.company_id" :class="isian" aria-label="Perusahaan" :required="auditi">
             <option value="">— tidak ada —</option>
-            <option v-for="c in opsi.perusahaan" :key="c.nilai" :value="c.nilai">{{ c.label }}</option>
+            <option v-for="c in opsi.perusahaan" :key="c.nilai" :value="c.nilai" :disabled="penuh(c.nilai)">
+              {{ c.label }}{{ penuh(c.nilai) ? ` — auditi penuh ${terpakai(c.nilai)}/${maksAuditi}` : '' }}
+            </option>
           </select>
+          <p v-if="auditi && form.company_id !== ''" class="text-[11px] text-stone-500 mt-1">
+            Auditi aktif di perusahaan ini: {{ terpakai(form.company_id) + (form.active ? 1 : 0) }} dari {{ maksAuditi }} (termasuk akun ini).
+          </p>
+          <p v-else-if="auditi" class="text-[11px] text-stone-500 mt-1">
+            Auditi wajib ditempatkan pada perusahaannya — paling banyak {{ maksAuditi }} akun auditi aktif per IUP/PJP.
+          </p>
         </div>
 
         <div class="flex flex-wrap gap-5 pt-1">

@@ -10,8 +10,7 @@ use App\Models\PjpLaporan as LaporanPjp;
 use App\Models\Miners\{Induksi as MnrInduksi, InduksiOrang as MnrInduksiOrang, McuOrang as MnrMcuOrang,
     McuRujukan as MnrMcuRujukan, Permit as MnrPermit, PermitBerkas as MnrPermitBerkas,
     PermitPerpanjangan as MnrPermitPerpanjangan, Simper as MnrSimper};
-use App\Models\SmkpBukti;
-use App\Models\{ComplianceSubject, Document, EnvAuditScore, GudangBarang, HazardReport, InspectionItem, News, PasporKartu, PasporKartuUnit, PasporMcu, PasporSertifikat, Signatory, SmkpFinding};
+use App\Models\{ComplianceSubject, Document, EnvAuditScore, GudangBarang, HazardReport, InspectionItem, News, PasporKartu, PasporKartuUnit, PasporMcu, PasporSertifikat, Signatory};
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -76,12 +75,6 @@ final class Berkas
         'p2h' => [\App\Models\P2hPeriksa::class, 'foto', true],
         'sds' => [GudangBarang::class,   'msds',      false],
 
-        /* Bukti temuan SMKP punya DUA jalur pada satu baris — sebelum
-           dan sesudah perbaikan — jadi keduanya terdaftar terpisah.
-           Menyatukannya sebagai daftar akan menyembunyikan bahwa
-           urutannya bermakna: kotak kiri selalu "sebelum". */
-        'smo' => [SmkpFinding::class,    'foto_open',   false],
-        'smc' => [SmkpFinding::class,    'foto_closed', false],
 
         /* Surat MCU. Terjaga lebih ketat daripada yang lain — lihat
            GERBANG di bawah. */
@@ -246,15 +239,10 @@ final class Berkas
            investigasi lalu insidennya. */
         $out['evd'] = [BuktiInvestigasi::class, 'berkas', false];
 
-        /* Bukti butir kriteria audit SMKP. Batas perusahaannya dijaga
-           BerindukPerusahaan pada SmkpBukti, yang menyaring lewat
-           auditnya.
-
-           Isinya SOP, notulen rapat, daftar hadir pelatihan, dan foto
-           lapangan milik perusahaan yang diaudit — berkas yang seluruhnya
-           hanya tampil di halaman yang menuntut login, jadi menutupnya
-           tidak menghilangkan apa pun. */
-        $out['smb'] = [SmkpBukti::class, 'file_path', false];
+        /* Bukti audit SMKP dan lampiran tindak lanjut TIDAK disajikan dari
+           sini: modul audit (porting Aurorasys) menyajikannya sendiri lewat
+           smkp.bukti.unduh dan smkp.tindak-lanjut.unduh, dengan batas
+           jangkauan audit dan tajuk pengaman BerkasUnggah::kirim. */
 
         /* Dokumen berkala perusahaan jasa — laporan bulanan, triwulan,
            data SPIP, TSP. Batas perusahaannya dijaga BerindukPerusahaan
@@ -439,7 +427,7 @@ final class Berkas
      * Aturan bagi berkas bukti butir kriteria audit.
      *
      * Batasnya 10 MB, LEBIH KETAT daripada ATURAN_DOKUMEN di bawah, dan
-     * bukan karena diska mahal. Satu audit SMKP menyentuh 349 butir;
+     * bukan karena diska mahal. Satu audit SMKP menyentuh 100 butir;
      * bukti yang dilampirkan pada tiap butir berupa satu SOP, satu
      * notulen, atau satu foto lapangan — dan berkas 20 MB pada butir
      * semacam itu hampir selalu berarti seseorang mengunggah seluruh

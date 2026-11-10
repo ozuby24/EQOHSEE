@@ -113,6 +113,6 @@ final class Kelayakan
      */
     public static function relasi(): array
     {
-        return ['mcu', 'induksi.induksi', 'permit.mcuOrang', 'simper.permit.mcuOrang'];
+        return Keadaan::relasi();
     }
 }

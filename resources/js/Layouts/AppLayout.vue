@@ -185,6 +185,11 @@ const remahKop = computed<[string, string | null][]>(() => {
  */
 
 const diBeranda = computed(() => {
+  // Server yang memutuskan (HandleInertiaRequests::diBeranda): butir yang
+  // menyala di seluruh halaman modulnya — Daftar Audit SMKP — tidak
+  // menjadikan tiap halamannya beranda.
+  if (typeof menu.value?.beranda === 'boolean') return menu.value.beranda;
+
   const pertama = menu.value?.grup?.[0]?.butir?.[0];
 
   return !!pertama && !!butirAktif.value && pertama.url === butirAktif.value.url;
@@ -352,13 +357,32 @@ const sapaan = computed(() => {
 const cari = ref('');
 
 /**
+ * Modul audit SMKP (porting Aurorasys) memakai kotak cari, lonceng
+ * temuan lewat target, dan keterangan penempatan akunnya sendiri —
+ * seperti bilah atas Aurorasys. Modul lain tidak berubah.
+ */
+const modulAudit = computed(() => menu.value?.kunci === 'smkp');
+
+/** Temuan SMKP lewat target yang belum ditutup (prop bersama `peringatan`). */
+const peringatan = computed(() => Number(halaman.props.peringatan ?? 0));
+
+/**
  * Pencarian menuju daftar pekerja, sebab hanya itu yang benar-benar
  * dapat dicari hari ini — nama, NIK, dan jabatan, lewat `q` pada
  * /miners. Kotak cari yang tidak menuju ke mana-mana lebih buruk
  * daripada tidak ada: ia menjanjikan sesuatu lalu diam.
+ *
+ * Di modul audit SMKP kotak yang sama mencari AUDIT — judul,
+ * perusahaan, ketua auditor — lewat `q` pada /smkp, persis bilah atas
+ * Aurorasys.
  */
 function kirimCari() {
   const q = cari.value.trim();
+
+  if (modulAudit.value) {
+    router.get('/smkp', q ? { q } : {}, { preserveState: false });
+    return;
+  }
 
   router.get('/miners', q ? { q } : {}, { preserveState: false });
 }
@@ -682,13 +706,14 @@ async function keluar() {
         <!-- Kotak cari menuju daftar pekerja: nama, NIK, jabatan.
              Hanya itu yang benar-benar dapat dicari hari ini, dan
              menjanjikan lebih dari itu berarti kotak yang diam. -->
-        <form class="eq-cari" @submit.prevent="kirimCari">
+        <form class="eq-cari" role="search" @submit.prevent="kirimCari">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                stroke-linecap="round" aria-hidden="true">
             <circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/>
           </svg>
-          <input ref="kotakCari" v-model="cari" type="search" aria-label="Cari pekerja"
-                 placeholder="Cari pekerja menurut nama, NIK, atau jabatan…">
+          <input ref="kotakCari" v-model="cari" type="search"
+                 :aria-label="modulAudit ? 'Cari audit' : 'Cari pekerja'"
+                 :placeholder="modulAudit ? 'Cari audit, perusahaan, ketua auditor…' : 'Cari pekerja menurut nama, NIK, atau jabatan…'">
 
           <!-- Lencana "Ctrl K" DIBUANG dari kotak ini. Pintasannya tetap
                bekerja — lihat pemasangan pendengar papan tik di atas —
@@ -710,6 +735,25 @@ async function keluar() {
               <path d="M20.5 14.3A8.6 8.6 0 0 1 9.7 3.5a8.6 8.6 0 1 0 10.8 10.8Z"/>
             </svg>
           </button>
+
+          <!-- Temuan audit SMKP lewat target — lonceng Aurorasys, hanya di
+               modul audit: pengguna modul lain tidak perlu dipanggil
+               olehnya, dan titik pada pemilih modul sudah memberi tahu
+               bahwa ada yang menunggu di sana. -->
+          <div v-if="modulAudit" class="eq-lonceng">
+            <Link href="/smkp/tindak-lanjut" class="eq-bulat"
+                  :title="peringatan ? `${peringatan} temuan lewat target` : 'Tidak ada temuan lewat target'"
+                  :aria-label="peringatan ? `${peringatan} temuan lewat target` : 'Tidak ada temuan lewat target'">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="13" r="7.5"/>
+                <path d="M12 9.5V13l2.3 1.6M9.5 2.8h5M12 2.8v2.7"/>
+              </svg>
+              <span v-if="peringatan > 0" class="eq-lonceng-titik">
+                {{ peringatan > 99 ? '99+' : peringatan }}
+              </span>
+            </Link>
+          </div>
 
           <div class="eq-lonceng">
             <a href="/news" class="eq-bulat" aria-label="Pengumuman">
@@ -925,7 +969,10 @@ async function keluar() {
              yang tidak terkirim karena penerimanya tidak ada. Dipisah
              dari pesan sukses, cara Safe Track (st_sukses dan st_gagal):
              digabung, bagian keduanya terbaca sebagai catatan kaki. -->
-        <div v-if="kilat.galat" class="max-w-[1400px] mx-auto mb-5">
+        <!-- Halaman audit SMKP menggambar galat ini sendiri sebagai toast
+             (Components/Smkp/Kilat.vue, cara Aurorasys); dua pesan yang
+             sama pada satu layar terbaca sebagai dua galat. -->
+        <div v-if="kilat.galat && !modulAudit" class="max-w-[1400px] mx-auto mb-5">
           <div class="rounded-xl px-4 py-3 text-[12.5px] font-semibold flex items-start gap-2.5"
                style="background:#fdecec;color:#9b1c1c" role="alert">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
@@ -951,6 +998,20 @@ async function keluar() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
                    stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
+          </div>
+
+          <!-- Akun belum ditempatkan: di modul audit tidak ada satu pun
+               audit yang terjangkau (User::jangkauan), dan daftar kosong
+               tanpa sebab terbaca sebagai galat. Keterangan Aurorasys. -->
+          <div v-if="modulAudit && pengguna && pengguna.ditempatkan === false" class="eq-gabungan" role="note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6h.01"/>
+            </svg>
+            <p>
+              Akun Anda belum ditempatkan pada perusahaan, sehingga belum ada data audit yang dapat dibuka.
+              Hubungi administrator EQOHSEE untuk penempatan dan pemberian peran.
+            </p>
           </div>
 
           <KopHalaman v-if="!kopSendiri" :judul="judul" :subjudul="subjudul ?? null"

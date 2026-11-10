@@ -441,58 +441,23 @@ final class Menu
       'semboyan' => 'Systems That Hold',
       'kutipan' => 'Sistem yang hanya ada di dokumen akan gagal pada hari ia paling dibutuhkan.',
       'icon'  => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
-      // Menu mengikuti tahapan audit, bukan satu daftar rata. Butir pada
-      // kelompok "Tahap" dan "Berkas" disalurkan ke periode yang sedang
-      // berjalan, sebab menu samping tidak membawa identitas audit.
+      /* Menu modul audit SMKP mengikuti Aurorasys (porting 7 Nov 2026):
+         daftar audit, audit baru, tindak lanjut temuan lintas audit, dan
+         acuan kriteria. Langkah per audit (Tahap I, Rencana, Rapat,
+         Penilaian, Bukti, Temuan, Formulir, Laporan) dibuka dari halaman
+         audit itu sendiri — menu samping tidak membawa identitas audit.
+
+         Daftar Audit tetap menyala di seluruh halaman satu audit (pola
+         `smkp/*`); butir lain yang polanya lebih khusus menang di
+         alamatnya sendiri — lihat HandleInertiaRequests::menu().
+         Audit Baru hanya bagi yang boleh mengisi audit (gerbang `audit`:
+         administrator & auditor) — auditi tidak pernah melihatnya. */
       'groups' => [
         '' => [
-          /* Dasbor mendahului daftar periode. Yang dibuka manajemen
-             bukan "audit mana yang ada" melainkan "apakah kami
-             membaik" — dan daftar tidak menjawab pertanyaan kedua. */
-          ['Performa SMKP', 'smkp.dasbor', 'smkp/dasbor'],
-        ],
-        'Periode' => [
-          ['Daftar Audit',   'smkp.index',  'smkp'],
-          ['Buat Periode',   'smkp.create', 'smkp/buat'],
-        ],
-        /* Urut sesuai jalannya audit. Form Penilaian ditaruh SESUDAH
-           Permulaan Audit dan Rencana Audit — keduanya yang menetapkan
-           lingkup dan sampel, dan menilai sebelum lingkupnya disepakati
-           berarti menilai butir yang belum tentu berlaku. Halamannya
-           sendiri tetap dapat dibuka lebih awal; yang dijaga urutannya,
-           bukan pintunya. */
-        'Tahap Audit' => [
-          ['Permulaan Audit',   'smkp.ke.tahap1',    'smkp/lanjut/tahap-1'],
-          ['Rencana Audit',     'smkp.ke.rencana',   'smkp/lanjut/rencana'],
-          ['Metode & Sampel',   'smkp.ke.sampel',    'smkp/lanjut/metode-sampel'],
-          ['Form Penilaian Audit','smkp.ke.penilaian','smkp/lanjut/penilaian'],
-          ['Rapat & Daftar Hadir','smkp.ke.rapat',   'smkp/lanjut/rapat'],
-          ['Temuan & Tindakan', 'smkp.ke.temuan',    'smkp/lanjut/temuan'],
-          ['Penyusunan Laporan','smkp.ke.laporan-susun','smkp/lanjut/susun-laporan'],
-        ],
-        /* Delapan keluaran audit, URUT SESUAI BERKASNYA — bukan urut
-           abjad dan bukan urut pembuatannya di sini. Berkas audit
-           diserahkan sebagai satu bundel bernomor, dan menu yang
-           urutannya berbeda dari bundelnya memaksa penyusunnya
-           mencocokkan sendiri satu per satu. */
-        'Berkas Resmi' => [
-          ['1 · Formulir Kriteria',   'smkp.ke.kriteria',       'smkp/lanjut/kriteria'],
-          ['2 · Rekap Ketidaksesuaian','smkp.ke.rekap-nc',      'smkp/lanjut/rekap-nc'],
-          ['3 · Respon Manajemen',    'smkp.ke.respon',         'smkp/lanjut/respon'],
-          ['4 · Rencana Tindak Lanjut','smkp.ke.rencana-tindak','smkp/lanjut/rencana-tindak'],
-          ['5 · Berita Acara Tahap I','smkp.ke.berita',         'smkp/lanjut/berita-acara'],
-          ['6 · Laporan Rencana Audit','smkp.ke.rencana-cetak', 'smkp/lanjut/laporan-rencana'],
-          ['7 · Laporan Audit',       'smkp.ke.laporan',        'smkp/lanjut/laporan-audit'],
-          ['8 · NC & Tindak Lanjut',  'smkp.ke.nc-tindak',      'smkp/lanjut/nc-tindak'],
-
-          /* Lembar OFI berdiri SESUDAH kedelapan berkas wajib, dan
-             bernomor terpisah. Ia bukan berkas kesembilan dalam bundel
-             yang sama: kedelapan di atas melaporkan ketidaksesuaian,
-             yang ini melaporkan yang sudah memenuhi seluruhnya. */
-          ['Peluang Perbaikan (OFI)', 'smkp.ke.ofi',            'smkp/lanjut/ofi'],
-        ],
-        'Acuan' => [
-          ['Kriteria Kepdirjen', 'smkp.acuan', 'smkp/acuan'],
+          ['Daftar Audit',          'smkp.index',         ['smkp', 'smkp/*']],
+          ['Audit Baru',            'smkp.create',        'smkp/buat', 'audit'],
+          ['Tindak Lanjut Temuan',  'smkp.tindak-lanjut', 'smkp/tindak-lanjut'],
+          ['Kriteria & Acuan',      'smkp.acuan',         'smkp/acuan'],
         ],
       ],
     ],
@@ -795,7 +760,9 @@ final class Menu
           ['Tagihan', 'pembelian.daftar',  'pembelian/tagihan*'],
           /* Unsur keempat `true`: hanya untuk administrator. Tanpanya
              pengguna biasa melihat butir yang berujung 403 — halamannya
-             sendiri menolak siapa pun selain admin. */
+             sendiri menolak siapa pun selain admin. Bisa pula berupa nama
+             gerbang (mis. 'audit'): butir tampil bagi yang lolos gerbang
+             itu — sama dengan middleware `can:` rutenya. */
           ['Daftar Harga', 'pembelian.produk', 'pembelian/produk*', true],
         ],
       ],

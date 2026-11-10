@@ -46,6 +46,24 @@ class UserFactory extends Factory
         ];
     }
 
+    /** Administrator: menjangkau seluruh perusahaan, termasuk audit SMKP. */
+    public function admin(): static
+    {
+        return $this->state(fn () => ['is_admin' => true, 'audit_role' => User::ROLE_AUDITOR]);
+    }
+
+    /** Auditor SMKP: mengisi dan mengubah audit perusahaan dalam jangkauannya. */
+    public function auditor(?int $companyId = null): static
+    {
+        return $this->state(fn () => ['audit_role' => User::ROLE_AUDITOR, 'company_id' => $companyId]);
+    }
+
+    /** Auditi SMKP: membaca, mengunggah bukti, dan menyampaikan tindak lanjut. */
+    public function auditi(?int $companyId = null): static
+    {
+        return $this->state(fn () => ['audit_role' => User::ROLE_AUDITI, 'company_id' => $companyId]);
+    }
+
     /**
      * Indicate that the model's email address should be unverified.
      */

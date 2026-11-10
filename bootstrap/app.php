@@ -52,8 +52,14 @@ return Application::configure(basePath: dirname(__DIR__))
            status aslinya — 422, 401, 419 — bukan pengalihan: pengalihan
            diikuti fetch sampai halaman masuk berstatus 200, dan antrean
            akan menganggap laporan yang ditolak sebagai laporan terkirim. */
+        /* Hal yang sama bagi titik JSON modul audit SMKP (porting
+           Aurorasys): Asisten AI dan impor/salin Rencana Audit dipanggil
+           fetch dengan Accept: application/json dan membaca galat 422/401
+           sebagai JSON. Kunjungan Inertia tidak terkena — Accept-nya
+           text/html — jadi galat validasi formulir tetap dialihkan. */
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*')
-                || ($request->is('lapangan', 'lapangan/*') && $request->expectsJson()),
+                || ($request->is('lapangan', 'lapangan/*') && $request->expectsJson())
+                || ($request->is('asisten/*', 'smkp/*') && $request->expectsJson()),
         );
     })->create();

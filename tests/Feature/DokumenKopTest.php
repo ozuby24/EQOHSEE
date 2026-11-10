@@ -140,7 +140,7 @@ class DokumenKopTest extends TestCase
         $this->assertSame(KopDokumen::DEPARTEMEN, $d['departemen'], 'Yang tidak diisi tetap memakai bawaan.');
     }
 
-    /* ---------- kop pada berkas cetak ---------- */
+    /* ---------- kop pada berkas cetak SMKP (porting Aurorasys) ---------- */
 
     public function test_berkas_cetak_memuat_kop_lengkap(): void
     {
@@ -149,17 +149,18 @@ class DokumenKopTest extends TestCase
         $a = $this->audit($c);
 
         foreach ([
-            ['smkp.berita-acara',  'berita',  'FRM/CAM/OHSE/001'],
-            ['smkp.rencana.cetak', 'rencana', 'FRM/CAM/OHSE/002'],
-            ['smkp.laporan',       'laporan', 'LAP/CAM/OHSE/001'],
-        ] as [$rute, $mode, $nomor]) {
+            ['smkp.berita-acara',  'Print/Smkp/BeritaAcara',  'FRM/CAM/OHSE/001'],
+            ['smkp.rencana.cetak', 'Print/Smkp/RencanaAudit', 'FRM/CAM/OHSE/002'],
+            ['smkp.laporan',       'Print/Smkp/LaporanAudit', 'LAP/CAM/OHSE/001'],
+        ] as [$rute, $komponen, $nomor]) {
             $this->get(route($rute, $a))->assertOk()->assertInertia(
-                fn (AssertableInertia $p) => $p->component('Print/Smkp')
-                    ->where('mode', $mode)
+                fn (AssertableInertia $p) => $p->component($komponen)
                     ->where('dok.nomor', $nomor)
                     ->where('dok.divisi', 'Occupational Health, Safety and Environment, External')
                     ->where('dok.departemen', KopDokumen::DEPARTEMEN)
-                    ->has('dok.terbit')->has('dok.setuju')
+                    // Lembar cetak SMKP menampilkan tanggal kop apa adanya.
+                    ->where('dok.terbit', '01 September 2023')
+                    ->where('dok.setuju', '31 Mei 2025')
             );
         }
     }
@@ -172,110 +173,27 @@ class DokumenKopTest extends TestCase
 
         $this->get(route('smkp.hadir.cetak', [$a, 'pembukaan']))
             ->assertOk()->assertInertia(fn (AssertableInertia $p) => $p
-                ->component('Print/Smkp')->where('mode', 'hadir')
-                ->where('dok.nomor', 'FRM/CAM/OHSE/003')->where('totalLembar', 1));
+                ->component('Print/Smkp/DaftarHadir')
+                ->where('dok.nomor', 'FRM/CAM/OHSE/003'));
     }
 
-    /* ---------- penomoran halaman ---------- */
-
-    public function test_rencana_audit_bernomor_tiga_lembar(): void
+    /**
+     * Paket formulir SMKP mewarisi nomor formulir SMKP lama yang
+     * digantikannya — daftar induk dokumen tidak berubah arti.
+     */
+    public function test_formulir_smkp_mewarisi_nomor_formulir_lama(): void
     {
         $c = $this->perusahaan();
-        $this->masuk($c);
-        $a = $this->audit($c);
 
-        $this->get(route('smkp.rencana.cetak', $a))->assertOk()->assertInertia(
-            fn (AssertableInertia $p) => $p->component('Print/Smkp')->where('totalLembar', 3)
-        );
-    }
+        $this->assertSame('FRM/CAM/OHSE/011', KopDokumen::untuk('penilaian-smkp', $c)['nomor']);
+        $this->assertSame('FRM/CAM/OHSE/012', KopDokumen::untuk('rekapitulasi-ketidaksesuaian', $c)['nomor']);
+        $this->assertSame('FRM/CAM/OHSE/014', KopDokumen::untuk('rencana-tindak-lanjut', $c)['nomor']);
+        $this->assertSame('FRM/CAM/OHSE/015', KopDokumen::untuk('formulir-ketidaksesuaian', $c)['nomor']);
+        $this->assertSame('FRM/CAM/OHSE/017', KopDokumen::untuk('rekomendasi-ofi', $c)['nomor']);
+        $this->assertSame('FRM/CAM/OHSE/022', KopDokumen::untuk('formulir-kesesuaian', $c)['nomor']);
 
-    public function test_berita_acara_bernomor_empat_lembar(): void
-    {
-        $c = $this->perusahaan();
-        $this->masuk($c);
-        $a = $this->audit($c);
-
-        $this->get(route('smkp.berita-acara', $a))->assertOk()->assertInertia(
-            fn (AssertableInertia $p) => $p->component('Print/Smkp')->where('totalLembar', 4)
-        );
-    }
-
-    public function test_daftar_hadir_bertambah_lembar_mengikuti_jumlah_peserta(): void
-    {
-        // Nomor halaman harus ikut isinya; daftar 20 orang tidak muat satu lembar.
-        $c = $this->perusahaan();
-        $this->masuk($c);
-        $a = $this->audit($c);
-
-        $this->get(route('smkp.hadir.cetak', [$a, 'pembukaan']))->assertOk()->assertInertia(
-            fn (AssertableInertia $p) => $p->where('totalLembar', 1)
-        );
-
-        for ($i = 1; $i <= 20; $i++) {
-            $a->attendees()->create(['rapat' => 'pembukaan', 'nama' => 'Peserta '.$i]);
+        foreach (['kriteria', 'tindak-lanjut', 'respon-manajemen', 'formulir-kriteria', 'ofi'] as $pensiun) {
+            $this->assertArrayNotHasKey($pensiun, KopDokumen::daftar(), "Kunci kop {$pensiun} sudah dipensiunkan.");
         }
-
-        $this->get(route('smkp.hadir.cetak', [$a, 'pembukaan']))->assertOk()->assertInertia(
-            fn (AssertableInertia $p) => $p->where('totalLembar', 2)
-        );
-    }
-
-    public function test_penomoran_peserta_berlanjut_antar_lembar(): void
-    {
-        $c = $this->perusahaan();
-        $this->masuk($c);
-        $a = $this->audit($c);
-        for ($i = 1; $i <= 20; $i++) {
-            $a->attendees()->create(['rapat' => 'pembukaan', 'nama' => 'Peserta '.$i]);
-        }
-
-        // Lembar kedua dimulai dari peserta ke-17, bukan mengulang dari 1.
-        $this->get(route('smkp.hadir.cetak', [$a, 'pembukaan']))->assertOk()->assertInertia(
-            fn (AssertableInertia $p) => $p->where('totalLembar', 2)->where('hadir.15.nama', 'Peserta 16')->where('hadir.16.nama', 'Peserta 17')
-        );
-    }
-
-    public function test_laporan_bertambah_lembar_mengikuti_jumlah_temuan(): void
-    {
-        $c = $this->perusahaan();
-        $this->masuk($c);
-        $a = $this->audit($c);
-
-        /* ENAM lembar tetap, mengikuti urutan berkas acuan — sampul dan
-           latar belakang, gambaran umum, penerapan tiap elemen, lingkup
-           dan penilaian, pelaksanaan audit, praktik terbaik — lalu daftar
-           ketidaksesuaian yang berlembar sendiri tiap delapan baris, lalu
-           satu lembar penutup berisi lampiran, distribusi, dan tanda
-           tangan.
-
-           Yang dijaga uji ini PERTUMBUHANNYA, bukan angka tetapnya:
-           penomoran "Halaman 2 dari 2" pada berkas terkendali tidak boleh
-           menyebut lembar yang tidak ada. */
-        $this->get(route('smkp.laporan', $a))->assertOk()
-            ->assertInertia(fn (AssertableInertia $p) => $p->where('totalLembar', 6 + 1 + 1));
-
-        // Delapan ketidaksesuaian masih muat satu lembar; yang kesembilan tidak.
-        for ($i = 1; $i <= 9; $i++) {
-            $a->findings()->create([
-                'kode_kriteria' => 'I.'.$i, 'jenis' => 'minor',
-                'uraian' => 'Temuan '.$i, 'status' => 'Open',
-            ]);
-        }
-
-        $this->get(route('smkp.laporan', $a))->assertOk()
-            ->assertInertia(fn (AssertableInertia $p) => $p->where('totalLembar', 6 + 2 + 1));
-    }
-
-    public function test_lembar_terakhir_tidak_memaksa_halaman_baru(): void
-    {
-        // Kelas pemutus halaman pada lembar terakhir akan menyisakan satu
-        // halaman kosong di akhir cetakan.
-        $c = $this->perusahaan();
-        $this->masuk($c);
-        $a = $this->audit($c);
-
-        $this->get(route('smkp.rencana.cetak', $a))->assertOk()->assertInertia(
-            fn (AssertableInertia $p) => $p->component('Print/Smkp')->where('totalLembar', 3)
-        );
     }
 }

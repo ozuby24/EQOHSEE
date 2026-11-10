@@ -96,6 +96,10 @@ class TampilanHidupTest extends TestCase
 
                 foreach ([
                     "/(?:view|make|markdown)\(\s*'([a-z0-9_.\-]+)'/i",
+
+                    /* Mailable bergaya baru menyebut tampilannya sebagai
+                       argumen bernama: new Content(markdown: 'mail.x'). */
+                    "/\b(?:view|markdown|html|text):\s*'([a-z0-9_.\-]+)'/i",
                     "/rootView[^=]*=\s*'([a-z0-9_.\-]+)'/",
 
                     /* Route::view() menaruh nama view-nya di argumen KEDUA;

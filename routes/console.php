@@ -36,3 +36,14 @@ Schedule::command('miners:sinkron')
     ->dailyAt('06:55')
     ->timezone(\App\Support\Waktu::zona())
     ->withoutOverlapping();
+
+/*
+ * Pengingat email batas waktu tindak lanjut temuan audit SMKP ke akun
+ * auditi (porting Aurorasys). Aman dijalankan ulang — pengingat yang
+ * sudah terkirim tidak dikirim lagi; penjadwal yang terlewat menyusul.
+ */
+Schedule::command('smkp:pengingat-tindak-lanjut')
+    ->dailyAt(\App\Services\PengingatTindakLanjut::JAM)
+    // Jam kirim Aurorasys (07.15 WIB); zona aplikasi EQOHSEE UTC.
+    ->timezone('Asia/Jakarta')
+    ->withoutOverlapping();
