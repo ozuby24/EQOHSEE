@@ -91,7 +91,7 @@ async function hapus(b: any) {
         <table class="mn-tabel">
           <thead>
             <tr>
-              <th style="width:42px">No</th>
+              <th class="mn-kolom-sempit">No</th>
               <th>Tanggal</th>
               <th>No Registrasi</th>
               <th>Title</th>
@@ -106,7 +106,7 @@ async function hapus(b: any) {
               <td>{{ (halaman.from ?? 1) + i }}</td>
               <td>{{ tglId(b.tanggal) }}</td>
               <td><Link :href="`/miners/induksi/${b.id}`" class="mn-tautan">{{ b.nomor || 'tanpa nomor' }}</Link></td>
-              <td style="max-width:240px">{{ b.perihal || '—' }}<div class="mn-redup" style="font-size:11px">{{ b.peserta }} peserta</div></td>
+              <td class="mn-sel-perihal">{{ b.perihal || '—' }}<span class="mn-orang-sub">{{ b.peserta }} peserta</span></td>
               <td>
                 <a v-if="b.permohonan?.url" :href="b.permohonan.url" target="_blank" rel="noopener" class="mn-tautan">unduh</a>
                 <span v-else class="mn-redup">—</span>

@@ -127,7 +127,7 @@ async function hapus(b: any) {
         <table class="mn-tabel">
           <thead>
             <tr>
-              <th style="width:42px">No</th>
+              <th class="mn-kolom-sempit">No</th>
               <th>Date MCU</th>
               <th>No Registrasi</th>
               <th>Title</th>
@@ -147,7 +147,7 @@ async function hapus(b: any) {
               <td><LencanaStatus :status="b.status" :label="props.STATUS?.[b.status]" /></td>
               <td>{{ b.oleh || '—' }}</td>
               <td v-if="register">
-                <div class="mn-aksi" style="justify-content:flex-start">
+                <div class="mn-aksi mn-aksi-kiri">
                   <TombolIkon v-if="b.bolehUbah" ikon="pensil" judul="Ubah surat MCU" @click="ubah(b)" />
                   <TombolIkon v-if="b.bolehHapus" ikon="hapus" varian="bahaya" judul="Hapus surat MCU" @click="hapus(b)" />
                 </div>

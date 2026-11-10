@@ -48,9 +48,9 @@ const nomor = (i: number | string) => Number(i) + 1;
     <div class="grid gap-x-5 lg:grid-cols-2">
       <Kartu v-for="k in kartu" :key="k.iup">
         <h2 class="mn-kartu-judul flex items-center gap-2 mb-3">
-          <img v-if="k.logo" :src="k.logo" alt="" style="height:26px;width:auto;max-width:70px;object-fit:contain" @error="($event.target as HTMLImageElement).style.display = 'none'">
+          <img v-if="k.logo" :src="k.logo" alt="" class="mn-logo" @error="($event.target as HTMLImageElement).style.display = 'none'">
           <span>{{ k.kode }}</span>
-          <small style="font-size:12.5px">{{ k.nama }}</small>
+          <small>{{ k.nama }}</small>
         </h2>
 
         <div v-if="k.kurang.length" class="mn-alert mn-alert-peringatan">
@@ -63,7 +63,7 @@ const nomor = (i: number | string) => Number(i) + 1;
         </div>
 
         <form @submit.prevent="simpan(k)">
-          <div v-for="(p, i) in k.peran" :key="p.kunci" class="mb-3 pb-3" style="border-bottom:1px solid var(--mn-garis-tabel)">
+          <div v-for="(p, i) in k.peran" :key="p.kunci" class="mb-3 pb-3 mn-garis-bawah">
             <Medan :label="`${nomor(i)}. ${p.label}`" :untuk="`${p.kunci}-${k.iup}`" :galat="forms[k.iup].errors[p.kolom]">
               <select :id="`${p.kunci}-${k.iup}`" v-model="forms[k.iup][p.kolom]" class="mn-isian mb-2" :title="p.label">
                 <option :value="null">— belum ditentukan —</option>

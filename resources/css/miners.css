@@ -559,3 +559,8 @@ a.mn-berkas:hover{border-color:#94a3b8;background:var(--mn-kartu-2)}
 .mn-profil-foto svg.mn-profil-ikon{width:30px;height:30px;color:var(--mn-aksen-pekat)}
 .mn-profil-foto:has(.mn-profil-ikon){background:var(--mn-aksen-lembut)}
 .mn-tanpa-jarak{margin:0}
+.mn-teks-aman{color:var(--mn-aman-tinta)}
+.mn-sel-perihal{max-width:260px}
+.mn-anak{padding-left:16px;color:var(--mn-teks)}
+.mn-induk{font-weight:600;color:var(--mn-judul)}
+.mn-logo{height:26px;width:auto;max-width:70px;object-fit:contain}

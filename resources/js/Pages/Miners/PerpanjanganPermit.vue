@@ -19,6 +19,7 @@ import LencanaStatus from '../../Components/Miners/LencanaStatus.vue';
 import PilihSayaSemua from '../../Components/Miners/PilihSayaSemua.vue';
 import Modal from '../../Components/Miners/Modal.vue';
 import Medan from '../../Components/Miners/Medan.vue';
+import SelOrang from '../../Components/Miners/SelOrang.vue';
 import { tglId } from '../../Components/Miners/zona';
 
 const props = propHalaman();
@@ -74,6 +75,7 @@ function simpan() {
 
       <template #sel-tanggal="{ nilai }">{{ tglId(nilai) }}</template>
       <template #sel-nomor="{ baris: b }"><Link :href="`/miners/perpanjangan-permit/${b.id}`" class="mn-tautan">{{ b.nomor || 'detail' }}</Link></template>
+      <template #sel-nama="{ baris: b }"><SelOrang :nama="b.nama" /></template>
       <template #sel-berlakuBaru="{ nilai }">{{ tglId(nilai) }}</template>
       <template #sel-status="{ nilai }"><LencanaStatus :status="nilai" /></template>
       <template #sel-posisi="{ nilai }"><span class="mn-redup text-[12px]">{{ nilai || '—' }}</span></template>
@@ -86,11 +88,11 @@ function simpan() {
             <option value="">— pilih —</option>
             <option v-for="c in calon" :key="c.id" :value="c.id">{{ c.label }}</option>
           </select>
-          <div v-else class="mn-alert mn-alert-peringatan" style="margin:0">
+          <div v-else class="mn-alert mn-alert-peringatan mn-tanpa-jarak">
             Tidak ada Mine Permit yang dapat diperpanjang: kartunya harus terbit atau expired, aktif, dan tidak sedang punya perpanjangan berjalan.
           </div>
         </Medan>
-        <div v-if="kartu" class="mn-penuh mn-alert mn-alert-info" style="margin:0">
+        <div v-if="kartu" class="mn-penuh mn-alert mn-alert-info mn-tanpa-jarak">
           <div>
             <div>Masa berlaku: <b>{{ tglId(kartu.berlaku) }}</b></div>
             <div>Masa berlaku MCU: <b>{{ tglId(kartu.mcu) }}</b> (periksa {{ tglId(kartu.tglMcu) }})</div>

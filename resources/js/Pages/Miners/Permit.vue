@@ -19,6 +19,7 @@ import TabelData from '../../Components/Miners/TabelData.vue';
 import LencanaMasaBerlaku from '../../Components/Miners/LencanaMasaBerlaku.vue';
 import LencanaStatus from '../../Components/Miners/LencanaStatus.vue';
 import TombolIkon from '../../Components/Miners/TombolIkon.vue';
+import SelOrang from '../../Components/Miners/SelOrang.vue';
 import Modal from '../../Components/Miners/Modal.vue';
 import Medan from '../../Components/Miners/Medan.vue';
 import { tglId, URUTAN_ZONA, ZONA, type MedanSaring } from '../../Components/Miners/zona';
@@ -198,11 +199,11 @@ async function hapus(b: any) {
       </template>
 
       <template #sel-nomor="{ baris: b }">
-        <Link :href="`/miners/permit/${b.id}`" class="mn-tautan" style="color:inherit">{{ b.nomor || 'tanpa nomor' }}</Link>
+        <Link :href="`/miners/permit/${b.id}`" class="mn-tautan">{{ b.nomor || 'tanpa nomor' }}</Link>
       </template>
       <template #sel-tanggal="{ nilai }">{{ tglId(nilai) }}</template>
       <template #sel-nama="{ baris: b }">
-        <Link :href="`/miners/permit/${b.id}`" class="mn-tautan">{{ b.nama || '—' }}</Link>
+        <SelOrang :nama="b.nama" :href="`/miners/permit/${b.id}`" />
         <span v-if="!b.aktif" class="mn-lencana mn-l-abu ml-1" :title="b.alasanNonaktif || ''">non-aktif</span>
       </template>
       <template #sel-berlaku="{ baris: b }">
@@ -210,7 +211,7 @@ async function hapus(b: any) {
       </template>
       <template #sel-status="{ nilai }"><LencanaStatus :status="nilai" /></template>
       <template #sel-aksi="{ baris: b }">
-        <div class="mn-aksi" style="justify-content:flex-start">
+        <div class="mn-aksi mn-aksi-kiri">
           <template v-if="register">
             <TombolIkon v-if="b.bolehHapus" ikon="hapus" varian="bahaya" judul="Hapus Mine Permit" @click="hapus(b)" />
             <TombolIkon ikon="pensil" :href="`/miners/permit/${b.id}`" judul="Buka detail Mine Permit" />
@@ -233,7 +234,7 @@ async function hapus(b: any) {
             <option value="">— pilih —</option>
             <option v-for="c in calon" :key="c.id" :value="c.id">{{ c.noDaftar }} - {{ c.nama }}{{ c.perusahaan ? ` (${c.perusahaan})` : '' }}</option>
           </select>
-          <div v-else class="mn-alert mn-alert-peringatan" style="margin:0">
+          <div v-else class="mn-alert mn-alert-peringatan mn-tanpa-jarak">
             Belum ada karyawan yang induksinya selesai. Selesaikan dulu induksi karyawannya; sesudah disetujui, namanya muncul di sini.
           </div>
         </Medan>

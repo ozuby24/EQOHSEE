@@ -54,7 +54,7 @@ function simpan() {
 
     <TabelData judul="Perusahaan Table" :jumlah="baris.length" :kolom="kolom" :baris="baris">
       <template #sel-nama="{ baris: b }">
-        <span :style="b.jenis === 'IUJP' ? 'padding-left:14px' : 'font-weight:600'">{{ b.nama }}</span>
+        <span :class="b.jenis === 'IUJP' ? 'mn-anak' : 'mn-induk'">{{ b.nama }}</span>
       </template>
       <template #sel-jenis="{ nilai }">
         <span class="mn-lencana" :class="nilai === 'IUP' ? 'mn-l-utama' : 'mn-l-terang'">{{ nilai }}</span>

@@ -87,10 +87,10 @@ function ajukanUlang() {
       <dl class="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
         <div v-for="b in rincian" :key="b.label" class="min-w-0">
           <dt class="mn-label">{{ b.label }}</dt>
-          <dd class="text-[13px] break-words" :style="b.nada === 'peringatan' ? 'color:#b45309;font-weight:600' : ''">
+          <dd class="text-[13px] break-words" :class="{ 'mn-teks-kritis font-semibold': b.nada === 'peringatan' }">
             {{ b.nilai || '—' }}
           </dd>
-          <dd v-if="b.sebab" class="mn-petunjuk" style="color:#b45309">{{ b.sebab }}</dd>
+          <dd v-if="b.sebab" class="mn-petunjuk mn-teks-kritis">{{ b.sebab }}</dd>
         </div>
       </dl>
     </Kartu>
@@ -98,7 +98,7 @@ function ajukanUlang() {
     <!-- ══════════ Lampiran ══════════ -->
     <Kartu v-if="lampiran.length" judul="Lampiran">
       <table class="mn-tabel">
-        <thead><tr><th style="width:42px">No</th><th>Lampiran</th><th>Nomor</th><th>Berkas</th></tr></thead>
+        <thead><tr><th class="mn-kolom-sempit">No</th><th>Lampiran</th><th>Nomor</th><th>Berkas</th></tr></thead>
         <tbody>
           <tr v-for="(b, i) in lampiran" :key="b.label">
             <td>{{ i + 1 }}</td>
@@ -119,12 +119,12 @@ function ajukanUlang() {
     <Kartu v-if="wajib.length" judul="Lampiran wajib" :keterangan="`${wajib.length - kurang.length} / ${wajib.length} terpenuhi`">
       <ul class="grid gap-x-6 gap-y-1 sm:grid-cols-2 text-[13px]">
         <li v-for="w in wajib" :key="w.kunci" class="flex items-baseline gap-2">
-          <span aria-hidden="true" :style="{ color: w.ada ? '#198754' : '#fd7e14' }">{{ w.ada ? '✓' : '○' }}</span>
+          <span aria-hidden="true" :class="w.ada ? 'mn-teks-aman' : 'mn-teks-kritis'">{{ w.ada ? '✓' : '○' }}</span>
           <span :class="{ 'mn-redup': w.ada }">{{ w.label }}</span>
           <span class="sr-only">{{ w.ada ? '— sudah dilampirkan' : '— belum dilampirkan' }}</span>
         </li>
       </ul>
-      <p v-if="kurang.length" class="mn-petunjuk mt-2" style="color:#b45309">
+      <p v-if="kurang.length" class="mn-petunjuk mt-2 mn-teks-kritis">
         Berkas belum dapat dikirim sampai seluruh lampiran wajib terpenuhi.
       </p>
     </Kartu>
@@ -135,7 +135,7 @@ function ajukanUlang() {
         <table class="mn-tabel">
           <thead>
             <tr>
-              <th style="width:42px">No</th>
+              <th class="mn-kolom-sempit">No</th>
               <th>{{ d.jenis === 'simper' ? 'Unit' : 'Nama Employee' }}</th>
               <th v-if="d.jenis === 'mcu'">NIK</th>
               <th v-if="d.jenis === 'mcu'">Hasil MCU</th>
