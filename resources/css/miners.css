@@ -452,7 +452,7 @@ a.mn-kpi:hover{box-shadow:var(--mn-bayang-angkat);transform:translateY(-1px)}
 
 .mn-dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 28px;margin:0}
 .mn-dl-3{grid-template-columns:repeat(3,minmax(0,1fr))}
-.mn-dl-butir{display:grid;grid-template-columns:minmax(120px,38%) 1fr;gap:12px;padding:10px 0;border-bottom:1px solid var(--mn-garis-halus);min-width:0}
+.mn-dl-butir{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;padding:10px 0;border-bottom:1px solid var(--mn-garis-halus);min-width:0}
 .mn-dl-3 .mn-dl-butir{grid-template-columns:1fr;gap:2px}
 .mn-dl-butir.mn-penuh{grid-column:1 / -1}
 .mn-dl dt{font-size:12.5px;color:var(--mn-redup)}
@@ -548,3 +548,9 @@ a.mn-berkas:hover{border-color:#94a3b8;background:var(--mn-kartu-2)}
 .mn-orang a.mn-orang-nama{color:var(--mn-judul)}
 .mn-tabel :is(th,td):first-child{padding-left:14px}
 .mn-tabel :is(th,td):last-child{padding-right:14px}
+.mn-sub-bagian{margin:18px 0 0;font-size:11px;font-weight:650;letter-spacing:.09em;text-transform:uppercase;color:var(--mn-redup)}
+.mn-kartu > .mn-sub-bagian:first-of-type{margin-top:0}
+.mn-btn-garis-bahaya{background:var(--mn-kartu);border-color:rgba(220,38,38,.4);color:var(--mn-expired-tinta)}
+.mn-btn-garis-bahaya:hover:not(:disabled){background:var(--mn-expired-lembut)}
+.mn-profil-lencana .mn-berlaku{flex-direction:row;align-items:center;gap:6px;flex-wrap:wrap}
+.mn-lencana.mn-bungkus{white-space:normal;text-align:left}

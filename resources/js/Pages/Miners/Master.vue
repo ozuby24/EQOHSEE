@@ -95,7 +95,7 @@ async function hapus(b: any) {
 
     <TabelData :judul="props.tabel" :jumlah="baris.length" :kolom="kolom" :baris="baris" kosong="Belum ada data.">
       <template #alat>
-        <button type="button" class="mn-btn mn-btn-gelap" @click="tambah">+ {{ props.tombol }}</button>
+        <button type="button" class="mn-btn mn-btn-utama" @click="tambah">+ {{ props.tombol }}</button>
       </template>
 
       <template #sel-milik="{ baris: b }">

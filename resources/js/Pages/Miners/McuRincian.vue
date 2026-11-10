@@ -330,8 +330,8 @@ function tindak(keadaan: string) {
           selama belum dikirim, MCU ini tidak muncul di layar siapa pun selain Anda.
         </div>
       </div>
-      <button v-if="props.bolehKirim" type="button" class="mn-btn mn-btn-bahaya" :disabled="!orang.length" @click="kirimTerbuka = true">Kirim ke dokter</button>
-      <button v-else type="button" class="mn-btn mn-btn-bahaya" :disabled="kirimForm.processing" @click="ajukanUlang">Re-Submit MCU</button>
+      <button v-if="props.bolehKirim" type="button" class="mn-btn mn-btn-utama" :disabled="!orang.length" @click="kirimTerbuka = true">Kirim ke dokter</button>
+      <button v-else type="button" class="mn-btn mn-btn-utama" :disabled="kirimForm.processing" @click="ajukanUlang">Re-Submit MCU</button>
     </div>
 
     <!-- ══════════ Persetujuan ══════════ -->
@@ -348,9 +348,9 @@ function tindak(keadaan: string) {
           <button v-if="!props.langkahDokter || props.belumDinilai === 0" type="button" class="mn-btn mn-btn-sukses"
                   @click="props.langkahDokter ? (setujuTerbuka = true) : tindak('setuju')">approve</button>
           <button type="button" class="mn-btn mn-btn-peringatan" @click="alasanTerbuka = 'dikembalikan'">Kembalikan</button>
-          <button type="button" class="mn-btn mn-btn-bahaya" @click="alasanTerbuka = 'tolak'">Reject</button>
+          <button type="button" class="mn-btn mn-btn-garis-bahaya" @click="alasanTerbuka = 'tolak'">Reject</button>
         </template>
-        <button v-if="props.bolehAjukanUlang && m.status === 'ditolak'" type="button" class="mn-btn mn-btn-bahaya"
+        <button v-if="props.bolehAjukanUlang && m.status === 'ditolak'" type="button" class="mn-btn mn-btn-utama"
                 :disabled="kirimForm.processing" @click="ajukanUlang">Re-Submit MCU</button>
       </div>
     </Kartu>
@@ -372,7 +372,7 @@ function tindak(keadaan: string) {
               <td>{{ j.poliklinik || '—' }}</td>
               <td>{{ j.rumahSakit || '—' }}</td>
               <td>
-                <a v-if="j.surat" :href="j.surat" target="_blank" rel="noopener" class="mn-btn mn-btn-gelap">Surat Rujukan</a>
+                <a v-if="j.surat" :href="j.surat" target="_blank" rel="noopener" class="mn-btn mn-btn-garis">Surat Rujukan</a>
                 <span v-else class="mn-redup">—</span>
               </td>
               <td>{{ j.oleh || '—' }}</td>
@@ -437,7 +437,7 @@ function tindak(keadaan: string) {
       </form>
       <template #kaki>
         <button type="button" class="mn-btn mn-btn-garis" @click="orangTerbuka = false">Close</button>
-        <button type="button" class="mn-btn mn-btn-bahaya" :disabled="orangForm.processing" @click="simpanOrang">Save Manpower</button>
+        <button type="button" class="mn-btn mn-btn-utama" :disabled="orangForm.processing" @click="simpanOrang">Save Manpower</button>
       </template>
     </Modal>
 
@@ -457,7 +457,7 @@ function tindak(keadaan: string) {
       </div>
       <template #kaki>
         <button type="button" class="mn-btn mn-btn-garis" @click="nilaiTerbuka = null">Close</button>
-        <button type="button" class="mn-btn mn-btn-bahaya" :disabled="nilaiForm.processing || !nilaiForm.hasil_id" @click="simpanNilai">Save MCU</button>
+        <button type="button" class="mn-btn mn-btn-utama" :disabled="nilaiForm.processing || !nilaiForm.hasil_id" @click="simpanNilai">Save MCU</button>
       </template>
     </Modal>
 
@@ -502,7 +502,7 @@ function tindak(keadaan: string) {
       </form>
       <template #kaki>
         <button type="button" class="mn-btn mn-btn-garis" @click="rujukTerbuka = null">Close</button>
-        <button type="button" class="mn-btn mn-btn-bahaya" :disabled="rujukForm.processing" @click="simpanRujuk">Save Rujukan</button>
+        <button type="button" class="mn-btn mn-btn-utama" :disabled="rujukForm.processing" @click="simpanRujuk">Save Rujukan</button>
       </template>
     </Modal>
 
@@ -539,7 +539,7 @@ function tindak(keadaan: string) {
       <p class="text-[13px]">Are you sure sending MCU? Surat dikirim ke dokter pemeriksa untuk divalidasi.</p>
       <template #kaki>
         <button type="button" class="mn-btn mn-btn-garis" @click="kirimTerbuka = false">Close</button>
-        <button type="button" class="mn-btn mn-btn-bahaya" :disabled="kirimForm.processing" @click="kirim">Sending</button>
+        <button type="button" class="mn-btn mn-btn-utama" :disabled="kirimForm.processing" @click="kirim">Sending</button>
       </template>
     </Modal>
 

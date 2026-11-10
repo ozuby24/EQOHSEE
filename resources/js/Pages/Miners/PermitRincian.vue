@@ -8,7 +8,11 @@
  *     pemiliknya atau admin.
  *   · Attachment Permit — SPDK (wajib), Induksi Khusus dan LOTO /
  *     Sertifikat Welder (opsional). Berkas dapat dikirim begitu SPDK ada.
- *   · Persetujuan — pengaju → HSE → KTT.
+ *   · Persetujuan — pengaju → HSE → KTT (stepper).
+ *
+ * Rupa: kepala profil + daftar definisi bersekat + chip berkas + daftar
+ * periksa lampiran, menggantikan kotak isian abu-abu Safe Track; tombol
+ * penyetuju di bilah aksi (lengket di bawah pada ponsel).
  *   · Riwayat perpanjangan kartu ini.
  */
 import { Link, useForm } from '@inertiajs/vue3';
@@ -19,6 +23,11 @@ import Kartu from '../../Components/Miners/Kartu.vue';
 import LencanaStatus from '../../Components/Miners/LencanaStatus.vue';
 import LencanaMasaBerlaku from '../../Components/Miners/LencanaMasaBerlaku.vue';
 import TabelPersetujuan from '../../Components/Miners/TabelPersetujuan.vue';
+import KepalaProfil from '../../Components/Miners/KepalaProfil.vue';
+import DaftarDefinisi from '../../Components/Miners/DaftarDefinisi.vue';
+import Butir from '../../Components/Miners/Butir.vue';
+import ChipBerkas from '../../Components/Miners/ChipBerkas.vue';
+import ButirLampiran from '../../Components/Miners/ButirLampiran.vue';
 import TombolIkon from '../../Components/Miners/TombolIkon.vue';
 import Modal from '../../Components/Miners/Modal.vue';
 import Medan from '../../Components/Miners/Medan.vue';
@@ -139,104 +148,110 @@ async function tindak(keadaan: string) {
       <div v-if="galat[k]" class="mn-alert mn-alert-bahaya" role="alert">{{ galat[k] }}</div>
     </div>
 
-    <Kartu judul="Detail Permit">
-      <template #kanan>
+    <KepalaProfil :judul="p.nama || '—'" :eyebrow="`${p.jenisKartu || 'Mine Permit'} · ${p.nomor || 'tanpa nomor'}`" :foto="p.foto?.url ?? null"
+                  :keterangan="[['NIK', p.nik], ['No ID', p.noid], ['Jabatan', p.jabatan], ['Perusahaan', p.kontraktor || p.iup]]">
+      <template #lencana>
         <LencanaStatus :status="p.status" />
-        <span v-if="!p.aktif" class="mn-lencana mn-l-abu" :title="p.alasanNonaktif || ''">non-aktif</span>
+        <span v-if="!p.aktif" class="mn-lencana mn-l-abu mn-titik" :title="p.alasanNonaktif || ''">non-aktif</span>
+        <LencanaMasaBerlaku :tanggal="p.berlaku" :sisa="p.sisa" :sumber="p.sumber" />
+      </template>
+      <template #aksi>
+        <button v-if="props.bolehFoto" type="button" class="mn-btn mn-btn-garis" @click="fotoTerbuka = true">Ganti foto</button>
         <TombolIkon v-if="props.kelola" ikon="pensil" judul="Edit Mine Permit" @click="bukaEdit" />
         <TombolIkon v-if="props.kelola" ikon="kalender" varian="garis" judul="Masa berlaku" @click="bukaMasa" />
         <TombolIkon v-if="props.kelola" ikon="orang" varian="garis" :judul="p.aktif ? 'Nonaktifkan kartu' : 'Aktifkan kembali'" @click="bukaStatus" />
       </template>
+    </KepalaProfil>
 
-      <div v-if="!p.aktif" class="mn-langkah mn-langkah-tolak">
-        <div>
-          <div class="mn-langkah-label">Tidak aktif sejak {{ tglId(p.nonaktifSejak) }}</div>
-          <div class="mn-langkah-kurang">{{ p.alasanNonaktif || 'Tanpa keterangan.' }}</div>
-        </div>
+    <div v-if="!p.aktif" class="mn-langkah mn-langkah-tolak">
+      <div>
+        <div class="mn-langkah-label">Tidak aktif sejak {{ tglId(p.nonaktifSejak) }}</div>
+        <div class="mn-langkah-kurang">{{ p.alasanNonaktif || 'Tanpa keterangan.' }}</div>
       </div>
+    </div>
 
-      <div class="mb-4 flex flex-wrap items-end gap-3">
-        <div>
-          <span class="mn-label">Profile</span>
-          <img v-if="p.foto?.url" :src="p.foto.url" class="mn-foto" alt="Foto pemegang Mine Permit">
-          <div v-else class="mn-foto-kosong">{{ p.foto?.ada ? 'terjaga' : 'Belum ada foto' }}</div>
-        </div>
-        <button v-if="props.bolehFoto" type="button" class="mn-btn mn-btn-garis" @click="fotoTerbuka = true">Ganti foto</button>
+    <div v-if="props.bolehTindak" class="mn-bilah-aksi">
+      <div class="mn-bilah-aksi-teks"><b>Menunggu persetujuan Anda</b>Periksa data dan lampiran di bawah, lalu approve, kembalikan, atau reject.</div>
+      <div class="mn-bilah-aksi-tombol">
+        <button type="button" class="mn-btn mn-btn-sukses" :disabled="tindakan.processing" @click="tindak('setuju')">approve</button>
+        <button type="button" class="mn-btn mn-btn-peringatan" @click="alasanTerbuka = 'dikembalikan'">Kembalikan</button>
+        <button type="button" class="mn-btn mn-btn-garis" @click="alasanTerbuka = 'tolak'">reject</button>
       </div>
+    </div>
 
-      <div class="mn-baca">
-        <Medan label="Tanggal"><span class="mn-nilai-baca">{{ tglId(p.tanggal) }}</span></Medan>
-        <Medan label="NIK"><span class="mn-nilai-baca">{{ p.nik || '—' }}</span></Medan>
-        <Medan label="No Register"><span class="mn-nilai-baca">{{ p.nomor || '—' }}</span></Medan>
-        <Medan label="Nama Lengkap">
-          <span class="mn-nilai-baca"><Link v-if="p.pekerja_id" :href="`/miners/${p.pekerja_id}`" class="mn-tautan">{{ p.nama }}</Link><template v-else>{{ p.nama }}</template></span>
-        </Medan>
-        <Medan label="Jabatan"><span class="mn-nilai-baca">{{ p.jabatan || '—' }}</span></Medan>
-        <Medan label="Tanggal Lahir"><span class="mn-nilai-baca">{{ tglId(p.lahir) }}</span></Medan>
-        <Medan label="Type Card"><span class="mn-nilai-baca">{{ p.jenisKartu || '—' }}</span></Medan>
-        <Medan label="Golongan Darah"><span class="mn-nilai-baca">{{ p.darah || '—' }}</span></Medan>
-        <Medan label="Phone"><span class="mn-nilai-baca">{{ p.telepon || '—' }}</span></Medan>
-        <Medan label="Emergency"><span class="mn-nilai-baca">{{ p.darurat || '—' }}</span></Medan>
-        <Medan label="Nomor Induk"><span class="mn-nilai-baca">{{ p.noid || '—' }}</span></Medan>
-        <Medan label="Cakupan Area / Warna"><span class="mn-nilai-baca">{{ p.cakupan || '—' }} · {{ p.warna || 'ikut unit SIMPER' }}</span></Medan>
-        <Medan label="Perusahaan (IUP)"><span class="mn-nilai-baca">{{ p.iup || '—' }}</span></Medan>
-        <Medan label="Contractor (IUJP)"><span class="mn-nilai-baca">{{ p.kontraktor || '— karyawan IUP —' }}</span></Medan>
-        <Medan label="Departemen"><span class="mn-nilai-baca">{{ p.departemen || '—' }}</span></Medan>
-        <Medan label="Masa Berlaku"><div><LencanaMasaBerlaku :tanggal="p.berlaku" :sisa="p.sisa" :sumber="p.sumber" /></div></Medan>
-        <Medan label="Sertifikat MCU">
-          <div class="flex flex-wrap gap-2">
-            <a v-if="p.sertifikatMcu" :href="p.sertifikatMcu" target="_blank" rel="noopener" class="mn-btn mn-btn-gelap">Sertifikat</a>
-            <a v-if="p.hasilMcu?.url" :href="p.hasilMcu.url" target="_blank" rel="noopener" class="mn-btn mn-btn-gelap">Hasil MCU</a>
+    <Kartu judul="Detail Permit">
+      <h3 class="mn-sub-bagian">Data pemegang</h3>
+      <DaftarDefinisi>
+        <Butir label="Tanggal" :nilai="tglId(p.tanggal)" />
+        <Butir label="No Register" :nilai="p.nomor" />
+        <Butir label="NIK" :nilai="p.nik" />
+        <Butir label="Nama Lengkap">
+          <Link v-if="p.pekerja_id" :href="`/miners/${p.pekerja_id}`" class="mn-tautan">{{ p.nama }}</Link><template v-else>{{ p.nama || '—' }}</template>
+        </Butir>
+        <Butir label="Jabatan" :nilai="p.jabatan" />
+        <Butir label="Tanggal Lahir" :nilai="tglId(p.lahir)" />
+        <Butir label="Golongan Darah" :nilai="p.darah" />
+        <Butir label="Nomor Induk" :nilai="p.noid" />
+        <Butir label="Phone" :nilai="p.telepon" />
+        <Butir label="Emergency" :nilai="p.darurat" />
+      </DaftarDefinisi>
+
+      <h3 class="mn-sub-bagian">Kartu</h3>
+      <DaftarDefinisi>
+        <Butir label="Type Card" :nilai="p.jenisKartu" />
+        <Butir label="Cakupan Area / Warna" :nilai="`${p.cakupan || '—'} · ${p.warna || 'ikut unit SIMPER'}`" />
+        <Butir label="Perusahaan (IUP)" :nilai="p.iup" />
+        <Butir label="Contractor (IUJP)" :nilai="p.kontraktor || '— karyawan IUP —'" />
+        <Butir label="Departemen" :nilai="p.departemen" />
+        <Butir label="Masa Berlaku"><LencanaMasaBerlaku :tanggal="p.berlaku" :sisa="p.sisa" :sumber="p.sumber" /></Butir>
+      </DaftarDefinisi>
+
+      <h3 class="mn-sub-bagian">MCU dan berkas</h3>
+      <DaftarDefinisi>
+        <Butir label="Expired MCU" :nilai="`${tglId(p.mcuSampai)} · ${p.mcuHasil || 'Belum dinilai'}`" />
+        <Butir label="Sertifikat MCU">
+          <span class="flex flex-wrap gap-2">
+            <ChipBerkas v-if="p.sertifikatMcu" :href="p.sertifikatMcu" nama="Sertifikat MCU" />
+            <ChipBerkas v-if="p.hasilMcu?.url" :href="p.hasilMcu.url" nama="Hasil MCU" />
             <span v-if="!p.sertifikatMcu && !p.hasilMcu?.url" class="mn-redup">—</span>
-          </div>
-        </Medan>
-        <Medan label="Expired MCU"><span class="mn-nilai-baca">{{ tglId(p.mcuSampai) }} · {{ p.mcuHasil || 'Belum dinilai' }}</span></Medan>
-        <Medan label="KTP">
-          <div>
-            <a v-if="p.ktp?.url" :href="p.ktp.url" target="_blank" rel="noopener" class="mn-btn mn-btn-gelap">KTP</a>
-            <span v-else class="mn-redup">{{ p.ktp?.ada ? 'terjaga — hanya admin dan tim OHSE' : '—' }}</span>
-          </div>
-        </Medan>
-        <Medan label="Permohonan Permit">
-          <div>
-            <a v-if="p.permohonan?.url" :href="p.permohonan.url" target="_blank" rel="noopener" class="mn-btn mn-btn-gelap">Permohonan Permit</a>
-            <span v-else class="mn-redup">—</span>
-          </div>
-        </Medan>
-        <Medan label="Catatan" penuh><span class="mn-nilai-baca">{{ p.catatan || '' }}</span></Medan>
-        <Medan label="Cetak Mine Permit" penuh>
-          <span class="mn-redup" style="font-size:12px">Kartu CR80 dan cover dicetak lewat Monitoring → Cetak Kartu sesudah kartunya terbit.</span>
-        </Medan>
-      </div>
+          </span>
+        </Butir>
+        <Butir label="KTP">
+          <ChipBerkas v-if="p.ktp?.url" :href="p.ktp.url" nama="KTP" />
+          <span v-else class="mn-redup">{{ p.ktp?.ada ? 'terjaga — hanya admin dan tim OHSE' : '—' }}</span>
+        </Butir>
+        <Butir label="Permohonan Permit">
+          <ChipBerkas v-if="p.permohonan?.url" :href="p.permohonan.url" nama="Permohonan Permit" />
+          <span v-else class="mn-redup">—</span>
+        </Butir>
+        <Butir label="Catatan" :nilai="p.catatan" penuh />
+        <Butir label="Cetak Mine Permit" penuh>
+          <span class="mn-redup">Kartu CR80 dan cover dicetak lewat Monitoring → Cetak Kartu sesudah kartunya terbit.</span>
+        </Butir>
+      </DaftarDefinisi>
     </Kartu>
 
-    <Kartu judul="Attachment Permit">
+    <Kartu judul="Attachment Permit" keterangan="SPDK wajib; lainnya opsional">
       <template #kanan>
-        <button v-if="props.bolehLampiran" type="button" class="mn-btn mn-btn-gelap" @click="lampiranTerbuka = true">+ Attachment</button>
+        <button v-if="props.bolehLampiran" type="button" class="mn-btn mn-btn-garis" @click="lampiranTerbuka = true">+ Attachment</button>
       </template>
-      <table class="mn-tabel" style="font-size:12px">
-        <thead><tr><th v-for="l in lampiran" :key="l.kunci" style="width:30%">{{ l.label }}<span v-if="!l.wajib" class="mn-redup"> (opsional)</span></th></tr></thead>
-        <tbody>
-          <tr>
-            <td v-for="l in lampiran" :key="l.kunci">
-              <a v-if="l.url" :href="l.url" target="_blank" rel="noopener" class="mn-btn mn-btn-bahaya">{{ l.label }}</a>
-              <span v-else-if="l.ada" class="mn-redup" title="Hanya dapat dibuka paramedis, tim OHSE, atau administrator.">terjaga</span>
-              <span v-else class="mn-lencana" :class="l.wajib ? 'mn-l-oranye' : 'mn-l-terang'">{{ l.wajib ? 'belum diunggah' : '—' }}</span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <p v-if="props.kurang?.length" class="mn-petunjuk mt-2" style="color:#b45309">
+      <ul class="mn-periksa">
+        <ButirLampiran v-for="l in lampiran" :key="l.kunci" :label="l.label" :wajib="l.wajib" :ada="!!(l.url || l.ada)">
+          <ChipBerkas v-if="l.url" :href="l.url" :nama="l.label" />
+          <span v-else-if="l.ada" class="mn-lencana mn-l-terang" title="Hanya dapat dibuka paramedis, tim OHSE, atau administrator.">terjaga</span>
+        </ButirLampiran>
+      </ul>
+      <div v-if="props.kurang?.length" class="mn-alert mn-alert-peringatan mt-3 mb-0">
         Berkas belum dapat dikirim: lampiran wajib {{ props.kurang.join(', ') }} belum diunggah.
-      </p>
-      <div v-if="props.lampiranLama?.length" class="mt-3">
-        <span class="mn-label">Lampiran lama (daftar SOP sebelumnya)</span>
-        <ul class="text-[12px]">
-          <li v-for="b in props.lampiranLama" :key="b.label">
-            <a v-if="b.url" :href="b.url" target="_blank" rel="noopener" class="mn-tautan">{{ b.label }}</a>
-            <span v-else>{{ b.label }} <span class="mn-redup">· {{ b.ada ? 'terjaga' : 'tanpa berkas' }}</span></span>
-          </li>
-        </ul>
+      </div>
+      <div v-if="props.lampiranLama?.length" class="mt-4">
+        <h3 class="mn-sub-bagian">Lampiran lama (daftar SOP sebelumnya)</h3>
+        <div class="flex flex-wrap gap-2">
+          <template v-for="b in props.lampiranLama" :key="b.label">
+            <ChipBerkas v-if="b.url" :href="b.url" :nama="b.label" />
+            <span v-else class="mn-lencana mn-l-terang mn-bungkus">{{ b.label }} · {{ b.ada ? 'terjaga' : 'tanpa berkas' }}</span>
+          </template>
+        </div>
       </div>
     </Kartu>
 
@@ -246,24 +261,19 @@ async function tindak(keadaan: string) {
         <div v-if="props.kurang?.length" class="mn-langkah-kurang">Unggah lampiran SPDK lebih dulu, barulah Mine Permit ini bisa dikirim ke HSE.</div>
         <div v-else class="mn-langkah-teks">Lampiran wajib lengkap. Kirim supaya HSE dan KTT menerima permohonannya.</div>
       </div>
-      <button type="button" class="mn-btn mn-btn-gelap" :disabled="props.kurang?.length > 0" @click="kirimTerbuka = true">Sending Permit</button>
+      <button type="button" class="mn-btn mn-btn-utama" :disabled="props.kurang?.length > 0" @click="kirimTerbuka = true">Sending Permit</button>
     </div>
 
-    <Kartu v-if="p.status !== 'draf' || props.bolehAjukanUlang" judul="Persetujuan">
+    <Kartu v-if="p.status !== 'draf' || props.bolehAjukanUlang" judul="Persetujuan" keterangan="Pengaju → HSE → KTT">
       <TabelPersetujuan :alur="props.alur ?? []" :posisi="props.posisi" />
-      <div class="mt-4 flex flex-wrap gap-2">
-        <template v-if="props.bolehTindak">
-          <button type="button" class="mn-btn mn-btn-sukses" :disabled="tindakan.processing" @click="tindak('setuju')">approve</button>
-          <button type="button" class="mn-btn mn-btn-peringatan" @click="alasanTerbuka = 'dikembalikan'">Kembalikan</button>
-          <button type="button" class="mn-btn mn-btn-gelap" @click="alasanTerbuka = 'tolak'">reject</button>
-        </template>
+      <div v-if="props.bolehAjukanUlang || (['terbit', 'kedaluwarsa'].includes(p.status) && p.aktif)" class="mt-4 flex flex-wrap gap-2">
         <button v-if="props.bolehAjukanUlang" type="button" class="mn-btn mn-btn-peringatan" :disabled="kirimForm.processing" @click="ajukanUlang">Re-Submit</button>
         <Link v-if="['terbit', 'kedaluwarsa'].includes(p.status) && p.aktif" href="/miners/perpanjangan-permit" class="mn-btn mn-btn-garis-utama">Perpanjang Mine Permit</Link>
       </div>
     </Kartu>
 
     <Kartu v-if="props.riwayat?.length" judul="Riwayat Perpanjangan" :keterangan="`${props.riwayat.length} kali`">
-      <table class="mn-tabel" style="font-size:12px">
+      <table class="mn-tabel">
         <thead><tr><th>Ke-</th><th>Berlaku lama</th><th>Berlaku baru</th><th>Disetujui</th><th>Oleh</th></tr></thead>
         <tbody>
           <tr v-for="h in props.riwayat" :key="h.urutan">
@@ -284,7 +294,7 @@ async function tindak(keadaan: string) {
       </div>
       <template #kaki>
         <button type="button" class="mn-btn mn-btn-garis" @click="lampiranTerbuka = false">Close</button>
-        <button type="button" class="mn-btn mn-btn-bahaya" :disabled="lampiranForm.processing" @click="simpanLampiran">Save Data</button>
+        <button type="button" class="mn-btn mn-btn-utama" :disabled="lampiranForm.processing" @click="simpanLampiran">Save Data</button>
       </template>
     </Modal>
 
@@ -395,7 +405,7 @@ async function tindak(keadaan: string) {
       <p class="text-[13px]">Are you sure sending Mine Permit? Permohonan dikirim ke HSE, lalu KTT.</p>
       <template #kaki>
         <button type="button" class="mn-btn mn-btn-garis" @click="kirimTerbuka = false">Close</button>
-        <button type="button" class="mn-btn mn-btn-gelap" :disabled="kirimForm.processing" @click="kirim">Sending</button>
+        <button type="button" class="mn-btn mn-btn-utama" :disabled="kirimForm.processing" @click="kirim">Sending</button>
       </template>
     </Modal>
 

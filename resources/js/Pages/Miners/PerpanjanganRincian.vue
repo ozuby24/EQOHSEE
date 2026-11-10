@@ -86,7 +86,7 @@ function ajukanUlang() {
         <template v-if="props.bolehTindak">
           <button type="button" class="mn-btn mn-btn-sukses" :disabled="tindakan.processing" @click="tindak('setuju')">Approve</button>
           <button type="button" class="mn-btn mn-btn-peringatan" @click="alasanTerbuka = 'dikembalikan'">Kembalikan</button>
-          <button type="button" class="mn-btn mn-btn-bahaya" @click="alasanTerbuka = 'tolak'">Reject</button>
+          <button type="button" class="mn-btn mn-btn-garis-bahaya" @click="alasanTerbuka = 'tolak'">Reject</button>
         </template>
         <button v-if="props.bolehAjukanUlang" type="button" class="mn-btn mn-btn-peringatan" :disabled="ulang.processing" @click="ajukanUlang">Ajukan Ulang</button>
       </div>

@@ -123,7 +123,7 @@ async function tindak(keadaan: string) {
         <Medan label="Title"><span class="mn-nilai-baca">{{ ind.perihal || '—' }}</span></Medan>
         <Medan label="File Permohonan">
           <div>
-            <a v-if="ind.permohonan?.url" :href="ind.permohonan.url" target="_blank" rel="noopener" class="mn-btn mn-btn-bahaya">Attachment Unduh</a>
+            <a v-if="ind.permohonan?.url" :href="ind.permohonan.url" target="_blank" rel="noopener" class="mn-btn mn-btn-garis">Attachment Unduh</a>
             <span v-else class="mn-redup">Belum diunggah</span>
           </div>
         </Medan>
@@ -199,7 +199,7 @@ async function tindak(keadaan: string) {
       </div>
 
       <div v-if="props.bolehNilai && orang.length" class="mt-3">
-        <button type="button" class="mn-btn mn-btn-bahaya" :disabled="jadwal.processing" @click="simpanJadwal">update data</button>
+        <button type="button" class="mn-btn mn-btn-utama" :disabled="jadwal.processing" @click="simpanJadwal">update data</button>
       </div>
     </Kartu>
 
@@ -209,7 +209,7 @@ async function tindak(keadaan: string) {
         <div v-if="!orang.length" class="mn-langkah-kurang">Tambahkan sedikitnya satu peserta, barulah pengajuan ini bisa dikirim ke HSE.</div>
         <div v-else class="mn-langkah-teks">{{ orang.length }} peserta terdaftar. Kirim supaya HSE menerima permohonan induksinya.</div>
       </div>
-      <button type="button" class="mn-btn mn-btn-bahaya" :disabled="!orang.length" @click="kirimTerbuka = true">Sending</button>
+      <button type="button" class="mn-btn mn-btn-utama" :disabled="!orang.length" @click="kirimTerbuka = true">Sending</button>
     </div>
 
     <Kartu v-if="ind.status !== 'draf' || props.bolehAjukanUlang" judul="Persetujuan">
@@ -218,9 +218,9 @@ async function tindak(keadaan: string) {
         <template v-if="props.bolehTindak">
           <button type="button" class="mn-btn mn-btn-sukses" :disabled="tindakan.processing" @click="tindak('setuju')">approve</button>
           <button type="button" class="mn-btn mn-btn-peringatan" @click="alasanTerbuka = 'dikembalikan'">Kembalikan</button>
-          <button type="button" class="mn-btn mn-btn-bahaya" @click="alasanTerbuka = 'tolak'">reject</button>
+          <button type="button" class="mn-btn mn-btn-garis-bahaya" @click="alasanTerbuka = 'tolak'">reject</button>
         </template>
-        <button v-if="props.bolehAjukanUlang" type="button" class="mn-btn mn-btn-bahaya" :disabled="kirimForm.processing" @click="ajukanUlang">Re-Submit</button>
+        <button v-if="props.bolehAjukanUlang" type="button" class="mn-btn mn-btn-utama" :disabled="kirimForm.processing" @click="ajukanUlang">Re-Submit</button>
       </div>
     </Kartu>
 
@@ -248,7 +248,7 @@ async function tindak(keadaan: string) {
       </div>
       <template #kaki>
         <button type="button" class="mn-btn mn-btn-garis" @click="tambahTerbuka = false">Close</button>
-        <button type="button" class="mn-btn mn-btn-bahaya" :disabled="tambah.processing || !calon.length || !tambah.mcu_orang_id" @click="simpanPeserta">Save Data</button>
+        <button type="button" class="mn-btn mn-btn-utama" :disabled="tambah.processing || !calon.length || !tambah.mcu_orang_id" @click="simpanPeserta">Save Data</button>
       </template>
     </Modal>
 
@@ -256,7 +256,7 @@ async function tindak(keadaan: string) {
       <p class="text-[13px]">Are you sure sending Induction? Pengajuan dikirim ke HSE untuk disetujui.</p>
       <template #kaki>
         <button type="button" class="mn-btn mn-btn-garis" @click="kirimTerbuka = false">Close</button>
-        <button type="button" class="mn-btn mn-btn-bahaya" :disabled="kirimForm.processing" @click="kirim">Sending</button>
+        <button type="button" class="mn-btn mn-btn-utama" :disabled="kirimForm.processing" @click="kirim">Sending</button>
       </template>
     </Modal>
 

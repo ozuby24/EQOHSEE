@@ -183,13 +183,13 @@ async function hapus(b: any) {
                :nomor-awal="halaman.from ?? 1" :tautan="halaman.links">
       <template #alat>
         <div v-if="register">
-          <button type="button" class="mn-btn mn-btn-gelap" @click="bukaTambah">+ add Permit</button>
+          <button type="button" class="mn-btn mn-btn-utama" @click="bukaTambah">+ add Permit</button>
         </div>
         <template v-else>
           <div class="mn-alat">
             <input v-model="dari" type="date" class="mn-isian" title="Dari tanggal" aria-label="Dari tanggal">
             <input v-model="sampai" type="date" class="mn-isian" title="Sampai tanggal" aria-label="Sampai tanggal">
-            <a :href="urlEkspor" class="mn-btn mn-btn-bahaya">Export</a>
+            <a :href="urlEkspor" class="mn-btn mn-btn-garis">Export</a>
           </div>
           <button v-if="props.kelola" type="button" class="mn-btn mn-btn-garis-utama" :disabled="sinkronForm.processing" @click="sinkron">
             ⟳ Sinkronkan dari MCU

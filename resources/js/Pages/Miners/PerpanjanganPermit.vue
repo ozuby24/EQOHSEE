@@ -69,7 +69,7 @@ function simpan() {
                         href-saya="/miners/perpanjangan-permit" href-semua="/miners/perpanjangan-permit?semua=1" />
       </template>
       <template #alat>
-        <button type="button" class="mn-btn mn-btn-gelap" @click="buka">+ Form Perpanjangan</button>
+        <button type="button" class="mn-btn mn-btn-utama" @click="buka">+ Form Perpanjangan</button>
       </template>
 
       <template #sel-tanggal="{ nilai }">{{ tglId(nilai) }}</template>

@@ -108,14 +108,14 @@ async function hapus(b: any) {
 
     <Kartu>
       <div v-if="register" class="mb-4">
-        <button type="button" class="mn-btn mn-btn-gelap" @click="tambah">+ add MCU</button>
+        <button type="button" class="mn-btn mn-btn-utama" @click="tambah">+ add MCU</button>
       </div>
 
       <div class="mb-3 grid gap-2">
         <div class="mn-alat">
           <input v-model="dari" type="date" class="mn-isian" title="Dari tanggal" aria-label="Dari tanggal">
           <input v-model="sampai" type="date" class="mn-isian" title="Sampai tanggal" aria-label="Sampai tanggal">
-          <a :href="urlEkspor" class="mn-btn mn-btn-bahaya">Export</a>
+          <a :href="urlEkspor" class="mn-btn mn-btn-garis">Export</a>
         </div>
         <form class="mn-alat-cari" @submit.prevent="telusuri">
           <input v-model="cari" class="mn-isian" placeholder="search.." aria-label="Cari nomor, judul, atau tujuan">
