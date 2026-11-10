@@ -18,6 +18,13 @@ import KepalaHalaman from '../../Components/Miners/KepalaHalaman.vue';
 import Kartu from '../../Components/Miners/Kartu.vue';
 import LencanaStatus from '../../Components/Miners/LencanaStatus.vue';
 import TabelPersetujuan from '../../Components/Miners/TabelPersetujuan.vue';
+import KepalaProfil from '../../Components/Miners/KepalaProfil.vue';
+import DaftarDefinisi from '../../Components/Miners/DaftarDefinisi.vue';
+import Butir from '../../Components/Miners/Butir.vue';
+import ChipBerkas from '../../Components/Miners/ChipBerkas.vue';
+import SelOrang from '../../Components/Miners/SelOrang.vue';
+import Ikon from '../../Components/Miners/Ikon.vue';
+import { IKON } from '../../Components/Miners/ikon';
 import TombolIkon from '../../Components/Miners/TombolIkon.vue';
 import Modal from '../../Components/Miners/Modal.vue';
 import Medan from '../../Components/Miners/Medan.vue';
@@ -215,32 +222,53 @@ function tindak(keadaan: string) {
     </div>
 
     <!-- ══════════ Detail MCU ══════════ -->
-    <Kartu judul="Detail MCU">
-      <template #kanan>
+    <KepalaProfil :judul="m.perihal || m.nomor || 'Surat MCU'" :eyebrow="`Surat MCU · ${m.nomor || 'tanpa nomor'}`"
+                  :keterangan="[['Date MCU', tglId(m.tanggal)], ['Perusahaan', m.perusahaan], ['Creator', m.pengaju], ['Manpower', orang.length]]">
+      <template #foto><Ikon :d="IKON.dokumen" class="mn-profil-ikon" /></template>
+      <template #lencana>
         <LencanaStatus :status="m.status" />
+        <span v-if="m.bulan" class="mn-lencana mn-l-info">Masa berlaku {{ m.bulan === 12 ? '1 Tahun' : `${m.bulan} Bulan` }}</span>
+      </template>
+      <template #aksi>
         <TombolIkon v-if="props.bolehUbahSurat" ikon="pensil" judul="Ubah surat MCU" @click="ubahSurat" />
       </template>
+    </KepalaProfil>
 
-      <div v-if="m.alasanTolak && ['draf', 'ditolak'].includes(m.status)" class="mn-langkah mn-langkah-tolak">
-        <div>
-          <div class="mn-langkah-label">{{ m.status === 'ditolak' ? 'Ditolak' : 'Dikembalikan' }} — alasan</div>
-          <div class="mn-langkah-kurang">{{ m.alasanTolak }}</div>
-        </div>
+    <div v-if="m.alasanTolak && ['draf', 'ditolak'].includes(m.status)" class="mn-langkah mn-langkah-tolak">
+      <div>
+        <div class="mn-langkah-label">{{ m.status === 'ditolak' ? 'Ditolak' : 'Dikembalikan' }} — alasan</div>
+        <div class="mn-langkah-kurang">{{ m.alasanTolak }}</div>
       </div>
+    </div>
 
-      <div class="mn-baca">
-        <Medan label="No Register"><span class="mn-nilai-baca">{{ m.nomor || '—' }}</span></Medan>
-        <Medan label="Date MCU"><span class="mn-nilai-baca">{{ tglId(m.tanggal) }}</span></Medan>
-        <Medan label="Title"><span class="mn-nilai-baca">{{ m.perihal || '—' }}</span></Medan>
-        <Medan label="Kepada"><span class="mn-nilai-baca">{{ m.kepada || '—' }}</span></Medan>
-        <Medan label="Creator"><span class="mn-nilai-baca">{{ m.pengaju || '—' }}</span></Medan>
-        <Medan label="Perusahaan"><span class="mn-nilai-baca">{{ m.perusahaan || '—' }}</span></Medan>
-        <Medan label="IUP penerbit"><span class="mn-nilai-baca">{{ m.iup || '—' }}</span></Medan>
-        <Medan label="Masa berlaku dari dokter">
-          <span class="mn-nilai-baca">{{ m.bulan ? (m.bulan === 12 ? '1 Tahun' : `${m.bulan} Bulan`) : '—' }}</span>
-        </Medan>
-        <Medan label="Remarks" penuh><span class="mn-nilai-baca">{{ m.catatan || '' }}</span></Medan>
+    <div v-if="props.bolehTindak" class="mn-bilah-aksi">
+      <div class="mn-bilah-aksi-teks">
+        <b>Menunggu persetujuan Anda</b>
+        <template v-if="props.langkahDokter && props.belumDinilai > 0">
+          {{ props.belumDinilai }} manpower belum ditetapkan hasil MCU-nya. Tetapkan lewat tombol pada kolom # di Manpower Table; sesudah semuanya terisi, tombol approve muncul di sini.
+        </template>
+        <template v-else>Periksa Manpower Table, lalu approve, kembalikan, atau reject.</template>
       </div>
+      <div class="mn-bilah-aksi-tombol">
+        <button v-if="!props.langkahDokter || props.belumDinilai === 0" type="button" class="mn-btn mn-btn-sukses"
+                @click="props.langkahDokter ? (setujuTerbuka = true) : tindak('setuju')">approve</button>
+        <button type="button" class="mn-btn mn-btn-peringatan" @click="alasanTerbuka = 'dikembalikan'">Kembalikan</button>
+        <button type="button" class="mn-btn mn-btn-garis-bahaya" @click="alasanTerbuka = 'tolak'">Reject</button>
+      </div>
+    </div>
+
+    <Kartu judul="Detail MCU">
+      <DaftarDefinisi>
+        <Butir label="No Register" :nilai="m.nomor" />
+        <Butir label="Date MCU" :nilai="tglId(m.tanggal)" />
+        <Butir label="Title" :nilai="m.perihal" />
+        <Butir label="Kepada" :nilai="m.kepada" />
+        <Butir label="Creator" :nilai="m.pengaju" />
+        <Butir label="Perusahaan" :nilai="m.perusahaan" />
+        <Butir label="IUP penerbit" :nilai="m.iup" />
+        <Butir label="Masa berlaku dari dokter" :nilai="m.bulan ? (m.bulan === 12 ? '1 Tahun' : `${m.bulan} Bulan`) : null" />
+        <Butir label="Remarks" :nilai="m.catatan" penuh />
+      </DaftarDefinisi>
     </Kartu>
 
     <!-- ══════════ Manpower ══════════ -->
@@ -250,10 +278,10 @@ function tindak(keadaan: string) {
       </div>
 
       <div class="mn-gulir">
-        <table class="mn-tabel" style="font-size:12px">
+        <table class="mn-tabel">
           <thead>
             <tr>
-              <th style="width:36px">No</th>
+              <th class="mn-kolom-sempit">No</th>
               <th>Date MCU</th>
               <th>Expired MCU</th>
               <th>Name</th>
@@ -268,15 +296,13 @@ function tindak(keadaan: string) {
           </thead>
           <tbody>
             <tr v-for="(o, i) in orang" :key="o.id">
-              <td>{{ i + 1 }}</td>
+              <td class="mn-no">{{ i + 1 }}</td>
               <td>{{ tglId(o.periksa) }}</td>
               <td>{{ tglId(o.sampai) }}</td>
               <td>
-                <Link v-if="o.pekerja_id" :href="`/miners/${o.pekerja_id}`" class="mn-tautan">{{ o.nama }}</Link>
-                <span v-else>{{ o.nama }}</span>
-                <div class="mn-redup" style="font-size:11px">{{ o.nik }}</div>
+                <SelOrang :nama="o.nama" :sub="o.nik" :href="o.pekerja_id ? `/miners/${o.pekerja_id}` : null" />
                 <span v-if="o.perbaikan" class="mn-lencana mn-l-kuning mt-1" :title="o.perbaikan">Perlu Diperbaiki</span>
-                <div v-if="o.perbaikan" class="mn-petunjuk" style="color:#b45309">{{ o.perbaikan }}</div>
+                <div v-if="o.perbaikan" class="mn-petunjuk mn-teks-kritis">{{ o.perbaikan }}</div>
               </td>
               <td>{{ o.jenis || '—' }}</td>
               <td>
@@ -300,7 +326,7 @@ function tindak(keadaan: string) {
                 <div v-if="o.cetak" class="mt-1"><span class="mn-stempel" :class="`mn-stempel-${o.stempel.nada}`">{{ o.stempel.judul }}</span></div>
               </td>
               <td>
-                <div class="mn-aksi" style="justify-content:flex-start;flex-wrap:wrap">
+                <div class="mn-aksi mn-aksi-kiri">
                   <TombolIkon v-if="o.bolehNilai" ikon="cek" varian="sukses" judul="Tetapkan hasil MCU" @click="bukaNilai(o)" />
                   <TombolIkon v-if="o.bolehPerbaiki" ikon="kembali" varian="garis" judul="Kembalikan untuk diperbaiki (bukan hasil medis)" @click="bukaPerbaiki(o)" />
                   <TombolIkon v-if="o.bolehRujuk" ikon="plus" varian="bahaya" judul="Buat surat rujukan" @click="bukaRujuk(o)" />
@@ -335,21 +361,10 @@ function tindak(keadaan: string) {
     </div>
 
     <!-- ══════════ Persetujuan ══════════ -->
-    <Kartu v-if="m.status !== 'draf' || props.alur?.some((a: any) => a.keadaan !== 'menunggu')" judul="Persetujuan">
+    <Kartu v-if="m.status !== 'draf' || props.alur?.some((a: any) => a.keadaan !== 'menunggu')" judul="Persetujuan" keterangan="Pengaju → Dokter">
       <TabelPersetujuan :alur="props.alur ?? []" :posisi="props.posisi" />
 
-      <div v-if="props.bolehTindak && props.langkahDokter && props.belumDinilai > 0" class="mn-alert mn-alert-peringatan mt-3">
-        <span><b>{{ props.belumDinilai }} manpower</b> belum ditetapkan hasil MCU-nya. Tetapkan lewat tombol pada kolom
-          <b>#</b> di tabel di atas; sesudah semuanya terisi, tombol <b>approve</b> muncul di sini.</span>
-      </div>
-
-      <div class="mt-4 flex flex-wrap items-center gap-2">
-        <template v-if="props.bolehTindak">
-          <button v-if="!props.langkahDokter || props.belumDinilai === 0" type="button" class="mn-btn mn-btn-sukses"
-                  @click="props.langkahDokter ? (setujuTerbuka = true) : tindak('setuju')">approve</button>
-          <button type="button" class="mn-btn mn-btn-peringatan" @click="alasanTerbuka = 'dikembalikan'">Kembalikan</button>
-          <button type="button" class="mn-btn mn-btn-garis-bahaya" @click="alasanTerbuka = 'tolak'">Reject</button>
-        </template>
+      <div v-if="props.bolehAjukanUlang && m.status === 'ditolak'" class="mt-4 flex flex-wrap items-center gap-2">
         <button v-if="props.bolehAjukanUlang && m.status === 'ditolak'" type="button" class="mn-btn mn-btn-utama"
                 :disabled="kirimForm.processing" @click="ajukanUlang">Re-Submit MCU</button>
       </div>
@@ -358,9 +373,9 @@ function tindak(keadaan: string) {
     <!-- ══════════ Surat rujukan ══════════ -->
     <Kartu v-if="rujukanSemua.length" judul="Surat Rujukan" :keterangan="`${rujukanSemua.length} surat`">
       <div class="mn-gulir">
-        <table class="mn-tabel" style="font-size:12px">
+        <table class="mn-tabel">
           <thead>
-            <tr><th style="width:36px">No</th><th>Nama</th><th>Tanggal</th><th>Dokter Spesialis</th><th>Poliklinik</th>
+            <tr><th class="mn-kolom-sempit">No</th><th>Nama</th><th>Tanggal</th><th>Dokter Spesialis</th><th>Poliklinik</th>
               <th>Rumah Sakit</th><th>Download</th><th>Creator</th><th>#</th></tr>
           </thead>
           <tbody>
@@ -372,7 +387,7 @@ function tindak(keadaan: string) {
               <td>{{ j.poliklinik || '—' }}</td>
               <td>{{ j.rumahSakit || '—' }}</td>
               <td>
-                <a v-if="j.surat" :href="j.surat" target="_blank" rel="noopener" class="mn-btn mn-btn-garis">Surat Rujukan</a>
+                <ChipBerkas v-if="j.surat" :href="j.surat" nama="Surat Rujukan" aksi="Unduh" />
                 <span v-else class="mn-redup">—</span>
               </td>
               <td>{{ j.oleh || '—' }}</td>

@@ -554,3 +554,8 @@ a.mn-berkas:hover{border-color:#94a3b8;background:var(--mn-kartu-2)}
 .mn-btn-garis-bahaya:hover:not(:disabled){background:var(--mn-expired-lembut)}
 .mn-profil-lencana .mn-berlaku{flex-direction:row;align-items:center;gap:6px;flex-wrap:wrap}
 .mn-lencana.mn-bungkus{white-space:normal;text-align:left}
+.mn-teks-kritis{color:var(--mn-kritis-tinta)}
+.mn-tabel .mn-aksi.mn-aksi-kiri{justify-content:flex-start;flex-wrap:wrap}
+.mn-profil-foto svg.mn-profil-ikon{width:30px;height:30px;color:var(--mn-aksen-pekat)}
+.mn-profil-foto:has(.mn-profil-ikon){background:var(--mn-aksen-lembut)}
+.mn-tanpa-jarak{margin:0}

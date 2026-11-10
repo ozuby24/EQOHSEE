@@ -16,6 +16,13 @@ import KepalaHalaman from '../../Components/Miners/KepalaHalaman.vue';
 import Kartu from '../../Components/Miners/Kartu.vue';
 import LencanaStatus from '../../Components/Miners/LencanaStatus.vue';
 import TabelPersetujuan from '../../Components/Miners/TabelPersetujuan.vue';
+import KepalaProfil from '../../Components/Miners/KepalaProfil.vue';
+import DaftarDefinisi from '../../Components/Miners/DaftarDefinisi.vue';
+import Butir from '../../Components/Miners/Butir.vue';
+import ChipBerkas from '../../Components/Miners/ChipBerkas.vue';
+import SelOrang from '../../Components/Miners/SelOrang.vue';
+import Ikon from '../../Components/Miners/Ikon.vue';
+import { IKON } from '../../Components/Miners/ikon';
 import TombolIkon from '../../Components/Miners/TombolIkon.vue';
 import Modal from '../../Components/Miners/Modal.vue';
 import Medan from '../../Components/Miners/Medan.vue';
@@ -107,30 +114,41 @@ async function tindak(keadaan: string) {
       <div v-if="galat[k]" class="mn-alert mn-alert-bahaya" role="alert">{{ galat[k] }}</div>
     </div>
 
+    <KepalaProfil :judul="ind.perihal || ind.nomor || 'Induction'" :eyebrow="`Induction · ${ind.nomor || 'tanpa nomor'}`"
+                  :keterangan="[['Date Induction', tglId(ind.tanggal)], ['IUP', ind.iup], ['Creator', ind.pengaju], ['Peserta', orang.length]]">
+      <template #foto><Ikon :d="IKON.orang" class="mn-profil-ikon" /></template>
+      <template #lencana><LencanaStatus :status="ind.status" /></template>
+    </KepalaProfil>
+
+    <div v-if="ind.alasanTolak && ['draf', 'ditolak'].includes(ind.status)" class="mn-langkah mn-langkah-tolak">
+      <div>
+        <div class="mn-langkah-label">{{ ind.status === 'ditolak' ? 'Ditolak' : 'Dikembalikan' }} — alasan</div>
+        <div class="mn-langkah-kurang">{{ ind.alasanTolak }}</div>
+      </div>
+    </div>
+
+    <div v-if="props.bolehTindak" class="mn-bilah-aksi">
+      <div class="mn-bilah-aksi-teks"><b>Menunggu persetujuan Anda</b>Isi tanggal, tempat, dan kelulusan peserta, simpan dengan update data, lalu approve.</div>
+      <div class="mn-bilah-aksi-tombol">
+        <button type="button" class="mn-btn mn-btn-sukses" :disabled="tindakan.processing" @click="tindak('setuju')">approve</button>
+        <button type="button" class="mn-btn mn-btn-peringatan" @click="alasanTerbuka = 'dikembalikan'">Kembalikan</button>
+        <button type="button" class="mn-btn mn-btn-garis-bahaya" @click="alasanTerbuka = 'tolak'">reject</button>
+      </div>
+    </div>
+
     <Kartu judul="Detail Induction">
-      <template #kanan><LencanaStatus :status="ind.status" /></template>
-
-      <div v-if="ind.alasanTolak && ['draf', 'ditolak'].includes(ind.status)" class="mn-langkah mn-langkah-tolak">
-        <div>
-          <div class="mn-langkah-label">{{ ind.status === 'ditolak' ? 'Ditolak' : 'Dikembalikan' }} — alasan</div>
-          <div class="mn-langkah-kurang">{{ ind.alasanTolak }}</div>
-        </div>
-      </div>
-
-      <div class="mn-baca">
-        <Medan label="No Register"><span class="mn-nilai-baca">{{ ind.nomor || '—' }}</span></Medan>
-        <Medan label="Date Induction"><span class="mn-nilai-baca">{{ tglId(ind.tanggal) }}</span></Medan>
-        <Medan label="Title"><span class="mn-nilai-baca">{{ ind.perihal || '—' }}</span></Medan>
-        <Medan label="File Permohonan">
-          <div>
-            <a v-if="ind.permohonan?.url" :href="ind.permohonan.url" target="_blank" rel="noopener" class="mn-btn mn-btn-garis">Attachment Unduh</a>
-            <span v-else class="mn-redup">Belum diunggah</span>
-          </div>
-        </Medan>
-        <Medan label="Creator"><span class="mn-nilai-baca">{{ ind.pengaju || '—' }}</span></Medan>
-        <Medan label="IUP penyelenggara"><span class="mn-nilai-baca">{{ ind.iup || '—' }}</span></Medan>
-        <Medan label="Remarks" penuh><span class="mn-nilai-baca">{{ ind.catatan || '' }}</span></Medan>
-      </div>
+      <DaftarDefinisi>
+        <Butir label="No Register" :nilai="ind.nomor" />
+        <Butir label="Date Induction" :nilai="tglId(ind.tanggal)" />
+        <Butir label="Title" :nilai="ind.perihal" />
+        <Butir label="File Permohonan">
+          <ChipBerkas v-if="ind.permohonan?.url" :href="ind.permohonan.url" nama="File Permohonan" aksi="Unduh" />
+          <span v-else class="mn-redup">Belum diunggah</span>
+        </Butir>
+        <Butir label="Creator" :nilai="ind.pengaju" />
+        <Butir label="IUP penyelenggara" :nilai="ind.iup" />
+        <Butir label="Remarks" :nilai="ind.catatan" penuh />
+      </DaftarDefinisi>
     </Kartu>
 
     <Kartu judul="Manpower Induction" :keterangan="`${orang.length} peserta`">
@@ -139,10 +157,10 @@ async function tindak(keadaan: string) {
       </div>
 
       <div class="mn-gulir">
-        <table class="mn-tabel" style="font-size:12px">
+        <table class="mn-tabel">
           <thead>
             <tr>
-              <th style="width:36px">No</th>
+              <th class="mn-kolom-sempit">No</th>
               <th>Expired MCU</th>
               <th>Nama Lengkap</th>
               <th>Perusahaan</th>
@@ -155,12 +173,9 @@ async function tindak(keadaan: string) {
           </thead>
           <tbody>
             <tr v-for="(o, i) in orang" :key="o.id">
-              <td>{{ i + 1 }}</td>
+              <td class="mn-no">{{ i + 1 }}</td>
               <td>{{ tglId(o.mcuSampai) }}</td>
-              <td>
-                <Link v-if="o.pekerja_id" :href="`/miners/${o.pekerja_id}`" class="mn-tautan">{{ o.nama }}</Link>
-                <span v-else>{{ o.nama }}</span>
-              </td>
+              <td><SelOrang :nama="o.nama" :href="o.pekerja_id ? `/miners/${o.pekerja_id}` : null" /></td>
               <td>{{ o.perusahaan || '—' }}</td>
               <template v-if="props.bolehNilai && jadwal.peserta[i]">
                 <td><input v-model="jadwal.peserta[i].tanggal_induksi" type="date" class="mn-isian" :aria-label="`Tanggal induksi ${o.nama}`"></td>
@@ -185,11 +200,11 @@ async function tindak(keadaan: string) {
                 </td>
               </template>
               <td>
-                <a v-if="o.sertifikat" :href="o.sertifikat" target="_blank" rel="noopener" class="mn-lencana mn-l-sukses">Sertifikat</a>
+                <a v-if="o.sertifikat" :href="o.sertifikat" target="_blank" rel="noopener" class="mn-lencana mn-l-sukses mn-titik">Sertifikat</a>
                 <span v-else-if="o.status === 'gagal'" class="mn-lencana mn-l-bahaya" :title="o.sertifikatAlasan">tidak lulus</span>
                 <span v-else class="mn-lencana mn-l-abu" :title="o.sertifikatAlasan">belum terbit</span>
                 <a v-if="o.unggahan?.url" :href="o.unggahan.url" target="_blank" rel="noopener" class="mn-lencana mn-l-gelap ml-1"
-                   style="background:#212529" title="Berkas sertifikat yang diunggah">unggahan</a>
+                   title="Berkas sertifikat yang diunggah">unggahan</a>
               </td>
               <td><TombolIkon v-if="o.bolehHapus" ikon="hapus" varian="bahaya" judul="Keluarkan peserta" @click="hapusPeserta(o)" /></td>
             </tr>
@@ -212,14 +227,9 @@ async function tindak(keadaan: string) {
       <button type="button" class="mn-btn mn-btn-utama" :disabled="!orang.length" @click="kirimTerbuka = true">Sending</button>
     </div>
 
-    <Kartu v-if="ind.status !== 'draf' || props.bolehAjukanUlang" judul="Persetujuan">
+    <Kartu v-if="ind.status !== 'draf' || props.bolehAjukanUlang" judul="Persetujuan" keterangan="Pengaju → HSE">
       <TabelPersetujuan :alur="props.alur ?? []" :posisi="props.posisi" />
-      <div class="mt-4 flex flex-wrap gap-2">
-        <template v-if="props.bolehTindak">
-          <button type="button" class="mn-btn mn-btn-sukses" :disabled="tindakan.processing" @click="tindak('setuju')">approve</button>
-          <button type="button" class="mn-btn mn-btn-peringatan" @click="alasanTerbuka = 'dikembalikan'">Kembalikan</button>
-          <button type="button" class="mn-btn mn-btn-garis-bahaya" @click="alasanTerbuka = 'tolak'">reject</button>
-        </template>
+      <div v-if="props.bolehAjukanUlang" class="mt-4 flex flex-wrap gap-2">
         <button v-if="props.bolehAjukanUlang" type="button" class="mn-btn mn-btn-utama" :disabled="kirimForm.processing" @click="ajukanUlang">Re-Submit</button>
       </div>
     </Kartu>
@@ -234,7 +244,7 @@ async function tindak(keadaan: string) {
             <option value="">— pilih —</option>
             <option v-for="c in calon" :key="c.id" :value="c.id">{{ c.nama }}{{ c.noid ? ` — ${c.noid}` : '' }}{{ c.perusahaan ? ` (${c.perusahaan})` : '' }}</option>
           </select>
-          <div v-else class="mn-alert mn-alert-peringatan" style="margin:0">
+          <div v-else class="mn-alert mn-alert-peringatan mn-tanpa-jarak">
             <div>
               Belum ada karyawan yang bisa diajukan induksi.<br>
               <span class="mn-redup">Yang muncul di sini hanya karyawan yang MCU-nya sudah <b>disetujui</b>, hasilnya <b>Fit</b> atau
