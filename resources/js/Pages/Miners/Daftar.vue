@@ -24,6 +24,7 @@ import TabelData from '../../Components/Miners/TabelData.vue';
 import LencanaMasaBerlaku from '../../Components/Miners/LencanaMasaBerlaku.vue';
 import LencanaStatus from '../../Components/Miners/LencanaStatus.vue';
 import TombolIkon from '../../Components/Miners/TombolIkon.vue';
+import SelOrang from '../../Components/Miners/SelOrang.vue';
 import Modal from '../../Components/Miners/Modal.vue';
 import Medan from '../../Components/Miners/Medan.vue';
 import { tglId, URUTAN_ZONA, ZONA, type MedanSaring } from '../../Components/Miners/zona';
@@ -146,7 +147,7 @@ function simpanStatus() {
     <TabelData judul="Daftar Manpower" :jumlah="halaman.total" :kolom="kolom" :baris="halaman.data"
                :nomor-awal="halaman.from ?? 1" :tautan="halaman.links">
       <template #kanan>
-        <button type="button" class="mn-btn mn-btn-gelap" @click="tambah">+ Tambah Manpower</button>
+        <button type="button" class="mn-btn mn-btn-utama" @click="tambah">+ Tambah Manpower</button>
       </template>
 
       <template #sel-noMcu="{ baris: b }">
@@ -154,7 +155,7 @@ function simpanStatus() {
         <span v-else class="mn-redup">—</span>
       </template>
       <template #sel-nama="{ baris: b }">
-        <Link :href="`/miners/${b.id}`" class="mn-tautan" style="color:inherit">{{ b.nama }}</Link>
+        <SelOrang :nama="b.nama" :href="`/miners/${b.id}`" />
       </template>
       <template #sel-hasil="{ nilai }"><span class="mn-redup">{{ nilai || 'Belum Dinilai' }}</span></template>
       <template #sel-berlaku="{ baris: b }"><LencanaMasaBerlaku :tanggal="b.berlaku" :sisa="b.sisa" /></template>

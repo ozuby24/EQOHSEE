@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /**
- * Lencana status pengajuan dan status karyawan — pil kecil Safe Track:
+ * Lencana status pengajuan dan status karyawan — pil lembut bertitik
+ * (kata tetap Safe Track):
  * "open" kuning, "approve" hijau, "reject" merah, "draft" abu; "Aktif"
  * hijau dan "Tidak aktif" abu bagi karyawan.
  *
@@ -36,5 +37,5 @@ const isi = computed(() => PETA[props.status ?? ''] ?? [props.status ?? '—', '
 </script>
 
 <template>
-  <span class="mn-lencana" :class="isi[1]" :title="label ?? undefined">{{ isi[0] }}</span>
+  <span class="mn-lencana mn-titik" :class="isi[1]" :title="label ?? undefined">{{ isi[0] }}</span>
 </template>

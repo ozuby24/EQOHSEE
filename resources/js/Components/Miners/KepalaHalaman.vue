@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
- * Kepala halaman Miners — judul biru tua dan remah roti gaya Safe Track
- * ("Manpower MCU" · Home / History / MCU).
+ * Kepala halaman Miners — remah roti kecil di atas judul tegas, tombol
+ * aksi halaman di kanan (pola kepala halaman SMKP). Istilah dan isi
+ * remahnya tetap Safe Track ("Home / Data MCU / Manpower").
  *
  * Menggantikan kop bersampul EQOHSEE pada halaman Miners: halaman yang
  * memakainya mengirim `kop: false` dari controllernya. Bilah samping dan
@@ -21,8 +22,7 @@ defineProps<{
   <Head :title="judul" />
 
   <div class="mn-kepala">
-    <div>
-      <h1>{{ judul }}</h1>
+    <div class="min-w-0">
       <nav v-if="remah?.length" class="mn-remah" aria-label="Remah roti">
         <template v-for="([label, href], i) in remah" :key="i">
           <i v-if="i > 0" aria-hidden="true">/</i>
@@ -30,9 +30,10 @@ defineProps<{
           <span v-else :class="{ 'mn-remah-kini': i === remah.length - 1 }">{{ label }}</span>
         </template>
       </nav>
+      <h1>{{ judul }}</h1>
     </div>
 
-    <div v-if="$slots.aksi" class="flex flex-wrap gap-2">
+    <div v-if="$slots.aksi" class="mn-kepala-aksi">
       <slot name="aksi" />
     </div>
   </div>
