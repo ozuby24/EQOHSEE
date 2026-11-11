@@ -157,7 +157,7 @@ class RincianDokumenMinersTest extends TestCase
             "/miners/mcu/{$this->mcu()->id}"    => ['Miners/McuRincian', 'mcu'],
             "/miners/induksi/{$induksi->id}"    => ['Miners/InduksiRincian', 'induksi'],
             "/miners/permit/{$permit->id}"      => ['Miners/PermitRincian', 'permit'],
-            "/miners/simper/{$simper->id}"      => ['Miners/Dokumen', 'rincian'],
+            "/miners/simper/{$simper->id}"      => ['Miners/SimperRincian', 'simper'],
         ];
 
         foreach ($alamat as $a => [$komponen, $isi]) {

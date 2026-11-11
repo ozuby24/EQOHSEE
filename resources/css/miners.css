@@ -585,3 +585,6 @@ a.mn-daftar-baris:hover{background:var(--mn-kartu-2);color:var(--mn-judul)}
 .mn-sim-deteksi{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px;border-radius:10px;background:var(--mn-kosong-lembut);border:1px solid var(--mn-garis)}
 .mn-sim-terbaca{color:var(--mn-aman-tinta)}
 @media (max-width:640px){.mn-sim-deteksi{grid-template-columns:1fr}}
+/* Pilihan banyak (Type Unit) sebagai kotak centang berbungkus. */
+.mn-pilih-banyak{display:flex;flex-wrap:wrap;gap:6px 14px;padding:10px 12px;border:1px solid var(--mn-garis);border-radius:10px;max-height:180px;overflow:auto}
+.mn-cek{display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer}

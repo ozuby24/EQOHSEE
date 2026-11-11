@@ -3,7 +3,7 @@
 namespace Tests\Feature\Concerns;
 
 use App\Models\Company;
-use App\Models\Miners\{HasilMcu, Induksi, InduksiOrang, Mcu, McuOrang, Pekerja, Permit, PermitBerkas, Skema};
+use App\Models\Miners\{HasilMcu, Induksi, InduksiOrang, JenisUnit, Kendaraan, Mcu, McuOrang, Pekerja, Permit, PermitBerkas, Simper, SimperUnit, Skema};
 use App\Models\User;
 use App\Support\Miners\MasterMiners;
 use App\Support\Waktu;
@@ -168,5 +168,53 @@ trait SiapanMiners
     protected function lampiranSpdk(Permit $p): void
     {
         PermitBerkas::create(['permit_id' => $p->id, 'jenis' => 'spdk', 'berkas' => 'miners/permit/spdk.pdf', 'catatan' => 'SPDK']);
+    }
+
+    /** PDF kecil berisi teks — untuk uji deteksi masa berlaku SIM. */
+    protected function pdfTeks(string $teks, string $nama = 'sim.pdf'): UploadedFile
+    {
+        $isi = "%PDF-1.4\n1 0 obj << /Length 60 >>\nstream\nBT /F1 12 Tf 10 10 Td ({$teks}) Tj ET\nendstream\nendobj\n%%EOF";
+
+        return UploadedFile::fake()->createWithContent($nama, $isi);
+    }
+
+    /** Isian "Add Manpower Simper" yang sah. @return array<string,mixed> */
+    protected function isianSimper(Permit $p, array $ganti = []): array
+    {
+        return $ganti + [
+            'permit_id'             => $p->id,
+            'no_simpol'             => '1234-5678-000001',
+            'jenis_simpol'          => 'SIM B1 Umum',
+            'simpol_berlaku_sampai' => Waktu::kini()->addYears(2)->toDateString(),
+            'berkas_simpol'         => $this->dokumenPdf('sim.pdf'),
+            'berkas_ddt'            => $this->dokumenPdf('ddt.pdf'),
+            'berkas_permohonan'     => $this->dokumenPdf('mohon.pdf'),
+            'berkas_pengalaman'     => $this->dokumenPdf('alaman.pdf'),
+        ];
+    }
+
+    /** SIMPER terbit berunit satu, tanggal SIM dua tahun lagi. */
+    protected function simperTerbit(?Permit $p = null, string $kendaraan = 'Dump Truck'): Simper
+    {
+        $p ??= $this->permitTerbit();
+
+        $s = Simper::withoutGlobalScopes()->create([
+            'company_id' => $p->company_id, 'iup_id' => $p->iup_id, 'permit_id' => $p->id, 'pekerja_id' => $p->pekerja_id,
+            'tanggal' => Waktu::kini()->startOfDay(), 'status' => 'terbit', 'aktif' => true,
+            'no_simpol' => 'SIM-LAMA-1', 'jenis_simpol' => 'SIM B1 Umum',
+            'simpol_berlaku_sampai' => Waktu::kini()->addYears(2)->startOfDay(), 'simpol_sumber' => 'manual',
+            'berkas_simpol' => 'miners/simper/a.pdf', 'berkas_ddt' => 'miners/simper/b.pdf',
+            'berkas_permohonan' => 'miners/simper/c.pdf', 'berkas_pengalaman' => 'miners/simper/d.pdf',
+            'user_id' => $this->pengaju->id,
+        ]);
+
+        $k = Kendaraan::withoutGlobalScopes()->firstOrCreate(['nama' => $kendaraan], ['kode' => 'DT', 'aktif' => true]);
+        $j = JenisUnit::withoutGlobalScopes()->firstOrCreate(['nama' => 'Volvo 40T'], ['aktif' => true]);
+
+        $u = SimperUnit::withoutGlobalScopes()->create(['simper_id' => $s->id, 'kendaraan_id' => $k->id, 'jenis_unit_id' => $j->id,
+            'authority' => 'F', 'nilai_p2h' => 90, 'nilai_praktek' => 85, 'asal' => 'baru']);
+        $u->jenisUnitBanyak()->sync([$j->id]);
+
+        return $s;
     }
 }
