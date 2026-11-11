@@ -30,7 +30,7 @@ Lihat kepala `tools/tembak-fitur.mjs` untuk pilihan `HANYA`, `MUTU`,
 `App\Support\Menu`, sumber yang sama dengan bilah samping — jadi modul
 baru ikut terpotret tanpa ada yang perlu mengingat menambahkannya.
 
-**Catatan ukuran:** kumpulan ini sekitar 47 MB untuk 188 gambar.
+**Catatan ukuran:** kumpulan ini sekitar 47 MB untuk 184 gambar.
 Menerbitkan ulang sebaiknya MENGGANTI folder ini dalam satu commit, bukan
 menumpuk versi baru di sampingnya — riwayat git menyimpan tiap salinan
 selamanya. Kalau kelak terasa berat, pindahkan folder ini ke git LFS atau
@@ -44,7 +44,7 @@ keluarkan dari repositori.
 
 Dipisahkan dari folder fitur dengan sengaja: yang di sana layar **di
 dalam** aplikasi, yang di sini etalasenya. Keduanya juga berubah pada
-waktu yang berbeda, dan menyatukannya berarti menerbitkan ulang 188
+waktu yang berbeda, dan menyatukannya berarti menerbitkan ulang 184
 gambar hanya karena satu kalimat pada beranda diperbaiki.
 
 ## Isinya
@@ -68,13 +68,13 @@ gambar hanya karena satu kalimat pada beranda diperbaiki.
 | [`lms`](./lms/) | LMS — Learning Center | 7 | Rp 2.500.000 |
 | [`maintenance`](./maintenance/) | Maintenance & Reliability | 4 | Rp 10.500.000 |
 | [`meh`](./meh/) | Mining Engineering Hub | 10 | Rp 11.500.000 |
-| [`miners`](./miners/) | Authority — Kelayakan Kerja | 21 | Rp 2.500.000 |
+| [`miners`](./miners/) | Authority — Kelayakan Kerja | 33 | Rp 2.500.000 |
 | [`operasi`](./operasi/) | Mine Operations & GIS | 4 | Rp 13.500.000 |
 | [`peledakan`](./peledakan/) | Drill & Blast | 5 | Rp 9.500.000 |
 | [`pjp`](./pjp/) | Pemantauan Perusahaan Jasa (PJP) | 7 | Rp 2.500.000 |
-| [`smkp`](./smkp/) | SMKP Audit | 20 | Rp 2.500.000 |
+| [`smkp`](./smkp/) | SMKP Audit | 4 | belum ditetapkan |
 | [`tpkkp`](./tpkkp/) | Safety Maturity Level | 11 | Rp 2.500.000 |
 
-**23 aplikasi · 188 halaman.**
+**23 aplikasi · 184 halaman.**
 Paket menyeluruh dan harga website tambahan ada di
 **Pembelian → Daftar Harga**.
