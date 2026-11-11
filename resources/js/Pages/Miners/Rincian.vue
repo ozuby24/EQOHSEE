@@ -1,28 +1,40 @@
 <script setup lang="ts">
 /**
- * Berkas kelayakan kerja satu orang.
+ * Detail karyawan — `detail_manpower` Safe Track dalam bahasa rupa Miners.
  *
- * DISUSUN MENURUT RANTAINYA — MCU, induksi, Mine Permit, SIMPER,
- * kompetensi — bukan menurut jenis dokumen yang kebetulan paling
- * banyak. Urutan itu yang menjelaskan mengapa kartu seseorang gugur:
- * yang menarik ke bawah hampir selalu dokumen yang lebih awal pada
- * rantainya, dan membacanya dari atas membuat sebabnya terlihat tanpa
- * perlu dijelaskan.
+ * Kepala profil, lalu kartu menurut RANTAINYA — MCU, Induksi, Mine
+ * Permit, SIMPER — bukan menurut jenis dokumen yang kebetulan paling
+ * banyak: yang menggugurkan kartu seseorang hampir selalu dokumen yang
+ * lebih awal pada rantainya. Sesudahnya perpanjangan, berkas, dan
+ * kompetensi. Cetak kartu dan verifikasi publik ditautkan dari baris
+ * Mine Permit / SIMPER yang sudah terbit.
  */
-import { Head, Link } from '@inertiajs/vue3';
+import { Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { propHalaman } from '../../halaman';
-import Lencana from './Lencana.vue';
-import Langkah from './Langkah.vue';
+import KepalaHalaman from '../../Components/Miners/KepalaHalaman.vue';
+import KepalaProfil from '../../Components/Miners/KepalaProfil.vue';
+import Kartu from '../../Components/Miners/Kartu.vue';
+import DaftarDefinisi from '../../Components/Miners/DaftarDefinisi.vue';
+import Butir from '../../Components/Miners/Butir.vue';
+import TabelData from '../../Components/Miners/TabelData.vue';
+import LencanaMasaBerlaku from '../../Components/Miners/LencanaMasaBerlaku.vue';
+import LencanaStatus from '../../Components/Miners/LencanaStatus.vue';
+import ChipBerkas from '../../Components/Miners/ChipBerkas.vue';
+import TombolIkon from '../../Components/Miners/TombolIkon.vue';
+import KeadaanKosong from '../../Components/Miners/KeadaanKosong.vue';
+import { tglId } from '../../Components/Miners/zona';
 
 const props = propHalaman();
 
-const p          = computed<any>(() => props.pekerja ?? {});
-const keadaan    = computed<any>(() => props.keadaan ?? {});
-const mcu        = computed<any[]>(() => (props.mcu ?? []) as any[]);
-const induksi    = computed<any[]>(() => (props.induksi ?? []) as any[]);
-const permit     = computed<any[]>(() => (props.permit ?? []) as any[]);
-const simper     = computed<any[]>(() => (props.simper ?? []) as any[]);
+const p = computed<any>(() => props.pekerja ?? {});
+const keadaan = computed<any>(() => props.keadaan ?? {});
+const mcu = computed<any[]>(() => (props.mcu ?? []) as any[]);
+const induksi = computed<any[]>(() => (props.induksi ?? []) as any[]);
+const permit = computed<any[]>(() => (props.permit ?? []) as any[]);
+const simper = computed<any[]>(() => (props.simper ?? []) as any[]);
+const riwayat = computed<any[]>(() => (props.riwayat ?? []) as any[]);
+const berkas = computed<any[]>(() => (props.berkas ?? []) as any[]);
 const kompetensi = computed<any[]>(() => (props.kompetensi ?? []) as any[]);
 
 const RINGKAS: [string, string][] = [
@@ -33,247 +45,224 @@ const RINGKAS: [string, string][] = [
 ];
 
 const SEBAB: Record<string, string> = {
-  mcu:    'MCU habis lebih dahulu',
-  simpol: 'SIMPOL habis lebih dahulu',
-  permit: 'Mine Permit habis lebih dahulu',
-  simper: 'masa berlaku kartunya sendiri',
+  mcu: 'Kartu mengikuti MCU yang habis lebih dahulu.',
+  simpol: 'Kartu mengikuti SIM kepolisian yang habis lebih dahulu.',
+  permit: 'Kartu mengikuti Mine Permit yang habis lebih dahulu.',
 };
+
+const kolomMcu = [
+  { kunci: 'surat', label: 'No Registrasi' },
+  { kunci: 'tanggal', label: 'Tanggal MCU' },
+  { kunci: 'hasil', label: 'Hasil MCU' },
+  { kunci: 'sampai', label: 'Masa Berlaku' },
+  { kunci: 'status', label: 'Status' },
+  { kunci: 'aksi', label: '#' },
+];
+const kolomInduksi = [
+  { kunci: 'surat', label: 'No Registrasi' },
+  { kunci: 'tanggal', label: 'Tanggal Induksi' },
+  { kunci: 'nilai', label: 'Nilai' },
+  { kunci: 'hasil', label: 'Hasil' },
+  { kunci: 'sampai', label: 'Masa Berlaku' },
+  { kunci: 'aksi', label: '#' },
+];
+const kolomPermit = [
+  { kunci: 'nomor', label: 'No Registrasi' },
+  { kunci: 'tanggal', label: 'Tanggal' },
+  { kunci: 'cakupan', label: 'Cakupan Area' },
+  { kunci: 'efektif', label: 'Masa Berlaku' },
+  { kunci: 'status', label: 'Status' },
+  { kunci: 'aksi', label: '#' },
+];
+const kolomUnit = [
+  { kunci: 'unit', label: 'Unit' },
+  { kunci: 'type', label: 'Type' },
+  { kunci: 'authority', label: 'Authority' },
+  { kunci: 'asal', label: 'Asal' },
+];
+const kolomRiwayat = [
+  { kunci: 'pada', label: 'Tanggal' },
+  { kunci: 'jenis', label: 'Dokumen' },
+  { kunci: 'lama', label: 'Berlaku lama' },
+  { kunci: 'baru', label: 'Berlaku baru' },
+];
+const kolomKompetensi = [
+  { kunci: 'nama', label: 'Kompetensi' },
+  { kunci: 'lembaga', label: 'Lembaga' },
+  { kunci: 'nomor', label: 'Nomor' },
+  { kunci: 'sampai', label: 'Masa Berlaku' },
+];
 </script>
 
 <template>
-  <Head :title="props.judul" />
+  <div>
+    <KepalaHalaman :judul="props.judul" :remah="[['Home', '/miners/dasbor'], ['Manpower', '/miners'], ['Detail', null]]" />
 
-  <div class="space-y-5">
-    <section class="flex flex-wrap items-end justify-between gap-4">
-      <div class="min-w-0">
-        <Link href="/miners" class="text-[11.5px] text-stone-400 hover:underline">← Daftar pekerja</Link>
-        <h2 class="text-xl font-bold text-cam-ink mt-1">{{ p.nama }}</h2>
-        <p class="text-[12.5px] text-stone-500 mt-0.5">
-          {{ p.jabatan || '—' }} · {{ p.departemen || '—' }}
-          <span v-if="p.subkontraktor"> · {{ p.subkontraktor }}</span>
-        </p>
+    <KepalaProfil :judul="p.nama || '—'" :eyebrow="`Manpower · ${p.perusahaan || 'tanpa perusahaan'}`" :foto="p.foto"
+                  :keterangan="[['NIK', p.nik], ['No ID', p.no_induk], ['Jabatan', p.jabatan], ['Departemen', p.departemen]]">
+      <template #lencana>
+        <span class="mn-lencana mn-titik" :class="p.aktif ? 'mn-l-sukses' : 'mn-l-abu'">{{ p.status }}</span>
+        <span v-if="p.dataLama" class="mn-lencana mn-l-terang">Data lama</span>
+      </template>
+    </KepalaProfil>
+
+    <div v-if="!p.aktif && p.nonaktifSejak" class="mn-langkah mn-langkah-tolak">
+      <div>
+        <div class="mn-langkah-label">Tidak aktif sejak {{ tglId(p.nonaktifSejak) }}</div>
+        <div class="mn-langkah-kurang">{{ p.alasanNonaktif || 'Tanpa keterangan.' }}</div>
       </div>
+    </div>
 
-      <Lencana :keadaan="keadaan.terburuk" :label="props.KEADAAN?.[keadaan.terburuk]" :nada="props.NADA" />
-    </section>
-
-    <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      <div v-for="[kode, nama] in RINGKAS" :key="kode"
-           class="rounded-2xl bg-white border border-stone-100 shadow-card p-4">
-        <div class="text-[11px] font-semibold uppercase tracking-wide text-stone-400">{{ nama }}</div>
-        <div class="mt-2">
-          <Lencana :keadaan="keadaan[kode]?.keadaan"
-                   :label="props.KEADAAN?.[keadaan[kode]?.keadaan]"
-                   :nada="props.NADA" :sisa="keadaan[kode]?.sisa" />
-        </div>
-        <div class="text-[11px] text-stone-500 mt-1.5 num">
-          {{ keadaan[kode]?.sampai || 'belum ada tanggal' }}
+    <Kartu judul="Kelayakan saat ini" keterangan="dokumen terbaru tiap tahap">
+      <div class="mn-ringkas-rantai">
+        <div v-for="[k, label] in RINGKAS" :key="k" class="mn-ringkas-tahap">
+          <span class="mn-ringkas-label">{{ label }}</span>
+          <LencanaMasaBerlaku v-if="keadaan[k]?.sampai" :tanggal="keadaan[k].sampai" :sisa="keadaan[k].sisa" />
+          <span v-else class="mn-redup">Belum ada dokumen</span>
         </div>
       </div>
-    </section>
+      <p v-if="keadaan.sebab && SEBAB[keadaan.sebab]" class="mn-status-catatan">{{ SEBAB[keadaan.sebab] }}</p>
+    </Kartu>
 
-    <p v-if="keadaan.sebab" class="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-[12px] text-amber-800">
-      Yang menghentikan kartunya lebih dahulu: <strong>{{ SEBAB[keadaan.sebab] ?? keadaan.sebab }}</strong>.
-      Itulah yang harus diperbarui — memperpanjang kartunya sendiri tidak mengubah apa pun.
-    </p>
+    <Kartu judul="Data Karyawan">
+      <DaftarDefinisi>
+        <Butir label="Nama" :nilai="p.nama" />
+        <Butir label="Perusahaan" :nilai="p.perusahaan" />
+        <Butir label="NIK" :nilai="p.nik" />
+        <Butir label="No ID" :nilai="p.no_induk" />
+        <Butir label="No Registrasi" :nilai="p.no_registrasi" />
+        <Butir label="Tanggal Lahir" :nilai="p.tanggal_lahir ? `${tglId(p.tanggal_lahir)}${p.usia ? ` (${p.usia} tahun)` : ''}` : null" />
+        <Butir label="Golongan Darah" :nilai="p.gol_darah" />
+        <Butir label="Telepon" :nilai="p.telepon" />
+        <Butir label="Telepon Darurat" :nilai="p.telepon_darurat" />
+        <Butir label="Jabatan" :nilai="p.jabatan" />
+        <Butir label="Departemen" :nilai="p.departemen" />
+        <Butir label="Subkontraktor" :nilai="p.subkontraktor" />
+        <Butir label="Lokasi Kerja" :nilai="p.lokasi" />
+        <Butir label="Status Kerja" :nilai="p.status_kerja" />
+        <Butir label="Catatan" :nilai="p.catatan" penuh />
+      </DaftarDefinisi>
+    </Kartu>
 
-    <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
-      <header class="px-5 py-3.5 border-b border-stone-100">
-        <h3 class="text-[13.5px] font-bold text-cam-ink">Identitas</h3>
-      </header>
-      <dl class="grid gap-x-6 gap-y-3 px-5 py-4 text-[12px] sm:grid-cols-2 lg:grid-cols-3">
-        <div><dt class="text-stone-400">NIK</dt><dd class="num text-cam-ink">{{ p.nik || '—' }}</dd></div>
-        <div><dt class="text-stone-400">No. induk</dt><dd class="num text-cam-ink">{{ p.no_induk || '—' }}</dd></div>
-        <div><dt class="text-stone-400">No. registrasi</dt><dd class="num text-cam-ink">{{ p.no_registrasi || '—' }}</dd></div>
-        <div><dt class="text-stone-400">Tanggal lahir</dt><dd class="num text-cam-ink">{{ p.tanggal_lahir || '—' }} <span v-if="p.usia" class="text-stone-400">({{ p.usia }} th)</span></dd></div>
-        <div><dt class="text-stone-400">Golongan darah</dt><dd class="text-cam-ink">{{ p.gol_darah || '—' }}</dd></div>
-        <div><dt class="text-stone-400">Telepon</dt><dd class="num text-cam-ink">{{ p.telepon || '—' }}</dd></div>
-        <div><dt class="text-stone-400">Telepon darurat</dt><dd class="num text-cam-ink">{{ p.telepon_darurat || '—' }}</dd></div>
-        <div><dt class="text-stone-400">Lokasi kerja</dt><dd class="text-cam-ink">{{ p.lokasi || '—' }}</dd></div>
-        <div><dt class="text-stone-400">Status</dt><dd class="text-cam-ink">{{ p.status }} · {{ p.status_kerja || '—' }}</dd></div>
-      </dl>
-    </section>
+    <TabelData judul="MCU" :jumlah="mcu.length" :kolom="kolomMcu" :baris="mcu" kosong="Belum ada MCU untuk karyawan ini.">
+      <template #sel-surat="{ baris: b }">
+        <Link :href="`/miners/mcu/${b.mcu_id}`" class="mn-tautan">{{ b.surat || 'tanpa nomor' }}</Link>
+        <span v-if="!b.aktif" class="mn-lencana mn-l-abu ml-1">tidak dipakai</span>
+      </template>
+      <template #sel-tanggal="{ nilai }">{{ tglId(nilai) }}</template>
+      <template #sel-hasil="{ baris: b }">
+        <span v-if="b.hasil" class="mn-lencana" :class="b.layak ? 'mn-l-sukses' : 'mn-l-bahaya'">{{ b.hasil }}</span>
+        <span v-else class="mn-redup">belum dinilai</span>
+        <span v-if="b.rujukan" class="mn-lencana mn-l-kuning ml-1">{{ b.rujukan }} rujukan</span>
+      </template>
+      <template #sel-sampai="{ baris: b }"><LencanaMasaBerlaku :tanggal="b.sampai" :sisa="b.sisa" /></template>
+      <template #sel-status="{ nilai }"><LencanaStatus :status="nilai" /></template>
+      <template #sel-aksi="{ baris: b }">
+        <TombolIkon ikon="mata" varian="garis" :href="`/miners/mcu/${b.mcu_id}`" :judul="`Buka MCU ${b.surat || ''}`" />
+      </template>
+    </TabelData>
 
-    <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
-      <header class="px-5 py-3.5 border-b border-stone-100">
-        <h3 class="text-[13.5px] font-bold text-cam-ink">
-          MCU <span class="font-normal text-stone-400">| {{ mcu.length }} pemeriksaan</span>
-        </h3>
-      </header>
+    <TabelData judul="Induksi" :jumlah="induksi.length" :kolom="kolomInduksi" :baris="induksi" kosong="Belum ada induksi untuk karyawan ini.">
+      <template #sel-surat="{ baris: b }"><Link :href="`/miners/induksi/${b.induksi_id}`" class="mn-tautan">{{ b.surat || 'tanpa nomor' }}</Link></template>
+      <template #sel-tanggal="{ nilai }">{{ tglId(nilai) }}</template>
+      <template #sel-nilai="{ nilai }"><span class="tabular-nums">{{ nilai ?? '—' }}</span></template>
+      <template #sel-hasil="{ baris: b }"><span class="mn-lencana" :class="b.lulus ? 'mn-l-sukses' : 'mn-l-abu'">{{ b.hasil }}</span></template>
+      <template #sel-sampai="{ baris: b }"><LencanaMasaBerlaku :tanggal="b.sampai" :sisa="b.sisa" /></template>
+      <template #sel-aksi="{ baris: b }">
+        <div class="mn-aksi mn-aksi-kiri">
+          <TombolIkon ikon="mata" varian="garis" :href="`/miners/induksi/${b.induksi_id}`" :judul="`Buka induksi ${b.surat || ''}`" />
+          <TombolIkon v-if="b.verifikasi" ikon="cek" varian="garis" :href="b.verifikasi" luar judul="Halaman verifikasi sertifikat induksi" />
+        </div>
+      </template>
+    </TabelData>
 
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-left text-[11.5px]">
-          <thead>
-            <tr class="text-stone-400 border-b border-stone-200 bg-stone-50/70">
-              <th class="px-4 py-2 font-semibold">Surat</th>
-              <th class="px-4 py-2 font-semibold whitespace-nowrap">Diperiksa</th>
-              <th class="px-4 py-2 font-semibold whitespace-nowrap">Berlaku sampai</th>
-              <th class="px-4 py-2 font-semibold">Hasil</th>
-              <th class="px-4 py-2 font-semibold">Napza</th>
-              <th class="px-4 py-2 font-semibold">Keadaan</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="m in mcu" :key="m.id" class="border-b border-stone-100">
-              <td class="px-4 py-2.5 num text-stone-500">{{ m.surat || '—' }}</td>
-              <td class="px-4 py-2.5 num">{{ m.tanggal || '—' }}</td>
-              <td class="px-4 py-2.5 num">{{ m.sampai || '—' }}</td>
-              <td class="px-4 py-2.5">
-                {{ m.hasil || '—' }}
-                <span v-if="m.hasil && !m.layak" class="text-red-600">· tidak layak</span>
-              </td>
-              <td class="px-4 py-2.5">{{ m.napza || '—' }}</td>
-              <td class="px-4 py-2.5">
-                <Lencana :keadaan="m.keadaan" :label="props.KEADAAN?.[m.keadaan]" :nada="props.NADA" :sisa="m.sisa" />
-              </td>
-            </tr>
-            <tr v-if="!mcu.length"><td colspan="6" class="px-4 py-8 text-center text-stone-400">Belum ada MCU.</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <TabelData judul="Mine Permit" :jumlah="permit.length" :kolom="kolomPermit" :baris="permit" kosong="Belum ada Mine Permit untuk karyawan ini.">
+      <template #sel-nomor="{ baris: b }">
+        <Link :href="`/miners/permit/${b.id}`" class="mn-tautan">{{ b.nomor || 'tanpa nomor' }}</Link>
+        <span v-if="b.dataLama" class="mn-lencana mn-l-terang ml-1">data lama</span>
+        <span v-if="!b.aktif" class="mn-lencana mn-l-abu ml-1">non-aktif</span>
+      </template>
+      <template #sel-tanggal="{ nilai }">{{ tglId(nilai) }}</template>
+      <template #sel-efektif="{ baris: b }"><LencanaMasaBerlaku :tanggal="b.efektif" :sisa="b.sisa" :sumber="b.sumber" /></template>
+      <template #sel-status="{ nilai }"><LencanaStatus :status="nilai" /></template>
+      <template #sel-aksi="{ baris: b }">
+        <div class="mn-aksi mn-aksi-kiri">
+          <TombolIkon ikon="mata" varian="garis" :href="`/miners/permit/${b.id}`" :judul="`Buka Mine Permit ${b.nomor || ''}`" />
+          <TombolIkon v-if="b.cetak" ikon="cetak" varian="garis" :href="b.cetak" luar :judul="`Cetak kartu ${b.nomor || ''}`" />
+          <TombolIkon v-if="b.verifikasi" ikon="cek" varian="garis" :href="b.verifikasi" luar judul="Halaman verifikasi kartu" />
+        </div>
+      </template>
+    </TabelData>
 
-    <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
-      <header class="px-5 py-3.5 border-b border-stone-100">
-        <h3 class="text-[13.5px] font-bold text-cam-ink">
-          Induksi <span class="font-normal text-stone-400">| ambang lulus {{ props.NILAI_LULUS }}</span>
-        </h3>
-      </header>
-
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-left text-[11.5px]">
-          <thead>
-            <tr class="text-stone-400 border-b border-stone-200 bg-stone-50/70">
-              <th class="px-4 py-2 font-semibold">Surat</th>
-              <th class="px-4 py-2 font-semibold whitespace-nowrap">Tanggal</th>
-              <th class="px-4 py-2 font-semibold text-right">Nilai</th>
-              <th class="px-4 py-2 font-semibold text-right">Percobaan</th>
-              <th class="px-4 py-2 font-semibold whitespace-nowrap">Berlaku sampai</th>
-              <th class="px-4 py-2 font-semibold">Keadaan</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="i in induksi" :key="i.id" class="border-b border-stone-100">
-              <td class="px-4 py-2.5 num text-stone-500">{{ i.surat || '—' }}</td>
-              <td class="px-4 py-2.5 num">{{ i.tanggal || '—' }}</td>
-              <td class="px-4 py-2.5 num text-right" :class="i.lulus ? '' : 'text-red-600 font-semibold'">
-                {{ i.nilai ?? '—' }}
-              </td>
-              <td class="px-4 py-2.5 num text-right">{{ i.percobaan }}</td>
-              <td class="px-4 py-2.5 num">{{ i.sampai || '—' }}</td>
-              <td class="px-4 py-2.5">
-                <Lencana :keadaan="i.keadaan" :label="props.KEADAAN?.[i.keadaan]" :nada="props.NADA" />
-              </td>
-            </tr>
-            <tr v-if="!induksi.length"><td colspan="6" class="px-4 py-8 text-center text-stone-400">Belum ada induksi.</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
-      <header class="px-5 py-3.5 border-b border-stone-100">
-        <h3 class="text-[13.5px] font-bold text-cam-ink">Mine Permit</h3>
-      </header>
-
-      <ul class="divide-y divide-stone-100">
-        <li v-for="k in permit" :key="k.id" class="px-5 py-4 space-y-2">
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="min-w-0">
-              <span class="num font-bold text-cam-ink">{{ k.nomor || 'tanpa nomor' }}</span>
-              <span class="text-[11.5px] text-stone-500"> · {{ k.tipe || '—' }} · {{ k.cakupan || '—' }}</span>
-            </div>
-            <Lencana :keadaan="k.keadaan" :label="props.KEADAAN?.[k.keadaan]" :nada="props.NADA" :sisa="k.sisa" />
+    <Kartu judul="SIMPER" :keterangan="`${simper.length} dokumen`">
+      <KeadaanKosong v-if="!simper.length" teks="Belum ada SIMPER. SIMPER dibuat dari Mine Permit yang sudah terbit." />
+      <section v-for="s in simper" :key="s.id" class="mn-simper-blok">
+        <header class="mn-simper-kepala">
+          <div>
+            <Link :href="`/miners/simper/${s.id}`" class="mn-tautan font-semibold">{{ s.nomor || 'tanpa nomor' }}</Link>
+            <span class="mn-redup"> · {{ s.jenisSim || 'jenis SIM belum diisi' }}{{ s.noSim ? ` · ${s.noSim}` : '' }}</span>
           </div>
+          <div class="mn-aksi mn-aksi-kiri">
+            <LencanaStatus :status="s.status" />
+            <span v-if="!s.aktif" class="mn-lencana mn-l-abu">non-aktif</span>
+            <LencanaMasaBerlaku :tanggal="s.efektif" :sisa="s.sisa" :sumber="s.sumber" />
+            <TombolIkon ikon="mata" varian="garis" :href="`/miners/simper/${s.id}`" :judul="`Buka SIMPER ${s.nomor || ''}`" />
+            <TombolIkon v-if="s.verifikasi" ikon="cek" varian="garis" :href="s.verifikasi" luar judul="Halaman verifikasi SIMPER" />
+          </div>
+        </header>
+        <div class="mn-gulir">
+          <table class="mn-tabel">
+            <thead><tr><th v-for="k in kolomUnit" :key="k.kunci">{{ k.label }}</th></tr></thead>
+            <tbody>
+              <tr v-for="u in s.unit" :key="u.id">
+                <td>{{ u.unit || '—' }}</td><td>{{ u.type || '—' }}</td>
+                <td><span class="mn-lencana mn-l-terang">{{ u.authority || '—' }}</span></td><td>{{ u.asal || '—' }}</td>
+              </tr>
+              <tr v-if="!s.unit.length"><td :colspan="kolomUnit.length" class="mn-kosong">Belum ada unit pada SIMPER ini.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <ul v-if="s.ajuan.length" class="mn-ajuan-daftar" aria-label="Pengajuan lanjutan">
+          <li v-for="a in s.ajuan" :key="a.id">
+            <Link :href="`/miners/simper-lanjutan/${a.id}`" class="mn-tautan">{{ a.jenis }} {{ a.nomor || '' }}</Link>
+            <span class="mn-redup">{{ tglId(a.tanggal) }}</span>
+            <LencanaStatus :status="a.status" />
+          </li>
+        </ul>
+      </section>
+    </Kartu>
 
-          <p class="text-[11.5px] text-stone-500">
-            Terbit {{ k.tanggal || '—' }} · berlaku sampai <span class="num">{{ k.sampai || '—' }}</span>
-            <span v-if="k.efektif && k.efektif !== k.sampai" class="text-amber-700">
-              — efektif habis <span class="num">{{ k.efektif }}</span>, karena MCU-nya lebih dahulu
-            </span>
-          </p>
+    <Kartu judul="Perpanjangan" keterangan="Mine Permit dan SIMPER">
+      <ul v-if="permit.some((x) => x.perpanjangan.length)" class="mn-ajuan-daftar mb-4" aria-label="Pengajuan perpanjangan Mine Permit">
+        <template v-for="x in permit" :key="x.id">
+          <li v-for="pp in x.perpanjangan" :key="pp.id">
+            <Link :href="`/miners/perpanjangan-permit/${pp.id}`" class="mn-tautan">Perpanjangan {{ pp.nomor || x.nomor }}</Link>
+            <span class="mn-redup">{{ tglId(pp.tanggal) }}{{ pp.berlakuBaru ? ` → berlaku s/d ${tglId(pp.berlakuBaru)}` : '' }}</span>
+            <LencanaStatus :status="pp.status" />
+          </li>
+        </template>
+      </ul>
+      <TabelData v-if="riwayat.length" judul="Riwayat masa berlaku" :jumlah="riwayat.length" :kolom="kolomRiwayat" :baris="riwayat">
+        <template #sel-pada="{ nilai }">{{ tglId(nilai) }}</template>
+        <template #sel-lama="{ nilai }">{{ tglId(nilai) }}</template>
+        <template #sel-baru="{ nilai }">{{ tglId(nilai) }}</template>
+      </TabelData>
+      <KeadaanKosong v-if="!riwayat.length && !permit.some((x) => x.perpanjangan.length)"
+                     teks="Belum ada perpanjangan. Ajukan dari menu Perpanjangan Permit atau Perpanjangan SIMPER bila masa berlakunya mendekati habis." />
+    </Kartu>
 
-          <Langkah :alur="k.alur" />
-        </li>
-
-        <li v-if="!permit.length" class="px-5 py-8 text-center text-[12px] text-stone-400">
-          Belum ada Mine Permit.
+    <Kartu judul="Berkas" :keterangan="`${berkas.length} berkas`">
+      <KeadaanKosong v-if="!berkas.length" teks="Belum ada berkas terunggah untuk karyawan ini." />
+      <ul v-else class="mn-berkas-daftar">
+        <li v-for="(b, i) in berkas" :key="i">
+          <span class="mn-redup">{{ b.kelompok }}</span>
+          <ChipBerkas :href="b.url" :nama="b.label" :aksi="b.url ? 'Lihat' : 'Terkunci'" />
         </li>
       </ul>
-    </section>
+    </Kartu>
 
-    <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
-      <header class="px-5 py-3.5 border-b border-stone-100">
-        <h3 class="text-[13.5px] font-bold text-cam-ink">SIMPER</h3>
-      </header>
-
-      <ul class="divide-y divide-stone-100">
-        <li v-for="s in simper" :key="s.id" class="px-5 py-4 space-y-2">
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="min-w-0">
-              <span class="num font-bold text-cam-ink">{{ s.nomor || 'tanpa nomor' }}</span>
-              <span class="text-[11.5px] text-stone-500">
-                · kelas {{ s.kelas }} · SIM {{ s.simpol || '—' }}
-              </span>
-            </div>
-            <Lencana :keadaan="s.keadaan" :label="props.KEADAAN?.[s.keadaan]" :nada="props.NADA" :sisa="s.sisa" />
-          </div>
-
-          <p class="text-[11.5px] text-stone-500">
-            Berlaku sampai <span class="num">{{ s.efektif || '—' }}</span>
-            <span v-if="s.sebab"> — yang menghentikannya: <strong>{{ SEBAB[s.sebab] ?? s.sebab }}</strong></span>
-          </p>
-
-          <ul v-if="s.unit?.length" class="flex flex-wrap gap-2">
-            <li v-for="u in s.unit" :key="u.id"
-                class="rounded-lg bg-stone-50 border border-stone-200 px-2.5 py-1 text-[11px]">
-              <span class="font-semibold text-cam-ink">{{ u.unit || u.golongan || '—' }}</span>
-              <span class="text-stone-500"> · {{ u.kewenangan || '—' }}</span>
-              <span v-if="!u.lulus" class="text-red-600"> · nilai kurang</span>
-            </li>
-          </ul>
-
-          <Langkah :alur="s.alur" />
-        </li>
-
-        <li v-if="!simper.length" class="px-5 py-8 text-center text-[12px] text-stone-400">
-          Belum ada SIMPER. Pemegang Mine Permit tanpa SIMPER berkartu putih — tidak mengendarai unit.
-        </li>
-      </ul>
-    </section>
-
-    <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
-      <header class="px-5 py-3.5 border-b border-stone-100">
-        <h3 class="text-[13.5px] font-bold text-cam-ink">Sertifikat kompetensi</h3>
-      </header>
-
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-left text-[11.5px]">
-          <thead>
-            <tr class="text-stone-400 border-b border-stone-200 bg-stone-50/70">
-              <th class="px-4 py-2 font-semibold">Sertifikat</th>
-              <th class="px-4 py-2 font-semibold">Lembaga</th>
-              <th class="px-4 py-2 font-semibold whitespace-nowrap">Nomor</th>
-              <th class="px-4 py-2 font-semibold whitespace-nowrap">Berlaku sampai</th>
-              <th class="px-4 py-2 font-semibold">Keadaan</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="k in kompetensi" :key="k.id" class="border-b border-stone-100">
-              <td class="px-4 py-2.5 font-semibold text-cam-ink">{{ k.nama }}</td>
-              <td class="px-4 py-2.5 text-stone-600">{{ k.lembaga || '—' }}</td>
-              <td class="px-4 py-2.5 num text-stone-500">{{ k.nomor || '—' }}</td>
-              <td class="px-4 py-2.5 num">{{ k.sampai || 'tanpa batas' }}</td>
-              <td class="px-4 py-2.5">
-                <Lencana :keadaan="k.keadaan" :label="props.KEADAAN?.[k.keadaan]" :nada="props.NADA" :sisa="k.sisa" />
-              </td>
-            </tr>
-            <tr v-if="!kompetensi.length">
-              <td colspan="5" class="px-4 py-8 text-center text-stone-400">Belum ada sertifikat kompetensi.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <TabelData v-if="kompetensi.length" judul="Kompetensi" :jumlah="kompetensi.length" :kolom="kolomKompetensi" :baris="kompetensi">
+      <template #sel-sampai="{ baris: b }"><LencanaMasaBerlaku :tanggal="b.sampai" :sisa="b.sisa" /></template>
+    </TabelData>
   </div>
 </template>

@@ -84,6 +84,37 @@ final class AksesMiners
         return $q->get();
     }
 
+    /**
+     * Boleh membuka halaman rincian seorang pekerja.
+     *
+     * Admin dan HSE perusahaan IUP: seluruh pekerja dalam jangkauannya
+     * (lingkup perusahaan dijaga global scope). Pengguna biasa: hanya
+     * data miliknya — pekerja yang ia daftarkan, atau yang MCU, Mine
+     * Permit, atau SIMPER-nya ia ajukan (register "Saya" Safe Track) —
+     * serta penyetuju yang ditugasi pada salah satu dokumennya.
+     */
+    public static function lihatPekerja(\App\Models\Miners\Pekerja $p, ?User $u): bool
+    {
+        if (! $u) return false;
+        if (self::kelola($u)) return true;
+        $id = (int) $u->getKey();
+        if ((int) $p->user_id === $id) return true;
+
+        $mcu    = \App\Models\Miners\McuOrang::withoutGlobalScopes()->where('pekerja_id', $p->id)->pluck('mcu_id');
+        $permit = \App\Models\Miners\Permit::withoutGlobalScopes()->where('pekerja_id', $p->id)->get(['id', 'user_id']);
+        $simper = \App\Models\Miners\Simper::withoutGlobalScopes()->where('pekerja_id', $p->id)->get(['id', 'user_id']);
+
+        if ($permit->contains('user_id', $id) || $simper->contains('user_id', $id)) return true;
+        if (\App\Models\Miners\Mcu::withoutGlobalScopes()->whereIn('id', $mcu)->where('user_id', $id)->exists()) return true;
+
+        return \App\Models\Miners\Alur::query()->where('ditugaskan_user_id', $id)
+            ->where(fn ($q) => $q
+                ->where(fn ($w) => $w->where('dokumen', 'mcu')->whereIn('dokumen_id', $mcu))
+                ->orWhere(fn ($w) => $w->where('dokumen', 'permit')->whereIn('dokumen_id', $permit->pluck('id')))
+                ->orWhere(fn ($w) => $w->where('dokumen', 'simper')->whereIn('dokumen_id', $simper->pluck('id'))))
+            ->exists();
+    }
+
     /** Hentikan permintaan dengan 403 bila syaratnya tidak terpenuhi. */
     public static function tegakkan(bool $boleh, string $pesan = 'Anda tidak berwenang mengubah berkas ini.'): void
     {

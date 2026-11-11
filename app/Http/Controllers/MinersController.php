@@ -7,7 +7,8 @@ use App\Models\Miners\{Alur, Blok, Departemen, HasilMcu, Induksi, InduksiOrang, 
     JenisUnit, KategoriPermit, Kendaraan, Kompetensi, Mcu, McuOrang, Pekerja, Permit,
     Pjo, Simper, SimperAjuan, Subkontraktor, TipePermit};
 use App\Models\KompetensiJenis;
-use App\Support\Miners\{Acuan, AksesMiners, Jalur, Keadaan, Laporan, MonitoringMiners, RincianDokumen, TugasMiners, Zona};
+use App\Support\Berkas;
+use App\Support\Miners\{Acuan, AksesMiners, Jalur, Keadaan, Laporan, MonitoringMiners, RincianDokumen, TugasMiners, Verifikasi, Zona};
 use App\Support\Perusahaan;
 use App\Support\Waktu;
 use Illuminate\Http\Request;
@@ -332,23 +333,58 @@ class MinersController extends Controller
         return $q->get(['id', 'name'])->map(fn ($c) => ['nilai' => $c->id, 'label' => $c->name])->all();
     }
 
-    public function show(Pekerja $pekerja)
+    /**
+     * Detail karyawan — `detail_manpower` Safe Track dalam bahasa rupa
+     * baru: kepala profil, lalu kartu per tahap rantainya (MCU → Induksi
+     * → Mine Permit → SIMPER), perpanjangan, berkas, dan tautan cetak
+     * kartu / verifikasi. Pengguna biasa hanya membuka data miliknya.
+     */
+    public function show(Request $r, Pekerja $pekerja)
     {
+        $u = $r->user();
+        AksesMiners::tegakkan(AksesMiners::lihatPekerja($pekerja, $u), 'Anda hanya dapat membuka data karyawan yang Anda ajukan.');
+
         $pekerja->load([
             'departemen', 'jabatan', 'subkontraktor', 'blok', 'subBlok', 'company',
             'mcu.hasil', 'mcu.mcu', 'mcu.rujukan',
             'induksi.induksi',
-            'permit.tipe', 'permit.kategori', 'permit.mcuOrang', 'permit.berkas', 'permit.alur', 'permit.perpanjanganBerjalan',
-            'simper.unit.kendaraan', 'simper.unit.jenisUnit', 'simper.permit.mcuOrang', 'simper.permit.perpanjanganBerjalan',
-            'simper.ajuan.unit', 'simper.alur',
+            'permit.mcuOrang', 'permit.berkas', 'permit.alur', 'permit.perpanjanganBerjalan', 'permit.perpanjangan',
+            'simper.unit.kendaraan', 'simper.unit.jenisUnit', 'simper.ajuan',
         ]);
 
         $kompetensi = Kompetensi::query()->where('pekerja_id', $pekerja->id)
             ->with('jenis')->orderByDesc('berlaku_sampai')->get();
 
+        $riwayat = \App\Models\Miners\RiwayatPerpanjangan::query()
+            ->where(fn ($q) => $q
+                ->where(fn ($w) => $w->where('jenis', 'permit')->whereIn('dokumen_id', $pekerja->permit->pluck('id')))
+                ->orWhere(fn ($w) => $w->where('jenis', 'simper')->whereIn('dokumen_id', $pekerja->simper->pluck('id'))))
+            ->orderByDesc('created_at')->get();
+
+        $permitAktif = $pekerja->permit->first(fn (Permit $p) => in_array($p->status, ['terbit', 'kedaluwarsa'], true) && $p->aktif);
+        $kelola = AksesMiners::kelola($u);
+
+        $berkas = [];
+        foreach ($pekerja->mcu as $m) {
+            foreach (['mnh' => 'Hasil MCU', 'mnk' => 'Rekomendasi MCU', 'mnz' => 'Hasil NAPZA'] as $j => $l) {
+                $berkas[] = ['label' => $l.' '.($m->mcu?->no_registrasi ?? ''), 'kelompok' => 'MCU'] + Berkas::lampiran($u, $m, $j);
+            }
+        }
+        foreach ($pekerja->induksi as $i) {
+            $berkas[] = ['label' => 'Sertifikat induksi '.($i->induksi?->no_registrasi ?? ''), 'kelompok' => 'Induksi'] + Berkas::lampiran($u, $i, 'mns');
+        }
+        foreach ($pekerja->permit as $p) {
+            foreach (['mnt' => 'KTP', 'mnq' => 'Permohonan Mine Permit'] as $j => $l) {
+                $berkas[] = ['label' => $l.' '.$p->no_registrasi, 'kelompok' => 'Mine Permit'] + Berkas::lampiran($u, $p, $j);
+            }
+        }
+        foreach ($pekerja->simper as $sp) {
+            $berkas[] = ['label' => 'Berkas SIM '.$sp->no_simper, 'kelompok' => 'SIMPER'] + Berkas::lampiran($u, $sp, 'mnp');
+        }
+
         return Inertia::render('Miners/Rincian', [
-            'judul'    => $pekerja->nama,
-            'subjudul' => 'Berkas kelayakan kerja — MCU, induksi, Mine Permit, SIMPER, kompetensi.',
+            'judul' => $pekerja->nama,
+            'kop'   => false,
 
             'pekerja' => [
                 'id'            => $pekerja->id,
@@ -365,47 +401,97 @@ class MinersController extends Controller
                 'jabatan'       => $pekerja->jabatan?->nama,
                 'subkontraktor' => $pekerja->subkontraktor?->nama,
                 'lokasi'        => trim(($pekerja->blok?->nama ?? '').' '.($pekerja->subBlok?->nama ?? '')),
-                'status'        => $pekerja->status,
-                'status_kerja'  => $pekerja->status_kerja,
+                'aktif'         => $pekerja->aktif(),
+                'status'        => Pekerja::STATUS[$pekerja->status] ?? $pekerja->status,
+                'status_kerja'  => Pekerja::STATUS_KERJA[$pekerja->status_kerja ?? ''] ?? $pekerja->status_kerja,
                 'perusahaan'    => $pekerja->company?->name,
                 'catatan'       => $pekerja->catatan,
+                'nonaktifSejak' => $pekerja->tanggal_nonaktif?->toDateString(),
+                'alasanNonaktif'=> $pekerja->alasan_nonaktif,
+                'dataLama'      => $pekerja->asal === \App\Support\Miners\DataLama::ASAL,
+                'foto'          => $permitAktif ? (Berkas::lampiran($u, $permitAktif, 'mnf')['url'] ?? null) : null,
             ],
 
             'keadaan' => $this->keadaanOrang($pekerja),
 
             'mcu' => $pekerja->mcu->map(fn (McuOrang $m) => [
                 'id'       => $m->id,
+                'mcu_id'   => $m->mcu_id,
                 'surat'    => $m->mcu?->no_registrasi,
                 'tanggal'  => $m->tanggal_periksa?->toDateString(),
                 'sampai'   => $m->berlaku_sampai?->toDateString(),
+                'sisa'     => Zona::sisa($m->berlaku_sampai),
                 'hasil'    => $m->hasil?->nama,
                 'layak'    => $m->layak(),
-                'napza'    => $m->hasil_napza,
-                'sisa'     => $m->sisaHari(),
-                'keadaan'  => Keadaan::mcu($m),
-                'rujukan'  => $m->rujukan->map(fn ($r) => [
-                    'id'        => $r->id,
-                    'tanggal'   => $r->tanggal_surat?->toDateString(),
-                    'dokter'    => $r->dokter,
-                    'poliklinik'=> $r->poliklinik,
-                    'keterangan'=> $r->keterangan,
-                ]),
-            ]),
+                'aktif'    => (bool) $m->aktif,
+                'status'   => $m->mcu?->status,
+                'rujukan'  => $m->rujukan->count(),
+            ])->values(),
 
             'induksi' => $pekerja->induksi->map(fn (InduksiOrang $i) => [
                 'id'        => $i->id,
+                'induksi_id'=> $i->induksi_id,
                 'surat'     => $i->induksi?->no_registrasi,
                 'tanggal'   => $i->tanggal_induksi?->toDateString(),
                 'sampai'    => $i->berlaku_sampai?->toDateString(),
+                'sisa'      => Zona::sisa($i->berlaku_sampai),
                 'nilai'     => $i->nilai,
-                'percobaan' => $i->percobaan,
-                'status'    => $i->status,
-                'lulus'     => $i->lulus(),
-                'keadaan'   => Keadaan::induksi($i),
-            ]),
+                'hasil'     => InduksiOrang::STATUS[$i->status] ?? $i->status,
+                'lulus'     => $i->status === 'lulus',
+                'verifikasi'=> $i->status === 'lulus' ? Verifikasi::alamat(Verifikasi::kode('ID', $i->id)) : null,
+            ])->values(),
 
-            'permit' => $pekerja->permit->map(fn (Permit $p) => $this->barisPermit($p)),
-            'simper' => $pekerja->simper->map(fn (Simper $s) => $this->barisSimper($s)),
+            'permit' => $pekerja->permit->map(fn (Permit $p) => [
+                'id'        => $p->id,
+                'nomor'     => $p->no_registrasi,
+                'tanggal'   => $p->tanggal?->toDateString(),
+                'jenis'     => $p->jenis_kartu,
+                'cakupan'   => Permit::CAKUPAN[$p->cakupan_area]['label'] ?? $p->cakupan_area,
+                'status'    => $p->status,
+                'aktif'     => (bool) $p->aktif,
+                'efektif'   => $p->habisEfektif()?->toDateString(),
+                'sisa'      => Zona::sisa($p->habisEfektif()),
+                'sumber'    => Permit::SUMBER[$p->sumber_berlaku ?? 'mcu'] ?? null,
+                'dataLama'  => $p->asal === \App\Support\Miners\DataLama::ASAL,
+                'cetak'     => $kelola && in_array($p->status, ['terbit', 'kedaluwarsa'], true) ? route('miners.kartu.cetak', $p->id) : null,
+                'verifikasi'=> in_array($p->status, ['terbit', 'kedaluwarsa'], true) ? Verifikasi::alamat(Verifikasi::kode('MP', $p->id)) : null,
+                'perpanjangan' => $p->perpanjangan->sortByDesc('tanggal')->map(fn ($x) => [
+                    'id' => $x->id, 'nomor' => $x->no_registrasi, 'tanggal' => $x->tanggal?->toDateString(),
+                    'berlakuBaru' => $x->berlaku_baru?->toDateString(), 'status' => $x->status,
+                ])->values(),
+            ])->values(),
+
+            'simper' => $pekerja->simper->map(fn (Simper $s) => [
+                'id'        => $s->id,
+                'nomor'     => $s->no_simper,
+                'tanggal'   => $s->tanggal?->toDateString(),
+                'jenisSim'  => $s->jenis_simpol,
+                'noSim'     => $s->no_simpol,
+                'status'    => $s->status,
+                'aktif'     => (bool) $s->aktif,
+                'efektif'   => $s->habisEfektif()?->toDateString(),
+                'sisa'      => Zona::sisa($s->habisEfektif()),
+                'sumber'    => Simper::SUMBER_SIM[$s->simpol_sumber ?? ''] ?? null,
+                'verifikasi'=> $s->status === 'terbit' ? Verifikasi::alamat(Verifikasi::kode('SP', $s->id)) : null,
+                /* Unit yang tercetak di kartu — termasuk unit penambahan
+                   dan upgrade yang sudah disetujui (asal-nya tercatat). */
+                'unit' => $s->unit->map(fn ($x) => [
+                    'id' => $x->id, 'unit' => $x->kendaraan?->nama, 'type' => $x->jenisUnit?->nama,
+                    'authority' => $x->authority, 'asal' => \App\Models\Miners\SimperUnit::ASAL[$x->asal] ?? $x->asal,
+                ])->values(),
+                'ajuan' => $s->ajuan->sortByDesc('tanggal')->map(fn (SimperAjuan $a) => [
+                    'id' => $a->id, 'jenis' => SimperAjuan::JENIS[$a->jenis] ?? $a->jenis, 'nomor' => $a->no_registrasi,
+                    'tanggal' => $a->tanggal?->toDateString(), 'status' => $a->status,
+                ])->values(),
+            ])->values(),
+
+            'riwayat' => $riwayat->map(fn ($x) => [
+                'id' => $x->id, 'jenis' => $x->jenis === 'permit' ? 'Mine Permit' : 'SIMPER',
+                'pada' => $x->created_at ? Waktu::lokal($x->created_at)->toDateString() : null,
+                'lama' => $x->berlaku_lama?->toDateString(), 'baru' => $x->berlaku_baru?->toDateString(),
+            ])->values(),
+
+            'berkas' => array_values(array_filter($berkas, fn ($b) => $b['ada'])),
 
             'kompetensi' => $kompetensi->map(fn (Kompetensi $k) => [
                 'id'      => $k->id,
@@ -415,12 +501,9 @@ class MinersController extends Controller
                 'terbit'  => $k->tanggal_terbit?->toDateString(),
                 'sampai'  => $k->berlaku_sampai?->toDateString(),
                 'sisa'    => $k->sisaHari(),
-                'keadaan' => Keadaan::kompetensi($k),
-            ]),
+            ])->values(),
 
-            'KEADAAN' => Keadaan::LABEL,
-            'NADA'    => Keadaan::NADA,
-            'NILAI_LULUS' => InduksiOrang::NILAI_LULUS,
+            'kelola' => $kelola,
         ]);
     }
 
