@@ -54,6 +54,9 @@ class SimperAjuan extends Model
      */
     public const HARI_BOLEH_PERPANJANG = Acuan::MASA['buka_perpanjangan_hari'];
 
+    /** Status yang masih berjalan (belum selesai/ditolak). */
+    public const BERJALAN = ['draf', 'diajukan', 'diperiksa', 'ohse', 'ktt'];
+
     protected $table = 'mnr_simper_ajuan';
 
     protected $guarded = ['id'];

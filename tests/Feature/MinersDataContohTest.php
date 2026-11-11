@@ -124,7 +124,9 @@ class MinersDataContohTest extends TestCase
             .'sudah lebih pendek lagi akan selalu kalah, sehingga aturannya tidak pernah terlihat.',
         );
 
-        $this->assertContains('permit', $sebab->all());
+        /* Safe Track: masa berlaku SIMPER = tanggal SIM-nya; Mine Permit
+           tidak lagi ikut memendekkannya. */
+        $this->assertNotContains('permit', $sebab->all());
     }
 
     #[Test]

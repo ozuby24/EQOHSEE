@@ -43,7 +43,24 @@ class RiwayatPerpanjangan extends Model
         'mcu'     => 'Masa berlaku MCU',
         'tgl_mcu' => 'Tanggal MCU',
         'cakupan' => 'Cakupan area',
+        'simpol'  => 'Nomor SIM Pol',
     ];
+
+    /** Keadaan SIMPER yang dicatat sebelum/sesudah perpanjangan — Riwayat::keadaanSimper Safe Track. */
+    public static function keadaanSimper(?Simper $s): array
+    {
+        if (! $s) return [];
+
+        $mcu = $s->permit?->mcuOrang;
+
+        return array_filter([
+            'berlaku' => (string) $s->habisEfektif()?->toDateString(),
+            'noregis' => (string) $s->no_simper,
+            'simpol'  => (string) $s->no_simpol,
+            'mcu'     => (string) $mcu?->berlaku_sampai?->toDateString(),
+            'tgl_mcu' => (string) $mcu?->tanggal_periksa?->toDateString(),
+        ], fn ($v) => trim($v) !== '');
+    }
 
     /**
      * Keadaan sebuah Mine Permit yang layak dicatat — Riwayat::keadaanPermit.

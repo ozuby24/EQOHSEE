@@ -71,7 +71,9 @@ final class Keadaan
         return [
             'mcu', 'induksi.induksi',
             'permit.mcuOrang', 'permit.perpanjanganBerjalan',
-            'simper.permit.mcuOrang', 'simper.permit.perpanjanganBerjalan',
+            /* Masa berlaku SIMPER kini tanggal SIM-nya sendiri — tidak
+               lagi membaca permit dasarnya. */
+            'simper',
         ];
     }
 
@@ -176,6 +178,7 @@ final class Keadaan
     {
         if ($s === null) return self::BELUM;
         if ($s->status !== 'terbit') return self::BELUM;
+        if (! $s->aktif) return self::HABIS;
 
         return self::dariTanggal($s->habisEfektif(), 30, $pada);
     }

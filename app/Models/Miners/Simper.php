@@ -69,6 +69,24 @@ class Simper extends Model
 
     protected $attributes = ['status' => 'draf', 'aktif' => true];
 
+    /**
+     * Jenis SIM — pilihan `jenis_sim` Safe Track, termasuk SIO bagi yang
+     * tidak memegang SIM kepolisian. Nilai lama ('A', 'B1', …) tetap sah.
+     */
+    public const JENIS_SIM = ['SIM A', 'SIM B1', 'SIM B1 Umum', 'SIM B2 Umum', 'SIO sertifikat/Kompetensi'];
+
+    public const SUMBER_SIM = ['auto' => 'terbaca otomatis', 'manual' => 'diisi manual', 'perpanjangan' => 'perpanjangan'];
+
+    protected static function booted(): void
+    {
+        /* Nomor `SIMPER-00{id}` Safe Track, bila tidak diisi. */
+        static::created(function (self $s) {
+            if (blank($s->no_simper)) {
+                $s->forceFill(['no_simper' => 'SIMPER-00'.$s->getKey()])->saveQuietly();
+            }
+        });
+    }
+
     protected function casts(): array
     {
         return [
@@ -105,33 +123,22 @@ class Simper extends Model
     /* ═══════════ masa berlaku ═══════════ */
 
     /**
-     * Kapan SIMPER ini sesungguhnya berhenti berlaku.
+     * Tanggal habis SIMPER = TANGGAL SIM/SIMPOL-nya (Safe Track:
+     * `sim_expired`), keputusan pemilik. Bukan lagi tanggal tersempit
+     * dari 31 Desember, SIM, dan Mine Permit.
      *
-     * Yang paling awal di antara tiga: masa berlakunya sendiri, masa
-     * berlaku permitnya, dan masa berlaku SIMPOL. Ketiganya dapat habis
-     * tanpa ada yang menyentuh baris ini, jadi dihitung — bukan
-     * disimpan. Kolom yang disimpan akan menyatakan kartu masih berlaku
-     * sampai seseorang menyegarkannya, dan yang menyegarkannya bukan
-     * orang yang berdiri di gerbang.
+     * Baris lama tanpa tanggal SIM tetap memakai `berlaku_sampai`-nya,
+     * supaya tidak ada kartu lama yang mendadak terbaca "belum diisi".
      */
     public function habisEfektif(): ?Carbon
     {
-        $calon = array_filter([
-            $this->berlaku_sampai,
-            $this->simpol_berlaku_sampai,
-            $this->permit?->habisEfektif(),
-        ]);
-
-        if ($calon === []) return null;
-
-        usort($calon, fn (Carbon $a, Carbon $b) => $a <=> $b);
-
-        return $calon[0];
+        return $this->simpol_berlaku_sampai ?? $this->berlaku_sampai;
     }
 
+    /** Terbit, aktif, dan tanggal SIM-nya belum lewat. */
     public function berlaku(): bool
     {
-        if ($this->status !== 'terbit') return false;
+        if ($this->status !== 'terbit' || ! $this->aktif) return false;
 
         $habis = $this->habisEfektif();
 
@@ -148,54 +155,52 @@ class Simper extends Model
     }
 
     /**
-     * Sudah masuk jendela perpanjangan.
-     *
-     * SOP membuka jendelanya sebulan sebelum berakhir. Di Project1
-     * ambang itu hanya mewarnai layar pemantauan dan tidak pernah
-     * membatasi kapan pengajuan boleh dibuat — sehingga perpanjangan
-     * dapat masuk sepanjang tahun, dan antrean OHSE terisi berkas yang
-     * belum waktunya.
-     *
-     * Yang dibaca habisEfektif(), bukan kolom tanggalnya: kartu yang
-     * SIMPOL-nya habis lebih dahulu memang sudah boleh diperpanjang
-     * meski tanggal kartunya sendiri masih jauh.
+     * Boleh diajukan perpanjangan — `masterdatauserext` Safe Track:
+     * SIMPER disetujui, aktif, dan tidak sedang punya perpanjangan yang
+     * berjalan. Safe Track tidak membatasi jendela waktunya.
      */
     public function bolehDiperpanjang(): bool
     {
-        $sisa = $this->sisaHari();
+        if ($this->status !== 'terbit' || ! $this->aktif) return false;
 
-        /* Tanpa masa berlaku sama sekali, tidak ada yang perlu
-           diperpanjang — dan membolehkannya berarti pengajuan yang
-           tidak pernah punya tenggat ikut memenuhi antrean. */
-        if ($sisa === null) return false;
+        return ! $this->ajuan()->where('jenis', 'perpanjangan')
+            ->whereIn('status', SimperAjuan::BERJALAN)->exists();
+    }
 
-        return $sisa <= SimperAjuan::HARI_BOLEH_PERPANJANG;
+    /** Sumber tanggal SIM — 'auto' | 'manual' | 'perpanjangan'. */
+    public function penyebabHabis(): ?string
+    {
+        if ($this->habisEfektif() === null) return null;
+
+        return $this->simpol_berlaku_sampai ? 'simpol' : 'simper';
     }
 
     /**
-     * Apa yang lebih dahulu menghentikannya — untuk dijelaskan di layar.
+     * Unit dari Penambahan Unit yang sudah DISETUJUI penuh — baris baru
+     * pada pengajuannya (bukan salinan unit lama). Safe Track tidak
+     * menggabungkannya ke `form_simper_details`; kartu dan rincian
+     * membacanya dari sini.
      *
-     * "Kartu habis 12 Maret" tidak memberi tahu apa yang harus
-     * diperbarui; "SIMPOL habis 12 Maret" memberi tahu.
+     * @return \Illuminate\Support\Collection<int,SimperAjuanUnit>
      */
-    public function penyebabHabis(): ?string
+    public function unitTambahan(): \Illuminate\Support\Collection
     {
-        $habis = $this->habisEfektif();
-        if ($habis === null) return null;
+        return SimperAjuanUnit::query()->with(['kendaraan', 'jenisUnitBanyak', 'jenisUnit'])
+            ->whereNull('simper_unit_id')
+            ->whereIn('ajuan_id', SimperAjuan::withoutGlobalScopes()->where('simper_id', $this->id)
+                ->where('jenis', 'penambahan')->where('status', 'selesai')->select('id'))
+            ->orderBy('id')->get();
+    }
 
-        /* MASA BERLAKUNYA SENDIRI DIPERIKSA LEBIH DAHULU, dan urutan
-           itu yang menentukan benar tidaknya kalimat di layar.
-           Diperiksa terakhir, kartu yang ketiga tanggalnya kebetulan
-           sama — hal biasa, sebab kartu dan permit sama-sama habis 31
-           Desember — akan dijelaskan sebagai "Mine Permit habis lebih
-           dahulu". Padahal tidak lebih dahulu; ia bersamaan. Yang
-           membaca lalu memperbarui permit dan mendapati kartunya tetap
-           habis pada tanggal yang sama. */
-        if ($this->berlaku_sampai?->eq($habis)) return 'simper';
+    /** IUP penerbit — dari Mine Permit dasarnya. */
+    public function iupPenerbitAwal(): ?int
+    {
+        if ($this->iup_id) return (int) $this->iup_id;
 
-        if ($this->simpol_berlaku_sampai?->eq($habis)) return 'simpol';
-        if ($this->permit?->habisEfektif()?->eq($habis)) return 'permit';
+        $iup = $this->permit_id
+            ? Permit::withoutGlobalScopes()->whereKey($this->permit_id)->value('iup_id')
+            : null;
 
-        return 'simper';
+        return $iup ? (int) $iup : \App\Support\Miners\Penyetuju::iupDari(auth()->user()?->company_id);
     }
 }
