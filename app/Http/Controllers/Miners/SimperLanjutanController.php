@@ -91,7 +91,7 @@ class SimperLanjutanController extends Controller
     /** Unduhan Excel Penambahan Unit / Upgrade / Perpanjangan SIMPER — kolom layar, pencarian layar. */
     public function ekspor(Request $r)
     {
-        $jenis = self::jenisDariRute((string) $r->query('jenis'));
+        $jenis = self::jenisDariRute((string) $r->query('jenis', 'penambahan'));
 
         return Laporan::unduh('laporan-'.self::JUDUL[$jenis][2].'-'.Waktu::kini()->format('Ymd-Hi'),
             ['No Registrasi', 'Tanggal', 'Nama Employee', 'Noid', 'Jabatan', 'Departemen', 'Perusahaan', 'Jenis SIM', 'Status', 'Creator'],

@@ -30,6 +30,7 @@ return new class extends Migration
             $t->timestamp('dikirim_pada')->nullable();
             $t->timestamps();
             $t->unique(['jenis', 'dokumen_id', 'berakhir', 'ambang'], 'mnr_pengingat_unik');
+            $t->index(['company_id', 'dikirim_pada'], 'mnr_pengingat_perusahaan');
         });
     }
 
