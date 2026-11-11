@@ -185,11 +185,19 @@ class Simper extends Model
      */
     public function unitTambahan(): \Illuminate\Support\Collection
     {
-        return SimperAjuanUnit::query()->with(['kendaraan', 'jenisUnitBanyak', 'jenisUnit'])
+        $baris = SimperAjuanUnit::query()->with(['kendaraan', 'jenisUnitBanyak', 'jenisUnit'])
             ->whereNull('simper_unit_id')
             ->whereIn('ajuan_id', SimperAjuan::withoutGlobalScopes()->where('simper_id', $this->id)
                 ->where('jenis', 'penambahan')->where('status', 'selesai')->select('id'))
             ->orderBy('id')->get();
+
+        /* Data lama: jalur EQOHSEE sebelum bagian 3 MENGGABUNGKAN unit
+           penambahan ke unit SIMPER (asal 'penambahan'). Unit itu tidak
+           dihitung dua kali. */
+        $sudah = SimperUnit::withoutGlobalScopes()->where('simper_id', $this->id)->where('asal', 'penambahan')
+            ->get(['kendaraan_id', 'jenis_unit_id'])->map(fn ($u) => $u->kendaraan_id.':'.$u->jenis_unit_id)->flip();
+
+        return $baris->reject(fn ($u) => $sudah->has($u->kendaraan_id.':'.$u->jenis_unit_id))->values();
     }
 
     /**
