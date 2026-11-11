@@ -121,7 +121,7 @@ const kolomKompetensi = [
           <span v-else class="mn-redup">Belum ada dokumen</span>
         </div>
       </div>
-      <p v-if="keadaan.sebab && SEBAB[keadaan.sebab]" class="mn-status-catatan">{{ SEBAB[keadaan.sebab] }}</p>
+      <p v-if="keadaan.sebab && SEBAB[keadaan.sebab] && (keadaan.simper?.sisa ?? 999) <= 30" class="mn-status-catatan">{{ SEBAB[keadaan.sebab] }}</p>
     </Kartu>
 
     <Kartu judul="Data Karyawan">
