@@ -8,7 +8,7 @@
   "halaman": [
     {
       "berkas": "01-miners-dasbor.jpg",
-      "label": "Ringkasan",
+      "label": "Dashboard",
       "grup": "",
       "path": "miners/dasbor",
       "status": "ok"
@@ -16,141 +16,225 @@
     {
       "berkas": "02-miners-mcu.jpg",
       "label": "MCU",
-      "grup": "Pendaftaran",
+      "grup": "Register",
       "path": "miners/mcu",
       "status": "ok"
     },
     {
       "berkas": "03-miners-induksi.jpg",
-      "label": "Induksi",
-      "grup": "Pendaftaran",
+      "label": "Induction",
+      "grup": "Register",
       "path": "miners/induksi",
       "status": "ok"
     },
     {
       "berkas": "04-miners-permit.jpg",
       "label": "Mine Permit",
-      "grup": "Pendaftaran",
+      "grup": "Register",
       "path": "miners/permit",
       "status": "ok"
     },
     {
       "berkas": "05-miners-simper.jpg",
       "label": "SIMPER",
-      "grup": "Pendaftaran",
+      "grup": "Register",
       "path": "miners/simper",
       "status": "ok"
     },
     {
       "berkas": "06-miners-riwayat-mcu.jpg",
       "label": "MCU",
-      "grup": "Riwayat",
+      "grup": "History",
       "path": "miners/riwayat/mcu",
       "status": "ok"
     },
     {
       "berkas": "07-miners-riwayat-induksi.jpg",
-      "label": "Induksi",
-      "grup": "Riwayat",
+      "label": "Induction",
+      "grup": "History",
       "path": "miners/riwayat/induksi",
       "status": "ok"
     },
     {
       "berkas": "08-miners-riwayat-mine-permit.jpg",
       "label": "Mine Permit",
-      "grup": "Riwayat",
+      "grup": "History",
       "path": "miners/riwayat/mine-permit",
       "status": "ok"
     },
     {
       "berkas": "09-miners-riwayat-mine-license.jpg",
       "label": "SIMPER",
-      "grup": "Riwayat",
+      "grup": "History",
       "path": "miners/riwayat/mine-license",
       "status": "ok"
     },
     {
       "berkas": "10-miners-riwayat-authority.jpg",
-      "label": "Kompetensi",
-      "grup": "Riwayat",
+      "label": "Authority",
+      "grup": "History",
       "path": "miners/riwayat/authority",
       "status": "ok"
     },
     {
-      "berkas": "11-miners-daftar-outstanding-mcu.jpg",
-      "label": "MCU",
-      "grup": "Outstanding",
-      "path": "miners/daftar/outstanding-mcu",
+      "berkas": "11-miners.jpg",
+      "label": "Manpower",
+      "grup": "Data MCU",
+      "path": "miners",
       "status": "ok"
     },
     {
-      "berkas": "12-miners-daftar-outstanding-permit.jpg",
-      "label": "Mine Permit",
-      "grup": "Outstanding",
-      "path": "miners/daftar/outstanding-permit",
+      "berkas": "12-miners-daftar-rujukan.jpg",
+      "label": "Rujukan",
+      "grup": "Data MCU",
+      "path": "miners/daftar/rujukan",
       "status": "ok"
     },
     {
-      "berkas": "13-miners-daftar-outstanding-simper.jpg",
-      "label": "SIMPER",
-      "grup": "Outstanding",
-      "path": "miners/daftar/outstanding-simper",
-      "status": "ok"
-    },
-    {
-      "berkas": "14-miners-daftar-outstanding-induksi.jpg",
-      "label": "Induksi",
-      "grup": "Outstanding",
-      "path": "miners/daftar/outstanding-induksi",
-      "status": "ok"
-    },
-    {
-      "berkas": "15-miners-daftar-penambahan-unit.jpg",
+      "berkas": "13-miners-daftar-penambahan-unit.jpg",
       "label": "Penambahan Unit",
       "grup": "SIMPER Lanjutan",
       "path": "miners/daftar/penambahan-unit",
       "status": "ok"
     },
     {
-      "berkas": "16-miners-daftar-upgrade-simper.jpg",
+      "berkas": "14-miners-daftar-upgrade-simper.jpg",
       "label": "Upgrade SIMPER",
       "grup": "SIMPER Lanjutan",
       "path": "miners/daftar/upgrade-simper",
       "status": "ok"
     },
     {
-      "berkas": "17-miners-daftar-perpanjangan.jpg",
-      "label": "Perpanjangan",
+      "berkas": "15-miners-daftar-perpanjangan.jpg",
+      "label": "Perpanjangan SIMPER",
       "grup": "SIMPER Lanjutan",
       "path": "miners/daftar/perpanjangan",
       "status": "ok"
     },
     {
-      "berkas": "18-miners.jpg",
-      "label": "Manpower",
-      "grup": "Data",
-      "path": "miners",
+      "berkas": "16-miners-perpanjangan-permit.jpg",
+      "label": "Perpanjangan Permit",
+      "grup": "SIMPER Lanjutan",
+      "path": "miners/perpanjangan-permit",
       "status": "ok"
     },
     {
-      "berkas": "19-miners-daftar-rujukan.jpg",
-      "label": "Rujukan",
-      "grup": "Data",
-      "path": "miners/daftar/rujukan",
+      "berkas": "17-miners-daftar-outstanding-mcu.jpg",
+      "label": "MCU",
+      "grup": "Outstanding",
+      "path": "miners/daftar/outstanding-mcu",
       "status": "ok"
     },
     {
-      "berkas": "20-miners-kedaluwarsa.jpg",
+      "berkas": "18-miners-daftar-outstanding-induksi.jpg",
+      "label": "Induction",
+      "grup": "Outstanding",
+      "path": "miners/daftar/outstanding-induksi",
+      "status": "ok"
+    },
+    {
+      "berkas": "19-miners-daftar-outstanding-permit.jpg",
+      "label": "Mine Permit",
+      "grup": "Outstanding",
+      "path": "miners/daftar/outstanding-permit",
+      "status": "ok"
+    },
+    {
+      "berkas": "20-miners-daftar-outstanding-simper.jpg",
+      "label": "SIMPER",
+      "grup": "Outstanding",
+      "path": "miners/daftar/outstanding-simper",
+      "status": "ok"
+    },
+    {
+      "berkas": "21-miners-master-unit.jpg",
+      "label": "Master Unit",
+      "grup": "Master Data",
+      "path": "miners/master/unit",
+      "status": "ok"
+    },
+    {
+      "berkas": "22-miners-master-type-unit.jpg",
+      "label": "Type Unit SIMPER",
+      "grup": "Master Data",
+      "path": "miners/master/type-unit",
+      "status": "ok"
+    },
+    {
+      "berkas": "23-miners-master-sub-unit.jpg",
+      "label": "Sub Unit",
+      "grup": "Master Data",
+      "path": "miners/master/sub-unit",
+      "status": "ok"
+    },
+    {
+      "berkas": "24-miners-master-jabatan.jpg",
+      "label": "Jabatan",
+      "grup": "Master Data",
+      "path": "miners/master/jabatan",
+      "status": "ok"
+    },
+    {
+      "berkas": "25-miners-master-departemen.jpg",
+      "label": "Departemen",
+      "grup": "Master Data",
+      "path": "miners/master/departemen",
+      "status": "ok"
+    },
+    {
+      "berkas": "26-miners-master-hasil-mcu.jpg",
+      "label": "Hasil MCU",
+      "grup": "Master Data",
+      "path": "miners/master/hasil-mcu",
+      "status": "ok"
+    },
+    {
+      "berkas": "27-miners-master-pjo.jpg",
+      "label": "PJO",
+      "grup": "Master Data",
+      "path": "miners/master/pjo",
+      "status": "ok"
+    },
+    {
+      "berkas": "28-miners-master-subkontraktor.jpg",
+      "label": "Subkontraktor",
+      "grup": "Master Data",
+      "path": "miners/master/subkontraktor",
+      "status": "ok"
+    },
+    {
+      "berkas": "29-miners-master-perusahaan.jpg",
+      "label": "Perusahaan",
+      "grup": "Master Data",
+      "path": "miners/master/perusahaan",
+      "status": "ok"
+    },
+    {
+      "berkas": "30-miners-data-lama.jpg",
+      "label": "Upload Data Lama",
+      "grup": "Master Data",
+      "path": "miners/data-lama",
+      "status": "ok"
+    },
+    {
+      "berkas": "31-miners-kedaluwarsa.jpg",
       "label": "Masa Berlaku",
-      "grup": "Pemantauan",
+      "grup": "Monitoring",
       "path": "miners/kedaluwarsa",
       "status": "ok"
     },
     {
-      "berkas": "21-miners-daftar-cetak-kartu.jpg",
+      "berkas": "32-miners-daftar-cetak-kartu.jpg",
       "label": "Cetak Kartu",
-      "grup": "Pemantauan",
+      "grup": "Monitoring",
       "path": "miners/daftar/cetak-kartu",
+      "status": "ok"
+    },
+    {
+      "berkas": "33-miners-alur-persetujuan.jpg",
+      "label": "Alur Persetujuan",
+      "grup": "Administrasi",
+      "path": "miners/alur-persetujuan",
       "status": "ok"
     }
   ]
