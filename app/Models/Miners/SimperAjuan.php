@@ -29,7 +29,7 @@ class SimperAjuan extends Model
 
     public const JENIS = [
         'penambahan'   => 'Penambahan Unit',
-        'upgrade'      => 'Upgrade Kelas',
+        'upgrade'      => 'Upgrade SIMPER',
         'perpanjangan' => 'Perpanjangan',
     ];
 
@@ -96,11 +96,101 @@ class SimperAjuan extends Model
      *
      * @return list<string>
      */
+    /** Awalan nomor per jenis — upgrade `SIMPER-AUTH00{id}` Safe Track. */
+    public const AWALAN = ['penambahan' => 'SIMPER-ADD00', 'upgrade' => 'SIMPER-AUTH00', 'perpanjangan' => 'SIMPER-EXT00'];
+
+    protected static function booted(): void
+    {
+        static::created(function (self $a) {
+            if (blank($a->no_registrasi)) {
+                $a->forceFill(['no_registrasi' => (self::AWALAN[$a->jenis] ?? 'SIMPER-AJU00').$a->getKey()])->saveQuietly();
+            }
+        });
+    }
+
+    /**
+     * Syarat "Sending": penambahan butuh sedikitnya satu unit BARU (bukan
+     * salinan unit lama) beserta berkas evaluasi dan pengalaman; upgrade
+     * sedikitnya satu baris perubahan authority; perpanjangan seluruh
+     * isian SIM dan MCU barunya.
+     *
+     * @return list<string>
+     */
     public function syaratKirim(): array
     {
-        return in_array($this->jenis, ['penambahan', 'upgrade'], true) && ! $this->unit()->exists()
-            ? ['belum ada satu pun unit pada pengajuan ini']
-            : [];
+        return match ($this->jenis) {
+            'penambahan' => array_values(array_filter([
+                $this->unit()->whereNull('simper_unit_id')->exists() ? null : 'belum ada unit baru pada pengajuan ini',
+                blank($this->berkas_evaluasi) ? 'berkas evaluasi' : null,
+                blank($this->berkas_pengalaman) ? 'berkas pengalaman' : null,
+            ])),
+            'upgrade' => $this->unit()->whereNotNull('simper_unit_id')->exists()
+                ? [] : ['belum ada unit yang di-upgrade pada pengajuan ini'],
+            default => array_values(array_filter([
+                blank($this->no_simpol_baru) ? 'nomor SIM baru' : null,
+                $this->simpol_berlaku_sampai ? null : 'masa berlaku SIM baru',
+                $this->tanggal_mcu ? null : 'tanggal MCU',
+                blank($this->berkas_simpol) ? 'berkas SIM baru' : null,
+                blank($this->berkas_mcu) ? 'sertifikat MCU' : null,
+                blank($this->berkas_form) ? 'form perpanjangan' : null,
+            ])),
+        };
+    }
+
+    /**
+     * Langkah dokter pada perpanjangan menulis balik MCU-nya — tanggal
+     * periksa = tanggal MCU, berlaku = tanggal SIM baru (`nom = datesimpol`
+     * Safe Track). SIMPER-nya sendiri BELUM berubah sampai KTT menyetujui.
+     */
+    public function setelahLangkahDisetujui(Alur $langkah, User $oleh): void
+    {
+        if ($this->jenis !== 'perpanjangan' || $langkah->peran !== 'dokter') return;
+
+        $mcu = $this->simper?->permit?->mcuOrang;
+
+        if (! $mcu || ! $this->simpol_berlaku_sampai) return;
+
+        $mcu->forceFill([
+            'tanggal_periksa' => $this->tanggal_mcu ?? $mcu->tanggal_periksa,
+            'berlaku_sampai'  => $this->simpol_berlaku_sampai,
+            'tanggal_berikut' => $this->simpol_berlaku_sampai,
+        ])->save();
+    }
+
+    /**
+     * Langkah terakhir disetujui:
+     *   · perpanjangan — tanggal dan nomor SIM baru pindah ke SIMPER,
+     *     sumber 'perpanjangan', riwayat dicatat dengan keadaan lamanya;
+     *   · upgrade — authority baru ditulis ke unit SIMPER-nya (Safe Track
+     *     belum pernah membangun persetujuannya; ini melengkapinya);
+     *   · penambahan — tidak digabung ke unit SIMPER (Safe Track); unit
+     *     barunya dibaca Simper::unitTambahan().
+     */
+    public function setelahAlurTuntas(User $oleh): void
+    {
+        $simper = $this->simper;
+        if (! $simper) return;
+
+        if ($this->jenis === 'perpanjangan' && $this->simpol_berlaku_sampai) {
+            $lama = RiwayatPerpanjangan::keadaanSimper($simper);
+
+            $simper->forceFill(array_filter([
+                'simpol_berlaku_sampai' => $this->simpol_berlaku_sampai,
+                'simpol_sumber'         => 'perpanjangan',
+                'no_simpol'             => filled($this->no_simpol_baru) ? $this->no_simpol_baru : null,
+                'berkas_simpol'         => $this->berkas_simpol,
+            ], fn ($v) => $v !== null))->save();
+
+            RiwayatPerpanjangan::catat('simper', (int) $simper->id, $lama,
+                RiwayatPerpanjangan::keadaanSimper($simper->fresh()), (int) $this->id, $oleh->getKey());
+        }
+
+        if ($this->jenis === 'upgrade') {
+            foreach ($this->unit()->whereNotNull('simper_unit_id')->get() as $u) {
+                SimperUnit::withoutGlobalScopes()->whereKey($u->simper_unit_id)
+                    ->where('simper_id', $simper->id)->update(['authority' => $u->authority]);
+            }
+        }
     }
 
     public function simper(): BelongsTo { return $this->belongsTo(Simper::class, 'simper_id'); }

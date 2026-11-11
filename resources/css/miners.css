@@ -588,3 +588,4 @@ a.mn-daftar-baris:hover{background:var(--mn-kartu-2);color:var(--mn-judul)}
 /* Pilihan banyak (Type Unit) sebagai kotak centang berbungkus. */
 .mn-pilih-banyak{display:flex;flex-wrap:wrap;gap:6px 14px;padding:10px 12px;border:1px solid var(--mn-garis);border-radius:10px;max-height:180px;overflow:auto}
 .mn-cek{display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer}
+.mn-form-penuh{grid-column:1/-1;margin:0}

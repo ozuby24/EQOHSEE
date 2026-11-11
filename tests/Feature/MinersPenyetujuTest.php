@@ -292,15 +292,19 @@ class MinersPenyetujuTest extends TestCase
         $a = SimperAjuan::create(['simper_id' => $simper->id, 'jenis' => 'penambahan',
             'tanggal' => Waktu::kini()->startOfDay(), 'user_id' => $this->pengajuMitra->id]);
         $a->terbitkanAlur();
-        SimperAjuanUnit::create(['ajuan_id' => $a->id, 'kewenangan' => 'operator', 'nilai_p2h' => 90]);
+        SimperAjuanUnit::create(['ajuan_id' => $a->id, 'kewenangan' => 'operator', 'authority' => 'F', 'nilai_p2h' => 90]);
+        $a->forceFill(['berkas_evaluasi' => 'miners/x.pdf', 'berkas_pengalaman' => 'miners/y.pdf'])->save();
 
-        $this->post("/miners/ajuan/{$a->id}/kirim")->assertSessionHasNoErrors();
+        $this->post("/miners/simper-lanjutan/{$a->id}/kirim")->assertSessionHasNoErrors();
 
-        $this->actingAs($this->ohse)->post("/miners/ajuan/{$a->id}/tindak", ['keadaan' => 'setuju'])->assertSessionHasNoErrors();
-        $this->actingAs($this->ktt)->post("/miners/ajuan/{$a->id}/tindak", ['keadaan' => 'setuju'])->assertSessionHasNoErrors();
+        $this->actingAs($this->ohse)->post("/miners/simper-lanjutan/{$a->id}/tindak", ['keadaan' => 'setuju'])->assertSessionHasNoErrors();
+        $this->actingAs($this->ktt)->post("/miners/simper-lanjutan/{$a->id}/tindak", ['keadaan' => 'setuju'])->assertSessionHasNoErrors();
 
         $this->assertSame('selesai', $a->fresh()->status);
-        $this->assertSame(1, SimperUnit::withoutGlobalScopes()->where('simper_id', $simper->id)->where('asal', 'penambahan')->count());
+        /* Safe Track: unit tambahan TIDAK digabung ke unit SIMPER; kartu
+           dan rincian membacanya dari pengajuan yang selesai. */
+        $this->assertSame(0, SimperUnit::withoutGlobalScopes()->where('simper_id', $simper->id)->count());
+        $this->assertSame(1, $simper->fresh()->unitTambahan()->count());
     }
 
     /* ═══════════ penjagaan server ═══════════ */

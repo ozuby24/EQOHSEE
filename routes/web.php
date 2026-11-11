@@ -11,6 +11,7 @@ use App\Http\Controllers\Miners\McuController as MinersMcuController;
 use App\Http\Controllers\Miners\InduksiController as MinersInduksiController;
 use App\Http\Controllers\Miners\PermitController as MinersPermitController;
 use App\Http\Controllers\Miners\SimperController as MinersSimperController;
+use App\Http\Controllers\Miners\SimperLanjutanController as MinersSimperLanjutanController;
 use App\Http\Controllers\Miners\PerpanjanganPermitController as MinersPerpanjanganPermitController;
 use App\Http\Controllers\Hris\AbsensiController;
 use App\Http\Controllers\Hris\CutiController;
@@ -519,13 +520,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->defaults('jenis', 'simper')->whereNumber('id')->name('kirim');
         });
 
-        Route::prefix('ajuan')->name('ajuan.')->group(function () {
-            Route::post('{ajuan}/unit',   [MinersDokumenController::class, 'ajuanUnit'])->name('unit');
-            Route::post('{ajuan}/tindak', [MinersDokumenController::class, 'ajuanTindak'])->name('tindak');
-            Route::post('{ajuan}/kirim',  [MinersDokumenController::class, 'ajuanKirim'])->name('kirim');
-            Route::delete('{ajuan}',      [MinersDokumenController::class, 'ajuanDestroy'])
-                ->middleware('can:admin')->name('destroy');
+        /* SIMPER Lanjutan — Penambahan Unit, Upgrade SIMPER, Perpanjangan
+           SIMPER (form_simper_exts, form_upgrade_simpers, extendsimpers). */
+        Route::prefix('simper-lanjutan')->name('lanjutan.')->group(function () {
+            Route::post('/', [MinersSimperLanjutanController::class, 'store'])->name('store');
+            Route::get('{id}', [MinersSimperLanjutanController::class, 'rincian'])->whereNumber('id')->name('rincian');
+            Route::post('{ajuan}/unit', [MinersSimperLanjutanController::class, 'unit'])->name('unit');
+            Route::delete('{ajuan}/unit/{unit}', [MinersSimperLanjutanController::class, 'unitHapus'])->name('unit.hapus');
+            Route::post('{ajuan}/kirim', [MinersSimperLanjutanController::class, 'kirim'])->name('kirim');
+            Route::post('{ajuan}/ajukan-ulang', [MinersSimperLanjutanController::class, 'ajukanUlang'])->name('ajukan-ulang');
+            Route::post('{ajuan}/tindak', [MinersSimperLanjutanController::class, 'tindak'])->name('tindak');
+            Route::delete('{ajuan}', [MinersSimperLanjutanController::class, 'destroy'])->name('destroy');
         });
+
+        foreach (['penambahan-unit', 'upgrade-simper', 'perpanjangan'] as $jenis) {
+            Route::get('daftar/'.$jenis, [MinersSimperLanjutanController::class, 'index'])
+                ->defaults('jenis', $jenis)->name('daftar.'.$jenis);
+        }
 
         /* Riwayat per tahap, urut mengikuti alurnya.
          *
@@ -552,7 +563,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
            jenis, dengan alasan yang sama seperti riwayat di atas. */
         foreach ([
             'outstanding-mcu', 'outstanding-permit', 'outstanding-simper', 'outstanding-induksi',
-            'penambahan-unit', 'upgrade-simper', 'perpanjangan', 'perpanjangan-permit',
+            'perpanjangan-permit',
             'rujukan', 'cetak-kartu',
         ] as $jenis) {
             Route::get('daftar/'.$jenis, [MinersController::class, 'daftar'])
