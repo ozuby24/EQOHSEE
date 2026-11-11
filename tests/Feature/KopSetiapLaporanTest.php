@@ -57,6 +57,12 @@ class KopSetiapLaporanTest extends TestCase
            IND/{kode}/{id}/{bulan}/{tahun}, QR verifikasi, dan tanda tangan
            KTT. Tabel kop terkendali di atasnya merusak bingkainya. */
         'SertifikatInduksi' => 'sertifikat berbingkai, identitas penerbit menyatu pada muka sertifikat',
+
+        /* Kartu Mine Permit / SIMPER CR80 54 × 86 mm (Safe Track): kartu
+           identitas, bukan formulir — kop IUP penerbit sudah menjadi kepala
+           kartunya, dan tabel kop terkendali tidak muat pada kartu. */
+        'KartuCetak'  => 'kartu identitas CR80, kepala kartu = identitas IUP penerbit',
+        'KartuLembar' => 'lembar potong kartu CR80, tiap petak kartu identitas',
     ];
 
     /* ═══════════ sisi tampilan ═══════════ */

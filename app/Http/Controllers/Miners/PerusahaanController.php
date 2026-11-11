@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Miners;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
+use App\Support\Berkas;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -60,6 +61,8 @@ class PerusahaanController extends Controller
             'no_izin'         => ['nullable', 'string', 'max:120'],
             'channel_darurat' => ['nullable', 'string', 'max:120'],
             'theme_color'     => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'logo_grup'       => ['nullable', ...Berkas::ATURAN_GAMBAR],
+            'ttd_ktt'         => ['nullable', ...Berkas::ATURAN_GAMBAR],
         ], [
             'parent_id.exists' => 'Induk harus sebuah IUP (perusahaan tanpa induk).',
             'parent_id.not_in' => 'Perusahaan tidak dapat menjadi induk dirinya sendiri.',
@@ -69,6 +72,20 @@ class PerusahaanController extends Controller
            — batas data hanya mengenal satu tingkat induk. */
         if (! empty($data['parent_id']) && Company::query()->where('parent_id', $company->id)->exists()) {
             return back()->withErrors(['parent_id' => $company->name.' masih menjadi induk mitra lain.']);
+        }
+
+        unset($data['logo_grup'], $data['ttd_ktt']);
+
+        /* Logo grup tercetak terbuka (seperti logo perusahaan); tanda
+           tangan KTT disimpan TERTUTUP — ia dapat dipakai memalsu surat —
+           dan hanya disisipkan ke halaman cetak kartu (DataKartu). */
+        if ($r->hasFile('logo_grup')) {
+            $data['logo_grup'] = $r->file('logo_grup')->store('logos', 'public');
+        }
+        if ($r->hasFile('ttd_ktt')) {
+            $lama = $company->ttd_ktt;
+            $data['ttd_ktt'] = Berkas::simpan($r->file('ttd_ktt'), 'miners/ttd');
+            Berkas::buang($lama);
         }
 
         $company->update($data);
@@ -89,6 +106,8 @@ class PerusahaanController extends Controller
             'nilai'       => $c->only(['nama_pendek', 'code', 'parent_id', 'ktt', 'jabatan_ktt',
                                        'no_izin', 'channel_darurat', 'theme_color']),
             'ktt'         => $c->ktt,
+            'logoGrup'    => $c->logo_grup ? Berkas::terbuka($c->logo_grup) : null,
+            'adaTtd'      => filled($c->ttd_ktt),
             'nama_pendek' => $c->nama_pendek,
         ];
     }

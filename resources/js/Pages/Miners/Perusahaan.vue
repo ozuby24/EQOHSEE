@@ -35,14 +35,15 @@ const form = useForm<Record<string, any>>({
 
 function ubah(b: any) {
   diubah.value = b;
-  form.defaults(Object.fromEntries(Object.entries(b.nilai).map(([k, v]) => [k, v ?? ''])));
+  form.defaults({ ...Object.fromEntries(Object.entries(b.nilai).map(([k, v]) => [k, v ?? ''])), logo_grup: null, ttd_ktt: null });
   form.reset();
   form.clearErrors();
 }
 
 function simpan() {
-  form.put(`/miners/master/perusahaan/${diubah.value.id}`, {
-    preserveScroll: true,
+  /* Unggahan berkas lewat POST + _method (PUT multipart tidak dibaca PHP). */
+  form.transform((d) => ({ ...d, _method: 'put' })).post(`/miners/master/perusahaan/${diubah.value.id}`, {
+    forceFormData: true, preserveScroll: true,
     onSuccess: () => { diubah.value = null; },
   });
 }
@@ -96,6 +97,15 @@ function simpan() {
         </Medan>
         <Medan label="Warna kartu" untuk="pr-warna" :galat="form.errors.theme_color">
           <input id="pr-warna" v-model="form.theme_color" class="mn-isian" maxlength="7" placeholder="#1F4E79">
+        </Medan>
+        <Medan label="Logo grup (kartu)" untuk="pr-logo" :galat="form.errors.logo_grup"
+               :petunjuk="diubah?.logoGrup ? 'Sudah ada — pilih berkas baru untuk mengganti.' : 'Markah saja, tanpa nama perusahaan di dalam gambar.'">
+          <img v-if="diubah?.logoGrup" :src="diubah.logoGrup" alt="" class="mn-pratinjau-logo">
+          <input id="pr-logo" type="file" class="mn-isian" accept=".png,.jpg,.jpeg,.webp" @change="form.logo_grup = ($event.target as HTMLInputElement).files?.[0] ?? null">
+        </Medan>
+        <Medan label="Tanda tangan KTT" untuk="pr-ttd" :galat="form.errors.ttd_ktt"
+               :petunjuk="diubah?.adaTtd ? 'Sudah ada (tersimpan tertutup) — pilih berkas baru untuk mengganti.' : 'PNG berlatar transparan; dicetak pada kartu.'">
+          <input id="pr-ttd" type="file" class="mn-isian" accept=".png,.jpg,.jpeg,.webp" @change="form.ttd_ktt = ($event.target as HTMLInputElement).files?.[0] ?? null">
         </Medan>
       </form>
       <template #kaki>

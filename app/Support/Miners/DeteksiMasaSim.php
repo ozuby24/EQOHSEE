@@ -42,9 +42,9 @@ final class DeteksiMasaSim
     /** Berkas yang sudah tersimpan di disk tertutup. */
     public static function dariJalur(?string $jalur): array
     {
-        if (! $jalur || ! Storage::disk('local')->exists($jalur)) return self::gagal();
+        if (! $jalur || ! Storage::disk(\App\Support\Berkas::TERTUTUP)->exists($jalur)) return self::gagal();
 
-        return self::deteksi(Storage::disk('local')->path($jalur), $jalur);
+        return self::deteksi(Storage::disk(\App\Support\Berkas::TERTUTUP)->path($jalur), $jalur);
     }
 
     /** @return array{tanggal:?string,keyakinan:string,metode:string,cuplikan:?string,pesan:string} */

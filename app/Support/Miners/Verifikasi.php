@@ -13,11 +13,10 @@ use Illuminate\Support\Facades\Route;
  * Huruf yang berbeda untuk tabel yang berbeda — satu kode tidak boleh
  * dapat menunjuk orang lain.
  *
- * Halaman verifikasi publik `/v/{kode}` dibangun pada paket kartu. Selama
- * rutenya belum terdaftar, alamat() memulangkan null dan QR memuat teks
- * keterangannya sendiri — lebih baik daripada QR yang menuju halaman
- * galat. Begitu rutenya ada, QR yang sama berpindah ke sana tanpa
- * mengubah sertifikat mana pun.
+ * Halaman verifikasi publiknya `/v/{kode}` (rute `verifikasi.kartu`,
+ * Miners\VerifikasiController). alamat() memulangkan URL-nya, sehingga QR
+ * pada kartu dan sertifikat menaut ke sana; null hanya bila rutenya tidak
+ * terdaftar (mis. aplikasi tanpa modul ini), dan QR lalu memuat teks.
  */
 final class Verifikasi
 {

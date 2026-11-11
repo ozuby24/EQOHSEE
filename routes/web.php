@@ -11,6 +11,7 @@ use App\Http\Controllers\Miners\McuController as MinersMcuController;
 use App\Http\Controllers\Miners\InduksiController as MinersInduksiController;
 use App\Http\Controllers\Miners\PermitController as MinersPermitController;
 use App\Http\Controllers\Miners\SimperController as MinersSimperController;
+use App\Http\Controllers\Miners\KartuController as MinersKartuController;
 use App\Http\Controllers\Miners\SimperLanjutanController as MinersSimperLanjutanController;
 use App\Http\Controllers\Miners\PerpanjanganPermitController as MinersPerpanjanganPermitController;
 use App\Http\Controllers\Hris\AbsensiController;
@@ -57,6 +58,10 @@ Route::get('sitemap.xml', [\App\Http\Controllers\PenemuanController::class, 'sit
 
 /* ============ VERIFIKASI SERTIFIKAT (publik) ============ */
 Route::get('verifikasi/{kode}', [\App\Http\Controllers\CertificateController::class,'verify'])->name('certificates.verify');
+/* Verifikasi publik kartu Mine Permit / SIMPER dan sertifikat Miners —
+   `v/{kode}` Safe Track: tanpa login, 30 per menit, kode HMAC. */
+Route::get('v/{kode}', [\App\Http\Controllers\Miners\VerifikasiController::class, 'kartu'])
+    ->middleware('throttle:30,1')->where('kode', '[A-Za-z0-9.]{3,60}')->name('verifikasi.kartu');
 Route::get('verifikasi-lingkungan/{kode}', [\App\Http\Controllers\SertifikatLingkunganController::class, 'verifikasi'])
     ->middleware('throttle:30,1')->name('audit-lingkungan.verifikasi');
 
@@ -533,6 +538,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('{ajuan}', [MinersSimperLanjutanController::class, 'destroy'])->name('destroy');
         });
 
+        /* Cetak Kartu — Kartu\KartuController Safe Track. */
+        Route::get('daftar/cetak-kartu', [MinersKartuController::class, 'index'])->name('daftar.cetak-kartu');
+        Route::prefix('kartu')->name('kartu.')->group(function () {
+            Route::get('lembar', [MinersKartuController::class, 'lembar'])->name('lembar');
+            Route::post('tata-cetak', [MinersKartuController::class, 'simpanTata'])->name('tata');
+            Route::get('{permit}', [MinersKartuController::class, 'cetak'])->whereNumber('permit')->name('cetak');
+        });
+
         foreach (['penambahan-unit', 'upgrade-simper', 'perpanjangan'] as $jenis) {
             Route::get('daftar/'.$jenis, [MinersSimperLanjutanController::class, 'index'])
                 ->defaults('jenis', $jenis)->name('daftar.'.$jenis);
@@ -564,7 +577,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         foreach ([
             'outstanding-mcu', 'outstanding-permit', 'outstanding-simper', 'outstanding-induksi',
             'perpanjangan-permit',
-            'rujukan', 'cetak-kartu',
+            'rujukan',
         ] as $jenis) {
             Route::get('daftar/'.$jenis, [MinersController::class, 'daftar'])
                 ->defaults('jenis', $jenis)
