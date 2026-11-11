@@ -580,3 +580,8 @@ a.mn-daftar-baris:hover{background:var(--mn-kartu-2);color:var(--mn-judul)}
 .mn-kpi-kecil .mn-kpi{padding:12px 14px;box-shadow:none}
 .mn-kpi-kecil .mn-kpi-angka{font-size:22px}
 .mn-isian.mn-isian-pas{width:auto}
+
+/* Berkas SIM + tanggal SIM bersisian dalam satu kotak lembut (v14), menempati satu baris formulir. */
+.mn-sim-deteksi{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px;border-radius:10px;background:var(--mn-kosong-lembut);border:1px solid var(--mn-garis)}
+.mn-sim-terbaca{color:var(--mn-aman-tinta)}
+@media (max-width:640px){.mn-sim-deteksi{grid-template-columns:1fr}}

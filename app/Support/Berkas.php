@@ -9,7 +9,8 @@ use App\Models\Pembelian\Pembayaran as PembayaranBeli;
 use App\Models\PjpLaporan as LaporanPjp;
 use App\Models\Miners\{Induksi as MnrInduksi, InduksiOrang as MnrInduksiOrang, McuOrang as MnrMcuOrang,
     McuRujukan as MnrMcuRujukan, Permit as MnrPermit, PermitBerkas as MnrPermitBerkas,
-    PermitPerpanjangan as MnrPermitPerpanjangan, Simper as MnrSimper};
+    PermitPerpanjangan as MnrPermitPerpanjangan, Simper as MnrSimper, SimperAjuan as MnrSimperAjuan,
+    SimperAjuanUnit as MnrSimperAjuanUnit, SimperUnit as MnrSimperUnit};
 use App\Models\{ComplianceSubject, Document, EnvAuditScore, GudangBarang, HazardReport, InspectionItem, News, PasporKartu, PasporKartuUnit, PasporMcu, PasporSertifikat, Signatory};
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -199,6 +200,33 @@ final class Berkas
            sertifikat MCU baru (dijaga seketat berkas medis lain). */
         'mpf' => [MnrPermitPerpanjangan::class, 'berkas_form',     false],
         'mpm' => [MnrPermitPerpanjangan::class, 'berkas_mcu',      false],
+
+        /* ── SIMPER Safe Track (form_simpers, form_simper_details) ──
+           DDT, permohonan, dan pengalaman kerja: surat pengantar,
+           terbuka bagi yang dapat melihat barisnya. Berkas uji per unit
+           (teori, praktek, evaluasi) juga terbuka — hasil uji mengemudi,
+           bukan data medis atau identitas. */
+        'sdd' => [MnrSimper::class,         'berkas_ddt',          false],
+        'sdm' => [MnrSimper::class,         'berkas_permohonan',   false],
+        'sdg' => [MnrSimper::class,         'berkas_pengalaman',   false],
+        'sut' => [MnrSimperUnit::class,     'berkas_teori',        false],
+        'sup' => [MnrSimperUnit::class,     'berkas_praktek',      false],
+        'sue' => [MnrSimperUnit::class,     'berkas_evaluasi',     false],
+
+        /* Pengajuan lanjutan: penambahan (evaluasi, pengalaman),
+           perpanjangan (form, SIM baru — dijaga seperti 'mnp', sertifikat
+           MCU — dijaga seperti berkas medis), upgrade per unit. */
+        'sae' => [MnrSimperAjuan::class,    'berkas_evaluasi',     false],
+        'sag' => [MnrSimperAjuan::class,    'berkas_pengalaman',   false],
+        'saf' => [MnrSimperAjuan::class,    'berkas_form',         false],
+        'sas' => [MnrSimperAjuan::class,    'berkas_simpol',       false],
+        'sam' => [MnrSimperAjuan::class,    'berkas_mcu',          false],
+        'aut' => [MnrSimperAjuanUnit::class, 'berkas_teori',       false],
+        'aup' => [MnrSimperAjuanUnit::class, 'berkas_praktek',     false],
+        'aue' => [MnrSimperAjuanUnit::class, 'berkas_evaluasi',    false],
+        'auu' => [MnrSimperAjuanUnit::class, 'berkas_upgrade',     false],
+        'aud' => [MnrSimperAjuanUnit::class, 'berkas_ddt',         false],
+        'auj' => [MnrSimperAjuanUnit::class, 'berkas_jam',         false],
     ];
 
     /**
@@ -346,6 +374,11 @@ final class Berkas
 
         /* Salinan KTP pemegang Mine Permit: dokumen identitas. */
         'mnt' => ['isAdmin', 'isOhse'],
+
+        /* SIM baru pada perpanjangan SIMPER: identitas, seperti 'mnp'.
+           Sertifikat MCU perpanjangan SIMPER: medis, seperti 'mpm'. */
+        'sas' => ['isAdmin', 'isOhse'],
+        'sam' => ['isAdmin', 'isOhse', 'isParamedis'],
     ];
 
     /**

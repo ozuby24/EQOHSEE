@@ -192,6 +192,25 @@ class Simper extends Model
             ->orderBy('id')->get();
     }
 
+    /**
+     * Syarat "Sending" — berkas wajib Safe Track dan sedikitnya satu unit.
+     *
+     * @return list<string>
+     */
+    public function syaratKirim(): array
+    {
+        $kurang = [];
+
+        foreach (['berkas_simpol' => 'berkas SIM', 'berkas_ddt' => 'file DDT',
+                  'berkas_permohonan' => 'permohonan SIMPER', 'berkas_pengalaman' => 'pengalaman kerja'] as $k => $label) {
+            if (blank($this->$k)) $kurang[] = $label;
+        }
+
+        if (! $this->unit()->exists()) $kurang[] = 'sedikitnya satu unit';
+
+        return $kurang;
+    }
+
     /** IUP penerbit — dari Mine Permit dasarnya. */
     public function iupPenerbitAwal(): ?int
     {

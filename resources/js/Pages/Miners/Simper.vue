@@ -1,337 +1,267 @@
 <script setup lang="ts">
 /**
- * SIMPER — izin mengemudikan unit.
+ * SIMPER — `master_simper_user` (Register, v09: "Masa Berlaku SIM Saya" +
+ * "+ add") dan `master_simper_admin` (History, v05: rekap per perusahaan,
+ * masa berlaku dan status per baris) Safe Track.
  *
- * TIGA SUMBER MASA BERLAKU, dan yang paling awal yang menang: kartunya
- * sendiri, Mine Permit yang mendasarinya, dan SIM Kepolisian. Layar ini
- * menyebut yang mana — "SIMPOL habis 1 Oktober" memberi tahu apa yang
- * harus diperbarui, sedangkan "kartu habis 1 Oktober" tidak.
+ * Masa berlaku SIMPER = TANGGAL SIM/SIMPOL-nya; sumbernya (terbaca
+ * otomatis / diisi manual / perpanjangan) tercetak di bawah lencananya.
+ * Formulir tambah membaca tanggal SIM dari berkasnya (v14) sebagai
+ * USULAN — tanggal yang sudah diketik tidak pernah ditimpa.
  */
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { propHalaman } from '../../halaman';
+import KepalaHalaman from '../../Components/Miners/KepalaHalaman.vue';
+import ZonaMasaBerlaku from '../../Components/Miners/ZonaMasaBerlaku.vue';
+import SaringBar from '../../Components/Miners/SaringBar.vue';
+import RekapPerusahaan from '../../Components/Miners/RekapPerusahaan.vue';
+import TabelData from '../../Components/Miners/TabelData.vue';
+import LencanaMasaBerlaku from '../../Components/Miners/LencanaMasaBerlaku.vue';
+import LencanaStatus from '../../Components/Miners/LencanaStatus.vue';
+import TombolIkon from '../../Components/Miners/TombolIkon.vue';
+import SelOrang from '../../Components/Miners/SelOrang.vue';
+import Modal from '../../Components/Miners/Modal.vue';
+import Medan from '../../Components/Miners/Medan.vue';
+import PetunjukSim from '../../Components/Miners/PetunjukSim.vue';
+import { URUTAN_ZONA, ZONA, type MedanSaring } from '../../Components/Miners/zona';
 import Dialog from '../../Components/Dialog.vue';
 import { useDialog } from '../../dialog';
-import Lencana from './Lencana.vue';
-import Langkah from './Langkah.vue';
 
 const props = propHalaman();
 const { dialog, tanya, batal, lanjut } = useDialog();
 
-const baris = computed<any[]>(() => (props.baris ?? []) as any[]);
-const buka  = ref<number | null>(null);
+const register = computed(() => props.mode === 'register');
+const alamat = computed(() => (register.value ? '/miners/simper' : '/miners/riwayat/mine-license'));
+const halaman = computed<any>(() => props.baris ?? { data: [], links: [], from: 1, total: 0 });
+const perusahaan = computed<any[]>(() => (props.perusahaan ?? []) as any[]);
+const calon = computed<any[]>(() => (props.calon ?? []) as any[]);
+const jenisSim = computed<string[]>(() => (props.jenisSim ?? []) as string[]);
 
-const buat = useForm<{
-  permit_id: string; no_simper: string; tanggal: string; kelas: string;
-  no_simpol: string; jenis_simpol: string; simpol_berlaku_sampai: string;
-  pengalaman_kerja: string; berkas_simpol: File | null;
-}>({
-  permit_id: '', no_simper: '', tanggal: '', kelas: 'F',
-  no_simpol: '', jenis_simpol: '', simpol_berlaku_sampai: '', pengalaman_kerja: '',
-  berkas_simpol: null,
+/* ─────────── saringan ─────────── */
+
+const saring = ref<Record<string, string>>({ ...(props.saring ?? {}) });
+
+const medanSaring = computed<MedanSaring[]>(() => [
+  { kunci: 'cari', label: 'Cari', placeholder: 'Nama, No ID, atau nomor dokumen', lebar: true },
+  { kunci: 'perusahaan', label: 'Perusahaan', jenis: 'pilih', semua: 'Semua perusahaan', opsi: perusahaan.value, lebar: true },
+  { kunci: 'zona', label: 'Zona masa berlaku', jenis: 'pilih', semua: 'Semua zona',
+    opsi: URUTAN_ZONA.map((z) => ({ nilai: z, label: ZONA[z].pendek })) },
+]);
+
+function terapkan() {
+  const q: Record<string, string> = {};
+  for (const [k, v] of Object.entries(saring.value)) if (v) q[k] = v;
+  router.get(alamat.value, q, { preserveState: true, preserveScroll: true });
+}
+
+function bersihkan() {
+  saring.value = { cari: '', perusahaan: '', zona: '' };
+  router.get(alamat.value, {}, { preserveScroll: true });
+}
+
+function pilihZona(z: string | null) {
+  saring.value = { ...saring.value, zona: z ?? '' };
+  terapkan();
+}
+
+const kolom = [
+  { kunci: 'nama', label: 'Nama Employee' },
+  { kunci: 'noid', label: 'Noid' },
+  { kunci: 'jabatan', label: 'Jabatan' },
+  { kunci: 'departemen', label: 'Departemen' },
+  { kunci: 'jenisSim', label: 'Jenis SIM' },
+  { kunci: 'berlaku', label: 'Masa Berlaku SIM' },
+  { kunci: 'status', label: 'Status' },
+  { kunci: 'pembuat', label: 'Creator' },
+  { kunci: 'aksi', label: '#' },
+];
+
+/* ─────────── tambah SIMPER ─────────── */
+
+const tambahTerbuka = ref(false);
+const form = useForm({
+  permit_id: '' as string | number, tanggal: '', email_atasan: '', no_simpol: '', jenis_simpol: '',
+  simpol_berlaku_sampai: '', simpol_sumber: 'manual',
+  berkas_simpol: null as File | null, berkas_ddt: null as File | null,
+  berkas_permohonan: null as File | null, berkas_pengalaman: null as File | null,
 });
 
-function pilihSimpol(e: Event) {
-  buat.berkas_simpol = (e.target as HTMLInputElement).files?.[0] ?? null;
+function bukaTambah() {
+  form.reset();
+  form.clearErrors();
+  form.tanggal = new Date().toISOString().slice(0, 10);
+  tambahTerbuka.value = true;
+}
+
+type Berkas = 'berkas_simpol' | 'berkas_ddt' | 'berkas_permohonan' | 'berkas_pengalaman';
+function berkas(medan: Berkas, e: Event) {
+  form[medan] = (e.target as HTMLInputElement).files?.[0] ?? null;
 }
 
 function simpan() {
-  /* forceFormData: tanpa itu objek File menjadi `{}` di sisi server —
-     SIMPER-nya tetap terbuat, dan hanya salinan SIM-nya yang hilang. */
-  buat.post('/miners/simper', {
-    forceFormData: true,
-    preserveScroll: true, onSuccess: () => buat.reset(),
-  });
+  form.post('/miners/simper', { forceFormData: true, preserveScroll: true, onSuccess: () => { tambahTerbuka.value = false; } });
 }
 
-const unit = useForm({
-  kendaraan_id: '', jenis_unit_id: '', kewenangan: 'operator',
-  nilai_p2h: '', nilai_praktek: '', nilai_teori: '', nilai_rambu: '',
-});
+/* ─────────── masa berlaku & status (admin) ─────────── */
 
-function tambahUnit(id: number) {
-  unit.post(`/miners/simper/${id}/unit`, { preserveScroll: true, onSuccess: () => unit.reset() });
+const masaTerbuka = ref<any>(null);
+const masaForm = useForm({ sumber: 'manual', tanggal: '' });
+function bukaMasa(b: any) {
+  masaTerbuka.value = b;
+  masaForm.sumber = 'manual';
+  masaForm.tanggal = b.berlaku ?? '';
+  masaForm.clearErrors();
+}
+function simpanMasa() {
+  masaForm.post(`/miners/simper/${masaTerbuka.value.id}/masa-berlaku`, { preserveScroll: true, onSuccess: () => { masaTerbuka.value = null; } });
 }
 
-const ajuan = useForm({ jenis: 'penambahan', no_registrasi: '', tanggal: '', pengalaman_kerja: '' });
-
-function buatAjuan(id: number) {
-  ajuan.post(`/miners/simper/${id}/ajuan`, { preserveScroll: true, onSuccess: () => ajuan.reset() });
+const statusTerbuka = ref<any>(null);
+const statusForm = useForm({ aktif: false as boolean, alasan: '' });
+function bukaStatus(b: any) {
+  statusTerbuka.value = b;
+  statusForm.aktif = !b.aktif;
+  statusForm.alasan = '';
+  statusForm.clearErrors();
+}
+function simpanStatus() {
+  statusForm.post(`/miners/simper/${statusTerbuka.value.id}/status`, { preserveScroll: true, onSuccess: () => { statusTerbuka.value = null; } });
 }
 
-const tindakan = useForm({ keadaan: 'setuju', catatan: '' });
-
-function tindak(id: number, keadaan: string) {
-  tindakan.keadaan = keadaan;
-  tindakan.post(`/miners/simper/${id}/tindak`, { preserveScroll: true });
+const hapusForm = useForm({});
+async function hapus(b: any) {
+  if (!await tanya({ judul: 'Hapus SIMPER', pesan: `Hapus SIMPER ${b.nomor} (${b.nama})?`, labelAksi: 'Hapus', nada: 'bahaya' })) return;
+  hapusForm.delete(`/miners/simper/${b.id}`, { preserveScroll: true });
 }
-
-async function hapus(id: number, nomor: string) {
-  if (!await tanya(`Hapus SIMPER ${nomor || 'ini'} beserta seluruh unitnya?`)) return;
-
-  useForm({}).delete(`/miners/simper/${id}`, { preserveScroll: true });
-}
-
-async function hapusUnit(simperId: number, unitId: number, nama: string) {
-  if (!await tanya(`Hapus unit ${nama} dari kartu ini?`)) return;
-
-  useForm({}).delete(`/miners/simper/${simperId}/unit/${unitId}`, { preserveScroll: true });
-}
-
-const bolehTindak = computed(() =>
-  ((props.peranSaya ?? []) as string[]).some((p) => p !== 'pengaju'));
-
-const SEBAB: Record<string, string> = {
-  simpol: 'SIMPOL habis lebih dahulu',
-  permit: 'Mine Permit habis lebih dahulu',
-  simper: 'masa berlaku kartunya sendiri',
-};
-
-/** Kelas SIM yang dituntut golongan yang sedang dipilih. */
-const simpolDituntut = computed(() =>
-  ((props.golongan ?? []) as any[]).find((g) => String(g.id) === String(unit.kendaraan_id))?.kelas_simpol ?? null);
 </script>
 
 <template>
-  <Head :title="props.judul" />
-  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
+  <div>
+    <KepalaHalaman :judul="props.judul" :remah="[['Home', '/miners/dasbor'], [register ? 'Register' : 'History', null], ['SIMPER', null]]" />
 
-  <div class="space-y-5">
+    <ZonaMasaBerlaku :judul="register ? 'Masa Berlaku SIM Saya' : 'Masa Berlaku SIMPER'" :ringkas="props.ringkas ?? {}"
+                     :aktif="props.saring?.zona || null" @pilih="pilihZona">
+      <SaringBar v-model="saring" :medan="medanSaring" @terapkan="terapkan" @bersihkan="bersihkan" />
+    </ZonaMasaBerlaku>
 
-    <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
-      <h3 class="text-[13.5px] font-bold text-cam-ink mb-3">SIMPER baru</h3>
+    <RekapPerusahaan v-if="!register" judul="SIMPER per Perusahaan" :baris="props.rekap ?? []" />
 
-      <form class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" @submit.prevent="simpan">
-        <label class="block lg:col-span-2">
-          <span class="block text-[11px] text-stone-500">Mine Permit yang mendasarinya</span>
-          <select v-model="buat.permit_id" required class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-            <option value="">Pilih kartu…</option>
-            <option v-for="p in (props.permit ?? [])" :key="p.id" :value="p.id">
-              {{ p.pekerja }} — {{ p.nomor || 'tanpa nomor' }}
-            </option>
-          </select>
-        </label>
-
-        <label class="block">
-          <span class="block text-[11px] text-stone-500">Nomor SIMPER</span>
-          <input v-model="buat.no_simper" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-        </label>
-
-        <label class="block">
-          <span class="block text-[11px] text-stone-500">Tanggal terbit</span>
-          <input v-model="buat.tanggal" type="date" required
-                 class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-        </label>
-
-        <label class="block">
-          <span class="block text-[11px] text-stone-500">Kelas SIMPER</span>
-          <select v-model="buat.kelas" required class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-            <option v-for="(label, kode) in (props.KELAS ?? {})" :key="kode" :value="kode">{{ label }}</option>
-          </select>
-        </label>
-
-        <label class="block">
-          <span class="block text-[11px] text-stone-500">Kelas SIM Kepolisian</span>
-          <select v-model="buat.jenis_simpol" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-            <option value="">Pilih kelas…</option>
-            <option v-for="s in (props.SIMPOL ?? [])" :key="s" :value="s">{{ s }}</option>
-          </select>
-        </label>
-
-        <label class="block">
-          <span class="block text-[11px] text-stone-500">Nomor SIM</span>
-          <input v-model="buat.no_simpol" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-        </label>
-
-        <label class="block">
-          <span class="block text-[11px] text-stone-500">SIM berlaku sampai</span>
-          <input v-model="buat.simpol_berlaku_sampai" type="date"
-                 class="mt-1 w-full rounded-lg border-stone-200 text-[12px]">
-        </label>
-
-        <label class="block">
-          <span class="block text-[11px] text-stone-500">Salinan SIM</span>
-          <input type="file" class="mt-1 w-full text-[11.5px]" @change="pilihSimpol">
-          <span class="text-[10.5px] text-stone-400">
-            Tersimpan tertutup — hanya terbuka bagi tim OHSE dan administrator.
-          </span>
-        </label>
-
-        <div class="sm:col-span-2 lg:col-span-4">
-          <button type="submit" class="eq-btn-utama" :disabled="buat.processing">Buat SIMPER (draf)</button>
-          <span v-if="buat.errors.permit_id" class="ml-3 text-[11.5px] text-red-600">{{ buat.errors.permit_id }}</span>
-          <span v-if="buat.errors.berkas_simpol" class="ml-3 text-[11.5px] text-red-600">{{ buat.errors.berkas_simpol }}</span>
+    <TabelData judul="Daftar SIMPER" :jumlah="halaman.total" :kolom="kolom" :baris="halaman.data"
+               :nomor-awal="halaman.from ?? 1" :tautan="halaman.links">
+      <template #alat>
+        <div v-if="register">
+          <button type="button" class="mn-btn mn-btn-utama" @click="bukaTambah">+ add</button>
         </div>
+      </template>
+
+      <template #sel-nama="{ baris: b }">
+        <SelOrang :nama="b.nama" :sub="b.nomor" :href="`/miners/simper/${b.id}`" />
+        <span v-if="!b.aktif" class="mn-lencana mn-l-abu ml-1" :title="b.alasanNonaktif || ''">non-aktif</span>
+      </template>
+      <template #sel-berlaku="{ baris: b }">
+        <LencanaMasaBerlaku :tanggal="b.berlaku" :sisa="b.sisa" :sumber="b.sumber" />
+      </template>
+      <template #sel-status="{ nilai }"><LencanaStatus :status="nilai" /></template>
+      <template #sel-aksi="{ baris: b }">
+        <div class="mn-aksi mn-aksi-kiri">
+          <template v-if="register">
+            <TombolIkon v-if="b.bolehHapus" ikon="hapus" varian="bahaya" judul="Hapus SIMPER" @click="hapus(b)" />
+            <TombolIkon ikon="pensil" :href="`/miners/simper/${b.id}`" judul="Buka detail SIMPER" />
+          </template>
+          <template v-else-if="props.kelola">
+            <TombolIkon ikon="kalender" varian="garis" judul="Masa berlaku SIM" @click="bukaMasa(b)" />
+            <TombolIkon ikon="orang" varian="garis" :judul="b.aktif ? 'Nonaktifkan SIMPER' : 'Aktifkan kembali'" @click="bukaStatus(b)" />
+            <TombolIkon ikon="mata" varian="garis" :href="`/miners/simper/${b.id}`" judul="Buka detail" />
+          </template>
+          <TombolIkon v-else ikon="mata" varian="garis" :href="`/miners/simper/${b.id}`" judul="Buka detail" />
+        </div>
+      </template>
+    </TabelData>
+
+    <!-- ══════════ tambah SIMPER (v14) ══════════ -->
+    <Modal :terbuka="tambahTerbuka" judul="Add Manpower Simper" lebar @tutup="tambahTerbuka = false">
+      <form class="mn-form" @submit.prevent="simpan">
+        <Medan label="Tanggal" untuk="s-tgl" wajib :galat="form.errors.tanggal">
+          <input id="s-tgl" v-model="form.tanggal" type="date" class="mn-isian">
+        </Medan>
+        <Medan label="Employee" untuk="s-calon" wajib :galat="form.errors.permit_id"
+               petunjuk="Pemegang Mine Permit yang sudah disetujui dan belum punya SIMPER.">
+          <select v-if="calon.length" id="s-calon" v-model="form.permit_id" class="mn-isian" title="Employee">
+            <option value="">— pilih —</option>
+            <option v-for="c in calon" :key="c.id" :value="c.id">{{ c.nama }}{{ c.perusahaan ? ` (${c.perusahaan})` : '' }}</option>
+          </select>
+          <div v-else class="mn-alert mn-alert-peringatan mn-tanpa-jarak">
+            Belum ada pemegang Mine Permit yang dapat dibuatkan SIMPER. Mine Permit-nya harus sudah disetujui; tiap karyawan hanya satu SIMPER.
+          </div>
+        </Medan>
+        <Medan label="Email Atasan" untuk="s-email" :galat="form.errors.email_atasan">
+          <input id="s-email" v-model="form.email_atasan" type="email" class="mn-isian" maxlength="150">
+        </Medan>
+        <Medan label="Simpol" untuk="s-simpol" wajib :galat="form.errors.no_simpol" petunjuk="Nomor SIM kepolisian (atau nomor SIO).">
+          <input id="s-simpol" v-model="form.no_simpol" class="mn-isian" maxlength="40">
+        </Medan>
+        <Medan label="Jenis SIM" untuk="s-jenis" wajib :galat="form.errors.jenis_simpol">
+          <select id="s-jenis" v-model="form.jenis_simpol" class="mn-isian" title="Jenis SIM">
+            <option value="">— pilih —</option>
+            <option v-for="j in jenisSim" :key="j" :value="j">{{ j }}</option>
+          </select>
+        </Medan>
+        <Medan label="File DDT" untuk="s-ddt" wajib :galat="form.errors.berkas_ddt">
+          <input id="s-ddt" type="file" class="mn-isian" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" @change="berkas('berkas_ddt', $event)">
+        </Medan>
+        <Medan label="Permohonan Simper" untuk="s-mohon" wajib :galat="form.errors.berkas_permohonan">
+          <input id="s-mohon" type="file" class="mn-isian" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" @change="berkas('berkas_permohonan', $event)">
+        </Medan>
+        <PetunjukSim v-model:tanggal="form.simpol_berlaku_sampai" v-model:sumber="form.simpol_sumber" :berkas="form.berkas_simpol"
+                     :galat-berkas="form.errors.berkas_simpol" :galat-tanggal="form.errors.simpol_berlaku_sampai"
+                     @berkas="form.berkas_simpol = $event" />
+        <Medan label="Pengalaman Kerja" untuk="s-alaman" wajib :galat="form.errors.berkas_pengalaman">
+          <input id="s-alaman" type="file" class="mn-isian" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" @change="berkas('berkas_pengalaman', $event)">
+        </Medan>
       </form>
-    </section>
+      <template #kaki>
+        <button type="button" class="mn-btn mn-btn-garis" @click="tambahTerbuka = false">Close</button>
+        <button type="button" class="mn-btn mn-btn-utama" :disabled="form.processing || !calon.length" @click="simpan">Save Manpower</button>
+      </template>
+    </Modal>
 
-    <section v-for="s in baris" :key="s.id"
-             class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
-      <header class="px-5 py-3.5 border-b border-stone-100 flex flex-wrap items-center gap-3">
-        <!-- basis 14rem: nama & nomor SIMPER tidak diperas di samping
-             lencana dan tombol; di ponsel keduanya yang turun baris. -->
-        <div class="grow basis-56 min-w-0">
-          <Link v-if="s.pekerja_id" :href="`/miners/${s.pekerja_id}`"
-                class="text-[13.5px] font-bold text-cam-lime-deep hover:underline">{{ s.pekerja || '—' }}</Link>
-          <p class="text-[11px] text-stone-500">
-            <Link :href="`/miners/simper/${s.id}`"
-                  class="num whitespace-nowrap text-cam-lime-deep hover:underline">{{ s.nomor || 'tanpa nomor' }}</Link>
-            · kelas {{ s.kelas }}
-            · SIM {{ s.simpol || '—' }} · {{ props.STATUS?.[s.status] ?? s.status }}
-          </p>
-        </div>
-
-        <Lencana :keadaan="s.keadaan" :label="props.KEADAAN?.[s.keadaan]" :nada="props.NADA" :sisa="s.sisa" />
-
-        <button class="eq-btn-lain" @click="buka = buka === s.id ? null : s.id">
-          {{ buka === s.id ? 'Tutup' : 'Kelola' }}
-        </button>
-      </header>
-
-      <div class="px-5 py-3 border-b border-stone-100 space-y-2">
-        <p class="text-[11.5px] text-stone-500">
-          Berlaku sampai <span class="num">{{ s.efektif || '—' }}</span>
-          <span v-if="s.sebab"> — yang menghentikannya: <strong>{{ SEBAB[s.sebab] ?? s.sebab }}</strong></span>
-          <span v-if="s.simpolSampai"> · SIM habis <span class="num">{{ s.simpolSampai }}</span></span>
-
-          <!-- Salinan SIM kepolisian. Dijaga tetapi TIDAK sampai
-               paramedis: ia dokumen identitas — memuat NIK dan alamat
-               rumah — bukan dokumen medis. -->
-          <a v-if="s.berkas?.simpol?.url" :href="s.berkas.simpol.url" target="_blank" rel="noopener"
-             class="ml-1 text-cam-lime-deep hover:underline">· salinan SIM</a>
-          <span v-else-if="s.berkas?.simpol?.ada" class="ml-1 text-stone-400"
-                title="Salinan SIM sudah diunggah, tetapi hanya dapat dibuka tim OHSE atau administrator.">
-            · salinan SIM terjaga
-          </span>
-        </p>
-
-        <Langkah :alur="s.alur" />
+    <!-- ══════════ masa berlaku ══════════ -->
+    <Modal :terbuka="masaTerbuka !== null" judul="Masa Berlaku SIMPER" @tutup="masaTerbuka = null">
+      <p class="text-[13px] mb-3"><b>{{ masaTerbuka?.nama }}</b> — {{ masaTerbuka?.nomor }}</p>
+      <div class="mn-form">
+        <Medan label="Sumber" untuk="m-sumber" penuh :galat="masaForm.errors.sumber">
+          <select id="m-sumber" v-model="masaForm.sumber" class="mn-isian" title="Sumber masa berlaku">
+            <option value="manual">Isi tanggal SIM manual</option>
+            <option value="auto">Baca ulang dari berkas SIM</option>
+          </select>
+        </Medan>
+        <Medan v-if="masaForm.sumber === 'manual'" label="Berlaku sampai" untuk="m-tgl" wajib penuh :galat="masaForm.errors.tanggal">
+          <input id="m-tgl" v-model="masaForm.tanggal" type="date" class="mn-isian">
+        </Medan>
       </div>
+      <template #kaki>
+        <button type="button" class="mn-btn mn-btn-garis" @click="masaTerbuka = null">Close</button>
+        <button type="button" class="mn-btn mn-btn-utama" :disabled="masaForm.processing" @click="simpanMasa">Simpan</button>
+      </template>
+    </Modal>
 
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-left text-[11.5px]">
-          <thead>
-            <tr class="text-stone-400 border-b border-stone-200 bg-stone-50/70">
-              <th class="px-4 py-2 font-semibold">Unit</th>
-              <th class="px-4 py-2 font-semibold">Golongan</th>
-              <th class="px-4 py-2 font-semibold">Kewenangan</th>
-              <th class="px-4 py-2 font-semibold">Asal</th>
-              <th class="px-4 py-2 font-semibold text-right">P2H</th>
-              <th class="px-4 py-2 font-semibold text-right">Praktik</th>
-              <th class="px-4 py-2 font-semibold text-right">Teori</th>
-              <th class="px-4 py-2 font-semibold text-right">Rambu</th>
-              <th v-if="buka === s.id" class="px-4 py-2 font-semibold"></th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr v-for="u in s.unit" :key="u.id" class="border-b border-stone-100"
-                :class="u.lulus ? '' : 'bg-red-50/50'">
-              <td class="px-4 py-2.5 font-semibold text-cam-ink">{{ u.unit || '—' }}</td>
-              <td class="px-4 py-2.5 text-stone-600">{{ u.golongan || '—' }}</td>
-              <td class="px-4 py-2.5 text-stone-600">{{ props.KEWENANGAN?.[u.kewenangan] ?? u.kewenangan ?? '—' }}</td>
-              <td class="px-4 py-2.5 text-stone-500">{{ props.ASAL?.[u.asal] ?? u.asal }}</td>
-              <td class="px-4 py-2.5 num text-right">{{ u.nilai_p2h ?? '—' }}</td>
-              <td class="px-4 py-2.5 num text-right">{{ u.nilai_praktek ?? '—' }}</td>
-              <td class="px-4 py-2.5 num text-right">{{ u.nilai_teori ?? '—' }}</td>
-              <td class="px-4 py-2.5 num text-right">{{ u.nilai_rambu ?? '—' }}</td>
-              <td v-if="buka === s.id" class="px-4 py-2.5">
-                <button class="text-[11px] text-red-600 hover:underline"
-                        @click="hapusUnit(s.id, u.id, u.unit || u.golongan || 'ini')">Hapus</button>
-              </td>
-            </tr>
-
-            <tr v-if="!s.unit?.length">
-              <td :colspan="buka === s.id ? 9 : 8" class="px-4 py-6 text-center text-stone-400">
-                Belum ada unit pada kartu ini.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <footer v-if="buka === s.id" class="px-5 py-4 border-t border-stone-100 space-y-4">
-        <form class="space-y-2" @submit.prevent="tambahUnit(s.id)">
-          <h4 class="text-[12px] font-bold text-cam-ink">Tambah unit</h4>
-
-          <div class="flex flex-wrap items-end gap-2">
-            <select v-model="unit.kendaraan_id" class="rounded-lg border-stone-200 text-[11px] w-44"
-                    aria-label="Golongan unit">
-              <option value="">Golongan…</option>
-              <option v-for="g in (props.golongan ?? [])" :key="g.id" :value="g.id">
-                {{ g.nama }}<span v-if="g.kelas_simpol"> — SIM {{ g.kelas_simpol }}</span>
-              </option>
-            </select>
-
-            <select v-model="unit.jenis_unit_id" class="rounded-lg border-stone-200 text-[11px] w-44"
-                    aria-label="Jenis unit">
-              <option value="">Unit…</option>
-              <option v-for="j in (props.unit ?? [])" :key="j.id" :value="j.id">{{ j.nama }}</option>
-            </select>
-
-            <select v-model="unit.kewenangan" class="rounded-lg border-stone-200 text-[11px]"
-                    aria-label="Kewenangan">
-              <option v-for="(label, kode) in (props.KEWENANGAN ?? {})" :key="kode" :value="kode">{{ label }}</option>
-            </select>
-
-            <input v-model="unit.nilai_p2h" type="number" min="0" max="100" placeholder="P2H"
-                   class="w-20 rounded-lg border-stone-200 text-[11px]" aria-label="Nilai P2H">
-            <input v-model="unit.nilai_praktek" type="number" min="0" max="100" placeholder="Praktik"
-                   class="w-20 rounded-lg border-stone-200 text-[11px]" aria-label="Nilai praktik">
-            <input v-model="unit.nilai_teori" type="number" min="0" max="100" placeholder="Teori"
-                   class="w-20 rounded-lg border-stone-200 text-[11px]" aria-label="Nilai teori">
-            <input v-model="unit.nilai_rambu" type="number" min="0" max="100" placeholder="Rambu"
-                   class="w-20 rounded-lg border-stone-200 text-[11px]" aria-label="Nilai rambu">
-
-            <button type="submit" class="eq-btn-lain">Tambahkan</button>
-          </div>
-
-          <p v-if="simpolDituntut && simpolDituntut !== s.simpol" class="text-[11px] text-amber-700">
-            Golongan ini menuntut SIM {{ simpolDituntut }}, sedangkan kartu ini tercatat
-            {{ s.simpol || 'tanpa SIM' }}. Penambahannya akan ditolak.
-          </p>
-
-          <p v-if="unit.errors.kendaraan_id" class="text-[11.5px] text-red-600">{{ unit.errors.kendaraan_id }}</p>
-          <p class="text-[11px] text-stone-500">Ambang kelulusan {{ props.NILAI_LULUS }}.</p>
-        </form>
-
-        <form class="space-y-2 border-t border-stone-100 pt-3" @submit.prevent="buatAjuan(s.id)">
-          <h4 class="text-[12px] font-bold text-cam-ink">Pengajuan lanjutan</h4>
-
-          <div class="flex flex-wrap items-end gap-2">
-            <select v-model="ajuan.jenis" class="rounded-lg border-stone-200 text-[11px]" aria-label="Jenis pengajuan">
-              <option v-for="(label, kode) in (props.JENIS_AJUAN ?? {})" :key="kode" :value="kode">{{ label }}</option>
-            </select>
-
-            <input v-model="ajuan.no_registrasi" placeholder="Nomor"
-                   class="w-32 rounded-lg border-stone-200 text-[11px]" aria-label="Nomor pengajuan">
-            <input v-model="ajuan.tanggal" type="date" required
-                   class="rounded-lg border-stone-200 text-[11px]" aria-label="Tanggal pengajuan">
-
-            <button type="submit" class="eq-btn-lain">Ajukan</button>
-          </div>
-
-          <p v-if="ajuan.errors.jenis" class="text-[11.5px] text-red-600">{{ ajuan.errors.jenis }}</p>
-        </form>
-
-        <div v-if="bolehTindak" class="flex flex-wrap items-end gap-2 border-t border-stone-100 pt-3">
-          <input v-model="tindakan.catatan" placeholder="Catatan peninjau (opsional)"
-                 class="rounded-lg border-stone-200 text-[12px] w-72" aria-label="Catatan peninjau">
-          <button class="eq-btn-utama" @click="tindak(s.id, 'setuju')">Setujui</button>
-          <button class="eq-btn-lain" @click="tindak(s.id, 'dikembalikan')">Kembalikan</button>
-          <button class="eq-btn-lain" @click="tindak(s.id, 'tolak')">Tolak</button>
-        </div>
-
-        <p v-if="tindakan.errors.keadaan" class="text-[11.5px] text-red-600">{{ tindakan.errors.keadaan }}</p>
-
-        <button class="text-[11.5px] text-red-600 hover:underline" @click="hapus(s.id, s.nomor)">
-          Hapus SIMPER ini
+    <!-- ══════════ status ══════════ -->
+    <Modal :terbuka="statusTerbuka !== null" :judul="statusForm.aktif ? 'Aktifkan kembali' : 'Nonaktifkan SIMPER'" @tutup="statusTerbuka = null">
+      <p class="text-[13px] mb-3"><b>{{ statusTerbuka?.nama }}</b> —
+        <template v-if="statusForm.aktif">SIMPER kembali dihitung sebagai dokumen aktif.</template>
+        <template v-else>SIMPER ditutup. Datanya tidak dihapus, tetapi tidak lagi dihitung pada zona masa berlaku.</template>
+      </p>
+      <Medan v-if="!statusForm.aktif" label="Alasan" untuk="st-alasan" wajib :galat="statusForm.errors.alasan">
+        <input id="st-alasan" v-model="statusForm.alasan" class="mn-isian" maxlength="200" placeholder="mis. mutasi, SIM dicabut">
+      </Medan>
+      <template #kaki>
+        <button type="button" class="mn-btn mn-btn-garis" @click="statusTerbuka = null">Close</button>
+        <button type="button" class="mn-btn" :class="statusForm.aktif ? 'mn-btn-sukses' : 'mn-btn-bahaya'" :disabled="statusForm.processing" @click="simpanStatus">
+          {{ statusForm.aktif ? 'Aktifkan' : 'Nonaktifkan' }}
         </button>
-      </footer>
-    </section>
-
-    <p v-if="!baris.length" class="rounded-2xl bg-white border border-stone-100 shadow-card px-5 py-10 text-center text-stone-400">
-      Belum ada SIMPER.
-    </p>
+      </template>
+    </Modal>
+    <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
   </div>
 </template>

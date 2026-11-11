@@ -10,6 +10,7 @@ use App\Http\Controllers\Miners\PerusahaanController as MinersPerusahaanControll
 use App\Http\Controllers\Miners\McuController as MinersMcuController;
 use App\Http\Controllers\Miners\InduksiController as MinersInduksiController;
 use App\Http\Controllers\Miners\PermitController as MinersPermitController;
+use App\Http\Controllers\Miners\SimperController as MinersSimperController;
 use App\Http\Controllers\Miners\PerpanjanganPermitController as MinersPerpanjanganPermitController;
 use App\Http\Controllers\Hris\AbsensiController;
 use App\Http\Controllers\Hris\CutiController;
@@ -490,24 +491,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->whereNumber('perpanjangan')->name('ajukan-ulang');
         });
 
+        /* SIMPER — form_simpersController, form_simper_detailsController Safe Track. */
         Route::prefix('simper')->name('simper.')->group(function () {
-            Route::get('/',  [MinersDokumenController::class, 'simperIndex'])->name('index');
-            Route::post('/', [MinersDokumenController::class, 'simperStore'])->name('store');
+            Route::get('/',  [MinersSimperController::class, 'index'])->name('index');
+            Route::post('/', [MinersSimperController::class, 'store'])->name('store');
+            Route::post('deteksi-sim', [MinersSimperController::class, 'deteksi'])->name('deteksi');
 
-            Route::put('{simper}',    [MinersDokumenController::class, 'simperUpdate'])->name('update');
-            Route::delete('{simper}', [MinersDokumenController::class, 'simperDestroy'])
+            Route::put('{simper}',    [MinersSimperController::class, 'update'])->name('update');
+            Route::delete('{simper}', [MinersSimperController::class, 'destroy'])
                 ->middleware('can:admin')->name('destroy');
 
-            Route::post('{simper}/unit',          [MinersDokumenController::class, 'simperUnit'])->name('unit.tambah');
-            Route::put('{simper}/unit/{unit}',    [MinersDokumenController::class, 'simperUnitUbah'])->name('unit.ubah');
-            Route::delete('{simper}/unit/{unit}', [MinersDokumenController::class, 'simperUnitHapus'])
-                ->middleware('can:admin')->name('unit.hapus');
+            Route::post('{simper}/unit',          [MinersSimperController::class, 'unit'])->name('unit.tambah');
+            Route::put('{simper}/unit/{unit}',    [MinersSimperController::class, 'unitUbah'])->name('unit.ubah');
+            Route::delete('{simper}/unit/{unit}', [MinersSimperController::class, 'unitHapus'])->name('unit.hapus');
 
-            Route::post('{simper}/tindak', [MinersDokumenController::class, 'simperTindak'])->name('tindak');
-            Route::post('{simper}/ajuan',  [MinersDokumenController::class, 'ajuanStore'])->name('ajuan.store');
+            Route::post('{simper}/masa-berlaku', [MinersSimperController::class, 'masaBerlaku'])->name('masa-berlaku');
+            Route::post('{simper}/status',       [MinersSimperController::class, 'status'])->name('status');
+            Route::post('{simper}/tindak',       [MinersSimperController::class, 'tindak'])->name('tindak');
 
-            Route::get('{id}', [MinersDokumenController::class, 'rincian'])
-                ->defaults('jenis', 'simper')->whereNumber('id')->name('rincian');
+            Route::get('{id}', [MinersSimperController::class, 'rincian'])->whereNumber('id')->name('rincian');
 
             Route::post('{id}/ajukan-ulang', [MinersDokumenController::class, 'ajukanUlang'])
                 ->defaults('jenis', 'simper')->whereNumber('id')->name('ajukan-ulang');
@@ -537,7 +539,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'mcu'          => [MinersMcuController::class, 'index'],
             'induksi'      => [MinersInduksiController::class, 'index'],
             'mine-permit'  => [MinersPermitController::class, 'index'],
-            'mine-license' => [MinersController::class, 'riwayat'],
+            'mine-license' => [MinersSimperController::class, 'index'],
             'authority'    => [MinersController::class, 'riwayat'],
         ] as $tahap => $aksi) {
             Route::get('riwayat/'.$tahap, $aksi)
