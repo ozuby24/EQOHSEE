@@ -1,153 +1,166 @@
 <script setup lang="ts">
 /**
- * Pemantauan masa berlaku.
+ * Monitoring Masa Berlaku — `masa_berlaku/monitoring.blade.php` Safe Track
+ * (v02): "Status Masa Berlaku" per modul, "Perlu Tindak Lanjut", lalu
+ * sebaran per perusahaan untuk MCU, Induksi, Mine Permit, dan SIMPER.
  *
- * Menjawab "siapa yang hari ini tidak boleh masuk, dan apa yang harus
- * diurus" — bukan "siapa saja pekerja kita". Karena itu yang ditampilkan
- * bukan seluruh orang melainkan yang berkasnya bermasalah, dan sebab
- * tiap kartu gugur ditulis sebagai kalimat, bukan diwakili warna saja.
+ * Setiap baris zona pada kartu status adalah tombol saring: mengkliknya
+ * menampilkan seluruh dokumen modul itu di zona itu (klik lagi untuk
+ * melepas). Zona selalu tampil sebagai ikon + angka + label, tidak
+ * pernah warna saja.
  */
-import { Head, Link, router } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { router } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 import { propHalaman } from '../../halaman';
-import Lencana from './Lencana.vue';
+import KepalaHalaman from '../../Components/Miners/KepalaHalaman.vue';
+import Kartu from '../../Components/Miners/Kartu.vue';
+import SaringBar from '../../Components/Miners/SaringBar.vue';
+import RekapPerusahaan from '../../Components/Miners/RekapPerusahaan.vue';
+import TabelData from '../../Components/Miners/TabelData.vue';
+import LencanaMasaBerlaku from '../../Components/Miners/LencanaMasaBerlaku.vue';
+import SelOrang from '../../Components/Miners/SelOrang.vue';
+import TombolIkon from '../../Components/Miners/TombolIkon.vue';
+import BarSebaran from '../../Components/Miners/BarSebaran.vue';
+import Ikon from '../../Components/Miners/Ikon.vue';
+import { IKON_ZONA } from '../../Components/Miners/ikon';
+import { URUTAN_ZONA, ZONA, type KunciZona, type MedanSaring } from '../../Components/Miners/zona';
 
 const props = propHalaman();
 
-const baris = computed<any[]>(() => (props.baris ?? []) as any[]);
+const JENIS = computed<Record<string, string>>(() => (props.JENIS ?? {}) as Record<string, string>);
+const KETERANGAN = computed<Record<string, string>>(() => (props.KETERANGAN ?? {}) as Record<string, string>);
+const ringkas = computed<Record<string, Record<string, number>>>(() => (props.ringkas ?? {}) as any);
+const rekap = computed<Record<string, any[]>>(() => (props.rekap ?? {}) as any);
+const daftar = computed<any>(() => props.daftar ?? { data: [], links: [], from: 1, total: 0 });
+const manpower = computed<any>(() => props.manpower ?? { total: 0, aktif: 0, nonaktif: 0 });
+const perusahaan = computed<any[]>(() => (props.perusahaan ?? []) as any[]);
 
-const cari       = ref(String(props.saring?.cari ?? ''));
-const jenis      = ref(String(props.saring?.jenis ?? ''));
-const keadaan    = ref(String(props.saring?.keadaan ?? ''));
-const status     = ref(String(props.saring?.status ?? ''));
-const perusahaan = ref(String(props.saring?.perusahaan ?? ''));
+const saring = ref<Record<string, string>>({ ...(props.saring ?? {}) });
 
-let tunda: ReturnType<typeof setTimeout> | undefined;
+const medanSaring = computed<MedanSaring[]>(() => [
+  { kunci: 'cari', label: 'Cari', placeholder: 'Nama, No ID, atau nomor dokumen', lebar: true },
+  { kunci: 'perusahaan', label: 'Perusahaan', jenis: 'pilih', semua: 'Semua perusahaan', opsi: perusahaan.value, lebar: true },
+  { kunci: 'jenis', label: 'Modul', jenis: 'pilih', semua: 'Semua modul',
+    opsi: Object.entries(JENIS.value).map(([nilai, label]) => ({ nilai, label })) },
+  { kunci: 'zona', label: 'Zona masa berlaku', jenis: 'pilih', semua: 'Semua zona',
+    opsi: URUTAN_ZONA.map((z) => ({ nilai: z, label: ZONA[z].pendek })) },
+]);
 
-watch([cari, jenis, keadaan, status, perusahaan], () => {
-  clearTimeout(tunda);
+function kirim(q: Record<string, string>) {
+  const isi: Record<string, string> = {};
+  for (const [k, v] of Object.entries(q)) if (v) isi[k] = v;
+  router.get('/miners/kedaluwarsa', isi, { preserveState: true, preserveScroll: true });
+}
 
-  tunda = setTimeout(() => {
-    router.get('/miners/kedaluwarsa', {
-      cari: cari.value || undefined,
-      jenis: jenis.value || undefined,
-      keadaan: keadaan.value || undefined,
-      status: status.value || undefined,
-      perusahaan: perusahaan.value || undefined,
-    }, { preserveState: true, preserveScroll: true, replace: true });
-  }, 300);
+const terapkan = () => kirim(saring.value);
+
+function bersihkan() {
+  saring.value = { cari: '', perusahaan: '', jenis: '', zona: '' };
+  kirim({});
+}
+
+/* Klik baris zona pada kartu status: saring modul + zona; klik baris
+   yang sedang aktif melepasnya. */
+function pilih(jenis: string, zona: KunciZona) {
+  const aktif = props.saring?.jenis === jenis && props.saring?.zona === zona;
+  saring.value = { ...saring.value, jenis: aktif ? '' : jenis, zona: aktif ? '' : zona };
+  terapkan();
+}
+
+const aktifZona = (jenis: string, zona: string) => props.saring?.jenis === jenis && props.saring?.zona === zona;
+const angka = (n: number | undefined) => (n ?? 0).toLocaleString('id-ID');
+
+const alamatEkspor = computed(() => {
+  const q = new URLSearchParams();
+  for (const [k, v] of Object.entries(props.saring ?? {})) if (v) q.set(k, String(v));
+  const s = q.toString();
+  return `/miners/kedaluwarsa/ekspor${s ? `?${s}` : ''}`;
 });
 
-const JENIS: [string, string][] = [
-  ['mcu', 'MCU'],
-  ['induksi', 'Induksi'],
-  ['permit', 'Mine Permit'],
-  ['simper', 'SIMPER'],
+const judulDaftar = computed(() => {
+  if (!props.disaring) return 'Perlu Tindak Lanjut';
+  const bagian = [props.saring?.jenis ? JENIS.value[props.saring.jenis] : 'Semua modul'];
+  if (props.saring?.zona) bagian.push(ZONA[props.saring.zona as KunciZona]?.pendek ?? '');
+  return `Daftar Dokumen — ${bagian.join(' · ')}`;
+});
+
+const kolom = [
+  { kunci: 'jenis', label: 'Modul' },
+  { kunci: 'nama', label: 'Nama' },
+  { kunci: 'perusahaan', label: 'Perusahaan' },
+  { kunci: 'nomor', label: 'No Dokumen' },
+  { kunci: 'berakhir', label: 'Berakhir' },
+  { kunci: 'aksi', label: '#' },
 ];
 
-const SEBAB: Record<string, string> = {
-  mcu:    'MCU habis lebih dahulu',
-  simpol: 'SIMPOL habis lebih dahulu',
-  permit: 'Mine Permit habis lebih dahulu',
-  simper: 'masa berlaku kartunya sendiri',
+const JUDUL_REKAP: Record<string, string> = {
+  mcu: 'Manpower MCU per Perusahaan',
+  induksi: 'Induksi per Perusahaan',
+  permit: 'Mine Permit per Perusahaan',
+  simper: 'SIMPER per Perusahaan',
 };
 </script>
 
 <template>
-  <Head :title="props.judul" />
+  <div>
+    <KepalaHalaman :judul="props.judul" :remah="[['Home', '/miners/dasbor'], ['Monitoring', null], ['Masa Berlaku', null]]" />
 
-  <div class="space-y-5">
-    <section class="flex flex-wrap items-end justify-between gap-4">
-      <div>
+    <Kartu judul="Status Masa Berlaku" keterangan="MCU, Induksi, Mine Permit, SIMPER — klik zona untuk menyaring">
+      <div class="mn-status-grid">
+        <section v-for="(label, j) in JENIS" :key="j" class="mn-status" :aria-label="`Status masa berlaku ${label}`">
+          <header class="mn-status-kepala">
+            <h3 class="mn-status-judul">{{ label }}</h3>
+            <span class="mn-status-sub"><b>{{ angka(ringkas[j]?.total) }}</b> dokumen · {{ KETERANGAN[j] }}</span>
+          </header>
+          <BarSebaran :n="ringkas[j] ?? {}" />
+          <ul class="mn-status-daftar">
+            <li v-for="z in URUTAN_ZONA" :key="z">
+              <button type="button" class="mn-status-baris" :class="[`mn-zona-${z}`, { 'mn-aktif': aktifZona(String(j), z) }]"
+                      :aria-pressed="aktifZona(String(j), z)" :aria-label="`${label}: ${ZONA[z].label}, ${angka(ringkas[j]?.[z])} dokumen`"
+                      @click="pilih(String(j), z)">
+                <span class="mn-zona-ikon"><Ikon :d="IKON_ZONA[z]" /></span>
+                <span class="mn-status-lbl">{{ ZONA[z].label }}</span>
+                <span class="mn-status-num">{{ angka(ringkas[j]?.[z]) }}</span>
+              </button>
+            </li>
+          </ul>
+        </section>
       </div>
+      <p class="mn-status-catatan">
+        Manpower terdaftar: <b>{{ angka(manpower.total) }}</b> orang — <b>{{ angka(manpower.aktif) }}</b> aktif,
+        {{ angka(manpower.nonaktif) }} tidak aktif. Angka MCU di atas hanya menghitung karyawan yang masih aktif;
+        Mine Permit dan SIMPER yang dinonaktifkan tidak dihitung.
+      </p>
+    </Kartu>
 
-      <Link href="/miners" class="eq-btn-lain">Daftar pekerja</Link>
-    </section>
+    <Kartu judul="Saring" keterangan="Cari orang atau dokumen, batasi per perusahaan, modul, dan zona">
+      <SaringBar v-model="saring" :medan="medanSaring" @terapkan="terapkan" @bersihkan="bersihkan" />
+    </Kartu>
 
-    <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      <div v-for="[kode, nama] in JENIS" :key="kode"
-           class="rounded-2xl bg-white border border-stone-100 shadow-card p-4">
-        <div class="text-[11px] font-semibold uppercase tracking-wide text-stone-400">{{ nama }}</div>
+    <TabelData :judul="judulDaftar" :jumlah="props.disaring ? daftar.total : props.mendesakTotal" :kolom="kolom"
+               :baris="daftar.data" :nomor-awal="daftar.from ?? 1" :tautan="daftar.links" kunci-baris="kunci"
+               :kosong="props.disaring ? 'Tidak ada dokumen di zona ini.' : 'Tidak ada dokumen yang lewat atau kurang dari 30 hari lagi.'">
+      <template #alat>
+        <p class="mn-status-sub">
+          {{ props.disaring ? 'Diurut dari yang paling mendesak.' : 'Sudah lewat atau kurang dari 30 hari — 15 paling mendesak.' }}
+        </p>
+        <a :href="alamatEkspor" class="mn-btn mn-btn-garis">
+          Unduh Excel
+        </a>
+      </template>
+      <template #sel-jenis="{ nilai }"><span class="mn-lencana mn-l-abu">{{ JENIS[nilai] ?? nilai }}</span></template>
+      <template #sel-nama="{ baris: b }">
+        <SelOrang :nama="b.nama" :sub="b.noid" :href="`/miners/${b.pekerja_id}`" />
+        <span v-if="!b.aktif" class="mn-lencana mn-l-abu ml-1">non-aktif</span>
+      </template>
+      <template #sel-berakhir="{ baris: b }"><LencanaMasaBerlaku :tanggal="b.berakhir" :sisa="b.sisa" /></template>
+      <template #sel-aksi="{ baris: b }">
+        <div class="mn-aksi mn-aksi-kiri">
+          <TombolIkon v-if="b.tautan" ikon="mata" varian="garis" :href="b.tautan" :judul="`Buka ${JENIS[b.jenis] ?? 'dokumen'} ${b.nama}`" />
+        </div>
+      </template>
+    </TabelData>
 
-        <dl class="mt-2 space-y-1 text-[11.5px]">
-          <div v-for="(label, k) in (props.KEADAAN ?? {})" :key="k" class="flex justify-between gap-2">
-            <dt class="text-stone-500">{{ label }}</dt>
-            <dd class="num font-semibold"
-                :class="Number(props.ringkas?.[kode]?.[k] ?? 0) > 0 && k !== 'berlaku'
-                  ? 'text-cam-ink' : 'text-stone-300'">
-              {{ props.ringkas?.[kode]?.[k] ?? 0 }}
-            </dd>
-          </div>
-        </dl>
-      </div>
-    </section>
-
-    <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
-      <header class="px-5 py-3.5 border-b border-stone-100 flex flex-wrap items-center gap-3">
-        <h3 class="text-[13.5px] font-bold text-cam-ink grow basis-40 min-w-0">
-          Perlu diurus <span class="font-normal text-stone-400">| {{ baris.length }} orang</span>
-        </h3>
-
-        <select v-model="jenis" class="rounded-lg border-stone-200 text-[12px]" aria-label="Saring jenis berkas">
-          <option value="">Semua berkas</option>
-          <option v-for="(label, kode) in (props.JENIS ?? {})" :key="kode" :value="kode">{{ label }}</option>
-        </select>
-
-        <select v-model="keadaan" class="rounded-lg border-stone-200 text-[12px]" aria-label="Saring keadaan">
-          <option value="">Semua keadaan</option>
-          <option v-for="(label, kode) in (props.KEADAAN ?? {})" :key="kode" :value="kode">{{ label }}</option>
-        </select>
-
-        <select v-model="status" class="rounded-lg border-stone-200 text-[12px]" aria-label="Saring status kerja">
-          <option value="">Semua status</option>
-          <option v-for="(label, kode) in (props.STATUS ?? {})" :key="kode" :value="kode">{{ label }}</option>
-        </select>
-
-        <input v-model="cari" placeholder="Cari nama, NIK…"
-               class="rounded-lg border-stone-200 text-[12px] w-48" aria-label="Cari pekerja">
-      </header>
-
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-left text-[11.5px]">
-          <thead>
-            <tr class="text-stone-400 border-b border-stone-200 bg-stone-50/70">
-              <th class="px-4 py-2 font-semibold w-10">No</th>
-              <th class="px-4 py-2 font-semibold">Nama</th>
-              <th v-for="[, label] in JENIS" :key="label"
-                  class="px-4 py-2 font-semibold whitespace-nowrap">{{ label }}</th>
-              <th class="px-4 py-2 font-semibold">Yang menghentikannya</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr v-for="(b, i) in baris" :key="b.id" class="border-b border-stone-100 hover:bg-stone-50/60">
-              <td class="px-4 py-2.5 num text-stone-400">{{ i + 1 }}</td>
-
-              <td class="px-4 py-2.5">
-                <Link :href="`/miners/${b.id}`" class="font-bold text-cam-lime-deep hover:underline">
-                  {{ b.nama }}
-                </Link>
-                <div class="text-[10.5px] text-stone-400">{{ b.perusahaan || '—' }}</div>
-              </td>
-
-              <td v-for="[kode] in JENIS" :key="kode" class="px-4 py-2.5">
-                <Lencana :keadaan="b[kode].keadaan" :label="props.KEADAAN?.[b[kode].keadaan]"
-                         :nada="props.NADA" :sisa="b[kode].sisa" />
-              </td>
-
-              <td class="px-4 py-2.5 text-[10.5px] text-stone-500">
-                {{ b.sebab ? SEBAB[b.sebab] ?? b.sebab : '—' }}
-              </td>
-            </tr>
-
-            <tr v-if="!baris.length">
-              <td colspan="7" class="px-4 py-10 text-center text-stone-400">
-                Tidak ada berkas yang perlu diurus dengan penyaring ini.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <RekapPerusahaan v-for="(judul, j) in JUDUL_REKAP" :key="j" :judul="judul" :baris="rekap[j] ?? []" :pakai-aktif="j === 'mcu'" />
   </div>
 </template>

@@ -39,7 +39,7 @@ class MinersKueriDaftarTest extends TestCase
     public function kueri_daftar_tidak_tumbuh_bersama_baris(): void
     {
         $this->simperTerbit();
-        $alamat = ['/miners/riwayat/mine-permit', '/miners/riwayat/mine-license', '/miners/perpanjangan-permit', '/miners/daftar/cetak-kartu'];
+        $alamat = ['/miners/riwayat/mine-permit', '/miners/riwayat/mine-license', '/miners/perpanjangan-permit', '/miners/daftar/cetak-kartu', '/miners/kedaluwarsa'];
         $kecil  = array_map(fn ($a) => $this->hitung($a), $alamat);
 
         for ($i = 0; $i < 5; $i++) $this->simperTerbit();

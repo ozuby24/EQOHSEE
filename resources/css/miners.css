@@ -591,3 +591,25 @@ a.mn-daftar-baris:hover{background:var(--mn-kartu-2);color:var(--mn-judul)}
 .mn-form-penuh{grid-column:1/-1;margin:0}
 .mn-btn.mn-nonaktif{opacity:.5;pointer-events:none}
 .mn-pratinjau-logo{max-height:40px;max-width:160px;object-fit:contain;margin-bottom:6px;display:block}
+
+/* ── Monitoring Masa Berlaku: kartu status per modul (v02 Safe Track) ──
+   Setiap baris zona adalah tombol saring: ikon + label + angka, tidak
+   pernah warna saja. Seluruh warna lewat token --mn-*, sehingga pasangan
+   gelapnya ikut dari :root[data-tema="gelap"] .tema-miners. */
+.mn-status-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.mn-status{display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid var(--mn-garis);border-radius:14px;background:var(--mn-kartu-2)}
+.mn-status-kepala{display:flex;flex-direction:column;gap:2px}
+.mn-status-judul{margin:0;font-size:15px;font-weight:700;color:var(--mn-judul)}
+.mn-status-sub{font-size:12px;color:var(--mn-redup)}
+.mn-status-sub b{color:var(--mn-judul);font-variant-numeric:tabular-nums}
+.mn-status-daftar{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.mn-status-baris{display:flex;align-items:center;gap:8px;width:100%;padding:5px 6px;border:1px solid transparent;border-radius:10px;background:transparent;text-align:left;cursor:pointer;color:var(--mn-teks)}
+.mn-status-baris:hover{background:var(--mn-kartu)}
+.mn-status-baris:focus-visible{outline:2px solid var(--mn-aksen);outline-offset:2px}
+.mn-status-baris.mn-aktif{border-color:var(--mn-aksen);background:var(--mn-kartu)}
+.mn-status-baris .mn-zona-ikon{width:24px;height:24px;border-radius:7px}
+.mn-status-baris .mn-zona-ikon svg{width:13px;height:13px}
+.mn-status-lbl{flex:1;font-size:12.5px}
+.mn-status-num{font-size:14px;font-weight:700;color:var(--mn-judul);font-variant-numeric:tabular-nums}
+.mn-status-catatan{margin:12px 0 0;font-size:12px;color:var(--mn-redup)}
+.mn-status-catatan b{color:var(--mn-judul);font-variant-numeric:tabular-nums}

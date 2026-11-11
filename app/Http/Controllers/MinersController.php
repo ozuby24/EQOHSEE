@@ -7,7 +7,7 @@ use App\Models\Miners\{Alur, Blok, Departemen, HasilMcu, Induksi, InduksiOrang, 
     JenisUnit, KategoriPermit, Kendaraan, Kompetensi, Mcu, McuOrang, Pekerja, Permit,
     Pjo, Simper, SimperAjuan, Subkontraktor, TipePermit};
 use App\Models\KompetensiJenis;
-use App\Support\Miners\{Acuan, AksesMiners, Jalur, Keadaan, RincianDokumen, TugasMiners, Zona};
+use App\Support\Miners\{Acuan, AksesMiners, Jalur, Keadaan, Laporan, MonitoringMiners, RincianDokumen, TugasMiners, Zona};
 use App\Support\Perusahaan;
 use App\Support\Waktu;
 use Illuminate\Http\Request;
@@ -471,66 +471,89 @@ class MinersController extends Controller
 
     public function kedaluwarsa(Request $r)
     {
-        $jenis = in_array($j = $r->query('jenis'), ['mcu', 'induksi', 'permit', 'simper'], true) ? $j : null;
+        [$saring, $baris] = $this->monitoring($r);
 
-        $orang = $this->orangDenganBerkas()
-            ->cari(trim((string) $r->query('cari')))
-            ->when($r->query('perusahaan'), fn ($q, $c) => $q->where('company_id', $c))
-            ->when($r->query('status'), fn ($q, $s) => $q->where('status', $s))
-            ->get();
+        $ringkas = MonitoringMiners::ringkas($baris);
+        $rekap   = MonitoringMiners::rekap($baris);
 
-        $baris = $orang->map(fn (Pekerja $p) => $this->keadaanOrang($p));
-
-        /* Ringkasan dihitung SEBELUM penyaring keadaan dipasang —
-           alasannya sama dengan pada dasbor di atas. */
-        $ringkas = [];
-        foreach (['mcu', 'induksi', 'permit', 'simper'] as $k) {
-            $ringkas[$k] = array_fill_keys(array_keys(Keadaan::LABEL), 0)
-                + $baris->countBy(fn (array $b) => $b[$k]['keadaan'])->all();
-        }
-
-        $tersaring = $baris;
-
-        if ($jenis) {
-            $tersaring = $tersaring->filter(
-                fn (array $b) => $b[$jenis]['keadaan'] !== Keadaan::BERLAKU,
-            )->values();
-        }
-
-        if ($keadaan = $r->query('keadaan')) {
-            $tersaring = $tersaring->filter(fn (array $b) => $jenis
-                ? $b[$jenis]['keadaan'] === $keadaan
-                : $b['terburuk'] === $keadaan)->values();
-        }
+        /* Tanpa saringan: "Perlu Tindak Lanjut" (lewat / ≤ 30 hari, 15
+           paling mendesak) seperti Safe Track. Dengan saringan jenis atau
+           zona (klik kartu zona): seluruh dokumen yang cocok, berhalaman. */
+        $tersaring = $this->saringMonitoring($baris, $saring);
+        $disaring  = $saring['jenis'] !== '' || $saring['zona'] !== '';
+        $isi       = $disaring ? $tersaring : MonitoringMiners::mendesak($tersaring);
+        $kini      = max(1, (int) $r->query('page', 1));
+        $per       = $disaring ? 25 : 15;
 
         return Inertia::render('Miners/Kedaluwarsa', [
-            'judul'    => 'Miners — Masa Berlaku Berkas',
-            'subjudul' => 'Siapa yang hari ini tidak boleh masuk, dan apa yang harus diurus.',
-
-            'baris'   => $tersaring,
-            'ringkas' => $ringkas,
-
-            'saring' => [
-                'cari'       => $r->query('cari', ''),
-                'jenis'      => $jenis ?? '',
-                'keadaan'    => $r->query('keadaan', ''),
-                'perusahaan' => $r->query('perusahaan', ''),
-                'status'     => $r->query('status', ''),
+            'judul'    => 'Monitoring Masa Berlaku',
+            'subjudul' => 'MCU, Induksi, Mine Permit, dan SIMPER — siapa yang hari ini tidak boleh masuk.',
+            'ringkas'  => $ringkas,
+            'rekap'    => $rekap,
+            'manpower' => [
+                'total'    => $baris->where('jenis', 'mcu')->count(),
+                'aktif'    => $baris->where('jenis', 'mcu')->where('aktif', true)->count(),
+                'nonaktif' => $baris->where('jenis', 'mcu')->where('aktif', false)->count(),
             ],
-
-            'KEADAAN' => Keadaan::LABEL,
-            'NADA'    => Keadaan::NADA,
-            'STATUS'  => Pekerja::STATUS,
-            'JENIS'   => [
-                'mcu'     => 'MCU',
-                'induksi' => 'Induksi',
-                'permit'  => 'Mine Permit',
-                'simper'  => 'SIMPER',
-            ],
-            'perusahaan' => Company::query()
-                ->when(! auth()->user()?->isAdmin(), fn ($q) => $q->whereKey(auth()->user()?->company_id))
-                ->orderBy('name')->get(['id', 'name']),
+            'daftar' => new \Illuminate\Pagination\LengthAwarePaginator(
+                $isi->forPage($kini, $per)->values(), $disaring ? $isi->count() : min($isi->count(), $per), $per, $kini,
+                ['path' => $r->url(), 'query' => $r->except('page')],
+            ),
+            'mendesakTotal' => MonitoringMiners::mendesak($tersaring)->count(),
+            'disaring' => $disaring,
+            'saring'   => $saring,
+            'JENIS'    => MonitoringMiners::JENIS,
+            'KETERANGAN' => MonitoringMiners::KETERANGAN,
+            'perusahaan' => AksesMiners::perusahaan($r->user())->map->only(['id', 'name'])->values(),
         ]);
+    }
+
+    /** Unduhan Excel monitoring — kolom = kolom tabel di layar, saringan yang sama. */
+    public function kedaluwarsaEkspor(Request $r)
+    {
+        [$saring, $baris] = $this->monitoring($r);
+        $isi = $this->saringMonitoring($baris, $saring);
+        if ($saring['jenis'] === '' && $saring['zona'] === '') $isi = MonitoringMiners::mendesak($isi);
+        $zona = Zona::daftar();
+
+        return Laporan::unduh('monitoring-masa-berlaku-'.Waktu::kini()->format('Ymd-Hi'),
+            ['Modul', 'Nama', 'No ID', 'Perusahaan', 'No Dokumen', 'Berakhir', 'Sisa Hari', 'Zona', 'Status'],
+            $isi->map(fn ($b) => [
+                MonitoringMiners::JENIS[$b['jenis']], $b['nama'], $b['noid'], $b['perusahaan'], $b['nomor'],
+                $b['berakhir'], $b['sisa'], $zona[$b['zona']]['label'], $b['aktif'] ? 'Aktif' : 'Tidak aktif',
+            ]));
+    }
+
+    /** @return array{0: array<string,string>, 1: Collection<int,array<string,mixed>>} */
+    private function monitoring(Request $r): array
+    {
+        $saring = [
+            'cari'       => trim((string) $r->query('cari', '')),
+            'perusahaan' => (string) $r->query('perusahaan', ''),
+            'jenis'      => array_key_exists($j = (string) $r->query('jenis'), MonitoringMiners::JENIS) ? $j : '',
+            'zona'       => in_array($z = (string) $r->query('zona'), Zona::KUNCI, true) ? $z : '',
+        ];
+
+        $baris = MonitoringMiners::baris()
+            ->when($saring['perusahaan'] !== '', fn ($c) => $c->where('company_id', (int) $saring['perusahaan']))
+            ->when($saring['cari'] !== '', function ($c) use ($saring) {
+                $k = mb_strtolower($saring['cari']);
+
+                return $c->filter(fn ($b) => str_contains(mb_strtolower($b['nama'].' '.$b['noid'].' '.$b['nomor']), $k));
+            })->values();
+
+        return [$saring, $baris];
+    }
+
+    /** @param Collection<int,array<string,mixed>> $baris */
+    private function saringMonitoring(Collection $baris, array $saring): Collection
+    {
+        return $baris
+            ->when($saring['jenis'] !== '', fn ($c) => $c->where('jenis', $saring['jenis']))
+            ->when($saring['zona'] !== '', fn ($c) => $c->where('zona', $saring['zona'])->where('aktif', true))
+            /* Paling mendesak lebih dulu; yang tanggalnya kosong di akhir. */
+            ->sortBy(fn ($b) => sprintf('%012d|%s', ($b['sisa'] ?? 99_999_999) + 1_000_000, mb_strtolower((string) $b['nama'])))
+            ->values();
     }
 
     /* ═══════════════════ riwayat ═══════════════════ */

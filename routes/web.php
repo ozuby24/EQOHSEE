@@ -589,6 +589,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
            pekerja kita" melainkan "siapa yang hari ini tidak boleh
            masuk". */
         Route::get('kedaluwarsa', [MinersController::class, 'kedaluwarsa'])->name('kedaluwarsa');
+        Route::get('kedaluwarsa/ekspor', [MinersController::class, 'kedaluwarsaEkspor'])->name('kedaluwarsa.ekspor');
 
         /* Alur persetujuan per IUP — penyetuju bernama dan penerima
            tembusannya (Administrasi Sistem → Alur Persetujuan Safe Track). */
