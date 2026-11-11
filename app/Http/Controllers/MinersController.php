@@ -310,8 +310,8 @@ class MinersController extends Controller
             'departemen', 'jabatan', 'subkontraktor', 'blok', 'subBlok', 'company',
             'mcu.hasil', 'mcu.mcu', 'mcu.rujukan',
             'induksi.induksi',
-            'permit.tipe', 'permit.kategori', 'permit.mcuOrang', 'permit.berkas', 'permit.alur',
-            'simper.unit.kendaraan', 'simper.unit.jenisUnit', 'simper.permit.mcuOrang',
+            'permit.tipe', 'permit.kategori', 'permit.mcuOrang', 'permit.berkas', 'permit.alur', 'permit.perpanjanganBerjalan',
+            'simper.unit.kendaraan', 'simper.unit.jenisUnit', 'simper.permit.mcuOrang', 'simper.permit.perpanjanganBerjalan',
             'simper.ajuan.unit', 'simper.alur',
         ]);
 
@@ -577,7 +577,7 @@ class MinersController extends Controller
                     'keadaan' => Keadaan::induksi($i),
                 ]),
 
-            'mine-permit' => Permit::query()->with(['pekerja', 'tipe', 'mcuOrang'])
+            'mine-permit' => Permit::query()->with(['pekerja', 'tipe', 'mcuOrang', 'perpanjanganBerjalan'])
                 ->orderByDesc('tanggal')->limit(300)->get()
                 ->map(fn (Permit $p) => [
                     'id'      => $p->id,
@@ -590,18 +590,7 @@ class MinersController extends Controller
                     'keadaan' => Keadaan::permit($p),
                 ]),
 
-            'mine-license' => Simper::query()->with(['pekerja', 'unit', 'permit.mcuOrang'])
-                ->orderByDesc('tanggal')->limit(300)->get()
-                ->map(fn (Simper $s) => [
-                    'id'      => $s->id,
-                    'pekerja_id' => $s->pekerja_id,
-                    'nama'    => $s->pekerja?->nama,
-                    'nomor'   => $s->no_simper,
-                    'tanggal' => $s->tanggal?->toDateString(),
-                    'sampai'  => $s->habisEfektif()?->toDateString(),
-                    'ket'     => 'Kelas '.$s->kelas.' · '.$s->unit->count().' unit',
-                    'keadaan' => Keadaan::simper($s),
-                ]),
+            /* SIMPER: History → SIMPER kini Miners\SimperController (rute riwayat.mine-license). */
 
             default => Kompetensi::query()->with('pekerja')
                 ->orderByDesc('berlaku_sampai')->limit(300)->get()
@@ -645,9 +634,6 @@ class MinersController extends Controller
         'outstanding-induksi' => ['Data Outstanding Induction',   'Outstanding Induction Table',   'induksi', null],
         'outstanding-permit'  => ['Data Outstanding Mine Permit', 'Outstanding Mine Permit Table', 'permit',  null],
         'outstanding-simper'  => ['Data Outstanding SIMPER',      'Outstanding SIMPER Table',      'simper',  null],
-        'penambahan-unit'     => ['Penambahan Unit',              'Penambahan Unit Table',         'ajuan',   'penambahan'],
-        'upgrade-simper'      => ['Upgrade SIMPER',               'Upgrade SIMPER Table',          'ajuan',   'upgrade'],
-        'perpanjangan'        => ['Perpanjangan SIMPER',          'Perpanjangan SIMPER Table',     'ajuan',   'perpanjangan'],
         'perpanjangan-permit' => ['Perpanjangan Mine Permit',     'Perpanjangan Mine Permit Table','perpanjangan_permit', null],
     ];
 
@@ -691,22 +677,8 @@ class MinersController extends Controller
                 'Data Rujukan MCU',
             ],
 
-            default => [
-                Permit::query()->where('status', 'terbit')->with(['pekerja.company', 'user'])
-                    ->orderByDesc('tanggal')->get()
-                    ->map(fn (Permit $p) => [
-                        'id'         => $p->id,
-                        'url'        => '/miners/permit/'.$p->id,
-                        'nomor'      => $p->no_registrasi,
-                        'tanggal'    => $p->tanggal?->toDateString(),
-                        'judul'      => $p->pekerja?->nama,
-                        'perusahaan' => $p->pekerja?->company?->name,
-                        'status'     => $p->status,
-                        'oleh'       => $p->user?->name,
-                        'posisi'     => trim(($p->jenis_kartu ?: 'Mine Permit').' · '.$p->cakupan_area, ' ·'),
-                    ]),
-                'Kartu Siap Cetak',
-            ],
+            /* Cetak Kartu kini Miners\KartuController (rute daftar.cetak-kartu). */
+            default => abort(404),
         };
 
         return Inertia::render('Miners/Antrean', [

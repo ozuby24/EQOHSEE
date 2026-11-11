@@ -56,7 +56,7 @@ class PermitController extends Controller
         ];
 
         $semua = Permit::query()
-            ->with(['pekerja.company:id,name', 'mcuOrang', 'company:id,name', 'iup:id,name'])
+            ->with(['pekerja.company:id,name', 'mcuOrang', 'company:id,name', 'iup:id,name', 'perpanjanganBerjalan'])
             ->when(! $riwayat, fn ($q) => $q->where('user_id', $u->id))
             ->orderByDesc('tanggal')->orderByDesc('id')->get();
 
@@ -137,7 +137,7 @@ class PermitController extends Controller
         $dari    = $r->date('dari')?->startOfDay();
         $sampai  = $r->date('sampai')?->endOfDay();
 
-        $baris = Permit::query()->with(['pekerja.departemen', 'pekerja.company', 'kontraktor', 'iup', 'mcuOrang', 'user'])
+        $baris = Permit::query()->with(['pekerja.departemen', 'pekerja.company', 'kontraktor', 'iup', 'mcuOrang', 'user', 'perpanjanganBerjalan'])
             ->when(! $riwayat, fn ($q) => $q->where('user_id', $u->id))
             ->when($dari, fn ($q) => $q->where('created_at', '>=', $dari))
             ->when($sampai, fn ($q) => $q->where('created_at', '<=', $sampai))

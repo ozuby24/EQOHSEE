@@ -64,13 +64,14 @@ final class PemantauanMiners
      */
     public static function muat(): Collection
     {
-        return Pekerja::with([
+        /* Keadaan::relasi() memuat yang dibaca Keadaan (induksi, permit +
+           perpanjangan berjalan, SIMPER) sekaligus — satu kueri per relasi,
+           bukan satu per orang. */
+        return Pekerja::with(array_merge(Keadaan::relasi(), [
             'company',
             'jabatan',
             'mcu' => fn ($q) => $q->orderByDesc('tanggal_periksa'),
-            'permit.mcuOrang',
-            'simper.permit.mcuOrang',
-        ])->get();
+        ]))->get();
     }
 
     /**

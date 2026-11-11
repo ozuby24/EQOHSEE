@@ -408,7 +408,7 @@ final class RincianDokumen
             'mcu'     => ['alur.user', 'alur.ditugaskan', 'user', 'iup', 'orang.hasil', 'orang.pekerja', 'orang.rujukan'],
             'induksi' => ['alur.user', 'alur.ditugaskan', 'user', 'iup', 'orang.pekerja'],
             'permit'  => ['alur.user', 'alur.ditugaskan', 'user', 'iup', 'pekerja', 'tipe', 'kategori', 'mcuOrang', 'berkas'],
-            'simper'  => ['alur.user', 'alur.ditugaskan', 'user', 'iup', 'pekerja', 'permit.mcuOrang', 'unit.kendaraan', 'unit.jenisUnit'],
+            'simper'  => ['alur.user', 'alur.ditugaskan', 'user', 'iup', 'pekerja', 'permit.mcuOrang', 'permit.perpanjanganBerjalan', 'unit.kendaraan', 'unit.jenisUnit'],
             default   => ['alur.user', 'alur.ditugaskan', 'user'],
         };
     }

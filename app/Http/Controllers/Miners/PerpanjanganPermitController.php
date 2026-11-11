@@ -45,7 +45,7 @@ class PerpanjanganPermitController extends Controller
 
         $q = $aktif === 'saya' ? $saya : PermitPerpanjangan::query();
 
-        $baris = $q->with(['permit.pekerja.company', 'permit.mcuOrang', 'user:id,name', 'alur.ditugaskan'])
+        $baris = $q->with(['permit.pekerja.company', 'permit.mcuOrang', 'permit.perpanjanganBerjalan', 'user:id,name', 'alur.ditugaskan'])
             ->orderByDesc('tanggal')->orderByDesc('id')->get()
             ->map(fn (PermitPerpanjangan $x) => [
                 'id'         => $x->id,
@@ -235,10 +235,17 @@ class PerpanjanganPermitController extends Controller
     {
         $berjalan = PermitPerpanjangan::withoutGlobalScopes()->whereIn('status', PermitPerpanjangan::BERJALAN)->select('permit_id');
 
-        return Permit::query()->with(['pekerja', 'mcuOrang'])
+        $permit = Permit::query()->with(['pekerja', 'mcuOrang', 'perpanjanganBerjalan'])
             ->whereIn('status', Permit::TERBIT)->where('aktif', true)
             ->whereNotIn('id', $berjalan)
-            ->get()
+            ->get();
+
+        /* Jumlah perpanjangan terdahulu dihitung SEKALI untuk semua calon,
+           bukan satu kueri per baris. */
+        $jumlah = RiwayatPerpanjangan::query()->where('jenis', 'permit')->whereIn('dokumen_id', $permit->pluck('id'))
+            ->selectRaw('dokumen_id, COUNT(*) as n')->groupBy('dokumen_id')->pluck('n', 'dokumen_id');
+
+        return $permit
             ->sortBy(fn (Permit $p) => $p->pekerja?->nama)
             ->map(fn (Permit $p) => [
                 'id'      => $p->id,
@@ -248,7 +255,7 @@ class PerpanjanganPermitController extends Controller
                 'tglMcu'  => $p->mcuOrang?->tanggal_periksa?->toDateString(),
                 'nik'     => $p->pekerja?->nik,
                 'cakupan' => $p->cakupan_area,
-                'jumlah'  => RiwayatPerpanjangan::jumlah('permit', (int) $p->id),
+                'jumlah'  => (int) ($jumlah[$p->id] ?? 0),
             ])->values();
     }
 }
