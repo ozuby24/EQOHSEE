@@ -47,3 +47,13 @@ Schedule::command('smkp:pengingat-tindak-lanjut')
     // Jam kirim Aurorasys (07.15 WIB); zona aplikasi EQOHSEE UTC.
     ->timezone('Asia/Jakarta')
     ->withoutOverlapping();
+
+/*
+ * Pengingat masa berlaku Miners — `Alert:MasaBerlaku` Safe Track (07.25
+ * WIB), sesudah `miners:sinkron` 06.55. Aman diulang: tiap dokumen
+ * diingatkan sekali per ambang (60 hari, 30 hari, lewat).
+ */
+Schedule::command('miners:pengingat')
+    ->dailyAt('07:25')
+    ->timezone(\App\Support\Waktu::zona())
+    ->withoutOverlapping();

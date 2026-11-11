@@ -106,9 +106,9 @@ function simpanEdit() {
 
 const masaTerbuka = ref(false);
 const masaForm = useForm({ sumber: 'manual', tanggal: '' });
-function bukaMasa() {
+function bukaMasa(usulan?: string) {
   masaForm.sumber = 'manual';
-  masaForm.tanggal = s.value.berlaku ?? '';
+  masaForm.tanggal = (typeof usulan === 'string' ? usulan : null) ?? s.value.berlaku ?? '';
   masaTerbuka.value = true;
 }
 function simpanMasa() {
@@ -167,7 +167,7 @@ const jenisTeks = (u: any) => (u.jenis ?? []).join(', ') || '—';
       </template>
       <template #aksi>
         <TombolIkon v-if="props.bolehUbah" ikon="pensil" judul="Edit SIMPER" @click="bukaEdit" />
-        <TombolIkon v-if="props.kelola" ikon="kalender" varian="garis" judul="Masa berlaku SIM" @click="bukaMasa" />
+        <TombolIkon v-if="props.kelola" ikon="kalender" varian="garis" judul="Masa berlaku SIM" @click="bukaMasa()" />
         <TombolIkon v-if="props.kelola" ikon="orang" varian="garis" :judul="s.aktif ? 'Nonaktifkan SIMPER' : 'Aktifkan kembali'" @click="bukaStatus" />
       </template>
     </KepalaProfil>
@@ -177,6 +177,12 @@ const jenisTeks = (u: any) => (u.jenis ?? []).join(', ') || '—';
         <div class="mn-langkah-label">Tidak aktif sejak {{ tglId(s.nonaktifSejak) }}</div>
         <div class="mn-langkah-kurang">{{ s.alasanNonaktif || 'Tanpa keterangan.' }}</div>
       </div>
+    </div>
+
+    <div v-if="s.usulanSim" class="mn-alert mn-alert-peringatan" role="status">
+      <b>Usulan masa berlaku SIM dari berkas: {{ tglId(s.usulanSim.tanggal) }}.</b>
+      {{ s.usulanSim.pesan }} Belum diterapkan — tanggal SIM baru berlaku setelah disimpan.
+      <button v-if="props.kelola" type="button" class="mn-btn mn-btn-garis mn-btn-kecil ml-2" @click="bukaMasa(s.usulanSim.tanggal)">Terapkan usulan</button>
     </div>
 
     <div v-if="props.bolehTindak" class="mn-bilah-aksi">

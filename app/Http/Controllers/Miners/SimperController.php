@@ -395,6 +395,11 @@ class SimperController extends Controller
                 'sisa'        => Zona::sisa($habis),
                 'sumber'      => Simper::SUMBER_SIM[$s->simpol_sumber ?? ''] ?? null,
                 'sumberKode'  => $s->simpol_sumber,
+                /* Usulan `miners:deteksi-sim` untuk SIMPER lama — hanya
+                   tampil selama tanggal SIM-nya belum diisi. */
+                'usulanSim'   => ! $s->simpol_berlaku_sampai && ! empty($s->simpol_meta['usulan']['tanggal'])
+                    ? ['tanggal' => $s->simpol_meta['usulan']['tanggal'], 'pesan' => $s->simpol_meta['usulan']['pesan'] ?? null]
+                    : null,
                 'catatan'     => $s->catatan,
                 'pengaju'     => $s->user?->name,
                 'berkas' => [
