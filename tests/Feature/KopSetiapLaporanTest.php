@@ -44,12 +44,6 @@ class KopSetiapLaporanTest extends TestCase
      * @var array<string,string>
      */
     private const TANPA_KOP = [
-        /* Kartu identitas ukuran KTP, bukan lembar A4. Kop dokumen
-           terkendali — nomor dokumen, revisi, tanggal terbit — memakan
-           sepertiga muka kartu yang lebarnya 85,6 mm, dan kartu itu
-           sendiri sudah menyandang identitas penerbitnya pada kepalanya:
-           nama perusahaan, jenis kartu, dan nomor kartunya. */
-        'KartuTambang' => 'kartu identitas fisik, kopnya menyatu pada kepala kartu',
         /* Sertifikat berbingkai ganda seperti piagam — bentuk Safe Track
            (induction_registrations/sertifikat.blade.php), bukan formulir
            yang diisi. Identitas penerbitnya sudah menjadi muka sertifikat:

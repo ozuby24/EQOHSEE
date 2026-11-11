@@ -3,12 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Company;
-use App\Models\Miners\{Alur, Blok, Departemen, HasilMcu, Induksi, InduksiOrang, Jabatan,
-    JenisUnit, KategoriPermit, Kendaraan, Kompetensi, Mcu, McuOrang, Pekerja, Permit,
-    Pjo, Simper, SimperAjuan, Subkontraktor, TipePermit};
-use App\Models\KompetensiJenis;
+use App\Models\Miners\{Alur, Departemen, HasilMcu, Induksi, InduksiOrang, Jabatan,
+    Kompetensi, Mcu, McuOrang, Pekerja, Permit, Simper, SimperAjuan, Subkontraktor};
 use App\Support\Berkas;
-use App\Support\Miners\{Acuan, AksesMiners, Jalur, Keadaan, Laporan, MonitoringMiners, RincianDokumen, TugasMiners, Verifikasi, Zona};
+use App\Support\Miners\{AksesMiners, Jalur, Keadaan, Laporan, MonitoringMiners, RincianDokumen, TugasMiners, Verifikasi, Zona};
 use App\Support\Perusahaan;
 use App\Support\Waktu;
 use Illuminate\Http\Request;
@@ -683,65 +681,26 @@ class MinersController extends Controller
         $tahap = $r->route('tahap');
         $cari  = trim((string) $r->query('cari'));
 
-        $baris = match ($tahap) {
-            'mcu' => McuOrang::query()->with(['mcu', 'pekerja', 'hasil'])
-                ->when($cari, fn ($q) => $q->where('nama', 'like', "%{$cari}%"))
-                ->orderByDesc('tanggal_periksa')->limit(300)->get()
-                ->map(fn (McuOrang $m) => [
-                    'id'      => $m->id,
-                    'pekerja_id' => $m->pekerja_id,
-                    'nama'    => $m->nama,
-                    'nomor'   => $m->mcu?->no_registrasi,
-                    'tanggal' => $m->tanggal_periksa?->toDateString(),
-                    'sampai'  => $m->berlaku_sampai?->toDateString(),
-                    'ket'     => $m->hasil?->nama,
-                    'keadaan' => Keadaan::mcu($m),
-                ]),
-
-            'induksi' => InduksiOrang::query()->with(['induksi', 'pekerja'])
-                ->orderByDesc('tanggal_induksi')->limit(300)->get()
-                ->map(fn (InduksiOrang $i) => [
-                    'id'      => $i->id,
-                    'pekerja_id' => $i->pekerja_id,
-                    'nama'    => $i->pekerja?->nama,
-                    'nomor'   => $i->induksi?->no_registrasi,
-                    'tanggal' => $i->tanggal_induksi?->toDateString(),
-                    'sampai'  => $i->berlaku_sampai?->toDateString(),
-                    'ket'     => $i->nilai === null ? null : 'Nilai '.$i->nilai,
-                    'keadaan' => Keadaan::induksi($i),
-                ]),
-
-            'mine-permit' => Permit::query()->with(['pekerja', 'tipe', 'mcuOrang', 'perpanjanganBerjalan'])
-                ->orderByDesc('tanggal')->limit(300)->get()
-                ->map(fn (Permit $p) => [
-                    'id'      => $p->id,
-                    'pekerja_id' => $p->pekerja_id,
-                    'nama'    => $p->pekerja?->nama,
-                    'nomor'   => $p->no_registrasi,
-                    'tanggal' => $p->tanggal?->toDateString(),
-                    'sampai'  => $p->habisEfektif()?->toDateString(),
-                    'ket'     => $p->tipe?->nama,
-                    'keadaan' => Keadaan::permit($p),
-                ]),
-
-            /* SIMPER: History → SIMPER kini Miners\SimperController (rute riwayat.mine-license). */
-
-            default => Kompetensi::query()->with('pekerja')
-                ->orderByDesc('berlaku_sampai')->limit(300)->get()
-                ->map(fn (Kompetensi $k) => [
-                    'id'      => $k->id,
-                    'pekerja_id' => $k->pekerja_id,
-                    'nama'    => $k->pekerja?->nama,
-                    'nomor'   => $k->nomor,
-                    'tanggal' => $k->tanggal_terbit?->toDateString(),
-                    'sampai'  => $k->berlaku_sampai?->toDateString(),
-                    'ket'     => $k->nama,
-                    'keadaan' => Keadaan::kompetensi($k),
-                ]),
-        };
+        /* Riwayat MCU, Induksi, Mine Permit, dan SIMPER dilayani
+           pengendali masing-masing (rute riwayat.* menunjuk ke sana);
+           yang tersisa di sini hanya riwayat Authority/kompetensi. */
+        $baris = Kompetensi::query()->with('pekerja')
+            ->when($cari, fn ($q) => $q->where(fn ($w) => $w->where('nama', 'like', "%{$cari}%")
+                ->orWhereHas('pekerja', fn ($pk) => $pk->where('nama', 'like', "%{$cari}%"))))
+            ->orderByDesc('berlaku_sampai')->limit(300)->get()
+            ->map(fn (Kompetensi $k) => [
+                'id'      => $k->id,
+                'pekerja_id' => $k->pekerja_id,
+                'nama'    => $k->pekerja?->nama,
+                'nomor'   => $k->nomor,
+                'tanggal' => $k->tanggal_terbit?->toDateString(),
+                'sampai'  => $k->berlaku_sampai?->toDateString(),
+                'ket'     => $k->nama,
+                'keadaan' => Keadaan::kompetensi($k),
+            ]);
 
         return Inertia::render('Miners/Riwayat', [
-            'judul'    => 'Miners — Riwayat '.($this->JUDUL_TAHAP[$tahap] ?? 'Kompetensi'),
+            'judul'    => 'Miners — Riwayat Kompetensi',
             'subjudul' => 'Apa yang pernah terjadi pada dokumen ini.',
 
             'tahap'   => $tahap,
@@ -751,14 +710,6 @@ class MinersController extends Controller
             'NADA'    => Keadaan::NADA,
         ]);
     }
-
-    private array $JUDUL_TAHAP = [
-        'mcu'          => 'MCU',
-        'induksi'      => 'Induksi',
-        'mine-permit'  => 'Mine Permit',
-        'mine-license' => 'SIMPER',
-        'authority'    => 'Kompetensi',
-    ];
 
     /* ═══════════════════ antrean ═══════════════════ */
 
@@ -977,91 +928,6 @@ class MinersController extends Controller
             'sampai'  => $ada ? $sampai?->toDateString() : null,
             'sisa'    => $ada ? $sisa : null,
         ];
-    }
-
-    /** @return array<string,mixed> */
-    private function barisPermit(Permit $p): array
-    {
-        return [
-            'id'        => $p->id,
-            'nomor'     => $p->no_registrasi,
-            'tanggal'   => $p->tanggal?->toDateString(),
-            'tipe'      => $p->tipe?->nama,
-            'kategori'  => $p->kategori?->nama,
-            'cakupan'   => $p->cakupan_area,
-            'warna'     => $p->kode_warna,
-            'status'    => $p->status,
-            'sampai'    => $p->berlaku_sampai?->toDateString(),
-            'efektif'   => $p->habisEfektif()?->toDateString(),
-            'sumber'    => $p->sumber_berlaku,
-            'sisa'      => $p->sisaHari(),
-            'keadaan'   => Keadaan::permit($p),
-            'berkas'    => $p->relationLoaded('berkas')
-                ? $p->berkas->map(fn ($b) => ['id' => $b->id, 'jenis' => $b->jenis, 'catatan' => $b->catatan])
-                : [],
-            'alur'      => $this->barisAlur($p),
-        ];
-    }
-
-    /** @return array<string,mixed> */
-    private function barisSimper(Simper $s): array
-    {
-        return [
-            'id'       => $s->id,
-            'nomor'    => $s->no_simper,
-            'tanggal'  => $s->tanggal?->toDateString(),
-            'kelas'    => $s->kelas,
-            'simpol'   => $s->jenis_simpol,
-            'no_simpol'=> $s->no_simpol,
-            'simpolSampai' => $s->simpol_berlaku_sampai?->toDateString(),
-            'status'   => $s->status,
-            'sampai'   => $s->berlaku_sampai?->toDateString(),
-            'efektif'  => $s->habisEfektif()?->toDateString(),
-            'sebab'    => $s->penyebabHabis(),
-            'sisa'     => $s->sisaHari(),
-            'keadaan'  => Keadaan::simper($s),
-            'unit'     => $s->relationLoaded('unit')
-                ? $s->unit->map(fn ($u) => [
-                    'id'        => $u->id,
-                    'golongan'  => $u->kendaraan?->nama,
-                    'unit'      => $u->jenisUnit?->nama,
-                    'kewenangan'=> $u->kewenangan,
-                    'asal'      => $u->asal,
-                    'lulus'     => $u->lulus(),
-                    'nilai'     => [
-                        'p2h'     => $u->nilai_p2h,
-                        'praktek' => $u->nilai_praktek,
-                        'teori'   => $u->nilai_teori,
-                        'rambu'   => $u->nilai_rambu,
-                    ],
-                ])
-                : [],
-            'ajuan'    => $s->relationLoaded('ajuan')
-                ? $s->ajuan->map(fn (SimperAjuan $a) => [
-                    'id'      => $a->id,
-                    'jenis'   => $a->jenis,
-                    'nomor'   => $a->no_registrasi,
-                    'tanggal' => $a->tanggal?->toDateString(),
-                    'status'  => $a->status,
-                ])
-                : [],
-            'alur'     => $this->barisAlur($s),
-        ];
-    }
-
-    /** @return list<array<string,mixed>> */
-    private function barisAlur(object $dokumen): array
-    {
-        if (! $dokumen->relationLoaded('alur')) return [];
-
-        return $dokumen->alur->map(fn (Alur $a) => [
-            'urutan'  => $a->urutan,
-            'peran'   => $a->peran,
-            'label'   => Alur::PERAN[$a->peran] ?? $a->peran,
-            'keadaan' => $a->keadaan,
-            'pada'    => $a->bertindak_pada ? Waktu::lokal($a->bertindak_pada)->toDateTimeString() : null,
-            'catatan' => $a->catatan,
-        ])->all();
     }
 
     /**
