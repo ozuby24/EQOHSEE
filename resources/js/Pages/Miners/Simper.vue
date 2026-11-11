@@ -65,6 +65,13 @@ function pilihZona(z: string | null) {
   terapkan();
 }
 
+/* Unduhan mengikuti mode dan saringan yang sedang tampil. */
+const urlEkspor = computed(() => {
+  const q = new URLSearchParams({ mode: String(props.mode) });
+  for (const [k, v] of Object.entries(props.saring ?? {})) if (v) q.set(k, String(v));
+  return `/miners/simper/ekspor?${q.toString()}`;
+});
+
 const kolom = [
   { kunci: 'nama', label: 'Nama Employee' },
   { kunci: 'noid', label: 'Noid' },
@@ -150,6 +157,7 @@ async function hapus(b: any) {
     <TabelData judul="Daftar SIMPER" :jumlah="halaman.total" :kolom="kolom" :baris="halaman.data"
                :nomor-awal="halaman.from ?? 1" :tautan="halaman.links">
       <template #alat>
+        <a :href="urlEkspor" class="mn-btn mn-btn-garis">Unduh Excel</a>
         <div v-if="register">
           <button type="button" class="mn-btn mn-btn-utama" @click="bukaTambah">+ add</button>
         </div>

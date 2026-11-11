@@ -89,7 +89,11 @@ async function hapus(b: any) {
 
     <TabelData :judul="props.tabel" :jumlah="baris.length" :kolom="kolom" :baris="baris">
       <template #alat>
-        <button type="button" class="mn-btn mn-btn-utama" @click="bukaTambah">+ add</button>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" class="mn-btn mn-btn-utama" @click="bukaTambah">+ add</button>
+          <a :href="`/miners/simper-lanjutan/ekspor?jenis=${props.jenis}${props.cari ? `&cari=${encodeURIComponent(String(props.cari))}` : ''}`"
+             class="mn-btn mn-btn-garis">Unduh Excel</a>
+        </div>
         <form class="mn-alat" role="search" @submit.prevent="terapkan">
           <input v-model="cari" class="mn-isian" placeholder="search.." aria-label="Cari">
           <button type="submit" class="mn-btn mn-btn-garis">search</button>

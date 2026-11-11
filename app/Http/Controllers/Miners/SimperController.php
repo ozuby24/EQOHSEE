@@ -7,7 +7,7 @@ use App\Http\Controllers\Miners\Concerns\TindakAlur;
 use App\Models\Miners\{JenisUnit, Kendaraan, Permit, RiwayatPerpanjangan, Simper, SimperAjuan, SimperUnit};
 use App\Models\User;
 use App\Support\Berkas;
-use App\Support\Miners\{AksesMiners, DeteksiMasaSim, Jalur, RincianDokumen, Zona};
+use App\Support\Miners\{AksesMiners, DeteksiMasaSim, Jalur, Laporan, RincianDokumen, Zona};
 use App\Support\Waktu;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -42,28 +42,7 @@ class SimperController extends Controller
         $riwayat = $r->route('tahap') === 'mine-license';
         $u       = $r->user();
 
-        $saring = [
-            'cari'       => trim((string) $r->query('cari', '')),
-            'perusahaan' => (string) $r->query('perusahaan', ''),
-            'zona'       => in_array($r->query('zona'), Zona::KUNCI, true) ? (string) $r->query('zona') : '',
-        ];
-
-        $semua = Simper::query()
-            ->with(['pekerja.company:id,name', 'pekerja.departemen', 'permit.mcuOrang', 'user:id,name'])
-            ->when(! $riwayat, fn ($q) => $q->where('user_id', $u->id))
-            ->orderByDesc('tanggal')->orderByDesc('id')->get();
-
-        $baris = $semua->map(fn (Simper $s) => self::baris($s, $u));
-
-        $tersaring = $baris
-            ->when($saring['cari'] !== '', fn ($c) => $c->filter(fn ($b) => str_contains($b['cari'], mb_strtolower($saring['cari']))))
-            ->when($saring['perusahaan'] !== '', fn ($c) => $c->where('company_id', (int) $saring['perusahaan']));
-
-        $aktif   = $tersaring->where('aktif', true);
-        $ringkas = Zona::ringkas($aktif->pluck('zona'));
-        $rekap   = Zona::rekapPerusahaan($aktif->all());
-
-        if ($saring['zona'] !== '') $tersaring = $tersaring->where('zona', $saring['zona']);
+        [$saring, $tersaring, $ringkas, $rekap] = $this->daftar($r, $riwayat);
 
         $kini = max(1, (int) $r->query('page', 1));
 
@@ -88,6 +67,55 @@ class SimperController extends Controller
             'calon'   => $riwayat ? [] : self::calon(),
             'jenisSim' => Simper::JENIS_SIM,
         ]);
+    }
+
+    /**
+     * Daftar tersaring — dipakai layar dan unduhan Excel-nya, supaya isi
+     * berkas sama dengan yang tampil.
+     *
+     * @return array{0: array<string,string>, 1: \Illuminate\Support\Collection, 2: array, 3: array}
+     */
+    private function daftar(Request $r, bool $riwayat): array
+    {
+        $u = $r->user();
+        $saring = [
+            'cari'       => trim((string) $r->query('cari', '')),
+            'perusahaan' => (string) $r->query('perusahaan', ''),
+            'zona'       => in_array($r->query('zona'), Zona::KUNCI, true) ? (string) $r->query('zona') : '',
+        ];
+
+        $semua = Simper::query()
+            ->with(['pekerja.company:id,name', 'pekerja.departemen', 'permit.mcuOrang', 'user:id,name'])
+            ->when(! $riwayat, fn ($q) => $q->where('user_id', $u->id))
+            ->orderByDesc('tanggal')->orderByDesc('id')->get();
+
+        $tersaring = $semua->map(fn (Simper $s) => self::baris($s, $u))
+            ->when($saring['cari'] !== '', fn ($c) => $c->filter(fn ($b) => str_contains($b['cari'], mb_strtolower($saring['cari']))))
+            ->when($saring['perusahaan'] !== '', fn ($c) => $c->where('company_id', (int) $saring['perusahaan']));
+
+        $aktif   = $tersaring->where('aktif', true);
+        $ringkas = Zona::ringkas($aktif->pluck('zona'));
+        $rekap   = Zona::rekapPerusahaan($aktif->all());
+
+        if ($saring['zona'] !== '') $tersaring = $tersaring->where('zona', $saring['zona']);
+
+        return [$saring, $tersaring, $ringkas, $rekap];
+    }
+
+    /** Unduhan Excel daftar SIMPER — ExportSimper / export_simper_users Safe Track; kolom layar, saringan layar. */
+    public function ekspor(Request $r)
+    {
+        [, $isi] = $this->daftar($r, $r->query('mode') === 'riwayat');
+        $zona = Zona::daftar();
+
+        return Laporan::unduh('laporan-simper-'.Waktu::kini()->format('Ymd-Hi'), [
+            'No SIMPER', 'Tanggal', 'Nama Employee', 'Noid', 'Jabatan', 'Departemen', 'Perusahaan', 'Jenis SIM',
+            'Masa Berlaku SIM', 'Sisa Hari', 'Zona', 'Sumber Tanggal', 'Status', 'Aktif', 'Creator',
+        ], $isi->values()->map(fn ($b) => [
+            $b['nomor'], $b['tanggal'], $b['nama'], $b['noid'], $b['jabatan'], $b['departemen'], $b['perusahaan'], $b['jenisSim'],
+            $b['berlaku'], $b['sisa'], $zona[$b['zona']]['label'], $b['sumber'], Simper::STATUS[$b['status']] ?? $b['status'],
+            $b['aktif'] ? 'Ya' : 'Tidak', $b['pembuat'],
+        ]));
     }
 
     /** @return array<string,mixed> */

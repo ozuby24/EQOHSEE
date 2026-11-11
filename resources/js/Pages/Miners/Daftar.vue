@@ -65,6 +65,14 @@ function pilihZona(z: string | null) {
 
 /* ─────────── tabel ─────────── */
 
+/* Unduhan mengikuti saringan yang sedang tampil. */
+const urlEkspor = computed(() => {
+  const q = new URLSearchParams();
+  for (const [k, v] of Object.entries(props.saring ?? {})) if (v) q.set(k, String(v));
+  const s = q.toString();
+  return `/miners/ekspor${s ? `?${s}` : ''}`;
+});
+
 const kolom = [
   { kunci: 'noMcu', label: 'No Registrasi' },
   { kunci: 'nama', label: 'Nama Employee' },
@@ -147,7 +155,10 @@ function simpanStatus() {
     <TabelData judul="Daftar Manpower" :jumlah="halaman.total" :kolom="kolom" :baris="halaman.data"
                :nomor-awal="halaman.from ?? 1" :tautan="halaman.links">
       <template #kanan>
-        <button type="button" class="mn-btn mn-btn-utama" @click="tambah">+ Tambah Manpower</button>
+        <div class="flex flex-wrap gap-2">
+          <a :href="urlEkspor" class="mn-btn mn-btn-garis">Unduh Excel</a>
+          <button type="button" class="mn-btn mn-btn-utama" @click="tambah">+ Tambah Manpower</button>
+        </div>
       </template>
 
       <template #sel-noMcu="{ baris: b }">

@@ -503,6 +503,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/',  [MinersSimperController::class, 'index'])->name('index');
             Route::post('/', [MinersSimperController::class, 'store'])->name('store');
             Route::post('deteksi-sim', [MinersSimperController::class, 'deteksi'])->name('deteksi');
+            Route::get('ekspor', [MinersSimperController::class, 'ekspor'])->name('ekspor');
 
             Route::put('{simper}',    [MinersSimperController::class, 'update'])->name('update');
             Route::delete('{simper}', [MinersSimperController::class, 'destroy'])
@@ -530,6 +531,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
            SIMPER (form_simper_exts, form_upgrade_simpers, extendsimpers). */
         Route::prefix('simper-lanjutan')->name('lanjutan.')->group(function () {
             Route::post('/', [MinersSimperLanjutanController::class, 'store'])->name('store');
+            Route::get('ekspor', [MinersSimperLanjutanController::class, 'ekspor'])->name('ekspor');
             Route::get('{id}', [MinersSimperLanjutanController::class, 'rincian'])->whereNumber('id')->name('rincian');
             Route::post('{ajuan}/unit', [MinersSimperLanjutanController::class, 'unit'])->name('unit');
             Route::delete('{ajuan}/unit/{unit}', [MinersSimperLanjutanController::class, 'unitHapus'])->name('unit.hapus');
@@ -623,6 +625,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('master/perusahaan/{company}', [MinersPerusahaanController::class, 'update'])
             ->middleware('can:admin')->name('master.perusahaan.update');
 
+        Route::get('ekspor', [MinersController::class, 'ekspor'])->name('ekspor');
         Route::get('/',  [MinersController::class, 'index'])->name('index');
         Route::post('/', [MinersController::class, 'store'])->name('store');
 

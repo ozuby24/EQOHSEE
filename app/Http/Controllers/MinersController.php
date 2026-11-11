@@ -156,10 +156,13 @@ class MinersController extends Controller
      * pada SQLite, MySQL, dan PostgreSQL, dan jumlah manpower satu
      * pemasangan berukuran ribuan, bukan jutaan.
      */
-    public function index(Request $r)
+    /**
+     * Daftar Manpower tersaring — layar dan unduhan Excel-nya.
+     *
+     * @return array{0: array<string,string>, 1: Collection, 2: Collection, 3: array, 4: array, 5: array}
+     */
+    private function manpower(Request $r): array
     {
-        $u = $r->user();
-
         $saring = [
             'cari'       => trim((string) $r->query('cari', '')),
             'perusahaan' => (string) $r->query('perusahaan', ''),
@@ -245,6 +248,31 @@ class MinersController extends Controller
         if ($saring['zona'] !== '') {
             $tersaring = $tersaring->where('zona', $saring['zona']);
         }
+
+        return [$saring, $baris, $tersaring, $ringkas, $rekap, $manpower];
+    }
+
+    /** Unduhan Excel Manpower MCU — kolom layar, saringan layar. */
+    public function ekspor(Request $r)
+    {
+        [, , $isi] = $this->manpower($r);
+        $zona = Zona::daftar();
+
+        return Laporan::unduh('manpower-mcu-'.Waktu::kini()->format('Ymd-Hi'), [
+            'No Registrasi', 'Nama Employee', 'NIK', 'Noid', 'Perusahaan', 'Departemen', 'Jabatan', 'Hasil MCU',
+            'Masa Berlaku MCU', 'Sisa Hari', 'Zona', 'Karyawan', 'Status Pengajuan',
+        ], $isi->values()->map(fn ($b) => [
+            $b['noMcu'], $b['nama'], $b['nik'], $b['noid'], $b['perusahaan'], $b['departemen'], $b['jabatan'], $b['hasil'],
+            $b['berlaku'], $b['sisa'], $zona[$b['zona']]['label'], $b['aktif'] ? 'Aktif' : 'Tidak aktif',
+            Mcu::STATUS[$b['pengajuan'] ?? ''] ?? $b['pengajuan'],
+        ]));
+    }
+
+    public function index(Request $r)
+    {
+        $u = $r->user();
+
+        [$saring, $baris, $tersaring, $ringkas, $rekap, $manpower] = $this->manpower($r);
 
         $halaman = $this->halaman($r, $tersaring->values(), 15);
 

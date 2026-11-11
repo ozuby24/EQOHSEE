@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Miners\Concerns\TindakAlur;
 use App\Models\Miners\{JenisUnit, Kendaraan, Simper, SimperAjuan, SimperAjuanUnit, SimperUnit};
 use App\Support\Berkas;
-use App\Support\Miners\{AksesMiners, DeteksiMasaSim, Jalur, RincianDokumen};
+use App\Support\Miners\{AksesMiners, DeteksiMasaSim, Jalur, Laporan, RincianDokumen};
 use App\Support\Waktu;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -45,27 +45,7 @@ class SimperLanjutanController extends Controller
     {
         $jenis = self::jenisDariRute((string) $r->route('jenis'));
         $u     = $r->user();
-        $cari  = mb_strtolower(trim((string) $r->query('cari', '')));
-
-        $baris = SimperAjuan::query()->where('jenis', $jenis)
-            ->with(['simper.pekerja.departemen', 'simper.permit.mcuOrang', 'user:id,name'])
-            ->when(! AksesMiners::kelola($u), fn ($q) => $q->where('user_id', $u->id))
-            ->orderByDesc('tanggal')->orderByDesc('id')->get()
-            ->map(fn (SimperAjuan $a) => [
-                'id'         => $a->id,
-                'nomor'      => $a->no_registrasi,
-                'tanggal'    => $a->tanggal?->toDateString(),
-                'nama'       => $a->simper?->pekerja?->nama,
-                'noid'       => $a->simper?->pekerja?->no_induk,
-                'jabatan'    => $a->simper?->permit?->mcuOrang?->jabatan,
-                'departemen' => $a->simper?->pekerja?->departemen?->nama,
-                'jenisSim'   => $a->simper?->jenis_simpol,
-                'status'     => $a->status,
-                'pembuat'    => $a->user?->name,
-                'bolehHapus' => $u->isAdmin() || ($a->status === 'draf' && (int) $a->user_id === (int) $u->id),
-            ])
-            ->when($cari !== '', fn ($c) => $c->filter(fn ($b) => str_contains(mb_strtolower($b['nama'].' '.$b['noid'].' '.$b['nomor']), $cari)))
-            ->values();
+        $baris = $this->daftar($r, $jenis);
 
         [$judul, $tabel] = self::JUDUL[$jenis];
 
@@ -78,6 +58,47 @@ class SimperLanjutanController extends Controller
             'baris'  => $baris,
             'calon'  => self::calon($jenis),
         ]);
+    }
+
+    /** @return Collection<int,array<string,mixed>> daftar tersaring — layar dan unduhannya */
+    private function daftar(Request $r, string $jenis): Collection
+    {
+        $u    = $r->user();
+        $cari = mb_strtolower(trim((string) $r->query('cari', '')));
+
+        return SimperAjuan::query()->where('jenis', $jenis)
+            ->with(['simper.pekerja.departemen', 'simper.pekerja.company:id,name', 'simper.permit.mcuOrang', 'user:id,name'])
+            ->when(! AksesMiners::kelola($u), fn ($q) => $q->where('user_id', $u->id))
+            ->orderByDesc('tanggal')->orderByDesc('id')->get()
+            ->map(fn (SimperAjuan $a) => [
+                'id'         => $a->id,
+                'nomor'      => $a->no_registrasi,
+                'tanggal'    => $a->tanggal?->toDateString(),
+                'nama'       => $a->simper?->pekerja?->nama,
+                'noid'       => $a->simper?->pekerja?->no_induk,
+                'jabatan'    => $a->simper?->permit?->mcuOrang?->jabatan,
+                'departemen' => $a->simper?->pekerja?->departemen?->nama,
+                'perusahaan' => $a->simper?->pekerja?->company?->name,
+                'jenisSim'   => $a->simper?->jenis_simpol,
+                'status'     => $a->status,
+                'pembuat'    => $a->user?->name,
+                'bolehHapus' => $u->isAdmin() || ($a->status === 'draf' && (int) $a->user_id === (int) $u->id),
+            ])
+            ->when($cari !== '', fn ($c) => $c->filter(fn ($b) => str_contains(mb_strtolower($b['nama'].' '.$b['noid'].' '.$b['nomor']), $cari)))
+            ->values();
+    }
+
+    /** Unduhan Excel Penambahan Unit / Upgrade / Perpanjangan SIMPER — kolom layar, pencarian layar. */
+    public function ekspor(Request $r)
+    {
+        $jenis = self::jenisDariRute((string) $r->query('jenis'));
+
+        return Laporan::unduh('laporan-'.self::JUDUL[$jenis][2].'-'.Waktu::kini()->format('Ymd-Hi'),
+            ['No Registrasi', 'Tanggal', 'Nama Employee', 'Noid', 'Jabatan', 'Departemen', 'Perusahaan', 'Jenis SIM', 'Status', 'Creator'],
+            $this->daftar($r, $jenis)->map(fn ($b) => [
+                $b['nomor'], $b['tanggal'], $b['nama'], $b['noid'], $b['jabatan'], $b['departemen'], $b['perusahaan'],
+                $b['jenisSim'], SimperAjuan::STATUS[$b['status']] ?? $b['status'], $b['pembuat'],
+            ]));
     }
 
     /* ═══════════════════ pengajuan ═══════════════════ */
