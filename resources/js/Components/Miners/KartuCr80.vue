@@ -14,6 +14,9 @@ import QRCode from 'qrcode';
 
 const props = defineProps<{ k: Record<string, any>; sisi: 'depan' | 'belakang' }>();
 
+/* Urutan legenda kelas tetap (kartu contoh SOP), bukan diulang dari kunci data. */
+const KELAS = ['F', 'R', 'P', 'I'] as const;
+
 const qr = ref<string | null>(null);
 
 async function buatQr() {
@@ -107,8 +110,8 @@ const gayaUnit = (b: any) => (b && Number(b.ukuran) < 4.2 ? { fontSize: `${Numbe
 
     <div class="k-legenda">
       <div class="k-judul">Class :</div>
-      <div v-for="(arti, huruf) in props.k.arti_kelas" :key="huruf" class="k-baris">
-        <span class="k-huruf">{{ huruf }}</span><span class="k-arti">: {{ props.k.nama_kelas?.[huruf] }}</span><span>= {{ arti }}</span>
+      <div v-for="huruf in KELAS" :key="huruf" class="k-baris">
+        <span class="k-huruf">{{ huruf }}</span><span class="k-arti">: {{ props.k.nama_kelas?.[huruf] }}</span><span>= {{ props.k.arti_kelas?.[huruf] }}</span>
       </div>
     </div>
 

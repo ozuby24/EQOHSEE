@@ -34,6 +34,7 @@ const { dialog, tanya, batal, lanjut } = useDialog();
 const a = computed<any>(() => props.ajuan ?? {});
 const unit = computed<any[]>(() => (props.unit ?? []) as any[]);
 const galat = computed<Record<string, string>>(() => (props.errors ?? {}) as Record<string, string>);
+const pilihanAuthority = computed(() => Object.entries((props.authority ?? {}) as Record<string, string>).map(([nilai, label]) => ({ nilai, label })));
 const dasar = computed(() => `/miners/simper-lanjutan/${a.value.id}`);
 const rantai = computed(() => ({ penambahan: 'Pengaju → HSE → KTT', upgrade: 'Pengaju → HSE', perpanjangan: 'Pengaju → Dokter → HSE → KTT' } as Record<string, string>)[a.value.jenis] ?? '');
 
@@ -174,7 +175,7 @@ async function tindak(keadaan: string) {
           </Medan>
           <Medan label="Authority baru" untuk="w-auth" wajib :galat="unitForm.errors.authority">
             <select id="w-auth" v-model="unitForm.authority" class="mn-isian" title="Authority">
-              <option v-for="(l, k) in props.authority" :key="k" :value="k">{{ l }}</option>
+              <option v-for="o in pilihanAuthority" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
             </select>
           </Medan>
           <Medan label="Form Simper Upgrade" untuk="w-up" wajib :galat="unitForm.errors.berkas_upgrade">
@@ -196,7 +197,7 @@ async function tindak(keadaan: string) {
           </Medan>
           <Medan label="Authority" untuk="w-auth2" wajib :galat="unitForm.errors.authority">
             <select id="w-auth2" v-model="unitForm.authority" class="mn-isian" title="Authority">
-              <option v-for="(l, k) in props.authority" :key="k" :value="k">{{ l }}</option>
+              <option v-for="o in pilihanAuthority" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
             </select>
           </Medan>
           <Medan label="Type Unit" wajib penuh :galat="unitForm.errors.jenis_unit_ids">
