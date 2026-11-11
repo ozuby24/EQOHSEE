@@ -206,6 +206,7 @@ final class Menu
           ['PJO',              'miners.master.pjo',           'miners/master/pjo',           'kelolaMiners'],
           ['Subkontraktor',    'miners.master.subkontraktor', 'miners/master/subkontraktor', 'kelolaMiners'],
           ['Perusahaan',       'miners.master.perusahaan',    'miners/master/perusahaan',    true],
+          ['Upload Data Lama', 'miners.data-lama',            'miners/data-lama',            'kelolaMiners'],
         ],
 
         'Monitoring' => [

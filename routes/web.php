@@ -7,6 +7,7 @@ use App\Http\Controllers\MinersDokumenController;
 use App\Http\Controllers\Miners\AlurPersetujuanController as MinersAlurPersetujuanController;
 use App\Http\Controllers\Miners\MasterDataController as MinersMasterDataController;
 use App\Http\Controllers\Miners\PerusahaanController as MinersPerusahaanController;
+use App\Http\Controllers\Miners\DataLamaController as MinersDataLamaController;
 use App\Http\Controllers\Miners\McuController as MinersMcuController;
 use App\Http\Controllers\Miners\InduksiController as MinersInduksiController;
 use App\Http\Controllers\Miners\PermitController as MinersPermitController;
@@ -611,6 +612,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->defaults('jenis', $jenis)->whereNumber('id')->name('master.'.$jenis.'.destroy');
         }
 
+        /* Upload Data Lama — DataLamaController Safe Track. */
+        Route::get('data-lama', [MinersDataLamaController::class, 'index'])->name('data-lama');
+        Route::get('data-lama/templat/{jenis}', [MinersDataLamaController::class, 'templat'])
+            ->whereIn('jenis', ['permit', 'simper'])->name('data-lama.templat');
+        Route::post('data-lama/{jenis}', [MinersDataLamaController::class, 'unggah'])
+            ->whereIn('jenis', ['permit', 'simper'])->name('data-lama.unggah');
         Route::get('master/perusahaan', [MinersPerusahaanController::class, 'index'])
             ->middleware('can:admin')->name('master.perusahaan');
         Route::put('master/perusahaan/{company}', [MinersPerusahaanController::class, 'update'])
