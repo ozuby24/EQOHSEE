@@ -92,7 +92,9 @@ const gayaUnit = (b: any) => (b && Number(b.ukuran) < 4.2 ? { fontSize: `${Numbe
 
     <div class="k-tabel-unit">
       <div class="k-judul">Recommended &amp; Authorized to Operate</div>
-      <table>
+      <!-- `lembar` + data-tabel-tetap: aturan tabel layar sempit (app.css)
+           dan tabelPas.ts tidak boleh menyentuh tabel di muka kartu. -->
+      <table class="lembar" data-tabel-tetap>
         <thead><tr><th class="k-unit">Equipments</th><th class="k-kelas">Class</th><th class="k-unit">Equipments</th><th class="k-kelas">Class</th></tr></thead>
         <tbody>
           <tr v-for="(p, i) in pasangan(props.k.unit ?? [])" :key="i">
@@ -175,15 +177,21 @@ const gayaUnit = (b: any) => (b && Number(b.ukuran) < 4.2 ? { fontSize: `${Numbe
 .k-identitas .k-baris-data { padding: .35mm 0; }
 .k-identitas .k-label { width: 18.5mm; color: #4a5b73; }
 .k-tabel-unit { position: absolute; top: 22.4mm; left: 3.5mm; width: 47mm; }
-.k-tabel-unit .k-judul { background: #123a76; color: #fff; font-size: 4.6pt; font-weight: 700; text-align: center; padding: .35mm 0; }
+.k-tabel-unit .k-judul { background: #123a76; color: #fff; font-size: 4.6pt; font-weight: 700; text-align: center; padding: .35mm 0;
+  height: 2.5mm; box-sizing: border-box; line-height: 1.8mm; }
 .k-tabel-unit table { width: 47mm; border-collapse: collapse; table-layout: fixed; }
-.k-tabel-unit th { background: #dce7f7; font-size: 4.2pt; font-weight: 700; text-align: center; border: .25mm solid #7d9bc6; padding: .3mm 0; }
-.k-tabel-unit td { white-space: nowrap !important; font-size: 4.2pt; height: 2.6mm; border: .25mm solid #7d9bc6; padding: 0 .8mm; white-space: nowrap; overflow: hidden; line-height: 2.6mm; }
+.k-tabel-unit th { background: #dce7f7; font-size: 4.2pt; font-weight: 700; text-align: center; border: .25mm solid #7d9bc6; padding: 0;
+  height: 2.6mm; line-height: 2.1mm; box-sizing: border-box; }
+.k-tabel-unit td { white-space: nowrap !important; font-size: 4.2pt; height: 2.6mm; border: .25mm solid #7d9bc6; padding: 0 .8mm; white-space: nowrap; overflow: hidden; line-height: 2.1mm;
+  box-sizing: border-box; }
+/* Tinggi tabel unit dikunci (judul 2,5 + kepala 2,6 + 5 × 2,6 mm ≈ 18,3 mm,
+   berakhir ± 40,7 mm), tidak bergantung tinggi baris bawaan peramban —
+   sebelumnya tabel layar memanjang sampai 45,8 mm dan menimpa catatan kaki. */
 .k-tabel-unit .k-unit { width: 35%; }
 .k-tabel-unit .k-kelas { width: 15%; text-align: center; }
-.k-coret { position: absolute; top: 29.6mm; left: 3.5mm; width: 47mm; height: 14.1mm;
+.k-coret { position: absolute; top: 27.5mm; left: 3.5mm; width: 47mm; height: 13.2mm;
   background: linear-gradient(to top right, transparent calc(50% - .3mm), #c8161d calc(50% - .3mm), #c8161d calc(50% + .3mm), transparent calc(50% + .3mm)); }
-.k-catatan { position: absolute; top: 45.4mm; left: 3.5mm; width: 47mm; font-size: 4.2pt; line-height: 1.3; color: #33445e; text-align: center; }
+.k-catatan { position: absolute; top: 43.6mm; left: 3.5mm; width: 47mm; font-size: 4.2pt; line-height: 1.3; color: #33445e; text-align: center; }
 .k-legenda { position: absolute; top: 51.4mm; left: 3.5mm; width: 33mm; }
 .k-legenda .k-judul { font-size: 4.6pt; font-weight: 700; margin-bottom: .5mm; }
 .k-legenda .k-baris { font-size: 3.8pt; line-height: 1.35; white-space: nowrap; padding: .1mm 0; }
