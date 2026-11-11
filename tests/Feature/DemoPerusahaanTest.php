@@ -88,7 +88,12 @@ class DemoPerusahaanTest extends TestCase
                 ->whereNotIn('email', [PasangDemo::PENJAJAL_ADMIN, PasangDemo::PENJAJAL_BIASA])
                 ->get();
 
-            $this->assertCount(2, $u, $c->name.' tidak punya dua akun.');
+            /* Empat akun: KTT dan PJO (auditi), serta HSE dan paramedis —
+               penyetuju Miners bernama pada mnr_skema. */
+            $this->assertCount(4, $u, $c->name.' tidak punya empat akun.');
+            $this->assertTrue($u->contains(fn (User $x) => $x->isOhse()), $c->name.' tidak punya HSE.');
+            $this->assertTrue($u->contains(fn (User $x) => $x->isParamedis()), $c->name.' tidak punya paramedis.');
+            $u = $u->filter(fn (User $x) => ! $x->isOhse() && ! $x->isParamedis())->values();
             $this->assertTrue($u->contains(fn (User $x) => $x->isKtt() || $x->isAdmin()),
                 $c->name.' tidak punya peninjau; seluruh datanya akan tersimpan '
                 .'sebagai draf dan tidak masuk hitungan KPI.');
@@ -110,11 +115,11 @@ class DemoPerusahaanTest extends TestCase
 
         $this->assertSame(5, Company::withoutGlobalScopes()->whereNotNull('code')->count());
 
-        /* Dua akun kali lima perusahaan. Akun penjajal dikecualikan dengan
+        /* Empat akun kali lima perusahaan. Akun penjajal dikecualikan dengan
            alasan yang sama seperti di atas: ia satu baris tetap, bukan
            bagian dari hitungan per perusahaan yang sedang dijaga di sini —
            yang dijaga adalah bahwa pemasangan kedua tidak MENGGANDAKAN. */
-        $this->assertSame(10, User::withoutGlobalScopes()->whereNotNull('company_id')
+        $this->assertSame(20, User::withoutGlobalScopes()->whereNotNull('company_id')
             ->whereNotIn('email', [PasangDemo::PENJAJAL_ADMIN, PasangDemo::PENJAJAL_BIASA])
             ->count());
 
@@ -198,5 +203,19 @@ class DemoPerusahaanTest extends TestCase
         // Tahap I mewarisi profilnya: 40 pekerja kelas Rendah.
         $this->assertSame('40', $audit->permulaan['jumlah_pekerja']);
         $this->assertSame('Rendah', $audit->permulaan['kelas_risiko']);
+    }
+
+    /** Skema Miners contoh: penyetuju per peran, dan tiap langkah yang menunggu punya penyetuju. */
+    public function test_skema_miners_contoh_bisa_dijalankan(): void
+    {
+        $this->artisan('demo:pasang', ['--hanya' => 'ABG'])->assertSuccessful();
+
+        $c = Company::withoutGlobalScopes()->where('code', 'ABG')->firstOrFail();
+        $s = \App\Models\Miners\Skema::query()->where('company_id', $c->id)->firstOrFail();
+
+        $this->assertTrue(User::find($s->dokter_user_id)?->isParamedis(), 'Langkah dokter harus jatuh ke paramedis.');
+        $this->assertTrue(User::find($s->ohse_user_id)?->isOhse(), 'Langkah HSE harus jatuh ke HSE.');
+        $this->assertTrue(User::find($s->ktt_user_id)?->isKtt(), 'Langkah KTT harus jatuh ke KTT.');
+        $this->assertSame(0, \App\Models\Miners\Alur::query()->where('keadaan', 'menunggu')->whereNull('ditugaskan_user_id')->count());
     }
 }

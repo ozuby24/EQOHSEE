@@ -108,7 +108,7 @@ class PasangDemo extends Command
             'lokasi' => 'Kabupaten Lima Puluh Kota, Sumatera Barat',
             'alamat' => 'Jorong Koto Tuo, Harau, Lima Puluh Kota, Sumatera Barat 26271',
             'risiko' => 'Rendah', 'karyawan' => 18, 'jasa' => 22,
-            'ktt' => 'Ir. Zulkifli Hasan', 'pjo' => 'Rina Marlina, S.T.',
+            'ktt' => 'Ir. Zulkarnain Hamid', 'pjo' => 'Rina Marlina, S.T.',
             'prefiks' => 'ABG', 'dept' => 'OHSE',
         ],
     ];
@@ -283,6 +283,20 @@ class PasangDemo extends Command
 
         Storage::disk('public')->put($tujuan, (string) file_get_contents($asal));
         $c->forceFill(['logo' => $tujuan])->save();
+        $this->tautanPenyimpanan();
+    }
+
+    /**
+     * Logo disajikan dari disk `public` lewat tautan public/storage. Tanpa
+     * tautan itu permintaan /storage/… jatuh ke rute penyaji disk `local`
+     * (bertanda tangan) dan memulangkan 403 — kop kartu dan sertifikat
+     * contoh tergambar tanpa logo. Dibuat sekali bila belum ada.
+     */
+    private function tautanPenyimpanan(): void
+    {
+        if (file_exists(public_path('storage')) || app()->runningUnitTests()) return;
+
+        $this->callSilently('storage:link');
     }
 
     /**
@@ -387,6 +401,30 @@ class PasangDemo extends Command
             'department' => 'Occupational Health, Safety and Environment',
             'lms_role'   => 'trainee',
             'audit_role' => User::ROLE_AUDITI,
+            'active'     => true,
+        ]);
+
+        /* Penyetuju Miners bernama (mnr_skema): HSE untuk verifikasi dan
+           paramedis untuk penilaian MCU. Tanpa keduanya DataContoh jatuh
+           ke peninjau (KTT) untuk ketiga peran, dan KTT tidak boleh
+           membuka berkas hasil MCU — alur contohnya macet di langkah
+           dokter. Nama jabatannya saja, bukan nama orang. */
+        $this->akun('hse.'.$kode.'@contoh.test', [
+            'name'       => 'Petugas HSE '.$p['kode'],
+            'company_id' => $c->id,
+            'position'   => 'Officer HSE',
+            'department' => 'Occupational Health, Safety and Environment',
+            'lms_role'   => 'trainee',
+            'ohse_role'  => 'ohse',
+            'active'     => true,
+        ]);
+        $this->akun('paramedis.'.$kode.'@contoh.test', [
+            'name'       => 'Paramedis Klinik '.$p['kode'],
+            'company_id' => $c->id,
+            'position'   => 'Paramedis',
+            'department' => 'Klinik Site',
+            'lms_role'   => 'trainee',
+            'ohse_role'  => 'paramedis',
             'active'     => true,
         ]);
 

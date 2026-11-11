@@ -64,6 +64,7 @@ class CakupanDataContohTest extends TestCase
            lama yang dipindahkan migrasi 2026_11_07_000003, bukan data
            yang dibuat siapa pun. */
         'smkp_pengingat'     => 'terisi sendiri saat pengingat tindak lanjut dikirim',
+        'mnr_pengingat'      => 'terisi sendiri saat miners:pengingat mengirim pengingat masa berlaku',
         'smkp_arsip_eqohsee' => 'arsip migrasi SMKP lama, bukan data lapangan',
         'activity_logs'=> 'jejak perbuatan; terisi sendiri saat dipakai',
         'jejak_akses'  => 'jejak masuk; terisi sendiri saat dipakai',
