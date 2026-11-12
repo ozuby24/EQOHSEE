@@ -851,6 +851,7 @@ return new class extends Migration
                 if (!empty($b['ke']) && ($b['ke'] !== ($b['dari'] ?? null))) Storage::disk('local')->delete($b['ke']);
             }
             // Baris asli dipulihkan apa adanya.
+            $disisipkan = [];
             foreach (DB::table('smkp_arsip_eqohsee')->where('jenis', 'asli')->orderBy('id')->get() as $x) {
                 $asli = $this->dekode($x->asli);
                 if (!$asli || !Schema::hasTable($x->tabel)) continue;
@@ -861,10 +862,30 @@ return new class extends Migration
                     DB::table($x->tabel)->where('id', $x->baris_id)->update($isi);
                 } elseif (isset($asli['id'])) {
                     DB::table($x->tabel)->insert(['id' => $asli['id']] + $isi);
+                    $disisipkan[$x->tabel] = true;
                 }
             }
+            $this->majukanSequence(array_keys($disisipkan));
             DB::table('smkp_arsip_eqohsee')->delete();
         });
+    }
+
+    /**
+     * PostgreSQL tidak memajukan sequence saat id ditulis langsung. Di
+     * atas smkp_ofi dibuat ulang (sequence-nya mulai dari 1) lalu diisi
+     * kembali dengan id lamanya; tanpa ini OFI pertama yang dibuat sesudah
+     * rollback bentrok dengan id 1. SQLite dan MySQL menyesuaikan sendiri.
+     *
+     * @param list<string> $tabel
+     */
+    private function majukanSequence(array $tabel): void
+    {
+        if (DB::connection()->getDriverName() !== 'pgsql') return;
+
+        foreach ($tabel as $t) {
+            $t = DB::connection()->getTablePrefix().$t;
+            DB::statement("SELECT setval(pg_get_serial_sequence('\"{$t}\"', 'id'), COALESCE((SELECT MAX(id) FROM \"{$t}\"), 1), (SELECT MAX(id) FROM \"{$t}\") IS NOT NULL)");
+        }
     }
 
     /* ═════════════════════ perkakas ═════════════════════ */

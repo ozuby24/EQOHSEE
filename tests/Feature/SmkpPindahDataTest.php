@@ -287,5 +287,12 @@ class SmkpPindahDataTest extends TestCase
         $this->assertEquals($asli['risiko'], DB::table('companies')->pluck('risk_class', 'id')->all());
         Storage::disk('local')->assertMissing("tindak-lanjut/{$d['audit']}/{$d['tTutup']}/foto-tutup.jpg");
         Storage::disk('local')->assertExists("smkp/{$d['audit']}/foto-tutup.jpg");
+
+        // Sesudah rollback aplikasi lama tetap dapat menulis: smkp_ofi dibuat
+        // ulang lalu diisi id lama, dan di PostgreSQL sequence-nya harus ikut maju.
+        $kini = now()->toDateTimeString();
+        $baru = fn (string $t, array $isi) => DB::table($t)->insertGetId($isi + ['audit_id' => $d['audit'], 'created_at' => $kini, 'updated_at' => $kini]);
+        $this->assertGreaterThan(max(array_column($asli['ofi'], 'id')), $baru('smkp_ofi', ['kode' => 'II.1', 'lingkup' => 'sub', 'uraian' => 'OFI sesudah rollback', 'status' => 'terbuka']));
+        $this->assertGreaterThan(max(array_column($asli['temuan'], 'id')), $baru('smkp_findings', ['kode_kriteria' => 'I.2', 'jenis' => 'minor', 'uraian' => 'Temuan sesudah rollback', 'status' => 'Open']));
     }
 }
