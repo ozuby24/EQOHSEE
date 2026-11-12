@@ -94,6 +94,19 @@ dikirim dan persetujuan tidak punya siapa-siapa untuk bertindak.
 - **Upload Data Lama:** Miners → Master Data → Upload Data Lama, dua templat
   Excel (Mine Permit dan SIMPER), untuk administrator dan HSE perusahaan.
   Daftar pada halaman Miners juga dapat diekspor ke Excel.
+- **Siapa melihat apa:** admin dan HSE IUP melihat semua dalam jangkauannya.
+  Pengguna lain hanya melihat karyawan yang mereka daftarkan, dokumen yang
+  mereka ajukan, dan dokumen yang menunggu persetujuan mereka. Ini berlaku
+  di daftar, monitoring, dasbor, ekspor, dan lampiran. Hasil MCU, catatan
+  dokter, rujukan, sertifikat MCU, dan surat rujukan hanya untuk admin,
+  HSE/OHSE, paramedis, dan dokter penyetuju. Nomor SIM disamarkan bagi
+  selain admin/HSE. Cetak kartu hanya untuk admin/HSE.
+- **Pendaftar karyawan** kini dicatat di kolom `dibuat_oleh`. Versi lama
+  menyimpannya di `user_id`, kolom yang juga dipakai HR untuk menautkan
+  akun layanan mandiri karyawan. Akibatnya, di data lama, pendaftar bisa
+  tampak sebagai akun milik karyawan pertama yang ia daftarkan. Periksa di
+  HR karyawan yang tertaut ke akun admin, HSE, atau staf administrasi, lalu
+  lepaskan tautan yang keliru.
 
 ## Penjadwal
 Dua pengingat di atas hanya berjalan bila `schedule:run` dipanggil tiap
