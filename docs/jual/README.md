@@ -30,7 +30,7 @@ Lihat kepala `tools/tembak-fitur.mjs` untuk pilihan `HANYA`, `MUTU`,
 `App\Support\Menu`, sumber yang sama dengan bilah samping — jadi modul
 baru ikut terpotret tanpa ada yang perlu mengingat menambahkannya.
 
-**Catatan ukuran:** kumpulan ini sekitar 47 MB untuk 184 gambar.
+**Catatan ukuran:** kumpulan ini sekitar 58 MB untuk 208 gambar.
 Menerbitkan ulang sebaiknya MENGGANTI folder ini dalam satu commit, bukan
 menumpuk versi baru di sampingnya — riwayat git menyimpan tiap salinan
 selamanya. Kalau kelak terasa berat, pindahkan folder ini ke git LFS atau
@@ -72,7 +72,7 @@ gambar hanya karena satu kalimat pada beranda diperbaiki.
 | [`operasi`](./operasi/) | Mine Operations & GIS | 4 | Rp 13.500.000 |
 | [`peledakan`](./peledakan/) | Drill & Blast | 5 | Rp 9.500.000 |
 | [`pjp`](./pjp/) | Pemantauan Perusahaan Jasa (PJP) | 7 | Rp 2.500.000 |
-| [`smkp`](./smkp/) | SMKP Audit | 4 | belum ditetapkan |
+| [`smkp`](./smkp/) | SMKP Audit | 21 | Rp 2.500.000 |
 | [`tpkkp`](./tpkkp/) | Safety Maturity Level | 11 | Rp 2.500.000 |
 
 **23 aplikasi · 184 halaman.**

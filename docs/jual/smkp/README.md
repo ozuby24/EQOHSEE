@@ -4,8 +4,8 @@ _Systems That Hold_
 
 Audit 7 elemen SMKP Minerba sesuai Kepdirjen 185.K/2019: penilaian per kriteria, temuan berjenjang, dan laporan siap cetak.
 
-**Harga katalog:** belum ditetapkan
-**Halaman:** 4
+**Harga katalog:** Rp 2.500.000
+**Halaman:** 21
 
 Tangkapan layar di bawah memakai data contoh (`php artisan demo:pasang`),
 bukan data pelanggan.
@@ -14,8 +14,25 @@ bukan data pelanggan.
 |---|---|---|---|
 | `01-smkp.jpg` | Daftar Audit | — |  |
 | `02-smkp-buat.jpg` | Audit Baru | — |  |
-| `03-smkp-tindak-lanjut.jpg` | Tindak Lanjut Temuan | — |  |
+| `03-smkp-tindak-lanjut.jpg` | Tindak Lanjut Temuan | Tindak Lanjut |  |
 | `04-smkp-acuan.jpg` | Kriteria & Acuan | — |  |
+| `05-smkp-11.jpg` | Ringkasan Audit | Tahap Audit |  |
+| `06-smkp-11-tahap-1.jpg` | Tahap I: Permulaan Audit | Tahap Audit |  |
+| `07-smkp-11-rencana.jpg` | Rencana Audit | Tahap Audit |  |
+| `08-smkp-11-elemen-I.jpg` | Penilaian Elemen I | Tahap Audit |  |
+| `09-smkp-11-rapat.jpg` | Rapat dan Daftar Hadir | Tahap Audit |  |
+| `10-smkp-11-temuan.jpg` | Temuan Audit | Tahap Audit |  |
+| `11-smkp-11-laporan.jpg` | Laporan Audit | Tahap Audit |  |
+| `12-smkp-11-rencana-cetak.jpg` | Cetak Rencana Audit | Berkas Resmi |  |
+| `13-smkp-11-berita-acara.jpg` | Berita Acara Tahap I | Berkas Resmi |  |
+| `14-smkp-11-daftar-hadir-pembukaan.jpg` | Daftar Hadir Rapat Pembukaan | Berkas Resmi |  |
+| `15-smkp-11-daftar-hadir-penutupan.jpg` | Daftar Hadir Rapat Penutupan | Berkas Resmi |  |
+| `16-smkp-11-formulir-penilaian-cetak.jpg` | Penilaian SMKP | Berkas Resmi |  |
+| `17-smkp-11-formulir-kesesuaian-cetak.jpg` | Formulir Kesesuaian | Berkas Resmi |  |
+| `18-smkp-11-formulir-ketidaksesuaian-cetak.jpg` | Formulir Ketidaksesuaian | Berkas Resmi |  |
+| `19-smkp-11-formulir-rekapitulasi-cetak.jpg` | Rekapitulasi Ketidaksesuaian | Berkas Resmi |  |
+| `20-smkp-11-formulir-rekomendasi-cetak.jpg` | Rekomendasi dan OFI | Berkas Resmi |  |
+| `21-smkp-11-formulir-tindak-lanjut-cetak.jpg` | Rencana Tindak Lanjut | Berkas Resmi |  |
 
 ## Deck promosi
 

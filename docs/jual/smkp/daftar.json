@@ -2,7 +2,7 @@
   "kunci": "smkp",
   "label": "Audit SMKP",
   "jual": "SMKP Audit",
-  "harga": 0,
+  "harga": 2500000,
   "ket": "Audit 7 elemen SMKP Minerba sesuai Kepdirjen 185.K/2019: penilaian per kriteria, temuan berjenjang, dan laporan siap cetak.",
   "semboyan": "Systems That Hold",
   "halaman": [
@@ -23,7 +23,7 @@
     {
       "berkas": "03-smkp-tindak-lanjut.jpg",
       "label": "Tindak Lanjut Temuan",
-      "grup": "",
+      "grup": "Tindak Lanjut",
       "path": "smkp/tindak-lanjut",
       "status": "ok"
     },
@@ -32,6 +32,125 @@
       "label": "Kriteria & Acuan",
       "grup": "",
       "path": "smkp/acuan",
+      "status": "ok"
+    },
+    {
+      "berkas": "05-smkp-11.jpg",
+      "label": "Ringkasan Audit",
+      "grup": "Tahap Audit",
+      "path": "smkp/11",
+      "status": "ok"
+    },
+    {
+      "berkas": "06-smkp-11-tahap-1.jpg",
+      "label": "Tahap I: Permulaan Audit",
+      "grup": "Tahap Audit",
+      "path": "smkp/11/tahap-1",
+      "status": "ok"
+    },
+    {
+      "berkas": "07-smkp-11-rencana.jpg",
+      "label": "Rencana Audit",
+      "grup": "Tahap Audit",
+      "path": "smkp/11/rencana",
+      "status": "ok"
+    },
+    {
+      "berkas": "08-smkp-11-elemen-I.jpg",
+      "label": "Penilaian Elemen I",
+      "grup": "Tahap Audit",
+      "path": "smkp/11/elemen/I",
+      "status": "ok"
+    },
+    {
+      "berkas": "09-smkp-11-rapat.jpg",
+      "label": "Rapat dan Daftar Hadir",
+      "grup": "Tahap Audit",
+      "path": "smkp/11/rapat",
+      "status": "ok"
+    },
+    {
+      "berkas": "10-smkp-11-temuan.jpg",
+      "label": "Temuan Audit",
+      "grup": "Tahap Audit",
+      "path": "smkp/11/temuan",
+      "status": "ok"
+    },
+    {
+      "berkas": "11-smkp-11-laporan.jpg",
+      "label": "Laporan Audit",
+      "grup": "Tahap Audit",
+      "path": "smkp/11/laporan",
+      "status": "ok"
+    },
+    {
+      "berkas": "12-smkp-11-rencana-cetak.jpg",
+      "label": "Cetak Rencana Audit",
+      "grup": "Berkas Resmi",
+      "path": "smkp/11/rencana/cetak",
+      "status": "ok"
+    },
+    {
+      "berkas": "13-smkp-11-berita-acara.jpg",
+      "label": "Berita Acara Tahap I",
+      "grup": "Berkas Resmi",
+      "path": "smkp/11/berita-acara",
+      "status": "ok"
+    },
+    {
+      "berkas": "14-smkp-11-daftar-hadir-pembukaan.jpg",
+      "label": "Daftar Hadir Rapat Pembukaan",
+      "grup": "Berkas Resmi",
+      "path": "smkp/11/daftar-hadir/pembukaan",
+      "status": "ok"
+    },
+    {
+      "berkas": "15-smkp-11-daftar-hadir-penutupan.jpg",
+      "label": "Daftar Hadir Rapat Penutupan",
+      "grup": "Berkas Resmi",
+      "path": "smkp/11/daftar-hadir/penutupan",
+      "status": "ok"
+    },
+    {
+      "berkas": "16-smkp-11-formulir-penilaian-cetak.jpg",
+      "label": "Penilaian SMKP",
+      "grup": "Berkas Resmi",
+      "path": "smkp/11/formulir/penilaian/cetak",
+      "status": "ok"
+    },
+    {
+      "berkas": "17-smkp-11-formulir-kesesuaian-cetak.jpg",
+      "label": "Formulir Kesesuaian",
+      "grup": "Berkas Resmi",
+      "path": "smkp/11/formulir/kesesuaian/cetak",
+      "status": "ok"
+    },
+    {
+      "berkas": "18-smkp-11-formulir-ketidaksesuaian-cetak.jpg",
+      "label": "Formulir Ketidaksesuaian",
+      "grup": "Berkas Resmi",
+      "path": "smkp/11/formulir/ketidaksesuaian/cetak",
+      "status": "ok"
+    },
+    {
+      "berkas": "19-smkp-11-formulir-rekapitulasi-cetak.jpg",
+      "label": "Rekapitulasi Ketidaksesuaian",
+      "grup": "Berkas Resmi",
+      "path": "smkp/11/formulir/rekapitulasi/cetak",
+      "status": "ok"
+    },
+    {
+      "berkas": "20-smkp-11-formulir-rekomendasi-cetak.jpg",
+      "label": "Rekomendasi dan OFI",
+      "grup": "Berkas Resmi",
+      "path": "smkp/11/formulir/rekomendasi/cetak",
+      "status": "ok"
+    },
+    {
+      "berkas": "21-smkp-11-formulir-tindak-lanjut-cetak.jpg",
+      "label": "Rencana Tindak Lanjut",
+      "grup": "Berkas Resmi",
+      "path": "smkp/11/formulir/tindak-lanjut/cetak",
       "status": "ok"
     }
   ]
