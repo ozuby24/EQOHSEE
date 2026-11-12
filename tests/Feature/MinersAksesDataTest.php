@@ -240,6 +240,61 @@ class MinersAksesDataTest extends TestCase
             ->assertInertia(fn (Assert $pg) => $pg->where('baris.total', 2));
     }
 
+    /* ═══════════ 4 · daftar dan unduhan Manpower ═══════════ */
+
+    #[Test]
+    public function manpower_dan_unduhannya_hanya_memuat_pekerja_milik_pengguna(): void
+    {
+        $pendaftar = $this->biasa();
+        $didaftar  = $this->pekerja($pendaftar);                       // didaftarkan $pendaftar
+        $diajukan  = $this->mcuSelesai($this->mitra, 'Fit With Note');  // MCU-nya diajukan $this->pengaju
+        $lain      = $this->pekerja();                                   // tidak berkaitan dengan siapa pun
+
+        $nama = fn (User $u) => collect($this->actingAs($u)->get('/miners')->assertOk()
+            ->viewData('page')['props']['baris']['data'])->pluck('nama')->sort()->values()->all();
+
+        $this->assertSame([], $nama($this->biasa()));
+        $this->assertSame([$didaftar->nama], $nama($pendaftar));
+        $this->assertSame([$diajukan->nama], $nama($this->pengaju));
+        $this->assertSame(collect([$didaftar->nama, $diajukan->nama, $lain->nama])->sort()->values()->all(), $nama($this->ohse));
+
+        /* Penyetuju yang ditugasi pada MCU-nya — dokter skema. */
+        $diajukan->mcu->terbitkanAlur();
+        $dokterBiasa = User::factory()->create(['company_id' => $this->iup->id]);
+        \App\Models\Miners\Alur::query()->where('dokumen', 'mcu')->where('dokumen_id', $diajukan->mcu_id)
+            ->where('peran', 'dokter')->update(['ditugaskan_user_id' => $dokterBiasa->id]);
+        $this->assertSame([$diajukan->nama], $nama($dokterBiasa));
+
+        /* Unduhan: hanya barisnya sendiri; hasil MCU hanya bagi pembaca medis. */
+        $isi = $this->lembar('/miners/ekspor', $this->pengaju);
+        $this->assertCount(2, $isi);
+        $this->assertSame($diajukan->nama, $isi[1][1]);
+        $this->assertNull($isi[1][7], 'Hasil MCU terunduh oleh yang bukan pembaca isi medis.');
+        $this->assertCount(1, $this->lembar('/miners/ekspor', $this->biasa()));
+        $this->assertSame('Fit With Note', collect($this->lembar('/miners/ekspor', $this->ohse))->firstWhere(1, $diajukan->nama)[7]);
+        $this->assertSame('Fit With Note', $this->lembar('/miners/ekspor', $dokterBiasa)[1][7]);
+
+        /* Pensil ubah hanya bagi yang boleh mengubah (pendaftar, pengelola). */
+        $this->actingAs($this->pengaju)->get('/miners')
+            ->assertInertia(fn (Assert $pg) => $pg->where('baris.data.0.isian', null)->where('baris.data.0.hasil', null));
+        $this->actingAs($pendaftar)->get('/miners')
+            ->assertInertia(fn (Assert $pg) => $pg->where('baris.data.0.isian.nik', $didaftar->nik));
+    }
+
+    #[Test]
+    public function pemilih_karyawan_pengaju_tetap_bekerja(): void
+    {
+        /* Calon Mine Permit dan SIMPER tetap daftar perusahaan — bukan
+           daftar Manpower yang kini tersaring per pengguna. */
+        $io = $this->induksiSelesai($this->mcuSelesai($this->mitra));
+        $biasa = $this->biasa();
+
+        $this->actingAs($biasa)->get('/miners/permit')->assertOk()
+            ->assertInertia(fn (Assert $pg) => $pg->where('calon.0.id', $io->id));
+        $this->actingAs($biasa)->get('/miners/simper')->assertOk()
+            ->assertInertia(fn (Assert $pg) => $pg->has('calon'));
+    }
+
     /** @return list<list<mixed>> lembar pertama unduhan Excel */
     private function lembar(string $url, User $oleh): array
     {

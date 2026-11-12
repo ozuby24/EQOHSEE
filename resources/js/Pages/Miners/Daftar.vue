@@ -180,7 +180,7 @@ function simpanStatus() {
       </template>
       <template #sel-aksi="{ baris: b }">
         <div class="mn-aksi">
-          <TombolIkon ikon="pensil" judul="Ubah data manpower" @click="ubah(b)" />
+          <TombolIkon v-if="b.isian" ikon="pensil" judul="Ubah data manpower" @click="ubah(b)" />
           <TombolIkon v-if="props.kelola" ikon="orang" varian="garis"
                       :judul="b.aktif ? 'Nonaktifkan karyawan' : 'Aktifkan kembali'" @click="bukaStatus(b)" />
         </div>

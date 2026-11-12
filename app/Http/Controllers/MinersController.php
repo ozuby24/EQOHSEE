@@ -173,17 +173,25 @@ class MinersController extends Controller
             ->whereColumn('pekerja_id', 'mnr_pekerja.id')->where('aktif', true)
             ->orderByDesc('tanggal_periksa')->orderByDesc('id')->limit(1);
 
+        /* Bukan pengelola: hanya pekerja yang boleh ia buka rinciannya
+           (AksesMiners::saringPekerja — aturan lihatPekerja). */
+        $u = $r->user();
+        $kelola = AksesMiners::kelola($u);
+        $medis  = AksesMiners::medis($u);
+
         $semua = Pekerja::query()
             ->select('mnr_pekerja.*')->addSelect(['mcu_terakhir_id' => $mcuTerakhir])
+            ->tap(fn ($q) => AksesMiners::saringPekerja($q, $u))
             ->with(['company:id,name', 'departemen:id,nama', 'jabatan:id,nama'])
             ->orderBy('nama')->get();
 
-        $mcu = McuOrang::withoutGlobalScopes()->with(['mcu', 'hasil'])
+        $mcu = McuOrang::withoutGlobalScopes()->with($medis ? ['mcu', 'hasil'] : ['mcu.alur', 'hasil'])
             ->whereIn('id', $semua->pluck('mcu_terakhir_id')->filter())->get()->keyBy('id');
 
-        $baris = $semua->map(function (Pekerja $p) use ($mcu) {
+        $baris = $semua->map(function (Pekerja $p) use ($mcu, $u, $kelola, $medis) {
             $m    = $mcu[$p->mcu_terakhir_id] ?? null;
             $sisa = Zona::sisa($m?->berlaku_sampai);
+            $ubah = $kelola || (int) $p->user_id === (int) $u->getKey();
 
             return [
                 'id'         => $p->id,
@@ -199,7 +207,8 @@ class MinersController extends Controller
                 'nonaktifSejak' => $p->tanggal_nonaktif?->toDateString(),
                 'mcu_id'     => $m?->mcu_id,
                 'noMcu'      => $m?->mcu?->no_registrasi,
-                'hasil'      => $m?->hasil?->nama,
+                /* Hasil MCU hanya bagi pembaca isi medis. */
+                'hasil'      => $medis || ($m?->mcu && AksesMiners::medis($u, $m->mcu)) ? $m?->hasil?->nama : null,
                 'berlaku'    => $m?->berlaku_sampai?->toDateString(),
                 'sisa'       => $sisa,
                 'zona'       => Zona::dariSisa($sisa),
@@ -207,8 +216,9 @@ class MinersController extends Controller
                 'cari'       => mb_strtolower($p->nama.' '.$p->nik.' '.$p->no_induk.' '.$p->no_registrasi.' '.$m?->mcu?->no_registrasi),
 
                 /* Isian formulir ubah — dikirim bersama barisnya supaya
-                   pensil di kolom "#" tidak perlu permintaan kedua. */
-                'isian' => [
+                   pensil di kolom "#" tidak perlu permintaan kedua; hanya
+                   bagi yang boleh mengubahnya (lihat update()). */
+                'isian' => ! $ubah ? null : [
                     'company_id'       => $p->company_id ?? '',
                     'nama'             => $p->nama,
                     'nik'              => $p->nik ?? '',

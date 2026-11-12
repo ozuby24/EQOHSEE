@@ -94,26 +94,36 @@ final class AksesMiners
      * Permit, atau SIMPER-nya ia ajukan (register "Saya" Safe Track) —
      * serta penyetuju yang ditugasi pada salah satu dokumennya.
      */
-    public static function lihatPekerja(\App\Models\Miners\Pekerja $p, ?User $u): bool
+    public static function lihatPekerja(Pekerja $p, ?User $u): bool
     {
         if (! $u) return false;
         if (self::kelola($u)) return true;
-        $id = (int) $u->getKey();
-        if ((int) $p->user_id === $id) return true;
 
-        $mcu    = \App\Models\Miners\McuOrang::withoutGlobalScopes()->where('pekerja_id', $p->id)->pluck('mcu_id');
-        $permit = \App\Models\Miners\Permit::withoutGlobalScopes()->where('pekerja_id', $p->id)->get(['id', 'user_id']);
-        $simper = \App\Models\Miners\Simper::withoutGlobalScopes()->where('pekerja_id', $p->id)->get(['id', 'user_id']);
+        return self::saringPekerja(Pekerja::withoutGlobalScopes()->whereKey($p->getKey()), $u)->exists();
+    }
 
-        if ($permit->contains('user_id', $id) || $simper->contains('user_id', $id)) return true;
-        if (\App\Models\Miners\Mcu::withoutGlobalScopes()->whereIn('id', $mcu)->where('user_id', $id)->exists()) return true;
+    /**
+     * Aturan lihatPekerja dalam bentuk kueri — untuk daftar Manpower dan
+     * unduhannya: yang ia daftarkan, yang MCU/Mine Permit/SIMPER-nya ia
+     * ajukan, dan yang salah satu dokumen itu ditugaskan kepadanya.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $q  kueri atas mnr_pekerja
+     */
+    public static function saringPekerja($q, ?User $u)
+    {
+        if (self::kelola($u)) return $q;
 
-        return \App\Models\Miners\Alur::query()->where('ditugaskan_user_id', $id)
-            ->where(fn ($q) => $q
-                ->where(fn ($w) => $w->where('dokumen', 'mcu')->whereIn('dokumen_id', $mcu))
-                ->orWhere(fn ($w) => $w->where('dokumen', 'permit')->whereIn('dokumen_id', $permit->pluck('id')))
-                ->orWhere(fn ($w) => $w->where('dokumen', 'simper')->whereIn('dokumen_id', $simper->pluck('id'))))
-            ->exists();
+        $id = (int) $u?->getKey();
+
+        $langkah = fn (string $jenis) => Alur::query()->where('dokumen', $jenis)->where('ditugaskan_user_id', $id)->select('dokumen_id');
+        $milik   = fn (string $kelas, string $jenis) => $kelas::withoutGlobalScopes()
+            ->where(fn ($w) => $w->where('user_id', $id)->orWhereIn('id', $langkah($jenis)));
+
+        return $q->where(fn ($w) => $w->where($q->qualifyColumn('user_id'), $id)
+            ->orWhereIn($q->qualifyColumn('id'), McuOrang::withoutGlobalScopes()
+                ->whereIn('mcu_id', $milik(\App\Models\Miners\Mcu::class, 'mcu')->select('id'))->select('pekerja_id'))
+            ->orWhereIn($q->qualifyColumn('id'), $milik(Permit::class, 'permit')->select('pekerja_id'))
+            ->orWhereIn($q->qualifyColumn('id'), $milik(Simper::class, 'simper')->select('pekerja_id')));
     }
 
     /**
