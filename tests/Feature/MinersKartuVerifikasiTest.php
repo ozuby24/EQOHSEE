@@ -85,9 +85,11 @@ class MinersKartuVerifikasiTest extends TestCase
             'sela' => 5, 'sela_lipat' => 4, 'margin' => 10, 'garis_potong' => 0])->assertSessionHasNoErrors();
         $this->assertSame('depan', SkemaCetak::tersimpan($this->admin)['skema']);
 
-        /* Pengaju biasa hanya mencetak kartunya sendiri dan tidak mengubah tata cetak. */
+        /* Kartu hanya dicetak admin atau HSE IUP — pengaju biasa tidak lagi
+           mencetak kartunya sendiri, dan tidak mengubah tata cetak. */
         $lain = \App\Models\User::factory()->create(['company_id' => $this->mitra->id]);
-        $this->actingAs($lain)->get("/miners/kartu/{$a->id}")->assertNotFound();
+        $this->actingAs($lain)->get("/miners/kartu/{$a->id}")->assertForbidden();
+        $this->actingAs($this->pengaju)->get("/miners/kartu/{$a->id}")->assertForbidden();
         $this->actingAs($this->pengaju)->post('/miners/kartu/tata-cetak', ['skema' => 'lipat', 'kertas' => 'a4', 'orientasi' => 'portrait',
             'sela' => 5, 'sela_lipat' => 4, 'margin' => 10, 'garis_potong' => 1])->assertForbidden();
     }

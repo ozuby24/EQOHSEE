@@ -14,8 +14,9 @@ use Inertia\Inertia;
 /**
  * Cetak Kartu — Kartu\KartuController Safe Track.
  *
- * Daftar Mine Permit TERBIT dan AKTIF dalam jangkauan (pengelola: semua;
- * pengaju: miliknya), dipilih sungguhan lalu dicetak: satu kartu CR80
+ * Daftar Mine Permit TERBIT dan AKTIF dalam jangkauan, HANYA bagi
+ * pengelola (admin atau HSE IUP) — kartunya kartu resmi bertanda tangan
+ * KTT dan memuat data diri pemegangnya. Dipilih sungguhan lalu dicetak: satu kartu CR80
  * depan-belakang, atau banyak kartu pada lembar A4 menurut tata cetak yang
  * disimpan per perusahaan. Kartu tanpa foto dilewati dengan alasannya.
  * Halaman cetak tidak disimpan di tembolok peramban (TanpaSimpan).
@@ -25,6 +26,8 @@ class KartuController extends Controller
     public function index(Request $r)
     {
         $u    = $r->user();
+        $this->bolehCetak($u);
+
         $cari = mb_strtolower(trim((string) $r->query('cari', '')));
 
         $baris = $this->permit($u)->with(['pekerja.company:id,name', 'mcuOrang:id,jabatan,nama', 'iup:id,name'])
@@ -59,6 +62,8 @@ class KartuController extends Controller
     /** Satu kartu, depan dan belakang. */
     public function cetak(Request $r, string $permit)
     {
+        $this->bolehCetak($r->user());
+
         $p = $this->permit($r->user())->findOrFail((int) $permit);
 
         return $this->tanpaSimpan(Inertia::render('Print/KartuCetak', [
@@ -70,6 +75,8 @@ class KartuController extends Controller
     /** Lembar A4 banyak kartu (`kartu/lembar`). */
     public function lembar(Request $r)
     {
+        $this->bolehCetak($r->user());
+
         $r->validate(['id' => ['required', 'array', 'min:1', 'max:500'], 'id.*' => ['integer']], [
             'id.required' => 'Pilih sedikitnya satu kartu.',
         ]);
@@ -119,11 +126,16 @@ class KartuController extends Controller
         return back()->with('sukses', 'Tata cetak kartu disimpan.');
     }
 
-    /** Mine Permit yang boleh dicetak pengguna ini: terbit dan aktif, dalam jangkauannya. */
+    /** Mine Permit yang dapat dicetak: terbit dan aktif, dalam jangkauan perusahaannya (global scope). */
     private function permit(User $u)
     {
-        return Permit::query()->where('status', 'terbit')->where('aktif', true)
-            ->when(! AksesMiners::kelola($u), fn ($q) => $q->where('user_id', $u->id));
+        return Permit::query()->where('status', 'terbit')->where('aktif', true);
+    }
+
+    /** Cetak kartu hanya admin atau HSE IUP — tombolnya pun hanya tampil bagi mereka. */
+    private function bolehCetak(?User $u): void
+    {
+        AksesMiners::tegakkan(AksesMiners::kelola($u), 'Kartu hanya dicetak admin atau HSE IUP.');
     }
 
     /** `TanpaSimpan` Safe Track — kartu berisi data diri, jangan tertinggal di tembolok. */

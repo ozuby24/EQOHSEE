@@ -295,6 +295,29 @@ class MinersAksesDataTest extends TestCase
             ->assertInertia(fn (Assert $pg) => $pg->has('calon'));
     }
 
+    /* ═══════════ 5 · cetak kartu ═══════════ */
+
+    #[Test]
+    public function kartu_hanya_dicetak_admin_atau_hse_iup(): void
+    {
+        $p = $this->permitTerbit();   // milik $this->pengaju
+        $alamat = ['/miners/daftar/cetak-kartu', '/miners/kartu/'.$p->id, '/miners/kartu/lembar?id[]='.$p->id];
+
+        foreach ([$this->pengaju, $this->biasa(), $this->ktt] as $u) {
+            foreach ($alamat as $url) $this->actingAs($u)->get($url)->assertForbidden();
+        }
+
+        $hseLain = User::factory()->create(['company_id' => Company::create(['name' => 'PT IUP Lain'])->id, 'ohse_role' => 'ohse']);
+        $this->actingAs($hseLain)->get('/miners/kartu/'.$p->id)->assertNotFound();
+
+        foreach ([$this->ohse, $this->admin] as $u) {
+            foreach ($alamat as $url) $this->actingAs($u)->get($url)->assertOk();
+        }
+
+        $this->assertFalse($this->diMenu($this->pengaju, 'miners/daftar/cetak-kartu'));
+        $this->assertTrue($this->diMenu($this->ohse, 'miners/daftar/cetak-kartu'));
+    }
+
     /** @return list<list<mixed>> lembar pertama unduhan Excel */
     private function lembar(string $url, User $oleh): array
     {

@@ -213,7 +213,7 @@ final class Menu
 
         'Monitoring' => [
           ['Masa Berlaku', 'miners.kedaluwarsa',        'miners/kedaluwarsa'],
-          ['Cetak Kartu',  'miners.daftar.cetak-kartu', 'miners/daftar/cetak-kartu'],
+          ['Cetak Kartu',  'miners.daftar.cetak-kartu', 'miners/daftar/cetak-kartu', 'kelolaMiners'],
         ],
 
         'Administrasi' => [
