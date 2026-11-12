@@ -25,7 +25,7 @@ const hasil = computed<any>(() => props.hasil ?? null);
 
 const URAIAN: Record<string, string> = {
   permit: 'Satu baris satu karyawan yang Mine Permit-nya sudah terbit di lapangan. Dibuatkan data manpower, MCU (Fit, berlaku sampai "Masa Berlaku"), induksi lulus, dan Mine Permit terbit. NIK yang sudah ada dilewati. Foto diisi belakangan dari detail Mine Permit.',
-  simper: 'Satu baris satu unit. NIK harus sudah punya Mine Permit (unggah templat Mine Permit lebih dulu). SIMPER terbitnya dipakai atau dibuatkan; Unit dan Class diisi berdua atau dikosongkan berdua. Class: F, R, P, atau I.',
+  simper: 'Satu baris satu unit. NIK harus sudah punya Mine Permit (unggah templat Mine Permit lebih dulu). SIMPER terbitnya dipakai; bila belum ada, baris yang membuatnya wajib memuat No SIMPOL dan Exp SIM (baris unit berikutnya boleh mengosongkannya). Unit dan Class diisi berdua atau dikosongkan berdua. Class: F, R, P, atau I.',
 };
 
 const form = {

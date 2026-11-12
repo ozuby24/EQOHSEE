@@ -61,12 +61,17 @@ final class DataLama
         'simper' => ['NIK', 'No SIMPOL', 'Exp SIM', 'Unit', 'Class'],
     ];
 
-    /** Contoh pada templat — fiktif, ditulis miring abu-abu. */
+    /**
+     * Contoh pada templat — fiktif, ditulis miring abu-abu. Nama unitnya
+     * golongan yang benar-benar dipasang `miners:pasang` (Acuan::
+     * GOLONGAN_UNIT): contoh yang meniru unit di luar Master Unit gagal
+     * bila pengunggah menyalinnya.
+     */
     private const CONTOH = [
         'permit' => [['3200000000000001', 'Contoh Pekerja', 'Operator Excavator', 'Produksi',
             'PT Contoh Mitra', 'A', '080000000000', '2026-01-15', '2027-01-15', 'FULL', '']],
         'simper' => [
-            ['3200000000000001', '000000000000001', '2028-03-20', 'Excavator', 'F'],
+            ['3200000000000001', '000000000000001', '2028-03-20', 'Dump Truck', 'F'],
             ['3200000000000001', '', '', 'Light Vehicle', 'F'],
             ['3200000000000002', '000000000000002', '2028-05-10', '', ''],
         ],
@@ -300,13 +305,25 @@ final class DataLama
 
             $s = Simper::withoutGlobalScopes()->where('permit_id', $permit->id)->where('status', 'terbit')->orderByDesc('id')->first();
             if (! $s) {
-                $exp = self::tanggal($b['exp_sim'] ?? null);
+                /* SIMPER baru hanya dari baris yang memuat No SIMPOL dan
+                   Exp SIM. Tanpa syarat ini, bila baris pembawa nomor SIM
+                   gagal, baris unit berikutnya untuk NIK yang sama diam-diam
+                   membuat SIMPER tanpa nomor dan tanpa masa berlaku. Baris
+                   yang hanya menambah unit pada SIMPER yang sudah ada (atau
+                   yang dibuat baris sebelumnya di berkas ini) tetap boleh
+                   mengosongkan keduanya. */
+                $simpol = trim((string) ($b['no_simpol'] ?? ''));
+                $exp    = self::tanggal($b['exp_sim'] ?? null);
                 if (filled($b['exp_sim'] ?? null) && ! $exp) return 'Exp SIM tidak terbaca — tulis sebagai 2028-03-20 atau 20-03-2028.';
+                if ($simpol === '' || ! $exp) {
+                    return 'Karyawan ini belum punya SIMPER — baris yang membuatnya wajib memuat No SIMPOL dan Exp SIM. '
+                        .'Isi keduanya pada baris ini; baris berikutnya untuk NIK yang sama boleh hanya berisi Unit dan Class.';
+                }
                 $s = Simper::withoutGlobalScopes()->create([
                     'company_id' => $permit->company_id, 'iup_id' => $permit->iup_id, 'permit_id' => $permit->id,
                     'pekerja_id' => $pk->id, 'no_simper' => 'LAMA-'.$permit->id, 'tanggal' => Waktu::kini()->startOfDay(),
-                    'no_simpol' => trim((string) ($b['no_simpol'] ?? '')) ?: null,
-                    'simpol_berlaku_sampai' => $exp, 'simpol_sumber' => $exp ? 'manual' : null,
+                    'no_simpol' => $simpol,
+                    'simpol_berlaku_sampai' => $exp, 'simpol_sumber' => 'manual',
                     'status' => 'terbit', 'aktif' => true, 'catatan' => 'Impor data lama',
                     'user_id' => $this->oleh->id, 'asal' => self::ASAL,
                 ]);
