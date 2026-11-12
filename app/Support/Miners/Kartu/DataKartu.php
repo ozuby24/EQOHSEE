@@ -7,7 +7,6 @@ use App\Models\Miners\{JenisUnit, Kendaraan, Permit, Simper, SimperAjuanUnit, Si
 use App\Support\Berkas;
 use App\Support\Miners\Verifikasi;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * Isi kartu Mine Permit / SIMPER — DataKartu::dariPermit Safe Track.
@@ -233,11 +232,6 @@ final class DataKartu
      */
     private static function gambarTertutup(?string $jalur): ?string
     {
-        if (! $jalur || ! Storage::disk(Berkas::TERTUTUP)->exists($jalur)) return null;
-
-        $isi  = Storage::disk(Berkas::TERTUTUP)->get($jalur);
-        $mime = Storage::disk(Berkas::TERTUTUP)->mimeType($jalur) ?: 'image/png';
-
-        return 'data:'.$mime.';base64,'.base64_encode((string) $isi);
+        return Berkas::sisipan($jalur);
     }
 }

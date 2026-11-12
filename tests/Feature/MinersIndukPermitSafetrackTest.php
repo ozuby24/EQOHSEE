@@ -150,6 +150,26 @@ class MinersIndukPermitSafetrackTest extends TestCase
                 ->where('s.qr', fn ($q) => str_contains($q, 'ID'.$lulus->id.'.')));
     }
 
+    public function test_tanda_tangan_ktt_sertifikat_induksi_disisipkan_bukan_alamat_publik(): void
+    {
+        /* Tanda tangan KTT ada di disk TERTUTUP; alamat storage/ publik
+           untuknya berujung 403 di peramban (uji E2E). */
+        \Illuminate\Support\Facades\Storage::fake('local')->put('miners/ttd/ktt.png',
+            base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='));
+        $this->iup->forceFill(['ttd_ktt' => 'miners/ttd/ktt.png'])->save();
+
+        $lulus = $this->induksiSelesai($this->mcuSelesai($this->mitra, 'Fit'));
+
+        $this->actingAs($this->pengaju)->get("/miners/induksi/peserta/{$lulus->id}/sertifikat")
+            ->assertInertia(fn (AssertableInertia $p) => $p->where('boleh', true)
+                ->where('s.ttdKtt', fn ($t) => str_starts_with((string) $t, 'data:image/png;base64,')));
+
+        /* Berkas yang hilang tidak menghasilkan gambar rusak. */
+        \Illuminate\Support\Facades\Storage::disk('local')->delete('miners/ttd/ktt.png');
+        $this->get("/miners/induksi/peserta/{$lulus->id}/sertifikat")
+            ->assertInertia(fn (AssertableInertia $p) => $p->where('s.ttdKtt', null));
+    }
+
     public function test_keadaan_induksi_mengikuti_persetujuan_dan_kelulusan(): void
     {
         $o = $this->mcuSelesai($this->mitra, 'Fit');

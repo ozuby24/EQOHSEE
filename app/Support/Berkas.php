@@ -602,4 +602,19 @@ final class Berkas
     {
         return $jalur ? asset('storage/'.ltrim($jalur, '/')) : null;
     }
+
+    /**
+     * Gambar di disk TERTUTUP sebagai data URI, untuk disisipkan ke
+     * halaman cetak — tanda tangan KTT dan sejenisnya tidak pernah punya
+     * alamat yang dapat dibuka langsung. Null bila berkasnya tidak ada.
+     */
+    public static function sisipan(?string $jalur): ?string
+    {
+        if (! $jalur || ! Storage::disk(self::TERTUTUP)->exists($jalur)) return null;
+
+        $isi  = Storage::disk(self::TERTUTUP)->get($jalur);
+        $mime = Storage::disk(self::TERTUTUP)->mimeType($jalur) ?: 'image/png';
+
+        return 'data:'.$mime.';base64,'.base64_encode((string) $isi);
+    }
 }

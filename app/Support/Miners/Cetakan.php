@@ -197,7 +197,10 @@ final class Cetakan
             'warna'       => $iup?->theme_color ?: '#1B4A9C',
             'namaKtt'     => mb_strtoupper((string) $iup?->ktt),
             'jabatanKtt'  => $iup?->jabatan_ktt ?: 'Kepala Teknik Tambang',
-            'ttdKtt'      => $iup?->ttd_ktt ? Berkas::terbuka($iup->ttd_ktt) : null,
+            /* Disimpan di disk TERTUTUP (PerusahaanController): alamat
+               storage/ publik menghasilkan 403, jadi disisipkan sebagai
+               data URI seperti pada kartu (DataKartu). */
+            'ttdKtt'      => Berkas::sisipan($iup?->ttd_ktt),
 
             /* QR verifikasi bertanda tangan APP_KEY. Selama halaman
                verifikasi publik belum ada, QR memuat keterangannya sendiri. */
