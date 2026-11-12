@@ -410,6 +410,7 @@ final class Berkas
         return [
             'ada' => $ada,
             'url' => $ada && self::bolehMembuka($u, $jenis)
+                    && \App\Support\Miners\AksesMiners::lihatLampiran($baris, $u instanceof \App\Models\User ? $u : null)
                 ? self::url($baris, $jenis, $i)
                 : null,
         ];

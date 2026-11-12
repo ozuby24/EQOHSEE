@@ -36,6 +36,7 @@ class BerkasController extends Controller
             'Berkas ini hanya dapat dibuka paramedis, tim OHSE, atau administrator.');
 
         $model = $kelas::findOrFail($baris);
+        $this->jagaBaris($model);
         $nilai = $model->{$atribut};
 
         $jalur = $daftar ? (((array) $nilai)[$i ?? 0] ?? null) : $nilai;
@@ -73,6 +74,7 @@ class BerkasController extends Controller
             'Berkas ini hanya dapat dibuka paramedis, tim OHSE, atau administrator.');
 
         $model = $kelas::findOrFail($baris);
+        $this->jagaBaris($model);
         $nilai = $model->{$atribut};
         $jalur = $daftar ? (((array) $nilai)[$i ?? 0] ?? null) : $nilai;
 
@@ -85,5 +87,16 @@ class BerkasController extends Controller
         }
 
         return $disk->download($jalur);
+    }
+
+    /**
+     * Gerbang baris di dalam perusahaan yang sama: lampiran Miners hanya
+     * bagi yang boleh membuka dokumen pemiliknya (AksesMiners — bukan
+     * salinan aturan kedua). Gerbang peran di atas tetap berlaku.
+     */
+    private function jagaBaris(object $model): void
+    {
+        abort_unless(\App\Support\Miners\AksesMiners::lihatLampiran($model, auth()->user()), 403,
+            'Anda hanya dapat membuka berkas dokumen yang Anda ajukan atau ditugaskan kepada Anda.');
     }
 }

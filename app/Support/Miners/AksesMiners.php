@@ -2,7 +2,8 @@
 
 namespace App\Support\Miners;
 
-use App\Models\Miners\{Alur, InduksiOrang, McuOrang, Pekerja, Permit, Simper};
+use App\Models\Miners\{Alur, Induksi, InduksiOrang, Mcu, McuOrang, McuRujukan, Pekerja, Permit, PermitBerkas,
+    PermitPerpanjangan, Simper, SimperAjuan, SimperAjuanUnit, SimperUnit};
 use App\Models\User;
 
 /**
@@ -188,6 +189,46 @@ final class AksesMiners
         return $q->where(fn ($w) => $w->where($q->qualifyColumn('user_id'), $id)
             ->orWhereIn($q->qualifyColumn('id'), $langkah)
             ->orWhereIn($q->qualifyColumn($kolom), $pekerjanya));
+    }
+
+    /**
+     * Dokumen pemilik sebuah baris lampiran Miners (yang disajikan lewat
+     * /berkas/{jenis}/{baris}): dokumennya sendiri, atau dokumen induk
+     * baris orang/unit/lampirannya. Null bila induknya tidak ada; false
+     * bila barisnya bukan baris Miners.
+     */
+    public static function dokumenLampiran(object $baris): object|false|null
+    {
+        return match (true) {
+            $baris instanceof Mcu, $baris instanceof Induksi, $baris instanceof Permit, $baris instanceof Simper,
+            $baris instanceof SimperAjuan, $baris instanceof PermitPerpanjangan => $baris,
+            $baris instanceof McuOrang        => $baris->mcu_id ? Mcu::withoutGlobalScopes()->find($baris->mcu_id) : null,
+            $baris instanceof McuRujukan      => ($o = McuOrang::withoutGlobalScopes()->find($baris->mcu_orang_id))
+                ? self::dokumenLampiran($o) : null,
+            $baris instanceof InduksiOrang    => Induksi::withoutGlobalScopes()->find($baris->induksi_id),
+            $baris instanceof PermitBerkas    => Permit::withoutGlobalScopes()->find($baris->permit_id),
+            $baris instanceof SimperUnit      => Simper::withoutGlobalScopes()->find($baris->simper_id),
+            $baris instanceof SimperAjuanUnit => SimperAjuan::withoutGlobalScopes()->find($baris->ajuan_id),
+            default                           => false,
+        };
+    }
+
+    /**
+     * Boleh membuka lampiran Miners ini: lihatDokumen atas dokumen
+     * pemiliknya. Berlaku untuk SETIAP jenis lampiran Miners — foto
+     * Mine Permit, form permohonan, sertifikat induksi, berkas uji unit,
+     * dan seterusnya. Gerbang peran Berkas::GERBANG (berkas medis, SIM,
+     * KTP) tetap berlaku di atasnya. Baris di luar Miners: tidak
+     * disentuh (true).
+     */
+    public static function lihatLampiran(object $baris, ?User $u): bool
+    {
+        $dokumen = self::dokumenLampiran($baris);
+
+        if ($dokumen === false) return true;
+        if (self::kelola($u)) return true;
+
+        return $dokumen !== null && self::lihatDokumen($dokumen, $u);
     }
 
     /**

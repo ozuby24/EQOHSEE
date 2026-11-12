@@ -514,6 +514,50 @@ class MinersAksesDataTest extends TestCase
         }
     }
 
+    /* ═══════════ 11 · lampiran Miners lewat /berkas ═══════════ */
+
+    #[Test]
+    public function lampiran_miners_hanya_bagi_yang_boleh_membuka_dokumennya(): void
+    {
+        \Illuminate\Support\Facades\Storage::disk('local')->put('miners/permit/foto-uji.jpg', 'foto');
+        \Illuminate\Support\Facades\Storage::disk('local')->put('miners/induksi/mohon-uji.pdf', 'form');
+        \Illuminate\Support\Facades\Storage::disk('local')->put('miners/mcu/hasil-uji.pdf', 'hasil');
+
+        $o = $this->mcuSelesai($this->mitra);
+        $o->forceFill(['berkas_hasil' => 'miners/mcu/hasil-uji.pdf'])->save();
+        $p = $this->permitTerbit($o);
+        $p->forceFill(['foto' => 'miners/permit/foto-uji.jpg'])->save();
+        $ind = $p->induksiOrang->induksi;
+        $ind->forceFill(['berkas_permohonan' => 'miners/induksi/mohon-uji.pdf'])->save();
+
+        $alamat = ['/berkas/mnf/'.$p->id, '/berkas/mnf/'.$p->id.'/unduh', '/berkas/mni/'.$ind->id];
+
+        /* Ditolak: pengguna biasa di perusahaan yang sama — foto Mine
+           Permit dan form induksi tidak berpenjaga peran, tetapi kini
+           mengikuti dokumen pemiliknya. Perusahaan lain: tetap 404. */
+        $biasa = $this->biasa();
+        foreach ($alamat as $url) $this->actingAs($biasa)->get($url)->assertForbidden();
+        $this->actingAs($this->asing())->get('/berkas/mnf/'.$p->id)->assertNotFound();
+
+        /* Boleh: pengajunya dan pengelola. */
+        foreach ([$this->pengaju, $this->ohse, $this->admin] as $u) {
+            foreach ($alamat as $url) $this->actingAs($u)->get($url)->assertOk();
+        }
+
+        /* Berkas medis: gerbang peran tetap di atasnya — pengajunya
+           ditolak peran, paramedis boleh (semua MCU), pengguna biasa
+           ditolak. */
+        $this->actingAs($this->pengaju)->get('/berkas/mnh/'.$o->id)->assertForbidden();
+        $this->actingAs($biasa)->get('/berkas/mnh/'.$o->id)->assertForbidden();
+        $this->actingAs($this->dokter)->get('/berkas/mnh/'.$o->id)->assertOk();
+
+        /* Cetak kartu (foto dimuat lewat /berkas/mnf) tetap bagi HSE IUP,
+           dan halaman verifikasi publik tidak terpengaruh. */
+        $this->actingAs($this->ohse)->get('/miners/kartu/'.$p->id)->assertOk();
+        auth()->logout();
+        $this->get('/v/'.\App\Support\Miners\Verifikasi::kode('MP', $p->id))->assertOk();
+    }
+
     /** @return list<list<mixed>> lembar pertama unduhan Excel */
     private function lembar(string $url, User $oleh): array
     {
