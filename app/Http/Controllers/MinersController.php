@@ -714,12 +714,17 @@ class MinersController extends Controller
     {
         $tahap = $r->route('tahap');
         $cari  = trim((string) $r->query('cari'));
+        $u     = $r->user();
 
         /* Riwayat MCU, Induksi, Mine Permit, dan SIMPER dilayani
            pengendali masing-masing (rute riwayat.* menunjuk ke sana);
-           yang tersisa di sini hanya riwayat Authority/kompetensi. */
+           yang tersisa di sini hanya riwayat Authority/kompetensi.
+           Selain pengelola hanya kompetensi pekerja yang boleh ia buka
+           (aturan lihatPekerja) — sama dengan kartu kompetensi dasbor. */
         $baris = Kompetensi::query()->with('pekerja')
-            ->when($cari, fn ($q) => $q->where(fn ($w) => $w->where('nama', Db::like(), "%{$cari}%")
+            ->when(! AksesMiners::kelola($u), fn ($q) => $q
+                ->whereIn('pekerja_id', AksesMiners::saringPekerja(Pekerja::query(), $u)->select('id')))
+            ->when($cari,fn ($q) => $q->where(fn ($w) => $w->where('nama', Db::like(), "%{$cari}%")
                 ->orWhereHas('pekerja', fn ($pk) => $pk->where('nama', Db::like(), "%{$cari}%"))))
             ->orderByDesc('berlaku_sampai')->limit(300)->get()
             ->map(fn (Kompetensi $k) => [

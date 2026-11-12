@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Company;
-use App\Models\Miners\{McuRujukan, Pekerja, PermitPerpanjangan, SimperAjuan};
+use App\Models\Miners\{Kompetensi, McuRujukan, Pekerja, PermitPerpanjangan, SimperAjuan};
 use App\Models\User;
 use App\Support\Waktu;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -238,6 +238,27 @@ class MinersAksesDataTest extends TestCase
             ->assertInertia(fn (Assert $pg) => $pg->where('baris.total', 2));
         $this->actingAs($this->dokter)->get('/miners/riwayat/mcu')->assertOk()
             ->assertInertia(fn (Assert $pg) => $pg->where('baris.total', 2));
+    }
+
+    #[Test]
+    public function riwayat_authority_hanya_memuat_kompetensi_pekerja_yang_boleh_dibuka(): void
+    {
+        $pendaftar = $this->biasa();
+        $milik     = $this->pekerja($pendaftar);
+        $lain      = $this->pekerja();
+        foreach ([$milik, $lain] as $p) {
+            Kompetensi::withoutGlobalScopes()->create([
+                'company_id' => $this->mitra->id, 'pekerja_id' => $p->id,
+                'nama' => 'Operator '.$p->nama, 'berlaku_sampai' => now()->addYear()->toDateString(),
+            ]);
+        }
+
+        $nama = fn (User $u) => collect($this->actingAs($u)->get('/miners/riwayat/authority')->assertOk()
+            ->viewData('page')['props']['baris'])->pluck('nama')->sort()->values()->all();
+
+        $this->assertSame([], $nama($this->biasa()), 'Riwayat Authority bocor kepada pengguna biasa.');
+        $this->assertSame([$milik->nama], $nama($pendaftar));
+        $this->assertSame(collect([$milik->nama, $lain->nama])->sort()->values()->all(), $nama($this->ohse));
     }
 
     /* ═══════════ 4 · daftar dan unduhan Manpower ═══════════ */
