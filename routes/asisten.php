@@ -11,9 +11,10 @@
  */
 
 use App\Http\Controllers\{AsistenController, RencanaImporController};
+use App\Support\Rute;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['can:audit', 'throttle:asisten'])->group(function () {
+Route::middleware(['can:audit', 'throttle:asisten'])->where(Rute::id('smkp', 'temuan'))->group(function () {
     Route::post('smkp/{smkp}/butir',            [AsistenController::class, 'butir'])->name('smkp.butir');
     Route::post('smkp/{smkp}/temuan/{temuan}',  [AsistenController::class, 'temuan'])->name('smkp.temuan');
     // Analisis berkas bukti satu butir (PDF/gambar/dokumen Office yang diunggah).
