@@ -1,30 +1,103 @@
-# Update 12 — Enam Pilar di Halaman Depan
+# Update 13 — Audit SMKP baru dan Kelayakan Karyawan (Miners) baru
 
 ```bash
-cd ~/eqohsee && git pull && npm run build && php artisan optimize:clear
-php artisan serve --host=127.0.0.1 --port=8000
+# Di VPS, dari /var/www/EQOHSEE (atau dari mesin lokal: bash deploy/kirim.sh)
+cp database/database.sqlite ~/cadangan-sebelum-update-13.sqlite   # pgsql: pg_dump
+git pull
+composer install --no-dev --optimize-autoloader
+php artisan migrate --force
+npm ci && npm run build
+php artisan optimize:clear
+php artisan storage:link        # hanya bila public/storage belum ada
 ```
-Tanpa migrasi baru. Buka `http://127.0.0.1:8000/` (tanpa login).
+`deploy/deploy.sh` mengerjakan semua langkah itu (termasuk cadangan database
+otomatis sebelum migrasi, `npm ci`, dan `storage:link`) — pakai `kirim.sh`
+bila biasanya deploy dari mesin lokal. Tanpa `storage:link`, logo pada kartu
+cetak mengembalikan 403.
 
-## Seksi baru: "Enam Pilar"
-Halaman depan kini menjelaskan **makna nama EQOHSEE** — sesuatu yang sebelumnya
-tak pernah muncul untuk pengunjung publik. Ditambahkan satu seksi (setelah Hero,
-sebelum Modul) dengan latar gelap `cam-ink`:
+## Sebelum migrasi — wajib
+Data SMKP lama **dipindahkan ke struktur baru**. Cadangkan database, lalu
+**latih migrasinya pada salinan data produksi** dulu. Data lama yang tidak
+punya padanan disimpan utuh di tabel arsip `smkp_arsip_eqohsee`
+(kolom `asli`); jangan dihapus sebelum audit lama diperiksa di aplikasi baru.
 
-1. **Wordmark hidup** — tulisan `EQOHSEE` besar, tiap huruf diberi warna pilarnya
-   (E·Q·O·H·S·E·E → Energy, Quality, Occupational Health, Safety, Environment,
-   Engineering). O dan H sama-sama warna Occupational Health.
-2. **Enam kartu pilar** — ikon heksagon, nama, dan deskripsi tiap pilar, dengan
-   aksen garis atas berwarna pilar. Ikon sama dengan yang dipakai halaman `/pilar`.
-3. Tautan **Pilar** ditambahkan ke navigasi lengket.
+## Audit SMKP (menu: Audit SMKP)
+Modul diganti dengan alur audit baru (porting Aurorasys). Menu sampingnya:
+**Daftar Audit**, **Audit Baru**, **Tindak Lanjut Temuan**, **Kriteria &
+Acuan**. Langkah per audit dibuka dari halaman audit itu sendiri:
+Tahap I (Permulaan Audit), Rencana Audit, Rapat, Penilaian per elemen,
+Bukti, Temuan, Formulir, Laporan. Status audit berjalan lewat tiga tahap:
+Tahap I — Permulaan Audit, Tahap II — Audit Lapangan, dan Pelaporan.
+Kriteria memakai `resources/data/smkp/elemen.json`: 7 elemen, 100 butir,
+nilai maksimal 339.
 
-## Satu sumber data
-Seksi ini membaca langsung dari registry **`App\Support\Pillars::all()`** —
-bukan menyalin ulang data. Jadi kalau warna/nama/deskripsi pilar diubah di satu
-tempat, halaman depan dan halaman `/pilar` ikut berubah serentak.
+- **Cetak:** paket tujuh formulir (Rencana Audit, Kriteria Audit,
+  Kesesuaian, Ketidaksesuaian & Tindak Lanjut, Rekapitulasi, Rekomendasi &
+  OFI, Rencana Tindak Lanjut), ditambah berita acara dan daftar hadir rapat.
+- **Asisten AI** (rekomendasi, akar masalah, RTP): hidup setelah kunci API
+  diisi di **Pusat Kendali → Integrasi AI** (`/admin/ai`). Tanpa kunci,
+  asisten mati; bagian lain tidak terpengaruh.
+- **Kop formulir per perusahaan:** Admin → Kelola Perusahaan → isian
+  **Kop Formulir Audit SMKP**. Kosong berarti kop bawaan EQOHSEE.
+- **Peran:** dipegang `users.audit_role` — `auditor` (menyusun audit) atau
+  `company` (auditi: unggah bukti dan tindak lanjut). Migrasi memberi peran
+  auditor kepada **semua akun non-admin yang belum berperan audit**.
+  **Tinjau** di Admin → Kelola Pengguna (isian *Peran Audit*) siapa yang
+  seharusnya auditor dan siapa auditi; auditi harus terhubung ke perusahaan.
+- **Akun nonaktif kini benar-benar tertutup** di semua halaman, termasuk
+  sesi yang sedang terbuka dan cookie "Ingat saya" (middleware
+  `PastikanAktif`). Sebelumnya akun nonaktif masih bisa bekerja.
+- **Pengingat tindak lanjut:** `smkp:pengingat-tindak-lanjut` mengirim
+  surel batas waktu ke akun auditi setiap hari pukul 07.15 WIB. Perlu
+  `MAIL_*` yang sungguhan di `.env` dan cron penjadwal (lihat bawah).
+  Sakelar dan pratinjaunya ada di halaman **Pengingat Tindak Lanjut**
+  (`/admin/pengingat`).
+- **Yang sudah tidak ada:** Dasbor SMKP (Performa SMKP) dan fitur Banding.
+  Metode & Sampel serta OFI tidak lagi berupa halaman menu sendiri —
+  keduanya kini bagian Rencana Audit dan Formulir Rekomendasi & OFI.
 
-## Tetap konsisten
-Memakai token dan komponen yang sudah ada (`glass-panel`, `card-hover`,
-`font-display`, warna `cam-*`, sistem `.stat`). Tidak ada dependensi baru,
-tidak ada file gambar eksternal — ikon pilar berupa SVG inline sehingga tetap
-tampil walau tanpa internet (penting untuk penggunaan lokal di Termux).
+## Kelayakan Karyawan (menu: Miners)
+Modul dibangun ulang. Alurnya: **MCU → Induksi → Mine Permit → SIMPER**,
+dengan SIMPER Lanjutan (Penambahan Unit, Upgrade, Perpanjangan SIMPER, dan
+Perpanjangan Mine Permit). Penyetuju tiap alur:
+
+| Alur | Penyetuju berurutan |
+|---|---|
+| MCU | Pengaju → Dokter Pemeriksa |
+| Induksi, Upgrade | Pengaju → HSE (Verifikasi) |
+| Mine Permit, SIMPER, Penambahan Unit | Pengaju → HSE → Kepala Teknik Tambang |
+| Perpanjangan SIMPER / Mine Permit | Pengaju → Dokter → HSE → KTT |
+
+**Penyetuju diisi dengan NAMA per IUP** di **Miners → Administrasi → Alur
+Persetujuan**. Selama satu IUP belum lengkap, pengajuannya tidak dapat
+dikirim dan persetujuan tidak punya siapa-siapa untuk bertindak.
+
+- **Identitas kartu:** Miners → Master Data → Perusahaan (hanya
+  administrator): *Logo grup (kartu)* dan *Tanda tangan KTT*.
+- **Kartu:** Miners → Monitoring → Cetak Kartu — CR80 54 × 86 mm atau
+  lembar A4, menurut tata cetak yang disimpan.
+- **Verifikasi publik:** kode QR di kartu membuka `/v/{kode}` tanpa login
+  (30 permintaan per menit). Kodenya HMAC-SHA256 dari **`APP_KEY`** —
+  mengganti `APP_KEY` membuat seluruh QR yang sudah tercetak tidak
+  valid. Jangan diganti tanpa mencetak ulang kartu.
+- **Monitoring:** Miners → Monitoring → **Masa Berlaku**.
+- **Pengingat surel:** `miners:pengingat` setiap hari 07.25 waktu tambang
+  (zona aplikasi, bawaan Asia/Makassar) untuk MCU, Induksi, Mine Permit,
+  dan SIMPER yang berakhir ≤ 60 hari atau lewat. Isi di `.env`:
+  `MINERS_SUREL_OHSE` (kotak surel tim OHSE) dan `MINERS_SUREL_TEMBUSAN`
+  (tembusan tetap, dipisah koma). `miners:sinkron` (06.55, juga otomatis)
+  menyelaraskan masa berlaku Mine Permit dengan MCU dan menandai yang
+  kedaluwarsa.
+- **Sekali jalan (opsional):** usulan masa berlaku SIM untuk SIMPER lama:
+  `php artisan miners:deteksi-sim --uji-coba` (hanya menampilkan), lalu
+  tanpa `--uji-coba` untuk menyimpan usulan. Tidak menimpa data apa pun.
+- **Upload Data Lama:** Miners → Master Data → Upload Data Lama, dua templat
+  Excel (Mine Permit dan SIMPER), untuk administrator dan HSE perusahaan.
+  Daftar pada halaman Miners juga dapat diekspor ke Excel.
+
+## Penjadwal
+Dua pengingat di atas hanya berjalan bila `schedule:run` dipanggil tiap
+menit oleh cron (satu baris, jalur mengikuti direktori aplikasi di VPS):
+```
+* * * * * cd /var/www/EQOHSEE && php artisan schedule:run >> /dev/null 2>&1
+```
