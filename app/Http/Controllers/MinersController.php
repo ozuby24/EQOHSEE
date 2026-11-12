@@ -33,7 +33,11 @@ class MinersController extends Controller
 
     public function dasbor(Request $r)
     {
-        $orang = $this->orangDenganBerkas()->get();
+        /* Pengguna yang bukan pengelola hanya melihat pekerja yang boleh
+           ia buka (saringPekerja) — daftar "paling mendesak" dan seluruh
+           hitungannya sama-sama atas orang-orang itu. */
+        $u     = $r->user();
+        $orang = AksesMiners::saringPekerja($this->orangDenganBerkas(), $u)->get();
 
         $baris = $orang->map(fn (Pekerja $p) => $this->keadaanOrang($p));
 
@@ -56,8 +60,8 @@ class MinersController extends Controller
             'jumlah' => [
                 'pekerja'      => $orang->count(),
                 'pekerjaAktif' => $orang->where('status', 'aktif')->count(),
-                'permitTerbit' => Permit::query()->where('status', 'terbit')->count(),
-                'simperTerbit' => Simper::query()->where('status', 'terbit')->count(),
+                'permitTerbit' => AksesMiners::saringDokumen(Permit::query()->where('status', 'terbit'), $u, 'permit')->count(),
+                'simperTerbit' => AksesMiners::saringDokumen(Simper::query()->where('status', 'terbit'), $u, 'simper')->count(),
             ],
 
             /* Antrean per peran, dan hanya yang MENUNGGU. Bagi yang
@@ -71,9 +75,10 @@ class MinersController extends Controller
             'mendesak' => $baris
                 ->filter(fn (array $b) => in_array($b['terburuk'], [Keadaan::HABIS, Keadaan::BELUM], true))
                 ->sortBy(fn (array $b) => array_search($b['terburuk'], Keadaan::URUTAN, true))
-                ->take(8)->values(),
+                ->take(8)->map(fn (array $b) => \Illuminate\Support\Arr::except($b, ['nik']))->values(),
 
             'kompetensiHabis' => Kompetensi::query()->akanHabis()->with('pekerja')
+                ->whereIn('pekerja_id', AksesMiners::saringPekerja(Pekerja::query(), $u)->select('id'))
                 ->orderBy('berlaku_sampai')->take(8)->get()
                 ->map(fn (Kompetensi $k) => [
                     'id'      => $k->id,
@@ -117,7 +122,8 @@ class MinersController extends Controller
         $dari   = $tanggal->copy()->startOfDay()->utc();
         $sampai = $tanggal->copy()->endOfDay()->utc();
 
-        $surat = fn () => Mcu::query()->whereBetween('created_at', [$dari, $sampai]);
+        /* Hanya surat MCU yang boleh dibuka pengguna ini (paramedis: seluruhnya). */
+        $surat = fn () => AksesMiners::saringDokumen(Mcu::query()->whereBetween('created_at', [$dari, $sampai]), $r->user(), 'mcu');
 
         $orang = McuOrang::query()->with(['mcu.company:id,name'])
             ->whereIn('mcu_id', $surat()->select('id'))
@@ -668,7 +674,9 @@ class MinersController extends Controller
             'zona'       => in_array($z = (string) $r->query('zona'), Zona::KUNCI, true) ? $z : '',
         ];
 
-        $baris = MonitoringMiners::baris()
+        /* Hanya baris yang boleh dilihat pengguna ini — angka ringkasan,
+           rekap per perusahaan, dan zona pun dihitung atasnya. */
+        $baris = MonitoringMiners::terlihat(MonitoringMiners::baris(), $r->user())
             ->when($saring['perusahaan'] !== '', fn ($c) => $c->where('company_id', (int) $saring['perusahaan']))
             ->when($saring['cari'] !== '', function ($c) use ($saring) {
                 $k = mb_strtolower($saring['cari']);

@@ -407,6 +407,54 @@ class MinersAksesDataTest extends TestCase
         $this->assertFalse(\App\Support\Miners\AksesMiners::lihatPekerja($milikEss, $ess));
     }
 
+    /* ═══════════ 9 · Monitoring Masa Berlaku dan dasbor ═══════════ */
+
+    #[Test]
+    public function monitoring_masa_berlaku_hanya_memuat_dokumen_yang_boleh_dibuka(): void
+    {
+        $o = $this->mcuSelesai($this->mitra);   // surat MCU diajukan $this->pengaju
+        $this->permitTerbit($o);                // induksi dan permit juga oleh pengaju
+        $nik = $o->pekerja->nik;
+
+        $props = fn (User $u, string $url) => $this->actingAs($u)->get($url)->assertOk()->viewData('page')['props'];
+
+        /* Ditolak: pengguna biasa yang tidak berkaitan — tidak ada baris,
+           tidak ada NIK, dan ringkasan serta rekap tidak menyebut apa pun. */
+        $biasa = $this->biasa();
+        foreach (['mcu', 'induksi', 'permit'] as $j) {
+            $this->assertSame(0, $props($biasa, '/miners/kedaluwarsa?jenis='.$j)['daftar']['total'], $j);
+        }
+        $p = $props($biasa, '/miners/kedaluwarsa');
+        $this->assertSame(0, $p['manpower']['total']);
+        $this->assertSame(0, array_sum(array_column($p['ringkas'], 'total')));
+        $this->assertSame([], array_merge(...array_values($p['rekap'])));
+        $this->assertStringNotContainsString($nik, $this->actingAs($biasa)->get('/miners/kedaluwarsa')->getContent());
+        $this->assertCount(1, $this->lembar('/miners/kedaluwarsa/ekspor?jenis=mcu', $biasa));   // hanya kepala
+        $d = $props($biasa, '/miners/dasbor');
+        $this->assertSame([], $d['mendesak']);
+        $this->assertSame(0, $d['jumlah']['pekerja']);
+        $this->assertStringNotContainsString($nik, $this->actingAs($biasa)->get('/miners/dasbor')->getContent());
+
+        /* Boleh: pengajunya melihat barisnya sendiri, termasuk di unduhan. */
+        $this->assertSame(1, $props($this->pengaju, '/miners/kedaluwarsa?jenis=mcu')['daftar']['total']);
+        $this->assertSame(1, $props($this->pengaju, '/miners/kedaluwarsa?jenis=permit')['daftar']['total']);
+        $this->assertSame(1, $props($this->pengaju, '/miners/kedaluwarsa')['ringkas']['permit']['total']);
+        $lembar = $this->lembar('/miners/kedaluwarsa/ekspor?jenis=mcu', $this->pengaju);
+        $this->assertCount(2, $lembar);
+        $this->assertContains($nik, $lembar[1]);
+        $d = $props($this->pengaju, '/miners/dasbor');
+        $this->assertSame(1, $d['jumlah']['pekerja']);
+        foreach ($d['mendesak'] as $m) $this->assertArrayNotHasKey('nik', $m);
+
+        /* Paramedis: baris MCU tetap, Mine Permit tidak. */
+        $this->assertSame(1, $props($this->dokter, '/miners/kedaluwarsa?jenis=mcu')['daftar']['total']);
+        $this->assertSame(0, $props($this->dokter, '/miners/kedaluwarsa?jenis=permit')['daftar']['total']);
+
+        /* Pengelola: seluruhnya. */
+        $this->assertSame(1, $props($this->ohse, '/miners/kedaluwarsa?jenis=permit')['daftar']['total']);
+        $this->assertSame(1, $props($this->ohse, '/miners/kedaluwarsa')['manpower']['total']);
+    }
+
     /** @return list<list<mixed>> lembar pertama unduhan Excel */
     private function lembar(string $url, User $oleh): array
     {

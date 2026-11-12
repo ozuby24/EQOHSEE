@@ -2,11 +2,14 @@
 
 namespace App\Support\Miners;
 
+use App\Models\Miners\Induksi;
 use App\Models\Miners\InduksiOrang;
+use App\Models\Miners\Mcu;
 use App\Models\Miners\McuOrang;
 use App\Models\Miners\Pekerja;
 use App\Models\Miners\Permit;
 use App\Models\Miners\Simper;
+use App\Models\User;
 use Illuminate\Support\Collection;
 
 /**
@@ -89,6 +92,41 @@ final class MonitoringMiners
         }
 
         return collect($keluar);
+    }
+
+    /**
+     * Baris yang boleh dilihat pengguna ini.
+     *
+     * Pengelola (admin, HSE IUP): seluruhnya. Pengguna lain: per modul,
+     * hanya baris yang dokumennya lolos AksesMiners::saringDokumen —
+     * pengajunya, pendaftar pekerjanya, penyetuju langkahnya, dan untuk
+     * MCU paramedis. Baris "belum ada dokumen" (MCU kosong) hanya bagi
+     * yang boleh melihat pekerjanya (saringPekerja). Ringkasan, rekap
+     * per perusahaan, dan hitungan zona dihitung atas hasil saringan
+     * ini, sehingga angkanya tidak menyebut lebih dari yang terlihat.
+     *
+     * @param  Collection<int,array<string,mixed>>  $baris
+     * @return Collection<int,array<string,mixed>>
+     */
+    public static function terlihat(Collection $baris, ?User $u): Collection
+    {
+        if (AksesMiners::kelola($u)) return $baris;
+
+        $id = fn ($q) => $q->pluck('id')->flip();
+
+        $boleh = [
+            'mcu'     => $id(McuOrang::withoutGlobalScopes()
+                ->whereIn('mcu_id', AksesMiners::saringDokumen(Mcu::query(), $u, 'mcu')->select('id'))),
+            'induksi' => $id(InduksiOrang::withoutGlobalScopes()
+                ->whereIn('induksi_id', AksesMiners::saringDokumen(Induksi::query(), $u, 'induksi')->select('id'))),
+            'permit'  => $id(AksesMiners::saringDokumen(Permit::query(), $u, 'permit')),
+            'simper'  => $id(AksesMiners::saringDokumen(Simper::query(), $u, 'simper')),
+        ];
+        $pekerja = $id(AksesMiners::saringPekerja(Pekerja::query(), $u));
+
+        return $baris->filter(fn (array $b) => $b['dokumen_id'] === null
+            ? isset($pekerja[$b['pekerja_id']])
+            : isset($boleh[$b['jenis']][$b['dokumen_id']]))->values();
     }
 
     /** @return array<string,mixed> */
