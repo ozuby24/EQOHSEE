@@ -387,7 +387,11 @@ class RincianDokumenMinersTest extends TestCase
         $orang = $surat->orang()->first();
         $orang->forceFill(['berkas_hasil' => 'miners/mcu/ada.pdf'])->save();
 
-        $this->actingAs($this->pengguna());
+        /* Pengajunya sendiri — rincian MCU tidak lagi terbuka bagi setiap
+           pengguna perusahaan (AksesMiners::lihatDokumen). */
+        $pengaju = $this->pengguna();
+        $surat->forceFill(['user_id' => $pengaju->id])->save();
+        $this->actingAs($pengaju);
 
         $props = $this->get("/miners/mcu/{$surat->id}")->viewData('page')['props'];
         $berkas = $props['orang'][0]['berkas'];

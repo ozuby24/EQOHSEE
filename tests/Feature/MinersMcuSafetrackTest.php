@@ -262,11 +262,15 @@ class MinersMcuSafetrackTest extends TestCase
         Notification::assertSentOnDemand(PemberitahuanMiners::class,
             fn ($n, $kanal, AnonymousNotifiable $t) => in_array('ohse@contoh.test', (array) $t->routes['mail'], true));
 
-        /* Pemberi kerja pasien boleh mencetak suratnya. Kopnya formulir
-           terkendali IUP penerbit — nomornya dari pengaturan dokumennya. */
+        /* Surat rujukan adalah isi medis: pemberi kerja pasien (pengaju
+           MCU yang bukan paramedis/OHSE) tidak lagi membukanya; dokternya
+           membukanya. Kopnya formulir terkendali IUP penerbit — nomornya
+           dari pengaturan dokumennya. */
         $this->iup->forceFill(['doc_no_prefix' => 'TBU'])->save();
 
-        $this->actingAs($this->pengaju)->get("/miners/mcu/rujukan/{$j->id}/surat")
+        $this->actingAs($this->pengaju)->get("/miners/mcu/rujukan/{$j->id}/surat")->assertForbidden();
+
+        $this->actingAs($this->dokter)->get("/miners/mcu/rujukan/{$j->id}/surat")
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $p) => $p->component('Print/SuratRujukan')
                 ->where('s.nama', $o->nama)->where('s.kop.nomor', 'FRM/TBU/OHSE/026'));
@@ -300,7 +304,9 @@ class MinersMcuSafetrackTest extends TestCase
         $o->mcu->forceFill(['iup_id' => $this->iup->id])->save();
         $this->iup->forceFill(['doc_no_prefix' => 'TBU'])->save();
 
-        $this->actingAs($this->pengaju)->get("/miners/mcu/orang/{$o->id}/sertifikat")
+        /* Sertifikat memuat hasil dan catatan dokter — dibuka HSE IUP, bukan
+           pengaju yang bukan pembaca isi medis (MinersAksesDataTest). */
+        $this->actingAs($this->ohse)->get("/miners/mcu/orang/{$o->id}/sertifikat")
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $p) => $p->component('Print/SertifikatMcu')
                 ->where('s.boleh', true)

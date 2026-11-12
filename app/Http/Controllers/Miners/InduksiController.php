@@ -43,7 +43,7 @@ class InduksiController extends Controller
         $cari    = trim((string) $r->query('cari', ''));
 
         $halaman = Induksi::query()->with(['user:id,name', 'company:id,name'])->withCount('orang')
-            ->when(! $riwayat, fn ($w) => $w->where('user_id', $u->id))
+            ->tap(fn ($w) => $riwayat ? AksesMiners::saringDokumen($w, $u, 'induksi') : $w->where('user_id', $u->id))
             ->when($cari !== '', fn ($w) => $w->where(fn ($c) => $c->where('no_registrasi', 'like', "%{$cari}%")
                 ->orWhere('perihal', 'like', "%{$cari}%")))
             ->orderByDesc('tanggal')->orderByDesc('id')->paginate(15)->withQueryString();
@@ -80,7 +80,7 @@ class InduksiController extends Controller
         $sampai  = $r->date('sampai')?->endOfDay();
 
         $baris = InduksiOrang::query()->with(['induksi.user', 'pekerja.company', 'pekerja.departemen', 'mcuOrang'])
-            ->whereIn('induksi_id', Induksi::query()->when(! $riwayat, fn ($w) => $w->where('user_id', $u->id))->select('id'))
+            ->whereIn('induksi_id', Induksi::query()->tap(fn ($w) => $riwayat ? AksesMiners::saringDokumen($w, $u, 'induksi') : $w->where('user_id', $u->id))->select('id'))
             ->when($dari, fn ($q) => $q->where('created_at', '>=', $dari))
             ->when($sampai, fn ($q) => $q->where('created_at', '<=', $sampai))
             ->orderBy('created_at')->get()
@@ -176,6 +176,8 @@ class InduksiController extends Controller
 
         $induksi = Induksi::with(['alur.user', 'alur.ditugaskan', 'user', 'iup', 'company',
             'orang.pekerja.company', 'orang.mcuOrang.mcu.company'])->findOrFail((int) $id);
+
+        AksesMiners::tegakkan(AksesMiners::lihatDokumen($induksi, $u), 'Anda hanya dapat membuka induksi yang Anda ajukan atau ditugaskan kepada Anda.');
 
         $induksi->terbitkanAlur();
         $induksi->load('alur.user', 'alur.ditugaskan');
@@ -357,8 +359,12 @@ class InduksiController extends Controller
     }
 
     /** Sertifikat induksi — `sertifikat_induksi/{id}` Safe Track. */
-    public function sertifikat(InduksiOrang $orang)
+    public function sertifikat(Request $r, InduksiOrang $orang)
     {
+        abort_unless($orang->induksi, 404);
+        AksesMiners::tegakkan(AksesMiners::lihatDokumen($orang->induksi, $r->user()),
+            'Anda hanya dapat membuka sertifikat induksi yang Anda ajukan atau ditugaskan kepada Anda.');
+
         [$boleh, $alasan] = Cetakan::bolehSertifikatInduksi($orang->load('induksi'));
 
         return Inertia::render('Print/SertifikatInduksi', [

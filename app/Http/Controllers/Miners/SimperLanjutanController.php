@@ -314,6 +314,8 @@ class SimperLanjutanController extends Controller
             'simper.unit.kendaraan', 'simper.unit.jenisUnitBanyak', 'unit.kendaraan', 'unit.jenisUnitBanyak', 'unit.simperUnit'])
             ->findOrFail((int) $id);
 
+        AksesMiners::tegakkan(AksesMiners::lihatDokumen($a, $u), 'Anda hanya dapat membuka pengajuan yang Anda ajukan atau ditugaskan kepada Anda.');
+
         $a->terbitkanAlur();
         $a->load('alur.user', 'alur.ditugaskan');
 
@@ -352,9 +354,9 @@ class SimperLanjutanController extends Controller
                 'simper_id' => $s?->id,
                 'simper'    => $s?->no_simper,
                 'jenisSim'  => $s?->jenis_simpol,
-                'simLama'   => $s?->no_simpol,
+                'simLama'   => AksesMiners::noSim($s?->no_simpol, $u),
                 'berlakuLama' => $s?->habisEfektif()?->toDateString(),
-                'simBaru'   => $a->no_simpol_baru,
+                'simBaru'   => AksesMiners::noSim($a->no_simpol_baru, $u, 'sas'),
                 'berlakuBaru' => $a->simpol_berlaku_sampai?->toDateString(),
                 'tanggalMcu'  => $a->tanggal_mcu?->toDateString(),
                 'pengaju'   => $a->user?->name,
@@ -409,6 +411,8 @@ class SimperLanjutanController extends Controller
      */
     public static function calon(string $jenis): Collection
     {
+        $simTerbuka = \App\Support\Berkas::bolehMembuka(request()->user(), 'mnp');
+
         $berjalan = SimperAjuan::withoutGlobalScopes()->where('jenis', $jenis)
             ->whereIn('status', SimperAjuan::BERJALAN)->select('simper_id');
 
@@ -422,7 +426,8 @@ class SimperLanjutanController extends Controller
                 'nama'    => $s->pekerja?->nama,
                 'nomor'   => $s->no_simper,
                 'noid'    => $s->pekerja?->no_induk,
-                'simpol'  => $s->no_simpol,
+                /* Nomor SIM hanya bagi yang boleh membuka pindaian SIM. */
+                'simpol'  => $simTerbuka ? $s->no_simpol : null,
                 'berlaku' => $s->habisEfektif()?->toDateString(),
             ])->values();
     }

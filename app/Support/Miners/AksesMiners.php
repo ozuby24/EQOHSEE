@@ -2,6 +2,7 @@
 
 namespace App\Support\Miners;
 
+use App\Models\Miners\{Alur, InduksiOrang, McuOrang, Pekerja, Permit, Simper};
 use App\Models\User;
 
 /**
@@ -113,6 +114,67 @@ final class AksesMiners
                 ->orWhere(fn ($w) => $w->where('dokumen', 'permit')->whereIn('dokumen_id', $permit->pluck('id')))
                 ->orWhere(fn ($w) => $w->where('dokumen', 'simper')->whereIn('dokumen_id', $simper->pluck('id'))))
             ->exists();
+    }
+
+    /**
+     * Boleh membuka rincian sebuah dokumen Miners — MCU, induksi, Mine
+     * Permit, SIMPER, ajuan SIMPER lanjutan, perpanjangan Mine Permit —
+     * beserta sertifikat dan suratnya.
+     *
+     * Lingkup perusahaan dijaga global scope saat dokumennya dimuat; di
+     * dalamnya berlaku aturan yang sama dengan lihatPekerja: pengelola
+     * seluruhnya, pengguna lain hanya pengajunya, pendaftar pekerjanya,
+     * penyetuju yang ditugasi (atau yang sudah menindak) salah satu
+     * langkahnya, dan — khusus MCU — paramedis.
+     */
+    public static function lihatDokumen(object $dokumen, ?User $u): bool
+    {
+        if (! $u) return false;
+        if (self::kelola($u)) return true;
+
+        return self::saringDokumen($dokumen::withoutGlobalScopes()->whereKey($dokumen->getKey()), $u, $dokumen::jenisDokumen())
+            ->exists();
+    }
+
+    /**
+     * Aturan lihatDokumen dalam bentuk kueri — untuk History dan
+     * unduhannya, supaya daftar memuat tepat dokumen yang boleh dibuka.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $q  kueri atas tabel dokumen jenis $jenis
+     */
+    public static function saringDokumen($q, ?User $u, string $jenis)
+    {
+        if (self::kelola($u)) return $q;
+        if ($jenis === 'mcu' && $u?->isParamedis()) return $q;
+
+        $id = (int) $u?->getKey();
+
+        $langkah = Alur::query()->where('dokumen', $jenis)
+            ->where(fn ($w) => $w->where('ditugaskan_user_id', $id)->orWhere('user_id', $id))->select('dokumen_id');
+
+        /* Pekerja yang ia daftarkan, dan jalan dari dokumen ke pekerjanya. */
+        $milik = Pekerja::withoutGlobalScopes()->where('user_id', $id)->select('id');
+
+        [$kolom, $pekerjanya] = match ($jenis) {
+            'mcu'     => ['id', McuOrang::withoutGlobalScopes()->whereIn('pekerja_id', $milik)->select('mcu_id')],
+            'induksi' => ['id', InduksiOrang::withoutGlobalScopes()->whereIn('pekerja_id', $milik)->select('induksi_id')],
+            'ajuan'   => ['simper_id', Simper::withoutGlobalScopes()->whereIn('pekerja_id', $milik)->select('id')],
+            'perpanjangan_permit' => ['permit_id', Permit::withoutGlobalScopes()->whereIn('pekerja_id', $milik)->select('id')],
+            default   => ['pekerja_id', $milik],   // permit, simper
+        };
+
+        return $q->where(fn ($w) => $w->where($q->qualifyColumn('user_id'), $id)
+            ->orWhereIn($q->qualifyColumn('id'), $langkah)
+            ->orWhereIn($q->qualifyColumn($kolom), $pekerjanya));
+    }
+
+    /**
+     * Nomor SIM pada props: utuh bagi yang boleh membuka pindaian SIM-nya
+     * (gerbang berkas yang sama, Berkas::GERBANG), tersamar bagi yang lain.
+     */
+    public static function noSim(?string $nomor, ?User $u, string $berkas = 'mnp'): ?string
+    {
+        return \App\Support\Berkas::bolehMembuka($u, $berkas) ? $nomor : Kartu\RincianVerifikasi::samarkan($nomor);
     }
 
     /**

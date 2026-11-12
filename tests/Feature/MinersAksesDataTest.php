@@ -3,8 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Company;
-use App\Models\Miners\Pekerja;
+use App\Models\Miners\{McuRujukan, Pekerja, PermitPerpanjangan, SimperAjuan};
 use App\Models\User;
+use App\Support\Waktu;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -90,6 +91,163 @@ class MinersAksesDataTest extends TestCase
         /* Menunya ikut hilang bagi yang pasti ditolak. */
         $this->assertFalse($this->diMenu($this->pengaju, 'miners/daftar/rujukan'));
         $this->assertTrue($this->diMenu($this->dokter, 'miners/daftar/rujukan'));
+    }
+
+    /* ═══════════ 3 · rincian, sertifikat, surat, isi medis, SIM ═══════════ */
+
+    #[Test]
+    public function rincian_dokumen_hanya_bagi_pengaju_pendaftar_penyetuju_dan_pengelola(): void
+    {
+        $pendaftar = $this->biasa();
+        $o  = $this->mcuSelesai($this->mitra, 'Fit', null, $this->pekerja($pendaftar));
+        $s  = $this->simperTerbit($this->permitTerbit($o));
+        $p  = $s->permit;
+        $io = $p->induksiOrang;
+        $a  = SimperAjuan::create(['simper_id' => $s->id, 'jenis' => 'penambahan', 'tanggal' => Waktu::kini()->startOfDay(),
+            'user_id' => $this->pengaju->id]);
+        $x  = PermitPerpanjangan::withoutGlobalScopes()->create(['company_id' => $p->company_id, 'iup_id' => $p->iup_id,
+            'permit_id' => $p->id, 'tanggal' => Waktu::kini()->startOfDay(), 'user_id' => $this->pengaju->id]);
+        foreach ([$o->mcu, $io->induksi, $p, $s, $a, $x] as $d) $d->terbitkanAlur();
+
+        $rincian = ['/miners/mcu/'.$o->mcu_id, '/miners/induksi/'.$io->induksi_id, '/miners/permit/'.$p->id,
+            '/miners/simper/'.$s->id, '/miners/simper-lanjutan/'.$a->id, '/miners/perpanjangan-permit/'.$x->id,
+            '/miners/induksi/peserta/'.$io->id.'/sertifikat'];
+        $sertifikatMcu = '/miners/mcu/orang/'.$o->id.'/sertifikat';
+
+        $biasa = $this->biasa();
+        foreach ([...$rincian, $sertifikatMcu] as $url) $this->actingAs($biasa)->get($url)->assertForbidden();
+        $this->actingAs($this->asing())->get('/miners/permit/'.$p->id)->assertNotFound();
+
+        foreach ([...$rincian, $sertifikatMcu] as $url) $this->actingAs($this->ohse)->get($url)->assertOk();
+        foreach ($rincian as $url) $this->actingAs($this->pengaju)->get($url)->assertOk();
+
+        /* Sertifikat MCU menyatakan hasil dan catatan dokter: pengaju yang
+           bukan pembaca isi medis tidak membukanya; paramedis membukanya. */
+        $this->actingAs($this->pengaju)->get($sertifikatMcu)->assertForbidden();
+        $this->actingAs($this->dokter)->get($sertifikatMcu)->assertOk();
+
+        foreach (['/miners/mcu/'.$o->mcu_id, '/miners/permit/'.$p->id, '/miners/simper/'.$s->id] as $url) {
+            $this->actingAs($pendaftar)->get($url)->assertOk();
+        }
+
+        /* KTT ditugasi pada Mine Permit, tidak pada MCU-nya. */
+        $this->actingAs($this->ktt)->get('/miners/permit/'.$p->id)->assertOk();
+        $this->actingAs($this->ktt)->get('/miners/mcu/'.$o->mcu_id)->assertForbidden();
+        $this->actingAs($this->dokter)->get('/miners/mcu/'.$o->mcu_id)->assertOk();
+    }
+
+    #[Test]
+    public function isi_medis_tidak_dikirim_kepada_yang_bukan_pembaca_medis(): void
+    {
+        $o = $this->mcuSelesai($this->mitra, 'Fit With Note');
+        $o->forceFill(['catatan' => 'Tidak untuk shift malam.'])->save();
+        $j = McuRujukan::create(['mcu_orang_id' => $o->id, 'tanggal_surat' => '2026-03-20', 'dokter' => 'dr. Spesialis',
+            'poliklinik' => 'Penyakit Dalam', 'rumah_sakit' => 'RS Uji', 'user_id' => $this->dokter->id]);
+        $p = $this->permitTerbit($o);
+
+        $mcu = '/miners/mcu/'.$o->mcu_id;
+        $this->actingAs($this->pengaju)->get($mcu)->assertOk()
+            ->assertInertia(fn (Assert $pg) => $pg->where('medis', false)
+                ->where('orang.0.hasil', null)->where('orang.0.hasil_id', null)->where('orang.0.layak', null)
+                ->where('orang.0.catatan', null)->where('orang.0.rujukan', [])->where('orang.0.stempel', null)
+                ->where('orang.0.cetak', null)->where('orang.0.berkas.rujukan.ada', false));
+        $orang = json_encode($this->actingAs($this->pengaju)->get($mcu)->viewData('page')['props']['orang']);
+        foreach (['Fit With Note', 'shift malam', 'Penyakit Dalam', 'rujukan/'.$j->id] as $t) {
+            $this->assertStringNotContainsString($t, $orang);
+        }
+
+        $this->actingAs($this->dokter)->get($mcu)->assertOk()
+            ->assertInertia(fn (Assert $pg) => $pg->where('orang.0.hasil', 'Fit With Note')
+                ->where('orang.0.catatan', 'Tidak untuk shift malam.')
+                ->where('orang.0.rujukan.0.surat', route('miners.mcu.rujukan.surat', $j->id)));
+
+        /* Surat rujukan: bukan lagi setiap orang perusahaan pemberi kerja. */
+        $this->actingAs($this->pengaju)->get('/miners/mcu/rujukan/'.$j->id.'/surat')->assertForbidden();
+        $this->actingAs($this->biasa())->get('/miners/mcu/rujukan/'.$j->id.'/surat')->assertForbidden();
+        $this->actingAs($this->dokter)->get('/miners/mcu/rujukan/'.$j->id.'/surat')->assertOk();
+        $this->actingAs($this->ohse)->get('/miners/mcu/rujukan/'.$j->id.'/surat')->assertOk();
+
+        /* Rincian Mine Permit dan rincian pekerja memuat hasil MCU yang sama. */
+        $this->actingAs($this->pengaju)->get('/miners/permit/'.$p->id)->assertOk()
+            ->assertInertia(fn (Assert $pg) => $pg->where('permit.mcuHasil', null)->where('permit.sertifikatMcu', null));
+        $this->actingAs($this->ohse)->get('/miners/permit/'.$p->id)->assertOk()
+            ->assertInertia(fn (Assert $pg) => $pg->where('permit.mcuHasil', 'Fit With Note'));
+        $this->actingAs($this->pengaju)->get('/miners/'.$o->pekerja_id)->assertOk()
+            ->assertInertia(fn (Assert $pg) => $pg->where('mcu.0.hasil', null)->where('mcu.0.rujukan', 0));
+        $this->actingAs($this->ohse)->get('/miners/'.$o->pekerja_id)->assertOk()
+            ->assertInertia(fn (Assert $pg) => $pg->where('mcu.0.hasil', 'Fit With Note')->where('mcu.0.rujukan', 1));
+    }
+
+    #[Test]
+    public function nomor_sim_tersamar_bagi_yang_tidak_boleh_membuka_pindaiannya(): void
+    {
+        $s = $this->simperTerbit();   // no_simpol SIM-LAMA-1
+        $samar = '••••••MA-1';
+
+        $this->actingAs($this->pengaju)->get('/miners/simper/'.$s->id)->assertOk()
+            ->assertInertia(fn (Assert $pg) => $pg->where('simper.noSim', $samar));
+        $this->actingAs($this->pengaju)->get('/miners/'.$s->pekerja_id)->assertOk()
+            ->assertInertia(fn (Assert $pg) => $pg->where('simper.0.noSim', $samar));
+        $this->actingAs($this->ohse)->get('/miners/simper/'.$s->id)->assertOk()
+            ->assertInertia(fn (Assert $pg) => $pg->where('simper.noSim', 'SIM-LAMA-1'));
+
+        $a = SimperAjuan::create(['simper_id' => $s->id, 'jenis' => 'perpanjangan', 'tanggal' => Waktu::kini()->startOfDay(),
+            'no_simpol_baru' => 'SIM-BARU-22', 'user_id' => $this->pengaju->id]);
+        $this->actingAs($this->pengaju)->get('/miners/simper-lanjutan/'.$a->id)->assertOk()
+            ->assertInertia(fn (Assert $pg) => $pg->where('ajuan.simLama', $samar)->where('ajuan.simBaru', '•••••••U-22'));
+        $this->actingAs($this->pengaju)->get('/miners/daftar/upgrade-simper')->assertOk()
+            ->assertInertia(fn (Assert $pg) => $pg->where('calon.0.simpol', null));
+
+        /* Formulir ubah yang dikirim balik dengan samarannya tidak menimpa nomor aslinya. */
+        $s->forceFill(['status' => 'draf'])->save();
+        $this->actingAs($this->pengaju)->put('/miners/simper/'.$s->id, ['no_simpol' => $samar])->assertSessionHasNoErrors();
+        $this->assertSame('SIM-LAMA-1', $s->fresh()->no_simpol);
+    }
+
+    #[Test]
+    public function history_dan_unduhannya_hanya_memuat_dokumen_yang_boleh_dibuka(): void
+    {
+        $p = $this->permitTerbit();     // MCU, induksi, permit: diajukan $this->pengaju
+        $s = $this->simperTerbit($p);
+        foreach ([$p, $s] as $d) $d->terbitkanAlur();
+        $lain = $this->permitTerbit();
+        $lain->mcuOrang->mcu->forceFill(['user_id' => $this->ohse->id])->save();
+        $lain->forceFill(['user_id' => $this->ohse->id])->save();
+
+        $biasa = $this->biasa();
+        foreach (['mcu', 'induksi', 'mine-permit', 'mine-license'] as $tahap) {
+            $this->actingAs($biasa)->get('/miners/riwayat/'.$tahap)->assertOk()
+                ->assertInertia(fn (Assert $pg) => $pg->where('baris.total', 0));
+        }
+        foreach (['mcu', 'induksi', 'permit', 'simper'] as $m) {
+            $this->assertCount(1, $this->lembar("/miners/{$m}/ekspor?mode=riwayat", $biasa), "Unduhan {$m} riwayat bocor.");
+        }
+
+        /* Pengaju melihat miliknya, bukan surat yang diajukan HSE. */
+        $this->actingAs($this->pengaju)->get('/miners/riwayat/mcu')->assertOk()
+            ->assertInertia(fn (Assert $pg) => $pg->where('baris.total', 1));
+        $this->actingAs($this->pengaju)->get('/miners/riwayat/mine-permit')->assertOk()
+            ->assertInertia(fn (Assert $pg) => $pg->where('baris.total', 1)->where('baris.data.0.id', $p->id));
+
+        /* Penyetuju yang ditugasi melihat dokumen yang ditugaskan kepadanya. */
+        $this->actingAs($this->ktt)->get('/miners/riwayat/mine-permit')->assertOk()
+            ->assertInertia(fn (Assert $pg) => $pg->where('baris.total', 1)->where('baris.data.0.id', $p->id));
+
+        /* Pengelola dan paramedis (MCU) seluruhnya. */
+        $this->actingAs($this->ohse)->get('/miners/riwayat/mine-permit')->assertOk()
+            ->assertInertia(fn (Assert $pg) => $pg->where('baris.total', 2));
+        $this->actingAs($this->dokter)->get('/miners/riwayat/mcu')->assertOk()
+            ->assertInertia(fn (Assert $pg) => $pg->where('baris.total', 2));
+    }
+
+    /** @return list<list<mixed>> lembar pertama unduhan Excel */
+    private function lembar(string $url, User $oleh): array
+    {
+        $r = $this->actingAs($oleh)->get($url)->assertOk();
+        $jalur = tempnam(sys_get_temp_dir(), 'ek').'.xlsx';
+        file_put_contents($jalur, $r->streamedContent());
+
+        return \PhpOffice\PhpSpreadsheet\IOFactory::load($jalur)->getActiveSheet()->toArray(null, false, false, false);
     }
 
     /** Apakah bilah samping Miners pengguna ini memuat alamat itu. */

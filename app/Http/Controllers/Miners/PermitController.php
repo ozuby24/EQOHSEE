@@ -57,7 +57,7 @@ class PermitController extends Controller
 
         $semua = Permit::query()
             ->with(['pekerja.company:id,name', 'mcuOrang', 'company:id,name', 'iup:id,name', 'perpanjanganBerjalan'])
-            ->when(! $riwayat, fn ($q) => $q->where('user_id', $u->id))
+            ->tap(fn ($q) => $riwayat ? AksesMiners::saringDokumen($q, $u, 'permit') : $q->where('user_id', $u->id))
             ->orderByDesc('tanggal')->orderByDesc('id')->get();
 
         $baris = $semua->map(function (Permit $p) use ($u) {
@@ -138,7 +138,7 @@ class PermitController extends Controller
         $sampai  = $r->date('sampai')?->endOfDay();
 
         $baris = Permit::query()->with(['pekerja.departemen', 'pekerja.company', 'kontraktor', 'iup', 'mcuOrang', 'user', 'perpanjanganBerjalan'])
-            ->when(! $riwayat, fn ($q) => $q->where('user_id', $u->id))
+            ->tap(fn ($q) => $riwayat ? AksesMiners::saringDokumen($q, $u, 'permit') : $q->where('user_id', $u->id))
             ->when($dari, fn ($q) => $q->where('created_at', '>=', $dari))
             ->when($sampai, fn ($q) => $q->where('created_at', '<=', $sampai))
             ->orderBy('created_at')->get()
@@ -419,6 +419,8 @@ class PermitController extends Controller
         $p = Permit::with(['alur.user', 'alur.ditugaskan', 'user', 'iup', 'kontraktor', 'company', 'berkas',
             'pekerja.departemen', 'pekerja.company', 'mcuOrang.mcu', 'mcuOrang.hasil', 'induksiOrang.induksi'])->findOrFail((int) $id);
 
+        AksesMiners::tegakkan(AksesMiners::lihatDokumen($p, $u), 'Anda hanya dapat membuka Mine Permit yang Anda ajukan atau ditugaskan kepada Anda.');
+
         $p->terbitkanAlur();
         $p->load('alur.user', 'alur.ditugaskan');
 
@@ -441,6 +443,10 @@ class PermitController extends Controller
 
         $pk     = $p->pekerja;
         $habis  = $p->habisEfektif();
+
+        /* Hasil MCU dan sertifikatnya hanya bagi pembaca isi medis. */
+        $mcuP   = $p->mcuOrang?->mcu;
+        $medis  = AksesMiners::medis($u, $mcuP);
 
         return Inertia::render('Miners/PermitRincian', [
             'judul' => 'Detail Permit',
@@ -478,14 +484,15 @@ class PermitController extends Controller
                 'sumber'      => Permit::SUMBER[$p->sumber_berlaku ?? 'mcu'] ?? $p->sumber_berlaku,
                 'sumberKode'  => $p->sumber_berlaku ?? 'mcu',
                 'mcuSampai'   => $p->mcuOrang?->berlaku_sampai?->toDateString(),
-                'mcuHasil'    => $p->mcuOrang?->hasil?->nama,
+                'mcuHasil'    => $medis ? $p->mcuOrang?->hasil?->nama : null,
                 'induksi'     => $p->induksiOrang?->induksi?->no_registrasi,
                 'pengaju'     => $p->user?->name,
                 'foto'        => Berkas::lampiran($u, $p, 'mnf'),
                 'ktp'         => Berkas::lampiran($u, $p, 'mnt'),
                 'permohonan'  => Berkas::lampiran($u, $p, 'mnq'),
                 'hasilMcu'    => Berkas::lampiran($u, $p->mcuOrang, 'mnh'),
-                'sertifikatMcu' => $p->mcuOrang && in_array($p->mcuOrang->mcu?->status, ['selesai', 'kedaluwarsa'], true)
+                'sertifikatMcu' => $mcuP && $medis && in_array($mcuP->status, ['selesai', 'kedaluwarsa'], true)
+                    && AksesMiners::lihatDokumen($mcuP, $u)
                     ? route('miners.mcu.sertifikat', $p->mcu_orang_id) : null,
             ],
 
@@ -507,6 +514,7 @@ class PermitController extends Controller
             'posisi' => Jalur::posisi($p),
 
             'kelola'           => $kelola,
+            'medis'            => $medis,
             'bolehLampiran'    => $kelola || AksesMiners::ubahDraf($p, $u),
             'bolehFoto'        => $kelola || (int) $p->user_id === (int) $u->id,
             'bolehKirim'       => Jalur::bolehKirim($p, $u) && ! $p->alurTertahan(),

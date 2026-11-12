@@ -208,7 +208,7 @@ async function tindak(keadaan: string) {
 
       <h3 class="mn-sub-bagian">MCU dan berkas</h3>
       <DaftarDefinisi>
-        <Butir label="Expired MCU" :nilai="`${tglId(p.mcuSampai)} · ${p.mcuHasil || 'Belum dinilai'}`" />
+        <Butir label="Expired MCU" :nilai="`${tglId(p.mcuSampai)} · ${p.mcuHasil || (props.medis === false ? 'hasil terjaga' : 'Belum dinilai')}`" />
         <Butir label="Sertifikat MCU">
           <span class="flex flex-wrap gap-2">
             <ChipBerkas v-if="p.sertifikatMcu" :href="p.sertifikatMcu" nama="Sertifikat MCU" />

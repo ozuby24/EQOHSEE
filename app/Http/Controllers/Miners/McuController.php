@@ -48,8 +48,13 @@ class McuController extends Controller
         $u       = $r->user();
         $cari    = trim((string) $r->query('cari', ''));
 
+        /* Register: surat buatan sendiri. History: seluruh surat bagi
+           pengelola dan paramedis; bagi yang lain hanya yang boleh ia buka
+           rinciannya (AksesMiners::saringDokumen). */
+        $jangkau = fn ($w) => $riwayat ? AksesMiners::saringDokumen($w, $u, 'mcu') : $w->where('user_id', $u->id);
+
         $q = Mcu::query()->with(['company:id,name', 'user:id,name'])
-            ->when(! $riwayat, fn ($w) => $w->where('user_id', $u->id))
+            ->tap($jangkau)
             ->when($cari !== '', fn ($w) => $w->where(fn ($c) => $c->where('no_registrasi', 'like', "%{$cari}%")
                 ->orWhere('perihal', 'like', "%{$cari}%")->orWhere('kepada', 'like', "%{$cari}%")));
 
@@ -72,7 +77,7 @@ class McuController extends Controller
 
         /* Kartu ringkas Safe Track: Manpower, Rujukan | Outstanding,
            Open | Total — dihitung atas surat dalam jangkauan layar ini. */
-        $surat = Mcu::query()->when(! $riwayat, fn ($w) => $w->where('user_id', $u->id))->select('id');
+        $surat = Mcu::query()->tap($jangkau)->select('id');
         $orang = fn () => McuOrang::query()->whereIn('mcu_id', $surat);
 
         return Inertia::render('Miners/Mcu', [
@@ -83,8 +88,7 @@ class McuController extends Controller
             'kartu' => [
                 'manpower' => $orang()->count(),
                 'rujukan'  => ($rujukan = HasilMcu::rujukan()) ? $orang()->where('hasil_id', $rujukan)->count() : 0,
-                'open'     => McuOrang::query()->whereIn('mcu_id', Mcu::query()
-                    ->when(! $riwayat, fn ($w) => $w->where('user_id', $u->id))
+                'open'     => McuOrang::query()->whereIn('mcu_id', Mcu::query()->tap($jangkau)
                     ->whereIn('status', ['diajukan', 'diperiksa'])->select('id'))->count(),
             ],
 
@@ -108,17 +112,22 @@ class McuController extends Controller
         $sampai = $r->date('sampai')?->endOfDay();
 
         $baris = McuOrang::query()->with(['mcu.company', 'mcu.user', 'hasil', 'departemen'])
-            ->whereIn('mcu_id', Mcu::query()->when(! $riwayat, fn ($w) => $w->where('user_id', $u->id))->select('id'))
+            ->whereIn('mcu_id', Mcu::query()->tap(fn ($w) => $riwayat ? AksesMiners::saringDokumen($w, $u, 'mcu') : $w->where('user_id', $u->id))->select('id'))
             ->when($dari, fn ($q) => $q->where('created_at', '>=', $dari))
             ->when($sampai, fn ($q) => $q->where('created_at', '<=', $sampai))
             ->orderBy('created_at')->get()
-            ->map(fn (McuOrang $o) => [
-                Waktu::lokal($o->created_at)?->format('Y-m-d H:i'),
-                $o->id, $o->nik, $o->no_id, $o->nama, $o->usia, $o->jabatan, $o->departemen?->nama,
-                $o->mcu?->company?->name, $o->tanggal_periksa?->toDateString(), $o->berlaku_sampai?->toDateString(),
-                $o->hasil?->nama, $o->jenis_mcu, $o->catatan_mitra, $o->catatan,
-                Mcu::STATUS[$o->mcu?->status] ?? $o->mcu?->status, $o->mcu?->user?->name,
-            ]);
+            ->map(function (McuOrang $o) use ($u) {
+                /* Hasil dan catatan dokter hanya bagi yang boleh membaca isi medis. */
+                $medis = AksesMiners::medis($u, $o->mcu);
+
+                return [
+                    Waktu::lokal($o->created_at)?->format('Y-m-d H:i'),
+                    $o->id, $o->nik, $o->no_id, $o->nama, $o->usia, $o->jabatan, $o->departemen?->nama,
+                    $o->mcu?->company?->name, $o->tanggal_periksa?->toDateString(), $o->berlaku_sampai?->toDateString(),
+                    $medis ? $o->hasil?->nama : null, $o->jenis_mcu, $o->catatan_mitra, $medis ? $o->catatan : null,
+                    Mcu::STATUS[$o->mcu?->status] ?? $o->mcu?->status, $o->mcu?->user?->name,
+                ];
+            });
 
         return Laporan::unduh('laporan-mcu-'.Waktu::kini()->format('Ymd-Hi'), [
             'Tanggal', 'ID System', 'NIK', 'Noid', 'Nama Karyawan', 'Umur', 'Jabatan', 'Departemen', 'Perusahaan',
@@ -210,6 +219,8 @@ class McuController extends Controller
         $mcu = Mcu::with(['alur.user', 'alur.ditugaskan', 'user', 'iup', 'company',
             'orang.hasil', 'orang.departemen', 'orang.rujukan.user', 'orang.mcu'])->findOrFail((int) $id);
 
+        AksesMiners::tegakkan(AksesMiners::lihatDokumen($mcu, $u), 'Anda hanya dapat membuka MCU yang Anda ajukan atau ditugaskan kepada Anda.');
+
         $mcu->terbitkanAlur();
         $mcu->load('alur.user', 'alur.ditugaskan');
 
@@ -219,6 +230,11 @@ class McuController extends Controller
         $giliran = Jalur::bolehTindak($mcu, $u);
         $milik   = (int) $mcu->user_id === (int) $u->id || $u->isAdmin();
         $rujuk   = $kelola || $dokter || $u->isParamedis();
+
+        /* Hasil, kategori, catatan dokter, rujukan, stempel, dan sertifikat
+           tidak dikirim sama sekali kepada yang bukan pembaca isi medis —
+           menyembunyikannya di layar saja tidak cukup. */
+        $medis   = AksesMiners::medis($u, $mcu);
 
         $langkah = $mcu->langkahBerjalan();
 
@@ -256,18 +272,18 @@ class McuController extends Controller
                 'sampai'      => $o->berlaku_sampai?->toDateString(),
                 'jenis'       => $o->jenis_mcu,
                 'risiko'      => $o->level_risiko,
-                'hasil_id'    => $o->hasil_id,
-                'hasil'       => $o->belumDinilai() ? null : $o->hasil?->nama,
-                'layak'       => $o->layak(),
-                'nilaiHasil'  => $o->belumDinilai() ? 'belum' : ($o->layak() ? ($o->hasil?->nilai >= 100 ? 'fit' : 'catatan') : ($o->dirujuk() ? 'rujukan' : 'tidak')),
-                'catatan'     => $o->catatan,
+                'hasil_id'    => $medis ? $o->hasil_id : null,
+                'hasil'       => $medis && ! $o->belumDinilai() ? $o->hasil?->nama : null,
+                'layak'       => $medis ? $o->layak() : null,
+                'nilaiHasil'  => ! $medis ? 'terjaga' : ($o->belumDinilai() ? 'belum' : ($o->layak() ? ($o->hasil?->nilai >= 100 ? 'fit' : 'catatan') : ($o->dirujuk() ? 'rujukan' : 'tidak'))),
+                'catatan'     => $medis ? $o->catatan : null,
                 'catatanMitra' => $o->catatan_mitra,
                 'perbaikan'   => $o->catatan_perbaikan,
                 'berkas'      => [
                     'hasil'   => Berkas::lampiran($u, $o, 'mnh'),
-                    'rujukan' => Berkas::lampiran($u, $o, 'mnr'),
+                    'rujukan' => $medis ? Berkas::lampiran($u, $o, 'mnr') : ['ada' => false, 'url' => null],
                 ],
-                'rujukan' => $o->rujukan->map(fn (McuRujukan $j) => [
+                'rujukan' => ! $medis ? [] : $o->rujukan->map(fn (McuRujukan $j) => [
                     'id'         => $j->id,
                     'tanggal'    => $j->tanggal_surat?->toDateString(),
                     'dokter'     => $j->dokter,
@@ -276,14 +292,14 @@ class McuController extends Controller
                     'oleh'       => $j->user?->name,
                     'surat'      => $this->bolehSurat($j, $u) ? route('miners.mcu.rujukan.surat', $j->id) : null,
                 ])->values(),
-                'stempel' => StempelValidasi::untuk($o),
+                'stempel' => $medis ? StempelValidasi::untuk($o) : null,
 
                 'bolehUbah'   => $draf || $kelola || ($milik && filled($o->catatan_perbaikan)),
                 'bolehHapus'  => $draf,
                 'bolehNilai'  => $dokter,
                 'bolehPerbaiki' => $giliran,
                 'bolehRujuk'  => $rujuk,
-                'cetak'       => in_array($mcu->status, StempelValidasi::DISETUJUI, true)
+                'cetak'       => $medis && in_array($mcu->status, StempelValidasi::DISETUJUI, true)
                     ? route('miners.mcu.sertifikat', $o->id) : null,
             ])->values(),
 
@@ -297,6 +313,7 @@ class McuController extends Controller
             'bolehTindak'      => $giliran,
             'langkahDokter'    => $langkah?->peran === 'dokter',
             'belumDinilai'     => $mcu->orang->filter(fn (McuOrang $o) => $o->belumDinilai())->count(),
+            'medis'            => $medis,
 
             'pilihan' => [
                 'departemen'  => collect(Departemen::pilihan())->map(fn ($n, $id) => ['nilai' => $id, 'label' => $n])->values(),
@@ -575,12 +592,11 @@ class McuController extends Controller
 
     /**
      * Cetak surat rujukan — `surat_rujukan/{id}` Safe Track. Yang boleh:
-     * admin/HSE IUP, tim OHSE dan paramedis, pembuat suratnya, atau orang
-     * dari perusahaan pemberi kerja pasiennya.
+     * lihat bolehSurat() — pembaca isi medis yang boleh membuka MCU-nya.
      */
     public function suratRujukan(Request $r, McuRujukan $rujukan)
     {
-        AksesMiners::tegakkan($this->bolehSurat($rujukan, $r->user()), 'Surat rujukan ini bukan milik perusahaan Anda.');
+        AksesMiners::tegakkan($this->bolehSurat($rujukan, $r->user()), 'Surat rujukan hanya dibuka admin, tim OHSE, paramedis, atau dokter surat MCU-nya.');
 
         return Inertia::render('Print/SuratRujukan', [
             's'       => Cetakan::suratRujukan($rujukan),
@@ -593,6 +609,13 @@ class McuController extends Controller
     /** Sertifikat MCU — `print_sertifikat/{id}` Safe Track. */
     public function sertifikat(Request $r, McuOrang $orang)
     {
+        /* Sertifikat menyatakan hasil dan catatan dokter: boleh dibuka
+           dokumennya (lihatDokumen) DAN boleh membaca isi medis. */
+        $mcu = $orang->mcu;
+        abort_unless($mcu, 404);
+        AksesMiners::tegakkan(AksesMiners::lihatDokumen($mcu, $r->user()) && AksesMiners::medis($r->user(), $mcu),
+            'Sertifikat MCU hanya dibuka admin, tim OHSE, paramedis, atau dokter surat ini.');
+
         return Inertia::render('Print/SertifikatMcu', [
             's'       => Cetakan::sertifikatMcu($orang),
             'kembali' => route('miners.mcu.rincian', $orang->mcu_id, false),
@@ -736,16 +759,15 @@ class McuController extends Controller
         ]);
     }
 
+    /**
+     * Surat rujukan adalah isi medis: yang boleh membuka surat MCU-nya
+     * (lihatDokumen) DAN boleh membaca isi medis — bukan lagi setiap
+     * pengguna perusahaan pemberi kerja pasiennya.
+     */
     private function bolehSurat(McuRujukan $j, ?User $u): bool
     {
-        if (! $u) return false;
+        $mcu = $j->orang?->mcu;
 
-        if (AksesMiners::kelola($u) || $u->isOhse() || $u->isParamedis()) return true;
-
-        if ((int) $j->user_id === (int) $u->id) return true;
-
-        $majikan = $j->orang?->mcu?->company_id;
-
-        return $majikan && (int) $majikan === (int) $u->company_id;
+        return $mcu !== null && AksesMiners::lihatDokumen($mcu, $u) && AksesMiners::medis($u, $mcu);
     }
 }

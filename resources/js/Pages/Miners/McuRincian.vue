@@ -306,7 +306,7 @@ function tindak(keadaan: string) {
               </td>
               <td>{{ o.jenis || '—' }}</td>
               <td>
-                <span class="mn-lencana" :class="kelasHasil[o.nilaiHasil]">{{ o.hasil || 'Belum dinilai' }}</span>
+                <span class="mn-lencana" :class="kelasHasil[o.nilaiHasil]" :title="o.nilaiHasil === 'terjaga' ? 'Hasil MCU hanya dibaca paramedis, dokter, tim OHSE, atau administrator.' : undefined">{{ o.hasil || (o.nilaiHasil === 'terjaga' ? 'Terjaga' : 'Belum dinilai') }}</span>
                 <div v-if="o.catatan" class="mn-petunjuk">{{ o.catatan }}</div>
               </td>
               <td>{{ o.risiko || '—' }}</td>

@@ -412,6 +412,7 @@ class MinersController extends Controller
 
             'keadaan' => $this->keadaanOrang($pekerja),
 
+            /* Hasil MCU dan rujukannya hanya bagi pembaca isi medis. */
             'mcu' => $pekerja->mcu->map(fn (McuOrang $m) => [
                 'id'       => $m->id,
                 'mcu_id'   => $m->mcu_id,
@@ -419,12 +420,11 @@ class MinersController extends Controller
                 'tanggal'  => $m->tanggal_periksa?->toDateString(),
                 'sampai'   => $m->berlaku_sampai?->toDateString(),
                 'sisa'     => Zona::sisa($m->berlaku_sampai),
-                'hasil'    => $m->hasil?->nama,
-                'layak'    => $m->layak(),
                 'aktif'    => (bool) $m->aktif,
                 'status'   => $m->mcu?->status,
-                'rujukan'  => $m->rujukan->count(),
-            ])->values(),
+            ] + (AksesMiners::medis($u, $m->mcu)
+                ? ['hasil' => $m->hasil?->nama, 'layak' => $m->layak(), 'rujukan' => $m->rujukan->count()]
+                : ['hasil' => null, 'layak' => null, 'rujukan' => 0]))->values(),
 
             'induksi' => $pekerja->induksi->map(fn (InduksiOrang $i) => [
                 'id'        => $i->id,
@@ -464,7 +464,7 @@ class MinersController extends Controller
                 'nomor'     => $s->no_simper,
                 'tanggal'   => $s->tanggal?->toDateString(),
                 'jenisSim'  => $s->jenis_simpol,
-                'noSim'     => $s->no_simpol,
+                'noSim'     => AksesMiners::noSim($s->no_simpol, $u),
                 'status'    => $s->status,
                 'aktif'     => (bool) $s->aktif,
                 'efektif'   => $s->habisEfektif()?->toDateString(),

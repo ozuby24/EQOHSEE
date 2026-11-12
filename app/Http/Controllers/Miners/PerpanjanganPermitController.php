@@ -159,6 +159,8 @@ class PerpanjanganPermitController extends Controller
         $x = PermitPerpanjangan::with(['alur.user', 'alur.ditugaskan', 'user', 'iup',
             'permit.pekerja.company', 'permit.pekerja.departemen', 'permit.mcuOrang'])->findOrFail((int) $id);
 
+        AksesMiners::tegakkan(AksesMiners::lihatDokumen($x, $u), 'Anda hanya dapat membuka perpanjangan yang Anda ajukan atau ditugaskan kepada Anda.');
+
         $x->terbitkanAlur();
         $x->load('alur.user', 'alur.ditugaskan');
 

@@ -86,7 +86,7 @@ class SimperController extends Controller
 
         $semua = Simper::query()
             ->with(['pekerja.company:id,name', 'pekerja.departemen', 'permit.mcuOrang', 'user:id,name'])
-            ->when(! $riwayat, fn ($q) => $q->where('user_id', $u->id))
+            ->tap(fn ($q) => $riwayat ? AksesMiners::saringDokumen($q, $u, 'simper') : $q->where('user_id', $u->id))
             ->orderByDesc('tanggal')->orderByDesc('id')->get();
 
         $tersaring = $semua->map(fn (Simper $s) => self::baris($s, $u))
@@ -202,6 +202,11 @@ class SimperController extends Controller
         $data = $this->validasi($r, $simper);
 
         $ubah = Arr::only($data, ['no_simpol', 'jenis_simpol', 'email_atasan']);
+
+        /* Nomor SIM tampil tersamar bagi yang tidak boleh membuka
+           pindaiannya; formulir yang dikirim balik apa adanya tidak boleh
+           menimpa nomor aslinya dengan samarannya. */
+        if (str_contains((string) ($ubah['no_simpol'] ?? ''), '•')) unset($ubah['no_simpol']);
         if (! empty($data['tanggal'])) $ubah['tanggal'] = Waktu::tanggal($data['tanggal']);
 
         foreach (['berkas_simpol', 'berkas_ddt', 'berkas_permohonan', 'berkas_pengalaman'] as $k) {
@@ -366,6 +371,8 @@ class SimperController extends Controller
         $s = Simper::with(['alur.user', 'alur.ditugaskan', 'user', 'iup', 'pekerja.departemen', 'pekerja.company',
             'permit.mcuOrang', 'unit.kendaraan', 'unit.jenisUnitBanyak', 'unit.jenisUnit', 'ajuan'])->findOrFail((int) $id);
 
+        AksesMiners::tegakkan(AksesMiners::lihatDokumen($s, $u), 'Anda hanya dapat membuka SIMPER yang Anda ajukan atau ditugaskan kepada Anda.');
+
         $s->terbitkanAlur();
         $s->load('alur.user', 'alur.ditugaskan');
 
@@ -415,7 +422,7 @@ class SimperController extends Controller
                 'foto'        => $s->permit ? Berkas::lampiran($u, $s->permit, 'mnf') : null,
                 'permit'      => $s->permit?->no_registrasi,
                 'permit_id'   => $s->permit_id,
-                'noSim'       => $s->no_simpol,
+                'noSim'       => AksesMiners::noSim($s->no_simpol, $u),
                 'jenisSim'    => $s->jenis_simpol,
                 'kelasLama'   => $s->kelas ? (Simper::KELAS[$s->kelas]['label'] ?? $s->kelas) : null,
                 'emailAtasan' => $s->email_atasan,
@@ -452,8 +459,8 @@ class SimperController extends Controller
                     'urutan' => $h->urutan,
                     'lama'   => $h->berlaku_lama?->toDateString(),
                     'baru'   => $h->berlaku_baru?->toDateString(),
-                    'simLama' => $h->data_lama['simpol'] ?? null,
-                    'simBaru' => $h->data_baru['simpol'] ?? null,
+                    'simLama' => AksesMiners::noSim($h->data_lama['simpol'] ?? null, $u),
+                    'simBaru' => AksesMiners::noSim($h->data_baru['simpol'] ?? null, $u),
                     'oleh'   => $h->user?->name,
                     'pada'   => Waktu::lokal($h->created_at)?->format('d-m-Y H:i'),
                 ]),
