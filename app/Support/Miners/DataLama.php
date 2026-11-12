@@ -205,8 +205,13 @@ final class DataLama
         $fit = HasilMcu::query()->where('layak', true)->orderBy('urutan')->first();
         if (! $fit) return 'Master hasil MCU "Fit" belum ada — isi dulu di Master Data → Hasil MCU.';
 
-        if (Pekerja::withoutGlobalScopes()->where('nik', $nik)->exists()) {
-            return 'NIK ini sudah ada di sistem (dilewati, tidak dibuat dobel).';
+        /* Hanya dalam jangkauan pengimpor. mnr_pekerja.nik tidak unik di
+           basis data (unik per perusahaan, lihat MinersController::
+           validasiPekerja); memeriksa seluruh perusahaan membocorkan —
+           lewat mode pratinjau — bahwa NIK itu bekerja di tambang lain,
+           dan menolak impor yang sah. */
+        if (Pekerja::withoutGlobalScopes()->where('nik', $nik)->whereIn('company_id', $this->lingkup->pluck('id'))->exists()) {
+            return 'NIK ini sudah ada dalam jangkauan akun ini (dilewati, tidak dibuat dobel).';
         }
 
         $namaPt = trim((string) ($b['perusahaan'] ?? ''));

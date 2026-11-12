@@ -344,6 +344,37 @@ class MinersAksesDataTest extends TestCase
             'jenis_kartu' => 'Mine Permit', 'departemen_id' => $this->departemen()])->assertSessionHasNoErrors();
     }
 
+    /* ═══════════ 7 · NIK ganda pada impor data lama ═══════════ */
+
+    #[Test]
+    public function nik_ganda_data_lama_diperiksa_dalam_jangkauan_pengimpor_saja(): void
+    {
+        $asing = Company::create(['name' => 'PT Tambang Asing', 'code' => 'TAS']);
+        Pekerja::withoutGlobalScopes()->create(['company_id' => $asing->id, 'nama' => 'Orang Asing', 'nik' => '7777', 'status' => 'aktif']);
+        Pekerja::withoutGlobalScopes()->create(['company_id' => $this->mitra->id, 'nama' => 'Orang Mitra', 'nik' => '8888', 'status' => 'aktif']);
+
+        $b = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $b->getActiveSheet()->fromArray(\App\Support\Miners\DataLama::KOLOM['permit'], null, 'A1');
+        foreach (['7777', '8888'] as $i => $nik) {
+            foreach ([$nik, 'Pekerja '.$nik, 'Operator', 'Produksi', 'PT Mitra Uji', 'O', '0800', '2026-01-15', '2030-01-15', 'FULL', ''] as $k => $v) {
+                $b->getActiveSheet()->setCellValueExplicit([$k + 1, $i + 2], $v, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            }
+        }
+        $jalur = tempnam(sys_get_temp_dir(), 'dl').'.xlsx';
+        (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($b))->save($jalur);
+
+        $this->actingAs($this->ohse)->post('/miners/data-lama/permit', [
+            'berkas' => new \Illuminate\Http\UploadedFile($jalur, 'data.xlsx', null, null, true), 'pratinjau' => '1',
+        ])->assertSessionHas('dataLama', function ($h) {
+            $gagal = collect($h['gagal'])->pluck('sebab')->implode(' ');
+
+            /* NIK di perusahaan lain tidak lagi menolak — dan tidak disebut;
+               NIK di jangkauan sendiri tetap dilewati. */
+            return count($h['berhasil']) === 1 && count($h['gagal']) === 1
+                && str_contains($gagal, 'sudah ada dalam jangkauan') && ! str_contains($gagal, 'Asing');
+        });
+    }
+
     /** @return list<list<mixed>> lembar pertama unduhan Excel */
     private function lembar(string $url, User $oleh): array
     {
