@@ -170,9 +170,11 @@ final class Menu
           ['Authority',   'miners.riwayat.authority',    'miners/riwayat/authority'],
         ],
 
+        /* 'medisMiners' — admin, tim OHSE, atau paramedis
+           (AksesMiners::medis); yang lain ditolak halaman rujukannya. */
         'Data MCU' => [
           ['Manpower', 'miners.index',          'miners'],
-          ['Rujukan',  'miners.daftar.rujukan', 'miners/daftar/rujukan'],
+          ['Rujukan',  'miners.daftar.rujukan', 'miners/daftar/rujukan', 'medisMiners'],
         ],
 
         'SIMPER Lanjutan' => [

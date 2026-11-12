@@ -7,6 +7,7 @@ use App\Models\Miners\Pekerja;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Feature\Concerns\SiapanMiners;
 use Tests\TestCase;
@@ -68,5 +69,34 @@ class MinersAksesDataTest extends TestCase
 
         $this->actingAs($this->ohse)->put('/miners/'.$pk->id, ['nama' => 'Oleh HSE'])->assertSessionHasNoErrors();
         $this->assertSame('Oleh HSE', $pk->fresh()->nama);
+    }
+
+    /* ═══════════ 2 · daftar rujukan ═══════════ */
+
+    #[Test]
+    public function daftar_rujukan_hanya_bagi_admin_ohse_dan_paramedis(): void
+    {
+        $o = $this->mcuSelesai($this->mitra, 'Rujukan');
+
+        foreach ([$this->biasa(), $this->pengaju, $this->ktt] as $u) {
+            $this->actingAs($u)->get('/miners/daftar/rujukan')->assertForbidden();
+        }
+
+        foreach ([$this->admin, $this->ohse, $this->dokter] as $u) {
+            $this->actingAs($u)->get('/miners/daftar/rujukan')->assertOk()
+                ->assertInertia(fn (Assert $p) => $p->where('baris.0.id', $o->id));
+        }
+
+        /* Menunya ikut hilang bagi yang pasti ditolak. */
+        $this->assertFalse($this->diMenu($this->pengaju, 'miners/daftar/rujukan'));
+        $this->assertTrue($this->diMenu($this->dokter, 'miners/daftar/rujukan'));
+    }
+
+    /** Apakah bilah samping Miners pengguna ini memuat alamat itu. */
+    private function diMenu(User $u, string $alamat): bool
+    {
+        $grup = $this->actingAs($u)->get('/miners/dasbor')->viewData('page')['props']['menu']['grup'];
+
+        return collect($grup)->flatMap(fn ($g) => $g['butir'])->contains(fn ($b) => str_ends_with($b['url'], $alamat));
     }
 }

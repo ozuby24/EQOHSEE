@@ -294,6 +294,8 @@ class HandleInertiaRequests extends Middleware
                 if ($syarat === true && !$u?->isAdmin()) continue;
                 if ($syarat === 'kelolaMiners') {
                     if (!\App\Support\Miners\AksesMiners::kelola($u)) continue;
+                } elseif ($syarat === 'medisMiners') {
+                    if (!\App\Support\Miners\AksesMiners::medis($u)) continue;
                 } elseif (is_string($syarat) && !($u && Gate::forUser($u)->allows($syarat))) {
                     continue;
                 }

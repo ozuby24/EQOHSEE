@@ -115,6 +115,20 @@ final class AksesMiners
             ->exists();
     }
 
+    /**
+     * Boleh membaca isi medis — hasil/kategori MCU, catatan dokter,
+     * rujukan beserta suratnya: administrator, tim OHSE, paramedis, dan
+     * dokter yang ditugasi pada surat MCU itu. Peran sama dengan gerbang
+     * berkas medis (Berkas::GERBANG 'mnh'), ditambah dokter suratnya.
+     */
+    public static function medis(?User $u, ?\App\Models\Miners\Mcu $mcu = null): bool
+    {
+        if (! $u) return false;
+        if ($u->isAdmin() || $u->isOhse() || $u->isParamedis()) return true;
+
+        return $mcu !== null && self::penyetujuLangkah($mcu, $u, 'dokter');
+    }
+
     /** Hentikan permintaan dengan 403 bila syaratnya tidak terpenuhi. */
     public static function tegakkan(bool $boleh, string $pesan = 'Anda tidak berwenang mengubah berkas ini.'): void
     {

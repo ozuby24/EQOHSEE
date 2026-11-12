@@ -748,6 +748,12 @@ class MinersController extends Controller
             return $this->antreanPersetujuan($r, $jenis);
         }
 
+        /* Daftar rujukan berisi poliklinik, dokter spesialis, dan catatan
+           medisnya: hanya admin, tim OHSE, dan paramedis. */
+        if ($jenis === 'rujukan') {
+            AksesMiners::tegakkan(AksesMiners::medis($r->user()), 'Data rujukan MCU hanya dibuka admin, tim OHSE, atau paramedis.');
+        }
+
         [$baris, $judul] = match ($jenis) {
             /* `master_admin_rujukan` Safe Track: orang yang hasilnya
                "Rujukan" — ditambah yang sudah punya surat rujukan, supaya
