@@ -87,6 +87,37 @@ class FormulirAuditTest extends TestCase
         $this->actingAs($this->auditi($this->induk))->post("/smkp/{$a->id}/formulir", ['kesesuaian' => []])->assertForbidden();
     }
 
+    public function test_baris_berisi_tanpa_elemen_ditolak_bukan_dibuang_diam_diam(): void
+    {
+        $a = $this->audit();
+        $a->forceFill(['kesesuaian' => [['elemen' => 'I', 'sub' => '', 'subsub' => '', 'keterangan' => 'Isian lama.']]])->save();
+
+        $this->actingAs($this->auditor($this->induk))->from("/smkp/{$a->id}/formulir")->post("/smkp/{$a->id}/formulir", [
+            'kesesuaian' => [
+                ['elemen' => 'I', 'sub' => '', 'keterangan' => 'Kebijakan K3 ditandatangani direksi.'],
+                ['elemen' => '', 'sub' => '', 'keterangan' => 'Lupa memilih elemen.'],
+                ['elemen' => '', 'sub' => '', 'keterangan' => ''],                       // benar-benar kosong → boleh dibuang
+            ],
+            'rekomendasi' => [['elemen' => '', 'sub' => '', 'uraian' => 'Rekomendasi tanpa elemen.']],
+        ])->assertRedirect("/smkp/{$a->id}/formulir")
+            ->assertSessionHasErrors(['kesesuaian.1.elemen', 'rekomendasi.0.elemen'])
+            ->assertSessionDoesntHaveErrors(['kesesuaian.0.elemen', 'kesesuaian.2.elemen'])
+            ->assertSessionMissing('ok');
+
+        /* Tidak ada yang tersimpan sebagian. */
+        $this->assertSame('Isian lama.', $a->fresh()->kesesuaian[0]['keterangan']);
+        $this->assertCount(1, $a->fresh()->kesesuaian);
+
+        /* Baris kosong tetap dibuang tanpa galat. */
+        $this->post("/smkp/{$a->id}/formulir", [
+            'kesesuaian' => [
+                ['elemen' => 'I', 'sub' => '', 'keterangan' => 'Kebijakan K3 ditandatangani direksi.'],
+                ['elemen' => '', 'sub' => '', 'keterangan' => '   '],
+            ],
+        ])->assertSessionHasNoErrors()->assertSessionHas('ok');
+        $this->assertCount(1, $a->fresh()->kesesuaian);
+    }
+
     public function test_temuan_diangkat_bernomor_dan_isian_formulir_tersimpan(): void
     {
         $a = $this->audit(null, $this->hasilSeparuh());

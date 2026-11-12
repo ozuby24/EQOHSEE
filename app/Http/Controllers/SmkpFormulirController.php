@@ -83,6 +83,8 @@ class SmkpFormulirController extends SmkpController
             'rekomendasi.*.uraian'      => ['nullable', 'string', 'max:3000'],
         ]);
 
+        $this->wajibElemen($d);
+
         $smkp->update([
             'kesesuaian'  => $this->bersihkan((array) ($d['kesesuaian'] ?? []), 'keterangan'),
             'rekomendasi' => $this->bersihkan((array) ($d['rekomendasi'] ?? []), 'uraian'),
@@ -91,6 +93,28 @@ class SmkpFormulirController extends SmkpController
         ActivityLog::write('Simpan formulir kesesuaian & OFI', $smkp->namaTampil(), 'smkp');
 
         return back()->with('ok', 'Formulir kesesuaian dan rekomendasi tersimpan.');
+    }
+
+    /**
+     * Baris yang sudah berisi uraian tetapi belum memilih Elemen ditolak
+     * per baris, dan isiannya tetap di formulir. Dulu bersihkan() membuang
+     * baris itu diam-diam sementara pesan "tersimpan" tetap muncul (uji
+     * E2E). Menyimpang dari aplikasi asal: hanya menambah validasi —
+     * baris yang benar-benar kosong tetap dibuang bersihkan().
+     */
+    private function wajibElemen(array $d): void
+    {
+        $galat = [];
+        foreach (['kesesuaian' => 'keterangan', 'rekomendasi' => 'uraian'] as $bagian => $kolom) {
+            foreach ((array) ($d[$bagian] ?? []) as $i => $b) {
+                $b = (array) $b;
+                if (trim((string) ($b[$kolom] ?? '')) !== '' && trim((string) ($b['elemen'] ?? '')) === '') {
+                    $galat["{$bagian}.{$i}.elemen"] = "Pilih Elemen untuk baris ini — {$kolom}nya sudah diisi.";
+                }
+            }
+        }
+
+        if ($galat) throw ValidationException::withMessages($galat);
     }
 
     /**

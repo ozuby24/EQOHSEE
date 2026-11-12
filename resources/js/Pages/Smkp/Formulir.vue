@@ -116,6 +116,7 @@ function simpan() {
                   <option value="" disabled>Pilih elemen</option>
                   <option v-for="e in kriteria" :key="e.kode" :value="e.kode">{{ e.kode }} — {{ e.nama }}</option>
                 </select>
+                <p v-if="(form.errors as Record<string, string>)[`kesesuaian.${i}.elemen`]" class="galat">{{ (form.errors as Record<string, string>)[`kesesuaian.${i}.elemen`] }}</p>
               </div>
               <div>
                 <label class="label" :for="`k-sub-${i}`">Sub elemen</label>
@@ -157,6 +158,7 @@ function simpan() {
                   <option value="" disabled>Pilih elemen</option>
                   <option v-for="e in kriteria" :key="e.kode" :value="e.kode">{{ e.kode }} — {{ e.nama }}</option>
                 </select>
+                <p v-if="(form.errors as Record<string, string>)[`rekomendasi.${i}.elemen`]" class="galat">{{ (form.errors as Record<string, string>)[`rekomendasi.${i}.elemen`] }}</p>
               </div>
               <div>
                 <label class="label" :for="`r-sub-${i}`">Sub elemen</label>
