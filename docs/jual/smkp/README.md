@@ -41,27 +41,27 @@ bukan data pelanggan.
 | `Promosi-Audit-SMKP-PTPKKP-EQOHSEE.pptx` | 19 slide penawaran Audit SMKP dan PTPKKP, dengan catatan pembicara |
 | `Promosi-Audit-SMKP-PTPKKP-EQOHSEE.pdf` | Salinan PDF untuk dikirim lewat WhatsApp atau surel |
 
-**Deck ini BELUM sesuai dengan aplikasi.** Ia dibuat sebelum modul SMKP
-diganti dan menggambarkan modul yang lama: alur 8 tahap, sembilan berkas
-audit, tangkapan layar layar lama, serta angka **98 kriteria dinilai dan
-nilai maksimal 333** (dari matriks resmi Kepdirjen 185.K/37.04/DJB/2019,
-Formulir Kriteria Audit hal. 605-608). Aplikasi sekarang memakai alur
-empat tahap (lihat tabel di atas) dan data kriteria
-`resources/data/smkp/elemen.json`: **7 elemen, 51 sub-elemen, 100 butir
-dinilai, nilai maksimal 339**. Deck belum diubah dan menunggu keputusan
-pemilik: diperbarui mengikuti aplikasi, atau ditarik dari peredaran.
-Sampai itu diputuskan, jangan mengirimnya sebagai gambaran aplikasi yang
-berjalan.
+Deck ini sudah mengikuti modul SMKP yang baru: alur empat babak (Tahap I
+Permulaan Audit, Tahap I·B Rencana Audit, Tahap II Audit Lapangan, Tahap III
+Pelaporan), sepuluh berkas cetak, dan tangkapan layar dari folder ini.
+Angka kriterianya dihitung dari `resources/data/smkp/elemen.json` dengan
+aturan `App\Support\Smkp::butirSub()`: **7 elemen, 51 sub-elemen, 62 sub-sub
+elemen, 100 butir dinilai, nilai maksimal 339** (`meta.total_nilai`). Deck
+menyebut angka ini "berdasarkan Lampiran II Kepdirjen 185.K/37.04/DJB/2019",
+bukan "persis seperti Kepdirjen": Formulir Kriteria Audit hal. 605-608
+mencantumkan 98 butir dan nilai maksimal 333, sedangkan data aplikasi
+memakai Daftar Koreksi dan Klarifikasi Lampiran II (lihat `meta.selisih`).
 
-Bagian PTPKKP di deck tidak terpengaruh penggantian ini:
+Bagian PTPKKP di deck tidak terpengaruh penggantian modul SMKP:
 
 - **Kepdirjen 10.K/MB.01/DJB.T/2023** (PTPKKP) — 4 indikator, 24 parameter,
   194 item; bobot dan tingkat pencapaian hal. 15–17.
 
-Tangkapan layar di dalam deck diambil dari folder ini sebelum diterbitkan
-ulang dan dari `docs/jual/tpkkp` (data contoh). Harga mengikuti katalog
-saat deck dibuat — periksa **Pembelian → Daftar Harga** sebelum mengirim
-penawaran.
+Tangkapan layar SMKP di dalam deck dipotong dari `05`, `06`, `07`, `08`,
+`10`, `11`, dan `19` di folder ini; tangkapan layar PTPKKP dari
+`docs/jual/tpkkp` (data contoh). Bila gambar-gambar itu diterbitkan ulang,
+potongan di deck tidak ikut berubah. Harga mengikuti katalog saat deck
+dibuat — periksa **Pembelian → Daftar Harga** sebelum mengirim penawaran.
 
 ---
 Diterbitkan ulang dengan `node tools/tembak-fitur.mjs` — lihat `docs/jual/README.md`.
