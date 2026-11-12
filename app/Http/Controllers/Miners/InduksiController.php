@@ -7,6 +7,7 @@ use App\Http\Controllers\Miners\Concerns\TindakAlur;
 use App\Models\Miners\{Induksi, InduksiOrang, Mcu, McuOrang, Permit};
 use App\Models\User;
 use App\Support\Berkas;
+use App\Support\Db;
 use App\Support\Miners\{AksesMiners, Cetakan, Jalur, Laporan, LokasiInduksi, RincianDokumen};
 use App\Support\Waktu;
 use Illuminate\Http\Request;
@@ -44,8 +45,8 @@ class InduksiController extends Controller
 
         $halaman = Induksi::query()->with(['user:id,name', 'company:id,name'])->withCount('orang')
             ->tap(fn ($w) => $riwayat ? AksesMiners::saringDokumen($w, $u, 'induksi') : $w->where('user_id', $u->id))
-            ->when($cari !== '', fn ($w) => $w->where(fn ($c) => $c->where('no_registrasi', 'like', "%{$cari}%")
-                ->orWhere('perihal', 'like', "%{$cari}%")))
+            ->when($cari !== '', fn ($w) => $w->where(fn ($c) => $c->where('no_registrasi', Db::like(), "%{$cari}%")
+                ->orWhere('perihal', Db::like(), "%{$cari}%")))
             ->orderByDesc('tanggal')->orderByDesc('id')->paginate(15)->withQueryString();
 
         $halaman->getCollection()->transform(fn (Induksi $i) => [

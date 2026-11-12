@@ -8,6 +8,7 @@ use App\Models\Miners\{Departemen, HasilMcu, InduksiOrang, Jabatan, Mcu, McuOran
 use App\Models\User;
 use App\Notifications\PemberitahuanMiners;
 use App\Support\Berkas;
+use App\Support\Db;
 use App\Support\Miners\{AksesMiners, Cetakan, Jalur, Laporan, Penyetuju, RincianDokumen, StempelValidasi};
 use App\Support\Waktu;
 use Illuminate\Http\Request;
@@ -55,8 +56,8 @@ class McuController extends Controller
 
         $q = Mcu::query()->with(['company:id,name', 'user:id,name'])
             ->tap($jangkau)
-            ->when($cari !== '', fn ($w) => $w->where(fn ($c) => $c->where('no_registrasi', 'like', "%{$cari}%")
-                ->orWhere('perihal', 'like', "%{$cari}%")->orWhere('kepada', 'like', "%{$cari}%")));
+            ->when($cari !== '', fn ($w) => $w->where(fn ($c) => $c->where('no_registrasi', Db::like(), "%{$cari}%")
+                ->orWhere('perihal', Db::like(), "%{$cari}%")->orWhere('kepada', Db::like(), "%{$cari}%")));
 
         $halaman = $q->orderByDesc('tanggal')->orderByDesc('id')->paginate(15)->withQueryString();
 

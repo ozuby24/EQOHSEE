@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\Concerns\BerpemilikPerusahaan;
 use App\Models\Scopes\MilikPerusahaan;
 use App\Models\User;
+use App\Support\Db;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -178,11 +179,13 @@ class Pekerja extends Model
 
     public function scopeCari(Builder $q, ?string $kata): Builder
     {
-        return $q->when($kata, fn (Builder $w, string $kata) => $w->where(function (Builder $c) use ($kata) {
-            $c->where('nama', 'like', "%{$kata}%")
-              ->orWhere('nik', 'like', "%{$kata}%")
-              ->orWhere('no_induk', 'like', "%{$kata}%")
-              ->orWhere('no_registrasi', 'like', "%{$kata}%");
+        $like = Db::like();   // `like` di PostgreSQL peka huruf
+
+        return $q->when($kata, fn (Builder $w, string $kata) => $w->where(function (Builder $c) use ($kata, $like) {
+            $c->where('nama', $like, "%{$kata}%")
+              ->orWhere('nik', $like, "%{$kata}%")
+              ->orWhere('no_induk', $like, "%{$kata}%")
+              ->orWhere('no_registrasi', $like, "%{$kata}%");
         }));
     }
 }

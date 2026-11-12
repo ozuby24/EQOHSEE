@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\Miners\{Alur, Departemen, HasilMcu, Induksi, InduksiOrang, Jabatan,
     Kompetensi, Mcu, McuOrang, Pekerja, Permit, Simper, SimperAjuan, Subkontraktor};
 use App\Support\Berkas;
+use App\Support\Db;
 use App\Support\Miners\{AksesMiners, Jalur, Keadaan, Laporan, MonitoringMiners, RincianDokumen, TugasMiners, Verifikasi, Zona};
 use App\Support\Perusahaan;
 use App\Support\Waktu;
@@ -718,8 +719,8 @@ class MinersController extends Controller
            pengendali masing-masing (rute riwayat.* menunjuk ke sana);
            yang tersisa di sini hanya riwayat Authority/kompetensi. */
         $baris = Kompetensi::query()->with('pekerja')
-            ->when($cari, fn ($q) => $q->where(fn ($w) => $w->where('nama', 'like', "%{$cari}%")
-                ->orWhereHas('pekerja', fn ($pk) => $pk->where('nama', 'like', "%{$cari}%"))))
+            ->when($cari, fn ($q) => $q->where(fn ($w) => $w->where('nama', Db::like(), "%{$cari}%")
+                ->orWhereHas('pekerja', fn ($pk) => $pk->where('nama', Db::like(), "%{$cari}%"))))
             ->orderByDesc('berlaku_sampai')->limit(300)->get()
             ->map(fn (Kompetensi $k) => [
                 'id'      => $k->id,

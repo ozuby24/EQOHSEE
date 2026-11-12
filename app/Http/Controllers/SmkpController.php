@@ -26,11 +26,14 @@ class SmkpController extends Controller
         $status  = $this->teks($request, 'status');
         $company = (int) $this->teks($request, 'perusahaan', '0');
 
+        // Tanpa peduli besar-kecil huruf di setiap mesin: `like` di PostgreSQL peka huruf.
+        $like = \App\Support\Db::like();
+
         $dasar = SmkpAudit::query()
             ->when($q !== '', fn ($b) => $b->where(fn ($w) => $w
-                ->where('judul', 'like', "%{$q}%")
-                ->orWhere('ketua_auditor', 'like', "%{$q}%")
-                ->orWhereHas('company', fn ($c) => $c->where('name', 'like', "%{$q}%"))))
+                ->where('judul', $like, "%{$q}%")
+                ->orWhere('ketua_auditor', $like, "%{$q}%")
+                ->orWhereHas('company', fn ($c) => $c->where('name', $like, "%{$q}%"))))
             ->when($company > 0, fn ($b) => $b->where('company_id', $company));
 
         $jumlah = ['semua' => (clone $dasar)->count()];
@@ -42,9 +45,9 @@ class SmkpController extends Controller
                 'findings as findings_open_count' => fn ($b) => $b->where('status', '<>', 'Closed'),
             ])
             ->when($q !== '', fn ($b) => $b->where(fn ($w) => $w
-                ->where('judul', 'like', "%{$q}%")
-                ->orWhere('ketua_auditor', 'like', "%{$q}%")
-                ->orWhereHas('company', fn ($c) => $c->where('name', 'like', "%{$q}%"))))
+                ->where('judul', $like, "%{$q}%")
+                ->orWhere('ketua_auditor', $like, "%{$q}%")
+                ->orWhereHas('company', fn ($c) => $c->where('name', $like, "%{$q}%"))))
             ->when(array_key_exists($status, SmkpAudit::STATUS), fn ($b) => $b->where('status', $status))
             ->when($company > 0, fn ($b) => $b->where('company_id', $company))
             ->orderByDesc('tahun')->orderByDesc('id')
