@@ -86,6 +86,18 @@ final class AksesMiners
     }
 
     /**
+     * Yang mendaftarkan pekerja ini — `mnr_pekerja.dibuat_oleh`.
+     *
+     * BUKAN `user_id`: kolom itu tautan layanan mandiri HR ke akun
+     * pekerjanya sendiri (unik, Hr\Ess). Pekerja yang akunnya ditautkan
+     * tidak mendapat hak sunting atas data manpower-nya sendiri.
+     */
+    public static function pendaftar(Pekerja $p, ?User $u): bool
+    {
+        return $u !== null && $p->dibuat_oleh !== null && (int) $p->dibuat_oleh === (int) $u->getKey();
+    }
+
+    /**
      * Boleh membuka halaman rincian seorang pekerja.
      *
      * Admin dan HSE perusahaan IUP: seluruh pekerja dalam jangkauannya
@@ -119,7 +131,7 @@ final class AksesMiners
         $milik   = fn (string $kelas, string $jenis) => $kelas::withoutGlobalScopes()
             ->where(fn ($w) => $w->where('user_id', $id)->orWhereIn('id', $langkah($jenis)));
 
-        return $q->where(fn ($w) => $w->where($q->qualifyColumn('user_id'), $id)
+        return $q->where(fn ($w) => $w->where($q->qualifyColumn('dibuat_oleh'), $id)
             ->orWhereIn($q->qualifyColumn('id'), McuOrang::withoutGlobalScopes()
                 ->whereIn('mcu_id', $milik(\App\Models\Miners\Mcu::class, 'mcu')->select('id'))->select('pekerja_id'))
             ->orWhereIn($q->qualifyColumn('id'), $milik(Permit::class, 'permit')->select('pekerja_id'))
@@ -163,7 +175,7 @@ final class AksesMiners
             ->where(fn ($w) => $w->where('ditugaskan_user_id', $id)->orWhere('user_id', $id))->select('dokumen_id');
 
         /* Pekerja yang ia daftarkan, dan jalan dari dokumen ke pekerjanya. */
-        $milik = Pekerja::withoutGlobalScopes()->where('user_id', $id)->select('id');
+        $milik = Pekerja::withoutGlobalScopes()->where('dibuat_oleh', $id)->select('id');
 
         [$kolom, $pekerjanya] = match ($jenis) {
             'mcu'     => ['id', McuOrang::withoutGlobalScopes()->whereIn('pekerja_id', $milik)->select('mcu_id')],

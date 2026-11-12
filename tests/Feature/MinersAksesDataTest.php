@@ -48,7 +48,7 @@ class MinersAksesDataTest extends TestCase
         return Pekerja::withoutGlobalScopes()->create([
             'company_id' => $this->mitra->id, 'nama' => 'Pekerja '.Str::random(4),
             'nik' => (string) random_int(1000000000000000, 9999999999999999), 'status' => 'aktif',
-            'user_id' => $pemilik?->id,
+            'dibuat_oleh' => $pemilik?->id,
         ]);
     }
 
@@ -373,6 +373,38 @@ class MinersAksesDataTest extends TestCase
             return count($h['berhasil']) === 1 && count($h['gagal']) === 1
                 && str_contains($gagal, 'sudah ada dalam jangkauan') && ! str_contains($gagal, 'Asing');
         });
+    }
+
+    /* ═══════════ 8 · pendaftar bukan tautan ESS ═══════════ */
+
+    #[Test]
+    public function pendaftar_dicatat_terpisah_dari_tautan_layanan_mandiri(): void
+    {
+        /* Pengguna yang sama mendaftarkan dua pekerja: keduanya masuk.
+           Dahulu yang kedua tertolak indeks unik user_id (HTTP 500). */
+        $pendaftar = $this->biasa();
+        foreach (['Daftar Satu', 'Daftar Dua'] as $nama) {
+            $this->actingAs($pendaftar)->post('/miners', ['nama' => $nama])->assertSessionHasNoErrors()->assertRedirect();
+        }
+        $baru = Pekerja::withoutGlobalScopes()->whereIn('nama', ['Daftar Satu', 'Daftar Dua'])->get();
+        $this->assertCount(2, $baru);
+        $this->assertSame([$pendaftar->id], $baru->pluck('dibuat_oleh')->unique()->values()->all());
+        $this->assertSame([null], $baru->pluck('user_id')->unique()->values()->all());
+
+        /* Pendaftarnya boleh menyunting; pengguna biasa lain tidak. */
+        $pk = $baru->firstWhere('nama', 'Daftar Satu');
+        $this->actingAs($pendaftar)->put('/miners/'.$pk->id, ['nama' => 'Daftar Satu Ubah'])->assertSessionHasNoErrors();
+        $this->assertSame('Daftar Satu Ubah', $pk->fresh()->nama);
+        $this->actingAs($this->biasa())->put('/miners/'.$pk->id, ['nama' => 'Oleh Lain'])->assertForbidden();
+
+        /* Pekerja yang akunnya ditautkan (ESS) tidak menyunting data
+           manpower-nya sendiri. */
+        $ess = $this->biasa();
+        $milikEss = $this->pekerja();
+        $milikEss->forceFill(['user_id' => $ess->id])->save();
+        $this->actingAs($ess)->put('/miners/'.$milikEss->id, ['nama' => 'Oleh Diri Sendiri'])->assertForbidden();
+        $this->assertNotSame('Oleh Diri Sendiri', $milikEss->fresh()->nama);
+        $this->assertFalse(\App\Support\Miners\AksesMiners::lihatPekerja($milikEss, $ess));
     }
 
     /** @return list<list<mixed>> lembar pertama unduhan Excel */

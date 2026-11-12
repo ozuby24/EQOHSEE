@@ -241,7 +241,7 @@ final class DataLama
             'gol_darah' => in_array($gol, ['A', 'AB', 'B', 'O'], true) ? $gol : null,
             'telepon' => trim((string) ($b['no_telp'] ?? '')) ?: null,
             'departemen_id' => $dept?->id, 'jabatan_id' => $jab?->id,
-            'status' => 'aktif', 'user_id' => $oleh, 'asal' => self::ASAL,
+            'status' => 'aktif', 'dibuat_oleh' => $oleh, 'asal' => self::ASAL,
         ]);
         $mcu = Mcu::withoutGlobalScopes()->create([
             'company_id' => $pt->id, 'iup_id' => $iup, 'tanggal' => $tglMcu, 'kepada' => 'Impor data lama',

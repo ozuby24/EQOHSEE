@@ -191,7 +191,7 @@ class MinersController extends Controller
         $baris = $semua->map(function (Pekerja $p) use ($mcu, $u, $kelola, $medis) {
             $m    = $mcu[$p->mcu_terakhir_id] ?? null;
             $sisa = Zona::sisa($m?->berlaku_sampai);
-            $ubah = $kelola || (int) $p->user_id === (int) $u->getKey();
+            $ubah = $kelola || AksesMiners::pendaftar($p, $u);
 
             return [
                 'id'         => $p->id,
@@ -519,21 +519,26 @@ class MinersController extends Controller
     {
         $data = $this->validasiPekerja($r);
 
-        $pekerja = Pekerja::create($data + ['user_id' => $r->user()?->id, 'status' => 'aktif']);
+        /* Pendaftarnya ke `dibuat_oleh`. `user_id` adalah tautan layanan
+           mandiri HR — akun milik pekerja itu sendiri, unik — dan hanya
+           diisi lewat layar tautan ESS. */
+        $pekerja = Pekerja::create($data + ['dibuat_oleh' => $r->user()?->id, 'status' => 'aktif']);
 
         return back()->with('sukses', 'Manpower '.$pekerja->nama.' ditambahkan.');
     }
 
     /**
      * Ubah data manpower — admin atau HSE IUP (lingkup perusahaannya
-     * dijaga global scope), atau yang mendaftarkan pekerja itu. Isiannya
+     * dijaga global scope), atau yang mendaftarkan pekerja itu
+     * (`dibuat_oleh` — bukan `user_id`, tautan ESS pekerjanya sendiri:
+     * pekerja tidak menyunting data manpower-nya sendiri). Isiannya
      * NIK, tanggal lahir, golongan darah, telepon, dan perusahaan: bukan
      * sesuatu yang boleh diubah setiap pengguna di perusahaan yang sama.
      */
     public function update(Request $r, Pekerja $pekerja)
     {
         $u = $r->user();
-        AksesMiners::tegakkan(AksesMiners::kelola($u) || (int) $pekerja->user_id === (int) $u->getKey(),
+        AksesMiners::tegakkan(AksesMiners::kelola($u) || AksesMiners::pendaftar($pekerja, $u),
             'Data manpower hanya diubah admin, HSE IUP, atau yang mendaftarkannya.');
 
         $pekerja->update($this->validasiPekerja($r, $pekerja));
