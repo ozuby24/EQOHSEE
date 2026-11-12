@@ -318,6 +318,32 @@ class MinersAksesDataTest extends TestCase
         $this->assertTrue($this->diMenu($this->ohse, 'miners/daftar/cetak-kartu'));
     }
 
+    /* ═══════════ 6 · IUP dan Contractor Mine Permit ═══════════ */
+
+    #[Test]
+    public function iup_dan_contractor_permit_hanya_dari_jangkauan_pengguna(): void
+    {
+        $iupLain   = Company::create(['name' => 'PT IUP Lain', 'code' => 'IUL', 'izin_type' => 'IUP Operasi Produksi']);
+        $mitraLain = Company::create(['name' => 'PT Mitra Lain', 'code' => 'MTL', 'izin_type' => 'IUJP', 'parent_id' => $iupLain->id]);
+
+        $io = $this->induksiSelesai($this->mcuSelesai($this->mitra));
+        $this->actingAs($this->pengaju)->post('/miners/permit', $this->isianPermit($io, ['iup_id' => $iupLain->id]))
+            ->assertSessionHasErrors(['iup_id' => 'Perusahaan (IUP) di luar jangkauan Anda.']);
+        $this->actingAs($this->pengaju)->post('/miners/permit', $this->isianPermit($io, ['kontraktor_id' => $mitraLain->id]))
+            ->assertSessionHasErrors(['kontraktor_id' => 'Contractor di luar jangkauan Anda.']);
+        $this->assertSame(0, \App\Models\Miners\Permit::withoutGlobalScopes()->count());
+
+        /* Akun mitra tetap memilih IUP induknya sendiri. */
+        $this->actingAs($this->pengaju)->post('/miners/permit', $this->isianPermit($io))->assertSessionHasNoErrors();
+
+        $p = $this->permitTerbit();
+        $this->actingAs($this->ohse)->put('/miners/permit/'.$p->id, ['iup_id' => $iupLain->id, 'jenis_kartu' => 'Mine Permit',
+            'departemen_id' => $this->departemen()])->assertSessionHasErrors(['iup_id' => 'Perusahaan (IUP) di luar jangkauan Anda.']);
+        $this->assertSame($this->iup->id, (int) $p->fresh()->iup_id);
+        $this->actingAs($this->ohse)->put('/miners/permit/'.$p->id, ['iup_id' => $this->iup->id, 'kontraktor_id' => $this->mitra->id,
+            'jenis_kartu' => 'Mine Permit', 'departemen_id' => $this->departemen()])->assertSessionHasNoErrors();
+    }
+
     /** @return list<list<mixed>> lembar pertama unduhan Excel */
     private function lembar(string $url, User $oleh): array
     {

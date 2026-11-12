@@ -598,10 +598,20 @@ class PermitController extends Controller
     {
         $baru = $lama === null;
 
+        /* IUP dan Contractor hanya dari jangkauan pengguna — sama dengan
+           pilihan(): IUP-nya perusahaan sendiri atau induknya (akun mitra
+           memilih IUP induknya), Contractor perusahaan dalam jangkauannya.
+           Nilai yang sudah tersimpan pada permit yang disunting tetap sah.
+           Tanpa ini IUP perusahaan lain dapat ditulis sebagai penerbit —
+           penyetuju dan tanda tangan KTT-nya ikut terbawa ke kartu. */
+        $jangkau    = AksesMiners::perusahaan($r->user());
+        $iup        = $jangkau->map(fn (Company $c) => $c->parent_id ?: $c->id)->push($lama?->iup_id)->filter()->unique()->values()->all();
+        $kontraktor = $jangkau->pluck('id')->push($lama?->kontraktor_id)->filter()->unique()->values()->all();
+
         return self::tanpaBerkas($r->validate([
             'induksi_orang_id' => [$baru ? 'required' : 'nullable', 'integer'],
-            'iup_id'           => ['required', 'exists:companies,id'],
-            'kontraktor_id'    => ['nullable', 'exists:companies,id'],
+            'iup_id'           => ['required', 'integer', Rule::in($iup ?: [0])],
+            'kontraktor_id'    => ['nullable', 'integer', Rule::in($kontraktor ?: [0])],
             'jenis_kartu'      => ['required', Rule::in(Permit::JENIS_KARTU)],
             'cakupan_area'     => [$baru ? 'required' : 'nullable', Rule::in(array_keys(Acuan::ZONA_AKSES))],
             'kode_warna'       => ['nullable', Rule::in(array_keys(Acuan::WARNA_KARTU))],
@@ -618,6 +628,8 @@ class PermitController extends Controller
         ], [
             'induksi_orang_id.required' => 'Karyawan wajib dipilih.',
             'iup_id.required'           => 'Perusahaan (IUP) wajib dipilih.',
+            'iup_id.in'                 => 'Perusahaan (IUP) di luar jangkauan Anda.',
+            'kontraktor_id.in'          => 'Contractor di luar jangkauan Anda.',
             'departemen_id.required'    => 'Departemen wajib dipilih. Bila daftarnya kosong, isi dulu lewat Master Data → Departemen.',
             'tanggal_lahir.required'    => 'Tanggal lahir wajib diisi.',
             'foto.required'             => 'Foto karyawan wajib diunggah.',
