@@ -514,8 +514,18 @@ class MinersController extends Controller
         return back()->with('sukses', 'Manpower '.$pekerja->nama.' ditambahkan.');
     }
 
+    /**
+     * Ubah data manpower — admin atau HSE IUP (lingkup perusahaannya
+     * dijaga global scope), atau yang mendaftarkan pekerja itu. Isiannya
+     * NIK, tanggal lahir, golongan darah, telepon, dan perusahaan: bukan
+     * sesuatu yang boleh diubah setiap pengguna di perusahaan yang sama.
+     */
     public function update(Request $r, Pekerja $pekerja)
     {
+        $u = $r->user();
+        AksesMiners::tegakkan(AksesMiners::kelola($u) || (int) $pekerja->user_id === (int) $u->getKey(),
+            'Data manpower hanya diubah admin, HSE IUP, atau yang mendaftarkannya.');
+
         $pekerja->update($this->validasiPekerja($r, $pekerja));
 
         return back()->with('sukses', 'Data manpower '.$pekerja->nama.' diperbarui.');
