@@ -235,12 +235,16 @@ class MinersPenyetujuTest extends TestCase
                 ->has('tugasMiners', 1)
                 ->where('tugasMiners.0.kunci', 'permit'));
 
-        /* KTT belum giliran: "Perlu Approval Saya" kosong, "Semua"
-           memperlihatkannya. */
+        /* KTT belum giliran: "Perlu Approval Saya" kosong. "Semua" hanya
+           bagi pengelola (admin, HSE IUP) — bagi KTT bendera itu
+           diabaikan; HSE IUP melihat seluruh yang berjalan. */
         $this->actingAs($this->ktt)->get('/miners/daftar/outstanding-permit')
             ->assertInertia(fn (AssertableInertia $h) => $h->has('baris', 0)->where('pilih.saya', 0));
 
         $this->actingAs($this->ktt)->get('/miners/daftar/outstanding-permit?semua=1')
+            ->assertInertia(fn (AssertableInertia $h) => $h->where('pilih.aktif', 'saya')->has('baris', 0)->where('pilih.semua', 0));
+
+        $this->actingAs($this->ohse)->get('/miners/daftar/outstanding-permit?semua=1')
             ->assertInertia(fn (AssertableInertia $h) => $h->where('pilih.aktif', 'semua')->has('baris', 1));
     }
 

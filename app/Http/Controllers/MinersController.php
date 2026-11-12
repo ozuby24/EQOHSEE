@@ -761,7 +761,8 @@ class MinersController extends Controller
      * Bawaannya "Perlu Approval Saya": dokumen yang langkahnya SEDANG
      * menunggu orang ini — angka yang sama dengan lonceng tugasnya.
      * `?semua=1` memperlihatkan seluruh yang masih berjalan dalam
-     * jangkauan perusahaannya (commit 72250f7, 9305535 Safe Track).
+     * jangkauan perusahaannya (commit 72250f7, 9305535 Safe Track) —
+     * hanya bagi pengelola; selain itu bendera itu diabaikan.
      */
     public function daftar(Request $r)
     {
@@ -840,7 +841,11 @@ class MinersController extends Controller
             ->when($ajuan, fn ($q) => $q->where('jenis', $ajuan))
             ->whereIn('id', $milikSaya);
 
-        $semua = $r->boolean('semua');
+        /* `?semua=1` hanya bagi pengelola (admin, HSE IUP). Pengguna lain
+           mendapat daftar yang sama persis dengan tanpa bendera itu —
+           yang menunggu dirinya — dan hitungan "Semua"-nya pun sama. */
+        $kelola = AksesMiners::kelola($u);
+        $semua  = $kelola && $r->boolean('semua');
 
         $dok = ($semua ? $berjalan() : $saya)
             ->with(array_merge(['user', 'alur.ditugaskan', 'alur.user'], match ($dokumen) {
@@ -882,7 +887,7 @@ class MinersController extends Controller
             'pilih' => [
                 'aktif' => $semua ? 'semua' : 'saya',
                 'saya'  => (clone $saya)->count(),
-                'semua' => $berjalan()->count(),
+                'semua' => $kelola ? $berjalan()->count() : (clone $saya)->count(),
             ],
         ]);
     }

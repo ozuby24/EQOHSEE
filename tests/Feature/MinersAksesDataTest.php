@@ -455,6 +455,65 @@ class MinersAksesDataTest extends TestCase
         $this->assertSame(1, $props($this->ohse, '/miners/kedaluwarsa')['manpower']['total']);
     }
 
+    /* ═══════════ 10 · Outstanding ?semua=1 ═══════════ */
+
+    #[Test]
+    public function outstanding_semua_hanya_bagi_pengelola(): void
+    {
+        $berjalan = \App\Models\Miners\Mcu::withoutGlobalScopes()->create([
+            'company_id' => $this->mitra->id, 'tanggal' => Waktu::kini()->startOfDay(), 'kepada' => 'Klinik',
+            'perihal' => 'Surat Berjalan', 'status' => 'diajukan', 'user_id' => $this->pengaju->id,
+        ]);
+        $penyetuju = $this->biasa();
+        \App\Models\Miners\Alur::create(['dokumen' => 'mcu', 'dokumen_id' => $berjalan->id, 'urutan' => 1,
+            'peran' => 'dokter', 'ditugaskan_user_id' => $penyetuju->id, 'keadaan' => 'menunggu']);
+
+        $lihat = fn (User $u, string $q) => $this->actingAs($u)->get('/miners/daftar/outstanding-mcu'.$q)->assertOk()
+            ->viewData('page')['props'];
+
+        /* Ditolak: pengguna biasa — bendera diabaikan, hitungan "Semua"
+           tidak menyebut dokumen perusahaan. */
+        $p = $lihat($this->biasa(), '?semua=1');
+        $this->assertSame([], collect($p['baris'])->all());
+        $this->assertSame(['aktif' => 'saya', 'saya' => 0, 'semua' => 0], $p['pilih']);
+
+        /* Boleh: penyetuju yang ditugasi melihat yang menunggunya, sama
+           dengan atau tanpa bendera. */
+        foreach (['', '?semua=1'] as $q) {
+            $p = $lihat($penyetuju, $q);
+            $this->assertSame([$berjalan->id], collect($p['baris'])->pluck('id')->all(), $q);
+            $this->assertSame('saya', $p['pilih']['aktif']);
+        }
+
+        /* Pengelola: seluruh yang berjalan. */
+        $p = $lihat($this->ohse, '?semua=1');
+        $this->assertSame([$berjalan->id], collect($p['baris'])->pluck('id')->all());
+        $this->assertSame(['aktif' => 'semua', 'saya' => 0, 'semua' => 1], $p['pilih']);
+    }
+
+    #[Test]
+    public function daftar_perpanjangan_permit_semua_disaring_bagi_selain_pengelola(): void
+    {
+        $p = $this->permitTerbit();
+        $x = PermitPerpanjangan::withoutGlobalScopes()->create(['company_id' => $p->company_id, 'iup_id' => $p->iup_id,
+            'permit_id' => $p->id, 'tanggal' => Waktu::kini()->startOfDay(), 'user_id' => $this->pengaju->id]);
+
+        $lihat = fn (User $u) => $this->actingAs($u)->get('/miners/perpanjangan-permit?semua=1')->assertOk()
+            ->viewData('page')['props'];
+
+        /* Ditolak: pengguna biasa tidak melihat perpanjangan orang lain. */
+        $b = $lihat($this->biasa());
+        $this->assertSame([], collect($b['baris'])->all());
+        $this->assertSame(0, $b['pilih']['semua']);
+
+        /* Boleh: pengajunya, dan pengelola. */
+        foreach ([$this->pengaju, $this->ohse] as $u) {
+            $b = $lihat($u);
+            $this->assertSame([$x->id], collect($b['baris'])->pluck('id')->all());
+            $this->assertSame(1, $b['pilih']['semua']);
+        }
+    }
+
     /** @return list<list<mixed>> lembar pertama unduhan Excel */
     private function lembar(string $url, User $oleh): array
     {

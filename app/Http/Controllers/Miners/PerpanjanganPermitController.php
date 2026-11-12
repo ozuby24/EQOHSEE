@@ -43,7 +43,11 @@ class PerpanjanganPermitController extends Controller
         $jumlahSaya = (clone $saya)->count();
         $aktif = $r->query('semua') !== null ? 'semua' : ($jumlahSaya > 0 ? 'saya' : 'semua');
 
-        $q = $aktif === 'saya' ? $saya : PermitPerpanjangan::query();
+        /* "Semua" bagi selain pengelola: yang boleh ia buka saja —
+           pengajunya, pendaftar pekerjanya, penyetuju langkahnya. */
+        $jangkauan = fn () => AksesMiners::saringDokumen(PermitPerpanjangan::query(), $u, 'perpanjangan_permit');
+
+        $q = $aktif === 'saya' ? $saya : $jangkauan();
 
         $baris = $q->with(['permit.pekerja.company', 'permit.mcuOrang', 'permit.perpanjanganBerjalan', 'user:id,name', 'alur.ditugaskan'])
             ->orderByDesc('tanggal')->orderByDesc('id')->get()
@@ -64,7 +68,7 @@ class PerpanjanganPermitController extends Controller
             'judul' => 'Perpanjangan Mine Permit',
             'kop'   => false,
             'baris' => $baris,
-            'pilih' => ['aktif' => $aktif, 'saya' => $jumlahSaya, 'semua' => PermitPerpanjangan::query()->count()],
+            'pilih' => ['aktif' => $aktif, 'saya' => $jumlahSaya, 'semua' => $jangkauan()->count()],
             'calon' => self::calon(),
             'hariIni' => Waktu::kini()->toDateString(),
         ]);
