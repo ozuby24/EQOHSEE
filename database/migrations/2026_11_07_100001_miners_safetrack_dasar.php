@@ -628,9 +628,14 @@ return new class extends Migration
 
         Schema::table('mnr_pekerja', fn (Blueprint $t) => $t->dropColumn(['tanggal_nonaktif', 'alasan_nonaktif']));
 
+        /* Kunci asing lebih dulu. MySQL memakai indeks gabungan
+           (ditugaskan_user_id, keadaan) untuk kunci asing itu — indeks yang
+           ia buat sendiri dibuang diam-diam begitu indeks gabungan ada —
+           sehingga indeksnya tidak dapat dibuang selama kuncinya masih ada. */
         Schema::table('mnr_alur', function (Blueprint $t) {
+            $t->dropForeign(['ditugaskan_user_id']);
             $t->dropIndex(['ditugaskan_user_id', 'keadaan']);
-            $t->dropConstrainedForeignId('ditugaskan_user_id');
+            $t->dropColumn('ditugaskan_user_id');
         });
 
         Schema::table('companies', fn (Blueprint $t) => $t->dropColumn([
