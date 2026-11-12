@@ -9,7 +9,7 @@ use App\Support\Miners\Acuan;
 use App\Support\Miners\MasterMiners;
 use App\Support\Waktu;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\{DB, Schema};
 use PHPUnit\Framework\Attributes\Test;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -253,6 +253,26 @@ class MinersMasterTest extends TestCase
                 $kelas::pilihan();
             } catch (\Throwable $e) {
                 $this->fail(class_basename($kelas).'::pilihan() gagal: '.$e->getMessage());
+            }
+        }
+    }
+
+    /**
+     * SQLite membaca `ORDER BY "urutan"` atas kolom yang tidak ada sebagai
+     * teks tetap, sehingga uji di atas lolos di sini — di PostgreSQL dan
+     * MySQL kueri yang sama gagal. Yang diperiksa karena itu kolomnya.
+     */
+    #[Test]
+    public function test_urutan_daftar_pilih_hanya_memakai_kolom_yang_ada(): void
+    {
+        foreach ($this->turunanMaster() as $kelas) {
+            $model = new $kelas;
+
+            foreach ($kelas::query()->terpakai()->toBase()->orders ?? [] as $o) {
+                $this->assertTrue(
+                    Schema::hasColumn($model->getTable(), $o['column']),
+                    class_basename($kelas)."::terpakai() mengurutkan menurut kolom {$o['column']} yang tidak ada di {$model->getTable()}."
+                );
             }
         }
     }

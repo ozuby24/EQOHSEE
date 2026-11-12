@@ -31,6 +31,17 @@ abstract class Master extends Model
 
     protected $guarded = ['id'];
 
+    /**
+     * Tabel ini punya kolom `urutan`. Tidak semuanya: mnr_pjo dan
+     * mnr_subkontraktor sejak awal hanya nama dan penanda aktif.
+     *
+     * Di SQLite `ORDER BY "urutan"` atas kolom yang tidak ada lolos diam-
+     * diam — kutip ganda yang tidak menunjuk kolom dibaca sebagai teks
+     * tetap — tetapi PostgreSQL dan MySQL menolaknya, dan daftar pilihnya
+     * gagal termuat. Turunan yang tidak berkolom itu menyetelnya false.
+     */
+    protected bool $punyaUrutan = true;
+
     protected function casts(): array
     {
         return ['aktif' => 'boolean'];
@@ -48,7 +59,7 @@ abstract class Master extends Model
     public function scopeTerpakai(Builder $q): Builder
     {
         return $q->where(fn (Builder $w) => $w->where('aktif', true)->orWhereNull('aktif'))
-            ->orderBy('urutan')
+            ->when($this->punyaUrutan, fn (Builder $b) => $b->orderBy('urutan'))
             ->orderBy('nama');
     }
 
