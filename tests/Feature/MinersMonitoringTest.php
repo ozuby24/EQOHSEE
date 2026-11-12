@@ -83,4 +83,24 @@ class MinersMonitoringTest extends TestCase
         $this->actingAs($this->pengaju)->get('/miners/kedaluwarsa')->assertOk()
             ->assertInertia(fn (Assert $p) => $p->where('ringkas.mcu.expired', 1)->has('perusahaan', 1));
     }
+
+    #[Test]
+    public function pilihan_perusahaan_saringan_berbentuk_nilai_label_dan_menyaring(): void
+    {
+        /* SaringBar membaca {nilai, label}; Monitoring dulu mengirim
+           {id, name} sehingga pilihannya satu "undefined" (uji E2E). */
+        foreach (['/miners', '/miners/kedaluwarsa', '/miners/riwayat/mine-permit', '/miners/riwayat/mine-license'] as $url) {
+            $opsi = $this->actingAs($this->admin)->get($url)->assertOk()->viewData('page')['props']['perusahaan'];
+            $this->assertNotEmpty($opsi, $url);
+            foreach ($opsi as $o) $this->assertSame(['nilai', 'label'], array_keys((array) $o), $url);
+            $this->assertContains($this->mitra->id, array_column($opsi, 'nilai'), $url);
+        }
+
+        $this->mcuSelesai($this->iup, 'Fit', Waktu::kini()->subDays(3)->toDateString());
+        $milik = $this->mcuSelesai($this->mitra, 'Fit', Waktu::kini()->subDays(3)->toDateString());
+
+        $this->get('/miners/kedaluwarsa?perusahaan='.$this->mitra->id)->assertOk()
+            ->assertInertia(fn (Assert $p) => $p->has('daftar.data', 1)
+                ->where('daftar.data.0.pekerja_id', $milik->pekerja_id));
+    }
 }

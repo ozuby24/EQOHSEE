@@ -645,7 +645,10 @@ class MinersController extends Controller
             'saring'   => $saring,
             'JENIS'    => MonitoringMiners::JENIS,
             'KETERANGAN' => MonitoringMiners::KETERANGAN,
-            'perusahaan' => AksesMiners::perusahaan($r->user())->map->only(['id', 'name'])->values(),
+            /* Bentuk {nilai, label} yang dibaca SaringBar — sama dengan
+               daftar Mine Permit dan SIMPER; {id, name} membuat pilihannya
+               satu "undefined" dan saringan perusahaan tidak bekerja. */
+            'perusahaan' => AksesMiners::perusahaan($r->user())->map(fn ($c) => ['nilai' => $c->id, 'label' => $c->name])->values(),
         ]);
     }
 
