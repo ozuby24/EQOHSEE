@@ -591,7 +591,7 @@ function tindak(keadaan: string) {
         <button type="button" class="mn-btn mn-btn-garis" @click="alasanTerbuka = null">Close</button>
         <button type="button" class="mn-btn" :class="alasanTerbuka === 'tolak' ? 'mn-btn-bahaya' : 'mn-btn-peringatan'"
                 :disabled="tindakan.processing || !tindakan.catatan.trim()" @click="tindak(alasanTerbuka!)">
-          {{ alasanTerbuka === 'tolak' ? 'Reject' : 'Kembalikan' }}
+          {{ tindakan.processing ? 'Sending…' : alasanTerbuka === 'tolak' ? 'Reject' : 'Kembalikan' }}
         </button>
       </template>
     </Modal>

@@ -608,4 +608,25 @@ class RincianDokumenMinersTest extends TestCase
         $this->assertArrayHasKey('ada', $props['lampiran'][0]);
         $this->assertSame(['SPDK'], $props['kurang']);
     }
+
+    /**
+     * Tombol kirim dialog Reject / Kembalikan berlabel tindakannya, dan
+     * "Sending…" hanya selama permintaannya berjalan. Uji E2E: dulu
+     * berlabel "Sending", sama dengan tombol kiriman biasa.
+     */
+    public function test_tombol_dialog_tolak_dan_kembalikan_berlabel_tindakannya(): void
+    {
+        $diperiksa = 0;
+        foreach (glob(resource_path('js/Pages/Miners/*.vue')) as $f) {
+            preg_match_all('#@click="tindak\(alasanTerbuka!\)">(.*?)</button>#s', (string) file_get_contents($f), $m);
+            foreach ($m[1] as $label) {
+                $diperiksa++;
+                foreach (["'Reject'", "'Kembalikan'", 'tindakan.processing'] as $wajib) {
+                    $this->assertStringContainsString($wajib, $label, basename($f).': tombol dialog tolak/kembalikan.');
+                }
+            }
+        }
+
+        $this->assertGreaterThanOrEqual(6, $diperiksa, 'Dialog tolak/kembalikan tidak ditemukan — pola tombolnya berubah?');
+    }
 }
