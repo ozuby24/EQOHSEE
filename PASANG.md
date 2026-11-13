@@ -20,6 +20,10 @@ Data SMKP lama **dipindahkan ke struktur baru**. Cadangkan database, lalu
 **latih migrasinya pada salinan data produksi** dulu. Data lama yang tidak
 punya padanan disimpan utuh di tabel arsip `smkp_arsip_eqohsee`
 (kolom `asli`); jangan dihapus sebelum audit lama diperiksa di aplikasi baru.
+Jalur pembaruan dari versi sebelumnya sudah dilatih dengan data contoh di
+SQLite, PostgreSQL 16, dan MariaDB 10.11. Migrasi selesai tanpa galat,
+jumlah datanya sama di ketiganya, dan `migrate:rollback` juga berjalan.
+MySQL 8 belum diuji.
 
 ## Audit SMKP (menu: Audit SMKP)
 Modul diganti dengan alur audit baru (porting Aurorasys). Menu sampingnya:
