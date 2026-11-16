@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import KepalaAudit from '../../Components/Smkp/KepalaAudit.vue';
 import Ikon from '../../Components/Smkp/Ikon.vue';
+import StatusSimpan from '../../Components/Smkp/StatusSimpan.vue';
+import { useAutosimpan } from '../../smkp/lib/autosimpan';
 import type { RingkasAudit } from '../../smkp/types';
 
 interface Baris { elemen: string; sub: string; subsub?: string; keterangan?: string; uraian?: string }
@@ -23,6 +25,7 @@ const props = defineProps<{
     kategori: Record<string, number>;
     rtl: number;
   };
+  versiSimpan: string;
   bisaSunting: boolean;
 }>();
 
@@ -60,6 +63,12 @@ const form = useForm({
   kesesuaian: props.kesesuaian.map((b) => ({ elemen: b.elemen, sub: b.sub, subsub: b.subsub ?? '', keterangan: b.keterangan ?? '' })),
   rekomendasi: props.rekomendasi.map((b) => ({ elemen: b.elemen, sub: b.sub, subsub: b.subsub ?? '', uraian: b.uraian ?? '' })),
 });
+
+/* Simpan otomatis (port DBEST): beberapa detik setelah berhenti mengetik. */
+const simpanOto = useAutosimpan({
+  form, url: `/smkp/${props.audit.id}/formulir`, versi: props.versiSimpan, aktif: () => props.bisaSunting,
+});
+watch(() => props.versiSimpan, (v) => simpanOto.sudahDisimpan(v));
 
 const subDari = (elemen: string) => props.kriteria.find((e) => e.kode === elemen)?.sub ?? [];
 const subsubDari = (elemen: string, sub: string) => subDari(elemen).find((s) => s.kode === sub)?.subsub ?? [];
@@ -187,6 +196,7 @@ function simpan() {
 
       <div v-if="bisaSunting" class="xl:col-span-2 sticky bottom-3 sm:bottom-4 z-10 flex items-center justify-between gap-3 rounded-kartu bg-navy-900 text-white px-3.5 py-2.5 sm:px-5 sm:py-3 shadow-angkat">
         <p class="min-w-0 text-[12.5px] sm:text-[13px] leading-snug text-white/80">{{ form.isDirty ? 'Ada perubahan yang belum disimpan.' : 'Kesesuaian dan rekomendasi tersimpan.' }}</p>
+          <StatusSimpan :keadaan="simpanOto.keadaan.value" :teks="simpanOto.teks.value" :pulihan="simpanOto.pulihan.value" gelap @pulihkan="simpanOto.pulihkan" @buang="simpanOto.buangPulihan" />
         <button type="submit" class="btn-aksen btn-kecil shrink-0" :disabled="form.processing || !form.isDirty"><Ikon nama="simpan" class="w-4 h-4" /> Simpan formulir</button>
       </div>
     </form>

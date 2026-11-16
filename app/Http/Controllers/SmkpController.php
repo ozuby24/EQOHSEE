@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Company, SmkpAttendee, SmkpAudit, SmkpBukti, SmkpFinding, SmkpTindakLanjut, User};
-use App\Support\{KopDokumen, Smkp, SmkpSusunan, SmkpTahap, Waktu};
+use App\Support\{KopDokumen, Smkp, SmkpAutosimpan, SmkpSusunan, SmkpTahap, Waktu};
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\{DB, Storage};
@@ -304,6 +304,8 @@ class SmkpController extends Controller
         foreach (array_keys(SmkpTahap::butirKinerja()) as $k) $kinerja[$k] = (string) ($smkp->kinerja[$k] ?? '');
 
         return Inertia::render('Smkp/Tahap1', [
+            // Versi isi untuk simpan otomatis (port DBEST) — lihat App\Support\SmkpAutosimpan.
+            'versiSimpan' => SmkpAutosimpan::versi($smkp->fresh() ?? $smkp, 'tahap1'),
             'audit' => $this->ringkasAudit($smkp),
             'isian' => [
                 'permulaan' => [
@@ -362,6 +364,7 @@ class SmkpController extends Controller
 
     public function simpanTahap1(Request $request, SmkpAudit $smkp)
     {
+        if ($b = SmkpAutosimpan::bentrok($request, $smkp, 'tahap1')) return $b;
         // Pengguna Indonesia mengetik desimal dengan koma ("12,5"); halaman pun
         // menghitungnya begitu, jadi server menerimanya juga.
         $this->desimalKoma($request, ['permulaan.mandays_dasar', 'permulaan.penyesuaian']);
@@ -483,6 +486,7 @@ class SmkpController extends Controller
 
         $smkp->update(['permulaan' => $p, 'kinerja' => $kinerja, 'kecukupan' => $kecukupan]);
         if ($smkp->status === 'draft') $smkp->update(['status' => 'berjalan']);
+        if ($j = SmkpAutosimpan::selesai($request, $smkp, 'tahap1')) return $j;
 
         return redirect()->route('smkp.tahap1', $smkp)->with('ok', 'Hasil Tahap I tersimpan.');
     }
@@ -559,6 +563,8 @@ class SmkpController extends Controller
         }
 
         return Inertia::render('Smkp/Rencana', [
+            // Versi isi untuk simpan otomatis (port DBEST) — lihat App\Support\SmkpAutosimpan.
+            'versiSimpan' => SmkpAutosimpan::versi($smkp->fresh() ?? $smkp, 'rencana'),
             'audit' => $this->ringkasAudit($smkp),
             'isian' => [
                 'nomor'           => (string) ($r['nomor'] ?? ''),
@@ -598,6 +604,7 @@ class SmkpController extends Controller
 
     public function simpanRencana(Request $request, SmkpAudit $smkp)
     {
+        if ($b = SmkpAutosimpan::bentrok($request, $smkp, 'rencana')) return $b;
         $kunci = [];
         foreach (['present', 'future'] as $jenis) {
             foreach (array_keys((array) $request->input("risiko.{$jenis}", [])) as $i) $kunci[] = "risiko.{$jenis}.{$i}.nilai";
@@ -709,6 +716,7 @@ class SmkpController extends Controller
 
         $smkp->update(['rencana' => $rencana, 'risiko' => $risiko]);
         if ($smkp->status === 'draft') $smkp->update(['status' => 'berjalan']);
+        if ($j = SmkpAutosimpan::selesai($request, $smkp, 'rencana')) return $j;
 
         $rekap = $smkp->rekapRencana();
         $pesan = $rekap['lengkap']
@@ -911,6 +919,8 @@ class SmkpController extends Controller
         $rekap = Smkp::rekapElemen($ref, $hasil);
 
         return Inertia::render('Smkp/Nilai', [
+            // Versi isi untuk simpan otomatis (port DBEST) — lihat App\Support\SmkpAutosimpan.
+            'versiSimpan' => SmkpAutosimpan::versi($smkp->fresh() ?? $smkp, 'nilai', $elemen),
             'audit'   => $this->ringkasAudit($smkp),
             'elemen'  => ['kode' => $ref['kode'], 'nama' => $ref['nama'], 'bobot' => $ref['bobot']],
             'sub'     => $sub,
@@ -937,6 +947,7 @@ class SmkpController extends Controller
     /** Simpan penilaian satu elemen; kriteria di elemen lain tidak tersentuh. */
     public function simpanNilai(Request $request, SmkpAudit $smkp, string $elemen)
     {
+        if ($b = SmkpAutosimpan::bentrok($request, $smkp, 'nilai', $elemen)) return $b;
         $ref = collect(Smkp::elemen())->firstWhere('kode', $elemen);
         abort_if(!$ref, 404, 'Elemen tidak dikenal.');
 
@@ -1007,6 +1018,7 @@ class SmkpController extends Controller
             $this->selaraskanJenisTemuan($segar, $ref);
         }, 3);
 
+        if ($j = SmkpAutosimpan::selesai($request, $smkp, 'nilai', $elemen)) return $j;
         ActivityLog::write('Nilai elemen SMKP', $smkp->namaTampil().' · elemen '.$ref['kode'], 'smkp');
 
         return redirect()->route('smkp.nilai', [$smkp, $elemen])
@@ -1241,6 +1253,8 @@ class SmkpController extends Controller
         $rekap = $smkp->rekap();
 
         return Inertia::render('Smkp/Laporan', [
+            // Versi isi untuk simpan otomatis (port DBEST) — lihat App\Support\SmkpAutosimpan.
+            'versiSimpan' => SmkpAutosimpan::versi($smkp->fresh() ?? $smkp, 'laporan'),
             'audit'  => $audit,
             'isian'  => $this->isiLaporan((array) ($smkp->laporan ?? [])),
             'bawaan' => [
@@ -1264,6 +1278,7 @@ class SmkpController extends Controller
 
     public function simpanLaporan(Request $request, SmkpAudit $smkp)
     {
+        if ($b = SmkpAutosimpan::bentrok($request, $smkp, 'laporan')) return $b;
         $d = $request->validate([
             'status_perusahaan'        => ['nullable', 'string', 'max:150'],
             'sk_izin'                  => ['nullable', 'string', 'max:200'],
@@ -1292,6 +1307,7 @@ class SmkpController extends Controller
 
         $smkp->update(['laporan' => $this->isiLaporan($d)]);
         if ($smkp->status === 'draft') $smkp->update(['status' => 'berjalan']);
+        if ($j = SmkpAutosimpan::selesai($request, $smkp, 'laporan')) return $j;
 
         return redirect()->route('smkp.laporan.isian', $smkp)->with('ok', 'Isian Laporan Audit tersimpan.');
     }

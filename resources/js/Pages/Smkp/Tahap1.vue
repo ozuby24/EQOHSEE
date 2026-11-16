@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import KepalaAudit from '../../Components/Smkp/KepalaAudit.vue';
 import Ikon from '../../Components/Smkp/Ikon.vue';
+import StatusSimpan from '../../Components/Smkp/StatusSimpan.vue';
+import { useAutosimpan } from '../../smkp/lib/autosimpan';
 import { angka } from '../../smkp/lib/format';
 import type { RingkasAudit } from '../../smkp/types';
 
@@ -33,6 +35,7 @@ const props = defineProps<{
   hariTetap: { total: number; penyesuaian: number; aturan?: string } | null;
   rekap: { lengkap: number; tidak: number; belum: number; total: number; siap: boolean };
   nilaiStatus: { lengkap: string; tidak: string };
+  versiSimpan: string;
   bisaSunting: boolean;
   dataPerusahaan: { izin: string; alamat: string; alamatSite: string };
   tren: Record<string, { judul: string; kolom: string }>;
@@ -51,6 +54,12 @@ if (!salin.persiapan.peralatan.length) salin.persiapan.peralatan.push({ jenis: '
 if (!salin.persiapan.kli.length) salin.persiapan.kli.push({ indikator: '', status: '' });
 if (!salin.persiapan.masukan.length) salin.persiapan.masukan.push({ sumber: '', isi: '' });
 const form = useForm(salin);
+
+/* Simpan otomatis (port DBEST): beberapa detik setelah berhenti mengetik. */
+const simpanOto = useAutosimpan({
+  form, url: `/smkp/${props.audit.id}/tahap-1`, versi: props.versiSimpan, aktif: () => props.bisaSunting, muatan: () => (hari.value.kondisi ? form.data() : { ...form.data(), permulaan: { ...form.permulaan, penyesuaian: '' } }),
+});
+watch(() => props.versiSimpan, (v) => simpanOto.sudahDisimpan(v));
 const MAKS_BARIS = 20;
 // Baris baru mewarisi sumber baris sebelumnya — masukan sekelompok diketik berurutan.
 function tambahMasukan() {
@@ -403,6 +412,7 @@ const bagian = 'kartu p-5 sm:p-6';
         </div>
         <div v-if="bisaSunting" class="kartu p-5">
           <p class="text-[12.5px] text-slate-500" :class="form.isDirty ? 'text-amber-700 font-semibold' : ''">{{ form.isDirty ? 'Ada perubahan yang belum disimpan.' : 'Seluruh isian Tahap I tersimpan.' }}</p>
+          <StatusSimpan :keadaan="simpanOto.keadaan.value" :teks="simpanOto.teks.value" :pulihan="simpanOto.pulihan.value" @pulihkan="simpanOto.pulihkan" @buang="simpanOto.buangPulihan" />
           <button class="mt-3 btn-utama w-full" :disabled="form.processing || !form.isDirty"><Ikon nama="simpan" class="w-4 h-4" /> {{ form.processing ? 'Menyimpan…' : 'Simpan Tahap I' }}</button>
         </div>
       </aside>

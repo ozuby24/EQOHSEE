@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import KepalaAudit from '../../Components/Smkp/KepalaAudit.vue';
 import Ikon from '../../Components/Smkp/Ikon.vue';
+import StatusSimpan from '../../Components/Smkp/StatusSimpan.vue';
+import { useAutosimpan } from '../../smkp/lib/autosimpan';
 import KepalaBagian from '../../Components/Smkp/Rencana/KepalaBagian.vue';
 import TabelMetodeSampel from '../../Components/Smkp/Rencana/TabelMetodeSampel.vue';
 import DialogPakaiUlang from '../../Components/Smkp/Rencana/DialogPakaiUlang.vue';
@@ -33,6 +35,7 @@ const props = defineProps<{
   rekap: { terisi: Record<string, boolean>; jumlah: number; total: number; lengkap: boolean; kurang: string[] };
   mandays: Record<string, number>;
   saranSusunan: { metode: string[]; fungsi: string[]; area: string[] };
+  versiSimpan: string;
   bisaSunting: boolean;
 }>();
 
@@ -58,6 +61,12 @@ salin.metode_sampel = { ...(salin.metode_sampel ?? {}) };
 for (const e of props.kriteriaDaftar) for (const sb of e.sub) salin.metode_sampel[sb.kode] ??= { metode: '', sampel: '' };
 
 const form = useForm(salin);
+
+/* Simpan otomatis (port DBEST): beberapa detik setelah berhenti mengetik. */
+const simpanOto = useAutosimpan({
+  form, url: `/smkp/${props.audit.id}/rencana`, versi: props.versiSimpan, aktif: () => props.bisaSunting,
+});
+watch(() => props.versiSimpan, (v) => simpanOto.sudahDisimpan(v));
 
 /* ---------- kelengkapan langsung dari isian (cermin SmkpTahap::rekapRencana) ---------- */
 const ada = (v: unknown) => String(v ?? '').trim() !== '';
@@ -565,6 +574,7 @@ function simpan() {
           <p class="min-w-0 text-[12.5px] sm:text-[13px] leading-snug" :class="form.isDirty ? 'text-amber-300 font-semibold' : 'text-white/70'">
             {{ form.isDirty ? (Object.keys(penanda).length ? 'Isian hasil pakai ulang belum disimpan.' : 'Ada perubahan yang belum disimpan.') : 'Rencana Audit tersimpan.' }}
           </p>
+          <StatusSimpan :keadaan="simpanOto.keadaan.value" :teks="simpanOto.teks.value" :pulihan="simpanOto.pulihan.value" gelap @pulihkan="simpanOto.pulihkan" @buang="simpanOto.buangPulihan" />
           <button class="btn-hijau shrink-0" :disabled="form.processing || !form.isDirty"><Ikon nama="simpan" class="w-4 h-4" /> {{ form.processing ? 'Menyimpan…' : 'Simpan Rencana Audit' }}</button>
         </div>
       </form>

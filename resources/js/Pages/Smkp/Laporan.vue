@@ -5,10 +5,12 @@
  * gambaran penerapan per elemen, praktik terbaik, temuan, dan tingkat
  * pencapaian — tersusun otomatis di halaman cetak.
  */
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import KepalaAudit from '../../Components/Smkp/KepalaAudit.vue';
 import Ikon from '../../Components/Smkp/Ikon.vue';
+import StatusSimpan from '../../Components/Smkp/StatusSimpan.vue';
+import { useAutosimpan } from '../../smkp/lib/autosimpan';
 import Dialog from '../../Components/Dialog.vue';
 import { useDialog } from '../../dialog';
 import type { RingkasAudit } from '../../smkp/types';
@@ -29,6 +31,7 @@ const props = defineProps<{
   isian: Isian;
   bawaan: { penerapan: string; distribusi: string };
   otomatis: { periode: string; alamatSite: string; jumlahPekerja: string; tim: number; praktik: number; temuan: number; dinilai: number; berlaku: number };
+  versiSimpan: string;
   bisaSunting: boolean;
 }>();
 
@@ -39,6 +42,12 @@ if (!salin.pekerja.length) salin.pekerja.push({ jabatan: '', jumlah: '' });
 if (!salin.peralatan.length) salin.peralatan.push({ jenis: '', tipe: '', produktivitas: '', jumlah: '' });
 if (!salin.area.length) salin.area.push('');
 const form = useForm(salin);
+
+/* Simpan otomatis (port DBEST): beberapa detik setelah berhenti mengetik. */
+const simpanOto = useAutosimpan({
+  form, url: `/smkp/${props.audit.id}/laporan`, versi: props.versiSimpan, aktif: () => props.bisaSunting,
+});
+watch(() => props.versiSimpan, (v) => simpanOto.sudahDisimpan(v));
 
 const BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 function isiBulan() {
@@ -217,6 +226,7 @@ const kepala = 'text-left text-[10.5px] font-semibold uppercase tracking-[0.08em
         </div>
         <div v-if="bisaSunting" class="kartu p-5">
           <p class="text-[12.5px] text-slate-500" :class="form.isDirty ? 'text-amber-700 font-semibold' : ''">{{ form.isDirty ? 'Ada perubahan yang belum disimpan.' : 'Seluruh isian laporan tersimpan.' }}</p>
+          <StatusSimpan :keadaan="simpanOto.keadaan.value" :teks="simpanOto.teks.value" :pulihan="simpanOto.pulihan.value" @pulihkan="simpanOto.pulihkan" @buang="simpanOto.buangPulihan" />
           <p v-if="Object.keys(form.errors).length" class="galat mt-2">{{ Object.values(form.errors)[0] }}</p>
           <button class="mt-3 btn-utama w-full" :disabled="form.processing || !form.isDirty"><Ikon nama="simpan" class="w-4 h-4" /> {{ form.processing ? 'Menyimpan…' : 'Simpan Isian Laporan' }}</button>
         </div>

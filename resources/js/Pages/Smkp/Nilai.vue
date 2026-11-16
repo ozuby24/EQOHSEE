@@ -3,6 +3,8 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import KepalaAudit from '../../Components/Smkp/KepalaAudit.vue';
 import Ikon from '../../Components/Smkp/Ikon.vue';
+import StatusSimpan from '../../Components/Smkp/StatusSimpan.vue';
+import { useAutosimpan } from '../../smkp/lib/autosimpan';
 import AsistenButir from '../../Components/Smkp/Asisten/AsistenButir.vue';
 import AsistenBukti from '../../Components/Smkp/Asisten/AsistenBukti.vue';
 import KriteriaNilai from '../../Components/Smkp/KriteriaNilai.vue';
@@ -33,6 +35,7 @@ const props = defineProps<{
   semua: Array<{ kode: string; nama: string; dinilai: number; berlaku: number; ulang: number; url: string }>;
   kategori: Kategori[];
   na: string;
+  versiSimpan: string;
   bisaSunting: boolean;
   /** Sub-elemen yang dibuka lebih dulu (tautan dari halaman Bukti Audit). */
   pilihSub: string | null;
@@ -49,6 +52,12 @@ function isianAwal() {
 const salin = <T,>(x: T): T => JSON.parse(JSON.stringify(x));
 let dasar = isianAwal();
 const form = useForm({ k: salin(dasar) });
+
+/* Simpan otomatis (port DBEST): beberapa detik setelah berhenti mengetik. */
+const simpanOto = useAutosimpan({
+  form, url: `/smkp/${props.audit.id}/elemen/${props.elemen.kode}`, versi: props.versiSimpan, aktif: () => props.bisaSunting, muatan: () => { const k: Record<string, any> = {}; for (const kode in form.k) if (beda(form.k[kode], dasar[kode])) k[kode] = form.k[kode]; return { k }; }, sesudah: () => { dasar = salin(form.k); },
+});
+watch(() => props.versiSimpan, (v) => simpanOto.sudahDisimpan(v));
 
 const subAwal = () => props.pilihSub ?? props.sub[0]?.kode ?? '';
 const pilih = ref(subAwal());
@@ -496,6 +505,7 @@ const ulangSub = (s: Sub) => s.butir.filter(perluUlang).length;
             <span v-else class="text-white/75"><span class="sm:hidden">Tersimpan</span><span class="hidden sm:inline">Penilaian elemen {{ elemen.kode }} tersimpan</span></span>
             <span class="hidden min-[1400px]:inline text-white/45"> · nilai sementara <span class="tabular-nums">{{ angka(ringkas.capaian * elemen.bobot) }}</span> dari bobot {{ elemen.bobot }}</span>
           </p>
+          <StatusSimpan :keadaan="simpanOto.keadaan.value" :teks="simpanOto.teks.value" :pulihan="simpanOto.pulihan.value" gelap @pulihkan="simpanOto.pulihkan" @buang="simpanOto.buangPulihan" />
           <button type="submit" class="btn-hijau h-9 shrink-0 px-3 sm:px-4" :disabled="form.processing || !form.isDirty" :title="`Simpan penilaian elemen ${elemen.kode} (${mac ? '⌘' : 'Ctrl'}+S)`">
             <Ikon nama="simpan" class="w-4 h-4" />
             <span v-if="form.processing">Menyimpan…</span>

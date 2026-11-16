@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, SmkpAudit, SmkpFinding};
 use App\Rules\LampiranBukti;
-use App\Support\{BerkasUnggah, KopDokumen, Smkp, Waktu};
+use App\Support\{BerkasUnggah, KopDokumen, Smkp, SmkpAutosimpan, Waktu};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{DB, Storage};
 use Illuminate\Support\Str;
@@ -51,6 +51,7 @@ class SmkpFormulirController extends SmkpController
         $hitung = fn (array $daftar) => count(array_filter($daftar, fn ($r) => trim((string) ($r['keterangan'] ?? $r['uraian'] ?? '')) !== ''));
 
         return Inertia::render('Smkp/Formulir', [
+            'versiSimpan' => SmkpAutosimpan::versi($smkp, 'formulir'),
             'audit'       => $this->ringkasAudit($smkp),
             'kesesuaian'  => array_values((array) ($smkp->kesesuaian ?? [])),
             'rekomendasi' => array_values((array) ($smkp->rekomendasi ?? [])),
@@ -70,6 +71,7 @@ class SmkpFormulirController extends SmkpController
 
     public function simpan(Request $request, SmkpAudit $smkp)
     {
+        if ($b = SmkpAutosimpan::bentrok($request, $smkp, 'formulir')) return $b;
         $d = $request->validate([
             'kesesuaian'                => ['nullable', 'array', 'max:150'],
             'kesesuaian.*.elemen'       => ['nullable', 'string', 'max:10'],
@@ -90,6 +92,7 @@ class SmkpFormulirController extends SmkpController
             'rekomendasi' => $this->bersihkan((array) ($d['rekomendasi'] ?? []), 'uraian'),
         ]);
 
+        if ($j = SmkpAutosimpan::selesai($request, $smkp, 'formulir')) return $j;
         ActivityLog::write('Simpan formulir kesesuaian & OFI', $smkp->namaTampil(), 'smkp');
 
         return back()->with('ok', 'Formulir kesesuaian dan rekomendasi tersimpan.');
