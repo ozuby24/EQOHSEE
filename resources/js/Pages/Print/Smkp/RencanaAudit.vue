@@ -45,6 +45,17 @@ const hari = computed(() => {
   }
   return kelompok;
 });
+/** Sel susunan sebagai teks untuk Word: metode, area, fungsi, elemen bernomor, kegiatan lain (cermin SmkpSusunan::teks). */
+function teksSusunan(x: Record<string, any>): string {
+  const i = x.isi;
+  if (!i || !(i.metode || i.area || i.elemen?.length)) return `${x.kegiatan ?? ''}${x.auditi ? `\nAuditi: ${x.auditi}` : ''}`;
+  const baris: string[] = [i.metode, i.area, i.fungsi].filter(Boolean);
+  (i.elemen ?? []).forEach((e: { judul: string; baris: string[] }, n: number) => {
+    baris.push(`${n + 1}. ${e.judul}`, ...e.baris.map((b) => `    ${b}`));
+  });
+  if (i.kegiatan) baris.push(i.kegiatan);
+  return baris.join('\n');
+}
 const NAMA_HARI = ['Pertama', 'Kedua', 'Ketiga', 'Keempat', 'Kelima', 'Keenam', 'Ketujuh'];
 
 /*
@@ -185,7 +196,7 @@ const blokWord = computed<Blok[]>(() => {
     baris: hari.value.length
       ? hari.value.flatMap((h, i) => [
           [[`Hari ${NAMA_HARI[i] ?? `Ke-${i + 1}`}${h.tanggal ? ` — ${tanggalPanjang(h.tanggal)}` : ''}`]],
-          ...h.baris.map((x) => [[x.waktu ?? ''], [`${x.kegiatan ?? ''}${x.auditi ? `\nAuditi: ${x.auditi}` : ''}`], [x.auditor ?? '']]),
+          ...h.baris.map((x) => [[x.waktu ?? ''], [teksSusunan(x)], [x.auditor ?? '']]),
         ])
       : [[['Susunan kegiatan belum ditetapkan']]] });
 

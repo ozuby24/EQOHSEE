@@ -29,6 +29,12 @@ export interface OpsiWord {
     sampul?: { judul: Isi[]; perusahaan: string; rincian: Array<[string, string]> };
     /** Isi blok `ttd` menurut `id`-nya. */
     ttd: Record<string, PenandaWord[]>;
+    /**
+     * Ukuran huruf isi dalam setengah poin (mengikuti DBEST): 22 = Arial 11 pt
+     * (bawaan), 24 = Arial 12 pt (Laporan Audit). Isi tabel satu poin lebih
+     * kecil, judul bab satu poin lebih besar.
+     */
+    huruf?: 20 | 22 | 24;
 }
 
 /* Ukuran dalam twip (1/20 pt; 1 px lembar cetak = 15 twip). */
@@ -390,6 +396,8 @@ export async function unduhWord(o: OpsiWord): Promise<void> {
     }));
     const logo = (o.dok.logo && gambar.get(o.dok.logo)) || null;
 
+    // Arial 11 pt bawaan, Laporan Audit 12 pt — seperti dokumen Word DBEST.
+    const huruf = o.huruf ?? 22;
     const penyusun = new Penyusun(o.ttd, gambar);
     o.blok.forEach((b) => penyusun.tambah(b));
 
@@ -411,13 +419,13 @@ export async function unduhWord(o: OpsiWord): Promise<void> {
         compatibility: { doNotExpandShiftReturn: true },
         styles: {
             default: {
-                document: { run: { font: 'Arial', size: 20, language: { value: 'id-ID' } }, paragraph: { spacing: { after: 120, line: 276, lineRule: LineRuleType.AUTO } } },
-                heading1: { run: { bold: true, allCaps: true, size: 22 }, paragraph: { keepNext: true, keepLines: true, spacing: { before: 240, after: 120 } } },
-                heading2: { run: { bold: true, size: 21 }, paragraph: { keepNext: true, keepLines: true, spacing: { before: 120, after: 100 } } },
-                heading3: { run: { bold: true, size: 20 }, paragraph: { keepNext: true, keepLines: true, spacing: { before: 60, after: 80 } } },
+                document: { run: { font: 'Arial', size: huruf, language: { value: 'id-ID' } }, paragraph: { spacing: { after: 120, line: 276, lineRule: LineRuleType.AUTO } } },
+                heading1: { run: { bold: true, allCaps: true, size: huruf + 2 }, paragraph: { keepNext: true, keepLines: true, spacing: { before: 240, after: 120 } } },
+                heading2: { run: { bold: true, size: huruf + 1 }, paragraph: { keepNext: true, keepLines: true, spacing: { before: 120, after: 100 } } },
+                heading3: { run: { bold: true, size: huruf }, paragraph: { keepNext: true, keepLines: true, spacing: { before: 60, after: 80 } } },
             },
             paragraphStyles: [
-                { id: 'IsiTabel', name: 'Isi Tabel', basedOn: 'Normal', quickFormat: true, run: { size: 19 }, paragraph: { spacing: { after: 0, line: 252, lineRule: LineRuleType.AUTO } } },
+                { id: 'IsiTabel', name: 'Isi Tabel', basedOn: 'Normal', quickFormat: true, run: { size: huruf - 2 }, paragraph: { spacing: { after: 0, line: 252, lineRule: LineRuleType.AUTO } } },
                 { id: 'Kop', name: 'Kop Dokumen', basedOn: 'Normal', run: { size: 16 }, paragraph: { spacing: { after: 0, line: 240, lineRule: LineRuleType.AUTO } } },
             ],
         },

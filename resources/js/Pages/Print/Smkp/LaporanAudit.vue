@@ -282,6 +282,8 @@ async function unduhWord() {
     const { unduhWord: susunWord } = await import('../../../smkp/lib/wordCetak');
     await susunWord({
       namaBerkas: `Laporan Audit SMKP ${pt.value} ${props.audit.tahun}`,
+      // Laporan Audit: Arial 12 pt (isi tabel 11 pt, judul bab 13 pt) — mengikuti DBEST.
+      huruf: 24,
       judul: `Laporan Audit Internal SMKP Minerba ${pt.value}`,
       dok: props.dok,
       blok: blok.value,
