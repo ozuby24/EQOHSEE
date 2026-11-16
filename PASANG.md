@@ -1,3 +1,53 @@
+# Update 15 — Fitur audit DBEST: susunan kegiatan, simpan otomatis, akses, grup
+
+```bash
+# Di VPS, dari /var/www/EQOHSEE (atau dari mesin lokal: bash deploy/kirim.sh)
+cp database/database.sqlite ~/cadangan-sebelum-update-15.sqlite   # pgsql: pg_dump
+git pull
+composer install --no-dev --optimize-autoloader
+php artisan migrate --force
+npm ci && npm run build
+php artisan optimize:clear
+```
+Dua migrasi baru, keduanya hanya MENAMBAH: tabel `audit_akses` dan kolom
+`lingkup`, `perusahaan_luar`, `jenis_luar` pada `smkp_audits`. Data lama
+tidak diubah.
+
+## Rencana Audit — susunan kegiatan terstruktur
+- Tiap sesi: tanggal, waktu, **metode**, **area**, **fungsi/jabatan**,
+  **kriteria** (mis. `I.1, III.2.1` atau `1.1, 3.2.1`), kegiatan lain, dan
+  auditor. Lembar cetak dan unduhan Word menyusunnya seperti formulir:
+  "1. Audit Elemen I Kebijakan — Sub Elemen 1.1, 1.5". Baris lama tetap terbaca.
+- **Unduh templat Excel / Unggah Excel** di bagian susunan kegiatan. Hasil
+  unggahan masuk ke formulir dan baru tersimpan setelah Simpan.
+- Sampel per kriteria boleh multi-baris. Tulis "Wawancara 5 orang:" lalu
+  rinciannya ("2 orang KTT", "3 orang Operator") — jumlahnya dicocokkan.
+
+## Simpan otomatis formulir audit
+Tahap I, Rencana Audit, Penilaian, Isian Laporan, dan Formulir tersimpan
+otomatis beberapa detik setelah berhenti mengetik ("Tersimpan otomatis
+pukul …"). Bila isian sudah diubah akun/tab lain, simpan otomatis berhenti
+agar tidak saling menimpa — muat ulang halaman, atau tekan Simpan untuk
+menimpanya. Ketikan yang belum tersimpan ditawarkan kembali saat halaman
+dibuka lagi.
+
+## Word
+Unduhan Word kini Arial 11 pt; **Laporan Audit Arial 12 pt**.
+
+## Aturan Akses Audit (Pusat Kendali → Aturan Akses Audit)
+Per perusahaan: **auditor** yang boleh mengaudit dan **pengunggah data**
+yang mengunggah bukti/menjawab temuan. Perusahaan tanpa penugasan tetap
+memakai aturan lama — tidak ada yang berubah sampai Anda mulai menugaskan.
+Auditor dari luar grup (mis. konsultan) yang ditugaskan ikut menjangkau
+audit perusahaan itu saja. Satu akun tidak boleh menjadi auditor sekaligus
+pengunggah perusahaan yang sama.
+
+## Audit SMKP → Perusahaan Grup (administrator)
+Audit perusahaan satu grup dengan **nama diketik manual** (Pemegang IUP /
+Jasa pertambangan). Isinya lengkap seperti audit biasa, tetapi tidak ikut
+Daftar Audit, Dasbor, statistik, tindak lanjut lintas audit, lonceng, dan
+pengingat email.
+
 # Update 14 — Dasbor SMKP, RTP Audit Lingkungan, Miners ala DBEST
 
 ```bash
