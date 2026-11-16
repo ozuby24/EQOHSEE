@@ -27,6 +27,8 @@ class BalikMigrasiPortingTest extends TestCase
         // Update 14: RTP Audit Lingkungan dan Riwayat Karyawan Miners — ikut dibalik dan dijalankan ulang.
         '2026_11_16_000003_create_env_audit_rtps_table', '2026_11_16_000004_terbitkan_rtp_lingkungan_lama',
         '2026_11_16_100001_miners_riwayat_karyawan',
+        // Update 15: Aturan Akses Audit dan audit perusahaan grup.
+        '2026_11_16_100002_create_audit_akses_table', '2026_11_16_100003_smkp_audit_perusahaan_grup',
     ];
 
     public function test_migrasi_porting_dapat_dibalik_lalu_dijalankan_ulang(): void

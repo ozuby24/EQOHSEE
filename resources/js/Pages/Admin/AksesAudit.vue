@@ -50,9 +50,8 @@ async function cabut(o: Orang, b: Baris, peran: string) {
   <Head :title="judul" />
   <div class="space-y-5">
     <section class="rounded-2xl bg-white border border-stone-200 p-5 sm:p-6 shadow-card">
-      <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Pusat Kendali · Audit</p>
-      <h1 class="mt-1 text-[22px] font-bold text-stone-900">{{ judul }}</h1>
-      <div class="mt-4 grid gap-3 sm:grid-cols-3 text-[12.5px] leading-relaxed">
+      <!-- Judul halaman sudah dicetak kop kerangka (prop `judul`); di sini cukup penjelasan perannya. -->
+      <div class="grid gap-3 sm:grid-cols-3 text-[12.5px] leading-relaxed">
         <div class="rounded-xl bg-sky-50 border border-sky-200 p-3"><b class="block text-stone-900">Administrator</b>Melihat dan mengaudit seluruh perusahaan.</div>
         <div class="rounded-xl bg-teal-50 border border-teal-200 p-3"><b class="block text-stone-900">Auditor</b>Menilai, memverifikasi bukti & RTP, mengisi Tahap I, Rencana, dan Laporan perusahaan yang ditugaskan — juga perusahaan di luar grupnya.</div>
         <div class="rounded-xl bg-amber-50 border border-amber-200 p-3"><b class="block text-stone-900">Pengunggah data</b>Mengunggah bukti dan menjawab temuan/RTP — hanya untuk perusahaannya.</div>

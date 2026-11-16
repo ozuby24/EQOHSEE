@@ -58,6 +58,7 @@ class CakupanDataContohTest extends TestCase
         'users'        => 'pengguna dibuat pemasangnya, bukan data contoh',
         'companies'    => 'perusahaannya sendiri',
         'app_settings' => 'pengaturan, bukan data lapangan',
+        'audit_akses'  => 'Aturan Akses Audit diatur administrator; kosong berarti aturan bawaan berlaku',
 
         /* Audit SMKP (porting Aurorasys). Pengingat terisi sendiri saat
            email pengingat tindak lanjut terkirim; arsip hanya berisi isian
