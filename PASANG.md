@@ -1,3 +1,57 @@
+# Update 14 — Dasbor SMKP, RTP Audit Lingkungan, Miners ala DBEST
+
+```bash
+# Di VPS, dari /var/www/EQOHSEE (atau dari mesin lokal: bash deploy/kirim.sh)
+cp database/database.sqlite ~/cadangan-sebelum-update-14.sqlite   # pgsql: pg_dump
+git pull
+composer install --no-dev --optimize-autoloader
+php artisan migrate --force
+npm ci && npm run build
+php artisan optimize:clear
+```
+Dua migrasi baru, keduanya hanya MENAMBAH (tidak mengubah data lama):
+`env_audit_rtps` (tabel baru) dan kolom `sebab_nonaktif`,
+`rekomendasi_rekrut`, `nonaktif_oleh` pada `mnr_pekerja` + tabel
+`mnr_pelanggaran`.
+
+Acuan modul audit kini **DBEST** (keputusan pemilik, 16 Nov 2026).
+
+## Audit SMKP → Dasbor (baru)
+Menu **Audit SMKP → Dasbor** (`/smkp/dasbor`), port dasbor v2 DBEST:
+KPI per babak, rata-rata nilai akhir dan selisihnya terhadap tahun
+pembanding (pilih tahun atau "tanpa pembanding"), tren empat tahun,
+sebaran tingkat, sorotan otomatis, benchmark per perusahaan dengan rincian
+tujuh elemen, radar elemen, temuan per elemen & kategori, analisis temuan
+& tindak lanjut (Top 10 sub-elemen, status, tren per bulan/kuartal/tahun),
+tindakan mendesak, agenda 30 hari, dan **Ekspor Excel** empat lembar.
+Hanya audit dalam jangkauan pengguna yang dihitung.
+
+## Audit Lingkungan → RTP (baru)
+Tombol **⚑ RTP** di ikhtisar audit (`/audit-lingkungan/{id}/rtp`).
+- Kriteria dengan nilai **verifikasi 0–2** otomatis menerbitkan RTP saat
+  nilai disimpan; naik ke 3 menutup/menghapusnya.
+- Auditee mengisi rencana, PIC, target, lalu mengunggah bukti (otomatis
+  diajukan). Auditor (admin/auditor) **Setujui** sekaligus memberi nilai
+  baru, atau **Tolak** dengan alasan.
+- **Aturan target:** nilai hanya dapat naik bila diverifikasi paling
+  lambat pada target selesai RTP. Target yang sudah lewat hanya dapat
+  diubah auditor.
+- Audit lama: migrasi menerbitkan RTP untuk nilai verifikasi 0–2 yang sudah ada.
+
+## Miners — isi mengikuti DBEST
+- **Menu** disusun seperti bilah samping DBEST: Register, Penambahan,
+  History, Outstanding, Master Data, Master Penambahan, Monitoring,
+  Aktivitas. SPIP/Uji Kelayakan/Unit Commissioning menaut ke modul KO;
+  Hazard Report, Inspeksi, Perizinan Kerja, Cuti Tahunan, dan Field Break
+  (Pengumuman) menaut ke modulnya masing-masing.
+- **Riwayat Karyawan** (Miners → Monitoring): cek orang lewat NIK/nama
+  lintas perusahaan **dalam satu grup IUP** (induk + mitranya), daftar
+  karyawan nonaktif beserta alasan & rekomendasi rekrut kembali, dan
+  rekap pelanggaran. Catatan pelanggaran dari mitra **menunggu
+  verifikasi** admin/HSE IUP sebelum terlihat perusahaan lain. NIK
+  perusahaan lain disamarkan. Data pribadi (UU 27/2022): hanya untuk
+  pertimbangan rekrutmen dan keselamatan kerja.
+
 # Update 13 — Audit SMKP baru dan Kelayakan Karyawan (Miners) baru
 
 ```bash

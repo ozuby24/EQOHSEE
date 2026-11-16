@@ -183,11 +183,11 @@ function verifikasi(c: Catatan, keputusan: 'diverifikasi' | 'ditolak') {
         </div>
         <p v-if="o.terpotong" class="mn-teks-redup">… dan {{ o.terpotong }} baris lain.</p>
 
-        <div v-if="o.pelanggaran.length" class="mn-sub-bagian">
-          <p class="mn-bagian-judul">Catatan pelanggaran<template v-if="o.sanksiTerberat"> · sanksi terberat: {{ o.sanksiTerberat }}</template></p>
+        <div v-if="o.pelanggaran.length" class="mt-4">
+          <p class="mn-sub-bagian">Catatan pelanggaran<template v-if="o.sanksiTerberat"> · sanksi terberat: {{ o.sanksiTerberat }}</template></p>
           <ul class="mn-daftar">
             <li v-for="c in o.pelanggaran" :key="c.id" class="mn-daftar-baris">
-              <div>
+              <div class="min-w-0 leading-relaxed">
                 <b>{{ c.tanggal }}</b> · {{ c.labelKategori }}
                 <span class="mn-lencana" :class="WARNA_TINGKAT[c.tingkat]">{{ c.labelTingkat }}</span>
                 <span v-if="c.labelSanksi" class="mn-lencana mn-l-abu">{{ c.labelSanksi }}</span>
@@ -196,7 +196,7 @@ function verifikasi(c: Catatan, keputusan: 'diverifikasi' | 'ditolak') {
                 <p class="mn-teks-redup">{{ c.perusahaan }}<template v-if="c.pencatat"> · dicatat {{ c.pencatat }}</template></p>
                 <p v-if="c.status === 'ditolak' && c.catatanVerifikasi" class="mn-galat">Ditolak: {{ c.catatanVerifikasi }}</p>
               </div>
-              <div class="mn-aksi">
+              <div class="flex flex-wrap gap-1.5 justify-end shrink-0">
                 <button v-if="c.bolehVerifikasi" type="button" class="mn-btn mn-btn-kecil mn-btn-sukses" @click="verifikasi(c, 'diverifikasi')">Verifikasi</button>
                 <button v-if="c.bolehVerifikasi" type="button" class="mn-btn mn-btn-kecil mn-btn-garis-bahaya" @click="verifikasi(c, 'ditolak')">Tolak</button>
                 <button v-if="c.bolehUbah" type="button" class="mn-btn mn-btn-kecil mn-btn-garis" @click="bukaCatat(undefined, c)">Ubah</button>
@@ -323,7 +323,7 @@ function verifikasi(c: Catatan, keputusan: 'diverifikasi' | 'ditolak') {
         </form>
         <ul class="mn-daftar">
           <li v-for="c in rekap.daftar" :key="c.id" class="mn-daftar-baris">
-            <div>
+            <div class="min-w-0 leading-relaxed">
               <b>{{ c.pekerja }}</b> · {{ c.tanggal }} · {{ c.labelKategori }}
               <span class="mn-lencana" :class="WARNA_TINGKAT[c.tingkat]">{{ c.labelTingkat }}</span>
               <span v-if="c.labelSanksi" class="mn-lencana mn-l-abu">{{ c.labelSanksi }}</span>
@@ -332,7 +332,7 @@ function verifikasi(c: Catatan, keputusan: 'diverifikasi' | 'ditolak') {
               <p class="mn-teks-redup">{{ c.perusahaan }}<template v-if="c.pencatat"> · dicatat {{ c.pencatat }}</template><template v-if="c.verifikator"> · diputuskan {{ c.verifikator }}</template></p>
               <p v-if="c.status === 'ditolak' && c.catatanVerifikasi" class="mn-galat">Ditolak: {{ c.catatanVerifikasi }}</p>
             </div>
-            <div class="mn-aksi">
+            <div class="flex flex-wrap gap-1.5 justify-end shrink-0">
               <button v-if="c.bolehVerifikasi" type="button" class="mn-btn mn-btn-kecil mn-btn-sukses" @click="verifikasi(c, 'diverifikasi')">Verifikasi</button>
               <button v-if="c.bolehVerifikasi" type="button" class="mn-btn mn-btn-kecil mn-btn-garis-bahaya" @click="verifikasi(c, 'ditolak')">Tolak</button>
               <button v-if="c.bolehUbah" type="button" class="mn-btn mn-btn-kecil mn-btn-garis" @click="bukaCatat(undefined, c)">Ubah</button>

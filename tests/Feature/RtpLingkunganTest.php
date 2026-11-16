@@ -171,6 +171,16 @@ class RtpLingkunganTest extends TestCase
         $this->put("/audit-lingkungan/{$this->audit->id}/rtp/{$r->id}", ['rencana' => 'x'])->assertNotFound();
     }
 
+    public function test_migrasi_menerbitkan_rtp_untuk_nilai_lama(): void
+    {
+        EnvAuditScore::create(['audit_id' => $this->audit->id, 'kode' => $this->kode, 'nilai' => 1, 'verifikasi' => 1]);
+        $this->assertSame(0, EnvAuditRtp::count());
+
+        (require database_path('migrations/2026_11_16_000004_terbitkan_rtp_lingkungan_lama.php'))->up();
+
+        $this->assertSame(1, EnvAuditRtp::where('kode', $this->kode)->where('status', 'buka')->count());
+    }
+
     public function test_aturan_boleh_naik(): void
     {
         $this->assertTrue(RtpLingkungan::bolehNaik(null, '2026-11-16'));

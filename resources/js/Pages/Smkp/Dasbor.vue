@@ -137,8 +137,13 @@ function gambar() {
       if (d.value.banding) ds.push({ label: `Rata-rata ${d.value.banding}`, data: d.value.elRataBanding, borderColor: '#94A3B8', backgroundColor: 'rgba(148,163,184,.10)', borderDash: [4, 4], pointRadius: 2 });
       ds.push({ label: `Target ${d.value.target}%`, data: label.map(() => d.value.target), borderColor: '#16A34A', backgroundColor: 'transparent', borderWidth: 1, pointRadius: 0 });
       grafik.radar = new C(kRadar.value, {
-        type: 'radar', data: { labels: d.value.elemen.map((e) => `${e.k}. ${e.n.length > 22 ? e.n.slice(0, 21) + '…' : e.n}`), datasets: ds },
-        options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 0, max: 100, ticks: { stepSize: 20, backdropColor: 'transparent' } } } },
+        type: 'radar', data: { labels: label, datasets: ds },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: { r: { min: 0, max: 100, ticks: { stepSize: 20, backdropColor: 'transparent' } } },
+          // Label sumbu cukup kode elemen agar radarnya lega; nama lengkap di tooltip.
+          plugins: { tooltip: { callbacks: { title: (x: any[]) => { const e = d.value.elemen[x[0]?.dataIndex ?? 0]; return e ? `${e.k}. ${e.n}` : ''; } } } },
+        },
       });
     }
 
