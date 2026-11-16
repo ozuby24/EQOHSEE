@@ -1571,11 +1571,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
            temuan terbit otomatis dari nilai verifikasi ≤ 2. Auditee
            mengisi rencana & bukti; auditor memutuskan dari kartu RTP. */
         Route::get('{audit}/rtp',                     [RtpLingkunganController::class, 'index'])->name('rtp');
-        Route::put('{audit}/rtp/{rtp}',               [RtpLingkunganController::class, 'simpan'])->whereNumber('rtp')->name('rtp.simpan');
-        Route::post('{audit}/rtp/{rtp}/bukti',        [RtpLingkunganController::class, 'bukti'])->whereNumber('rtp')->name('rtp.bukti');
-        Route::post('{audit}/rtp/{rtp}/bukti/hapus',  [RtpLingkunganController::class, 'hapusBukti'])->whereNumber('rtp')->name('rtp.bukti.hapus');
+        Route::put('{audit}/rtp/{rtp}',               [RtpLingkunganController::class, 'simpan'])->whereNumber('rtp')->middleware(\App\Http\Middleware\AksesAuditPerusahaan::class.':unggah')->name('rtp.simpan');
+        Route::post('{audit}/rtp/{rtp}/bukti',        [RtpLingkunganController::class, 'bukti'])->whereNumber('rtp')->middleware(\App\Http\Middleware\AksesAuditPerusahaan::class.':unggah')->name('rtp.bukti');
+        Route::post('{audit}/rtp/{rtp}/bukti/hapus',  [RtpLingkunganController::class, 'hapusBukti'])->whereNumber('rtp')->middleware(\App\Http\Middleware\AksesAuditPerusahaan::class.':unggah')->name('rtp.bukti.hapus');
         Route::post('{audit}/rtp/{rtp}/verifikasi',   [RtpLingkunganController::class, 'verifikasi'])->whereNumber('rtp')
-            ->middleware('can:audit')->name('rtp.verifikasi');
+            ->middleware(['can:audit', \App\Http\Middleware\AksesAuditPerusahaan::class.':audit'])->name('rtp.verifikasi');
     });
 
     /* ================= WEBSITE #5b — ISO: pemenuhan klausul ================= */
@@ -1636,21 +1636,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Bukti kelengkapan per butir: auditi mengunggah sesuai Rencana Audit; auditor memverifikasi.
         Route::get('{smkp}/bukti',                         [BuktiAuditController::class, 'halaman'])->name('bukti');
         Route::post('{smkp}/bukti',                        [BuktiAuditController::class, 'unggah'])
-            ->middleware('throttle:20,1,bukti-audit')->name('bukti.unggah');
+            ->middleware(['throttle:20,1,bukti-audit', \App\Http\Middleware\AksesAuditPerusahaan::class.':unggah'])->name('bukti.unggah');
         Route::get('{smkp}/bukti/{bukti}/berkas',          [BuktiAuditController::class, 'unduh'])->name('bukti.unduh');
-        Route::delete('{smkp}/bukti/{bukti}',              [BuktiAuditController::class, 'hapus'])->name('bukti.hapus');
+        Route::delete('{smkp}/bukti/{bukti}',              [BuktiAuditController::class, 'hapus'])->middleware(\App\Http\Middleware\AksesAuditPerusahaan::class.':unggah')->name('bukti.hapus');
         Route::post('{smkp}/bukti/{bukti}/verifikasi',     [BuktiAuditController::class, 'verifikasi'])
-            ->middleware('can:audit')->name('bukti.verifikasi');
+            ->middleware(['can:audit', \App\Http\Middleware\AksesAuditPerusahaan::class.':audit'])->name('bukti.verifikasi');
 
         // Tindak lanjut temuan: auditi mengirim isian & bukti; auditor memverifikasi.
         Route::get('{smkp}/temuan/{temuan}/tindak-lanjut/{kiriman}/berkas/{berkas}', [TindakLanjutController::class, 'unduh'])
             ->where(['kiriman' => '[0-9]{1,9}', 'berkas' => '[0-9]{1,2}'])->name('tindak-lanjut.unduh');
         Route::post('{smkp}/temuan/{temuan}/tindak-lanjut', [TindakLanjutController::class, 'kirim'])
-            ->middleware(['can:tindak-lanjut', 'throttle:10,1,tindak-lanjut'])->name('tindak-lanjut.kirim');
+            ->middleware(['can:tindak-lanjut', 'throttle:10,1,tindak-lanjut', \App\Http\Middleware\AksesAuditPerusahaan::class.':unggah'])->name('tindak-lanjut.kirim');
         Route::delete('{smkp}/temuan/{temuan}/tindak-lanjut/{kiriman}', [TindakLanjutController::class, 'hapus'])
             ->where('kiriman', '[0-9]{1,9}')->name('tindak-lanjut.hapus');
 
-        Route::middleware('can:audit')->group(function () {
+        /* Aturan Akses Audit (port DBEST): perusahaan yang punya auditor
+           ditugaskan hanya diaudit auditor itu (dan administrator). */
+        Route::middleware(['can:audit', \App\Http\Middleware\AksesAuditPerusahaan::class.':audit'])->group(function () {
             Route::get('{smkp}/ubah',                [SmkpController::class, 'edit'])->name('edit');
             Route::put('{smkp}',                     [SmkpController::class, 'update'])->name('update');
             Route::post('{smkp}/tahap',              [SmkpController::class, 'ubahTahap'])->name('tahap');
@@ -1799,6 +1801,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         /* Pengingat batas waktu tindak lanjut temuan audit SMKP (porting
            Aurorasys). Server emailnya tetap MAIL_* di .env. */
+        /* Aturan Akses Audit per perusahaan (port DBEST): auditor & pengunggah data. */
+        Route::get('akses-audit',             [\App\Http\Controllers\Admin\AksesAuditController::class, 'index'])->name('akses-audit');
+        Route::post('akses-audit',            [\App\Http\Controllers\Admin\AksesAuditController::class, 'simpan'])->name('akses-audit.simpan');
+        Route::delete('akses-audit/{akses}',  [\App\Http\Controllers\Admin\AksesAuditController::class, 'hapus'])->whereNumber('akses')->name('akses-audit.hapus');
+
         Route::get('pengingat',        [PengingatController::class,'index'])->name('pengingat');
         Route::middleware('throttle:20,1')->group(function () {
             Route::post('pengingat',       [PengingatController::class,'simpan'])->name('pengingat.simpan');

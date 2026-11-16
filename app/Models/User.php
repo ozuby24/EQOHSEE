@@ -173,17 +173,21 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $milik = $this->isAdmin() ? \App\Support\Perusahaan::terpilih($this) : (int) $this->company_id;
         if ($this->isAdmin() && $milik === null) return null;
-        if (!$milik) return [];
+        // Auditor luar tanpa perusahaan sendiri: hanya perusahaan yang ditugaskan kepadanya.
+        if (!$milik) return $this->isAdmin() ? [] : \App\Support\AturanAksesAudit::tambahan($this);
 
         // Diingat per objek pengguna (sekali per permintaan), dan ikut
         // berganti bila penempatan/pilihannya berubah.
-        $kunci = ($this->isAdmin() ? 'lihat:' : 'milik:').$milik;
+        $tambah = $this->isAdmin() ? [] : \App\Support\AturanAksesAudit::tambahan($this);
+        $kunci = ($this->isAdmin() ? 'lihat:' : 'milik:').$milik.':'.implode(',', $tambah);
         if (($this->jangkauanMemo['untuk'] ?? null) !== $kunci) {
             $this->jangkauanMemo = [
                 'untuk' => $kunci,
                 'isi'   => array_values(array_unique(array_merge(
                     [$milik],
                     Company::withoutGlobalScopes()->where('parent_id', $milik)->pluck('id')->map(fn ($id) => (int) $id)->all(),
+                    // Aturan Akses Audit (port DBEST): perusahaan tempat akun ini ditugaskan.
+                    $tambah,
                 ))),
             ];
         }

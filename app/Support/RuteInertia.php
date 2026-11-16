@@ -247,6 +247,7 @@ final class RuteInertia
         'smkp.acuan',
         'smkp.tindak-lanjut',
         'smkp.dasbor',
+        'admin.akses-audit',
 
         /* Keselamatan Operasi */
         'investigasi.dasbor',
