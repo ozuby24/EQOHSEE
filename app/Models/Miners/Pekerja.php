@@ -81,6 +81,8 @@ class Pekerja extends Model
         'hr_saldo_cuti', 'hr_cuti', 'hr_lembur', 'hr_upah', 'pay_slip', 'hr_kontrak',
         'frop_observasi',
         'mnr_mcu_orang', 'mnr_induksi_orang', 'mnr_permit', 'mnr_simper', 'mnr_kompetensi',
+        // Catatan pelanggaran (Riwayat Karyawan): pekerja bercatatan dinonaktifkan, bukan dihapus.
+        'mnr_pelanggaran',
     ];
 
     /* ═══════════ relasi ═══════════ */

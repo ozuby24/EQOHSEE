@@ -8,6 +8,7 @@ use App\Http\Controllers\MinersDokumenController;
 use App\Http\Controllers\Miners\AlurPersetujuanController as MinersAlurPersetujuanController;
 use App\Http\Controllers\Miners\MasterDataController as MinersMasterDataController;
 use App\Http\Controllers\Miners\PerusahaanController as MinersPerusahaanController;
+use App\Http\Controllers\Miners\RiwayatKaryawanController as MinersRiwayatKaryawanController;
 use App\Http\Controllers\Miners\DataLamaController as MinersDataLamaController;
 use App\Http\Controllers\Miners\McuController as MinersMcuController;
 use App\Http\Controllers\Miners\InduksiController as MinersInduksiController;
@@ -390,7 +391,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
      * mengikuti urutan itu, bukan abjad: bilah samping adalah tempat
      * orang belajar urutan sebuah proses tanpa membaca petunjuk.
      */
-    Route::prefix('miners')->name('miners.')->where(Rute::id('ajuan', 'company', 'id', 'induksi', 'iup', 'mcu', 'orang', 'pekerja', 'permit', 'perpanjangan', 'rujukan', 'simper', 'unit'))->group(function () {
+    Route::prefix('miners')->name('miners.')->where(Rute::id('ajuan', 'company', 'id', 'induksi', 'iup', 'mcu', 'orang', 'pekerja', 'pelanggaran', 'permit', 'perpanjangan', 'rujukan', 'simper', 'unit'))->group(function () {
         Route::get('dasbor', [MinersController::class, 'dasbor'])->name('dasbor');
 
         /* Seluruh rute berkata-tetap didaftarkan SEBELUM rute
@@ -595,6 +596,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
            masuk". */
         Route::get('kedaluwarsa', [MinersController::class, 'kedaluwarsa'])->name('kedaluwarsa');
         Route::get('kedaluwarsa/ekspor', [MinersController::class, 'kedaluwarsaEkspor'])->name('kedaluwarsa.ekspor');
+
+        /* Riwayat Karyawan lintas perusahaan dalam satu grup IUP (port
+           DBEST #22): cek orang lewat NIK/nama, karyawan nonaktif beserta
+           alasannya, dan rekap pelanggaran + verifikasi. Didaftarkan
+           sebelum rute {pekerja}. */
+        Route::get('riwayat-karyawan', [MinersRiwayatKaryawanController::class, 'index'])->name('riwayat-karyawan');
+        Route::post('riwayat-karyawan/{pekerja}/status', [MinersRiwayatKaryawanController::class, 'status'])->name('riwayat-karyawan.status');
+        Route::post('riwayat-karyawan/{pekerja}/pelanggaran', [MinersRiwayatKaryawanController::class, 'catat'])->name('riwayat-karyawan.catat');
+        Route::put('riwayat-karyawan/pelanggaran/{pelanggaran}', [MinersRiwayatKaryawanController::class, 'ubah'])
+            ->name('riwayat-karyawan.ubah');
+        Route::delete('riwayat-karyawan/pelanggaran/{pelanggaran}', [MinersRiwayatKaryawanController::class, 'hapus'])
+            ->name('riwayat-karyawan.hapus');
+        Route::post('riwayat-karyawan/pelanggaran/{pelanggaran}/verifikasi', [MinersRiwayatKaryawanController::class, 'verifikasi'])
+            ->name('riwayat-karyawan.verifikasi');
 
         /* Alur persetujuan per IUP — penyetuju bernama dan penerima
            tembusannya (Administrasi Sistem → Alur Persetujuan Safe Track). */

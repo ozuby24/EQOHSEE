@@ -123,97 +123,109 @@ final class Menu
          tertinggal pada halaman yang ditambahkan berikutnya. */
       'tema'  => 'miners',
       'icon'  => 'M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 14l2 2 4-4',
-      /* SUSUNANNYA MENGIKUTI PROJECT1, bukan urutan pembuatannya di sini.
-         Di sana bilah sampingnya terbagi menurut PERTANYAAN yang dijawab
-         tiap kelompok, bukan menurut jenis dokumennya:
+      /* SUSUNANNYA MENGIKUTI BILAH SAMPING DBEST (16 Nov 2026), atas
+         permintaan pemilik agar isi Miners sama dengan DBEST: REGISTER,
+         PENAMBAHAN, HISTORY, OUTSTANDING, MASTER DATA, MASTER PENAMBAHAN,
+         MONITORING (Masa Berlaku, Riwayat Karyawan), dan AKTIVITAS.
 
-           Pendaftaran  apa yang saya ajukan hari ini
-           Riwayat      apa yang pernah terjadi pada dokumen ini
-           Data         siapa orangnya dan apa hasilnya
-           Pemantauan   apa yang harus dikerjakan sebelum kedaluwarsa
+         Butir DBEST yang di EQOHSEE sudah menjadi modul tersendiri —
+         SPIP & Uji Kelayakan (modul KO), Hazard Report, Inspeksi,
+         Perizinan Kerja (Izin Kerja Aman), Cuti Tahunan (HRIS), dan
+         Field Break (papan kabar = Pengumuman) — DITAUTKAN ke modulnya,
+         bukan dibuat ulang di sini. Dua salinan satu register adalah dua
+         register yang lambat laun berbeda isinya; tautan memastikan
+         orang Miners menemukan semuanya di tempat yang sama dengan di
+         DBEST, sementara datanya tetap satu.
 
-         Bedanya terasa pada MCU, yang muncul di tiga kelompok sekaligus
-         dengan arti berbeda: mengajukan surat ke klinik, menelusuri
-         hasil yang pernah keluar, dan menagih rujukan yang belum
-         ditindaklanjuti. Digabung menjadi satu entri "MCU", ketiganya
-         menjadi satu halaman yang tidak menjawab satu pun di antaranya
-         dengan baik.
-
-         Kelompok Project1 yang belum punya layarnya — Outstanding,
-         SIMPER Lanjutan, Master Data, Cetak Kartu — sengaja BELUM
-         didaftarkan di sini. Entri menu yang menunjuk rute yang belum
-         ada memulangkan galat saat ditekan, dan menu yang salah satu
-         entrinya galat membuat seluruh menunya berhenti dipercaya. */
+         Setiap butir harus membuka halaman yang bekerja bagi admin —
+         dijaga MinersMenuTest. */
       'groups' => [
         '' => [
           ['Dashboard', 'miners.dasbor', 'miners/dasbor*'],
         ],
 
-        /* Yang diajukan pengaju — REGISTER pada bilah samping Safe
-           Track. Urutannya mengikuti rantainya: MCU menentukan induksi,
-           induksi menentukan Mine Permit, Mine Permit menentukan SIMPER. */
+        /* REGISTER DBEST — urut rantainya: MCU → Induction → Mine Permit
+           → SIMPER, lalu register unit & kompetensi. */
         'Register' => [
-          ['MCU',         'miners.mcu.index',     'miners/mcu*'],
-          ['Induction',   'miners.induksi.index', 'miners/induksi*'],
-          ['Mine Permit', 'miners.permit.index',  'miners/permit*'],
-          ['SIMPER',      'miners.simper.index',  'miners/simper*'],
+          ['MCU',                'miners.mcu.index',        'miners/mcu*'],
+          ['Daftar Induction',   'miners.induksi.index',    'miners/induksi*'],
+          ['Mine Permit',        'miners.permit.index',     'miners/permit*'],
+          ['SIMPER',             'miners.simper.index',     'miners/simper*'],
+          ['SPIP',               'ko.index',                'ko'],
+          ['Authority Passport', 'miners.riwayat.authority','miners/riwayat/authority'],
+          ['Hazard Report',      'hazard.create',           'hazard/buat'],
+          ['Uji Kelayakan',      'ko.uji',                  'ko/uji*'],
         ],
 
-        /* Riwayat seluruh dokumen — HISTORY Safe Track. "Authority"
-           adalah register kompetensi EQOHSEE, yang tidak dimiliki Safe
-           Track tetapi dipakai modul lain. */
+        /* PENAMBAHAN DBEST: penambahan unit SIMPER dan upgrade. */
+        'Penambahan' => [
+          ['Penambahan SIMPER',  'miners.daftar.penambahan-unit', 'miners/daftar/penambahan-unit'],
+          ['Upgrade Authority',  'miners.daftar.upgrade-simper',  'miners/daftar/upgrade-simper'],
+        ],
+
+        /* HISTORY DBEST. "Data Karyawan" = Manpower. */
         'History' => [
-          ['MCU',         'miners.riwayat.mcu',          'miners/riwayat/mcu'],
-          ['Induction',   'miners.riwayat.induksi',      'miners/riwayat/induksi'],
-          ['Mine Permit', 'miners.riwayat.mine-permit',  'miners/riwayat/mine-permit'],
-          ['SIMPER',      'miners.riwayat.mine-license', 'miners/riwayat/mine-license'],
-          ['Authority',   'miners.riwayat.authority',    'miners/riwayat/authority'],
+          ['MCU',            'miners.riwayat.mcu',          'miners/riwayat/mcu'],
+          ['Data Karyawan',  'miners.index',                'miners'],
+          ['Induction',      'miners.riwayat.induksi',      'miners/riwayat/induksi'],
+          ['Mine Permit',    'miners.riwayat.mine-permit',  'miners/riwayat/mine-permit'],
+          ['SIMPER',         'miners.riwayat.mine-license', 'miners/riwayat/mine-license'],
+          ['Authority',      'miners.riwayat.authority',    'miners/riwayat/authority'],
+          ['Hazard',         'hazard.register',             'hazard/register*'],
+          ['Inspeksi',       'inspeksi.index',              'inspeksi'],
+          ['SPIP',           'ko.register',                 'ko/register*'],
+          ['Uji Kelayakan',  'ko.kelayakan',                'ko/kelayakan*'],
         ],
 
-        /* 'medisMiners' — admin, tim OHSE, atau paramedis
-           (AksesMiners::medis); yang lain ditolak halaman rujukannya. */
-        'Data MCU' => [
-          ['Manpower', 'miners.index',          'miners'],
-          ['Rujukan',  'miners.daftar.rujukan', 'miners/daftar/rujukan', 'medisMiners'],
-        ],
-
-        'SIMPER Lanjutan' => [
-          ['Penambahan Unit',     'miners.daftar.penambahan-unit',     'miners/daftar/penambahan-unit'],
-          ['Upgrade SIMPER',      'miners.daftar.upgrade-simper',      'miners/daftar/upgrade-simper'],
-          ['Perpanjangan SIMPER', 'miners.daftar.perpanjangan',        'miners/daftar/perpanjangan'],
-          ['Perpanjangan Permit', 'miners.perpanjangan-permit.index', 'miners/perpanjangan-permit*'],
-        ],
-
-        /* Antrean di meja SAYA — OUTSTANDING Safe Track. Bawaannya
-           "Perlu Approval Saya", dan penanda angkanya sama dengan
-           lonceng tugas di bilah atas. */
+        /* OUTSTANDING DBEST — antrean di meja SAYA. Bawaannya "Perlu
+           Approval Saya", dan penanda angkanya sama dengan lonceng tugas. */
         'Outstanding' => [
           ['MCU',         'miners.daftar.outstanding-mcu',     'miners/daftar/outstanding-mcu'],
           ['Induction',   'miners.daftar.outstanding-induksi', 'miners/daftar/outstanding-induksi'],
           ['Mine Permit', 'miners.daftar.outstanding-permit',  'miners/daftar/outstanding-permit'],
           ['SIMPER',      'miners.daftar.outstanding-simper',  'miners/daftar/outstanding-simper'],
+          ['SPIP',        'ko.tindak',                         'ko/tindak*'],
         ],
 
-        /* MASTER DATA Safe Track. Unsur keempat 'kelolaMiners' berarti
-           admin atau HSE perusahaan IUP — "admin" Safe Track; mitra
+        /* MASTER DATA DBEST (+ daftar acuan EQOHSEE). Unsur keempat
+           'kelolaMiners' berarti admin atau HSE perusahaan IUP; mitra
            tidak melihatnya. Perusahaan hanya administrator: layar itu
            mengubah hubungan IUP–IUJP yang menjadi dasar batas data. */
         'Master Data' => [
-          ['Master Unit',      'miners.master.unit',          'miners/master/unit',          'kelolaMiners'],
-          ['Type Unit SIMPER', 'miners.master.type-unit',     'miners/master/type-unit',     'kelolaMiners'],
-          ['Sub Unit',         'miners.master.sub-unit',      'miners/master/sub-unit',      'kelolaMiners'],
-          ['Jabatan',          'miners.master.jabatan',       'miners/master/jabatan',       'kelolaMiners'],
-          ['Departemen',       'miners.master.departemen',    'miners/master/departemen',    'kelolaMiners'],
-          ['Hasil MCU',        'miners.master.hasil-mcu',     'miners/master/hasil-mcu',     'kelolaMiners'],
-          ['PJO',              'miners.master.pjo',           'miners/master/pjo',           'kelolaMiners'],
-          ['Subkontraktor',    'miners.master.subkontraktor', 'miners/master/subkontraktor', 'kelolaMiners'],
-          ['Perusahaan',       'miners.master.perusahaan',    'miners/master/perusahaan',    true],
-          ['Upload Data Lama', 'miners.data-lama',            'miners/data-lama',            'kelolaMiners'],
+          ['Unit',               'miners.master.unit',          'miners/master/unit',          'kelolaMiners'],
+          ['Type Unit SIMPER',   'miners.master.type-unit',     'miners/master/type-unit',     'kelolaMiners'],
+          ['Unit Commissioning', 'ko.unit',                     'ko/unit*',                    'kelolaMiners'],
+          ['Sub Unit',           'miners.master.sub-unit',      'miners/master/sub-unit',      'kelolaMiners'],
+          ['Jabatan',            'miners.master.jabatan',       'miners/master/jabatan',       'kelolaMiners'],
+          ['Departemen',         'miners.master.departemen',    'miners/master/departemen',    'kelolaMiners'],
+          ['Hasil MCU',          'miners.master.hasil-mcu',     'miners/master/hasil-mcu',     'kelolaMiners'],
+          ['PJO',                'miners.master.pjo',           'miners/master/pjo',           'kelolaMiners'],
+          ['Subkontraktor',      'miners.master.subkontraktor', 'miners/master/subkontraktor', 'kelolaMiners'],
+          ['Perusahaan',         'miners.master.perusahaan',    'miners/master/perusahaan',    true],
+          ['Upload Data Lama',   'miners.data-lama',            'miners/data-lama',            'kelolaMiners'],
         ],
 
+        /* MASTER PENAMBAHAN DBEST — seluruh ajuan lanjutan. */
+        'Master Penambahan' => [
+          ['Penambahan SIMPER',   'miners.daftar.penambahan-unit',    'miners/daftar/penambahan-unit', 'kelolaMiners'],
+          ['Perpanjangan Permit', 'miners.perpanjangan-permit.index', 'miners/perpanjangan-permit*'],
+          ['Perpanjangan SIMPER', 'miners.daftar.perpanjangan',       'miners/daftar/perpanjangan'],
+        ],
+
+        /* 'medisMiners' — admin, tim OHSE, atau paramedis
+           (AksesMiners::medis); yang lain ditolak halaman rujukannya. */
         'Monitoring' => [
-          ['Masa Berlaku', 'miners.kedaluwarsa',        'miners/kedaluwarsa'],
-          ['Cetak Kartu',  'miners.daftar.cetak-kartu', 'miners/daftar/cetak-kartu', 'kelolaMiners'],
+          ['Masa Berlaku',     'miners.kedaluwarsa',        'miners/kedaluwarsa'],
+          ['Riwayat Karyawan', 'miners.riwayat-karyawan',   'miners/riwayat-karyawan*'],
+          ['Rujukan MCU',      'miners.daftar.rujukan',     'miners/daftar/rujukan', 'medisMiners'],
+          ['Cetak Kartu',      'miners.daftar.cetak-kartu', 'miners/daftar/cetak-kartu', 'kelolaMiners'],
+        ],
+
+        /* AKTIVITAS DBEST. */
+        'Aktivitas' => [
+          ['Perizinan Kerja', 'izin.index',      'izin-kerja'],
+          ['Field Break',     'news.index',      'news'],
+          ['Cuti Tahunan',    'hris.cuti.index', 'hris/cuti'],
         ],
 
         'Administrasi' => [

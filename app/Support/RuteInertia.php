@@ -270,6 +270,7 @@ final class RuteInertia
         'miners.index',
         'miners.dasbor',
         'miners.kedaluwarsa',
+        'miners.riwayat-karyawan',
         'miners.data-lama',
         'miners.mcu.index',
         'miners.induksi.index',

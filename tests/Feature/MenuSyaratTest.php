@@ -47,9 +47,9 @@ class MenuSyaratTest extends TestCase
         $hseIup  = User::factory()->create(['company_id' => $this->induk->id, 'ohse_role' => 'ohse']);
         $hsePjp  = User::factory()->create(['company_id' => $this->pjp->id, 'ohse_role' => 'ohse']);
 
-        $this->assertContains('Master Unit', $this->label($this->admin(), '/miners/dasbor'));
-        $this->assertContains('Master Unit', $this->label($hseIup, '/miners/dasbor'));
-        $this->assertNotContains('Master Unit', $this->label($hsePjp, '/miners/dasbor'));
+        $this->assertContains('Unit Commissioning', $this->label($this->admin(), '/miners/dasbor'));
+        $this->assertContains('Unit Commissioning', $this->label($hseIup, '/miners/dasbor'));
+        $this->assertNotContains('Unit Commissioning', $this->label($hsePjp, '/miners/dasbor'));
     }
 
     public function test_syarat_nama_gerbang_mengikuti_gate(): void
