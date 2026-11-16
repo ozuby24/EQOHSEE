@@ -206,13 +206,13 @@ onBeforeUnmount(() => Object.values(grafik).forEach((g) => g?.destroy()));
 
     <form class="kartu flex flex-wrap items-end gap-3 p-4 mb-5 no-print" @submit.prevent="terapkan">
       <label class="min-w-[140px]">
-        <span class="label">Periode</span>
+        <span class="label block">Periode</span>
         <select v-model.number="tahun" class="input">
           <option v-for="t in tahunAda" :key="t" :value="t">{{ t }}</option>
         </select>
       </label>
       <label class="min-w-[180px]">
-        <span class="label">Bandingkan dengan</span>
+        <span class="label block">Bandingkan dengan</span>
         <select v-model="banding" class="input">
           <option value="tidak">Tanpa pembanding</option>
           <option v-for="t in pilihanBanding" :key="t" :value="String(t)">{{ t }}</option>

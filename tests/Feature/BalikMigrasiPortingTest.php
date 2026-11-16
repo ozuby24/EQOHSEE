@@ -24,6 +24,9 @@ class BalikMigrasiPortingTest extends TestCase
         '2026_11_07_100001_miners_safetrack_dasar', '2026_11_08_000001_kop_formulir_perusahaan', '2026_11_08_100001_miners_safetrack_mcu_induksi_permit',
         '2026_11_11_100001_miners_safetrack_simper', '2026_11_12_100001_miners_pengingat_masa_berlaku', '2026_11_12_100002_miners_asal_data_lama',
         '2026_11_12_100003_miners_pekerja_dibuat_oleh',
+        // Update 14: RTP Audit Lingkungan dan Riwayat Karyawan Miners — ikut dibalik dan dijalankan ulang.
+        '2026_11_16_000003_create_env_audit_rtps_table', '2026_11_16_000004_terbitkan_rtp_lingkungan_lama',
+        '2026_11_16_100001_miners_riwayat_karyawan',
     ];
 
     public function test_migrasi_porting_dapat_dibalik_lalu_dijalankan_ulang(): void
@@ -40,5 +43,7 @@ class BalikMigrasiPortingTest extends TestCase
         $this->assertTrue(Schema::hasColumn('mnr_alur', 'ditugaskan_user_id'));
         $this->assertTrue(Schema::hasColumn('mnr_pekerja', 'dibuat_oleh'));
         $this->assertFalse(Schema::hasTable('smkp_ofi'));
+        $this->assertTrue(Schema::hasTable('env_audit_rtps'));
+        $this->assertTrue(Schema::hasColumn('mnr_pekerja', 'sebab_nonaktif'));
     }
 }

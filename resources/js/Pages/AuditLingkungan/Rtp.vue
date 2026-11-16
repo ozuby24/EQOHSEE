@@ -144,15 +144,15 @@ const LENCANA_VERIFIKASI: Record<string, [string, string]> = {
 
       <div class="grid md:grid-cols-[1fr_200px_170px] gap-3 mt-4">
         <label class="block">
-          <span class="text-[12px] font-semibold opacity-70">Rencana tindak perbaikan</span>
+          <span class="block text-[12px] font-semibold opacity-70">Rencana tindak perbaikan</span>
           <textarea v-model="isian[r.id].rencana" rows="2" class="ring-focus w-full rounded-xl border border-stone-200 px-3 py-2 text-[12.5px] transition" :disabled="r.status === 'selesai'" maxlength="3000" />
         </label>
         <label class="block">
-          <span class="text-[12px] font-semibold opacity-70">PIC</span>
+          <span class="block text-[12px] font-semibold opacity-70">PIC</span>
           <input v-model="isian[r.id].pic" class="ring-focus w-full rounded-xl border border-stone-200 px-3 py-2 text-[12.5px] transition" :disabled="r.status === 'selesai'" maxlength="150">
         </label>
         <label class="block">
-          <span class="text-[12px] font-semibold opacity-70">Target selesai</span>
+          <span class="block text-[12px] font-semibold opacity-70">Target selesai</span>
           <input v-model="isian[r.id].target" type="date" class="ring-focus w-full rounded-xl border border-stone-200 px-3 py-2 text-[12.5px] transition" :disabled="r.status === 'selesai' || r.targetTerkunci">
           <span v-if="r.targetTerkunci" class="block text-[11px] opacity-60">Sudah lewat — hanya auditor yang dapat mengubah.</span>
         </label>

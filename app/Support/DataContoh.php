@@ -37,7 +37,7 @@ use App\Support\Hr\{JalurCuti, JalurLembur, KebijakanCuti, MasterCuti, MasterPaj
     Penggajian, Penyusun, Rekonsiliasi};
 use Illuminate\Support\Facades\Hash;
 use App\Models\{CompliancePoint, ComplianceRecap, ComplianceSubject};
-use App\Models\{EnvAudit, EnvAuditScore, EnvAuditSertifikat};
+use App\Models\{EnvAudit, EnvAuditRtp, EnvAuditScore, EnvAuditSertifikat};
 use App\Models\Frop\{Coaching as FropCoaching, Observasi as FropObservasi};
 use App\Support\AuditLingkungan;
 use App\Support\Kepatuhan;
@@ -153,7 +153,7 @@ final class DataContoh
 
         /* Nilai lebih dulu, lalu auditnya — sama alasannya: kaskade
            basis data tidak terhitung pemanggilnya. */
-        EnvAuditSertifikat::class, EnvAuditScore::class, EnvAudit::class,
+        EnvAuditSertifikat::class, EnvAuditRtp::class, EnvAuditScore::class, EnvAudit::class,
 
         /* Coaching menunjuk sesi observasi (nullOnDelete), jadi dibuang
            lebih dulu agar hitungannya tetap sebanding. */
@@ -381,6 +381,8 @@ final class DataContoh
         MnrInduksiOrang::class, MnrInduksi::class,
         MnrMcuRujukan::class, MnrMcuOrang::class, MnrMcu::class,
         MnrKompetensi::class,
+        /* Catatan pelanggaran (Riwayat Karyawan) sebelum pekerjanya. */
+        \App\Models\Miners\Pelanggaran::class,
         MnrPekerja::class, MnrSubBlok::class, MnrPjo::class, MnrSubkontraktor::class,
 
         /* Penyetuju bernama perusahaan contoh. Dibuang bersama datanya:
@@ -663,6 +665,8 @@ final class DataContoh
             /* Nilai kriteria audit menumpang auditnya, sebab yang
                bermilik perusahaan adalah pelaksanaan auditnya. */
             EnvAuditScore::class => $q->whereIn('audit_id',
+                EnvAudit::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+            EnvAuditRtp::class => $q->whereIn('audit_id',
                 EnvAudit::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
 
             /* ── Miners ──
@@ -1234,6 +1238,23 @@ final class DataContoh
                    memperagakan layanan mandiri harus punya orang yang
                    benar-benar dapat masuk sebagai dirinya. */
                 'user_id'          => $this->akunPekerja($nama, $i)?->id,
+            ]);
+            $n++;
+        }
+
+        /* ── Riwayat Karyawan: catatan pelanggaran ──
+           Satu sudah terverifikasi OHSE (terbaca perusahaan lain dalam
+           grup) dan satu masih menunggu verifikasi — dua keadaan yang
+           membedakan rekap pelanggaran dari daftar biasa. */
+        foreach ([
+            ['Sudarmin',  'lalu_lintas', 'sedang', 'sp1', 'Melebihi batas kecepatan di jalan hauling KM 4.', \App\Models\Miners\Pelanggaran::DIVERIFIKASI, 40],
+            ['Haryanto',  'prosedur_k3', 'ringan', 'teguran', 'Tidak memakai sabuk keselamatan saat mengemudi LV.', \App\Models\Miners\Pelanggaran::DIAJUKAN, 6],
+        ] as [$nama, $kategori, $tingkat, $sanksi, $uraian, $status, $lalu]) {
+            $this->baru(\App\Models\Miners\Pelanggaran::class, [
+                'pekerja_id' => $pekerja[$nama]->id,
+                'tanggal'    => $hari->copy()->subDays($lalu)->toDateString(),
+                'kategori'   => $kategori, 'tingkat' => $tingkat, 'sanksi' => $sanksi,
+                'uraian'     => $uraian, 'lokasi' => 'Area tambang', 'status' => $status,
             ]);
             $n++;
         }
@@ -5067,7 +5088,7 @@ final class DataContoh
                    itulah yang dicari auditor saat meninjau. */
                 $mandiri = $v === null ? null : min(3, $v + ($i % 5 === 0 ? 1 : 0));
 
-                EnvAuditScore::create([
+                $skor = EnvAuditScore::create([
                     'audit_id'   => $a->id,
                     'kode'       => $k['kode'],
                     'nilai'      => $mandiri,
@@ -5076,6 +5097,17 @@ final class DataContoh
                         : 'Bukti dokumen tersedia, implementasi lapangan belum lengkap.',
                 ]);
                 $n++;
+
+                /* RTP terbit lewat jalur yang sama dengan simpan nilai
+                   (nilai verifikasi 0–2), lalu sebagian diisi auditee
+                   supaya layar RTP memperlihatkan ketiga keadaannya. */
+                if ($rtp = \App\Support\RtpLingkungan::perbarui($a, $skor)) {
+                    if ($i % 3 === 0) {
+                        $rtp->fill(['rencana' => 'Lengkapi dokumen dan perbaiki implementasi lapangan.', 'pic' => 'Koordinator Lingkungan',
+                            'target_tanggal' => now()->addDays(14 + $i)->toDateString(), 'status' => 'proses'])->save();
+                    }
+                    $n++;
+                }
             }
         }
 

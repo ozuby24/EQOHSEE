@@ -469,8 +469,10 @@ final class Menu
          administrator & auditor) — auditi tidak pernah melihatnya. */
       'groups' => [
         '' => [
-          ['Dasbor',                'smkp.dasbor',        'smkp/dasbor*'],
           ['Daftar Audit',          'smkp.index',         ['smkp', 'smkp/*']],
+          /* Dasbor v2 (port DBEST) sesudah Daftar Audit: butir pertama
+             adalah beranda modul (HandleInertiaRequests::diBeranda). */
+          ['Dasbor',                'smkp.dasbor',        'smkp/dasbor*'],
           ['Audit Baru',            'smkp.create',        'smkp/buat', 'audit'],
           ['Tindak Lanjut Temuan',  'smkp.tindak-lanjut', 'smkp/tindak-lanjut'],
           ['Kriteria & Acuan',      'smkp.acuan',         'smkp/acuan'],

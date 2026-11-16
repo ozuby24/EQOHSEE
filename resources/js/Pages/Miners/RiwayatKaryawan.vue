@@ -16,6 +16,8 @@ import KepalaHalaman from '../../Components/Miners/KepalaHalaman.vue';
 import Kartu from '../../Components/Miners/Kartu.vue';
 import Modal from '../../Components/Miners/Modal.vue';
 import Medan from '../../Components/Miners/Medan.vue';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
 
 type Peta = Record<string, string>;
 interface Catatan {
@@ -58,6 +60,10 @@ const props = defineProps<{
 }>();
 
 const URL = '/miners/riwayat-karyawan';
+
+/* Dialog EQOHSEE, bukan confirm()/prompt() peramban — di webview ponsel
+   keduanya dibungkam dan tindakannya diam-diam tidak jadi. */
+const { dialog, tanya, minta, batal, lanjut } = useDialog();
 const TAB: Array<[typeof props.tab, string]> = [['cek', 'Cek Karyawan'], ['nonaktif', 'Karyawan Nonaktif'], ['pelanggaran', 'Rekap Pelanggaran']];
 
 const cari = ref(props.q);
@@ -108,15 +114,24 @@ function simpanCatat() {
   if (d.catatan) fCatat.put(`${URL}/pelanggaran/${d.catatan.id}`, opsi);
   else if (d.pekerja) fCatat.post(`${URL}/${d.pekerja.id}/pelanggaran`, opsi);
 }
-function hapusCatat(c: Catatan) {
-  if (!confirm('Hapus catatan pelanggaran ini?')) return;
+async function hapusCatat(c: Catatan) {
+  const ok = await tanya({
+    judul: 'Hapus catatan pelanggaran?',
+    pesan: `${c.labelKategori} tanggal ${c.tanggal ?? '—'} dihapus dari riwayat karyawan. Penghapusan tercatat di log aktivitas.`,
+    labelAksi: 'Hapus', nada: 'bahaya',
+  });
+  if (!ok) return;
   router.delete(`${URL}/pelanggaran/${c.id}`, { preserveScroll: true });
 }
-function verifikasi(c: Catatan, keputusan: 'diverifikasi' | 'ditolak') {
+async function verifikasi(c: Catatan, keputusan: 'diverifikasi' | 'ditolak') {
   let catatan: string | null = null;
   if (keputusan === 'ditolak') {
-    catatan = prompt('Alasan penolakan (wajib):');
-    if (!catatan) return;
+    catatan = await minta({
+      judul: 'Tolak catatan pelanggaran?',
+      pesan: 'Alasannya terbaca oleh pencatat agar dapat diperbaiki dan diajukan kembali.',
+      label: 'Alasan penolakan', jenis: 'panjang', wajib: true, min: 3, nada: 'bahaya', labelAksi: 'Tolak',
+    });
+    if (catatan === null) return;
   }
   router.post(`${URL}/pelanggaran/${c.id}/verifikasi`, { keputusan, catatan }, { preserveScroll: true });
 }
@@ -422,5 +437,7 @@ function verifikasi(c: Catatan, keputusan: 'diverifikasi' | 'ditolak') {
         <button type="button" class="mn-btn mn-btn-utama" :disabled="fCatat.processing" @click="simpanCatat">Simpan</button>
       </template>
     </Modal>
+
+    <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
   </div>
 </template>

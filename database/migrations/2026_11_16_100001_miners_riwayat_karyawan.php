@@ -48,6 +48,8 @@ return new class extends Migration
             $t->foreignId('dibuat_oleh')->nullable()->constrained('users')->nullOnDelete();
             $t->timestamps();
             $t->index(['pekerja_id', 'tanggal']);
+            // Batas grup perusahaan menyaring lewat company_id (lihat MigrasiIndeksTest).
+            $t->index(['company_id', 'status']);
         });
     }
 
