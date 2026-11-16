@@ -140,6 +140,8 @@ final class SmkpTahap
                 'langkah' => [
                     ['kunci'=>'laporan',   'judul'=>'Laporan Audit Internal',        'jenis'=>'cetak','rute'=>'smkp.laporan',
                      'ket'=>'Nilai akhir, tingkat penerapan, rekapitulasi tujuh elemen, dan seluruh temuan dalam satu berkas bernomor.'],
+                    ['kunci'=>'respon',    'judul'=>'Respon Perusahaan Terhadap Audit', 'jenis'=>'cetak','rute'=>'smkp.formulir.cetak','arg'=>'respon',
+                     'ket'=>'Tanggapan dan komitmen auditi atas pelaksanaan dan hasil audit, ditandatangani KTT atau PJO. Bukan bagian lampiran resmi Kepdirjen 185.K — lampiran tambahan berkop terkendali.'],
                     ['kunci'=>'hadir-buka','judul'=>'Daftar Hadir Rapat Pembukaan',  'jenis'=>'cetak','rute'=>'smkp.hadir.cetak','arg'=>'pembukaan',
                      'ket'=>'Lampiran daftar hadir, berpindah halaman sendiri bila pesertanya banyak.'],
                     ['kunci'=>'hadir-tutup','judul'=>'Daftar Hadir Rapat Penutupan', 'jenis'=>'cetak','rute'=>'smkp.hadir.cetak','arg'=>'penutupan',

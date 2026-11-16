@@ -457,6 +457,7 @@ final class Menu
          administrator & auditor) — auditi tidak pernah melihatnya. */
       'groups' => [
         '' => [
+          ['Dasbor',                'smkp.dasbor',        'smkp/dasbor*'],
           ['Daftar Audit',          'smkp.index',         ['smkp', 'smkp/*']],
           ['Audit Baru',            'smkp.create',        'smkp/buat', 'audit'],
           ['Tindak Lanjut Temuan',  'smkp.tindak-lanjut', 'smkp/tindak-lanjut'],

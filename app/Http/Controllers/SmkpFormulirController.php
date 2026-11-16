@@ -32,6 +32,7 @@ class SmkpFormulirController extends SmkpController
         'rekapitulasi'    => 'rekapitulasi-ketidaksesuaian',
         'rekomendasi'     => 'rekomendasi-ofi',
         'tindak-lanjut'   => 'rencana-tindak-lanjut',
+        'respon'          => 'respon-perusahaan',
     ];
 
     /**
@@ -40,25 +41,26 @@ class SmkpFormulirController extends SmkpController
      * tiga per temuan pada Formulir Ketidaksesuaian (temuan, perbaikan oleh
      * auditi, verifikasi).
      */
-    private const BAGIAN = '/^(?:kesesuaian|rekomendasi|penilaian|rekapitulasi|tindak-lanjut|rencana|berita-acara|laporan|ketidaksesuaian\.\d{1,10}\.(?:temuan|perbaikan|verifikasi))$/';
+    private const BAGIAN = '/^(?:kesesuaian|rekomendasi|penilaian|rekapitulasi|tindak-lanjut|respon|rencana|berita-acara|laporan|ketidaksesuaian\.\d{1,10}\.(?:temuan|perbaikan|verifikasi))$/';
 
     public function halaman(Request $request, SmkpAudit $smkp)
     {
         $smkp->load('company');
         $temuan = $smkp->findings()->get();
         $rekap  = $smkp->rekapRencana();
+        $pt     = $smkp->company?->name ?? '';
+        $jasa   = $smkp->company?->kategori === 'pjp';
 
         $hitung = fn (array $daftar) => count(array_filter($daftar, fn ($r) => trim((string) ($r['keterangan'] ?? $r['uraian'] ?? '')) !== ''));
 
         return Inertia::render('Smkp/Formulir', [
             'audit'       => $this->ringkasAudit($smkp),
-            'kesesuaian'  => array_values((array) ($smkp->kesesuaian ?? [])),
             'rekomendasi' => array_values((array) ($smkp->rekomendasi ?? [])),
             'kriteria'    => $this->daftarSubElemen(),
             'ringkas'     => [
                 'rencana'         => ['terisi' => $rekap['jumlah'], 'total' => $rekap['total']],
                 'penilaian'       => ['terisi' => $smkp->rekap()['dinilai'], 'total' => $smkp->rekap()['berlaku']],
-                'kesesuaian'      => $hitung((array) ($smkp->kesesuaian ?? [])),
+                'kesesuaian'      => count(Smkp::kesesuaian($smkp->hasil ?? [], $pt, $jasa)),
                 'rekomendasi'     => $hitung((array) ($smkp->rekomendasi ?? [])),
                 'ketidaksesuaian' => $temuan->count(),
                 'kategori'        => collect(SmkpFinding::KATEGORI)->map(fn ($l, $k) => $temuan->where('jenis', $k)->count())->all(),
@@ -71,11 +73,6 @@ class SmkpFormulirController extends SmkpController
     public function simpan(Request $request, SmkpAudit $smkp)
     {
         $d = $request->validate([
-            'kesesuaian'                => ['nullable', 'array', 'max:150'],
-            'kesesuaian.*.elemen'       => ['nullable', 'string', 'max:10'],
-            'kesesuaian.*.sub'          => ['nullable', 'string', 'max:20'],
-            'kesesuaian.*.subsub'       => ['nullable', 'string', 'max:20'],
-            'kesesuaian.*.keterangan'   => ['nullable', 'string', 'max:3000'],
             'rekomendasi'               => ['nullable', 'array', 'max:150'],
             'rekomendasi.*.elemen'      => ['nullable', 'string', 'max:10'],
             'rekomendasi.*.sub'         => ['nullable', 'string', 'max:20'],
@@ -86,13 +83,12 @@ class SmkpFormulirController extends SmkpController
         $this->wajibElemen($d);
 
         $smkp->update([
-            'kesesuaian'  => $this->bersihkan((array) ($d['kesesuaian'] ?? []), 'keterangan'),
             'rekomendasi' => $this->bersihkan((array) ($d['rekomendasi'] ?? []), 'uraian'),
         ]);
 
-        ActivityLog::write('Simpan formulir kesesuaian & OFI', $smkp->namaTampil(), 'smkp');
+        ActivityLog::write('Simpan formulir rekomendasi', $smkp->namaTampil(), 'smkp');
 
-        return back()->with('ok', 'Formulir kesesuaian dan rekomendasi tersimpan.');
+        return back()->with('ok', 'Rekomendasi tersimpan.');
     }
 
     /**
@@ -105,7 +101,7 @@ class SmkpFormulirController extends SmkpController
     private function wajibElemen(array $d): void
     {
         $galat = [];
-        foreach (['kesesuaian' => 'keterangan', 'rekomendasi' => 'uraian'] as $bagian => $kolom) {
+        foreach (['rekomendasi' => 'uraian'] as $bagian => $kolom) {
             foreach ((array) ($d[$bagian] ?? []) as $i => $b) {
                 $b = (array) $b;
                 if (trim((string) ($b[$kolom] ?? '')) !== '' && trim((string) ($b['elemen'] ?? '')) === '') {
@@ -173,17 +169,42 @@ class SmkpFormulirController extends SmkpController
         return match ($jenis) {
             'penilaian'   => Inertia::render('Print/Smkp/FormulirPenilaian', $dasar + $this->dataPenilaian($smkp)),
             'kesesuaian'  => Inertia::render('Print/Smkp/FormulirKesesuaian', $dasar + [
-                'baris' => $this->dengan_nama((array) ($smkp->kesesuaian ?? []), $nama, 'keterangan'),
+                'baris' => $this->dengan_nama(
+                    Smkp::kesesuaian($smkp->hasil ?? [], (string) ($smkp->company?->name ?? ''), $smkp->company?->kategori === 'pjp'),
+                    $nama, 'keterangan'
+                ),
+                // Nama Auditi: PJO untuk perusahaan jasa pertambangan, KTT untuk lainnya.
+                'pihak' => [['peran' => 'Nama Auditor', 'kunci' => 'ketua', 'nama' => $ttd['ketua']], $this->pihakAuditi($smkp, 'Nama Auditi', 'Nama Auditi')],
             ]),
             'rekomendasi' => Inertia::render('Print/Smkp/FormulirRekomendasi', $dasar + [
                 'baris' => $this->dengan_nama((array) ($smkp->rekomendasi ?? []), $nama, 'uraian'),
+            ]),
+            'respon'      => Inertia::render('Print/Smkp/ResponPerusahaan', $dasar + [
+                'site'    => $smkp->company?->kategori === 'pjp' ? (string) $smkp->company?->induk?->name : null,
+                'pihak'   => $this->pihakRespon($smkp),
+                'tempat'  => (string) (($smkp->respon ?? [])['tempat'] ?? ''),
+                'bisaSunting' => $request->user()->bisaAudit(),
             ]),
             default       => Inertia::render(match ($jenis) {
                 'ketidaksesuaian' => 'Print/Smkp/FormulirKetidaksesuaian',
                 'rekapitulasi'    => 'Print/Smkp/FormulirRekapitulasi',
                 'tindak-lanjut'   => 'Print/Smkp/FormulirTindakLanjut',
-            }, $dasar + ['temuan' => $this->dataTemuan($smkp, $request->integer('temuan') ?: null)]),
+            }, $dasar + ['temuan' => $this->dataTemuan($smkp, $request->integer('temuan') ?: null)]
+                // Nama Auditi: PJO untuk perusahaan jasa pertambangan, KTT untuk lainnya — dipakai lembar temuan (ttdTemuan) dan tindak lanjut (ttdAuditi).
+                + ($jenis === 'ketidaksesuaian' ? ['pihakAuditi' => [$this->pihakAuditi($smkp, 'Nama Auditi', 'Nama Auditi')]] : [])),
         };
+    }
+
+    /** Tempat penandatanganan Respon Perusahaan ("Padang, 12 Desember 2025") — satu-satunya isian bebas lampiran ini. */
+    public function simpanRespon(Request $request, SmkpAudit $smkp)
+    {
+        $d = $request->validate(['tempat' => ['nullable', 'string', 'max:150']]);
+        $tempat = trim((string) ($d['tempat'] ?? ''));
+
+        $smkp->update(['respon' => $tempat !== '' ? ['tempat' => $tempat] : null]);
+        ActivityLog::write('Simpan Respon Perusahaan', $smkp->namaTampil(), 'smkp');
+
+        return back()->with('ok', 'Tempat penandatanganan tersimpan.');
     }
 
     private function dengan_nama(array $baris, array $nama, string $kolom): array
@@ -236,7 +257,7 @@ class SmkpFormulirController extends SmkpController
         // Auditi hanya mengisi tanggal tanda tangannya sendiri pada bagian perbaikan.
         $u = $request->user();
         abort_unless($u->bisaAudit() || (preg_match(self::BAGIAN_MANUAL, $d['bagian'], $m)
-            && self::PIHAK_MANUAL[$m[2]] === $d['pihak'] && self::bolehBubuh($u, $d['pihak'])), 403);
+            && $this->pihakManual($smkp, $m[2]) === $d['pihak'] && self::bolehBubuh($u, $d['pihak'])), 403);
 
         $this->ubahTtd($smkp, function (array &$t) use ($d) {
             if ($d['tanggal'] ?? null) {
@@ -312,7 +333,7 @@ class SmkpFormulirController extends SmkpController
             'ttd'    => ['required', 'boolean'],
         ]);
         preg_match(self::BAGIAN_MANUAL, $d['bagian'], $m);
-        $pihak = self::PIHAK_MANUAL[$m[2]];
+        $pihak = $this->pihakManual($smkp, $m[2]);
         abort_unless(self::bolehBubuh($request->user(), $pihak), 403);
         $temuan = $smkp->findings()->with('tindakLanjut:id,finding_id')->whereKey((int) $m[1])->firstOrFail();
 

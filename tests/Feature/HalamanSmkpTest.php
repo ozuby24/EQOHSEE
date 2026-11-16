@@ -27,7 +27,7 @@ class HalamanSmkpTest extends TestCase
     {
         return [
             '/smkp' => 'Smkp/Index', '/smkp/acuan' => 'Smkp/Acuan', '/smkp/buat' => 'Smkp/Form',
-            '/smkp/tindak-lanjut' => 'Smkp/TindakLanjut', '/smkp/tindak-lanjut?status=Closed&q=I.1' => 'Smkp/TindakLanjut',
+            '/smkp/tindak-lanjut' => 'Smkp/TindakLanjut', '/smkp/dasbor' => 'Smkp/Dasbor', '/smkp/tindak-lanjut?status=Closed&q=I.1' => 'Smkp/TindakLanjut',
             "/smkp/{$a->id}" => 'Smkp/Show', "/smkp/{$a->id}/ubah" => 'Smkp/Form', "/smkp/{$a->id}/tahap-1" => 'Smkp/Tahap1',
             "/smkp/{$a->id}/rencana" => 'Smkp/Rencana', "/smkp/{$a->id}/rapat" => 'Smkp/Rapat',
             "/smkp/{$a->id}/elemen/IV" => 'Smkp/Nilai', "/smkp/{$a->id}/bukti" => 'Smkp/Bukti',
@@ -44,6 +44,7 @@ class HalamanSmkpTest extends TestCase
             "/smkp/{$a->id}/formulir/rekapitulasi/cetak" => 'Print/Smkp/FormulirRekapitulasi',
             "/smkp/{$a->id}/formulir/rekomendasi/cetak" => 'Print/Smkp/FormulirRekomendasi',
             "/smkp/{$a->id}/formulir/tindak-lanjut/cetak" => 'Print/Smkp/FormulirTindakLanjut',
+            "/smkp/{$a->id}/formulir/respon/cetak" => 'Print/Smkp/ResponPerusahaan',
         ];
     }
 
@@ -110,7 +111,10 @@ class HalamanSmkpTest extends TestCase
 
     public function test_tidak_ada_lagi_halaman_smkp_lama(): void
     {
-        foreach (['Smkp/Halaman', 'Smkp/Penilaian', 'Smkp/Sampel', 'Smkp/Ofi', 'Smkp/Dasbor', 'Print/Smkp',
+        /* Smkp/Dasbor kembali ada, tetapi sebagai dasbor v2 baru (mengikuti
+           DBEST, App\Support\SmkpDasbor) — bukan Performa SMKP lama yang
+           dibuang di Update 13; SmkpDasborTest yang menjaganya. */
+        foreach (['Smkp/Halaman', 'Smkp/Penilaian', 'Smkp/Sampel', 'Smkp/Ofi', 'Print/Smkp',
                   'Print/SmkpKriteria', 'Print/SmkpRekapNc', 'Print/SmkpRespon', 'Print/SmkpRtl',
                   'Print/SmkpNcTindak', 'Print/SmkpOfi'] as $lama) {
             $this->assertFileDoesNotExist(resource_path("js/Pages/{$lama}.vue"));

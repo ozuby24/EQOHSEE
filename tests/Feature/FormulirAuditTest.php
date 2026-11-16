@@ -56,66 +56,61 @@ class FormulirAuditTest extends TestCase
         $this->actingAs($this->auditor($this->induk))->get("/smkp/{$lain->id}/formulir")->assertNotFound();
     }
 
-    public function test_simpan_kesesuaian_dan_rekomendasi_membuang_baris_tidak_sah(): void
+    public function test_simpan_rekomendasi_membuang_baris_tidak_sah(): void
     {
         $a = $this->audit();
 
         $this->actingAs($this->auditor($this->induk))->post("/smkp/{$a->id}/formulir", [
-            'kesesuaian' => [
-                ['elemen' => 'I', 'sub' => 'I.1', 'keterangan' => 'Kebijakan K3 ditandatangani direksi.'],
-                ['elemen' => 'II', 'sub' => 'I.1', 'keterangan' => 'Sub-elemen salah elemen.'],   // sub tidak cocok → dikosongkan
-                ['elemen' => 'IX', 'sub' => '', 'keterangan' => 'Elemen tidak dikenal.'],         // dibuang
-                ['elemen' => 'III', 'sub' => '', 'keterangan' => '   '],                         // tanpa uraian → dibuang
-                ['elemen' => 'II', 'sub' => 'II.2', 'subsub' => 'II.2.1', 'keterangan' => 'Praktik terbaik 1.'],
-                ['elemen' => 'II', 'sub' => 'II.2', 'subsub' => 'III.2.1', 'keterangan' => 'Sub-sub salah sub.'],  // → dikosongkan
-                ['elemen' => 'II', 'sub' => '', 'subsub' => 'II.2.1', 'keterangan' => 'Sub-sub tanpa sub.'],       // → dikosongkan
+            'rekomendasi' => [
+                ['elemen' => 'VII', 'sub' => 'VII.1', 'uraian' => 'Tinjauan manajemen per semester.'],
+                ['elemen' => 'IX', 'sub' => '', 'uraian' => 'Elemen tidak dikenal.'],   // dibuang
+                ['elemen' => 'III', 'sub' => '', 'uraian' => '   '],                   // tanpa uraian → dibuang
             ],
-            'rekomendasi' => [['elemen' => 'VII', 'sub' => 'VII.1', 'uraian' => 'Tinjauan manajemen per semester.']],
         ])->assertRedirect();
 
         $a->refresh();
         $this->assertSame([
-            ['elemen' => 'I', 'sub' => 'I.1', 'subsub' => '', 'keterangan' => 'Kebijakan K3 ditandatangani direksi.'],
-            ['elemen' => 'II', 'sub' => '', 'subsub' => '', 'keterangan' => 'Sub-elemen salah elemen.'],
-            ['elemen' => 'II', 'sub' => 'II.2', 'subsub' => 'II.2.1', 'keterangan' => 'Praktik terbaik 1.'],
-            ['elemen' => 'II', 'sub' => 'II.2', 'subsub' => '', 'keterangan' => 'Sub-sub salah sub.'],
-            ['elemen' => 'II', 'sub' => '', 'subsub' => '', 'keterangan' => 'Sub-sub tanpa sub.'],
-        ], $a->kesesuaian);
-        $this->assertCount(1, $a->rekomendasi);
+            ['elemen' => 'VII', 'sub' => 'VII.1', 'subsub' => '', 'uraian' => 'Tinjauan manajemen per semester.'],
+        ], $a->rekomendasi);
 
         // Auditi hanya membaca.
-        $this->actingAs($this->auditi($this->induk))->post("/smkp/{$a->id}/formulir", ['kesesuaian' => []])->assertForbidden();
+        $this->actingAs($this->auditi($this->induk))->post("/smkp/{$a->id}/formulir", ['rekomendasi' => []])->assertForbidden();
     }
 
     public function test_baris_berisi_tanpa_elemen_ditolak_bukan_dibuang_diam_diam(): void
     {
         $a = $this->audit();
-        $a->forceFill(['kesesuaian' => [['elemen' => 'I', 'sub' => '', 'subsub' => '', 'keterangan' => 'Isian lama.']]])->save();
+        $a->forceFill([
+            'kesesuaian'  => [['elemen' => 'I', 'sub' => '', 'subsub' => '', 'keterangan' => 'Isian lama.']],
+            'rekomendasi' => [['elemen' => 'VII', 'sub' => '', 'subsub' => '', 'uraian' => 'Rekomendasi lama.']],
+        ])->save();
 
         $this->actingAs($this->auditor($this->induk))->from("/smkp/{$a->id}/formulir")->post("/smkp/{$a->id}/formulir", [
-            'kesesuaian' => [
-                ['elemen' => 'I', 'sub' => '', 'keterangan' => 'Kebijakan K3 ditandatangani direksi.'],
-                ['elemen' => '', 'sub' => '', 'keterangan' => 'Lupa memilih elemen.'],
-                ['elemen' => '', 'sub' => '', 'keterangan' => ''],                       // benar-benar kosong → boleh dibuang
+            'rekomendasi' => [
+                ['elemen' => 'I', 'sub' => '', 'uraian' => 'Perkuat sosialisasi kebijakan.'],
+                ['elemen' => '', 'sub' => '', 'uraian' => 'Lupa memilih elemen.'],
+                ['elemen' => '', 'sub' => '', 'uraian' => ''],                       // benar-benar kosong → boleh dibuang
             ],
-            'rekomendasi' => [['elemen' => '', 'sub' => '', 'uraian' => 'Rekomendasi tanpa elemen.']],
         ])->assertRedirect("/smkp/{$a->id}/formulir")
-            ->assertSessionHasErrors(['kesesuaian.1.elemen', 'rekomendasi.0.elemen'])
-            ->assertSessionDoesntHaveErrors(['kesesuaian.0.elemen', 'kesesuaian.2.elemen'])
+            ->assertSessionHasErrors(['rekomendasi.1.elemen'])
+            ->assertSessionDoesntHaveErrors(['rekomendasi.0.elemen', 'rekomendasi.2.elemen'])
             ->assertSessionMissing('ok');
 
         /* Tidak ada yang tersimpan sebagian. */
-        $this->assertSame('Isian lama.', $a->fresh()->kesesuaian[0]['keterangan']);
-        $this->assertCount(1, $a->fresh()->kesesuaian);
+        $this->assertSame('Rekomendasi lama.', $a->fresh()->rekomendasi[0]['uraian']);
 
-        /* Baris kosong tetap dibuang tanpa galat. */
+        /* Baris kosong tetap dibuang tanpa galat. Kesesuaian kini otomatis
+           dari penilaian: kiriman lama yang masih membawanya diabaikan dan
+           kolomnya tidak disentuh. */
         $this->post("/smkp/{$a->id}/formulir", [
-            'kesesuaian' => [
-                ['elemen' => 'I', 'sub' => '', 'keterangan' => 'Kebijakan K3 ditandatangani direksi.'],
-                ['elemen' => '', 'sub' => '', 'keterangan' => '   '],
+            'kesesuaian'  => [['elemen' => '', 'sub' => '', 'keterangan' => 'Kiriman lama tanpa elemen.']],
+            'rekomendasi' => [
+                ['elemen' => 'I', 'sub' => '', 'uraian' => 'Perkuat sosialisasi kebijakan.'],
+                ['elemen' => '', 'sub' => '', 'uraian' => '   '],
             ],
         ])->assertSessionHasNoErrors()->assertSessionHas('ok');
-        $this->assertCount(1, $a->fresh()->kesesuaian);
+        $this->assertCount(1, $a->fresh()->rekomendasi);
+        $this->assertSame('Isian lama.', $a->fresh()->kesesuaian[0]['keterangan']);
     }
 
     public function test_temuan_diangkat_bernomor_dan_isian_formulir_tersimpan(): void
@@ -180,8 +175,10 @@ class FormulirAuditTest extends TestCase
 
     public function test_setiap_formulir_dapat_dicetak(): void
     {
-        $a = $this->audit(null, $this->hasilSeparuh());
-        $a->update(['kesesuaian' => [['elemen' => 'I', 'sub' => 'I.2', 'keterangan' => 'Sesuai']]]);
+        // Sub-elemen I.1 separuh (ketidaksesuaian minor); I.2 capaian penuh → kesesuaian otomatis.
+        $sub = Smkp::elemen()[0]['sub'][1];
+        $penuh = [$sub['kode'] => ['v' => Smkp::butirSub($sub)[0]['maks']]];
+        $a = $this->audit(null, $this->hasilSeparuh() + $penuh);
         $a->findings()->create(['kode_kriteria' => 'I.1', 'jenis' => 'minor', 'uraian' => 'Uji', 'status' => 'Open', 'nomor' => 'KTS-01']);
         $u = $this->auditi($this->induk);   // hak baca cukup untuk mencetak
 
@@ -195,10 +192,10 @@ class FormulirAuditTest extends TestCase
                 ->assertOk()->assertInertia(fn (Inertia $p) => $p->component($komponen)->has('dok.nomor'));
         }
 
-        $a->update(['kesesuaian' => [['elemen' => 'I', 'sub' => 'I.2', 'keterangan' => 'Sesuai'], ['elemen' => 'II', 'sub' => 'II.2', 'subsub' => 'II.2.1', 'keterangan' => 'Praktik']]]);
+        // Formulir Kesesuaian terisi otomatis dari hasil penilaian — I.1 (minor) tidak muncul, I.2 (penuh) muncul.
         $this->actingAs($u)->get("/smkp/{$a->id}/formulir/kesesuaian/cetak")
-            ->assertInertia(fn (Inertia $p) => $p->where('baris.0.subNama', fn ($n) => $n !== '')->where('baris.0.subsub', '')
-                ->where('baris.1.subsub', 'II.2.1')->where('baris.1.subsubNama', fn ($n) => $n !== '')
+            ->assertInertia(fn (Inertia $p) => $p->where('baris', fn ($b) => collect($b)->pluck('sub')->all() === [$sub['kode']])
+                ->where('baris.0.subNama', fn ($n) => $n !== '')->where('baris.0.subsub', '')->where('baris.0.isi', fn ($i) => $i !== '')
                 ->where('ttd.bisaSunting', false)->where('ttd.gambar.ketua', null));
         $this->actingAs($u)->get("/smkp/{$a->id}/formulir/rekapitulasi/cetak")
             ->assertInertia(fn (Inertia $p) => $p->where('temuan.0.nomor', 'KTS-01')->where('temuan.0.labelKategori', 'Minor'));
@@ -317,6 +314,36 @@ class FormulirAuditTest extends TestCase
         $this->actingAs($auditor)->post("{$url}/ttd/bubuh", ['bagian' => 'kesesuaian', 'ttd' => true])->assertSessionHasErrors('bagian');
         $lain = $this->audit($this->sister);
         $this->actingAs($auditi)->post("/smkp/{$lain->id}/formulir/ttd/bubuh", ['bagian' => $perbaikan, 'ttd' => true])->assertNotFound();
+    }
+
+    /**
+     * Bug nyata dari auditor: tanda tangan perbaikan tindak lanjut selalu
+     * dipaksa KTT, padahal perusahaan jasa pertambangan (PJP) diwakili PJO
+     * saja — wakil auditi ditentukan dari siapa yang sebenarnya diaudit,
+     * KTT tidak ikut kecuali dia sendiri yang diaudit.
+     */
+    public function test_tindak_lanjut_perbaikan_memakai_pjo_untuk_perusahaan_jasa_pertambangan(): void
+    {
+        Storage::fake('local');
+        $this->pjp->update(['pjo' => 'PJO Uji']);
+        $a = $this->audit($this->pjp);
+        $t = $a->findings()->create(['kode_kriteria' => 'I.4', 'jenis' => 'mayor', 'uraian' => 'Uji', 'status' => 'Open', 'nomor' => 'KTS-09']);
+        $auditi = $this->auditi($this->pjp);
+        $url = "/smkp/{$a->id}/formulir";
+        $perbaikan = "ketidaksesuaian.{$t->id}.perbaikan";
+
+        $this->actingAs($this->auditor($this->pjp))->get("{$url}/ketidaksesuaian/cetak")->assertOk()->assertInertia(fn (Inertia $p) => $p
+            ->where('pihakAuditi', [['peran' => 'Nama Auditi', 'kunci' => 'pjo', 'nama' => 'PJO Uji']]));
+
+        // KTT tidak lagi berlaku untuk bagian ini; hanya PJO yang dapat mengisi tanggalnya.
+        $this->actingAs($auditi)->post("{$url}/tanggal", ['bagian' => $perbaikan, 'pihak' => 'ktt', 'tanggal' => '2026-10-20'])->assertForbidden();
+        $this->actingAs($auditi)->post("{$url}/tanggal", ['bagian' => $perbaikan, 'pihak' => 'pjo', 'tanggal' => '2026-10-20'])->assertRedirect();
+
+        $t->tindakLanjut()->create(['user_id' => $auditi->id, 'tindakan' => 'Perbaikan selesai']);
+        $this->actingAs($auditi)->post("{$url}/ttd", ['pihak' => 'pjo', 'berkas' => UploadedFile::fake()->image('p.png', 300, 100)])->assertRedirect();
+        $this->actingAs($auditi)->post("{$url}/ttd/bubuh", ['bagian' => $perbaikan, 'ttd' => true])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertTrue($a->fresh()->ttd_formulir['bubuh'][$perbaikan]['pjo']);
+        $this->assertArrayNotHasKey('ktt', $a->fresh()->ttd_formulir['bubuh'][$perbaikan]);
     }
 
     public function test_tanda_tangan_digital_di_pengesahan_rencana_berita_acara_dan_laporan(): void
@@ -450,11 +477,11 @@ class FormulirAuditTest extends TestCase
 
     public function test_laporan_audit_mengikuti_format_kepdirjen_185(): void
     {
-        $a = $this->audit(null, ['I.1' => ['v' => 1], 'I.4' => ['v' => 0], 'III.3' => ['v' => 'N/A']]);
+        // I.2 bernilai penuh (4/4) → kesesuaian/praktik terbaik otomatis dari hasil penilaian.
+        $a = $this->audit(null, ['I.1' => ['v' => 1], 'I.2' => ['v' => 4], 'I.4' => ['v' => 0], 'III.3' => ['v' => 'N/A']]);
         $a->update([
             'tanggal_mulai' => '2026-10-05', 'tanggal_selesai' => '2026-10-23',
             'permulaan' => ['periode' => '1 Januari – 31 Desember 2025'],
-            'kesesuaian' => [['elemen' => 'III', 'sub' => 'III.2', 'subsub' => 'III.2.1', 'keterangan' => 'KTT telah disahkan KaIT.']],
             'rencana' => ['tugas' => [
                 ['nama' => 'Lead Uji', 'peran' => 'Lead Auditor', 'registrasi' => '160/AUD'],
                 ['nama' => 'Auditor Satu', 'peran' => 'Auditor', 'registrasi' => '161/AUD'],
@@ -487,15 +514,17 @@ class FormulirAuditTest extends TestCase
             ->where('penerapan.0.sub', fn ($sub) => collect($sub)->firstWhere('kode', 'I.4')['teks'] === "{$pt} belum melakukan komunikasi kebijakan."
                 && str_starts_with(collect($sub)->firstWhere('kode', 'I.1')['teks'], "{$pt} telah melakukan tinjauan awal"))
             ->where('penerapan', fn ($el) => str_ends_with(collect(collect($el)->firstWhere('kode', 'III')['sub'])->firstWhere('kode', 'III.3')['teks'], "tidak dapat diaplikasikan di {$pt}."))
-            ->where('praktik.0.kriteria', fn ($k) => str_starts_with($k, 'Sub Sub Elemen III.2.1 – '))
+            ->where('praktik.0.kriteria', fn ($k) => str_starts_with($k, 'Sub Elemen I.2 – '))
+            ->where('praktik.0.uraian', fn ($uraian) => $uraian !== '')
             // Penanda tangan: ketua & anggota (slot auditor2, auditor3); pemandu tercantum tanpa tanda tangan.
             ->where('tim', fn ($t) => collect($t)->pluck('kunci')->all() === ['ketua', 'auditor2', null, 'auditor3'])
-            ->where('pihakPjo', [])->where('hitung', ['kritikal' => 0, 'mayor' => 0, 'minor' => 0]));
+            ->where('pihakAuditi', fn ($ph) => collect($ph)->pluck('kunci')->all() === ['ktt'])
+            ->where('hitung', ['kritikal' => 0, 'mayor' => 0, 'minor' => 0]));
 
-        // Perusahaan jasa: PJO turut menandatangani laporan.
+        // Perusahaan jasa: PJO saja yang turut menandatangani laporan.
         $j = $this->audit($this->pjp);
         $this->actingAs($this->auditor($this->pjp))->get("/smkp/{$j->id}/laporan")->assertOk()->assertInertia(fn (Inertia $p) => $p
-            ->where('jasa', true)->where('pihakPjo.0.kunci', 'pjo'));
+            ->where('jasa', true)->where('pihakAuditi', fn ($ph) => collect($ph)->pluck('kunci')->all() === ['pjo']));
 
         // Auditi tidak dapat mengubah isian laporan maupun tanda tangan anggota tim audit.
         $auditi = $this->auditi($this->induk);
@@ -568,12 +597,96 @@ class FormulirAuditTest extends TestCase
             ->where('awal.kop_formulir.formulir-kesesuaian.kode', 'K3-F-021')
             ->where('awal.kop_formulir.berita-acara.kode', '')
             ->where('daftarFormulir.berita-acara.nomor', 'FRM/IU/OHSE/001')
-            ->has('daftarFormulir', 10)
+            ->has('daftarFormulir', 11)
             ->has('opsi.kategori', 4));
 
         // Simpan tanpa kop_formulir tidak menghapus penyesuaian yang ada.
         $this->actingAs($adm)->put("/admin/companies/{$this->induk->id}", ['name' => $this->induk->name, 'doc_no_prefix' => 'IU'])
             ->assertRedirect();
         $this->assertSame('K3-F-021', $this->induk->refresh()->kop_formulir['formulir-kesesuaian']['kode']);
+    }
+
+    /**
+     * Respon Perusahaan — bukan bagian lampiran resmi Kepdirjen 185.K,
+     * karena itu bernomor "HSE-RESP" bukan pola "IV.067x". Penanda tangan
+     * tunggal: PJO untuk perusahaan jasa pertambangan (dengan site induknya),
+     * KTT untuk perusahaan pertambangan (tanpa site).
+     */
+    public function test_respon_perusahaan_memakai_pihak_dan_site_sesuai_kategori(): void
+    {
+        $this->induk->update(['ktt' => 'KTT Uji']);
+        $a = $this->audit($this->induk);
+        $this->actingAs($this->auditor($this->induk))->get("/smkp/{$a->id}/formulir/respon/cetak")->assertOk()->assertInertia(fn (Inertia $p) => $p
+            ->component('Print/Smkp/ResponPerusahaan')
+            ->where('dok.nomor', 'FRM/IU/OHSE/027')->where('dok.jenis', 'SURAT')
+            ->where('site', null)
+            ->where('pihak', [['peran' => 'Kepala Teknik Tambang', 'kunci' => 'ktt', 'nama' => 'KTT Uji']]));
+
+        $this->pjp->update(['pjo' => 'PJO Uji']);
+        $b = $this->audit($this->pjp);
+        $this->actingAs($this->auditor($this->pjp))->get("/smkp/{$b->id}/formulir/respon/cetak")->assertOk()->assertInertia(fn (Inertia $p) => $p
+            ->where('site', 'PT Induk Uji')
+            ->where('pihak', [['peran' => 'Penanggung Jawab Operasional', 'kunci' => 'pjo', 'nama' => 'PJO Uji']]));
+    }
+
+    /**
+     * Bug nyata dari auditor: Nama Auditi di Formulir Kesesuaian selalu
+     * dipaksa KTT, padahal perusahaan jasa pertambangan (PJP) diwakili PJO
+     * — wakil auditi ditentukan dari siapa yang sebenarnya diwawancara/
+     * diobservasi/diaudit, KTT tidak ikut kecuali dia sendiri yang diaudit.
+     */
+    public function test_formulir_kesesuaian_memakai_pjo_untuk_perusahaan_jasa_pertambangan(): void
+    {
+        $this->induk->update(['ktt' => 'KTT Uji']);
+        $a = $this->audit($this->induk);
+        $this->actingAs($this->auditor($this->induk))->get("/smkp/{$a->id}/formulir/kesesuaian/cetak")->assertOk()->assertInertia(fn (Inertia $p) => $p
+            ->where('pihak', [
+                ['peran' => 'Nama Auditor', 'kunci' => 'ketua', 'nama' => 'Ketua Uji'],
+                ['peran' => 'Nama Auditi', 'kunci' => 'ktt', 'nama' => 'KTT Uji'],
+            ]));
+
+        $this->pjp->update(['pjo' => 'PJO Uji']);
+        $b = $this->audit($this->pjp);
+        $this->actingAs($this->auditor($this->pjp))->get("/smkp/{$b->id}/formulir/kesesuaian/cetak")->assertOk()->assertInertia(fn (Inertia $p) => $p
+            ->where('pihak', [
+                ['peran' => 'Nama Auditor', 'kunci' => 'ketua', 'nama' => 'Ketua Uji'],
+                ['peran' => 'Nama Auditi', 'kunci' => 'pjo', 'nama' => 'PJO Uji'],
+            ]));
+    }
+
+    /**
+     * Bug nyata dari auditor: Nama Auditi di lembar temuan Formulir
+     * Ketidaksesuaian dan Tindak Lanjut dipaksa KTT, sama seperti Formulir
+     * Kesesuaian — perusahaan jasa pertambangan (PJP) diwakili PJO.
+     */
+    public function test_formulir_ketidaksesuaian_pihak_auditi_memakai_pjo_untuk_perusahaan_jasa_pertambangan(): void
+    {
+        $this->induk->update(['ktt' => 'KTT Uji']);
+        $a = $this->audit($this->induk);
+        $this->actingAs($this->auditor($this->induk))->get("/smkp/{$a->id}/formulir/ketidaksesuaian/cetak")->assertOk()->assertInertia(fn (Inertia $p) => $p
+            ->where('pihakAuditi', [['peran' => 'Nama Auditi', 'kunci' => 'ktt', 'nama' => 'KTT Uji']]));
+
+        $this->pjp->update(['pjo' => 'PJO Uji']);
+        $b = $this->audit($this->pjp);
+        $this->actingAs($this->auditor($this->pjp))->get("/smkp/{$b->id}/formulir/ketidaksesuaian/cetak")->assertOk()->assertInertia(fn (Inertia $p) => $p
+            ->where('pihakAuditi', [['peran' => 'Nama Auditi', 'kunci' => 'pjo', 'nama' => 'PJO Uji']]));
+
+        // Formulir yang lain (rekapitulasi, tindak-lanjut) tidak memiliki tanda tangan auditi.
+        $this->actingAs($this->auditor($this->induk))->get("/smkp/{$a->id}/formulir/rekapitulasi/cetak")->assertOk()->assertInertia(fn (Inertia $p) => $p
+            ->missing('pihakAuditi'));
+    }
+
+    public function test_respon_perusahaan_simpan_tempat(): void
+    {
+        $u = $this->auditor($this->induk);
+        $a = $this->audit($this->induk);
+
+        $this->actingAs($u)->post("/smkp/{$a->id}/formulir/respon", ['tempat' => 'Padang'])->assertSessionHas('ok');
+        $this->assertSame(['tempat' => 'Padang'], $a->fresh()->respon);
+
+        $this->actingAs($u)->post("/smkp/{$a->id}/formulir/respon", ['tempat' => ''])->assertSessionHas('ok');
+        $this->assertNull($a->fresh()->respon);
+
+        $this->actingAs($this->auditi($this->induk))->post("/smkp/{$a->id}/formulir/respon", ['tempat' => 'X'])->assertForbidden();
     }
 }

@@ -46,7 +46,7 @@ use App\Http\Controllers\SertifikatLingkunganController;
 use App\Http\Controllers\KepatuhanController;
 use App\Http\Controllers\PerangkatSayaController;
 use App\Http\Controllers\TurController;
-use App\Http\Controllers\{BuktiAuditController, RencanaImporController, SmkpFormulirController, TindakLanjutController};
+use App\Http\Controllers\{BuktiAuditController, RencanaImporController, SmkpDasborController, SmkpFormulirController, TindakLanjutController};
 use Illuminate\Support\Facades\Route;
 
 /* ============ PENEMUAN (publik) ============
@@ -1568,6 +1568,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('smkp')->name('smkp.')->where(Rute::id('bukti', 'hadir', 'smkp', 'sumber', 'temuan'))->group(function () {
         Route::get('/',      [SmkpController::class, 'index'])->name('index');
         Route::get('acuan',  [SmkpController::class, 'acuan'])->name('acuan');
+        /* Dasbor v2 (mengikuti dasbor DBEST): KPI, benchmark & pembanding
+           antartahun, analisis temuan, ekspor Excel. Didaftarkan sebelum
+           rute {smkp} agar "dasbor" tidak dibaca sebagai nomor audit. */
+        Route::get('dasbor',        [SmkpDasborController::class, 'index'])->name('dasbor');
+        Route::get('dasbor/ekspor', [SmkpDasborController::class, 'ekspor'])->name('dasbor.ekspor');
         Route::get('lanjut/{bagian}', [SmkpController::class, 'lanjut'])->name('lanjut');
         Route::get('tindak-lanjut', [TindakLanjutController::class, 'index'])->name('tindak-lanjut');
 
@@ -1640,6 +1645,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('{smkp}/temuan/{temuan}',  [SmkpController::class, 'hapusTemuan'])->name('temuan.hapus');
             Route::post('{smkp}/elemen/{elemen}',    [SmkpController::class, 'simpanNilai'])->name('nilai.simpan');
             Route::post('{smkp}/formulir',           [SmkpFormulirController::class, 'simpan'])->name('formulir.simpan');
+            Route::post('{smkp}/formulir/respon',    [SmkpFormulirController::class, 'simpanRespon'])->name('formulir.respon.simpan');
         });
 
         Route::delete('{smkp}', [SmkpController::class, 'destroy'])->middleware('can:admin')->name('destroy');

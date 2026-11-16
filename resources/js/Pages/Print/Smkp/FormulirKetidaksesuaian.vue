@@ -12,13 +12,16 @@ import CetakLayout from '../../../Components/Smkp/CetakLayout.vue';
 import Lembar from '../../../Components/Smkp/Lembar.vue';
 import SeksiKetidaksesuaian, { type TemuanKts } from '../../../Components/Smkp/SeksiKetidaksesuaian.vue';
 import { useSeksiLembar, type GrupSeksi } from '../../../smkp/lib/susunLembar';
-import type { KopDok, RingkasAudit, TtdForm } from '../../../smkp/types';
+import type { KopDok, PihakTtd, RingkasAudit, TtdForm } from '../../../smkp/types';
 import BlankLayout from '../../../Layouts/BlankLayout.vue';
 
 /* Lembar cetak di luar kerangka aplikasi (konvensi EQOHSEE: Pages/Print + BlankLayout). */
 defineOptions({ layout: BlankLayout });
 
-const props = defineProps<{ audit: RingkasAudit; dok: KopDok; ttd: TtdForm; kembali: string; temuan: TemuanKts[] }>();
+const props = defineProps<{
+  audit: RingkasAudit; dok: KopDok; ttd: TtdForm; kembali: string; temuan: TemuanKts[];
+  pihakAuditi: Array<{ peran: string; kunci: PihakTtd; nama: string }>;
+}>();
 
 // Formulir kosong tetap dapat dicetak bila belum ada temuan.
 const daftar = computed<Array<TemuanKts | null>>(() => (props.temuan.length ? props.temuan : [null]));
@@ -52,7 +55,7 @@ const dokUntuk = (t: TemuanKts | null): KopDok => ({
         <div data-awal />
         <p data-lanjutan class="mb-2 text-[10.5px] italic text-slate-500">Lanjutan</p>
         <template v-for="(g, gi) in grup" :key="gi">
-          <SeksiKetidaksesuaian v-for="s in g.seksi" :key="s" :data-seksi="`${gi}:${s}`" :seksi="s" :t="temuanDari(gi)" :audit="audit" :ttd="ttd" />
+          <SeksiKetidaksesuaian v-for="s in g.seksi" :key="s" :data-seksi="`${gi}:${s}`" :seksi="s" :t="temuanDari(gi)" :audit="audit" :ttd="ttd" :pihak-auditi="pihakAuditi" />
         </template>
       </Lembar>
     </div>
@@ -63,7 +66,7 @@ const dokUntuk = (t: TemuanKts | null): KopDok => ({
         <p v-if="lanjutan(n)" class="mb-2 text-[10.5px] italic text-slate-500">
           {{ h.grup % 2 ? 'Tindak Lanjut Audit' : 'Uraian Ketidaksesuaian' }}<template v-if="temuanDari(h.grup)"> — {{ temuanDari(h.grup)?.nomor }}</template> (lanjutan)
         </p>
-        <SeksiKetidaksesuaian v-for="s in h.seksi" :key="s" :seksi="s" :t="temuanDari(h.grup)" :audit="audit" :ttd="ttd" />
+        <SeksiKetidaksesuaian v-for="s in h.seksi" :key="s" :seksi="s" :t="temuanDari(h.grup)" :audit="audit" :ttd="ttd" :pihak-auditi="pihakAuditi" />
       </Lembar>
     </template>
   </CetakLayout>

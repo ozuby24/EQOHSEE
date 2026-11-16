@@ -7,7 +7,7 @@
  */
 import FormIdentitas from './FormIdentitas.vue';
 import FormTtd from './FormTtd.vue';
-import type { RingkasAudit, TtdForm } from '../../smkp/types';
+import type { PihakTtd, RingkasAudit, TtdForm } from '../../smkp/types';
 
 export interface TemuanKts {
   id: number; nomor: string; kode: string; elemen: string; sub: string; subsub: string; kategori: string; labelKategori: string;
@@ -16,7 +16,10 @@ export interface TemuanKts {
   syaratTtd: { perbaikan: string | null; verifikasi: string | null }; lampiran: Array<{ nama: string; url: string }>;
 }
 
-const props = defineProps<{ seksi: string; t: TemuanKts | null; audit: RingkasAudit; ttd: TtdForm; lanjut?: boolean }>();
+const props = defineProps<{
+  seksi: string; t: TemuanKts | null; audit: RingkasAudit; ttd: TtdForm; lanjut?: boolean;
+  pihakAuditi: Array<{ peran: string; kunci: PihakTtd; nama: string }>;
+}>();
 
 const KATEGORI: Array<[string, string]> = [['kritikal', 'Kritikal'], ['mayor', 'Mayor'], ['minor', 'Minor']];
 const urlTemuan = (t: TemuanKts) => `/smkp/${props.audit.id}/temuan?buka=${t.id}`;
@@ -58,7 +61,7 @@ const urlTemuan = (t: TemuanKts) => `/smkp/${props.audit.id}/temuan?buka=${t.id}
       <div class="kotak-isi">{{ t?.batas || ' ' }}</div>
     </template>
 
-    <FormTtd v-else-if="seksi === 'ttdTemuan'" :pihak="[{ peran: 'Nama Auditor', kunci: 'ketua', nama: ttd.ketua }, { peran: 'Nama Auditi', kunci: 'ktt', nama: ttd.ktt }]" :ttd="ttd"
+    <FormTtd v-else-if="seksi === 'ttdTemuan'" :pihak="[{ peran: 'Nama Auditor', kunci: 'ketua', nama: ttd.ketua }, ...pihakAuditi]" :ttd="ttd"
              :bagian="t ? `ketidaksesuaian.${t.id}.temuan` : undefined" />
 
     <!-- Lembar tindak lanjut (auditi) & ulasan tim auditor -->
@@ -89,7 +92,7 @@ const urlTemuan = (t: TemuanKts) => `/smkp/${props.audit.id}/temuan?buka=${t.id}
       <tr><td class="w-[22%]">Tanggal Perbaikan</td><td>{{ t?.tanggalPerbaikan }}</td></tr>
     </tbody></table>
 
-    <FormTtd v-else-if="seksi === 'ttdAuditi'" :pihak="[{ peran: 'Nama Auditi', kunci: 'ktt', nama: ttd.ktt }]" :ttd="ttd" manual :syarat="t?.syaratTtd.perbaikan"
+    <FormTtd v-else-if="seksi === 'ttdAuditi'" :pihak="pihakAuditi" :ttd="ttd" manual :syarat="t?.syaratTtd.perbaikan"
              :tautan="t ? urlTemuan(t) : undefined" :bagian="t ? `ketidaksesuaian.${t.id}.perbaikan` : undefined" />
 
     <template v-else-if="seksi === 'ulasan'">
