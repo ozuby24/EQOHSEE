@@ -5,17 +5,14 @@ import CetakLayout from '../../../Components/Smkp/CetakLayout.vue';
 import Lembar from '../../../Components/Smkp/Lembar.vue';
 import FormIdentitas from '../../../Components/Smkp/FormIdentitas.vue';
 import FormTtd from '../../../Components/Smkp/FormTtd.vue';
-import type { KopDok, PihakTtd, RingkasAudit, TtdForm } from '../../../smkp/types';
+import type { KopDok, RingkasAudit, TtdForm } from '../../../smkp/types';
 import BlankLayout from '../../../Layouts/BlankLayout.vue';
 
 /* Lembar cetak di luar kerangka aplikasi (konvensi EQOHSEE: Pages/Print + BlankLayout). */
 defineOptions({ layout: BlankLayout });
 
 interface Baris { elemen: string; elemenNama: string; sub: string; subNama: string; subsub: string; subsubNama: string; isi: string }
-const props = defineProps<{
-  audit: RingkasAudit; dok: KopDok; ttd: TtdForm; kembali: string; baris: Baris[];
-  pihak: Array<{ peran: string; kunci: PihakTtd; nama: string }>;
-}>();
+const props = defineProps<{ audit: RingkasAudit; dok: KopDok; ttd: TtdForm; kembali: string; baris: Baris[] }>();
 
 // Tiga blok per lembar seperti formulir asli; formulir kosong tetap tercetak tiga blok.
 const halaman = computed(() => {
@@ -41,7 +38,7 @@ const halaman = computed(() => {
           <tr><td class="label-sel">Keterangan</td><td class="h-16 whitespace-pre-line text-justify">{{ b?.isi ?? '' }}</td></tr>
         </tbody>
       </table>
-      <FormTtd v-if="i === halaman.length - 1" :pihak="pihak" :ttd="ttd" bagian="kesesuaian" />
+      <FormTtd v-if="i === halaman.length - 1" :pihak="[{ peran: 'Nama Auditor', kunci: 'ketua', nama: ttd.ketua }, { peran: 'Nama Auditi', kunci: 'ktt', nama: ttd.ktt }]" :ttd="ttd" bagian="kesesuaian" />
     </Lembar>
   </CetakLayout>
 </template>

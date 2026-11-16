@@ -11,6 +11,7 @@ interface Elemen extends Kode { sub: Array<Kode & { subsub: Kode[] }> }
 
 const props = defineProps<{
   audit: RingkasAudit;
+  kesesuaian: Baris[];
   rekomendasi: Baris[];
   kriteria: Elemen[];
   ringkas: {
@@ -41,8 +42,8 @@ const FORMULIR = computed(() => [
   { no: 2, judul: 'Formulir Kriteria Audit (Penilaian SMKP)', ket: 'Nilai tiap sub-elemen dan sub-sub-elemen, total & persentase nilai elemen berbobot.',
     status: `${props.ringkas.penilaian.terisi}/${props.ringkas.penilaian.total} butir dinilai`, lengkap: props.ringkas.penilaian.total > 0 && props.ringkas.penilaian.terisi === props.ringkas.penilaian.total,
     isi: `/smkp/${id}/elemen/I`, cetak: cetak('penilaian') },
-  { no: 3, judul: 'Formulir Kesesuaian', ket: 'Terisi otomatis dari Formulir Kriteria Audit — butir bercapaian penuh, dengan keterangan dari rubrik resmi. Tidak perlu diisi manual.',
-    status: `${props.ringkas.kesesuaian} butir otomatis`, lengkap: props.ringkas.kesesuaian > 0, isi: null, cetak: cetak('kesesuaian') },
+  { no: 3, judul: 'Formulir Kesesuaian', ket: 'Uraian kesesuaian per elemen, sub-elemen & sub-sub-elemen, ditandatangani auditor dan auditi.',
+    status: `${props.ringkas.kesesuaian} uraian`, lengkap: props.ringkas.kesesuaian > 0, isi: '#kesesuaian', cetak: cetak('kesesuaian') },
   { no: 4, judul: 'Formulir Ketidaksesuaian & Tindak Lanjut', ket: 'Satu formulir per temuan: uraian masalah, lokasi, bukti, kategori, tindak lanjut auditi, ulasan auditor.',
     status: `${props.ringkas.ketidaksesuaian} temuan`, lengkap: props.ringkas.ketidaksesuaian > 0, isi: `/smkp/${id}/temuan`, cetak: cetak('ketidaksesuaian') },
   { no: 5, judul: 'Rekapitulasi Ketidaksesuaian', ket: 'Daftar seluruh ketidaksesuaian beserta jumlah temuan kritikal, mayor, dan minor.',
@@ -54,13 +55,15 @@ const FORMULIR = computed(() => [
     isi: `/smkp/${id}/temuan`, cetak: cetak('tindak-lanjut') },
 ]);
 
-/* ───────── Editor rekomendasi (opsional) ───────── */
+/* ───────── Editor kesesuaian & rekomendasi ───────── */
 const form = useForm({
+  kesesuaian: props.kesesuaian.map((b) => ({ elemen: b.elemen, sub: b.sub, subsub: b.subsub ?? '', keterangan: b.keterangan ?? '' })),
   rekomendasi: props.rekomendasi.map((b) => ({ elemen: b.elemen, sub: b.sub, subsub: b.subsub ?? '', uraian: b.uraian ?? '' })),
 });
 
 const subDari = (elemen: string) => props.kriteria.find((e) => e.kode === elemen)?.sub ?? [];
 const subsubDari = (elemen: string, sub: string) => subDari(elemen).find((s) => s.kode === sub)?.subsub ?? [];
+const tambahK = () => form.kesesuaian.push({ elemen: '', sub: '', subsub: '', keterangan: '' });
 const tambahR = () => form.rekomendasi.push({ elemen: '', sub: '', subsub: '', uraian: '' });
 
 function simpan() {
@@ -98,40 +101,49 @@ function simpan() {
       </ol>
     </section>
 
-    <section class="kartu mt-5">
-      <div class="kartu-kepala">
-        <div>
-          <h2 class="kartu-judul">Lampiran Tambahan</h2>
-          <p class="kartu-sub">Di luar 7 formulir resmi di atas — bukan bagian lampiran Kepdirjen 185.K/37.04/DJB/2019, tapi tetap berkop dokumen terkendali.</p>
+    <form class="mt-5 grid xl:grid-cols-2 gap-5" @submit.prevent="simpan">
+      <section id="kesesuaian" class="kartu scroll-mt-24">
+        <div class="kartu-kepala">
+          <div><h2 class="kartu-judul">Uraian Kesesuaian</h2><p class="kartu-sub">Formulir 3 — praktik terbaik yang sesuai kriteria, per elemen, sub-elemen & sub-sub-elemen.</p></div>
+          <button v-if="bisaSunting" type="button" class="btn-garis btn-kecil" @click="tambahK"><Ikon nama="tambah" class="w-4 h-4" /> Tambah</button>
         </div>
-      </div>
-      <ol class="divide-y divide-slate-100">
-        <li class="grid grid-cols-[36px_1fr] md:grid-cols-[36px_1fr_190px_176px] items-center gap-x-4 gap-y-2 px-5 sm:px-6 py-4">
-          <span class="grid place-items-center w-9 h-9 rounded-lg bg-slate-100 text-slate-500"><Ikon nama="cetak" class="w-4 h-4" /></span>
-          <div class="min-w-0">
-            <p class="text-[14px] font-semibold text-navy-900">Respon Perusahaan Terhadap Audit</p>
-            <p class="text-[12.5px] text-slate-500 leading-snug">Tanggapan dan komitmen auditi atas pelaksanaan dan hasil audit, ditandatangani KTT atau PJO.</p>
-          </div>
-          <span class="col-start-2 md:col-start-auto"></span>
-          <div class="col-start-2 md:col-start-auto flex gap-2 md:justify-end">
-            <a :href="cetak('respon')" target="_blank" rel="noopener" class="btn-garis btn-kecil"><Ikon nama="cetak" class="w-4 h-4" /> Cetak</a>
-          </div>
-        </li>
-      </ol>
-    </section>
+        <fieldset :disabled="!bisaSunting">
+          <ol v-if="form.kesesuaian.length" class="divide-y divide-slate-100">
+            <li v-for="(b, i) in form.kesesuaian" :key="i" class="px-5 sm:px-6 py-4 grid sm:grid-cols-2 gap-3">
+              <div>
+                <label class="label" :for="`k-el-${i}`">Elemen</label>
+                <select :id="`k-el-${i}`" v-model="b.elemen" class="input" @change="b.sub = ''; b.subsub = ''">
+                  <option value="" disabled>Pilih elemen</option>
+                  <option v-for="e in kriteria" :key="e.kode" :value="e.kode">{{ e.kode }} — {{ e.nama }}</option>
+                </select>
+                <p v-if="(form.errors as Record<string, string>)[`kesesuaian.${i}.elemen`]" class="galat">{{ (form.errors as Record<string, string>)[`kesesuaian.${i}.elemen`] }}</p>
+              </div>
+              <div>
+                <label class="label" :for="`k-sub-${i}`">Sub elemen</label>
+                <select :id="`k-sub-${i}`" v-model="b.sub" class="input" :disabled="!b.elemen" @change="b.subsub = ''">
+                  <option value="">— Seluruh elemen —</option>
+                  <option v-for="s in subDari(b.elemen)" :key="s.kode" :value="s.kode">{{ s.kode }} — {{ s.nama }}</option>
+                </select>
+              </div>
+              <div v-if="subsubDari(b.elemen, b.sub).length" class="sm:col-span-2">
+                <label class="label" :for="`k-ss-${i}`">Sub-sub elemen</label>
+                <select :id="`k-ss-${i}`" v-model="b.subsub" class="input">
+                  <option value="">— Seluruh sub elemen —</option>
+                  <option v-for="s in subsubDari(b.elemen, b.sub)" :key="s.kode" :value="s.kode">{{ s.kode }} — {{ s.nama }}</option>
+                </select>
+              </div>
+              <div class="sm:col-span-2">
+                <div class="flex items-center justify-between"><label class="label" :for="`k-ket-${i}`">Keterangan</label>
+                  <button v-if="bisaSunting" type="button" class="text-[12px] font-semibold text-rose-600 hover:text-rose-700" @click="form.kesesuaian.splice(i, 1)">Hapus</button></div>
+                <textarea :id="`k-ket-${i}`" v-model="b.keterangan" rows="2" class="input" placeholder="Bukti kesesuaian: dokumen, rekaman, atau pengamatan" />
+                <p v-if="(form.errors as Record<string, string>)[`kesesuaian.${i}.keterangan`]" class="galat">{{ (form.errors as Record<string, string>)[`kesesuaian.${i}.keterangan`] }}</p>
+              </div>
+            </li>
+          </ol>
+          <p v-else class="px-6 py-10 text-center text-[13px] text-slate-500">Belum ada uraian kesesuaian.</p>
+        </fieldset>
+      </section>
 
-    <section class="kartu mt-5">
-      <div class="kartu-kepala">
-        <div><h2 class="kartu-judul">Uraian Kesesuaian</h2><p class="kartu-sub">Formulir 3 — terisi otomatis dari Formulir Kriteria Audit, tidak perlu diisi manual.</p></div>
-      </div>
-      <p class="px-5 sm:px-6 py-5 text-[12.5px] text-slate-600 leading-relaxed">
-        <b class="text-navy-900 num">{{ ringkas.kesesuaian }}</b> butir dengan capaian penuh pada Formulir Kriteria Audit otomatis menjadi uraian kesesuaian di sini —
-        keterangannya diturunkan dari rubrik resmi Kepdirjen 185.K/37.04/DJB/2019, menyebut nama perusahaan.
-        Butir yang jadi ketidaksesuaian (lihat Formulir 4) tidak ikut terdaftar. Klik Cetak pada Formulir Kesesuaian di atas untuk melihat hasilnya.
-      </p>
-    </section>
-
-    <form class="mt-5 grid gap-5" @submit.prevent="simpan">
       <section id="rekomendasi" class="kartu scroll-mt-24">
         <div class="kartu-kepala">
           <div><h2 class="kartu-judul">Rekomendasi &amp; Peluang untuk Perbaikan</h2><p class="kartu-sub">Formulir 6 — opsional, tidak wajib diisi setiap auditor.</p></div>
@@ -173,9 +185,9 @@ function simpan() {
         </fieldset>
       </section>
 
-      <div v-if="bisaSunting" class="sticky bottom-3 sm:bottom-4 z-10 flex items-center justify-between gap-3 rounded-kartu bg-navy-900 text-white px-3.5 py-2.5 sm:px-5 sm:py-3 shadow-angkat">
-        <p class="min-w-0 text-[12.5px] sm:text-[13px] leading-snug text-white/80">{{ form.isDirty ? 'Ada perubahan yang belum disimpan.' : 'Rekomendasi tersimpan.' }}</p>
-        <button type="submit" class="btn-aksen btn-kecil shrink-0" :disabled="form.processing || !form.isDirty"><Ikon nama="simpan" class="w-4 h-4" /> Simpan rekomendasi</button>
+      <div v-if="bisaSunting" class="xl:col-span-2 sticky bottom-3 sm:bottom-4 z-10 flex items-center justify-between gap-3 rounded-kartu bg-navy-900 text-white px-3.5 py-2.5 sm:px-5 sm:py-3 shadow-angkat">
+        <p class="min-w-0 text-[12.5px] sm:text-[13px] leading-snug text-white/80">{{ form.isDirty ? 'Ada perubahan yang belum disimpan.' : 'Kesesuaian dan rekomendasi tersimpan.' }}</p>
+        <button type="submit" class="btn-aksen btn-kecil shrink-0" :disabled="form.processing || !form.isDirty"><Ikon nama="simpan" class="w-4 h-4" /> Simpan formulir</button>
       </div>
     </form>
   </div>

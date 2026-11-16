@@ -634,52 +634,6 @@ class Smkp
     }
 
     /**
-     * Uraian kesesuaian otomatis untuk Formulir Kesesuaian — pelengkap
-     * temuan(): butir yang sudah dinilai dan tergolong kategori 'kesesuaian'
-     * (capaian penuh), dengan keterangan diturunkan dari rubrik resmi (lihat
-     * uraianPenerapan()) alih-alih diketik manual. Sub-elemen rincian yang
-     * keseluruhannya Mayor tidak menyumbang baris di sini — sejalan dengan
-     * temuan() yang mencatatnya sebagai satu ketidaksesuaian untuk seluruh
-     * sub-elemen, bukan per butir.
-     *
-     * @return array<int,array{elemen:string,sub:string,subsub:string,keterangan:string}>
-     */
-    public static function kesesuaian(array $hasil, string $pt, bool $jasa = false): array
-    {
-        $out = [];
-        foreach (self::elemen() as $e) {
-            foreach ($e['sub'] as $s) {
-                $rinci = !empty($s['subsub']);
-                if ($rinci) {
-                    $r = self::rekapSub($s, $hasil);
-                    if ($r['berlaku'] === 0 || $r['dinilai'] < $r['berlaku']) continue; // kategori sub-elemen belum pasti
-                    if ($r['kategori']['kode'] === 'mayor') continue; // seluruh sub tidak sesuai
-                }
-
-                foreach (self::butirSub($s) as $b) {
-                    $v = self::nilaiSetara($hasil, $b);
-                    if ($v === self::NA || $v === null) continue;
-
-                    $capaian = $b['maks'] > 0 ? (float) $v / (float) $b['maks'] : 0.0;
-                    if (self::kategoriDari($capaian)['kode'] !== 'kesesuaian') continue;
-
-                    $uraian = self::uraianPenerapan($b['kode'], (float) $v, $pt, $jasa);
-                    if ($uraian === null) continue;
-
-                    $out[] = [
-                        'elemen'     => $e['kode'],
-                        'sub'        => $s['kode'],
-                        'subsub'     => $rinci ? $b['kode'] : '',
-                        'keterangan' => $uraian,
-                    ];
-                }
-            }
-        }
-
-        return $out;
-    }
-
-    /**
      * Jenis temuan sebuah sub-elemen menurut nilainya: 'mayor', 'minor',
      * 'kesesuaian', atau null bila di luar lingkup / belum tuntas dinilai.
      */

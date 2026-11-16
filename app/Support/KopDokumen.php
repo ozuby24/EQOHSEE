@@ -127,19 +127,6 @@ final class KopDokumen
                 'kode'  => 'OHSE-IV.067',
                 'urut'  => 1,
 ],
-            // Lampiran tambahan, bukan bagian lampiran resmi Lampiran II
-            // Kepdirjen 185.K/37.04/DJB/2019 — karena itu tidak memakai pola
-            // nomor "IV.067x" formulir resmi di atas.
-            'respon-perusahaan' => [
-                'nama'  => 'Respon Perusahaan',
-                'jenis' => 'SURAT',
-                'judul' => 'RESPON PERUSAHAAN TERHADAP PELAKSANAAN AUDIT INTERNAL SMKP',
-                'kode'  => 'OHSE-RESP',
-                /* Slot baru, bukan 13 (respon manajemen lama yang sudah
-                   dipensiunkan): nomor yang pernah beredar tidak dipakai
-                   ulang dokumen lain. */
-                'urut'  => 27,
-            ],
             'laporan-energi' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN KINERJA ENERGI DAN EMISI KARBON',
@@ -336,7 +323,7 @@ final class KopDokumen
     public const FORMULIR_SMKP = [
         'berita-acara', 'rencana-audit', 'daftar-hadir', 'penilaian-smkp', 'formulir-kesesuaian',
         'formulir-ketidaksesuaian', 'rekapitulasi-ketidaksesuaian', 'rekomendasi-ofi',
-        'rencana-tindak-lanjut', 'laporan-audit', 'respon-perusahaan',
+        'rencana-tindak-lanjut', 'laporan-audit',
     ];
 
     public const DIVISI     = 'Occupational Health, Safety and Environment, External';

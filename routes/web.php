@@ -1656,7 +1656,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('{smkp}/temuan/{temuan}',  [SmkpController::class, 'hapusTemuan'])->name('temuan.hapus');
             Route::post('{smkp}/elemen/{elemen}',    [SmkpController::class, 'simpanNilai'])->name('nilai.simpan');
             Route::post('{smkp}/formulir',           [SmkpFormulirController::class, 'simpan'])->name('formulir.simpan');
-            Route::post('{smkp}/formulir/respon',    [SmkpFormulirController::class, 'simpanRespon'])->name('formulir.respon.simpan');
         });
 
         Route::delete('{smkp}', [SmkpController::class, 'destroy'])->middleware('can:admin')->name('destroy');

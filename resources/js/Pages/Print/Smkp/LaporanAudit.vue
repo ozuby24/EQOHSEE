@@ -4,8 +4,7 @@
  * Lampiran II Kepdirjen Minerba 185.K/37.04/DJB/2019 (format laporan):
  * halaman judul, 1 latar belakang, 2 gambaran umum, 3 lingkup, 4 pelaksanaan
  * & tim auditor, 5 ringkasan & penilaian, 6 lampiran, penutup bertanda
- * tangan seluruh tim auditor & auditi (PJO untuk perusahaan jasa, KTT untuk
- * lainnya), distribusi.
+ * tangan seluruh tim auditor (PJO untuk perusahaan jasa), distribusi.
  * Isi dibagi ke lembar A4 berkop dari tinggi yang diukur (lib/susunLembar).
  * Blok yang sama dapat diunduh sebagai dokumen Word untuk disunting
  * (lib/wordCetak; `?unduh=word` langsung mengunduhnya).
@@ -51,7 +50,7 @@ const props = defineProps<{
   kategori: Record<string, string>;
   hitung: Record<string, number>;
   tim: Array<{ fungsi: string; nama: string; registrasi: string; tandaTangan: boolean; kunci: PihakTtd | null }>;
-  pihakAuditi: Array<{ peran: string; kunci: PihakTtd; nama: string }>;
+  pihakPjo: Array<{ peran: string; kunci: PihakTtd; nama: string }>;
   jasa: boolean;
   ttd: TtdForm;
   dok: KopDok;
@@ -257,7 +256,7 @@ const blok = computed<Blok[]>(() => {
     teks([`Tim Internal Auditor ${p}`], 0, true),
     { k: 'ttd', id: 'tim' },
   );
-  if (props.pihakAuditi.length) isi.push(teks(['Mengetahui,'], 0, true), { k: 'ttd', id: 'auditi' });
+  if (props.pihakPjo.length) isi.push(teks(['Mengetahui,'], 0, true), { k: 'ttd', id: 'pjo' });
   isi.push(
     teks([B('Distribusi Laporan')], 0, true),
     { k: 'daftar', gaya: '1.', inden: 0, butir: (x.distribusi ? x.distribusi.split('\n').map((t) => t.trim()).filter(Boolean) : props.distribusi).map((t) => ({ isi: [t] })) },
@@ -293,7 +292,7 @@ async function unduhWord() {
       },
       ttd: {
         tim: pihakTim.value.map((x) => ({ peran: x.peran, nama: x.nama, gambar: x.kunci ? props.ttd.gambar[x.kunci] : null })),
-        pjo: props.pihakAuditi.map((x) => ({ peran: x.peran, nama: x.nama, gambar: props.ttd.gambar[x.kunci] })),
+        pjo: props.pihakPjo.map((x) => ({ peran: x.peran, nama: x.nama, gambar: props.ttd.gambar[x.kunci] })),
       },
     });
   } catch (e) {
@@ -332,7 +331,7 @@ onMounted(() => {
         <BlokCetak v-for="(b, i) in blok" :key="i" :blok="b" data-blok>
           <template v-if="b.k === 'ttd'">
             <FormTtd v-if="b.id === 'tim'" daftar :pihak="pihakTim" :ttd="ttd" />
-            <FormTtd v-else daftar :pihak="pihakAuditi" :ttd="ttd" />
+            <FormTtd v-else daftar :pihak="pihakPjo" :ttd="ttd" />
           </template>
         </BlokCetak>
       </Lembar>
@@ -363,7 +362,7 @@ onMounted(() => {
         <BlokCetak v-for="c in isi" :key="`${c.i}-${c.dari ?? 0}`" :blok="blok[c.i]" :dari="c.dari" :sampai="c.sampai">
           <template v-if="blok[c.i].k === 'ttd'">
             <FormTtd v-if="(blok[c.i] as { id?: string }).id === 'tim'" daftar :pihak="pihakTim" :ttd="ttd" />
-            <FormTtd v-else daftar :pihak="pihakAuditi" :ttd="ttd" />
+            <FormTtd v-else daftar :pihak="pihakPjo" :ttd="ttd" />
           </template>
         </BlokCetak>
       </Lembar>

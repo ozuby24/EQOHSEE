@@ -44,7 +44,6 @@ class HalamanSmkpTest extends TestCase
             "/smkp/{$a->id}/formulir/rekapitulasi/cetak" => 'Print/Smkp/FormulirRekapitulasi',
             "/smkp/{$a->id}/formulir/rekomendasi/cetak" => 'Print/Smkp/FormulirRekomendasi',
             "/smkp/{$a->id}/formulir/tindak-lanjut/cetak" => 'Print/Smkp/FormulirTindakLanjut',
-            "/smkp/{$a->id}/formulir/respon/cetak" => 'Print/Smkp/ResponPerusahaan',
         ];
     }
 

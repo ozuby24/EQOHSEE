@@ -25,7 +25,7 @@ class SmkpAudit extends Model
         'tanggal_mulai', 'tanggal_selesai', 'ketua_auditor',
         'hasil', 'auditor', 'profil', 'user_id',
         'permulaan', 'rencana', 'kecukupan', 'kinerja', 'risiko',
-        'kesesuaian', 'rekomendasi', 'laporan', 'respon',
+        'kesesuaian', 'rekomendasi', 'laporan',
     ];
 
     /** Folder berkas tanda tangan digital formulir (disk local). Kolom ttd_formulir sengaja tidak fillable: jalur berkasnya hanya ditulis SmkpFormulirController. */
@@ -50,7 +50,6 @@ class SmkpAudit extends Model
             'kesesuaian'      => 'array',
             'rekomendasi'     => 'array',
             'laporan'         => 'array',
-            'respon'          => 'array',
             'ttd_formulir'    => 'array',
             'mandays_tetap'   => 'array',
             'tahap'           => 'integer',
@@ -192,7 +191,6 @@ class SmkpAudit extends Model
             'laporan'     => $this->langkah($rk['dinilai'] > 0, 'Nilai akhir '.number_format($rk['skor'], 2, ',', '.').' · '.$rk['tingkat']['label']),
             'hadir-buka'  => $this->langkah($hadirBuka > 0, $hadirBuka.' peserta'),
             'hadir-tutup' => $this->langkah($hadirTutup > 0, $hadirTutup.' peserta'),
-            'respon'      => $this->langkah(!empty($this->ttd_formulir['tanggal']['respon'] ?? []), !empty($this->ttd_formulir['tanggal']['respon'] ?? []) ? 'Sudah ditandatangani' : 'Belum ditandatangani'),
         ];
     }
 

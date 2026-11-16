@@ -1245,7 +1245,7 @@ class SmkpController extends Controller
                 'alamatSite' => trim((string) ($smkp->permulaan['alamat_site'] ?? '')) ?: $this->alamatSiteBawaan($smkp),
                 'jumlahPekerja' => (string) ($smkp->permulaan['jumlah_pekerja'] ?? ''),
                 'tim'        => count($this->timLaporan($smkp)),
-                'praktik'    => count($this->praktikTerbaik($smkp)),
+                'praktik'    => count((array) ($smkp->kesesuaian ?? [])),
                 'temuan'     => $smkp->findings()->count(),
                 'dinilai'    => $rekap['dinilai'],
                 'berlaku'    => $rekap['berlaku'],
@@ -1305,6 +1305,8 @@ class SmkpController extends Controller
             $elemen[] = ['kode' => $e['kode'], 'nama' => $e['nama'], 'maks' => $r['maks'], 'nilai' => $r['nilai'], 'skor' => $r['skor']];
         }
 
+        $pjo = trim((string) ($smkp->rencana['pengesahan']['pjo']['nama'] ?? '')) ?: (string) $smkp->company?->pjo;
+
         return Inertia::render('Print/Smkp/LaporanAudit', [
             'audit'     => $audit,
             'isian'     => $this->isiLaporan((array) ($smkp->laporan ?? [])),
@@ -1329,8 +1331,8 @@ class SmkpController extends Controller
             // keduanya bisa berbeda setelah auditor menetapkan kategori.
             'hitung'    => collect(array_keys(SmkpFinding::KATEGORI))->mapWithKeys(fn ($k) => [$k => $temuan->where('jenis', $k)->count()])->all(),
             'tim'       => $this->timLaporan($smkp),
-            // Approval auditi: PJO untuk perusahaan jasa pertambangan, KTT untuk lainnya.
-            'pihakAuditi' => [$this->pihakAuditi($smkp)],
+            // Perusahaan jasa pertambangan: laporan turut ditandatangani PJO.
+            'pihakPjo'  => $jasa ? [['peran' => 'Penanggung Jawab Operasional', 'kunci' => 'pjo', 'nama' => $pjo]] : [],
             'jasa'      => $jasa,
             'ttd'       => $this->isianTtd($request, $smkp),
             'dok'       => KopDokumen::cetak('laporan-audit', $smkp->company),
@@ -1422,36 +1424,6 @@ class SmkpController extends Controller
             $jasa || $pjo !== '' ? ['peran' => 'Penanggung Jawab Operasional dari Auditi', 'ket' => 'khusus untuk audit perusahaan jasa pertambangan', 'kunci' => 'pjo', 'nama' => $pjo ?: (string) $a->company?->pjo] : null,
             ['peran' => 'Kepala Teknik Tambang', 'kunci' => 'ktt', 'nama' => $n['ktt']],
         ]));
-    }
-
-    /**
-     * Satu baris wakil auditi sendiri (bukan tim audit), siapa yang benar-
-     * benar diwawancara/diobservasi/diaudit dokumennya: PJO untuk perusahaan
-     * jasa pertambangan, KTT untuk lainnya — KTT tidak ikut tanda tangan
-     * auditi kecuali dia sendiri yang diaudit. Satu peran berlaku untuk
-     * keduanya, label resminya dibedakan lewat parameter bila perlu. Dipakai
-     * Respon Perusahaan, Formulir Kesesuaian, lembar temuan Formulir
-     * Ketidaksesuaian, dan Laporan Audit. Berita Acara terkecuali — tetap
-     * menampilkan Ketua Tim, PJO, dan KTT bertiga (pihakBeritaAcara()).
-     */
-    protected function pihakAuditi(SmkpAudit $a, string $peranKtt = 'Kepala Teknik Tambang', ?string $peranPjo = null): array
-    {
-        $n = $this->penandaTangan($a);
-        $pjo = trim((string) ($a->rencana['pengesahan']['pjo']['nama'] ?? ''));
-        $jasa = $a->company?->kategori === 'pjp';
-
-        return $jasa || $pjo !== ''
-            ? ['peran' => $peranPjo ?? 'Penanggung Jawab Operasional', 'kunci' => 'pjo', 'nama' => $pjo ?: (string) $a->company?->pjo]
-            : ['peran' => $peranKtt, 'kunci' => 'ktt', 'nama' => $n['ktt']];
-    }
-
-    /**
-     * Penanda tangan tunggal Respon Perusahaan: wakil auditi sendiri, bukan
-     * tim audit — PJO untuk perusahaan jasa pertambangan, KTT untuk lainnya.
-     */
-    protected function pihakRespon(SmkpAudit $a): array
-    {
-        return [$this->pihakAuditi($a)];
     }
 
     /**
@@ -1631,13 +1603,7 @@ class SmkpController extends Controller
         return $out;
     }
 
-    /**
-     * Praktik terbaik (laporan bagian 5.1.1), dengan nama kriterianya —
-     * sinkron dengan Formulir Kesesuaian: dihitung otomatis dari hasil
-     * penilaian (Smkp::kesesuaian()), bukan kolom `kesesuaian` lama yang
-     * sudah tidak diisi lagi sejak formulir itu otomatis (lihat PR
-     * otomatisasi Formulir Kesesuaian).
-     */
+    /** Praktik terbaik (laporan bagian 5.1.1) dari Formulir Kesesuaian, dengan nama kriterianya. */
     protected function praktikTerbaik(SmkpAudit $a): array
     {
         $nama = [];
@@ -1649,15 +1615,18 @@ class SmkpController extends Controller
             }
         }
 
-        $jasa = $a->company?->kategori === 'pjp';
         $out = [];
-        foreach (Smkp::kesesuaian((array) ($a->hasil ?? []), (string) ($a->company?->name ?? ''), $jasa) as $r) {
-            $kode = $r['subsub'] ?: $r['sub'];
+        foreach ((array) ($a->kesesuaian ?? []) as $r) {
+            $r = (array) $r;
+            $ket = trim((string) ($r['keterangan'] ?? ''));
+            $el = (string) ($r['elemen'] ?? '');
+            if ($ket === '' || !isset($nama[$el])) continue;
+            $kode = ($r['subsub'] ?? '') ?: (($r['sub'] ?? '') ?: '');
             $out[] = [
-                'elemen'     => $r['elemen'],
-                'namaElemen' => $nama[$r['elemen']] ?? '',
-                'kriteria'   => $kode === '' ? '' : ($r['subsub'] ? 'Sub Sub Elemen ' : 'Sub Elemen ').$kode.' – '.($nama[$kode] ?? ''),
-                'uraian'     => $r['keterangan'],
+                'elemen'   => $el,
+                'namaElemen' => $nama[$el],
+                'kriteria' => $kode === '' ? '' : (($r['subsub'] ?? '') ? 'Sub Sub Elemen ' : 'Sub Elemen ').$kode.' – '.($nama[$kode] ?? ''),
+                'uraian'   => $ket,
             ];
         }
 
@@ -1687,19 +1656,7 @@ class SmkpController extends Controller
      * disampaikan, verifikasi oleh auditor setelah buktinya diverifikasi.
      */
     protected const BAGIAN_MANUAL = '/^ketidaksesuaian\.(\d{1,10})\.(perbaikan|verifikasi)$/';
-
-    /**
-     * Pihak bagian tindak lanjut: perbaikan dibubuhkan wakil auditi sendiri
-     * — PJO untuk perusahaan jasa pertambangan, KTT untuk lainnya, sama
-     * seperti pihakAuditi() — verifikasi selalu oleh ketua tim audit.
-     */
-    protected function pihakManual(SmkpAudit $a, string $tahap): string
-    {
-        if ($tahap !== 'perbaikan') return 'ketua';
-        $pjo = trim((string) ($a->rencana['pengesahan']['pjo']['nama'] ?? ''));
-
-        return $a->company?->kategori === 'pjp' || $pjo !== '' ? 'pjo' : 'ktt';
-    }
+    protected const PIHAK_MANUAL = ['perbaikan' => 'ktt', 'verifikasi' => 'ketua'];
 
     /**
      * Isian tanda tangan untuk halaman cetak: tanggal per bagian & pihak,
@@ -1729,7 +1686,7 @@ class SmkpController extends Controller
         $bubuh = [];
         foreach ((array) ($t['bubuh'] ?? []) as $bagian => $per) {
             if (!preg_match(self::BAGIAN_MANUAL, (string) $bagian, $m)) continue;
-            $pihak = $this->pihakManual($smkp, $m[2]);
+            $pihak = self::PIHAK_MANUAL[$m[2]];
             if (!empty(((array) $per)[$pihak])) $bubuh[$bagian] = [$pihak => true];
         }
 

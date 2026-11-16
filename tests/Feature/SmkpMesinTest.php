@@ -288,48 +288,6 @@ class SmkpMesinTest extends TestCase
         $this->assertSame(['mayor' => 1, 'minor' => 0], Smkp::hitungTemuan($h));
     }
 
-    /**
-     * Kesesuaian() adalah pelengkap temuan() untuk Formulir Kesesuaian: butir
-     * dengan capaian penuh menyumbang keterangan otomatis dari rubrik resmi
-     * (uraianPenerapan), bukan ditulis manual satu per satu.
-     */
-    public function test_kesesuaian_adalah_pelengkap_temuan_dengan_keterangan_dari_rubrik(): void
-    {
-        $h = ['I.1' => ['v' => 1], 'I.2' => ['v' => 2], 'I.3' => ['v' => 3]];   // I.3 capaian penuh, I.4/I.5 belum dinilai
-        $k = Smkp::kesesuaian($h, 'PT Uji', false);
-        $sub = array_column($k, 'sub');
-
-        $this->assertContains('I.3', $sub, 'Capaian penuh menjadi kesesuaian.');
-        $this->assertNotContains('I.1', $sub, 'Mayor bukan kesesuaian.');
-        $this->assertNotContains('I.2', $sub, 'Minor bukan kesesuaian.');
-        $this->assertNotContains('I.4', $sub, 'Yang belum dinilai bukan kesesuaian.');
-
-        $baris = collect($k)->firstWhere('sub', 'I.3');
-        $this->assertSame('I', $baris['elemen']);
-        $this->assertSame('', $baris['subsub'], 'Sub-elemen tanpa rincian: subsub kosong.');
-        $this->assertStringContainsString('PT Uji', $baris['keterangan'], 'Keterangan diturunkan dari rubrik resmi, bukan diketik manual.');
-    }
-
-    /** Sama seperti temuan(): rincian dinilai per butir, bukan per sub-elemen. */
-    public function test_kesesuaian_rincian_per_butir_mengikuti_pola_temuan(): void
-    {
-        $h = $this->rinciIII12(['III.12.2' => 0, 'III.12.4' => 2]);   // keduanya Minor (lihat test rincian tidak pernah Mayor)
-        $k = Smkp::kesesuaian($h, 'PT Uji', false);
-        $subsub = array_column($k, 'subsub');
-        sort($subsub);
-
-        $this->assertSame(['III.12.1', 'III.12.3', 'III.12.5'], $subsub, 'Rincian capaian penuh jadi kesesuaian; yang Minor tidak.');
-    }
-
-    /** Sub-elemen rincian yang keseluruhannya Mayor tidak menyumbang kesesuaian per rincian — selaras dengan temuan(). */
-    public function test_kesesuaian_kosong_bila_sub_elemen_berincian_mayor(): void
-    {
-        $nol = array_fill_keys(['III.12.1', 'III.12.2', 'III.12.3', 'III.12.4', 'III.12.5'], 0);
-        $k = Smkp::kesesuaian($this->rinciIII12($nol), 'PT Uji', false);
-
-        $this->assertSame([], array_values(array_filter($k, fn ($b) => $b['sub'] === 'III.12')));
-    }
-
     public function test_sub_elemen_berincian_menunggu_seluruh_rincian_dinilai(): void
     {
         // Mayor atau Minor baru pasti setelah seluruh rincian dinilai.
