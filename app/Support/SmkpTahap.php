@@ -479,7 +479,7 @@ final class SmkpTahap
         foreach (array_keys(self::komponenRencana()) as $k) {
             $terisi[$k] = match ($k) {
                 'tanggal'    => !empty($r['tanggal_mulai']) && !empty($r['tanggal_selesai']),
-                'susunan'    => self::adaBaris($r['susunan'] ?? [], ['kegiatan']),
+                'susunan'    => self::adaBaris($r['susunan'] ?? [], ['kegiatan', 'kriteria', 'metode']),
                 'tugas'      => self::adaBaris($r['tugas'] ?? [], ['nama']),
                 'metode'     => trim((string) ($r['metode'] ?? '')) !== '',
                 'pengesahan' => self::pengesahanLengkap($r['pengesahan'] ?? [], $kategori),

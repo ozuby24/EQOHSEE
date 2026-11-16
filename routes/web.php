@@ -1663,6 +1663,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('{smkp}/rencana/templat',         [RencanaImporController::class, 'templat'])->name('rencana.templat');
             Route::post('{smkp}/rencana/impor',          [RencanaImporController::class, 'impor'])
                 ->middleware('throttle:20,1,rencana-impor')->name('rencana.impor');
+            // Susunan kegiatan lewat Excel (port DBEST): templat berisi isian sekarang, unggahan → pratinjau.
+            Route::get('{smkp}/rencana/susunan/templat', [RencanaImporController::class, 'templatSusunan'])->name('rencana.susunan.templat');
+            Route::post('{smkp}/rencana/susunan/impor',  [RencanaImporController::class, 'imporSusunan'])
+                ->middleware('throttle:20,1,rencana-impor')->name('rencana.susunan.impor');
             Route::post('{smkp}/rapat',              [SmkpController::class, 'simpanHadir'])->name('rapat.simpan');
             Route::delete('{smkp}/rapat/{hadir}',    [SmkpController::class, 'hapusHadir'])->name('rapat.hapus');
             Route::post('{smkp}/temuan/angkat',      [SmkpController::class, 'angkatTemuan'])->name('temuan.angkat');

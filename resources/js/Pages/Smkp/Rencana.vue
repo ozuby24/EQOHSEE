@@ -7,7 +7,7 @@ import KepalaBagian from '../../Components/Smkp/Rencana/KepalaBagian.vue';
 import TabelMetodeSampel from '../../Components/Smkp/Rencana/TabelMetodeSampel.vue';
 import DialogPakaiUlang from '../../Components/Smkp/Rencana/DialogPakaiUlang.vue';
 import DialogImpor from '../../Components/Smkp/Rencana/DialogImpor.vue';
-import { gabungNilai, tabelKosong } from '../../Components/Smkp/Rencana/api';
+import { gabungNilai, kirimBerkas, pesanGalat, tabelKosong } from '../../Components/Smkp/Rencana/api';
 import type { BarisMetode, IsiSalin, KunciBagian, SumberRencana } from '../../Components/Smkp/Rencana/api';
 import { angka } from '../../smkp/lib/format';
 import type { RingkasAudit } from '../../smkp/types';
@@ -32,6 +32,7 @@ const props = defineProps<{
   kegiatan: string[];
   rekap: { terisi: Record<string, boolean>; jumlah: number; total: number; lengkap: boolean; kurang: string[] };
   mandays: Record<string, number>;
+  saranSusunan: { metode: string[]; fungsi: string[]; area: string[] };
   bisaSunting: boolean;
 }>();
 
@@ -39,13 +40,15 @@ const page = usePage<any>();
 const aiAktif = computed(() => !!page.props.asisten?.aktif);
 
 const KOSONG = {
-  susunan: { tanggal: '', waktu: '', kegiatan: '', auditi: '', auditor: '' },
+  susunan: { tanggal: '', waktu: '', area: '', metode: '', auditi: '', kriteria: '', kegiatan: '', auditor: '' },
   tugas: { nama: '', peran: '', registrasi: '', lingkup: '' },
   risiko: { kegiatan: '', risiko: '', nilai: '' },
 };
 
 const salin = JSON.parse(JSON.stringify(props.isian)) as typeof props.isian;
 if (!salin.susunan.length) salin.susunan.push({ ...KOSONG.susunan });
+// Baris lama (tanpa metode/area/kriteria) tetap terbaca: kolom barunya diisi kosong.
+salin.susunan = salin.susunan.map((b) => ({ ...KOSONG.susunan, ...b }));
 if (!salin.tugas.length) salin.tugas.push({ ...KOSONG.tugas });
 if (!salin.risiko.present.length) salin.risiko.present.push({ ...KOSONG.risiko });
 if (!salin.risiko.future.length) salin.risiko.future.push({ ...KOSONG.risiko });
@@ -64,7 +67,7 @@ const terisi = computed<Record<string, boolean>>(() => ({
   kriteria: ada(form.kriteria),
   ruang_lingkup: ada(form.ruang_lingkup),
   tanggal: ada(form.tanggal_mulai) && ada(form.tanggal_selesai),
-  susunan: adaBaris(form.susunan, ['kegiatan']),
+  susunan: adaBaris(form.susunan, ['kegiatan', 'kriteria', 'metode']),
   tugas: adaBaris(form.tugas, ['nama']),
   sumberdaya: ada(form.sumberdaya),
   metode: ada(form.metode),
@@ -90,6 +93,66 @@ const TOP_RISKS = [
 const METODE_SARAN = ['Tinjauan dokumen', 'Wawancara', 'Observasi lapangan', 'Tinjauan dokumen & wawancara', 'Tinjauan dokumen, wawancara & observasi'];
 
 const tambah = (daftar: Baris[], kosong: Baris) => daftar.push({ ...kosong });
+
+/* ---------- susunan kegiatan terstruktur (port DBEST, cermin App\Support\SmkpSusunan) ---------- */
+const ROMAWI = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+const keAngka = (k: string) => k.split('.').map((x, i) => (i === 0 ? String(ROMAWI.indexOf(x) + 1) : x)).join('.');
+function kodeSusunan(teks: string): string[] {
+  const urut = new Map<string, number>();
+  for (const e of props.kriteriaDaftar) {
+    urut.set(e.kode, urut.size);
+    for (const sb of e.sub) urut.set(sb.kode, urut.size);
+  }
+  const out = new Map<string, number>();
+  const re = /\b(VII|VI|IV|V|III|II|I|[1-7])(?:\s*\.\s*(\d{1,2}))?(?:\s*\.\s*(\d{1,2}))?\b/g;
+  for (const m of String(teks ?? '').toUpperCase().matchAll(re)) {
+    const digit = /^\d$/.test(m[1]);
+    if (digit && !m[2]) continue;
+    const el = digit ? ROMAWI[Number(m[1]) - 1] : m[1];
+    const k = el + (m[2] ? `.${Number(m[2])}` : '') + (m[3] ? `.${Number(m[3])}` : '');
+    const induk = m[3] ? `${el}.${Number(m[2])}` : k;
+    const n = urut.get(k) ?? (m[3] && urut.has(induk) ? (urut.get(induk) as number) + Number(m[3]) / 100 : undefined);
+    if (n !== undefined) out.set(k, n);
+  }
+  return [...out.entries()].sort((a, b) => a[1] - b[1]).map(([k]) => k);
+}
+/* Unggah susunan kegiatan dari Excel (port DBEST #17): baris unggahan
+   menggantikan susunan yang masih kosong, atau ditambahkan di belakangnya. */
+const unggahSusunan = ref<{ sibuk: boolean; pesan: string; galat: boolean }>({ sibuk: false, pesan: '', galat: false });
+async function imporSusunan(e: Event) {
+  const input = e.target as HTMLInputElement;
+  const berkas = input.files?.[0];
+  input.value = '';
+  if (!berkas) return;
+  unggahSusunan.value = { sibuk: true, pesan: '', galat: false };
+  try {
+    const hasil = await kirimBerkas<{ baris: Baris[]; berkas: string }>(`/smkp/${props.audit.id}/rencana/susunan/impor`, berkas);
+    const baru = hasil.baris.map((b) => ({ ...KOSONG.susunan, ...b }));
+    if (tabelKosong(form.susunan)) form.susunan = baru; else form.susunan.push(...baru);
+    unggahSusunan.value = { sibuk: false, galat: false,
+      pesan: `${baru.length} sesi dari ${hasil.berkas} diterapkan ke formulir — periksa, lalu Simpan Rencana Audit.` };
+  } catch (x) {
+    unggahSusunan.value = { sibuk: false, galat: true, pesan: pesanGalat(x) };
+  }
+}
+
+function elemenSusunan(teks: string) {
+  const per = new Map<string, Record<number, string[]>>();
+  for (const k of kodeSusunan(teks)) {
+    const p = k.split('.');
+    const g = per.get(p[0]) ?? {};
+    (g[p.length] ??= []).push(k);
+    per.set(p[0], g);
+  }
+  return props.kriteriaDaftar.filter((e) => per.has(e.kode)).map((e) => {
+    const g = per.get(e.kode) as Record<number, string[]>;
+    const baris = [
+      ...(g[2]?.length ? [`Sub Elemen ${g[2].map(keAngka).join(', ')}`] : []),
+      ...(g[3]?.length ? [`Sub Sub Elemen ${g[3].map(keAngka).join(', ')}`] : []),
+    ];
+    return { kode: e.kode, judul: `Audit Elemen ${e.kode} ${e.nama}`, baris: baris.length ? baris : ['Seluruh sub elemen'] };
+  });
+}
 const buang = (daftar: Baris[], i: number) => daftar.splice(i, 1);
 
 function lompat(id: string) {
@@ -335,27 +398,49 @@ function simpan() {
           <section id="k-susunan" class="kartu scroll-mt-24 p-5 sm:p-6">
             <KepalaBagian :nomor="nomor('susunan')" :judul="komponen.susunan.judul" :ket="komponen.susunan.ket" :terisi="terisi.susunan" />
             <p class="bantu mt-3 mb-3">Kegiatan Tahap II: {{ kegiatan.join(' · ') }}.</p>
-            <div class="rounded-xl border border-slate-200 overflow-hidden">
-              <div class="gulir-x scrollbar-tipis">
-                <table class="w-full min-w-[760px] text-[12.5px]">
-                  <thead class="bg-slate-50/80">
-                    <tr class="text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-slate-400">
-                      <th class="py-2 pl-3 pr-2 w-40">Tanggal</th><th class="py-2 px-2 w-32">Waktu</th><th class="py-2 px-2">Kegiatan</th><th class="py-2 px-2 w-[18%]">Auditi</th><th class="py-2 px-2 w-[18%]">Auditor</th><th class="w-10" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(b, i) in form.susunan" :key="i" class="border-t border-slate-100">
-                      <td class="py-1.5 pl-3 pr-2"><input v-model="b.tanggal" type="date" class="input-kecil" :aria-label="`Tanggal kegiatan ${i + 1}`"></td>
-                      <td class="py-1.5 px-2"><input v-model="b.waktu" class="input-kecil" placeholder="08.00–10.00" :aria-label="`Waktu kegiatan ${i + 1}`"></td>
-                      <td class="py-1.5 px-2"><input v-model="b.kegiatan" class="input-kecil" :aria-label="`Kegiatan ${i + 1}`"></td>
-                      <td class="py-1.5 px-2"><input v-model="b.auditi" class="input-kecil" :aria-label="`Auditi kegiatan ${i + 1}`"></td>
-                      <td class="py-1.5 px-2"><input v-model="b.auditor" class="input-kecil" :aria-label="`Auditor kegiatan ${i + 1}`"></td>
-                      <td class="py-1.5 pr-2 text-center"><button type="button" class="p-1.5 rounded-md text-slate-300 hover:text-rose-600 hover:bg-rose-50" aria-label="Hapus baris" @click="buang(form.susunan, i)"><Ikon nama="tutup" class="w-4 h-4" /></button></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+            <div v-if="bisaSunting" class="flex flex-wrap items-center gap-2 mb-3">
+              <a :href="`/smkp/${audit.id}/rencana/susunan/templat`" class="btn-garis btn-kecil"><Ikon nama="unduh" class="w-4 h-4" /> Unduh templat Excel</a>
+              <label class="btn-garis btn-kecil cursor-pointer" :class="{ 'opacity-60 pointer-events-none': unggahSusunan.sibuk }">
+                <Ikon nama="unggah" class="w-4 h-4" /> {{ unggahSusunan.sibuk ? 'Membaca…' : 'Unggah Excel' }}
+                <input type="file" accept=".xlsx,.csv" class="hidden" @change="imporSusunan">
+              </label>
+              <p v-if="unggahSusunan.pesan" class="text-[12px]" :class="unggahSusunan.galat ? 'text-rose-600' : 'text-hijau-700'" role="status">{{ unggahSusunan.pesan }}</p>
             </div>
+            <datalist id="saran-metode"><option v-for="x in saranSusunan.metode" :key="x" :value="x" /></datalist>
+            <datalist id="saran-fungsi"><option v-for="x in saranSusunan.fungsi" :key="x" :value="x" /></datalist>
+            <datalist id="saran-area"><option v-for="x in saranSusunan.area" :key="x" :value="x" /></datalist>
+            <ol class="space-y-3">
+              <li v-for="(b, i) in form.susunan" :key="i" class="rounded-xl border border-slate-200 p-3 sm:p-4">
+                <div class="flex items-start justify-between gap-2 mb-2">
+                  <p class="text-[12px] font-semibold text-slate-500">Sesi {{ i + 1 }}</p>
+                  <button type="button" class="p-1.5 rounded-md text-slate-300 hover:text-rose-600 hover:bg-rose-50" aria-label="Hapus sesi" @click="buang(form.susunan, i)"><Ikon nama="tutup" class="w-4 h-4" /></button>
+                </div>
+                <div class="grid sm:grid-cols-[150px_140px_1fr] gap-2">
+                  <label class="block"><span class="block text-[11px] font-semibold text-slate-500 mb-1">Tanggal</span>
+                    <input v-model="b.tanggal" type="date" class="input-kecil" :aria-label="`Tanggal sesi ${i + 1}`"></label>
+                  <label class="block"><span class="block text-[11px] font-semibold text-slate-500 mb-1">Waktu</span>
+                    <input v-model="b.waktu" class="input-kecil" placeholder="08.00–10.00" :aria-label="`Waktu sesi ${i + 1}`"></label>
+                  <label class="block"><span class="block text-[11px] font-semibold text-slate-500 mb-1">Auditor</span>
+                    <input v-model="b.auditor" class="input-kecil" :aria-label="`Auditor sesi ${i + 1}`"></label>
+                </div>
+                <div class="grid sm:grid-cols-3 gap-2 mt-2">
+                  <label class="block"><span class="block text-[11px] font-semibold text-slate-500 mb-1">Metode</span>
+                    <input v-model="b.metode" list="saran-metode" class="input-kecil" placeholder="Peninjauan Dokumen, Rekaman, Wawancara" :aria-label="`Metode sesi ${i + 1}`"></label>
+                  <label class="block"><span class="block text-[11px] font-semibold text-slate-500 mb-1">Area</span>
+                    <input v-model="b.area" list="saran-area" class="input-kecil" placeholder="Kantor, Area Penambangan (PIT)…" :aria-label="`Area sesi ${i + 1}`"></label>
+                  <label class="block"><span class="block text-[11px] font-semibold text-slate-500 mb-1">Fungsi / jabatan / departemen</span>
+                    <input v-model="b.auditi" list="saran-fungsi" class="input-kecil" placeholder="Kepala Teknik Tambang (KTT)" :aria-label="`Fungsi sesi ${i + 1}`"></label>
+                </div>
+                <label class="block mt-2"><span class="block text-[11px] font-semibold text-slate-500 mb-1">Kriteria yang diaudit</span>
+                  <input v-model="b.kriteria" class="input-kecil" placeholder="Mis. I.1, I.5, III.2.1 — atau 1.1, 1.5, 3.2.1; kode elemen saja (IV) = seluruh elemen" :aria-label="`Kriteria sesi ${i + 1}`"></label>
+                <ol v-if="elemenSusunan(b.kriteria).length" class="mt-2 ml-1 text-[12px] text-slate-600 list-decimal list-inside space-y-0.5">
+                  <li v-for="e in elemenSusunan(b.kriteria)" :key="e.kode"><span class="font-semibold text-navy-900">{{ e.judul }}</span>
+                    <span v-for="x in e.baris" :key="x" class="block pl-5 text-slate-500">{{ x }}</span></li>
+                </ol>
+                <label class="block mt-2"><span class="block text-[11px] font-semibold text-slate-500 mb-1">Kegiatan lain (opsional)</span>
+                  <textarea v-model="b.kegiatan" rows="1" class="input-kecil" placeholder="Mis. Rapat pembukaan, ishoma, rapat penutupan" :aria-label="`Kegiatan sesi ${i + 1}`" /></label>
+              </li>
+            </ol>
             <button type="button" class="mt-3 btn-garis btn-kecil" @click="tambah(form.susunan, KOSONG.susunan)"><Ikon nama="tambah" class="w-4 h-4" /> Baris kegiatan</button>
           </section>
 

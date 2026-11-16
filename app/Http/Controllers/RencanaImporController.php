@@ -156,6 +156,111 @@ class RencanaImporController extends SmkpController
         ]);
     }
 
+    /* ---------- Susunan kegiatan lewat Excel (port DBEST #17) ---------- */
+
+    /** Kolom templat susunan kegiatan, urut seperti formulir. */
+    private const KEPALA_SUSUNAN = [
+        'tanggal'  => 'Tanggal (YYYY-MM-DD)',
+        'waktu'    => 'Waktu',
+        'metode'   => 'Metode',
+        'area'     => 'Area',
+        'auditi'   => 'Fungsi / Jabatan / Departemen',
+        'kriteria' => 'Kriteria (mis. I.1, III.2.1)',
+        'kegiatan' => 'Kegiatan lain',
+        'auditor'  => 'Auditor',
+    ];
+
+    /** Kata kunci kepala kolom → kolom susunan (urutan bebas pada berkas unggahan). */
+    private const KENAL_SUSUNAN = [
+        'tanggal' => '/tanggal|tgl|hari/i', 'waktu' => '/waktu|jam/i', 'metode' => '/metode/i', 'area' => '/area|lokasi/i',
+        'auditi' => '/fungsi|jabatan|departemen|auditi/i', 'kriteria' => '/kriteria|elemen/i', 'kegiatan' => '/kegiatan|agenda/i',
+        'auditor' => '/auditor/i',
+    ];
+
+    public function templatSusunan(Request $request, SmkpAudit $smkp)
+    {
+        $buku = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $ws = $buku->getActiveSheet()->setTitle('Susunan Kegiatan');
+        $ws->fromArray([array_values(self::KEPALA_SUSUNAN)], null, 'A1');
+
+        $isi = (array) ($smkp->rencana['susunan'] ?? []);
+        $baris = $isi ? array_map(fn ($b) => array_map(fn ($k) => (string) (((array) $b)[$k] ?? ''), array_keys(self::KEPALA_SUSUNAN)), $isi)
+            : [[(string) ($smkp->rencana['tanggal_mulai'] ?? ''), '08.00–10.00', 'Peninjauan Dokumen, Rekaman, Wawancara',
+                'Kantor', 'Kepala Teknik Tambang (KTT)', 'I.1, I.5, III.3', '', '']];
+        $ws->fromArray($baris, null, 'A2');
+        $ws->getStyle('A1:H1')->getFont()->setBold(true);
+        foreach (range('A', 'H') as $c) $ws->getColumnDimension($c)->setWidth($c === 'G' ? 40 : 26);
+
+        $nama = 'susunan-kegiatan-'.(Str::slug($smkp->namaTampil()) ?: 'audit').'.xlsx';
+
+        return response()->streamDownload(fn () => (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($buku))->save('php://output'), $nama, [
+            'Content-Type'           => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control'          => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
+    /**
+     * Unggahan CSV/XLSX → baris susunan kegiatan (belum disimpan; diterapkan
+     * ke formulir lalu disimpan auditor). Kepala kolom dikenali dari
+     * namanya; tanpa kepala, urutan templat yang dipakai.
+     */
+    public function imporSusunan(Request $request, SmkpAudit $smkp): JsonResponse
+    {
+        $request->validate(['berkas' => ['required', 'file', 'max:'.self::MAKS_KB]], self::PESAN_BERKAS);
+        $f = $request->file('berkas');
+        $ext = strtolower($f->getClientOriginalExtension());
+        $request->validate([
+            'berkas' => ['extensions:csv,txt,xlsx', ...($ext === 'xlsx' ? [new LampiranBukti()] : [])],
+        ], self::PESAN_BERKAS + ['berkas.extensions' => 'Berkas susunan kegiatan harus XLSX atau CSV.']);
+
+        $tabel = EkstrakTeks::tabel((string) $f->getRealPath(), $ext);
+        if (!$tabel) {
+            return response()->json(['pesan' => 'Isi berkas tidak dapat dibaca. Pakai templat dari tombol Unduh templat.', 'jenis' => 'kosong'], 422);
+        }
+
+        $kolom = null;
+        $mulai = 0;
+        foreach (array_slice($tabel, 0, 10) as $i => $row) {
+            $peta = [];
+            foreach ($row as $j => $sel) {
+                foreach (self::KENAL_SUSUNAN as $k => $pola) {
+                    if (!isset($peta[$k]) && preg_match($pola, (string) $sel)) { $peta[$k] = $j; break; }
+                }
+            }
+            if (count($peta) >= 3) { [$kolom, $mulai] = [$peta, $i + 1]; break; }
+        }
+        $kolom ??= array_flip(array_keys(self::KEPALA_SUSUNAN));
+
+        $rows = [];
+        foreach (array_slice($tabel, $mulai) as $row) {
+            $b = [];
+            foreach (array_keys(self::KEPALA_SUSUNAN) as $k) $b[$k] = isset($kolom[$k]) ? trim((string) ($row[$kolom[$k]] ?? '')) : '';
+            $b['tanggal'] = self::tanggalSel($b['tanggal']);
+            $rows[] = $b;
+        }
+        $baris = \App\Support\SmkpSusunan::bersih($rows);
+        if (!$baris) {
+            return response()->json(['pesan' => 'Tidak ada baris susunan kegiatan yang terisi. Pakai templat dari tombol Unduh templat.', 'jenis' => 'kosong'], 422);
+        }
+
+        return response()->json(['baris' => $baris, 'berkas' => BerkasUnggah::namaAman($f->getClientOriginalName(), $ext, 'susunan')]);
+    }
+
+    /** Tanggal sel Excel: YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY, atau nomor seri Excel. */
+    private static function tanggalSel(string $v): string
+    {
+        $v = trim($v);
+        if ($v === '') return '';
+        if (preg_match('/^\d{4}-\d{2}-\d{2}/', $v)) return substr($v, 0, 10);
+        if (preg_match('/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/', $v, $m)) return sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
+        if (is_numeric($v) && (float) $v > 20000 && (float) $v < 80000) {
+            return \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject((float) $v)->format('Y-m-d');
+        }
+
+        return '';
+    }
+
     /* ---------- Ekstraksi DOCX/PDF/XLSX/CSV dengan Asisten AI (routes/asisten.php) ---------- */
     public function ekstrak(Request $request, LayananAsisten $asisten, SmkpAudit $smkp): JsonResponse
     {

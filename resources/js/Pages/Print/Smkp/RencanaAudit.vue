@@ -18,7 +18,7 @@ defineOptions({ layout: BlankLayout });
 interface Elemen { kode: string; nama: string; sub: Array<{ kode: string; nama: string }> }
 const props = defineProps<{
   audit: RingkasAudit;
-  rencana: Record<string, any> & { susunan?: Array<Record<string, string>>; tugas?: Array<Record<string, string>> };
+  rencana: Record<string, any> & { susunan?: Array<Record<string, any>>; tugas?: Array<Record<string, string>> };
   bawaan: Record<string, string>;
   kriteriaDaftar: Elemen[];
   jasa: boolean;
@@ -37,7 +37,7 @@ const tanggal = computed(() => (props.rencana.tanggal_mulai && props.rencana.tan
 
 /* Susunan kegiatan dikelompokkan per hari pelaksanaan. */
 const hari = computed(() => {
-  const kelompok: Array<{ tanggal: string; baris: Array<Record<string, string>> }> = [];
+  const kelompok: Array<{ tanggal: string; baris: Array<Record<string, any>> }> = [];
   for (const b of props.rencana.susunan ?? []) {
     const t = b.tanggal || '';
     const ada = kelompok.find((k) => k.tanggal === t);
@@ -291,7 +291,19 @@ async function unduhWord() {
             <tr class="bg-slate-100 font-bold"><td colspan="3">Hari {{ NAMA_HARI[i] ?? `Ke-${i + 1}` }}<template v-if="h.tanggal"> — {{ tanggalPanjang(h.tanggal) }}</template></td></tr>
             <tr v-for="(b, j) in h.baris" :key="j">
               <td class="tabular-nums">{{ b.waktu }}</td>
-              <td>{{ b.kegiatan }}<template v-if="b.auditi"><br><span class="text-slate-600">Auditi: {{ b.auditi }}</span></template></td>
+              <td>
+                <!-- Susunan terstruktur (port DBEST): metode, area, fungsi, elemen bernomor, kegiatan lain. -->
+                <template v-if="b.isi && (b.isi.metode || b.isi.area || b.isi.elemen?.length)">
+                  <p v-if="b.isi.metode" class="font-semibold">{{ b.isi.metode }}</p>
+                  <p v-if="b.isi.area">{{ b.isi.area }}</p>
+                  <p v-if="b.isi.fungsi">{{ b.isi.fungsi }}</p>
+                  <ol v-if="b.isi.elemen?.length" class="list-decimal pl-4">
+                    <li v-for="e in b.isi.elemen" :key="e.kode">{{ e.judul }}<span v-for="x in e.baris" :key="x" class="block">{{ x }}</span></li>
+                  </ol>
+                  <p v-if="b.isi.kegiatan" class="whitespace-pre-line">{{ b.isi.kegiatan }}</p>
+                </template>
+                <template v-else>{{ b.kegiatan }}<template v-if="b.auditi"><br><span class="text-slate-600">Auditi: {{ b.auditi }}</span></template></template>
+              </td>
               <td>{{ b.auditor }}</td>
             </tr>
           </template>

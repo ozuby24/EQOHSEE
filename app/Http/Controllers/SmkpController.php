@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Company, SmkpAttendee, SmkpAudit, SmkpBukti, SmkpFinding, SmkpTindakLanjut, User};
-use App\Support\{KopDokumen, Smkp, SmkpTahap, Waktu};
+use App\Support\{KopDokumen, Smkp, SmkpSusunan, SmkpTahap, Waktu};
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\{DB, Storage};
@@ -585,6 +585,7 @@ class SmkpController extends Controller
                 ],
             ],
             'komponen'    => SmkpTahap::komponenRencana(),
+            'saranSusunan' => ['metode' => SmkpSusunan::SARAN_METODE, 'fungsi' => SmkpSusunan::SARAN_FUNGSI, 'area' => SmkpSusunan::SARAN_AREA],
             'jenisAudit'  => SmkpTahap::JENIS_AUDIT,
             'kriteriaDaftar' => $this->daftarSubElemen(),
             'pengesah'    => SmkpTahap::pengesah($smkp->company?->kategori),
@@ -612,7 +613,7 @@ class SmkpController extends Controller
             'distribusi'         => ['nullable', 'string', 'max:3000'],
             'metode_sampel'           => ['nullable', 'array', 'max:200'],
             'metode_sampel.*.metode'  => ['nullable', 'string', 'max:300'],
-            'metode_sampel.*.sampel'  => ['nullable', 'string', 'max:300'],
+            'metode_sampel.*.sampel'  => ['nullable', 'string', 'max:3000'],
             'tujuan'             => ['nullable', 'string', 'max:3000'],
             'kriteria'           => ['nullable', 'string', 'max:3000'],
             'ruang_lingkup'      => ['nullable', 'string', 'max:3000'],
@@ -625,9 +626,13 @@ class SmkpController extends Controller
             'susunan'            => ['nullable', 'array', 'max:60'],
             'susunan.*.tanggal'  => ['nullable', 'date'],
             'susunan.*.waktu'    => ['nullable', 'string', 'max:50'],
-            'susunan.*.kegiatan' => ['nullable', 'string', 'max:300'],
-            'susunan.*.auditi'   => ['nullable', 'string', 'max:200'],
-            'susunan.*.auditor'  => ['nullable', 'string', 'max:200'],
+            // Susunan terstruktur (port DBEST): metode, area, fungsi/jabatan, kriteria bernomor.
+            'susunan.*.area'     => ['nullable', 'string', 'max:'.SmkpSusunan::MAKS['area']],
+            'susunan.*.metode'   => ['nullable', 'string', 'max:'.SmkpSusunan::MAKS['metode']],
+            'susunan.*.kriteria' => ['nullable', 'string', 'max:'.SmkpSusunan::MAKS['kriteria']],
+            'susunan.*.kegiatan' => ['nullable', 'string', 'max:'.SmkpSusunan::MAKS['kegiatan']],
+            'susunan.*.auditi'   => ['nullable', 'string', 'max:'.SmkpSusunan::MAKS['auditi']],
+            'susunan.*.auditor'  => ['nullable', 'string', 'max:'.SmkpSusunan::MAKS['auditor']],
 
             'tugas'              => ['nullable', 'array', 'max:30'],
             'tugas.*.nama'       => ['nullable', 'string', 'max:150'],
@@ -689,7 +694,7 @@ class SmkpController extends Controller
             'ruang_lingkup'   => trim((string) ($d['ruang_lingkup'] ?? '')),
             'tanggal_mulai'   => $d['tanggal_mulai'] ?? null,
             'tanggal_selesai' => $d['tanggal_selesai'] ?? null,
-            'susunan'         => $this->baris($kolom((array) ($d['susunan'] ?? []), ['tanggal', 'waktu', 'kegiatan', 'auditi', 'auditor'])),
+            'susunan'         => SmkpSusunan::bersih((array) ($d['susunan'] ?? [])),
             'tugas'           => $this->baris($kolom((array) ($d['tugas'] ?? []), ['nama', 'peran', 'registrasi', 'lingkup'])),
             'sumberdaya'      => trim((string) ($d['sumberdaya'] ?? '')),
             'metode'          => trim((string) ($d['metode'] ?? '')),
@@ -728,6 +733,9 @@ class SmkpController extends Controller
             if (!$def['wajib'] && trim((string) ($o['nama'] ?? '')) === '') continue;
             $pihak[] = ['peran' => (($o['jabatan'] ?? '') ?: $def['peran']), 'kunci' => $k, 'nama' => (string) ($o['nama'] ?? '')];
         }
+
+        // Isi sel susunan kegiatan tersusun di server (metode, area, fungsi, elemen bernomor).
+        $r['susunan'] = array_map(fn ($b) => (array) $b + ['isi' => SmkpSusunan::isi((array) $b)], array_values((array) ($r['susunan'] ?? [])));
 
         return Inertia::render('Print/Smkp/RencanaAudit', [
             'audit'    => $this->ringkasAudit($smkp),

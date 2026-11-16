@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cekWawancara } from '../../../smkp/lib/metodeSampel';
 import { computed, ref, watch } from 'vue';
 import Ikon from '../Ikon.vue';
 import type { MetodeSampel } from './api';
@@ -121,8 +122,12 @@ const persen = (a: number, b: number) => `${b ? Math.round((a / b) * 100) : 0}%`
               </label>
               <label class="block min-w-0">
                 <span class="lg:sr-only block text-[11px] font-semibold text-slate-500 mb-1">Sampel</span>
-                <input v-model="nilai[sb.kode].sampel" maxlength="300" class="input-kecil" placeholder="Per metode, pisahkan dengan ; — mis. dokumen IBPR; KTT, HSE Manager; area tambang"
-                       :aria-label="`Sampel ${sb.kode}`">
+                <textarea v-model="nilai[sb.kode].sampel" maxlength="3000" rows="1" class="input-kecil" placeholder="Per metode, pisahkan dengan ; — mis. dokumen IBPR; KTT, HSE Manager; area tambang. Rincian wawancara: &quot;Wawancara 5 orang:&quot; lalu baris &quot;2 orang KTT&quot;"
+                          :aria-label="`Sampel ${sb.kode}`" />
+                <span v-for="(c, ci) in cekWawancara(nilai[sb.kode].sampel)" :key="ci" class="mt-1 mr-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                      :class="c.jumlah === c.rinci ? 'bg-hijau-50 text-hijau-700' : 'bg-amber-50 text-amber-700'" title="Jumlah rincian dibandingkan dengan jumlah pada judul wawancara">
+                  {{ c.jumlah === c.rinci ? `✓ ${c.rinci} orang` : `rincian ${c.rinci} dari ${c.jumlah} orang` }}
+                </span>
               </label>
             </div>
           </div>

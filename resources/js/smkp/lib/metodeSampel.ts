@@ -85,3 +85,56 @@ export function susunMetodeSampel(metode: unknown, sampel: unknown): BarisMS[] {
         return { no: m.length > 1 ? i + 1 : 0, metode: x, sampel: tanpaUlang(x, milik), rentang: 1 };
     });
 }
+
+/* ───────── Rincian sampel wawancara (port DBEST MetodeSampel::cekRincian) ─────────
+ * "Wawancara 5 orang:" lalu baris "2 orang KTT", "3 orang Operator" — jumlah
+ * pada judul dibandingkan dengan jumlah rinciannya agar sampel yang tertulis
+ * tidak berselisih dengan yang akan diwawancarai. */
+
+const KATA_ORANG = /\b(wawancara|responden|pekerja|karyawan|personil|personel|interview)\b/i;
+
+/** Jumlah orang pada judul rincian ("Wawancara 5 orang:") atau butir rinciannya ("3 orang Operator"). */
+export function jumlahOrang(teks: string, judul = false): number | null {
+    const t = String(teks ?? '').trim();
+    if (judul) {
+        if (/^\d/.test(t) || !KATA_ORANG.test(t)) return null;
+        const m = t.match(/\b(\d{1,3})\s*orang\b/i);
+        return m ? Number(m[1]) : null;
+    }
+    const m = t.match(/^(\d{1,3})\s*orang\b/i);
+    return m ? Number(m[1]) : null;
+}
+
+export type CekWawancara = { judul: string; jumlah: number; rinci: number };
+
+/** Pemeriksaan tiap judul wawancara berjumlah dalam teks sampel; judul tanpa rincian berangka dilewati. */
+export function cekWawancara(sampel: unknown): CekWawancara[] {
+    const out: CekWawancara[] = [];
+    let kini: { judul: string; jumlah: number; rinci: number; anak: number; sah: boolean } | null = null;
+    const tutup = () => { if (kini && kini.sah && kini.anak) out.push({ judul: kini.judul, jumlah: kini.jumlah, rinci: kini.rinci }); kini = null; };
+    const butir = (x: string) => x.replace(/^\s*(?:[-•*·–]|\d{1,2}[.)]|[a-z][.)])\s+/i, '').trim();
+
+    for (const mentah of String(sampel ?? '').split(/\r?\n/)) {
+        const baris = butir(mentah);
+        if (!baris) continue;
+        const [kepala, ...sisa] = baris.split(':');
+        const n = jumlahOrang(kepala, true);
+        if (n !== null) {
+            tutup();
+            kini = { judul: kepala.trim(), jumlah: n, rinci: 0, anak: 0, sah: true };
+            // Rincian sebaris: "Wawancara 5 orang: 2 orang KTT, 3 orang Operator".
+            for (const x of sisa.join(':').split(/[,;]/).map(butir).filter(Boolean)) {
+                const j = jumlahOrang(x);
+                if (j === null) kini.sah = false; else { kini.rinci += j; kini.anak++; }
+            }
+            continue;
+        }
+        if (!kini) continue;
+        const j = jumlahOrang(baris);
+        if (j === null) { tutup(); continue; }
+        kini.rinci += j;
+        kini.anak++;
+    }
+    tutup();
+    return out;
+}
