@@ -37,6 +37,7 @@ class EnvAudit extends Model
     public function company(): BelongsTo { return $this->belongsTo(Company::class); }
     public function user(): BelongsTo    { return $this->belongsTo(User::class); }
     public function scores(): HasMany    { return $this->hasMany(EnvAuditScore::class, 'audit_id'); }
+    public function rtp(): HasMany       { return $this->hasMany(EnvAuditRtp::class, 'audit_id'); }
 
     /** Seluruh terbitan sertifikat, termasuk yang sudah dicabut. */
     public function sertifikat(): HasMany

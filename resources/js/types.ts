@@ -2575,7 +2575,7 @@ export interface OpsiAudit {
 
 export interface TautanAudit {
   index: string; ikhtisar: string; ubah: string; hapus: string;
-  lembar: string; pengurang: string;
+  lembar: string; pengurang: string; rtp: string;
   bagian: Record<string, string>;
 }
 
@@ -2598,6 +2598,8 @@ export interface HalamanAuditLingkunganIkhtisar {
   skor: SkorAudit;
   opsi: OpsiAudit;
   sertifikat: SertifikatAudit;
+  /** Ringkasan Rencana Tindak Perbaikan (RTP). */
+  rtp: { aktif: number; menunggu: number; telat: number; selesai: number };
   tautan: TautanAudit;
 }
 

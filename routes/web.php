@@ -47,6 +47,7 @@ use App\Http\Controllers\KepatuhanController;
 use App\Http\Controllers\PerangkatSayaController;
 use App\Http\Controllers\TurController;
 use App\Http\Controllers\{BuktiAuditController, RencanaImporController, SmkpDasborController, SmkpFormulirController, TindakLanjutController};
+use App\Http\Controllers\RtpLingkunganController;
 use Illuminate\Support\Facades\Route;
 
 /* ============ PENEMUAN (publik) ============
@@ -1550,6 +1551,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('{audit}/pengurang',[AuditLingkunganController::class, 'pengurang'])->name('pengurang');
         Route::post('{audit}/nilai',    [AuditLingkunganController::class, 'simpanNilai'])->name('nilai');
         Route::get('{audit}/bagian/{bagian}', [AuditLingkunganController::class, 'bagian'])->name('bagian');
+
+        /* Rencana Tindak Perbaikan (mengikuti Audit Lingkungan DBEST):
+           temuan terbit otomatis dari nilai verifikasi ≤ 2. Auditee
+           mengisi rencana & bukti; auditor memutuskan dari kartu RTP. */
+        Route::get('{audit}/rtp',                     [RtpLingkunganController::class, 'index'])->name('rtp');
+        Route::put('{audit}/rtp/{rtp}',               [RtpLingkunganController::class, 'simpan'])->whereNumber('rtp')->name('rtp.simpan');
+        Route::post('{audit}/rtp/{rtp}/bukti',        [RtpLingkunganController::class, 'bukti'])->whereNumber('rtp')->name('rtp.bukti');
+        Route::post('{audit}/rtp/{rtp}/bukti/hapus',  [RtpLingkunganController::class, 'hapusBukti'])->whereNumber('rtp')->name('rtp.bukti.hapus');
+        Route::post('{audit}/rtp/{rtp}/verifikasi',   [RtpLingkunganController::class, 'verifikasi'])->whereNumber('rtp')
+            ->middleware('can:audit')->name('rtp.verifikasi');
     });
 
     /* ================= WEBSITE #5b — ISO: pemenuhan klausul ================= */

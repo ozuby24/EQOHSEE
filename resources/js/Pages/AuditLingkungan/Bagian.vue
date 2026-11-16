@@ -311,7 +311,7 @@ const warnaBagian = computed(() => WARNA_BAGIAN[props.kini] ?? '#DC6E00');
           <span>#</span><span>Kriteria penilaian</span><span>Mitra</span><span>Verifikasi auditor</span><span>Catatan &amp; bukti</span>
         </div>
 
-        <div v-for="b in g.butir" v-show="tampak(b.kode)" :key="b.kode" class="akb-baris"
+        <div v-for="b in g.butir" v-show="tampak(b.kode)" :key="b.kode" :id="`k-${b.kode.replace(/\./g, '-')}`" class="akb-baris scroll-mt-24"
              :class="{ selisih: selisih(b.kode), berubah: sidik(isi[b.kode]) !== dasar[b.kode] }">
           <span class="akb-huruf">{{ b.huruf ?? '—' }}</span>
 

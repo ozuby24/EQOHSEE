@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Company, EnvAudit, EnvAuditScore, EnvAuditSertifikat, Signatory};
-use App\Support\{AuditLingkungan, Berkas, KopDokumen, SertifikatLingkungan};
+use App\Support\{AuditLingkungan, Berkas, KopDokumen, RtpLingkungan, SertifikatLingkungan};
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -94,6 +94,13 @@ class AuditLingkunganController extends Controller
             'opsi'  => $this->opsi(),
 
             'sertifikat' => $this->sertifikat($audit, $skor),
+
+            'rtp' => [
+                'aktif'    => $audit->rtp()->where('status', '!=', 'selesai')->count(),
+                'menunggu' => $audit->rtp()->where('status', '!=', 'selesai')->where('verifikasi', \App\Models\EnvAuditRtp::MENUNGGU)->count(),
+                'telat'    => $audit->rtp()->where('status', '!=', 'selesai')->whereDate('target_tanggal', '<', \App\Support\Waktu::kini()->toDateString())->count(),
+                'selesai'  => $audit->rtp()->where('status', 'selesai')->count(),
+            ],
 
             'tautan' => $this->tautan($audit),
         ]);
@@ -285,6 +292,7 @@ class AuditLingkunganController extends Controller
 
         $sah = array_column(AuditLingkungan::kriteria($request->get('bagian', '')), 'kode');
         $sah = array_flip($sah);
+        $ditahan = [];
 
         foreach ($d['nilai'] as $kode => $baris) {
             /* Kode yang tidak ada di bagian ini DILEWATI, bukan
@@ -294,14 +302,31 @@ class AuditLingkunganController extends Controller
                dapat ditinjau. */
             if ($sah && !isset($sah[$kode])) continue;
 
-            EnvAuditScore::updateOrCreate(
+            /* Aturan target RTP (mengikuti DBEST): nilai kriteria yang
+               punya RTP hanya boleh NAIK bila diverifikasi paling lambat
+               pada target selesainya. Lewat target, nilai lama
+               dipertahankan dan penyimpannya diberi tahu. */
+            $lama = EnvAuditScore::where('audit_id', $audit->id)->where('kode', $kode)->value('verifikasi');
+            $rtp  = $audit->rtp()->where('kode', $kode)->first();
+            [$verifikasi, $tahan] = RtpLingkungan::saring($rtp, $lama === null ? null : (int) $lama,
+                isset($baris['verifikasi']) ? (int) $baris['verifikasi'] : null);
+            if ($tahan) $ditahan[] = $kode;
+
+            $skor = EnvAuditScore::updateOrCreate(
                 ['audit_id' => $audit->id, 'kode' => $kode],
                 [
                     'nilai'      => $baris['nilai'] ?? null,
-                    'verifikasi' => $baris['verifikasi'] ?? null,
+                    'verifikasi' => $verifikasi,
                     'keterangan' => $baris['keterangan'] ?? null,
                 ],
             );
+
+            RtpLingkungan::perbarui($audit, $skor);
+        }
+
+        if ($ditahan) {
+            return back()->with('ok', 'Nilai bagian tersimpan. Kenaikan nilai verifikasi '.implode(', ', $ditahan)
+                .' ditahan: target selesai RTP-nya sudah lewat.');
         }
 
         return back()->with('ok', 'Nilai bagian tersimpan.');
@@ -568,6 +593,7 @@ class AuditLingkunganController extends Controller
             'hapus'     => route('audit-lingkungan.destroy', $a),
             'lembar'    => route('audit-lingkungan.lembar', $a),
             'pengurang' => route('audit-lingkungan.pengurang', $a),
+            'rtp'       => route('audit-lingkungan.rtp', $a),
             'bagian'    => array_combine(
                 array_keys(AuditLingkungan::bagian()),
                 array_map(fn ($k) => route('audit-lingkungan.bagian', [$a, $k]),
