@@ -42,7 +42,7 @@ class TindakLanjutController extends Controller
         if ($status !== 'semua' && $status !== 'terbuka' && !in_array($status, SmkpFinding::STATUS, true)) $status = 'terbuka';
 
         $like = \App\Support\Db::like();   // `like` di PostgreSQL peka huruf
-        $dasar = SmkpFinding::query()->when($q !== '', fn ($b) => $b->where(fn ($w) => $w
+        $dasar = SmkpFinding::query()->whereHas('audit', fn ($a) => $a->tanpaGrup())->when($q !== '', fn ($b) => $b->where(fn ($w) => $w
             ->where('uraian', $like, "%{$q}%")->orWhere('kode_kriteria', $like, "%{$q}%")->orWhere('nomor', $like, "%{$q}%")));
 
         $jumlah = (clone $dasar)->selectRaw('status, COUNT(*) AS n')->groupBy('status')->pluck('n', 'status');

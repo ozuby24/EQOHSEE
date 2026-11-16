@@ -29,7 +29,8 @@ class SmkpController extends Controller
         // Tanpa peduli besar-kecil huruf di setiap mesin: `like` di PostgreSQL peka huruf.
         $like = \App\Support\Db::like();
 
-        $dasar = SmkpAudit::query()
+        // Audit perusahaan grup tampil di halaman Perusahaan Grup, bukan di sini (port DBEST).
+        $dasar = SmkpAudit::query()->tanpaGrup()
             ->when($q !== '', fn ($b) => $b->where(fn ($w) => $w
                 ->where('judul', $like, "%{$q}%")
                 ->orWhere('ketua_auditor', $like, "%{$q}%")
@@ -39,7 +40,7 @@ class SmkpController extends Controller
         $jumlah = ['semua' => (clone $dasar)->count()];
         foreach (array_keys(SmkpAudit::STATUS) as $st) $jumlah[$st] = (clone $dasar)->where('status', $st)->count();
 
-        $audits = SmkpAudit::with('company:id,name,logo,kategori,parent_id')
+        $audits = SmkpAudit::with('company:id,name,logo,kategori,parent_id')->tanpaGrup()
             ->withCount([
                 'findings',
                 'findings as findings_open_count' => fn ($b) => $b->where('status', '<>', 'Closed'),
@@ -118,6 +119,7 @@ class SmkpController extends Controller
 
     public function edit(Request $request, SmkpAudit $smkp)
     {
+        if ($smkp->grup()) return redirect()->route('smkp.grup', ['ubah' => $smkp->id]);
         return Inertia::render('Smkp/Form', [
             'audit' => [
                 'id'              => $smkp->id,

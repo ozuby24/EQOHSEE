@@ -1591,12 +1591,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
        audit; auditi membaca, mengunggah bukti, dan menyampaikan tindak
        lanjut. Batas perusahaan ditegakkan global scope model
        (Scopes\JangkauanAudit) lewat route model binding. */
-    Route::prefix('smkp')->name('smkp.')->where(Rute::id('bukti', 'hadir', 'smkp', 'sumber', 'temuan'))->group(function () {
+    Route::prefix('smkp')->name('smkp.')->where(Rute::id('bukti', 'grup', 'hadir', 'smkp', 'sumber', 'temuan'))->group(function () {
         Route::get('/',      [SmkpController::class, 'index'])->name('index');
         Route::get('acuan',  [SmkpController::class, 'acuan'])->name('acuan');
         /* Dasbor v2 (mengikuti dasbor DBEST): KPI, benchmark & pembanding
            antartahun, analisis temuan, ekspor Excel. Didaftarkan sebelum
            rute {smkp} agar "dasbor" tidak dibaca sebagai nomor audit. */
+        /* Audit perusahaan grup bernama manual (port DBEST #21) — administrator. */
+        Route::middleware('can:admin')->group(function () {
+            Route::get('grup',          [\App\Http\Controllers\SmkpGrupController::class, 'index'])->name('grup');
+            Route::post('grup',         [\App\Http\Controllers\SmkpGrupController::class, 'store'])->name('grup.store');
+            Route::put('grup/{grup}',   [\App\Http\Controllers\SmkpGrupController::class, 'update'])->name('grup.update');
+        });
         Route::get('dasbor',        [SmkpDasborController::class, 'index'])->name('dasbor');
         Route::get('dasbor/ekspor', [SmkpDasborController::class, 'ekspor'])->name('dasbor.ekspor');
         Route::get('lanjut/{bagian}', [SmkpController::class, 'lanjut'])->name('lanjut');

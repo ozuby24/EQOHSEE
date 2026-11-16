@@ -28,7 +28,7 @@ class SmkpDasborController extends Controller
         $tahun   = $this->tahun($request);
         $banding = $this->tahunBanding($request, $tahun);
 
-        $tahunAda = SmkpAudit::query()->select('tahun')->distinct()->pluck('tahun')
+        $tahunAda = SmkpAudit::query()->tanpaGrup()->select('tahun')->distinct()->pluck('tahun')
             ->push((int) Waktu::kini()->year)->push($tahun)
             ->map(fn ($t) => (int) $t)->unique()->sortDesc()->values()->all();
 
@@ -78,7 +78,7 @@ class SmkpDasborController extends Controller
         if ($b === 'tidak') return null;
         if (ctype_digit($b) && (int) $b >= 2000 && (int) $b <= 2100 && (int) $b !== $tahun) return (int) $b;
 
-        $lalu = SmkpAudit::query()->where('tahun', '<', $tahun)->max('tahun');
+        $lalu = SmkpAudit::query()->tanpaGrup()->where('tahun', '<', $tahun)->max('tahun');
 
         return $lalu ? (int) $lalu : null;
     }
@@ -86,7 +86,8 @@ class SmkpDasborController extends Controller
     /** @return Collection<int, SmkpAudit> */
     private function audit(array $tahun): Collection
     {
-        return SmkpAudit::with('company:id,name,kategori,parent_id')
+        // Audit perusahaan grup tidak ikut dasbor, statistik, maupun pembanding (port DBEST #21).
+        return SmkpAudit::with('company:id,name,kategori,parent_id')->tanpaGrup()
             ->whereIn('tahun', $tahun)->orderBy('id')->get();
     }
 

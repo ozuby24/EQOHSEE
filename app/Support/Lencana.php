@@ -63,6 +63,7 @@ final class Lencana
         if (!Schema::hasTable('smkp_findings')) return 0;
 
         return SmkpFinding::query()
+            ->whereHas('audit', fn ($a) => $a->tanpaGrup())
             ->where('status', '<>', 'Closed')
             ->whereNotNull('target_selesai')
             ->whereDate('target_selesai', '<', Waktu::kini()->toDateString())

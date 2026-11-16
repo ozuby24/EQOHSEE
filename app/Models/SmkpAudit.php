@@ -26,7 +26,14 @@ class SmkpAudit extends Model
         'hasil', 'auditor', 'profil', 'user_id',
         'permulaan', 'rencana', 'kecukupan', 'kinerja', 'risiko',
         'kesesuaian', 'rekomendasi', 'laporan',
+        'lingkup', 'perusahaan_luar', 'jenis_luar',
     ];
+
+    /** Audit perusahaan grup (port DBEST #21): nama manual, tanpa company_id, khusus administrator. */
+    public const LINGKUP_GRUP = 'grup';
+
+    /** Jenis perusahaan grup — menentukan rubrik dan kalimat kedudukan dokumen. */
+    public const JENIS_LUAR = ['iup' => 'Pemegang IUP', 'iujp' => 'Jasa pertambangan (IUJP)'];
 
     /** Folder berkas tanda tangan digital formulir (disk local). Kolom ttd_formulir sengaja tidak fillable: jalur berkasnya hanya ditulis SmkpFormulirController. */
     public const FOLDER_TTD = 'ttd-formulir';
@@ -60,6 +67,41 @@ class SmkpAudit extends Model
     }
 
     public function company(): BelongsTo { return $this->belongsTo(Company::class); }
+
+    public function grup(): bool
+    {
+        return $this->lingkup === self::LINGKUP_GRUP;
+    }
+
+    /** Audit di luar lingkup grup — dasbor, statistik, daftar lintas audit, lonceng. */
+    public function scopeTanpaGrup($q)
+    {
+        return $q->where(fn ($w) => $w->whereNull($this->getTable().'.lingkup')->orWhere($this->getTable().'.lingkup', '<>', self::LINGKUP_GRUP));
+    }
+
+    /**
+     * Audit perusahaan grup tidak punya baris perusahaan. Agar seluruh
+     * halaman, kop, dan nomor temuan SMKP tetap bekerja tanpa cabang
+     * khusus, `$audit->company` memulangkan perusahaan BAYANGAN yang tidak
+     * tersimpan: nama manual, kategori menurut jenisnya (IUJP → pjp), dan
+     * kode singkat dari inisial namanya.
+     */
+    public function getRelationValue($key)
+    {
+        $v = parent::getRelationValue($key);
+        if ($key === 'company' && $v === null && $this->grup()) {
+            $nama = trim((string) $this->perusahaan_luar) ?: 'Perusahaan grup';
+            $v = (new Company())->forceFill([
+                'name'     => $nama,
+                'kategori' => $this->jenis_luar === 'iujp' ? 'pjp' : 'induk',
+                'code'     => \App\Support\KopDokumen::prefiksDari($nama),
+                'izin_type'=> $this->jenis_luar === 'iujp' ? 'IUJP' : 'IUP',
+            ]);
+            $this->setRelation('company', $v);
+        }
+
+        return $v;
+    }
     public function user(): BelongsTo    { return $this->belongsTo(User::class); }
     public function findings(): HasMany  { return $this->hasMany(SmkpFinding::class, 'audit_id'); }
     public function attendees(): HasMany { return $this->hasMany(SmkpAttendee::class, 'audit_id'); }

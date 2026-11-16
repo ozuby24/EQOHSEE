@@ -476,6 +476,8 @@ final class Menu
           ['Audit Baru',            'smkp.create',        'smkp/buat', 'audit'],
           ['Tindak Lanjut Temuan',  'smkp.tindak-lanjut', 'smkp/tindak-lanjut'],
           ['Kriteria & Acuan',      'smkp.acuan',         'smkp/acuan'],
+          // Audit perusahaan grup bernama manual (port DBEST #21) — administrator.
+          ['Perusahaan Grup',       'smkp.grup',          'smkp/grup*', true],
           // Aturan Akses Audit (port DBEST): auditor & pengunggah per perusahaan — administrator.
           ['Aturan Akses Audit',    'admin.akses-audit',  'admin/akses-audit*', true],
         ],
