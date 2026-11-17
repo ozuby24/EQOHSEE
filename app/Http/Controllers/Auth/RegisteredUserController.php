@@ -67,13 +67,24 @@ class RegisteredUserController extends Controller
         $data['active']   = true;
 
         $user = User::create($data);
+        Auth::login($user);
+
+        /* Di lingkungan lokal tidak ada server surel sungguhan (MAIL_MAILER
+           biasanya 'log'), jadi kode verifikasi tidak pernah sampai ke
+           siapa pun. Supaya orang yang mendaftar untuk uji coba lokal tidak
+           tersangkut di halaman verifikasi menunggu surel yang tidak akan
+           datang, email langsung ditandai terverifikasi di sini. */
+        if (app()->environment('local')) {
+            $user->markEmailAsVerified();
+
+            return redirect()->route('dashboard');
+        }
 
         /* Registered memanggil sendEmailVerificationNotification pada User,
            yang sudah dibajak untuk mengirim kode enam angka. Mengirim
            sendiri di sini akan menghasilkan dua surel untuk satu
            pendaftaran, dan kode pada yang pertama langsung tidak berlaku. */
         event(new Registered($user));
-        Auth::login($user);
 
         return redirect()->route('verification.notice');
     }
