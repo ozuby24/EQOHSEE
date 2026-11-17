@@ -1,0 +1,405 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\{Company, User};
+use App\Support\{Menu, Pillars, Tur};
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+/**
+ * Pengenalan situs bagi akun yang baru mendaftar.
+ */
+class TurPengenalanTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function baru(): User
+    {
+        $c = Company::create(['name' => 'PT Uji Tur', 'code' => 'UTR']);
+
+        $u = User::factory()->create([
+            'name' => 'Ir. Bambang Sudarsono, S.T.',
+            'company_id' => $c->id, 'email_verified_at' => now(),
+        ]);
+
+        $u->tur_selesai_pada = null;
+        $u->saveQuietly();
+
+        return $u->fresh();
+    }
+
+    public function test_akun_baru_melihat_pengenalan(): void
+    {
+        $this->assertTrue(Tur::perlu($this->baru()));
+    }
+
+    public function test_yang_sudah_selesai_tidak_melihatnya_lagi(): void
+    {
+        $u = $this->baru();
+        $u->tur_selesai_pada = now();
+
+        $this->assertFalse(Tur::perlu($u));
+    }
+
+    public function test_tamu_tidak_melihat_apa_pun(): void
+    {
+        $this->assertFalse(Tur::perlu(null));
+        $this->assertSame([], Tur::langkah(null));
+    }
+
+    /**
+     * Akun baru membawa langkahnya bersama halaman.
+     *
+     * Inilah yang membuat sambutan otomatis tidak dapat gagal dimuat.
+     * Semula yang dikirim hanya sebuah boolean dan isinya diambil lewat
+     * fetch('/tur'); begitu permintaan itu gagal di produksi, yang
+     * dilihat pengguna barunya adalah kotak "Pengenalan gagal dimuat"
+     * yang muncul LAGI setiap kali halaman disegarkan.
+     *
+     * Bahwa muatan ini tidak ikut pada pengguna lain dijaga uji
+     * berikutnya.
+     */
+    public function test_akun_baru_membawa_langkahnya_bersama_halaman(): void
+    {
+        $u = $this->baru();
+
+        $props = $this->actingAs($u)->get(route('dashboard'))
+            ->assertOk()->viewData('page')['props'];
+
+        $this->assertArrayHasKey('tur', $props);
+        $this->assertIsArray($props['tur'],
+            'Akun baru tidak membawa langkah pengenalannya. Bila isinya harus '
+            .'diambil lewat jaringan, satu permintaan yang gagal mengubah sambutan '
+            .'menjadi kotak galat yang muncul lagi pada tiap penyegaran halaman.');
+    }
+
+    /**
+     * Yang sudah selesai tidak membayar apa pun.
+     *
+     * Langkahnya berbobot sekitar sembilan setengah kilobita. Terkirim
+     * kepada semua orang pada tiap pembukaan halaman, ia menjadi ongkos
+     * tetap untuk sesuatu yang dibaca sekali seumur akun — dan halaman
+     * Form Penilaian Audit punya ambang muatannya sendiri yang akan
+     * jatuh karenanya.
+     */
+    public function test_yang_sudah_selesai_tidak_membawa_muatannya(): void
+    {
+        $u = $this->baru();
+        $u->tur_selesai_pada = now();
+        $u->saveQuietly();
+
+        $props = $this->actingAs($u->fresh())->get(route('dashboard'))
+            ->assertOk()->viewData('page')['props'];
+
+        $this->assertNull($props['tur'],
+            'Langkah pengenalan ikut terkirim kepada pengguna yang sudah '
+            .'menyelesaikannya — ongkos tetap untuk sesuatu yang tidak akan dibuka.');
+    }
+
+    public function test_isi_diambil_lewat_rutenya_sendiri(): void
+    {
+        $isi = $this->actingAs($this->baru())->getJson('/tur')->assertOk()->json();
+
+        $kunci = array_column($isi['langkah'], 'kunci');
+
+        $this->assertSame(['sambutan', 'pilar', 'modul', 'mulai'], $kunci);
+    }
+
+    public function test_tamu_tidak_dapat_mengambil_isinya(): void
+    {
+        $this->getJson('/tur')->assertRedirect();
+    }
+
+    /**
+     * Isinya mengikuti registry, tidak diketik ulang.
+     *
+     * Pengenalan fitur adalah tulisan yang paling cepat basi di sebuah
+     * aplikasi, dan basinya tidak terlihat: tidak ada galat, hanya orang
+     * baru yang dijanjikan modul yang sudah berganti nama.
+     */
+    public function test_pilar_dan_modul_mengikuti_registry(): void
+    {
+        $u = $this->baru();
+        $langkah = collect(Tur::langkah($u))->keyBy('kunci');
+
+        $this->assertCount(count(Pillars::all()), $langkah['pilar']['pilar'],
+            'Jumlah pilar pada pengenalan berbeda dari Pillars::all().');
+
+        $this->assertSame(
+            array_column(Pillars::all(), 'nama'),
+            array_column($langkah['pilar']['pilar'], 'nama'));
+
+        $this->assertSame(
+            array_keys(Menu::untuk($u)),
+            array_column($langkah['modul']['modul'], 'kunci'),
+            'Daftar modul pada pengenalan berbeda dari Menu::untuk().');
+    }
+
+    /**
+     * Modul yang diperkenalkan adalah yang benar-benar dapat dibuka.
+     *
+     * Memakai Menu::all() akan memperkenalkan modul yang, begitu diklik,
+     * memulangkan 403 — kesan pertama sebuah situs menjadi pintu
+     * terkunci yang baru saja ditawarkan kepadanya sendiri.
+     */
+    public function test_pengguna_biasa_tidak_ditawari_modul_admin(): void
+    {
+        $biasa = $this->baru();
+        $biasa->is_admin = false;
+        $biasa->saveQuietly();
+
+        $modul = collect(Tur::langkah($biasa->fresh()))->firstWhere('kunci', 'modul')['modul'];
+        $kunci = array_column($modul, 'kunci');
+
+        foreach (Menu::all() as $k => $m) {
+            if ($m['admin'] ?? false) {
+                $this->assertNotContains($k, $kunci,
+                    "Modul admin '{$k}' ditawarkan kepada pengguna biasa.");
+            }
+        }
+    }
+
+    /**
+     * Sapaannya melewati gelar.
+     *
+     * Mengambil kata pertama begitu saja menghasilkan "Selamat datang,
+     * Ir." — sapaan yang menyebut gelarnya saja terdengar seperti
+     * aplikasi yang rusak, persis bertentangan dengan maksud sambutan.
+     */
+    public function test_sapaan_melewati_gelar_depan(): void
+    {
+        $judul = collect(Tur::langkah($this->baru()))->firstWhere('kunci', 'sambutan')['judul'];
+
+        $this->assertSame('Selamat datang, Bambang', $judul);
+    }
+
+    /**
+     * Administrator tidak disuruh menghubungi administrator.
+     *
+     * Administrator lintas perusahaan sengaja tidak terikat perusahaan
+     * mana pun. Dengan hanya dua cabang, ia jatuh ke cabang "belum
+     * terikat" dan kalimat pertama yang dibacanya adalah nasihat untuk
+     * menghubungi dirinya sendiri, tentang keadaan yang memang
+     * dikehendaki baginya.
+     */
+    public function test_sambutan_administrator_tidak_menyuruhnya_menghubungi_administrator(): void
+    {
+        $a = $this->baru();
+        $a->is_admin   = true;
+        $a->company_id = null;
+        $a->saveQuietly();
+
+        $teks = collect(Tur::langkah($a->fresh()))->firstWhere('kunci', 'sambutan')['teks'];
+
+        $this->assertStringNotContainsString('Hubungi administrator', $teks,
+            'Administrator disuruh menghubungi administrator tentang keadaan '
+            .'yang justru disengaja baginya.');
+
+        $this->assertStringContainsString('Semua perusahaan', $teks,
+            'Sambutan administrator tidak menyebut pemilih perusahaan — '
+            .'satu-satunya hal yang menjelaskan mengapa akunnya tanpa perusahaan.');
+    }
+
+    /** Pengguna biasa tanpa perusahaan TETAP diberi nasihat yang benar. */
+    public function test_pengguna_biasa_tanpa_perusahaan_tetap_diarahkan(): void
+    {
+        $b = $this->baru();
+        $b->is_admin   = false;
+        $b->company_id = null;
+        $b->saveQuietly();
+
+        $teks = collect(Tur::langkah($b->fresh()))->firstWhere('kunci', 'sambutan')['teks'];
+
+        $this->assertStringContainsString('Hubungi administrator', $teks);
+    }
+
+    /** Yang punya perusahaan disebutkan nama perusahaannya. */
+    public function test_sambutan_menyebut_nama_perusahaannya(): void
+    {
+        $teks = collect(Tur::langkah($this->baru()))->firstWhere('kunci', 'sambutan')['teks'];
+
+        $this->assertStringContainsString('PT Uji Tur', $teks);
+    }
+
+    /** Tiap tautan langkah pertama menunjuk rute yang benar-benar ada. */
+    public function test_tautan_langkah_pertama_semuanya_hidup(): void
+    {
+        $butir = collect(Tur::langkah($this->baru()))->firstWhere('kunci', 'mulai')['butir'];
+
+        $this->assertNotEmpty($butir);
+
+        foreach ($butir as [$judul, , $url]) {
+            $this->assertNotEmpty($url, "Langkah '{$judul}' tidak punya tautan.");
+        }
+    }
+
+    /* ═══════════ menandai selesai ═══════════ */
+
+    /**
+     * Penutupannya TIDAK boleh lewat router Inertia.
+     *
+     * `/tur/selesai` memulangkan 204 No Content, dan itu tepat: menutup
+     * sambutan memang tidak mengubah apa pun di halaman yang sedang
+     * dibuka. Tetapi router Inertia memeriksa tiap jawaban — yang tidak
+     * bertajuk X-Inertia dianggapnya halaman galat, dan ia membuka
+     * dialog galat SELAYAR PENUH di atas situsnya.
+     *
+     * Terukur di peramban: akun baru menekan "Lewati pengenalan", lalu
+     * yang muncul kotak galat hitam. Penandanya tetap tersimpan dan
+     * dialognya hilang begitu halaman disegarkan — itulah sebabnya ia
+     * lolos dari tangkapan layar sesudah penyegaran, dan sebabnya uji
+     * ini membaca berkasnya, bukan menunggu ada yang memotretnya lagi.
+     */
+    public function test_penutupan_tidak_lewat_router_inertia(): void
+    {
+        $berkas = resource_path('js/Components/TurSelamatDatang.vue');
+
+        $this->assertFileExists($berkas);
+
+        $isi = file_get_contents($berkas);
+
+        $this->assertStringNotContainsString("router.post('/tur/selesai'", $isi,
+            'Penutupan pengenalan dikirim lewat router Inertia. Jawaban 204 dari '
+            .'rute itu bukan jawaban Inertia, sehingga router membuka dialog galat '
+            .'selayar penuh tepat di hadapan orang yang baru saja menekan Lewati.');
+
+        $this->assertStringContainsString("fetch('/tur/selesai'", $isi,
+            'Penutupan pengenalan tidak lagi dikirim dengan fetch; bila diganti '
+            .'cara lain, pastikan cara itu tidak melewatkan jawabannya ke '
+            .'pemeriksaan router Inertia.');
+
+        $this->assertStringContainsString('keepalive', $isi,
+            'fetch penutupan tanpa keepalive. Tautan pada langkah terakhir menutup '
+            .'pengenalan lalu berpindah halaman pada napas yang sama — peramban '
+            .'membatalkan permintaan yang belum selesai, dan sambutan muncul lagi '
+            .'justru bagi orang yang membacanya sampai habis.');
+
+        $this->assertStringContainsString('X-XSRF-TOKEN', $isi,
+            'fetch penutupan tidak membawa token CSRF; penandanya tidak akan '
+            .'pernah tersimpan, dan gagalnya tidak terlihat sebagai galat — hanya '
+            .'sambutan yang muncul lagi tiap kali halaman disegarkan.');
+    }
+
+
+    public function test_menandai_selesai_menghentikan_pengenalan(): void
+    {
+        $u = $this->baru();
+
+        $this->actingAs($u)->post('/tur/selesai')->assertNoContent();
+
+        $this->assertNotNull($u->fresh()->tur_selesai_pada);
+        $this->assertFalse(Tur::perlu($u->fresh()));
+    }
+
+    /**
+     * Ditandai dua kali tidak memundurkan tanggalnya.
+     *
+     * Tanggal itu satu-satunya jawaban atas "kapan orang ini pertama
+     * kali dikenalkan"; membuka ulang pengenalan lalu menutupnya tidak
+     * boleh menghapus jawabannya.
+     */
+    public function test_menandai_dua_kali_tidak_menggeser_tanggalnya(): void
+    {
+        $u = $this->baru();
+
+        $this->actingAs($u)->post('/tur/selesai')->assertNoContent();
+        $pertama = $u->fresh()->tur_selesai_pada;
+
+        $this->travel(5)->minutes();
+
+        $this->actingAs($u)->post('/tur/selesai')->assertNoContent();
+
+        $this->assertTrue($pertama->equalTo($u->fresh()->tur_selesai_pada),
+            'Tanggal pengenalan pertama tergeser oleh penutupan berikutnya.');
+    }
+
+    /**
+     * Penandanya tidak dapat dipasang lewat pembaruan profil.
+     *
+     * Sengaja di luar $fillable: akun yang belum pernah melihat
+     * pengenalannya tidak boleh diam-diam terhitung sudah, hanya karena
+     * ada formulir lain yang kebetulan mengirim namanya.
+     */
+    public function test_penanda_tidak_dapat_diisi_massal(): void
+    {
+        $u = $this->baru();
+
+        $u->fill(['tur_selesai_pada' => now()]);
+
+        $this->assertNull($u->tur_selesai_pada,
+            'tur_selesai_pada dapat diisi massal; formulir mana pun dapat melewatkan '
+            .'pengenalan tanpa orangnya pernah melihatnya.');
+    }
+
+    /* ════════════ tata letak: yang membuat isinya dapat digulir ════════════ */
+
+    /**
+     * Ketiga deklarasi di bawah adalah SATU perbaikan, dan hilang salah
+     * satunya mengembalikan cacat yang sama.
+     *
+     * Langkah ketiga memuat dua puluh tujuh kartu modul. Pengenalannya
+     * dibatasi max-height dan .eq-tur-isi sudah punya overflow-y: auto,
+     * jadi di atas kertas semuanya lengkap. Tetapi petak dan lentur
+     * memberi anaknya min-height: auto — "jangan menyusut lebih kecil
+     * daripada isimu" — dan baris petak yang tingginya auto mengambil
+     * setinggi isinya tanpa peduli max-height induknya.
+     *
+     * Akibatnya wadah gulirnya tidak pernah kekurangan ruang, jadi tidak
+     * pernah menggulir; kelebihannya dipotong overflow: hidden. Yang
+     * ikut terpotong bukan cuma sisa daftarnya melainkan KAKI-nya —
+     * tombol "Lanjut" terdorong keluar layar, dan pengenalannya berhenti
+     * di langkah ketiga tanpa jalan maju maupun mundur.
+     *
+     * Terukur di peramban pada enam ukuran layar: langkah 3 rusak di
+     * SEMUA ukuran, dari 429 piksel terpotong pada 1440x960 sampai 1270
+     * piksel pada 390x844. Tidak ada satu pun galat yang tercatat.
+     */
+    public function test_tata_letak_pengenalan_membiarkan_isinya_digulir(): void
+    {
+        $vue = file_get_contents(base_path('resources/js/Components/TurSelamatDatang.vue'));
+
+        $wajib = [
+            '.eq-tur'       => ['grid-template-rows' => 'minmax(0, 1fr)'],
+            '.eq-tur-badan' => ['min-height' => '0'],
+            '.eq-tur-isi'   => ['min-height' => '0', 'overflow-y' => 'auto'],
+        ];
+
+        foreach ($wajib as $pemilih => $deklarasi) {
+            $badan = self::badanAturan($vue, $pemilih);
+
+            $this->assertNotNull($badan, "Aturan {$pemilih} tidak ada lagi di TurSelamatDatang.vue.");
+
+            foreach ($deklarasi as $sifat => $nilai) {
+                $this->assertMatchesRegularExpression(
+                    '/;\s*'.preg_quote($sifat, '/').'\s*:\s*'.preg_quote($nilai, '/').'\s*;/',
+                    ';'.$badan.';',
+                    "{$pemilih} kehilangan `{$sifat}: {$nilai}`. Tanpa itu daftar "
+                    ."langkah ketiga berhenti dapat digulir dan tombol Lanjut "
+                    ."terdorong ke luar layar.",
+                );
+            }
+        }
+    }
+
+    /**
+     * Isi sebuah aturan CSS, dicari menurut pemilih yang PERSIS.
+     *
+     * Dicocokkan di awal baris supaya '.eq-tur' tidak ikut menangkap
+     * '.eq-tur-badan' — keduanya berawalan sama, dan pencocokan yang
+     * longgar akan memeriksa aturan yang salah lalu lulus.
+     */
+    private static function badanAturan(string $css, string $pemilih): ?string
+    {
+        /* Komentar dibuang lebih dulu. Isinya menyebut nama sifat yang
+           sedang dicari — blok ini justru menjelaskan kenapa deklarasi
+           itu ada — jadi dibiarkan, ia akan cocok pada penjelasannya,
+           bukan pada aturannya. Komentar juga memutus batas titik koma
+           yang dipakai pencocokan di bawah. */
+        $css = (string) preg_replace('#/\*.*?\*/#s', '', $css);
+
+        $pola = '/^'.preg_quote($pemilih, '/').'\s*\{([^}]*)\}/m';
+
+        return preg_match($pola, $css, $m) ? $m[1] : null;
+    }
+}

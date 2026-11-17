@@ -41,7 +41,7 @@ const tahunSekarang = new Date().getFullYear();
   <div class="flex flex-wrap items-center gap-1.5 mb-4">
     <select :value="tahun" @change="gantiTahun"
             class="ring-focus rounded-xl border border-stone-200 bg-white px-3.5 py-2
-                   text-[12.5px] font-semibold shadow-sm mr-1">
+                   text-[12.5px] font-semibold shadow-sm mr-1" aria-label="Periode">
       <option v-for="t in daftarTahun" :key="t" :value="t">Periode {{ t }}</option>
       <option v-if="!daftarTahun.includes(tahunSekarang)" :value="tahunSekarang">
         Periode {{ tahunSekarang }} (baru)

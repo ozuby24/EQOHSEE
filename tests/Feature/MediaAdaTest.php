@@ -114,4 +114,66 @@ class MediaAdaTest extends TestCase
         $this->assertSame([], $hilang,
             "Tetapan media menunjuk berkas yang tidak ada:\n  ".implode("\n  ", $hilang));
     }
+
+    /**
+     * Latar halaman masuk tidak boleh berkas yang sama dengan mana pun
+     * yang sudah tampil di halaman depan.
+     *
+     * Ini bukan soal selera. `hero/masuk.jpg` pernah byte-per-byte
+     * identik dengan `galeri/safety.jpg`, dan rekamannya isi yang sama
+     * pula — sehingga orang yang menekan "Masuk ke Platform" dari
+     * halaman depan mendarat di gambar yang baru saja dilewatinya.
+     * Perpindahan halaman itu terbaca sebagai halaman yang GAGAL
+     * berganti, bukan sebagai halaman baru.
+     *
+     * Kegagalannya sunyi sempurna: kedua berkas ada, kedua halaman
+     * tergambar, tidak ada satu baris pun di log. Yang menyadarinya
+     * hanya orang yang membuka keduanya berurutan.
+     *
+     * Dibandingkan menurut ISI, bukan menurut nama. Menyalin satu berkas
+     * ke nama lain justru cara paling mudah membuat keduanya kembar
+     * tanpa terlihat pada daftar berkas.
+     */
+    public function test_latar_halaman_masuk_bukan_salinan_media_halaman_depan(): void
+    {
+        $sidik = function (?string $jalur): ?string {
+            if (!Media::ada($jalur)) return null;
+
+            return md5_file(public_path(Media::akar().'/'.ltrim((string) $jalur, '/')));
+        };
+
+        $masuk = [
+            Media::MASUK_VIDEO  => $sidik(Media::MASUK_VIDEO),
+            Media::MASUK_POSTER => $sidik(Media::MASUK_POSTER),
+        ];
+
+        $this->assertNotEmpty(array_filter($masuk),
+            'Tidak satu pun berkas latar halaman masuk ada — ujinya tidak menguji apa pun.');
+
+        /* Seluruh media yang tampil di halaman depan: hero, posternya,
+           dan tiap butir galeri. */
+        $depan = [Media::HERO_VIDEO, Media::HERO_POSTER];
+
+        foreach (Media::galeri() as $g) {
+            $depan[] = $g['gambar'] ?? null;
+            $depan[] = $g['video'] ?? null;
+        }
+
+        $kembar = [];
+
+        foreach (array_filter($masuk) as $jalurMasuk => $sidikMasuk) {
+            foreach (array_filter($depan) as $jalurDepan) {
+                if ($sidik($jalurDepan) === $sidikMasuk) {
+                    $kembar[] = "{$jalurMasuk} == {$jalurDepan}";
+                }
+            }
+        }
+
+        sort($kembar);
+
+        $this->assertSame([], $kembar,
+            "Latar halaman masuk memakai berkas yang isinya sama dengan media halaman depan.\n"
+            ."Yang menekan \"Masuk\" akan melihat gambar yang baru saja dilewatinya:\n  "
+            .implode("\n  ", $kembar));
+    }
 }

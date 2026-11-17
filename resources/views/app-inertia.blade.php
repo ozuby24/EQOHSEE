@@ -12,7 +12,14 @@
 {{-- Sama persis dengan layouts/app.blade.php: tema dipasang sebelum apa
      pun tergambar, supaya halaman Inertia tidak berkedip terang sesaat
      sebelum berubah gelap. --}}
-<script>
+{{-- nonce WAJIB ada di sini.
+
+     Content-Security-Policy pada TajukKeamanan melarang skrip sebaris
+     tanpa nonce. Tanpa atribut ini, skrip tema tidak dijalankan sama
+     sekali — dan kegagalannya sunyi: tidak ada galat di sisi server,
+     hanya halaman yang berkedip terang lalu berubah gelap, persis cacat
+     yang skrip ini ada untuk mencegahnya. --}}
+<script nonce="{{ \App\Http\Middleware\TajukKeamanan::nonce() }}">
 (function(){
   var t = null;
   try{
@@ -27,11 +34,64 @@
 })();
 </script>
 
+{{-- Judul dan keterangan berbagi, digambar SERVER.
+
+     Aplikasi ini memakai Inertia tanpa SSR, jadi seluruh <title> dipasang
+     JavaScript sesudah halaman tiba. Bagi orang itu tidak terasa; bagi
+     apa pun yang tidak menjalankan JavaScript — pratinjau tautan di
+     WhatsApp, LinkedIn, Telegram — halaman ini datang tanpa judul, tanpa
+     uraian, dan tanpa gambar sama sekali.
+
+     Ditaruh SEBELUM @inertiaHead supaya judul dari <Head> di sisi Vue
+     tetap menang begitu halamannya hidup. Yang di sini berlaku untuk
+     pembaca yang tidak pernah sampai ke tahap itu. --}}
+@php($eqSeo = \App\Support\Seo::untuk(request()))
+<title>{{ $eqSeo['judul'] }}</title>
+<meta name="description" content="{{ $eqSeo['uraian'] }}">
+<link rel="canonical" href="{{ $eqSeo['kanonik'] }}">
+@unless($eqSeo['indeks'])
+<meta name="robots" content="noindex, nofollow">
+@endunless
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{ \App\Support\Seo::NAMA }}">
+<meta property="og:locale" content="id_ID">
+<meta property="og:title" content="{{ $eqSeo['judul'] }}">
+<meta property="og:description" content="{{ $eqSeo['uraian'] }}">
+<meta property="og:url" content="{{ $eqSeo['kanonik'] }}">
+<meta property="og:image" content="{{ url($eqSeo['gambar']) }}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ $eqSeo['judul'] }}">
+<meta name="twitter:description" content="{{ $eqSeo['uraian'] }}">
+<meta name="twitter:image" content="{{ url($eqSeo['gambar']) }}">
+
+{{-- Data terstruktur hanya di halaman pendaratan. Memasangnya di setiap
+     halaman berarti menyatakan bahwa tiap alamat adalah aplikasinya
+     sendiri — dan pernyataan yang berulang di dua ratus alamat bukan
+     penekanan, melainkan kekeliruan yang diulang dua ratus kali. --}}
+@if($eqSeo['indeks'] && request()->route()?->getName() === 'beranda')
+<script type="application/ld+json" nonce="{{ \App\Http\Middleware\TajukKeamanan::nonce() }}">{!! \App\Support\Seo::dataTerstruktur() !!}</script>
+{{-- FAQPage, diterbitkan HANYA di halaman yang benar-benar memuat
+     akordeon tanya jawabnya, dan dibangun dari daftar yang sama dengan
+     yang digambar di sana — lihat App\Support\TanyaJawab.
+
+     Google menjatuhkan sanksi manual atas data terstruktur yang tidak
+     sesuai dengan isi yang terlihat, jadi memasangnya di halaman yang
+     tidak punya FAQ-nya lebih merugikan daripada tidak memasangnya
+     sama sekali. --}}
+<script type="application/ld+json" nonce="{{ \App\Http\Middleware\TajukKeamanan::nonce() }}">{!! json_encode(\App\Support\TanyaJawab::dataTerstruktur(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+@endif
+
 @inertiaHead
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+{{-- Huruf disajikan sendiri dari /fonts/, tidak lagi dari
+     fonts.googleapis.com. Lihat resources/css/fonts.css. Berkasnya
+     dimuat lewat app.css, jadi tidak ada lagi permintaan ke luar di
+     sini — dan tidak ada lagi halaman yang tergambar dengan huruf
+     cadangan ketika jaringannya tertutup. --}}
+<link rel="preload" href="{{ \App\Support\Aset::v('fonts/inter-latin.woff2') }}" as="font" type="font/woff2" crossorigin>
 @vite(['resources/css/app.css', 'resources/js/inertia.ts'])
 <link rel="icon" type="image/svg+xml" href="{{ \App\Support\Aset::v('brand/favicon.svg') }}">
 <link rel="icon" href="{{ \App\Support\Aset::v('favicon.ico') }}" sizes="any">
@@ -45,13 +105,16 @@
      salinan seperti itu pasti berbeda isinya cepat atau lambat. --}}
 @include('partials.eq-visual')
 
-{{-- Pemuat dan setelan tema Chart.js yang sama dengan halaman Blade.
-     Berkas CDN-nya beralamat sama persis, jadi peramban memakai satu
-     salinan untuk seluruh aplikasi; yang lebih penting, setelan tema
-     grafiknya tidak tergandakan — dua salinan setelan warna dan font
-     akan berbeda isinya cepat atau lambat, dan bedanya baru ketahuan
-     saat dua grafik dibandingkan berdampingan. --}}
-@include('tpkkp._chart')
+{{-- Chart.js TIDAK lagi disisipkan di sini.
+
+     Dulu partial tpkkp._chart memuatnya dari cdn.jsdelivr.net pada setiap
+     halaman Inertia. Di jaringan tambang yang tertutup — tempat aplikasi
+     ini justru dipakai — skripnya gagal dimuat dan grafiknya kosong tanpa
+     satu pun penjelasan; Pages/Admin/Sistem.vue sudah ditulis ulang
+     menjadi SVG karena persis itu.
+
+     Kini pustakanya ikut dibundel lewat resources/js/bagan.ts, jadi ia
+     tiba bersama halamannya. --}}
 
 @inertia
 </body>

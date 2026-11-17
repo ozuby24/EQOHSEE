@@ -72,7 +72,7 @@ function simpan() {
 <template>
   <Head title="PTPKKP — Kalkulator Slovin" />
 
-  <div class="max-w-4xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <PickerTpkkp v-bind="picker" />
 

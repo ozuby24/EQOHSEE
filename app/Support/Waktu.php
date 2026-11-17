@@ -29,6 +29,61 @@ final class Waktu
         return Carbon::now(self::zona());
     }
 
+    /**
+     * Selisih HARI KALENDER dari $pada (bawaan: hari ini, waktu tambang)
+     * ke sebuah tanggal; negatif bila sudah lewat, null bila kosong.
+     *
+     * Dibandingkan sebagai TANGGAL, bukan saat. Kolom DATE terbaca sebagai
+     * tengah malam UTC, sedangkan "hari ini" tengah malam WITA — selisih
+     * delapan jam itu membuat `diffInDays()` menjawab −0,67 untuk tanggal
+     * KEMARIN, yang terpangkas menjadi 0: kartu yang habis kemarin
+     * terbaca "habis hari ini" dan masih dianggap berlaku sehari lagi.
+     */
+    public static function sisaHari(\DateTimeInterface|string|null $tanggal, ?Carbon $pada = null): ?int
+    {
+        if ($tanggal === null || $tanggal === '' || $tanggal === '0000-00-00') return null;
+
+        $zona  = self::zona();
+        $acuan = Carbon::parse(($pada ?? self::kini())->copy()->setTimezone($zona)->toDateString(), $zona);
+        $teks  = $tanggal instanceof \DateTimeInterface ? $tanggal->format('Y-m-d') : substr((string) $tanggal, 0, 10);
+
+        return (int) round($acuan->diffInDays(Carbon::parse($teks, $zona), false));
+    }
+
+/**
+     * Sebuah waktu disiapkan untuk DISIMPAN — selalu UTC.
+     *
+     * Eloquent menyimpan ANGKA JAM PADA JAM DINDING, bukan saatnya.
+     * `Model::fromDateTime()` memanggil `format()` atas Carbon yang
+     * diberikan dan tidak memindahkan zonanya lebih dahulu — sehingga
+     * Carbon berzona WITA pukul 07.02 tersimpan sebagai untaian
+     * "07:02:00" pada kolom yang dibaca sebagai UTC. Dibaca kembali,
+     * ia menjadi pukul 15.02 WITA.
+     *
+     * TIDAK ADA GALAT SATU PUN. Barisnya tersimpan, layarnya menggambar,
+     * dan seluruhnya meleset delapan jam: pindaian pukul tujuh pagi
+     * tercatat terlambat 540 menit, tap pulang pukul empat sore jatuh
+     * ke hari berikutnya sehingga orangnya tercatat "belum tap pulang"
+     * selamanya, dan jam kerjanya nol. Terjadi sungguhan — seluruh data
+     * contoh absensi yang pertama dibangkitkan begitu.
+     *
+     * Bedakan dengan tanggal(): kolom DATE memang menyimpan tanggal
+     * setempat, jadi di sana yang benar justru jam dinding WITA tengah
+     * malam. Yang di sini untuk kolom TIMESTAMP, yang menyimpan saat.
+     */
+    public static function simpan(\DateTimeInterface|string|null $waktu): ?Carbon
+    {
+        if ($waktu === null || $waktu === '') return null;
+
+        return Carbon::parse($waktu)->utc();
+    }
+
+    /** Waktu sekarang, siap disimpan. */
+    public static function kiniSimpan(): Carbon
+    {
+        return Carbon::now('UTC');
+    }
+
     /** Sebuah waktu dipindah ke zona tampilan; null tetap null. */
     public static function lokal($waktu): ?Carbon
     {
@@ -44,6 +99,23 @@ final class Waktu
      * 18.00 WITA disapa "Selamat pagi" — salah delapan jam, dan justru
      * bagian halaman yang paling pertama dibaca orang.
      */
+    /**
+     * Tanggal WITA tengah malam dari isian formulir.
+     *
+     * Cast `date` Laravel memangkas jam saat DIBACA, tidak saat
+     * DITULIS — sehingga "2026-09-02T14:30" yang lolos aturan `date`
+     * tersimpan berikut jamnya pada kolom bertipe DATE. MySQL
+     * memangkasnya di tingkat kolom, SQLite tidak, dan kueri rentang
+     * karena itu menjawab BERBEDA di server dan di mesin penguji.
+     * Lihat KolomTanggalTest.
+     */
+    public static function tanggal(string|\DateTimeInterface|null $nilai): ?Carbon
+    {
+        if ($nilai === null || $nilai === '') return null;
+
+        return Carbon::parse($nilai, self::zona())->startOfDay();
+    }
+
     public static function sapaan(?Carbon $saat = null): string
     {
         $jam = (int) ($saat ?? self::kini())->format('G');

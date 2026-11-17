@@ -10,6 +10,10 @@
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { angka } from '../../angka';
 import type { HalamanBarangGudang } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanBarangGudang>();
 
@@ -26,8 +30,8 @@ function terapkan() {
 
 const adaSaringan = () => Object.values(props.f).some((v) => v !== '');
 
-function hapus(url: string, nama: string) {
-  if (!confirm(`Hapus atau nonaktifkan "${nama}"?`)) return;
+async function hapus(url: string, nama: string) {
+  if (!await tanya(`Hapus atau nonaktifkan "${nama}"?`)) return;
   router.delete(url, { preserveScroll: true });
 }
 
@@ -37,7 +41,7 @@ const isian = 'rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px] ring
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <form class="bg-white rounded-2xl shadow-card border border-stone-100 p-3
                  grid gap-2.5 sm:grid-cols-2 lg:grid-cols-5"
@@ -45,12 +49,12 @@ const isian = 'rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px] ring
       <input v-model="saring.cari" :class="[isian, 'lg:col-span-2']"
              placeholder="Cari nama, kode, part number…">
 
-      <select v-model="saring.kategori" :class="isian" @change="terapkan">
+      <select v-model="saring.kategori" :class="isian" @change="terapkan" aria-label="Kategori">
         <option value="">Semua kategori</option>
         <option v-for="o in opsi.kategori" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
       </select>
 
-      <select v-model="saring.status" :class="isian" @change="terapkan">
+      <select v-model="saring.status" :class="isian" @change="terapkan" aria-label="Status">
         <option value="">Semua status</option>
         <option v-for="o in opsi.status" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
       </select>
@@ -120,9 +124,9 @@ const isian = 'rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px] ring
                 <span class="eq-lencana-kat" :class="`k-${b.status.nada}`">{{ b.status.nama }}</span>
               </td>
               <td v-if="bolehUbah" class="py-3 px-4 text-right whitespace-nowrap">
-                <a :href="b.urlUbah" class="text-[12px] font-semibold"
+                <a :href="b.urlUbah" class="text-[12px] font-semibold py-1.5 -my-1.5"
                    style="color:var(--eq-aksen,#F57C00)">Ubah</a>
-                <button type="button" class="text-[12px] font-semibold text-red-600 ml-2"
+                <button type="button" class="text-[12px] font-semibold text-red-600 ml-2 py-1.5 -my-1.5"
                         @click="hapus(b.urlHapus, b.nama)">Hapus</button>
               </td>
             </tr>
@@ -132,4 +136,6 @@ const isian = 'rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px] ring
     </div>
 
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

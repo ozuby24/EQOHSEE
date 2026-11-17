@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+: layar pembuka sistem. Latar ink dan tanda EQOHSEE,
+         bukan ikon putih polos di atas latar putih. -->
+    <style name="LaunchTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowSplashScreenBackground">@color/eq_ink</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_ikon</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/eq_ink</item>
+        <item name="android:windowBackground">@color/eq_ink</item>
+    </style>
+    <style name="NormalTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@color/eq_ink</item>
+    </style>
+</resources>

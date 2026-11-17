@@ -12,7 +12,12 @@
  */
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import BarisPeriksa from '../../Components/BarisPeriksa.vue';
 import type { HalamanDiagnosa } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanDiagnosa>();
 
@@ -37,25 +42,43 @@ const perluTindakan = computed(() =>
   props.hasil.filter((h) => h.keadaan === 'gawat' || h.keadaan === 'perhatian').length,
 );
 
+/* Kesesuaian memakai saringan yang sama. "Belum dinilai" sengaja ikut
+   terlihat walau bukan merah: modul yang kosong bukan modul yang sehat,
+   ia hanya modul yang belum membuktikan apa pun. */
+const sesuaiTerlihat = computed(() =>
+  props.sesuai.filter((h) => tampilkanAman.value || h.keadaan !== 'aman'),
+);
+
+const sesuaiPerluTindakan = computed(() =>
+  props.sesuai.filter((h) => h.keadaan !== 'aman').length,
+);
+
 /* ── aksi ── */
 
 const perbaikanForm = useForm({});
 
-function perbaiki(p: HalamanDiagnosa['perbaikan'][number]) {
-  if (p.berat && !confirm(`${p.label}\n\n${p.ket}\n\nJalankan sekarang?`)) return;
+async function perbaiki(p: HalamanDiagnosa['perbaikan'][number]) {
+  if (p.berat && !await tanya(`${p.label}\n\n${p.ket}\n\nJalankan sekarang?`)) return;
 
   perbaikanForm.post(p.url, { preserveScroll: true });
 }
 
+const jawabanAi = computed<string | null>(() => (usePage().props.kilat as any)?.aiJawaban ?? null);
+const tanyaForm = useForm({ pertanyaan: '' });
+
+function tanyaAi() {
+  tanyaForm.post(props.ai.url, { preserveScroll: true });
+}
+
 function periksaUlang() {
-  router.reload({ only: ['hasil', 'ringkas', 'dijalankan'] });
+  router.reload({ only: ['hasil', 'ringkas', 'sesuai', 'ringkasSesuai', 'dijalankan'] });
 }
 </script>
 
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-5xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <section class="brand-gradient rounded-2xl p-6 text-white shadow-card relative overflow-hidden">
       <div class="absolute -right-20 -top-20 w-56 h-56 rounded-full bg-cam-lime/20 blur-3xl"></div>
@@ -65,7 +88,6 @@ function periksaUlang() {
             <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-cam-lime-light">
               Pemeriksaan Mandiri
             </span>
-            <h2 class="stat mt-1.5">{{ judul }}</h2>
             <p class="text-[12px] text-white/70 mt-1.5 max-w-xl leading-relaxed">
               {{ subjudul }} — mode debug yang tertinggal menyala, migrasi yang belum jalan,
               tautan berkas yang putus. Semuanya membuat sistem tetap terlihat sehat.
@@ -120,47 +142,7 @@ function periksaUlang() {
         </label>
       </div>
 
-      <div v-for="h in terlihat" :key="h.kode"
-           class="rounded-2xl border shadow-card p-4"
-           :class="[NADA[h.keadaan].garis, NADA[h.keadaan].latar]">
-        <div class="flex items-start gap-3">
-          <span class="w-2.5 h-2.5 rounded-full mt-1.5 shrink-0" :class="NADA[h.keadaan].titik"></span>
-
-          <div class="min-w-0 flex-1">
-            <div class="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-              <span class="text-[13.5px] font-bold text-cam-ink">{{ h.judul }}</span>
-              <!-- Nada bakunya, bukan bg-white/70: pada tema gelap
-                   putih tetap putih sementara text-stone-500 ikut
-                   diterangkan, sehingga abu terang duduk di atas putih
-                   pada 2,6:1. Pasangan stone-100/stone-500 inilah yang
-                   dipakai lencana lain di aplikasi ini dan yang
-                   terbukti lolos di kedua tema. -->
-              <span class="text-[9.5px] font-bold uppercase tracking-wide bg-stone-100
-                           text-stone-600 px-1.5 py-0.5 rounded">
-                {{ h.kelompok }}
-              </span>
-              <span class="text-[11px] font-bold" :class="NADA[h.keadaan].teks">
-                {{ NADA[h.keadaan].label }}
-              </span>
-            </div>
-
-            <div class="text-[12.5px] font-semibold text-stone-700 mt-1.5 break-words">
-              {{ h.nilai }}
-            </div>
-
-            <!-- stone-600, bukan stone-500: kartu ini berlatar merah
-                 atau kuning muda, dan di atas latar itu stone-500
-                 turun ke 4,4:1 — tepat di bawah ambang. Justru baris
-                 yang paling perlu dibaca yang latarnya paling berwarna. -->
-            <p class="text-[12px] text-stone-600 mt-1.5 leading-relaxed">{{ h.uraian }}</p>
-
-            <p v-if="h.tindakan"
-               class="text-[12px] mt-2 leading-relaxed font-semibold" :class="NADA[h.keadaan].teks">
-              Langkah: {{ h.tindakan }}
-            </p>
-          </div>
-        </div>
-      </div>
+      <BarisPeriksa v-for="h in terlihat" :key="h.kode" :baris="h" />
 
       <div v-if="!terlihat.length"
            class="rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-10 text-center">
@@ -169,6 +151,95 @@ function periksaUlang() {
           Seluruh {{ hasil.length }} pemeriksaan lolos. Centang "Tampilkan yang aman" untuk melihat rinciannya.
         </p>
       </div>
+    </section>
+
+    <!--
+      Kesesuaian angka.
+
+      Dipisahkan dari diagnosa karena pertanyaannya berbeda: diagnosa
+      menanyakan apakah sistemnya sehat, bagian ini menanyakan apakah
+      angka yang dipajangnya benar. Sistem dapat sehat sempurna sementara
+      skor yang ditampilkannya keliru — dan kekeliruan macam itu tidak
+      pernah memunculkan galat, hanya memunculkan angka.
+    -->
+    <section class="space-y-2.5 pt-2">
+      <div class="flex flex-wrap items-baseline justify-between gap-2">
+        <h3 class="text-[14px] font-bold text-cam-ink">
+          Kesesuaian isi &amp; penilaian tiap modul
+        </h3>
+        <span class="text-[11.5px] font-semibold text-stone-500">
+          {{ sesuaiPerluTindakan }} dari {{ sesuai.length }} perlu diperiksa
+        </span>
+      </div>
+
+      <p class="text-[11.5px] text-stone-500 leading-relaxed max-w-3xl">
+        Yang diperiksa di sini bukan kesehatan sistemnya melainkan kebenaran angkanya:
+        apakah totalnya masih sama dengan jumlah rinciannya, apakah persentasenya masih
+        di dalam 0–100, dan apakah modulnya cukup terisi sehingga skornya layak dibaca.
+        Modul yang kosong ditandai <strong>belum dinilai</strong>, bukan aman — halaman
+        kosong tidak pernah keliru, dan justru karena itu ia tidak membuktikan apa pun.
+      </p>
+
+      <BarisPeriksa v-for="h in sesuaiTerlihat" :key="'s-' + h.kode + h.judul" :baris="h" />
+
+      <div v-if="!sesuaiTerlihat.length"
+           class="rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-10 text-center">
+        <div class="text-[14px] font-bold text-emerald-800">Angka tiap modul konsisten</div>
+        <p class="text-[12px] text-emerald-700 mt-1.5">
+          Seluruh {{ sesuai.length }} pemeriksaan kesesuaian lolos.
+        </p>
+      </div>
+    </section>
+
+    <!-- Pendamping AI -->
+    <section v-if="ai.aktif" class="bg-white rounded-2xl shadow-card border border-stone-100 p-5">
+      <h3 class="text-[14px] font-bold text-cam-ink mb-1">Tanya AI tentang temuan ini</h3>
+      <p class="text-[11.5px] text-stone-500 leading-relaxed mb-3.5">
+        Daftar temuan di atas dikirim ke asisten untuk diurutkan menurut yang paling mendesak.
+        Yang dikirim hanya temuannya — bukan isi basis data, bukan <code>.env</code>, bukan kode.
+        Ia menasihati dan tidak menjalankan apa pun.
+      </p>
+
+      <form class="flex flex-wrap gap-2" @submit.prevent="tanyaAi">
+        <input v-model="tanyaForm.pertanyaan" maxlength="500"
+               placeholder="Mana yang harus saya tangani lebih dulu, dan mengapa?"
+               class="flex-1 min-w-[240px] rounded-xl border-stone-200 text-[12.5px]">
+        <button type="submit" :disabled="tanyaForm.processing"
+                class="rounded-xl bg-cam-lime-deep px-4 py-2 text-[11.5px] font-bold text-white
+                       hover:brightness-95 transition disabled:opacity-40">
+          {{ tanyaForm.processing ? 'Menanyakan…' : 'Tanya' }}
+        </button>
+      </form>
+
+      <!-- Kegagalan AI DITAMPILKAN, tidak ditelan.
+
+           Sebelumnya pesan galatnya dibuat di server lalu tidak pernah
+           digambar di sini — hanya `galat.perbaikan` yang punya
+           tempat. Kunci yang salah, kuota yang habis, dan nama model
+           yang tidak dikenal karena itu terlihat persis sama: tombolnya
+           kembali normal dan tidak ada apa-apa yang muncul. Tidak ada
+           jalan bagi yang memakainya untuk mengetahui bahwa ada yang
+           perlu diperbaiki, apalagi apa yang perlu diperbaiki. -->
+      <div v-if="galat.ai"
+           class="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-[12.5px]
+                  text-red-700 leading-relaxed">
+        {{ galat.ai }}
+        <Link :href="ai.atur" class="block mt-1.5 font-semibold underline">
+          Periksa pengaturan Integrasi AI
+        </Link>
+      </div>
+
+      <div v-if="jawabanAi"
+           class="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-4 text-[12.5px]
+                  text-stone-700 leading-relaxed whitespace-pre-wrap">{{ jawabanAi }}</div>
+    </section>
+
+    <section v-else class="rounded-2xl border border-stone-200 bg-stone-50 px-5 py-4">
+      <p class="text-[12px] text-stone-600 leading-relaxed">
+        Asisten AI belum diaktifkan. Dengan kunci API sendiri, temuan di atas dapat diurutkan
+        menurut yang paling mendesak —
+        <Link :href="ai.atur" class="text-cam-lime-deep font-semibold hover:underline">atur di Integrasi AI</Link>.
+      </p>
     </section>
 
     <!-- Perbaikan -->
@@ -203,4 +274,6 @@ function periksaUlang() {
     </section>
 
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

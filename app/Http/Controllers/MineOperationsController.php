@@ -148,7 +148,7 @@ class MineOperationsController extends Controller
         $targetProduksi = (float) $targets->sum('target_produksi_ton');
         $targetOb = (float) $targets->sum('target_overburden_bcm');
 
-        $perusahaan = auth()->user()?->company ?: Company::first();
+        $perusahaan = $this->perusahaanKop();
 
         return Inertia::render('Print/Operasi', [
             'dok'    => KopDokumen::untuk('laporan-operasi', $perusahaan),
@@ -421,7 +421,16 @@ class MineOperationsController extends Controller
         return Inertia::render('Operasi/Halaman', [
             'mode' => $mode, 'dari' => $dari, 'sampai' => $sampai, 'ringkas' => $ringkas,
             'target' => ['produksi' => $targetProduksi, 'ob' => $targetOb, 'strip_ratio' => $targetStrip, 'jarak' => $targetJarak],
-            'records' => $records->map(fn (MineOperationalRecord $x) => $this->recordView($x))->values(),
+            /* Hanya tab "Input Shift" yang menggambar daftar ini; tiga
+               tab lain memakai $records untuk hitungannya saja. Alasan
+               yang sama dengan `geojson` di atas — tiap tab kunjungan
+               terpisah ke server, jadi mengirimnya di semua tab hanya
+               menambah muatan yang dibayar ulang tiap perpindahan.
+
+               Terukur pada data 16x: 71,9 kB dikirim kepada empat tab,
+               tiga di antaranya tidak menggambarkannya. */
+            'records' => $mode !== 'data' ? [] :
+                $records->map(fn (MineOperationalRecord $x) => $this->recordView($x))->values(),
             'targets' => $targets->sortByDesc(fn ($x) => $x->tahun * 100 + $x->bulan)
                 ->map(fn (MineOperationalTarget $x) => $this->targetView($x))->values(),
             'layers' => $layers->map(fn (MineMapLayer $x) => $this->layerView($x, $mode === 'gis'))->values(),
@@ -462,12 +471,6 @@ class MineOperationsController extends Controller
                 'layerHapus'   => route('operasi.layer.hapus', ['layer' => '__ID__']),
             ],
         ]);
-    }
-
-    private function pemilik(array $data): array
-    {
-        if (!auth()->user()?->isAdmin()) $data['company_id'] = auth()->user()?->company_id;
-        return $data;
     }
 
     /* Muatan halaman disusun kolom demi kolom, bukan lewat toArray(). Model

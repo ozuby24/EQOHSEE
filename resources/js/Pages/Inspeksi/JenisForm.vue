@@ -8,6 +8,10 @@
  */
 import { Head, router, useForm } from '@inertiajs/vue3';
 import type { HalamanJenisFormInspeksi } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanJenisFormInspeksi>();
 
@@ -29,8 +33,8 @@ function tambahItem() {
   });
 }
 
-function hapusItem(url: string) {
-  if (!confirm('Hapus parameter ini?')) return;
+async function hapusItem(url: string) {
+  if (!await tanya('Hapus parameter ini?')) return;
   router.delete(url, { preserveScroll: true });
 }
 
@@ -115,7 +119,7 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
         </div>
         <div>
           <label :class="label">Risiko awal</label>
-          <select v-model="formItem.risiko_default" :class="kecil">
+          <select v-model="formItem.risiko_default" :class="kecil" aria-label="Risiko awal">
             <option value="">—</option>
             <option v-for="r in opsi.risiko" :key="r" :value="r">{{ r }}</option>
           </select>
@@ -130,4 +134,6 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
       Simpan jenisnya dulu, lalu parameternya dapat ditambahkan.
     </p>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

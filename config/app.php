@@ -78,7 +78,11 @@ return [
     |
     */
 
-    'locale' => env('APP_LOCALE', 'en'),
+    /* Bawaannya 'id': seluruh antarmuka berbahasa Indonesia, dan pesan
+       validasi "The email field is required." di bawah formulir berbahasa
+       Indonesia terbaca sebagai aplikasi yang belum selesai. Terjemahannya
+       di lang/id; kunci yang belum ada jatuh ke bahasa Inggris. */
+    'locale' => env('APP_LOCALE', 'id'),
 
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
 

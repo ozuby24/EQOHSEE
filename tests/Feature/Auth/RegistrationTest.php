@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use Illuminate\Support\Facades\Http;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -18,11 +19,17 @@ class RegistrationTest extends TestCase
 
     public function test_new_users_can_register(): void
     {
+        /* Daftar bocoran dipalsukan: uji ini menguji alur penggantian
+           sandinya, bukan pemeriksaan HIBP — yang diuji tersendiri di
+           AturanSandiTest. Tanpa ini, tiap jalannya menembak layanan
+           luar yang sungguhan. */
+        Http::fake(['api.pwnedpasswords.com/*' => Http::response('')]);
+
         $response = $this->post('/register', [
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => 'password',
-            'password_confirmation' => 'password',
+            'password' => 'sandi uji yang panjang',
+            'password_confirmation' => 'sandi uji yang panjang',
             // Jabatan wajib diisi sejak pendaftaran ikut mengumpulkan data man
             // power — dipakai untuk menghitung target KPI Hazard & Inspeksi.
             'position' => \App\Support\Hazard::JABATAN[0],

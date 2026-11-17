@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Support\AturanSandi;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
@@ -22,6 +23,7 @@ class NewPasswordController extends Controller
     public function create(Request $request)
     {
         return Inertia::render('Auth/ResetSandi', [
+            'sandiMinimal' => AturanSandi::MINIMAL,
             'token' => $request->route('token'),
             'email' => $request->email,
         ]);
@@ -38,7 +40,7 @@ class NewPasswordController extends Controller
             'token' => ['required'],
             'email' => ['required', 'email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+        ], AturanSandi::pesan());
 
         // Here we will attempt to reset the user's password. If it is successful we
         // will update the password on an actual user model and persist it to the

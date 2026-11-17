@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
-import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { propHalaman } from '../../halaman';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, minta, batal, lanjut } = useDialog();
+
 
 /*
   Prop halaman diambil lewat usePage(), bukan defineProps — lihat
@@ -8,7 +13,7 @@ import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
   `defineProps<{ mode: string; [key: string]: any }>()` hanya
   mendaftarkan `mode`, dan sisanya hilang tanpa galat apa pun.
 */
-const props = usePage<any>().props as any;
+const props = propHalaman();
 const isAdmin = computed(() => Boolean(props.pengguna?.admin));
 
 const judul: Record<string, string> = {
@@ -19,7 +24,7 @@ const judul: Record<string, string> = {
 };
 
 const angka = (v: unknown, d = 0) => new Intl.NumberFormat('id-ID', { maximumFractionDigits: d, minimumFractionDigits: d }).format(Number(v || 0));
-const rp = (v: unknown) => v === null || v === undefined ? '—' : `Rp ${angka(v)}`;
+const rp = (v: unknown) => v === null || v === undefined ? '—' : `Rp\u00A0${angka(v)}`;
 const label = (v: string) => String(v || '').replaceAll('-', ' ').replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 const namaBulan = (b: number) => ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][b] || String(b);
 
@@ -44,22 +49,26 @@ function gantiTahun(t: number | string) {
   router.get(window.location.pathname, { tahun: t }, { preserveState: false });
 }
 function simpanAkun() { akun.post(tautan.value.akunSimpan, { preserveScroll: true, onSuccess: () => akun.reset('kode', 'nama', 'satuan', 'catatan') }); }
-function hapusAkun(a: any) { if (window.confirm(`Hapus akun ${a.kode}? Anggaran dan realisasinya ikut terhapus.`)) router.delete(untuk(tautan.value.akunHapus, a.id), { preserveScroll: true }); }
+async function hapusAkun(a: any) { if (await tanya(`Hapus akun ${a.kode}? Anggaran dan realisasinya ikut terhapus.`)) router.delete(untuk(tautan.value.akunHapus, a.id), { preserveScroll: true }); }
 function simpanAnggaran() { anggaran.post(tautan.value.anggaranSimpan, { preserveScroll: true, onSuccess: () => anggaran.reset('nilai_rp', 'kuantitas_rencana', 'catatan') }); }
-function hapusAnggaran(a: any) { router.delete(untuk(tautan.value.anggaranHapus, a.id), { preserveScroll: true }); }
+async function hapusAnggaran(a: any) {
+  if (!await tanya(`Hapus anggaran ${a.akun} — ${a.akunNama}?`)) return;
+  router.delete(untuk(tautan.value.anggaranHapus, a.id), { preserveScroll: true });
+}
 function simpanRealisasi() { realisasi.post(tautan.value.realisasiSimpan, { preserveScroll: true, onSuccess: () => realisasi.reset('nilai_rp', 'kuantitas', 'catatan') }); }
-function hapusRealisasi(r: any) { if (window.confirm('Hapus realisasi ini?')) router.delete(untuk(tautan.value.realisasiHapus, r.id), { preserveScroll: true }); }
+async function hapusRealisasi(r: any) { if (await tanya('Hapus realisasi ini?')) router.delete(untuk(tautan.value.realisasiHapus, r.id), { preserveScroll: true }); }
 
 function alur(pola: string, baris: any, isi: Record<string, any> = {}) {
   sibuk[baris.id] = true;
   router.post(untuk(pola, baris.id), isi, { preserveScroll: true, onFinish: () => { sibuk[baris.id] = false; } });
 }
-function setujui(baris: any) {
-  if (!window.confirm('Setujui realisasi ini? Setelah disetujui tidak dapat diubah.')) return;
+async function setujui(baris: any) {
+  if (!await tanya('Setujui realisasi ini? Setelah disetujui tidak dapat diubah.')) return;
   alur(tautan.value.realisasiSetujui, baris);
 }
-function tolak(baris: any) {
-  const a = window.prompt('Alasan penolakan:');
+async function tolak(baris: any) {
+  const a = await minta({ judul: 'Tolak realisasi biaya?', label: 'Alasan penolakan',
+    jenis: 'panjang', min: 5, labelAksi: 'Tolak', nada: 'bahaya' });
   if (a === null) return;
   alur(tautan.value.realisasiTolak, baris, { alasan_tolak: a });
 }
@@ -85,17 +94,17 @@ const warnaSerapan: Record<string, string> = {
 <template>
   <Head :title="judul[props.mode]" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
     <section class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <p class="text-[10px] font-bold uppercase tracking-[.16em] text-cam-orange">Engineering · Cost Control</p>
-        <h2 class="text-2xl font-extrabold tracking-tight text-stone-800">{{ judul[props.mode] }}</h2>
+        
         <p class="text-[12px] text-stone-500 mt-1">Anggaran terhadap realisasi, biaya per ton, dan selisih yang dipecah menjadi bagian volume dan bagian tarif.</p>
       </div>
       <div class="flex items-center gap-2">
         <label class="text-[11px] font-bold text-stone-500">Tahun anggaran</label>
         <select class="rounded-lg border-stone-200 text-[12px]" :value="props.tahun"
-                @change="gantiTahun(($event.target as HTMLSelectElement).value)">
+                @change="gantiTahun(($event.target as HTMLSelectElement).value)" aria-label="Tahun">
           <option v-for="t in props.opsi?.tahunPilihan || []" :key="t" :value="t">{{ t }}</option>
         </select>
       </div>
@@ -122,7 +131,7 @@ const warnaSerapan: Record<string, string> = {
         <p v-if="a.saran" class="text-[11px] text-stone-700 mt-2 pt-2 border-t border-black/5"><span class="font-bold">Tindakan: </span>{{ a.saran }}</p>
         <div class="mt-2">
           <span v-if="ditangani.has(a.kode)" class="inline-block rounded-full bg-emerald-100 text-emerald-700 px-2 py-1 text-[10px] font-bold">Sedang ditangani</span>
-          <button v-else type="button" class="text-[11px] font-bold text-cam-orange-dark" @click="tindakDari(a)">+ Buat tindak lanjut</button>
+          <button v-else type="button" class="text-[11px] font-bold text-cam-orange-dark py-1.5" @click="tindakDari(a)">+ Buat tindak lanjut</button>
         </div>
       </div>
     </section>
@@ -299,7 +308,7 @@ const warnaSerapan: Record<string, string> = {
                    :placeholder="akunTerpilih?.bersatuan ? '' : 'akun tanpa satuan'"></label>
           <label class="md:col-span-2 text-[11px] font-bold text-stone-500">Catatan
             <input v-model="realisasi.catatan" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
-          <button class="eq-btn self-end" :disabled="realisasi.processing">Simpan draf</button>
+          <button class="eq-btn-utama self-end" :disabled="realisasi.processing">Simpan draf</button>
         </form>
         <p v-for="(e, k) in realisasi.errors" :key="k" class="mt-2 text-[11px] text-red-600">{{ e }}</p>
       </section>
@@ -371,12 +380,13 @@ const warnaSerapan: Record<string, string> = {
             <input v-model="anggaran.kuantitas_rencana" type="number" step="0.001" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
           <label class="md:col-span-3 text-[11px] font-bold text-stone-500">Catatan
             <input v-model="anggaran.catatan" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
-          <button class="eq-btn self-end" :disabled="anggaran.processing">Simpan</button>
+          <button class="eq-btn-utama self-end" :disabled="anggaran.processing">Simpan</button>
         </form>
         <p v-for="(e, k) in anggaran.errors" :key="k" class="mt-2 text-[11px] text-red-600">{{ e }}</p>
       </section>
 
       <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
+        <div class="overflow-x-auto">
         <table class="w-full text-[11.5px]">
           <thead class="bg-stone-50 text-left text-stone-400 uppercase text-[10px] tracking-wide">
             <tr><th class="px-5 py-2.5">Akun</th><th class="px-5 py-2.5">Pusat biaya</th>
@@ -395,6 +405,7 @@ const warnaSerapan: Record<string, string> = {
             <tr v-if="!(props.daftarAnggaran || []).length"><td colspan="6" class="px-5 py-8 text-center text-stone-400">Belum ada pagu untuk {{ props.tahun }}.</td></tr>
           </tbody>
         </table>
+        </div>
       </section>
     </template>
 
@@ -426,12 +437,13 @@ const warnaSerapan: Record<string, string> = {
                    class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
           <label class="md:col-span-2 text-[11px] font-bold text-stone-500">Catatan
             <input v-model="akun.catatan" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
-          <button class="eq-btn self-end" :disabled="akun.processing">Simpan</button>
+          <button class="eq-btn-utama self-end" :disabled="akun.processing">Simpan</button>
         </form>
         <p v-for="(e, k) in akun.errors" :key="k" class="mt-2 text-[11px] text-red-600">{{ e }}</p>
       </section>
 
       <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
+        <div class="overflow-x-auto">
         <table class="w-full text-[11.5px]">
           <thead class="bg-stone-50 text-left text-stone-400 uppercase text-[10px] tracking-wide">
             <tr><th class="px-5 py-2.5">Kode</th><th class="px-5 py-2.5">Nama</th><th class="px-5 py-2.5">Kelompok</th>
@@ -452,6 +464,7 @@ const warnaSerapan: Record<string, string> = {
             <tr v-if="!(props.daftarAkun || []).length"><td colspan="6" class="px-5 py-8 text-center text-stone-400">Belum ada akun terdaftar.</td></tr>
           </tbody>
         </table>
+        </div>
       </section>
     </template>
 
@@ -471,9 +484,10 @@ const warnaSerapan: Record<string, string> = {
           <input v-model="tindak.target_selesai" type="date" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
         <label class="md:col-span-4 text-[11px] font-bold text-stone-500">Uraian
           <input v-model="tindak.uraian" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
-        <button class="eq-btn self-end" :disabled="tindak.processing">Tambah</button>
+        <button class="eq-btn-utama self-end" :disabled="tindak.processing">Tambah</button>
       </form>
 
+      <div class="overflow-x-auto">
       <table class="w-full mt-4 text-[11.5px]">
         <tbody>
           <tr v-for="t in props.tindak || []" :key="t.id" class="border-t border-stone-50">
@@ -483,7 +497,7 @@ const warnaSerapan: Record<string, string> = {
             <td class="py-2 text-stone-500">{{ t.target_selesai || '—' }}</td>
             <td class="py-2 text-right">
               <select class="rounded-lg border-stone-200 text-[11px]" :value="t.status"
-                      @change="ubahTindak(t, ($event.target as HTMLSelectElement).value)">
+                      @change="ubahTindak(t, ($event.target as HTMLSelectElement).value)" aria-label="Status">
                 <option v-for="s in props.opsi?.statusTindak || []" :key="s" :value="s">{{ label(s) }}</option>
               </select>
             </td>
@@ -491,6 +505,9 @@ const warnaSerapan: Record<string, string> = {
           <tr v-if="!(props.tindak || []).length"><td colspan="4" class="py-6 text-center text-stone-400">Belum ada tindak lanjut.</td></tr>
         </tbody>
       </table>
+      </div>
     </section>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

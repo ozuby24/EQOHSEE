@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\{ActivityLog, Company, TpkkpAssessment, User};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Support\Berkas;
 
 class CompanyController extends Controller
 {
@@ -25,7 +26,7 @@ class CompanyController extends Controller
                 'nama'       => $c->name,
                 'kode'       => $c->code ?: null,
                 'inisial'    => mb_strtoupper(mb_substr($c->code ?: $c->name, 0, 2)),
-                'logo'       => $c->logo ? asset('storage/'.$c->logo) : null,
+                'logo'       => $c->logo ? Berkas::terbuka($c->logo) : null,
                 'risiko'     => $c->risk_class,
                 'izin'       => $c->izin_type ?: null,
                 'komoditas'  => $c->commodity ?: null,
@@ -84,6 +85,7 @@ class CompanyController extends Controller
                 'doc_no_prefix'    => $teks($c->doc_no_prefix),
                 'divisi'           => $teks($c->divisi),
                 'departemen'       => $teks($c->departemen),
+                'dept_kode'        => $teks($c->dept_kode),
                 'doc_terbit'       => $c->doc_terbit?->format('Y-m-d') ?? '',
                 'doc_setuju'       => $c->doc_setuju?->format('Y-m-d') ?? '',
                 'doc_revisi'       => (string) ($c->doc_revisi ?? 0),
@@ -91,6 +93,7 @@ class CompanyController extends Controller
                 'commodity'        => $teks($c->commodity),
                 'location'         => $teks($c->location),
                 'risk_class'       => $c->risk_class ?: 'Tinggi',
+                'kategori'         => (string) ($c->kategori ?: $c->kategoriTurunan()),
                 'address'          => $teks($c->address),
                 'ktt'              => $teks($c->ktt),
                 'pjo'              => $teks($c->pjo),
@@ -99,9 +102,21 @@ class CompanyController extends Controller
                 'pic_name'         => $teks($c->pic_name),
                 'pic_email'        => $teks($c->pic_email),
                 'pic_phone'        => $teks($c->pic_phone),
+
+                /* Kop formulir audit SMKP per perusahaan (porting
+                   Aurorasys). Selalu lengkap untuk tiap formulir supaya
+                   kolom isiannya dapat langsung diikat. */
+                'kop_formulir'     => (object) collect(\App\Support\KopDokumen::FORMULIR_SMKP)
+                    ->mapWithKeys(fn ($k) => [$k => [
+                        'jenis' => (string) (($c->kop_formulir[$k]['jenis'] ?? '') ?: ''),
+                        'judul' => (string) (($c->kop_formulir[$k]['judul'] ?? '') ?: ''),
+                        'kode'  => (string) (($c->kop_formulir[$k]['kode'] ?? '') ?: ''),
+                    ]])->all(),
             ],
 
-            'logo' => $c->logo ? asset('storage/'.$c->logo) : null,
+            'daftarFormulir' => \App\Support\KopDokumen::formulirSmkp($c->exists ? $c : null),
+
+            'logo' => $c->logo ? Berkas::terbuka($c->logo) : null,
 
             'opsi' => [
                 // Perusahaan tidak boleh menjadi induk dirinya sendiri;
@@ -109,7 +124,15 @@ class CompanyController extends Controller
                 // berputar tanpa henti.
                 'induk'  => Company::whereKeyNot($c->id ?? 0)->orderBy('name')->get()
                     ->map(fn ($o) => ['nilai' => (string) $o->id, 'label' => $o->name])->all(),
-                'risiko' => ['Rendah', 'Sedang', 'Tinggi'],
+                /* Diambil dari SmkpTahap, bukan ditulis ulang: daftar kelas
+                   risiko yang sama dipakai Tahap I audit SMKP (Rendah,
+                   Sedang, Tinggi — porting Aurorasys). */
+                'risiko' => \App\Support\SmkpTahap::kelasRisiko(),
+
+                /* Kategori audit SMKP: menentukan pengesah PJO, distribusi
+                   laporan, dan penanda tangan berkas audit. */
+                'kategori' => collect(Company::KATEGORI)
+                    ->map(fn ($l, $k) => ['nilai' => $k, 'label' => $l])->values()->all(),
             ],
 
             'contoh' => [
@@ -163,15 +186,41 @@ class CompanyController extends Controller
             'pic_phone'        => ['nullable','string','max:30'],
             'workers_employee' => ['nullable','integer','min:0'],
             'workers_sub'      => ['nullable','integer','min:0'],
-            'risk_class'       => ['nullable','in:Rendah,Sedang,Tinggi'],
+            'risk_class'       => ['nullable', \Illuminate\Validation\Rule::in(\App\Support\SmkpTahap::kelasRisiko())],
+            'kategori'         => ['nullable', \Illuminate\Validation\Rule::in(array_keys(Company::KATEGORI))],
             'doc_no_prefix'    => ['nullable','string','max:20'],
             'divisi'           => ['nullable','string','max:150'],
             'departemen'       => ['nullable','string','max:150'],
+
+            /* Bagian OHSE pada FRM/CAM/OHSE/001. Huruf dan angka saja:
+               garis miring di dalamnya akan memecah nomornya sendiri. */
+            'dept_kode'        => ['nullable','string','max:12','regex:/^[A-Za-z0-9]+$/'],
             'doc_terbit'       => ['nullable','date'],
             'doc_setuju'       => ['nullable','date'],
             'doc_revisi'       => ['nullable','integer','min:0','max:999'],
-            'logo'             => ['nullable','image','max:1024'],
+            'logo'             => array_merge(['nullable'], Berkas::ATURAN_GAMBAR),
+            'kop_formulir'         => ['nullable', 'array'],
+            'kop_formulir.*.jenis' => ['nullable', 'string', 'max:60'],
+            'kop_formulir.*.judul' => ['nullable', 'string', 'max:190'],
+            'kop_formulir.*.kode'  => ['nullable', 'string', 'max:40'],
         ]);
+
+        /* Hanya formulir SMKP yang dikenal dan isian yang tidak kosong yang
+           disimpan (Aurorasys). Permintaan yang tidak membawa kop_formulir
+           sama sekali tidak menyentuh penyesuaian yang sudah ada. */
+        if ($r->has('kop_formulir')) {
+            $kop = [];
+            foreach (\App\Support\KopDokumen::FORMULIR_SMKP as $k) {
+                $o = array_filter(array_map(
+                    fn ($v) => trim((string) $v),
+                    array_intersect_key((array) ($d['kop_formulir'][$k] ?? []), array_flip(['jenis', 'judul', 'kode']))
+                ), fn ($v) => $v !== '');
+                if ($o) $kop[$k] = $o;
+            }
+            $d['kop_formulir'] = $kop ?: null;
+        } else {
+            unset($d['kop_formulir']);
+        }
         if ($r->hasFile('logo')) $d['logo'] = $r->file('logo')->store('logos', 'public');
         else unset($d['logo']);
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Notifications\KodeVerifikasiEmail;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -95,9 +96,40 @@ class VerifikasiKodeController extends Controller
             ]);
         }
 
-        session()->flash('sukses', 'Email Anda terverifikasi.');
+        return $this->kePintuMasuk(
+            $r, 'Email Anda sudah terverifikasi. Silakan masuk dengan email dan sandi Anda.',
+        );
+    }
 
-        return $this->keDashboard();
+    /**
+     * Tutup sesi dan pulangkan orangnya ke halaman masuk.
+     *
+     * Terverifikasi BUKAN berarti masuk. Sebelumnya kode yang benar
+     * langsung membuka dasbor, dan yang dibuktikan orangnya di situ
+     * hanyalah bahwa ia memegang kotak surat itu — sandi yang baru saja
+     * dipilihnya tidak pernah diminta sekali pun, jadi tidak pernah
+     * teruji. Kotak surat yang tertinggal terbuka di ponsel bersama,
+     * atau surel yang diteruskan, karena itu cukup untuk masuk.
+     *
+     * Sesinya ditutup penuh — logout, invalidate, token baru — bukan
+     * sekadar dialihkan. Pengalihan tanpa menutup sesi meninggalkan
+     * orangnya TETAP masuk di belakang halaman masuk: mengetik alamat
+     * dasbor langsung akan membukanya, dan penjagaan ini berubah
+     * menjadi tirai.
+     *
+     * Pesan kilatnya ditulis SESUDAH invalidate. Ditulis sebelumnya, ia
+     * ikut terbuang bersama isi sesi lama, dan halaman masuk menyambut
+     * dengan diam — persis pada saat orangnya paling perlu tahu bahwa
+     * verifikasinya berhasil dan bukan gagal.
+     */
+    private function kePintuMasuk(Request $r, string $pesan): \Illuminate\Http\RedirectResponse
+    {
+        Auth::guard('web')->logout();
+
+        $r->session()->invalidate();
+        $r->session()->regenerateToken();
+
+        return redirect()->route('login')->with('sukses', $pesan);
     }
 
     public function kirimUlang(Request $r)

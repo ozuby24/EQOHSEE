@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\DeretBulan;
+
 use App\Models\{ActivityLog, Company, HazardReport, User};
-use App\Support\{Db, Hazard, Identitas};
+use App\Support\{AnalitikBahaya, Db, Ekspor, Hazard, Identitas};
 use Illuminate\Http\Request;
+use App\Support\Berkas;
 
 class HazardController extends Controller
 {
@@ -46,6 +49,14 @@ class HazardController extends Controller
         $bulanOpsi = HazardReport::selectRaw(Db::ym('tanggal') . ' as b')
                         ->whereNotNull('tanggal')->distinct()->orderByDesc('b')->pluck('b');
 
+        /* Lokasi diambil dari data, bukan dari daftar tetap. Register
+           disaring per area kerja, dan area kerja satu tambang tidak
+           sama dengan tambang lain — daftar tetap berarti pilihan yang
+           tidak pernah cocok pada pemasangan mana pun kecuali yang
+           pertama. */
+        $lokasiOpsi = HazardReport::whereNotNull('lokasi')->where('lokasi', '<>', '')
+                        ->distinct()->orderBy('lokasi')->pluck('lokasi');
+
         /* Ringkasan WhatsApp disusun di server, bukan di peramban: isinya
            mengikuti hasil saringan yang sama dengan daftar di layar, dan
            menyusunnya ulang di sisi klien berarti dua tempat yang harus
@@ -76,6 +87,16 @@ class HazardController extends Controller
                 ])->all(),
                 'perusahaan' => Company::orderBy('name')->get(['id', 'name'])
                     ->map(fn ($c) => ['id' => $c->id, 'nama' => $c->name])->all(),
+                'lokasi'  => $lokasiOpsi->all(),
+
+                /* Urutan register dibaca dari penyusunnya sendiri.
+                   Menyalinnya ke sini membuat pilihan keenam yang
+                   ditambahkan nanti tampil di layar tanpa pernah
+                   dikenali sisi server — dan yang dipilih orang diam-diam
+                   berubah menjadi urutan bawaan. */
+                'urutan'  => collect(\App\Support\RegisterPerbaikan::URUTAN)
+                    ->map(fn ($label, $nilai) => ['nilai' => $nilai, 'label' => $label])
+                    ->values()->all(),
             ],
 
             'laporan' => array_map(fn (HazardReport $r) => [
@@ -92,7 +113,19 @@ class HazardController extends Controller
                 'tanggal'     => $r->tanggal?->format('d M Y'),
                 'tujuan'      => $r->company?->name ?: ($r->terlapor ?: null),
                 'terlapor'    => $r->terlapor && $r->company ? $r->terlapor : null,
-                'foto'        => $r->foto && count($r->foto) ? asset('storage/'.$r->foto[0]) : null,
+                /* SELURUH fotonya, bukan yang pertama saja — dan yang
+                   tindak lanjut ikut.
+
+                   Monitor ini dibaca untuk menjawab satu pertanyaan:
+                   bahaya ini sudah ditangani atau belum. Foto temuan
+                   sendirian tidak menjawabnya; yang menjawabnya adalah
+                   ADA atau TIDAK ADA foto tindak lanjut di sebelahnya.
+                   Sebelum ini keduanya hanya terlihat sesudah membuka
+                   laporannya satu per satu — lima belas kali membuka
+                   dan kembali untuk satu pertanyaan yang seharusnya
+                   terjawab sekali lihat. */
+                'fotoTemuan'  => Berkas::daftarUrl($r, 'hzd'),
+                'fotoTindak'  => Berkas::daftarUrl($r, 'hzt'),
                 'url'         => route('hazard.show', $r),
             ], $reports->items()),
 
@@ -113,6 +146,14 @@ class HazardController extends Controller
                 'cetak'    => route('hazard.ekspor.cetak', $request->query()),
                 'wa'       => \App\Support\Ekspor::waLink($ringkasWa),
                 'pengingat'=> route('hazard.pengingat'),
+
+                /* TANPA query saringan layar. Register punya pilihannya
+                   sendiri di dalam dialognya, dan mewarisi saringan
+                   monitor berarti lembar yang diserahkan ke rapat
+                   diam-diam terpotong oleh kotak cari yang kebetulan
+                   masih terisi. */
+                'register'       => route('hazard.register'),
+                'registerJumlah' => route('hazard.register.jumlah'),
             ],
         ]);
     }
@@ -213,7 +254,6 @@ class HazardController extends Controller
     {
         $hazard->load(['company', 'user', 'closer']);
 
-        $foto = fn (?array $daftar) => array_map(fn ($f) => asset('storage/'.$f), $daftar ?: []);
 
         return \Inertia\Inertia::render('Hazard/Detail', [
             'judul'    => 'Laporan '.$hazard->kode,
@@ -234,6 +274,16 @@ class HazardController extends Controller
                 'tanggal'   => $hazard->tanggal?->format('d M Y'),
                 'waktu'     => $hazard->waktu,
 
+                'batasAkhir'  => $hazard->batas_akhir?->format('d M Y'),
+                'batasAkhirIso' => $hazard->batas_akhir?->format('Y-m-d'),
+
+                /* Dihitung di server, bukan dibandingkan di peramban.
+                   Perbandingan tanggal di sisi klien memakai jam
+                   PERANGKATNYA, dan ponsel lapangan yang jamnya meleset
+                   sehari akan menandai temuan yang masih dalam tenggat
+                   sebagai terlambat — atau sebaliknya. */
+                'lewatTenggat' => $hazard->lewatTenggat(),
+
                 'pelapor' => [
                     'nama'       => $hazard->user?->name ?: $hazard->pelapor_nama,
                     'nrp'        => $hazard->pelapor_nrp,
@@ -250,8 +300,8 @@ class HazardController extends Controller
                 'unsafeAction'    => $hazard->unsafe_action_list,
                 'unsafeCondition' => $hazard->unsafe_condition_list,
 
-                'foto'            => $foto($hazard->foto),
-                'fotoTindakLanjut' => $foto($hazard->foto_tindaklanjut),
+                'foto'            => Berkas::daftarUrl($hazard, 'hzd'),
+                'fotoTindakLanjut' => Berkas::daftarUrl($hazard, 'hzt'),
 
                 'catatanPenutupan' => $hazard->catatan_penutupan,
                 'penutup'  => $hazard->closer?->name,
@@ -275,7 +325,16 @@ class HazardController extends Controller
         $d = $request->validate([
             'status'            => ['required','in:Open,In Progress,Closed'],
             'catatan_penutupan' => ['nullable','string','max:2000'],
+            'batas_akhir'       => ['nullable','date'],
         ]);
+
+        /* Medan yang TIDAK dikirim tidak ikut menimpa.
+           validate() hanya mengembalikan kunci yang ada pada
+           permintaannya, tetapi formulir tindak lanjut mengirim
+           batas_akhir kosong ketika belum diisi — dan nilai kosong yang
+           diteruskan apa adanya menghapus tenggat yang sudah disepakati,
+           hanya karena seseorang mengubah statusnya. */
+        if (($d['batas_akhir'] ?? '') === '') unset($d['batas_akhir']);
 
         $baru = $this->simpanFoto($request, 'foto_tindaklanjut');
         if ($baru) $d['foto_tindaklanjut'] = array_merge((array) $hazard->foto_tindaklanjut, $baru);
@@ -299,14 +358,26 @@ class HazardController extends Controller
         return redirect()->route('hazard.index')->with('ok', 'Laporan dihapus.');
     }
 
-    /* ---------- Analitik: KPI golongan + distribusi + tren ---------- */
+    /* ---------- Analitik: kartu ringkas, sorotan, sebaran, tren ---------- */
+
+    /**
+     * Analitik & KPI Hazard Report.
+     *
+     * Seluruh angkanya dihitung DI SINI dan di App\Support\AnalitikBahaya,
+     * bukan di tampilan. Persentase yang dihitung ulang di tiap tabel
+     * yang menampilkannya cepat atau lambat berbeda di salah satunya —
+     * dan yang membandingkan dua angka yang seharusnya sama tidak punya
+     * cara mengetahui mana yang benar.
+     */
     public function analytics(Request $request)
     {
         $bulan = $request->get('bulan');
-        // user dimuat sekaligus: identitas dan jabatan terkini dibaca dari
-        // sana, dan tanpa eager load itu menjadi satu kueri per laporan.
-        $data = HazardReport::with('user')
-            ->when($bulan, fn($b) => $b->whereRaw(Db::ym('tanggal') . ' = ?', [$bulan]))->get();
+
+        /* user dan company dimuat sekaligus: identitas, jabatan terkini,
+           dan nama perusahaannya dibaca dari sana, dan tanpa eager load
+           itu menjadi dua kueri per laporan. */
+        $data = HazardReport::with(['user', 'company'])
+            ->when($bulan, fn ($b) => $b->whereRaw(Db::ym('tanggal').' = ?', [$bulan]))->get();
 
         /* Jumlah bulan yang benar-benar berisi laporan — pengali target.
            Dihitung lewat pluck, bukan ->distinct()->count(): count()
@@ -314,81 +385,35 @@ class HazardController extends Controller
            bulan ikut hilang, dan yang terhitung menjadi jumlah BARIS.
            Akibatnya target tiap orang ikut membesar setiap ada laporan
            baru, dan capaian semua orang merosot tanpa sebab. */
-        $bulanAktif = $bulan ? 1 : max(1, HazardReport::selectRaw(Db::ym('tanggal') . ' as b')
+        $bulanAktif = $bulan ? 1 : max(1, HazardReport::selectRaw(Db::ym('tanggal').' as b')
                         ->whereNotNull('tanggal')->distinct()->pluck('b')->count());
 
-        /* KPI per orang.
-           Dikelompokkan lewat Identitas, bukan langsung dari teksnya: satu
-           orang yang mengetik namanya sedikit berbeda pada tiga laporan
-           akan terhitung sebagai tiga orang, dan karena target dijumlahkan
-           per orang, targetnya ikut tiga kali lipat sementara laporannya
-           tetap tiga — capaiannya ambruk jadi sepertiga tanpa satu pun
-           galat muncul.
+        $analitik = new AnalitikBahaya($data, $bulanAktif);
 
-           Nama dan jabatan diambil dari akunnya bila ada. Teks pada
-           laporan adalah salinan saat laporan dibuat; orang yang berganti
-           jabatan akan menyeret jabatan lamanya — beserta target lama —
-           di seluruh laporan terdahulunya. */
-        $perOrang = [];
-        foreach ($data as $r) {
-            $key = Identitas::kunci($r->user_id, $r->pelapor_nrp, $r->pelapor_nama);
+        $perOrang = $analitik->perOrang();
+        $golongan = $analitik->perGolongan($perOrang);
 
-            $jabatan = $r->user?->position ?: $r->pelapor_jabatan;
+        [$tren, $trenTumpuk] = $this->trenBahaya();
 
-            $perOrang[$key] ??= [
-                'nama' => $r->user?->name ?: $r->pelapor_nama, 'jabatan' => $jabatan,
-                'gol'  => Hazard::golongan($jabatan),
-                'target' => Hazard::target($jabatan) * $bulanAktif,
-                'aktual' => 0,
-            ];
-            $perOrang[$key]['aktual']++;
-        }
-        uasort($perOrang, fn($a,$b) => $b['aktual'] <=> $a['aktual']);
-
-        // rekap per golongan
-        $perGolongan = [];
-        foreach ($perOrang as $o) {
-            $g = $o['gol'];
-            $perGolongan[$g] ??= ['target'=>0,'aktual'=>0,'orang'=>0,'tercapai'=>0];
-            $perGolongan[$g]['target'] += $o['target'];
-            $perGolongan[$g]['aktual'] += $o['aktual'];
-            $perGolongan[$g]['orang']++;
-            if ($o['aktual'] >= $o['target']) $perGolongan[$g]['tercapai']++;
-        }
-
-        $hitung = fn(string $kolom) => $data->groupBy($kolom)->map->count()->sortDesc();
-
-        // tren 12 bulan
-        $tren = [];
-        for ($i = 11; $i >= 0; $i--) {
-            $k = now()->subMonths($i)->format('Y-m');
-            $tren[$k] = HazardReport::whereRaw(Db::ym('tanggal') . ' = ?', [$k])->count();
-        }
-
-        /* Capaian dihitung di sini, bukan di tampilan. Pembagian target yang
-           bernilai nol harus dijaga sekali saja — ditulis ulang di tiap tabel
-           yang menampilkannya, satu di antaranya cepat atau lambat lupa. */
-        $persen = fn (int $aktual, int $target) => $target ? (int) round($aktual / $target * 100) : 0;
-
-        $golongan = [];
-        foreach ($perGolongan as $nama => $g) {
-            $golongan[] = [
-                'nama'     => $nama,
-                'orang'    => $g['orang'],
-                'target'   => $g['target'],
-                'aktual'   => $g['aktual'],
-                'tercapai' => $g['tercapai'],
-                'pct'      => $persen($g['aktual'], $g['target']),
-            ];
-        }
-
-        $maksTren = max(array_values($tren) ?: [1]) ?: 1;
+        $hitung = fn (string $kolom) => $data->groupBy($kolom)->map->count()->sortDesc();
 
         $sebaran = fn (string $judul, $dist) => [
             'judul' => $judul,
             'maks'  => $dist->max() ?: 1,
             'baris' => $dist->map(fn ($v, $k) => ['label' => $k ?: '—', 'nilai' => $v])->values()->all(),
         ];
+
+        $maksTren = max(array_values($tren) ?: [1]) ?: 1;
+
+        $pelapor = array_values(array_map(fn ($o) => [
+            'nama'       => $o['nama'],
+            'jabatan'    => $o['jabatan'] ?: null,
+            'perusahaan' => $o['perusahaan'],
+            'gol'        => $o['gol'],
+            'target'     => $o['target'],
+            'aktual'     => $o['aktual'],
+            'pct'        => AnalitikBahaya::persen($o['aktual'], $o['target']),
+        ], $perOrang));
 
         return \Inertia\Inertia::render('Hazard/Analitik', [
             'judul'    => 'Analitik & KPI',
@@ -398,37 +423,150 @@ class HazardController extends Controller
             'bulanAktif' => $bulanAktif,
             'total'      => $data->count(),
 
-            'opsiBulan' => HazardReport::selectRaw(Db::ym('tanggal') . ' as b')
+            'opsiBulan' => HazardReport::selectRaw(Db::ym('tanggal').' as b')
                 ->whereNotNull('tanggal')->distinct()->orderByDesc('b')->pluck('b')
                 ->map(fn ($b) => [
                     'nilai' => $b,
                     'label' => \Carbon\Carbon::parse($b.'-01')->translatedFormat('F Y'),
                 ])->all(),
 
+            'kartu'   => $analitik->kartu($perOrang),
+            'sorotan' => $analitik->insight($perOrang, $golongan, $tren),
+
+            'donat' => [
+                ['judul' => 'Status Penanganan',
+                 'potong' => $analitik->donat('status', [
+                     'Closed' => '#16A34A', 'In Progress' => '#CA9A04', 'Open' => '#DC2626',
+                 ])],
+                ['judul' => 'Tingkat Risiko',
+                 'potong' => $analitik->donat('risiko', [
+                     'Rendah' => '#2563EB', 'Sedang' => '#CA9A04', 'Tinggi' => '#DC2626',
+                 ])],
+            ],
+
             'golongan' => $golongan,
 
             'tren' => collect($tren)->map(fn ($v, $k) => [
-                'label' => \Carbon\Carbon::parse($k.'-01')->translatedFormat('M'),
-                'nilai' => $v,
-                'maks'  => $maksTren,
+                'label'  => \Carbon\Carbon::parse($k.'-01')->translatedFormat('M'),
+                'nilai'  => $v,
+                'maks'   => $maksTren,
+                'tumpuk' => $trenTumpuk[$k],
             ])->values()->all(),
 
             'sebaran' => [
-                $sebaran('Status',         $hitung('status')),
-                $sebaran('Risiko',         $hitung('risiko')),
-                $sebaran('Kategori',       $hitung('kategori')),
-                $sebaran('Lokasi teratas', $hitung('lokasi')->take(8)),
+                $sebaran('Kategori',        $hitung('kategori')),
+                $sebaran('Hirarki Kendali', $hitung('hirarki')),
+                $sebaran('Lokasi teratas',  $hitung('lokasi')->take(8)),
+                $sebaran('Departemen',      $hitung('pelapor_departemen')->take(8)),
             ],
 
-            'pelapor' => array_values(array_map(fn ($o) => [
-                'nama'    => $o['nama'],
-                'jabatan' => $o['jabatan'] ?: null,
-                'gol'     => $o['gol'],
-                'target'  => $o['target'],
-                'aktual'  => $o['aktual'],
-                'pct'     => $persen($o['aktual'], $o['target']),
-            ], $perOrang)),
+            /* Sepuluh teratas dipisahkan dari tabel lengkapnya. Daftar
+               dua ratus baris tidak menjawab "siapa yang paling aktif",
+               dan tabel lengkapnya tetap ada di bawah bagi yang menagih
+               satu orang tertentu. */
+            'teratas' => array_slice($pelapor, 0, 10),
+            'pelapor' => $pelapor,
+
+            'ekspor' => route('hazard.analitik.ekspor', $bulan ? ['bulan' => $bulan] : []),
         ]);
+    }
+
+    /**
+     * Tren dua belas bulan, dalam SATU kueri.
+     *
+     * Sebelumnya dua belas COUNT berurutan — dua belas perjalanan ke
+     * basis data untuk menggambar satu grafik, dan pada pemasangan
+     * berisi ratusan ribu laporan itu terasa sebagai halaman yang
+     * berhenti sejenak setiap kali dibuka.
+     *
+     * Kuncinya dibangun DeretBulan, bukan `now()->subMonths($i)`: yang
+     * kedua meluap pada tanggal 29–31 dan membuat dua bulan berbagi satu
+     * kunci, sehingga deretnya menyusut dari dua belas menjadi tujuh.
+     *
+     * @return array{0:array<string,int>,1:array<string,array<int,array<string,mixed>>>}
+     */
+    private function trenBahaya(): array
+    {
+        $kunci = DeretBulan::kunciMundur(now(), 12);
+
+        /* Julat, bukan whereIn atas ekspresi: DB::raw tidak dapat
+           diimpor di berkas ini (namanya bentrok dengan App\Support\Db),
+           dan julat berbanding dua nilai lebih mudah dipakai indeks
+           daripada IN atas dua belas hasil pemformatan tanggal. */
+        $baris = HazardReport::selectRaw(Db::ym('tanggal').' as b, risiko, count(*) as n')
+            ->whereNotNull('tanggal')
+            ->whereRaw(Db::ym('tanggal').' >= ?', [$kunci[0]])
+            ->whereRaw(Db::ym('tanggal').' <= ?', [$kunci[count($kunci) - 1]])
+            ->groupByRaw(Db::ym('tanggal').', risiko')
+            ->get();
+
+        $tren = array_fill_keys($kunci, 0);
+        $tumpuk = [];
+
+        /* Ketiga pita SELALU ada, meski bernilai nol. Dibangun hanya
+           dari yang terisi, urutan warnanya berubah dari bulan ke bulan
+           — dan batang bertumpuk yang warnanya berpindah tempat tidak
+           dapat dibaca sebagai perbandingan antar bulan. */
+        $warna = ['Tinggi' => '#DC2626', 'Sedang' => '#CA9A04', 'Rendah' => '#2563EB'];
+
+        foreach ($kunci as $k) {
+            $tumpuk[$k] = array_map(
+                fn ($r) => ['label' => $r, 'nilai' => 0, 'warna' => $warna[$r]],
+                array_keys($warna),
+            );
+        }
+
+        foreach ($baris as $r) {
+            $tren[$r->b] += (int) $r->n;
+
+            foreach ($tumpuk[$r->b] as $i => $pita) {
+                if ($pita['label'] === $r->risiko) $tumpuk[$r->b][$i]['nilai'] += (int) $r->n;
+            }
+        }
+
+        return [$tren, $tumpuk];
+    }
+
+    /**
+     * Angka analitiknya sebagai berkas — yang ditempel di laporan bulanan.
+     *
+     * CSV, bukan xlsx: yang dibawa keluar di sini deretan angka tanpa
+     * gambar maupun kop, dan yang menerimanya hampir selalu menempelkan
+     * ulang angkanya ke lembar laporannya sendiri.
+     */
+    public function analitikEkspor(Request $request)
+    {
+        $bulan = $request->get('bulan');
+
+        $data = HazardReport::with(['user', 'company'])
+            ->when($bulan, fn ($b) => $b->whereRaw(Db::ym('tanggal').' = ?', [$bulan]))->get();
+
+        $bulanAktif = $bulan ? 1 : max(1, HazardReport::selectRaw(Db::ym('tanggal').' as b')
+                        ->whereNotNull('tanggal')->distinct()->pluck('b')->count());
+
+        $analitik = new AnalitikBahaya($data, $bulanAktif);
+        $perOrang = $analitik->perOrang();
+
+        $baris = collect();
+
+        foreach ($analitik->kartu($perOrang) as $k) {
+            $baris->push(['Ringkas', $k['label'], $k['nilai'].($k['satuan'] ? ' '.$k['satuan'] : ''), $k['ket'], '', '']);
+        }
+
+        foreach ($analitik->perGolongan($perOrang) as $g) {
+            $baris->push(['Golongan', $g['nama'], $g['orang'], $g['target'], $g['aktual'], $g['pct'].'%']);
+        }
+
+        foreach ($perOrang as $o) {
+            $baris->push(['Pelapor', $o['nama'], $o['perusahaan'] ?: '—', $o['target'], $o['aktual'],
+                          AnalitikBahaya::persen($o['aktual'], $o['target']).'%']);
+        }
+
+        return Ekspor::csv(
+            'analitik-bahaya-'.($bulan ?: 'akumulasi').'-'.date('Ymd-Hi'),
+            ['Bagian', 'Nama', 'Orang / Perusahaan', 'Target', 'Aktual', 'Capaian'],
+            $baris,
+        );
     }
 
     /* ---------- bantu ---------- */
@@ -455,15 +593,36 @@ class HazardController extends Controller
             'lokasi_lain'        => ['nullable','string','max:200'],
             'hirarki'            => ['nullable','string','max:50'],
             'rekomendasi'        => ['nullable','string','max:2000'],
+
+            /* after_or_equal:tanggal, bukan after_or_equal:today.
+               Laporan kerap diisikan beberapa hari sesudah temuannya —
+               "today" akan menolak tenggat yang memang sudah disepakati
+               saat temuannya ditemukan. Yang tidak masuk akal adalah
+               tenggat SEBELUM temuannya ada, dan itulah yang dijaga. */
+            'batas_akhir'        => ['nullable','date','after_or_equal:tanggal'],
         ]);
     }
 
+    /**
+     * Simpan foto laporan, sesudah memeriksanya.
+     *
+     * Pemeriksaannya ada di sini, bukan di blok validate tiap pemanggil.
+     * Sebelumnya kedua pemanggil tidak memvalidasinya sama sekali —
+     * `$request->file('foto')` langsung tersimpan, apa pun isinya — dan
+     * pemanggil ketiga akan ditulis dengan menyalin salah satu dari
+     * keduanya. Aturan yang diletakkan di jalur yang WAJIB dilewati
+     * tidak dapat terlewat dengan cara itu.
+     */
     private function simpanFoto(Request $r, string $field): array
     {
-        $out = [];
-        foreach ((array) $r->file($field) as $file) {
-            if ($file && $file->isValid()) $out[] = $file->store('hazard', 'public');
-        }
-        return $out;
+        if (!$r->hasFile($field)) return [];
+
+        $r->validate(
+            [$field.'.*' => Berkas::ATURAN_GAMBAR],
+            [],
+            [$field.'.*' => 'foto'],
+        );
+
+        return Berkas::simpanBanyak($r->file($field), 'hazard');
     }
 }

@@ -326,13 +326,13 @@ class EnergyController extends Controller
 
     public function simpanBaseline(Request $request)
     {
-        $d = $request->validate([
+        $d = $this->pemilik($request->validate([
             'company_id'      => ['nullable','exists:companies,id'],
             'tahun'           => ['required','integer','min:2000','max:2100'],
             'baseline_gj_ton' => ['required','numeric','min:0','max:100'],
             'target_gj_ton'   => ['required','numeric','min:0','max:100'],
             'catatan'         => ['nullable','string','max:1000'],
-        ]);
+        ]));
 
         // Sasaran yang lebih boros daripada garis dasar bukan sasaran.
         if ($d['target_gj_ton'] > $d['baseline_gj_ton']) {
@@ -437,7 +437,7 @@ class EnergyController extends Controller
 
         return Inertia::render('Energi/Halaman', [
             'mode'      => 'laporan',
-            'dok'      => KopDokumen::untuk('laporan-energi', Company::first()),
+            'dok'      => KopDokumen::untuk('laporan-energi', $this->perusahaanKop($request ?? null)),
             'r'        => $this->ringkasan($dari, $sampai),
             'baseline' => $this->baselineBerlaku(),
             'dari'     => $dari, 'sampai' => $sampai,
@@ -461,7 +461,7 @@ class EnergyController extends Controller
 
     public function simpanUnit(Request $request)
     {
-        $d = $request->validate([
+        $d = $this->pemilik($request->validate([
             'company_id'  => ['nullable','exists:companies,id'],
             'kode'        => ['required','string','max:50','unique:energy_equipment,kode'],
             'nama'        => ['required','string','max:150'],
@@ -469,7 +469,7 @@ class EnergyController extends Controller
             'merek'       => ['nullable','string','max:100'],
             'daya_hp'     => ['nullable','integer','min:0','max:100000'],
             'payload_ton' => ['nullable','numeric','min:0','max:1000'],
-        ]);
+        ]));
 
         EnergyEquipment::create($d + ['aktif' => true]);
 
@@ -518,10 +518,17 @@ class EnergyController extends Controller
         $solarTotal = $liter + $genset;
         $k = Energi::konsolidasi($solarTotal, $kwh, $m3);
 
-        // Dibulatkan: selisih hari Carbon berupa pecahan, dan rentang yang
-        // dijepit ke awal/akhir hari menghasilkan 30,99999… hari — angka yang
-        // benar tetapi tidak untuk dibaca orang.
-        $hari = max(1, (int) round($dari->diffInDays($sampai)) + 1);
+        /* Kedua ujungnya dijepit ke AWAL hari lebih dulu, lalu +1 untuk
+           membuat rentangnya inklusif.
+
+           Versi sebelumnya membulatkan pecahannya, dan itu menghitung
+           dua kali: `sampai` adalah akhir hari, jadi 1–31 Agustus
+           menghasilkan 30,99999… hari; round() menaikkannya menjadi 31,
+           lalu +1 menjadikannya 32. Rentang satu bulan penuh terbaca
+           sebagai 32 hari, dan setiap angka "per hari" yang dibagi
+           dengannya ikut meleset. */
+        $hari = max(1, (int) $dari->copy()->startOfDay()
+            ->diffInDays($sampai->copy()->startOfDay()) + 1);
 
         return $k + [
             'liter'      => $solarTotal,

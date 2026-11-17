@@ -30,7 +30,7 @@ const lebar = (n: number) => (props.r.jumlah > 0 ? Math.round((n / props.r.jumla
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <div v-for="k in kpi" :key="k.label" class="eq-kpi">

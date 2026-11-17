@@ -1,0 +1,1232 @@
+{
+  "_meta": {
+    "sumber": "FormScat.jsx (aplikasi Accident Investigation SICOOL)",
+    "bahasa": "id",
+    "model": "SCAT / ILCI Loss Causation (Bird)",
+    "catatan": "Kode hierarkis 5.x=tindakan, 6.x=kondisi, 7.x.y=faktor pribadi, 8.x.y=faktor pekerjaan, 9.x.y=lack of control"
+  },
+  "kategori": [
+    {
+      "key": "tindakan_tidak_aman",
+      "bagian": "5",
+      "label": "Tindakan Tidak Aman / Substandard Act",
+      "tipe": "flat",
+      "items": [
+        {
+          "kode": "5.1",
+          "teks": "Gagal mematuhi aturan/Prosedur"
+        },
+        {
+          "kode": "5.2",
+          "teks": "Inspeksi area kerja tidak memadai"
+        },
+        {
+          "kode": "5.3",
+          "teks": "Inspeksi pra-operasi tidak memadai"
+        },
+        {
+          "kode": "5.4",
+          "teks": "Penilaian resiko tidak memadai"
+        },
+        {
+          "kode": "5.5",
+          "teks": "Gagal memulai tindakan korektif"
+        },
+        {
+          "kode": "5.6",
+          "teks": "Mengoperasikan tanpa izin"
+        },
+        {
+          "kode": "5.7",
+          "teks": "Gagal memperingatkan"
+        },
+        {
+          "kode": "5.8",
+          "teks": "Gagal mengamankan"
+        },
+        {
+          "kode": "5.9",
+          "teks": "Mengoperasikan pada kecepatan yang tidak seharusnya"
+        },
+        {
+          "kode": "5.10",
+          "teks": "Melepas/mengabaikan perangkat keselamatan"
+        },
+        {
+          "kode": "5.11",
+          "teks": "Menggunakan alat yang cacat"
+        },
+        {
+          "kode": "5.12",
+          "teks": "Menggunakan alat secara tidak benar"
+        },
+        {
+          "kode": "5.13",
+          "teks": "Tidak menggunakan Alat Pelindung Diri"
+        },
+        {
+          "kode": "5.14",
+          "teks": "Melakukan loading secara tidak benar"
+        },
+        {
+          "kode": "5.15",
+          "teks": "Penempatan yang tidak benar"
+        },
+        {
+          "kode": "5.16",
+          "teks": "Pengangkatan yang tidak benar"
+        },
+        {
+          "kode": "5.17",
+          "teks": "Posisi bekerja tidak benar"
+        },
+        {
+          "kode": "5.18",
+          "teks": "Bersenda gurau"
+        },
+        {
+          "kode": "5.19",
+          "teks": "Dalam pengaruh alkohol dan atau obat-obatan"
+        },
+        {
+          "kode": "5.20",
+          "teks": "Tidak sehat dalam bekerja"
+        }
+      ]
+    },
+    {
+      "key": "kondisi_tidak_aman",
+      "bagian": "6",
+      "label": "Kondisi Tidak Aman / Substandard Condition",
+      "tipe": "flat",
+      "items": [
+        {
+          "kode": "6.1",
+          "teks": "Penjagaan/penghalang yang tidak memadai"
+        },
+        {
+          "kode": "6.2",
+          "teks": "Alat pelindung tidak memadai/tidak sesuai"
+        },
+        {
+          "kode": "6.3",
+          "teks": "Perkakas, alat/peralatan yang cacat"
+        },
+        {
+          "kode": "6.4",
+          "teks": "Kepadatan/pergerakan yang terbatas"
+        },
+        {
+          "kode": "6.5",
+          "teks": "Sistem peringatan tidak memadai"
+        },
+        {
+          "kode": "6.6",
+          "teks": "Bahaya kebakaran/ledakan"
+        },
+        {
+          "kode": "6.7",
+          "teks": "Kebersihan/kerapihan yang buruk/berantakan (tempat)"
+        },
+        {
+          "kode": "6.8",
+          "teks": "Kondisi lingkungan berbahaya (gas/debu/asap/uap)"
+        },
+        {
+          "kode": "6.9",
+          "teks": "Keterpaparan pada kebisingan"
+        },
+        {
+          "kode": "6.10",
+          "teks": "Keterpaparan pada radiasi"
+        },
+        {
+          "kode": "6.11",
+          "teks": "Keterpaparan pada temperatur tinggi/rendah"
+        },
+        {
+          "kode": "6.12",
+          "teks": "Pencahayaan tidak memadai/berlebihan"
+        },
+        {
+          "kode": "6.13",
+          "teks": "Ventilasi tidak memadai"
+        }
+      ]
+    },
+    {
+      "key": "faktor_pribadi",
+      "bagian": "7",
+      "label": "Faktor Pribadi / Personal Factor",
+      "tipe": "nested",
+      "grup": [
+        {
+          "kode": "7.1",
+          "judul": "Kemampuan Fisik/Mental Tidak Memadai",
+          "items": [
+            {
+              "kode": "7.1.1",
+              "teks": "Ketidaksesuaian tinggi, bobot, ukuran, kekuatan, jangkauan dll."
+            },
+            {
+              "kode": "7.1.2",
+              "teks": "Kisaran pergerakan tubuh yang terbatas"
+            },
+            {
+              "kode": "7.1.3",
+              "teks": "Kemampuan menopang posisi tubuh terbatas"
+            },
+            {
+              "kode": "7.1.4",
+              "teks": "Keterbatasan/ketidakcocokan dengan tugas yang ditetapkan (cacat permanen)"
+            },
+            {
+              "kode": "7.1.5",
+              "teks": "Keterbatasan/ketidakcocokan dengan tugas yang diberikan (cacat sementara)"
+            },
+            {
+              "kode": "7.1.6",
+              "teks": "Sensitif atau alergi terhadap zat"
+            },
+            {
+              "kode": "7.1.7",
+              "teks": "Sensitif terhadap hal ekstrim pada indera (temperatur, suara, dll)"
+            },
+            {
+              "kode": "7.1.8",
+              "teks": "Kurang daya lihat"
+            },
+            {
+              "kode": "7.1.9",
+              "teks": "Kurang pendengaran"
+            },
+            {
+              "kode": "7.1.10",
+              "teks": "Indera lainnya (perabaan, rasa, penciuman, keseimbangan)"
+            },
+            {
+              "kode": "7.1.11",
+              "teks": "Pernapasan lemah"
+            },
+            {
+              "kode": "7.1.12",
+              "teks": "Cacat permanen lain"
+            },
+            {
+              "kode": "7.1.13",
+              "teks": "Cacat sementara"
+            }
+          ]
+        },
+        {
+          "kode": "7.2",
+          "judul": "Kemampuan Mental/Psikologi Tidak Memadai",
+          "items": [
+            {
+              "kode": "7.2.1",
+              "teks": "Keterbatasan/ketidakcocokan dengan tugas (cacat permanen)"
+            },
+            {
+              "kode": "7.2.2",
+              "teks": "Keterbatasan/ketidakcocokan dengan tugas (cacat sementara)"
+            },
+            {
+              "kode": "7.2.3",
+              "teks": "Ketakutan dan fobia"
+            },
+            {
+              "kode": "7.2.4",
+              "teks": "Gangguan emosi"
+            },
+            {
+              "kode": "7.2.5",
+              "teks": "Sakit/gangguan mental"
+            },
+            {
+              "kode": "7.2.6",
+              "teks": "Tingkat kecerdasan"
+            },
+            {
+              "kode": "7.2.7",
+              "teks": "Ketidakmampuan dalam pemahaman"
+            },
+            {
+              "kode": "7.2.8",
+              "teks": "Ketidakmampuan mengambil keputusan yang tepat"
+            },
+            {
+              "kode": "7.2.9",
+              "teks": "Koordinasi fisik yang buruk"
+            },
+            {
+              "kode": "7.2.10",
+              "teks": "Waktu reaksi lambat"
+            },
+            {
+              "kode": "7.2.11",
+              "teks": "Kemampuan mekanis rendah"
+            },
+            {
+              "kode": "7.2.12",
+              "teks": "Kemampuan belajar rendah"
+            },
+            {
+              "kode": "7.2.13",
+              "teks": "Sulit mengingat"
+            },
+            {
+              "kode": "7.2.14",
+              "teks": "Pelatihan awal tidak memadai"
+            }
+          ]
+        },
+        {
+          "kode": "7.3",
+          "judul": "Tekanan Fisik atau Fisiologi",
+          "items": [
+            {
+              "kode": "7.3.1",
+              "teks": "Cedera atau sakit"
+            },
+            {
+              "kode": "7.3.2",
+              "teks": "Kelelahan akibat beban atau durasi pekerjaan"
+            },
+            {
+              "kode": "7.3.3",
+              "teks": "Kelelahan akibat kurang istirahat"
+            },
+            {
+              "kode": "7.3.4",
+              "teks": "Kelelahan karena kelebihan stimulasi sensorik"
+            },
+            {
+              "kode": "7.3.5",
+              "teks": "Keterpaparan pada bahaya kesehatan"
+            },
+            {
+              "kode": "7.3.6",
+              "teks": "Keterpaparan pada suhu ekstrim"
+            },
+            {
+              "kode": "7.3.7",
+              "teks": "Kekurangan oksigen"
+            },
+            {
+              "kode": "7.3.8",
+              "teks": "Perbedaan tekanan atmosfir"
+            },
+            {
+              "kode": "7.3.9",
+              "teks": "Gerakan terbatas"
+            },
+            {
+              "kode": "7.3.10",
+              "teks": "Gula darah rendah"
+            },
+            {
+              "kode": "7.3.12",
+              "teks": "Obat-obatan"
+            },
+            {
+              "kode": "7.3.13",
+              "teks": "Kondisi medis/pengobatan yang tidak terkait pekerjaan"
+            }
+          ]
+        },
+        {
+          "kode": "7.4",
+          "judul": "Tekanan Mental atau Psikologi",
+          "items": [
+            {
+              "kode": "7.4.1",
+              "teks": "Emosi mental yang berlebihan"
+            },
+            {
+              "kode": "7.4.2",
+              "teks": "Kelelahan akibat beban mental atau kecepatan tugas"
+            },
+            {
+              "kode": "7.4.3",
+              "teks": "Permintaan pertimbangan/keputusan ekstrim"
+            },
+            {
+              "kode": "7.4.4",
+              "teks": "Permintaan rutin, monoton, tidak menentu"
+            },
+            {
+              "kode": "7.4.5",
+              "teks": "Permintaan persepsi/konsentrasi ekstrim"
+            },
+            {
+              "kode": "7.4.6",
+              "teks": "Kegiatan \"tidak berarti\"/\"merendahkan\""
+            },
+            {
+              "kode": "7.4.7",
+              "teks": "Pengarahan yang membingungkan"
+            },
+            {
+              "kode": "7.4.8",
+              "teks": "Permintaan yang bertentangan"
+            }
+          ]
+        },
+        {
+          "kode": "7.5",
+          "judul": "Kurang Pengetahuan",
+          "items": [
+            {
+              "kode": "7.5.1",
+              "teks": "Kurang pengalaman"
+            },
+            {
+              "kode": "7.5.2",
+              "teks": "Kurang pengarahan"
+            },
+            {
+              "kode": "7.5.3",
+              "teks": "Kurang pelatihan awal"
+            },
+            {
+              "kode": "7.5.4",
+              "teks": "Kurang pelatihan peningkatan"
+            },
+            {
+              "kode": "7.5.5",
+              "teks": "Salah mengartikan arahan"
+            }
+          ]
+        },
+        {
+          "kode": "7.6",
+          "judul": "Kurang Keterampilan",
+          "items": [
+            {
+              "kode": "7.6.1",
+              "teks": "Kurang instruksi awal"
+            },
+            {
+              "kode": "7.6.2",
+              "teks": "Kurang praktek"
+            },
+            {
+              "kode": "7.6.3",
+              "teks": "Kinerja jarang dilakukan"
+            },
+            {
+              "kode": "7.6.4",
+              "teks": "Kurang bimbingan"
+            }
+          ]
+        },
+        {
+          "kode": "7.7",
+          "judul": "Salah Motivasi",
+          "items": [
+            {
+              "kode": "7.7.1",
+              "teks": "Menghargai kinerja salah"
+            },
+            {
+              "kode": "7.7.2",
+              "teks": "Menghukum kinerja tepat"
+            },
+            {
+              "kode": "7.7.3",
+              "teks": "Kurang insentif"
+            },
+            {
+              "kode": "7.7.4",
+              "teks": "Frustasi berlebihan"
+            },
+            {
+              "kode": "7.7.5",
+              "teks": "Agresi tidak pada tempatnya"
+            },
+            {
+              "kode": "7.7.6",
+              "teks": "Upaya salah untuk menghemat waktu dan usaha"
+            },
+            {
+              "kode": "7.7.7",
+              "teks": "Upaya salah untuk mendapatkan perhatian"
+            },
+            {
+              "kode": "7.7.8",
+              "teks": "Tekanan tidak wajar dari rekan"
+            },
+            {
+              "kode": "7.7.9",
+              "teks": "Contoh kepemimpinan tidak benar"
+            },
+            {
+              "kode": "7.7.10",
+              "teks": "Umpan balik kinerja tidak memadai"
+            },
+            {
+              "kode": "7.7.11",
+              "teks": "Pengembangan perilaku baik tidak memadai"
+            },
+            {
+              "kode": "7.7.12",
+              "teks": "Insentif produksi yang tidak tepat"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "faktor_pekerjaan",
+      "bagian": "8",
+      "label": "Faktor Pekerjaan / Job Factor",
+      "tipe": "nested",
+      "grup": [
+        {
+          "kode": "8.1",
+          "judul": "Kurang Kepemimpinan dan/atau Pengawasan",
+          "items": [
+            {
+              "kode": "8.1.1",
+              "teks": "Hubungan pelaporan tidak jelas atau bertentangan"
+            },
+            {
+              "kode": "8.1.2",
+              "teks": "Penugasan tanggung jawab tidak jelas atau bertentangan"
+            },
+            {
+              "kode": "8.1.3",
+              "teks": "Delegasi tidak benar atau tidak memadai"
+            },
+            {
+              "kode": "8.1.4",
+              "teks": "Pemberian kebijakan, prosedur praktek/pedoman tidak memadai"
+            },
+            {
+              "kode": "8.1.5",
+              "teks": "Perencanaan atau pemrograman kerja tidak memadai"
+            },
+            {
+              "kode": "8.1.6",
+              "teks": "Instruksi, orientasi dan/atau pelatihan tidak memadai"
+            },
+            {
+              "kode": "8.1.7",
+              "teks": "Penyediaan referensi dokumen arahan tidak memadai"
+            },
+            {
+              "kode": "8.1.8",
+              "teks": "Identifikasi & evaluasi keterpaparan terhadap kerugian tidak memadai"
+            },
+            {
+              "kode": "8.1.9",
+              "teks": "Pemimpin/manajemen kurang memiliki pengetahuan terhadap pekerjaan"
+            },
+            {
+              "kode": "8.1.10",
+              "teks": "Pencocokan kualifikasi individu dengan kebutuhan tugas tidak memadai"
+            },
+            {
+              "kode": "8.1.11",
+              "teks": "Pengukuran kinerja dan evaluasi tidak memadai"
+            },
+            {
+              "kode": "8.1.12",
+              "teks": "Umpan balik kinerja tidak memadai atau tidak benar"
+            }
+          ]
+        },
+        {
+          "kode": "8.2",
+          "judul": "Rekayasa Tidak Memadai",
+          "items": [
+            {
+              "kode": "8.2.1",
+              "teks": "Penilaian terhadap keterpaparan pada kerugian tidak memadai"
+            },
+            {
+              "kode": "8.2.2",
+              "teks": "Pertimbangan faktor manusia/ergonomik tidak memadai"
+            },
+            {
+              "kode": "8.2.3",
+              "teks": "Standar, spesifikasi dan/atau kriteria rancangan tidak memadai"
+            },
+            {
+              "kode": "8.2.4",
+              "teks": "Pemantauan konstruksi tidak memadai"
+            },
+            {
+              "kode": "8.2.5",
+              "teks": "Penilaian kesiapan operasional tidak memadai"
+            },
+            {
+              "kode": "8.2.6",
+              "teks": "Pemantauan operasi awal tidak memadai"
+            },
+            {
+              "kode": "8.2.7",
+              "teks": "Evaluasi perubahan tidak memadai"
+            }
+          ]
+        },
+        {
+          "kode": "8.3",
+          "judul": "Pembelian yang Tidak Memadai",
+          "items": [
+            {
+              "kode": "8.3.1",
+              "teks": "Spesifikasi permintaan tidak memadai"
+            },
+            {
+              "kode": "8.3.2",
+              "teks": "Riset material/alat tidak memadai"
+            },
+            {
+              "kode": "8.3.3",
+              "teks": "Standar, spesifikasi ke vendor tidak memadai"
+            },
+            {
+              "kode": "8.3.4",
+              "teks": "Penerimaan model atau rute tidak memadai"
+            },
+            {
+              "kode": "8.3.5",
+              "teks": "Inspeksi saat menerima dan penerimaan tidak memadai"
+            },
+            {
+              "kode": "8.3.6",
+              "teks": "Komunikasi data keselamatan dan kesehatan tidak memadai"
+            },
+            {
+              "kode": "8.3.7",
+              "teks": "Penanganan material tidak benar"
+            },
+            {
+              "kode": "8.3.8",
+              "teks": "Pengangkutan material tidak benar"
+            },
+            {
+              "kode": "8.3.9",
+              "teks": "Identifikasi item-item berbahaya tidak memadai"
+            },
+            {
+              "kode": "8.3.10",
+              "teks": "Penyelamatan dan/atau pembuangan limbah tidak memadai"
+            }
+          ]
+        },
+        {
+          "kode": "8.4",
+          "judul": "Pemeliharaan yang Tidak Memadai",
+          "items": [
+            {
+              "kode": "8.4.1",
+              "teks": "Preventif tidak memadai - penilaian kebutuhan"
+            },
+            {
+              "kode": "8.4.2",
+              "teks": "Preventif tidak memadai - pelumasan dan perbaikan"
+            },
+            {
+              "kode": "8.4.3",
+              "teks": "Preventif tidak memadai - penyetelan/perangkaian"
+            },
+            {
+              "kode": "8.4.4",
+              "teks": "Preventif tidak memadai - pembersihan dan pelapisan ulang permukaan"
+            },
+            {
+              "kode": "8.4.5",
+              "teks": "Perbaikan tidak memadai - komunikasi kebutuhan"
+            },
+            {
+              "kode": "8.4.6",
+              "teks": "Perbaikan tidak memadai - penjadwalan pekerjaan"
+            },
+            {
+              "kode": "8.4.7",
+              "teks": "Perbaikan tidak memadai - pemeriksaan unit"
+            },
+            {
+              "kode": "8.4.8",
+              "teks": "Perbaikan tidak memadai - penggantian suku cadang"
+            }
+          ]
+        },
+        {
+          "kode": "8.5",
+          "judul": "Perkakas dan Alat yang Tidak Memadai",
+          "items": [
+            {
+              "kode": "8.5.1",
+              "teks": "Penilaian kebutuhan dan resiko tidak memadai"
+            },
+            {
+              "kode": "8.5.2",
+              "teks": "Pertimbangan faktor manusia/ergonomik tidak memadai"
+            },
+            {
+              "kode": "8.5.3",
+              "teks": "Standar atau spesifikasi tidak memadai"
+            },
+            {
+              "kode": "8.5.4",
+              "teks": "Ketersediaan tidak memadai"
+            },
+            {
+              "kode": "8.5.5",
+              "teks": "Penyetelan/perbaikan/pemeliharaan tidak memadai"
+            },
+            {
+              "kode": "8.5.6",
+              "teks": "Penyelamatan dan reklamasi tidak memadai"
+            },
+            {
+              "kode": "8.5.7",
+              "teks": "Pelepasan dan penggantian item tidak sesuai, tidak memadai"
+            }
+          ]
+        },
+        {
+          "kode": "8.6",
+          "judul": "Standar Kerja yang Tidak Memadai",
+          "items": [
+            {
+              "kode": "8.6.1",
+              "teks": "Inventarisasi dan evaluasi keterpaparan dan kebutuhan tidak memadai"
+            },
+            {
+              "kode": "8.6.2",
+              "teks": "Koordinasi dengan proses rancangan tidak memadai"
+            },
+            {
+              "kode": "8.6.3",
+              "teks": "Keterlibatan karyawan tidak memadai"
+            },
+            {
+              "kode": "8.6.4",
+              "teks": "Standar/prosedur/aturan tidak memadai/tidak konsisten"
+            },
+            {
+              "kode": "8.6.5",
+              "teks": "Publikasi tidak memadai"
+            },
+            {
+              "kode": "8.6.6",
+              "teks": "Distribusi tidak memadai"
+            },
+            {
+              "kode": "8.6.7",
+              "teks": "Penerjemahan ke bahasa yang sesuai tidak memadai"
+            },
+            {
+              "kode": "8.6.8",
+              "teks": "Pelacakan alur kerja tidak memadai"
+            },
+            {
+              "kode": "8.6.9",
+              "teks": "Update tidak memadai"
+            },
+            {
+              "kode": "8.6.10",
+              "teks": "Pemantauan penggunaan standar/prosedur/aturan tidak memadai"
+            }
+          ]
+        },
+        {
+          "kode": "8.7",
+          "judul": "Aus dan Sobek (Wear and Tear)",
+          "items": [
+            {
+              "kode": "8.7.1",
+              "teks": "Perencanaan penggunaan tidak memadai"
+            },
+            {
+              "kode": "8.7.2",
+              "teks": "Perpanjangan pemakaian tidak benar"
+            },
+            {
+              "kode": "8.7.3",
+              "teks": "Inspeksi dan/atau pemantauan tidak memadai"
+            },
+            {
+              "kode": "8.7.4",
+              "teks": "Pemuatan atau tingkat pemakaian tidak benar"
+            },
+            {
+              "kode": "8.7.5",
+              "teks": "Pemeliharaan tidak memadai"
+            },
+            {
+              "kode": "8.7.6",
+              "teks": "Penggunaan oleh orang yang tidak kompeten/terlatih"
+            },
+            {
+              "kode": "8.7.7",
+              "teks": "Penggunaan untuk tujuan yang salah"
+            }
+          ]
+        },
+        {
+          "kode": "8.8",
+          "judul": "Penyalahgunaan atau Pemanfaatan Tidak Benar",
+          "items": [
+            {
+              "kode": "8.8.1",
+              "teks": "Dibiarkan/diterima/dimaafkan – disengaja"
+            },
+            {
+              "kode": "8.8.2",
+              "teks": "Dibiarkan/diterima/dimaafkan – tidak disengaja"
+            },
+            {
+              "kode": "8.8.3",
+              "teks": "Tidak dibiarkan/diterima/dimaafkan – disengaja"
+            },
+            {
+              "kode": "8.8.4",
+              "teks": "Tidak dibiarkan/diterima/dimaafkan – tidak disengaja"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "lack_of_control",
+      "bagian": "9",
+      "label": "Lack of Control",
+      "tipe": "nested",
+      "grup": [
+        {
+          "kode": "9.1",
+          "judul": "Pengembangan Karyawan",
+          "items": [
+            {
+              "kode": "9.1.1",
+              "teks": "Kebutuhan pelatihan dianalisa secara teratur"
+            },
+            {
+              "kode": "9.1.2",
+              "teks": "Material pelatihan dikembangkan/dirumuskan"
+            },
+            {
+              "kode": "9.1.3",
+              "teks": "Pelatihan diberikan ke karyawan baru"
+            },
+            {
+              "kode": "9.1.4",
+              "teks": "Update pelatihan secara teratur"
+            },
+            {
+              "kode": "9.1.5",
+              "teks": "Pelatihan penyegaran"
+            },
+            {
+              "kode": "9.1.6",
+              "teks": "Rekam pelatihan disimpan"
+            },
+            {
+              "kode": "9.1.7",
+              "teks": "Kualifikasi instruktur"
+            },
+            {
+              "kode": "9.1.8",
+              "teks": "Evaluasi kompetensi dilaksanakan"
+            },
+            {
+              "kode": "9.1.9",
+              "teks": "Keefektifan pelatihan diukur/dipantau"
+            }
+          ]
+        },
+        {
+          "kode": "9.2",
+          "judul": "Akuntabilitas Karyawan",
+          "items": [
+            {
+              "kode": "9.2.1",
+              "teks": "Sistem akuntabilitas ditetapkan/formal"
+            },
+            {
+              "kode": "9.2.2",
+              "teks": "Peran/harapan untuk semua kelas pekerjaan"
+            },
+            {
+              "kode": "9.2.3",
+              "teks": "Sistem pengukuran akuntabilitas"
+            },
+            {
+              "kode": "9.2.4",
+              "teks": "Evaluasi akuntabilitas secara teratur dilakukan"
+            },
+            {
+              "kode": "9.2.5",
+              "teks": "Terdapat akuntabilitas untuk perilaku negatif/positif"
+            }
+          ]
+        },
+        {
+          "kode": "9.3",
+          "judul": "Manajemen Risiko/Perubahan",
+          "items": [
+            {
+              "kode": "9.3.1",
+              "teks": "Risiko diidentifikasi"
+            },
+            {
+              "kode": "9.3.2",
+              "teks": "Risiko dianalisa dan diperingkat"
+            },
+            {
+              "kode": "9.3.3",
+              "teks": "Pengontrolan risiko diidentifikasi"
+            },
+            {
+              "kode": "9.3.4",
+              "teks": "Rencana tindakan risiko"
+            },
+            {
+              "kode": "9.3.5",
+              "teks": "Risiko dikurangi (ALARP)"
+            },
+            {
+              "kode": "9.3.6",
+              "teks": "Sistem pengukuran/pemantauan risiko"
+            },
+            {
+              "kode": "9.3.7",
+              "teks": "Sistem identifikasi manajemen perubahan"
+            },
+            {
+              "kode": "9.3.8",
+              "teks": "Proses identifikasi manajemen perubahan"
+            },
+            {
+              "kode": "9.3.9",
+              "teks": "Proses komunikasi manajemen perubahan"
+            },
+            {
+              "kode": "9.3.10",
+              "teks": "Keterlibatan karyawan dalam manajemen risiko/perubahan"
+            }
+          ]
+        },
+        {
+          "kode": "9.4",
+          "judul": "Komunikasi",
+          "items": [
+            {
+              "kode": "9.4.1",
+              "teks": "Komunikasi untuk seluruh audiens"
+            },
+            {
+              "kode": "9.4.2",
+              "teks": "Komunikasi puncak-bawah-atas"
+            },
+            {
+              "kode": "9.4.3",
+              "teks": "Instruksi tugas"
+            },
+            {
+              "kode": "9.4.4",
+              "teks": "Kontak pribadi"
+            },
+            {
+              "kode": "9.4.5",
+              "teks": "Rapat karyawan kelompok"
+            },
+            {
+              "kode": "9.4.6",
+              "teks": "Diaudit untuk memastikan keefektifan/ketepatan waktu"
+            }
+          ]
+        },
+        {
+          "kode": "9.5",
+          "judul": "Inspeksi/Audit",
+          "items": [
+            {
+              "kode": "9.5.1",
+              "teks": "Proses inspeksi umum terencana"
+            },
+            {
+              "kode": "9.5.2",
+              "teks": "Proses pemeriksaan tempat kerja"
+            },
+            {
+              "kode": "9.5.3",
+              "teks": "Proses inspeksi alat"
+            },
+            {
+              "kode": "9.5.4",
+              "teks": "Proses observasi pekerjaan/tugas"
+            },
+            {
+              "kode": "9.5.5",
+              "teks": "Keterlibatan manajemen"
+            },
+            {
+              "kode": "9.5.6",
+              "teks": "Keterlibatan karyawan"
+            },
+            {
+              "kode": "9.5.7",
+              "teks": "Proses tindak lanjut tindakan perbaikan"
+            },
+            {
+              "kode": "9.5.8",
+              "teks": "Keefektifan diukur/dipantau"
+            },
+            {
+              "kode": "9.5.9",
+              "teks": "Evaluasi terhadap praktek dan kondisi"
+            }
+          ]
+        },
+        {
+          "kode": "9.6",
+          "judul": "Persiapan Keadaan Darurat",
+          "items": [
+            {
+              "kode": "9.6.1",
+              "teks": "Peran-peran administratif ditetapkan"
+            },
+            {
+              "kode": "9.6.2",
+              "teks": "Identifikasi potensi keadaan darurat"
+            },
+            {
+              "kode": "9.6.3",
+              "teks": "Rencana darurat tertulis"
+            },
+            {
+              "kode": "9.6.4",
+              "teks": "Informasi kontak darurat"
+            },
+            {
+              "kode": "9.6.5",
+              "teks": "Tim darurat dilatih"
+            },
+            {
+              "kode": "9.6.6",
+              "teks": "Alat darurat tersedia"
+            },
+            {
+              "kode": "9.6.7",
+              "teks": "Koordinasi dengan badan-badan luar"
+            },
+            {
+              "kode": "9.6.8",
+              "teks": "Latihan keadaan darurat/evakuasi"
+            },
+            {
+              "kode": "9.6.9",
+              "teks": "Pelatihan keadaan darurat untuk karyawan"
+            }
+          ]
+        },
+        {
+          "kode": "9.7",
+          "judul": "Kebijakan/Pedoman/JSA/SOP/SWI",
+          "items": [
+            {
+              "kode": "9.7.1",
+              "teks": "Dikembangkan untuk pekerjaan/tugas"
+            },
+            {
+              "kode": "9.7.2",
+              "teks": "Tersedia untuk karyawan"
+            },
+            {
+              "kode": "9.7.3",
+              "teks": "Ditinjau sebagai bagian dari pelatihan pekerjaan"
+            },
+            {
+              "kode": "9.7.4",
+              "teks": "Ditinjau sebelum pekerjaan/tugas dimulai"
+            },
+            {
+              "kode": "9.7.5",
+              "teks": "Ditinjau/direvisi secara teratur"
+            }
+          ]
+        },
+        {
+          "kode": "9.8",
+          "judul": "Manajemen Kontraktor/Material",
+          "items": [
+            {
+              "kode": "9.8.1",
+              "teks": "Kebijakan/prosedur tertulis ditetapkan"
+            },
+            {
+              "kode": "9.8.2",
+              "teks": "Pengadaan barang dan jasa termasuk tinjauan keselamatan"
+            },
+            {
+              "kode": "9.8.3",
+              "teks": "Tinjauan K3 terhadap pemilihan kontraktor"
+            },
+            {
+              "kode": "9.8.4",
+              "teks": "Manajemen kontraktor di site"
+            },
+            {
+              "kode": "9.8.5",
+              "teks": "Tinjauan K3 terhadap jasa yang masuk"
+            },
+            {
+              "kode": "9.8.6",
+              "teks": "Pelatihan K3 untuk kontraktor"
+            },
+            {
+              "kode": "9.8.7",
+              "teks": "Sistem/pelatihan untuk MSDS"
+            }
+          ]
+        },
+        {
+          "kode": "9.9",
+          "judul": "Rekayasa/Rancangan",
+          "items": [
+            {
+              "kode": "9.9.1",
+              "teks": "Peraturan/tata tertib dipatuhi"
+            },
+            {
+              "kode": "9.9.2",
+              "teks": "Identifikasi bahaya/risiko dilakukan"
+            },
+            {
+              "kode": "9.9.3",
+              "teks": "Tinjauan K3 terhadap proyek"
+            },
+            {
+              "kode": "9.9.4",
+              "teks": "Analisis K3 dilaksanakan"
+            },
+            {
+              "kode": "9.9.5",
+              "teks": "Terdapat pengontrolan operasi/proses kerja"
+            }
+          ]
+        },
+        {
+          "kode": "9.10",
+          "judul": "Operasi & Pemeliharaan",
+          "items": [
+            {
+              "kode": "9.10.1",
+              "teks": "Terdapat sistem pemeliharaan preventif"
+            },
+            {
+              "kode": "9.10.2",
+              "teks": "Proses/bagian kritikal diidentifikasi/ditinjau"
+            },
+            {
+              "kode": "9.10.3",
+              "teks": "Terdapat proses terhadap alat sebelum digunakan"
+            },
+            {
+              "kode": "9.10.4",
+              "teks": "Terdapat sistem urutan pekerjaan"
+            }
+          ]
+        },
+        {
+          "kode": "9.11",
+          "judul": "Kesehatan Kerja",
+          "items": [
+            {
+              "kode": "9.11.1",
+              "teks": "Terdapat identifikasi/evaluasi/kontrol bahaya"
+            },
+            {
+              "kode": "9.11.2",
+              "teks": "Terdapat pemantauan kesehatan industrial dan dilaksanakan"
+            },
+            {
+              "kode": "9.11.3",
+              "teks": "Terdapat informasi dan pelatihan"
+            },
+            {
+              "kode": "9.11.4",
+              "teks": "Pengawasan medis dilakukan"
+            },
+            {
+              "kode": "9.11.5",
+              "teks": "Penyimpanan catatan/rekam terlacak dan dipelihara"
+            }
+          ]
+        },
+        {
+          "kode": "9.12",
+          "judul": "Rekayasa untuk Manusia",
+          "items": [
+            {
+              "kode": "9.12.1",
+              "teks": "Terdapat alat yang dirancang secara ergonomis"
+            },
+            {
+              "kode": "9.12.2",
+              "teks": "Tinjauan ergonomik dilaksanakan"
+            },
+            {
+              "kode": "9.12.3",
+              "teks": "Pendidikan ergonomik disediakan"
+            },
+            {
+              "kode": "9.12.4",
+              "teks": "Faktor-faktor kelelahan diidentifikasi"
+            },
+            {
+              "kode": "9.12.5",
+              "teks": "Pelatihan kesadaran kelelahan disediakan"
+            }
+          ]
+        },
+        {
+          "kode": "9.13",
+          "judul": "Sumber Daya Manusia",
+          "items": [
+            {
+              "kode": "9.13.1",
+              "teks": "Persyaratan kemampuan kerja dievaluasi dan ditetapkan"
+            },
+            {
+              "kode": "9.13.2",
+              "teks": "Tes pra-penempatan diberikan"
+            },
+            {
+              "kode": "9.13.3",
+              "teks": "Analisis keterampilan karyawan baru dibuat"
+            },
+            {
+              "kode": "9.13.4",
+              "teks": "Orientasi/pelatihan umum dilaksanakan"
+            },
+            {
+              "kode": "9.13.5",
+              "teks": "Pemeriksaan kualifikasi pra-kerja dibuat"
+            },
+            {
+              "kode": "9.13.6",
+              "teks": "Terdapat sistem pembimbingan"
+            }
+          ]
+        },
+        {
+          "kode": "9.14",
+          "judul": "Lingkungan",
+          "items": [
+            {
+              "kode": "9.14.1",
+              "teks": "Terdapat pelaporan/pengontrolan pelepasan tumpahan"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

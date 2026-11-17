@@ -1,0 +1,38 @@
+{
+  "kunci": "geoteknik",
+  "label": "Kestabilan Lereng",
+  "jual": "Kestabilan Lereng",
+  "harga": 9500000,
+  "ket": "Pemantauan gerakan lereng, kebalikan laju, penyimpangan geometri terbangun, dan acuan kajian geoteknik — alat bantu keputusan, bukan pengganti penilaian tenaga kompeten.",
+  "semboyan": "Ground You Can Trust",
+  "halaman": [
+    {
+      "berkas": "01-geoteknik.jpg",
+      "label": "Dashboard Lereng",
+      "grup": "Pengawasan",
+      "path": "geoteknik",
+      "status": "ok"
+    },
+    {
+      "berkas": "02-geoteknik-bacaan.jpg",
+      "label": "Pembacaan Alat",
+      "grup": "Pengawasan",
+      "path": "geoteknik/bacaan",
+      "status": "ok"
+    },
+    {
+      "berkas": "03-geoteknik-lereng.jpg",
+      "label": "Lereng & Instrumen",
+      "grup": "Pengawasan",
+      "path": "geoteknik/lereng",
+      "status": "ok"
+    },
+    {
+      "berkas": "04-geoteknik-cetak.jpg",
+      "label": "Laporan Geoteknik",
+      "grup": "Data",
+      "path": "geoteknik/cetak",
+      "status": "ok"
+    }
+  ]
+}

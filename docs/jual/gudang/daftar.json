@@ -1,0 +1,59 @@
+{
+  "kunci": "gudang",
+  "label": "Gudang & Penyimpanan",
+  "jual": "Sistem Informasi Gudang & Penyimpanan",
+  "harga": 6500000,
+  "ket": "Register B3, material, dan APD: mutasi keluar masuk, stok opname, pantangan penyimpanan, dan laporan persediaan.",
+  "semboyan": "Right Part Right Time",
+  "halaman": [
+    {
+      "berkas": "01-gudang.jpg",
+      "label": "Dashboard",
+      "grup": "Persediaan",
+      "path": "gudang",
+      "status": "ok"
+    },
+    {
+      "berkas": "02-gudang-barang.jpg",
+      "label": "Daftar Barang",
+      "grup": "Persediaan",
+      "path": "gudang/barang",
+      "status": "ok"
+    },
+    {
+      "berkas": "03-gudang-lokasi.jpg",
+      "label": "Lokasi Simpan",
+      "grup": "Persediaan",
+      "path": "gudang/lokasi",
+      "status": "ok"
+    },
+    {
+      "berkas": "04-gudang-mutasi.jpg",
+      "label": "Mutasi Keluar Masuk",
+      "grup": "Transaksi",
+      "path": "gudang/mutasi",
+      "status": "ok"
+    },
+    {
+      "berkas": "05-gudang-opname.jpg",
+      "label": "Stok Opname",
+      "grup": "Transaksi",
+      "path": "gudang/opname",
+      "status": "ok"
+    },
+    {
+      "berkas": "06-gudang-b3.jpg",
+      "label": "Register B3",
+      "grup": "Pengawasan",
+      "path": "gudang/b3",
+      "status": "ok"
+    },
+    {
+      "berkas": "07-gudang-laporan.jpg",
+      "label": "Laporan Stok",
+      "grup": "Pengawasan",
+      "path": "gudang/laporan",
+      "status": "ok"
+    }
+  ]
+}

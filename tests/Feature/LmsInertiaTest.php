@@ -51,11 +51,11 @@ class LmsInertiaTest extends TestCase
 
     /* ══════════════ berita ══════════════ */
 
-    public function test_cuplikan_berita_dipotong_di_server(): void
+    public function test_ringkasan_berita_dipotong_di_server(): void
     {
-        // Isi berita bisa sepanjang apa pun. Mengirim seluruhnya hanya
-        // untuk menampilkan tiga baris membuat halaman daftar membawa
-        // muatan yang tidak dibaca siapa pun.
+        // Ringkasan yang tergambar di daftar tetap dipotong di server.
+        // Memotongnya dengan CSS berarti isi sepanjang apa pun tetap
+        // dikirim hanya untuk menampilkan tiga baris.
         $this->masuk();
         News::create([
             'title' => 'Pengumuman Panjang',
@@ -65,8 +65,55 @@ class LmsInertiaTest extends TestCase
 
         $baris = $this->props('news.index')['berita'][0];
 
-        $this->assertLessThan(240, strlen($baris['cuplikan']));
-        $this->assertStringEndsWith('...', $baris['cuplikan']);
+        $this->assertLessThan(240, strlen($baris['ringkasan']));
+        $this->assertStringEndsWith('...', $baris['ringkasan']);
+    }
+
+    public function test_isi_berita_ikut_utuh_supaya_pop_out_tidak_perlu_mengambilnya(): void
+    {
+        /* Kebalikan dari aturan di atas, dan disengaja.
+         *
+         * Ringkasan dipotong karena hanya tiga barisnya yang tergambar;
+         * isinya TIDAK, karena pop-out membukanya tanpa satu pun
+         * permintaan jaringan. Pop-out yang masih harus mengambil isinya
+         * gagal terbuka justru di sambungan site yang lambat — cacat
+         * yang sama pernah mengubah pop-out pengenalan menjadi kotak
+         * galat berulang. */
+        $this->masuk();
+
+        $isi = str_repeat('Kalimat panjang sekali. ', 60);
+
+        News::create(['title' => 'Pengumuman Panjang', 'content' => $isi, 'published_at' => now()]);
+
+        $baris = $this->props('news.index')['berita'][0];
+
+        $this->assertSame($isi, $baris['isi']);
+        $this->assertFalse($baris['terpotong']);
+    }
+
+    public function test_isi_yang_luar_biasa_panjang_dipenggal_dan_mengaku(): void
+    {
+        /* Halaman daftar membawa sepuluh baris sekaligus. Satu
+         * pengumuman yang ditempeli seluruh naskah prosedur akan
+         * membuatnya berat bagi SEMUA yang membukanya, termasuk yang
+         * tidak membuka pengumuman itu.
+         *
+         * Yang dijaga di sini bukan pemenggalannya melainkan
+         * pengakuannya: pengumuman yang kehilangan bagian akhirnya tanpa
+         * ada yang tahu lebih buruk daripada yang mengaku terpotong. */
+        $this->masuk();
+
+        News::create([
+            'title'        => 'Naskah panjang',
+            'content'      => str_repeat('a', \App\Support\Pengumuman::BATAS_ISI + 500),
+            'published_at' => now(),
+        ]);
+
+        $baris = $this->props('news.index')['berita'][0];
+
+        $this->assertSame(\App\Support\Pengumuman::BATAS_ISI, mb_strlen($baris['isi']));
+        $this->assertTrue($baris['terpotong'],
+            'Isi yang dipenggal harus mengaku dipenggal, kalau tidak bagian akhirnya hilang diam-diam.');
     }
 
     public function test_bukan_admin_tidak_diberi_tombol_ubah_berita(): void

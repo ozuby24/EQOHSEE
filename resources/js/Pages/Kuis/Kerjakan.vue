@@ -9,6 +9,11 @@
 import { Head, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import type { HalamanKerjakanKuis } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import Putaran from '../../Components/Putaran.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanKerjakanKuis>();
 
@@ -17,8 +22,8 @@ const form = useForm({ answers: {} as Record<number, string> });
 const terjawab = computed(() => Object.keys(form.answers).length);
 const lengkap = computed(() => terjawab.value === props.soal.length);
 
-function kirim() {
-  if (!lengkap.value && !confirm(
+async function kirim() {
+  if (!lengkap.value && !await tanya(
     `Masih ada ${props.soal.length - terjawab.value} soal yang belum dijawab. Kirim sekarang?`)) return;
 
   form.post(props.tautan.kirim);
@@ -56,11 +61,21 @@ function kirim() {
         </div>
       </div>
 
+      <!-- Cincin, bukan hanya teks yang berganti.
+           Jawaban yang dikirim dua kali tercatat sebagai DUA percobaan,
+           dan yang kedua hampir selalu bernilai lebih rendah — ia
+           dikirim tanpa ada yang mengerjakannya lagi. Tombol yang mati
+           tanpa satu pun gerakan terbaca sebagai tombol yang rusak, dan
+           yang membacanya begitu akan menekannya lagi. -->
       <button type="submit" :disabled="form.processing"
               class="lime-gradient shadow-glow w-full rounded-xl text-white py-3 text-[13.5px]
-                     font-bold hover:brightness-105 transition disabled:opacity-40">
-        {{ form.processing ? 'Mengirim…' : 'Kirim Jawaban' }}
+                     font-bold hover:brightness-105 transition disabled:opacity-50
+                     disabled:cursor-wait inline-flex items-center justify-center gap-2">
+        <Putaran v-if="form.processing" :ukuran="14" />
+        {{ form.processing ? 'Mengirim jawaban…' : 'Kirim Jawaban' }}
       </button>
     </form>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

@@ -339,6 +339,17 @@ class TpkkpController extends Controller
                 'label' => $t['label'],
                 'warna' => Tpkkp::levelHex($i + 1),
             ])->values()->all(),
+
+            /* Tingkat rubrik 1–5, terpisah dari ambang rasio di atas.
+               Keduanya memakai lima nama yang sama dan karena itu mudah
+               tertukar — tetapi skalanya berbeda, dan menampilkan yang
+               satu sebagai yang lain membuat penilai yang mengisi 3
+               membaca "Reaktif". */
+            'tingkatan'   => collect(Tpkkp::LV)->map(fn ($label, $i) => [
+                'nomor' => $i + 1,
+                'label' => $label,
+                'warna' => Tpkkp::levelHex($i + 1),
+            ])->values()->all(),
         ]);
     }
 
@@ -595,7 +606,20 @@ class TpkkpController extends Controller
 
         $rows   = $a->programs ?? [];
         $rows[] = $d + [
-            'id'       => 'p' . now()->timestamp . rand(10, 99),
+            /* Id acak yang sungguh-sungguh acak.
+
+               Sebelumnya: 'p' . timestamp . rand(10, 99). Dua program yang
+               ditambahkan dalam DETIK YANG SAMA karena itu bertabrakan
+               satu kali dari sembilan puluh — dan menambahkan dua program
+               berturut-turut adalah cara normal mengisi rencana perbaikan,
+               bukan keadaan langka.
+
+               Akibat tabrakannya tidak berhenti pada id kembar.
+               destroyProgram menyaring dengan `!== $id`, sehingga menghapus
+               satu program menghapus KEDUANYA; updateProgramStatus
+               memperbarui keduanya pula. Kehilangannya diam: tidak ada
+               galat, hanya satu baris yang ikut lenyap dari rencana. */
+            'id'       => 'p' . bin2hex(random_bytes(8)),
             'remarks'  => '',
             'status'   => 'Rencana',
             'progress' => 0,

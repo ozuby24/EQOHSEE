@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Rules\DalamPerusahaan;
+
 use App\Models\{ActivityLog, BiayaAkun, BiayaAnggaran, BiayaRealisasi, Company,
                 MineOperationalRecord, MineOperationalTarget, TindakLanjut};
 use App\Support\{Alur, Biaya, KopDokumen, PeringatanBiaya};
@@ -65,7 +67,7 @@ class CostController extends Controller
     {
         $data = $this->pemilik($request->validate([
             'company_id'        => ['nullable', 'exists:companies,id'],
-            'biaya_akun_id'     => ['required', 'exists:biaya_akuns,id'],
+            'biaya_akun_id'     => ['required', new DalamPerusahaan('biaya_akuns')],
             'tahun'             => ['required', 'integer', 'min:2000', 'max:2100'],
             'pusat_biaya'       => ['required', Rule::in(BiayaAnggaran::PUSAT)],
             'nilai_rp'          => ['required', 'numeric', 'min:0', 'max:1000000000000000'],
@@ -98,7 +100,7 @@ class CostController extends Controller
     {
         $data = $this->pemilik($request->validate([
             'company_id'    => ['nullable', 'exists:companies,id'],
-            'biaya_akun_id' => ['required', 'exists:biaya_akuns,id'],
+            'biaya_akun_id' => ['required', new DalamPerusahaan('biaya_akuns')],
             'tahun'         => ['required', 'integer', 'min:2000', 'max:2100'],
             'bulan'         => ['required', 'integer', 'min:1', 'max:12'],
             'pusat_biaya'   => ['required', Rule::in(BiayaAnggaran::PUSAT)],
@@ -224,7 +226,7 @@ class CostController extends Controller
         $tahun = $this->tahun($request);
         $r = $this->rekap($tahun);
 
-        $perusahaan = auth()->user()?->company ?: Company::first();
+        $perusahaan = $this->perusahaanKop();
 
         return Inertia::render('Print/Biaya', [
             'dok'   => KopDokumen::untuk('laporan-biaya', $perusahaan),
@@ -270,12 +272,28 @@ class CostController extends Controller
 
             'daftarAkun' => BiayaAkun::where('aktif', true)->orderBy('kode')->get()
                 ->map(fn (BiayaAkun $a) => $a->toView())->values(),
-            'daftarAnggaran' => BiayaAnggaran::with('akun')->where('tahun', $tahun)
-                ->orderBy('biaya_akun_id')->get()
-                ->map(fn (BiayaAnggaran $a) => $a->toView())->values(),
-            'daftarRealisasi' => BiayaRealisasi::with('akun')->where('tahun', $tahun)
-                ->orderByDesc('bulan')->orderBy('biaya_akun_id')->get()
-                ->map(fn (BiayaRealisasi $x) => $x->toView())->values(),
+            /* Dua daftar panjang ini hanya dibaca oleh tabnya sendiri —
+               `daftarAnggaran` oleh tab anggaran, `daftarRealisasi` oleh
+               tab realisasi. Tiap tab adalah kunjungan terpisah ke
+               server (<Link>, bukan saklar di sisi peramban), jadi
+               mengirim keduanya di keempat tab bukan mempercepat
+               perpindahan tab: muatannya dibayar ulang di setiap tab,
+               dan tiga per empatnya tidak pernah tergambar.
+
+               Terukur pada data 16x: daftarRealisasi 36,4 kB dikirim
+               kepada empat tab, tiga di antaranya tidak memakainya.
+
+               `daftarAkun` sengaja tidak ikut disyaratkan — ia dibaca
+               sebuah computed di script setup, jadi ia memang dibutuhkan
+               tab mana pun. */
+            'daftarAnggaran' => $mode !== 'anggaran' ? [] :
+                BiayaAnggaran::with('akun')->where('tahun', $tahun)
+                    ->orderBy('biaya_akun_id')->get()
+                    ->map(fn (BiayaAnggaran $a) => $a->toView())->values(),
+            'daftarRealisasi' => $mode !== 'realisasi' ? [] :
+                BiayaRealisasi::with('akun')->where('tahun', $tahun)
+                    ->orderByDesc('bulan')->orderBy('biaya_akun_id')->get()
+                    ->map(fn (BiayaRealisasi $x) => $x->toView())->values(),
 
             'tindak' => $tindak->map(fn (TindakLanjut $t) => $t->toView())->values(),
             'kodeDitangani' => $tindak->filter(fn (TindakLanjut $t) => $t->terbuka())
@@ -530,12 +548,4 @@ class CostController extends Controller
         return $t >= 2000 && $t <= 2100 ? $t : (int) now()->year;
     }
 
-    private function pemilik(array $data): array
-    {
-        if (!auth()->user()?->isAdmin()) {
-            $data['company_id'] = auth()->user()?->company_id;
-        }
-
-        return $data;
-    }
 }

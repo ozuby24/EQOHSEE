@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Rules\DalamPerusahaan;
+
 use App\Models\{ActivityLog, AngkutAlat, AngkutMuatan, AngkutRegu, Company, TindakLanjut};
 use App\Support\{Alur, Angkutan, KopDokumen, PeringatanAngkutan};
 use Illuminate\Http\Request;
@@ -38,7 +40,7 @@ class DispatchController extends Controller
             'kapasitas_ton'       => ['nullable', 'numeric', 'min:0.1', 'max:2000'],
             'kapasitas_bucket_m3' => ['nullable', 'numeric', 'min:0.1', 'max:200'],
             'faktor_isi'          => ['nullable', 'numeric', 'min:0.1', 'max:1.5'],
-            'ko_object_id'        => ['nullable', 'exists:ko_objects,id'],
+            'ko_object_id'        => ['nullable', new DalamPerusahaan('ko_objects')],
             'catatan'             => ['nullable', 'string', 'max:2000'],
         ]));
 
@@ -230,7 +232,7 @@ class DispatchController extends Controller
         [$dari, $sampai] = $this->rentang($request);
         $d = $this->kumpulkan($dari, $sampai);
 
-        $perusahaan = auth()->user()?->company ?: Company::first();
+        $perusahaan = $this->perusahaanKop();
 
         return Inertia::render('Print/Angkutan', [
             'dok'    => KopDokumen::untuk('laporan-angkutan', $perusahaan),
@@ -321,7 +323,12 @@ class DispatchController extends Controller
 
     private function kumpulkan(Carbon $dari, Carbon $sampai): array
     {
-        $regu = AngkutRegu::with(['alatMuat', 'muatan.alat'])
+        /* `muatan.regu` ikut dimuat meski regunya justru induk yang
+           sedang diambil di sini. AngkutMuatan::toView() membaca
+           $this->regu?->kode pada tiap baris, dan tanpa disebut, Eloquent
+           mengambilnya satu per satu — dua puluh empat kueri pada data
+           contoh sekecil ini. Menyebutnya menukar semuanya dengan satu. */
+        $regu = AngkutRegu::with(['alatMuat', 'muatan.alat', 'muatan.regu'])
             ->whereBetween('tanggal', [$dari, $sampai])
             ->orderByDesc('tanggal')->orderBy('shift')->get();
 
@@ -403,12 +410,4 @@ class DispatchController extends Controller
         return $dari->greaterThan($sampai) ? [$sampai, $dari] : [$dari, $sampai];
     }
 
-    private function pemilik(array $data): array
-    {
-        if (!auth()->user()?->isAdmin()) {
-            $data['company_id'] = auth()->user()?->company_id;
-        }
-
-        return $data;
-    }
 }

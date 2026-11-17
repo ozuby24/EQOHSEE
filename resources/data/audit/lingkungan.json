@@ -1,0 +1,1434 @@
+{
+    "a": {
+        "kunci": "a",
+        "judul": "Administrasi Lingkungan",
+        "bobot": 0.1,
+        "maks": 21,
+        "kelompok": [
+            {
+                "no": 1,
+                "sub": null,
+                "judul": "Kelengkapan Administrasi",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan kebijakan tentang perlindungan lingkungan yang telah ditandatangani oleh PJO",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan bukti sosialisasi kebijakan perlindungan lingkungan",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "c",
+                        "uraian": "Lampirkan EPI (Environmental Performance Indicator) yang telah ditandatangani oleh KTT CAM",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "d",
+                        "uraian": "Lampirkan sruktur organisasi yang membidangi perlindungan lingkungan",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "e",
+                        "uraian": "Lampirkan surat penunjukkan dan deskripsi kerja pengawas lingkungan yang telah ditandatangani oleh PJO",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "f",
+                        "uraian": "Lampirkan daftar hadir pelatihan bidang lingkungan yang diselenggarakan oleh CAM atau dilaksanakan secara mandiri",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "g",
+                        "uraian": "Lampirkan bukti campaign lingkungan",
+                        "kosong": false
+                    }
+                ]
+            }
+        ]
+    },
+    "b": {
+        "kunci": "b",
+        "judul": "Implementasi Pengelolaan dan Pemantauan Lingkungan",
+        "bobot": 0.6,
+        "maks": 450,
+        "kelompok": [
+            {
+                "no": 1,
+                "sub": "AIR LIMBAH",
+                "judul": "Kelengkapan Administrasi pada Settling Pond",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan dokumentasi SK Izin pada lokasi settling pond",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan dokumentasi standar operasional prosedur yang diletakkan pada lokasi settling pond",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "c",
+                        "uraian": "Lampirkan dokumen logbook koagulan",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "d",
+                        "uraian": "Lampirkan salinan MSDS koagulan yang digunakan",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "e",
+                        "uraian": "Lampirkan dokumentasi MSDS yang tersedia digudang bahan kimia (kapur/ tawas)",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "f",
+                        "uraian": "Lampirkan rekaman pemahaman MSDS ke petugas yang berkaitan (bukti sosialisasi)",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "g",
+                        "uraian": "Lampirkan bukti pelaksanaan training internal atau sosialisasi terkait pengelolaan air limbah",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 2,
+                "sub": "AIR LIMBAH",
+                "judul": "SOP Pengelolaan Air Limbah",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan prosedur tanggap darurat dan pengelolaan air limbah",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan bukti sosialisasi prosedur tanggap darurat dan pengelolaan air limbah",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 3,
+                "sub": "AIR LIMBAH",
+                "judul": "Kelengkapan Sarana Keselamatan pada Settling Pond",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan dokumentasi rambu pada setiap lokasi",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan dokumentasi tangga yang digunakan untuk pengambilan sampel air limbah pada setiap lokasi",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "c",
+                        "uraian": "Lampirkan dokumentasi akses operasional pintu air atau valve",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "d",
+                        "uraian": "Lampirkan dokumentasi akses LV menuju Settling Pond pada setiap lokasi (akses dapat dilalui dengan aman)",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "e",
+                        "uraian": "(uraian kosong pada berkas acuan — lengkapi sendiri sebelum dipakai)",
+                        "kosong": true
+                    },
+                    {
+                        "huruf": "f",
+                        "uraian": "Lampirkan dokumentasi ringbuoy pada setiap lokasi",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "g",
+                        "uraian": "Lampirkan dokumentasi life vest yang di gunakan oleh tim sampling",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 4,
+                "sub": "AIR LIMBAH",
+                "judul": "Sarana & Prasarana",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan dokumentasi lokasi treatment",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan dokumentasi aktivitas treatment",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "c",
+                        "uraian": "Lampirkan dokumentasi (video) pintu air atau valve berfungsi dengan baik",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "d",
+                        "uraian": "Lampirkan dokumentasi pemeliharaan pintu air atau valve",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "e",
+                        "uraian": "Lampirkan dokumentasi alat ukur debit air limbah",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "f",
+                        "uraian": "Lampirkan daftar alat ukur yang dimiliki",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "g",
+                        "uraian": "Lampirkan rekaman kalibrasi atau verifikasi alat ukur (contoh ; pH meter, TSS meter)",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "h",
+                        "uraian": "Lampirkan dokumentasi ketersediaan akses alat berat (hauler) ke lokasi Settling pond untuk melakukan maintenance",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "i",
+                        "uraian": "Lampirkan dokumentasi ketersediaan bak penirisan lumpur",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "j",
+                        "uraian": "Lampirkan dokumentasi rumah koagulan pada setiap lokasi",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "k",
+                        "uraian": "Bahan kimia (kapur dan tawas) yang tersedia di lokasi masih memadai.",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "l",
+                        "uraian": "Seluruh air limbah dapat tertampung dan terolah sesuai kapasitas kolam ?, tidak terdapat air limbah yang over topping antar kompartement maupun keluar instalasi dan juga tidak terdapat air limbah yang dibuang secara langsung ke badan lingkungan",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "m",
+                        "uraian": "Spill way antar kompartement dapat berfungsi dengan baik dan tidak rusak ?",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 5,
+                "sub": "AIR LIMBAH",
+                "judul": "Tanggul",
+                "butir": [
+                    {
+                        "huruf": null,
+                        "uraian": "Lampirkan dokumentasi tanggul pada setiap lokasi settling pond"
+                    }
+                ]
+            },
+            {
+                "no": 6,
+                "sub": "AIR LIMBAH",
+                "judul": "Drop Structure",
+                "butir": [
+                    {
+                        "huruf": null,
+                        "uraian": "Lampirkan dokumentasi drop structure yang dimiliki (jika ada)"
+                    }
+                ]
+            },
+            {
+                "no": 7,
+                "sub": "AIR LIMBAH",
+                "judul": "Maintenance Settling Pond",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan jadwal rencana dan realisasi maintenance settling pond",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan dokumentasi maintenance settling pond",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "c",
+                        "uraian": "Lampirkan dokumentasi kondisi tiap-tiap kolam, Kapasitas kolam yang ada masih dapat menampung sedimentasi (kapasitas kolam tersedia sekitar 80% atau minimal sudah terisi 20% lumpur)",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 8,
+                "sub": "AIR LIMBAH",
+                "judul": "Pemantauan",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan hasil dan dokumentasi pemantauan air limbah",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan dokumentasi papan pemantauan. (papan pemantauan memuat informasi nama SP, titik koordinat, parameter wajib swapantau)",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 9,
+                "sub": "AIR LIMBAH",
+                "judul": "Pelaporan",
+                "butir": [
+                    {
+                        "huruf": null,
+                        "uraian": "Lampirkan laporan daily, weekly, monthly"
+                    }
+                ]
+            },
+            {
+                "no": 1,
+                "sub": "UDARA AMBIEN",
+                "judul": "SOP Pengelolaan Kualitas Udara Ambien",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan prosedur pengelolaan kualitas udara",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan bukti sosialiasi prosedur pengelolaan kualitas udara",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 2,
+                "sub": "UDARA AMBIEN",
+                "judul": "Kelengkapan Sarana Pengelolaan",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan daftar water truck yang dimiliki beserta volume dan status unitnya",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan dokumentasi sarana water truck beserta jadwal penggunaannya",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "c",
+                        "uraian": "Lampirkan dokumentasi kegiatan penyiraman menggunakan sarana water truck",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "d",
+                        "uraian": "Lampirkan dokumen catatan volume air yang digunakan serta sumber pengambilan airnya",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "e",
+                        "uraian": "Lampirkan dokumentasi untuk mengatur kecepatan unit kendaraan pada setiap lokasi yg dikelola",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 1,
+                "sub": "EMISI GENSET",
+                "judul": "Penaatan Emisi Genset (untuk genset >100 Kw)",
+                "butir": [
+                    {
+                        "huruf": null,
+                        "uraian": "Lampirkan deskripsi genset yang berisikan:\n- daftar genset yang dimiliki\n- kode genset\n- kode cerobong\n- titik koordinat\n- kapasitas genset\n- alat pengendali emisi\n- bentuk cerobong\n- bahan bakar apa yang digunakan\n- jumlah bahan bakar yang digunakan (liter/bulan)\n- waktu operasional genset (bulan)\n- tinggi/panjang cerobong\n- diameter cerobong tinggi/panjang lubang sampling"
+                    }
+                ]
+            },
+            {
+                "no": 2,
+                "sub": "EMISI GENSET",
+                "judul": "Administrasi",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan prosedur tanggap darurat & pengelolaan sumber emisi genset",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan bukti sosialisasi prosedur tanggap darurat & pengelolaan sumber emisi genset",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "c",
+                        "uraian": "Lampirkan bukti pelaksanaan training internal atau sosialisasi terkait pengelolaan emisi dari genset",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "d",
+                        "uraian": "Lampirkan bukti pencatatan jam kerja operasional genset beserta penggunaan bahan bakar per masing-masing genset",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 3,
+                "sub": "EMISI GENSET",
+                "judul": "Kelengkapan Sarana Pengelolaan",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan dokumentasi rumah genset (dilengkapi dengan pagar pengaman dan dilengkapi dengan pintu yang di gembok)",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan dokumentasi cerobong pada setiap genset",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "c",
+                        "uraian": "Lampirkan dokumentasi lubang sampling pada setiap genset (jika memenuhi persyaratan kewajiban lubang sampling)",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "d",
+                        "uraian": "Lampirkan dokumentasi tangga yang digunakan untuk pemantauan genset",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "e",
+                        "uraian": "Lampirkan dokumentasi papan nama yang berisikan kode genset, kode cerobong, dan titik koordinat pada lokasi genset",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "f",
+                        "uraian": "Lampirkan dokumentasi sarana pada genset memiliki lantai yang kedap air",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "g",
+                        "uraian": "Lampirkan dokumentasi sarana penangkap tumpahan hidrokarbon cair (oil catcher)",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "h",
+                        "uraian": "Lampirkan dokumentasi sumber listrik yang digunakan untuk pemantauan emisi genset, Panel listrik berada di luar area rumah genset",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "i",
+                        "uraian": "Lampirkan dokumentasi rambu keselamatan pada area Genset",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "j",
+                        "uraian": "Tidak ditemukannya tumpahan/penyimpanan limbah B3 yang tidak terkontrol di sekitar lokasi genset",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "k",
+                        "uraian": "Terdapat kontrol pengendalian bahaya yang dilakukan sehingga nilai tingkat kebisingan sesuai dengan baku mutu yang ditetapkan",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 4,
+                "sub": "EMISI GENSET",
+                "judul": "Jadwal Rencana dan Realisasi Perawatan pada Genset",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan jadwal rencana dan realisasi maintenance perawatan genset",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan dokumentasi perawatan genset",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "c",
+                        "uraian": "Housekeeping/ tatagraha di sekitar area genset terjaga dengan baik",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 1,
+                "sub": "EMISI SUMBER BERGERAK",
+                "judul": "Administrasi",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan daftar unit/ kendaraan yang beroperasi serta mencantumkan tahun perakitannya",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan prosedur tanggap darurat & pengelolaan emisi sumber bergerak",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "c",
+                        "uraian": "Lampirkan bukti sosialisasi prosedur tanggap darurat & pengelolaan emisi sumber bergerak",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 1,
+                "sub": "REKLAMASI",
+                "judul": "Perencanaan",
+                "butir": [
+                    {
+                        "huruf": null,
+                        "uraian": "Tersedia rencana reklamasi yang ditandatangani oleh mitra kerja dan CAM, peta rencana minimal menampilkan data ; contour, plan disposal, boundary area reklamasi, arah aliran air, sistem drainase, rencana lokasi bangunan pengendali erosi, akses penanaman"
+                    }
+                ]
+            },
+            {
+                "no": 2,
+                "sub": "REKLAMASI",
+                "judul": "Tempat penimbunan akhir (final dump)",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Tersedia berita acara serah terima lokasi final dump",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Tersedia patok batas area rencana reklamasi",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "c",
+                        "uraian": "Kemiringan lereng maksimum 1:4",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "d",
+                        "uraian": "Panjang lereng maksimum 40 meter",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "e",
+                        "uraian": "Tersedia akses penanaman (Menjangkau seluruh area reklamasi, tidak menjadi jalur aliran air dan tidak berpotensi tergenang)",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 3,
+                "sub": "REKLAMASI",
+                "judul": "Pengendalian erosi",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Tersedia saluran drainase dan tidak berpotensi menimbulkan genangan",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Pada bagian bench, membentuk back slope 2%",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "c",
+                        "uraian": "Arah aliran air terkontrol (mengarah ke sarana pengendali erosi seperti drop structure, sediment pond, dll)",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 4,
+                "sub": "REKLAMASI",
+                "judul": "Penempatan tanah perakaran (top soil)",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Ketebalan top soil minimal 50 cm",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Memenuhi kriteria topsoil (tidak terkontaminasi oleh batubara/OB)",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 1,
+                "sub": "PENGELOLAAN LIMBAH B3",
+                "judul": "Kelengkapan TPS Limbah B3",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan dokumentasi papan nama (memuat koordinat) yang berada diluar bangunan",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan dokumentasi simbol limbah B3 sesuai dengan karakteristik limbah B3 yang disimpan pada bagian luar bangunan",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "c",
+                        "uraian": "Lampirkan dokumentasi limbah B3 terlindung dari hujan dan sinar matahari",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "d",
+                        "uraian": "Lampirkan dokumentasi bangunan memiliki sistem ventilasi",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "e",
+                        "uraian": "Lampirkan dokumentasi penerangan (berfungsi dengan baik) pada TPS limbah B3",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "f",
+                        "uraian": "Lampirkan dokumentasi bangunan memiliki secondary containment untuk limbah B3 cair",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "g",
+                        "uraian": "Lampirkan dokumentasi penyimpanan menggunakan sistem blok / sel",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "h",
+                        "uraian": "Lampirkan dokumentasi masing-masing blok/sel yang dipisahkan gang/tanggul?",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "i",
+                        "uraian": "Lampirkan dokumentasi pengukuran jarak antar gang minimal 60 cm",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "j",
+                        "uraian": "Lampirkan dokumentasi kemasan limbah B3 diberi alas/pallet",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "k",
+                        "uraian": "Lampirkan dokumentasi dasar bangunan kedap air dan memiliki kemiringan 1%",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "l",
+                        "uraian": "Lampirkan dokumentasi drainase sisi dalam bangunan yang mengarah ke oil catcher",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "m",
+                        "uraian": "Lampirkan dokumentasi tumpukan limbah B3 tidak melebihi 3 lapis",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "n",
+                        "uraian": "Lampirkan bukti limbah B3 disimpan sesuai dengan  masa penyimpanan dalam izin",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "o",
+                        "uraian": "Lampirkan dokumentasi penyimpanan limbah B3 telah sesuai dengan sumber, jumlah dan kategori limbah B3",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "p",
+                        "uraian": "Lampirkan dokumentasi pemeliharaan dan perawatan bangunan limbah B3",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "q",
+                        "uraian": "Lampirkan dokumentasi penyimpanan Limbah B3 yang bebas banjir dan longsor",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "r",
+                        "uraian": "Lampirkan  bukti lokasi Penyimpanan limbah B3 berada di dalam pengusaan setiap orang yang menghasilkan limbah B3 tersebut",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "s",
+                        "uraian": "Lampirkan dokumentasi fasilitas penyimpanan limbah B3 sesuai dengan kategori dan sumber limbah B3",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "t",
+                        "uraian": "Lampirkan dokumentasi saluran drainase di luar bangunan",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 2,
+                "sub": "PENGELOLAAN LIMBAH B3",
+                "judul": "Administrasi",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan neraca limbah B3",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan salinan izin TPS Limbah B3 di tempat penyimpanan Limbah B3",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "c",
+                        "uraian": "Lampirkan dokumen identifikasi limbah B3 yang memuat informasi : Nama limbah, Kode limbah, Jenis limbah, Kategori limbah, Karakteristik limbah, estimasi timbulan limbah, pengolahan limbah",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "d",
+                        "uraian": "Lampirkan bukti pelaksanaan training internal atau sosialisasi terkait pengelolaan limbah B3",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 2,
+                "sub": "PENGELOLAAN LIMBAH B3",
+                "judul": "Pengemasan Limbah B3",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan dokumentasi pengemasan limbah B3 dilakukan sesuai dengan bentuk limbah B3",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan dokumentasi pengemasan limbah B3 dilakukan sesuai dengan karakteristik limbah B3",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "c",
+                        "uraian": "Lampirkan dokumentasi kemasan limbah B3 yang   mampu manampung limbah B3 dan memiliki penutup yang kuat ntuk mencegah terjadinya tumpahan saat dilakukan penyimpanan, pemindahan, atau pengangkutan",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "d",
+                        "uraian": "Lampirkan dokumentasi simbol dan label limbah B3 memuat keterangan mengenai karakteristik, nama limbah B3, identitas penghasil limbah B3, tanggal dihasilkan limbah B3 dan tanggal pengemasan limbah B3",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "e",
+                        "uraian": "Lampirkan dokumentasi penempatan limbah B3 disesuaikan dengan jenis dan karakteristik limbah B3",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "f",
+                        "uraian": "Lampirkan kondisi kemasan limbah B3 bebas karat dan tidak penyok",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 3,
+                "sub": "PENGELOLAAN LIMBAH B3",
+                "judul": "Pengelolaan Oil Trap di Workshop",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan prosedur dan/ atau instruksi kerja pengelolaan Oil Trap",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan bukti sosialisasi prosedur dan/ atau instruksi kerja pengelolaan Oil Trap",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "c",
+                        "uraian": "Lampirkan prosedur tanggap darurat pengelolaan Oil Trap",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "d",
+                        "uraian": "Lampirkan bukti sosialisasi prosedur tanggap darurat pengelolaan Oil Trap",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "e",
+                        "uraian": "Lampirkan dokumentasi oil trap dengan sistem closed circuit",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "f",
+                        "uraian": "Lampirkan dokumentasi saluran kedap air",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "g",
+                        "uraian": "Lampirkan dokumentasi plank informasi keterangan oil trap",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "h",
+                        "uraian": "Lampirkan dokumentasi tongkat pemantauan lumpur yang berada pada oil trap",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "i",
+                        "uraian": "Lampirkan dokumentasi penutup pada oil trap",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "j",
+                        "uraian": "Lampirkan dokumentasi tidak melakukan pengenceran pada oil trap",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "k",
+                        "uraian": "Lampirkan dokumentasi papan informasi perawatan dan pemantauan",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "l",
+                        "uraian": "Lampirkan jadwal rencana dan realisasi perawatan oil trap pada periode audit",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "m",
+                        "uraian": "Lampirkan dokumentasi pemeliharaan oil trap",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 4,
+                "sub": "PENGELOLAAN LIMBAH B3",
+                "judul": "Pengelolaan Wash Pad",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan prosedur dan/atau instruksi kerja pengelolaan Wash Pad",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan bukti sosialisasi prosedur dan/atau instruksi kerja Pengelolaan Wash Pad",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "c",
+                        "uraian": "Lampirkan prosedur tanggap darurat pengelolaan Wash Pad",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "d",
+                        "uraian": "Lampirkan bukti sosialisasi prosedur tanggap darurat pengelolaan Wash Pad",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "e",
+                        "uraian": "Lampirkan dokumentasi Wash Pad dengan sistem closed circuit",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "f",
+                        "uraian": "Lampirkan dokumentasi saluran kedap air",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "g",
+                        "uraian": "Lampirkan dokumentasi plank informasi keterangan trap",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "h",
+                        "uraian": "Lampirkan dokumentasi papan informasi perawatan dan pemantauan",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "i",
+                        "uraian": "Lampirkan jadwal rencana dan realisasi perawatan Wash Pad pada periode audit",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "j",
+                        "uraian": "Lampirkan dokumentasi pemeliharaan Wash Pad",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 5,
+                "sub": "PENGELOLAAN LIMBAH B3",
+                "judul": "Kelengkapan Sarana Tanggap Darurat dan Housekeeping pada TPS Limbah B3",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan prosedur Tanggap Darurat dalam melakukan pengelolaan limbah B3",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan bukti sosialisasi prosedur Tanggap Darurat dalam melakukan pengelolaan limbah B3",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "c",
+                        "uraian": "Lampirkan dokumentasi simulasi tanggap darurat",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "d",
+                        "uraian": "Lampirkan dokumentasi alarm emergency, alat pemadam api dan penanggulangan keadaan darurat lain yang sesuai",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "e",
+                        "uraian": "Lampirkan rekaman pemeriksaan peralatan penanggulangan kedaruratan",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "f",
+                        "uraian": "Lampirkan bukti pelaksanaan training internal atau sosialisasi terkait pengelolaan kedaruratan limbah B3",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "g",
+                        "uraian": "Lampirkan dokumentasi pagar, pintu darurat dan rute evakuasi",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "h",
+                        "uraian": "Lampirkan dokumentasi fasilitas P3K yang ada dan mudah untuk di jangkau",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "i",
+                        "uraian": "Lampirkan dokumentasi sarana pengendali tumpahan (spill kit)",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "j",
+                        "uraian": "Lampirkan dokumentasi bahwa kebersihan/ housekeeping terkelola/ terjaga dengan baik",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 6,
+                "sub": "PENGELOLAAN LIMBAH B3",
+                "judul": "Prodesur Pengelolaan Limbah B3",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan prosedur pengelolaan Limbah B3",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan bukti sosialisasi prosedur pengelolaan Limbah B3",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 7,
+                "sub": "PENGELOLAAN LIMBAH B3",
+                "judul": "Logbook dan Neraca Limbah B3",
+                "butir": [
+                    {
+                        "huruf": null,
+                        "uraian": "Lampirkan logbook dan neraca limbah B3 pada periode audit"
+                    }
+                ]
+            },
+            {
+                "no": 8,
+                "sub": "PENGELOLAAN LIMBAH B3",
+                "judul": "Berita Acara Pengangkutan Limbah B3",
+                "butir": [
+                    {
+                        "huruf": null,
+                        "uraian": "Lampirkan BA pengangkutan limbah B3 periode audit"
+                    }
+                ]
+            },
+            {
+                "no": 1,
+                "sub": "PENGELOLAAN LIMBAH DOMESTIK",
+                "judul": "Pemilahan Sampah",
+                "butir": [
+                    {
+                        "huruf": null,
+                        "uraian": "Lampirkan dokumentasi pemilahan sampah domestik sesuai dengan jenisnya"
+                    }
+                ]
+            },
+            {
+                "no": 2,
+                "sub": "PENGELOLAAN LIMBAH DOMESTIK",
+                "judul": "Prosedur pengelolaan sampah",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan prosedur pengelolaan sampah domestik",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan bukti sosialisasi prosedur pengelolaan sampah domestik",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "c",
+                        "uraian": "Lampirkan bukti pelaksanaan training internal atau sosialisasi terkait pengelolaan sampah",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 3,
+                "sub": "PENGELOLAAN LIMBAH DOMESTIK",
+                "judul": "Housekeeping",
+                "butir": [
+                    {
+                        "huruf": null,
+                        "uraian": "Tidak ditemukannya sampah domestik yang berserakan (dikumpulkan bukan pada tempatnya)"
+                    }
+                ]
+            },
+            {
+                "no": 4,
+                "sub": "PENGELOLAAN LIMBAH DOMESTIK",
+                "judul": "Kampanye",
+                "butir": [
+                    {
+                        "huruf": null,
+                        "uraian": "Lampirkan bukti kampanye pengelolaan sampah"
+                    }
+                ]
+            }
+        ]
+    },
+    "c": {
+        "kunci": "c",
+        "judul": "Evaluasi Pengelolaan Lingkungan",
+        "bobot": 0.05,
+        "maks": 27,
+        "kelompok": [
+            {
+                "no": 1,
+                "sub": null,
+                "judul": "NCR dan Tindak Lanjut Rekomendasi",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan NCR yang pernah diterima selama periode evaluasi dan tindak lanjut perbaikannya",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan strategi pencegahan dan rekaman sosialisasi",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 2,
+                "sub": null,
+                "judul": "PEA yang pernah dimiliki dan Tindak Lanjutnya",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan PEA yang pernah diterima selama periode evaluasi dan tindak lanjut perbaikannya",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan strategi pencegahan dan rekaman sosialisasi",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 3,
+                "sub": null,
+                "judul": "Inspeksi Internal",
+                "butir": [
+                    {
+                        "huruf": null,
+                        "uraian": "Lampirkan bukti inspeksi dan evidence perbaikan hasil inspeksi periode audit"
+                    }
+                ]
+            },
+            {
+                "no": 4,
+                "sub": null,
+                "judul": "Prosedur inspeksi lingkungan",
+                "butir": [
+                    {
+                        "huruf": null,
+                        "uraian": "Lampirkan prosedur inspeksi yang telah disahkan"
+                    }
+                ]
+            },
+            {
+                "no": 5,
+                "sub": null,
+                "judul": "Inspeksi CAM dan Tindak Lanjut",
+                "butir": [
+                    {
+                        "huruf": null,
+                        "uraian": "Lampirkan hasil inspeksi dan tindak lanjutnya"
+                    }
+                ]
+            },
+            {
+                "no": 6,
+                "sub": null,
+                "judul": "Evaluasi Lingkungan",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan bukti evaluasi lingkungan internal dan progres tindak lanjut perbaikannya (Evaluasi internal lingkungan PT CAM)",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan bukti pelaksanaan audit external (jika ada)",
+                        "kosong": false
+                    }
+                ]
+            }
+        ]
+    },
+    "d": {
+        "kunci": "d",
+        "judul": "Kompetensi Personil (BNSP)",
+        "bobot": 0.1,
+        "maks": 21,
+        "kelompok": [
+            {
+                "no": 1,
+                "sub": null,
+                "judul": "Kompetensi pengelolaan dan pengendalian pencemaran air",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan bukti sertifikasi kompetensi penanggungjawab pengendalian pengolahan air (PPPA)",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan bukti sertifikasi kompetensi penanggungjawab operasional pengolahan air limbah (POIPAL)",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan bukti sertifikasi kompetensi pengambilan contoh air (PCUA)",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 2,
+                "sub": null,
+                "judul": "Kompetensi pengelolaan dan pengendalian pencemaran udara",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan bukti sertifikasi kompetensi penanggungjawab pengendalian pencemaran udara (PPPU)",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan bukti sertifikasi kompetensi penanggungjawab operasional instalasi pengendalian pencemaran udara (POIPU)",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 3,
+                "sub": null,
+                "judul": "Kompetensi pengelolaan dan pengendalian limbah bahan berbahaya dan beracun (LB3)",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan bukti sertifikasi kompetensi penanggung jawab pengendalian pengelolaan limbah B3 (PLB3)",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan bukti sertifikasi kompetensi penanggung jawab operasional pengelolaan limbah B3 (OPLB3)",
+                        "kosong": false
+                    }
+                ]
+            }
+        ]
+    },
+    "e": {
+        "kunci": "e",
+        "judul": "Manajemen Energi",
+        "bobot": 0.1,
+        "maks": 48,
+        "kelompok": [
+            {
+                "no": 1,
+                "sub": null,
+                "judul": "Kebijakan Energi",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan kebijakan energi yang telah disahkan oleh PJO",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan rekaman distribusi dan sosialisasi Kebijakan Energi",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 2,
+                "sub": null,
+                "judul": "Sumber daya yang diperkukan untuk Energi Manajemen Sistem",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirakan penunjukan PIC Energi yang disahkan oleh PJO",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan sertifikasi kompetensi personal sebagai Manager Energi",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "c",
+                        "uraian": "Lampirkan Struktur Organisasi Manajemen Energi yang disahkan oleh PJO",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 3,
+                "sub": null,
+                "judul": "Perencanaan, tujuan, dan target manajemen energi",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan rencana kerja (jangka pendek) dan rencana strategis (jangka panjang), tujuan, target manajemen energi yang telah disahkan oleh PJO",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan realisasi dari rencana dan target efisiensi energi",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "c",
+                        "uraian": "Lampirkan indeks kinerja energi (EnPI) satuan GJ/Ton Product",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "d",
+                        "uraian": "Lampirkan monitoring indeks kinerja energi (EnPI)",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "e",
+                        "uraian": "Lampirkan identifikasi signifikan energi use (SEU)",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 4,
+                "sub": null,
+                "judul": "Monitoring dan Evaluasi",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan rencana dan pelaksanaan audit internal",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan hasil audit internal",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "c",
+                        "uraian": "Lampirkan analisis penggunaan dan konsumsi energi pada SEU",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "d",
+                        "uraian": "Lampirkan monitoring pengendalian operasi pada unit SEU",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "e",
+                        "uraian": "Lampirkan monitoring penggunaan energi pada setiap aktivitas yang mencakup penggunaan fuel, HM, Produksi, dll sesuai template yang didistribusikan untuk laporan bulanan",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 5,
+                "sub": null,
+                "judul": "Penggunaan Energi Baru & Terbarukan",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Penggunaan Panel Surya (Untuk penggunaan Solarcell)\nLampirkan jumlah penggunaan energi panel surya (jumlah unit, kapasitas, dan daya yang digunakan) pada kantor dan workshop dan/atau fasilitas lainnya yang dimiliki",
+                        "kosong": false
+                    }
+                ]
+            }
+        ]
+    },
+    "f": {
+        "kunci": "f",
+        "judul": "Inovasi di Bidang Lingkungan",
+        "bobot": 0.05,
+        "maks": 36,
+        "kelompok": [
+            {
+                "no": 1,
+                "sub": null,
+                "judul": "Tim Inovasi",
+                "butir": [
+                    {
+                        "huruf": null,
+                        "uraian": "Memiliki Tim Inovasi yang disahkan oleh PJO"
+                    }
+                ]
+            },
+            {
+                "no": 2,
+                "sub": null,
+                "judul": "Keikutsertaan Kompetisi Inovasi PT CAM",
+                "butir": [
+                    {
+                        "huruf": null,
+                        "uraian": "Mengikuti kompetisi G.R.E.E.N pekan HLH CAM selama periode penilaian"
+                    }
+                ]
+            },
+            {
+                "no": 3,
+                "sub": null,
+                "judul": "Daftar Inovasi yang dimiliki",
+                "butir": [
+                    {
+                        "huruf": null,
+                        "uraian": "Menyajikan daftar inovasi lingkungan yang dilakukan sejak memulai project di PT CAM"
+                    }
+                ]
+            },
+            {
+                "no": 4,
+                "sub": null,
+                "judul": "Kesinambungan Inovasi",
+                "butir": [
+                    {
+                        "huruf": null,
+                        "uraian": "Keberlanjutan terhadap pelaksanaan inovasi pada angka dua (2) hingga kini dan menyajikan pelaporan pelaksanaan inovasi yang telah dilakukan"
+                    }
+                ]
+            },
+            {
+                "no": 5,
+                "sub": null,
+                "judul": "Pengelolaan Air",
+                "butir": [
+                    {
+                        "huruf": null,
+                        "uraian": "Lampirkan dokumentasi dan perhitungan dalam inovasi pengelolaan air"
+                    }
+                ]
+            },
+            {
+                "no": 6,
+                "sub": null,
+                "judul": "Pengelolaan Kualitas Udara dan Kebisingan",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan bukti  inovasi dalam pengelolaan kualitas udara dan kebisingan",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan dokumentasi area penghijauan pada sekitar area kerja",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 7,
+                "sub": null,
+                "judul": "Pengelolaan Limbah B3",
+                "butir": [
+                    {
+                        "huruf": null,
+                        "uraian": "Lampirkan bukti inovasi dalam pengelolaan limbah B3"
+                    }
+                ]
+            },
+            {
+                "no": 8,
+                "sub": null,
+                "judul": "Pengelolaan Limbah domestik",
+                "butir": [
+                    {
+                        "huruf": "a",
+                        "uraian": "Lampirkan jumlah sampah organik yang dihasilkan selama periode audit",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "b",
+                        "uraian": "Lampirkan jumlah sampah anorganik yang dihasilkan selama periode audit",
+                        "kosong": false
+                    },
+                    {
+                        "huruf": "c",
+                        "uraian": "Lampirkan bukti penerapan upaya 4R pada lokasi kerja beserta jumlahnya (data jumlah limbah yang di kelola secara 4R dan dokumentasinya)",
+                        "kosong": false
+                    }
+                ]
+            },
+            {
+                "no": 9,
+                "sub": null,
+                "judul": "Bentuk Inovasi Lainnya",
+                "butir": [
+                    {
+                        "huruf": null,
+                        "uraian": "Lampirkan bukti inovasi lainnya diluar kategori inovasi diatas"
+                    }
+                ]
+            }
+        ]
+    }
+}

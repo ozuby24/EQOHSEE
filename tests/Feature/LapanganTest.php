@@ -1,0 +1,621 @@
+<?php
+
+namespace Tests\Feature;
+
+use Tests\TestCase;
+
+/**
+ * Penjagaan atas hal-hal yang hanya terlihat di layar ponsel.
+ *
+ * Aplikasi ini dipakai di site tambang, dan sebagian besar pemakaiannya
+ * di lapangan terjadi lewat telepon genggam — sering dengan sarung
+ * tangan. Cacat yang muncul hanya di sana tidak pernah terlihat oleh
+ * siapa pun yang mengembangkannya di layar lebar, dan tidak satu pun
+ * menimbulkan galat: tombol yang tulisannya keluar dari kotaknya tetap
+ * dapat ditekan, kolom tabel yang terpotong tetap "ada", dan kendali
+ * tanpa label tetap berfungsi bagi yang melihatnya.
+ *
+ * Yang diuji di sini adalah ATURANNYA di dalam kode, bukan hasil
+ * rendernya — uji render menuntut peramban sungguhan, dan uji yang
+ * menuntut peramban akan dilewati pada mesin yang tidak punya. Yang
+ * ditegakkan: aturan CSS yang menjadi lantainya masih ada, dan tidak ada
+ * kendali baru yang lahir tanpa label.
+ *
+ * Pengukuran yang melahirkan uji ini, di layar 393px sebelum diperbaiki:
+ * 51 tombol dan 18 tautan di bawah 24px, 50 kendali tanpa label, satu
+ * tombol saringan yang tulisannya terpotong, dan satu tabel yang empat
+ * kolomnya tidak terjangkau.
+ */
+class LapanganTest extends TestCase
+{
+    /**
+     * Bilah samping harus dapat digulir sampai butir terakhirnya.
+     *
+     * <nav class="flex-1 overflow-y-auto"> di dalam wadah flex TIDAK
+     * menggulir tanpa `min-h-0`. Anak flex punya `min-height: auto`, yang
+     * melarangnya menyusut di bawah tinggi ISINYA — jadi ia tumbuh
+     * melewati wadahnya, dan `overflow-y-auto` tidak pernah punya sesuatu
+     * untuk digulir.
+     *
+     * Terukur sebelum diperbaiki: pada laci ponsel, nav setinggi 1.464px
+     * di dalam aside yang dibatasi tinggi layar, tidak dapat digulir sama
+     * sekali. Sekitar sepertiga butir menu tidak terjangkau siapa pun.
+     *
+     * Cacat lamanya diam karena di layar lebar aside memang tumbuh bebas
+     * dan halamanlah yang menggulir. Ia hanya menggigit pada laci ponsel,
+     * yang posisinya `fixed` dan karena itu dibatasi tinggi layar.
+     */
+    public function test_bilah_samping_dapat_digulir(): void
+    {
+        $tata = file_get_contents(resource_path('js/Layouts/AppLayout.vue'));
+
+        preg_match('/<nav class="([^"]*overflow-y-auto[^"]*)"/', $tata, $m);
+
+        $this->assertNotEmpty($m[1] ?? '', 'Bilah samping tidak lagi punya nav yang menggulir.');
+
+        $this->assertStringContainsString('min-h-0', $m[1],
+            'nav bilah samping kehilangan min-h-0. Tanpa itu ia tumbuh melewati '
+            .'wadahnya dan butir terbawah tidak terjangkau di laci ponsel.');
+    }
+
+    /**
+     * TIDAK ADA aturan global yang menaikkan tinggi kendali.
+     *
+     * Aturan semacam itu pernah dipasang di sini — `min-height` pada
+     * button dan a[href] di perangkat sentuh, demi memenuhi WCAG 2.2 AA
+     * (2.5.8). Ia dibuang seluruhnya sesudah merusak tampilan tiga kali:
+     *
+     *   Menyentuh `display` merobohkan setiap `<a class="flex …">`
+     *   menjadi inline; ikon bilah samping menumpuk di atas labelnya, di
+     *   seluruh modul sekaligus.
+     *
+     *   `min-height` pada <a> merenggangkan baris daftar. Di halaman
+     *   Miners, nama orang dan keterangan statusnya berhenti sebaris.
+     *
+     *   `min-height` pada seluruh tautan menu membuat daftar bilah samping
+     *   melewati wadahnya, dan pada laci ponsel butir terbawah menjadi
+     *   tak terjangkau.
+     *
+     * Sebabnya satu dan sama: di aplikasi ini <a> bukan hanya kendali
+     * yang berdiri sendiri, ia juga ISI baris — nama di dalam daftar, kode
+     * di dalam tabel. Aturan global tidak dapat membedakan keduanya, dan
+     * kerusakannya selalu muncul di halaman yang tidak disebut dalam
+     * perubahan itu.
+     *
+     * Memperbesar sasaran sentuh tetap layak dikerjakan — tetapi per
+     * tempat, dengan menambah padding pada tombol yang memang terlalu
+     * kecil, bukan lewat satu pemilih yang menyapu semuanya.
+     */
+    public function test_tidak_ada_aturan_tinggi_global(): void
+    {
+        $css = file_get_contents(resource_path('css/app.css'));
+
+        $this->assertStringNotContainsString('pointer: coarse', $css,
+            'Aturan tinggi global dipasang lagi. Baca alasannya di docblock uji ini '
+            .'lebih dulu — ia sudah tiga kali merusak tampilan.');
+    }
+
+    /**
+     * Tombol tidak boleh menyusut sampai lebih kecil daripada tulisannya.
+     *
+     * `.eq-btn-utama` memakai `flex:1`, yang berarti flex-basis nol —
+     * tombolnya mulai dari lebar NOL lalu tumbuh dari sisa ruang. Di baris
+     * sempit sisa ruangnya bisa lebih kecil daripada teksnya sendiri.
+     * Terukur: tombol "Terapkan" menjadi 47px untuk teks yang butuh 85px,
+     * dan tulisannya keluar dari kotak jingganya.
+     */
+    public function test_tombol_punya_lantai_lebar(): void
+    {
+        $gaya = file_get_contents(resource_path('views/partials/eq-visual.blade.php'));
+
+        foreach (['eq-btn-utama', 'eq-btn-lain'] as $kelas) {
+            $i = strpos($gaya, ".$kelas{");
+            $this->assertNotFalse($i, "Kelas .$kelas hilang.");
+
+            $blok = substr($gaya, $i, strpos($gaya, '}', $i) - $i);
+
+            $this->assertStringContainsString('min-width:fit-content', $blok,
+                ".$kelas dapat menyusut sampai tulisannya keluar dari kotaknya.");
+        }
+    }
+
+    /**
+     * Tidak ada kendali saringan yang lahir tanpa label.
+     *
+     * Dibatasi pada input tanggal dan select — keduanya tidak dapat
+     * menjelaskan dirinya sendiri lewat isinya, berbeda dari kotak teks
+     * yang biasanya punya placeholder. Halaman cetak dikecualikan: ia
+     * dibaca di kertas, bukan dengan pembaca layar.
+     */
+    /**
+     * Buang ISI komentar, pertahankan panjang dan pergantian barisnya.
+     *
+     * Penjaga ini memindai teks berkas apa adanya, sehingga komentar yang
+     * KEBETULAN menyebut <select> atau <input> — misalnya catatan yang
+     * menerangkan kenapa lebar bawaannya bermasalah — terbaca sebagai
+     * kendali sungguhan tanpa label. Laporannya lalu menunjuk baris yang
+     * tidak memuat kendali apa pun, dan yang membacanya wajar menyimpulkan
+     * penjaganya yang rusak, lalu mematikannya.
+     *
+     * Diganti spasi, BUKAN dihapus: nomor baris dihitung dari posisi bita,
+     * dan memangkas teks menggeser seluruh laporan sesudahnya.
+     */
+    private static function tanpaKomentar(string $isi): string
+    {
+        return (string) preg_replace_callback(
+            '~/\\*.*?\\*/|<!--.*?-->~s',
+            fn ($c) => preg_replace('/[^\\n]/', ' ', $c[0]),
+            $isi,
+        );
+    }
+
+    /**
+     * Kelas `<style scoped>` tidak boleh senama dengan kelas global.
+     *
+     * Vue menambahkan atribut pada selektor scoped, sehingga
+     * `.eq-nilai[data-v-x]` menang atas `.eq-nilai` global — TETAPI
+     * hanya untuk properti yang benar-benar ditulis ulang. Properti
+     * yang tidak disebut tetap diwarisi dari kelas global, dan itulah
+     * yang berbahaya: kelas global `.eq-nilai` adalah chip nilai
+     * ber-`display: inline-flex`, dan sebuah `<table class="eq-nilai">`
+     * yang mewarisinya berhenti menjadi tabel. Kepala kolomnya terlepas
+     * dari badannya, melayang di tengah dengan lebar sendiri, dan tidak
+     * satu pun galat muncul — halamannya terbuka dengan status 200,
+     * hanya isinya tidak sejajar.
+     *
+     * Bentrokan seperti ini lahir dari nama yang wajar: 'nilai',
+     * 'judul', 'reg'. Karena itu yang dijaga bukan kewaspadaan
+     * penulisnya melainkan daftar namanya.
+     */
+    public function test_kelas_scoped_tidak_senama_dengan_kelas_global(): void
+    {
+        $global = [];
+
+        foreach ([
+            resource_path('views/partials/eq-visual.blade.php'),
+            resource_path('css/app.css'),
+        ] as $berkas) {
+            if (!is_file($berkas)) continue;
+
+            preg_match_all('~\.(eq-[a-z0-9-]+)~', (string) file_get_contents($berkas), $m);
+            $global = array_merge($global, $m[1]);
+        }
+
+        $global = array_flip($global);
+
+        /* Penimpaan yang DISENGAJA, beserta alasannya.
+
+           Ketiganya memang bermaksud mewarisi bentuk komponen
+           globalnya lalu mengubah rupanya setempat — itu gunanya
+           penimpaan. Yang dijaga daftar ini adalah nama yang bentrok
+           TANPA disengaja: `.eq-nilai` global adalah chip
+           ber-`display:inline-flex`, dan sebuah <table> berkelas sama
+           berhenti menjadi tabel tanpa satu galat pun. */
+        $disengaja = [
+            'TurSelamatDatang.vue → .eq-merek',    // logo di kartu tur, bukan di bilah samping
+            'TurSelamatDatang.vue → .eq-btn-lain', // tombol tur mewarisi bentuk tombol biasa
+            'PopPengumuman.vue → .eq-pop',         // animasi pop-nya memang dari CSS global
+            'DialogRegister.vue → .eq-reg',        // dialog yang justru dianimasikan .eq-pop-* global
+        ];
+
+        $bentrok = [];
+
+        /* Halaman cetak IKUT diperiksa, meski `berkasVue()` melewatinya:
+           bentrokan pertama yang ditemukan justru ada di sana, dan
+           tabel yang rusak di atas kertas lebih sulit disadari
+           daripada tabel yang rusak di layar. */
+        $semua = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(resource_path('js')),
+        );
+
+        foreach ($semua as $f) {
+            if (!$f->isFile() || !str_ends_with($f->getFilename(), '.vue')) continue;
+
+            $berkas = $f->getPathname();
+            $isi    = (string) file_get_contents($berkas);
+
+            if (!str_contains($isi, '<style scoped>')) continue;
+
+            $blok = substr($isi, strpos($isi, '<style scoped>'));
+
+            preg_match_all('~\.(eq-[a-z0-9-]+)~', $blok, $m);
+
+            foreach (array_unique($m[1]) as $kelas) {
+                $tanda = basename($berkas).' → .'.$kelas;
+
+                if (isset($global[$kelas]) && !in_array($tanda, $disengaja, true)) {
+                    $bentrok[] = $tanda;
+                }
+            }
+        }
+
+        $this->assertSame([], $bentrok,
+            "Kelas berikut didefinisikan di <style scoped> padahal namanya sudah dipakai CSS global.\n"
+            ."Properti yang tidak ditulis ulang akan diwarisi diam-diam dari kelas global:\n  "
+            .implode("\n  ", $bentrok));
+    }
+
+    /**
+     * Tiap halaman cetak melepas kerangka aplikasinya.
+     *
+     * Halaman di Pages/Print dirender ke KERTAS. Yang lupa menyatakan
+     * `layout: BlankLayout` mewarisi AppLayout, sehingga bilah atas,
+     * sampul modul, lencana notifikasi, dan chip akun ikut tercetak di
+     * kepala dokumen terkendali — di atas kop perusahaan, pada lembar
+     * yang diserahkan kepada auditor.
+     *
+     * Cacatnya TIDAK terlihat di layar: di layar semua hiasan itu
+     * memang wajar ada, dan halamannya tampak benar sepenuhnya. Yang
+     * pertama menemukannya adalah orang yang sudah menekan cetak —
+     * kalau perlu sesudah kertasnya keluar.
+     */
+    public function test_setiap_halaman_cetak_memakai_blank_layout(): void
+    {
+        $tanpa = [];
+
+        foreach (glob(resource_path('js/Pages/Print/*.vue')) as $berkas) {
+            $isi = (string) file_get_contents($berkas);
+
+            if (!preg_match('/defineOptions\\(\\s*\\{[^}]*layout:\\s*BlankLayout/s', $isi)) {
+                $tanpa[] = basename($berkas);
+            }
+        }
+
+        sort($tanpa);
+
+        $this->assertSame([], $tanpa,
+            "Halaman cetak berikut belum menyatakan layout: BlankLayout, sehingga\n"
+            ."kerangka aplikasi ikut tercetak di atas kop dokumennya:\n  "
+            .implode("\n  ", $tanpa));
+    }
+
+    public function test_tidak_ada_kendali_tanpa_label(): void
+    {
+        $tanpa = [];
+
+        foreach ($this->berkasVue() as $berkas) {
+            $isi = self::tanpaKomentar((string) file_get_contents($berkas));
+
+            /* Kedalaman <label> dihitung dari awal berkas, bukan ditebak
+               dari jendela beberapa ratus karakter sebelumnya.
+
+               Percobaan pertama memakai jendela 400 karakter dan
+               melaporkan 57 kendali "tanpa label" yang sebenarnya
+               berlabel — <label> pada berkas ini kerap membentang jauh
+               lebih panjang daripada itu, memuat teks bantuan dan
+               beberapa baris atribut. Uji yang menuduh 57 tempat yang
+               benar akan dimatikan orang pada hari pertama, dan
+               bersamanya hilang pula penjagaan atas yang sungguh
+               salah. */
+            /* <label for="x"> juga label yang sah, sama sahnya dengan
+               kendali yang dibungkus <label>.
+
+               Semula hanya pembungkusan yang diakui, sehingga halaman
+               yang memasangkan `for` dengan `id` — cara yang justru
+               dianjurkan ketika labelnya perlu berdiri sendiri di atas
+               kendalinya — dilaporkan sebagai tanpa label. Jalan keluar
+               yang ditempuh orang atas laporan itu adalah menambahkan
+               `aria-label` di samping <label> yang sudah ada, dan itu
+               MEMBURUKKAN keadaannya: aria-label menimpa teks <label>
+               bagi pembaca layar, sehingga sejak saat itu ada dua teks
+               yang harus diubah bersama-sama, dan yang terdengar adalah
+               yang lebih mudah terlupa. */
+            /* <Medan untuk="x"> (Components/Miners/Medan.vue) sama dengan
+               <label for="x">: komponen itu menggambar label tersebut
+               di atas slot kendalinya. Menuntut aria-label tambahan di
+               sana justru melahirkan dua teks yang harus dijaga sama. */
+            preg_match_all('/<(?:label\b[^>]*\bfor|Medan\b[^>]*\buntuk)="([^"]+)"/', $isi, $cocok);
+            $berpasangan = array_flip($cocok[1]);
+
+            $dalamLabel = 0;
+            $tanda = preg_split(
+                '/(<label\b|<\/label>|<input\b[^>]*>|<select\b[^>]*>)/',
+                $isi, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_OFFSET_CAPTURE,
+            );
+
+            foreach ($tanda as [$potong, $pos]) {
+                if (str_starts_with($potong, '<label')) { $dalamLabel++; continue; }
+                if (str_starts_with($potong, '</label>')) { $dalamLabel = max(0, $dalamLabel - 1); continue; }
+
+                $adalahInput  = str_starts_with($potong, '<input');
+                $adalahSelect = str_starts_with($potong, '<select');
+                if (!$adalahInput && !$adalahSelect) continue;
+
+                if ($dalamLabel > 0) continue;
+                if ($adalahInput && !str_contains($potong, 'type="date"')) continue;
+                if (preg_match('/aria-label|placeholder=|title=/', $potong)) continue;
+
+                if (preg_match('/\bid="([^"]+)"/', $potong, $id)
+                    && isset($berpasangan[$id[1]])) continue;
+
+                $baris = substr_count(substr($isi, 0, $pos), "\n") + 1;
+                $tanpa[] = str_replace(base_path().'/', '', $berkas).':'.$baris;
+            }
+        }
+
+        $this->assertSame([], $tanpa,
+            "Kendali berikut tidak punya label — pembaca layar tidak menyebut apa pun:\n  "
+            .implode("\n  ", $tanpa));
+    }
+
+    /**
+     * Sasaran sentuh yang sudah dilebarkan tidak boleh menyusut lagi.
+     *
+     * Dua tempat ini menampung sebagian besar tautan aksi yang tadinya
+     * di bawah 24px: kelas bersama `.eq-tautan` / `.eq-panel-lihat`, dan
+     * legenda diagram donat yang dipakai ulang di tujuh halaman.
+     *
+     * Yang dijaga bukan angka pastinya, melainkan bahwa paddingnya masih
+     * ada. Menghapusnya mengembalikan 36 temuan yang sudah ditutup, dan
+     * tidak satu pun menimbulkan galat — tautan 17px tetap dapat diklik
+     * oleh siapa pun yang memakai tetikus.
+     *
+     * Catatan tentang `margin-block` negatif yang menyertainya: itulah
+     * yang membuat paddingnya tidak menggeser apa pun. Ia hanya bekerja
+     * pada kotak sebaris dan inline-flex; pada elemen blok ia dapat
+     * menciut bersama margin tetangganya, dan pernah menggeser tombol
+     * "Kirim Pesan" 6px ke bawah persis karena itu.
+     */
+    public function test_sasaran_sentuh_tetap_lebar(): void
+    {
+        $css = file_get_contents(resource_path('views/partials/eq-visual.blade.php'));
+
+        foreach (['.eq-tautan', '.eq-panel-lihat'] as $kelas) {
+            $this->assertMatchesRegularExpression(
+                '/' . preg_quote($kelas, '/') . '\{[^}]*padding-block:\s*\d/',
+                $css,
+                "{$kelas} kehilangan padding tegaknya — sasaran sentuhnya kembali di bawah 24px.",
+            );
+        }
+
+        $donat = file_get_contents(resource_path('js/Grafik/Donat.vue'));
+
+        $this->assertStringNotContainsString(
+            'px-1 py-0.5',
+            $donat,
+            'Butir legenda donat kembali ke py-0.5; tingginya hanya 22px.',
+        );
+    }
+
+    /**
+     * Tiap kelas `eq-*` yang dipakai markup harus benar-benar ada CSS-nya.
+     *
+     * Kelas yang tidak pernah didefinisikan tidak menimbulkan galat apa
+     * pun: peramban mengabaikannya, buildnya berhasil, ujinya hijau, dan
+     * tombolnya tergambar sebagai teks polos di tengah formulir — tanpa
+     * bidang, tanpa garis, tanpa tanda bahwa ia dapat ditekan.
+     *
+     * Terjadi persis begitu pada `.eq-btn`, yang tidak pernah ada:
+     * 23 tombol kirim di enam modul — "Tambah", "Simpan", "Simpan draf" —
+     * semuanya tampil sebagai tulisan biasa. Yang ada hanya
+     * `.eq-btn-utama`, `.eq-btn-lain`, `.eq-btn-mini`, `.eq-btn-blok`,
+     * `.eq-btn-setuju`, dan `.eq-btn-tolak`.
+     *
+     * Kelas utilitas Tailwind sengaja tidak ikut diperiksa — ia lahir
+     * dari pemindaian, bukan dari berkas gaya, jadi memeriksanya di sini
+     * hanya akan salah menuduh. Yang diperiksa khusus awalan `eq-`,
+     * sebab itulah yang ditulis tangan dan karenanya dapat salah ketik.
+     */
+    public function test_kelas_eq_yang_dipakai_ada_gayanya(): void
+    {
+        $gaya = file_get_contents(resource_path('views/partials/eq-visual.blade.php'))
+              . file_get_contents(resource_path('css/app.css'));
+
+        preg_match_all('/\.(eq-[a-z0-9-]+)/', $gaya, $m);
+        $ada = array_flip($m[1]);
+
+        $hilang = [];
+
+        foreach ($this->berkasVue() as $berkas) {
+            $isi = file_get_contents($berkas);
+
+            /* Blok <style> komponennya sendiri ikut dihitung sebagai
+               sumber gaya — sebagian kelas memang tinggal di sana, dan
+               mengabaikannya melahirkan tuduhan palsu. Terjadi pada
+               `.eq-denyut` dan `.eq-jenis-aktif` saat uji ini ditulis. */
+            $adaBerkas = $ada;
+            if (preg_match_all('/\.(eq-[a-z0-9-]+)/', $isi, $lokal)) {
+                $adaBerkas += array_flip($lokal[1]);
+            }
+
+            /* Hanya atribut class harfiah. Kelas yang dirangkai saat
+               berjalan (`:class`, gabungan tali) tidak dapat dibaca dari
+               sumber, dan menebaknya akan melahirkan tuduhan palsu. */
+            preg_match_all('/(?<![:\w-])class="([^"{\']*)"/', $isi, $c);
+
+            foreach ($c[1] as $daftar) {
+                foreach (preg_split('/\s+/', trim($daftar)) as $kelas) {
+                    if (!str_starts_with($kelas, 'eq-') || isset($adaBerkas[$kelas])) continue;
+                    $hilang[$kelas][] = basename($berkas);
+                }
+            }
+        }
+
+        $pesan = '';
+        foreach ($hilang as $kelas => $berkas) {
+            $pesan .= sprintf("\n  .%s — %d tempat (%s)", $kelas, count($berkas),
+                implode(', ', array_slice(array_unique($berkas), 0, 4)));
+        }
+
+        $this->assertSame([], $hilang,
+            'Kelas eq-* dipakai markup tetapi tidak ada aturan gayanya. '
+            . 'Elemennya tergambar tanpa gaya sama sekali, dan tidak ada yang menimbulkan galat:'
+            . $pesan);
+    }
+
+    /**
+     * Tidak satu pun halaman boleh memakai dialog bawaan peramban.
+     *
+     * `confirm()` dan `prompt()` tidak dapat diandalkan di tempat
+     * aplikasi ini justru dipakai. Pada webview ponsel dan tablet —
+     * aplikasi induk yang tidak memasang penangan `onJsConfirm` /
+     * `onJsPrompt` — keduanya langsung memulangkan `false` dan `null`
+     * tanpa menampilkan apa pun. Kode pemanggilnya membaca itu sebagai
+     * "pengguna menekan Batal", lalu berhenti diam-diam.
+     *
+     * Tidak ada galat, tidak ada pesan, tidak ada yang terjadi. Dari
+     * sisi pemakainya fiturnya sekadar mati — dan hanya di perangkat
+     * itu, jadi ia tidak pernah terlihat oleh siapa pun yang
+     * memeriksanya di layar lebar.
+     *
+     * Terukur sebelum diperbaiki, dengan dialog bawaan dibungkam persis
+     * seperti webview: panel data contoh tidak memuat satu baris pun,
+     * dan tombol hapusnya — yang hanya muncul bila panelnya berisi —
+     * karena itu tidak pernah ada sama sekali. Sisi servernya sehat
+     * sepenuhnya; yang hilang hanya jalan menuju ke sana.
+     *
+     * Yang paling berat bukan panel itu melainkan alur tinjauan: seluruh
+     * "Alasan penolakan" memakai `prompt()`. Menolak laporan bahaya,
+     * inspeksi, atau catatan penirisan dari ponsel diam-diam tidak jadi.
+     *
+     * Penggantinya `useDialog()` di resources/js/dialog.ts, yang
+     * digambar aplikasinya sendiri sehingga muncul di mana pun
+     * aplikasinya muncul.
+     */
+    public function test_tidak_ada_dialog_bawaan_peramban(): void
+    {
+        $temuan = [];
+
+        foreach ($this->berkasVue() as $berkas) {
+            $isi = file_get_contents($berkas);
+
+            /* Komentar dibuang lebih dulu. Berkas-berkas ini memang
+               menjelaskan mengapa keduanya ditinggalkan, dan uji yang
+               membaca prosanya akan tersandung pada penjelasan itu
+               sendiri — sempat terjadi saat penggantiannya dikerjakan. */
+            $kode = preg_replace('#/\*.*?\*/#s', '', $isi);
+            $kode = preg_replace('#(?m)^\s*//.*$#', '', $kode);
+
+            foreach (['confirm', 'prompt'] as $dialog) {
+                if (preg_match('/(?<![\w.])(?:window\.)?' . $dialog . '\s*\(/', $kode)) {
+                    $temuan[] = basename($berkas) . " :: {$dialog}()";
+                }
+            }
+        }
+
+        $this->assertSame([], $temuan,
+            'Dialog bawaan peramban dipakai lagi. Pada webview ponsel panggilan itu '
+            . "dibungkam dan tindakannya diam-diam tidak jadi — pakai useDialog():\n  "
+            . implode("\n  ", $temuan));
+    }
+
+    /**
+     * Tiap tindakan yang menghapus harus bertanya lebih dulu.
+     *
+     * Yang dicari fungsi bernama yang memanggil `.delete()` tanpa satu
+     * pun penegasan di badannya. Penghapusan yang terjadi pada ketukan
+     * pertama tidak menimbulkan galat — barisnya hilang, halamannya
+     * menggambar ulang, dan tidak ada yang tahu sampai seseorang mencari
+     * data yang sudah tidak ada.
+     *
+     * Bahayanya bertambah oleh sasaran sentuh yang berdempetan di layar
+     * ponsel: "Hapus" pada tabel angkutan bertetangga dengan tombol lain
+     * dalam satu baris setinggi 42px.
+     *
+     * Terhitung sebelum diperbaiki: enam tindakan menghapus tanpa
+     * bertanya — muatan angkutan, anggaran biaya, serta gas, syarat, dan
+     * ambang pada izin kerja, dan pengukuran getaran peledakan. Di
+     * berkas yang sama, tindakan sejenis lainnya sudah bertanya; yang
+     * enam ini terlewat satu per satu, bukan karena diputuskan begitu.
+     */
+    public function test_penghapusan_selalu_bertanya(): void
+    {
+        $tanpa = [];
+
+        foreach ($this->berkasVue() as $berkas) {
+            $isi = file_get_contents($berkas);
+
+            /* Komentar dibuang: sebagian menjelaskan penghapusan dan akan
+               salah terbaca sebagai kodenya. */
+            $kode = preg_replace('#/\*.*?\*/#s', '', $isi);
+            $kode = preg_replace('#(?m)^\s*//.*$#', '', $kode);
+
+            /* Nama fungsi penegasnya DIBACA dari berkasnya sendiri,
+               bukan ditulis harfiah di sini.
+               useDialog() kerap didestrukturisasi dengan nama lain —
+               halaman materi sudah punya prop bernama `tanya`, jadi
+               penegasnya di sana bernama `konfirmasi`. Daftar nama yang
+               ditulis tangan membuat uji ini menuduh halaman yang
+               justru sudah bertanya, dan tuduhan palsu adalah cara
+               tercepat sebuah penjagaan dimatikan orang. */
+            $penegas = ['tanya', 'minta'];
+
+            if (preg_match('/useDialog\(\)/', $kode)
+                && preg_match('/const\s*\{([^}]*)\}\s*=\s*useDialog\(\)/', $kode, $d)) {
+                foreach (explode(',', $d[1]) as $bagian) {
+                    /* "tanya: konfirmasi" → konfirmasi; "tanya" → tanya. */
+                    $nama = trim(explode(':', $bagian)[1] ?? $bagian);
+                    if ($nama !== '') $penegas[] = $nama;
+                }
+            }
+
+            preg_match_all('/(?m)^\s*(?:async\s+)?function\s+(\w+)\s*\([^)]*\)\s*\{/', $kode, $m, PREG_OFFSET_CAPTURE);
+
+            foreach ($m[0] as $i => [$cocok, $mulai]) {
+                $badan = $this->badanFungsi($kode, $mulai);
+
+                if (!preg_match('/\.delete\s*\(/', $badan)) continue;
+
+                $bertanya = false;
+                foreach ($penegas as $nama) {
+                    if (str_contains($badan, "await {$nama}(")) { $bertanya = true; break; }
+                }
+                if ($bertanya) continue;
+
+                $nama = $m[1][$i][0];
+
+                /* Penghapusan akun punya penegasannya sendiri: sebuah
+                   modal yang menuntut kata sandi diketik. Itu penjagaan
+                   yang lebih kuat, bukan yang kurang. */
+                if ($nama === 'hapusAkun') continue;
+
+                $tanpa[] = basename($berkas) . " :: {$nama}()";
+            }
+        }
+
+        $this->assertSame([], $tanpa,
+            "Tindakan menghapus tanpa penegasan:\n  " . implode("\n  ", $tanpa));
+    }
+
+    /** Badan sebuah fungsi, dihitung dari kurung kurawalnya. */
+    private function badanFungsi(string $kode, int $mulai): string
+    {
+        $i = strpos($kode, '{', $mulai);
+        if ($i === false) return '';
+
+        $dalam = 0;
+        $j = $i;
+        $n = strlen($kode);
+
+        while ($j < $n) {
+            if ($kode[$j] === '{') $dalam++;
+            elseif ($kode[$j] === '}') {
+                $dalam--;
+                if ($dalam === 0) break;
+            }
+            $j++;
+        }
+
+        return substr($kode, $mulai, $j - $mulai);
+    }
+
+    /** @return list<string> */
+    private function berkasVue(): array
+    {
+        $out = [];
+
+        $it = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(resource_path('js'))
+        );
+
+        foreach ($it as $f) {
+            if (!$f->isFile() || !str_ends_with($f->getFilename(), '.vue')) continue;
+            if (str_contains($f->getPathname(), '/Print/')) continue;   // dibaca di kertas
+            $out[] = $f->getPathname();
+        }
+
+        sort($out);
+
+        return $out;
+    }
+}

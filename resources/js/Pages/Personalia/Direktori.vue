@@ -71,7 +71,7 @@ onBeforeUnmount(() => { if (jeda) clearTimeout(jeda); });
 <template>
   <Head title="Direktori" />
 
-  <div class="max-w-[1200px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <div class="bg-white rounded-2xl shadow-card border border-stone-100 p-3 flex items-center gap-2.5">
       <input v-model="cari" placeholder="Cari nama, jabatan, atau departemen…"
@@ -114,12 +114,12 @@ onBeforeUnmount(() => { if (jeda) clearTimeout(jeda); });
             </div>
 
             <button v-if="o.id !== diriId" type="button" @click="pesan(o)"
-                    class="mt-2.5 text-[11.5px] font-semibold text-[color:var(--eq-aksen,#F57C00)] hover:underline">
+                    class="mt-1 text-[11.5px] font-semibold text-[color:var(--eq-aksen,#F57C00)] hover:underline py-1.5 -mb-1.5">
               Kirim Pesan
             </button>
 
             <div v-if="admin" class="mt-2.5">
-              <select :value="o.perusahaanId ?? ''" :disabled="menetapkan === o.id"
+              <select :value="o.perusahaanId ?? ''" :disabled="menetapkan === o.id" aria-label="Perusahaan pengguna"
                       @change="tetapkan(o, ($event.target as HTMLSelectElement).value)"
                       class="w-full rounded-lg border border-stone-200 px-2 py-1.5 text-[11px] text-stone-600
                              disabled:opacity-50

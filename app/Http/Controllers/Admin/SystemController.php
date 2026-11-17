@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\{ActivityLog, Certificate, Company, Course, Enrollment, Material, Module, News,
     PostTrainingEvaluation, Procedure, Quiz, QuizAttempt, Signatory, SopEvaluation,
     SopEvaluationAttempt, TpkkpAssessment, TpkkpResponse, User};
-use App\Support\{DataContoh, Diagnosa, Ikon};
+use App\Support\{Ai, DataContoh, Diagnosa, Ikon, Kesesuaian};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -16,14 +16,23 @@ class SystemController extends Controller
 {
     public function index()
     {
+        /* TIDAK SATU PUN UBIN BOLEH KOSONG.
+           Nilai yang kosong menggambar kotak berlabel tanpa isi, dan
+           kotak semacam itu terbaca sebagai halaman yang gagal dimuat —
+           bukan sebagai pengaturan yang belum diisi. Terlihat pada satu
+           pemasangan yang `.env`-nya memuat APP_NAME=production tanpa
+           APP_ENV: ubin "Lingkungan" berdiri kosong di samping tujuh
+           ubin yang terisi, dan yang tampak rusak adalah halamannya. */
+        $isi = fn ($v) => trim((string) $v) === '' ? 'belum diisi' : (string) $v;
+
         $server = [
-            'Aplikasi'     => config('app.name'),
+            'Aplikasi'     => $isi(config('app.name')),
             'Laravel'      => app()->version(),
             'PHP'          => PHP_VERSION,
-            'Basis data'   => config('database.default'),
-            'Lingkungan'   => app()->environment(),
+            'Basis data'   => $isi(config('database.default')),
+            'Lingkungan'   => $isi(app()->environment()),
             'Mode debug'   => config('app.debug') ? 'AKTIF' : 'nonaktif',
-            'Zona waktu'   => config('app.timezone'),
+            'Zona waktu'   => $isi(config('app.timezone')),
             'Waktu server' => now()->format('d M Y · H:i:s'),
         ];
         try {
@@ -59,15 +68,36 @@ class SystemController extends Controller
             ],
         ];
 
-        $roles = [
-            'Administrator' => User::where('is_admin', true)->count(),
-            'Trainer'       => User::where('lms_role', 'trainer')->count(),
-            'KTT'           => User::where('lms_role', 'ktt')->count(),
-            'Auditor'       => User::where('audit_role', 'auditor')->count(),
-            'Perusahaan'    => User::where('audit_role', 'company')->count(),
-            'Peserta'       => User::where(fn($q) => $q->whereNull('lms_role')->orWhere('lms_role','trainee'))->count(),
-            'Nonaktif'      => User::where('active', false)->count(),
-        ];
+        /* Sebaran peran: SATU peran per orang, jumlahnya = seluruh pengguna.
+
+           Sebelumnya tiap peran dihitung dengan kuerinya sendiri. Kategorinya
+           saling tumpang tindih — administrator yang juga KTT terhitung dua
+           kali, akun nonaktif terhitung lagi di perannya — sehingga donatnya
+           tidak proporsional dan angka "N pengguna" di atasnya tidak sama
+           dengan kartu Pengguna di bawahnya. "Peserta" pun hanya mencari
+           'trainee' atau null, jadi akun berperan lain yang bukan pelatih
+           maupun KTT jatuh ke luar semua kategori dan hilang dari donat.
+
+           Urutannya prioritas: yang nonaktif lebih dulu (perannya tidak
+           berlaku selama nonaktif), lalu hak terluas, lalu sisanya Peserta. */
+        $roles = array_fill_keys(['Administrator', 'Trainer', 'KTT', 'Auditor', 'Perusahaan', 'Peserta', 'Nonaktif'], 0);
+
+        User::query()
+            ->selectRaw('is_admin, lms_role, audit_role, active, count(*) as n')
+            ->groupBy('is_admin', 'lms_role', 'audit_role', 'active')
+            ->get()
+            ->each(function ($b) use (&$roles) {
+                $peran = match (true) {
+                    $b->active === false         => 'Nonaktif',
+                    (bool) $b->is_admin          => 'Administrator',
+                    $b->lms_role === 'trainer'   => 'Trainer',
+                    $b->lms_role === 'ktt'       => 'KTT',
+                    $b->audit_role === 'auditor' => 'Auditor',
+                    $b->audit_role === 'company' => 'Perusahaan',
+                    default                      => 'Peserta',
+                };
+                $roles[$peran] += (int) $b->n;
+            });
 
         $companies = Company::withCount('users')->orderBy('name')->get();
         $logs = ActivityLog::latest()->take(30)->get();
@@ -117,6 +147,7 @@ class SystemController extends Controller
                 'isi'       => $c->demo ? DataContoh::rincianIsi($c) : null,
                 'urlTandai' => route('admin.system.demo.tandai', $c),
                 'urlMuat'   => route('admin.system.demo.muat', $c),
+                'urlHapus'  => route('admin.system.demo.hapus', $c),
             ])->all(),
 
             'log' => $logs->map(fn ($l) => [
@@ -138,6 +169,18 @@ class SystemController extends Controller
                 ['url' => route('signatories.index'), 'label' => 'Penanda Tangan',
                  'sub' => 'sertifikat', 'warna' => '#F57C00',
                  'ikon' => 'M12 3l2 4 4 .6-3 3 .8 4-3.8-2-3.8 2 .8-4-3-3 4-.6zM6 21s2-4 6-4 6 4 6 4'],
+                ['url' => route('admin.ai'), 'label' => 'Integrasi AI',
+                 'sub' => 'kunci API sendiri', 'warna' => '#7C3AED',
+                 'ikon' => 'M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1'],
+                ['url' => route('admin.pengingat'), 'label' => 'Pengingat Tindak Lanjut',
+                 'sub' => 'temuan audit SMKP · email', 'warna' => '#E5484D',
+                 'ikon' => 'M12 20.5a7.5 7.5 0 100-15 7.5 7.5 0 000 15zM12 9.5V13l2.3 1.6M9.5 2.8h5'],
+                ['url' => route('admin.pemilik'), 'label' => 'Penetapan Pemilik',
+                 'sub' => 'prosedur & berita lama', 'warna' => '#0891B2',
+                 'ikon' => 'M4 7h16M4 12h10M4 17h7M17 14l2 2 4-4'],
+                ['url' => route('admin.keamanan'), 'label' => 'Keamanan & Jaringan',
+                 'sub' => 'jejak akses · perangkat', 'warna' => '#B91C1C',
+                 'ikon' => 'M12 3l7 3v5c0 4.4-2.9 8.3-7 9.5-4.1-1.2-7-5.1-7-9.5V6l7-3zM9.5 12l1.8 1.8 3.4-3.4'],
                 ['url' => route('kuesioner.admin'), 'label' => 'Kuesioner PTPKKP',
                  'sub' => 'tautan & hasil', 'warna' => '#22C55E',
                  'ikon' => 'M7 3h7l4 4v14H7a1 1 0 01-1-1V4a1 1 0 011-1zM14 3v4h4M9.5 12h5M9.5 15.5h5'],
@@ -248,6 +291,12 @@ class SystemController extends Controller
         // supaya keduanya tidak pernah menyebut angka yang berbeda.
         Diagnosa::simpanRingkas($ringkas);
 
+        /* Kesesuaian dihitung di halaman yang sama, bukan halaman
+           tersendiri. Keduanya menjawab pertanyaan yang orang datangi
+           berbarengan — "sistemnya sehat?" dan "angkanya benar?" — dan
+           memisahkannya berarti separuh jawabannya tidak pernah dibuka. */
+        $sesuai = Kesesuaian::jalankan();
+
         return Inertia::render('Admin/Diagnosa', [
             'judul'    => 'Diagnosa Sistem',
             'subjudul' => 'Hal yang bila salah tidak menimbulkan galat',
@@ -256,6 +305,9 @@ class SystemController extends Controller
             'ringkas' => $ringkas,
             'dijalankan' => now()->format('d M Y · H:i:s'),
 
+            'sesuai'        => $sesuai,
+            'ringkasSesuai' => Kesesuaian::ringkas($sesuai),
+
             'perbaikan' => array_map(fn ($k) => [
                 'aksi'  => $k,
                 'label' => self::PERBAIKAN[$k]['label'],
@@ -263,6 +315,16 @@ class SystemController extends Controller
                 'berat' => self::PERBAIKAN[$k]['berat'],
                 'url'   => route('admin.system.perbaiki', $k),
             ], array_keys(self::PERBAIKAN)),
+
+            /* Pendamping AI hanya ditawarkan bila kuncinya memang
+               terpasang. Tombol yang selalu ada lalu selalu menjawab
+               "belum diaktifkan" mengajari orang untuk tidak
+               menekannya. */
+            'ai' => [
+                'aktif' => Ai::aktif(),
+                'url'   => route('admin.ai.diagnosa'),
+                'atur'  => route('admin.ai'),
+            ],
 
             'tautan' => [
                 'sistem'      => route('admin.system'),
@@ -364,12 +426,23 @@ class SystemController extends Controller
         if ($data['demo'] && !$company->demo) {
             $isi = DataContoh::hitungIsi($company);
 
-            if ($isi > 0 && ($data['sadar'] ?? null) !== $company->name) {
+            /* Dibandingkan setelah dipangkas dan diseragamkan hurufnya.
+               Yang diminta di sini KESENGAJAAN, bukan ketepatan mengetik:
+               spasi di ujung nama dan beda huruf besar-kecil tidak
+               terlihat di layar, sehingga penolakannya tampak seperti
+               kerusakan. Terjadi sungguhan pada perusahaan bernama
+               "DEMO" — pemiliknya mengetik persis apa yang terbaca dan
+               tetap ditolak. */
+            $diketik = mb_strtolower(trim((string) ($data['sadar'] ?? '')));
+            $harusnya = mb_strtolower(trim($company->name));
+
+            if ($isi > 0 && $diketik !== $harusnya) {
                 return back()->withErrors(['demo' =>
                     'Perusahaan "'.$company->name.'" sudah berisi '.number_format($isi, 0, ',', '.')
                     .' baris data. Menandainya sebagai perusahaan contoh membuat seluruh data itu '
-                    .'dapat dibuang oleh tombol muat ulang. Ketik nama perusahaannya persis untuk '
-                    .'menegaskan bahwa itu memang yang dimaksud.']);
+                    .'dapat dibuang oleh tombol muat ulang. Ketik nama perusahaannya untuk '
+                    .'menegaskan bahwa itu memang yang dimaksud — huruf besar-kecil dan spasi '
+                    .'di ujung tidak diperhitungkan.']);
             }
         }
 
@@ -414,6 +487,37 @@ class SystemController extends Controller
         return $hasil['catatan'] === []
             ? back()->with('ok', $pesan)
             : back()->with('ok', $pesan)->withErrors(['demo' => implode(' ', $hasil['catatan'])]);
+    }
+
+    /**
+     * Buang data contoh, tanpa mengisinya lagi.
+     *
+     * Terpisah dari "muat ulang" dan sengaja begitu: yang satu
+     * menyegarkan isinya, yang ini mengosongkannya. Data contoh
+     * bertahan sampai tombol INI ditekan — itulah yang membuatnya
+     * dapat dipakai memeriksa alur dari input sampai laporan tanpa
+     * takut hilang di tengah jalan.
+     */
+    public function hapusContoh(Company $company)
+    {
+        try {
+            $hasil = DB::transaction(fn () => DataContoh::buang($company));
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['demo' => $e->getMessage()]);
+        }
+
+        Diagnosa::lupakanRingkas();
+
+        ActivityLog::write('Buang data contoh',
+            $company->name.' · '.$hasil['dihapus'].' baris', 'sistem');
+
+        if ($hasil['dihapus'] === 0) {
+            return back()->with('ok', 'Tidak ada data contoh '.$company->name.' yang perlu dibuang.');
+        }
+
+        return back()->with('ok',
+            $hasil['dihapus'].' baris data contoh '.$company->name.' dibuang dari '
+            .count($hasil['rincian']).' tabel. Modulnya kini kosong.');
     }
 
     private function human(float $b): string

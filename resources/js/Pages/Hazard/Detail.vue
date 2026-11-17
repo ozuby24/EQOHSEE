@@ -10,12 +10,17 @@
 import { ref } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import type { HalamanDetailBahaya } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanDetailBahaya>();
 
 const form = useForm({
   status: props.r.status,
   catatan_penutupan: props.r.catatanPenutupan ?? '',
+  batas_akhir: props.r.batasAkhirIso ?? '',
   foto_tindaklanjut: [] as File[],
 });
 
@@ -29,8 +34,8 @@ function pilihFoto(e: Event) {
 
 const menghapus = ref(false);
 
-function hapus() {
-  if (!confirm(`Hapus laporan ${props.r.kode}? Tindakan ini tidak dapat dibatalkan.`)) return;
+async function hapus() {
+  if (!await tanya(`Hapus laporan ${props.r.kode}? Tindakan ini tidak dapat dibatalkan.`)) return;
 
   menghapus.value = true;
   router.delete(props.tautan.hapus, { onFinish: () => { menghapus.value = false; } });
@@ -53,7 +58,7 @@ const rinci: Array<[string, string | null]> = [
 <template>
   <Head :title="`Laporan ${r.kode}`" />
 
-  <div class="max-w-4xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <div class="bg-white rounded-2xl shadow-card border border-stone-100 p-5">
       <div class="flex flex-wrap items-start justify-between gap-3">
@@ -134,13 +139,24 @@ const rinci: Array<[string, string | null]> = [
         </a>
       </div>
 
-      <div class="grid gap-3 sm:grid-cols-[200px_1fr]">
+      <div class="grid gap-3 sm:grid-cols-[200px_200px_1fr]">
         <div>
           <label class="block text-[11.5px] font-bold uppercase tracking-wide text-stone-500 mb-1.5">Status</label>
           <select v-model="form.status"
-                  class="ring-focus w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
+                  class="ring-focus w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]" aria-label="Status">
             <option v-for="s in opsi.status" :key="s" :value="s">{{ s }}</option>
           </select>
+        </div>
+
+        <div>
+          <label class="block text-[11.5px] font-bold uppercase tracking-wide text-stone-500 mb-1.5">
+            Batas akhir
+          </label>
+          <input v-model="form.batas_akhir" type="date" aria-label="Batas akhir perbaikan"
+                 class="ring-focus w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
+          <p v-if="r.lewatTenggat" class="text-[11px] font-bold text-red-600 mt-1.5">
+            Lewat tenggat sejak {{ r.batasAkhir }}.
+          </p>
         </div>
 
         <div>
@@ -176,4 +192,6 @@ const rinci: Array<[string, string | null]> = [
       </div>
     </div>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

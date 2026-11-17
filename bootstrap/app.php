@@ -8,14 +8,39 @@ use Illuminate\Http\Request;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+
+        /* Permukaan mesin — alat pindai absensi. Terpisah dari web
+           karena ia tidak punya sesi, tidak punya CSRF, dan tidak
+           pernah menjawab Inertia. */
+        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        /* Tajuk keamanan dipasang pada SELURUH permintaan, bukan hanya
+           yang web: unduhan berkas, tanggapan galat, dan jawaban api/*
+           sama-sama dikirim ke peramban yang sama. Ditaruh di depan
+           supaya ia tetap membungkus tanggapan yang dihasilkan
+           middleware lain, termasuk tanggapan galat yang dibuat ketika
+           middleware sesudahnya melempar. */
+        $middleware->prepend(\App\Http\Middleware\TajukKeamanan::class);
+
         /* Hanya menyentuh permintaan yang benar-benar mengembalikan
            Inertia::render(); halaman Blade melewatinya tanpa berubah,
            jadi 170-an halaman lama tidak ikut terpengaruh. */
+        /* Atap lalu lintas web — lihat AppServiceProvider::batasLaju().
+           Ditaruh di DEPAN grup web supaya permintaan yang melewati
+           batas ditolak sebelum sesi dibuka dan basis data disentuh;
+           ditaruh di belakang, biayanya sudah telanjur dikeluarkan
+           justru untuk permintaan yang akan ditolak. */
+        $middleware->web(prepend: [
+            \Illuminate\Routing\Middleware\ThrottleRequests::class.':web',
+        ]);
+
         $middleware->web(append: [
+            /* Akun nonaktif dikeluarkan pada permintaan berikutnya,
+               termasuk sesi terbuka dan cookie "Ingat saya" (Aurorasys). */
+            \App\Http\Middleware\PastikanAktif::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
 
             /* Ditaruh SESUDAH HandleInertiaRequests supaya ia melihat
@@ -25,7 +50,19 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        /* Kiriman mode lapangan datang dari antrean perangkat (fetch,
+           Accept: application/json). Galatnya harus berupa JSON dengan
+           status aslinya — 422, 401, 419 — bukan pengalihan: pengalihan
+           diikuti fetch sampai halaman masuk berstatus 200, dan antrean
+           akan menganggap laporan yang ditolak sebagai laporan terkirim. */
+        /* Hal yang sama bagi titik JSON modul audit SMKP (porting
+           Aurorasys): Asisten AI dan impor/salin Rencana Audit dipanggil
+           fetch dengan Accept: application/json dan membaca galat 422/401
+           sebagai JSON. Kunjungan Inertia tidak terkena — Accept-nya
+           text/html — jadi galat validasi formulir tetap dialihkan. */
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
+            fn (Request $request) => $request->is('api/*')
+                || ($request->is('lapangan', 'lapangan/*') && $request->expectsJson())
+                || ($request->is('asisten/*', 'smkp/*') && $request->expectsJson()),
         );
     })->create();

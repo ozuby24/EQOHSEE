@@ -283,4 +283,98 @@ class TpkkpPenilaianTest extends TestCase
             $this->get($url)->assertOk()->assertSee('<!DOCTYPE html>', false);
         }
     }
+
+    /* ══════════════ tingkat rubrik vs kategori rasio ══════════════ */
+
+    /**
+     * Tingkat yang tampil harus sama dengan tingkat yang diisi.
+     *
+     * Dua skala hidup berdampingan di modul ini dan bernama sama:
+     *
+     *   kategori — dari RASIO capaian (nilai/maks), ambang workbook resmi
+     *   tingkat  — dari SKOR RUBRIK 1–5 yang benar-benar diisi penilai
+     *
+     * Keduanya sah, tetapi tidak selaras. Mengisi 3 pada seluruh metode
+     * memberi rasio 0,6 — yang menurut ambang rasio jatuh ke "Reaktif",
+     * padahal yang dinilai adalah "Terencana". Mengisi 2 menampilkan
+     * "Dasar".
+     *
+     * Cacat semacam ini tidak menimbulkan galat apa pun. Lencananya hanya
+     * menyebut tingkat kematangan yang salah — dan itulah satu-satunya
+     * angka yang benar-benar dibaca orang pada formulir penilaian.
+     */
+    public function test_tingkat_sama_dengan_yang_diisi(): void
+    {
+        $item = ['code' => '1.1.1', 'name' => 'Uji', 'methods' => ['TD', 'FGD', 'KS']];
+
+        foreach ([1 => 'Dasar', 2 => 'Reaktif', 3 => 'Terencana', 4 => 'Proaktif', 5 => 'Resilient'] as $isi => $label) {
+            $scores = [];
+            foreach ($item['methods'] as $m) $scores[$m] = ['1.1.1' => ['v' => $isi]];
+
+            $c = Tpkkp::itemCalc($scores, $item);
+
+            $this->assertSame($label, $c['tingkat'],
+                "Diisi {$isi}, tingkat yang tampil seharusnya '{$label}'.");
+            $this->assertSame($isi, $c['tingkatNum']);
+        }
+    }
+
+    /** Dan kategori rasio TIDAK ikut berubah — itu rumus workbook resmi. */
+    public function test_kategori_rasio_tetap_rumus_workbook(): void
+    {
+        $item = ['code' => '1.1.1', 'name' => 'Uji', 'methods' => ['TD', 'FGD', 'KS']];
+
+        $scores = [];
+        foreach ($item['methods'] as $m) $scores[$m] = ['1.1.1' => ['v' => 3]];
+
+        $c = Tpkkp::itemCalc($scores, $item);
+
+        $this->assertSame(9.0, (float) $c['nilai']);
+        $this->assertSame(15, $c['max']);
+        $this->assertEqualsWithDelta(0.6, $c['achv'], 0.0001);
+        $this->assertSame(Tpkkp::category(0.6), $c['category'],
+            'Kategori harus tetap datang dari ambang rasio, bukan dari tingkat rubrik.');
+    }
+
+    /**
+     * Pembulatan setengah ke bawah, seragam.
+     *
+     * 2,5 menjadi 2 dan bukan 3: menaikkan tingkat kematangan yang belum
+     * benar-benar dicapai adalah kesalahan yang berpihak pada auditi.
+     * Di luar rentang dijepit ke 1..5 supaya tidak ada tingkat keenam.
+     */
+    public function test_pembulatan_tingkat_setengah_ke_bawah(): void
+    {
+        foreach ([
+            [1.0, 1], [2.4, 2], [2.5, 2], [2.6, 3],
+            [3.5, 3], [4.5, 4], [4.6, 5], [5.0, 5],
+            [0.2, 1], [6.0, 5],
+        ] as [$masuk, $keluar]) {
+            $this->assertSame($keluar, Tpkkp::roundLevel($masuk),
+                "roundLevel({$masuk}) seharusnya {$keluar}.");
+        }
+
+        $this->assertNull(Tpkkp::roundLevel(null));
+        $this->assertNull(Tpkkp::levelCategory(null));
+    }
+
+    /**
+     * Rerata antar-entitas dibulatkan sebelum dipakai.
+     *
+     * Dua perusahaan bernilai 3 dan 4 memberi rerata 3,5 — tingkat yang
+     * tidak ada dalam rubrik mana pun. Dibiarkan desimal, angka itu
+     * merambat ke seluruh rekap sebagai nilai yang tidak dapat
+     * dijelaskan kepada auditi.
+     */
+    public function test_rerata_antar_entitas_dibulatkan(): void
+    {
+        $s = Tpkkp::methodScore(
+            ['TD' => ['1.1.1' => ['e' => ['PT A' => 3, 'PT B' => 4]]]],
+            'TD', '1.1.1',
+        );
+
+        $this->assertSame(3, $s['val'], 'Rerata 3,5 dibulatkan setengah ke bawah menjadi 3.');
+        $this->assertEqualsWithDelta(3.5, $s['raw'], 0.0001, 'Rerata mentahnya tetap dibawa.');
+        $this->assertSame(2, $s['nEnt']);
+    }
 }

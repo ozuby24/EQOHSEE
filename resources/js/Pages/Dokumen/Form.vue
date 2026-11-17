@@ -89,13 +89,13 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
       <div class="grid gap-3 sm:grid-cols-3">
         <div>
           <label :class="label">Jenis <span class="text-red-500">*</span></label>
-          <select v-model="form.jenis" :class="isian">
+          <select v-model="form.jenis" :class="isian" aria-label="Jenis">
             <option v-for="j in opsi.jenis" :key="j" :value="j">{{ j }}</option>
           </select>
         </div>
         <div>
           <label :class="label">Status <span class="text-red-500">*</span></label>
-          <select v-model="form.status" :class="isian">
+          <select v-model="form.status" :class="isian" aria-label="Status">
             <option v-for="s in opsi.status" :key="s" :value="s">{{ s[0].toUpperCase() + s.slice(1) }}</option>
           </select>
         </div>
@@ -112,7 +112,7 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
         </div>
         <div>
           <label :class="label">Klasifikasi</label>
-          <select v-model="form.klasifikasi" :class="isian">
+          <select v-model="form.klasifikasi" :class="isian" aria-label="Klasifikasi">
             <option value="">—</option>
             <option v-for="k in opsi.klasifikasi" :key="k" :value="k">{{ k }}</option>
           </select>
@@ -121,7 +121,7 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
 
       <div>
         <label :class="label">Perusahaan</label>
-        <select v-model="form.company_id" :class="isian">
+        <select v-model="form.company_id" :class="isian" aria-label="Perusahaan">
           <option value="">— seluruh perusahaan —</option>
           <option v-for="c in opsi.perusahaan" :key="c.nilai" :value="c.nilai">{{ c.label }}</option>
         </select>
@@ -129,7 +129,7 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
 
       <div>
         <label :class="label">Tautkan ke prosedur LMS</label>
-        <select v-model="form.procedure_id" :class="isian">
+        <select v-model="form.procedure_id" :class="isian" aria-label="Tautkan ke prosedur LMS">
           <option value="">— tidak ditautkan —</option>
           <option v-for="p in opsi.prosedur" :key="p.nilai" :value="p.nilai">{{ p.label }}</option>
         </select>
@@ -141,15 +141,15 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
       <div class="grid gap-3 sm:grid-cols-3">
         <div>
           <label :class="label">Tanggal terbit</label>
-          <input v-model="form.tanggal_terbit" type="date" :class="isian">
+          <input v-model="form.tanggal_terbit" type="date" :class="isian" aria-label="Tanggal terbit">
         </div>
         <div>
           <label :class="label">Mulai berlaku</label>
-          <input v-model="form.tanggal_berlaku" type="date" :class="isian">
+          <input v-model="form.tanggal_berlaku" type="date" :class="isian" aria-label="Mulai berlaku">
         </div>
         <div>
           <label :class="label">Jatuh tempo tinjau</label>
-          <input v-model="form.tanggal_tinjau" type="date" :class="isian">
+          <input v-model="form.tanggal_tinjau" type="date" :class="isian" aria-label="Jatuh tempo tinjau">
         </div>
       </div>
 

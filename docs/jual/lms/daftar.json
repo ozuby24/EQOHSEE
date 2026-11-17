@@ -1,0 +1,59 @@
+{
+  "kunci": "lms",
+  "label": "Learning Center",
+  "jual": "LMS — Learning Center",
+  "harga": 2500000,
+  "ket": "Pelatihan, kuis, evaluasi SOP, dan sertifikat digital ber-barcode.",
+  "semboyan": "Learn Before You Lead",
+  "halaman": [
+    {
+      "berkas": "01-dashboard.jpg",
+      "label": "Dashboard",
+      "grup": "",
+      "path": "dashboard",
+      "status": "ok"
+    },
+    {
+      "berkas": "02-courses.jpg",
+      "label": "Kursus",
+      "grup": "",
+      "path": "courses",
+      "status": "ok"
+    },
+    {
+      "berkas": "03-procedures.jpg",
+      "label": "Prosedur & SOP",
+      "grup": "",
+      "path": "procedures",
+      "status": "ok"
+    },
+    {
+      "berkas": "04-sop.jpg",
+      "label": "Evaluasi SOP",
+      "grup": "",
+      "path": "sop",
+      "status": "ok"
+    },
+    {
+      "berkas": "05-certificates.jpg",
+      "label": "Sertifikat",
+      "grup": "",
+      "path": "certificates",
+      "status": "ok"
+    },
+    {
+      "berkas": "06-news.jpg",
+      "label": "Berita",
+      "grup": "",
+      "path": "news",
+      "status": "ok"
+    },
+    {
+      "berkas": "07-evaluations.jpg",
+      "label": "Evaluasi",
+      "grup": "",
+      "path": "evaluations",
+      "status": "ok"
+    }
+  ]
+}

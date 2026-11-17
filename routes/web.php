@@ -1,5 +1,35 @@
 <?php
 
+use App\Http\Controllers\InvestigasiController;
+use App\Support\Rute;
+use App\Http\Controllers\FropController;
+use App\Http\Controllers\MinersController;
+use App\Http\Controllers\MinersDokumenController;
+use App\Http\Controllers\Miners\AlurPersetujuanController as MinersAlurPersetujuanController;
+use App\Http\Controllers\Miners\MasterDataController as MinersMasterDataController;
+use App\Http\Controllers\Miners\PerusahaanController as MinersPerusahaanController;
+use App\Http\Controllers\Miners\RiwayatKaryawanController as MinersRiwayatKaryawanController;
+use App\Http\Controllers\Miners\DataLamaController as MinersDataLamaController;
+use App\Http\Controllers\Miners\McuController as MinersMcuController;
+use App\Http\Controllers\Miners\InduksiController as MinersInduksiController;
+use App\Http\Controllers\Miners\PermitController as MinersPermitController;
+use App\Http\Controllers\Miners\SimperController as MinersSimperController;
+use App\Http\Controllers\Miners\KartuController as MinersKartuController;
+use App\Http\Controllers\Miners\SimperLanjutanController as MinersSimperLanjutanController;
+use App\Http\Controllers\Miners\PerpanjanganPermitController as MinersPerpanjanganPermitController;
+use App\Http\Controllers\Hris\AbsensiController;
+use App\Http\Controllers\Hris\CutiController;
+use App\Http\Controllers\Hris\GajiController;
+use App\Http\Controllers\Hris\KontrakController;
+use App\Http\Controllers\Hris\SayaController;
+use App\Http\Controllers\PerusahaanDilihatController;
+use App\Http\Controllers\Hris\LemburController;
+use App\Http\Controllers\Hris\HrisController;
+use App\Http\Controllers\Hris\RosterController;
+use App\Http\Controllers\DasborController;
+use App\Http\Controllers\PembelianController;
+use App\Http\Controllers\{PjpAspekController, PjpChecklistController, PjpController,
+    PjpEvaluasiController, PjpLaporanController};
 use App\Http\Controllers\{
     CertificateController, CourseController, DashboardController, EvaluationController,
     LearnController, NewsController, PersonaliaController, ProcedureController, ProfileController,
@@ -7,15 +37,37 @@ use App\Http\Controllers\{
 };
 use App\Http\Controllers\{CourseContentController, DocumentController, EvaluasiTemuanController, HazardController,
     HazardExportController, InspectionController, InspectionTemplateController,
-    BlastingController, CostController, DispatchController, PermitController, EnergyController, EngineeringController, EnvironmentController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, MineOperationsController, SignatoryController, SmkpController,
+    BlastingController, CostController, DispatchController, PermitController, EnergyController, EngineeringController, EnvironmentController, GeotechnicalController, GudangController, IsoController, KoController, KonservasiController, MaintenanceController, WaterController, KuesionerController, PengujianController, MineOperationsController, SignatoryController, SmkpController,
     TpkkpController, TpkkpLanjutController};
-use App\Http\Controllers\{BantuanController, ChatController};
-use App\Http\Controllers\{PjpBerandaController, PjpController, PjpCatatanController, PjpEvaluasiController, PjpLaporanController, PjpTahapanController, SmkpChecklistController};
-use App\Http\Controllers\Admin\{CompanyController, SystemController, UserController};
+use App\Http\Controllers\{BantuanController, BerkasController, ChatController, TemuanController};
+use App\Http\Controllers\Admin\{AiController, CompanyController, KeamananController, PemilikController, PengingatController, SystemController, UserController};
+use App\Http\Controllers\DuaFaktorController;
+use App\Http\Controllers\AuditLingkunganController;
+use App\Http\Controllers\SertifikatLingkunganController;
+use App\Http\Controllers\KepatuhanController;
+use App\Http\Controllers\PerangkatSayaController;
+use App\Http\Controllers\TurController;
+use App\Http\Controllers\{BuktiAuditController, RencanaImporController, SmkpDasborController, SmkpFormulirController, TindakLanjutController};
+use App\Http\Controllers\RtpLingkunganController;
 use Illuminate\Support\Facades\Route;
+
+/* ============ PENEMUAN (publik) ============
+
+   robots.txt dan sitemap.xml dibangkitkan, bukan berupa berkas statis di
+   public/. Berkas statis menua diam-diam: modul baru ditambahkan,
+   alamatnya tidak pernah masuk ke robots.txt, dan tidak ada yang memberi
+   tahu siapa pun. Lihat PenemuanController. */
+Route::get('robots.txt', [\App\Http\Controllers\PenemuanController::class, 'robots']);
+Route::get('sitemap.xml', [\App\Http\Controllers\PenemuanController::class, 'sitemap']);
 
 /* ============ VERIFIKASI SERTIFIKAT (publik) ============ */
 Route::get('verifikasi/{kode}', [\App\Http\Controllers\CertificateController::class,'verify'])->name('certificates.verify');
+/* Verifikasi publik kartu Mine Permit / SIMPER dan sertifikat Miners —
+   `v/{kode}` Safe Track: tanpa login, 30 per menit, kode HMAC. */
+Route::get('v/{kode}', [\App\Http\Controllers\Miners\VerifikasiController::class, 'kartu'])
+    ->middleware('throttle:30,1')->where('kode', '[A-Za-z0-9.]{3,60}')->name('verifikasi.kartu');
+Route::get('verifikasi-lingkungan/{kode}', [\App\Http\Controllers\SertifikatLingkunganController::class, 'verifikasi'])
+    ->middleware('throttle:30,1')->name('audit-lingkungan.verifikasi');
 
 /* ============ KUESIONER PUBLIK (tanpa login) ============ */
 Route::get('q/{token}',              [KuesionerController::class,'pilih'])->name('kuesioner.pilih');
@@ -23,9 +75,87 @@ Route::get('q/{token}/selesai',      [KuesionerController::class,'selesai'])->na
 Route::get('q/{token}/{cat}',        [KuesionerController::class,'form'])->name('kuesioner.form');
 Route::post('q/{token}/{cat}',       [KuesionerController::class,'submit'])->name('kuesioner.submit');
 
+/* ============ PENGUJIAN PUBLIK — kuis metode PJ (tanpa login) ============
+ *
+ * Alurnya dijalankan server langkah demi langkah, bukan satu halaman
+ * JavaScript: soal berikutnya baru ada setelah yang sekarang dijawab,
+ * dan batas waktunya disimpan di server. Lihat PengujianController.
+ */
+Route::get('uji/{token}',            [PengujianController::class,'mulai'])->name('pengujian.mulai');
+Route::post('uji/{token}/siap',      [PengujianController::class,'siap'])->name('pengujian.siap');
+Route::get('uji/{token}/aturan',     [PengujianController::class,'aturan'])->name('pengujian.aturan');
+Route::post('uji/{token}/jalan',     [PengujianController::class,'jalan'])->name('pengujian.jalan');
+Route::get('uji/{token}/soal',       [PengujianController::class,'soal'])->name('pengujian.soal');
+Route::post('uji/{token}/jawab',     [PengujianController::class,'jawab'])->name('pengujian.jawab');
+Route::get('uji/{token}/selesai',    [PengujianController::class,'selesai'])->name('pengujian.selesai');
+
+/* Halaman bayar. TERBUKA TANPA LOGIN, dan itu memang keperluannya:
+   pembelinya calon pelanggan yang belum punya akun. Yang menjaganya
+   token acak 48 karakter pada alamatnya — sama seperti kuesioner dan
+   pengujian di atas.
+
+   Tidak memakai id pesanan. Id berurutan berarti mengganti angkanya
+   menampilkan tagihan orang lain lengkap dengan nama, telepon, dan
+   nilainya, pada halaman yang memang tidak meminta login. */
+Route::get('bayar/{token}',        [PembelianController::class, 'bayar'])->name('pembelian.bayar');
+Route::post('bayar/{token}/bukti', [PembelianController::class, 'unggahBukti'])->name('pembelian.bukti');
+
+/* ============ ETALASE JUAL (publik) ============
+
+   Yang membacanya calon pembeli yang belum punya akun; di balik login
+   ia hanya terbaca oleh orang yang sudah membeli.
+
+   Pemesanannya dibatasi lajunya. Tanpa itu satu skrip dapat menerbitkan
+   ribuan tagihan semalaman — tidak satu pun berisi uang, tetapi tagihan
+   yang sungguhan tenggelam di baliknya, dan nomor registernya melompat
+   ribuan angka. Enam per menit per alamat: cukup longgar untuk orang
+   yang salah pilih lalu memesan ulang, cukup ketat untuk skrip. */
+Route::get('katalog', [PembelianController::class, 'publik'])->name('katalog.publik');
+Route::post('katalog/pesan', [PembelianController::class, 'pesanPublik'])
+    ->middleware('throttle:6,1')->name('katalog.pesan');
+
 Route::get('/', fn () => auth()->check()
-    ? redirect()->route('dashboard')
+    ? redirect(\App\Support\Lapangan::berandaUntuk())
     : app(LandingController::class)->index())->name('beranda');
+
+/* ── Kebijakan privasi ──
+ *
+ * DI LUAR grup 'auth' dengan sengaja, dan uji penjagaannya memastikan
+ * ia tetap begitu. Google Play memeriksa alamat ini dari perangkat
+ * peninjau yang tidak punya akun di sini; begitu halamannya mengalihkan
+ * ke /login, peninjauan gagal dengan pesan yang tidak menyinggung
+ * sebabnya sama sekali — dan yang membacanya akan mencari di Play
+ * Console, bukan di berkas rute.
+ *
+ * Dua bahasa pada dua alamat, bukan satu halaman dengan pengalih:
+ * Play menyimpan SATU alamat, dan alamat yang isinya berubah menurut
+ * tebakan bahasa peramban menyulitkan pembuktian isi mana yang dinilai.
+ *
+ * Digambar dengan Blade biasa, bukan Inertia: tidak ada bundel JS yang
+ * harus dimuat lebih dulu, jadi tetap terbuka di jaringan site tambang
+ * dan pada peramban peninjau yang mematikan JavaScript.
+ */
+Route::view('/kebijakan-privasi', 'hukum.kebijakan-privasi', [
+    'surel' => config('hukum.surel'),
+])->name('hukum.privasi');
+
+Route::view('/privacy-policy', 'hukum.privacy-policy', [
+    'surel' => config('hukum.surel'),
+])->name('hukum.privacy');
+
+/* ── Hapus akun ──
+ *
+ * Google Play mewajibkan aplikasi yang dapat membuat akun menyediakan
+ * alamat web tempat penghapusan akun dapat DIMINTA tanpa memasang
+ * aplikasinya. Sama seperti kebijakan privasi: di luar grup 'auth',
+ * Blade biasa, terbuka tanpa JavaScript. */
+Route::view('/hapus-akun', 'hukum.hapus-akun', [
+    'surel' => config('hukum.surel'),
+])->name('hukum.hapus-akun');
+
+Route::view('/delete-account', 'hukum.delete-account', [
+    'surel' => config('hukum.surel'),
+])->name('hukum.delete-account');
 
 /* 'verified' dipasang di sini, bukan per rute: halaman yang lupa
    memakainya tidak menimbulkan galat apa pun — ia hanya diam-diam
@@ -34,7 +164,82 @@ Route::get('/', fn () => auth()->check()
    supaya tidak menghalangi jalan menuju dirinya sendiri. */
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    /* /dashboard adalah RINGKASAN SITUS, bukan dasbor pembelajaran.
+     *
+       Sebelumnya terbalik: seluruh pengalihan sesudah masuk menuju
+       route('dashboard'), dan nama itu dipegang dasbor LMS. Akibatnya
+       setiap orang — kepala teknik tambang sekalipun — mendarat di
+       halaman kursusnya sendiri, dan harus mencari sendiri jalan ke
+       ringkasan situs yang seharusnya ia lihat lebih dulu.
+
+       Ditukar di sini, bukan dengan mengubah kedelapan pemanggil
+       route('dashboard') satu per satu: nama rutenya yang salah tuju,
+       bukan pemanggilnya. Menukarnya di satu tempat membuat kedelapannya
+       benar sekaligus, dan tidak ada yang tertinggal. */
+    Route::get('/dashboard', [DasborController::class, 'index'])->name('dashboard');
+
+    /* Dasbor pembelajaran, sekarang beralamat sesuai modulnya.
+       Ia menjawab pertanyaan seorang PESERTA tentang kursusnya sendiri —
+       pertanyaan yang sah, tetapi bukan pertanyaan pertama yang dibawa
+       orang saat membuka aplikasi ini. */
+    Route::get('/lms', [DashboardController::class, 'index'])->name('lms.dasbor');
+
+    /* Pengenalan situs bagi akun baru.
+     *
+     * Isinya diambil terpisah, bukan dititipkan pada prop bersama:
+     * sembilan setengah kilobita yang ikut pada tiap pembukaan halaman
+     * adalah harga yang dibayar terus-menerus untuk sesuatu yang dibaca
+     * sekali. Lihat TurController.
+     *
+     * Berada di dalam grup 'verified' seperti halaman lain — pengenalan
+     * modul bagi akun yang emailnya belum terbukti dimiliki pendaftarnya
+     * memperkenalkan situs kepada orang yang belum tentu berhak ada di
+     * dalamnya. */
+    Route::get('/tur', [TurController::class, 'isi'])->name('tur.isi');
+    Route::post('/tur/selesai', [TurController::class, 'selesai'])->name('tur.selesai');
+
+    /* /dasbor dipertahankan sebagai PENGALIHAN, bukan dihapus.
+       Alamat ini sudah beredar — ditandai orang di peramban, ditempel di
+       grup WhatsApp, dan tertulis pada tangkapan layar yang sudah
+       dikirim. Menghapusnya mengubah tautan yang pernah dibagikan
+       menjadi halaman galat, dan yang membukanya menyimpulkan
+       aplikasinya rusak, bukan alamatnya yang pindah. */
+    Route::redirect('/dasbor', '/dashboard')->name('dasbor');
+
+    /* Register temuan lintas modul. Berdiri di luar modul mana pun karena
+       ia justru menyatukan kelimanya — menaruhnya di dalam salah satu modul
+       akan menyiratkan bahwa isinya hanya milik modul itu. */
+    Route::get('/temuan', [TemuanController::class, 'index'])->name('temuan.index');
+
+    /* Menetapkan penanggung jawab dan tenggat dari register. Sumbernya
+       dibatasi ke lima yang dikenal — alamat yang menerima nama kelas
+       sembarang dari luar adalah cara paling mudah membuat pengguna
+       menyentuh model yang tidak dimaksudkan. */
+    Route::post('/temuan/{sumber}/{id}/tugaskan', [TemuanController::class, 'tugaskan'])
+        ->whereIn('sumber', ['tindak-lanjut', 'smkp', 'ko', 'hazard', 'inspeksi'])
+        ->whereNumber('id')
+        ->name('temuan.tugaskan');
+
+    /* ---- Berkas tertutup ----
+
+       Satu pintu bagi dokumen, tanda tangan, foto bahaya, foto inspeksi,
+       dan MSDS. Sebelumnya kelimanya tergeletak di disk publik, dan
+       `storage:link` menjadikannya terbaca dari eqohsee.id/storage/…
+       tanpa login — termasuk gambar tanda tangan yang dicetak pada tiap
+       sertifikat sebagai bukti persetujuan.
+
+       Berada di dalam grup ini, jadi 'auth' dan 'verified' berlaku
+       tanpa perlu disebut. Batas perusahaannya ditegakkan oleh scope
+       modelnya sendiri; lihat BerkasController. */
+    Route::get('berkas/{jenis}/{baris}/{i?}', [BerkasController::class, 'sajikan'])
+        ->whereIn('jenis', array_keys(\App\Support\Berkas::tersaji()))
+        ->whereNumber('baris')->whereNumber('i')
+        ->name('berkas.sajikan');
+
+    Route::get('berkas/{jenis}/{baris}/unduh/{i?}', [BerkasController::class, 'unduh'])
+        ->whereIn('jenis', array_keys(\App\Support\Berkas::tersaji()))
+        ->whereNumber('baris')->whereNumber('i')
+        ->name('berkas.unduh');
 
     /* ---- Kursus ---- */
     /* Rute admin didaftarkan LEBIH DULU: 'courses/create' harus dicoba
@@ -48,6 +253,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     /* ---- Belajar ---- */
     Route::post('courses/{course}/enroll',  [LearnController::class, 'enroll'])->name('courses.enroll');
     Route::get('learn/{course}',            [LearnController::class, 'show'])->name('learn.show');
+
+    /* Satu materi punya alamatnya sendiri, di bawah kursusnya.
+       Kursusnya ikut di alamat — bukan demi kerapian melainkan supaya
+       ada yang dapat diperiksa: materi milik kursus lain yang nomornya
+       kebetulan ditebak harus 404, dan pemeriksaan itu butuh kedua
+       nomornya. */
+    Route::get('learn/{course}/materi/{material}', [LearnController::class, 'materi'])->name('learn.materi');
+
+    Route::post('materials/{material}/complete', [LearnController::class, 'selesaiMateri'])->name('materials.complete');
+    Route::post('materials/{material}/tanya',    [LearnController::class, 'tanya'])->name('materials.tanya');
+    Route::delete('diskusi/{discussion}',        [LearnController::class, 'hapusTanya'])->name('materials.tanya.hapus');
+
     Route::post('modules/{module}/complete',[LearnController::class, 'complete'])->name('modules.complete');
     Route::post('notes/{module}',           [LearnController::class, 'saveNote'])->name('notes.save');
 
@@ -71,6 +288,35 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('sop/{evaluation}/grade', [SopController::class, 'grade'])->name('sop.grade');
     Route::get('sop/{evaluation}/hasil/{attempt}', [SopController::class, 'hasil'])->name('sop.result');
 
+    /* ---- Observasi operator loader (FROP) ----
+       Program pembinaan operator excavator: sesi observasi cycle time,
+       performa per operator, KPI bulanan, temuan & CA, coaching log. */
+    Route::prefix('frop')->name('frop.')->group(function () {
+        Route::get('sesi',                     [FropController::class, 'index'])->name('index');
+        Route::get('sesi/buat',                [FropController::class, 'create'])->name('create');
+        Route::post('sesi',                    [FropController::class, 'store'])->name('store');
+        Route::get('sesi/{observasi}',         [FropController::class, 'show'])->whereNumber('observasi')->name('show');
+        Route::get('sesi/{observasi}/ubah',    [FropController::class, 'edit'])->whereNumber('observasi')->name('edit');
+        Route::put('sesi/{observasi}',         [FropController::class, 'update'])->whereNumber('observasi')->name('update');
+        Route::delete('sesi/{observasi}',      [FropController::class, 'destroy'])->whereNumber('observasi')
+            ->middleware('can:admin')->name('destroy');
+        Route::put('sesi/{observasi}/ca',      [FropController::class, 'ca'])->whereNumber('observasi')->name('ca');
+
+        Route::get('operator',                 [FropController::class, 'operator'])->name('operator');
+        Route::get('kpi',                      [FropController::class, 'kpi'])->name('kpi');
+        Route::get('tracker',                  [FropController::class, 'tracker'])->name('tracker');
+
+        Route::get('coaching',                 [FropController::class, 'coaching'])->name('coaching');
+        Route::post('coaching',                [FropController::class, 'simpanCoaching'])->name('coaching.store');
+        Route::put('coaching/{coaching}',      [FropController::class, 'ubahCoaching'])->whereNumber('coaching')->name('coaching.update');
+        Route::delete('coaching/{coaching}',   [FropController::class, 'hapusCoaching'])->whereNumber('coaching')
+            ->middleware('can:admin')->name('coaching.destroy');
+
+        Route::get('impor',                    [FropController::class, 'impor'])->name('impor');
+        Route::post('impor',                   [FropController::class, 'kirimImpor'])->name('impor.kirim');
+        Route::get('panduan',                  [FropController::class, 'panduan'])->name('panduan');
+    });
+
     /* ---- Sertifikat ---- */
     Route::get('certificates',               [CertificateController::class, 'index'])->name('certificates.index');
     Route::post('certificates/{course}',     [CertificateController::class, 'store'])->name('certificates.store');
@@ -84,6 +330,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
        yang menjelaskan apa pun. */
     Route::resource('news', NewsController::class)->except(['index','show'])->middleware('can:admin');
     Route::resource('news', NewsController::class)->only(['index','show']);
+
+    /* Tandai sudah dibaca. DI LUAR grup admin: yang menandainya adalah
+       pembacanya, bukan yang menerbitkannya. Pengumuman keselamatan
+       yang hanya dapat ditandai administrator tidak menjawab satu pun
+       pertanyaan yang membuatnya dicatat. */
+    Route::post('news/{news}/baca', [NewsController::class, 'baca'])->name('news.baca');
 
     /* ---- Evaluasi Pasca-Pelatihan (oleh trainer) ---- */
     Route::get('evaluations',              [EvaluationController::class, 'index'])->name('evaluations.index');
@@ -103,6 +355,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('modules/{module}',             [CourseContentController::class,'updateModule'])->name('manage.module.update');
         Route::delete('modules/{module}',          [CourseContentController::class,'destroyModule'])->name('manage.module.destroy');
         Route::post('modules/{module}/materials',  [CourseContentController::class,'storeMaterial'])->name('manage.material.store');
+
+        /* 'materials/{material}/kelola', bukan 'materials/{material}/edit'.
+           Alamat '…/edit' sudah dipakai konvensi resource di modul lain
+           dan mengundang orang mengira ada resource controller penuh di
+           sini — padahal yang ada hanya satu formulir ikhtisar. */
+        Route::get('materials/{material}/kelola',  [CourseContentController::class,'editMaterial'])->name('manage.material.edit');
+        Route::put('materials/{material}',         [CourseContentController::class,'updateMaterial'])->name('manage.material.update');
+        Route::post('materials/{material}/lampiran',[CourseContentController::class,'storeAttachment'])->name('manage.attachment.store');
+        Route::delete('lampiran/{attachment}',     [CourseContentController::class,'destroyAttachment'])->name('manage.attachment.destroy');
+
         Route::delete('materials/{material}',      [CourseContentController::class,'destroyMaterial'])->name('manage.material.destroy');
         Route::post('courses/{course}/quizzes',    [CourseContentController::class,'storeQuiz'])->name('manage.quiz.store');
         Route::delete('quizzes/{quiz}',            [CourseContentController::class,'destroyQuiz'])->name('manage.quiz.destroy');
@@ -115,6 +377,657 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('signatories/{signatory}',[SignatoryController::class,'destroy'])->name('signatories.destroy');
     });
 
+
+    /* ================= WEBSITE #1b — Authority: kelayakan kerja =================
+
+       Diletakkan tepat sesudah LMS: keduanya berbicara tentang orang yang
+       sama. LMS menerbitkan sertifikat pelatihan internal; Authority
+       menyimpan seluruh berkas kelayakan kerjanya — kompetensi, MCU, dan
+       kartu masuk tambang — dan menjawab satu pertanyaan yang ditanyakan
+       setiap pagi di gerbang: boleh atau tidak orang ini bekerja hari ini. */
+    /* ================= MINERS =================
+     *
+     * MCU → Mine Permit → SIMPER, satu rantai berurutan. Rutenya
+     * mengikuti urutan itu, bukan abjad: bilah samping adalah tempat
+     * orang belajar urutan sebuah proses tanpa membaca petunjuk.
+     */
+    Route::prefix('miners')->name('miners.')->where(Rute::id('ajuan', 'company', 'id', 'induksi', 'iup', 'mcu', 'orang', 'pekerja', 'pelanggaran', 'permit', 'perpanjangan', 'rujukan', 'simper', 'unit'))->group(function () {
+        Route::get('dasbor', [MinersController::class, 'dasbor'])->name('dasbor');
+
+        /* Seluruh rute berkata-tetap didaftarkan SEBELUM rute
+           ber-{pekerja}. `miners/mcu` cocok pula dengan pola
+           `miners/{pekerja}`, dan yang terdaftar lebih dahulu yang
+           menang — terbalik, halaman MCU akan mencari pekerja bernomor
+           "mcu" lalu memulangkan 404 yang membingungkan. */
+
+        /* MCU — mcusController, mcu_detailsController, rujukan_formsController
+           Safe Track. Rute berkata-tetap (ekspor, orang/…, rujukan/…)
+           didaftarkan sebelum yang berparameter. */
+        Route::prefix('mcu')->name('mcu.')->group(function () {
+            Route::get('/',  [MinersMcuController::class, 'index'])->name('index');
+            Route::post('/', [MinersMcuController::class, 'store'])->name('store');
+            Route::get('ekspor', [MinersMcuController::class, 'ekspor'])->name('ekspor');
+
+            Route::get('orang/{orang}/sertifikat', [MinersMcuController::class, 'sertifikat'])
+                ->name('sertifikat');
+            Route::get('rujukan/{rujukan}/surat', [MinersMcuController::class, 'suratRujukan'])
+                ->name('rujukan.surat');
+            Route::delete('rujukan/{rujukan}', [MinersMcuController::class, 'hapusRujukan'])
+                ->name('rujukan.hapus');
+
+            Route::put('{mcu}',    [MinersMcuController::class, 'update'])->name('update');
+            Route::delete('{mcu}', [MinersMcuController::class, 'destroy'])->name('destroy');
+
+            Route::post('{mcu}/orang',                  [MinersMcuController::class, 'tambahOrang'])->name('orang.tambah');
+            Route::put('{mcu}/orang/{orang}',           [MinersMcuController::class, 'ubahOrang'])->name('orang.ubah');
+            Route::delete('{mcu}/orang/{orang}',        [MinersMcuController::class, 'hapusOrang'])->name('orang.hapus');
+            Route::post('{mcu}/orang/{orang}/hasil',    [MinersMcuController::class, 'hasil'])->name('hasil');
+            Route::post('{mcu}/orang/{orang}/perbaiki', [MinersMcuController::class, 'perbaiki'])->name('perbaiki');
+            Route::post('{mcu}/orang/{orang}/rujukan',  [MinersMcuController::class, 'rujukan'])->name('rujukan');
+            Route::post('{mcu}/tindak',                 [MinersMcuController::class, 'tindak'])->name('tindak');
+
+            Route::get('{id}', [MinersMcuController::class, 'rincian'])->name('rincian');
+
+            Route::post('{id}/ajukan-ulang', [MinersDokumenController::class, 'ajukanUlang'])
+                ->defaults('jenis', 'mcu')->name('ajukan-ulang');
+
+            /* "Kirim" — langkah pengaju disetujui oleh pengajunya sendiri. */
+            Route::post('{id}/kirim', [MinersDokumenController::class, 'kirim'])
+                ->defaults('jenis', 'mcu')->name('kirim');
+        });
+
+        /* Induksi — induction_registrationsController Safe Track. */
+        Route::prefix('induksi')->name('induksi.')->group(function () {
+            Route::get('/',  [MinersInduksiController::class, 'index'])->name('index');
+            Route::post('/', [MinersInduksiController::class, 'store'])->name('store');
+            Route::get('ekspor', [MinersInduksiController::class, 'ekspor'])->name('ekspor');
+
+            Route::get('peserta/{orang}/sertifikat', [MinersInduksiController::class, 'sertifikat'])
+                ->name('sertifikat');
+
+            Route::put('{induksi}',    [MinersInduksiController::class, 'update'])->name('update');
+            Route::delete('{induksi}', [MinersInduksiController::class, 'destroy'])->name('destroy');
+
+            Route::post('{induksi}/orang',               [MinersInduksiController::class, 'tambahOrang'])->name('orang.tambah');
+            Route::delete('{induksi}/orang/{orang}',     [MinersInduksiController::class, 'hapusOrang'])->name('orang.hapus');
+            Route::post('{induksi}/orang/{orang}/nilai', [MinersInduksiController::class, 'nilai'])->name('nilai');
+            Route::post('{induksi}/jadwal',              [MinersInduksiController::class, 'jadwal'])->name('jadwal');
+            Route::post('{induksi}/tindak',              [MinersInduksiController::class, 'tindak'])->name('tindak');
+
+            Route::get('{id}', [MinersInduksiController::class, 'rincian'])->name('rincian');
+
+            Route::post('{id}/ajukan-ulang', [MinersDokumenController::class, 'ajukanUlang'])
+                ->defaults('jenis', 'induksi')->name('ajukan-ulang');
+
+            Route::post('{id}/kirim', [MinersDokumenController::class, 'kirim'])
+                ->defaults('jenis', 'induksi')->name('kirim');
+        });
+
+        /* Mine Permit — mine_permitsController dan MasaBerlakuController Safe Track. */
+        Route::prefix('permit')->name('permit.')->group(function () {
+            Route::get('/',  [MinersPermitController::class, 'index'])->name('index');
+            Route::post('/', [MinersPermitController::class, 'store'])->name('store');
+            Route::get('ekspor', [MinersPermitController::class, 'ekspor'])->name('ekspor');
+            Route::post('sinkron', [MinersPermitController::class, 'sinkron'])->name('sinkron');
+
+            Route::put('{permit}',    [MinersPermitController::class, 'update'])->name('update');
+            Route::delete('{permit}', [MinersPermitController::class, 'destroy'])
+                ->middleware('can:admin')->name('destroy');
+
+            Route::post('{permit}/berkas',       [MinersPermitController::class, 'berkas'])->name('berkas');
+            Route::post('{permit}/foto',         [MinersPermitController::class, 'foto'])->name('foto');
+            Route::post('{permit}/masa-berlaku', [MinersPermitController::class, 'masaBerlaku'])->name('masa-berlaku');
+            Route::post('{permit}/status',       [MinersPermitController::class, 'status'])->name('status');
+            Route::post('{permit}/cabut',        [MinersPermitController::class, 'cabut'])->name('cabut');
+            Route::post('{permit}/tindak',       [MinersPermitController::class, 'tindak'])->name('tindak');
+
+            Route::get('{id}', [MinersPermitController::class, 'rincian'])->name('rincian');
+
+            Route::post('{id}/ajukan-ulang', [MinersDokumenController::class, 'ajukanUlang'])
+                ->defaults('jenis', 'permit')->name('ajukan-ulang');
+
+            Route::post('{id}/kirim', [MinersDokumenController::class, 'kirim'])
+                ->defaults('jenis', 'permit')->name('kirim');
+        });
+
+        /* Perpanjangan Mine Permit — extendcardsController Safe Track. */
+        Route::prefix('perpanjangan-permit')->name('perpanjangan-permit.')->group(function () {
+            Route::get('/',  [MinersPerpanjanganPermitController::class, 'index'])->name('index');
+            Route::post('/', [MinersPerpanjanganPermitController::class, 'store'])->name('store');
+            Route::get('{id}', [MinersPerpanjanganPermitController::class, 'rincian'])->name('rincian');
+            Route::post('{perpanjangan}/tindak', [MinersPerpanjanganPermitController::class, 'tindak'])
+                ->name('tindak');
+            Route::post('{perpanjangan}/ajukan-ulang', [MinersPerpanjanganPermitController::class, 'ajukanUlang'])
+                ->name('ajukan-ulang');
+        });
+
+        /* SIMPER — form_simpersController, form_simper_detailsController Safe Track. */
+        Route::prefix('simper')->name('simper.')->group(function () {
+            Route::get('/',  [MinersSimperController::class, 'index'])->name('index');
+            Route::post('/', [MinersSimperController::class, 'store'])->name('store');
+            Route::post('deteksi-sim', [MinersSimperController::class, 'deteksi'])->name('deteksi');
+            Route::get('ekspor', [MinersSimperController::class, 'ekspor'])->name('ekspor');
+
+            Route::put('{simper}',    [MinersSimperController::class, 'update'])->name('update');
+            Route::delete('{simper}', [MinersSimperController::class, 'destroy'])
+                ->middleware('can:admin')->name('destroy');
+
+            Route::post('{simper}/unit',          [MinersSimperController::class, 'unit'])->name('unit.tambah');
+            Route::put('{simper}/unit/{unit}',    [MinersSimperController::class, 'unitUbah'])->name('unit.ubah');
+            Route::delete('{simper}/unit/{unit}', [MinersSimperController::class, 'unitHapus'])->name('unit.hapus');
+
+            Route::post('{simper}/masa-berlaku', [MinersSimperController::class, 'masaBerlaku'])->name('masa-berlaku');
+            Route::post('{simper}/status',       [MinersSimperController::class, 'status'])->name('status');
+            Route::post('{simper}/tindak',       [MinersSimperController::class, 'tindak'])->name('tindak');
+
+            Route::get('{id}', [MinersSimperController::class, 'rincian'])->name('rincian');
+
+            Route::post('{id}/ajukan-ulang', [MinersDokumenController::class, 'ajukanUlang'])
+                ->defaults('jenis', 'simper')->name('ajukan-ulang');
+
+            /* "Kirim" — langkah pengaju disetujui oleh pengajunya sendiri. */
+            Route::post('{id}/kirim', [MinersDokumenController::class, 'kirim'])
+                ->defaults('jenis', 'simper')->name('kirim');
+        });
+
+        /* SIMPER Lanjutan — Penambahan Unit, Upgrade SIMPER, Perpanjangan
+           SIMPER (form_simper_exts, form_upgrade_simpers, extendsimpers). */
+        Route::prefix('simper-lanjutan')->name('lanjutan.')->group(function () {
+            Route::post('/', [MinersSimperLanjutanController::class, 'store'])->name('store');
+            Route::get('ekspor', [MinersSimperLanjutanController::class, 'ekspor'])->name('ekspor');
+            Route::get('{id}', [MinersSimperLanjutanController::class, 'rincian'])->name('rincian');
+            Route::post('{ajuan}/unit', [MinersSimperLanjutanController::class, 'unit'])->name('unit');
+            Route::delete('{ajuan}/unit/{unit}', [MinersSimperLanjutanController::class, 'unitHapus'])->name('unit.hapus');
+            Route::post('{ajuan}/kirim', [MinersSimperLanjutanController::class, 'kirim'])->name('kirim');
+            Route::post('{ajuan}/ajukan-ulang', [MinersSimperLanjutanController::class, 'ajukanUlang'])->name('ajukan-ulang');
+            Route::post('{ajuan}/tindak', [MinersSimperLanjutanController::class, 'tindak'])->name('tindak');
+            Route::delete('{ajuan}', [MinersSimperLanjutanController::class, 'destroy'])->name('destroy');
+        });
+
+        /* Cetak Kartu — Kartu\KartuController Safe Track. */
+        Route::get('daftar/cetak-kartu', [MinersKartuController::class, 'index'])->name('daftar.cetak-kartu');
+        Route::prefix('kartu')->name('kartu.')->group(function () {
+            Route::get('lembar', [MinersKartuController::class, 'lembar'])->name('lembar');
+            Route::post('tata-cetak', [MinersKartuController::class, 'simpanTata'])->name('tata');
+            Route::get('{permit}', [MinersKartuController::class, 'cetak'])->name('cetak');
+        });
+
+        foreach (['penambahan-unit', 'upgrade-simper', 'perpanjangan'] as $jenis) {
+            Route::get('daftar/'.$jenis, [MinersSimperLanjutanController::class, 'index'])
+                ->defaults('jenis', $jenis)->name('daftar.'.$jenis);
+        }
+
+        /* Riwayat per tahap, urut mengikuti alurnya.
+         *
+         * Lima nama rute tersendiri, bukan satu rute berparameter.
+         * Sebabnya bukan gaya: RuteInertiaTest memanggil SETIAP nama
+         * rute terdaftar tanpa parameter untuk memastikan halamannya
+         * benar-benar Inertia. Satu rute berparameter memaksa uji itu
+         * menyimpan daftar parameter contoh — dan daftar semacam itu
+         * adalah tempat pertama yang tertinggal saat rutenya berubah. */
+        foreach ([
+            'mcu'          => [MinersMcuController::class, 'index'],
+            'induksi'      => [MinersInduksiController::class, 'index'],
+            'mine-permit'  => [MinersPermitController::class, 'index'],
+            'mine-license' => [MinersSimperController::class, 'index'],
+            'authority'    => [MinersController::class, 'riwayat'],
+        ] as $tahap => $aksi) {
+            Route::get('riwayat/'.$tahap, $aksi)
+                ->defaults('tahap', $tahap)
+                ->name('riwayat.'.$tahap);
+        }
+
+        /* Daftar menyilang orang — antrean di meja saya, SIMPER
+           lanjutan, rujukan, dan kartu siap cetak. Satu nama rute per
+           jenis, dengan alasan yang sama seperti riwayat di atas. */
+        foreach ([
+            'outstanding-mcu', 'outstanding-permit', 'outstanding-simper', 'outstanding-induksi',
+            'perpanjangan-permit',
+            'rujukan',
+        ] as $jenis) {
+            Route::get('daftar/'.$jenis, [MinersController::class, 'daftar'])
+                ->defaults('jenis', $jenis)
+                ->name('daftar.'.$jenis);
+        }
+
+        /* Pemantauan masa berlaku — halaman tersendiri, sebab
+           pertanyaannya berbeda dari daftar orang: bukan "siapa saja
+           pekerja kita" melainkan "siapa yang hari ini tidak boleh
+           masuk". */
+        Route::get('kedaluwarsa', [MinersController::class, 'kedaluwarsa'])->name('kedaluwarsa');
+        Route::get('kedaluwarsa/ekspor', [MinersController::class, 'kedaluwarsaEkspor'])->name('kedaluwarsa.ekspor');
+
+        /* Riwayat Karyawan lintas perusahaan dalam satu grup IUP (port
+           DBEST #22): cek orang lewat NIK/nama, karyawan nonaktif beserta
+           alasannya, dan rekap pelanggaran + verifikasi. Didaftarkan
+           sebelum rute {pekerja}. */
+        Route::get('riwayat-karyawan', [MinersRiwayatKaryawanController::class, 'index'])->name('riwayat-karyawan');
+        Route::post('riwayat-karyawan/{pekerja}/status', [MinersRiwayatKaryawanController::class, 'status'])->name('riwayat-karyawan.status');
+        Route::post('riwayat-karyawan/{pekerja}/pelanggaran', [MinersRiwayatKaryawanController::class, 'catat'])->name('riwayat-karyawan.catat');
+        Route::put('riwayat-karyawan/pelanggaran/{pelanggaran}', [MinersRiwayatKaryawanController::class, 'ubah'])
+            ->name('riwayat-karyawan.ubah');
+        Route::delete('riwayat-karyawan/pelanggaran/{pelanggaran}', [MinersRiwayatKaryawanController::class, 'hapus'])
+            ->name('riwayat-karyawan.hapus');
+        Route::post('riwayat-karyawan/pelanggaran/{pelanggaran}/verifikasi', [MinersRiwayatKaryawanController::class, 'verifikasi'])
+            ->name('riwayat-karyawan.verifikasi');
+
+        /* Alur persetujuan per IUP — penyetuju bernama dan penerima
+           tembusannya (Administrasi Sistem → Alur Persetujuan Safe Track). */
+        Route::get('alur-persetujuan', [MinersAlurPersetujuanController::class, 'index'])->name('alur.index');
+        Route::put('alur-persetujuan/{iup}', [MinersAlurPersetujuanController::class, 'simpan'])
+            ->name('alur.simpan');
+
+        /* Master Data. Satu nama rute per daftar, dengan alasan yang sama
+           seperti riwayat di atas: RuteInertiaTest memanggil tiap nama
+           rute tanpa parameter. */
+        foreach (MinersMasterDataController::DAFTAR as $jenis) {
+            Route::get('master/'.$jenis, [MinersMasterDataController::class, 'index'])
+                ->defaults('jenis', $jenis)->name('master.'.$jenis);
+            Route::post('master/'.$jenis, [MinersMasterDataController::class, 'store'])
+                ->defaults('jenis', $jenis)->name('master.'.$jenis.'.store');
+            Route::put('master/'.$jenis.'/{id}', [MinersMasterDataController::class, 'update'])
+                ->defaults('jenis', $jenis)->name('master.'.$jenis.'.update');
+            Route::delete('master/'.$jenis.'/{id}', [MinersMasterDataController::class, 'destroy'])
+                ->defaults('jenis', $jenis)->name('master.'.$jenis.'.destroy');
+        }
+
+        /* Upload Data Lama — DataLamaController Safe Track. */
+        Route::get('data-lama', [MinersDataLamaController::class, 'index'])->name('data-lama');
+        Route::get('data-lama/templat/{jenis}', [MinersDataLamaController::class, 'templat'])
+            ->whereIn('jenis', ['permit', 'simper'])->name('data-lama.templat');
+        Route::post('data-lama/{jenis}', [MinersDataLamaController::class, 'unggah'])
+            ->whereIn('jenis', ['permit', 'simper'])->name('data-lama.unggah');
+        Route::get('master/perusahaan', [MinersPerusahaanController::class, 'index'])
+            ->middleware('can:admin')->name('master.perusahaan');
+        Route::put('master/perusahaan/{company}', [MinersPerusahaanController::class, 'update'])
+            ->middleware('can:admin')->name('master.perusahaan.update');
+
+        Route::get('ekspor', [MinersController::class, 'ekspor'])->name('ekspor');
+        Route::get('/',  [MinersController::class, 'index'])->name('index');
+        Route::post('/', [MinersController::class, 'store'])->name('store');
+
+        Route::get('{pekerja}',    [MinersController::class, 'show'])->name('show');
+        /* Aktif / tidak aktif — `masa-berlaku/manpower/{id}/status`
+           Safe Track. Pekerja tidak pernah dihapus keras bila masih
+           punya riwayat. */
+        Route::post('{pekerja}/status', [MinersController::class, 'status'])->name('status');
+        Route::put('{pekerja}',    [MinersController::class, 'update'])->name('update');
+        Route::delete('{pekerja}', [MinersController::class, 'destroy'])->name('destroy');
+    });
+
+
+    /* ================= HRIS =================
+     *
+     * SATU MODUL, BUKAN SATU PER FITUR. Roster menjawab kapan
+     * seseorang seharusnya bekerja; absensi menjawab apakah ia
+     * benar-benar bekerja. Keduanya membaca daftar orang yang sama,
+     * dijalankan bagian yang sama, dan saling merujuk pada tiap
+     * layarnya — dipisah menjadi dua modul bilah samping, yang
+     * mengurusnya berpindah-pindah antar dua tempat untuk satu
+     * pekerjaan.
+     *
+     * Dan yang berikutnya masih banyak: cuti, lembur, kontrak PKWT,
+     * penggajian. Tiap-tiapnya sebagai modul tersendiri akan
+     * menambahkan satu baris lagi ke bilah samping yang sudah berisi
+     * dua puluh delapan — sampai tidak ada lagi yang dapat menemukan
+     * apa pun di sana. Sebagai grup di dalam HRIS, bilahnya tidak
+     * bertambah panjang sama sekali.
+     *
+     * TETAP TERPISAH DARI MINERS, dan itu disengaja. Miners menjawab
+     * "BOLEH atau tidak orang ini bekerja" menurut Kepmen ESDM 1827 —
+     * MCU, induksi, Mine Permit, SIMPER — dan yang membacanya
+     * paramedis, OHSE, dan KTT. HRIS menjawab "KAPAN dan APAKAH ia
+     * bekerja", dan yang membacanya bagian personalia serta pengawas
+     * pos jaga. Dilebur, satu daftar berkas K3 yang diminta Inspektur
+     * Tambang harus dicari lewat layar penggajian.
+     */
+    /* Perusahaan yang sedang dilihat seorang administrator.
+       Penjagaannya di Perusahaan::pilih dan sekali lagi di lingkup
+       datanya; di sini tidak ada pemeriksaan peran supaya tidak ada
+       dua sumber kebenaran yang dapat berselisih. */
+    Route::post('perusahaan-dilihat', PerusahaanDilihatController::class)
+        ->name('perusahaan.dilihat');
+
+    Route::prefix('hris')->name('hris.')->group(function () {
+
+        /* ---- Roster & shift ---- */
+        Route::prefix('roster')->name('roster.')->group(function () {
+            /* Rute berkata-tetap didaftarkan lebih dahulu, sebab `pola`
+               dan `kebutuhan` cocok pula dengan pola berparameter di
+               bawahnya. */
+            Route::get('pola',      [RosterController::class, 'pola'])->name('pola');
+            Route::get('kebutuhan', [RosterController::class, 'kebutuhan'])->name('kebutuhan');
+
+            Route::post('pola',          [RosterController::class, 'polaSimpan'])->name('pola.simpan');
+            Route::put('pola/{pola}',    [RosterController::class, 'polaUbah'])->name('pola.ubah');
+            Route::delete('pola/{pola}', [RosterController::class, 'polaHapus'])
+                ->middleware('can:admin')->name('pola.hapus');
+
+            Route::post('regu',          [RosterController::class, 'reguSimpan'])->name('regu.simpan');
+            Route::put('regu/{regu}',    [RosterController::class, 'reguUbah'])->name('regu.ubah');
+            Route::delete('regu/{regu}', [RosterController::class, 'reguHapus'])
+                ->middleware('can:admin')->name('regu.hapus');
+
+            Route::post('regu/{regu}/anggota',             [RosterController::class, 'anggotaTambah'])->name('anggota.tambah');
+            Route::delete('regu/{regu}/anggota/{anggota}', [RosterController::class, 'anggotaHapus'])->name('anggota.hapus');
+
+            Route::post('regu/{regu}/susun',     [RosterController::class, 'susun'])->name('susun');
+            Route::post('regu/{regu}/terbitkan', [RosterController::class, 'terbitkan'])->name('terbitkan');
+
+            Route::post('kebutuhan',               [RosterController::class, 'kebutuhanSimpan'])->name('kebutuhan.simpan');
+            Route::delete('kebutuhan/{kebutuhan}', [RosterController::class, 'kebutuhanHapus'])
+                ->middleware('can:admin')->name('kebutuhan.hapus');
+
+            Route::put('{roster}', [RosterController::class, 'ubah'])->name('ubah');
+
+            Route::get('/', [RosterController::class, 'index'])->name('index');
+        });
+
+        /* ---- Absensi ---- */
+        Route::prefix('absensi')->name('absensi.')->group(function () {
+            Route::get('rekap', [AbsensiController::class, 'rekap'])->name('rekap');
+            Route::get('mesin', [AbsensiController::class, 'mesin'])->name('mesin');
+
+            Route::post('mesin',               [AbsensiController::class, 'mesinSimpan'])->name('mesin.simpan');
+            Route::put('mesin/{mesin}',        [AbsensiController::class, 'mesinUbah'])->name('mesin.ubah');
+            Route::post('mesin/{mesin}/token', [AbsensiController::class, 'mesinToken'])
+                ->middleware('can:admin')->name('mesin.token');
+            Route::delete('mesin/{mesin}',     [AbsensiController::class, 'mesinHapus'])
+                ->middleware('can:admin')->name('mesin.hapus');
+
+            Route::post('catat',        [AbsensiController::class, 'catat'])->name('catat');
+            Route::post('rekonsiliasi', [AbsensiController::class, 'rekonsiliasi'])->name('rekonsiliasi');
+
+            Route::put('{absensi}', [AbsensiController::class, 'koreksi'])->name('koreksi');
+
+            Route::get('/', [AbsensiController::class, 'index'])->name('index');
+        });
+
+        /* ---- Cuti & izin ---- */
+        Route::prefix('cuti')->name('cuti.')->group(function () {
+            Route::get('saldo', [CutiController::class, 'saldo'])->name('saldo');
+
+            Route::post('/', [CutiController::class, 'store'])->name('simpan');
+
+            /* Tindakan atas pengajuan orang lain. Penjagaan "yang
+               mengajukan tidak boleh menyetujui sendiri" ada di
+               JalurCuti, bukan di middleware — middleware tidak tahu
+               siapa yang mengajukan baris ini. */
+            Route::post('{cuti}/setujui',  [CutiController::class, 'setujui'])->name('setujui');
+            Route::post('{cuti}/tolak',    [CutiController::class, 'tolak'])->name('tolak');
+            Route::post('{cuti}/teruskan', [CutiController::class, 'teruskan'])->name('teruskan');
+            Route::post('{cuti}/batalkan', [CutiController::class, 'batalkan'])->name('batalkan');
+
+            Route::get('/', [CutiController::class, 'index'])->name('index');
+        });
+
+        /* ---- Lembur (SPL) ---- */
+        Route::prefix('lembur')->name('lembur.')->group(function () {
+            Route::get('upah',  [LemburController::class, 'upah'])->name('upah');
+            Route::post('upah', [LemburController::class, 'upahSimpan'])->name('upah.simpan');
+
+            Route::post('usulkan', [LemburController::class, 'usulkan'])->name('usulkan');
+
+            Route::post('{lembur}/setujui',  [LemburController::class, 'setujui'])->name('setujui');
+            Route::post('{lembur}/tolak',    [LemburController::class, 'tolak'])->name('tolak');
+            Route::post('{lembur}/batalkan', [LemburController::class, 'batalkan'])->name('batalkan');
+
+            Route::get('/', [LemburController::class, 'index'])->name('index');
+        });
+
+        /* ---- Penggajian ---- */
+        Route::prefix('gaji')->name('gaji.')->group(function () {
+            Route::get('acuan', [GajiController::class, 'acuan'])->name('acuan');
+
+            /* MENANDAI ACUAN SUDAH DIPERIKSA HANYA UNTUK ADMIN, dan
+               itu bukan kerapian: tanda itulah yang membuka kunci
+               periode gaji. Dibuka untuk semua, siapa pun dapat
+               mencentangnya tanpa pernah membuka naskah peraturannya. */
+            Route::post('acuan/{acuan}', [GajiController::class, 'verifikasi'])
+                ->middleware('can:admin')->name('acuan.verifikasi');
+
+            Route::post('pekerja', [GajiController::class, 'pekerja'])->name('pekerja');
+
+            Route::post('/', [GajiController::class, 'buat'])->name('buat');
+
+            Route::post('{periode}/hitung', [GajiController::class, 'hitung'])->name('hitung');
+
+            /* Penguncian hanya admin: sesudah ini angkanya berhenti
+               menjadi pratinjau dan mulai menjadi dasar pembayaran. */
+            Route::post('{periode}/kunci', [GajiController::class, 'kunci'])
+                ->middleware('can:admin')->name('kunci');
+
+            Route::get('/', [GajiController::class, 'index'])->name('index');
+        });
+
+        /* ---- Layanan mandiri pekerja ----
+
+           SELURUH PENJAGAANNYA DI SayaController LEWAT Ess, bukan di
+           middleware. Middleware peran akan menjawab "boleh membuka
+           halaman ini atau tidak"; yang perlu dijawab di sini adalah
+           "baris siapa yang boleh terbaca", dan jawabannya berbeda bagi
+           tiap orang yang membukanya. */
+        Route::prefix('saya')->name('saya.')->group(function () {
+            Route::get('kehadiran', [SayaController::class, 'kehadiran'])->name('kehadiran');
+            Route::get('cuti',      [SayaController::class, 'cuti'])->name('cuti');
+            Route::get('gaji',      [SayaController::class, 'gaji'])->name('gaji');
+            Route::get('kontrak',   [SayaController::class, 'kontrak'])->name('kontrak');
+
+            Route::post('cuti',             [SayaController::class, 'ajukanCuti'])->name('cuti.ajukan');
+            Route::post('cuti/{id}/batal',  [SayaController::class, 'batalkanCuti'])->name('cuti.batal');
+
+            Route::get('/', [SayaController::class, 'index'])->name('index');
+        });
+
+        /* ---- Kontrak kerja ---- */
+        Route::prefix('kontrak')->name('kontrak.')->group(function () {
+            Route::post('/', [KontrakController::class, 'simpan'])->name('simpan');
+
+            Route::post('{kontrak}/terbitkan',  [KontrakController::class, 'terbitkan'])->name('terbitkan');
+            Route::post('{kontrak}/perpanjang', [KontrakController::class, 'perpanjang'])->name('perpanjang');
+
+            /* MENGAKHIRI KONTRAK HANYA ADMIN. Yang terjadi di sini bukan
+               perubahan status: uang kompensasi dihitung dan dibekukan,
+               dan angkanya menjadi tagihan. */
+            Route::post('{kontrak}/akhiri', [KontrakController::class, 'akhiri'])
+                ->middleware('can:admin')->name('akhiri');
+
+            Route::post('{kontrak}/pkwtt', [KontrakController::class, 'jadikanPkwtt'])
+                ->middleware('can:admin')->name('pkwtt');
+
+            Route::get('/', [KontrakController::class, 'index'])->name('index');
+        });
+
+        Route::get('/', [HrisController::class, 'index'])->name('index');
+    });
+    /* ================= INVESTIGASI KECELAKAAN =================
+     *
+     * Modul tersendiri, TERPISAH dari Miners. Miners menjawab "boleh
+     * atau tidak orang ini bekerja hari ini"; modul ini menjawab
+     * "mengapa kejadian ini terjadi dan apa yang membuatnya tidak
+     * terulang". Keduanya dibaca orang berbeda pada waktu berbeda, dan
+     * menyelipkan yang kedua ke dalam yang pertama membuat berkas
+     * investigasi hanya dapat ditemukan lewat halaman seorang pekerja —
+     * padahal yang dicari selalu kejadiannya, bukan orangnya.
+     */
+    /* ================= Pembelian & lisensi ================= */
+    Route::prefix('pembelian')->name('pembelian.')->group(function () {
+        Route::get('/',        [PembelianController::class, 'katalog'])->name('katalog');
+        Route::post('pesan',   [PembelianController::class, 'simpan'])->name('simpan');
+
+        /* 'tagihan' didaftarkan SEBELUM 'tagihan/{pesanan}': tanpa itu
+           kata "tagihan" terbaca sebagai nomor pesanan. */
+        /* Daftar harga. Sebelum 'tagihan/{pesanan}' karena alasan yang
+           sama: kata yang bukan angka tidak boleh terbaca sebagai nomor. */
+        Route::get('produk',   [PembelianController::class, 'produk'])->name('produk');
+        Route::put('produk/{produk}', [PembelianController::class, 'simpanProduk'])
+            ->name('produk.simpan');
+
+        Route::get('tagihan',  [PembelianController::class, 'daftar'])->name('daftar');
+        Route::get('tagihan/{pesanan}', [PembelianController::class, 'tagihan'])
+            ->whereNumber('pesanan')->name('tagihan');
+
+        /* Ketiganya mengubah keadaan uang, jadi POST — bukan tautan GET
+           yang dapat terpicu prefetch peramban tanpa disentuh siapa pun.
+           Kewenangannya diperiksa di dalam controller supaya pesan
+           penolakannya dapat menyebut alasannya. */
+        Route::post('tagihan/{pesanan}/verifikasi', [PembelianController::class, 'verifikasi'])->name('verifikasi');
+        Route::post('tagihan/{pesanan}/tolak',      [PembelianController::class, 'tolak'])->name('tolak');
+        Route::post('tagihan/{pesanan}/batal',      [PembelianController::class, 'batal'])->name('batal');
+    });
+
+    Route::prefix('investigasi')->name('investigasi.')->group(function () {
+        Route::get('/', [InvestigasiController::class, 'dasbor'])->name('dasbor');
+
+        /* Register insiden dan formulir laporannya didaftarkan SEBELUM
+           rute ber-{insiden}: `insiden/baru` cocok pula dengan pola
+           `insiden/{insiden}`, dan yang terdaftar lebih dahulu yang
+           menang. Terbalik, halaman formulir akan mencari insiden
+           bernomor "baru" dan memulangkan 404 yang membingungkan. */
+        Route::get('insiden',       [InvestigasiController::class, 'insiden'])->name('insiden');
+        Route::get('insiden/baru',  [InvestigasiController::class, 'insidenBaru'])->name('insiden.baru');
+        Route::post('insiden',      [InvestigasiController::class, 'insidenSimpan'])->name('insiden.simpan');
+
+        Route::get('insiden/{insiden}', [InvestigasiController::class, 'insidenDetail'])
+            ->whereNumber('insiden')->name('insiden.detail');
+
+        Route::get('insiden/{insiden}/triase',  [InvestigasiController::class, 'triase'])
+            ->whereNumber('insiden')->name('triase');
+        Route::post('insiden/{insiden}/triase', [InvestigasiController::class, 'triaseSimpan'])
+            ->whereNumber('insiden')->name('triase.simpan');
+
+        /* Membuka investigasi memakai POST, bukan tautan GET: aksinya
+           membuat baris baru, dan tautan GET dapat terpicu prefetch
+           peramban tanpa pengguna menyentuh apa pun. */
+        Route::post('insiden/{insiden}/buka', [InvestigasiController::class, 'investigasiBuka'])
+            ->whereNumber('insiden')->name('buka');
+
+        Route::get('berkas', [InvestigasiController::class, 'investigasi'])->name('daftar');
+
+        Route::get('berkas/{investigasi}', [InvestigasiController::class, 'detail'])
+            ->whereNumber('investigasi')->name('detail');
+
+        /* ── aksi tulis pada ruang kerja ──
+         *
+         * SELURUHNYA POST, termasuk penghapusan dan pemajuan tahap.
+         * Tautan GET yang menghapus bukti atau memajukan tahap dapat
+         * terpicu prefetch peramban tanpa pengguna menyentuh apa pun,
+         * dan pada berkas yang dapat diminta Inspektur Tambang, satu
+         * penghapusan yang tidak disengaja tidak dapat dijelaskan
+         * kepada siapa pun. */
+        Route::prefix('berkas/{investigasi}')->whereNumber('investigasi')->group(function () {
+            Route::post('keterangan', [InvestigasiController::class, 'simpanKeterangan'])->name('keterangan');
+
+            Route::post('tim',                 [InvestigasiController::class, 'timTambah'])->name('tim.tambah');
+            Route::post('tim/{tim}/hapus',     [InvestigasiController::class, 'timHapus'])->name('tim.hapus');
+
+            Route::post('kronologi',                     [InvestigasiController::class, 'kronologiTambah'])->name('kronologi.tambah');
+            Route::post('kronologi/{kronologi}/hapus',   [InvestigasiController::class, 'kronologiHapus'])->name('kronologi.hapus');
+
+            Route::post('bukti',                 [InvestigasiController::class, 'buktiTambah'])->name('bukti.tambah');
+            Route::post('bukti/{bukti}/kunci',   [InvestigasiController::class, 'buktiKunci'])->name('bukti.kunci');
+            Route::post('bukti/{bukti}/hapus',   [InvestigasiController::class, 'buktiHapus'])->name('bukti.hapus');
+
+            Route::post('akar',               [InvestigasiController::class, 'akarTambah'])->name('akar.tambah');
+            Route::post('akar/{akar}/hapus',  [InvestigasiController::class, 'akarHapus'])->name('akar.hapus');
+
+            Route::post('temuan',                          [InvestigasiController::class, 'temuanTambah'])->name('temuan.tambah');
+            Route::post('temuan/{temuan}/hapus',           [InvestigasiController::class, 'temuanHapus'])->name('temuan.hapus');
+            Route::post('temuan/{temuan}/tindakan',        [InvestigasiController::class, 'tindakanTambah'])->name('tindakan.tambah');
+            Route::post('tindakan/{tindakan}/status',      [InvestigasiController::class, 'tindakanStatus'])->name('tindakan.status');
+            Route::post('tindakan/{tindakan}/hapus',       [InvestigasiController::class, 'tindakanHapus'])->name('tindakan.hapus');
+
+            Route::post('tahap/maju',   [InvestigasiController::class, 'tahapMaju'])->name('tahap.maju');
+            Route::post('tahap/mundur', [InvestigasiController::class, 'tahapMundur'])->name('tahap.mundur');
+            Route::post('tutup',        [InvestigasiController::class, 'tutup'])->name('tutup');
+            Route::post('buka-lagi',    [InvestigasiController::class, 'bukaLagi'])->name('bukaLagi');
+
+            Route::post('pembelajaran', [InvestigasiController::class, 'pembelajaranTambah'])->name('pembelajaran');
+
+            /* Analisis SCAT dan wawancara punya LAYARNYA SENDIRI.
+               Keduanya memang bagian dari berkas yang sama, tetapi
+               masing-masing menampung katalog panjang — 252 butir
+               penyebab dan 46 pertanyaan — dan menempelkannya ke ruang
+               kerja membuat halaman yang sudah sepuluh blok menjadi
+               tidak terbaca. Alamatnya tetap di bawah berkasnya supaya
+               kepemilikan dan lingkup perusahaannya diperiksa di satu
+               tempat yang sama. */
+            Route::get('analisis',  [InvestigasiController::class, 'analisis'])->name('analisis');
+            Route::post('scat',                  [InvestigasiController::class, 'scatPilih'])->name('scat.pilih');
+            Route::post('scat/{pilihan}/hapus',  [InvestigasiController::class, 'scatHapus'])->name('scat.hapus');
+            Route::post('scat/catatan',          [InvestigasiController::class, 'scatCatatan'])->name('scat.catatan');
+
+            Route::get('wawancara', [InvestigasiController::class, 'wawancara'])->name('wawancara');
+            Route::post('wawancara',                       [InvestigasiController::class, 'wawancaraTambah'])->name('wawancara.tambah');
+            Route::post('wawancara/{wawancara}/jawab',     [InvestigasiController::class, 'wawancaraJawab'])->name('wawancara.jawab');
+            Route::post('wawancara/{wawancara}/hapus',     [InvestigasiController::class, 'wawancaraHapus'])->name('wawancara.hapus');
+        });
+    });
+
+    /* ================= PJP — PERUSAHAAN JASA PERTAMBANGAN =================
+     *
+     * Seluruhnya di dalam grup auth+verified di atas, dan itu perubahan
+     * yang disengaja terhadap kit asalnya: di sana modul ini berdiri
+     * sendiri tanpa satu pun lapis autentikasi, sehingga daftar mitra,
+     * dokumen laporannya, dan nilai evaluasinya terbuka bagi siapa saja
+     * yang tahu alamatnya.
+     *
+     * Awalan alamatnya tetap `pjp`, bukan diganti mengikuti nama modul
+     * yang lebih panjang. Alamat ini sudah hidup dan sudah ditandai
+     * orang; menggantinya membuat setiap tautan lama memulangkan 404
+     * tanpa satu pun pesan yang menerangkan ke mana ia pindah.
+     */
+    Route::prefix('pjp')->name('pjp.')->group(function () {
+        Route::get('/',            [PjpAspekController::class, 'index'])->name('index');
+        Route::get('persyaratan',  [PjpAspekController::class, 'persyaratan'])->name('persyaratan');
+        Route::get('pelaporan',    [PjpAspekController::class, 'pelaporan'])->name('pelaporan');
+        Route::get('evaluasi',     [PjpAspekController::class, 'evaluasi'])->name('evaluasi');
+        Route::get('bantuan',      [PjpAspekController::class, 'bantuan'])->name('bantuan');
+
+        /* Yang beralamat tetap didaftarkan SEBELUM rute ber-{pjp}, dan
+           pola {pjp} dibatasi angka. Keduanya menjaga hal yang sama:
+           `pjp/daftar` cocok pula dengan pola `pjp/{pjp}`, dan yang
+           terdaftar lebih dahulu yang menang. Terbalik, halaman daftar
+           akan mencari mitra bernomor "daftar" lalu memulangkan 404 yang
+           membingungkan — dan batas angka membuat alamat baru yang
+           ditulis orang kemudian tidak pernah tertelan pola itu. */
+        Route::get('daftar',        [PjpController::class, 'daftar'])->name('daftar');
+        Route::get('daftar/ekspor', [PjpController::class, 'ekspor'])->name('ekspor');
+        Route::get('daftar/baru',   [PjpController::class, 'baru'])->name('baru');
+        Route::post('daftar',       [PjpController::class, 'simpan'])->name('simpan');
+
+        Route::prefix('{pjp}')->whereNumber('pjp')->group(function () {
+            Route::get('/',           [PjpController::class, 'detail'])->name('detail');
+            Route::get('ubah',        [PjpController::class, 'ubah'])->name('ubah');
+            Route::put('/',           [PjpController::class, 'perbarui'])->name('perbarui');
+            Route::get('cetak',       [PjpController::class, 'cetak'])->name('cetak');
+
+            Route::get('checklist',   [PjpChecklistController::class, 'tampil'])->name('checklist');
+            Route::post('checklist',  [PjpChecklistController::class, 'simpan'])->name('checklist.simpan');
+
+            Route::post('laporan',            [PjpLaporanController::class, 'simpan'])->name('laporan.simpan');
+            Route::patch('laporan/{laporan}', [PjpLaporanController::class, 'nilai'])->name('laporan.nilai');
+
+            Route::post('evaluasi',           [PjpEvaluasiController::class, 'simpan'])->name('evaluasi.simpan');
+
+            /* PENGHAPUSAN HANYA UNTUK ADMINISTRATOR, sama seperti modul
+               lain di berkas ini.
+
+               Bukan sekadar keseragaman. Yang dihapus di sini adalah
+               bukti pemantauan yang dapat diminta Inspektur Tambang:
+               dokumen laporan mitra, nilai evaluasinya, dan — pada rute
+               pertama — seluruh berkas mitra sekaligus, beserta jawaban
+               daftar periksa yang mungkin disusun berbulan-bulan.
+               Layarnya memang menyembunyikan tombolnya dari yang bukan
+               admin, tetapi penjagaan yang hanya ada di peramban
+               dilewati satu permintaan yang disusun tangan. */
+            Route::middleware('can:admin')->group(function () {
+                Route::delete('/',                   [PjpController::class, 'hapus'])->name('hapus');
+                Route::delete('laporan/{laporan}',   [PjpLaporanController::class, 'hapus'])->name('laporan.hapus');
+                Route::delete('evaluasi/{evaluasi}', [PjpEvaluasiController::class, 'hapus'])->name('evaluasi.hapus');
+            });
+        });
+    });
 
     /* ================= WEBSITE #2 — SafeMine TPKKP ================= */
         /* ================= KO / SPIP ================= */
@@ -129,6 +1042,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('objek/{objek}',     [KoController::class,'destroy'])->name('destroy');
 
             Route::get('kelayakan',            [KoController::class,'kelayakan'])->name('kelayakan');
+
+            /* Daftar acuan jenis unit SPIP — dipelihara pemakainya. */
+            Route::get('unit',                 [KoController::class,'unit'])->name('unit');
+            Route::post('unit',                [KoController::class,'simpanUnit'])->name('unit.simpan');
+            Route::put('unit/{unit}',          [KoController::class,'ubahUnit'])->name('unit.ubah');
+            Route::delete('unit/{unit}',       [KoController::class,'hapusUnit'])->name('unit.hapus');
+
+            /* Uji kelayakan — riwayat, bukan satu tanggal yang ditimpa. */
+            Route::get('uji',                  [KoController::class,'uji'])->name('uji');
+            Route::post('uji',                 [KoController::class,'simpanUji'])->name('uji.simpan');
+            Route::delete('uji/{uji}',         [KoController::class,'hapusUji'])->name('uji.hapus');
+            Route::post('uji/{uji}/ajukan',    [KoController::class,'ajukanUji'])->name('uji.ajukan');
+            Route::post('uji/{uji}/tinjau',    [KoController::class,'tinjauUji'])->name('uji.tinjau');
 
             Route::get('perawatan',            [KoController::class,'perawatan'])->name('perawatan');
             Route::post('perawatan/{objek}',   [KoController::class,'catatPm'])->name('perawatan.catat');
@@ -169,6 +1095,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('program/{id}/status', [TpkkpController::class,'updateProgramStatus'])->name('program.status');
         Route::delete('program/{id}',    [TpkkpController::class,'destroyProgram'])->name('program.destroy');
         Route::get('kuesioner',          [KuesionerController::class,'admin'])->name('kuesioner');
+        Route::get('pengujian',          [PengujianController::class,'admin'])->name('pengujian');
         Route::get('metode',      [TpkkpController::class,'metode'])->name('metode');
         Route::get('tentang',     [TpkkpController::class,'tentang'])->name('tentang');
 
@@ -191,8 +1118,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('kuesioner/token',           [KuesionerController::class,'resetToken'])->name('kuesioner.token.reset');
     Route::post('kuesioner/tarik',           [KuesionerController::class,'tarikKs'])->name('kuesioner.tarik');
-    Route::delete('kuesioner/{response}',    [KuesionerController::class,'destroyResponse'])->name('kuesioner.response.destroy');
+    Route::delete('kuesioner/{response}',    [KuesionerController::class,'destroyResponse'])->middleware('can:admin')->name('kuesioner.response.destroy');
     Route::get('kuesioner',                  [KuesionerController::class,'admin'])->name('kuesioner.admin');
+
+    Route::get('pengujian',                  [PengujianController::class,'admin'])->name('pengujian.admin');
+    Route::post('pengujian/terapkan',        [PengujianController::class,'terapkan'])->name('pengujian.terapkan');
+    Route::delete('pengujian/{peserta}',     [PengujianController::class,'destroyPeserta'])->middleware('can:admin')->name('pengujian.peserta.destroy');
 
     /* ================= WEBSITE #5 — ISO & Dokumen ================= */
     Route::prefix('dokumen')->name('dokumen.')->group(function () {
@@ -249,7 +1180,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('penghematan',  [EnergyController::class,'hemat'])->name('hemat');
         Route::post('penghematan', [EnergyController::class,'simpanPeluang'])->name('hemat.simpan');
         Route::put('penghematan/{peluang}',   [EnergyController::class,'ubahPeluang'])->name('hemat.ubah');
-        Route::delete('penghematan/{peluang}',[EnergyController::class,'hapusPeluang'])->name('hemat.hapus');
+        Route::delete('penghematan/{peluang}',[EnergyController::class,'hapusPeluang'])->middleware('can:admin')->name('hemat.hapus');
 
         Route::get('karbon',       [EnergyController::class,'karbon'])->name('karbon');
         Route::get('kalkulator',   [EnergyController::class,'kalkulator'])->name('kalkulator');
@@ -257,7 +1188,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('data-induk',   [EnergyController::class,'master'])->name('master');
         Route::post('data-induk',  [EnergyController::class,'simpanUnit'])->name('master.simpan');
-        Route::delete('data-induk/{unit}', [EnergyController::class,'hapusUnit'])->name('master.hapus');
+        Route::delete('data-induk/{unit}', [EnergyController::class,'hapusUnit'])->middleware('can:admin')->name('master.hapus');
     });
 
     /* ============ Pengelolaan Air & Penirisan ============
@@ -468,6 +1399,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
        sini adalah catatan gangguan dan perbaikannya. */
     Route::prefix('pemeliharaan')->name('maintenance.')->group(function () {
         Route::get('/',       [MaintenanceController::class, 'index'])->name('index');
+
+        /* P2H unit — register unit dan catatan pemeriksaan pra-operasi. */
+        Route::get('p2h',          [\App\Http\Controllers\P2hController::class, 'index'])->name('p2h');
+        Route::post('p2h',         [\App\Http\Controllers\P2hController::class, 'simpan'])->name('p2h.simpan');
+        Route::put('p2h/{unit}',   [\App\Http\Controllers\P2hController::class, 'ubah'])->name('p2h.ubah');
         Route::get('order',   [MaintenanceController::class, 'order'])->name('order');
         Route::get('armada',  [MaintenanceController::class, 'armada'])->name('armada');
 
@@ -535,6 +1471,113 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('layers/{layer}', [MineOperationsController::class, 'hapusLayer'])->middleware('can:admin')->name('layer.hapus');
     });
 
+    /* ================= Identifikasi & Evaluasi Pemenuhan =================
+
+       Satu modul untuk tiga sumber kewajiban: peraturan perundangan,
+       klausul standar ISO, dan dokumen terkendali. Dasbor lebih dulu,
+       register kemudian — yang dibuka manajemen bukan "kewajiban apa
+       saja yang terdaftar" melainkan "berapa yang sudah dipenuhi", dan
+       pertanyaan kedua tidak terjawab oleh daftar. */
+    Route::prefix('kepatuhan')->name('kepatuhan.')->group(function () {
+        Route::get('/',            [KepatuhanController::class, 'dasbor'])->name('dasbor');
+        Route::get('register',     [KepatuhanController::class, 'index'])->name('index');
+        Route::get('rekap',        [KepatuhanController::class, 'rekap'])->name('rekap');
+        Route::post('rekap',       [KepatuhanController::class, 'simpanRekap'])->name('rekap.simpan');
+        Route::get('unggah',       [KepatuhanController::class, 'unggah'])->name('unggah');
+        Route::get('pustaka',      [KepatuhanController::class, 'pustaka'])->name('pustaka');
+        Route::post('pustaka',     [KepatuhanController::class, 'terbitkanPustaka'])->name('pustaka.terbitkan');
+        Route::post('rangkum',     [KepatuhanController::class, 'rangkum'])->name('rangkum');
+        Route::post('rangkum/simpan', [KepatuhanController::class, 'simpanRangkuman'])->name('rangkum.simpan');
+        /* Analisis AI dipanggil halaman per giliran kecil. Dibatasi per
+           menit: tiap permintaan dibayar dengan kunci API pemasangnya. */
+        Route::post('rangkum/analisis',  [KepatuhanController::class, 'rangkumAi'])->middleware('throttle:60,1')->name('rangkum.analisis');
+        Route::post('rangkum/identitas', [KepatuhanController::class, 'rangkumIdentitas'])->middleware('throttle:10,1')->name('rangkum.identitas');
+        Route::post('rangkum/gambar',    [KepatuhanController::class, 'rangkumGambar'])->middleware('throttle:60,1')->name('rangkum.gambar');
+        Route::post('rangkum/baca',      [KepatuhanController::class, 'rangkumBaca'])->middleware('throttle:40,1')->name('rangkum.baca');
+        Route::get('buat',         [KepatuhanController::class, 'create'])->name('create');
+        Route::post('/',           [KepatuhanController::class, 'store'])->name('store');
+
+        /* Unduhan register, DI ATAS rute {kepatuhan}: ditaruh di
+           bawahnya, "ekspor" terbaca sebagai nomor subjek dan
+           permintaannya berakhir sebagai 404 pada baris yang tidak
+           pernah ada. */
+        Route::get('ekspor',       [KepatuhanController::class, 'ekspor'])->name('ekspor');
+
+        /* Butir berdiri di jalurnya sendiri, tidak bersarang di bawah
+           subjeknya: satu butir dinilai berkali-kali sepanjang tahun,
+           dan kiriman yang ikut membawa nomor subjeknya berarti satu
+           penilaian dapat menunjuk subjek yang bukan pemiliknya. */
+        Route::post('{kepatuhan}/butir',  [KepatuhanController::class, 'storeButir'])->name('butir.store');
+        Route::put('butir/{butir}',       [KepatuhanController::class, 'updateButir'])->name('butir.update');
+        Route::delete('butir/{butir}',    [KepatuhanController::class, 'destroyButir'])
+            ->middleware('can:admin')->name('butir.destroy');
+
+        Route::get('{kepatuhan}',         [KepatuhanController::class, 'show'])->name('show');
+        Route::get('{kepatuhan}/ubah',    [KepatuhanController::class, 'edit'])->name('edit');
+        Route::put('{kepatuhan}',         [KepatuhanController::class, 'update'])->name('update');
+        /* Penghapusan hanya untuk administrator, seperti seluruh modul
+           lain. Register pemenuhan adalah rekaman audit: barisnya
+           dirujuk berita acara dan laporan tahun sebelumnya, dan yang
+           terhapus tidak dapat dipulihkan dari layar mana pun. */
+        Route::delete('{kepatuhan}',      [KepatuhanController::class, 'destroy'])
+            ->middleware('can:admin')->name('destroy');
+        Route::post('{kepatuhan}/salin',  [KepatuhanController::class, 'salin'])->name('salin');
+        Route::get('{kepatuhan}/lembar',  [KepatuhanController::class, 'lembar'])->name('lembar');
+    });
+
+    /* ============ Audit Kinerja Pengelolaan & Pemantauan Lingkungan ============
+
+       Bagiannya dibuka SATU PER SATU. Bagian B sendirian berisi seratus
+       lima puluh kriteria, dan satu halaman berisi dua ratus baris
+       berpenilaian tiga kolom adalah halaman yang tidak pernah selesai
+       dimuat maupun selesai diisi. */
+    Route::prefix('audit-lingkungan')->name('audit-lingkungan.')->group(function () {
+        Route::get('/',                 [AuditLingkunganController::class, 'index'])->name('index');
+        Route::get('buat',              [AuditLingkunganController::class, 'create'])->name('create');
+        Route::post('/',                [AuditLingkunganController::class, 'store'])->name('store');
+
+        Route::post('berkas/{skor}',    [AuditLingkunganController::class, 'berkas'])->name('berkas');
+
+        /* Bukti per kriteria, dikunci pada KODE kriteria — bukan pada
+           baris nilai. Kriteria yang belum pernah dinilai belum punya
+           baris, dan justru bukti itulah yang biasanya diunggah lebih
+           dulu sebelum nilainya diberikan. */
+        Route::post('{audit}/bukti/{kode}',       [AuditLingkunganController::class, 'buktiUnggah'])
+            ->where('kode', '[a-z0-9.]+')->name('bukti');
+        Route::post('{audit}/bukti/{kode}/hapus', [AuditLingkunganController::class, 'buktiHapus'])
+            ->where('kode', '[a-z0-9.]+')->name('bukti.hapus');
+
+        /* Sertifikat Penghargaan — disebut SEBELUM {audit}, supaya
+           "sertifikat" tidak pernah dibaca sebagai id audit. Pencabutan
+           hanya oleh administrator: sertifikat yang dicabut mengubah
+           bunyi halaman verifikasi yang dibaca pihak luar. */
+        Route::get('sertifikat/{sertifikat}',        [SertifikatLingkunganController::class, 'lihat'])->name('sertifikat.lihat');
+        Route::post('sertifikat/{sertifikat}/cabut', [SertifikatLingkunganController::class, 'cabut'])
+            ->middleware('can:admin')->name('sertifikat.cabut');
+        Route::post('{audit}/sertifikat',            [SertifikatLingkunganController::class, 'terbitkan'])->name('sertifikat.terbitkan');
+
+        Route::get('{audit}',           [AuditLingkunganController::class, 'show'])->name('show');
+        Route::get('{audit}/ubah',      [AuditLingkunganController::class, 'edit'])->name('edit');
+        Route::put('{audit}',           [AuditLingkunganController::class, 'update'])->name('update');
+        Route::delete('{audit}',        [AuditLingkunganController::class, 'destroy'])
+            ->middleware('can:admin')->name('destroy');
+
+        Route::get('{audit}/lembar',    [AuditLingkunganController::class, 'lembar'])->name('lembar');
+        Route::post('{audit}/pengurang',[AuditLingkunganController::class, 'pengurang'])->name('pengurang');
+        Route::post('{audit}/nilai',    [AuditLingkunganController::class, 'simpanNilai'])->name('nilai');
+        Route::get('{audit}/bagian/{bagian}', [AuditLingkunganController::class, 'bagian'])->name('bagian');
+
+        /* Rencana Tindak Perbaikan (mengikuti Audit Lingkungan DBEST):
+           temuan terbit otomatis dari nilai verifikasi ≤ 2. Auditee
+           mengisi rencana & bukti; auditor memutuskan dari kartu RTP. */
+        Route::get('{audit}/rtp',                     [RtpLingkunganController::class, 'index'])->name('rtp');
+        Route::put('{audit}/rtp/{rtp}',               [RtpLingkunganController::class, 'simpan'])->whereNumber('rtp')->middleware(\App\Http\Middleware\AksesAuditPerusahaan::class.':unggah')->name('rtp.simpan');
+        Route::post('{audit}/rtp/{rtp}/bukti',        [RtpLingkunganController::class, 'bukti'])->whereNumber('rtp')->middleware(\App\Http\Middleware\AksesAuditPerusahaan::class.':unggah')->name('rtp.bukti');
+        Route::post('{audit}/rtp/{rtp}/bukti/hapus',  [RtpLingkunganController::class, 'hapusBukti'])->whereNumber('rtp')->middleware(\App\Http\Middleware\AksesAuditPerusahaan::class.':unggah')->name('rtp.bukti.hapus');
+        Route::post('{audit}/rtp/{rtp}/verifikasi',   [RtpLingkunganController::class, 'verifikasi'])->whereNumber('rtp')
+            ->middleware(['can:audit', \App\Http\Middleware\AksesAuditPerusahaan::class.':audit'])->name('rtp.verifikasi');
+    });
+
     /* ================= WEBSITE #5b — ISO: pemenuhan klausul ================= */
     Route::prefix('iso')->name('iso.')->group(function () {
         Route::get('/',                 [IsoController::class,'index'])->name('index');
@@ -542,67 +1585,153 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('{standar}/cetak',   [IsoController::class,'cetak'])->name('cetak');
     });
 
-    /* ================= WEBSITE #4 — Audit SMKP Minerba ================= */
-    Route::prefix('smkp')->name('smkp.')->group(function () {
-        Route::get('/',                [SmkpController::class,'index'])->name('index');
-        Route::get('buat',             [SmkpController::class,'create'])->name('create');
-        Route::post('/',               [SmkpController::class,'store'])->name('store');
-        Route::get('acuan',            [SmkpController::class,'acuan'])->name('acuan');
+    /* ================= WEBSITE #4 — Audit SMKP Minerba =================
+       Modul porting Aurorasys (7 Nov 2026). Urutan penting: alamat statis
+       sebelum {smkp}. Peran: can:audit (administrator & auditor) mengisi
+       audit; auditi membaca, mengunggah bukti, dan menyampaikan tindak
+       lanjut. Batas perusahaan ditegakkan global scope model
+       (Scopes\JangkauanAudit) lewat route model binding. */
+    Route::prefix('smkp')->name('smkp.')->where(Rute::id('bukti', 'grup', 'hadir', 'smkp', 'sumber', 'temuan'))->group(function () {
+        Route::get('/',      [SmkpController::class, 'index'])->name('index');
+        Route::get('acuan',  [SmkpController::class, 'acuan'])->name('acuan');
+        /* Dasbor v2 (mengikuti dasbor DBEST): KPI, benchmark & pembanding
+           antartahun, analisis temuan, ekspor Excel. Didaftarkan sebelum
+           rute {smkp} agar "dasbor" tidak dibaca sebagai nomor audit. */
+        /* Audit perusahaan grup bernama manual (port DBEST #21) — administrator. */
+        Route::middleware('can:admin')->group(function () {
+            Route::get('grup',          [\App\Http\Controllers\SmkpGrupController::class, 'index'])->name('grup');
+            Route::post('grup',         [\App\Http\Controllers\SmkpGrupController::class, 'store'])->name('grup.store');
+            Route::put('grup/{grup}',   [\App\Http\Controllers\SmkpGrupController::class, 'update'])->name('grup.update');
+        });
+        Route::get('dasbor',        [SmkpDasborController::class, 'index'])->name('dasbor');
+        Route::get('dasbor/ekspor', [SmkpDasborController::class, 'ekspor'])->name('dasbor.ekspor');
+        Route::get('lanjut/{bagian}', [SmkpController::class, 'lanjut'])->name('lanjut');
+        Route::get('tindak-lanjut', [TindakLanjutController::class, 'index'])->name('tindak-lanjut');
 
-        // Pintasan menu samping: tanpa parameter, disalurkan ke audit berjalan.
-        foreach ([
-            'tahap1' => 'tahap-1', 'rencana' => 'rencana', 'rapat' => 'rapat', 'temuan' => 'temuan',
-            'berita' => 'berita-acara', 'rencana-cetak' => 'laporan-rencana', 'laporan' => 'laporan-audit',
-        ] as $bagian => $ruas) {
-            Route::get("lanjut/{$ruas}", [SmkpController::class,'lanjut'])
-                ->defaults('bagian', $bagian)->name('ke.'.$bagian);
-        }
+        Route::middleware('can:audit')->group(function () {
+            Route::get('buat', [SmkpController::class, 'create'])->name('create');
+            Route::post('/',   [SmkpController::class, 'store'])->name('store');
+        });
 
-        Route::get('{smkp}',           [SmkpController::class,'show'])->name('show');
-        Route::get('{smkp}/ubah',      [SmkpController::class,'edit'])->name('edit');
-        Route::put('{smkp}',           [SmkpController::class,'update'])->name('update');
-        Route::delete('{smkp}',        [SmkpController::class,'destroy'])->middleware('can:admin')->name('destroy');
+        Route::get('{smkp}',                       [SmkpController::class, 'show'])->name('show');
+        Route::get('{smkp}/tahap-1',               [SmkpController::class, 'tahap1'])->name('tahap1');
+        Route::get('{smkp}/berita-acara',          [SmkpController::class, 'beritaAcara'])->name('berita-acara');
+        Route::get('{smkp}/rencana',               [SmkpController::class, 'rencana'])->name('rencana');
+        Route::get('{smkp}/rencana/cetak',         [SmkpController::class, 'rencanaCetak'])->name('rencana.cetak');
+        Route::get('{smkp}/rapat',                 [SmkpController::class, 'rapat'])->name('rapat');
+        Route::get('{smkp}/daftar-hadir/{rapat}',  [SmkpController::class, 'daftarHadir'])->name('hadir.cetak');
+        Route::get('{smkp}/temuan',                [SmkpController::class, 'temuan'])->name('temuan');
+        Route::get('{smkp}/elemen/{elemen}',       [SmkpController::class, 'nilai'])->name('nilai');
+        Route::get('{smkp}/laporan',               [SmkpController::class, 'laporan'])->name('laporan');
+        Route::get('{smkp}/laporan/isian',         [SmkpController::class, 'laporanIsian'])->name('laporan.isian');
+        Route::get('{smkp}/formulir',              [SmkpFormulirController::class, 'halaman'])->name('formulir');
+        Route::get('{smkp}/formulir/{jenis}/cetak', [SmkpFormulirController::class, 'cetak'])
+            ->whereIn('jenis', array_keys(SmkpFormulirController::CETAK))->name('formulir.cetak');
+        Route::get('{smkp}/formulir/ttd/{pihak}',  [SmkpFormulirController::class, 'lihatTtd'])
+            ->whereIn('pihak', SmkpFormulirController::PIHAK)->name('formulir.ttd');
+        // Tanda tangan formulir: auditor & auditi (untuk tanda tangannya sendiri) — izin per pihak di pengendali.
+        Route::post('{smkp}/formulir/tanggal',     [SmkpFormulirController::class, 'simpanTanggal'])
+            ->middleware('throttle:60,1,ttd-isian')->name('formulir.tanggal');
+        Route::post('{smkp}/formulir/ttd/bubuh',   [SmkpFormulirController::class, 'bubuhTtd'])
+            ->middleware('throttle:60,1,ttd-isian')->name('formulir.ttd.bubuh');
+        Route::post('{smkp}/formulir/ttd',         [SmkpFormulirController::class, 'unggahTtd'])
+            ->middleware('throttle:20,1,ttd-formulir')->name('formulir.ttd.unggah');
+        Route::delete('{smkp}/formulir/ttd/{pihak}', [SmkpFormulirController::class, 'hapusTtd'])
+            ->whereIn('pihak', SmkpFormulirController::PIHAK)->name('formulir.ttd.hapus');
 
-        Route::get('{smkp}/laporan',   [SmkpController::class,'laporan'])->name('laporan');
-        Route::post('{smkp}/tahap',    [SmkpController::class,'ubahTahap'])->name('tahap');
+        // Bukti kelengkapan per butir: auditi mengunggah sesuai Rencana Audit; auditor memverifikasi.
+        Route::get('{smkp}/bukti',                         [BuktiAuditController::class, 'halaman'])->name('bukti');
+        Route::post('{smkp}/bukti',                        [BuktiAuditController::class, 'unggah'])
+            ->middleware(['throttle:20,1,bukti-audit', \App\Http\Middleware\AksesAuditPerusahaan::class.':unggah'])->name('bukti.unggah');
+        Route::get('{smkp}/bukti/{bukti}/berkas',          [BuktiAuditController::class, 'unduh'])->name('bukti.unduh');
+        Route::delete('{smkp}/bukti/{bukti}',              [BuktiAuditController::class, 'hapus'])->middleware(\App\Http\Middleware\AksesAuditPerusahaan::class.':unggah')->name('bukti.hapus');
+        Route::post('{smkp}/bukti/{bukti}/verifikasi',     [BuktiAuditController::class, 'verifikasi'])
+            ->middleware(['can:audit', \App\Http\Middleware\AksesAuditPerusahaan::class.':audit'])->name('bukti.verifikasi');
 
-        // Tahap I — permulaan audit, peninjauan dokumen, persiapan lapangan
-        Route::get('{smkp}/tahap-1',       [SmkpController::class,'tahap1'])->name('tahap1');
-        Route::post('{smkp}/tahap-1',      [SmkpController::class,'simpanTahap1'])->name('tahap1.simpan');
-        Route::get('{smkp}/berita-acara',  [SmkpController::class,'beritaAcara'])->name('berita-acara');
+        // Tindak lanjut temuan: auditi mengirim isian & bukti; auditor memverifikasi.
+        Route::get('{smkp}/temuan/{temuan}/tindak-lanjut/{kiriman}/berkas/{berkas}', [TindakLanjutController::class, 'unduh'])
+            ->where(['kiriman' => '[0-9]{1,9}', 'berkas' => '[0-9]{1,2}'])->name('tindak-lanjut.unduh');
+        Route::post('{smkp}/temuan/{temuan}/tindak-lanjut', [TindakLanjutController::class, 'kirim'])
+            ->middleware(['can:tindak-lanjut', 'throttle:10,1,tindak-lanjut', \App\Http\Middleware\AksesAuditPerusahaan::class.':unggah'])->name('tindak-lanjut.kirim');
+        Route::delete('{smkp}/temuan/{temuan}/tindak-lanjut/{kiriman}', [TindakLanjutController::class, 'hapus'])
+            ->where('kiriman', '[0-9]{1,9}')->name('tindak-lanjut.hapus');
 
-        // Rencana Audit — sembilan komponen wajib, plus laporannya
-        Route::get('{smkp}/rencana',       [SmkpController::class,'rencana'])->name('rencana');
-        Route::post('{smkp}/rencana',      [SmkpController::class,'simpanRencana'])->name('rencana.simpan');
-        Route::get('{smkp}/rencana/cetak', [SmkpController::class,'rencanaCetak'])->name('rencana.cetak');
+        /* Aturan Akses Audit (port DBEST): perusahaan yang punya auditor
+           ditugaskan hanya diaudit auditor itu (dan administrator). */
+        Route::middleware(['can:audit', \App\Http\Middleware\AksesAuditPerusahaan::class.':audit'])->group(function () {
+            Route::get('{smkp}/ubah',                [SmkpController::class, 'edit'])->name('edit');
+            Route::put('{smkp}',                     [SmkpController::class, 'update'])->name('update');
+            Route::post('{smkp}/tahap',              [SmkpController::class, 'ubahTahap'])->name('tahap');
+            Route::post('{smkp}/tahap-1',            [SmkpController::class, 'simpanTahap1'])->name('tahap1.simpan');
+            Route::post('{smkp}/rencana',            [SmkpController::class, 'simpanRencana'])->name('rencana.simpan');
+            Route::post('{smkp}/laporan',            [SmkpController::class, 'simpanLaporan'])->name('laporan.simpan');
+            // Pakai ulang Rencana Audit: salin dari audit lain, templat & impor CSV/XLSX.
+            Route::get('{smkp}/rencana/sumber',          [RencanaImporController::class, 'sumber'])->name('rencana.sumber');
+            Route::get('{smkp}/rencana/sumber/{sumber}', [RencanaImporController::class, 'salin'])->name('rencana.salin');
+            Route::get('{smkp}/rencana/templat',         [RencanaImporController::class, 'templat'])->name('rencana.templat');
+            Route::post('{smkp}/rencana/impor',          [RencanaImporController::class, 'impor'])
+                ->middleware('throttle:20,1,rencana-impor')->name('rencana.impor');
+            // Susunan kegiatan lewat Excel (port DBEST): templat berisi isian sekarang, unggahan → pratinjau.
+            Route::get('{smkp}/rencana/susunan/templat', [RencanaImporController::class, 'templatSusunan'])->name('rencana.susunan.templat');
+            Route::post('{smkp}/rencana/susunan/impor',  [RencanaImporController::class, 'imporSusunan'])
+                ->middleware('throttle:20,1,rencana-impor')->name('rencana.susunan.impor');
+            Route::post('{smkp}/rapat',              [SmkpController::class, 'simpanHadir'])->name('rapat.simpan');
+            Route::delete('{smkp}/rapat/{hadir}',    [SmkpController::class, 'hapusHadir'])->name('rapat.hapus');
+            Route::post('{smkp}/temuan/angkat',      [SmkpController::class, 'angkatTemuan'])->name('temuan.angkat');
+            Route::post('{smkp}/temuan/nomor-ulang', [SmkpController::class, 'nomorUlangTemuan'])->name('temuan.nomorUlang');
+            Route::put('{smkp}/temuan/{temuan}',     [SmkpController::class, 'simpanTemuan'])->name('temuan.simpan');
+            Route::delete('{smkp}/temuan/{temuan}',  [SmkpController::class, 'hapusTemuan'])->name('temuan.hapus');
+            Route::post('{smkp}/elemen/{elemen}',    [SmkpController::class, 'simpanNilai'])->name('nilai.simpan');
+            Route::post('{smkp}/formulir',           [SmkpFormulirController::class, 'simpan'])->name('formulir.simpan');
+        });
 
-        // Tahap II — rapat pembukaan & penutupan
-        Route::get('{smkp}/rapat',                [SmkpController::class,'rapat'])->name('rapat');
-        Route::post('{smkp}/rapat',               [SmkpController::class,'simpanHadir'])->name('rapat.simpan');
-        Route::delete('{smkp}/rapat/{hadir}',     [SmkpController::class,'hapusHadir'])->name('rapat.hapus');
-        Route::get('{smkp}/daftar-hadir/{rapat}', [SmkpController::class,'daftarHadir'])->name('hadir.cetak');
-
-        // Temuan / tindakan perbaikan
-        Route::get('{smkp}/temuan',            [SmkpController::class,'temuan'])->name('temuan');
-        Route::post('{smkp}/temuan/angkat',    [SmkpController::class,'angkatTemuan'])->name('temuan.angkat');
-        Route::put('{smkp}/temuan/{temuan}',   [SmkpController::class,'simpanTemuan'])->name('temuan.simpan');
-        Route::delete('{smkp}/temuan/{temuan}',[SmkpController::class,'hapusTemuan'])->name('temuan.hapus');
-
-        // Formulir penilaian per elemen — ditaruh terakhir agar tidak menyerobot rute di atas
-        Route::get('{smkp}/elemen/{elemen}',  [SmkpController::class,'nilai'])->name('nilai');
-        Route::post('{smkp}/elemen/{elemen}', [SmkpController::class,'simpanNilai'])->name('nilai.simpan');
+        Route::delete('{smkp}', [SmkpController::class, 'destroy'])->middleware('can:admin')->name('destroy');
     });
 
+    // Asisten AI audit SMKP — rekomendasi, akar masalah, RTP (routes/asisten.php).
+    Route::prefix('asisten')->name('asisten.')->group(base_path('routes/asisten.php'));
+
     /* ================= WEBSITE #3 — Hazard Report & Inspeksi ================= */
+    /* ============ Mode Lapangan (pendamping seluler) ============
+       Layar ringkas untuk muka tambang. Kiriman laporan dan P2H
+       menerima JSON dari antrean luring perangkat; kiriman ulangnya
+       dikenali lewat klien_id, jadi tidak pernah menggandakan catatan. */
+    Route::prefix('lapangan')->name('lapangan.')->group(function () {
+        Route::get('/',                 [\App\Http\Controllers\LapanganController::class, 'beranda'])->name('beranda');
+        Route::get('modul',             [\App\Http\Controllers\LapanganController::class, 'modul'])->name('modul');
+        Route::get('tugas',             [\App\Http\Controllers\LapanganController::class, 'tugas'])->name('tugas');
+        Route::get('profil',            [\App\Http\Controllers\LapanganController::class, 'profil'])->name('profil');
+        Route::get('lapor',             [\App\Http\Controllers\LapanganController::class, 'lapor'])->name('lapor');
+        Route::post('lapor',            [\App\Http\Controllers\LapanganController::class, 'laporSimpan'])
+            ->middleware('throttle:30,1')->name('lapor.simpan');
+        Route::get('laporan/{hazard}',  [\App\Http\Controllers\LapanganController::class, 'laporan'])->name('laporan');
+        Route::get('izin',              [\App\Http\Controllers\LapanganController::class, 'izin'])->name('izin');
+        Route::get('sertifikat',        [\App\Http\Controllers\LapanganController::class, 'sertifikat'])->name('sertifikat');
+        Route::get('p2h',               [\App\Http\Controllers\LapanganController::class, 'p2h'])->name('p2h');
+        Route::get('p2h/{unit}',        [\App\Http\Controllers\LapanganController::class, 'p2hIsi'])->name('p2h.isi');
+        Route::post('p2h/{unit}',       [\App\Http\Controllers\LapanganController::class, 'p2hSimpan'])
+            ->middleware('throttle:30,1')->name('p2h.simpan');
+        Route::post('p2h/{unit}/lepas', [\App\Http\Controllers\LapanganController::class, 'p2hLepas'])->name('p2h.lepas');
+    });
+
     Route::prefix('hazard')->name('hazard.')->group(function () {
         Route::get('/',                  [HazardController::class,'index'])->name('index');
         Route::get('buat',               [HazardController::class,'create'])->name('create');
         Route::post('/',                 [HazardController::class,'store'])->name('store');
         Route::get('analitik',           [HazardController::class,'analytics'])->name('analytics');
+        Route::get('analitik/ekspor',    [HazardController::class,'analitikEkspor'])->name('analitik.ekspor');
         Route::get('evaluasi',           [EvaluasiTemuanController::class,'index'])->name('evaluasi');
+        Route::get('berulang',           [EvaluasiTemuanController::class,'berulang'])->name('berulang');
         Route::get('pengingat',          [HazardExportController::class,'pengingat'])->name('pengingat');
         Route::get('ekspor/csv',         [HazardExportController::class,'hazardCsv'])->name('ekspor.csv');
         Route::get('ekspor/cetak',       [HazardExportController::class,'hazardCetak'])->name('ekspor.cetak');
+
+        /* Register Tindakan Perbaikan — lembar terkendali yang diserahkan
+           ke rapat, bukan ekspor data. Jumlahnya punya rutenya sendiri
+           supaya dialog pilihan dapat menghitung tanpa memuat ulang
+           seluruh halaman monitor pada tiap pilihan yang digeser. */
+        Route::get('register',           [HazardExportController::class,'register'])->name('register');
+        Route::get('register/jumlah',    [HazardExportController::class,'registerJumlah'])->name('register.jumlah');
         Route::get('{hazard}',           [HazardController::class,'show'])->name('show');
         Route::post('{hazard}/tindak',   [HazardController::class,'follow'])->name('follow');
         Route::delete('{hazard}',        [HazardController::class,'destroy'])->middleware('can:admin')->name('destroy');
@@ -616,16 +1745,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/',                [InspectionTemplateController::class,'store'])->name('store');
             Route::get('{template}/kelola', [InspectionTemplateController::class,'edit'])->name('edit');
             Route::put('{template}',        [InspectionTemplateController::class,'update'])->name('update');
-            Route::delete('{template}',     [InspectionTemplateController::class,'destroy'])->name('destroy');
+            Route::delete('{template}',     [InspectionTemplateController::class,'destroy'])->middleware('can:admin')->name('destroy');
             Route::post('{template}/param', [InspectionTemplateController::class,'storeItem'])->name('item.store');
             Route::post('{template}/salin', [InspectionTemplateController::class,'salin'])->name('salin');
         });
-        Route::delete('param/{item}', [InspectionTemplateController::class,'destroyItem'])->name('template.item.destroy');
+        Route::delete('param/{item}', [InspectionTemplateController::class,'destroyItem'])->middleware('can:admin')->name('template.item.destroy');
 
         // KPI inspeksi
         Route::get('kpi', [InspectionController::class,'kpi'])->name('kpi');
         Route::get('ekspor/csv',   [HazardExportController::class,'inspeksiCsv'])->name('ekspor.csv');
         Route::get('ekspor/cetak', [HazardExportController::class,'inspeksiCetak'])->name('ekspor.cetak');
+
+        /* Lembar satu inspeksi — dokumen terkendali yang ditandatangani
+           dan diarsipkan, bukan register seluruh inspeksi. */
+        Route::get('{inspeksi}/lembar', [HazardExportController::class,'inspeksiLembar'])->name('lembar');
 
         // Pelaksanaan
         Route::get('/',                   [InspectionController::class,'index'])->name('index');
@@ -634,17 +1767,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('{inspeksi}',          [InspectionController::class,'show'])->name('show');
         Route::get('{inspeksi}/ubah',     [InspectionController::class,'edit'])->name('edit');
         Route::put('{inspeksi}',          [InspectionController::class,'update'])->name('update');
-        Route::delete('{inspeksi}',       [InspectionController::class,'destroy'])->name('destroy');
+        Route::delete('{inspeksi}',       [InspectionController::class,'destroy'])->middleware('can:admin')->name('destroy');
 
         // Inspektur
         Route::post('{inspeksi}/inspektur',  [InspectionController::class,'addInspector'])->name('inspector.store');
-        Route::delete('inspektur/{inspector}',[InspectionController::class,'removeInspector'])->name('inspector.destroy');
+        Route::delete('inspektur/{inspector}',[InspectionController::class,'removeInspector'])->middleware('can:admin')->name('inspector.destroy');
 
         // Item pemeriksaan
         Route::post('{inspeksi}/items',   [InspectionController::class,'saveItems'])->name('items.save');
         Route::post('{inspeksi}/item',    [InspectionController::class,'storeItem'])->name('item.store');
-        Route::delete('item/{item}',      [InspectionController::class,'destroyItem'])->name('item.destroy');
+        Route::delete('item/{item}',      [InspectionController::class,'destroyItem'])->middleware('can:admin')->name('item.destroy');
         Route::post('item/{item}/angkat', [InspectionController::class,'angkat'])->name('item.angkat');
+
+        /* Foto satu butir, terpisah dari penyimpanan seluruh baris:
+           mengunggah foto tidak boleh ikut mengirim dua puluh delapan
+           isian yang lain. */
+        Route::post('item/{item}/foto',   [InspectionController::class,'fotoItem'])->name('item.foto');
     });
 
     /* ---- Panel Admin ---- */
@@ -656,7 +1794,29 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('system/maintenance/{aksi}', [SystemController::class,'maintenance'])->name('system.maintenance');
 
         Route::get('system/diagnosa',           [SystemController::class,'diagnosa'])->name('system.diagnosa');
+
+        /* Integrasi AI. Kunci API dimasukkan lewat halaman ini, bukan
+           lewat .env di server — yang paling berkepentingan menyalakan
+           asisten justru yang paling tidak punya akses SSH. */
+        Route::get('ai',            [AiController::class,'index'])->name('ai');
+        Route::post('ai',           [AiController::class,'simpan'])->name('ai.simpan');
+        Route::post('ai/uji',       [AiController::class,'uji'])->name('ai.uji');
+        Route::delete('ai/kunci',   [AiController::class,'hapus'])->name('ai.hapus');
+        Route::post('ai/diagnosa',  [AiController::class,'tanyaDiagnosa'])->name('ai.diagnosa');
         Route::post('system/perbaiki/{aksi}',   [SystemController::class,'perbaiki'])->name('system.perbaiki');
+
+        /* Pengingat batas waktu tindak lanjut temuan audit SMKP (porting
+           Aurorasys). Server emailnya tetap MAIL_* di .env. */
+        /* Aturan Akses Audit per perusahaan (port DBEST): auditor & pengunggah data. */
+        Route::get('akses-audit',             [\App\Http\Controllers\Admin\AksesAuditController::class, 'index'])->name('akses-audit');
+        Route::post('akses-audit',            [\App\Http\Controllers\Admin\AksesAuditController::class, 'simpan'])->name('akses-audit.simpan');
+        Route::delete('akses-audit/{akses}',  [\App\Http\Controllers\Admin\AksesAuditController::class, 'hapus'])->whereNumber('akses')->name('akses-audit.hapus');
+
+        Route::get('pengingat',        [PengingatController::class,'index'])->name('pengingat');
+        Route::middleware('throttle:20,1')->group(function () {
+            Route::post('pengingat',       [PengingatController::class,'simpan'])->name('pengingat.simpan');
+            Route::post('pengingat/kirim', [PengingatController::class,'kirim'])->name('pengingat.kirim');
+        });
 
         // Data contoh. Penandaan dan pemuatan sengaja dua rute terpisah:
         // menandai perusahaan sebagai perusahaan contoh harus menjadi
@@ -666,7 +1826,44 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('system.demo.tandai');
         Route::post('system/demo/{company}/muat',   [SystemController::class,'muatContoh'])
             ->name('system.demo.muat');
+
+        /* Terpisah dari muat: yang satu menyegarkan, yang ini
+           mengosongkan. Data contoh bertahan sampai ini ditekan. */
+        Route::delete('system/demo/{company}',      [SystemController::class,'hapusContoh'])
+            ->name('system.demo.hapus');
+
+        /* Kendali keamanan. Terpisah dari Diagnosa: diagnosa menjawab
+           "apakah pemasangannya benar", halaman ini menjawab "apa yang
+           sedang terjadi padanya sekarang". */
+        Route::get('keamanan',              [KeamananController::class,'index'])->name('keamanan');
+        Route::delete('keamanan/sesi',      [KeamananController::class,'putusSesi'])->name('keamanan.sesi.putus');
+        Route::post('keamanan/sesi/bersih', [KeamananController::class,'bersihSesi'])->name('keamanan.sesi.bersih');
+        Route::post('keamanan/jejak/pangkas',[KeamananController::class,'pangkasJejak'])->name('keamanan.jejak.pangkas');
+
+        /* Penetapan pemilik bagi prosedur dan berita lama yang belum
+           bertuan — akibat yang disengaja dari migrasi tanpa backfill. */
+        Route::get('pemilik',           [PemilikController::class,'index'])->name('pemilik');
+        Route::post('pemilik/tetapkan', [PemilikController::class,'tetapkan'])->name('pemilik.tetapkan');
     });
+
+    /* ---- Perangkat saya ----
+       Sengaja di luar grup admin: memutus perangkat yang mencurigakan
+       adalah tindakan pertama pemilik akun, bukan tindakan yang harus
+       ia mintakan lebih dulu kepada orang lain. */
+    Route::get('akun/perangkat',        [PerangkatSayaController::class,'index'])->name('keamanan.perangkat');
+    Route::delete('akun/perangkat',     [PerangkatSayaController::class,'putus'])->name('keamanan.perangkat.putus');
+    Route::post('akun/perangkat/lain',  [PerangkatSayaController::class,'putusLain'])->name('keamanan.perangkat.putus-lain');
+
+    /* ---- Verifikasi dua langkah ----
+       Di luar grup admin atas alasan yang sama seperti perangkat:
+       memasang pengaman pada akun sendiri tidak boleh perlu izin
+       siapa pun. Mematikannya menuntut sandi lagi — lihat
+       DuaFaktorController. */
+    Route::get('akun/dua-faktor',            [DuaFaktorController::class,'index'])->name('keamanan.dua-faktor');
+    Route::post('akun/dua-faktor/mulai',     [DuaFaktorController::class,'mulai'])->name('keamanan.dua-faktor.mulai');
+    Route::post('akun/dua-faktor/sahkan',    [DuaFaktorController::class,'sahkan'])->name('keamanan.dua-faktor.sahkan');
+    Route::delete('akun/dua-faktor',         [DuaFaktorController::class,'matikan'])->name('keamanan.dua-faktor.matikan');
+    Route::post('akun/dua-faktor/pemulihan', [DuaFaktorController::class,'terbitkanUlang'])->name('keamanan.dua-faktor.pemulihan');
 
     /* ---- Gudang & Penyimpanan ---- */
     Route::prefix('gudang')->name('gudang.')->group(function () {
@@ -730,33 +1927,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile',    [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile',  [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-    /* ---- Perusahaan Jasa Pertambangan (PJP) ---- */
-    Route::get('perusahaan-jasa-tambang', PjpBerandaController::class)->name('pjp.beranda');
-
-    Route::get('pjp/export',          [PjpController::class, 'export'])->name('pjp.export');
-    Route::get('pjp/import-template', [PjpController::class, 'importTemplate'])->name('pjp.import-template');
-    Route::post('pjp/import',         [PjpController::class, 'import'])->name('pjp.import');
-    Route::get('pjp/{pjp}/export-pdf',[PjpController::class, 'exportPdf'])->name('pjp.export-pdf');
-
-    Route::resource('pjp', PjpController::class);
-
-    Route::post('pjp/{pjp}/laporan',            [PjpLaporanController::class, 'store'])->name('pjp.laporan.store');
-    Route::patch('pjp/{pjp}/laporan/{laporan}', [PjpLaporanController::class, 'update'])->name('pjp.laporan.update');
-    Route::delete('pjp/{pjp}/laporan/{laporan}',[PjpLaporanController::class, 'destroy'])->name('pjp.laporan.destroy');
-
-    Route::post('pjp/{pjp}/catatan',   [PjpCatatanController::class, 'store'])->name('pjp.catatan.store');
-    Route::delete('pjp/{pjp}/catatan/{catatan}', [PjpCatatanController::class, 'destroy'])->name('pjp.catatan.destroy');
-
-    Route::get('pjp/{pjp}/checklist-smkp',  [SmkpChecklistController::class, 'show'])->name('pjp.checklist-smkp.show');
-    Route::post('pjp/{pjp}/checklist-smkp', [SmkpChecklistController::class, 'update'])->name('pjp.checklist-smkp.update');
-
-    Route::post('pjp/{pjp}/evaluasi',   [PjpEvaluasiController::class, 'store'])->name('pjp.evaluasi.store');
-    Route::delete('pjp/{pjp}/evaluasi/{evaluasi}', [PjpEvaluasiController::class, 'destroy'])->name('pjp.evaluasi.destroy');
-
-    Route::get('pjp-tahapan/persyaratan', [PjpTahapanController::class, 'persyaratanSeleksiPenetapan'])->name('pjp.tahapan.persyaratan');
-    Route::get('pjp-tahapan/pelaporan',   [PjpTahapanController::class, 'tanggungJawabPemantauanPelaporan'])->name('pjp.tahapan.pelaporan');
-    Route::get('pjp-tahapan/evaluasi',    [PjpTahapanController::class, 'evaluasi'])->name('pjp.tahapan.evaluasi');
 });
 
 require __DIR__.'/auth.php';

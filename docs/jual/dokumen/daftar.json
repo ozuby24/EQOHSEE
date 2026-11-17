@@ -1,0 +1,45 @@
+{
+  "kunci": "dokumen",
+  "label": "ISO & Dokumen",
+  "jual": "ISO & Dokumen",
+  "harga": 5500000,
+  "ket": "Register dokumen terkendali: nomor revisi, masa berlaku, riwayat perubahan, dan pengingat peninjauan berkala.",
+  "semboyan": "One Source Of Truth",
+  "halaman": [
+    {
+      "berkas": "01-dokumen.jpg",
+      "label": "Semua Dokumen",
+      "grup": "Register",
+      "path": "dokumen",
+      "status": "ok"
+    },
+    {
+      "berkas": "02-dokumen-baru.jpg",
+      "label": "Dokumen Baru",
+      "grup": "Register",
+      "path": "dokumen/baru",
+      "status": "ok"
+    },
+    {
+      "berkas": "03-struktur-dokumen.jpg",
+      "label": "Piramida Dokumen",
+      "grup": "Struktur",
+      "path": "struktur-dokumen",
+      "status": "ok"
+    },
+    {
+      "berkas": "04-daftar-induk.jpg",
+      "label": "Daftar Induk",
+      "grup": "Struktur",
+      "path": "daftar-induk",
+      "status": "ok"
+    },
+    {
+      "berkas": "05-iso.jpg",
+      "label": "Pemenuhan Klausul",
+      "grup": "Standar ISO",
+      "path": "iso",
+      "status": "ok"
+    }
+  ]
+}

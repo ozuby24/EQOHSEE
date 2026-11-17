@@ -90,6 +90,81 @@ class HazardTest extends TestCase
         $this->assertSame(\App\Support\Hazard::WARNA_STATUS['Open'], $baris['warnaStatus']);
     }
 
+    /* ══════════════ dua kolom foto ══════════════ */
+
+    /**
+     * Tiap baris membawa foto temuan DAN foto tindak lanjutnya.
+     *
+     * Monitor ini dibaca untuk menjawab "bahaya ini sudah ditangani
+     * atau belum". Foto temuan sendirian tidak menjawabnya; yang
+     * menjawabnya adalah ada atau tidak adanya foto tindak lanjut di
+     * sebelahnya. Dikirim satu foto saja seperti sebelumnya,
+     * pertanyaan itu hanya terjawab dengan membuka lima belas laporan
+     * satu per satu.
+     */
+    public function test_tiap_baris_membawa_kedua_daftar_fotonya(): void
+    {
+        $c = $this->perusahaan();
+        $this->masuk();
+
+        $this->laporan($c, [
+            'foto'              => ['hazard/a.jpg', 'hazard/b.jpg'],
+            'foto_tindaklanjut' => ['hazard/c.jpg'],
+        ]);
+
+        $baris = $this->get('/hazard')->assertOk()->viewData('page')['props']['laporan'][0];
+
+        $this->assertCount(2, $baris['fotoTemuan'],
+            'Hanya sebagian foto temuan yang terkirim; sisanya tidak dapat dilihat '
+            .'tanpa membuka laporannya.');
+
+        $this->assertCount(1, $baris['fotoTindak'],
+            'Foto tindak lanjut tidak ikut terkirim — kolom bukti perbaikan '
+            .'selalu terlihat kosong walau buktinya ada.');
+    }
+
+    /** Yang belum berfoto memulangkan daftar KOSONG, bukan null. */
+    public function test_yang_belum_berfoto_memulangkan_daftar_kosong(): void
+    {
+        $c = $this->perusahaan();
+        $this->masuk();
+        $this->laporan($c);
+
+        $baris = $this->get('/hazard')->assertOk()->viewData('page')['props']['laporan'][0];
+
+        $this->assertSame([], $baris['fotoTemuan']);
+        $this->assertSame([], $baris['fotoTindak']);
+    }
+
+    /**
+     * Monitornya digambar sebagai TABEL.
+     *
+     * Halaman ini dipakai untuk membandingkan lima belas laporan
+     * sekaligus — mana yang risikonya tinggi tetapi masih Open, mana
+     * yang sudah ditutup tanpa bukti foto perbaikan. Perbandingan
+     * dijawab kolom yang sejajar; tumpukan kartu memaksa mata melompat
+     * dan memaksa setiap laporan dibuka satu per satu.
+     *
+     * Dijaga dengan membaca berkasnya: tata letak tidak menimbulkan
+     * galat apa pun ketika ia berubah kembali.
+     */
+    public function test_monitor_digambar_sebagai_tabel_berkolom_foto(): void
+    {
+        $isi = file_get_contents(resource_path('js/Pages/Hazard/Monitor.vue'));
+
+        $this->assertStringContainsString('<table', $isi,
+            'Monitor bahaya tidak lagi berupa tabel.');
+
+        foreach (['Foto Temuan', 'Foto Tindak'] as $kolom) {
+            $this->assertStringContainsString($kolom, $isi,
+                "Kolom '{$kolom}' hilang dari monitor bahaya.");
+        }
+
+        $this->assertStringContainsString('GaleriFoto', $isi,
+            'Foto pada monitor tidak lagi dapat dibuka besar. Pada kotak 44 piksel '
+            .'tidak satu pun temuan lapangan terbaca — yang terbaca hanya "ada fotonya".');
+    }
+
     /* ══════════════ analitik ══════════════ */
 
     public function test_analitik_dirender_inertia(): void
@@ -242,6 +317,26 @@ class HazardTest extends TestCase
         $props = $this->get('/hazard/pengingat')->assertOk()->viewData('page')['props'];
 
         $this->assertSame(['PT Punya Temuan'], array_column($props['perusahaan'], 'nama'));
+    }
+
+    /**
+     * Tautan "atur kontak PIC" mengikuti peran: admin ke Kelola
+     * Perusahaan, yang lain ke Profil Perusahaan. Menaut semua orang ke
+     * halaman admin mengantar non-admin ke 403.
+     */
+    public function test_tautan_kontak_pic_mengikuti_peran(): void
+    {
+        $this->masuk();
+        $p = $this->get('/hazard/pengingat')->assertOk()->viewData('page')['props'];
+        $this->assertSame(route('admin.companies.index'), $p['urlPerusahaan']);
+
+        $this->masuk(false);
+        $r = $this->get('/hazard/pengingat');
+        if ($r->status() !== 200) $this->markTestSkipped('Pengingat tertutup bagi non-admin.');
+
+        $p = $r->viewData('page')['props'];
+        $this->assertSame(route('personalia.perusahaan'), $p['urlPerusahaan']);
+        $this->assertSame('Profil Perusahaan', $p['labelPerusahaan']);
     }
 
     public function test_pesan_pengingat_menyebut_hitungan_dan_kode_temuan(): void

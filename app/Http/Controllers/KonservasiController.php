@@ -128,7 +128,7 @@ class KonservasiController extends Controller
         $hilang = (float) $sah->sum('kehilangan_material');
         $dilusi = (float) $sah->sum('dilusi');
 
-        $perusahaan = auth()->user()?->company ?: Company::first();
+        $perusahaan = $this->perusahaanKop();
 
         return Inertia::render('Print/Konservasi', [
             'dok'   => KopDokumen::untuk('laporan-konservasi', $perusahaan),
@@ -230,14 +230,6 @@ class KonservasiController extends Controller
     }
 
     /** Pengguna biasa tidak boleh menulis data ke perusahaan lain lewat payload. */
-    private function pemilik(array $data): array
-    {
-        if (!auth()->user()?->isAdmin()) {
-            $data['company_id'] = auth()->user()?->company_id;
-        }
-
-        return $data;
-    }
 
     public function hapusAction(TindakLanjut $action)
     {

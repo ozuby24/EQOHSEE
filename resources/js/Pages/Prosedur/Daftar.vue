@@ -4,6 +4,10 @@
  */
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import type { HalamanDaftarProsedur } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanDaftarProsedur>();
 
@@ -15,8 +19,8 @@ function cari() {
     .get(props.tautan.daftar, { preserveState: true, preserveScroll: true, replace: true });
 }
 
-function hapus(url: string, judul: string) {
-  if (!confirm(`Hapus prosedur "${judul}"?`)) return;
+async function hapus(url: string, judul: string) {
+  if (!await tanya(`Hapus prosedur "${judul}"?`)) return;
   router.delete(url, { preserveScroll: true });
 }
 </script>
@@ -24,7 +28,7 @@ function hapus(url: string, judul: string) {
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-5xl mx-auto">
+  <div class="">
 
     <div class="flex flex-wrap items-center gap-2.5 mb-5">
       <form class="flex-1 min-w-0 basis-[200px]" @submit.prevent="cari">
@@ -83,4 +87,6 @@ function hapus(url: string, judul: string) {
                  v-html="t.label" />
     </nav>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

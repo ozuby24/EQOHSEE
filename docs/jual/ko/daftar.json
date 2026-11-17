@@ -1,0 +1,80 @@
+{
+  "kunci": "ko",
+  "label": "Keselamatan Operasi",
+  "jual": "Keselamatan Operasi (KO)",
+  "harga": 2500000,
+  "ket": "Kelayakan objek, jadwal perawatan, alat pengaman, kajian teknis, dan tenaga teknis bersertifikat.",
+  "semboyan": "Zero Is The Target",
+  "halaman": [
+    {
+      "berkas": "01-ko.jpg",
+      "label": "Dashboard KO",
+      "grup": "Monitoring SPIP",
+      "path": "ko",
+      "status": "ok"
+    },
+    {
+      "berkas": "02-ko-register.jpg",
+      "label": "Register SPIP",
+      "grup": "Monitoring SPIP",
+      "path": "ko/register",
+      "status": "ok"
+    },
+    {
+      "berkas": "03-ko-kelayakan.jpg",
+      "label": "Kelayakan",
+      "grup": "Monitoring SPIP",
+      "path": "ko/kelayakan",
+      "status": "ok"
+    },
+    {
+      "berkas": "04-ko-unit.jpg",
+      "label": "Jenis Unit",
+      "grup": "Monitoring SPIP",
+      "path": "ko/unit",
+      "status": "ok"
+    },
+    {
+      "berkas": "05-ko-uji.jpg",
+      "label": "Uji Kelayakan",
+      "grup": "Monitoring SPIP",
+      "path": "ko/uji",
+      "status": "ok"
+    },
+    {
+      "berkas": "06-ko-perawatan.jpg",
+      "label": "Perawatan",
+      "grup": "Monitoring SPIP",
+      "path": "ko/perawatan",
+      "status": "ok"
+    },
+    {
+      "berkas": "07-ko-pengaman.jpg",
+      "label": "Pengaman",
+      "grup": "Monitoring SPIP",
+      "path": "ko/pengaman",
+      "status": "ok"
+    },
+    {
+      "berkas": "08-ko-kajian.jpg",
+      "label": "Kajian Teknis",
+      "grup": "Kepatuhan",
+      "path": "ko/kajian",
+      "status": "ok"
+    },
+    {
+      "berkas": "09-ko-tenaga.jpg",
+      "label": "Tenaga Teknis",
+      "grup": "Kepatuhan",
+      "path": "ko/tenaga",
+      "status": "ok"
+    },
+    {
+      "berkas": "10-ko-tindak.jpg",
+      "label": "Tindak Lanjut",
+      "grup": "Kepatuhan",
+      "path": "ko/tindak",
+      "status": "ok"
+    }
+  ]
+}

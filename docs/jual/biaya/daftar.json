@@ -1,0 +1,45 @@
+{
+  "kunci": "biaya",
+  "label": "Pengendalian Biaya",
+  "jual": "Pengendalian Biaya",
+  "harga": 8500000,
+  "ket": "Anggaran RKAB terhadap realisasi, biaya per ton dan per BCM, selisih yang dipecah menjadi bagian volume dan bagian tarif, serta proyeksi akhir tahun.",
+  "semboyan": "Every Rupiah Traced",
+  "halaman": [
+    {
+      "berkas": "01-biaya.jpg",
+      "label": "Dashboard Biaya",
+      "grup": "Pengawasan",
+      "path": "biaya",
+      "status": "ok"
+    },
+    {
+      "berkas": "02-biaya-realisasi.jpg",
+      "label": "Realisasi Bulanan",
+      "grup": "Pengawasan",
+      "path": "biaya/realisasi",
+      "status": "ok"
+    },
+    {
+      "berkas": "03-biaya-anggaran.jpg",
+      "label": "Anggaran Tahunan",
+      "grup": "Acuan & Data",
+      "path": "biaya/anggaran",
+      "status": "ok"
+    },
+    {
+      "berkas": "04-biaya-bagan-akun.jpg",
+      "label": "Bagan Akun",
+      "grup": "Acuan & Data",
+      "path": "biaya/bagan-akun",
+      "status": "ok"
+    },
+    {
+      "berkas": "05-biaya-cetak.jpg",
+      "label": "Laporan Biaya",
+      "grup": "Acuan & Data",
+      "path": "biaya/cetak",
+      "status": "ok"
+    }
+  ]
+}

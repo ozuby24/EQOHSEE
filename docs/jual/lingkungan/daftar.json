@@ -1,0 +1,45 @@
+{
+  "kunci": "lingkungan",
+  "label": "Lingkungan & Reklamasi",
+  "jual": "Lingkungan & Reklamasi",
+  "harga": 7500000,
+  "ket": "Neraca lahan terganggu dan direklamasi, tahapan berjenjang per petak, tingkat tumbuh revegetasi, kecukupan jaminan, dan pemantauan baku mutu yang dapat disesuaikan.",
+  "semboyan": "Leave It Better",
+  "halaman": [
+    {
+      "berkas": "01-lingkungan.jpg",
+      "label": "Dashboard Lingkungan",
+      "grup": "Pengawasan",
+      "path": "lingkungan",
+      "status": "ok"
+    },
+    {
+      "berkas": "02-lingkungan-lahan.jpg",
+      "label": "Petak & Reklamasi",
+      "grup": "Pengawasan",
+      "path": "lingkungan/lahan",
+      "status": "ok"
+    },
+    {
+      "berkas": "03-lingkungan-pemantauan.jpg",
+      "label": "Pemantauan Mutu",
+      "grup": "Pengawasan",
+      "path": "lingkungan/pemantauan",
+      "status": "ok"
+    },
+    {
+      "berkas": "04-lingkungan-baku-mutu.jpg",
+      "label": "Baku Mutu",
+      "grup": "Acuan & Data",
+      "path": "lingkungan/baku-mutu",
+      "status": "ok"
+    },
+    {
+      "berkas": "05-lingkungan-cetak.jpg",
+      "label": "Laporan Lingkungan",
+      "grup": "Acuan & Data",
+      "path": "lingkungan/cetak",
+      "status": "ok"
+    }
+  ]
+}

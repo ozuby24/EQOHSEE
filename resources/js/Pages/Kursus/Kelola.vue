@@ -9,6 +9,10 @@
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { reactive, watchEffect } from 'vue';
 import type { HalamanKelolaKursus } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanKelolaKursus>();
 
@@ -77,8 +81,8 @@ function tambahSoal(q: { id: number; urlTambahSoal: string }) {
   });
 }
 
-function hapus(url: string, pesan: string) {
-  if (!confirm(pesan)) return;
+async function hapus(url: string, pesan: string) {
+  if (!await tanya(pesan)) return;
   router.delete(url, { preserveScroll: true });
 }
 
@@ -90,7 +94,7 @@ const HURUF = ['A', 'B', 'C', 'D'];
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-4xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
@@ -148,11 +152,25 @@ const HURUF = ['A', 'B', 'C', 'D'];
                 class="flex items-center justify-between gap-2 text-[12.5px] bg-stone-50 rounded-lg px-3 py-2">
               <span class="flex items-center gap-2 min-w-0">
                 <span class="text-[9.5px] uppercase font-bold bg-cam-lime-soft text-cam-lime-deep
-                             px-1.5 py-0.5 rounded tracking-wide">{{ x.jenis }}</span>
+                             px-1.5 py-0.5 rounded tracking-wide">{{ x.label }}</span>
                 <span class="text-stone-600 clamp-1">{{ x.judul }}</span>
+
+                <!-- Penanda materi yang ikhtisarnya belum diisi. Tanpa ini
+                     satu-satunya cara mengetahui mana yang masih kosong
+                     adalah membuka keduapuluhnya satu per satu — dan yang
+                     terlewat baru ketahuan dari pesertanya. -->
+                <span v-if="!x.lengkap"
+                      class="shrink-0 text-[9.5px] font-bold uppercase tracking-wide
+                             text-amber-700 bg-amber-50 border border-amber-200
+                             rounded px-1.5 py-0.5">Ikhtisar kosong</span>
               </span>
-              <button type="button" @click="hapus(x.urlHapus, `Hapus materi “${x.judul}”?`)"
-                      class="text-[11px] text-red-400 hover:text-red-600">✕</button>
+
+              <span class="flex items-center gap-1.5 shrink-0">
+                <a :href="x.urlAtur"
+                   class="text-[11px] font-semibold text-cam-lime-deep hover:underline">Atur</a>
+                <button type="button" @click="hapus(x.urlHapus, `Hapus materi “${x.judul}”?`)"
+                        class="text-[11px] text-red-400 hover:text-red-600">✕</button>
+              </span>
             </li>
           </ul>
 
@@ -165,7 +183,7 @@ const HURUF = ['A', 'B', 'C', 'D'];
             <form v-show="terbuka[`m${m.id}`]" class="mt-2.5 grid sm:grid-cols-[1fr_130px] gap-2"
                   @submit.prevent="tambahMateri(m)">
               <input v-model="materi[m.id].title" placeholder="Judul materi" :class="kecil">
-              <select v-model="materi[m.id].type" :class="kecil">
+              <select v-model="materi[m.id].type" :class="kecil" aria-label="Jenis">
                 <option value="document">Dokumen</option>
                 <option value="pdf">PDF</option>
                 <option value="pptx">PPTX</option>
@@ -260,4 +278,6 @@ const HURUF = ['A', 'B', 'C', 'D'];
       </form>
     </section>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

@@ -2,14 +2,78 @@
 
 namespace App\Support;
 
+use App\Models\Investigasi\{
+    AkarMasalah as InvAkar, Analisis as InvAnalisis, Bukti as InvBukti,
+    Insiden as InvInsiden, InsidenOrang as InvInsidenOrang, Investigasi as InvInvestigasi,
+    Jejak as InvJejak, Kronologi as InvKronologi, Lokasi as InvLokasi,
+    Pembelajaran as InvPembelajaran, ScatPilihan as InvScatPilihan, Temuan as InvTemuan,
+    Tim as InvTim, Tindakan as InvTindakan, Wawancara as InvWawancara,
+    WawancaraJawaban as InvWawancaraJawaban
+};
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Pembelian\{Item as ItemBeli, Lisensi as LisensiBeli,
+    Pembayaran as PembayaranBeli, Pesanan as PesananBeli, Produk as ProdukBeli};
+use App\Support\Investigasi\{MasterInvestigasi, MesinScat, NomorInvestigasi, Triase as InvTriase};
+use App\Models\Miners\{Alur as MnrAlur, Blok as MnrBlok, Departemen as MnrDepartemen,
+    HasilMcu as MnrHasilMcu, Induksi as MnrInduksi, InduksiOrang as MnrInduksiOrang,
+    Jabatan as MnrJabatan, JenisUnit as MnrJenisUnit, KategoriPermit as MnrKategoriPermit,
+    Kendaraan as MnrKendaraan, Kompetensi as MnrKompetensi, Mcu as MnrMcu, McuOrang as MnrMcuOrang, McuRujukan as MnrMcuRujukan,
+    Pekerja as MnrPekerja, Permit as MnrPermit, PermitBerkas as MnrPermitBerkas, Pjo as MnrPjo,
+    Simper as MnrSimper, SimperAjuan as MnrSimperAjuan, SimperAjuanUnit as MnrSimperAjuanUnit,
+    SimperUnit as MnrSimperUnit, SubBlok as MnrSubBlok, Subkontraktor as MnrSubkontraktor,
+    TipePermit as MnrTipePermit, Skema as MnrSkema, PermitPerpanjangan as MnrPermitPerpanjangan};
+use App\Models\{
+    Pjp, PjpEvaluasi, PjpLaporan,
+    SmkpChecklistItem as PjpSmkpItem,
+    SmkpChecklistAnswer as PjpSmkpJawaban,
+    SmkpChecklistCategory as PjpSmkpKategori,
+};
+use App\Models\Hr\{Absensi as HrAbsensi, AbsensiJejak as HrJejak, Cuti as HrCuti,
+    JenisCuti as HrJenisCuti, Kebutuhan as HrKebutuhan, Kontrak as HrKontrak, Lembur as HrLembur,
+    PeriodeGaji as HrPeriodeGaji, SaldoCuti as HrSaldoCuti, SlipGaji as HrSlipGaji, Upah as HrUpah,
+    MesinAbsensi as HrMesin, PolaRoster as HrPola, Regu as HrRegu,
+    ReguAnggota as HrReguAnggota, Roster as HrRoster};
+use App\Support\Hr\{JalurCuti, JalurLembur, KebijakanCuti, MasterCuti, MasterPajak, MasterRoster,
+    Penggajian, Penyusun, Rekonsiliasi};
+use Illuminate\Support\Facades\Hash;
+use App\Models\{CompliancePoint, ComplianceRecap, ComplianceSubject};
+use App\Models\{EnvAudit, EnvAuditRtp, EnvAuditScore, EnvAuditSertifikat};
+use App\Models\Frop\{Coaching as FropCoaching, Observasi as FropObservasi};
+use App\Support\AuditLingkungan;
+use App\Support\Kepatuhan;
+use App\Support\MasterInspeksi;
+use App\Support\Miners\Acuan;
+use App\Support\Miners\MasterMiners;
+use App\Support\Pembelian;
 use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, BiayaRealisasi,
-                Company, GeoBacaan, GeoInstrumen, GeoLereng, GudangBarang, GudangLokasi,
-                GudangMutasi, IzinAmbang, IzinGas, IzinKerja, IzinPeriksa, IzinSyarat,
+                Company, Document, DocumentIso, DocumentRevision, EnergyEquipment,
+                EnergyFuelLog, GeoBacaan, GeoInstrumen, GeoLereng, GudangBarang, GudangLokasi,
+                GudangMutasi, HazardReport, Inspection, InspectionInspector, InspectionItem,
+                IzinAmbang, IzinGas, IzinKerja, IzinPeriksa, IzinSyarat,
+                KoAction, KoInspection, KoObject, KoReview, KoSafeguard,
+                KoUjiKelayakan, KoUnitMaster,
                 LedakHasil, LedakRencana, LedakTitik, LedakUkur, LingkunganArea,
                 LingkunganPantau, LingkunganParameter, MineOperationalRecord,
-                MineOperationalTarget, ReklamasiKemajuan, TindakLanjut, User,
-                WaterLog, WaterSump, WaterSumpPump};
+                MineOperationalTarget, News, Procedure, ReklamasiKemajuan, SmkpAttendee, SmkpAudit, SmkpBukti, SmkpTindakLanjut,
+                SmkpFinding, SopEvaluation, SopEvaluationAttempt,
+                SopEvaluationQuestion,
+                Certificate, Course, Enrollment, InspectionTemplate, InspectionTemplateItem,
+                Material, MaterialAttachment, MaterialCompletion, MaterialDiscussion,
+                Module, ModuleCompletion, NewsRead,
+                PostTrainingEvaluation, Quiz, QuizAttempt, QuizQuestion,
+                TindakLanjut, User, WaterLog, WaterSump, WaterSumpPump, WorkOrder, WorkOrderPart,
+                EnergyBaseline, EnergyFuelRecon, EnergyOpportunity, EnergyOtherLog,
+                EnergyPowerLog, EnergyProduction,
+                KoPersonnel, KompetensiJenis, McuPengajuan, MineMapLayer,
+                MinerbaConservationRecord, Note,
+                Paspor, PasporInduksi, PasporKartu, PasporKartuUnit, PasporMcu, PasporSertifikat,
+                Percakapan, PersetujuanParaf,
+                Pesan, Signatory, TpkkpAssessment, TpkkpPengujian, TpkkpResponse, InduksiPengajuan};
+use App\Support\Waktu;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Pemuat data contoh untuk satu perusahaan.
@@ -68,6 +132,263 @@ final class DataContoh
         GudangMutasi::class, GudangBarang::class, GudangLokasi::class,
         MineOperationalRecord::class, MineOperationalTarget::class,
         TindakLanjut::class,
+
+        /* Modul yang ditambahkan belakangan. Urutannya tetap aturan yang
+           sama — anak lebih dulu — dan di sini aturan itu lebih berbahaya
+           daripada di atas: ko_objects dirujuk oleh enam tabel, dua di
+           antaranya (water_sump_pumps, angkut_alats) sudah dibuang lebih
+           dulu di daftar atas. KoObject karena itu harus berada paling
+           belakang, sesudah seluruh perujuknya. */
+        InspectionItem::class, InspectionInspector::class, Inspection::class,
+        /* Bukti butir dan peluang perbaikan disebut SEBELUM auditnya:
+           penghapusan berkaskade dikerjakan basis data dan tidak ikut
+           terhitung pemanggilnya, sehingga jumlah "dibuang" tidak lagi
+           sebanding dengan jumlah "dibuat" — dan pemeriksaan penumpukan
+           bersandar pada perbandingan itu. */
+        SmkpBukti::class, SmkpTindakLanjut::class,
+        SmkpFinding::class, SmkpAttendee::class, SmkpAudit::class,
+        /* Butir lebih dulu, lalu subjeknya. Rekapnya berdiri sendiri —
+           ia potret angka, bukan anak salah satu subjek. */
+        CompliancePoint::class, ComplianceSubject::class, ComplianceRecap::class,
+
+        /* Nilai lebih dulu, lalu auditnya — sama alasannya: kaskade
+           basis data tidak terhitung pemanggilnya. */
+        EnvAuditSertifikat::class, EnvAuditRtp::class, EnvAuditScore::class, EnvAudit::class,
+
+        /* Coaching menunjuk sesi observasi (nullOnDelete), jadi dibuang
+           lebih dulu agar hitungannya tetap sebanding. */
+        FropCoaching::class, FropObservasi::class,
+
+        DocumentRevision::class, DocumentIso::class, Document::class,
+        HazardReport::class,
+
+        /* Energi. Catatan pemakaian mendahului registri alatnya;
+           EnergyFuelLog menunjuk equipment_id, sisanya berdiri sendiri
+           dengan company_id masing-masing. */
+        EnergyFuelLog::class, EnergyEquipment::class,
+        EnergyProduction::class, EnergyPowerLog::class, EnergyOtherLog::class,
+        EnergyFuelRecon::class, EnergyBaseline::class, EnergyOpportunity::class,
+
+        /* KO. Suku cadang mendahului perintah kerjanya, dan
+           KoInspection menunjuk ko_safeguard_id sekaligus
+           ko_personnel_id — jadi keduanya dibuang sesudahnya. */
+        /* P2H mendahului perintah kerja yang diterbitkannya, dan unitnya
+           menunjuk objek KO — keduanya dibuang sebelum KoObject. */
+        \App\Models\P2hPeriksa::class, \App\Models\P2hUnit::class,
+        WorkOrderPart::class, WorkOrder::class,
+        KoInspection::class, KoAction::class, KoReview::class,
+        KoSafeguard::class, KoPersonnel::class,
+
+        /* Uji kelayakan menggantung pada objeknya, jadi dibuang lebih
+           dulu. Master jenis unit TIDAK dibuang — ia acuan bersama
+           seperti jenis kompetensi, bukan data contoh. */
+        KoUjiKelayakan::class,
+        KoObject::class,
+
+        MinerbaConservationRecord::class,
+        MineMapLayer::class,
+        Signatory::class,
+
+        /* Pesan mendahului percakapannya, dan peserta dilepas lewat
+           relasi pivot — bukan model tersendiri. */
+        Pesan::class, Percakapan::class,
+
+        TpkkpResponse::class, TpkkpPengujian::class, TpkkpAssessment::class,
+        Note::class,
+
+        /* Authority. Keempat anaknya menggantung pada paspor; jenis
+           kompetensi TIDAK dibuang — ia master nasional milik bersama,
+           bukan data contoh.
+
+           Surat pengajuan MCU dibuang SESUDAH hasilnya, sebab hasilnya
+           menunjuk suratnya. Ia menyebut perusahaan sendiri, jadi tidak
+           ikut terbawa penghapusan paspor — dan itu persis sebabnya ia
+           harus disebut di sini: yang tidak disebut tidak menimbulkan
+           galat, hanya dua baris yang bertambah tiap kali tombol muat
+           ulang ditekan. */
+        /* Paraf dibuang PALING DULU: ia menunjuk kartu dan pengajuan,
+           dan penyaringnya bekerja lewat keduanya. Dibalik urutannya,
+           penyaring itu tidak menemukan apa pun karena yang ditunjuknya
+           sudah hilang — dan barisnya tertinggal tanpa galat. */
+        PersetujuanParaf::class,
+
+        /* Pembelian: anak lebih dulu. Lisensi dan pembayaran menunjuk
+           pesanan, item menunjuk pesanan dan produk. */
+        LisensiBeli::class, PembayaranBeli::class, ItemBeli::class,
+        PesananBeli::class, ProdukBeli::class,
+        PasporSertifikat::class, PasporMcu::class,
+        PasporKartuUnit::class, PasporKartu::class,
+        PasporInduksi::class, Paspor::class, McuPengajuan::class, InduksiPengajuan::class,
+
+        /* Prosedur dan berita baru dapat masuk ke sini sesudah keduanya
+           melekat perusahaan; sebelum itu penghapusnya tidak punya
+           company_id untuk disebut, dan barisnya akan menumpuk tiap
+           kali tombolnya ditekan.
+
+           Procedure paling belakang di antara ketiganya: Document
+           menunjuk procedure_id, dan Document dibuang lebih dulu di
+           atas. SopEvaluation menunjuk Procedure pula, jadi ia dan
+           anak-anaknya mendahuluinya. */
+        SopEvaluationAttempt::class, SopEvaluationQuestion::class, SopEvaluation::class,
+        Procedure::class,
+
+        /* Bacaan mendahului pengumumannya. Urutannya bukan soal kunci
+           asing — kaskade sudah menjaganya — melainkan soal hitungan:
+           yang dibuang basis data sendiri tidak ikut terhitung, dan
+           pemeriksaan penumpukan membandingkan "dibuat" dengan
+           "dibuang". */
+        NewsRead::class, News::class,
+
+        /* LMS. Sertifikat, pendaftaran, percobaan, dan evaluasi pelatihan
+           menggantung pada kursus, jadi semuanya dibuang lebih dulu.
+           Kursus, kuis, dan template inspeksi TIDAK punya company_id —
+           keduanya pustaka bersama — dan disaring lewat penanda `demo`
+           sebagai gantinya. */
+        Certificate::class, PostTrainingEvaluation::class,
+        QuizAttempt::class, Enrollment::class,
+        QuizQuestion::class, Quiz::class,
+        MaterialDiscussion::class, MaterialAttachment::class, MaterialCompletion::class,
+        ModuleCompletion::class, Material::class, Module::class, Course::class,
+        InspectionTemplateItem::class, InspectionTemplate::class,
+
+        /* Investigasi. Seluruh anaknya disebut satu per satu meski
+           kunci asingnya sudah berkaskade, dan itu bukan pengulangan
+           yang sia-sia: penghapusan berkaskade dikerjakan basis data
+           dan TIDAK IKUT TERHITUNG oleh pemanggilnya, sehingga jumlah
+           "dibuang" tidak lagi sebanding dengan jumlah "dibuat" — dan
+           pemeriksaan penumpukan bersandar pada perbandingan itu.
+           Kaskade juga bergantung pada penegakan kunci asing, yang
+           tidak sama di setiap mesin.
+
+           Urutannya anak lebih dulu. `inv_akar_bukti` tidak disebut:
+           ia pivot tanpa model, terbuang bersama akar masalahnya, dan
+           karena tidak pernah dihitung sebagai "dibuat" ia tidak
+           membuat kedua sisi timpang.
+
+           Master investigasi TIDAK dibuang. Matriks risiko, kamus SCAT,
+           dan klasifikasi menurut Kepmen adalah kerangka regulasi yang
+           berlaku sama bagi setiap perusahaan — membuangnya bersama
+           data contoh satu perusahaan akan melumpuhkan triase seluruh
+           perusahaan lain pada pemasangan yang sama. */
+        InvWawancaraJawaban::class, InvWawancara::class,
+        InvScatPilihan::class, InvAnalisis::class,
+        InvTindakan::class, InvTemuan::class, InvAkar::class,
+        InvPembelajaran::class, InvKronologi::class, InvBukti::class, InvTim::class,
+        InvJejak::class, InvInvestigasi::class,
+        InvInsidenOrang::class, InvInsiden::class, InvLokasi::class,
+
+        /* PJP. Anaknya disebut satu per satu dengan alasan yang sama
+           seperti Investigasi di atas: penghapusan berkaskade tidak ikut
+           terhitung, dan pemeriksaan penumpukan bersandar pada
+           perbandingan "dibuat" lawan "dibuang".
+
+           Daftar periksanya — pjp_smkp_kategori dan pjp_smkp_item —
+           TIDAK dibuang. Isinya lampiran Kepdirjen 185/2019 yang berlaku
+           sama bagi setiap perusahaan, dan membuangnya bersama data
+           contoh satu perusahaan akan mengosongkan daftar periksa
+           seluruh perusahaan lain pada pemasangan yang sama — beserta
+           jawaban mereka, yang menunjuk butirnya lewat kunci asing
+           berkaskade. */
+        PjpSmkpJawaban::class, PjpEvaluasi::class, PjpLaporan::class, Pjp::class,
+
+        /* Miners. Urutannya ANAK LEBIH DULU, dan rantainya panjang:
+           unit pengajuan → pengajuan → unit SIMPER → SIMPER → lampiran
+           → permit → induksi → MCU → pekerja. Satu tabel yang lepas
+           urutan akan tertahan kunci asingnya dan menghentikan seluruh
+           pembuangan.
+
+           `mnr_alur` disebut TERSENDIRI dan dibuang paling dahulu. Ia
+           tidak punya kunci asing ke dokumennya — relasinya polimorfik
+           lewat sepasang kolom (`dokumen`, `dokumen_id`) — sehingga
+           tidak ada kaskade yang membuangnya. Dilewatkan, tiap
+           penekanan tombol meninggalkan satu rombongan langkah
+           persetujuan yatim yang menunjuk ke dokumen yang sudah tidak
+           ada, dan jumlahnya bertambah tiap kali.
+
+           Daftar awal bersamanya — departemen, jabatan, blok, golongan
+           unit, jenis permit, hasil MCU — TIDAK dibuang, dengan alasan
+           yang sama seperti master Investigasi dan PJP di atas: isinya
+           acuan SOP yang berlaku sama bagi setiap tambang, dan
+           membuangnya bersama data contoh satu perusahaan akan memutus
+           rujukan kartu yang sudah terbit di perusahaan lain.
+
+           Yang milik perusahaan sendiri — subkontraktor, PJO, sub-blok
+           — memang ikut terbuang, dan memang harus. */
+        /* Roster dibuang SEBELUM Miners: `hr_roster.pekerja_id` dan
+           `hr_regu_anggota.pekerja_id` menunjuk ke `mnr_pekerja`, dan
+           meski kaskadenya ada, penghapusan berkaskade TIDAK ikut
+           terhitung pemanggilnya — sedangkan pemeriksaan penumpukan
+           bersandar pada perbandingan "dibuat" lawan "dibuang".
+
+           Pola rosternya sendiri TIDAK dibuang, dengan alasan yang sama
+           seperti master Miners: ia daftar awal bersama tanpa pemilik,
+           dipasang `roster:pasang`, dan membuangnya bersama data contoh
+           satu perusahaan akan memutus regu perusahaan lain dari
+           polanya. */
+        /* Absensi dibuang SEBELUM roster: `hr_absensi.roster_id`
+           menunjuk ke `hr_roster`, dan meski kunci asingnya
+           `nullOnDelete` — sehingga barisnya tidak ikut hilang — baris
+           yang tertinggal itu justru yang berbahaya. Ia menunjuk ke
+           pekerja yang sudah terhapus berkaskade, dan layar rekap
+           menggambar baris tanpa nama yang tidak dapat ditelusuri ke
+           mana pun.
+
+           Mesin dibuang paling belakang di antara ketiganya, sebab
+           jejak menunjuk kepadanya. */
+        /* Lembur dibuang SEBELUM absensi: `hr_lembur.absensi_id`
+           menunjuk ke sana, dan meski kunci asingnya mengosongkan
+           dirinya sendiri, baris yang tertinggal menunjuk ke pekerja
+           yang sudah terhapus berkaskade — lalu rekap lembur
+           menggambar baris tanpa nama yang tidak dapat ditelusuri ke
+           mana pun. */
+        /* Slip dibuang sebelum periodenya, dan keduanya sebelum
+           lembur: slip menunjuk ke periode, dan angka lemburnya sudah
+           tersalin ke dalam slip. Urutan ini menjaga HITUNGANNYA —
+           baris yang terhapus lewat kaskade tidak ikut terhitung
+           pemanggilnya, dan pemeriksaan penumpukan bersandar pada
+           perbandingan "dibuat" lawan "dibuang".
+
+           Acuan pajak dan tabel tarifnya TIDAK dibuang: keduanya
+           daftar awal bersama tanpa pemilik, berisi angka peraturan
+           yang berlaku sama bagi setiap perusahaan — dan penanda
+           verifikasinya adalah pekerjaan seseorang yang tidak boleh
+           hilang bersama data contoh. */
+        HrSlipGaji::class, HrPeriodeGaji::class,
+
+        HrKontrak::class, HrLembur::class, HrUpah::class,
+
+        HrAbsensi::class, HrJejak::class, HrMesin::class,
+
+        /* Cuti dibuang SEBELUM roster, meski `hr_roster.cuti_id`
+           mengosongkan dirinya sendiri saat cutinya hilang. Yang
+           dijaga urutan ini bukan integritasnya melainkan
+           HITUNGANNYA: baris yang terhapus lewat kaskade tidak ikut
+           terhitung pemanggilnya, dan pemeriksaan penumpukan bersandar
+           pada perbandingan "dibuat" lawan "dibuang".
+
+           Jenis cutinya sendiri TIDAK dibuang — ia daftar awal bersama
+           tanpa pemilik, berisi pasal undang-undang yang berlaku sama
+           bagi setiap perusahaan. */
+        HrCuti::class, HrSaldoCuti::class,
+
+        HrRoster::class, HrKebutuhan::class,
+        HrReguAnggota::class, HrRegu::class,
+
+        MnrAlur::class,
+        MnrSimperAjuanUnit::class, MnrSimperAjuan::class,
+        MnrSimperUnit::class, MnrSimper::class,
+        MnrPermitBerkas::class, MnrPermitPerpanjangan::class, MnrPermit::class,
+        MnrInduksiOrang::class, MnrInduksi::class,
+        MnrMcuRujukan::class, MnrMcuOrang::class, MnrMcu::class,
+        MnrKompetensi::class,
+        /* Catatan pelanggaran (Riwayat Karyawan) sebelum pekerjanya. */
+        \App\Models\Miners\Pelanggaran::class,
+        MnrPekerja::class, MnrSubBlok::class, MnrPjo::class, MnrSubkontraktor::class,
+
+        /* Penyetuju bernama perusahaan contoh. Dibuang bersama datanya:
+           ia menunjuk akun perusahaan itu, dan skema yang tertinggal
+           akan menugaskan dokumen sungguhan kepada akun contoh. */
+        MnrSkema::class,
     ];
 
     /** @var list<string> hal yang perlu diketahui pemanggilnya */
@@ -124,6 +445,50 @@ final class DataContoh
         ];
     }
 
+    /**
+     * Buang seluruh data contoh satu perusahaan, tanpa mengisinya lagi.
+     *
+     * Dipisahkan dari `muat()` karena keduanya menjawab kebutuhan yang
+     * berbeda. `muat()` untuk menyegarkan: buang lalu isi, dan modulnya
+     * kembali berisi. Yang ini untuk MENGOSONGKAN — dipakai ketika
+     * pemeriksaan sudah selesai dan pemasangannya hendak dipakai
+     * sungguhan.
+     *
+     * Tanpa pemisahan ini, satu-satunya jalan mengosongkan adalah
+     * memuat ulang lalu menghapus barisnya satu per satu lewat tiap
+     * modul — dan pada dua ratus empat puluh baris di tujuh belas
+     * modul, itu bukan jalan yang akan ditempuh siapa pun. Data contoh
+     * karena itu akan tertinggal, lalu ikut terhitung sebagai data
+     * sungguhan pada laporan pertama yang dicetak.
+     *
+     * Tiga lapis pengamannya sama persis dengan `muat()`: hanya
+     * perusahaan bertanda `demo`, penghapusan selalu menyebut
+     * company_id, dan scope dilepas supaya company_id itulah
+     * satu-satunya penyaring.
+     *
+     * @return array{dihapus:int,rincian:array<string,int>}
+     *
+     * @throws \RuntimeException bila perusahaan itu bukan perusahaan contoh
+     */
+    public static function buang(Company $c): array
+    {
+        if (!$c->demo) {
+            throw new \RuntimeException(
+                'Perusahaan "'.$c->name.'" bukan perusahaan contoh. '
+                .'Tandai dulu sebagai perusahaan contoh bila datanya memang boleh dibuang.'
+            );
+        }
+
+        /* Rinciannya dihitung SEBELUM dihapus — sesudahnya semuanya nol,
+           dan yang menekan tombolnya tidak akan pernah tahu apa yang
+           barusan hilang. */
+        $rincian = self::rincianIsi($c);
+
+        $diri = new self($c, null, null, Carbon::now());
+
+        return ['dihapus' => $diri->bersihkan(), 'rincian' => $rincian];
+    }
+
     /** Hitung baris yang akan terhapus, tanpa menghapus apa pun. */
     public static function hitungIsi(Company $c): int
     {
@@ -155,12 +520,67 @@ final class DataContoh
 
     /* ═══════════ penghapusan ═══════════ */
 
+    /**
+     * Tabel yang menunjuk DIRINYA SENDIRI, beserta kolom penunjuknya.
+     *
+     * Aturan pemuat ini — "sebut anaknya lebih dulu supaya ia ikut
+     * terhitung" — tidak dapat diikuti tabel semacam ini: induk dan anak
+     * berada di tabel yang SAMA, jadi satu pernyataan DELETE mengenai
+     * keduanya sekaligus. Basis data membuang induknya, kaskade membawa
+     * serta anaknya, dan pernyataan itu melaporkan SATU baris terhapus
+     * meski dua yang hilang.
+     *
+     * Terukur, dan tidak muncul sebagai galat: pemeriksaan penumpukan
+     * melaporkan 1730 dibuat melawan 1729 dibuang — tanpa satu pun baris
+     * yang sungguh tertinggal, sehingga tidak ada halaman yang tampak
+     * rusak dan tidak ada yang dapat ditelusuri dari layar mana pun.
+     *
+     * Dibuang dua langkah: anaknya lebih dulu dalam pernyataannya
+     * sendiri, lalu sisanya. Berlaku untuk SATU tingkat — dan memang
+     * hanya satu tingkat yang mungkin ada: LearnController menolak
+     * balasan atas balasan, dan penolakan itu dijaga uji.
+     *
+     * @var array<class-string,string> kelas => kolom penunjuk induk
+     */
+    private const MENUNJUK_DIRI = [
+        MaterialDiscussion::class => 'parent_id',
+    ];
+
     private function bersihkan(): int
     {
         $n = 0;
+
         foreach (self::URUTAN_HAPUS as $kelas) {
-            $n += self::kueri($kelas, $this->c)->delete();
+            /* Anak lebih dulu, dalam pernyataannya sendiri, supaya ia
+               terhitung alih-alih ditelan kaskade induknya. */
+            if ($kolom = self::MENUNJUK_DIRI[$kelas] ?? null) {
+                $n += self::kueri($kelas, $this->c)->whereNotNull($kolom)->delete();
+            }
+
+            $q = self::kueri($kelas, $this->c);
+
+            /* Model bertanda hapus-lunak DIBUANG SUNGGUHAN di sini.
+               `delete()` biasa hanya mengisi deleted_at, sehingga
+               barisnya tetap ada — dan dua akibatnya sama-sama sunyi:
+               kaskade kunci asing tidak pernah berjalan sehingga anaknya
+               tertinggal sebagai baris yatim, dan tombol muat ulang
+               menambah satu rombongan baru tiap kali ditekan tanpa
+               membuang yang lama.
+
+               Data contoh memang tidak punya alasan disimpan di kotak
+               sampah: ia dibuat untuk dibuang. */
+            $n += in_array(SoftDeletes::class, class_uses_recursive($kelas), true)
+                ? $q->forceDelete()
+                : $q->delete();
         }
+
+        /* Foto contoh ikut terbuang bersama barisnya.
+           Baris yang hilang tidak membawa serta berkasnya: yang
+           tertinggal adalah folder foto yang tidak lagi ditunjuk baris
+           mana pun, pada diska yang sama tempat foto bahaya sungguhan
+           disimpan. Ia tidak terlihat dari layar mana pun — dan karena
+           itu akan tetap di sana. */
+        Storage::disk(Berkas::TERTUTUP)->deleteDirectory($this->folderFotoBahaya());
 
         return $n;
     }
@@ -178,6 +598,19 @@ final class DataContoh
      * terlihat, dapat diperbaiki, dan jauh lebih ringan akibatnya
      * daripada tebakan yang salah tentang siapa pemiliknya.
      */
+    /** Id seluruh insiden satu perusahaan — subkueri, bukan daftar id. */
+    private static function idInsiden(Company $c)
+    {
+        return InvInsiden::withoutGlobalScopes()->where('company_id', $c->id)->select('id');
+    }
+
+    /** Id seluruh investigasi satu perusahaan, lewat insidennya. */
+    private static function idInvestigasi(Company $c)
+    {
+        return InvInvestigasi::withoutGlobalScopes()
+            ->whereIn('insiden_id', self::idInsiden($c))->select('id');
+    }
+
     private static function kueri(string $kelas, Company $c)
     {
         $q = $kelas::withoutGlobalScopes();
@@ -189,10 +622,273 @@ final class DataContoh
         }
 
         return match ($kelas) {
+            /* ── Investigasi ──
+               Tiga tingkat dari perusahaannya: anak → investigasi →
+               insiden. Disaring lewat id investigasi, bukan lewat
+               rangkaian whereIn bertumpuk yang ditulis ulang belasan
+               kali — satu subkueri bernama membuat penyaringnya sama
+               persis di tiap cabang, dan cabang yang berbeda sendiri
+               adalah cara termudah satu tabel tertinggal tidak
+               terhapus. */
+            InvTim::class, InvBukti::class, InvKronologi::class, InvAnalisis::class,
+            InvAkar::class, InvTemuan::class, InvPembelajaran::class, InvWawancara::class
+                => $q->whereIn('investigasi_id', self::idInvestigasi($c)),
+
+            InvInvestigasi::class, InvInsidenOrang::class, InvJejak::class
+                => $q->whereIn('insiden_id', self::idInsiden($c)),
+
+            InvScatPilihan::class => $q->whereIn('analisis_id',
+                InvAnalisis::withoutGlobalScopes()
+                    ->whereIn('investigasi_id', self::idInvestigasi($c))->select('id')),
+
+            InvTindakan::class => $q->whereIn('temuan_id',
+                InvTemuan::withoutGlobalScopes()
+                    ->whereIn('investigasi_id', self::idInvestigasi($c))->select('id')),
+
+            InvWawancaraJawaban::class => $q->whereIn('wawancara_id',
+                InvWawancara::withoutGlobalScopes()
+                    ->whereIn('investigasi_id', self::idInvestigasi($c))->select('id')),
+
+            /* Anggota regu tidak berkolom company_id sendiri —
+               ia menumpang regunya, yang memang bermilik. */
+            HrReguAnggota::class => $q->whereIn('regu_id',
+                HrRegu::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            /* Butir pemenuhan menumpang subjeknya. Tanpa cabang ini
+               penyaringnya tidak menemukan satu baris pun, butirnya
+               terbuang diam-diam lewat kaskade subjeknya, dan jumlah
+               "dibuang" berhenti sebanding dengan jumlah "dibuat" —
+               yang justru menjadi dasar pemeriksaan penumpukan. */
+            CompliancePoint::class => $q->whereIn('subject_id',
+                ComplianceSubject::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            /* Nilai kriteria audit menumpang auditnya, sebab yang
+               bermilik perusahaan adalah pelaksanaan auditnya. */
+            EnvAuditScore::class => $q->whereIn('audit_id',
+                EnvAudit::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+            EnvAuditRtp::class => $q->whereIn('audit_id',
+                EnvAudit::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            /* ── Miners ──
+               Anaknya disaring lewat induknya yang berkolom
+               company_id, sependek mungkin: unit SIMPER lewat
+               SIMPER, bukan lewat permit lalu pekerja. */
+            MnrMcuOrang::class => $q->whereIn('mcu_id',
+                MnrMcu::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            MnrMcuRujukan::class => $q->whereIn('mcu_orang_id',
+                MnrMcuOrang::query()->whereIn('mcu_id',
+                    MnrMcu::withoutGlobalScopes()->where('company_id', $c->id)->select('id')
+                )->select('id')),
+
+            MnrInduksiOrang::class => $q->whereIn('induksi_id',
+                MnrInduksi::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            MnrPermitBerkas::class => $q->whereIn('permit_id',
+                MnrPermit::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            MnrSimperUnit::class, MnrSimperAjuan::class => $q->whereIn('simper_id',
+                MnrSimper::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            MnrSimperAjuanUnit::class => $q->whereIn('ajuan_id',
+                MnrSimperAjuan::query()->whereIn('simper_id',
+                    MnrSimper::withoutGlobalScopes()->where('company_id', $c->id)->select('id')
+                )->select('id')),
+
+            /* Alur BERELASI POLIMORFIK lewat sepasang kolom, jadi ia
+               tidak punya satu kunci asing pun yang dapat ditelusuri
+               ke perusahaannya — dan tidak ada kaskade yang
+               membuangnya bersama dokumennya.
+
+               Disaring per jenis dokumen, seluruhnya digabung dengan
+               `orWhere`. Yang kosong tetap disebut: jenis dokumen yang
+               dilewatkan akan meninggalkan langkah persetujuan yatim
+               yang bertambah tiap kali tombolnya ditekan. */
+            MnrAlur::class => $q->where(function ($w) use ($c) {
+                foreach ([
+                    'mcu'     => MnrMcu::class,
+                    'induksi' => MnrInduksi::class,
+                    'permit'  => MnrPermit::class,
+                    'simper'  => MnrSimper::class,
+                    'perpanjangan_permit' => MnrPermitPerpanjangan::class,
+                ] as $jenis => $kelas) {
+                    $w->orWhere(fn ($x) => $x->where('dokumen', $jenis)
+                        ->whereIn('dokumen_id',
+                            $kelas::withoutGlobalScopes()->where('company_id', $c->id)->select('id')));
+                }
+
+                $w->orWhere(fn ($x) => $x->where('dokumen', 'ajuan')
+                    ->whereIn('dokumen_id',
+                        MnrSimperAjuan::query()->whereIn('simper_id',
+                            MnrSimper::withoutGlobalScopes()->where('company_id', $c->id)->select('id')
+                        )->select('id')));
+            }),
+
+            /* PJP — satu tingkat: seluruh anaknya menempel pada
+               mitranya, dan mitranya yang berkolom company_id. */
+            PjpLaporan::class, PjpEvaluasi::class, PjpSmkpJawaban::class => $q->whereIn('pjp_id',
+                Pjp::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
             WaterSumpPump::class => $q->whereIn('water_sump_id',
                 WaterSump::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
             GeoInstrumen::class => $q->whereIn('geo_lereng_id',
                 GeoLereng::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            /* Unit SIMPER menempel pada kartu, dan kartu pada paspor —
+               dua tingkat. Disaring lewat kartunya, bukan lewat paspor,
+               supaya penyaringnya sependek mungkin. */
+            PasporKartuUnit::class => $q->whereIn('paspor_kartu_id',
+                PasporKartu::withoutGlobalScopes()->whereIn('paspor_id',
+                    Paspor::withoutGlobalScopes()->where('company_id', $c->id)->select('id')
+                )->select('id')),
+
+            InspectionItem::class, InspectionInspector::class => $q->whereIn('inspection_id',
+                Inspection::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            SmkpFinding::class, SmkpAttendee::class, SmkpBukti::class
+                => $q->whereIn('audit_id',
+                    SmkpAudit::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            SmkpTindakLanjut::class => $q->whereIn('finding_id',
+                SmkpFinding::withoutGlobalScopes()->whereIn('audit_id',
+                    SmkpAudit::withoutGlobalScopes()->where('company_id', $c->id)->select('id'))->select('id')),
+
+            DocumentRevision::class, DocumentIso::class => $q->whereIn('document_id',
+                Document::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            EnergyFuelLog::class => $q->whereIn('equipment_id',
+                EnergyEquipment::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            KoSafeguard::class, KoInspection::class, KoAction::class, KoReview::class
+                => $q->whereIn('ko_object_id',
+                    KoObject::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            KoUjiKelayakan::class => $q->whereIn('ko_object_id',
+                KoObject::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            WorkOrderPart::class => $q->whereIn('work_order_id',
+                WorkOrder::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            /* Pesan menggantung pada percakapan; barisnya sendiri tidak
+               menyebut perusahaan. Peserta bukan model — pivotnya ikut
+               terbuang oleh cascadeOnDelete percakapan. */
+            Pesan::class => $q->whereIn('percakapan_id',
+                Percakapan::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            /* Keduanya tidak punya company_id sendiri; batasnya lewat
+               pesanan. Tanpa cabang ini mereka tertinggal saat data
+               contoh dibuang — dan bertambah tiap kali tombol muat
+               ulang ditekan, tanpa satu pun galat. */
+            ItemBeli::class, PembayaranBeli::class
+                => $q->whereIn('pesanan_id',
+                    PesananBeli::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            PasporSertifikat::class, PasporMcu::class, PasporKartu::class, PasporInduksi::class
+                => $q->whereIn('paspor_id',
+                    Paspor::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            /* Paraf bersifat polimorfik, jadi penyaringnya dua cabang —
+               satu per jenis subjek. Kolom subjek_type WAJIB ikut
+               disebut di tiap cabang: tanpanya, whereIn atas id saja
+               akan ikut menghapus paraf milik jenis subjek LAIN yang
+               kebetulan bernomor sama. */
+            PersetujuanParaf::class => $q->where(fn ($w) => $w
+                ->where(fn ($x) => $x
+                    ->where('subjek_type', PasporKartu::class)
+                    ->whereIn('subjek_id', PasporKartu::withoutGlobalScopes()
+                        ->whereIn('paspor_id', Paspor::withoutGlobalScopes()
+                            ->where('company_id', $c->id)->select('id'))
+                        ->select('id')))
+                ->orWhere(fn ($x) => $x
+                    ->where('subjek_type', McuPengajuan::class)
+                    ->whereIn('subjek_id', McuPengajuan::withoutGlobalScopes()
+                        ->where('company_id', $c->id)->select('id')))
+                ->orWhere(fn ($x) => $x
+                    ->where('subjek_type', InduksiPengajuan::class)
+                    ->whereIn('subjek_id', InduksiPengajuan::withoutGlobalScopes()
+                        ->where('company_id', $c->id)->select('id')))),
+
+            /* Catatan belajar menggantung pada modul, dan modul pada
+               kursus yang dibuat perusahaan contoh ini. */
+            Note::class => $q->whereIn('module_id',
+                Module::withoutGlobalScopes()->whereIn('course_id',
+                    Course::withoutGlobalScopes()->where('demo_company_id', $c->id)->select('id')
+                )->select('id')),
+
+            InspectionTemplateItem::class => $q->whereIn('template_id',
+                InspectionTemplate::withoutGlobalScopes()
+                    ->where('demo_company_id', $c->id)->select('id')),
+
+            /* Penyelesaian modul menggantung pada modul, dan modul pada
+               kursus — jadi penyaringnya adalah kursus yang dibuat
+               perusahaan contoh ini, bukan penggunanya. Menyaring lewat
+               pengguna akan membuang penyelesaian pada kursus sungguhan
+               yang kebetulan diikuti orang yang sama. */
+            ModuleCompletion::class => $q->whereIn('module_id',
+                Module::withoutGlobalScopes()->whereIn('course_id',
+                    Course::withoutGlobalScopes()->where('demo_company_id', $c->id)->select('id')
+                )->select('id')),
+
+            /* Keduanya menggantung pada MATERI, dan materi pada kursus.
+               Didaftarkan meski kunci asingnya sudah berkaskade: yang
+               dibuang basis data sendiri TIDAK ikut terhitung pemanggilnya,
+               dan pemeriksaan penumpukan bersandar pada perbandingan
+               "dibuat" dengan "dibuang". */
+            MaterialCompletion::class, MaterialAttachment::class
+                => $q->whereIn('material_id',
+                    Material::withoutGlobalScopes()->whereIn('course_id',
+                        Course::withoutGlobalScopes()->where('demo_company_id', $c->id)->select('id')
+                    )->select('id')),
+
+            /* Tanya jawab. Penyaringnya sama dengan keduanya di atas;
+               yang khusus adalah URUTAN pembuangannya — lihat
+               MENUNJUK_DIRI dan bersihkan(). */
+            MaterialDiscussion::class
+                => $q->whereIn('material_id',
+                    Material::withoutGlobalScopes()->whereIn('course_id',
+                        Course::withoutGlobalScopes()->where('demo_company_id', $c->id)->select('id')
+                    )->select('id')),
+
+            /* Bacaan pengumuman menggantung pada pengumumannya, dan
+               pengumuman punya company_id sendiri — jadi penyaringnya
+               beritanya, bukan penggunanya. Menyaring lewat pengguna akan
+               membuang catatan baca atas pengumuman SUNGGUHAN yang
+               kebetulan dibaca orang yang sama. */
+            NewsRead::class => $q->whereIn('news_id',
+                News::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            SopEvaluation::class => $q->whereIn('procedure_id',
+                Procedure::withoutGlobalScopes()->where('company_id', $c->id)->select('id')),
+
+            SopEvaluationQuestion::class => $q->whereIn('evaluation_id',
+                SopEvaluation::withoutGlobalScopes()->whereIn('procedure_id',
+                    Procedure::withoutGlobalScopes()->where('company_id', $c->id)->select('id')
+                )->select('id')),
+
+            SopEvaluationAttempt::class => $q->whereIn('evaluation_id',
+                SopEvaluation::withoutGlobalScopes()->whereIn('procedure_id',
+                    Procedure::withoutGlobalScopes()->where('company_id', $c->id)->select('id')
+                )->select('id')),
+
+            /* Pustaka bersama: tidak punya company_id, jadi penyaringnya
+               adalah perusahaan contoh yang MEMBUATNYA. Kursus sungguhan
+               bawaannya null dan karena itu tidak pernah tersentuh; dan
+               dua perusahaan contoh tidak saling membuang pustaka. */
+            Course::class, Quiz::class, InspectionTemplate::class
+                => $q->where('demo_company_id', $c->id),
+
+            Module::class, Material::class => $q->whereIn('course_id',
+                Course::withoutGlobalScopes()->where('demo_company_id', $c->id)->select('id')),
+
+            QuizQuestion::class => $q->whereIn('quiz_id',
+                Quiz::withoutGlobalScopes()->where('demo_company_id', $c->id)->select('id')),
+
+            Enrollment::class, PostTrainingEvaluation::class => $q->whereIn('course_id',
+                Course::withoutGlobalScopes()->where('demo_company_id', $c->id)->select('id')),
+
+            QuizAttempt::class => $q->whereIn('quiz_id',
+                Quiz::withoutGlobalScopes()->where('demo_company_id', $c->id)->select('id')),
+
             default => $q->whereRaw('1 = 0'),
         };
     }
@@ -234,7 +930,3157 @@ final class DataContoh
             'Angkutan'   => $this->angkutan(),
             'Biaya'      => $this->biaya(),
             'Izin kerja' => $this->izin(),
+
+            /* Modul di bawah ini sebelumnya tidak pernah terisi sama
+               sekali. Akibatnya bukan sekadar halaman kosong: tombol
+               "muat data contoh" ada supaya orang dapat memeriksa
+               apakah datanya sudah benar, dan modul yang tetap kosong
+               sesudah tombolnya ditekan tidak dapat diperiksa — sambil
+               terlihat seolah sudah. Ketahuan ketika 38 rute rincian
+               tidak dapat diuji karena tidak ada satu pun baris yang
+               dapat dibuka. */
+            'Dokumen'   => $this->dokumen(),
+            'Bahaya'    => $this->bahaya(),
+            'Inspeksi'  => $this->inspeksi(),
+            'KO'        => $this->ko(),
+            'Energi'    => $this->energiAlat(),
+            'SMKP'      => $this->smkp(),
+            'Prosedur'  => $this->prosedur(),
+            'Berita'    => $this->berita(),
+            'LMS'       => $this->lms(),
+
+            /* Gelombang kedua, dari penelusuran tabel mana yang masih
+               nol sesudah tombolnya ditekan. Empat modul di bawah ini
+               tidak punya satu baris pun — dan tiga di antaranya
+               (konservasi, tindak lanjut, penanda tangan) muncul pada
+               laporan yang ditandatangani keluar. */
+            'Konservasi'     => $this->konservasi(),
+            'Tindak lanjut'  => $this->tindakLanjut(),
+            'Penanda tangan' => $this->penandaTangan(),
+            'Peta tambang'   => $this->peta(),
+            'Authority'      => $this->authority(),
+            'TPKKP'          => $this->tpkkp(),
+            'Investigasi'    => $this->investigasi(),
+            'PJP'            => $this->pjp(),
+
+            /* Evaluasi pemenuhan peraturan. Ditaruh SESUDAH dokumen,
+               karena sebagian kewajibannya menunjuk dokumen terkendali
+               sebagai bukti penerapannya — dan menunjuk baris yang
+               belum ada menghasilkan register bertaut kosong. */
+            'Kepatuhan'      => $this->kepatuhan(),
+
+            /* Audit lingkungan berdiri sendiri: kriterianya master
+               statis di resources, bukan tautan ke modul lain. Ditaruh
+               berdampingan dengan Kepatuhan karena keduanya dibaca dari
+               menu yang sama — dan yang memeriksa data contoh mencari
+               keduanya di satu tempat. */
+            'Audit lingkungan' => $this->auditLingkungan(),
+
+            /* P2H: lima unit, satu DITAHAN oleh butir kritis beserta
+               perintah kerjanya, satu sudah diperiksa shift ini, sisanya
+               menunggu — supaya daftar di mode lapangan punya ketiga
+               keadaannya. */
+            'P2H'             => $this->p2h(),
+
+            /* Observasi operator loader (FROP) di Learning Center. */
+            'Observasi operator' => $this->frop(),
+
+            /* Miners: MCU → Mine Permit → SIMPER. Satu rantai, dan
+               yang paling perlu diperiksa orang justru sambungannya —
+               kartu yang gugur karena MCU-nya habis, SIMPER yang gugur
+               karena SIMPOL-nya habis. Keduanya sengaja ada di sini. */
+            'Miners'         => $this->miners(),
+
+            /* Roster disusun SESUDAH Miners, dan urutan itu mengikat:
+               penyusunnya memeriksa MCU, induksi, dan Mine Permit tiap
+               orang pada tanggal yang dijadwalkan. Disusun lebih
+               dahulu, seluruh baris tertandai "terhalang" sebab
+               berkasnya memang belum ada. */
+            'Roster'         => $this->roster(),
+
+            /* Cuti di ANTARA roster dan absensi, dan urutan itu
+               mengikat keduanya: cuti yang disetujui menuliskan
+               hari-harinya ke roster, dan absensi dibangkitkan dari
+               roster yang sudah memuat cuti itu. Dijalankan sesudah
+               absensi, orang yang sedang cuti tetap menghasilkan
+               pindaian — dan layar harian menampilkan seseorang
+               menempel kartu di pos jaga pada hari ia berada di
+               kampung halamannya. */
+            'Cuti'           => $this->cuti(),
+
+            /* Absensi SESUDAH roster, dan urutan itu mengikat pula:
+               jejak pindaiannya dibangkitkan DARI roster yang sudah
+               tersusun, lalu direkonsiliasi terhadapnya. Dibalik,
+               seluruh pindaian jatuh menjadi "di luar roster" — sebab
+               memang belum ada roster yang memuatnya. */
+            'Absensi'        => $this->absensi(),
+
+            /* Lembur SESUDAH absensi, dan urutan itu mengikat: ia
+               diusulkan dari selisih jam yang benar-benar tercatat
+               terhadap jadwal shiftnya. Dijalankan lebih dahulu, tidak
+               ada satu jam pun yang dapat dibandingkan dengan apa
+               pun. */
+            'Lembur'         => $this->lembur(),
+
+            /* Penggajian PALING AKHIR di antara modul HRIS: ia menarik
+               dari roster, absensi, cuti, dan lembur sekaligus.
+               Dijalankan lebih dahulu, slipnya lahir kosong — dan
+               layarnya memperlihatkan gaji tanpa tunjangan site
+               maupun lembur, yang justru dua komponen yang paling
+               membedakan penggajian tambang. */
+            'Penggajian'     => $this->penggajian(),
+
+            /* Kontrak SESUDAH absensi: pelanggaran PKWT harian
+               diturunkan dari hari yang benar-benar dijalani, bukan
+               dari roster. Dijalankan lebih dahulu, pekerja harian
+               contohnya tampak patuh sebab belum ada satu hari pun
+               yang dapat dihitung. */
+            'Kontrak'        => $this->kontrak(),
+            'Pembelian'      => $this->pembelian(),
+            'Pesan'          => $this->pesan(),
+            'Catatan'        => $this->catatan(),
         ]);
+    }
+
+    /**
+     * Pembelian: katalog, satu tagihan lunas, satu yang masih menunggu.
+     *
+     * Dua tagihan, dan sengaja berbeda keadaannya. Data contoh yang
+     * seluruhnya lunas tidak pernah memperlihatkan bagaimana layarnya
+     * menampilkan tagihan yang menunggu — padahal itu keadaan yang
+     * paling sering dibuka orang.
+     *
+     * Katalognya dipasang lewat perintah yang sama dengan yang dipakai
+     * server, bukan disusun ulang di sini: dua penyusun untuk satu
+     * daftar akan berbeda isinya cepat atau lambat, dan yang di sini
+     * yang lebih dulu ketinggalan.
+     */
+
+    /* ─────────── Miners: MCU → Mine Permit → SIMPER ─────────── */
+
+    /**
+     * Satu rantai utuh, bukan tiga daftar yang kebetulan berdampingan.
+     *
+     * Ketiga dokumen Miners BERURUTAN — MCU menentukan Mine Permit, Mine
+     * Permit menentukan SIMPER — dan yang paling perlu diperiksa orang
+     * justru sambungannya: kartu yang gugur karena MCU-nya habis,
+     * SIMPER yang gugur karena SIMPOL-nya habis, permit tamu yang hanya
+     * berumur tujuh hari. Data contoh yang seluruhnya sah tidak pernah
+     * memperlihatkan satu pun dari itu; ia hanya memperlihatkan bahwa
+     * halamannya terbuka.
+     *
+     * Karena itu keenam orang di bawah sengaja BERBEDA KEADAANNYA, dan
+     * perbedaannya dipilih dari apa yang ditanyakan layar pemantauan:
+     *
+     *   1 Sudarmin      semuanya sah — jalur yang benar, untuk pembanding
+     *   2 Yulianto      MCU tinggal 10 hari — masuk ambang peringatan SOP
+     *   3 Haryanto      MCU sudah lewat — kartunya gugur meski tanggalnya belum
+     *   4 Bambang       mekanik, SIMPER R1 — kewenangan terbatas
+     *   5 Ratna         Mine Permit saja, tanpa SIMPER — kartu putih
+     *   6 Dwi Prasetyo  tamu, Visitor Permit tujuh hari
+     *
+     * Daftar awalnya dipasang lebih dulu, dan pemasangannya idempoten.
+     * Tanpa itu, data contoh pada pemasangan yang belum pernah
+     * menjalankan `miners:pasang` akan menghasilkan pekerja tanpa
+     * departemen dan permit tanpa jenis — dan kegagalannya berhenti di
+     * tingkat basis data, sebagai galat 500 tanpa sebab.
+     */
+    private function miners(): int
+    {
+        MasterMiners::pasang();
+
+        $n = 0;
+
+        /* Penyetuju BERNAMA lebih dulu — skema Safe Track. Dokumen yang
+           dibuat sebelum skemanya ada lahir tanpa penyetuju, dan antrean
+           "Perlu Approval Saya" pada data contoh kosong bagi siapa pun.
+           Pemegang peran perusahaan itu dipakai bila ada; selebihnya
+           peninjau yang memuat data contoh, supaya ia dapat menelusuri
+           alurnya sendiri. */
+        $penyetuju = fn (string $kolom, string $nilai) => User::withoutGlobalScopes()
+            ->where('company_id', $this->c->id)->where($kolom, $nilai)->orderBy('id')->value('id')
+            ?? $this->peninjau?->id;
+
+        MnrSkema::query()->updateOrCreate(['company_id' => $this->c->id], [
+            'dokter_user_id' => $penyetuju('ohse_role', 'paramedis'),
+            'ohse_user_id'   => $penyetuju('ohse_role', 'ohse'),
+            'ktt_user_id'    => $penyetuju('lms_role', 'ktt'),
+            'ohse_cc'        => 'hse.tembusan@contoh.test',
+            'user_id'        => $this->peninjau?->id,
+        ]);
+        $n++;
+
+        /* TENGAH MALAM, dan itu bukan kerapian.
+         *
+         * Cast `date` Laravel memangkas jam saat DIBACA, tidak saat
+         * DITULIS: Carbon berjam 22:15 tersimpan apa adanya sebagai
+         * "2026-10-11 22:15:09" pada kolom bertipe DATE. MySQL memangkas
+         * sendiri di tingkat kolom, SQLite tidak — sehingga baris yang
+         * sama berperilaku BERBEDA di server dan di mesin penguji, dan
+         * yang berbeda bukan tampilannya melainkan jawaban kueri
+         * rentang: `whereBetween(hari ini, hari ini + 30)` melewatkan
+         * sertifikat yang habis tepat pada hari ke-30, sebab 22:15 lewat
+         * dari tengah malam hari itu. Ujinya hijau di sini, layarnya
+         * salah di sana.
+         *
+         * Seluruh modul lain menyimpan 00:00:00 pada kolom tanggalnya;
+         * yang di bawah ini mengikuti. `$this->kini` tetap dipakai apa
+         * adanya untuk kolom WAKTU — `bertindak_pada` memang perlu
+         * jamnya. */
+        $hari = $this->kini->copy()->startOfDay();
+
+        /* ── daftar milik perusahaan sendiri ── */
+
+        $subkon = [];
+        foreach ([['PT Karya Tambang Mandiri', 'KTM'], ['CV Sinar Jaya Teknik', 'SJT']] as [$nama, $kode]) {
+            $subkon[] = MnrSubkontraktor::withoutGlobalScopes()->create([
+                'company_id' => $this->c->id, 'nama' => $nama, 'kode' => $kode,
+            ]);
+            $n++;
+        }
+
+        foreach ([
+            ['Ir. Bagas Wicaksono', 'Penanggung Jawab Operasional', 'pjo@contoh.test'],
+            ['Andi Prasetyo, S.T.', 'Wakil PJO', 'wakil.pjo@contoh.test'],
+        ] as [$nama, $jabatan, $surel]) {
+            MnrPjo::withoutGlobalScopes()->create([
+                'company_id' => $this->c->id, 'nama' => $nama,
+                'jabatan' => $jabatan, 'email' => $surel,
+            ]);
+            $n++;
+        }
+
+        /* Sub-blok menempel pada blok acuan bersama — lokasi kerja
+           001-SPM-007 — dan rinciannya memang milik masing-masing
+           tambang: front dan bay tidak sama di dua tambang mana pun. */
+        $blok = MnrBlok::withoutGlobalScopes()->whereNull('company_id')
+            ->get()->keyBy('kunci');
+
+        $subBlok = [];
+        foreach ([
+            ['pit', ['Front A', 'Front B']],
+            ['workshop', ['Bay 1', 'Bay 2']],
+        ] as [$kunci, $daftar]) {
+            if (! isset($blok[$kunci])) continue;
+
+            foreach ($daftar as $i => $nama) {
+                $subBlok[$nama] = MnrSubBlok::withoutGlobalScopes()->create([
+                    'company_id' => $this->c->id,
+                    'blok_id'    => $blok[$kunci]->id,
+                    'nama'       => $nama,
+                    'urutan'     => ($i + 1) * 10,
+                ]);
+                $n++;
+            }
+        }
+
+        $dep    = $this->minersMaster(MnrDepartemen::class);
+        $jab    = $this->minersMaster(MnrJabatan::class);
+        $unit   = $this->minersMaster(MnrJenisUnit::class);
+        $golong = $this->minersMaster(MnrKendaraan::class);
+        $tipe   = $this->minersMaster(MnrTipePermit::class);
+        $hasil  = $this->minersMaster(MnrHasilMcu::class);
+
+        /* ── orangnya ── */
+
+        $orang = [
+            ['Sudarmin',      '6371010101900001', 'produksi',    'driver-dt',          'PIT/Front A',    1990, 'O',  'karyawan'],
+            ['Yulianto',      '6371010202880002', 'produksi',    'operator-excavator', 'PIT/Front B',    1988, 'B',  'karyawan'],
+            ['Haryanto',      '6371010303920003', 'logistik',    'driver-lv',          'Main Office',    1992, 'A',  'kontrak'],
+            ['Bambang Irawan','6371010404850004', 'plant',       'mekanik',            'Workshop/Bay 1', 1985, 'AB', 'karyawan'],
+            ['Ratna Dewi',    '6371010505950005', 'logistik',    'admin-logistik',     'Main Office',    1995, 'O',  'karyawan'],
+            ['Dwi Prasetyo',  '6371010606800006', 'hse',         'safety-officer',     'Main Office',    1980, 'B',  'tamu'],
+        ];
+
+        $pekerja = [];
+        foreach ($orang as $i => [$nama, $nik, $kDep, $kJab, $lokasi, $lahir, $darah, $kerja]) {
+            [$namaBlok, $namaSub] = array_pad(explode('/', $lokasi), 2, null);
+
+            $pekerja[$nama] = MnrPekerja::withoutGlobalScopes()->create([
+                'company_id'      => $this->c->id,
+                'no_registrasi'   => sprintf('MNR-%s-%03d', $hari->format('Y'), $i + 1),
+                'nama'            => $nama,
+                'nik'             => $nik,
+                'no_induk'        => sprintf('IBP-%04d', 1200 + $i),
+                'tanggal_lahir'   => Carbon::create($lahir, ($i % 12) + 1, (($i * 3) % 27) + 1),
+
+                /* Masa kerja sengaja beragam, dan yang TERAKHIR belum
+                   genap dua belas bulan. Hak cuti tahunan baru timbul
+                   sesudah dua belas bulan bekerja terus-menerus (UU
+                   13/2003 pasal 79) — kalau semuanya sudah lama
+                   bekerja, layar saldo tidak pernah memperlihatkan
+                   bagaimana hak nol digambar, padahal itulah keadaan
+                   tiap karyawan baru. */
+                'tanggal_masuk'   => $hari->copy()->subMonths($i === 5 ? 5 : (14 + $i * 9))->startOfDay(),
+                'gol_darah'       => $darah,
+                'telepon'         => '0812'.str_pad((string) (3300000 + $i), 7, '0', STR_PAD_LEFT),
+                'telepon_darurat' => '0813'.str_pad((string) (4400000 + $i), 7, '0', STR_PAD_LEFT),
+                'departemen_id'   => $dep[$kDep] ?? null,
+                'jabatan_id'      => $jab[$kJab] ?? null,
+
+                /* Dua dari enam dipekerjakan subkontraktor, bukan
+                   seluruhnya atau tak seorang pun: penyaring "mitra
+                   kerja" pada daftar pekerja hanya dapat diperiksa
+                   kalau memang ada yang bermitra DAN ada yang tidak. */
+                'subkontraktor_id' => $i % 3 === 1 ? $subkon[(int) ($i / 3)]->id : null,
+                'blok_id'          => $blok->firstWhere('nama', $namaBlok)?->id,
+                'sub_blok_id'      => $namaSub ? ($subBlok[$namaSub]->id ?? null) : null,
+                'status_kerja'     => $kerja,
+                'status'           => 'aktif',
+
+                /* AKUN SENDIRI-SENDIRI, bukan satu akun untuk semua.
+                   Layanan mandiri menjawab "pekerja mana yang dimaksud
+                   akun ini" lebih dahulu; enam baris yang menunjuk satu
+                   akun membuat jawabannya diambil sembarang, dan yang
+                   membuka slip gajinya membaca slip rekannya. Sejak
+                   migrasi satu-akun-satu-pekerja, tautan berlebih
+                   memang ditolak basis data — tetapi data contoh yang
+                   memperagakan layanan mandiri harus punya orang yang
+                   benar-benar dapat masuk sebagai dirinya. */
+                'user_id'          => $this->akunPekerja($nama, $i)?->id,
+            ]);
+            $n++;
+        }
+
+        /* ── Riwayat Karyawan: catatan pelanggaran ──
+           Satu sudah terverifikasi OHSE (terbaca perusahaan lain dalam
+           grup) dan satu masih menunggu verifikasi — dua keadaan yang
+           membedakan rekap pelanggaran dari daftar biasa. */
+        foreach ([
+            ['Sudarmin',  'lalu_lintas', 'sedang', 'sp1', 'Melebihi batas kecepatan di jalan hauling KM 4.', \App\Models\Miners\Pelanggaran::DIVERIFIKASI, 40],
+            ['Haryanto',  'prosedur_k3', 'ringan', 'teguran', 'Tidak memakai sabuk keselamatan saat mengemudi LV.', \App\Models\Miners\Pelanggaran::DIAJUKAN, 6],
+        ] as [$nama, $kategori, $tingkat, $sanksi, $uraian, $status, $lalu]) {
+            $this->baru(\App\Models\Miners\Pelanggaran::class, [
+                'pekerja_id' => $pekerja[$nama]->id,
+                'tanggal'    => $hari->copy()->subDays($lalu)->toDateString(),
+                'kategori'   => $kategori, 'tingkat' => $tingkat, 'sanksi' => $sanksi,
+                'uraian'     => $uraian, 'lokasi' => 'Area tambang', 'status' => $status,
+            ]);
+            $n++;
+        }
+
+        /* ── MCU ──
+           Dua berkas: satu sudah selesai dan menjadi dasar seluruh
+           kartu, satu masih di meja dokter. Yang kedua itu yang membuat
+           antrean "menunggu pemeriksaan" dapat diperiksa; data contoh
+           yang seluruh MCU-nya selesai tidak pernah menampilkannya. */
+
+        $mcu = MnrMcu::withoutGlobalScopes()->create([
+            'company_id'    => $this->c->id,
+            'no_registrasi' => 'MCU-'.$hari->format('Y').'-001',
+            'tanggal'       => $hari->copy()->subMonths(3),
+            'kepada'        => 'Klinik Pratama Bhakti Medika',
+            'perihal'       => 'Permohonan pemeriksaan kesehatan berkala karyawan tambang.',
+            'status'        => 'selesai',
+            'user_id'       => $this->pengaju?->id,
+        ]);
+        $n++;
+        $n += $this->minersAlur($mcu, ['setuju', 'setuju', 'setuju']);
+
+        /* Berapa bulan lalu MCU tiap orang dilakukan. Sengaja
+           BUKAN satu angka: 11 bulan lalu berarti tinggal sebulan lagi,
+           12 bulan 10 hari lalu berarti sudah lewat — dua keadaan yang
+           justru paling perlu terlihat di layar pemantauan. */
+        $umurMcu = [
+            'Sudarmin'       => ['bulan' => 2,  'hasil' => 'fit'],
+            'Yulianto'       => ['hari'  => 355, 'hasil' => 'fit'],
+            'Haryanto'       => ['hari'  => 380, 'hasil' => 'fit'],
+            'Bambang Irawan' => ['bulan' => 4,  'hasil' => 'fit-with-note'],
+            'Ratna Dewi'     => ['bulan' => 1,  'hasil' => 'fit'],
+            'Dwi Prasetyo'   => ['bulan' => 1,  'hasil' => 'fit'],
+        ];
+
+        $mcuOrang = [];
+        foreach ($pekerja as $nama => $p) {
+            $u = $umurMcu[$nama];
+
+            $periksa = isset($u['bulan'])
+                ? $hari->copy()->subMonths($u['bulan'])
+                : $hari->copy()->subDays($u['hari']);
+
+            $mcuOrang[$nama] = MnrMcuOrang::create([
+                'mcu_id'             => $mcu->id,
+                'pekerja_id'         => $p->id,
+                'nama'               => $p->nama,
+                'nik'                => $p->nik,
+                'jabatan'            => MnrJabatan::withoutGlobalScopes()->find($p->jabatan_id)?->nama,
+                'usia'               => $p->usia($periksa),
+                'departemen_id'      => $p->departemen_id,
+                'hasil_id'           => $hasil[$u['hasil']] ?? null,
+                'tanggal_periksa'    => $periksa,
+                'berlaku_sampai'     => $periksa->copy()->addMonths(MnrMcuOrang::BULAN_BERLAKU),
+                'tanggal_berikut'    => $periksa->copy()->addMonths(MnrMcuOrang::BULAN_BERLAKU),
+                'hasil_napza'        => 'negatif',
+                'aktif'              => true,
+            ]);
+            $n++;
+        }
+
+        /* Satu rujukan, pada satu-satunya orang yang hasilnya "Fit With
+           Note". Rujukan tanpa catatan medis apa pun tidak masuk akal,
+           dan yang tidak masuk akal tidak dapat dipakai memeriksa
+           apakah layarnya benar. */
+        MnrMcuRujukan::create([
+            'mcu_orang_id'    => $mcuOrang['Bambang Irawan']->id,
+            'tanggal_surat'   => $mcuOrang['Bambang Irawan']->tanggal_periksa->copy()->addDays(3),
+            'dokter'          => 'dr. Retno Wulandari, Sp.PD',
+            'poliklinik'      => 'Penyakit Dalam',
+            'rumah_sakit'     => 'RSUD Kabupaten',
+            'diagnosis_awal'  => 'Tekanan darah 150/95 mmHg pada dua kali pengukuran.',
+            'keterangan'      => 'Boleh bekerja dengan pemantauan tekanan darah tiap tiga bulan. Tidak untuk shift malam.',
+        ]);
+        $n++;
+
+        $mcuJalan = MnrMcu::withoutGlobalScopes()->create([
+            'company_id'    => $this->c->id,
+            'no_registrasi' => 'MCU-'.$hari->format('Y').'-002',
+            'tanggal'       => $hari->copy()->subDays(5),
+            'kepada'        => 'Klinik Pratama Bhakti Medika',
+            'perihal'       => 'Permohonan MCU pre-employment dua calon karyawan baru.',
+            'status'        => 'diperiksa',
+            'user_id'       => $this->pengaju?->id,
+        ]);
+        $n++;
+        $n += $this->minersAlur($mcuJalan, ['setuju', 'menunggu', 'menunggu']);
+
+        /* ── induksi ── */
+
+        $induksi = MnrInduksi::withoutGlobalScopes()->create([
+            'company_id'    => $this->c->id,
+            'no_registrasi' => 'IND-'.$hari->format('Y').'-001',
+            'tanggal'       => $hari->copy()->subMonths(3)->addDays(7),
+            'perihal'       => 'Induksi keselamatan pertambangan bagi enam karyawan.',
+            'status'        => 'selesai',
+            'user_id'       => $this->pengaju?->id,
+        ]);
+        $n++;
+        $n += $this->minersAlur($induksi, ['setuju', 'setuju']);
+
+        /* Nilai post test sengaja MELINTASI ambang kelulusan, bukan
+           seluruhnya di atasnya. Satu orang harus mengulang, dan
+           layar remidi tidak dapat diperiksa tanpa itu. */
+        $nilai = [
+            'Sudarmin' => [88, 1], 'Yulianto' => [92, 1], 'Haryanto' => [76, 2],
+            'Bambang Irawan' => [85, 1], 'Ratna Dewi' => [95, 1], 'Dwi Prasetyo' => [90, 1],
+        ];
+
+        $induksiOrang = [];
+        foreach ($pekerja as $nama => $p) {
+            [$angka, $percobaan] = $nilai[$nama];
+            $tanggal = $induksi->tanggal->copy();
+
+            $induksiOrang[$nama] = MnrInduksiOrang::create([
+                'induksi_id'      => $induksi->id,
+                'pekerja_id'      => $p->id,
+                'mcu_orang_id'    => $mcuOrang[$nama]->id,
+                'tanggal_induksi' => $tanggal,
+                'lokasi'          => 'Ruang Induksi, Main Office',
+                'nilai'           => $angka,
+                'percobaan'       => $percobaan,
+                'status'          => MnrInduksiOrang::statusDari($angka, $percobaan),
+                'berlaku_sampai'  => $tanggal->copy()->addMonths(MnrInduksiOrang::BULAN_BERLAKU),
+                'catatan'         => $percobaan > 1
+                    ? 'Nilai '.$angka.' masih di bawah ambang '.MnrInduksiOrang::NILAI_LULUS
+                        .'. Dijadwalkan mengulang sekali lagi.'
+                    : null,
+            ]);
+            $n++;
+        }
+
+        $induksiJalan = MnrInduksi::withoutGlobalScopes()->create([
+            'company_id'    => $this->c->id,
+            'no_registrasi' => 'IND-'.$hari->format('Y').'-002',
+            'tanggal'       => $hari->copy()->addDays(10),
+            'perihal'       => 'Refresh induksi keselamatan menjelang perpanjangan tahunan.',
+            'status'        => 'dijadwal',
+            'user_id'       => $this->pengaju?->id,
+        ]);
+        $n++;
+        $n += $this->minersAlur($induksiJalan, ['setuju', 'menunggu']);
+
+        /* ── Mine Permit ──
+           Masa berlakunya DIHITUNG dari tipenya lewat jalan yang sama
+           dengan yang dipakai aplikasi, bukan diketik sebagai tanggal
+           di sini: tanggal yang diketik akan diam-diam berbeda dari
+           yang dihitung aplikasi, dan yang berbeda itulah yang
+           dipercaya orang saat memeriksa layarnya. */
+
+        $rencana = [
+            ['Sudarmin',       'full-permit',      'umum',      'UNRESTRICTED', 'merah', 'terbit',   null],
+            ['Yulianto',       'full-permit',      'umum',      'UNRESTRICTED', 'merah', 'terbit',   null],
+            ['Haryanto',       'full-permit',      'umum',      'RESTRICTED',   'hijau', 'terbit',   null],
+            ['Bambang Irawan', 'full-permit',      'umum',      'UNRESTRICTED', 'merah', 'terbit',   null],
+            ['Ratna Dewi',     'full-permit',      'umum',      'RESTRICTED',   'putih', 'terbit',   null],
+            ['Dwi Prasetyo',   'visitor-permit',   'kunjungan', 'RESTRICTED',   'putih', 'diajukan', null],
+        ];
+
+        $permit = [];
+        foreach ($rencana as $i => [$nama, $kTipe, $kKategori, $zona, $warna, $status, $cabut]) {
+            $p       = $pekerja[$nama];
+            $tipeRow = MnrTipePermit::withoutGlobalScopes()->find($tipe[$kTipe] ?? 0);
+
+            /* Permit tamu diterbitkan BARU-BARU INI, bukan tiga bulan
+               lalu seperti sisanya. Umurnya hanya tujuh hari menurut
+               SOP, jadi yang berumur tiga bulan sudah lama habis — dan
+               permit tamu yang selalu tampil kedaluwarsa tidak
+               memperlihatkan apa pun tentang bagaimana jendela tujuh
+               hari itu digambar, yang justru satu-satunya alasan
+               jenis ini ada. */
+            $terbit = $tipeRow?->hari_berlaku === null
+                ? $hari->copy()->subMonths(3)->addDays(14)
+                : $hari->copy()->subDays(2);
+
+            /* Masa berlaku MENGIKUTI MCU dasarnya — aturan Safe Track
+               (`tgl_expired = nom`), bukan 31 Desember. */
+            $habis = $mcuOrang[$nama]->berlaku_sampai;
+            $asal  = 'mcu';
+
+            $kategoriId = MnrKategoriPermit::where('tipe_permit_id', $tipeRow?->id)
+                ->where('kunci', $kKategori)->value('id');
+
+            $permit[$nama] = MnrPermit::withoutGlobalScopes()->create([
+                'company_id'         => $this->c->id,
+                'kontraktor_id'      => null,
+                'pekerja_id'         => $p->id,
+                'mcu_orang_id'       => $mcuOrang[$nama]->id,
+                'induksi_orang_id'   => $induksiOrang[$nama]->id,
+                'iup_id'             => $this->c->id,
+                'jenis_kartu'        => 'Mine Permit',
+                'no_registrasi'      => sprintf('MP-%s-%03d', $terbit->format('Y'), $i + 1),
+                'tanggal'            => $terbit,
+                'tipe_permit_id'     => $tipeRow?->id,
+                'kategori_permit_id' => $kategoriId,
+                'cakupan_area'       => $zona,
+                'kode_warna'         => $warna,
+                'status'             => $status,
+                'berlaku_sampai'     => $habis,
+                'sumber_berlaku'     => $asal,
+                'user_id'            => $this->pengaju?->id,
+            ]);
+            $n++;
+
+            $n += $this->minersAlur(
+                $permit[$nama],
+                $status === 'terbit' ? ['setuju', 'setuju', 'setuju'] : ['setuju', 'menunggu', 'menunggu'],
+            );
+        }
+
+        /* Lampiran wajib menurut SOP, pada satu permit saja. Seluruhnya
+           pada keenamnya hanya menggandakan baris yang sama; satu yang
+           lengkap cukup memperlihatkan bagaimana daftar periksa
+           kelengkapan digambar. */
+        foreach (Acuan::berkasWajib('permit_baru') as $j => $jenis) {
+            MnrPermitBerkas::create([
+                'permit_id' => $permit['Sudarmin']->id,
+                'jenis'     => Str::slug($jenis),
+                'berkas'    => null,
+                'nomor'     => sprintf('LMP-%03d', $j + 1),
+                'tanggal'   => $permit['Sudarmin']->tanggal,
+                'catatan'   => $jenis,
+            ]);
+            $n++;
+        }
+
+        /* ── SIMPER ── */
+
+        $kartu = [
+            ['Sudarmin',       'F',  'Dump Truck', ['Dump Truck PS'],               'B2 Umum', 'operator', [90, 88, 92, 85]],
+            ['Yulianto',       'F',  'Alat Berat', ['Excavator', 'Wheel Loader'],   'B2 Umum', 'operator', [92, 90, 88, 90]],
+            ['Bambang Irawan', 'R1', 'Alat Berat', ['Excavator', 'Bulldozer'],      'B2 Umum', 'pengawas', [85, 80, 82, null]],
+        ];
+
+        $simper = [];
+        foreach ($kartu as $i => [$nama, $kelas, $namaGolongan, $daftarUnit, $simpol, $wewenang, $skor]) {
+            $terbit = $permit[$nama]->tanggal->copy()->addDays(21);
+
+            /* SIMPOL Bambang habis LEBIH DAHULU daripada apa pun yang
+               lain pada kartunya. SOP: "SIMPOL habis → SIMPER otomatis
+               tidak berlaku", dan aturan itu tidak dapat diperiksa di
+               layar mana pun tanpa satu kartu yang benar-benar begitu.
+
+               DIA, BUKAN YULIANTO, dan pilihan itu bukan selera. Masa
+               berlaku SIMPER adalah yang PALING AWAL di antara tiga —
+               kartunya sendiri, permitnya, dan SIMPOL — sedangkan
+               permit Yulianto sudah dipendekkan MCU-nya sampai sepuluh
+               hari lagi. SIMPOL pendek di sana akan kalah oleh permit,
+               dan `penyebabHabis()` menjawab "permit": aturan SIMPOL
+               tidak pernah terlihat sekali pun. MCU Bambang masih lama,
+               jadi pada kartunyalah SIMPOL benar-benar yang menentukan. */
+            $simpolHabis = $nama === 'Bambang Irawan'
+                ? $hari->copy()->addDays(20)
+                : $hari->copy()->addYears(3);
+
+            $simper[$nama] = MnrSimper::withoutGlobalScopes()->create([
+                'company_id'            => $this->c->id,
+                'permit_id'             => $permit[$nama]->id,
+                'pekerja_id'            => $pekerja[$nama]->id,
+                'no_simper'             => sprintf('SMP-%s-%03d', $terbit->format('Y'), $i + 1),
+                'tanggal'               => $terbit,
+                'kelas'                 => $kelas,
+                'no_simpol'             => '7401'.str_pad((string) (120045 + $i), 6, '0', STR_PAD_LEFT),
+                'jenis_simpol'          => $simpol,
+                'simpol_berlaku_sampai' => $simpolHabis,
+                'pengalaman_kerja'      => (5 + $i).' tahun',
+                'status'                => 'terbit',
+                'berlaku_sampai'        => $terbit->copy()->endOfYear()->startOfDay(),
+                'sumber_berlaku'        => 'tahunan',
+                'user_id'               => $this->pengaju?->id,
+            ]);
+            $n++;
+            $n += $this->minersAlur($simper[$nama], ['setuju', 'setuju', 'setuju']);
+
+            foreach ($daftarUnit as $namaUnit) {
+                MnrSimperUnit::create([
+                    'simper_id'     => $simper[$nama]->id,
+                    'kendaraan_id'  => $golong[Str::slug($namaGolongan)] ?? null,
+                    'jenis_unit_id' => $unit[Str::slug($namaUnit)] ?? null,
+                    'kewenangan'    => $wewenang,
+                    'nilai_p2h'     => $skor[0],
+                    'nilai_praktek' => $skor[1],
+                    'nilai_teori'   => $skor[2],
+                    'nilai_rambu'   => $skor[3],
+                    'asal'          => 'baru',
+                ]);
+                $n++;
+            }
+        }
+
+        /* ── pengajuan lanjutan ──
+           Dua jenis dari tiga, dan keduanya berbeda keadaan: satu sudah
+           tuntas, satu masih menunggu KTT. Tanpa yang kedua, layar
+           "menunggu pengesahan" tidak punya satu baris pun. */
+
+        $tambah = MnrSimperAjuan::create([
+            'simper_id'        => $simper['Sudarmin']->id,
+            'jenis'            => 'penambahan',
+            'no_registrasi'    => 'AJU-'.$hari->format('Y').'-001',
+            'tanggal'          => $hari->copy()->subMonths(1),
+            'pengalaman_kerja' => '6 tahun',
+            'status'           => 'selesai',
+            'user_id'          => $this->pengaju?->id,
+        ]);
+        $n++;
+        $n += $this->minersAlur($tambah, ['setuju', 'setuju', 'setuju']);
+
+        foreach (['Water Truck' => 'Water Truck', 'Fuel Truck' => 'Fuel Truck'] as $namaGolongan => $namaUnit) {
+            MnrSimperAjuanUnit::create([
+                'ajuan_id'      => $tambah->id,
+                'kendaraan_id'  => $golong[Str::slug($namaGolongan)] ?? null,
+                'jenis_unit_id' => $unit[Str::slug($namaUnit)] ?? null,
+                'kewenangan'    => 'operator',
+                'nilai_p2h'     => 88,
+                'nilai_praktek' => 86,
+                'nilai_teori'   => 90,
+            ]);
+            $n++;
+
+            /* Unit yang sudah disetujui IKUT MASUK ke kartunya, bertanda
+               asal "penambahan". Disimpan hanya pada pengajuannya,
+               kartu yang unitnya bertambah tidak pernah menunjukkan
+               unit barunya — dan yang dibaca petugas pos adalah kartu,
+               bukan arsip pengajuan. */
+            MnrSimperUnit::create([
+                'simper_id'     => $simper['Sudarmin']->id,
+                'kendaraan_id'  => $golong[Str::slug($namaGolongan)] ?? null,
+                'jenis_unit_id' => $unit[Str::slug($namaUnit)] ?? null,
+                'kewenangan'    => 'operator',
+                'nilai_p2h'     => 88,
+                'nilai_praktek' => 86,
+                'nilai_teori'   => 90,
+                'asal'          => 'penambahan',
+            ]);
+            $n++;
+        }
+
+        /* ── sertifikat kompetensi ──
+           Tiga orang, dan masa berlakunya sengaja BERBEDA JAUH: satu
+           masih lama, satu tinggal tiga minggu, satu sudah lewat.
+           Masa berlaku melekat pada sertifikatnya, bukan pada orangnya
+           — seorang pengawas dapat memegang POP sampai 2028 dan Ahli K3
+           yang habis bulan depan — dan perbedaan itu tidak dapat
+           diperiksa pada data contoh yang seluruhnya berlaku sampai
+           tahun yang sama. */
+        foreach ([
+            ['Sudarmin',       'Pengawas Operasional Pertama (POP)', 'BNSP', 36],
+            ['Yulianto',       'Petugas K3 Pertambangan',            'ESDM', 1],
+            ['Bambang Irawan', 'AK3U BNSP',                          'BNSP', -2],
+        ] as [$nama, $judul, $lembaga, $bulanLagi]) {
+            $jenis = KompetensiJenis::withoutGlobalScopes()
+                ->whereRaw('LOWER(nama) = ?', [mb_strtolower($judul)])->first();
+
+            MnrKompetensi::withoutGlobalScopes()->create([
+                'company_id'          => $this->c->id,
+                'pekerja_id'          => $pekerja[$nama]->id,
+                'kompetensi_jenis_id' => $jenis?->id,
+                'nama'                => $jenis?->nama ?? $judul,
+                'lembaga'             => $jenis?->lembaga ?? $lembaga,
+                'nomor'               => 'SRT/'.strtoupper(Str::random(4)).'/'.$hari->format('Y'),
+                'tanggal_terbit'      => $hari->copy()->addMonths($bulanLagi)->subYears(3),
+                'berlaku_sampai'      => $hari->copy()->addMonths($bulanLagi),
+                'user_id'             => $this->pengaju?->id,
+            ]);
+            $n++;
+        }
+
+        $perpanjang = MnrSimperAjuan::create([
+            'simper_id'             => $simper['Yulianto']->id,
+            'jenis'                 => 'perpanjangan',
+            'no_registrasi'         => 'AJU-'.$hari->format('Y').'-002',
+            'tanggal'               => $hari->copy()->subDays(4),
+            'simpol_berlaku_sampai' => $hari->copy()->addYears(5),
+            'pengalaman_kerja'      => '7 tahun',
+            'status'                => 'ktt',
+            'catatan'               => 'SIMPOL diperpanjang; menunggu pengesahan KTT.',
+            'user_id'               => $this->pengaju?->id,
+        ]);
+        $n++;
+        /* Perpanjangan menempuh dokter → HSE → KTT; yang ini sudah
+           sampai di KTT. */
+        $n += $this->minersAlur($perpanjang, ['setuju', 'setuju', 'setuju', 'menunggu']);
+
+        MnrSimperAjuanUnit::create([
+            'ajuan_id'      => $perpanjang->id,
+            'kendaraan_id'  => $golong['alat-berat'] ?? null,
+            'jenis_unit_id' => $unit['excavator'] ?? null,
+            'kewenangan'    => 'operator',
+            'nilai_p2h'     => 94,
+            'nilai_praktek' => 91,
+            'nilai_teori'   => 89,
+        ]);
+        $n++;
+
+        /* ── perpanjangan Mine Permit ──
+           Satu yang masih di meja dokter: rantainya pengaju → dokter →
+           HSE → KTT, dan layar antrean perpanjangan tidak dapat diperiksa
+           tanpa satu pun yang berjalan. */
+        $panjang = MnrPermitPerpanjangan::withoutGlobalScopes()->create([
+            'company_id'    => $this->c->id,
+            'permit_id'     => $permit['Yulianto']->id,
+            'no_registrasi' => 'PPJ-'.$hari->format('Y').'-001',
+            'tanggal'       => $hari->copy()->subDays(2),
+            'tanggal_mcu'   => $hari->copy()->subDays(6),
+            'berlaku_baru'  => $hari->copy()->addYear(),
+            'status'        => 'diperiksa',
+            'user_id'       => $this->pengaju?->id,
+        ]);
+        $n++;
+        $n += $this->minersAlur($panjang, ['setuju', 'menunggu', 'menunggu', 'menunggu']);
+
+        /* Huruf kewenangan per unit dan type unit pada tabel pasangannya
+           — bentuk Safe Track. Pasangannya ikut terbuang lewat kaskade
+           unitnya, jadi tidak dihitung tersendiri. */
+        $huruf = ['operator' => 'F', 'pengawas' => 'R', 'trainer' => 'I'];
+        $idSimper = MnrSimper::withoutGlobalScopes()->where('company_id', $this->c->id)->select('id');
+
+        foreach (MnrSimperUnit::withoutGlobalScopes()->whereIn('simper_id', $idSimper)->get() as $u) {
+            $u->update(['authority' => $huruf[$u->kewenangan] ?? 'F']);
+            if ($u->jenis_unit_id) $u->jenisUnitBanyak()->syncWithoutDetaching([$u->jenis_unit_id]);
+        }
+
+        foreach (MnrSimperAjuanUnit::withoutGlobalScopes()
+                     ->whereIn('ajuan_id', MnrSimperAjuan::withoutGlobalScopes()->whereIn('simper_id', $idSimper)->select('id'))
+                     ->get() as $u) {
+            $u->update(['authority' => $huruf[$u->kewenangan] ?? 'F']);
+            if ($u->jenis_unit_id) $u->jenisUnitBanyak()->syncWithoutDetaching([$u->jenis_unit_id]);
+        }
+
+        return $n;
+    }
+
+
+
+    /* ─────────── Cuti & izin ─────────── */
+
+    /**
+     * Empat pengajuan yang sengaja berbeda nasibnya.
+     *
+     * Seluruhnya disetujui, layar ini tidak pernah memperlihatkan
+     * antrean yang menunggu — padahal antrean itulah satu-satunya
+     * alasan seseorang membuka layarnya. Seluruhnya cuti tahunan, ia
+     * tidak pernah memperlihatkan izin khusus yang TIDAK memotong
+     * saldo, dan yang membacanya menyangka setiap izin memakan jatah.
+     */
+    private function cuti(): int
+    {
+        MasterCuti::pasang();
+
+        $n = 0;
+
+        $hari = $this->kini->copy()->startOfDay();
+
+        $jenis = HrJenisCuti::withoutGlobalScopes()->whereNull('company_id')
+            ->get()->keyBy('kunci');
+
+        $pekerja = MnrPekerja::withoutGlobalScopes()
+            ->where('company_id', $this->c->id)->orderBy('nama')->get()->values();
+
+        if ($jenis->isEmpty() || $pekerja->isEmpty()) return 0;
+
+        /* Penindaknya HARUS bukan pengajunya — JalurCuti menolak
+           persetujuan atas pengajuan sendiri, dan data contoh yang
+           melanggarnya akan diam-diam gagal menyetujui apa pun. */
+        $penyetuju = $this->pengaju
+            ? User::where('id', '<>', $this->pengaju->id)->first()
+            : User::first();
+
+        $rencana = [
+            /* pekerja, kunci jenis, mulai (hari dari sekarang), lama, nasib */
+            [0, 'tahunan',    -21, 3, 'disetujui'],
+            [1, 'duka-inti',  -12, 2, 'disetujui'],
+            [2, 'tahunan',      9, 4, 'menunggu'],
+            [3, 'sakit',       -6, 2, 'ditolak'],
+        ];
+
+        foreach ($rencana as [$i, $kunciJenis, $geser, $lama, $nasib]) {
+            if (! isset($pekerja[$i]) || ! isset($jenis[$kunciJenis])) continue;
+
+            $p = $pekerja[$i];
+            $j = $jenis[$kunciJenis];
+
+            $mulai   = $hari->copy()->addDays($geser);
+            $selesai = $mulai->copy()->addDays($lama - 1);
+
+            $hitung = KebijakanCuti::hariTerpotong($p, $mulai, $selesai);
+
+            /* Rentang yang seluruhnya jatuh pada periode off-site tidak
+               memotong satu hari pun — dan pengajuan seperti itu memang
+               ditolak aturannya. Dilewati di sini supaya data contoh
+               tidak berisi baris yang tidak dapat dibuat lewat layarnya
+               sendiri. */
+            if ($hitung['hari'] === 0) continue;
+
+            $c = HrCuti::withoutGlobalScopes()->create([
+                'company_id'    => $this->c->id,
+                'pekerja_id'    => $p->id,
+                'jenis_cuti_id' => $j->id,
+                'mulai'         => $mulai,
+                'selesai'       => $selesai,
+                'hari'          => $hitung['hari'],
+                'kalender'      => $hitung['kalender'],
+                'alasan'        => match ($kunciJenis) {
+                    'duka-inti' => 'Orang tua meninggal dunia.',
+                    'sakit'     => 'Demam berdarah, dirawat di klinik site.',
+                    default     => 'Keperluan keluarga di kampung halaman.',
+                },
+                'status'        => 'menunggu',
+                'diajukan_oleh' => $this->pengaju?->id,
+                'diajukan_pada' => Waktu::kiniSimpan(),
+            ]);
+            $n++;
+
+            if (! $penyetuju) continue;
+
+            /* Ditindak lewat JALUR YANG SAMA dengan yang dipakai
+               layarnya, bukan dengan menulis kolom status langsung.
+               Ditulis langsung, saldo tidak terpotong dan rosternya
+               tidak ikut berubah — data contoh lalu memperlihatkan
+               keadaan yang tidak pernah dihasilkan tombolnya. */
+            if ($nasib === 'disetujui') {
+                JalurCuti::setujui($c->fresh(), $penyetuju, 'Disetujui; regu masih cukup orang.');
+            }
+
+            if ($nasib === 'ditolak') {
+                JalurCuti::tolak($c->fresh(), $penyetuju, 'Surat dokter belum dilampirkan.');
+            }
+        }
+
+        /* Saldo seluruh pekerja dilahirkan sekalian, bukan hanya milik
+           yang mengajukan. Layar saldo yang separuh barisnya kosong
+           terbaca seperti data yang gagal dimuat. */
+        $tahunan = $jenis['tahunan'] ?? null;
+
+        if ($tahunan) {
+            foreach ($pekerja as $p) {
+                KebijakanCuti::saldo($p, $tahunan, (int) $hari->format('Y'));
+            }
+
+            $n += HrSaldoCuti::withoutGlobalScopes()
+                ->where('company_id', $this->c->id)->count();
+        }
+
+        return $n;
+    }
+
+    /* ─────────── Absensi ─────────── */
+
+    /**
+     * Pindaian yang dibangkitkan DARI roster, lalu direkonsiliasi
+     * terhadapnya.
+     *
+     * Dibangkitkan sempurna — tiap orang menempel tepat waktu tiap
+     * hari — layar ini tidak pernah memperlihatkan satu pun keadaan
+     * yang menuntut tindakan, dan justru keadaan itulah alasan
+     * modulnya ada. Karena itu data contoh memuat kelimanya sekaligus:
+     * yang tepat waktu, yang terlambat, yang lupa menempel saat
+     * pulang, yang tidak datang sama sekali, dan yang bekerja pada
+     * hari liburnya.
+     *
+     * PENYIMPANGANNYA DITENTUKAN CRC32, bukan rand(). Data contoh yang
+     * berubah tiap kali dimuat membuat tangkapan layar kemarin tidak
+     * dapat dibandingkan dengan hari ini — dan uji yang menghitungnya
+     * lulus atau gagal menurut undian.
+     */
+    private function absensi(): int
+    {
+        $n = 0;
+
+        $hari = $this->kini->copy()->startOfDay();
+
+        $blok = MnrBlok::withoutGlobalScopes()->whereNull('company_id')
+            ->get()->keyBy('kunci');
+
+        /* Dua mesin, dan sengaja berbeda keadaannya: yang satu sudah
+           bertoken dan pernah terhubung, yang lain belum. Seluruhnya
+           bertoken, layar mesin tidak pernah memperlihatkan bagaimana
+           alat yang belum siap dipasang digambar — padahal itulah
+           keadaan tiap alat pada hari pertamanya. */
+        $mesin = [];
+
+        foreach ([
+            ['Pos Jaga Utama',   'zkteco',    'POS-01', 'pit',      '10.20.7.11', true],
+            ['Gerbang Workshop', 'hikvision', 'WS-02',  'workshop', '10.20.7.12', false],
+        ] as [$nama, $merek, $seri, $kunciBlok, $ip, $bertoken]) {
+            $m = HrMesin::withoutGlobalScopes()->create([
+                'company_id' => $this->c->id,
+                'blok_id'    => $blok[$kunciBlok]->id ?? null,
+                'nama'       => $nama,
+                'merek'      => $merek,
+                'nomor_seri' => $seri,
+                'ip'         => $ip,
+                'aktif'      => true,
+                'terakhir_hubung' => $bertoken ? Waktu::simpan($this->kini->copy()->subMinutes(7)) : null,
+            ]);
+
+            if ($bertoken) $m->terbitkanToken();
+
+            $mesin[] = $m;
+            $n++;
+        }
+
+        $utama = $mesin[0];
+
+        $dari = $hari->copy()->subDays(20);
+
+        $roster = HrRoster::withoutGlobalScopes()
+            ->where('company_id', $this->c->id)
+            ->with('pola')
+            ->antara($dari->toDateString(), $hari->toDateString())
+            ->orderBy('tanggal')
+            ->get();
+
+        if ($roster->isEmpty()) return $n;
+
+        /* UNDIANNYA DIKUNCI PADA NOMOR REGISTRASI, bukan pada id baris.
+           Id berubah tiap kali data contoh dimuat ulang — dan bersama
+           itu berubah pula siapa yang absen dan siapa yang lupa
+           menempel saat pulang. Jumlah barisnya lalu berbeda antara dua
+           pemuatan yang seharusnya identik, dan uji penggandaan gagal
+           menurut undian, bukan menurut cacat. Terjadi sungguhan. */
+        $nomor = MnrPekerja::withoutGlobalScopes()
+            ->where('company_id', $this->c->id)
+            ->pluck('no_registrasi', 'id');
+
+        $orang = [];
+
+        foreach ($roster as $r) {
+            $tgl = $r->tanggal->toDateString();
+
+            $undian = (int) (crc32(($nomor[$r->pekerja_id] ?? $r->pekerja_id).'|'.$tgl) % 100);
+
+            $pasang = $r->bekerja()
+                ? $this->jamKerja($r, $tgl, $undian)
+
+                /* Hari libur yang dikerjakan — jarang, dan memang harus
+                   jarang: dibuat sering, "di luar roster" berhenti
+                   terbaca sebagai kejanggalan. */
+                : ($undian % 17 === 3 ? $this->jamLuarRoster($r, $tgl) : null);
+
+            if ($pasang === null) continue;
+
+            [$masuk, $keluar, $sumber, $luring, $dalamArea, $jarak] = $pasang;
+
+            foreach ([['masuk', $masuk], ['keluar', $keluar]] as [$arah, $saat]) {
+                if ($saat === null) continue;
+
+                /* Pindaian di masa depan tidak dibuat. Shift hari ini
+                   yang belum selesai memang belum punya tap pulang —
+                   dan layar pos jaga yang menampilkannya sebagai
+                   "belum tap pulang" pada pukul dua siang menyatakan
+                   yang sebenarnya. */
+                if ($saat->gt($this->kini)) continue;
+
+                HrJejak::withoutGlobalScopes()->create([
+                    'company_id' => $this->c->id,
+                    'pekerja_id' => $r->pekerja_id,
+                    'mesin_id'   => $sumber === 'mesin' ? $utama->id : null,
+                    'terjadi'    => Waktu::simpan($saat),
+                    'diterima'   => Waktu::simpan(
+                        $luring ? $saat->copy()->addHours(9) : $saat->copy()->addSeconds(4),
+                    ),
+                    'arah'       => $arah,
+                    'sumber'     => $sumber,
+                    'luring'     => $luring,
+                    'jarak_m'    => $jarak,
+                    'dalam_area' => $dalamArea,
+                    'kunci'      => 'contoh-'.$r->pekerja_id.'-'.$tgl.'-'.$arah,
+                ]);
+
+                $n++;
+            }
+
+            $orang[$r->pekerja_id] = $r->pekerja_id;
+        }
+
+        if ($orang === []) return $n;
+
+        /* Direkonsiliasi lewat jalan yang sama dengan yang dipakai
+           aplikasi, bukan ditulis baris demi baris di sini. Dua
+           penyusun untuk satu aturan akan berbeda cepat atau lambat,
+           dan yang di sini yang lebih dulu ketinggalan — data contoh
+           lalu memperlihatkan kesimpulan yang tidak pernah dihasilkan
+           tombolnya. */
+        $hasil = Rekonsiliasi::jalankan(array_values($orang), $dari, $hari, $this->pengaju?->id);
+
+        return $n + $hasil['dibuat'];
+    }
+
+    /**
+     * Jam masuk dan keluar sebuah hari kerja.
+     *
+     * @return array{0:?Carbon,1:?Carbon,2:string,3:bool,4:?bool,5:?int}|null
+     */
+    private function jamKerja(HrRoster $r, string $tgl, int $undian): ?array
+    {
+        /* Tidak datang sama sekali. */
+        if ($undian < 6) return null;
+
+        $mulai = Carbon::parse(
+            $tgl.' '.($r->pola?->mulaiShift($r->shift) ?? '07:00'),
+            Waktu::zona(),
+        );
+
+        $jam = (int) ($r->jam ?: 8);
+
+        /* Terlambat melewati toleransi. Geserannya diambil dari
+           undiannya sendiri supaya tetap sama tiap kali dimuat. */
+        $geser = $undian < 20
+            ? 18 + ($undian % 40)
+            : -($undian % 14);
+
+        $masuk = $mulai->copy()->addMinutes($geser);
+
+        /* Lupa menempel saat pulang. */
+        $keluar = $undian >= 94
+            ? null
+            : $mulai->copy()->addMinutes($jam * 60 + ($undian % 35));
+
+        /* Sesekali lembur panjang, dan itu bukan hiasan: dengan
+           kelebihan setengah jam saja, tabel faktor lembur hari kerja
+           tidak pernah melewati tingkat pertama — layar lembur
+           memperlihatkan "1 jam x 1,5" pada tiap baris dan pembacanya
+           tidak pernah melihat bahwa jam kedua dihitung 2x. */
+        if ($keluar && $undian % 31 === 12) $keluar->addMinutes(175);
+
+        /* Satu berkas absen ponsel dari luar geofence, dan satu
+           kiriman luring. Keduanya keadaan yang benar-benar terjadi di
+           site bersinyal buruk, dan keduanya digambar berbeda. */
+        /* Dipilih dengan modulo, bukan dengan kesamaan tepat: site
+           contoh berisi enam orang, dan satu nilai tertentu dari
+           seratus hampir tidak pernah muncul — keadaannya lalu tidak
+           pernah tergambar sekali pun pada layar. */
+        $ponsel = $undian % 19 === 7;
+        $luring = $undian % 23 === 4;
+
+        return [
+            $masuk,
+            $keluar,
+            $ponsel ? 'ponsel' : 'mesin',
+            $luring,
+            $ponsel ? false : true,
+            $ponsel ? 3_140 : 24,
+        ];
+    }
+
+    /**
+     * Jam masuk dan keluar sebuah hari LIBUR yang tetap dikerjakan.
+     *
+     * @return array{0:Carbon,1:Carbon,2:string,3:bool,4:?bool,5:?int}
+     */
+    private function jamLuarRoster(HrRoster $r, string $tgl): array
+    {
+        $mulai = Carbon::parse($tgl.' 07:05', Waktu::zona());
+
+        return [$mulai, $mulai->copy()->addMinutes(6 * 60 + 20), 'mesin', false, true, 31];
+    }
+
+    /* ─────────── Penggajian ─────────── */
+
+    /**
+     * Dua periode: yang lalu sudah terkunci, yang berjalan masih
+     * dapat dihitung ulang.
+     *
+     * Seluruhnya terkunci, layar ini tidak pernah memperlihatkan
+     * tombol "Hitung" bekerja; seluruhnya terbuka, ia tidak pernah
+     * memperlihatkan bagaimana periode yang sudah menjadi dasar
+     * pembayaran digambar berbeda.
+     *
+     * ACUAN PAJAKNYA TIDAK IKUT DITANDAI TERVERIFIKASI. Data contoh
+     * tidak berwenang menyatakan bahwa tabel tarif sudah dicocokkan
+     * dengan naskah peraturannya — dan periode contoh karena itu
+     * terkunci lewat jalan yang sama dengan yang akan ditempuh
+     * sungguhan: seseorang menandai acuannya lebih dahulu.
+     */
+    private function penggajian(): int
+    {
+        MasterPajak::pasang();
+
+        $n = 0;
+
+        $hari = $this->kini->copy()->startOfDay();
+
+        /* Status PTKP disebar supaya ketiga kategori TER terpakai —
+           layar yang seluruhnya TK/0 tidak pernah memperlihatkan bahwa
+           kategorinya memang berbeda-beda. */
+        $ptkp = ['TK/0', 'K/0', 'K/1', 'K/2', 'K/3', 'TK/2'];
+
+        $pekerja = MnrPekerja::withoutGlobalScopes()
+            ->where('company_id', $this->c->id)->orderBy('nama')->get()->values();
+
+        foreach ($pekerja as $i => $p) {
+            $p->forceFill([
+                'status_ptkp' => $ptkp[$i % count($ptkp)],
+                'npwp'        => $p->nik,
+            ])->save();
+        }
+
+        /* Tunjangan site harian, yang tidak dapat dihitung HRIS mana
+           pun yang tidak memegang absensinya sendiri. */
+        HrUpah::withoutGlobalScopes()
+            ->where('company_id', $this->c->id)
+            ->update(['tunjangan_site_harian' => 185_000]);
+
+        foreach ([$hari->copy()->subMonth(), $hari->copy()] as $k => $bulan) {
+            $periode = HrPeriodeGaji::withoutGlobalScopes()->create([
+                'company_id' => $this->c->id,
+                'tahun'      => (int) $bulan->format('Y'),
+                'bulan'      => (int) $bulan->format('n'),
+            ]);
+            $n++;
+
+            /* Dihitung lewat JALAN YANG SAMA dengan yang dipakai
+               tombolnya. Ditulis baris demi baris di sini, data contoh
+               memperlihatkan angka yang tidak pernah dihasilkan
+               mesinnya sendiri. */
+            $hasil = Penggajian::hitung($periode, $this->pengaju);
+
+            if (is_array($hasil)) $n += $hasil['dibuat'];
+
+            /* Periode yang lalu dikunci — dan untuk itu acuannya harus
+               ditandai lebih dahulu, persis seperti yang akan terjadi
+               sungguhan. Penandanya dicabut kembali sesudahnya supaya
+               data contoh tidak meninggalkan pernyataan bahwa tabel
+               tarifnya sudah diperiksa seseorang. */
+            if ($k === 0 && $this->pengaju) {
+                DB::table('pay_acuan')->update(['terverifikasi' => true]);
+
+                Penggajian::kunci($periode->fresh(), $this->pengaju);
+
+                DB::table('pay_acuan')->update([
+                    'terverifikasi' => false, 'diverifikasi_oleh' => null, 'diverifikasi_pada' => null,
+                ]);
+            }
+        }
+
+        return $n;
+    }
+
+    /* ─────────── Lembur ─────────── */
+
+    /**
+     * Upah dasar, lalu lembur yang diusulkan dari absensinya sendiri.
+     *
+     * SUSUNAN UPAHNYA SENGAJA BERBEDA-BEDA, dan itu yang paling perlu
+     * terlihat: satu orang berupah pokok saja, satu bertunjangan tetap,
+     * dan satu bertunjangan tidak tetap yang besar sehingga dasarnya
+     * jatuh ke 75% (PP 35/2021 pasal 32 ayat 3). Seluruhnya berpokok
+     * saja, layar upah tidak pernah memperlihatkan bagaimana dasar 75%
+     * digambar — padahal di situlah kesalahan hitung paling sering
+     * terjadi.
+     */
+    private function lembur(): int
+    {
+        $n = 0;
+
+        $hari = $this->kini->copy()->startOfDay();
+
+        $pekerja = MnrPekerja::withoutGlobalScopes()
+            ->where('company_id', $this->c->id)->orderBy('nama')->get()->values();
+
+        if ($pekerja->isEmpty()) return 0;
+
+        /* pokok, tunjangan tetap, tunjangan tidak tetap */
+        $susunan = [
+            [6_500_000, 0,         0],          // pokok saja — dasar 100%
+            [5_800_000, 1_200_000, 0],          // bertunjangan tetap — dasar 100%
+            [3_200_000,   300_000, 2_500_000],  // tidak tetap besar — dasar 75%
+            [7_400_000,   800_000,   400_000],  // tidak tetap kecil — tetap 100%
+            [5_100_000,   600_000,         0],
+            [4_900_000,   500_000,         0],
+        ];
+
+        foreach ($pekerja as $i => $p) {
+            [$pokok, $tetap, $tidakTetap] = $susunan[$i % count($susunan)];
+
+            HrUpah::withoutGlobalScopes()->create([
+                'company_id' => $this->c->id,
+                'pekerja_id' => $p->id,
+
+                /* Berlaku sejak awal tahun lalu supaya seluruh lembur
+                   pada data contoh punya upah yang berlaku — bertanggal
+                   hari ini, lembur bulan lalu bernilai nol dan layarnya
+                   memperlihatkan keadaan yang terbaca seperti cacat. */
+                'berlaku_mulai' => $hari->copy()->subYear()->startOfYear(),
+
+                'pokok'                 => $pokok,
+                'tunjangan_tetap'       => $tetap,
+                'tunjangan_tidak_tetap' => $tidakTetap,
+            ]);
+            $n++;
+        }
+
+        /* Diusulkan lewat JALAN YANG SAMA dengan yang dipakai tombolnya,
+           bukan ditulis baris demi baris di sini. Dua penyusun untuk
+           satu aturan akan berbeda cepat atau lambat — dan yang di sini
+           yang lebih dulu ketinggalan. */
+        $hasil = JalurLembur::usulkan(
+            $pekerja->pluck('id')->all(),
+            $hari->copy()->subDays(20),
+            $hari,
+            $this->pengaju?->id,
+        );
+
+        $n += $hasil['dibuat'];
+
+        /* Sebagian disetujui, sebagian dibiarkan menunggu. Seluruhnya
+           disetujui, antrean persetujuan kosong — padahal antrean itu
+           satu-satunya alasan seseorang membuka layarnya. */
+        $penyetuju = $this->pengaju
+            ? User::where('id', '<>', $this->pengaju->id)->first()
+            : User::first();
+
+        if ($penyetuju) {
+            foreach (HrLembur::withoutGlobalScopes()
+                ->where('company_id', $this->c->id)
+                ->menunggu()->orderBy('tanggal')->get()->take(6) as $l) {
+                JalurLembur::setujui($l, $penyetuju, 'Diperintahkan pengawas shift.');
+            }
+        }
+
+        return $n;
+    }
+
+    /**
+     * Akun milik seorang pekerja contoh.
+     *
+     * Kata sandinya sama dengan akun contoh lain supaya layanan
+     * mandirinya dapat benar-benar dicoba; ini data contoh, dan seluruh
+     * isinya memang dibuat untuk dilihat orang lain.
+     *
+     * Akun yang sudah ada dipakai ulang alih-alih dibuat dua kali:
+     * memuat ulang data contoh tidak boleh meninggalkan tumpukan akun
+     * yatim yang tidak menunjuk siapa pun.
+     */
+    private function akunPekerja(string $nama, int $i): ?User
+    {
+        /* ALAMATNYA MEMUAT ID PERUSAHAAN.
+           Tanpa itu, memuat data contoh bagi perusahaan kedua memakai
+           ulang akun yang sudah menunjuk pekerja perusahaan pertama —
+           dan sejak satu akun hanya boleh menunjuk satu pekerja,
+           pemuatannya gugur di tengah. Ditemukan oleh uji dua
+           perusahaan, bukan oleh mata. */
+        $surel = 'pekerja'.($i + 1).'.p'.$this->c->id.'.miners@contoh.test';
+
+        $u = User::withoutGlobalScopes()->where('email', $surel)->first();
+
+        if ($u) {
+            $u->forceFill(['company_id' => $this->c->id, 'name' => $nama])->save();
+
+            return $u;
+        }
+
+        return User::withoutGlobalScopes()->create([
+            'company_id' => $this->c->id,
+            'name'       => $nama,
+            'email'      => $surel,
+            'password'   => Hash::make('rahasia123'),
+            'lms_role'   => 'trainee',
+        ]);
+    }
+
+    /* ─────────── Kontrak kerja ─────────── */
+
+    /**
+     * Empat kontrak yang memperlihatkan empat keadaan berbeda.
+     *
+     * DATA CONTOH YANG SELURUHNYA PATUH TIDAK MENGAJARKAN APA PUN.
+     * Layar kepatuhan yang selalu kosong tidak dapat dibedakan dari
+     * layar kepatuhan yang rusak, dan yang pertama kali melihat
+     * pelanggaran sungguhan sebaiknya bukan orang yang juga baru
+     * pertama kali melihat bentuk peringatannya.
+     *
+     * Karena itu di sini ada satu rantai yang sudah melewati lima
+     * tahun, satu PKWT jangka waktu tanpa alasan pasal 5, satu PKWTT
+     * yang bersih, dan satu PKWT harian yang sudah terlampaui batas
+     * 21 harinya — yang terakhir diturunkan dari absensi yang memang
+     * sudah dibuat langkah sebelumnya.
+     */
+    private function kontrak(): int
+    {
+        $orang = MnrPekerja::withoutGlobalScopes()
+            ->where('company_id', $this->c->id)
+            ->orderBy('no_registrasi')->get()->values();
+
+        if ($orang->isEmpty()) return 0;
+
+        $kini = Waktu::kini()->startOfDay();
+        $n    = 0;
+
+        $buat = function (array $isi) use (&$n): HrKontrak {
+            $n++;
+
+            return HrKontrak::withoutGlobalScopes()->create(array_merge([
+                'company_id' => $this->c->id,
+                'status'     => 'berjalan',
+            ], $isi));
+        };
+
+        /* ── rantai yang sudah melewati lima tahun ──
+           Tiga kontrak dua tahunan berturut-turut: tiap barisnya patuh
+           dan jumlahnya tidak. Inilah bentuk pelanggaran PKWT yang
+           paling sering terjadi dan paling jarang terlihat. */
+        $a = $buat([
+            'pekerja_id' => $orang[0]->id,
+            'nomor'      => 'PKWT/2020/001',
+            'jenis'      => 'pkwt_jangka',
+            'alasan'     => 'tidak_lama',
+            'mulai'      => $kini->copy()->subYears(6)->toDateString(),
+            'selesai'    => $kini->copy()->subYears(4)->toDateString(),
+            'status'     => 'selesai',
+            'ditandatangani_pada' => $kini->copy()->subYears(6)->subDays(3)->toDateString(),
+            'dicatatkan_pada'     => $kini->copy()->subYears(6)->subDay()->toDateString(),
+        ]);
+
+        $b = $buat([
+            'pekerja_id' => $orang[0]->id,
+            'nomor'      => 'PKWT/2022/014',
+            'jenis'      => 'pkwt_jangka',
+            'alasan'     => 'tidak_lama',
+            'mulai'      => $kini->copy()->subYears(4)->addDay()->toDateString(),
+            'selesai'    => $kini->copy()->subYears(2)->toDateString(),
+            'status'     => 'selesai',
+            'induk_id'   => $a->id,
+            'urutan'     => 2,
+            'ditandatangani_pada' => $kini->copy()->subYears(4)->toDateString(),
+            'dicatatkan_pada'     => $kini->copy()->subYears(4)->addDays(2)->toDateString(),
+        ]);
+
+        $buat([
+            'pekerja_id' => $orang[0]->id,
+            'nomor'      => 'PKWT/2024/031',
+            'jenis'      => 'pkwt_jangka',
+            'alasan'     => 'tidak_lama',
+            'mulai'      => $kini->copy()->subYears(2)->addDay()->toDateString(),
+            'selesai'    => $kini->copy()->addDays(45)->toDateString(),
+            'induk_id'   => $b->id,
+            'urutan'     => 3,
+            'ditandatangani_pada' => $kini->copy()->subYears(2)->toDateString(),
+            'dicatatkan_pada'     => $kini->copy()->subYears(2)->addDays(2)->toDateString(),
+        ]);
+
+        /* ── PKWT jangka waktu tanpa alasan pasal 5 ──
+           Kontraknya berjalan, gajinya terbayar, dan sejak hari pertama
+           ia sebenarnya PKWTT. */
+        if (isset($orang[1])) {
+            $buat([
+                'pekerja_id' => $orang[1]->id,
+                'nomor'      => 'PKWT/2026/007',
+                'jenis'      => 'pkwt_jangka',
+                'alasan'     => null,
+                'mulai'      => $kini->copy()->subMonths(8)->toDateString(),
+                'selesai'    => $kini->copy()->addMonths(4)->toDateString(),
+                'ditandatangani_pada' => $kini->copy()->subMonths(8)->subDays(30)->toDateString(),
+            ]);
+        }
+
+        /* ── PKWTT yang bersih, sebagai pembanding ── */
+        if (isset($orang[2])) {
+            $buat([
+                'pekerja_id' => $orang[2]->id,
+                'nomor'      => 'PKWTT/2023/002',
+                'jenis'      => 'pkwtt',
+                'mulai'      => $kini->copy()->subYears(3)->toDateString(),
+                'selesai'    => null,
+                'masa_percobaan_hari' => 90,
+                'ditandatangani_pada' => $kini->copy()->subYears(3)->subDays(2)->toDateString(),
+                'dicatatkan_pada'     => $kini->copy()->subYears(3)->toDateString(),
+            ]);
+        }
+
+        /* ── PKWT harian ──
+           Dibuat mencakup seluruh rentang absensi contoh, supaya
+           hari-hari yang memang sudah tercatat di langkah sebelumnya
+           terhitung terhadap batas 21 harinya. */
+        if (isset($orang[3])) {
+            $buat([
+                'pekerja_id' => $orang[3]->id,
+                'nomor'      => 'PKWT-H/2026/019',
+                'jenis'      => 'pkwt_harian',
+                'mulai'      => $kini->copy()->subMonths(6)->startOfMonth()->toDateString(),
+                'selesai'    => $kini->copy()->addMonths(3)->toDateString(),
+                'ditandatangani_pada' => $kini->copy()->subMonths(6)->toDateString(),
+                'dicatatkan_pada'     => $kini->copy()->subMonths(6)->addDays(2)->toDateString(),
+            ]);
+        }
+
+        return $n;
+    }
+
+    /* ─────────── Roster & shift ─────────── */
+
+    /**
+     * Dua regu pada pola 14:7, BERJANGKAR SETENGAH SIKLUS BERSELISIH.
+     *
+     * Itu bentuk yang sesungguhnya dipakai, dan yang paling perlu
+     * terlihat: yang satu pulang ketika yang lain datang, sehingga site
+     * tidak pernah kosong. Dua regu berjangkar sama akan libur pada
+     * minggu yang sama — kesalahan yang baru ketahuan setelah tiketnya
+     * terbit, dan justru karena itu data contoh harus memperlihatkan
+     * yang benar.
+     *
+     * Satu regu ketiga memakai pola kantor 5:2 sebagai pembanding:
+     * batas fatigue lapangan tidak berlaku baginya, dan layar yang
+     * hanya berisi pola lapangan tidak pernah memperlihatkan pembedaan
+     * itu.
+     */
+    private function roster(): int
+    {
+        MasterRoster::pasang();
+
+        $n = 0;
+
+        $hari = $this->kini->copy()->startOfDay();
+
+        $pola = HrPola::withoutGlobalScopes()->whereNull('company_id')
+            ->get()->keyBy('kunci');
+
+        if ($pola->isEmpty()) return 0;
+
+        $blok = MnrBlok::withoutGlobalScopes()->whereNull('company_id')
+            ->get()->keyBy('kunci');
+
+        $pekerja = MnrPekerja::withoutGlobalScopes()
+            ->where('company_id', $this->c->id)->orderBy('nama')->get();
+
+        if ($pekerja->isEmpty()) return 0;
+
+        /* Jangkar dipasang pada awal bulan LALU, bukan hari ini:
+           rosternya harus memuat periode yang sudah berjalan supaya
+           pemeriksaan "14 hari berturut-turut" punya sesuatu untuk
+           diperiksa. Berjangkar hari ini, tiap regu baru memulai hari
+           pertamanya dan tidak satu batas pun dapat dilanggar. */
+        $jangkar = $hari->copy()->subMonth()->startOfMonth();
+
+        $rencana = [
+            ['Regu A', '147', 'pit',      $jangkar->copy(),              'siang', [0, 1, 2]],
+            ['Regu B', '147', 'pit',      $jangkar->copy()->addDays(14), 'malam', [3, 4]],
+            ['Regu Kantor', '52', 'main-office', $jangkar->copy(),       'siang', [5]],
+        ];
+
+        $regu = [];
+
+        foreach ($rencana as [$nama, $kunciPola, $kunciBlok, $mulai, $shift, $indeks]) {
+            if (! isset($pola[$kunciPola])) continue;
+
+            $g = HrRegu::withoutGlobalScopes()->create([
+                'company_id'     => $this->c->id,
+                'pola_roster_id' => $pola[$kunciPola]->id,
+                'blok_id'        => $blok[$kunciBlok]->id ?? null,
+                'nama'           => $nama,
+                'mulai'          => $mulai,
+                'shift'          => $shift,
+            ]);
+            $n++;
+
+            foreach ($indeks as $i) {
+                if (! isset($pekerja[$i])) continue;
+
+                HrReguAnggota::create([
+                    'regu_id'    => $g->id,
+                    'pekerja_id' => $pekerja[$i]->id,
+                    'mulai'      => $mulai,
+                ]);
+                $n++;
+            }
+
+            $regu[] = $g;
+        }
+
+        /* Rosternya benar-benar disusun lewat jalan yang sama dengan
+           yang dipakai aplikasi, bukan ditulis baris demi baris di
+           sini. Dua penyusun untuk satu aturan akan berbeda cepat atau
+           lambat, dan yang di sini yang lebih dulu ketinggalan — data
+           contoh lalu memperlihatkan siklus yang tidak pernah dihasilkan
+           tombolnya. */
+        $dari   = $hari->copy()->subMonth()->startOfMonth();
+        $sampai = $hari->copy()->endOfMonth();
+
+        foreach ($regu as $g) {
+            $hasil = Penyusun::susun($g, $dari, $sampai, $this->pengaju?->id);
+            $n += $hasil['dibuat'];
+        }
+
+        /* Bulan yang sudah lewat DITERBITKAN, bulan berjalan tidak.
+           Keduanya perlu: yang terbit memperlihatkan baris terkunci
+           yang tidak lagi tersusun ulang, yang belum terbit
+           memperlihatkan tombol "Terbitkan" masih punya pekerjaan. */
+        HrRoster::withoutGlobalScopes()
+            ->whereIn('regu_id', collect($regu)->pluck('id'))
+            ->where('tanggal', '<', $hari->copy()->startOfMonth()->toDateString())
+            ->update(['terbit' => true]);
+
+        /* Kebutuhan tenaga kerja — satu yang terpenuhi, satu yang
+           kurang. Seluruhnya terpenuhi, layar manpower tidak pernah
+           memperlihatkan bagaimana kekurangan digambar, padahal itulah
+           satu-satunya keadaan yang menuntut tindakan. */
+        foreach ([
+            ['pit',         'driver-dt',          6, 'siang'],
+            ['pit',         'operator-excavator', 4, 'siang'],
+            ['workshop',    'mekanik',            2, null],
+        ] as [$kunciBlok, $kunciJabatan, $jumlah, $shift]) {
+            $jabatan = MnrJabatan::withoutGlobalScopes()->whereNull('company_id')
+                ->where('kunci', $kunciJabatan)->first();
+
+            HrKebutuhan::withoutGlobalScopes()->create([
+                'company_id' => $this->c->id,
+                'blok_id'    => $blok[$kunciBlok]->id ?? null,
+                'jabatan_id' => $jabatan?->id,
+                'mulai'      => $dari,
+                'jumlah'     => $jumlah,
+                'shift'      => $shift,
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /**
+     * Daftar master Miners sebagai kunci => id.
+     *
+     * Dikunci lewat `kunci`, bukan lewat nama: nama boleh disunting
+     * perusahaan yang memakainya — itu justru yang dijaga MasterMiners —
+     * sehingga data contoh yang mencari lewat nama akan berhenti
+     * menemukan apa pun pada pemasangan yang departemennya sudah
+     * diganti namanya, dan pekerjanya lahir tanpa departemen.
+     *
+     * @param  class-string<\App\Models\Miners\Master>  $kelas
+     * @return array<string,int>
+     */
+    private function minersMaster(string $kelas): array
+    {
+        return $kelas::withoutGlobalScopes()
+            ->whereNotNull('kunci')
+            ->pluck('id', 'kunci')
+            ->all();
+    }
+
+    /**
+     * Terbitkan alur sebuah dokumen lalu tetapkan keadaan tiap langkah.
+     *
+     * Alurnya dibuat lewat `terbitkanAlur()` — jalan yang sama dengan
+     * yang dipakai aplikasi — bukan disusun ulang di sini. Dua penyusun
+     * untuk satu aturan akan berbeda cepat atau lambat, dan yang di
+     * sini yang lebih dulu ketinggalan: data contoh akan memperlihatkan
+     * alur yang tidak pernah dilalui dokumen sungguhan.
+     *
+     * @param  list<string>  $keadaan  berurutan; yang lebih pendek
+     *                                 membiarkan sisanya menunggu
+     * @return int jumlah langkah yang lahir
+     */
+    private function minersAlur(object $dokumen, array $keadaan): int
+    {
+        $dokumen->terbitkanAlur();
+
+        $langkah = $dokumen->alur()->orderBy('urutan')->get();
+
+        foreach ($langkah as $i => $l) {
+            $k = $keadaan[$i] ?? 'menunggu';
+
+            /* Langkah pengaju ditindak pengajunya sendiri — "Kirim";
+               langkah lain oleh penyetuju yang ditugasi skema. */
+            $oleh = $l->peran === 'pengaju'
+                ? ($this->pengaju?->id ?? $this->peninjau?->id)
+                : ($l->ditugaskan_user_id ?? $this->peninjau?->id ?? $this->pengaju?->id);
+
+            $l->update([
+                'keadaan'        => $k,
+                'user_id'        => $k === 'menunggu' ? null : $oleh,
+
+                /* Kolom WAKTU, bukan tanggal — jamnya memang disimpan,
+                   sebab "siapa menyetujui pukul berapa" adalah yang
+                   ditanyakan saat sebuah pengesahan dipersoalkan. */
+                'bertindak_pada' => $k === 'menunggu' ? null : $this->kini->copy()->subDays(30 - $i),
+            ]);
+        }
+
+        return $langkah->count();
+    }
+
+    /* ─────────── Pemantauan Perusahaan Jasa ─────────── */
+
+    /**
+     * Dua mitra yang keadaannya BERLAWANAN, bukan dua mitra yang sama.
+     *
+     * Yang satu patuh sepenuhnya, yang lain menunggak dan skornya jatuh.
+     * Data contoh yang seluruhnya rapi tidak pernah memperlihatkan
+     * bagaimana layarnya menandai mitra bermasalah — padahal daftar
+     * "paling perlu perhatian" dan ubin "laporan bulanan menunggak"
+     * adalah dua bagian yang paling sering dibuka, dan keduanya hanya
+     * dapat diperiksa kalau memang ada yang bermasalah.
+     *
+     * Daftar periksanya diisi SELURUHNYA untuk keduanya, 126 butir
+     * masing-masing. Mengisi sebagian akan membuat skornya bergantung
+     * pada butir mana yang kebetulan terisi — dan angka yang tidak dapat
+     * dihitung ulang dengan tangan adalah angka yang tidak dapat
+     * diperiksa siapa pun.
+     */
+    private function pjp(): int
+    {
+        $n = 0;
+
+        /* Daftar periksanya diisi migrasi 2026_09_13_000002, bukan oleh
+           perintah tersendiri, jadi tidak ada yang perlu dipasang di
+           sini. Yang tetap dijaga adalah akibatnya bila masternya
+           kosong: mitra contoh akan lahir tanpa satu pun jawaban dan
+           berskor 0% bagi semuanya — angka yang terlihat sah dan tidak
+           menyebut sebabnya. Lebih baik tidak membuat apa pun. */
+        $butir = PjpSmkpItem::query()->with('category')->orderBy('urutan')->get();
+
+        if ($butir->isEmpty()) return 0;
+
+        /* Dua mitra, dan nilai daftar periksanya ditentukan oleh satu
+           angka: berapa dari setiap tiga butir yang dinilai penuh.
+           Ditulis begitu supaya skornya dapat dihitung ulang dengan
+           tangan dari angka itu saja. */
+        foreach ([
+            ['PT Karya Bumi Sejahtera', '0812345678901', 'Ir. Bagas Wicaksono', 'aktif',
+             'tiap' => 1, 'catatan' => 'Kontrak hauling overburden Pit Selatan, berlaku sampai Desember 2026.'],
+            ['PT Mitra Tambang Nusantara', '0898765432109', 'Andi Prasetyo, S.T.', 'perlu_tindak_lanjut',
+             'tiap' => 3, 'catatan' => 'Laporan bulanan sering terlambat. Sudah dua kali diberi surat teguran.'],
+        ] as $b) {
+            [$nama, $nib, $pj, $status] = $b;
+
+            $pjp = Pjp::withoutGlobalScopes()->create([
+                'company_id'       => $this->c->id,
+                'nama_perusahaan'  => $nama,
+                'nib'              => $nib,
+                'penanggung_jawab' => $pj,
+                'alamat'           => 'Jl. Poros Tambang KM 12, Kutai Kartanegara, Kalimantan Timur',
+                'status'           => $status,
+                'catatan'          => $b['catatan'],
+            ]);
+            $n++;
+
+            foreach ($butir as $i => $satu) {
+                $legalitas = $satu->category?->kode === PjpSmkpKategori::LEGALITAS;
+                $penuh     = $i % $b['tiap'] === 0;
+
+                PjpSmkpJawaban::withoutGlobalScopes()->create([
+                    'pjp_id'  => $pjp->id,
+                    'smkp_checklist_item_id' => $satu->id,
+
+                    /* Kategori LEGALITAS dijawab ada/tidak ada; A–P
+                       dinilai 0–3. Mengisi keduanya dengan kolom yang
+                       sama akan membuat salah satunya terbaca kosong di
+                       layar tanpa satu galat pun. */
+                    'jawaban' => $legalitas ? ($penuh ? 'ya' : 'tidak') : null,
+                    'nilai'   => $legalitas ? null : ($penuh ? '3' : '1'),
+                ]);
+                $n++;
+            }
+
+            $n += $this->pjpLaporan($pjp, $b['tiap'] === 1);
+            $n += $this->pjpEvaluasi($pjp, $b['tiap'] === 1);
+        }
+
+        return $n;
+    }
+
+    /**
+     * Dokumen berkala satu mitra.
+     *
+     * Tanggal unggahnya ditulis lewat kueri, bukan lewat isian: kolom
+     * stempel waktu diisi Eloquent sesudah penyimpanan dan menimpa apa
+     * pun yang diberikan — sehingga seluruh dokumen contoh akan
+     * bertanggal hari ini, dan tidak satu pun akan terbaca terlambat.
+     */
+    private function pjpLaporan(Pjp $pjp, bool $patuh): int
+    {
+        $n = 0;
+
+        $tahun     = (int) $this->kini->format('Y');
+        $bulanLalu = $this->kini->copy()->subMonth();
+
+        foreach ([
+            ['spip', 'Semester I '.$tahun, $bulanLalu, 2, 'sesuai',
+             'Data SPIP 24 unit, lengkap dengan sertifikat kelayakan.'],
+
+            ['tsp', (string) $tahun, $bulanLalu, 3, 'sesuai',
+             'TSP '.$tahun.' memuat 11 sasaran dengan penanggung jawab.'],
+
+            /* Laporan bulanan sengaja jatuh pada BULAN BERJALAN, bukan
+               bulan lalu. Pjp::belumLaporanBulananBulanIni() menanyakan
+               bulan ini; ditaruh di bulan lalu, kedua mitra sama-sama
+               muncul menunggak — dan data contoh yang dimaksudkan
+               memperlihatkan satu mitra patuh justru memperlihatkan
+               dua-duanya lalai. */
+            ['laporan_bulanan', $this->kini->translatedFormat('F Y'), $this->kini,
+             $patuh ? 2 : 14, $patuh ? 'sesuai' : null,
+             $patuh ? 'Jam kerja, statistik kecelakaan, dan realisasi program.'
+                    : 'Terlambat 11 hari. Statistik jam kerja belum dilampirkan.'],
+        ] as [$jenis, $periode, $bulan, $hari, $sesuai, $catatan]) {
+            $saat = $bulan->copy()->startOfMonth()->addDays($hari - 1)->setTime(9, 15);
+
+            $l = PjpLaporan::withoutGlobalScopes()->create([
+                'pjp_id'    => $pjp->id,
+                'jenis'     => $jenis,
+                'periode'   => $periode,
+                'catatan'   => $catatan,
+                'kesesuaian_isi' => $sesuai,
+
+                /* Berkasnya sengaja TIDAK ada di disk. Data contoh tidak
+                   mengunggah apa pun, dan menaruh berkas palsu di disk
+                   tertutup berarti data contoh meninggalkan berkas yang
+                   tidak ikut terbuang saat data contohnya dibuang. Yang
+                   membukanya memperoleh 404 dari rute penyaji — jawaban
+                   yang benar bagi berkas yang memang tidak ada. */
+                'file_path' => "pjp/{$pjp->id}/contoh-{$jenis}.pdf",
+                'file_name' => str(PjpLaporan::JENIS[$jenis] ?? $jenis)->slug().'-'
+                    .str($periode)->slug().'.pdf',
+                'file_size' => 248_000,
+            ]);
+
+            PjpLaporan::withoutGlobalScopes()->where('id', $l->id)
+                ->update(['created_at' => $saat, 'updated_at' => $saat]);
+
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /** Dua semester penilaian, supaya grafik trennya punya dua titik. */
+    private function pjpEvaluasi(Pjp $pjp, bool $patuh): int
+    {
+        $tahun = (int) $this->kini->format('Y');
+        $n = 0;
+
+        foreach ([
+            [$tahun - 1, 2, $patuh ? [88, 90, 86] : [62, 55, 60]],
+            [$tahun,     1, $patuh ? [92, 94, 90] : [58, 48, 57]],
+        ] as [$th, $sem, $skor]) {
+            PjpEvaluasi::withoutGlobalScopes()->create([
+                'pjp_id'   => $pjp->id,
+                'tahun'    => $th,
+                'semester' => $sem,
+                'skor_teknis'                => $skor[0],
+                'skor_keselamatan_kesehatan' => $skor[1],
+                'skor_lingkungan'            => $skor[2],
+                'catatan' => $patuh
+                    ? 'Tidak ada temuan mayor. Program KPLH berjalan sesuai TSP.'
+                    : 'Dua temuan mayor pada pengelolaan kelelahan dan tanggap darurat.',
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    private function pembelian(): int
+    {
+        /* Katalognya dipasang, tetapi TIDAK dihitung sebagai baris data
+           contoh — ia master milik penjual, bukan data pelanggan, dan
+           membuangnya bersama data contoh akan menghapus harga yang
+           sudah ditetapkan orang. */
+        \Illuminate\Support\Facades\Artisan::call('pembelian:katalog');
+
+        $n = 0;
+
+        /* Harga contoh. Perintah pemasangnya sengaja menaruh nol dan
+           menonaktifkan — di sini diisi supaya katalognya dapat dilihat
+           berisi. */
+        ProdukBeli::where('kode', 'WEBSITE')->update(['harga' => 25_000_000, 'aktif' => true]);
+
+        ProdukBeli::where('jenis', 'aplikasi')->orderBy('urutan')->take(8)->get()
+            ->each(fn ($p) => $p->update(['harga' => 2_500_000, 'aktif' => true]));
+
+        $paket = ProdukBeli::where('kode', 'WEBSITE')->first();
+        $satuan = ProdukBeli::where('jenis', 'aplikasi')->where('aktif', true)->first();
+
+        if (! $paket || ! $satuan) return $n;
+
+        /* ── tagihan yang sudah lunas, lengkap dengan lisensinya ── */
+        $lunas = Pembelian::buat([
+            'company_id'         => $this->c->id,
+            'pembeli_nama'       => 'Bpk. Hendra Wijaya',
+            'pembeli_perusahaan' => $this->c->name,
+            'pembeli_email'      => 'hendra@contoh.co.id',
+            'pembeli_telepon'    => '0811-2233-4455',
+        ], [$paket->id => 1], $this->peninjau);
+
+        Pembelian::kirim($lunas);
+        $n += 1 + $lunas->items()->count();
+
+        PembayaranBeli::create([
+            'pesanan_id' => $lunas->id,
+            'metode'     => 'qris',
+            'jumlah'     => $lunas->total,
+            'atas_nama'  => 'Hendra Wijaya',
+            /* startOfDay(): kolomnya bertipe DATE, dan cast `date`
+               Laravel memangkas jam saat dibaca — tidak saat ditulis.
+               Lihat KolomTanggalTest. */
+            'tanggal_bayar' => $this->kini->copy()->subDays(9)->startOfDay(),
+            'catatan'    => 'Dibayar lewat QRIS, satu kali penuh.',
+        ]);
+        $n++;
+
+        if ($this->peninjau) {
+            Pembelian::tandaiLunas($lunas, $this->peninjau);
+            $n += $lunas->lisensi()->count();
+        }
+
+        /* ── tagihan yang masih menunggu pembayaran ── */
+        /* Perusahaannya diisi, meski di kenyataan calon pelanggan kerap
+           belum punya. Data contoh harus dapat dibuang seluruhnya, dan
+           tagihan tanpa perusahaan tidak terjangkau pembuangnya —
+           tertinggal, lalu menumpuk tiap kali tombol muat ulang
+           ditekan. */
+        $menunggu = Pembelian::buat([
+            'company_id'         => $this->c->id,
+            'pembeli_nama'       => 'Ibu Ratna Sari',
+            'pembeli_perusahaan' => 'PT Bara Sejahtera',
+            'pembeli_email'      => 'ratna@barasejahtera.co.id',
+            'pembeli_telepon'    => '0812-9988-7766',
+            'catatan'            => 'Minta penawaran tiga aplikasi lebih dulu.',
+        ], [$satuan->id => 3], $this->peninjau);
+
+        Pembelian::kirim($menunggu);
+        $n += 1 + $menunggu->items()->count();
+
+        return $n;
+    }
+
+    /* ─────────── Authority: kelayakan kerja ─────────── */
+
+    /**
+     * Berkas kelayakan kerja lima orang.
+     *
+     * Sebarannya sengaja tidak rapi, dan tiap ketidakrapiannya menguji
+     * satu hal:
+     *
+     *   satu MCU kadaluarsa       → orangnya tidak boleh bekerja
+     *   satu hasil Temporary Unfit → tidak boleh meski MCU masih berlaku
+     *   satu kartu masuk habis     → tidak boleh meski MCU sehat
+     *   satu sertifikat lewat      → orangnya tetap boleh masuk, tetapi
+     *                                 tidak boleh mengerjakan pekerjaan
+     *                                 yang menuntut sertifikat itu
+     *   satu tanpa tanggal         → bukan aman, melainkan tidak diketahui
+     *
+     * Berkas yang seluruhnya berlaku tidak pernah menyalakan satu pun
+     * peringatan, dan peringatan yang tidak pernah menyala tidak dapat
+     * dibedakan dari peringatan yang rusak.
+     */
+    private function authority(): int
+    {
+        $n = 0;
+
+        /* Jenis kompetensi ditanam bila pemasangannya belum punya —
+           masternya milik bersama, jadi tidak ikut dibuang bersama data
+           contoh. */
+        if (KompetensiJenis::withoutGlobalScopes()->whereNull('company_id')->doesntExist()) {
+            MasterKompetensi::tanam();
+        }
+
+        $jenis = KompetensiJenis::withoutGlobalScopes()
+            ->whereNull('company_id')->pluck('id', 'nama');
+
+        $orang = [
+            ['Ir. Bambang Susilo',  '3201010101800001', 'Kepala Teknik Tambang',   'OHSE',      'PO'],
+            ['Dewi Anggraini',      '3201010202850002', 'Manajer OHSE',            'OHSE',      'PO'],
+            ['Rahmat Hidayat',      '3201010303900003', 'Operator Crane',          'Workshop',  'TTK'],
+            ['Sri Wahyuni',         '3201010404880004', 'Pengawas Workshop',       'Workshop',  'PT'],
+            ['Bayu Pratama',        '3201010505920005', 'Surveyor Tambang',        'Engineering','TTK'],
+        ];
+
+        /* [sertifikat, hari sampai kadaluarsa] · null = tanpa tanggal */
+        $sertifikat = [
+            0 => [['Pengawas Operasional Utama (POU)', 620], ['Implementasi SMKP', 200]],
+            1 => [['Pengawas Operasional Madya (POM)', 410], ['Auditor SMKP', 75],
+                  ['AK3U BNSP', -30]],
+            2 => [['SIO Kelas 2 ( Surat Ijin Operator ) beban 25 - 50 Ton', 45],
+                  ['Rigger', 150]],
+            3 => [['Pengawas Operasional Pertama (POP)', 300], ['Petugas P3K', null]],
+            4 => [['Juru Ukur', 520]],
+        ];
+
+        /* [hari kadaluarsa MCU, hasil, pembatasan] */
+        $mcu = [
+            0 => [210, 'Fit', null],
+            1 => [140, 'Fit With Note', 'Pemeriksaan tekanan darah tiap enam bulan.'],
+            2 => [-12, 'Fit', null],                                   // kadaluarsa
+            3 => [95,  'Temporary Unfit', 'Cedera punggung; tidak boleh mengangkat beban.'],
+            4 => [330, 'Fit', null],
+        ];
+
+        /* [jenis kartu, hari kadaluarsa, golongan, status alur]
+
+           Statusnya sengaja bervariasi. Bila seluruhnya disetujui, layar
+           tidak pernah memperlihatkan seperti apa kartu yang masih
+           menunggu — dan alur persetujuannya tampak seperti hiasan yang
+           tidak pernah menahan apa pun. */
+        $kartu = [
+            0 => [['Mine Permit', 400, null, Alur::DISETUJUI],
+                  ['SIMPER', 180, 'LV', Alur::DISETUJUI]],
+            1 => [['Mine Permit', 250, null, Alur::DISETUJUI]],
+            2 => [['Mine Permit', 60, null, Alur::DISETUJUI],
+                  ['SIMPER', 20, 'Alat Berat', Alur::DIAJUKAN]],
+            3 => [['Mine Permit', 310, null, Alur::DISETUJUI]],
+            4 => [['Mine Permit', -5, null, Alur::DISETUJUI]],         // kartu habis
+        ];
+
+        /* [hari kadaluarsa induksi, jenis, hasil, nilai]
+
+           Orang ke-4 induksinya sudah lewat: satu-satunya sebab ia
+           tertahan, sementara MCU dan kartunya aman. Tanpa satu contoh
+           seperti itu, induksi tidak pernah terlihat benar-benar
+           menentukan. */
+        $induksi = [
+            0 => [[500, 'Awal', 'Lulus', 92]],
+            1 => [[280, 'Penyegaran', 'Lulus', 88]],
+            2 => [[120, 'Awal', 'Lulus', 76]],
+            3 => [[-40, 'Penyegaran', 'Lulus', 81]],                   // induksi kadaluarsa
+            4 => [[60, 'Awal', 'Tidak Lulus', 58], [400, 'Awal', 'Lulus', 84]],
+        ];
+
+        foreach ($orang as $i => [$nama, $nik, $jabatan, $dept, $klas]) {
+            $p = $this->baru(Paspor::class, [
+                'user_id'        => $i === 0 ? $this->peninjau?->getKey()
+                                  : ($i === 2 ? $this->pengaju?->getKey() : null),
+                'nomor_register' => 'REG-'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
+                'nama'           => $nama,
+                'nik'            => $nik,
+                'jabatan'        => $jabatan,
+                'departemen'     => $dept,
+                'klasifikasi'    => $klas,
+                'status'         => 'aktif',
+                'tgl_bergabung'  => $this->kini->copy()->subYears(3 + $i)->toDateString(),
+            ]);
+            $n++;
+
+            foreach ($sertifikat[$i] ?? [] as $j => [$namaSert, $hari]) {
+                PasporSertifikat::withoutGlobalScopes()->create([
+                    'paspor_id'           => $p->id,
+                    'kompetensi_jenis_id' => $jenis[$namaSert] ?? null,
+                    'nama'                => $namaSert,
+                    'nomor'               => 'SRT/'.$this->kini->year.'/'
+                        .str_pad((string) ($i * 10 + $j + 1), 4, '0', STR_PAD_LEFT),
+                    'tgl_terbit'          => $this->kini->copy()->subYears(2)->toDateString(),
+                    'tgl_expired'         => $hari === null
+                        ? null : $this->kini->copy()->addDays($hari)->toDateString(),
+                ]);
+                $n++;
+            }
+
+            [$hariMcu, $hasil, $batas] = $mcu[$i];
+
+            $barisMcu = PasporMcu::withoutGlobalScopes()->create([
+                'paspor_id'     => $p->id,
+                'tgl_periksa'   => $this->kini->copy()->addDays($hariMcu)->subYear()->toDateString(),
+                'tgl_expired'   => $this->kini->copy()->addDays($hariMcu)->toDateString(),
+                'penyelenggara' => 'Klinik Pratama Sehat Tambang',
+                'jenis'         => 'Berkala',
+                'hasil'         => $hasil,
+                'pembatasan'    => $batas,
+
+                /* Medan yang dibaca dari D'Best. Usia disimpan apa
+                   adanya — yang tercetak pada suratnya adalah usia saat
+                   pemeriksaan, dan menghitungnya ulang tahun depan
+                   memberi angka yang berbeda dari suratnya. */
+                'usia'           => 28 + $i * 3,
+                'mcu_berikutnya' => $this->kini->copy()->addDays($hariMcu - 30)->toDateString(),
+
+                /* Satu orang sengaja dibiarkan BELUM diverifikasi:
+                   tanpa satu pun contohnya, tampilan "belum diperiksa"
+                   tidak pernah benar-benar tergambar. */
+                'status_verifikasi' => $i === 1
+                    ? Authority::MCU_MENUNGGU : Authority::MCU_TERVERIFIKASI,
+                'catatan_kontraktor' => $i === 1
+                    ? 'Berkas menyusul dari klinik rujukan.' : null,
+
+                /* Level risiko menyebar, tidak seragam. Kolom yang
+                   seluruh barisnya berisi "Rendah" memperlihatkan
+                   halaman yang BEKERJA tetapi tidak memperlihatkan apa
+                   gunanya — yang dicari orang justru ekor atasnya.
+                   Salah satunya sengaja Fit-tetapi-Tinggi: itulah baris
+                   yang menjadi isi angka "Risiko tinggi" pada ringkasan. */
+                'level_risiko' => [
+                    Authority::RISIKO_RENDAH,
+                    Authority::RISIKO_TINGGI,
+                    Authority::RISIKO_SEDANG,
+                ][$i % 3],
+
+                /* Satu rujukan yang batasnya SUDAH LEWAT, supaya angka
+                   "Rujukan tertunggak" pada ringkasan riwayat punya isi.
+                   Sebelum medannya dapat dijangkau formulir, angka itu
+                   selamanya nol — dan nol terbaca sebagai "tidak ada
+                   yang tertunggak", bukan sebagai "belum dapat diisi". */
+                'rujukan'     => $i === 1 ? 'Rujukan Sp.PD — tekanan darah' : null,
+                'outstanding' => $i === 1
+                    ? $this->kini->copy()->subDays(20)->toDateString() : null,
+
+                'nomor' => 'MCU/'.$this->kini->year.'/'
+                    .str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
+            ]);
+            $n++;
+
+            foreach ($kartu[$i] as [$jenisKartu, $hariKartu, $gol, $statusKartu]) {
+                $k = PasporKartu::withoutGlobalScopes()->create([
+                    'paspor_id'   => $p->id,
+                    'jenis'       => $jenisKartu,
+                    'sebab_terbit' => 'Terbit',
+                    'nomor'       => ($jenisKartu === 'SIMPER' ? 'ML/' : 'MP/')
+                        .str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
+                    'tgl_terbit'  => $this->kini->copy()->addDays($hariKartu)->subYear()->toDateString(),
+                    'tgl_expired' => $this->kini->copy()->addDays($hariKartu)->toDateString(),
+                    'golongan'    => $gol,
+                    'area'        => $gol ? 'Seluruh area tambang' : 'Area kantor dan workshop',
+
+                    /* Berkas syarat. SIMPER menuntut ketiganya; kartu
+                       masuk biasa hanya bukti induksinya. */
+                    'berkas_induksi' => 'induksi/'.$p->nomor_register.'.pdf',
+                    'sim_polisi'     => $gol ? 'SIM-B2-'.str_pad((string) ($i + 1), 6, '0', STR_PAD_LEFT) : null,
+                    'sim_polisi_expired' => $gol
+                        ? $this->kini->copy()->addDays($hariKartu + 200)->toDateString() : null,
+                    'berkas_ddt'     => $gol ? 'ddt/'.$p->nomor_register.'.pdf' : null,
+                    'email_atasan'   => 'atasan@eqohsee.id',
+
+                    /* Tercetak pada kartunya sendiri. */
+                    'golongan_darah' => ['A', 'B', 'O', 'AB'][$i % 4],
+                    'telepon'        => '08123456'.str_pad((string) ($i + 10), 4, '0', STR_PAD_LEFT),
+                    'kontak_darurat' => 'Keluarga · 08998877'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT),
+                    'tgl_lahir'      => $this->kini->copy()->subYears(28 + $i * 3)->toDateString(),
+                    'subkontraktor'  => $i % 2 ? 'PT Mitra Karya Tambang' : null,
+                    'jenis_sim'      => $gol ? 'B2 Umum' : null,
+
+                    /* ── rantai berkas ──
+                       Atas dasar apa kartu ini diterbitkan. Ditulis
+                       sekali pada penerbitan; MCU baru yang datang
+                       kemudian TIDAK menggesernya, dan selisih itulah
+                       yang membuat "dasar usang" dapat terlihat. */
+                    'paspor_mcu_id'  => $barisMcu->id,
+
+                    /* Lampiran syarat permit. Sengaja TIDAK lengkap
+                       semuanya: satu kartu dibiarkan tanpa SPDK supaya
+                       tampilan "belum lengkap" benar-benar pernah
+                       tergambar, bukan hanya ada di kode. */
+                    'berkas_ktp'        => 'ktp/'.$p->nomor_register.'.pdf',
+                    'berkas_permohonan' => 'permohonan/'.$p->nomor_register.'.pdf',
+                    'berkas_spdk'       => $i === 0 ? null : 'spdk/'.$p->nomor_register.'.pdf',
+                    'berkas_dept'       => $gol ? 'dept/'.$p->nomor_register.'.pdf' : null,
+                    'berkas_lotto'      => $gol ? 'lotto/'.$p->nomor_register.'.pdf' : null,
+                    'berkas_blasting'   => null,
+                ]);
+                $n++;
+
+                /* Unit SIMPER — hanya pada SIMPER, dan sengaja dua
+                   baris dengan hasil berbeda: satu lulus, satu belum.
+                   Seluruhnya lulus tidak pernah memperlihatkan seperti apa
+                   unit yang tertahan itu tampak di layar. */
+                if ($jenisKartu === 'SIMPER') {
+                    foreach ([
+                        ['F', 'EXCAVATOR', 'Komatsu PC 200', 82, 82],
+                        ['T', 'EXCAVATOR', 'Komatsu PC 500', 64, 58],
+                    ] as [$auth, $unit, $merk, $p2h, $praktek]) {
+                        PasporKartuUnit::withoutGlobalScopes()->create([
+                            'paspor_kartu_id' => $k->id,
+                            'authority'       => $auth,
+                            'jenis_unit'      => $unit,
+                            'type_merk'       => $merk,
+                            'nilai_p2h'       => $p2h,
+                            'nilai_praktek'   => $praktek,
+                            'berkas_rambu'    => 'simper/rambu-'.$k->id.'.pdf',
+                            'berkas_teori'    => 'simper/teori-'.$k->id.'.pdf',
+                            'hasil_praktek'   => $p2h >= 70 ? 'simper/praktek-'.$k->id.'.pdf' : null,
+                            'evaluasi'        => $p2h >= 70 ? 'simper/evaluasi-'.$k->id.'.pdf' : null,
+                        ]);
+                        $n++;
+                    }
+                }
+
+                /* Status TIDAK dapat diisi lewat create(): trait Ditinjau
+                   memaksa setiap baris baru lahir sebagai draf, tepat
+                   supaya tidak ada jalan memasang "disetujui" tanpa
+                   melewati alurnya. Data contoh memang perlu menembusnya,
+                   dan menembusnya dengan pembaruan langsung ke basis data
+                   membuat penembusan itu terlihat — bukan tersembunyi
+                   sebagai kolom yang diam-diam boleh diisi. */
+                if ($statusKartu !== Alur::DRAF) {
+                    PasporKartu::withoutGlobalScopes()->whereKey($k->id)->update([
+                        'status'        => $statusKartu,
+                        'diajukan_oleh' => $this->pengaju?->getKey(),
+                        'diajukan_pada' => $this->kini->copy()->subDays(20),
+                        'ditinjau_oleh' => $statusKartu === Alur::DISETUJUI
+                            ? $this->peninjau?->getKey() : null,
+                        'ditinjau_pada' => $statusKartu === Alur::DISETUJUI
+                            ? $this->kini->copy()->subDays(18) : null,
+                    ]);
+
+                    /* Yang sudah disetujui parafnya lengkap; yang masih
+                       menunggu sengaja BARU SATU. Rantai yang seluruhnya
+                       terisi tidak pernah memperlihatkan seperti apa
+                       tampilan tahap yang tertinggal — padahal itulah
+                       yang paling sering dilihat orang. */
+                    $n += $this->paraf($k, $statusKartu === Alur::DISETUJUI
+                        ? [Tahap::ATASAN, Tahap::DEPARTEMEN]
+                        : [Tahap::ATASAN]);
+                }
+            }
+
+            foreach ($induksi[$i] as $j => [$hariInduksi, $jenisInduksi, $hasilInduksi, $nilai]) {
+                PasporInduksi::withoutGlobalScopes()->create([
+                    'paspor_id'        => $p->id,
+                    'nomor_registrasi' => 'IND/'.$this->kini->year.'/'
+                        .str_pad((string) ($i * 10 + $j + 1), 4, '0', STR_PAD_LEFT),
+                    'jenis'       => $jenisInduksi,
+                    'tanggal'     => $this->kini->copy()->addDays($hariInduksi)->subYear()->toDateString(),
+                    'tgl_expired' => $this->kini->copy()->addDays($hariInduksi)->toDateString(),
+                    'pemberi'     => 'Departemen OHSE',
+                    'lokasi'      => 'Ruang Induksi — Pos Utama',
+                    'nilai'       => $nilai,
+                    'hasil'       => $hasilInduksi,
+                ]);
+                $n++;
+            }
+        }
+
+        return $n + $this->pengajuanMcu();
+    }
+
+    /**
+     * Membubuhkan paraf contoh pada tahap-tahap yang disebut.
+     *
+     * Ditulis langsung ke tabelnya, tidak lewat bubuhkanParaf(): metode
+     * itu menolak paraf dari pengajunya sendiri, dan data contoh hanya
+     * punya dua pengguna. Penjagaannya tetap diuji — lihat MinersTest
+     * — dan yang ditembus di sini terlihat sebagai penembusan, bukan
+     * tersembunyi sebagai jalan yang ternyata memang terbuka.
+     *
+     * Memulangkan JUMLAH BARIS, bukan sekadar menandai sudah dipanggil.
+     * Hitungan yang dilaporkan pemuat harus sama persis dengan yang
+     * nanti terbuang; menghitung "sekali per panggilan" membuat selisih
+     * yang muncul sebagai kegagalan uji muat-ulang di tempat yang jauh
+     * dari sebabnya.
+     *
+     * @param  list<string>  $tahap
+     */
+    private function paraf(object $subjek, array $tahap): int
+    {
+        foreach ($tahap as $i => $t) {
+            $subjek->paraf()->create([
+                'tahap'   => $t,
+                'user_id' => $this->peninjau?->getKey(),
+                'nama'    => $this->peninjau?->name ?? 'Pengawas',
+                'jabatan' => Tahap::label($t),
+                'created_at' => $this->kini->copy()->subDays(19 - $i),
+            ]);
+        }
+
+        return count($tahap);
+    }
+
+    /**
+     * Dua surat pengajuan MCU: satu sudah kembali hasilnya, satu belum.
+     *
+     * Keduanya diperlukan. Yang sudah lengkap memperlihatkan bentuk
+     * akhirnya; yang belum memperlihatkan keadaan yang sebenarnya paling
+     * sering ditemui — surat yang sudah dikirim dan hasilnya ditunggu —
+     * dan itulah keadaan yang layarnya harus bisa menampilkan dengan
+     * jelas.
+     */
+    private function pengajuanMcu(): int
+    {
+        /* Disaring ke perusahaan ini SENDIRI. Tanpa itu, memuat data
+           contoh untuk perusahaan kedua akan menyusun suratnya dari nama
+           milik perusahaan pertama — kebocoran yang dibuat sendiri oleh
+           penyemai, dan justru pada tabel yang paling diawasi. */
+        $orang = Paspor::withoutGlobalScopes()
+            ->where('company_id', $this->c->getKey())
+            ->orderBy('id')->get();
+
+        if ($orang->isEmpty()) return 0;
+
+        $n = 0;
+
+        /* [nomor, hari, kepada, jenis, status, sudah kembali, ambil dari, berapa]
+
+           Nama yang diikutkan dipilih supaya TIDAK menimpa keadaan yang
+           sengaja dibuat cacat di atas. Surat pertama yang hasilnya sudah
+           kembali hanya memuat dua orang pertama; bila ia memuat orang
+           ketiga, MCU-nya yang sengaja dibuat kadaluarsa akan tergantikan
+           hasil baru yang sehat — dan satu-satunya contoh MCU kadaluarsa
+           di seluruh data hilang tanpa ada yang menyadarinya. */
+        $surat = [
+            ['MCU/EQ/2026/001', -45, 'Klinik Pratama Sehat Tambang', 'Berkala', Alur::DISETUJUI, true,  0, 2],
+            ['MCU/EQ/2026/002', -6,  'RS Umum Daerah Kabupaten',     'Khusus',  Alur::DIAJUKAN,  false, 2, 3],
+        ];
+
+        foreach ($surat as [$nomor, $hari, $kepada, $jenis, $status, $sudahKembali, $dari, $berapa]) {
+            $p = McuPengajuan::withoutGlobalScopes()->create([
+                'company_id'     => $this->c->getKey(),
+                'user_id'        => $this->pengaju?->getKey(),
+                'nomor_register' => $nomor,
+                'tanggal'        => $this->kini->copy()->addDays($hari)->toDateString(),
+                'kepada'         => $kepada,
+                'judul'          => 'Permohonan pemeriksaan kesehatan '.strtolower($jenis).' pekerja',
+                'jenis'          => $jenis,
+            ]);
+            $n++;
+
+            McuPengajuan::withoutGlobalScopes()->whereKey($p->id)->update([
+                'status'        => $status,
+                'diajukan_oleh' => $this->pengaju?->getKey(),
+                'diajukan_pada' => $this->kini->copy()->addDays($hari)->addDay(),
+                'ditinjau_oleh' => $status === Alur::DISETUJUI ? $this->peninjau?->getKey() : null,
+                'ditinjau_pada' => $status === Alur::DISETUJUI
+                    ? $this->kini->copy()->addDays($hari)->addDays(2) : null,
+            ]);
+
+            /* Rantai MCU: paramedis lalu KTT — bukan rantai kartu. */
+            $n += $this->paraf($p, $status === Alur::DISETUJUI
+                ? [Tahap::PARAMEDIS, Tahap::KTT]
+                : [Tahap::PARAMEDIS]);
+
+            foreach ($orang->slice($dari, $berapa)->values() as $t => $o) {
+                PasporMcu::withoutGlobalScopes()->create([
+                    'paspor_id'        => $o->id,
+                    'mcu_pengajuan_id' => $p->id,
+                    'tgl_periksa'      => $this->kini->copy()->addDays($hari)->addDays(7)->toDateString(),
+                    'penyelenggara'    => $kepada,
+                    'jenis'            => $jenis,
+
+                    /* Yang belum kembali BENAR-BENAR kosong hasilnya —
+                       bukan diisi "Fit" sebagai nilai awal. Hasil yang
+                       ditebak tidak dapat dibedakan dari hasil sungguhan
+                       begitu halamannya ditutup. */
+                    'hasil'       => $sudahKembali ? ($t === 1 ? 'Fit With Note' : 'Fit') : null,
+                    'nomor'       => $sudahKembali ? str_replace('MCU/', 'HSL/', $nomor).'-'.($t + 1) : null,
+                    'tgl_expired' => $sudahKembali
+                        ? $this->kini->copy()->addDays($hari)->addDays(372)->toDateString() : null,
+                    'rujukan'     => $sudahKembali && $t === 1 ? 'Poli Jantung — kontrol tekanan darah' : null,
+                    'outstanding' => $sudahKembali && $t === 1
+                        ? $this->kini->copy()->subDays(9)->toDateString() : null,  // tertunggak
+                ]);
+                $n++;
+            }
+        }
+
+        return $n + $this->pengajuanInduksi($orang);
+    }
+
+    /**
+     * Kelas induksi — kembar dengan surat pengajuan MCU di atas.
+     *
+     * Dua kelas: satu yang sudah selesai dan dinilai, satu yang masih
+     * menunggu tinjauan dengan pesertanya belum dinilai. Yang kedua ada
+     * supaya angka "hasil belum dinilai" pada ringkasan punya isi —
+     * angka yang selalu nol tidak terbaca sebagai "belum dapat diisi"
+     * melainkan sebagai "semua sudah selesai".
+     *
+     * @param  \Illuminate\Support\Collection  $orang
+     */
+    private function pengajuanInduksi($orang): int
+    {
+        if ($orang->isEmpty()) return 0;
+
+        $n = 0;
+
+        /* [nomor, hari, lokasi, jenis, status, sudah dinilai, ambil dari, berapa] */
+        $kelas = [
+            ['IND/EQ/2026/001', -40, 'Ruang Kelas Safety — Site A', 'Awal',       Alur::DISETUJUI, true,  0, 2],
+            ['IND/EQ/2026/002', -4,  'Ruang Kelas Safety — Site A', 'Penyegaran', Alur::DIAJUKAN,  false, 1, 3],
+        ];
+
+        foreach ($kelas as [$nomor, $hari, $lokasi, $jenis, $status, $sudahDinilai, $dari, $berapa]) {
+            $p = InduksiPengajuan::withoutGlobalScopes()->create([
+                'company_id'      => $this->c->getKey(),
+                'user_id'         => $this->pengaju?->getKey(),
+                'nomor_register'  => $nomor,
+                'tanggal'         => $this->kini->copy()->addDays($hari)->toDateString(),
+                'judul'           => 'Induksi keselamatan '.strtolower($jenis).' pekerja',
+                'jenis'           => $jenis,
+                'lokasi'          => $lokasi,
+                'tgl_pelaksanaan' => $this->kini->copy()->addDays($hari)->addDays(3)->toDateString(),
+            ]);
+            $n++;
+
+            InduksiPengajuan::withoutGlobalScopes()->whereKey($p->id)->update([
+                'status'        => $status,
+                'diajukan_oleh' => $this->pengaju?->getKey(),
+                'diajukan_pada' => $this->kini->copy()->addDays($hari)->addDay(),
+                'ditinjau_oleh' => $status === Alur::DISETUJUI ? $this->peninjau?->getKey() : null,
+                'ditinjau_pada' => $status === Alur::DISETUJUI
+                    ? $this->kini->copy()->addDays($hari)->addDays(2) : null,
+            ]);
+
+            /* Rantai induksi BERHENTI DI OHSE — tidak ada tahap paraf
+               sama sekali, sebab OHSE sendiri yang menyelenggarakannya. */
+            foreach ($orang->slice($dari, $berapa)->values() as $t => $o) {
+                PasporInduksi::withoutGlobalScopes()->create([
+                    'paspor_id'            => $o->id,
+                    'induksi_pengajuan_id' => $p->id,
+                    'jenis'                => $jenis,
+                    'tanggal'              => $this->kini->copy()->addDays($hari)->addDays(3)->toDateString(),
+                    'lokasi'               => $lokasi,
+
+                    /* Yang belum dinilai BENAR-BENAR kosong hasilnya. */
+                    'hasil'       => $sudahDinilai ? ($t === 1 ? 'Mengulang' : 'Lulus') : null,
+                    'nilai'       => $sudahDinilai ? ($t === 1 ? 62 : 88) : null,
+                    'nomor_registrasi' => $sudahDinilai
+                        ? str_replace('IND/', 'SRT/', $nomor).'-'.($t + 1) : null,
+                    'tgl_expired' => $sudahDinilai
+                        ? $this->kini->copy()->addDays($hari)->addDays(368)->toDateString() : null,
+                    'pemberi'     => $sudahDinilai ? ($this->peninjau?->name ?? 'Tim OHSE') : null,
+                ]);
+                $n++;
+            }
+        }
+
+        return $n;
+    }
+
+    /* ─────────── TPKKP ─────────── */
+
+    /**
+     * Penilaian kinerja keselamatan, nilainya dibangkitkan dari
+     * instrumennya sendiri.
+     *
+     * Nilai TIDAK ditulis tetap. Instrumen TPKKP berisi ratusan item
+     * dengan kode yang dapat berubah bila instrumennya diperbarui, dan
+     * kode yang ditulis tetap akan diam-diam berhenti cocok — hasilnya
+     * penilaian yang tampil sebagai nol pada seluruh parameter tanpa
+     * satu pun galat. Dibangkitkan dari `Tpkkp::allItems()`, nilainya
+     * ikut mengikuti instrumen yang sedang berlaku.
+     *
+     * Sebarannya sengaja tidak rata dan sengaja tidak lengkap: sebagian
+     * item dibiarkan kosong. Penilaian yang seluruh itemnya terisi
+     * penuh tidak memperlihatkan bagaimana halaman ini menandai yang
+     * belum dikerjakan — dan itulah yang paling sering ditanyakan.
+     */
+    private function tpkkp(): int
+    {
+        $n = 0;
+
+        try {
+            $item   = Tpkkp::allItems();
+            $metode = Tpkkp::methods();       // dipetakan menurut KODE, bukan berindeks
+        } catch (\Throwable $e) {
+            /* Instrumennya berkas, bukan tabel. Bila hilang, modul lain
+               tidak boleh ikut gagal dimuat. */
+            $this->catatan[] = 'TPKKP: instrumen tidak terbaca — '.$e->getMessage();
+
+            return 0;
+        }
+
+        if (!$item || !$metode) return 0;
+
+        foreach ([['selesai', 1], ['berjalan', 0]] as [$status, $mundur]) {
+            $tahun  = $this->kini->year - $mundur;
+            $scores = [];
+
+            foreach ($item as $ii => $it) {
+                /* Hanya metode yang MEMANG dipakai item itu. Menilai
+                   dengan metode yang tidak disebut instrumen tidak
+                   pernah terbaca — nilainya tersimpan, tidak terhitung,
+                   dan tidak dapat dijelaskan asalnya. */
+                foreach (($it['methods'] ?? []) as $mi => $m) {
+                    /* Yang berjalan baru terisi sebagian — itulah yang
+                       membedakannya dari yang sudah selesai, dan yang
+                       memperlihatkan bagaimana item kosong ditandai. */
+                    if ($status === 'berjalan' && ($ii + $mi) % 3 !== 0) continue;
+
+                    $nilai = 2 + (($ii * 7 + $mi * 3) % 4);   // 2..5
+                    $ent   = array_slice($metode[$m]['entities'] ?? [], 0, 2);
+
+                    /* Metode berentitas dinilai PER ENTITAS; itulah yang
+                       dirata-ratakan mesin hitungnya. Mengisi 'v' pada
+                       metode berentitas menghasilkan angka yang benar
+                       pada rekap keseluruhan tetapi nol pada rekap per
+                       perusahaan. */
+                    $scores[$m][$it['code']] = $ent
+                        ? ['v' => null,
+                           'e' => array_combine($ent, [$nilai, max(1, $nilai - 1)]),
+                           'ket' => '']
+                        : ['v' => $nilai, 'e' => [], 'ket' => ''];
+                }
+            }
+
+            $this->baru(TpkkpAssessment::class, [
+                'tahun'    => $tahun,
+                'judul'    => 'Penilaian Kinerja Keselamatan Pertambangan '.$tahun,
+                'status'   => $status,
+                'scores'   => $scores,
+                'roster'   => [],
+                'profil'   => [
+                    'organisasi' => $this->c->name,
+                    'site'       => 'Site Utama',
+                    'komoditas'  => 'Batubara',
+                    'ktt'        => $this->peninjau?->name ?? 'Kepala Teknik Tambang',
+                    'periode'    => (string) $tahun,
+                ],
+                'tim'      => [
+                    ['nama' => $this->peninjau?->name ?? 'Kepala Teknik Tambang', 'peran' => 'Ketua'],
+                    ['nama' => $this->pengaju?->name  ?? 'Pengawas Operasional',  'peran' => 'Anggota'],
+                ],
+                'programs' => Tpkkp::programSeed(),
+                'jadwal'   => [],
+                'sampling' => [],
+            ]);
+            $n++;
+        }
+
+        /* Tanggapan kuesioner dari lapangan; tiga kategori responden
+           supaya rekap per kategori punya lebih dari satu batang. */
+        foreach ([
+            ['pekerja',   'Operator Dump Truck', 'Produksi'],
+            ['pengawas',  'Pengawas Operasional', 'Produksi'],
+            ['manajemen', 'Manajer OHSE',         'OHSE'],
+        ] as $i => [$cat, $jabatan, $dept]) {
+            $this->baru(TpkkpResponse::class, [
+                'ext_id'     => 'RESP-'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
+                'cat'        => $cat,
+                'nrp'        => '20'.str_pad((string) (140 + $i), 4, '0', STR_PAD_LEFT),
+                'jabatan'    => $jabatan,
+                'dept'       => $dept,
+                'perusahaan' => $this->c->name,
+                'answers'    => ['q1' => 4, 'q2' => 3 + ($i % 2), 'q3' => 5, 'q4' => 4],
+                'ts'         => $this->kini->copy()->subDays(30 - $i * 4),
+            ]);
+            $n++;
+        }
+
+        $n += $this->tpkkpPengujian();
+
+        return $n;
+    }
+
+    /**
+     * Hasil pengujian (metode PJ) — enam peserta, sengaja tidak seragam.
+     *
+     * Nilainya menyebar dari 6/15 sampai 14/15 supaya sebaran tingkat di
+     * halaman admin punya lebih dari satu batang. Sebaran yang rata —
+     * enam peserta bertingkat sama — memperlihatkan halaman yang
+     * BEKERJA tetapi tidak memperlihatkan apa gunanya: yang dicari
+     * seorang penilai justru ekor bawahnya.
+     *
+     * Tingkatnya dihitung lewat TpkkpUji::tingkatDari, bukan ditulis
+     * tetap. Pita konversinya ada di berkas instrumen dan dapat
+     * berubah; angka tetap akan diam-diam berhenti cocok dengan pita
+     * yang berlaku, dan data contoh yang tidak konsisten dengan
+     * mesinnya sendiri lebih menyesatkan daripada tidak ada data.
+     *
+     * Satu peserta diberi `pindah_layar` di atas nol supaya kolom
+     * indikasi itu punya isi — kolom yang seluruhnya nol tampak seperti
+     * kolom yang tidak berfungsi.
+     */
+    private function tpkkpPengujian(): int
+    {
+        $total = TpkkpUji::jumlahSoal();
+        $n     = 0;
+
+        $peserta = [
+            ['Suryanto',      'Operator Dump Truck',  'Mining / Operation / Produksi', 14, 0],
+            ['Rahmat Hidayat','Mekanik',              'Plant',                         12, 0],
+            ['Dewi Lestari',  'Admin',                'HRGA / HRO',                    10, 2],
+            ['Bagus Prakoso', 'Crew / Helper',        'Mining / Operation / Produksi',  9, 0],
+            ['Iwan Setiawan', 'Driver',               'CHF / Port',                     7, 1],
+            ['Marta Sinaga',  'Security',             'HRGA / HRO',                     5, 0],
+        ];
+
+        foreach ($peserta as $i => [$nama, $jabatan, $dept, $benar, $pindah]) {
+            $benar = min($benar, $total);
+            $pct   = $total ? $benar / $total : 0.0;
+
+            $mulai = $this->kini->copy()->subDays(12 - $i)->setTime(9 + $i % 6, 15);
+
+            $this->baru(TpkkpPengujian::class, [
+                'ext_id'       => 'UJI-'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
+                'nama'         => $nama,
+                'nrp'          => '20'.str_pad((string) (210 + $i), 4, '0', STR_PAD_LEFT),
+                'jabatan'      => $jabatan,
+                'dept'         => $dept,
+                'perusahaan'   => $this->c->name,
+                'kunci_identitas' => TpkkpUji::kunciIdentitas([
+                    'nama' => $nama, 'jabatan' => $jabatan,
+                    'dept' => $dept, 'perusahaan' => $this->c->name,
+                ]),
+                'benar'        => $benar,
+                'total'        => $total,
+                'skor_pct'     => round($pct, 4),
+                'tingkat'      => TpkkpUji::tingkatDari($pct),
+                'durasi_detik' => 420 + $i * 55,
+                'pindah_layar' => $pindah,
+                'mulai'        => $mulai,
+                'ts'           => $mulai->copy()->addSeconds(420 + $i * 55),
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /* ─────────── pesan internal ─────────── */
+
+    /**
+     * Satu percakapan dengan pesan di kedua arah.
+     *
+     * Satu arah saja tidak cukup: halaman pesan membedakan gelembung
+     * kiri dan kanan, menghitung yang belum terbaca, dan mengurutkan
+     * percakapan menurut pesan terakhir. Ketiganya tidak dapat dilihat
+     * dari percakapan yang hanya berisi pesan sendiri.
+     */
+    /* ─────────── Investigasi kecelakaan ─────────── */
+
+    /**
+     * Satu berkas investigasi yang lengkap dari ujung ke ujung.
+     *
+     * SATU, BUKAN LIMA, dan itu keputusan yang berbeda dari modul lain
+     * di berkas ini. Modul lain diisi beberapa baris supaya sebaran dan
+     * penyaringnya dapat diperiksa. Investigasi tidak diperiksa lewat
+     * sebaran melainkan lewat RANTAINYA — bukti menyokong akar masalah,
+     * akar melahirkan temuan, temuan melahirkan tindakan — dan rantai
+     * itu hanya terlihat kalau satu berkas benar-benar utuh. Lima berkas
+     * setengah jadi memenuhi tiap tabel dengan angka bukan-nol sambil
+     * tidak memperlihatkan satu pun rantai yang tersambung.
+     *
+     * Levelnya sengaja L3. Di L1 dan L2 tahap Verifikasi dilewati,
+     * sehingga tabel verifikasi tindakan tidak akan pernah terisi oleh
+     * data contoh — dan bagian yang tidak pernah terisi adalah bagian
+     * yang tidak pernah diperiksa siapa pun.
+     */
+    private function investigasi(): int
+    {
+        /* Masternya dipasang lebih dulu, dan pemasangannya idempoten.
+           Tanpa ini, data contoh pada pemasangan yang belum pernah
+           menjalankan `investigasi:pasang` akan menunjuk klasifikasi
+           yang tidak ada — dan triasenya diam-diam tidak menghasilkan
+           level apa pun. */
+        MasterInvestigasi::pasang();
+
+        $n = 0;
+
+        $lokasi = InvLokasi::withoutGlobalScopes()->create([
+            'company_id' => $this->c->id,
+            'kode' => 'HR-KM4', 'nama' => 'Jalan Hauling KM 4',
+            'area' => 'Pit Selatan', 'aktif' => true,
+        ]);
+        $n++;
+
+        $kejadian = $this->kini->copy()->subDays(12)->setTime(14, 20);
+
+        $insiden = InvInsiden::withoutGlobalScopes()->create([
+            'company_id'       => $this->c->id,
+            'no_insiden'       => NomorInvestigasi::terbitkan(NomorInvestigasi::INSIDEN, (int) $kejadian->format('Y')),
+            'judul'            => 'Dump truck menabrak tanggul pengaman di jalan hauling KM 4',
+            'tanggal_kejadian' => $kejadian->toDateString(),
+            'waktu_kejadian'   => $kejadian->format('H:i:s'),
+            'dilaporkan_pada'  => $kejadian->copy()->addHours(2),
+            'lokasi_id'        => $lokasi->id,
+            'lokasi_rinci'     => 'Tikungan menurun sesudah simpang workshop',
+            'aktivitas'        => 'Hauling overburden dari Pit Selatan ke disposal',
+            'jenis_insiden_id' => DB::table('inv_jenis_insiden')->where('kode', 'tabrakan')->value('id'),
+            'klasifikasi_cedera_id' => DB::table('inv_klasifikasi_cedera')->where('kode', 'ringan')->value('id'),
+            'pelapor_id'       => $this->pengaju?->id,
+            'kronologi'        => 'Unit HD-785 keluar dari pit bermuatan penuh. Pada tikungan menurun '
+                .'sesudah simpang workshop, pengemudi mengerem dan pedal terasa dalam. Unit tidak berhenti '
+                .'pada jarak biasa dan menabrak tanggul pengaman sisi kiri, berhenti sekitar 12 meter dari '
+                .'titik pengereman. Area tikungan gelap karena dua lampu penerangan mati sejak pekan lalu.',
+            'tindakan_segera'  => 'Unit diamankan dan ditarik ke workshop. Jalur dialihkan lewat ramp lama. '
+                .'Pengemudi diperiksa paramedis, lecet pada siku kiri.',
+
+            /* Enam pemicu saran lapis 3 — dicentang pelapor di formulir,
+               dan justru kolom inilah yang dulu tidak punya medan sama
+               sekali sehingga lapis 3 tidak pernah menyala. */
+            'p_shift_malam'      => true,
+            'p_sop_tidak_ada'    => false,
+            'p_belum_dilatih'    => false,
+            'p_inspeksi_absen'   => true,
+            'p_insiden_berulang' => true,
+            'p_lembur_panjang'   => true,
+        ]);
+        $n++;
+
+        $insiden->orang()->create([
+            'nama' => 'Budi Santoso', 'jabatan' => 'Operator HD',
+            'perusahaan' => $this->c->name, 'peran' => 'korban',
+            'bagian_tubuh' => 'Siku kiri', 'rincian_cedera' => 'Lecet, dibalut di klinik site.',
+            'hari_hilang' => 2,
+        ]);
+        $insiden->orang()->create([
+            'nama' => 'Hendra Gunawan', 'jabatan' => 'Pengawas Hauling',
+            'perusahaan' => $this->c->name, 'peran' => 'saksi',
+        ]);
+        $n += 2;
+
+        /* Triase dijalankan lewat jalur yang sama dengan layarnya —
+           bukan dengan menulis level langsung ke kolomnya. Menulisnya
+           langsung membuat data contoh tetap benar meskipun rumus
+           triasenya rusak, dan itu justru menyembunyikan kerusakannya. */
+        InvTriase::terapkan($insiden, [
+            'kemungkinan' => 3, 'keparahan' => 3, 'keparahan_potensial' => 4,
+            'klasifikasi_regulasi_id' => DB::table('inv_klasifikasi_regulasi')
+                ->where('kode', 'kecelakaan_tambang')->value('id'),
+            'k1_benar_terjadi' => 1, 'k2_mencederai_pekerja' => 1,
+            'k3_akibat_kegiatan' => 1, 'k4_jam_kerja' => 1, 'k5_wilayah_usaha' => 1,
+        ]);
+
+        $insiden->update([
+            'status' => 'diselidiki',
+            'dilaporkan_kait_pada' => $kejadian->copy()->addHours(6),
+        ]);
+
+        $inv = $insiden->investigasi()->create([
+            'no_investigasi' => NomorInvestigasi::terbitkan(NomorInvestigasi::INVESTIGASI, (int) $kejadian->format('Y')),
+            'ketua_id'       => $this->peninjau?->id ?? $this->pengaju?->id,
+            'prioritas'      => 'tinggi',
+            'target_selesai' => $kejadian->copy()->addDays(30)->toDateString(),
+            'tahap'          => 'verifikasi',
+            'tujuan'         => 'Menetapkan penyebab kegagalan pengereman dan mencegah terulangnya '
+                .'pada unit sejenis.',
+            'ruang_lingkup'  => 'Seluruh unit HD-785 yang melintasi jalan hauling bergradien.',
+            'metode'         => 'ICAM, Bowtie, 5 Why, Kronologi, Analisis Penghalang',
+        ]);
+        $n++;
+
+        if ($this->pengaju) {
+            $inv->tim()->create(['user_id' => $this->pengaju->id, 'peran_tim' => 'Anggota']);
+            $n++;
+        }
+
+        /* ── kronologi ── */
+        $peristiwa = [
+            ['-08:25', 'Unit keluar dari pit bermuatan penuh', 'Muatan tercatat 91 ton, dalam batas.', false],
+            ['-08:10', 'Pemeriksaan awal (P2H) tidak mencatat keluhan rem', 'Lembar P2H pagi itu diisi tanpa catatan.', true],
+            ['-00:01', 'Operator mengerem memasuki tikungan', 'Menurut pernyataan, pedal terasa dalam.', true],
+            ['+00:00', 'Unit menabrak tanggul dan berhenti', 'Jarak henti sekitar 12 meter dari titik pengereman.', false],
+        ];
+
+        foreach ($peristiwa as $i => [$geser, $judul, $ket, $sebab]) {
+            [$tanda, $jam] = [substr($geser, 0, 1), substr($geser, 1)];
+            [$j, $m] = array_map('intval', explode(':', $jam));
+            $waktu = $tanda === '-'
+                ? $kejadian->copy()->subHours($j)->subMinutes($m)
+                : $kejadian->copy()->addHours($j)->addMinutes($m);
+
+            $inv->kronologi()->create([
+                'waktu' => $waktu, 'peristiwa' => $judul, 'keterangan' => $ket,
+                'penyebab' => $sebab, 'urutan' => $i + 1,
+            ]);
+            $n++;
+        }
+
+        /* ── bukti ── */
+        $bukti = [];
+        $daftarBukti = [
+            ['foto',       'Foto posisi akhir unit dan bekas ban',          true],
+            ['dokumen',    'Lembar P2H unit HD-785 tiga hari terakhir',     true],
+            ['dokumen',    'Riwayat perawatan sistem rem HD-785',           false],
+            ['pernyataan', 'Pernyataan operator Budi Santoso',              true],
+            ['foto',       'Foto kondisi kampas rem setelah pembongkaran',  true],
+        ];
+
+        foreach ($daftarBukti as $i => [$jenis, $judul, $dikunci]) {
+            $b = $inv->bukti()->create([
+                'no_bukti' => NomorInvestigasi::terbitkan(NomorInvestigasi::BUKTI, (int) $kejadian->format('Y')),
+                'jenis' => $jenis, 'judul' => $judul,
+                'sumber' => $i === 3 ? 'Wawancara di klinik site' : 'Tim investigasi',
+                'dikumpulkan_pada' => $kejadian->copy()->addDay()->toDateString(),
+                'dikumpulkan_oleh' => $inv->ketua_id,
+
+                /* Sidik jarinya dibuat dari judulnya supaya tetap sama
+                   tiap kali data contoh dimuat ulang. Nilai acak akan
+                   membuat dua pemuatan menghasilkan sidik jari berbeda
+                   untuk berkas yang sama — persis keadaan yang seharusnya
+                   menandakan berkasnya diganti. */
+                'sha256' => hash('sha256', $judul),
+                'dikunci' => $dikunci,
+                'dikunci_pada' => $dikunci ? $kejadian->copy()->addDays(2) : null,
+                'dikunci_oleh' => $dikunci ? $inv->ketua_id : null,
+            ]);
+
+            $bukti[] = $b;
+            $n++;
+        }
+
+        /* ── analisis SCAT ── */
+        $analisis = $inv->analisis()->create([
+            'metode'  => 'scat',
+            'catatan' => 'Dipilih dari 15 saran mesin atas 252 butir kamus; seluruhnya diverifikasi '
+                .'ulang terhadap bukti sebelum dicentang.',
+        ]);
+        $n++;
+
+        $butir = DB::table('inv_taksonomi')->where('metode', 'scat')
+            ->whereIn('kode', ['6.12', '8.5.5', '9.5.7', '5.2'])
+            ->pluck('id', 'kode');
+
+        /* `dari_saran` mengikuti apa yang SUNGGUH DAPAT terjadi di layar.
+           Lapis 1 dipilih sendiri dari keterangan saksi — mesinnya tidak
+           pernah mengusulkannya — jadi menandainya sebagai hasil usulan
+           membuat rekap "apakah mesinnya menolong atau justru menyetir"
+           dijawab dengan angka yang tidak pernah ada kejadiannya.
+
+           Lapisnya pun dihitung MesinScat, bukan ditulis tangan. Ditulis
+           tangan, ia diam-diam melenceng begitu kamusnya bergeser. */
+        foreach ($butir as $kode => $id) {
+            $lapis = MesinScat::lapis($kode);
+
+            $analisis->pilihan()->create([
+                'taksonomi_id' => $id,
+                'dari_saran'   => $lapis > 1,
+                'lapis_saran'  => $lapis > 1 ? $lapis : null,
+                'catatan_lapangan' => 'Dicocokkan dengan bukti '.$bukti[0]->no_bukti.'.',
+            ]);
+            $n++;
+        }
+
+        /* ── akar masalah, masing-masing bertaut ke buktinya ── */
+        $akar = [];
+        $daftarAkar = [
+            ['Interval penggantian kampas rem tidak disesuaikan dengan kondisi jalan hauling yang menurun tajam.', '8.5.5', [2, 4]],
+            ['Lembar P2H diisi tanpa pemeriksaan fisik yang sebenarnya.', null, [1, 3]],
+            ['Pengawasan pengisian P2H tidak berjalan.', '9.5.7', [1]],
+        ];
+
+        foreach ($daftarAkar as $i => [$uraian, $kode, $idxBukti]) {
+            $a = $inv->akar()->create([
+                'uraian'  => $uraian,
+                'metode'  => $kode ? 'scat' : '5why',
+                'taksonomi_id' => $kode ? ($butir[$kode] ?? null) : null,
+                'urutan'  => $i + 1,
+            ]);
+
+            /* Tiap akar disokong bukti. Akar tanpa bukti adalah pendapat,
+               dan pendapat tidak bertahan di depan Inspektur Tambang —
+               data contoh yang memperlihatkan akar tanpa bukti akan
+               mengajarkan kebiasaan yang justru hendak dicegah. */
+            $a->bukti()->attach(collect($idxBukti)->map(fn ($x) => $bukti[$x]->id)->all());
+
+            $akar[] = $a;
+            $n++;
+        }
+
+        /* ── temuan dan tindakan perbaikan ── */
+        $hierarki = DB::table('inv_hierarki_kendali')->pluck('id', 'kode');
+
+        $daftarTemuan = [
+            [
+                'Jadwal penggantian kampas rem memakai interval jam kerja standar pabrikan, tanpa '
+                    .'penyesuaian terhadap jalan hauling bergradien di atas 8%.',
+                'Susun ulang interval perawatan sistem rem berdasarkan gradien jalan dan jam kerja aktual.',
+                'tinggi', 0,
+                [
+                    ['Revisi jadwal perawatan sistem rem seluruh unit HD berdasarkan gradien jalan', 'rekayasa', 'diverifikasi', -2],
+                    ['Pasang alat pemantau suhu rem pada unit yang melintasi jalan bergradien tinggi', 'rekayasa', 'selesai', 18],
+                ],
+            ],
+            [
+                'Lembar P2H diisi tanpa pemeriksaan fisik. Tiga lembar terakhir tidak mencatat satu pun '
+                    .'temuan meskipun kampas sudah aus melewati batas.',
+                'Ubah cara verifikasi P2H sehingga tidak bergantung pada kejujuran pengisian sendiri.',
+                'tinggi', 1,
+                [
+                    ['Pemeriksaan silang P2H oleh pengawas pada 20% unit setiap giliran kerja', 'administratif', 'diverifikasi', -5],
+                    ['Penyegaran pelatihan P2H untuk seluruh operator HD', 'administratif', 'selesai', 9],
+                ],
+            ],
+        ];
+
+        foreach ($daftarTemuan as $i => [$uraian, $rekomendasi, $tingkat, $idxAkar, $tindakan]) {
+            $t = $inv->temuan()->create([
+                'no_temuan' => NomorInvestigasi::terbitkan(NomorInvestigasi::TEMUAN, (int) $kejadian->format('Y')),
+                'akar_id'   => $akar[$idxAkar]->id,
+                'uraian'    => $uraian,
+                'rekomendasi' => $rekomendasi,
+                'tingkat'   => $tingkat,
+                'urutan'    => $i + 1,
+            ]);
+            $n++;
+
+            foreach ($tindakan as [$isi, $kodeHierarki, $status, $geserTenggat]) {
+                $sudahDiverifikasi = $status === 'diverifikasi';
+
+                $t->tindakan()->create([
+                    'no_tindakan' => NomorInvestigasi::terbitkan(NomorInvestigasi::TINDAKAN, (int) $kejadian->format('Y')),
+                    'hierarki_id' => $hierarki[$kodeHierarki] ?? null,
+                    'uraian'      => $isi,
+                    'pic_id'      => $this->pengaju?->id,
+                    'tenggat'     => $this->kini->copy()->addDays($geserTenggat)->toDateString(),
+                    'status'      => $status,
+                    'selesai_pada' => $this->kini->copy()->subDays(3)->toDateString(),
+                    'diverifikasi_oleh' => $sudahDiverifikasi ? $inv->ketua_id : null,
+                    'diverifikasi_pada' => $sudahDiverifikasi ? $this->kini->copy()->subDay()->toDateString() : null,
+                    'catatan_verifikasi' => $sudahDiverifikasi
+                        ? 'Diperiksa di lapangan; jadwal baru sudah berjalan pada dua unit contoh.' : null,
+                    'efektif' => $sudahDiverifikasi ? true : null,
+                ]);
+                $n++;
+            }
+        }
+
+        /* ── wawancara ── */
+        $w = $inv->wawancara()->create([
+            'narasumber' => 'Budi Santoso', 'jabatan' => 'Operator HD',
+            'peran' => 'korban',
+            'tanggal' => $kejadian->copy()->addDay()->toDateString(),
+            'tempat' => 'Klinik site',
+            'pewawancara_id' => $inv->ketua_id,
+            'catatan' => 'Narasumber tenang, keterangan runtut.',
+        ]);
+        $n++;
+
+        foreach ([
+            ['Ceritakan kronologi kejadian dari sudut pandang Anda, dari sebelum sampai sesudah kejadian.',
+             'Saya keluar pit sekitar pukul enam pagi. Di tikungan menurun saya mulai mengerem seperti '
+                .'biasa, tetapi pedalnya terasa lebih dalam dan unit tidak melambat seperti biasanya.'],
+            ['APD apa yang digunakan saat kejadian, dan apakah kondisinya baik & sesuai standar?',
+             'Sabuk pengaman terpasang, helm dan sepatu lengkap. Sabuk yang menahan saya tidak terbentur setir.'],
+        ] as [$tanya, $jawab]) {
+            $w->jawaban()->create([
+                'pertanyaan_id' => DB::table('inv_wawancara_pertanyaan')
+                    ->where('pertanyaan', $tanya)->value('id'),
+                'pertanyaan_teks' => $tanya,
+                'jawaban' => $jawab,
+            ]);
+            $n++;
+        }
+
+        /* ── pembelajaran ── */
+        $inv->pembelajaran()->create([
+            'judul' => 'Interval perawatan rem harus mengikuti gradien jalan, bukan hanya jam kerja',
+            'ringkasan' => 'Unit HD-785 menabrak tanggul pengaman karena kampas rem sudah aus melewati '
+                .'batas, sementara jadwal penggantiannya memakai interval jam kerja standar pabrikan. '
+                .'Jalan hauling bergradien di atas 8% mempercepat keausan jauh melebihi asumsi itu.',
+            'pesan_kunci' => 'Periksa apakah jadwal perawatan rem di site Anda sudah memperhitungkan '
+                .'gradien jalan. Bila belum, hitung ulang sebelum musim hujan.',
+            'diterbitkan_pada' => $this->kini->toDateString(),
+            'diterbitkan_oleh' => $inv->ketua_id,
+        ]);
+        $n++;
+
+        /* ── jejak langkah ── */
+        foreach ([
+            ['Insiden dilaporkan', $insiden->no_insiden],
+            ['Triase', 'L3 · skor '.$insiden->skor_risiko],
+            ['Investigasi dibuka', $inv->no_investigasi],
+            ['Bukti dikunci', '4 dari 5 berkas'],
+            ['Tahap dimajukan', 'Analisis → Rencana Aksi'],
+        ] as [$aksi, $ket]) {
+            DB::table('inv_jejak')->insert([
+                'investigasi_id' => $inv->id, 'insiden_id' => $insiden->id,
+                'user_id' => $inv->ketua_id, 'aksi' => $aksi, 'keterangan' => $ket,
+                'created_at' => now(), 'updated_at' => now(),
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    private function pesan(): int
+    {
+        if (!$this->pengaju || !$this->peninjau) return 0;
+
+        $n = 0;
+
+        /* Dibuat lewat jalan yang dipakai aplikasinya sendiri, bukan
+           dengan menulis tabel pivotnya langsung. Percakapan langsung
+           punya aturan "satu pasang, satu percakapan", dan data contoh
+           yang melewati aturan itu akan menghasilkan keadaan yang tidak
+           pernah dapat muncul dari pemakaian biasa. */
+        $p = Percakapan::withoutGlobalScopes()
+            ->where('jenis', 'langsung')->firstOr(fn () => tap(
+                Percakapan::withoutGlobalScopes()->create([
+                    'jenis'      => 'langsung',
+                    'judul'      => 'Koordinasi tanggul KM 4',
+                    'company_id' => $this->c->id,
+                ]),
+                fn ($baru) => $baru->peserta()->attach([
+                    $this->pengaju->getKey(), $this->peninjau->getKey(),
+                ]),
+            ));
+        $n++;
+
+        $terakhir = null;
+
+        foreach ([
+            [$this->pengaju,  'Tanggul KM 4 tergerus sesudah hujan semalam. Sudah saya buatkan laporan bahayanya.', 180],
+            [$this->peninjau, 'Terima kasih. Tutup dulu jalur itu sampai alat berat sampai.', 165],
+            [$this->pengaju,  'Siap, rambu pengalihan sudah dipasang.', 150],
+            [$this->peninjau, 'Perbaikan dijadwalkan besok pagi; tolong dipantau.', 20],
+        ] as [$dari, $isi, $menitLalu]) {
+            $terakhir = $this->kini->copy()->subMinutes($menitLalu);
+
+            Pesan::withoutGlobalScopes()->create([
+                'percakapan_id' => $p->id,
+                'user_id'       => $dari->getKey(),
+                'peran'         => 'pengguna',
+                'isi'           => $isi,
+                'created_at'    => $terakhir,
+                'updated_at'    => $terakhir,
+            ]);
+            $n++;
+        }
+
+        /* Daftar percakapan diurutkan menurut kolom ini, bukan menurut
+           pesan terakhirnya. Membiarkannya kosong menaruh percakapan
+           yang baru saja ramai di dasar daftar. */
+        $p->forceFill(['pesan_terakhir_at' => $terakhir])->saveQuietly();
+
+        return $n;
+    }
+
+    /* ─────────── catatan belajar ─────────── */
+
+    private function catatan(): int
+    {
+        if (!$this->pengaju) return 0;
+
+        $n = 0;
+
+        $modul = Module::withoutGlobalScopes()->whereIn('course_id',
+            Course::withoutGlobalScopes()->where('demo_company_id', $this->c->id)->select('id')
+        )->orderBy('order_index')->take(2)->get();
+
+        foreach ($modul as $i => $m) {
+            $this->baru(Note::class, [
+                'user_id'   => $this->pengaju->getKey(),
+                'module_id' => $m->id,
+                'content'   => [
+                    'Bagian pengendalian bahaya perlu dibaca ulang sebelum ujian.',
+                    'Urutan pemakaian APD: helm, kacamata, rompi, sepatu.',
+                ][$i],
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /* ─────────── konservasi minerba ─────────── */
+
+    /**
+     * Recovery, kehilangan, dan dilusi per bulan.
+     *
+     * Tiga angka yang saling mengunci: recovery yang naik sementara
+     * kehilangan ikut naik adalah tanda hitungannya keliru, dan itu
+     * hanya terlihat bila ketiganya ada. Satu bulan sengaja berada di
+     * bawah target supaya kolom selisihnya tidak selalu positif.
+     */
+    private function konservasi(): int
+    {
+        $n = 0;
+
+        foreach ([5, 4, 3, 2, 1, 0] as $i => $mundur) {
+            $bulan  = $this->kini->copy()->subMonths($mundur);
+            $target = 82_000;
+
+            /* Bulan keempat turun karena hujan — bulan yang seluruhnya
+               memenuhi target tidak memperlihatkan apakah peringatannya
+               menyala. */
+            $aktual = $i === 3 ? 61_400 : $target + ($i % 2 ? 1_800 : -900);
+            $digali = (int) round($aktual / 0.93);
+
+            $this->baru(MinerbaConservationRecord::class, [
+                'periode'             => $bulan->format('Y-m'),
+                'lokasi'              => 'Pit Utara',
+                'komoditas'           => 'Batubara',
+                'satuan'              => 'ton',
+                'target_produksi'     => $target,
+                'produksi_aktual'     => $aktual,
+                'material_digali'     => $digali,
+                'recovery_percent'    => round($aktual / $digali * 100, 2),
+                'kehilangan_material' => $digali - $aktual,
+                'dilusi'              => round(4.2 + ($i % 3) * 0.6, 2),
+                'stok_akhir'          => 12_500 + $i * 900,
+                'mineral_ikutan'      => 'Tidak ada mineral ikutan bernilai ekonomis.',
+                'catatan'             => $i === 3
+                    ? 'Produksi turun; curah hujan tinggi sepanjang bulan.' : null,
+                'user_id'             => $this->pengaju?->getKey(),
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /* ─────────── tindak lanjut lintas modul ─────────── */
+
+    /**
+     * Papan tindak lanjut yang menyatukan temuan dari banyak modul.
+     *
+     * Justru inilah yang paling perlu berisi: halaman ini ada supaya
+     * temuan tidak berhenti di modulnya masing-masing. Papan kosong
+     * terbaca sebagai "tidak ada yang tertunda", yang merupakan
+     * kesimpulan paling berbahaya yang dapat diambil dari layar kosong.
+     */
+    private function tindakLanjut(): int
+    {
+        $n = 0;
+
+        /* Unsur terakhir tiap baris menyatakan apakah temuannya BERTUAN:
+           punya penanggung jawab sekaligus tenggat. Satu baris sengaja
+           dibiarkan tanpa keduanya.
+
+           Bukan kelalaian menyusun contoh — justru keadaan itu yang
+           paling perlu terlihat. Temuan tanpa tenggat tidak pernah
+           terhitung terlambat, sebab tidak punya tanggal untuk dilewati,
+           sehingga ia tidak menyalakan peringatan apa pun di modul mana
+           pun, selamanya. Di daftar biasa ia tampak persis sama dengan
+           temuan yang sedang ditangani. Bila data contoh hanya memuat
+           baris yang rapi, kolom `bertuan` di register tidak pernah
+           membuktikan apa-apa. */
+        $daftar = [
+            ['bahaya',    'HZ-001', 'Perbaiki tanggul jalan hauling KM 4',
+             'Rekayasa', 'Tinggi', 'berjalan',  7, null, true],
+            ['inspeksi',  'INS-003', 'Bersihkan saluran drainase Pit Selatan',
+             'Perawatan', 'Sedang', 'terbuka',  -3, null, true],
+            ['ko',        'KO-PER-002', 'Ganti pemutus arus utama genset',
+             'Perbaikan', 'Tinggi', 'berjalan', 14, null, true],
+            ['smkp',      'IV.2.1', 'Lengkapi rekaman inspeksi jalan angkut',
+             'Administratif', 'Sedang', 'terbuka', -8, null, true],
+            ['lingkungan','LK-002', 'Tambah titik pantau kualitas udara di camp',
+             'Pemantauan', 'Rendah', 'selesai',  -20, -14, true],
+            ['air',       'AIR-001', 'Perbaiki pompa sump 2 yang mati',
+             'Perbaikan', 'Tinggi', 'selesai',  -30, -26, true],
+            ['gudang',    'GD-004', 'Tata ulang penyimpanan oli bekas di gudang B',
+             'Administratif', 'Sedang', 'terbuka', null, null, false],
+        ];
+
+        foreach ($daftar as [$modul, $pemicu, $judul, $kategori, $prioritas, $status, $target, $selesai, $bertuan]) {
+            $this->baru(TindakLanjut::class, [
+                'user_id'          => $this->pengaju?->getKey(),
+                'modul'            => $modul,
+                'kode_pemicu'      => $pemicu,
+                'judul'            => $judul,
+                'kategori'         => $kategori,
+                'prioritas'        => $prioritas,
+                'status'           => $status,
+                'penanggung_jawab' => $bertuan
+                    ? ($this->peninjau?->name ?? 'Kepala Teknik Tambang') : null,
+                'target_selesai'   => $bertuan && $target !== null
+                    ? $this->kini->copy()->addDays($target)->toDateString() : null,
+                'selesai_pada'     => $selesai === null
+                    ? null : $this->kini->copy()->addDays($selesai)->toDateString(),
+                'uraian'           => 'Tindak lanjut contoh; asalnya disebut pada kolom modul dan pemicu.',
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /* ─────────── penanda tangan laporan ─────────── */
+
+    /**
+     * Nama dan jabatan yang tercetak di kaki laporan.
+     *
+     * Tanpa ini setiap lembar keluar dengan kolom tanda tangan tanpa
+     * nama di bawahnya — dan lembar semacam itu ditolak sebagai dokumen
+     * terkendali, bukan sekadar terlihat belum jadi.
+     */
+    private function penandaTangan(): int
+    {
+        $n = 0;
+
+        foreach ([
+            ['Kepala Teknik Tambang',  true],
+            ['Manajer OHSE',           true],
+            ['Pengawas Operasional',   true],
+            ['Kepala Teknik Tambang (pejabat lama)', false],
+        ] as $i => [$jabatan, $aktif]) {
+            $this->baru(Signatory::class, [
+                'name'      => [$this->peninjau?->name ?? 'Ir. Bambang Susilo',
+                                'Dewi Anggraini',
+                                $this->pengaju?->name ?? 'Agus Setiawan',
+                                'Hendra Kusuma'][$i],
+                'title'     => $jabatan,
+                'signature' => null,
+                'is_active' => $aktif,
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /* ─────────── peta tambang ─────────── */
+
+    /**
+     * Lapisan peta sederhana, cukup untuk membuktikan peta menggambar.
+     *
+     * Geometrinya sengaja kecil dan bulat: yang diuji adalah apakah
+     * lapisannya terbaca, terwarnai, dan dapat dinyalakan-matikan —
+     * bukan ketelitian koordinatnya.
+     */
+    private function peta(): int
+    {
+        $n = 0;
+
+        $kotak = fn (float $x, float $y, float $s) => json_encode([
+            'type' => 'FeatureCollection',
+            'features' => [[
+                'type' => 'Feature',
+                'properties' => new \stdClass,
+                'geometry' => [
+                    'type' => 'Polygon',
+                    'coordinates' => [[
+                        [$x, $y], [$x + $s, $y], [$x + $s, $y + $s], [$x, $y + $s], [$x, $y],
+                    ]],
+                ],
+            ]],
+        ]);
+
+        foreach ([
+            ['Batas Pit Utara',      'pit',      '#B45309', 0.000, 0.000, 0.010],
+            ['Disposal Barat',       'disposal', '#4D7C0F', 0.014, 0.002, 0.008],
+            ['Kolam Pengendap 3',    'sump',     '#0E7490', 0.004, 0.014, 0.004],
+            ['Jalan Hauling KM 0–6', 'jalan',    '#9333EA', 0.000, 0.020, 0.006],
+        ] as [$nama, $tipe, $warna, $x, $y, $s]) {
+            $this->baru(MineMapLayer::class, [
+                'user_id'        => $this->pengaju?->getKey(),
+                'nama'           => $nama,
+                'tipe'           => $tipe,
+                'geojson'        => $kotak($x, $y, $s),
+                'warna'          => $warna,
+                'status'         => 'aktif',
+                'catatan'        => 'Lapisan contoh; koordinatnya bukan koordinat sungguhan.',
+                'tanggal_survey' => $this->kini->copy()->subDays(21)->toDateString(),
+                'sumber_survey'  => 'Survey topografi bulanan',
+            ]);
+            $n++;
+        }
+
+        return $n;
     }
 
     /* ─────────── operasi ─────────── */
@@ -635,6 +4481,14 @@ final class DataContoh
            antreannya panjang — dan justru itu yang harus TIDAK ikut
            memperbaiki match factor-nya. */
         foreach ([['RG-CTH-01', 4, 2], ['RG-CTH-02', 9, 9]] as [$kode, $jumlah, $antre]) {
+            /* Ritase adalah CACAHAN — berapa kali truk bolak-balik —
+               jadi bulat, dan tonasenya diturunkan dari ritase yang
+               sudah dibulatkan itu. Menghitung tonase dari pecahannya
+               menghasilkan dua angka yang tidak dapat dicocokkan pada
+               laporan yang sama. PostgreSQL menolak 193.5 pada kolom
+               integer; SQLite menerimanya diam-diam. */
+            $ritase = (int) round(86 * $jumlah / 4);
+
             $r = $this->baru(AngkutRegu::class, [
                 'user_id' => $this->pengaju?->getKey(), 'alat_muat_id' => $ex->id,
                 'kode' => $kode, 'tanggal' => $this->kini->copy()->subDays(3)->toDateString(),
@@ -642,8 +4496,8 @@ final class DataContoh
                 'material' => 'overburden', 'jumlah_alat_muat' => 1, 'jumlah_truk' => $jumlah,
                 'jarak_km' => 3.4, 'waktu_muat_menit' => 4, 'waktu_angkut_menit' => 8,
                 'waktu_tumpah_menit' => 2, 'waktu_kembali_menit' => 6,
-                'waktu_antre_menit' => $antre, 'ritase' => 86 * $jumlah / 4,
-                'tonase' => round(86 * $jumlah / 4 * 89), 'jam_kerja' => 9, 'jam_delay' => 1,
+                'waktu_antre_menit' => $antre, 'ritase' => $ritase,
+                'tonase' => $ritase * 89, 'jam_kerja' => 9, 'jam_delay' => 1,
                 'batas_kecepatan_kmh' => 40,
             ]);
             $this->setujui($r);
@@ -837,6 +4691,27 @@ final class DataContoh
      * yang perusahaannya belum tentu — dan biasanya bukan — perusahaan
      * yang sedang dimuati.
      */
+    /**
+     * Mundurkan tanggal catat sebuah baris.
+     *
+     * `created_at` tidak dapat dikirim lewat `create()`: ia bukan kolom
+     * fillable pada model mana pun di sini, dan Eloquent menimpanya
+     * dengan waktu sekarang sesudahnya. Menuliskannya lewat forceFill
+     * adalah satu-satunya jalan yang tidak menuntut tiap model
+     * membocorkan kolom stempel waktunya ke daftar fillable.
+     *
+     * DIPAKAI DENGAN SENGAJA, bukan demi kerapian. Seluruh data contoh
+     * yang bertanggal hari ini menggambar tiap grafik bertren sebagai
+     * satu paku di tepi kanan — bentuk yang benar menurut datanya dan
+     * tidak berguna untuk memeriksa apa pun.
+     */
+    private function bertanggal($model, int $mundurHari): void
+    {
+        $t = $this->kini->copy()->subDays(max(0, $mundurHari));
+
+        $model->forceFill(['created_at' => $t, 'updated_at' => $t])->save();
+    }
+
     private function baru(string $kelas, array $isi)
     {
         $model = new $kelas;
@@ -847,6 +4722,2496 @@ final class DataContoh
         }
 
         return $kelas::withoutGlobalScopes()->create($isi);
+    }
+
+    /* ─────────── evaluasi pemenuhan peraturan ─────────── */
+
+    /**
+     * Register pemenuhan beserta rekap bulanannya.
+     *
+     * Sengaja TIDAK semuanya comply, dan sengaja tidak semuanya sudah
+     * dinilai. Data contoh yang seratus persen rapi tidak
+     * memperlihatkan satu pun keadaan yang justru perlu diperiksa
+     * tampilannya: bar merah, tanggal target yang lewat, lencana draf,
+     * baris "belum dirinci", dan bulan yang belum direkap.
+     */
+    private function kepatuhan(): int
+    {
+        $n = 0;
+        $tahun = (int) date('Y');
+
+        /* [aspek, jenis, nomor, judul, instansi, terbit, status, butir…]
+           Butir: [penunjuk, rangkuman, penerapan, status, keterangan,
+                   tindak lanjut, PIC, hari dari sekarang ke target] */
+        $daftar = [
+            ['safety', 'Undang-Undang', 'Undang-Undang Nomor 1 Tahun 1970', 'Keselamatan Kerja',
+             'Pemerintah Republik Indonesia', '1970-01-12', 'Tetap', [
+                ['Pasal 3 Ayat (1)', 'Ditetapkan syarat-syarat keselamatan kerja untuk mencegah dan mengurangi kecelakaan.',
+                 'Tersedia SOP K3 lengkap, APAR terpasang di 34 titik, tim ERT bersertifikat 12 orang.',
+                 'Comply', 'SOP-K3-01 rev.3', null, null, null],
+                ['Pasal 9 Ayat (1)', 'Pengurus wajib menjelaskan kondisi dan bahaya di tempat kerja kepada tenaga kerja baru.',
+                 'Induksi K3 wajib bagi seluruh karyawan dan tamu, tercatat pada modul Induksi.',
+                 'Comply', 'Sertifikat induksi terbit otomatis', null, null, null],
+                ['Pasal 9 Ayat (3)', 'Pengurus wajib menyelenggarakan pembinaan pencegahan kecelakaan dan pemberantasan kebakaran.',
+                 'Program pelatihan tahunan fire fighting, P3K, dan defensive driving.',
+                 'Comply', null, null, null, null],
+                ['Pasal 14 huruf b', 'Memasang gambar keselamatan kerja di tempat kerja yang mudah terlihat.',
+                 null, 'Not Comply', 'Rambu di jalan hauling km 7-12 belum terpasang',
+                 'Pengadaan dan pemasangan 20 titik rambu peringatan', 'Dept. K3 — Taqwa Utama', -22],
+                ['Pasal 14 huruf c', 'Menyediakan alat perlindungan diri cuma-cuma bagi tenaga kerja.',
+                 'APD lengkap disediakan gratis; tamu dipinjami di pos security.',
+                 'Comply', 'Stok APD dikontrol gudang', null, null, null],
+                ['Pasal 16', 'Ketentuan peralihan bagi perusahaan yang sudah berjalan saat undang-undang ini terbit.',
+                 null, 'N/A', 'Tidak berlaku bagi kegiatan perusahaan', null, null, null],
+             ]],
+
+            ['safety', 'Peraturan Pemerintah', 'Peraturan Pemerintah Nomor 50 Tahun 2012',
+             'Penerapan Sistem Manajemen Keselamatan dan Kesehatan Kerja',
+             'Pemerintah Republik Indonesia', '2012-04-12', 'Tetap', [
+                ['Pasal 7 Ayat (1)', 'Penilaian penerapan SMK3 dilakukan oleh lembaga audit independen.',
+                 'Audit internal SMKP berjalan; audit eksternal dijadwalkan triwulan III.',
+                 'Comply', 'Laporan audit internal SMKP', null, null, null],
+                ['Pasal 15 Ayat (1)', 'Penilaian penerapan SMK3 dilaksanakan oleh lembaga audit yang ditunjuk Menteri.',
+                 null, 'Not Comply', 'Lembaga audit eksternal belum ditunjuk',
+                 'Penunjukan lembaga audit dan penjadwalan audit eksternal', 'Manager OHSE', 45],
+             ]],
+
+            ['occhealth', 'Peraturan Menteri', 'Permenaker Nomor 5 Tahun 2018',
+             'Keselamatan dan Kesehatan Kerja Lingkungan Kerja',
+             'Kementerian Ketenagakerjaan', '2018-04-27', 'Tetap', [
+                ['Pasal 5 Ayat (1)', 'Pengurus wajib melaksanakan syarat K3 lingkungan kerja.',
+                 'Pengukuran hiperkes semester I selesai untuk debit, bising, dan pencahayaan.',
+                 'Comply', 'Laporan hiperkes semester I', null, null, null],
+                ['Pasal 8 Ayat (1)', 'Pengendalian faktor biologi di tempat kerja termasuk penyediaan air bersih.',
+                 null, 'Not Comply', 'Hasil uji air bersih mess belum keluar',
+                 'Pengujian ulang air bersih di tiga titik mess', 'Dept. Health', 18],
+                ['Pasal 12', 'Penyediaan fasilitas kebersihan dan sanitasi yang memadai.',
+                 'Toilet dan wastafel tersedia; pembersihan terjadwal dua kali sehari.',
+                 'Comply', null, null, null, null],
+             ]],
+
+            ['environment', 'Peraturan Pemerintah', 'Peraturan Pemerintah Nomor 22 Tahun 2021',
+             'Penyelenggaraan Perlindungan dan Pengelolaan Lingkungan Hidup',
+             'Pemerintah Republik Indonesia', '2021-02-02', 'Tetap', [
+                ['Pasal 220', 'Kewajiban menyusun dokumen kajian teknis pemanfaatan limbah.',
+                 null, 'Not Comply', 'Kajian teknis pemanfaatan limbah B3 belum disusun',
+                 'Penyusunan kajian teknis bersama konsultan', 'Dept. Enviro', null],
+                ['Pasal 285', 'Kewajiban memiliki izin penyimpanan sementara limbah B3.',
+                 'Izin TPS limbah B3 terbit dan salinannya dipasang di lokasi.',
+                 'Comply', 'Izin TPS LB3 nomor 660/2024', null, null, null],
+                ['Pasal 298', 'Pelaporan neraca limbah B3 secara berkala.',
+                 'Neraca limbah B3 dilaporkan triwulanan lewat SIRAJA.',
+                 'Comply', null, null, null, null],
+             ]],
+
+            /* Sudah terdaftar tetapi BELUM DIRINCI — inilah baris yang
+               muncul di panel "Belum Dirinci Butirnya" pada dasbor. */
+            ['safety', 'Peraturan Menteri', 'Permen ESDM Nomor 26 Tahun 2018',
+             'Pelaksanaan Kaidah Pertambangan yang Baik dan Pengawasan Pertambangan Mineral dan Batubara',
+             'Kementerian ESDM', '2018-05-02', 'Tetap', []],
+
+            /* Draf hasil rangkuman yang belum diperiksa: isinya sengaja
+               tidak ikut dihitung di angka mana pun. */
+            ['environment', 'Peraturan Menteri', 'Permen LHK Nomor 6 Tahun 2021',
+             'Tata Cara dan Persyaratan Pengelolaan Limbah Bahan Berbahaya dan Beracun',
+             'Kementerian LHK', '2021-03-22', 'Draf', [
+                ['Pasal 3 Ayat (1)', 'Setiap orang yang menghasilkan limbah B3 wajib melakukan pengelolaan.',
+                 'Pengelolaan limbah B3 lewat TPS berizin dan pengangkut berizin.', null, null, null, null, null],
+                ['Pasal 12', 'Kewajiban pelabelan dan simbol pada kemasan limbah B3.',
+                 'Simbol dan label dipasang sesuai karakteristik limbah.', null, null, null, null, null],
+             ]],
+        ];
+
+        foreach ($daftar as [$aspek, $jenis, $nomor, $judul, $instansi, $terbit, $status, $butir]) {
+            $s = $this->baru(ComplianceSubject::class, [
+                'user_id'        => $this->pengaju?->id,
+                'sumber'         => 'Peraturan',
+                'kode'           => Kepatuhan::kodeBaru($aspek, $this->c->id, $tahun),
+                'jenis'          => $jenis,
+                'nomor'          => $nomor,
+                'judul'          => $judul,
+                'tanggal_terbit' => $terbit,
+                'instansi'       => $instansi,
+                'aspek'          => $aspek,
+                'tahun'          => $tahun,
+                'status'         => $status,
+                'dari_ai'        => $status === 'Draf',
+                'ruang_lingkup'  => 'Seluruh kegiatan operasional penambangan, pengangkutan, dan pengolahan batubara.',
+                'rangkuman'      => 'Rangkuman contoh untuk memeriksa tampilan register dan lembar cetaknya.',
+            ]);
+            $n++;
+
+            foreach ($butir as $i => [$tunjuk, $isi, $terap, $st, $ket, $tindak, $pic, $hari]) {
+                CompliancePoint::create([
+                    'subject_id'    => $s->id,
+                    'penunjuk'      => $tunjuk,
+                    'rangkuman'     => $isi,
+                    'penerapan'     => $terap,
+                    'status'        => $st,
+                    'keterangan'    => $ket,
+                    'tindak_lanjut' => $tindak,
+                    'pic'           => $pic,
+                    'target'        => $hari === null ? null : now()->addDays($hari)->toDateString(),
+                    'order_index'   => $i + 1,
+                ]);
+                $n++;
+            }
+        }
+
+        /* Rekap empat bulan pertama saja: sisanya sengaja dibiarkan
+           kosong supaya tampilan "belum direkap" ikut terlihat. */
+        $rekap = [
+            [1, 8,  7, 2, 3, 'Baru mulai identifikasi, banyak pasal belum dinilai.'],
+            [2, 9,  6, 2, 2, 'Dua temuan ditutup, rambu masih tertunda.'],
+            [3, 10, 5, 2, 1, 'Audit internal SMKP selesai.'],
+            [4, 11, 4, 2, 1, 'Pengukuran hiperkes semester I tuntas.'],
+        ];
+
+        foreach ($rekap as [$bulan, $comply, $nc, $na, $belum, $evaluasi]) {
+            /* updateOrCreate, bukan create: rekap bulanan punya kunci
+               unik (perusahaan, sumber, tahun, bulan), dan memuat data
+               contoh dua kali tanpa membuangnya lebih dulu akan
+               menabrak kunci itu — bukan menghasilkan baris kembar,
+               melainkan galat basis data di tengah pemuatan yang
+               meninggalkan sebagian modul terisi dan sebagian tidak. */
+            ComplianceRecap::withoutGlobalScopes()->updateOrCreate([
+                'company_id' => $this->c->id,
+                'sumber'     => 'Peraturan',
+                'tahun'      => $tahun,
+                'bulan'      => $bulan,
+            ], [
+                'comply'     => $comply,
+                'not_comply' => $nc,
+                'na'         => $na,
+                'belum'      => $belum,
+                'evaluasi'   => $evaluasi,
+                'rencana'    => 'Menutup temuan yang tersisa sesuai target masing-masing PIC.',
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /* ─────────── audit kinerja pengelolaan lingkungan ─────────── */
+
+    /**
+     * Satu pelaksanaan Audit Kinerja Pengelolaan dan Pemantauan Lingkungan.
+     *
+     * Sengaja TIDAK sempurna, dan sengaja belum tuntas. Audit contoh
+     * yang seluruh dua ratus satu kriterianya bernilai tiga hanya
+     * memperlihatkan satu keadaan — ADITAMA dengan bar penuh — dan
+     * menyembunyikan justru yang perlu diperiksa tampilannya: bagian
+     * yang capaiannya rendah, kriteria yang belum diverifikasi, selisih
+     * antara penilaian mandiri mitra dan hasil verifikasi auditor, dan
+     * predikat yang turun satu tingkat karena nilai pengurang.
+     *
+     * Susunannya dipilih supaya syarat "bagian A dan B harus penuh"
+     * TERPENUHI — kalau tidak, predikatnya tidak terbit sama sekali dan
+     * layar ikhtisarnya hanya memperlihatkan satu cabang dari dua.
+     */
+    private function p2h(): int
+    {
+        $unit = [];
+        foreach ([
+            ['DT-1142', 'Komatsu HD785-7', 'dump_truck', 'Dump truck 91 t', 18442],
+            ['DT-1127', 'Komatsu HD785-7', 'dump_truck', 'Dump truck 91 t', 21310],
+            ['EX-2201', 'Komatsu PC2000-8', 'excavator', 'Excavator 12 m³', 9820],
+            ['GD-03',   'Komatsu GD825A-2', 'grader', 'Motor grader jalan angkut', 14205],
+            ['LV-018',  'Toyota Hilux 4×4', 'light_vehicle', 'Kendaraan pengawas', 61230],
+        ] as [$kode, $nama, $jenis, $ket, $hm]) {
+            $unit[$kode] = $this->baru(\App\Models\P2hUnit::class, [
+                'kode' => $kode, 'nama' => $nama, 'jenis' => $jenis, 'keterangan' => $ket,
+                'hm' => $hm, 'status' => P2h::LAIK, 'aktif' => true,
+            ]);
+        }
+        $n = count($unit);
+
+        /* Jam setempat, bukan jam server: shift dan tanggal P2H dibaca
+           layar menurut Waktu::kini(), dan pukul 02.00 UTC sudah shift
+           pagi di site. */
+        $setempat = Waktu::kini();
+        $shift = P2h::shiftSekarang($setempat);
+        $semua = fn (string $jenis, array $ubah = []) => array_merge(
+            array_fill_keys(array_column(P2h::butir($jenis), 'kode'), P2h::OK), $ubah);
+
+        foreach ([
+            // unit, hari lalu, shift, jawaban khusus, catatan
+            ['DT-1127', 0, $shift, [], null],
+            ['EX-2201', 1, 'pagi', ['kuku' => P2h::TIDAK], 'Satu kuku bucket aus, dijadwalkan ganti.'],
+            ['GD-03',   0, $shift, ['rem' => P2h::TIDAK], 'Rem berdecit dan tarikannya lemah di turunan R-04.'],
+        ] as [$kode, $hari, $sh, $ubah, $catatan]) {
+            $u = $unit[$kode];
+            $nilai = P2h::nilai($u->jenis, $semua($u->jenis, $ubah));
+            $tanggal = $setempat->copy()->subDays($hari);
+
+            $p = $this->baru(\App\Models\P2hPeriksa::class, [
+                'p2h_unit_id' => $u->id, 'user_id' => $this->pengaju?->getKey(),
+                'operator' => $this->pengaju?->name ?? 'Operator contoh', 'shift' => $sh,
+                'tanggal' => $tanggal->toDateString(), 'hm' => $u->hm, 'jawaban' => $nilai['jawaban'],
+                'jumlah_ok' => $nilai['ok'], 'jumlah_tidak' => $nilai['tidak'], 'jumlah_na' => $nilai['na'],
+                'hasil' => $nilai['hasil'], 'catatan' => $catatan,
+            ]);
+            $n++;
+
+            if ($nilai['hasil'] === P2h::DITAHAN) {
+                $wo = $this->baru(WorkOrder::class, [
+                    'user_id' => $this->pengaju?->getKey(), 'jenis' => 'korektif', 'prioritas' => 'kritis',
+                    'status' => 'dibuka', 'dilaporkan_pada' => $tanggal,
+                    'gejala' => "P2H {$u->kode} ({$u->nama}) — unit ditahan: ".implode('; ', $nilai['kritisGagal']).". {$catatan}",
+                    'hm_saat_rusak' => $u->hm,
+                ]);
+                $p->update(['work_order_id' => $wo->id]);
+                $u->update(['status' => P2h::DITAHAN, 'ditahan_sejak' => $tanggal,
+                            'ditahan_karena' => implode('; ', $nilai['kritisGagal'])]);
+                $n++;
+            }
+        }
+
+        return $n;
+    }
+
+    private function auditLingkungan(): int
+    {
+        $n = 0;
+        $tahun = (int) date('Y');
+
+        /* Tiga audit, tiga keadaan yang masing-masing perlu dapat
+           diperiksa tampilannya:
+
+             1. Berjalan — empat kriteria terakhir bagian F belum
+                diverifikasi; skornya masih sementara.
+             2. Lengkap dan ADITAMA — sertifikatnya sudah terbit, jadi
+                lembar sertifikat, QR, dan halaman verifikasinya dapat
+                dibuka.
+             3. Lengkap, skornya tinggi, tetapi satu kriteria bagian A
+                tidak penuh — predikatnya tertahan, dan daftar periksa
+                syarat sertifikat menunjuk tepat ke sebabnya. */
+        $n += $this->satuAuditLingkungan($tahun, 'Site Utara', 'Berjalan', ['sanksi-tindak'], [
+            'a' => [3], 'b' => [3], 'c' => [3, 2, 2, 2, 2, 2, 2, 1, 1], 'd' => [3], 'e' => [2, 2, 3, 1], 'f' => [1],
+        ], ['f' => 4], 'Audit contoh untuk memeriksa tampilan, perhitungan bobot, dan lembar cetaknya.');
+
+        $n += $this->satuAuditLingkungan($tahun, 'Site Selatan', 'Selesai', [], [
+            'a' => [3], 'b' => [3], 'c' => [3, 3, 2], 'd' => [3], 'e' => [3, 2], 'f' => [3, 2],
+        ], [], 'Seluruh kriteria terverifikasi; bagian Administrasi dan Implementasi penuh.');
+        $aditama = $this->auditTerakhir;
+
+        $n += $this->satuAuditLingkungan($tahun, 'Workshop & Port', 'Berjalan', [], [
+            'a' => [2, 3, 3, 3, 3, 3, 3], 'b' => [3, 3, 3, 2], 'c' => [2], 'd' => [3, 2], 'e' => [2], 'f' => [2, 1],
+        ], [], 'Satu kriteria administrasi belum penuh — predikat tertahan walau skornya tinggi.');
+
+        /* Sertifikat untuk audit ADITAMA, lewat jalur yang sama dengan
+           penerbitan sebenarnya: syarat, potret, nomor, kode. */
+        $aditama->load(['scores', 'company.owner']);
+        $skor = $aditama->skor();
+
+        if (SertifikatLingkungan::kelayakan($aditama, $skor)['layak']) {
+            $ttd = Signatory::withoutGlobalScopes()->where('company_id', $this->c->id)
+                ->where('is_active', true)->orderBy('id')->first();
+
+            $this->baru(EnvAuditSertifikat::class, [
+                'audit_id'     => $aditama->id,
+                'user_id'      => $this->pengaju?->id,
+                'signatory_id' => $ttd?->id,
+                'nomor'        => EnvAuditSertifikat::nomorBaru(
+                    KopDokumen::prefiksDari(SertifikatLingkungan::penerbit($aditama) ?? $this->c->name), $tahun),
+                'kode'         => EnvAuditSertifikat::kodeBaru(),
+                'terbit'       => now()->toDateString(),
+                'berlaku'      => now()->addYear()->subDay()->toDateString(),
+                'tempat'       => $this->c->location ?: 'Site Selatan',
+                'predikat'     => $skor['predikat']['nama'],
+                'peringkat'    => $skor['peringkat']['nama'],
+                'skor'         => $skor['akhir'],
+                'data'         => SertifikatLingkungan::potret($aditama, $skor, $ttd),
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /** Audit contoh yang dibuat terakhir — dipakai penerbitan sertifikat contoh. */
+    private ?EnvAudit $auditTerakhir = null;
+
+    /**
+     * Satu audit contoh.
+     *
+     * @param  array<string,list<int>>  $pola     nilai per bagian, diputar sepanjang kriterianya
+     * @param  array<string,int>        $sisakan  berapa kriteria TERAKHIR tiap bagian dibiarkan kosong
+     */
+    private function satuAuditLingkungan(int $tahun, string $lokasi, string $status, array $pengurang,
+                                         array $pola, array $sisakan, string $catatan): int
+    {
+        $n = 0;
+
+        $a = $this->baru(EnvAudit::class, [
+            'user_id'   => $this->pengaju?->id,
+            'kode'      => EnvAudit::kodeBaru($tahun),
+            'tahun'     => $tahun,
+            'judul'     => 'Audit Kinerja Pengelolaan dan Pemantauan Lingkungan '.$tahun,
+            'lokasi'    => $lokasi,
+            'tanggal'   => now()->toDateString(),
+            'status'    => $status,
+            'pengurang' => $pengurang,
+            'catatan'   => $catatan,
+            'profil'    => [
+                'alamat'            => 'Jl. Hauling KM 12, Kutai Kartanegara',
+                'telepon'           => '0541-770123',
+                'alamatPusat'       => 'Gedung Menara Hijau Lt. 8, Jakarta Selatan',
+                'teleponPusat'      => '021-5550123',
+                'tahunBerdiri'      => '2014',
+                'karyawanTotal'     => '248',
+                'karyawanStaff'     => '42',
+                'karyawanNonStaff'  => '206',
+                'karyawanPria'      => '221',
+                'karyawanWanita'    => '27',
+                'petugasLingkungan' => '6',
+                'kontak1'           => 'Taqwa Utama',
+                'kontak1Hp'         => '0812-5550-1188 / hse@mitra.co.id',
+            ],
+        ]);
+        $n++;
+        $this->auditTerakhir = $a;
+
+        foreach (AuditLingkungan::bagian() as $kunci => $_) {
+            $kriteria = AuditLingkungan::kriteria($kunci);
+            $putar = $pola[$kunci] ?? [3];
+            $batas = count($kriteria) - ($sisakan[$kunci] ?? 0);
+
+            foreach ($kriteria as $i => $k) {
+                $v = $i < $batas ? $putar[$i % count($putar)] : null;
+
+                /* Penilaian mandiri mitra sengaja LEBIH TINGGI pada
+                   sebagian baris. Kolom verifikasi yang selalu sama
+                   dengan kolom nilai tidak membuktikan bahwa keduanya
+                   memang dua kolom yang berbeda — dan justru selisih
+                   itulah yang dicari auditor saat meninjau. */
+                $mandiri = $v === null ? null : min(3, $v + ($i % 5 === 0 ? 1 : 0));
+
+                $skor = EnvAuditScore::create([
+                    'audit_id'   => $a->id,
+                    'kode'       => $k['kode'],
+                    'nilai'      => $mandiri,
+                    'verifikasi' => $v,
+                    'keterangan' => $v === null || $v >= 2 ? null
+                        : 'Bukti dokumen tersedia, implementasi lapangan belum lengkap.',
+                ]);
+                $n++;
+
+                /* RTP terbit lewat jalur yang sama dengan simpan nilai
+                   (nilai verifikasi 0–2), lalu sebagian diisi auditee
+                   supaya layar RTP memperlihatkan ketiga keadaannya. */
+                if ($rtp = \App\Support\RtpLingkungan::perbarui($a, $skor)) {
+                    if ($i % 3 === 0) {
+                        $rtp->fill(['rencana' => 'Lengkapi dokumen dan perbaiki implementasi lapangan.', 'pic' => 'Koordinator Lingkungan',
+                            'target_tanggal' => now()->addDays(14 + $i)->toDateString(), 'status' => 'proses'])->save();
+                    }
+                    $n++;
+                }
+            }
+        }
+
+        return $n;
+    }
+
+    /* ─────────── observasi operator loader (FROP) ─────────── */
+
+    /**
+     * Sesi observasi cycle time beberapa operator selama sebulan.
+     *
+     * Sengaja tidak seluruhnya ON TARGET, tidak seluruhnya ber-PTY, dan
+     * temuannya sengaja berulang pada unit yang sama: halaman performa,
+     * KPI, dan tracker temuan hanya dapat diperiksa kalau ada operator
+     * yang tertinggal, sesi yang belum dinilai produksinya, dan masalah
+     * yang kembali.
+     */
+    private function frop(): int
+    {
+        $n = 0;
+        $operator = ['Operator Contoh A', 'Operator Contoh B', 'Operator Contoh C',
+                     'Operator Contoh D', 'Operator Contoh E', 'Operator Contoh F'];
+        $unit  = ['Ex 699 / PC 1250', 'Ex 700 / PC 1250', 'Ex 731 / PC 1250', 'Ex 750 / R-850'];
+        $level = ['easy', 'average', 'severe', 'easy'];
+        $temuan = [
+            'Front undulating; hauler menggantung',
+            'Material keras; sudut swing besar',
+            'Track sejajar bench; bucket tidak heap',
+            'Jalan disposal berdebu',
+            null,
+            'Boulder di front; spotting lama',
+        ];
+
+        for ($i = 0; $i < 24; $i++) {
+            $lv   = $level[$i % 4];
+            $plan = \App\Support\Frop\Penilaian::PLAN_CT[$lv];
+            // Operator E dan F lebih lambat; sisanya berayun di sekitar plan.
+            $geser = in_array($i % 6, [4, 5], true) ? 3.5 : (($i % 3) - 1.2);
+            $dig   = round($plan * 9 / 22 + $geser, 1);
+
+            $o = $this->baru(FropObservasi::class, [
+                'user_id'       => $this->pengaju?->id,
+                'tanggal'       => $this->kini->copy()->subDays(29 - $i)->toDateString(),
+                'shift'         => 1 + $i % 2,
+                'jam_observasi' => sprintf('%02d.00 – %02d.00', 8 + $i % 4, 9 + $i % 4),
+                'unit'          => $unit[$i % 4],
+                'operator'      => $operator[$i % 6],
+                'gl_front'      => 'GL Contoh',
+                'observer'      => 'Observer Contoh',
+                'verified_by'   => 'GL Contoh',
+                'kondisi_mesin' => 'Normal',
+                'mode_kerja'    => 'P (Power)',
+                'level'         => $lv,
+                'material'      => ['easy' => 'Soft Soil', 'average' => 'Clay Alot', 'severe' => 'OB Non Blasting'][$lv],
+                'metode_loading'=> 'Side Loading',
+                'operating_condition' => 'Average',
+                'tinggi_jenjang'=> 3,
+                'lebar_front'   => 25,
+                'cuaca'         => $i % 7 === 3 ? 'Hujan Ringan' : 'Cerah',
+                'spotting'      => 8 + $i % 6,
+                'digging'       => $dig,
+                'swl'           => round($plan * 6 / 22, 1),
+                'dump'          => round($plan * 3 / 22, 1),
+                'swe'           => round($plan * 4 / 22, 1),
+                'plan_ct'       => $plan,
+                'loading_detik' => 70 + ($i * 7) % 45,
+                'n_passing'     => (string) (4 + $i % 3),
+                'bucket_heap'   => $i % 5 !== 2,
+                'target_pty'    => 600,
+                // Sesi terakhir belum menerima PTY dari Engineering.
+                'aktual_pty'    => $i >= 22 ? null : 470 + ($i * 37) % 170,
+                'temuan'        => $temuan[$i % 6],
+                'corrective_action' => $temuan[$i % 6] ? 'Arahkan operator dan GL front; verifikasi pada observasi berikutnya' : null,
+                'status_ca'     => $temuan[$i % 6] === null ? 'Open' : ($i < 16 ? 'Closed' : ($i % 2 ? 'In Progress' : 'Open')),
+                'selesai_ca'    => $temuan[$i % 6] && $i < 16 ? $this->kini->copy()->subDays(27 - $i)->toDateString() : null,
+                'deadline_ca'   => $temuan[$i % 6] && $i >= 16 ? $this->kini->copy()->subDays(20 - $i)->toDateString() : null,
+            ]);
+            $n++;
+
+            if ($i % 6 === 4 && $i < 20) {
+                $this->baru(FropCoaching::class, [
+                    'user_id'      => $this->pengaju?->id,
+                    'observasi_id' => $o->id,
+                    'tanggal'      => $o->tanggal->toDateString(),
+                    'operator'     => $o->operator,
+                    'unit'         => $o->unit,
+                    'materi'       => 'Teknik Digging – kurangi beban bucket',
+                    'respons'      => 'Operator memahami dan akan mencoba',
+                    'coach'        => 'Observer Contoh',
+                    'follow_up'    => 'Monitor pada observasi berikutnya',
+                    'target_selesai' => $this->kini->copy()->subDays(20 - $i)->toDateString(),
+                    'status'       => $i < 12 ? 'Closed' : 'Open',
+                ]);
+                $n++;
+            }
+        }
+
+        return $n;
+    }
+
+    /* ─────────── dokumen terkendali ─────────── */
+
+    /**
+     * Piramida dokumen: kebijakan di puncak, rekaman di dasar.
+     *
+     * Nomor revisinya sengaja tidak semuanya 0. Daftar induk dokumen
+     * yang setiap barisnya revisi 0 tidak dapat dipakai memeriksa
+     * apakah kolom revisi benar-benar terbaca.
+     */
+    private function dokumen(): int
+    {
+        $n = 0;
+
+        /* Kodenya DISUSUN dari perusahaannya, bukan ditulis tetap.
+           Data contoh yang kodenya tetap akan memperlihatkan penomoran
+           milik perusahaan lain kepada yang sedang memeriksanya — dan
+           yang diperiksa justru apakah penomorannya sudah benar. */
+        $daftar = [
+            ['Kebijakan',       'Kebijakan Keselamatan dan Kesehatan Kerja', 'Umum',     'berlaku',   2],
+            ['Manual',          'Manual Sistem Manajemen Keselamatan',       'Internal', 'berlaku',   1],
+            ['Prosedur',        'Prosedur Izin Kerja Khusus',                'Internal', 'berlaku',   3],
+            ['Prosedur',        'Prosedur Investigasi Kecelakaan',           'Internal', 'berlaku',   1],
+            ['Instruksi Kerja', 'Instruksi Kerja Pemeriksaan Sump Harian',   'Internal', 'berlaku',   0],
+            ['Instruksi Kerja', 'Instruksi Kerja Pengisian Bahan Peledak',   'Rahasia',  'berlaku',   2],
+            ['Formulir',        'Formulir Inspeksi Jalan Tambang',           'Umum',     'berlaku',   0],
+            ['Rekaman',         'Rekaman Pelatihan Tanggap Darurat',         'Internal', 'draft',     0],
+            ['Prosedur',        'Prosedur Pengelolaan Limbah B3',            'Internal', 'kadaluarsa',4],
+        ];
+
+        $urut = [];
+
+        foreach ($daftar as [$jenis, $judul, $klas, $status, $rev]) {
+            $urut[$jenis] = ($urut[$jenis] ?? 0) + 1;
+            $kode = Nomor::susun($jenis, $this->c, $urut[$jenis])
+                ?: strtoupper(Nomor::jenis($jenis)).'-'.str_pad((string) $urut[$jenis], 3, '0', STR_PAD_LEFT);
+            $terbit = $this->kini->copy()->subMonths(6 + $rev);
+
+            $d = $this->baru(Document::class, [
+                'kode'            => $kode,
+                'judul'           => $judul,
+                'jenis'           => $jenis,
+                'klasifikasi'     => $klas,
+                'departemen'      => 'HSE',
+                'revisi'          => $rev,
+                'status'          => $status,
+                'tanggal_terbit'  => $terbit->toDateString(),
+                'tanggal_berlaku' => $terbit->copy()->addWeek()->toDateString(),
+
+                /* Yang kadaluarsa tanggal tinjaunya memang sudah lewat —
+                   itulah yang membuatnya kadaluarsa, dan halaman daftar
+                   induk menghitungnya dari sini, bukan dari statusnya. */
+                'tanggal_tinjau'  => $status === 'kadaluarsa'
+                    ? $this->kini->copy()->subMonth()->toDateString()
+                    : $terbit->copy()->addYear()->toDateString(),
+
+                'ringkasan'       => 'Dokumen contoh untuk memeriksa tampilan dan penomoran.',
+                'user_id'         => $this->pengaju?->id,
+                'disetujui_oleh'  => $status === 'berlaku' ? ($this->peninjau?->name) : null,
+            ]);
+            $n++;
+
+            /* ── riwayat revisi ──
+
+               Dokumen revisi 3 yang riwayatnya kosong tidak dapat
+               dipakai membuktikan apa pun kepada auditor: yang
+               ditanyakan adalah APA yang berubah pada tiap revisi, dan
+               kolom angka saja tidak menjawabnya. Riwayatnya dibuat
+               mundur dari revisi berjalan sampai revisi 0. */
+            for ($r = $rev; $r >= 0; $r--) {
+                $this->baru(DocumentRevision::class, [
+                    'document_id'         => $d->id,
+                    'revisi'              => $r,
+                    'ringkasan_perubahan' => $r === 0
+                        ? 'Terbitan pertama.'
+                        : 'Penyesuaian isi mengikuti hasil tinjauan berkala.',
+                    'tanggal'             => $terbit->copy()->subMonths(($rev - $r) * 8)->toDateString(),
+                    'oleh'                => $this->peninjau?->name ?? 'Pengendali Dokumen',
+                ]);
+                $n++;
+            }
+
+            /* ── kaitan ke klausul standar ──
+
+               Daftar induk yang tidak menyebut klausul memaksa auditor
+               memetakannya sendiri, dan pemetaan yang dikerjakan
+               auditor adalah pemetaan yang tidak pernah sama dua kali.
+
+               Kodenya HARUS kode standar yang dikenal Iso::kodeSah() dan
+               klausulnya butir standar itu — persis yang dapat dipilih
+               di formulir dokumen. Kode karangan seperti 'SMKP' atau
+               'ISO 45001' pernah ditulis di sini: tautannya berujung 404,
+               cakupan standarnya tidak ikut terhitung, dan menyimpan ulang
+               dokumen lewat formulir diam-diam membuang pemetaannya. */
+            foreach ([
+                'Kebijakan'       => [['45001', '5.2'], ['14001', '5.2']],
+                'Manual'          => [['45001', '4.4'], ['14001', '4.4']],
+                'Prosedur'        => [['45001', '8.1'], ['14001', '8.1']],
+                'Instruksi Kerja' => [['45001', '8.1.2']],
+                'Formulir'        => [['45001', '7.5'], ['14001', '7.5.3']],
+                'Rekaman'         => [['45001', '9.1'], ['14001', '9.1.1']],
+            ][$jenis] ?? [] as [$standar, $klausul]) {
+                $this->baru(DocumentIso::class, [
+                    'document_id' => $d->id,
+                    'standar'     => $standar,
+                    'klausul'     => $klausul,
+                ]);
+                $n++;
+            }
+        }
+
+        return $n;
+    }
+
+    /* ─────────── laporan bahaya ─────────── */
+
+    /**
+     * Laporan bahaya dengan tiga status sekaligus.
+     *
+     * Sengaja tidak semuanya Open. Halaman bahaya menghitung waktu
+     * penutupan dan jumlah yang tertunda; bila seluruh contohnya
+     * berstatus sama, kedua angka itu tidak pernah terbukti benar.
+     */
+    private function bahaya(): int
+    {
+        $n = 0;
+
+        /* Rekomendasinya ditulis satu per satu, bukan satu kalimat yang
+           dipakai enam kali. Register Tindakan Perbaikan adalah lembar
+           yang dibawa ke rapat bulanan untuk menagih orang; kolom
+           tindakan yang berbunyi sama pada seluruh barisnya tidak
+           menagih apa pun, dan lembar contohnya tidak akan pernah
+           memperlihatkan bahwa kolom itu memang terbaca. */
+        $daftar = [
+            ['Unsafe Condition', 'Tinggi', 'Open', 'Tanggul jalan hauling KM 4 tergerus hujan', 'Rekayasa',
+             'Tanggul dibangun ulang setinggi setengah diameter ban unit terbesar dan dipadatkan.', 7],
+            ['Unsafe Action', 'Sedang', 'In Progress', 'Operator tidak memakai sabuk pengaman di kabin', 'Administratif',
+             'Teguran tertulis, pengarahan ulang di P5M, dan pemeriksaan acak tiap pergantian gilir.', 14],
+            ['Near Miss', 'Tinggi', 'Closed', 'Batu jatuh dari bak dump truck di simpang timbang', 'Rekayasa',
+             'Muatan diratakan di bawah bibir bak dan pemasangan jaring penahan pada unit pengangkut.', 10],
+            ['Unsafe Condition', 'Rendah', 'Closed', 'Lampu penerangan front loading mati satu titik', 'Rekayasa',
+             'Penggantian lampu dan pemeriksaan seluruh titik penerangan front tiap awal gilir malam.', 5],
+            ['Bahaya Lingkungan', 'Sedang', 'Open', 'Ceceran oli di area workshop belum ditampung', 'Administratif',
+             'Pemasangan bak penampung di bawah titik bocor dan penjadwalan pembuangan limbah B3.', 7],
+            ['Unsafe Action & Unsafe Condition', 'Tinggi', 'In Progress',
+             'Pengisian bahan bakar dilakukan saat mesin hidup', 'Eliminasi',
+             'Pengisian hanya boleh saat mesin mati; kunci kontak diserahkan ke petugas pengisian.', 3],
+        ];
+
+        /* Pelapornya BERBEDA-BEDA, bukan satu orang enam kali.
+
+           Register Tindakan Perbaikan punya rekap per pelapor di
+           kakinya, dan rekap satu baris tidak memperlihatkan apa pun:
+           urutannya tidak teruji, pengelompokan identitasnya tidak
+           teruji, dan kolom "paling banyak melapor" selalu benar. Yang
+           pertama melapor tiga kali supaya urutannya punya sesuatu untuk
+           diurutkan. */
+        $pelapor = $this->pelaporBahaya();
+
+        foreach ($daftar as $i => [$kategori, $risiko, $status, $uraian, $hirarki, $rekomendasi, $tenggat]) {
+            $tanggal = $this->kini->copy()->subDays(3 + $i * 5);
+            $orang   = $pelapor[$i % count($pelapor)];
+
+            $b = $this->baru(HazardReport::class, [
+                'kode'          => Nomor::susun('Formulir', $this->c, 100 + $i + 1)
+                    ?: 'HZ-'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT),
+                'user_id'       => $orang?->id,
+                'pelapor_nama'  => $orang?->name ?? 'Pengawas Lapangan',
+                'pelapor_nrp'   => $orang?->employee_id,
+                'pelapor_departemen' => $orang?->department ?: 'Produksi',
+                'pelapor_jabatan'    => $orang?->position ?: 'Pengawas',
+                'tanggal'       => $tanggal->toDateString(),
+                'waktu'         => '09:'.str_pad((string) (10 + $i * 7), 2, '0', STR_PAD_LEFT),
+                'lokasi'        => ['Pit Utara', 'Jalan Hauling KM 4', 'Workshop', 'Disposal Selatan'][$i % 4],
+                'risiko'        => $risiko,
+                'kategori'      => $kategori,
+                'deskripsi'     => $uraian,
+                'hirarki'       => $hirarki,
+                'rekomendasi'   => $rekomendasi,
+
+                /* Tenggatnya dihitung dari tanggal temuannya, bukan dari
+                   hari ini. Yang kedua membuat seluruh temuan contoh
+                   selalu belum lewat waktu berapa pun lamanya ia
+                   didiamkan — dan penanda "lewat tenggat" yang tidak
+                   pernah menyala tidak dapat dibedakan dari penanda yang
+                   rusak. Dengan cara ini, temuan ke lima yang berumur 23
+                   hari dengan tenggat 7 hari memang terlambat. */
+                'batas_akhir'   => $tanggal->copy()->addDays($tenggat)->toDateString(),
+                'status'        => $status,
+                'foto'          => $this->fotoBahaya('temuan', $i, self::FOTO_TEMUAN[$i % count(self::FOTO_TEMUAN)]),
+            ]);
+
+            /* Yang sudah ditutup harus punya penutup dan waktunya.
+               Tanpa keduanya, halaman menghitung waktu penutupan dari
+               nilai kosong dan memulangkan angka yang tidak masuk akal. */
+            if ($status === 'Closed') {
+                $b->forceFill([
+                    'closed_by'         => $this->peninjau?->id ?? $this->pengaju?->id,
+                    'closed_at'         => $tanggal->copy()->addDays(4),
+                    'catatan_penutupan' => 'Perbaikan selesai dan diperiksa ulang di lapangan.',
+
+                    /* Foto perbaikan HANYA pada yang sudah ditutup.
+                       Memberikannya pada seluruh baris membuat kolom
+                       "Gambar Perbaikan" penuh pada register contoh, dan
+                       register yang tiap barisnya berisi tidak pernah
+                       memperlihatkan seperti apa baris yang belum
+                       dikerjakan — padahal barisan itulah yang dicari
+                       orang saat membuka lembarnya. */
+                    'foto_tindaklanjut' => $this->fotoBahaya('perbaikan', $i, self::FOTO_PERBAIKAN),
+                ])->saveQuietly();
+            }
+
+            $n++;
+        }
+
+        return $n + $this->bahayaBerulang();
+    }
+
+    /**
+     * Satu temuan yang sengaja KEMBALI berkali-kali di tempat yang sama.
+     *
+     * Halaman Temuan Berulang menjawab pertanyaan yang tidak dapat
+     * dijawab daftar temuan: apakah perbaikannya bertahan. Tanpa contoh
+     * yang memang berulang, halaman itu selamanya kosong pada
+     * pemasangan contoh — dan halaman kosong tidak pernah salah, justru
+     * karena itu ia tidak membuktikan apa pun tentang benar-tidaknya
+     * hitungan di belakangnya.
+     *
+     * Pola yang dibuat di sini disengaja dan bukan sekadar pengulangan:
+     *
+     *   · Tersebar di EMPAT BULAN berbeda, bukan menumpuk pada satu
+     *     bulan. Lima temuan sejenis dalam satu bulan boleh jadi sekali
+     *     sapuan inspeksi; yang tersebar berbulan-bulan adalah masalah
+     *     yang tidak pernah tertutup.
+     *   · DUA di antaranya ditutup lalu muncul lagi — itulah yang
+     *     dihitung sebagai "kambuh", satu-satunya angka di halaman itu
+     *     yang menuduh sesuatu.
+     *   · Ditutup dengan pengendalian ADMINISTRATIF, yang justru
+     *     menjelaskan mengapa ia berulang: ia menuntut kehati-hatian
+     *     orang, dan kehati-hatian tidak bertahan melewati pergantian
+     *     regu.
+     */
+    private function bahayaBerulang(): int
+    {
+        $orang = $this->pelaporBahaya()[0];
+
+        /* [bulan ke belakang, status, ditutup berapa hari sesudahnya] */
+        $daur = [
+            [7, 'Closed', 6],
+            [5, 'Closed', 5],
+            [3, 'Open',   null],
+            [1, 'Open',   null],
+        ];
+
+        $n = 0;
+
+        foreach ($daur as $i => [$mundur, $status, $tutup]) {
+            $tanggal = $this->kini->copy()->subMonths($mundur)->startOfMonth()->addDays(9);
+
+            /* Nomornya menyambung dari enam temuan di atas, memakai
+               penomoran yang sama. Kode karangan sendiri lolos dari
+               layar tetapi tidak dari penjagaan pola penomoran — dan
+               yang dijaga di sana memang benar: satu modul yang
+               menomori sendiri membuat seluruh skemanya berhenti dapat
+               dipercaya. */
+            $b = $this->baru(HazardReport::class, [
+                'kode'          => Nomor::susun('Formulir', $this->c, 107 + $i)
+                    ?: 'HZ-'.str_pad((string) (107 + $i), 3, '0', STR_PAD_LEFT),
+                'user_id'       => $orang?->id,
+                'pelapor_nama'  => $orang?->name ?? 'Pengawas Lapangan',
+                'pelapor_nrp'   => $orang?->employee_id,
+                'pelapor_departemen' => $orang?->department ?: 'Produksi',
+                'pelapor_jabatan'    => $orang?->position ?: 'Pengawas',
+                'tanggal'       => $tanggal->toDateString(),
+                'waktu'         => '14:20',
+                'lokasi'        => 'Simpang Timbang',
+                'risiko'        => 'Tinggi',
+                'kategori'      => 'Unsafe Action',
+                'deskripsi'     => 'Unit melintas simpang timbang tanpa berhenti penuh.',
+                'hirarki'       => 'Administratif',
+                'rekomendasi'   => 'Pengarahan ulang di P5M dan penempatan pengatur lalu lintas.',
+                'batas_akhir'   => $tanggal->copy()->addDays(7)->toDateString(),
+                'status'        => $status,
+
+                /* Foto temuan pada SELURUH barisnya, seperti keenam
+                   temuan di atas. Kolom Foto Temuan yang kosong pada
+                   sebagian baris monitor tidak dapat dibedakan dari
+                   kolom yang rusak. Nomornya digeser sepuluh supaya
+                   berkasnya tidak menimpa foto temuan yang biasa. */
+                'foto'          => $this->fotoBahaya('temuan', $i + 10,
+                    self::FOTO_TEMUAN[$i % count(self::FOTO_TEMUAN)]),
+            ]);
+            $n++;
+
+            if ($tutup === null) continue;
+
+            $b->forceFill([
+                'closed_by'         => $this->peninjau?->id ?? $this->pengaju?->id,
+                'closed_at'         => $tanggal->copy()->addDays($tutup),
+                'catatan_penutupan' => 'Pengarahan ulang dilaksanakan dan ditandatangani seluruh operator.',
+                /* Bukti perbaikan HANYA pada yang sudah ditutup — dan
+                   pada yang ditutup, ia wajib ada. */
+                'foto_tindaklanjut' => $this->fotoBahaya('perbaikan', $i + 10, self::FOTO_PERBAIKAN),
+            ])->saveQuietly();
+        }
+
+        return $n;
+    }
+
+    /**
+     * Urutan pelapor temuan bahaya — sengaja tidak rata.
+     *
+     * Bila perusahaannya hanya punya satu pengguna, daftarnya berisi
+     * satu orang dan rekapnya memang satu baris. Itu keadaan yang benar,
+     * bukan yang perlu dipaksa: memaksakan nama karangan agar rekapnya
+     * terlihat ramai akan memasukkan orang yang tidak ada ke lembar yang
+     * dibawa ke rapat.
+     *
+     * @return list<User|null>
+     */
+    private function pelaporBahaya(): array
+    {
+        $orang = User::withoutGlobalScopes()
+            ->where('company_id', $this->c->id)
+            ->orderBy('id')->limit(3)->get()->all();
+
+        if (!$orang) return [$this->pengaju];
+
+        /* Yang pertama muncul dua kali lebih sering. Enam temuan yang
+           dibagi rata kepada tiga orang memberi 2-2-2 — dan urutan
+           "paling banyak melapor" atas tiga angka yang sama tidak
+           membuktikan bahwa ia benar-benar mengurutkan. */
+        return [$orang[0], $orang[1] ?? $orang[0], $orang[0],
+                $orang[2] ?? $orang[0], $orang[1] ?? $orang[0], $orang[0]];
+    }
+
+    /* ─────────── foto contoh ─────────── */
+
+    /**
+     * Foto temuan contoh, disalin dari media bawaan aplikasi.
+     *
+     * Bukan gambar kosong berwarna. Halaman monitor, lightbox-nya, dan
+     * kolom gambar pada Register Tindakan Perbaikan sama-sama tidak
+     * dapat diperiksa dengan kotak abu-abu 1×1: thumbnail yang salah
+     * nisbah, gambar yang meluber keluar selnya, dan foto tegak yang
+     * meregangkan barisnya tiga kali lipat semuanya terlihat benar bila
+     * sumbernya bujur sangkar sekecil itu.
+     */
+    private const FOTO_TEMUAN = [
+        'media/sampul/jalan-angkut.jpg',
+        'media/sampul/pengawasan-pit.jpg',
+        'media/sampul/pit-pemuatan.jpg',
+        'media/sampul/pit-panorama.jpg',
+    ];
+
+    private const FOTO_PERBAIKAN = 'media/sampul/pelabuhan-muat.jpg';
+
+    /**
+     * Salin satu foto contoh ke diska tertutup, lalu pulangkan jalurnya.
+     *
+     * Namanya TETAP bagi tiap perusahaan dan tiap temuan — bukan nama
+     * acak seperti unggahan sungguhan. Unggahan sungguhan memang harus
+     * acak supaya alamatnya tidak dapat ditebak, tetapi data contoh
+     * dimuat ulang berkali-kali, dan nama acak membuat tiap pemuatan
+     * meninggalkan satu salinan lagi di diska yang tidak lagi ditunjuk
+     * baris mana pun. Nama tetap menimpa dirinya sendiri.
+     *
+     * @return list<string>
+     */
+    private function fotoBahaya(string $awalan, int $i, string $sumber): array
+    {
+        $asal = public_path($sumber);
+        if (!is_file($asal)) return [];
+
+        $tujuan = $this->folderFotoBahaya().'/'.$awalan.'-'.($i + 1).'.jpg';
+
+        Storage::disk(Berkas::TERTUTUP)->put($tujuan, (string) file_get_contents($asal));
+
+        return [$tujuan];
+    }
+
+    /** Folder foto contoh satu perusahaan — terpisah dari unggahan nyata. */
+    private function folderFotoBahaya(): string
+    {
+        return 'hazard/contoh/'.$this->c->id;
+    }
+
+    /* ─────────── inspeksi ─────────── */
+
+    /**
+     * Inspeksi lengkap dengan template, butir, dan pemeriksanya.
+     *
+     * Template TIDAK punya company_id — ia pustaka bersama — dan
+     * karena itu ditandai `demo_company_id` supaya penghapus data
+     * contoh tetap dapat menemukannya kembali tanpa menyentuh milik
+     * perusahaan contoh yang lain.
+     *
+     * Butirnya diisi, bukan dibiarkan kosong. Inspeksi tanpa butir
+     * tampil sebagai lembar yang sudah selesai dengan nol temuan —
+     * bentuk yang tidak dapat dibedakan dari inspeksi yang memang
+     * bersih, dan yang membuat seluruh rekapitulasi temuan menjadi nol
+     * tanpa ada yang salah di layar.
+     */
+    private function inspeksi(): int
+    {
+        $n = 0;
+
+        /* ── template dan butirnya ── */
+
+        $template = [];
+
+        /* Daftar periksanya datang dari pustaka baku, bukan diketik
+           lagi di sini.
+
+           Sebelumnya dua salinan hidup berdampingan: satu di kelas ini
+           berisi lima butir, satu lagi di bawah tanpa butir sama sekali.
+           Data contoh karena itu memperlihatkan modul inspeksi yang
+           daftar periksanya dangkal — dan yang memilih template kosong
+           mendapat inspeksi tanpa satu pun baris untuk diisi. */
+        $pustaka = MasterInspeksi::PUSTAKA;
+
+        foreach ($pustaka as [$nama, $jenis, $kategori, $deskripsi, $butir]) {
+            $t = InspectionTemplate::withoutGlobalScopes()->create([
+                'demo_company_id' => $this->c->id,
+                'nama'      => $nama,
+                'jenis'     => $jenis,
+                'kategori'  => $kategori,
+                'deskripsi' => $deskripsi,
+                'is_active' => true,
+            ]);
+            $n++;
+
+            foreach ($butir as $j => [$kelompok, $uraian, $acuan, $risiko]) {
+                InspectionTemplateItem::withoutGlobalScopes()->create([
+                    'template_id'    => $t->id,
+                    'kelompok'       => $kelompok,
+                    'uraian'         => $uraian,
+                    'acuan'          => $acuan,
+                    'risiko_default' => $risiko,
+                    'order_index'    => $j + 1,
+                ]);
+                $n++;
+            }
+
+            /* Dikunci menurut NAMA, bukan jenis. Sejak pustaka memuat
+               dua template "Bulanan" — kantor dan gudang handak — kunci
+               menurut jenis membuat yang kedua menimpa yang pertama
+               diam-diam, dan inspeksi kantor pada data contoh akan
+               memakai daftar periksa gudang bahan peledak. */
+            $template[$nama] = $t;
+        }
+
+        /* ── pelaksanaannya ── */
+
+        /* [template, jenis, judul, lokasi, status]
+
+           Template disebut dengan NAMANYA supaya jelas daftar periksa
+           mana yang dipakai tiap baris. Yang terakhir sengaja tanpa
+           template: inspeksi mendadak sesudah hujan deras memang tidak
+           punya daftar periksa baku, dan modul ini harus memperlihatkan
+           bahwa keadaan itu pun tertangani. */
+        $daftar = [
+            ['Inspeksi K3 Perkantoran',              'Bulanan',  'Inspeksi K3 Kantor Site',        'Kantor Site — Lantai 1 dan 2', 'Selesai'],
+            ['Inspeksi Harian Jalan Angkut',         'Harian',   'Inspeksi Jalan Angkut Pagi',     'Jalan Hauling KM 0–6',         'Selesai'],
+            ['Inspeksi Mingguan Alat Berat',         'Mingguan', 'Inspeksi Mingguan Unit Produksi','Workshop dan Pit Utara',       'Berjalan'],
+            ['Inspeksi Bulanan Gudang Bahan Peledak','Bulanan',  'Inspeksi Gudang Bahan Peledak',  'Gudang Handak',                'Berjalan'],
+            [null,                                   'Khusus',   'Inspeksi Pasca Hujan Deras',     'Disposal Selatan',             'Selesai'],
+        ];
+
+        /* Tidak semua butir "Sesuai". Rekapitulasi temuan yang seluruh
+           barisnya sesuai tidak pernah membuktikan penghitungnya
+           bekerja — sama saja dengan tidak menghitung apa pun. */
+        $kondisi = ['Sesuai', 'Sesuai', 'Tidak Sesuai', 'Sesuai', 'N/A'];
+
+        /* Temuan yang KHAS bagi butirnya, bukan satu kalimat untuk
+           semua. Lembar contoh yang enam temuannya berbunyi sama persis
+           memperlihatkan kolom yang terisi, bukan kolom yang berguna —
+           dan justru kolom inilah yang menentukan apakah lembarnya dapat
+           ditindaklanjuti orang lain tanpa bertanya lagi. */
+        $temuanKhas = MasterInspeksi::temuanKhas();
+
+        /* Tindakannya mengikuti RISIKO butirnya. Temuan berisiko tinggi
+           yang tindak lanjutnya berbunyi sama dengan temuan berisiko
+           rendah adalah lembar yang tidak memprioritaskan apa pun. */
+        $tindakan = [
+            'Tinggi' => 'Dihentikan sementara dan diperbaiki hari ini juga; diperiksa ulang pengawas sebelum dipakai kembali.',
+            'Sedang' => 'Diperbaiki paling lambat tujuh hari dan dilaporkan pada inspeksi berikutnya.',
+            'Rendah' => 'Dimasukkan ke daftar perbaikan berkala area.',
+        ];
+
+        foreach ($daftar as $i => [$namaTemplate, $jenis, $judul, $lokasi, $status]) {
+            $t = $namaTemplate ? ($template[$namaTemplate] ?? null) : null;
+
+            $ins = $this->baru(Inspection::class, [
+                'kode'        => Nomor::susun('Formulir', $this->c, 200 + $i + 1)
+                    ?: 'INS-'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT),
+                'template_id' => $t?->id,
+                'user_id'     => $this->pengaju?->id,
+                'judul'       => $judul,
+                'jenis'       => $jenis,
+                'lokasi'      => $lokasi,
+                'tanggal'     => $this->kini->copy()->subDays($i * 3)->toDateString(),
+                'pelaksana'   => $this->pengaju?->name ?? 'Pengawas Lapangan',
+                'status'      => $status,
+                'catatan'     => 'Inspeksi contoh untuk memeriksa tampilan dan rekapitulasi.',
+            ]);
+            $n++;
+
+            /* Butir diambil dari template bila ada; bila inspeksinya
+               memang tanpa template, butirnya tetap ditulis sendiri —
+               inspeksi kosong bukan keadaan yang perlu dicontohkan. */
+            $butir = $t
+                ? InspectionTemplateItem::withoutGlobalScopes()
+                    ->where('template_id', $t->id)->orderBy('order_index')->get()
+                    ->map(fn ($b) => [$b->id, $b->kelompok, $b->uraian, $b->acuan, $b->risiko_default])
+                    ->all()
+                : [
+                    [null, 'Umum', 'Kondisi area sesudah hujan deras', null, 'Sedang'],
+                    [null, 'Umum', 'Genangan pada jalan akses',        null, 'Sedang'],
+                    [null, 'Lereng', 'Retakan baru pada muka lereng',  null, 'Tinggi'],
+                ];
+
+            foreach ($butir as $j => [$idButir, $kelompok, $uraian, $acuan, $risiko]) {
+                $k = $kondisi[$j % count($kondisi)];
+
+                InspectionItem::withoutGlobalScopes()->create([
+                    'inspection_id'    => $ins->id,
+                    'template_item_id' => $idButir,
+                    'kelompok'         => $kelompok,
+                    'uraian'           => $uraian,
+                    'acuan'            => $acuan,
+                    'kondisi'          => $k,
+                    'risiko'           => $risiko,
+                    'temuan'  => $k === 'Tidak Sesuai'
+                        ? ($temuanKhas[$uraian] ?? 'Tidak memenuhi acuan saat diperiksa.')
+                        : null,
+                    'tindakan'=> $k === 'Tidak Sesuai'
+                        ? ($tindakan[$risiko] ?? $tindakan['Sedang'])
+                        : null,
+                    'order_index'      => $j + 1,
+                ]);
+                $n++;
+            }
+
+            /* Dua pemeriksa, bukan satu: lembar inspeksi resmi
+               ditandatangani pelaksana DAN pengawas, dan halaman
+               cetaknya menyediakan dua kolom tanda tangan yang akan
+               kosong sebelah bila hanya satu yang tercatat. */
+            foreach ([
+                [$this->pengaju,  'Pengawas Operasional', 'Pelaksana'],
+                [$this->peninjau, 'Kepala Teknik Tambang', 'Pemeriksa'],
+            ] as [$orang, $jabatan, $peran]) {
+                if (!$orang) continue;
+
+                InspectionInspector::withoutGlobalScopes()->create([
+                    'inspection_id' => $ins->id,
+                    'user_id'       => $orang->getKey(),
+                    'nama'          => $orang->name,
+                    'jabatan'       => $jabatan,
+                    'peran'         => $peran,
+                ]);
+                $n++;
+            }
+        }
+
+        return $n;
+    }
+
+    /* ─────────── kelayakan operasi ─────────── */
+
+    private function ko(): int
+    {
+        $n = 0;
+
+        /* Daftar acuan jenis unit ditanam bila pemasangannya belum
+           punya — sama seperti jenis kompetensi, ia milik bersama dan
+           tidak ikut dibuang bersama data contoh. */
+        if (KoUnitMaster::withoutGlobalScopes()->whereNull('company_id')->doesntExist()) {
+            MasterUnitSpip::tanam();
+        }
+
+        $jenisUnit = KoUnitMaster::withoutGlobalScopes()
+            ->whereNull('company_id')->pluck('id', 'kode');
+
+        /** @var array<string,KoObject> menurut kodenya, dipakai anak-anaknya */
+        $objek = [];
+
+        /* Kode jenis ditambahkan supaya unit contoh TERTAUT ke daftar
+           acuan. Bila seluruhnya dibiarkan mengetik bebas, layar "belum
+           tertaut" akan menunjukkan seratus persen dan penyeragamannya
+           tampak tidak pernah berjalan. */
+        $daftar = [
+            ['KO-SAR-001', 'Jembatan Timbang 60 Ton',    'Sarana',    'Tinggi', 'Aktif',     2, 'JBT'],
+            ['KO-PRA-001', 'Tanggul Kolam Pengendap 3',  'Prasarana', 'Tinggi', 'Aktif',     1, 'SETL'],
+            ['KO-INS-001', 'Instalasi Listrik Workshop', 'Instalasi', 'Sedang', 'Aktif',     3, 'PNL'],
+            ['KO-PER-001', 'Crane Workshop 10 Ton',      'Peralatan', 'Tinggi', 'Standby',   1, 'OHC'],
+            ['KO-PER-002', 'Genset 500 kVA',             'Peralatan', 'Sedang', 'Breakdown', 2, 'GEN'],
+
+            /* Satu unit sengaja TIDAK tertaut, supaya angka "belum
+               tertaut" tidak nol dan layarnya memperlihatkan seperti apa
+               keadaan yang perlu dibereskan. */
+            ['KO-SAR-002', 'Tangki Bahan Bakar 50 kL',   'Sarana',    'Tinggi', 'Aktif',     2, null],
+        ];
+
+        foreach ($daftar as $i => [$kode, $nama, $kategori, $kritis, $operasi, $interval, $kodeJenis]) {
+            $sertifikasi = $this->kini->copy()->subMonths(6 + $i);
+
+            $o = $this->baru(KoObject::class, [
+                'kode'            => $kode,
+                'nama'            => $nama,
+                'kategori'        => $kategori,
+                'ko_unit_master_id' => $kodeJenis ? ($jenisUnit[$kodeJenis] ?? null) : null,
+                'jenis'           => $kodeJenis,
+                'lokasi'          => ['Area Timbang', 'Pit Selatan', 'Workshop', 'Fuel Station'][$i % 4],
+                'kritikalitas'    => $kritis,
+                'status_operasi'  => $operasi,
+                'tgl_sertifikasi' => $sertifikasi->toDateString(),
+                'interval_tahun'  => $interval,
+                'no_sertifikat'   => 'SER/'.$sertifikasi->format('Y').'/'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
+                'lembaga_uji'     => 'Balai Pengujian Peralatan',
+                'pm_terakhir'     => $this->kini->copy()->subMonths(2)->toDateString(),
+                'pm_berikutnya'   => $this->kini->copy()->addMonth()->toDateString(),
+            ]);
+            $n++;
+
+            $objek[$kode] = $o;
+        }
+
+        return $n + $this->ujiKelayakan($objek) + $this->koRinci($objek);
+    }
+
+    /**
+     * Riwayat uji kelayakan — dua tahun berturut-turut untuk sebagian.
+     *
+     * Dua uji pada unit yang sama memang pokoknya: bentuk lama hanya
+     * menyimpan satu tanggal, sehingga uji tahun lalu selalu hilang.
+     * Data contoh yang hanya berisi satu uji per unit tidak akan pernah
+     * memperlihatkan bahwa masalah itu sudah diperbaiki.
+     *
+     * @param  array<string,KoObject>  $objek
+     */
+    private function ujiKelayakan(array $objek): int
+    {
+        $n = 0;
+
+        /* [kode objek, bulan lalu, hasil, status, syarat] */
+        $daftar = [
+            ['KO-PER-001', 20, 'Layak', Alur::DISETUJUI, null],          // uji tahun lalu
+            ['KO-PER-001', 8,  'Layak', Alur::DISETUJUI, null],          // uji terbaru
+            ['KO-SAR-001', 6,  'Layak Bersyarat', Alur::DISETUJUI,
+                'Beban maksimum dibatasi 50 ton sampai perbaikan load cell selesai.'],
+            ['KO-INS-001', 10, 'Layak', Alur::DISETUJUI, null],
+            ['KO-PER-002', 2,  'Tidak Layak', Alur::DISETUJUI, null],    // genset breakdown
+            ['KO-PRA-001', 1,  'Layak', Alur::DIAJUKAN, null],           // menunggu tinjauan
+            ['KO-SAR-002', 0,  'Layak', Alur::DRAF, null],
+        ];
+
+        foreach ($daftar as $i => [$kode, $bulan, $hasil, $status, $syarat]) {
+            $o = $objek[$kode] ?? null;
+            if (!$o) continue;
+
+            $inspeksi = $this->kini->copy()->subMonths($bulan);
+
+            $u = KoUjiKelayakan::withoutGlobalScopes()->create([
+                'ko_object_id' => $o->id,
+                'company_id'   => $o->company_id,
+                'nomor'        => 'UK/'.$inspeksi->format('Y').'/'
+                    .str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
+                'merk'         => $o->merk,
+                'nomor_seri'   => $o->serial_number,
+                'tgl_inspeksi' => $inspeksi->toDateString(),
+                'tgl_expired'  => $inspeksi->copy()->addYear()->toDateString(),
+                'pemeriksa'    => ['Ir. Hartono', 'Sulaiman, S.T.', 'Nurhayati'][$i % 3],
+                'lembaga'      => 'Balai Pengujian Peralatan',
+                'lokasi_uji'   => $o->lokasi,
+                'hasil'        => $hasil,
+                'syarat'       => $syarat,
+                'temuan'       => $hasil === 'Tidak Layak'
+                    ? 'Kebocoran pendingin dan getaran berlebih pada bantalan.' : null,
+                'rekomendasi'  => $hasil === 'Tidak Layak'
+                    ? 'Hentikan operasi sampai perbaikan menyeluruh dan uji ulang.' : null,
+            ]);
+            $n++;
+
+            if ($status !== Alur::DRAF) {
+                KoUjiKelayakan::withoutGlobalScopes()->whereKey($u->id)->update([
+                    'status'        => $status,
+                    'diajukan_oleh' => $this->pengaju?->getKey(),
+                    'diajukan_pada' => $inspeksi->copy()->addDays(2),
+                    'ditinjau_oleh' => $status === Alur::DISETUJUI ? $this->peninjau?->getKey() : null,
+                    'ditinjau_pada' => $status === Alur::DISETUJUI
+                        ? $inspeksi->copy()->addDays(4) : null,
+                ]);
+            }
+        }
+
+        return $n;
+    }
+
+    /**
+     * Isi modul KO selain registrinya: tenaga teknik, pengaman,
+     * pemeriksaan, tindak lanjut, kajian, dan perintah kerja.
+     *
+     * Tanpa ini registrinya berdiri sendiri, dan indeks KO — rerata
+     * lima sub-elemen — dihitung dari satu sub-elemen saja. Angka yang
+     * keluar tetap berupa persentase yang tampak masuk akal, dan itulah
+     * yang membuatnya berbahaya: tidak ada yang di layar mengatakan
+     * empat sub-elemen lainnya tidak punya data sama sekali.
+     *
+     * @param  array<string,KoObject>  $objek  menurut kodenya
+     */
+    private function koRinci(array $objek): int
+    {
+        $n = 0;
+
+        /* ── tenaga teknik ── */
+
+        $tenaga = [];
+
+        foreach ([
+            ['Tenaga Teknik Pertambangan', 'Operator Crane',     'Lisensi K3 Pesawat Angkat', 8],
+            ['Pengawas Operasional',       'Pengawas Workshop',  'POP',                       -2],
+            ['Juru Ukur',                  'Surveyor Tambang',   'Sertifikat Juru Ukur',      20],
+        ] as $i => [$jabatanSertifikasi, $jabatan, $sertifikasi, $bulan]) {
+            /* Satu sudah lewat masa berlakunya. Daftar yang seluruhnya
+               masih berlaku tidak pernah menyalakan peringatannya, dan
+               peringatan yang tidak pernah menyala tidak dapat
+               dibedakan dari peringatan yang rusak. */
+            $tenaga[] = $this->baru(KoPersonnel::class, [
+                'nama'           => ['Rahmat Hidayat', 'Sri Wahyuni', 'Bayu Pratama'][$i],
+                'jabatan'        => $jabatan,
+                'sertifikasi'    => $sertifikasi,
+                'no_sertifikat'  => 'SRT/'.$this->kini->year.'/'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT),
+                'tgl_kadaluarsa' => $this->kini->copy()->addMonths($bulan)->toDateString(),
+                'user_id'        => $i === 0 ? $this->pengaju?->getKey() : null,
+            ]);
+            $n++;
+        }
+
+        /* ── pengaman, pemeriksaannya, dan tindak lanjutnya ── */
+
+        $pengaman = [
+            'KO-PER-001' => [
+                ['Limit switch batas angkat', 'Trip pada 105% beban', 'Berfungsi'],
+                ['Rem sekunder hoist',        'Tahan beban statis 125%', 'Perlu Perbaikan'],
+            ],
+            'KO-PER-002' => [
+                ['Pemutus arus utama', '630 A', 'Tidak Berfungsi'],
+                ['Alarm tekanan oli',  'Trip < 1,5 bar', 'Berfungsi'],
+            ],
+            'KO-INS-001' => [
+                ['Pembumian panel workshop', 'Tahanan ≤ 5 ohm', 'Berfungsi'],
+            ],
+            'KO-SAR-002' => [
+                ['Katup penutup darurat', 'Tutup penuh ≤ 15 detik', 'Berfungsi'],
+                ['Bunding tangki',        'Tampung 110% isi tangki', 'Perlu Perbaikan'],
+            ],
+        ];
+
+        foreach ($pengaman as $kode => $daftar) {
+            $o = $objek[$kode] ?? null;
+            if (!$o) continue;
+
+            foreach ($daftar as $i => [$nama, $spek, $status]) {
+                $periksa = $this->kini->copy()->subDays(20 + $i * 9);
+
+                $p = KoSafeguard::withoutGlobalScopes()->create([
+                    'ko_object_id' => $o->id,
+                    'nama'         => $nama,
+                    'spesifikasi'  => $spek,
+                    'status'       => $status,
+                    'tgl_periksa'  => $periksa->toDateString(),
+                    'catatan'      => 'Diperiksa bersama pemeriksaan berkala alat.',
+                ]);
+                $n++;
+
+                /* Pemeriksaan pengaman dicatat sebagai baris tersendiri
+                   — itulah yang dibaca sub-elemen "pengaman diperiksa",
+                   bukan kolom tgl_periksa pada pengamannya. */
+                KoInspection::withoutGlobalScopes()->create([
+                    'ko_object_id'    => $o->id,
+                    'ko_safeguard_id' => $p->id,
+                    'ko_personnel_id' => $tenaga[0]?->id,
+                    'jenis'           => 'Pengaman',
+                    'tanggal'         => $periksa->toDateString(),
+                    'hasil'           => $status,
+                    'nilai_ukur'      => $spek,
+                    'berikutnya'      => $periksa->copy()->addMonths(3)->toDateString(),
+                    'catatan'         => 'Pemeriksaan contoh.',
+                    'user_id'         => $this->pengaju?->getKey(),
+                ]);
+                $n++;
+
+                if ($status === 'Berfungsi') continue;
+
+                /* Pengaman yang tidak berfungsi WAJIB punya tindak
+                   lanjut. Temuan tanpa tindak lanjut adalah persis yang
+                   dicari auditor, dan data contoh yang tidak
+                   memperlihatkan pasangan itu tidak menguji alurnya. */
+                KoAction::withoutGlobalScopes()->create([
+                    'ko_object_id'    => $o->id,
+                    'ko_safeguard_id' => $p->id,
+                    'sumber'          => 'Pemeriksaan pengaman',
+                    'uraian'          => $nama.' tidak memenuhi spesifikasi saat diperiksa.',
+                    'prioritas'       => $status === 'Tidak Berfungsi' ? 'Tinggi' : 'Sedang',
+                    'pic_user_id'     => $this->peninjau?->getKey(),
+                    'pic_nama'        => $this->peninjau?->name ?? 'Kepala Workshop',
+                    'target_tgl'      => $periksa->copy()->addDays(14)->toDateString(),
+                    'status'          => $status === 'Tidak Berfungsi' ? 'Berjalan' : 'Selesai',
+                    'tgl_selesai'     => $status === 'Tidak Berfungsi'
+                        ? null : $periksa->copy()->addDays(9)->toDateString(),
+                    'tindakan'        => $status === 'Tidak Berfungsi'
+                        ? 'Suku cadang dipesan; alat distandbykan sampai perbaikan selesai.'
+                        : 'Disetel ulang dan diuji beban.',
+                ]);
+                $n++;
+            }
+        }
+
+        /* ── pemeriksaan berkala alatnya sendiri ── */
+
+        foreach ($objek as $o) {
+            $tgl = $this->kini->copy()->subMonths(2);
+
+            KoInspection::withoutGlobalScopes()->create([
+                'ko_object_id'    => $o->id,
+                'ko_personnel_id' => $tenaga[1]?->id,
+                'jenis'           => 'Berkala',
+                'tanggal'         => $tgl->toDateString(),
+                'hasil'           => $o->status_operasi === 'Breakdown' ? 'Tidak Layak' : 'Layak',
+                'berikutnya'      => $tgl->copy()->addMonths(3)->toDateString(),
+                'catatan'         => 'Pemeriksaan berkala contoh.',
+                'user_id'         => $this->pengaju?->getKey(),
+            ]);
+            $n++;
+        }
+
+        /* ── kajian teknis ── */
+
+        foreach ([
+            ['KO-PRA-001', 'Kajian Teknis Tanggul Kolam Pengendap 3', 'Perubahan tinggi muka air', 'Dilaporkan'],
+            ['KO-PER-002', 'Kajian Teknis Genset 500 kVA',            'Kerusakan berulang',        'Berjalan'],
+        ] as $i => [$kode, $judul, $pemicu, $status]) {
+            $o = $objek[$kode] ?? null;
+            if (!$o) continue;
+
+            $tgl = $this->kini->copy()->subDays(30 + $i * 12);
+
+            KoReview::withoutGlobalScopes()->create([
+                'ko_object_id'    => $o->id,
+                'judul'           => $judul,
+                'pemicu'          => $pemicu,
+                'tanggal'         => $tgl->toDateString(),
+                'oleh'            => $this->peninjau?->name ?? 'Tenaga Teknik Bersertifikat',
+                'ko_personnel_id' => $tenaga[2]?->id,
+                'status'          => $status,
+                'tgl_lapor'       => $status === 'Dilaporkan'
+                    ? $tgl->copy()->addDays(10)->toDateString() : null,
+                'ringkasan'       => 'Kajian contoh; kesimpulannya menjadi dasar keputusan operasi.',
+            ]);
+            $n++;
+        }
+
+        return $n + $this->perintahKerja($objek);
+    }
+
+    /**
+     * Perintah kerja perawatan, terhubung ke registri alat KO.
+     *
+     * Halaman perawatan menghitung ketaatan PM sebagai perbandingan
+     * perintah kerja preventif yang selesai terhadap yang terbit. Tanpa
+     * satu pun perintah kerja, pembaginya nol — dan halaman itu dahulu
+     * menampilkannya sebagai 100% pada pemasangan yang belum punya satu
+     * alat pun.
+     *
+     * @param  array<string,KoObject>  $objek
+     */
+    private function perintahKerja(array $objek): int
+    {
+        $n = 0;
+
+        $daftar = [
+            ['KO-PER-002', 'darurat',   'kritis', 'selesai',    'Genset mati mendadak saat beban puncak',
+             'Filter solar tersumbat dan sensor tekanan oli lemah', 26, 20, 4_850_000.0,
+             [['Filter solar', 2, 'pcs', 385_000.0], ['Sensor tekanan oli', 1, 'pcs', 1_240_000.0]]],
+
+            ['KO-PER-001', 'korektif',  'tinggi', 'dikerjakan', 'Rem sekunder hoist selip saat uji beban',
+             'Kampas rem aus melewati batas', 12, null, 2_100_000.0,
+             [['Kampas rem hoist', 1, 'set', 1_850_000.0]]],
+
+            ['KO-SAR-001', 'preventif', 'sedang', 'selesai',    'Kalibrasi berkala jembatan timbang',
+             null, 34, 33, 3_500_000.0, []],
+
+            ['KO-INS-001', 'preventif', 'sedang', 'selesai',    'Pengukuran tahanan pembumian panel workshop',
+             null, 21, 21, 750_000.0, []],
+
+            ['KO-SAR-002', 'preventif', 'tinggi', 'dibuka',     'Uji katup penutup darurat tangki bahan bakar',
+             null, 2, null, 0.0, []],
+
+            ['KO-PRA-001', 'prediktif', 'tinggi', 'dikerjakan', 'Pembacaan piezometer tanggul naik tiga minggu berturut',
+             'Rembesan pada kaki tanggul sisi timur', 9, null, 0.0, []],
+        ];
+
+        foreach ($daftar as $i => [
+            $kode, $jenis, $prioritas, $status, $gejala, $penyebab,
+            $lapor, $tutup, $biaya, $suku,
+        ]) {
+            $o = $objek[$kode] ?? null;
+
+            $dilaporkan = $this->kini->copy()->subDays($lapor);
+
+            $wo = $this->baru(WorkOrder::class, [
+                'user_id'         => $this->pengaju?->getKey(),
+                'ko_object_id'    => $o?->id,
+                'nomor'           => Nomor::susun('Formulir', $this->c, 300 + $i + 1)
+                    ?: 'WO-'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT),
+                'jenis'           => $jenis,
+                'prioritas'       => $prioritas,
+                'status'          => $status,
+                'gejala'          => $gejala,
+                'penyebab'        => $penyebab,
+                'tindakan'        => $status === 'selesai'
+                    ? 'Diperbaiki, diuji fungsi, dan dikembalikan ke operasi.'
+                    : ($status === 'dikerjakan' ? 'Perbaikan berjalan; alat distandbykan.' : null),
+                'dilaporkan_pada' => $dilaporkan,
+                'mulai_pada'      => $status === 'dibuka' ? null : $dilaporkan->copy()->addHours(6),
+                'selesai_pada'    => $tutup === null ? null : $this->kini->copy()->subDays($tutup),
+                'hm_saat_rusak'   => 12_400 + $i * 615,
+                'biaya'           => $biaya,
+            ]);
+            $n++;
+
+            if ($status === 'selesai') {
+                $wo->forceFill([
+                    'ditutup_oleh'       => $this->peninjau?->getKey() ?? $this->pengaju?->getKey(),
+                    'diverifikasi_oleh'  => $this->peninjau?->getKey(),
+                    'diverifikasi_pada'  => $this->kini->copy()->subDays(max(0, (int) $tutup - 1)),
+                ])->saveQuietly();
+            }
+
+            foreach ($suku as [$nama, $jumlah, $satuan, $harga]) {
+                WorkOrderPart::withoutGlobalScopes()->create([
+                    'work_order_id' => $wo->id,
+                    'nama'          => $nama,
+                    'jumlah'        => $jumlah,
+                    'satuan'        => $satuan,
+                    'harga_satuan'  => $harga,
+                ]);
+                $n++;
+            }
+        }
+
+        return $n;
+    }
+
+    /* ─────────── alat energi ─────────── */
+
+    private function energiAlat(): int
+    {
+        $n = 0;
+
+        /* Kategorinya adalah KUNCI dari Energi::KATEGORI, bukan
+           labelnya — halaman rekap memvalidasi dengan
+           Rule::in(array_keys(...)), dan label yang tersimpan di sini
+           akan lolos penyimpanan lalu hilang dari setiap
+           pengelompokan tanpa menimbulkan galat. */
+        $daftar = [
+            ['EQ-HD-001', 'Dump Truck HD465-7',   'Komatsu', 'hauling',   552, 55.0],
+            ['EQ-HD-002', 'Dump Truck HD465-7',   'Komatsu', 'hauling',   552, 55.0],
+            ['EQ-EX-001', 'Excavator PC2000',     'Komatsu', 'excavator', 960, null],
+            ['EQ-DZ-001', 'Bulldozer D375A',      'Komatsu', 'dozer',     610, null],
+            ['EQ-GR-001', 'Motor Grader GD825',   'Komatsu', 'support',   280, null],
+        ];
+
+        $kategoriSah = array_keys(Energi::KATEGORI);
+
+        /** @var array<string,EnergyEquipment> menurut kodenya */
+        $alat = [];
+
+        foreach ($daftar as [$kode, $nama, $merek, $kategori, $hp, $payload]) {
+            $e = $this->baru(EnergyEquipment::class, [
+                'kode'        => $kode,
+                'nama'        => $nama,
+                'merek'       => $merek,
+
+                /* Kategori yang tidak dikenal membuat halaman rekap
+                   memulangkan kelompok kosong tanpa galat. Bila daftar
+                   kuncinya berubah, dipakai yang pertama supaya barisnya
+                   tetap terhitung, bukan menghilang diam-diam. */
+                'kategori'    => in_array($kategori, $kategoriSah, true)
+                    ? $kategori
+                    : ($kategoriSah[0] ?? $kategori),
+
+                'daya_hp'     => $hp,
+                'payload_ton' => $payload,
+                'aktif'       => true,
+            ]);
+            $n++;
+
+            $alat[$kode] = $e;
+        }
+
+        return $n + $this->energiCatatan($alat);
+    }
+
+    /**
+     * Pemakaian energi harian: solar per alat, listrik per area,
+     * produksi pembaginya, rekonsiliasi tangki, garis dasar, dan
+     * peluang penghematan.
+     *
+     * Registri alat saja tidak cukup. Intensitas energi adalah GJ per
+     * ton, dan tanpa satu pun catatan pemakaian maupun produksi, kedua
+     * sisi pecahannya nol — halaman rekapnya menggambar grafik kosong
+     * yang tidak dapat dibedakan dari tambang yang sedang berhenti.
+     *
+     * @param  array<string,EnergyEquipment>  $alat  menurut kodenya
+     */
+    private function energiCatatan(array $alat): int
+    {
+        $n    = 0;
+        $hari = 14;
+
+        /* ── produksi harian ── */
+
+        for ($i = $hari; $i >= 1; $i--) {
+            $tgl = $this->kini->copy()->subDays($i);
+
+            /* Akhir pekan lebih rendah, dan satu hari nyaris berhenti
+               karena hujan. Deret yang rata tidak memperlihatkan apakah
+               grafiknya benar-benar mengikuti datanya. */
+            $faktor = $tgl->isSunday() ? 0.45 : ($i === 6 ? 0.2 : 1.0);
+
+            $this->baru(EnergyProduction::class, [
+                'tanggal' => $tgl->toDateString(),
+                'ton'     => round(8_400 * $faktor),
+                'bcm'     => round(6_100 * $faktor),
+            ]);
+            $n++;
+        }
+
+        /* ── solar per alat ──
+
+           `hm` di sini adalah JAM OPERASI HARI ITU, bukan angka jam
+           meter kumulatif. Halaman rekap menghitung liter per jam
+           sebagai liter dibagi SUM(hm); diisi angka meter kumulatif
+           (18.420 dan seterusnya), pembaginya menjadi ratusan ribu dan
+           setiap alat dilaporkan 0,0 L/jam — daftar "alat paling haus"
+           yang seluruh barisnya nol. */
+
+        /* Liter per jam yang wajar menurut kelasnya; satu truk sengaja
+           lebih boros supaya perbandingan antar alat punya pemenang dan
+           pecundang. */
+        $lph = ['EQ-HD-001' => 38.0, 'EQ-HD-002' => 46.5,
+                'EQ-EX-001' => 62.0, 'EQ-DZ-001' => 41.0, 'EQ-GR-001' => 19.5];
+
+        foreach ($alat as $kode => $e) {
+            for ($i = $hari; $i >= 1; $i--) {
+                $tgl = $this->kini->copy()->subDays($i);
+
+                /* Hari Minggu TETAP dicatat, dengan jam yang lebih
+                   pendek. Melewatinya sama sekali sementara produksi
+                   hari itu tetap dicatat membuat intensitas energinya
+                   0 GJ/ton — dan nol pada kolom intensitas terbaca
+                   sebagai efisiensi sempurna, bukan sebagai pengukuran
+                   yang tidak ada. */
+                $jam = $tgl->isSunday() ? 4.5 : ($i === 6 ? 3.0 : 9.5);
+                $idle = round($jam * ($kode === 'EQ-HD-002' ? 0.22 : 0.12), 1);
+
+                $this->baru(EnergyFuelLog::class, [
+                    'equipment_id' => $e->id,
+                    'tanggal'      => $tgl->toDateString(),
+                    'hm'           => $jam,
+                    'liter'        => round($jam * $lph[$kode], 1),
+                    'idle_jam'     => $idle,
+                    /* Nol, bukan null: kolomnya NOT NULL berdefault 0.
+                       Alat yang memang tidak mengangkut apa pun tercatat
+                       0 ton — itu keadaan yang berbeda dari "tidak
+                       diketahui", dan keduanya tidak boleh tertukar pada
+                       pembagi intensitas energi. */
+                    'jarak_km'     => str_starts_with($kode, 'EQ-HD') ? round($jam * 7.4, 1) : 0,
+                    'ton'          => str_starts_with($kode, 'EQ-HD') ? round($jam * 96) : 0,
+                    'bcm'          => $kode === 'EQ-EX-001' ? round($jam * 210) : 0,
+                    'cycle_menit'  => $kode === 'EQ-EX-001' ? 0.6 : null,
+                ]);
+                $n++;
+            }
+        }
+
+        /* ── listrik per area ── */
+
+        foreach ([
+            /* Solar genset 0 untuk yang bersumber PLN — kolomnya NOT
+               NULL, dan 0 memang benar: area itu tidak membakar solar. */
+            ['camp',     'pln',    2_450, 168.0, 24.0, 0.0],
+            ['workshop', 'pln',    1_180,  96.0, 12.0, 0.0],
+            ['office',   'pln',      420,  38.0, 10.0, 0.0],
+            ['crusher',  'pln',    9_800, 720.0, 18.0, 0.0],
+            ['pump',     'genset', 3_150, 240.0, 20.0, 780.0],
+        ] as $j => [$area, $sumber, $kwh, $puncak, $jam, $liter]) {
+            for ($i = 3; $i >= 1; $i--) {
+                $this->baru(EnergyPowerLog::class, [
+                    'tanggal'       => $this->kini->copy()->subDays($i)->toDateString(),
+                    'area'          => $area,
+                    'sumber'        => $sumber,
+                    'kwh'           => $kwh + $j * 10 - $i * 25,
+                    'puncak_kw'     => $puncak,
+                    'jam_operasi'   => $jam,
+                    'liter_genset'  => $liter,
+                ]);
+                $n++;
+            }
+        }
+
+        /* ── energi lain ── */
+
+        foreach ([
+            ['LPG',      'kg', 240.0, 'Dapur mess karyawan'],
+            ['Oli mesin','liter', 860.0, 'Pemakaian workshop bulan berjalan'],
+        ] as [$jenis, $satuan, $jumlah, $ket]) {
+            $this->baru(EnergyOtherLog::class, [
+                'tanggal'     => $this->kini->copy()->subDays(5)->toDateString(),
+                'jenis'       => $jenis,
+                'satuan'      => $satuan,
+                'jumlah'      => $jumlah,
+                'keterangan'  => $ket,
+            ]);
+            $n++;
+        }
+
+        /* ── rekonsiliasi tangki ──
+
+           Selisih antara yang disalurkan dan yang tercatat terpakai
+           adalah satu-satunya cara kehilangan solar terlihat. Dibuat
+           TIDAK nol dengan sengaja: rekonsiliasi yang selalu pas tidak
+           membuktikan penghitungnya bekerja. */
+        $stok = 48_000.0;
+
+        for ($i = 3; $i >= 1; $i--) {
+            $salur = 12_400.0 - $i * 220;
+            $awal  = $stok;
+            $stok  = $awal - $salur + 11_000;
+
+            $this->baru(EnergyFuelRecon::class, [
+                'tanggal'           => $this->kini->copy()->subDays($i)->toDateString(),
+                'disalurkan_liter'  => $salur,
+                'stok_awal_liter'   => $awal,
+                'stok_akhir_liter'  => $stok,
+                'catatan'           => $i === 2 ? 'Selisih diperiksa; dugaan penguapan dan sisa selang.' : null,
+            ]);
+            $n++;
+        }
+
+        /* ── garis dasar dan target ── */
+
+        foreach ([[$this->kini->year - 1, 0.0246, 0.0240], [$this->kini->year, 0.0240, 0.0228]] as [$th, $dasar, $target]) {
+            $this->baru(EnergyBaseline::class, [
+                'tahun'           => $th,
+                'baseline_gj_ton' => $dasar,
+                'target_gj_ton'   => $target,
+                'catatan'         => 'Garis dasar contoh; dihitung dari pemakaian tahun sebelumnya.',
+            ]);
+            $n++;
+        }
+
+        /* ── peluang penghematan ── */
+
+        foreach ([
+            /* Penghematan yang tidak berlaku dicatat 0, bukan kosong:
+               peluang yang hanya menghemat listrik memang menghemat nol
+               liter solar, dan rekapnya menjumlahkan kedua kolomnya. */
+            ['Batasi idle truk hauling maksimal 10%',      'Pit',      'berjalan',  38_000.0,     0.0],
+            ['Ganti lampu penerangan camp ke LED',          'camp',     'disetujui',      0.0, 46_000.0],
+            ['Perbaiki penjadwalan pompa dewatering',       'pump',     'usulan',    12_500.0, 18_000.0],
+            ['Pasang meter listrik terpisah tiap area',     'workshop', 'selesai',        0.0,  9_400.0],
+        ] as $i => [$judul, $area, $status, $liter, $kwh]) {
+            $this->baru(EnergyOpportunity::class, [
+                'judul'             => $judul,
+                'area'              => $area,
+                'status'            => $status,
+                'uraian'            => 'Peluang contoh; angkanya perkiraan setahun penuh.',
+                'hemat_liter'       => $liter,
+                'hemat_kwh'         => $kwh,
+                'penanggung_jawab'  => $this->peninjau?->name ?? 'Kepala Teknik Tambang',
+                'target_selesai'    => $this->kini->copy()->addMonths(2 + $i)->toDateString(),
+                'user_id'           => $this->pengaju?->getKey(),
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /* ─────────── SMKP ─────────── */
+
+    /**
+     * Satu audit SMKP per tahun berjalan dan satu tahun sebelumnya, dalam
+     * bentuk modul audit Aurorasys.
+     *
+     * Dua, bukan satu: Tahap I menyarankan "Data Audit Internal SMKP" dari
+     * audit tahun sebelumnya, dan saran itu hanya dapat diperiksa bila
+     * audit sebelumnya memang ada.
+     *
+     * Audit tahun lalu sudah sampai Pelaporan (Tahap I tuntas, Rencana
+     * Audit lengkap sembilan komponen, hari kerja dibekukan); audit tahun
+     * ini baru di Tahap I. Temuannya diangkat dari nilai — kode kriteria
+     * dan kategorinya karena itu selalu sah — dan bernomor seperti yang
+     * dibangkitkan aplikasi (KODE-MYR-01-2025).
+     */
+    private function smkp(): int
+    {
+        $n = 0;
+
+        foreach ([['selesai', 1], ['berjalan', 0]] as [$status, $mundur]) {
+            $tahun = $this->kini->year - $mundur;
+            $tuntas = $status === 'selesai';
+            $ketua = $this->peninjau?->name ?? 'Ketua Auditor Internal';
+            $mulai = Carbon::create($tahun, 3, 1);
+
+            $permulaan = [
+                'tanggal_kontak' => $mulai->copy()->subWeeks(3)->toDateString(),
+                'media_kontak'   => 'Rapat daring',
+                'wakil_auditi'   => $this->pengaju?->name ?? 'Wakil Auditi',
+                'jabatan_wakil'  => 'Kepala Teknik Tambang',
+                'periode'        => '1 Januari – 31 Desember '.($tahun - 1),
+                'sifat_kontak'   => 'formal',
+                'layak'          => $tuntas ? 'layak' : '',
+                'jumlah_pekerja' => (string) max(1, (int) $this->c->workers_employee + (int) $this->c->workers_sub),
+                'kelas_risiko'   => in_array($this->c->risk_class, SmkpTahap::kelasRisiko(), true) ? $this->c->risk_class : 'Tinggi',
+                'mandays_dasar'  => '12',
+                'jumlah_auditor' => '2',
+                'penyesuaian'    => '',
+                'kesimpulan'     => $tuntas ? 'Audit layak dilaksanakan; dokumentasi tujuh elemen lengkap.' : '',
+                'kelayakan'      => array_fill_keys(array_keys(SmkpTahap::indikatorKelayakan()), $tuntas ? 'Memadai' : ''),
+                'faktor'         => array_fill_keys(array_keys(SmkpTahap::faktorPenyesuaian()), false),
+            ];
+
+            $a = $this->baru(SmkpAudit::class, [
+                'tahun'           => $tahun,
+                'judul'           => 'Audit Internal SMKP Minerba '.$tahun,
+                'status'          => $status,
+                'tahap'           => $tuntas ? SmkpTahap::PELAPORAN : SmkpTahap::PERMULAAN,
+                'tanggal_mulai'   => $mulai->toDateString(),
+                'tanggal_selesai' => $tuntas ? Carbon::create($tahun, 3, 14)->toDateString() : null,
+                'ketua_auditor'   => $ketua,
+                'user_id'         => $this->pengaju?->id,
+                'hasil'           => $this->smkpHasil($tuntas),
+                'permulaan'       => $permulaan,
+                'kinerja'         => ['cidera_ringan' => '2', 'cidera_berat' => '0', 'mati' => '0', 'fr' => '0,85', 'sr' => '12', 'berbahaya' => '1'],
+                'kecukupan'       => $tuntas
+                    ? array_fill_keys(array_column(Smkp::elemen(), 'kode'), ['status' => SmkpTahap::LENGKAP, 'ket' => ''])
+                    : [],
+                'rencana'         => $tuntas ? [
+                    'nomor'           => '',
+                    'tujuan'          => 'Menilai kesesuaian penerapan SMKP Minerba terhadap Lampiran II Kepdirjen 185.K/37.04/DJB/2019.',
+                    'kriteria'        => SmkpTahap::KRITERIA_AUDIT,
+                    'ruang_lingkup'   => 'Seluruh area operasi penambangan, pengolahan, dan penunjang.',
+                    'tanggal_mulai'   => $mulai->toDateString(),
+                    'tanggal_selesai' => Carbon::create($tahun, 3, 14)->toDateString(),
+                    'susunan'         => array_map(fn ($k) => ['tanggal' => $mulai->toDateString(), 'waktu' => '08.00', 'kegiatan' => $k, 'auditi' => 'KTT', 'auditor' => 'Tim Audit'],
+                        SmkpTahap::kegiatanLapangan()),
+                    'tugas'           => [
+                        ['nama' => $ketua, 'peran' => 'Lead Auditor', 'registrasi' => 'REG-0001', 'lingkup' => 'Elemen I–IV'],
+                        ['nama' => $this->pengaju?->name ?? 'Auditor Internal', 'peran' => 'Auditor', 'registrasi' => 'REG-0002', 'lingkup' => 'Elemen V–VII'],
+                    ],
+                    'sumberdaya'      => SmkpTahap::fasilitasBawaan(),
+                    'metode'          => 'Tinjauan dokumen dan rekaman, wawancara, observasi lapangan.',
+                    'metode_sampel'   => ['I.1' => ['metode' => 'Tinjauan Dokumen dan Rekaman, Wawancara', 'sampel' => 'Kebijakan keselamatan; KTT']],
+                    'pengesahan'      => [
+                        'ktt'   => ['nama' => (string) ($this->c->ktt ?: 'Kepala Teknik Tambang'), 'jabatan' => 'Kepala Teknik Tambang', 'tanggal' => $mulai->toDateString()],
+                        'pjo'   => ['nama' => (string) ($this->c->pjo ?: ''), 'jabatan' => 'Penanggung Jawab Operasional', 'tanggal' => ''],
+                        'ketua' => ['nama' => $ketua, 'jabatan' => 'Ketua Tim Audit', 'tanggal' => $mulai->toDateString()],
+                    ],
+                ] : [],
+                'risiko'          => $tuntas ? ['present' => [['kegiatan' => 'Pengangkutan', 'risiko' => 'Tabrakan unit di jalan hauling', 'nilai' => '16']], 'future' => []] : [],
+
+                /* Formulir Kesesuaian dan Rekomendasi & OFI — praktik
+                   terbaik dan peluang perbaikan atas butir yang sudah
+                   penuh. */
+                'kesesuaian'      => $tuntas ? [
+                    ['elemen' => 'I', 'sub' => 'I.1', 'subsub' => '', 'keterangan' => 'Kebijakan keselamatan ditinjau tiap tahun dan dikomunikasikan pada seluruh induksi.'],
+                ] : [],
+                'rekomendasi'     => $tuntas ? [
+                    ['elemen' => 'I', 'sub' => 'I.2', 'subsub' => '', 'uraian' => 'Cakupan komunikasi kebijakan baru pada area produksi utama; perluas ke area penunjang pada periode berikutnya.'],
+                    ['elemen' => 'VI', 'sub' => 'VI.1', 'subsub' => '', 'uraian' => 'Bukti masih berupa berkas cetak; pemindaian ke sistem akan mempercepat penelusuran saat audit eksternal.'],
+                ] : [],
+            ]);
+            if ($tuntas) {
+                $a->forceFill(['mandays_tetap' => SmkpTahap::mandays($permulaan)])->save();
+            }
+            $n++;
+
+            /* ── temuan ──
+
+               Diangkat dari nilai seperti tombol "Angkat temuan": kode dan
+               kategorinya sah. Ketiga status dipakai sekaligus, dan satu
+               temuan sengaja MELEWATI targetnya — keterlambatan yang tidak
+               pernah muncul di data contoh tidak membuktikan penghitungnya
+               bekerja. */
+            $usulan = array_slice(Smkp::temuan((array) $a->hasil), 0, $tuntas ? 3 : 2);
+            $urut = [];
+            foreach ($usulan as $i => $u) {
+                [$st, $targetHari, $selesaiHari] = [['Closed', -60, -35], ['In Progress', 20, null], ['Open', -8, null]][$i];
+                $urut[$u['jenis']] = ($urut[$u['jenis']] ?? 0) + 1;
+
+                $t = $this->baru(SmkpFinding::class, [
+                    'audit_id'          => $a->id,
+                    'nomor'             => $a->nomorTemuanBaru($u['jenis'], $urut[$u['jenis']]),
+                    'kode_kriteria'     => $u['kode'],
+                    'jenis'             => $u['jenis'],
+                    'uraian'            => 'Bukti penerapan '.mb_strtolower($u['uraian']).' belum lengkap saat audit lapangan.',
+                    'lokasi'            => 'Kantor site',
+                    'akar_masalah'      => 'Pemilik proses belum menetapkan jadwal pemeliharaan rekaman.',
+                    'tindakan'          => $st === 'Open' ? null : 'Tetapkan pemilik proses dan jadwal pemeliharaan rekaman.',
+                    'penanggung_jawab'  => $this->peninjau?->name ?? 'Kepala Teknik Tambang',
+                    'target_selesai'    => $this->kini->copy()->addDays($targetHari)->toDateString(),
+                    'tanggal_selesai'   => $selesaiHari === null ? null : $this->kini->copy()->addDays($selesaiHari)->toDateString(),
+                    'status'            => $st,
+                    'verifikasi'        => $st === 'Closed' ? 'Diverifikasi ketua auditor; bukti memadai.' : null,
+                ]);
+                $n++;
+
+                // Kiriman tindak lanjut auditi atas temuan yang sudah dikerjakan.
+                if ($st !== 'Open') {
+                    $this->baru(SmkpTindakLanjut::class, [
+                        'finding_id'       => $t->id,
+                        'user_id'          => $this->pengaju?->id,
+                        'akar_masalah'     => 'Pemilik proses belum menetapkan jadwal pemeliharaan rekaman.',
+                        'tindakan'         => 'Jadwal pemeliharaan rekaman ditetapkan dan disosialisasikan.',
+                        'bukti_perbaikan'  => 'Notulen sosialisasi dan jadwal yang ditandatangani KTT.',
+                        'penanggung_jawab' => 'Kepala Teknik Tambang',
+                        'lampiran'         => [],
+                    ]);
+                    $n++;
+                }
+            }
+
+            /* ── peserta rapat ── */
+
+            foreach ([
+                ['pembukaan', 'Kepala Teknik Tambang',   'KTT'],
+                ['pembukaan', 'Ketua Auditor Internal',  'Auditor'],
+                ['penutupan', 'Kepala Teknik Tambang',   'KTT'],
+                ['penutupan', 'Pengawas Operasional',    'Auditee'],
+            ] as $j => [$rapat, $jabatan, $peran]) {
+                if (!$tuntas && $rapat === 'penutupan') continue;
+
+                $this->baru(SmkpAttendee::class, [
+                    'audit_id'   => $a->id,
+                    'rapat'      => $rapat,
+                    'nama'       => [$this->peninjau?->name ?? 'Kepala Teknik Tambang',
+                                     $this->pengaju?->name  ?? 'Auditor Internal'][$j % 2],
+                    'jabatan'    => $jabatan,
+                    'perusahaan' => $this->c->name,
+                ]);
+                $n++;
+            }
+
+            $n += $this->smkpBukti($a);
+        }
+
+        return $n;
+    }
+
+    /**
+     * Nilai tiap butir kriteria, sebaran yang dapat dihitung ulang.
+     *
+     * DITENTUKAN DARI POSISI BUTIR, bukan diacak. Data contoh yang
+     * berubah tiap kali dimuat membuat dua orang yang membandingkan
+     * layarnya memperoleh angka berbeda, dan tidak ada cara mengetahui
+     * mana yang salah. Polanya sengaja sederhana sehingga skornya dapat
+     * diperiksa dengan tangan:
+     *
+     *   tiap butir ke-17  di luar lingkup perusahaan (N/A)
+     *   tiap butir ke-7   jatuh — inilah yang melahirkan temuan
+     *   sisanya           penuh atau hampir penuh
+     *
+     * Audit yang BELUM selesai hanya diisi sebagian: audit berjalan yang
+     * seluruh butirnya sudah dinilai adalah keadaan yang tidak mungkin,
+     * dan bilah kemajuan yang selalu penuh tidak membuktikan apa pun.
+     *
+     * @return array<string,array<string,mixed>>
+     */
+    private function smkpHasil(bool $tuntas): array
+    {
+        $hasil = [];
+        $butir = Smkp::butir();
+        $batas = $tuntas ? count($butir) : (int) round(count($butir) * 0.55);
+
+        foreach ($butir as $i => $b) {
+            if ($i >= $batas) break;                 // sisanya belum dinilai
+
+            $maks = (int) $b['maks'];
+            $urut = $i + 1;
+
+            if ($urut % 17 === 0) {
+                $hasil[$b['kode']] = ['v' => Smkp::NA];
+                continue;
+            }
+
+            $nilai = match (true) {
+                $urut % 7 === 0  => 0,                        // jatuh — calon temuan
+                $urut % 5 === 0  => (int) floor($maks / 2),    // separuh
+                $urut % 3 === 0  => max(0, $maks - 1),         // hampir penuh
+                default          => $maks,                    // penuh
+            };
+
+            $hasil[$b['kode']] = [
+                'v'     => $nilai,
+                'ket'   => $nilai === 0
+                    ? 'Bukti yang diminta tidak dapat ditunjukkan saat audit lapangan.'
+                    : '',
+                'bukti' => $nilai === 0 ? '' : 'Dokumen dan wawancara pemilik proses.',
+            ];
+        }
+
+        return $hasil;
+    }
+
+    /**
+     * Berkas bukti kelengkapan pada beberapa butir kriteria.
+     *
+     * BERKASNYA SENGAJA TIDAK ADA DI DISK. Data contoh tidak mengunggah
+     * apa pun, dan menaruh berkas palsu di disk tertutup berarti data
+     * contoh meninggalkan berkas yang tidak ikut terbuang saat data
+     * contohnya dibuang. Yang membukanya memperoleh 404 dari rute
+     * penyaji — jawaban yang benar bagi berkas yang memang tidak ada.
+     *
+     * Status verifikasinya dicampur supaya antrean verifikasi auditor
+     * punya isi: sebagian diterima, satu menunggu, satu perlu perbaikan.
+     */
+    private function smkpBukti(SmkpAudit $a): int
+    {
+        $n = 0;
+
+        foreach ([
+            ['I.1',    'SOP-HSE-001 Kebijakan Keselamatan rev.3',      'kebijakan-keselamatan-rev3.pdf', 412_000, SmkpBukti::DITERIMA],
+            ['I.1',    'Notulen tinjauan manajemen 12 Maret',          'notulen-tinjauan-manajemen.pdf',  188_000, SmkpBukti::DITERIMA],
+            ['II.2.1', 'Risalah komunikasi risiko lintas departemen',  'risalah-komunikasi-risiko.pdf',   264_000, SmkpBukti::MENUNGGU],
+            ['III.1',  'Struktur organisasi KP dan surat penunjukan',  'struktur-organisasi-kp.pdf',      356_000, SmkpBukti::DITERIMA],
+            ['IV.2.1', 'Rekaman inspeksi jalan angkut dua bulan',      'inspeksi-jalan-angkut.pdf',       144_000, SmkpBukti::DITOLAK],
+        ] as [$kode, $keterangan, $berkas, $ukuran, $status]) {
+            $this->baru(SmkpBukti::class, [
+                'audit_id'          => $a->id,
+                'kode'              => $kode,
+                'keterangan'        => $keterangan,
+                'path'              => SmkpBukti::folder($a->id).'/contoh-'.str($berkas)->slug().'.pdf',
+                'nama'              => $berkas,
+                'ukuran'            => $ukuran,
+                'mime'              => 'application/pdf',
+                'user_id'           => $this->pengaju?->id,
+                'status'            => $status,
+                'catatan'           => $status === SmkpBukti::DITOLAK ? 'Rekaman bulan kedua belum ditandatangani pengawas.' : null,
+                'diverifikasi_oleh' => $status === SmkpBukti::MENUNGGU ? null : $this->peninjau?->id,
+                'diverifikasi_pada' => $status === SmkpBukti::MENUNGGU ? null : $this->kini,
+            ]);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /* ─────────── prosedur & evaluasi SOP ─────────── */
+
+    /**
+     * Prosedur berikut satu evaluasi SOP beserta soalnya.
+     *
+     * Soalnya diisi sungguhan, bukan sekadar satu baris judul. Halaman
+     * evaluasi menghitung nilai lulus dari jumlah soal, dan evaluasi
+     * tanpa soal memulangkan pembagian dengan nol — bentuk kegagalan
+     * yang hanya muncul ketika ada yang benar-benar mengerjakannya,
+     * yaitu justru bukan saat diperiksa.
+     */
+    private function prosedur(): int
+    {
+        $n = 0;
+
+        $daftar = [
+            ['Penanganan Bahan Bakar di Area Tambang',     'Operasional'],
+            ['Pengoperasian Alat Angkut di Jalan Hauling', 'Operasional'],
+            ['Tanggap Darurat Kebakaran Workshop',         'Keselamatan'],
+            ['Pemeriksaan Harian Kolam Pengendap',         'Lingkungan'],
+        ];
+
+        foreach ($daftar as $i => [$judul, $kategori]) {
+            $kode = Nomor::susun('Prosedur', $this->c, $i + 1)
+                ?: 'SOP-'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT);
+            $p = $this->baru(Procedure::class, [
+                'code'        => $kode,
+                'title'       => $judul,
+                'category'    => $kategori,
+                'description' => 'Prosedur contoh untuk memeriksa tampilan dan penomoran.',
+                'position'    => $i + 1,
+            ]);
+            $n++;
+
+            // Satu evaluasi pada dua prosedur pertama saja — supaya
+            // halaman daftar memperlihatkan keduanya: yang punya
+            // evaluasi dan yang belum.
+            if ($i > 1) continue;
+
+            $ev = SopEvaluation::withoutGlobalScopes()->create([
+                'procedure_id'     => $p->id,
+                'title'            => 'Evaluasi '.$judul,
+                'description'      => 'Evaluasi contoh.',
+                'passing_score'    => 70,
+                'duration_minutes' => 15,
+                'is_active'        => true,
+                'position'         => 1,
+            ]);
+            $n++;
+
+            $soal = [
+                ['Apa langkah pertama sebelum mengisi bahan bakar?',
+                 ['Matikan mesin', 'Nyalakan mesin', 'Biarkan idle', 'Panggil rekan'], 0],
+                ['Berapa jarak aman minimum dari sumber api?',
+                 ['1 meter', '5 meter', '10 meter', 'Tidak diatur'], 2],
+                ['Siapa yang berwenang menghentikan pekerjaan tidak aman?',
+                 ['Hanya KTT', 'Hanya pengawas', 'Setiap pekerja', 'Hanya kontraktor'], 2],
+            ];
+
+            foreach ($soal as $k => [$tanya, $pilihan, $benar]) {
+                SopEvaluationQuestion::withoutGlobalScopes()->create([
+                    'evaluation_id' => $ev->id,
+                    'question'      => $tanya,
+                    'options'       => $pilihan,
+                    'correct_index' => $benar,
+                    'order_index'   => $k + 1,
+                ]);
+                $n++;
+            }
+
+            /* Percobaan pengerjaan: DUA, bertanggal mundur dan berbeda
+               hasil. Satu percobaan yang gagal saja membuat rekapitulasi
+               kelulusan selalu menjawab 0% — angka yang tidak dapat
+               dibedakan dari penyaring kelulusan yang rusak. */
+            if ($this->pengaju) {
+                foreach ([[67, 2, false, 18], [100, 3, true, 4]] as [$nilai, $benar, $lulusSop, $mundur]) {
+                    $percobaan = SopEvaluationAttempt::withoutGlobalScopes()->create([
+                        'user_id'       => $this->pengaju->id,
+                        'evaluation_id' => $ev->id,
+                        'procedure_id'  => $p->id,
+                        'score'         => $nilai,
+                        'total'         => count($soal),
+                        'correct'       => $benar,
+                        'passed'        => $lulusSop,
+                        'answers'       => [0, 1, 2],
+                    ]);
+
+                    $this->bertanggal($percobaan, $mundur + ($i * 5));
+                    $n++;
+                }
+            }
+        }
+
+        return $n;
+    }
+
+    /* ─────────── berita ─────────── */
+
+    /**
+     * Pengumuman, sebagian sudah terbit dan satu masih terjadwal.
+     *
+     * Yang terjadwal sengaja ada: halaman depan menyaring berdasarkan
+     * tanggal terbit, dan penyaring itu tidak pernah terbukti bekerja
+     * bila seluruh contohnya sudah lewat tanggalnya.
+     */
+    private function berita(): int
+    {
+        $n = 0;
+
+        $daftar = [
+            ['Sosialisasi Prosedur Izin Kerja Khusus yang Baru', -21],
+            ['Hasil Audit Internal SMKP Triwulan Ini', -12],
+            ['Jadwal Pemeriksaan Kesehatan Berkala Pekerja Shift Malam', -4],
+            ['Simulasi Tanggap Darurat Bulan Depan', 9],
+        ];
+
+        /* Pembacanya DUA ORANG YANG SUDAH DIPEGANG kelas ini, bukan
+           seluruh pengguna perusahaan yang dibaca dari basis data.
+           Bacaan dari basis data bergantung pada berapa pengguna yang
+           kebetulan ada saat pemuatan berjalan — dan jumlah itu tumbuh
+           tiap kali data contoh dimuat ulang, sehingga barisnya
+           bertambah pada muat kedua meski yang lama sudah dibuang.
+           Terukur: empat baris menjadi dua puluh satu. */
+        $pembaca = array_values(array_filter([
+            $this->pengaju?->id, $this->peninjau?->id,
+        ]));
+
+        foreach ($daftar as $ke => [$judul, $geser]) {
+            $berita = $this->baru(News::class, [
+                'title'        => $judul,
+
+                /* Ringkasan DITULIS pada sebagian, dikosongkan pada
+                   sisanya. Keduanya jalur yang berbeda di server —
+                   News::ringkasan() memakai yang ditulis bila ada dan
+                   memotong isinya bila tidak — dan jalur yang tidak
+                   pernah dilewati data contoh adalah jalur yang tidak
+                   pernah terlihat rusak. */
+                'excerpt'      => $ke % 2 === 0
+                    ? 'Ringkasan contoh yang ditulis penulisnya sendiri, bukan potongan otomatis.'
+                    : null,
+
+                'content'      => "Pengumuman contoh untuk memeriksa tampilan halaman berita.\n\n"
+                    ."Isinya sengaja beberapa paragraf agar potongan ringkasnya pada daftar "
+                    ."benar-benar terpotong, bukan tampak utuh karena kebetulan pendek.",
+                'published_at' => $this->kini->copy()->addDays($geser)->toDateString(),
+            ]);
+            $n++;
+
+            /* Yang TERJADWAL tidak punya pembaca sama sekali — ia belum
+               terbit. Yang sudah terbit dibaca sebagian saja: "dibaca
+               seluruh regu" dan "belum dibaca siapa pun" sama-sama tidak
+               dapat memperlihatkan selisih yang justru ditanyakan
+               pengawas. */
+            if (!$berita || $geser > 0) continue;
+
+            foreach (array_slice($pembaca, 0, max(1, count($pembaca) - $ke)) as $idPembaca) {
+                $bacaan = NewsRead::withoutGlobalScopes()->create([
+                    'news_id' => $berita->id, 'user_id' => $idPembaca,
+                ]);
+
+                $this->bertanggal($bacaan, abs($geser) - 1);
+                $n++;
+            }
+        }
+
+        return $n;
+    }
+
+    /* ─────────── LMS ─────────── */
+
+    /**
+     * Satu kursus utuh: modul, materi, kuis bersoal, pendaftaran,
+     * percobaan, sertifikat, dan evaluasi pasca-pelatihan.
+     *
+     * Dibuat UTUH, bukan sekadar satu baris kursus, sebab yang hendak
+     * diperiksa adalah alurnya: mendaftar → belajar → mengerjakan kuis
+     * → lulus → menerima sertifikat → dievaluasi. Kursus tanpa
+     * pendaftaran hanya membuktikan halaman daftarnya tergambar.
+     *
+     * Kursus, kuis, dan template inspeksi menyebut `demo_company_id`
+     * karena ketiganya pustaka bersama dan tidak punya company_id yang
+     * dapat dipakai penghapus. Kolom itu TIDAK menyaring pembacaan —
+     * pustakanya tetap terlihat semua orang — ia hanya menjawab
+     * "dibuang bersama perusahaan contoh mana". Sertifikat punya
+     * company_id sendiri dan mengikuti jalur biasa.
+     */
+    private function lms(): int
+    {
+        if (!$this->pengaju) {
+            $this->catatan[] = 'Data contoh LMS dilewati: perusahaan ini belum punya pengguna '
+                .'yang dapat didaftarkan sebagai peserta.';
+
+            return 0;
+        }
+
+        $n = 0;
+
+        /** @var list<Module> dipakai mencatat penyelesaian per peserta */
+        $modulKursus = [];
+
+        /** @var list<Material> dipakai mencatat penyelesaian dan tanya jawab */
+        $materiKursus = [];
+
+        $kursus = Course::withoutGlobalScopes()->create([
+            'title'            => 'Keselamatan Kerja Tambang Dasar',
+            'description'      => 'Kursus contoh: pengenalan bahaya, APD, dan tanggap darurat.',
+            'category'         => 'Keselamatan',
+            'cert_template'    => 'default',
+            'auto_certificate' => true,
+            'require_code'     => false,
+            'require_evaluation' => false,
+            'demo_company_id'  => $this->c->id,
+        ]);
+        $n++;
+
+        /* DUA KURSUS PENDAMPING, tanpa modul dan tanpa kuis.
+         *
+         * Ada bukan sebagai pengisi melainkan karena satu kursus tidak
+         * dapat membuktikan apa pun yang membedakan kursus. Grafik
+         * "Kemajuan tiap kursus" berbatang tunggal terlihat benar
+         * apapun urutannya; sebaran status berisi satu kursus tidak
+         * dapat memperlihatkan selisih antara selesai, berjalan, dan
+         * belum diikuti. Keduanya berkategori berbeda pula, sehingga
+         * pintasan kategori di kaki dasbor punya lebih dari satu baris.
+         */
+        $pendamping = [];
+
+        foreach ([
+            ['Pengoperasian Alat Angkut yang Aman', 'Operasional',
+             'Kursus contoh: jarak aman, blind spot, dan aturan jalan hauling.'],
+            ['Pengelolaan Lingkungan Tambang', 'Lingkungan',
+             'Kursus contoh: kolam pengendap, baku mutu, dan reklamasi.'],
+        ] as [$judulKursus, $kategoriKursus, $uraianKursus]) {
+            $pendamping[] = Course::withoutGlobalScopes()->create([
+                'title'            => $judulKursus,
+                'description'      => $uraianKursus,
+                'category'         => $kategoriKursus,
+                'cert_template'    => 'default',
+                'auto_certificate' => false,
+                'require_code'     => false,
+                'require_evaluation' => false,
+                'demo_company_id'  => $this->c->id,
+            ]);
+            $n++;
+        }
+
+        foreach ([
+            ['Pengenalan Bahaya Tambang', 'Jenis bahaya di area tambang terbuka.'],
+            ['Alat Pelindung Diri',       'Pemilihan dan pemakaian APD sesuai pekerjaan.'],
+            ['Tanggap Darurat',           'Langkah pertama saat kecelakaan dan kebakaran.'],
+        ] as $i => [$judul, $uraian]) {
+            $modul = Module::withoutGlobalScopes()->create([
+                'course_id' => $kursus->id, 'title' => $judul,
+                'description' => $uraian, 'order_index' => $i + 1,
+            ]);
+            $n++;
+
+            /* DUA materi per modul, dan jenisnya berbeda.
+             *
+             * Satu materi per modul tidak dapat membuktikan apa pun yang
+             * membedakan materi: kurikulum berbutir tunggal terlihat
+             * benar apapun urutannya, "Materi 2 dari 6" tidak pernah
+             * tergambar, dan tombol sebelumnya-berikutnya tidak punya
+             * tujuan di dalam modulnya sendiri.
+             *
+             * Jenis pertama 'video' dengan tautan YouTube: itu
+             * satu-satunya jalur yang melewati penyaring sematan
+             * App\Support\Materi, dan jalur yang tidak pernah dilewati
+             * data contoh adalah jalur yang tidak pernah terlihat rusak. */
+            $materiModul = [
+                ['Pengantar '.$judul, 'video', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 12],
+                ['Praktik '.$judul,   'document', null, 25],
+            ];
+
+            foreach ($materiModul as $urut => [$judulMateri, $jenisMateri, $tautanMateri, $menit]) {
+                $materi = Material::withoutGlobalScopes()->create([
+                    'course_id'   => $kursus->id,
+                    'module_id'   => $modul->id,
+                    'title'       => $judulMateri,
+                    'description' => 'Materi contoh untuk memeriksa tampilan halaman belajar.',
+                    'type'        => $jenisMateri,
+                    'url'         => $tautanMateri,
+
+                    'outcomes'    => [
+                        'Mengenali '.lcfirst($judul).' di area kerja sendiri',
+                        'Menyebutkan langkah pertama ketika menemukannya',
+                        'Melaporkannya lewat jalur yang benar',
+                    ],
+
+                    /* Prasyarat hanya pada materi KEDUA tiap modul.
+                       Seluruhnya berprasyarat membuat kotak kuning
+                       "Sebelum mulai" muncul di setiap halaman, dan yang
+                       muncul di mana-mana berhenti dibaca. */
+                    'prerequisite' => $urut === 1
+                        ? 'Selesaikan materi sebelumnya pada modul ini lebih dulu.' : null,
+
+                    'duration_minutes' => $menit,
+
+                    'content' => $tautanMateri ? null
+                        : 'Isi materi contoh. Beberapa paragraf agar halaman belajar '
+                          ."benar-benar punya sesuatu untuk digulir.\n\n"
+                          .'Bahaya di area tambang tidak selalu terlihat; yang paling sering '
+                          .'melukai justru yang sudah biasa dilewati setiap hari.',
+
+                    'sop_url'     => $urut === 0 ? 'https://contoh.test/sop-'.($i + 1).'.pdf' : null,
+                    'order_index' => $urut + 1,
+                ]);
+                $n++;
+
+                $materiKursus[] = $materi;
+
+                /* Lampiran hanya pada materi pertama kursus. Tab
+                   "Lampiran" yang selalu berisi tidak dapat
+                   memperlihatkan bagaimana rupanya ketika kosong — dan
+                   kosong adalah keadaan yang paling sering terjadi. */
+                if ($i === 0 && $urut === 0) {
+                    foreach ([
+                        ['Lembar periksa harian (PDF)', 'https://contoh.test/lembar-periksa.pdf'],
+                        ['Formulir izin kerja khusus',  'https://contoh.test/izin-kerja.docx'],
+                    ] as $ke => [$judulLampiran, $tautanLampiran]) {
+                        MaterialAttachment::withoutGlobalScopes()->create([
+                            'material_id' => $materi->id,
+                            'title'       => $judulLampiran,
+                            'url'         => $tautanLampiran,
+                            'order_index' => $ke + 1,
+                        ]);
+                        $n++;
+                    }
+                }
+            }
+
+            $modulKursus[] = $modul;
+        }
+
+        $kuis = Quiz::withoutGlobalScopes()->create([
+            'course_id' => $kursus->id, 'title' => 'Kuis Keselamatan Kerja Tambang Dasar',
+            'pass_score' => 70, 'demo_company_id' => $this->c->id,
+        ]);
+        $n++;
+
+        $soal = [
+            ['Apa yang pertama dilakukan saat melihat rekan tertimpa material?',
+             ['Menolong sendiri', 'Amankan lokasi lalu panggil bantuan', 'Memotret kejadian', 'Melapor besok'], 1],
+            ['APD wajib di area front loading adalah?',
+             ['Helm dan rompi saja', 'Helm, rompi, sepatu, dan kacamata', 'Sepatu saja', 'Tidak wajib'], 1],
+            ['Siapa yang berwenang menghentikan pekerjaan tidak aman?',
+             ['Hanya KTT', 'Hanya pengawas', 'Setiap pekerja', 'Hanya kontraktor'], 2],
+        ];
+
+        foreach ($soal as $i => [$tanya, $pilihan, $benar]) {
+            QuizQuestion::withoutGlobalScopes()->create([
+                'quiz_id' => $kuis->id, 'question' => $tanya, 'options' => $pilihan,
+                'correct_index' => $benar, 'order_index' => $i + 1,
+            ]);
+            $n++;
+        }
+
+        /* Peserta: pengaju dan peninjau, supaya daftar pesertanya tidak
+           berisi satu nama saja dan rekapitulasinya punya sebaran. */
+        $peserta = array_values(array_filter([$this->pengaju, $this->peninjau]));
+
+        foreach ($peserta as $i => $orang) {
+            $lulus = $i === 0;
+
+            /* 'finished' / 'ongoing' — EJAAN YANG DIPAKAI APLIKASI, bukan
+               'completed' / 'in_progress'. Keduanya pernah tertulis di
+               sini, dan tidak satu baris kode pun membacanya: LearnController
+               menulis 'finished' saat kemajuan mencapai 100, dan halaman
+               sertifikat, halaman evaluasi, serta dasbor seluruhnya
+               menyaring dengan ejaan itu.
+
+               Kegagalannya diam sepenuhnya. Data contohnya tersimpan,
+               kursusnya muncul di daftar, dan hanya angkanya yang salah:
+               "Kursus Selesai 0" pada peserta yang seluruh modulnya sudah
+               tuntas, sertifikat yang tidak pernah dapat diklaim, dan
+               tombol "Lanjutkan Pembelajaran" yang membuka kursus
+               sembarang alih-alih yang sedang dikerjakan. */
+            Enrollment::withoutGlobalScopes()->create([
+                'user_id' => $orang->id, 'course_id' => $kursus->id,
+                'progress' => $lulus ? 100 : 60,
+                'status'   => $lulus ? 'finished' : 'ongoing',
+            ]);
+            $n++;
+
+            /* Pendaftaran pada kursus pendamping: satu berjalan, satu
+               belum disentuh sama sekali. Yang belum disentuh sengaja
+               TIDAK didaftarkan — "belum diikuti" adalah keadaan yang
+               harus dapat dibedakan dari "diikuti tetapi 0%". */
+            if (isset($pendamping[0])) {
+                Enrollment::withoutGlobalScopes()->create([
+                    'user_id' => $orang->id, 'course_id' => $pendamping[0]->id,
+                    'progress' => $lulus ? 35 : 10, 'status' => 'ongoing',
+                ]);
+                $n++;
+            }
+
+            /* BEBERAPA PERCOBAAN, BERTANGGAL MUNDUR.
+             *
+             * Satu percobaan bertanggal hari ini menggambar grafik
+             * kegiatan sebagai satu paku di tepi kanan dan sebaran
+             * nilai sebagai satu batang — keduanya benar dan keduanya
+             * tidak dapat dipakai memeriksa apa pun. Nilainya menaik
+             * sebagaimana orang yang mengulang: gagal, nyaris, lalu
+             * lulus. */
+            $riwayat = $lulus
+                ? [[52, 34], [68, 21], [100, 6]]
+                : [[45, 26], [67, 9]];
+
+            foreach ($riwayat as $k => [$nilai, $mundur]) {
+                $a = QuizAttempt::withoutGlobalScopes()->create([
+                    'user_id' => $orang->id, 'quiz_id' => $kuis->id,
+                    'score' => $nilai, 'passed' => $nilai >= 70,
+                ]);
+
+                $this->bertanggal($a, $mundur);
+                $n++;
+            }
+
+            /* Kemajuan belajar dicatat per modul, bukan hanya sebagai
+               persen pada pendaftaran. Halaman belajar menandai modul
+               mana yang sudah dilewati dari sini; tanpa barisnya,
+               peserta yang kemajuannya 100% tetap melihat seluruh
+               modulnya belum tercentang. */
+            $selesai = $lulus ? $modulKursus : array_slice($modulKursus, 0, 2);
+
+            /* Bertanggal mundur dan BERJARAK, bukan seluruhnya hari ini.
+               Tiga modul yang tercatat pada detik yang sama menggambarkan
+               orang yang menyelesaikan kursus dalam satu tarikan napas —
+               dan pada grafik kegiatan ia menjadi satu batang tunggal di
+               tepi kanan, tanpa ada yang dapat dibandingkan dengannya. */
+            foreach ($selesai as $k => $m) {
+                $mc = ModuleCompletion::withoutGlobalScopes()->create([
+                    'user_id' => $orang->id, 'module_id' => $m->id,
+                ]);
+
+                $this->bertanggal($mc, 30 - ($k * 9) - ($i * 3));
+                $n++;
+
+                /* Materi modul itu ikut tercatat tuntas.
+                   Modul yang tercentang sementara seluruh materinya masih
+                   kosong adalah keadaan yang TIDAK dapat terjadi lewat
+                   aplikasinya — modul menjadi selesai justru karena
+                   materinya tuntas — dan data contoh yang menampilkannya
+                   mengajari pembacanya aturan yang salah. */
+                foreach ($m->materials as $materi) {
+                    $sel = MaterialCompletion::withoutGlobalScopes()->create([
+                        'user_id' => $orang->id, 'material_id' => $materi->id,
+                    ]);
+
+                    $this->bertanggal($sel, 30 - ($k * 9) - ($i * 3));
+                    $n++;
+                }
+            }
+
+            /* SATU materi setengah jalan: modul berikutnya baru tersentuh
+               materi pertamanya. Tanpa ini tidak ada satu pun modul yang
+               "2 dari 3 materi" — dan justru keadaan itulah yang paling
+               banyak dilihat peserta sungguhan. */
+            $berikutnya = $modulKursus[count($selesai)] ?? null;
+
+            if ($berikutnya && $awalnya = $berikutnya->materials->first()) {
+                $sel = MaterialCompletion::withoutGlobalScopes()->create([
+                    'user_id' => $orang->id, 'material_id' => $awalnya->id,
+                ]);
+
+                $this->bertanggal($sel, 3 + $i);
+                $n++;
+            }
+
+            if (!$lulus) continue;
+
+            /* Hanya yang lulus yang bersertifikat — kalau semuanya
+               bersertifikat, aturan "sertifikat menyusul kelulusan"
+               tidak pernah terbukti berlaku. */
+            $this->baru(Certificate::class, [
+                'user_id'           => $orang->id,
+                'course_id'         => $kursus->id,
+                'certificate_number' => Nomor::susun('Sertifikat', $this->c, $i + 1)
+                    ?: 'SRT-'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT),
+                'recipient_name'    => $orang->name,
+                'course_title'      => $kursus->title,
+                'final_score'       => 100,
+                'issued_at'         => $this->kini->copy()->subDays(7 + ($i * 45)),
+                'verification_code' => strtoupper(substr(md5($kursus->id.'-'.$orang->id), 0, 10)),
+                'template'          => 'default',
+            ]);
+            $n++;
+
+            PostTrainingEvaluation::withoutGlobalScopes()->create([
+                'user_id'         => $orang->id,
+                'course_id'       => $kursus->id,
+                'trainer_id'      => $this->peninjau?->id,
+                'trainer_name'    => $this->peninjau?->name,
+                'knowledge_score' => 85, 'skill_score' => 80,
+                'attitude_score'  => 90, 'safety_score' => 88,
+                'overall_score'   => 86,
+                'recommendation'  => 'Layak bekerja mandiri dengan pengawasan berkala.',
+                'strengths'       => 'Disiplin memakai APD dan aktif melaporkan bahaya.',
+                'improvements'    => 'Perlu latihan tambahan pada prosedur tanggap darurat.',
+            ]);
+            $n++;
+        }
+
+        /* Satu utas tanya jawab, LENGKAP DENGAN JAWABANNYA.
+         *
+         * Pertanyaan tanpa jawaban adalah keadaan yang paling mudah
+         * dibuat dan paling sedikit membuktikan: ia tidak memperlihatkan
+         * bagaimana jawaban tergambar bersarang, siapa yang boleh
+         * menghapusnya, maupun bahwa utasnya memang satu tingkat saja. */
+        if ($this->peninjau && ($materiTanya = $materiKursus[1] ?? null)) {
+            $tanyaContoh = MaterialDiscussion::withoutGlobalScopes()->create([
+                'material_id' => $materiTanya->id,
+                'user_id'     => $this->pengaju->id,
+                'body'        => 'Kalau rambu di lapangan berbeda dengan yang ada di materi ini, '
+                    .'mana yang dipakai sebagai acuan?',
+            ]);
+
+            $this->bertanggal($tanyaContoh, 5);
+            $n++;
+
+            $jawabContoh = MaterialDiscussion::withoutGlobalScopes()->create([
+                'material_id' => $materiTanya->id,
+                'user_id'     => $this->peninjau->id,
+                'parent_id'   => $tanyaContoh->id,
+                'body'        => 'Yang dipakai selalu rambu terpasang di lapangan. Materi ini '
+                    .'diperbarui setiap kuartal; bila selisihnya tetap ada, laporkan ke pengawas area.',
+            ]);
+
+            $this->bertanggal($jawabContoh, 4);
+            $n++;
+        }
+
+        /* Template inspeksi TIDAK dibuat di sini.
+
+           Blok ini dulu membuat dua template lagi tanpa satu pun butir,
+           dan salah satunya berganda dengan template yang sudah dibuat
+           lengkap oleh inspeksi() di atas. Akibatnya dua-duanya buruk:
+           daftar template memuat nama yang sama dua kali sehingga yang
+           memilih tidak tahu mana yang benar, dan yang memilih salah
+           mendapat inspeksi tanpa daftar periksa — halaman yang terbuka
+           rapi dengan nol baris, yang terbaca sebagai modul rusak, bukan
+           sebagai template yang memang kosong. */
+
+        return $n;
     }
 
     /**

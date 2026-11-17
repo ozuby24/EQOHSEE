@@ -27,6 +27,7 @@ const form = useForm<Record<string, any>>({
   unsafe_condition: [] as string[],
   hirarki: '',
   rekomendasi: '',
+  batas_akhir: '',
   foto: [] as File[],
 });
 
@@ -122,7 +123,7 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
       <div class="grid gap-3 sm:grid-cols-2">
         <div>
           <label :class="label">Ditujukan kepada <span class="text-red-500">*</span></label>
-          <select v-model="form.company_id" :class="isian">
+          <select v-model="form.company_id" :class="isian" aria-label="Perusahaan">
             <option value="">— pilih perusahaan —</option>
             <option v-for="c in opsi.perusahaan" :key="c.id" :value="String(c.id)">{{ c.nama }}</option>
           </select>
@@ -135,7 +136,7 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
 
         <div>
           <label :class="label">Tanggal <span class="text-red-500">*</span></label>
-          <input v-model="form.tanggal" type="date" :class="isian">
+          <input v-model="form.tanggal" type="date" :class="isian" aria-label="Tanggal">
           <p v-if="form.errors.tanggal" class="text-[11.5px] text-red-600 mt-1">{{ form.errors.tanggal }}</p>
         </div>
         <div>
@@ -145,7 +146,7 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
 
         <div>
           <label :class="label">Lokasi</label>
-          <select v-model="form.lokasi" :class="isian">
+          <select v-model="form.lokasi" :class="isian" aria-label="Lokasi">
             <option value="">— pilih lokasi —</option>
             <option v-for="l in opsi.lokasi" :key="l" :value="l">{{ l }}</option>
             <option value="Lainnya">Lainnya…</option>
@@ -158,13 +159,13 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
 
         <div>
           <label :class="label">Risiko <span class="text-red-500">*</span></label>
-          <select v-model="form.risiko" :class="isian">
+          <select v-model="form.risiko" :class="isian" aria-label="Tingkat risiko">
             <option v-for="r in opsi.risiko" :key="r" :value="r">{{ r }}</option>
           </select>
         </div>
         <div>
           <label :class="label">Kategori <span class="text-red-500">*</span></label>
-          <select v-model="form.kategori" :class="isian">
+          <select v-model="form.kategori" :class="isian" aria-label="Kategori">
             <option value="">— pilih kategori —</option>
             <option v-for="k in opsi.kategori" :key="k" :value="k">{{ k }}</option>
           </select>
@@ -219,7 +220,7 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
       <div class="grid gap-3 sm:grid-cols-2">
         <div>
           <label :class="label">Hirarki pengendalian</label>
-          <select v-model="form.hirarki" :class="isian">
+          <select v-model="form.hirarki" :class="isian" aria-label="Hirarki pengendalian">
             <option value="">— pilih —</option>
             <option v-for="h in opsi.hirarki" :key="h" :value="h">{{ h }}</option>
           </select>
@@ -234,6 +235,20 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
       <div class="mt-3">
         <label :class="label">Rekomendasi perbaikan</label>
         <textarea v-model="form.rekomendasi" rows="3" :class="isian" style="resize:none"></textarea>
+      </div>
+
+      <div class="mt-3 sm:max-w-[240px]">
+        <label :class="label" for="batas-akhir">Batas akhir perbaikan</label>
+        <input id="batas-akhir" v-model="form.batas_akhir" type="date" :class="isian"
+              >
+        <!-- Dikatakan bahwa ia boleh kosong, dan apa akibatnya bila
+             kosong. Medan tanggal tanpa keterangan mengundang orang
+             mengisinya asal supaya formulirnya "lengkap", dan tenggat
+             asal adalah tenggat yang tidak ditagih siapa pun. -->
+        <p class="text-[11px] text-stone-400 mt-1.5 leading-relaxed">
+          Boleh dikosongkan bila tenggatnya belum disepakati. Yang terisi
+          akan muncul pada Register Tindakan Perbaikan dan ditandai bila lewat.
+        </p>
       </div>
     </div>
 

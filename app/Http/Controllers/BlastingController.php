@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Rules\DalamPerusahaan;
+
 use App\Models\{ActivityLog, Company, LedakHasil, LedakRencana, LedakTitik, LedakUkur, TindakLanjut};
 use App\Support\{Alur, KopDokumen, Peledakan, PeringatanPeledakan};
 use Illuminate\Http\Request;
@@ -205,7 +207,7 @@ class BlastingController extends Controller
     {
         $data = $this->pemilik($request->validate([
             'company_id'     => ['nullable', 'exists:companies,id'],
-            'ledak_titik_id' => ['required', 'exists:ledak_titiks,id'],
+            'ledak_titik_id' => ['required', new DalamPerusahaan('ledak_titiks')],
             'jarak_m'        => ['required', 'numeric', 'min:1', 'max:50000'],
             'ppv_mm_s'       => ['required', 'numeric', 'min:0.0001', 'max:10000'],
             'frekuensi_hz'   => ['nullable', 'numeric', 'min:0', 'max:1000'],
@@ -283,7 +285,7 @@ class BlastingController extends Controller
         [$dari, $sampai] = $this->rentang($request);
         $d = $this->kumpulkan($dari, $sampai);
 
-        $perusahaan = auth()->user()?->company ?: Company::first();
+        $perusahaan = $this->perusahaanKop();
 
         return Inertia::render('Print/Peledakan', [
             'dok'    => KopDokumen::untuk('laporan-peledakan', $perusahaan),
@@ -382,7 +384,7 @@ class BlastingController extends Controller
 
     private function kumpulkan(Carbon $dari, Carbon $sampai): array
     {
-        $rencana = LedakRencana::with(['hasil', 'ukur.titik'])
+        $rencana = LedakRencana::with(['hasil', 'ukur.titik', 'ukur.rencana'])
             ->whereBetween('tanggal_rencana', [$dari, $sampai])
             ->orderByDesc('tanggal_rencana')->get();
 
@@ -394,7 +396,12 @@ class BlastingController extends Controller
         // situs adalah sifat batuannya, bukan sifat periodenya, dan
         // membatasinya pada satu bulan membuang data yang justru
         // membuatnya layak dipercaya.
-        $semuaUkur = LedakUkur::with('titik')->get();
+        /* `rencana` ikut dimuat: baris di bawah membaca
+           $u->rencana?->isi_per_tunda_kg untuk SETIAP pengukuran, dan
+           kalibrasi ini sengaja memakai seluruh pengukuran yang pernah
+           ada — jadi jumlah kueri yang ditimbulkannya tumbuh seumur
+           pemasangan, bukan sebesar rentang tanggal yang sedang dilihat. */
+        $semuaUkur = LedakUkur::with(['titik', 'rencana'])->get();
 
         $tetapan = Peledakan::kalibrasi(
             $semuaUkur->map(fn (LedakUkur $u) => [
@@ -446,12 +453,4 @@ class BlastingController extends Controller
         return $dari->greaterThan($sampai) ? [$sampai, $dari] : [$dari, $sampai];
     }
 
-    private function pemilik(array $data): array
-    {
-        if (!auth()->user()?->isAdmin()) {
-            $data['company_id'] = auth()->user()?->company_id;
-        }
-
-        return $data;
-    }
 }

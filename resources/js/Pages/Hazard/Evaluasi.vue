@@ -34,24 +34,38 @@ const kartu = [
   { k: 'naikJadiHazard' as const, l: 'Dinaikkan jadi hazard', c: 'text-amber-600' },
 ];
 
+/* pr-9, bukan px-3.5 di kedua sisi.
+
+   Lebar bawaan <select> diukur dari pilihan TERPANJANGNYA tanpa
+   memperhitungkan anak panahnya. Pada saringan yang pilihan
+   terpanjangnya justru label bawaannya — "Semua risiko" lebih panjang
+   daripada Tinggi/Sedang/Rendah — panah itu tergambar menimpa huruf
+   terakhirnya. Tetangganya tampak benar hanya karena kebetulan punya
+   pilihan yang lebih panjang daripada labelnya, sehingga cacatnya
+   terbaca sebagai satu-dua kotak yang aneh alih-alih aturan yang kurang.
+
+   Diperbaiki pada kelasnya, bukan lewat aturan `select{...}` global:
+   utilitas Tailwind berupa KELAS, dan kelas selalu mengalahkan pemilih
+   elemen berapa pun urutannya — aturan global itu sempat ditulis, tidak
+   mengubah apa pun, lalu dibuang. */
 const pilihan =
-  'ring-focus rounded-xl border border-stone-200 px-3.5 py-2.5 text-[12.5px] font-semibold text-stone-600';
+  'ring-focus rounded-xl border border-stone-200 pl-3.5 pr-9 py-2.5 text-[12.5px] font-semibold text-stone-600';
 </script>
 
 <template>
   <Head title="Evaluasi Temuan" />
 
-  <div class="max-w-6xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <div class="bg-white rounded-2xl shadow-card border border-stone-100 p-3 flex flex-wrap items-center gap-2">
-      <span class="text-[12.5px] font-semibold text-stone-500 px-1">Saring</span>
+      <span class="block text-[12.5px] font-semibold text-stone-500 px-1">Saring</span>
 
-      <select v-model="isi.bulan" :class="pilihan" @change="kirim">
+      <select v-model="isi.bulan" :class="pilihan" @change="kirim" aria-label="Bulan">
         <option :value="null">Semua bulan</option>
         <option v-for="b in opsi.bulan" :key="b.nilai" :value="b.nilai">{{ b.label }}</option>
       </select>
 
-      <select v-model="isi.perusahaan" :class="pilihan" @change="kirim">
+      <select v-model="isi.perusahaan" :class="pilihan" @change="kirim" aria-label="Perusahaan">
         <option :value="null">Semua perusahaan</option>
         <option v-for="c in opsi.perusahaan" :key="c.id" :value="String(c.id)">{{ c.nama }}</option>
       </select>

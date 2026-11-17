@@ -1,0 +1,484 @@
+{
+  "meta": {
+    "method": "PJ",
+    "item": "1.1.1",
+    "title": "Pengujian Kesadaran Risiko Keselamatan Pertambangan",
+    "pick": 15,
+    "secondsPerQuestion": 90,
+    "passNote": "Nilai tidak ditampilkan. Hasil seluruh peserta dirata-ratakan menjadi tingkat 1–5 pada penilaian PTPKKP."
+  },
+  "levelBands": [
+    {
+      "lt": 0.4,
+      "level": 1,
+      "name": "Dasar"
+    },
+    {
+      "lt": 0.55,
+      "level": 2,
+      "name": "Reaktif"
+    },
+    {
+      "lt": 0.7,
+      "level": 3,
+      "name": "Terencana"
+    },
+    {
+      "lt": 0.85,
+      "level": 4,
+      "name": "Proaktif"
+    }
+  ],
+  "questions": [
+    {
+      "q": "Apa yang dimaksud dengan \"bahaya\" (hazard) di tempat kerja tambang?",
+      "a": [
+        "Segala sesuatu yang berpotensi menimbulkan cedera, penyakit, atau kerusakan",
+        "Kejadian yang sudah menimbulkan korban jiwa",
+        "Peraturan keselamatan yang wajib dipatuhi pekerja",
+        "Biaya yang timbul akibat kecelakaan kerja"
+      ]
+    },
+    {
+      "q": "Apa perbedaan mendasar antara bahaya (hazard) dan risiko (risk)?",
+      "a": [
+        "Bahaya adalah sumber potensi cedera; risiko adalah kombinasi kemungkinan dan keparahan bahaya itu terjadi",
+        "Bahaya terjadi di tambang terbuka, risiko terjadi di tambang bawah tanah",
+        "Bahaya bersifat administratif, risiko bersifat teknis",
+        "Tidak ada perbedaan, keduanya istilah yang sama"
+      ]
+    },
+    {
+      "q": "Urutan hierarki pengendalian risiko dari yang PALING efektif ke paling lemah adalah:",
+      "a": [
+        "Eliminasi – Substitusi – Rekayasa teknik – Administratif – Alat Pelindung Diri",
+        "Alat Pelindung Diri – Administratif – Rekayasa teknik – Substitusi – Eliminasi",
+        "Administratif – Alat Pelindung Diri – Eliminasi – Substitusi – Rekayasa teknik",
+        "Rekayasa teknik – Eliminasi – Alat Pelindung Diri – Substitusi – Administratif"
+      ]
+    },
+    {
+      "q": "Alat Pelindung Diri (APD) berada pada posisi terakhir hierarki pengendalian karena:",
+      "a": [
+        "APD tidak menghilangkan sumber bahaya, hanya mengurangi keparahan bila pengendalian lain gagal",
+        "APD terlalu mahal dibandingkan pengendalian lain",
+        "APD hanya diwajibkan untuk pengawas, bukan pekerja",
+        "APD hanya efektif pada pekerjaan di kantor"
+      ]
+    },
+    {
+      "q": "Sebelum memulai pekerjaan non-rutin yang berisiko tinggi, dokumen yang wajib disiapkan adalah:",
+      "a": [
+        "JSA/JSEA (Job Safety Analysis) dan izin kerja (work permit) yang telah disetujui pengawas",
+        "Laporan produksi harian",
+        "Surat perintah lembur",
+        "Berita acara serah terima alat"
+      ]
+    },
+    {
+      "q": "Apa langkah PERTAMA yang benar ketika Anda menemukan kondisi tidak aman di area kerja?",
+      "a": [
+        "Amankan area dan laporkan segera kepada pengawas, jangan meneruskan pekerjaan",
+        "Selesaikan dulu target produksi, laporkan pada akhir shift",
+        "Abaikan bila bukan area tanggung jawab Anda",
+        "Memfoto lalu membagikannya di grup media sosial"
+      ]
+    },
+    {
+      "q": "Hak pekerja tambang untuk menolak pekerjaan yang syarat keselamatannya diragukan disebut:",
+      "a": [
+        "Hak menyatakan keberatan bekerja (right to refuse unsafe work)",
+        "Hak cuti keselamatan",
+        "Hak mendapat insentif risiko",
+        "Hak memilih pengawas sendiri"
+      ]
+    },
+    {
+      "q": "Prosedur LOTO (Lock Out Tag Out) bertujuan untuk:",
+      "a": [
+        "Mengisolasi sumber energi berbahaya agar peralatan tidak aktif saat diperbaiki",
+        "Mengunci gudang bahan peledak pada malam hari",
+        "Mencatat jam kerja operator alat berat",
+        "Menandai jalur hauling yang sedang diperbaiki"
+      ]
+    },
+    {
+      "q": "P2H (Pemeriksaan dan Pengujian Harian) unit wajib dilakukan:",
+      "a": [
+        "Sebelum unit dioperasikan pada setiap awal gilir kerja",
+        "Hanya ketika unit menunjukkan gejala kerusakan",
+        "Sebulan sekali oleh bagian plant",
+        "Setelah unit selesai dioperasikan saja"
+      ]
+    },
+    {
+      "q": "Bila hasil P2H menemukan kerusakan kritis pada rem unit, tindakan yang benar adalah:",
+      "a": [
+        "Unit di-tag \"tidak layak operasi\" dan tidak dioperasikan sampai diperbaiki dan dinyatakan layak",
+        "Unit tetap dioperasikan pelan-pelan sampai akhir shift",
+        "Unit dipakai hanya untuk jarak dekat di area datar",
+        "Kerusakan dicatat saja untuk laporan bulanan"
+      ]
+    },
+    {
+      "q": "Pengendalian risiko \"eliminasi\" pada pekerjaan di ketinggian contohnya adalah:",
+      "a": [
+        "Merancang ulang pekerjaan agar dikerjakan di permukaan tanah sehingga tidak perlu naik",
+        "Memberi pekerja full body harness",
+        "Memasang rambu peringatan bahaya jatuh",
+        "Menambah pengawas di lokasi kerja"
+      ]
+    },
+    {
+      "q": "Fatigue (kelelahan) pada operator alat berat merupakan bahaya karena:",
+      "a": [
+        "Menurunkan kewaspadaan dan waktu reaksi sehingga memperbesar peluang kecelakaan",
+        "Hanya memengaruhi kenyamanan, bukan keselamatan",
+        "Hanya berisiko pada shift siang",
+        "Hanya menjadi urusan bagian personalia"
+      ]
+    },
+    {
+      "q": "Tindakan paling tepat saat operator merasa mengantuk berat di tengah gilir kerja adalah:",
+      "a": [
+        "Menghentikan unit di tempat aman dan melapor ke pengawas untuk istirahat/penggantian",
+        "Menambah kecepatan agar pekerjaan cepat selesai",
+        "Membuka kaca dan melanjutkan bekerja sampai shift berakhir",
+        "Meminta rekan mengoperasikan unit tanpa izin pengawas"
+      ]
+    },
+    {
+      "q": "Jarak aman beriringan (safe following distance) di jalan hauling ditetapkan untuk mengendalikan bahaya:",
+      "a": [
+        "Tabrakan belakang akibat jarak henti unit besar yang panjang",
+        "Debu jalan yang mengganggu pernapasan",
+        "Keausan ban unit angkut",
+        "Kebisingan mesin di kabin"
+      ]
+    },
+    {
+      "q": "Ketika bekerja di dekat unit alat berat yang sedang beroperasi, pekerja wajib:",
+      "a": [
+        "Melakukan kontak positif (positive communication) dengan operator sebelum memasuki area kerja unit",
+        "Berjalan cepat melintasi area agar tidak lama terpapar",
+        "Cukup memakai rompi reflektif tanpa memberi tahu operator",
+        "Menunggu operator berhenti sendiri tanpa komunikasi"
+      ]
+    },
+    {
+      "q": "Blind spot pada alat berat adalah:",
+      "a": [
+        "Area di sekeliling unit yang tidak terlihat oleh operator dari kursi kemudi",
+        "Titik buta pada kaca helm pekerja",
+        "Area tambang yang belum dipetakan surveyor",
+        "Bagian jalan hauling yang tidak diberi penerangan"
+      ]
+    },
+    {
+      "q": "Tanggul pengaman (safety berm) di tepi jalan tambang berfungsi sebagai:",
+      "a": [
+        "Pengendalian rekayasa untuk mencegah unit terperosok/terjun ke tebing",
+        "Batas kepemilikan lahan antar perusahaan",
+        "Tempat menumpuk material sisa produksi",
+        "Penanda arah jalan bagi pengunjung"
+      ]
+    },
+    {
+      "q": "Potensi bahaya utama pada area dinding/lereng tambang (highwall) adalah:",
+      "a": [
+        "Longsor dan material jatuh (rock fall) yang dapat menimpa pekerja dan unit",
+        "Kebisingan berlebih dari pompa air",
+        "Radiasi sinar matahari langsung",
+        "Kelembapan udara yang tinggi"
+      ]
+    },
+    {
+      "q": "Sebelum memasuki ruang terbatas (confined space), hal yang WAJIB dilakukan adalah:",
+      "a": [
+        "Pengujian kualitas udara (gas test), ventilasi, izin kerja khusus, dan penjaga (attendant) di luar",
+        "Cukup membawa senter dan sarung tangan",
+        "Meminta izin lisan dari rekan kerja",
+        "Masuk berdua agar dapat saling membantu tanpa izin kerja"
+      ]
+    },
+    {
+      "q": "Yang dimaksud nearmiss (kejadian nyaris celaka) adalah:",
+      "a": [
+        "Kejadian yang berpotensi menimbulkan cedera/kerusakan tetapi tidak sampai terjadi",
+        "Kecelakaan ringan yang cukup diobati di klinik",
+        "Kecelakaan yang menimbulkan kerugian material besar",
+        "Pelanggaran administrasi tanpa dampak keselamatan"
+      ]
+    },
+    {
+      "q": "Mengapa nearmiss tetap wajib dilaporkan meskipun tidak ada korban?",
+      "a": [
+        "Sebagai peringatan dini untuk memperbaiki pengendalian sebelum terjadi kecelakaan sungguhan",
+        "Untuk menentukan siapa yang harus diberi sanksi",
+        "Agar produksi dapat dihentikan sementara",
+        "Karena diwajibkan hanya bila ada kerugian materi"
+      ]
+    },
+    {
+      "q": "HIRADC dalam pengelolaan risiko Keselamatan Pertambangan adalah singkatan dari:",
+      "a": [
+        "Hazard Identification, Risk Assessment and Determining Control",
+        "High Risk Area Daily Control",
+        "Hazard Inspection and Reporting for Daily Control",
+        "Health, Industrial Risk and Disaster Control"
+      ]
+    },
+    {
+      "q": "Peran pekerja dalam penyusunan HIRADC di area kerjanya adalah:",
+      "a": [
+        "Ikut mengidentifikasi bahaya dan mengusulkan pengendalian karena paling memahami pekerjaannya",
+        "Tidak terlibat, sepenuhnya tugas bagian OHSE",
+        "Hanya menandatangani dokumen yang sudah jadi",
+        "Hanya bila diminta oleh inspektur tambang"
+      ]
+    },
+    {
+      "q": "Matriks risiko umumnya menilai risiko berdasarkan:",
+      "a": [
+        "Kemungkinan (likelihood) terjadinya dan tingkat keparahan (severity) akibatnya",
+        "Biaya perbaikan dan lama pengerjaan",
+        "Jumlah pekerja dan jumlah unit yang terlibat",
+        "Umur peralatan dan merek pabrikan"
+      ]
+    },
+    {
+      "q": "Risiko yang tergolong \"tinggi\" setelah dinilai harus:",
+      "a": [
+        "Diturunkan dengan pengendalian tambahan sampai ke tingkat yang dapat diterima sebelum pekerjaan dimulai",
+        "Diterima apa adanya bila target produksi mendesak",
+        "Cukup dicatat dalam register risiko tanpa tindakan",
+        "Dialihkan seluruhnya kepada mitra kerja"
+      ]
+    },
+    {
+      "q": "Rambu keselamatan berlatar merah dengan garis miring umumnya bermakna:",
+      "a": [
+        "Larangan — tindakan tersebut tidak boleh dilakukan",
+        "Perintah wajib memakai APD tertentu",
+        "Petunjuk arah jalur evakuasi",
+        "Informasi umum lokasi fasilitas"
+      ]
+    },
+    {
+      "q": "Saat mendengar sirene tanda keadaan darurat di area tambang, tindakan yang benar adalah:",
+      "a": [
+        "Menghentikan pekerjaan dengan aman lalu menuju titik kumpul (muster point) sesuai prosedur",
+        "Melanjutkan pekerjaan sampai diperintah pengawas langsung",
+        "Berlari ke arah sumber kejadian untuk melihat",
+        "Pulang ke mess tanpa melapor"
+      ]
+    },
+    {
+      "q": "Fungsi titik kumpul (muster point) dalam keadaan darurat adalah:",
+      "a": [
+        "Tempat berkumpul aman untuk pendataan seluruh orang di area kerja",
+        "Tempat menyimpan alat pemadam api ringan",
+        "Tempat parkir kendaraan operasional",
+        "Tempat istirahat pekerja saat jam makan"
+      ]
+    },
+    {
+      "q": "Bila melihat rekan kerja melakukan tindakan tidak aman, sikap paling tepat adalah:",
+      "a": [
+        "Menegur/menghentikan secara langsung dengan cara yang baik lalu melaporkan bila perlu",
+        "Membiarkan karena bukan wewenang Anda",
+        "Menunggu terjadi kecelakaan agar ada bukti",
+        "Melaporkan tanpa menghentikan tindakan yang sedang berlangsung"
+      ]
+    },
+    {
+      "q": "Program \"Stop Work Authority\" memberi kewenangan kepada:",
+      "a": [
+        "Setiap pekerja untuk menghentikan pekerjaan yang dinilai tidak aman tanpa takut sanksi",
+        "Hanya KTT/PJO untuk menghentikan pekerjaan",
+        "Hanya inspektur tambang dari pemerintah",
+        "Hanya bagian produksi ketika target tercapai"
+      ]
+    },
+    {
+      "q": "Safety talk / P5M (Pertemuan 5 Menit) sebelum bekerja bertujuan untuk:",
+      "a": [
+        "Menyampaikan bahaya dan pengendalian pekerjaan hari itu kepada seluruh anggota kelompok kerja",
+        "Mengabsen kehadiran pekerja saja",
+        "Membahas besaran insentif produksi",
+        "Menggantikan pelatihan keselamatan formal"
+      ]
+    },
+    {
+      "q": "Induksi Keselamatan Pertambangan wajib diberikan kepada:",
+      "a": [
+        "Setiap pekerja baru, pekerja yang dipindah tugas, dan tamu sebelum memasuki area tambang",
+        "Hanya pekerja bagian OHSE",
+        "Hanya pekerja yang pernah mengalami kecelakaan",
+        "Hanya karyawan tetap perusahaan"
+      ]
+    },
+    {
+      "q": "Yang dimaksud Kompetensi Keselamatan Pertambangan bagi pekerja adalah:",
+      "a": [
+        "Kemampuan yang dibuktikan dengan pengetahuan, keterampilan, dan sikap kerja aman sesuai tugasnya",
+        "Lama masa kerja di perusahaan tambang",
+        "Jumlah sertifikat pelatihan yang dimiliki tanpa memandang isinya",
+        "Kemampuan mencapai target produksi tertinggi"
+      ]
+    },
+    {
+      "q": "Pemeriksaan APD sebelum digunakan penting karena:",
+      "a": [
+        "APD yang rusak/kedaluwarsa tidak memberi perlindungan sesuai fungsinya",
+        "APD harus selalu tampak baru untuk penilaian",
+        "Merupakan syarat pengambilan APD baru di gudang",
+        "Hanya untuk memenuhi ceklis administrasi"
+      ]
+    },
+    {
+      "q": "Penggunaan full body harness pada pekerjaan di ketinggian wajib disertai:",
+      "a": [
+        "Pengait (lanyard) yang tertambat pada anchor point yang kuat dan tersertifikasi",
+        "Sarung tangan kulit tebal",
+        "Sepatu keselamatan bersol karet",
+        "Kacamata pelindung antisilau"
+      ]
+    },
+    {
+      "q": "Bahaya utama pada pekerjaan pengelasan di area tambang mencakup:",
+      "a": [
+        "Percikan api dan kebakaran, asap las beracun, radiasi sinar las, serta sengatan listrik",
+        "Hanya panas berlebih pada benda kerja",
+        "Hanya kebisingan dari mesin gerinda",
+        "Hanya kelelahan otot tangan"
+      ]
+    },
+    {
+      "q": "Housekeeping (kerapian dan kebersihan area kerja) berkaitan langsung dengan keselamatan karena:",
+      "a": [
+        "Mengurangi bahaya tersandung, terpeleset, kejatuhan barang, dan kebakaran",
+        "Hanya memperbaiki penampilan area kerja saat audit",
+        "Menaikkan nilai produksi harian",
+        "Menggantikan kebutuhan APD di area kerja"
+      ]
+    },
+    {
+      "q": "Bahan Berbahaya dan Beracun (B3) di area tambang wajib dilengkapi:",
+      "a": [
+        "Lembar Data Keselamatan Bahan (MSDS/SDS), label, dan penyimpanan sesuai sifat bahayanya",
+        "Cukup ditulis nama bahannya dengan spidol",
+        "Cukup disimpan terpisah tanpa dokumen apa pun",
+        "Hanya laporan pembelian dari bagian logistik"
+      ]
+    },
+    {
+      "q": "Debu batubara dan silika pada area kerja termasuk bahaya jenis:",
+      "a": [
+        "Bahaya kesehatan (health hazard) yang dampaknya dapat muncul jangka panjang",
+        "Bahaya listrik",
+        "Bahaya ergonomi",
+        "Bahaya keamanan (security)"
+      ]
+    },
+    {
+      "q": "Pengendalian ergonomi pada pekerjaan mengangkat beban manual adalah:",
+      "a": [
+        "Memakai alat bantu angkat dan menerapkan teknik angkat yang benar (punggung lurus, tumpuan kaki)",
+        "Mengangkat secepat mungkin agar tidak lelah",
+        "Menambah jumlah pengangkatan agar terbiasa",
+        "Menggunakan sarung tangan tebal saja"
+      ]
+    },
+    {
+      "q": "Pelaporan kecelakaan tambang kepada Kepala Teknik Tambang (KTT) harus dilakukan:",
+      "a": [
+        "Segera setelah kejadian sesuai prosedur tanggap darurat perusahaan",
+        "Setelah investigasi internal selesai seluruhnya",
+        "Pada rapat bulanan keselamatan",
+        "Hanya bila ada korban meninggal dunia"
+      ]
+    },
+    {
+      "q": "Tujuan investigasi kecelakaan yang benar adalah:",
+      "a": [
+        "Menemukan akar penyebab dan mencegah kejadian serupa terulang, bukan mencari siapa yang salah",
+        "Menetapkan sanksi bagi pekerja yang terlibat",
+        "Memenuhi syarat klaim asuransi semata",
+        "Menutup kasus secepat mungkin"
+      ]
+    },
+    {
+      "q": "Yang termasuk tindakan tidak aman (unsafe act) adalah:",
+      "a": [
+        "Mengoperasikan unit tanpa Kartu Izin Mengemudi Perusahaan (KIMPER) yang sesuai",
+        "Jalan hauling berlubang dan licin",
+        "Penerangan area kerja yang kurang",
+        "Rambu keselamatan yang sudah pudar"
+      ]
+    },
+    {
+      "q": "Yang termasuk kondisi tidak aman (unsafe condition) adalah:",
+      "a": [
+        "Tanggul pengaman jalan hauling yang rusak dan belum diperbaiki",
+        "Pekerja bekerja tanpa memakai kacamata pelindung",
+        "Operator menggunakan telepon genggam saat mengemudi",
+        "Pekerja memotong jalur (short cut) melewati area terlarang"
+      ]
+    },
+    {
+      "q": "Inspeksi keselamatan terencana berbeda dengan inspeksi mendadak karena inspeksi terencana:",
+      "a": [
+        "Dijadwalkan, memiliki ceklis dan cakupan area yang ditetapkan, serta ditindaklanjuti terdokumentasi",
+        "Hanya dilakukan bila terjadi kecelakaan",
+        "Tidak perlu laporan tertulis",
+        "Hanya dilakukan oleh pihak eksternal"
+      ]
+    },
+    {
+      "q": "Kewajiban pekerja terhadap prosedur Keselamatan Pertambangan (SOP) di tempat kerjanya adalah:",
+      "a": [
+        "Memahami, mematuhi, dan memberi masukan bila SOP tidak lagi sesuai kondisi lapangan",
+        "Menyimpan SOP tanpa harus membacanya",
+        "Mengikuti SOP hanya saat ada audit atau kunjungan",
+        "Membuat SOP sendiri sesuai kebiasaan kelompok kerja"
+      ]
+    },
+    {
+      "q": "Bekerja di area yang sedang dilakukan peledakan (blasting) hanya diperbolehkan bila:",
+      "a": [
+        "Area telah dinyatakan aman (all clear) oleh juru ledak/pengawas sesuai prosedur",
+        "Sudah lewat 5 menit sejak ledakan terdengar",
+        "Debu ledakan sudah tidak terlihat dari kejauhan",
+        "Rekan kerja lain sudah lebih dulu masuk"
+      ]
+    },
+    {
+      "q": "Isolasi energi listrik sebelum perbaikan panel harus dipastikan dengan:",
+      "a": [
+        "Uji tegangan (test for dead) setelah pemutusan dan penguncian sumber energi",
+        "Melihat lampu indikator panel padam saja",
+        "Menanyakan kepada operator terdekat",
+        "Mematikan lampu penerangan ruangan"
+      ]
+    },
+    {
+      "q": "Air blast, banjir tambang, dan genangan pada pit termasuk bahaya yang dikendalikan melalui:",
+      "a": [
+        "Perencanaan penyaliran tambang (mine dewatering) dan pemantauan curah hujan",
+        "Penambahan jumlah operator per shift",
+        "Penggantian merek pelumas unit",
+        "Perpanjangan jam kerja untuk mengejar target"
+      ]
+    },
+    {
+      "q": "Yang paling menunjukkan budaya keselamatan tingkat lanjut di suatu kelompok kerja adalah:",
+      "a": [
+        "Pekerja saling mengingatkan dan melaporkan bahaya secara sukarela tanpa menunggu diawasi",
+        "Angka kecelakaan nol karena kejadian tidak dilaporkan",
+        "Pekerja hanya patuh saat ada pengawas di lokasi",
+        "Dokumen keselamatan lengkap tetapi jarang digunakan"
+      ]
+    }
+  ]
+}

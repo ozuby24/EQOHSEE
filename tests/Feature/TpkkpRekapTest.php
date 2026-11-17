@@ -231,14 +231,17 @@ class TpkkpRekapTest extends TestCase
      * hidup: orang menyunting di sana, tidak ada yang berubah di layar,
      * dan tidak ada galat apa pun yang menjelaskan kenapa.
      *
-     * Yang boleh tersisa hanya _chart, sebab tata letak Inertia sendiri
-     * yang memuatnya.
+     * Seluruh direktorinya kini tidak ada — termasuk _chart, yang dulu
+     * memuat Chart.js dari CDN dan sejak itu digantikan bundel sendiri.
+     * Penjaga yang lebih luas ada di TampilanHidupTest: ia menuntut
+     * SETIAP berkas Blade dapat dicapai dari titik masuk yang nyata,
+     * bukan hanya berkas milik modul ini.
      */
     public function test_tidak_ada_halaman_blade_ptpkkp_yang_tertinggal(): void
     {
         $sisa = array_map('basename', glob(resource_path('views/tpkkp/*.blade.php')) ?: []);
 
-        $this->assertSame(['_chart.blade.php'], $sisa,
+        $this->assertSame([], $sisa,
             'Masih ada view Blade PTPKKP yang tidak dipanggil siapa pun: ' . implode(', ', $sisa));
     }
 

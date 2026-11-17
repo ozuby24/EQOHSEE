@@ -147,7 +147,12 @@ class Ko
      */
     public static function hitung($objek, $tenaga = null): array
     {
-        $total   = max(1, $objek->count());
+        /* Jumlah sebenarnya, TANPA max(1, ...).
+           Pemaksaan ke satu itu dahulu menghindari pembagian dengan nol
+           dengan cara membuat penyebutnya berbohong: nol objek terbaca
+           sebagai "nol dari satu", dan hasilnya 0% — angka yang terlihat
+           seperti kepatuhan buruk padahal tidak ada yang diukur. */
+        $total   = $objek->count();
         $byStat  = array_fill_keys(self::STATUS, 0);
         $overdue = 0;
         $pgTot = 0; $pgOk = 0;
@@ -177,18 +182,40 @@ class Ko
             'total'    => $objek->count(),
             'byStat'   => $byStat,
             'overdue'  => $overdue,
-            'pmc'      => (int) round(($objek->count() - $overdue) / $total * 100),
+            /* NULL ketika tidak ada yang diukur. Lihat catatan pada
+               subElemen() untuk alasannya. */
+            'pmc'      => self::persen($total - $overdue, $total),
             'pgTot'    => $pgTot,
             'pgOk'     => $pgOk,
-            'pgPct'    => $pgTot ? (int) round($pgOk / $pgTot * 100) : 100,
+            'pgPct'    => self::persen($pgOk, $pgTot),
             'kjTot'    => $kj,
             'kjLap'    => $kjLap,
-            'kjPct'    => $kj ? (int) round($kjLap / $kj * 100) : 100,
+            'kjPct'    => self::persen($kjLap, $kj),
             'tnTot'    => $tnTot,
             'tnAktif'  => $tnAktif,
-            'tnPct'    => $tnTot ? (int) round($tnAktif / $tnTot * 100) : 100,
-            'layakPct' => (int) round($byStat[self::ST_LAYAK] / $total * 100),
+            'tnPct'    => self::persen($tnAktif, $tnTot),
+            'layakPct' => self::persen($byStat[self::ST_LAYAK], $total),
         ];
+    }
+
+    /**
+     * Persentase, atau NULL bila tidak ada yang diukur.
+     *
+     * Nol dari nol bukan seratus persen dan bukan nol persen — ia
+     * ketiadaan ukuran. Ketiganya harus terbaca berbeda, dan pada
+     * modul kepatuhan pertambangan perbedaan itu bukan kehalusan:
+     * "Kepatuhan 100%" pada register yang masih kosong adalah angka
+     * yang dapat ditangkap layar lalu masuk ke laporan kepada
+     * inspektur tambang.
+     *
+     * Dahulu ketiga sub-elemen memulangkan 100 dan dua sisanya
+     * memulangkan 0 untuk keadaan yang sama persis — sehingga register
+     * kosong menghasilkan indeks gabungan 60%, dirata-ratakan dari
+     * lima angka yang tak satu pun berasal dari data.
+     */
+    public static function persen(int $bagian, int $dari): ?int
+    {
+        return $dari > 0 ? (int) round($bagian / $dari * 100) : null;
     }
 
     /** Lima sub-elemen KO + indeks gabungan. */
@@ -207,9 +234,24 @@ class Ko
              'ket' => $c['kjLap'] . ' dari ' . $c['kjTot'] . ' kajian dilaporkan ke KaIT'],
         ];
 
-        $idx = (int) round(array_sum(array_column($items, 'pct')) / count($items));
+        /* Indeks dihitung HANYA dari sub-elemen yang benar-benar
+           terukur. Memasukkan yang null sebagai nol menghukum
+           perusahaan karena belum mengisi modulnya; memasukkannya
+           sebagai seratus memberinya nilai yang tidak diperolehnya.
+           Bila tidak ada satu pun yang terukur, indeksnya juga tidak
+           ada — bukan nol. */
+        $terukur = array_values(array_filter(
+            array_column($items, 'pct'), fn ($p) => $p !== null,
+        ));
 
-        return ['items' => $items, 'indeks' => $idx, 'level' => self::level($idx)];
+        $idx = $terukur ? (int) round(array_sum($terukur) / count($terukur)) : null;
+
+        return [
+            'items'   => $items,
+            'indeks'  => $idx,
+            'terukur' => count($terukur),
+            'level'   => $idx === null ? null : self::level($idx),
+        ];
     }
 
     public static function level(int $pct): string

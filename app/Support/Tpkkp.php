@@ -115,6 +115,46 @@ class Tpkkp
         return 'Resilient';
     }
 
+    /**
+     * Bulatkan rerata skor apa pun menjadi TINGKAT BULAT 1–5.
+     *
+     * Pembulatannya KONSERVATIF — setengah ke bawah: 2,4 → 2, 2,5 → 2
+     * (Reaktif), 2,6 → 3. Yang di tengah tidak dinaikkan, sebab menaikkan
+     * tingkat kematangan yang belum benar-benar dicapai adalah kesalahan
+     * yang berpihak pada auditi.
+     *
+     * Dipakai SERAGAM oleh seluruh alur yang memakai rata-rata — rerata
+     * antar-entitas, impor kuesioner, konversi nilai pengujian — supaya
+     * angka yang tampil selalu tepat satu tingkat rubrik, bukan desimal
+     * yang tidak bersesuaian dengan tingkat mana pun.
+     */
+    public static function roundLevel(?float $x): ?int
+    {
+        if ($x === null || is_nan($x)) return null;
+
+        return (int) min(5, max(1, (int) ceil($x - 0.5)));
+    }
+
+    /**
+     * Label tingkat untuk SKOR MENTAH 1–5, bukan untuk rasio capaian.
+     *
+     * Wajib dipakai untuk apa pun yang menampilkan tingkat dari skor yang
+     * diisi penilai. `category()` memetakan RASIO (nilai/maks) dengan
+     * ambang workbook, dan kedua skala itu tidak selaras: skor 3 memberi
+     * rasio 0,6 yang menurut ambang rasio jatuh ke "Reaktif", padahal
+     * tingkat rubrik yang diisi penilai adalah "Terencana".
+     *
+     * Terukur sebelum diperbaiki: mengisi 2 menampilkan "Dasar",
+     * mengisi 3 menampilkan "Reaktif" — dua-duanya satu tingkat lebih
+     * rendah daripada yang benar-benar dinilai.
+     */
+    public static function levelCategory(?float $x): ?string
+    {
+        $n = self::roundLevel($x);
+
+        return $n === null ? null : (self::LV[$n - 1] ?? null);
+    }
+
     /** Level 1..5 dari label; 0 bila belum ada nilai. */
     public static function level(?string $label): int
     {
@@ -143,20 +183,30 @@ class Tpkkp
         if ($onlyEntity !== null) {
             $v = $e[$onlyEntity] ?? null;
             return (is_numeric($v) && $v >= 1)
-                ? ['val' => (float) $v, 'filled' => true, 'nEnt' => 1]
-                : ['val' => null, 'filled' => false, 'nEnt' => 0];
+                ? ['val' => self::roundLevel((float) $v), 'raw' => (float) $v, 'filled' => true, 'nEnt' => 1]
+                : ['val' => null, 'raw' => null, 'filled' => false, 'nEnt' => 0];
         }
 
         $vals = [];
         foreach ($e as $v) if (is_numeric($v) && $v >= 1) $vals[] = (float) $v;
+
         if ($vals) {
-            return ['val' => array_sum($vals) / count($vals), 'filled' => true, 'nEnt' => count($vals)];
+            /* Rerata antar-entitas DIBULATKAN ke tingkat 1–5. Nilai satu
+               metode harus selalu identik dengan salah satu tingkat rubrik;
+               rerata 3,5 dari dua perusahaan bukan tingkat yang ada dalam
+               rubrik mana pun, dan angka semacam itu lalu merambat ke
+               seluruh rekap sebagai desimal yang tidak dapat dijelaskan.
+               Rerata mentahnya tetap dibawa pada `raw`. */
+            $rerata = array_sum($vals) / count($vals);
+
+            return ['val' => self::roundLevel($rerata), 'raw' => $rerata,
+                    'filled' => true, 'nEnt' => count($vals)];
         }
 
         $v = $rec['v'] ?? null;
         return (is_numeric($v) && $v >= 1)
-            ? ['val' => (float) $v, 'filled' => true, 'nEnt' => 0]
-            : ['val' => null, 'filled' => false, 'nEnt' => 0];
+            ? ['val' => self::roundLevel((float) $v), 'raw' => (float) $v, 'filled' => true, 'nEnt' => 0]
+            : ['val' => null, 'raw' => null, 'filled' => false, 'nEnt' => 0];
     }
 
     public static function itemCalc(array $scores, array $item, ?string $onlyEntity = null): array
@@ -176,17 +226,32 @@ class Tpkkp
         $max   = $total * 5;
         $achv  = $filled ? $sum / $max : null;   // metode kosong dihitung nol
 
+        /* Dua angka berdampingan, dan keduanya perlu.
+
+           `achv`/`category` — rasio capaian menurut rumus workbook resmi,
+           dengan metode kosong dihitung nol. Tidak diubah.
+
+           `avg`/`tingkat` — rerata tingkat metode yang BENAR-BENAR terisi,
+           dan tingkat rubriknya. Inilah yang boleh ditampilkan sebagai
+           tingkat pada formulir penilaian: penilai yang mengisi 4 harus
+           membaca "Proaktif", bukan kategori rasio yang kebetulan jatuh
+           satu tingkat di bawahnya. */
+        $avg = $filled ? $sum / $filled : null;
+
         return [
-            'code'      => $item['code'],
-            'name'      => $item['name'],
-            'perMethod' => $perMethod,
-            'nilai'     => $filled ? $sum : null,
-            'max'       => $max,
-            'achv'      => $achv,
-            'category'  => self::category($achv),
-            'filled'    => $filled,
-            'total'     => $total,
-            'complete'  => $filled === $total,
+            'code'       => $item['code'],
+            'name'       => $item['name'],
+            'perMethod'  => $perMethod,
+            'nilai'      => $filled ? $sum : null,
+            'max'        => $max,
+            'achv'       => $achv,
+            'category'   => self::category($achv),
+            'avg'        => $avg,
+            'tingkat'    => self::levelCategory($avg),
+            'tingkatNum' => self::roundLevel($avg),
+            'filled'     => $filled,
+            'total'      => $total,
+            'complete'   => $filled === $total,
         ];
     }
 
@@ -205,6 +270,10 @@ class Tpkkp
 
         $ratio = $any && $max > 0 ? $sum / $max : null;
 
+        // Rerata tingkat seluruh item terisi — pendamping kategori rasio.
+        $berskor = array_values(array_filter($items, fn ($c) => $c['avg'] !== null));
+        $avg = $berskor ? array_sum(array_column($berskor, 'avg')) / count($berskor) : null;
+
         return [
             'code'        => $par['code'],
             'name'        => $par['name'],
@@ -213,6 +282,8 @@ class Tpkkp
             'nilai'       => $any ? $sum : null,
             'max'         => $max,
             'ratio'       => $ratio,
+            'avg'         => $avg,
+            'tingkat'     => self::levelCategory($avg),
             'score'       => $ratio !== null ? $ratio * $par['weight'] : null,
             'target'      => self::paramTargets()[$par['code']] ?? null,
             'category'    => self::category($ratio),
@@ -236,6 +307,9 @@ class Tpkkp
         }
         $ratio = ($score !== null && $weight > 0) ? $score / $weight : null;
 
+        $berskor = array_values(array_filter($params, fn ($p) => $p['avg'] !== null));
+        $avg = $berskor ? array_sum(array_column($berskor, 'avg')) / count($berskor) : null;
+
         return [
             'code'        => $ind['code'],
             'name'        => $ind['name'],
@@ -244,6 +318,8 @@ class Tpkkp
             'score'       => $score,
             'target'      => $target,
             'ratio'       => $ratio,
+            'avg'         => $avg,
+            'tingkat'     => self::levelCategory($avg),
             'category'    => self::category($ratio),
             'filledCells' => $filledCells,
             'totalCells'  => $totalCells,
@@ -261,12 +337,23 @@ class Tpkkp
             if ($c['score'] !== null) $score = ($score ?? 0) + $c['score'];
         }
 
+        $berskor = array_values(array_filter($inds, fn ($i) => $i['avg'] !== null));
+        $avg = $berskor ? array_sum(array_column($berskor, 'avg')) / count($berskor) : null;
+
         return [
             'indicators'   => $inds,
             'score'        => $score,
             'target'       => self::totalTarget(),
             'category'     => self::category($score),
+            /* `level` di sini tetap level dari KATEGORI RASIO, sebab itulah
+               yang sudah dipakai halaman-halaman lama. Tingkat rubrik
+               ditambahkan berdampingan sebagai `tingkat`, bukan
+               menggantikannya — mengubah arti kunci yang sudah dibaca
+               banyak tempat adalah cara termudah membuat dua halaman
+               menampilkan angka berbeda tanpa satu pun galat. */
             'level'        => self::level(self::category($score)),
+            'avg'          => $avg,
+            'tingkat'      => self::levelCategory($avg),
             'filledCells'  => $filledCells,
             'totalCells'   => $totalCells,
             'completeness' => $totalCells ? $filledCells / $totalCells : 0.0,

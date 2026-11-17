@@ -5,9 +5,8 @@ namespace App\Support;
 /**
  * Dua tahap audit SMKP dan berkas resmi yang menyertainya.
  *
- * Acuan: Lampiran II Kepdirjen 185.K/37.04/DJB/2019, dibaca lewat berkas audit
- * nyata (PT Gunung Bara Utama 2023 dan PT CAM 2025) agar istilah dan urutan
- * isiannya sama persis dengan yang dipakai auditor di lapangan.
+ * Acuan: Lampiran II Kepdirjen 185.K/37.04/DJB/2019. Istilah dan urutan isian
+ * mengikuti formulir audit yang dipakai auditor di lapangan.
  *
  * Kelas ini hanya berisi daftar acuan dan hitungan. Ia tidak menyentuh basis
  * data — bentuk isiannya disimpan sebagai JSON pada model SmkpAudit.
@@ -81,13 +80,13 @@ final class SmkpTahap
                 'warna' => '#0F766E',
                 'langkah' => [
                     ['kunci'=>'kontak',    'judul'=>'Kontak Awal & Penugasan Tim',   'jenis'=>'kerja', 'rute'=>'smkp.tahap1',
-                     'ket'=>'Pertemuan pertama dengan auditi dan surat pengangkatan tim audit beserta nomor registrasi auditor.'],
+                     'ket'=>'Pertemuan pertama dengan auditi dan surat pengangkatan tim audit.'],
                     ['kunci'=>'kinerja',   'judul'=>'Kinerja Keselamatan Pertambangan','jenis'=>'kerja','rute'=>'smkp.tahap1',
                      'ket'=>'Sepuluh angka kinerja pada periode audit — frequency rate, severity rate, kejadian berbahaya, penyakit akibat kerja.'],
                     ['kunci'=>'kelayakan', 'judul'=>'Penentuan Kelayakan Audit',     'jenis'=>'kerja', 'rute'=>'smkp.tahap1',
                      'ket'=>'Tujuh indikator yang memutuskan audit boleh berjalan: profil organisasi, profil risiko, kerja sama auditi, sumber daya.'],
                     ['kunci'=>'mandays',   'judul'=>'Perhitungan Hari Kerja Audit',  'jenis'=>'kerja', 'rute'=>'smkp.tahap1',
-                     'ket'=>'Mandays dibagi jumlah auditor lalu disesuaikan tujuh kondisi; Tahap I paling banyak 10% dari total.'],
+                     'ket'=>'Mandays dibagi jumlah auditor; satu kondisi penyesuaian atau lebih menambah paling banyak 10%. Tahap I paling banyak 10% dari total.'],
                     ['kunci'=>'kecukupan', 'judul'=>'Kecukupan Dokumentasi 7 Elemen','jenis'=>'kerja', 'rute'=>'smkp.tahap1',
                      'ket'=>'Peninjauan dokumen dan rekaman tiap elemen — lengkap atau tidak lengkap — sebelum tim turun ke lapangan.'],
                     ['kunci'=>'berita',    'judul'=>'Berita Acara Tahapan Awal',     'jenis'=>'cetak', 'rute'=>'smkp.berita-acara',
@@ -156,30 +155,34 @@ final class SmkpTahap
     public static function indikatorKelayakan(): array
     {
         return [
-            'profil_organisasi' => 'Informasi untuk pengembangan program audit: Profil Organisasi',
-            'profil_risiko'     => 'Informasi untuk pengembangan program audit: Profil Risiko',
-            'kinerja'           => 'Informasi untuk pengembangan program audit: Data Kinerja Keselamatan Pertambangan pada periode audit',
-            'kerjasama'         => 'Kerja sama dari auditi',
-            'waktu'             => 'Ketersediaan waktu',
-            'sumberdaya'        => 'Ketersediaan sumber daya lainnya',
-            'keselamatan'       => 'Pemenuhan persyaratan keselamatan dan keamanan',
+            'profil_organisasi' => 'Informasi untuk Pengembangan Program Audit: Profil Organisasi',
+            'profil_risiko'     => 'Informasi untuk Pengembangan Program Audit: Profil Risiko',
+            'kinerja'           => 'Informasi untuk Pengembangan Program Audit: Data Kinerja Keselamatan Pertambangan pada Periode Audit',
+            'kerjasama'         => 'Kerjasama dari Auditi',
+            'waktu'             => 'Ketersediaan Waktu',
+            'sumberdaya'        => 'Ketersediaan Sumberdaya lainnya',
+            'keselamatan'       => 'Pemenuhan Persyaratan Keselamatan dan Keamanan',
         ];
     }
 
     /**
-     * Tujuh kondisi dasar faktor penyesuaian hari kerja audit.
-     * Tiap kondisi yang terpenuhi menambah hari audit.
+     * Tujuh kondisi dasar faktor penyesuaian hari kerja audit. Satu kondisi
+     * atau lebih yang terpenuhi membuka tambahan hari kerja paling banyak
+     * PENYESUAIAN_MAKS — bukan satu hari per kondisi.
      */
+    /** Tambahan hari kerja audit dari faktor penyesuaian: paling banyak 10%. */
+    public const PENYESUAIAN_MAKS = 0.10;
+
     public static function faktorPenyesuaian(): array
     {
         return [
             'jarak'      => 'Jarak antar objek audit yang saling berjauhan, dengan waktu tempuh ≥ 4 jam',
             'metode'     => 'Perusahaan pertambangan menggunakan lebih dari satu metode penambangan',
             'pengolahan' => 'Perusahaan pertambangan memiliki fasilitas pengolahan dan pemurnian',
-            'kecelakaan' => 'Severity rate dan frequency rate kecelakaan tahun terakhir lebih tinggi dari rata-rata nasional',
-            'penyakit'   => 'Absence severity rate dan morbidity frequency rate tahun terakhir lebih tinggi dari rata-rata nasional',
+            'kecelakaan' => 'Tingkat keparahan (severity rate) dan tingkat kekerapan (frequency rate) kecelakaan perusahaan tahun terakhir lebih tinggi dari tingkat rata-rata nasional',
+            'penyakit'   => 'Tingkat keparahan penyakit berdasarkan absensi (absence severity rate) dan tingkat kekerapan kesakitan (morbidity frequency rate) perusahaan tahun terakhir lebih tinggi dari tingkat rata-rata nasional',
             'berbahaya'  => 'Terjadi kejadian berbahaya serupa dan berulang dalam satu tahun terakhir',
-            'pak'        => 'Terjadi kejadian akibat penyakit tenaga kerja dan/atau penyakit akibat kerja dalam satu tahun terakhir',
+            'pak'        => 'Terjadi kejadian akibat penyakit tenaga kerja, dan/atau penyakit akibat kerja dalam satu tahun terakhir',
         ];
     }
 
@@ -187,18 +190,68 @@ final class SmkpTahap
     public static function butirKinerja(): array
     {
         return [
-            'cidera_ringan' => ['label' => 'Kecelakaan tambang berakibat cidera ringan', 'satuan' => 'kecelakaan'],
-            'cidera_berat'  => ['label' => 'Kecelakaan tambang berakibat cidera berat',  'satuan' => 'kecelakaan'],
-            'mati'          => ['label' => 'Kecelakaan tambang berakibat mati',           'satuan' => 'kecelakaan'],
-            'fr'            => ['label' => 'Frequency rate kecelakaan tambang',           'satuan' => ''],
-            'sr'            => ['label' => 'Severity rate kecelakaan tambang',            'satuan' => ''],
-            'berbahaya'     => ['label' => 'Jumlah kejadian berbahaya',                   'satuan' => 'kejadian'],
-            'asr'           => ['label' => 'Absence severity rate',                       'satuan' => ''],
-            'mfr'           => ['label' => 'Morbidity frequency rate',                    'satuan' => ''],
-            'kptk'          => ['label' => 'Kejadian akibat penyakit tenaga kerja',       'satuan' => 'kejadian'],
-            'pak'           => ['label' => 'Frekuensi penyakit akibat kerja',             'satuan' => ''],
+            'cidera_ringan' => ['label' => 'Jumlah Kecelakaan Tambang Berakibat Cidera Ringan', 'satuan' => 'kecelakaan'],
+            'cidera_berat'  => ['label' => 'Jumlah Kecelakaan Tambang Berakibat Cidera Berat',  'satuan' => 'kecelakaan'],
+            'mati'          => ['label' => 'Jumlah Kecelakaan Tambang Berakibat Mati',           'satuan' => 'kecelakaan'],
+            'fr'            => ['label' => 'Frequency Rate Kecelakaan Tambang',                  'satuan' => ''],
+            'sr'            => ['label' => 'Severity Rate Kecelakaan Tambang',                   'satuan' => ''],
+            'berbahaya'     => ['label' => 'Jumlah Kejadian Berbahaya',                          'satuan' => 'kejadian'],
+            'asr'           => ['label' => 'Absence Severity Rate',                              'satuan' => ''],
+            'mfr'           => ['label' => 'Morbidity Frequency Rate',                           'satuan' => ''],
+            'kptk'          => ['label' => 'Jumlah Kejadian Akibat Penyakit Tenaga Kerja',       'satuan' => 'kejadian'],
+            'pak'           => ['label' => 'Frekuensi Penyakit Akibat Kerja',                    'satuan' => ''],
         ];
     }
+
+    /**
+     * Data trend pada Penyiapan Rencana Audit (Berita Acara Tahap I bagian
+     * III.B, Lampiran I SE B-6450/MB.07/DBT.KP/2022) — dasar penetapan
+     * metode dan sampel sebagai critical point pembuktian primer.
+     */
+    public static function trenData(): array
+    {
+        $kejadian = 'Near Miss, Property Damage, Kejadian Berbahaya, dan/atau Kecelakaan';
+
+        return [
+            'penyebab' => ['judul' => "Data Trend Faktor Penyebab {$kejadian}", 'kolom' => 'Faktor Penyebab Dominan'],
+            'lokasi'   => ['judul' => "Data Trend Lokasi Terjadinya {$kejadian}", 'kolom' => 'Lokasi'],
+            'kegiatan' => ['judul' => "Data Trend Jenis Kegiatan terkait Kejadian {$kejadian}", 'kolom' => 'Jenis Kegiatan'],
+            'jabatan'  => ['judul' => "Data Trend Jenis Jabatan terkait Kejadian {$kejadian}", 'kolom' => 'Jenis Jabatan'],
+            'deviasi'  => ['judul' => 'Data Trend Deviasi Keselamatan Pertambangan berdasarkan Hasil Temuan Inspeksi', 'kolom' => 'Deviasi Penerapan Keselamatan Pertambangan Hasil Inspeksi'],
+            'pak'      => ['judul' => 'Data Trend Faktor Penyebab Kejadian Akibat Penyakit Tenaga Kerja dan/atau Penyakit Akibat Kerja', 'kolom' => 'Faktor Penyebab Dominan'],
+        ];
+    }
+
+    /** Baris "Data Audit Internal SMKP" tahun sebelumnya pada Berita Acara Tahap I. */
+    public static function auditLalu(): array
+    {
+        $tl = 'Status Penyelesaian Tindak Lanjut Audit untuk Ketidaksesuaian Kategori';
+
+        return [
+            'nilai'    => 'Capaian Nilai Audit',
+            'kritikal' => "{$tl} Kritikal",
+            'mayor'    => "{$tl} Mayor",
+            'minor'    => "{$tl} Minor",
+            'pembina'  => 'Catatan Hasil Evaluasi dari Instansi Pembina Sektor',
+        ];
+    }
+
+    /** Distribusi Laporan Audit (Kepdirjen 185.K/37.04/DJB/2019 — sistematika laporan). */
+    public const DISTRIBUSI_LAPORAN = [
+        'Pimpinan pemegang IUP, IUPK, IUP Operasi Produksi khusus untuk Pengolahan dan/atau Pemurnian, IPR, atau IUJP',
+        'Kementerian yang menyelenggarakan urusan pemerintahan di bidang pertambangan mineral dan batubara',
+        'Dinas teknis provinsi yang mempunyai tugas pokok dan fungsi di bidang pertambangan mineral dan batubara pada pemerintah provinsi',
+    ];
+
+    /** Key leading indicator yang lazim dipantau — usulan isian, dapat diubah. */
+    public const KLI_BAWAAN = [
+        'Tujuan, Sasaran dan Program',
+        'Pencapaian Tingkat Kinerja Keselamatan Pertambangan',
+        'Zero Fatality',
+        'Zero LTI',
+        'Zero Health',
+        'Zero PDFR',
+    ];
 
     public static function kelasRisiko(): array
     {
@@ -208,41 +261,55 @@ final class SmkpTahap
     /**
      * Hari kerja audit.
      *
-     * Mandays dasar dibagi jumlah auditor, lalu ditambah faktor penyesuaian.
-     * Tahap I mendapat maksimal 10% dari total, sisanya untuk Tahap II —
-     * itulah sebabnya alokasi diturunkan, bukan diisi terpisah.
+     * Mandays dasar dibagi jumlah auditor, lalu ditambah faktor penyesuaian:
+     * bila satu kondisi atau lebih terpenuhi, paling banyak 10% dari hari
+     * kerja tersebut (seberapa pun banyak kondisinya); tanpa kondisi, tidak
+     * ada tambahan. Tambahan maksimum menjadi bawaan bila auditor tidak
+     * menetapkan angka lain. Tahap I mendapat maksimal 10% dari total,
+     * sisanya untuk Tahap II — itulah sebabnya alokasi diturunkan, bukan
+     * diisi terpisah.
      *
-     * @return array{dasar:float,auditor:int,per_auditor:float,penyesuaian:float,total:float,tahap1:float,tahap2:float,usul_penyesuaian:int}
+     * @return array{dasar:float,auditor:int,per_auditor:float,kondisi:int,maks_penyesuaian:float,usul_penyesuaian:float,penyesuaian:float,persen_penyesuaian:float,total:float,tahap1:float,tahap2:float}
      */
     public static function mandays(array $p): array
     {
         $dasar   = max(0.0, (float) ($p['mandays_dasar'] ?? 0));
         $auditor = max(1, (int) ($p['jumlah_auditor'] ?? 1));
+        $per     = $dasar / $auditor;
 
-        // Tiap kondisi yang dijawab "ya" mengusulkan tambahan satu hari.
-        $usul = 0;
+        $kondisi = 0;
         foreach (array_keys(self::faktorPenyesuaian()) as $k) {
-            if (!empty($p['faktor'][$k])) $usul++;
+            if (!empty($p['faktor'][$k])) $kondisi++;
         }
+        $maks = $kondisi > 0 ? self::batasPenyesuaian($per) : 0.0;
 
-        // Auditor boleh menetapkan angka lain; usulan hanya jadi bawaan.
-        $tambah = array_key_exists('penyesuaian', $p) && $p['penyesuaian'] !== ''
-            ? max(0.0, (float) $p['penyesuaian'])
-            : (float) $usul;
+        // Auditor boleh menetapkan angka lebih kecil; di atas batas dipangkas
+        // (isian lama yang tersimpan sebelum aturan ini).
+        $tambah = array_key_exists('penyesuaian', $p) && trim((string) $p['penyesuaian']) !== ''
+            ? min(max(0.0, (float) $p['penyesuaian']), $maks)
+            : $maks;
 
-        $per   = $dasar / $auditor;
         $total = $per + $tambah;
 
         return [
-            'dasar'            => round($dasar, 2),
-            'auditor'          => $auditor,
-            'per_auditor'      => round($per, 2),
-            'penyesuaian'      => round($tambah, 2),
-            'usul_penyesuaian' => $usul,
-            'total'            => round($total, 2),
-            'tahap1'           => round($total * 0.10, 2),
-            'tahap2'           => round($total * 0.90, 2),
+            'dasar'              => round($dasar, 2),
+            'auditor'            => $auditor,
+            'per_auditor'        => round($per, 2),
+            'kondisi'            => $kondisi,
+            'maks_penyesuaian'   => $maks,
+            'usul_penyesuaian'   => $maks,
+            'penyesuaian'        => round($tambah, 2),
+            'persen_penyesuaian' => $per > 0 ? round($tambah / $per * 100, 1) : 0.0,
+            'total'              => round($total, 2),
+            'tahap1'             => round($total * 0.10, 2),
+            'tahap2'             => round($total * 0.90, 2),
         ];
+    }
+
+    /** Tambahan hari kerja terbesar yang dibolehkan untuk $hari hari kerja audit (dua desimal, dibulatkan ke bawah). */
+    public static function batasPenyesuaian(float $hari): float
+    {
+        return floor(max(0.0, $hari) * self::PENYESUAIAN_MAKS * 100 + 1e-9) / 100;
     }
 
     /**
@@ -334,12 +401,63 @@ final class SmkpTahap
         ];
     }
 
+    /* ---------- isian bawaan Formulir Rencana Audit (Lampiran Kepdirjen 185.K/2019) ---------- */
+
+    public const JENIS_AUDIT = [
+        'Audit Internal Sistem Manajemen Keselamatan Pertambangan Mineral dan Batubara',
+        'Audit Internal Sistem Manajemen Keselamatan Pertambangan Khusus untuk Pengolahan dan/atau Pemurnian',
+    ];
+
+    public const KRITERIA_AUDIT = 'Lampiran II Keputusan Direktur Jenderal Mineral dan Batubara Nomor 185.K/37.04/DJB/2019';
+
+    public static function dokumentasiBawaan(): string
+    {
+        return implode("\n", [
+            'Manual Sistem Manajemen Keselamatan Pertambangan',
+            'Dokumen dan Rekaman Elemen Kebijakan',
+            'Dokumen dan Rekaman Elemen Perencanaan',
+            'Dokumen dan Rekaman Elemen Organisasi dan Personel',
+            'Dokumen dan Rekaman Elemen Implementasi',
+            'Dokumen dan Rekaman Elemen Pemantauan, Evaluasi, dan Tindak Lanjut',
+            'Dokumen dan Rekaman Elemen Dokumentasi',
+            'Dokumen dan Rekaman Elemen Tinjauan Manajemen dan Peningkatan Kinerja',
+        ]);
+    }
+
+    public static function fasilitasBawaan(): string
+    {
+        return implode("\n", [
+            'Ruangan untuk rapat pembukaan dan rapat penutupan audit serta penyusunan laporan',
+            'Peralatan dan perlengkapan penunjang pelaksanaan audit, termasuk audit lapangan',
+            'Pemandu untuk pelaksanaan kontak dan waktu wawancara, pengaturan kunjungan lokasi, pemastian prosedur keselamatan di lokasi diketahui tim audit, serta bantuan pengumpulan informasi',
+        ]);
+    }
+
+    /** Distribusi laporan menurut jenis auditi. */
+    public static function distribusiBawaan(?string $kategori): string
+    {
+        $penanggung = $kategori === 'pjp'
+            ? 'Penanggung Jawab Operasional perusahaan klien audit (salinan)'
+            : 'Kepala Teknik Tambang perusahaan klien audit (salinan)';
+
+        return implode("\n", [
+            'Pimpinan perusahaan klien audit (asli)',
+            $penanggung,
+            'Tim Audit (salinan)',
+            'Direktur Teknik dan Lingkungan Mineral dan Batubara/Kepala Inspektur Tambang (salinan)',
+        ]);
+    }
+
     /** Pihak yang mengesahkan Rencana Audit. */
-    public static function pengesah(): array
+    /**
+     * Pihak yang mengesahkan Rencana Audit. Auditi perusahaan jasa
+     * pertambangan (PJP) wajib menyertakan Penanggung Jawab Operasionalnya.
+     */
+    public static function pengesah(?string $kategori = null): array
     {
         return [
             'ktt'   => ['peran' => 'Kepala Teknik Tambang', 'wajib' => true],
-            'pjo'   => ['peran' => 'Penanggung Jawab Operasional', 'wajib' => false],
+            'pjo'   => ['peran' => 'Penanggung Jawab Operasional', 'wajib' => $kategori === 'pjp'],
             'ketua' => ['peran' => 'Ketua Tim Audit', 'wajib' => true],
         ];
     }
@@ -353,7 +471,7 @@ final class SmkpTahap
      *
      * @return array{terisi:array<string,bool>,jumlah:int,total:int,lengkap:bool,kurang:array<int,string>}
      */
-    public static function rekapRencana(?array $rencana): array
+    public static function rekapRencana(?array $rencana, ?string $kategori = null): array
     {
         $r = $rencana ?? [];
         $terisi = [];
@@ -361,10 +479,10 @@ final class SmkpTahap
         foreach (array_keys(self::komponenRencana()) as $k) {
             $terisi[$k] = match ($k) {
                 'tanggal'    => !empty($r['tanggal_mulai']) && !empty($r['tanggal_selesai']),
-                'susunan'    => self::adaBaris($r['susunan'] ?? [], ['kegiatan']),
+                'susunan'    => self::adaBaris($r['susunan'] ?? [], ['kegiatan', 'kriteria', 'metode']),
                 'tugas'      => self::adaBaris($r['tugas'] ?? [], ['nama']),
                 'metode'     => trim((string) ($r['metode'] ?? '')) !== '',
-                'pengesahan' => self::pengesahanLengkap($r['pengesahan'] ?? []),
+                'pengesahan' => self::pengesahanLengkap($r['pengesahan'] ?? [], $kategori),
                 default      => trim((string) ($r[$k] ?? '')) !== '',
             };
         }
@@ -396,9 +514,9 @@ final class SmkpTahap
         return false;
     }
 
-    private static function pengesahanLengkap($p): bool
+    private static function pengesahanLengkap($p, ?string $kategori): bool
     {
-        foreach (self::pengesah() as $k => $def) {
+        foreach (self::pengesah($kategori) as $k => $def) {
             if (!$def['wajib']) continue;
             if (trim((string) (((array) $p)[$k]['nama'] ?? '')) === '') return false;
         }

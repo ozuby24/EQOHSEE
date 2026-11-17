@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Rules\DalamPerusahaan;
+
 use App\Models\{ActivityLog, Company, Document, Procedure};
 use App\Support\{Db, Dokumen, Iso, KopDokumen};
 use Illuminate\Http\Request;
@@ -9,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use App\Support\Berkas;
 
 /**
  * ISO & Dokumen — register dokumen terkendali.
@@ -139,7 +142,7 @@ class DocumentController extends Controller
         return Inertia::render('Print/Dokumen', [
             'documents' => Document::with('company')
                 ->orderByRaw(Dokumen::urutJenisSql())->orderBy('kode')->get(),
-            'dok'       => KopDokumen::untuk('daftar-induk', Company::first()),
+            'dok'       => KopDokumen::untuk('daftar-induk', $this->perusahaanKop()),
             'kembali'   => route('dokumen.index'),
         ]);
     }
@@ -212,7 +215,9 @@ class DocumentController extends Controller
                 'kode'   => (string) $kode,
                 'nama'   => Iso::get((string) $kode)['nama'] ?? (string) $kode,
                 'warna'  => Iso::warna((string) $kode),
-                'url'    => route('iso.show', $kode),
+                // Hanya standar yang punya halaman yang ditautkan; kode
+                // lama di luar daftar tetap tampil, tanpa tautan 404.
+                'url'    => Iso::get((string) $kode) ? route('iso.show', (string) $kode) : null,
                 'butir'  => $dokumen->klausul()[$kode],
             ], array_keys($dokumen->klausul())),
 
@@ -262,7 +267,7 @@ class DocumentController extends Controller
             'ringkasan_perubahan' => ['required','string','max:2000'],
             'tanggal'             => ['nullable','date'],
             'tanggal_tinjau'      => ['nullable','date'],
-            'berkas'              => ['nullable','file','max:20480'],
+            'berkas'              => array_merge(['nullable'], Berkas::ATURAN_DOKUMEN),
         ]);
 
         $berkas = $this->simpanBerkas($request) ?: $dokumen->berkas;
@@ -426,14 +431,14 @@ class DocumentController extends Controller
 
     private function validasi(Request $r, ?Document $abaikan = null): array
     {
-        $d = $r->validate([
+        $d = $this->pemilik($r->validate([
             'kode'            => ['required','string','max:60', Rule::unique('documents','kode')->ignore($abaikan?->id)],
             'judul'           => ['required','string','max:200'],
             'jenis'           => ['required', Rule::in(Dokumen::JENIS)],
             'klasifikasi'     => ['nullable', Rule::in(Dokumen::KLASIFIKASI)],
             'departemen'      => ['nullable','string','max:100'],
             'company_id'      => ['nullable','exists:companies,id'],
-            'procedure_id'    => ['nullable','exists:procedures,id'],
+            'procedure_id'    => ['nullable', new DalamPerusahaan('procedures')],
             'revisi'          => ['nullable','integer','min:0','max:999'],
             'status'          => ['required', Rule::in(Dokumen::STATUS)],
             'tanggal_terbit'  => ['nullable','date'],
@@ -442,8 +447,8 @@ class DocumentController extends Controller
             'ringkasan'       => ['nullable','string','max:3000'],
             'acuan'           => ['nullable','string','max:150'],
             'disetujui_oleh'  => ['nullable','string','max:150'],
-            'berkas'          => ['nullable','file','max:20480'],
-        ]);
+            'berkas'          => array_merge(['nullable'], Berkas::ATURAN_DOKUMEN),
+        ]));
 
         // Hasil validasi memuat objek unggahan, bukan path. Buang di sini agar
         // tidak ikut mass-assignment; pemanggil menyetel path hasil simpanBerkas().
@@ -455,14 +460,18 @@ class DocumentController extends Controller
     /** Simpan berkas unggahan; kembalikan path, atau null bila tidak ada. */
     private function simpanBerkas(Request $r): ?string
     {
-        $f = $r->file('berkas');
-        return ($f && $f->isValid()) ? $f->store('dokumen', 'public') : null;
+        return Berkas::simpan($r->file('berkas'), 'dokumen');
     }
 
     /** Unduh berkas revisi berjalan. */
     public function unduh(Document $dokumen)
     {
-        abort_if(!$dokumen->berkas || !Storage::disk('public')->exists($dokumen->berkas), 404, 'Berkas tidak ditemukan.');
-        return Storage::disk('public')->download($dokumen->berkas);
+        /* Diteruskan ke BerkasController supaya hanya ada SATU tempat
+           yang tahu di disk mana berkas tertutup berada. Selama ada dua,
+           pemindahan disk berikutnya akan memperbaiki satu dan
+           melewatkan yang lain — dan yang terlewat adalah yang jarang
+           dibuka, jadi tidak segera ketahuan. */
+        abort_if(!$dokumen->berkas, 404, 'Berkas tidak ditemukan.');
+        return app(BerkasController::class)->unduh('dok', $dokumen->getKey());
     }
 }

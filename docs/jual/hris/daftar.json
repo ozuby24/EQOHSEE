@@ -1,0 +1,143 @@
+{
+  "kunci": "hris",
+  "label": "HRIS",
+  "jual": "HRIS — Tenaga Kerja Tambang",
+  "harga": 2500000,
+  "ket": "Roster bergilir 14:7 dengan batas jam kerja Kepmenakertrans 234/2003, absensi mesin lapangan yang direkonsiliasi terhadapnya termasuk shift malam lewat tengah malam, cuti UU 13/2003 yang menulis ke kalender regu, dan lembur PP 35/2021 yang diusulkan dari jam yang benar-benar tercatat.",
+  "semboyan": "People Drive Progress",
+  "halaman": [
+    {
+      "berkas": "01-hris.jpg",
+      "label": "Ringkasan",
+      "grup": "",
+      "path": "hris",
+      "status": "ok"
+    },
+    {
+      "berkas": "02-hris-roster.jpg",
+      "label": "Kalender Regu",
+      "grup": "Roster & Shift",
+      "path": "hris/roster",
+      "status": "ok"
+    },
+    {
+      "berkas": "03-hris-roster-pola.jpg",
+      "label": "Pola & Regu",
+      "grup": "Roster & Shift",
+      "path": "hris/roster/pola",
+      "status": "ok"
+    },
+    {
+      "berkas": "04-hris-roster-kebutuhan.jpg",
+      "label": "Manpower Plan",
+      "grup": "Roster & Shift",
+      "path": "hris/roster/kebutuhan",
+      "status": "ok"
+    },
+    {
+      "berkas": "05-hris-absensi.jpg",
+      "label": "Pemantauan Harian",
+      "grup": "Absensi",
+      "path": "hris/absensi",
+      "status": "ok"
+    },
+    {
+      "berkas": "06-hris-absensi-rekap.jpg",
+      "label": "Rekap Periode",
+      "grup": "Absensi",
+      "path": "hris/absensi/rekap",
+      "status": "ok"
+    },
+    {
+      "berkas": "07-hris-absensi-mesin.jpg",
+      "label": "Mesin Lapangan",
+      "grup": "Absensi",
+      "path": "hris/absensi/mesin",
+      "status": "ok"
+    },
+    {
+      "berkas": "08-hris-cuti.jpg",
+      "label": "Pengajuan & Persetujuan",
+      "grup": "Cuti & Izin",
+      "path": "hris/cuti",
+      "status": "ok"
+    },
+    {
+      "berkas": "09-hris-cuti-saldo.jpg",
+      "label": "Saldo Cuti",
+      "grup": "Cuti & Izin",
+      "path": "hris/cuti/saldo",
+      "status": "ok"
+    },
+    {
+      "berkas": "10-hris-lembur.jpg",
+      "label": "Perintah Lembur",
+      "grup": "Lembur",
+      "path": "hris/lembur",
+      "status": "ok"
+    },
+    {
+      "berkas": "11-hris-lembur-upah.jpg",
+      "label": "Upah Dasar",
+      "grup": "Lembur",
+      "path": "hris/lembur/upah",
+      "status": "ok"
+    },
+    {
+      "berkas": "12-hris-gaji.jpg",
+      "label": "Periode & Slip",
+      "grup": "Penggajian",
+      "path": "hris/gaji",
+      "status": "ok"
+    },
+    {
+      "berkas": "13-hris-gaji-acuan.jpg",
+      "label": "Acuan Pajak & BPJS",
+      "grup": "Penggajian",
+      "path": "hris/gaji/acuan",
+      "status": "ok"
+    },
+    {
+      "berkas": "14-hris-kontrak.jpg",
+      "label": "PKWT & PKWTT",
+      "grup": "Kontrak Kerja",
+      "path": "hris/kontrak",
+      "status": "ok"
+    },
+    {
+      "berkas": "15-hris-saya.jpg",
+      "label": "Beranda Saya",
+      "grup": "Milik Saya",
+      "path": "hris/saya",
+      "status": "ok"
+    },
+    {
+      "berkas": "16-hris-saya-kehadiran.jpg",
+      "label": "Kehadiran Saya",
+      "grup": "Milik Saya",
+      "path": "hris/saya/kehadiran",
+      "status": "ok"
+    },
+    {
+      "berkas": "17-hris-saya-cuti.jpg",
+      "label": "Cuti Saya",
+      "grup": "Milik Saya",
+      "path": "hris/saya/cuti",
+      "status": "ok"
+    },
+    {
+      "berkas": "18-hris-saya-gaji.jpg",
+      "label": "Slip Gaji Saya",
+      "grup": "Milik Saya",
+      "path": "hris/saya/gaji",
+      "status": "ok"
+    },
+    {
+      "berkas": "19-hris-saya-kontrak.jpg",
+      "label": "Kontrak Saya",
+      "grup": "Milik Saya",
+      "path": "hris/saya/kontrak",
+      "status": "ok"
+    }
+  ]
+}

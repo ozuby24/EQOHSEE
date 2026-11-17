@@ -35,7 +35,7 @@ const label = 'block text-[12px] font-semibold text-cam-ink mb-1.5';
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-[1200px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <div v-if="bolehUbah" class="bg-white rounded-2xl shadow-card border border-stone-100 overflow-hidden">
       <button type="button" class="w-full px-6 py-4 text-left text-[13px] font-bold text-cam-ink"
@@ -52,7 +52,7 @@ const label = 'block text-[12px] font-semibold text-cam-ink mb-1.5';
           </div>
           <div>
             <label :class="label">Jenis <span class="text-red-500">*</span></label>
-            <select v-model="form.jenis" :class="isian">
+            <select v-model="form.jenis" :class="isian" aria-label="Jenis">
               <option v-for="o in opsi.jenis" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
             </select>
           </div>

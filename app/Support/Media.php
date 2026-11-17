@@ -23,11 +23,30 @@ final class Media
     }
 
     /**
-     * Video latar hero.
+     * Video latar hero halaman depan.
      *
-     * Hanya dipasang di layar lebar. Di ponsel gambar diam yang dipakai —
-     * memutar video belasan megabita lewat jaringan site tambang bukan
-     * kesan mewah, melainkan halaman yang tidak kunjung muncul.
+     * REKAMAN OPERASI TAMBANG, TANPA SATU PUN TEKS.
+     *
+     * Truk angkut, ekskavator memuat, dozer, aerial pit, lalu haul
+     * malam. Tidak ada logo maupun tulisan di dalamnya — halaman depan
+     * menggambar wordmark, tagline, dan tombolnya sendiri DI ATAS
+     * rekaman ini, dan logo kedua yang berbeda bentuk di belakangnya
+     * bukan penegasan merek melainkan bantahan terhadapnya.
+     *
+     * Berkas ini sempat berisi montase yang justru berakhir pada logo
+     * EQOHSEE bergaya tiga dimensi yang tidak sama dengan wordmark
+     * aplikasi, dan di antara potongannya memuat layar kabin
+     * bertuliskan kacau ("EQOH", "RPN", angka yang tidak terbaca).
+     *
+     * Durasinya TIDAK disebut di layar. Tombol "Tonton Video" pernah
+     * berbunyi "Operasional tambang · 10 detik", dan angka itu menjadi
+     * salah begitu rekamannya ditukar dengan yang berdurasi sembilan
+     * detik — fakta yang sama disimpan di dua tempat selalu berselisih
+     * pada penggantian berikutnya. Kalimatnya kini tidak menyebut
+     * angka sama sekali.
+     *
+     * Berlaku pula di sini: periksa SELURUH bingkai sebelum memasang
+     * rekaman baru — lihat catatan pada MASUK_VIDEO di bawah.
      */
     public const HERO_VIDEO  = 'hero/tambang.mp4';
     public const HERO_POSTER = 'hero/tambang.jpg';
@@ -35,11 +54,49 @@ final class Media
     /**
      * Latar halaman masuk dan pendaftaran.
      *
-     * Sebelumnya sebuah foto 900 piksel dipakai untuk panel setinggi layar
-     * penuh. Diperbesar tiga kali lipat pada layar berkerapatan ganda,
-     * fotonya pecah — dan itu adalah layar pertama yang dilihat pengguna
-     * baru. Rekaman 1280 piksel yang bergerak menutupi jarak itu jauh
-     * lebih baik daripada foto diam yang diregangkan.
+     * REKAMANNYA HARUS BEDA DARI HALAMAN DEPAN, dan itu bukan selera.
+     * Berkas ini sempat berisi klip yang sama persis dengan butir galeri
+     * "Inspeksi & Observasi" — posternya bahkan byte-per-byte identik
+     * dengan galeri/safety.jpg. Akibatnya orang yang menekan "Masuk"
+     * dari halaman depan melihat gambar yang baru saja dilewatinya, dan
+     * perpindahan halaman itu terbaca sebagai halaman yang gagal
+     * berganti, bukan sebagai halaman baru.
+     *
+     * Isinya sekarang film brand: aerial pit senja, ruang kendali,
+     * animasi tanda heksagon EQOHSEE yang benar, tampilan dasbor, lalu
+     * regu berjalan. Halaman depan memakai rekaman operasi tanpa teks.
+     * Audionya dipertahankan — panel ini membisukan rekamannya, tetapi
+     * berkas yang sama dipakai modal "Tonton Video" dengan kontrol.
+     *
+     * Ukurannya 1920×1080, bukan 1280×720 seperti dahulu. Panelnya
+     * setinggi layar penuh: pada layar berkerapatan ganda, sumber 720p
+     * diregangkan sekitar tiga kali dan lunaknya terlihat justru pada
+     * layar pertama yang dilihat pengguna baru.
+     *
+     * Posternya adalah bingkai pertama rekaman yang sama, jadi tidak ada
+     * lompatan gambar saat rekamannya mulai berjalan.
+     *
+     * ── WAJIB: PERIKSA SELURUH BINGKAI, BUKAN CUPLIKANNYA ──
+     *
+     * Rekaman stok semacam ini kerap ditutup KARTU PENUTUP BERLOGO pada
+     * satu detik terakhirnya. Berkas ini sempat lolos dengan kartu
+     * penutup berisi logo perisai biru-hijau dan tagline "Sustaining
+     * Performance | Shaping the Future" — logo yang bukan milik EQOHSEE
+     * sama sekali, tergambar tepat di belakang wordmark aslinya.
+     *
+     * Ia lolos karena diperiksa dengan mengambil bingkai tiap dua detik
+     * (0, 2, 4, 6, 8) pada rekaman sepuluh detik: kartunya mulai pada
+     * detik 9,02 dan tidak satu pun cuplikan mengenainya. Pemeriksaan
+     * yang tidak menyentuh detik terakhir bukan pemeriksaan.
+     *
+     * Cara memeriksa yang benar — kontak sheet SELURUH berkas:
+     *
+     *   ffmpeg -i public/media/hero/masuk.mp4 \
+     *     -vf "fps=4,scale=240:-1,tile=8x5" /tmp/periksa-%%02d.png
+     *
+     * Lalu LIHAT gambarnya. Tidak boleh ada teks, logo, atau kartu
+     * penutup di bingkai mana pun — halaman ini sudah menggambar
+     * wordmark, tagline, dan delapan aspek di atas rekamannya.
      */
     public const MASUK_VIDEO  = 'hero/masuk.mp4';
     public const MASUK_POSTER = 'hero/masuk.jpg';

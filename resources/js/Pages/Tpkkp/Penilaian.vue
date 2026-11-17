@@ -20,6 +20,10 @@ import { computed, reactive, ref, watch } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import PickerTpkkp from '../../Components/PickerTpkkp.vue';
 import type { HalamanPenilaian } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanPenilaian>();
 
@@ -69,6 +73,33 @@ function kategori(rasio: number | null) {
   return props.ambang[props.ambang.length - 1] ?? null;
 }
 
+/**
+ * Tingkat rubrik satu item: rerata sel TERISI, dibulatkan setengah ke bawah.
+ *
+ * Inilah yang boleh ditampilkan sebagai tingkat pada formulir penilaian.
+ * Sebelumnya lencananya memakai `kategori(capaian(...))` — kategori dari
+ * RASIO capaian, yang skalanya tidak selaras dengan tingkat rubrik:
+ * mengisi 3 memberi rasio 0,6 yang jatuh ke "Reaktif", dan mengisi 2
+ * memberi "Dasar". Penilai membaca satu tingkat lebih rendah daripada
+ * yang benar-benar dinilainya, tanpa satu pun galat.
+ *
+ * Pembulatannya sama dengan App\Support\Tpkkp::roundLevel() — setengah
+ * ke bawah, sebab menaikkan tingkat kematangan yang belum dicapai adalah
+ * kesalahan yang berpihak pada auditi.
+ */
+function tingkat(kode: string) {
+  const sel = nilai[kode];
+  if (!sel) return null;
+
+  const isi = Object.values(sel).filter((v): v is number => v !== null && v !== undefined);
+  if (!isi.length) return null;
+
+  const rerata = isi.reduce((a, b) => a + b, 0) / isi.length;
+  const n = Math.min(5, Math.max(1, Math.ceil(rerata - 0.5)));
+
+  return props.tingkatan.find((t) => t.nomor === n) ?? null;
+}
+
 /** Capaian satu item: rerata sel terisi dibagi nilai penuh. */
 function capaian(kode: string): number | null {
   const sel = nilai[kode];
@@ -102,8 +133,8 @@ const kemajuan = computed(() => {
 
 const kunciSel = computed(() => (props.entitas.length ? props.entitas : ['_']));
 
-function buka(m: string, p?: string | null) {
-  if (kotor.value && !confirm('Ada perubahan yang belum tersimpan. Tinggalkan halaman ini?')) return;
+async function buka(m: string, p?: string | null) {
+  if (kotor.value && !await tanya('Ada perubahan yang belum tersimpan. Tinggalkan halaman ini?')) return;
 
   router.get('/tpkkp/penilaian', { m, ...(p ? { p } : {}) }, {
     preserveScroll: false,
@@ -128,6 +159,24 @@ function simpan() {
     });
 }
 
+/**
+ * Isi seluruh kolom entitas satu item sekaligus.
+ *
+ * Penilaian CAM atas dua belas mitra kerja sebelumnya harus diisi satu
+ * per satu — dua belas klik untuk satu item, dikali ratusan item.
+ * Kenyataannya sebagian besar mitra memang bernilai sama, dan yang
+ * berbeda hanya satu atau dua; mengisi seluruhnya lalu menyesuaikan
+ * yang berbeda jauh lebih sedikit pekerjaannya daripada mengisi
+ * satu-satu dari kosong.
+ *
+ * `null` mengosongkan seluruhnya — dan itu perlu ada: tanpa cara
+ * mengosongkan massal, satu salah klik pada tombol isi-cepat menuntut
+ * dua belas klik untuk dibatalkan.
+ */
+function isiCepat(kode: string, v: number | null) {
+  for (const sel of kunciSel.value) nilai[kode][sel] = v;
+}
+
 const bukaRubrik = reactive<Record<string, boolean>>({});
 const bukaTarget = reactive<Record<string, boolean>>({});
 </script>
@@ -135,7 +184,7 @@ const bukaTarget = reactive<Record<string, boolean>>({});
 <template>
   <Head title="PTPKKP — Penilaian" />
 
-  <div class="max-w-6xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <PickerTpkkp v-bind="picker" />
 
@@ -223,24 +272,59 @@ const bukaTarget = reactive<Record<string, boolean>>({});
               </div>
 
               <div class="text-right whitespace-nowrap">
-                <span v-if="kategori(capaian(it.kode))"
+                <span v-if="tingkat(it.kode)"
                       class="inline-block text-[10.5px] font-bold text-white px-2.5 py-1 rounded-md"
-                      :style="{ background: kategori(capaian(it.kode))!.warna }">
-                  {{ kategori(capaian(it.kode))!.label }}
+                      :style="{ background: tingkat(it.kode)!.warna }">
+                  {{ tingkat(it.kode)!.label }}
                 </span>
                 <span v-else class="inline-block text-[10.5px] font-bold px-2.5 py-1 rounded-md
                                     bg-stone-100 text-stone-400">Belum dinilai</span>
                 <div class="num text-[11px] text-stone-400 mt-1">
                   {{ terisi(it.kode) }}/{{ kunciSel.length }} terisi
                 </div>
+                <!--
+                  Kedua angka ditampilkan terbuka, bukan salah satunya.
+                  Tingkat adalah rerata skor yang diisi; capaian adalah
+                  rasio nilai/maks menurut rumus workbook, dengan metode
+                  kosong dihitung nol. Keduanya sah dan sering berbeda —
+                  menyembunyikan salah satunya membuat selisihnya tampak
+                  seperti kesalahan.
+                -->
+                <div v-if="capaian(it.kode) !== null" class="num text-[10.5px] text-stone-300 mt-0.5">
+                  capaian {{ (capaian(it.kode)! * 100).toFixed(1) }}%
+                  <span v-if="kategori(capaian(it.kode))">· {{ kategori(capaian(it.kode))!.label }}</span>
+                </div>
               </div>
+            </div>
+
+            <!--
+              Baris isi cepat, hanya bila entitasnya lebih dari satu:
+              pada penilaian tanpa entitas tombol ini tidak menghemat
+              apa pun dan hanya menambah satu hal untuk dibaca.
+            -->
+            <div v-if="bisaSunting && kunciSel.length > 1"
+                 class="flex flex-wrap items-center gap-1.5 mb-2">
+              <span class="text-[11px] text-stone-500">Isi cepat seluruh
+                {{ (metode.find(x => x.kode === metodeAktif)?.labelEntitas || 'entitas').toLowerCase() }}:</span>
+
+              <button v-for="i in 5" :key="i" type="button"
+                      class="w-7 h-7 rounded-md border border-stone-200 bg-white text-[12px]
+                             font-bold num text-cam-ink hover:border-cam-lime transition"
+                      :title="`Isi ${i} untuk seluruh kolom`"
+                      @click="isiCepat(it.kode, i)">{{ i }}</button>
+
+              <button type="button"
+                      class="w-7 h-7 rounded-md border border-stone-200 bg-white text-[12px]
+                             text-stone-400 hover:border-red-300 hover:text-red-500 transition"
+                      title="Kosongkan seluruh kolom"
+                      @click="isiCepat(it.kode, null)">✕</button>
             </div>
 
             <!-- kolom nilai -->
             <div class="flex flex-wrap gap-2">
               <label v-for="sel in kunciSel" :key="sel"
                      class="flex items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 px-2.5 py-1.5">
-                <span class="text-[11px] text-stone-500 whitespace-nowrap">
+                <span class="block text-[11px] text-stone-500 whitespace-nowrap">
                   {{ sel === '_' ? 'Nilai' : sel }}
                 </span>
                 <select v-model="nilai[it.kode][sel]" :disabled="!bisaSunting"
@@ -272,12 +356,28 @@ const bukaTarget = reactive<Record<string, boolean>>({});
                       @click="bukaRubrik[it.kode] = !bukaRubrik[it.kode]">
                 Rubrik 5 tingkat {{ bukaRubrik[it.kode] ? '▾' : '▸' }}
               </button>
+              <!--
+                Tingkat rubriknya DAPAT DIKLIK, dan mengkliknya mengisi
+                nilainya. Penilai membaca rubrik justru untuk memutuskan
+                angkanya; memaksanya menggulir kembali ke atas untuk
+                memilih angka yang baru saja ia baca adalah langkah yang
+                tidak menambah apa pun.
+
+                Pada penilaian berentitas, satu klik mengisi seluruh
+                kolom sekaligus — lalu yang berbeda tinggal disesuaikan.
+              -->
               <div v-if="bukaRubrik[it.kode]" class="mt-1.5 space-y-1">
-                <div v-for="r in it.rubrik" :key="r.tingkat" class="flex gap-2.5 text-[11.5px] leading-snug">
+                <component :is="bisaSunting ? 'button' : 'div'"
+                           v-for="r in it.rubrik" :key="r.tingkat"
+                           :type="bisaSunting ? 'button' : undefined"
+                           class="w-full flex gap-2.5 text-[11.5px] leading-snug text-left rounded-md"
+                           :class="bisaSunting ? 'hover:bg-stone-50 px-1 -mx-1 py-0.5 transition' : ''"
+                           :title="bisaSunting ? `Isi tingkat ${r.tingkat} untuk seluruh kolom` : undefined"
+                           @click="bisaSunting && isiCepat(it.kode, r.tingkat)">
                   <span class="flex-none w-5 h-5 rounded-md text-white text-[10px] font-bold
                                grid place-items-center" :style="{ background: r.warna }">{{ r.tingkat }}</span>
                   <span class="text-stone-600">{{ r.teks }}</span>
-                </div>
+                </component>
               </div>
             </div>
           </div>
@@ -300,4 +400,6 @@ const bukaTarget = reactive<Record<string, boolean>>({});
       </div>
     </template>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

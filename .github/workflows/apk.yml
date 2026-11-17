@@ -1,0 +1,115 @@
+name: Bangun APK dan AAB
+
+# Dijalankan manual dan pada tag versi. TIDAK pada tiap push: satu build
+# APK memakan belasan menit dan mengunduh SDK Android; menjalankannya
+# untuk tiap perubahan PHP adalah pemborosan yang tidak membuktikan apa pun.
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.5'
+          channel: stable
+
+      - name: Uji aturan inang
+        working-directory: mobile
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
+
+      # Kunci penandatanganan datang dari secrets, tidak pernah dari repo.
+      # Tanpa keduanya, build tetap jalan dan menghasilkan APK berkunci
+      # DEBUG — cukup untuk uji coba, ditolak Play Store. Build mencetak
+      # peringatannya sendiri, jadi keadaan itu tidak lewat diam-diam.
+      # `if: secrets.X != ''` TIDAK dapat diandalkan — konteks secrets
+      # tidak tersedia di dalam ekspresi if. Nilainya dipindah ke env
+      # lebih dulu, lalu env yang diperiksa; ini pola yang didukung.
+      - name: Siapkan kunci rilis
+        if: ${{ env.KEYSTORE != '' }}
+        working-directory: mobile
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          echo "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/rilis.jks"
+          cat > android/key.properties <<EOF
+          storePassword=$STORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=$RUNNER_TEMP/rilis.jks
+          EOF
+
+      # APK per-arsitektur: satu berkas gemuk ±43 MB, tiga berkas terpisah
+      # masing-masing ±13-17 MB. Yang dibagikan untuk uji coba lapangan
+      # sebaiknya yang kecil — jaringan site tambang bukan kantor.
+      - name: Bangun APK
+        working-directory: mobile
+        run: flutter build apk --release --split-per-abi
+
+      - name: Bangun AAB
+        working-directory: mobile
+        run: flutter build appbundle --release
+
+      - name: Periksa tanda tangan APK
+        working-directory: mobile
+        run: |
+          APK=build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          SIGNER=$("$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "$APK" \
+                   | grep -m1 "certificate DN")
+          echo "$SIGNER"
+          # Dicetak, bukan digagalkan: APK berkunci debug memang SAH untuk
+          # uji coba — ia tetap dapat dipasang. Yang berbahaya adalah tidak
+          # tahu yang mana yang sedang dibagikan; keduanya kelihatan sama.
+          case "$SIGNER" in
+            *"Android Debug"*) echo "::warning::APK ini berkunci DEBUG — jangan diunggah ke Play Store." ;;
+          esac
+
+      - name: Periksa tanda tangan AAB
+        working-directory: mobile
+        run: |
+          AAB=build/app/outputs/bundle/release/app-release.aab
+          # AAB ditandatangani jarsigner, bukan apksigner.
+          SIGNER=$(jarsigner -verify -verbose:summary -certs "$AAB" | grep -m1 "Signed by")
+          echo "$SIGNER"
+          # DIGAGALKAN, tidak sekadar diperingatkan — di sinilah AAB
+          # berbeda dari APK. APK berkunci debug masih berguna: dipasang
+          # sideload untuk uji coba. AAB berkunci debug tidak berguna
+          # untuk apa pun: ia tidak dapat dipasang ke ponsel sama sekali
+          # (bukan format pasang), dan Play Console menolak unggahan yang
+          # ditandatangani sertifikat debug. Menyerahkannya sebagai hasil
+          # build berarti menyerahkan berkas yang tidak dapat dipakai
+          # siapa pun, dan itu baru ketahuan di Play Console.
+          case "$SIGNER" in
+            *"Android Debug"*)
+              echo "::error::AAB ditandatangani KUNCI DEBUG. Play Console menolaknya, dan AAB tidak dapat dipasang ke ponsel. Pasang secrets ANDROID_KEYSTORE_BASE64 dkk."
+              exit 1
+              ;;
+          esac
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eqohsee-apk
+          path: mobile/build/app/outputs/flutter-apk/app-*-release.apk
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eqohsee-aab
+          path: mobile/build/app/outputs/bundle/release/app-release.aab
+          retention-days: 30

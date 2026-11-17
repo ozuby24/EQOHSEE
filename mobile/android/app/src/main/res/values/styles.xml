@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Induk AppCompat, bukan Theme.Light: kunci sidik jari (BiometricPrompt)
+         memakai dialog AppCompat pada Android 8 ke bawah dan akan jatuh
+         tanpa tema ini. -->
+    <style name="LaunchTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:statusBarColor">@color/eq_ink</item>
+        <item name="android:navigationBarColor">@color/eq_ink</item>
+    </style>
+    <style name="NormalTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@color/eq_ink</item>
+    </style>
+</resources>

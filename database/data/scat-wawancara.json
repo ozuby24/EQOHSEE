@@ -1,0 +1,317 @@
+{
+  "kamus_kata_kunci_kurasi": {
+    "5.1": [
+      "tidak sesuai prosedur",
+      "melanggar sop",
+      "tidak ikuti prosedur",
+      "menyimpang dari prosedur"
+    ],
+    "5.6": [
+      "tanpa izin",
+      "tanpa ijin",
+      "tidak berwenang",
+      "tanpa otorisasi"
+    ],
+    "5.9": [
+      "kecepatan tinggi",
+      "terlalu cepat",
+      "ngebut",
+      "melebihi batas kecepatan"
+    ],
+    "5.13": [
+      "tanpa apd",
+      "tidak pakai apd",
+      "tidak menggunakan apd",
+      "tanpa helm",
+      "tanpa sarung tangan",
+      "tanpa kacamata",
+      "tanpa masker",
+      "tanpa rompi",
+      "tanpa sabuk pengaman"
+    ],
+    "5.18": [
+      "bercanda",
+      "bersenda gurau",
+      "iseng saat bekerja"
+    ],
+    "6.3": [
+      "rusak",
+      "cacat",
+      "tidak layak pakai",
+      "sudah aus"
+    ],
+    "6.7": [
+      "berantakan",
+      "tidak rapi",
+      "ceceran",
+      "kotor dan berantakan"
+    ],
+    "6.12": [
+      "gelap",
+      "minim cahaya",
+      "pencahayaan kurang",
+      "kurang penerangan"
+    ],
+    "6.13": [
+      "sirkulasi udara buruk",
+      "ventilasi kurang",
+      "pengap"
+    ],
+    "7.2.4": [
+      "emosi",
+      "marah",
+      "stress",
+      "tertekan secara emosional"
+    ],
+    "7.3.2": [
+      "lelah",
+      "kelelahan",
+      "capek",
+      "fatigue"
+    ],
+    "7.3.3": [
+      "kurang tidur",
+      "kurang istirahat",
+      "mengantuk"
+    ],
+    "7.5.1": [
+      "baru bekerja",
+      "belum berpengalaman",
+      "karyawan baru"
+    ],
+    "8.1.6": [
+      "belum dilatih",
+      "tanpa training",
+      "tidak dilatih",
+      "belum training"
+    ],
+    "8.4.7": [
+      "jarang diperiksa",
+      "tidak diinspeksi",
+      "inspeksi terlewat",
+      "jarang dicek"
+    ],
+    "8.6.4": [
+      "tidak ada sop",
+      "sop tidak tersedia",
+      "prosedur tidak ada",
+      "belum ada sop"
+    ],
+    "9.1.3": [
+      "belum ada pelatihan",
+      "tidak ada training awal",
+      "belum training awal"
+    ],
+    "9.3.1": [
+      "risiko belum diidentifikasi",
+      "belum ada penilaian risiko",
+      "belum ada jsa"
+    ],
+    "9.5.7": [
+      "sudah pernah terjadi",
+      "kejadian berulang",
+      "terulang lagi",
+      "kejadian serupa sebelumnya"
+    ]
+  },
+  "pertanyaan_dasar_per_role": {
+    "korban": [
+      "Ceritakan kronologi kejadian dari sudut pandang Anda, dari sebelum sampai sesudah kejadian.",
+      "Apa yang sedang Anda kerjakan tepat sebelum kejadian terjadi?",
+      "Apakah Anda familiar/pernah dilatih untuk tugas yang sedang dikerjakan saat itu?",
+      "Menurut Anda, apa yang menjadi penyebab langsung kejadian ini?"
+    ],
+    "saksiLangsung": [
+      "Di mana posisi Anda dan seberapa jauh dari lokasi kejadian?",
+      "Apa yang Anda lihat/dengar tepat sebelum, saat, dan sesudah kejadian?",
+      "Apakah ada tanda-tanda bahaya yang terlihat sebelum kejadian terjadi?"
+    ],
+    "saksiTidakLangsung": [
+      "Bagaimana kondisi area kerja tersebut secara umum sehari-hari (kebersihan, penerangan, dsb)?",
+      "Apakah pernah ada kejadian serupa/hampir celaka di area ini sebelumnya?"
+    ],
+    "pengawas": [
+      "Apakah pekerjaan ini sudah sesuai rencana kerja & izin kerja yang berlaku?",
+      "Pengawasan seperti apa yang dilakukan terhadap pekerjaan ini sebelum kejadian?",
+      "Kapan terakhir kali tim ini menerima training terkait tugas yang dikerjakan?"
+    ],
+    "manajemen": [
+      "Apakah SOP/kebijakan untuk pekerjaan ini sudah lengkap & terkini?",
+      "Kapan terakhir inspeksi/audit rutin dilakukan di area/unit terkait?",
+      "Apakah ada tindak lanjut dari insiden serupa sebelumnya, dan sejauh mana efektivitasnya?"
+    ]
+  },
+  "pertanyaan_scat_per_role": {
+    "korban": [
+      {
+        "kategori": "Tindakan Tidak Aman",
+        "pertanyaan": [
+          "Apakah ada langkah/prosedur kerja yang Anda lewati atau lakukan berbeda dari biasanya saat itu?",
+          "Apakah Anda merasa terburu-buru atau tertekan untuk menyelesaikan pekerjaan lebih cepat dari biasanya?"
+        ]
+      },
+      {
+        "kategori": "Kondisi Tidak Aman",
+        "pertanyaan": [
+          "Bagaimana kondisi area kerja Anda saat itu (penerangan, kebersihan, kepadatan area, dsb)?",
+          "Apakah ada alat/perkakas yang Anda gunakan dalam kondisi kurang baik atau rusak?"
+        ]
+      },
+      {
+        "kategori": "Faktor Pribadi",
+        "pertanyaan": [
+          "Bagaimana kondisi fisik & mental Anda saat itu (lelah, kurang tidur, stres, dll)?",
+          "Apakah Anda merasa cukup terampil/berpengalaman untuk mengerjakan tugas tersebut?"
+        ]
+      },
+      {
+        "kategori": "Faktor Pekerjaan",
+        "pertanyaan": [
+          "Apakah Anda pernah menerima instruksi/training yang jelas untuk pekerjaan ini sebelumnya?",
+          "Menurut Anda, apakah pengawasan terhadap pekerjaan ini sudah cukup memadai?"
+        ]
+      }
+    ],
+    "saksiLangsung": [],
+    "saksiTidakLangsung": [],
+    "pengawas": [],
+    "manajemen": []
+  },
+  "pertanyaan_kontekstual": [
+    {
+      "kataKunci": [
+        "apd",
+        "helm",
+        "sarung tangan",
+        "kacamata",
+        "masker",
+        "rompi",
+        "sabuk pengaman"
+      ],
+      "pertanyaan": {
+        "korban": "Mengapa APD yang seharusnya dipakai tidak digunakan/tidak berfungsi saat kejadian?",
+        "pengawas": "Apakah ketersediaan & pemeriksaan APD untuk tim ini rutin dilakukan sebelum bekerja?"
+      }
+    },
+    {
+      "kataKunci": [
+        "lelah",
+        "kelelahan",
+        "capek",
+        "kurang tidur",
+        "kurang istirahat",
+        "ngantuk",
+        "shift malam"
+      ],
+      "pertanyaan": {
+        "korban": "Bagaimana pola jam kerja & istirahat Anda dalam 3 hari terakhir sebelum kejadian?",
+        "pengawas": "Apakah ada mekanisme pemantauan kelelahan pekerja (fatigue management) di area ini?"
+      }
+    },
+    {
+      "kataKunci": [
+        "rusak",
+        "cacat",
+        "tidak layak",
+        "aus"
+      ],
+      "pertanyaan": {
+        "pengawas": "Kapan terakhir alat/unit yang terlibat menjalani inspeksi atau perawatan preventif?",
+        "manajemen": "Apakah ada sistem pelaporan alat rusak yang berjalan efektif sebelum kejadian ini?"
+      }
+    },
+    {
+      "kataKunci": [
+        "tanpa izin",
+        "tanpa ijin",
+        "tidak berwenang"
+      ],
+      "pertanyaan": {
+        "pengawas": "Bagaimana prosedur izin kerja untuk aktivitas ini seharusnya dijalankan?",
+        "manajemen": "Apakah ada kontrol untuk memastikan pekerjaan hanya dilakukan oleh yang berwenang?"
+      }
+    },
+    {
+      "kataKunci": [
+        "berulang",
+        "terulang",
+        "kejadian serupa",
+        "sudah pernah terjadi"
+      ],
+      "pertanyaan": {
+        "manajemen": "Apa tindakan korektif dari kejadian sebelumnya, dan mengapa belum efektif mencegah kejadian ini terulang?"
+      }
+    },
+    {
+      "kataKunci": [
+        "berantakan",
+        "kotor",
+        "tidak rapi",
+        "gelap",
+        "minim cahaya",
+        "ventilasi"
+      ],
+      "pertanyaan": {
+        "saksiTidakLangsung": "Bagaimana kondisi umum area kerja ini (kebersihan, pencahayaan, ventilasi) dalam keseharian?",
+        "pengawas": "Apakah housekeeping & kondisi lingkungan area ini masuk dalam item inspeksi rutin?"
+      }
+    }
+  ],
+  "hierarki_pengendalian_lengkap": [
+    {
+      "level": "Eliminasi",
+      "pertanyaan": "Apakah pekerjaan/aktivitas berisiko ini bisa dihilangkan sepenuhnya dari proses kerja?"
+    },
+    {
+      "level": "Substitusi",
+      "pertanyaan": "Apakah pernah dipertimbangkan mengganti alat/material/metode ini dengan yang lebih aman?"
+    },
+    {
+      "level": "Rekayasa",
+      "pertanyaan": "Rekayasa teknis apa (guarding, interlock, sensor, ventilasi, dll) yang seharusnya ada di titik kejadian ini?"
+    },
+    {
+      "level": "Administrasi",
+      "pertanyaan": "SOP, izin kerja, dan training untuk pekerjaan ini — apakah semuanya sudah diterapkan secara konsisten?"
+    },
+    {
+      "level": "APD",
+      "pertanyaan": "Kalau semua level di atas sudah maksimal, apakah APD yang digunakan tetap memadai sebagai pengendalian terakhir?"
+    }
+  ],
+  "hierarki_pengendalian_apd": [
+    {
+      "level": "APD",
+      "pertanyaan": "APD apa yang digunakan saat kejadian, dan apakah kondisinya baik & sesuai standar?"
+    }
+  ],
+  "hierarki_per_role": {
+    "korban": "hierarki_pengendalian_apd",
+    "saksiLangsung": "hierarki_pengendalian_apd",
+    "saksiTidakLangsung": [],
+    "pengawas": "hierarki_pengendalian_lengkap",
+    "manajemen": "hierarki_pengendalian_lengkap"
+  },
+  "daftar_role": [
+    {
+      "kunci": "korban",
+      "label": "Korban"
+    },
+    {
+      "kunci": "saksiLangsung",
+      "label": "Saksi Langsung"
+    },
+    {
+      "kunci": "saksiTidakLangsung",
+      "label": "Saksi Tidak Langsung"
+    },
+    {
+      "kunci": "pengawas",
+      "label": "Pengawas/PIC"
+    },
+    {
+      "kunci": "manajemen",
+      "label": "Manajemen"
+    }
+  ]
+}

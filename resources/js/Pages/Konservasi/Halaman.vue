@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, minta, batal, lanjut } = useDialog();
+
 
 const props = defineProps<{
   judul: string;
@@ -101,16 +105,17 @@ function ajukan(item: Record<string, any>) {
   });
 }
 
-function setujui(item: Record<string, any>) {
-  if (!window.confirm(`Setujui data ${item.komoditas} periode ${item.periodeLabel}? Setelah disetujui, data tidak dapat diubah lagi.`)) return;
+async function setujui(item: Record<string, any>) {
+  if (!await tanya(`Setujui data ${item.komoditas} periode ${item.periodeLabel}? Setelah disetujui, data tidak dapat diubah lagi.`)) return;
   sibuk[item.id] = true;
   router.post(untuk(props.tautan.recordSetujui, item.id), {}, {
     preserveScroll: true, onFinish: () => { sibuk[item.id] = false; },
   });
 }
 
-function tolak(item: Record<string, any>) {
-  const alasan = window.prompt(`Alasan penolakan data ${item.komoditas} periode ${item.periodeLabel}:`);
+async function tolak(item: Record<string, any>) {
+  const alasan = await minta({ judul: `Tolak data ${item.komoditas} periode ${item.periodeLabel}?`,
+    label: 'Alasan penolakan', jenis: 'panjang', min: 5, labelAksi: 'Tolak', nada: 'bahaya' });
   if (alasan === null) return;
   sibuk[item.id] = true;
   router.post(untuk(props.tautan.recordTolak, item.id), { alasan_tolak: alasan }, {
@@ -125,14 +130,14 @@ const warnaStatus: Record<string, string> = {
   ditolak: 'bg-red-100 text-red-700',
 };
 
-function hapusRecord(item: Record<string, any>) {
-  if (window.confirm(`Hapus data ${item.komoditas} periode ${item.periodeLabel}?`)) {
+async function hapusRecord(item: Record<string, any>) {
+  if (await tanya(`Hapus data ${item.komoditas} periode ${item.periodeLabel}?`)) {
     router.delete(untuk(props.tautan.recordHapus, item.id), { preserveScroll: true });
   }
 }
 
-function hapusAction(item: Record<string, any>) {
-  if (window.confirm(`Hapus tindak lanjut “${item.judul}”?`)) {
+async function hapusAction(item: Record<string, any>) {
+  if (await tanya(`Hapus tindak lanjut “${item.judul}”?`)) {
     router.delete(untuk(props.tautan.actionHapus, item.id), { preserveScroll: true });
   }
 }
@@ -145,12 +150,10 @@ function cetak() {
 <template>
   <Head :title="props.judul" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-cam-orange">Minerba · Environment</p>
-        <h2 class="text-2xl font-extrabold tracking-tight text-stone-800">{{ props.judul }}</h2>
-        <p class="text-[12px] text-stone-500 mt-1">{{ props.subjudul }}</p>
       </div>
       <label class="text-[11px] font-semibold text-stone-500">Periode data
         <select v-model="tahun" class="ml-2 rounded-lg border-stone-200 text-[12px] font-semibold">
@@ -223,8 +226,8 @@ function cetak() {
         <div class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
           <h3 class="font-bold text-[14px]">Catat Data Konservasi</h3><p class="text-[11px] text-stone-400 mt-1">Satu baris untuk satu lokasi, komoditas, dan periode pelaporan.</p>
           <form class="grid gap-3 md:grid-cols-3 mt-4" @submit.prevent="simpanRecord">
-            <select v-model="record.company_id" class="rounded-lg border-stone-200 text-[12px]"><option value="">Semua perusahaan</option><option v-for="company in props.companies" :key="company.id" :value="company.id">{{ company.name }}</option></select>
-            <input v-model="record.periode" required type="date" class="rounded-lg border-stone-200 text-[12px]"><input v-model="record.lokasi" required placeholder="Lokasi / pit / fasilitas" class="rounded-lg border-stone-200 text-[12px]">
+            <select v-model="record.company_id" class="rounded-lg border-stone-200 text-[12px]" aria-label="Perusahaan"><option value="">Semua perusahaan</option><option v-for="company in props.companies" :key="company.id" :value="company.id">{{ company.name }}</option></select>
+            <input v-model="record.periode" required type="date" class="rounded-lg border-stone-200 text-[12px]" aria-label="Periode"><input v-model="record.lokasi" required placeholder="Lokasi / pit / fasilitas" class="rounded-lg border-stone-200 text-[12px]">
             <input v-model="record.komoditas" required placeholder="Komoditas" class="rounded-lg border-stone-200 text-[12px]"><input v-model="record.target_produksi" required type="number" step="any" placeholder="Target produksi" class="rounded-lg border-stone-200 text-[12px]"><input v-model="record.produksi_aktual" required type="number" step="any" placeholder="Produksi aktual" class="rounded-lg border-stone-200 text-[12px]">
             <input v-model="record.material_digali" required type="number" step="any" placeholder="Material digali" class="rounded-lg border-stone-200 text-[12px]"><input v-model="record.recovery_percent" required type="number" step="any" min="0" max="100" placeholder="Recovery %" class="rounded-lg border-stone-200 text-[12px]"><input v-model="record.kehilangan_material" required type="number" step="any" placeholder="Kehilangan material" class="rounded-lg border-stone-200 text-[12px]">
             <input v-model="record.dilusi" required type="number" step="any" placeholder="Dilusi" class="rounded-lg border-stone-200 text-[12px]"><input v-model="record.stok_akhir" required type="number" step="any" placeholder="Stockpile akhir" class="rounded-lg border-stone-200 text-[12px]"><input v-model="record.mineral_ikutan" placeholder="Mineral ikutan" class="rounded-lg border-stone-200 text-[12px]"><p class="self-center rounded-lg bg-stone-50 px-3 py-2 text-[11px] text-stone-500">Tersimpan sebagai <b>draf</b>. Ajukan dari tabel di bawah.</p><textarea v-model="record.catatan" placeholder="Catatan / metode pengukuran" class="rounded-lg border-stone-200 text-[12px] md:col-span-2"></textarea>
@@ -236,16 +239,16 @@ function cetak() {
         <div class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
           <h3 class="font-bold text-[14px]">Rencana Perbaikan</h3><p class="text-[11px] text-stone-400 mt-1">Tindak lanjuti gap recovery, kehilangan, dan pengelolaan mineral ikutan.</p>
           <form class="grid gap-3 mt-4" @submit.prevent="simpanAction">
-            <input v-model="action.judul" required placeholder="Judul tindakan" class="rounded-lg border-stone-200 text-[12px]"><select v-model="action.record_id" class="rounded-lg border-stone-200 text-[12px]"><option value="">Tanpa record tertentu</option><option v-for="item in props.records" :key="item.id" :value="item.id">{{ item.komoditas }} · {{ item.periodeLabel }} · {{ item.lokasi }}</option></select>
-            <div class="grid grid-cols-3 gap-2"><select v-model="action.kategori" class="rounded-lg border-stone-200 text-[12px]"><option v-for="item in props.opsi.kategoriAction" :key="item" :value="item">{{ label(item) }}</option></select><select v-model="action.prioritas" class="rounded-lg border-stone-200 text-[12px]"><option v-for="item in props.opsi.prioritasAction" :key="item" :value="item">{{ label(item) }}</option></select><select v-model="action.status" class="rounded-lg border-stone-200 text-[12px]"><option v-for="item in props.opsi.statusAction" :key="item" :value="item">{{ label(item) }}</option></select></div>
-            <div class="grid grid-cols-2 gap-2"><input v-model="action.penanggung_jawab" placeholder="PIC" class="rounded-lg border-stone-200 text-[12px]"><input v-model="action.target_selesai" type="date" class="rounded-lg border-stone-200 text-[12px]"></div><textarea v-model="action.uraian" placeholder="Uraian tindakan dan indikator selesai" class="rounded-lg border-stone-200 text-[12px]"></textarea><button :disabled="action.processing" class="eq-btn-utama">{{ action.processing ? 'Menyimpan...' : 'Tambah tindak lanjut' }}</button>
+            <input v-model="action.judul" required placeholder="Judul tindakan" class="rounded-lg border-stone-200 text-[12px]"><select v-model="action.record_id" class="rounded-lg border-stone-200 text-[12px]" aria-label="Record"><option value="">Tanpa record tertentu</option><option v-for="item in props.records" :key="item.id" :value="item.id">{{ item.komoditas }} · {{ item.periodeLabel }} · {{ item.lokasi }}</option></select>
+            <div class="grid grid-cols-3 gap-2"><select v-model="action.kategori" class="rounded-lg border-stone-200 text-[12px]" aria-label="Kategori"><option v-for="item in props.opsi.kategoriAction" :key="item" :value="item">{{ label(item) }}</option></select><select v-model="action.prioritas" class="rounded-lg border-stone-200 text-[12px]" aria-label="Prioritas"><option v-for="item in props.opsi.prioritasAction" :key="item" :value="item">{{ label(item) }}</option></select><select v-model="action.status" class="rounded-lg border-stone-200 text-[12px]" aria-label="Status"><option v-for="item in props.opsi.statusAction" :key="item" :value="item">{{ label(item) }}</option></select></div>
+            <div class="grid grid-cols-2 gap-2"><input v-model="action.penanggung_jawab" placeholder="PIC" class="rounded-lg border-stone-200 text-[12px]"><input v-model="action.target_selesai" type="date" class="rounded-lg border-stone-200 text-[12px]" aria-label="Tenggat"></div><textarea v-model="action.uraian" placeholder="Uraian tindakan dan indikator selesai" class="rounded-lg border-stone-200 text-[12px]"></textarea><button :disabled="action.processing" class="eq-btn-utama">{{ action.processing ? 'Menyimpan...' : 'Tambah tindak lanjut' }}</button>
           </form>
         </div>
       </section>
 
       <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-x-auto">
-        <div class="px-5 py-4 border-b border-stone-100 flex items-center justify-between"><h3 class="font-bold text-[14px]">Tindak Lanjut Aktif</h3><Link :href="props.tautan.data" class="text-[11px] font-bold text-cam-orange">Lihat seluruh data</Link></div>
-        <table class="min-w-full text-left text-[12px]"><thead><tr class="border-b border-stone-100 text-stone-400"><th class="px-5 py-3">Tindakan</th><th class="px-5 py-3">Kategori</th><th class="px-5 py-3">PIC</th><th class="px-5 py-3">Target</th><th class="px-5 py-3">Status</th></tr></thead><tbody><tr v-for="item in props.actions.slice(0, 8)" :key="item.id" class="border-b border-stone-50"><td class="px-5 py-3 font-semibold">{{ item.judul }}<small v-if="item.record" class="block text-[10px] text-stone-400">{{ item.record }}</small></td><td class="px-5 py-3">{{ label(item.kategori) }}</td><td class="px-5 py-3">{{ item.penanggung_jawab || '-' }}</td><td class="px-5 py-3">{{ tanggal(item.target_selesai) }}</td><td class="px-5 py-3"><select :value="item.status" class="rounded border-stone-200 text-[11px]" @change="ubahStatus(item, ($event.target as HTMLSelectElement).value)"><option v-for="status in props.opsi.statusAction" :key="status" :value="status">{{ label(status) }}</option></select></td></tr><tr v-if="!props.actions.length"><td colspan="5" class="px-5 py-8 text-center text-stone-400">Belum ada tindak lanjut.</td></tr></tbody></table>
+        <div class="px-5 py-4 border-b border-stone-100 flex items-center justify-between"><h3 class="font-bold text-[14px]">Tindak Lanjut Aktif</h3><Link :href="props.tautan.data" class="text-[11px] font-bold text-cam-orange py-1.5">Lihat seluruh data</Link></div>
+        <table class="min-w-full text-left text-[12px]"><thead><tr class="border-b border-stone-100 text-stone-400"><th class="px-5 py-3">Tindakan</th><th class="px-5 py-3">Kategori</th><th class="px-5 py-3">PIC</th><th class="px-5 py-3">Target</th><th class="px-5 py-3">Status</th></tr></thead><tbody><tr v-for="item in props.actions.slice(0, 8)" :key="item.id" class="border-b border-stone-50"><td class="px-5 py-3 font-semibold">{{ item.judul }}<small v-if="item.record" class="block text-[10px] text-stone-400">{{ item.record }}</small></td><td class="px-5 py-3">{{ label(item.kategori) }}</td><td class="px-5 py-3">{{ item.penanggung_jawab || '-' }}</td><td class="px-5 py-3">{{ tanggal(item.target_selesai) }}</td><td class="px-5 py-3"><select :value="item.status" class="rounded border-stone-200 text-[11px]" @change="ubahStatus(item, ($event.target as HTMLSelectElement).value)" aria-label="Status"><option v-for="status in props.opsi.statusAction" :key="status" :value="status">{{ label(status) }}</option></select></td></tr><tr v-if="!props.actions.length"><td colspan="5" class="px-5 py-8 text-center text-stone-400">Belum ada tindak lanjut.</td></tr></tbody></table>
       </section>
     </template>
 
@@ -274,4 +277,6 @@ function cetak() {
       <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-x-auto"><table class="min-w-full text-left text-[12px]"><thead><tr class="border-b border-stone-100 text-stone-400"><th class="px-5 py-3">Periode</th><th class="px-5 py-3">Lokasi</th><th class="px-5 py-3">Komoditas</th><th class="px-5 py-3">Produksi</th><th class="px-5 py-3">Mineral Ikutan</th><th class="px-5 py-3">Catatan</th></tr></thead><tbody><tr v-for="item in props.records" :key="item.id" class="border-b border-stone-50"><td class="px-5 py-3">{{ item.periodeLabel }}</td><td class="px-5 py-3">{{ item.lokasi }}</td><td class="px-5 py-3 font-semibold">{{ item.komoditas }}</td><td class="px-5 py-3">{{ angka(item.produksi_aktual) }} {{ item.satuan }}</td><td class="px-5 py-3">{{ item.mineral_ikutan || '-' }}</td><td class="px-5 py-3 text-stone-500">{{ item.catatan || '-' }}</td></tr></tbody></table></section>
     </template>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

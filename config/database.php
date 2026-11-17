@@ -38,10 +38,39 @@ return [
             'database' => env('DB_DATABASE', database_path('database.sqlite')),
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
-            'busy_timeout' => null,
+
+            /* Milidetik yang ditunggu penulis sebelum menyerah pada berkas
+               yang sedang dikunci penulis lain.
+
+               null berarti NOL: begitu dua permintaan menulis bersamaan —
+               dua pengawas menyimpan laporan, atau satu menyimpan sementara
+               sesi pengguna lain diperbarui — yang kedua langsung gagal
+               dengan "database is locked" dan pengguna melihat galat 500.
+               SQLite adalah bawaan pemasangan VPS (lihat VPS.md), jadi ini
+               terjadi di produksi, bukan hanya di mesin pengembang.
+
+               journal_mode sengaja TIDAK diubah ke WAL: deploy.sh
+               mencadangkan berkasnya dengan `cp`, dan pada mode WAL salinan
+               itu dapat kehilangan tulisan yang masih tinggal di berkas -wal. */
+            'busy_timeout' => env('DB_BUSY_TIMEOUT', 5000),
             'journal_mode' => null,
             'synchronous' => null,
-            'transaction_mode' => 'DEFERRED',
+
+            /* IMMEDIATE, bukan DEFERRED.
+
+               Transaksi DEFERRED yang membaca lalu menulis harus menaikkan
+               kuncinya di tengah jalan, dan bila penulis lain sedang aktif
+               SQLite menolaknya SEKETIKA — busy_timeout di atas tidak
+               dipanggil sama sekali, sebab menunggu di sana dapat
+               menimbulkan kebuntuan. Pembatas laju `web` menaikkan
+               penghitungnya dengan pola persis itu (baca, lalu tulis) pada
+               setiap permintaan, sehingga daftar Hazard yang memuat belasan
+               foto sekaligus memperoleh sebagian fotonya sebagai galat 500
+               "database is locked".
+
+               IMMEDIATE mengambil kunci tulis di awal transaksi; penulis
+               kedua menunggu giliran lewat busy_timeout alih-alih gagal. */
+            'transaction_mode' => env('DB_TRANSACTION_MODE', 'IMMEDIATE'),
         ],
 
         'mysql' => [

@@ -4,20 +4,24 @@
  */
 import { Head, router } from '@inertiajs/vue3';
 import type { HalamanJenisInspeksi } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 defineProps<HalamanJenisInspeksi>();
 
-function salin(url: string, nama: string) {
-  if (!confirm(`Salin "${nama}" beserta seluruh parameternya?`)) return;
+async function salin(url: string, nama: string) {
+  if (!await tanya(`Salin "${nama}" beserta seluruh parameternya?`)) return;
   router.post(url);
 }
 
-function hapus(url: string, nama: string, dipakai: number) {
+async function hapus(url: string, nama: string, dipakai: number) {
   const pesan = dipakai
     ? `"${nama}" sudah dipakai ${dipakai} inspeksi. Inspeksi yang sudah ada tidak ikut terhapus. Lanjutkan?`
     : `Hapus jenis "${nama}"?`;
 
-  if (!confirm(pesan)) return;
+  if (!await tanya(pesan)) return;
   router.delete(url);
 }
 </script>
@@ -25,7 +29,7 @@ function hapus(url: string, nama: string, dipakai: number) {
 <template>
   <Head title="Jenis & Parameter Inspeksi" />
 
-  <div class="max-w-5xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <div class="bg-white rounded-2xl shadow-card border border-stone-100 p-3 flex items-center gap-2">
       <p class="text-[12px] text-stone-500 px-1">
@@ -80,4 +84,6 @@ function hapus(url: string, nama: string, dipakai: number) {
       </a>
     </div>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

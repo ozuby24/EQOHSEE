@@ -223,10 +223,38 @@ class PersonaliaTest extends TestCase
 
     public function test_warna_tidak_sah_tidak_pernah_masuk_ke_halaman(): void
     {
-        // Nilai yang tersuntik ke atribut style adalah jalan masuk ke
-        // halaman; hanya hex 6 digit yang boleh lewat.
-        $p = $this->perusahaan(['theme_color' => 'red;} body{display:none']);
+        /* Nilai yang tersuntik ke atribut style adalah jalan masuk ke
+           halaman; hanya hex 6 digit yang boleh lewat.
+
+           Yang disimpan di sini muat dalam lebar kolomnya (tujuh
+           huruf). Itu bukan pelemahan ujinya melainkan bentuk serangan
+           yang sesungguhnya mungkin: PostgreSQL dan MySQL menolak nilai
+           yang lebih panjang di tingkat kolom, jadi muatan panjang tidak
+           pernah sampai tersimpan pada pemasangan sungguhan — sementara
+           SQLite menyimpannya utuh, dan uji yang bergantung pada itu
+           lulus di sini tetapi gagal di server. */
+        $p = $this->perusahaan(['theme_color' => 'red;}#f']);
         $u = User::factory()->create(['company_id' => $p->id]);
+
+        $this->assertSame(Tema::BAWAAN_TERANG, Tema::aksen($u));
+        $this->assertStringNotContainsString('red;}', Tema::gaya($u));
+    }
+
+    /**
+     * Muatan panjang pun ditolak penyaringnya, bukan hanya oleh lebar
+     * kolomnya.
+     *
+     * Diuji tanpa menyimpan: lebar kolom adalah lapis kedua, dan lapis
+     * kedua tidak boleh menjadi satu-satunya yang bekerja. Warna dapat
+     * datang dari tempat lain — impor, tempelan, kolom yang suatu saat
+     * dilebarkan.
+     */
+    public function test_muatan_panjang_ditolak_penyaring_bukan_lebar_kolom(): void
+    {
+        $u = User::factory()->make();
+        $u->setRelation('company', new \App\Models\Company([
+            'name' => 'PT Suntik', 'theme_color' => 'red;} body{display:none',
+        ]));
 
         $this->assertSame(Tema::BAWAAN_TERANG, Tema::aksen($u));
         $this->assertStringNotContainsString('display:none', Tema::gaya($u));

@@ -1,9 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import Kesiapan from './Kesiapan.vue';
+import KartuGrafik from '../../Grafik/KartuGrafik.vue';
+import Batang from '../../Grafik/Batang.vue';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { propHalaman } from '../../halaman';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 /*
-  Prop halaman diambil lewat usePage(), bukan defineProps.
+  Prop halaman diambil lewat propHalaman(), bukan defineProps.
 
   Bentuk `defineProps<{ mode: string; [key: string]: any }>()` yang
   dipakai sebelumnya terbaca seolah menerima apa saja. Yang sebenarnya
@@ -18,11 +26,12 @@ import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
   tidak pernah sampai ke tampilan. Uji sisi server tetap hijau, sebab
   yang salah bukan propnya melainkan penerimaannya.
 
-  usePage() mengambil prop halaman apa adanya — termasuk yang dibagikan
-  middleware — sehingga tidak ada daftar nama yang harus dirawat sejajar
-  dengan controller-nya, dan tidak ada nama yang dapat hilang diam-diam.
+  propHalaman() mengambil prop halaman apa adanya — termasuk yang
+  dibagikan middleware — sehingga tidak ada daftar nama yang harus
+  dirawat sejajar dengan controller-nya, dan tidak ada nama yang dapat
+  hilang diam-diam. Dibacanya hidup: lihat resources/js/halaman.ts.
 */
-const props = usePage<any>().props as any;
+const props = propHalaman();
 const isAdmin = computed(() => Boolean(props.pengguna?.admin));
 
 const judul: Record<string, string> = {
@@ -32,8 +41,12 @@ const judul: Record<string, string> = {
 };
 
 const angka = (v: unknown, d = 0) => new Intl.NumberFormat('id-ID', { maximumFractionDigits: d, minimumFractionDigits: d }).format(Number(v || 0));
-const persen = (v: unknown) => `${angka(v, 1)}%`;
-const rupiah = (v: unknown) => `Rp ${angka(v, 0)}`;
+/* null berarti TIDAK ADA YANG DIUKUR, bukan nol persen.
+   angka() memaksa null menjadi 0 dan menampilkannya sebagai
+   "0,0%" — terbaca sebagai kepatuhan buruk padahal tidak ada
+   satu pun alat berjadwal untuk dinilai. */
+const persen = (v: unknown) => (v === null || v === undefined ? '—' : `${angka(v, 1)}%`);
+const rupiah = (v: unknown) => `Rp\u00A0${angka(v, 0)}`;
 const label = (v: string) => String(v || '').replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 const jam = (v: unknown) => v === null || v === undefined ? '—' : `${angka(v, 1)} jam`;
 
@@ -56,8 +69,8 @@ function ubahStatus(item: any, status: string) {
   router.put(untuk(tautan.value.ubahStatus, item.id), { status }, { preserveScroll: true });
 }
 
-function hapus(item: any) {
-  if (window.confirm(`Hapus perintah kerja ${item.nomor || item.gejala}?`)) {
+async function hapus(item: any) {
+  if (await tanya(`Hapus perintah kerja ${item.nomor || item.gejala}?`)) {
     router.delete(untuk(tautan.value.hapus, item.id), { preserveScroll: true });
   }
 }
@@ -66,8 +79,8 @@ function rentang() {
   router.get(window.location.pathname, { dari: props.dari, sampai: props.sampai }, { preserveState: true, replace: true });
 }
 
-function verifikasi(item: any) {
-  if (!window.confirm(`Verifikasi penutupan ${item.nomor || item.gejala}? Setelah diverifikasi, jam dan biayanya tidak dapat diubah.`)) return;
+async function verifikasi(item: any) {
+  if (!await tanya(`Verifikasi penutupan ${item.nomor || item.gejala}? Setelah diverifikasi, jam dan biayanya tidak dapat diubah.`)) return;
   router.post(untuk(tautan.value.verifikasi, item.id), {}, { preserveScroll: true });
 }
 
@@ -103,6 +116,22 @@ function ubahTindak(item: any, status: string) {
   router.put(untuk(tautan.value.tindakUbah, item.id), { status }, { preserveScroll: true });
 }
 
+/**
+ * Tujuh alat teratas menurut jam henti, diwarnai menurut
+ * kritikalitasnya.
+ *
+ * Tujuh, bukan seluruhnya: daftar penuh adalah tabelnya, dan grafik
+ * yang memuat empat puluh batang berhenti menjawab "mana yang
+ * terburuk" — yang justru satu-satunya alasan ia digambar.
+ */
+const alatPenahan = computed(() =>
+  (props.perAlat || []).slice(0, 7).map((a: any) => ({
+    label: a.kode,
+    nilai: Number(a.jamHenti ?? 0),
+    keadaan: a.kritikalitas === 'Tinggi' ? 'gawat'
+      : a.kritikalitas === 'Sedang' ? 'ingat' : 'netral',
+  })));
+
 const warnaStatus: Record<string, string> = {
   dibuka: 'bg-red-100 text-red-700',
   dikerjakan: 'bg-amber-100 text-amber-700',
@@ -114,16 +143,16 @@ const warnaStatus: Record<string, string> = {
 <template>
   <Head :title="judul[props.mode]" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
     <section class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <p class="text-[10px] font-bold uppercase tracking-[.16em] text-cam-lime-deep">Engineering · Reliability</p>
-        <h2 class="text-2xl font-extrabold tracking-tight text-stone-800">{{ judul[props.mode] }}</h2>
+        
         <p class="text-[12px] text-stone-500 mt-1">Alat diambil dari registri Keselamatan Operasi; di sini dicatat gangguan, perbaikan, dan biayanya.</p>
       </div>
       <div class="flex gap-2">
-        <input v-model="props.dari" type="date" class="rounded-lg border-stone-200 text-[11px]">
-        <input v-model="props.sampai" type="date" class="rounded-lg border-stone-200 text-[11px]">
+        <input v-model="props.dari" type="date" class="rounded-lg border-stone-200 text-[11px]" aria-label="Tanggal mulai">
+        <input v-model="props.sampai" type="date" class="rounded-lg border-stone-200 text-[11px]" aria-label="Tanggal akhir">
         <button class="eq-btn-lain" type="button" @click="rentang">Terapkan</button>
       </div>
     </section>
@@ -145,23 +174,13 @@ const warnaStatus: Record<string, string> = {
         <p v-if="a.saran" class="text-[11px] text-stone-700 mt-2 pt-2 border-t border-black/5"><span class="font-bold">Tindakan: </span>{{ a.saran }}</p>
         <div class="mt-2">
           <span v-if="ditangani.has(a.kode)" class="inline-block rounded-full bg-emerald-100 text-emerald-700 px-2 py-1 text-[10px] font-bold">Sedang ditangani</span>
-          <button v-else type="button" class="text-[11px] font-bold text-cam-lime-deep" @click="tindakDari(a)">+ Buat tindak lanjut</button>
+          <button v-else type="button" class="text-[11px] font-bold text-cam-lime-deep py-1.5" @click="tindakDari(a)">+ Buat tindak lanjut</button>
         </div>
       </div>
     </section>
 
-    <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-      <article v-for="c in [
-        { l: 'Ketersediaan', v: persen(props.keandalan?.ketersediaan), c: Number(props.keandalan?.ketersediaan) >= 85 ? 'text-emerald-600' : 'text-red-600' },
-        { l: 'MTBF', v: jam(props.keandalan?.mtbf), c: 'text-cam-ink' },
-        { l: 'MTTR', v: jam(props.keandalan?.mttr), c: 'text-violet-700' },
-        { l: 'Kepatuhan PM', v: persen(props.pm?.persen), c: Number(props.pm?.persen) >= 90 ? 'text-emerald-600' : 'text-amber-600' },
-        { l: 'Tunggakan', v: `${props.tunggakan?.jumlah || 0} WO`, c: props.tunggakan?.kritis ? 'text-red-600' : 'text-stone-700' },
-      ]" :key="c.l" class="rounded-2xl bg-white border border-stone-100 shadow-card p-4">
-        <p class="text-[10px] uppercase tracking-wide font-bold text-stone-400">{{ c.l }}</p>
-        <p class="mt-2 text-xl font-extrabold" :class="c.c">{{ c.v }}</p>
-      </article>
-    </section>
+    <Kesiapan :keandalan="props.keandalan ?? {}" :pm="props.pm ?? {}"
+              :tunggakan="props.tunggakan ?? {}" />
 
     <template v-if="props.mode === 'dashboard'">
       <section class="grid gap-5 lg:grid-cols-2">
@@ -225,6 +244,40 @@ const warnaStatus: Record<string, string> = {
         </div>
       </section>
 
+      <!-- Alat mana yang menahan armada. Sebelumnya jawaban ini hanya
+           ada pada tab "Per Alat" sebagai tabel tujuh kolom, sementara
+           keputusannya diambil dari halaman ini. Batangnya diwarnai
+           menurut kritikalitas alatnya: sepuluh jam henti pada alat
+           pendukung tidak sama artinya dengan sepuluh jam pada alat
+           kritis. -->
+      <KartuGrafik judul="Alat yang paling lama berhenti"
+                   :catatan="(props.perAlat || []).length
+                     ? `${props.perAlat[0].kode} menahan ${angka(props.perAlat[0].jamHenti, 1)} jam dari ${props.perAlat[0].order} perintah kerja.`
+                     : 'Belum ada perintah kerja yang tertaut ke alat pada periode ini.'"
+                   angka="jam henti">
+        <Batang :baris="alatPenahan" satuan="jam" apa-adanya />
+
+        <template #tabel>
+          <table>
+            <thead>
+              <tr><th>Alat</th><th>Kritikalitas</th><th>WO</th><th>Kegagalan</th>
+                  <th>Jam henti</th><th>Menunggu</th><th>Biaya</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="a in props.perAlat || []" :key="a.kode">
+                <td>{{ a.kode }} — {{ a.nama }}</td>
+                <td>{{ a.kritikalitas || '—' }}</td>
+                <td class="num">{{ a.order }}</td>
+                <td class="num">{{ a.kegagalan }}</td>
+                <td class="num">{{ angka(a.jamHenti, 1) }}</td>
+                <td class="num">{{ angka(a.jamMenunggu, 1) }}</td>
+                <td class="num">{{ rupiah(a.biaya) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </template>
+      </KartuGrafik>
+
       <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
         <h3 class="font-bold text-[14px]">Tunggakan pekerjaan</h3>
         <div class="grid gap-3 sm:grid-cols-4 mt-4">
@@ -250,7 +303,7 @@ const warnaStatus: Record<string, string> = {
               <td class="px-5 py-3">{{ t.penanggung_jawab || '—' }}</td>
               <td class="px-5 py-3" :class="t.terlambat ? 'text-red-600 font-bold' : ''">{{ t.target_selesai || '—' }}</td>
               <td class="px-5 py-3">
-                <select :value="t.status" class="rounded border-stone-200 text-[11px]" @change="ubahTindak(t, ($event.target as HTMLSelectElement).value)">
+                <select :value="t.status" class="rounded border-stone-200 text-[11px]" @change="ubahTindak(t, ($event.target as HTMLSelectElement).value)" aria-label="Status">
                   <option v-for="st in props.opsi?.statusTindak || []" :key="st" :value="st">{{ label(st) }}</option>
                 </select>
               </td>
@@ -265,10 +318,10 @@ const warnaStatus: Record<string, string> = {
         <form class="grid gap-3 mt-4" @submit.prevent="simpanTindak">
           <input v-model="tindak.judul" required placeholder="Tindakan yang akan dikerjakan" class="rounded-lg border-stone-200 text-[12px]">
           <div class="grid grid-cols-2 gap-2">
-            <select v-model="tindak.prioritas" class="rounded-lg border-stone-200 text-[12px]">
+            <select v-model="tindak.prioritas" class="rounded-lg border-stone-200 text-[12px]" aria-label="Prioritas">
               <option v-for="pr in props.opsi?.prioritasTindak || []" :key="pr" :value="pr">Prioritas {{ label(pr) }}</option>
             </select>
-            <input v-model="tindak.target_selesai" type="date" class="rounded-lg border-stone-200 text-[12px]">
+            <input v-model="tindak.target_selesai" type="date" class="rounded-lg border-stone-200 text-[12px]" aria-label="Tenggat">
           </div>
           <input v-model="tindak.penanggung_jawab" placeholder="Penanggung jawab" class="rounded-lg border-stone-200 text-[12px]">
           <textarea v-model="tindak.uraian" rows="3" placeholder="Uraian" class="rounded-lg border-stone-200 text-[12px]"></textarea>
@@ -282,16 +335,16 @@ const warnaStatus: Record<string, string> = {
       <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
         <h3 class="font-bold text-[14px]">Buka perintah kerja</h3>
         <form class="grid gap-3 md:grid-cols-3 mt-4" @submit.prevent="simpan">
-          <select v-model="order.ko_object_id" class="rounded-lg border-stone-200 text-[12px]">
+          <select v-model="order.ko_object_id" class="rounded-lg border-stone-200 text-[12px]" aria-label="Objek KO">
             <option value="">Pilih alat (registri KO)</option>
             <option v-for="o in props.objekOpsi || []" :key="o.id" :value="o.id">{{ o.kode }} — {{ o.nama }}</option>
           </select>
           <input v-model="order.nomor" placeholder="Nomor WO (opsional)" class="rounded-lg border-stone-200 text-[12px]">
           <input v-model="order.dilaporkan_pada" type="datetime-local" required class="rounded-lg border-stone-200 text-[12px]">
-          <select v-model="order.jenis" class="rounded-lg border-stone-200 text-[12px]">
+          <select v-model="order.jenis" class="rounded-lg border-stone-200 text-[12px]" aria-label="Jenis">
             <option v-for="j in props.opsi?.jenis || []" :key="j" :value="j">{{ label(j) }}</option>
           </select>
-          <select v-model="order.prioritas" class="rounded-lg border-stone-200 text-[12px]">
+          <select v-model="order.prioritas" class="rounded-lg border-stone-200 text-[12px]" aria-label="Prioritas">
             <option v-for="p in props.opsi?.prioritas || []" :key="p" :value="p">Prioritas {{ label(p) }}</option>
           </select>
           <input v-model.number="order.hm_saat_rusak" type="number" step="any" min="0" placeholder="HM saat rusak" class="rounded-lg border-stone-200 text-[12px]">
@@ -319,12 +372,12 @@ const warnaStatus: Record<string, string> = {
               <td class="px-5 py-3 text-right" :class="w.jamMenunggu > w.jamPerbaikan ? 'text-amber-700 font-semibold' : ''">{{ angka(w.jamMenunggu, 1) }}</td>
               <td class="px-5 py-3 text-right">{{ rupiah(w.biaya) }}</td>
               <td class="px-5 py-3">
-                <select :value="w.status" class="rounded border-stone-200 text-[11px]" @change="ubahStatus(w, ($event.target as HTMLSelectElement).value)">
+                <select :value="w.status" class="rounded border-stone-200 text-[11px]" @change="ubahStatus(w, ($event.target as HTMLSelectElement).value)" aria-label="Status">
                   <option v-for="s in props.opsi?.status || []" :key="s" :value="s">{{ label(s) }}</option>
                 </select>
               </td>
               <td class="px-5 py-3 text-right whitespace-nowrap">
-                <button v-if="w.verifikasi?.dapatDiverifikasi" type="button" class="text-[11px] font-bold text-emerald-600" @click="verifikasi(w)">Verifikasi</button>
+                <button v-if="w.verifikasi?.dapatDiverifikasi" type="button" class="text-[11px] font-bold text-emerald-600 py-1.5" @click="verifikasi(w)">Verifikasi</button>
                 <span v-else-if="w.verifikasi?.sudah" class="text-[10px] text-emerald-700" :title="`oleh ${w.verifikasi.pemverifikasi} · ${w.verifikasi.pada}`">✓ terverifikasi</span>
                 <span v-else-if="w.verifikasi?.menunggu" class="text-[10px] text-amber-600">menunggu verifikasi</span>
                 <button v-if="isAdmin && w.verifikasi?.sudah" type="button" class="ml-3 text-[11px] text-stone-400" @click="batalVerifikasi(w)">Batal</button>
@@ -366,4 +419,6 @@ const warnaStatus: Record<string, string> = {
       </section>
     </template>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

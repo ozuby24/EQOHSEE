@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Rules\DalamPerusahaan;
+
 use App\Models\{ActivityLog, Company, KoObject, TindakLanjut, WaterLog, WaterSump, WaterSumpPump};
 use App\Support\{Alur, KelengkapanShift, KopDokumen, NeracaAir, PeringatanAir};
 use Illuminate\Http\Request;
@@ -58,7 +60,7 @@ class WaterController extends Controller
     public function simpanPompa(Request $request, WaterSump $sump)
     {
         $data = $request->validate([
-            'ko_object_id'     => ['nullable', 'exists:ko_objects,id'],
+            'ko_object_id'     => ['nullable', new DalamPerusahaan('ko_objects')],
             'nama'             => ['nullable', 'string', 'max:150'],
             'kapasitas_m3_jam' => ['required', 'numeric', 'min:0', 'max:1000000'],
             'status'           => ['required', Rule::in(WaterSumpPump::STATUS)],
@@ -96,7 +98,7 @@ class WaterController extends Controller
     {
         $data = $this->pemilik($request->validate([
             'company_id'      => ['nullable', 'exists:companies,id'],
-            'water_sump_id'   => ['required', 'exists:water_sumps,id'],
+            'water_sump_id'   => ['required', new DalamPerusahaan('water_sumps')],
             'tanggal'         => ['required', 'date'],
             'curah_hujan_mm'  => ['required', 'numeric', 'min:0', 'max:2000'],
             'level_m'         => ['nullable', 'numeric', 'min:-1000', 'max:10000'],
@@ -217,11 +219,12 @@ class WaterController extends Controller
     {
         [$dari, $sampai] = $this->rentang($request);
 
-        $sumps = WaterSump::with(['pumps.objek', 'logs'])->where('status', 'aktif')->orderBy('kode')->get();
+        $sumps = WaterSump::with(['pumps.objek', 'logs', 'company:id,name'])
+            ->where('status', 'aktif')->orderBy('kode')->get();
         $semua = WaterLog::with('sump')->whereBetween('tanggal', [$dari, $sampai])->orderBy('tanggal')->get();
         $sah = $semua->whereIn('status', Alur::terhitung());
 
-        $perusahaan = auth()->user()?->company ?: Company::first();
+        $perusahaan = $this->perusahaanKop();
 
         return Inertia::render('Print/Air', [
             'dok'    => KopDokumen::untuk('laporan-air', $perusahaan),
@@ -252,7 +255,7 @@ class WaterController extends Controller
     {
         [$dari, $sampai] = $this->rentang($request);
 
-        $sumps = WaterSump::with(['pumps.objek', 'logs'])->orderBy('kode')->get();
+        $sumps = WaterSump::with(['pumps.objek', 'logs', 'company:id,name'])->orderBy('kode')->get();
         $aktif = $sumps->where('status', 'aktif');
 
         $semua = WaterLog::with('sump')->whereBetween('tanggal', [$dari, $sampai])
@@ -403,12 +406,4 @@ class WaterController extends Controller
         return $dari->greaterThan($sampai) ? [$sampai, $dari] : [$dari, $sampai];
     }
 
-    private function pemilik(array $data): array
-    {
-        if (!auth()->user()?->isAdmin()) {
-            $data['company_id'] = auth()->user()?->company_id;
-        }
-
-        return $data;
-    }
 }

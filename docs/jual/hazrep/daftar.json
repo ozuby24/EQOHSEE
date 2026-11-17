@@ -1,0 +1,80 @@
+{
+  "kunci": "hazrep",
+  "label": "Hazard & Inspeksi",
+  "jual": "Hazard Report & Inspeksi",
+  "harga": 2500000,
+  "ket": "Pelaporan bahaya lapangan dan inspeksi rutin dengan tindak lanjut berjenjang, KPI per jabatan, dan ekspor siap cetak.",
+  "semboyan": "See It Say It",
+  "halaman": [
+    {
+      "berkas": "01-hazard.jpg",
+      "label": "Monitor Laporan",
+      "grup": "Hazard Report",
+      "path": "hazard",
+      "status": "ok"
+    },
+    {
+      "berkas": "02-hazard-buat.jpg",
+      "label": "Buat Laporan",
+      "grup": "Hazard Report",
+      "path": "hazard/buat",
+      "status": "ok"
+    },
+    {
+      "berkas": "03-hazard-analitik.jpg",
+      "label": "Analitik & KPI",
+      "grup": "Hazard Report",
+      "path": "hazard/analitik",
+      "status": "ok"
+    },
+    {
+      "berkas": "04-hazard-evaluasi.jpg",
+      "label": "Evaluasi Temuan",
+      "grup": "Hazard Report",
+      "path": "hazard/evaluasi",
+      "status": "ok"
+    },
+    {
+      "berkas": "05-hazard-pengingat.jpg",
+      "label": "Pengingat PIC",
+      "grup": "Hazard Report",
+      "path": "hazard/pengingat",
+      "status": "ok"
+    },
+    {
+      "berkas": "06-temuan.jpg",
+      "label": "Register Temuan",
+      "grup": "Lintas Modul",
+      "path": "temuan",
+      "status": "ok"
+    },
+    {
+      "berkas": "07-inspeksi-jenis.jpg",
+      "label": "Jenis & Parameter",
+      "grup": "Inspeksi",
+      "path": "inspeksi/jenis",
+      "status": "ok"
+    },
+    {
+      "berkas": "08-inspeksi.jpg",
+      "label": "Daftar Inspeksi",
+      "grup": "Inspeksi",
+      "path": "inspeksi",
+      "status": "ok"
+    },
+    {
+      "berkas": "09-inspeksi-buat.jpg",
+      "label": "Buat Inspeksi",
+      "grup": "Inspeksi",
+      "path": "inspeksi/buat",
+      "status": "ok"
+    },
+    {
+      "berkas": "10-inspeksi-kpi.jpg",
+      "label": "KPI Inspeksi",
+      "grup": "Inspeksi",
+      "path": "inspeksi/kpi",
+      "status": "ok"
+    }
+  ]
+}

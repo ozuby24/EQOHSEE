@@ -27,18 +27,18 @@ const isian = 'rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px] ring
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
 
     <form class="bg-white rounded-2xl shadow-card border border-stone-100 p-3
                  flex flex-wrap items-end gap-2.5 cetak-sembunyi"
           @submit.prevent="tampilkan">
       <div>
         <label class="block text-[11.5px] font-semibold text-cam-ink mb-1">Dari</label>
-        <input v-model="saring.dari" type="date" :class="isian">
+        <input v-model="saring.dari" type="date" :class="isian" aria-label="Tanggal mulai">
       </div>
       <div>
         <label class="block text-[11.5px] font-semibold text-cam-ink mb-1">Sampai</label>
-        <input v-model="saring.sampai" type="date" :class="isian">
+        <input v-model="saring.sampai" type="date" :class="isian" aria-label="Tanggal akhir">
       </div>
       <button type="submit" class="eq-btn-utama" style="flex:none;padding:10px 20px">Tampilkan</button>
       <button type="button" class="px-4 py-2.5 rounded-xl border border-stone-200 text-[12.5px]

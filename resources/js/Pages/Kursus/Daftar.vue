@@ -4,6 +4,10 @@
  */
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import type { HalamanDaftarKursus } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanDaftarKursus>();
 
@@ -22,8 +26,8 @@ function pilihKategori(k: string) {
   terapkan();
 }
 
-function hapus(url: string, judul: string) {
-  if (!confirm(`Hapus kursus "${judul}" beserta modul dan kuisnya?`)) return;
+async function hapus(url: string, judul: string) {
+  if (!await tanya(`Hapus kursus "${judul}" beserta modul dan kuisnya?`)) return;
   router.delete(url, { preserveScroll: true });
 }
 
@@ -35,7 +39,7 @@ const isian = 'ring-focus rounded-xl border border-stone-200 px-3.5 py-2.5 text-
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-6xl mx-auto">
+  <div class="">
 
     <form class="bg-white rounded-2xl shadow-card border border-stone-100 p-3 mb-5"
           @submit.prevent="terapkan">
@@ -49,17 +53,17 @@ const isian = 'ring-focus rounded-xl border border-stone-200 px-3.5 py-2.5 text-
                         text-[13px] transition">
         </div>
 
-        <select v-model="saring.kategori" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan">
+        <select v-model="saring.kategori" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan" aria-label="Kategori">
           <option value="">Semua jenis</option>
           <option v-for="k in opsi.kategori" :key="k" :value="k">{{ k }}</option>
         </select>
 
-        <select v-model="saring.status" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan">
+        <select v-model="saring.status" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan" aria-label="Status">
           <option value="">Semua status</option>
           <option v-for="o in opsi.status" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
         </select>
 
-        <select v-model="saring.urut" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan">
+        <select v-model="saring.urut" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan" aria-label="Urutan">
           <option v-for="o in opsi.urut" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
         </select>
 
@@ -174,4 +178,6 @@ const isian = 'ring-focus rounded-xl border border-stone-200 px-3.5 py-2.5 text-
                  v-html="t.label" />
     </nav>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

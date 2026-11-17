@@ -2,22 +2,49 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BerpemilikPerusahaan;
+use App\Models\Scopes\MilikPerusahaan;
+use App\Support\Waktu;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
+/**
+ * Perusahaan Jasa Pertambangan yang dipantau pemegang izin.
+ *
+ * Dipantau lewat tiga aspek yang berjalan BERSAMAAN — persyaratan
+ * (checklist prakualifikasi SMKP), pelaporan (kepatuhan unggah dokumen),
+ * dan evaluasi (kinerja per semester). Ketiganya berdiri sendiri: satu
+ * PJP muncul di ketiga halaman sekaligus, masing-masing dengan skornya
+ * sendiri. Tidak ada urutan yang harus dilewati.
+ *
+ * Seluruh aturan skor tinggal di sini, bukan di pengendali. Skor yang
+ * dihitung di pengendali akan berbeda antara halaman daftar, ekspor, dan
+ * laporan cetak begitu salah satunya diubah — dan bedanya tidak
+ * menimbulkan galat, hanya dua angka yang sama-sama terlihat sah.
+ */
+#[ScopedBy(MilikPerusahaan::class)]
 class Pjp extends Model
 {
+    use BerpemilikPerusahaan;
     use HasFactory;
 
+    /** Kunci = nilai tersimpan; nilai = label yang dibaca orang. */
     public const STATUS = [
-        'aktif' => 'Aktif Dipantau',
+        'aktif'               => 'Aktif Dipantau',
         'perlu_tindak_lanjut' => 'Perlu Tindak Lanjut',
-        'tidak_aktif' => 'Tidak Aktif',
+        'tidak_aktif'         => 'Tidak Aktif',
     ];
 
+    /** Batas achievement di bawah mana sebuah PJP disebut perlu perhatian. */
+    public const AMBANG_PERHATIAN = 80;
+
     protected $fillable = [
+        'company_id',
         'nama_perusahaan',
         'nib',
         'penanggung_jawab',
@@ -25,6 +52,12 @@ class Pjp extends Model
         'status',
         'catatan',
     ];
+
+    /** Pemegang izin yang memantau — bukan PJP-nya sendiri. */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
 
     public function laporans(): HasMany
     {
@@ -38,142 +71,177 @@ class Pjp extends Model
 
     public function evaluasis(): HasMany
     {
-        return $this->hasMany(PjpEvaluasi::class)->orderByDesc('tahun')->orderByDesc('semester');
+        return $this->hasMany(PjpEvaluasi::class)
+            ->orderByDesc('tahun')->orderByDesc('semester');
     }
 
-    /**
-     * Riwayat catatan bertimestamp — beda dari kolom `catatan` di atas
-     * (satu teks ringkas yang bisa ditimpa lewat form Ubah Data), ini log
-     * tambah-saja: setiap entri baru menambah baris, bukan menimpa yang
-     * lama, supaya ada jejak kenapa/kapan sesuatu berubah dari waktu ke
-     * waktu.
-     */
-    public function catatans(): HasMany
-    {
-        // `latest('id')`, bukan `latest()` biasa (yang urut dari `created_at`
-        // saja) — dua catatan yang ditambahkan dalam detik yang sama akan
-        // punya `created_at` identik, jadi butuh `id` sebagai tiebreaker
-        // supaya urutan "terbaru dulu" tetap benar dan deterministik.
-        return $this->hasMany(PjpCatatan::class)->latest('id');
-    }
+    /* ---------- skor persyaratan (checklist prakualifikasi SMKP) ---------- */
 
     /**
-     * Skor kepatuhan checklist prakualifikasi SMKP, dihitung dari kategori
-     * berbobot A-P (kategori Dokumen Legalitas tidak ikut dihitung karena
-     * berupa syarat wajib terpisah, bukan bagian dari sistem bobot 180).
-     * Item dengan nilai N/A dikeluarkan dari total bobot maupun skor; item
-     * yang belum diisi tetap menyumbang bobot ke penyebut (skor 0).
+     * Skor kepatuhan checklist prakualifikasi SMKP.
+     *
+     * Σ(bobot × nilai ÷ 3) ÷ Σbobot × 100, dari kategori berbobot A–P
+     * (total bobot 178). Dua perlakuan yang mudah tertukar dan keduanya
+     * disengaja:
+     *
+     *  - Item bernilai `na` keluar dari PEMBILANG DAN PENYEBUT. Pertanyaan
+     *    yang tidak berlaku bagi sebuah PJP tidak boleh menghukum skornya.
+     *  - Item yang BELUM DIJAWAB tetap masuk penyebut dengan skor 0.
+     *    Kalau tidak, PJP yang baru menjawab satu pertanyaan dengan nilai
+     *    penuh akan terbaca 100% patuh.
+     *
+     * Kategori LEGALITAS tidak ikut sama sekali — ia gerbang wajib yang
+     * dihitung terpisah lewat smkpLegalitasStatus().
      */
     public function smkpScore(): array
     {
-        $breakdown = $this->smkpCategoryBreakdown();
+        $rincian = $this->smkpCategoryBreakdown();
 
-        $totalBobot = array_sum(array_column($breakdown, 'bobot_dinilai'));
-        $totalSkor = array_sum(array_column($breakdown, 'skor'));
+        $totalBobot = array_sum(array_column($rincian, 'bobot_dinilai'));
+        $totalSkor  = array_sum(array_column($rincian, 'skor'));
 
         $persentase = $totalBobot > 0 ? round($totalSkor / $totalBobot * 100, 1) : 0.0;
 
         return [
-            'total_bobot' => $totalBobot,
-            'total_skor' => round($totalSkor, 1),
-            'persentase' => $persentase,
-            'kategori_risiko' => self::kategoriRisikoFor($persentase),
+            'total_bobot'     => $totalBobot,
+            'total_skor'      => round($totalSkor, 1),
+            'persentase'      => $persentase,
+            'kategori_risiko' => self::kategoriRisiko($persentase),
         ];
     }
 
     /**
-     * Rincian skor checklist SMKP per kategori (A-P, tidak termasuk
-     * LEGALITAS), supaya kelihatan kategori mana yang paling lemah —
-     * bukan cuma satu angka persentase total.
+     * Skor yang sama, dipecah per kategori A–P.
+     *
+     * Satu angka total menjawab "seberapa patuh", tidak menjawab "apa
+     * yang harus diperbaiki lebih dulu". Rincian inilah yang membuat
+     * kategori terlemah dapat ditunjuk dan dibuka langsung formulirnya.
      */
     public function smkpCategoryBreakdown(): array
     {
-        $answers = $this->smkpChecklistAnswers()->get()->keyBy('smkp_checklist_item_id');
+        $jawaban = $this->smkpChecklistAnswers()->get()->keyBy('smkp_checklist_item_id');
 
-        $categories = SmkpChecklistCategory::query()
-            ->where('kode', '!=', 'LEGALITAS')
+        $kategori = SmkpChecklistCategory::query()
+            ->where('kode', '!=', SmkpChecklistCategory::LEGALITAS)
             ->orderBy('urutan')
             ->with('items')
             ->get();
 
-        return $categories->map(function (SmkpChecklistCategory $category) use ($answers) {
+        return $kategori->map(function (SmkpChecklistCategory $k) use ($jawaban) {
             $bobotDinilai = 0;
             $skor = 0.0;
 
-            foreach ($category->items as $item) {
-                $nilai = $answers->get($item->id)?->nilai;
+            foreach ($k->items as $item) {
+                $nilai = $jawaban->get($item->id)?->nilai;
 
-                if ($nilai === 'na') {
-                    continue;
-                }
+                if ($nilai === SmkpChecklistAnswer::NILAI_NA) continue;
 
                 $bobotDinilai += $item->bobot;
                 $skor += $item->bobot * ((int) ($nilai ?? 0) / 3);
             }
 
             return [
-                'kode' => $category->kode,
-                'nama' => $category->nama,
-                'bobot' => $category->bobot,
+                'kode'          => $k->kode,
+                'nama'          => $k->nama,
+                'bobot'         => $k->bobot,
                 'bobot_dinilai' => $bobotDinilai,
-                'skor' => round($skor, 1),
-                'persentase' => $bobotDinilai > 0 ? round($skor / $bobotDinilai * 100, 1) : 0.0,
+                'skor'          => round($skor, 1),
+                'persentase'    => $bobotDinilai > 0 ? round($skor / $bobotDinilai * 100, 1) : 0.0,
             ];
-        })->values()->toArray();
+        })->values()->all();
     }
 
     /**
-     * Status kelengkapan syarat wajib Dokumen Legalitas — terpisah dari
-     * skor 180 checklist SMKP, jadi cuma dihitung "berapa dari total item
-     * yang sudah dijawab Y", bukan skor 0-3.
+     * Kelengkapan Dokumen Legalitas — hitungan lulus/belum, bukan skor.
+     *
+     * Akta, NIB, IUJP, dan NPWP tidak punya tingkatan "cukup memadai":
+     * dokumennya ada atau tidak ada. Karena itu yang dihitung hanya
+     * berapa item berjawaban "ya", dan hasilnya berdiri di luar skor 178.
      */
     public function smkpLegalitasStatus(): array
     {
-        $answers = $this->smkpChecklistAnswers()->get()->keyBy('smkp_checklist_item_id');
+        $jawaban = $this->smkpChecklistAnswers()->get()->keyBy('smkp_checklist_item_id');
 
-        $items = SmkpChecklistCategory::where('kode', 'LEGALITAS')->first()?->items ?? collect();
+        $items = SmkpChecklistCategory::where('kode', SmkpChecklistCategory::LEGALITAS)
+            ->first()?->items ?? collect();
 
         return [
-            'total' => $items->count(),
-            'lengkap' => $items->filter(fn (SmkpChecklistItem $item) => $answers->get($item->id)?->jawaban === 'ya')->count(),
+            'total'   => $items->count(),
+            'lengkap' => $items->filter(
+                fn (SmkpChecklistItem $item) => $jawaban->get($item->id)?->jawaban === 'ya'
+            )->count(),
         ];
     }
 
     /**
-     * Skor kepatuhan pelaporan Tahap 2, dari rata-rata dua hal yang sudah
-     * ada: persentase laporan yang tepat waktu, dan (kalau ada yang sudah
-     * dievaluasi) persentase yang dinilai sesuai isinya. `null` artinya PJP
-     * ini belum pernah mengunggah laporan sama sekali — beda dari skor 0,
-     * supaya tidak salah ditandai "kritis" padahal cuma belum ada datanya.
+     * Label kategori risiko pekerjaan yang layak dipercayakan kepada PJP ini.
+     *
+     * Perlu dibaca terbalik dari dugaan yang wajar: "Kritis" BUKAN berarti
+     * PJP-nya berbahaya, melainkan bahwa skornya sudah cukup tinggi untuk
+     * dipercaya mengerjakan pekerjaan berisiko kritis. Karena itu skor
+     * 100% memang berlabel "Kritis", dan itu benar.
+     */
+    public static function kategoriRisiko(float $persentase): string
+    {
+        return match (true) {
+            $persentase > 75  => 'Kritis',
+            $persentase >= 55 => 'Tinggi',
+            $persentase >= 36 => 'Sedang',
+            $persentase >= 20 => 'Rendah',
+            default           => 'Sangat Rendah',
+        };
+    }
+
+    /* ---------- skor pelaporan ---------- */
+
+    /**
+     * Skor kepatuhan pelaporan: rata-rata ketepatan waktu dan kesesuaian isi.
+     *
+     * Persentase kesesuaian hanya dihitung dari dokumen yang SUDAH dinilai;
+     * yang belum dinilai tidak dianggap tidak sesuai.
+     *
+     * `null` berarti PJP ini belum pernah mengunggah apa pun — sengaja
+     * dibedakan dari 0. Keduanya digambar berbeda: 0% adalah kegagalan
+     * kepatuhan, null adalah ketiadaan data. Menyamakannya membuat PJP
+     * yang baru terdaftar kemarin tampil semerah PJP yang setahun tidak
+     * pernah melapor.
      */
     public function pelaporanScore(): ?float
     {
         $laporans = $this->laporans()->get();
 
-        if ($laporans->isEmpty()) {
-            return null;
-        }
+        if ($laporans->isEmpty()) return null;
 
-        $rateTepatWaktu = $laporans->filter(fn (PjpLaporan $l) => $l->tepat_waktu)->count() / $laporans->count() * 100;
+        $tepatWaktu = $laporans->filter(fn (PjpLaporan $l) => $l->tepat_waktu)->count()
+            / $laporans->count() * 100;
 
-        $dievaluasi = $laporans->whereNotNull('kesesuaian_isi');
-        $rateSesuai = $dievaluasi->isNotEmpty()
-            ? $dievaluasi->filter(fn (PjpLaporan $l) => $l->kesesuaian_isi === 'sesuai')->count() / $dievaluasi->count() * 100
+        $dinilai = $laporans->filter(fn (PjpLaporan $l) => $l->kesesuaian_isi !== null);
+
+        $sesuai = $dinilai->isNotEmpty()
+            ? $dinilai->filter(fn (PjpLaporan $l) => $l->kesesuaian_isi === 'sesuai')->count()
+                / $dinilai->count() * 100
             : null;
 
-        return round($rateSesuai !== null ? ($rateTepatWaktu + $rateSesuai) / 2 : $rateTepatWaktu, 1);
+        return round($sesuai !== null ? ($tepatWaktu + $sesuai) / 2 : $tepatWaktu, 1);
     }
 
+    /* ---------- skor gabungan lintas aspek ---------- */
+
     /**
-     * Skor achievement keseluruhan PJP — setiap PJP berjalan di ketiga tahap
-     * (Persyaratan, Pelaporan, Evaluasi) secara bersamaan, bukan bergantian,
-     * jadi achievement dipakai untuk ringkasan lintas-tahap (widget "Paling
-     * Perlu Perhatian" di Beranda, badge sidebar) dan diambil dari skor
-     * TERENDAH di antara ketiganya yang tersedia — bukan rata-rata — supaya
-     * satu area yang buruk tidak "tertutup" oleh dua area lain yang baik.
-     * Skor SMKP selalu ada (checklist kosong = 0%, bukan null), sedangkan
-     * pelaporan/evaluasi bisa null kalau memang belum ada datanya sama
-     * sekali — null itu diabaikan, bukan dihitung sebagai 0.
+     * Nilai TERENDAH di antara ketiga aspek yang datanya tersedia.
+     *
+     * Terendah, bukan rata-rata. Satu aspek yang buruk adalah alasan
+     * menindaklanjuti sebuah PJP, dan rata-rata justru menyembunyikannya:
+     * checklist 95% dan evaluasi 90% akan menutupi kepatuhan pelaporan
+     * 30% menjadi angka 72 yang terlihat sekadar "perlu perhatian".
+     *
+     * Skor SMKP selalu berupa angka (checklist kosong = 0%, bukan null),
+     * sedangkan pelaporan dan evaluasi benar-benar bisa null saat belum
+     * ada datanya — yang null diabaikan, bukan dihitung sebagai 0.
+     *
+     * Dipakai hanya di tempat yang memerlukan SATU angka lintas aspek:
+     * kartu "Paling Perlu Perhatian" di beranda modul. Ketiga halaman
+     * aspek memakai skor aspeknya masing-masing, bukan ini.
      */
     public function achievement(): ?float
     {
@@ -186,88 +254,112 @@ class Pjp extends Model
         return $skor === [] ? null : min($skor);
     }
 
+    /* ---------- saringan & hitungan ---------- */
+
     /**
-     * Jumlah PJP dengan achievement() di bawah 80 — dipakai oleh badge
-     * ringkas di sidebar (lihat HandleInertiaRequests) dan sejalan dengan
-     * daftar "PJP Paling Perlu Perhatian" di Beranda.
+     * Pencarian dan penyaringan yang dipakai bersama oleh daftar, ketiga
+     * halaman aspek, dan ekspor. Ditulis sekali di sini supaya ekspor
+     * tidak pernah mengirim baris yang berbeda dari yang terlihat di layar.
      */
-    public static function perluPerhatianCount(): int
+    public function scopeFilter(Builder $query, ?string $cari, ?string $status): Builder
     {
-        return static::all(['id'])
-            ->filter(fn (Pjp $pjp) => ($achievement = $pjp->achievement()) !== null && $achievement < 80)
-            ->count();
-    }
-
-    private static function kategoriRisikoFor(float $persentase): string
-    {
-        return match (true) {
-            $persentase > 75 => 'Kritis',
-            $persentase >= 55 => 'Tinggi',
-            $persentase >= 36 => 'Sedang',
-            $persentase >= 20 => 'Rendah',
-            default => 'Sangat Rendah',
-        };
-    }
-
-    public function scopeFilter(
-        Builder $query,
-        ?string $search,
-        ?string $status,
-    ): Builder {
         return $query
-            ->when($search, fn ($q, $search) => $q->where(function (Builder $q) use ($search) {
-                $q->where('nama_perusahaan', 'like', "%{$search}%")
-                    ->orWhere('nib', 'like', "%{$search}%")
-                    ->orWhere('penanggung_jawab', 'like', "%{$search}%")
-                    ->orWhere('alamat', 'like', "%{$search}%");
-            }))
+            ->when($cari, fn ($q, $cari) => $q->where('nama_perusahaan', 'like', "%{$cari}%"))
             ->when($status, fn ($q, $status) => $q->where('status', $status));
     }
 
     /**
-     * PJP (yang masih dipantau, bukan tidak_aktif) yang belum mengirim Laporan
-     * Bulanan bulan ini, atau mengirimnya lewat dari tanggal batas. Kosong
-     * sebelum tanggal batas terlewati (belum dianggap terlambat).
+     * Hitungan per status, SELALU memuat setiap kunci status (0 bila kosong).
+     *
+     * Bilah status bertumpuk menggambar tiga segmen tetap. Kunci yang
+     * hilang saat belum ada datanya membuat segmennya lenyap, dan yang
+     * terlihat adalah bilah dua warna yang seolah-olah lengkap.
      */
-    public static function belumLaporanBulananBulanIni(): \Illuminate\Support\Collection
+    public static function statusCountsFor(?Builder $query = null): array
     {
-        if (now()->day <= PjpLaporan::BATAS_TANGGAL_LAPORAN) {
+        $hitung = ($query ?? static::query())
+            ->selectRaw('status, count(*) as jumlah')
+            ->groupBy('status')
+            ->pluck('jumlah', 'status');
+
+        return collect(array_keys(self::STATUS))
+            ->mapWithKeys(fn (string $status) => [$status => (int) ($hitung[$status] ?? 0)])
+            ->all();
+    }
+
+    /**
+     * PJP yang belum atau terlambat mengirim Laporan Bulanan bulan ini.
+     *
+     * Kosong selama tanggal batas belum terlewati: sebelum tanggal 3
+     * berakhir, belum ada yang terlambat. Yang berstatus tidak_aktif
+     * dikecualikan — PJP yang memang sudah tidak bekerja lagi tidak perlu
+     * muncul sebagai tunggakan setiap bulan.
+     *
+     * Seluruh batas waktunya ditetapkan menurut kalender SETEMPAT lalu
+     * dipindah ke UTC untuk dibandingkan, bukan dengan whereMonth() atas
+     * kolom UTC. Bulan menurut UTC bergeser delapan jam dari bulan yang
+     * dimaksud orang, sehingga unggahan awal bulan dapat terbaca sebagai
+     * bulan sebelumnya — tidak terhitung sama sekali, dan perusahaan yang
+     * sudah melapor tetap tertagih.
+     */
+    public static function belumLaporanBulananBulanIni(): Collection
+    {
+        $kini = Waktu::kini();
+
+        if ($kini->day <= PjpLaporan::BATAS_TANGGAL_LAPORAN) {
             return collect();
         }
 
-        $batasBulanIni = now()->startOfMonth()->addDays(PjpLaporan::BATAS_TANGGAL_LAPORAN);
+        $awal  = $kini->copy()->startOfMonth();
+        $batas = $awal->copy()->addDays(PjpLaporan::BATAS_TANGGAL_LAPORAN);
+        $akhir = $kini->copy()->endOfMonth();
+
+        // Dibandingkan dalam UTC, zona penyimpanannya.
+        $awalUtc  = $awal->copy()->utc();
+        $batasUtc = $batas->copy()->utc();
+        $akhirUtc = $akhir->copy()->utc();
+
+        $bulanIni = fn (Builder $q) => $q->where('jenis', 'laporan_bulanan')
+            ->whereBetween('created_at', [$awalUtc, $akhirUtc]);
 
         return static::query()
             ->where('status', '!=', 'tidak_aktif')
-            ->where(function (Builder $outer) use ($batasBulanIni) {
-                $outer->whereDoesntHave('laporans', function (Builder $query) {
-                    $query->where('jenis', 'laporan_bulanan')
-                        ->whereYear('created_at', now()->year)
-                        ->whereMonth('created_at', now()->month);
-                })->orWhereHas('laporans', function (Builder $query) use ($batasBulanIni) {
-                    $query->where('jenis', 'laporan_bulanan')
-                        ->whereYear('created_at', now()->year)
-                        ->whereMonth('created_at', now()->month)
-                        ->where('created_at', '>', $batasBulanIni);
-                });
+            ->where(function (Builder $luar) use ($bulanIni, $batasUtc) {
+                $luar->whereDoesntHave('laporans', $bulanIni)
+                     ->orWhereHas('laporans', fn (Builder $q) => $bulanIni($q)
+                         ->where('created_at', '>', $batasUtc));
             })
             ->orderBy('nama_perusahaan')
             ->get(['id', 'nama_perusahaan']);
     }
 
     /**
-     * Count of records per status, always including every status key (0 if none).
+     * PJP dengan achievement di bawah ambang, terendah lebih dulu.
+     *
+     * Dihitung di PHP, bukan lewat kueri: achievement menggabungkan tiga
+     * skor yang masing-masing membaca tabel berbeda, dan tidak ada satu
+     * kolom pun yang dapat diurutkan basis data.
+     *
+     * Karena itu ia memuat seluruh PJP beserta relasinya sekali di muka
+     * (eager load), bukan membiarkan tiap baris menanyakan jawabannya
+     * sendiri. Tanpa itu, halaman beranda modul menjalankan sekitar lima
+     * kueri tambahan PER PJP — pada aplikasi asal tercatat 78 kueri untuk
+     * tujuh PJP saja, dan jumlah itu tumbuh diam-diam bersama datanya.
      */
-    public static function statusCountsFor(?Builder $query = null): array
+    public static function perluPerhatian(int $ambil = 5): Collection
     {
-        $query ??= static::query();
-
-        $counts = $query->selectRaw('status, count(*) as aggregate')
-            ->groupBy('status')
-            ->pluck('aggregate', 'status');
-
-        return collect(array_keys(self::STATUS))
-            ->mapWithKeys(fn (string $status) => [$status => (int) ($counts[$status] ?? 0)])
-            ->toArray();
+        return static::query()
+            ->with(['laporans', 'evaluasis', 'smkpChecklistAnswers'])
+            ->get()
+            ->map(fn (Pjp $pjp) => [
+                'id'              => $pjp->id,
+                'nama_perusahaan' => $pjp->nama_perusahaan,
+                'achievement'     => $pjp->achievement(),
+            ])
+            ->filter(fn (array $b) => $b['achievement'] !== null
+                                   && $b['achievement'] < self::AMBANG_PERHATIAN)
+            ->sortBy('achievement')
+            ->take($ambil)
+            ->values();
     }
 }

@@ -2,6 +2,9 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\User;
+use App\Support\{DuaFaktor, Turnstile};
+use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -30,6 +33,11 @@ class LoginRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
+
+            /* Verifikasi Cloudflare — hanya ketika kuncinya terpasang.
+               Aturannya disusun di satu tempat, dipakai sama persis oleh
+               masuk, daftar, dan lupa sandi. */
+            Turnstile::KOLOM => Turnstile::aturan(Turnstile::TINDAKAN['masuk']),
         ];
     }
 
@@ -51,6 +59,85 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+        $this->tolakBilaNonaktif(Auth::user());
+    }
+
+    /**
+     * Akun nonaktif ditolak sejak di pintu masuk (Aurorasys), bukan baru
+     * dikeluarkan PastikanAktif pada permintaan berikutnya. Hanya sesudah
+     * sandinya benar, sehingga tidak membocorkan status akun.
+     *
+     * @throws ValidationException
+     */
+    private function tolakBilaNonaktif(?\Illuminate\Contracts\Auth\Authenticatable $u): void
+    {
+        if ($u instanceof User && $u->active === false) {
+            if (Auth::guard('web')->check()) Auth::guard('web')->logout();
+
+            throw ValidationException::withMessages([
+                'email' => \App\Http\Middleware\PastikanAktif::PESAN,
+            ]);
+        }
+    }
+
+    /**
+     * Akun yang kredensialnya sedang dicoba, BILA ia memakai dua faktor.
+     *
+     * Dicari lewat surelnya saja, tanpa menyentuh sandinya. Yang perlu
+     * diketahui di sini cuma satu: apakah masuk untuk akun ini berakhir
+     * di dasbor, atau berakhir di halaman kode. Sandinya diperiksa
+     * sesudahnya, sekali, oleh sahkanTanpaMasuk().
+     *
+     * null berarti "jalankan alur lama apa adanya" — termasuk ketika
+     * surelnya tidak terdaftar sama sekali. Membedakan surel yang ada
+     * dari yang tidak ada DI SINI akan membocorkan daftar akun kepada
+     * siapa pun yang mau mencoba satu per satu.
+     */
+    public function calonDuaFaktor(): ?User
+    {
+        $pengguna = User::where('email', Str::lower($this->string('email')))->first();
+
+        return DuaFaktor::menyala($pengguna) ? $pengguna : null;
+    }
+
+    /**
+     * Memeriksa sandi TANPA memasukkan siapa pun.
+     *
+     * Auth::attempt akan memasukkannya dan membangkitkan peristiwa
+     * Login, dan peristiwa itu menulis satu baris "masuk" pada jejak
+     * akses serta memperbarui masuk_terakhir_at. Untuk akun berdua
+     * faktor, keduanya belum benar: sandinya memang benar, tetapi
+     * orangnya belum masuk dan mungkin tidak akan pernah — ia masih
+     * harus menunjukkan kode. Jejak yang mencatatnya sebagai sudah
+     * masuk membuat halaman "Perangkat & Keamanan" memberi tahu hal
+     * yang tidak terjadi, tepat pada halaman yang dibaca orang ketika
+     * ia curiga akunnya dipakai orang lain.
+     *
+     * @throws ValidationException
+     */
+    public function sahkanTanpaMasuk(User $pengguna): void
+    {
+        $this->ensureIsNotRateLimited();
+
+        $kredensial = ['password' => (string) $this->string('password')];
+
+        if (! Auth::guard('web')->getProvider()->validateCredentials($pengguna, $kredensial)) {
+            RateLimiter::hit($this->throttleKey());
+
+            /* Peristiwa Failed dibangkitkan sendiri. Ia biasanya datang
+               dari Auth::attempt, yang sengaja tidak dipakai di sini —
+               dan tanpa ini, sandi yang salah pada akun berdua faktor
+               menjadi satu-satunya percobaan gagal yang tidak tercatat
+               di mana pun. Justru akun itu yang paling perlu diawasi. */
+            event(new Failed('web', $pengguna, $kredensial));
+
+            throw ValidationException::withMessages([
+                'email' => trans('auth.failed'),
+            ]);
+        }
+
+        RateLimiter::clear($this->throttleKey());
+        $this->tolakBilaNonaktif($pengguna);
     }
 
     /**

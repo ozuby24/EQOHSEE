@@ -15,6 +15,10 @@ import { computed, ref } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import PickerTpkkp from '../../Components/PickerTpkkp.vue';
 import type { HalamanKuesioner } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, minta, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanKuesioner>();
 
@@ -26,9 +30,14 @@ async function salin() {
     tersalin.value = true;
     setTimeout(() => { tersalin.value = false; }, 2000);
   } catch {
-    // Clipboard ditolak peramban (bukan konteks aman, atau izin dicabut).
-    // Kotak prompt tetap memungkinkan orang menyalin sendiri.
-    window.prompt("Salin tautan:", props.urlPublik ?? "");
+    /* Clipboard ditolak peramban (bukan konteks aman, atau izin dicabut).
+       Cadangannya menampilkan tautannya di kolom yang sudah tersorot,
+       supaya masih dapat disalin sendiri. Dulu ini memakai `prompt()` —
+       yang pada webview ponsel tidak muncul sama sekali, sehingga
+       cadangannya sendiri ikut lenyap justru di perangkat yang paling
+       sering menolak clipboard. */
+    await minta({ judul: 'Salin tautan kuesioner', label: 'Tautan publik',
+      nilai: props.urlPublik ?? '', baca: true, wajib: false, labelAksi: 'Selesai' });
   }
 }
 
@@ -38,20 +47,20 @@ function gantiPerusahaan(id: number | string) {
   router.get('/tpkkp/kuesioner', { company: id }, { preserveScroll: true });
 }
 
-function gantiTautan() {
-  if (!confirm('Buat tautan baru? Tautan lama langsung tidak berlaku, termasuk yang sudah tersebar.')) return;
+async function gantiTautan() {
+  if (!await tanya('Buat tautan baru? Tautan lama langsung tidak berlaku, termasuk yang sudah tersebar.')) return;
 
   router.post("/kuesioner/token", { company_id: props.perusahaan?.id }, { preserveScroll: true });
 }
 
-function tarik() {
-  if (!confirm('Tarik seluruh jawaban kuesioner menjadi skor metode KS? Nilai KS yang ada akan ditimpa.')) return;
+async function tarik() {
+  if (!await tanya('Tarik seluruh jawaban kuesioner menjadi skor metode KS? Nilai KS yang ada akan ditimpa.')) return;
 
   router.post('/kuesioner/tarik', {}, { preserveScroll: true });
 }
 
-function hapus(id: number) {
-  if (!confirm('Hapus responden?')) return;
+async function hapus(id: number) {
+  if (!await tanya('Hapus responden?')) return;
 
   router.delete(`/kuesioner/${id}`, { preserveScroll: true });
 }
@@ -60,7 +69,7 @@ function hapus(id: number) {
 <template>
   <Head title="Kuesioner PTPKKP" />
 
-  <div class="max-w-5xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <PickerTpkkp v-bind="picker" />
 
@@ -93,7 +102,7 @@ function hapus(id: number) {
           <select :value="perusahaan.id"
                   @change="gantiPerusahaan(($event.target as HTMLSelectElement).value)"
                   class="ring-focus rounded-lg bg-white/15 border border-white/20 pl-3 pr-8 py-1.5
-                         text-[12px] font-semibold text-white">
+                         text-[12px] font-semibold text-white" aria-label="Perusahaan">
             <option v-for="c in daftarPerusahaan" :key="c.id" :value="c.id" class="text-cam-ink">
               {{ c.nama }}
             </option>
@@ -132,9 +141,9 @@ function hapus(id: number) {
       </div>
     </div>
 
-    <div class="grid gap-4 sm:grid-cols-2">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div v-for="r in ringkas" :key="r.kunci"
-           class="bg-white rounded-2xl shadow-card border border-stone-100 p-5">
+           class="min-w-0 bg-white rounded-2xl shadow-card border border-stone-100 p-5">
         <div class="flex items-center justify-between mb-3">
           <div>
             <div class="text-[13.5px] font-bold text-cam-ink">{{ r.label }}</div>
@@ -164,6 +173,51 @@ function hapus(id: number) {
       Hasil kuesioner adalah <b>data pendukung</b> (Metode B) untuk mengisi Formulir Nilai —
       bukan nilai otomatis, sesuai prosedur penilaian PTPKKP.
     </p>
+
+    <!--
+      RESPONS MITRA KERJA — analisa, bukan nilai.
+
+      Tidak masuk skor KS: kematangan yang dinilai adalah milik pemegang
+      IUP, dan persepsi orang yang bekerja di perusahaan lain, dengan
+      pengawas lain dan aturan internal lain, akan menaikkan atau
+      menurunkan nilai itu oleh keadaan yang bukan miliknya.
+
+      Tetapi TIDAK dibuang. Mitra yang persepsi keselamatannya rendah
+      adalah mitra yang perlu dibina — temuan tersendiri yang tidak
+      muncul di mana pun bila datanya hanya disingkirkan diam-diam.
+    -->
+    <section v-if="(mitra ?? []).length"
+             class="bg-white rounded-2xl shadow-card border border-stone-100 overflow-hidden">
+      <div class="px-5 py-4 border-b border-stone-100">
+        <h3 class="text-[14px] font-bold text-cam-ink">
+          Persepsi mitra kerja
+          <span class="font-normal text-[11.5px] text-stone-400">
+            | analisa saja — tidak masuk Summary maupun nilai total
+          </span>
+        </h3>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-left text-[12px]">
+          <thead class="text-[10px] uppercase tracking-wider text-stone-400 bg-stone-50">
+            <tr>
+              <th class="px-5 py-2.5 font-bold">Perusahaan</th>
+              <th class="px-3 py-2.5 font-bold text-right">Responden</th>
+              <th class="px-5 py-2.5 font-bold text-right">Rerata persepsi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="m in mitra" :key="m.perusahaan" class="border-t border-stone-50">
+              <td class="px-5 py-2.5 font-semibold text-cam-ink">{{ m.perusahaan }}</td>
+              <td class="px-3 py-2.5 text-right num">{{ m.jumlah }}</td>
+              <td class="px-5 py-2.5 text-right num">
+                {{ m.rerata === null ? '—' : Number(m.rerata).toFixed(2) }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
     <div class="bg-white rounded-2xl shadow-card border border-stone-100 overflow-hidden">
       <div class="px-5 py-4 border-b border-stone-100">
@@ -211,4 +265,6 @@ function hapus(id: number) {
     </div>
     </template>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

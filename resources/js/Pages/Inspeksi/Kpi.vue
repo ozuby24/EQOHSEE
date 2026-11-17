@@ -31,13 +31,13 @@ const kartu = [
 <template>
   <Head title="KPI Inspeksi" />
 
-  <div class="max-w-6xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <div class="bg-white rounded-2xl shadow-card border border-stone-100 p-3 flex flex-wrap items-center gap-2">
-      <span class="text-[12.5px] font-semibold text-stone-500 px-1">Periode</span>
+      <span class="block text-[12.5px] font-semibold text-stone-500 px-1">Periode</span>
       <select v-model="bulan" @change="pilihBulan"
               class="ring-focus rounded-xl border border-stone-200 px-3.5 py-2.5 text-[12.5px]
-                     font-semibold text-stone-600">
+                     font-semibold text-stone-600" aria-label="Bulan">
         <option :value="null">Semua bulan (akumulasi)</option>
         <option v-for="b in opsiBulan" :key="b.nilai" :value="b.nilai">{{ b.label }}</option>
       </select>

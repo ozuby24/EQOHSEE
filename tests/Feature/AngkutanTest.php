@@ -37,7 +37,7 @@ class AngkutanTest extends TestCase
         parent::setUp();
         Carbon::setTestNow('2026-08-15 08:00:00');
 
-        $this->company = Company::create(['name' => 'Tambang Uji']);
+        $this->company = Company::create(['name' => 'Tambang Uji', 'doc_no_prefix' => 'TU']);
         $this->pengawas = User::factory()->create(['company_id' => $this->company->id]);
         $this->ktt = User::factory()->create(['company_id' => $this->company->id, 'lms_role' => 'ktt']);
     }
@@ -392,7 +392,7 @@ class AngkutanTest extends TestCase
         $this->actingAs($this->pengawas)->get(route('angkutan.cetak'))
             ->assertInertia(fn (Assert $p) => $p
                 ->component('Print/Angkutan')
-                ->where('dok.nomor', 'TU-OHSE-V.101'));
+                ->where('dok.nomor', 'LAP/TU/OHSE/008'));
     }
 
     /* ---------- pemisahan antar perusahaan ---------- */

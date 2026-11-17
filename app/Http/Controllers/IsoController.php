@@ -117,7 +117,7 @@ class IsoController extends Controller
             'perBab'  => Iso::perBab($standar),
             'peta'    => $this->dokumenPerKlausul($standar),
             'cakupan' => Iso::cakupan($standar, $this->hitungPerKlausul()[$standar] ?? []),
-            'dok'     => KopDokumen::untuk('iso-matriks', \App\Models\Company::first()),
+            'dok'     => KopDokumen::untuk('iso-matriks', $this->perusahaanKop()),
             'kembali' => route('iso.show', $standar),
         ]);
     }

@@ -8,6 +8,7 @@ use App\Support\{Kategori, Sampul};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
+use App\Support\Berkas;
 
 class CourseController extends Controller
 {
@@ -112,7 +113,7 @@ class CourseController extends Controller
                 'keterangan'  => $course->description ?: null,
                 'kategori'    => $course->category ?: null,
                 'nadaKategori'=> $course->category ? Kategori::nada($course->category) : null,
-                'gambar'      => $course->image ? asset('storage/'.$course->image) : null,
+                'gambar'      => $course->image ? Berkas::terbuka($course->image) : null,
             ],
 
             'modul' => $course->modules->map(fn ($m) => [
@@ -159,7 +160,7 @@ class CourseController extends Controller
                 'require_evaluation' => $c->exists ? (bool) $c->require_evaluation : true,
             ],
 
-            'gambar' => $c->image ? asset('storage/'.$c->image) : null,
+            'gambar' => $c->image ? Berkas::terbuka($c->image) : null,
 
             'opsi' => [
                 'sertifikat' => array_map(
@@ -196,7 +197,7 @@ class CourseController extends Controller
             'title'       => ['required', 'string', 'max:200'],
             'category'    => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string'],
-            'image'       => ['nullable', 'image', 'max:2048'],
+            'image'       => array_merge(['nullable'], Berkas::ATURAN_GAMBAR),
             'cert_template'    => ['nullable','string','max:30'],
             'access_code'      => ['nullable','string','max:20'],
             'require_code'     => ['nullable','boolean'],

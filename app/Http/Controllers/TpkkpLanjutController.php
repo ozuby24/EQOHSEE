@@ -71,6 +71,23 @@ class TpkkpLanjutController extends Controller
                         // berubah dan lencananya menyesatkan.
                         'kategori'  => $c['complete'] ? $c['category'] : null,
                         'warna'     => Tpkkp::levelHex(Tpkkp::level($c['category'])),
+
+                        /* DUA ANGKA YANG BERBEDA, dan keduanya perlu.
+                           `kategori` adalah rasio capaian terhadap nilai
+                           maksimum — rumus resmi workbook. `tingkat`
+                           adalah rerata SKOR 1–5 yang benar-benar diisi
+                           penilai.
+
+                           Keduanya kerap berselisih, dan selisihnya
+                           bukan kesalahan: skor 3 dari maksimum 5 berarti
+                           rasio 0,6 yang menurut ambang Kepdirjen jatuh
+                           ke "Reaktif", sedangkan tingkat rubrik yang
+                           diisi penilai memang "Terencana". Menampilkan
+                           satu saja membuat penilai melihat angka yang
+                           tidak pernah ia isi. */
+                        'tingkat'     => $c['tingkat'] ?? null,
+                        'rerata'      => $c['avg'] ?? null,
+                        'warnaTingkat' => Tpkkp::levelHex(Tpkkp::level($c['tingkat'] ?? null)),
                     ];
                 }
 
@@ -80,6 +97,9 @@ class TpkkpLanjutController extends Controller
                     'nilai' => $P['nilai'], 'maks' => $P['max'], 'rasio' => $P['ratio'],
                     'kategori' => $P['category'],
                     'warna' => Tpkkp::levelHex(Tpkkp::level($P['category'])),
+                    'tingkat'      => $P['tingkat'] ?? null,
+                    'rerata'       => $P['avg'] ?? null,
+                    'warnaTingkat' => Tpkkp::levelHex(Tpkkp::level($P['tingkat'] ?? null)),
                     'items' => $items,
                 ];
             }
@@ -89,6 +109,9 @@ class TpkkpLanjutController extends Controller
                 'bobot' => $I['weight'], 'rasio' => $I['ratio'],
                 'kategori' => $I['category'],
                 'warna' => Tpkkp::levelHex(Tpkkp::level($I['category'])),
+                'tingkat'      => $I['tingkat'] ?? null,
+                'rerata'       => $I['avg'] ?? null,
+                'warnaTingkat' => Tpkkp::levelHex(Tpkkp::level($I['tingkat'] ?? null)),
                 'parameter' => $params,
             ];
         }
@@ -118,6 +141,9 @@ class TpkkpLanjutController extends Controller
                     'rasio' => $P['ratio'], 'target' => $P['target'],
                     'kategori' => $P['category'],
                     'warna' => Tpkkp::levelHex(Tpkkp::level($P['category'])),
+                    'tingkat'      => $P['tingkat'] ?? null,
+                    'rerata'       => $P['avg'] ?? null,
+                    'warnaTingkat' => Tpkkp::levelHex(Tpkkp::level($P['tingkat'] ?? null)),
 
                     /* Selisih dihitung server. Di klien ia harus tahu
                        kapan hasilnya null — capaian atau target yang belum
@@ -133,6 +159,9 @@ class TpkkpLanjutController extends Controller
                 'rasio' => $I['ratio'], 'target' => $I['target'],
                 'kategori' => $I['category'],
                 'warna' => Tpkkp::levelHex(Tpkkp::level($I['category'])),
+                'tingkat'      => $I['tingkat'] ?? null,
+                'rerata'       => $I['avg'] ?? null,
+                'warnaTingkat' => Tpkkp::levelHex(Tpkkp::level($I['tingkat'] ?? null)),
                 'gap' => $I['score'] === null ? null : $I['score'] - $I['target'],
                 'parameter' => $params,
             ];
@@ -149,6 +178,9 @@ class TpkkpLanjutController extends Controller
                 'target'   => $hasil['target'],
                 'kategori' => $hasil['category'],
                 'warna'    => Tpkkp::levelHex(Tpkkp::level($hasil['category'])),
+                'tingkat'      => $hasil['tingkat'] ?? null,
+                'rerata'       => $hasil['avg'] ?? null,
+                'warnaTingkat' => Tpkkp::levelHex(Tpkkp::level($hasil['tingkat'] ?? null)),
                 'gap'      => $hasil['score'] === null ? null : $hasil['score'] - $hasil['target'],
             ],
         ]);
@@ -175,6 +207,9 @@ class TpkkpLanjutController extends Controller
                 'target'   => $hasil['target'],
                 'kategori' => $hasil['category'],
                 'warna'    => Tpkkp::levelHex(Tpkkp::level($hasil['category'])),
+                'tingkat'      => $hasil['tingkat'] ?? null,
+                'rerata'       => $hasil['avg'] ?? null,
+                'warnaTingkat' => Tpkkp::levelHex(Tpkkp::level($hasil['tingkat'] ?? null)),
             ],
 
             'indikator' => collect($hasil['indicators'])->map(fn ($I) => [

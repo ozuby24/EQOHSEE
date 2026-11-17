@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
-import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { propHalaman } from '../../halaman';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, minta, batal, lanjut } = useDialog();
+
 
 /*
-  Prop halaman diambil lewat usePage(), bukan defineProps.
+  Prop halaman diambil lewat propHalaman(), bukan defineProps.
 
   Bentuk `defineProps<{ mode: string; [key: string]: any }>()` yang
   dipakai sebelumnya terbaca seolah menerima apa saja. Yang sebenarnya
@@ -18,11 +23,12 @@ import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
   tidak pernah sampai ke tampilan. Uji sisi server tetap hijau, sebab
   yang salah bukan propnya melainkan penerimaannya.
 
-  usePage() mengambil prop halaman apa adanya — termasuk yang dibagikan
-  middleware — sehingga tidak ada daftar nama yang harus dirawat sejajar
-  dengan controller-nya, dan tidak ada nama yang dapat hilang diam-diam.
+  propHalaman() mengambil prop halaman apa adanya — termasuk yang
+  dibagikan middleware — sehingga tidak ada daftar nama yang harus
+  dirawat sejajar dengan controller-nya, dan tidak ada nama yang dapat
+  hilang diam-diam. Dibacanya hidup: lihat resources/js/halaman.ts.
 */
-const props = usePage<any>().props as any;
+const props = propHalaman();
 const isAdmin = computed(() => Boolean(props.pengguna?.admin));
 
 const judul: Record<string, string> = {
@@ -64,16 +70,17 @@ function simpanKolam() { kolam.post(tautan.value.kolamSimpan, { preserveScroll: 
 function simpanCatatan() { catatan.post(tautan.value.catatanSimpan, { preserveScroll: true, onSuccess: () => catatan.reset('curah_hujan_mm', 'level_m', 'ph', 'tss_mgl', 'fe_mgl', 'mn_mgl', 'catatan') }); }
 function simpanPompa(s: any) { pompa.post(untuk(tautan.value.pompaSimpan, s.id), { preserveScroll: true, onSuccess: () => pompa.reset() }); }
 function ubahPompa(p: any, status: string) { router.put(untuk(tautan.value.pompaUbah, p.id), { status }, { preserveScroll: true }); }
-function hapusKolam(s: any) { if (window.confirm(`Hapus kolam ${s.kode}?`)) router.delete(untuk(tautan.value.kolamHapus, s.id), { preserveScroll: true }); }
-function hapusCatatan(c: any) { if (window.confirm(`Hapus catatan ${c.tanggalLabel}?`)) router.delete(untuk(tautan.value.catatanHapus, c.id), { preserveScroll: true }); }
+async function hapusKolam(s: any) { if (await tanya(`Hapus kolam ${s.kode}?`)) router.delete(untuk(tautan.value.kolamHapus, s.id), { preserveScroll: true }); }
+async function hapusCatatan(c: any) { if (await tanya(`Hapus catatan ${c.tanggalLabel}?`)) router.delete(untuk(tautan.value.catatanHapus, c.id), { preserveScroll: true }); }
 
 function ajukan(c: any) { sibuk[c.id] = true; router.post(untuk(tautan.value.ajukan, c.id), {}, { preserveScroll: true, onFinish: () => { sibuk[c.id] = false; } }); }
-function setujui(c: any) {
-  if (!window.confirm(`Setujui catatan ${c.tanggalLabel}? Setelah disetujui tidak dapat diubah.`)) return;
+async function setujui(c: any) {
+  if (!await tanya(`Setujui catatan ${c.tanggalLabel}? Setelah disetujui tidak dapat diubah.`)) return;
   sibuk[c.id] = true; router.post(untuk(tautan.value.setujui, c.id), {}, { preserveScroll: true, onFinish: () => { sibuk[c.id] = false; } });
 }
-function tolak(c: any) {
-  const alasan = window.prompt(`Alasan penolakan catatan ${c.tanggalLabel}:`);
+async function tolak(c: any) {
+  const alasan = await minta({ judul: `Tolak catatan ${c.tanggalLabel}?`, label: 'Alasan penolakan',
+    jenis: 'panjang', min: 5, labelAksi: 'Tolak', nada: 'bahaya' });
   if (alasan === null) return;
   sibuk[c.id] = true; router.post(untuk(tautan.value.tolak, c.id), { alasan_tolak: alasan }, { preserveScroll: true, onFinish: () => { sibuk[c.id] = false; } });
 }
@@ -98,16 +105,16 @@ const warnaPompa: Record<string, string> = {
 <template>
   <Head :title="judul[props.mode]" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
     <section class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <p class="text-[10px] font-bold uppercase tracking-[.16em] text-sky-600">Environment · Dewatering</p>
-        <h2 class="text-2xl font-extrabold tracking-tight text-stone-800">{{ judul[props.mode] }}</h2>
+        
         <p class="text-[12px] text-stone-500 mt-1">Hujan, level kolam, pompa, dan kualitas air. Pompa memakai registri Keselamatan Operasi.</p>
       </div>
       <div class="flex gap-2">
-        <input v-model="props.dari" type="date" class="rounded-lg border-stone-200 text-[11px]">
-        <input v-model="props.sampai" type="date" class="rounded-lg border-stone-200 text-[11px]">
+        <input v-model="props.dari" type="date" class="rounded-lg border-stone-200 text-[11px]" aria-label="Tanggal mulai">
+        <input v-model="props.sampai" type="date" class="rounded-lg border-stone-200 text-[11px]" aria-label="Tanggal akhir">
         <button class="eq-btn-lain" type="button" @click="rentang">Terapkan</button>
       </div>
     </section>
@@ -127,7 +134,7 @@ const warnaPompa: Record<string, string> = {
         <p v-if="a.saran" class="text-[11px] text-stone-700 mt-2 pt-2 border-t border-black/5"><span class="font-bold">Tindakan: </span>{{ a.saran }}</p>
         <div class="mt-2">
           <span v-if="ditangani.has(a.kode)" class="inline-block rounded-full bg-emerald-100 text-emerald-700 px-2 py-1 text-[10px] font-bold">Sedang ditangani</span>
-          <button v-else type="button" class="text-[11px] font-bold text-sky-700" @click="tindakDari(a)">+ Buat tindak lanjut</button>
+          <button v-else type="button" class="text-[11px] font-bold text-sky-700 py-1.5" @click="tindakDari(a)">+ Buat tindak lanjut</button>
         </div>
       </div>
     </section>
@@ -230,10 +237,10 @@ const warnaPompa: Record<string, string> = {
           <form class="grid gap-3 mt-4" @submit.prevent="simpanTindak">
             <input v-model="tindak.judul" required placeholder="Tindakan yang akan dikerjakan" class="rounded-lg border-stone-200 text-[12px]">
             <div class="grid grid-cols-2 gap-2">
-              <select v-model="tindak.prioritas" class="rounded-lg border-stone-200 text-[12px]">
+              <select v-model="tindak.prioritas" class="rounded-lg border-stone-200 text-[12px]" aria-label="Prioritas">
                 <option v-for="pr in props.opsi?.prioritasTindak || []" :key="pr" :value="pr">Prioritas {{ label(pr) }}</option>
               </select>
-              <input v-model="tindak.target_selesai" type="date" class="rounded-lg border-stone-200 text-[12px]">
+              <input v-model="tindak.target_selesai" type="date" class="rounded-lg border-stone-200 text-[12px]" aria-label="Tenggat">
             </div>
             <input v-model="tindak.penanggung_jawab" placeholder="Penanggung jawab" class="rounded-lg border-stone-200 text-[12px]">
             <textarea v-model="tindak.uraian" rows="2" placeholder="Uraian" class="rounded-lg border-stone-200 text-[12px]"></textarea>
@@ -253,7 +260,7 @@ const warnaPompa: Record<string, string> = {
               <td class="px-5 py-3">{{ t.penanggung_jawab || '—' }}</td>
               <td class="px-5 py-3" :class="t.terlambat ? 'text-red-600 font-bold' : ''">{{ t.target_selesai || '—' }}</td>
               <td class="px-5 py-3">
-                <select :value="t.status" class="rounded border-stone-200 text-[11px]" @change="ubahTindak(t, ($event.target as HTMLSelectElement).value)">
+                <select :value="t.status" class="rounded border-stone-200 text-[11px]" @change="ubahTindak(t, ($event.target as HTMLSelectElement).value)" aria-label="Status tindak lanjut">
                   <option v-for="st in props.opsi?.statusTindak || []" :key="st" :value="st">{{ label(st) }}</option>
                 </select>
               </td>
@@ -268,11 +275,11 @@ const warnaPompa: Record<string, string> = {
         <h3 class="font-bold text-[14px]">Catatan harian</h3>
         <p class="text-[11px] text-stone-400 mt-1">Satu kolam satu catatan per hari. Kualitas air boleh dikosongkan pada hari tanpa sampel.</p>
         <form class="grid gap-3 md:grid-cols-4 mt-4" @submit.prevent="simpanCatatan">
-          <select v-model="catatan.water_sump_id" required class="rounded-lg border-stone-200 text-[12px]">
+          <select v-model="catatan.water_sump_id" required class="rounded-lg border-stone-200 text-[12px]" aria-label="Kolam">
             <option value="">Pilih kolam</option>
             <option v-for="s in props.kolam || []" :key="s.id" :value="s.id">{{ s.kode }} — {{ s.nama }}</option>
           </select>
-          <input v-model="catatan.tanggal" type="date" required class="rounded-lg border-stone-200 text-[12px]">
+          <input v-model="catatan.tanggal" type="date" required class="rounded-lg border-stone-200 text-[12px]" aria-label="Tanggal">
           <input v-model.number="catatan.curah_hujan_mm" type="number" step="any" min="0" placeholder="Curah hujan (mm)" required class="rounded-lg border-stone-200 text-[12px]">
           <input v-model.number="catatan.level_m" type="number" step="any" placeholder="Level (m)" class="rounded-lg border-stone-200 text-[12px]">
           <input v-model.number="catatan.volume_m3" type="number" step="any" min="0" placeholder="Volume (m³)" required class="rounded-lg border-stone-200 text-[12px]">
@@ -335,14 +342,14 @@ const warnaPompa: Record<string, string> = {
         <form class="grid gap-3 md:grid-cols-4 mt-4" @submit.prevent="simpanKolam">
           <input v-model="kolam.kode" required placeholder="Kode, mis. SUMP-01" class="rounded-lg border-stone-200 text-[12px]">
           <input v-model="kolam.nama" required placeholder="Nama kolam" class="rounded-lg border-stone-200 text-[12px]">
-          <select v-model="kolam.jenis" class="rounded-lg border-stone-200 text-[12px]">
+          <select v-model="kolam.jenis" class="rounded-lg border-stone-200 text-[12px]" aria-label="Jenis">
             <option v-for="j in props.opsi?.jenis || []" :key="j" :value="j">{{ label(j) }}</option>
           </select>
           <input v-model="kolam.lokasi" placeholder="Lokasi" class="rounded-lg border-stone-200 text-[12px]">
           <input v-model.number="kolam.kapasitas_m3" type="number" step="any" min="0" required placeholder="Kapasitas (m³)" class="rounded-lg border-stone-200 text-[12px]">
           <input v-model.number="kolam.luas_tangkapan_ha" type="number" step="any" min="0" required placeholder="Luas tangkapan (ha)" class="rounded-lg border-stone-200 text-[12px]">
           <input v-model.number="kolam.koefisien_limpasan" type="number" step="0.01" min="0.01" max="1" required placeholder="Koefisien limpasan" class="rounded-lg border-stone-200 text-[12px]">
-          <select v-model="kolam.status" class="rounded-lg border-stone-200 text-[12px]">
+          <select v-model="kolam.status" class="rounded-lg border-stone-200 text-[12px]" aria-label="Status">
             <option v-for="st in props.opsi?.statusKolam || []" :key="st" :value="st">{{ label(st) }}</option>
           </select>
           <input v-model="kolam.pembersihan_terakhir" type="date" class="rounded-lg border-stone-200 text-[12px]" title="Pembersihan terakhir">
@@ -367,7 +374,7 @@ const warnaPompa: Record<string, string> = {
         <div class="mt-4 grid gap-2">
           <div v-for="p in s.pumps || []" :key="p.id" class="flex items-center justify-between gap-3 rounded-xl bg-stone-50 px-3 py-2">
             <span class="text-[12px]"><b>{{ p.label }}</b> · {{ angka(p.kapasitas) }} m³/jam</span>
-            <select :value="p.status" class="rounded border-stone-200 text-[11px]" :class="warnaPompa[p.status]" @change="ubahPompa(p, ($event.target as HTMLSelectElement).value)">
+            <select :value="p.status" class="rounded border-stone-200 text-[11px]" :class="warnaPompa[p.status]" @change="ubahPompa(p, ($event.target as HTMLSelectElement).value)" aria-label="Status pompa">
               <option v-for="st in props.opsi?.statusPompa || []" :key="st" :value="st">{{ label(st) }}</option>
             </select>
           </div>
@@ -375,7 +382,7 @@ const warnaPompa: Record<string, string> = {
         </div>
 
         <form class="grid gap-2 md:grid-cols-4 mt-3" @submit.prevent="simpanPompa(s)">
-          <select v-model="pompa.ko_object_id" class="rounded-lg border-stone-200 text-[12px]">
+          <select v-model="pompa.ko_object_id" class="rounded-lg border-stone-200 text-[12px]" aria-label="Objek KO">
             <option value="">Alat dari registri KO</option>
             <option v-for="o in props.objekOpsi || []" :key="o.id" :value="o.id">{{ o.kode }} — {{ o.nama }}</option>
           </select>
@@ -386,4 +393,6 @@ const warnaPompa: Record<string, string> = {
       </section>
     </template>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

@@ -1,0 +1,38 @@
+{
+  "kunci": "maintenance",
+  "label": "Maintenance",
+  "jual": "Maintenance & Reliability",
+  "harga": 10500000,
+  "ket": "Perintah kerja, MTBF dan MTTR, ketersediaan armada, kepatuhan perawatan berkala, tunggakan pekerjaan, dan biaya per jam serta per ton.",
+  "semboyan": "Fixed Before It Fails",
+  "halaman": [
+    {
+      "berkas": "01-pemeliharaan.jpg",
+      "label": "Dashboard Keandalan",
+      "grup": "Pengawasan",
+      "path": "pemeliharaan",
+      "status": "ok"
+    },
+    {
+      "berkas": "02-pemeliharaan-order.jpg",
+      "label": "Perintah Kerja",
+      "grup": "Pengawasan",
+      "path": "pemeliharaan/order",
+      "status": "ok"
+    },
+    {
+      "berkas": "03-pemeliharaan-armada.jpg",
+      "label": "Armada",
+      "grup": "Pengawasan",
+      "path": "pemeliharaan/armada",
+      "status": "ok"
+    },
+    {
+      "berkas": "04-pemeliharaan-cetak.jpg",
+      "label": "Laporan Keandalan",
+      "grup": "Data",
+      "path": "pemeliharaan/cetak",
+      "status": "ok"
+    }
+  ]
+}

@@ -16,13 +16,18 @@ const props = defineProps<{
   entitas: unknown[];
   skala: Skala[];
   params: Parameter[];
+
+  /* Identitas yang sudah diisi di halaman pembuka. Diketik sekali,
+     dibawa ke sini — mengetiknya dua kali adalah cara tercepat membuat
+     orang berhenti di tengah. */
+  identitas?: Record<string, string | null>;
 }>();
 
 const form = useForm({
-  nrp: '',
-  perusahaan: props.company.name,
-  jabatan: '',
-  dept: '',
+  nrp:        props.identitas?.nrp ?? '',
+  perusahaan: props.identitas?.perusahaan || props.company.name,
+  jabatan:    props.identitas?.jabatan ?? '',
+  dept:       props.identitas?.dept ?? '',
   answers: {} as Record<string, number>,
 });
 
@@ -48,14 +53,39 @@ function kirim() {
     </div>
 
     <form class="space-y-5" @submit.prevent="kirim">
+      <!--
+        Identitas sudah diisi di halaman pembuka; di sini ia ditampilkan
+        agar dapat diperiksa, bukan diketik ulang. Jabatan sengaja tidak
+        dapat diubah dari sini — mengubahnya berarti mengubah kuesioner
+        yang sedang diisi, dan jawaban yang sudah masuk akan menggantung
+        pada kuesioner yang lain.
+      -->
       <div class="bg-white rounded-2xl border border-stone-200 p-5">
-        <h2 class="text-[13px] font-bold text-cam-ink mb-3">Identitas (opsional)</h2>
-        <div class="grid sm:grid-cols-2 gap-3">
-          <input v-model="form.nrp" placeholder="NRP / ID Karyawan" class="ring-focus rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
-          <input v-model="form.perusahaan" placeholder="Perusahaan" class="ring-focus rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
-          <input v-model="form.jabatan" placeholder="Jabatan" class="ring-focus rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
-          <input v-model="form.dept" placeholder="Departemen" class="ring-focus rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]">
+        <div class="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+          <h2 class="text-[13px] font-bold text-cam-ink">Identitas Anda</h2>
+          <a :href="`/q/${props.token}`" class="text-[12px] font-semibold text-cam-lime-deep">
+            Ubah identitas
+          </a>
         </div>
+
+        <dl class="grid sm:grid-cols-2 gap-x-4 gap-y-1.5 text-[12.5px]">
+          <div class="flex gap-2">
+            <dt class="w-24 text-stone-500">Jabatan</dt>
+            <dd class="font-semibold text-cam-ink">{{ form.jabatan || '—' }}</dd>
+          </div>
+          <div class="flex gap-2">
+            <dt class="w-24 text-stone-500">Perusahaan</dt>
+            <dd class="font-semibold text-cam-ink">{{ form.perusahaan || '—' }}</dd>
+          </div>
+          <div class="flex gap-2">
+            <dt class="w-24 text-stone-500">Departemen</dt>
+            <dd class="font-semibold text-cam-ink">{{ form.dept || '—' }}</dd>
+          </div>
+          <div class="flex gap-2">
+            <dt class="w-24 text-stone-500">NRP / NIK</dt>
+            <dd class="font-semibold text-cam-ink num">{{ form.nrp || '—' }}</dd>
+          </div>
+        </dl>
       </div>
 
       <div class="bg-white rounded-2xl border border-stone-200 p-5">

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Rules\DalamPerusahaan;
+
 use App\Models\{GudangBarang, GudangLokasi, GudangMutasi};
 use App\Support\{Gudang, Waktu};
 use Illuminate\Http\Request;
@@ -9,6 +11,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use App\Support\Berkas;
 
 /**
  * Sistem Informasi Gudang & Penyimpanan.
@@ -68,7 +71,7 @@ class GudangController extends Controller
             'partNumber'  => $b->part_number ?: null,
             'kelasB3'     => $b->kelas_b3,
             'namaKelas'   => $b->kelas_b3 ? Gudang::namaKelas($b->kelas_b3) : null,
-            'msds'        => $b->msds ? asset('storage/'.$b->msds) : null,
+            'msds'        => Berkas::url($b, 'sds'),
             'status'      => $s,
             'urlUbah'     => route('gudang.barang.edit', $b),
             'urlHapus'    => route('gudang.barang.hapus', $b),
@@ -223,7 +226,7 @@ class GudangController extends Controller
                 'aktif'            => $b->exists ? (bool) $b->aktif : true,
             ],
 
-            'msds' => $b->msds ? asset('storage/'.$b->msds) : null,
+            'msds' => Berkas::url($b, 'sds'),
 
             'opsi' => [
                 'kategori' => array_map(fn ($k) => ['nilai' => $k, 'label' => Gudang::KATEGORI[$k]['nama']],
@@ -251,7 +254,7 @@ class GudangController extends Controller
             'kategori'         => ['required', Rule::in(array_keys(Gudang::KATEGORI))],
             'satuan'           => ['required', 'string', 'max:20'],
             'stok_min'         => ['nullable', 'numeric', 'min:0'],
-            'lokasi_id'        => ['nullable', 'exists:gudang_lokasi,id'],
+            'lokasi_id'        => ['nullable', new DalamPerusahaan('gudang_lokasi')],
             'kelas_b3'         => ['nullable', Rule::in(array_keys(Gudang::KELAS_B3))],
             'wujud'            => ['nullable', Rule::in(['padat', 'cair', 'gas'])],
             'un_number'        => ['nullable', 'string', 'max:12'],
@@ -279,8 +282,8 @@ class GudangController extends Controller
         $data['aktif']      = $r->boolean('aktif', true);
 
         if ($r->hasFile('msds')) {
-            if ($barang?->msds) Storage::disk('public')->delete($barang->msds);
-            $data['msds'] = $r->file('msds')->store('gudang/msds', 'public');
+            Berkas::buang($barang?->msds);
+            $data['msds'] = Berkas::simpan($r->file('msds'), 'gudang/msds');
         } else {
             unset($data['msds']);
         }
@@ -590,7 +593,7 @@ class GudangController extends Controller
                 'lokasi'    => $b->lokasi?->nama,
                 'stok'      => Gudang::stok($b),
                 'satuan'    => $b->satuan,
-                'msds'      => $b->msds ? asset('storage/'.$b->msds) : null,
+                'msds'      => Berkas::url($b, 'sds'),
             ])->all(),
 
             'langgar'     => $this->pelanggaranSemua(),

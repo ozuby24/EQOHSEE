@@ -43,7 +43,7 @@ class DashboardTest extends TestCase
     {
         $this->actingAs($this->pengguna());
 
-        $props = $this->get('/dashboard')->assertOk()->viewData('page')['props'];
+        $props = $this->get('/lms')->assertOk()->viewData('page')['props'];
 
         $this->assertSame([], $props['enrollments']);
         $this->assertSame(0, $props['ringkas']['kemajuan']);
@@ -55,7 +55,7 @@ class DashboardTest extends TestCase
 
         // Membagi dengan nol lalu menampilkan 100% adalah kesalahan yang
         // paling meyakinkan bentuknya — angkanya tampak wajar.
-        $props = $this->get('/dashboard')->assertOk()->viewData('page')['props'];
+        $props = $this->get('/lms')->assertOk()->viewData('page')['props'];
 
         $this->assertSame(0, $props['ringkas']['kemajuan']);
     }
@@ -73,7 +73,7 @@ class DashboardTest extends TestCase
         Enrollment::create(['user_id' => $u->id, 'course_id' => $a->id, 'progress' => 82, 'status' => 'ongoing']);
         Enrollment::create(['user_id' => $u->id, 'course_id' => $b->id, 'progress' => 100, 'status' => 'finished']);
 
-        $props = $this->get('/dashboard')->assertOk()->viewData('page')['props'];
+        $props = $this->get('/lms')->assertOk()->viewData('page')['props'];
         $kursus = $props['enrollments'];
 
         $this->assertEqualsCanonicalizing([
@@ -99,7 +99,7 @@ class DashboardTest extends TestCase
         $c = $this->kursus('Pengendalian Risiko Operasional', 'Wajib', 4);
         Enrollment::create(['user_id' => $u->id, 'course_id' => $c->id, 'progress' => 25, 'status' => 'ongoing']);
 
-        $props = $this->get('/dashboard')->assertOk()->viewData('page')['props'];
+        $props = $this->get('/lms')->assertOk()->viewData('page')['props'];
 
         $this->assertSame(4, $props['enrollments'][0]['modul']);
         $this->assertSame('Hazard Report', $props['modul'][0]['nama']);
@@ -117,7 +117,7 @@ class DashboardTest extends TestCase
 
         // Rata-rata 40, 60, 80 adalah 60 — bukan jumlahnya, dan bukan
         // dibagi jumlah kursus yang tersedia.
-        $props = $this->get('/dashboard')->assertOk()->viewData('page')['props'];
+        $props = $this->get('/lms')->assertOk()->viewData('page')['props'];
 
         $this->assertSame(60, $props['ringkas']['kemajuan']);
     }
@@ -132,7 +132,7 @@ class DashboardTest extends TestCase
         Enrollment::create(['user_id' => $u->id, 'course_id' => $a->id, 'progress' => 100, 'status' => 'finished']);
         Enrollment::create(['user_id' => $u->id, 'course_id' => $b->id, 'progress' => 30,  'status' => 'ongoing']);
 
-        $props = $this->get('/dashboard')->assertOk()->viewData('page')['props'];
+        $props = $this->get('/lms')->assertOk()->viewData('page')['props'];
 
         // Satu kursus selesai; sertifikat belum tentu ikut terbit, jadi
         // keduanya tidak boleh dihitung dari angka yang sama.
@@ -151,7 +151,7 @@ class DashboardTest extends TestCase
         // persis yang pernah terjadi setelah pergantian merek.
         $this->actingAs($this->pengguna());
 
-        $this->get('/dashboard')->assertOk()
+        $this->get('/lms')->assertOk()
             ->assertSee('brand/favicon.svg?v=', false)
             ->assertSee('favicon.ico?v=', false);
     }
@@ -160,7 +160,7 @@ class DashboardTest extends TestCase
     {
         $this->actingAs($this->pengguna());
 
-        $this->get('/dashboard')
+        $this->get('/lms')
             ->assertOk()
             ->assertSee('Safe Today · Sustainable Tomorrow')
             ->assertSee('eqohsee-mark.png', false);
@@ -172,7 +172,7 @@ class DashboardTest extends TestCase
 
         // Subjudul menjelaskan halamannya; judul sendirian menyisakan
         // pertanyaan "dashboard apa".
-        $this->get('/dashboard')
+        $this->get('/lms')
             ->assertOk()
             ->assertSee('Kelola pembelajaran dan tingkatkan kompetensi Anda');
     }
@@ -184,12 +184,12 @@ class DashboardTest extends TestCase
         // Yang diperiksa adalah lencananya, bukan sekadar nama kelasnya —
         // '.eq-lonceng-titik' juga tertulis di lembar gaya sebaris, jadi
         // namanya selalu ada di halaman entah lencananya tampil atau tidak.
-        $this->get('/dashboard')->assertOk()->assertDontSee('<span class="eq-lonceng-titik">', false);
+        $this->get('/lms')->assertOk()->assertDontSee('<span class="eq-lonceng-titik">', false);
 
         News::create(['title' => 'Pelatihan wajib bulan ini', 'content' => 'Isi pengumuman.',
                       'published_at' => now()]);
 
-        $this->get('/dashboard')->assertOk()->assertSee('<span class="eq-lonceng-titik">1</span>', false);
+        $this->get('/lms')->assertOk()->assertSee('<span class="eq-lonceng-titik">1</span>', false);
     }
 
     /**
@@ -204,7 +204,7 @@ class DashboardTest extends TestCase
     {
         $this->actingAs($this->pengguna());
 
-        $halaman = $this->get('/dashboard')->assertOk();
+        $halaman = $this->get('/lms')->assertOk();
 
         $html = $halaman->getContent();
         $this->assertGreaterThanOrEqual(
@@ -263,7 +263,7 @@ class DashboardTest extends TestCase
                                 'progress' => 10, 'status' => 'ongoing']);
         }
 
-        $html = $this->get('/dashboard')->assertOk()->getContent();
+        $html = $this->get('/lms')->assertOk()->getContent();
 
         // Hanya sampul di dalam kartu kursus yang dihitung: foto sambutan di
         // atas halaman berasal dari galeri yang sama, dan nama kelasnya juga
@@ -328,7 +328,7 @@ class DashboardTest extends TestCase
         Enrollment::create(['user_id' => $u->id, 'course_id' => $a->id, 'progress' => 10, 'status' => 'ongoing']);
         Enrollment::create(['user_id' => $u->id, 'course_id' => $b->id, 'progress' => 10, 'status' => 'ongoing']);
 
-        $this->get('/dashboard')
+        $this->get('/lms')
             ->assertOk()
             ->assertSee('k-'.Kategori::nada('Wajib'), false)
             ->assertSee('k-'.Kategori::nada('Operasional'), false);
@@ -356,7 +356,7 @@ class DashboardTest extends TestCase
     public function test_bilah_samping_membawa_data_menu_inertia(): void
     {
         $this->actingAs($this->pengguna());
-        $props = $this->get('/dashboard')->assertOk()->viewData('page')['props'];
+        $props = $this->get('/lms')->assertOk()->viewData('page')['props'];
 
         $this->assertNotEmpty($props['menu']['modul']);
         $this->assertSame('Learning Center', $props['menu']['label']);
@@ -365,7 +365,7 @@ class DashboardTest extends TestCase
     public function test_bilah_atas_membawa_judul_dan_subjudul_inertia(): void
     {
         $this->actingAs($this->pengguna());
-        $props = $this->get('/dashboard')->assertOk()->viewData('page')['props'];
+        $props = $this->get('/lms')->assertOk()->viewData('page')['props'];
 
         $this->assertSame('Dashboard', $props['judul']);
         $this->assertSame('Kelola pembelajaran dan tingkatkan kompetensi Anda', $props['subjudul']);
@@ -374,17 +374,17 @@ class DashboardTest extends TestCase
     public function test_lencana_lonceng_mengikuti_jumlah_pengumuman_inertia(): void
     {
         $this->actingAs($this->pengguna());
-        $this->assertSame(0, $this->get('/dashboard')->assertOk()->viewData('page')['props']['pengumuman']);
+        $this->assertSame(0, $this->get('/lms')->assertOk()->viewData('page')['props']['pengumuman']);
 
         News::create(['title' => 'Pelatihan wajib bulan ini', 'content' => 'Isi pengumuman.', 'published_at' => now()]);
 
-        $this->assertSame(1, $this->get('/dashboard')->assertOk()->viewData('page')['props']['pengumuman']);
+        $this->assertSame(1, $this->get('/lms')->assertOk()->viewData('page')['props']['pengumuman']);
     }
 
     public function test_menu_bilah_samping_membawa_ikon_inertia(): void
     {
         $this->actingAs($this->pengguna());
-        $props = $this->get('/dashboard')->assertOk()->viewData('page')['props'];
+        $props = $this->get('/lms')->assertOk()->viewData('page')['props'];
         $butir = array_merge(...array_map(fn ($g) => $g['butir'], $props['menu']['grup']));
 
         $this->assertGreaterThanOrEqual(6, count($butir));
@@ -401,7 +401,7 @@ class DashboardTest extends TestCase
             Enrollment::create(['user_id' => $u->id, 'course_id' => $c->id, 'progress' => 10, 'status' => 'ongoing']);
         }
 
-        $sampul = array_column($this->get('/dashboard')->assertOk()->viewData('page')['props']['enrollments'], 'sampul');
+        $sampul = array_column($this->get('/lms')->assertOk()->viewData('page')['props']['enrollments'], 'sampul');
         $this->assertCount(2, $sampul);
         $this->assertCount(2, array_unique($sampul));
     }
@@ -415,7 +415,7 @@ class DashboardTest extends TestCase
             Enrollment::create(['user_id' => $u->id, 'course_id' => $c->id, 'progress' => 10, 'status' => 'ongoing']);
         }
 
-        $nada = array_column($this->get('/dashboard')->assertOk()->viewData('page')['props']['enrollments'], 'nada');
+        $nada = array_column($this->get('/lms')->assertOk()->viewData('page')['props']['enrollments'], 'nada');
         $this->assertContains(Kategori::nada('Wajib'), $nada);
         $this->assertContains(Kategori::nada('Operasional'), $nada);
     }
@@ -433,7 +433,7 @@ class DashboardTest extends TestCase
         $this->kursus('Kursus B', 'Keselamatan Kerja', 1);
         $this->kursus('Kursus C', 'Operasional', 1);
 
-        $props = $this->get('/dashboard')->assertOk()->viewData('page')['props'];
+        $props = $this->get('/lms')->assertOk()->viewData('page')['props'];
         $kategori = collect($props['kategori'])->keyBy('nama');
 
         $this->assertSame(2, $kategori['Keselamatan Kerja']['jumlah']);

@@ -191,10 +191,7 @@ class EngineeringTest extends TestCase
         $this->masuk();
 
         foreach (self::HALAMAN as $h) {
-            $this->get(route('meh.'.$h))
-                ->assertOk()
-                ->assertDontSee('NaN')
-                ->assertDontSee('INF');
+            $this->tanpaNaN($this->get(route('meh.'.$h))->assertOk());
         }
     }
 

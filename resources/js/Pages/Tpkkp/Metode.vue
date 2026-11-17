@@ -17,7 +17,7 @@ defineProps<HalamanMetode>();
 <template>
   <Head title="PTPKKP — Metode" />
 
-  <div class="max-w-5xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <PickerTpkkp v-bind="picker" />
 

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\{MineOperationalRecord, User};
 use App\Support\Alur;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 /**
@@ -18,6 +19,32 @@ use Tests\TestCase;
 class AlurTinjauanTest extends TestCase
 {
     use RefreshDatabase;
+
+    /**
+     * Jamnya dipatok — uji ini pernah gagal sendiri saat bulan berganti.
+     *
+     * Halaman operasi menyaring bawaan ke BULAN BERJALAN. Isian di bawah
+     * bertanggal 14 Agustus, jadi selama Agustus ia masuk jendela dan
+     * selama September ia tidak — dua uji berubah dari lulus menjadi
+     * gagal tanpa ada satu baris pun yang diubah.
+     *
+     * Kegagalan yang datang sendiri seperti itu terbaca sebagai uji rewel
+     * lalu ditandai lewati, dan bersamanya ikut hilang penjagaan atas hal
+     * yang sebenarnya diuji di sini: angka yang belum disetujui tidak
+     * boleh terhitung. Karena itu waktunya dipatok, bukan tanggalnya yang
+     * digeser mengikuti hari ini.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Carbon::setTestNow('2026-08-14 08:00:00');
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+        parent::tearDown();
+    }
 
     private function operator(): User
     {
@@ -96,8 +123,18 @@ class AlurTinjauanTest extends TestCase
 
         $this->assertSame(0.0, (float) $props['ringkas']['produksi'],
             'Draf tidak boleh ikut terhitung.');
-        $this->assertCount(1, $props['records'],
-            'Tetapi draf harus tetap terlihat di daftar oleh pengajunya.');
+
+        /* Daftarnya diperiksa pada tab "Input Shift", bukan pada dasbor.
+           Di situlah ia digambar — dasbornya tidak pernah menampilkan
+           daftar record sama sekali, dan sejak muatannya dipangkas ia
+           juga tidak lagi mengirimnya. Yang ditegakkan tetap sama persis:
+           draf harus tetap terlihat oleh pengajunya. */
+        $daftar = $this->actingAs($this->operator())
+            ->get(route('operasi.data'))->assertOk()
+            ->viewData('page')['props'];
+
+        $this->assertCount(1, $daftar['records'],
+            'Draf harus tetap terlihat di daftar oleh pengajunya.');
     }
 
     public function test_angka_yang_sudah_disetujui_terhitung_di_kpi(): void

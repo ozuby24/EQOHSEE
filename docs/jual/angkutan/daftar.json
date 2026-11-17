@@ -1,0 +1,45 @@
+{
+  "kunci": "angkutan",
+  "label": "Dispatch & Hauling",
+  "jual": "Dispatch & Hauling",
+  "harga": 10500000,
+  "ket": "Keseimbangan armada, rincian waktu edar, antrean di muka gali, kepatuhan muatan 10/10/20, dan tonase yang hilang karena menunggu.",
+  "semboyan": "Safe Load Safe Road",
+  "halaman": [
+    {
+      "berkas": "01-angkutan.jpg",
+      "label": "Dashboard Angkutan",
+      "grup": "Pengawasan",
+      "path": "angkutan",
+      "status": "ok"
+    },
+    {
+      "berkas": "02-angkutan-regu.jpg",
+      "label": "Regu Angkut",
+      "grup": "Pengawasan",
+      "path": "angkutan/regu",
+      "status": "ok"
+    },
+    {
+      "berkas": "03-angkutan-muatan.jpg",
+      "label": "Penimbangan Muatan",
+      "grup": "Pengawasan",
+      "path": "angkutan/muatan",
+      "status": "ok"
+    },
+    {
+      "berkas": "04-angkutan-armada.jpg",
+      "label": "Armada Angkut",
+      "grup": "Acuan & Data",
+      "path": "angkutan/armada",
+      "status": "ok"
+    },
+    {
+      "berkas": "05-angkutan-cetak.jpg",
+      "label": "Laporan Angkutan",
+      "grup": "Acuan & Data",
+      "path": "angkutan/cetak",
+      "status": "ok"
+    }
+  ]
+}

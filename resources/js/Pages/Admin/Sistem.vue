@@ -9,9 +9,12 @@
  */
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
 import type { HalamanSistem } from '../../types';
-
 const props = defineProps<HalamanSistem>();
+
+const { dialog, tanya, batal, lanjut } = useDialog();
 
 /** Galat validasi tidak ditampilkan oleh tata letak; halaman ini sendiri
     yang menampilkannya — tanpa itu, penolakan penandaan data contoh
@@ -63,8 +66,15 @@ function jalankan(url: string) {
   pemeliharaanForm.post(url, { preserveScroll: true });
 }
 
-function bersihkanLog() {
-  if (!confirm('Kosongkan seluruh log aktivitas?')) return;
+async function bersihkanLog() {
+  const ok = await tanya({
+    judul: 'Kosongkan seluruh log aktivitas?',
+    pesan: 'Seluruh catatan aktivitas dihapus dan tidak dapat dikembalikan.',
+    labelAksi: 'Kosongkan log',
+    nada: 'bahaya',
+  });
+  if (!ok) return;
+
   router.delete(props.tautan.bersihkanLog, { preserveScroll: true });
 }
 
@@ -88,49 +98,85 @@ function ringkasIsi(c: Perusahaan): string {
   return isi.length ? isi.map(([t, n]) => `${t} ${n}`).join(' · ') : 'belum ada data';
 }
 
-function tandai(c: Perusahaan) {
-  /* Perusahaan yang sudah berisi menuntut namanya diketik. Penjagaan
-     yang sama ada di server — yang di sini hanya menghemat satu
-     perjalanan, bukan menggantikannya. */
+/**
+ * Penegasan digambar oleh aplikasinya sendiri, bukan oleh peramban.
+ *
+ * Ketiga tindakan ini dulu memakai `confirm()` dan `prompt()`. Pada
+ * webview ponsel dan tablet keduanya kerap dibungkam aplikasi induknya
+ * dan langsung memulangkan `false`/`null` — yang dibaca kode ini sebagai
+ * "pengguna menekan Batal". Tombolnya ditekan, tidak ada dialog yang
+ * muncul, tidak ada pesan, dan tidak ada yang terjadi; dari sisi
+ * pemakainya seluruh panel data contoh sekadar mati.
+ *
+ * Sisi servernya tidak pernah bermasalah — memuat 623 baris ke 56 tabel
+ * dan membuang semuanya tanpa sisa. Yang hilang hanya jalan menuju ke
+ * sana.
+ */
+async function tandai(c: Perusahaan) {
   const isi = jumlahIsi(c);
-  let sadar = '';
 
-  if (isi > 0) {
-    sadar =
-      prompt(
-        `${c.nama} sudah berisi ${isi} baris data.\n\n` +
-          'Menandainya sebagai perusahaan contoh membuat seluruh data itu dapat dibuang ' +
-          'oleh tombol muat ulang.\n\nKetik nama perusahaannya persis untuk menegaskan:',
-      ) ?? '';
+  const ok = await tanya({
+    judul: `Jadikan ${c.nama} perusahaan contoh?`,
+    pesan: isi
+      ? `${c.nama} sudah berisi ${isi} baris data.\n\n`
+        + 'Menandainya sebagai perusahaan contoh membuat seluruh data itu dapat dihapus '
+        + 'oleh tombol muat ulang maupun tombol hapus.'
+      : 'Perusahaan contoh dapat diisi data contoh dan dikosongkan kembali kapan saja.',
+    /* Namanya diminta HANYA bila sudah ada yang bisa hilang. Menuntut
+       ketikan pada perusahaan kosong tidak menjaga apa pun, dan
+       penegasan yang diminta tanpa alasan cepat berhenti dibaca. */
+    tegasNama: isi > 0 ? c.nama : null,
+    labelAksi: 'Jadikan contoh',
+  });
+  if (!ok) return;
 
-    if (!sadar) return;
-  }
+  demoForm.transform(() => ({ demo: true, sadar: c.nama })).post(c.urlTandai, { preserveScroll: true });
+}
 
-  demoForm.transform(() => ({ demo: true, sadar })).post(c.urlTandai, { preserveScroll: true });
+async function muat(c: Perusahaan) {
+  const isi = jumlahIsi(c);
+
+  const ok = await tanya({
+    judul: `Muat data contoh ${c.nama}?`,
+    pesan: isi
+      ? `${isi} baris yang ada sekarang akan DIHAPUS lebih dulu, lalu diganti dengan `
+        + 'data contoh yang baru.\n\nTindakan ini tidak dapat dibatalkan.'
+      : 'Seluruh modul akan diisi data contoh — operasi, gudang, penirisan, geoteknik, '
+        + 'lingkungan, peledakan, angkutan, biaya, dan izin kerja.',
+    labelAksi: isi ? 'Hapus lalu muat ulang' : 'Muat data contoh',
+    nada: isi ? 'bahaya' : 'utama',
+  });
+  if (!ok) return;
+
+  demoForm.transform(() => ({})).post(c.urlMuat, { preserveScroll: true });
+}
+
+async function buang(c: Perusahaan) {
+  const isi = jumlahIsi(c);
+  if (!isi) return;
+
+  const ok = await tanya({
+    judul: `Hapus data contoh ${c.nama}?`,
+    pesan: `${isi} baris akan dihapus dan seluruh modulnya kosong kembali.\n\n`
+      + 'Tindakan ini tidak dapat dibatalkan — tetapi data contoh memang dibuat untuk '
+      + 'dihapus. Jalankan setelah pemeriksaan selesai, sebelum pemasangan dipakai sungguhan.',
+    labelAksi: 'Hapus data contoh',
+    nada: 'bahaya',
+  });
+  if (!ok) return;
+
+  demoForm.transform(() => ({})).delete(c.urlHapus, { preserveScroll: true });
 }
 
 function lepasTanda(c: Perusahaan) {
   demoForm.transform(() => ({ demo: false, sadar: '' })).post(c.urlTandai, { preserveScroll: true });
-}
-
-function muat(c: Perusahaan) {
-  const isi = jumlahIsi(c);
-
-  const pesan = isi
-    ? `Muat ulang data contoh ${c.nama}?\n\n${isi} baris yang ada sekarang akan DIBUANG ` +
-      'dan diganti dengan data contoh yang baru. Tindakan ini tidak dapat dibatalkan.'
-    : `Muat data contoh untuk ${c.nama}?`;
-
-  if (!confirm(pesan)) return;
-
-  demoForm.transform(() => ({})).post(c.urlMuat, { preserveScroll: true });
 }
 </script>
 
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-6xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <section class="brand-gradient rounded-2xl p-6 text-white shadow-card relative overflow-hidden">
       <div class="absolute -right-20 -top-20 w-56 h-56 rounded-full bg-cam-lime/20 blur-3xl"></div>
@@ -374,7 +420,10 @@ function muat(c: Perusahaan) {
         <div v-for="c in perusahaanContoh" :key="c.id"
              class="rounded-xl border border-amber-100 bg-amber-50/60 px-4 py-3
                     flex flex-wrap items-center gap-3">
-          <div class="min-w-0 flex-1">
+          <!-- `grow basis-56`, bukan `flex-1`: basis 0 membuat kotak nama
+               menyusut sampai 30px di ponsel sementara tombolnya tetap
+               sebaris. Dengan basis 14rem, tombolnya yang turun baris. -->
+          <div class="min-w-0 grow basis-56">
             <div class="text-[13px] font-bold text-cam-ink">{{ c.nama }}</div>
             <div class="text-[11px] text-stone-500 mt-0.5">
               <span class="num font-semibold">{{ jumlahIsi(c) }}</span> baris ·
@@ -382,11 +431,19 @@ function muat(c: Perusahaan) {
             </div>
           </div>
 
-          <button type="button" @click="muat(c)" :disabled="demoForm.processing"
-                  class="rounded-xl bg-cam-lime-deep px-4 py-2 text-[11.5px] font-bold text-white
-                         hover:brightness-95 transition disabled:opacity-40 shrink-0">
-            {{ jumlahIsi(c) ? 'Muat ulang' : 'Muat data contoh' }}
-          </button>
+          <div class="flex items-center gap-2 shrink-0">
+            <button type="button" @click="muat(c)" :disabled="demoForm.processing"
+                    class="rounded-xl bg-cam-lime-deep px-4 py-2 text-[11.5px] font-bold text-white
+                           hover:brightness-95 transition disabled:opacity-40">
+              {{ jumlahIsi(c) ? 'Muat ulang' : 'Muat data contoh' }}
+            </button>
+
+            <button v-if="jumlahIsi(c)" type="button" @click="buang(c)" :disabled="demoForm.processing"
+                    class="rounded-xl border border-red-200 px-4 py-2 text-[11.5px] font-bold text-red-700
+                           hover:bg-red-50 transition disabled:opacity-40">
+              Hapus data contoh
+            </button>
+          </div>
         </div>
       </div>
 
@@ -445,6 +502,8 @@ function muat(c: Perusahaan) {
     </div>
 
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>
 
 <style scoped>

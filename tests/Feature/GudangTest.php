@@ -383,10 +383,7 @@ class GudangTest extends TestCase
         $this->mutasi($b, 'masuk', 20, ['kadaluarsa' => '2026-09-30', 'batch' => 'X1']);
 
         foreach (self::HALAMAN as $h) {
-            $this->get(route('gudang.'.$h))
-                 ->assertOk()
-                 ->assertDontSee('NaN')
-                 ->assertDontSee('INF');
+            $this->tanpaNaN($this->get(route('gudang.'.$h))->assertOk());
         }
     }
 

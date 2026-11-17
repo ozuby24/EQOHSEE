@@ -1,0 +1,48 @@
+{
+  "kunci": "00-halaman-depan",
+  "label": "Halaman publik",
+  "halaman": [
+    {
+      "berkas": "01-beranda-lebar.jpg",
+      "halaman": "Halaman depan — pilar, modul, harga, cara kerja",
+      "alamat": "/",
+      "lebar": 1440
+    },
+    {
+      "berkas": "01-beranda-ponsel.jpg",
+      "halaman": "Halaman depan — pilar, modul, harga, cara kerja",
+      "alamat": "/",
+      "lebar": 390
+    },
+    {
+      "berkas": "02-pilar-lebar.jpg",
+      "halaman": "Delapan aspek EQOHSEE, halaman tersendiri",
+      "alamat": "/pilar",
+      "lebar": 1440
+    },
+    {
+      "berkas": "02-pilar-ponsel.jpg",
+      "halaman": "Delapan aspek EQOHSEE, halaman tersendiri",
+      "alamat": "/pilar",
+      "lebar": 390
+    },
+    {
+      "berkas": "03-etalase-harga-lebar.jpg",
+      "halaman": "Etalase publik: paket, layanan tahunan, aplikasi satuan",
+      "alamat": "/katalog",
+      "lebar": 1440
+    },
+    {
+      "berkas": "03-etalase-harga-ponsel.jpg",
+      "halaman": "Etalase publik: paket, layanan tahunan, aplikasi satuan",
+      "alamat": "/katalog",
+      "lebar": 390
+    },
+    {
+      "berkas": "04-pilar-panel-samping.jpg",
+      "halaman": "Rincian aspek terbuka di kolom kanan",
+      "alamat": "/#pilar",
+      "lebar": 1440
+    }
+  ]
+}

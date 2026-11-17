@@ -22,7 +22,7 @@ const ringkas: Array<[string, number, boolean]> = [
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-4xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <section class="kartu-lux rounded-2xl p-6">
       <h2 class="font-display text-[20px] font-black text-cam-ink leading-tight">

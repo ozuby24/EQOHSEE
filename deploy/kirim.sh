@@ -79,6 +79,37 @@ for alat in git ssh; do
 done
 git rev-parse --git-dir >/dev/null 2>&1 || gagal "Bukan repo Git: $AKAR"
 
+# Berkas ini dijalankan DI MESIN LOKAL, bukan di VPS.
+#
+# Keterangan itu sudah tertulis di kepala berkas, dan itu tidak cukup:
+# yang membaca kepala berkas adalah orang yang sedang mempelajarinya,
+# sedangkan yang menjalankannya adalah orang yang sedang menyalin
+# perintah. Dijalankan di VPS, skrip ini ber-SSH ke dirinya sendiri —
+# butuh kunci SSH ke localhost yang tidak pernah ada alasan untuk
+# dipasang — dan gagal dengan pesan tentang kunci, bukan tentang tempat.
+# Pesan tentang kunci mengirim orang memasang kunci; itu memperbaiki
+# gejalanya sambil mengekalkan kekeliruannya.
+#
+# Dikenali dari letak repo, bukan dari nama host: nama host dapat sama
+# kebetulan, sedangkan $VPS_DIR adalah alamat yang skrip ini sendiri
+# tuju. Kalau ia berdiri di dalamnya, ia sedang menuju dirinya sendiri.
+if [ "$AKAR" = "${VPS_DIR%/}" ]; then
+    merah "GAGAL: kirim.sh sedang dijalankan DI VPS."
+    echo  ""
+    echo  "    Skrip ini berjalan di mesin Anda sendiri, lalu memanggil"
+    echo  "    deploy.sh di VPS lewat SSH. Dijalankan dari dalam VPS, ia"
+    echo  "    akan menyambung ke dirinya sendiri."
+    echo  ""
+    echo  "    Dari VPS, yang dijalankan adalah pasangannya:"
+    echo  ""
+    echo  "        cd '$VPS_DIR'"
+    echo  "        git fetch origin <cabang> && git checkout <cabang>"
+    echo  "        bash deploy/deploy.sh"
+    echo  ""
+    echo  "    Dari mesin Anda, barulah:  bash deploy/kirim.sh"
+    exit 1
+fi
+
 CABANG="${CABANG:-$(git rev-parse --abbrev-ref HEAD)}"
 [ "$CABANG" != "HEAD" ] || gagal "HEAD sedang lepas. Sebutkan cabangnya: bash deploy/kirim.sh <cabang>"
 echo "    cabang  : $CABANG"
@@ -117,6 +148,29 @@ else
     else
         php artisan test || gagal "Uji tidak lulus. Perbaiki dulu, atau pakai --tanpa-tes bila memang mendesak."
         hijau "    Uji lulus."
+    fi
+
+    # Tipe TypeScript dan Vue diperiksa TERPISAH dari `npm run build`.
+    #
+    # Vite tidak memeriksa tipe sama sekali — ia membuang anotasinya lalu
+    # membundel. Artinya galat tipe lolos build tanpa satu pun peringatan,
+    # dan yang tersisa memeriksanya hanyalah langkah yang harus dipanggil
+    # dengan sengaja. Tujuh galat pernah menumpuk begitu, termasuk
+    # resolve() halaman yang mengembalikan modul padahal tipenya menuntut
+    # komponen — bentuk yang bekerja hari itu karena Inertia menerima
+    # keduanya saat dijalankan, dan berhenti bekerja pada versi berikutnya
+    # yang tidak lagi menerimanya.
+    #
+    # Sengaja TIDAK disatukan ke skrip `build`: satu galat tipe tidak boleh
+    # menghalangi penerbitan darurat, dan Vite memang tidak membutuhkannya
+    # untuk menghasilkan bundel yang benar.
+    tahap "Memeriksa tipe TypeScript & Vue"
+    if [ ! -d node_modules ]; then
+        kuning "    node_modules/ belum ada — pemeriksaan dilewati. Jalankan 'npm ci' bila ingin diperiksa."
+    elif ! npm run --silent typecheck; then
+        gagal "Ada galat tipe. Perbaiki dulu, atau pakai --tanpa-tes bila memang mendesak."
+    else
+        hijau "    Tipe bersih."
     fi
 fi
 
@@ -164,12 +218,72 @@ elif [ -n "$KOTOR" ]; then
     echo "$KOTOR" | sed 's/^/      /'
     if [ "$PAKSA" != "1" ]; then
         merah "    Ada suntingan langsung di VPS yang belum masuk repo."
-        echo  "    Selamatkan dulu, atau buang dengan sengaja lewat --paksa."
+        echo  "    Berkas di atas TIDAK ada di repo mana pun — hanya di server."
+        echo  "    Masukkan dulu ke repo bila memang dipakai, atau teruskan"
+        echo  "    dengan --paksa: deploy.sh menyalinnya lebih dulu ke"
+        echo  "    storage/backup-berkas-server/<waktu>/ sebelum menimpanya."
         exit 1
     fi
-    kuning "    Diteruskan karena --paksa — suntingan di atas akan hilang."
+    kuning "    Diteruskan karena --paksa — berkas di atas ditimpa isi repo,"
+    kuning "    salinannya tersimpan di storage/backup-berkas-server/."
 else
     hijau "    Bersih."
+fi
+
+# Yang terpasang di VPS harus termasuk riwayat cabang yang dikirim.
+#
+# Repo ini pernah punya dua jalur yang berkembang terpisah — `main` dan
+# cabang kerja yang memang terpasang di VPS — dan keduanya membuat tabel
+# yang sama lewat migrasi yang berbeda (modul PJP: `pjps` dibuat di dua
+# berkas dengan tanggal berlainan). Mengirim jalur yang satu ke server
+# yang menjalankan jalur lainnya menghentikan deploy di tengah migrasi
+# dengan "table already exists", dan situsnya tertinggal di halaman
+# perawatan.
+#
+# Karena itu posisinya dibandingkan lebih dulu:
+#   maju      — commit VPS termasuk riwayat cabang ini: deploy biasa.
+#   mundur    — cabang ini lebih lama dari VPS: diteruskan, sebab itulah
+#               cara memulihkan versi sebelumnya (lihat VPS.md). Basis
+#               data tidak ikut mundur, jadi diingatkan.
+#   bercabang — tidak satu pun memuat yang lain: ditolak tanpa --paksa.
+tahap "Membandingkan dengan yang terpasang di VPS"
+POSISI="$($SSH "$VPS_HOST" "cd '$VPS_DIR' && git rev-parse --abbrev-ref HEAD && git rev-parse HEAD" 2>/dev/null || true)"
+VPS_CABANG="$(printf '%s\n' "$POSISI" | sed -n 1p)"
+VPS_COMMIT="$(printf '%s\n' "$POSISI" | sed -n 2p)"
+
+if [ -z "$VPS_COMMIT" ]; then
+    kuning "    Posisi repo di VPS tidak terbaca — perbandingan dilewati."
+else
+    echo "    VPS kini: $VPS_CABANG @ ${VPS_COMMIT:0:8}"
+    if ! git cat-file -e "${VPS_COMMIT}^{commit}" 2>/dev/null; then
+        GIT_TERMINAL_PROMPT=0 git fetch -q origin 2>/dev/null || true
+    fi
+
+    if [ "$(git rev-parse --is-shallow-repository 2>/dev/null)" = "true" ]; then
+        # Riwayat yang terpotong tidak dapat membuktikan dua commit
+        # bercabang — jalurnya mungkin hanya belum terunduh.
+        kuning "    Repo lokal dangkal (shallow) — perbandingan dilewati."
+        kuning "    Untuk memeriksanya: git fetch --unshallow origin"
+    elif ! git cat-file -e "${VPS_COMMIT}^{commit}" 2>/dev/null; then
+        kuning "    Commit itu tidak ada di repo lokal maupun GitHub — tidak dapat dibandingkan."
+    elif [ "$VPS_COMMIT" = "$COMMIT" ]; then
+        hijau "    Sama dengan yang terpasang — dipasang ulang."
+    elif git merge-base --is-ancestor "$VPS_COMMIT" "$COMMIT"; then
+        hijau "    Maju dari yang terpasang."
+    elif git merge-base --is-ancestor "$COMMIT" "$VPS_COMMIT"; then
+        kuning "    Mundur ke commit yang lebih lama. Basis data TIDAK ikut mundur —"
+        kuning "    bila commit yang ditinggalkan membawa migrasi, pulihkan cadangannya (VPS.md)."
+    elif [ "$PAKSA" = "1" ]; then
+        kuning "    '$CABANG' tidak memuat commit yang terpasang — riwayatnya bercabang."
+        kuning "    Diteruskan karena --paksa. Migrasi dari jalur lain dapat bertabrakan."
+    else
+        merah "    '$CABANG' tidak memuat commit yang terpasang di VPS ($VPS_CABANG)."
+        echo  "    Riwayat keduanya bercabang: migrasi dari jalur lain dapat membuat"
+        echo  "    tabel yang sudah ada, dan deploy berhenti di tengah migrasi."
+        echo  "    Gabungkan dulu '$VPS_CABANG' ke '$CABANG', atau teruskan dengan --paksa"
+        echo  "    bila memang sengaja berpindah jalur."
+        exit 1
+    fi
 fi
 
 # ── 6. Pasang di VPS ──────────────────────────────────────────────
@@ -187,7 +301,11 @@ cd '$VPS_DIR'
 echo '--> Menarik $CABANG'
 git fetch origin '$CABANG'
 git checkout '$CABANG' 2>/dev/null || git checkout -b '$CABANG' 'origin/$CABANG'
-git reset --hard '$COMMIT'
+
+# Sengaja TIDAK reset di sini. deploy.sh yang menegakkan isi repo, dan ia
+# menyalin lebih dulu berkas terlacak yang menyimpang ke
+# storage/backup-berkas-server/. Reset di titik ini akan membuang berkas
+# itu sebelum sempat disalin — persis kehilangan yang ingin dicegah.
 
 echo '--> Menjalankan deploy.sh'
 EQOHSEE_SSL='$VPS_SSL' bash deploy/deploy.sh

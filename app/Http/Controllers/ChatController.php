@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\{Percakapan, Pesan, User};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Support\Berkas;
 
 /**
  * Pesan — chat langsung antar pengguna dan grup perusahaan.
@@ -113,11 +114,11 @@ class ChatController extends Controller
     {
         if ($p->jenis === 'grup') {
             $nama   = $p->judul ?? $p->company?->name ?? 'Grup Perusahaan';
-            $avatar = $p->company?->effectiveLogo() ? asset('storage/' . $p->company->effectiveLogo()) : null;
+            $avatar = $p->company?->effectiveLogo() ? Berkas::terbuka($p->company->effectiveLogo()) : null;
         } else {
             $lawan  = $p->peserta->firstWhere('id', '!=', $u->id);
             $nama   = $lawan?->name ?? 'Pengguna terhapus';
-            $avatar = $lawan?->avatar ? asset('storage/' . $lawan->avatar) : null;
+            $avatar = $lawan?->avatar ? Berkas::terbuka($lawan->avatar) : null;
         }
 
         return [
@@ -139,7 +140,7 @@ class ChatController extends Controller
                 'id'        => $m->id,
                 'isi'       => $m->isi,
                 'nama'      => $m->pengirim?->name ?? 'Pengguna terhapus',
-                'avatar'    => $m->pengirim?->avatar ? asset('storage/' . $m->pengirim->avatar) : null,
+                'avatar'    => $m->pengirim?->avatar ? Berkas::terbuka($m->pengirim->avatar) : null,
                 'waktu'     => \App\Support\Waktu::lokal($m->created_at)?->format('d M · H:i'),
                 'milikSaya' => $m->user_id === $pemirsa->id,
             ])->all();

@@ -16,6 +16,10 @@ import { reactive, ref, watch } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import PickerTpkkp from '../../Components/PickerTpkkp.vue';
 import type { BarisProgram, BarisSunting, HalamanProgram } from '../../types';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, batal, lanjut } = useDialog();
+
 
 const props = defineProps<HalamanProgram>();
 
@@ -73,8 +77,8 @@ function simpanBaris(id: string) {
     { preserveScroll: true });
 }
 
-function hapus(id: string) {
-  if (!confirm('Hapus program ini?')) return;
+async function hapus(id: string) {
+  if (!await tanya('Hapus program ini?')) return;
 
   router.delete(`/tpkkp/program/${id}?tahun=${props.tahun}`, { preserveScroll: true });
 }
@@ -85,7 +89,7 @@ const angka = (n: number) => (n >= 0 ? '+' : '') + n.toFixed(3);
 <template>
   <Head title="PTPKKP — Program Improvement" />
 
-  <div class="max-w-5xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <PickerTpkkp v-bind="picker" />
 
@@ -155,7 +159,7 @@ const angka = (n: number) => (n >= 0 ? '+' : '') + n.toFixed(3);
               <!-- pr-7: tanda panah select digambar di dalam kotaknya, jadi
                    tanpa ruang di kanan ia menindih teks pilihan. -->
               <select v-model="sunting[r.id].status"
-                      class="ring-focus rounded-lg border border-stone-200 pl-2 pr-7 py-1 text-[11.5px] font-semibold">
+                      class="ring-focus rounded-lg border border-stone-200 pl-2 pr-7 py-1 text-[11.5px] font-semibold" aria-label="Status">
                 <option v-for="s in statusPilihan" :key="s" :value="s">{{ s }}</option>
               </select>
               <input v-model.number="sunting[r.id].progress"
@@ -186,4 +190,6 @@ const angka = (n: number) => (n >= 0 ? '+' : '') + n.toFixed(3);
       </div>
     </div>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

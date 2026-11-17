@@ -1,0 +1,38 @@
+{
+  "kunci": "investigasi",
+  "label": "Investigasi",
+  "jual": "Investigasi Insiden",
+  "harga": 2500000,
+  "ket": "Register insiden, analisis SCAT tiga lapis, wawancara terarah, hierarki kendali, dan matriks risiko — dari laporan awal sampai tindakan perbaikan yang tuntas.",
+  "semboyan": "Never Twice The Same",
+  "halaman": [
+    {
+      "berkas": "01-investigasi.jpg",
+      "label": "Ringkasan",
+      "grup": "",
+      "path": "investigasi",
+      "status": "ok"
+    },
+    {
+      "berkas": "02-investigasi-insiden.jpg",
+      "label": "Register Insiden",
+      "grup": "Kejadian",
+      "path": "investigasi/insiden",
+      "status": "ok"
+    },
+    {
+      "berkas": "03-investigasi-insiden-baru.jpg",
+      "label": "Lapor Insiden",
+      "grup": "Kejadian",
+      "path": "investigasi/insiden/baru",
+      "status": "ok"
+    },
+    {
+      "berkas": "04-investigasi-berkas.jpg",
+      "label": "Investigasi",
+      "grup": "Berkas",
+      "path": "investigasi/berkas",
+      "status": "ok"
+    }
+  ]
+}

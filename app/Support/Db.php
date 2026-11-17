@@ -47,4 +47,39 @@ class Db
     {
         return self::pgsql() ? 'ilike' : 'like';
     }
+
+    /**
+     * Urutkan menurut DAFTAR NILAI, bukan menurut abjad.
+     *
+     * Sebagian kolom pada aplikasi ini berisi tingkatan yang urutannya
+     * bukan urutan hurufnya: risiko Tinggi > Sedang > Rendah, status
+     * Open sebelum Closed. Diurutkan `ORDER BY risiko`, yang teratas
+     * menjadi "Rendah" — dan lembar register yang seharusnya menaruh
+     * temuan paling berbahaya di baris pertama justru menaruhnya di
+     * baris terakhir.
+     *
+     * Nilainya DIKUTIP lewat PDO, bukan ditempel ke dalam tali teks.
+     * Seluruh pemanggil yang ada memberi tetapan yang ditulis di kode,
+     * tetapi pemanggil berikutnya akan menulis nilainya dari permintaan
+     * — dan ekspresi ORDER BY tetap sebuah tempat suntikan SQL meski ia
+     * tidak pernah memuat isian pengguna hari ini.
+     *
+     * @param list<string> $urutan nilai dari yang paling dulu
+     */
+    public static function urutanNilai(string $kolom, array $urutan): string
+    {
+        $pdo = DBFacade::connection()->getPdo();
+
+        $kasus = '';
+
+        foreach (array_values($urutan) as $i => $nilai) {
+            $kasus .= ' WHEN '.$pdo->quote((string) $nilai)." THEN {$i}";
+        }
+
+        /* Nilai yang TIDAK terdaftar jatuh ke belakang, bukan ke depan.
+           Status baru yang ditambahkan orang kemudian tidak boleh
+           diam-diam naik ke puncak register hanya karena ia belum
+           disebut di sini. */
+        return "CASE {$kolom}{$kasus} ELSE ".count($urutan).' END';
+    }
 }

@@ -36,7 +36,7 @@ const chip = 'text-[9.5px] font-bold uppercase tracking-wide px-2 py-0.5 rounded
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-5xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <div class="grid gap-3 grid-cols-2 lg:grid-cols-4">
       <div v-for="k in kpi" :key="k.label"
@@ -64,17 +64,17 @@ const chip = 'text-[9.5px] font-bold uppercase tracking-wide px-2 py-0.5 rounded
                class="ring-focus flex-1 min-w-0 basis-[180px] rounded-xl border border-stone-200
                       px-4 py-2.5 text-[13px] transition">
 
-        <select v-model="saring.jenis" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan">
+        <select v-model="saring.jenis" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan" aria-label="Jenis">
           <option value="">Semua jenis</option>
           <option v-for="j in opsi.jenis" :key="j" :value="j">{{ j }}</option>
         </select>
 
-        <select v-model="saring.status" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan">
+        <select v-model="saring.status" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan" aria-label="Status">
           <option value="">Semua status</option>
           <option v-for="s in opsi.status" :key="s" :value="s">{{ s[0].toUpperCase() + s.slice(1) }}</option>
         </select>
 
-        <select v-model="saring.tinjau" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan">
+        <select v-model="saring.tinjau" :class="[isian, 'flex-1 basis-[8.5rem]']" @change="terapkan" aria-label="Masa tinjau">
           <option value="">Semua masa tinjau</option>
           <option v-for="t in opsi.tinjau" :key="t.nilai" :value="t.nilai">{{ t.label }}</option>
         </select>
@@ -86,10 +86,10 @@ const chip = 'text-[9.5px] font-bold uppercase tracking-wide px-2 py-0.5 rounded
       </div>
 
       <div class="flex flex-wrap gap-3 mt-2.5 px-1">
-        <Link :href="tautan.piramida" class="text-[11.5px] font-bold text-cam-lime-deep hover:underline">
+        <Link :href="tautan.piramida" class="text-[11.5px] font-bold text-cam-lime-deep hover:underline py-1.5 -my-1.5">
           Piramida dokumen →
         </Link>
-        <a :href="tautan.daftarInduk" class="text-[11.5px] font-bold text-stone-400 hover:underline">
+        <a :href="tautan.daftarInduk" class="text-[11.5px] font-bold text-stone-400 hover:underline py-1.5 -my-1.5">
           Daftar induk (cetak) →
         </a>
       </div>

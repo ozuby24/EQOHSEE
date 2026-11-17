@@ -6,6 +6,8 @@ use App\Models\{ActivityLog, Company, HazardReport, Inspection, InspectionInspec
     InspectionItem, InspectionTemplate, User};
 use App\Support\{Db, Hazard, Identitas};
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use App\Support\Berkas;
 
 class InspectionController extends Controller
 {
@@ -25,7 +27,7 @@ class InspectionController extends Controller
 
             'saring' => ['status' => $status, 'template' => $template],
             'opsi'   => [
-                'status'   => ['Draft', 'Selesai'],
+                'status'   => Inspection::STATUS,
                 'template' => InspectionTemplate::orderBy('nama')->get(['id', 'nama'])
                     ->map(fn ($t) => ['id' => $t->id, 'nama' => $t->nama])->all(),
             ],
@@ -150,17 +152,18 @@ class InspectionController extends Controller
                 'risiko'   => $x->risiko,
                 'temuan'   => $x->temuan,
                 'tindakan' => $x->tindakan,
-                'foto'     => array_map(fn ($f) => asset('storage/'.$f), $x->foto ?: []),
+                'foto'     => Berkas::daftarUrl($x, 'ins'),
                 'hazard'   => $x->hazardReport?->kode,
                 'urlHazard'=> $x->hazardReport ? route('hazard.show', $x->hazardReport) : null,
                 'urlAngkat'=> route('inspeksi.item.angkat', $x),
                 'urlHapus' => route('inspeksi.item.destroy', $x),
+                'urlFoto'  => route('inspeksi.item.foto', $x),
             ])->all(),
 
             'opsi' => [
                 'kondisi' => Hazard::KONDISI,
                 'risiko'  => Hazard::RISIKO,
-                'status'  => ['Draft', 'Selesai'],
+                'status'  => Inspection::STATUS,
                 'peran'   => ['Ketua', 'Anggota'],
                 'kandidat' => User::orderBy('name')->get(['id', 'name', 'position'])
                     ->map(fn ($u) => ['id' => $u->id, 'nama' => $u->name, 'jabatan' => $u->position])->all(),
@@ -171,7 +174,15 @@ class InspectionController extends Controller
                 'tambahItem'    => route('inspeksi.item.store', $inspeksi),
                 'tambahPetugas' => route('inspeksi.inspector.store', $inspeksi),
                 'ubah'          => route('inspeksi.edit', $inspeksi),
-                'cetak'         => route('inspeksi.ekspor.cetak'),
+
+                /* Lembar INSPEKSI INI, bukan register seluruhnya.
+                   Tombol cetak di halaman satu inspeksi dulu menunjuk
+                   ke register — yang menekannya sambil membaca satu
+                   inspeksi mendapat daftar seluruh inspeksi perusahaan,
+                   dan tidak ada apa pun di layar yang menjelaskan
+                   kenapa. */
+                'lembar'        => route('inspeksi.lembar', $inspeksi),
+                'register'      => route('inspeksi.ekspor.cetak'),
                 'kembali'       => route('inspeksi.index'),
             ],
         ]);
@@ -260,9 +271,51 @@ class InspectionController extends Controller
                 'tindakan' => $row['tindakan'] ?? null,
             ]);
         }
-        if ($request->filled('status')) $inspeksi->update(['status' => $request->input('status')]);
+        /* Statusnya divalidasi, bukan diterima apa adanya.
+
+           Baris ini dulu menulis apa pun yang dikirim. Nilai di luar
+           domainnya tidak menimbulkan galat sama sekali: ia tersimpan,
+           lalu lencana statusnya jatuh ke cabang "belum selesai" dan
+           saringan di halaman daftar berhenti menemukannya — tanpa
+           satu pun pesan yang menjelaskan ke mana inspeksinya pergi. */
+        if ($request->filled('status')) {
+            $request->validate(['status' => [Rule::in(Inspection::STATUS)]]);
+            $inspeksi->update(['status' => $request->input('status')]);
+        }
 
         return back()->with('ok','Hasil pemeriksaan tersimpan.');
+    }
+
+    /**
+     * Tambah foto pada butir yang SUDAH ada.
+     *
+     * Terpisah dari `saveItems` yang menyimpan seluruh baris sekaligus.
+     * Menyatukannya berarti setiap kali satu foto diunggah, dua puluh
+     * delapan baris ikut terkirim — dan pada sambungan lapangan yang
+     * putus di tengah, yang hilang bukan cuma fotonya melainkan seluruh
+     * isian yang belum sempat tersimpan.
+     *
+     * Foto DITAMBAHKAN, tidak menggantikan. Satu temuan kerap difoto
+     * dari beberapa sudut, dan pengunggahan kedua yang menimpa yang
+     * pertama membuang bukti tanpa bertanya.
+     */
+    public function fotoItem(Request $request, InspectionItem $item)
+    {
+        $request->validate(['foto' => ['required', 'array', 'max:6']]);
+        $request->validate(['foto.*' => Berkas::ATURAN_GAMBAR], [], ['foto.*' => 'foto']);
+
+        /* Lewat inspeksinya, bukan langsung dari $item: butir milik
+           perusahaan lain harus tidak dapat ditemukan, dan itu hanya
+           terjadi bila pencariannya melewati baris yang ber-scope. */
+        $inspeksi = Inspection::findOrFail($item->inspection_id);
+
+        if ($baru = Berkas::simpanBanyak($request->file('foto'), 'inspeksi')) {
+            $item->update(['foto' => array_merge((array) $item->foto, $baru)]);
+        }
+
+        ActivityLog::write('Foto butir inspeksi', $inspeksi->kode.' — '.$item->uraian, 'hazrep');
+
+        return back()->with('ok', 'Foto tersimpan pada butir pemeriksaan.');
     }
 
     public function storeItem(Request $request, Inspection $inspeksi)
@@ -277,11 +330,13 @@ class InspectionController extends Controller
         ]);
         $d['order_index'] = (int) $inspeksi->items()->max('order_index') + 1;
 
-        $foto = [];
-        foreach ((array) $request->file('foto') as $f) {
-            if ($f && $f->isValid()) $foto[] = $f->store('inspeksi', 'public');
+        /* Foto butir pemeriksaan sebelumnya tersimpan tanpa diperiksa
+           sama sekali — bukan hanya tanpa batas ukuran, melainkan tanpa
+           batas JENIS. */
+        if ($request->hasFile('foto')) {
+            $request->validate(['foto.*' => Berkas::ATURAN_GAMBAR], [], ['foto.*' => 'foto']);
+            if ($foto = Berkas::simpanBanyak($request->file('foto'), 'inspeksi')) $d['foto'] = $foto;
         }
-        if ($foto) $d['foto'] = $foto;
 
         $inspeksi->items()->create($d);
         return back()->with('ok','Item pemeriksaan ditambahkan.');
@@ -421,7 +476,7 @@ class InspectionController extends Controller
 
     private function v(Request $r): array
     {
-        $d = $r->validate([
+        $d = $this->pemilik($r->validate([
             'template_id' => ['nullable','exists:inspection_templates,id'],
             'judul'       => ['required','string','max:200'],
             'jenis'       => ['nullable','in:Harian,Mingguan,Bulanan,Khusus'],
@@ -429,10 +484,10 @@ class InspectionController extends Controller
             'lokasi'      => ['nullable','string','max:200'],
             'tanggal'     => ['required','date'],
             'pelaksana'   => ['nullable','string','max:150'],
-            'status'      => ['nullable','in:Berjalan,Selesai'],
+            'status'      => ['nullable', Rule::in(Inspection::STATUS)],
             'catatan'     => ['nullable','string','max:2000'],
-        ]);
-        $d['status'] = $d['status'] ?? 'Berjalan';
+        ]));
+        $d['status'] = $d['status'] ?? Inspection::STATUS[0];
         return $d;
     }
 }

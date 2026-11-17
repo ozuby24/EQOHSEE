@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
-import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { propHalaman } from '../../halaman';
+import Dialog from '../../Components/Dialog.vue';
+import { useDialog } from '../../dialog';
+const { dialog, tanya, minta, batal, lanjut } = useDialog();
+
 
 /*
   Prop halaman diambil lewat usePage(), bukan defineProps — lihat
   tests/Feature/PropHalamanTest.php untuk sebabnya.
 */
-const props = usePage<any>().props as any;
+const props = propHalaman();
 const isAdmin = computed(() => Boolean(props.pengguna?.admin));
 
 const judul: Record<string, string> = {
@@ -41,13 +46,26 @@ function rentang() {
   router.get(window.location.pathname, { dari: props.dari, sampai: props.sampai }, { preserveState: true, replace: true });
 }
 function simpanIzin() { izin.post(tautan.value.izinSimpan, { preserveScroll: true, onSuccess: () => izin.reset('nomor', 'uraian', 'catatan') }); }
-function hapusIzin(i: any) { if (window.confirm(`Hapus izin ${i.nomor}?`)) router.delete(untuk(tautan.value.izinHapus, i.id), { preserveScroll: true }); }
+async function hapusIzin(i: any) { if (await tanya(`Hapus izin ${i.nomor}?`)) router.delete(untuk(tautan.value.izinHapus, i.id), { preserveScroll: true }); }
 function simpanGas(i: any) { gas.post(untuk(tautan.value.gasSimpan, i.id), { preserveScroll: true, onSuccess: () => gas.reset('o2', 'lel', 'co', 'h2s') }); }
-function hapusGas(g: any) { router.delete(untuk(tautan.value.gasHapus, g.id), { preserveScroll: true }); }
+async function hapusGas(g: any) {
+  if (!await tanya(`Hapus pengukuran gas ${g.waktu}?`)) return;
+  router.delete(untuk(tautan.value.gasHapus, g.id), { preserveScroll: true });
+}
 function simpanSyarat() { syarat.post(tautan.value.syaratSimpan, { preserveScroll: true, onSuccess: () => syarat.reset('teks') }); }
-function hapusSyarat(s: any) { router.delete(untuk(tautan.value.syaratHapus, s.id), { preserveScroll: true }); }
+async function hapusSyarat(s: any) {
+  if (!await tanya(`Hapus syarat "${s.teks}"?`)) return;
+  router.delete(untuk(tautan.value.syaratHapus, s.id), { preserveScroll: true });
+}
 function simpanAmbang() { ambang.post(tautan.value.ambangSimpan, { preserveScroll: true }); }
-function hapusAmbang(a: any) { router.delete(untuk(tautan.value.ambangHapus, a.id), { preserveScroll: true }); }
+async function hapusAmbang(a: any) {
+  /* Baris ini dicari dari daftar lain oleh templatnya; bila tidak ketemu
+     tidak ada yang boleh dihapus. Tanpa penjagaan ini `a.id` menjadi
+     undefined dan permintaannya tetap terkirim ke alamat yang salah. */
+  if (!a) return;
+  if (!await tanya(`Hapus ambang ${String(a.parameter ?? '').toUpperCase()} yang ditetapkan situs?`)) return;
+  router.delete(untuk(tautan.value.ambangHapus, a.id), { preserveScroll: true });
+}
 
 function ubahPeriksa(p: any, nilai: boolean) {
   router.put(untuk(tautan.value.periksaUbah, p.id), { terpenuhi: nilai, keterangan: p.keterangan || '' }, { preserveScroll: true });
@@ -57,17 +75,20 @@ function alur(pola: string, baris: any, isi: Record<string, any> = {}) {
   sibuk[baris.id] = true;
   router.post(untuk(pola, baris.id), isi, { preserveScroll: true, onFinish: () => { sibuk[baris.id] = false; } });
 }
-function terbitkan(i: any) {
-  if (!window.confirm(`Terbitkan izin ${i.nomor}? Pekerjaan boleh dimulai setelah ini.`)) return;
+async function terbitkan(i: any) {
+  if (!await tanya(`Terbitkan izin ${i.nomor}? Pekerjaan boleh dimulai setelah ini.`)) return;
   alur(tautan.value.izinTerbitkan, i);
 }
-function tolak(i: any) {
-  const a = window.prompt(`Alasan penolakan izin ${i.nomor}:`);
+async function tolak(i: any) {
+  const a = await minta({ judul: `Tolak izin ${i.nomor}?`, label: 'Alasan penolakan',
+    jenis: 'panjang', min: 5, labelAksi: 'Tolak', nada: 'bahaya' });
   if (a === null) return;
   alur(tautan.value.izinTolak, i, { alasan_tolak: a });
 }
-function tutup(i: any) {
-  const c = window.prompt(`Catatan penutupan izin ${i.nomor} (keadaan area, orang sudah keluar, dsb.):`);
+async function tutup(i: any) {
+  const c = await minta({ judul: `Tutup izin ${i.nomor}?`, label: 'Catatan penutupan',
+    pesan: 'Keadaan area, orang sudah keluar, peralatan sudah diamankan, dan sebagainya.',
+    jenis: 'panjang', wajib: false, labelAksi: 'Tutup izin' });
   if (c === null) return;
   alur(tautan.value.izinTutup, i, { catatan_penutupan: c });
 }
@@ -93,16 +114,16 @@ const warnaWaktu: Record<string, string> = {
 <template>
   <Head :title="judul[props.mode]" />
 
-  <div class="max-w-[1400px] mx-auto space-y-5">
+  <div class="space-y-5">
     <section class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <p class="text-[10px] font-bold uppercase tracking-[.16em] text-cam-orange">Safety · Permit to Work</p>
-        <h2 class="text-2xl font-extrabold tracking-tight text-stone-800">{{ judul[props.mode] }}</h2>
+        
         <p class="text-[12px] text-stone-500 mt-1">Izin yang diterbitkan sebelum pekerjaan dimulai — dan yang harus ditutup setelah selesai.</p>
       </div>
       <div class="flex gap-2">
-        <input v-model="props.dari" type="date" class="rounded-lg border-stone-200 text-[11px]">
-        <input v-model="props.sampai" type="date" class="rounded-lg border-stone-200 text-[11px]">
+        <input v-model="props.dari" type="date" class="rounded-lg border-stone-200 text-[11px]" aria-label="Tanggal mulai">
+        <input v-model="props.sampai" type="date" class="rounded-lg border-stone-200 text-[11px]" aria-label="Tanggal akhir">
         <button class="eq-btn-lain" type="button" @click="rentang">Terapkan</button>
       </div>
     </section>
@@ -128,7 +149,7 @@ const warnaWaktu: Record<string, string> = {
         <p v-if="a.saran" class="text-[11px] text-stone-700 mt-2 pt-2 border-t border-black/5"><span class="font-bold">Tindakan: </span>{{ a.saran }}</p>
         <div class="mt-2">
           <span v-if="ditangani.has(a.kode)" class="inline-block rounded-full bg-emerald-100 text-emerald-700 px-2 py-1 text-[10px] font-bold">Sedang ditangani</span>
-          <button v-else type="button" class="text-[11px] font-bold text-cam-orange-dark" @click="tindakDari(a)">+ Buat tindak lanjut</button>
+          <button v-else type="button" class="text-[11px] font-bold text-cam-orange-dark py-1.5" @click="tindakDari(a)">+ Buat tindak lanjut</button>
         </div>
       </div>
     </section>
@@ -239,7 +260,7 @@ const warnaWaktu: Record<string, string> = {
             <input v-model="izin.batas_uji_menit" type="number" :disabled="!perluGas"
                    :placeholder="perluGas ? String(props.opsi?.batasUjiBawaan) : 'jenis ini tidak menuntut uji gas'"
                    class="mt-1 w-full rounded-lg border-stone-200 text-[12px] disabled:bg-stone-50"></label>
-          <button class="eq-btn self-end" :disabled="izin.processing">Simpan draf</button>
+          <button class="eq-btn-utama self-end" :disabled="izin.processing">Simpan draf</button>
         </form>
         <p v-for="(e, k) in izin.errors" :key="k" class="mt-2 text-[11px] text-red-600">{{ e }}</p>
       </section>
@@ -384,12 +405,12 @@ const warnaWaktu: Record<string, string> = {
             <input v-model="syarat.urutan" type="number" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
           <label class="flex items-center gap-2 text-[11px] font-bold text-stone-500 self-end pb-2">
             <input v-model="syarat.wajib" type="checkbox" class="rounded border-stone-300"> Wajib</label>
-          <button class="eq-btn md:col-start-5" :disabled="syarat.processing">Tambah</button>
+          <button class="eq-btn-utama md:col-start-5" :disabled="syarat.processing">Tambah</button>
         </form>
         <p v-for="(e, k) in syarat.errors" :key="k" class="mt-2 text-[11px] text-red-600">{{ e }}</p>
       </section>
 
-      <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
+      <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-x-auto">
         <table class="w-full text-[11.5px]">
           <thead class="bg-stone-50 text-left text-stone-400 uppercase text-[10px] tracking-wide">
             <tr><th class="px-5 py-2.5">Jenis</th><th class="px-5 py-2.5 text-right">Urutan</th>
@@ -434,12 +455,12 @@ const warnaWaktu: Record<string, string> = {
             <input v-model="ambang.satuan" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
           <label class="text-[11px] font-bold text-stone-500">Acuan
             <input v-model="ambang.acuan" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
-          <button class="eq-btn md:col-start-5" :disabled="ambang.processing">Simpan</button>
+          <button class="eq-btn-utama md:col-start-5" :disabled="ambang.processing">Simpan</button>
         </form>
         <p v-for="(e, k) in ambang.errors" :key="k" class="mt-2 text-[11px] text-red-600">{{ e }}</p>
       </section>
 
-      <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-hidden">
+      <section class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-x-auto">
         <table class="w-full text-[11.5px]">
           <thead class="bg-stone-50 text-left text-stone-400 uppercase text-[10px] tracking-wide">
             <tr><th class="px-5 py-2.5">Parameter</th><th class="px-5 py-2.5 text-right">Batas bawah</th>
@@ -483,10 +504,11 @@ const warnaWaktu: Record<string, string> = {
           <input v-model="tindak.target_selesai" type="date" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
         <label class="md:col-span-4 text-[11px] font-bold text-stone-500">Uraian
           <input v-model="tindak.uraian" type="text" class="mt-1 w-full rounded-lg border-stone-200 text-[12px]"></label>
-        <button class="eq-btn self-end" :disabled="tindak.processing">Tambah</button>
+        <button class="eq-btn-utama self-end" :disabled="tindak.processing">Tambah</button>
       </form>
 
-      <table class="w-full mt-4 text-[11.5px]">
+      <div class="mt-4 overflow-x-auto">
+      <table class="w-full text-[11.5px]">
         <tbody>
           <tr v-for="t in props.tindak || []" :key="t.id" class="border-t border-stone-50">
             <td class="py-2"><b>{{ t.judul }}</b>
@@ -495,7 +517,7 @@ const warnaWaktu: Record<string, string> = {
             <td class="py-2 text-stone-500">{{ t.target_selesai || '—' }}</td>
             <td class="py-2 text-right">
               <select class="rounded-lg border-stone-200 text-[11px]" :value="t.status"
-                      @change="ubahTindak(t, ($event.target as HTMLSelectElement).value)">
+                      @change="ubahTindak(t, ($event.target as HTMLSelectElement).value)" aria-label="Status">
                 <option v-for="s in props.opsi?.statusTindak || []" :key="s" :value="s">{{ label(s) }}</option>
               </select>
             </td>
@@ -503,6 +525,9 @@ const warnaWaktu: Record<string, string> = {
           <tr v-if="!(props.tindak || []).length"><td colspan="4" class="py-6 text-center text-stone-400">Belum ada tindak lanjut.</td></tr>
         </tbody>
       </table>
+      </div>
     </section>
   </div>
+
+  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

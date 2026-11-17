@@ -50,7 +50,70 @@ git config core.fileMode false
 # ini ikut berubah, prosesnya diganti dengan versi baru dari awal.
 SIDIK_SEBELUM="$(sha256sum "$0" | cut -d' ' -f1)"
 
-git pull origin "$(git rev-parse --abbrev-ref HEAD)"
+CABANG="$(git rev-parse --abbrev-ref HEAD)"
+git fetch --prune origin "$CABANG"
+
+# Git harus menjadi satu-satunya sumber isi berkas yang dilacaknya.
+#
+# Sebelumnya langkah ini `git pull` biasa, dan itu punya lubang yang
+# diam. Berkas yang dilacak Git tetapi diganti langsung di server —
+# lewat panel, scp, atau FTP — TIDAK akan pernah ditimpa `git pull`
+# selama tidak ada commit baru yang kebetulan menyentuh berkas yang
+# sama. Git menganggapnya perubahan lokal yang belum diputuskan, dan
+# membiarkannya. Situs pun menyajikan berkas yang tidak ada di repo
+# mana pun, tanpa satu pun pesan.
+#
+# Itu benar-benar terjadi: seluruh berkas .mp4 di server berbeda dari
+# yang ada di repo, sedangkan seluruh .jpg sama persis. Videonya pernah
+# diunggah langsung ke server, lalu menetap di sana berbulan-bulan.
+# Setiap commit yang memperbarui video "berhasil" tanpa pernah tampak.
+#
+# Lebih buruk lagi, lubang ini punya sisi kedua: begitu ada commit yang
+# menyentuh berkas yang menyimpang itu, `git pull` menolak MELEBUR SAMA
+# SEKALI ("local changes would be overwritten"). Dengan `set -e` di atas,
+# seluruh deploy berhenti — bukan hanya videonya yang gagal, melainkan
+# semuanya, karena berkas yang tak seorang pun ingat pernah menggantinya.
+#
+# `reset --hard` menutup keduanya. Yang menyimpang disalin dulu ke
+# storage/ (di luar jangkauan reset karena diabaikan Git), supaya
+# menegakkan Git tidak berarti kehilangan berkas yang mungkin satu-satunya
+# salinannya ada di server.
+# Yang terlacak DAN yang tak terlacak, keduanya.
+#
+# Semula hanya `git diff` yang dibaca, dan itu melewatkan separuh
+# masalahnya. `git diff` hanya melihat berkas yang DILACAK Git; berkas
+# yang diunggah langsung ke server dan namanya belum pernah ada di repo
+# — public/media/galeri/energi.mp4, misalnya — tidak muncul di situ sama
+# sekali.
+#
+# Berkas semacam itu memang selamat dari `reset --hard`, jadi ia tidak
+# hilang hari ini. Tetapi ia juga tidak pernah tercatat di mana pun, dan
+# justru itu bahayanya: satu-satunya salinan sesuatu yang dipakai situs,
+# hidup di luar Git, tanpa seorang pun tahu ia ada sampai server diganti.
+# Menyalinnya ke cadangan tidak memindahkannya ke repo, tetapi membuatnya
+# TERSEBUT — dan yang tersebut dapat diputuskan nasibnya.
+#
+# `--exclude-standard` menjaga agar isi .gitignore tidak ikut tersalin;
+# tanpa itu, seluruh vendor/, node_modules/, dan storage/ ikut masuk
+# cadangan tiap deploy.
+MENYIMPANG="$( { git diff --name-only "origin/$CABANG" -- .
+                 git ls-files --others --exclude-standard; } | sort -u | head -200)"
+
+if [ -n "$MENYIMPANG" ]; then
+    # Nama diawali `backup-` supaya tercakup aturan /storage/backup-* di
+    # .gitignore — kalau tidak, cadangannya sendiri menjadi berkas tak
+    # terlacak yang membuat kirim.sh menolak deploy berikutnya.
+    SIMPAN="$REPO_DIR/storage/backup-berkas-server/$(date +%Y%m%d-%H%M%S)"
+    echo "==> Berkas yang menyimpang dari Git — disalin ke $SIMPAN"
+    while IFS= read -r berkas; do
+        [ -f "$berkas" ] || continue
+        mkdir -p "$SIMPAN/$(dirname "$berkas")"
+        cp -p "$berkas" "$SIMPAN/$berkas"
+        echo "    $berkas"
+    done <<< "$MENYIMPANG"
+fi
+
+git reset --hard "origin/$CABANG"
 
 if [ -z "${EQOHSEE_DIMUAT_ULANG:-}" ] \
    && [ "$SIDIK_SEBELUM" != "$(sha256sum "$0" | cut -d' ' -f1)" ]; then
@@ -60,7 +123,165 @@ if [ -z "${EQOHSEE_DIMUAT_ULANG:-}" ] \
 fi
 
 echo "==> Installing PHP dependencies"
-composer install --no-dev --optimize-autoloader
+# ── COMPOSER TIDAK BOLEH BERTANYA ──
+#
+# Skrip ini memang dijalankan sebagai root: ia memanggil apt-get, menulis
+# konfigurasi nginx, dan memiliki /var/www/EQOHSEE. Tetapi Composer
+# menolak berjalan sebagai root tanpa bertanya lebih dulu:
+#
+#   Do not run Composer as root/super user!
+#   Continue as root/super user [yes]?
+#
+# Dan di sinilah kerusakannya, yang sama sekali tidak terlihat sebagai
+# kerusakan. Deploy tidak gagal — ia BERHENTI, menunggu satu huruf yang
+# tidak akan pernah datang bila dijalankan lewat SSH tanpa TTY, lewat
+# cron, atau lewat kirim.sh. Tidak ada galat, tidak ada kode keluar
+# bukan-nol yang ditangkap `set -e`, tidak ada baris merah di mana pun.
+#
+# Akibatnya seluruh langkah SESUDAH baris ini tidak pernah berjalan:
+# npm ci, npm run build, migrasi, config:cache, view:cache. Situs tetap
+# hidup menyajikan bundel JS dan Blade LAMA, jadi yang membuka eqohsee.id
+# melihat halaman yang sama persis seperti sebelum deploy — dan
+# menyimpulkan kodenya yang tidak berubah, bukan deploy-nya yang tidak
+# pernah selesai.
+#
+# COMPOSER_ALLOW_SUPERUSER=1 adalah jawaban resmi Composer untuk keadaan
+# ini: ia menjalankan langkah yang sama tanpa prompt. --no-interaction
+# memastikan tidak ada pertanyaan LAIN yang dapat menghentikannya dengan
+# cara yang sama.
+COMPOSER_ALLOW_SUPERUSER=1 composer install \
+    --no-dev --optimize-autoloader --no-interaction
+
+if ! command -v npm >/dev/null 2>&1; then
+    echo "==> npm not found, installing nodejs/npm"
+    apt-get install -y nodejs npm
+fi
+
+echo "==> Memasang dependensi Node"
+# `npm ci` dipakai, bukan `npm install`: `install` boleh menulis ulang
+# package-lock.json (versi npm/Node yang beda antara mesin dev dan server
+# bisa meregenerasi lockfile-nya sedikit berbeda meski paketnya sama),
+# meninggalkan working tree kotor. `ci` memasang persis apa yang tercatat
+# di lockfile dan tidak pernah mengubahnya — begitu pula, ia gagal keras
+# kalau package.json dan lockfile tidak sinkron, alih-alih diam-diam
+# menambal keduanya. Deploy berikutnya jadi tidak lagi bentrok dengan
+# `git pull` gara-gara berkas yang sebenarnya tidak ada yang menyunting.
+#
+# Dijalankan SEBELUM mode perawatan, bukan sesudahnya. Memasang paket Node
+# tidak menyentuh apa pun yang dipakai melayani permintaan — PHP tidak
+# membaca node_modules — jadi menurunkan situs untuk itu hanya memperpanjang
+# padamnya tanpa menukar apa pun.
+npm ci
+
+# ── Pemeriksaan tipe, sebelum apa pun diturunkan ──────────────────
+#
+# Vite TIDAK memeriksa tipe sama sekali; ia membuang anotasinya lalu
+# membundel. Berkas dengan `const x: number = "teks"` tetap menghasilkan
+# "built in 5s" tanpa satu pun peringatan. Artinya `npm run build` yang
+# hijau bukan bukti bahwa kodenya benar — ia hanya bukti bahwa kodenya
+# dapat dibundel.
+#
+# Letaknya di sini, SEBELUM `php artisan down`, dan itu yang terpenting
+# dari langkah ini. Ditaruh sesudahnya, galat tipe akan menurunkan situs
+# lebih dulu lalu menghentikan deploy di tengah — meninggalkan kode PHP
+# yang baru berdampingan dengan aset yang lama. Di sini, kegagalannya
+# berhenti sebelum satu pengunjung pun terganggu, dan yang berjalan tetap
+# versi lama yang utuh.
+#
+# node_modules baru saja dipasang ulang oleh `npm ci` di atas, jadi yang
+# diperiksa adalah tipe kode baru terhadap dependensi barunya — bukan
+# terhadap sisa pemasangan sebelumnya.
+# ── Jatah memori pemeriksa tipe ──
+#
+# vue-tsc memuat SELURUH grafik tipe proyek sekaligus. Pada ukuran proyek
+# sekarang — hampir tiga ratus halaman Vue — satu kali jalan memerlukan
+# sekitar 1,2 GB heap, dan pada VPS dengan jatah 1 GB yang terjadi bukan
+# galat tipe melainkan "FATAL ERROR: Reached heap limit — JavaScript heap
+# out of memory". Menambah swap hanya menunda: tiap halaman baru menambah
+# kira-kira 4,5 MB.
+#
+# Karena itu pemeriksaannya dijalankan tools/periksa-tipe.mjs, yang
+# memeriksa halaman BERGILIR — beberapa puluh sekali jalan, masing-masing
+# beserta seluruh yang diimpornya — dengan ukuran giliran yang dihitung
+# dari jatah di bawah. Giliran yang tetap kehabisan memori dibelah dua dan
+# diulang. Hasilnya sama dengan `npm run typecheck`; yang berbeda hanya
+# puncak memorinya.
+#
+# Jatahnya dihitung dari memori yang BENAR-BENAR tersedia, bukan angka
+# tetap: angka tetap yang terlalu besar membuat kernel membunuh prosesnya
+# (OOM killer) alih-alih membuat Node menyerah dengan rapi, dan yang
+# terbunuh bisa saja PHP-FPM yang sedang melayani pengunjung.
+TIPE_TERSEDIA_MB=$(( $(awk '/^MemAvailable:/ {print $2}' /proc/meminfo 2>/dev/null || echo 0) / 1024 ))
+
+# 70% dari yang tersedia, disisakan untuk kernel dan proses lain — di
+# antaranya PHP-FPM yang masih melayani pengunjung, sebab langkah ini
+# sengaja berjalan SEBELUM situs diturunkan.
+TIPE_MB=$(( TIPE_TERSEDIA_MB * 7 / 10 ))
+[ "$TIPE_MB" -gt 4096 ] && TIPE_MB=4096
+
+TIPE_LOG=$(mktemp)
+
+# Di bawah 400 MB bahkan grafik bersamanya (Layout, Components, types.ts,
+# ≈ 260 MB) tidak muat dengan ruang GC yang wajar; jatahnya tidak disebut
+# dan Node memilih batasnya sendiri, seperti sebelum langkah ini ada.
+if [ "$TIPE_MB" -ge 400 ]; then
+    echo "==> Memeriksa tipe (tersedia ${TIPE_TERSEDIA_MB} MB, jatah ${TIPE_MB} MB per giliran)"
+    export EQOHSEE_TIPE_MB="$TIPE_MB"
+else
+    echo "==> Memeriksa tipe (tersedia ${TIPE_TERSEDIA_MB} MB — sempit, memakai bawaan Node)"
+fi
+
+if node tools/periksa-tipe.mjs >"$TIPE_LOG" 2>&1; then
+    unset EQOHSEE_TIPE_MB
+    grep -E "^Memeriksa|giliran" "$TIPE_LOG" | sed 's/^/    /'
+    echo "==> Tipe TypeScript & Vue bersih"
+    rm -f "$TIPE_LOG"
+else
+    unset EQOHSEE_TIPE_MB
+    # ── Kehabisan memori BUKAN galat tipe ──
+    #
+    # Keduanya keluar dengan status bukan-nol, dan sebelum pembedaan ini
+    # keduanya dilaporkan sebagai "ada galat tipe". Yang membacanya lalu
+    # mencari kesalahan tipe yang tidak pernah ada — sementara yang
+    # sebenarnya kurang adalah memori, dan tidak satu pun baris kode yang
+    # perlu disentuh.
+    if grep -qE "heap out of memory|Reached heap limit|JavaScript heap" "$TIPE_LOG"; then
+        echo "==> GAGAL: pemeriksa tipe kehabisan memori — BUKAN galat tipe"
+        echo
+        echo "    Bahkan giliran terkecil (lima halaman) tidak muat, jadi tidak"
+        echo "    ada yang perlu diperbaiki pada kodenya. Yang kurang memori"
+        echo "    mesin ini — tersedia ${TIPE_TERSEDIA_MB} MB saat deploy berjalan."
+        echo
+        echo "    Yang biasanya menolong, berurutan:"
+        echo "      1. Tambahkan swap bila belum ada — cukup sekali, permanen:"
+        echo "           fallocate -l 2G /swapfile && chmod 600 /swapfile"
+        echo "           mkswap /swapfile && swapon /swapfile"
+        echo "           echo '/swapfile none swap sw 0 0' >> /etc/fstab"
+        echo "      2. Hentikan sebentar yang memakan memori, lalu deploy lagi."
+        echo "      3. Periksa tipenya di komputer Anda sendiri, lalu deploy"
+        echo "         dengan EQOHSEE_LEWATI_TIPE=1 — aman selama sudah bersih"
+        echo "         di tempat lain."
+    else
+        echo "==> GAGAL: ada galat tipe TypeScript/Vue"
+        echo
+        cat "$TIPE_LOG"
+    fi
+
+    echo
+    echo "    Deploy dihentikan SEBELUM situs diturunkan; yang berjalan"
+    echo "    masih versi lama yang utuh."
+    echo
+    echo "    Bila memang mendesak dan Anda menerima risikonya:"
+    echo "        EQOHSEE_LEWATI_TIPE=1 bash deploy/deploy.sh"
+
+    if [ "${EQOHSEE_LEWATI_TIPE:-0}" != "1" ]; then
+        rm -f "$TIPE_LOG"
+        exit 1
+    fi
+
+    rm -f "$TIPE_LOG"
+    echo "    Dilanjutkan karena EQOHSEE_LEWATI_TIPE=1."
+fi
 
 # Mulai dari sini kode di disk sudah kode baru, sementara singgahan config,
 # rute, dan tampilan masih milik kode lama, dan migrasinya belum jalan.
@@ -72,21 +293,7 @@ echo "==> Memasuki mode perawatan"
 php artisan down --retry=60 2>/dev/null || true
 trap 'php artisan up >/dev/null 2>&1 || true' EXIT
 
-if ! command -v npm >/dev/null 2>&1; then
-    echo "==> npm not found, installing nodejs/npm"
-    apt-get install -y nodejs npm
-fi
-
 echo "==> Building frontend assets"
-# `npm ci` dipakai, bukan `npm install`: `install` boleh menulis ulang
-# package-lock.json (versi npm/Node yang beda antara mesin dev dan server
-# bisa meregenerasi lockfile-nya sedikit berbeda meski paketnya sama),
-# meninggalkan working tree kotor. `ci` memasang persis apa yang tercatat
-# di lockfile dan tidak pernah mengubahnya — begitu pula, ia gagal keras
-# kalau package.json dan lockfile tidak sinkron, alih-alih diam-diam
-# menambal keduanya. Deploy berikutnya jadi tidak lagi bentrok dengan
-# `git pull` gara-gara berkas yang sebenarnya tidak ada yang menyunting.
-npm ci
 npm run build
 
 echo "==> Detecting PHP-FPM socket"
@@ -106,6 +313,21 @@ echo "    Using socket: $PHP_SOCK"
 # yang sudah pernah dialihkan ke https menerima ERR_CONNECTION_REFUSED.
 # Karena Laravel tidak pernah dijalankan, lognya bersih dan penyebabnya tidak
 # terlihat sama sekali dari sisi aplikasi.
+# ── Zona pembatas laju ──
+#
+# Konteks http, jadi berkasnya terpisah dari vhost — `limit_req_zone`
+# ditaruh di dalam blok server membuat nginx menolak SELURUH
+# konfigurasinya, dan situsnya tidak menyala sama sekali.
+#
+# Disalin SEBELUM vhost ditulis, sebab vhost di bawah merujuk zona yang
+# didefinisikan di sini. Urutan terbalik membuat `nginx -t` gagal dengan
+# "unknown limit_req_zone" — yang terbaca seperti vhost-nya yang rusak,
+# padahal yang belum ada zonanya.
+BERKAS_ZONA="/etc/nginx/conf.d/eqohsee-limits.conf"
+
+[ -f "$BERKAS_ZONA" ] && cp "$BERKAS_ZONA" "$BERKAS_ZONA.sebelumnya"
+cp "$REPO_DIR/deploy/nginx-eqohsee-limits.conf" "$BERKAS_ZONA"
+
 BERKAS_VHOST="/etc/nginx/sites-available/eqohsee"
 SERTIFIKAT="/etc/letsencrypt/live/$DOMAIN_UTAMA/fullchain.pem"
 
@@ -138,13 +360,29 @@ mkdir -p /var/www/html/.well-known/acme-challenge
 
 echo "==> Testing Nginx config"
 if ! nginx -t; then
-    echo "!!  Konfigurasi baru ditolak nginx — vhost dikembalikan ke yang lama."
+    echo "!!  Konfigurasi baru ditolak nginx — vhost DAN zona pembatas dikembalikan."
+
+    # KEDUANYA dikembalikan, bukan hanya vhost. Keduanya ditulis pada
+    # deploy yang sama dan saling merujuk; mengembalikan satu saja
+    # menyisakan pasangan yang tidak pernah diuji bersama — vhost lama
+    # yang tidak mengenal zona baru, atau sebaliknya.
+    if [ -f "$BERKAS_ZONA.sebelumnya" ]; then
+        mv "$BERKAS_ZONA.sebelumnya" "$BERKAS_ZONA"
+    else
+        # Belum pernah ada sebelumnya: yang benar membuangnya, bukan
+        # meninggalkan berkas yang baru saja ditolak.
+        rm -f "$BERKAS_ZONA"
+    fi
+
     if [ -f "$BERKAS_VHOST.sebelumnya" ]; then
         mv "$BERKAS_VHOST.sebelumnya" "$BERKAS_VHOST"
-        nginx -t && systemctl reload nginx
     fi
+
+    nginx -t && systemctl reload nginx
     exit 1
 fi
+
+rm -f "$BERKAS_ZONA.sebelumnya"
 
 echo "==> Restarting services"
 systemctl restart nginx
@@ -194,10 +432,62 @@ case "$DB_CONN" in
             echo "!!  pg_dump tidak terpasang — migrasi berjalan tanpa cadangan."
         fi
         ;;
+    mysql|mariadb)
+        if command -v mysqldump >/dev/null 2>&1; then
+            DB_NAMA="$(grep -E '^DB_DATABASE=' "$REPO_DIR/.env" | cut -d= -f2- | tr -d '"')"
+            DB_USER="$(grep -E '^DB_USERNAME=' "$REPO_DIR/.env" | cut -d= -f2- | tr -d '"')"
+            DB_HOST="$(grep -E '^DB_HOST=' "$REPO_DIR/.env" | cut -d= -f2- | tr -d '"')"
+            DB_PORT="$(grep -E '^DB_PORT=' "$REPO_DIR/.env" | cut -d= -f2- | tr -d '"')"
+
+            # Sandi lewat peubah lingkungan, bukan --password= pada baris
+            # perintah: yang di baris perintah terbaca siapa pun lewat
+            # `ps aux` selama dump berjalan.
+            MYSQL_PWD="$(grep -E '^DB_PASSWORD=' "$REPO_DIR/.env" | cut -d= -f2- | tr -d '"')" \
+                mysqldump --single-transaction --routines --triggers --events \
+                    -h "${DB_HOST:-127.0.0.1}" -P "${DB_PORT:-3306}" -u "$DB_USER" "$DB_NAMA" \
+                    > "$CADANGAN/db-$STEMPEL.sql" \
+                && echo "    $CADANGAN/db-$STEMPEL.sql" \
+                || {
+                    echo "!!  mysqldump GAGAL — cadangan tidak terbentuk."
+                    rm -f "$CADANGAN/db-$STEMPEL.sql"
+                    CADANGAN_GAGAL=1
+                }
+        else
+            echo "!!  mysqldump tidak terpasang."
+            CADANGAN_GAGAL=1
+        fi
+        ;;
     *)
-        echo "    DB_CONNECTION '$DB_CONN' tidak dikenal — dilewati."
+        echo "!!  DB_CONNECTION '$DB_CONN' tidak dikenal — tidak ada cadangan."
+        CADANGAN_GAGAL=1
         ;;
 esac
+
+# ── Migrasi tanpa cadangan harus DIPUTUSKAN, bukan terjadi begitu saja ──
+#
+# Sebelumnya cabang yang tidak dikenal hanya mencetak "dilewati" lalu
+# migrasi berjalan terus. Baris itu tenggelam di antara ratusan baris
+# keluaran deploy, dan yang membacanya wajar menyangka cadangan sudah
+# diambil — kata "Mencadangkan basis data" tercetak tepat di atasnya.
+#
+# Itu benar-benar terjadi: DB_CONNECTION di server ini `mysql`, yang
+# tidak dikenal blok di atas sebelum ini ditambahkan, sehingga migrasi
+# pemindahan data PJP — yang MELEPAS enam tabel lama dan tidak punya
+# jalan pulang — berjalan tanpa satu pun cadangan otomatis.
+#
+# Sekarang deploy berhenti. Yang memang sengaja melanjutkan tanpa
+# cadangan menyatakannya, dan pernyataan itu tercatat di riwayat perintah
+# — bukan tersirat dari baris log yang terlewat.
+if [ "${CADANGAN_GAGAL:-0}" = "1" ] && [ "${EQOHSEE_TANPA_CADANGAN:-0}" != "1" ]; then
+    echo
+    echo "    Deploy DIHENTIKAN sebelum migrasi: tidak ada cadangan basis data."
+    echo '    Migrasi dapat menghapus tabel, dan down() tidak mengembalikan isinya.'
+    echo
+    echo "    Cadangkan sendiri lebih dulu, lalu ulangi deploy. Atau, bila Anda"
+    echo "    sudah punya cadangan di tempat lain dan menerima risikonya:"
+    echo "        EQOHSEE_TANPA_CADANGAN=1 bash deploy/deploy.sh"
+    exit 1
+fi
 
 # Sepuluh cadangan terakhir disimpan; selebihnya dibuang supaya disk VPS
 # tidak diam-diam penuh oleh berkas yang tidak pernah ada yang menghapus.
@@ -206,8 +496,113 @@ ls -1t "$CADANGAN"/db-* 2>/dev/null | tail -n +11 | xargs -r rm -f
 echo "==> Running database migrations"
 php artisan migrate --force
 
+# Master data modul Investigasi — matriks risiko 5x5, klasifikasi menurut
+# Kepmen ESDM 1827/2018 dan Kepdirjen Minerba 185/2019, hierarki
+# pengendalian, kamus penyebab SCAT 252 butir, dan bank soal wawancara.
+#
+# Dijalankan pada SETIAP deploy, bukan sekali saat pemasangan, dan itu
+# disengaja: isinya bertambah bersama kode — kamus yang panjangnya
+# berubah, klasifikasi yang direvisi mengikuti regulasi baru — dan
+# perintah yang hanya dijalankan sekali akan membuat server berjalan
+# dengan kamus versi lama tanpa satu pun tanda.
+#
+# Aman diulang: penyimpanannya idempoten berdasar kode, sehingga matriks
+# tetap 25 sel dan kamus tetap 252 butir berapa kali pun ia dipanggil.
+#
+# TANPA LANGKAH INI triase tidak menghasilkan level apa pun — dan
+# kegagalannya diam: layarnya terbuka, matriksnya kosong, dan insiden
+# tersimpan tanpa level seolah memang belum ditriase.
+echo "==> Installing Investigasi master data"
+php artisan investigasi:pasang
+
+# Daftar periksa prakualifikasi SMKP modul PJP — 17 kategori, 126 butir.
+#
+# Aman diulang, dan itu bukan sekadar kerapian: penyimpanannya
+# MEMPERBARUI, tidak pernah menghapus. Jawaban tiap mitra menunjuk ke
+# butirnya lewat kunci asing yang cascade on delete, sehingga penyemai
+# yang mengosongkan tabelnya lebih dahulu akan menghapus seluruh
+# jawaban daftar periksa setiap mitra — dan yang tersisa hanyalah
+# daftar periksa yang kembali kosong tanpa satu pun galat.
+#
+# TANPA LANGKAH INI halaman daftar periksa terbuka tanpa satu
+# pertanyaan pun, dan skor kepatuhannya menjawab 0% bagi setiap mitra.
+echo "==> Installing PJP checklist master data"
+php artisan pjp:pasang
+
+# Daftar awal bersama modul Miners — departemen, jabatan, lokasi kerja,
+# golongan unit beserta kelas SIMPOL-nya, jenis permit, dan hasil MCU.
+#
+# Aman diulang: baris yang sudah ada hanya DIPERBARUI pada kolom yang
+# berasal dari SOP — kelas SIM, kewajiban SIO, masa berlaku tipe permit
+# — dan tidak pada namanya, sebab nama itulah yang tercetak pada kartu
+# yang sudah terbit. Tidak satu baris pun dihapus: `mnr_pekerja`,
+# `mnr_permit`, dan `mnr_simper_unit` menunjuk ke daftar ini, dan
+# penyemai yang mengosongkannya lebih dahulu akan memutus rujukan
+# ribuan dokumen yang sudah berjalan.
+#
+# TANPA LANGKAH INI modulnya tidak dapat dipakai sama sekali, dan
+# kegagalannya diam: formulir MCU terbuka dengan daftar hasil yang
+# kosong, formulir permit tanpa satu jenis permit pun, lalu
+# penyimpanannya gagal di tingkat basis data. Yang terlihat pengguna
+# hanyalah galat 500 tanpa sebab.
+echo "==> Installing Miners master data"
+php artisan miners:pasang
+
+# Pola roster awal — 14:7, 10:2 minggu, 8:2, 6:2, 4:1, 5:2.
+#
+# Aman diulang: baris yang sudah ada hanya diperbarui pada bentuk
+# siklusnya — hari kerja, hari libur, satuan, jam — dan tidak pada
+# namanya. Tidak satu pun dihapus: `hr_regu.pola_roster_id` menunjuk ke
+# sini, dan penyemai yang mengosongkannya lebih dahulu akan memutus
+# seluruh regu dari polanya, sehingga kalender rosternya kosong tanpa
+# satu galat pun.
+#
+# TANPA LANGKAH INI halaman Pola & Regu terbuka tanpa satu pilihan pun,
+# dan regu tidak dapat dibuat sama sekali.
+echo "==> Installing roster patterns"
+php artisan roster:pasang
+
+# Katalog jual — paket website dan tiap aplikasi di dalamnya.
+#
+# Dijalankan tiap deploy dengan alasan yang sama: modul baru yang
+# ditambahkan ke aplikasi harus ikut muncul di katalog, dan yang lupa
+# ditambahkan tidak dapat dijual sama sekali.
+#
+# TIDAK menimpa harga maupun keaktifan yang sudah diisi — butir yang
+# sudah ada hanya diperbarui nama dan urutannya. Butir baru lahir
+# berharga nol dan tidak aktif, sehingga tidak dapat terjual sebelum
+# harganya ditetapkan orang lewat layar Pembelian → Daftar Harga.
+#
+# Arah sebaliknya juga dikerjakan di sini, dan itu yang lebih penting:
+# butir yang modulnya sudah tidak ada lagi berhenti dijual. Yang belum
+# pernah dipesan dibuang; yang pernah dipesan hanya dinonaktifkan,
+# supaya tagihan yang sudah terbit tidak kehilangan nama barangnya.
+php artisan pembelian:katalog
+
 echo "==> Linking public storage"
-php artisan storage:link 2>/dev/null || true
+# `--quiet` menekan ERROR merah "link already exists" yang muncul pada
+# SETIAP deploy sesudah yang pertama. Tautannya memang sudah ada dan
+# memang sudah benar; yang salah hanyalah kata "ERROR" di keluarannya.
+#
+# Bukan soal kerapian. Keluaran deploy adalah satu-satunya tempat orang
+# melihat ada tidaknya yang gagal, dan baris merah yang selalu muncul
+# tanpa pernah berarti apa-apa melatih mata melewati warna merah — lalu
+# baris merah yang sungguh-sungguh penting ikut terlewat.
+php artisan storage:link --quiet 2>/dev/null || true
+
+# Berkas tertutup dipindahkan keluar dari disk publik.
+#
+# Kodenya sudah menyimpan ke tempat yang benar, tetapi berkas yang
+# terlanjur ada tidak berpindah sendiri — dan justru itulah yang penting:
+# dokumen terkendali, foto insiden, dan gambar tanda tangan yang selama
+# ini terbaca dari /storage/… tanpa login. Selama berkas lama masih di
+# sana, perbaikan kodenya belum menutup apa pun.
+#
+# Aman diulang, dan tidak menghentikan deploy bila ada yang gagal: berkas
+# yang gagal pindah tetap di tempat lamanya, dan itu keadaan yang sama
+# dengan sebelum deploy — bukan lebih buruk.
+echo "==> Mengamankan berkas unggahan"
+php artisan berkas:amankan || echo "    Sebagian berkas gagal dipindah; jalankan ulang: php artisan berkas:amankan"
 
 echo "==> Laravel optimize"
 cd "$REPO_DIR"
@@ -289,6 +684,23 @@ APP_URL_HARAP="${SKEMA}://${DOMAIN_UTAMA}"
 if [ "$APP_URL_KINI" != "$APP_URL_HARAP" ]; then
     echo "!!  APP_URL di .env masih '$APP_URL_KINI'."
     echo "!!  Sebaiknya '$APP_URL_HARAP' — lalu jalankan: php artisan config:cache"
+fi
+
+# ── Pemeriksaan APP_LOCALE ────────────────────────────────────────
+# Pesan validasi, masuk, sandi, dan paginasi berbahasa Indonesia ada di
+# lang/id. `.env` yang dibuat dari .env.example lama memuat APP_LOCALE=en,
+# dan dengan itu seluruh terjemahan tersebut tidak pernah dipakai: formulir
+# berbahasa Indonesia menampilkan "The email field is required." dan
+# tombol halaman "Previous / Next".
+#
+# Hanya diingatkan, tidak diubah otomatis, sama seperti APP_URL di atas:
+# .env milik server, dan isinya diputuskan oleh yang mengelolanya. Baris
+# yang tidak ada tidak diingatkan — bawaannya di config/app.php sudah 'id'.
+APP_LOCALE_KINI="$(grep -E '^APP_LOCALE=' "$REPO_DIR/.env" | cut -d= -f2- | tr -d '"' || true)"
+
+if [ -n "$APP_LOCALE_KINI" ] && [ "$APP_LOCALE_KINI" != "id" ]; then
+    echo "!!  APP_LOCALE di .env masih '$APP_LOCALE_KINI'; terjemahan lang/id tidak terpakai."
+    echo "!!  Ubah menjadi APP_LOCALE=id — lalu jalankan: php artisan config:cache"
 fi
 
 echo "==> Keluar dari mode perawatan"

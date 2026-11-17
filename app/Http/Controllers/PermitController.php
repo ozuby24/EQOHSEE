@@ -327,7 +327,7 @@ class PermitController extends Controller
         [$dari, $sampai] = $this->rentang($request);
         $d = $this->kumpulkan($dari, $sampai);
 
-        $perusahaan = auth()->user()?->company ?: Company::first();
+        $perusahaan = $this->perusahaanKop();
 
         return Inertia::render('Print/Izin', [
             'dok'    => KopDokumen::untuk('laporan-izin-kerja', $perusahaan),
@@ -462,12 +462,4 @@ class PermitController extends Controller
         return $dari->greaterThan($sampai) ? [$sampai, $dari] : [$dari, $sampai];
     }
 
-    private function pemilik(array $data): array
-    {
-        if (!auth()->user()?->isAdmin()) {
-            $data['company_id'] = auth()->user()?->company_id;
-        }
-
-        return $data;
-    }
 }

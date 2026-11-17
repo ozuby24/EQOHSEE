@@ -15,6 +15,28 @@ export interface Pengguna {
   peran: string;
   admin: boolean;
   avatar: string | null;
+
+  /** Null bagi pengguna lintas perusahaan — bukan berarti datanya hilang. */
+  perusahaan: string | null;
+
+  /**
+   * Perusahaan yang boleh dipilih. KOSONG bagi pengguna biasa.
+   *
+   * Kosong itu yang membedakan pemilih dari label: daftar berisi satu
+   * akan menggambar tombol yang dapat dibuka dan tidak dapat mengubah
+   * apa pun.
+   */
+  perusahaanPilihan?: { id: number; nama: string }[];
+
+  /** Perusahaan yang sedang dilihat; null berarti seluruhnya. */
+  perusahaanDilihat?: number | null;
+
+  /** Audit SMKP: boleh mengisi audit (administrator atau auditor). */
+  auditor?: boolean;
+  /** Audit SMKP: auditi — membaca, mengunggah bukti, menyampaikan tindak lanjut. */
+  auditi?: boolean;
+  /** false bila akun non-admin belum ditempatkan pada perusahaan mana pun. */
+  ditempatkan?: boolean;
 }
 
 /** Satu butir menu: label, alamat, dan apakah ia sedang dibuka. */
@@ -42,13 +64,38 @@ export interface Modul {
 
 export interface KerangkaMenu {
   modul: Modul[];
+  /** Kunci modul yang sedang aktif — dipakai menandai dan memberi tema. */
+  kunci: string;
   label: string;
   grup: Array<{ nama: string; butir: ButirMenu[] }>;
+
+  /**
+   * Nama tema modul ini, bila ia menyatakan satu.
+   *
+   * Dikirim sebagai NAMA, bukan sebagai daftar warna: yang menentukan
+   * rupa sebuah tema adalah lembar gayanya, dan mengirim warnanya lewat
+   * prop berarti dua tempat yang harus sama selamanya.
+   */
+  tema?: string | null;
+
+  /** Semboyan modul, untuk tagline di kop halaman. */
+  semboyan?: string | null;
+
+  /** Kutipan penutup halaman. */
+  kutipan?: string | null;
+
+  /** true di halaman awal modul (pola pertama butir pertamanya). */
+  beranda?: boolean;
+
+  /** Alamat akar modul, untuk remah roti di kop. */
+  akar?: string | null;
 }
 
 export interface Kilat {
   sukses?: string | null;
   galat?: string | null;
+  /** Jawaban asisten AI — berparagraf, jadi dibawa terpisah dari `sukses`. */
+  aiJawaban?: string | null;
 }
 
 /** Prop yang dibagikan ke SELURUH halaman Inertia. */
@@ -60,6 +107,8 @@ export interface PropBersama {
   kilat: Kilat;
   status?: string | null;
   pengumuman: number;
+  /** Temuan audit SMKP lewat target yang belum ditutup, dalam jangkauan pengguna. */
+  peringatan?: number;
   tema: 'terang' | 'gelap' | null;
   warna: { aksen: string; dasar: string };
   ziggy?: Record<string, string>;
@@ -102,6 +151,20 @@ export interface MetodeInfo {
 /** Ambang kategori kematangan — selalu dari server, tidak pernah ditulis di klien. */
 export interface Ambang {
   batas: number;
+  label: string;
+  warna: string;
+}
+
+/**
+ * Tingkat rubrik 1–5.
+ *
+ * Berbeda dari `Ambang`, yang memetakan RASIO capaian. Kelimanya bernama
+ * sama dan karena itu mudah tertukar — tetapi skalanya berbeda, dan
+ * menampilkan yang satu sebagai yang lain membuat penilai yang mengisi 3
+ * membaca "Reaktif".
+ */
+export interface Tingkatan {
+  nomor: number;
   label: string;
   warna: string;
 }
@@ -235,6 +298,9 @@ export interface ItemMatriks {
   capaian: number | null;
   kategori: string | null;
   warna: string;
+  tingkat: string | null;
+  rerata: number | null;
+  warnaTingkat: string;
 }
 
 export interface ParamMatriks {
@@ -248,6 +314,9 @@ export interface ParamMatriks {
   kategori: string | null;
   warna: string;
   items: ItemMatriks[];
+  tingkat: string | null;
+  rerata: number | null;
+  warnaTingkat: string;
 }
 
 export interface IndikatorMatriks {
@@ -258,6 +327,9 @@ export interface IndikatorMatriks {
   kategori: string | null;
   warna: string;
   parameter: ParamMatriks[];
+  tingkat: string | null;
+  rerata: number | null;
+  warnaTingkat: string;
 }
 
 export interface HalamanMatriks {
@@ -278,6 +350,9 @@ export interface ParamSummary {
   kategori: string | null;
   warna: string;
   gap: number | null;
+  tingkat: string | null;
+  rerata: number | null;
+  warnaTingkat: string;
 }
 
 export interface IndikatorSummary extends Omit<ParamSummary, 'target'> {
@@ -297,6 +372,14 @@ export interface HalamanSummary {
     kategori: string | null;
     warna: string;
     gap: number | null;
+
+    /* Tingkat rubrik 1–5 dari skor yang benar-benar diisi penilai —
+       berbeda dari `kategori`, yang merupakan rasio capaian terhadap
+       nilai maksimum. Keduanya kerap berselisih, dan itu bukan
+       kesalahan. */
+    tingkat: string | null;
+    rerata: number | null;
+    warnaTingkat: string;
   };
 }
 
@@ -472,6 +555,7 @@ export interface HalamanPenilaian {
   subjudul: string;
   picker: Picker;
   ambang: Ambang[];
+  tingkatan: Tingkatan[];
   tahun: number;
   metode: MetodeInfo[];
   metodeAktif: string;
@@ -683,6 +767,59 @@ export interface HalamanKuesioner {
   ringkas: RingkasKuesioner[];
   responden: Responden[];
   bisaTarik: boolean;
+
+  /* Respons mitra kerja — analisa saja, di luar skor penilaian. */
+  mitra: Array<{ perusahaan: string; jumlah: number; rerata: number | null }>;
+}
+
+/* ══════════════ Pengujian (metode PJ) ══════════════ */
+
+export interface PesertaUji {
+  id: number;
+  nama: string;
+  nrp: string | null;
+  jabatan: string | null;
+  dept: string | null;
+  perusahaan: string | null;
+  benar: number;
+  total: number;
+  tingkat: number;
+  label: string | null;
+  durasi: number;
+  /** Berapa kali peserta meninggalkan layar saat mengerjakan. */
+  pindahLayar: number;
+  waktu: string | null;
+}
+
+export interface RingkasUji {
+  peserta: number;
+  /** Tingkat yang masuk penilaian — rerata tingkat peserta, dibulatkan. */
+  tingkat: number | null;
+  rerataTingkat: number | null;
+  rerataPct: number | null;
+  /** tingkat 1–5 → jumlah peserta */
+  sebaran: Record<string, number>;
+  pindahLayar: number;
+}
+
+export interface HalamanPengujian {
+  judul: string;
+  subjudul: string;
+  picker: Picker;
+  bank: number;
+  jumlahSoal: number;
+  detikPerSoal: number;
+  pita: Array<{ batas: number; tingkat: number; nama: string }>;
+  /** Palet tingkat 1–5, datang dari server agar tidak ada salinan palet. */
+  warnaTingkat: string[];
+  namaTingkat: string[];
+  perusahaan: PerusahaanRingkas | null;
+  daftarPerusahaan: PerusahaanRingkas[];
+  urlPublik: string | null;
+  ringkas: RingkasUji;
+  peserta: PesertaUji[];
+  skorKini: { kode: string; nama: string; nilai: number | null; ket: string | null } | null;
+  bisaTerapkan: boolean;
 }
 
 /* ══════════════ Personalia ══════════════ */
@@ -904,7 +1041,7 @@ export interface ItemInspeksi {
   /** Kode hazard bila temuan ini sudah dinaikkan; null bila belum. */
   hazard: string | null;
   urlHazard: string | null;
-  urlAngkat: string; urlHapus: string;
+  urlAngkat: string; urlHapus: string; urlFoto: string;
 }
 
 export interface HalamanDetailInspeksi {
@@ -922,7 +1059,11 @@ export interface HalamanDetailInspeksi {
   };
   tautan: {
     simpanItem: string; tambahItem: string; tambahPetugas: string;
-    ubah: string; cetak: string; kembali: string;
+    ubah: string; kembali: string;
+    /** Lembar inspeksi INI — dokumen terkendali yang ditandatangani. */
+    lembar: string;
+    /** Register seluruh inspeksi; berbeda dari lembar di atas. */
+    register: string;
   };
 }
 
@@ -977,7 +1118,12 @@ export interface LaporanBahaya {
   tujuan: string | null;
   /** Terisi hanya bila terlapor dan perusahaan sama-sama ada. */
   terlapor: string | null;
-  foto: string | null;
+  /** Foto temuan — seluruhnya, terurut sebagaimana diunggah. */
+  fotoTemuan: string[];
+
+  /** Foto tindak lanjut. Kosong berarti belum ada bukti perbaikan. */
+  fotoTindak: string[];
+
   url: string;
 }
 
@@ -996,6 +1142,10 @@ export interface OpsiBahaya {
   kategori: string[];
   bulan: Array<{ nilai: string; label: string }>;
   perusahaan: PilihanPerusahaan[];
+  /** Lokasi yang benar-benar ada di data, untuk saringan register. */
+  lokasi: string[];
+  /** Urutan penyusunan register — dibaca dari RegisterPerbaikan::URUTAN. */
+  urutan: Array<{ nilai: string; label: string }>;
 }
 
 export interface BarisGolongan {
@@ -1013,6 +1163,14 @@ export interface BatangTren {
   nilai: number;
   /** Nilai tertinggi sepanjang tren, untuk menskalakan tinggi batang. */
   maks: number;
+  /**
+   * Pita bertumpuk menurut tingkat risiko — Tinggi, Sedang, Rendah.
+   *
+   * Ketiganya SELALU ada meski bernilai nol, dan urutannya ditetapkan
+   * server: batang bertumpuk yang urutan warnanya berubah dari bulan ke
+   * bulan tidak dapat dibaca sebagai perbandingan antar bulan.
+   */
+  tumpuk?: Array<{ label: string; nilai: number; warna: string }>;
 }
 
 export interface SebaranBahaya {
@@ -1030,6 +1188,30 @@ export interface BarisPelapor {
   pct: number;
 }
 
+/**
+ * Satu pelapor bahaya — sama seperti BarisPelapor, ditambah perusahaannya.
+ *
+ * Terpisah, bukan medan opsional pada BarisPelapor: bentuk yang sama
+ * dipakai KPI Inspeksi, yang tidak menyajikan perusahaan, dan medan
+ * opsional di sana hanya akan selamanya kosong tanpa ada yang tahu
+ * apakah itu disengaja.
+ */
+export interface BarisPelaporBahaya extends BarisPelapor {
+  /** null bila laporannya belum ditempatkan di sebuah perusahaan. */
+  perusahaan: string | null;
+}
+
+/** Satu angka ringkas di kartu atas — seluruhnya sudah berbentuk teks. */
+export interface KartuAnalitik {
+  kunci: string;
+  label: string;
+  /** Sudah jadi, termasuk tanda '—' bila belum dapat dihitung. */
+  nilai: string;
+  satuan: string | null;
+  ket: string;
+  nada: 'baik' | 'perhatian' | 'bahaya' | 'netral';
+}
+
 export interface HalamanAnalitikBahaya {
   judul: string;
   subjudul: string;
@@ -1037,10 +1219,69 @@ export interface HalamanAnalitikBahaya {
   bulanAktif: number;
   total: number;
   opsiBulan: Array<{ nilai: string; label: string }>;
+  kartu: KartuAnalitik[];
+  sorotan: Array<{ nada: 'baik' | 'perhatian' | 'bahaya' | 'netral'; teks: string }>;
+  donat: Array<{
+    judul: string;
+    potong: Array<{ label: string; nilai: number; pct: number; warna: string }>;
+  }>;
   golongan: BarisGolongan[];
   tren: BatangTren[];
   sebaran: SebaranBahaya[];
-  pelapor: BarisPelapor[];
+  teratas: BarisPelaporBahaya[];
+  pelapor: BarisPelaporBahaya[];
+  ekspor: string;
+}
+
+/** Satu kelompok temuan berulang — lokasi dan perihal yang sama. */
+export interface KelompokBerulang {
+  sumber: 'Hazard' | 'Inspeksi';
+  /**
+   * Perusahaan pemilik temuannya — ikut menjadi bagian kunci kelompok.
+   *
+   * Tanpanya, tujuh perusahaan yang masing-masing punya lokasi bernama
+   * sama dan diperiksa sekali menyatu menjadi satu kelompok berjumlah
+   * tujuh yang dilaporkan berulang.
+   */
+  perusahaan: string | null;
+  lokasi: string;
+  perihal: string;
+  jumlah: number;
+  /** Berapa BULAN BERBEDA ia muncul — pembeda "satu sapuan" dari "tidak pernah tertutup". */
+  bulan: number;
+  /** Kemunculan sesudah temuan sejenis di tempat yang sama sudah ditangani. */
+  kambuh: number;
+  tinggi: number;
+  selesai: number;
+  pertama: string;
+  terakhir: string;
+  /** Hari dari kemunculan pertama ke terakhir — bukan jeda rata-rata. */
+  rentang: number;
+  /** Hirarki pengendalian yang dipakai; kosong bagi butir inspeksi. */
+  hirarki: Record<string, number>;
+  /** Dua belas bulan, SELALU lengkap termasuk yang bernilai nol. */
+  bulanan: Array<{ label: string; nilai: number }>;
+  contoh: string[];
+}
+
+export interface HalamanTemuanBerulang {
+  judul: string;
+  subjudul: string;
+  saring: { perusahaan: string | number | null; sumber: string | null };
+  opsi: {
+    sumber: string[];
+    perusahaan: Array<{ id: number; nama: string }>;
+  };
+  bulanTinjau: number;
+  kartu: KartuAnalitik[];
+  sorotan: Array<{ nada: 'baik' | 'perhatian' | 'bahaya' | 'netral'; teks: string }>;
+  hirarki: {
+    potong: Array<{ label: string; nilai: number; pct: number; warna: string }>;
+    total: number;
+    lemah: number;
+    pctLemah: number;
+  };
+  kelompok: KelompokBerulang[];
 }
 
 export interface PengingatPerusahaan {
@@ -1065,6 +1306,7 @@ export interface HalamanPengingat {
   subjudul: string;
   perusahaan: PengingatPerusahaan[];
   urlPerusahaan: string;
+  labelPerusahaan: string;
 }
 
 export interface OrangManpower {
@@ -1099,6 +1341,13 @@ export interface HalamanDetailBahaya {
     kategori: string | null; deskripsi: string;
     rekomendasi: string | null; hirarki: string | null;
     lokasi: string | null; tanggal: string | null; waktu: string | null;
+
+    /** Tenggat perbaikan. `batasAkhir` untuk dibaca, `batasAkhirIso` untuk <input type=date>. */
+    batasAkhir: string | null;
+    batasAkhirIso: string | null;
+    /** Dihitung di SERVER — jam perangkat lapangan kerap meleset sehari. */
+    lewatTenggat: boolean;
+
     pelapor: {
       nama: string | null; nrp: string | null; jabatan: string | null;
       departemen: string | null; perusahaan: string | null;
@@ -1146,7 +1395,10 @@ export interface HalamanMonitorBahaya {
   opsi: OpsiBahaya;
   laporan: LaporanBahaya[];
   halaman: { kini: number; akhir: number; total: number; tautan: TautanHalaman[] };
-  tautan: { buat: string; csv: string; cetak: string; wa: string; pengingat: string };
+  tautan: {
+    buat: string; csv: string; cetak: string; wa: string; pengingat: string;
+    register: string; registerJumlah: string;
+  };
 }
 
 /* ══════════════ Gudang & Penyimpanan ══════════════ */
@@ -1379,7 +1631,7 @@ export interface HalamanDetailDokumen {
     id: number; label: string; tanggal: string | null;
     oleh: string | null; ringkasan: string | null;
   }>;
-  klausul: Array<{ kode: string; nama: string; warna: string; url: string; butir: string[] }>;
+  klausul: Array<{ kode: string; nama: string; warna: string; url: string | null; butir: string[] }>;
   bolehHapus: boolean;
   tautan: { ubah: string; unduh: string | null; revisi: string; hapus: string; daftar: string };
 }
@@ -1440,6 +1692,7 @@ export interface HalamanDaftarPengguna {
   daftar: Array<{
     id: number; nama: string; email: string; inisial: string;
     admin: boolean; lmsRole: string | null; auditRole: string | null;
+    ohseRole: string | null;
     jabatan: string | null; departemen: string | null;
     aktif: boolean; perusahaan: string | null;
     /** true untuk akun yang sedang dipakai — tombol hapusnya tidak digambar. */
@@ -1454,11 +1707,24 @@ export interface HalamanDaftarPengguna {
 export interface HalamanFormPengguna {
   judul: string; subjudul: string;
   tersimpan: boolean;
-  awal: Record<string, string | boolean>;
+
+  /* `password` disebut terpisah, dan itu bukan kerapian.
+   *
+   * Record<string, string | boolean> membuat SETIAP kolomnya terbaca
+   * mungkin-boolean, termasuk yang jelas-jelas teks. Selama kolomnya
+   * digambar <input> polos hal itu tidak terasa — v-model bawaannya
+   * menerima apa saja. Begitu kolom sandi berpindah ke komponen yang
+   * modelnya bertipe string, kelonggaran itu langsung terlihat sebagai
+   * galat tipe: kolom sandi yang mungkin berisi boolean. */
+  awal: Record<string, string | boolean> & { password?: string };
   opsi: {
-    lms: Pilihan[]; audit: Pilihan[]; perusahaan: Pilihan[];
+    lms: Pilihan[]; audit: Pilihan[]; ohse: Pilihan[]; perusahaan: Pilihan[];
     jabatan: string[]; departemen: string[];
   };
+  /** Auditi audit SMKP aktif per perusahaan (kunci: id perusahaan), tanpa akun ini. */
+  auditiAktif: Record<string, number>;
+  /** Batas akun auditi aktif per perusahaan. */
+  maksAuditi: number;
   tautan: { simpan: string; batal: string };
 }
 
@@ -1480,10 +1746,16 @@ export interface HalamanDaftarPerusahaan {
 export interface HalamanFormPerusahaan {
   judul: string; subjudul: string;
   tersimpan: boolean;
-  awal: Record<string, string>;
+  /* Isian awal; `kop_formulir` berbentuk {kunci: {jenis, judul, kode}}. */
+  awal: Record<string, any>;
   logo: string | null;
-  opsi: { induk: Pilihan[]; risiko: string[] };
+  opsi: { induk: Pilihan[]; risiko: string[]; kategori: Pilihan[] };
   contoh: { prefiks: string; divisi: string; departemen: string };
+  /* Formulir audit SMKP yang kopnya dapat disesuaikan (KopDokumen::formulirSmkp). */
+  daftarFormulir: Record<string, {
+    nama: string; jenis: string; judul: string; kode: string;
+    nomor: string; jenisNomor: string; urut: number;
+  }>;
   tautan: { simpan: string; batal: string };
 }
 
@@ -1505,7 +1777,7 @@ export interface HalamanSistem {
     demo: boolean;
     isi: Record<string, number> | null;
     urlTandai: string;
-    urlMuat: string;
+    urlMuat: string; urlHapus: string;
   }>;
   log: Array<{
     id: number; aksi: string; modul: string | null;
@@ -1515,6 +1787,23 @@ export interface HalamanSistem {
   diagnosa: { ringkas: Record<string, number>; url: string };
   tautan: { perusahaanBaru: string; bersihkanLog: string };
   pemeliharaan: Array<{ aksi: string; label: string; url: string }>;
+}
+
+export interface HalamanAi {
+  judul: string; subjudul: string;
+  penyedia: Array<{
+    kode: string; nama: string; modelBawaan: string;
+    contohModel: string[]; kunciDari: string;
+    /* Sengaja tidak ada bidang untuk kuncinya sendiri: server tidak
+       pernah mengirimkannya, dan bidang yang tersedia cepat atau lambat
+       akan diisi seseorang. */
+    terpasang: boolean; ekor: string | null; dariBerkas: boolean;
+  }>;
+  terpilih: string;
+  model: string;
+  maksToken: number;
+  aktif: boolean;
+  tautan: { simpan: string; uji: string; hapus: string; sistem: string; diagnosa: string };
 }
 
 export interface HalamanDiagnosa {
@@ -1530,17 +1819,86 @@ export interface HalamanDiagnosa {
   ringkas: Record<string, number>;
   dijalankan: string;
   perbaikan: Array<{ aksi: string; label: string; ket: string; berat: boolean; url: string }>;
+  ai: { aktif: boolean; url: string; atur: string };
   tautan: { sistem: string; pemeliharaan: string };
+
+  /* Kesesuaian angka tiap modul. Bentuk barisnya sengaja sama persis
+     dengan `hasil` di atas, supaya satu perender melayani keduanya —
+     dua perender untuk bentuk yang sama pasti berbeda cepat atau
+     lambat, dan bedanya muncul justru pada baris yang paling jarang
+     tampil: yang merah. */
+  sesuai: HalamanDiagnosa['hasil'];
+  ringkasSesuai: Record<string, number>;
+}
+
+/* ══════════════ Register temuan lintas modul ══════════════ */
+
+export interface BarisTemuan {
+  sumber: string;
+  /** Kunci baris ASALNYA, dipakai menugaskan. */
+  id: number | null;
+  modul: string;
+  kode: string;
+  judul: string;
+  uraian: string | null;
+  prioritas: string;
+  status: string;
+  terbuka: boolean;
+  /** Punya penanggung jawab DAN tenggat. Salah satu saja belum cukup. */
+  bertuan: boolean;
+  penanggungJawab: string | null;
+  targetSelesai: string | null;
+  terlambat: boolean;
+  hariTerlambat: number;
+  /** Punya id DAN masih terbuka. Yang sudah selesai tidak perlu ditugaskan. */
+  dapatDitugaskan: boolean;
+}
+
+export interface HalamanRegisterTemuan {
+  judul: string; subjudul: string;
+  temuan: BarisTemuan[];
+  ringkas: { semua: number; terbuka: number; terlambat: number; takBertuan: number; selesai: number };
+  perModul: Array<{ modul: string; jumlah: number }>;
+  saring: string;
+  opsi: Array<{ nilai: string; label: string }>;
+  tautan: { register: string };
 }
 
 /* ══════════════ Berita, Prosedur, Penanda Tangan ══════════════ */
 
+/**
+ * Satu pengumuman, dalam bentuk yang sama di mana pun ia muncul.
+ *
+ * Disusun App\Support\Pengumuman di server. Panel dasbor, daftar
+ * berita, halaman penuh, dan pop-out memakai bentuk ini tanpa kecuali —
+ * sebelumnya panel dasbor dan daftar berita menyusun muatannya
+ * sendiri-sendiri dan sudah berselisih pada panjang cuplikan maupun
+ * format tanggalnya.
+ */
+export interface Pengumuman {
+  id: number;
+  judul: string;
+  /** 'd F Y' — untuk pop-out dan halaman penuh. */
+  tanggal: string | null;
+  /** 'd M' — untuk panel sempit di dasbor. */
+  tanggalPendek: string | null;
+  ringkasan: string;
+  /** Isi, teks polos. Digambar dengan whitespace-pre-line, bukan v-html. */
+  isi: string;
+  /** true bila `isi` dipenggal di batas muatan — pop-out mengatakannya. */
+  terpotong: boolean;
+  sampul: string | null;
+  lampiran: { nama: string; url: string } | null;
+  /** Halaman penuhnya. Tetap hidup supaya alamat yang sudah disalin orang tidak mati. */
+  url: string;
+  urlBaca: string;
+  sudahDibaca: boolean;
+  jumlahDibaca: number;
+}
+
 export interface HalamanDaftarBerita {
   judul: string; subjudul: string;
-  berita: Array<{
-    id: number; judul: string; tanggal: string | null; cuplikan: string;
-    url: string; urlUbah: string; urlHapus: string;
-  }>;
+  berita: Array<Pengumuman & { urlUbah: string; urlHapus: string }>;
   halaman: { kini: number; akhir: number; total: number; tautan: TautanHalaman[] };
   bolehUbah: boolean;
   tautan: { buat: string };
@@ -1548,7 +1906,7 @@ export interface HalamanDaftarBerita {
 
 export interface HalamanDetailBerita {
   judul: string; subjudul: string;
-  berita: { judul: string; tanggal: string | null; isi: string };
+  berita: Pengumuman;
   tautan: { daftar: string };
 }
 
@@ -1556,6 +1914,7 @@ export interface HalamanFormBerita {
   judul: string; subjudul: string;
   tersimpan: boolean;
   awal: Record<string, string>;
+  berkas: { sampul: string | null; lampiran: { nama: string; url: string } | null };
   tautan: { simpan: string; batal: string };
 }
 
@@ -1688,6 +2047,102 @@ export interface MateriKursus {
   url?: string | null;
 }
 
+/** Satu baris materi di daftar kursus maupun di kurikulum ruang belajar. */
+export interface BarisMateri {
+  id: number;
+  judul: string;
+  jenis: string;
+  /** Nama jenis yang pantas dibaca — "Video", bukan "video". */
+  label: string;
+  /** Kunci ikon yang dikenal IkonStat. Dijaga MateriSematTest. */
+  ikon: string;
+  durasi: string | null;
+  selesai: boolean;
+  url: string;
+}
+
+export interface ModulKurikulum {
+  id: number;
+  urutan: number;
+  judul: string;
+  selesai: boolean;
+  materi: Array<BarisMateri & { kini: boolean }>;
+}
+
+export interface PesanDiskusi {
+  id: number;
+  isi: string;
+  nama: string;
+  jabatan: string | null;
+  waktu: string | null;
+  bolehHapus: boolean;
+  urlHapus: string;
+}
+
+export interface HalamanMateriBelajar {
+  judul: string; subjudul: string;
+
+  kursus: {
+    judul: string; progres: number; url: string;
+    /* Angka MATERI, terpisah dari `progres` yang dihitung dari modul.
+       Bilah di kurikulum berdiri tepat di atas centang per materi;
+       menyebut persentase modul di situ membantah centangnya sendiri. */
+    materiTuntas: number; materiTotal: number;
+  };
+
+  materi: {
+    id: number;
+    judul: string;
+    keterangan: string | null;
+    jenis: string;
+    jenisLabel: string;
+    jenisIkon: string;
+    jenisNada: string;
+    durasi: string | null;
+    /** "Yang akan Anda pelajari". Kosong berarti belum diisi, dan bloknya tidak digambar. */
+    hasil: string[];
+    prasyarat: string | null;
+    isiRingkas: Array<{ jenis: string; label: string; ikon: string; ket: string }>;
+
+    bacaan: string | null;
+    tautan: string | null;
+    /** Alamat semat yang sudah disaring App\Support\Materi. null = jangan pernah di-iframe. */
+    semat: string | null;
+    sop: string | null;
+
+    lampiran: Array<{ id: number; judul: string; url: string }>;
+
+    selesai: boolean;
+    urlSelesai: string;
+    urlTanya: string;
+
+    nomor: number | null;
+    dari: number;
+  };
+
+  modul: { urutan: number; judul: string } | null;
+  kurikulum: ModulKurikulum[];
+
+  /** Catatan melekat pada MODUL, bukan pada materi — `modul` menyebut yang mana. */
+  catatan: { isi: string; url: string | null; modul: string | null };
+
+  tanya: Array<PesanDiskusi & { milikku: boolean; jawaban: PesanDiskusi[] }>;
+
+  jelajah: {
+    sebelum: { judul: string; url: string } | null;
+    sesudah: { judul: string; url: string } | null;
+  };
+}
+
+export interface HalamanKelolaMateri {
+  judul: string; subjudul: string;
+  awal: Record<string, string>;
+  /** Pratinjau keputusan semat, supaya pengelola tahu sebelum pesertanya bertanya. */
+  semat: string | null;
+  lampiran: Array<{ id: number; judul: string; url: string; urlHapus: string }>;
+  tautan: { simpan: string; tambahLampiran: string; pratinjau: string; batal: string };
+}
+
 export interface HalamanDetailKursus {
   judul: string; subjudul: string;
   kursus: {
@@ -1716,7 +2171,7 @@ export interface HalamanKelolaKursus {
   kursus: { judul: string; kode: string | null; perluKode: boolean };
   modul: Array<{
     id: number; urutan: number; judul: string; keterangan: string | null;
-    materi: Array<MateriKursus & { urlHapus: string }>;
+    materi: Array<MateriKursus & { label: string; lengkap: boolean; urlAtur: string; urlHapus: string }>;
     urlHapus: string; urlTambahMateri: string;
   }>;
   kuis: Array<{
@@ -1739,7 +2194,7 @@ export interface HalamanBelajarKursus {
   kursus: { judul: string; keterangan: string | null; progres: number; selesai: boolean };
   modul: Array<{
     id: number; urutan: number; judul: string; keterangan: string | null;
-    selesai: boolean; catatan: string; materi: MateriKursus[];
+    selesai: boolean; catatan: string; materi: BarisMateri[];
     urlSelesai: string; urlCatatan: string;
   }>;
   kuis: Array<{ id: number; judul: string; nilaiLulus: number; url: string }>;
@@ -1791,4 +2246,394 @@ export interface HalamanHasilSop {
     total: number; nilaiLulus: number; evaluasi: string;
   };
   tautan: { ulangi: string; daftar: string };
+}
+
+/* ── Keamanan & jaringan ── */
+
+export interface SesiAktif {
+  id: string;
+  iniSaya: boolean;
+  userId: number | null;
+  nama: string;
+  email: string | null;
+  ip: string;
+  perangkat: string;
+  terakhir: string;
+  detik: number;
+}
+
+export interface PeristiwaKeamanan {
+  id: number;
+  peristiwa: string;
+  siapa: string;
+  detail: string | null;
+  ip: string;
+  perangkat: string;
+  kapan: string | null;
+  gagal: boolean;
+}
+
+export interface HalamanKeamanan {
+  judul: string; subjudul: string;
+  ringkas: {
+    gagal24: number; gagal1: number; keadaan: string;
+    sesiAktif: number; sesiBasi: number;
+    ambang: number; ambangGawat: number;
+  };
+  menekan: Array<{ ip: string; jumlah: number; sasaran: number; terakhir: string }>;
+  sesi: SesiAktif[];
+  riwayat: PeristiwaKeamanan[];
+  tajuk: Array<{ nama: string; ada: boolean; nilai: string | null; guna: string }>;
+  tidurAn: Array<{
+    id: number; nama: string; email: string;
+    admin: boolean; terakhir: string; url: string;
+  }>;
+  tautan: {
+    putusSesi: string; bersihSesi: string; pangkasJejak: string;
+    sistem: string; diagnosa: string; perangkatSaya: string;
+  };
+}
+
+export interface HalamanPerangkat {
+  judul: string; subjudul: string;
+  sesi: SesiAktif[];
+  riwayat: PeristiwaKeamanan[];
+  masukTerakhir: { kapan: string | null; ip: string | null };
+  tautan: { putus: string; putusLain: string };
+}
+
+/* ── Penetapan pemilik ── */
+
+/** Admin → Pengingat Tindak Lanjut (audit SMKP, porting Aurorasys). */
+export interface HalamanPengingat {
+  judul: string; subjudul: string;
+  pengingat: { aktif: boolean; jadwal: string[]; pilihan: Record<string, string>; jam: string };
+  surel: { siap: boolean; mailer: string; dari: string };
+  mendatang: Array<{
+    tanggal: string; jadwal: string; temuan: string; perusahaan: string;
+    target: string; penerima: string[]; url: string;
+  }>;
+  riwayat: Array<{ id: number; oleh: string | null; aksi: string; detail: string | null; waktu: string | null }>;
+  tautan: { simpan: string; kirim: string; pengguna: string; sistem: string };
+}
+
+export interface HalamanPemilik {
+  judul: string; subjudul: string;
+  jenis: Array<{
+    kunci: string; label: string; ket: string; jumlah: number;
+    baris: Array<{ id: number; judul: string; ket: string }>;
+  }>;
+  perusahaan: Array<{ nilai: number; label: string }>;
+  tautan: { tetapkan: string; sistem: string; diagnosa: string };
+}
+
+/* ── Identifikasi & Evaluasi Pemenuhan ──
+   Satu mesin untuk tiga sumber kewajiban: peraturan perundangan,
+   klausul standar ISO, dan dokumen terkendali. */
+
+export interface RekapPemenuhan {
+  total: number; comply: number; notComply: number; na: number;
+  belum: number; dinilai: number;
+  /** null berarti belum ada satu pun yang dinilai — bukan nol persen. */
+  persen: number | null;
+}
+
+export interface OpsiKepatuhan {
+  sumber: string[];
+  sumberNama: Record<string, string>;
+  jenis: string[];
+  status: string[];
+  aspek: Array<{ nilai: string; nama: string; warna: string }>;
+  tahun: number[];
+  perusahaan: Array<{ id: number; nama: string }>;
+  iso: Array<{ kode: string; nama: string }>;
+  dokumen: Array<{ id: number; nama: string }>;
+}
+
+export interface TautanKepatuhan {
+  dasbor: string; register: string; rekap: string; buat: string;
+  unggah: string; pustaka: string; ekspor: string;
+}
+
+export interface BarisKepatuhan {
+  id: number; kode: string | null; sumber: string;
+  nomor: string; judul: string; jenis: string | null; instansi: string | null;
+  terbit: string | null;
+  aspek: string | null; aspekNama: string; aspekWarna: string;
+  tahun: number; status: string; dariAi: boolean;
+  rekap: RekapPemenuhan;
+  url: string;
+}
+
+export interface HalamanKepatuhanDasbor {
+  judul: string; subjudul: string;
+  saring: { perusahaan: number | null; tahun: number; sumber: string | null; aspek: string | null };
+  opsi: OpsiKepatuhan;
+  ringkas: RekapPemenuhan & { draf: number; subjek: number };
+  aspek: Array<RekapPemenuhan & { aspek: string | null; nama: string; warna: string }>;
+  kosong: Array<{ id: number; nomor: string; judul: string; url: string }>;
+  menunggu: Array<{
+    id: number; penunjuk: string; rangkuman: string | null;
+    tindak: string | null; pic: string | null; target: string | null; lewat: boolean;
+    nomor: string | null; judul: string | null; url: string | null;
+  }>;
+  tren: Array<{ bulan: string; comply: number; notComply: number; persen: number | null; evaluasi: string | null }>;
+  tautan: TautanKepatuhan;
+}
+
+export interface HalamanKepatuhanRegister {
+  judul: string; subjudul: string;
+  saring: {
+    perusahaan: number | null; tahun: number; sumber: string | null;
+    aspek: string | null; cari: string; punya: string | null;
+  };
+  opsi: OpsiKepatuhan;
+  daftar: BarisKepatuhan[];
+  halaman: {
+    kini: number; akhir: number; total: number;
+    tautan: Array<{ label: string; url: string | null; aktif: boolean }>;
+  };
+  tautan: TautanKepatuhan;
+}
+
+export interface ButirPemenuhan {
+  id: number; penunjuk: string;
+  rangkuman: string | null; penerapan: string | null;
+  status: string | null; keterangan: string | null;
+  tindak: string | null; pic: string | null; target: string | null; lewat: boolean;
+  urlUbah: string; urlHapus: string;
+}
+
+export interface HalamanKepatuhanPenilaian {
+  judul: string; subjudul: string;
+  s: BarisKepatuhan & {
+    jenis: string | null; instansi: string | null; tanggalTerbit: string | null;
+    ruangLingkup: string | null; rangkuman: string | null; perusahaan: string | null;
+    dokumen: string | null; urlDokumen: string | null;
+    isoKode: string | null; urlIso: string | null;
+    berkas: string[];
+  };
+  butir: ButirPemenuhan[];
+  opsi: OpsiKepatuhan;
+  tautan: TautanKepatuhan & {
+    tambahButir: string; ubah: string; hapus: string; salin: string; lembar: string;
+  };
+}
+
+export interface HalamanKepatuhanForm {
+  judul: string; subjudul: string;
+  awal: Record<string, string>;
+  sunting: boolean;
+  opsi: OpsiKepatuhan;
+  tautan: { simpan: string; batal: string };
+}
+
+export interface HalamanKepatuhanRekap {
+  judul: string; subjudul: string;
+  saring: { perusahaan: number | null; tahun: number; sumber: string | null };
+  opsi: OpsiKepatuhan;
+  bulan: Array<{
+    bulan: number; nama: string; terekap: boolean;
+    comply: number | null; notComply: number | null; na: number | null; belum: number | null;
+    persen: number | null; evaluasi: string; rencana: string;
+  }>;
+  kini: { comply: number; notComply: number; na: number; belum: number; persen: number | null };
+  tautan: TautanKepatuhan & { simpan: string };
+}
+
+export interface HalamanKepatuhanUnggah {
+  judul: string; subjudul: string;
+  opsi: OpsiKepatuhan;
+  /** Apakah analisis otomatis terpasang; pemecahan pasalnya berjalan tanpa itu. */
+  otomatis: boolean;
+  batas: { perGiliran: number; halamanPerBaca: number; maksButir: number };
+  tautan: TautanKepatuhan & { rangkum: string; analisis: string; identitas: string; gambar: string; baca: string; simpan: string };
+}
+
+/** Jawaban POST kepatuhan/rangkum. */
+export interface HasilRangkum {
+  butir: Array<{ no: number; penunjuk: string; isi: string }>;
+  total: number;
+  identitas: IdentitasPeraturan | null;
+  catatan: string[];
+  halaman: number | null;
+  halamanGambar: number[];
+  perHalaman: string[] | null;
+  token: string | null;
+  naskah: string;
+  otomatis: boolean;
+}
+
+export interface IdentitasPeraturan {
+  jenis: string; nomor: string; judul: string; tanggal_terbit: string; instansi: string;
+  aspek?: string; ruang_lingkup?: string; rangkuman?: string;
+}
+
+export interface HalamanKepatuhanPustaka {
+  judul: string; subjudul: string;
+  saring: { perusahaan: number | null; tahun: number };
+  opsi: OpsiKepatuhan;
+  pustaka: Array<{
+    kunci: string; nama: string; nomor: string; judul: string;
+    sumber: string; aspek: string; warna: string;
+    ket: string; acuan: string; jumlah: number;
+    /** id register yang sudah terbit untuk tahun ini; null bila belum. */
+    sudah: number | null;
+    contoh: Array<{ penunjuk: string; uraian: string }>;
+  }>;
+  tautan: TautanKepatuhan & { terbitkan: string };
+}
+
+/* ── Audit Kinerja Pengelolaan dan Pemantauan Lingkungan (ISO 14001) ── */
+
+export interface SkorBagianAudit {
+  kunci: string; judul: string; bobot: number; maks: number;
+  nilai: number; kriteria: number; belum: number;
+  persen: number; penuh: boolean; hasil: number;
+}
+
+export interface SkorAudit {
+  bagian: Record<string, SkorBagianAudit>;
+  pemenuhan: number; pengurang: number; akhir: number;
+  belum: number; kriteria: number; penuhWajib: boolean;
+  predikat: { nama: string | null; alasan: string | null };
+  peringkat: { nama: string; kriteria: string; warna: string };
+  rincianKurang: Array<{ kunci: string; label: string; poin: number }>;
+}
+
+export interface BarisAudit {
+  id: number; kode: string; judul: string; tahun: number;
+  lokasi: string | null; tanggal: string | null; status: string;
+  perusahaan: string | null; pengurang: string[];
+  akhir: number; pemenuhan: number; belum: number; kriteria: number;
+  predikat: { nama: string | null; alasan: string | null };
+  peringkat: { nama: string; kriteria: string; warna: string };
+  /** Capaian per bagian (persen), berkunci huruf kecil bagiannya. */
+  bagianPersen: Record<string, number>;
+  sertifikat: { nomor: string; url: string } | null;
+  url: string;
+}
+
+/** Isi satu lembar Sertifikat Penghargaan Kinerja Lingkungan. */
+export interface DataSertifikatLingkungan {
+  id?: number | null;
+  nomor: string; kode: string;
+  terbit: string | null; berlaku: string | null; tempat: string | null;
+  predikat: string; bintang: number;
+  peringkat: string; peringkatKriteria: string; warna: string;
+  tema: 'emas' | 'hijau' | 'biru';
+  skor: number; pemenuhan: number; pengurang: number; kriteria: number;
+  perusahaan: string; penerbit: string | null; judul: string;
+  kodeAudit: string | null; lokasi: string | null; tahun: number; tanggalAudit: string | null;
+  bagian: Array<{ kunci: string; judul: string; bobot: number; persen: number }>;
+  ttdNama: string | null; ttdJabatan: string | null; ttdGambar: string | null;
+  logoPenerbit: string | null; logoPenerima: string | null;
+  status: 'sah' | 'kedaluwarsa' | 'dicabut';
+  dicabutPada: string | null; alasanCabut: string | null;
+  urlVerifikasi: string;
+}
+
+export interface SertifikatAudit {
+  aktif: (DataSertifikatLingkungan & { url: string; urlCabut: string; berubah: boolean }) | null;
+  riwayat: Array<{ id: number; nomor: string; terbit: string | null; dicabut: string | null;
+                   alasan: string | null; predikat: string; url: string }>;
+  layak: boolean;
+  alasan: string | null;
+  pratinjau: DataSertifikatLingkungan | null;
+  penandatangan: Array<{ id: number; nama: string; jabatan: string | null }>;
+  bawaan: { terbit: string; berlaku: string; tempat: string; signatory_id: number | null };
+  urlTerbit: string;
+  urlLogo: string;
+  bolehCabut: boolean;
+}
+
+export interface HalamanSertifikatLingkungan {
+  judul: string;
+  s: DataSertifikatLingkungan;
+  kembali: string;
+}
+
+export interface HalamanVerifikasiLingkungan {
+  kode: string;
+  catatanKaki?: string;
+  s: Pick<DataSertifikatLingkungan, 'nomor' | 'kode' | 'terbit' | 'berlaku' | 'tempat' | 'predikat'
+    | 'bintang' | 'peringkat' | 'peringkatKriteria' | 'warna' | 'tema' | 'skor' | 'perusahaan'
+    | 'penerbit' | 'lokasi' | 'tahun' | 'ttdNama' | 'ttdJabatan' | 'status' | 'dicabutPada'
+    | 'alasanCabut' | 'logoPenerbit' | 'logoPenerima'> | null;
+}
+
+export interface OpsiAudit {
+  tahun: number[];
+  status: string[];
+  nilai: number[];
+  pengurang: Array<{ kunci: string; label: string; poin: number }>;
+  profil: Array<{ kunci: string; label: string }>;
+  predikat: Array<{ nama: string; min: number; maks: number }>;
+  peringkat: Array<{ nama: string; kriteria: string; min: number; warna: string }>;
+  perusahaan: Array<{ id: number; nama: string }>;
+}
+
+export interface TautanAudit {
+  index: string; ikhtisar: string; ubah: string; hapus: string;
+  lembar: string; pengurang: string; rtp: string;
+  bagian: Record<string, string>;
+}
+
+export interface HalamanAuditLingkunganDaftar {
+  judul: string; subjudul: string;
+  saring: { tahun: number };
+  opsi: OpsiAudit;
+  daftar: BarisAudit[];
+  bagian: Array<{ kunci: string; huruf: string; judul: string; bobot: number;
+                  maks: number; kriteria: number; wajib: boolean }>;
+  tautan: { buat: string; index: string };
+}
+
+export interface HalamanAuditLingkunganIkhtisar {
+  judul: string; subjudul: string;
+  a: BarisAudit & {
+    profil: Array<{ kunci: string; label: string; nilai: string }>;
+    catatan: string | null;
+  };
+  skor: SkorAudit;
+  opsi: OpsiAudit;
+  sertifikat: SertifikatAudit;
+  /** Ringkasan Rencana Tindak Perbaikan (RTP). */
+  rtp: { aktif: number; menunggu: number; telat: number; selesai: number };
+  tautan: TautanAudit;
+}
+
+export interface HalamanAuditLingkunganBagian {
+  judul: string; subjudul: string;
+  a: BarisAudit;
+  kini: string;
+  bagian: Array<{ kunci: string; huruf: string; judul: string; bobot: number;
+                  maks: number; kriteria: number; wajib: boolean }>;
+  susun: Array<{
+    nama: string;
+    kelompok: Array<{
+      nama: string;
+      butir: Array<{
+        kode: string; huruf: string | null; uraian: string; kosong: boolean;
+        nilai: number | null; verifikasi: number | null; keterangan: string;
+        selisih: boolean; berkas: string[]; urlBerkas: string | null;
+        bukti: Array<{ url: string; nama: string }>; urlBukti: string; urlHapusBukti: string;
+      }>;
+    }>;
+  }>;
+  skorBagian: SkorBagianAudit;
+  skor: { akhir: number; belum: number; kriteria: number };
+  tangga: Record<string, string>;
+  maksKeterangan: number;
+  maksBukti: number;
+  maksBuktiMb: number;
+  tautan: TautanAudit & { simpanNilai: string };
+}
+
+export interface HalamanAuditLingkunganForm {
+  judul: string; subjudul: string;
+  awal: Record<string, string> & { profil: Record<string, string> };
+  sunting: boolean;
+  opsi: OpsiAudit;
+  tautan: { simpan: string; batal: string };
 }

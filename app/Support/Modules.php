@@ -21,12 +21,65 @@ namespace App\Support;
  */
 class Modules
 {
+    /**
+     * Modul jual per KUNCI MENU.
+     *
+     * Katalog jual dan halaman depan menceritakan aplikasi yang sama;
+     * keduanya harus mengambil kalimatnya dari daftar ini, bukan dari
+     * salinan masing-masing. Pencocokannya lewat NAMA RUTE — bukan peta
+     * nama yang ditulis tangan, sebab peta tangan basi diam-diam: satu
+     * modul berganti nama, petanya tidak, dan yang terjadi bukan galat
+     * melainkan kartu jual tanpa keterangan sama sekali.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public static function perKunciMenu(): array
+    {
+        $rute = [];
+
+        foreach (Menu::all() as $kunci => $m) {
+            foreach ($m['groups'] as $grup) {
+                foreach ($grup as $butir) $rute[$butir[1]] = $kunci;
+            }
+        }
+
+        $per = [];
+
+        foreach (self::all() as $modul) {
+            $kunci = $rute[$modul['rute'] ?? ''] ?? null;
+
+            if ($kunci !== null) $per[$kunci] = $modul;
+        }
+
+        return $per;
+    }
+
     public static function all(): array
     {
         return [
             ['nama' => 'LMS — Learning Center', 'status' => 'aktif', 'pilar' => 'quality', 'rute' => 'courses.index',
              'ket'  => 'Pelatihan, kuis, evaluasi SOP, dan sertifikat digital ber-barcode.',
              'ikon' => 'M12 14l9-5-9-5-9 5 9 5z M12 14l6.16-3.42A12 12 0 0112 21a12 12 0 01-6.16-10.42L12 14z'],
+
+            /* Tepat sesudah LMS: keduanya berbicara tentang orang yang
+               sama. LMS menerbitkan sertifikat pelatihan internal;
+               Authority menyimpan seluruh berkas kelayakan kerjanya dan
+               menjawab pertanyaan gerbang — boleh atau tidak orang ini
+               bekerja hari ini. */
+            ['nama' => 'Authority — Kelayakan Kerja', 'status' => 'aktif', 'pilar' => 'occhealth',
+             'rute' => 'miners.index',
+             'ket'  => 'Kompetensi, MCU, dan kartu masuk tambang dalam satu berkas per orang, dengan pengingat masa berlaku berjenjang.',
+             'ikon' => 'M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 14l2 2 4-4'],
+
+            /* SATU ENTRI UNTUK SELURUH HRIS. Roster dan absensi
+               dipasarkan bersama karena memang dipakai bersama: yang
+               satu menyusun jadwalnya, yang lain memeriksa apakah
+               jadwal itu dijalankan. Dipecah dua, etalase menyebut dua
+               produk untuk satu pekerjaan. */
+            ['nama' => 'HRIS — Tenaga Kerja Tambang', 'status' => 'aktif', 'pilar' => 'occhealth',
+             'rute' => 'hris.index',
+             'ket'  => 'Roster bergilir 14:7 dengan batas jam kerja Kepmenakertrans 234/2003, absensi mesin lapangan yang direkonsiliasi terhadapnya termasuk shift malam lewat tengah malam, cuti UU 13/2003 yang menulis ke kalender regu, dan lembur PP 35/2021 yang diusulkan dari jam yang benar-benar tercatat.',
+             'ikon' => 'M17 20h5v-2a3 3 0 0 0-5.36-1.87M17 20H7m10 0v-2c0-.66-.13-1.3-.36-1.87m0 0a5 5 0 0 0-9.28 0M7 20H2v-2a3 3 0 0 1 5.36-1.87M7 20v-2c0-.66.13-1.3.36-1.87m0 0a5 5 0 0 1 9.28 0M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm6 3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM7 10a2 2 0 1 1-4 0 2 2 0 0 1 4 0z'],
 
             ['nama' => 'Safety Maturity Level', 'status' => 'aktif', 'pilar' => 'safety', 'rute' => 'tpkkp.index',
              'ket'  => 'Penilaian tingkat kematangan keselamatan: 194 item · 24 parameter · 4 indikator, lengkap Kalkulator Slovin.',
@@ -39,6 +92,26 @@ class Modules
             ['nama' => 'Keselamatan Operasi (KO)', 'status' => 'aktif', 'pilar' => 'engineering', 'rute' => 'ko.index',
              'ket'  => 'Kelayakan objek, jadwal perawatan, alat pengaman, kajian teknis, dan tenaga teknis bersertifikat.',
              'ikon' => 'M2.5 18.2a1 1 0 0 0 1 1h17a1 1 0 0 0 1-1v-1.7a1 1 0 0 0-1-1h-17a1 1 0 0 0-1 1zM10 10.2V5.4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4.8M4.6 15.5v-3.3a5.6 5.6 0 0 1 5.4-5.6M14 6.6a5.6 5.6 0 0 1 5.4 5.6v3.3'],
+
+            /* Berdiri sendiri, bukan bagian Hazard Report. Hazard mencatat
+               bahaya sebelum ada yang celaka; Investigasi bekerja setelah
+               kejadian, dengan alur, bukti, dan kesimpulan yang berbeda —
+               menggabungkan keduanya dalam satu kartu jual membuat pembeli
+               mengira sudah memiliki yang sebenarnya belum dibeli. */
+            ['nama' => 'Investigasi Insiden', 'status' => 'aktif', 'pilar' => 'safety',
+             'rute' => 'investigasi.dasbor',
+             'ket'  => 'Register insiden, analisis SCAT tiga lapis, wawancara terarah, hierarki kendali, dan matriks risiko — dari laporan awal sampai tindakan perbaikan yang tuntas.',
+             'ikon' => 'M21 21l-5.2-5.2M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z'],
+
+            /* Dijual terpisah dari SMKP Audit, dan pemisahannya bukan
+               soal harga. Yang satu menilai sistem keselamatan pembeli
+               sendiri; yang ini menilai mitra yang dipekerjakannya.
+               Menggabungkan keduanya dalam satu kartu membuat pembeli
+               mengira sudah memiliki yang sebenarnya belum dibeli. */
+            ['nama' => 'Pemantauan Perusahaan Jasa (PJP)', 'status' => 'aktif', 'pilar' => 'safety',
+             'rute' => 'pjp.index',
+             'ket'  => 'Prakualifikasi SMKP 17 kategori dan 126 butir, dokumen berkala beserta ketepatan waktunya, dan evaluasi kinerja semesteran tiap mitra kerja — satu berkas yang siap diminta Inspektur Tambang.',
+             'ikon' => 'M4 21h9M6 21V5a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v6M9 8h1M9 11.5h1M14.5 17.5l2.2 2.2 4.3-4.3'],
 
             ['nama' => 'SMKP Audit', 'status' => 'aktif', 'pilar' => 'safety', 'rute' => 'smkp.index',
              'ket'  => 'Audit 7 elemen SMKP Minerba sesuai Kepdirjen 185.K/2019: penilaian per kriteria, temuan berjenjang, dan laporan siap cetak.',
@@ -113,5 +186,50 @@ class Modules
              'ket'  => 'Register dokumen terkendali: nomor revisi, masa berlaku, riwayat perubahan, dan pengingat peninjauan berkala.',
              'ikon' => 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.59a1 1 0 01.7.29l4.42 4.42a1 1 0 01.29.7V19a2 2 0 01-2 2z'],
         ];
+    }
+
+    /**
+     * Nama modul di halaman depan ke kunci modul di dalam aplikasi.
+     *
+     * Dua daftar modul memang hidup berdampingan di repo ini: yang di
+     * Menu memakai kunci pendek dan dipakai bilah samping, sedangkan
+     * yang di sini memakai nama jualan lengkap ("Authority — Kelayakan
+     * Kerja") untuk orang yang belum pernah memakai aplikasinya.
+     * Jembatannya ditulis apa adanya di sini, bukan ditebak dari
+     * awalan nama rutenya: 'courses.index' menuju modul 'lms' dan
+     * 'hazard.index' menuju 'hazrep', jadi tebakan itu meleset diam-diam
+     * pada dua modul dan tidak pernah memulangkan galat — hanya ikon
+     * yang hilang di kartu yang benar.
+     */
+    public const KUNCI = [
+        'LMS — Learning Center'                  => 'lms',
+        'Authority — Kelayakan Kerja'            => 'miners',
+        'HRIS — Tenaga Kerja Tambang'            => 'hris',
+        'Safety Maturity Level'                  => 'tpkkp',
+        'Hazard Report & Inspeksi'               => 'hazrep',
+        'Keselamatan Operasi (KO)'               => 'ko',
+        'Investigasi Insiden'                    => 'investigasi',
+        'Pemantauan Perusahaan Jasa (PJP)'       => 'pjp',
+        'SMKP Audit'                             => 'smkp',
+        'Sistem Informasi Gudang & Penyimpanan'  => 'gudang',
+        'Energy Performance Center'              => 'energi',
+        'Konservasi Minerba'                     => 'konservasi',
+        'Mining Engineering Hub'                 => 'meh',
+        'Mine Operations & GIS'                  => 'operasi',
+        'Water & Dewatering'                     => 'air',
+        'Maintenance & Reliability'              => 'maintenance',
+        'Lingkungan & Reklamasi'                 => 'lingkungan',
+        'Drill & Blast'                          => 'peledakan',
+        'Dispatch & Hauling'                     => 'angkutan',
+        'Pengendalian Biaya'                     => 'biaya',
+        'Izin Kerja Aman'                        => 'izin',
+        'Kestabilan Lereng'                      => 'geoteknik',
+        'ISO & Dokumen'                          => 'dokumen',
+    ];
+
+    /** Kunci modul untuk sebuah nama jualan, atau null bila belum dipetakan. */
+    public static function kunci(string $nama): ?string
+    {
+        return self::KUNCI[$nama] ?? null;
     }
 }

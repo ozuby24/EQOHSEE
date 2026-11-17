@@ -1,0 +1,101 @@
+{
+  "kunci": "energi",
+  "label": "Energy Performance",
+  "jual": "Energy Performance Center",
+  "harga": 7500000,
+  "ket": "Konsumsi bahan bakar dan listrik, intensitas energi, baseline dan sasaran, peluang penghematan, serta jejak karbon.",
+  "semboyan": "Every Watt Counted",
+  "halaman": [
+    {
+      "berkas": "01-energi.jpg",
+      "label": "Dashboard",
+      "grup": "Pantau",
+      "path": "energi",
+      "status": "ok"
+    },
+    {
+      "berkas": "02-energi-input.jpg",
+      "label": "Input Lapangan",
+      "grup": "Pantau",
+      "path": "energi/input",
+      "status": "ok"
+    },
+    {
+      "berkas": "03-energi-konsumsi.jpg",
+      "label": "Energy Consumption",
+      "grup": "Pantau",
+      "path": "energi/konsumsi",
+      "status": "ok"
+    },
+    {
+      "berkas": "04-energi-bahan-bakar.jpg",
+      "label": "Fuel Management",
+      "grup": "Pantau",
+      "path": "energi/bahan-bakar",
+      "status": "ok"
+    },
+    {
+      "berkas": "05-energi-listrik.jpg",
+      "label": "Electricity",
+      "grup": "Pantau",
+      "path": "energi/listrik",
+      "status": "ok"
+    },
+    {
+      "berkas": "06-energi-alat.jpg",
+      "label": "Equipment Performance",
+      "grup": "Kinerja",
+      "path": "energi/alat",
+      "status": "ok"
+    },
+    {
+      "berkas": "07-energi-kpi.jpg",
+      "label": "Energy KPI",
+      "grup": "Kinerja",
+      "path": "energi/kpi",
+      "status": "ok"
+    },
+    {
+      "berkas": "08-energi-baseline.jpg",
+      "label": "Baseline & Target",
+      "grup": "Kinerja",
+      "path": "energi/baseline",
+      "status": "ok"
+    },
+    {
+      "berkas": "09-energi-penghematan.jpg",
+      "label": "Saving Opportunities",
+      "grup": "Optimasi",
+      "path": "energi/penghematan",
+      "status": "ok"
+    },
+    {
+      "berkas": "10-energi-karbon.jpg",
+      "label": "Carbon & Emission",
+      "grup": "Optimasi",
+      "path": "energi/karbon",
+      "status": "ok"
+    },
+    {
+      "berkas": "11-energi-kalkulator.jpg",
+      "label": "Energy Calculator",
+      "grup": "Optimasi",
+      "path": "energi/kalkulator",
+      "status": "ok"
+    },
+    {
+      "berkas": "12-energi-laporan.jpg",
+      "label": "Laporan Energi",
+      "grup": "Data",
+      "path": "energi/laporan",
+      "status": "ok"
+    },
+    {
+      "berkas": "13-energi-data-induk.jpg",
+      "label": "Master Data",
+      "grup": "Data",
+      "path": "energi/data-induk",
+      "status": "ok"
+    }
+  ]
+}

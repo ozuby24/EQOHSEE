@@ -148,6 +148,10 @@ APP_ENV=production
 APP_DEBUG=false
 APP_URL=https://eqohsee.id
 
+# Antarmuka berbahasa Indonesia (lang/id). `deploy.sh` mengingatkan bila
+# baris ini masih `en`.
+APP_LOCALE=id
+
 # Basis data. Bawaan sqlite; untuk pgsql isi juga DB_HOST/DB_PORT/
 # DB_DATABASE/DB_USERNAME/DB_PASSWORD.
 DB_CONNECTION=sqlite
@@ -239,8 +243,18 @@ Pilihan lain:
 - uji lokal tidak lulus
 - SSH belum bisa masuk tanpa kata sandi
 - repo di VPS punya suntingan langsung yang belum kembali ke repo
+- cabang yang dikirim tidak memuat commit yang sedang terpasang di VPS
+  (riwayatnya bercabang, misalnya mengirim `main` ke server yang menjalankan
+  cabang kerja lain)
 
-Yang terakhir paling mudah terlewat. `deploy.sh` menyamakan isi VPS lewat
+Riwayat yang bercabang ditolak karena migrasinya dapat bertabrakan: dua
+jalur yang sama-sama membuat tabel `pjps` lewat berkas migrasi berbeda
+menghentikan deploy di tengah migrasi dengan "table already exists".
+Mundur ke commit yang LEBIH LAMA di jalur yang sama tetap diizinkan, sebab
+itulah cara memulihkan versi sebelumnya (bagian 6). `--kering` menampilkan
+posisi VPS saat ini tanpa mengubah apa pun.
+
+Suntingan langsung di VPS paling mudah terlewat. `deploy.sh` menyamakan isi VPS lewat
 `git reset --hard`, yang membuang suntingan semacam itu tanpa jejak —
 padahal justru suntingan langsung di server biasanya berisi perbaikan
 mendesak yang belum sempat masuk repo. Selamatkan dulu, atau buang dengan

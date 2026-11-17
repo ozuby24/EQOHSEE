@@ -27,7 +27,7 @@ const bingkai =
 
       <div v-if="c.template === 'korporat'"
            class="flex items-center gap-4 px-9 py-5 border-b-2 border-cam-lime/40 bg-stone-50">
-        <img v-if="c.logo" :src="c.logo" class="h-12 w-auto object-contain" alt="">
+        <img v-if="c.logo" :src="c.logo" class="h-12 w-auto object-contain mix-blend-multiply" alt="">
         <div class="min-w-0">
           <div class="text-[15px] font-bold text-cam-ink leading-tight">{{ c.pemilik }}</div>
           <div v-if="c.lokasi" class="text-[11px] text-stone-400 mt-0.5">{{ c.lokasi }}</div>
@@ -43,7 +43,7 @@ const bingkai =
 
         <div class="relative">
           <template v-if="c.template !== 'korporat'">
-            <img v-if="c.logo" :src="c.logo" class="h-14 mx-auto object-contain" alt="">
+            <img v-if="c.logo" :src="c.logo" class="h-14 mx-auto object-contain mix-blend-multiply" alt="">
             <img v-else :src="markUrl" class="h-8 mx-auto rounded-xl" alt="EQOHSEE">
           </template>
 

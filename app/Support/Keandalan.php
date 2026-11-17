@@ -158,7 +158,17 @@ final class Keandalan
             'berjadwal' => $n,
             'terlambat' => $telat,
             'patuh'     => $n - $telat,
-            'persen'    => $n > 0 ? round(($n - $telat) / $n * 100, 1) : 100.0,
+            /* NULL, bukan 100, ketika tidak ada satu pun alat berjadwal.
+               Nol dibagi nol bukan kepatuhan sempurna — ia ketiadaan
+               ukuran, dan keduanya harus terbaca berbeda. "Kepatuhan PM
+               100%" pada armada yang belum punya satu pun alat terdaftar
+               adalah angka yang dapat ditangkap layar lalu masuk laporan
+               kepatuhan; "—" tidak dapat.
+
+               Alasannya sudah tertulis pada catatan di bawah — alat tanpa
+               jadwal bukan alat yang patuh maupun tidak patuh — dan
+               nilai 100 di sini justru melanggarnya. */
+            'persen'    => $n > 0 ? round(($n - $telat) / $n * 100, 1) : null,
 
             // Dilaporkan terpisah, tidak dilebur ke persentase. Alat tanpa
             // jadwal bukan alat yang patuh maupun tidak patuh — ia alat

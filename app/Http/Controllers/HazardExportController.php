@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\{Company, HazardReport, Inspection};
-use App\Support\{Db, Ekspor, Hazard};
+use App\Support\{Berkas, Db, Ekspor, Hazard, RegisterPerbaikan, Waktu};
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -35,14 +36,187 @@ class HazardExportController extends Controller
         ], $baris);
     }
 
+    /* ---------- Register Tindakan Perbaikan (.xlsx) ---------- */
+
+    /**
+     * Berapa temuan yang akan ikut terbawa pilihan sekarang.
+     *
+     * Rute JSON tersendiri, bukan muat ulang sebagian halaman monitor.
+     * Yang ditanyakan hanya SATU ANGKA; memuat ulang halamannya berarti
+     * menjalankan kembali penyaringan, penghitungan kartu, dan
+     * paginasinya setiap kali satu pilihan digeser di dalam dialog —
+     * pekerjaan yang seluruhnya dibuang.
+     */
+    public function registerJumlah(Request $r)
+    {
+        return response()->json(['jumlah' => $this->saringRegister($r)->count()]);
+    }
+
+    /**
+     * Unduh Register Tindakan Perbaikan sebagai berkas Excel.
+     *
+     * Dikirim sebagai aliran (stream), bukan disimpan dulu ke berkas
+     * sementara. Register berfoto tertanam berukuran beberapa megabita,
+     * dan berkas sementara yang gagal terhapus — permintaan yang putus
+     * di tengah, proses yang dimatikan — menumpuk di diska server tanpa
+     * ada yang membersihkannya.
+     */
+    public function register(Request $r): StreamedResponse
+    {
+        $data = $this->saringRegister($r)->get();
+
+        $penyusun = new RegisterPerbaikan(
+            $data,
+            $this->perusahaanKop($r),
+            [
+                'urutan'     => $r->get('urutan', 'bulan'),
+                'perusahaan' => $r->get('perusahaan'),
+                'bulan'      => $r->get('bulan'),
+                'lokasi'     => $r->get('lokasi'),
+            ],
+        );
+
+        $nama = $penyusun->namaBerkas();
+        $buku = $penyusun->spreadsheet();
+
+        return response()->streamDownload(function () use ($buku) {
+            $tulis = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($buku);
+            $tulis->save('php://output');
+
+            /* Dilepas SESUDAH ditulis. PhpSpreadsheet menahan setiap
+               gambar sebagai sumber daya GD di memori; register berisi
+               empat puluh foto yang tidak dilepas meninggalkan puluhan
+               megabita tergenggam sampai prosesnya berakhir — dan pada
+               antrian yang melayani banyak unduhan berturut-turut, itu
+               berakhir sebagai kehabisan memori pada unduhan yang
+               kebetulan ketiga belas. */
+            $buku->disconnectWorksheets();
+        }, $nama, [
+            'Content-Type'  => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'no-store, no-cache',
+        ]);
+    }
+
+    /**
+     * Penyaring register — TERPISAH dari penyaring daftar monitor.
+     *
+     * Keduanya menyaring tabel yang sama tetapi menjawab pertanyaan yang
+     * berbeda: monitor menjawab "apa yang sedang saya lihat", register
+     * menjawab "apa yang saya serahkan ke rapat". Menyatukannya membuat
+     * kotak cari yang sedang terisi di layar diam-diam ikut memotong
+     * lembar yang diserahkan — dan yang menerimanya tidak punya cara
+     * mengetahui bahwa ada yang hilang.
+     */
+    private function saringRegister(Request $r)
+    {
+        $q = HazardReport::with(['company', 'user'])
+            ->when($r->filled('bulan'),      fn ($b) => $b->whereRaw(Db::ym('tanggal').' = ?', [$r->bulan]))
+            ->when($r->filled('lokasi'),     fn ($b) => $b->where('lokasi', $r->lokasi))
+            ->when($r->filled('perusahaan'), fn ($b) => $b->where('company_id', $r->perusahaan));
+
+        /* Urutan KEDUA selalu tanggal, apa pun urutan pertamanya.
+           Tanpa itu, dua temuan pada lokasi yang sama tampil dalam
+           urutan yang ditentukan basis data — yang berbeda antara dua
+           unduhan atas data yang sama, dan membuat dua lembar yang
+           seharusnya identik tidak dapat dibandingkan. */
+        return match ($r->get('urutan', 'bulan')) {
+            'lokasi'     => $q->orderBy('lokasi')->orderBy('tanggal'),
+            'perusahaan' => $q->orderBy('company_id')->orderBy('tanggal'),
+            'risiko'     => $q->orderByRaw(Db::urutanNilai('risiko', ['Tinggi', 'Sedang', 'Rendah']))->orderBy('tanggal'),
+            'status'     => $q->orderByRaw(Db::urutanNilai('status', ['Open', 'In Progress', 'Closed']))->orderBy('tanggal'),
+            default      => $q->orderBy('tanggal'),
+        };
+    }
+
     /** Halaman siap cetak → simpan sebagai PDF lewat dialog cetak peramban. */
     public function hazardCetak(Request $r)
     {
         $data = $this->saringHazard($r)->get();
         return Inertia::render('Print/Hazard', [
+            'dok'  => \App\Support\KopDokumen::untuk('register-hazard', $this->perusahaanKop($r)),
             'data' => $data,
             'filters' => $r->query(),
             'kembali' => route('hazard.index', $r->query()),
+        ]);
+    }
+
+    /**
+     * Lembar SATU inspeksi — dokumen terkendali yang ditandatangani.
+     *
+     * Berbeda dari `inspeksiCetak` di bawahnya, yang mendaftar seluruh
+     * inspeksi sebagai register. Register menjawab "apa saja yang sudah
+     * diperiksa bulan ini"; lembar ini menjawab "apa yang ditemukan pada
+     * pemeriksaan tanggal sekian, oleh siapa, dan siapa yang bertanda
+     * tangan atasnya" — dan hanya yang kedua yang dapat diarsipkan
+     * sebagai bukti pemeriksaan.
+     *
+     * Butirnya dikirim SUDAH TERKELOMPOK. Mengelompokkannya di peramban
+     * berarti urutan kelompok ditentukan urutan kemunculan baris, yang
+     * berubah begitu satu butir disisipkan di tengah — dan lembar yang
+     * kelompoknya berpindah-pindah antar penerbitan tidak dapat
+     * dibandingkan dengan terbitan sebelumnya.
+     */
+    public function inspeksiLembar(Request $r, Inspection $inspeksi)
+    {
+        $inspeksi->load(['items', 'inspectors', 'company', 'template', 'user']);
+
+        $kelompok = [];
+
+        foreach ($inspeksi->items->sortBy('order_index') as $b) {
+            $nama = $b->kelompok ?: 'Umum';
+
+            $kelompok[$nama][] = [
+                'uraian'   => $b->uraian,
+                'acuan'    => $b->acuan,
+                'risiko'   => $b->risiko,
+                'kondisi'  => $b->kondisi,
+                'temuan'   => $b->temuan,
+                'tindakan' => $b->tindakan,
+                'foto'     => Berkas::daftarUrl($b, 'ins'),
+            ];
+        }
+
+        $butir = $inspeksi->items;
+
+        return Inertia::render('Print/InspeksiLembar', [
+            'dok' => \App\Support\KopDokumen::untuk('lembar-inspeksi', $inspeksi->company ?: $this->perusahaanKop($r)),
+
+            'i' => [
+                'kode'      => $inspeksi->kode,
+                'judul'     => $inspeksi->judul,
+                'jenis'     => $inspeksi->jenis,
+                'lokasi'    => $inspeksi->lokasi,
+                'tanggal'   => $inspeksi->tanggal?->translatedFormat('d F Y'),
+                'status'    => $inspeksi->status,
+                'catatan'   => $inspeksi->catatan,
+                'template'  => $inspeksi->template?->nama,
+                'perusahaan'=> $inspeksi->company?->name,
+            ],
+
+            /* Rekapitulasi dihitung di server, satu kali, dari kumpulan
+               yang sama yang dicetak di bawahnya. Menghitungnya di
+               peramban membuat angka di kepala lembar dan baris di
+               badannya bersumber pada dua jalan yang harus sepakat. */
+            'rekap' => [
+                'total'       => $butir->count(),
+                'sesuai'      => $butir->where('kondisi', 'Sesuai')->count(),
+                'tidakSesuai' => $butir->where('kondisi', 'Tidak Sesuai')->count(),
+                'na'          => $butir->where('kondisi', 'N/A')->count(),
+                'belum'       => $butir->whereNull('kondisi')->count(),
+            ],
+
+            'kelompok' => collect($kelompok)->map(fn ($b, $nama) => [
+                'nama'  => $nama,
+                'butir' => $b,
+            ])->values()->all(),
+
+            'pemeriksa' => $inspeksi->inspectors->map(fn ($p) => [
+                'nama'    => $p->nama,
+                'jabatan' => $p->jabatan,
+                'peran'   => $p->peran,
+            ])->all(),
+
+            'kembali' => route('inspeksi.show', $inspeksi),
         ]);
     }
 
@@ -80,6 +254,7 @@ class HazardExportController extends Controller
         if ($r->filled('template')) $q->where('template_id', $r->template);
 
         return Inertia::render('Print/Inspeksi', [
+            'dok'  => \App\Support\KopDokumen::untuk('register-inspeksi', $this->perusahaanKop($r)),
             'data' => $q->latest('tanggal')->get(),
             'filters' => $r->query(),
             'kembali' => route('inspeksi.index', $r->query()),
@@ -150,7 +325,12 @@ class HazardExportController extends Controller
             'subjudul' => 'Temuan yang belum ditutup, per perusahaan',
 
             'perusahaan'  => $daftar,
-            'urlPerusahaan' => route('admin.companies.index'),
+            /* Kontak PIC diatur administrator di Kelola Perusahaan, dan
+               oleh pengguna perusahaan di Profil Perusahaan. Menaut semua
+               orang ke halaman admin mengantar non-admin ke 403. */
+            'urlPerusahaan'   => auth()->user()?->isAdmin()
+                ? route('admin.companies.index') : route('personalia.perusahaan'),
+            'labelPerusahaan' => auth()->user()?->isAdmin() ? 'Kelola Perusahaan' : 'Profil Perusahaan',
         ]);
     }
 

@@ -1,0 +1,87 @@
+{
+  "kunci": "tpkkp",
+  "label": "Safety Maturity Level",
+  "jual": "Safety Maturity Level",
+  "harga": 2500000,
+  "ket": "Penilaian tingkat kematangan keselamatan: 194 item · 24 parameter · 4 indikator, lengkap Kalkulator Slovin.",
+  "semboyan": "Measured Not Assumed",
+  "halaman": [
+    {
+      "berkas": "01-tpkkp.jpg",
+      "label": "Beranda",
+      "grup": "Penilaian",
+      "path": "tpkkp",
+      "status": "ok"
+    },
+    {
+      "berkas": "02-tpkkp-profil.jpg",
+      "label": "Profil",
+      "grup": "Penilaian",
+      "path": "tpkkp/profil",
+      "status": "ok"
+    },
+    {
+      "berkas": "03-tpkkp-penilaian.jpg",
+      "label": "Formulir Nilai",
+      "grup": "Penilaian",
+      "path": "tpkkp/penilaian",
+      "status": "ok"
+    },
+    {
+      "berkas": "04-tpkkp-kuesioner.jpg",
+      "label": "Kuesioner",
+      "grup": "Penilaian",
+      "path": "tpkkp/kuesioner",
+      "status": "ok"
+    },
+    {
+      "berkas": "05-tpkkp-pengujian.jpg",
+      "label": "Pengujian",
+      "grup": "Penilaian",
+      "path": "tpkkp/pengujian",
+      "status": "ok"
+    },
+    {
+      "berkas": "06-tpkkp-rekap.jpg",
+      "label": "Rekapitulasi",
+      "grup": "Hasil & Analisis",
+      "path": "tpkkp/rekap",
+      "status": "ok"
+    },
+    {
+      "berkas": "07-tpkkp-visual.jpg",
+      "label": "Visualisasi",
+      "grup": "Hasil & Analisis",
+      "path": "tpkkp/visual",
+      "status": "ok"
+    },
+    {
+      "berkas": "08-tpkkp-program.jpg",
+      "label": "Program",
+      "grup": "Hasil & Analisis",
+      "path": "tpkkp/program",
+      "status": "ok"
+    },
+    {
+      "berkas": "09-tpkkp-sampling.jpg",
+      "label": "Kalkulator Slovin",
+      "grup": "Alat Bantu",
+      "path": "tpkkp/sampling",
+      "status": "ok"
+    },
+    {
+      "berkas": "10-tpkkp-metode.jpg",
+      "label": "Metode Data",
+      "grup": "Alat Bantu",
+      "path": "tpkkp/metode",
+      "status": "ok"
+    },
+    {
+      "berkas": "11-tpkkp-tentang.jpg",
+      "label": "Tentang Regulasi",
+      "grup": "Alat Bantu",
+      "path": "tpkkp/tentang",
+      "status": "ok"
+    }
+  ]
+}

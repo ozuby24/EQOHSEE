@@ -99,7 +99,7 @@ onBeforeUnmount(() => {
 <template>
   <Head title="PTPKKP — Beranda" />
 
-  <div class="max-w-5xl mx-auto space-y-5">
+  <div class="space-y-5">
 
     <PickerTpkkp v-bind="picker" />
 

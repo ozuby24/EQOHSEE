@@ -2,10 +2,12 @@
 
 namespace App\Http\Middleware;
 
-use App\Support\{IkonNav, Lencana, Media, Menu, RuteInertia, Tema};
+use App\Support\{IkonNav, KondisiSitus, Lencana, Media, Menu, RuteInertia, SampulModul, Tema, Tur};
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\{Gate, Schema};
 use Inertia\Middleware;
+use App\Support\Berkas;
+use App\Support\Perusahaan;
 
 /**
  * Data yang dibagikan ke seluruh halaman Inertia.
@@ -29,16 +31,58 @@ class HandleInertiaRequests extends Middleware
     {
         $u = $request->user();
 
+        /* Penanda menu dihitung SEKALI per permintaan dan dipakai dua
+           tempat: lencana butir menu dan `peringatan` (temuan SMKP lewat
+           target) di bilah atas. Dua closure yang masing-masing menghitung
+           sendiri berarti kueri yang sama dua kali pada tiap halaman. */
+        $lencana = null;
+        $ambilLencana = function () use ($u, &$lencana): array {
+            return $lencana ??= Lencana::semua($u);
+        };
+
         return array_merge(parent::share($request), [
             'pengguna' => $u ? [
                 'id'     => $u->id,
                 'nama'   => $u->name,
                 'peran'  => $u->position ?: ($u->isAdmin() ? 'Administrator' : ucfirst($u->lms_role ?: 'Peserta')),
                 'admin'  => $u->isAdmin(),
-                'avatar' => $u->avatar ? asset('storage/'.$u->avatar) : null,
+                'avatar' => $u->avatar ? Berkas::terbuka($u->avatar) : null,
+
+                /* Peran audit SMKP (porting Aurorasys): auditor/administrator
+                   mengisi audit, auditi membaca dan menyampaikan tindak lanjut. */
+                'auditor' => $u->bisaAudit(),
+                'auditi'  => $u->isAuditi(),
+
+                /* Akun non-admin tanpa perusahaan tidak menjangkau audit
+                   SMKP mana pun (User::jangkauan); kerangka menuliskan
+                   sebabnya di halaman modul audit alih-alih daftar kosong
+                   yang terbaca sebagai galat (perilaku Aurorasys). */
+                'ditempatkan' => $u->isAdmin() || (bool) $u->company_id,
+
+                /* Nama perusahaannya ikut dikirim karena kepala halaman
+                   menyebutkannya. Pengguna yang tidak terikat perusahaan
+                   mana pun — admin lintas perusahaan — memulangkan null,
+                   dan kepala halamannya menuliskan "Semua perusahaan"
+                   alih-alih kotak kosong yang terbaca sebagai galat. */
+                /* Bagi administrator, null berarti "semua perusahaan"
+                   dan harus tetap null — jatuh ke nama perusahaannya
+                   sendiri membuat "seluruhnya" tidak dapat dibedakan
+                   dari "perusahaan saya", dan pilihan yang tidak dapat
+                   dibedakan dari pilihan lain adalah pilihan yang
+                   tidak pernah terlihat berpindah. */
+                'perusahaan' => $u->isAdmin()
+                    ? Perusahaan::namaTerpilih($u)
+                    : $u->company?->name,
+
+                /* Daftar KOSONG bagi pengguna biasa, dan bilah atasnya
+                   menggambar label biasa alih-alih pemilih. Pemilih
+                   yang dapat dibuka tetapi tidak dapat mengubah apa pun
+                   lebih membingungkan daripada tulisan. */
+                'perusahaanPilihan'  => Perusahaan::dapatDipilih($u),
+                'perusahaanDilihat'  => Perusahaan::terpilih($u),
             ] : null,
 
-            'menu' => fn () => $this->menu($u),
+            'menu' => fn () => $this->menu($u, $ambilLencana()),
 
             /* Ditutup dalam closure supaya dibaca saat halaman disusun,
                bukan saat middleware dipasang — pesan kilat baru ada
@@ -46,13 +90,76 @@ class HandleInertiaRequests extends Middleware
             'kilat' => fn () => [
                 'sukses' => $request->session()->get('sukses') ?? $request->session()->get('ok'),
                 'galat'  => $request->session()->get('galat'),
+
+                /* Jawaban asisten AI dibawa terpisah dari 'sukses'.
+                   Jawabannya berparagraf, sementara bilah 'sukses'
+                   dirancang untuk satu kalimat — dan yang paling perlu
+                   dibaca justru akan terpotong di situ. */
+                'aiJawaban' => $request->session()->get('aiJawaban'),
             ],
 
             'status' => fn () => $request->session()->get('status'),
 
+            /* Asisten AI audit SMKP — hanya status dan nama model; kunci API
+               tetap di server. HANYA di halaman modul audit SMKP, yang
+               panel asistennya menyebut modelnya (perilaku Aurorasys);
+               halaman lain EQOHSEE sengaja tidak pernah menerima nama
+               penyedia maupun model (lihat RangkumPeraturanTest). */
+            'asisten' => fn () => $u && $request->routeIs('smkp.*') ? [
+                'aktif' => \App\Services\Asisten\LayananAsisten::aktif(),
+                'model' => \App\Services\Asisten\KonfigurasiAsisten::model(),
+            ] : null,
+
+            /* Halaman audit SMKP (porting Aurorasys) menggambar kepalanya
+               sendiri — KepalaHalaman / KepalaAudit: jejak, judul, tombol
+               aksi, dan tab audit — sehingga kop kerangka ditolak dengan
+               `kop: false` (lihat AppLayout). Tanpa ini judul halamannya
+               tercetak dua kali. Halaman yang mengirim `kop` sendiri tetap
+               menang: prop halaman menimpa prop bersama. Selalu dikirim
+               (null di luar SMKP): prop bersama yang hanya ada pada
+               sebagian permintaan tertinggal di ResponseFactory untuk
+               permintaan berikutnya dalam proses yang sama. */
+            'kop' => fn () => $request->routeIs('smkp.*') ? false : null,
+
+            /* Temuan audit SMKP lewat target yang belum ditutup, dalam
+               jangkauan pengguna — lonceng bilah atas modul audit dan
+               lencana butir "Tindak Lanjut Temuan" (Lencana::semua). */
+            'peringatan' => fn () => (int) ($ambilLencana()[Lencana::TEMUAN_SMKP] ?? 0),
+
+            /* Sambutan otomatis dibawa UTUH di sini, bukan diambil
+             * kemudian lewat jaringan.
+             *
+             * Semula hanya penandanya yang dikirim, dan isinya diambil
+             * dengan fetch('/tur') saat pop-out terbuka. Rancangan itu
+             * salah, dan salahnya terbukti di produksi: begitu permintaan
+             * itu gagal — sebab apa pun — yang dilihat pengguna barunya
+             * adalah kotak "Pengenalan gagal dimuat" yang muncul LAGI
+             * pada setiap kali halaman disegarkan. Sambutan berubah
+             * menjadi penghalang yang tidak bisa ia singkirkan.
+             *
+             * Dibawa sebagai prop, tidak ada yang tersisa untuk gagal:
+             * isinya sudah ada bersama halaman yang menggambarnya.
+             *
+             * Biayanya nol bagi hampir semua orang. Closure-nya baru
+             * menyusun apa pun ketika Tur::perlu() benar — yaitu hanya
+             * bagi akun yang belum pernah menyelesaikannya, dan hanya
+             * sampai ia menutupnya sekali. Bagi seluruh pengguna lain
+             * yang terkirim cuma `null`. */
+            'tur' => fn () => Tur::perlu($u) ? Tur::langkah($u) : null,
+
+            /* Lonceng tugas persetujuan Miners — TugasSaya Safe Track.
+               Hanya modul yang memang ada isinya; kosong berarti tidak
+               ada yang menunggu orang ini. */
+            'tugasMiners' => fn () => \App\Support\Miners\TugasMiners::daftar($u),
+
             'pengumuman' => fn () => Schema::hasTable('news')
                 ? \App\Models\News::where('created_at', '>=', now()->subDays(30))->count()
                 : 0,
+
+            /* Sampul halaman awal modul: foto, geo tag, dan kondisi
+               cuaca. Ditutup dalam closure supaya kueri cuacanya tidak
+               berjalan pada kunjungan sebagian yang tidak memintanya. */
+            'sampul' => fn () => $this->sampul($u),
 
             'tema'  => Tema::pilihan($u),
             'warna' => [
@@ -80,13 +187,77 @@ class HandleInertiaRequests extends Middleware
      * hanya memindahkan masalah yang sama ke tempat yang lebih sulit
      * diperiksa.
      */
-    private function menu($u): array
+    /**
+     * Sampul modul — fotonya di SELURUH halaman modul, bilah keadaan
+     * situs hanya di halaman awalnya.
+     *
+     * Dua hal yang dulu satu, dan memisahkannya yang membuat keduanya
+     * benar:
+     *
+     * FOTONYA identitas modul. Sebelumnya subhalaman kembali ke satu
+     * foto merek yang sama untuk seluruh aplikasi, sehingga dua puluh
+     * modul yang berbeda terlihat sama persis begitu orangnya menekan
+     * butir menu kedua — dan satu-satunya pembeda tinggal judul kecil
+     * di pojok. Sekarang tiap halaman membawa foto modulnya sendiri.
+     *
+     * BILAH KEADAAN — lokasi, jam, curah hujan, cuaca — tetap hanya di
+     * halaman awal. Ia menjawab "saya ada di modul apa, di situs mana,
+     * dan hari ini bagaimana", dan pertanyaan itu ditanyakan sekali saat
+     * masuk modulnya, bukan pada tiap formulir yang dibuka sesudahnya.
+     *
+     * Itu pula yang menjaga keberatan aslinya tetap dihormati: yang dulu
+     * mengganggu bukan fotonya melainkan TINGGINYA. Kop bersitus 212px;
+     * tanpa `kondisi` KopHalaman menggambar kop pendek 150px — lihat
+     * kelas `kop-bersitus` di sana — jadi subhalaman tidak bertambah
+     * tinggi satu piksel pun dibanding sebelumnya.
+     */
+    private function sampul($u): ?array
+    {
+        $kunci = Menu::modulAktif();
+        $modul = Menu::modul($kunci);
+
+        $gambar = SampulModul::untuk($kunci);
+
+        if ($gambar === null) return null;
+
+        $ruteAwal = Menu::ruteAwal($modul);
+        $diAwal   = $ruteAwal !== null && request()->route()?->getName() === $ruteAwal;
+
+        return $gambar + [
+            'label'   => $modul['label'] ?? null,
+
+            /* Null di subhalaman, dan itu yang menentukan tinggi kopnya.
+               Dihitung pula HANYA di halaman awal: KondisiSitus menyentuh
+               basis data dan layanan cuaca, dan membayarnya pada tiap
+               permintaan demi bilah yang tidak digambar adalah biaya yang
+               tidak dibelanjakan untuk apa pun. */
+            'kondisi' => $diAwal ? KondisiSitus::untuk($u) : null,
+        ];
+    }
+
+    /**
+     * Panjang pola terpanjang yang cocok dengan alamat sekarang (0 bila
+     * tidak ada). Pola boleh satu teks atau daftar teks.
+     *
+     * @param string|list<string> $pola
+     */
+    private static function panjangCocok(string|array $pola): int
+    {
+        $panjang = 0;
+        foreach ((array) $pola as $p) {
+            if (request()->is($p)) $panjang = max($panjang, strlen($p));
+        }
+
+        return $panjang;
+    }
+
+    private function menu($u, ?array $lencana = null): array
     {
         $kunci = Menu::modulAktif();
         $aktif = Menu::modul($kunci);
 
         // Sekali per permintaan, bukan sekali per butir — lihat App\Support\Lencana.
-        $lencana = Lencana::semua($u);
+        $lencana ??= Lencana::semua($u);
 
         $modul = [];
         foreach (Menu::untuk($u) as $k => $m) {
@@ -108,21 +279,96 @@ class HandleInertiaRequests extends Middleware
         }
 
         $grup = [];
+        $cocokTerpanjang = 0;
         foreach ($aktif['groups'] as $nama => $butir) {
             $isi = [];
-            foreach ($butir as [$label, $rute, $cocok]) {
+            foreach ($butir as $b) {
+                [$label, $rute, $cocok] = $b;
+
+                // Butir khusus administrator (unsur keempat `true`), khusus
+                // pengelola Miners ('kelolaMiners' = admin atau HSE perusahaan
+                // IUP, "admin" Safe Track), atau khusus pemegang gerbang
+                // tertentu (unsur keempat berupa nama gerbang, mis. 'audit'),
+                // tidak ditampilkan kepada yang pasti ditolak halamannya.
+                $syarat = $b[3] ?? false;
+                if ($syarat === true && !$u?->isAdmin()) continue;
+                if ($syarat === 'kelolaMiners') {
+                    if (!\App\Support\Miners\AksesMiners::kelola($u)) continue;
+                } elseif ($syarat === 'medisMiners') {
+                    if (!\App\Support\Miners\AksesMiners::medis($u)) continue;
+                } elseif (is_string($syarat) && !($u && Gate::forUser($u)->allows($syarat))) {
+                    continue;
+                }
+
                 $isi[] = [
                     'label'   => $label,
                     'url'     => route($rute),
-                    'aktif'   => request()->is($cocok),
+                    'aktif'   => $panjang = self::panjangCocok($cocok),
                     'ikon'    => IkonNav::JALUR[IkonNav::nama($label)],
                     'inertia' => RuteInertia::ada($rute),
                     'lencana' => $lencana[$rute] ?? null,
                 ];
+                $cocokTerpanjang = max($cocokTerpanjang, $panjang);
             }
             $grup[] = ['nama' => (string) $nama, 'butir' => $isi];
         }
 
-        return ['modul' => $modul, 'label' => $aktif['label'], 'grup' => $grup];
+        /* POLA PALING KHUSUS YANG MENANG. Satu butir boleh berpola lebar
+           (Daftar Audit: `smkp/*`, menyala di seluruh halaman satu audit)
+           selama butir lain yang polanya lebih panjang (`smkp/buat`)
+           tetap menang di alamatnya sendiri — dua butir menyala bersama
+           terbaca sebagai dua halaman yang sedang dibuka. Butir yang
+           polanya sama panjang tetap menyala bersama, seperti sebelumnya. */
+        foreach ($grup as &$g) {
+            foreach ($g['butir'] as &$b) {
+                $b['aktif'] = $b['aktif'] > 0 && $b['aktif'] === $cocokTerpanjang;
+            }
+        }
+        unset($g, $b);
+
+        return [
+            'modul' => $modul,
+            'kunci' => $kunci,
+            'label' => $aktif['label'],
+            'grup'  => $grup,
+
+            /* Tema modul, bila ia menyatakan satu. Dikirim sebagai NAMA,
+               bukan sebagai daftar warna: yang menentukan rupa sebuah
+               tema adalah lembar gayanya, dan mengirim warnanya lewat
+               prop berarti dua tempat yang harus sama selamanya. */
+            'tema'  => $aktif['tema'] ?? null,
+
+            /* Semboyan modul, untuk kop halaman. Ditulis sekali di
+               tempat modulnya didefinisikan, bukan diulang di tiap
+               halaman — diulang, ia akan berselisih antar halaman pada
+               modul yang sama, dan selisih itu terbaca sebagai halaman
+               yang dikerjakan orang berbeda. */
+            'semboyan' => $aktif['semboyan'] ?? null,
+
+            /* Kutipan penutup halaman, juga sekali per modul. */
+            'kutipan' => $aktif['kutipan'] ?? null,
+
+            /* Alamat akar modul, untuk remah roti di kop. */
+            'akar' => ($r = Menu::ruteAwal($aktif)) ? route($r) : null,
+
+            /* Sedang di halaman awal modul: butir pertama menyala menurut
+               pola PERTAMANYA. Butir berpola ganda (Daftar Audit SMKP:
+               `smkp` lalu `smkp/*`) menyala di seluruh halaman audit,
+               tetapi hanya pola pertamanya yang beranda — bilah pindah
+               cepat tidak ikut tergambar di tiap halaman audit. */
+            'beranda' => $this->diBeranda($aktif, $grup),
+        ];
+    }
+
+    /** @param list<array{nama:string,butir:list<array<string,mixed>>}> $grup */
+    private function diBeranda(array $aktif, array $grup): bool
+    {
+        $pertama = $grup[0]['butir'][0] ?? null;
+        $pola = null;
+        foreach ($aktif['groups'] as $butir) {
+            foreach ($butir as $b) { $pola = ((array) $b[2])[0]; break 2; }
+        }
+
+        return $pertama && $pertama['aktif'] && $pola !== null && request()->is($pola);
     }
 }

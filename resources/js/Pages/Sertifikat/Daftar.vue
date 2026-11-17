@@ -20,7 +20,7 @@ function terbitkan(url: string) {
 <template>
   <Head :title="judul" />
 
-  <div class="max-w-4xl mx-auto">
+  <div class="">
 
     <section v-if="menungguEvaluasi.length"
              class="bg-white rounded-2xl shadow-card border border-amber-200 p-5 mb-5">

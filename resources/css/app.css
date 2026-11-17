@@ -1,3 +1,12 @@
+/* Huruf disajikan sendiri — lihat fonts.css. */
+@import './fonts.css';
+/* Archivo dan IBM Plex Mono — muka huruf merek yang dipakai halaman depan.
+   Dimuat di sini juga supaya judul di dalam aplikasi (kop halaman, halaman
+   masuk, halaman pilar) berbentuk sama dengan judul di halaman depan: satu
+   identitas dari pintu depan sampai ke dalam. Berkasnya subset latin dan
+   dimuat malas per unicode-range, jadi ongkosnya kecil. */
+@import './huruf-archivo.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,19 +22,133 @@ body{
 /* ---------- Pengaman responsif global ----------
    Halaman tidak boleh pernah menggeser ke samping. Konten yang memang lebar
    (tabel, diagram) discroll di dalam pembungkusnya sendiri, bukan menyeret
-   seluruh halaman. */
-html,body{ max-width:100%; overflow-x:hidden; }
+   seluruh halaman.
+
+   `clip`, BUKAN `hidden`. Keduanya sama-sama memotong yang meluber ke
+   samping, tetapi `hidden` menjadikan halaman ini WADAH GULIR tersendiri
+   — dan `position:sticky` di dalam wadah gulir yang tidak pernah
+   benar-benar bergulir tidak punya apa pun untuk dilekati.
+
+   Akibatnya terukur pada bilah samping: ia mengaku "dipaku setinggi
+   layar" tetapi ikut hanyut ke atas bersama halaman (top 0 → −600 →
+   −1611), sehingga di bagian atas halaman ia terlihat dan di bagian
+   bawah ia hilang sama sekali, meninggalkan kolom kosong di sebelah
+   kiri. Hal yang sama sudah tercatat sekali pada panel harga di
+   halaman jual — lihat .jual-paket-harga — dan di sana jalan keluarnya
+   adalah menyerah memakai sticky.
+
+   `clip` tidak membuat wadah gulir, jadi sticky kembali melekat pada
+   viewport sementara pengaman geser-ke-samping tetap terpasang. */
+html,body{ max-width:100%; overflow-x:clip; }
 
 /* Kontrol formulir punya lebar bawaan dari isi terpanjangnya sehingga menolak
    menyusut di dalam flexbox — inilah penyebab bilah filter meluber di layar
    sempit. min-width:0 mengembalikan kendali lebar ke tata letak. */
 input,select,textarea,button{ min-width:0; max-width:100%; }
 
+/* Anak grid boleh menyusut di bawah lebar isinya.
+
+   Grid tanpa kolom dasar (`grid gap-4 sm:grid-cols-2`) memakai satu
+   kolom tersirat di layar HP, dan kolom tersirat selebar isi
+   min-content-nya. Satu teks `truncate` atau baris `whitespace-nowrap`
+   di dalamnya cukup untuk melebarkan seluruh kartu melewati layar —
+   lalu terpotong diam-diam oleh `overflow-x:clip` di atas, karena
+   halamannya tidak pernah menggeser. Terukur di layar 390 px: kartu
+   Dasbor 434 px, ringkasan Kuesioner 568 px, panel Gudang 439 px,
+   dokumen PJP 510 px.
+
+   `:where()` membuat aturannya berbobot nol: kelas `min-w-*` yang
+   sengaja dipasang pada satu anak tetap menang. */
+:where(.grid) > *{ min-width:0; }
+
 /* Media tidak pernah melampaui kolomnya. */
 img,svg,video,canvas{ max-width:100%; height:auto; }
 
-/* Kata/URL panjang tanpa spasi tidak melebarkan kartu. */
-p,li,td,th,dd,dt,h1,h2,h3,h4{ overflow-wrap:anywhere; }
+/* Kata/URL panjang tanpa spasi tidak melebarkan kartu.
+
+   `break-word`, BUKAN `anywhere`. Keduanya sama-sama memecah kata yang
+   memang tidak muat sendirian, tetapi `anywhere` juga ikut mengubah
+   perhitungan lebar-minimum elemen menjadi selebar SATU HURUF. Pada
+   tabel akibatnya kolomnya mengkerut sampai sesempit mungkin lalu
+   isinya patah di tengah kata — "Edi t", "Renda h", "TANGGA L",
+   "Close d" — pada tabel yang sebenarnya masih punya ruang.
+
+   `break-word` menahan diri: kata dipecah hanya bila baris itu memang
+   tidak dapat memuatnya, dan lebar-minimum kolom tetap dihitung dari
+   kata terpanjangnya. */
+p,li,td,th,dd,dt,h1,h2,h3,h4{ overflow-wrap:break-word; }
+
+/* Sel tabel tidak boleh memecah kata sama sekali pada kolom sempit
+   yang isinya memang pendek — label aksi, lencana status, tanggal.
+   Yang panjang tetap dapat digulir lewat .tabel-scroll di atasnya. */
+th{ white-space:nowrap; }
+
+/* ---------- Tabel pas layar ----------
+   Tidak ada tabel yang boleh memaksa geser ke samping. Lapis pertama di
+   sini: di bawah 1280 px judul kolom boleh turun baris, sel yang ditandai
+   nowrap boleh membungkus, jarak sel dirapatkan, dan lebar minimum
+   paksa dibuang. Tabel yang TETAP tidak muat diubah menjadi kartu
+   bertumpuk oleh resources/js/tabelPas.ts. Lembar cetak tidak disentuh:
+   bentuknya harus sama dengan kertasnya. */
+/* Lembar cetak SMKP (.smkp-cetak) dikecualikan sama seperti .lembar: pembagi
+   lembarnya (smkp/lib/susunLembar.ts) mengukur tinggi baris di layar. */
+@media screen and (max-width: 1279.98px){
+  #app table:not(:is(.lembar, .smkp-cetak) table){ min-width:0 !important; }
+  #app :is(th, td):not(:is(.lembar, .smkp-cetak) *){ white-space:normal !important; min-width:0 !important; }
+  /* ...kecuali angka: lihat td.num di bawah. */
+  #app td.num:not(:is(.lembar, .smkp-cetak) *), #app td .num:not(:is(.lembar, .smkp-cetak) *), #app td.sel-angka:not(:is(.lembar, .smkp-cetak) *){ white-space:nowrap !important; }
+  #app :is(th, td):not(:is(.lembar, .smkp-cetak) *):not(.tabel-tumpuk *):not(:first-child):not(:last-child){
+    padding-left:.45rem !important; padding-right:.45rem !important;
+  }
+  #app :is(th, td):not(:is(.lembar, .smkp-cetak) *):not(.tabel-tumpuk *):first-child{ padding-right:.45rem !important; }
+  #app :is(th, td):not(:is(.lembar, .smkp-cetak) *):not(.tabel-tumpuk *):last-child{ padding-left:.45rem !important; }
+}
+
+/* Kartu bertumpuk: satu baris satu kartu. Isinya kisi ringkas — label
+   kecil di atas nilainya, beberapa kolom per kartu — supaya tabel dua
+   belas kolom tidak berubah menjadi kartu setinggi layar. Sel berisi
+   teks panjang atau tombol (.sel-lebar, dipasang tabelPas.ts) mengambil
+   selebar kartu. Kolom kisi paling sempit 8.5rem, atau 40% kartu bila
+   kartunya sendiri sempit (di dalam lembar cetak di ponsel) — tanpa
+   itu kartu selebar 230 px hanya memuat satu kolom dan tiap angka
+   mengambil satu baris penuh. */
+@media screen{
+  table.tabel-tumpuk, table.tabel-tumpuk > tbody, table.tabel-tumpuk > tfoot{ display:block; width:100% !important; min-width:0 !important; }
+  table.tabel-tumpuk > thead{ display:none; }
+  table.tabel-tumpuk > :is(tbody, tfoot) > tr{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(min(8.5rem, 40%), 1fr)); column-gap:1rem; row-gap:.15rem;
+    margin:.6rem 0; padding:.55rem .85rem; border:1px solid #E7E5E4; border-radius:.8rem;
+  }
+  table.tabel-tumpuk > tbody > tr:first-child{ margin-top:.2rem; }
+  table.tabel-tumpuk > :is(tbody, tfoot) > tr > :is(td, th){
+    display:block; width:auto !important; min-width:0 !important; text-align:left !important;
+    padding:.3rem 0 !important; border:0 !important; white-space:normal !important; overflow-wrap:anywhere;
+    background:transparent !important;
+  }
+  table.tabel-tumpuk > :is(tbody, tfoot) > tr > :is(td, th).sel-lebar,
+  table.tabel-tumpuk > :is(tbody, tfoot) > tr > :is(td, th)[data-label=""]{ grid-column:1 / -1; }
+  table.tabel-tumpuk > :is(tbody, tfoot) > tr > :is(td, th)[data-label]:not([data-label=""])::before{
+    content:attr(data-label); display:block; margin-bottom:.1rem;
+    font-size:9.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#8A8580;
+  }
+  table.tabel-tumpuk > :is(tbody, tfoot) > tr > :is(td, th):empty{ display:none; }
+  table.tabel-tumpuk > :is(tbody, tfoot) > tr > :is(td, th) *{ max-width:100%; }
+  :root[data-tema="gelap"] table.tabel-tumpuk > :is(tbody, tfoot) > tr{ border-color:#223238; }
+  :root[data-tema="gelap"] table.tabel-tumpuk > :is(tbody, tfoot) > tr > :is(td, th)::before{ color:#96A8AF; }
+}
+
+/* KECUALI PADA LEMBAR CETAK, yang tidak dapat digulir mendatar.
+ *
+ * Aturan di atas bersandar pada .tabel-scroll: judul kolom yang panjang
+ * boleh melampaui lebar kartunya karena pembacanya dapat menggeser.
+ * Lembar cetak tidak punya jalan keluar itu — judul yang tidak boleh
+ * membungkus meluber MENIMPA judul kolom sebelahnya, dan yang tercetak
+ * di atas kertas berbunyi "Nomor KetidakseKriteria".
+ *
+ * Terukur pada Formulir Rencana Tindak Lanjut: th selebar 101px memuat
+ * judul selebar 128px, dan selisih 27px itu jatuh ke kolom tetangganya.
+ */
+.lembar th{ white-space:normal; }
 
 /* Pembungkus baku untuk tabel lebar: geser di dalam kartunya sendiri,
    lengkap dengan momentum di iOS. */
@@ -109,7 +232,7 @@ p,li,td,th,dd,dt,h1,h2,h3,h4{ overflow-wrap:anywhere; }
 }
 
 /* ---------- Navigasi ---------- */
-.nav-active{ background:linear-gradient(135deg,rgba(21,141,153,.20),rgba(44,176,188,.10)); color:#fff; }
+.nav-active{ background:linear-gradient(135deg,rgba(245,124,0,.22),rgba(255,152,0,.08)); color:#fff; }
 .nav-active .nav-accent{ opacity:1; }
 
 /* ---------- Kartu ---------- */
@@ -117,7 +240,7 @@ p,li,td,th,dd,dt,h1,h2,h3,h4{ overflow-wrap:anywhere; }
 .card-hover:hover{ transform:translateY(-4px); }
 
 /* ---------- Fokus input ---------- */
-.ring-focus:focus{ box-shadow:0 0 0 3px rgba(21,141,153,.30); border-color:#158D99; }
+.ring-focus:focus{ box-shadow:0 0 0 3px rgba(245,124,0,.22); border-color:#F57C00; }
 
 /* ---------- Animasi ---------- */
 @keyframes fadeUp{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
@@ -128,6 +251,50 @@ p,li,td,th,dd,dt,h1,h2,h3,h4{ overflow-wrap:anywhere; }
 .animate-fadeIn{ animation:fadeIn .4s ease both; }
 .animate-pop{ animation:pop .35s cubic-bezier(.21,.6,.35,1) both; }
 .floaty{ animation:floaty 5s ease-in-out infinite; }
+
+/* ---------- Huruf merek (Archivo) ----------
+   Satu kelas untuk judul yang harus terbaca sebagai EQOHSEE: dipakai
+   halaman masuk/daftar, kop halaman, dan halaman pilar. Dipersempit lewat
+   sumbu lebar Archivo, sama seperti .ld-h1/.ld-h2 di halaman depan. */
+.huruf-merek{
+  font-family:'Archivo',system-ui,sans-serif;
+  font-weight:700;
+  font-stretch:86%;
+  letter-spacing:-.025em;
+  line-height:1.05;
+  text-wrap:balance;
+}
+.auth-judul{
+  font-family:'Archivo',system-ui,sans-serif;
+  font-weight:700;
+  font-stretch:88%;
+  font-size:30px;
+  letter-spacing:-.022em;
+  line-height:1.1;
+  color:#0B1117;
+}
+.auth-ket{ font-size:13.5px; line-height:1.55; color:#5E6875; margin-top:6px; }
+.auth-label{
+  display:block; margin-bottom:.4rem;
+  font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#5E6875;
+}
+.auth-isian{
+  width:100%; min-height:48px; border:1px solid #D9DEE4; border-radius:.75rem; background:#fff;
+  padding:.7rem 1rem; font-size:15px; color:#0F1720;
+  transition:border-color .15s, box-shadow .15s;
+}
+.auth-isian:focus{ outline:none; border-color:#F57C00; box-shadow:0 0 0 3px rgba(245,124,0,.18); }
+.auth-tombol{
+  width:100%; min-height:50px; display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+  border-radius:.75rem; background:#F57C00; color:#0B1117; font-size:15px; font-weight:700;
+  transition:background-color .15s, transform .15s, box-shadow .15s;
+  box-shadow:0 10px 24px -14px rgba(245,124,0,.7);
+}
+.auth-tombol:hover{ background:#FF9800; }
+.auth-tombol:active{ transform:translateY(1px); }
+.auth-tombol:disabled{ opacity:.6; cursor:wait; }
+.auth-tautan{ font-weight:700; color:#A85400; text-decoration:underline; text-underline-offset:3px; text-decoration-color:rgba(168,84,0,.35); }
+.auth-tautan:hover{ color:#0B1117; text-decoration-color:currentColor; }
 
 /* ---------- Sistem angka (rata & proporsional) ---------- */
 .num{ font-variant-numeric:tabular-nums lining-nums; font-feature-settings:'tnum' 1,'lnum' 1; }
@@ -146,6 +313,31 @@ p,li,td,th,dd,dt,h1,h2,h3,h4{ overflow-wrap:anywhere; }
 .stat-unit{ font-weight:700; font-size:.55em; letter-spacing:0; opacity:.65; margin-left:1px; }
 
 table .num, td.num, th.num{ text-align:right; font-variant-numeric:tabular-nums; }
+
+/* Judul kolom yang isinya rata kanan ikut rata kanan — dipasang oleh
+   resources/js/tabelPas.ts setelah mengukur isi kolomnya. */
+th.th-rata-kanan{ text-align:right !important; }
+
+/* Dipasang sesaat oleh tabelPas.ts saat MENGUKUR apakah sebuah tabel
+   muat. Tabel ber-table-layout:fixed tidak pernah melebar melampaui
+   wadahnya — ia memotong kata di dalam kolomnya — sehingga tanpa ini
+   lembar delapan kolom di ponsel lolos dari pengukuran dan tampil
+   "Nom / or / Ketid / akse". Diukur dengan tata letak otomatis, tabel
+   yang tidak muat tanpa memotong kata terdeteksi dan menjadi kartu. */
+table.tabel-ukur{ table-layout:auto !important; }
+
+/* Angka tidak dipatah di tengah.
+   "Rp 6.500.000" yang turun menjadi "Rp" dan "6.500.000", "9,9 bln"
+   menjadi "9,9" dan "bln", "24 Sep 2026" menjadi tiga baris — terukur di
+   tabel gaji, kontrak, register kepatuhan, dan monitor hazard. Sel angka
+   selebar isinya; tabel yang karenanya tidak muat berubah menjadi kartu
+   bertumpuk lewat tabelPas.ts, bukan memeras angkanya. */
+td.num, td .num, th.num, td.sel-angka{ white-space:nowrap; }
+/* Angka dan tanggal sebaris di dalam kalimat ("jangkar 2026-08-01",
+   "efektif habis 2026-12-31") tidak boleh terbelah pada tanda
+   hubungnya di ponsel: "2026-08-" di ujung baris dan "01" di baris
+   berikutnya terbaca sebagai dua nilai. Isinya selalu pendek. */
+span.num{ white-space:nowrap; }
 
 /* ---------- Utilitas teks ---------- */
 .clamp-1{ display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
@@ -167,6 +359,41 @@ input,select,textarea{ outline:none; }
    ══════════════════════════════════════════════════════════════ */
 
 .lembar{ position:relative; }
+
+/* Kop dokumen di layar ponsel: tiga kolom sebaris (logo, judul, blok
+   nomor dokumen) lebih lebar dari lembarnya, dan nomor seperti
+   "FRM/CDI/OHSE/019" menembus bingkai kanan. Blok nomor dokumen turun
+   menjadi baris kedua selebar kop. Kertas tetap tiga kolom. */
+@media screen and (max-width:639.98px){
+  table.kop-cetak, table.kop-cetak > tbody{ display:block; }
+  table.kop-cetak > tbody > tr{ display:grid; grid-template-columns:5.5rem minmax(0, 1fr); }
+  table.kop-cetak > tbody > tr > td{ width:auto !important; }
+  table.kop-cetak > tbody > tr > td:nth-child(2){ border-left:0; }
+  table.kop-cetak > tbody > tr > td:last-child{ grid-column:1 / -1; border-top:0; }
+  table.kop-cetak td td{ overflow-wrap:anywhere; }
+}
+
+/* Tabel identitas lembar (tiga pasang label–isi per baris, kolom
+   persen) di layar ponsel: label selebar 11% menjadi 30 px dan tiap
+   kata terpotong per dua huruf ("NOM OR", "TAN GGA L"). Di layar sempit
+   setiap pasang label–isi menjadi satu baris sendiri; kertas tetap
+   memakai tata letak enam kolomnya. */
+@media screen and (max-width:639.98px){
+  table.lembar-identitas{
+    display:block; width:100%; border:1px solid #D6D3D1; border-bottom:0;
+  }
+  table.lembar-identitas > tbody{ display:block; }
+  table.lembar-identitas > tbody > tr{
+    display:grid; grid-template-columns:minmax(6.5rem, 34%) minmax(0, 1fr);
+  }
+  table.lembar-identitas > tbody > tr > :is(th, td){
+    width:auto !important; border:0 !important; border-bottom:1px solid #D6D3D1 !important;
+    overflow-wrap:anywhere;
+  }
+  table.lembar-identitas > tbody > tr > th{
+    border-right:1px solid #D6D3D1 !important; overflow-wrap:normal; hyphens:auto;
+  }
+}
 
 /* Tabel di dalam lembar tidak boleh terbelah antar halaman cetak. */
 .lembar table{ break-inside:auto; }
@@ -419,7 +646,7 @@ input,select,textarea{ outline:none; }
      color:transparent, sehingga currentColor ikut menjadi transparan dan
      seluruh teks lenyap. */
   --sheen-base: #FFFFFF;
-  --sheen-hi:   #9FEFF4;
+  --sheen-hi:   #FFD3A1;
   background-image: linear-gradient(100deg,
     var(--sheen-base) 0%,  var(--sheen-base) 38%,
     var(--sheen-hi)   50%,
@@ -436,17 +663,6 @@ input,select,textarea{ outline:none; }
   100%   { background-position: -30% 0; }
 }
 
-/* ── Muncul saat masuk layar ── */
-.reveal{
-  opacity:0; transform: translateY(22px);
-  transition: opacity .8s cubic-bezier(.16,.84,.44,1),
-              transform .8s cubic-bezier(.16,.84,.44,1);
-}
-.reveal.tampil{ opacity:1; transform:none; }
-.reveal-d1{ transition-delay:.09s } .reveal-d2{ transition-delay:.18s }
-.reveal-d3{ transition-delay:.27s } .reveal-d4{ transition-delay:.36s }
-.reveal-d5{ transition-delay:.45s } .reveal-d6{ transition-delay:.54s }
-
 /* ── Gerak halus berkelanjutan ── */
 @keyframes apung{ 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-11px) } }
 @keyframes apung-lambat{ 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-6px) } }
@@ -460,7 +676,7 @@ input,select,textarea{ outline:none; }
 /* ── Garis pemisah bergradien ── */
 .rule-grad{
   height:1px; border:0;
-  background:linear-gradient(90deg,transparent,rgba(44,176,188,.55),transparent);
+  background:linear-gradient(90deg,transparent,rgba(245,124,0,.55),transparent);
 }
 
 /* ── Kartu kaca gelap ── */
@@ -623,13 +839,7 @@ input,select,textarea{ outline:none; }
   /* Tanpa animasi, garis bergaris-putus harus tetap tergambar penuh. */
   .alir-daya{ stroke-dasharray:none !important; }
   .detak{ stroke-dashoffset:0 !important; }
-  .reveal{ opacity:1 !important; transform:none !important; transition:none !important; }
-  .tilt{ transform:none !important; transition:none !important; }
 }
-
-/* Sembunyikan elemen Alpine sampai kerangkanya siap, supaya panel rincian
-   tidak berkedip muncul lalu hilang saat halaman pertama dimuat. */
-[x-cloak]{ display:none !important; }
 
 /* ---------- Galeri yang digeser mendatar ----------
    Bilah gulir dibuat tipis dan sewarna bidangnya, bukan disembunyikan
@@ -640,3 +850,238 @@ input,select,textarea{ outline:none; }
 .scrollbar-halus::-webkit-scrollbar-track{ background:transparent; }
 .scrollbar-halus::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.22); border-radius:99px; }
 .scrollbar-halus::-webkit-scrollbar-thumb:hover{ background:rgba(255,255,255,.35); }
+
+/* ══════════════════════════════════════════════════════════════
+   KERANGKA POP-OUT
+
+   Latar, tombol silang, pil label, dan geraknya — dipakai bersama
+   oleh setiap pop-out aplikasi ini (pengumuman, pilihan register,
+   dan seterusnya).
+
+   Tinggal di sini, bukan di dalam blok `scoped` salah satu
+   komponennya. Style `scoped` hanya berlaku pada komponen tempat ia
+   ditulis, jadi pop-out kedua yang memakai kelas yang sama akan
+   tergambar TANPA satu pun aturannya — kotak putih tanpa latar gelap,
+   yang tampak seperti halaman rusak alih-alih seperti style yang
+   tidak terpasang. Menyalinnya ke tiap komponen menyelesaikan itu,
+   tetapi menyisakan tiga salinan yang harus berubah bersama-sama
+   setiap kali temanya bergeser — dan yang ketiga selalu ketinggalan.
+   ══════════════════════════════════════════════════════════════ */
+
+.eq-pop-latar{
+  position:fixed; inset:0; z-index:70;
+  display:grid; place-items:center; padding:1rem;
+  background:rgb(12 17 23 / .62);
+  backdrop-filter:blur(3px);
+}
+
+/* Tombol silang selalu berlatar gelap tembus pandang — ia berdiri di
+   atas foto sampul pada satu pop-out dan di atas putih pada yang lain,
+   dan satu-satunya warna yang terbaca pada keduanya adalah ini. */
+.eq-pop-silang{
+  position:absolute; top:.7rem; right:.7rem; z-index:2;
+  display:grid; place-items:center;
+  width:2rem; height:2rem;
+  border-radius:99px; border:0;
+  color:#fff; background:rgb(12 17 23 / .55);
+  backdrop-filter:blur(4px);
+  cursor:pointer;
+  transition:background .15s ease;
+}
+.eq-pop-silang:hover{ background:rgb(12 17 23 / .78); }
+.eq-pop-silang svg{ width:1rem; height:1rem; }
+
+.eq-pop-pil{
+  display:inline-block;
+  padding:.2rem .55rem;
+  border-radius:99px;
+  font-size:9.5px; font-weight:800;
+  letter-spacing:.14em; text-transform:uppercase;
+  color:var(--eq-aksen, #D96500);
+  background:color-mix(in srgb, var(--eq-aksen, #F57C00) 13%, transparent);
+}
+
+/* ── gerak ── */
+.eq-pop-enter-active, .eq-pop-leave-active{ transition:opacity .16s ease; }
+.eq-pop-enter-from, .eq-pop-leave-to{ opacity:0; }
+.eq-pop-enter-active .eq-pop,
+.eq-pop-enter-active .eq-reg{ transition:transform .18s cubic-bezier(.2,.8,.3,1); }
+.eq-pop-enter-from .eq-pop,
+.eq-pop-enter-from .eq-reg{ transform:translateY(.9rem) scale(.985); }
+
+@media (prefers-reduced-motion: reduce){
+  .eq-pop-enter-active, .eq-pop-leave-active,
+  .eq-pop-enter-active .eq-pop, .eq-pop-enter-active .eq-reg{ transition:none; }
+  .eq-pop-enter-from .eq-pop, .eq-pop-enter-from .eq-reg{ transform:none; }
+}
+
+/* Di layar sempit pop-out menempel ke bawah: kotak melayang di tengah
+   layar ponsel menyisakan pita kosong di atas dan di bawah sementara
+   isinya sendiri terhimpit. */
+@media (max-width: 520px){
+  .eq-pop-latar{ padding:0; place-items:end stretch; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   AUDIT SMKP — porting tampilan Aurorasys
+   ──────────────────────────────────────────────────────────────
+   Halaman dan lembar cetak modul Audit SMKP dibawa persis dari
+   Aurorasys. Kelas komponennya (kartu, btn-*, input, label,
+   lencana, tabel, …) BERCAKUPAN: hanya berlaku di dalam
+   `.smkp-ui` (halaman aplikasi; pembungkus tiap halaman
+   Pages/Smkp/*) dan `.smkp-cetak` (lembar cetak Pages/Print/Smkp/*).
+   `.label` dan `.input` dipakai juga oleh halaman tamu EQOHSEE
+   dengan rupa lain, dan tanpa cakupan keduanya saling menimpa.
+
+   `:where()` menjaga bobotnya setara satu kelas — sama seperti di
+   Aurorasys — sehingga utilitas pada elemen yang sama (h-11,
+   px-2, w-full, …) tetap menang, sebab @layer components disusun
+   sebelum utilitas.
+   ══════════════════════════════════════════════════════════════ */
+
+@layer components {
+  .smkp-ui{ color:#334155; font-size:14px; line-height:1.55; }
+  :where(.smkp-ui) :is(h1, h2, h3, h4){ color:#0B2D4D; }
+  :where(.smkp-ui, .smkp-cetak) fieldset{ min-width:0; }
+
+  /* ---------- kartu ---------- */
+  :where(.smkp-ui, .smkp-cetak) :is(.kartu, .kartu-pad){ @apply bg-white rounded-kartu border border-slate-200/80 shadow-kartu; }
+  :where(.smkp-ui, .smkp-cetak) .kartu-pad{ @apply p-4 sm:p-5; }
+  :where(.smkp-ui, .smkp-cetak) .kartu-kepala{ @apply flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 sm:px-5 py-3.5 border-b border-slate-100; }
+  :where(.smkp-ui, .smkp-cetak) .kartu-judul{ @apply text-[15px] font-semibold text-navy-900 leading-snug; }
+  :where(.smkp-ui, .smkp-cetak) .kartu-sub{ @apply text-[12.5px] text-slate-500 mt-0.5 leading-snug; }
+
+  /* ---------- tombol: tinggi 38 px (kecil 32 px) ---------- */
+  :where(.smkp-ui, .smkp-cetak) :is(.btn, .btn-utama, .btn-aksen, .btn-hijau, .btn-garis, .btn-hantu, .btn-bahaya, .btn-garis-bahaya){
+    @apply inline-flex items-center justify-center gap-2 h-[38px] rounded-lg px-4 text-[13px] font-semibold leading-none
+           transition-colors duration-150 select-none whitespace-nowrap
+           focus:outline-none focus-visible:ring-[3px] focus-visible:ring-brand-500/30
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  :where(.smkp-ui, .smkp-cetak) .btn-utama{ @apply text-white bg-navy-900 hover:bg-navy-800 active:bg-navy-950 shadow-cahaya; }
+  :where(.smkp-ui, .smkp-cetak) :is(.btn-aksen, .btn-hijau){ @apply text-white bg-teal-700 hover:bg-teal-800 shadow-cahaya; }
+  :where(.smkp-ui, .smkp-cetak) .btn-garis{ @apply text-navy-900 bg-white border border-slate-300/80 hover:bg-slate-50 hover:border-slate-400/70; }
+  :where(.smkp-ui, .smkp-cetak) .btn-hantu{ @apply text-slate-600 hover:text-navy-900 hover:bg-slate-100; }
+  :where(.smkp-ui, .smkp-cetak) .btn-bahaya{ @apply text-white bg-rose-600 hover:bg-rose-700; }
+  :where(.smkp-ui, .smkp-cetak) .btn-garis-bahaya{ @apply text-rose-700 bg-white border border-rose-200 hover:bg-rose-50; }
+  :where(.smkp-ui, .smkp-cetak) .btn-kecil{ @apply h-8 px-3 text-[12.5px] gap-1.5; }
+
+  /* ---------- formulir: tinggi 40 px ---------- */
+  :where(.smkp-ui, .smkp-cetak) .label{ @apply block text-[12.5px] font-semibold text-slate-700 mb-1.5; }
+  :where(.smkp-ui, .smkp-cetak) :is(.input, .input-kecil){
+    @apply block w-full rounded-lg border-slate-300/90 bg-white px-3 py-[9px] text-[13.5px] leading-5 text-slate-800 placeholder:text-slate-400
+           shadow-[0_1px_1px_rgba(11,45,77,.04)] transition-colors
+           hover:border-slate-400/70 focus:border-brand-600 focus:ring-[3px] focus:ring-brand-600/15
+           disabled:bg-slate-50 disabled:text-slate-500;
+  }
+  :where(.smkp-ui, .smkp-cetak) select:is(.input, .input-kecil){ @apply pr-9; }
+  :where(.smkp-ui, .smkp-cetak) .input-kecil{ @apply text-[12.5px] py-1.5 px-2.5; }
+  :where(.smkp-ui, .smkp-cetak) .galat{ @apply text-[12px] font-medium text-rose-600 mt-1.5; }
+  :where(.smkp-ui, .smkp-cetak) .bantu{ @apply text-[12px] text-slate-500 mt-1.5 leading-snug; }
+
+  /* ---------- lencana ---------- */
+  :where(.smkp-ui, .smkp-cetak) .lencana{ @apply inline-flex items-center gap-1 rounded-md px-2 py-[3px] text-[11.5px] font-semibold leading-4 whitespace-nowrap; }
+
+  /* ---------- tabel ---------- */
+  :where(.smkp-ui, .smkp-cetak) .tabel{ @apply w-full text-left text-[13px]; }
+  :where(.smkp-ui, .smkp-cetak) .tabel thead th{ @apply px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500 bg-slate-50 border-b border-slate-200/80 whitespace-nowrap; }
+  :where(.smkp-ui, .smkp-cetak) .tabel tbody td{ @apply px-4 py-2.5 border-b border-slate-100 align-middle; }
+  :where(.smkp-ui, .smkp-cetak) .tabel tbody tr:last-child td{ @apply border-b-0; }
+  :where(.smkp-ui, .smkp-cetak) .tabel tbody tr{ @apply transition-colors; }
+  :where(.smkp-ui, .smkp-cetak) .tabel-hover tbody tr:hover{ @apply bg-slate-50/80; }
+  :where(.smkp-ui, .smkp-cetak) .gulir-x{ @apply overflow-x-auto; -webkit-overflow-scrolling:touch; }
+
+  /* ---------- bilah kemajuan ---------- */
+  :where(.smkp-ui, .smkp-cetak) .bilah{ @apply h-1.5 w-full rounded-full bg-slate-100 overflow-hidden; }
+  :where(.smkp-ui, .smkp-cetak) .bilah > i{ @apply block h-full rounded-full transition-all duration-700; }
+
+  /* ---------- teks kecil berhuruf kapital, tautan ---------- */
+  :where(.smkp-ui, .smkp-cetak) .eyebrow{ @apply text-[11px] font-semibold uppercase tracking-[0.1em] text-teal-700; }
+  /* Cincin fokus papan ketik untuk tautan & tombol buatan halaman (tab
+     langkah audit, tombol nilai 0–4, kartu sub-elemen) yang tidak
+     membawa cincin sendiri. Spesifisitasnya sengaja rendah (0,1,0):
+     tombol .btn-* tetap memakai cincin miliknya. */
+  :where(.smkp-ui :is(a, button, summary, [tabindex]:not([tabindex="-1"]))):focus-visible{
+    outline:2px solid #0284C7; outline-offset:2px;
+  }
+  :root[data-tema="gelap"] :where(.smkp-ui :is(a, button, summary, [tabindex]:not([tabindex="-1"]))):focus-visible{ outline-color:#7CC5F4; }
+  /* Di dalam wadah bergulir/terpotong (bilah tab langkah audit) garis luar
+     di luar kotak ikut terpotong — digambar di sisi dalam. */
+  :where(.smkp-ui :is(.overflow-x-auto, .overflow-auto, .gulir-x, .overflow-hidden) :is(a, button)):focus-visible{ outline-offset:-2px; }
+  :where(.smkp-ui, .smkp-cetak) :is(.btn, .btn-utama, .btn-aksen, .btn-hijau, .btn-garis, .btn-hantu, .btn-bahaya, .btn-garis-bahaya):focus-visible{
+    @apply ring-brand-500/45;
+  }
+  :where(.smkp-ui, .smkp-cetak) .tautan{ @apply font-semibold text-brand-700 hover:text-brand-800 hover:underline underline-offset-2; }
+
+  :where(.smkp-ui, .smkp-cetak) .scrollbar-tipis{ scrollbar-width:thin; scrollbar-color:rgba(148,163,184,.45) transparent; }
+  :where(.smkp-ui, .smkp-cetak) .scrollbar-tipis::-webkit-scrollbar{ width:6px; height:6px; }
+  :where(.smkp-ui, .smkp-cetak) .scrollbar-tipis::-webkit-scrollbar-thumb{ background:rgba(148,163,184,.45); border-radius:9999px; }
+}
+
+/* Judul kolom tabel SMKP boleh membungkus seperti di Aurorasys — EQOHSEE
+   memasang nowrap pada seluruh th untuk tabel layar yang bergulir, dan
+   lembar cetak tidak dapat digulir. `.tabel thead th` (bilah daftar)
+   tetap nowrap: pemilihnya lebih berbobot. */
+.smkp-ui th, .smkp-cetak th{ white-space:normal; }
+
+/* `.bilah` EQOHSEE adalah gerak hiasan halaman depan (skala berdenyut);
+   bilah kemajuan SMKP bernama sama dan harus diam. Di luar @layer supaya
+   menang atas aturan global yang ditulis lebih awal di berkas ini. */
+.smkp-ui .bilah, .smkp-cetak .bilah{ animation:none; transform:none; }
+
+/* ══════════ Lembar cetak SMKP (A4) ══════════
+   Nama kelasnya diberi awalan `smkp-` dan seluruhnya di bawah
+   `.smkp-cetak`: `.lembar` dan `@page { margin: 10mm }` milik dokumen
+   terkendali EQOHSEE lain berperilaku berbeda (tanpa bantalan, margin
+   kertas 10 mm). Lembar SMKP membawa bantalannya sendiri di dalam kertas
+   A4 tanpa margin; @page-nya dipasang komponen CetakLayout. */
+.smkp-cetak{ color-scheme:light; color:#0f172a; font-size:14px; line-height:1.55; }
+.smkp-cetak .smkp-lembar{
+  @apply bg-white mx-auto shadow-angkat;
+  width:210mm; min-height:297mm; padding:14mm 14mm 16mm;
+  color:#0f172a;
+}
+.smkp-cetak .smkp-lembar + .smkp-lembar{ margin-top:18px; }
+.smkp-cetak .smkp-lembar-lanskap{ width:297mm; min-height:210mm; page:lanskap; }
+.smkp-cetak .smkp-kop td, .smkp-cetak .smkp-kop th{ border:1px solid #94a3b8; }
+
+/* Formulir resmi: kotak isian & tabel bergaris tegas seperti lampiran Kepdirjen. */
+.smkp-cetak .form-judul{ @apply text-center font-bold uppercase text-[11.5px] leading-snug text-slate-900 mb-5; }
+.smkp-cetak .tabel-form{ width:100%; border-collapse:collapse; }
+.smkp-cetak .tabel-form th, .smkp-cetak .tabel-form td{ border:1px solid #64748b; padding:4px 6px; vertical-align:top; }
+/* Kata/kode panjang tanpa spasi dipatahkan di dalam selnya, bukan melebarkan kolom
+   — lebar kolom tetap seperti yang diperkirakan pembagi lembar (smkp/lib/halaman.ts). */
+.smkp-cetak .tabel-form td{ overflow-wrap:anywhere; }
+.smkp-cetak .tabel-form th{ background:#f1f5f9; font-weight:700; text-align:center; vertical-align:middle; }
+.smkp-cetak .tabel-form .label-sel{ width:30%; color:#334155; }
+.smkp-cetak .kotak-isi{ border:1px solid #64748b; padding:4px 8px; min-height:26px; white-space:pre-line; }
+/* Wadah ukur berkas yang dibagi per lembar dari tinggi isinya: selalu
+   selebar A4 — juga di layar sempit — dan tidak terlihat. */
+.smkp-cetak .smkp-ukur{ position:absolute; left:-10000px; top:0; visibility:hidden; pointer-events:none; }
+.smkp-cetak .smkp-ukur .smkp-lembar{ width:210mm !important; min-height:297mm; padding:14mm 14mm 16mm !important; }
+.smkp-cetak .smkp-ukur .smkp-lembar.smkp-lembar-lanskap{ width:297mm !important; min-height:210mm; }
+.smkp-cetak .centang{ display:inline-grid; place-items:center; width:13px; height:13px; border:1px solid #475569; font-size:10px; line-height:1; font-weight:700; }
+
+/* Kontrol isian di panel tanda tangan tetap terang pada mode gelap:
+   lembar cetak selalu kertas putih. */
+:root[data-tema="gelap"] .smkp-cetak :is(input, select, textarea){ background:#fff; border-color:#cbd5e1; color:#1e293b; }
+
+@media screen and (max-width: 860px){
+  .smkp-cetak .smkp-lembar{ width:100%; min-height:auto; padding:18px; }
+}
+
+@media print{
+  @page lanskap{ size:A4 landscape; margin:0; }
+  .smkp-cetak .no-print{ display:none !important; }
+  /* Bantalan bawah lembar tidak dicetak. Huruf yang dihitung peramban saat
+     mencetak dapat sedikit berbeda dari tampilan layar (skala tampilan
+     Windows, zoom), sehingga lembar yang penuh bisa lebih panjang beberapa
+     baris dari perkiraan pembagi lembar. Dengan bantalan, kelebihan itu
+     menumpahkan baris terakhir ke halaman tambahan; tanpa bantalan, ruang
+     16 mm itu menampungnya dan satu lembar tetap satu halaman. */
+  .smkp-cetak .smkp-lembar{ box-shadow:none !important; margin:0 !important; width:210mm; min-height:297mm; padding-bottom:0 !important; }
+  .smkp-cetak .smkp-lembar.smkp-lembar-lanskap{ width:297mm; min-height:210mm; }
+  .smkp-cetak .smkp-lembar + .smkp-lembar{ margin-top:0 !important; }
+  .smkp-cetak .smkp-lembar:not(:last-child){ break-after:page; page-break-after:always; }
+  .smkp-cetak .hindari-putus{ break-inside:avoid; page-break-inside:avoid; }
+}

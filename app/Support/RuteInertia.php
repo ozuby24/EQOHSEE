@@ -28,6 +28,8 @@ final class RuteInertia
     public const NAMA = [
         'pilar',
         'dashboard',
+        'lms.dasbor',
+        'temuan.index',
         'password.confirm',
 
         'tpkkp.index',
@@ -55,6 +57,11 @@ final class RuteInertia
         'tpkkp.kuesioner',
         'kuesioner.admin',
 
+        // Sama untuk Pengujian: bilah PTPKKP memakai tpkkp.pengujian,
+        // tautan lain memakai pengujian.admin.
+        'tpkkp.pengujian',
+        'pengujian.admin',
+
         /* Bantuan */
         'bantuan.index',
         'bantuan.masuk',
@@ -67,6 +74,7 @@ final class RuteInertia
         'hazard.create',
         'hazard.analytics',
         'hazard.evaluasi',
+        'hazard.berulang',
         'hazard.pengingat',
 
         /* Inspeksi */
@@ -88,10 +96,24 @@ final class RuteInertia
         'courses.index',
         'courses.create',
         'sop.index',
+        'frop.index',
+        'frop.create',
+        'frop.operator',
+        'frop.kpi',
+        'frop.tracker',
+        'frop.coaching',
+        'frop.impor',
+        'frop.panduan',
 
         /* Admin */
         'admin.system',
         'admin.system.diagnosa',
+        'admin.keamanan',
+        'admin.pemilik',
+        'admin.ai',
+        'admin.pengingat',
+        'keamanan.perangkat',
+        'keamanan.dua-faktor',
         'admin.users.index',
         'admin.users.create',
         'admin.companies.index',
@@ -103,6 +125,14 @@ final class RuteInertia
         'dokumen.piramida',
         'dokumen.daftar-induk',
         'iso.index',
+        'kepatuhan.dasbor',
+        'kepatuhan.index',
+        'kepatuhan.rekap',
+        'kepatuhan.create',
+        'kepatuhan.unggah',
+        'kepatuhan.pustaka',
+        'audit-lingkungan.index',
+        'audit-lingkungan.create',
 
         /* Berkas cetak HSE */
         'hazard.ekspor.cetak',
@@ -138,7 +168,19 @@ final class RuteInertia
         'maintenance.index',
         'maintenance.order',
         'maintenance.armada',
+        'maintenance.p2h',
         'maintenance.cetak',
+
+        /* Mode lapangan — hanya yang tanpa parameter; detail laporan dan
+           isian P2H per unit dicapai dari dalam layar lapangan sendiri. */
+        'lapangan.beranda',
+        'lapangan.modul',
+        'lapangan.tugas',
+        'lapangan.profil',
+        'lapangan.lapor',
+        'lapangan.izin',
+        'lapangan.sertifikat',
+        'lapangan.p2h',
 
         /* Air & Penirisan */
         'air.index',
@@ -199,16 +241,111 @@ final class RuteInertia
         'meh.tools',
         'meh.regulations',
 
-        /* Audit SMKP */
+        /* Audit SMKP (porting Aurorasys) */
         'smkp.index',
         'smkp.create',
         'smkp.acuan',
+        'smkp.tindak-lanjut',
+        'smkp.dasbor',
+        'admin.akses-audit',
+        'smkp.grup',
 
         /* Keselamatan Operasi */
+        'investigasi.dasbor',
+        'investigasi.insiden',
+        'investigasi.insiden.baru',
+        'investigasi.daftar',
+
+        /* Pemantauan perusahaan jasa. Hanya yang tanpa parameter yang
+           disebut: uji di Tests\Feature\RuteInertiaTest memanggil tiap
+           nama di sini tanpa argumen, dan rute ber-{pjp} tidak dapat
+           dibangun begitu. Tautan ke halaman rinci ditulis langsung
+           sebagai <Link href="/pjp/…"> di sisi Vue. */
+        'pjp.index',
+        'pjp.persyaratan',
+        'pjp.pelaporan',
+        'pjp.evaluasi',
+        'pjp.daftar',
+        'pjp.baru',
+        'pjp.bantuan',
+
+        'miners.index',
+        'miners.dasbor',
+        'miners.kedaluwarsa',
+        'miners.riwayat-karyawan',
+        'miners.data-lama',
+        'miners.mcu.index',
+        'miners.induksi.index',
+        'miners.permit.index',
+        'miners.simper.index',
+
+        'hris.index',
+        'hris.roster.index',
+        'hris.roster.pola',
+        'hris.roster.kebutuhan',
+        'hris.absensi.index',
+        'hris.absensi.rekap',
+        'hris.absensi.mesin',
+        'hris.cuti.index',
+        'hris.cuti.saldo',
+        'hris.lembur.index',
+        'hris.lembur.upah',
+        'hris.gaji.index',
+        'hris.gaji.acuan',
+        'hris.kontrak.index',
+        'hris.saya.index',
+        'hris.saya.kehadiran',
+        'hris.saya.cuti',
+        'hris.saya.gaji',
+        'hris.saya.kontrak',
+        'miners.riwayat.mcu',
+        'miners.riwayat.induksi',
+        'miners.riwayat.mine-permit',
+        'miners.riwayat.mine-license',
+        'miners.riwayat.authority',
+
+        /* Daftar menyilang orang. Kesembilannya memakai komponen
+           Miners/Riwayat yang sama, dan seluruhnya Inertia. */
+        'miners.daftar.outstanding-mcu',
+        'miners.daftar.outstanding-permit',
+        'miners.daftar.outstanding-simper',
+        'miners.daftar.outstanding-induksi',
+        'miners.daftar.penambahan-unit',
+        'miners.daftar.upgrade-simper',
+        'miners.daftar.perpanjangan',
+        'miners.daftar.rujukan',
+        'miners.daftar.cetak-kartu',
+        'miners.daftar.perpanjangan-permit',
+        'miners.perpanjangan-permit.index',
+        'miners.alur.index',
+        'miners.master.unit',
+        'miners.master.type-unit',
+        'miners.master.sub-unit',
+        'miners.master.jabatan',
+        'miners.master.departemen',
+        'miners.master.hasil-mcu',
+        'miners.master.pjo',
+        'miners.master.subkontraktor',
+        'miners.master.perusahaan',
+
+        /* Pembelian. Halaman bayar TIDAK didaftarkan di sini: ia
+           berparameter token dan berada di luar grup auth, sedangkan
+           daftar ini dipanggil tanpa parameter oleh RuteInertiaTest. */
+        'pembelian.katalog',
+        'pembelian.produk',
+        'pembelian.daftar',
+
+        /* Etalase publik. Di luar grup auth, jadi uji "lupa didaftarkan"
+           tidak akan menemukannya sendiri — ia hanya memeriksa rute
+           ber-middleware auth. Didaftarkan tangan supaya <Link> dari
+           halaman depan benar-benar berpindah. */
+        'katalog.publik',
         'ko.index',
         'ko.register',
         'ko.create',
         'ko.kelayakan',
+        'ko.unit',
+        'ko.uji',
         'ko.perawatan',
         'ko.pengaman',
         'ko.kajian',

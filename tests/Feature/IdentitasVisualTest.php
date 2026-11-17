@@ -191,18 +191,29 @@ class IdentitasVisualTest extends TestCase
     }
 
     /**
-     * Lambang lama tidak boleh dipakai lagi oleh tampilan mana pun.
+     * Lambang lama tidak boleh dipakai lagi — dan berkasnya sudah dibuang.
      *
      * Ada dua identitas di public/brand: heksagon jingga-perak yang berlaku,
-     * dan lambang gunung navy-emas yang digantikannya. Berkas lamanya sengaja
-     * tidak dihapus — tetapi selama masih ada di sana, ia akan terpakai lagi
-     * oleh siapa pun yang menebak nama berkas dari daftar direktori, dan
-     * hasilnya adalah dua merek berbeda pada dua layar berurutan.
+     * dan lambang gunung navy-emas yang digantikannya. Berkas lamanya
+     * SEMULA dibiarkan di tempatnya dan hanya dijaga agar tidak dipakai —
+     * tetapi selama ia masih ada di sana, ia akan terpakai lagi oleh siapa
+     * pun yang menebak nama berkas dari daftar direktori, dan hasilnya dua
+     * merek berbeda pada dua layar berurutan. Keempatnya kini dihapus.
+     *
+     * Uji ini tetap ada dan tetap perlu: yang dijaga sekarang bukan berkas
+     * yang tertinggal melainkan SALINAN BARU yang diunggah orang dengan
+     * nama lama. Pasangannya, test_berkas_lambang_yang_dirujuk_benar_benar_ada,
+     * menangkap rujukan ke berkas yang sudah tidak ada.
      */
     public function test_lambang_lama_tidak_dipakai_tampilan_mana_pun(): void
     {
         $pensiun = ['eqohsee-mark.svg', 'eqohsee-mark-white.svg',
                     'eqohsee-logo.svg', 'eqohsee-logo-white.svg'];
+
+        foreach ($pensiun as $berkas) {
+            $this->assertFileDoesNotExist(public_path('brand/'.$berkas),
+                "Lambang lama {$berkas} muncul kembali di public/brand.");
+        }
 
         $terpakai = [];
 
