@@ -1,3 +1,28 @@
+# Update 16 — Celah keamanan npm ditutup, Node 24 LTS
+
+```bash
+# Di VPS, dari /var/www/EQOHSEE
+bash deploy/deploy.sh
+```
+Tanpa migrasi. `npm audit` kini 0 (sebelumnya 7: 2 critical, 4 high,
+1 moderate) — Vue 3.5.45, Vite 8.3.8, concurrently 9.2.5, beserta
+shell-quote, source-map-js, dan postcss-selector-parser di dalamnya.
+
+Peringatan `EBADENGINE` (pdfjs-dist, nanoid) muncul karena VPS memakai
+Node 20 bawaan Debian, yang sudah habis masa dukungannya April 2026.
+`deploy.sh` kini memeriksa versinya: bila di bawah 22.13, ia memasang
+Node 24 LTS dari repositori NodeSource SEKALI (sebelum situs diturunkan),
+lalu deploy berikutnya melewatinya. Bila pemasangannya gagal, repositori
+itu dicabut lagi, Node lama dipulihkan, dan deploy tetap berlanjut.
+Jalur lain: `EQOHSEE_NODE_MAYOR=22 bash deploy/deploy.sh`.
+
+Memasangnya sendiri tanpa deploy:
+```bash
+curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
+apt-get remove -y npm; apt-get install -y nodejs
+node -v   # v24.x
+```
+
 # Update 15 — Fitur audit DBEST: susunan kegiatan, simpan otomatis, akses, grup
 
 ```bash
