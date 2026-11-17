@@ -152,9 +152,68 @@ echo "==> Installing PHP dependencies"
 COMPOSER_ALLOW_SUPERUSER=1 composer install \
     --no-dev --optimize-autoloader --no-interaction
 
-if ! command -v npm >/dev/null 2>&1; then
-    echo "==> npm not found, installing nodejs/npm"
+# ── Versi Node ──
+#
+# Node bawaan Debian 13 adalah 20.19 (npm 9.2), dan Node 20 sudah habis
+# masa dukungannya pada April 2026: tidak ada lagi tambalan keamanan
+# untuknya. Paket yang dipakai pun sudah meninggalkannya — pdfjs-dist 6
+# meminta Node ≥ 22.13, nanoid 6 (lewat docx) meminta ^22 || ^24 — dan
+# `npm ci` memenuhi layar dengan EBADENGINE pada setiap deploy.
+#
+# Karena itu Node dipasang dari repositori resmi NodeSource, jalur LTS
+# (bawaan 24; ganti dengan EQOHSEE_NODE_MAYOR=22 bila perlu). Hanya bila
+# versinya kurang dari yang diminta package.json — deploy berikutnya
+# melewatinya. Langkah ini berjalan SEBELUM situs diturunkan, dan PHP
+# tidak memakai Node, jadi pengunjung tidak terganggu. Bila pemasangannya
+# gagal, deploy tetap berlanjut dengan Node yang ada — build tetap jalan
+# di Node 20, hanya peringatannya yang tersisa.
+NODE_MAYOR="${EQOHSEE_NODE_MAYOR:-24}"
+
+node_cukup() {
+    command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1 \
+        && node -e 'const [a,b]=process.versions.node.split(".").map(Number);process.exit(a>22||(a===22&&b>=13)?0:1)' 2>/dev/null
+}
+
+pasang_node() {
+    local kunci
+    kunci="$(mktemp)"
+    apt-get install -y ca-certificates curl gnupg >/dev/null || return 1
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key -o "$kunci" || return 1
+    mkdir -p /etc/apt/keyrings /etc/apt/sources.list.d /etc/apt/preferences.d
+    gpg --dearmor --yes -o /etc/apt/keyrings/nodesource.gpg "$kunci" || return 1
+    rm -f "$kunci"
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_MAYOR}.x nodistro main" \
+        > /etc/apt/sources.list.d/nodesource.list || return 1
+    printf 'Package: nodejs\nPin: origin deb.nodesource.com\nPin-Priority: 600\n' > /etc/apt/preferences.d/nodejs || return 1
+    apt-get update -qq || return 1
+
+    # Paket `npm` Debian bentrok dengan nodejs NodeSource, yang sudah
+    # membawa npm sendiri. Bila apt tidak menyelesaikannya sendiri, npm
+    # Debian dilepas lalu nodejs dipasang ulang.
+    if apt-get install -y nodejs || { apt-get remove -y npm && apt-get install -y nodejs; }; then
+        hash -r
+        return 0
+    fi
+
+    # Gagal: repositorinya dicabut dan Node Debian dipulihkan, supaya
+    # deploy ini — dan berikutnya — tetap punya npm.
+    rm -f /etc/apt/sources.list.d/nodesource.list /etc/apt/preferences.d/nodejs
+    apt-get update -qq
     apt-get install -y nodejs npm
+    hash -r
+    return 1
+}
+
+if ! node_cukup; then
+    echo "==> Node $(node -v 2>/dev/null || echo 'belum terpasang') — memasang Node ${NODE_MAYOR} LTS dari NodeSource"
+    if pasang_node && node_cukup; then
+        echo "    Node $(node -v), npm $(npm -v)"
+    else
+        echo "!!  Node ${NODE_MAYOR} gagal dipasang — dilanjutkan dengan Node yang ada."
+        if ! command -v npm >/dev/null 2>&1; then
+            apt-get install -y nodejs npm
+        fi
+    fi
 fi
 
 echo "==> Memasang dependensi Node"
