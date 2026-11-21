@@ -394,6 +394,11 @@ class EnergiKarbonTest extends TestCase
         $this->assertEqualsWithDelta($snap['ringkas']['total'], $emisi, 1e-9);
         $this->assertEqualsWithDelta($snap['ringkas']['s1'] + $snap['ringkas']['s2_lb'], $emisi, 1e-9);
 
+        /* CH₄ & N₂O pada tabel per gas ikut disetarakan dengan GWP, bukan dibiarkan kosong. */
+        $ch4 = collect($snap['per_gas'])->firstWhere('gas', 'CH₄');
+        $this->assertGreaterThan(0, $ch4['massa_t']);
+        $this->assertEqualsWithDelta($ch4['massa_t'] * \App\Support\Energi\Kalkulator::gwp('ch4', 'AR5', '2026-12-31'), $ch4['co2e_t'], 1e-9);
+
         $this->get(route('energi.bod.index', ['periode' => 'kustom', 'dari' => '2026-08-01', 'sampai' => '2026-08-31']))->assertOk();
     }
 

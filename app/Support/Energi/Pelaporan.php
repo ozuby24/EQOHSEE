@@ -232,6 +232,11 @@ final class Pelaporan
             'terpisah' => (int) $k === 11,
         ])->values()->all();
 
+        /* CH₄ dan N₂O dicatat sebagai massa; setaranya memakai GWP set
+           perusahaan dari registri. Tanpa faktor GWP, tetap kosong. */
+        $gwpM = Kalkulator::gwp('ch4', $atur->gwp_set ?? 'AR5', $tahun.'-12-31');
+        $gwpN = Kalkulator::gwp('n2o', $atur->gwp_set ?? 'AR5', $tahun.'-12-31');
+
         $out = [
             'batas' => $batas ? [
                 'pendekatan' => GrkBatas::PENDEKATAN[$batas->pendekatan] ?? $batas->pendekatan,
@@ -241,8 +246,8 @@ final class Pelaporan
             ] : ['disetujui' => false],
             'per_gas' => [
                 ['gas' => 'CO₂', 'massa_t' => $ring['co2'], 'co2e_t' => $ring['co2']],
-                ['gas' => 'CH₄', 'massa_t' => $ring['ch4'], 'co2e_t' => null],
-                ['gas' => 'N₂O', 'massa_t' => $ring['n2o'], 'co2e_t' => null],
+                ['gas' => 'CH₄', 'massa_t' => $ring['ch4'], 'co2e_t' => $gwpM !== null ? $ring['ch4'] * $gwpM : null],
+                ['gas' => 'N₂O', 'massa_t' => $ring['n2o'], 'co2e_t' => $gwpN !== null ? $ring['n2o'] * $gwpN : null],
                 ['gas' => 'HFC', 'massa_t' => null, 'co2e_t' => $ring['hfc_co2e']],
                 ['gas' => 'PFC', 'massa_t' => null, 'co2e_t' => 0.0],
                 ['gas' => 'SF₆', 'massa_t' => null, 'co2e_t' => $ring['sf6_co2e']],
