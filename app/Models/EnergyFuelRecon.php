@@ -12,16 +12,17 @@ use Illuminate\Database\Eloquent\Model;
 #[ScopedBy(MilikPerusahaan::class)]
 class EnergyFuelRecon extends Model
 {
-    use BerpemilikPerusahaan;
+    use BerpemilikPerusahaan, \App\Models\Concerns\CatatanEnergi;
 
     protected $table = 'energy_fuel_recon';
 
-    protected $fillable = ['company_id','tanggal','disalurkan_liter','stok_awal_liter','stok_akhir_liter','catatan'];
+    protected $fillable = ['company_id','tanggal','disalurkan_liter','stok_awal_liter','stok_akhir_liter','catatan',
+                           'status','sumber_data','diinput_oleh','diverifikasi_oleh','diverifikasi_pada','alasan_tolak'];
 
     protected function casts(): array
     {
         return ['tanggal' => 'date', 'disalurkan_liter' => 'float',
-                'stok_awal_liter' => 'float', 'stok_akhir_liter' => 'float'];
+                'stok_awal_liter' => 'float', 'stok_akhir_liter' => 'float', 'diverifikasi_pada' => 'datetime'];
     }
 
     /** Yang seharusnya terpakai menurut pergerakan stok. */

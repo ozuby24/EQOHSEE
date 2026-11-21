@@ -621,6 +621,15 @@ php artisan miners:pasang
 echo "==> Installing roster patterns"
 php artisan roster:pasang
 
+# Faktor energi & emisi bersama — IPCC 2006, GWP AR5/AR6, campuran
+# biodiesel B30–B50, konversi TOE. Hanya menambah yang belum ada; faktor
+# yang sudah dicocokkan atau ditarik Petugas GRK tidak disentuh.
+#
+# TANPA LANGKAH INI inventarisasi GRK menandai setiap baris "faktor tidak
+# tersedia" dan periode tidak dapat dikunci.
+echo "==> Installing energy & emission factors"
+php artisan energi:pasang
+
 # Katalog jual — paket website dan tiap aplikasi di dalamnya.
 #
 # Dijalankan tiap deploy dengan alasan yang sama: modul baru yang

@@ -1,98 +1,99 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue';
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { propHalaman } from '../../halaman';
-import EnergyInput from '../../Components/EnergyInput.vue';
-import Dasbor from './Dasbor.vue';
-import Dialog from '../../Components/Dialog.vue';
-import { useDialog } from '../../dialog';
-const { dialog, tanya, batal, lanjut } = useDialog();
-
-
 /*
-  Prop halaman diambil lewat propHalaman(), bukan defineProps.
+  Energy Performance Center — halaman operasional.
 
-  Bentuk `defineProps<{ mode: string; [key: string]: any }>()` yang
-  dipakai sebelumnya terbaca seolah menerima apa saja. Yang sebenarnya
-  terjadi: penyusun Vue tidak dapat menurunkan nama prop dari sebuah
-  index signature, sehingga HANYA `mode` yang benar-benar terdaftar
-  sebagai prop. Seluruh sisanya jatuh ke $attrs — dan karena template
-  ini berakar jamak (<Head> beserta pembungkusnya), atribut itu bahkan
-  tidak tersangkut di mana pun.
+  Satu rute controller lama, satu komponen per mode. Sebelumnya mode
+  selain dasbor digambar sebagai "tampilan darurat": kisi kunci mentah
+  (`l_ton`, `kwh_ton`) yang menjelaskan bentuk data, bukan kinerjanya
+  (cacat D4). Tiap mode kini punya susunannya sendiri.
 
-  Akibatnya halaman merender kosong seluruhnya: tidak ada galat, tidak
-  ada peringatan pada build produksi, hanya data yang dikirim server dan
-  tidak pernah sampai ke tampilan. Uji sisi server tetap hijau, sebab
-  yang salah bukan propnya melainkan penerimaannya.
-
-  propHalaman() mengambil prop halaman apa adanya — termasuk yang
-  dibagikan middleware — sehingga tidak ada daftar nama yang harus
-  dirawat sejajar dengan controller-nya, dan tidak ada nama yang dapat
-  hilang diam-diam. Dibacanya hidup: lihat resources/js/halaman.ts.
+  Prop diambil lewat propHalaman(), bukan defineProps — lihat
+  resources/js/halaman.ts untuk alasannya.
 */
-const props = propHalaman();
-const judul: Record<string, string> = {
-  index: 'Energy Performance Center', konsumsi: 'Energy Consumption', fuel: 'Fuel Management', listrik: 'Electricity',
-  equipment: 'Equipment Performance', 'equipment-show': 'Equipment Detail', kpi: 'Energy KPI', baseline: 'Baseline & Target',
-  hemat: 'Saving Opportunities', karbon: 'Carbon & Emission', kalkulator: 'Energy Calculator', laporan: 'Laporan Energi', master: 'Master Data Energi',
-};
-const tabs = [
-  ['input', 'Input Lapangan', '/energi/input'],
-  ['index', 'Dashboard', '/energi'], ['konsumsi', 'Konsumsi', '/energi/konsumsi'], ['fuel', 'Bahan bakar', '/energi/bahan-bakar'],
-  ['listrik', 'Listrik', '/energi/listrik'], ['equipment', 'Peralatan', '/energi/alat'], ['kpi', 'KPI', '/energi/kpi'],
-  ['baseline', 'Baseline', '/energi/baseline'], ['hemat', 'Penghematan', '/energi/penghematan'], ['karbon', 'Karbon', '/energi/karbon'],
-  ['kalkulator', 'Kalkulator', '/energi/kalkulator'], ['laporan', 'Laporan', '/energi/laporan'], ['master', 'Master', '/energi/data-induk'],
-];
-const rentang = reactive({ dari: String(props.dari ?? '').slice(0, 10), sampai: String(props.sampai ?? '').slice(0, 10) });
-const angka = (nilai: unknown) => typeof nilai === 'number' ? nilai.toLocaleString('id-ID', { maximumFractionDigits: 2 }) : (nilai ?? '—');
-const tanggal = (nilai: unknown) => nilai ? new Date(String(nilai)).toLocaleDateString('id-ID') : '—';
-const data = computed(() => props.r ?? {});
-const daftar = computed(() => props.peringkat ?? props.teratas ?? props.daftar ?? props.units ?? []);
-const pesanKalkulator = ref('');
+import { reactive } from 'vue';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { propHalaman } from '../../halaman';
+import Dasbor from './Dasbor.vue';
+import EnergyInput from '../../Components/EnergyInput.vue';
+import Konsumsi from '../../Components/Energi/ModeKonsumsi.vue';
+import BahanBakar from '../../Components/Energi/ModeBahanBakar.vue';
+import Listrik from '../../Components/Energi/ModeListrik.vue';
+import Peralatan from '../../Components/Energi/ModePeralatan.vue';
+import PeralatanRinci from '../../Components/Energi/ModePeralatanRinci.vue';
+import Kpi from '../../Components/Energi/ModeKpi.vue';
+import Baseline from '../../Components/Energi/ModeBaseline.vue';
+import Penghematan from '../../Components/Energi/ModePenghematan.vue';
+import Kalkulator from '../../Components/Energi/ModeKalkulator.vue';
+import LaporanBulanan from '../../Components/Energi/ModeLaporan.vue';
+import Master from '../../Components/Energi/ModeMaster.vue';
 
-function filter() { router.get(window.location.pathname, rentang, { preserveState: true, preserveScroll: true }); }
-function nilaiBaris(baris: any, nama: string) { return nama === 'unit' ? (baris.unit?.nama ?? baris.unit?.kode ?? baris.nama ?? baris.kode ?? 'Unit') : (baris[nama] ?? '—'); }
-const baseline = useForm<Record<string, any>>({ company_id: '', tahun: new Date().getFullYear(), baseline_gj_ton: '', target_gj_ton: '', catatan: '' });
-const peluang = useForm<Record<string, any>>({ judul: '', area: '', status: 'diusulkan', uraian: '', hemat_liter: 0, hemat_kwh: 0, penanggung_jawab: '', target_selesai: '' });
-const unit = useForm<Record<string, any>>({ company_id: '', kode: '', nama: '', kategori: '', merek: '', daya_hp: '', payload_ton: '' });
-const kalkulator = reactive({ liter: 0, kwh: 0, ton: 0, hargaLiter: 0, hargaKwh: 0 });
-const hasilKalkulator = computed(() => ({ gj: Number(kalkulator.liter) * 0.0358 + Number(kalkulator.kwh) * 0.0036, rupiah: Number(kalkulator.liter) * Number(kalkulator.hargaLiter) + Number(kalkulator.kwh) * Number(kalkulator.hargaKwh), intensitas: Number(kalkulator.ton) ? (Number(kalkulator.liter) * 0.0358 + Number(kalkulator.kwh) * 0.0036) / Number(kalkulator.ton) : 0 }));
-function simpan(path: string, form: any) { form.post(path, { preserveScroll: true, onSuccess: () => form.reset() }); }
-function ubahPeluang(item: any, status: string) { router.put(`/energi/penghematan/${item.id}`, { status }, { preserveScroll: true }); }
-async function hapusPeluang(item: any) { if (await tanya(`Hapus peluang ${item.judul}?`)) router.delete(`/energi/penghematan/${item.id}`, { preserveScroll: true }); }
-async function hapusUnit(item: any) { if (await tanya(`Hapus unit ${item.kode}?`)) router.delete(`/energi/data-induk/${item.id}`, { preserveScroll: true }); }
-function hitung() { pesanKalkulator.value = 'Perhitungan menggunakan faktor konversi aplikasi; nilai ini tidak mengubah data server.'; }
+const props = propHalaman();
+
+const judulTab: Record<string, string> = {
+  index: 'Energy Performance Center', input: 'Input Lapangan', konsumsi: 'Energy Consumption', fuel: 'Fuel Management',
+  listrik: 'Electricity', equipment: 'Equipment Performance', 'equipment-show': 'Equipment Detail', kpi: 'Energy KPI',
+  baseline: 'Baseline & Target', hemat: 'Saving Opportunities', kalkulator: 'Energy Calculator',
+  laporan: 'Laporan Energi', master: 'Master Data Energi',
+};
+
+const tabs = [
+  ['index', 'Dashboard', '/energi'], ['input', 'Input', '/energi/input'], ['konsumsi', 'Konsumsi', '/energi/konsumsi'],
+  ['fuel', 'Bahan bakar', '/energi/bahan-bakar'], ['listrik', 'Listrik', '/energi/listrik'], ['equipment', 'Peralatan', '/energi/alat'],
+  ['kpi', 'KPI', '/energi/kpi'], ['baseline', 'Baseline', '/energi/baseline'], ['hemat', 'Penghematan', '/energi/penghematan'],
+  ['karbon', 'Karbon & GRK', '/energi/grk'], ['kalkulator', 'Kalkulator', '/energi/kalkulator'], ['laporan', 'Laporan', '/energi/laporan'],
+  ['master', 'Master', '/energi/data-induk'],
+];
+
+const rentang = reactive({ dari: String(props.dari ?? '').slice(0, 10), sampai: String(props.sampai ?? '').slice(0, 10) });
+
+function filter() {
+  router.get(window.location.pathname, rentang, { preserveState: true, preserveScroll: true });
+}
 </script>
 
 <template>
-  <Head :title="judul[props.mode] ?? 'Energi'" />
-  <div class="space-y-5">
-    <section class="flex flex-wrap items-end justify-between gap-4"><div><p class="text-[12.5px] text-stone-500 mt-1">Data, indikator, dan tindakan pengendalian kinerja energi.</p></div><form v-if="props.dari || props.sampai" class="flex flex-wrap items-end gap-2" @submit.prevent="filter"><label class="text-[11px] font-semibold text-stone-500">Dari<input v-model="rentang.dari" type="date" class="block mt-1 rounded-lg border-stone-200 text-[12px]"></label><label class="text-[11px] font-semibold text-stone-500">Sampai<input v-model="rentang.sampai" type="date" class="block mt-1 rounded-lg border-stone-200 text-[12px]"></label><button class="eq-btn-utama" style="padding:9px 14px">Terapkan</button></form></section>
-    <nav class="flex gap-1 overflow-x-auto rounded-xl bg-stone-100 p-1 text-[11px]"><Link v-for="tab in tabs" :key="tab[0]" :href="tab[2]" class="whitespace-nowrap rounded-lg px-3 py-2 text-stone-500 hover:bg-white hover:text-cam-ink" :class="props.mode === tab[0] ? 'bg-white font-bold text-cam-ink shadow-sm' : ''">{{ tab[1] }}</Link></nav>
+  <Head :title="judulTab[props.mode] ?? 'Energi'" />
 
-    <!-- Dasbor punya susunannya sendiri; kisi kunci mentah di bawah
-         adalah tampilan darurat untuk mode yang belum digarap. -->
+  <div class="space-y-5">
+    <section v-if="props.mode !== 'laporan'" class="flex flex-wrap items-end justify-between gap-4">
+      <p class="text-[12.5px] text-stone-500">Data, indikator, dan tindakan pengendalian kinerja energi.</p>
+      <form v-if="props.dari || props.sampai" class="flex flex-wrap items-end gap-2" @submit.prevent="filter">
+        <label class="text-[11px] font-semibold text-stone-500">Dari
+          <input v-model="rentang.dari" type="date" class="block mt-1 rounded-lg border-stone-200 text-[12px]">
+        </label>
+        <label class="text-[11px] font-semibold text-stone-500">Sampai
+          <input v-model="rentang.sampai" type="date" class="block mt-1 rounded-lg border-stone-200 text-[12px]">
+        </label>
+        <button class="eq-btn-utama" style="padding:9px 14px">Terapkan</button>
+      </form>
+    </section>
+
+    <nav v-if="props.mode !== 'laporan'" class="flex gap-1 overflow-x-auto rounded-xl bg-stone-100 p-1 text-[11px]" aria-label="Halaman energi">
+      <Link v-for="tab in tabs" :key="tab[0]" :href="tab[2]"
+            class="whitespace-nowrap rounded-lg px-3 py-2 text-stone-500 hover:bg-white hover:text-cam-ink"
+            :class="props.mode === tab[0] || (tab[0] === 'equipment' && props.mode === 'equipment-show') ? 'bg-white font-bold text-cam-ink shadow-sm' : ''">
+        {{ tab[1] }}
+      </Link>
+    </nav>
+
     <Dasbor v-if="props.mode === 'index'"
             :r="props.r ?? {}" :tren="props.tren ?? []" :teratas="props.teratas ?? []"
             :peluang="props.peluang ?? []" :baseline="props.baseline ?? null" />
-
-    <section v-if="Object.keys(data).length && !['index','listrik','equipment-show'].includes(props.mode)" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><article v-for="(value, key) in data" :key="String(key)" v-show="typeof value !== 'object'" class="rounded-2xl bg-white border border-stone-100 shadow-card p-4"><p class="text-[10px] uppercase tracking-wider font-bold text-stone-400">{{ String(key).replaceAll('_', ' ') }}</p><strong class="block text-xl text-cam-ink mt-1">{{ angka(value) }}</strong></article></section>
-    <section v-if="props.baseline && props.mode !== 'index'" class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><div class="flex flex-wrap items-center justify-between gap-2"><h3 class="font-bold text-[14px]">Baseline aktif</h3><Link href="/energi/baseline" class="text-[11px] text-cam-lime-deep font-semibold">Kelola baseline</Link></div><div class="grid gap-3 sm:grid-cols-3 mt-3 text-[12.5px]"><span>Tahun: <b>{{ props.baseline.tahun }}</b></span><span>Baseline: <b>{{ angka(props.baseline.baseline_gj_ton) }} GJ/ton</b></span><span>Target: <b>{{ angka(props.baseline.target_gj_ton) }} GJ/ton</b></span></div></section>
-
-    <section v-if="props.mode === 'fuel'" class="grid gap-3 md:grid-cols-4"><template v-for="(value, key) in props.recon" :key="String(key)"><article v-if="typeof value !== 'object'" class="rounded-2xl bg-white border border-stone-100 shadow-card p-4"><p class="text-[10px] uppercase font-bold text-stone-400">{{ String(key) }}</p><b class="text-xl">{{ angka(value) }}</b></article></template></section>
-    <section v-if="props.mode === 'listrik'" class="space-y-4"><div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><article v-for="(value, key) in props.total" :key="String(key)" class="rounded-2xl bg-white border border-stone-100 shadow-card p-4"><p class="text-[10px] uppercase font-bold text-stone-400">{{ String(key) }}</p><b class="text-xl">{{ angka(value) }}</b></article></div><div class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-x-auto"><table class="min-w-full text-left text-[12px]"><thead><tr class="border-b border-stone-100 text-stone-400"><th class="px-5 py-3">Area</th><th class="px-5 py-3">kWh</th><th class="px-5 py-3">GJ</th><th class="px-5 py-3">Faktor beban</th></tr></thead><tbody><tr v-for="(row, key) in props.perArea" :key="key" class="border-b border-stone-50"><td class="px-5 py-3 font-semibold">{{ row.nama }}</td><td class="px-5 py-3">{{ angka(row.kwh) }}</td><td class="px-5 py-3">{{ angka(row.gj) }}</td><td class="px-5 py-3">{{ angka(row.faktor) }}</td></tr></tbody></table></div></section>
-    <section v-if="props.mode === 'equipment-show'" class="space-y-4"><div class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><div class="flex flex-wrap justify-between gap-3"><div><h3 class="text-lg font-bold">{{ props.unit?.kode }} — {{ props.unit?.nama }}</h3><p class="text-[12px] text-stone-500">{{ props.unit?.kategori }} · Status efisiensi: <b>{{ props.status }}</b></p></div><Link href="/energi/alat" class="eq-btn-lain">Kembali ke peralatan</Link></div><div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-5 mt-5"><div v-for="(value, key) in props.m" :key="String(key)" class="rounded-xl bg-stone-50 p-3"><small class="block text-[10px] uppercase font-bold text-stone-400">{{ String(key).replaceAll('_',' ') }}</small><b>{{ angka(value) }}</b></div></div></div><div class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-x-auto"><table class="min-w-full text-left text-[12px]"><thead><tr class="border-b border-stone-100 text-stone-400"><th class="px-5 py-3">Tanggal</th><th class="px-5 py-3">HM</th><th class="px-5 py-3">Liter</th><th class="px-5 py-3">Ton</th><th class="px-5 py-3">Idle</th></tr></thead><tbody><tr v-for="row in props.log ?? []" :key="row.id" class="border-b border-stone-50"><td class="px-5 py-3">{{ tanggal(row.tanggal) }}</td><td class="px-5 py-3">{{ angka(row.hm) }}</td><td class="px-5 py-3">{{ angka(row.liter) }}</td><td class="px-5 py-3">{{ angka(row.ton) }}</td><td class="px-5 py-3">{{ angka(row.idle_jam) }}</td></tr></tbody></table></div></section>
-
-    <section v-if="daftar.length && !['index','listrik','equipment-show'].includes(props.mode)" class="rounded-2xl bg-white border border-stone-100 shadow-card overflow-x-auto"><div class="px-5 py-4 border-b border-stone-100 flex items-center justify-between"><h3 class="font-bold text-[14px]">{{ props.mode === 'master' ? 'Unit terdaftar' : 'Rincian data' }}</h3><span v-if="props.mode === 'equipment'" class="text-[11px] text-stone-400">{{ daftar.length }} unit</span></div><table class="min-w-full text-left text-[12px]"><thead><tr class="text-stone-400 border-b border-stone-100"><th class="px-5 py-3">Unit / Nama</th><th class="px-5 py-3">Kategori</th><th class="px-5 py-3">Liter / kWh</th><th class="px-5 py-3">L/HM</th><th class="px-5 py-3">Status</th><th class="px-5 py-3"></th></tr></thead><tbody><tr v-for="(row, i) in daftar" :key="row.id ?? row.unit?.id ?? i" class="border-b border-stone-50"><td class="px-5 py-3 font-semibold"><Link v-if="props.mode === 'equipment' && row.id" :href="`/energi/alat/${row.id}`" class="text-cam-lime-deep">{{ nilaiBaris(row, 'unit') }}</Link><span v-else>{{ nilaiBaris(row, 'unit') }}</span></td><td class="px-5 py-3">{{ row.kategori ?? row.jenis ?? '—' }}</td><td class="px-5 py-3">{{ angka(row.liter ?? row.kwh ?? row.jumlah) }}</td><td class="px-5 py-3">{{ angka(row.l_hm ?? row.faktor) }}</td><td class="px-5 py-3">{{ row.status ?? (row.aktif ? 'Aktif' : '—') }}</td><td class="px-5 py-3 text-right"><button v-if="props.mode === 'master'" type="button" class="text-red-600 text-[11px]" @click="hapusUnit(row)">Hapus</button><div v-if="props.mode === 'hemat'" class="flex justify-end gap-2"><select :value="row.status" class="rounded border-stone-200 text-[11px]" @change="ubahPeluang(row, ($event.target as HTMLSelectElement).value)" aria-label="Status"><option value="diusulkan">Diusulkan</option><option value="disetujui">Disetujui</option><option value="berjalan">Berjalan</option><option value="selesai">Selesai</option></select><button type="button" class="text-red-600 text-[11px]" @click="hapusPeluang(row)">Hapus</button></div></td></tr></tbody></table></section>
-    <section v-if="props.mode === 'kpi' || props.mode === 'karbon' || props.mode === 'laporan'" class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><h3 class="font-bold text-[14px]">{{ props.mode === 'karbon' ? 'Emisi karbon' : props.mode === 'kpi' ? 'KPI energi' : 'Ringkasan laporan' }}</h3><div class="grid gap-3 sm:grid-cols-3 mt-4"><div v-for="key in ['gj','tco2e','rupiah','intensitas','l_ton','kwh_ton']" :key="key" class="rounded-xl bg-stone-50 p-3"><small class="block text-[10px] uppercase font-bold text-stone-400">{{ key }}</small><b>{{ angka(data[key] ?? props.hemat?.[key]) }}</b></div></div></section>
-
-    <section v-if="props.mode === 'baseline'" class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><h3 class="font-bold text-[14px]">Simpan baseline baru</h3><form class="grid gap-3 md:grid-cols-3 mt-4" @submit.prevent="simpan('/energi/baseline', baseline)"><select v-model="baseline.company_id" class="rounded-lg border-stone-200 text-[12px]" aria-label="Perusahaan"><option value="">Semua perusahaan</option><option v-for="company in props.companies ?? []" :key="company.id" :value="company.id">{{ company.name }}</option></select><input v-model="baseline.tahun" type="number" placeholder="Tahun" class="rounded-lg border-stone-200 text-[12px]"><input v-model="baseline.baseline_gj_ton" type="number" step="any" placeholder="Baseline GJ/ton" class="rounded-lg border-stone-200 text-[12px]"><input v-model="baseline.target_gj_ton" type="number" step="any" placeholder="Target GJ/ton" class="rounded-lg border-stone-200 text-[12px]"><input v-model="baseline.catatan" placeholder="Catatan" class="rounded-lg border-stone-200 text-[12px] md:col-span-2"><button class="eq-btn-utama">Simpan baseline</button></form><p v-if="baseline.errors.target_gj_ton" class="text-xs text-red-600 mt-2">{{ baseline.errors.target_gj_ton }}</p><div v-if="props.daftar?.length" class="mt-6 divide-y divide-stone-100 text-[12px]"><div v-for="row in props.daftar" :key="row.id" class="py-3 flex justify-between"><span>{{ row.tahun }} · {{ angka(row.baseline_gj_ton) }} GJ/ton → {{ angka(row.target_gj_ton) }}</span><span class="text-stone-400">{{ row.company?.name ?? 'Semua perusahaan' }}</span></div></div></section>
-    <section v-if="props.mode === 'hemat'" class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><h3 class="font-bold text-[14px]">Catat peluang penghematan</h3><form class="grid gap-3 md:grid-cols-3 mt-4" @submit.prevent="simpan('/energi/penghematan', peluang)"><input v-model="peluang.judul" required placeholder="Judul peluang" class="rounded-lg border-stone-200 text-[12px]"><input v-model="peluang.area" placeholder="Area" class="rounded-lg border-stone-200 text-[12px]"><select v-model="peluang.status" class="rounded-lg border-stone-200 text-[12px]" aria-label="Status"><option value="diusulkan">Diusulkan</option><option value="disetujui">Disetujui</option><option value="berjalan">Berjalan</option><option value="selesai">Selesai</option></select><input v-model="peluang.hemat_liter" type="number" step="any" placeholder="Hemat liter" class="rounded-lg border-stone-200 text-[12px]"><input v-model="peluang.hemat_kwh" type="number" step="any" placeholder="Hemat kWh" class="rounded-lg border-stone-200 text-[12px]"><input v-model="peluang.target_selesai" type="date" class="rounded-lg border-stone-200 text-[12px]" aria-label="Tenggat"><textarea v-model="peluang.uraian" placeholder="Uraian" class="rounded-lg border-stone-200 text-[12px] md:col-span-2"></textarea><button class="eq-btn-utama">Catat peluang</button></form><p v-if="peluang.errors.judul" class="text-xs text-red-600 mt-2">{{ peluang.errors.judul }}</p></section>
-    <section v-if="props.mode === 'master'" class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><h3 class="font-bold text-[14px]">Tambah unit energi</h3><form class="grid gap-3 md:grid-cols-3 mt-4" @submit.prevent="simpan('/energi/data-induk', unit)"><select v-model="unit.company_id" class="rounded-lg border-stone-200 text-[12px]" aria-label="Perusahaan"><option value="">Semua perusahaan</option><option v-for="company in props.companies ?? []" :key="company.id" :value="company.id">{{ company.name }}</option></select><input v-model="unit.kode" required placeholder="Kode" class="rounded-lg border-stone-200 text-[12px]"><input v-model="unit.nama" required placeholder="Nama unit" class="rounded-lg border-stone-200 text-[12px]"><select v-model="unit.kategori" required class="rounded-lg border-stone-200 text-[12px]" aria-label="Kategori"><option value="" disabled>Kategori</option><option v-for="(label, key) in { excavator: 'Excavator', dump_truck: 'Dump Truck', dozer: 'Dozer', loader: 'Loader', support: 'Support' }" :key="key" :value="key">{{ label }}</option></select><input v-model="unit.merek" placeholder="Merek" class="rounded-lg border-stone-200 text-[12px]"><input v-model="unit.daya_hp" type="number" placeholder="Daya HP" class="rounded-lg border-stone-200 text-[12px]"><input v-model="unit.payload_ton" type="number" step="any" placeholder="Payload ton" class="rounded-lg border-stone-200 text-[12px]"><button class="eq-btn-utama">Tambah unit</button></form></section>
-    <section v-if="props.mode === 'kalkulator'" class="rounded-2xl bg-white border border-stone-100 shadow-card p-5"><h3 class="font-bold text-[14px]">Kalkulator konversi energi</h3><div class="grid gap-3 md:grid-cols-3 mt-4"><input v-model="kalkulator.liter" type="number" step="any" placeholder="Solar (liter)" class="rounded-lg border-stone-200 text-[12px]"><input v-model="kalkulator.kwh" type="number" step="any" placeholder="Listrik (kWh)" class="rounded-lg border-stone-200 text-[12px]"><input v-model="kalkulator.ton" type="number" step="any" placeholder="Produksi (ton)" class="rounded-lg border-stone-200 text-[12px]"><input v-model="kalkulator.hargaLiter" type="number" step="any" placeholder="Harga solar/liter" class="rounded-lg border-stone-200 text-[12px]"><input v-model="kalkulator.hargaKwh" type="number" step="any" placeholder="Harga listrik/kWh" class="rounded-lg border-stone-200 text-[12px]"><button type="button" class="eq-btn-utama" @click="hitung">Hitung</button></div><div class="grid gap-3 sm:grid-cols-3 mt-5"><div class="rounded-xl bg-stone-50 p-4"><small class="text-stone-400">Total energi</small><b class="block text-xl">{{ angka(hasilKalkulator.gj) }} GJ</b></div><div class="rounded-xl bg-stone-50 p-4"><small class="text-stone-400">Biaya</small><b class="block text-xl">Rp {{ angka(hasilKalkulator.rupiah) }}</b></div><div class="rounded-xl bg-stone-50 p-4"><small class="text-stone-400">Intensitas</small><b class="block text-xl">{{ angka(hasilKalkulator.intensitas) }} GJ/ton</b></div></div><p v-if="pesanKalkulator" class="text-[11px] text-stone-500 mt-3">{{ pesanKalkulator }}</p></section>
-    <div v-if="!daftar.length && !props.baseline && !['index','kalkulator','listrik','equipment-show'].includes(props.mode)" class="rounded-2xl bg-white border border-stone-100 p-8 text-center text-stone-500 text-[13px]">Belum ada data pada rentang atau modul ini.</div>
-    <EnergyInput v-if="props.mode === 'input'" :units="props.units ?? []" :areas="props.areas ?? {}" :sources="props.sources ?? {}" :recent="props.recent ?? {}" :tautan="props.tautan ?? {}" />
+    <EnergyInput v-else-if="props.mode === 'input'" :units="props.units ?? []" :areas="props.areas ?? {}" :sources="props.sources ?? {}"
+                 :sites="props.sites ?? []" :lain="props.lain ?? {}" :sumber-data="props.sumberData ?? {}" :fame-bawaan="props.fameBawaan ?? null"
+                 :recent="props.recent ?? {}" :tautan="props.tautan ?? {}" :boleh="props.boleh ?? {}" />
+    <Konsumsi v-else-if="props.mode === 'konsumsi'" :r="props.r ?? {}" :tren="props.tren ?? []" :baseline="props.baseline ?? null" />
+    <BahanBakar v-else-if="props.mode === 'fuel'" :r="props.r ?? {}" :peringkat="props.peringkat ?? []" :per-kategori="props.perKategori ?? {}" :recon="props.recon ?? {}" />
+    <Listrik v-else-if="props.mode === 'listrik'" :per-area="props.perArea ?? {}" :total="props.total ?? {}" :pln="props.pln ?? {}" :genset="props.genset ?? {}" />
+    <Peralatan v-else-if="props.mode === 'equipment'" :peringkat="props.peringkat ?? []" :per-kategori="props.perKategori ?? {}" :kategori="props.kategori ?? null" />
+    <PeralatanRinci v-else-if="props.mode === 'equipment-show'" :unit="props.unit ?? {}" :log="props.log ?? []" :m="props.m ?? {}" :acuan="props.acuan ?? 0" :status="props.status ?? {}" />
+    <Kpi v-else-if="props.mode === 'kpi'" :r="props.r ?? {}" :baseline="props.baseline ?? null" :hemat="props.hemat ?? {}" />
+    <Baseline v-else-if="props.mode === 'baseline'" :daftar="props.daftar ?? []" :baseline="props.baseline ?? null" :r="props.r ?? {}" :companies="props.companies ?? []" />
+    <Penghematan v-else-if="props.mode === 'hemat'" :daftar="props.daftar ?? []" :terwujud="props.terwujud ?? {}" :potensi="props.potensi ?? {}" />
+    <Kalkulator v-else-if="props.mode === 'kalkulator'" :kode="props.kode ?? {}" :kategori="props.kategori ?? {}" :terpasang="!!props.terpasang" :tautan="props.tautan ?? {}" />
+    <LaporanBulanan v-else-if="props.mode === 'laporan'" :dok="props.dok ?? null" :r="props.r ?? {}" :baseline="props.baseline ?? null" :dari="props.dari" :sampai="props.sampai"
+                    :per-kategori="props.perKategori ?? {}" :peringkat="props.peringkat ?? []" :peluang="props.peluang ?? []" :hemat="props.hemat ?? {}" />
+    <Master v-else-if="props.mode === 'master'" :units="props.units ?? []" :companies="props.companies ?? []" :sites="props.sites ?? []"
+            :pilihan="props.pilihan ?? {}" :boleh="props.boleh ?? {}" />
   </div>
-
-  <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
 </template>

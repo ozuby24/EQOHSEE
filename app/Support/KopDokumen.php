@@ -133,6 +133,63 @@ final class KopDokumen
                 'kode'  => 'OHSE-V.021',
                 'urut'  => 2,
 ],
+            /* Pusat Pelaporan Energi & Karbon (FSD §10) — satu kop per
+               templat, supaya nomor dokumen laporan ke ESDM tidak sama
+               dengan nomor laporan inventarisasi GRK. */
+            'laporan-energi-esdm' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN PELAKSANAAN MANAJEMEN ENERGI',
+                'kode'  => 'OHSE-V.022',
+                'urut'  => 21,
+],
+            'laporan-energi-monev' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN MONITORING DAN EVALUASI MANAJEMEN ENERGI',
+                'kode'  => 'OHSE-V.023',
+                'urut'  => 22,
+],
+            'laporan-grk' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN INVENTARISASI EMISI GAS RUMAH KACA PERUSAHAAN',
+                'kode'  => 'OHSE-V.024',
+                'urut'  => 23,
+],
+            'laporan-grk-iso' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'LAPORAN GAS RUMAH KACA ORGANISASI (ISO 14064-1)',
+                'kode'  => 'OHSE-V.025',
+                'urut'  => 24,
+],
+            'laporan-proper-energi' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'DATA EFISIENSI ENERGI DAN PENURUNAN EMISI UNTUK PROPER',
+                'kode'  => 'OHSE-V.026',
+                'urut'  => 25,
+],
+            'laporan-keberlanjutan-energi' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'KINERJA ENERGI DAN EMISI — LAPORAN KEBERLANJUTAN',
+                'kode'  => 'OHSE-V.027',
+                'urut'  => 26,
+],
+            'laporan-pspk2' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'PENGUNGKAPAN METRIK IKLIM PSPK 2',
+                'kode'  => 'OHSE-V.028',
+                'urut'  => 27,
+],
+            'laporan-srn-aksi' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'DATA AKSI MITIGASI UNTUK SRN PPI',
+                'kode'  => 'OHSE-V.029',
+                'urut'  => 28,
+],
+            'laporan-bod-energi' => [
+                'jenis' => 'LAPORAN',
+                'judul' => 'BOARD PACK KINERJA ENERGI DAN KARBON',
+                'kode'  => 'OHSE-V.020',
+                'urut'  => 29,
+],
             'laporan-operasi' => [
                 'jenis' => 'LAPORAN',
                 'judul' => 'LAPORAN KINERJA OPERASI PENAMBANGAN',

@@ -53,6 +53,17 @@ Schedule::command('smkp:pengingat-tindak-lanjut')
  * WIB), sesudah `miners:sinkron` 06.55. Aman diulang: tiap dokumen
  * diingatkan sekali per ambang (60 hari, 30 hari, lewat).
  */
+/*
+ * Pengingat kalender kepatuhan energi & GRK (FSD Energi-Karbon §12):
+ * laporan ESDM 30 Juni, inventarisasi GRK Maret, audit energi 3-tahunan,
+ * sertifikat manajer energi. Kewajiban diturunkan dari data, jadi aman
+ * diulang — yang sudah selesai tidak diingatkan lagi.
+ */
+Schedule::command('energi:pengingat')
+    ->dailyAt('07:10')
+    ->timezone(\App\Support\Waktu::zona())
+    ->withoutOverlapping();
+
 Schedule::command('miners:pengingat')
     ->dailyAt('07:25')
     ->timezone(\App\Support\Waktu::zona())

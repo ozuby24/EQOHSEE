@@ -69,6 +69,7 @@ class CakupanDataContohTest extends TestCase
         'smkp_arsip_eqohsee' => 'arsip migrasi SMKP lama, bukan data lapangan',
         'activity_logs'=> 'jejak perbuatan; terisi sendiri saat dipakai',
         'jejak_akses'  => 'jejak masuk; terisi sendiri saat dipakai',
+        'energi_jejak' => 'jejak perubahan data energi; terisi sendiri saat pengguna mengubah baris',
 
         /* Master 51 jenis kompetensi berasal dari SK Dirjen
            185.K/37.04/DJB/2019 — regulasi nasional, sama bagi setiap

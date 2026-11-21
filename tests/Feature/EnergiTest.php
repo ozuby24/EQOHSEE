@@ -214,7 +214,13 @@ class EnergiTest extends TestCase
 
     /* ---------- data induk ---------- */
 
-    public function test_unit_terdaftar_dan_hapusnya_ikut_membawa_catatan(): void
+    /**
+     * Cacat D5 (FSD Energi-Karbon §15): menghapus unit dulu ikut membuang
+     * catatan BBM-nya lewat cascade — data aktivitas laporan GRK lenyap
+     * bersama unitnya. Unit bercatatan kini DINONAKTIFKAN; hanya unit
+     * tanpa catatan yang benar-benar dihapus.
+     */
+    public function test_unit_bercatatan_dinonaktifkan_bukan_dihapus(): void
     {
         $this->masukAdmin();
 
@@ -227,8 +233,13 @@ class EnergiTest extends TestCase
 
         $this->delete(route('energi.master.hapus', $u));
 
-        $this->assertSame(0, EnergyEquipment::count());
-        $this->assertSame(0, EnergyFuelLog::count());   // cascade, bukan catatan yatim
+        $this->assertSame(1, EnergyEquipment::count());
+        $this->assertFalse($u->fresh()->aktif);
+        $this->assertSame(1, EnergyFuelLog::count());   // catatan tetap utuh
+
+        $kosong = $this->unit(['kode' => 'EX-KOSONG']);
+        $this->delete(route('energi.master.hapus', $kosong));
+        $this->assertNull(EnergyEquipment::find($kosong->id));
     }
 
     public function test_kode_unit_tidak_boleh_kembar(): void

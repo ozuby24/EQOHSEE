@@ -18,11 +18,13 @@ class EnergyBaseline extends Model
 
     protected $table = 'energy_baselines';
 
-    protected $fillable = ['company_id','tahun','baseline_gj_ton','target_gj_ton','catatan'];
+    protected $fillable = ['company_id','tahun','baseline_gj_ton','target_gj_ton','catatan',
+                           'status','target_tco2e_ton','model_enb','diusulkan_oleh','disetujui_oleh','disetujui_pada'];
 
     protected function casts(): array
     {
-        return ['tahun' => 'integer', 'baseline_gj_ton' => 'float', 'target_gj_ton' => 'float'];
+        return ['tahun' => 'integer', 'baseline_gj_ton' => 'float', 'target_gj_ton' => 'float',
+                'target_tco2e_ton' => 'float', 'model_enb' => 'array', 'disetujui_pada' => 'datetime'];
     }
 
     public function company(): BelongsTo { return $this->belongsTo(Company::class); }

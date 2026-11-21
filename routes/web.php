@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\InvestigasiController;
+use App\Http\Controllers\Energi\{ApiController as EnergiApi, BodController as EnergiBod, EnpiController as EnergiEnpi,
+    FaktorController as EnergiFaktor, InventarisController as EnergiGrk, LaporanController as EnergiLapor,
+    ManajemenEnergiController as EnergiMe, PeriodeController as EnergiPeriode};
 use App\Support\Rute;
 use App\Http\Controllers\FropController;
 use App\Http\Controllers\MinersController;
@@ -1162,10 +1165,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('energi')->name('energi.')->group(function () {
         Route::get('/',            [EnergyController::class,'index'])->name('index');
         Route::get('input',        [EnergyController::class,'input'])->name('input');
-        Route::post('input/produksi', [EnergyController::class,'simpanProduksi'])->name('input.production');
-        Route::post('input/fuel', [EnergyController::class,'simpanFuel'])->name('input.fuel');
-        Route::post('input/listrik', [EnergyController::class,'simpanListrik'])->name('input.power');
-        Route::post('input/rekonsiliasi', [EnergyController::class,'simpanRekonsiliasi'])->name('input.recon');
+
+        /* Input lapangan. `energi.input` meloloskan akun tanpa peran energi
+           (seperti sebelum peran ada) dan menolak peran baca-saja. */
+        Route::middleware('can:energi.input')->group(function () {
+            Route::post('input/produksi', [EnergyController::class,'simpanProduksi'])->name('input.production');
+            Route::post('input/fuel', [EnergyController::class,'simpanFuel'])->name('input.fuel');
+            Route::post('input/listrik', [EnergyController::class,'simpanListrik'])->name('input.power');
+            Route::post('input/rekonsiliasi', [EnergyController::class,'simpanRekonsiliasi'])->name('input.recon');
+            Route::post('input/lain', [EnergyController::class,'simpanLain'])->name('input.other');
+        });
         Route::get('konsumsi',     [EnergyController::class,'konsumsi'])->name('konsumsi');
         Route::get('bahan-bakar',  [EnergyController::class,'fuel'])->name('fuel');
         Route::get('listrik',      [EnergyController::class,'listrik'])->name('listrik');
@@ -1175,11 +1184,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('kpi',          [EnergyController::class,'kpi'])->name('kpi');
         Route::get('baseline',     [EnergyController::class,'baseline'])->name('baseline');
-        Route::post('baseline',    [EnergyController::class,'simpanBaseline'])->name('baseline.simpan');
+        Route::post('baseline',    [EnergyController::class,'simpanBaseline'])->middleware('can:energi.input')->name('baseline.simpan');
 
         Route::get('penghematan',  [EnergyController::class,'hemat'])->name('hemat');
-        Route::post('penghematan', [EnergyController::class,'simpanPeluang'])->name('hemat.simpan');
-        Route::put('penghematan/{peluang}',   [EnergyController::class,'ubahPeluang'])->name('hemat.ubah');
+        Route::post('penghematan', [EnergyController::class,'simpanPeluang'])->middleware('can:energi.input')->name('hemat.simpan');
+        Route::put('penghematan/{peluang}',   [EnergyController::class,'ubahPeluang'])->middleware('can:energi.input')->name('hemat.ubah');
         Route::delete('penghematan/{peluang}',[EnergyController::class,'hapusPeluang'])->middleware('can:admin')->name('hemat.hapus');
 
         Route::get('karbon',       [EnergyController::class,'karbon'])->name('karbon');
@@ -1187,8 +1196,95 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('laporan',      [EnergyController::class,'laporan'])->name('laporan');
 
         Route::get('data-induk',   [EnergyController::class,'master'])->name('master');
-        Route::post('data-induk',  [EnergyController::class,'simpanUnit'])->name('master.simpan');
+        Route::post('data-induk',  [EnergyController::class,'simpanUnit'])->middleware('can:energi.input')->name('master.simpan');
         Route::delete('data-induk/{unit}', [EnergyController::class,'hapusUnit'])->middleware('can:admin')->name('master.hapus');
+        Route::post('data-induk/site', [EnergyController::class,'simpanSite'])->middleware('can:energi.kelola')->name('master.site');
+        Route::put('data-induk/site/{site}', [EnergyController::class,'ubahSite'])->middleware('can:energi.kelola')->name('master.site.ubah');
+        Route::put('data-induk/{unit}', [EnergyController::class,'ubahUnit'])->middleware('can:energi.input')->name('master.ubah');
+
+        /* ═════ Manajemen Energi & Karbon (PRD/FSD Energi-Karbon) ═════ */
+
+        // Registri faktor emisi & konversi berversi.
+        Route::get('faktor', [EnergiFaktor::class, 'index'])->name('faktor.index');
+        Route::get('faktor/uji-dampak', [EnergiFaktor::class, 'ujiDampak'])->name('faktor.uji');
+        Route::post('faktor', [EnergiFaktor::class, 'simpan'])->name('faktor.simpan');
+        Route::put('faktor/{faktor}', [EnergiFaktor::class, 'ubah'])->name('faktor.ubah');
+        Route::post('faktor/{faktor}/setujui', [EnergiFaktor::class, 'setujui'])->name('faktor.setujui');
+        Route::post('faktor/{faktor}/tarik', [EnergiFaktor::class, 'tarik'])->name('faktor.tarik');
+        Route::post('faktor/{faktor}/cocokkan', [EnergiFaktor::class, 'cocokkan'])->name('faktor.cocokkan');
+
+        // Inventarisasi GRK.
+        Route::get('grk', [EnergiGrk::class, 'index'])->name('grk.index');
+        Route::get('grk/batas', [EnergiGrk::class, 'batas'])->name('grk.batas');
+        Route::post('grk/batas', [EnergiGrk::class, 'simpanBatas'])->name('grk.batas.simpan');
+        Route::post('grk/batas/{batas}/setujui', [EnergiGrk::class, 'setujuiBatas'])->name('grk.batas.setujui');
+        Route::post('grk/tahun-dasar', [EnergiGrk::class, 'simpanDasar'])->name('grk.dasar');
+        Route::get('grk/scope3', [EnergiGrk::class, 'scope3'])->name('grk.s3');
+        Route::post('grk/scope3', [EnergiGrk::class, 'simpanScope3'])->name('grk.s3.simpan');
+        Route::post('grk/scope3/{scope3}/verifikasi', [EnergiGrk::class, 'verifikasiScope3'])->name('grk.s3.verifikasi');
+        Route::delete('grk/scope3/{scope3}', [EnergiGrk::class, 'hapusScope3'])->middleware('can:energi.kelola')->name('grk.s3.hapus');
+        Route::get('grk/mitigasi', [EnergiGrk::class, 'mitigasi'])->name('grk.mitigasi');
+        Route::post('grk/mitigasi', [EnergiGrk::class, 'simpanMitigasi'])->name('grk.mitigasi.simpan');
+        Route::put('grk/mitigasi/{mitigasi}', [EnergiGrk::class, 'ubahMitigasi'])->name('grk.mitigasi.ubah');
+
+        // Manajemen energi PP 33/2023 & ISO 50001.
+        Route::get('manajemen', [EnergiMe::class, 'index'])->name('me.index');
+        Route::post('manajemen/pengaturan', [EnergiMe::class, 'simpanPengaturan'])->name('me.pengaturan');
+        Route::get('manajemen/personel', [EnergiMe::class, 'personel'])->name('me.personel');
+        Route::post('manajemen/personel', [EnergiMe::class, 'simpanPersonel'])->name('me.personel.simpan');
+        Route::put('manajemen/personel/{personel}', [EnergiMe::class, 'ubahPersonel'])->name('me.personel.ubah');
+        Route::get('manajemen/program', [EnergiMe::class, 'program'])->name('me.program');
+        Route::post('manajemen/program', [EnergiMe::class, 'simpanProgram'])->name('me.program.simpan');
+        Route::put('manajemen/program/{program}', [EnergiMe::class, 'ubahProgram'])->name('me.program.ubah');
+        Route::get('manajemen/audit', [EnergiMe::class, 'audit'])->name('me.audit');
+        Route::post('manajemen/audit', [EnergiMe::class, 'simpanAudit'])->name('me.audit.simpan');
+        Route::get('manajemen/audit/{audit}', [EnergiMe::class, 'auditShow'])->name('me.audit.show');
+        Route::put('manajemen/audit/{audit}', [EnergiMe::class, 'ubahAudit'])->name('me.audit.ubah');
+        Route::post('manajemen/audit/{audit}/rekomendasi', [EnergiMe::class, 'simpanRekomendasi'])->name('me.rek.simpan');
+        Route::put('manajemen/rekomendasi/{rek}', [EnergiMe::class, 'ubahRekomendasi'])->name('me.rek');
+        Route::get('manajemen/tinjauan', [EnergiMe::class, 'tinjauan'])->name('me.tinjauan');
+        Route::post('manajemen/tinjauan', [EnergiMe::class, 'simpanTinjauan'])->name('me.tinjauan.simpan');
+        Route::get('enpi', [EnergiEnpi::class, 'index'])->name('enpi');
+        Route::post('enpi', [EnergiEnpi::class, 'simpan'])->name('enpi.simpan');
+        Route::get('seu', [EnergiEnpi::class, 'seu'])->name('seu');
+        Route::post('seu/{unit}', [EnergiEnpi::class, 'tandaiSeu'])->name('seu.tandai');
+
+        // Verifikasi, kunci periode, dan koreksi.
+        Route::get('periode', [EnergiPeriode::class, 'index'])->name('periode.index');
+        Route::post('periode/verifikasi', [EnergiPeriode::class, 'verifikasi'])->name('periode.verifikasi');
+        Route::post('periode/{periode}/kunci', [EnergiPeriode::class, 'kunci'])->name('periode.kunci');
+        Route::post('periode/koreksi', [EnergiPeriode::class, 'ajukanKoreksi'])->name('periode.koreksi');
+        Route::post('periode/koreksi/{koreksi}', [EnergiPeriode::class, 'putusKoreksi'])->name('periode.koreksi.putus');
+
+        // Pusat Pelaporan & kalender kepatuhan.
+        Route::get('pelaporan', [EnergiLapor::class, 'index'])->name('lapor.index');
+        Route::get('kalender', [EnergiLapor::class, 'kalender'])->name('kalender');
+        Route::post('pelaporan/{templat}/susun', [EnergiLapor::class, 'susun'])->name('lapor.susun');
+        Route::get('pelaporan/terbit/{laporan}', [EnergiLapor::class, 'show'])->name('lapor.show');
+        Route::post('pelaporan/terbit/{laporan}/susun-ulang', [EnergiLapor::class, 'susunUlang'])->name('lapor.susun-ulang');
+        Route::post('pelaporan/terbit/{laporan}/ajukan', [EnergiLapor::class, 'ajukan'])->name('lapor.ajukan');
+        Route::post('pelaporan/terbit/{laporan}/setujui', [EnergiLapor::class, 'setujui'])->name('lapor.setujui');
+        Route::post('pelaporan/terbit/{laporan}/terbitkan', [EnergiLapor::class, 'terbitkan'])->name('lapor.terbitkan');
+        Route::post('pelaporan/terbit/{laporan}/revisi', [EnergiLapor::class, 'revisi'])->name('lapor.revisi');
+        Route::post('pelaporan/terbit/{laporan}/sampaikan', [EnergiLapor::class, 'sampaikan'])->name('lapor.sampaikan');
+        Route::get('pelaporan/terbit/{laporan}/unduh/{format}', [EnergiLapor::class, 'unduh'])->name('lapor.unduh');
+
+        // Executive Control Tower — dasbor kontrol direksi.
+        Route::middleware('can:energi.bod')->group(function () {
+            Route::get('bod', [EnergiBod::class, 'index'])->name('bod.index');
+            Route::get('bod/layar', [EnergiBod::class, 'layar'])->name('bod.layar');
+            Route::get('bod/drill', [EnergiBod::class, 'drill'])->name('bod.drill');
+            Route::post('bod/simulasi', [EnergiBod::class, 'simulasi'])->name('bod.simulasi');
+            Route::post('bod/board-pack', [EnergiBod::class, 'boardPack'])->name('bod.pack');
+            Route::post('bod/instruksi', [EnergiBod::class, 'instruksi'])->name('bod.instruksi');
+            Route::put('bod/instruksi/{tindak}', [EnergiBod::class, 'ubahInstruksi'])->name('bod.instruksi.ubah');
+            Route::post('bod/target/{baseline}', [EnergiBod::class, 'setujuiTarget'])->name('bod.target');
+        });
+
+        // API internal (JSON, sesi web).
+        Route::post('api/kalkulator', [EnergiApi::class, 'kalkulator'])->name('api.kalkulator');
+        Route::get('api/faktor', [EnergiApi::class, 'faktor'])->name('api.faktor');
+        Route::get('api/agregat', [EnergiApi::class, 'agregat'])->name('api.agregat');
     });
 
     /* ============ Pengelolaan Air & Penirisan ============
