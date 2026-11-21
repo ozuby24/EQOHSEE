@@ -70,6 +70,15 @@ final class Katalog
         'harga_tinggi'=> 'Rp/tCO₂e',
     ];
 
+    /** Nama parameter untuk teks yang dibaca orang (satuannya di PARAMETER). */
+    public const NAMA_PARAMETER = [
+        'densitas' => 'densitas', 'ncv' => 'nilai kalor', 'ef_co2' => 'faktor emisi CO₂', 'ef_ch4' => 'faktor emisi CH₄',
+        'ef_n2o' => 'faktor emisi N₂O', 'ef_grid' => 'faktor emisi grid', 'ef_kontrak' => 'faktor emisi kontrak',
+        'ef_residual' => 'faktor emisi residual', 'harga' => 'harga', 'persen_fame' => 'campuran FAME',
+        'gwp_ar5' => 'GWP AR5', 'gwp_ar6' => 'GWP AR6', 'gj_per_toe' => 'GJ per TOE', 'gj_per_sbm' => 'GJ per SBM',
+        'harga_dasar' => 'harga karbon dasar', 'harga_rendah' => 'harga karbon rendah', 'harga_tinggi' => 'harga karbon tinggi',
+    ];
+
     /** Kode registri di luar sumber energi: gas rumah kaca, konversi, harga karbon. */
     public const KODE_LAIN = [
         'biodiesel_fame' => 'Biodiesel (FAME)', 'ch4' => 'Metana (CH₄)', 'n2o' => 'Dinitrogen oksida (N₂O)',

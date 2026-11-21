@@ -95,13 +95,18 @@ final class Pelaporan
             'per_bulan' => array_map(fn ($r) => self::potong($r, true),
                 Inventaris::kelompok($inv['baris'], fn ($b) => $b['bulan'])),
             'per_sumber' => self::perSumber($inv['baris']),
-            'faktor' => array_values($inv['faktor']),
+            'faktor' => array_map(fn ($f) => $f + [
+                'label' => Katalog::label($f['kode_energi']),
+                'nama_parameter' => Katalog::NAMA_PARAMETER[$f['parameter']] ?? $f['parameter'],
+                'kategori_label' => isset($f['kategori_ipcc']) ? (Katalog::KATEGORI_IPCC[$f['kategori_ipcc']] ?? $f['kategori_ipcc']) : null,
+            ], array_values($inv['faktor'])),
             'periode_kunci' => self::statusPeriode($companyId, $mulai, $sampai),
             'versi_aplikasi' => self::versiAplikasi(),
         ];
 
         $s['faktor_perlu_cocok'] = collect($s['faktor'])->where('perlu_cocok', true)
-            ->map(fn ($f) => $f['kode_energi'].'/'.$f['parameter'])->unique()->values()->all();
+            ->map(fn ($f) => Katalog::label($f['kode_energi']).' ('.(Katalog::NAMA_PARAMETER[$f['parameter']] ?? $f['parameter']).')')
+            ->unique()->values()->all();
 
         return $s + match ($templat) {
             'ESDM_ME'     => self::esdm($companyId, $tahun, $mulai, $sampai, $ring),

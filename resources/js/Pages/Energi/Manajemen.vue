@@ -27,7 +27,7 @@ const simpan = () => form.transform(d => Object.fromEntries(Object.entries(d).ma
     <section class="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
       <Kartu judul="Ambang konsumsi energi" :ket="props.ambang.kategori_label">
         <template #aksi><Lencana :status="props.ambang.status" /></template>
-        <Meter :nilai="props.ambang.toe_lalu" :target="props.ambang.ambang" :maks="Math.max(props.ambang.ambang, props.ambang.toe_lalu, props.ambang.toe_proyeksi) * 1.25 || 1" satuan=" TOE" kecil-lebih-baik />
+        <Meter :nilai="props.ambang.toe_lalu" :target="props.ambang.ambang" :maks="Math.max(props.ambang.ambang, props.ambang.toe_lalu, props.ambang.toe_proyeksi) * 1.25 || 1" satuan=" TOE" sebutan="ambang" kecil-lebih-baik />
         <div class="ubin-kisi mt-4">
           <KartuAngka :label="`Konsumsi ${props.ambang.tahun - 1}`" :nilai="props.ambang.toe_lalu" satuan="TOE" />
           <KartuAngka :label="`YTD ${props.ambang.tahun}`" :nilai="props.ambang.toe_ytd" satuan="TOE" />
@@ -39,7 +39,7 @@ const simpan = () => form.transform(d => Object.fromEntries(Object.entries(d).ma
         <ul class="divide-y divide-stone-100">
           <li v-for="c in props.checklist" :key="c.label" class="py-2.5 flex items-start justify-between gap-3">
             <div class="min-w-0"><p class="text-[12.5px] font-semibold text-cam-ink" :title="c.dasar">{{ c.label }}</p><p v-if="c.rincian" class="text-[11px] text-stone-500">{{ c.rincian }}</p></div>
-            <span class="shrink-0 rounded-md px-1.5 py-0.5 text-[10.5px] font-semibold" :class="c.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'">{{ c.ok ? 'Terpenuhi' : 'Belum' }}</span>
+            <span class="shrink-0 rounded-md px-1.5 py-0.5 text-[10.5px] font-semibold" :class="c.ok === null ? 'bg-stone-100 text-stone-600' : c.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'">{{ c.ok === null ? 'Tidak berlaku' : c.ok ? 'Terpenuhi' : 'Belum' }}</span>
           </li>
         </ul>
         <div class="flex flex-wrap gap-2 mt-3">

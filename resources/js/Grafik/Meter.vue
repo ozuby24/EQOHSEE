@@ -25,7 +25,9 @@ const props = withDefaults(defineProps<{
   satuan?: string;
   /** Angka kecil dan target lebih besar berarti baik — mis. jam henti. */
   kecilLebihBaik?: boolean;
-}>(), { target: null, maks: 100, satuan: '%', kecilLebihBaik: false });
+  /** Sebutan garis pembandingnya: "target", atau mis. "ambang" untuk batas wajib. */
+  sebutan?: string;
+}>(), { target: null, maks: 100, satuan: '%', kecilLebihBaik: false, sebutan: 'target' });
 
 const rasio = computed(() =>
   props.nilai === null ? 0 : Math.min(1, Math.max(0, props.nilai / props.maks)));
@@ -65,7 +67,7 @@ const keterangan = computed(() => {
      SELURUH nilai yang mungkin sebagai "tepat di target", termasuk
      yang setengahnya. Itu yang terjadi pada dasbor energi — meter
      0,0105 terhadap target 0,024 dilaporkan tepat sasaran. */
-  if (Math.abs(selisih) < Math.abs(props.target) * 0.01) return 'tepat di target';
+  if (Math.abs(selisih) < Math.abs(props.target) * 0.01) return `tepat di ${props.sebutan}`;
 
   /* Kata "di atas" dan "di bawah" menyatakan LETAK, bukan penilaian.
      Yang menyatakan baik-buruknya adalah warnanya, dan warna itu sudah
@@ -73,7 +75,7 @@ const keterangan = computed(() => {
      kecilLebihBaik membuat 71% terhadap target 95% terbaca "24% di
      atas target" — kebalikan dari keadaannya. */
   return `${ringkas(Math.abs(selisih))}${props.satuan} `
-    + (selisih > 0 ? 'di atas' : 'di bawah') + ' target';
+    + (selisih > 0 ? 'di atas' : 'di bawah') + ' ' + props.sebutan;
 });
 </script>
 
@@ -110,12 +112,12 @@ const keterangan = computed(() => {
       <div v-if="rasioTarget !== null"
            class="absolute -top-1 -bottom-1 w-0.5 bg-stone-700 rounded-full"
            :style="{ left: `calc(${rasioTarget * 100}% - 1px)` }">
-        <span class="sr-only">Target {{ target }}{{ satuan }}</span>
+        <span class="sr-only">{{ sebutan.charAt(0).toUpperCase() + sebutan.slice(1) }} {{ target }}{{ satuan }}</span>
       </div>
     </div>
 
     <p v-if="target !== null" class="text-[10.5px] text-stone-400 mt-1.5">
-      Target {{ ringkas(target) }}{{ satuan }}
+      {{ sebutan.charAt(0).toUpperCase() + sebutan.slice(1) }} {{ ringkas(target) }}{{ satuan }}
     </p>
   </div>
 </template>
