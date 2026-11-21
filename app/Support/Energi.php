@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Support\Energi\{Kalkulator, RegistriFaktor};
+
 /**
  * Kinerja energi tambang — faktor konversi, kategori, dan hitungannya.
  *
@@ -12,6 +14,16 @@ namespace App\Support;
  * Angka konversi diletakkan di satu tempat: faktor emisi dan harga bahan
  * bakar berubah dari tahun ke tahun, dan yang berubah harus satu berkas,
  * bukan belasan pemanggilan yang tersebar.
+ *
+ * SEJAK MODUL ENERGI & KARBON (FSD §14 M5): fungsi konversi di bawah
+ * membaca registri faktor berversi lewat App\Support\Energi\Kalkulator —
+ * NCV & densitas, campuran FAME yang berlaku, EF CO₂/CH₄/N₂O, GWP, faktor
+ * grid, dan harga. Konstanta di bawah tinggal sebagai cadangan WARISAN
+ * yang hanya dipakai bila paket faktor belum pernah dipasang
+ * (`php artisan energi:pasang`) — pada lingkungan uji, atau pemasangan
+ * yang belum dideploy ulang. Mesin inventarisasi GRK tidak memakai
+ * cadangan ini sama sekali: di sana faktor yang tidak ada berarti "tidak
+ * dapat dihitung", bukan angka lama.
  */
 final class Energi
 {
@@ -61,25 +73,73 @@ final class Energi
         'lighting'   => 'Lighting',
     ];
 
-    public const SUMBER_LISTRIK = ['pln' => 'PLN', 'genset' => 'Genset'];
+    /* PLN dan IUPTLS adalah listrik yang DIBELI (Scope 2); genset dihitung
+       dari solarnya (Scope 1); PLTS di lokasi adalah EBT tanpa emisi. */
+    public const SUMBER_LISTRIK = ['pln' => 'PLN', 'genset' => 'Genset', 'iuptls' => 'IUPTLS / pihak lain', 'plts' => 'PLTS'];
 
     /** Status peluang penghematan, dari usulan sampai terwujud. */
     public const STATUS_PELUANG = ['usulan', 'review', 'disetujui', 'berjalan', 'selesai', 'ditolak'];
 
     /* ================= konversi ================= */
 
-    public static function literKeGj(float $liter): float   { return $liter * self::GJ_PER_LITER; }
+    /**
+     * Hasil mesin perhitungan untuk satu kuantitas, atau null bila paket
+     * faktor belum terpasang. Konteks perusahaannya perusahaan pengguna —
+     * fasad ini melayani tampilan operasional perusahaan sendiri.
+     */
+    private static function hasil(string $kode, float $jumlah, $tanggal = null): ?array
+    {
+        if ($jumlah == 0.0 || !RegistriFaktor::terpasang()) return null;
+
+        return Kalkulator::hitung($kode, $jumlah, $tanggal ?? now(), [
+            'company_id' => auth()->user()?->company_id,
+        ]);
+    }
+
+    public static function literKeGj(float $liter, $tanggal = null): float
+    {
+        return self::hasil('solar', $liter, $tanggal)['gj'] ?? $liter * self::GJ_PER_LITER;
+    }
+
+    /** Definisi fisika (1 kWh = 3,6 MJ) — bukan faktor yang dapat berubah. */
     public static function kwhKeGj(float $kwh): float       { return $kwh * self::GJ_PER_KWH; }
     public static function gjKeKwh(float $gj): float        { return self::GJ_PER_KWH > 0 ? $gj / self::GJ_PER_KWH : 0.0; }
-    public static function m3KeGj(float $m3): float         { return $m3 * self::GJ_PER_M3_GAS; }
 
-    public static function literKeCo2(float $liter): float  { return $liter * self::TCO2E_PER_LITER; }
-    public static function kwhKeCo2(float $kwh): float      { return $kwh * self::TCO2E_PER_KWH; }
-    public static function m3KeCo2(float $m3): float        { return $m3 * self::TCO2E_PER_M3_GAS; }
+    public static function m3KeGj(float $m3, $tanggal = null): float
+    {
+        return self::hasil('gas', $m3, $tanggal)['gj'] ?? $m3 * self::GJ_PER_M3_GAS;
+    }
 
-    public static function literKeRp(float $liter): float   { return $liter * self::RP_PER_LITER; }
-    public static function kwhKeRp(float $kwh): float       { return $kwh * self::RP_PER_KWH; }
-    public static function m3KeRp(float $m3): float         { return $m3 * self::RP_PER_M3_GAS; }
+    /** tCO₂e FOSIL; CO₂ biogenik dari FAME tidak ikut (dilaporkan terpisah). */
+    public static function literKeCo2(float $liter, $tanggal = null): float
+    {
+        return self::hasil('solar', $liter, $tanggal)['co2e_t'] ?? $liter * self::TCO2E_PER_LITER;
+    }
+
+    public static function kwhKeCo2(float $kwh, $tanggal = null): float
+    {
+        return self::hasil('listrik_pln', $kwh, $tanggal)['co2e_t'] ?? $kwh * self::TCO2E_PER_KWH;
+    }
+
+    public static function m3KeCo2(float $m3, $tanggal = null): float
+    {
+        return self::hasil('gas', $m3, $tanggal)['co2e_t'] ?? $m3 * self::TCO2E_PER_M3_GAS;
+    }
+
+    public static function literKeRp(float $liter, $tanggal = null): float
+    {
+        return self::hasil('solar', $liter, $tanggal)['rupiah'] ?? $liter * self::RP_PER_LITER;
+    }
+
+    public static function kwhKeRp(float $kwh, $tanggal = null): float
+    {
+        return self::hasil('listrik_pln', $kwh, $tanggal)['rupiah'] ?? $kwh * self::RP_PER_KWH;
+    }
+
+    public static function m3KeRp(float $m3, $tanggal = null): float
+    {
+        return self::hasil('gas', $m3, $tanggal)['rupiah'] ?? $m3 * self::RP_PER_M3_GAS;
+    }
 
     /* ================= hitungan kinerja ================= */
 

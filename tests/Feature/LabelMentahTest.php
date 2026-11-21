@@ -47,9 +47,6 @@ class LabelMentahTest extends TestCase
      * terlihat di dalam kode, dan kejadian BARU tetap ditolak.
      */
     private const DIKETAHUI = [
-        'Energi/Halaman.vue: v-for="(value, key) in props.m"',
-        'Energi/Halaman.vue: v-for="(value, key) in props.recon"',
-        'Energi/Halaman.vue: v-for="(value, key) in props.total"',
         'Engineering/Halaman.vue: v-for="(v, key) in props.e"',
         'Engineering/Halaman.vue: v-for="(v, key) in props.h"',
     ];
@@ -63,7 +60,6 @@ class LabelMentahTest extends TestCase
      * atau parameter baru hilang dari tampilan tanpa ada yang tahu.
      */
     private const BERKUNCI_DATA = [
-        'Energi/Halaman.vue: v-for="(row, key) in props.perArea"',
         'Print/Izin.vue: v-for="(a, kode) in props.ambang"',
     ];
 

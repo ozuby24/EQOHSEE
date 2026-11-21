@@ -70,6 +70,10 @@ use App\Models\{AngkutAlat, AngkutMuatan, AngkutRegu, BiayaAkun, BiayaAnggaran, 
                 Percakapan, PersetujuanParaf,
                 Pesan, Signatory, TpkkpAssessment, TpkkpPengujian, TpkkpResponse, InduksiPengajuan};
 use App\Support\Waktu;
+use App\Models\Energi\{Audit as EnergiAudit, Faktor as EnergiFaktor, GrkBatas as EnergiGrkBatas, Jejak as EnergiJejak,
+    Koreksi as EnergiKoreksi, Laporan as EnergiLaporan, Mitigasi as EnergiMitigasi, Pengaturan as EnergiPengaturan,
+    Periode as EnergiPeriode, Personel as EnergiPersonel, Program as EnergiProgram, Rekomendasi as EnergiRekomendasi,
+    Scope3 as EnergiScope3, Site as EnergiSite, Tinjauan as EnergiTinjauan};
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -165,9 +169,18 @@ final class DataContoh
         /* Energi. Catatan pemakaian mendahului registri alatnya;
            EnergyFuelLog menunjuk equipment_id, sisanya berdiri sendiri
            dengan company_id masing-masing. */
+        /* Manajemen Energi & Karbon: koreksi mendahului periodenya,
+           rekomendasi mendahului auditnya, dan seluruhnya mendahului
+           catatan harian & peluang yang dirujuknya (nullOnDelete). Site
+           dibuang paling akhir — unit alat dan catatan listrik menunjuknya. */
+        EnergiJejak::class, EnergiKoreksi::class, EnergiPeriode::class, EnergiLaporan::class,
+        EnergiRekomendasi::class, EnergiAudit::class, EnergiTinjauan::class, EnergiProgram::class,
+        EnergiPersonel::class, EnergiMitigasi::class, EnergiScope3::class, EnergiGrkBatas::class,
+        EnergiPengaturan::class, EnergiFaktor::class,
         EnergyFuelLog::class, EnergyEquipment::class,
         EnergyProduction::class, EnergyPowerLog::class, EnergyOtherLog::class,
         EnergyFuelRecon::class, EnergyBaseline::class, EnergyOpportunity::class,
+        EnergiSite::class,
 
         /* KO. Suku cadang mendahului perintah kerjanya, dan
            KoInspection menunjuk ko_safeguard_id sekaligus
@@ -544,6 +557,7 @@ final class DataContoh
      */
     private const MENUNJUK_DIRI = [
         MaterialDiscussion::class => 'parent_id',
+        EnergiLaporan::class      => 'pengganti_id',
     ];
 
     private function bersihkan(): int
@@ -944,6 +958,7 @@ final class DataContoh
             'Inspeksi'  => $this->inspeksi(),
             'KO'        => $this->ko(),
             'Energi'    => $this->energiAlat(),
+            'Energi & Karbon' => $this->energiTataKelola(),
             'SMKP'      => $this->smkp(),
             'Prosedur'  => $this->prosedur(),
             'Berita'    => $this->berita(),
@@ -6183,6 +6198,14 @@ final class DataContoh
 
         $kategoriSah = array_keys(Energi::KATEGORI);
 
+        /* Dua site: pit di sistem grid Kalimantan, pelabuhan di sistem
+           terisolasi — supaya faktor grid Scope 2 per sistem terlihat bekerja. */
+        $sitePit = $this->baru(EnergiSite::class, ['kode' => 'PIT-A', 'nama' => 'Pit Asam-Asam', 'jenis' => 'pit',
+            'provinsi' => 'Kalimantan Selatan', 'sistem_grid' => 'KALSELTENGTIMUTARA', 'zona_waktu' => 'Asia/Makassar', 'aktif' => true]);
+        $this->baru(EnergiSite::class, ['kode' => 'PORT-1', 'nama' => 'Pelabuhan Batubara', 'jenis' => 'port',
+            'provinsi' => 'Kalimantan Selatan', 'sistem_grid' => 'ISOLATED', 'zona_waktu' => 'Asia/Makassar', 'aktif' => true]);
+        $n += 2;
+
         /** @var array<string,EnergyEquipment> menurut kodenya */
         $alat = [];
 
@@ -6203,6 +6226,9 @@ final class DataContoh
                 'daya_hp'     => $hp,
                 'payload_ton' => $payload,
                 'aktif'       => true,
+                'site_id'     => $sitePit->id,
+                'kategori_ipcc' => 'bergerak_offroad',
+                'seu'         => in_array($kode, ['EQ-HD-001', 'EQ-HD-002', 'EQ-EX-001'], true),
             ]);
             $n++;
 
@@ -6227,7 +6253,15 @@ final class DataContoh
     private function energiCatatan(array $alat): int
     {
         $n    = 0;
-        $hari = 14;
+        /* 45 hari supaya bulan lalu ikut berisi — bulan itulah yang
+           dikunci data contoh, dan kunci tanpa isi tidak memperlihatkan
+           apa pun. Dua hari terakhir sengaja masih "diajukan": antrean
+           verifikasi yang kosong tidak memperlihatkan alurnya. */
+        $hari = 45;
+        $siteId = EnergiSite::withoutGlobalScopes()->where('company_id', $this->c->id)->pluck('id', 'kode');
+        $alur = fn (int $i) => $i <= 2
+            ? ['status' => 'diajukan']
+            : ['status' => 'terverifikasi', 'diverifikasi_oleh' => $this->peninjau?->getKey(), 'diverifikasi_pada' => $this->kini->copy()->subDays($i - 1)];
 
         /* ── produksi harian ── */
 
@@ -6243,7 +6277,10 @@ final class DataContoh
                 'tanggal' => $tgl->toDateString(),
                 'ton'     => round(8_400 * $faktor),
                 'bcm'     => round(6_100 * $faktor),
-            ]);
+                'stripping_ratio' => 6.2,
+                'jarak_angkut_km' => round(4.6 + ($i % 5) * 0.3, 1),
+                'sumber_data' => 'nota',
+            ] + $alur($i));
             $n++;
         }
 
@@ -6290,7 +6327,8 @@ final class DataContoh
                     'ton'          => str_starts_with($kode, 'EQ-HD') ? round($jam * 96) : 0,
                     'bcm'          => $kode === 'EQ-EX-001' ? round($jam * 210) : 0,
                     'cycle_menit'  => $kode === 'EQ-EX-001' ? 0.6 : null,
-                ]);
+                    'sumber_data'  => $kode === 'EQ-GR-001' ? 'estimasi' : 'flowmeter',
+                ] + $alur($i));
                 $n++;
             }
         }
@@ -6315,24 +6353,34 @@ final class DataContoh
                     'puncak_kw'     => $puncak,
                     'jam_operasi'   => $jam,
                     'liter_genset'  => $liter,
-                ]);
+                    'site_id'       => $siteId[in_array($area, ['camp', 'office'], true) ? 'PORT-1' : 'PIT-A'] ?? null,
+                    'sumber_data'   => 'flowmeter',
+                ] + $alur($i));
                 $n++;
             }
         }
 
         /* ── energi lain ── */
 
+        /* Jenisnya KODE katalog (App\Support\Energi\Katalog), bukan label:
+           mesin inventarisasi GRK memilih faktor menurut kode ini, dan label
+           seperti "LPG" berakhir sebagai "kode energi tidak dikenal". */
         foreach ([
-            ['LPG',      'kg', 240.0, 'Dapur mess karyawan'],
-            ['Oli mesin','liter', 860.0, 'Pemakaian workshop bulan berjalan'],
-        ] as [$jenis, $satuan, $jumlah, $ket]) {
+            ['lpg',    'kg', 240.0,   'Dapur mess karyawan',           'nota',     5],
+            ['bensin', 'L',  1_350.0, 'Kendaraan ringan pengawas',     'nota',     6],
+            ['anfo',   'kg', 18_500.0,'Peledakan overburden blok B',   'nota',     8],
+            ['r134a',  'kg', 6.5,     'Isi ulang AC unit & kantor',    'nota',     9],
+            ['sf6',    'kg', 0.4,     'Penambahan SF₆ switchgear 20 kV','estimasi', 12],
+        ] as [$jenis, $satuan, $jumlah, $ket, $sumber, $mundur]) {
             $this->baru(EnergyOtherLog::class, [
-                'tanggal'     => $this->kini->copy()->subDays(5)->toDateString(),
+                'tanggal'     => $this->kini->copy()->subDays($mundur)->toDateString(),
                 'jenis'       => $jenis,
                 'satuan'      => $satuan,
                 'jumlah'      => $jumlah,
                 'keterangan'  => $ket,
-            ]);
+                'sumber_data' => $sumber,
+                'site_id'     => $siteId['PIT-A'] ?? null,
+            ] + $alur($mundur));
             $n++;
         }
 
@@ -6345,9 +6393,12 @@ final class DataContoh
         $stok = 48_000.0;
 
         for ($i = 3; $i >= 1; $i--) {
-            $salur = 12_400.0 - $i * 220;
+            /* Terpakai menurut stok ±3–5% di atas yang tercatat per unit dan
+               genset (±2.750 L/hari): selisih yang wajar, bukan nol — dan
+               bukan puluhan persen yang tidak mungkin terjadi di tambang. */
+            $salur = 3_000.0;
             $awal  = $stok;
-            $stok  = $awal - $salur + 11_000;
+            $stok  = $awal + $salur - (2_850.0 + $i * 25);
 
             $this->baru(EnergyFuelRecon::class, [
                 'tanggal'           => $this->kini->copy()->subDays($i)->toDateString(),
@@ -6355,17 +6406,24 @@ final class DataContoh
                 'stok_awal_liter'   => $awal,
                 'stok_akhir_liter'  => $stok,
                 'catatan'           => $i === 2 ? 'Selisih diperiksa; dugaan penguapan dan sisa selang.' : null,
-            ]);
+            ] + $alur($i));
             $n++;
         }
 
         /* ── garis dasar dan target ── */
 
-        foreach ([[$this->kini->year - 1, 0.0246, 0.0240], [$this->kini->year, 0.0240, 0.0228]] as [$th, $dasar, $target]) {
+        /* Dua yang sudah disetujui direksi, satu usulan tahun depan yang
+           menunggu putusan di Control Tower (BOD-17). */
+        foreach ([[$this->kini->year - 1, 0.0246, 0.0240, 'disetujui_bod'], [$this->kini->year, 0.0240, 0.0228, 'disetujui_bod'],
+                  [$this->kini->year + 1, 0.0232, 0.0219, 'usulan']] as [$th, $dasar, $target, $status]) {
             $this->baru(EnergyBaseline::class, [
                 'tahun'           => $th,
                 'baseline_gj_ton' => $dasar,
                 'target_gj_ton'   => $target,
+                'target_tco2e_ton'=> round($target * 0.0786, 6),
+                'status'          => $status,
+                'disetujui_oleh'  => $status === 'disetujui_bod' ? $this->peninjau?->getKey() : null,
+                'disetujui_pada'  => $status === 'disetujui_bod' ? $this->kini->copy()->subMonths(2) : null,
                 'catatan'         => 'Garis dasar contoh; dihitung dari pemakaian tahun sebelumnya.',
             ]);
             $n++;
@@ -6392,9 +6450,206 @@ final class DataContoh
                 'penanggung_jawab'  => $this->peninjau?->name ?? 'Kepala Teknik Tambang',
                 'target_selesai'    => $this->kini->copy()->addMonths(2 + $i)->toDateString(),
                 'user_id'           => $this->pengaju?->getKey(),
+                'capex_rp'          => [185_000_000, 420_000_000, 95_000_000, 60_000_000][$i],
+                /* Yang "selesai" membawa hasil M&V — status itu mensyaratkannya. */
+                'metode_mv'         => $status === 'selesai' ? 'B' : null,
+                'hemat_terverifikasi_kwh' => $status === 'selesai' ? 8_100.0 : null,
+                'tanggal_mulai_hemat' => $status === 'selesai' ? $this->kini->copy()->subMonths(3)->toDateString() : null,
+                'mv_catatan'        => $status === 'selesai' ? 'Meter terpisah 3 bulan sebelum vs 3 bulan sesudah; dinormalisasi jam operasi.' : null,
             ]);
             $n++;
         }
+
+        return $n;
+    }
+
+    /**
+     * Manajemen Energi & Karbon — tata kelola yang memakai catatan di atas.
+     *
+     * Bulan lalu DIKUNCI dan memuat satu koreksi yang menunggu putusan;
+     * manajer energi bersertifikat tetapi sertifikatnya habis dalam 50 hari
+     * (peringatan kalender menyala); audit energi dua tahun lalu dengan satu
+     * rekomendasi yang tenggatnya sudah lewat. Data contoh yang seluruhnya
+     * patuh tidak memperlihatkan satu pun peringatan bekerja.
+     */
+    private function energiTataKelola(): int
+    {
+        $n = 0;
+        $t = $this->kini->year;
+
+        $this->baru(EnergiPengaturan::class, [
+            'kategori_pengguna' => 'industri', 'sistem_grid' => 'KALSELTENGTIMUTARA', 'gwp_set' => 'AR5', 'emiten' => true,
+            'ambang_kelengkapan_persen' => 90, 'ambang_rekonsiliasi_persen' => 2, 'ambang_rag_persen' => 5,
+            'tahun_dasar' => $t - 1, 'ambang_rekalkulasi_persen' => 5, 'target_tahun' => 2030, 'target_penurunan_persen' => 30,
+            'tanggal_proper' => Carbon::create($t, 12, 15)->toDateString(),
+        ]);
+        $n++;
+
+        /* Faktor spesifik pemasok (Tier 2) — densitas solar dari sertifikat
+           mutu pemasok. Faktor BERSAMA dipasang `energi:pasang`, bukan di sini. */
+        $this->baru(EnergiFaktor::class, [
+            'kode_energi' => 'solar', 'parameter' => 'densitas', 'pemasok' => 'PT Pemasok BBM Contoh', 'nilai' => 0.838,
+            'satuan' => 'kg/L', 'berlaku_mulai' => Carbon::create($t, 1, 1)->toDateString(), 'tier' => 2,
+            'sumber_dokumen' => 'Sertifikat mutu pemasok (contoh)', 'status' => 'aktif', 'perlu_cocok' => false,
+            'diajukan_oleh' => $this->pengaju?->getKey(), 'disetujui_oleh' => $this->peninjau?->getKey(), 'disetujui_pada' => $this->kini,
+        ]);
+        $this->baru(EnergiFaktor::class, [
+            'kode_energi' => 'karbon', 'parameter' => 'harga_tinggi', 'nilai' => 150000, 'satuan' => 'Rp/tCO2e',
+            'berlaku_mulai' => Carbon::create($t, 1, 1)->toDateString(), 'tier' => 1,
+            'sumber_dokumen' => 'Skenario internal (contoh) — harga karbon bayangan tinggi', 'status' => 'draf',
+            'diajukan_oleh' => $this->pengaju?->getKey(),
+        ]);
+        $n += 2;
+
+        /* ── periode: bulan lalu terkunci, bulan ini terbuka ── */
+        $lalu = $this->kini->copy()->subMonthNoOverflow()->startOfMonth();
+        $periodeLalu = $this->baru(EnergiPeriode::class, [
+            'tahun' => $lalu->year, 'bulan' => $lalu->month, 'status' => 'terkunci',
+            'dikunci_oleh' => $this->peninjau?->getKey(), 'dikunci_pada' => $this->kini->copy()->startOfMonth()->addDays(4),
+            'kelengkapan_persen' => 96.4, 'catatan' => 'Dikunci sesudah rekonsiliasi akhir bulan.',
+        ]);
+        $this->baru(EnergiPeriode::class, ['tahun' => $this->kini->year, 'bulan' => $this->kini->month, 'status' => 'terbuka']);
+        $n += 2;
+
+        $alat = EnergyEquipment::withoutGlobalScopes()->where('company_id', $this->c->id)->pluck('id');
+        $rentangLalu = [$lalu->toDateString(), $lalu->copy()->endOfMonth()->toDateString()];
+        EnergyFuelLog::withoutGlobalScopes()->whereIn('equipment_id', $alat)->whereBetween('tanggal', $rentangLalu)->update(['status' => 'terkunci']);
+        foreach ([EnergyProduction::class, EnergyPowerLog::class, EnergyOtherLog::class, EnergyFuelRecon::class] as $kelas) {
+            $kelas::withoutGlobalScopes()->where('company_id', $this->c->id)->whereBetween('tanggal', $rentangLalu)->update(['status' => 'terkunci']);
+        }
+
+        $terkunci = EnergyFuelLog::withoutGlobalScopes()->whereIn('equipment_id', $alat)->where('status', 'terkunci')->orderBy('tanggal')->first()
+                 ?? EnergyFuelLog::withoutGlobalScopes()->whereIn('equipment_id', $alat)->orderBy('tanggal')->first();
+        if ($terkunci) {
+            $this->baru(EnergiKoreksi::class, [
+                'periode_id' => $periodeLalu->id, 'subjek_type' => EnergyFuelLog::class, 'subjek_id' => $terkunci->id,
+                'nilai_lama' => ['liter' => $terkunci->liter], 'nilai_baru' => ['liter' => round($terkunci->liter * 0.94, 1)],
+                'alasan' => 'Nota flow meter terbaca dua kali pada pengisian sore; angka benar sesuai tiket pengisian.',
+                'status' => 'diajukan', 'diajukan_oleh' => $this->pengaju?->getKey(),
+            ]);
+            $n++;
+        }
+
+        /* ── inventarisasi GRK ── */
+        $relevansi = [];
+        foreach (EnergiScope3::KATEGORI as $k => $l) {
+            $relevansi[$k] = ['relevan' => in_array($k, [3, 4, 6, 7, 11], true),
+                              'alasan' => in_array($k, [3, 4, 6, 7, 11], true) ? 'Material terhadap rantai nilai tambang batubara.' : 'Tidak material / tidak ada kegiatan.'];
+        }
+        $this->baru(EnergiGrkBatas::class, [
+            'tahun' => $t, 'pendekatan' => 'kendali_operasional',
+            'uraian_batas' => "Seluruh kegiatan di bawah kendali operasional perusahaan: pit, hauling road, crusher, pelabuhan, camp.\nKontraktor penambangan di bawah kendali operasional ikut tercakup.",
+            'pengecualian' => [['sumber' => 'Genset cadangan kantor perwakilan Banjarmasin', 'alasan' => 'Data tidak tersedia; kurang dari 0,5% emisi.', 'estimasi_persen' => 0.3]],
+            'relevansi_scope3' => $relevansi, 'disetujui_oleh' => $this->peninjau?->getKey(), 'disetujui_pada' => $this->kini->copy()->subMonths(3),
+        ]);
+        $n++;
+
+        foreach ([
+            [4, 'Angkutan tongkang batubara pihak ketiga', 'distance', 18_400_000, 'ton-km', 0.0185, 'Faktor tongkang (contoh) — ganti dengan data pemasok', 'PT Pelayaran Contoh', 3],
+            [6, 'Perjalanan dinas udara karyawan', 'distance', 412_000, 'pkm', 0.158, 'Faktor penerbangan domestik (contoh)', null, 3],
+            [11, 'Pembakaran batubara terjual di PLTU pembeli', 'average_data', 1_950_000, 'ton', 1_890.0, 'Estimasi NCV × EF batubara sub-bituminus (contoh)', null, 4],
+        ] as [$kat, $sub, $metode, $q, $sat, $f, $sumber, $mitra, $mutu]) {
+            $this->baru(EnergiScope3::class, [
+                'tahun' => $t, 'kategori' => $kat, 'subkategori' => $sub, 'metode' => $metode, 'kuantitas' => $q, 'satuan' => $sat,
+                'faktor_kgco2e' => $f, 'sumber_faktor' => $sumber, 'mitra' => $mitra, 'kualitas_data' => $mutu,
+                'status' => $kat === 11 ? 'diajukan' : 'terverifikasi', 'diinput_oleh' => $this->pengaju?->getKey(),
+            ]);
+            $n++;
+        }
+
+        $peluang = EnergyOpportunity::withoutGlobalScopes()->where('company_id', $this->c->id)->pluck('id', 'judul');
+        foreach ([
+            ['PLTS atap camp & workshop 400 kWp', 'ebt', -8, 'Pengukuran kWh PLTS × faktor grid sistem', 620.0, 410.0, 'didaftarkan', 'SRN-CONTOH-001', null],
+            ['Pembatasan idle armada hauling', 'efisiensi', -5, 'IPMVP opsi B, liter sebelum vs sesudah', 3_900.0, 260.0, 'belum', null, 'Batasi idle truk hauling maksimal 10%'],
+        ] as [$judul, $jenis, $mulai, $metode, $base, $turun, $srn, $nomor, $pel]) {
+            $this->baru(EnergiMitigasi::class, [
+                'judul' => $judul, 'jenis' => $jenis, 'mulai' => $this->kini->copy()->addMonths($mulai)->toDateString(),
+                'metodologi' => $metode, 'baseline_tco2e_tahun' => $base, 'target_penurunan_tco2e_tahun' => $turun,
+                'capaian' => [(string) $t => round($turun * 0.55, 1)], 'status_srn' => $srn, 'nomor_srn' => $nomor,
+                'peluang_id' => $pel ? ($peluang[$pel] ?? null) : null,
+                'site_id' => EnergiSite::withoutGlobalScopes()->where('company_id', $this->c->id)->value('id'),
+            ]);
+            $n++;
+        }
+
+        /* ── manajemen energi PP 33/2023 ── */
+        $manajer = $this->baru(EnergiPersonel::class, [
+            'user_id' => $this->peninjau?->getKey(), 'nama' => $this->peninjau?->name ?? 'Manajer Energi', 'peran' => 'manajer_energi',
+            'internal' => true, 'nomor_sertifikat' => 'ME-'.$t.'-0142', 'lembaga_sertifikasi' => 'LSP Energi (contoh)',
+            'berlaku_sampai' => $this->kini->copy()->addDays(50)->toDateString(), 'nomor_sk' => 'SK/ME/'.$t.'/07', 'aktif' => true,
+        ]);
+        $auditor = $this->baru(EnergiPersonel::class, [
+            'nama' => 'Ir. Auditor Energi (contoh)', 'peran' => 'auditor_energi', 'internal' => false, 'lembaga' => 'Konsultan Energi Contoh',
+            'nomor_sertifikat' => 'AE-'.($t - 2).'-0381', 'lembaga_sertifikasi' => 'LSP Energi (contoh)',
+            'berlaku_sampai' => $this->kini->copy()->addYears(2)->toDateString(), 'aktif' => true,
+        ]);
+        $n += 2;
+
+        foreach ([[$t, 'Pengendalian idle & pola operasi armada', 'berjalan', 4_200, 310, 250_000_000],
+                  [$t, 'Efisiensi penerangan & pompa', 'berjalan', 1_900, 150, 520_000_000],
+                  [$t + 1, 'Elektrifikasi pompa dewatering pit', 'rencana', 6_500, 480, 2_100_000_000]] as [$th, $judul, $status, $gj, $co2, $rp]) {
+            $this->baru(EnergiProgram::class, [
+                'tahun' => $th, 'judul' => $judul, 'sasaran' => 'Program contoh — sasaran, kegiatan, dan ukuran keberhasilannya.',
+                'target_hemat_gj' => $gj, 'target_hemat_tco2e' => $co2, 'anggaran_rp' => $rp,
+                'pic' => $this->peninjau?->name ?? 'Manajer Energi', 'status' => $status,
+                'peluang_ids' => $peluang->values()->take(2)->all(),
+            ]);
+            $n++;
+        }
+
+        $audit = $this->baru(EnergiAudit::class, [
+            'jenis' => 'eksternal', 'judul' => 'Audit energi rinci '.($t - 2),
+            'ruang_lingkup' => 'Armada hauling, excavator, crusher, dan sistem pompa dewatering.',
+            'seu' => ['kategori:hauling', 'kategori:excavator', 'area:crusher'], 'auditor_ids' => [$auditor->id],
+            'mulai' => Carbon::create($t - 2, 3, 6)->toDateString(), 'selesai' => Carbon::create($t - 2, 4, 20)->toDateString(),
+            'standar' => 'SNI ISO 50002', 'status' => 'selesai',
+            'ringkasan' => 'Idle armada di atas 15% dan pompa dewatering bekerja di luar titik efisiensi terbaiknya.',
+        ]);
+        $n++;
+
+        foreach ([
+            ['Batasi idle truk hauling maksimal 10% lewat pemantauan FMS', 2_800, 1_150_000_000, 150_000_000, 'tinggi', 'ditindaklanjuti', Carbon::create($t + 1, 4, 20)],
+            ['Ganti impeller & atur ulang titik operasi pompa dewatering', 950, 380_000_000, 420_000_000, 'sedang', 'terbuka', $this->kini->copy()->subDays(20)],
+        ] as [$uraian, $gj, $rp, $biaya, $prio, $status, $tenggat]) {
+            $r = $this->baru(EnergiRekomendasi::class, [
+                'audit_id' => $audit->id, 'uraian' => $uraian, 'potensi_hemat_gj' => $gj, 'potensi_hemat_rp' => $rp, 'biaya_rp' => $biaya,
+                'prioritas' => $prio, 'tenggat' => $tenggat->toDateString(), 'status' => $status,
+            ]);
+            $this->baru(TindakLanjut::class, [
+                'user_id' => $this->peninjau?->getKey(), 'sumber_type' => EnergiRekomendasi::class, 'sumber_id' => $r->id, 'modul' => 'energi',
+                'kode_pemicu' => 'AUDIT-ENERGI-'.$audit->id, 'judul' => 'Rekomendasi audit energi: '.$uraian, 'kategori' => 'rekomendasi_audit',
+                'prioritas' => $prio, 'status' => $status === 'ditindaklanjuti' ? 'berjalan' : 'rencana',
+                'target_selesai' => $tenggat->toDateString(), 'penanggung_jawab' => $manajer->nama, 'uraian' => $uraian,
+            ]);
+            $n += 2;
+        }
+
+        /* Instruksi direksi dari Control Tower. */
+        $this->baru(TindakLanjut::class, [
+            'user_id' => $this->peninjau?->getKey(), 'modul' => 'energi', 'kode_pemicu' => 'BOD', 'kategori' => 'instruksi_bod',
+            'judul' => 'Turunkan selisih rekonsiliasi BBM di bawah 2%', 'prioritas' => 'tinggi', 'status' => 'berjalan',
+            'penanggung_jawab' => 'Superintendent Fuel', 'target_selesai' => $this->kini->copy()->addDays(21)->toDateString(),
+            'uraian' => "Telusuri selisih tangki utama dan kalibrasi flow meter.\n\nKonteks dasbor: Selisih rekonsiliasi BBM.",
+        ]);
+        $n++;
+
+        $this->baru(EnergiTinjauan::class, [
+            'tahun' => $t, 'jenis' => 'monev', 'tanggal' => $this->kini->copy()->subMonths(1)->startOfMonth()->addDays(9)->toDateString(),
+            'peserta' => 'Direktur Operasi, KTT, Manajer Energi, Superintendent Plant',
+            'masukan' => "EnPI semester I di bawah EnB 2,1%.\nRekomendasi pompa dewatering belum dilaksanakan.",
+            'keluaran' => "Anggaran impeller pompa disetujui.\nTarget idle hauling diturunkan menjadi 10%.",
+        ]);
+        $n++;
+
+        /* Satu draf laporan bulanan dari bulan yang sudah terkunci. */
+        $this->baru(EnergiLaporan::class, [
+            'templat' => 'KINERJA_BLN', 'tahun' => $lalu->year,
+            'periode_mulai' => $lalu->toDateString(), 'periode_sampai' => $lalu->copy()->endOfMonth()->toDateString(),
+            'versi' => 1, 'status' => 'draf', 'judul' => 'Laporan Kinerja Energi Bulanan '.$lalu->format('Y-m'),
+            'snapshot' => \App\Support\Energi\Pelaporan::susun('KINERJA_BLN', $this->c->id, $lalu->copy(), $lalu->copy()->endOfMonth()->startOfDay()),
+            'disusun_oleh' => $this->pengaju?->getKey(),
+        ]);
+        $n++;
 
         return $n;
     }

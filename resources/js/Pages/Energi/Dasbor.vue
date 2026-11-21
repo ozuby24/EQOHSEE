@@ -84,9 +84,11 @@ const trenIntensitas = computed(() => [{
  * Liter dan kWh tidak dapat berbagi satu sumbu, dan dua sumbu pada
  * satu grafik membuat perpotongannya ditentukan pemilihan skala, bukan
  * datanya.
+ *
+ * GJ-nya dihitung server dengan registri faktor (gj_solar, gj_listrik);
+ * berkas ini tidak lagi menyimpan faktornya sendiri — salinan faktor di
+ * Vue pasti berbeda dengan server begitu registri diperbarui (cacat D2).
  */
-const GJ_PER_LITER = 0.0358;
-const GJ_PER_KWH   = 0.0036;
 
 /**
  * Satu warna untuk satu sumber energi, DI SELURUH halaman.
@@ -105,14 +107,14 @@ const WARNA_SUMBER: Record<string, string> = {
 };
 
 const trenSumber = computed(() => [
-  { nama: 'Solar',   nilai: props.tren.map(t => Number(t.liter) * GJ_PER_LITER), warna: WARNA_SUMBER.Solar },
-  { nama: 'Listrik', nilai: props.tren.map(t => Number(t.kwh) * GJ_PER_KWH),     warna: WARNA_SUMBER.Listrik },
+  { nama: 'Solar',   nilai: props.tren.map(t => Number(t.gj_solar ?? 0)),   warna: WARNA_SUMBER.Solar },
+  { nama: 'Listrik', nilai: props.tren.map(t => Number(t.gj_listrik ?? 0)), warna: WARNA_SUMBER.Listrik },
 ]);
 
 /* ── 3. boros di mana ── */
 
 const bauran = computed(() =>
-  Object.entries(props.r?.rincian ?? {})
+  Object.entries((props.r?.rincian ?? {}) as Record<string, any>)
     .map(([nama, d]: [string, any]) => ({
       label: nama,
       nilai: Math.round(Number(d.gj)),
@@ -269,8 +271,8 @@ const kartu = computed(() => [
             <tbody>
               <tr v-for="(t, i) in tren" :key="i">
                 <td>{{ hari[i] }}</td>
-                <td class="num">{{ n(Number(t.liter) * GJ_PER_LITER, 2) }}</td>
-                <td class="num">{{ n(Number(t.kwh) * GJ_PER_KWH, 2) }}</td>
+                <td class="num">{{ n(Number(t.gj_solar ?? 0), 2) }}</td>
+                <td class="num">{{ n(Number(t.gj_listrik ?? 0), 2) }}</td>
               </tr>
             </tbody>
           </table>

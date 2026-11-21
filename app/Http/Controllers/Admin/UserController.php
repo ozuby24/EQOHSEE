@@ -96,6 +96,7 @@ class UserController extends Controller
                 'lms_role'    => (string) ($u->lms_role ?? ''),
                 'audit_role'  => (string) ($u->audit_role ?? ''),
                 'ohse_role'   => (string) ($u->ohse_role ?? ''),
+                'energi_role' => (string) ($u->energi_role ?? ''),
                 'company_id'  => $u->company_id ? (string) $u->company_id : '',
                 'employee_id' => (string) ($u->employee_id ?? ''),
                 'position'    => (string) ($u->position ?? ''),
@@ -119,6 +120,7 @@ class UserController extends Controller
                     ['nilai' => 'ohse',      'label' => 'Tim OHSE — memutuskan'],
                     ['nilai' => 'paramedis', 'label' => 'Paramedis — memaraf hasil MCU'],
                 ],
+                'energi' => collect(User::PERAN_ENERGI)->map(fn ($l, $k) => ['nilai' => $k, 'label' => $l])->values()->all(),
                 'perusahaan' => Company::orderBy('name')->get()
                     ->map(fn ($c) => ['nilai' => (string) $c->id, 'label' => $c->name])->all(),
                 'jabatan'    => \App\Support\Hazard::JABATAN,
@@ -253,6 +255,8 @@ class UserController extends Controller
                tahap paramedis ada supaya yang membaca hasil pemeriksaan
                bukan orang yang memutuskan kelayakannya. */
             'ohse_role'   => ['nullable', Rule::in(['ohse', 'paramedis'])],
+            /* Peran modul Manajemen Energi & Karbon — lihat gerbang energi.* di AppServiceProvider. */
+            'energi_role' => ['nullable', Rule::in(array_keys(User::PERAN_ENERGI))],
             /* Auditi audit SMKP tanpa perusahaan tidak menjangkau audit
                mana pun dan tidak menerima pengingat (Aurorasys). */
             'company_id'  => [Rule::requiredIf(fn () => $request->input('audit_role') === User::ROLE_AUDITI && !$request->boolean('is_admin')),

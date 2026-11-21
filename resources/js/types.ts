@@ -1718,7 +1718,7 @@ export interface HalamanFormPengguna {
    * galat tipe: kolom sandi yang mungkin berisi boolean. */
   awal: Record<string, string | boolean> & { password?: string };
   opsi: {
-    lms: Pilihan[]; audit: Pilihan[]; ohse: Pilihan[]; perusahaan: Pilihan[];
+    lms: Pilihan[]; audit: Pilihan[]; ohse: Pilihan[]; energi?: Pilihan[]; perusahaan: Pilihan[];
     jabatan: string[]; departemen: string[];
   };
   /** Auditi audit SMKP aktif per perusahaan (kunci: id perusahaan), tanpa akun ini. */

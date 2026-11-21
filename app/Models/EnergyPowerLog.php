@@ -13,16 +13,18 @@ use Illuminate\Database\Eloquent\Model;
 #[ScopedBy(MilikPerusahaan::class)]
 class EnergyPowerLog extends Model
 {
-    use BerpemilikPerusahaan;
+    use BerpemilikPerusahaan, \App\Models\Concerns\CatatanEnergi;
 
     protected $table = 'energy_power_logs';
 
-    protected $fillable = ['company_id','tanggal','area','sumber','kwh','puncak_kw','jam_operasi','liter_genset'];
+    protected $fillable = ['company_id','tanggal','area','sumber','kwh','puncak_kw','jam_operasi','liter_genset',
+                           'site_id','status','sumber_data','diinput_oleh','diverifikasi_oleh','diverifikasi_pada','alasan_tolak'];
 
     protected function casts(): array
     {
         return ['tanggal' => 'date', 'kwh' => 'float', 'puncak_kw' => 'float',
-                'jam_operasi' => 'float', 'liter_genset' => 'float'];
+                'jam_operasi' => 'float', 'liter_genset' => 'float',
+                'diverifikasi_pada' => 'datetime'];
     }
 
     public function labelArea(): string   { return Energi::AREA[$this->area] ?? ucfirst($this->area); }

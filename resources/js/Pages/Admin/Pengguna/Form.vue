@@ -103,6 +103,18 @@ const kepala = 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400
             dirangkap tim OHSE, supaya yang membaca hasil bukan yang memutuskannya.
           </p>
         </div>
+
+        <div>
+          <label :class="label">Peran Energi &amp; Karbon</label>
+          <select v-model="form.energi_role" :class="isian" aria-label="Peran Energi dan Karbon">
+            <option value="">— tanpa peran (input lapangan) —</option>
+            <option v-for="o in (opsi.energi ?? [])" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
+          </select>
+          <p class="text-[11px] text-stone-500 mt-1">
+            Menentukan siapa yang memverifikasi dan mengunci data energi, mengelola registri faktor emisi,
+            menyusun laporan ESDM/GRK, dan membuka dasbor kontrol direksi.
+          </p>
+        </div>
         <div>
           <label :class="label">Perusahaan</label>
           <select v-model="form.company_id" :class="isian" aria-label="Perusahaan" :required="auditi">

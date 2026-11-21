@@ -11,14 +11,16 @@ use Illuminate\Database\Eloquent\Model;
 #[ScopedBy(MilikPerusahaan::class)]
 class EnergyProduction extends Model
 {
-    use BerpemilikPerusahaan;
+    use BerpemilikPerusahaan, \App\Models\Concerns\CatatanEnergi;
 
     protected $table = 'energy_production';
 
-    protected $fillable = ['company_id','tanggal','ton','bcm'];
+    protected $fillable = ['company_id','tanggal','ton','bcm','stripping_ratio','jarak_angkut_km',
+                           'status','sumber_data','diinput_oleh','diverifikasi_oleh','diverifikasi_pada','alasan_tolak'];
 
     protected function casts(): array
     {
-        return ['tanggal' => 'date', 'ton' => 'float', 'bcm' => 'float'];
+        return ['tanggal' => 'date', 'ton' => 'float', 'bcm' => 'float', 'stripping_ratio' => 'float',
+                'jarak_angkut_km' => 'float', 'diverifikasi_pada' => 'datetime'];
     }
 }

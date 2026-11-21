@@ -34,7 +34,7 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $fillable = [
         'name', 'email', 'password',
         // peran terpadu
-        'is_admin', 'lms_role', 'audit_role', 'ohse_role', 'company_id',
+        'is_admin', 'lms_role', 'audit_role', 'ohse_role', 'energi_role', 'company_id',
         // profil (dulu tabel 'profiles')
         'avatar', 'employee_id', 'position', 'department', 'phone', 'active',
         'whatsapp', 'bio', 'tema',
@@ -81,6 +81,17 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isAdmin(): bool   { return (bool) $this->is_admin; }
     public function isTrainer(): bool { return $this->lms_role === 'trainer'; }
     public function isKtt(): bool     { return $this->lms_role === 'ktt'; }
+
+    /** Peran modul Manajemen Energi & Karbon (kolom energi_role). */
+    public const PERAN_ENERGI = [
+        'operator'       => 'Operator lapangan — input data aktivitas',
+        'verifikator'    => 'Verifikator site — memverifikasi data harian',
+        'manajer_energi' => 'Manajer Energi — program, audit, laporan ESDM',
+        'petugas_grk'    => 'Petugas GRK / HSE — registri faktor & inventarisasi GRK',
+        'keuangan'       => 'Keuangan / Sustainability — PSPK 2, biaya energi',
+        'bod'            => 'BOD / Direksi — dasbor kontrol & persetujuan target',
+        'auditor_tamu'   => 'Auditor/verifikator eksternal — baca saja',
+    ];
 
     /**
      * Tim OHSE — satu-satunya yang memutuskan di modul Authority.

@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Company, EnergyBaseline, EnergyEquipment, EnergyFuelLog,
                 EnergyFuelRecon, EnergyOpportunity, EnergyOtherLog, EnergyPowerLog, EnergyProduction};
+use App\Models\Energi\{Periode, Site};
+use App\Rules\DalamPerusahaan;
 use App\Support\{Energi, KopDokumen};
+use App\Support\Energi\{Katalog, RegistriFaktor};
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
@@ -46,22 +49,34 @@ class EnergyController extends Controller
 
     public function input(Request $request)
     {
+        $lain = [];
+        foreach (Katalog::LAIN as $k) $lain[$k] = ['label' => Katalog::label($k), 'satuan' => Katalog::satuan($k)];
+
         return Inertia::render('Energi/Halaman', [
             'mode' => 'input',
             'units' => EnergyEquipment::where('aktif', true)->orderBy('kode')->get(['id', 'kode', 'nama', 'kategori']),
             'areas' => Energi::AREA,
             'sources' => Energi::SUMBER_LISTRIK,
+            'sites' => Site::where('aktif', true)->orderBy('nama')->get(['id', 'kode', 'nama']),
+            'lain' => $lain,
+            'sumberData' => EnergyFuelLog::$SUMBER_DATA,
+            /* Campuran FAME nasional yang berlaku hari ini — bawaan isian;
+               penginput menimpanya hanya bila nota pengiriman menyebut lain. */
+            'fameBawaan' => RegistriFaktor::nilai('solar', 'persen_fame', now(), ['company_id' => $request->user()->company_id]),
+            'boleh' => ['input' => $request->user()->can('energi.input')],
             'recent' => [
                 'production' => EnergyProduction::latest('tanggal')->limit(8)->get(),
                 'fuel' => EnergyFuelLog::with('equipment')->latest('tanggal')->limit(8)->get(),
                 'power' => EnergyPowerLog::latest('tanggal')->limit(8)->get(),
                 'recon' => EnergyFuelRecon::latest('tanggal')->limit(8)->get(),
+                'other' => EnergyOtherLog::latest('tanggal')->limit(8)->get(),
             ],
             'tautan' => [
                 'production' => route('energi.input.production'),
                 'fuel' => route('energi.input.fuel'),
                 'power' => route('energi.input.power'),
                 'recon' => route('energi.input.recon'),
+                'other' => route('energi.input.other'),
             ],
         ]);
     }
@@ -69,12 +84,17 @@ class EnergyController extends Controller
     public function simpanProduksi(Request $request)
     {
         $data = $request->validate([
-            'tanggal' => ['required', 'date'],
+            'tanggal' => ['required', 'date', 'before_or_equal:today'],
             'ton' => ['required', 'numeric', 'min:0', 'max:1000000000'],
             'bcm' => ['required', 'numeric', 'min:0', 'max:1000000000'],
+            'stripping_ratio' => ['nullable', 'numeric', 'min:0', 'max:1000'],
+            'jarak_angkut_km' => ['nullable', 'numeric', 'min:0', 'max:1000'],
+            'sumber_data' => ['nullable', Rule::in(array_keys(EnergyProduction::$SUMBER_DATA))],
         ]);
 
-        EnergyProduction::updateOrCreate(['tanggal' => $data['tanggal']], $data);
+        if ($galat = $this->periodeTerkunci($data['tanggal'], $request->user()->company_id)) return $galat;
+
+        EnergyProduction::updateOrCreate(['tanggal' => $data['tanggal']], $data + $this->diajukan());
 
         return back()->with('ok', 'Produksi harian tersimpan dan langsung masuk ke KPI energi.');
     }
@@ -91,13 +111,17 @@ class EnergyController extends Controller
             'ton' => ['required', 'numeric', 'min:0', 'max:1000000'],
             'bcm' => ['required', 'numeric', 'min:0', 'max:1000000'],
             'cycle_menit' => ['nullable', 'numeric', 'min:0', 'max:1000'],
+            'persen_fame' => ['nullable', 'numeric', 'between:0,100'],
+            'sumber_data' => ['nullable', Rule::in(array_keys(EnergyFuelLog::$SUMBER_DATA))],
         ]);
 
         // Model unit membawa scope perusahaan; ID lintas perusahaan berhenti di sini.
         $unit = EnergyEquipment::findOrFail($data['equipment_id']);
+        if ($galat = $this->periodeTerkunci($data['tanggal'], $unit->company_id)) return $galat;
+
         $log = EnergyFuelLog::updateOrCreate(
             ['equipment_id' => $unit->id, 'tanggal' => $data['tanggal']],
-            $data
+            $data + $this->diajukan()
         );
 
         ActivityLog::write('Input bahan bakar alat', $unit->kode.' - '.$log->tanggal->format('Y-m-d'), 'energi');
@@ -115,11 +139,15 @@ class EnergyController extends Controller
             'puncak_kw' => ['required', 'numeric', 'min:0', 'max:1000000'],
             'jam_operasi' => ['required', 'numeric', 'min:0', 'max:24'],
             'liter_genset' => ['required', 'numeric', 'min:0', 'max:1000000'],
+            'site_id' => ['nullable', new DalamPerusahaan('energi_sites')],
+            'sumber_data' => ['nullable', Rule::in(array_keys(EnergyPowerLog::$SUMBER_DATA))],
         ]);
+
+        if ($galat = $this->periodeTerkunci($data['tanggal'], $request->user()->company_id)) return $galat;
 
         EnergyPowerLog::updateOrCreate(
             ['tanggal' => $data['tanggal'], 'area' => $data['area'], 'sumber' => $data['sumber']],
-            $data
+            $data + $this->diajukan()
         );
 
         return back()->with('ok', 'Catatan listrik tersimpan.');
@@ -139,9 +167,49 @@ class EnergyController extends Controller
             return back()->withInput()->withErrors(['stok_akhir_liter' => 'Stok akhir tidak boleh melebihi stok awal ditambah penyaluran.']);
         }
 
-        EnergyFuelRecon::updateOrCreate(['tanggal' => $data['tanggal']], $data);
+        if ($galat = $this->periodeTerkunci($data['tanggal'], $request->user()->company_id)) return $galat;
+
+        EnergyFuelRecon::updateOrCreate(['tanggal' => $data['tanggal']], $data + $this->diajukan());
 
         return back()->with('ok', 'Rekonsiliasi bahan bakar tersimpan.');
+    }
+
+    /**
+     * Gas & energi lain (cacat D3 — sebelumnya tidak ada formulirnya):
+     * bensin, LPG, gas alam, bahan peledak, refrigeran, SF₆.
+     */
+    public function simpanLain(Request $request)
+    {
+        $data = $request->validate([
+            'tanggal' => ['required', 'date', 'before_or_equal:today'],
+            'site_id' => ['nullable', new DalamPerusahaan('energi_sites')],
+            'jenis' => ['required', Rule::in(Katalog::LAIN)],
+            'jumlah' => ['required', 'numeric', 'min:0', 'max:1000000000'],
+            'sumber_data' => ['required', Rule::in(array_keys(EnergyOtherLog::$SUMBER_DATA))],
+            'keterangan' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        if ($galat = $this->periodeTerkunci($data['tanggal'], $request->user()->company_id)) return $galat;
+
+        $data['satuan'] = Katalog::satuan($data['jenis']);
+        EnergyOtherLog::create($this->pemilik($data) + $this->diajukan());
+
+        return back()->with('ok', Katalog::label($data['jenis']).' tercatat.');
+    }
+
+    /** Status baris yang baru disimpan atau dibetulkan sesudah ditolak. */
+    private function diajukan(): array
+    {
+        return ['status' => 'diajukan', 'alasan_tolak' => null];
+    }
+
+    /** Tolak penyimpanan ke periode terkunci dengan pesan yang dapat dibaca, bukan 423 mentah. */
+    private function periodeTerkunci(string $tanggal, ?int $companyId)
+    {
+        if (!Periode::terkunciPada($companyId, $tanggal)) return null;
+
+        return back()->withInput()->withErrors(['tanggal' => 'Periode '.Carbon::parse($tanggal)->translatedFormat('F Y')
+            .' sudah terkunci. Perubahan hanya lewat pengajuan koreksi di halaman Verifikasi & Periode.']);
     }
 
     /* ================= konsumsi energi ================= */
@@ -166,7 +234,11 @@ class EnergyController extends Controller
         [$dari, $sampai] = $this->rentang($request);
 
         $recon = EnergyFuelRecon::whereBetween('tanggal', [$dari, $sampai])->get();
-        $tercatat = (float) EnergyFuelLog::whereBetween('tanggal', [$dari, $sampai])->sum('liter');
+
+        /* Selisih dihitung atas tanggal yang SAMA dengan rekonsiliasinya —
+           sama persis dengan kartu rekonsiliasi di Control Tower. */
+        $r = \App\Support\Energi\KendaliDireksi::rekonsiliasi($dari, $sampai, []);
+        $tercatat = $r['tercatat'];
 
         $disalurkan = $recon->sum(fn ($x) => $x->terpakaiMenurutStok());
 
@@ -378,7 +450,12 @@ class EnergyController extends Controller
             'hemat_kwh'        => ['nullable','numeric','min:0','max:10000000'],
             'penanggung_jawab' => ['nullable','string','max:150'],
             'target_selesai'   => ['nullable','date'],
+            'capex_rp'         => ['nullable','numeric','min:0','max:100000000000000'],
         ]);
+
+        if ($d['status'] === 'selesai') {
+            return back()->withErrors(['status' => 'Peluang baru tidak dapat langsung "selesai" — catat dulu, lalu isi hasil M&V-nya.']);
+        }
 
         $d['hemat_liter'] = $d['hemat_liter'] ?? 0;
         $d['hemat_kwh']   = $d['hemat_kwh']   ?? 0;
@@ -391,11 +468,28 @@ class EnergyController extends Controller
 
     public function ubahPeluang(Request $request, EnergyOpportunity $peluang)
     {
-        $peluang->update($request->validate([
+        $d = $request->validate([
             'status' => ['required', Rule::in(Energi::STATUS_PELUANG)],
-        ]));
+            'capex_rp' => ['nullable', 'numeric', 'min:0', 'max:100000000000000'],
+            'metode_mv' => ['nullable', Rule::in(['A', 'B', 'C', 'D'])],
+            'hemat_terverifikasi_liter' => ['nullable', 'numeric', 'min:0', 'max:10000000'],
+            'hemat_terverifikasi_kwh' => ['nullable', 'numeric', 'min:0', 'max:10000000'],
+            'tanggal_mulai_hemat' => ['nullable', 'date'],
+            'mv_catatan' => ['nullable', 'string', 'max:2000'],
+        ]);
 
-        return back()->with('ok', 'Status peluang diperbarui.');
+        /* "Selesai" berarti penghematannya sudah diukur (ISO 50015/IPMVP).
+           Tanpa M&V, yang ada hanya perkiraan — dan perkiraan tidak boleh
+           masuk KPI "terwujud" di laporan regulator (F4.6). */
+        $mv = $d + $peluang->only(['metode_mv', 'hemat_terverifikasi_liter', 'hemat_terverifikasi_kwh']);
+        if ($d['status'] === 'selesai' && (blank($mv['metode_mv'] ?? null)
+                || ((float) ($mv['hemat_terverifikasi_liter'] ?? 0) <= 0 && (float) ($mv['hemat_terverifikasi_kwh'] ?? 0) <= 0))) {
+            return back()->withErrors(['status' => 'Status "selesai" mensyaratkan metode M&V (IPMVP A–D) dan penghematan terverifikasi.']);
+        }
+
+        $peluang->update(array_filter($d, fn ($v) => $v !== null) + ['status' => $d['status']]);
+
+        return back()->with('ok', 'Peluang diperbarui.');
     }
 
     public function hapusPeluang(EnergyOpportunity $peluang)
@@ -404,21 +498,28 @@ class EnergyController extends Controller
         return back()->with('ok', 'Peluang dihapus.');
     }
 
+    /**
+     * Halaman Karbon lama kini menampilkan inventarisasi GRK (FSD §8.4).
+     * Alamatnya dipertahankan — tautan dan tangkapan layar lama tetap berlaku.
+     */
     public function karbon(Request $request)
     {
-        [$dari, $sampai] = $this->rentang($request);
-
-        return Inertia::render('Energi/Halaman', [
-            'mode' => 'karbon',
-            'r' => $this->ringkasan($dari, $sampai),
-            'dari' => $dari, 'sampai' => $sampai,
-            'hemat' => $this->penghematanTerwujud(),
-        ]);
+        return app(\App\Http\Controllers\Energi\InventarisController::class)->index($request);
     }
 
-    public function kalkulator()
+    /** Kalkulator menghitung di server (cacat D2): angkanya identik dengan laporan. */
+    public function kalkulator(Request $request)
     {
-        return Inertia::render('Energi/Halaman', ['mode' => 'kalkulator']);
+        $kode = [];
+        foreach (Katalog::ENERGI as $k => $v) $kode[$k] = ['label' => $v['label'], 'satuan' => $v['satuan']];
+
+        return Inertia::render('Energi/Halaman', [
+            'mode' => 'kalkulator',
+            'kode' => $kode,
+            'kategori' => Katalog::KATEGORI_IPCC,
+            'terpasang' => RegistriFaktor::terpasang(),
+            'tautan' => ['hitung' => route('energi.api.kalkulator')],
+        ]);
     }
 
     /* ================= laporan ================= */
@@ -437,7 +538,7 @@ class EnergyController extends Controller
 
         return Inertia::render('Energi/Halaman', [
             'mode'      => 'laporan',
-            'dok'      => KopDokumen::untuk('laporan-energi', $this->perusahaanKop($request ?? null)),
+            'dok'      => KopDokumen::untuk('laporan-energi', $this->perusahaanKop($request)),
             'r'        => $this->ringkasan($dari, $sampai),
             'baseline' => $this->baselineBerlaku(),
             'dari'     => $dari, 'sampai' => $sampai,
@@ -454,8 +555,12 @@ class EnergyController extends Controller
     {
         return Inertia::render('Energi/Halaman', [
             'mode'      => 'master',
-            'units'     => EnergyEquipment::orderBy('kategori')->orderBy('kode')->get(),
+            'units'     => EnergyEquipment::with('site:id,nama')->withCount('fuelLogs')->orderBy('kategori')->orderBy('kode')->get(),
             'companies' => Company::orderBy('name')->get(),
+            'sites'     => Site::orderBy('nama')->get(),
+            'pilihan'   => ['kategori' => Energi::KATEGORI, 'kategoriIpcc' => Katalog::KATEGORI_IPCC,
+                            'jenisSite' => Site::JENIS, 'grid' => Site::SISTEM_GRID, 'zona' => Site::ZONA],
+            'boleh'     => ['kelola' => auth()->user()->can('energi.kelola'), 'admin' => auth()->user()->isAdmin()],
         ]);
     }
 
@@ -469,18 +574,81 @@ class EnergyController extends Controller
             'merek'       => ['nullable','string','max:100'],
             'daya_hp'     => ['nullable','integer','min:0','max:100000'],
             'payload_ton' => ['nullable','numeric','min:0','max:1000'],
+            'site_id'     => ['nullable', new DalamPerusahaan('energi_sites')],
+            'kategori_ipcc' => ['nullable', Rule::in(['bergerak_offroad', 'bergerak_jalan', 'stasioner'])],
         ]));
+        $d['kategori_ipcc'] ??= 'bergerak_offroad';
 
         EnergyEquipment::create($d + ['aktif' => true]);
 
         return back()->with('ok', 'Unit '.$d['kode'].' terdaftar.');
     }
 
+    public function ubahUnit(Request $request, EnergyEquipment $unit)
+    {
+        $unit->update($request->validate([
+            'nama'          => ['required', 'string', 'max:150'],
+            'kategori'      => ['required', Rule::in(array_keys(Energi::KATEGORI))],
+            'site_id'       => ['nullable', new DalamPerusahaan('energi_sites')],
+            'kategori_ipcc' => ['required', Rule::in(['bergerak_offroad', 'bergerak_jalan', 'stasioner'])],
+            'aktif'         => ['boolean'],
+        ]));
+
+        return back()->with('ok', 'Unit '.$unit->kode.' diperbarui.');
+    }
+
+    /**
+     * Hapus unit (cacat D5). Unit yang sudah punya catatan BBM tidak dihapus
+     * — catatannya adalah data aktivitas laporan GRK — melainkan
+     * dinonaktifkan; yang catatannya sudah terkunci tidak disentuh sama sekali.
+     */
     public function hapusUnit(EnergyEquipment $unit)
     {
         $kode = $unit->kode;
+
+        if ($unit->fuelLogs()->where('status', 'terkunci')->exists()) {
+            $unit->update(['aktif' => false]);
+
+            return back()->with('ok', "Unit {$kode} memiliki catatan pada periode terkunci — dinonaktifkan, tidak dihapus.");
+        }
+
+        if ($unit->fuelLogs()->exists()) {
+            $unit->update(['aktif' => false]);
+
+            return back()->with('ok', "Unit {$kode} sudah memiliki catatan bahan bakar — dinonaktifkan supaya catatannya tetap terhitung.");
+        }
+
         $unit->delete();
-        return back()->with('ok', "Unit {$kode} dihapus beserta catatan bahan bakarnya.");
+
+        return back()->with('ok', "Unit {$kode} dihapus.");
+    }
+
+    public function simpanSite(Request $request)
+    {
+        $d = $this->validasiSite($request);
+        Site::create($this->pemilik($d) + ['aktif' => true]);
+
+        return back()->with('ok', 'Site '.$d['nama'].' terdaftar.');
+    }
+
+    public function ubahSite(Request $request, Site $site)
+    {
+        $site->update($this->validasiSite($request, $site) + ['aktif' => $request->boolean('aktif', true)]);
+
+        return back()->with('ok', 'Site '.$site->nama.' diperbarui.');
+    }
+
+    private function validasiSite(Request $request, ?Site $site = null): array
+    {
+        return $request->validate([
+            'kode'        => ['required', 'string', 'max:30', Rule::unique('energi_sites', 'kode')
+                                ->where('company_id', $site?->company_id ?? $request->user()->company_id)->ignore($site?->id)],
+            'nama'        => ['required', 'string', 'max:150'],
+            'jenis'       => ['required', Rule::in(array_keys(Site::JENIS))],
+            'provinsi'    => ['nullable', 'string', 'max:60'],
+            'sistem_grid' => ['nullable', Rule::in(array_keys(Site::SISTEM_GRID))],
+            'zona_waktu'  => ['required', Rule::in(array_keys(Site::ZONA))],
+        ]);
     }
 
     /* ================= bantu ================= */
@@ -570,6 +738,9 @@ class EnergyController extends Controller
                 'kwh'        => $kwh,
                 'ton'        => $ton,
                 'gj'         => $gj,
+                // GJ per sumber dari server — grafik tidak lagi menyimpan faktornya sendiri.
+                'gj_solar'   => Energi::literKeGj($liter),
+                'gj_listrik' => Energi::kwhKeGj($kwh),
                 'intensitas' => Energi::intensitas($gj, $ton),
             ];
         }

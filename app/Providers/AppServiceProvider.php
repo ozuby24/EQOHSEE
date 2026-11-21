@@ -23,6 +23,10 @@ class AppServiceProvider extends ServiceProvider
         // antarmuka KlienAi, menumpang sambungan AI pemasangan ini
         // (App\Support\Ai — Pusat Kendali), bukan SDK penyedia sendiri.
         $this->app->singleton(\App\Services\Asisten\KlienAi::class, fn () => \App\Services\Asisten\KonfigurasiAsisten::klien());
+
+        // Registri faktor energi menghafal faktor per permintaan; scoped
+        // supaya hafalannya tidak terbawa ke permintaan berikutnya.
+        $this->app->scoped(\App\Support\Energi\RegistriFaktor::class);
     }
 
     /**
@@ -86,6 +90,25 @@ class AppServiceProvider extends ServiceProvider
         // audit; auditi menyampaikan tindak lanjut temuan.
         Gate::define('audit', fn (User $u) => $u->bisaAudit());
         Gate::define('tindak-lanjut', fn (User $u) => $u->isAuditi());
+
+        // Manajemen Energi & Karbon (FSD Energi-Karbon §4). Kolom
+        // `energi_role` berpola sama dengan ohse_role/audit_role; KTT
+        // memakai lms_role = 'ktt' yang sudah ada.
+        $peran = fn (User $u, array $daftar) => $u->isAdmin() || in_array($u->energi_role, $daftar, true);
+        /* Akun TANPA peran energi tetap boleh menginput — begitulah modul
+           ini dipakai sebelum peran diperkenalkan, dan mencabutnya diam-diam
+           akan menghentikan input lapangan pada hari deploy. Yang ditutup
+           hanya peran baca-saja: BOD, keuangan, auditor tamu. */
+        Gate::define('energi.input',      fn (User $u) => $u->energi_role === null || $peran($u, ['operator', 'verifikator', 'manajer_energi', 'petugas_grk']));
+        Gate::define('energi.verifikasi', fn (User $u) => $peran($u, ['verifikator', 'manajer_energi', 'petugas_grk']));
+        Gate::define('energi.kelola',     fn (User $u) => $peran($u, ['manajer_energi', 'petugas_grk']));
+        Gate::define('energi.faktor',     fn (User $u) => $peran($u, ['petugas_grk']));
+        Gate::define('energi.harga',      fn (User $u) => $peran($u, ['petugas_grk', 'keuangan']));
+        Gate::define('energi.setujui',    fn (User $u) => $peran($u, ['manajer_energi', 'petugas_grk']) || $u->isKtt());
+        Gate::define('energi.lapor',      fn (User $u) => $peran($u, ['manajer_energi', 'petugas_grk', 'keuangan']));
+        Gate::define('energi.bod',        fn (User $u) => $peran($u, ['bod', 'keuangan', 'manajer_energi', 'petugas_grk']) || $u->isKtt());
+        Gate::define('energi.instruksi',  fn (User $u) => $peran($u, ['bod']) || $u->isKtt());
+        Gate::define('energi.target',     fn (User $u) => $peran($u, ['bod']));
 
         // Seluruh antarmuka dan berkas cetak berbahasa Indonesia, termasuk
         // nama bulan pada kop dokumen terkendali. Disetel di sini agar tidak

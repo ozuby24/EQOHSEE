@@ -500,15 +500,40 @@ final class Menu
           ['Equipment Performance','energi.equipment','energi/alat*'],
           ['Energy KPI',           'energi.kpi',      'energi/kpi'],
           ['Baseline & Target',    'energi.baseline', 'energi/baseline'],
+          ['EnPI & EnB',           'energi.enpi',     'energi/enpi'],
+          ['Significant Energy Use','energi.seu',     'energi/seu'],
+        ],
+        /* Manajemen Energi & Karbon (PRD/FSD Energi-Karbon). Halaman
+           Karbon lama kini menampilkan inventarisasi GRK, jadi alamat
+           lamanya ikut menandai butir ini. */
+        'Karbon & GRK' => [
+          ['Inventarisasi GRK',   'energi.grk.index',    ['energi/grk', 'energi/karbon']],
+          ['Batas & Tahun Dasar', 'energi.grk.batas',    'energi/grk/batas'],
+          ['Scope 3',             'energi.grk.s3',       'energi/grk/scope3'],
+          ['Aksi Mitigasi',       'energi.grk.mitigasi', 'energi/grk/mitigasi'],
+          ['Registri Faktor',     'energi.faktor.index', 'energi/faktor*'],
+        ],
+        'Manajemen Energi' => [
+          ['Kewajiban & Ambang',  'energi.me.index',     'energi/manajemen'],
+          ['Manajer & Auditor',   'energi.me.personel',  'energi/manajemen/personel'],
+          ['Program Konservasi',  'energi.me.program',   'energi/manajemen/program'],
+          ['Audit Energi',        'energi.me.audit',     'energi/manajemen/audit*'],
+          ['Monev & Tinjauan',    'energi.me.tinjauan',  'energi/manajemen/tinjauan'],
         ],
         'Optimasi' => [
           ['Saving Opportunities','energi.hemat',      'energi/penghematan*'],
-          ['Carbon & Emission',   'energi.karbon',     'energi/karbon'],
           ['Energy Calculator',   'energi.kalkulator', 'energi/kalkulator'],
         ],
-        'Data' => [
-          ['Laporan Energi', 'energi.laporan', 'energi/laporan'],
-          ['Master Data',    'energi.master',  'energi/data-induk*'],
+        'Pelaporan' => [
+          ['Verifikasi & Periode', 'energi.periode.index', 'energi/periode*'],
+          ['Pusat Pelaporan',      'energi.lapor.index',   'energi/pelaporan*'],
+          ['Kalender Kepatuhan',   'energi.kalender',      'energi/kalender'],
+          ['Laporan Energi',       'energi.laporan',       'energi/laporan'],
+          ['Master Data',          'energi.master',        'energi/data-induk*'],
+        ],
+        // Executive Control Tower — hanya BOD, KTT, keuangan, manajer energi/GRK, dan admin.
+        'Kontrol Direksi' => [
+          ['Control Tower',        'energi.bod.index',     'energi/bod*', 'energi.bod'],
         ],
       ],
     ],
