@@ -1,3 +1,90 @@
+# Update 17 — Modul Manajemen Energi & Karbon (PRD/FSD Energi-Karbon)
+
+```bash
+# Di VPS, dari /var/www/EQOHSEE
+cp database/database.sqlite ~/cadangan-sebelum-update-17.sqlite   # pgsql: pg_dump
+bash deploy/deploy.sh          # menjalankan migrate, energi:pasang, build
+```
+Atau manual:
+```bash
+git pull && composer install --no-dev --optimize-autoloader
+php artisan migrate --force
+php artisan energi:pasang      # paket faktor bersama — WAJIB, aman diulang
+npm ci && npm run build && php artisan optimize:clear
+```
+Dua migrasi baru, keduanya hanya MENAMBAH: 15 tabel `energi_*`, kolom alur
+(status, sumber data, verifikator, site, persen FAME) pada lima tabel
+catatan harian, kolom M&V pada `energy_opportunities`, kolom status
+persetujuan pada `energy_baselines`, dan `users.energi_role`. Baris lama
+diberi status **terverifikasi**; baseline lama **disetujui BOD**.
+
+## Sesudah deploy — wajib dikerjakan orang
+1. **Cocokkan faktor acuan.** `energi:pasang` memasang nilai bawaan IPCC
+   2006 (NCV, EF CO₂/CH₄/N₂O), GWP AR5/AR6, campuran B30–B50, dan konversi
+   TOE/SBM. Yang bertanda **"perlu dicocokkan"** (densitas, NCV FAME,
+   harga, faktor grid, ANFO) disebut perintahnya di akhir keluaran. Buka
+   **Energi → Registri Faktor** dan ganti/cocokkan dengan dokumen sumbernya.
+2. **Faktor grid per sistem.** Yang terpasang hanya nilai warisan 0,87
+   tCO₂e/MWh. Salin nilai per sistem ketenagalistrikan dari lampiran Kepmen
+   ESDM 163.K/HK.02/MEM.S/2021 (atau penetapan terbaru Ditjen Gatrik) sebagai
+   versi faktor `listrik_pln / ef_grid` berwilayah, lalu isi **sistem grid**
+   tiap site di Master Data.
+3. **Tetapkan peran** di Admin → Pengguna → *Peran Energi & Karbon*:
+   operator, verifikator, manajer_energi, petugas_grk, keuangan, bod,
+   auditor_tamu. Akun **tanpa** peran tetap dapat menginput seperti
+   sebelumnya; fitur tata kelola (faktor, kunci periode, laporan, Control
+   Tower) hanya terbuka bagi peran yang sesuai dan administrator.
+4. **Atur Manajemen Energi → Pengaturan**: kategori pengguna energi
+   (ambang 4.000/6.000 TOE — kategorisasi tambang belum dipastikan [A-01]),
+   sistem grid bawaan, emiten (POJK 51/PSPK 2), target dekarbonisasi.
+
+## Yang baru di menu Energy Performance
+- **Input Lapangan**: formulir *Gas & Energi Lain* (bensin, LPG, gas alam,
+  ANFO/emulsi, refrigeran, SF₆), site, persen FAME per pengiriman, sumber
+  data. Baris baru berstatus *diajukan* sampai diverifikasi.
+- **Karbon & GRK**: inventarisasi Scope 1/2 (location & market-based)/3,
+  per gas (CO₂, CH₄, N₂O, HFC, PFC, SF₆), CO₂ biogenik FAME terpisah,
+  ketidakpastian IPCC Approach 1; batas organisasi & tahun dasar; Scope 3
+  per kategori (kat. 11 disajikan terpisah); registri aksi mitigasi SRN PPI;
+  registri faktor berversi dengan persetujuan & uji dampak.
+- **Manajemen Energi**: status wajib PP 33/2023 (TOE tahun lalu, proyeksi),
+  checklist Permen ESDM 8/2025, Manajer & Auditor Energi bersertifikat,
+  program konservasi, audit energi + rekomendasi (tenggat 3 tahun, masuk
+  Tindak Lanjut), monev; EnPI/EnB regresi ISO 50006; Pareto SEU.
+- **Pelaporan**: verifikasi massal & kunci periode bulanan (4 syarat),
+  koreksi pasca-kunci; Pusat Pelaporan 10 templat (Laporan Manajemen Energi
+  ke ESDM, Monev, Inventarisasi GRK, ISO 14064-1, PROPER, Laporan
+  Keberlanjutan, PSPK 2, SRN PPI, kinerja bulanan, board pack) dengan alur
+  draf → diajukan → disetujui → terbit, snapshot beku ber-hash SHA-256,
+  ekspor XLSX/CSV/JSON dan cetak PDF; kalender kepatuhan.
+- **Kontrol Direksi → Control Tower** (`/energi/bod`): kartu KPI ber-RAG,
+  filter di alamat, tren & proyeksi akhir tahun, jalur dekarbonisasi, peta
+  panas kepatuhan, drill-down sampai catatan harian + faktornya, pusat
+  peringatan, portofolio inisiatif, eksposur biaya karbon, simulator
+  skenario, instruksi BOD (→ Tindak Lanjut), persetujuan target, board pack,
+  mode layar besar.
+
+## Perubahan perilaku yang perlu diketahui
+- Angka GJ/tCO₂e/Rp di halaman lama kini dihitung dari registri faktor:
+  1 L solar B0 = 36,12 MJ (sebelumnya 35,8; selisih ±0,9%), dan solar
+  dengan FAME dipisah CO₂ fosil vs biogenik — emisi B50 per liter hampir separuh dari
+  angka lama. Jalankan Pusat Pelaporan untuk perbandingan.
+- **Hapus unit alat** yang sudah punya catatan BBM kini **menonaktifkan**
+  unit, bukan menghapus catatannya (cacat D5).
+- Peluang hemat berstatus **selesai** mensyaratkan hasil M&V (IPMVP A–D).
+- Kalkulator energi menghitung di server (cacat D2); bug status peluang
+  `diusulkan` diperbaiki (D1).
+
+## Penjadwal
+`energi:pengingat` harian 07:10 (zona aplikasi): tenggat kewajiban H-60,
+H-30, H-7, H-1, terlambat; sertifikat manajer/auditor energi H-90, H-30.
+Pratinjau tanpa mengirim: `php artisan energi:pengingat --pratinjau`.
+
+## Belum termasuk (PRD §4.2 / fase F4)
+Aplikasi seluler Flutter, ingest API bertoken untuk FMS/flow meter, akses
+tamu verifikator bertoken, notifikasi dorong, dan integrasi API portal
+pemerintah (POME/SRN PPI) — v1 menyediakan berkas siap unggah.
+
 # Update 16 — Celah keamanan npm ditutup, Node 24 LTS
 
 ```bash
