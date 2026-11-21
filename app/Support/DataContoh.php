@@ -6547,7 +6547,7 @@ final class DataContoh
         foreach ([
             [4, 'Angkutan tongkang batubara pihak ketiga', 'distance', 18_400_000, 'ton-km', 0.0185, 'Faktor tongkang (contoh) — ganti dengan data pemasok', 'PT Pelayaran Contoh', 3],
             [6, 'Perjalanan dinas udara karyawan', 'distance', 412_000, 'pkm', 0.158, 'Faktor penerbangan domestik (contoh)', null, 3],
-            [11, 'Pembakaran batubara terjual di PLTU pembeli', 'average_data', 1_950_000, 'ton', 1_890.0, 'Estimasi NCV × EF batubara sub-bituminus (contoh) [A-10]', null, 4],
+            [11, 'Pembakaran batubara terjual di PLTU pembeli', 'average_data', 1_950_000, 'ton', 1_890.0, 'Estimasi NCV × EF batubara sub-bituminus (contoh)', null, 4],
         ] as [$kat, $sub, $metode, $q, $sat, $f, $sumber, $mitra, $mutu]) {
             $this->baru(EnergiScope3::class, [
                 'tahun' => $t, 'kategori' => $kat, 'subkategori' => $sub, 'metode' => $metode, 'kuantitas' => $q, 'satuan' => $sat,

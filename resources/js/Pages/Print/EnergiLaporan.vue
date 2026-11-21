@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /*
-  Laporan energi & GRK terbit — digambar dari SNAPSHOT-nya (FSD §7.4, §10).
+  Laporan energi & GRK terbit — digambar dari snapshot-nya, bukan dari data hidup.
   Tidak ada angka yang dihitung ulang di sini: yang tercetak adalah yang
   dibekukan pada laporan, dan hash SHA-256-nya membuktikan itu.
 */
@@ -42,8 +42,8 @@ const catat = () => sampai.post(`/energi/pelaporan/terbit/${props.laporan.id}/sa
           <a v-for="[f, url] in Object.entries((props.unduh ?? {}) as Record<string, any>)" v-show="url" :key="f" :href="url ?? '#'" class="eq-btn-mini uppercase">{{ f }}</a>
         </div>
       </div>
-      <ul v-if="props.validasi.blokir.length" class="rounded-lg bg-red-50 text-red-700 p-2 space-y-0.5"><li v-for="b in props.validasi.blokir" :key="b">✖ {{ b }}</li></ul>
-      <ul v-if="props.validasi.peringatan.length" class="rounded-lg bg-amber-50 text-amber-800 p-2 space-y-0.5"><li v-for="p in props.validasi.peringatan" :key="p">⚠ {{ p }}</li></ul>
+      <ul v-if="props.validasi.blokir.length" class="rounded-lg bg-red-50 text-red-700 p-2 space-y-0.5"><li v-for="b in props.validasi.blokir" :key="b">{{ b }}</li></ul>
+      <ul v-if="props.validasi.peringatan.length" class="rounded-lg bg-amber-50 text-amber-800 p-2 space-y-0.5"><li v-for="p in props.validasi.peringatan" :key="p">{{ p }}</li></ul>
       <form v-if="props.boleh.sampaikan" class="flex flex-wrap items-end gap-2" @submit.prevent="catat">
         <label class="text-[11px] font-semibold text-stone-500">Disampaikan pada<input v-model="sampai.disampaikan_pada" type="date" class="block mt-1 rounded-lg border-stone-200 text-[12px]"></label>
         <label class="text-[11px] font-semibold text-stone-500">No. tanda terima (POME/SRN/dll.)<input v-model="sampai.bukti_penyampaian" required maxlength="255" class="block mt-1 rounded-lg border-stone-200 text-[12px] w-72"></label>
@@ -161,7 +161,7 @@ const catat = () => sampai.post(`/energi/pelaporan/terbit/${props.laporan.id}/sa
         <tbody><tr v-for="f in s.faktor" :key="f.id" class="border-b border-stone-100"><td class="p-1">{{ f.id }}</td><td class="p-1">{{ f.kode_energi }}/{{ f.parameter }}{{ f.kategori_ipcc ? ' (' + f.kategori_ipcc + ')' : '' }}</td><td class="p-1">{{ f.nilai }} {{ f.satuan }}</td><td class="p-1">{{ tgl(f.berlaku_mulai) }}</td><td class="p-1">{{ f.tier }}</td><td class="p-1">{{ f.sumber_dokumen }}{{ f.perlu_cocok ? ' — perlu dicocokkan' : '' }}</td></tr></tbody>
       </table>
 
-      <p class="text-[9.5px] text-stone-500">Struktur laporan mengikuti rancangan FSD Energi-Karbon; format resmi (mis. Lampiran I Permen ESDM 8/2025) wajib dicocokkan dengan naskah resminya sebelum disampaikan. Hash SHA-256 snapshot: {{ props.laporan.hash ?? '— (belum terbit)' }}.</p>
+      <p class="text-[9.5px] text-stone-500">Kode verifikasi (SHA-256): {{ props.laporan.hash ?? 'belum terbit' }}</p>
     </div>
   </PrintShell>
 </template>

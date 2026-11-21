@@ -11,7 +11,7 @@ const simpan = () => form.post('/energi/baseline', { preserveScroll: true, onSuc
 
 <template>
   <div class="space-y-4">
-    <Kartu judul="Baseline & target intensitas" ket="Target yang berlaku di dasbor direksi adalah yang sudah disetujui BOD. Baseline ternormalisasi produksi (ISO 50006) disusun di halaman EnPI & EnB.">
+    <Kartu judul="Baseline & target intensitas" ket="Dasbor direksi hanya memakai target yang sudah disetujui.">
       <template #aksi><Link href="/energi/enpi" class="eq-btn-lain">Susun EnB regresi</Link></template>
       <form class="grid gap-3 md:grid-cols-3" @submit.prevent="simpan">
         <label v-if="props.companies.length" class="text-[11px] font-semibold text-stone-500">Perusahaan

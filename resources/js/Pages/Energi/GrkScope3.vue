@@ -30,7 +30,7 @@ const gantiTahun = (e: Event) => router.get('/energi/grk/scope3', { tahun: (e.ta
       <p class="text-[12px] text-stone-600">Total Scope 3: <b>{{ n(total, 2) }} tCO₂e</b><template v-if="kat11"> · kategori 11 (disajikan terpisah) <b>{{ n(kat11, 0) }} tCO₂e</b></template></p>
     </section>
 
-    <Kartu judul="Aktivitas Scope 3" ket="PSPK 2 memberi keringanan Scope 3 tiga tahun pertama. Kategori 11 (pembakaran batubara terjual) dipisah dari target operasional [A-10].">
+    <Kartu judul="Aktivitas Scope 3" ket="Kategori 11 (batubara terjual) dilaporkan terpisah.">
       <div class="overflow-x-auto">
         <table class="w-full text-[12px] min-w-[860px]">
           <thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-2">Kategori</th><th class="py-2">Aktivitas</th><th class="py-2">Metode</th><th class="py-2 text-right">Kuantitas</th><th class="py-2 text-right">Faktor</th><th class="py-2 text-right">tCO₂e</th><th class="py-2">Mutu</th><th class="py-2">Status</th><th class="py-2"></th></tr></thead>

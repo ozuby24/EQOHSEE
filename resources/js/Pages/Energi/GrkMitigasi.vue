@@ -26,7 +26,7 @@ const kirim = () => {
 <template>
   <Head title="Aksi Mitigasi" />
   <div class="space-y-4">
-    <Kartu judul="Registri aksi mitigasi" ket="Baseline, target, dan capaian penurunan emisi per tahun — bahan pendaftaran SRN PPI (Perpres 110/2025).">
+    <Kartu judul="Aksi mitigasi">
       <div class="overflow-x-auto">
         <table class="w-full text-[12px] min-w-[820px]">
           <thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-2">Aksi</th><th class="py-2">Jenis</th><th class="py-2">Periode</th><th class="py-2 text-right">Baseline</th><th class="py-2 text-right">Target turun/thn</th><th class="py-2 text-right">Capaian {{ tahunIni }}</th><th class="py-2">SRN PPI</th><th class="py-2"></th></tr></thead>

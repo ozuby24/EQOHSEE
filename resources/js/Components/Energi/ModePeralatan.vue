@@ -24,7 +24,7 @@ function saring(kode: string | null) {
       </button>
     </section>
 
-    <Kartu judul="Peringkat unit" :ket="props.kategori ? 'Disaring satu kategori — klik kartunya lagi untuk melepas.' : 'Urut dari liter per jam operasi tertinggi.'">
+    <Kartu judul="Peringkat unit" :ket="props.kategori ? 'Satu kategori' : null">
       <table class="w-full text-[12px]">
         <thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-2">Unit</th><th class="py-2">Kategori</th><th class="py-2 text-right">Liter</th><th class="py-2 text-right">HM</th><th class="py-2 text-right">L/HM</th><th class="py-2 text-right">L/ton</th><th class="py-2 text-right">Idle</th><th class="py-2 text-right">Biaya</th><th class="py-2">Status</th></tr></thead>
         <tbody>

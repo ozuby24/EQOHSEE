@@ -71,7 +71,7 @@ final class AlurPeriode
     }
 
     /**
-     * Syarat kunci periode (FSD §7.2), masing-masing ✔/✖ beserta alasannya.
+     * Syarat kunci periode, masing-masing terpenuhi atau tidak beserta alasannya.
      *
      * @return array{boleh:bool,syarat:list<array{kode:string,label:string,ok:bool,rincian:string}>,kelengkapan:array,inventaris:array}
      */
@@ -94,15 +94,15 @@ final class AlurPeriode
         $rekon = self::kueri('rekon', $p->company_id, $mulai, $sampai)->count();
 
         $s = [
-            ['kode' => 'kelengkapan', 'label' => 'Kelengkapan data ≥ '.number_format($atur->ambang_kelengkapan_persen, 0).'%',
+            ['kode' => 'kelengkapan', 'label' => 'Kelengkapan data minimal '.number_format($atur->ambang_kelengkapan_persen, 0).'%',
              'ok' => $leng['persen'] !== null && $leng['persen'] >= $atur->ambang_kelengkapan_persen,
-             'rincian' => $leng['persen'] === null ? 'Belum ada hari operasi yang dapat dinilai.' : number_format($leng['persen'], 1, ',', '.').'% terisi'],
-            ['kode' => 'verifikasi', 'label' => 'Tidak ada baris draf/diajukan/ditolak',
-             'ok' => $belum === 0, 'rincian' => $belum === 0 ? 'Seluruh baris terverifikasi.' : "{$belum} baris belum terverifikasi."],
-            ['kode' => 'faktor', 'label' => 'Tidak ada baris "faktor tidak tersedia"',
-             'ok' => $kurang === 0, 'rincian' => $kurang === 0 ? 'Seluruh baris dapat dihitung.' : "{$kurang} kelompok baris kekurangan faktor."],
-            ['kode' => 'rekonsiliasi', 'label' => 'Rekonsiliasi BBM bulan ini terisi',
-             'ok' => $rekon > 0, 'rincian' => $rekon > 0 ? "{$rekon} catatan rekonsiliasi." : 'Belum ada rekonsiliasi tangki.'],
+             'rincian' => $leng['persen'] === null ? 'Belum ada hari operasi.' : number_format($leng['persen'], 1, ',', '.').'% terisi'],
+            ['kode' => 'verifikasi', 'label' => 'Semua data terverifikasi',
+             'ok' => $belum === 0, 'rincian' => $belum === 0 ? 'Tidak ada yang tertunda.' : "{$belum} baris belum diverifikasi."],
+            ['kode' => 'faktor', 'label' => 'Semua data punya faktor emisi',
+             'ok' => $kurang === 0, 'rincian' => $kurang === 0 ? 'Semua dapat dihitung.' : "{$kurang} kelompok data belum punya faktor."],
+            ['kode' => 'rekonsiliasi', 'label' => 'Rekonsiliasi BBM terisi',
+             'ok' => $rekon > 0, 'rincian' => $rekon > 0 ? "{$rekon} catatan rekonsiliasi." : 'Belum ada.'],
         ];
 
         return [

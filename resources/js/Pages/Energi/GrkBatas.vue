@@ -34,7 +34,7 @@ const gantiTahun = (e: Event) => router.get('/energi/grk/batas', { tahun: (e.tar
       <PilihPerusahaan :daftar="props.daftarPerusahaan" :terpilih="props.perusahaan" :nama="props.namaPerusahaan" />
     </section>
 
-    <Kartu :judul="`Batas organisasi & operasional ${props.tahun}`" ket="ISO 14064-1 & GHG Protocol. Laporan GRK, ISO 14064, dan PSPK 2 tidak dapat terbit sebelum batas tahun ini disetujui.">
+    <Kartu :judul="`Batas organisasi & operasional ${props.tahun}`" ket="Laporan GRK baru dapat terbit setelah batas tahun ini disetujui.">
       <template #aksi>
         <Lencana v-if="props.batas" :status="props.batas.disetujui ? 'disetujui' : 'diajukan'" :label="props.batas.disetujui ? `Disetujui ${props.batas.penyetuju ?? ''} ${props.batas.disetujui_pada ?? ''}` : 'Menunggu persetujuan'" />
         <button v-if="props.batas && !props.batas.disetujui && props.boleh.setujui" type="button" class="eq-btn-setuju" @click="setujui">Setujui batas</button>
@@ -75,7 +75,7 @@ const gantiTahun = (e: Event) => router.get('/energi/grk/batas', { tahun: (e.tar
       </form>
     </Kartu>
 
-    <Kartu judul="Tahun dasar & set GWP" ket="Mengubah tahun dasar membekukan ulang angka tahun dasar. Rekalkulasi wajib bila perubahan struktural/metodologi melewati ambang.">
+    <Kartu judul="Tahun dasar & set GWP">
       <form class="grid gap-3 md:grid-cols-4 items-end" @submit.prevent="simpanDasar">
         <label class="text-[11px] font-semibold text-stone-500">Tahun dasar<input v-model="dasar.tahun_dasar" type="number" min="2000" max="2100" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"></label>
         <label class="text-[11px] font-semibold text-stone-500">Ambang rekalkulasi (%)<input v-model="dasar.ambang_rekalkulasi_persen" type="number" step="any" min="0" max="100" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"></label>

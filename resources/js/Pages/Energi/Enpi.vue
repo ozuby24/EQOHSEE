@@ -28,7 +28,7 @@ const kirim = () => usul.transform(d => ({ ...d, mulai: pilih.mulai, sampai: pil
 <template>
   <Head title="EnPI & EnB" />
   <div class="space-y-4">
-    <Kartu judul="Energy Baseline ternormalisasi (ISO 50006)" ket="Regresi energi bulanan (GJ) terhadap variabel relevan. Model diterima bila R² dan CV(RMSE) memenuhi ambang; bila tidak, gunakan EnPI rasio sederhana (GJ/ton).">
+    <Kartu judul="Model baseline energi" ket="Energi bulanan (GJ) terhadap variabel produksi.">
       <form class="flex flex-wrap items-end gap-3" @submit.prevent="hitung">
         <label class="text-[11px] font-semibold text-stone-500">Periode dasar dari<input v-model="pilih.mulai" type="date" class="block mt-1 rounded-lg border-stone-200 text-[12px]"></label>
         <label class="text-[11px] font-semibold text-stone-500">sampai<input v-model="pilih.sampai" type="date" class="block mt-1 rounded-lg border-stone-200 text-[12px]"></label>
@@ -39,7 +39,7 @@ const kirim = () => usul.transform(d => ({ ...d, mulai: pilih.mulai, sampai: pil
       </form>
     </Kartu>
 
-    <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <section class="ubin-kisi">
       <KartuAngka label="R²" :nilai="m.r2" :desimal="3" :rag="m.r2 === null || m.r2 === undefined ? null : (m.r2 >= props.ambang.r2 ? 'hijau' : 'merah')" :catatan="`ambang ≥ ${props.ambang.r2}`" />
       <KartuAngka label="CV(RMSE)" :nilai="m.cv_rmse" satuan="%" :rag="m.cv_rmse === null || m.cv_rmse === undefined ? null : (m.cv_rmse <= props.ambang.cv ? 'hijau' : 'merah')" :catatan="`ambang ≤ ${props.ambang.cv}%`" />
       <KartuAngka label="Titik data" :nilai="m.n" satuan="bulan" :desimal="0" />
@@ -51,7 +51,7 @@ const kirim = () => usul.transform(d => ({ ...d, mulai: pilih.mulai, sampai: pil
       </article>
     </section>
 
-    <KartuGrafik judul="Aktual vs EnB prediksi" catatan="Selisih positif (aktual di bawah prediksi) adalah penghematan ternormalisasi." :angka="`${props.data?.length ?? 0} bulan`">
+    <KartuGrafik judul="Aktual vs EnB prediksi" :angka="`${props.data?.length ?? 0} bulan`">
       <Garis :label="label" :deret="deret" satuan="GJ" />
       <template #tabel>
         <table><thead><tr><th>Bulan</th><th>GJ aktual</th><th>GJ prediksi</th><th>Ton</th><th>BCM</th></tr></thead>
@@ -60,7 +60,7 @@ const kirim = () => usul.transform(d => ({ ...d, mulai: pilih.mulai, sampai: pil
     </KartuGrafik>
 
     <section class="grid gap-4 lg:grid-cols-2">
-      <Kartu v-if="props.boleh.kelola" judul="Usulkan baseline & target" ket="Model periode dasar ini disimpan bersama usulan; berlaku setelah disetujui BOD di Control Tower.">
+      <Kartu v-if="props.boleh.kelola" judul="Usulkan baseline & target" ket="Berlaku setelah disetujui direksi.">
         <form class="grid gap-3 sm:grid-cols-3" @submit.prevent="kirim">
           <label class="text-[11px] font-semibold text-stone-500">Tahun target<input v-model="usul.tahun" type="number" min="2000" max="2100" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"></label>
           <label class="text-[11px] font-semibold text-stone-500">Target GJ/ton<input v-model="usul.target_gj_ton" required type="number" step="any" min="0" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"></label>

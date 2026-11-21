@@ -15,7 +15,7 @@ const cetak = () => window.print();
 <template>
   <div class="space-y-3">
     <div class="flex flex-wrap items-center justify-between gap-2 print:hidden">
-      <p class="text-[12px] text-stone-500">Pratinjau langsung. Untuk laporan bernomor yang dibekukan dan berparaf, susun "Laporan Kinerja Energi Bulanan" di Pusat Pelaporan.</p>
+      <p class="text-[12px] text-stone-500">Pratinjau. Laporan resmi disusun di Pusat Pelaporan.</p>
       <div class="flex gap-2"><Link href="/energi/pelaporan" class="eq-btn-lain">Pusat Pelaporan</Link><button type="button" class="eq-btn-utama" @click="cetak">Cetak</button></div>
     </div>
     <div class="bg-white rounded-2xl border border-stone-100 p-6 print:border-0 print:p-0 text-[11.5px]">

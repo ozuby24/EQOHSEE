@@ -13,7 +13,7 @@ const props = propHalaman();
   <Head title="Kalender Kepatuhan" />
   <div class="space-y-4">
     <div class="flex justify-end"><PilihPerusahaan :daftar="props.daftarPerusahaan" :terpilih="props.perusahaan" :nama="props.namaPerusahaan" /></div>
-    <Kartu judul="Kewajiban energi & GRK" ket="Status dibaca dari kenyataan: laporan terbit dan bukti penyampaiannya, audit selesai, sertifikat berlaku. Pengingat surel dikirim H-60, H-30, H-7, H-1, dan saat terlambat (perintah energi:pengingat).">
+    <Kartu judul="Kewajiban energi & GRK">
       <table class="w-full text-[12px]">
         <thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-2">Kewajiban</th><th class="py-2">Dasar hukum</th><th class="py-2">Tahun lapor</th><th class="py-2">Tenggat</th><th class="py-2">Status</th><th class="py-2"></th></tr></thead>
         <tbody>

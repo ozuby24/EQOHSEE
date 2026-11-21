@@ -22,11 +22,11 @@ const bauran = computed(() => Object.entries((props.r?.rincian ?? {}) as Record<
 
 <template>
   <div class="space-y-4">
-    <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <section class="ubin-kisi">
       <KartuAngka label="Total energi" :nilai="r.gj" satuan="GJ" :catatan="`${props.r.hari ?? 0} hari · ${ringkas(r.liter_hari)} L solar/hari`" />
       <KartuAngka label="Intensitas energi" :nilai="r.intensitas" satuan="GJ/ton" :desimal="4"
                   :catatan="baseline ? `Target ${n(baseline.target_gj_ton, 4)} GJ/ton` : 'Belum ada baseline'" />
-      <KartuAngka label="Emisi" :nilai="r.tco2e" satuan="tCO₂e" :desimal="2" catatan="Fosil; CO₂ biogenik FAME di halaman GRK" />
+      <KartuAngka label="Emisi" :nilai="r.tco2e" satuan="tCO₂e" :desimal="2" />
       <KartuAngka label="Biaya energi" :nilai="r.rupiah" satuan="Rp" :desimal="0" />
       <KartuAngka label="Solar per ton" :nilai="r.l_ton" satuan="L/ton" :desimal="3" />
       <KartuAngka label="Solar per BCM" :nilai="r.l_bcm" satuan="L/BCM" :desimal="3" />
@@ -35,7 +35,7 @@ const bauran = computed(() => Object.entries((props.r?.rincian ?? {}) as Record<
     </section>
 
     <section class="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-      <KartuGrafik judul="Energi harian menurut sumber" catatan="Seluruh sumber disetarakan ke GJ dengan faktor registri." :angka="`${n(r.gj, 0)} GJ`">
+      <KartuGrafik judul="Energi harian menurut sumber" :angka="`${n(r.gj, 0)} GJ`">
         <Garis :label="label" :deret="deret" satuan="GJ" />
         <template #tabel>
           <table>
@@ -50,7 +50,7 @@ const bauran = computed(() => Object.entries((props.r?.rincian ?? {}) as Record<
         </template>
       </KartuGrafik>
 
-      <KartuGrafik judul="Bauran energi" catatan="Porsi tiap sumber terhadap total GJ." :angka="rp(r.rupiah)" :tinggi="150">
+      <KartuGrafik judul="Bauran energi" :angka="rp(r.rupiah)" :tinggi="150">
         <Donat :bagian="bauran" :tengah="ringkas(r.gj)" tengah-label="GJ" />
         <template #tabel>
           <table>

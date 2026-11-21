@@ -24,7 +24,7 @@ const kemajuan = computed(() => {
         <p v-if="kemajuan !== null" class="text-[12px] text-stone-600 mt-3">Kemajuan menuju target: <b>{{ n(kemajuan, 0) }}%</b> dari rentang baseline ke target.</p>
         <Link v-if="!baseline" href="/energi/baseline" class="eq-tautan mt-2">Tetapkan baseline</Link>
       </Kartu>
-      <div class="grid gap-3 sm:grid-cols-2">
+      <div class="ubin-kisi">
         <KartuAngka label="Total energi" :nilai="r.gj" satuan="GJ" />
         <KartuAngka label="Emisi" :nilai="r.tco2e" satuan="tCO₂e" :desimal="2" />
         <KartuAngka label="Solar per ton" :nilai="r.l_ton" satuan="L/ton" :desimal="3" />
@@ -32,8 +32,8 @@ const kemajuan = computed(() => {
       </div>
     </section>
 
-    <Kartu judul="Penghematan yang Sudah Berjalan" ket="Peluang berstatus berjalan atau selesai, per bulan. Angka terverifikasi M&V ada di Pusat Pelaporan.">
-      <div class="grid gap-3 sm:grid-cols-4">
+    <Kartu judul="Penghematan berjalan">
+      <div class="ubin-kisi">
         <KartuAngka label="Peluang" :nilai="hemat.jumlah" satuan="inisiatif" :desimal="0" />
         <KartuAngka label="Energi dihemat" :nilai="hemat.gj" satuan="GJ/bulan" />
         <KartuAngka label="Emisi dihindari" :nilai="hemat.tco2e" satuan="tCO₂e/bulan" :desimal="2" />

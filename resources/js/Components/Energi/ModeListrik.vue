@@ -8,17 +8,17 @@ defineProps<{ perArea: Record<string, any>; total: Record<string, any>; pln: Rec
 
 <template>
   <div class="space-y-4">
-    <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <section class="ubin-kisi">
       <KartuAngka label="Listrik terpakai" :nilai="total.kwh" satuan="kWh" :desimal="0" :catatan="`${n(total.gj, 1)} GJ`" />
       <KartuAngka label="Listrik per ton" :nilai="total.perTon" satuan="kWh/ton" :desimal="3" />
-      <KartuAngka label="Emisi listrik beli" :nilai="total.tco2e" satuan="tCO₂e" :desimal="2" catatan="Scope 2 location-based, faktor grid registri" />
+      <KartuAngka label="Emisi listrik beli" :nilai="total.tco2e" satuan="tCO₂e" :desimal="2" catatan="Scope 2" />
       <KartuAngka label="Biaya listrik" :nilai="total.rupiah" satuan="Rp" :desimal="0" />
       <KartuAngka label="Dari PLN" :nilai="pln.kwh" satuan="kWh" :desimal="0" />
       <KartuAngka label="Dari genset" :nilai="genset.kwh" satuan="kWh" :desimal="0" :catatan="`${n(genset.liter, 0)} L solar · ${n(genset.jam, 1)} jam`" />
-      <KartuAngka label="Efisiensi genset" :nilai="genset.efisiensi" satuan="kWh/L" :desimal="2" catatan="Makin tinggi makin efisien" />
+      <KartuAngka label="Efisiensi genset" :nilai="genset.efisiensi" satuan="kWh/L" :desimal="2" />
     </section>
 
-    <Kartu judul="Pemakaian per area" ket="Faktor beban rendah berarti kapasitas terpasang jauh melebihi pemakaian biasanya.">
+    <Kartu judul="Pemakaian per area">
       <table class="w-full text-[12px]">
         <thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-2">Area</th><th class="py-2 text-right">kWh</th><th class="py-2 text-right">GJ</th><th class="py-2 text-right">Beban puncak</th><th class="py-2 text-right">Jam</th><th class="py-2 text-right">Faktor beban</th><th class="py-2 text-right">Biaya</th></tr></thead>
         <tbody>

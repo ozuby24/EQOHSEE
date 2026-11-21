@@ -71,7 +71,7 @@ class PeriodeController extends Controller
             'antre' => $antre,
             'anomali' => $anomali,
             'koreksi' => Koreksi::with(['pengaju:id,name', 'pemutus:id,name', 'periode'])->orderByDesc('id')->limit(50)->get()->map(fn (Koreksi $k) => [
-                'id' => $k->id, 'periode' => $k->periode?->label(), 'subjek' => class_basename($k->subjek_type).' #'.$k->subjek_id,
+                'id' => $k->id, 'periode' => $k->periode?->label(), 'subjek' => (collect(AlurPeriode::MODEL)->first(fn ($m) => $m[0] === $k->subjek_type)[1] ?? class_basename($k->subjek_type)).' #'.$k->subjek_id,
                 'nilai_lama' => $k->nilai_lama, 'nilai_baru' => $k->nilai_baru, 'alasan' => $k->alasan, 'status' => $k->status,
                 'pengaju' => $k->pengaju?->name, 'pemutus' => $k->pemutus?->name, 'catatan_putusan' => $k->catatan_putusan,
                 'diajukan_pada' => $k->created_at?->format('d/m/Y'),

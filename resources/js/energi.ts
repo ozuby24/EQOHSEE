@@ -1,7 +1,7 @@
 /**
  * Format angka & label modul Energi & Karbon.
  *
- * Pembulatan HANYA saat tampil (FSD §6.11): tCO₂e dua desimal, GJ dan TOE
+ * Pembulatan HANYA saat tampil: tCO₂e dua desimal, GJ dan TOE
  * satu desimal, rupiah tanpa desimal. Angka null digambar "—", bukan nol:
  * nol tCO₂e terbaca "tidak beremisi", padahal null berarti "faktornya
  * tidak tersedia, tidak dapat dihitung".
@@ -39,6 +39,15 @@ export function tgl(v: unknown): string {
 
 export const persen = (v: unknown, d = 1) => (v === null || v === undefined ? '—' : n(v, d) + '%');
 
+/** Nama parameter registri faktor; satuannya ada di kolom nilai. */
+export const PARAMETER: Record<string, string> = {
+  densitas: 'Densitas', ncv: 'Nilai kalor (NCV)', ef_co2: 'Faktor emisi CO₂', ef_ch4: 'Faktor emisi CH₄', ef_n2o: 'Faktor emisi N₂O',
+  ef_grid: 'Faktor emisi grid', ef_kontrak: 'Faktor emisi kontrak', ef_residual: 'Faktor emisi residual', harga: 'Harga',
+  persen_fame: 'Campuran FAME', gwp_ar5: 'GWP (AR5)', gwp_ar6: 'GWP (AR6)', gj_per_toe: 'GJ per TOE', gj_per_sbm: 'GJ per SBM',
+  harga_dasar: 'Harga karbon — dasar', harga_rendah: 'Harga karbon — rendah', harga_tinggi: 'Harga karbon — tinggi',
+};
+export const namaParameter = (k: unknown) => PARAMETER[String(k)] ?? String(k ?? '—');
+
 /** Warna & label status yang dipakai di seluruh modul. */
 export const STATUS: Record<string, { label: string; kelas: string }> = {
   draf:          { label: 'Draf',           kelas: 'bg-stone-100 text-stone-600' },
@@ -52,7 +61,7 @@ export const STATUS: Record<string, { label: string; kelas: string }> = {
   terbit:        { label: 'Terbit',         kelas: 'bg-emerald-50 text-emerald-700' },
   perlu_revisi:  { label: 'Perlu revisi',   kelas: 'bg-amber-50 text-amber-800' },
   diganti:       { label: 'Diganti',        kelas: 'bg-stone-100 text-stone-600' },
-  selesai:       { label: 'Patuh / selesai', kelas: 'bg-emerald-50 text-emerald-700' },
+  selesai:       { label: 'Selesai', kelas: 'bg-emerald-50 text-emerald-700' },
   proses:        { label: 'Dalam proses',   kelas: 'bg-sky-50 text-sky-700' },
   belum:         { label: 'Belum',          kelas: 'bg-amber-50 text-amber-800' },
   terlambat:     { label: 'Terlambat',      kelas: 'bg-red-50 text-red-700' },

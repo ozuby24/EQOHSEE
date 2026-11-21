@@ -43,9 +43,8 @@ const label = 'text-[11px] font-semibold text-stone-500';
   <section class="rounded-2xl bg-white border border-stone-100 shadow-card p-5">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <p class="text-[10px] uppercase tracking-[.18em] text-cam-orange font-bold">Data capture</p>
         <h3 class="text-lg font-extrabold">Input Lapangan Terpadu</h3>
-        <p class="text-[12px] text-stone-500 mt-1">Produksi, solar per unit, listrik, gas & energi lain, dan rekonsiliasi. Baris baru berstatus <b>diajukan</b> sampai diverifikasi supervisor.</p>
+        <p class="text-[12px] text-stone-500 mt-1">Baris baru menunggu verifikasi supervisor.</p>
       </div>
       <span v-if="props.boleh?.input === false" class="rounded-full bg-amber-50 px-3 py-1 text-[10px] font-bold text-amber-800">Peran Anda baca-saja</span>
       <span v-else class="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold text-emerald-700">Masuk ke antrean verifikasi</span>
@@ -54,7 +53,7 @@ const label = 'text-[11px] font-semibold text-stone-500';
 
   <section class="grid gap-5 xl:grid-cols-2">
     <form class="rounded-2xl bg-white border border-stone-100 shadow-card p-5 space-y-3" @submit.prevent="kirim(produksi, props.tautan.production, ['ton', 'bcm', 'stripping_ratio', 'jarak_angkut_km'])">
-      <div><h3 class="font-bold text-[14px]">Produksi Harian</h3><p class="text-[11px] text-stone-400">Pembagi intensitas energi; jarak angkut & stripping ratio menjadi variabel EnB.</p></div>
+      <div><h3 class="font-bold text-[14px]">Produksi Harian</h3></div>
       <div class="grid grid-cols-2 gap-2">
         <label :class="label">Tanggal<input v-model="produksi.tanggal" required type="date" :class="isian"></label>
         <label :class="label">Sumber data<select v-model="produksi.sumber_data" :class="isian"><option v-for="[k, l] in Object.entries((props.sumberData ?? {}) as Record<string, any>)" :key="k" :value="k">{{ l }}</option></select></label>
@@ -87,7 +86,7 @@ const label = 'text-[11px] font-semibold text-stone-500';
     </form>
 
     <form class="rounded-2xl bg-white border border-stone-100 shadow-card p-5 space-y-3" @submit.prevent="kirim(listrik, props.tautan.power, ['kwh', 'puncak_kw', 'liter_genset'])">
-      <div><h3 class="font-bold text-[14px]">Listrik, Genset & PLTS</h3><p class="text-[11px] text-stone-400">PLN/IUPTLS = Scope 2; genset dihitung dari solarnya (Scope 1); PLTS = EBT.</p></div>
+      <div><h3 class="font-bold text-[14px]">Listrik, Genset & PLTS</h3></div>
       <div class="grid grid-cols-2 gap-2">
         <label :class="label">Tanggal<input v-model="listrik.tanggal" required type="date" :class="isian"></label>
         <label :class="label">Site<select v-model="listrik.site_id" :class="isian"><option value="">—</option><option v-for="s in props.sites ?? []" :key="s.id" :value="s.id">{{ s.nama }}</option></select></label>
@@ -104,7 +103,7 @@ const label = 'text-[11px] font-semibold text-stone-500';
     </form>
 
     <form class="rounded-2xl bg-white border border-stone-100 shadow-card p-5 space-y-3" @submit.prevent="kirim(lain, props.tautan.other, ['jumlah', 'keterangan'])">
-      <div><h3 class="font-bold text-[14px]">Gas & Energi Lain</h3><p class="text-[11px] text-stone-400">Bensin, LPG, gas alam, bahan peledak (ANFO/emulsi), isi ulang refrigeran, dan kebocoran SF₆.</p></div>
+      <div><h3 class="font-bold text-[14px]">Gas & Energi Lain</h3><p class="text-[11px] text-stone-400">Bensin, LPG, gas, bahan peledak, refrigeran, SF₆.</p></div>
       <div class="grid grid-cols-2 gap-2">
         <label :class="label">Tanggal<input v-model="lain.tanggal" required type="date" :class="isian"></label>
         <label :class="label">Site<select v-model="lain.site_id" :class="isian"><option value="">—</option><option v-for="s in props.sites ?? []" :key="s.id" :value="s.id">{{ s.nama }}</option></select></label>
@@ -118,7 +117,7 @@ const label = 'text-[11px] font-semibold text-stone-500';
     </form>
 
     <form class="rounded-2xl bg-white border border-stone-100 shadow-card p-5 space-y-3 xl:col-span-2" @submit.prevent="kirim(recon, props.tautan.recon, ['stok_awal_liter', 'disalurkan_liter', 'stok_akhir_liter', 'catatan'])">
-      <div><h3 class="font-bold text-[14px]">Rekonsiliasi Solar</h3><p class="text-[11px] text-stone-400">Wajib terisi sebelum periode dapat dikunci; selisih di atas 2% muncul di pusat peringatan direksi.</p></div>
+      <div><h3 class="font-bold text-[14px]">Rekonsiliasi Solar</h3></div>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
         <label :class="label">Tanggal<input v-model="recon.tanggal" required type="date" :class="isian"></label>
         <label :class="label">Stok awal (L)<input v-model="recon.stok_awal_liter" required type="number" step="any" min="0" :class="isian"></label>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /*
-  Kalkulator energi & emisi — dihitung di server (cacat D2).
+  Kalkulator energi & emisi — dihitung di server dengan registri faktor yang sama dengan laporan.
 
   Versi sebelumnya menyimpan 0,0358 GJ/L dan 0,0036 GJ/kWh di berkas ini
   dan tidak menghitung CO₂ sama sekali; angkanya berbeda dengan laporan
@@ -46,8 +46,8 @@ async function hitung() {
 
 <template>
   <div class="space-y-4">
-    <Kartu judul="Kalkulator energi & emisi" ket="Hitungan memakai registri faktor dan campuran FAME yang berlaku pada tanggal yang dipilih — hasilnya identik dengan laporan. Tidak ada data yang disimpan.">
-      <p v-if="!props.terpasang" class="rounded-lg bg-amber-50 text-amber-800 text-[12px] p-3 mb-3">Paket faktor belum dipasang (php artisan energi:pasang) — seluruh baris akan ditandai "faktor tidak tersedia".</p>
+    <Kartu judul="Kalkulator energi & emisi" ket="Tidak menyimpan data.">
+      <p v-if="!props.terpasang" class="rounded-lg bg-amber-50 text-amber-800 text-[12px] p-3 mb-3">Faktor emisi belum dipasang, jadi hasil belum dapat dihitung. Hubungi admin sistem.</p>
       <form class="space-y-3" @submit.prevent="hitung">
         <div class="grid gap-3 sm:grid-cols-3">
           <label class="text-[11px] font-semibold text-stone-500">Tanggal aktivitas<input v-model="isian.tanggal" type="date" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"></label>
@@ -79,14 +79,14 @@ async function hitung() {
     </Kartu>
 
     <template v-if="hasil">
-      <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <section class="ubin-kisi">
         <KartuAngka label="Total energi" :nilai="hasil.total.gj" satuan="GJ" :catatan="`${n(hasil.total.toe, 2)} TOE`" />
         <KartuAngka label="Emisi (CO₂e fosil)" :nilai="hasil.total.co2e_t" satuan="tCO₂e" :desimal="3" :catatan="`GWP ${hasil.gwp}`" />
         <KartuAngka label="CO₂ biogenik (terpisah)" :nilai="hasil.total.co2_bio_t" satuan="tCO₂" :desimal="3" />
         <KartuAngka label="Biaya" :nilai="hasil.total.rupiah" satuan="Rp" :desimal="0" />
         <KartuAngka label="Intensitas" :nilai="hasil.total.intensitas" satuan="GJ/ton" :desimal="4" :catatan="hasil.total.intensitas_emisi !== null ? `${n(hasil.total.intensitas_emisi, 5)} tCO₂e/ton` : null" />
       </section>
-      <Kartu judul="Rincian per sumber" ket="Faktor yang dipakai beserta sumber dokumennya — sama dengan yang dibekukan pada snapshot laporan.">
+      <Kartu judul="Rincian per sumber">
         <div v-for="(b, i) in hasil.butir" :key="i" class="border-b border-stone-100 py-3 last:border-0">
           <p class="text-[12.5px] font-semibold">{{ b.label }} — {{ n(b.jumlah, 2) }} {{ b.satuan }}
             <span class="text-stone-400 font-normal">· Scope {{ b.scope || 'EBT' }}<template v-if="b.kode === 'solar'"> · FAME {{ n(b.persen_fame, 0) }}%</template></span></p>

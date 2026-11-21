@@ -15,7 +15,7 @@ defineProps<{ unit: Record<string, any>; log: any[]; m: Record<string, any>; acu
         <span class="text-[12px] font-bold" :style="{ color: status.warna }">{{ status.label }}</span>
         <Link href="/energi/alat" class="eq-btn-lain">Kembali ke peralatan</Link>
       </template>
-      <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div class="ubin-kisi">
         <KartuAngka label="Solar" :nilai="m.liter" satuan="L" :desimal="0" />
         <KartuAngka label="Jam operasi" :nilai="m.hm" satuan="HM" />
         <KartuAngka label="Liter per jam" :nilai="m.l_hm" satuan="L/HM" :desimal="2" />
@@ -31,7 +31,7 @@ defineProps<{ unit: Record<string, any>; log: any[]; m: Record<string, any>; acu
       </div>
     </Kartu>
 
-    <Kartu judul="Catatan harian" ket="Status alur setiap baris: diajukan → terverifikasi → terkunci.">
+    <Kartu judul="Catatan harian">
       <table class="w-full text-[12px]">
         <thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-2">Tanggal</th><th class="py-2 text-right">HM</th><th class="py-2 text-right">Liter</th><th class="py-2 text-right">L/HM</th><th class="py-2 text-right">Ton</th><th class="py-2 text-right">Idle</th><th class="py-2 text-right">FAME</th><th class="py-2">Sumber data</th><th class="py-2">Status</th></tr></thead>
         <tbody>

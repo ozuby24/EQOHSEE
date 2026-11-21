@@ -13,7 +13,7 @@ const ragRekon = () => props.recon?.persen === null || props.recon?.persen === u
 
 <template>
   <div class="space-y-4">
-    <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <section class="ubin-kisi">
       <KartuAngka label="Solar terpakai" :nilai="r.liter" satuan="L" :desimal="0" :catatan="`Alat ${n(r.liter_alat, 0)} L · genset ${n(r.liter_genset, 0)} L`" />
       <KartuAngka label="Solar per ton" :nilai="r.l_ton" satuan="L/ton" :desimal="3" />
       <KartuAngka label="Solar per BCM" :nilai="r.l_bcm" satuan="L/BCM" :desimal="3" />
@@ -22,7 +22,7 @@ const ragRekon = () => props.recon?.persen === null || props.recon?.persen === u
     </section>
 
     <section class="grid gap-4 lg:grid-cols-2">
-      <Kartu judul="Konsumsi per kategori alat" ket="Liter per jam operasi dibandingkan antar kelompok alat.">
+      <Kartu judul="Konsumsi per kategori alat">
         <table class="w-full text-[12px]">
           <thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-2">Kategori</th><th class="py-2 text-right">Liter</th><th class="py-2 text-right">HM</th><th class="py-2 text-right">L/HM</th><th class="py-2 text-right">GJ</th></tr></thead>
           <tbody>
@@ -35,7 +35,7 @@ const ragRekon = () => props.recon?.persen === null || props.recon?.persen === u
         <p v-if="!Object.keys(perKategori).length" class="text-[12px] text-stone-400 py-4 text-center">Belum ada catatan solar pada rentang ini.</p>
       </Kartu>
 
-      <Kartu judul="Unit paling haus" ket="Dibandingkan terhadap rata-rata kategorinya sendiri, bukan angka mutlak.">
+      <Kartu judul="Unit paling haus" ket="Dibanding rata-rata kategorinya.">
         <table class="w-full text-[12px]">
           <thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-2">Unit</th><th class="py-2 text-right">L/HM</th><th class="py-2 text-right">Acuan</th><th class="py-2 text-right">Biaya</th><th class="py-2">Status</th></tr></thead>
           <tbody>
@@ -50,7 +50,7 @@ const ragRekon = () => props.recon?.persen === null || props.recon?.persen === u
       </Kartu>
     </section>
 
-    <Kartu judul="Rekonsiliasi tangki" ket="Terpakai menurut stok (stok awal + disalurkan − stok akhir) dibandingkan dengan yang tercatat per unit.">
+    <Kartu judul="Rekonsiliasi tangki">
       <table class="w-full text-[12px]">
         <thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-2">Tanggal</th><th class="py-2 text-right">Stok awal</th><th class="py-2 text-right">Disalurkan</th><th class="py-2 text-right">Stok akhir</th><th class="py-2">Catatan</th><th class="py-2">Status</th></tr></thead>
         <tbody>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /*
-  Registri faktor emisi & konversi berversi (FSD §8.3).
+  Registri faktor emisi & konversi berversi.
   Faktor aktif tidak disunting di tempat: perubahan = versi baru (draf)
   dengan tanggal berlaku baru, disetujui petugas lain, lalu versi lama
   ditutup otomatis sehari sebelumnya.
@@ -10,7 +10,7 @@ import { Head, router, useForm } from '@inertiajs/vue3';
 import { propHalaman } from '../../halaman';
 import Kartu from '../../Components/Energi/Kartu.vue';
 import Lencana from '../../Components/Energi/Lencana.vue';
-import { json, n, tgl } from '../../energi';
+import { json, n, namaParameter, statusLabel, tgl } from '../../energi';
 
 const props = propHalaman();
 const saring = reactive({ kode: props.saring?.kode ?? '', parameter: props.saring?.parameter ?? '', status: props.saring?.status ?? '' });
@@ -50,65 +50,73 @@ async function uji(f: any) {
   <Head title="Registri Faktor" />
   <div class="space-y-4">
     <p v-if="!props.terpasang" class="rounded-xl bg-amber-50 text-amber-800 text-[12px] p-3">
-      Paket faktor bersama belum dipasang. Jalankan <code>php artisan energi:pasang</code> di server — tanpa itu inventarisasi GRK menandai setiap baris "faktor tidak tersedia".
+      Paket faktor bawaan belum dipasang — jalankan <code>php artisan energi:pasang</code> di server.
     </p>
 
-    <Kartu judul="Saring registri" ket="Setiap versi berlaku pada rentang tanggal; perhitungan memilih versi yang berlaku pada tanggal aktivitas.">
-      <form class="flex flex-wrap items-end gap-2" @submit.prevent="terapkan">
-        <label class="text-[11px] font-semibold text-stone-500">Kode energi
-          <select v-model="saring.kode" class="block mt-1 rounded-lg border-stone-200 text-[12px]"><option value="">Semua</option><option v-for="[k, l] in Object.entries((props.pilihan.kode ?? {}) as Record<string, any>)" :key="k" :value="k">{{ l }}</option></select>
-        </label>
-        <label class="text-[11px] font-semibold text-stone-500">Parameter
-          <select v-model="saring.parameter" class="block mt-1 rounded-lg border-stone-200 text-[12px]"><option value="">Semua</option><option v-for="[k, l] in Object.entries((props.pilihan.parameter ?? {}) as Record<string, any>)" :key="k" :value="k">{{ k }}</option></select>
-        </label>
-        <label class="text-[11px] font-semibold text-stone-500">Status
-          <select v-model="saring.status" class="block mt-1 rounded-lg border-stone-200 text-[12px]"><option value="">Semua</option><option v-for="s in props.pilihan.status" :key="s" :value="s">{{ s }}</option></select>
-        </label>
-        <button class="eq-btn-utama" style="padding:9px 14px">Terapkan</button>
-      </form>
+    <form class="flex flex-wrap items-end gap-2" @submit.prevent="terapkan">
+      <label class="text-[11px] font-semibold text-stone-500">Energi
+        <select v-model="saring.kode" class="block mt-1 rounded-lg border-stone-200 text-[12px]"><option value="">Semua</option><option v-for="[k, l] in Object.entries((props.pilihan.kode ?? {}) as Record<string, any>)" :key="k" :value="k">{{ l }}</option></select>
+      </label>
+      <label class="text-[11px] font-semibold text-stone-500">Parameter
+        <select v-model="saring.parameter" class="block mt-1 rounded-lg border-stone-200 text-[12px]"><option value="">Semua</option><option v-for="k in Object.keys(props.pilihan.parameter ?? {})" :key="k" :value="k">{{ namaParameter(k) }}</option></select>
+      </label>
+      <label class="text-[11px] font-semibold text-stone-500">Status
+        <select v-model="saring.status" class="block mt-1 rounded-lg border-stone-200 text-[12px]"><option value="">Semua</option><option v-for="s in props.pilihan.status" :key="s" :value="s">{{ statusLabel(s) }}</option></select>
+      </label>
+      <button class="eq-btn-lain" style="padding:9px 14px">Terapkan</button>
+      <a v-if="props.boleh.kelola" href="#form-faktor" class="eq-btn-mini ml-auto">Tambah versi</a>
+    </form>
+
+    <Kartu judul="Faktor emisi & konversi" rapat>
+      <div class="overflow-x-auto">
+        <table class="w-full text-[12px] min-w-[860px]">
+          <thead><tr class="text-left text-stone-400 border-y border-stone-200 bg-stone-50/70"><th class="px-5 py-2 font-semibold">Nilai</th><th class="px-3 py-2 font-semibold">Berlaku</th><th class="px-3 py-2 font-semibold">Tier</th><th class="px-3 py-2 font-semibold">Sumber</th><th class="px-3 py-2 font-semibold">Milik</th><th class="px-3 py-2 font-semibold">Status</th><th class="px-5 py-2"></th></tr></thead>
+          <tbody v-for="g in kelompok" :key="g[0].id">
+            <tr class="bg-stone-50/40 border-b border-stone-100">
+              <td colspan="7" class="px-5 pt-3 pb-1.5">
+                <span class="font-bold text-cam-ink">{{ props.pilihan.kode[g[0].kode_energi] ?? g[0].kode_energi }}</span>
+                <span class="text-stone-500"> · {{ namaParameter(g[0].parameter) }}</span>
+                <span v-if="g[0].kategori_ipcc" class="text-stone-400"> · {{ props.pilihan.kategori[g[0].kategori_ipcc] }}</span>
+                <span v-if="g[0].wilayah" class="text-stone-400"> · {{ props.pilihan.wilayah?.[g[0].wilayah] ?? g[0].wilayah }}</span>
+              </td>
+            </tr>
+            <tr v-for="f in g" :key="f.id" class="border-b border-stone-100 align-top">
+              <td class="px-5 py-2 font-semibold num whitespace-nowrap">{{ f.nilai }} <span class="text-stone-400 font-normal">{{ f.satuan }}</span><span v-if="f.ketidakpastian_persen !== null" class="block text-[10px] text-stone-400 font-normal">± {{ n(f.ketidakpastian_persen, 1) }}%</span></td>
+              <td class="px-3 py-2 whitespace-nowrap">{{ tgl(f.berlaku_mulai) }} – {{ f.berlaku_sampai ? tgl(f.berlaku_sampai) : 'sekarang' }}</td>
+              <td class="px-3 py-2">{{ f.tier }}</td>
+              <td class="px-3 py-2 max-w-[320px]">{{ f.sumber_dokumen }}<span v-if="f.sumber_rujukan" class="text-stone-400"> · {{ f.sumber_rujukan }}</span>
+                <span v-if="f.perlu_cocok" class="block text-[10.5px] text-amber-700">Belum dicocokkan dengan dokumen sumber</span>
+                <span v-if="f.catatan" class="block text-[10.5px] text-stone-500">{{ f.catatan }}</span>
+                <span v-if="dampak[f.id]" class="block text-[10.5px] text-sky-700 mt-1">
+                  <template v-if="dampak[f.id].sibuk">Menghitung…</template>
+                  <template v-else-if="dampak[f.id].galat">{{ dampak[f.id].galat }}</template>
+                  <template v-else>12 bulan terakhir: {{ n(dampak[f.id].aktif?.total, 1) }} → {{ n(dampak[f.id].draf?.total, 1) }} tCO₂e ({{ n(dampak[f.id].selisih_persen, 2) }}%)</template>
+                </span>
+              </td>
+              <td class="px-3 py-2 text-stone-500">{{ f.milik }}<span v-if="f.penyetuju" class="block text-[10px]">Disetujui {{ f.penyetuju }} {{ f.disetujui_pada }}</span></td>
+              <td class="px-3 py-2"><Lencana :status="f.status" /></td>
+              <td class="px-5 py-2 text-right whitespace-nowrap space-x-1">
+                <template v-if="f.status === 'draf'">
+                  <button type="button" class="eq-btn-mini" @click="uji(f)">Uji dampak</button>
+                  <button v-if="f.boleh_setujui" type="button" class="eq-btn-setuju" @click="aksi(f, 'setujui')">Setujui</button>
+                </template>
+                <template v-else-if="f.status === 'aktif' && props.boleh.kelola">
+                  <button type="button" class="eq-btn-mini" @click="versiBaru(f)">Versi baru</button>
+                  <button v-if="f.perlu_cocok && props.boleh.faktor" type="button" class="eq-btn-mini" @click="aksi(f, 'cocokkan')">Sudah dicocokkan</button>
+                  <button type="button" class="eq-btn-mini bahaya" @click="aksi(f, 'tarik')">Tarik</button>
+                </template>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p v-if="!kelompok.length" class="eq-kosong eq-kosong-kecil">Tidak ada faktor yang cocok.</p>
     </Kartu>
 
-    <Kartu v-for="g in kelompok" :key="g[0].id" :judul="`${props.pilihan.kode[g[0].kode_energi] ?? g[0].kode_energi} — ${g[0].parameter}`"
-           :ket="[g[0].kategori_ipcc ? props.pilihan.kategori[g[0].kategori_ipcc] : null, g[0].wilayah ? 'Wilayah ' + g[0].wilayah : null].filter(Boolean).join(' · ') || null">
-      <table class="w-full text-[12px]">
-        <thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-2">Nilai</th><th class="py-2">Berlaku</th><th class="py-2">Tier</th><th class="py-2">Sumber</th><th class="py-2">Milik</th><th class="py-2">Status</th><th class="py-2"></th></tr></thead>
-        <tbody>
-          <tr v-for="f in g" :key="f.id" class="border-b border-stone-50 align-top">
-            <td class="py-2 font-semibold num">{{ f.nilai }} <span class="text-stone-400 font-normal">{{ f.satuan }}</span><span v-if="f.ketidakpastian_persen !== null" class="block text-[10px] text-stone-400">± {{ n(f.ketidakpastian_persen, 1) }}%</span></td>
-            <td class="py-2">{{ tgl(f.berlaku_mulai) }} – {{ f.berlaku_sampai ? tgl(f.berlaku_sampai) : 'terbuka' }}</td>
-            <td class="py-2">{{ f.tier }}</td>
-            <td class="py-2 max-w-[320px]">{{ f.sumber_dokumen }}<span v-if="f.sumber_rujukan" class="text-stone-400"> · {{ f.sumber_rujukan }}</span>
-              <span v-if="f.perlu_cocok" class="block text-[10.5px] font-bold text-amber-700">Nilai acuan — perlu dicocokkan dengan dokumen sumber</span>
-              <span v-if="f.catatan" class="block text-[10.5px] text-stone-500">{{ f.catatan }}</span>
-              <span v-if="dampak[f.id]" class="block text-[10.5px] text-sky-700 mt-1">
-                <template v-if="dampak[f.id].sibuk">Menghitung dampak…</template>
-                <template v-else-if="dampak[f.id].galat">{{ dampak[f.id].galat }}</template>
-                <template v-else>12 bulan: aktif {{ n(dampak[f.id].aktif?.total, 1) }} → draf {{ n(dampak[f.id].draf?.total, 1) }} tCO₂e ({{ n(dampak[f.id].selisih_persen, 2) }}%)</template>
-              </span>
-            </td>
-            <td class="py-2 text-stone-500">{{ f.milik }}<span v-if="f.penyetuju" class="block text-[10px]">Disetujui {{ f.penyetuju }} {{ f.disetujui_pada }}</span></td>
-            <td class="py-2"><Lencana :status="f.status" /></td>
-            <td class="py-2 text-right whitespace-nowrap space-x-1">
-              <template v-if="f.status === 'draf'">
-                <button type="button" class="eq-btn-mini" @click="uji(f)">Uji dampak</button>
-                <button v-if="f.boleh_setujui" type="button" class="eq-btn-setuju" @click="aksi(f, 'setujui')">Setujui</button>
-              </template>
-              <template v-else-if="f.status === 'aktif' && props.boleh.kelola">
-                <button type="button" class="eq-btn-mini" @click="versiBaru(f)">Versi baru</button>
-                <button v-if="f.perlu_cocok && props.boleh.faktor" type="button" class="eq-btn-mini" @click="aksi(f, 'cocokkan')">Sudah dicocokkan</button>
-                <button type="button" class="eq-btn-tolak" @click="aksi(f, 'tarik')">Tarik</button>
-              </template>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </Kartu>
-    <p v-if="!kelompok.length" class="text-[12px] text-stone-400 text-center py-6">Tidak ada faktor yang cocok dengan saringan.</p>
-
-    <Kartu v-if="props.boleh.kelola" id="form-faktor" judul="Ajukan versi faktor" ket="Sumber dokumen wajib — faktor tanpa sumber tidak dapat diperiksa verifikator. Versi diajukan sebagai draf dan disetujui petugas lain.">
+    <Kartu v-if="props.boleh.kelola" id="form-faktor" judul="Tambah versi faktor" ket="Masuk sebagai draf dan berlaku setelah disetujui petugas lain.">
       <form class="grid gap-3 md:grid-cols-4" @submit.prevent="kirim">
         <label class="text-[11px] font-semibold text-stone-500">Kode energi<select v-model="form.kode_energi" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"><option v-for="[k, l] in Object.entries((props.pilihan.kode ?? {}) as Record<string, any>)" :key="k" :value="k">{{ l }}</option></select></label>
-        <label class="text-[11px] font-semibold text-stone-500">Parameter<select v-model="form.parameter" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"><option v-for="[k, l] in Object.entries((props.pilihan.parameter ?? {}) as Record<string, any>)" :key="k" :value="k">{{ k }} — {{ l }}</option></select></label>
+        <label class="text-[11px] font-semibold text-stone-500">Parameter<select v-model="form.parameter" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"><option v-for="[k, l] in Object.entries((props.pilihan.parameter ?? {}) as Record<string, any>)" :key="k" :value="k">{{ namaParameter(k) }} ({{ l }})</option></select></label>
         <label class="text-[11px] font-semibold text-stone-500">Kategori IPCC<select v-model="form.kategori_ipcc" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"><option value="">Semua kategori</option><option v-for="[k, l] in Object.entries((props.pilihan.kategori ?? {}) as Record<string, any>)" :key="k" :value="k">{{ l }}</option></select></label>
         <label class="text-[11px] font-semibold text-stone-500">Wilayah / sistem grid<select v-model="form.wilayah" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"><option value="">Nasional / semua</option><option v-for="[k, l] in Object.entries((props.pilihan.wilayah ?? {}) as Record<string, any>)" :key="k" :value="k">{{ l }}</option></select></label>
         <label class="text-[11px] font-semibold text-stone-500">Nilai<input v-model="form.nilai" required type="number" step="any" min="0" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"></label>

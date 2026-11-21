@@ -514,7 +514,7 @@ final class Menu
           ['Registri Faktor',     'energi.faktor.index', 'energi/faktor*'],
         ],
         'Manajemen Energi' => [
-          ['Status PP 33/2023',   'energi.me.index',     'energi/manajemen'],
+          ['Kewajiban & Ambang',  'energi.me.index',     'energi/manajemen'],
           ['Manajer & Auditor',   'energi.me.personel',  'energi/manajemen/personel'],
           ['Program Konservasi',  'energi.me.program',   'energi/manajemen/program'],
           ['Audit Energi',        'energi.me.audit',     'energi/manajemen/audit*'],

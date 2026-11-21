@@ -55,9 +55,9 @@ final class PaketFaktor
             /* ── campuran biodiesel nasional (persen volume FAME) ── */
             ['solar', 'persen_fame', null, 30, '%', '2020-01-01', '2023-01-31', 'Mandatori B30 (Kepmen ESDM pemanfaatan BBN)', null, 1, null, true, null],
             ['solar', 'persen_fame', null, 35, '%', '2023-02-01', '2024-12-31', 'Mandatori B35 (Kepmen ESDM pemanfaatan BBN)', null, 1, null, true, null],
-            ['solar', 'persen_fame', null, 40, '%', '2025-01-01', '2026-06-30', 'Mandatori B40 (Kepmen ESDM pemanfaatan BBN 2025) [R-18]', null, 1, null, true,
+            ['solar', 'persen_fame', null, 40, '%', '2025-01-01', '2026-06-30', 'Mandatori B40 (Kepmen ESDM pemanfaatan BBN 2025)', null, 1, null, true,
                 'Nomor Kepmen belum diverifikasi.'],
-            ['solar', 'persen_fame', null, 50, '%', '2026-07-01', null, 'Kepmen ESDM No. 257.K/EK.01/MEM.E/2026 (B50) [R-17]', null, 1, null, false,
+            ['solar', 'persen_fame', null, 50, '%', '2026-07-01', null, 'Kepmen ESDM No. 257.K/EK.01/MEM.E/2026 (B50)', null, 1, null, false,
                 'Stok B40 boleh disalurkan s.d. 30 Sep 2026 — isi persen FAME per pengiriman bila menerima B40.'],
 
             /* ── biodiesel FAME ── */
@@ -93,9 +93,9 @@ final class PaketFaktor
 
             /* ── listrik ── */
             ['listrik_pln', 'ef_grid', null, 0.87, 'tCO2e/MWh', $m, null, 'Nilai warisan modul Energi (±0,87 kgCO₂e/kWh)', null, 1, 10.0, true,
-                'GANTI dengan faktor per sistem dari lampiran Kepmen ESDM 163.K/HK.02/MEM.S/2021 [R-10][A-03].'],
+                'Ganti dengan faktor per sistem dari lampiran Kepmen ESDM 163.K/HK.02/MEM.S/2021.'],
             ['listrik_iuptls', 'ef_grid', null, 0.87, 'tCO2e/MWh', $m, null, 'Nilai warisan modul Energi (±0,87 kgCO₂e/kWh)', null, 1, 10.0, true,
-                'GANTI dengan faktor pembangkit pemasok (IUPTLS) atau faktor grid sistemnya.'],
+                'Ganti dengan faktor pembangkit pemasok (IUPTLS) atau faktor grid sistemnya.'],
             ['listrik_pln', 'harga', null, 1450, 'Rp/kWh', $m, null, 'Nilai warisan modul Energi (Rp1.450/kWh)', null, 1, null, true, null],
             ['listrik_iuptls', 'harga', null, 1450, 'Rp/kWh', $m, null, 'Nilai warisan modul Energi (Rp1.450/kWh)', null, 1, null, true, null],
 
@@ -120,10 +120,10 @@ final class PaketFaktor
             ['r410a', 'gwp_ar6', null, 2255.5, 'tCO2e/t', $m, null, 'IPCC AR6 WG1 (campuran 50% HFC-32 + 50% HFC-125)', null, 1, null, true, null],
 
             /* ── konversi & harga karbon ── */
-            ['konversi', 'gj_per_toe', null, 41.868, 'GJ/TOE', $m, null, 'Definisi IEA (1 TOE = 41,868 GJ) [A-02]', null, 1, null, false, null],
+            ['konversi', 'gj_per_toe', null, 41.868, 'GJ/TOE', $m, null, 'Definisi IEA (1 TOE = 41,868 GJ)', null, 1, null, false, null],
             ['konversi', 'gj_per_sbm', null, 6.1178632, 'GJ/SBM', $m, null, 'Setara barel minyak (BOE)', null, 1, null, true,
                 'Cocokkan dengan faktor Handbook of Energy & Economic Statistics of Indonesia (ESDM).'],
-            ['karbon', 'harga_dasar', null, 30000, 'Rp/tCO2e', $m, null, 'UU 7/2021 HPP — tarif minimum pajak karbon Rp30/kgCO₂e [R-12]', null, 1, null, false,
+            ['karbon', 'harga_dasar', null, 30000, 'Rp/tCO2e', $m, null, 'UU 7/2021 HPP — tarif minimum pajak karbon Rp30/kgCO₂e', null, 1, null, false,
                 'Harga karbon bayangan acuan minimum; penerapan pajak karbon masih ditunda.'],
         ];
     }

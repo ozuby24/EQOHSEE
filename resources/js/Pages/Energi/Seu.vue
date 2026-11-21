@@ -20,10 +20,10 @@ const tandai = (u: any) => router.post(`/energi/seu/${u.id}`, { seu: !u.seu }, {
     <form class="flex flex-wrap items-end gap-2" @submit.prevent="terapkan">
       <label class="text-[11px] font-semibold text-stone-500">Dari<input v-model="rentang.dari" type="date" class="block mt-1 rounded-lg border-stone-200 text-[12px]"></label>
       <label class="text-[11px] font-semibold text-stone-500">Sampai<input v-model="rentang.sampai" type="date" class="block mt-1 rounded-lg border-stone-200 text-[12px]"></label>
-      <button class="eq-btn-utama" style="padding:9px 14px">Terapkan</button>
+      <button class="eq-btn-lain" style="padding:9px 14px">Terapkan</button>
     </form>
 
-    <KartuGrafik judul="Pareto pemakai energi" catatan="Pemakai yang mengisi 80% energi pertama diusulkan sebagai SEU (ISO 50001 6.3). Penetapannya keputusan Manajer Energi." :angka="`${props.pareto?.length ?? 0} kelompok`">
+    <KartuGrafik judul="Pareto pemakai energi" catatan="Kelompok yang mengisi 80% energi pertama diusulkan sebagai SEU." :angka="`${props.pareto?.length ?? 0} kelompok`">
       <Batang :baris="baris" satuan="GJ" apa-adanya />
       <template #tabel>
         <table><thead><tr><th>Pemakai</th><th>GJ</th><th>%</th><th>Kumulatif</th><th>Usulan SEU</th></tr></thead>
@@ -31,11 +31,11 @@ const tandai = (u: any) => router.post(`/energi/seu/${u.id}`, { seu: !u.seu }, {
       </template>
     </KartuGrafik>
 
-    <Kartu judul="Penetapan SEU per unit" ket="Unit bertanda SEU dipantau EnPI-nya tersendiri dan wajib tercakup audit energi.">
+    <Kartu judul="Penetapan SEU per unit">
       <div class="flex flex-wrap gap-2">
         <button v-for="u in props.unit" :key="u.id" type="button" :disabled="!props.boleh.kelola" @click="tandai(u)"
                 class="rounded-lg border px-2.5 py-1.5 text-[11.5px]" :class="u.seu ? 'bg-amber-50 border-amber-300 text-amber-800 font-bold' : 'bg-white border-stone-200 text-stone-600'">
-          {{ u.seu ? '★ ' : '' }}{{ u.kode }}
+          {{ u.kode }}<span v-if="u.seu" class="ml-1 text-[9.5px]">SEU</span>
         </button>
       </div>
     </Kartu>

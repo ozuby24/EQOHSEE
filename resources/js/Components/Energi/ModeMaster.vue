@@ -23,7 +23,7 @@ async function hapusUnit(u: any) {
 
 <template>
   <div class="space-y-4">
-    <Kartu judul="Site" ket="Sistem ketenagalistrikan site menentukan faktor grid Scope 2 (Kepmen ESDM 163.K/2021).">
+    <Kartu judul="Site">
       <table class="w-full text-[12px] mb-4">
         <thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-2">Kode</th><th class="py-2">Nama</th><th class="py-2">Jenis</th><th class="py-2">Provinsi</th><th class="py-2">Sistem grid</th><th class="py-2">Zona</th></tr></thead>
         <tbody>
@@ -45,7 +45,7 @@ async function hapusUnit(u: any) {
       <p v-for="(pesan, k) in site.errors" :key="k" class="text-[11px] text-red-600 mt-1">{{ pesan }}</p>
     </Kartu>
 
-    <Kartu judul="Unit alat" ket="Kategori IPCC menentukan faktor CH₄/N₂O: alat tambang off-road, kendaraan jalan, atau stasioner.">
+    <Kartu judul="Unit alat">
       <table class="w-full text-[12px] mb-4">
         <thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-2">Kode</th><th class="py-2">Nama</th><th class="py-2">Kategori</th><th class="py-2">Site</th><th class="py-2">Kategori IPCC</th><th class="py-2">Aktif</th><th class="py-2"></th></tr></thead>
         <tbody>

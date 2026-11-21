@@ -43,7 +43,7 @@ async function ubahStatus(r: any, status: string) {
       </form>
     </Kartu>
 
-    <Kartu judul="Rekomendasi" ket="Setiap rekomendasi membuka tindak lanjut ber-PIC dan masuk pengingat tenggat; status tidak layak wajib beralasan.">
+    <Kartu judul="Rekomendasi">
       <table class="w-full text-[12px]">
         <thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-2">Uraian</th><th class="py-2 text-right">Potensi</th><th class="py-2">Prioritas</th><th class="py-2">Tenggat</th><th class="py-2">Status</th></tr></thead>
         <tbody>

@@ -84,7 +84,7 @@ final class Katalog
 
     public static function label(string $kode): string
     {
-        return self::ENERGI[$kode]['label'] ?? self::KODE_LAIN[$kode] ?? $kode;
+        return self::ENERGI[$kode]['label'] ?? self::KODE_LAIN[$kode] ?? ($kode === 'scope3' ? 'Rantai nilai' : $kode);
     }
 
     public static function satuan(string $kode): string

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /*
-  Verifikasi data harian & kunci periode (FSD §7, §8.2).
+  Verifikasi data harian & kunci periode bulanan.
   Kalender kelengkapan: hijau lengkap & terverifikasi, kuning belum
   diverifikasi, merah kosong, abu terkunci.
 */
@@ -33,6 +33,13 @@ const kunci = () => router.post(`/energi/periode/${props.periode.id}/kunci`, {},
 const koreksi = useForm<Record<string, any>>({ jenis: 'bbm', id: '', kolom: 'liter', nilaiBaru: '', alasan: '' });
 const ajukan = () => koreksi.transform(d => ({ jenis: d.jenis, id: d.id, alasan: d.alasan, nilai: { [d.kolom]: d.nilaiBaru } }))
   .post('/energi/periode/koreksi', { preserveScroll: true, onSuccess: () => koreksi.reset('id', 'nilaiBaru', 'alasan') });
+const KOLOM: Record<string, string> = {
+  hm: 'HM', liter: 'Liter', idle_jam: 'Jam idle', jarak_km: 'Jarak (km)', ton: 'Ton', bcm: 'BCM', persen_fame: 'FAME (%)',
+  kwh: 'kWh', puncak_kw: 'Beban puncak (kW)', jam_operasi: 'Jam operasi', liter_genset: 'Liter genset', jumlah: 'Jumlah',
+  stripping_ratio: 'Stripping ratio', jarak_angkut_km: 'Jarak angkut (km)', stok_awal_liter: 'Stok awal (L)',
+  disalurkan_liter: 'Disalurkan (L)', stok_akhir_liter: 'Stok akhir (L)',
+};
+const ubahan = (k: any) => Object.keys(k.nilai_baru ?? {}).map(c => `${KOLOM[c] ?? c}: ${n(k.nilai_lama?.[c], 2)} → ${n(k.nilai_baru[c], 2)}`);
 const putus = (k: any, putusan: string) => router.post(`/energi/periode/koreksi/${k.id}`, { putusan }, { preserveScroll: true });
 </script>
 
@@ -44,7 +51,7 @@ const putus = (k: any, putusan: string) => router.post(`/energi/periode/koreksi/
       <PilihPerusahaan :daftar="props.daftarPerusahaan" :terpilih="props.perusahaan" :nama="props.namaPerusahaan" />
     </section>
 
-    <Kartu judul="Kalender kelengkapan" ket="Klik bulan untuk memeriksa antrean verifikasi dan syarat kuncinya.">
+    <Kartu judul="Kelengkapan per bulan">
       <div class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 gap-2">
         <button v-for="k in props.kalender" :key="k.bulan" type="button" :disabled="k.keadaan === 'mendatang'" @click="pindah(k.bulan)"
                 class="rounded-xl p-2 text-center border-2" :class="[WARNA[k.keadaan], k.bulan === props.bulan ? 'border-cam-orange' : 'border-transparent']">
@@ -56,7 +63,7 @@ const putus = (k: any, putusan: string) => router.post(`/energi/periode/koreksi/
     </Kartu>
 
     <section class="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-      <Kartu :judul="`Antrean verifikasi — ${props.periode.label}`" ket="Centang massal per tanggal; penolakan wajib beralasan dan dikembalikan ke penginput.">
+      <Kartu :judul="`Antrean verifikasi — ${props.periode.label}`">
         <template #aksi>
           <button type="button" class="eq-btn-mini" @click="semua(true)">Pilih semua</button>
           <button type="button" class="eq-btn-mini" @click="semua(false)">Lepas</button>
@@ -71,7 +78,7 @@ const putus = (k: any, putusan: string) => router.post(`/energi/periode/koreksi/
               </tr>
             </tbody>
           </table>
-          <p v-if="!props.antre?.length" class="text-[12px] text-stone-400 py-6 text-center">Tidak ada baris yang menunggu verifikasi pada bulan ini.</p>
+          <p v-if="!props.antre?.length" class="eq-kosong eq-kosong-kecil">Tidak ada yang menunggu verifikasi.</p>
         </div>
         <div v-if="props.boleh.verifikasi && props.antre?.length" class="flex flex-wrap items-end gap-2 mt-3">
           <button type="button" class="eq-btn-setuju" :disabled="!terpilih.length" @click="kirim('verifikasi')">Verifikasi {{ terpilih.length }} baris</button>
@@ -85,36 +92,36 @@ const putus = (k: any, putusan: string) => router.post(`/energi/periode/koreksi/
         </div>
       </Kartu>
 
-      <Kartu :judul="`Kunci periode ${props.periode.label}`" :ket="props.periode.status === 'terkunci' ? `Dikunci ${props.periode.pengunci ?? ''} ${props.periode.dikunci_pada ?? ''} · kelengkapan ${n(props.periode.kelengkapan_persen, 1)}%` : 'Keempat syarat FSD §7.2 harus terpenuhi.'">
+      <Kartu :judul="`Kunci periode ${props.periode.label}`" :ket="props.periode.status === 'terkunci' ? `Dikunci ${props.periode.pengunci ?? ''} ${props.periode.dikunci_pada ?? ''} · kelengkapan ${n(props.periode.kelengkapan_persen, 1)}%` : null">
         <template #aksi><Lencana :status="props.periode.status" /></template>
-        <ul v-if="props.syarat" class="space-y-2">
-          <li v-for="s in props.syarat.syarat" :key="s.kode" class="flex items-start gap-2 text-[12px]">
-            <span class="w-5 h-5 shrink-0 rounded-full grid place-items-center text-[11px] font-bold" :class="s.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'">{{ s.ok ? '✔' : '✖' }}</span>
-            <span><b>{{ s.label }}</b><span class="block text-[11px] text-stone-500">{{ s.rincian }}</span></span>
+        <ul v-if="props.syarat" class="divide-y divide-stone-100">
+          <li v-for="s in props.syarat.syarat" :key="s.kode" class="py-2 flex items-start justify-between gap-3 text-[12px]">
+            <span class="min-w-0"><span class="font-semibold text-cam-ink">{{ s.label }}</span><span class="block text-[11px] text-stone-500">{{ s.rincian }}</span></span>
+            <span class="shrink-0 rounded-md px-1.5 py-0.5 text-[10.5px] font-semibold" :class="s.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'">{{ s.ok ? 'Terpenuhi' : 'Belum' }}</span>
           </li>
         </ul>
         <button v-if="props.syarat && props.boleh.kunci" type="button" class="eq-btn-utama mt-3" :disabled="!props.syarat.boleh" @click="kunci">Kunci periode</button>
-        <p v-if="props.periode.status === 'terkunci'" class="text-[12px] text-stone-600">Data bulan ini dibekukan. Perubahan hanya lewat pengajuan koreksi di bawah; koreksi yang disetujui menandai laporan terbit sebagai perlu revisi.</p>
+        <p v-if="props.periode.status === 'terkunci'" class="text-[12px] text-stone-600">Bulan ini sudah dikunci. Perubahan lewat koreksi di bawah.</p>
       </Kartu>
     </section>
 
-    <Kartu judul="Koreksi pasca-kunci" ket="Setiap koreksi menyimpan nilai lama → baru, alasan, pengaju, dan pemutusnya. Pemutus bukan pengajunya.">
+    <Kartu judul="Koreksi setelah kunci">
       <form v-if="props.boleh.koreksi" class="grid gap-3 md:grid-cols-6 items-end mb-4" @submit.prevent="ajukan">
         <label class="text-[11px] font-semibold text-stone-500">Jenis data<select v-model="koreksi.jenis" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"><option value="bbm">Solar per unit</option><option value="listrik">Listrik</option><option value="lain">Energi lain</option><option value="produksi">Produksi</option><option value="rekon">Rekonsiliasi</option></select></label>
         <label class="text-[11px] font-semibold text-stone-500">ID baris<input v-model="koreksi.id" required type="number" min="1" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"></label>
-        <label class="text-[11px] font-semibold text-stone-500">Kolom<select v-model="koreksi.kolom" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"><option v-for="k in (props.kolomKoreksi?.[koreksi.jenis] ?? [])" :key="k" :value="k">{{ k }}</option></select></label>
+        <label class="text-[11px] font-semibold text-stone-500">Kolom<select v-model="koreksi.kolom" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"><option v-for="k in (props.kolomKoreksi?.[koreksi.jenis] ?? [])" :key="k" :value="k">{{ KOLOM[k] ?? k }}</option></select></label>
         <label class="text-[11px] font-semibold text-stone-500">Nilai baru<input v-model="koreksi.nilaiBaru" required type="number" step="any" min="0" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"></label>
         <label class="text-[11px] font-semibold text-stone-500 md:col-span-2">Alasan<input v-model="koreksi.alasan" required maxlength="2000" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"></label>
         <button class="eq-btn-utama" :disabled="koreksi.processing">Ajukan koreksi</button>
       </form>
       <p v-for="(pesan, k) in koreksi.errors" :key="k" class="text-[11px] text-red-600 mb-2">{{ pesan }}</p>
       <table class="w-full text-[12px]">
-        <thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-2">Diajukan</th><th class="py-2">Periode</th><th class="py-2">Baris</th><th class="py-2">Lama → baru</th><th class="py-2">Alasan</th><th class="py-2">Status</th><th class="py-2"></th></tr></thead>
+        <thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-2">Diajukan</th><th class="py-2">Periode</th><th class="py-2">Baris</th><th class="py-2">Perubahan</th><th class="py-2">Alasan</th><th class="py-2">Status</th><th class="py-2"></th></tr></thead>
         <tbody>
           <tr v-for="k in props.koreksi" :key="k.id" class="border-b border-stone-50 align-top">
             <td class="py-2">{{ k.diajukan_pada }}<span class="block text-[10.5px] text-stone-400">{{ k.pengaju }}</span></td>
             <td class="py-2">{{ k.periode }}</td><td class="py-2">{{ k.subjek }}</td>
-            <td class="py-2 font-mono text-[11px]">{{ JSON.stringify(k.nilai_lama) }} → {{ JSON.stringify(k.nilai_baru) }}</td>
+            <td class="py-2 num whitespace-nowrap"><span v-for="u in ubahan(k)" :key="u" class="block">{{ u }}</span></td>
             <td class="py-2">{{ k.alasan }}<span v-if="k.catatan_putusan" class="block text-[10.5px] text-stone-500">Putusan: {{ k.catatan_putusan }}</span></td>
             <td class="py-2"><Lencana :status="k.status" /><span v-if="k.pemutus" class="block text-[10.5px] text-stone-400">{{ k.pemutus }}</span></td>
             <td class="py-2 text-right whitespace-nowrap"><template v-if="k.status === 'diajukan' && props.boleh.putus">
@@ -124,7 +131,7 @@ const putus = (k: any, putusan: string) => router.post(`/energi/periode/koreksi/
           </tr>
         </tbody>
       </table>
-      <p v-if="!props.koreksi?.length" class="text-[12px] text-stone-400 py-4 text-center">Belum ada pengajuan koreksi.</p>
+      <p v-if="!props.koreksi?.length" class="eq-kosong eq-kosong-kecil">Belum ada pengajuan koreksi.</p>
     </Kartu>
   </div>
 </template>

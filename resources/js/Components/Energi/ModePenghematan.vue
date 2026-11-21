@@ -37,7 +37,7 @@ async function hapus(p: any) { if (await tanya(`Hapus peluang "${p.judul}"?`)) r
 
 <template>
   <div class="space-y-4">
-    <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <section class="ubin-kisi">
       <KartuAngka label="Potensi seluruh peluang" :nilai="potensi.gj" satuan="GJ/bulan" />
       <KartuAngka label="Potensi emisi dihindari" :nilai="potensi.tco2e" satuan="tCO₂e/bulan" :desimal="2" />
       <KartuAngka label="Sudah berjalan" :nilai="terwujud.gj" satuan="GJ/bulan" :catatan="`${terwujud.jumlah ?? 0} peluang berjalan/selesai`" />
@@ -66,7 +66,7 @@ async function hapus(p: any) { if (await tanya(`Hapus peluang "${p.judul}"?`)) r
       </div>
     </section>
 
-    <Kartu v-if="mv" :judul="`Hasil M&V — ${mv.judul}`" ket="Status selesai mensyaratkan pengukuran penghematan (ISO 50015 / IPMVP opsi A–D). Hanya angka ini yang dihitung sebagai penghematan terwujud di laporan.">
+    <Kartu v-if="mv" :judul="`Hasil M&V — ${mv.judul}`">
       <form class="grid gap-3 md:grid-cols-3" @submit.prevent="simpanMv">
         <label class="text-[11px] font-semibold text-stone-500">Metode IPMVP
           <select v-model="mvForm.metode_mv" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]">

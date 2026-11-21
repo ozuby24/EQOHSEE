@@ -20,7 +20,7 @@ const kirim = () => {
 <template>
   <Head title="Manajer & Auditor Energi" />
   <div class="space-y-4">
-    <Kartu judul="Manajer Energi & Auditor Energi" ket="Permen ESDM 8/2025 Ps. 4: perusahaan wajib menunjuk Manajer Energi bersertifikat kompetensi. Pengingat kedaluwarsa dikirim H-90 dan H-30.">
+    <Kartu judul="Manajer & auditor energi">
       <table class="w-full text-[12px]">
         <thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-2">Nama</th><th class="py-2">Peran</th><th class="py-2">Sertifikat</th><th class="py-2">Berlaku sampai</th><th class="py-2">Keadaan</th><th class="py-2"></th></tr></thead>
         <tbody>
