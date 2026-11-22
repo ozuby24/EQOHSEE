@@ -11,7 +11,7 @@
   resources/js/halaman.ts untuk alasannya.
 */
 import { reactive } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import { propHalaman } from '../../halaman';
 import Dasbor from './Dasbor.vue';
 import EnergyInput from '../../Components/EnergyInput.vue';
@@ -36,13 +36,6 @@ const judulTab: Record<string, string> = {
   laporan: 'Laporan Energi', master: 'Master Data Energi',
 };
 
-const tabs = [
-  ['index', 'Dashboard', '/energi'], ['input', 'Input', '/energi/input'], ['konsumsi', 'Konsumsi', '/energi/konsumsi'],
-  ['fuel', 'Bahan bakar', '/energi/bahan-bakar'], ['listrik', 'Listrik', '/energi/listrik'], ['equipment', 'Peralatan', '/energi/alat'],
-  ['kpi', 'KPI', '/energi/kpi'], ['baseline', 'Baseline', '/energi/baseline'], ['hemat', 'Penghematan', '/energi/penghematan'],
-  ['karbon', 'Karbon & GRK', '/energi/grk'], ['kalkulator', 'Kalkulator', '/energi/kalkulator'], ['laporan', 'Laporan', '/energi/laporan'],
-  ['master', 'Master', '/energi/data-induk'],
-];
 
 const rentang = reactive({ dari: String(props.dari ?? '').slice(0, 10), sampai: String(props.sampai ?? '').slice(0, 10) });
 
@@ -68,13 +61,6 @@ function filter() {
       </form>
     </section>
 
-    <nav v-if="props.mode !== 'laporan'" class="flex gap-1 overflow-x-auto rounded-xl bg-stone-100 p-1 text-[11px]" aria-label="Halaman energi">
-      <Link v-for="tab in tabs" :key="tab[0]" :href="tab[2]"
-            class="whitespace-nowrap rounded-lg px-3 py-2 text-stone-500 hover:bg-white hover:text-cam-ink"
-            :class="props.mode === tab[0] || (tab[0] === 'equipment' && props.mode === 'equipment-show') ? 'bg-white font-bold text-cam-ink shadow-sm' : ''">
-        {{ tab[1] }}
-      </Link>
-    </nav>
 
     <Dasbor v-if="props.mode === 'index'"
             :r="props.r ?? {}" :tren="props.tren ?? []" :teratas="props.teratas ?? []"

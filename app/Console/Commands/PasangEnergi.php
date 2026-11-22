@@ -35,7 +35,7 @@ class PasangEnergi extends Command
             foreach ($belum as $f) {
                 $this->line('  · '.$f->kode_energi.' / '.$f->parameter.($f->kategori_ipcc ? ' ('.$f->kategori_ipcc.')' : ''));
             }
-            $this->line('  Cocokkan di /energi/faktor sebelum laporan resmi disampaikan.');
+            $this->line('  Cocokkan di /karbon/faktor sebelum laporan resmi disampaikan.');
         }
 
         return self::SUCCESS;

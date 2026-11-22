@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\InvestigasiController;
+use App\Http\Controllers\Karbon\DasborController as KarbonDasbor;
 use App\Http\Controllers\Energi\{ApiController as EnergiApi, BodController as EnergiBod, EnpiController as EnergiEnpi,
     FaktorController as EnergiFaktor, InventarisController as EnergiGrk, LaporanController as EnergiLapor,
     ManajemenEnergiController as EnergiMe, PeriodeController as EnergiPeriode};
@@ -1191,7 +1192,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('penghematan/{peluang}',   [EnergyController::class,'ubahPeluang'])->middleware('can:energi.input')->name('hemat.ubah');
         Route::delete('penghematan/{peluang}',[EnergyController::class,'hapusPeluang'])->middleware('can:admin')->name('hemat.hapus');
 
-        Route::get('karbon',       [EnergyController::class,'karbon'])->name('karbon');
+        Route::permanentRedirect('karbon', '/karbon/inventaris')->name('karbon');
         Route::get('kalkulator',   [EnergyController::class,'kalkulator'])->name('kalkulator');
         Route::get('laporan',      [EnergyController::class,'laporan'])->name('laporan');
 
@@ -1204,28 +1205,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         /* ═════ Manajemen Energi & Karbon (PRD/FSD Energi-Karbon) ═════ */
 
-        // Registri faktor emisi & konversi berversi.
-        Route::get('faktor', [EnergiFaktor::class, 'index'])->name('faktor.index');
-        Route::get('faktor/uji-dampak', [EnergiFaktor::class, 'ujiDampak'])->name('faktor.uji');
-        Route::post('faktor', [EnergiFaktor::class, 'simpan'])->name('faktor.simpan');
-        Route::put('faktor/{faktor}', [EnergiFaktor::class, 'ubah'])->name('faktor.ubah');
-        Route::post('faktor/{faktor}/setujui', [EnergiFaktor::class, 'setujui'])->name('faktor.setujui');
-        Route::post('faktor/{faktor}/tarik', [EnergiFaktor::class, 'tarik'])->name('faktor.tarik');
-        Route::post('faktor/{faktor}/cocokkan', [EnergiFaktor::class, 'cocokkan'])->name('faktor.cocokkan');
-
-        // Inventarisasi GRK.
-        Route::get('grk', [EnergiGrk::class, 'index'])->name('grk.index');
-        Route::get('grk/batas', [EnergiGrk::class, 'batas'])->name('grk.batas');
-        Route::post('grk/batas', [EnergiGrk::class, 'simpanBatas'])->name('grk.batas.simpan');
-        Route::post('grk/batas/{batas}/setujui', [EnergiGrk::class, 'setujuiBatas'])->name('grk.batas.setujui');
-        Route::post('grk/tahun-dasar', [EnergiGrk::class, 'simpanDasar'])->name('grk.dasar');
-        Route::get('grk/scope3', [EnergiGrk::class, 'scope3'])->name('grk.s3');
-        Route::post('grk/scope3', [EnergiGrk::class, 'simpanScope3'])->name('grk.s3.simpan');
-        Route::post('grk/scope3/{scope3}/verifikasi', [EnergiGrk::class, 'verifikasiScope3'])->name('grk.s3.verifikasi');
-        Route::delete('grk/scope3/{scope3}', [EnergiGrk::class, 'hapusScope3'])->middleware('can:energi.kelola')->name('grk.s3.hapus');
-        Route::get('grk/mitigasi', [EnergiGrk::class, 'mitigasi'])->name('grk.mitigasi');
-        Route::post('grk/mitigasi', [EnergiGrk::class, 'simpanMitigasi'])->name('grk.mitigasi.simpan');
-        Route::put('grk/mitigasi/{mitigasi}', [EnergiGrk::class, 'ubahMitigasi'])->name('grk.mitigasi.ubah');
+        /* Inventarisasi GRK dan registri faktor pindah ke aplikasi
+           Carbon Management (/karbon). Alamat lamanya dialihkan supaya
+           markah dan tautan yang sudah beredar tetap sampai. */
+        Route::permanentRedirect('grk', '/karbon/inventaris');
+        Route::permanentRedirect('grk/batas', '/karbon/batas');
+        Route::permanentRedirect('grk/scope3', '/karbon/scope3');
+        Route::permanentRedirect('grk/mitigasi', '/karbon/mitigasi');
+        Route::permanentRedirect('faktor', '/karbon/faktor');
 
         // Manajemen energi PP 33/2023 & ISO 50001.
         Route::get('manajemen', [EnergiMe::class, 'index'])->name('me.index');
@@ -1285,6 +1272,34 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('api/kalkulator', [EnergiApi::class, 'kalkulator'])->name('api.kalkulator');
         Route::get('api/faktor', [EnergiApi::class, 'faktor'])->name('api.faktor');
         Route::get('api/agregat', [EnergiApi::class, 'agregat'])->name('api.agregat');
+    });
+
+    /* ================= Carbon Management ================= */
+    Route::prefix('karbon')->name('karbon.')->group(function () {
+        Route::get('/',            [KarbonDasbor::class, 'index'])->name('index');
+
+        // Inventarisasi GRK: Scope 1, 2, 3, batas organisasi, tahun dasar.
+        Route::get('inventaris', [EnergiGrk::class, 'index'])->name('grk');
+        Route::get('batas', [EnergiGrk::class, 'batas'])->name('batas');
+        Route::post('batas', [EnergiGrk::class, 'simpanBatas'])->name('batas.simpan');
+        Route::post('batas/{batas}/setujui', [EnergiGrk::class, 'setujuiBatas'])->name('batas.setujui');
+        Route::post('tahun-dasar', [EnergiGrk::class, 'simpanDasar'])->name('dasar');
+        Route::get('scope3', [EnergiGrk::class, 'scope3'])->name('s3');
+        Route::post('scope3', [EnergiGrk::class, 'simpanScope3'])->name('s3.simpan');
+        Route::post('scope3/{scope3}/verifikasi', [EnergiGrk::class, 'verifikasiScope3'])->name('s3.verifikasi');
+        Route::delete('scope3/{scope3}', [EnergiGrk::class, 'hapusScope3'])->middleware('can:energi.kelola')->name('s3.hapus');
+        Route::get('mitigasi', [EnergiGrk::class, 'mitigasi'])->name('mitigasi');
+        Route::post('mitigasi', [EnergiGrk::class, 'simpanMitigasi'])->name('mitigasi.simpan');
+        Route::put('mitigasi/{mitigasi}', [EnergiGrk::class, 'ubahMitigasi'])->name('mitigasi.ubah');
+
+        // Registri faktor emisi & konversi berversi — dipakai bersama modul Energi.
+        Route::get('faktor', [EnergiFaktor::class, 'index'])->name('faktor.index');
+        Route::get('faktor/uji-dampak', [EnergiFaktor::class, 'ujiDampak'])->name('faktor.uji');
+        Route::post('faktor', [EnergiFaktor::class, 'simpan'])->name('faktor.simpan');
+        Route::put('faktor/{faktor}', [EnergiFaktor::class, 'ubah'])->name('faktor.ubah');
+        Route::post('faktor/{faktor}/setujui', [EnergiFaktor::class, 'setujui'])->name('faktor.setujui');
+        Route::post('faktor/{faktor}/tarik', [EnergiFaktor::class, 'tarik'])->name('faktor.tarik');
+        Route::post('faktor/{faktor}/cocokkan', [EnergiFaktor::class, 'cocokkan'])->name('faktor.cocokkan');
     });
 
     /* ============ Pengelolaan Air & Penirisan ============

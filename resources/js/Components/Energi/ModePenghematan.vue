@@ -37,7 +37,7 @@ async function hapus(p: any) { if (await tanya(`Hapus peluang "${p.judul}"?`)) r
 
 <template>
   <div class="space-y-4">
-    <section class="ubin-kisi">
+    <section class="ka-kisi">
       <KartuAngka label="Potensi seluruh peluang" :nilai="potensi.gj" satuan="GJ/bulan" />
       <KartuAngka label="Potensi emisi dihindari" :nilai="potensi.tco2e" satuan="tCO₂e/bulan" :desimal="2" />
       <KartuAngka label="Sudah berjalan" :nilai="terwujud.gj" satuan="GJ/bulan" :catatan="`${terwujud.jumlah ?? 0} peluang berjalan/selesai`" />

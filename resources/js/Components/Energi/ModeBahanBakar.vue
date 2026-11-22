@@ -13,7 +13,7 @@ const ragRekon = () => props.recon?.persen === null || props.recon?.persen === u
 
 <template>
   <div class="space-y-4">
-    <section class="ubin-kisi">
+    <section class="ka-kisi">
       <KartuAngka label="Solar terpakai" :nilai="r.liter" satuan="L" :desimal="0" :catatan="`Alat ${n(r.liter_alat, 0)} L · genset ${n(r.liter_genset, 0)} L`" />
       <KartuAngka label="Solar per ton" :nilai="r.l_ton" satuan="L/ton" :desimal="3" />
       <KartuAngka label="Solar per BCM" :nilai="r.l_bcm" satuan="L/BCM" :desimal="3" />

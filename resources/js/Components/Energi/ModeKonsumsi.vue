@@ -22,7 +22,7 @@ const bauran = computed(() => Object.entries((props.r?.rincian ?? {}) as Record<
 
 <template>
   <div class="space-y-4">
-    <section class="ubin-kisi">
+    <section class="ka-kisi">
       <KartuAngka label="Total energi" :nilai="r.gj" satuan="GJ" :catatan="`${props.r.hari ?? 0} hari · ${ringkas(r.liter_hari)} L solar/hari`" />
       <KartuAngka label="Intensitas energi" :nilai="r.intensitas" satuan="GJ/ton" :desimal="4"
                   :catatan="baseline ? `Target ${n(baseline.target_gj_ton, 4)} GJ/ton` : 'Belum ada baseline'" />

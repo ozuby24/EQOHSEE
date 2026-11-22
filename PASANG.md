@@ -1,3 +1,50 @@
+# Update 18 — Carbon Management jadi aplikasi sendiri, tampilan Energi & Karbon diperbarui
+
+```bash
+# Di VPS, dari /var/www/EQOHSEE
+bash deploy/deploy.sh          # tidak ada migrasi baru; cukup pull + build
+php artisan pembelian:katalog  # menambah butir APP-KARBON (Rp0, tidak aktif)
+```
+Tidak ada perubahan skema. Yang berubah:
+
+- **Carbon Management** kini aplikasi terpisah di pemilih aplikasi
+  (pilar Environment), dengan dasbornya sendiri di `/karbon`: jejak karbon
+  Scope 1–3, intensitas tCO₂e/ton, komposisi scope, emisi bulanan, kategori
+  IPCC, sumber emisi terbesar, emisi per gas, jalur dekarbonisasi, biaya
+  karbon tiga skenario harga, aksi mitigasi, dan kewajiban pelaporan emisi.
+  Halamannya pindah dari Energy Performance:
+
+  | Lama | Baru |
+  |---|---|
+  | `/energi/grk` | `/karbon/inventaris` |
+  | `/energi/grk/batas` | `/karbon/batas` |
+  | `/energi/grk/scope3` | `/karbon/scope3` |
+  | `/energi/grk/mitigasi` | `/karbon/mitigasi` |
+  | `/energi/faktor` | `/karbon/faktor` |
+  | `/energi/karbon` | `/karbon/inventaris` |
+
+  Alamat lama **dialihkan permanen (301)**, jadi markah dan tautan di
+  laporan lama tetap sampai. Data aktivitas (BBM, listrik, produksi) tetap
+  diinput di Energy Performance; Carbon Management membaca dan
+  menghitungnya dengan mesin yang sama dengan laporan GRK resmi.
+- **Tampilan Energi & Karbon**: panel utama bergradien dengan siluet
+  tambang dan motif kontur, kartu KPI berwarna per kategori dengan ikon,
+  status target, arah perubahan terhadap tahun lalu, dan sparkline; Control
+  Tower direksi mendapat ringkasan status di bagian atas. Ikon dari Lucide
+  (ISC), disimpan lokal — tidak memanggil CDN.
+- **Perbaikan angka**: saat administrator memilih satu perusahaan di
+  "perusahaan dilihat", catatan BBM kini ikut tersaring (sebelumnya
+  terjumlah dari semua perusahaan); grafik harian tidak lagi bergerigi
+  karena format tanggal campuran; tahun berjalan pada jalur dekarbonisasi
+  diproyeksikan setahun penuh, bukan dibandingkan mentah dengan target
+  tahunan; peringkat unit boros membandingkan tiap unit dengan rata-rata
+  kategori di perusahaannya sendiri.
+- **Data contoh** Energi & Karbon dibuat ulang agar realistis (armada
+  PC2000/HD785/D375A, produksi ±4.800 t/hari, genset musim hujan, PLTS,
+  rekonsiliasi BBM, baseline & target). Muat ulang perusahaan contoh bila
+  ingin melihatnya: `php artisan demo:pasang` (hanya menyentuh perusahaan
+  contoh).
+
 # Update 17 — Modul Manajemen Energi & Karbon (PRD/FSD Energi-Karbon)
 
 ```bash

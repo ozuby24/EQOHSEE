@@ -12,7 +12,7 @@ const kirim = () => form.post('/energi/manajemen/tinjauan', { preserveScroll: tr
 <template>
   <Head title="Monev & Tinjauan" />
   <div class="space-y-4">
-    <Kartu judul="Monev & tinjauan manajemen">
+    <Kartu judul="Monev & tinjauan manajemen" ikon="presentation" warna="ungu">
       <article v-for="t in props.daftar" :key="t.id" class="border-b border-stone-100 py-3 last:border-0">
         <p class="text-[13px] font-semibold text-cam-ink">{{ props.jenis[t.jenis] }} — {{ tgl(t.tanggal) }}</p>
         <p class="text-[11px] text-stone-400">Peserta: {{ t.peserta ?? '—' }}</p>

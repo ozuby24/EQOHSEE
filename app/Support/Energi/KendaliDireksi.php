@@ -247,11 +247,22 @@ final class KendaliDireksi
         if ($agg->isEmpty()) return [];
 
         $unit = EnergyEquipment::withoutGlobalScopes()->whereIn('id', $agg->pluck('equipment_id'))->get()->keyBy('id');
+
+        /* Acuan per perusahaan DAN kategori. Pada tampilan grup, rata-rata
+           kategori lintas perusahaan membandingkan armada yang berbeda
+           ukuran dan medan — yang terlihat boros hanyalah perusahaan
+           dengan alat lebih besar. Kode unit pun berulang antarperusahaan,
+           jadi singkatan perusahaannya ikut disebut. */
+        $banyak = $unit->pluck('company_id')->unique()->count() > 1;
+        $singkat = $banyak ? Company::withoutGlobalScopes()->whereIn('id', $unit->pluck('company_id')->filter()->unique())
+            ->get()->mapWithKeys(fn ($c) => [$c->id => $c->code ?: $c->nama_pendek ?: $c->name]) : collect();
+        $kunci = fn ($u) => ($u->company_id ?? 0).'|'.$u->kategori;
+
         $acuan = [];
         foreach ($agg as $a) {
             $u = $unit[$a->equipment_id] ?? null;
             if (!$u || $a->hm <= 0) continue;
-            $acuan[$u->kategori][] = [$a->liter, $a->hm];
+            $acuan[$kunci($u)][] = [$a->liter, $a->hm];
         }
         $acuan = array_map(fn ($xs) => array_sum(array_column($xs, 1)) > 0
             ? array_sum(array_column($xs, 0)) / array_sum(array_column($xs, 1)) : 0.0, $acuan);
@@ -264,8 +275,8 @@ final class KendaliDireksi
             $u = $unit[$a->equipment_id] ?? null;
             if (!$u || $a->hm <= 0) continue;
             $lhm = $a->liter / $a->hm;
-            $ac = $acuan[$u->kategori] ?? 0.0;
-            $out[] = ['id' => $u->id, 'kode' => $u->kode, 'nama' => $u->nama, 'kategori' => Energi::KATEGORI[$u->kategori] ?? $u->kategori,
+            $ac = $acuan[$kunci($u)] ?? 0.0;
+            $out[] = ['id' => $u->id, 'kode' => $banyak ? $u->kode.' · '.($singkat[$u->company_id] ?? '—') : $u->kode, 'nama' => $u->nama, 'kategori' => Energi::KATEGORI[$u->kategori] ?? $u->kategori,
                       'l_hm' => $lhm, 'acuan' => $ac, 'liter' => (float) $a->liter,
                       'deviasi_rp' => max(0.0, ($lhm - $ac) * $a->hm * $harga),
                       'status' => Energi::statusEfisiensi($lhm, $ac)];
@@ -417,7 +428,16 @@ final class KendaliDireksi
         $tahun = [];
         foreach (range($dasar, $kini) as $t) {
             $r = Inventaris::ringkas(Inventaris::hitung("{$t}-01-01", min("{$t}-12-31", now()->toDateString()), $saring)['baris']);
-            $tahun[] = ['tahun' => $t, 'tco2e' => $r['total']];
+            /* Tahun berjalan diproyeksikan setahun penuh menurut laju
+               hariannya. Angka berjalan apa adanya selalu tampak anjlok
+               dibanding tahun penuh sebelumnya — penurunan yang hanya
+               berarti tahunnya belum selesai. */
+            if ($t === $kini) {
+                $lewat = max(1, now()->dayOfYear);
+                $tahun[] = ['tahun' => $t, 'tco2e' => $r['total'] * (now()->daysInYear / $lewat), 'ytd' => $r['total'], 'proyeksi' => true];
+            } else {
+                $tahun[] = ['tahun' => $t, 'tco2e' => $r['total']];
+            }
         }
 
         $lintasan = [];

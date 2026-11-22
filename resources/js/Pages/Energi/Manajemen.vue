@@ -25,17 +25,17 @@ const simpan = () => form.transform(d => Object.fromEntries(Object.entries(d).ma
     <div class="flex justify-end"><PilihPerusahaan :daftar="props.daftarPerusahaan" :terpilih="props.perusahaan" :nama="props.namaPerusahaan" /></div>
 
     <section class="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-      <Kartu judul="Ambang konsumsi energi" :ket="props.ambang.kategori_label">
+      <Kartu judul="Ambang konsumsi energi" ikon="gauge" warna="oranye" :ket="props.ambang.kategori_label">
         <template #aksi><Lencana :status="props.ambang.status" /></template>
         <Meter :nilai="props.ambang.toe_lalu" :target="props.ambang.ambang" :maks="Math.max(props.ambang.ambang, props.ambang.toe_lalu, props.ambang.toe_proyeksi) * 1.25 || 1" satuan=" TOE" sebutan="ambang" kecil-lebih-baik />
-        <div class="ubin-kisi mt-4">
+        <div class="ka-kisi mt-4">
           <KartuAngka :label="`Konsumsi ${props.ambang.tahun - 1}`" :nilai="props.ambang.toe_lalu" satuan="TOE" />
           <KartuAngka :label="`YTD ${props.ambang.tahun}`" :nilai="props.ambang.toe_ytd" satuan="TOE" />
           <KartuAngka label="Proyeksi akhir tahun" :nilai="props.ambang.toe_proyeksi" satuan="TOE" :catatan="`Ambang ${n(props.ambang.ambang, 0)} TOE ≈ ${n(props.ambang.gj_setara_ambang, 0)} GJ`" />
         </div>
       </Kartu>
 
-      <Kartu judul="Kewajiban manajemen energi">
+      <Kartu judul="Kewajiban manajemen energi" ikon="shield-check" warna="hijau">
         <ul class="divide-y divide-stone-100">
           <li v-for="c in props.checklist" :key="c.label" class="py-2.5 flex items-start justify-between gap-3">
             <div class="min-w-0"><p class="text-[12.5px] font-semibold text-cam-ink" :title="c.dasar">{{ c.label }}</p><p v-if="c.rincian" class="text-[11px] text-stone-500">{{ c.rincian }}</p></div>
@@ -51,7 +51,7 @@ const simpan = () => form.transform(d => Object.fromEntries(Object.entries(d).ma
       </Kartu>
     </section>
 
-    <Kartu judul="Kalender kewajiban">
+    <Kartu judul="Kalender kewajiban" ikon="calendar-clock" warna="biru">
       <template #aksi><Link href="/energi/kalender" class="eq-tautan">Kalender lengkap</Link></template>
       <table class="w-full text-[12px]">
         <thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-2">Kewajiban</th><th class="py-2">Dasar</th><th class="py-2">Tenggat</th><th class="py-2">Status</th></tr></thead>
@@ -66,7 +66,7 @@ const simpan = () => form.transform(d => Object.fromEntries(Object.entries(d).ma
       </table>
     </Kartu>
 
-    <Kartu judul="Pengaturan">
+    <Kartu judul="Pengaturan" ikon="layers" warna="ungu">
       <form class="grid gap-3 md:grid-cols-4" @submit.prevent="simpan">
         <label class="text-[11px] font-semibold text-stone-500 md:col-span-2">Kategori pengguna energi<select v-model="form.kategori_pengguna" :disabled="!props.boleh.kelola" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"><option v-for="[k, l] in Object.entries((props.pilihan.kategori ?? {}) as Record<string, any>)" :key="k" :value="k">{{ l }}</option></select></label>
         <label class="text-[11px] font-semibold text-stone-500">Ambang khusus (TOE)<input v-model="form.ambang_toe" type="number" step="any" min="0" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"></label>

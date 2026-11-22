@@ -502,11 +502,6 @@ class EnergyController extends Controller
      * Halaman Karbon lama kini menampilkan inventarisasi GRK (FSD §8.4).
      * Alamatnya dipertahankan — tautan dan tangkapan layar lama tetap berlaku.
      */
-    public function karbon(Request $request)
-    {
-        return app(\App\Http\Controllers\Energi\InventarisController::class)->index($request);
-    }
-
     /** Kalkulator menghitung di server (cacat D2): angkanya identik dengan laporan. */
     public function kalkulator(Request $request)
     {
@@ -699,6 +694,7 @@ class EnergyController extends Controller
             ->diffInDays($sampai->copy()->startOfDay()) + 1);
 
         return $k + [
+            'toe'        => \App\Support\Energi\Kalkulator::toe((float) ($k['gj'] ?? 0), $sampai),
             'liter'      => $solarTotal,
             'liter_alat' => $liter,
             'liter_genset' => $genset,
@@ -718,18 +714,39 @@ class EnergyController extends Controller
     /** Tren harian intensitas dan pemakaian, untuk grafik. */
     private function trenHarian(Carbon $dari, Carbon $sampai): array
     {
-        $fuel = EnergyFuelLog::whereBetween('tanggal', [$dari, $sampai])
-            ->selectRaw('tanggal, SUM(liter) as liter')->groupBy('tanggal')->pluck('liter', 'tanggal');
-        $power = EnergyPowerLog::whereBetween('tanggal', [$dari, $sampai])
-            ->selectRaw('tanggal, SUM(kwh) as kwh, SUM(liter_genset) as genset')->groupBy('tanggal')->get()->keyBy('tanggal');
-        $prod = EnergyProduction::whereBetween('tanggal', [$dari, $sampai])->pluck('ton', 'tanggal');
+        /* Kunci harian SELALU 'Y-m-d', dijumlah di PHP.
+
+           Sebelumnya tiap sumber dikunci dengan caranya sendiri: listrik
+           lewat keyBy pada model bercast tanggal ("2026-11-02 00:00:00"),
+           solar dan produksi dengan teks mentah kolomnya ("2026-11-02").
+           Satu hari terbelah menjadi dua titik — satu hanya berisi solar,
+           satu hanya listrik — dan grafiknya bergerigi. Produksi pun
+           diambil dengan pluck per tanggal tanpa dijumlah, sehingga pada
+           tampilan gabungan beberapa perusahaan hanya satu perusahaan
+           yang menjadi pembagi intensitas. */
+        $hari = fn ($v) => substr((string) $v, 0, 10);
+        $jumlah = function ($q, string $pilih) use ($hari, $dari, $sampai) {
+            $out = [];
+            foreach ($q->whereBetween('tanggal', Energi\Inventaris::sela($dari, $sampai))->toBase()->selectRaw($pilih)->groupBy('tanggal')->get() as $r) {
+                $k = $hari($r->tanggal);
+                foreach ((array) $r as $kol => $v) {
+                    if ($kol !== 'tanggal') $out[$k][$kol] = ($out[$k][$kol] ?? 0.0) + (float) $v;
+                }
+            }
+            return $out;
+        };
+        $fuel  = $jumlah(EnergyFuelLog::query(), 'tanggal, SUM(liter) as liter');
+        $power = $jumlah(EnergyPowerLog::query(), 'tanggal, SUM(kwh) as kwh, SUM(liter_genset) as genset');
+        $prod  = $jumlah(EnergyProduction::query(), 'tanggal, SUM(ton) as ton');
+
+        $kunciSemua = array_unique(array_merge(array_keys($prod), array_keys($fuel), array_keys($power)));
+        sort($kunciSemua);
 
         $out = [];
-        foreach ($prod->keys()->merge($fuel->keys())->merge($power->keys())->unique()->sort() as $tgl) {
-            $kunci  = (string) $tgl;
-            $liter  = (float) ($fuel[$kunci] ?? 0) + (float) ($power[$kunci]->genset ?? 0);
-            $kwh    = (float) ($power[$kunci]->kwh ?? 0);
-            $ton    = (float) ($prod[$kunci] ?? 0);
+        foreach ($kunciSemua as $kunci) {
+            $liter  = (float) ($fuel[$kunci]['liter'] ?? 0) + (float) ($power[$kunci]['genset'] ?? 0);
+            $kwh    = (float) ($power[$kunci]['kwh'] ?? 0);
+            $ton    = (float) ($prod[$kunci]['ton'] ?? 0);
             $gj     = Energi::literKeGj($liter) + Energi::kwhKeGj($kwh);
 
             $out[] = [

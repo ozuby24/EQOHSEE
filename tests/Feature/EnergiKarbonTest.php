@@ -128,7 +128,7 @@ class EnergiKarbonTest extends TestCase
         $pengaju = $this->orang($this->a, 'petugas_grk');
         $penyetuju = $this->orang($this->a, 'petugas_grk');
 
-        $this->actingAs($pengaju)->post(route('energi.faktor.simpan'), [
+        $this->actingAs($pengaju)->post(route('karbon.faktor.simpan'), [
             'kode_energi' => 'listrik_pln', 'parameter' => 'ef_grid', 'wilayah' => null, 'nilai' => 0.79, 'satuan' => 'tCO2e/MWh',
             'berlaku_mulai' => '2026-09-01', 'tier' => 2, 'sumber_dokumen' => 'Kepmen ESDM (uji)',
         ])->assertSessionHasNoErrors();
@@ -137,9 +137,9 @@ class EnergiKarbonTest extends TestCase
         $this->assertSame('draf', $f->status);
 
         // Pengaju tidak menyetujui faktornya sendiri.
-        $this->actingAs($pengaju)->post(route('energi.faktor.setujui', $f))->assertForbidden();
+        $this->actingAs($pengaju)->post(route('karbon.faktor.setujui', $f))->assertForbidden();
 
-        $this->actingAs($penyetuju)->post(route('energi.faktor.setujui', $f))->assertSessionHasNoErrors();
+        $this->actingAs($penyetuju)->post(route('karbon.faktor.setujui', $f))->assertSessionHasNoErrors();
         $this->assertSame('aktif', $f->fresh()->status);
 
         RegistriFaktor::lupakan();
@@ -149,11 +149,11 @@ class EnergiKarbonTest extends TestCase
 
     public function test_faktor_tanpa_sumber_ditolak_dan_peran_lain_tidak_boleh(): void
     {
-        $this->actingAs($this->orang($this->a, 'petugas_grk'))->post(route('energi.faktor.simpan'), [
+        $this->actingAs($this->orang($this->a, 'petugas_grk'))->post(route('karbon.faktor.simpan'), [
             'kode_energi' => 'solar', 'parameter' => 'ncv', 'nilai' => 43, 'satuan' => 'MJ/kg', 'berlaku_mulai' => '2026-01-01', 'tier' => 1,
         ])->assertSessionHasErrors('sumber_dokumen');
 
-        $this->actingAs($this->orang($this->a, 'operator'))->post(route('energi.faktor.simpan'), [
+        $this->actingAs($this->orang($this->a, 'operator'))->post(route('karbon.faktor.simpan'), [
             'kode_energi' => 'solar', 'parameter' => 'ncv', 'nilai' => 43, 'satuan' => 'MJ/kg', 'berlaku_mulai' => '2026-01-01',
             'tier' => 1, 'sumber_dokumen' => 'x',
         ])->assertForbidden();
@@ -495,10 +495,10 @@ class EnergiKarbonTest extends TestCase
         \App\Support\DataContoh::muat($c, $admin);
 
         $this->actingAs($admin);
-        foreach (['energi.faktor.index', 'energi.grk.index', 'energi.grk.batas', 'energi.grk.s3', 'energi.grk.mitigasi',
+        foreach (['karbon.index', 'karbon.faktor.index', 'karbon.grk', 'karbon.batas', 'karbon.s3', 'karbon.mitigasi',
                   'energi.me.index', 'energi.me.personel', 'energi.me.program', 'energi.me.audit', 'energi.me.tinjauan',
                   'energi.enpi', 'energi.seu', 'energi.periode.index', 'energi.lapor.index', 'energi.kalender',
-                  'energi.bod.index', 'energi.bod.layar', 'energi.karbon', 'energi.kalkulator', 'energi.input', 'energi.master'] as $rute) {
+                  'energi.bod.index', 'energi.bod.layar', 'energi.kalkulator', 'energi.input', 'energi.master'] as $rute) {
             $this->get(route($rute))->assertOk();
         }
 

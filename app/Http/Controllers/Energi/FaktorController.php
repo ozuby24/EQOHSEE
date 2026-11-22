@@ -37,7 +37,7 @@ class FaktorController extends Controller
 
         $u = $request->user();
 
-        return Inertia::render('Energi/Faktor', [
+        return Inertia::render('Karbon/Faktor', [
             'faktor' => $q->get()->map(fn (Faktor $f) => $f->ringkas() + [
                 'status' => $f->status, 'pemasok' => $f->pemasok, 'sumber_url' => $f->sumber_url,
                 'ketidakpastian_persen' => $f->ketidakpastian_persen, 'catatan' => $f->catatan,
@@ -57,7 +57,7 @@ class FaktorController extends Controller
                 'faktor' => $u->can('energi.faktor'),
             ],
             'perusahaan' => $this->perusahaanAktif($request),
-            'tautan' => ['simpan' => route('energi.faktor.simpan'), 'uji' => route('energi.faktor.uji')],
+            'tautan' => ['simpan' => route('karbon.faktor.simpan'), 'uji' => route('karbon.faktor.uji')],
         ]);
     }
 

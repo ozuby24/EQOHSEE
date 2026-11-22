@@ -8,7 +8,7 @@ defineProps<{ perArea: Record<string, any>; total: Record<string, any>; pln: Rec
 
 <template>
   <div class="space-y-4">
-    <section class="ubin-kisi">
+    <section class="ka-kisi">
       <KartuAngka label="Listrik terpakai" :nilai="total.kwh" satuan="kWh" :desimal="0" :catatan="`${n(total.gj, 1)} GJ`" />
       <KartuAngka label="Listrik per ton" :nilai="total.perTon" satuan="kWh/ton" :desimal="3" />
       <KartuAngka label="Emisi listrik beli" :nilai="total.tco2e" satuan="tCO₂e" :desimal="2" catatan="Scope 2" />

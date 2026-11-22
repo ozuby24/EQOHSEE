@@ -124,8 +124,13 @@ class Modules
 
             ['nama' => 'Energy Performance Center', 'status' => 'aktif', 'pilar' => 'energy',
              'rute' => 'energi.index',
-             'ket'  => 'Konsumsi BBM dan listrik, emisi GRK Scope 1–3, kepatuhan manajemen energi PP 33/2023, laporan ESDM, PROPER, PSPK 2, serta Control Tower direksi.',
+             'ket'  => 'Konsumsi BBM dan listrik, intensitas energi, EnPI dan SEU, kepatuhan manajemen energi PP 33/2023, laporan ESDM, serta Control Tower direksi.',
              'ikon' => 'M13 2 4 14h7l-1 8 10-13h-7l0-7Z'],
+
+            ['nama' => 'Carbon Management Center', 'status' => 'aktif', 'pilar' => 'environment',
+             'rute' => 'karbon.index',
+             'ket'  => 'Inventarisasi emisi GRK Scope 1–3, registri faktor emisi berversi, jalur dekarbonisasi, aksi mitigasi SRN PPI, dan biaya karbon.',
+             'ikon' => 'M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z'],
 
             ['nama' => 'Konservasi Minerba', 'status' => 'aktif', 'pilar' => 'environment',
              'rute' => 'konservasi.index',
@@ -213,6 +218,7 @@ class Modules
         'SMKP Audit'                             => 'smkp',
         'Sistem Informasi Gudang & Penyimpanan'  => 'gudang',
         'Energy Performance Center'              => 'energi',
+        'Carbon Management Center'               => 'karbon',
         'Konservasi Minerba'                     => 'konservasi',
         'Mining Engineering Hub'                 => 'meh',
         'Mine Operations & GIS'                  => 'operasi',

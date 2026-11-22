@@ -24,17 +24,25 @@ class EnergyFuelLog extends Model
                 'persen_fame' => 'float', 'diverifikasi_pada' => 'datetime'];
     }
 
-    /** Catatan bahan bakar mengikuti perusahaan unit alatnya. */
+    /**
+     * Catatan bahan bakar mengikuti perusahaan unit alatnya.
+     *
+     * whereHas('equipment') membawa lingkup MilikPerusahaan milik unitnya
+     * sendiri — termasuk perusahaan yang sedang DILIHAT administrator,
+     * keturunan IUP/IUJP, dan baris tanpa pemilik. Sebelumnya lingkup
+     * ini ditulis ulang di sini dan melewatkan administrator sama
+     * sekali: memilih satu perusahaan tetap menjumlahkan solar seluruh
+     * perusahaan, sementara listrik dan produksinya sudah tersaring —
+     * intensitas energinya berlipat sebanyak jumlah perusahaan.
+     */
     protected static function booted(): void
     {
         static::addGlobalScope('company', function (Builder $builder) {
             $u = auth()->user();
-            if (!$u || $u->isAdmin()) return;
+            if (!$u) return;
+            if ($u->isAdmin() && \App\Support\Perusahaan::terpilih($u) === null) return;
 
-            $builder->whereHas('equipment', function (Builder $query) use ($u) {
-                $query->whereNull('company_id');
-                if ($u->company_id) $query->orWhere('company_id', $u->company_id);
-            });
+            $builder->whereHas('equipment');
         });
     }
 

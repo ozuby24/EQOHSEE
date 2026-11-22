@@ -131,6 +131,10 @@ class IkonPadat
         'energi' => [
             ['d' => 'M14.2 1.8 5.2 13.4h5.4L9.2 22.2l9.6-12.1h-5.7z', 'evenodd' => false],
         ],
+        /* awan karbon */
+        'karbon' => [
+            ['d' => 'M17.5 20H8.6a7.6 7.6 0 1 1 7.3-9.7h1.6a4.85 4.85 0 1 1 0 9.7Z', 'evenodd' => false],
+        ],
         /* ic-minerba */
         'konservasi' => [
             ['d' => 'M7.7 2.4h8.6l5 6.3-9.3 12.9L2.7 8.7zm-.3 4.3-1.6 2h12.4l-1.6-2z', 'evenodd' => true],

@@ -14,7 +14,7 @@ const kirim = () => form.transform(d => ({ ...d, selesai: d.selesai || null })).
 <template>
   <Head title="Audit Energi" />
   <div class="space-y-4">
-    <Kartu judul="Audit energi" ket="Minimal sekali dalam tiga tahun dan mencakup minimal satu SEU.">
+    <Kartu judul="Audit energi" ikon="search-check" warna="biru" ket="Minimal sekali dalam tiga tahun dan mencakup minimal satu SEU.">
       <table class="w-full text-[12px]">
         <thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-2">Audit</th><th class="py-2">Jenis</th><th class="py-2">Periode</th><th class="py-2">SEU yang dicakup</th><th class="py-2 text-right">Rekomendasi</th><th class="py-2">Status</th></tr></thead>
         <tbody>

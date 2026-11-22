@@ -14,7 +14,7 @@ import { json, n, namaParameter, statusLabel, tgl } from '../../energi';
 
 const props = propHalaman();
 const saring = reactive({ kode: props.saring?.kode ?? '', parameter: props.saring?.parameter ?? '', status: props.saring?.status ?? '' });
-const terapkan = () => router.get('/energi/faktor', Object.fromEntries(Object.entries(saring).filter(([, v]) => v)), { preserveState: true });
+const terapkan = () => router.get('/karbon/faktor', Object.fromEntries(Object.entries(saring).filter(([, v]) => v)), { preserveState: true });
 
 const kelompok = computed(() => {
   const g: Record<string, any[]> = {};
@@ -36,7 +36,7 @@ function versiBaru(f: any) {
   document.getElementById('form-faktor')?.scrollIntoView({ behavior: 'smooth' });
 }
 
-const aksi = (f: any, jenis: string) => router.post(`/energi/faktor/${f.id}/${jenis}`, {}, { preserveScroll: true });
+const aksi = (f: any, jenis: string) => router.post(`/karbon/faktor/${f.id}/${jenis}`, {}, { preserveScroll: true });
 
 const dampak = ref<Record<number, any>>({});
 async function uji(f: any) {
@@ -67,7 +67,7 @@ async function uji(f: any) {
       <a v-if="props.boleh.kelola" href="#form-faktor" class="eq-btn-mini ml-auto">Tambah versi</a>
     </form>
 
-    <Kartu judul="Faktor emisi & konversi" rapat>
+    <Kartu judul="Faktor emisi & konversi" ikon="database" warna="toska" rapat>
       <div class="overflow-x-auto">
         <table class="w-full text-[12px] min-w-[860px]">
           <thead><tr class="text-left text-stone-400 border-y border-stone-200 bg-stone-50/70"><th class="px-5 py-2 font-semibold">Nilai</th><th class="px-3 py-2 font-semibold">Berlaku</th><th class="px-3 py-2 font-semibold">Tier</th><th class="px-3 py-2 font-semibold">Sumber</th><th class="px-3 py-2 font-semibold">Milik</th><th class="px-3 py-2 font-semibold">Status</th><th class="px-5 py-2"></th></tr></thead>
@@ -113,7 +113,7 @@ async function uji(f: any) {
       <p v-if="!kelompok.length" class="eq-kosong eq-kosong-kecil">Tidak ada faktor yang cocok.</p>
     </Kartu>
 
-    <Kartu v-if="props.boleh.kelola" id="form-faktor" judul="Tambah versi faktor" ket="Masuk sebagai draf dan berlaku setelah disetujui petugas lain.">
+    <Kartu v-if="props.boleh.kelola" id="form-faktor" judul="Tambah versi faktor" ikon="file-check-2" warna="biru" ket="Masuk sebagai draf dan berlaku setelah disetujui petugas lain.">
       <form class="grid gap-3 md:grid-cols-4" @submit.prevent="kirim">
         <label class="text-[11px] font-semibold text-stone-500">Kode energi<select v-model="form.kode_energi" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"><option v-for="[k, l] in Object.entries((props.pilihan.kode ?? {}) as Record<string, any>)" :key="k" :value="k">{{ l }}</option></select></label>
         <label class="text-[11px] font-semibold text-stone-500">Parameter<select v-model="form.parameter" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"><option v-for="[k, l] in Object.entries((props.pilihan.parameter ?? {}) as Record<string, any>)" :key="k" :value="k">{{ namaParameter(k) }} ({{ l }})</option></select></label>

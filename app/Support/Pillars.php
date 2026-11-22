@@ -48,9 +48,9 @@ class Pillars
                 'cakupan' => [
                     ['Efisiensi bahan bakar alat berat', 'Pemantauan konsumsi per unit dan per ton produksi.'],
                     ['Keandalan kelistrikan',            'Kelayakan instalasi, proteksi, dan jadwal pemeliharaan.'],
-                    ['Emisi GRK & kepatuhan energi',     'Scope 1–3 dari faktor emisi berversi; laporan ESDM, PROPER, dan PSPK 2.'],
+                    ['Kepatuhan manajemen energi',       'Ambang TOE, manajer energi, audit, dan laporan ke ESDM; emisinya dikelola Carbon Management.'],
                 ],
-                'modul' => ['Energy Performance Center', 'Keselamatan Operasi (KO)', 'ISO & Dokumen'],
+                'modul' => ['Energy Performance Center', 'Carbon Management Center', 'Keselamatan Operasi (KO)', 'ISO & Dokumen'],
             ],
 
             'quality' => [
@@ -121,7 +121,7 @@ class Pillars
                     ['Kualitas air & udara',  'Pemantauan titik penaatan secara berkala.'],
                     ['Reklamasi lahan',       'Rencana dan realisasi pemulihan area terganggu.'],
                 ],
-                'modul' => ['Sistem Informasi Gudang & Penyimpanan', 'ISO & Dokumen', 'SMKP Audit'],
+                'modul' => ['Carbon Management Center', 'Sistem Informasi Gudang & Penyimpanan', 'ISO & Dokumen', 'SMKP Audit'],
             ],
 
             'engineering' => [

@@ -496,18 +496,6 @@ final class Menu
           ['Fuel Management',    'energi.fuel',     'energi/bahan-bakar'],
           ['Electricity',        'energi.listrik',  'energi/listrik'],
         ],
-        /* Karbon diletakkan tepat sesudah Pantau, dan butir utamanya
-           memakai nama lama "Carbon & Emission": pengguna mencarinya
-           dengan nama itu, dan grup yang jatuh di bawah lipatan bilah
-           samping terbaca sebagai fitur yang hilang. Alamat lama
-           /energi/karbon ikut menandai butir ini. */
-        'Karbon & GRK' => [
-          ['Carbon & Emission',   'energi.grk.index',    ['energi/grk', 'energi/karbon']],
-          ['Batas & Tahun Dasar', 'energi.grk.batas',    'energi/grk/batas'],
-          ['Scope 3',             'energi.grk.s3',       'energi/grk/scope3'],
-          ['Aksi Mitigasi',       'energi.grk.mitigasi', 'energi/grk/mitigasi'],
-          ['Registri Faktor',     'energi.faktor.index', 'energi/faktor*'],
-        ],
         'Kinerja' => [
           ['Equipment Performance','energi.equipment','energi/alat*'],
           ['Energy KPI',           'energi.kpi',      'energi/kpi'],
@@ -536,6 +524,30 @@ final class Menu
         // Executive Control Tower — hanya BOD, KTT, keuangan, manajer energi/GRK, dan admin.
         'Kontrol Direksi' => [
           ['Control Tower',        'energi.bod.index',     'energi/bod*', 'energi.bod'],
+        ],
+      ],
+    ],
+    /* Carbon Management — aplikasi tersendiri sejak dipisah dari Energy
+       Performance. Data aktivitasnya tetap dicatat di Energy (solar,
+       listrik, gas); di sini dihitung, dikendalikan, dan dilaporkan.
+       Registri faktor tinggal di sini dan dipakai kedua aplikasi. */
+    'karbon' => [
+      'label' => 'Carbon Management',
+      'semboyan' => 'Every Tonne Accounted',
+      'kutipan' => 'Emisi yang tidak diukur tidak akan pernah turun.',
+      'icon'  => 'M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z',
+      'groups' => [
+        'Pantau' => [
+          ['Dashboard',            'karbon.index',       'karbon'],
+          ['Carbon & Emission',    'karbon.grk',         'karbon/inventaris'],
+        ],
+        'Inventarisasi GRK' => [
+          ['Scope 3',              'karbon.s3',          'karbon/scope3'],
+          ['Batas & Tahun Dasar',  'karbon.batas',       'karbon/batas'],
+          ['Registri Faktor',      'karbon.faktor.index','karbon/faktor*'],
+        ],
+        'Dekarbonisasi' => [
+          ['Aksi Mitigasi',        'karbon.mitigasi',    'karbon/mitigasi'],
         ],
       ],
     ],
@@ -864,6 +876,7 @@ final class Menu
            salah — dan yang membukanya menyimpulkan ia tersesat. */
         [['dokumen*', 'iso*', 'kepatuhan*', 'struktur-dokumen', 'daftar-induk'], 'dokumen'],
         [['energi*'],                              'energi'],
+        [['karbon*'],                              'karbon'],
         [['konservasi*'],                          'konservasi'],
         [['operasi-tambang*'],                     'operasi'],
         [['penirisan*'],                           'air'],

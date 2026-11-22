@@ -378,6 +378,7 @@ final class Dasbor
            seolah menuntut tindakan. */
         'angkutan'   => [AngkutMuatan::class,              'Angkutan',           'angkutan.muatan',   false],
         'energi'     => [EnergyFuelLog::class,             'Energi',             'energi.index',      false],
+        'karbon'     => [\App\Models\Energi\Scope3::class, 'Karbon',            'karbon.index',      false],
         'meh'        => [Procedure::class,                 'Mining Engineering', 'meh.index',         false],
     ];
 

@@ -6183,17 +6183,27 @@ final class DataContoh
     {
         $n = 0;
 
-        /* Kategorinya adalah KUNCI dari Energi::KATEGORI, bukan
-           labelnya — halaman rekap memvalidasi dengan
-           Rule::in(array_keys(...)), dan label yang tersimpan di sini
-           akan lolos penyimpanan lalu hilang dari setiap
-           pengelompokan tanpa menimbulkan galat. */
+        /* Armada tambang batubara kelas menengah (±1,5 juta ton per
+           tahun). Kategorinya KUNCI dari Energi::KATEGORI, bukan labelnya
+           — halaman rekap memvalidasi dengan Rule::in(array_keys(...)).
+           Kolom terakhir: liter per jam acuan dan jam operasi hari kerja. */
         $daftar = [
-            ['EQ-HD-001', 'Dump Truck HD465-7',   'Komatsu', 'hauling',   552, 55.0],
-            ['EQ-HD-002', 'Dump Truck HD465-7',   'Komatsu', 'hauling',   552, 55.0],
-            ['EQ-EX-001', 'Excavator PC2000',     'Komatsu', 'excavator', 960, null],
-            ['EQ-DZ-001', 'Bulldozer D375A',      'Komatsu', 'dozer',     610, null],
-            ['EQ-GR-001', 'Motor Grader GD825',   'Komatsu', 'support',   280, null],
+            ['EQ-EX-001', 'Excavator PC2000-8',          'Komatsu', 'excavator',  960, null, 96.0, 20.0],
+            ['EQ-EX-002', 'Excavator PC2000-8',          'Komatsu', 'excavator',  960, null, 93.0, 20.0],
+            ['EQ-HD-001', 'Dump Truck HD785-7',          'Komatsu', 'hauling',   1200, 91.0, 50.0, 20.5],
+            ['EQ-HD-002', 'Dump Truck HD785-7',          'Komatsu', 'hauling',   1200, 91.0, 52.0, 20.5],
+            ['EQ-HD-003', 'Dump Truck HD785-7',          'Komatsu', 'hauling',   1200, 91.0, 49.0, 20.5],
+            /* Satu truk sengaja lebih boros dari kelasnya, supaya
+               perbandingan antar alat punya yang perlu ditelusuri. */
+            ['EQ-HD-004', 'Dump Truck HD785-7',          'Komatsu', 'hauling',   1200, 91.0, 61.0, 20.5],
+            ['EQ-HD-005', 'Dump Truck HD785-7',          'Komatsu', 'hauling',   1200, 91.0, 51.0, 20.5],
+            ['EQ-HD-006', 'Dump Truck HD785-7',          'Komatsu', 'hauling',   1200, 91.0, 50.5, 20.5],
+            ['EQ-HD-007', 'Dump Truck HD785-7',          'Komatsu', 'hauling',   1200, 91.0, 51.5, 20.5],
+            ['EQ-HD-008', 'Dump Truck HD785-7',          'Komatsu', 'hauling',   1200, 91.0, 50.0, 20.5],
+            ['EQ-DZ-001', 'Bulldozer D375A-6',           'Komatsu', 'dozer',      610, null, 47.0, 17.0],
+            ['EQ-DZ-002', 'Bulldozer D375A-6',           'Komatsu', 'dozer',      610, null, 45.5, 16.0],
+            ['EQ-GR-001', 'Motor Grader GD825A-2',       'Komatsu', 'support',    280, null, 25.0, 14.0],
+            ['EQ-WT-001', 'Water Truck HD465 40 kL',     'Komatsu', 'support',    552, null, 26.0, 14.0],
         ];
 
         $kategoriSah = array_keys(Energi::KATEGORI);
@@ -6206,251 +6216,234 @@ final class DataContoh
             'provinsi' => 'Kalimantan Selatan', 'sistem_grid' => 'ISOLATED', 'zona_waktu' => 'Asia/Makassar', 'aktif' => true]);
         $n += 2;
 
-        /** @var array<string,EnergyEquipment> menurut kodenya */
+        /** @var array<string,array{0:EnergyEquipment,1:float,2:float}> menurut kodenya */
         $alat = [];
 
-        foreach ($daftar as [$kode, $nama, $merek, $kategori, $hp, $payload]) {
+        foreach ($daftar as [$kode, $nama, $merek, $kategori, $hp, $payload, $lph, $jam]) {
             $e = $this->baru(EnergyEquipment::class, [
                 'kode'        => $kode,
                 'nama'        => $nama,
                 'merek'       => $merek,
-
-                /* Kategori yang tidak dikenal membuat halaman rekap
-                   memulangkan kelompok kosong tanpa galat. Bila daftar
-                   kuncinya berubah, dipakai yang pertama supaya barisnya
-                   tetap terhitung, bukan menghilang diam-diam. */
-                'kategori'    => in_array($kategori, $kategoriSah, true)
-                    ? $kategori
-                    : ($kategoriSah[0] ?? $kategori),
-
+                'kategori'    => in_array($kategori, $kategoriSah, true) ? $kategori : ($kategoriSah[0] ?? $kategori),
                 'daya_hp'     => $hp,
                 'payload_ton' => $payload,
                 'aktif'       => true,
                 'site_id'     => $sitePit->id,
                 'kategori_ipcc' => 'bergerak_offroad',
-                'seu'         => in_array($kode, ['EQ-HD-001', 'EQ-HD-002', 'EQ-EX-001'], true),
+                'seu'         => in_array($kategori, ['hauling', 'excavator'], true),
             ]);
             $n++;
 
-            $alat[$kode] = $e;
+            $alat[$kode] = [$e, $lph, $jam];
         }
 
         return $n + $this->energiCatatan($alat);
     }
 
+    /** Bilangan semu 0–1 yang tetap untuk satu kunci — data contoh yang sama di setiap pemasangan. */
+    private function acak(string $kunci): float
+    {
+        return (crc32($this->c->id.'|'.$kunci) % 10_000) / 10_000;
+    }
+
     /**
-     * Pemakaian energi harian: solar per alat, listrik per area,
-     * produksi pembaginya, rekonsiliasi tangki, garis dasar, dan
-     * peluang penghematan.
+     * Pemakaian energi harian sejak 1 Januari tahun lalu: solar per alat,
+     * listrik per area (PLN, genset dewatering, PLTS), produksi
+     * pembaginya, energi lain bulanan, rekonsiliasi tangki harian, garis
+     * dasar, dan peluang penghematan.
      *
-     * Registri alat saja tidak cukup. Intensitas energi adalah GJ per
-     * ton, dan tanpa satu pun catatan pemakaian maupun produksi, kedua
-     * sisi pecahannya nol — halaman rekapnya menggambar grafik kosong
-     * yang tidak dapat dibedakan dari tambang yang sedang berhenti.
+     * Setahun penuh tahun lalu bukan kemewahan: ambang wajib manajemen
+     * energi dibaca dari konsumsi tahun lalu, kartu direksi
+     * membandingkan dengan periode yang sama tahun lalu, dan jalur
+     * dekarbonisasi berangkat dari tahun dasarnya. Data 45 hari membuat
+     * ketiganya kosong.
      *
-     * @param  array<string,EnergyEquipment>  $alat  menurut kodenya
+     * Ditulis lewat sisip massal: belasan ribu baris lewat Eloquent satu
+     * per satu membuat pemasangan dan uji yang memuat data contoh lambat.
+     *
+     * @param  array<string,array{0:EnergyEquipment,1:float,2:float}>  $alat
      */
     private function energiCatatan(array $alat): int
     {
-        $n    = 0;
-        /* 45 hari supaya bulan lalu ikut berisi — bulan itulah yang
-           dikunci data contoh, dan kunci tanpa isi tidak memperlihatkan
-           apa pun. Dua hari terakhir sengaja masih "diajukan": antrean
-           verifikasi yang kosong tidak memperlihatkan alurnya. */
-        $hari = 45;
+        $n = 0;
+        $awal = Carbon::create($this->kini->year - 1, 1, 1)->startOfDay();
+        $akhir = $this->kini->copy()->subDay()->startOfDay();
         $siteId = EnergiSite::withoutGlobalScopes()->where('company_id', $this->c->id)->pluck('id', 'kode');
-        $alur = fn (int $i) => $i <= 2
-            ? ['status' => 'diajukan']
-            : ['status' => 'terverifikasi', 'diverifikasi_oleh' => $this->peninjau?->getKey(), 'diverifikasi_pada' => $this->kini->copy()->subDays($i - 1)];
+        $peninjau = $this->peninjau?->getKey();
+        $pengaju = $this->pengaju?->getKey();
 
-        /* ── produksi harian ── */
+        /* Program pembatasan idle berjalan sejak lima bulan lalu, PLTS
+           atap sejak delapan bulan lalu — keduanya terlihat pada tren. */
+        $mulaiIdle = $this->kini->copy()->subMonths(5)->startOfMonth();
+        $mulaiPlts = $this->kini->copy()->subMonths(8)->startOfMonth();
 
-        for ($i = $hari; $i >= 1; $i--) {
-            $tgl = $this->kini->copy()->subDays($i);
+        $alur = function (Carbon $tgl) use ($akhir, $peninjau, $pengaju): array {
+            $baru = $tgl->diffInDays($akhir) < 2;
 
-            /* Akhir pekan lebih rendah, dan satu hari nyaris berhenti
-               karena hujan. Deret yang rata tidak memperlihatkan apakah
-               grafiknya benar-benar mengikuti datanya. */
-            $faktor = $tgl->isSunday() ? 0.45 : ($i === 6 ? 0.2 : 1.0);
+            return [
+                'status' => $baru ? 'diajukan' : 'terverifikasi',
+                'diinput_oleh' => $pengaju,
+                'diverifikasi_oleh' => $baru ? null : $peninjau,
+                'diverifikasi_pada' => $baru ? null : $tgl->copy()->addDay()->setTime(8, 30)->toDateTimeString(),
+            ];
+        };
 
-            $this->baru(EnergyProduction::class, [
-                'tanggal' => $tgl->toDateString(),
-                'ton'     => round(8_400 * $faktor),
-                'bcm'     => round(6_100 * $faktor),
-                'stripping_ratio' => 6.2,
-                'jarak_angkut_km' => round(4.6 + ($i % 5) * 0.3, 1),
+        $produksi = $bbm = $listrik = $rekon = [];
+        $stok = 182_000.0;
+
+        for ($tgl = $awal->copy(); $tgl->lte($akhir); $tgl->addDay()) {
+            $d = $tgl->toDateString();
+            $hujanMusim = in_array($tgl->month, [11, 12, 1, 2, 3, 4], true);
+
+            /* Faktor operasi hari itu: Minggu setengah hari, hari hujan
+               berhenti sebagian — lebih sering di musim hujan. */
+            $hujan = $this->acak('hujan'.$d) < ($hujanMusim ? 0.24 : 0.09);
+            $f = $tgl->isSunday() ? 0.58 : 1.0;
+            if ($hujan) $f *= 0.42 + $this->acak('lebat'.$d) * 0.35;
+
+            /* ── solar per alat ──
+               `hm` adalah jam operasi HARI ITU, bukan jam meter kumulatif. */
+            $bcmHari = 0.0;
+            $literHari = 0.0;
+            foreach ($alat as $kode => [$e, $lph, $jamDasar]) {
+                $hauler = str_starts_with($kode, 'EQ-HD');
+                $jam = round(min(23.5, $jamDasar * $f * (0.94 + $this->acak($kode.$d) * 0.1)), 1);
+                if ($jam <= 0.2) continue;
+
+                $pakaiProgram = $hauler && $tgl->gte($mulaiIdle);
+                $rasioIdle = $kode === 'EQ-HD-004' ? 0.24 : ($pakaiProgram ? 0.095 : 0.145);
+                $liter = round($jam * $lph * ($pakaiProgram ? 0.965 : 1.0) * (0.96 + $this->acak('l'.$kode.$d) * 0.08), 1);
+                $bcm = match ($kode) { 'EQ-EX-001' => round($jam * 740), 'EQ-EX-002' => round($jam * 715), default => 0 };
+                $bcmHari += $bcm;
+                $literHari += $liter;
+
+                $bbm[] = [
+                    'equipment_id' => $e->id, 'tanggal' => $d, 'hm' => $jam, 'liter' => $liter,
+                    'idle_jam' => round($jam * $rasioIdle, 1),
+                    'jarak_km' => $hauler ? round($jam * 7.1, 1) : 0, 'ton' => $hauler ? round($jam * 86) : 0, 'bcm' => $bcm,
+                    'cycle_menit' => str_starts_with($kode, 'EQ-EX') ? 0.55 : null,
+                    'sumber_data' => $kode === 'EQ-GR-001' ? 'estimasi' : ($hauler ? 'fms' : 'flowmeter'),
+                    'persen_fame' => null,
+                ] + $alur($tgl);
+            }
+
+            /* ── produksi: batubara dan overburden yang sama dengan muatan excavator ── */
+            $ton = round(4_800 * $f * (0.95 + $this->acak('t'.$d) * 0.1));
+            $produksi[] = [
+                'tanggal' => $d, 'ton' => $ton, 'bcm' => $bcmHari,
+                'stripping_ratio' => $ton > 0 ? round($bcmHari / $ton, 2) : null,
+                /* Pit makin dalam, jarak angkut perlahan bertambah. */
+                'jarak_angkut_km' => round(4.6 + $awal->diffInDays($tgl) / 700 * 0.6 + $this->acak('j'.$d) * 0.3, 2),
                 'sumber_data' => 'nota',
-            ] + $alur($i));
-            $n++;
+            ] + $alur($tgl);
+
+            /* ── listrik per area ── */
+            $dewater = $hujanMusim ? 1.22 : 0.92;
+            $literGenset = round(1_650 * $dewater * (0.95 + $this->acak('g'.$d) * 0.1), 1);
+            foreach ([
+                ['camp',     'pln',    3_250.0, 210.0, 24.0, 0.0,          'PORT-1'],
+                ['workshop', 'pln',    1_650.0, 120.0, 14.0, 0.0,          'PIT-A'],
+                ['office',   'pln',      620.0,  55.0, 11.0, 0.0,          'PORT-1'],
+                ['crusher',  'pln',   12_500.0 * $f, 820.0, round(20 * $f, 1), 0.0, 'PIT-A'],
+                ['pump',     'genset', round($literGenset * 3.2), 260.0, 22.0, $literGenset, 'PIT-A'],
+            ] as [$area, $sumber, $kwh, $puncak, $jam, $lit, $site]) {
+                $listrik[] = [
+                    'tanggal' => $d, 'area' => $area, 'sumber' => $sumber,
+                    'kwh' => round($kwh * (0.96 + $this->acak($area.$d) * 0.08)), 'puncak_kw' => $puncak, 'jam_operasi' => $jam,
+                    'liter_genset' => $lit, 'site_id' => $siteId[$site] ?? null, 'sumber_data' => 'flowmeter',
+                ] + $alur($tgl);
+            }
+            if ($tgl->gte($mulaiPlts)) {
+                $listrik[] = [
+                    'tanggal' => $d, 'area' => 'camp', 'sumber' => 'plts',
+                    'kwh' => round(1_280 * ($hujan ? 0.48 : 1.0) * (0.9 + $this->acak('s'.$d) * 0.2)), 'puncak_kw' => 400.0, 'jam_operasi' => 9.0,
+                    'liter_genset' => 0.0, 'site_id' => $siteId['PORT-1'] ?? null, 'sumber_data' => 'flowmeter',
+                ] + $alur($tgl);
+            }
+
+            /* ── rekonsiliasi tangki utama ──
+               Terpakai menurut stok sedikit di atas yang tercatat per unit dan
+               genset: wajar 0,8–1,8%. Bulan berjalan sengaja melewati ambang 2%
+               — instruksi direksi di data contoh menanganinya. */
+            $tercatat = $literHari + $literGenset;
+            $selisih = $tgl->gte($this->kini->copy()->startOfMonth()) ? 0.021 + $this->acak('r'.$d) * 0.008 : 0.008 + $this->acak('r'.$d) * 0.010;
+            $salur = $stok < 150_000 ? 32_000.0 : 16_000.0;
+            $sisa = round($stok + $salur - $tercatat * (1 + $selisih), 1);
+            $rekon[] = [
+                'tanggal' => $d, 'disalurkan_liter' => $salur, 'stok_awal_liter' => round($stok, 1), 'stok_akhir_liter' => $sisa,
+                'catatan' => null, 'sumber_data' => 'flowmeter',
+            ] + $alur($tgl);
+            $stok = $sisa;
         }
 
-        /* ── solar per alat ──
+        $n += $this->sisipMassal(EnergyProduction::class, $produksi);
+        $n += $this->sisipMassal(EnergyFuelLog::class, $bbm, false);
+        $n += $this->sisipMassal(EnergyPowerLog::class, $listrik);
+        $n += $this->sisipMassal(EnergyFuelRecon::class, $rekon);
 
-           `hm` di sini adalah JAM OPERASI HARI ITU, bukan angka jam
-           meter kumulatif. Halaman rekap menghitung liter per jam
-           sebagai liter dibagi SUM(hm); diisi angka meter kumulatif
-           (18.420 dan seterusnya), pembaginya menjadi ratusan ribu dan
-           setiap alat dilaporkan 0,0 L/jam — daftar "alat paling haus"
-           yang seluruh barisnya nol. */
-
-        /* Liter per jam yang wajar menurut kelasnya; satu truk sengaja
-           lebih boros supaya perbandingan antar alat punya pemenang dan
-           pecundang. */
-        $lph = ['EQ-HD-001' => 38.0, 'EQ-HD-002' => 46.5,
-                'EQ-EX-001' => 62.0, 'EQ-DZ-001' => 41.0, 'EQ-GR-001' => 19.5];
-
-        foreach ($alat as $kode => $e) {
-            for ($i = $hari; $i >= 1; $i--) {
-                $tgl = $this->kini->copy()->subDays($i);
-
-                /* Hari Minggu TETAP dicatat, dengan jam yang lebih
-                   pendek. Melewatinya sama sekali sementara produksi
-                   hari itu tetap dicatat membuat intensitas energinya
-                   0 GJ/ton — dan nol pada kolom intensitas terbaca
-                   sebagai efisiensi sempurna, bukan sebagai pengukuran
-                   yang tidak ada. */
-                $jam = $tgl->isSunday() ? 4.5 : ($i === 6 ? 3.0 : 9.5);
-                $idle = round($jam * ($kode === 'EQ-HD-002' ? 0.22 : 0.12), 1);
-
-                $this->baru(EnergyFuelLog::class, [
-                    'equipment_id' => $e->id,
-                    'tanggal'      => $tgl->toDateString(),
-                    'hm'           => $jam,
-                    'liter'        => round($jam * $lph[$kode], 1),
-                    'idle_jam'     => $idle,
-                    /* Nol, bukan null: kolomnya NOT NULL berdefault 0.
-                       Alat yang memang tidak mengangkut apa pun tercatat
-                       0 ton — itu keadaan yang berbeda dari "tidak
-                       diketahui", dan keduanya tidak boleh tertukar pada
-                       pembagi intensitas energi. */
-                    'jarak_km'     => str_starts_with($kode, 'EQ-HD') ? round($jam * 7.4, 1) : 0,
-                    'ton'          => str_starts_with($kode, 'EQ-HD') ? round($jam * 96) : 0,
-                    'bcm'          => $kode === 'EQ-EX-001' ? round($jam * 210) : 0,
-                    'cycle_menit'  => $kode === 'EQ-EX-001' ? 0.6 : null,
-                    'sumber_data'  => $kode === 'EQ-GR-001' ? 'estimasi' : 'flowmeter',
-                ] + $alur($i));
-                $n++;
+        /* ── energi lain, bulanan ──
+           Jenisnya KODE katalog (App\Support\Energi\Katalog), bukan label:
+           mesin inventarisasi GRK memilih faktor menurut kode ini. */
+        $lain = [];
+        for ($b = $awal->copy(); $b->lte($akhir); $b->addMonth()) {
+            $tgl = $b->copy()->addDays(24)->min($akhir);
+            $basah = in_array($b->month, [11, 12, 1, 2, 3, 4], true);
+            $k = $b->format('Y-m');
+            foreach ([
+                ['lpg',    'kg', round(1_080 + $this->acak('lpg'.$k) * 160),        'Dapur mess karyawan',               'nota'],
+                ['bensin', 'L',  round(3_650 + $this->acak('bsn'.$k) * 600),        'Kendaraan ringan pengawas',         'nota'],
+                ['anfo',   'kg', round((86_000 + $this->acak('anf'.$k) * 9_000) * ($basah ? 0.84 : 1.0)), 'Peledakan overburden', 'nota'],
+            ] as [$jenis, $satuan, $jumlah, $ket, $sumber]) {
+                $lain[] = ['tanggal' => $tgl->toDateString(), 'jenis' => $jenis, 'satuan' => $satuan, 'jumlah' => $jumlah,
+                           'keterangan' => $ket, 'sumber_data' => $sumber, 'site_id' => $siteId['PIT-A'] ?? null] + $alur($tgl);
+            }
+            if ($b->month % 3 === 0) {
+                $lain[] = ['tanggal' => $tgl->toDateString(), 'jenis' => 'r134a', 'satuan' => 'kg', 'jumlah' => round(4 + $this->acak('ac'.$k) * 2, 1),
+                           'keterangan' => 'Isi ulang AC unit & kantor', 'sumber_data' => 'nota', 'site_id' => $siteId['PIT-A'] ?? null] + $alur($tgl);
+            }
+            if ($b->month === 6) {
+                $lain[] = ['tanggal' => $tgl->toDateString(), 'jenis' => 'sf6', 'satuan' => 'kg', 'jumlah' => 0.4,
+                           'keterangan' => 'Penambahan SF₆ switchgear 20 kV', 'sumber_data' => 'estimasi', 'site_id' => $siteId['PIT-A'] ?? null] + $alur($tgl);
             }
         }
+        $n += $this->sisipMassal(EnergyOtherLog::class, $lain);
 
-        /* ── listrik per area ── */
-
-        foreach ([
-            /* Solar genset 0 untuk yang bersumber PLN — kolomnya NOT
-               NULL, dan 0 memang benar: area itu tidak membakar solar. */
-            ['camp',     'pln',    2_450, 168.0, 24.0, 0.0],
-            ['workshop', 'pln',    1_180,  96.0, 12.0, 0.0],
-            ['office',   'pln',      420,  38.0, 10.0, 0.0],
-            ['crusher',  'pln',    9_800, 720.0, 18.0, 0.0],
-            ['pump',     'genset', 3_150, 240.0, 20.0, 780.0],
-        ] as $j => [$area, $sumber, $kwh, $puncak, $jam, $liter]) {
-            for ($i = 3; $i >= 1; $i--) {
-                $this->baru(EnergyPowerLog::class, [
-                    'tanggal'       => $this->kini->copy()->subDays($i)->toDateString(),
-                    'area'          => $area,
-                    'sumber'        => $sumber,
-                    'kwh'           => $kwh + $j * 10 - $i * 25,
-                    'puncak_kw'     => $puncak,
-                    'jam_operasi'   => $jam,
-                    'liter_genset'  => $liter,
-                    'site_id'       => $siteId[in_array($area, ['camp', 'office'], true) ? 'PORT-1' : 'PIT-A'] ?? null,
-                    'sumber_data'   => 'flowmeter',
-                ] + $alur($i));
-                $n++;
-            }
-        }
-
-        /* ── energi lain ── */
-
-        /* Jenisnya KODE katalog (App\Support\Energi\Katalog), bukan label:
-           mesin inventarisasi GRK memilih faktor menurut kode ini, dan label
-           seperti "LPG" berakhir sebagai "kode energi tidak dikenal". */
-        foreach ([
-            ['lpg',    'kg', 240.0,   'Dapur mess karyawan',           'nota',     5],
-            ['bensin', 'L',  1_350.0, 'Kendaraan ringan pengawas',     'nota',     6],
-            ['anfo',   'kg', 18_500.0,'Peledakan overburden blok B',   'nota',     8],
-            ['r134a',  'kg', 6.5,     'Isi ulang AC unit & kantor',    'nota',     9],
-            ['sf6',    'kg', 0.4,     'Penambahan SF₆ switchgear 20 kV','estimasi', 12],
-        ] as [$jenis, $satuan, $jumlah, $ket, $sumber, $mundur]) {
-            $this->baru(EnergyOtherLog::class, [
-                'tanggal'     => $this->kini->copy()->subDays($mundur)->toDateString(),
-                'jenis'       => $jenis,
-                'satuan'      => $satuan,
-                'jumlah'      => $jumlah,
-                'keterangan'  => $ket,
-                'sumber_data' => $sumber,
-                'site_id'     => $siteId['PIT-A'] ?? null,
-            ] + $alur($mundur));
-            $n++;
-        }
-
-        /* ── rekonsiliasi tangki ──
-
-           Selisih antara yang disalurkan dan yang tercatat terpakai
-           adalah satu-satunya cara kehilangan solar terlihat. Dibuat
-           TIDAK nol dengan sengaja: rekonsiliasi yang selalu pas tidak
-           membuktikan penghitungnya bekerja. */
-        $stok = 48_000.0;
-
-        for ($i = 3; $i >= 1; $i--) {
-            /* Terpakai menurut stok ±3–5% di atas yang tercatat per unit dan
-               genset (±2.750 L/hari): selisih yang wajar, bukan nol — dan
-               bukan puluhan persen yang tidak mungkin terjadi di tambang. */
-            $salur = 3_000.0;
-            $awal  = $stok;
-            $stok  = $awal + $salur - (2_850.0 + $i * 25);
-
-            $this->baru(EnergyFuelRecon::class, [
-                'tanggal'           => $this->kini->copy()->subDays($i)->toDateString(),
-                'disalurkan_liter'  => $salur,
-                'stok_awal_liter'   => $awal,
-                'stok_akhir_liter'  => $stok,
-                'catatan'           => $i === 2 ? 'Selisih diperiksa; dugaan penguapan dan sisa selang.' : null,
-            ] + $alur($i));
-            $n++;
-        }
-
-        /* ── garis dasar dan target ── */
-
-        /* Dua yang sudah disetujui direksi, satu usulan tahun depan yang
-           menunggu putusan di Control Tower (BOD-17). */
-        foreach ([[$this->kini->year - 1, 0.0246, 0.0240, 'disetujui_bod'], [$this->kini->year, 0.0240, 0.0228, 'disetujui_bod'],
-                  [$this->kini->year + 1, 0.0232, 0.0219, 'usulan']] as [$th, $dasar, $target, $status]) {
+        /* ── garis dasar dan target ──
+           Dua yang sudah disetujui direksi, satu usulan tahun depan yang
+           menunggu putusan di Control Tower. */
+        foreach ([[$this->kini->year - 1, 0.1265, 0.1235, 0.0100, 'disetujui_bod'], [$this->kini->year, 0.1235, 0.1205, 0.0093, 'disetujui_bod'],
+                  [$this->kini->year + 1, 0.1205, 0.1170, 0.0090, 'usulan']] as [$th, $dasar, $target, $targetCo2, $status]) {
             $this->baru(EnergyBaseline::class, [
                 'tahun'           => $th,
                 'baseline_gj_ton' => $dasar,
                 'target_gj_ton'   => $target,
-                'target_tco2e_ton'=> round($target * 0.0786, 6),
+                'target_tco2e_ton'=> $targetCo2,
                 'status'          => $status,
-                'disetujui_oleh'  => $status === 'disetujui_bod' ? $this->peninjau?->getKey() : null,
-                'disetujui_pada'  => $status === 'disetujui_bod' ? $this->kini->copy()->subMonths(2) : null,
-                'catatan'         => 'Garis dasar contoh; dihitung dari pemakaian tahun sebelumnya.',
+                'disetujui_oleh'  => $status === 'disetujui_bod' ? $peninjau : null,
+                'disetujui_pada'  => $status === 'disetujui_bod' ? Carbon::create($th - 1, 12, 18) : null,
+                'catatan'         => 'Garis dasar dari intensitas tahun sebelumnya, ternormalisasi produksi.',
             ]);
             $n++;
         }
 
         /* ── peluang penghematan ── */
-
         foreach ([
-            /* Penghematan yang tidak berlaku dicatat 0, bukan kosong:
-               peluang yang hanya menghemat listrik memang menghemat nol
-               liter solar, dan rekapnya menjumlahkan kedua kolomnya. */
-            ['Batasi idle truk hauling maksimal 10%',      'Pit',      'berjalan',  38_000.0,     0.0],
-            ['Ganti lampu penerangan camp ke LED',          'camp',     'disetujui',      0.0, 46_000.0],
-            ['Perbaiki penjadwalan pompa dewatering',       'pump',     'usulan',    12_500.0, 18_000.0],
-            ['Pasang meter listrik terpisah tiap area',     'workshop', 'selesai',        0.0,  9_400.0],
-        ] as $i => [$judul, $area, $status, $liter, $kwh]) {
+            ['Batasi idle truk hauling maksimal 10%',      'Pit',      'berjalan', 185_000.0,      0.0, 185_000_000],
+            ['Ganti lampu penerangan camp ke LED',          'camp',     'disetujui',      0.0,  46_000.0, 420_000_000],
+            ['Perbaiki penjadwalan pompa dewatering',       'pump',     'usulan',    62_000.0,  18_000.0,  95_000_000],
+            ['Pasang meter listrik terpisah tiap area',     'workshop', 'selesai',        0.0,   9_400.0,  60_000_000],
+        ] as $i => [$judul, $area, $status, $liter, $kwh, $capex]) {
             $this->baru(EnergyOpportunity::class, [
                 'judul'             => $judul,
                 'area'              => $area,
                 'status'            => $status,
-                'uraian'            => 'Peluang contoh; angkanya perkiraan setahun penuh.',
+                'uraian'            => 'Perkiraan penghematan setahun penuh.',
                 'hemat_liter'       => $liter,
                 'hemat_kwh'         => $kwh,
                 'penanggung_jawab'  => $this->peninjau?->name ?? 'Kepala Teknik Tambang',
                 'target_selesai'    => $this->kini->copy()->addMonths(2 + $i)->toDateString(),
-                'user_id'           => $this->pengaju?->getKey(),
-                'capex_rp'          => [185_000_000, 420_000_000, 95_000_000, 60_000_000][$i],
+                'user_id'           => $pengaju,
+                'capex_rp'          => $capex,
                 /* Yang "selesai" membawa hasil M&V — status itu mensyaratkannya. */
                 'metode_mv'         => $status === 'selesai' ? 'B' : null,
                 'hemat_terverifikasi_kwh' => $status === 'selesai' ? 8_100.0 : null,
@@ -6461,6 +6454,36 @@ final class DataContoh
         }
 
         return $n;
+    }
+
+    /**
+     * Sisip massal tanpa Eloquent: tanpa event, tanpa jejak audit, satu
+     * pernyataan per potongan. Hanya untuk data contoh bervolume besar.
+     *
+     * @param  list<array<string,mixed>>  $baris
+     */
+    private function sisipMassal(string $kelas, array $baris, bool $milikPerusahaan = true): int
+    {
+        if (!$baris) return 0;
+
+        $model = new $kelas;
+        $tabel = $model->getTable();
+        $waktu = $this->kini->toDateTimeString();
+
+        /* Tanggal ditulis dengan format yang sama dengan Eloquent untuk
+           sambungan ini — baris sisipan massal dan baris dari formulir
+           tidak boleh berbeda bentuk, atau pengelompokan per tanggal
+           membelah satu hari menjadi dua. */
+        foreach (array_chunk($baris, 150) as $potong) {
+            DB::table($tabel)->insert(array_map(
+                fn (array $b) => ($milikPerusahaan ? ['company_id' => $this->c->id] : [])
+                    + (isset($b['tanggal']) ? ['tanggal' => $model->fromDateTime(Carbon::parse($b['tanggal']))] : [])
+                    + $b + ['created_at' => $waktu, 'updated_at' => $waktu],
+                $potong,
+            ));
+        }
+
+        return count($baris);
     }
 
     /**
@@ -6493,32 +6516,52 @@ final class DataContoh
             'sumber_dokumen' => 'Sertifikat mutu pemasok (contoh)', 'status' => 'aktif', 'perlu_cocok' => false,
             'diajukan_oleh' => $this->pengaju?->getKey(), 'disetujui_oleh' => $this->peninjau?->getKey(), 'disetujui_pada' => $this->kini,
         ]);
+        foreach ([['harga_rendah', 15_000, 'Skenario internal — separuh tarif minimum UU HPP'],
+                  ['harga_tinggi', 120_000, 'Skenario internal — harga karbon bayangan, acuan pasar sukarela']] as [$param, $nilai, $sumber]) {
+            $this->baru(EnergiFaktor::class, [
+                'kode_energi' => 'karbon', 'parameter' => $param, 'nilai' => $nilai, 'satuan' => 'Rp/tCO2e',
+                'berlaku_mulai' => Carbon::create($t - 1, 1, 1)->toDateString(), 'tier' => 1, 'sumber_dokumen' => $sumber,
+                'status' => 'aktif', 'perlu_cocok' => false,
+                'diajukan_oleh' => $this->pengaju?->getKey(), 'disetujui_oleh' => $this->peninjau?->getKey(), 'disetujui_pada' => $this->kini->copy()->subMonths(10),
+            ]);
+        }
+        /* Versi baru harga tinggi yang menunggu persetujuan — alur registri. */
         $this->baru(EnergiFaktor::class, [
             'kode_energi' => 'karbon', 'parameter' => 'harga_tinggi', 'nilai' => 150000, 'satuan' => 'Rp/tCO2e',
-            'berlaku_mulai' => Carbon::create($t, 1, 1)->toDateString(), 'tier' => 1,
-            'sumber_dokumen' => 'Skenario internal (contoh) — harga karbon bayangan tinggi', 'status' => 'draf',
+            'berlaku_mulai' => Carbon::create($t + 1, 1, 1)->toDateString(), 'tier' => 1,
+            'sumber_dokumen' => 'Skenario internal — revisi harga bayangan tinggi', 'status' => 'draf',
             'diajukan_oleh' => $this->pengaju?->getKey(),
         ]);
-        $n += 2;
+        $n += 4;
 
-        /* ── periode: bulan lalu terkunci, bulan ini terbuka ── */
+        /* ── periode: setiap bulan yang sudah lewat dikunci, bulan ini terbuka ──
+           Tutup buku bulanan adalah kebiasaan yang diharapkan; bulan yang
+           tetap terbuka bertahun-tahun bukan gambaran tambang yang tertib. */
         $lalu = $this->kini->copy()->subMonthNoOverflow()->startOfMonth();
-        $periodeLalu = $this->baru(EnergiPeriode::class, [
-            'tahun' => $lalu->year, 'bulan' => $lalu->month, 'status' => 'terkunci',
-            'dikunci_oleh' => $this->peninjau?->getKey(), 'dikunci_pada' => $this->kini->copy()->startOfMonth()->addDays(4),
-            'kelengkapan_persen' => 96.4, 'catatan' => 'Dikunci sesudah rekonsiliasi akhir bulan.',
-        ]);
+        $periodeLalu = null;
+        for ($b = Carbon::create($t - 1, 1, 1); $b->lte($lalu); $b->addMonth()) {
+            $p = $this->baru(EnergiPeriode::class, [
+                'tahun' => $b->year, 'bulan' => $b->month, 'status' => 'terkunci',
+                'dikunci_oleh' => $this->peninjau?->getKey(), 'dikunci_pada' => $b->copy()->addMonth()->addDays(4 + (int) round($this->acak('kunci'.$b->format('Ym')) * 3)),
+                'kelengkapan_persen' => round(96.5 + $this->acak('lengkap'.$b->format('Ym')) * 3.2, 1),
+                'catatan' => 'Dikunci sesudah rekonsiliasi akhir bulan.',
+            ]);
+            $periodeLalu = $p;
+            $n++;
+        }
         $this->baru(EnergiPeriode::class, ['tahun' => $this->kini->year, 'bulan' => $this->kini->month, 'status' => 'terbuka']);
-        $n += 2;
+        $n++;
 
         $alat = EnergyEquipment::withoutGlobalScopes()->where('company_id', $this->c->id)->pluck('id');
-        $rentangLalu = [$lalu->toDateString(), $lalu->copy()->endOfMonth()->toDateString()];
-        EnergyFuelLog::withoutGlobalScopes()->whereIn('equipment_id', $alat)->whereBetween('tanggal', $rentangLalu)->update(['status' => 'terkunci']);
+        $sebelumBulanIni = $this->kini->copy()->startOfMonth()->toDateString();
+        EnergyFuelLog::withoutGlobalScopes()->whereIn('equipment_id', $alat)->where('tanggal', '<', $sebelumBulanIni)->update(['status' => 'terkunci']);
         foreach ([EnergyProduction::class, EnergyPowerLog::class, EnergyOtherLog::class, EnergyFuelRecon::class] as $kelas) {
-            $kelas::withoutGlobalScopes()->where('company_id', $this->c->id)->whereBetween('tanggal', $rentangLalu)->update(['status' => 'terkunci']);
+            $kelas::withoutGlobalScopes()->where('company_id', $this->c->id)->where('tanggal', '<', $sebelumBulanIni)->update(['status' => 'terkunci']);
         }
 
-        $terkunci = EnergyFuelLog::withoutGlobalScopes()->whereIn('equipment_id', $alat)->where('status', 'terkunci')->orderBy('tanggal')->first()
+        $rentangLalu = [$lalu->toDateString(), $lalu->copy()->endOfMonth()->toDateString().' 23:59:59'];
+        $terkunci = EnergyFuelLog::withoutGlobalScopes()->whereIn('equipment_id', $alat)->where('status', 'terkunci')
+                        ->whereBetween('tanggal', $rentangLalu)->orderByDesc('tanggal')->first()
                  ?? EnergyFuelLog::withoutGlobalScopes()->whereIn('equipment_id', $alat)->orderBy('tanggal')->first();
         if ($terkunci) {
             $this->baru(EnergiKoreksi::class, [
@@ -6544,28 +6587,38 @@ final class DataContoh
         ]);
         $n++;
 
-        foreach ([
-            [4, 'Angkutan tongkang batubara pihak ketiga', 'distance', 18_400_000, 'ton-km', 0.0185, 'Faktor tongkang (contoh) — ganti dengan data pemasok', 'PT Pelayaran Contoh', 3],
-            [6, 'Perjalanan dinas udara karyawan', 'distance', 412_000, 'pkm', 0.158, 'Faktor penerbangan domestik (contoh)', null, 3],
-            [11, 'Pembakaran batubara terjual di PLTU pembeli', 'average_data', 1_950_000, 'ton', 1_890.0, 'Estimasi NCV × EF batubara sub-bituminus (contoh)', null, 4],
-        ] as [$kat, $sub, $metode, $q, $sat, $f, $sumber, $mitra, $mutu]) {
-            $this->baru(EnergiScope3::class, [
-                'tahun' => $t, 'kategori' => $kat, 'subkategori' => $sub, 'metode' => $metode, 'kuantitas' => $q, 'satuan' => $sat,
-                'faktor_kgco2e' => $f, 'sumber_faktor' => $sumber, 'mitra' => $mitra, 'kualitas_data' => $mutu,
-                'status' => $kat === 11 ? 'diajukan' : 'terverifikasi', 'diinput_oleh' => $this->pengaju?->getKey(),
-            ]);
-            $n++;
+        /* Scope 3 dua tahun, dengan kuantitas tahun berjalan sebanding
+           bulan yang sudah lewat. Kategori 11 (batubara terjual) jauh
+           lebih besar dari seluruh emisi operasi — itulah sebabnya ia
+           dilaporkan terpisah. */
+        $porsi = ($this->kini->dayOfYear - 1) / 365;
+        foreach ([$t - 1 => 1.0, $t => $porsi] as $th => $kali) {
+            foreach ([
+                [3, 'Hulu bahan bakar (well-to-tank) solar & listrik', 'average_data', 4_480_000, 'L', 0.62, 'Faktor WTT solar (DEFRA, contoh)', null, 3],
+                [4, 'Angkutan tongkang batubara pihak ketiga', 'distance', 182_000_000, 'ton-km', 0.0185, 'Faktor tongkang pemasok (contoh)', 'PT Pelayaran Nusantara Contoh', 3],
+                [6, 'Perjalanan dinas udara karyawan', 'distance', 1_240_000, 'pkm', 0.158, 'Faktor penerbangan domestik (contoh)', null, 3],
+                [7, 'Bus jemputan karyawan', 'distance', 2_350_000, 'pkm', 0.089, 'Faktor bus diesel (contoh)', 'PT Transportasi Contoh', 3],
+                [11, 'Pembakaran batubara terjual di PLTU pembeli', 'average_data', 1_480_000, 'ton', 1_890.0, 'Estimasi NCV × EF batubara sub-bituminus (contoh)', null, 4],
+            ] as [$kat, $sub, $metode, $q, $sat, $f, $sumber, $mitra, $mutu]) {
+                $this->baru(EnergiScope3::class, [
+                    'tahun' => $th, 'kategori' => $kat, 'subkategori' => $sub, 'metode' => $metode, 'kuantitas' => round($q * $kali), 'satuan' => $sat,
+                    'faktor_kgco2e' => $f, 'sumber_faktor' => $sumber, 'mitra' => $mitra, 'kualitas_data' => $mutu,
+                    'status' => $th === $t && $kat === 11 ? 'diajukan' : 'terverifikasi', 'diinput_oleh' => $this->pengaju?->getKey(),
+                ]);
+                $n++;
+            }
         }
 
         $peluang = EnergyOpportunity::withoutGlobalScopes()->where('company_id', $this->c->id)->pluck('id', 'judul');
         foreach ([
-            ['PLTS atap camp & workshop 400 kWp', 'ebt', -8, 'Pengukuran kWh PLTS × faktor grid sistem', 620.0, 410.0, 'didaftarkan', 'SRN-CONTOH-001', null],
-            ['Pembatasan idle armada hauling', 'efisiensi', -5, 'IPMVP opsi B, liter sebelum vs sesudah', 3_900.0, 260.0, 'belum', null, 'Batasi idle truk hauling maksimal 10%'],
-        ] as [$judul, $jenis, $mulai, $metode, $base, $turun, $srn, $nomor, $pel]) {
+            ['PLTS atap camp & workshop 400 kWp', 'ebt', -8, 'Pengukuran kWh PLTS × faktor grid sistem', 5_420.0, 405.0, 'didaftarkan', 'SRN-CONTOH-001', null, 0.62],
+            ['Pembatasan idle armada hauling', 'efisiensi', -5, 'IPMVP opsi B, liter sebelum vs sesudah', 6_150.0, 520.0, 'belum', null, 'Batasi idle truk hauling maksimal 10%', 0.38],
+            ['Elektrifikasi pompa dewatering pit', 'elektrifikasi', 3, 'Liter genset dihindari − kWh grid × faktor sistem', 1_640.0, 610.0, 'belum', null, 'Perbaiki penjadwalan pompa dewatering', 0.0],
+        ] as [$judul, $jenis, $mulai, $metode, $base, $turun, $srn, $nomor, $pel, $capai]) {
             $this->baru(EnergiMitigasi::class, [
                 'judul' => $judul, 'jenis' => $jenis, 'mulai' => $this->kini->copy()->addMonths($mulai)->toDateString(),
                 'metodologi' => $metode, 'baseline_tco2e_tahun' => $base, 'target_penurunan_tco2e_tahun' => $turun,
-                'capaian' => [(string) $t => round($turun * 0.55, 1)], 'status_srn' => $srn, 'nomor_srn' => $nomor,
+                'capaian' => [(string) $t => round($turun * $capai, 1)], 'status_srn' => $srn, 'nomor_srn' => $nomor,
                 'peluang_id' => $pel ? ($peluang[$pel] ?? null) : null,
                 'site_id' => EnergiSite::withoutGlobalScopes()->where('company_id', $this->c->id)->value('id'),
             ]);
@@ -6650,6 +6703,33 @@ final class DataContoh
             'disusun_oleh' => $this->pengaju?->getKey(),
         ]);
         $n++;
+
+        /* Laporan tahunan tahun lalu yang sudah terbit dan disampaikan —
+           tambang yang tertib memenuhi sebagian besar tenggatnya; PROPER
+           masih dalam proses karena siklusnya belum tutup. */
+        $awalLalu = Carbon::create($t - 1, 1, 1);
+        $akhirLalu = Carbon::create($t - 1, 12, 31);
+        foreach ([
+            ['GRK_PU', 'Laporan Inventarisasi Emisi GRK '.($t - 1),          'terbit',    Carbon::create($t, 3, 18),  'SIGN-SMART/'.$t.'/0312'],
+            ['ESDM_ME', 'Laporan Manajemen Energi '.($t - 1),                 'terbit',    Carbon::create($t, 6, 23),  'POME/'.$t.'/ME/1147'],
+            ['OJK_LK', 'Kinerja Energi & Emisi — Laporan Keberlanjutan '.($t - 1), 'terbit', Carbon::create($t, 4, 25), 'SPE-OJK/'.$t.'/0458'],
+            ['PROPER', 'Data Energi & Emisi untuk PROPER '.($t - 1),          'disetujui', null,                       null],
+        ] as $i => [$templat, $judul, $status, $sampai, $bukti]) {
+            $snap = json_decode(json_encode(\App\Support\Energi\Pelaporan::susun($templat, $this->c->id, $awalLalu->copy(), $akhirLalu->copy())), true);
+            $this->baru(EnergiLaporan::class, [
+                'templat' => $templat, 'tahun' => $t - 1, 'periode_mulai' => $awalLalu->toDateString(), 'periode_sampai' => $akhirLalu->toDateString(),
+                'versi' => 1, 'status' => $status, 'judul' => $judul,
+                'nomor_dokumen' => $status === 'terbit' ? sprintf('LAP/EK/%d/%03d Rev. 01', $t - 1, $i + 1) : null,
+                'snapshot' => $snap, 'hash_snapshot' => $status === 'terbit' ? EnergiLaporan::hash($snap) : null,
+                'disusun_oleh' => $this->pengaju?->getKey(),
+                'diajukan_oleh' => $this->pengaju?->getKey(), 'diajukan_pada' => ($sampai ?? $this->kini)->copy()->subDays(12),
+                'disetujui_oleh' => $this->peninjau?->getKey(), 'disetujui_pada' => ($sampai ?? $this->kini)->copy()->subDays(7),
+                'diterbitkan_oleh' => $status === 'terbit' ? $this->peninjau?->getKey() : null,
+                'diterbitkan_pada' => $status === 'terbit' ? $sampai->copy()->subDays(3) : null,
+                'disampaikan_pada' => $sampai?->toDateString(), 'bukti_penyampaian' => $bukti,
+            ]);
+            $n++;
+        }
 
         return $n;
     }

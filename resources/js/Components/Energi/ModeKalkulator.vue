@@ -79,7 +79,7 @@ async function hitung() {
     </Kartu>
 
     <template v-if="hasil">
-      <section class="ubin-kisi">
+      <section class="ka-kisi">
         <KartuAngka label="Total energi" :nilai="hasil.total.gj" satuan="GJ" :catatan="`${n(hasil.total.toe, 2)} TOE`" />
         <KartuAngka label="Emisi (CO₂e fosil)" :nilai="hasil.total.co2e_t" satuan="tCO₂e" :desimal="3" :catatan="`GWP ${hasil.gwp}`" />
         <KartuAngka label="CO₂ biogenik (terpisah)" :nilai="hasil.total.co2_bio_t" satuan="tCO₂" :desimal="3" />

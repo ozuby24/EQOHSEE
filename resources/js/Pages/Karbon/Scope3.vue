@@ -16,10 +16,10 @@ const kat11 = computed(() => (props.daftar ?? []).filter((s: any) => s.kategori 
 
 const form = useForm<Record<string, any>>({ tahun: props.tahun, bulan: '', kategori: 4, subkategori: '', metode: 'distance', kuantitas: '', satuan: 'ton-km',
   faktor_kgco2e: '', sumber_faktor: '', mitra: '', kualitas_data: 3, catatan: '' });
-const simpan = () => form.transform(d => ({ ...d, bulan: d.bulan === '' ? null : d.bulan })).post('/energi/grk/scope3', { preserveScroll: true, onSuccess: () => form.reset('subkategori', 'kuantitas', 'faktor_kgco2e', 'mitra', 'catatan') });
-const verifikasi = (s: any) => router.post(`/energi/grk/scope3/${s.id}/verifikasi`, {}, { preserveScroll: true });
-async function hapus(s: any) { if (await tanya(`Hapus aktivitas "${s.subkategori}"?`)) router.delete(`/energi/grk/scope3/${s.id}`, { preserveScroll: true }); }
-const gantiTahun = (e: Event) => router.get('/energi/grk/scope3', { tahun: (e.target as HTMLInputElement).value });
+const simpan = () => form.transform(d => ({ ...d, bulan: d.bulan === '' ? null : d.bulan })).post('/karbon/scope3', { preserveScroll: true, onSuccess: () => form.reset('subkategori', 'kuantitas', 'faktor_kgco2e', 'mitra', 'catatan') });
+const verifikasi = (s: any) => router.post(`/karbon/scope3/${s.id}/verifikasi`, {}, { preserveScroll: true });
+async function hapus(s: any) { if (await tanya(`Hapus aktivitas "${s.subkategori}"?`)) router.delete(`/karbon/scope3/${s.id}`, { preserveScroll: true }); }
+const gantiTahun = (e: Event) => router.get('/karbon/scope3', { tahun: (e.target as HTMLInputElement).value });
 </script>
 
 <template>
@@ -30,7 +30,7 @@ const gantiTahun = (e: Event) => router.get('/energi/grk/scope3', { tahun: (e.ta
       <p class="text-[12px] text-stone-600">Total Scope 3: <b>{{ n(total, 2) }} tCO₂e</b><template v-if="kat11"> · kategori 11 (disajikan terpisah) <b>{{ n(kat11, 0) }} tCO₂e</b></template></p>
     </section>
 
-    <Kartu judul="Aktivitas Scope 3" ket="Kategori 11 (batubara terjual) dilaporkan terpisah.">
+    <Kartu judul="Aktivitas Scope 3" ikon="ship" warna="ungu" ket="Kategori 11 (batubara terjual) dilaporkan terpisah.">
       <div class="overflow-x-auto">
         <table class="w-full text-[12px] min-w-[860px]">
           <thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-2">Kategori</th><th class="py-2">Aktivitas</th><th class="py-2">Metode</th><th class="py-2 text-right">Kuantitas</th><th class="py-2 text-right">Faktor</th><th class="py-2 text-right">tCO₂e</th><th class="py-2">Mutu</th><th class="py-2">Status</th><th class="py-2"></th></tr></thead>

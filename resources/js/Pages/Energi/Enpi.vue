@@ -39,7 +39,7 @@ const kirim = () => usul.transform(d => ({ ...d, mulai: pilih.mulai, sampai: pil
       </form>
     </Kartu>
 
-    <section class="ubin-kisi">
+    <section class="ka-kisi">
       <KartuAngka label="R²" :nilai="m.r2" :desimal="3" :rag="m.r2 === null || m.r2 === undefined ? null : (m.r2 >= props.ambang.r2 ? 'hijau' : 'merah')" :catatan="`ambang ≥ ${props.ambang.r2}`" />
       <KartuAngka label="CV(RMSE)" :nilai="m.cv_rmse" satuan="%" :rag="m.cv_rmse === null || m.cv_rmse === undefined ? null : (m.cv_rmse <= props.ambang.cv ? 'hijau' : 'merah')" :catatan="`ambang ≤ ${props.ambang.cv}%`" />
       <KartuAngka label="Titik data" :nilai="m.n" satuan="bulan" :desimal="0" />
