@@ -18,15 +18,15 @@ function ubah(m: any) {
 }
 const kirim = () => {
   const t = form.transform(d => Object.fromEntries(Object.entries(d).map(([k, v]) => [k, v === '' ? null : v])));
-  if (sunting.value) t.put(`/energi/grk/mitigasi/${sunting.value}`, { preserveScroll: true, onSuccess: () => { sunting.value = null; form.defaults(kosong()); form.reset(); } });
-  else t.post('/energi/grk/mitigasi', { preserveScroll: true, onSuccess: () => form.reset() });
+  if (sunting.value) t.put(`/karbon/mitigasi/${sunting.value}`, { preserveScroll: true, onSuccess: () => { sunting.value = null; form.defaults(kosong()); form.reset(); } });
+  else t.post('/karbon/mitigasi', { preserveScroll: true, onSuccess: () => form.reset() });
 };
 </script>
 
 <template>
   <Head title="Aksi Mitigasi" />
   <div class="space-y-4">
-    <Kartu judul="Aksi mitigasi">
+    <Kartu judul="Aksi mitigasi" ikon="sprout" warna="hijau">
       <div class="overflow-x-auto">
         <table class="w-full text-[12px] min-w-[820px]">
           <thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-2">Aksi</th><th class="py-2">Jenis</th><th class="py-2">Periode</th><th class="py-2 text-right">Baseline</th><th class="py-2 text-right">Target turun/thn</th><th class="py-2 text-right">Capaian {{ tahunIni }}</th><th class="py-2">SRN PPI</th><th class="py-2"></th></tr></thead>

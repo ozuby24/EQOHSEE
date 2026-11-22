@@ -15,7 +15,7 @@ defineProps<{ unit: Record<string, any>; log: any[]; m: Record<string, any>; acu
         <span class="text-[12px] font-bold" :style="{ color: status.warna }">{{ status.label }}</span>
         <Link href="/energi/alat" class="eq-btn-lain">Kembali ke peralatan</Link>
       </template>
-      <div class="ubin-kisi">
+      <div class="ka-kisi">
         <KartuAngka label="Solar" :nilai="m.liter" satuan="L" :desimal="0" />
         <KartuAngka label="Jam operasi" :nilai="m.hm" satuan="HM" />
         <KartuAngka label="Liter per jam" :nilai="m.l_hm" satuan="L/HM" :desimal="2" />

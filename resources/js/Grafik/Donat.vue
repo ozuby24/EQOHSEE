@@ -135,8 +135,11 @@ const disorot = ref<string | null>(null);
                 @pointerenter="disorot = p.label" @focus="disorot = p.label"
                 @blur="disorot = null">
           <span class="w-2.5 h-2.5 rounded-sm shrink-0" :style="{ background: p.warna }"></span>
-          <span class="text-stone-600 truncate text-left">{{ p.label }}</span>
-          <span class="ml-auto font-bold text-cam-ink num shrink-0">{{ p.nilai }}</span>
+          <!-- Label boleh turun baris, tidak dipotong: dua kategori yang
+               berawalan sama ("Pembakaran bergerak — off-road" dan
+               "— jalan") terbaca identik bila keduanya terpotong. -->
+          <span class="text-stone-600 text-left min-w-0 leading-snug">{{ p.label }}</span>
+          <span class="ml-auto font-bold text-cam-ink num shrink-0">{{ p.nilai.toLocaleString('id-ID', { maximumFractionDigits: 1 }) }}</span>
           <span class="text-stone-400 num shrink-0 w-9 text-right">{{ p.persen }}%</span>
         </button>
       </li>

@@ -8,7 +8,7 @@ import { Head, router, useForm } from '@inertiajs/vue3';
 import BlankLayout from '../../Layouts/BlankLayout.vue';
 import PrintShell from '../../Components/PrintShell.vue';
 import KopCetak from '../../Components/KopCetak.vue';
-import { n, rp, statusLabel, tgl } from '../../energi';
+import { n, namaParameter, rp, statusLabel, tgl } from '../../energi';
 
 defineOptions({ layout: BlankLayout });
 
@@ -157,8 +157,8 @@ const catat = () => sampai.post(`/energi/pelaporan/terbit/${props.laporan.id}/sa
 
       <h3 class="font-bold text-[12.5px] mb-2">Faktor yang dipakai</h3>
       <table class="w-full border-collapse mb-4 text-[9.5px]">
-        <thead><tr class="border-b border-stone-300 text-left text-stone-500"><th class="p-1">#</th><th class="p-1">Kode/parameter</th><th class="p-1">Nilai</th><th class="p-1">Berlaku</th><th class="p-1">Tier</th><th class="p-1">Sumber</th></tr></thead>
-        <tbody><tr v-for="f in s.faktor" :key="f.id" class="border-b border-stone-100"><td class="p-1">{{ f.id }}</td><td class="p-1">{{ f.kode_energi }}/{{ f.parameter }}{{ f.kategori_ipcc ? ' (' + f.kategori_ipcc + ')' : '' }}</td><td class="p-1">{{ f.nilai }} {{ f.satuan }}</td><td class="p-1">{{ tgl(f.berlaku_mulai) }}</td><td class="p-1">{{ f.tier }}</td><td class="p-1">{{ f.sumber_dokumen }}{{ f.perlu_cocok ? ' — perlu dicocokkan' : '' }}</td></tr></tbody>
+        <thead><tr class="border-b border-stone-300 text-left text-stone-500"><th class="p-1">#</th><th class="p-1">Faktor</th><th class="p-1">Nilai</th><th class="p-1">Berlaku</th><th class="p-1">Tier</th><th class="p-1">Sumber</th></tr></thead>
+        <tbody><tr v-for="f in s.faktor" :key="f.id" class="border-b border-stone-100"><td class="p-1">{{ f.id }}</td><td class="p-1">{{ f.label ?? f.kode_energi }} — {{ f.nama_parameter ?? namaParameter(f.parameter).toLowerCase() }}<template v-if="f.kategori_ipcc"> ({{ f.kategori_label ?? f.kategori_ipcc }})</template></td><td class="p-1">{{ f.nilai }} {{ f.satuan }}</td><td class="p-1">{{ tgl(f.berlaku_mulai) }}</td><td class="p-1">{{ f.tier }}</td><td class="p-1">{{ f.sumber_dokumen }}{{ f.perlu_cocok ? ' — perlu dicocokkan' : '' }}</td></tr></tbody>
       </table>
 
       <p class="text-[9.5px] text-stone-500">Kode verifikasi (SHA-256): {{ props.laporan.hash ?? 'belum terbit' }}</p>

@@ -43,6 +43,8 @@ final class Kategori
         'induksi'       => 'kuning',
         'teknis'        => 'biru',
         'energi'        => 'kuning',
+        'karbon'        => 'toska',
+        'emisi'         => 'toska',
         'konservasi'    => 'hijau',
         'mutu'          => 'ungu',
         'kualitas'      => 'ungu',

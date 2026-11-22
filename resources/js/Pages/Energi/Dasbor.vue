@@ -29,7 +29,9 @@ import Batang from '../../Grafik/Batang.vue';
 import Donat from '../../Grafik/Donat.vue';
 import Meter from '../../Grafik/Meter.vue';
 import Sparkline from '../../Grafik/Sparkline.vue';
-import { AKSEN, KATEGORI, KEADAAN, ringkas } from '../../Grafik/warna';
+import Panggung from '../../Components/Energi/Panggung.vue';
+import KartuAngka from '../../Components/Energi/KartuAngka.vue';
+import { KATEGORI, KEADAAN, ringkas } from '../../Grafik/warna';
 
 const props = defineProps<{
   r: Record<string, any>;
@@ -166,42 +168,55 @@ const idle = computed(() => {
   return hm > 0 ? (jam / hm) * 100 : null;
 });
 
+/* ── panggung ── */
+
+const panggung = computed(() => [
+  { label: 'Total energi', nilai: n(Number(props.r?.gj ?? 0), 0), satuan: 'GJ', ikon: 'zap',
+    catatan: props.r?.toe ? `${n(Number(props.r.toe), 1)} TOE` : null },
+  { label: 'Intensitas energi', nilai: intensitas.value === null ? '—' : n(intensitas.value, 3), satuan: 'GJ/ton', ikon: 'gauge',
+    catatan: target.value !== null ? `Target ${n(target.value, 3)}` : 'Belum ada target' },
+  { label: 'Solar terpakai', nilai: ringkas(Number(props.r?.liter ?? 0)), satuan: 'L', ikon: 'fuel',
+    catatan: props.r?.l_bcm ? `${n(Number(props.r.l_bcm), 2)} L/BCM` : null },
+  { label: 'Biaya energi', nilai: 'Rp ' + ringkas(Number(props.r?.rupiah ?? 0)), ikon: 'banknote',
+    catatan: props.r?.ton ? `Rp ${n(Number(props.r.rupiah) / Number(props.r.ton), 0)}/ton` : null },
+]);
+
+const statusIntensitas = computed(() => {
+  if (intensitas.value === null || target.value === null) return [];
+  return [intensitas.value <= target.value ? 'Intensitas sesuai target' : 'Intensitas di atas target'];
+});
+
 /* ── kartu angka ── */
 
 const kartu = computed(() => [
   {
-    label: 'Solar terpakai',
-    nilai: ringkas(Number(props.r?.liter ?? 0)),
-    satuan: 'L',
+    label: 'Solar terpakai', angka: Number(props.r?.liter ?? 0), desimal: 0, satuan: 'L', ikon: 'fuel', warna: 'amber' as const,
     catatan: `${ringkas(Number(props.r?.liter_hari ?? 0))} L/hari`,
-    garis: props.tren.map(t => Number(t.liter)),
+    garis: props.tren.map(t => Number(t.liter)), garisWarna: '#D97706',
   },
   {
-    label: 'Listrik terpakai',
-    nilai: ringkas(Number(props.r?.kwh ?? 0)),
-    satuan: 'kWh',
-    catatan: null,
-    garis: props.tren.map(t => Number(t.kwh)),
+    label: 'Listrik terpakai', angka: Number(props.r?.kwh ?? 0), desimal: 0, satuan: 'kWh', ikon: 'plug-zap', warna: 'biru' as const,
+    catatan: props.r?.kwh_ton ? `${n(Number(props.r.kwh_ton), 2)} kWh/ton` : null,
+    garis: props.tren.map(t => Number(t.kwh)), garisWarna: '#2563EB',
   },
   {
-    label: 'Produksi',
-    nilai: ringkas(Number(props.r?.ton ?? 0)),
-    satuan: 'ton',
-    catatan: `${ringkas(Number(props.r?.bcm ?? 0))} bcm`,
-    garis: props.tren.map(t => Number(t.ton)),
+    label: 'Produksi batubara', angka: Number(props.r?.ton ?? 0), desimal: 0, satuan: 'ton', ikon: 'mountain', warna: 'langit' as const,
+    catatan: `${ringkas(Number(props.r?.bcm ?? 0))} BCM overburden`,
+    garis: props.tren.map(t => Number(t.ton)), garisWarna: '#0284C7',
   },
   {
-    label: 'Emisi',
-    nilai: n(Number(props.r?.tco2e ?? 0), 1),
-    satuan: 'tCO₂e',
-    catatan: `Rp\u00A0${ringkas(Number(props.r?.rupiah ?? 0))} biaya energi`,
-    garis: [],
+    label: 'Emisi energi', angka: Number(props.r?.tco2e ?? 0), desimal: 1, satuan: 'tCO₂e', ikon: 'cloud', warna: 'toska' as const,
+    catatan: 'Rincian di Carbon Management',
+    garis: [] as number[], garisWarna: '#0F766E',
   },
 ]);
 </script>
 
 <template>
   <div class="space-y-4">
+    <Panggung tema="energi" judul="Kinerja energi operasi"
+              :sub="`${props.r?.hari ?? 0} hari · ${ringkas(Number(props.r?.ton ?? 0))} ton produksi · ${ringkas(Number(props.r?.bcm ?? 0))} BCM overburden`"
+              :stat="panggung" :lencana="statusIntensitas" />
 
     <!-- 1 · apakah kita boros -->
     <section class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
@@ -221,21 +236,11 @@ const kartu = computed(() => [
         </p>
       </div>
 
-      <div class="grid gap-3 sm:grid-cols-2">
-        <article v-for="k in kartu" :key="k.label"
-                 class="bg-white rounded-2xl shadow-card border border-stone-100 p-4">
-          <p class="text-[11px] font-semibold text-stone-500">{{ k.label }}</p>
-
-          <div class="flex items-end justify-between gap-2 mt-1">
-            <p class="text-[20px] font-bold text-cam-ink leading-none num">
-              {{ k.nilai }}<span class="text-[12px] font-semibold text-stone-400 ml-1">{{ k.satuan }}</span>
-            </p>
-
-            <Sparkline v-if="k.garis.length > 1" :nilai="k.garis" :warna="AKSEN" />
-          </div>
-
-          <p v-if="k.catatan" class="text-[10.5px] text-stone-400 mt-1.5">{{ k.catatan }}</p>
-        </article>
+      <div class="grid gap-3 sm:grid-cols-2 content-start">
+        <KartuAngka v-for="k in kartu" :key="k.label" :label="k.label" :nilai="k.angka" :satuan="k.satuan"
+                    :desimal="k.desimal" :ikon="k.ikon" :warna="k.warna" :catatan="k.catatan">
+          <Sparkline v-if="k.garis.length > 1" :nilai="k.garis" :warna="k.garisWarna" />
+        </KartuAngka>
       </div>
     </section>
 

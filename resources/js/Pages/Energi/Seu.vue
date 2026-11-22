@@ -31,7 +31,7 @@ const tandai = (u: any) => router.post(`/energi/seu/${u.id}`, { seu: !u.seu }, {
       </template>
     </KartuGrafik>
 
-    <Kartu judul="Penetapan SEU per unit">
+    <Kartu judul="Penetapan SEU per unit" ikon="target" warna="oranye">
       <div class="flex flex-wrap gap-2">
         <button v-for="u in props.unit" :key="u.id" type="button" :disabled="!props.boleh.kelola" @click="tandai(u)"
                 class="rounded-lg border px-2.5 py-1.5 text-[11.5px]" :class="u.seu ? 'bg-amber-50 border-amber-300 text-amber-800 font-bold' : 'bg-white border-stone-200 text-stone-600'">

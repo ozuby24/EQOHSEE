@@ -51,7 +51,7 @@ const putus = (k: any, putusan: string) => router.post(`/energi/periode/koreksi/
       <PilihPerusahaan :daftar="props.daftarPerusahaan" :terpilih="props.perusahaan" :nama="props.namaPerusahaan" />
     </section>
 
-    <Kartu judul="Kelengkapan per bulan">
+    <Kartu judul="Kelengkapan per bulan" ikon="calendar-clock" warna="biru">
       <div class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 gap-2">
         <button v-for="k in props.kalender" :key="k.bulan" type="button" :disabled="k.keadaan === 'mendatang'" @click="pindah(k.bulan)"
                 class="rounded-xl p-2 text-center border-2" :class="[WARNA[k.keadaan], k.bulan === props.bulan ? 'border-cam-orange' : 'border-transparent']">
@@ -63,7 +63,7 @@ const putus = (k: any, putusan: string) => router.post(`/energi/periode/koreksi/
     </Kartu>
 
     <section class="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-      <Kartu :judul="`Antrean verifikasi — ${props.periode.label}`">
+      <Kartu ikon="list-checks" warna="amber" :judul="`Antrean verifikasi — ${props.periode.label}`">
         <template #aksi>
           <button type="button" class="eq-btn-mini" @click="semua(true)">Pilih semua</button>
           <button type="button" class="eq-btn-mini" @click="semua(false)">Lepas</button>
@@ -92,7 +92,7 @@ const putus = (k: any, putusan: string) => router.post(`/energi/periode/koreksi/
         </div>
       </Kartu>
 
-      <Kartu :judul="`Kunci periode ${props.periode.label}`" :ket="props.periode.status === 'terkunci' ? `Dikunci ${props.periode.pengunci ?? ''} ${props.periode.dikunci_pada ?? ''} · kelengkapan ${n(props.periode.kelengkapan_persen, 1)}%` : null">
+      <Kartu ikon="lock" warna="oranye" :judul="`Kunci periode ${props.periode.label}`" :ket="props.periode.status === 'terkunci' ? `Dikunci ${props.periode.pengunci ?? ''} ${props.periode.dikunci_pada ?? ''} · kelengkapan ${n(props.periode.kelengkapan_persen, 1)}%` : null">
         <template #aksi><Lencana :status="props.periode.status" /></template>
         <ul v-if="props.syarat" class="divide-y divide-stone-100">
           <li v-for="s in props.syarat.syarat" :key="s.kode" class="py-2 flex items-start justify-between gap-3 text-[12px]">
@@ -105,7 +105,7 @@ const putus = (k: any, putusan: string) => router.post(`/energi/periode/koreksi/
       </Kartu>
     </section>
 
-    <Kartu judul="Koreksi setelah kunci">
+    <Kartu judul="Koreksi setelah kunci" ikon="file-check-2" warna="ungu">
       <form v-if="props.boleh.koreksi" class="grid gap-3 md:grid-cols-6 items-end mb-4" @submit.prevent="ajukan">
         <label class="text-[11px] font-semibold text-stone-500">Jenis data<select v-model="koreksi.jenis" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"><option value="bbm">Solar per unit</option><option value="listrik">Listrik</option><option value="lain">Energi lain</option><option value="produksi">Produksi</option><option value="rekon">Rekonsiliasi</option></select></label>
         <label class="text-[11px] font-semibold text-stone-500">ID baris<input v-model="koreksi.id" required type="number" min="1" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"></label>

@@ -41,16 +41,16 @@ class Pillars
         return [
             'energy' => [
                 'nama'  => 'Energy',
-                'ket'   => 'Konsumsi energi per ton produksi',
+                'ket'   => 'Energi dan emisi per ton produksi',
                 'deep'  => '#B85C00', 'warna' => '#F57C00', 'light' => '#FF9800',
                 'ikon'  => 'bolt',
-                'ringkas' => 'Mengelola konsumsi dan keandalan energi di seluruh rantai operasi tambang — dari pembangkit, distribusi, hingga alat berat di lapangan.',
+                'ringkas' => 'Mengelola konsumsi, keandalan, dan emisi energi di seluruh rantai operasi tambang — dari alat berat di lapangan sampai laporan ke regulator dan direksi.',
                 'cakupan' => [
                     ['Efisiensi bahan bakar alat berat', 'Pemantauan konsumsi per unit dan per ton produksi.'],
                     ['Keandalan kelistrikan',            'Kelayakan instalasi, proteksi, dan jadwal pemeliharaan.'],
-                    ['Jejak emisi operasi',              'Perhitungan emisi dari pemakaian energi.'],
+                    ['Kepatuhan manajemen energi',       'Ambang TOE, manajer energi, audit, dan laporan ke ESDM; emisinya dikelola Carbon Management.'],
                 ],
-                'modul' => ['Energy Performance Center', 'Keselamatan Operasi (KO)', 'ISO & Dokumen'],
+                'modul' => ['Energy Performance Center', 'Carbon Management Center', 'Keselamatan Operasi (KO)', 'ISO & Dokumen'],
             ],
 
             'quality' => [
@@ -121,7 +121,7 @@ class Pillars
                     ['Kualitas air & udara',  'Pemantauan titik penaatan secara berkala.'],
                     ['Reklamasi lahan',       'Rencana dan realisasi pemulihan area terganggu.'],
                 ],
-                'modul' => ['Sistem Informasi Gudang & Penyimpanan', 'ISO & Dokumen', 'SMKP Audit'],
+                'modul' => ['Carbon Management Center', 'Sistem Informasi Gudang & Penyimpanan', 'ISO & Dokumen', 'SMKP Audit'],
             ],
 
             'engineering' => [

@@ -27,7 +27,9 @@ class ManajemenEnergiController extends Controller
         $kew = Kewajiban::daftar($c);
         $k = collect($kew)->keyBy('kode');
 
-        $cek = fn (string $kode) => in_array($k[$kode]['status'] ?? null, ['selesai', 'tidak_berlaku'], true);
+        /* null = tidak berlaku (perusahaan di bawah ambang): ditampilkan apa
+           adanya, bukan sebagai "terpenuhi". */
+        $cek = fn (string $kode) => ($k[$kode]['status'] ?? null) === 'tidak_berlaku' ? null : ($k[$kode]['status'] ?? null) === 'selesai';
 
         return Inertia::render('Energi/Manajemen', [
             'ambang' => $ambang,

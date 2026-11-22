@@ -19,7 +19,7 @@ const susun = (t: any) => router.post(`/energi/pelaporan/${t.kode}/susun`, { ...
   <div class="space-y-4">
     <div class="flex justify-end"><PilihPerusahaan :daftar="props.daftarPerusahaan" :terpilih="props.perusahaan" :nama="props.namaPerusahaan" /></div>
 
-    <Kartu judul="Templat laporan">
+    <Kartu judul="Templat laporan" ikon="file-check-2" warna="biru">
       <div class="grid gap-3 md:grid-cols-2">
         <article v-for="t in props.templat" :key="t.kode" class="rounded-xl border border-stone-100 bg-stone-50 p-4 flex flex-col gap-2">
           <p class="text-[13px] font-bold text-cam-ink">{{ t.judul }}</p>
@@ -33,7 +33,7 @@ const susun = (t: any) => router.post(`/energi/pelaporan/${t.kode}/susun`, { ...
       </div>
     </Kartu>
 
-    <Kartu judul="Laporan tersusun">
+    <Kartu judul="Laporan tersusun" ikon="book-check" warna="hijau">
       <table class="w-full text-[12px]">
         <thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-2">Laporan</th><th class="py-2">Periode</th><th class="py-2">Versi</th><th class="py-2">Nomor</th><th class="py-2">Status</th><th class="py-2">Disampaikan</th></tr></thead>
         <tbody>
@@ -48,7 +48,7 @@ const susun = (t: any) => router.post(`/energi/pelaporan/${t.kode}/susun`, { ...
       <p v-if="!props.laporan?.length" class="text-[12px] text-stone-400 py-4 text-center">Belum ada laporan yang disusun.</p>
     </Kartu>
 
-    <Kartu judul="Kewajiban terdekat">
+    <Kartu judul="Kewajiban terdekat" ikon="calendar-clock" warna="mawar">
       <template #aksi><Link href="/energi/kalender" class="eq-tautan">Kalender kepatuhan</Link></template>
       <ul class="divide-y divide-stone-100">
         <li v-for="k in props.kewajiban" :key="k.kode" class="py-2 flex items-center justify-between gap-3 text-[12px]">

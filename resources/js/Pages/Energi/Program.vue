@@ -25,7 +25,7 @@ const namaPeluang = (id: number) => (props.peluang ?? []).find((p: any) => p.id 
   <div class="space-y-4">
     <label class="text-[11px] font-semibold text-stone-500 inline-block">Tahun program<input :value="props.tahun" type="number" min="2000" max="2100" class="block mt-1 rounded-lg border-stone-200 text-[12px] w-28" @change="gantiTahun"></label>
 
-    <Kartu :judul="`Program konservasi energi ${props.tahun}`">
+    <Kartu ikon="sprout" warna="hijau" :judul="`Program konservasi energi ${props.tahun}`">
       <article v-for="p in props.daftar" :key="p.id" class="border-b border-stone-100 py-3 last:border-0">
         <div class="flex flex-wrap items-start justify-between gap-2">
           <div class="min-w-0"><p class="text-[13px] font-semibold text-cam-ink">{{ p.judul }}</p><p class="text-[11.5px] text-stone-500 whitespace-pre-line">{{ p.sasaran }}</p></div>

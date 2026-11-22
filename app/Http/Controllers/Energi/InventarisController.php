@@ -45,7 +45,7 @@ class InventarisController extends Controller
 
         $snap = Pelaporan::susun('GRK_PU', $c, $dari, $sampai);
 
-        return Inertia::render('Energi/Grk', [
+        return Inertia::render('Karbon/Inventaris', [
             'dari' => $dari->toDateString(), 'sampai' => $sampai->toDateString(),
             'r' => Pelaporan::potong($r), 'produksi' => $p,
             'intensitas' => $p['ton'] > 0 ? $r['total'] / $p['ton'] : null,
@@ -69,7 +69,7 @@ class InventarisController extends Controller
         $tahun = $request->integer('tahun') ?: now()->year;
         $b = GrkBatas::where('company_id', $c)->where('tahun', $tahun)->with('penyetuju:id,name')->first();
 
-        return Inertia::render('Energi/GrkBatas', [
+        return Inertia::render('Karbon/Batas', [
             'tahun' => $tahun,
             'batas' => $b ? [
                 'id' => $b->id, 'pendekatan' => $b->pendekatan, 'persen_ekuitas' => $b->persen_ekuitas,
@@ -163,7 +163,7 @@ class InventarisController extends Controller
         $c = $this->perusahaanAktif($request);
         $b = GrkBatas::where('company_id', $c)->where('tahun', $tahun)->first();
 
-        return Inertia::render('Energi/GrkScope3', [
+        return Inertia::render('Karbon/Scope3', [
             'tahun' => $tahun,
             'daftar' => Scope3::where('tahun', $tahun)->orderBy('kategori')->get()->map(fn (Scope3 $s) => [
                 'id' => $s->id, 'bulan' => $s->bulan, 'kategori' => $s->kategori, 'subkategori' => $s->subkategori,
@@ -219,7 +219,7 @@ class InventarisController extends Controller
 
     public function mitigasi(Request $request)
     {
-        return Inertia::render('Energi/GrkMitigasi', [
+        return Inertia::render('Karbon/Mitigasi', [
             'daftar' => Mitigasi::with(['site:id,nama', 'peluang:id,judul'])->orderByDesc('mulai')->get()->map(fn (Mitigasi $m) => [
                 'id' => $m->id, 'judul' => $m->judul, 'jenis' => $m->jenis, 'mulai' => $m->mulai?->toDateString(),
                 'selesai' => $m->selesai?->toDateString(), 'metodologi' => $m->metodologi,

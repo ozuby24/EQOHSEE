@@ -279,9 +279,14 @@ class EnergiTest extends TestCase
             'disalurkan_liter' => 1000, 'stok_akhir_liter' => 4100,
         ]);
 
-        foreach (['index','konsumsi','fuel','listrik','equipment','kpi','baseline','hemat','karbon','kalkulator','master','laporan'] as $aksi) {
+        foreach (['index','konsumsi','fuel','listrik','equipment','kpi','baseline','hemat','kalkulator','master','laporan'] as $aksi) {
             $this->tanpaNaN(
                 $this->get(route('energi.'.$aksi, $this->rentang()))->assertOk());
+        }
+
+        // Karbon kini aplikasi tersendiri; dasbor & inventarisnya ikut diperiksa di sini.
+        foreach (['karbon.index', 'karbon.grk'] as $rute) {
+            $this->tanpaNaN($this->get(route($rute, $this->rentang()))->assertOk());
         }
 
         $this->get(route('energi.equipment.show', [$truk] + $this->rentang()))
@@ -293,9 +298,23 @@ class EnergiTest extends TestCase
     {
         $this->masuk();
 
-        foreach (['index','konsumsi','fuel','listrik','equipment','kpi','baseline','hemat','karbon','kalkulator','master','laporan'] as $aksi) {
+        foreach (['index','konsumsi','fuel','listrik','equipment','kpi','baseline','hemat','kalkulator','master','laporan'] as $aksi) {
             $this->get(route('energi.'.$aksi))->assertOk();
         }
+
+        foreach (['karbon.index', 'karbon.grk', 'karbon.s3', 'karbon.batas', 'karbon.mitigasi', 'karbon.faktor.index'] as $rute) {
+            $this->get(route($rute))->assertOk();
+        }
+    }
+
+    public function test_alamat_karbon_lama_dialihkan_ke_aplikasi_karbon(): void
+    {
+        $this->masuk();
+
+        $this->get('/energi/karbon')->assertRedirect('/karbon/inventaris');
+        $this->get('/energi/grk')->assertRedirect('/karbon/inventaris');
+        $this->get('/energi/grk/scope3')->assertRedirect('/karbon/scope3');
+        $this->get('/energi/faktor')->assertRedirect('/karbon/faktor');
     }
 
     public function test_input_lapangan_menyimpan_produksi_fuel_listrik_dan_rekonsiliasi(): void

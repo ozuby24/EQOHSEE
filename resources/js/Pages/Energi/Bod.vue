@@ -13,6 +13,7 @@ import { computed, reactive, ref } from 'vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { propHalaman } from '../../halaman';
 import Kartu from '../../Components/Energi/Kartu.vue';
+import Panggung from '../../Components/Energi/Panggung.vue';
 import KartuAngka from '../../Components/Energi/KartuAngka.vue';
 import Lencana from '../../Components/Energi/Lencana.vue';
 import KartuGrafik from '../../Grafik/KartuGrafik.vue';
@@ -30,6 +31,14 @@ const TAB: Record<string, string> = {
 };
 const awalTab = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('tab');
 const tab = ref(awalTab && awalTab in TAB ? awalTab : 'ringkasan');
+const lencanaPanggung = computed(() => {
+  const l: string[] = [];
+  const merah = (props.kartu ?? []).filter((k: any) => k.rag === 'merah').length;
+  l.push(merah ? `${merah} indikator melewati target` : 'Semua indikator dalam batas');
+  if (props.peringatan?.length) l.push(`${props.peringatan.length} perlu perhatian`);
+  if (!props.mutu?.lengkap) l.push('Sebagian data belum punya faktor emisi');
+  return l;
+});
 const instruksiTerbuka = computed(() => (props.instruksi ?? []).filter((t: any) => t.status !== 'selesai' && t.status !== 'batal').length);
 
 /* ── filter ── */
@@ -164,13 +173,11 @@ const TD = 'px-5 py-2';
       </div>
     </form>
 
-    <p class="text-[11.5px] text-stone-500">
-      {{ tgl(props.filter.dari) }} – {{ tgl(props.filter.sampai) }} ·
-      {{ persen(props.mutu.persen_terverifikasi, 0) }} data terverifikasi · data terakhir {{ tgl(props.mutu.terakhir) }}
-      <span v-if="!props.mutu.lengkap" class="text-amber-700"> · sebagian data belum punya faktor emisi</span>
-    </p>
+    <Panggung tema="energi" judul="Control Tower energi & karbon"
+              :sub="`${tgl(props.filter.dari)} – ${tgl(props.filter.sampai)} · ${persen(props.mutu.persen_terverifikasi, 0)} data terverifikasi · data terakhir ${tgl(props.mutu.terakhir)}`"
+              :lencana="lencanaPanggung" />
 
-    <div class="ubin-kisi ubin-kisi-lebar">
+    <div class="ka-kisi">
       <KartuAngka v-for="k in props.kartu" :key="k.kode" :label="k.label" :nilai="k.nilai" :satuan="k.satuan"
                   :desimal="desimal(k)" :rag="k.rag" :arah="k.arah" :catatan="k.catatan" />
     </div>
@@ -184,7 +191,7 @@ const TD = 'px-5 py-2';
     <!-- ═══ Ringkasan ═══ -->
     <template v-if="tab === 'ringkasan'">
       <section class="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-        <KartuGrafik judul="Tren bulanan" :catatan="props.tren.proyeksi ? `Proyeksi akhir tahun ${n(props.tren.proyeksi.tco2e, 0)} ± ${n(props.tren.proyeksi.pita, 0)} tCO₂e` : null" :angka="SATUAN[metrik]">
+        <KartuGrafik judul="Tren bulanan" :catatan="props.tren.proyeksi ? `Bulan berjalan belum penuh · proyeksi akhir tahun ${n(props.tren.proyeksi.tco2e, 0)} ± ${n(props.tren.proyeksi.pita, 0)} tCO₂e` : 'Bulan berjalan belum penuh'" :angka="SATUAN[metrik]">
           <div class="flex gap-1.5 mb-2" role="group" aria-label="Pilih metrik tren">
             <button v-for="(l, k) in METRIK" :key="k" type="button" class="eq-saring" :class="{ aktif: metrik === k }" @click="metrik = k as any">{{ l }}</button>
           </div>
@@ -195,7 +202,7 @@ const TD = 'px-5 py-2';
           </template>
         </KartuGrafik>
 
-        <Kartu judul="Perlu perhatian" rapat>
+        <Kartu judul="Perlu perhatian" ikon="bell-ring" warna="mawar" rapat>
           <template #aksi><span class="text-[11px] text-stone-400">{{ props.peringatan?.length ?? 0 }}</span></template>
           <ul class="divide-y divide-stone-100 max-h-[340px] overflow-y-auto border-t border-stone-100">
             <li v-for="[i, p] in Object.entries((props.peringatan ?? {}) as Record<string, any>)" :key="i" class="px-5 py-2.5 flex items-start gap-2.5">
@@ -222,7 +229,7 @@ const TD = 'px-5 py-2';
 
     <!-- ═══ Kepatuhan & target ═══ -->
     <template v-else-if="tab === 'kepatuhan'">
-      <Kartu judul="Kewajiban per perusahaan" rapat>
+      <Kartu judul="Kewajiban per perusahaan" ikon="calendar-clock" warna="biru" rapat>
         <template #aksi><Link href="/energi/kalender" class="eq-tautan">Kalender</Link></template>
         <div class="overflow-x-auto">
           <table class="w-full text-[11.5px]">
@@ -246,7 +253,7 @@ const TD = 'px-5 py-2';
         </div>
       </Kartu>
 
-      <Kartu judul="Target tahunan menunggu persetujuan">
+      <Kartu judul="Target tahunan menunggu persetujuan" ikon="target" warna="hijau">
         <article v-for="b in props.usulanTarget" :key="b.id" class="flex flex-wrap items-center justify-between gap-3 py-3 border-t border-stone-100 first:border-0 first:pt-0">
           <div class="min-w-0">
             <p class="text-[12.5px] font-semibold text-cam-ink">{{ b.tahun }} · {{ n(b.baseline_gj_ton, 4) }} → {{ n(b.target_gj_ton, 4) }} GJ/ton<template v-if="b.target_tco2e_ton"> · {{ n(b.target_tco2e_ton, 5) }} tCO₂e/ton</template></p>
@@ -264,7 +271,7 @@ const TD = 'px-5 py-2';
     <!-- ═══ Inisiatif & karbon ═══ -->
     <template v-else-if="tab === 'inisiatif'">
       <section class="grid gap-4 xl:grid-cols-2">
-        <Kartu judul="Inisiatif penghematan" rapat>
+        <Kartu judul="Inisiatif penghematan" ikon="trending-down" warna="hijau" rapat>
           <table class="w-full text-[12px]">
             <thead><tr class="text-left text-stone-400 border-y border-stone-200 bg-stone-50/70"><th :class="TH">Status</th><th class="px-2 py-2 font-semibold text-right">Jml</th><th class="px-2 py-2 font-semibold text-right">CAPEX</th><th class="px-2 py-2 font-semibold text-right">Rencana t/thn</th><th class="pl-2 pr-5 py-2 font-semibold text-right">Terukur t/thn</th></tr></thead>
             <tbody><tr v-for="s in props.portofolio.per_status.filter((x: any) => x.jumlah)" :key="s.status" class="border-b border-stone-100">
@@ -280,7 +287,7 @@ const TD = 'px-5 py-2';
           </ul>
         </Kartu>
 
-        <Kartu judul="Biaya karbon bila dikenakan" :ket="`${n(props.ringkas.total, 1)} tCO₂e (Scope 1 + 2)`" rapat>
+        <Kartu judul="Biaya karbon bila dikenakan" ikon="coins" warna="ungu" :ket="`${n(props.ringkas.total, 1)} tCO₂e (Scope 1 + 2)`" rapat>
           <table class="w-full text-[12px]">
             <thead><tr class="text-left text-stone-400 border-y border-stone-200 bg-stone-50/70"><th :class="TH">Skenario</th><th class="px-2 py-2 font-semibold text-right">Harga</th><th :class="TH" class="text-right">Biaya</th></tr></thead>
             <tbody><tr v-for="e in props.eksposur" :key="e.skenario" class="border-b border-stone-100">
@@ -304,7 +311,7 @@ const TD = 'px-5 py-2';
           </template>
         </KartuGrafik>
 
-        <Kartu judul="Simulasi" ket="Tidak menyimpan apa pun.">
+        <Kartu judul="Simulasi" ikon="calculator" warna="langit" ket="Tidak menyimpan apa pun.">
           <form class="grid gap-2 grid-cols-2 sm:grid-cols-4" @submit.prevent="simulasi">
             <label class="text-[11px] font-semibold text-stone-500">Produksi ±%<input v-model="sim.produksi" type="number" step="any" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"></label>
             <label class="text-[11px] font-semibold text-stone-500">L/BCM ±%<input v-model="sim.l_bcm" type="number" step="any" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"></label>
@@ -333,7 +340,7 @@ const TD = 'px-5 py-2';
 
     <!-- ═══ Telusur data ═══ -->
     <template v-else-if="tab === 'telusur'">
-      <Kartu judul="Telusur angka" rapat>
+      <Kartu judul="Telusur angka" ikon="search-check" warna="biru" rapat>
         <nav class="flex flex-wrap items-center gap-1 text-[11.5px] px-5 pb-3" aria-label="Jejak telusur">
           <template v-for="(j, i) in jejak" :key="i">
             <button type="button" class="font-semibold" :class="i === jejak.length - 1 ? 'text-cam-ink' : 'text-cam-lime-deep hover:underline'" @click="naik(i)">{{ j.label }}</button>
@@ -360,7 +367,7 @@ const TD = 'px-5 py-2';
         <p v-if="!simpulKini.anak?.length" class="eq-kosong eq-kosong-kecil">Tidak ada data.</p>
       </Kartu>
 
-      <Kartu v-if="props.benchmark?.length" judul="Perbandingan antarperusahaan" rapat>
+      <Kartu v-if="props.benchmark?.length" judul="Perbandingan antarperusahaan" ikon="chart-column" warna="amber" rapat>
         <table class="w-full text-[12px]">
           <thead><tr class="text-left text-stone-400 border-y border-stone-200 bg-stone-50/70"><th :class="TH">Perusahaan</th><th :class="TH" class="text-right">GJ</th><th :class="TH" class="text-right">GJ/ton</th><th :class="TH" class="text-right">tCO₂e</th><th :class="TH" class="text-right">tCO₂e/ton</th></tr></thead>
           <tbody><tr v-for="b in props.benchmark" :key="b.id" class="border-b border-stone-100 last:border-0"><td :class="TD" class="font-semibold">{{ b.nama }}</td><td :class="TD" class="text-right num">{{ ringkas(b.gj) }}</td><td :class="TD" class="text-right num">{{ n(b.gj_ton, 4) }}</td><td :class="TD" class="text-right num">{{ ringkas(b.tco2e) }}</td><td :class="TD" class="text-right num">{{ n(b.tco2e_ton, 5) }}</td></tr></tbody>
@@ -370,7 +377,7 @@ const TD = 'px-5 py-2';
 
     <!-- ═══ Instruksi ═══ -->
     <template v-else>
-      <Kartu judul="Instruksi direksi" rapat>
+      <Kartu judul="Instruksi direksi" ikon="clipboard-check" warna="oranye" rapat>
         <table class="w-full text-[12px]">
           <thead><tr class="text-left text-stone-400 border-y border-stone-200 bg-stone-50/70"><th :class="TH">Instruksi</th><th :class="TH">PIC</th><th :class="TH">Tenggat</th><th :class="TH">Status</th></tr></thead>
           <tbody>
@@ -389,7 +396,7 @@ const TD = 'px-5 py-2';
         <p v-if="!props.instruksi?.length" class="eq-kosong eq-kosong-kecil">Belum ada instruksi.</p>
       </Kartu>
 
-      <Kartu v-if="props.boleh.instruksi" judul="Instruksi baru">
+      <Kartu v-if="props.boleh.instruksi" judul="Instruksi baru" ikon="clipboard-check" warna="oranye">
         <form class="grid gap-2 sm:grid-cols-4" @submit.prevent="kirimInstruksi">
           <label class="text-[11px] font-semibold text-stone-500 sm:col-span-2">Judul<input v-model="instruksi.judul" required maxlength="190" class="block w-full mt-1 rounded-lg border-stone-200 text-[12px]"></label>
           <label class="text-[11px] font-semibold text-stone-500">PIC

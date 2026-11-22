@@ -148,15 +148,9 @@ final class RuteInertia
         'energi.kpi',
         'energi.baseline',
         'energi.hemat',
-        'energi.karbon',
         'energi.kalkulator',
         'energi.laporan',
         'energi.master',
-        'energi.faktor.index',
-        'energi.grk.index',
-        'energi.grk.batas',
-        'energi.grk.s3',
-        'energi.grk.mitigasi',
         'energi.me.index',
         'energi.me.personel',
         'energi.me.program',
@@ -169,6 +163,14 @@ final class RuteInertia
         'energi.kalender',
         'energi.bod.index',
         'energi.bod.layar',
+
+        /* Carbon Management */
+        'karbon.index',
+        'karbon.grk',
+        'karbon.batas',
+        'karbon.s3',
+        'karbon.mitigasi',
+        'karbon.faktor.index',
 
         /* Konservasi Minerba */
         'konservasi.index',
