@@ -496,22 +496,24 @@ final class Menu
           ['Fuel Management',    'energi.fuel',     'energi/bahan-bakar'],
           ['Electricity',        'energi.listrik',  'energi/listrik'],
         ],
+        /* Karbon diletakkan tepat sesudah Pantau, dan butir utamanya
+           memakai nama lama "Carbon & Emission": pengguna mencarinya
+           dengan nama itu, dan grup yang jatuh di bawah lipatan bilah
+           samping terbaca sebagai fitur yang hilang. Alamat lama
+           /energi/karbon ikut menandai butir ini. */
+        'Karbon & GRK' => [
+          ['Carbon & Emission',   'energi.grk.index',    ['energi/grk', 'energi/karbon']],
+          ['Batas & Tahun Dasar', 'energi.grk.batas',    'energi/grk/batas'],
+          ['Scope 3',             'energi.grk.s3',       'energi/grk/scope3'],
+          ['Aksi Mitigasi',       'energi.grk.mitigasi', 'energi/grk/mitigasi'],
+          ['Registri Faktor',     'energi.faktor.index', 'energi/faktor*'],
+        ],
         'Kinerja' => [
           ['Equipment Performance','energi.equipment','energi/alat*'],
           ['Energy KPI',           'energi.kpi',      'energi/kpi'],
           ['Baseline & Target',    'energi.baseline', 'energi/baseline'],
           ['EnPI & EnB',           'energi.enpi',     'energi/enpi'],
           ['Significant Energy Use','energi.seu',     'energi/seu'],
-        ],
-        /* Manajemen Energi & Karbon (PRD/FSD Energi-Karbon). Halaman
-           Karbon lama kini menampilkan inventarisasi GRK, jadi alamat
-           lamanya ikut menandai butir ini. */
-        'Karbon & GRK' => [
-          ['Inventarisasi GRK',   'energi.grk.index',    ['energi/grk', 'energi/karbon']],
-          ['Batas & Tahun Dasar', 'energi.grk.batas',    'energi/grk/batas'],
-          ['Scope 3',             'energi.grk.s3',       'energi/grk/scope3'],
-          ['Aksi Mitigasi',       'energi.grk.mitigasi', 'energi/grk/mitigasi'],
-          ['Registri Faktor',     'energi.faktor.index', 'energi/faktor*'],
         ],
         'Manajemen Energi' => [
           ['Kewajiban & Ambang',  'energi.me.index',     'energi/manajemen'],

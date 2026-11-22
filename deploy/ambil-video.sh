@@ -56,7 +56,7 @@ PETA=(
   "1KFqCcjOlVotqFGNtcnGffsdOVHG12--f|galeri/quality.mp4|QUALITY (1)"
   "1I6FgpTb70q6ONGi3rwQ2B6UrDQouSfs9|galeri/safety.mp4|QUALITY (2) — (?) diduga SAFETY"
   "13BjNDH9MiFXkunbppbck4iG_-NC_v2BA|galeri/environment.mp4|EBT — (?) diduga ENVIRONMENT"
-  "1XL0_GBQgzHuwh7Nbl7Zxyw_Eb2G3ZpyN|galeri/energi.mp4|ENERGY MINING — belum dipakai halaman mana pun"
+  "1XL0_GBQgzHuwh7Nbl7Zxyw_Eb2G3ZpyN|galeri/energi.mp4|ENERGY MINING — kartu galeri Energi & Karbon"
 )
 
 unduh() {   # $1 = id, $2 = keluaran
@@ -136,6 +136,21 @@ for baris in "${PETA[@]}"; do
   else
     cp "$mentah" "$TUJUAN/$tujuan"
     printf '      %s\n' "$(du -h "$TUJUAN/$tujuan" | cut -f1)"
+  fi
+
+  # Kartu galeri memajang gambar diamnya sebelum diputar. Gambar
+  # galeri/energi.jpg semula diambil dari foto jalan angkut, bukan dari
+  # rekaman ini — tanpa langkah ini kartunya memajang satu adegan lalu
+  # memutar adegan lain. Bingkai detik ketiga dipakai sebagai gantinya.
+  if [[ "$tujuan" == galeri/energi.mp4 ]] && command -v ffmpeg >/dev/null; then
+    poster="$TUJUAN/${tujuan%.mp4}.jpg"
+    if ffmpeg -y -loglevel error -ss 3 -i "$TUJUAN/$tujuan" -frames:v 1 \
+         -vf "scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720" -q:v 4 "$poster.baru"; then
+      mv "$poster.baru" "$poster"
+      printf '      gambar diam → %s\n' "${tujuan%.mp4}.jpg"
+    else
+      rm -f "$poster.baru"
+    fi
   fi
 done
 

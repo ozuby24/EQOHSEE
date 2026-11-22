@@ -438,6 +438,15 @@ button.ld-galeri-foto:hover img { transform: scale(1.05); }
 .ld-putar i { width: 20px; height: 20px; border-radius: 50%; background: var(--ld-aksen); color: var(--ld-hitam); display: grid; place-items: center; }
 .ld-putar svg { width: 10px; height: 10px; margin-left: 1px; }
 .ld-galeri figcaption { display: flex; gap: 14px; margin-top: 14px; }
+/* Kartu sorotan selebar baris: foto lebih pipih supaya tidak memakan
+   satu layar penuh, dan berlabuh agak ke tengah — subjek foto lebar
+   jarang berada di sepertiga atasnya. Di layar sempit kembali 3∶2. */
+.ld-galeri-sorot { grid-column: 1 / -1; }
+.ld-galeri-sorot .ld-galeri-foto { aspect-ratio: 21 / 8; }
+.ld-galeri-sorot .ld-galeri-foto img { height: 118%; object-position: 50% 55%; }
+@media (max-width: 720px) { .ld-galeri-sorot .ld-galeri-foto { aspect-ratio: 3 / 2; } }
+.ld-baru { display: inline-block; margin-left: 10px; padding: 2px 9px; border-radius: 999px; font-style: normal;
+  font-size: 11.5px; font-weight: 700; vertical-align: 2px; background: var(--ld-aksen); color: var(--ld-hitam); }
 .ld-galeri figcaption > .ld-mono { font-size: 12px; font-weight: 600; color: var(--ld-redup); flex: none; padding-top: 3px; }
 .ld-galeri figcaption b { display: block; font-size: 16px; font-weight: 700; color: var(--ld-hitam); }
 .ld-galeri figcaption small { display: block; font-size: 14.5px; line-height: 1.5; color: var(--ld-redup); margin-top: 3px; }

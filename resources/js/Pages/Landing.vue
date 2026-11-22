@@ -36,7 +36,7 @@ type Produk = { id: number; nama: string; ket?: string | null; harga: number; ma
 
 const props = defineProps<{
   hero: { video: string | null; poster: string | null };
-  galeri: { judul: string; ket: string; aspek: string; gambarUrl: string | null; videoUrl: string | null }[];
+  galeri: { judul: string; ket: string; aspek: string; gambarUrl: string | null; videoUrl: string | null; sorot?: boolean }[];
   klien: { nama: string; url: string }[];
   standar: { kode: string; ket: string }[];
   elemenSmkp: { kode: string; nama: string; bobot: number; modul: string }[];
@@ -638,7 +638,7 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
             <p class="ld-lead" style="max-width:440px;font-size:16px">Dari inspeksi harian sampai pemantauan energi dan reklamasi.</p>
           </div>
           <div class="ld-galeri">
-            <figure v-for="(g, i) in galeri" :key="g.judul" class="ld-muncul">
+            <figure v-for="(g, i) in galeri" :key="g.judul" class="ld-muncul" :class="{ 'ld-galeri-sorot': g.sorot }">
               <component :is="g.videoUrl ? 'button' : 'div'" class="ld-galeri-foto"
                          :type="g.videoUrl ? 'button' : undefined"
                          :aria-label="g.videoUrl ? `Putar video ${g.judul}` : undefined"
@@ -650,7 +650,7 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
               </component>
               <figcaption>
                 <span class="ld-mono">{{ String(i + 1).padStart(2, '0') }}</span>
-                <span><b>{{ g.judul }}</b><small>{{ g.ket }}</small></span>
+                <span><b>{{ g.judul }}<em v-if="g.sorot" class="ld-baru">Modul baru</em></b><small>{{ g.ket }}</small></span>
               </figcaption>
             </figure>
           </div>

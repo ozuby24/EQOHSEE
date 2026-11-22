@@ -27,7 +27,7 @@ const perubahan = computed(() => props.dasar && props.dasar.total > 0 ? (r.value
 </script>
 
 <template>
-  <Head title="Inventarisasi GRK" />
+  <Head title="Carbon & Emission" />
   <div class="space-y-4">
     <section class="flex flex-wrap items-end justify-between gap-3">
       <form class="flex flex-wrap items-end gap-2" @submit.prevent="terapkan">

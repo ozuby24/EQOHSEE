@@ -41,14 +41,14 @@ class Pillars
         return [
             'energy' => [
                 'nama'  => 'Energy',
-                'ket'   => 'Konsumsi energi per ton produksi',
+                'ket'   => 'Energi dan emisi per ton produksi',
                 'deep'  => '#B85C00', 'warna' => '#F57C00', 'light' => '#FF9800',
                 'ikon'  => 'bolt',
-                'ringkas' => 'Mengelola konsumsi dan keandalan energi di seluruh rantai operasi tambang — dari pembangkit, distribusi, hingga alat berat di lapangan.',
+                'ringkas' => 'Mengelola konsumsi, keandalan, dan emisi energi di seluruh rantai operasi tambang — dari alat berat di lapangan sampai laporan ke regulator dan direksi.',
                 'cakupan' => [
                     ['Efisiensi bahan bakar alat berat', 'Pemantauan konsumsi per unit dan per ton produksi.'],
                     ['Keandalan kelistrikan',            'Kelayakan instalasi, proteksi, dan jadwal pemeliharaan.'],
-                    ['Jejak emisi operasi',              'Perhitungan emisi dari pemakaian energi.'],
+                    ['Emisi GRK & kepatuhan energi',     'Scope 1–3 dari faktor emisi berversi; laporan ESDM, PROPER, dan PSPK 2.'],
                 ],
                 'modul' => ['Energy Performance Center', 'Keselamatan Operasi (KO)', 'ISO & Dokumen'],
             ],

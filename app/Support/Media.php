@@ -110,6 +110,18 @@ final class Media
     public static function galeri(): array
     {
         return [
+            /* Kartu sorotan: selebar baris dan di urutan pertama. Dengan
+               tujuh kartu, sorotan inilah yang membuat sisanya genap —
+               enam kartu rata pada tiga maupun dua kolom, tanpa satu kartu
+               yatim di baris terakhir. */
+            [
+                'judul' => 'Energi & Karbon',
+                'ket'   => 'Dari konsumsi solar alat angkut sampai emisi GRK yang dilaporkan ke regulator dan direksi.',
+                'gambar'=> 'galeri/energi.jpg',
+                'video' => 'galeri/energi.mp4',
+                'aspek' => 'energy',
+                'sorot' => true,
+            ],
             [
                 'judul' => 'Inspeksi & Observasi',
                 'ket'   => 'Pemeriksaan kondisi unit dan area kerja, langsung dari perangkat.',

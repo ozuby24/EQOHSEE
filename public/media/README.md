@@ -17,9 +17,11 @@ dengan **nama yang sama persis**. Tidak ada kode yang perlu disunting.
 | `galeri/risiko.mp4` · `.jpg` | Pengamatan bahaya di lapangan |
 | `galeri/budaya.mp4` · `.jpg` | Pemakaian alat pelindung diri |
 
-Dua kartu galeri masih menunggu berkasnya — `galeri/energi.*` dan
-`galeri/lingkungan.*`. Keduanya sudah terdaftar, jadi menyalin berkasnya
-langsung memunculkan kartunya.
+Kartu **Energi & Karbon** (`galeri/energi.*`) sementara memakai foto jalan
+angkut dan klip gerak pelan dari foto itu. Rekaman aslinya, "ENERGY MINING"
+di Google Drive, terpasang dengan `bash deploy/ambil-video.sh` di server;
+skrip itu sekaligus mengganti `galeri/energi.jpg` dengan bingkai dari
+rekamannya supaya gambar diam dan videonya adegan yang sama.
 
 ## Hero
 
@@ -46,8 +48,8 @@ Semua di folder `galeri/`. Gambar 16∶9, anjuran 1280×720.
 | `operasional.jpg` · `operasional.mp4` | Operasional Tambang |
 | `risiko.jpg` · `risiko.mp4` | Pengendalian Risiko |
 | `budaya.jpg` · `budaya.mp4` | Budaya Keselamatan |
-| `energi.jpg` · `energi.mp4` | Kinerja Energi |
-| `lingkungan.jpg` · `lingkungan.mp4` | Reklamasi & Lingkungan |
+| `energi.jpg` · `energi.mp4` | Energi & Karbon |
+| `environment.jpg` · `environment.mp4` | Reklamasi & Lingkungan |
 
 Berkas `.mp4` bersifat pilihan. Kartu yang punya video ditandai tombol
 putar dan videonya terbuka di jendela; kartu tanpa video tampil sebagai

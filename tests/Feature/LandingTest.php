@@ -69,7 +69,7 @@ class LandingTest extends TestCase
         foreach ([
             'Inspeksi & Observasi', 'Perencanaan & Survei Tambang',
             'Pemantauan Pajanan Kerja', 'Higiene Industri',
-            'Pengujian Mutu', 'Reklamasi & Lingkungan',
+            'Pengujian Mutu', 'Energi & Karbon', 'Reklamasi & Lingkungan',
         ] as $judul) {
             $item = collect($galeri)->firstWhere('judul', $judul);
             $this->assertNotNull($item);

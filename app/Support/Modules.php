@@ -124,7 +124,7 @@ class Modules
 
             ['nama' => 'Energy Performance Center', 'status' => 'aktif', 'pilar' => 'energy',
              'rute' => 'energi.index',
-             'ket'  => 'Konsumsi bahan bakar dan listrik, intensitas energi, baseline dan sasaran, peluang penghematan, serta jejak karbon.',
+             'ket'  => 'Konsumsi BBM dan listrik, emisi GRK Scope 1–3, kepatuhan manajemen energi PP 33/2023, laporan ESDM, PROPER, PSPK 2, serta Control Tower direksi.',
              'ikon' => 'M13 2 4 14h7l-1 8 10-13h-7l0-7Z'],
 
             ['nama' => 'Konservasi Minerba', 'status' => 'aktif', 'pilar' => 'environment',
