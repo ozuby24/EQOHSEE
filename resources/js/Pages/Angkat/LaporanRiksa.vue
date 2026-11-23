@@ -21,7 +21,7 @@ function cetak() { window.print(); }
 
 <template>
   <Head :title="`Laporan ${x.nomor}`" />
-  <div class="space-y-4 max-w-5xl">
+  <div class="space-y-4">
     <section class="lr-kepala" :class="x.putusan === 'layak' ? 'lr-hijau' : 'lr-merah'">
       <div class="min-w-0">
         <p class="text-[12px] font-bold opacity-85">{{ x.nomor }} · {{ x.jenis_label }}</p>
