@@ -132,6 +132,16 @@ class Modules
              'ket'  => 'Inventarisasi emisi GRK Scope 1–3, registri faktor emisi berversi, jalur dekarbonisasi, aksi mitigasi SRN PPI, dan biaya karbon.',
              'ikon' => 'M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z'],
 
+            ['nama' => 'Life Cycle Assessment', 'status' => 'aktif', 'pilar' => 'environment',
+             'rute' => 'lca.index',
+             'ket'  => 'Penilaian daur hidup produk ISO 14040/14044: inventori lima tahap, enam kategori dampak, kualitas data, hotspot, dan simulasi dekarbonisasi.',
+             'ikon' => 'M21 12a9 9 0 0 1-15.4 6.4L3 16M3 12a9 9 0 0 1 15.4-6.4L21 8M21 3v5h-5M3 21v-5h5'],
+
+            ['nama' => 'Scaffolding Management', 'status' => 'aktif', 'pilar' => 'safety',
+             'rute' => 'perancah.index',
+             'ket'  => 'Kalkulator BoM dan beban perancah, kajian kelayakan teknis, inspeksi 16 butir, scafftag otomatis ber-QR, dan peta titik pemasangan.',
+             'ikon' => 'M5 3v18M19 3v18M5 8h14M5 14h14M5 20h14M5 14l14-6'],
+
             ['nama' => 'Konservasi Minerba', 'status' => 'aktif', 'pilar' => 'environment',
              'rute' => 'konservasi.index',
              'ket'  => 'Pemantauan produksi, recovery, kehilangan material, dilusi, stockpile, mineral ikutan, dan tindak lanjut perbaikan.',
@@ -219,6 +229,8 @@ class Modules
         'Sistem Informasi Gudang & Penyimpanan'  => 'gudang',
         'Energy Performance Center'              => 'energi',
         'Carbon Management Center'               => 'karbon',
+        'Life Cycle Assessment'                  => 'lca',
+        'Scaffolding Management'                 => 'perancah',
         'Konservasi Minerba'                     => 'konservasi',
         'Mining Engineering Hub'                 => 'meh',
         'Mine Operations & GIS'                  => 'operasi',

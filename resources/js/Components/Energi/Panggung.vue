@@ -4,14 +4,16 @@
 
   Satu pita bergradasi di bawah sampul modul: angka terpenting halaman
   dibaca lebih dulu, di atas latar yang langsung memberi tahu aplikasi
-  mana yang sedang dibuka — jingga untuk Energi, toska untuk Karbon.
+  mana yang sedang dibuka — jingga untuk Energi, toska untuk Karbon,
+  kuning-arang K3 untuk Scaffolding, hijau hutan untuk LCA.
 
   Dua lapis hiasannya sama-sama digambar di sini, tanpa berkas gambar:
   - motif garis kontur (peta topografi) — dibangkitkan dari rumus, jadi
     tiap tema mendapat bentuk yang sama tanpa satu byte unduhan pun;
-  - siluet kegiatan tambang di kaki pita: ekskavator, dump truck,
-    konveyor dan stockpile, menara listrik, panel surya, kincir angin,
-    dan cerobong — rantai energi sampai emisinya.
+  - siluet di kaki pita, berbeda per aplikasi: rantai energi tambang
+    (Energi/Karbon), perancah berdiri di depan kolom proses dan tangki
+    (Scaffolding), atau daur hidup produk dari tambang ke kapal sampai
+    kembali ke tanah (LCA).
 */
 import { computed } from 'vue';
 import Ikon from './Ikon.vue';
@@ -19,7 +21,7 @@ import Ikon from './Ikon.vue';
 type Stat = { label: string; nilai: string; satuan?: string | null; ikon?: string; catatan?: string | null; arah?: { teks: string; baik: boolean } | null };
 
 const props = withDefaults(defineProps<{
-  tema?: 'energi' | 'karbon';
+  tema?: 'energi' | 'karbon' | 'perancah' | 'lca';
   judul: string;
   sub?: string | null;
   stat?: Stat[];
@@ -51,8 +53,56 @@ const kontur = computed(() => {
       <path v-for="(d, i) in kontur" :key="i" :d="d" />
     </svg>
 
+    <!-- Garis peringatan K3 di tepi atas pita Scaffolding. -->
+    <div v-if="tema === 'perancah'" class="pg-belang" aria-hidden="true" />
+
+    <!-- Siluet perancah: tiang, ledger, bracing, plank, tangga, pekerja, kolom proses & tangki. -->
+    <svg v-if="tema === 'perancah'" class="pg-siluet" viewBox="0 0 1200 120" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <g fill="currentColor">
+        <path d="M0 110 H1200 V120 H0Z" />
+        <template v-for="x in [40, 92, 144, 196]" :key="'t' + x"><rect :x="x" y="14" width="5" height="96" /></template>
+        <template v-for="y in [22, 50, 78]" :key="'l' + y"><rect x="40" :y="y" width="161" height="4" /></template>
+        <path d="M45 76 L92 52 L94 56 L47 80Z" /><path d="M149 76 L196 52 L198 56 L151 80Z" /><path d="M97 48 L144 24 L146 28 L99 52Z" />
+        <rect x="36" y="18" width="169" height="5" rx="1" /><rect x="36" y="46" width="169" height="5" rx="1" />
+        <rect x="200" y="20" width="4" height="90" /><rect x="216" y="20" width="4" height="90" />
+        <template v-for="y in [30, 42, 54, 66, 78, 90, 102]" :key="'a' + y"><rect x="200" :y="y" width="20" height="3" /></template>
+        <circle cx="120" cy="34" r="4.5" /><path d="M114 40 h12 l2 10 h-16Z" /><rect x="115" y="50" width="4" height="10" /><rect x="121" y="50" width="4" height="10" />
+        <template v-for="x in [300, 344, 388, 432, 476]" :key="'u' + x"><rect :x="x" y="36" width="4" height="74" /></template>
+        <template v-for="y in [44, 70, 96]" :key="'v' + y"><rect x="300" :y="y" width="180" height="3" /></template>
+        <path d="M304 94 L344 72 L346 75 L306 97Z" /><path d="M392 68 L432 46 L434 49 L394 71Z" />
+        <rect x="540" y="10" width="34" height="100" rx="4" /><rect x="534" y="30" width="46" height="4" /><rect x="534" y="62" width="46" height="4" />
+        <path d="M557 10 v-8 h4 v8Z" />
+        <template v-for="x in [588, 616]" :key="'k' + x"><rect :x="x" y="24" width="4" height="86" /></template>
+        <template v-for="y in [32, 58, 84]" :key="'w' + y"><rect x="588" :y="y" width="32" height="3" /></template>
+        <path d="M660 110 V60 a50 16 0 0 1 100 0 V110Z" /><path d="M780 110 V74 a38 12 0 0 1 76 0 V110Z" />
+        <rect x="880" y="40" width="160" height="6" /><template v-for="x in [884, 924, 964, 1004, 1036]" :key="'r' + x"><rect :x="x" y="46" width="5" height="64" /></template>
+        <path d="M890 46 l34 30 v4 l-34 -30Z" /><path d="M970 46 l34 30 v4 l-34 -30Z" />
+        <path d="M1070 110 V30 h12 V110Z" /><path d="M1100 110 V58 l30 -14 l30 14 V110Z" />
+      </g>
+    </svg>
+
+    <!-- Siluet daur hidup: tambang → angkut → olah → kemas & kapal → kembali ke tanah (pohon, reklamasi). -->
+    <svg v-else-if="tema === 'lca'" class="pg-siluet" viewBox="0 0 1200 120" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <g fill="currentColor">
+        <path d="M0 106 C140 98 260 112 400 104 S640 96 800 106 S1040 114 1200 102 V120 H0Z" />
+        <path d="M20 106 L70 62 L110 82 L150 50 L210 106Z" />
+        <path d="M232 74 h80 l9 16 h-89Z" /><rect x="320" y="78" width="20" height="14" rx="3" /><rect x="228" y="90" width="116" height="7" rx="2" />
+        <circle cx="250" cy="101" r="8" /><circle cx="276" cy="101" r="8" /><circle cx="326" cy="101" r="8" />
+        <path d="M392 106 V70 l24 -12 v12 l24 -12 v12 l24 -12 V106Z" /><rect x="476" y="40" width="11" height="66" />
+        <circle cx="482" cy="30" r="7" opacity=".6" /><circle cx="494" cy="20" r="9" opacity=".4" />
+        <rect x="530" y="84" width="26" height="22" /><rect x="560" y="76" width="26" height="30" /><rect x="545" y="60" width="26" height="22" />
+        <path d="M620 92 h150 l-16 18 h-118Z" /><rect x="660" y="70" width="60" height="22" /><rect x="700" y="54" width="10" height="16" />
+        <path d="M800 70 a26 26 0 1 1 0.1 0" fill="none" stroke="currentColor" stroke-width="7" />
+        <path d="M822 58 l10 12 -14 4Z" /><path d="M778 82 l-10 -12 14 -4Z" />
+        <template v-for="(x, i) in [880, 930, 985, 1040, 1100, 1150]" :key="'p' + x">
+          <rect :x="x - 2" :y="70 - (i % 2) * 14" width="5" :height="40 + (i % 2) * 14" />
+          <circle :cx="x" :cy="62 - (i % 2) * 14" :r="18 - (i % 3) * 2" />
+        </template>
+      </g>
+    </svg>
+
     <!-- Siluet rantai kegiatan: alat gali-muat-angkut, konveyor, listrik, EBT, cerobong. -->
-    <svg class="pg-siluet" viewBox="0 0 1200 120" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <svg v-else class="pg-siluet" viewBox="0 0 1200 120" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
       <g fill="currentColor">
         <!-- tanah bergelombang -->
         <path d="M0 108 C120 100 220 112 340 106 S560 98 700 106 S960 114 1200 104 V120 H0Z" />
@@ -116,11 +166,17 @@ const kontur = computed(() => {
   box-shadow: 0 18px 40px -24px rgba(15, 23, 32, .55); }
 .pg-energi { background: linear-gradient(118deg, #7A2E00 0%, #B85C00 28%, #F57C00 64%, #FFA23A 100%); }
 .pg-karbon { background: linear-gradient(118deg, #062F2C 0%, #0B4F49 30%, #0F766E 62%, #22A699 100%); }
+.pg-perancah { background: linear-gradient(118deg, #17181C 0%, #2E2A1E 26%, #8A5A00 60%, #E3A008 88%, #F7C948 100%); }
+.pg-lca { background: linear-gradient(118deg, #052E1C 0%, #0E4D33 30%, #15803D 64%, #6BAF3A 100%); }
+.pg-belang { position: absolute; left: 0; right: 0; top: 0; height: 7px; z-index: -1;
+  background: repeating-linear-gradient(-45deg, #F7C948 0 14px, #17181C 14px 28px); opacity: .9; }
 
 .pg-kontur { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; }
 .pg-kontur path { fill: none; stroke: rgba(255, 255, 255, .16); stroke-width: 1.1; }
 .pg-siluet { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 92px; z-index: -1; color: rgba(0, 0, 0, .22); }
 .pg-karbon .pg-siluet { color: rgba(0, 20, 18, .30); }
+.pg-perancah .pg-siluet { color: rgba(10, 10, 10, .34); }
+.pg-lca .pg-siluet { color: rgba(2, 30, 16, .30); }
 
 .pg-isi { padding: 22px 24px 30px; }
 .pg-kepala { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; }
@@ -137,6 +193,8 @@ const kontur = computed(() => {
 .pg-ikon { width: 40px; height: 40px; flex: none; border-radius: 12px; display: grid; place-items: center;
   background: rgba(255, 255, 255, .95); color: #B85C00; }
 .pg-karbon .pg-ikon { color: #0F766E; }
+.pg-perancah .pg-ikon { color: #A16207; }
+.pg-lca .pg-ikon { color: #15803D; }
 .pg-label { font-size: 11.5px; font-weight: 600; color: rgba(255, 255, 255, .85); }
 .pg-nilai { font-size: 24px; font-weight: 800; line-height: 1.15; letter-spacing: -.02em; margin-top: 2px; }
 .pg-nilai small { font-size: 12px; font-weight: 700; margin-left: 5px; color: rgba(255, 255, 255, .8); letter-spacing: 0; }

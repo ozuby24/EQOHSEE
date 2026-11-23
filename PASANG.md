@@ -1,3 +1,69 @@
+# Update 19 — Aplikasi baru: Scaffolding Management & Life Cycle Assessment
+
+```bash
+# Di VPS, dari /var/www/EQOHSEE
+cp database/database.sqlite ~/cadangan-sebelum-update-19.sqlite   # pgsql: pg_dump
+bash deploy/deploy.sh          # migrate + lca:pasang + build
+php artisan pembelian:katalog  # menambah APP-PERANCAH & APP-LCA (Rp0, tidak aktif)
+php artisan demo:pasang        # opsional: data contoh kedua aplikasi
+```
+Dua migrasi baru, keduanya hanya MENAMBAH tabel: `perancah_*` (unit,
+hitung, kajian, inspeksi, tag) dan `lca_*` (faktor, studi, inventori,
+hasil, skenario, jejak). Tidak ada tabel lama yang diubah.
+
+## Scaffolding Management (`/perancah`, pilar Safety)
+Diadaptasi dari ScaffGuard Pro (OSHA 1926 Subpart L, BS EN 12811-1,
+Permenaker 01/MEN/1980) untuk tambang dan fasilitas pengolahannya.
+- **Daftarkan & Hitung**: kalkulator BoM (standard, ledger, transom,
+  bracing, plank, coupler, tangga), beban mati/hidup, beban kaki, faktor
+  keamanan, rasio H/B, tekanan tumpuan — dihitung server dan tampil
+  langsung bersama sketsa tampak depan. GPS diambil dari perangkat.
+- **Kajian kelayakan** lima kriteria: SF ≥ 4, H/B & ikatan, daya dukung
+  tumpuan, angin & desain khusus (> 15 m / kantilever wajib P.E.), dan
+  proteksi jatuh.
+- **Inspeksi 16 butir** di ponsel, tombol besar, putusan tag berubah
+  seketika: satu butir KRITIS gagal = merah.
+- **Scafftag otomatis** hijau/kuning/merah — warnanya diputuskan sistem,
+  tidak dapat dipilih tangan; hijau hanya bila kajian layak DAN inspeksi
+  lulus penuh. Berlaku 7 hari; kartu siap cetak dengan QR.
+- **Verifikasi QR tanpa masuk** di `/scafftag/{token}`: menjawab "layak
+  digunakan / tidak layak digunakan" dari tag yang BERLAKU saat dipindai.
+- **Daftar & Peta** titik pemasangan (tanpa ubin peta dari luar), ekspor
+  GeoJSON & CSV; dasbor kepatuhan inspeksi, tren 12 minggu, Pareto butir
+  gagal, zona, dan material terpasang.
+- **Penjadwal**: `perancah:kedaluwarsa` tiap jam (menit ke-7) menurunkan
+  tag yang lewat 7 hari menjadi merah. Pratinjau: `php artisan
+  perancah:kedaluwarsa --pratinjau`. Pastikan cron `schedule:run` aktif.
+
+## Life Cycle Assessment (`/lca`, pilar Environment)
+Diadaptasi dari EcoTrace LCA (ISO 14040/14044, ISO 14067) untuk produk
+tambang (batubara, nikel, emas, batu gamping).
+- **Studi** goal & scope: unit fungsional, batas sistem (cradle-to-gate /
+  grave / gate-to-gate / cradle-to-cradle), metode, alokasi, cut-off.
+- **Inventori lima tahap** (ekstraksi, angkutan, pengolahan, distribusi,
+  akhir hidup) dengan pratinjau dampak langsung, konversi satuan, t·km,
+  alokasi, konten daur ulang, dan pedigree matrix → DQR & ketidakpastian.
+- **Tarik dari Energy Performance**: solar per kategori alat, listrik,
+  genset, ANFO/emulsi, bensin, LPG — dibagi produksi periode studi.
+- **LCIA enam kategori** (GWP100, asidifikasi, eutrofikasi, kelangkaan
+  air, energi kumulatif, ozon), matriks kategori × tahap, hotspot Pareto,
+  radar profil dampak.
+- **Simulator skenario** lima tuas (PLTS, efisiensi BBM, logistik,
+  material, limbah) dengan nilai karbon Rp dan potensi EU CBAM.
+- **Tinjauan kritis ISO 14044**, alur draf → tinjauan → terverifikasi →
+  terbit, pembuat tidak dapat memverifikasi sendiri, studi terverifikasi
+  dikunci (revisi = versi baru), jejak audit.
+
+## Sesudah deploy — wajib dikerjakan orang
+1. **Cocokkan faktor LCA** di **Life Cycle Assessment → Faktor Dampak**.
+   Pustaka bawaan (`lca:pasang`) bertanda "belum dicocokkan"; faktor grid
+   per sistem kelistrikan terutama harus disamakan dengan penetapan
+   Ditjen Gatrik terbaru. Faktor yang sudah dicocokkan tidak ditimpa
+   saat `lca:pasang` dijalankan lagi.
+2. **Kapasitas tiang** di `App\Support\Perancah\Katalog::JENIS` adalah
+   nilai tipikal; samakan dengan lembar data pabrikan sistem perancah
+   yang dipakai kontraktor sebelum hasil kajian dijadikan acuan.
+
 # Update 18 — Carbon Management jadi aplikasi sendiri, tampilan Energi & Karbon diperbarui
 
 ```bash

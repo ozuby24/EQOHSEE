@@ -68,3 +68,8 @@ Schedule::command('miners:pengingat')
     ->dailyAt('07:25')
     ->timezone(\App\Support\Waktu::zona())
     ->withoutOverlapping();
+
+/* Scafftag yang lewat 7 hari tanpa inspeksi ulang diturunkan menjadi
+   merah tiap jam: perancah yang kedaluwarsa pagi hari tidak boleh tetap
+   berlabel hijau sampai tengah malam. */
+Schedule::command('perancah:kedaluwarsa')->hourlyAt(7)->withoutOverlapping();

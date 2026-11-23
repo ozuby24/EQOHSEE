@@ -551,6 +551,25 @@ final class Menu
         ],
       ],
     ],
+    /* Life Cycle Assessment (ISO 14040/14044) — jejak produk dari
+       tambang sampai pelabuhan atau pembeli: GWP, energi, air, asidifikasi,
+       eutrofikasi, ozon. Data aktivitas energinya dapat ditarik dari
+       Energy Performance, sehingga dua aplikasi membaca angka yang sama. */
+    'lca' => [
+      'label' => 'Life Cycle Assessment',
+      'semboyan' => 'Cradle to Grave, Counted',
+      'kutipan' => 'Produk yang jejaknya tidak diketahui tidak dapat diperbaiki — hanya ditebak.',
+      'icon'  => 'M21 12a9 9 0 0 1-15.4 6.4L3 16M3 12a9 9 0 0 1 15.4-6.4L21 8M21 3v5h-5M3 21v-5h5',
+      'groups' => [
+        'Pantau' => [
+          ['Dashboard',            'lca.index',   'lca'],
+          ['Studi LCA',            'lca.studi',   'lca/studi*'],
+        ],
+        'Data' => [
+          ['Faktor Dampak',        'lca.faktor',  'lca/faktor*'],
+        ],
+      ],
+    ],
     'konservasi' => [
       'label' => 'Konservasi Minerba',
       'semboyan' => 'Take Only What Lasts',
@@ -693,6 +712,24 @@ final class Menu
           ['Daftar Periksa', 'izin.syarat', 'izin-kerja/syarat*'],
           ['Ambang Gas',     'izin.ambang', 'izin-kerja/ambang-gas*'],
           ['Laporan Izin',   'izin.cetak',  'izin-kerja/cetak'],
+        ],
+      ],
+    ],
+    /* Scaffolding — perancah dari rancangan sampai dibongkar. Warna tag
+       diputuskan sistem dari kajian kelayakan dan inspeksi; tidak ada
+       jalan pintas ke hijau. */
+    'perancah' => [
+      'label' => 'Scaffolding Management',
+      'semboyan' => 'Tagged Before Trusted',
+      'kutipan' => 'Perancah yang belum diinspeksi belum layak digunakan.',
+      'icon'  => 'M5 3v18M19 3v18M5 8h14M5 14h14M5 20h14M5 14l14-6',
+      'groups' => [
+        'Pantau' => [
+          ['Dashboard',            'perancah.index', 'perancah'],
+          ['Daftar & Peta',        'perancah.peta',  'perancah/peta'],
+        ],
+        'Lapangan' => [
+          ['Daftarkan & Hitung',   'perancah.baru',  'perancah/baru'],
         ],
       ],
     ],
@@ -877,6 +914,8 @@ final class Menu
         [['dokumen*', 'iso*', 'kepatuhan*', 'struktur-dokumen', 'daftar-induk'], 'dokumen'],
         [['energi*'],                              'energi'],
         [['karbon*'],                              'karbon'],
+        [['lca*'],                                 'lca'],
+        [['perancah*'],                            'perancah'],
         [['konservasi*'],                          'konservasi'],
         [['operasi-tambang*'],                     'operasi'],
         [['penirisan*'],                           'air'],

@@ -116,6 +116,8 @@ use Illuminate\Support\Facades\Storage;
  */
 final class DataContoh
 {
+    use ContohPerancahLca;
+
     /**
      * Tabel yang dibersihkan, anak lebih dulu daripada induknya.
      *
@@ -124,6 +126,13 @@ final class DataContoh
      * terbuang, separuh tertinggal.
      */
     private const URUTAN_HAPUS = [
+        /* Scaffolding: tag → inspeksi → kajian → hitungan → unit. LCA: jejak,
+           skenario, hasil, inventori, studi, lalu faktor KHUSUS perusahaan
+           (pustaka bersama ber-company_id NULL tidak tersentuh). */
+        \App\Models\Perancah\Tag::class, \App\Models\Perancah\Inspeksi::class, \App\Models\Perancah\Kajian::class,
+        \App\Models\Perancah\Hitung::class, \App\Models\Perancah\Unit::class,
+        \App\Models\Lca\Jejak::class, \App\Models\Lca\Skenario::class, \App\Models\Lca\Hasil::class,
+        \App\Models\Lca\Inventori::class, \App\Models\Lca\Studi::class, \App\Models\Lca\Faktor::class,
         AngkutMuatan::class, AngkutRegu::class, AngkutAlat::class,
         BiayaRealisasi::class, BiayaAnggaran::class, BiayaAkun::class,
         IzinGas::class, IzinPeriksa::class, IzinKerja::class,
@@ -1054,6 +1063,11 @@ final class DataContoh
             'Pembelian'      => $this->pembelian(),
             'Pesan'          => $this->pesan(),
             'Catatan'        => $this->catatan(),
+
+            /* Scaffolding dan LCA paling akhir: LCA menarik inventorinya dari
+               catatan Energy Performance yang sudah dimuat di atas. */
+            'Scaffolding'    => $this->perancah(),
+            'LCA'            => $this->lca(),
         ]);
     }
 

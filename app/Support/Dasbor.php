@@ -379,6 +379,8 @@ final class Dasbor
         'angkutan'   => [AngkutMuatan::class,              'Angkutan',           'angkutan.muatan',   false],
         'energi'     => [EnergyFuelLog::class,             'Energi',             'energi.index',      false],
         'karbon'     => [\App\Models\Energi\Scope3::class, 'Karbon',            'karbon.index',      false],
+        'lca'        => [\App\Models\Lca\Studi::class,     'LCA',               'lca.index',         false],
+        'perancah'   => [\App\Models\Perancah\Inspeksi::class, 'Scaffolding',    'perancah.index',    false],
         'meh'        => [Procedure::class,                 'Mining Engineering', 'meh.index',         false],
     ];
 
