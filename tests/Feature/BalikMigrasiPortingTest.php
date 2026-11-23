@@ -31,6 +31,8 @@ class BalikMigrasiPortingTest extends TestCase
         '2026_11_16_100002_create_audit_akses_table', '2026_11_16_100003_smkp_audit_perusahaan_grup',
         // Update 17: Manajemen Energi & Karbon — fondasi data dan tata kelola.
         '2026_11_21_000001_energi_karbon_fondasi', '2026_11_21_000002_energi_karbon_tata_kelola',
+        // Update 19: Scaffolding Management dan Life Cycle Assessment.
+        '2026_11_23_000001_perancah', '2026_11_23_000002_lca',
     ];
 
     public function test_migrasi_porting_dapat_dibalik_lalu_dijalankan_ulang(): void
@@ -53,5 +55,7 @@ class BalikMigrasiPortingTest extends TestCase
         $this->assertTrue(Schema::hasTable('energi_laporan'));
         $this->assertTrue(Schema::hasColumn('energy_fuel_logs', 'persen_fame'));
         $this->assertTrue(Schema::hasColumn('users', 'energi_role'));
+        $this->assertTrue(Schema::hasTable('perancah_tag'));
+        $this->assertTrue(Schema::hasTable('lca_inventori'));
     }
 }

@@ -71,6 +71,14 @@ class CakupanDataContohTest extends TestCase
         'jejak_akses'  => 'jejak masuk; terisi sendiri saat dipakai',
         'energi_jejak' => 'jejak perubahan data energi; terisi sendiri saat pengguna mengubah baris',
 
+        /* Pustaka faktor dampak LCA bawaan (company_id NULL) dipasang
+           `lca:pasang` dan dipakai bersama seluruh perusahaan, seperti
+           kompetensi_jenis: membuangnya bersama data contoh satu
+           perusahaan mengosongkan daftar pilih perusahaan lain. Faktor
+           khusus perusahaan yang dibuat data contoh tetap ikut terbuang
+           lewat URUTAN_HAPUS. */
+        'lca_faktor' => 'pustaka faktor dampak bersama, dipasang lca:pasang',
+
         /* Master 51 jenis kompetensi berasal dari SK Dirjen
            185.K/37.04/DJB/2019 — regulasi nasional, sama bagi setiap
            perusahaan. Ia ditanam sekali dan SENGAJA tidak ikut terbuang

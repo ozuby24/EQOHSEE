@@ -172,6 +172,16 @@ final class RuteInertia
         'karbon.mitigasi',
         'karbon.faktor.index',
 
+        /* Life Cycle Assessment */
+        'lca.index',
+        'lca.studi',
+        'lca.faktor',
+
+        /* Scaffolding Management */
+        'perancah.index',
+        'perancah.peta',
+        'perancah.baru',
+
         /* Konservasi Minerba */
         'konservasi.index',
         'konservasi.data',

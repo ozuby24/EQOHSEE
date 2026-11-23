@@ -70,6 +70,10 @@ Route::get('verifikasi/{kode}', [\App\Http\Controllers\CertificateController::cl
    `v/{kode}` Safe Track: tanpa login, 30 per menit, kode HMAC. */
 Route::get('v/{kode}', [\App\Http\Controllers\Miners\VerifikasiController::class, 'kartu'])
     ->middleware('throttle:30,1')->where('kode', '[A-Za-z0-9.]{3,60}')->name('verifikasi.kartu');
+/* Verifikasi scafftag dari QR di kaki tangga perancah — tanpa login,
+   token acak (bukan kode tag yang berurutan), dibatasi 30 per menit. */
+Route::get('scafftag/{token}', \App\Http\Controllers\Perancah\VerifikasiController::class)
+    ->middleware('throttle:30,1')->where('token', '[a-z0-9]{32}')->name('perancah.verifikasi');
 Route::get('verifikasi-lingkungan/{kode}', [\App\Http\Controllers\SertifikatLingkunganController::class, 'verifikasi'])
     ->middleware('throttle:30,1')->name('audit-lingkungan.verifikasi');
 
@@ -1272,6 +1276,53 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('api/kalkulator', [EnergiApi::class, 'kalkulator'])->name('api.kalkulator');
         Route::get('api/faktor', [EnergiApi::class, 'faktor'])->name('api.faktor');
         Route::get('api/agregat', [EnergiApi::class, 'agregat'])->name('api.agregat');
+    });
+
+    /* ================= Life Cycle Assessment =================
+       ISO 14040/14044: goal & scope, inventori lima tahap, LCIA enam
+       kategori, hotspot, skenario, tinjauan kritis & versi. */
+    Route::prefix('lca')->name('lca.')->group(function () {
+        $L = \App\Http\Controllers\Lca\LcaController::class;
+        Route::get('/',                                  [$L, 'index'])->name('index');
+        Route::get('studi',                              [$L, 'studi'])->name('studi');
+        Route::post('studi',                             [$L, 'simpan'])->name('studi.simpan');
+        Route::get('faktor',                             [$L, 'faktor'])->name('faktor');
+        Route::post('faktor',                            [$L, 'simpanFaktor'])->name('faktor.simpan');
+        Route::post('faktor/{faktor}/cocok',             [$L, 'cocokkanFaktor'])->whereNumber('faktor')->name('faktor.cocok');
+        Route::get('studi/{studi}',                      [$L, 'rincian'])->whereNumber('studi')->name('rincian');
+        Route::put('studi/{studi}',                      [$L, 'perbarui'])->whereNumber('studi')->name('perbarui');
+        Route::post('studi/{studi}/pratinjau',           [$L, 'pratinjau'])->whereNumber('studi')->name('pratinjau');
+        Route::post('studi/{studi}/inventori',           [$L, 'simpanItem'])->whereNumber('studi')->name('item.simpan');
+        Route::delete('studi/{studi}/inventori/{item}',  [$L, 'hapusItem'])->whereNumber(['studi', 'item'])->name('item.hapus');
+        Route::post('studi/{studi}/impor-energi',        [$L, 'imporEnergi'])->whereNumber('studi')->name('impor');
+        Route::post('studi/{studi}/simulasi',            [$L, 'simulasi'])->whereNumber('studi')->name('simulasi');
+        Route::post('studi/{studi}/skenario',            [$L, 'simpanSkenario'])->whereNumber('studi')->name('skenario.simpan');
+        Route::delete('studi/{studi}/skenario/{skenario}', [$L, 'hapusSkenario'])->whereNumber(['studi', 'skenario'])->name('skenario.hapus');
+        Route::post('studi/{studi}/status',              [$L, 'status'])->whereNumber('studi')->name('status');
+        Route::post('studi/{studi}/versi',               [$L, 'versi'])->whereNumber('studi')->name('versi');
+        Route::get('studi/{studi}/ekspor/csv',           [$L, 'csv'])->whereNumber('studi')->name('csv');
+    });
+
+    /* ================= Scaffolding Management =================
+       Perancah dari rancangan sampai dibongkar: kalkulator BoM & beban,
+       kajian kelayakan, inspeksi 16 butir, scafftag otomatis, peta. */
+    Route::prefix('perancah')->name('perancah.')->group(function () {
+        $P = \App\Http\Controllers\Perancah\PerancahController::class;
+        Route::get('/',                 [$P, 'index'])->name('index');
+        Route::get('peta',              [$P, 'peta'])->name('peta');
+        Route::get('baru',              [$P, 'baru'])->name('baru');
+        Route::post('hitung',           [$P, 'hitung'])->name('hitung');
+        Route::get('ekspor/geojson',    [$P, 'geojson'])->name('geojson');
+        Route::get('ekspor/csv',        [$P, 'csv'])->name('csv');
+        Route::get('tag/{tag}',         [$P, 'tag'])->name('tag');
+        Route::post('/',                [$P, 'simpan'])->name('simpan');
+        Route::get('{unit}',            [$P, 'rincian'])->whereNumber('unit')->name('rincian');
+        Route::get('{unit}/ubah',       [$P, 'ubah'])->whereNumber('unit')->name('ubah');
+        Route::put('{unit}',            [$P, 'perbarui'])->whereNumber('unit')->name('perbarui');
+        Route::post('{unit}/kaji',      [$P, 'kajiUlang'])->whereNumber('unit')->name('kaji');
+        Route::post('{unit}/bongkar',   [$P, 'bongkar'])->whereNumber('unit')->name('bongkar');
+        Route::get('{unit}/inspeksi',   [$P, 'formInspeksi'])->whereNumber('unit')->name('inspeksi');
+        Route::post('{unit}/inspeksi',  [$P, 'simpanInspeksi'])->whereNumber('unit')->name('inspeksi.simpan');
     });
 
     /* ================= Carbon Management ================= */

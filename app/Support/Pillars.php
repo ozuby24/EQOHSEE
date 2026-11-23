@@ -107,7 +107,7 @@ class Pillars
                     ['Tingkat kematangan',        '194 item penilaian, dari Dasar sampai Resilient.'],
                 ],
                 'modul' => ['Hazard Report & Inspeksi', 'Safety Maturity Level', 'SMKP Audit',
-                            'Pemantauan Perusahaan Jasa (PJP)'],
+                            'Pemantauan Perusahaan Jasa (PJP)', 'Scaffolding Management'],
             ],
 
             'environment' => [
@@ -121,7 +121,7 @@ class Pillars
                     ['Kualitas air & udara',  'Pemantauan titik penaatan secara berkala.'],
                     ['Reklamasi lahan',       'Rencana dan realisasi pemulihan area terganggu.'],
                 ],
-                'modul' => ['Carbon Management Center', 'Sistem Informasi Gudang & Penyimpanan', 'ISO & Dokumen', 'SMKP Audit'],
+                'modul' => ['Carbon Management Center', 'Life Cycle Assessment', 'Sistem Informasi Gudang & Penyimpanan', 'ISO & Dokumen', 'SMKP Audit'],
             ],
 
             'engineering' => [
@@ -135,7 +135,7 @@ class Pillars
                     ['Perawatan terencana',    'Jadwal preventif dengan pengingat jatuh tempo.'],
                     ['Kajian teknis & pengaman','Analisis kelayakan dan kelengkapan alat pengaman.'],
                 ],
-                'modul' => ['Keselamatan Operasi (KO)'],
+                'modul' => ['Keselamatan Operasi (KO)', 'Scaffolding Management'],
             ],
 
             // Di luar akronim: kewajiban tersendiri pada kaidah teknik

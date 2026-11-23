@@ -630,6 +630,12 @@ php artisan roster:pasang
 echo "==> Installing energy & emission factors"
 php artisan energi:pasang
 
+# Pustaka faktor dampak LCA bersama (solar, listrik grid per wilayah,
+# peledak, transportasi, kemasan, limbah, lahan). Faktor yang sudah
+# dicocokkan orang tidak ditimpa.
+echo "==> Installing LCA impact factors"
+php artisan lca:pasang
+
 # Katalog jual — paket website dan tiap aplikasi di dalamnya.
 #
 # Dijalankan tiap deploy dengan alasan yang sama: modul baru yang

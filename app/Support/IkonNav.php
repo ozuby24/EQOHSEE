@@ -99,6 +99,8 @@ final class IkonNav
         'energy' => 'energi', 'energi' => 'energi', 'listrik' => 'energi',
         'carbon' => 'awan', 'karbon' => 'awan', 'emisi' => 'awan', 'emission' => 'awan', 'scope' => 'awan',
         'mitigasi' => 'daun', 'dekarbonisasi' => 'daun',
+        'studi lca' => 'daun', 'faktor dampak' => 'buku',
+        'daftar & peta' => 'kotak', 'daftarkan & hitung' => 'kalkulator',
         'fleet' => 'armada', 'armada' => 'armada', 'equipment' => 'armada',
         'bahan bakar' => 'armada', 'fuel' => 'armada',
         'tools' => 'alat', 'alat' => 'alat',

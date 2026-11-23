@@ -135,6 +135,15 @@ class IkonPadat
         'karbon' => [
             ['d' => 'M17.5 20H8.6a7.6 7.6 0 1 1 7.3-9.7h1.6a4.85 4.85 0 1 1 0 9.7Z', 'evenodd' => false],
         ],
+        /* perancah: dua tiang, tiga ledger, satu bracing */
+        'perancah' => [
+            ['d' => 'M3 2h2.6v20H3zM18.4 2H21v20h-2.6zM3 5.6h18v2.4H3zM3 12.6h18V15H3zM3 19.4h18v2.4H3zM6.3 14.2 17 7.4l1.3 1.9-10.7 6.8z', 'evenodd' => false],
+        ],
+        /* daur hidup: daun di dalam putaran */
+        'lca' => [
+            ['d' => 'M12 2.2a9.8 9.8 0 0 1 7.4 3.4l1.6-1.6v5.4h-5.4l2-2A7.2 7.2 0 0 0 4.8 12H2.2A9.8 9.8 0 0 1 12 2.2zM21.8 12A9.8 9.8 0 0 1 4.6 18.4L3 20v-5.4h5.4l-2 2A7.2 7.2 0 0 0 19.2 12z', 'evenodd' => false],
+            ['d' => 'M8.2 16.2c-.4-3.6 2.2-7 7.6-7.4.3 4.8-2.6 7.6-6.2 7.7l-1.4 1.3-.9-.8z', 'evenodd' => false],
+        ],
         /* ic-minerba */
         'konservasi' => [
             ['d' => 'M7.7 2.4h8.6l5 6.3-9.3 12.9L2.7 8.7zm-.3 4.3-1.6 2h12.4l-1.6-2z', 'evenodd' => true],
