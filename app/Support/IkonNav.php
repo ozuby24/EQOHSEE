@@ -101,6 +101,7 @@ final class IkonNav
         'mitigasi' => 'daun', 'dekarbonisasi' => 'daun',
         'studi lca' => 'daun', 'faktor dampak' => 'buku',
         'daftar & peta' => 'kotak', 'daftarkan & hitung' => 'kalkulator',
+        'rencana pengangkatan' => 'dokumen', 'simulasi' => 'kalkulator', 'riksa uji' => 'evaluasi',
         'fleet' => 'armada', 'armada' => 'armada', 'equipment' => 'armada',
         'bahan bakar' => 'armada', 'fuel' => 'armada',
         'tools' => 'alat', 'alat' => 'alat',

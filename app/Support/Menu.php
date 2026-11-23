@@ -733,6 +733,26 @@ final class Menu
         ],
       ],
     ],
+    /* Lifting & Rigging — pengangkatan dari register PAA sampai selesai.
+       Crane dan alat bantu yang tidak layak digunakan tidak bisa masuk ke
+       rencana; pengangkatan kritis menunggu persetujuan KTT. */
+    'angkat' => [
+      'label' => 'Lifting & Rigging Management',
+      'semboyan' => 'Planned Before Lifted',
+      'kutipan' => 'Beban yang belum dihitung belum layak diangkat.',
+      'icon'  => 'M4 21h7M7.5 21V4M3 4h17M7.5 9 12 4M17 4v7M17 11v2.2a1.8 1.8 0 1 1-1.8 1.8',
+      'groups' => [
+        'Pantau' => [
+          ['Dashboard',                 'angkat.index',     'pengangkatan'],
+          ['Rencana Pengangkatan',      'angkat.daftar',    'pengangkatan/rencana'],
+        ],
+        'Lapangan' => [
+          ['Buat Rencana & Simulasi',   'angkat.baru',      'pengangkatan/rencana/baru'],
+          ['Register PAA & Alat Bantu', 'angkat.peralatan', 'pengangkatan/peralatan*'],
+          ['Riksa Uji',                 'angkat.riksa',     'pengangkatan/riksa-uji*'],
+        ],
+      ],
+    ],
     'geoteknik' => [
       'label' => 'Kestabilan Lereng',
       'semboyan' => 'Ground You Can Trust',
@@ -916,6 +936,7 @@ final class Menu
         [['karbon*'],                              'karbon'],
         [['lca*'],                                 'lca'],
         [['perancah*'],                            'perancah'],
+        [['pengangkatan*'],                        'angkat'],
         [['konservasi*'],                          'konservasi'],
         [['operasi-tambang*'],                     'operasi'],
         [['penirisan*'],                           'air'],

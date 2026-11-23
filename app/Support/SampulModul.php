@@ -74,6 +74,7 @@ final class SampulModul
         'karbon'  => 'pelabuhan-muat',
         'lca'     => 'pelabuhan-senja',
         'perancah' => 'pelabuhan-senja',
+        'angkat'   => 'pelabuhan-muat',
         'dokumen' => 'pelabuhan-senja',
         'admin'   => 'pelabuhan-senja',
     ];

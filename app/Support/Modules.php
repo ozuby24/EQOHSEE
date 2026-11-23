@@ -142,6 +142,11 @@ class Modules
              'ket'  => 'Kalkulator BoM dan beban perancah, kajian kelayakan teknis, inspeksi 16 butir, scafftag otomatis ber-QR, dan peta titik pemasangan.',
              'ikon' => 'M5 3v18M19 3v18M5 8h14M5 14h14M5 20h14M5 14l14-6'],
 
+            ['nama' => 'Lifting & Rigging Management', 'status' => 'aktif', 'pilar' => 'safety',
+             'rute' => 'angkat.index',
+             'ket'  => 'Register PAA dan alat bantu angkat, riksa uji dengan karantina otomatis, kalkulator rigging, simulasi pengangkatan 4 fase, kajian teknis 6 pilar, dan persetujuan KTT.',
+             'ikon' => 'M4 21h7M7.5 21V4M3 4h17M7.5 9 12 4M17 4v7M17 11v2.2a1.8 1.8 0 1 1-1.8 1.8'],
+
             ['nama' => 'Konservasi Minerba', 'status' => 'aktif', 'pilar' => 'environment',
              'rute' => 'konservasi.index',
              'ket'  => 'Pemantauan produksi, recovery, kehilangan material, dilusi, stockpile, mineral ikutan, dan tindak lanjut perbaikan.',
@@ -231,6 +236,7 @@ class Modules
         'Carbon Management Center'               => 'karbon',
         'Life Cycle Assessment'                  => 'lca',
         'Scaffolding Management'                 => 'perancah',
+        'Lifting & Rigging Management'           => 'angkat',
         'Konservasi Minerba'                     => 'konservasi',
         'Mining Engineering Hub'                 => 'meh',
         'Mine Operations & GIS'                  => 'operasi',
