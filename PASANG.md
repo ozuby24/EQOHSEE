@@ -1,3 +1,65 @@
+# Update 20 — Aplikasi baru: Lifting & Rigging Management
+
+```bash
+# Di VPS, dari /var/www/EQOHSEE
+cp database/database.sqlite ~/cadangan-sebelum-update-20.sqlite   # pgsql: pg_dump
+bash deploy/deploy.sh          # migrate + build
+php artisan pembelian:katalog  # menambah APP-ANGKAT (Rp0, tidak aktif)
+php artisan demo:pasang        # opsional: data contoh pengangkatan
+```
+Satu migrasi baru, hanya MENAMBAH tabel `angkat_*` (alat, gear, riksa,
+rencana, kajian, jejak). Tidak ada tabel lama yang diubah, tidak ada
+penjadwal baru — status kelayakan crane dan alat bantu dihitung dari
+tanggal riksa uji setiap kali dibaca.
+
+## Lifting & Rigging Management (`/pengangkatan`, pilar Safety & Engineering)
+Diadaptasi dari LiftGuard Mining Pro (Permenaker 8/2020 tentang K3
+Pesawat Angkat & Angkut, Kepmen ESDM 1827 K/30/MEM/2018, ASME B30.5 /
+B30.9 / B30.26, BS 7121) untuk pengangkatan di tambang.
+- **Register PAA & alat bantu**: crane (mobile, crawler, overhead, truck
+  crane, hoist) dengan SUKET dan operator ber-SIO; sling, rantai,
+  webbing, shackle, spreader dengan WLL, faktor keamanan, dan kode warna
+  triwulan. Status efektif: layak / segera riksa (≤ 30 hari) /
+  kedaluwarsa / karantina / afkir.
+- **Riksa uji**: beban uji dihitung otomatis (crane 125% statis + 110%
+  dinamis 10 menit; sling/rantai/shackle 200% 5 menit; spreader 125%),
+  butir visual & fungsi per kategori, ukuran (keausan, kawat putus,
+  pemuluran rantai, bukaan kait, deformasi), NDT. Putusan TIDAK dipilih
+  pemeriksa: satu butir kritis gagal, NDT cacat, atau satu ukuran
+  melewati batas ASME → TIDAK LAYAK DIGUNAKAN dan alat langsung
+  dikarantina (label merah). Laporan siap cetak dengan riwayat uji.
+- **Rencana & simulasi**: beban kotor (bersih + rigging + kait) × DAF,
+  kapasitas pada radius & boom, utilisasi (batas 85%, tandem 75%,
+  man-basket 50%), tegangan kaki sling (sudut, CoG asimetris, hitch,
+  spreader), tekanan outrigger vs daya dukung tanah tambang, ruang bebas
+  ujung boom, angin, jarak SUTT. Klasifikasi rutin/rekayasa/kritis
+  otomatis, simulasi 4 fase → GO / GO bersyarat / NO-GO, kurva beban
+  interaktif dengan radius maksimum aman dan berat maksimum.
+- **Alat yang tidak layak digunakan tidak dapat dipilih** — crane
+  ber-SUKET habis atau sling yang dikarantina ditolak saat rencana
+  disimpan, dan disembunyikan dari pilihan form.
+- **Kajian teknis 6 pilar** (geoteknik, PAA, rekayasa, lingkungan
+  tambang, kompetensi, IBPR/JSA): butir yang terbukti dari angka dinilai
+  sistem; butir lapangan dinilai peninjau. Dihitung ulang setiap rincian
+  dibuka selama rencana belum disetujui.
+- **Alur persetujuan** draf → diajukan → disetujui → selesai. NO-GO
+  dan kajian "tidak memenuhi" tidak dapat diajukan; pengangkatan kritis
+  wajib seluruh butir lapangan terisi dan disetujui KTT; pembuat tidak
+  dapat menyetujui rencananya sendiri; penolakan wajib beralasan.
+- **Dasbor**: pengangkatan per bulan per klasifikasi, sebaran beban vs
+  radius (klik untuk membuka), histogram utilisasi, radar 6 pilar, alat
+  bantu per status, Pareto penyebab tidak layak riksa uji, jadwal 14 hari,
+  dan riksa uji yang jatuh tempo. Ekspor CSV rencana.
+
+## Sesudah deploy — wajib dikerjakan orang
+1. **Daftarkan crane dan alat bantu** di **Register PAA & Alat Bantu**,
+   lalu catat riksa uji terakhir masing-masing. Alat yang baru didaftarkan
+   belum ber-SUKET dan tidak dapat dipilih di rencana sampai riksa ujinya
+   dicatat LAYAK.
+2. **Samakan angka batas** di `app/Support/Angkat/Katalog.php` bila
+   prosedur perusahaan lebih ketat (mis. utilisasi kritis 70%, angin
+   maksimum 30 km/jam).
+
 # Update 19 — Aplikasi baru: Scaffolding Management & Life Cycle Assessment
 
 ```bash

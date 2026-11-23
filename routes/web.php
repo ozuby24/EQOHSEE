@@ -1325,6 +1325,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('{unit}/inspeksi',  [$P, 'simpanInspeksi'])->whereNumber('unit')->name('inspeksi.simpan');
     });
 
+    /* ================= Lifting & Rigging Management =================
+       Register PAA & alat bantu angkat, riksa uji, rencana pengangkatan
+       dengan simulasi 4 fase, kajian teknis 6 pilar, persetujuan KTT. */
+    Route::prefix('pengangkatan')->name('angkat.')->group(function () {
+        $A = \App\Http\Controllers\Angkat\AngkatController::class;
+        Route::get('/',                       [$A, 'index'])->name('index');
+        Route::get('rencana',                 [$A, 'daftar'])->name('daftar');
+        Route::get('rencana/baru',            [$A, 'baru'])->name('baru');
+        Route::post('rencana/hitung',         [$A, 'hitung'])->name('hitung');
+        Route::post('rencana',                [$A, 'simpan'])->name('simpan');
+        Route::get('rencana/ekspor/csv',      [$A, 'csv'])->name('csv');
+        Route::get('rencana/{rencana}',       [$A, 'rincian'])->whereNumber('rencana')->name('rincian');
+        Route::get('rencana/{rencana}/ubah',  [$A, 'ubah'])->whereNumber('rencana')->name('ubah');
+        Route::put('rencana/{rencana}',       [$A, 'perbarui'])->whereNumber('rencana')->name('perbarui');
+        Route::post('rencana/{rencana}/kajian', [$A, 'kajian'])->whereNumber('rencana')->name('kajian');
+        Route::post('rencana/{rencana}/status', [$A, 'status'])->whereNumber('rencana')->name('status');
+        Route::get('peralatan',               [$A, 'peralatan'])->name('peralatan');
+        Route::post('peralatan/alat',         [$A, 'simpanAlat'])->name('alat.simpan');
+        Route::post('peralatan/gear',         [$A, 'simpanGear'])->name('gear.simpan');
+        Route::post('peralatan/gear/{gear}/afkir', [$A, 'afkir'])->whereNumber('gear')->name('gear.afkir');
+        Route::get('riksa-uji',               [$A, 'riksa'])->name('riksa');
+        Route::get('riksa-uji/baru',          [$A, 'formRiksa'])->name('riksa.baru');
+        Route::post('riksa-uji/pratinjau',    [$A, 'pratinjauRiksa'])->name('riksa.pratinjau');
+        Route::post('riksa-uji',              [$A, 'simpanRiksa'])->name('riksa.simpan');
+        Route::get('riksa-uji/{riksa}',       [$A, 'lihatRiksa'])->whereNumber('riksa')->name('riksa.lihat');
+    });
+
     /* ================= Carbon Management ================= */
     Route::prefix('karbon')->name('karbon.')->group(function () {
         Route::get('/',            [KarbonDasbor::class, 'index'])->name('index');

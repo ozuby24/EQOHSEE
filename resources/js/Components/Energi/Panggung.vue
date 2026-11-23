@@ -5,15 +5,17 @@
   Satu pita bergradasi di bawah sampul modul: angka terpenting halaman
   dibaca lebih dulu, di atas latar yang langsung memberi tahu aplikasi
   mana yang sedang dibuka — jingga untuk Energi, toska untuk Karbon,
-  kuning-arang K3 untuk Scaffolding, hijau hutan untuk LCA.
+  kuning-arang K3 untuk Scaffolding, hijau hutan untuk LCA, biru baja
+  untuk Lifting & Rigging.
 
   Dua lapis hiasannya sama-sama digambar di sini, tanpa berkas gambar:
   - motif garis kontur (peta topografi) — dibangkitkan dari rumus, jadi
     tiap tema mendapat bentuk yang sama tanpa satu byte unduhan pun;
   - siluet di kaki pita, berbeda per aplikasi: rantai energi tambang
     (Energi/Karbon), perancah berdiri di depan kolom proses dan tangki
-    (Scaffolding), atau daur hidup produk dari tambang ke kapal sampai
-    kembali ke tanah (LCA).
+    (Scaffolding), daur hidup produk dari tambang ke kapal sampai
+    kembali ke tanah (LCA), atau crane mengangkat beban di workshop,
+    pit, dan dermaga (Lifting & Rigging).
 */
 import { computed } from 'vue';
 import Ikon from './Ikon.vue';
@@ -21,7 +23,7 @@ import Ikon from './Ikon.vue';
 type Stat = { label: string; nilai: string; satuan?: string | null; ikon?: string; catatan?: string | null; arah?: { teks: string; baik: boolean } | null };
 
 const props = withDefaults(defineProps<{
-  tema?: 'energi' | 'karbon' | 'perancah' | 'lca';
+  tema?: 'energi' | 'karbon' | 'perancah' | 'lca' | 'angkat';
   judul: string;
   sub?: string | null;
   stat?: Stat[];
@@ -101,6 +103,32 @@ const kontur = computed(() => {
       </g>
     </svg>
 
+    <!-- Siluet pengangkatan: mobile crane mengangkat engine, crawler lattice, overhead crane workshop, crane dermaga. -->
+    <svg v-else-if="tema === 'angkat'" class="pg-siluet" viewBox="0 0 1200 120" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <g fill="currentColor">
+        <path d="M0 110 H1200 V120 H0Z" />
+        <!-- mobile crane: carrier, outrigger, boom, kabel, beban -->
+        <rect x="30" y="92" width="120" height="14" rx="3" /><circle cx="52" cy="108" r="6" /><circle cx="74" cy="108" r="6" /><circle cx="128" cy="108" r="6" />
+        <rect x="22" y="104" width="14" height="6" /><rect x="146" y="104" width="14" height="6" />
+        <path d="M72 92 h40 v-12 h-28Z" /><rect x="112" y="76" width="18" height="16" rx="2" />
+        <path d="M90 84 L262 18 L265 23 L94 90Z" /><rect x="261" y="20" width="2" height="54" />
+        <rect x="246" y="74" width="32" height="20" rx="2" /><path d="M262 74 l-12 -6 h24Z" />
+        <!-- crawler crane lattice -->
+        <rect x="360" y="96" width="110" height="12" rx="6" /><rect x="380" y="76" width="60" height="20" rx="2" />
+        <path d="M398 78 L560 4 L563 9 L404 84Z" /><path d="M406 82 L566 8" stroke="currentColor" stroke-width="2" fill="none" />
+        <template v-for="i in 7" :key="'lt' + i"><path :d="`M${404 + i * 21} ${82 - i * 9.6} l10 -9`" stroke="currentColor" stroke-width="2" fill="none" /></template>
+        <rect x="561" y="8" width="2" height="62" /><path d="M548 70 h28 v14 h-28Z" />
+        <!-- overhead crane workshop -->
+        <rect x="660" y="40" width="8" height="70" /><rect x="840" y="40" width="8" height="70" /><rect x="650" y="32" width="208" height="10" rx="2" />
+        <rect x="740" y="42" width="30" height="10" /><rect x="754" y="52" width="2" height="22" /><rect x="732" y="74" width="46" height="24" rx="3" />
+        <path d="M640 110 V40 l14 -12 h200 l14 12 V110 h-6 V44 H646 V110Z" opacity=".55" />
+        <!-- crane dermaga & kapal -->
+        <rect x="960" y="30" width="10" height="80" /><rect x="1010" y="30" width="10" height="80" /><rect x="930" y="22" width="190" height="10" />
+        <path d="M960 70 L1020 40 L1022 44 L962 74Z" /><rect x="1086" y="32" width="2" height="34" /><rect x="1074" y="66" width="26" height="14" />
+        <path d="M1050 100 h150 v10 h-160Z" /><rect x="1100" y="86" width="40" height="14" /><rect x="1150" y="80" width="30" height="20" />
+      </g>
+    </svg>
+
     <!-- Siluet rantai kegiatan: alat gali-muat-angkut, konveyor, listrik, EBT, cerobong. -->
     <svg v-else class="pg-siluet" viewBox="0 0 1200 120" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
       <g fill="currentColor">
@@ -168,6 +196,7 @@ const kontur = computed(() => {
 .pg-karbon { background: linear-gradient(118deg, #062F2C 0%, #0B4F49 30%, #0F766E 62%, #22A699 100%); }
 .pg-perancah { background: linear-gradient(118deg, #17181C 0%, #2E2A1E 26%, #8A5A00 60%, #E3A008 88%, #F7C948 100%); }
 .pg-lca { background: linear-gradient(118deg, #052E1C 0%, #0E4D33 30%, #15803D 64%, #6BAF3A 100%); }
+.pg-angkat { background: linear-gradient(118deg, #0A1628 0%, #12305A 30%, #1D4ED8 66%, #4F8EF7 100%); }
 .pg-belang { position: absolute; left: 0; right: 0; top: 0; height: 7px; z-index: -1;
   background: repeating-linear-gradient(-45deg, #F7C948 0 14px, #17181C 14px 28px); opacity: .9; }
 
@@ -177,6 +206,7 @@ const kontur = computed(() => {
 .pg-karbon .pg-siluet { color: rgba(0, 20, 18, .30); }
 .pg-perancah .pg-siluet { color: rgba(10, 10, 10, .34); }
 .pg-lca .pg-siluet { color: rgba(2, 30, 16, .30); }
+.pg-angkat .pg-siluet { color: rgba(4, 12, 30, .34); }
 
 .pg-isi { padding: 22px 24px 30px; }
 .pg-kepala { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; }
@@ -195,6 +225,7 @@ const kontur = computed(() => {
 .pg-karbon .pg-ikon { color: #0F766E; }
 .pg-perancah .pg-ikon { color: #A16207; }
 .pg-lca .pg-ikon { color: #15803D; }
+.pg-angkat .pg-ikon { color: #1D4ED8; }
 .pg-label { font-size: 11.5px; font-weight: 600; color: rgba(255, 255, 255, .85); }
 .pg-nilai { font-size: 24px; font-weight: 800; line-height: 1.15; letter-spacing: -.02em; margin-top: 2px; }
 .pg-nilai small { font-size: 12px; font-weight: 700; margin-left: 5px; color: rgba(255, 255, 255, .8); letter-spacing: 0; }

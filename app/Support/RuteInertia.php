@@ -181,6 +181,12 @@ final class RuteInertia
         'perancah.index',
         'perancah.peta',
         'perancah.baru',
+        'angkat.index',
+        'angkat.daftar',
+        'angkat.baru',
+        'angkat.peralatan',
+        'angkat.riksa',
+        'angkat.riksa.baru',
 
         /* Konservasi Minerba */
         'konservasi.index',
