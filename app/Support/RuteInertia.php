@@ -187,6 +187,12 @@ final class RuteInertia
         'angkat.peralatan',
         'angkat.riksa',
         'angkat.riksa.baru',
+        'rdas.index',
+        'rdas.peta',
+        'rdas.ppkh',
+        'rdas.blok.baru',
+        'rdas.penilaian',
+        'rdas.acuan',
 
         /* Konservasi Minerba */
         'konservasi.index',

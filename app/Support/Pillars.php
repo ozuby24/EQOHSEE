@@ -121,7 +121,7 @@ class Pillars
                     ['Kualitas air & udara',  'Pemantauan titik penaatan secara berkala.'],
                     ['Reklamasi lahan',       'Rencana dan realisasi pemulihan area terganggu.'],
                 ],
-                'modul' => ['Carbon Management Center', 'Life Cycle Assessment', 'Sistem Informasi Gudang & Penyimpanan', 'ISO & Dokumen', 'SMKP Audit'],
+                'modul' => ['Carbon Management Center', 'Life Cycle Assessment', 'Rehabilitasi DAS', 'Sistem Informasi Gudang & Penyimpanan', 'ISO & Dokumen', 'SMKP Audit'],
             ],
 
             'engineering' => [

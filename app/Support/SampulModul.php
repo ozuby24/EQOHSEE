@@ -75,6 +75,7 @@ final class SampulModul
         'lca'     => 'pelabuhan-senja',
         'perancah' => 'pelabuhan-senja',
         'angkat'   => 'pelabuhan-muat',
+        'rdas'     => 'pit-panorama',
         'dokumen' => 'pelabuhan-senja',
         'admin'   => 'pelabuhan-senja',
     ];

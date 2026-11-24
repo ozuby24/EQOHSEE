@@ -118,6 +118,7 @@ final class DataContoh
 {
     use ContohPerancahLca;
     use ContohAngkat;
+    use ContohRdas;
 
     /**
      * Tabel yang dibersihkan, anak lebih dulu daripada induknya.
@@ -138,6 +139,11 @@ final class DataContoh
            crane & alat bantu) → alat bantu → crane. */
         \App\Models\Angkat\Jejak::class, \App\Models\Angkat\Kajian::class, \App\Models\Angkat\Rencana::class,
         \App\Models\Angkat\Riksa::class, \App\Models\Angkat\Gear::class, \App\Models\Angkat\Alat::class,
+        /* Rehab DAS: kejadian & laporan (merujuk PPKH) → penilaian, kegiatan,
+           Petak Ukur (merujuk blok/petak) → petak → blok → PPKH. */
+        \App\Models\Rdas\Kejadian::class, \App\Models\Rdas\Laporan::class, \App\Models\Rdas\Penilaian::class,
+        \App\Models\Rdas\Kegiatan::class, \App\Models\Rdas\Pantau::class, \App\Models\Rdas\Petak::class,
+        \App\Models\Rdas\Blok::class, \App\Models\Rdas\Ppkh::class,
         AngkutMuatan::class, AngkutRegu::class, AngkutAlat::class,
         BiayaRealisasi::class, BiayaAnggaran::class, BiayaAkun::class,
         IzinGas::class, IzinPeriksa::class, IzinKerja::class,
@@ -1074,6 +1080,7 @@ final class DataContoh
             'Scaffolding'    => $this->perancah(),
             'LCA'            => $this->lca(),
             'Lifting'        => $this->angkat(),
+            'Rehab DAS'      => $this->rdas(),
         ]);
     }
 

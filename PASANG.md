@@ -1,3 +1,73 @@
+# Update 21 — Aplikasi baru: Rehabilitasi DAS
+
+```bash
+# Di VPS, dari /var/www/EQOHSEE
+cp database/database.sqlite ~/cadangan-sebelum-update-21.sqlite   # pgsql: pg_dump
+bash deploy/deploy.sh          # migrate + build
+php artisan pembelian:katalog  # menambah APP-RDAS (Rp0, tidak aktif)
+php artisan demo:pasang        # opsional: data contoh rehabilitasi DAS
+```
+Satu migrasi baru, hanya MENAMBAH tabel `rdas_*` (ppkh, blok, petak,
+pantau, kegiatan, penilaian, laporan, kejadian). Tidak ada tabel lama
+yang diubah, tidak ada penjadwal baru — fase blok, sisa waktu kewajiban,
+dan keadaan laporan semesteran dihitung dari tanggal setiap kali dibaca.
+
+## Rehabilitasi DAS (`/rehab-das`, pilar Environment)
+Diadaptasi dari bahan Bimtek RDAS BPDAS Mahakam Berau (24 November 2026)
+dan modul RehabDAS, mengacu PP 26/2020, Permen LHK P.59/2019, Permen LHK
+7/2021, Permenhut P.60/2009, Permen LHK 10/2022, dan SE MenLHK 1/2024.
+- **Kewajiban PPKH**: luas kewajiban dihitung otomatis 1 : 1 luas PAK
+  (rasio dapat diubah), batas penyelesaian ½ jangka waktu PPKH (> 5 tahun)
+  atau ½N + 1 tahun (≤ 5 tahun), sisa hari aman / mendesak (≤ 180 hari) /
+  lewat. Corong kewajiban → ditetapkan → ditanam → diserahterimakan.
+- **Lokasi & petak tanam**: blok dengan SK penetapan lokasi, DAS/Sub-DAS,
+  fungsi kawasan, ekosistem (daratan, riparian, mangrove, gambut),
+  jarak tanam dan kerapatan, komposisi jenis (lokal ≥ 40%, cepat tumbuh
+  ≤ 60%), RKP, kontraktor, dan anggaran. Poligon petak dapat ditempel
+  sebagai GeoJSON atau daftar "lat, lng"; peta poligon interaktif
+  (geser, perbesar, warna menurut fase atau persen tumbuh) dan ekspor
+  GeoJSON.
+- **Fase TIDAK dipilih**: P0 / P1 / P2 / siap dinilai diturunkan dari
+  tanggal tanam; penilaian dan serah terima dari status permohonan.
+- **Petak Ukur**: intensitas sampling 5%, PU 0,1 ha; persen tumbuh,
+  batang sehat/ha, status berhasil (≥ 80%) / peringatan (75–80%) /
+  sulam (< 75%) dan kebutuhan bibit sulam dihitung langsung di form.
+- **Kegiatan lapangan** (penanaman, penyulaman, pemupukan, penyiangan,
+  patroli, sekat bakar, dll.) dengan HOK, bibit, dan biaya; verifikasi
+  empat mata — pencatat tidak dapat memverifikasi sendiri, penolakan
+  wajib beralasan.
+- **Kelayakan penilaian 10 prasyarat** (SK penlok, RKP, usia ≥ 36 bulan,
+  tumbuh ≥ 75%, ≥ 500 batang sehat/ha, geotagging 100% tanpa duplikasi,
+  petak berpeta, tidak ada gangguan terbuka, laporan tertib, komposisi).
+  Blok yang belum memenuhi tidak dapat diajukan.
+- **Penilaian & BAST**: SK tim penilai → hasil tim (berhasil bila ≥ 75%
+  dan ≥ 500 batang sehat/ha) → BAST. Serah terima dapat bertahap; blok
+  selesai bila seluruh tahap BAST menutup luasnya.
+- **Laporan semesteran** (31 Juli & 31 Januari) dengan status tepat /
+  terlambat / jatuh tempo; **kejadian & sanksi** 4 tahap (teguran I–III,
+  pembatalan lokasi, pencabutan PPKH, penindakan hukum). Kebakaran tidak
+  dapat ditutup sebelum dilaporkan dan exit strategy dipilih (pemeliharaan
+  lanjutan/penanaman ulang, pengusulan relokasi, atau serah terima
+  bertahap).
+- **Reklamasi & RURH**: luas terganggu vs direklamasi dan nilai
+  keberhasilan (baik ≥ 80, sedang 60–79, buruk < 60).
+- **Dasbor**: corong kewajiban, peta poligon, sebaran fase, tren persen
+  tumbuh per kuartal, histogram petak, HOK/bibit/biaya per bulan,
+  komposisi jenis, serapan biaya vs progres fisik, dan peringatan
+  (batas mendekat, petak wajib sulam, laporan terlambat). Ekspor CSV.
+
+## Sesudah deploy — wajib dikerjakan orang
+1. **Daftarkan setiap PPKH** di **Kewajiban PPKH** (nomor & tanggal SK,
+   jangka, luas PAK). Jadwal laporan semesteran terbentuk otomatis sejak
+   tahun SK; tandai yang sudah dikirim.
+2. **Samakan angka batas** di `app/Support/Rdas/Katalog.php` bila
+   BPDAS setempat memakai ketentuan lain (mis. kerapatan 1.100 batang/ha
+   untuk mangrove, ambang peringatan 180 hari).
+3. **Aktifkan APP-RDAS** di katalog pembelian untuk perusahaan pemegang
+   PPKH.
+
+---
+
 # Update 20 — Aplikasi baru: Lifting & Rigging Management
 
 ```bash

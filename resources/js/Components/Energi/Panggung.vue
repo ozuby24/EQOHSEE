@@ -6,7 +6,7 @@
   dibaca lebih dulu, di atas latar yang langsung memberi tahu aplikasi
   mana yang sedang dibuka — jingga untuk Energi, toska untuk Karbon,
   kuning-arang K3 untuk Scaffolding, hijau hutan untuk LCA, biru baja
-  untuk Lifting & Rigging.
+  untuk Lifting & Rigging, dan tanah-ke-hijau untuk Rehabilitasi DAS.
 
   Dua lapis hiasannya sama-sama digambar di sini, tanpa berkas gambar:
   - motif garis kontur (peta topografi) — dibangkitkan dari rumus, jadi
@@ -14,8 +14,10 @@
   - siluet di kaki pita, berbeda per aplikasi: rantai energi tambang
     (Energi/Karbon), perancah berdiri di depan kolom proses dan tangki
     (Scaffolding), daur hidup produk dari tambang ke kapal sampai
-    kembali ke tanah (LCA), atau crane mengangkat beban di workshop,
-    pit, dan dermaga (Lifting & Rigging).
+    kembali ke tanah (LCA), crane mengangkat beban di workshop,
+    pit, dan dermaga (Lifting & Rigging), atau lahan di tepi sungai yang
+    tumbuh dari ajir dan bibit P0 sampai hutan siap diserahterimakan
+    (Rehabilitasi DAS).
 */
 import { computed } from 'vue';
 import Ikon from './Ikon.vue';
@@ -23,7 +25,7 @@ import Ikon from './Ikon.vue';
 type Stat = { label: string; nilai: string; satuan?: string | null; ikon?: string; catatan?: string | null; arah?: { teks: string; baik: boolean } | null };
 
 const props = withDefaults(defineProps<{
-  tema?: 'energi' | 'karbon' | 'perancah' | 'lca' | 'angkat';
+  tema?: 'energi' | 'karbon' | 'perancah' | 'lca' | 'angkat' | 'rdas';
   judul: string;
   sub?: string | null;
   stat?: Stat[];
@@ -129,6 +131,31 @@ const kontur = computed(() => {
       </g>
     </svg>
 
+    <!-- Siluet rehabilitasi DAS: dari ajir & bibit P0 di kiri, P1–P2, sampai hutan BAST di kanan; sungai di kaki. -->
+    <svg v-else-if="tema === 'rdas'" class="pg-siluet" viewBox="0 0 1200 120" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <g fill="currentColor">
+        <path d="M0 98 C160 90 300 104 460 96 S760 88 920 98 S1100 104 1200 94 V120 H0Z" />
+        <path d="M0 112 C200 104 420 118 640 110 S1000 104 1200 112 V120 H0Z" opacity=".55" />
+        <!-- ajir & bibit P0 -->
+        <template v-for="x in [40, 78, 116, 154, 192, 230]" :key="'a' + x">
+          <rect :x="x" y="76" width="2.5" height="22" />
+          <path :d="`M${x + 7} 97 v-9 M${x + 7} 90 q-5 -2 -6 -7 q5 1 6 6 q1 -6 6 -7 q-1 5 -6 8`" stroke="currentColor" stroke-width="2" fill="none" />
+        </template>
+        <!-- tanaman muda P1–P2 -->
+        <template v-for="(x, i) in [300, 350, 400, 450, 500, 550]" :key="'m' + x">
+          <rect :x="x - 1.5" :y="78 - i * 3" width="3" :height="20 + i * 3" />
+          <circle :cx="x" :cy="72 - i * 3" :r="9 + i * 1.4" />
+        </template>
+        <!-- tegakan siap serah terima -->
+        <template v-for="(x, i) in [640, 700, 760, 820, 880, 940, 1000, 1060, 1120, 1170]" :key="'h' + x">
+          <rect :x="x - 2.5" :y="56 - (i % 3) * 8" width="5" :height="42 + (i % 3) * 8" />
+          <circle :cx="x" :cy="46 - (i % 3) * 8" :r="20 + (i % 2) * 4" />
+          <circle :cx="x - 12" :cy="56 - (i % 3) * 8" :r="13" />
+          <circle :cx="x + 12" :cy="54 - (i % 3) * 8" :r="14" />
+        </template>
+      </g>
+    </svg>
+
     <!-- Siluet rantai kegiatan: alat gali-muat-angkut, konveyor, listrik, EBT, cerobong. -->
     <svg v-else class="pg-siluet" viewBox="0 0 1200 120" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
       <g fill="currentColor">
@@ -196,6 +223,7 @@ const kontur = computed(() => {
 .pg-karbon { background: linear-gradient(118deg, #062F2C 0%, #0B4F49 30%, #0F766E 62%, #22A699 100%); }
 .pg-perancah { background: linear-gradient(118deg, #17181C 0%, #2E2A1E 26%, #8A5A00 60%, #E3A008 88%, #F7C948 100%); }
 .pg-lca { background: linear-gradient(118deg, #052E1C 0%, #0E4D33 30%, #15803D 64%, #6BAF3A 100%); }
+.pg-rdas { background: linear-gradient(118deg, #3B2A16 0%, #5C4326 24%, #2F6B3A 56%, #3F9A4E 80%, #A3D36B 100%); }
 .pg-angkat { background: linear-gradient(118deg, #0A1628 0%, #12305A 30%, #1D4ED8 66%, #4F8EF7 100%); }
 .pg-belang { position: absolute; left: 0; right: 0; top: 0; height: 7px; z-index: -1;
   background: repeating-linear-gradient(-45deg, #F7C948 0 14px, #17181C 14px 28px); opacity: .9; }
@@ -207,6 +235,7 @@ const kontur = computed(() => {
 .pg-perancah .pg-siluet { color: rgba(10, 10, 10, .34); }
 .pg-lca .pg-siluet { color: rgba(2, 30, 16, .30); }
 .pg-angkat .pg-siluet { color: rgba(4, 12, 30, .34); }
+.pg-rdas .pg-siluet { color: rgba(18, 32, 14, .34); }
 
 .pg-isi { padding: 22px 24px 30px; }
 .pg-kepala { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; }
@@ -226,6 +255,7 @@ const kontur = computed(() => {
 .pg-perancah .pg-ikon { color: #A16207; }
 .pg-lca .pg-ikon { color: #15803D; }
 .pg-angkat .pg-ikon { color: #1D4ED8; }
+.pg-rdas .pg-ikon { color: #2F6B3A; }
 .pg-label { font-size: 11.5px; font-weight: 600; color: rgba(255, 255, 255, .85); }
 .pg-nilai { font-size: 24px; font-weight: 800; line-height: 1.15; letter-spacing: -.02em; margin-top: 2px; }
 .pg-nilai small { font-size: 12px; font-weight: 700; margin-left: 5px; color: rgba(255, 255, 255, .8); letter-spacing: 0; }
