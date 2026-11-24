@@ -570,6 +570,29 @@ final class Menu
         ],
       ],
     ],
+    /* Rehabilitasi DAS — kewajiban penanaman pemegang PPKH sampai
+       serah terima. Fase dan kelayakan penilaian diturunkan dari tanggal
+       tanam dan Petak Ukur, bukan dipilih orang. */
+    'rdas' => [
+      'label' => 'Rehabilitasi DAS',
+      'semboyan' => 'Planted to Be Handed Over',
+      'kutipan' => 'Kewajiban selesai saat tanaman diserahterimakan, bukan saat bibit ditanam.',
+      'icon'  => 'M7 21v-5.5M7 15.5c-2.6 0-4-1.8-4-4 0-2.6 2-4.2 4-4.2.4-2.2 2.2-3.8 4.5-3.8 2.6 0 4.5 2 4.5 4.6M17 21v-7M17 14l-3-3M17 16l2.5-2.5M2 21h20M13.5 18.5c1.2-1 2.6-1.4 4.4-1.4',
+      'groups' => [
+        'Pantau' => [
+          ['Dashboard',              'rdas.index',     'rehab-das'],
+          ['Peta Petak Tanam',       'rdas.peta',      'rehab-das/peta'],
+        ],
+        'Kewajiban & Lapangan' => [
+          ['Kewajiban PPKH',         'rdas.ppkh',      'rehab-das/kewajiban*'],
+          ['Daftarkan Lokasi',       'rdas.blok.baru', 'rehab-das/blok/baru'],
+          ['Penilaian & BAST',       'rdas.penilaian', 'rehab-das/penilaian*'],
+        ],
+        'Acuan' => [
+          ['Regulasi & Pedoman',     'rdas.acuan',     'rehab-das/acuan'],
+        ],
+      ],
+    ],
     'konservasi' => [
       'label' => 'Konservasi Minerba',
       'semboyan' => 'Take Only What Lasts',
@@ -937,6 +960,7 @@ final class Menu
         [['lca*'],                                 'lca'],
         [['perancah*'],                            'perancah'],
         [['pengangkatan*'],                        'angkat'],
+        [['rehab-das*'],                           'rdas'],
         [['konservasi*'],                          'konservasi'],
         [['operasi-tambang*'],                     'operasi'],
         [['penirisan*'],                           'air'],

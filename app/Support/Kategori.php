@@ -51,6 +51,8 @@ final class Kategori
         'lifting'       => 'biru',
         'rigging'       => 'biru',
         'pesawat angkat' => 'biru',
+        'rehabilitasi'  => 'hijau',
+        'kehutanan'     => 'hijau',
         'emisi'         => 'toska',
         'konservasi'    => 'hijau',
         'mutu'          => 'ungu',

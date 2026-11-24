@@ -382,6 +382,7 @@ final class Dasbor
         'lca'        => [\App\Models\Lca\Studi::class,     'LCA',               'lca.index',         false],
         'perancah'   => [\App\Models\Perancah\Inspeksi::class, 'Scaffolding',    'perancah.index',    false],
         'angkat'     => [\App\Models\Angkat\Rencana::class, 'Lifting & Rigging', 'angkat.index',     false],
+        'rdas'       => [\App\Models\Rdas\Pantau::class,   'Rehabilitasi DAS',  'rdas.index',       false],
         'meh'        => [Procedure::class,                 'Mining Engineering', 'meh.index',         false],
     ];
 

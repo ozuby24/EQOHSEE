@@ -147,6 +147,11 @@ class Modules
              'ket'  => 'Register PAA dan alat bantu angkat, riksa uji dengan karantina otomatis, kalkulator rigging, simulasi pengangkatan 4 fase, kajian teknis 6 pilar, dan persetujuan KTT.',
              'ikon' => 'M4 21h7M7.5 21V4M3 4h17M7.5 9 12 4M17 4v7M17 11v2.2a1.8 1.8 0 1 1-1.8 1.8'],
 
+            ['nama' => 'Rehabilitasi DAS', 'status' => 'aktif', 'pilar' => 'environment',
+             'rute' => 'rdas.index',
+             'ket'  => 'Kewajiban Rehab DAS pemegang PPKH: penetapan lokasi, RKP, P0–P2, Petak Ukur persen tumbuh, peta petak, penilaian keberhasilan, BAST bertahap, laporan semesteran, dan sanksi.',
+             'ikon' => 'M7 21v-5.5M7 15.5c-2.6 0-4-1.8-4-4 0-2.6 2-4.2 4-4.2.4-2.2 2.2-3.8 4.5-3.8 2.6 0 4.5 2 4.5 4.6M17 21v-7M17 14l-3-3M17 16l2.5-2.5M2 21h20M13.5 18.5c1.2-1 2.6-1.4 4.4-1.4'],
+
             ['nama' => 'Konservasi Minerba', 'status' => 'aktif', 'pilar' => 'environment',
              'rute' => 'konservasi.index',
              'ket'  => 'Pemantauan produksi, recovery, kehilangan material, dilusi, stockpile, mineral ikutan, dan tindak lanjut perbaikan.',
@@ -237,6 +242,7 @@ class Modules
         'Life Cycle Assessment'                  => 'lca',
         'Scaffolding Management'                 => 'perancah',
         'Lifting & Rigging Management'           => 'angkat',
+        'Rehabilitasi DAS'                       => 'rdas',
         'Konservasi Minerba'                     => 'konservasi',
         'Mining Engineering Hub'                 => 'meh',
         'Mine Operations & GIS'                  => 'operasi',

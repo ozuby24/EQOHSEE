@@ -198,9 +198,13 @@ class CutiTest extends TestCase
         $p = $this->pekerja();
         $j = $this->jenis('tahunan');
 
-        $this->ajukan($p, $j, $this->hari->copy()->addDays(30), 10);
+        // Saldo dihitung per tahun kalender: kedua pengajuan harus jatuh di
+        // tahun yang sama. "Hari ini + 60" melewati 31 Desember sejak awal
+        // November dan membaca saldo tahun berikutnya yang masih utuh.
+        $awal = $this->hari->copy()->addYear()->startOfYear();
+        $this->ajukan($p, $j, $awal->copy()->addDays(30), 10);
 
-        $alasan = KebijakanCuti::periksa($p, $j, $this->hari->copy()->addDays(60), $this->hari->copy()->addDays(64));
+        $alasan = KebijakanCuti::periksa($p, $j, $awal->copy()->addDays(60), $awal->copy()->addDays(64));
 
         $this->assertNotNull($alasan);
         $this->assertStringContainsString('Saldo tidak cukup', $alasan);

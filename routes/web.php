@@ -1352,6 +1352,42 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('riksa-uji/{riksa}',       [$A, 'lihatRiksa'])->whereNumber('riksa')->name('riksa.lihat');
     });
 
+    /* ================= Rehabilitasi DAS =================
+       Kewajiban penanaman pemegang PPKH dari penetapan lokasi sampai
+       serah terima: kewajiban 1:1, blok & petak berpeta, Petak Ukur,
+       log kegiatan, penilaian keberhasilan & BAST, laporan, kejadian. */
+    Route::prefix('rehab-das')->name('rdas.')->group(function () {
+        $R = \App\Http\Controllers\Rdas\RdasController::class;
+        Route::get('/',                          [$R, 'index'])->name('index');
+        Route::get('peta',                       [$R, 'peta'])->name('peta');
+        Route::get('ekspor/geojson',             [$R, 'geojson'])->name('geojson');
+        Route::get('ekspor/csv',                 [$R, 'csv'])->name('csv');
+        Route::get('acuan',                      [$R, 'acuan'])->name('acuan');
+        Route::get('kewajiban',                  [$R, 'ppkh'])->name('ppkh');
+        Route::post('kewajiban',                 [$R, 'simpanPpkh'])->name('ppkh.simpan');
+        Route::get('kewajiban/{ppkh}',           [$R, 'rincianPpkh'])->whereNumber('ppkh')->name('ppkh.rincian');
+        Route::put('kewajiban/{ppkh}',           [$R, 'perbaruiPpkh'])->whereNumber('ppkh')->name('ppkh.perbarui');
+        Route::post('kewajiban/{ppkh}/reklamasi', [$R, 'reklamasi'])->whereNumber('ppkh')->name('ppkh.reklamasi');
+        Route::post('kewajiban/{ppkh}/kejadian', [$R, 'simpanKejadian'])->whereNumber('ppkh')->name('kejadian.simpan');
+        Route::post('kejadian/{kejadian}',       [$R, 'perbaruiKejadian'])->whereNumber('kejadian')->name('kejadian.perbarui');
+        Route::post('laporan/{laporan}',         [$R, 'kirimLaporan'])->whereNumber('laporan')->name('laporan.kirim');
+        Route::get('blok/baru',                  [$R, 'baruBlok'])->name('blok.baru');
+        Route::post('blok',                      [$R, 'simpanBlok'])->name('blok.simpan');
+        Route::get('blok/{blok}',                [$R, 'rincianBlok'])->whereNumber('blok')->name('blok.rincian');
+        Route::get('blok/{blok}/ubah',           [$R, 'ubahBlok'])->whereNumber('blok')->name('blok.ubah');
+        Route::put('blok/{blok}',                [$R, 'perbaruiBlok'])->whereNumber('blok')->name('blok.perbarui');
+        Route::post('blok/{blok}/geotag',        [$R, 'geotag'])->whereNumber('blok')->name('blok.geotag');
+        Route::post('blok/{blok}/petak',         [$R, 'simpanPetak'])->whereNumber('blok')->name('petak.simpan');
+        Route::post('blok/{blok}/kegiatan',      [$R, 'simpanKegiatan'])->whereNumber('blok')->name('kegiatan.simpan');
+        Route::post('blok/{blok}/penilaian',     [$R, 'ajukanPenilaian'])->whereNumber('blok')->name('penilaian.ajukan');
+        Route::post('kegiatan/{kegiatan}/verifikasi', [$R, 'verifikasiKegiatan'])->whereNumber('kegiatan')->name('kegiatan.verifikasi');
+        Route::get('petak/{petak}/pantau',       [$R, 'formPantau'])->whereNumber('petak')->name('pantau.baru');
+        Route::post('petak/{petak}/pantau',      [$R, 'simpanPantau'])->whereNumber('petak')->name('pantau.simpan');
+        Route::post('pantau/hitung',             [$R, 'hitungPantau'])->name('pantau.hitung');
+        Route::get('penilaian',                  [$R, 'penilaian'])->name('penilaian');
+        Route::post('penilaian/{penilaian}',     [$R, 'perbaruiPenilaian'])->whereNumber('penilaian')->name('penilaian.perbarui');
+    });
+
     /* ================= Carbon Management ================= */
     Route::prefix('karbon')->name('karbon.')->group(function () {
         Route::get('/',            [KarbonDasbor::class, 'index'])->name('index');
