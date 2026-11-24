@@ -87,7 +87,7 @@ const tahapan = ['diajukan', 'tim_dibentuk', 'dinilai', 'berhasil', 'serah_terim
     <!-- sudah diserahterimakan penuh -->
     <section v-if="b.fase === 'serah_terima'" class="bk-layak bk-layak-ok">
       <Ikon nama="file-check-2" :ukuran="36" class="bk-ok shrink-0" />
-      <div class="min-w-0">
+      <div class="min-w-0 grow basis-[240px]">
         <p class="text-[14px] font-extrabold text-cam-ink">Seluruh {{ n(props.luasBast, 2) }} ha telah diserahterimakan kepada pemangku kawasan</p>
         <p class="text-[12px] text-stone-600">{{ (props.penilaian ?? []).filter((p: any) => p.bast_nomor).map((p: any) => `BAST ${p.bast_nomor} (${tanggal(p.bast_at)})`).join(' · ') }} — kewajiban di lokasi ini selesai; pemantauan berikutnya menjadi tanggung jawab pengelola kawasan.</p>
       </div>
@@ -98,7 +98,8 @@ const tahapan = ['diajukan', 'tim_dibentuk', 'dinilai', 'berhasil', 'serah_terim
       <div class="shrink-0">
         <Cincin :nilai="Math.round(k.terpenuhi / Math.max(1, k.jumlah) * 100)" satuan="%" :ukuran="96" :warna="k.layak ? '#15803D' : '#D97706'" :label="`${k.terpenuhi} dari ${k.jumlah} prasyarat`" />
       </div>
-      <div class="min-w-0 flex-1">
+      <!-- basis 260px: di ponsel kolom ini turun ke bawah cincin, bukan menyempit jadi satu kata per baris -->
+      <div class="min-w-0 grow basis-[260px]">
         <p class="text-[14px] font-extrabold text-cam-ink">{{ k.layak ? 'Seluruh prasyarat wajib terpenuhi — boleh diajukan penilaian' : 'Belum boleh diajukan penilaian' }}</p>
         <p v-if="!k.layak" class="text-[12px] bk-teks-kuning">Penghenti: {{ k.penghenti.join('; ') }}.</p>
         <ul class="grid gap-x-5 gap-y-1.5 md:grid-cols-2 mt-2">

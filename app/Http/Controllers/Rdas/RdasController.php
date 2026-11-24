@@ -315,7 +315,6 @@ class RdasController extends Controller
             'luasBast' => round($blok->penilaian->where('status', 'serah_terima')->sum('luas_berhasil_ha'), 2),
             'fitur' => $this->fitur(collect([$blok])),
             'pilihan' => Katalog::pilihan(),
-            'pengguna' => auth()->user()->name,
         ]);
     }
 

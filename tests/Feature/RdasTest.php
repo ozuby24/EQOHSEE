@@ -313,7 +313,10 @@ class RdasTest extends TestCase
             "/rehab-das/blok/{$b->id}/ubah" => 'Rdas/FormBlok', "/rehab-das/petak/{$petak->id}/pantau" => 'Rdas/Pantau',
             '/rehab-das/penilaian' => 'Rdas/Penilaian', '/rehab-das/acuan' => 'Rdas/Acuan',
         ] as $url => $komponen) {
-            $this->actingAs($this->u)->get($url)->assertOk()->assertInertia(fn (Assert $p) => $p->component($komponen));
+            // Prop halaman tidak boleh menimpa prop bersama `pengguna` — tanpa itu
+            // kepala halaman menampilkan avatar "?" dan "Semua perusahaan".
+            $this->actingAs($this->u)->get($url)->assertOk()->assertInertia(fn (Assert $p) => $p->component($komponen)
+                ->where('pengguna.nama', $this->u->name));
         }
         $this->actingAs($this->u)->get('/rehab-das/ekspor/geojson')->assertOk()->assertJsonPath('features.0.geometry.type', 'Polygon');
         $this->actingAs($this->u)->get('/rehab-das/ekspor/csv')->assertOk();

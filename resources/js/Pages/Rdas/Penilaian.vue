@@ -99,7 +99,7 @@ const tombol: Record<string, [string, string][]> = {
       <ul class="divide-y divide-stone-100">
         <li v-for="b in props.kandidat" :key="b.id" class="px-5 py-3">
           <div class="flex flex-wrap items-center gap-3">
-            <Link :href="`/rehab-das/blok/${b.id}`" class="min-w-0 flex-1">
+            <Link :href="`/rehab-das/blok/${b.id}`" class="min-w-0 grow basis-[240px]">
               <p class="text-[12.5px] font-bold text-cam-ink">{{ b.kode }} · {{ b.nama }}</p>
               <p class="text-[11px] text-stone-500">{{ n(b.luas_ha, 1) }} ha · usia {{ b.usia_bulan }} bulan · tumbuh {{ b.persen_tumbuh === null ? '—' : n(b.persen_tumbuh, 1) + '%' }}</p>
             </Link>
