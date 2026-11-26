@@ -27,6 +27,16 @@ final class Geo
     public const BATAS_FITUR = 5000;
 
     /**
+     * Ukuran terbesar doc.kml di dalam KMZ, SESUDAH dibuka.
+     *
+     * KMZ adalah arsip zip: beberapa kilobita di unggahan dapat mengembang
+     * menjadi gigabita di memori (bom zip), dan isinya dibaca utuh ke
+     * memori sebelum diurai. Batas unggahannya tidak menolong — yang
+     * dibatasi di sana ukuran SEBELUM dibuka.
+     */
+    public const MAKS_KML = 50 * 1024 * 1024;
+
+    /**
      * @return list<array{props: array<string, mixed>, geometry: array<string, mixed>}>
      */
     public static function bacaBerkas(string $jalur, string $nama): array
@@ -67,6 +77,13 @@ final class Geo
             throw new RuntimeException('KMZ tidak berisi berkas .kml.');
         }
 
+        $ukuran = (int) ($zip->statIndex($pilih)['size'] ?? 0);
+        if ($ukuran > self::MAKS_KML) {
+            $zip->close();
+            throw new RuntimeException('Berkas .kml di dalam KMZ terlalu besar (lebih dari '
+                .(self::MAKS_KML / 1024 / 1024).' MB sesudah dibuka).');
+        }
+
         $isi = (string) $zip->getFromIndex($pilih);
         $zip->close();
 
@@ -76,6 +93,16 @@ final class Geo
     /** @return list<array{props: array<string, mixed>, geometry: array<string, mixed>}> */
     public static function dariKml(string $kml): array
     {
+        /* KML tidak pernah memerlukan DOCTYPE. Ditolak sebelum diurai,
+           karena DOCTYPE-lah tempat entitas dideklarasikan — dan dengan
+           LIBXML_PARSEHUGE (perlu untuk deretan koordinat yang panjang)
+           batas pengembangan entitas libxml ikut dilonggarkan: sepuluh
+           baris entitas bertingkat cukup untuk menghabiskan memori
+           peladen ("billion laughs"). */
+        if (preg_match('/<!DOCTYPE/i', $kml)) {
+            throw new RuntimeException('KML tidak boleh memuat DOCTYPE.');
+        }
+
         $dom = new DOMDocument();
         $lama = libxml_use_internal_errors(true);
         $ok = $dom->loadXML($kml, LIBXML_NONET | LIBXML_COMPACT | LIBXML_PARSEHUGE);

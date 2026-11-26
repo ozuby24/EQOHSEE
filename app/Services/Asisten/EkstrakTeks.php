@@ -275,6 +275,10 @@ final class EkstrakTeks
 
     private static function dom(string $xml): ?DOMDocument
     {
+        /* Bagian XML dokumen Office tidak pernah memuat DOCTYPE; yang
+           memuatnya hampir pasti mencoba menyelundupkan entitas. */
+        if (preg_match('/<!DOCTYPE/i', $xml)) return null;
+
         $d = new DOMDocument();
         $lama = libxml_use_internal_errors(true);
         $ok = $d->loadXML($xml, LIBXML_NONET | LIBXML_COMPACT);
