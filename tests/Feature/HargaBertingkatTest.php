@@ -211,7 +211,7 @@ class HargaBertingkatTest extends TestCase
     {
         $p = $this->paketWebsite(69_000_000, 2_000_000);
 
-        $migrasi = require database_path('migrations/2026_11_26_000001_harga_website_tambahan_tiga_juta.php');
+        $migrasi = require database_path('migrations/2026_11_26_200001_harga_website_tambahan_tiga_juta.php');
         $migrasi->up();
 
         $this->assertSame(3_000_000, $p->refresh()->harga_tambahan);

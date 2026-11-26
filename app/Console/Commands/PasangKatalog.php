@@ -47,7 +47,7 @@ class PasangKatalog extends Command
      * masing-masing. Keputusan pemiliknya, sama seperti harga layanan
      * di atas. Diisi hanya saat butir WEBSITE baru lahir; pemasangan
      * yang sudah ada dipindahkan oleh migrasinya sendiri
-     * (2026_11_26_000001_harga_website_tambahan_tiga_juta).
+     * (2026_11_26_200001_harga_website_tambahan_tiga_juta).
      */
     public const HARGA_WEBSITE_TAMBAHAN = 3_000_000;
 
