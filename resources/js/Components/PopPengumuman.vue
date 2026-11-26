@@ -420,13 +420,13 @@ onBeforeUnmount(() => {
 .eq-pop-penuh:hover { color: #1B2024; }
 
 /* ── mode gelap ── */
-:global([data-tema='gelap']) .eq-pop { background: #111C27; }
-:global([data-tema='gelap']) .eq-pop-judul { color: #F5F5F4; }
-:global([data-tema='gelap']) .eq-pop-badan { color: #D6D3D1; }
-:global([data-tema='gelap']) .eq-pop-lampiran { border-color: #2A3A4B; }
-:global([data-tema='gelap']) .eq-pop-lampiran-teks strong { color: #F5F5F4; }
-:global([data-tema='gelap']) .eq-pop-kaki { background: #0D1621; border-top-color: #22303F; }
-:global([data-tema='gelap']) .eq-pop-isi.is-lanjut::after {
+[data-tema='gelap'] .eq-pop { background: #111C27; }
+[data-tema='gelap'] .eq-pop-judul { color: #F5F5F4; }
+[data-tema='gelap'] .eq-pop-badan { color: #D6D3D1; }
+[data-tema='gelap'] .eq-pop-lampiran { border-color: #2A3A4B; }
+[data-tema='gelap'] .eq-pop-lampiran-teks strong { color: #F5F5F4; }
+[data-tema='gelap'] .eq-pop-kaki { background: #0D1621; border-top-color: #22303F; }
+[data-tema='gelap'] .eq-pop-isi.is-lanjut::after {
   background: linear-gradient(to bottom, rgb(17 28 39 / 0), #111C27 88%);
 }
 

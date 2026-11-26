@@ -812,3 +812,20 @@ button.ld-galeri-foto:hover img { transform: scale(1.05); }
 @media (prefers-reduced-motion: reduce) {
   .ld-baru-tab, .ld-hero-baru a { transition: none; }
 }
+
+/* ═══════════ tetap terang ketika tema gelap aktif ═══════════
+   Halaman depan berpalet sendiri dan tidak punya versi gelap. Tema gelap
+   aplikasi (data-tema="gelap" — pilihan pengguna, atau sistem yang
+   bermode gelap) dulu tetap menjalar ke sini: empat isian formulir
+   pesanan menjadi kotak gelap di tengah kartu terang, dan kontrol bawaan
+   peramban serta bilah gulirnya ikut digambar gelap.
+
+   :has(.ld) membuat aturan akar ini hanya berlaku selama halaman depan
+   terpasang; begitu pengunjung pindah ke halaman aplikasi lewat Inertia,
+   tema pilihannya kembali. Spesifisitasnya sengaja di atas aturan tema
+   gelap di eq-visual.css, yang dimuat SESUDAH berkas ini. */
+:root[data-tema]:has(.ld) { color-scheme: light; background: #F5EEE2; }
+:root[data-tema]:has(.ld) body { background: #F5EEE2; color: #1D1712; }
+:root[data-tema] .ld .ld-isian { color: var(--ld-tinta); background-color: #FFFFFF; border-color: var(--ld-garis-2); }
+:root[data-tema] .ld .ld-isian:focus { border-color: var(--ld-aksen); }
+:root[data-tema] .ld .ld-isian.salah { border-color: #DC2626; }

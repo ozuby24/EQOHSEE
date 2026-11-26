@@ -364,16 +364,16 @@ const persenMateri = computed(() => (props.kursus.materiTotal
 .eq-kur-hampa { padding: .5rem; font-size: 11px; color: #A8A29E; font-style: italic; }
 
 /* ── mode gelap ── */
-:global([data-tema='gelap']) .eq-kur { background: #141F23; border-color: #223238; }
-:global([data-tema='gelap']) .eq-kur-kepala { background: #0F1A1E; border-bottom-color: #223238; }
-:global([data-tema='gelap']) .eq-kur-balik,
-:global([data-tema='gelap']) .eq-kur-teks strong,
-:global([data-tema='gelap']) .eq-kur-butir.is-kini .eq-kur-butir-judul { color: #E8EFF2; }
-:global([data-tema='gelap']) .eq-kur-butir-judul { color: #C4CDD2; }
-:global([data-tema='gelap']) .eq-kur-modul > li + li { border-top-color: #223238; }
-:global([data-tema='gelap']) .eq-kur-judul:hover,
-:global([data-tema='gelap']) .eq-kur-butir:hover { background: rgba(255, 255, 255, .045); }
-:global([data-tema='gelap']) .eq-kur-laju { background: #223238; }
+[data-tema='gelap'] .eq-kur { background: #141F23; border-color: #223238; }
+[data-tema='gelap'] .eq-kur-kepala { background: #0F1A1E; border-bottom-color: #223238; }
+[data-tema='gelap'] .eq-kur-balik,
+[data-tema='gelap'] .eq-kur-teks strong,
+[data-tema='gelap'] .eq-kur-butir.is-kini .eq-kur-butir-judul { color: #E8EFF2; }
+[data-tema='gelap'] .eq-kur-butir-judul { color: #C4CDD2; }
+[data-tema='gelap'] .eq-kur-modul > li + li { border-top-color: #223238; }
+[data-tema='gelap'] .eq-kur-judul:hover,
+[data-tema='gelap'] .eq-kur-butir:hover { background: rgba(255, 255, 255, .045); }
+[data-tema='gelap'] .eq-kur-laju { background: #223238; }
 
 /* Di bawah lebar ini kurikulum pindah ke atas isi dan berhenti menempel:
    panel setinggi layar di ponsel berarti isinya sendiri tidak pernah

@@ -266,4 +266,29 @@ class LandingTest extends TestCase
         $this->assertSame(3, $k['pemeliharaan']['modulPerBlok']);
         $this->assertSame(\App\Support\Pembelian::modulPaket(), $k['modulPaket']);
     }
+
+    /**
+     * Halaman depan tetap terang ketika tema gelap aktif.
+     *
+     * Tema gelap aplikasi dulu menjalar ke sini lewat aturan global
+     * eq-visual.css: isian formulir pesanan menjadi kotak gelap di
+     * tengah kartu terang, dan kontrol bawaan peramban ikut gelap.
+     * eq-visual.css dimuat SESUDAH CSS halaman ini, jadi penimpanya harus
+     * menang karena spesifisitas, bukan karena urutan.
+     */
+    public function test_halaman_depan_tetap_terang_ketika_tema_gelap_aktif(): void
+    {
+        $css = (string) file_get_contents(resource_path('css/landing.css'));
+
+        $this->assertMatchesRegularExpression('/:root\[data-tema\]:has\(\.ld\)\s*\{[^}]*color-scheme:\s*light/', $css,
+            'Kontrol bawaan peramban di halaman depan akan digambar gelap.');
+        $this->assertMatchesRegularExpression('/:root\[data-tema\]:has\(\.ld\)\s+body\s*\{[^}]*background:/', $css,
+            'Latar gelap aplikasi akan tampak di tepi halaman depan.');
+        $this->assertMatchesRegularExpression('/:root\[data-tema\]\s+\.ld\s+\.ld-isian\s*\{[^}]*background-color:\s*#FFFFFF/i', $css,
+            'Isian formulir pesanan akan menjadi kotak gelap di tengah kartu terang.');
+
+        // Aturan yang harus dikalahkan memang masih ada — bila suatu saat
+        // dihapus, uji ini boleh disederhanakan.
+        $this->assertStringContainsString(':root[data-tema="gelap"] input,', (string) file_get_contents(resource_path('css/eq-visual.css')));
+    }
 }
