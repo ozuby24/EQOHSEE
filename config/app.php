@@ -13,7 +13,19 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Laravel'),
+    /* Nama yang tampil pada surel dan halaman. Nilai yang jelas bukan
+       nama — kosong, bawaan 'Laravel', atau nama lingkungan seperti
+       'production' yang tertukar ke kunci ini — diganti EQOHSEE. Tanpa
+       itu surel keluar bertanda tangan "Tim Audit SMKP — production".
+       Nama kuki sesi sengaja TIDAK ikut berubah (config/session.php
+       membaca APP_NAME mentah), sehingga perbaikan ini tidak
+       mengeluarkan siapa pun dari sesinya. */
+    'name' => (static function (): string {
+        $nama = trim((string) env('APP_NAME', ''));
+
+        return in_array(strtolower($nama), ['', 'laravel', 'production', 'produksi', 'local',
+            'lokal', 'staging', 'testing', 'development', 'dev', 'prod'], true) ? 'EQOHSEE' : $nama;
+    })(),
 
     /*
     |--------------------------------------------------------------------------
@@ -26,7 +38,17 @@ return [
     |
     */
 
-    'env' => env('APP_ENV', 'production'),
+    /* APP_ENV yang DIKOSONGKAN diperlakukan sama dengan yang tidak
+       ditulis sama sekali: production, bawaan Laravel sendiri.
+
+       env('APP_ENV', 'production') hanya memakai bawaannya bila kuncinya
+       tidak ada; baris "APP_ENV=" justru menghasilkan string kosong —
+       lingkungan tanpa nama yang bukan production. Pemasangan sungguhan
+       pernah berjalan persis begitu: mode debug yang menyala tidak akan
+       terbaca GAWAT, perintah artisan yang menghapus tidak meminta
+       konfirmasi, dan Pemeriksaan Mandiri menyarankan membuang cache
+       konfigurasi di server produksi. */
+    'env' => env('APP_ENV') ?: 'production',
 
     /*
     |--------------------------------------------------------------------------

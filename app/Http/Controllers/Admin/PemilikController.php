@@ -34,6 +34,9 @@ use Inertia\Inertia;
  */
 class PemilikController extends Controller
 {
+    /** Nilai pilihan "milik bersama" pada daftar perusahaan. */
+    public const BERSAMA = 'bersama';
+
     /**
      * Jenis yang dapat ditetapkan pemiliknya.
      *
@@ -96,15 +99,25 @@ class PemilikController extends Controller
             'jenis'      => ['required', Rule::in(array_keys(self::JENIS))],
             'id'         => ['required', 'array', 'min:1'],
             'id.*'       => ['integer'],
-            'company_id' => ['required', 'exists:companies,id'],
+            /* 'bersama' adalah keputusan bahwa barisnya memang untuk
+               SEMUA perusahaan. company_id tetap NULL — siapa yang membaca
+               tidak berubah — tetapi barisnya tidak lagi menunggu
+               ditetapkan, dan Pemeriksaan Mandiri berhenti menyebutnya. */
+            'company_id' => ['required', Rule::when(
+                $request->input('company_id') !== self::BERSAMA,
+                ['exists:companies,id'],
+            )],
         ]);
 
         $kelas = self::JENIS[$data['jenis']]['kelas'];
 
+        $bersama = $data['company_id'] === self::BERSAMA;
+
         $n = $kelas::withoutGlobalScopes()
             ->whereIn('id', $data['id'])
             ->whereNull('company_id')
-            ->update(['company_id' => $data['company_id']]);
+            ->where('bersama', false)
+            ->update($bersama ? ['bersama' => true] : ['company_id' => $data['company_id']]);
 
         if ($n === 0) {
             return back()->withErrors(['pemilik' =>
@@ -112,18 +125,21 @@ class PemilikController extends Controller
                 .'sementara halaman ini terbuka — muat ulang untuk melihat keadaan terbaru.']);
         }
 
-        $perusahaan = Company::withoutGlobalScopes()->find($data['company_id']);
+        $perusahaan = $bersama ? null : Company::withoutGlobalScopes()->find($data['company_id']);
+        $tujuan = $bersama ? 'milik bersama semua perusahaan'
+            : ($perusahaan?->name ?? 'perusahaan '.$data['company_id']);
 
         ActivityLog::write(
             'Tetapkan pemilik '.self::JENIS[$data['jenis']]['label'],
-            $n.' baris → '.($perusahaan?->name ?? 'perusahaan '.$data['company_id']),
+            $n.' baris → '.$tujuan,
             'sistem',
         );
 
         Diagnosa::lupakanRingkas();
 
         return back()->with('ok', $n.' '.strtolower(self::JENIS[$data['jenis']]['label'])
-            .' kini melekat pada '.($perusahaan?->name ?? 'perusahaan itu').'.');
+            .($bersama ? ' kini ditetapkan sebagai milik bersama semua perusahaan.'
+                       : ' kini melekat pada '.($perusahaan?->name ?? 'perusahaan itu').'.'));
     }
 
     /** @return list<array<string,mixed>> */
@@ -133,6 +149,7 @@ class PemilikController extends Controller
 
         return $j['kelas']::withoutGlobalScopes()
             ->whereNull('company_id')
+            ->where('bersama', false)
             ->orderBy($j['judul'])
             ->limit(200)
             ->get()
@@ -148,6 +165,7 @@ class PemilikController extends Controller
 
     private function hitungYatim(string $kunci): int
     {
-        return self::JENIS[$kunci]['kelas']::withoutGlobalScopes()->whereNull('company_id')->count();
+        return self::JENIS[$kunci]['kelas']::withoutGlobalScopes()
+            ->whereNull('company_id')->where('bersama', false)->count();
     }
 }

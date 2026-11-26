@@ -72,10 +72,13 @@ class DemoSeeder extends Seeder
         $p1 = Procedure::firstOrCreate(['code'=>'SOP-001'], [
             'title'=>'Prosedur Lock Out Tag Out (LOTO)','category'=>'Keselamatan Kerja',
             'description'=>'Prosedur isolasi energi sebelum perawatan alat.','position'=>1,
+            // Konten baku untuk semua perusahaan — diputuskan milik bersama.
+            'bersama'=>true,
         ]);
         $p2 = Procedure::firstOrCreate(['code'=>'SOP-002'], [
             'title'=>'Prosedur Bekerja di Ketinggian','category'=>'Keselamatan Kerja',
             'description'=>'Persyaratan APD dan izin kerja di ketinggian.','position'=>2,
+            'bersama'=>true,
         ]);
 
         $e1 = SopEvaluation::firstOrCreate(['procedure_id'=>$p1->id], [
@@ -117,10 +120,12 @@ class DemoSeeder extends Seeder
         News::firstOrCreate(['title'=>'Bulan K3 Nasional 2026 Dimulai'], [
             'content'=>"EQOHSEE memulai rangkaian Bulan K3 Nasional dengan apel bersama di seluruh site.\n\nKegiatan meliputi lomba safety patrol, pelatihan P3K, dan simulasi tanggap darurat.",
             'published_at'=>now()->subDays(2),
+            'bersama'=>true,
         ]);
         News::firstOrCreate(['title'=>'Pembaruan Prosedur LOTO'], [
             'content'=>"Prosedur LOTO (SOP-001) telah diperbarui. Seluruh karyawan wajib mengikuti evaluasi ulang melalui menu Evaluasi SOP.",
             'published_at'=>now()->subDay(),
+            'bersama'=>true,
         ]);
     }
 }

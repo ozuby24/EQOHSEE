@@ -22,7 +22,11 @@ const halaman = usePage<any>();
 const galat = computed<Record<string, string>>(() => halaman.props.errors ?? {});
 
 /** Pilihan per jenis: baris yang dicentang, dan perusahaan tujuannya. */
-const pilihan = reactive<Record<string, { id: number[]; company_id: number | null }>>(
+/* 'bersama' bukan perusahaan: ia KEPUTUSAN bahwa barisnya untuk semua
+   perusahaan. Nilainya sama dengan PemilikController::BERSAMA. */
+const BERSAMA = 'bersama';
+
+const pilihan = reactive<Record<string, { id: number[]; company_id: number | 'bersama' | null }>>(
   Object.fromEntries(props.jenis.map((j) => [j.kunci, { id: [], company_id: null }])),
 );
 
@@ -35,8 +39,13 @@ async function tetapkan(kunci: string) {
   const p = pilihan[kunci];
   const j = props.jenis.find((x) => x.kunci === kunci);
   const nama = props.perusahaan.find((c) => c.nilai === p.company_id)?.label ?? '';
+  const label = j?.label.toLowerCase();
 
-  if (!await tanya(`Tetapkan ${p.id.length} ${j?.label.toLowerCase()} sebagai milik ${nama}?\n\nSetelah ditetapkan, hanya perusahaan itu yang dapat melihatnya.`)) return;
+  const pesan = p.company_id === BERSAMA
+    ? `Tetapkan ${p.id.length} ${label} sebagai milik bersama?\n\nTetap terbaca oleh semua perusahaan, dan tidak lagi disebut di Pemeriksaan Mandiri.`
+    : `Tetapkan ${p.id.length} ${label} sebagai milik ${nama}?\n\nSetelah ditetapkan, hanya perusahaan itu yang dapat melihatnya.`;
+
+  if (!await tanya(pesan)) return;
 
   router.post(props.tautan.tetapkan,
     { jenis: kunci, id: p.id, company_id: p.company_id },
@@ -74,7 +83,8 @@ async function tetapkan(kunci: string) {
       <strong>semua</strong> perusahaan. Itu bukan kesalahan — ketika prosedur dan berita mulai
       melekat perusahaan, pemilik baris lama sengaja tidak ditebak, sebab tebakan yang salah
       menyembunyikannya dari yang berhak tanpa menimbulkan galat apa pun.
-      <strong>Yang memang berlaku untuk semua perusahaan boleh dibiarkan kosong.</strong>
+      <strong>Yang memang berlaku untuk semua perusahaan, tetapkan sebagai &laquo;Milik bersama&raquo;</strong>
+      — tetap terbaca oleh semua, dan tidak lagi menunggu ditetapkan.
     </div>
 
     <section v-for="j in jenis" :key="j.kunci"
@@ -125,6 +135,7 @@ async function tetapkan(kunci: string) {
             <select v-model="pilihan[j.kunci].company_id"
                     class="mt-1 w-64 rounded-xl border-stone-200 text-[12.5px]">
               <option :value="null">— pilih perusahaan —</option>
+              <option :value="BERSAMA">Milik bersama — semua perusahaan</option>
               <option v-for="c in perusahaan" :key="c.nilai" :value="c.nilai">{{ c.label }}</option>
             </select>
           </label>

@@ -182,15 +182,118 @@ class DiagnosaTest extends TestCase
         $this->assertSame(Diagnosa::PERHATIAN, $this->keadaan('administrator'));
     }
 
-    public function test_perusahaan_contoh_dilaporkan(): void
+    /**
+     * Perusahaan demo kini tempat mulai akun baru — punya satu adalah
+     * keadaan normal. Namanya tetap disebut, supaya terlihat perusahaan
+     * mana yang dapat dikosongkan tombol muat ulang.
+     */
+    public function test_perusahaan_contoh_disebut_tanpa_peringatan(): void
     {
         User::factory()->create(['is_admin' => true]);
-        Company::create(['name' => 'PT Contoh', 'demo' => true]);
+        $c = Company::create(['name' => 'PT Contoh', 'demo' => true]);
+
+        // Akun yang mendaftar sendiri: peserta pelatihan, tanpa peran kerja.
+        User::factory()->create(['company_id' => $c->id, 'lms_role' => 'trainee', 'active' => true]);
+
+        $h = $this->periksa()['perusahaan-contoh'];
+
+        $this->assertSame(Diagnosa::AMAN, $h['keadaan']);
+        $this->assertStringContainsString('PT Contoh', $h['nilai']);
+        $this->assertStringContainsString('1 akun sungguhan', $h['nilai']);
+    }
+
+    /** Akun sungguhan yang diberi peran kerja di perusahaan contoh: tanda dipakai bekerja. */
+    public function test_perusahaan_contoh_yang_dipakai_bekerja_diperingatkan(): void
+    {
+        User::factory()->create(['is_admin' => true]);
+        $c = Company::create(['name' => 'PT Contoh', 'demo' => true]);
+        User::factory()->create(['company_id' => $c->id, 'audit_role' => User::ROLE_AUDITOR, 'active' => true]);
+
+        // Akun contoh bawaan tidak dihitung, berperan apa pun.
+        User::factory()->create(['company_id' => $c->id, 'email' => 'ktt.x@contoh.test', 'lms_role' => 'ktt']);
 
         $h = $this->periksa()['perusahaan-contoh'];
 
         $this->assertSame(Diagnosa::PERHATIAN, $h['keadaan']);
-        $this->assertStringContainsString('PT Contoh', $h['nilai']);
+        $this->assertStringContainsString('1 berperan kerja', $h['nilai']);
+        $this->assertNotNull($h['tindakan']);
+    }
+
+    /* ---------- kop laporan ---------- */
+
+    public function test_kop_perusahaan_contoh_tidak_dihitung(): void
+    {
+        Company::create(['name' => 'PT Contoh', 'demo' => true]);
+        Company::create(['name' => 'PT Sungguhan', 'demo' => false, 'doc_no_prefix' => 'PTS', 'logo' => 'logo/pts.png']);
+
+        $h = $this->periksa()['kop-laporan'];
+
+        $this->assertSame(Diagnosa::AMAN, $h['keadaan']);
+        $this->assertStringContainsString('1 perusahaan contoh tidak dihitung', $h['uraian']);
+    }
+
+    public function test_kop_perusahaan_sungguhan_yang_belum_lengkap_tetap_dilaporkan(): void
+    {
+        Company::create(['name' => 'PT Contoh', 'demo' => true]);
+        Company::create(['name' => 'PT Sungguhan', 'demo' => false]);
+
+        $h = $this->periksa()['kop-laporan'];
+
+        $this->assertSame(Diagnosa::PERHATIAN, $h['keadaan']);
+        $this->assertStringContainsString('(dari 1)', $h['nilai']);
+    }
+
+    /* ---------- lingkungan ---------- */
+
+    public function test_server_umum_tanpa_app_env_production_dilaporkan(): void
+    {
+        config(['app.url' => 'https://eqohsee.id']);
+        $this->app['env'] = '';
+
+        $h = $this->periksa()['lingkungan'];
+
+        $this->assertSame(Diagnosa::PERHATIAN, $h['keadaan']);
+        $this->assertStringContainsString('APP_ENV kosong', $h['nilai']);
+        $this->assertStringContainsString('APP_ENV=production', $h['tindakan']);
+    }
+
+    /**
+     * Cache konfigurasi di server umum yang APP_ENV-nya salah setel tidak
+     * boleh disuruh dibuang: itu membuat produksi lebih lambat tanpa
+     * memperbaiki apa pun.
+     */
+    public function test_cache_di_server_umum_tidak_disuruh_dibuang(): void
+    {
+        config(['app.url' => 'https://eqohsee.id']);
+        $this->app['env'] = '';
+
+        $h = $this->periksa()['cache-siap'];
+
+        $this->assertStringNotContainsString('Bersihkan', (string) $h['tindakan']);
+    }
+
+    public function test_mesin_pengembang_bukan_server_umum(): void
+    {
+        config(['app.url' => 'http://localhost:8000']);
+        $this->app['env'] = 'local';
+
+        $this->assertSame(Diagnosa::AMAN, $this->keadaan('lingkungan'));
+    }
+
+    /** APP_ENV yang dikosongkan berarti production — bawaan Laravel sendiri. */
+    public function test_app_env_kosong_berarti_production(): void
+    {
+        $asli = getenv('APP_ENV');
+        putenv('APP_ENV=');
+        $_ENV['APP_ENV'] = ''; $_SERVER['APP_ENV'] = '';
+
+        try {
+            $config = require config_path('app.php');
+            $this->assertSame('production', $config['env']);
+        } finally {
+            putenv('APP_ENV='.$asli);
+            $_ENV['APP_ENV'] = $asli; $_SERVER['APP_ENV'] = $asli;
+        }
     }
 
     /* ---------- basis data ---------- */
@@ -256,6 +359,42 @@ class DiagnosaTest extends TestCase
     public function test_tanpa_baris_yatim_terbaca_aman(): void
     {
         $this->assertSame(Diagnosa::AMAN, $this->keadaan('tanpa-pemilik'));
+    }
+
+    /**
+     * Daftar acuan bersama memang tanpa perusahaan. Pemasangan sungguhan
+     * pernah membaca 309 baris acuan sebagai GAWAT — merah yang tidak
+     * pernah dapat dipadamkan, dan karena itu mengajari orang
+     * mengabaikan merah.
+     */
+    public function test_daftar_acuan_bersama_tidak_terbaca_sebagai_yatim(): void
+    {
+        $this->artisan('miners:pasang')->assertSuccessful();
+        $this->artisan('roster:pasang')->assertSuccessful();
+
+        $h = $this->periksa()['tanpa-pemilik'];
+
+        $this->assertSame(Diagnosa::AMAN, $h['keadaan']);
+        $this->assertStringContainsString('daftar acuan bersama', $h['uraian']);
+    }
+
+    /** Prosedur dan berita punya pemeriksaannya sendiri — tidak dihitung dua kali. */
+    public function test_prosedur_tanpa_pemilik_tidak_dihitung_dua_kali(): void
+    {
+        DB::table('procedures')->insert(['code' => 'SOP-X', 'title' => 'Prosedur X', 'company_id' => null,
+            'created_at' => now(), 'updated_at' => now()]);
+
+        $this->assertSame(Diagnosa::AMAN, $this->keadaan('tanpa-pemilik'));
+        $this->assertSame(Diagnosa::PERHATIAN, $this->keadaan('tanpa-pemilik-lingkup'));
+    }
+
+    /** Yang sudah diputuskan milik bersama tidak lagi menunggu apa pun. */
+    public function test_prosedur_milik_bersama_tidak_lagi_diperingatkan(): void
+    {
+        DB::table('procedures')->insert(['code' => 'SOP-X', 'title' => 'Prosedur X', 'company_id' => null,
+            'bersama' => true, 'created_at' => now(), 'updated_at' => now()]);
+
+        $this->assertSame(Diagnosa::AMAN, $this->keadaan('tanpa-pemilik-lingkup'));
     }
 
     public function test_pengguna_tanpa_perusahaan_dilaporkan(): void

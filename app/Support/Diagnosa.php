@@ -130,6 +130,7 @@ final class Diagnosa
     {
         return [
             /* ── keamanan ── */
+            'lingkungan'     => fn () => self::lingkungan(),
             'debug'          => fn () => self::debug(),
             'kunci-aplikasi' => fn () => self::kunciAplikasi(),
             'skema-url'      => fn () => self::skemaUrl(),
@@ -172,6 +173,77 @@ final class Diagnosa
     }
 
     /* ═══════════════ keamanan ═══════════════ */
+
+    /**
+     * APP_ENV dan APP_NAME pada server yang dapat dibuka umum.
+     *
+     * Pemasangan sungguhan pernah berjalan dengan APP_ENV kosong dan
+     * APP_NAME "production" — dua nilai yang tampaknya tertukar. Tidak
+     * ada yang rusak secara kasatmata; yang terjadi diam-diam: setiap
+     * pemeriksaan di halaman ini yang bertanya "apakah ini produksi?"
+     * menjawab tidak, perintah artisan yang menghapus berhenti meminta
+     * konfirmasi, dan saran yang keluar justru membuang cache konfigurasi
+     * di server produksi.
+     */
+    private static function lingkungan(): array
+    {
+        $env = (string) app()->environment();
+        $nama = trim((string) env('APP_NAME', ''));
+        $publik = self::tampakProduksi();
+
+        $salahEnv  = $publik && $env !== 'production';
+        $namaAneh  = $publik && in_array(strtolower($nama), ['', 'laravel', 'production', 'produksi',
+            'local', 'lokal', 'staging', 'testing', 'development', 'dev', 'prod'], true);
+
+        $masalah = array_filter([
+            $salahEnv ? 'APP_ENV '.($env === '' ? 'kosong' : '"'.$env.'"') : null,
+            $namaAneh ? 'APP_NAME "'.$nama.'"' : null,
+        ]);
+
+        return [
+            'kelompok' => 'Keamanan',
+            'judul'    => 'Lingkungan aplikasi',
+            'keadaan'  => $salahEnv ? self::PERHATIAN : self::AMAN,
+            'nilai'    => $masalah ? implode(' · ', $masalah) : $env.' · '.config('app.name'),
+            'uraian'   => $salahEnv
+                ? 'Server ini dapat dibuka umum (APP_URL '.config('app.url').') tetapi tidak berjalan '
+                  .'sebagai production. Pemeriksaan mode debug dan skema alamat di halaman ini '
+                  .'karena itu tidak berlaku penuh, dan perintah artisan yang menghapus data tidak '
+                  .'meminta konfirmasi.'
+                : ($namaAneh
+                    ? 'Lingkungannya benar. APP_NAME berisi nama lingkungan, bukan nama aplikasi; '
+                      .'surel dan halaman memakai "EQOHSEE" sebagai gantinya, jadi tidak ada yang '
+                      .'perlu segera dilakukan.'
+                    : 'Lingkungan dan nama aplikasi sesuai dengan server yang dibuka umum.'),
+            'tindakan' => $salahEnv
+                ? 'Setel APP_ENV=production (dan APP_NAME=EQOHSEE) pada .env di server, lalu tekan '
+                  .'"Bangun cache produksi".'
+                : null,
+        ];
+    }
+
+    /**
+     * Server yang dapat dibuka umum: APP_URL https pada nama host sungguhan.
+     *
+     * Dipakai di samping app()->environment('production'), bukan
+     * menggantikannya — supaya server produksi yang APP_ENV-nya salah
+     * setel tetap dinilai sebagai produksi, bukan sebagai mesin
+     * pengembang yang kebetulan berinternet.
+     */
+    private static function tampakProduksi(): bool
+    {
+        $url = (string) config('app.url');
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+
+        if (! str_starts_with($url, 'https://') || $host === '') return false;
+        if (in_array($host, ['localhost', '127.0.0.1', '::1'], true)) return false;
+
+        foreach (['.test', '.local', '.localhost', '.example'] as $akhir) {
+            if (str_ends_with($host, $akhir)) return false;
+        }
+
+        return true;
+    }
 
     private static function debug(): array
     {
@@ -376,26 +448,73 @@ final class Diagnosa
         ];
     }
 
+    /**
+     * Perusahaan contoh — dan apakah ada yang sungguh BEKERJA di dalamnya.
+     *
+     * Perusahaan contoh dapat dikosongkan dan diisi ulang oleh satu tombol
+     * di Pusat Kendali. Sejak akun baru hanya dapat mendaftar ke
+     * perusahaan demo, punya satu adalah keadaan normal, bukan temuan:
+     * peringatan yang menyala hanya karena perusahaan demo ADA tidak
+     * pernah padam pada pemasangan yang sehat.
+     *
+     * Yang berbahaya adalah perusahaan sungguhan yang keliru bertanda
+     * contoh — tombol muat ulang akan menghapus pekerjaannya. Tandanya:
+     * akun sungguhan (bukan @contoh.test) di dalamnya yang sudah DIBERI
+     * PERAN KERJA oleh administrator — auditor, OHSE, energi, MERANTI,
+     * pengajar, KTT, atau administrator. Akun yang mendaftar sendiri
+     * hanya bertanda peserta pelatihan, jadi akun penjajal tidak ikut
+     * terhitung.
+     */
     private static function perusahaanContoh(): array
     {
         if (!Schema::hasColumn('companies', 'demo')) {
             return self::lewat('Keamanan', 'Perusahaan contoh', 'kolom belum ada');
         }
 
-        $nama = Company::query()->where('demo', true)->pluck('name')->all();
+        $demo = Company::query()->withoutGlobalScopes()->where('demo', true)
+            ->orderBy('name')->get(['id', 'name']);
+
+        if ($demo->isEmpty()) {
+            return [
+                'kelompok' => 'Keamanan',
+                'judul'    => 'Perusahaan contoh',
+                'keadaan'  => self::AMAN,
+                'nilai'    => 'tidak ada',
+                'uraian'   => 'Tidak ada perusahaan yang datanya dapat dibuang oleh pemuat data contoh. '
+                    .'Akun baru yang mendaftar menunggu ditempatkan administrator.',
+                'tindakan' => null,
+            ];
+        }
+
+        $akun = fn () => User::query()->whereIn('company_id', $demo->pluck('id'))
+            ->where('active', true)->where('email', 'not like', '%@contoh.test');
+
+        $kolom = self::petaKolom()['users'] ?? [];
+        $berperan = $akun()->where(function ($q) use ($kolom) {
+            $q->where('is_admin', true)->orWhereIn('lms_role', ['trainer', 'ktt']);
+            foreach (['audit_role', 'ohse_role', 'energi_role', 'meranti_role'] as $peran) {
+                if (in_array($peran, $kolom, true)) $q->orWhere(fn ($w) => $w->whereNotNull($peran)->where($peran, '!=', ''));
+            }
+        })->count();
+
+        $penjajal = $akun()->count();
+        $nama = $demo->pluck('name')->implode(', ');
 
         return [
             'kelompok' => 'Keamanan',
             'judul'    => 'Perusahaan contoh',
-            'keadaan'  => $nama ? self::PERHATIAN : self::AMAN,
-            'nilai'    => $nama ? implode(', ', $nama) : 'tidak ada',
-            'uraian'   => $nama
-                ? 'Perusahaan di atas dapat dikosongkan dan diisi ulang oleh satu tombol di Pusat '
-                  .'Kendali. Itu memang gunanya — tetapi hanya selama perusahaan itu benar-benar '
-                  .'perusahaan uji, bukan perusahaan yang sudah dipakai bekerja.'
-                : 'Tidak ada perusahaan yang datanya dapat dibuang oleh pemuat data contoh.',
-            'tindakan' => $nama
-                ? 'Bila salah satunya sudah dipakai bekerja, lepas tandanya di Pusat Kendali sekarang.'
+            'keadaan'  => $berperan > 0 ? self::PERHATIAN : self::AMAN,
+            'nilai'    => $nama.' · '.$penjajal.' akun sungguhan'.($berperan ? ', '.$berperan.' berperan kerja' : ''),
+            'uraian'   => $berperan > 0
+                ? $berperan.' akun sungguhan di perusahaan contoh sudah diberi peran kerja oleh '
+                  .'administrator — tanda perusahaan itu dipakai bekerja. Tombol muat ulang data '
+                  .'contoh di Pusat Kendali akan menghapus pekerjaan mereka tanpa dapat dikembalikan.'
+                : 'Perusahaan contoh menjadi tempat mulai akun baru dan dapat dikosongkan serta diisi '
+                  .'ulang dari Pusat Kendali. Data yang dibuat akun penjajal di dalamnya ikut terbuang '
+                  .'saat dimuat ulang — pindahkan akun yang sudah diverifikasi ke perusahaannya lebih dulu.',
+            'tindakan' => $berperan > 0
+                ? 'Pindahkan akun itu ke perusahaan sungguhan di Kelola Pengguna, atau lepas tanda '
+                  .'contoh perusahaannya di Pusat Kendali bila memang dipakai bekerja.'
                 : null,
         ];
     }
@@ -607,7 +726,18 @@ final class Diagnosa
             return self::lewat('Berkas & disk', 'Kop laporan', 'tabel perusahaan belum ada');
         }
 
-        $total = Company::query()->withoutGlobalScopes()->count();
+        /* Perusahaan contoh TIDAK dihitung. Kopnya kop karangan pada
+           lembar contoh, bukan lembar yang dikirim ke pemerintah atau
+           ditandatangani KTT — dan sejak akun baru dimulai di perusahaan
+           demo, pemasangan yang sehat pun selalu punya satu. Dihitung,
+           peringatan ini tidak pernah padam pada pemasangan yang
+           seluruh perusahaan sungguhannya sudah lengkap. */
+        $demo = Schema::hasColumn('companies', 'demo')
+            ? Company::query()->withoutGlobalScopes()->where('demo', true)->count() : 0;
+        $sungguhan = fn () => Company::query()->withoutGlobalScopes()
+            ->when($demo > 0, fn ($q) => $q->where('demo', false));
+
+        $total = $sungguhan()->count();
 
         /* Belum ada perusahaan bukan "tidak diketahui" melainkan
            "belum berlaku" — tidak ada kop yang dapat salah. */
@@ -616,19 +746,22 @@ final class Diagnosa
                 'kelompok' => 'Berkas & disk',
                 'judul'    => 'Kop laporan',
                 'keadaan'  => self::AMAN,
-                'nilai'    => 'belum ada perusahaan',
-                'uraian'   => 'Belum ada perusahaan yang kopnya perlu ditetapkan.',
+                'nilai'    => $demo ? 'hanya perusahaan contoh' : 'belum ada perusahaan',
+                'uraian'   => 'Belum ada perusahaan sungguhan yang kopnya perlu ditetapkan.'
+                    .($demo ? ' Perusahaan contoh tidak dihitung.' : ''),
                 'tindakan' => null,
             ];
         }
 
-        $tanpaNomor = Company::query()->withoutGlobalScopes()
+        $tanpaNomor = $sungguhan()
             ->where(fn ($q) => $q->whereNull('doc_no_prefix')->orWhere('doc_no_prefix', ''))
             ->count();
 
-        $tanpaLogo = Company::query()->withoutGlobalScopes()
+        $tanpaLogo = $sungguhan()
             ->where(fn ($q) => $q->whereNull('logo')->orWhere('logo', ''))
             ->count();
+
+        $catatanDemo = $demo ? ' '.$demo.' perusahaan contoh tidak dihitung.' : '';
 
         $bermasalah = $tanpaNomor > 0 || $tanpaLogo > 0;
 
@@ -645,7 +778,7 @@ final class Diagnosa
                   .'tanpa lambang — dan itu baru terlihat sesudah tercetak. Nomornya sengaja '
                   .'dikosongkan, bukan dikarang dari nama perusahaan: nomor karangan '
                   .'bertabrakan dengan penomoran mereka sendiri pada daftar induk.'
-                : 'Semua perusahaan sudah punya prefiks nomor dokumen dan logo.',
+                : 'Semua perusahaan sungguhan sudah punya prefiks nomor dokumen dan logo.'.$catatanDemo,
             'tindakan' => $bermasalah
                 ? 'Buka Kelola Perusahaan, isi Prefiks Nomor Dokumen dan unggah logonya.'
                 : null,
@@ -669,7 +802,12 @@ final class Diagnosa
             if (!Schema::hasTable($tabel)) continue;
             if (!in_array('company_id', self::petaKolom()[$tabel] ?? [], true)) continue;
 
-            $n = DB::table($tabel)->whereNull('company_id')->count();
+            /* Yang sudah DIPUTUSKAN milik bersama tidak lagi menunggu
+               apa pun — lihat migrasi milik_bersama_prosedur_berita. */
+            $q = DB::table($tabel)->whereNull('company_id');
+            if (in_array('bersama', self::petaKolom()[$tabel] ?? [], true)) $q->where('bersama', false);
+
+            $n = $q->count();
 
             if ($n > 0) $hitung[] = $n.' '.$sebutan;
         }
@@ -680,7 +818,8 @@ final class Diagnosa
                 'judul'    => 'Prosedur & berita tanpa pemilik',
                 'keadaan'  => self::AMAN,
                 'nilai'    => 'semuanya bertuan',
-                'uraian'   => 'Tiap prosedur dan berita sudah melekat pada satu perusahaan.',
+                'uraian'   => 'Tiap prosedur dan berita sudah melekat pada satu perusahaan, '
+                    .'atau sudah diputuskan menjadi milik bersama.',
                 'tindakan' => null,
             ];
         }
@@ -696,7 +835,7 @@ final class Diagnosa
                 .'menimbulkan galat apa pun. Sebagian mungkin memang milik bersama; sisanya '
                 .'perlu ditetapkan.',
             'tindakan' => 'Buka Pusat Kendali → Penetapan Pemilik, lalu tetapkan perusahaannya. '
-                .'Yang memang berlaku untuk semua perusahaan boleh dibiarkan kosong.',
+                .'Yang memang berlaku untuk semua perusahaan, tetapkan sebagai "Milik bersama".',
         ];
     }
 
@@ -980,7 +1119,13 @@ final class Diagnosa
         $config = is_file(base_path('bootstrap/cache/config.php'));
         $rute   = is_file(base_path('bootstrap/cache/routes-v7.php'))
                || is_file(base_path('bootstrap/cache/routes.php'));
-        $produksi = app()->environment('production');
+
+        /* Server yang dibuka umum dinilai sebagai produksi walau APP_ENV-nya
+           salah setel. Dulu cabang di bawah menyuruh membuang cache
+           konfigurasi di server produksi semacam itu — membuatnya lebih
+           lambat tanpa memperbaiki apa pun. Salah setelnya sendiri
+           dilaporkan "Lingkungan aplikasi". */
+        $produksi = app()->environment('production') || self::tampakProduksi();
 
         if ($produksi) {
             $kurang = array_keys(array_filter(['konfigurasi' => !$config, 'rute' => !$rute]));
@@ -1184,18 +1329,41 @@ final class Diagnosa
     {
         $abaikan = ['companies', 'users', 'migrations', 'sessions', 'cache', 'cache_locks',
                     'jobs', 'job_batches', 'failed_jobs', 'password_reset_tokens',
-                    'signatories', 'activity_log'];
+                    'signatories', 'activity_log',
+
+                    /* Punya pemeriksaannya sendiri ("Prosedur & berita tanpa
+                       pemilik"), yang juga mengenal keputusan "milik
+                       bersama". Dihitung di dua tempat, satu baris yang
+                       sama muncul sebagai dua masalah. */
+                    'procedures', 'news'];
 
         $temuan = [];
         $total = 0;
+        $acuan = 0;
+        $tabelAcuan = 0;
 
         foreach (self::tabelBerpemilik() as $tabel) {
             if (in_array($tabel, $abaikan, true)) continue;
 
             $n = DB::table($tabel)->whereNull('company_id')->count();
 
+            /* Daftar acuan bersama memang tanpa perusahaan — lihat
+               App\Support\AcuanBersama. Disebut jumlahnya, tidak
+               dihitung sebagai masalah. */
+            if (AcuanBersama::termasuk($tabel)) {
+                if ($n > 0) { $acuan += $n; $tabelAcuan++; }
+
+                continue;
+            }
+
             if ($n > 0) { $temuan[$tabel] = $n; $total += $n; }
         }
+
+        $catatanAcuan = $acuan > 0
+            ? ' Tidak dihitung: '.$acuan.' baris daftar acuan bersama di '.$tabelAcuan
+              .' tabel (jenis kompetensi, faktor emisi, master Miners, dan sejenisnya) — '
+              .'baris itu memang berlaku untuk semua perusahaan.'
+            : '';
 
         arsort($temuan);
 
@@ -1208,15 +1376,15 @@ final class Diagnosa
                   .implode(', ', array_map(fn ($t, $n) => "{$t} {$n}",
                         array_slice(array_keys($temuan), 0, 3),
                         array_slice(array_values($temuan), 0, 3))),
-            'uraian'   => $total === 0
-                ? 'Setiap baris data melekat pada satu perusahaan.'
-                : 'Baris tanpa company_id terlihat oleh SETIAP perusahaan. Untuk acuan yang '
-                  .'memang dipakai bersama itu disengaja; untuk data lapangan itu berarti data '
-                  .'satu perusahaan terbaca oleh perusahaan lain — dan aturannya tidak dapat '
-                  .'membedakan keduanya, hanya orang yang melihat daftarnya yang dapat.',
+            'uraian'   => ($total === 0
+                ? 'Setiap baris data lapangan melekat pada satu perusahaan.'
+                : 'Baris data lapangan tanpa company_id terlihat oleh SETIAP perusahaan — '
+                  .'termasuk akun baru yang mendaftar sendiri ke perusahaan demo. Data satu '
+                  .'perusahaan karena itu terbaca oleh perusahaan lain.').$catatanAcuan,
             'tindakan' => $total === 0 ? null
-                : 'Periksa tabel di atas satu per satu. Yang memang acuan bersama biarkan; yang '
-                  .'data lapangan tetapkan pemiliknya lewat konsol basis data.',
+                : 'Periksa tabel di atas satu per satu dan tetapkan pemiliknya lewat konsol '
+                  .'basis data. Bila ternyata tabel itu daftar acuan yang memang dipakai '
+                  .'bersama, cantumkan di App\\Support\\AcuanBersama.',
         ];
     }
 

@@ -33,7 +33,8 @@ class News extends Model
         'cover', 'lampiran', 'lampiran_nama',
     ];
 
-    protected function casts(): array { return ['published_at' => 'date']; }
+    /** `bersama`: sudah DIPUTUSKAN milik semua perusahaan — lihat migrasi milik_bersama_prosedur_berita. */
+    protected function casts(): array { return ['published_at' => 'date', 'bersama' => 'boolean']; }
 
     public function company(): BelongsTo { return $this->belongsTo(Company::class); }
 
