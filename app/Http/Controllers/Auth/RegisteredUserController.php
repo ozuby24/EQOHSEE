@@ -8,7 +8,7 @@ use App\Support\{AturanSandi, Turnstile};
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rules;
+use Illuminate\Validation\{Rule, Rules};
 use Inertia\Inertia;
 
 /**
@@ -21,7 +21,17 @@ class RegisteredUserController extends Controller
     public function create()
     {
         return Inertia::render('Auth/Register', [
-            'companies'   => Company::orderBy('name')->get(['id', 'name']),
+            /* HANYA perusahaan demo.
+
+               Pendaftaran terbuka untuk siapa saja, dan halaman ini dapat
+               dibuka tanpa masuk. Dulu daftarnya memuat SELURUH perusahaan:
+               nama setiap pelanggan terpampang bagi pengunjung mana pun,
+               dan siapa pun dapat menempatkan dirinya di perusahaan
+               sungguhan lalu — sesudah surelnya terverifikasi — membaca
+               datanya. Akun baru kini hanya dapat memilih perusahaan
+               demo; memindahkannya ke perusahaan sungguhan adalah
+               keputusan administrator, di Kelola Pengguna. */
+            'companies'   => self::perusahaanDemo()->get(['id', 'name']),
             'departments' => \App\Support\Hazard::DEPARTEMEN,
             'positions'   => \App\Support\Hazard::JABATAN,
 
@@ -44,7 +54,15 @@ class RegisteredUserController extends Controller
             'employee_id' => ['nullable','string','max:50'],
             'position'    => ['required','string','max:100'],
             'department'  => ['nullable','string','max:100'],
-            'company_id'  => ['nullable','exists:companies,id'],
+            /* Ditegakkan DI SINI, bukan hanya dengan menyaring daftar di
+               layar: permintaan dapat dikirim tanpa layarnya sama sekali.
+               Bila ada perusahaan demo, salah satunya wajib dipilih —
+               akun tanpa perusahaan hanya melihat halaman kosong. Bila
+               tidak ada sama sekali, akunnya menunggu ditempatkan
+               administrator. */
+            'company_id'  => self::perusahaanDemo()->exists()
+                ? ['required', Rule::exists('companies', 'id')->where('demo', true)]
+                : ['prohibited'],
 
             /* Pendaftaran terbuka untuk siapa saja yang membuka
                halamannya, dan itu memang disengaja — pekerja baru di site
@@ -53,7 +71,12 @@ class RegisteredUserController extends Controller
                akun, masing-masing memicu satu surel verifikasi dari
                server ini. */
             Turnstile::KOLOM => Turnstile::aturan(Turnstile::TINDAKAN['daftar']),
-        ], AturanSandi::pesan());
+        ], AturanSandi::pesan() + [
+            'company_id.required'   => 'Pilih perusahaan demo untuk akun baru Anda.',
+            'company_id.exists'     => 'Akun baru hanya dapat memakai perusahaan demo. '
+                .'Administrator yang memindahkan akun Anda ke perusahaan Anda sendiri.',
+            'company_id.prohibited' => 'Perusahaan ditetapkan administrator sesudah akun Anda dibuat.',
+        ]);
 
         /* Tokennya sengaja TIDAK dibuang dari $data di sini.
            User::$fillable adalah daftar putih, jadi cf-turnstile-response
@@ -87,5 +110,11 @@ class RegisteredUserController extends Controller
         event(new Registered($user));
 
         return redirect()->route('verification.notice');
+    }
+
+    /** Perusahaan yang boleh dipilih akun baru: hanya yang bertanda demo. */
+    private static function perusahaanDemo()
+    {
+        return Company::query()->withoutGlobalScopes()->where('demo', true)->orderBy('name');
     }
 }

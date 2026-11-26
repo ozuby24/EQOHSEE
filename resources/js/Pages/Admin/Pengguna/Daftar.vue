@@ -80,12 +80,15 @@ const chip = 'text-[9.5px] font-bold px-2 py-0.5 rounded tracking-wide uppercase
                   <span v-if="u.admin" :class="chip" class="bg-cam-ink text-white">ADMIN</span>
                   <span v-if="u.lmsRole" :class="chip" class="bg-cam-lime-soft text-cam-lime-deep">{{ u.lmsRole }}</span>
                   <span v-if="u.auditRole" :class="chip" class="bg-stone-100 text-stone-500">{{ u.auditRole }}</span>
-                  <span v-if="!u.admin && !u.lmsRole && !u.auditRole" class="text-[11px] text-stone-300">—</span>
+                  <span v-if="u.perusahaanDemo" :class="chip" class="bg-amber-50 text-amber-700"
+                        :title="`Masih di ${u.perusahaan} (perusahaan demo). Pindahkan lewat Edit bila sudah diverifikasi.`">Demo</span>
+                  <span v-if="!u.admin && !u.lmsRole && !u.auditRole && !u.perusahaanDemo" class="text-[11px] text-stone-300">—</span>
                 </div>
               </td>
               <td class="px-4 py-3.5 hidden md:table-cell">
                 <div class="text-stone-600">{{ u.jabatan ?? '—' }}</div>
                 <div v-if="u.departemen" class="text-[11px] text-stone-400">{{ u.departemen }}</div>
+                <div v-if="u.perusahaan" class="text-[11px] text-stone-400 clamp-1">{{ u.perusahaan }}</div>
               </td>
               <td class="px-4 py-3.5">
                 <span class="inline-flex items-center gap-1.5 text-[11.5px] font-semibold"

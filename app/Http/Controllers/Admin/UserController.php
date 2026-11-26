@@ -48,6 +48,10 @@ class UserController extends Controller
                 'departemen' => $u->department ?: null,
                 'aktif'      => (bool) $u->active,
                 'perusahaan' => $u->company?->name,
+                /* Akun baru hanya dapat mendaftar ke perusahaan demo;
+                   penandanya membuat akun yang masih menunggu dipindahkan
+                   ke perusahaan sungguhan terlihat dari daftar ini. */
+                'perusahaanDemo' => (bool) $u->company?->demo,
                 'diri'       => $u->id === auth()->id(),
                 'urlUbah'    => route('admin.users.edit', $u),
                 'urlHapus'   => route('admin.users.destroy', $u),
