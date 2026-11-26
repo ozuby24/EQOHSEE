@@ -3,13 +3,61 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pembelian\Produk;
-use App\Support\{Ekspor, IkonPadat, Media, Modules, Pillars, Smkp, TanyaJawab};
+use App\Support\{Ekspor, IkonPadat, Media, Modules, Pembelian, Pillars, Smkp, TanyaJawab};
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 class LandingController extends Controller
 {
+    /**
+     * Modul terbaru — ditandai "Baru" pada daftar modul dan dipajang di
+     * etalasenya sendiri. Kuncinya kunci menu (Modules::perKunciMenu),
+     * sehingga nama, keterangan, dan pilarnya tetap dibaca dari satu
+     * sumber yang sama dengan seluruh halaman.
+     */
+    private const BARU = ['meranti', 'rdas', 'angkat', 'perancah', 'lca', 'energi', 'karbon'];
+
+    /**
+     * Etalase modul terbaru: satu kalimat, tiga sorotan, dan tangkapan
+     * layar ASLI dari platform (media/terbaru/*.webp). Sorotannya diringkas
+     * dari keterangan modulnya sendiri — bukan janji yang tidak ada di
+     * aplikasinya. Gambar yang belum ditaruh menjadi null, dan layar
+     * menggambar bidang bermotif sebagai gantinya.
+     */
+    private const ETALASE = [
+        ['kunci' => 'meranti', 'gambar' => 'terbaru/meranti.webp', 'judul' => 'MERANTI · Reklamasi & Nursery',
+         'kalimat' => 'Dari bibit di persemaian sampai lahan yang direklamasi — satu alur, satu data.',
+         'sorot' => ['Stok dan mutasi bibit persemaian, termasuk bibit mati dan rusak',
+                     'Peta satelit 3D blok reklamasi dari berkas KML/KMZ',
+                     'Matrik 17 penilaian keberhasilan dan jaminan reklamasi']],
+        ['kunci' => 'rdas', 'gambar' => 'terbaru/rdas.webp', 'judul' => 'Rehabilitasi DAS',
+         'kalimat' => 'Kewajiban rehabilitasi DAS pemegang PPKH, terukur per blok dan per petak.',
+         'sorot' => ['Penetapan lokasi, RKP, dan pekerjaan P0–P2 per blok',
+                     'Petak ukur persen tumbuh dan penilaian keberhasilan',
+                     'Serah terima (BAST) bertahap dan laporan semesteran']],
+        ['kunci' => 'angkat', 'gambar' => 'terbaru/angkat.webp', 'judul' => 'Lifting & Rigging Management',
+         'kalimat' => 'Setiap pengangkatan direncanakan, dihitung, dan disetujui sebelum tali dipasang.',
+         'sorot' => ['Register PAA dan alat bantu angkat dengan karantina otomatis',
+                     'Kalkulator rigging dan simulasi pengangkatan empat fase',
+                     'Kajian teknis enam pilar sampai persetujuan KTT']],
+        ['kunci' => 'perancah', 'gambar' => 'terbaru/perancah.webp', 'judul' => 'Scaffolding Management',
+         'kalimat' => 'Perancah yang aman dipakai — dan buktinya tergantung di tag-nya.',
+         'sorot' => ['Kalkulator kebutuhan material dan beban perancah',
+                     'Inspeksi 16 butir dan scafftag ber-QR otomatis',
+                     'Peta titik pemasangan di area kerja']],
+        ['kunci' => 'lca', 'gambar' => 'terbaru/lca.webp', 'judul' => 'Life Cycle Assessment',
+         'kalimat' => 'Jejak lingkungan produk tambang, dihitung dari tambang sampai gerbang.',
+         'sorot' => ['Inventori lima tahap mengikuti ISO 14040/14044',
+                     'Enam kategori dampak dan analisis hotspot',
+                     'Kualitas data dan simulasi dekarbonisasi']],
+        ['kunci' => 'energi', 'gambar' => 'terbaru/energi.webp', 'judul' => 'Energi & Karbon',
+         'kalimat' => 'Konsumsi energi dan emisi GRK dalam satu tempat, siap dilaporkan.',
+         'sorot' => ['Konsumsi BBM dan listrik, intensitas energi, EnPI, dan SEU',
+                     'Inventarisasi emisi GRK Scope 1–3 dengan faktor berversi',
+                     'Laporan ESDM, kepatuhan PP 33/2023, dan jalur dekarbonisasi']],
+    ];
+
     public function index()
     {
         $modules = array_map(function (array $module): array {
@@ -23,6 +71,7 @@ class LandingController extends Controller
                 'pilarWarna' => $pillar['warna'],
                 'pilarDeep' => $pillar['deep'],
                 'url' => $route && Route::has($route) ? route($route) : null,
+                'baru' => in_array(Modules::kunci($module['nama']), self::BARU, true),
                 'ikonPadat' => IkonPadat::untuk(Modules::kunci($module['nama'])),
             ];
         }, Modules::all());
@@ -65,7 +114,13 @@ class LandingController extends Controller
             'kontak' => [
                 'whatsapp' => Ekspor::nomorWa(config('pembelian.kontak.whatsapp')) ?? '',
                 'email' => (string) config('pembelian.kontak.email'),
+                /* Kontak WhatsApp tambahan, bernama — lihat config/pembelian.php. */
+                'lain' => array_values(array_filter(array_map(
+                    fn (array $k) => ($n = Ekspor::nomorWa($k['nomor'] ?? null)) ? ['nama' => (string) $k['nama'], 'whatsapp' => $n] : null,
+                    (array) config('pembelian.kontak.whatsapp_lain', []),
+                ))),
             ],
+            'terbaru' => $this->etalase(),
             'elemenSmkp' => $this->elemenSmkp(),
             'smkpAngka' => ['poin' => Smkp::totalNilai(), 'butir' => Smkp::jumlahButir()],
             'jumlahItem' => 194,
@@ -192,16 +247,51 @@ class LandingController extends Controller
      *
      * @return array{paket: ?array<string, mixed>, layanan: ?array<string, mixed>, aplikasi: list<array<string, mixed>>}|null
      */
+    /** @return list<array<string,mixed>> etalase modul terbaru, urut seperti ETALASE */
+    private function etalase(): array
+    {
+        $modul = Modules::perKunciMenu();
+        $hasil = [];
+
+        foreach (self::ETALASE as $e) {
+            $m = $modul[$e['kunci']] ?? null;
+            if (! $m) continue;
+
+            $pilar = Pillars::get($m['pilar'] ?? 'engineering') ?? Pillars::get('engineering');
+
+            $hasil[] = [
+                'kunci'      => $e['kunci'],
+                'judul'      => $e['judul'],
+                'kalimat'    => $e['kalimat'],
+                'sorot'      => $e['sorot'],
+                'gambar'     => Media::url($e['gambar']),
+                'pilarNama'  => $pilar['nama'],
+                'pilarWarna' => $pilar['warna'],
+                'ikon'       => $m['ikon'] ?? null,
+            ];
+        }
+
+        return $hasil;
+    }
+
     private function katalog(): ?array
     {
         try {
             $aktif = Produk::aktif()->where('harga', '>', 0)->get();
 
+            /* Harga tambahan, aturan server, dan ukuran kelipatan pemeliharaan
+               ikut dikirim: keranjang halaman ini menghitung dengan aturan
+               yang SAMA dengan yang menagih (hargaBertingkat.ts). Tanpa
+               itu ia hanya dapat mengalikan harga dengan banyaknya — dan
+               menjanjikan angka yang berbeda dari tagihan yang terbit. */
             $satu = function (string $jenis) use ($aktif): ?array {
                 $p = $aktif->where('jenis', $jenis)->sortBy('urutan')->first();
 
                 return $p ? ['id' => $p->id, 'nama' => $p->nama, 'ket' => $p->keterangan,
-                             'harga' => (int) $p->harga, 'masa' => $p->masaBerlaku()] : null;
+                             'harga' => (int) $p->harga, 'masa' => $p->masaBerlaku(),
+                             'harga_tambahan' => $p->harga_tambahan,
+                             'aturan' => $p->aturanServer(),
+                             'modulPerBlok' => $p->modul_per_blok] : null;
             };
 
             $perKunci = $aktif->where('jenis', Produk::APLIKASI)->keyBy('modul_kunci');
@@ -215,6 +305,8 @@ class LandingController extends Controller
             }
 
             $katalog = ['paket' => $satu(Produk::WEBSITE), 'layanan' => $satu(Produk::LAYANAN),
+                        'pemeliharaan' => $satu(Produk::PEMELIHARAAN),
+                        'modulPaket' => Pembelian::modulPaket(),
                         'aplikasi' => $aplikasi];
 
             return $katalog['paket'] || $katalog['layanan'] || $aplikasi ? $katalog : null;

@@ -270,11 +270,14 @@ class HargaBertingkatTest extends TestCase
      */
     public function test_tidak_ada_layar_yang_mengalikan_harganya_sendiri(): void
     {
-        $halaman = ['Katalog.vue', 'Etalase.vue'];
+        /* Landing.vue ikut dijaga: keranjang halaman depan pernah
+           mengalikan harga dengan banyaknya sendiri, sehingga website
+           kedua terbaca seharga penuh padahal tagihannya Rp 3 juta. */
+        $halaman = ['Pembelian/Katalog.vue', 'Pembelian/Etalase.vue', 'Landing.vue'];
         $langgar = [];
 
         foreach ($halaman as $berkas) {
-            $utuh = file_get_contents(resource_path("js/Pages/Pembelian/{$berkas}"));
+            $utuh = file_get_contents(resource_path("js/Pages/{$berkas}"));
 
             /* Komentarnya dibuang lebih dulu.
              *

@@ -20,6 +20,9 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import BlankLayout from '../Layouts/BlankLayout.vue';
 import { bolehLatarVideo } from '../latarVideo';
+import {
+  blokPemeliharaan, hargaServer, rincianBertingkat, subtotalBertingkat, subtotalPemeliharaan, subtotalServer,
+} from '../hargaBertingkat';
 import '../../css/landing.css';
 
 defineOptions({ layout: BlankLayout });
@@ -30,9 +33,17 @@ type Pilar = {
 };
 type Modul = {
   nama: string; status: string; ket: string; ikon: string; pilar: string;
-  pilarNama: string; pilarWarna: string; url: string | null;
+  pilarNama: string; pilarWarna: string; url: string | null; baru?: boolean;
 };
-type Produk = { id: number; nama: string; ket?: string | null; harga: number; masa: string };
+type AturanServer = { cpuDasar: number; cpuMaks: number; ramDasar: number; ramMaks: number; hargaCpu: number; hargaRam: number };
+type Produk = {
+  id: number; nama: string; ket?: string | null; harga: number; masa: string;
+  harga_tambahan?: number | null; aturan?: AturanServer | null; modulPerBlok?: number | null;
+};
+type Etalase = {
+  kunci: string; judul: string; kalimat: string; sorot: string[]; gambar: string | null;
+  pilarNama: string; pilarWarna: string; ikon: string | null;
+};
 
 const props = defineProps<{
   hero: { video: string | null; poster: string | null };
@@ -43,12 +54,16 @@ const props = defineProps<{
   smkpAngka: { poin: number; butir: number };
   aman: { judul: string; ket: string }[];
   tanya: { t: string; j: string }[];
-  kontak: { whatsapp: string; email: string };
+  kontak: { whatsapp: string; email: string; lain?: { nama: string; whatsapp: string }[] };
+  terbaru?: Etalase[];
   jumlahItem: number;
   modul: Modul[];
   pilar: Record<string, Pilar>;
   alur: { judul: string; ket: string }[];
-  katalog: { paket: Produk | null; layanan: Produk | null; aplikasi: Produk[] } | null;
+  katalog: {
+    paket: Produk | null; layanan: Produk | null; pemeliharaan?: Produk | null;
+    modulPaket?: number; aplikasi: Produk[];
+  } | null;
   layarPonsel: { url: string; alt: string }[];
   tautan: { masuk: string; katalog: string; pesan: string; privasi: string };
   tahun: number;
@@ -64,9 +79,11 @@ const Kata = (n: number) => { const k = kata(n); return k.charAt(0).toUpperCase(
 
 /* ═══════════ kepala & navigasi ═══════════ */
 
+/* "Cara kerja" keluar dari bilah atas untuk memberi tempat "Modul baru";
+   bagiannya tetap ada dan tetap dapat dicapai dengan menggulir. */
 const NAV: [string, string][] = [
-  ['kerangka', 'Kerangka'], ['modul', 'Modul'], ['smkp', 'Audit SMKP'],
-  ['aplikasi', 'Aplikasi lapangan'], ['alur', 'Cara kerja'], ['harga', 'Harga'],
+  ['terbaru', 'Modul baru'], ['kerangka', 'Kerangka'], ['modul', 'Modul'], ['smkp', 'Audit SMKP'],
+  ['aplikasi', 'Aplikasi lapangan'], ['harga', 'Harga'],
   ['tanya', 'Tanya jawab'], ['kontak', 'Kontak'],
 ];
 
@@ -84,6 +101,24 @@ const huruf = computed(() => pilarDaftar.value.map(([slug, p]) => ({
 })));
 const pilarKini = ref<string>(props.pilar.safety ? 'safety' : (Object.keys(props.pilar)[0] ?? ''));
 const pilarAktif = computed(() => props.pilar[pilarKini.value] ?? null);
+
+/* ═══════════ etalase modul terbaru ═══════════ */
+
+const etalase = computed(() => props.terbaru ?? []);
+const etalaseKini = ref(0);
+const etalaseAktif = computed(() => etalase.value[etalaseKini.value] ?? null);
+
+/* Panah kiri/kanan/atas/bawah berpindah tab, sesuai pola tablist WAI-ARIA. */
+function tombolEtalase(e: KeyboardEvent, i: number) {
+  const n = etalase.value.length;
+  if (!n) return;
+  const maju = e.key === 'ArrowRight' || e.key === 'ArrowDown';
+  const mundur = e.key === 'ArrowLeft' || e.key === 'ArrowUp';
+  if (!maju && !mundur) return;
+  e.preventDefault();
+  etalaseKini.value = (i + (maju ? 1 : n - 1)) % n;
+  nextTick(() => document.getElementById(`ld-baru-tab-${etalaseKini.value}`)?.focus());
+}
 
 /* ═══════════ modul ═══════════ */
 
@@ -127,7 +162,7 @@ async function lihatModul(nama: string) {
 
 /* ═══════════ SMKP ═══════════ */
 
-const warnaBobot = (b: number) => (b >= 35 ? 'var(--ld-aksen)' : b >= 15 ? 'var(--ld-hitam)' : '#3A4450');
+const warnaBobot = (b: number) => (b >= 35 ? 'var(--ld-aksen)' : b >= 15 ? 'var(--ld-hitam)' : 'var(--ld-batu)');
 const teksBobot = (b: number) => (b >= 35 ? 'var(--ld-hitam)' : '#FFFFFF');
 
 /* ═══════════ hero ═══════════ */
@@ -170,15 +205,87 @@ function ubah(id: number, d: number) {
   jumlah[id] = Math.max(0, Math.min(MAKS, (jumlah[id] ?? 0) + d));
 }
 
+/* Spesifikasi server yang dipilih. Dasar 1 vCPU / 1 GB sudah termasuk
+   harga layanan; tiap tambahan bertarif sendiri (Produk::aturanServer). */
+const spek = reactive({ cpu: 1, ram: 1 });
+function aturSpek(k: 'cpu' | 'ram', d: number) {
+  const a = props.katalog?.layanan?.aturan;
+  if (!a) return;
+  const [min, maks] = k === 'cpu' ? [a.cpuDasar, a.cpuMaks] : [a.ramDasar, a.ramMaks];
+  spek[k] = Math.max(min, Math.min(maks, spek[k] + d));
+}
+/* Contoh pilihan cepat menurut keputusan pemiliknya: lima aplikasi pada
+   4 vCPU dan RAM 4 GB. */
+const contohSpek = [{ label: '1 aplikasi', cpu: 1, ram: 1 }, { label: '5 aplikasi', cpu: 4, ram: 4 }];
+/* Dua pengatur spesifikasi, dengan labelnya. */
+const PENGATUR = [
+  { k: 'cpu' as const, label: 'vCPU', satuan: 'vCPU' },
+  { k: 'ram' as const, label: 'RAM (GB)', satuan: 'GB' },
+];
+function pakaiSpek(cpu: number, ram: number) { spek.cpu = cpu; spek.ram = ram; }
+
+const hargaLayanan = computed(() => {
+  const l = props.katalog?.layanan;
+  return l ? hargaServer(l.harga, l.aturan?.hargaCpu, l.aturan?.hargaRam, spek.cpu, spek.ram) : 0;
+});
+
 const produkSemua = computed<Produk[]>(() => {
   const k = props.katalog;
   if (!k) return [];
   return [...(k.paket ? [k.paket] : []), ...(k.layanan ? [k.layanan] : []), ...k.aplikasi];
 });
+
+/* Lewat hargaBertingkat.ts — aturan yang SAMA dengan yang menagih.
+   Dulu halaman ini mengalikan harga dengan banyaknya sendiri, sehingga
+   website kedua terbaca seharga penuh padahal tagihannya Rp 3 juta. */
+function subtotalProduk(p: Produk, n: number): number {
+  if (p.aturan) return subtotalServer(p.harga, p.aturan.hargaCpu, p.aturan.hargaRam, spek.cpu, spek.ram, n);
+  return subtotalBertingkat(p.harga, p.harga_tambahan, n);
+}
+function rincianProduk(p: Produk, n: number): string | null {
+  if (p.aturan) return `${spek.cpu} vCPU · RAM ${spek.ram} GB`;
+  return rincianBertingkat(p.harga, p.harga_tambahan, n, rp);
+}
+
 const baris = computed(() => produkSemua.value
   .filter((p) => (jumlah[p.id] ?? 0) > 0)
-  .map((p) => ({ ...p, n: jumlah[p.id], sub: p.harga * jumlah[p.id] })));
-const total = computed(() => baris.value.reduce((t, b) => t + b.sub, 0));
+  .map((p) => ({ ...p, n: jumlah[p.id], sub: subtotalProduk(p, jumlah[p.id]), rinci: rincianProduk(p, jumlah[p.id]) })));
+
+/* Modul yang dipelihara — aturan Pembelian::modulPesanan(): paket membawa
+   seluruh modulnya per website; aplikasi satuan satu modul per butir,
+   kecuali bila paketnya ikut dipilih. Pemeliharaan tidak dipilih pembeli —
+   ia baris tetap, dan peladen menghitungnya sendiri dengan aturan sama. */
+const modulDipilih = computed(() => {
+  const k = props.katalog;
+  if (!k) return 0;
+  const website = k.paket ? (jumlah[k.paket.id] ?? 0) : 0;
+  if (website > 0) return website * (k.modulPaket ?? 0);
+  return k.aplikasi.reduce((t, a) => t + (jumlah[a.id] ?? 0), 0);
+});
+const pelihara = computed(() => {
+  const p = props.katalog?.pemeliharaan;
+  const per = p?.modulPerBlok ?? 3;
+  const blok = p ? blokPemeliharaan(modulDipilih.value, per) : 0;
+  return p && blok > 0
+    ? { nama: p.nama, harga: p.harga, per, blok, biaya: subtotalPemeliharaan(p.harga, per, modulDipilih.value) }
+    : null;
+});
+/** Biaya pemeliharaan setahun untuk sekian modul — untuk keterangan kartunya. */
+function peliharaUntuk(modul: number): number {
+  const p = props.katalog?.pemeliharaan;
+  return p ? subtotalPemeliharaan(p.harga, p.modulPerBlok ?? 3, modul) : 0;
+}
+
+const total = computed(() => baris.value.reduce((t, b) => t + b.sub, 0) + (pelihara.value?.biaya ?? 0));
+
+/* Yang datang lagi tiap tahun: server (bila dipilih) dan pemeliharaan.
+   Disebut terpisah supaya harga website yang sekali bayar tidak terbaca
+   sebagai biaya tahunan — dan sebaliknya. */
+const tahunan = computed(() => {
+  const l = props.katalog?.layanan;
+  const server = l && (jumlah[l.id] ?? 0) > 0 ? hargaLayanan.value : 0;
+  return server + (pelihara.value?.biaya ?? 0);
+});
 const butir = computed(() => baris.value.reduce((t, b) => t + b.n, 0));
 const paketDipilih = computed(() => !!props.katalog?.paket && (jumlah[props.katalog.paket.id] ?? 0) > 0);
 const satuanDipilih = computed(() => (props.katalog?.aplikasi ?? []).some((a) => (jumlah[a.id] ?? 0) > 0));
@@ -204,9 +311,11 @@ function periksa(): boolean {
 
 function buatTagihan() {
   if (!baris.value.length || !periksa()) return;
-  /* Hanya ID dan banyaknya yang dikirim; harganya dihitung ulang server. */
+  /* Hanya ID, banyaknya, dan spesifikasi server yang dikirim; harganya
+     — termasuk pemeliharaan — dihitung ulang server. */
   const produk = Object.fromEntries(baris.value.map((b) => [b.id, b.n]));
-  form.transform((d) => ({ ...d, produk })).post(props.tautan.pesan, { preserveScroll: true });
+  const spesifikasi = Object.fromEntries(baris.value.filter((b) => b.aturan).map((b) => [b.id, { cpu: spek.cpu, ram: spek.ram }]));
+  form.transform((d) => ({ ...d, produk, spesifikasi })).post(props.tautan.pesan, { preserveScroll: true });
 }
 
 /* ═══════════ tanya jawab ═══════════ */
@@ -242,6 +351,14 @@ const waTampil = computed(() => {
   const m = n.match(/^62(\d{3})(\d{4})(\d+)$/);
   return m ? `+62 ${m[1]}-${m[2]}-${m[3]}` : '+' + n;
 });
+/* Kontak WhatsApp tambahan yang bernama (config/pembelian.php). */
+const waFormat = (n: string) => { const m = n.match(/^62(\d{3})(\d{4})(\d+)$/); return m ? `+62 ${m[1]}-${m[2]}-${m[3]}` : '+' + n; };
+const kontakLain = computed(() => (props.kontak.lain ?? []).map((k) => ({
+  nama: k.nama,
+  tampil: waFormat(k.whatsapp),
+  url: 'https://wa.me/' + k.whatsapp + '?text='
+    + encodeURIComponent(`Halo ${k.nama}, saya ingin menanyakan penawaran EQOHSEE untuk perusahaan kami.`),
+})));
 const emailUrl = computed(() => (props.kontak.email
   ? 'mailto:' + props.kontak.email + '?subject=' + encodeURIComponent('Penawaran EQOHSEE') : null));
 
@@ -356,6 +473,13 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
                 </Link>
                 <a href="#modul" class="ld-tombol ld-tombol-garis">Lihat {{ modul.length }} modul</a>
               </div>
+
+              <!-- Modul terbaru, langsung dari layar pertama: tiap nama
+                   membuka tabnya sendiri di etalase di bawah. -->
+              <div v-if="etalase.length" class="ld-hero-baru" aria-label="Modul baru">
+                <span class="ld-hero-baru-label">BARU</span>
+                <a v-for="(e, i) in etalase" :key="e.kunci" href="#terbaru" @click="etalaseKini = i">{{ e.judul.split(' · ')[0] }}</a>
+              </div>
             </div>
 
             <!-- Kartu di atas foto adalah CONTOH tampilan, memakai bidang
@@ -390,6 +514,10 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
             </div>
           </div>
         </div>
+        <!-- Siluet jenjang tambang terbuka: hero gelap "turun" bertingkat
+             ke lapisan pasir di bawahnya. Hiasan, tanpa makna bagi
+             pembaca layar. -->
+        <div class="ld-teras" aria-hidden="true"></div>
       </section>
 
       <!-- ══════════ ACUAN ══════════
@@ -405,6 +533,74 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
             <span>Setiap penilaian bersandar pada</span>
             <span v-for="x in standar" :key="x.kode" class="ld-acuan-kode" :title="x.ket">{{ x.kode }}</span>
           </template>
+        </div>
+      </section>
+
+      <!-- ══════════ MODUL TERBARU ══════════
+           Tangkapan layar ASLI dari platform (media/terbaru/*.webp),
+           bukan gambar karangan. Gambar yang belum ditaruh diganti
+           bidang bermotif, tidak pernah bingkai gambar rusak. -->
+      <section v-if="etalase.length" id="terbaru" class="ld-abu ld-garis-atas">
+        <div class="ld-lebar ld-blok">
+          <div class="ld-kepala-bagian ld-muncul">
+            <div>
+              <p class="ld-mata">Baru — {{ etalase.length }} modul</p>
+              <h2 class="ld-h2">Dari persemaian sampai jejak karbon.</h2>
+            </div>
+            <p class="ld-lead">
+              Modul terbaru EQOHSEE untuk pekerjaan yang paling sering ditanyakan di site: reklamasi,
+              rehabilitasi DAS, pengangkatan, perancah, daur hidup produk, serta energi dan emisi —
+              di akun dan data yang sama dengan modul lainnya.
+            </p>
+          </div>
+
+          <div class="ld-baru-grid">
+            <div class="ld-baru-daftar" role="tablist" aria-label="Modul baru" aria-orientation="vertical">
+              <button v-for="(e, i) in etalase" :id="`ld-baru-tab-${i}`" :key="e.kunci" type="button" role="tab"
+                      class="ld-baru-tab" :style="{ '--warna': e.pilarWarna }"
+                      :aria-selected="etalaseKini === i" aria-controls="ld-baru-panel"
+                      :tabindex="etalaseKini === i ? 0 : -1"
+                      @click="etalaseKini = i" @keydown="tombolEtalase($event, i)">
+                <span class="ld-baru-ikon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path :d="e.ikon || PANAH" /></svg>
+                </span>
+                <b>{{ e.judul }}</b>
+                <small>{{ e.kalimat }}</small>
+              </button>
+            </div>
+
+            <div v-if="etalaseAktif" id="ld-baru-panel" class="ld-baru-panel" role="tabpanel"
+                 :aria-labelledby="`ld-baru-tab-${etalaseKini}`" :style="{ '--warna': etalaseAktif.pilarWarna }">
+              <div class="ld-baru-layar">
+                <div class="ld-baru-bilah" aria-hidden="true"><i></i><i></i><i></i><span>eqohsee.id · {{ etalaseAktif.judul }}</span></div>
+                <img v-if="etalaseAktif.gambar" :key="etalaseAktif.gambar" :src="etalaseAktif.gambar"
+                     :alt="`Tampilan ${etalaseAktif.judul} di platform EQOHSEE`" width="1280" height="800"
+                     loading="lazy" decoding="async">
+                <div v-else class="ld-baru-kosong" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="etalaseAktif.ikon || PANAH" /></svg>
+                </div>
+              </div>
+
+              <div class="ld-baru-isi">
+                <div class="ld-baru-isi-atas">
+                  <h3>{{ etalaseAktif.judul }}</h3>
+                  <span class="ld-lencana-baru">BARU</span>
+                  <span class="ld-lencana-pilar"><i></i>{{ etalaseAktif.pilarNama }}</span>
+                </div>
+                <p class="ld-baru-kalimat">{{ etalaseAktif.kalimat }}</p>
+                <ul class="ld-baru-sorot">
+                  <li v-for="x in etalaseAktif.sorot" :key="x">{{ x }}</li>
+                </ul>
+                <div class="ld-baru-aksi">
+                  <a href="#harga" class="ld-tombol ld-tombol-aksen ld-tombol-kecil">
+                    Lihat harga
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="PANAH" /></svg>
+                  </a>
+                  <a href="#kontak" class="ld-tombol ld-tombol-tanah ld-tombol-kecil">Minta demo</a>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -484,13 +680,13 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
 
           <div class="ld-modul-kisi">
             <article v-for="m in modulTampil" :key="m.nama" class="ld-modul" :data-modul="m.nama"
-                     :class="{ sorot: sorot === m.nama }">
+                     :class="{ sorot: sorot === m.nama }" :style="{ '--warna': m.pilarWarna }">
               <span class="ld-modul-ikon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path :d="m.ikon" /></svg>
               </span>
               <div style="flex:1;min-width:0">
                 <div class="ld-modul-atas">
-                  <h3 style="margin:0"><b>{{ m.nama }}</b><span v-if="m.status !== 'aktif'" class="ld-segera">SEGERA</span></h3>
+                  <h3 style="margin:0"><b>{{ m.nama }}</b><span v-if="m.baru" class="ld-lencana-baru">BARU</span><span v-if="m.status !== 'aktif'" class="ld-segera">SEGERA</span></h3>
                   <span class="ld-modul-pilar"><i :style="{ background: m.pilarWarna }"></i>{{ m.pilarNama }}</span>
                 </div>
                 <p>{{ m.ket }}</p>
@@ -665,11 +861,12 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
           <div class="ld-kepala-bagian ld-muncul">
             <div>
               <p class="ld-mata">07 — Harga &amp; pembelian</p>
-              <h2 class="ld-h2">Beli per aplikasi, atau semuanya sekaligus.</h2>
+              <h2 class="ld-h2">Website sekali bayar. Tahunan hanya server dan pemeliharaan.</h2>
             </div>
             <p class="ld-lead">
-              Pemesanan tidak menuntut akun. Tagihan terbit lebih dulu, pembayaran lewat QRIS atau
-              transfer bank, dan lisensi terbit setelah bukti bayar diperiksa.
+              Lisensi website permanen. Sesudahnya yang dibayar setiap tahun hanya server (mulai
+              {{ katalog?.layanan ? rp(katalog.layanan.harga) : '—' }}) dan pemeliharaan per tiga modul.
+              Pemesanan tidak menuntut akun; lisensi terbit setelah bukti bayar diperiksa.
             </p>
           </div>
 
@@ -680,7 +877,12 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
                 <div class="ld-produk-nama">{{ katalog.paket.nama }}</div>
                 <div class="ld-produk-ket">{{ katalog.paket.ket || 'Seluruh aplikasi di dalamnya, pembaruan, dan pendampingan pemasangan.' }}</div>
                 <div class="ld-produk-bawah">
-                  <div><div class="ld-harga">{{ rp(katalog.paket.harga) }}</div><div class="ld-harga-masa">{{ katalog.paket.masa }}</div></div>
+                  <div>
+                    <div class="ld-harga">{{ rp(katalog.paket.harga) }}</div><div class="ld-harga-masa">{{ katalog.paket.masa }}</div>
+                    <div v-if="katalog.paket.harga_tambahan != null" class="ld-harga-masa">
+                      Website ke-2 dst. {{ rp(katalog.paket.harga_tambahan) }} masing-masing
+                    </div>
+                  </div>
                   <div class="ld-stepper">
                     <button type="button" :disabled="!jumlah[katalog.paket.id]" aria-label="Kurangi paket" @click="ubah(katalog.paket.id, -1)">−</button>
                     <span aria-live="polite">{{ jumlah[katalog.paket.id] ?? 0 }}</span>
@@ -694,11 +896,58 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
                 <div class="ld-produk-nama" style="font-size:20px;color:var(--ld-hitam)">{{ katalog.layanan.nama }}</div>
                 <div v-if="katalog.layanan.ket" class="ld-produk-ket">{{ katalog.layanan.ket }}</div>
                 <div class="ld-produk-bawah">
-                  <div><div class="ld-harga" style="font-size:26px;color:var(--ld-hitam)">{{ rp(katalog.layanan.harga) }}</div><div class="ld-harga-masa">{{ katalog.layanan.masa }}</div></div>
+                  <div><div class="ld-harga" style="font-size:26px;color:var(--ld-hitam)">{{ rp(hargaLayanan) }}</div><div class="ld-harga-masa">{{ katalog.layanan.masa }}</div></div>
                   <div class="ld-stepper">
                     <button type="button" :disabled="!jumlah[katalog.layanan.id]" aria-label="Kurangi layanan" @click="ubah(katalog.layanan.id, -1)">−</button>
                     <span aria-live="polite">{{ jumlah[katalog.layanan.id] ?? 0 }}</span>
                     <button type="button" aria-label="Tambah layanan" @click="ubah(katalog.layanan.id, 1)">+</button>
+                  </div>
+                </div>
+
+                <!-- Atur server: dasar sudah termasuk, tiap vCPU dan GB RAM
+                     tambahan bertarif sendiri — hitungannya hargaBertingkat.ts. -->
+                <div v-if="katalog.layanan.aturan" class="ld-server">
+                  <div v-for="g in PENGATUR" :key="g.k" class="ld-server-baris">
+                    <span>{{ g.label }}</span>
+                    <div class="ld-stepper">
+                      <button type="button" :aria-label="`Kurangi ${g.label}`"
+                              :disabled="spek[g.k] <= (g.k === 'cpu' ? katalog.layanan.aturan.cpuDasar : katalog.layanan.aturan.ramDasar)"
+                              @click="aturSpek(g.k, -1)">−</button>
+                      <span>{{ spek[g.k] }}</span>
+                      <button type="button" :aria-label="`Tambah ${g.label}`"
+                              :disabled="spek[g.k] >= (g.k === 'cpu' ? katalog.layanan.aturan.cpuMaks : katalog.layanan.aturan.ramMaks)"
+                              @click="aturSpek(g.k, 1)">+</button>
+                    </div>
+                    <small>+{{ rp(g.k === 'cpu' ? katalog.layanan.aturan.hargaCpu : katalog.layanan.aturan.hargaRam) }} per {{ g.satuan }} tambahan</small>
+                  </div>
+                  <div class="ld-server-contoh">
+                    <span>Contoh:</span>
+                    <button v-for="c in contohSpek" :key="c.label" type="button"
+                            :class="{ pilih: spek.cpu === c.cpu && spek.ram === c.ram }" @click="pakaiSpek(c.cpu, c.ram)">
+                      {{ c.label }} · {{ c.cpu }} vCPU · {{ c.ram }} GB
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Pemeliharaan tahunan: per kelipatan tiga modul, di luar
+                   server. Tidak dipilih — ikut dihitung dari modul yang
+                   diambil, dan tabelnya di sini supaya dapat diperiksa. -->
+              <div v-if="katalog.pemeliharaan" class="ld-produk">
+                <div class="ld-produk-atas"><span>Layanan tahunan</span></div>
+                <div class="ld-produk-nama" style="font-size:20px;color:var(--ld-hitam)">{{ katalog.pemeliharaan.nama }}</div>
+                <div class="ld-produk-ket">
+                  {{ rp(katalog.pemeliharaan.harga) }} per tahun untuk setiap kelipatan {{ katalog.pemeliharaan.modulPerBlok ?? 3 }}
+                  modul, di luar server. Ikut masuk tagihan sesuai modul yang diambil.
+                </div>
+                <div class="ld-pelihara">
+                  <div v-for="k in [1, 2, 3]" :key="k">
+                    <span>{{ (k - 1) * (katalog.pemeliharaan.modulPerBlok ?? 3) + 1 }}–{{ k * (katalog.pemeliharaan.modulPerBlok ?? 3) }} modul</span>
+                    <b>{{ rp(peliharaUntuk(k * (katalog.pemeliharaan.modulPerBlok ?? 3))) }}<template v-if="k === 1 && katalog.layanan"> + server {{ rp(katalog.layanan.harga) }} = {{ rp(peliharaUntuk(katalog.pemeliharaan.modulPerBlok ?? 3) + katalog.layanan.harga) }}</template></b>
+                  </div>
+                  <div v-if="katalog.modulPaket">
+                    <span>Paket menyeluruh · {{ katalog.modulPaket }} modul</span>
+                    <b>{{ rp(peliharaUntuk(katalog.modulPaket)) }}</b>
                   </div>
                 </div>
               </div>
@@ -723,13 +972,20 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
               <div v-if="!baris.length" class="ld-ringkas-kosong">Belum ada yang dipilih.</div>
               <div v-else>
                 <div v-for="b in baris" :key="b.id" class="ld-ringkas-baris">
-                  <span>{{ b.nama }}</span><span class="ld-mono">×{{ b.n }}</span><b>{{ rp(b.sub) }}</b>
+                  <span>{{ b.nama }}<small v-if="b.rinci" class="ld-ringkas-tetap" style="display:block">{{ b.rinci }}</small></span><span class="ld-mono">×{{ b.n }}</span><b>{{ rp(b.sub) }}</b>
+                </div>
+                <div v-if="pelihara" class="ld-ringkas-baris ld-ringkas-tetap">
+                  <span>{{ pelihara.nama }} — {{ modulDipilih }} modul<small>{{ pelihara.blok }} × {{ rp(pelihara.harga) }} per {{ pelihara.per }} modul · per tahun</small></span>
+                  <span class="ld-mono">×{{ pelihara.blok }}</span><b>{{ rp(pelihara.biaya) }}</b>
                 </div>
               </div>
               <p v-if="paketDipilih && satuanDipilih" class="ld-ringkas-catatan">
                 Paket menyeluruh sudah mencakup seluruh aplikasi — aplikasi satuan tidak perlu dipilih lagi.
               </p>
-              <div class="ld-total"><span>Total</span><b>{{ rp(total) }}</b></div>
+              <div class="ld-total"><span>Total tagihan pertama</span><b>{{ rp(total) }}</b></div>
+              <p v-if="tahunan > 0" class="ld-tahunan">
+                Tahun berikutnya: <b>{{ rp(tahunan) }}</b> per tahun (server dan pemeliharaan). Harga website dibayar sekali.
+              </p>
 
               <div class="ld-form">
                 <label>
@@ -820,6 +1076,15 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="PANAH" /></svg>
               </span>
             </a>
+            <a v-for="k in kontakLain" :key="k.url" :href="k.url" target="_blank" rel="noopener" class="ld-kontak-kartu">
+              <span class="ld-kontak-ikon" style="background:#E4F6EA">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#15803D" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="WA" /></svg>
+              </span>
+              <span class="ld-kontak-teks"><small>WHATSAPP · <span>{{ k.nama.toUpperCase() }}</span></small><b>{{ k.tampil }}</b></span>
+              <span class="ld-kontak-aksi" style="background:var(--ld-aksen);color:var(--ld-hitam)">Chat
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="PANAH" /></svg>
+              </span>
+            </a>
             <a v-if="emailUrl" :href="emailUrl" class="ld-kontak-kartu">
               <span class="ld-kontak-ikon" style="background:#FFF0DE">
                 <svg viewBox="0 0 24 24" fill="none" stroke="#A85400" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Zm0 1 8 6 8-6" /></svg>
@@ -865,6 +1130,7 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
           <a :href="tautan.privasi">Kebijakan privasi</a>
           <a href="/privacy-policy">Privacy policy</a>
           <a v-if="waUrl" :href="waUrl" target="_blank" rel="noopener">WhatsApp {{ waTampil }}</a>
+          <a v-for="k in kontakLain" :key="k.url" :href="k.url" target="_blank" rel="noopener">{{ k.nama }} {{ k.tampil }}</a>
           <a v-if="emailUrl" :href="emailUrl">{{ kontak.email }}</a>
           <span>© {{ tahun }} EQOHSEE</span>
         </nav>
@@ -873,7 +1139,7 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
 
     <a v-if="waUrl" :href="waUrl" target="_blank" rel="noopener" class="ld-apung" :class="{ sembunyi: !apungTampak }"
        aria-label="Chat WhatsApp" :tabindex="apungTampak ? undefined : -1">
-      <span><svg viewBox="0 0 24 24" fill="none" stroke="#0B1117" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="WA" /></svg></span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="#14100D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="WA" /></svg></span>
       <span>WhatsApp</span>
     </a>
 

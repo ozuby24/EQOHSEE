@@ -165,6 +165,10 @@ class PembelianController extends Controller
             'kontak' => [
                 'whatsapp' => (string) config('pembelian.kontak.whatsapp'),
                 'email'    => (string) config('pembelian.kontak.email'),
+                'lain'     => array_values(array_filter(array_map(
+                    fn (array $k) => ($n = \App\Support\Ekspor::nomorWa($k['nomor'] ?? null)) ? ['nama' => (string) $k['nama'], 'whatsapp' => $n] : null,
+                    (array) config('pembelian.kontak.whatsapp_lain', []),
+                ))),
             ],
 
             'tahun' => now()->year,

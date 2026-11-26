@@ -85,7 +85,7 @@ const props = defineProps<{
   aplikasi: Aplikasi[];
   pilar: Record<string, Pilar>;
   adaHarga: boolean;
-  kontak: { whatsapp: string; email: string };
+  kontak: { whatsapp: string; email: string; lain?: { nama: string; whatsapp: string }[] };
   latar: { video: string | null; poster: string | null; paket: string | null };
   tahun: number;
 }>();
@@ -307,6 +307,13 @@ const waUrl = computed(() => (props.kontak.whatsapp
  * satu pun tautan di bawahnya — kalimat yang meminta sesuatu lalu tidak
  * menyediakan caranya.
  */
+/** 6281346853729 → +62 813-4685-3729 */
+function nomorTampil(n: string): string {
+  const d = (n || '').replace(/\D/g, '');
+  const m = d.match(/^62(\d{3})(\d{4})(\d+)$/);
+  return m ? `+62 ${m[1]}-${m[2]}-${m[3]}` : (d ? '+' + d : '');
+}
+
 const tanya = computed(() => (waUrl.value
   ?? (props.kontak.email ? 'mailto:' + props.kontak.email : null)));
 
@@ -937,6 +944,15 @@ onBeforeUnmount(() => {
             <p class="jual-tubuh-kecil mt-4">
               Pembayarannya lewat QRIS pada halaman yang muncul sesudahnya, dan lisensinya
               terbit setelah bukti bayar diperiksa.
+            </p>
+
+            <!-- Kontak penjualan, termasuk yang bernama — config/pembelian.php. -->
+            <p v-if="waUrl || kontak.lain?.length" class="jual-tubuh-kecil mt-3">
+              Ada pertanyaan? WhatsApp
+              <a v-if="waUrl" :href="waUrl" target="_blank" rel="noopener" class="jual-tautan">{{ nomorTampil(kontak.whatsapp) }}</a>
+              <template v-for="k in kontak.lain ?? []" :key="k.whatsapp">
+                · <a :href="'https://wa.me/' + k.whatsapp.replace(/\D/g, '')" target="_blank" rel="noopener" class="jual-tautan">{{ k.nama }} {{ nomorTampil(k.whatsapp) }}</a>
+              </template>
             </p>
           </form>
         </div>
