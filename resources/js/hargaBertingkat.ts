@@ -55,3 +55,41 @@ export function rincianBertingkat(
 
   return `${rupiah(harga)} untuk yang pertama, lalu ${n - 1} × ${rupiah(hargaTambahan)}`;
 }
+
+/**
+ * Harga satu tahun server yang spesifikasinya dipilih pembeli.
+ *
+ * Padanan Produk::hargaSatuan() di peladen — dasar 1 vCPU dan RAM 1 GB
+ * sudah termasuk dalam `harga`; yang ditambahkan hanya vCPU dan GB RAM
+ * di atasnya. Null pada kedua tarif berarti butirnya tidak dapat diatur.
+ * Uji HargaServerTest menjalankan berkas ini lewat node dan
+ * membandingkan hasilnya dengan peladen.
+ */
+export function hargaServer(
+  harga: number,
+  hargaCpu: number | null | undefined,
+  hargaRam: number | null | undefined,
+  cpu: number,
+  ram: number,
+): number {
+  if ((hargaCpu === null || hargaCpu === undefined) && (hargaRam === null || hargaRam === undefined)) return harga;
+
+  const tambahCpu = Math.max(0, Math.floor(cpu || 1) - 1);
+  const tambahRam = Math.max(0, Math.floor(ram || 1) - 1);
+
+  return harga + (hargaCpu ?? 0) * tambahCpu + (hargaRam ?? 0) * tambahRam;
+}
+
+/** Subtotal server: harga menurut spesifikasinya × banyaknya (tahun). */
+export function subtotalServer(
+  harga: number,
+  hargaCpu: number | null | undefined,
+  hargaRam: number | null | undefined,
+  cpu: number,
+  ram: number,
+  jumlah: number,
+): number {
+  const n = Math.max(0, Math.floor(jumlah || 0));
+
+  return n === 0 ? 0 : hargaServer(harga, hargaCpu, hargaRam, cpu, ram) * n;
+}

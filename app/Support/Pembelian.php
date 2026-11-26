@@ -39,8 +39,10 @@ final class Pembelian
      * Susun tagihan dari daftar produk.
      *
      * @param  array<int,int>  $jumlahPerProduk  id produk => banyaknya
+     * @param  array<int,array{cpu?:int,ram?:int}>  $spesifikasi  id produk => spesifikasi
+     *         server yang dipilih; hanya berlaku bagi butir yang dapat diatur
      */
-    public static function buat(array $pembeli, array $jumlahPerProduk, ?User $oleh = null): Pesanan
+    public static function buat(array $pembeli, array $jumlahPerProduk, ?User $oleh = null, array $spesifikasi = []): Pesanan
     {
         $pesanan = new Pesanan($pembeli);
         $pesanan->dibuat_oleh = $oleh?->getKey();
@@ -65,11 +67,26 @@ final class Pembelian
                penjualnya. */
             if (! $produk) continue;
 
+            /* Spesifikasi hanya bermakna bagi server yang dapat diatur.
+               Untuk butir lain diabaikan, bukan ditolak — sama seperti
+               produk yang tidak aktif di atas. */
+            $atur = $produk->dapatDiatur();
+            $cpu  = $atur ? (int) ($spesifikasi[$produkId]['cpu'] ?? Produk::CPU_DASAR) : null;
+            $ram  = $atur ? (int) ($spesifikasi[$produkId]['ram'] ?? Produk::RAM_DASAR) : null;
+
             Item::create([
                 'pesanan_id' => $pesanan->id,
                 'produk_id'  => $produk->id,
-                'nama'       => $produk->nama,
-                'harga'      => $produk->harga,
+                'nama'       => $atur ? $produk->namaDenganSpesifikasi($cpu, $ram) : $produk->nama,
+
+                /* Harga SATU butir sesuai spesifikasinya, sehingga
+                   harga × banyaknya tetap sama dengan subtotalnya pada
+                   setiap tagihan yang dicetak. */
+                'harga'      => $atur ? $produk->hargaSatuan($cpu, $ram) : $produk->harga,
+                'harga_cpu'  => $atur ? $produk->harga_cpu : null,
+                'harga_ram'  => $atur ? $produk->harga_ram : null,
+                'cpu'        => $cpu,
+                'ram'        => $ram,
 
                 /* Ikut disalin, seperti harganya. Tanpa angka ini,
                    subtotal yang tersimpan tidak dapat lagi diterangkan
@@ -86,7 +103,7 @@ final class Pembelian
                    Perkalian yang ditulis ulang di tempat kedua akan
                    melewatkan harga bertingkatnya, dan tagihannya tetap
                    terlihat wajar — hanya angkanya yang salah. */
-                'subtotal'   => $produk->subtotal($jumlah),
+                'subtotal'   => $atur ? $produk->subtotal($jumlah, $cpu, $ram) : $produk->subtotal($jumlah),
             ]);
         }
 

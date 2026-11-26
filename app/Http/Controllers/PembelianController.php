@@ -121,6 +121,11 @@ class PembelianController extends Controller
                 'ket'   => $layanan->keterangan,
                 'harga' => $layanan->harga,
                 'masa'  => $layanan->masaBerlaku(),
+
+                /* Batas dan tarif tambahan server — null bila tidak dapat
+                   diatur. Layar menghitung dengan aturan yang sama
+                   dengan yang menagih (hargaBertingkat.ts). */
+                'aturan' => $layanan->aturanServer(),
             ] : null,
 
             'aplikasi' => $aplikasi,
@@ -182,6 +187,7 @@ class PembelianController extends Controller
             $this->pembeli($data) + ['company_id' => $request->user()?->company_id],
             $data['produk'],
             $request->user(),
+            $data['spesifikasi'] ?? [],
         );
 
         if ($pesanan->items()->count() < 1) {
@@ -214,6 +220,16 @@ class PembelianController extends Controller
                DITERIMA dari layar — lihat App\Support\Pembelian. */
             'produk'             => ['required', 'array', 'min:1'],
             'produk.*'           => ['integer', 'min:1', 'max:99'],
+
+            /* Spesifikasi server yang dipilih, per id produk. Harganya
+               TETAP dihitung di peladen dari tarif produknya — yang
+               diterima dari layar hanya banyaknya vCPU dan GB RAM. */
+            'spesifikasi'        => ['nullable', 'array'],
+            'spesifikasi.*.cpu'  => ['nullable', 'integer', 'min:'.Produk::CPU_DASAR, 'max:'.Produk::CPU_MAKS],
+            'spesifikasi.*.ram'  => ['nullable', 'integer', 'min:'.Produk::RAM_DASAR, 'max:'.Produk::RAM_MAKS],
+        ], [
+            'spesifikasi.*.cpu.*' => 'vCPU server harus antara '.Produk::CPU_DASAR.' dan '.Produk::CPU_MAKS.'.',
+            'spesifikasi.*.ram.*' => 'RAM server harus antara '.Produk::RAM_DASAR.' dan '.Produk::RAM_MAKS.' GB.',
         ]);
     }
 
@@ -268,6 +284,7 @@ class PembelianController extends Controller
                dari tagihan yang ia terima, tanpa satu pun galat yang
                menyebutkannya. */
             'harga_tambahan' => $p->harga_tambahan,
+            'aturan'         => $p->aturanServer(),
 
             'masa'       => $p->masaBerlaku(),
         ])->values()->all();
@@ -281,6 +298,7 @@ class PembelianController extends Controller
             $this->pembeli($data) + ['company_id' => $request->user()?->company_id],
             $data['produk'],
             $request->user(),
+            $data['spesifikasi'] ?? [],
         );
 
         if ($pesanan->items()->count() < 1) {

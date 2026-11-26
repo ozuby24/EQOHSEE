@@ -14,12 +14,32 @@
 import { Head, useForm } from '@inertiajs/vue3';
 import { computed, reactive } from 'vue';
 import { propHalaman } from '../../halaman';
-import { rincianBertingkat, subtotalBertingkat } from '../../hargaBertingkat';
+import { hargaServer, rincianBertingkat, subtotalBertingkat, subtotalServer } from '../../hargaBertingkat';
 
 const props = propHalaman();
 
 /** id produk => banyaknya. Nol berarti tidak dipilih. */
 const pilih = reactive<Record<number, number>>({});
+
+/** id produk => spesifikasi server yang dipilih (hanya butir yang dapat diatur). */
+const spek = reactive<Record<number, { cpu: number; ram: number }>>(
+  Object.fromEntries((props.layanan ?? []).filter((p: any) => p.aturan)
+    .map((p: any) => [p.id, { cpu: p.aturan.cpuDasar, ram: p.aturan.ramDasar }])),
+);
+
+function aturSpek(p: any, kunci: 'cpu' | 'ram', n: number) {
+  const a = p.aturan;
+  const s = spek[p.id];
+  if (!a || !s) return;
+  const [min, maks] = kunci === 'cpu' ? [a.cpuDasar, a.cpuMaks] : [a.ramDasar, a.ramMaks];
+  s[kunci] = Math.max(min, Math.min(maks, s[kunci] + n));
+}
+
+/** Harga satu tahun menurut spesifikasi yang sedang dipilih. */
+function hargaSatuan(p: any): number {
+  const s = spek[p.id];
+  return p.aturan && s ? hargaServer(p.harga, p.aturan.hargaCpu, p.aturan.hargaRam, s.cpu, s.ram) : p.harga;
+}
 
 const semua = computed<any[]>(() => [
   ...(props.website ?? []),
@@ -35,10 +55,16 @@ const terpilih = computed(() =>
    dan seterusnya, lalu layar menjanjikan angka yang berbeda dari
    tagihan yang benar-benar terbit. */
 function subtotal(p: any): number {
+  const s = spek[p.id];
+  if (p.aturan && s) {
+    return subtotalServer(p.harga, p.aturan.hargaCpu, p.aturan.hargaRam, s.cpu, s.ram, pilih[p.id] ?? 0);
+  }
   return subtotalBertingkat(p.harga, p.harga_tambahan, pilih[p.id] ?? 0);
 }
 
 function rincian(p: any): string | null {
+  const s = spek[p.id];
+  if (p.aturan && s) return `${s.cpu} vCPU · RAM ${s.ram} GB`;
   return rincianBertingkat(p.harga, p.harga_tambahan, pilih[p.id] ?? 0, rupiah);
 }
 
@@ -56,11 +82,17 @@ function ubah(id: number, n: number) {
 const f = useForm<Record<string, any>>({
   pembeli_nama: '', pembeli_perusahaan: '', pembeli_email: '',
   pembeli_telepon: '', catatan: '', produk: {} as Record<number, number>,
+  spesifikasi: {} as Record<number, { cpu: number; ram: number }>,
 });
 
 function kirim() {
   f.produk = Object.fromEntries(
     terpilih.value.map((p) => [p.id, pilih[p.id]]));
+
+  /* Hanya banyaknya vCPU dan GB RAM yang dikirim — harganya dihitung
+     ulang peladen dari tarif produknya, sama seperti harga butir. */
+  f.spesifikasi = Object.fromEntries(
+    terpilih.value.filter((p) => p.aturan && spek[p.id]).map((p) => [p.id, { ...spek[p.id] }]));
 
   f.post('/pembelian/pesan', { preserveScroll: true });
 }
@@ -146,10 +178,28 @@ function kirim() {
                     {{ p.keterangan }}
                   </span>
                   <span class="block text-[11px] text-stone-400 mt-1">{{ p.masa }}</span>
+
+                  <!-- Spesifikasi server: dasar sudah termasuk; tiap vCPU dan
+                       GB RAM tambahan bertarif sendiri. -->
+                  <span v-if="p.aturan && spek[p.id]" class="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
+                    <span v-for="k in (['cpu', 'ram'] as const)" :key="k" class="inline-flex items-center gap-2">
+                      <span class="text-[11.5px] font-semibold text-stone-600 w-16">{{ k === 'cpu' ? 'vCPU' : 'RAM (GB)' }}</span>
+                      <button type="button" class="beli-plusmin" :aria-label="`Kurangi ${k === 'cpu' ? 'vCPU' : 'RAM'}`"
+                              :disabled="spek[p.id][k] <= (k === 'cpu' ? p.aturan.cpuDasar : p.aturan.ramDasar)"
+                              @click="aturSpek(p, k, -1)">−</button>
+                      <span class="num w-6 text-center text-[13px] font-semibold">{{ spek[p.id][k] }}</span>
+                      <button type="button" class="beli-plusmin" :aria-label="`Tambah ${k === 'cpu' ? 'vCPU' : 'RAM'}`"
+                              :disabled="spek[p.id][k] >= (k === 'cpu' ? p.aturan.cpuMaks : p.aturan.ramMaks)"
+                              @click="aturSpek(p, k, 1)">+</button>
+                      <span class="text-[10.5px] text-stone-400">
+                        +{{ rupiah(k === 'cpu' ? p.aturan.hargaCpu : p.aturan.hargaRam) }} / {{ k === 'cpu' ? 'vCPU' : 'GB' }}
+                      </span>
+                    </span>
+                  </span>
                 </span>
 
                 <span class="shrink-0 text-right">
-                  <span class="block text-[14px] font-bold num text-cam-ink">{{ rupiah(p.harga) }}</span>
+                  <span class="block text-[14px] font-bold num text-cam-ink">{{ rupiah(hargaSatuan(p)) }}</span>
                   <span class="block text-[10.5px] text-stone-400">per tahun</span>
                   <span class="inline-flex items-center gap-2 mt-1.5">
                     <button type="button" class="beli-plusmin" aria-label="Kurangi"

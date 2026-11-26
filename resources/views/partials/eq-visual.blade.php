@@ -2830,6 +2830,25 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
 .jual-layanan-spek span{border:1px solid var(--j-garis);border-radius:999px;
   padding:.2rem .7rem;font-size:11.5px;font-weight:600}
 
+/* Atur server: vCPU dan RAM di atas dasarnya, masing-masing bertarif.
+   Dua baris pengatur yang sama bentuknya dengan pengatur banyaknya,
+   supaya terbaca sebagai satu keluarga kendali, bukan formulir baru. */
+.jual-server{display:grid;gap:.75rem;padding:1rem 1.1rem;border-radius:10px;
+  background:var(--j-dasar);border:1px solid var(--j-garis)}
+.jual-server-atur{display:grid;gap:.55rem}
+.jual-server-baris{display:flex;align-items:center;gap:.85rem;flex-wrap:wrap}
+.jual-server-label{min-width:5.5rem;font-size:12.5px;font-weight:700;color:var(--j-tinta)}
+.jual-server-tarif{font-size:11.5px;color:var(--j-redup)}
+.jual-server .jual-hitung{background:var(--j-kartu)}
+.jual-hitung button:disabled{opacity:.35;cursor:not-allowed;background:transparent}
+.jual-server-contoh{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;
+  font-size:11.5px;color:var(--j-samar)}
+.jual-server-pilih{border:1px solid var(--j-garis-tebal);border-radius:999px;background:var(--j-kartu);
+  padding:.25rem .75rem;font-size:11.5px;font-weight:600;color:var(--j-tinta);
+  transition:border-color .2s,background .2s}
+.jual-server-pilih:hover{border-color:var(--j-aksen)}
+.jual-server-pilih.is-aktif{border-color:var(--j-aksen);background:var(--j-aksen-lembut);color:var(--j-aksen-teks)}
+
 .jual-kosong{background:var(--j-kartu);border:1px solid var(--j-garis);border-radius:12px;
   padding:2.5rem;max-width:42rem}
 

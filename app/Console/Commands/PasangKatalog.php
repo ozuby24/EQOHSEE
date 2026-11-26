@@ -52,11 +52,23 @@ class PasangKatalog extends Command
     public const HARGA_WEBSITE_TAMBAHAN = 3_000_000;
 
     private const KETERANGAN_LAYANAN =
-        'Satu peladen khusus: 1 vCPU, RAM 1 GB, penyimpanan NVMe 60 GB. '
+        'Satu peladen khusus: dasar 1 vCPU, RAM 1 GB, penyimpanan NVMe 60 GB. '
         .'Sudah termasuk hosting, nama domain terpasang, sertifikat HTTPS, '
         .'cadangan berkala, pemantauan, dan pembaruan keamanan. '
+        .'Spesifikasi dapat ditambah sesuai jumlah aplikasi: Rp 500.000 per vCPU '
+        .'dan Rp 500.000 per GB RAM tambahan per tahun. '
         .'Berlaku untuk seluruh website pada akun yang sama — bukan per website. '
         .'Diperpanjang setiap tahun.';
+
+    /**
+     * Tarif tambahan server per tahun — keputusan pemiliknya: setiap vCPU
+     * dan setiap GB RAM di atas dasar 1 vCPU / 1 GB menambah Rp 500.000.
+     * Lima aplikasi pada 4 vCPU dan RAM 4 GB karena itu Rp 6.000.000.
+     * Pemasangan yang sudah ada mendapatkannya dari migrasi
+     * 2026_11_26_200003_harga_server_dapat_diatur.
+     */
+    public const HARGA_PER_CPU = 500_000;
+    public const HARGA_PER_GB  = 500_000;
 
     protected $signature = 'pembelian:katalog';
 
@@ -107,7 +119,8 @@ class PasangKatalog extends Command
             'modul_kunci' => null,
             'keterangan'  => self::KETERANGAN_LAYANAN,
             'urutan'      => 5,
-        ], $baru, harga: self::HARGA_LAYANAN, aktif: true, masaBulan: 12);
+        ], $baru, harga: self::HARGA_LAYANAN, aktif: true, masaBulan: 12,
+            hargaCpu: self::HARGA_PER_CPU, hargaRam: self::HARGA_PER_GB);
 
         /* Keterangan jualnya diambil dari Modules — daftar yang sama
            dengan yang menggambar halaman depan — supaya katalog dan
@@ -222,6 +235,8 @@ class PasangKatalog extends Command
         bool $aktif = false,
         int $masaBulan = 12,
         ?int $hargaTambahan = null,
+        ?int $hargaCpu = null,
+        ?int $hargaRam = null,
     ): int {
         $lama = Produk::where('kode', $kode)->first();
 
@@ -247,6 +262,8 @@ class PasangKatalog extends Command
             'kode'       => $kode,
             'harga'      => $harga ?? 0,
             'harga_tambahan' => $hargaTambahan,
+            'harga_cpu'      => $hargaCpu,
+            'harga_ram'      => $hargaRam,
             'masa_bulan' => $masaBulan,
 
             /* Tetap mati bila harganya nol, apa pun yang diminta

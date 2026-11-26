@@ -41,7 +41,7 @@ import BlankLayout from '../../Layouts/BlankLayout.vue';
 import Wordmark from '../../Components/Wordmark.vue';
 import IkonPilar from '../../Components/IkonPilar.vue';
 import { bolehLatarVideo } from '../../latarVideo';
-import { rincianBertingkat, subtotalBertingkat } from '../../hargaBertingkat';
+import { hargaServer, rincianBertingkat, subtotalBertingkat, subtotalServer } from '../../hargaBertingkat';
 
 defineOptions({ layout: BlankLayout });
 
@@ -62,7 +62,15 @@ type Paket = {
 };
 
 /** Server dan hosting, diperpanjang tiap tahun. */
-type Layanan = { id: number; nama: string; ket: string | null; harga: number; masa: string };
+/** Batas dan tarif tambahan server — dari Produk::aturanServer(). */
+type AturanServer = {
+  cpuDasar: number; cpuMaks: number; ramDasar: number; ramMaks: number;
+  hargaCpu: number; hargaRam: number;
+};
+type Layanan = {
+  id: number; nama: string; ket: string | null; harga: number; masa: string;
+  aturan?: AturanServer | null;
+};
 
 const props = defineProps<{
   paket: Paket | null;
@@ -78,6 +86,39 @@ const props = defineProps<{
 /** id produk => banyaknya. Nol berarti tidak dipilih. */
 const pilih = reactive<Record<number, number>>({});
 
+/* Spesifikasi server yang sedang dipilih. Dasar (1 vCPU, RAM 1 GB) sudah
+   termasuk dalam harga layanan; tiap tambahan bertarif sendiri. */
+const spek = reactive({
+  cpu: props.layanan?.aturan?.cpuDasar ?? 1,
+  ram: props.layanan?.aturan?.ramDasar ?? 1,
+});
+
+function aturSpek(kunci: 'cpu' | 'ram', n: number) {
+  const a = props.layanan?.aturan;
+  if (!a) return;
+  const [min, maks] = kunci === 'cpu' ? [a.cpuDasar, a.cpuMaks] : [a.ramDasar, a.ramMaks];
+  spek[kunci] = Math.max(min, Math.min(maks, spek[kunci] + n));
+}
+
+/* Contoh pilihan cepat, menurut keputusan pemiliknya: lima aplikasi
+   berjalan pada 4 vCPU dan RAM 4 GB. */
+const contohSpek = [
+  { label: '1 aplikasi', cpu: 1, ram: 1 },
+  { label: '5 aplikasi', cpu: 4, ram: 4 },
+];
+
+function pakaiSpek(cpu: number, ram: number) {
+  const a = props.layanan?.aturan;
+  if (!a) return;
+  spek.cpu = Math.max(a.cpuDasar, Math.min(a.cpuMaks, cpu));
+  spek.ram = Math.max(a.ramDasar, Math.min(a.ramMaks, ram));
+}
+
+/** Harga satu tahun server menurut spesifikasi yang dipilih. */
+const hargaLayanan = computed(() => (props.layanan
+  ? hargaServer(props.layanan.harga, props.layanan.aturan?.hargaCpu, props.layanan.aturan?.hargaRam, spek.cpu, spek.ram)
+  : 0));
+
 const terjual = computed(() => props.aplikasi.filter((a) => a.id !== null));
 
 const pilarList = computed(() => Object.entries(props.pilar));
@@ -90,12 +131,17 @@ const kelompok = computed(() => pilarList.value.map(([slug, w]) => ({
 })).filter((k) => k.butir.length > 0));
 
 /** Semua yang dapat dibeli: paket, layanan tahunan, dan satuan. */
-const semua = computed<{ id: number; nama: string; harga: number; harga_tambahan?: number | null }[]>(() => [
+type Butir = { id: number; nama: string; harga: number; harga_tambahan?: number | null; aturan?: AturanServer | null };
+
+const semua = computed<Butir[]>(() => [
   ...(props.paket ? [{
     id: props.paket.id, nama: props.paket.nama, harga: props.paket.harga,
     harga_tambahan: props.paket.harga_tambahan ?? null,
   }] : []),
-  ...(props.layanan ? [{ id: props.layanan.id, nama: props.layanan.nama, harga: props.layanan.harga }] : []),
+  ...(props.layanan ? [{
+    id: props.layanan.id, nama: props.layanan.nama, harga: props.layanan.harga,
+    aturan: props.layanan.aturan ?? null,
+  }] : []),
   ...terjual.value.map((a) => ({ id: a.id as number, nama: a.nama, harga: a.harga as number })),
 ]);
 
@@ -104,11 +150,15 @@ const terpilih = computed(() => semua.value.filter((p) => (pilih[p.id] ?? 0) > 0
 /* Lewat subtotalBertingkat — aturan yang sama dengan yang menagih.
    Perkalian yang ditulis ulang di sini membuat halaman jual
    menjanjikan angka yang berbeda dari tagihan yang terbit. */
-function subtotal(p: { id: number; harga: number; harga_tambahan?: number | null }): number {
+function subtotal(p: Butir): number {
+  if (p.aturan) {
+    return subtotalServer(p.harga, p.aturan.hargaCpu, p.aturan.hargaRam, spek.cpu, spek.ram, pilih[p.id] ?? 0);
+  }
   return subtotalBertingkat(p.harga, p.harga_tambahan, pilih[p.id] ?? 0);
 }
 
-function rincian(p: { id: number; harga: number; harga_tambahan?: number | null }): string | null {
+function rincian(p: Butir): string | null {
+  if (p.aturan) return `${spek.cpu} vCPU · RAM ${spek.ram} GB · NVMe 60 GB`;
   return rincianBertingkat(p.harga, p.harga_tambahan, pilih[p.id] ?? 0, (n) => rupiah(n));
 }
 
@@ -173,10 +223,16 @@ const pakaiVideo = ref(bolehLatarVideo());
 const f = useForm<Record<string, any>>({
   pembeli_nama: '', pembeli_perusahaan: '', pembeli_email: '',
   pembeli_telepon: '', catatan: '', produk: {} as Record<number, number>,
+  spesifikasi: {} as Record<number, { cpu: number; ram: number }>,
 });
 
 function kirim() {
   f.produk = Object.fromEntries(terpilih.value.map((p) => [p.id, pilih[p.id]]));
+
+  /* Hanya banyaknya vCPU dan GB RAM — harganya dihitung ulang peladen
+     dari tarif produknya, sama seperti harga butir lainnya. */
+  f.spesifikasi = Object.fromEntries(terpilih.value.filter((p) => p.aturan)
+    .map((p) => [p.id, { cpu: spek.cpu, ram: spek.ram }]));
 
   f.post('/katalog/pesan', { preserveScroll: true });
 }
@@ -468,13 +524,13 @@ onBeforeUnmount(() => {
               <h3 class="jual-h3 mt-1.5">Professional — server &amp; hosting</h3>
             </div>
             <p class="jual-layanan-harga">
-              {{ rupiah(layanan.harga) }}<span class="jual-angka-kecil"> / tahun</span>
+              {{ rupiah(hargaLayanan) }}<span class="jual-angka-kecil"> / tahun</span>
             </p>
           </div>
 
           <div class="jual-layanan-spek">
-            <span>1 vCPU</span>
-            <span>RAM 1 GB</span>
+            <span>{{ spek.cpu }} vCPU</span>
+            <span>RAM {{ spek.ram }} GB</span>
             <span>NVMe 60 GB</span>
             <span>HTTPS</span>
             <span>Cadangan berkala</span>
@@ -486,6 +542,41 @@ onBeforeUnmount(() => {
             Sudah termasuk hosting, pemasangan nama domain, sertifikat HTTPS, cadangan
             berkala, dan pembaruan keamanan. Diperpanjang setiap tahun.
           </p>
+
+          <!-- ── Atur server ──
+               Dasar 1 vCPU dan RAM 1 GB sudah termasuk; makin banyak
+               aplikasi, makin besar servernya. Tiap vCPU dan GB RAM
+               tambahan bertarif sendiri, dan angkanya dihitung dengan
+               aturan yang sama dengan yang menagih (hargaBertingkat.ts). -->
+          <div v-if="layanan.aturan" class="jual-server">
+            <div class="jual-server-atur">
+              <div v-for="k in (['cpu', 'ram'] as const)" :key="k" class="jual-server-baris">
+                <span class="jual-server-label">{{ k === 'cpu' ? 'vCPU' : 'RAM (GB)' }}</span>
+                <span class="jual-hitung">
+                  <button type="button" :aria-label="`Kurangi ${k === 'cpu' ? 'vCPU' : 'RAM'}`"
+                          :disabled="spek[k] <= (k === 'cpu' ? layanan.aturan.cpuDasar : layanan.aturan.ramDasar)"
+                          @click="aturSpek(k, -1)">−</button>
+                  <span class="num">{{ spek[k] }}</span>
+                  <button type="button" :aria-label="`Tambah ${k === 'cpu' ? 'vCPU' : 'RAM'}`"
+                          :disabled="spek[k] >= (k === 'cpu' ? layanan.aturan.cpuMaks : layanan.aturan.ramMaks)"
+                          @click="aturSpek(k, 1)">+</button>
+                </span>
+                <span class="jual-server-tarif">
+                  +{{ rupiah(k === 'cpu' ? layanan.aturan.hargaCpu : layanan.aturan.hargaRam) }}
+                  per {{ k === 'cpu' ? 'vCPU' : 'GB' }} tambahan
+                </span>
+              </div>
+            </div>
+
+            <div class="jual-server-contoh">
+              <span>Contoh:</span>
+              <button v-for="c in contohSpek" :key="c.label" type="button" class="jual-server-pilih"
+                      :class="{ 'is-aktif': spek.cpu === c.cpu && spek.ram === c.ram }"
+                      @click="pakaiSpek(c.cpu, c.ram)">
+                {{ c.label }} · {{ c.cpu }} vCPU · {{ c.ram }} GB
+              </button>
+            </div>
+          </div>
 
           <div class="flex items-center gap-3 flex-wrap">
             <span class="jual-hitung">

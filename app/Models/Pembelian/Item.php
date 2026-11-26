@@ -19,6 +19,7 @@ class Item extends Model
 
     protected $fillable = [
         'pesanan_id', 'produk_id', 'nama', 'harga', 'harga_tambahan',
+        'harga_cpu', 'harga_ram', 'cpu', 'ram',
         'masa_bulan', 'jumlah', 'subtotal',
     ];
 
@@ -26,6 +27,8 @@ class Item extends Model
     {
         return [
             'harga' => 'integer', 'harga_tambahan' => 'integer',
+            'harga_cpu' => 'integer', 'harga_ram' => 'integer',
+            'cpu' => 'integer', 'ram' => 'integer',
             'jumlah' => 'integer',
             'subtotal' => 'integer', 'masa_bulan' => 'integer',
         ];
