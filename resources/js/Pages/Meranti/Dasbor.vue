@@ -8,7 +8,7 @@
   per bulan, komposisi P0/P1/P2, realisasi per blok, rencana vs realisasi
   reklamasi, peta spasial, dan yang perlu ditangani.
 */
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { propHalaman } from '../../halaman';
 import Panggung from '../../Components/Energi/Panggung.vue';
@@ -16,6 +16,7 @@ import Kartu from '../../Components/Energi/Kartu.vue';
 import Ikon from '../../Components/Energi/Ikon.vue';
 import PilihPerusahaan from '../../Components/Energi/PilihPerusahaan.vue';
 import PetaGeo from '../../Components/Meranti/PetaGeo.vue';
+import PetaSatelit from '../../Components/Meranti/PetaSatelit.vue';
 import KartuGrafik from '../../Grafik/KartuGrafik.vue';
 import Donat from '../../Grafik/Donat.vue';
 import Kolom from '../../Grafik/Kolom.vue';
@@ -67,6 +68,8 @@ const perGrup = computed(() => {
   for (const m of props.jumlahModul ?? []) (g[m.grup] ??= []).push(m);
   return g;
 });
+// Peta satelit bila sumber ubinnya ada; kembali ke skema bila WebGL atau citranya gagal.
+const satelit = ref(!!props.ubin);
 const tglPendek = (v: string | null) => (v ? new Date(v + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 </script>
 
@@ -106,9 +109,10 @@ const tglPendek = (v: string | null) => (v ? new Date(v + 'T00:00:00').toLocaleD
     </section>
 
     <section class="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] items-start">
-      <Kartu judul="Peta spasial" :ket="`${(props.peta ?? []).length} fitur · gulir untuk memperbesar · klik untuk membuka peta lengkap`" ikon="map" warna="hijau">
+      <Kartu judul="Peta spasial" :ket="`${(props.peta ?? []).length} fitur · ${satelit && props.ubin ? 'citra satelit & medan 3D' : 'gulir untuk memperbesar'} · klik fitur untuk membuka peta lengkap`" ikon="map" warna="hijau">
         <template #aksi><Link href="/meranti/peta" class="eq-btn-lain inline-flex items-center gap-2"><Ikon nama="map" :ukuran="15" />Peta lengkap</Link></template>
-        <PetaGeo :fitur="props.peta ?? []" :tinggi="420" :label="false" @pilih="() => router.visit('/meranti/peta')" />
+        <PetaSatelit v-if="satelit && props.ubin" :fitur="props.peta ?? []" :ubin="props.ubin" :tinggi="440" @pilih="() => router.visit('/meranti/peta')" @gagal="satelit = false" />
+        <PetaGeo v-else :fitur="props.peta ?? []" :tinggi="420" :label="false" @pilih="() => router.visit('/meranti/peta')" />
       </Kartu>
 
       <div class="space-y-4">

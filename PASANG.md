@@ -42,8 +42,14 @@ EQOHSEE, satu tabel bertipe per modul dengan batas perusahaan.
 - **Administrasi**: Surat, Pengajuan Dana & Control Budget, Berita Acara,
   Periode Pengajuan. **Data Master**: Project, Pelaksana, Project Vendor.
 - **Peta Spasial**: unggah KML / KMZ / GeoJSON — tiap placemark jadi satu
-  fitur, MultiPolygon dipecah, luas dihitung bila tidak disebut; peta
-  digambar tanpa ubin internet; ekspor GeoJSON.
+  fitur, MultiPolygon dipecah, luas dihitung bila tidak disebut; ekspor
+  GeoJSON. Dua tampilan: **Satelit 3D** — citra satelit di atas bola dunia,
+  medan 3D yang dapat dimiringkan/diputar (klik kanan atau dua jari), kamera
+  terbang ke lokasi saat dibuka, batas blok kuning seperti KML di Google
+  Earth, popup per fitur, layar penuh — dan **Skema**, digambar tanpa
+  internet untuk jaringan site yang tertutup. Bila WebGL atau citranya
+  gagal, halaman kembali ke skema dengan sendirinya. Kartu peta di Dashboard
+  Analitik ikut satelit dan baru dimuat saat digulir ke layar.
 - **Setiap daftar**: cari, saring tahun/bulan, urut kolom, total, tambah /
   ubah / hapus (terkonfirmasi), saran isian dari data master, CSV, cetak.
 - **Empat peran MERANTI** (`users.meranti_role`, diatur di Data Master →
@@ -51,6 +57,22 @@ EQOHSEE, satu tabel bertipe per modul dengan batas perusahaan.
   master, peran, log, impor), EMC (tambah/ubah/hapus), Crew (tambah),
   Manager (lihat). Tanpa peran = bawaan setara Crew; administrator
   EQOHSEE selalu penuh. Semua perubahan tercatat di Log Aktivitas.
+
+## Peta satelit — sumber ubin (`config/meranti.php`)
+Bawaannya citra **Esri World Imagery** dan medan **Terrain Tiles (AWS Open
+Data)**; peramban pengguna mengambilnya langsung, jadi perangkatnya perlu
+internet (servernya tidak). Host di config otomatis menjadi kelonggaran CSP
+`img-src`/`connect-src` — tidak pernah `script-src`. Pustaka petanya
+(MapLibre GL) dan pekerjanya disajikan dari server sendiri.
+```dotenv
+MERANTI_PETA_SATELIT_AKTIF=true           # false = hanya peta skema
+MERANTI_PETA_SATELIT=https://…/{z}/{y}/{x}  # ganti penyedia citra (mis. kunci ArcGIS/MapTiler)
+MERANTI_PETA_LABEL=                       # kosong = tanpa label nama tempat
+MERANTI_PETA_MEDAN=                       # kosong = tanpa medan 3D
+```
+Untuk pemakaian berat atau komersial, daftarkan kunci di penyedia citra
+(ArcGIS Location Platform, MapTiler, dsb.) dan pakai alamatnya di atas;
+sesudah mengubah .env jalankan `php artisan config:cache`.
 
 ## Data dari Google Sheets "MERANTI"
 Data tidak ikut di repositori — data operasional perusahaan tempatnya di

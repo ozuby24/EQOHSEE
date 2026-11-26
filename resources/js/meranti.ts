@@ -21,6 +21,14 @@ export const WARNA_KATEGORI_PETA: Record<string, string> = {
 
 export const warnaKategori = (k: unknown) => WARNA_KATEGORI_PETA[String(k ?? '')] ?? WARNA_KATEGORI_PETA.Lainnya;
 
+/* Garis di atas citra satelit: hijau tua tenggelam di atas hutan dan lahan
+   revegetasi yang juga hijau, jadi batasnya digambar terang — kuning untuk
+   blok, seperti batas KML di Google Earth — dengan pinggiran gelap. */
+const GARIS_SATELIT: Record<string, string> = {
+  Blok: '#FACC15', Petak: '#4ADE80', 'Batas Area': '#FB923C', 'Titik Tanam': '#F97316', Lainnya: '#E2E8F0',
+};
+export const garisSatelit = (k: unknown) => GARIS_SATELIT[String(k ?? '')] ?? GARIS_SATELIT.Lainnya;
+
 /** Kelas lencana untuk nilai berstatus — kategori skor, status, jenis, pekerjaan. */
 const LENCANA: Record<string, string> = {
   Baik: 'mr-hijau', Sedang: 'mr-emas', Buruk: 'mr-merah',

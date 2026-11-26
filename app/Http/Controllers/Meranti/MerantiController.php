@@ -69,6 +69,7 @@ class MerantiController extends Controller
             'periodeAktif' => $this->kueri(M\Periode::class, $c)->where('status', 'Aktif')->orderByDesc('tanggal_mulai')->first(['nama_periode', 'tanggal_mulai', 'tanggal_selesai']),
             'bibitHabis' => $bibitHabis->all(),
             'peta' => $this->fitur($this->kueri(M\Peta::class, $c)->orderBy('id')->get(), 160),
+            'ubin' => $this->ubinPeta(),
             'jumlahModul' => collect(Katalog::semua())->map(fn ($m, $k) => ['kunci' => $k, 'judul' => $m['judul'], 'slug' => $m['slug'], 'grup' => $m['grup'], 'ikon' => $m['ikon'],
                 'n' => $this->kueri($m['kelas'], $c)->count()])->values()->all(),
             'izin' => $this->izin(),
@@ -276,9 +277,26 @@ class MerantiController extends Controller
                 'sumber' => $baris->groupBy(fn ($b) => $b->sumber_file ?: 'Manual')->map(fn ($g, $k) => ['label' => $k, 'n' => $g->count()])->values()->all(),
             ],
             'kategori' => Katalog::KATEGORI_PETA,
+            'ubin' => $this->ubinPeta(),
             'izin' => $this->izin(Katalog::modul('peta_spasial')),
             'perusahaan' => $c, 'namaPerusahaan' => $this->namaPerusahaan($c), 'daftarPerusahaan' => $this->pilihanPerusahaan($request),
         ]);
+    }
+
+    /**
+     * Sumber ubin peta satelit (config/meranti.php) — null bila dimatikan,
+     * dan halaman lalu hanya menawarkan peta skema. Host yang sama menjadi
+     * kelonggaran CSP di TajukKeamanan.
+     */
+    private function ubinPeta(): ?array
+    {
+        $k = config('meranti.peta');
+        if (!($k['aktif'] ?? false) || blank($k['satelit'] ?? null)) return null;
+
+        return [
+            'satelit' => $k['satelit'], 'label' => $k['label'] ?: null, 'medan' => $k['medan'] ?: null,
+            'atribusi' => $k['atribusi'], 'atribusiMedan' => $k['atribusi_medan'] ?? null, 'zoomMaks' => (int) ($k['zoom_maks'] ?? 19),
+        ];
     }
 
     /** @param Collection<int, M\Peta> $baris */

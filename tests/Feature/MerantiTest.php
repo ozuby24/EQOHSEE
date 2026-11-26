@@ -405,6 +405,36 @@ class MerantiTest extends TestCase
         $this->get('/meranti/arsip-capaian')->assertInertia(fn (Assert $p) => $p->where('setelan.folder_drive', 'https://drive.google.com/drive/folders/FolderContohArsipCapaianMeranti01'));
     }
 
+    private function arahanCsp(string $csp, string $arahan): string
+    {
+        return (string) collect(explode('; ', $csp))->first(fn ($d) => str_starts_with($d, $arahan.' '));
+    }
+
+    public function test_peta_satelit_dan_csp_ubinnya(): void
+    {
+        config(['meranti.peta.satelit' => 'https://citra.contoh.test/tile/{z}/{y}/{x}', 'meranti.peta.label' => 'https://label.contoh.test/{z}/{y}/{x}',
+            'meranti.peta.medan' => 'https://medan.contoh.test/terrarium/{z}/{x}/{y}.png']);
+        $r = $this->actingAs($this->crew)->get('/meranti/peta')->assertOk()
+            ->assertInertia(fn (Assert $p) => $p->where('ubin.satelit', 'https://citra.contoh.test/tile/{z}/{y}/{x}')->where('ubin.medan', 'https://medan.contoh.test/terrarium/{z}/{x}/{y}.png'));
+        $csp = (string) $r->headers->get('Content-Security-Policy');
+        foreach (['img-src', 'connect-src'] as $arahan) {
+            foreach (['https://citra.contoh.test', 'https://label.contoh.test', 'https://medan.contoh.test'] as $asal) {
+                $this->assertStringContainsString($asal, $this->arahanCsp($csp, $arahan), "{$arahan} tidak mengizinkan {$asal}: ubin peta akan diblokir tanpa pesan.");
+            }
+        }
+        $this->assertStringNotContainsString('contoh.test', $this->arahanCsp($csp, 'script-src'), 'Host ubin tidak boleh masuk script-src.');
+        $this->get('/meranti')->assertInertia(fn (Assert $p) => $p->where('ubin.satelit', 'https://citra.contoh.test/tile/{z}/{y}/{x}'));
+
+        // Alamat tanpa HTTPS tidak dimasukkan ke CSP.
+        config(['meranti.peta.label' => 'http://polos.contoh.test/{z}/{y}/{x}']);
+        $this->assertStringNotContainsString('polos.contoh.test', (string) $this->get('/meranti/peta')->headers->get('Content-Security-Policy'));
+
+        // Dimatikan: halaman hanya menawarkan peta skema dan CSP kembali ketat.
+        config(['meranti.peta.aktif' => false]);
+        $r = $this->get('/meranti/peta')->assertInertia(fn (Assert $p) => $p->where('ubin', null));
+        $this->assertSame("'self' data: blob:", trim(substr($this->arahanCsp((string) $r->headers->get('Content-Security-Policy'), 'img-src'), strlen('img-src'))));
+    }
+
     public function test_angka_berformat_indonesia(): void
     {
         $this->assertSame(48.5, Hitung::angka('48,5'));
