@@ -730,21 +730,27 @@ onBeforeUnmount(() => {
         <p class="jual-tubuh-kecil">Platform Terpadu Keselamatan Pertambangan · {{ tahun }}</p>
       </div>
     </footer>
-  </div>
 
-  <!-- ══════════ bilah keranjang ══════════ -->
-  <transition name="jual-bilah">
-    <div v-if="terpilih.length && !formTerlihat" class="jual-bilah-bungkus">
-      <div class="jual-bilah">
-        <span>
-          <span class="jual-bilah-angka">{{ rupiah(total) }}</span>
-          <span class="jual-bilah-ket">{{ jumlahButir }} butir · {{ terpilih.length }} jenis</span>
-        </span>
-        <button type="button" class="jual-tombol jual-tombol-terang jual-tombol-kecil ml-auto shrink-0"
-                @click="ke('pesan')">
-          Lanjut memesan
-        </button>
+    <!-- ══════════ bilah keranjang ══════════
+         DI DALAM .jual, bukan sesudahnya. Seluruh warnanya peubah
+         --j-* yang hanya hidup di .jual: diletakkan di luar, latarnya
+         var(--j-gelap) tidak terdefinisi sehingga bilahnya bening —
+         angka putihnya menggantung di atas halaman dan tulisan
+         tombolnya putih di atas putih. position:fixed tetap melekat
+         pada layar, sebab .jual tidak memasang transform apa pun. -->
+    <transition name="jual-bilah">
+      <div v-if="terpilih.length && !formTerlihat" class="jual-bilah-bungkus">
+        <div class="jual-bilah">
+          <span>
+            <span class="jual-bilah-angka">{{ rupiah(total) }}</span>
+            <span class="jual-bilah-ket">{{ jumlahButir }} butir · {{ terpilih.length }} jenis</span>
+          </span>
+          <button type="button" class="jual-tombol jual-tombol-terang jual-tombol-kecil ml-auto shrink-0"
+                  @click="ke('pesan')">
+            Lanjut memesan
+          </button>
+        </div>
       </div>
-    </div>
-  </transition>
+    </transition>
+  </div>
 </template>

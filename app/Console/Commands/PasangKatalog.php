@@ -42,6 +42,15 @@ class PasangKatalog extends Command
      */
     private const HARGA_LAYANAN = 3_000_000;
 
+    /**
+     * Website kedua dan seterusnya dalam satu pesanan: Rp 3.000.000
+     * masing-masing. Keputusan pemiliknya, sama seperti harga layanan
+     * di atas. Diisi hanya saat butir WEBSITE baru lahir; pemasangan
+     * yang sudah ada dipindahkan oleh migrasinya sendiri
+     * (2026_11_26_000001_harga_website_tambahan_tiga_juta).
+     */
+    public const HARGA_WEBSITE_TAMBAHAN = 3_000_000;
+
     private const KETERANGAN_LAYANAN =
         'Satu peladen khusus: 1 vCPU, RAM 1 GB, penyimpanan NVMe 60 GB. '
         .'Sudah termasuk hosting, nama domain terpasang, sertifikat HTTPS, '
@@ -76,7 +85,7 @@ class PasangKatalog extends Command
             'modul_kunci' => null,
             'keterangan'  => 'Seluruh aplikasi di dalamnya, pembaruan, dan pendampingan pemasangan.',
             'urutan'      => 0,
-        ], $baru);
+        ], $baru, hargaTambahan: self::HARGA_WEBSITE_TAMBAHAN);
 
         /* ── Layanan tahunan: server, hosting, dan perpanjangan ──
 
@@ -212,6 +221,7 @@ class PasangKatalog extends Command
         ?int $harga = null,
         bool $aktif = false,
         int $masaBulan = 12,
+        ?int $hargaTambahan = null,
     ): int {
         $lama = Produk::where('kode', $kode)->first();
 
@@ -236,6 +246,7 @@ class PasangKatalog extends Command
         Produk::create($data + [
             'kode'       => $kode,
             'harga'      => $harga ?? 0,
+            'harga_tambahan' => $hargaTambahan,
             'masa_bulan' => $masaBulan,
 
             /* Tetap mati bila harganya nol, apa pun yang diminta

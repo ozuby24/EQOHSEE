@@ -191,6 +191,72 @@ class HargaBertingkatTest extends TestCase
             .'hanya bisa dikalikan — dan akan berbeda dari tagihan yang terbit.');
     }
 
+    /* ═══════════ harga website kedua: Rp 3.000.000 ═══════════ */
+
+    /**
+     * Keputusan pemiliknya: website kedua dan seterusnya Rp 3 juta.
+     * Katalog yang baru dipasang dan katalog yang sudah ada harus tiba
+     * di angka yang sama — dua etalase dengan harga berbeda untuk barang
+     * yang sama lebih buruk daripada harga yang salah di keduanya.
+     */
+    public function test_katalog_baru_memberi_website_kedua_tiga_juta(): void
+    {
+        $this->artisan('pembelian:katalog')->assertSuccessful();
+
+        $this->assertSame(3_000_000, Produk::where('kode', 'WEBSITE')->value('harga_tambahan'));
+        $this->assertSame(3_000_000, \App\Console\Commands\PasangKatalog::HARGA_WEBSITE_TAMBAHAN);
+    }
+
+    public function test_migrasi_memindahkan_website_kedua_dari_dua_ke_tiga_juta(): void
+    {
+        $p = $this->paketWebsite(69_000_000, 2_000_000);
+
+        $migrasi = require database_path('migrations/2026_11_26_000001_harga_website_tambahan_tiga_juta.php');
+        $migrasi->up();
+
+        $this->assertSame(3_000_000, $p->refresh()->harga_tambahan);
+        $this->assertSame(72_000_000, $p->subtotal(2));
+
+        $migrasi->down();
+        $this->assertSame(2_000_000, $p->refresh()->harga_tambahan, 'Migrasinya tidak dapat dibalik.');
+    }
+
+    /**
+     * Bilah keranjang harus berada DI DALAM pembungkus .jual.
+     *
+     * Seluruh warnanya peubah --j-* yang hanya didefinisikan pada .jual.
+     * Pernah diletakkan sesudah pembungkusnya: latarnya var(--j-gelap)
+     * tidak terdefinisi, bilahnya bening, angka "Rp 3.000.000" putih
+     * menggantung di atas halaman, dan tulisan tombolnya putih di atas
+     * putih. Tidak ada galat apa pun — hanya pembeli yang tidak dapat
+     * membaca tombol pesannya.
+     */
+    public function test_bilah_keranjang_berada_di_dalam_pembungkus_jual(): void
+    {
+        $vue = file_get_contents(resource_path('js/Pages/Pembelian/Etalase.vue'));
+        $templat = substr($vue, strpos($vue, '<template>'));
+        $templat = preg_replace('/<!--.*?-->/s', '', $templat);
+
+        $awal = strpos($templat, '<div class="jual">');
+        $this->assertNotFalse($awal, 'Pembungkus .jual tidak ditemukan.');
+
+        /* Cari penutup pembungkusnya dengan menghitung div yang dibuka
+           dan ditutup — bukan sekadar </div> terakhir. */
+        preg_match_all('#<div\b|</div>#', $templat, $m, PREG_OFFSET_CAPTURE, $awal);
+        $dalam = 0;
+        $akhir = null;
+        foreach ($m[0] as [$tanda, $letak]) {
+            $dalam += $tanda === '</div>' ? -1 : 1;
+            if ($dalam === 0) { $akhir = $letak; break; }
+        }
+
+        $bilah = strpos($templat, 'jual-bilah-bungkus');
+        $this->assertNotNull($akhir);
+        $this->assertNotFalse($bilah);
+        $this->assertTrue($bilah > $awal && $bilah < $akhir,
+            'Bilah keranjang berada di luar .jual, sehingga peubah warnanya tidak terdefinisi.');
+    }
+
     /* ═══════════ layar dan tagihan tidak boleh berbeda ═══════════ */
 
     /**
