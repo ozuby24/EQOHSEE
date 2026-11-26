@@ -210,6 +210,14 @@ final class Hitung
             if ($m > -1) $perBulan[$m] += (float) $r->luas_realisasi;
         }
 
+        // Bulan yang belum dilalui pada tahun berjalan tidak digambar sebagai nol —
+        // garis tren yang jatuh ke 0 di Desember terbaca sebagai pekerjaan berhenti.
+        if ($pakaiTahun && (int) $tahun === (int) now()->year) {
+            foreach ($perBulan as $m => $v) {
+                if ($m >= (int) now()->month && $v == 0) $perBulan[$m] = null;
+            }
+        }
+
         $pkj = array_fill_keys(Katalog::PEKERJAAN, 0.0);
         foreach ($prog as $r) {
             $k = mb_strtoupper(trim((string) $r->pekerjaan));
@@ -255,7 +263,7 @@ final class Hitung
                 'luasBukaan' => round($luasBukaan, 2),
                 'pkar' => $luasBukaan > 0 ? round($luasReklamasi / $luasBukaan * 100, 1) : null,
             ],
-            'perBulan' => array_map(fn ($v) => round($v, 2), $perBulan),
+            'perBulan' => array_map(fn ($v) => $v === null ? null : round($v, 2), $perBulan),
             'pekerjaan' => array_map(fn ($v) => round($v, 2), $pkj),
             'blok' => collect($blok)->take(6)->map(fn ($v, $k) => ['label' => (string) $k, 'nilai' => round($v, 2)])->values()->all(),
             'luas' => [

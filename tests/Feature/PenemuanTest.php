@@ -317,6 +317,17 @@ class PenemuanTest extends TestCase
         $this->assertSame([], array_values(array_filter($masuk, fn ($i) => str_contains($i, 'pdfjs'))),
             'pdf.js ikut dimuat pada setiap halaman.');
 
+        /* Pustaka pihak ketiga yang dimuat dinamis juga bukan kode halaman:
+           MapLibre (±1,1 MB, satu berkas jadi dari paketnya sendiri) baru
+           diunduh saat peta satelit MERANTI dibuka dan tidak dapat dipecah
+           lebih jauh. Yang dijaga untuknya sama dengan pdf.js — tidak ikut
+           diimpor statis oleh entri utama. Potongan halaman tetap diukur. */
+        $pustaka = array_filter($peta, fn ($e, $k) => str_starts_with($k, 'node_modules/') && ($e['isDynamicEntry'] ?? false), ARRAY_FILTER_USE_BOTH);
+        $this->assertSame([], array_values(array_intersect($masuk, array_keys($pustaka))),
+            'Pustaka yang seharusnya dimuat dinamis ikut diimpor pada setiap halaman.');
+        $berkasPustaka = array_map(fn ($e) => $e['file'], $pustaka);
+        $berkas = array_values(array_filter($berkas, fn ($b) => !in_array('assets/'.basename($b), $berkasPustaka, true)));
+
         $terbesar = max(array_map('filesize', $berkas));
 
         $this->assertLessThan(800 * 1024, $terbesar,

@@ -435,6 +435,27 @@ class MerantiTest extends TestCase
         $this->assertSame("'self' data: blob:", trim(substr($this->arahanCsp((string) $r->headers->get('Content-Security-Policy'), 'img-src'), strlen('img-src'))));
     }
 
+    public function test_bulan_yang_belum_dilalui_tidak_digambar_nol(): void
+    {
+        $this->actingAs($this->crew);
+        foreach ([[2026, 'Januari', 3.0], [2026, 'November', 2.5], [2025, 'Desember', 4.0]] as [$th, $bln, $l]) {
+            M\Progres::create(['company_id' => $this->c->id, 'tahun' => $th, 'bulan' => $bln, 'minggu' => 'Minggu 1', 'pekerjaan' => 'P0', 'nama_blok' => 'Blok 1', 'luas_realisasi' => $l]);
+        }
+
+        // Tahun berjalan (26 November 2026): Februari–Oktober sudah lewat tanpa realisasi
+        // tetap nol, Desember belum dilalui sehingga kosong — garis tidak jatuh ke nol.
+        $this->get('/meranti?tahun=2026')->assertOk()->assertInertia(fn (Assert $p) => $p
+            ->where('dasbor.perBulan.0', 3)
+            ->where('dasbor.perBulan.1', 0)
+            ->where('dasbor.perBulan.10', 2.5)
+            ->where('dasbor.perBulan.11', null));
+
+        // Tahun yang sudah lewat digambar penuh dua belas bulan.
+        $this->get('/meranti?tahun=2025')->assertOk()->assertInertia(fn (Assert $p) => $p
+            ->where('dasbor.perBulan.10', 0)
+            ->where('dasbor.perBulan.11', 4));
+    }
+
     public function test_angka_berformat_indonesia(): void
     {
         $this->assertSame(48.5, Hitung::angka('48,5'));
