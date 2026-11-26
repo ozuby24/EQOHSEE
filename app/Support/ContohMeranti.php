@@ -333,7 +333,7 @@ trait ContohMeranti
             [16, 'Tambah', 'Peta Spasial', 'Unggah blok-rdas.kml — 6 fitur'], [21, 'Tambah', 'Material Keluar', 'Pupuk NPK 16-16-16 → Blok 5'],
             [27, 'Ubah', 'Jaminan Reklamasi', 'Penempatan jaminan '.($th + 1).'–'.($th + 5)], [34, 'Tambah', 'Arsip File Capaian', 'Penanaman RDAS · PT Tunas Alam']]
             as [$h, $aksi, $modul, $detail]) {
-            M\Log::withoutGlobalScopes()->create(['company_id' => $this->c->id, 'user_id' => $this->pengaju?->id, 'waktu' => $k->copy()->subDays($h)->subMinutes(23 + 47 * $h),
+            M\Log::withoutGlobalScopes()->create(['company_id' => $this->c->id, 'user_id' => $this->pengaju?->id, 'waktu' => $h === 0 ? $k->copy()->subMinutes(37) : $k->copy()->subDays($h)->setTime(7 + ($h * 5) % 9, (13 * $h) % 60),
                 'pengguna' => $h % 3 === 2 ? 'Mandor lapangan' : $nama, 'aksi' => $aksi, 'modul' => $modul, 'detail' => $detail]);
         }
         M\Setelan::withoutGlobalScopes()->create(['company_id' => $this->c->id, 'folder_drive' => null, 'catatan' => 'Isi tautan folder Google Drive arsip capaian di halaman Arsip File Capaian.']);
