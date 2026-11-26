@@ -192,6 +192,17 @@ class TajukKeamanan
            kelonggaran ini, pengembangan berhenti bekerja sama sekali,
            dan cara tercepat memperbaikinya adalah mematikan CSP-nya —
            lalu lupa menyalakannya lagi. */
+        /* Peta satelit MERANTI — ubin citra, label, dan medan diambil
+           peramban langsung dari penyedianya (lihat config/meranti.php).
+           Hanya `img-src` dan `connect-src`, dan hanya host yang memang
+           dikonfigurasi: tidak ada skrip luar, dan worker petanya
+           disajikan dari asal sendiri. */
+        $gambar = "'self' data: blob:";
+        foreach (self::asalPeta() as $asal) {
+            $gambar  .= " $asal";
+            $sambung .= " $asal";
+        }
+
         if (Vite::isRunningHot()) {
             $asal = rtrim((string) config('vite.dev_server_url', 'http://localhost:5173'), '/');
             $skrip   .= " $asal";
@@ -213,10 +224,26 @@ class TajukKeamanan
                diperlukan tetap saja kelonggaran. */
             "style-src 'self' 'unsafe-inline'",
             "font-src 'self' data:",
-            "img-src 'self' data: blob:",
+            "img-src $gambar",
             "media-src 'self'",
             "connect-src $sambung",
         ]);
+    }
+
+    /** @return list<string> asal (skema + host) ubin peta satelit yang dikonfigurasi */
+    private static function asalPeta(): array
+    {
+        if (!config('meranti.peta.aktif', false)) return [];
+
+        $asal = [];
+        foreach (['satelit', 'label', 'medan'] as $kunci) {
+            $url = (string) config("meranti.peta.$kunci", '');
+            $p = $url !== '' ? parse_url($url) : false;
+            if (!$p || ($p['scheme'] ?? '') !== 'https' || empty($p['host'])) continue;
+            $asal[] = 'https://'.$p['host'].(isset($p['port']) ? ':'.$p['port'] : '');
+        }
+
+        return array_values(array_unique($asal));
     }
 
     /**

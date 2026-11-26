@@ -152,6 +152,11 @@ class Modules
              'ket'  => 'Kewajiban Rehab DAS pemegang PPKH: penetapan lokasi, RKP, P0–P2, Petak Ukur persen tumbuh, peta petak, penilaian keberhasilan, BAST bertahap, laporan semesteran, dan sanksi.',
              'ikon' => 'M7 21v-5.5M7 15.5c-2.6 0-4-1.8-4-4 0-2.6 2-4.2 4-4.2.4-2.2 2.2-3.8 4.5-3.8 2.6 0 4.5 2 4.5 4.6M17 21v-7M17 14l-3-3M17 16l2.5-2.5M2 21h20M13.5 18.5c1.2-1 2.6-1.4 4.4-1.4'],
 
+            ['nama' => 'MERANTI · Reklamasi & Nursery', 'status' => 'aktif', 'pilar' => 'environment',
+             'rute' => 'meranti.index',
+             'ket'  => 'MERANTI: stok & mutasi bibit, material persemaian, progres mingguan rehabilitasi DAS dan capaian P0–P2 per blok, Matrik 17 penilaian keberhasilan, jaminan reklamasi, administrasi, peta spasial KML/KMZ, dan impor Google Sheets.',
+             'ikon' => 'M7 20h10M10 20c5.5-2.5.8-6.4 3-10M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8zM14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z'],
+
             ['nama' => 'Konservasi Minerba', 'status' => 'aktif', 'pilar' => 'environment',
              'rute' => 'konservasi.index',
              'ket'  => 'Pemantauan produksi, recovery, kehilangan material, dilusi, stockpile, mineral ikutan, dan tindak lanjut perbaikan.',
@@ -243,6 +248,7 @@ class Modules
         'Scaffolding Management'                 => 'perancah',
         'Lifting & Rigging Management'           => 'angkat',
         'Rehabilitasi DAS'                       => 'rdas',
+        'MERANTI · Reklamasi & Nursery'          => 'meranti',
         'Konservasi Minerba'                     => 'konservasi',
         'Mining Engineering Hub'                 => 'meh',
         'Mine Operations & GIS'                  => 'operasi',

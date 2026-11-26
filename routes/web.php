@@ -1388,6 +1388,39 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('penilaian/{penilaian}',     [$R, 'perbaruiPenilaian'])->whereNumber('penilaian')->name('penilaian.perbarui');
     });
 
+    /* ================= MERANTI — Reklamasi & Nursery =================
+       Monitoring, Evaluation of Reclamation and Nursery Information:
+       nursery & material, progres mingguan rehabilitasi DAS dan Aktual
+       Pencapaian P0/P1/P2, reklamasi (Matrik 17, jaminan), administrasi,
+       data master, peta spasial KML/KMZ/GeoJSON, dan impor lembar Google
+       Sheets. Satu halaman per modul — namanya meranti.{kunci katalog}. */
+    Route::prefix('meranti')->name('meranti.')->group(function () {
+        $M = \App\Http\Controllers\Meranti\MerantiController::class;
+        $K = \App\Http\Controllers\Meranti\KelolaController::class;
+        $kunci = \App\Support\Meranti\Katalog::kunci();
+
+        Route::get('/',                          [$M, 'index'])->name('index');
+        Route::get('aktual-pencapaian',          [$M, 'capaian'])->name('capaian');
+        Route::get('peta',                       [$M, 'peta'])->name('peta');
+        Route::post('peta/unggah',               [$M, 'unggahPeta'])->name('peta.unggah');
+        Route::get('peta/geojson',               [$M, 'geojson'])->name('peta.geojson');
+        Route::get('log',                        [$K, 'log'])->name('log');
+        Route::get('pengguna',                   [$K, 'pengguna'])->name('pengguna');
+        Route::put('pengguna/{user}',            [$K, 'aturPeran'])->whereNumber('user')->name('pengguna.peran');
+        Route::get('impor',                      [$K, 'impor'])->name('impor');
+        Route::post('impor',                     [$K, 'jalankanImpor'])->name('impor.jalankan');
+        Route::put('setelan',                    [$K, 'setelan'])->name('setelan');
+
+        Route::post('data/{modul}',              [$M, 'simpan'])->whereIn('modul', $kunci)->name('simpan');
+        Route::put('data/{modul}/{id}',          [$M, 'perbarui'])->whereIn('modul', $kunci)->whereNumber('id')->name('perbarui');
+        Route::delete('data/{modul}/{id}',       [$M, 'hapus'])->whereIn('modul', $kunci)->whereNumber('id')->name('hapus');
+        Route::get('data/{modul}/csv',           [$M, 'csv'])->whereIn('modul', $kunci)->name('csv');
+
+        foreach (\App\Support\Meranti\Katalog::semua() as $k => $m) {
+            Route::get($m['slug'], [$M, 'daftar'])->defaults('modul', $k)->name($k);
+        }
+    });
+
     /* ================= Carbon Management ================= */
     Route::prefix('karbon')->name('karbon.')->group(function () {
         Route::get('/',            [KarbonDasbor::class, 'index'])->name('index');

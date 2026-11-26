@@ -97,6 +97,7 @@ class UserController extends Controller
                 'audit_role'  => (string) ($u->audit_role ?? ''),
                 'ohse_role'   => (string) ($u->ohse_role ?? ''),
                 'energi_role' => (string) ($u->energi_role ?? ''),
+                'meranti_role' => (string) ($u->meranti_role ?? ''),
                 'company_id'  => $u->company_id ? (string) $u->company_id : '',
                 'employee_id' => (string) ($u->employee_id ?? ''),
                 'position'    => (string) ($u->position ?? ''),
@@ -121,6 +122,7 @@ class UserController extends Controller
                     ['nilai' => 'paramedis', 'label' => 'Paramedis — memaraf hasil MCU'],
                 ],
                 'energi' => collect(User::PERAN_ENERGI)->map(fn ($l, $k) => ['nilai' => $k, 'label' => $l])->values()->all(),
+                'meranti' => collect(User::PERAN_MERANTI)->map(fn ($l, $k) => ['nilai' => $k, 'label' => $l])->values()->all(),
                 'perusahaan' => Company::orderBy('name')->get()
                     ->map(fn ($c) => ['nilai' => (string) $c->id, 'label' => $c->name])->all(),
                 'jabatan'    => \App\Support\Hazard::JABATAN,
@@ -257,6 +259,8 @@ class UserController extends Controller
             'ohse_role'   => ['nullable', Rule::in(['ohse', 'paramedis'])],
             /* Peran modul Manajemen Energi & Karbon — lihat gerbang energi.* di AppServiceProvider. */
             'energi_role' => ['nullable', Rule::in(array_keys(User::PERAN_ENERGI))],
+            /* Peran aplikasi MERANTI — lihat gerbang meranti.* di AppServiceProvider. */
+            'meranti_role' => ['nullable', Rule::in(array_keys(User::PERAN_MERANTI))],
             /* Auditi audit SMKP tanpa perusahaan tidak menjangkau audit
                mana pun dan tidak menerima pengingat (Aurorasys). */
             'company_id'  => [Rule::requiredIf(fn () => $request->input('audit_role') === User::ROLE_AUDITI && !$request->boolean('is_admin')),

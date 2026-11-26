@@ -155,6 +155,12 @@ class IkonPadat
             ['d' => 'M17.2 9.5l3.3 5.1h-2l2.4 3.6h-2.6V21h-2.2v-2.8h-2.6l2.4-3.6h-2Z', 'evenodd' => false],
             ['d' => 'M1.6 22.6c2.6-1.3 4.9-1.3 7.4 0s4.9 1.3 7.4 0 4.6-1.3 6-.6v1.4c-1.6-.7-3.6-.6-5.4.3-3 1.5-5.6 1.5-8.6 0-2.2-1.1-4.4-1.1-6.8 0Z', 'evenodd' => false],
         ],
+        /* MERANTI: semai dua daun di atas tanah persemaian */
+        'meranti' => [
+            ['d' => 'M11.2 13.6C11.1 9.4 8.5 6.6 3.4 6.4c-.2 4.9 2.6 7.7 7.8 7.2Z', 'evenodd' => false],
+            ['d' => 'M12.8 11.8c.1-4.8 2.8-7.6 7.8-7.8.2 5-2.6 7.8-7.8 7.8Z', 'evenodd' => false],
+            ['d' => 'M11 12.4h2V20h-2zM3.4 19.4h17.2V22H3.4z', 'evenodd' => false],
+        ],
         /* ic-minerba */
         'konservasi' => [
             ['d' => 'M7.7 2.4h8.6l5 6.3-9.3 12.9L2.7 8.7zm-.3 4.3-1.6 2h12.4l-1.6-2z', 'evenodd' => true],

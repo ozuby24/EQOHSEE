@@ -115,6 +115,18 @@ const kepala = 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400
             menyusun laporan ESDM/GRK, dan membuka dasbor kontrol direksi.
           </p>
         </div>
+
+        <div>
+          <label :class="label">Peran MERANTI</label>
+          <select v-model="form.meranti_role" :class="isian" aria-label="Peran MERANTI">
+            <option value="">— bawaan (lihat &amp; tambah data) —</option>
+            <option v-for="o in (opsi.meranti ?? [])" :key="o.nilai" :value="o.nilai">{{ o.label }}</option>
+          </select>
+          <p class="text-[11px] text-stone-500 mt-1">
+            Aplikasi Reklamasi &amp; Nursery. Data Master mengelola data master, peran, log, dan impor;
+            EMC boleh mengubah dan menghapus; Manager hanya melihat.
+          </p>
+        </div>
         <div>
           <label :class="label">Perusahaan</label>
           <select v-model="form.company_id" :class="isian" aria-label="Perusahaan" :required="auditi">

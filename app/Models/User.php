@@ -34,7 +34,7 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $fillable = [
         'name', 'email', 'password',
         // peran terpadu
-        'is_admin', 'lms_role', 'audit_role', 'ohse_role', 'energi_role', 'company_id',
+        'is_admin', 'lms_role', 'audit_role', 'ohse_role', 'energi_role', 'meranti_role', 'company_id',
         // profil (dulu tabel 'profiles')
         'avatar', 'employee_id', 'position', 'department', 'phone', 'active',
         'whatsapp', 'bio', 'tema',
@@ -91,6 +91,18 @@ class User extends Authenticatable implements MustVerifyEmail
         'keuangan'       => 'Keuangan / Sustainability — PSPK 2, biaya energi',
         'bod'            => 'BOD / Direksi — dasbor kontrol & persetujuan target',
         'auditor_tamu'   => 'Auditor/verifikator eksternal — baca saja',
+    ];
+
+    /**
+     * Peran aplikasi MERANTI (kolom meranti_role) — empat peran yang sama
+     * dengan MERANTI versi Google Apps Script. Kosong = bawaan: lihat dan
+     * tambah data, setara Crew, seperti isian lapangan di modul lain.
+     */
+    public const PERAN_MERANTI = [
+        'data_master' => 'Data Master — penuh, kelola data master, peran, log, impor',
+        'emc'         => 'EMC — lihat, tambah, ubah, hapus',
+        'crew'        => 'Crew — lihat dan tambah data',
+        'manager'     => 'Manager — lihat saja',
     ];
 
     /**
