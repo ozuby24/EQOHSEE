@@ -67,6 +67,12 @@ final class Pembelian
                penjualnya. */
             if (! $produk) continue;
 
+            /* Pemeliharaan tidak pernah diterima dari layar: banyaknya
+               kelipatan dihitung di bawah dari modul pesanan ini sendiri.
+               Diterima dari layar, satu angka yang disunting cukup untuk
+               memelihara tiga puluh modul seharga satu kelipatan. */
+            if ($produk->jenis === Produk::PEMELIHARAAN) continue;
+
             /* Spesifikasi hanya bermakna bagi server yang dapat diatur.
                Untuk butir lain diabaikan, bukan ditolak — sama seperti
                produk yang tidak aktif di atas. */
@@ -107,9 +113,64 @@ final class Pembelian
             ]);
         }
 
+        self::tambahPemeliharaan($pesanan);
+
         $pesanan->hitungUlang();
 
         return $pesanan->refresh();
+    }
+
+    /** Banyaknya modul dalam paket menyeluruh — daftar yang sama dengan yang dipajang etalase. */
+    public static function modulPaket(): int
+    {
+        return count(Modules::perKunciMenu());
+    }
+
+    /**
+     * Banyaknya modul yang dipelihara untuk sebuah pesanan.
+     *
+     * Paket menyeluruh membawa seluruh modulnya, per website. Aplikasi
+     * satuan satu modul per butir — KECUALI bila paketnya ikut dipesan:
+     * aplikasi itu sudah tercakup, dan menghitungnya lagi berarti
+     * menagih pemeliharaan modul yang sama dua kali.
+     */
+    public static function modulPesanan(Pesanan $pesanan): int
+    {
+        $item = $pesanan->items()->with('produk')->get();
+
+        $website = (int) $item->filter(fn (Item $i) => $i->produk?->jenis === Produk::WEBSITE)->sum('jumlah');
+        if ($website > 0) return $website * self::modulPaket();
+
+        return (int) $item->filter(fn (Item $i) => $i->produk?->jenis === Produk::APLIKASI)->sum('jumlah');
+    }
+
+    /**
+     * Pemeliharaan tahun pertama, ditambahkan sendiri oleh peladen.
+     *
+     * Keputusan pemiliknya: Rp 2.000.000 untuk setiap kelipatan tiga modul
+     * per tahun, di luar server. Ditambahkan di sini, bukan dipilih
+     * pembeli, karena ia bagian dari harga modul yang dibeli — sama
+     * seperti etalase yang menampilkannya sebagai baris tetap.
+     */
+    private static function tambahPemeliharaan(Pesanan $pesanan): void
+    {
+        $pelihara = Produk::aktif()->where('jenis', Produk::PEMELIHARAAN)->orderBy('urutan')->first();
+        if (! $pelihara) return;
+
+        $modul = self::modulPesanan($pesanan);
+        $blok  = $pelihara->blokPemeliharaan($modul);
+        if ($blok < 1) return;
+
+        Item::create([
+            'pesanan_id'     => $pesanan->id,
+            'produk_id'      => $pelihara->id,
+            'nama'           => $pelihara->nama.' — '.$modul.' modul',
+            'harga'          => $pelihara->harga,
+            'harga_tambahan' => null,
+            'masa_bulan'     => $pelihara->masa_bulan,
+            'jumlah'         => $blok,
+            'subtotal'       => $pelihara->subtotal($blok),
+        ]);
     }
 
     /**

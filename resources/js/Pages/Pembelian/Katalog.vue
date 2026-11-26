@@ -14,7 +14,9 @@
 import { Head, useForm } from '@inertiajs/vue3';
 import { computed, reactive } from 'vue';
 import { propHalaman } from '../../halaman';
-import { hargaServer, rincianBertingkat, subtotalBertingkat, subtotalServer } from '../../hargaBertingkat';
+import {
+  blokPemeliharaan, hargaServer, rincianBertingkat, subtotalBertingkat, subtotalPemeliharaan, subtotalServer,
+} from '../../hargaBertingkat';
 
 const props = propHalaman();
 
@@ -68,8 +70,24 @@ function rincian(p: any): string | null {
   return rincianBertingkat(p.harga, p.harga_tambahan, pilih[p.id] ?? 0, rupiah);
 }
 
+/* Modul yang dipelihara — aturan Pembelian::modulPesanan(): paket membawa
+   seluruh modulnya per website, aplikasi satuan satu modul per butir
+   kecuali bila paketnya ikut dipilih. */
+const modulDipilih = computed(() => {
+  const website = (props.website ?? []).reduce((n: number, p: any) => n + (pilih[p.id] ?? 0), 0);
+  if (website > 0) return website * (props.modulPaket ?? 0);
+
+  return (props.aplikasi ?? []).reduce((n: number, p: any) => n + (pilih[p.id] ?? 0), 0);
+});
+
+const blokPelihara = computed(() => (props.pemeliharaan
+  ? blokPemeliharaan(modulDipilih.value, props.pemeliharaan.modulPerBlok) : 0));
+
+const biayaPelihara = computed(() => (props.pemeliharaan
+  ? subtotalPemeliharaan(props.pemeliharaan.harga, props.pemeliharaan.modulPerBlok, modulDipilih.value) : 0));
+
 const total = computed(() =>
-  terpilih.value.reduce((n, p) => n + subtotal(p), 0));
+  terpilih.value.reduce((n, p) => n + subtotal(p), 0) + biayaPelihara.value);
 
 function rupiah(n: number) {
   return 'Rp\u00A0' + Number(n || 0).toLocaleString('id-ID');
@@ -267,6 +285,18 @@ function kirim() {
             </li>
           </ul>
           <p v-else class="px-5 py-4 text-[12px] text-stone-400">Belum ada yang dipilih.</p>
+
+          <!-- Pemeliharaan tahun pertama — baris tetap, banyaknya mengikuti
+               modul yang dipilih; peladen menghitungnya dengan aturan sama. -->
+          <div v-if="props.pemeliharaan && blokPelihara > 0" class="px-5 py-3 border-b border-stone-100 text-[12px]">
+            <span class="flex items-baseline gap-2">
+              <span class="min-w-0 flex-1 text-stone-600 truncate">{{ props.pemeliharaan.nama }} — {{ modulDipilih }} modul</span>
+              <span class="num font-semibold text-cam-ink">{{ rupiah(biayaPelihara) }}</span>
+            </span>
+            <span class="block text-[10.5px] text-emerald-700 mt-0.5">
+              {{ blokPelihara }} × {{ rupiah(props.pemeliharaan.harga) }} per {{ props.pemeliharaan.modulPerBlok }} modul · per tahun
+            </span>
+          </div>
 
           <div class="px-5 py-3 flex items-baseline justify-between border-b border-stone-100">
             <span class="text-[12px] font-semibold text-stone-500">Total</span>

@@ -31,9 +31,16 @@ class Produk extends Model
      */
     public const LAYANAN = 'layanan';
 
+    /**
+     * Pemeliharaan tahunan: harganya per KELIPATAN modul (modul_per_blok),
+     * bukan per butir. Banyaknya kelipatan dihitung peladen dari modul
+     * dalam pesanan yang sama — lihat Pembelian::buat().
+     */
+    public const PEMELIHARAAN = 'pemeliharaan';
+
     protected $fillable = [
         'kode', 'nama', 'jenis', 'modul_kunci', 'keterangan',
-        'harga', 'harga_tambahan', 'harga_cpu', 'harga_ram', 'masa_bulan', 'aktif', 'urutan',
+        'harga', 'harga_tambahan', 'harga_cpu', 'harga_ram', 'modul_per_blok', 'masa_bulan', 'aktif', 'urutan',
     ];
 
     /* ── Server yang dapat diatur ──
@@ -54,6 +61,7 @@ class Produk extends Model
             'harga_tambahan' => 'integer',
             'harga_cpu'      => 'integer',
             'harga_ram'      => 'integer',
+            'modul_per_blok' => 'integer',
             'masa_bulan'     => 'integer',
             'aktif'          => 'boolean',
         ];
@@ -85,6 +93,17 @@ class Produk extends Model
         if (! $this->bertingkat()) return $this->harga * $jumlah;
 
         return $this->harga + ($this->harga_tambahan * ($jumlah - 1));
+    }
+
+    /**
+     * Banyaknya kelipatan pemeliharaan untuk sekian modul: 1–3 modul satu
+     * kelipatan, 4–6 dua, dan seterusnya. Nol modul, nol kelipatan.
+     */
+    public function blokPemeliharaan(int $modul): int
+    {
+        if ($modul <= 0) return 0;
+
+        return (int) ceil($modul / max(1, (int) ($this->modul_per_blok ?? 1)));
     }
 
     /** Spesifikasi server (vCPU, RAM) dapat dipilih pembelinya. */
@@ -157,13 +176,19 @@ class Produk extends Model
     /** Masa berlaku sebagai kalimat, bukan angka telanjang. */
     public function masaBerlaku(): string
     {
+        /* Website: lisensi permanen. Dikatakan sebagai "sekali bayar"
+           karena itulah yang ditanyakan pembeli — "berlaku selamanya"
+           saja masih menyisakan pertanyaan apakah ada tagihan tahunan
+           untuk website itu sendiri. */
+        if ($this->masa_bulan === 0 && $this->jenis === self::WEBSITE) return 'Sekali bayar · permanen';
+
         if ($this->masa_bulan === 0)  return 'Berlaku selamanya';
 
         if ($this->masa_bulan === 12) {
             /* Layanan diperpanjang, aplikasi berlaku. Kalimat yang sama
                untuk keduanya membuat biaya yang datang lagi tiap tahun
                terbaca seperti pembelian sekali jalan. */
-            return $this->jenis === self::LAYANAN ? 'Per tahun' : 'Berlaku 1 tahun';
+            return in_array($this->jenis, [self::LAYANAN, self::PEMELIHARAAN], true) ? 'Per tahun' : 'Berlaku 1 tahun';
         }
 
         return 'Berlaku '.$this->masa_bulan.' bulan';

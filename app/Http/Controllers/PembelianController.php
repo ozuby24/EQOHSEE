@@ -130,6 +130,11 @@ class PembelianController extends Controller
 
             'aplikasi' => $aplikasi,
 
+            /* Pemeliharaan tahunan — per kelipatan modul, dihitung layar
+               dengan aturan yang sama dengan yang menagih. */
+            'pemeliharaan' => $this->pemeliharaan(),
+            'modulPaket'   => Pembelian::modulPaket(),
+
             /* Hanya pilar yang benar-benar punya kartu. Chip saring untuk
                pilar kosong menyaring seluruh kartu menjadi tidak ada, dan
                yang membacanya menduga katalognya yang habis. */
@@ -258,6 +263,8 @@ class PembelianController extends Controller
             'website'  => $this->barisProduk($katalog[Produk::WEBSITE] ?? []),
             'layanan'  => $this->barisProduk($katalog[Produk::LAYANAN] ?? []),
             'aplikasi' => $this->barisProduk($katalog[Produk::APLIKASI] ?? []),
+            'pemeliharaan' => $this->pemeliharaan(),
+            'modulPaket'   => Pembelian::modulPaket(),
 
             /* Katalog kosong disebut sebabnya, bukan dibiarkan sebagai
                halaman putih. Yang membacanya harus tahu bahwa yang
@@ -266,6 +273,21 @@ class PembelianController extends Controller
                 && (! ($katalog[Produk::LAYANAN] ?? []))
                 && (! ($katalog[Produk::APLIKASI] ?? [])),
         ]);
+    }
+
+    /** Butir pemeliharaan tahunan yang berlaku, atau null bila tidak dijual. */
+    private function pemeliharaan(): ?array
+    {
+        $p = Produk::aktif()->where('jenis', Produk::PEMELIHARAAN)->orderBy('urutan')->first();
+
+        return $p ? [
+            'id'           => $p->id,
+            'nama'         => $p->nama,
+            'ket'          => $p->keterangan,
+            'harga'        => $p->harga,
+            'modulPerBlok' => (int) ($p->modul_per_blok ?? 1),
+            'masa'         => $p->masaBerlaku(),
+        ] : null;
     }
 
     /** @param iterable<Produk> $daftar */

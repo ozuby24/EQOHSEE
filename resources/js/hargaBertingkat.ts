@@ -93,3 +93,18 @@ export function subtotalServer(
 
   return n === 0 ? 0 : hargaServer(harga, hargaCpu, hargaRam, cpu, ram) * n;
 }
+
+/**
+ * Banyaknya kelipatan pemeliharaan untuk sekian modul — padanan
+ * Produk::blokPemeliharaan(). 1–3 modul satu kelipatan, 4–6 dua, dst.
+ */
+export function blokPemeliharaan(modul: number, perBlok: number): number {
+  const n = Math.max(0, Math.floor(modul || 0));
+
+  return n === 0 ? 0 : Math.ceil(n / Math.max(1, Math.floor(perBlok || 1)));
+}
+
+/** Biaya pemeliharaan setahun untuk sekian modul. */
+export function subtotalPemeliharaan(harga: number, perBlok: number, modul: number): number {
+  return harga * blokPemeliharaan(modul, perBlok);
+}

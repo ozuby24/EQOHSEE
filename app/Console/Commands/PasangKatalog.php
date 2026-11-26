@@ -68,6 +68,11 @@ class PasangKatalog extends Command
      * 2026_11_26_200003_harga_server_dapat_diatur.
      */
     public const HARGA_PER_CPU = 500_000;
+
+    /** Pemeliharaan: Rp 2.000.000 setahun per kelipatan tiga modul. */
+    private const KODE_PEMELIHARAAN = 'PEMELIHARAAN';
+    public const HARGA_PEMELIHARAAN = 2_000_000;
+    public const MODUL_PER_BLOK     = 3;
     public const HARGA_PER_GB  = 500_000;
 
     protected $signature = 'pembelian:katalog';
@@ -95,9 +100,26 @@ class PasangKatalog extends Command
             'nama'        => 'Website EQOHSEE — paket menyeluruh',
             'jenis'       => Produk::WEBSITE,
             'modul_kunci' => null,
-            'keterangan'  => 'Seluruh aplikasi di dalamnya, pembaruan, dan pendampingan pemasangan.',
+            'keterangan'  => 'Seluruh aplikasi di dalamnya dan pendampingan pemasangan. '
+                .'Lisensi permanen — sekali bayar; yang tahunan hanya server dan pemeliharaan.',
             'urutan'      => 0,
-        ], $baru, hargaTambahan: self::HARGA_WEBSITE_TAMBAHAN);
+        ], $baru, hargaTambahan: self::HARGA_WEBSITE_TAMBAHAN, masaBulan: 0);
+
+        /* ── Pemeliharaan tahunan ──
+           Keputusan pemiliknya: Rp 2.000.000 setahun untuk setiap
+           kelipatan tiga modul, di luar server — satu sampai tiga modul
+           bersama server dasar karena itu Rp 5.000.000 setahun. Banyaknya
+           kelipatan tidak pernah dipilih pembeli; Pembelian::buat
+           menghitungnya dari modul dalam pesanan. */
+        $ada += $this->pasang(self::KODE_PEMELIHARAAN, [
+            'nama'        => 'Pemeliharaan tahunan',
+            'jenis'       => Produk::PEMELIHARAAN,
+            'modul_kunci' => null,
+            'keterangan'  => 'Pembaruan, perbaikan, dan dukungan teknis. Rp 2.000.000 per tahun untuk '
+                .'setiap kelipatan 3 modul (1–3 modul, 4–6 modul, dan seterusnya), di luar server.',
+            'urutan'      => 6,
+        ], $baru, harga: self::HARGA_PEMELIHARAAN, aktif: true, masaBulan: 12,
+            modulPerBlok: self::MODUL_PER_BLOK);
 
         /* ── Layanan tahunan: server, hosting, dan perpanjangan ──
 
@@ -135,7 +157,7 @@ class PasangKatalog extends Command
         $jual = Modules::perKunciMenu();
 
         $urutan = 10;
-        $hidup  = ['WEBSITE', self::KODE_LAYANAN];
+        $hidup  = ['WEBSITE', self::KODE_LAYANAN, self::KODE_PEMELIHARAAN];
 
         foreach (Menu::all() as $kunci => $modul) {
             /* Dasbor dan Admin tidak dijual terpisah: keduanya bagian
@@ -237,6 +259,7 @@ class PasangKatalog extends Command
         ?int $hargaTambahan = null,
         ?int $hargaCpu = null,
         ?int $hargaRam = null,
+        ?int $modulPerBlok = null,
     ): int {
         $lama = Produk::where('kode', $kode)->first();
 
@@ -264,6 +287,7 @@ class PasangKatalog extends Command
             'harga_tambahan' => $hargaTambahan,
             'harga_cpu'      => $hargaCpu,
             'harga_ram'      => $hargaRam,
+            'modul_per_blok' => $modulPerBlok,
             'masa_bulan' => $masaBulan,
 
             /* Tetap mati bila harganya nol, apa pun yang diminta
