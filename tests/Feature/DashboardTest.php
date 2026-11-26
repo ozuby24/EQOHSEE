@@ -345,7 +345,7 @@ class DashboardTest extends TestCase
      */
     public function legacy_aturan_dasar_lencana_tidak_menimpa_warna_kategori(): void
     {
-        $gaya = file_get_contents(resource_path('views/partials/eq-visual.blade.php'));
+        $gaya = file_get_contents(resource_path('css/eq-visual.css'));
 
         preg_match('/\.eq-kursus-lencana i\{(.*?)\}/s', $gaya, $cocok);
         $this->assertNotEmpty($cocok, 'Aturan dasar lencana tidak ditemukan.');

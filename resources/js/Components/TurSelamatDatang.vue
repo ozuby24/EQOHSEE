@@ -571,7 +571,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
 
 /* LOGO YANG SAMA DENGAN SELURUH SITUS — lambang berwarna beserta
  * wordmark dan semboyannya, persis seperti yang tergambar di kepala
- * bilah samping (lihat .eq-merek pada partials/eq-visual.blade.php).
+ * bilah samping (lihat .eq-merek pada resources/css/eq-visual.css).
  *
  * Sempat dipakai lockup tersendiri berupa satu berkas PNG. Ia memuat
  * huruf bergaya stensil dan semboyan "Sustaining Performance, Shaping

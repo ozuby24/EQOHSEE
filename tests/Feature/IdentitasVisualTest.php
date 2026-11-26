@@ -370,7 +370,7 @@ class IdentitasVisualTest extends TestCase
     public function test_lapisan_latar_panel_bergambar_tidak_ditimpa_pemilih_menyapu(): void
     {
         $gaya = file_get_contents(resource_path('css/app.css'))
-              . file_get_contents(resource_path('views/partials/eq-visual.blade.php'));
+              . file_get_contents(resource_path('css/eq-visual.css'));
 
         // Komentar dibuang lebih dulu: berkas ini memang menjelaskan
         // polanya, dan penjelasan tidak boleh dihitung sebagai aturan.

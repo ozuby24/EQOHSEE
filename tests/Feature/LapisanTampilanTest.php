@@ -489,7 +489,7 @@ class LapisanTampilanTest extends TestCase
      */
     public function test_kaki_bilah_samping_tidak_menyusut_di_dalam_pemotong(): void
     {
-        $css = file_get_contents(resource_path('views/partials/eq-visual.blade.php'));
+        $css = file_get_contents(resource_path('css/eq-visual.css'));
 
         $this->assertMatchesRegularExpression(
             '/#eqSidebar\{[^}]*overflow:\s*hidden/', $css,
@@ -529,7 +529,7 @@ class LapisanTampilanTest extends TestCase
      */
     public function test_tombol_utama_tidak_memuai_memenuhi_barisnya(): void
     {
-        $css = file_get_contents(resource_path('views/partials/eq-visual.blade.php'));
+        $css = file_get_contents(resource_path('css/eq-visual.css'));
 
         preg_match('/\n\.eq-btn-utama\{([^}]*)\}/', $css, $c);
 

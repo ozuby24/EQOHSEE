@@ -100,10 +100,18 @@
 </head>
 <body class="antialiased">
 
-{{-- Lapisan gaya yang sama dipakai kedua tampilan. Menyalinnya ke berkas
-     Vue tersendiri berarti dua salinan aturan warna yang panjang, dan dua
-     salinan seperti itu pasti berbeda isinya cepat atau lambat. --}}
-@include('partials.eq-visual')
+{{-- Lapisan gaya bersama — resources/css/eq-visual.css.
+
+     Dulu disisipkan sebaris di sini: ±190 KB CSS di dalam HTML yang tidak
+     pernah disimpan peramban, terunduh ulang pada setiap pemuatan penuh.
+     Kini satu berkas ber-hash yang disimpan setahun; yang tersisa di HTML
+     hanya tautannya.
+
+     Tautannya tetap DI SINI, di <body>, bukan di <head> bersama app.css:
+     CSS halaman yang dimuat belakangan disisipkan Vite ke <head>, jadi
+     dengan tautan di sini urutan dokumennya — dan pemenang di antara
+     aturan yang sama kuat — persis seperti ketika gayanya masih sebaris. --}}
+@vite('resources/css/eq-visual.css')
 
 {{-- Chart.js TIDAK lagi disisipkan di sini.
 

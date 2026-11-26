@@ -35,7 +35,7 @@ use Tests\TestCase;
  */
 class ModeGelapLatarTest extends TestCase
 {
-    private const BERKAS = 'views/partials/eq-visual.blade.php';
+    private const BERKAS = 'css/eq-visual.css';
 
     private function gaya(): string
     {

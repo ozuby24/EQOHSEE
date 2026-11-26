@@ -144,6 +144,29 @@ class PengerasanNginxTest extends TestCase
      * sertifikatnya kedaluwarsa dan seluruh peramban menolak membuka
      * situsnya.
      */
+    /**
+     * JavaScript HARUS ikut dikompres.
+     *
+     * mime.types nginx menamai berkas .js "application/javascript",
+     * sedangkan gzip_types dulu hanya memuat text/javascript — seluruh
+     * JavaScript situs, termasuk pustaka peta ±1,6 MB, terkirim mentah
+     * sementara HTML dan CSS-nya terkompres. Terukur di server langsung:
+     * berkas utama 302 KB tanpa content-encoding.
+     */
+    public function test_kedua_vhost_mengompres_javascript_dan_svg(): void
+    {
+        foreach ($this->vhost() as $nama => $isi) {
+            $this->assertMatchesRegularExpression('/^\s*gzip\s+on;/m', $isi, "{$nama}: gzip mati.");
+
+            preg_match('/gzip_types([^;]*);/s', $isi, $m);
+            $jenis = preg_split('/\s+/', trim($m[1] ?? ''));
+
+            foreach (['application/javascript', 'text/css', 'application/json', 'image/svg+xml'] as $wajib) {
+                $this->assertContains($wajib, $jenis, "{$nama}: {$wajib} tidak dikompres.");
+            }
+        }
+    }
+
     public function test_tantangan_acme_tetap_dilayani(): void
     {
         foreach ($this->vhost() as $nama => $isi) {

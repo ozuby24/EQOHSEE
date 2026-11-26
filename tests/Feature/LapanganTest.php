@@ -106,7 +106,7 @@ class LapanganTest extends TestCase
      */
     public function test_tombol_punya_lantai_lebar(): void
     {
-        $gaya = file_get_contents(resource_path('views/partials/eq-visual.blade.php'));
+        $gaya = file_get_contents(resource_path('css/eq-visual.css'));
 
         foreach (['eq-btn-utama', 'eq-btn-lain'] as $kelas) {
             $i = strpos($gaya, ".$kelas{");
@@ -172,7 +172,7 @@ class LapanganTest extends TestCase
         $global = [];
 
         foreach ([
-            resource_path('views/partials/eq-visual.blade.php'),
+            resource_path('css/eq-visual.css'),
             resource_path('css/app.css'),
         ] as $berkas) {
             if (!is_file($berkas)) continue;
@@ -358,7 +358,7 @@ class LapanganTest extends TestCase
      */
     public function test_sasaran_sentuh_tetap_lebar(): void
     {
-        $css = file_get_contents(resource_path('views/partials/eq-visual.blade.php'));
+        $css = file_get_contents(resource_path('css/eq-visual.css'));
 
         foreach (['.eq-tautan', '.eq-panel-lihat'] as $kelas) {
             $this->assertMatchesRegularExpression(
@@ -398,7 +398,7 @@ class LapanganTest extends TestCase
      */
     public function test_kelas_eq_yang_dipakai_ada_gayanya(): void
     {
-        $gaya = file_get_contents(resource_path('views/partials/eq-visual.blade.php'))
+        $gaya = file_get_contents(resource_path('css/eq-visual.css'))
               . file_get_contents(resource_path('css/app.css'));
 
         preg_match_all('/\.(eq-[a-z0-9-]+)/', $gaya, $m);
