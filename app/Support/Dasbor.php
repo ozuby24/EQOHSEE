@@ -383,6 +383,7 @@ final class Dasbor
         'perancah'   => [\App\Models\Perancah\Inspeksi::class, 'Scaffolding',    'perancah.index',    false],
         'angkat'     => [\App\Models\Angkat\Rencana::class, 'Lifting & Rigging', 'angkat.index',     false],
         'rdas'       => [\App\Models\Rdas\Pantau::class,   'Rehabilitasi DAS',  'rdas.index',       false],
+        'meranti'    => [\App\Models\Meranti\Progres::class, 'MERANTI',         'meranti.index',    false],
         'meh'        => [Procedure::class,                 'Mining Engineering', 'meh.index',         false],
     ];
 

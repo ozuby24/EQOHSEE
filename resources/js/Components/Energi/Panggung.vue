@@ -25,7 +25,7 @@ import Ikon from './Ikon.vue';
 type Stat = { label: string; nilai: string; satuan?: string | null; ikon?: string; catatan?: string | null; arah?: { teks: string; baik: boolean } | null };
 
 const props = withDefaults(defineProps<{
-  tema?: 'energi' | 'karbon' | 'perancah' | 'lca' | 'angkat' | 'rdas';
+  tema?: 'energi' | 'karbon' | 'perancah' | 'lca' | 'angkat' | 'rdas' | 'meranti';
   judul: string;
   sub?: string | null;
   stat?: Stat[];
@@ -156,6 +156,39 @@ const kontur = computed(() => {
       </g>
     </svg>
 
+    <!-- Siluet MERANTI: rumah paranet persemaian berisi bedeng polybag di kiri, bibit siap
+         angkut, lalu lahan reklamasi yang menghijau sampai tegakan di kanan. -->
+    <svg v-else-if="tema === 'meranti'" class="pg-siluet" viewBox="0 0 1200 120" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <g fill="currentColor">
+        <path d="M0 102 C180 96 340 108 520 100 S840 92 1000 102 S1140 106 1200 98 V120 H0Z" />
+        <!-- rumah paranet -->
+        <path d="M24 100 V52 L120 34 L216 52 V100 h-6 V56 L120 40 L30 56 V100Z" />
+        <template v-for="x in [48, 72, 96, 120, 144, 168, 192]" :key="'p' + x"><rect :x="x" :y="x <= 120 ? 54 - (x - 24) * 0.19 : 54 - (216 - x) * 0.19" width="1.6" height="46" opacity=".55" /></template>
+        <!-- bedeng polybag bersemai -->
+        <template v-for="(x, i) in [40, 58, 76, 94, 112, 130, 148, 166, 184]" :key="'b' + x">
+          <rect :x="x" y="90" width="12" height="10" rx="2" />
+          <path :d="`M${x + 6} 90 v-${8 + (i % 3) * 2} M${x + 6} ${84 - (i % 3) * 2} q-5 -1 -6 -6 q5 0 6 5 q1 -5 6 -6 q-1 5 -6 7`" stroke="currentColor" stroke-width="1.8" fill="none" />
+        </template>
+        <!-- bibit siap angkut -->
+        <template v-for="(x, i) in [270, 300, 330, 360, 390]" :key="'s' + x">
+          <rect :x="x" y="88" width="16" height="12" rx="2" />
+          <rect :x="x + 7" :y="70 - i * 2" width="2.4" :height="20 + i * 2" />
+          <circle :cx="x + 8" :cy="66 - i * 2" :r="7 + i" />
+        </template>
+        <!-- lahan reklamasi menghijau -->
+        <template v-for="(x, i) in [470, 520, 570, 620, 670, 720]" :key="'m' + x">
+          <rect :x="x - 1.5" :y="76 - i * 3" width="3" :height="24 + i * 3" />
+          <circle :cx="x" :cy="70 - i * 3" :r="10 + i * 1.5" />
+        </template>
+        <template v-for="(x, i) in [800, 860, 920, 980, 1040, 1100, 1160]" :key="'h' + x">
+          <rect :x="x - 2.5" :y="52 - (i % 3) * 8" width="5" :height="48 + (i % 3) * 8" />
+          <circle :cx="x" :cy="42 - (i % 3) * 8" :r="21 + (i % 2) * 4" />
+          <circle :cx="x - 13" :cy="52 - (i % 3) * 8" :r="13" />
+          <circle :cx="x + 13" :cy="50 - (i % 3) * 8" :r="14" />
+        </template>
+      </g>
+    </svg>
+
     <!-- Siluet rantai kegiatan: alat gali-muat-angkut, konveyor, listrik, EBT, cerobong. -->
     <svg v-else class="pg-siluet" viewBox="0 0 1200 120" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
       <g fill="currentColor">
@@ -224,6 +257,7 @@ const kontur = computed(() => {
 .pg-perancah { background: linear-gradient(118deg, #17181C 0%, #2E2A1E 26%, #8A5A00 60%, #E3A008 88%, #F7C948 100%); }
 .pg-lca { background: linear-gradient(118deg, #052E1C 0%, #0E4D33 30%, #15803D 64%, #6BAF3A 100%); }
 .pg-rdas { background: linear-gradient(118deg, #3B2A16 0%, #5C4326 24%, #2F6B3A 56%, #3F9A4E 80%, #A3D36B 100%); }
+.pg-meranti { background: linear-gradient(118deg, #062A1E 0%, #0A3A2A 26%, #2E7D55 58%, #4CA771 82%, #C9A227 100%); }
 .pg-angkat { background: linear-gradient(118deg, #0A1628 0%, #12305A 30%, #1D4ED8 66%, #4F8EF7 100%); }
 .pg-belang { position: absolute; left: 0; right: 0; top: 0; height: 7px; z-index: -1;
   background: repeating-linear-gradient(-45deg, #F7C948 0 14px, #17181C 14px 28px); opacity: .9; }
@@ -236,6 +270,7 @@ const kontur = computed(() => {
 .pg-lca .pg-siluet { color: rgba(2, 30, 16, .30); }
 .pg-angkat .pg-siluet { color: rgba(4, 12, 30, .34); }
 .pg-rdas .pg-siluet { color: rgba(18, 32, 14, .34); }
+.pg-meranti .pg-siluet { color: rgba(3, 26, 17, .36); }
 
 .pg-isi { padding: 22px 24px 30px; }
 .pg-kepala { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; }
@@ -256,6 +291,7 @@ const kontur = computed(() => {
 .pg-lca .pg-ikon { color: #15803D; }
 .pg-angkat .pg-ikon { color: #1D4ED8; }
 .pg-rdas .pg-ikon { color: #2F6B3A; }
+.pg-meranti .pg-ikon { color: #2E7D55; }
 .pg-label { font-size: 11.5px; font-weight: 600; color: rgba(255, 255, 255, .85); }
 .pg-nilai { font-size: 24px; font-weight: 800; line-height: 1.15; letter-spacing: -.02em; margin-top: 2px; }
 .pg-nilai small { font-size: 12px; font-weight: 700; margin-left: 5px; color: rgba(255, 255, 255, .8); letter-spacing: 0; }

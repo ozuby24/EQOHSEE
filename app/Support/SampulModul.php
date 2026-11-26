@@ -76,6 +76,7 @@ final class SampulModul
         'perancah' => 'pelabuhan-senja',
         'angkat'   => 'pelabuhan-muat',
         'rdas'     => 'pit-panorama',
+        'meranti'  => 'pit-panorama',
         'dokumen' => 'pelabuhan-senja',
         'admin'   => 'pelabuhan-senja',
     ];

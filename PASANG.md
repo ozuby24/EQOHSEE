@@ -1,3 +1,93 @@
+# Update 22 — Aplikasi baru: MERANTI · Reklamasi & Nursery
+
+```bash
+# Di VPS, dari /var/www/EQOHSEE
+cp database/database.sqlite ~/cadangan-sebelum-update-22.sqlite   # pgsql: pg_dump
+bash deploy/deploy.sh          # migrate + build
+php artisan pembelian:katalog  # menambah APP-MERANTI (Rp0, tidak aktif)
+
+# Muat data lembar Google Sheets "MERANTI" — paling mudah lewat halaman
+# MERANTI → Data Master → Impor Google Sheets (unggah .xlsx dari ponsel).
+# Atau dari terminal, sesudah berkas .xlsx diunggah ke VPS:
+php artisan meranti:impor ~/MERANTI.xlsx --perusahaan="Cemerlang Asa Mandiri" --kering   # pratinjau dulu
+php artisan meranti:impor ~/MERANTI.xlsx --perusahaan="Cemerlang Asa Mandiri"
+```
+Satu migrasi baru, hanya MENAMBAH: 25 tabel modul `meranti_*`, tabel
+`meranti_log` dan `meranti_setelan`, serta kolom `users.meranti_role`.
+Tidak ada tabel lama yang diubah, tidak ada penjadwal baru. Bila nama
+perusahaannya cocok dengan lebih dari satu baris, perintah impor
+menampilkan daftar ID-nya — ulangi dengan `--perusahaan=ID`.
+
+## MERANTI (`/meranti`, pilar Environment)
+Monitoring, Evaluation of Reclamation and Nursery Information —
+aplikasi Google Apps Script/Supabase MERANTI v4 dipindahkan utuh ke
+EQOHSEE, satu tabel bertipe per modul dengan batas perusahaan.
+- **Dashboard Analitik**: total stok bibit, realisasi rehabilitasi DAS
+  terhadap target, luas reklamasi dan PKAR, skor keberhasilan Matrik 17;
+  tren realisasi per bulan, komposisi P0/P1/P2, realisasi per blok,
+  rencana vs realisasi reklamasi, peta spasial, mutasi nursery 30 hari,
+  jaminan, dan yang perlu ditangani (stok habis, pengajuan menunggu).
+  Saringan tahun.
+- **Nursery**: Stok Bibit, Bibit Masuk/Keluar/Kembali/Mati/Rusak, Master
+  Tanaman. **Material Stok**: Stok Material, Material Masuk/Keluar.
+- **Rehabilitasi DAS**: Progres Mingguan (tahun → bulan → minggu,
+  P0 Penanaman · P1 Pemeliharaan I · P2 Pemeliharaan II), **Aktual
+  Pencapaian** (Σ realisasi ÷ Σ Target Blok per blok, garis 100%),
+  Target Blok, Arsip File Capaian (tombol folder Google Drive), dan Aktual
+  Penanaman (lembar "Actual Penanaman" versi lama, tidak dibuang).
+- **Reklamasi**: Rencana Reklamasi, **Penilaian Keberhasilan Matrik 17**
+  (60% penatagunaan + 20% revegetasi + 20% penyelesaian; > 80 Baik,
+  60–80 Sedang, < 60 Buruk — dihitung server, tidak dapat diketik),
+  Jaminan Reklamasi.
+- **Administrasi**: Surat, Pengajuan Dana & Control Budget, Berita Acara,
+  Periode Pengajuan. **Data Master**: Project, Pelaksana, Project Vendor.
+- **Peta Spasial**: unggah KML / KMZ / GeoJSON — tiap placemark jadi satu
+  fitur, MultiPolygon dipecah, luas dihitung bila tidak disebut; peta
+  digambar tanpa ubin internet; ekspor GeoJSON.
+- **Setiap daftar**: cari, saring tahun/bulan, urut kolom, total, tambah /
+  ubah / hapus (terkonfirmasi), saran isian dari data master, CSV, cetak.
+- **Empat peran MERANTI** (`users.meranti_role`, diatur di Data Master →
+  Pengguna & Peran atau form admin pengguna): Data Master (penuh + data
+  master, peran, log, impor), EMC (tambah/ubah/hapus), Crew (tambah),
+  Manager (lihat). Tanpa peran = bawaan setara Crew; administrator
+  EQOHSEE selalu penuh. Semua perubahan tercatat di Log Aktivitas.
+
+## Data dari Google Sheets "MERANTI"
+Data tidak ikut di repositori — data operasional perusahaan tempatnya di
+basis data, bukan di riwayat Git. Pindahkan lewat **Data Master → Impor
+Google Sheets**:
+1. Buka lembar Google Sheets **MERANTI** → File → Download → Microsoft
+   Excel (.xlsx). Di aplikasi Google Sheets ponsel: ⋮ → Bagikan & ekspor →
+   Simpan sebagai → Excel.
+2. Pilih perusahaan tujuan (administrator: pemilih perusahaan di atas),
+   unggah berkasnya, tekan **Impor berkas**.
+- Setiap lembar ("MERANTI - Stok Bibit", "MERANTI - Peta Spasial", …)
+  masuk ke modulnya; nama lembar yang terpotong 31 karakter tetap
+  dikenali; lembar "Actual Penanaman" versi lama masuk ke Aktual Penanaman;
+  Log Aktivitas lama ikut sebagai riwayat. **Lembar Users tidak dimuat** —
+  akun MERANTI lama tidak dipindahkan; beri peran kepada akun EQOHSEE.
+- Aman diulang: baris membawa asal (`stok_bibit#7`) dan diperbarui, bukan
+  digandakan; data yang diketik langsung di EQOHSEE tidak disentuh.
+- Jalan lain: tautan lembar yang dibagikan "siapa saja yang memiliki link"
+  (server mengambilnya sendiri), atau **CSV dari tombol Export CSV MERANTI**
+  (satu modul per berkas, dikenali dari nama berkasnya).
+- Lembar Google Sheets versi Apps Script **tidak memuat Progres Mingguan dan
+  Target Blok** (dibuat MERANTI v4 versi Supabase). Bila datanya ada di
+  aplikasi MERANTI Supabase, ekspor CSV kedua modul itu dari sana lalu
+  unggah di halaman Impor — Aktual Pencapaian baru terisi sesudahnya.
+
+## Sesudah deploy — wajib dikerjakan orang
+1. **Impor lembar MERANTI** (langkah di atas) untuk PT Cemerlang Asa
+   Mandiri, lalu periksa angkanya di Dashboard Analitik.
+2. **Beri peran MERANTI**: minimal satu Data Master per perusahaan; EMC
+   untuk yang boleh mengubah/menghapus; Manager untuk yang hanya melihat.
+3. **Isi folder Google Drive** arsip capaian di halaman Arsip File Capaian
+   (tombol "Atur folder Drive").
+4. **Aktifkan APP-MERANTI** di katalog pembelian untuk perusahaan yang
+   memakainya.
+
+---
+
 # Update 21 — Aplikasi baru: Rehabilitasi DAS
 
 ```bash

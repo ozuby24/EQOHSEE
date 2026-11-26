@@ -104,6 +104,13 @@ final class IkonNav
         'rencana pengangkatan' => 'dokumen', 'simulasi' => 'kalkulator', 'riksa uji' => 'evaluasi',
         'peta petak' => 'kotak', 'kewajiban ppkh' => 'perisai', 'daftarkan lokasi' => 'dokumen',
         'penilaian & bast' => 'evaluasi', 'regulasi & pedoman' => 'buku',
+        // MERANTI — Reklamasi & Nursery.
+        'dashboard analitik' => 'dashboard', 'peta spasial' => 'kotak', 'data peta' => 'kotak',
+        'bibit' => 'daun', 'tanaman' => 'daun', 'penanaman' => 'daun', 'progres' => 'grafik', 'pencapaian' => 'grafik',
+        'target blok' => 'nilai', 'arsip' => 'dokumen', 'reklamasi' => 'daun', 'penilaian keberhasilan' => 'nilai',
+        'jaminan' => 'perisai', 'surat' => 'dokumen', 'pengajuan dana' => 'timbang', 'berita acara' => 'dokumen',
+        'periode' => 'kalender', 'project' => 'kotak', 'pelaksana' => 'orang', 'vendor' => 'orang',
+        'peran' => 'orang', 'log aktivitas' => 'buku', 'google sheets' => 'tukar', 'material' => 'kotak',
         'fleet' => 'armada', 'armada' => 'armada', 'equipment' => 'armada',
         'bahan bakar' => 'armada', 'fuel' => 'armada',
         'tools' => 'alat', 'alat' => 'alat',

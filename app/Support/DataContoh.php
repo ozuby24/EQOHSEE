@@ -119,6 +119,7 @@ final class DataContoh
     use ContohPerancahLca;
     use ContohAngkat;
     use ContohRdas;
+    use ContohMeranti;
 
     /**
      * Tabel yang dibersihkan, anak lebih dulu daripada induknya.
@@ -144,6 +145,16 @@ final class DataContoh
         \App\Models\Rdas\Kejadian::class, \App\Models\Rdas\Laporan::class, \App\Models\Rdas\Penilaian::class,
         \App\Models\Rdas\Kegiatan::class, \App\Models\Rdas\Pantau::class, \App\Models\Rdas\Petak::class,
         \App\Models\Rdas\Blok::class, \App\Models\Rdas\Ppkh::class,
+        /* MERANTI: semua tabelnya hanya merujuk perusahaan dan pengguna. */
+        \App\Models\Meranti\Tanaman::class, \App\Models\Meranti\StokBibit::class, \App\Models\Meranti\BibitMasuk::class,
+        \App\Models\Meranti\BibitKeluar::class, \App\Models\Meranti\BibitKembali::class, \App\Models\Meranti\BibitMati::class,
+        \App\Models\Meranti\BibitRusak::class, \App\Models\Meranti\StokMaterial::class, \App\Models\Meranti\MaterialMasuk::class,
+        \App\Models\Meranti\MaterialKeluar::class, \App\Models\Meranti\Progres::class, \App\Models\Meranti\TargetBlok::class,
+        \App\Models\Meranti\ArsipCapaian::class, \App\Models\Meranti\Penanaman::class, \App\Models\Meranti\RencanaReklamasi::class,
+        \App\Models\Meranti\Penilaian::class, \App\Models\Meranti\Jaminan::class, \App\Models\Meranti\Surat::class,
+        \App\Models\Meranti\PengajuanDana::class, \App\Models\Meranti\BeritaAcara::class, \App\Models\Meranti\Periode::class,
+        \App\Models\Meranti\Project::class, \App\Models\Meranti\Pelaksana::class, \App\Models\Meranti\ProjectVendor::class,
+        \App\Models\Meranti\Peta::class, \App\Models\Meranti\Log::class, \App\Models\Meranti\Setelan::class,
         AngkutMuatan::class, AngkutRegu::class, AngkutAlat::class,
         BiayaRealisasi::class, BiayaAnggaran::class, BiayaAkun::class,
         IzinGas::class, IzinPeriksa::class, IzinKerja::class,
@@ -1081,6 +1092,7 @@ final class DataContoh
             'LCA'            => $this->lca(),
             'Lifting'        => $this->angkat(),
             'Rehab DAS'      => $this->rdas(),
+            'MERANTI'        => $this->meranti(),
         ]);
     }
 

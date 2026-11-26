@@ -593,6 +593,63 @@ final class Menu
         ],
       ],
     ],
+    /* MERANTI — Monitoring, Evaluation of Reclamation and Nursery
+       Information: persemaian, material, progres rehabilitasi DAS per
+       minggu, kepatuhan reklamasi, dan peta spasial — dipindahkan dari
+       aplikasi Google Apps Script/Supabase MERANTI beserta datanya. */
+    'meranti' => [
+      'label' => 'MERANTI · Reklamasi & Nursery',
+      'semboyan' => 'From Nursery to Reclaimed Land',
+      'kutipan' => 'Bibit yang tercatat sejak persemaian adalah hektar yang dapat dipertanggungjawabkan saat dinilai.',
+      'icon'  => 'M7 20h10M10 20c5.5-2.5.8-6.4 3-10M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8zM14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z',
+      'groups' => [
+        'Pantau' => [
+          ['Dashboard Analitik',       'meranti.index',                  'meranti'],
+          ['Peta Spasial',             'meranti.peta',                   'meranti/peta'],
+        ],
+        'Nursery' => [
+          ['Stok Bibit',               'meranti.stok_bibit',             'meranti/stok-bibit'],
+          ['Bibit Masuk',              'meranti.bibit_masuk',            'meranti/bibit-masuk'],
+          ['Bibit Keluar',             'meranti.bibit_keluar',           'meranti/bibit-keluar'],
+          ['Bibit Kembali',            'meranti.bibit_kembali',          'meranti/bibit-kembali'],
+          ['Bibit Mati',               'meranti.bibit_mati',             'meranti/bibit-mati'],
+          ['Bibit Rusak',              'meranti.bibit_rusak',            'meranti/bibit-rusak'],
+          ['Master Tanaman',           'meranti.master_tanaman',         'meranti/master-tanaman'],
+        ],
+        'Material Stok' => [
+          ['Stok Material',            'meranti.stok_material',          'meranti/stok-material'],
+          ['Material Masuk',           'meranti.material_masuk',         'meranti/material-masuk'],
+          ['Material Keluar',          'meranti.material_keluar',        'meranti/material-keluar'],
+        ],
+        'Rehabilitasi DAS' => [
+          ['Progres Mingguan',         'meranti.progres_mingguan',       'meranti/progres-mingguan'],
+          ['Aktual Pencapaian',        'meranti.capaian',                'meranti/aktual-pencapaian'],
+          ['Target Blok (Rencana)',    'meranti.target_blok',            'meranti/target-blok'],
+          ['Arsip File Capaian',       'meranti.actual_capaian',         'meranti/arsip-capaian'],
+          ['Aktual Penanaman',         'meranti.aktual_penanaman',       'meranti/aktual-penanaman'],
+        ],
+        'Reklamasi' => [
+          ['Rencana Reklamasi',        'meranti.rencana_reklamasi',      'meranti/rencana-reklamasi'],
+          ['Penilaian Keberhasilan',   'meranti.penilaian_keberhasilan', 'meranti/penilaian-keberhasilan'],
+          ['Jaminan Reklamasi',        'meranti.jaminan_reklamasi',      'meranti/jaminan-reklamasi'],
+        ],
+        'Administrasi' => [
+          ['Surat Keluar/Masuk',       'meranti.surat',                  'meranti/surat'],
+          ['Pengajuan Dana & Control Budget', 'meranti.pengajuan_dana',  'meranti/pengajuan-dana'],
+          ['Berita Acara',             'meranti.berita_acara',           'meranti/berita-acara'],
+          ['Periode Pengajuan',        'meranti.periode_pengajuan',      'meranti/periode-pengajuan'],
+        ],
+        'Data Master' => [
+          ['Project',                  'meranti.master_project',         'meranti/master-project'],
+          ['Pelaksana',                'meranti.master_pelaksana',       'meranti/master-pelaksana'],
+          ['Project Vendor',           'meranti.project_vendor',         'meranti/project-vendor'],
+          ['Data Peta Spasial',        'meranti.peta_spasial',           'meranti/peta-spasial'],
+          ['Pengguna & Peran',         'meranti.pengguna',               'meranti/pengguna', 'meranti.master'],
+          ['Log Aktivitas',            'meranti.log',                    'meranti/log', 'meranti.master'],
+          ['Impor Google Sheets',      'meranti.impor',                  'meranti/impor', 'meranti.master'],
+        ],
+      ],
+    ],
     'konservasi' => [
       'label' => 'Konservasi Minerba',
       'semboyan' => 'Take Only What Lasts',
@@ -961,6 +1018,7 @@ final class Menu
         [['perancah*'],                            'perancah'],
         [['pengangkatan*'],                        'angkat'],
         [['rehab-das*'],                           'rdas'],
+        [['meranti*'],                             'meranti'],
         [['konservasi*'],                          'konservasi'],
         [['operasi-tambang*'],                     'operasi'],
         [['penirisan*'],                           'air'],

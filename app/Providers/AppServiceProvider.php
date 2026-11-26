@@ -110,6 +110,14 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('energi.instruksi',  fn (User $u) => $peran($u, ['bod']) || $u->isKtt());
         Gate::define('energi.target',     fn (User $u) => $peran($u, ['bod']));
 
+        // MERANTI: Data Master (penuh + data master), EMC (tambah/ubah/hapus),
+        // Crew (tambah), Manager (lihat). Kosong = bawaan setara Crew.
+        $mrt = fn (User $u, array $daftar) => $u->isAdmin() || in_array($u->meranti_role, $daftar, true);
+        Gate::define('meranti.tambah', fn (User $u) => $u->meranti_role === null || $mrt($u, ['data_master', 'emc', 'crew']));
+        Gate::define('meranti.ubah',   fn (User $u) => $mrt($u, ['data_master', 'emc']));
+        Gate::define('meranti.hapus',  fn (User $u) => $mrt($u, ['data_master', 'emc']));
+        Gate::define('meranti.master', fn (User $u) => $mrt($u, ['data_master']));
+
         // Seluruh antarmuka dan berkas cetak berbahasa Indonesia, termasuk
         // nama bulan pada kop dokumen terkendali. Disetel di sini agar tidak
         // bergantung pada APP_LOCALE yang berbeda-beda antar server.
