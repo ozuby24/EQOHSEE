@@ -2266,7 +2266,7 @@ final class DataContoh
             'company_id' => $this->c->id,
             'name'       => $nama,
             'email'      => $surel,
-            'password'   => Hash::make('rahasia123'),
+            'password'   => Hash::make(SandiContoh::BAWAAN),
             'lms_role'   => 'trainee',
         ]);
     }

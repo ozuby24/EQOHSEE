@@ -48,7 +48,7 @@ class PasangDemo extends Command
 
     /** Kata sandi seluruh akun contoh. Sengaja seragam dan sengaja lemah:
      *  akun ini hanya ada pada pemasangan contoh. */
-    private const SANDI = 'rahasia123';
+    private const SANDI = \App\Support\SandiContoh::BAWAAN;
 
     /** Surel kedua akun penjajal.
      *
@@ -202,6 +202,15 @@ class PasangDemo extends Command
         }
 
         $this->info('Selesai. Kata sandi seluruh akun contoh: '.self::SANDI);
+
+        /* Sandinya tertulis di kode sumber yang terbuka, jadi di luar
+           local/testing ia ditolak di pintu masuk (App\Support\SandiContoh).
+           Dikatakan di sini, bukan dibiarkan ditemukan sendiri sebagai
+           "sandinya salah" pada demo pertama. */
+        if (! \App\Support\SandiContoh::bolehDipakai()) {
+            $this->warn('Di lingkungan ini sandi contoh TIDAK dapat dipakai masuk. Atur sandi baru '
+                .'untuk akun yang hendak dipakai (terutama '.self::PENJAJAL_ADMIN.') di Kelola Pengguna.');
+        }
 
         return self::SUCCESS;
     }
