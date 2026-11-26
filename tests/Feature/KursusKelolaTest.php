@@ -34,9 +34,21 @@ class KursusKelolaTest extends TestCase
     {
         $this->actingAs($this->admin());
 
+        /* Halaman Inertia: isinya digambar di peramban, jadi yang
+           dipastikan adalah komponen dan propnya — bukan teks HTML.
+           Dulu diuji dengan assertSee('Judul'), dan itu lulus hanya karena
+           kata itu kebetulan ada di komentar CSS yang disisipkan sebaris
+           ke setiap halaman; begitu CSS-nya dipindah ke berkas sendiri,
+           ujinya gagal padahal halamannya utuh. */
         $this->get('/courses/create')
             ->assertOk()
-            ->assertSee('Judul');
+            ->assertInertia(fn ($h) => $h
+                ->component('Kursus/Form')
+                ->where('tersimpan', false)
+                ->where('judul', 'Kursus Baru'));
+
+        $this->assertStringContainsString('Judul', file_get_contents(resource_path('js/Pages/Kursus/Form.vue')),
+            'Formulir kursus kehilangan isian judulnya.');
     }
 
     public function test_formulir_kursus_baru_tidak_terbaca_sebagai_kursus(): void

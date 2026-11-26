@@ -41,7 +41,9 @@ import BlankLayout from '../../Layouts/BlankLayout.vue';
 import Wordmark from '../../Components/Wordmark.vue';
 import IkonPilar from '../../Components/IkonPilar.vue';
 import { bolehLatarVideo } from '../../latarVideo';
-import { rincianBertingkat, subtotalBertingkat } from '../../hargaBertingkat';
+import {
+  blokPemeliharaan, hargaServer, rincianBertingkat, subtotalBertingkat, subtotalPemeliharaan, subtotalServer,
+} from '../../hargaBertingkat';
 
 defineOptions({ layout: BlankLayout });
 
@@ -62,21 +64,67 @@ type Paket = {
 };
 
 /** Server dan hosting, diperpanjang tiap tahun. */
-type Layanan = { id: number; nama: string; ket: string | null; harga: number; masa: string };
+/** Batas dan tarif tambahan server — dari Produk::aturanServer(). */
+type AturanServer = {
+  cpuDasar: number; cpuMaks: number; ramDasar: number; ramMaks: number;
+  hargaCpu: number; hargaRam: number;
+};
+type Layanan = {
+  id: number; nama: string; ket: string | null; harga: number; masa: string;
+  aturan?: AturanServer | null;
+};
+
+/** Pemeliharaan tahunan — harga per kelipatan modul (Produk::PEMELIHARAAN). */
+type Pemeliharaan = { id: number; nama: string; ket: string | null; harga: number; modulPerBlok: number; masa: string };
 
 const props = defineProps<{
   paket: Paket | null;
   layanan: Layanan | null;
+  pemeliharaan?: Pemeliharaan | null;
+  modulPaket?: number;
   aplikasi: Aplikasi[];
   pilar: Record<string, Pilar>;
   adaHarga: boolean;
-  kontak: { whatsapp: string; email: string };
+  kontak: { whatsapp: string; email: string; lain?: { nama: string; whatsapp: string }[] };
   latar: { video: string | null; poster: string | null; paket: string | null };
   tahun: number;
 }>();
 
 /** id produk => banyaknya. Nol berarti tidak dipilih. */
 const pilih = reactive<Record<number, number>>({});
+
+/* Spesifikasi server yang sedang dipilih. Dasar (1 vCPU, RAM 1 GB) sudah
+   termasuk dalam harga layanan; tiap tambahan bertarif sendiri. */
+const spek = reactive({
+  cpu: props.layanan?.aturan?.cpuDasar ?? 1,
+  ram: props.layanan?.aturan?.ramDasar ?? 1,
+});
+
+function aturSpek(kunci: 'cpu' | 'ram', n: number) {
+  const a = props.layanan?.aturan;
+  if (!a) return;
+  const [min, maks] = kunci === 'cpu' ? [a.cpuDasar, a.cpuMaks] : [a.ramDasar, a.ramMaks];
+  spek[kunci] = Math.max(min, Math.min(maks, spek[kunci] + n));
+}
+
+/* Contoh pilihan cepat, menurut keputusan pemiliknya: lima aplikasi
+   berjalan pada 4 vCPU dan RAM 4 GB. */
+const contohSpek = [
+  { label: '1 aplikasi', cpu: 1, ram: 1 },
+  { label: '5 aplikasi', cpu: 4, ram: 4 },
+];
+
+function pakaiSpek(cpu: number, ram: number) {
+  const a = props.layanan?.aturan;
+  if (!a) return;
+  spek.cpu = Math.max(a.cpuDasar, Math.min(a.cpuMaks, cpu));
+  spek.ram = Math.max(a.ramDasar, Math.min(a.ramMaks, ram));
+}
+
+/** Harga satu tahun server menurut spesifikasi yang dipilih. */
+const hargaLayanan = computed(() => (props.layanan
+  ? hargaServer(props.layanan.harga, props.layanan.aturan?.hargaCpu, props.layanan.aturan?.hargaRam, spek.cpu, spek.ram)
+  : 0));
 
 const terjual = computed(() => props.aplikasi.filter((a) => a.id !== null));
 
@@ -90,12 +138,17 @@ const kelompok = computed(() => pilarList.value.map(([slug, w]) => ({
 })).filter((k) => k.butir.length > 0));
 
 /** Semua yang dapat dibeli: paket, layanan tahunan, dan satuan. */
-const semua = computed<{ id: number; nama: string; harga: number; harga_tambahan?: number | null }[]>(() => [
+type Butir = { id: number; nama: string; harga: number; harga_tambahan?: number | null; aturan?: AturanServer | null };
+
+const semua = computed<Butir[]>(() => [
   ...(props.paket ? [{
     id: props.paket.id, nama: props.paket.nama, harga: props.paket.harga,
     harga_tambahan: props.paket.harga_tambahan ?? null,
   }] : []),
-  ...(props.layanan ? [{ id: props.layanan.id, nama: props.layanan.nama, harga: props.layanan.harga }] : []),
+  ...(props.layanan ? [{
+    id: props.layanan.id, nama: props.layanan.nama, harga: props.layanan.harga,
+    aturan: props.layanan.aturan ?? null,
+  }] : []),
   ...terjual.value.map((a) => ({ id: a.id as number, nama: a.nama, harga: a.harga as number })),
 ]);
 
@@ -104,16 +157,71 @@ const terpilih = computed(() => semua.value.filter((p) => (pilih[p.id] ?? 0) > 0
 /* Lewat subtotalBertingkat — aturan yang sama dengan yang menagih.
    Perkalian yang ditulis ulang di sini membuat halaman jual
    menjanjikan angka yang berbeda dari tagihan yang terbit. */
-function subtotal(p: { id: number; harga: number; harga_tambahan?: number | null }): number {
+function subtotal(p: Butir): number {
+  if (p.aturan) {
+    return subtotalServer(p.harga, p.aturan.hargaCpu, p.aturan.hargaRam, spek.cpu, spek.ram, pilih[p.id] ?? 0);
+  }
   return subtotalBertingkat(p.harga, p.harga_tambahan, pilih[p.id] ?? 0);
 }
 
-function rincian(p: { id: number; harga: number; harga_tambahan?: number | null }): string | null {
-  return rincianBertingkat(p.harga, p.harga_tambahan, pilih[p.id] ?? 0, (n) => rupiah(n));
+function rincian(p: Butir): string | null {
+  if (p.aturan) return `${spek.cpu} vCPU · RAM ${spek.ram} GB · NVMe 60 GB`;
+
+  const bertingkat = rincianBertingkat(p.harga, p.harga_tambahan, pilih[p.id] ?? 0, (n) => rupiah(n));
+
+  /* Website: sekali bayar. Disebut di baris pesanannya juga, supaya
+     tidak terbaca sebagai biaya tahunan seperti server di bawahnya. */
+  if (props.paket && p.id === props.paket.id) {
+    return bertingkat ? `${bertingkat} · ${props.paket.masa}` : props.paket.masa;
+  }
+
+  return bertingkat;
 }
 
+/*
+  Modul yang dipelihara — aturan yang sama dengan Pembelian::modulPesanan():
+  paket menyeluruh membawa seluruh modulnya per website; aplikasi satuan
+  satu modul per butir, kecuali bila paketnya ikut dipilih.
+*/
+const modulDipilih = computed(() => {
+  const website = props.paket ? (pilih[props.paket.id] ?? 0) : 0;
+  if (website > 0) return website * (props.modulPaket ?? 0);
+
+  return terjual.value.reduce((n, a) => n + (pilih[a.id as number] ?? 0), 0);
+});
+
+/* Pemeliharaan tahun pertama: baris tetap, tidak dipilih pembeli —
+   peladen menambahkannya sendiri dengan hitungan yang sama. */
+const blokPelihara = computed(() => (props.pemeliharaan
+  ? blokPemeliharaan(modulDipilih.value, props.pemeliharaan.modulPerBlok) : 0));
+
+const biayaPelihara = computed(() => (props.pemeliharaan
+  ? subtotalPemeliharaan(props.pemeliharaan.harga, props.pemeliharaan.modulPerBlok, modulDipilih.value) : 0));
+
+/** Biaya pemeliharaan setahun untuk sekian modul — untuk tabel kelipatannya. */
+function pelihara(modul: number): number {
+  return props.pemeliharaan
+    ? subtotalPemeliharaan(props.pemeliharaan.harga, props.pemeliharaan.modulPerBlok, modul) : 0;
+}
+
+/** Baris contoh kelipatan: 1–3, 4–6, 7–9 modul, lalu paket menyeluruh. */
+const tanggaPelihara = computed(() => {
+  const per = props.pemeliharaan?.modulPerBlok ?? 3;
+  return [1, 2, 3].map((k) => ({ label: `${(k - 1) * per + 1}–${k * per} modul`, modul: k * per }));
+});
+
 const total = computed(() =>
-  terpilih.value.reduce((n, p) => n + subtotal(p), 0));
+  terpilih.value.reduce((n, p) => n + subtotal(p), 0) + biayaPelihara.value);
+
+/* Yang datang lagi setiap tahun: server (bila dipilih) dan pemeliharaan.
+   Disebut terpisah dari total tagihan pertama supaya harga website yang
+   sekali bayar tidak terbaca sebagai biaya tahunan — dan sebaliknya. */
+const tahunan = computed(() => {
+  const server = props.layanan && (pilih[props.layanan.id] ?? 0) > 0
+    ? hargaServer(props.layanan.harga, props.layanan.aturan?.hargaCpu, props.layanan.aturan?.hargaRam, spek.cpu, spek.ram)
+    : 0;
+  return server + biayaPelihara.value;
+});
 
 const jumlahButir = computed(() =>
   terpilih.value.reduce((n, p) => n + (pilih[p.id] ?? 0), 0));
@@ -173,10 +281,16 @@ const pakaiVideo = ref(bolehLatarVideo());
 const f = useForm<Record<string, any>>({
   pembeli_nama: '', pembeli_perusahaan: '', pembeli_email: '',
   pembeli_telepon: '', catatan: '', produk: {} as Record<number, number>,
+  spesifikasi: {} as Record<number, { cpu: number; ram: number }>,
 });
 
 function kirim() {
   f.produk = Object.fromEntries(terpilih.value.map((p) => [p.id, pilih[p.id]]));
+
+  /* Hanya banyaknya vCPU dan GB RAM — harganya dihitung ulang peladen
+     dari tarif produknya, sama seperti harga butir lainnya. */
+  f.spesifikasi = Object.fromEntries(terpilih.value.filter((p) => p.aturan)
+    .map((p) => [p.id, { cpu: spek.cpu, ram: spek.ram }]));
 
   f.post('/katalog/pesan', { preserveScroll: true });
 }
@@ -193,6 +307,13 @@ const waUrl = computed(() => (props.kontak.whatsapp
  * satu pun tautan di bawahnya — kalimat yang meminta sesuatu lalu tidak
  * menyediakan caranya.
  */
+/** 6281346853729 → +62 813-4685-3729 */
+function nomorTampil(n: string): string {
+  const d = (n || '').replace(/\D/g, '');
+  const m = d.match(/^62(\d{3})(\d{4})(\d+)$/);
+  return m ? `+62 ${m[1]}-${m[2]}-${m[3]}` : (d ? '+' + d : '');
+}
+
 const tanya = computed(() => (waUrl.value
   ?? (props.kontak.email ? 'mailto:' + props.kontak.email : null)));
 
@@ -428,6 +549,16 @@ onBeforeUnmount(() => {
               masing-masing.
             </p>
 
+            <!-- Harga website SEKALI BAYAR. Yang tahunan disebut di sini juga,
+                 di tempat yang sama dengan harganya — biaya yang baru
+                 diketahui sesudah menandatangani merusak kepercayaan. -->
+            <p v-if="pemeliharaan" class="jual-paket-tambahan">
+              Sesudahnya, yang tahunan hanya <b>server</b> (mulai
+              {{ layanan ? rupiah(layanan.harga) : '—' }}) dan <b>pemeliharaan</b>:
+              {{ rupiah(pemeliharaan.harga) }} per {{ pemeliharaan.modulPerBlok }} modul —
+              paket ini {{ modulPaket }} modul, {{ rupiah(pelihara(modulPaket ?? 0)) }} per tahun.
+            </p>
+
             <div class="flex items-center gap-3 mt-7">
               <span class="jual-hitung">
                 <button type="button" aria-label="Kurangi" @click="ubah(paket.id, -1)">−</button>
@@ -468,13 +599,13 @@ onBeforeUnmount(() => {
               <h3 class="jual-h3 mt-1.5">Professional — server &amp; hosting</h3>
             </div>
             <p class="jual-layanan-harga">
-              {{ rupiah(layanan.harga) }}<span class="jual-angka-kecil"> / tahun</span>
+              {{ rupiah(hargaLayanan) }}<span class="jual-angka-kecil"> / tahun</span>
             </p>
           </div>
 
           <div class="jual-layanan-spek">
-            <span>1 vCPU</span>
-            <span>RAM 1 GB</span>
+            <span>{{ spek.cpu }} vCPU</span>
+            <span>RAM {{ spek.ram }} GB</span>
             <span>NVMe 60 GB</span>
             <span>HTTPS</span>
             <span>Cadangan berkala</span>
@@ -487,6 +618,41 @@ onBeforeUnmount(() => {
             berkala, dan pembaruan keamanan. Diperpanjang setiap tahun.
           </p>
 
+          <!-- ── Atur server ──
+               Dasar 1 vCPU dan RAM 1 GB sudah termasuk; makin banyak
+               aplikasi, makin besar servernya. Tiap vCPU dan GB RAM
+               tambahan bertarif sendiri, dan angkanya dihitung dengan
+               aturan yang sama dengan yang menagih (hargaBertingkat.ts). -->
+          <div v-if="layanan.aturan" class="jual-server">
+            <div class="jual-server-atur">
+              <div v-for="k in (['cpu', 'ram'] as const)" :key="k" class="jual-server-baris">
+                <span class="jual-server-label">{{ k === 'cpu' ? 'vCPU' : 'RAM (GB)' }}</span>
+                <span class="jual-hitung">
+                  <button type="button" :aria-label="`Kurangi ${k === 'cpu' ? 'vCPU' : 'RAM'}`"
+                          :disabled="spek[k] <= (k === 'cpu' ? layanan.aturan.cpuDasar : layanan.aturan.ramDasar)"
+                          @click="aturSpek(k, -1)">−</button>
+                  <span class="num">{{ spek[k] }}</span>
+                  <button type="button" :aria-label="`Tambah ${k === 'cpu' ? 'vCPU' : 'RAM'}`"
+                          :disabled="spek[k] >= (k === 'cpu' ? layanan.aturan.cpuMaks : layanan.aturan.ramMaks)"
+                          @click="aturSpek(k, 1)">+</button>
+                </span>
+                <span class="jual-server-tarif">
+                  +{{ rupiah(k === 'cpu' ? layanan.aturan.hargaCpu : layanan.aturan.hargaRam) }}
+                  per {{ k === 'cpu' ? 'vCPU' : 'GB' }} tambahan
+                </span>
+              </div>
+            </div>
+
+            <div class="jual-server-contoh">
+              <span>Contoh:</span>
+              <button v-for="c in contohSpek" :key="c.label" type="button" class="jual-server-pilih"
+                      :class="{ 'is-aktif': spek.cpu === c.cpu && spek.ram === c.ram }"
+                      @click="pakaiSpek(c.cpu, c.ram)">
+                {{ c.label }} · {{ c.cpu }} vCPU · {{ c.ram }} GB
+              </button>
+            </div>
+          </div>
+
           <div class="flex items-center gap-3 flex-wrap">
             <span class="jual-hitung">
               <button type="button" aria-label="Kurangi" @click="ubah(layanan.id, -1)">−</button>
@@ -498,6 +664,46 @@ onBeforeUnmount(() => {
               Tambahkan
             </button>
           </div>
+        </div>
+
+        <!-- ── Pemeliharaan tahunan ──
+             Per kelipatan tiga modul, di luar server. Tidak dipilih
+             pembeli — ikut dihitung dari modul yang diambil, dan
+             tabelnya ada di sini supaya angkanya dapat diperiksa
+             sebelum memesan, bukan baru terlihat di tagihan. -->
+        <div v-if="pemeliharaan" v-singkap="120" class="jual-layanan jual-pelihara">
+          <div class="jual-layanan-kepala">
+            <div>
+              <p class="jual-mata">Layanan tahunan</p>
+              <h3 class="jual-h3 mt-1.5">Pemeliharaan</h3>
+            </div>
+            <p class="jual-layanan-harga">
+              {{ rupiah(pemeliharaan.harga) }}<span class="jual-angka-kecil"> / {{ pemeliharaan.modulPerBlok }} modul / tahun</span>
+            </p>
+          </div>
+
+          <p class="jual-tubuh-kecil">
+            Pembaruan, perbaikan, dan dukungan teknis. Dihitung per kelipatan
+            {{ pemeliharaan.modulPerBlok }} modul, di luar server, dan ikut masuk tagihan
+            sesuai modul yang Anda ambil.
+          </p>
+
+          <ul class="jual-pelihara-tangga">
+            <li v-for="t in tanggaPelihara" :key="t.label">
+              <span>{{ t.label }}</span>
+              <b>{{ rupiah(pelihara(t.modul)) }}</b>
+              <span v-if="layanan" class="jual-pelihara-total">
+                + server {{ rupiah(layanan.harga) }} = {{ rupiah(pelihara(t.modul) + layanan.harga) }} / tahun
+              </span>
+            </li>
+            <li v-if="modulPaket">
+              <span>Paket menyeluruh · {{ modulPaket }} modul</span>
+              <b>{{ rupiah(pelihara(modulPaket)) }}</b>
+              <span v-if="layanan" class="jual-pelihara-total">
+                + server mulai {{ rupiah(layanan.harga) }}
+              </span>
+            </li>
+          </ul>
         </div>
       </div>
     </section>
@@ -665,10 +871,32 @@ onBeforeUnmount(() => {
               Belum ada yang dipilih. Ambil paketnya, atau tambahkan aplikasi satuan di atas.
             </p>
 
+            <!-- Pemeliharaan tahun pertama: baris tetap tanpa pengatur —
+                 banyaknya mengikuti modul yang diambil, dan peladen
+                 menghitungnya sendiri dengan aturan yang sama. -->
+            <ul v-if="pemeliharaan && blokPelihara > 0" class="jual-pesanan jual-pesanan-tetap">
+              <li>
+                <span class="jual-pesanan-teks">
+                  <span class="jual-baris-nama">{{ pemeliharaan.nama }} — {{ modulDipilih }} modul</span>
+                  <span class="jual-baris-masa">
+                    {{ blokPelihara }} × {{ rupiah(pemeliharaan.harga) }} per {{ pemeliharaan.modulPerBlok }} modul · per tahun
+                  </span>
+                </span>
+                <span class="jual-pesanan-aksi">
+                  <span class="jual-pesanan-jumlah">{{ rupiah(biayaPelihara) }}</span>
+                </span>
+              </li>
+            </ul>
+
             <div class="jual-total">
-              <span>Total</span>
+              <span>Total tagihan pertama</span>
               <span>{{ rupiah(total) }}</span>
             </div>
+
+            <p v-if="tahunan > 0" class="jual-tahunan">
+              Tahun berikutnya: <b>{{ rupiah(tahunan) }}</b> per tahun
+              (server dan pemeliharaan). Harga website dibayar sekali.
+            </p>
           </div>
 
           <form v-singkap="80" class="jual-form" @submit.prevent="kirim">
@@ -717,6 +945,15 @@ onBeforeUnmount(() => {
               Pembayarannya lewat QRIS pada halaman yang muncul sesudahnya, dan lisensinya
               terbit setelah bukti bayar diperiksa.
             </p>
+
+            <!-- Kontak penjualan, termasuk yang bernama — config/pembelian.php. -->
+            <p v-if="waUrl || kontak.lain?.length" class="jual-tubuh-kecil mt-3">
+              Ada pertanyaan? WhatsApp
+              <a v-if="waUrl" :href="waUrl" target="_blank" rel="noopener" class="jual-tautan">{{ nomorTampil(kontak.whatsapp) }}</a>
+              <template v-for="k in kontak.lain ?? []" :key="k.whatsapp">
+                · <a :href="'https://wa.me/' + k.whatsapp.replace(/\D/g, '')" target="_blank" rel="noopener" class="jual-tautan">{{ k.nama }} {{ nomorTampil(k.whatsapp) }}</a>
+              </template>
+            </p>
           </form>
         </div>
       </div>
@@ -730,21 +967,27 @@ onBeforeUnmount(() => {
         <p class="jual-tubuh-kecil">Platform Terpadu Keselamatan Pertambangan · {{ tahun }}</p>
       </div>
     </footer>
-  </div>
 
-  <!-- ══════════ bilah keranjang ══════════ -->
-  <transition name="jual-bilah">
-    <div v-if="terpilih.length && !formTerlihat" class="jual-bilah-bungkus">
-      <div class="jual-bilah">
-        <span>
-          <span class="jual-bilah-angka">{{ rupiah(total) }}</span>
-          <span class="jual-bilah-ket">{{ jumlahButir }} butir · {{ terpilih.length }} jenis</span>
-        </span>
-        <button type="button" class="jual-tombol jual-tombol-terang jual-tombol-kecil ml-auto shrink-0"
-                @click="ke('pesan')">
-          Lanjut memesan
-        </button>
+    <!-- ══════════ bilah keranjang ══════════
+         DI DALAM .jual, bukan sesudahnya. Seluruh warnanya peubah
+         --j-* yang hanya hidup di .jual: diletakkan di luar, latarnya
+         var(--j-gelap) tidak terdefinisi sehingga bilahnya bening —
+         angka putihnya menggantung di atas halaman dan tulisan
+         tombolnya putih di atas putih. position:fixed tetap melekat
+         pada layar, sebab .jual tidak memasang transform apa pun. -->
+    <transition name="jual-bilah">
+      <div v-if="terpilih.length && !formTerlihat" class="jual-bilah-bungkus">
+        <div class="jual-bilah">
+          <span>
+            <span class="jual-bilah-angka">{{ rupiah(total) }}</span>
+            <span class="jual-bilah-ket">{{ jumlahButir }} butir · {{ terpilih.length }} jenis</span>
+          </span>
+          <button type="button" class="jual-tombol jual-tombol-terang jual-tombol-kecil ml-auto shrink-0"
+                  @click="ke('pesan')">
+            Lanjut memesan
+          </button>
+        </div>
       </div>
-    </div>
-  </transition>
+    </transition>
+  </div>
 </template>

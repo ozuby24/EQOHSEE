@@ -212,7 +212,7 @@ onBeforeUnmount(() => {
   padding: 0 .2rem;
 }
 
-:global([data-tema='gelap']) .eq-turnstile-halang {
+[data-tema='gelap'] .eq-turnstile-halang {
   background: #241B0C;
   border-color: #6B4A10;
   color: #FDBA74;

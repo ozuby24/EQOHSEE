@@ -103,7 +103,7 @@ class IkonBerdimensiTest extends TestCase
            string itu juga muncul di dalam aturan :hover yang sama
            sekali bukan yang dijaga. Uji yang hijau karena menemukan
            barang di tempat yang salah tidak menjaga apa pun. */
-        $css = file_get_contents(base_path('resources/views/partials/eq-visual.blade.php'));
+        $css = file_get_contents(base_path('resources/css/eq-visual.css'));
 
         $telanjang = [];
 
@@ -174,7 +174,7 @@ class IkonBerdimensiTest extends TestCase
 
            Pernah ada di berkas ini, dan tidak ada yang menangkapnya
            sampai ikon beliungnya masuk. */
-        $css = file_get_contents(base_path('resources/views/partials/eq-visual.blade.php'));
+        $css = file_get_contents(base_path('resources/css/eq-visual.css'));
 
         $salah = [];
 
@@ -213,7 +213,7 @@ class IkonBerdimensiTest extends TestCase
            jadi tanpa pengembalian ini dasbor gelap kehilangan satu-
            satunya petunjuk mana modul yang gawat — dan tidak ada apa pun
            yang menandakan bahwa sesuatu hilang. */
-        $css = file_get_contents(base_path('resources/views/partials/eq-visual.blade.php'));
+        $css = file_get_contents(base_path('resources/css/eq-visual.css'));
 
         $adaPemerata = false;
         $adaPemulih  = false;

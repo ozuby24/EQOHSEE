@@ -128,6 +128,16 @@ return [
     'kontak' => [
         'whatsapp' => (($v = env('PEMBELIAN_WHATSAPP')) === '-') ? '' : ($v ?: '6281214407991'),
         'email'    => (($v = env('PEMBELIAN_EMAIL')) === '-') ? '' : ($v ?: 'febrian@eqohsee.id'),
+
+        /* Kontak WhatsApp penjualan tambahan, BERNAMA — dicetak di halaman
+           depan dan etalase di samping nomor utama. Aturannya sama dengan
+           di atas: dapat ditimpa lewat .env, tanda minus mematikannya. */
+        'whatsapp_lain' => array_values(array_filter([
+            [
+                'nama'  => env('PEMBELIAN_WHATSAPP_2_NAMA') ?: 'Septiadi',
+                'nomor' => (($v = env('PEMBELIAN_WHATSAPP_2')) === '-') ? '' : ($v ?: '6281346853729'),
+            ],
+        ], fn (array $k) => $k['nomor'] !== '')),
     ],
 
 ];

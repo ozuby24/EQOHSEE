@@ -39,6 +39,9 @@ class BalikMigrasiPortingTest extends TestCase
         '2026_11_24_000001_rdas',
         // Update 22: MERANTI — Reklamasi & Nursery.
         '2026_11_26_000001_meranti',
+        // Keamanan & harga: website ke-2, milik bersama, server dapat diatur, website permanen.
+        '2026_11_26_200001_harga_website_tambahan_tiga_juta', '2026_11_26_200002_milik_bersama_prosedur_berita',
+        '2026_11_26_200003_harga_server_dapat_diatur', '2026_11_26_200004_website_permanen_dan_pemeliharaan',
     ];
 
     public function test_migrasi_porting_dapat_dibalik_lalu_dijalankan_ulang(): void
@@ -68,5 +71,9 @@ class BalikMigrasiPortingTest extends TestCase
         $this->assertTrue(Schema::hasTable('rdas_pantau'));
         $this->assertTrue(Schema::hasTable('meranti_peta'));
         $this->assertTrue(Schema::hasColumn('users', 'meranti_role'));
+        $this->assertTrue(Schema::hasColumn('procedures', 'bersama'));
+        $this->assertTrue(Schema::hasColumn('beli_produk', 'harga_cpu'));
+        $this->assertTrue(Schema::hasColumn('beli_item', 'ram'));
+        $this->assertTrue(Schema::hasColumn('beli_produk', 'modul_per_blok'));
     }
 }

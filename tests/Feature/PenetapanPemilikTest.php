@@ -96,6 +96,56 @@ class PenetapanPemilikTest extends TestCase
         $this->assertSame($this->b->id, $n->fresh()->company_id);
     }
 
+    /* ═══════════ milik bersama sebagai keputusan ═══════════ */
+
+    /**
+     * "Milik bersama" adalah keputusan, bukan perusahaan: barisnya tetap
+     * terbaca semua perusahaan, tetapi tidak lagi menunggu ditetapkan —
+     * dan peringatannya di Pemeriksaan Mandiri akhirnya dapat padam.
+     */
+    public function test_admin_menetapkan_prosedur_sebagai_milik_bersama(): void
+    {
+        $p = $this->prosedur(null, 'SOP-UMUM');
+
+        $this->actingAs($this->admin)->post(route('admin.pemilik.tetapkan'), [
+            'jenis' => 'prosedur', 'id' => [$p->id],
+            'company_id' => \App\Http\Controllers\Admin\PemilikController::BERSAMA,
+        ])->assertSessionHasNoErrors();
+
+        $p->refresh();
+        $this->assertNull($p->company_id, 'Milik bersama tidak boleh memberi perusahaan.');
+        $this->assertTrue($p->bersama);
+
+        // Tidak lagi muncul di daftar yang menunggu ditetapkan.
+        $this->actingAs($this->admin)->get(route('admin.pemilik'))
+            ->assertInertia(fn ($h) => $h->where('jenis.0.jumlah', 0));
+
+        // Tetap terbaca oleh pengguna perusahaan mana pun.
+        $this->actingAs(User::factory()->create(['company_id' => $this->b->id, 'email_verified_at' => now()]));
+        $this->assertTrue(Procedure::whereKey($p->id)->exists());
+    }
+
+    /** Baris contoh DemoSeeder ditandai milik bersama oleh migrasinya; yang diubah orang tidak. */
+    public function test_migrasi_menandai_baris_contoh_bawaan_sebagai_milik_bersama(): void
+    {
+        $bawaan = Procedure::withoutGlobalScopes()->create([
+            'code' => 'SOP-001', 'title' => 'Prosedur Lock Out Tag Out (LOTO)', 'company_id' => null,
+        ]);
+        $diubah = Procedure::withoutGlobalScopes()->create([
+            'code' => 'SOP-002', 'title' => 'SOP Ketinggian versi tambang kami', 'company_id' => null,
+        ]);
+        $berita = News::withoutGlobalScopes()->create([
+            'title' => 'Bulan K3 Nasional 2026 Dimulai', 'content' => 'x', 'published_at' => now(), 'company_id' => null,
+        ]);
+
+        $migrasi = require database_path('migrations/2026_11_26_200002_milik_bersama_prosedur_berita.php');
+        $migrasi->up();
+
+        $this->assertTrue($bawaan->fresh()->bersama);
+        $this->assertTrue($berita->fresh()->bersama);
+        $this->assertFalse($diubah->fresh()->bersama, 'Baris yang sudah diubah orang ikut dianggap diputuskan.');
+    }
+
     /**
      * Yang SUDAH bertuan tidak dapat dipindahkan dari sini.
      *

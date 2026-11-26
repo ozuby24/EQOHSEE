@@ -28,6 +28,9 @@ class Procedure extends Model
 
     protected $fillable = ['code', 'title', 'category', 'description', 'url', 'position', 'company_id'];
 
+    /** `bersama`: sudah DIPUTUSKAN milik semua perusahaan — lihat migrasi milik_bersama_prosedur_berita. */
+    protected function casts(): array { return ['bersama' => 'boolean']; }
+
     public function company(): BelongsTo     { return $this->belongsTo(Company::class); }
     public function evaluations(): HasMany   { return $this->hasMany(SopEvaluation::class); }
     public function documents(): HasMany     { return $this->hasMany(Document::class); }

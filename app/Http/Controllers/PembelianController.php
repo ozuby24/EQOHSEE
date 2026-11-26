@@ -121,9 +121,19 @@ class PembelianController extends Controller
                 'ket'   => $layanan->keterangan,
                 'harga' => $layanan->harga,
                 'masa'  => $layanan->masaBerlaku(),
+
+                /* Batas dan tarif tambahan server — null bila tidak dapat
+                   diatur. Layar menghitung dengan aturan yang sama
+                   dengan yang menagih (hargaBertingkat.ts). */
+                'aturan' => $layanan->aturanServer(),
             ] : null,
 
             'aplikasi' => $aplikasi,
+
+            /* Pemeliharaan tahunan — per kelipatan modul, dihitung layar
+               dengan aturan yang sama dengan yang menagih. */
+            'pemeliharaan' => $this->pemeliharaan(),
+            'modulPaket'   => Pembelian::modulPaket(),
 
             /* Hanya pilar yang benar-benar punya kartu. Chip saring untuk
                pilar kosong menyaring seluruh kartu menjadi tidak ada, dan
@@ -155,6 +165,10 @@ class PembelianController extends Controller
             'kontak' => [
                 'whatsapp' => (string) config('pembelian.kontak.whatsapp'),
                 'email'    => (string) config('pembelian.kontak.email'),
+                'lain'     => array_values(array_filter(array_map(
+                    fn (array $k) => ($n = \App\Support\Ekspor::nomorWa($k['nomor'] ?? null)) ? ['nama' => (string) $k['nama'], 'whatsapp' => $n] : null,
+                    (array) config('pembelian.kontak.whatsapp_lain', []),
+                ))),
             ],
 
             'tahun' => now()->year,
@@ -182,6 +196,7 @@ class PembelianController extends Controller
             $this->pembeli($data) + ['company_id' => $request->user()?->company_id],
             $data['produk'],
             $request->user(),
+            $data['spesifikasi'] ?? [],
         );
 
         if ($pesanan->items()->count() < 1) {
@@ -214,6 +229,16 @@ class PembelianController extends Controller
                DITERIMA dari layar — lihat App\Support\Pembelian. */
             'produk'             => ['required', 'array', 'min:1'],
             'produk.*'           => ['integer', 'min:1', 'max:99'],
+
+            /* Spesifikasi server yang dipilih, per id produk. Harganya
+               TETAP dihitung di peladen dari tarif produknya — yang
+               diterima dari layar hanya banyaknya vCPU dan GB RAM. */
+            'spesifikasi'        => ['nullable', 'array'],
+            'spesifikasi.*.cpu'  => ['nullable', 'integer', 'min:'.Produk::CPU_DASAR, 'max:'.Produk::CPU_MAKS],
+            'spesifikasi.*.ram'  => ['nullable', 'integer', 'min:'.Produk::RAM_DASAR, 'max:'.Produk::RAM_MAKS],
+        ], [
+            'spesifikasi.*.cpu.*' => 'vCPU server harus antara '.Produk::CPU_DASAR.' dan '.Produk::CPU_MAKS.'.',
+            'spesifikasi.*.ram.*' => 'RAM server harus antara '.Produk::RAM_DASAR.' dan '.Produk::RAM_MAKS.' GB.',
         ]);
     }
 
@@ -242,6 +267,8 @@ class PembelianController extends Controller
             'website'  => $this->barisProduk($katalog[Produk::WEBSITE] ?? []),
             'layanan'  => $this->barisProduk($katalog[Produk::LAYANAN] ?? []),
             'aplikasi' => $this->barisProduk($katalog[Produk::APLIKASI] ?? []),
+            'pemeliharaan' => $this->pemeliharaan(),
+            'modulPaket'   => Pembelian::modulPaket(),
 
             /* Katalog kosong disebut sebabnya, bukan dibiarkan sebagai
                halaman putih. Yang membacanya harus tahu bahwa yang
@@ -250,6 +277,21 @@ class PembelianController extends Controller
                 && (! ($katalog[Produk::LAYANAN] ?? []))
                 && (! ($katalog[Produk::APLIKASI] ?? [])),
         ]);
+    }
+
+    /** Butir pemeliharaan tahunan yang berlaku, atau null bila tidak dijual. */
+    private function pemeliharaan(): ?array
+    {
+        $p = Produk::aktif()->where('jenis', Produk::PEMELIHARAAN)->orderBy('urutan')->first();
+
+        return $p ? [
+            'id'           => $p->id,
+            'nama'         => $p->nama,
+            'ket'          => $p->keterangan,
+            'harga'        => $p->harga,
+            'modulPerBlok' => (int) ($p->modul_per_blok ?? 1),
+            'masa'         => $p->masaBerlaku(),
+        ] : null;
     }
 
     /** @param iterable<Produk> $daftar */
@@ -268,6 +310,7 @@ class PembelianController extends Controller
                dari tagihan yang ia terima, tanpa satu pun galat yang
                menyebutkannya. */
             'harga_tambahan' => $p->harga_tambahan,
+            'aturan'         => $p->aturanServer(),
 
             'masa'       => $p->masaBerlaku(),
         ])->values()->all();
@@ -281,6 +324,7 @@ class PembelianController extends Controller
             $this->pembeli($data) + ['company_id' => $request->user()?->company_id],
             $data['produk'],
             $request->user(),
+            $data['spesifikasi'] ?? [],
         );
 
         if ($pesanan->items()->count() < 1) {

@@ -195,12 +195,12 @@ function saatKeluar(e: FocusEvent): void {
   color: #292524;
 }
 
-:global([data-tema='gelap']) .eq-sandi-intip {
+[data-tema='gelap'] .eq-sandi-intip {
   color: #A8A29E;
 }
 
-:global([data-tema='gelap']) .eq-sandi-intip:hover,
-:global([data-tema='gelap']) .eq-sandi-intip:focus-visible {
+[data-tema='gelap'] .eq-sandi-intip:hover,
+[data-tema='gelap'] .eq-sandi-intip:focus-visible {
   color: #F5F5F4;
   background: rgb(255 255 255 / .08);
 }

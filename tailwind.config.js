@@ -8,6 +8,11 @@ export default {
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
 
+        /* Dulu partials/eq-visual.blade.php, dan karena itu ikut terpindai
+           lewat baris di atas. Tetap dipindai supaya daftar kelas yang
+           dibangun tidak berubah karena pemindahannya. */
+        './resources/css/eq-visual.css',
+
         /* Halaman Inertia hidup di .vue, bukan .blade.php. Tanpa baris ini
            Tailwind memindai hanya berkas Blade untuk memutuskan kelas mana
            yang dipakai, dan kelas yang HANYA muncul di sebuah komponen Vue
@@ -102,7 +107,7 @@ export default {
                  * kelas navy-, brand-, hijau-, teal-, atau cyan- di EQOHSEE
                  * (diperiksa saat porting). `teal` dan `cyan` menimpa tangga
                  * bawaan Tailwind dengan nilai Aurorasys. Pasangan mode gelap
-                 * tinggal di resources/views/partials/eq-visual.blade.php (bagian SMKP).
+                 * tinggal di resources/css/eq-visual.css (bagian SMKP).
                  */
                 navy: {
                     50: '#F0F5FA', 100: '#DCE7F2', 200: '#B9CFE4', 300: '#8AAFCF', 400: '#5786B3',

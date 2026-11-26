@@ -67,6 +67,9 @@ export default defineConfig({
         laravel({
             input: [
                 'resources/css/app.css',
+                /* Lapisan gaya bersama, dulu sebaris di setiap halaman —
+                   lihat kepala berkasnya. */
+                'resources/css/eq-visual.css',
                 'resources/js/inertia.ts',
             ],
             refresh: true,

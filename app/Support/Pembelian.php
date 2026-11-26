@@ -39,8 +39,10 @@ final class Pembelian
      * Susun tagihan dari daftar produk.
      *
      * @param  array<int,int>  $jumlahPerProduk  id produk => banyaknya
+     * @param  array<int,array{cpu?:int,ram?:int}>  $spesifikasi  id produk => spesifikasi
+     *         server yang dipilih; hanya berlaku bagi butir yang dapat diatur
      */
-    public static function buat(array $pembeli, array $jumlahPerProduk, ?User $oleh = null): Pesanan
+    public static function buat(array $pembeli, array $jumlahPerProduk, ?User $oleh = null, array $spesifikasi = []): Pesanan
     {
         $pesanan = new Pesanan($pembeli);
         $pesanan->dibuat_oleh = $oleh?->getKey();
@@ -65,11 +67,32 @@ final class Pembelian
                penjualnya. */
             if (! $produk) continue;
 
+            /* Pemeliharaan tidak pernah diterima dari layar: banyaknya
+               kelipatan dihitung di bawah dari modul pesanan ini sendiri.
+               Diterima dari layar, satu angka yang disunting cukup untuk
+               memelihara tiga puluh modul seharga satu kelipatan. */
+            if ($produk->jenis === Produk::PEMELIHARAAN) continue;
+
+            /* Spesifikasi hanya bermakna bagi server yang dapat diatur.
+               Untuk butir lain diabaikan, bukan ditolak — sama seperti
+               produk yang tidak aktif di atas. */
+            $atur = $produk->dapatDiatur();
+            $cpu  = $atur ? (int) ($spesifikasi[$produkId]['cpu'] ?? Produk::CPU_DASAR) : null;
+            $ram  = $atur ? (int) ($spesifikasi[$produkId]['ram'] ?? Produk::RAM_DASAR) : null;
+
             Item::create([
                 'pesanan_id' => $pesanan->id,
                 'produk_id'  => $produk->id,
-                'nama'       => $produk->nama,
-                'harga'      => $produk->harga,
+                'nama'       => $atur ? $produk->namaDenganSpesifikasi($cpu, $ram) : $produk->nama,
+
+                /* Harga SATU butir sesuai spesifikasinya, sehingga
+                   harga × banyaknya tetap sama dengan subtotalnya pada
+                   setiap tagihan yang dicetak. */
+                'harga'      => $atur ? $produk->hargaSatuan($cpu, $ram) : $produk->harga,
+                'harga_cpu'  => $atur ? $produk->harga_cpu : null,
+                'harga_ram'  => $atur ? $produk->harga_ram : null,
+                'cpu'        => $cpu,
+                'ram'        => $ram,
 
                 /* Ikut disalin, seperti harganya. Tanpa angka ini,
                    subtotal yang tersimpan tidak dapat lagi diterangkan
@@ -86,13 +109,68 @@ final class Pembelian
                    Perkalian yang ditulis ulang di tempat kedua akan
                    melewatkan harga bertingkatnya, dan tagihannya tetap
                    terlihat wajar — hanya angkanya yang salah. */
-                'subtotal'   => $produk->subtotal($jumlah),
+                'subtotal'   => $atur ? $produk->subtotal($jumlah, $cpu, $ram) : $produk->subtotal($jumlah),
             ]);
         }
+
+        self::tambahPemeliharaan($pesanan);
 
         $pesanan->hitungUlang();
 
         return $pesanan->refresh();
+    }
+
+    /** Banyaknya modul dalam paket menyeluruh — daftar yang sama dengan yang dipajang etalase. */
+    public static function modulPaket(): int
+    {
+        return count(Modules::perKunciMenu());
+    }
+
+    /**
+     * Banyaknya modul yang dipelihara untuk sebuah pesanan.
+     *
+     * Paket menyeluruh membawa seluruh modulnya, per website. Aplikasi
+     * satuan satu modul per butir — KECUALI bila paketnya ikut dipesan:
+     * aplikasi itu sudah tercakup, dan menghitungnya lagi berarti
+     * menagih pemeliharaan modul yang sama dua kali.
+     */
+    public static function modulPesanan(Pesanan $pesanan): int
+    {
+        $item = $pesanan->items()->with('produk')->get();
+
+        $website = (int) $item->filter(fn (Item $i) => $i->produk?->jenis === Produk::WEBSITE)->sum('jumlah');
+        if ($website > 0) return $website * self::modulPaket();
+
+        return (int) $item->filter(fn (Item $i) => $i->produk?->jenis === Produk::APLIKASI)->sum('jumlah');
+    }
+
+    /**
+     * Pemeliharaan tahun pertama, ditambahkan sendiri oleh peladen.
+     *
+     * Keputusan pemiliknya: Rp 2.000.000 untuk setiap kelipatan tiga modul
+     * per tahun, di luar server. Ditambahkan di sini, bukan dipilih
+     * pembeli, karena ia bagian dari harga modul yang dibeli — sama
+     * seperti etalase yang menampilkannya sebagai baris tetap.
+     */
+    private static function tambahPemeliharaan(Pesanan $pesanan): void
+    {
+        $pelihara = Produk::aktif()->where('jenis', Produk::PEMELIHARAAN)->orderBy('urutan')->first();
+        if (! $pelihara) return;
+
+        $modul = self::modulPesanan($pesanan);
+        $blok  = $pelihara->blokPemeliharaan($modul);
+        if ($blok < 1) return;
+
+        Item::create([
+            'pesanan_id'     => $pesanan->id,
+            'produk_id'      => $pelihara->id,
+            'nama'           => $pelihara->nama.' — '.$modul.' modul',
+            'harga'          => $pelihara->harga,
+            'harga_tambahan' => null,
+            'masa_bulan'     => $pelihara->masa_bulan,
+            'jumlah'         => $blok,
+            'subtotal'       => $pelihara->subtotal($blok),
+        ]);
     }
 
     /**

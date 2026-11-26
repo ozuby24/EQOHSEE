@@ -170,6 +170,45 @@ class MerantiTest extends TestCase
         $this->assertSame($this->c->id, M\StokBibit::where('nama_bibit', 'Titipan')->value('company_id'));
     }
 
+    /**
+     * KML dengan DOCTYPE ditolak sebelum diurai. DOCTYPE adalah tempat
+     * entitas dideklarasikan, dan pengurainya memakai LIBXML_PARSEHUGE
+     * yang melonggarkan batas pengembangan entitas — "billion laughs"
+     * dari satu unggahan kecil cukup menghabiskan memori peladen.
+     */
+    public function test_kml_berdoctype_ditolak(): void
+    {
+        $bom = '<?xml version="1.0"?><!DOCTYPE kml [<!ENTITY a "aaaaaaaaaa"><!ENTITY b "&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;">]>'
+            .'<kml xmlns="http://www.opengis.net/kml/2.2"><Placemark><name>&b;</name>'
+            .'<Point><coordinates>116.9,-0.6</coordinates></Point></Placemark></kml>';
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('DOCTYPE');
+
+        \App\Support\Meranti\Geo::dariKml($bom);
+    }
+
+    /** KMZ yang mengembang melewati batas sesudah dibuka ditolak sebelum dibaca ke memori. */
+    public function test_kmz_yang_terlalu_besar_sesudah_dibuka_ditolak(): void
+    {
+        if (! class_exists(\ZipArchive::class)) $this->markTestSkipped('ZipArchive tidak tersedia.');
+
+        $jalur = tempnam(sys_get_temp_dir(), 'kmz').'.kmz';
+        $zip = new \ZipArchive();
+        $zip->open($jalur, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+        $zip->addFromString('doc.kml', str_repeat(' ', \App\Support\Meranti\Geo::MAKS_KML + 1));
+        $zip->close();
+
+        try {
+            \App\Support\Meranti\Geo::bacaBerkas($jalur, 'besar.kmz');
+            $this->fail('KMZ raksasa diterima.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('terlalu besar', $e->getMessage());
+        } finally {
+            @unlink($jalur);
+        }
+    }
+
     public function test_unggah_geojson_kml_dan_kmz(): void
     {
         $this->actingAs($this->crew);

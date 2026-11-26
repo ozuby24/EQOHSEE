@@ -571,7 +571,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
 
 /* LOGO YANG SAMA DENGAN SELURUH SITUS — lambang berwarna beserta
  * wordmark dan semboyannya, persis seperti yang tergambar di kepala
- * bilah samping (lihat .eq-merek pada partials/eq-visual.blade.php).
+ * bilah samping (lihat .eq-merek pada resources/css/eq-visual.css).
  *
  * Sempat dipakai lockup tersendiri berupa satu berkas PNG. Ia memuat
  * huruf bergaya stensil dan semboyan "Sustaining Performance, Shaping
@@ -1149,44 +1149,44 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
 }
 
 /* ══ mode gelap ══ */
-:global([data-tema='gelap']) .eq-tur { background: #14202F; }
+[data-tema='gelap'] .eq-tur { background: #14202F; }
 
-:global([data-tema='gelap']) .eq-tur-kepala,
-:global([data-tema='gelap']) .eq-tur-kaki { border-color: #1E2E42; }
+[data-tema='gelap'] .eq-tur-kepala,
+[data-tema='gelap'] .eq-tur-kaki { border-color: #1E2E42; }
 
-:global([data-tema='gelap']) .eq-tur-kaki { background: #101A26; }
+[data-tema='gelap'] .eq-tur-kaki { background: #101A26; }
 
-:global([data-tema='gelap']) .eq-tur-judul,
-:global([data-tema='gelap']) .eq-tur-poin strong,
-:global([data-tema='gelap']) .eq-tur-pilar strong,
-:global([data-tema='gelap']) .eq-tur-modul strong { color: #F5F5F4; }
+[data-tema='gelap'] .eq-tur-judul,
+[data-tema='gelap'] .eq-tur-poin strong,
+[data-tema='gelap'] .eq-tur-pilar strong,
+[data-tema='gelap'] .eq-tur-modul strong { color: #F5F5F4; }
 
-:global([data-tema='gelap']) .eq-tur-teks,
-:global([data-tema='gelap']) .eq-tur-poin span,
-:global([data-tema='gelap']) .eq-tur-pilar small,
-:global([data-tema='gelap']) .eq-tur-modul small,
-:global([data-tema='gelap']) .eq-tur-mulai small,
-:global([data-tema='gelap']) .eq-tur-hitung,
-:global([data-tema='gelap']) .eq-tur-tunggu,
-:global([data-tema='gelap']) .eq-tur-lewati { color: #A8A29E; }
+[data-tema='gelap'] .eq-tur-teks,
+[data-tema='gelap'] .eq-tur-poin span,
+[data-tema='gelap'] .eq-tur-pilar small,
+[data-tema='gelap'] .eq-tur-modul small,
+[data-tema='gelap'] .eq-tur-mulai small,
+[data-tema='gelap'] .eq-tur-hitung,
+[data-tema='gelap'] .eq-tur-tunggu,
+[data-tema='gelap'] .eq-tur-lewati { color: #A8A29E; }
 
-:global([data-tema='gelap']) .eq-tur-pilar li,
-:global([data-tema='gelap']) .eq-tur-modul li,
-:global([data-tema='gelap']) .eq-tur-mulai li {
+[data-tema='gelap'] .eq-tur-pilar li,
+[data-tema='gelap'] .eq-tur-modul li,
+[data-tema='gelap'] .eq-tur-mulai li {
   background: #101A26;
   border-color: #1E2E42;
 }
 
-:global([data-tema='gelap']) .eq-tur-titik { background: #2A3D55; }
-:global([data-tema='gelap']) .eq-tur-tautan { color: #FDBA74; }
-:global([data-tema='gelap']) .eq-tur-tutup { color: #A8A29E; }
+[data-tema='gelap'] .eq-tur-titik { background: #2A3D55; }
+[data-tema='gelap'] .eq-tur-tautan { color: #FDBA74; }
+[data-tema='gelap'] .eq-tur-tutup { color: #A8A29E; }
 
-:global([data-tema='gelap']) .eq-tur-tutup:hover {
+[data-tema='gelap'] .eq-tur-tutup:hover {
   background: rgb(255 255 255 / .08);
   color: #F5F5F4;
 }
 
-:global([data-tema='gelap']) .eq-tur-lewati:hover { color: #F5F5F4; }
+[data-tema='gelap'] .eq-tur-lewati:hover { color: #F5F5F4; }
 
 /* ══ layar sempit ══
 

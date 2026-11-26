@@ -4,7 +4,7 @@
  *
  * Menggambar bilah samping dan bilah atas yang sama dengan
  * layouts/app.blade.php, memakai kelas CSS yang sama pula (eq-*, dari
- * partials/eq-visual.blade.php). Gayanya sengaja tidak ditulis ulang di
+ * resources/css/eq-visual.css). Gayanya sengaja tidak ditulis ulang di
  * sini: dua salinan aturan warna yang panjang pasti berbeda isinya cepat
  * atau lambat, dan bedanya baru ketahuan saat orang membandingkan dua
  * halaman berdampingan.
@@ -856,7 +856,7 @@ async function keluar() {
                baris pandang.
 
                Teksnya disembunyikan pada layar sempit (lihat
-               `.eq-akun-nama` di eq-visual.blade.php): jabatan yang
+               `.eq-akun-nama` di resources/css/eq-visual.css): jabatan yang
                membungkus menjadi dua baris menaikkan tinggi seluruh
                bilah atas, dan yang tersisa cuma lingkarannya — persis
                bentuk lama. -->

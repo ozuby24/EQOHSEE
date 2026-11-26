@@ -1,12 +1,28 @@
-{{--
-  Lapisan visual EQOHSEE — disisipkan di awal <body> oleh layouts/app.blade.php.
+/*
+  Lapisan visual EQOHSEE — gaya bersama seluruh halaman Inertia.
 
-  Semua gaya di sini berdiri sendiri (CSS biasa, bukan utilitas Tailwind baru),
-  jadi tidak perlu `npm run build`. Kelas dan pemilihnya diawali `eq-` atau
-  menargetkan id tertentu, supaya tidak menabrak gaya yang sudah ada.
---}}
+  ── DULU SEBARIS, KINI BERKAS SENDIRI ──
 
-<style>
+  Gaya ini dulu disisipkan sebaris ke SETIAP halaman lewat
+  partials/eq-visual.blade.php: ±190 KB CSS di dalam HTML, sedangkan
+  HTML halaman yang memerlukan masuk tidak pernah disimpan peramban
+  (Cache-Control: no-store). Akibatnya setiap pemuatan penuh mengunduh
+  ulang seluruhnya — HTML halaman masuk 207 KB, 187 KB di antaranya CSS
+  ini. Kini Vite membangunnya menjadi satu berkas ber-hash yang disimpan
+  peramban setahun penuh, dan halaman hanya membawa tautannya.
+
+  ── TAUTANNYA SENGAJA DI <body> ──
+
+  Di tempat partial itu dulu berada (app-inertia.blade.php). CSS halaman
+  yang dimuat belakangan disisipkan Vite ke <head>, jadi urutan dokumen —
+  dan karenanya pemenang di antara aturan yang sama kuat — tetap persis
+  seperti sebelum pemindahan.
+
+  Semua gaya di sini berdiri sendiri (CSS biasa, bukan utilitas Tailwind
+  baru). Kelas dan pemilihnya diawali `eq-` atau menargetkan id tertentu,
+  supaya tidak menabrak gaya yang sudah ada.
+*/
+
 /* ═══════════════════════════════════════════════════════════
    1 · TEKSTUR LATAR — butiran halus + gradasi hangat
    ═══════════════════════════════════════════════════════════ */
@@ -1368,9 +1384,8 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] .smkp-ui .hover\:text-rose-600:hover{color:#FB9AAA}
 :root[data-tema="gelap"] .smkp-ui .hover\:text-rose-700:hover{color:#FECDD3}
 
-</style>
+/* ═══════════════════════════ bagian kedua ═══════════════════════════ */
 
-<style>
 /* ==========================================================================
    TEMA SAFE TRACK — pasir · teal · coral
    --------------------------------------------------------------------------
@@ -2830,6 +2845,40 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
 .jual-layanan-spek span{border:1px solid var(--j-garis);border-radius:999px;
   padding:.2rem .7rem;font-size:11.5px;font-weight:600}
 
+/* Atur server: vCPU dan RAM di atas dasarnya, masing-masing bertarif.
+   Dua baris pengatur yang sama bentuknya dengan pengatur banyaknya,
+   supaya terbaca sebagai satu keluarga kendali, bukan formulir baru. */
+.jual-server{display:grid;gap:.75rem;padding:1rem 1.1rem;border-radius:10px;
+  background:var(--j-dasar);border:1px solid var(--j-garis)}
+.jual-server-atur{display:grid;gap:.55rem}
+.jual-server-baris{display:flex;align-items:center;gap:.85rem;flex-wrap:wrap}
+.jual-server-label{min-width:5.5rem;font-size:12.5px;font-weight:700;color:var(--j-tinta)}
+.jual-server-tarif{font-size:11.5px;color:var(--j-redup)}
+.jual-server .jual-hitung{background:var(--j-kartu)}
+.jual-hitung button:disabled{opacity:.35;cursor:not-allowed;background:transparent}
+.jual-server-contoh{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;
+  font-size:11.5px;color:var(--j-samar)}
+.jual-server-pilih{border:1px solid var(--j-garis-tebal);border-radius:999px;background:var(--j-kartu);
+  padding:.25rem .75rem;font-size:11.5px;font-weight:600;color:var(--j-tinta);
+  transition:border-color .2s,background .2s}
+.jual-server-pilih:hover{border-color:var(--j-aksen)}
+.jual-server-pilih.is-aktif{border-color:var(--j-aksen);background:var(--j-aksen-lembut);color:var(--j-aksen-teks)}
+
+/* Pemeliharaan tahunan: tabel kelipatan modul, terbaca sekilas. */
+.jual-pelihara-tangga{display:grid;gap:.35rem;margin:0;padding:0;list-style:none}
+.jual-pelihara-tangga li{display:grid;grid-template-columns:minmax(9rem,max-content) max-content 1fr;
+  gap:.35rem 1rem;align-items:baseline;padding:.55rem .85rem;border-radius:8px;
+  background:var(--j-dasar);border:1px solid var(--j-garis);font-size:12.5px}
+.jual-pelihara-tangga b{font-variant-numeric:tabular-nums}
+.jual-pelihara-total{color:var(--j-samar);font-size:11.5px}
+@media (max-width:640px){
+  .jual-pelihara-tangga li{grid-template-columns:1fr max-content}
+  .jual-pelihara-total{grid-column:1 / -1}
+}
+.jual-pesanan-tetap{margin-top:.5rem}
+.jual-tahunan{margin-top:.65rem;font-size:12.5px;line-height:1.55;color:var(--j-redup)}
+.jual-tahunan b{color:var(--j-tinta)}
+
 .jual-kosong{background:var(--j-kartu);border:1px solid var(--j-garis);border-radius:12px;
   padding:2.5rem;max-width:42rem}
 
@@ -3502,5 +3551,3 @@ html:has(.jual-lugas){scroll-behavior:smooth;scroll-padding-top:5.5rem}
 @media (prefers-reduced-motion:reduce){
   .jual-apung,.jual-masalah-kartu,.jual-tanya-isi,.jual-tanya-kepala i{transition:none}
 }
-
-</style>

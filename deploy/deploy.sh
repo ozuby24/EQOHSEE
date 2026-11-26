@@ -777,6 +777,22 @@ if [ -n "$APP_LOCALE_KINI" ] && [ "$APP_LOCALE_KINI" != "id" ]; then
     echo "!!  Ubah menjadi APP_LOCALE=id — lalu jalankan: php artisan config:cache"
 fi
 
+# APP_ENV dan APP_DEBUG — diperiksa di sini karena kesalahannya sunyi.
+# Pemasangan ini pernah berjalan dengan APP_ENV kosong dan APP_NAME
+# "production": tidak ada yang rusak kasatmata, tetapi setiap pemeriksaan
+# "apakah ini produksi?" menjawab tidak. Kosong kini dibaca production
+# (config/app.php), tetapi tetap disebut supaya ditulis dengan jelas.
+APP_ENV_KINI="$(grep -E '^APP_ENV=' "$REPO_DIR/.env" | cut -d= -f2- | tr -d '"' || true)"
+if [ "$APP_ENV_KINI" != "production" ]; then
+    echo "!!  APP_ENV di .env '${APP_ENV_KINI:-kosong}'. Server yang dibuka umum semestinya APP_ENV=production."
+    echo "!!  Ubah, lalu jalankan: php artisan config:cache"
+fi
+APP_DEBUG_KINI="$(grep -E '^APP_DEBUG=' "$REPO_DIR/.env" | cut -d= -f2- | tr -d '"' | tr '[:upper:]' '[:lower:]' || true)"
+if [ "$APP_DEBUG_KINI" = "true" ] || [ "$APP_DEBUG_KINI" = "1" ]; then
+    echo "!!  APP_DEBUG=true di server: halaman galat membocorkan isi .env kepada siapa pun."
+    echo "!!  Setel APP_DEBUG=false, lalu jalankan: php artisan config:cache"
+fi
+
 echo "==> Keluar dari mode perawatan"
 php artisan up
 

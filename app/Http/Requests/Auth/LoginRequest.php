@@ -3,7 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use App\Models\User;
-use App\Support\{DuaFaktor, Turnstile};
+use App\Support\{DuaFaktor, SandiContoh, Turnstile};
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -49,6 +49,7 @@ class LoginRequest extends FormRequest
     public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
+        $this->tolakSandiContoh();
 
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
@@ -60,6 +61,31 @@ class LoginRequest extends FormRequest
 
         RateLimiter::clear($this->throttleKey());
         $this->tolakBilaNonaktif(Auth::user());
+    }
+
+    /**
+     * Sandi akun contoh tidak berlaku di server yang dapat dibuka orang lain.
+     *
+     * Diperiksa SEBELUM akunnya dicari, dan berlaku untuk surel apa pun:
+     * menolaknya hanya untuk akun yang ada akan memberi tahu penebak
+     * surel mana yang terdaftar. Dicatat sebagai percobaan gagal — orang
+     * yang mencoba sandi yang tertulis di kode sumber terbuka adalah
+     * persis yang perlu terlihat pada "Tekanan pintu masuk". Lihat
+     * App\Support\SandiContoh.
+     *
+     * @throws ValidationException
+     */
+    private function tolakSandiContoh(): void
+    {
+        $sandi = (string) $this->string('password');
+
+        if (SandiContoh::bolehDipakai() || ! SandiContoh::adalah($sandi)) return;
+
+        RateLimiter::hit($this->throttleKey());
+
+        event(new Failed('web', null, ['email' => (string) $this->string('email'), 'password' => $sandi]));
+
+        throw ValidationException::withMessages(['email' => SandiContoh::PESAN]);
     }
 
     /**
@@ -118,6 +144,7 @@ class LoginRequest extends FormRequest
     public function sahkanTanpaMasuk(User $pengguna): void
     {
         $this->ensureIsNotRateLimited();
+        $this->tolakSandiContoh();
 
         $kredensial = ['password' => (string) $this->string('password')];
 

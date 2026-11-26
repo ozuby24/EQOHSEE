@@ -31,7 +31,11 @@ const props = defineProps<{
 
 const form = useForm({
   name: '', email: '', employee_id: '', department: '', position: '',
-  company_id: '', password: '', password_confirmation: '',
+  /* Satu-satunya perusahaan demo langsung terpilih: memilih dari
+     daftar berisi satu hanya menambah satu ketukan yang tidak mengubah
+     apa pun. */
+  company_id: props.companies.length === 1 ? String(props.companies[0].id) : '',
+  password: '', password_confirmation: '',
 
   /* Nama kolomnya ditentukan Cloudflare — widget-nya mengisi kolom
      dengan nama persis ini, dan validasi di server mencarinya dengan
@@ -66,7 +70,16 @@ function daftar() {
     <div><label class="label">Email</label><input v-model="form.email" type="email" required autocomplete="username" class="input"></div>
     <div class="grid grid-cols-2 gap-3"><div><label class="label">NRP / Employee ID</label><input v-model="form.employee_id" class="input"></div><div><label class="label">Departemen</label><input v-model="form.department" list="departments" class="input"><datalist id="departments"><option v-for="d in departments" :key="d" :value="d" /></datalist></div></div>
     <div><label class="label">Jabatan</label><select v-model="form.position" required class="input" aria-label="Jabatan"><option value="">— pilih jabatan —</option><option v-for="p in positions" :key="p" :value="p">{{ p }}</option></select></div>
-    <div><label class="label">Perusahaan</label><select v-model="form.company_id" class="input" aria-label="Perusahaan"><option value="">— pilih perusahaan —</option><option v-for="c in companies" :key="c.id" :value="String(c.id)">{{ c.name }}</option></select></div>
+    <!-- Akun baru HANYA memakai perusahaan demo (server menolak yang
+         lain). Perusahaan sungguhan ditetapkan administrator sesudahnya,
+         di Kelola Pengguna — dikatakan di sini supaya pendaftar tidak
+         mencari nama perusahaannya sendiri di daftar ini. -->
+    <div v-if="companies.length">
+      <label class="label">Perusahaan demo</label>
+      <select v-model="form.company_id" required class="input" aria-label="Perusahaan demo"><option value="">— pilih perusahaan demo —</option><option v-for="c in companies" :key="c.id" :value="String(c.id)">{{ c.name }}</option></select>
+      <p class="petunjuk">Akun baru dimulai di perusahaan demo berisi data contoh. Administrator yang memindahkan akun Anda ke perusahaan Anda sendiri.</p>
+    </div>
+    <p v-else class="petunjuk">Perusahaan untuk akun Anda ditetapkan administrator sesudah pendaftaran.</p>
     <div>
       <label class="label">Kata sandi</label>
       <InputSandi v-model="form.password" required autocomplete="new-password" kelas="input" label="baru" />

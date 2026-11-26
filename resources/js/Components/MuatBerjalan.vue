@@ -263,15 +263,15 @@ onBeforeUnmount(() => {
 }
 
 /* ── mode gelap ── */
-:global([data-tema='gelap']) .eq-muat-bilah { background: rgb(255 152 0 / .16); }
+[data-tema='gelap'] .eq-muat-bilah { background: rgb(255 152 0 / .16); }
 
-:global([data-tema='gelap']) .eq-muat-keping {
+[data-tema='gelap'] .eq-muat-keping {
   background: rgb(20 32 47 / .94);
   border-color: rgb(255 152 0 / .3);
   box-shadow: 0 6px 20px rgb(0 0 0 / .45);
 }
 
-:global([data-tema='gelap']) .eq-muat-teks { color: #D6D3D1; }
+[data-tema='gelap'] .eq-muat-teks { color: #D6D3D1; }
 
 /* ── yang meminta gerakan seminimal mungkin ──
 

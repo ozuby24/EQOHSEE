@@ -263,8 +263,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekan));
 .eq-foto-arah.is-kiri  { left: .75rem; }
 .eq-foto-arah.is-kanan { right: .75rem; }
 
-:global([data-tema='gelap']) .eq-foto-kecil { background: #101A26; border-color: #1E2E42; }
-:global([data-tema='gelap']) .eq-foto-kosong { border-color: #1E2E42; color: #3A4E66; }
+[data-tema='gelap'] .eq-foto-kecil { background: #101A26; border-color: #1E2E42; }
+[data-tema='gelap'] .eq-foto-kosong { border-color: #1E2E42; color: #3A4E66; }
 
 @media (prefers-reduced-motion: reduce) {
   .eq-foto-kecil:hover { transform: none; }

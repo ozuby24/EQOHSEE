@@ -1695,6 +1695,8 @@ export interface HalamanDaftarPengguna {
     ohseRole: string | null;
     jabatan: string | null; departemen: string | null;
     aktif: boolean; perusahaan: string | null;
+    /** Akun masih di perusahaan demo — biasanya akun baru yang menunggu dipindahkan admin. */
+    perusahaanDemo: boolean;
     /** true untuk akun yang sedang dipakai — tombol hapusnya tidak digambar. */
     diri: boolean;
     urlUbah: string; urlHapus: string;

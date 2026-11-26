@@ -606,11 +606,11 @@ const pilihan =
 }
 
 /* ══ mode gelap ══ */
-:global([data-tema='gelap']) .eq-tabel tbody td { border-color: #1E2E42; color: #A8A29E; }
-:global([data-tema='gelap']) .eq-tabel tbody tr:hover td { background: #101A26; }
-:global([data-tema='gelap']) .eq-uraian { color: #F5F5F4; }
-:global([data-tema='gelap']) .eq-pil-abu { background: #1E2E42; color: #A8A29E; }
-:global([data-tema='gelap']) .eq-detail { border-color: #1E2E42; color: #A8A29E; }
-:global([data-tema='gelap']) .eq-detail:hover { background: #1E2E42; color: #FDBA74; }
-:global([data-tema='gelap']) .eq-tabel tbody tr { border-color: #1E2E42; }
+[data-tema='gelap'] .eq-tabel tbody td { border-color: #1E2E42; color: #A8A29E; }
+[data-tema='gelap'] .eq-tabel tbody tr:hover td { background: #101A26; }
+[data-tema='gelap'] .eq-uraian { color: #F5F5F4; }
+[data-tema='gelap'] .eq-pil-abu { background: #1E2E42; color: #A8A29E; }
+[data-tema='gelap'] .eq-detail { border-color: #1E2E42; color: #A8A29E; }
+[data-tema='gelap'] .eq-detail:hover { background: #1E2E42; color: #FDBA74; }
+[data-tema='gelap'] .eq-tabel tbody tr { border-color: #1E2E42; }
 </style>

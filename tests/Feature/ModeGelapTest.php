@@ -25,7 +25,7 @@ class ModeGelapTest extends TestCase
 {
     private function gaya(): string
     {
-        return file_get_contents(resource_path('views/partials/eq-visual.blade.php'))
+        return file_get_contents(resource_path('css/eq-visual.css'))
              . file_get_contents(resource_path('css/app.css'));
     }
 

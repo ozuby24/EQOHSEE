@@ -208,4 +208,87 @@ class LandingTest extends TestCase
             $this->assertMatchesRegularExpression('/id="'.$id.'"/', $isi, "Tautan #{$id} menunjuk bagian yang tidak ada.");
         }
     }
+
+    /* ═══════════ rombak: modul terbaru, harga, kontak ═══════════ */
+
+    /** Etalase modul terbaru memajang tangkapan layar ASLI dan tiga sorotan tiap modul. */
+    public function test_etalase_modul_terbaru_lengkap_dengan_tangkapan_layar(): void
+    {
+        $terbaru = $this->props()['terbaru'];
+
+        $this->assertCount(6, $terbaru);
+        foreach ($terbaru as $e) {
+            $this->assertNotNull($e['gambar'], "{$e['judul']} tanpa tangkapan layar.");
+            $this->assertCount(3, $e['sorot']);
+            $this->assertFileExists(public_path('media/terbaru/'.$e['kunci'].'.webp'));
+        }
+    }
+
+    /** Tanpa berkas gambarnya, etalase tetap berdiri — bidang bermotif, bukan gambar rusak. */
+    public function test_etalase_tanpa_berkas_gambar_tetap_utuh(): void
+    {
+        config(['media.akar' => 'media-tidak-ada']);
+
+        foreach ($this->props()['terbaru'] as $e) $this->assertNull($e['gambar']);
+    }
+
+    public function test_tujuh_modul_terbaru_bertanda_baru(): void
+    {
+        $baru = array_values(array_map(fn ($m) => $m['nama'],
+            array_filter($this->props()['modul'], fn ($m) => $m['baru'] ?? false)));
+
+        $this->assertCount(7, $baru);
+        $this->assertContains('MERANTI · Reklamasi & Nursery', $baru);
+        $this->assertContains('Carbon Management Center', $baru);
+    }
+
+    public function test_kontak_whatsapp_septiadi_tampil(): void
+    {
+        $lain = $this->props()['kontak']['lain'];
+
+        $this->assertSame([['nama' => 'Septiadi', 'whatsapp' => '6281346853729']], $lain);
+    }
+
+    /**
+     * Keranjang halaman depan menerima aturan harga yang sama dengan yang
+     * menagih: harga website kedua, aturan server, dan kelipatan pemeliharaan.
+     */
+    public function test_katalog_halaman_depan_membawa_aturan_harga(): void
+    {
+        $this->artisan('pembelian:katalog')->assertSuccessful();
+        \App\Models\Pembelian\Produk::where('kode', 'WEBSITE')->update(['harga' => 69_000_000, 'aktif' => true]);
+
+        $k = $this->props()['katalog'];
+
+        $this->assertSame(3_000_000, $k['paket']['harga_tambahan']);
+        $this->assertSame('Sekali bayar · permanen', $k['paket']['masa']);
+        $this->assertSame(500_000, $k['layanan']['aturan']['hargaCpu']);
+        $this->assertSame(3, $k['pemeliharaan']['modulPerBlok']);
+        $this->assertSame(\App\Support\Pembelian::modulPaket(), $k['modulPaket']);
+    }
+
+    /**
+     * Halaman depan tetap terang ketika tema gelap aktif.
+     *
+     * Tema gelap aplikasi dulu menjalar ke sini lewat aturan global
+     * eq-visual.css: isian formulir pesanan menjadi kotak gelap di
+     * tengah kartu terang, dan kontrol bawaan peramban ikut gelap.
+     * eq-visual.css dimuat SESUDAH CSS halaman ini, jadi penimpanya harus
+     * menang karena spesifisitas, bukan karena urutan.
+     */
+    public function test_halaman_depan_tetap_terang_ketika_tema_gelap_aktif(): void
+    {
+        $css = (string) file_get_contents(resource_path('css/landing.css'));
+
+        $this->assertMatchesRegularExpression('/:root\[data-tema\]:has\(\.ld\)\s*\{[^}]*color-scheme:\s*light/', $css,
+            'Kontrol bawaan peramban di halaman depan akan digambar gelap.');
+        $this->assertMatchesRegularExpression('/:root\[data-tema\]:has\(\.ld\)\s+body\s*\{[^}]*background:/', $css,
+            'Latar gelap aplikasi akan tampak di tepi halaman depan.');
+        $this->assertMatchesRegularExpression('/:root\[data-tema\]\s+\.ld\s+\.ld-isian\s*\{[^}]*background-color:\s*#FFFFFF/i', $css,
+            'Isian formulir pesanan akan menjadi kotak gelap di tengah kartu terang.');
+
+        // Aturan yang harus dikalahkan memang masih ada — bila suatu saat
+        // dihapus, uji ini boleh disederhanakan.
+        $this->assertStringContainsString(':root[data-tema="gelap"] input,', (string) file_get_contents(resource_path('css/eq-visual.css')));
+    }
 }

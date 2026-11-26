@@ -369,14 +369,14 @@ const label = 'block text-[11px] font-bold uppercase tracking-wide text-stone-50
 /* Tema gelap. Dialog yang tidak mengenalnya tergambar sebagai kotak
    putih menyilaukan di tengah halaman gelap — dan yang membukanya pada
    gilir malam menutupnya kembali sebelum sempat membaca pilihannya. */
-:global([data-tema='gelap']) .eq-reg { background: #111C27; }
-:global([data-tema='gelap']) .eq-reg-kepala { border-bottom-color: #22303F; }
-:global([data-tema='gelap']) .eq-reg-kaki { border-top-color: #22303F; }
-:global([data-tema='gelap']) .eq-reg-judul { color: #F5F5F4; }
-:global([data-tema='gelap']) .eq-reg-jumlah { background: #0D1621; color: #D6D3D1; }
-:global([data-tema='gelap']) .eq-reg-jumlah.is-kosong { background: #2A1517; color: #FCA5A5; }
-:global([data-tema='gelap']) .eq-reg-jumlah.is-gagal { background: #2A2213; color: #FCD34D; }
-:global([data-tema='gelap']) .eq-reg-unduh.is-mati { background: #22303F; color: #78716C; }
+[data-tema='gelap'] .eq-reg { background: #111C27; }
+[data-tema='gelap'] .eq-reg-kepala { border-bottom-color: #22303F; }
+[data-tema='gelap'] .eq-reg-kaki { border-top-color: #22303F; }
+[data-tema='gelap'] .eq-reg-judul { color: #F5F5F4; }
+[data-tema='gelap'] .eq-reg-jumlah { background: #0D1621; color: #D6D3D1; }
+[data-tema='gelap'] .eq-reg-jumlah.is-kosong { background: #2A1517; color: #FCA5A5; }
+[data-tema='gelap'] .eq-reg-jumlah.is-gagal { background: #2A2213; color: #FCD34D; }
+[data-tema='gelap'] .eq-reg-unduh.is-mati { background: #22303F; color: #78716C; }
 
 /* Sejajar dengan pop-out lain: di layar sempit ia menempel ke bawah,
    bukan melayang di tengah. */
