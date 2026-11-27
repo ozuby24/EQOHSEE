@@ -44,6 +44,8 @@ type Etalase = {
   kunci: string; judul: string; kalimat: string; sorot: string[]; gambar: string | null;
   pilarNama: string; pilarWarna: string; ikon: string | null;
 };
+type Layar = { url: string; alt: string };
+type Perangkat = { kunci: string; judul: string; ket: string; laptop: Layar; ponsel: Layar[] };
 
 const props = defineProps<{
   hero: { video: string | null; poster: string | null };
@@ -64,7 +66,7 @@ const props = defineProps<{
     paket: Produk | null; layanan: Produk | null; pemeliharaan?: Produk | null;
     modulPaket?: number; aplikasi: Produk[];
   } | null;
-  layarPonsel: { url: string; alt: string }[];
+  perangkat?: Perangkat[];
   tautan: { masuk: string; katalog: string; pesan: string; privasi: string };
   tahun: number;
 }>();
@@ -118,6 +120,23 @@ function tombolEtalase(e: KeyboardEvent, i: number) {
   e.preventDefault();
   etalaseKini.value = (i + (maju ? 1 : n - 1)) % n;
   nextTick(() => document.getElementById(`ld-baru-tab-${etalaseKini.value}`)?.focus());
+}
+
+/* ═══════════ aplikasi lapangan: laptop + ponsel ═══════════ */
+
+const perangkat = computed(() => props.perangkat ?? []);
+const perangkatKini = ref(0);
+const perangkatAktif = computed(() => perangkat.value[perangkatKini.value] ?? null);
+
+function tombolPerangkat(e: KeyboardEvent, i: number) {
+  const n = perangkat.value.length;
+  if (!n) return;
+  const maju = e.key === 'ArrowRight' || e.key === 'ArrowDown';
+  const mundur = e.key === 'ArrowLeft' || e.key === 'ArrowUp';
+  if (!maju && !mundur) return;
+  e.preventDefault();
+  perangkatKini.value = (i + (maju ? 1 : n - 1)) % n;
+  nextTick(() => document.getElementById(`ld-perangkat-tab-${perangkatKini.value}`)?.focus());
 }
 
 /* ═══════════ modul ═══════════ */
@@ -790,10 +809,31 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="PANAH" /></svg>
             </a>
           </div>
-          <div v-if="layarPonsel.length" class="ld-ponsel-deret">
-            <figure v-for="l in layarPonsel" :key="l.url" class="ld-ponsel" style="margin:0">
-              <img :src="l.url" :alt="l.alt" loading="lazy" decoding="async" width="600" height="1298">
-            </figure>
+          <!-- Laptop dan dua ponsel dari modul yang SAMA, seperti sampul
+               materi promosi tiap modul: data yang dibaca di meja kantor
+               adalah data yang diisi di lapangan. Tab menukar ketiga
+               layarnya; hanya adegan yang terbuka yang diunduh. -->
+          <div v-if="perangkat.length" class="ld-perangkat">
+            <div class="ld-perangkat-tab" role="tablist" aria-label="Contoh layar per modul">
+              <button v-for="(s, i) in perangkat" :id="`ld-perangkat-tab-${i}`" :key="s.kunci" type="button" role="tab"
+                      class="ld-perangkat-pil" :aria-selected="perangkatKini === i" aria-controls="ld-perangkat-panel"
+                      :tabindex="perangkatKini === i ? 0 : -1"
+                      @click="perangkatKini = i" @keydown="tombolPerangkat($event, i)">{{ s.judul }}</button>
+            </div>
+            <div v-if="perangkatAktif" id="ld-perangkat-panel" class="ld-perangkat-panggung" role="tabpanel"
+                 :aria-labelledby="`ld-perangkat-tab-${perangkatKini}`">
+              <figure class="ld-laptop">
+                <div class="ld-laptop-layar">
+                  <img :key="perangkatAktif.laptop.url" :src="perangkatAktif.laptop.url" :alt="perangkatAktif.laptop.alt"
+                       width="1280" height="800" loading="lazy" decoding="async">
+                </div>
+                <div class="ld-laptop-alas" aria-hidden="true"></div>
+              </figure>
+              <figure v-for="(l, j) in perangkatAktif.ponsel" :key="l.url" class="ld-hp" :class="j === 0 ? 'ld-hp-satu' : 'ld-hp-dua'">
+                <img :src="l.url" :alt="l.alt" width="600" height="1298" loading="lazy" decoding="async">
+              </figure>
+            </div>
+            <p v-if="perangkatAktif" class="ld-perangkat-ket" aria-live="polite">{{ perangkatAktif.ket }}</p>
           </div>
         </div>
       </section>

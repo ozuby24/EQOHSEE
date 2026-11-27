@@ -42,6 +42,13 @@ Bila keduanya belum ada, panorama SVG yang dipakai.
 
 Semua di folder `galeri/`. Gambar 16∶9, anjuran 1280×720.
 
+Rekaman dari Drive ditutup kartu judul teks ("SAFETY — Zero Harm Starts
+With Us", logo EQOHSEE, dan sebagainya). Di kartu yang dipotong mengikuti
+bingkainya teks besar itu terpotong dan terbaca sebagai video rusak, jadi
+video di sini sudah dipotong di bingkai bersih terakhir sebelum teksnya
+muncul. `deploy/ambil-video.sh` memotong di detik yang sama (kolom
+keempat petanya); video pengganti juga harus berakhir sebelum teks penutup.
+
 | Berkas | Kartu |
 |---|---|
 | `inspeksi.jpg` · `inspeksi.mp4` | Inspeksi & Observasi |
@@ -60,6 +67,23 @@ kartu lain yang berkasnya lengkap — menyandingkan rekaman sungguhan dengan
 kotak kosong membuat galerinya terbaca sebagai rusak, bukan sebagai belum
 lengkap. Bila belum ada satu pun berkas, semua kartu muncul sebagai tempat
 foto agar bagian ini tidak hilang sama sekali.
+
+## Aplikasi lapangan — laptop dan ponsel
+
+Bagian "04 — Aplikasi lapangan" memajang satu laptop dan dua ponsel dari
+modul yang sama, dengan tab per modul. Semuanya tangkapan layar asli dari
+data contoh platform; layar ponselnya digeser ke bagian yang berisi angka.
+
+| Tab | Laptop | Ponsel |
+|---|---|---|
+| MERANTI | `terbaru/meranti.webp` | `aplikasi/meranti-a.webp`, `aplikasi/meranti-b.webp` |
+| Rehab DAS | `terbaru/rdas.webp` | `aplikasi/rdas-a.webp`, `aplikasi/rdas-b.webp` |
+| Lapor & P2H | `aplikasi/lapangan-laptop.webp` | `aplikasi/lapangan-a.webp`, `aplikasi/lapangan-b.webp` |
+| Energi & Karbon | `terbaru/energi.webp` | `aplikasi/energi-a.webp`, `aplikasi/energi-b.webp` |
+| Lifting & Scaffolding | `terbaru/angkat.webp` | `aplikasi/angkat-a.webp`, `aplikasi/angkat-b.webp` |
+
+Laptop 1280×800 (layar 1440×900 diperkecil), ponsel 600×1298 (layar
+390×844), WebP mutu 80. Sebuah tab tampil hanya bila ketiga berkasnya ada.
 
 ## Logo perusahaan pengguna
 

@@ -37,7 +37,15 @@ KECILKAN=1
 
 # ── Peta berkas ───────────────────────────────────────────────────────
 #
-# Kolom: id-drive|tujuan|nama-di-drive
+# Kolom: id-drive|tujuan|nama-di-drive|detik-dipakai
+#
+# DETIK-DIPAKAI: tujuh rekaman ditutup kartu judul teks ("SAFETY —
+# Zero Harm Starts With Us", "Mining today. Restoring tomorrow.", logo
+# EQOHSEE, dan seterusnya) yang memudar masuk beberapa detik sebelum
+# akhir. Di kartu halaman depan yang dipotong mengikuti bingkainya, teks
+# besar itu terpotong dan terbaca sebagai video rusak. Rekamannya karena
+# itu dipotong di bingkai bersih terakhir sebelum teksnya muncul —
+# diperiksa bingkai demi bingkai. Kosong = dipakai utuh.
 #
 # Dua berkas di Drive sama-sama bernama "QUALITY EQOHSEE.mp4" padahal
 # isinya berbeda, dan tidak ada berkas bernama SAFETY maupun
@@ -49,13 +57,13 @@ KECILKAN=1
 PETA=(
   "1UrX1yhhMxh5J8i36PEyoNjy_uvFrmBZk|hero/tambang.mp4|LANDING PAGE"
   "1R0gvO71TfHcWrZUvhGpCM-kM8pkKcPpD|hero/masuk.mp4|REGISTER PAGE"
-  "1LXXOzOAzgf4rZpns7PxQXLyH56_XEMOB|galeri/engineering.mp4|ENGINEERING"
-  "1fStWWOhrfccv71CWXd9pCG0bkuJzU2Fd|galeri/hygiene.mp4|HYGIENE"
-  "1iOX7tcPj9CXNriJY74B4_mK2dA-C0lM3|galeri/occhealth.mp4|OCCUPATIONAL_HEALTH"
-  "1OsbL2teIrqE3k5PhAhvGENsp513AnViO|galeri/operasional.mp4|MINING"
-  "1KFqCcjOlVotqFGNtcnGffsdOVHG12--f|galeri/quality.mp4|QUALITY (1)"
-  "1I6FgpTb70q6ONGi3rwQ2B6UrDQouSfs9|galeri/safety.mp4|QUALITY (2) — (?) diduga SAFETY"
-  "13BjNDH9MiFXkunbppbck4iG_-NC_v2BA|galeri/environment.mp4|EBT — (?) diduga ENVIRONMENT"
+  "1LXXOzOAzgf4rZpns7PxQXLyH56_XEMOB|galeri/engineering.mp4|ENGINEERING|7.9"
+  "1fStWWOhrfccv71CWXd9pCG0bkuJzU2Fd|galeri/hygiene.mp4|HYGIENE|5.35"
+  "1iOX7tcPj9CXNriJY74B4_mK2dA-C0lM3|galeri/occhealth.mp4|OCCUPATIONAL_HEALTH|7.0"
+  "1OsbL2teIrqE3k5PhAhvGENsp513AnViO|galeri/operasional.mp4|MINING|8.6"
+  "1KFqCcjOlVotqFGNtcnGffsdOVHG12--f|galeri/quality.mp4|QUALITY (1)|8.0"
+  "1I6FgpTb70q6ONGi3rwQ2B6UrDQouSfs9|galeri/safety.mp4|QUALITY (2) — (?) diduga SAFETY|7.9"
+  "13BjNDH9MiFXkunbppbck4iG_-NC_v2BA|galeri/environment.mp4|EBT — (?) diduga ENVIRONMENT|7.5"
   "1XL0_GBQgzHuwh7Nbl7Zxyw_Eb2G3ZpyN|galeri/energi.mp4|ENERGY MINING — kartu galeri Energi & Karbon"
 )
 
@@ -79,12 +87,14 @@ unduh() {   # $1 = id, $2 = keluaran
   fi
 }
 
-kecilkan() {   # $1 = masukan, $2 = keluaran
+kecilkan() {   # $1 = masukan, $2 = keluaran, $3 = detik dipakai (kosong = utuh)
   # 1280 lebar, CRF 28, tanpa suara: cukup untuk latar halaman, dan
   # itulah satu-satunya tempat video ini dipakai. Video 11 MB yang
   # dimuat pada tiap kunjungan halaman depan mahal bagi pengunjung di
   # jaringan site.
-  ffmpeg -y -loglevel error -i "$1" \
+  local potong=()
+  [[ -n "${3:-}" ]] && potong=(-t "$3")
+  ffmpeg -y -loglevel error -i "$1" "${potong[@]}" \
     -vf "scale='min(1280,iw)':-2" \
     -c:v libx264 -crf 28 -preset slow -profile:v high -pix_fmt yuv420p \
     -movflags +faststart -an "$2"
@@ -102,7 +112,7 @@ mkdir -p "$TUJUAN/hero" "$TUJUAN/galeri" "$TUJUAN/asal-drive"
 
 GAGAL=0
 for baris in "${PETA[@]}"; do
-  IFS='|' read -r id tujuan asal <<< "$baris"
+  IFS='|' read -r id tujuan asal detik <<< "$baris"
 
   printf '  %-28s ← %s\n' "$tujuan" "$asal"
 
@@ -126,7 +136,7 @@ for baris in "${PETA[@]}"; do
   mkdir -p "$(dirname "$TUJUAN/$tujuan")"
 
   if [[ $KECILKAN -eq 1 ]]; then
-    if kecilkan "$mentah" "$TUJUAN/$tujuan"; then
+    if kecilkan "$mentah" "$TUJUAN/$tujuan" "$detik"; then
       printf '      %s → %s\n' \
         "$(du -h "$mentah" | cut -f1)" "$(du -h "$TUJUAN/$tujuan" | cut -f1)"
     else
@@ -136,6 +146,7 @@ for baris in "${PETA[@]}"; do
   else
     cp "$mentah" "$TUJUAN/$tujuan"
     printf '      %s\n' "$(du -h "$TUJUAN/$tujuan" | cut -f1)"
+    [[ -n "$detik" ]] && echo "      PERHATIAN: tanpa ffmpeg, kartu teks penutupnya TIDAK terpotong."
   fi
 
   # Kartu galeri memajang gambar diamnya sebelum diputar. Gambar

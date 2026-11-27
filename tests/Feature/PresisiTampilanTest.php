@@ -147,6 +147,102 @@ class PresisiTampilanTest extends TestCase
         }
     }
 
+    /**
+     * Deret E Q O H S E E +K di panel halaman tamu tidak menyorot satu
+     * huruf secara tetap. Dulu S disorot menetap, dan di panel yang penuh
+     * gerak itu terbaca sebagai animasi yang macet di satu huruf.
+     */
+    public function test_deret_huruf_halaman_tamu_tidak_macet_di_satu_huruf(): void
+    {
+        $tataLetak = file_get_contents(resource_path('js/Layouts/GuestLayout.vue'));
+        $this->assertDoesNotMatchRegularExpression("/h\s*===\s*'S'/", $tataLetak,
+            'Huruf S kembali disorot tetap — terbaca sebagai animasi yang macet.');
+
+        $css = preg_replace('#/\*.*?\*/#s', '', file_get_contents(resource_path('css/masuk.css')));
+        $this->assertDoesNotMatchRegularExpression('/\.ms-huruf\s+b\.ini\b/', $css,
+            'Sorotan tetap .ms-huruf b.ini kembali.');
+        $this->assertMatchesRegularExpression('/\.ms-huruf\s+b\s*\{[^}]*animation:\s*ms-huruf-sorot\b/', $css,
+            'Deret huruf tidak lagi bergiliran disorot.');
+        $this->assertMatchesRegularExpression('/@keyframes\s+ms-huruf-sorot\b/', $css);
+
+        // Kedelapan huruf mendapat giliran: tujuh jeda, satu per huruf.
+        for ($n = 2; $n <= 8; $n++) {
+            $this->assertMatchesRegularExpression('/\.ms-huruf\s+b:nth-child\('.$n.'\)\s*\{[^}]*animation-delay:/', $css,
+                "Huruf ke-{$n} tidak mendapat giliran sorot.");
+        }
+
+        // Tanpa gerak: tidak ada huruf yang menonjol sendirian.
+        $this->assertMatchesRegularExpression(
+            '/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{\s*\.ms-huruf\s+b\s*\{[^}]*animation:\s*none/', $css,
+            'Bagi yang meminta gerakan dikurangi, sorotannya tidak dihentikan.');
+    }
+
+    /**
+     * Motif kontur ada di LEMBAR PUTIH halaman tamu, bukan di atas
+     * rekamannya. Keputusan pemiliknya: motif di atas video bersaing
+     * dengan gambarnya; lembar putih justru yang kosong.
+     */
+    public function test_motif_kontur_di_lembar_putih_bukan_di_atas_rekaman(): void
+    {
+        $tataLetak = file_get_contents(resource_path('js/Layouts/GuestLayout.vue'));
+        $this->assertMatchesRegularExpression('/<section class="ms-lembar /', $tataLetak,
+            'Lembar formulir halaman tamu kehilangan motif konturnya.');
+
+        // Panel rekaman: hanya video/poster, tirai gradien, dan isinya.
+        preg_match('#<section class="pendar-rekaman.*?</section>#s', $tataLetak, $panel);
+        $this->assertNotEmpty($panel, 'Panel rekaman halaman tamu tidak ditemukan.');
+        $this->assertDoesNotMatchRegularExpression('/ms-peta|ms-lembar|motif/', $panel[0],
+            'Motif kembali dipasang di atas rekaman halaman tamu.');
+
+        $css = file_get_contents(resource_path('css/masuk.css'));
+        $this->assertMatchesRegularExpression('/--ms-motif-kontur:\s*url\("data:image\/svg\+xml,[^"]+"\)/', $css,
+            '--ms-motif-kontur tidak lagi didefinisikan di masuk.css.');
+        preg_match('/--ms-motif-kontur:\s*url\("data:image\/svg\+xml,([^"]+)"\)/', $css, $m);
+
+        // Garis tinggi sungguhan: banyak jalur, garis indeks yang lebih
+        // tebal, lebar garis tetap di layar sempit, tanpa label teks yang
+        // akan bertumpuk dengan tulisan formulir.
+        $this->assertGreaterThan(15, substr_count($m[1], 'M'), 'Motif kontur terlalu sedikit garisnya.');
+        $this->assertStringContainsString("stroke-width='1.5'", $m[1], 'Garis indeks kontur hilang.');
+        $this->assertStringContainsString('non-scaling-stroke', $m[1]);
+        $this->assertStringNotContainsString('<text', $m[1], 'Motif kontur memuat label teks.');
+
+        $tanpaKomentar = preg_replace('#/\*.*?\*/#s', '', $css);
+        $this->assertMatchesRegularExpression('/\.ms-lembar\s*\{[^}]*var\(--ms-motif-kontur\)/', $tanpaKomentar);
+        $this->assertDoesNotMatchRegularExpression('/\.ms-peta\b/', $tanpaKomentar, 'Lapisan motif di atas rekaman kembali.');
+
+        // Desain pit (jenjang, ramp, jalan angkut) di pojok lembar yang sama,
+        // TANPA teks: label di belakang tautan terbaca sebagai tulisan nyasar.
+        $this->assertMatchesRegularExpression('/\.ms-lembar\s*\{[^}]*var\(--ms-motif-pit\)/', $tanpaKomentar,
+            'Lembar formulir kehilangan desain pit tambangnya.');
+        preg_match('/--ms-motif-pit:\s*url\("data:image\/svg\+xml,([^"]+)"\)/', $css, $pit);
+        $this->assertNotEmpty($pit, '--ms-motif-pit tidak didefinisikan.');
+        $this->assertStringNotContainsString('<text', $pit[1], 'Desain pit memuat label teks.');
+        $this->assertStringContainsString('%23F57C00', $pit[1], 'Jalan angkut berstrip jingga hilang dari desain pit.');
+    }
+
+    /**
+     * Halaman tamu tetap terang ketika tema gelap aktif: kolom isiannya
+     * dulu menjadi kotak gelap di lembar putih dan garis fokusnya hilang.
+     * eq-visual.css dimuat SESUDAH masuk.css, jadi penimpanya harus menang
+     * karena spesifisitas.
+     */
+    public function test_halaman_tamu_tetap_terang_ketika_tema_gelap_aktif(): void
+    {
+        $css = preg_replace('#/\*.*?\*/#s', '', file_get_contents(resource_path('css/masuk.css')));
+
+        $this->assertMatchesRegularExpression('/:root\[data-tema\]:has\(\.ms\)\s*\{[^}]*color-scheme:\s*light/', $css,
+            'Kontrol bawaan peramban di halaman tamu akan digambar gelap.');
+        $this->assertMatchesRegularExpression(
+            '/:root\[data-tema="gelap"\]\s+\.ms\s+:is\(input, select, textarea\)[^{]*\{[^}]*background-color:\s*#FFFFFF/i', $css,
+            'Kolom isian halaman tamu akan menjadi kotak gelap di lembar putih.');
+        $this->assertMatchesRegularExpression(
+            '/:root\[data-tema="gelap"\]\s+\.ms\s+:is\(input, select, textarea\)[^{]*:focus\s*\{[^}]*border-color:\s*var\(--ms-aksen\)/', $css,
+            'Garis fokus jingga kolom isian hilang di tema gelap.');
+        $this->assertMatchesRegularExpression('/:root\[data-tema="gelap"\]\s+\.ms\s+\.eq-sandi-intip\s*\{[^}]*color:\s*#78716C/i', $css,
+            'Ikon mata di lembar putih memakai abu mode gelap (2,5:1).');
+    }
+
     public function test_panel_foto_halaman_tamu_menempel_di_layar_lebar(): void
     {
         $tataLetak = file_get_contents(resource_path('js/Layouts/GuestLayout.vue'));
