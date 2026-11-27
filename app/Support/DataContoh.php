@@ -6776,227 +6776,512 @@ final class DataContoh
     /* ─────────── SMKP ─────────── */
 
     /**
-     * Satu audit SMKP per tahun berjalan dan satu tahun sebelumnya, dalam
-     * bentuk modul audit Aurorasys.
+     * Tiga audit SMKP — dua tahun lalu dan tahun lalu sudah selesai, tahun
+     * ini audit lapangannya tuntas dan tindak lanjutnya berjalan — dalam
+     * bentuk modul audit Aurorasys, cukup lengkap untuk demo: Tahap I
+     * (kontak, kinerja, kelayakan, hari kerja, kecukupan, persiapan),
+     * Rencana Audit (metode & sampel tiap kriteria dengan jumlah sampel,
+     * susunan lima hari, tim, top risks), penilaian bercatatan & berbukti,
+     * Formulir Kesesuaian otomatis dengan OFI, temuan dengan tindak lanjut
+     * berbagai status, daftar hadir, dan isian Laporan Audit.
      *
-     * Dua, bukan satu: Tahap I menyarankan "Data Audit Internal SMKP" dari
-     * audit tahun sebelumnya, dan saran itu hanya dapat diperiksa bila
-     * audit sebelumnya memang ada.
+     * Tiga tahun, bukan satu: Tahap I menyarankan "Data Audit Internal
+     * SMKP" dari audit tahun sebelumnya, Dasbor membandingkan tahun, dan
+     * Evaluasi membandingkan capaian elemen — semuanya hanya dapat
+     * diperiksa bila audit sebelumnya memang ada. Nilainya membaik dari
+     * tahun ke tahun (varian penilaian 0 → 2), sehingga tren naik.
      *
-     * Audit tahun lalu sudah sampai Pelaporan (Tahap I tuntas, Rencana
-     * Audit lengkap sembilan komponen, hari kerja dibekukan); audit tahun
-     * ini baru di Tahap I. Temuannya diangkat dari nilai — kode kriteria
-     * dan kategorinya karena itu selalu sah — dan bernomor seperti yang
-     * dibangkitkan aplikasi (KODE-MYR-01-2025).
+     * Temuannya diangkat dari nilai — kode kriteria dan kategorinya karena
+     * itu selalu sah — dan bernomor seperti yang dibangkitkan aplikasi
+     * (KODE-MYR-01-2025). Seluruh angka ditentukan dari posisi, bukan acak.
      */
     private function smkp(): int
     {
         $n = 0;
+        $pt     = (string) $this->c->name;
+        $ketua  = $this->peninjau?->name ?? 'Ketua Auditor Internal';
+        $kedua  = $this->pengaju?->name ?? 'Auditor Internal';
+        $ktt    = (string) ($this->c->ktt ?: 'Kepala Teknik Tambang');
+        $pjo    = (string) ($this->c->pjo ?: '');
+        $pekerja = max(40, (int) $this->c->workers_employee + (int) $this->c->workers_sub);
+        $kelas  = in_array($this->c->risk_class, SmkpTahap::kelasRisiko(), true) ? $this->c->risk_class : 'Tinggi';
 
-        foreach ([['selesai', 1], ['berjalan', 0]] as [$status, $mundur]) {
-            $tahun = $this->kini->year - $mundur;
+        // Audit tahun ini: audit lapangan enam minggu lalu; dua audit sebelumnya pada Maret.
+        $mulaiIni = $this->kini->copy()->subDays(42)->startOfDay();
+        while ($mulaiIni->isWeekend()) $mulaiIni->subDay();
+        $tahunIni = (int) $mulaiIni->year;
+
+        $lalu = null;
+        foreach ([[2, 'selesai'], [1, 'selesai'], [0, 'berjalan']] as [$mundur, $status]) {
+            $tahun  = $tahunIni - $mundur;
+            $varian = 2 - $mundur;
             $tuntas = $status === 'selesai';
-            $ketua = $this->peninjau?->name ?? 'Ketua Auditor Internal';
-            $mulai = Carbon::create($tahun, 3, 1);
+            $mulai  = $mundur === 0 ? $mulaiIni->copy() : Carbon::create($tahun, 3, 2);
+            while ($mulai->isWeekend()) $mulai->addDay();
+            $selesai = $mulai->copy()->addWeekdays(4);
+            $hasil   = $this->smkpHasil($varian);
+            $kinerja = $this->smkpKinerja($varian);
+            $saran   = SmkpTahap::saranFaktor($kinerja, $tahun);
+
+            $faktor = array_fill_keys(array_keys(SmkpTahap::faktorPenyesuaian()), false);
+            $faktor['pengolahan'] = true;
+            foreach (['kecelakaan', 'penyakit', 'pak'] as $k) $faktor[$k] = (bool) $saran[$k];
 
             $permulaan = [
-                'tanggal_kontak' => $mulai->copy()->subWeeks(3)->toDateString(),
-                'media_kontak'   => 'Rapat daring',
-                'wakil_auditi'   => $this->pengaju?->name ?? 'Wakil Auditi',
-                'jabatan_wakil'  => 'Kepala Teknik Tambang',
-                'periode'        => '1 Januari – 31 Desember '.($tahun - 1),
-                'sifat_kontak'   => 'formal',
-                'layak'          => $tuntas ? 'layak' : '',
-                'jumlah_pekerja' => (string) max(1, (int) $this->c->workers_employee + (int) $this->c->workers_sub),
-                'kelas_risiko'   => in_array($this->c->risk_class, SmkpTahap::kelasRisiko(), true) ? $this->c->risk_class : 'Tinggi',
-                'mandays_dasar'  => '12',
-                'jumlah_auditor' => '2',
-                'penyesuaian'    => '',
-                'kesimpulan'     => $tuntas ? 'Audit layak dilaksanakan; dokumentasi tujuh elemen lengkap.' : '',
-                'kelayakan'      => array_fill_keys(array_keys(SmkpTahap::indikatorKelayakan()), $tuntas ? 'Memadai' : ''),
-                'faktor'         => array_fill_keys(array_keys(SmkpTahap::faktorPenyesuaian()), false),
+                'tanggal_kontak'    => $mulai->copy()->subWeeks(4)->toDateString(),
+                'media_kontak'      => 'Rapat tatap muka di kantor site',
+                'wakil_auditi'      => $ktt,
+                'jabatan_wakil'     => 'Kepala Teknik Tambang',
+                'surat_nomor'       => sprintf('%03d/KTT/SK-AUD/%s/%d', 11 + $varian, 'III', $tahun),
+                'surat_tanggal'     => $mulai->copy()->subWeeks(5)->toDateString(),
+                'periode'           => '1 Januari – 31 Desember '.($tahun - 1),
+                'sifat_kontak'      => 'formal',
+                'tanggal_kelayakan' => $mulai->copy()->subWeeks(3)->toDateString(),
+                'layak'             => 'layak',
+                'tanggal_ba'        => $mulai->copy()->subWeeks(3)->addDay()->toDateString(),
+                'sk_auditor'        => sprintf('%03d/SK/%d (Lead Auditor), %03d/SK/%d (Auditor)', 21 + $varian, $tahun, 22 + $varian, $tahun),
+                'jumlah_pekerja'    => (string) $pekerja,
+                'kelas_risiko'      => $kelas,
+                'mandays_dasar'     => '12',
+                'jumlah_auditor'    => '3',
+                'penyesuaian'       => '',
+                'kesimpulan'        => 'Audit layak dilaksanakan; dokumen dan rekaman tujuh elemen tersedia, auditor tidak memiliki benturan kepentingan.',
+                'kelayakan'         => array_fill_keys(array_keys(SmkpTahap::indikatorKelayakan()), 'Memadai'),
+                'faktor'            => $faktor,
+                'persiapan'         => $this->smkpPersiapan($tahun, $lalu),
+            ];
+
+            $tugas = [
+                ['nama' => $ketua, 'peran' => 'Lead Auditor', 'registrasi' => '0017/AUD-SMKP/37.04/DBT/'.($tahun - 1), 'lingkup' => 'Elemen I, II, VII'],
+                ['nama' => $kedua, 'peran' => 'Auditor', 'registrasi' => '0042/AUD-SMKP/37.04/DBT/'.($tahun - 1), 'lingkup' => 'Elemen III, IV'],
+                ['nama' => 'Dewi Lestari, S.T.', 'peran' => 'Auditor', 'registrasi' => '0068/AUD-SMKP/37.04/DBT/'.($tahun - 1), 'lingkup' => 'Elemen V, VI'],
+                ['nama' => 'Agus Wibowo', 'peran' => 'Pemandu', 'registrasi' => '', 'lingkup' => 'Area penambangan & workshop'],
             ];
 
             $a = $this->baru(SmkpAudit::class, [
                 'tahun'           => $tahun,
                 'judul'           => 'Audit Internal SMKP Minerba '.$tahun,
                 'status'          => $status,
-                'tahap'           => $tuntas ? SmkpTahap::PELAPORAN : SmkpTahap::PERMULAAN,
+                'tahap'           => $tuntas ? SmkpTahap::PELAPORAN : SmkpTahap::LAPANGAN,
                 'tanggal_mulai'   => $mulai->toDateString(),
-                'tanggal_selesai' => $tuntas ? Carbon::create($tahun, 3, 14)->toDateString() : null,
+                'tanggal_selesai' => $selesai->toDateString(),
                 'ketua_auditor'   => $ketua,
                 'user_id'         => $this->pengaju?->id,
-                'hasil'           => $this->smkpHasil($tuntas),
+                'hasil'           => $hasil,
                 'permulaan'       => $permulaan,
-                'kinerja'         => ['cidera_ringan' => '2', 'cidera_berat' => '0', 'mati' => '0', 'fr' => '0,85', 'sr' => '12', 'berbahaya' => '1'],
-                'kecukupan'       => $tuntas
-                    ? array_fill_keys(array_column(Smkp::elemen(), 'kode'), ['status' => SmkpTahap::LENGKAP, 'ket' => ''])
-                    : [],
-                'rencana'         => $tuntas ? [
-                    'nomor'           => '',
-                    'tujuan'          => 'Menilai kesesuaian penerapan SMKP Minerba terhadap Lampiran II Kepdirjen 185.K/37.04/DJB/2019.',
+                'kinerja'         => $kinerja,
+                'kecukupan'       => $this->smkpKecukupan($varian),
+                'rencana'         => [
+                    'nomor'           => sprintf('RA-SMKP/%s/%d', strtoupper((string) ($this->c->code ?: 'PT')), $tahun),
+                    'tujuan'          => "Menilai tingkat penerapan SMKP Minerba di {$pt} terhadap Lampiran II Kepdirjen 185.K/37.04/DJB/2019, mengidentifikasi ketidaksesuaian dan peluang perbaikan, serta menilai efektivitas tindak lanjut audit sebelumnya.",
                     'kriteria'        => SmkpTahap::KRITERIA_AUDIT,
-                    'ruang_lingkup'   => 'Seluruh area operasi penambangan, pengolahan, dan penunjang.',
+                    'ruang_lingkup'   => 'Seluruh kegiatan penambangan, pengangkutan, pengolahan, dan penunjang (workshop, fuel station, gudang bahan peledak) beserta kontraktor yang bekerja di wilayah izin.',
+                    'pengecualian'    => '',
                     'tanggal_mulai'   => $mulai->toDateString(),
-                    'tanggal_selesai' => Carbon::create($tahun, 3, 14)->toDateString(),
-                    'susunan'         => array_map(fn ($k) => ['tanggal' => $mulai->toDateString(), 'waktu' => '08.00', 'kegiatan' => $k, 'auditi' => 'KTT', 'auditor' => 'Tim Audit'],
-                        SmkpTahap::kegiatanLapangan()),
-                    'tugas'           => [
-                        ['nama' => $ketua, 'peran' => 'Lead Auditor', 'registrasi' => 'REG-0001', 'lingkup' => 'Elemen I–IV'],
-                        ['nama' => $this->pengaju?->name ?? 'Auditor Internal', 'peran' => 'Auditor', 'registrasi' => 'REG-0002', 'lingkup' => 'Elemen V–VII'],
-                    ],
+                    'tanggal_selesai' => $selesai->toDateString(),
+                    'susunan'         => $this->smkpSusunan($mulai, $ketua, $kedua),
+                    'tugas'           => $tugas,
                     'sumberdaya'      => SmkpTahap::fasilitasBawaan(),
-                    'metode'          => 'Tinjauan dokumen dan rekaman, wawancara, observasi lapangan.',
-                    'metode_sampel'   => ['I.1' => ['metode' => 'Tinjauan Dokumen dan Rekaman, Wawancara', 'sampel' => 'Kebijakan keselamatan; KTT']],
+                    'metode'          => 'Tinjauan dokumen dan rekaman, wawancara, dan observasi lapangan dengan pengambilan sampel berbasis risiko.',
+                    'metode_sampel'   => $this->smkpMetodeSampel($pekerja),
                     'pengesahan'      => [
-                        'ktt'   => ['nama' => (string) ($this->c->ktt ?: 'Kepala Teknik Tambang'), 'jabatan' => 'Kepala Teknik Tambang', 'tanggal' => $mulai->toDateString()],
-                        'pjo'   => ['nama' => (string) ($this->c->pjo ?: ''), 'jabatan' => 'Penanggung Jawab Operasional', 'tanggal' => ''],
-                        'ketua' => ['nama' => $ketua, 'jabatan' => 'Ketua Tim Audit', 'tanggal' => $mulai->toDateString()],
+                        'ktt'   => ['nama' => $ktt, 'jabatan' => 'Kepala Teknik Tambang', 'tanggal' => $mulai->copy()->subWeeks(2)->toDateString()],
+                        'pjo'   => ['nama' => $pjo, 'jabatan' => 'Penanggung Jawab Operasional', 'tanggal' => $pjo !== '' ? $mulai->copy()->subWeeks(2)->toDateString() : ''],
+                        'ketua' => ['nama' => $ketua, 'jabatan' => 'Ketua Tim Audit', 'tanggal' => $mulai->copy()->subWeeks(2)->toDateString()],
                     ],
-                ] : [],
-                'risiko'          => $tuntas ? ['present' => [['kegiatan' => 'Pengangkutan', 'risiko' => 'Tabrakan unit di jalan hauling', 'nilai' => '16']], 'future' => []] : [],
-
-                /* Formulir Kesesuaian dan Rekomendasi & OFI — praktik
-                   terbaik dan peluang perbaikan atas butir yang sudah
-                   penuh. */
-                'kesesuaian'      => $tuntas ? [
-                    ['elemen' => 'I', 'sub' => 'I.1', 'subsub' => '', 'keterangan' => 'Kebijakan keselamatan ditinjau tiap tahun dan dikomunikasikan pada seluruh induksi.'],
-                ] : [],
-                'rekomendasi'     => $tuntas ? [
-                    ['elemen' => 'I', 'sub' => 'I.2', 'subsub' => '', 'uraian' => 'Cakupan komunikasi kebijakan baru pada area produksi utama; perluas ke area penunjang pada periode berikutnya.'],
-                    ['elemen' => 'VI', 'sub' => 'VI.1', 'subsub' => '', 'uraian' => 'Bukti masih berupa berkas cetak; pemindaian ke sistem akan mempercepat penelusuran saat audit eksternal.'],
-                ] : [],
+                ],
+                'risiko'          => [
+                    'present' => [
+                        ['kegiatan' => 'Pengangkutan material di jalan hauling', 'risiko' => 'Tabrakan unit dump truck dengan kendaraan ringan', 'nilai' => '20'],
+                        ['kegiatan' => 'Penggalian di front kerja', 'risiko' => 'Longsoran lereng tambang', 'nilai' => '20'],
+                        ['kegiatan' => 'Peledakan', 'risiko' => 'Lemparan batu (flyrock) ke area kerja', 'nilai' => '16'],
+                        ['kegiatan' => 'Pemeliharaan unit di workshop', 'risiko' => 'Tertimpa komponen saat pengangkatan', 'nilai' => '15'],
+                        ['kegiatan' => 'Pengisian bahan bakar', 'risiko' => 'Kebakaran di fuel station', 'nilai' => '12'],
+                    ],
+                    'future' => [
+                        ['kegiatan' => 'Pembukaan pit baru di blok selatan', 'risiko' => 'Air limpasan masuk pit saat musim hujan', 'nilai' => '16'],
+                        ['kegiatan' => 'Penambahan armada 40 dump truck', 'risiko' => 'Kepadatan lalu lintas jalan hauling', 'nilai' => '15'],
+                        ['kegiatan' => 'Operasi malam penuh dua shift', 'risiko' => 'Kelelahan operator', 'nilai' => '12'],
+                    ],
+                ],
+                'laporan'         => $this->smkpLaporanIsian($tahun, $selesai, $pekerja),
             ]);
-            if ($tuntas) {
-                $a->forceFill(['mandays_tetap' => SmkpTahap::mandays($permulaan)])->save();
-            }
             $n++;
 
-            /* ── temuan ──
+            [$kesesuaian, $rekomendasi] = $this->smkpFormulir($a, $varian);
+            $a->forceFill(['kesesuaian' => $kesesuaian, 'rekomendasi' => $rekomendasi])->save();
+            if ($tuntas) $a->forceFill(['mandays_tetap' => SmkpTahap::mandays($permulaan)])->save();
 
-               Diangkat dari nilai seperti tombol "Angkat temuan": kode dan
-               kategorinya sah. Ketiga status dipakai sekaligus, dan satu
-               temuan sengaja MELEWATI targetnya — keterlambatan yang tidak
-               pernah muncul di data contoh tidak membuktikan penghitungnya
-               bekerja. */
-            $usulan = array_slice(Smkp::temuan((array) $a->hasil), 0, $tuntas ? 3 : 2);
-            $urut = [];
-            foreach ($usulan as $i => $u) {
-                [$st, $targetHari, $selesaiHari] = [['Closed', -60, -35], ['In Progress', 20, null], ['Open', -8, null]][$i];
-                $urut[$u['jenis']] = ($urut[$u['jenis']] ?? 0) + 1;
-
-                $t = $this->baru(SmkpFinding::class, [
-                    'audit_id'          => $a->id,
-                    'nomor'             => $a->nomorTemuanBaru($u['jenis'], $urut[$u['jenis']]),
-                    'kode_kriteria'     => $u['kode'],
-                    'jenis'             => $u['jenis'],
-                    'uraian'            => 'Bukti penerapan '.mb_strtolower($u['uraian']).' belum lengkap saat audit lapangan.',
-                    'lokasi'            => 'Kantor site',
-                    'akar_masalah'      => 'Pemilik proses belum menetapkan jadwal pemeliharaan rekaman.',
-                    'tindakan'          => $st === 'Open' ? null : 'Tetapkan pemilik proses dan jadwal pemeliharaan rekaman.',
-                    'penanggung_jawab'  => $this->peninjau?->name ?? 'Kepala Teknik Tambang',
-                    'target_selesai'    => $this->kini->copy()->addDays($targetHari)->toDateString(),
-                    'tanggal_selesai'   => $selesaiHari === null ? null : $this->kini->copy()->addDays($selesaiHari)->toDateString(),
-                    'status'            => $st,
-                    'verifikasi'        => $st === 'Closed' ? 'Diverifikasi ketua auditor; bukti memadai.' : null,
-                ]);
-                $n++;
-
-                // Kiriman tindak lanjut auditi atas temuan yang sudah dikerjakan.
-                if ($st !== 'Open') {
-                    $this->baru(SmkpTindakLanjut::class, [
-                        'finding_id'       => $t->id,
-                        'user_id'          => $this->pengaju?->id,
-                        'akar_masalah'     => 'Pemilik proses belum menetapkan jadwal pemeliharaan rekaman.',
-                        'tindakan'         => 'Jadwal pemeliharaan rekaman ditetapkan dan disosialisasikan.',
-                        'bukti_perbaikan'  => 'Notulen sosialisasi dan jadwal yang ditandatangani KTT.',
-                        'penanggung_jawab' => 'Kepala Teknik Tambang',
-                        'lampiran'         => [],
-                    ]);
-                    $n++;
-                }
-            }
-
-            /* ── peserta rapat ── */
-
-            foreach ([
-                ['pembukaan', 'Kepala Teknik Tambang',   'KTT'],
-                ['pembukaan', 'Ketua Auditor Internal',  'Auditor'],
-                ['penutupan', 'Kepala Teknik Tambang',   'KTT'],
-                ['penutupan', 'Pengawas Operasional',    'Auditee'],
-            ] as $j => [$rapat, $jabatan, $peran]) {
-                if (!$tuntas && $rapat === 'penutupan') continue;
-
-                $this->baru(SmkpAttendee::class, [
-                    'audit_id'   => $a->id,
-                    'rapat'      => $rapat,
-                    'nama'       => [$this->peninjau?->name ?? 'Kepala Teknik Tambang',
-                                     $this->pengaju?->name  ?? 'Auditor Internal'][$j % 2],
-                    'jabatan'    => $jabatan,
-                    'perusahaan' => $this->c->name,
-                ]);
-                $n++;
-            }
-
+            $n += $this->smkpTemuan($a, $mundur, $ketua);
+            $n += $this->smkpHadir($a, $ketua, $kedua, $ktt, $pjo);
             $n += $this->smkpBukti($a);
+            $lalu = $a;
         }
 
         return $n;
     }
 
     /**
-     * Nilai tiap butir kriteria, sebaran yang dapat dihitung ulang.
+     * Nilai tiap butir kriteria, DITENTUKAN DARI POSISI BUTIR, bukan
+     * diacak — data contoh yang berubah tiap dimuat membuat dua orang yang
+     * membandingkan layarnya memperoleh angka berbeda. Varian 0 (dua tahun
+     * lalu) paling lemah, varian 2 (tahun ini) paling baik:
      *
-     * DITENTUKAN DARI POSISI BUTIR, bukan diacak. Data contoh yang
-     * berubah tiap kali dimuat membuat dua orang yang membandingkan
-     * layarnya memperoleh angka berbeda, dan tidak ada cara mengetahui
-     * mana yang salah. Polanya sengaja sederhana sehingga skornya dapat
-     * diperiksa dengan tangan:
+     *   tiap butir ke-17       di luar lingkup perusahaan (N/A)
+     *   tiap butir ke-7/-11/-19 jatuh — inilah yang melahirkan temuan
+     *   tiap butir ke-5/-6/-13  separuh
+     *   tiap butir ke-3/-4/-7   hampir penuh
+     *   sisanya                penuh — menjadi Formulir Kesesuaian otomatis
      *
-     *   tiap butir ke-17  di luar lingkup perusahaan (N/A)
-     *   tiap butir ke-7   jatuh — inilah yang melahirkan temuan
-     *   sisanya           penuh atau hampir penuh
-     *
-     * Audit yang BELUM selesai hanya diisi sebagian: audit berjalan yang
-     * seluruh butirnya sudah dinilai adalah keadaan yang tidak mungkin,
-     * dan bilah kemajuan yang selalu penuh tidak membuktikan apa pun.
+     * Setiap butir membawa catatan auditor dan bukti objektif per elemen,
+     * yang tampil di Formulir Kesesuaian dan dasar temuan.
      *
      * @return array<string,array<string,mixed>>
      */
-    private function smkpHasil(bool $tuntas): array
+    private function smkpHasil(int $varian = 2): array
     {
+        [$nol, $separuh, $hampir] = [[7, 5, 3], [11, 6, 4], [19, 13, 7]][max(0, min(2, $varian))];
+        $bukti = [
+            'I'   => 'Kebijakan K3 & KO bertanda tangan direksi, notulen sosialisasi pada induksi, papan kebijakan di pos masuk.',
+            'II'  => 'Register IBPR per departemen, program kerja K3 tahunan, daftar peraturan perundangan yang dimutakhirkan.',
+            'III' => 'SK penunjukan KTT dan pengawas operasional, struktur organisasi KO, matriks kompetensi dan sertifikat POP/POM.',
+            'IV'  => 'SOP dan IK operasi, rekaman inspeksi jalan angkut, izin kerja berisiko tinggi, program pemeliharaan unit.',
+            'V'   => 'Program inspeksi terjadwal, laporan investigasi insiden, rekaman pemantauan lingkungan kerja.',
+            'VI'  => 'Daftar induk dokumen, prosedur pengendalian dokumen dan rekaman, arsip digital terkendali.',
+            'VII' => 'Notulen tinjauan manajemen, status tindak lanjut audit sebelumnya, rencana perbaikan berkelanjutan.',
+        ];
+
         $hasil = [];
-        $butir = Smkp::butir();
-        $batas = $tuntas ? count($butir) : (int) round(count($butir) * 0.55);
-
-        foreach ($butir as $i => $b) {
-            if ($i >= $batas) break;                 // sisanya belum dinilai
-
+        foreach (Smkp::butir() as $i => $b) {
             $maks = (int) $b['maks'];
             $urut = $i + 1;
 
             if ($urut % 17 === 0) {
-                $hasil[$b['kode']] = ['v' => Smkp::NA];
+                $hasil[$b['kode']] = ['v' => Smkp::NA, 'ket' => 'Kegiatan terkait tidak ada di wilayah izin pada periode audit.'];
                 continue;
             }
 
             $nilai = match (true) {
-                $urut % 7 === 0  => 0,                        // jatuh — calon temuan
-                $urut % 5 === 0  => (int) floor($maks / 2),    // separuh
-                $urut % 3 === 0  => max(0, $maks - 1),         // hampir penuh
-                default          => $maks,                    // penuh
+                $urut % $nol === 0     => 0,
+                $urut % $separuh === 0 => (int) floor($maks / 2),
+                $urut % $hampir === 0  => max(0, $maks - 1),
+                default                => $maks,
             };
 
             $hasil[$b['kode']] = [
                 'v'     => $nilai,
-                'ket'   => $nilai === 0
-                    ? 'Bukti yang diminta tidak dapat ditunjukkan saat audit lapangan.'
-                    : '',
-                'bukti' => $nilai === 0 ? '' : 'Dokumen dan wawancara pemilik proses.',
+                'ket'   => match (true) {
+                    $nilai === 0     => 'Bukti yang diminta tidak dapat ditunjukkan saat audit lapangan.',
+                    $nilai < $maks   => 'Penerapan belum konsisten di seluruh area; sebagian rekaman periode audit belum lengkap.',
+                    default          => 'Diterapkan konsisten dan dipantau berkala oleh pemilik proses.',
+                },
+                'bukti' => $nilai === 0 ? '' : ($bukti[$b['elemen']] ?? 'Dokumen dan wawancara pemilik proses.'),
             ];
         }
 
         return $hasil;
+    }
+
+    /** Data kinerja Tahap I: membaik tiap tahun; tahun ini FR & SR masih di atas rata-rata nasional. */
+    private function smkpKinerja(int $varian): array
+    {
+        return [
+            ['cidera_ringan' => '6', 'cidera_berat' => '2', 'mati' => '0', 'fr' => '0,21', 'sr' => '186,4', 'berbahaya' => '5', 'asr' => '512,7', 'mfr' => '530,2', 'kptk' => '1', 'pak' => '0'],
+            ['cidera_ringan' => '4', 'cidera_berat' => '1', 'mati' => '0', 'fr' => '0,14', 'sr' => '141,2', 'berbahaya' => '3', 'asr' => '468,9', 'mfr' => '471,5', 'kptk' => '0', 'pak' => '0'],
+            ['cidera_ringan' => '3', 'cidera_berat' => '1', 'mati' => '0', 'fr' => '0,11', 'sr' => '152,6', 'berbahaya' => '2', 'asr' => '388,3', 'mfr' => '409,8', 'kptk' => '0', 'pak' => '0'],
+        ][max(0, min(2, $varian))];
+    }
+
+    private function smkpKecukupan(int $varian): array
+    {
+        $out = [];
+        foreach (Smkp::elemen() as $e) {
+            $out[$e['kode']] = ['status' => SmkpTahap::LENGKAP, 'ket' => match ($e['kode']) {
+                'II' => 'Register IBPR tersedia untuk seluruh departemen.',
+                'IV' => $varian < 2 ? 'Sebagian SOP masih revisi lama; dilengkapi sebelum Tahap II.' : 'SOP dan IK revisi terbaru tersedia.',
+                'V'  => 'Rekaman inspeksi dan investigasi tersedia di sistem.',
+                default => '',
+            }];
+        }
+
+        return $out;
+    }
+
+    /** Persiapan audit lapangan (Berita Acara bagian III). */
+    private function smkpPersiapan(int $tahun, ?SmkpAudit $lalu): array
+    {
+        $auditLalu = ['nilai' => '', 'kritikal' => '', 'mayor' => '', 'minor' => '', 'pembina' => ''];
+        if ($lalu) {
+            $r = $lalu->rekap();
+            $hitung = $lalu->findings()->get()->countBy('jenis');
+            $auditLalu = [
+                'nilai'    => number_format((float) $r['skor'], 2, ',', '.').'% ('.$r['tingkat']['label'].')',
+                'kritikal' => ($hitung['kritikal'] ?? 0).' temuan, seluruhnya ditutup',
+                'mayor'    => ($hitung['mayor'] ?? 0).' temuan, seluruhnya ditutup',
+                'minor'    => ($hitung['minor'] ?? 0).' temuan, seluruhnya ditutup',
+                'pembina'  => 'Inspektur Tambang meminta peningkatan pengawasan jalan angkut dan pengelolaan kelelahan operator.',
+            ];
+        }
+
+        return [
+            'tren' => [
+                'penyebab' => ['Kurang menjaga jarak aman antarunit', 'Tidak mematuhi rambu jalan tambang', 'Kelelahan operator shift malam'],
+                'lokasi'   => ['Jalan hauling KM 4–7', 'Front penambangan Pit Utara', 'Area workshop'],
+                'kegiatan' => ['Pengangkutan material', 'Pemuatan di front kerja', 'Pemeliharaan unit'],
+                'jabatan'  => ['Operator dump truck', 'Operator excavator', 'Mekanik'],
+                'deviasi'  => ['Tanggul pengaman jalan kurang dari ½ tinggi roda', 'Rambu jalan rusak/tertutup debu', 'APD tidak lengkap di workshop'],
+                'pak'      => ['Paparan debu di area crusher', 'Kebisingan di workshop'],
+            ],
+            'peralatan' => [
+                ['jenis' => 'Excavator PC2000', 'pa' => '91,2', 'ma' => '88,5'],
+                ['jenis' => 'Dump truck HD785', 'pa' => '89,6', 'ma' => '86,1'],
+                ['jenis' => 'Bulldozer D375', 'pa' => '87,3', 'ma' => '84,0'],
+                ['jenis' => 'Motor grader GD825', 'pa' => '92,4', 'ma' => '90,2'],
+            ],
+            'kli' => [
+                ['indikator' => 'Pelaksanaan inspeksi terencana', 'status' => '96% dari rencana'],
+                ['indikator' => 'Pelaksanaan P5M / safety talk', 'status' => '100% dari rencana'],
+                ['indikator' => 'Penutupan temuan inspeksi tepat waktu', 'status' => '88%'],
+                ['indikator' => 'Pelatihan wajib keselamatan', 'status' => '93% pekerja'],
+            ],
+            'audit_lalu' => $auditLalu,
+            'masukan' => [
+                ['sumber' => 'Masukan Audit Internal SMKP Periode '.($tahun - 1), 'isi' => 'Perkuat verifikasi efektivitas tindakan perbaikan sebelum temuan ditutup.'],
+                ['sumber' => 'Perintah, Larangan, Petunjuk Inspektur Tambang (Buku Tambang)', 'isi' => 'Perbaiki tanggul pengaman dan rambu pada jalan hauling KM 4–7.'],
+                ['sumber' => 'Masukan Komite Keselamatan Pertambangan', 'isi' => 'Program manajemen kelelahan operator shift malam.'],
+            ],
+        ];
+    }
+
+    /** Susunan kegiatan lima hari: rapat pembukaan, verifikasi per elemen di area, perumusan temuan, rapat penutupan. */
+    private function smkpSusunan(Carbon $mulai, string $ketua, string $kedua): array
+    {
+        $h = fn (int $i) => $mulai->copy()->addWeekdays($i)->toDateString();
+        $tim = 'Tim Audit';
+
+        return [
+            ['tanggal' => $h(0), 'waktu' => '08.00 - 09.00', 'area' => 'Kantor', 'metode' => '', 'kriteria' => '', 'kegiatan' => 'Pelaksanaan Rapat Pembukaan', 'auditi' => 'KTT, PJO, Kepala Departemen', 'auditor' => $tim],
+            ['tanggal' => $h(0), 'waktu' => '09.00 - 12.00', 'area' => 'Kantor', 'metode' => 'Peninjauan Dokumen, Rekaman, Wawancara', 'kriteria' => 'I.1 - I.4', 'kegiatan' => 'Pengumpulan dan Verifikasi Informasi', 'auditi' => 'Kepala Teknik Tambang (KTT)', 'auditor' => $ketua],
+            ['tanggal' => $h(0), 'waktu' => '13.00 - 16.00', 'area' => 'Kantor', 'metode' => 'Peninjauan Dokumen, Rekaman, Wawancara', 'kriteria' => 'II.1 - II.4', 'kegiatan' => 'Pengumpulan dan Verifikasi Informasi', 'auditi' => 'Departemen HSE', 'auditor' => $ketua],
+            ['tanggal' => $h(1), 'waktu' => '08.00 - 12.00', 'area' => 'Kantor', 'metode' => 'Peninjauan Dokumen, Rekaman, Wawancara', 'kriteria' => 'III.1 - III.12', 'kegiatan' => 'Pengumpulan dan Verifikasi Informasi', 'auditi' => 'Departemen HR & Training', 'auditor' => $kedua],
+            ['tanggal' => $h(1), 'waktu' => '13.00 - 16.00', 'area' => 'Area Penambangan (PIT)', 'metode' => 'Observasi, Wawancara', 'kriteria' => 'IV.1 - IV.3', 'kegiatan' => 'Pengumpulan dan Verifikasi Informasi', 'auditi' => 'Pengawas Operasional', 'auditor' => $kedua],
+            ['tanggal' => $h(2), 'waktu' => '08.00 - 12.00', 'area' => 'Area Workshop', 'metode' => 'Observasi, Wawancara', 'kriteria' => 'IV.4 - IV.10', 'kegiatan' => 'Pengumpulan dan Verifikasi Informasi', 'auditi' => 'Departemen Plant', 'auditor' => $kedua],
+            ['tanggal' => $h(2), 'waktu' => '13.00 - 16.00', 'area' => 'Fuel Station', 'metode' => 'Observasi, Wawancara', 'kriteria' => 'V.1 - V.4', 'kegiatan' => 'Pengumpulan dan Verifikasi Informasi', 'auditi' => 'Departemen HSE', 'auditor' => 'Dewi Lestari, S.T.'],
+            ['tanggal' => $h(3), 'waktu' => '08.00 - 12.00', 'area' => 'Kantor', 'metode' => 'Peninjauan Dokumen, Rekaman', 'kriteria' => 'V.5 - VI.3', 'kegiatan' => 'Pengumpulan dan Verifikasi Informasi', 'auditi' => 'Document Control', 'auditor' => 'Dewi Lestari, S.T.'],
+            ['tanggal' => $h(3), 'waktu' => '13.00 - 16.00', 'area' => 'Kantor', 'metode' => 'Peninjauan Dokumen, Rekaman, Wawancara', 'kriteria' => 'VII.1 - VII.4', 'kegiatan' => 'Pengumpulan dan Verifikasi Informasi', 'auditi' => 'Kepala Teknik Tambang (KTT)', 'auditor' => $ketua],
+            ['tanggal' => $h(4), 'waktu' => '08.00 - 11.00', 'area' => 'Kantor', 'metode' => '', 'kriteria' => '', 'kegiatan' => 'Perumusan Temuan Audit', 'auditi' => '', 'auditor' => $tim],
+            ['tanggal' => $h(4), 'waktu' => '11.00 - 13.00', 'area' => 'Kantor', 'metode' => '', 'kriteria' => '', 'kegiatan' => 'Penyiapan Kesimpulan Audit', 'auditi' => '', 'auditor' => $tim],
+            ['tanggal' => $h(4), 'waktu' => '14.00 - 15.30', 'area' => 'Kantor', 'metode' => '', 'kriteria' => '', 'kegiatan' => 'Pelaksanaan Rapat Penutupan', 'auditi' => 'KTT, PJO, Kepala Departemen', 'auditor' => $tim],
+        ];
+    }
+
+    /**
+     * Metode & sampel tiap sub elemen, dengan baris jumlah sampel baku
+     * (kalkulator Rencana Audit) dan rincian wawancara.
+     */
+    private function smkpMetodeSampel(int $pekerja): array
+    {
+        $dok = [
+            'I'   => 'Dokumen kebijakan K3 & KO; notulen sosialisasi',
+            'II'  => 'Register IBPR; program kerja K3; daftar peraturan',
+            'III' => 'SK penunjukan; matriks kompetensi; sertifikat',
+            'IV'  => 'SOP & IK; izin kerja; rekaman inspeksi',
+            'V'   => 'Program inspeksi; laporan investigasi; pemantauan lingkungan kerja',
+            'VI'  => 'Daftar induk dokumen; rekaman terkendali',
+            'VII' => 'Notulen tinjauan manajemen; status tindak lanjut',
+        ];
+        $cara = [
+            ['slovin', $pekerja, 'manpower', 10],
+            ['akar', 64, 'unit'],
+            ['persen', 120, 'dokumen', 10],
+            ['satu', 7, 'departemen'],
+            ['triangulasi', 3, 'sumber bukti'],
+        ];
+
+        $out = [];
+        $i = 0;
+        foreach (Smkp::elemen() as $e) {
+            $lapangan = in_array($e['kode'], ['III', 'IV', 'V'], true);
+            foreach ($e['sub'] as $s) {
+                [$c, $N, $objek, $p] = $cara[$i % count($cara)] + [3 => null];
+                $baris = [$dok[$e['kode']] ?? 'Dokumen dan rekaman terkait'];
+                if ($i % 3 === 0) $baris[] = "Wawancara 3 orang:\n1 orang KTT\n2 orang Pengawas Operasional";
+                $baris[] = SmkpSampel::barisJumlah($c, $N, $objek, $p);
+                $out[$s['kode']] = [
+                    'metode' => $lapangan ? 'Tinjauan Dokumen dan Rekaman, Wawancara, Observasi' : 'Tinjauan Dokumen dan Rekaman, Wawancara',
+                    'sampel' => implode("\n", array_filter($baris)),
+                ];
+                $i++;
+            }
+        }
+
+        return $out;
+    }
+
+    /** Isian Laporan Audit yang tidak dapat diturunkan dari data audit. */
+    private function smkpLaporanIsian(int $tahun, Carbon $selesai, int $pekerja): array
+    {
+        $kota = trim((string) preg_replace('/^Kabupaten\s+/i', '', (string) strtok((string) ($this->c->location ?: 'Site'), ',')));
+        $karyawan = max(1, (int) $this->c->workers_employee);
+
+        return [
+            'status_perusahaan' => 'Pemegang '.($this->c->izin_type ?: 'IUP Operasi Produksi'),
+            'sk_izin'           => sprintf('SK Bupati No. 540/%03d/IUP-OP/%d', 120 + ($tahun % 7), $tahun - 6),
+            'wiup'              => '4.850 Ha',
+            'legalitas'         => "Akta pendirian perusahaan dan perubahannya telah disahkan Kementerian Hukum. Izin usaha pertambangan berlaku sampai {$tahun}+10 tahun dengan komoditas ".($this->c->commodity ?: 'batubara').'.',
+            'kegiatan'          => 'Penambangan terbuka metode strip mine dengan alat gali-muat excavator dan alat angkut dump truck, dilanjutkan pengolahan (crushing) dan pengapalan melalui pelabuhan khusus.',
+            'penerapan'         => '',
+            'satuan_produksi'   => 'ton',
+            'produksi'          => [
+                ['periode' => 'Triwulan I '.($tahun - 1), 'jumlah' => '1.120.400'],
+                ['periode' => 'Triwulan II '.($tahun - 1), 'jumlah' => '1.205.800'],
+                ['periode' => 'Triwulan III '.($tahun - 1), 'jumlah' => '1.318.250'],
+                ['periode' => 'Triwulan IV '.($tahun - 1), 'jumlah' => '1.264.900'],
+            ],
+            'pekerja'           => [
+                ['jabatan' => 'Karyawan pemegang izin', 'jumlah' => (string) $karyawan],
+                ['jabatan' => 'Karyawan kontraktor', 'jumlah' => (string) max(0, $pekerja - $karyawan)],
+            ],
+            'peralatan'         => [
+                ['jenis' => 'Excavator', 'tipe' => 'PC2000', 'produktivitas' => '850 bcm/jam', 'jumlah' => '6'],
+                ['jenis' => 'Dump truck', 'tipe' => 'HD785', 'produktivitas' => '90 ton/rit', 'jumlah' => '38'],
+                ['jenis' => 'Bulldozer', 'tipe' => 'D375', 'produktivitas' => '—', 'jumlah' => '5'],
+                ['jenis' => 'Motor grader', 'tipe' => 'GD825', 'produktivitas' => '—', 'jumlah' => '3'],
+            ],
+            'area'              => ['Area Penambangan (PIT)', 'Jalan hauling dan jalan tambang', 'Area Workshop', 'Fuel Station', 'Area CPP / CHF', 'Port'],
+            'distribusi'        => '',
+            'tempat'            => $kota !== '' ? $kota : 'Site',
+            'tanggal'           => $selesai->copy()->addWeekdays(7)->min($this->kini)->toDateString(),
+        ];
+    }
+
+    /**
+     * Formulir Kesesuaian otomatis: satu suntingan keterangan, dua OFI
+     * berjustifikasi, satu butir dikeluarkan, satu uraian tambahan; serta
+     * dua rekomendasi/OFI tambahan.
+     *
+     * @return array{0: array, 1: array}
+     */
+    private function smkpFormulir(SmkpAudit $a, int $varian): array
+    {
+        $butir = array_column(SmkpKesesuaian::butir((array) $a->hasil), 'kode');
+        $pilih = fn (int $i) => $butir[$i] ?? null;
+        $pt = (string) $this->c->name;
+
+        $isian = [];
+        if ($k = $pilih(0)) $isian[] = ['kode' => $k, 'masuk' => true, 'keterangan' => "{$pt} telah menetapkan kebijakan keselamatan pertambangan yang ditandatangani direksi, ditinjau setiap tahun, dan dikomunikasikan pada seluruh induksi pekerja dan kontraktor.", 'ofi' => false, 'justifikasi' => ''];
+        if ($k = $pilih(3)) $isian[] = ['kode' => $k, 'masuk' => true, 'keterangan' => '', 'ofi' => true, 'justifikasi' => 'Sudah sesuai kriteria, namun pemantauan masih manual; integrasikan ke dasbor digital agar tren dapat dibaca per bulan.'];
+        if ($k = $pilih(8)) $isian[] = ['kode' => $k, 'masuk' => true, 'keterangan' => '', 'ofi' => true, 'justifikasi' => 'Sudah sesuai kriteria; perluas cakupan ke kontraktor subkon kecil yang belum terdaftar.'];
+        if ($k = $pilih(12)) $isian[] = ['kode' => $k, 'masuk' => false, 'keterangan' => '', 'ofi' => false, 'justifikasi' => ''];
+        [$suntingan] = SmkpKesesuaian::gabungSuntingan($a, $isian);
+
+        $tambahan = [
+            ['elemen' => 'VII', 'sub' => 'VII.1', 'subsub' => '', 'keterangan' => "Tinjauan manajemen {$pt} dilaksanakan setiap semester dengan agenda lengkap dan tindak lanjut terpantau."],
+        ];
+        $rekomendasi = [
+            ['elemen' => 'IV', 'sub' => 'IV.2', 'subsub' => '', 'uraian' => 'Pasang kamera dasbor pada dump truck untuk memperkuat pengawasan jarak aman di jalan hauling.'],
+            ['elemen' => 'VI', 'sub' => 'VI.1', 'subsub' => '', 'uraian' => 'Pindahkan rekaman cetak ke arsip digital terkendali agar penelusuran saat audit eksternal lebih cepat.'],
+        ];
+
+        return [array_merge($suntingan, $tambahan), $varian >= 1 ? $rekomendasi : array_slice($rekomendasi, 0, 1)];
+    }
+
+    /**
+     * Temuan diangkat dari nilai seperti tombol "Angkat temuan". Audit yang
+     * sudah selesai: seluruhnya ditutup. Audit tahun ini: ditutup,
+     * dalam proses (tindak lanjut dikirim), terbuka, dan satu SENGAJA
+     * melewati batas waktunya — keterlambatan yang tidak pernah muncul di
+     * data contoh tidak membuktikan penghitungnya bekerja.
+     */
+    private function smkpTemuan(SmkpAudit $a, int $mundur, string $ketua): int
+    {
+        $n = 0;
+        // Mayor lebih dulu agar kedua kategori terwakili; urutan acuan dipertahankan di dalam kategori.
+        $semua = Smkp::temuan((array) $a->hasil);
+        $usulan = array_slice(array_merge(
+            array_values(array_filter($semua, fn ($u) => $u['jenis'] !== 'minor')),
+            array_values(array_filter($semua, fn ($u) => $u['jenis'] === 'minor')),
+        ), 0, 8);
+        $pola = $mundur > 0
+            ? array_fill(0, count($usulan), ['Closed', -300 + 20 * $mundur, -280 + 20 * $mundur])
+            : [['Closed', -20, -10], ['Closed', -14, -6], ['In Progress', 10, null], ['In Progress', 18, null], ['Open', -5, null], ['In Progress', 25, null], ['Open', 30, null], ['Open', 40, null]];
+        $selesaiAudit = Carbon::parse($a->tanggal_selesai);
+        $lokasi = ['Kantor site', 'Jalan hauling KM 5', 'Front penambangan Pit Utara', 'Area workshop', 'Fuel station', 'Gudang bahan peledak', 'Area crusher', 'Port'];
+        $urut = [];
+
+        foreach ($usulan as $i => $u) {
+            [$st, $targetHari, $selesaiHari] = $pola[$i] ?? ['Open', 30, null];
+            $urut[$u['jenis']] = ($urut[$u['jenis']] ?? 0) + 1;
+            $target = $mundur > 0 ? $selesaiAudit->copy()->addDays(60 + 7 * $i) : $this->kini->copy()->addDays($targetHari);
+            $tutup = $selesaiHari === null ? null : ($mundur > 0 ? $selesaiAudit->copy()->addDays(45 + 7 * $i) : $this->kini->copy()->addDays($selesaiHari));
+
+            $t = $this->baru(SmkpFinding::class, [
+                'audit_id'         => $a->id,
+                'nomor'            => $a->nomorTemuanBaru($u['jenis'], $urut[$u['jenis']]),
+                'kode_kriteria'    => $u['kode'],
+                'jenis'            => $u['jenis'],
+                'deskripsi'        => 'Bukti penerapan '.mb_strtolower($u['uraian']).' belum lengkap saat audit lapangan.',
+                'uraian'           => 'Bukti penerapan '.mb_strtolower($u['uraian']).' belum lengkap saat audit lapangan.',
+                'lokasi'           => $lokasi[$i % count($lokasi)],
+                'departemen'       => ['HSE', 'Produksi', 'Plant', 'HR & Training'][$i % 4],
+                'akar_masalah'     => ['Pemilik proses belum menetapkan jadwal pemeliharaan rekaman.', 'Prosedur belum disosialisasikan ke kontraktor baru.', 'Belum ada pengawas khusus pada shift malam.', 'Sasaran kinerja belum diturunkan ke tingkat departemen.'][$i % 4],
+                'tindakan'         => $st === 'Open' ? null : 'Tetapkan pemilik proses, jadwal pemantauan bulanan, dan sosialisasikan ke seluruh pengawas.',
+                'penanggung_jawab' => ['Kepala Teknik Tambang', 'Superintendent HSE', 'Superintendent Plant', 'Kepala Departemen Produksi'][$i % 4],
+                'target_selesai'   => $target->toDateString(),
+                'tanggal_selesai'  => $tutup?->min($this->kini)->toDateString(),
+                'status'           => $st,
+                'verifikasi'       => $st === 'Closed' ? "Diverifikasi {$ketua}; bukti perbaikan memadai dan efektif." : null,
+            ]);
+            // Temuan dirumuskan pada hari terakhir audit lapangan, bukan saat data contoh dimuat —
+            // rata-rata hari penyelesaian di Dasbor dan Evaluasi dihitung dari tanggal ini.
+            $dibuat = $selesaiAudit->copy()->setTime(14, 0)->min($this->kini);
+            $t->forceFill(['created_at' => $dibuat, 'updated_at' => $tutup?->min($this->kini) ?? $dibuat])->save();
+            $n++;
+
+            if ($st !== 'Open') {
+                foreach ($st === 'Closed' ? [0, 1] : [0] as $j) {
+                    $kirim = $dibuat->copy()->addDays(5 + 9 * $j)->min($this->kini);
+                    $tl = $this->baru(SmkpTindakLanjut::class, [
+                        'finding_id'       => $t->id,
+                        'user_id'          => $this->pengaju?->id,
+                        'akar_masalah'     => $t->akar_masalah,
+                        'tindakan'         => $j === 0 ? 'Jadwal pemantauan ditetapkan dan disosialisasikan pada P5M seluruh shift.' : 'Hasil pemantauan dua bulan dilampirkan; seluruh rekaman lengkap.',
+                        'bukti_perbaikan'  => $j === 0 ? 'Notulen sosialisasi dan jadwal yang ditandatangani KTT.' : 'Rekaman pemantauan bulan pertama dan kedua.',
+                        'penanggung_jawab' => $t->penanggung_jawab,
+                        'lampiran'         => [],
+                    ]);
+                    $tl->forceFill(['created_at' => $kirim, 'updated_at' => $kirim])->save();
+                    $n++;
+                }
+            }
+        }
+
+        return $n;
+    }
+
+    private function smkpHadir(SmkpAudit $a, string $ketua, string $kedua, string $ktt, string $pjo): int
+    {
+        $n = 0;
+        $orang = array_values(array_filter([
+            [$ktt, 'Kepala Teknik Tambang', $this->c->name],
+            $pjo !== '' ? [$pjo, 'Penanggung Jawab Operasional', $this->c->name] : null,
+            ['Rina Kartika', 'Superintendent HSE', $this->c->name],
+            ['Bambang Sutrisno', 'Superintendent Produksi', $this->c->name],
+            ['Agus Wibowo', 'Pengawas Operasional', $this->c->name],
+            [$ketua, 'Lead Auditor', 'Tim Audit Internal'],
+            [$kedua, 'Auditor', 'Tim Audit Internal'],
+            ['Dewi Lestari, S.T.', 'Auditor', 'Tim Audit Internal'],
+        ]));
+        foreach (['pembukaan', 'penutupan'] as $rapat) {
+            foreach ($orang as [$nama, $jabatan, $perusahaan]) {
+                $this->baru(SmkpAttendee::class, [
+                    'audit_id' => $a->id, 'rapat' => $rapat, 'nama' => $nama, 'jabatan' => $jabatan, 'perusahaan' => $perusahaan,
+                ]);
+                $n++;
+            }
+        }
+
+        return $n;
     }
 
     /**

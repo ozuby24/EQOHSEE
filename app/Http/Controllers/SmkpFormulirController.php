@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, SmkpAudit, SmkpFinding};
 use App\Rules\LampiranBukti;
-use App\Support\{BerkasUnggah, KopDokumen, Smkp, SmkpAutosimpan, Waktu};
+use App\Support\{BerkasUnggah, KopDokumen, Smkp, SmkpAutosimpan, SmkpKesesuaian, Waktu};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{DB, Storage};
 use Illuminate\Support\Str;
@@ -47,20 +47,23 @@ class SmkpFormulirController extends SmkpController
         $smkp->load('company');
         $temuan = $smkp->findings()->get();
         $rekap  = $smkp->rekapRencana();
-
-        $hitung = fn (array $daftar) => count(array_filter($daftar, fn ($r) => trim((string) ($r['keterangan'] ?? $r['uraian'] ?? '')) !== ''));
+        // Formulir Kesesuaian otomatis dari penilaian (port DBEST #23).
+        $otomatis = SmkpKesesuaian::otomatis($smkp);
 
         return Inertia::render('Smkp/Formulir', [
             'versiSimpan' => SmkpAutosimpan::versi($smkp, 'formulir'),
             'audit'       => $this->ringkasAudit($smkp),
-            'kesesuaian'  => array_values((array) ($smkp->kesesuaian ?? [])),
-            'rekomendasi' => array_values((array) ($smkp->rekomendasi ?? [])),
+            'otomatis'    => $otomatis,
+            'kesesuaian'  => SmkpKesesuaian::tambahan((array) ($smkp->kesesuaian ?? [])),
+            'rekomendasi' => array_values(array_filter((array) ($smkp->rekomendasi ?? []), 'is_array')),
+            'namaPerusahaan' => SmkpKesesuaian::namaPerusahaan($smkp),
             'kriteria'    => $this->daftarSubElemen(),
             'ringkas'     => [
                 'rencana'         => ['terisi' => $rekap['jumlah'], 'total' => $rekap['total']],
                 'penilaian'       => ['terisi' => $smkp->rekap()['dinilai'], 'total' => $smkp->rekap()['berlaku']],
-                'kesesuaian'      => $hitung((array) ($smkp->kesesuaian ?? [])),
-                'rekomendasi'     => $hitung((array) ($smkp->rekomendasi ?? [])),
+                'kesesuaian'      => count(SmkpKesesuaian::daftar($smkp)),
+                'kesesuaianNilai' => count($otomatis),
+                'rekomendasi'     => count(SmkpKesesuaian::ofi($smkp)),
                 'ketidaksesuaian' => $temuan->count(),
                 'kategori'        => collect(SmkpFinding::KATEGORI)->map(fn ($l, $k) => $temuan->where('jenis', $k)->count())->all(),
                 'rtl'             => $temuan->filter(fn ($t) => trim((string) $t->tindakan) !== '')->count(),
@@ -83,19 +86,30 @@ class SmkpFormulirController extends SmkpController
             'rekomendasi.*.sub'         => ['nullable', 'string', 'max:20'],
             'rekomendasi.*.subsub'      => ['nullable', 'string', 'max:20'],
             'rekomendasi.*.uraian'      => ['nullable', 'string', 'max:3000'],
+            // Butir otomatis dari penilaian: suntingan keterangan, keluar dari formulir, dan OFI berjustifikasi.
+            'otomatis'                  => ['nullable', 'array', 'max:400'],
+            'otomatis.*.kode'           => ['required', 'string', 'max:20'],
+            'otomatis.*.masuk'          => ['nullable', 'boolean'],
+            'otomatis.*.ofi'            => ['nullable', 'boolean'],
+            'otomatis.*.keterangan'     => ['nullable', 'string', 'max:'.SmkpKesesuaian::MAKS_TEKS],
+            'otomatis.*.justifikasi'    => ['nullable', 'string', 'max:'.SmkpKesesuaian::MAKS_TEKS],
         ]);
 
         $this->wajibElemen($d);
 
+        $smkp->load('company');
+        [$suntingan, $tanpaJustifikasi] = SmkpKesesuaian::gabungSuntingan($smkp, (array) ($d['otomatis'] ?? []));
         $smkp->update([
-            'kesesuaian'  => $this->bersihkan((array) ($d['kesesuaian'] ?? []), 'keterangan'),
+            'kesesuaian'  => array_merge($suntingan, $this->bersihkan((array) ($d['kesesuaian'] ?? []), 'keterangan')),
             'rekomendasi' => $this->bersihkan((array) ($d['rekomendasi'] ?? []), 'uraian'),
         ]);
 
         if ($j = SmkpAutosimpan::selesai($request, $smkp, 'formulir')) return $j;
         ActivityLog::write('Simpan formulir kesesuaian & OFI', $smkp->namaTampil(), 'smkp');
 
-        return back()->with('ok', 'Formulir kesesuaian dan rekomendasi tersimpan.');
+        return back()->with('ok', $tanpaJustifikasi
+            ? 'Formulir tersimpan. OFI '.implode(', ', $tanpaJustifikasi).' belum berisi justifikasi auditor, jadi belum tercetak di Formulir Rekomendasi & OFI.'
+            : 'Formulir kesesuaian dan rekomendasi tersimpan.');
     }
 
     /**
@@ -175,11 +189,12 @@ class SmkpFormulirController extends SmkpController
 
         return match ($jenis) {
             'penilaian'   => Inertia::render('Print/Smkp/FormulirPenilaian', $dasar + $this->dataPenilaian($smkp)),
+            // Kesesuaian tersusun otomatis dari penilaian (+ uraian tambahan); OFI dari kesesuaian berjustifikasi + OFI tambahan.
             'kesesuaian'  => Inertia::render('Print/Smkp/FormulirKesesuaian', $dasar + [
-                'baris' => $this->dengan_nama((array) ($smkp->kesesuaian ?? []), $nama, 'keterangan'),
+                'baris' => $this->dengan_nama(SmkpKesesuaian::daftar($smkp), $nama, 'keterangan'),
             ]),
             'rekomendasi' => Inertia::render('Print/Smkp/FormulirRekomendasi', $dasar + [
-                'baris' => $this->dengan_nama((array) ($smkp->rekomendasi ?? []), $nama, 'uraian'),
+                'baris' => $this->dengan_nama(SmkpKesesuaian::ofi($smkp), $nama, 'uraian'),
             ]),
             default       => Inertia::render(match ($jenis) {
                 'ketidaksesuaian' => 'Print/Smkp/FormulirKetidaksesuaian',

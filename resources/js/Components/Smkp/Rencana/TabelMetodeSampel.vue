@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { cekWawancara } from '../../../smkp/lib/metodeSampel';
+import { bacaJumlah, pasangBarisJumlah } from '../../../smkp/lib/jumlahSampel';
 import { computed, ref, watch } from 'vue';
 import Ikon from '../Ikon.vue';
+import KalkulatorSampel from './KalkulatorSampel.vue';
 import type { MetodeSampel } from './api';
 
 /*
@@ -63,6 +65,15 @@ function alih(kode: string) {
 function bukaSemua() { terbuka.value = props.daftar.map((e) => e.kode); }
 
 const persen = (a: number, b: number) => `${b ? Math.round((a / b) * 100) : 0}%`;
+
+/* Kalkulator jumlah sampel (port DBEST #23) untuk satu kriteria. */
+const kalkulator = ref<{ kode: string; nama: string } | null>(null);
+const punyaJumlah = (teks: string) => (teks ?? '').split(/\r\n|\r|\n/).some((b) => bacaJumlah(b.replace(/^\s*(?:[-•*]\s+)?/u, '')) !== null);
+function terapkanJumlah(baris: string) {
+  if (!kalkulator.value) return;
+  const t = props.nilai[kalkulator.value.kode];
+  t.sampel = pasangBarisJumlah(t.sampel, baris);
+}
 </script>
 
 <template>
@@ -128,6 +139,10 @@ const persen = (a: number, b: number) => `${b ? Math.round((a / b) * 100) : 0}%`
                       :class="c.jumlah === c.rinci ? 'bg-hijau-50 text-hijau-700' : 'bg-amber-50 text-amber-700'" title="Jumlah rincian dibandingkan dengan jumlah pada judul wawancara">
                   {{ c.jumlah === c.rinci ? `✓ ${c.rinci} orang` : `rincian ${c.rinci} dari ${c.jumlah} orang` }}
                 </span>
+                <button type="button" class="mt-1 inline-flex items-center gap-1 text-[11.5px] font-semibold text-teal-700 hover:underline"
+                        @click="kalkulator = { kode: sb.kode, nama: sb.nama }">
+                  <Ikon nama="kalkulator" class="w-3.5 h-3.5" /> {{ punyaJumlah(nilai[sb.kode].sampel) ? 'Ubah jumlah sampel' : 'Hitung jumlah sampel' }}
+                </button>
               </label>
             </div>
           </div>
@@ -140,5 +155,9 @@ const persen = (a: number, b: number) => `${b ? Math.round((a / b) * 100) : 0}%`
     </div>
 
     <datalist :id="idSaran"><option v-for="m in saran" :key="m" :value="m" /></datalist>
+
+    <KalkulatorSampel :buka="!!kalkulator" :kode="kalkulator?.kode ?? ''" :nama="kalkulator?.nama ?? ''"
+                      :sampel="kalkulator ? nilai[kalkulator.kode]?.sampel ?? '' : ''"
+                      @update:buka="(v) => { if (!v) kalkulator = null; }" @terapkan="terapkanJumlah" />
   </div>
 </template>

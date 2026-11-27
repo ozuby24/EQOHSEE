@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { Head } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+import { Head, router, useForm } from '@inertiajs/vue3';
 import KepalaHalaman from '../../Components/Smkp/KepalaHalaman.vue';
 import KriteriaNilai from '../../Components/Smkp/KriteriaNilai.vue';
 import Ikon from '../../Components/Smkp/Ikon.vue';
 import type { Rubrik } from '../../smkp/types';
+import { angka, tanggalPanjang } from '../../smkp/lib/format';
 
 interface Sub {
   kode: string; nama: string; ref: string | null; maks: number;
@@ -19,7 +20,37 @@ const props = defineProps<{
   tingkat: Array<{ min: number; label: string; warna: string }>;
   ringkas: { elemen: number; subElemen: number; butir: number; maks: number };
   alur: Array<{ nomor: string; judul: string; ket: string; warna: string; langkah: Array<{ judul: string; jenis: string }> }>;
+  /** Peta keterkaitan antar elemen (port DBEST #23) — resources/data/smkp/keterkaitan.json. */
+  keterkaitan?: {
+    meta: { judul?: string; sumber?: string; catatan?: string };
+    kelompok: Array<{ judul: string; tautan: Array<{ a: string[]; b: string[]; label: string; uraian: string; umum?: boolean }> }>;
+  };
+  /** Rata-rata nasional FR/SR/ASR/MFR per tahun Surat Edaran (port DBEST #23). */
+  rataNasional?: Array<{ tahun: number; nomor: string; tanggal: string | null; fr: number; sr: number; asr: number; mfr: number; sumber: string; catatan: string | null; bawaan: boolean; diubah: boolean }>;
+  tahunIni?: number;
+  bisaKelola?: boolean;
 }>();
+
+/* ───────── Rata-rata nasional ───────── */
+const seDipakai = computed(() => {
+  let pilih: number | null = null;
+  for (const r of props.rataNasional ?? []) if (pilih === null || r.tahun <= (props.tahunIni ?? 0)) pilih = r.tahun;
+  return pilih;
+});
+const seUrut = computed(() => [...(props.rataNasional ?? [])].sort((a, b) => b.tahun - a.tahun));
+const formSe = useForm({ tahun: String(props.tahunIni ?? ''), nomor: '', tanggal: '', fr: '', sr: '', asr: '', mfr: '', catatan: '' });
+function ubahSe(r: NonNullable<typeof props.rataNasional>[number]) {
+  const t = (v: number) => String(v).replace('.', ',');
+  Object.assign(formSe, { tahun: String(r.tahun), nomor: r.nomor, tanggal: r.tanggal ?? '', fr: t(r.fr), sr: t(r.sr), asr: t(r.asr), mfr: t(r.mfr), catatan: r.catatan ?? '' });
+  document.getElementById('form-se')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function simpanSe() {
+  formSe.post('/smkp/acuan/rata-nasional', { preserveScroll: true, onSuccess: () => formSe.reset() });
+}
+function hapusSe(tahun: number) {
+  if (!confirm(`Hapus isian Surat Edaran ${tahun}?`)) return;
+  router.delete(`/smkp/acuan/rata-nasional/${tahun}`, { preserveScroll: true });
+}
 
 const buka = ref<string | null>(props.elemen[0]?.kode ?? null);
 const rubrikBuka = ref<Record<string, boolean>>({});
@@ -97,6 +128,83 @@ const rentang = (i: number) => (i === 0 ? `≥ ${urut[0].min}` : `${urut[i].min}
           </li>
         </ul>
       </div>
+    </section>
+
+    <section v-if="rataNasional?.length" id="rata-nasional" class="kartu p-5 sm:p-6 mb-5 scroll-mt-20">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 class="kartu-judul">Rata-rata nasional FR, SR, ASR, MFR</h2>
+          <p class="kartu-sub">Dari Surat Edaran Dirjen Minerba. Audit memakai SE terbaru yang terbit sampai tahun auditnya — untuk saran faktor penyesuaian hari kerja Tahap I dan evaluasi kinerja keselamatan.</p>
+        </div>
+        <span v-if="seDipakai" class="lencana bg-teal-50 text-teal-800">Audit {{ tahunIni }} memakai SE {{ seDipakai }}</span>
+      </div>
+      <div class="mt-4 overflow-x-auto rounded-xl border border-slate-200">
+        <table class="w-full min-w-[640px] text-[12.5px]">
+          <thead class="bg-slate-50 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">
+            <tr><th class="px-3 py-2">Tahun</th><th class="px-3 py-2">Surat Edaran</th><th class="px-3 py-2 text-right">FR</th><th class="px-3 py-2 text-right">SR</th><th class="px-3 py-2 text-right">ASR</th><th class="px-3 py-2 text-right">MFR</th><th v-if="bisaKelola" class="px-3 py-2" /></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr v-for="r in seUrut" :key="r.tahun" :class="r.tahun === seDipakai ? 'bg-teal-50/40' : ''">
+              <td class="px-3 py-2 font-semibold text-navy-900 tabular-nums">{{ r.tahun }}</td>
+              <td class="px-3 py-2">
+                <span class="text-slate-700">{{ r.nomor }}</span>
+                <span v-if="r.tanggal" class="block text-[11.5px] text-slate-400">{{ tanggalPanjang(r.tanggal) }}</span>
+                <span class="mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10.5px] font-semibold" :class="r.diubah ? 'bg-brand-50 text-brand-700' : 'bg-slate-100 text-slate-500'">{{ r.diubah ? 'isian administrator' : 'bawaan sistem' }}</span>
+              </td>
+              <td v-for="k in (['fr', 'sr', 'asr', 'mfr'] as const)" :key="k" class="px-3 py-2 text-right tabular-nums text-navy-900">{{ angka(r[k], 2) }}</td>
+              <td v-if="bisaKelola" class="px-3 py-2 text-right whitespace-nowrap">
+                <button type="button" class="text-[12px] font-semibold text-teal-700 hover:underline" @click="ubahSe(r)">Ubah</button>
+                <button v-if="r.diubah" type="button" class="ml-3 text-[12px] font-semibold text-rose-600 hover:underline" @click="hapusSe(r.tahun)">{{ r.bawaan ? 'Kembalikan bawaan' : 'Hapus' }}</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <form v-if="bisaKelola" id="form-se" class="mt-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4" @submit.prevent="simpanSe">
+        <p class="text-[12.5px] font-semibold text-navy-900">Tambah / perbarui Surat Edaran</p>
+        <p class="text-[11.5px] text-slate-500">Satu baris per tahun SE; isian bertahun sama menimpa bawaan. Koma desimal boleh (mis. 0,09).</p>
+        <div class="mt-3 grid gap-3 sm:grid-cols-4">
+          <label class="block"><span class="label">Tahun</span><input v-model="formSe.tahun" inputmode="numeric" class="input" placeholder="2025"></label>
+          <label class="block sm:col-span-2"><span class="label">Nomor Surat Edaran</span><input v-model="formSe.nomor" class="input" maxlength="120" placeholder="B-9669/MB.07/DBT.KP/2025"></label>
+          <label class="block"><span class="label">Tanggal</span><input v-model="formSe.tanggal" type="date" class="input"></label>
+          <label v-for="[k, l] in ([['fr', 'FR'], ['sr', 'SR'], ['asr', 'ASR'], ['mfr', 'MFR']] as const)" :key="k" class="block">
+            <span class="label">{{ l }}</span><input v-model="formSe[k]" inputmode="decimal" class="input tabular-nums">
+          </label>
+          <label class="block sm:col-span-4"><span class="label">Catatan <span class="font-normal text-slate-400">(opsional)</span></span><input v-model="formSe.catatan" class="input" maxlength="500"></label>
+        </div>
+        <p v-for="(g, k) in formSe.errors" :key="k" class="galat">{{ g }}</p>
+        <div class="mt-3 flex justify-end"><button type="submit" class="btn-utama btn-kecil" :disabled="formSe.processing"><Ikon nama="simpan" class="w-4 h-4" /> Simpan Surat Edaran</button></div>
+      </form>
+    </section>
+
+    <section v-if="keterkaitan?.kelompok?.length" id="keterkaitan" class="kartu p-5 sm:p-6 mb-5 scroll-mt-20">
+      <div class="flex items-start gap-3">
+        <span class="grid place-items-center w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 shrink-0"><Ikon nama="cabang" class="w-5 h-5" /></span>
+        <div class="min-w-0">
+          <h2 class="kartu-judul">{{ keterkaitan.meta.judul || 'Keterkaitan antar elemen' }}</h2>
+          <p class="mt-1 text-[12.5px] text-slate-600 leading-relaxed">
+            Acuan penilaian: di halaman Penilaian setiap sub elemen memajang keterkaitannya, status sisi terkait, dan peringatan
+            bila hasilnya tidak sejalan. <span v-if="keterkaitan.meta.sumber">{{ keterkaitan.meta.sumber }}</span>
+          </p>
+        </div>
+      </div>
+      <div class="mt-4 grid gap-4 lg:grid-cols-2">
+        <div v-for="g in keterkaitan.kelompok" :key="g.judul" class="rounded-xl border border-slate-100 p-4">
+          <p class="text-[13px] font-bold text-navy-900">{{ g.judul }}</p>
+          <ul class="mt-2.5 space-y-2.5">
+            <li v-for="t in g.tautan" :key="t.label" class="text-[12.5px] leading-relaxed">
+              <p class="flex flex-wrap items-center gap-1.5">
+                <b v-for="k in t.a" :key="`a${k}`" class="rounded bg-slate-100 px-1.5 tabular-nums text-navy-900">{{ k }}</b>
+                <span class="text-slate-400">↔</span>
+                <b v-for="k in t.b" :key="`b${k}`" class="rounded bg-slate-100 px-1.5 tabular-nums text-navy-900">{{ k }}</b>
+                <span class="font-semibold text-navy-900">{{ t.label }}</span>
+              </p>
+              <p class="mt-0.5 text-slate-600">{{ t.uraian }}</p>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <p v-if="keterkaitan.meta.catatan" class="mt-3 text-[12px] text-slate-500">{{ keterkaitan.meta.catatan }}</p>
     </section>
 
     <section class="space-y-3">

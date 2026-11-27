@@ -19,11 +19,16 @@ import type { BatasBerkas, BerkasBukti as Berkas, DokumenDiminta, RingkasAudit, 
  */
 interface Ulang { v: number; maks: number; maks_lama: number | null; koreksi: number | null; setara: number }
 interface Butir { kode: string; nama: string; maks: number; v: string; ket: string; bukti: string; ulang: Ulang | null; rubrik: Rubrik | null; berkas: Berkas[] }
+/** Status penilaian satu sisi terkait (elemen, sub elemen, atau butir). */
+interface StatusKait { kode: string; nama: string; jenis: string | null; label: string; warna: string; url: string }
+/** Keterkaitan antar elemen (port DBEST #23); `periksa` = sisi terkait yang hasilnya tidak sejalan. */
+interface Kait { kelompok: string; label: string; uraian: string; umum: boolean; sisi: string[]; terkait: string[]; status: StatusKait[]; periksa: string[] }
 interface Sub {
   kode: string; nama: string; ref: string | null; rinci: boolean; nilai: number; maks: number; dinilai: number; berlaku: number;
   kategori: { kode: string; label: string; warna: string }; butir: Butir[];
   /** Dokumen & sampel yang diminta Rencana Audit untuk sub-elemen ini. */
   diminta: DokumenDiminta | null;
+  keterkaitan?: Kait[];
 }
 interface Kategori { kode: string; label: string; min: number; warna: string; ket?: string }
 
@@ -50,6 +55,11 @@ function isianAwal() {
 }
 
 const salin = <T,>(x: T): T => JSON.parse(JSON.stringify(x));
+
+/* Keterkaitan antar elemen: jumlah sisi yang hasilnya tidak sejalan — panel terbuka sendiri bila ada. */
+const kaitPeriksa = (s: Sub) => (s.keterkaitan ?? []).reduce((n, t) => n + t.periksa.length, 0);
+const ringkasNama = (n: string) => (n.length > 46 ? n.slice(0, 45).trimEnd() + '…' : n);
+
 let dasar = isianAwal();
 const form = useForm({ k: salin(dasar) });
 
@@ -396,6 +406,41 @@ const ulangSub = (s: Sub) => s.butir.filter(perluUlang).length;
               <Ikon nama="clipboard-list" class="w-4 h-4 text-slate-400" /> Belum ditetapkan di Rencana Audit.
               <Link v-if="bisaSunting" :href="`/smkp/${audit.id}/rencana`" class="tautan">Tetapkan dokumen &amp; sampel</Link>
             </p>
+
+            <!-- Keterkaitan antar elemen sebagai acuan penilaian (port DBEST #23): status sisi terkait,
+                 dan peringatan bila hasilnya tidak sejalan (Kesesuaian ↔ Ketidaksesuaian Mayor). -->
+            <details v-if="subAktif.keterkaitan?.length" :key="`kait-${subAktif.kode}`" :open="kaitPeriksa(subAktif) > 0"
+                     class="group mt-3 rounded-xl border border-slate-200 bg-white px-4 py-2.5">
+              <summary class="flex cursor-pointer list-none items-center gap-2 text-[12.5px] font-semibold text-navy-900">
+                <Ikon nama="cabang" class="w-4 h-4 text-slate-500" />
+                Keterkaitan antar elemen
+                <span class="rounded-full bg-slate-100 px-1.5 text-[11px] tabular-nums text-slate-600">{{ subAktif.keterkaitan.length }}</span>
+                <span v-if="kaitPeriksa(subAktif)" class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                  <Ikon nama="peringatan" class="w-3 h-3" /> periksa konsistensi
+                </span>
+                <Ikon nama="chevron-down" class="ml-auto w-4 h-4 text-slate-400 transition-transform group-open:rotate-180" />
+              </summary>
+              <div class="mt-2 space-y-2.5 pb-1">
+                <div v-for="(t, i) in subAktif.keterkaitan" :key="i" class="rounded-lg px-3 py-2"
+                     :class="t.umum ? 'bg-slate-50' : 'border border-slate-100 bg-white'">
+                  <p class="text-[12.5px] font-semibold text-navy-900">{{ t.label }}</p>
+                  <p class="mt-0.5 text-[12.5px] leading-relaxed text-slate-600">{{ t.uraian }}</p>
+                  <div class="mt-2 flex flex-wrap gap-1.5">
+                    <Link v-for="ks in t.status" :key="ks.kode" :href="ks.url" :title="`${ks.kode} ${ks.nama}`"
+                          class="inline-flex max-w-full items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11.5px] hover:border-slate-400">
+                      <span class="h-2 w-2 shrink-0 rounded-full" :style="{ background: ks.warna }"></span>
+                      <b class="tabular-nums text-navy-900">{{ ks.kode }}</b>
+                      <span class="truncate text-slate-600">{{ ringkasNama(ks.nama) }}</span>
+                      <span class="shrink-0 text-slate-500">· {{ ks.label }}</span>
+                    </Link>
+                  </div>
+                  <p v-if="t.periksa.length" class="mt-2 flex items-start gap-1.5 text-[12px] leading-relaxed text-amber-800">
+                    <Ikon nama="peringatan" class="mt-0.5 w-3.5 h-3.5 shrink-0" />
+                    Hasil sub elemen ini tidak sejalan dengan {{ t.periksa.join(', ') }} — periksa ulang bukti objektif kedua sisi.
+                  </p>
+                </div>
+              </div>
+            </details>
           </header>
 
           <div class="divide-y divide-slate-100">

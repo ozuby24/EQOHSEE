@@ -25,7 +25,7 @@ interface Perusahaan {
   skor: number | null; tingkat: string; poin: number; maks: number; dinilaiButir: number; berlaku: number;
   el: Array<number | null>; elPoin: Array<[number, number] | null>; lalu: number | null;
   temuan: number; buka: number; telat: number; bukti: number; buktiTerima: number; buktiTunggu: number; lead: string;
-  lanjut: { t: string; nada: string }; url: { ringkasan: string; nilai: string; temuan: string; laporan: string };
+  lanjut: { t: string; nada: string }; url: { ringkasan: string; nilai: string; temuan: string; laporan: string; evaluasi: string };
 }
 interface Seri { label: string[]; dibuat: number[]; ditutup: number[]; rasio: Array<number | null> }
 interface BarisTindakan { nomor: string; kode: string; kriteria: string; pt: string; batas: string | null; jenis: string; jenisK: string; hari: number; url: string }
@@ -338,6 +338,7 @@ onBeforeUnmount(() => Object.values(grafik).forEach((g) => g?.destroy()));
                     <div class="flex flex-wrap gap-2 mt-3">
                       <Link :href="p.url.ringkasan" class="btn-garis btn-kecil"><Ikon nama="mata" class="w-4 h-4" /> Ringkasan</Link>
                       <Link :href="p.url.nilai" class="btn-garis btn-kecil"><Ikon nama="clipboard-check" class="w-4 h-4" /> Penilaian</Link>
+                      <Link :href="p.url.evaluasi" class="btn-garis btn-kecil"><Ikon nama="grafik" class="w-4 h-4" /> Evaluasi</Link>
                       <Link :href="p.url.temuan" class="btn-garis btn-kecil"><Ikon nama="peringatan" class="w-4 h-4" /> Temuan</Link>
                       <a :href="p.url.laporan" target="_blank" rel="noopener" class="btn-garis btn-kecil"><Ikon nama="cetak" class="w-4 h-4" /> Laporan</a>
                     </div>

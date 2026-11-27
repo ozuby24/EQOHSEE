@@ -186,6 +186,119 @@ final class SmkpTahap
         ];
     }
 
+    /* ================= Rata-rata nasional (port DBEST #23) ================= */
+
+    /**
+     * Rata-rata nasional FR, SR, ASR, MFR bawaan dari Surat Edaran Dirjen
+     * Minerba. Administrator menambah/menimpa per tahun di Kriteria & Acuan
+     * (tabel smkp_rata_nasional).
+     */
+    public const RATA_NASIONAL = [
+        2022 => ['fr' => 0.19, 'sr' => 84.32, 'asr' => 322.32, 'mfr' => 183.06,
+                 'nomor' => 'B-6450/MB.07/DBT.KP/2022', 'tanggal' => '2022-11-07'],
+        2025 => ['fr' => 0.09, 'sr' => 133.91, 'asr' => 452.19, 'mfr' => 482.71,
+                 'nomor' => 'B-9669/MB.07/DBT.KP/2025', 'tanggal' => '2025-11-13'],
+    ];
+
+    /** Nilai rata-rata nasional yang dibandingkan: kunci butir kinerja → label. */
+    public const NILAI_NASIONAL = [
+        'fr'  => 'Frequency Rate (FR)',
+        'sr'  => 'Severity Rate (SR)',
+        'asr' => 'Absence Severity Rate (ASR)',
+        'mfr' => 'Morbidity Frequency Rate (MFR)',
+    ];
+
+    private static ?array $rataNasional = null;
+
+    /**
+     * Seluruh rata-rata nasional per tahun SE: bawaan ditimpa/ditambah
+     * isian administrator. tahun => [fr, sr, asr, mfr, nomor, tanggal,
+     * sumber, catatan, tahun, bawaan, diubah].
+     */
+    public static function daftarRataNasional(): array
+    {
+        if (self::$rataNasional !== null) return self::$rataNasional;
+
+        $out = [];
+        foreach (self::RATA_NASIONAL as $th => $v) {
+            $out[$th] = $v + ['sumber' => 'SE Dirjen Minerba '.$v['nomor'], 'catatan' => null, 'tahun' => $th, 'bawaan' => true, 'diubah' => false];
+        }
+        try {
+            foreach (\App\Models\SmkpRataNasional::query()->orderBy('tahun')->get() as $r) {
+                $th = (int) $r->tahun;
+                $out[$th] = [
+                    'fr' => (float) $r->fr, 'sr' => (float) $r->sr, 'asr' => (float) $r->asr, 'mfr' => (float) $r->mfr,
+                    'nomor'   => (string) $r->nomor,
+                    'tanggal' => $r->tanggal?->toDateString(),
+                    'sumber'  => 'SE '.$r->nomor,
+                    'catatan' => $r->catatan,
+                    'tahun'   => $th,
+                    'bawaan'  => isset(self::RATA_NASIONAL[$th]),
+                    'diubah'  => true,
+                ];
+            }
+        } catch (\Throwable) {
+            // Tabel belum dimigrasi: bawaan saja.
+        }
+        ksort($out);
+
+        return self::$rataNasional = $out;
+    }
+
+    /** Lupakan daftar yang sudah dibaca (setelah administrator mengubahnya). */
+    public static function lupakanRataNasional(): void
+    {
+        self::$rataNasional = null;
+    }
+
+    /** SE terbaru yang terbit sampai tahun audit; audit yang lebih tua memakai SE terlama. */
+    public static function rataNasional(int $tahun): array
+    {
+        $pilih = null;
+        foreach (self::daftarRataNasional() as $th => $v) {
+            if ($pilih === null || $th <= $tahun) $pilih = $v;
+        }
+
+        return $pilih;
+    }
+
+    /** "0,09" / "1.234,5" / "133.91" → angka; kosong/tidak sah → null. */
+    public static function bilangan(mixed $v): ?float
+    {
+        $t = str_replace([' ', "\u{00A0}"], '', trim((string) $v));
+        if ($t === '') return null;
+        if (str_contains($t, ',')) $t = str_replace(['.', ','], ['', '.'], $t);
+
+        return is_numeric($t) ? (float) $t : null;
+    }
+
+    /**
+     * Saran kondisi penyesuaian dari Data Kinerja: kecelakaan (FR dan SR di
+     * atas rata-rata nasional), penyakit (ASR dan MFR di atas rata-rata
+     * nasional), pak (ada kejadian akibat penyakit tenaga kerja / PAK).
+     * Null = datanya belum cukup untuk menyarankan.
+     *
+     * @return array{kecelakaan: ?bool, penyakit: ?bool, pak: ?bool}
+     */
+    public static function saranFaktor(array $kinerja, int $tahun): array
+    {
+        $n = self::rataNasional($tahun);
+        $atas = function (string $a, string $b) use ($kinerja, $n): ?bool {
+            $x = self::bilangan($kinerja[$a] ?? '');
+            $y = self::bilangan($kinerja[$b] ?? '');
+
+            return $x === null || $y === null ? null : ($x > $n[$a] && $y > $n[$b]);
+        };
+        $kptk = self::bilangan($kinerja['kptk'] ?? '');
+        $pak  = self::bilangan($kinerja['pak'] ?? '');
+
+        return [
+            'kecelakaan' => $atas('fr', 'sr'),
+            'penyakit'   => $atas('asr', 'mfr'),
+            'pak'        => $kptk === null && $pak === null ? null : (($kptk ?: 0) > 0 || ($pak ?: 0) > 0),
+        ];
+    }
+
     /** Data kinerja Keselamatan Pertambangan pada periode audit. */
     public static function butirKinerja(): array
     {
