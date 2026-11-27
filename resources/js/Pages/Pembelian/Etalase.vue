@@ -404,7 +404,9 @@ onBeforeUnmount(() => {
     <header class="jual-kepala" :class="digulir ? 'jual-kepala-turun' : ''">
       <div class="jual-lebar flex items-center gap-8 h-full">
         <Link href="/" class="shrink-0 opacity-90 hover:opacity-100 transition-opacity duration-300">
-          <Wordmark :tinggi="26" />
+          <!-- Kepala transparan di atas hero gelap, terang sesudah digulir:
+               lockupnya ikut berganti varian supaya tetap terbaca. -->
+          <Wordmark :tinggi="26" :gelap="!digulir" />
         </Link>
 
         <nav class="ml-auto hidden md:flex items-center gap-7">
@@ -963,7 +965,8 @@ onBeforeUnmount(() => {
 
     <footer class="jual-kaki">
       <div class="jual-lebar flex flex-wrap items-center justify-between gap-4">
-        <Wordmark :tinggi="20" />
+        <!-- Kaki berlatar putih: lockup varian latar terang. -->
+        <Wordmark :tinggi="20" :gelap="false" />
         <p class="jual-tubuh-kecil">Platform Terpadu Keselamatan Pertambangan · {{ tahun }}</p>
       </div>
     </footer>

@@ -1,3 +1,25 @@
+# Update 25 — Halaman depan & katalog memakai palet merek baru
+
+```bash
+# Di VPS, dari /var/www/EQOHSEE
+bash deploy/deploy.sh          # build ulang aset; tidak ada migrasi baru
+```
+Tidak ada migrasi, tabel, atau penjadwal baru — hanya tampilan.
+
+- **Halaman depan** (`/`) dan **katalog** (`/katalog`, juga bagian Harga di
+  halaman depan): hitam-cokelat + jingga identitas lama diganti teal
+  hitam, abu hangat, teal, dan zaitun-limau merek baru — sama dengan
+  halaman masuk. Tombol utama: limau di bidang gelap, teal di bidang
+  terang; garis fokus keyboard tetap kontras di keduanya.
+- **Warna pilar** (dipakai halaman depan, katalog, halaman pilar, kartu
+  modul): tiga warna merek berulang — teal, zaitun, oker tanah tambang —
+  menggantikan jingga, cyan, hijau. Ketiganya lolos 4,5:1 sebagai teks di
+  atas putih maupun sebagai latar bertulisan putih (jingga lama 2,9:1).
+- Logo `/katalog` kini berganti varian saat kepala halaman menjadi terang
+  sesudah digulir, dan memakai varian terang di kaki halaman (sebelumnya
+  logo putih di atas latar terang, nyaris tak terlihat).
+- Aplikasi di balik login belum berubah warna — itu tahap berikutnya.
+
 # Update 24 — Logo baru EQOHSEE, halaman masuk baru, pengunjung situs, ID/EN, Google & Microsoft
 
 ```bash
