@@ -165,6 +165,12 @@ class DataContohTest extends TestCase
 
     public function test_muat_ulang_tidak_menumpuk(): void
     {
+        /* Jam dibekukan: absensi contoh hanya dibuat sampai saat ini,
+           jadi tap yang jatuh di antara dua pemuatan menambah 'Absensi'
+           secara sah pada pemuatan kedua. Lihat
+           CakupanDataContohTest::test_muat_dua_kali_tidak_menggandakan. */
+        $this->freezeTime();
+
         $pertama = $this->muat();
         $kedua   = $this->muat();
 

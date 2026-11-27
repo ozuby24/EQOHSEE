@@ -301,6 +301,15 @@ class CakupanDataContohTest extends TestCase
      */
     public function test_muat_dua_kali_tidak_menggandakan(): void
     {
+        /* Jam dibekukan selama kedua pemuatan. Pindaian absensi contoh
+           hanya dibuat sampai saat ini (yang di masa depan memang belum
+           terjadi), jadi tap yang jatuh di antara dua pemuatan muncul
+           sah pada pemuatan kedua: CI pukul 00.24–00.35 UTC melihat
+           hr_absensi 83 → 84 karena tap pulang shift 14.00–00.00 lewat
+           di sela keduanya. Yang diuji di sini penggandaan, bukan
+           berjalannya waktu. */
+        $this->freezeTime();
+
         $c = $this->muat();
 
         $pertama = [];
