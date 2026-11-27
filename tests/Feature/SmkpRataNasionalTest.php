@@ -108,7 +108,8 @@ class SmkpRataNasionalTest extends TestCase
         ];
         $n = SmkpTahap::rataNasional(2026);
 
-        $skrip = "const ts = require('typescript'); const fs = require('fs');"
+        // Skrip sementara ada di luar proyek: typescript dicari dari folder proyek (cwd), bukan dari /tmp.
+        $skrip = "const ts = require(require.resolve('typescript', { paths: [process.cwd()] })); const fs = require('fs');"
             ."const src = fs.readFileSync(".json_encode(resource_path('js/smkp/lib/kinerja.ts')).", 'utf8');"
             ."const js = ts.transpileModule(src, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText;"
             ."const m = { exports: {} }; new Function('module', 'exports', js)(m, m.exports);"

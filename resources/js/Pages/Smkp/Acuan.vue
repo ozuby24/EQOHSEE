@@ -6,6 +6,8 @@ import KriteriaNilai from '../../Components/Smkp/KriteriaNilai.vue';
 import Ikon from '../../Components/Smkp/Ikon.vue';
 import type { Rubrik } from '../../smkp/types';
 import { angka, tanggalPanjang } from '../../smkp/lib/format';
+import { useDialog } from '../../dialog';
+import Dialog from '../../Components/Dialog.vue';
 
 interface Sub {
   kode: string; nama: string; ref: string | null; maks: number;
@@ -47,8 +49,15 @@ function ubahSe(r: NonNullable<typeof props.rataNasional>[number]) {
 function simpanSe() {
   formSe.post('/smkp/acuan/rata-nasional', { preserveScroll: true, onSuccess: () => formSe.reset() });
 }
-function hapusSe(tahun: number) {
-  if (!confirm(`Hapus isian Surat Edaran ${tahun}?`)) return;
+/* Penegasan memakai dialog EQOHSEE — confirm() bawaan dibungkam di webview ponsel. */
+const { dialog, tanya, batal, lanjut } = useDialog();
+async function hapusSe(tahun: number, bawaan: boolean) {
+  const ya = await tanya({
+    judul: bawaan ? `Kembalikan nilai bawaan SE ${tahun}?` : `Hapus Surat Edaran ${tahun}?`,
+    pesan: bawaan ? 'Isian administrator untuk tahun ini dihapus; audit kembali memakai nilai bawaan Surat Edaran.' : 'Audit tahun ini dan sesudahnya akan memakai Surat Edaran terbaru sebelumnya.',
+    labelAksi: bawaan ? 'Kembalikan' : 'Hapus', nada: 'bahaya',
+  });
+  if (!ya) return;
   router.delete(`/smkp/acuan/rata-nasional/${tahun}`, { preserveScroll: true });
 }
 
@@ -154,7 +163,7 @@ const rentang = (i: number) => (i === 0 ? `≥ ${urut[0].min}` : `${urut[i].min}
               <td v-for="k in (['fr', 'sr', 'asr', 'mfr'] as const)" :key="k" class="px-3 py-2 text-right tabular-nums text-navy-900">{{ angka(r[k], 2) }}</td>
               <td v-if="bisaKelola" class="px-3 py-2 text-right whitespace-nowrap">
                 <button type="button" class="text-[12px] font-semibold text-teal-700 hover:underline" @click="ubahSe(r)">Ubah</button>
-                <button v-if="r.diubah" type="button" class="ml-3 text-[12px] font-semibold text-rose-600 hover:underline" @click="hapusSe(r.tahun)">{{ r.bawaan ? 'Kembalikan bawaan' : 'Hapus' }}</button>
+                <button v-if="r.diubah" type="button" class="ml-3 text-[12px] font-semibold text-rose-600 hover:underline" @click="hapusSe(r.tahun, r.bawaan)">{{ r.bawaan ? 'Kembalikan bawaan' : 'Hapus' }}</button>
               </td>
             </tr>
           </tbody>
@@ -179,7 +188,7 @@ const rentang = (i: number) => (i === 0 ? `≥ ${urut[0].min}` : `${urut[i].min}
 
     <section v-if="keterkaitan?.kelompok?.length" id="keterkaitan" class="kartu p-5 sm:p-6 mb-5 scroll-mt-20">
       <div class="flex items-start gap-3">
-        <span class="grid place-items-center w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 shrink-0"><Ikon nama="cabang" class="w-5 h-5" /></span>
+        <span class="grid place-items-center w-10 h-10 rounded-xl bg-sky-50 text-sky-700 shrink-0"><Ikon nama="cabang" class="w-5 h-5" /></span>
         <div class="min-w-0">
           <h2 class="kartu-judul">{{ keterkaitan.meta.judul || 'Keterkaitan antar elemen' }}</h2>
           <p class="mt-1 text-[12.5px] text-slate-600 leading-relaxed">
@@ -246,5 +255,6 @@ const rentang = (i: number) => (i === 0 ? `≥ ${urut[0].min}` : `${urut[i].min}
         </div>
       </article>
     </section>
+    <Dialog v-bind="dialog" @batal="batal" @lanjut="lanjut" />
   </div>
 </template>
