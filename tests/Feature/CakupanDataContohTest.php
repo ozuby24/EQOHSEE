@@ -68,6 +68,7 @@ class CakupanDataContohTest extends TestCase
         'mnr_pengingat'      => 'terisi sendiri saat miners:pengingat mengirim pengingat masa berlaku',
         'smkp_arsip_eqohsee' => 'arsip migrasi SMKP lama, bukan data lapangan',
         'smkp_rata_nasional' => 'acuan nasional Surat Edaran yang diisi administrator; kosong berarti bawaan SE 2022 & 2025 berlaku',
+        'kunjungan_harian' => 'hitungan pengunjung situs anonim yang terisi sendiri dari lalu lintas nyata; data contoh tidak boleh mengarang jumlah pengunjung',
         'activity_logs'=> 'jejak perbuatan; terisi sendiri saat dipakai',
         'jejak_akses'  => 'jejak masuk; terisi sendiri saat dipakai',
         'energi_jejak' => 'jejak perubahan data energi; terisi sendiri saat pengguna mengubah baris',

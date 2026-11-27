@@ -1,3 +1,105 @@
+# Update 25 — Halaman depan & katalog memakai palet merek baru
+
+```bash
+# Di VPS, dari /var/www/EQOHSEE
+bash deploy/deploy.sh          # build ulang aset; tidak ada migrasi baru
+```
+Tidak ada migrasi, tabel, atau penjadwal baru — hanya tampilan.
+
+- **Halaman depan** (`/`) dan **katalog** (`/katalog`, juga bagian Harga di
+  halaman depan): hitam-cokelat + jingga identitas lama diganti teal
+  hitam, abu hangat, teal, dan zaitun-limau merek baru — sama dengan
+  halaman masuk. Tombol utama: limau di bidang gelap, teal di bidang
+  terang; garis fokus keyboard tetap kontras di keduanya.
+- **Warna pilar** (dipakai halaman depan, katalog, halaman pilar, kartu
+  modul): tiga warna merek berulang — teal, zaitun, oker tanah tambang —
+  menggantikan jingga, cyan, hijau. Ketiganya lolos 4,5:1 sebagai teks di
+  atas putih maupun sebagai latar bertulisan putih (jingga lama 2,9:1).
+- Logo `/katalog` kini berganti varian saat kepala halaman menjadi terang
+  sesudah digulir, dan memakai varian terang di kaki halaman (sebelumnya
+  logo putih di atas latar terang, nyaris tak terlihat).
+- Aplikasi di balik login belum berubah warna — itu tahap berikutnya.
+
+# Update 24 — Logo baru EQOHSEE, halaman masuk baru, pengunjung situs, ID/EN, Google & Microsoft
+
+```bash
+# Di VPS, dari /var/www/EQOHSEE
+cp database/database.sqlite ~/cadangan-sebelum-update-24.sqlite   # pgsql: pg_dump
+bash deploy/deploy.sh          # composer install (paket baru: laravel/socialite) + migrate + build
+```
+Satu migrasi baru, hanya MENAMBAH tabel `kunjungan_harian` (tanggal +
+jumlah pengunjung; tidak ada IP, agen peramban, atau akun). Tidak ada
+tabel lama yang diubah, tidak ada penjadwal baru. Tombol Google/Microsoft
+TIDAK muncul sampai kredensialnya diisi (lihat di bawah) — tanpa itu
+halaman masuk bekerja seperti biasa.
+
+## Identitas baru
+- Lambang dan wordmark resmi (Deep Teal `#0F4C45`, Olive `#7A9E3A`,
+  Warm Grey `#D6D8D3`) di seluruh aplikasi: sidebar, halaman depan,
+  sertifikat, halaman hukum, favicon, ikon iPhone/Android, gambar
+  pratinjau tautan (WhatsApp/LinkedIn) bertuliskan *Integrated Mining
+  OHSE & Compliance Platform*. Berkas logo lama dihapus.
+- Ikon aplikasi Android ikut diganti di kode (`mobile/`); baru terlihat
+  di ponsel sesudah aplikasinya dibangun ulang dan diunggah ke Play
+  Store. Tangkapan layar Play Store masih tampilan lama.
+
+## Halaman masuk (dan semua halaman tamu)
+- Kartu kaca melayang ala macOS (tiga bintik), foto tambang resmi dengan
+  kontur topografi, panel formulir terang. Kaca kiri-bawah tidak pernah
+  menutupi unit dump truck (diukur di 1024–2560 px).
+- Kaca kiri-bawah berisi angka sungguhan: **pengguna aktif**,
+  **pengunjung situs** (+grafik 7 hari dan "+n hari ini"), **modul**
+  (pita sebaran per pilar), **aspek OHSE**, jam & tanggal "Sistem aktif".
+  Angka nol tidak ditampilkan; jumlah perusahaan pelanggan sengaja tidak
+  ditampilkan.
+- **Pengunjung situs** dihitung anonim: satu peramban sekali per hari
+  (kuki `eq_kunjungan` berisi tanggal saja). Perayap, pratinjau tautan,
+  pemantau ketersediaan, dan skrip tidak dihitung. Hitungan mulai dari
+  nol pada hari deploy — tidak ada angka karangan. Sudah dicantumkan di
+  Kebijakan Privasi (ID & EN).
+- **Pilihan bahasa ID / EN** (pil bendera di pojok kanan atas): masuk,
+  daftar, lupa & atur ulang sandi, verifikasi surel, dua langkah,
+  konfirmasi sandi — termasuk pesan galat dari server dan kotak
+  Turnstile. Aplikasi di balik login tetap berbahasa Indonesia.
+- Lencana "Koneksi terenkripsi" (hanya di HTTPS) dan "Dilindungi
+  Cloudflare Turnstile" (hanya bila Turnstile aktif).
+
+## Masuk dengan Google / Microsoft (pilihan)
+Hanya untuk akun yang SUDAH ADA: penyedia membuktikan siapa orangnya,
+lalu akun EQOHSEE dengan surel yang sama yang dimasuki. Tidak ada akun
+yang dibuat otomatis; akun nonaktif ditolak; verifikasi dua langkah
+tetap diminta. Microsoft hanya mempercayai surel berdomain milik
+organisasi itu sendiri (menutup celah "nOAuth").
+
+1. **Google** — console.cloud.google.com → APIs & Services → Credentials →
+   *Create credentials* → *OAuth client ID* → *Web application*.
+   *Authorized redirect URI*: `https://<domain>/masuk/google/kembali`.
+   (Layar persetujuan OAuth: jenis *External*, cakupan `openid`, `email`,
+   `profile` saja.)
+2. **Microsoft** — entra.microsoft.com → *App registrations* → *New
+   registration* → akun organisasi mana pun (atau hanya organisasi Anda).
+   *Redirect URI* (Web): `https://<domain>/masuk/microsoft/kembali`.
+   *Certificates & secrets* → *New client secret*. Izin API: `User.Read`
+   (bawaan).
+3. Isi di `.env` VPS, lalu `php artisan config:clear` (atau `bash deploy/deploy.sh`):
+   ```
+   GOOGLE_CLIENT_ID=...
+   GOOGLE_CLIENT_SECRET=...
+   MICROSOFT_CLIENT_ID=...
+   MICROSOFT_CLIENT_SECRET=...
+   # kosong = semua organisasi; isi ID/domain penyewa untuk satu organisasi saja
+   MICROSOFT_TENANT_ID=
+   ```
+   Tombolnya muncul sendiri untuk penyedia yang kredensialnya lengkap.
+   Mengosongkannya lagi = tombolnya hilang, alurnya tertutup (404).
+
+## Sesudah deploy — wajib dikerjakan orang
+- Buka halaman masuk sekali dari peramban biasa: kaca kiri-bawah
+  menunjukkan pengunjung **1** (Anda) — tanda penghitungnya berjalan.
+- Coba pil bahasa → English → muat ulang: tetap English.
+- Bila Google/Microsoft dipasang: coba masuk dengan akun yang surelnya
+  sudah terdaftar di EQOHSEE.
+
 # Update 23 — Audit SMKP: pembaruan DBEST, Evaluasi Audit, data demo lengkap
 
 ```bash

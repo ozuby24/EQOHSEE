@@ -85,7 +85,7 @@ class LoginRequest extends FormRequest
 
         event(new Failed('web', null, ['email' => (string) $this->string('email'), 'password' => $sandi]));
 
-        throw ValidationException::withMessages(['email' => SandiContoh::PESAN]);
+        throw ValidationException::withMessages(['email' => __(SandiContoh::PESAN)]);
     }
 
     /**
@@ -101,7 +101,7 @@ class LoginRequest extends FormRequest
             if (Auth::guard('web')->check()) Auth::guard('web')->logout();
 
             throw ValidationException::withMessages([
-                'email' => \App\Http\Middleware\PastikanAktif::PESAN,
+                'email' => __(\App\Http\Middleware\PastikanAktif::PESAN),
             ]);
         }
     }

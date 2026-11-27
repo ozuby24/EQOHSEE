@@ -44,7 +44,7 @@ const bingkai =
         <div class="relative">
           <template v-if="c.template !== 'korporat'">
             <img v-if="c.logo" :src="c.logo" class="h-14 mx-auto object-contain mix-blend-multiply" alt="">
-            <img v-else :src="markUrl" class="h-8 mx-auto rounded-xl" alt="EQOHSEE">
+            <img v-else :src="markUrl" class="h-9 w-auto mx-auto" alt="EQOHSEE">
           </template>
 
           <p class="text-[10px] uppercase tracking-[0.3em] text-stone-400 mt-5 font-bold">

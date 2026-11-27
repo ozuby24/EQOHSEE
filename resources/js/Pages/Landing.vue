@@ -440,8 +440,8 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
     <header class="ld-kepala">
       <div class="ld-lebar ld-kepala-isi">
         <a href="#beranda" class="ld-merek" aria-label="EQOHSEE — ke atas">
-          <img src="/brand/eqohsee-mark-128.png" alt="" width="30" height="30">
-          <b>E<i>Q</i>OHSEE</b>
+          <!-- Lockup resmi: lambang pita + wordmark, varian latar gelap. -->
+          <img src="/brand/eqohsee-navbar-dark.svg" alt="" width="167" height="30">
         </a>
 
         <nav class="ld-nav" aria-label="Bagian halaman">
@@ -1126,8 +1126,8 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
               </span>
             </a>
             <a v-if="emailUrl" :href="emailUrl" class="ld-kontak-kartu">
-              <span class="ld-kontak-ikon" style="background:#FFF0DE">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#A85400" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Zm0 1 8 6 8-6" /></svg>
+              <span class="ld-kontak-ikon" style="background:#E3F1EC">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#0F5C52" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Zm0 1 8 6 8-6" /></svg>
               </span>
               <span class="ld-kontak-teks"><small>EMAIL</small><b>{{ kontak.email }}</b></span>
               <span class="ld-kontak-aksi" style="border:1px solid var(--ld-garis-2);font-weight:600">Kirim email</span>
@@ -1163,7 +1163,7 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
     <footer class="ld-kaki">
       <div class="ld-lebar ld-kaki-isi">
         <div class="ld-kaki-merek">
-          <span class="ld-merek"><img src="/brand/eqohsee-mark-128.png" alt="" width="26" height="26"><b>E<i>Q</i>OHSEE</b></span>
+          <span class="ld-merek"><img src="/brand/eqohsee-navbar-dark.svg" alt="EQOHSEE" width="145" height="26"></span>
           <span>PLATFORM TERPADU KESELAMATAN PERTAMBANGAN</span>
         </div>
         <nav aria-label="Tautan kaki">
@@ -1179,7 +1179,7 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
 
     <a v-if="waUrl" :href="waUrl" target="_blank" rel="noopener" class="ld-apung" :class="{ sembunyi: !apungTampak }"
        aria-label="Chat WhatsApp" :tabindex="apungTampak ? undefined : -1">
-      <span><svg viewBox="0 0 24 24" fill="none" stroke="#14100D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="WA" /></svg></span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="#072420" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="WA" /></svg></span>
       <span>WhatsApp</span>
     </a>
 

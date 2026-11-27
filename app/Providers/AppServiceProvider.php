@@ -83,6 +83,12 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        /* Penyedia Microsoft (Entra ID) untuk Laravel Socialite — ditulis
+           sendiri, lihat App\Support\Sso\PenyediaMicrosoft. */
+        \Laravel\Socialite\Facades\Socialite::extend('microsoft', fn ($app) => \Laravel\Socialite\Facades\Socialite::buildProvider(
+            \App\Support\Sso\PenyediaMicrosoft::class, (array) config('services.microsoft'),
+        ));
+
         Gate::define('admin',   fn (User $u) => $u->isAdmin());
         Gate::define('trainer', fn (User $u) => $u->isAdmin() || $u->isTrainer());
 
@@ -202,6 +208,9 @@ class AppServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('dua-faktor', fn (Request $r) => Limit::perMinute(30)->by('ip:'.$r->ip()));
+
+        /* Masuk dengan Google/Microsoft: pengalihan dan kembalinya. */
+        RateLimiter::for('masuk-sso', fn (Request $r) => Limit::perMinute(20)->by('ip:'.$r->ip()));
 
         RateLimiter::for('daftar', fn (Request $r) => Limit::perHour(5)->by($r->ip()));
 

@@ -111,6 +111,13 @@ stores — not a generic list.</p>
   logged.</p>
 </div>
 
+<p><strong>Site visitor count.</strong> The visitor figure shown on the sign-in
+page is counted anonymously: the server stores a single number per day, with no
+IP address, browser type, or identifier of any kind. So that one browser is not
+counted twice on the same day, your browser keeps a functional cookie,
+<code>eq_kunjungan</code>, which holds only the visit date and expires within two
+days.</p>
+
 <h2>2. How data is used</h2>
 
 <ul>

@@ -190,6 +190,7 @@ return [
         'avatar'                => 'foto profil',
         'kode'                  => 'kode',
         'token'                 => 'token',
+        'cf-turnstile-response' => 'verifikasi keamanan',
 
         /* Audit SMKP (porting Aurorasys) — hanya ruas bertitik yang
            khas modul itu; nama ruas umum tidak diubah di sini karena

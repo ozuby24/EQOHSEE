@@ -14,13 +14,15 @@
      dimuat lebih dulu, dan tetap terbaca di jaringan site tambang. --}}
 <link rel="icon" href="/favicon-32.png" sizes="32x32">
 <style>
+  /* Warna merek EQOHSEE: Deep Teal untuk tautan di latar terang,
+     Olive Green terang di latar gelap (kontras keduanya di atas 4,5:1). */
   :root{
     --tinta:#12181D; --redup:#5A6873; --garis:#E4E9EC;
-    --oranye:#C86A00; --latar:#FFFFFF; --kotak:#F7F9FA;
+    --aksen:#0F5C52; --latar:#FFFFFF; --kotak:#F7F9F7;
   }
   @media (prefers-color-scheme: dark){
-    :root{ --tinta:#E7ECEF; --redup:#9FADB8; --garis:#243039;
-           --oranye:#FFA23D; --latar:#0E1418; --kotak:#161F26; }
+    :root{ --tinta:#E7ECEF; --redup:#9FADB8; --garis:#1E3A35;
+           --aksen:#9EC454; --latar:#082420; --kotak:#0F2E29; }
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--latar);color:var(--tinta);
@@ -28,19 +30,19 @@
     -webkit-text-size-adjust:100%}
   .bungkus{max-width:46rem;margin:0 auto;padding:2.5rem 1.15rem 4rem}
   header{border-bottom:1px solid var(--garis);padding-bottom:1.4rem;margin-bottom:2rem}
-  .merek{display:flex;align-items:center;gap:.6rem;font-weight:800;letter-spacing:-.02em;font-size:1.05rem}
-  .merek span{width:.62rem;height:.62rem;border-radius:.2rem;background:var(--oranye)}
+  .merek{display:flex;align-items:center}
+  .merek img{display:block;height:28px;width:auto}
   h1{font-size:1.7rem;line-height:1.25;letter-spacing:-.025em;margin:1.1rem 0 .4rem}
   .tanggal{color:var(--redup);font-size:.87rem;margin:0}
   .alih{margin-top:1rem;font-size:.87rem}
-  .alih a{color:var(--oranye)}
+  .alih a{color:var(--aksen)}
   h2{font-size:1.08rem;letter-spacing:-.015em;margin:2.2rem 0 .55rem;scroll-margin-top:1rem}
   h3{font-size:.97rem;margin:1.35rem 0 .35rem}
   p,li{color:var(--tinta)}
   p{margin:.55rem 0}
   ul{margin:.55rem 0;padding-left:1.15rem}
   li{margin:.3rem 0}
-  a{color:var(--oranye)}
+  a{color:var(--aksen)}
   .kotak{background:var(--kotak);border:1px solid var(--garis);
     border-radius:.7rem;padding:.95rem 1.05rem;margin:1.1rem 0}
   .kotak p:first-child{margin-top:0} .kotak p:last-child{margin-bottom:0}
@@ -59,7 +61,13 @@
 <body>
 <div class="bungkus">
   <header>
-    <div class="merek"><span></span>EQOHSEE</div>
+    {{-- Lockup resmi; varian bernama putih saat perangkat bertema gelap. --}}
+    <div class="merek">
+      <picture>
+        <source srcset="/brand/eqohsee-navbar-dark.svg" media="(prefers-color-scheme: dark)">
+        <img src="/brand/eqohsee-navbar-light.svg" alt="EQOHSEE" width="156" height="28">
+      </picture>
+    </div>
     <h1>{{ $judul }}</h1>
     <p class="tanggal">{{ $tanggal }}</p>
     <p class="alih">{!! $alih !!}</p>

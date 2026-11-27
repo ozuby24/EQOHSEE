@@ -207,18 +207,26 @@ class IdentitasVisualTest extends TestCase
      */
     public function test_lambang_lama_tidak_dipakai_tampilan_mana_pun(): void
     {
+        // Dua generasi lambang lama: gunung navy-emas (.svg) dan heksagon
+        // jingga-perak (.png). Keduanya digantikan pita Deep Teal–Olive
+        // Green; berkasnya dihapus dan tidak boleh muncul kembali.
         $pensiun = ['eqohsee-mark.svg', 'eqohsee-mark-white.svg',
-                    'eqohsee-logo.svg', 'eqohsee-logo-white.svg'];
+                    'eqohsee-logo.svg', 'eqohsee-logo-white.svg',
+                    'eqohsee-mark.png', 'eqohsee-mark-128.png'];
 
         foreach ($pensiun as $berkas) {
             $this->assertFileDoesNotExist(public_path('brand/'.$berkas),
                 "Lambang lama {$berkas} muncul kembali di public/brand.");
         }
 
+        // Lockup, wordmark, dan infografis jingga lama di public/img/brand.
+        $this->assertDirectoryDoesNotExist(public_path('img/brand'),
+            'Folder lockup identitas lama public/img/brand muncul kembali.');
+
         $terpakai = [];
 
-        foreach (['js', 'views'] as $sub) {
-            $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(resource_path($sub)));
+        foreach ([resource_path('js'), resource_path('views'), app_path()] as $akar) {
+            $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($akar));
             foreach ($it as $f) {
                 if (!$f->isFile() || str_contains($f->getFilename(), '.bak-')) continue;
                 if (!in_array($f->getExtension(), ['vue', 'php'], true)) continue;
@@ -382,12 +390,13 @@ class IdentitasVisualTest extends TestCase
             'Pemilih menyapu pada .pendar-rekaman menimpa posisi video latarnya.',
         );
 
-        // Videonya sendiri harus tetap dinyatakan sebagai lapisan penuh.
+        // Lapisan fotonya sendiri harus tetap dinyatakan sebagai lapisan
+        // penuh (dulu rekaman video, kini foto tambang resmi paket merek).
         $tataLetak = file_get_contents(resource_path('js/Layouts/GuestLayout.vue'));
         $this->assertMatchesRegularExpression(
-            '/<video[^>]*class="[^"]*absolute inset-0[^"]*"/s',
+            '/<img[^>]*class="[^"]*absolute inset-0[^"]*"/s',
             $tataLetak,
-            'Video latar halaman masuk tidak lagi dinyatakan absolute inset-0.',
+            'Foto latar halaman masuk tidak lagi dinyatakan absolute inset-0.',
         );
     }
 
@@ -396,13 +405,13 @@ class IdentitasVisualTest extends TestCase
     {
         $hilang = [];
 
-        foreach (['js', 'views'] as $sub) {
-            $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(resource_path($sub)));
+        foreach ([resource_path('js'), resource_path('views'), app_path()] as $akar) {
+            $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($akar));
             foreach ($it as $f) {
                 if (!$f->isFile() || str_contains($f->getFilename(), '.bak-')) continue;
                 if (!in_array($f->getExtension(), ['vue', 'php'], true)) continue;
 
-                preg_match_all("#brand/([A-Za-z0-9._-]+\.(?:svg|png|jpg))#", file_get_contents($f->getPathname()), $c);
+                preg_match_all("#brand/([A-Za-z0-9._-]+\.(?:svg|png|jpg|webp))#", file_get_contents($f->getPathname()), $c);
                 foreach ($c[1] as $berkas) {
                     if (!is_file(public_path('brand/'.$berkas))) {
                         $hilang[] = $berkas.' di '.str_replace(base_path().'/', '', $f->getPathname());

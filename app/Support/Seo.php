@@ -176,7 +176,7 @@ final class Seo
                 'url'   => $dasar,
                 'logo'  => [
                     '@type' => 'ImageObject',
-                    'url'   => $dasar.'/brand/eqohsee-mark.png',
+                    'url'   => $dasar.'/brand/eqohsee-icon-512.png',
                 ],
             ],
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);

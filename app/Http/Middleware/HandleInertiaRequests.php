@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Support\{IkonNav, KondisiSitus, Lencana, Media, Menu, RuteInertia, SampulModul, Tema, Tur};
+use App\Support\{IkonNav, KondisiSitus, Lencana, Menu, RingkasPlatform, RuteInertia, SampulModul, Tema, Tur};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{Gate, Schema};
 use Inertia\Middleware;
@@ -167,15 +167,13 @@ class HandleInertiaRequests extends Middleware
                 'dasar' => Tema::dasar($u),
             ],
 
-            /* Latar halaman masuk. Dibagikan dari sini, bukan dari tiap
-               pengendali autentikasi: masuk, daftar, lupa sandi, dan atur
-               ulang sandi semuanya memakai tata letak yang sama, dan yang
-               satu terlewat tidak menimbulkan galat — latarnya hanya
-               diam-diam kembali menjadi foto lama pada satu halaman. */
-            'mediaMasuk' => fn () => [
-                'video'  => Media::masukVideo(),
-                'poster' => Media::masukPoster(),
-            ],
+            /* Angka di panel halaman tamu (masuk, daftar, lupa sandi):
+               modul per pilar, aspek, pengguna, dan pengunjung situs —
+               semuanya dihitung dari data, bukan ditulis di tampilan,
+               supaya halaman pertama yang dilihat calon pengguna tidak
+               pernah menyebut angka yang sudah tidak benar. Hanya untuk
+               tamu; pengguna yang sudah masuk tidak melihat panel itu. */
+            'ringkasPlatform' => fn () => $u ? null : RingkasPlatform::untukTamu(),
         ]);
     }
 

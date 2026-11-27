@@ -18,6 +18,14 @@ namespace App\Support;
  * Tiap pilar membawa: palet tiga tingkat (deep/base/light) untuk gradien,
  * ringkasan, cakupan kerja, dan modul yang menopangnya.
  *
+ * ── TIGA WARNA MEREK, BERULANG ──
+ *
+ * Teal (Deep Teal merek), zaitun (Olive merek), dan oker tanah tambang —
+ * menggantikan jingga-cyan-hijau identitas lama. Ketiganya lolos 4,5:1
+ * sebagai teks di atas putih DAN sebagai latar bertulisan putih; jingga
+ * lama hanya 2,9:1 untuk keduanya. Tetap tiga warna, bukan delapan:
+ * nama aspeklah yang membedakan (KatalogTest).
+ *
  * ── `ket` MENYEBUT PEKERJAANNYA, BUKAN CITA-CITANYA ──
  *
  * Kalimat satu baris di bawah nama tiap aspek sempat berisi semboyan:
@@ -42,7 +50,7 @@ class Pillars
             'energy' => [
                 'nama'  => 'Energy',
                 'ket'   => 'Energi dan emisi per ton produksi',
-                'deep'  => '#B85C00', 'warna' => '#F57C00', 'light' => '#FF9800',
+                'deep'  => '#6F3F0C', 'warna' => '#9A5A14', 'light' => '#C98A3E',
                 'ikon'  => 'bolt',
                 'ringkas' => 'Mengelola konsumsi, keandalan, dan emisi energi di seluruh rantai operasi tambang — dari alat berat di lapangan sampai laporan ke regulator dan direksi.',
                 'cakupan' => [
@@ -56,7 +64,7 @@ class Pillars
             'quality' => [
                 'nama'  => 'Quality',
                 'ket'   => 'Satu versi prosedur yang berlaku',
-                'deep'  => '#1B7FA8', 'warna' => '#29ABE2', 'light' => '#5FC5EE',
+                'deep'  => '#0A3F38', 'warna' => '#0F5C52', 'light' => '#2E9C7E',
                 'ikon'  => 'gem',
                 'ringkas' => 'Menjaga hasil kerja tetap konsisten terhadap standar — lewat prosedur yang terkendali, kompetensi terverifikasi, dan pemeriksaan berkala.',
                 'cakupan' => [
@@ -70,7 +78,7 @@ class Pillars
             'occhealth' => [
                 'nama'  => 'Occupational Health',
                 'ket'   => 'Pemeriksaan kesehatan dan kebugaran kerja',
-                'deep'  => '#16883F', 'warna' => '#22C55E', 'light' => '#4ADE80',
+                'deep'  => '#3F5A12', 'warna' => '#5B7D1F', 'light' => '#8DB33A',
                 'ikon'  => 'health',
                 'ringkas' => 'Menjaga pekerja pulang dalam keadaan sehat — mengendalikan pajanan di lingkungan kerja sebelum menjadi penyakit akibat kerja.',
                 'cakupan' => [
@@ -84,7 +92,7 @@ class Pillars
             'hygiene' => [
                 'nama'  => 'Hygiene',
                 'ket'   => 'Debu, bising, getaran, dan bahan kimia',
-                'deep'  => '#B85C00', 'warna' => '#F57C00', 'light' => '#FF9800',
+                'deep'  => '#6F3F0C', 'warna' => '#9A5A14', 'light' => '#C98A3E',
                 'ikon'  => 'droplet',
                 'ringkas' => 'Higiene industri: mengukur pajanan di lingkungan kerja lalu menekannya pada sumbernya, sebelum tubuh pekerja yang menanggung.',
                 'cakupan' => [
@@ -98,7 +106,7 @@ class Pillars
             'safety' => [
                 'nama'  => 'Safety',
                 'ket'   => 'Pelaporan bahaya dan inspeksi terjadwal',
-                'deep'  => '#1B7FA8', 'warna' => '#29ABE2', 'light' => '#5FC5EE',
+                'deep'  => '#0A3F38', 'warna' => '#0F5C52', 'light' => '#2E9C7E',
                 'ikon'  => 'shield',
                 'ringkas' => 'Inti dari seluruh kerangka: mengenali bahaya lebih dulu, mengendalikannya berjenjang, dan memastikan tindak lanjut benar-benar menutup risiko.',
                 'cakupan' => [
@@ -113,7 +121,7 @@ class Pillars
             'environment' => [
                 'nama'  => 'Environment',
                 'ket'   => 'Limbah, air, dan reklamasi lahan',
-                'deep'  => '#16883F', 'warna' => '#22C55E', 'light' => '#4ADE80',
+                'deep'  => '#3F5A12', 'warna' => '#5B7D1F', 'light' => '#8DB33A',
                 'ikon'  => 'leaf',
                 'ringkas' => 'Menekan dampak operasi terhadap lingkungan sekitar tambang, dari pengelolaan limbah hingga pemulihan lahan pascatambang.',
                 'cakupan' => [
@@ -127,7 +135,7 @@ class Pillars
             'engineering' => [
                 'nama'  => 'Engineering',
                 'ket'   => 'Kelayakan sarana dan perawatannya',
-                'deep'  => '#B85C00', 'warna' => '#F57C00', 'light' => '#FF9800',
+                'deep'  => '#6F3F0C', 'warna' => '#9A5A14', 'light' => '#C98A3E',
                 'ikon'  => 'gear',
                 'ringkas' => 'Memastikan sarana, prasarana, instalasi, dan peralatan tambang layak dioperasikan — dan tetap layak sepanjang umur pakainya.',
                 'cakupan' => [
@@ -143,7 +151,7 @@ class Pillars
             'konservasi' => [
                 'nama'  => 'Konservasi Minerba',
                 'ket'   => 'Recovery tambang dan neraca cadangan',
-                'deep'  => '#1B7FA8', 'warna' => '#29ABE2', 'light' => '#5FC5EE',
+                'deep'  => '#0A3F38', 'warna' => '#0F5C52', 'light' => '#2E9C7E',
                 'ikon'  => 'layers',
                 'ringkas' => 'Memastikan mineral dan batubara terambil seoptimal mungkin dan tidak terbuang percuma — termasuk yang berkadar rendah dan mineral ikutannya.',
                 'cakupan' => [
@@ -162,10 +170,10 @@ class Pillars
         return static::all()[$slug] ?? null;
     }
 
-    /** Warna dasar sebuah pilar (fallback: brand ink). */
+    /** Warna dasar sebuah pilar (fallback: Deep Teal merek). */
     public static function color(string $slug): string
     {
-        return static::all()[$slug]['warna'] ?? '#123049';
+        return static::all()[$slug]['warna'] ?? '#0F4C45';
     }
 
     /** Gradien siap pakai untuk latar kartu dan ikon. */
@@ -174,7 +182,7 @@ class Pillars
         $p = static::get($slug);
         return $p
             ? "linear-gradient(135deg,{$p['deep']} 0%,{$p['warna']} 55%,{$p['light']} 100%)"
-            : 'linear-gradient(135deg,#0E2B44 0%,#158D99 100%)';
+            : 'linear-gradient(135deg,#072420 0%,#13806B 100%)';
     }
 
     /** Urutan slug: tujuh mengikuti ejaan E-Q-O-H-S-E-E, lalu Konservasi. */

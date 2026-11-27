@@ -319,9 +319,9 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
            satu pun kata tambahan di badan isinya. -->
       <aside class="eq-tur-rel" aria-hidden="true">
         <div class="eq-tur-merek">
-          <img src="/brand/eqohsee-mark-128.png" alt="" width="40" height="40">
+          <img src="/brand/eqohsee-icon-dark.svg" alt="" width="40" height="40">
           <span>
-            <strong>E<em>Q</em>OHSEE</strong>
+            <img class="eq-tur-merek-nama" src="/brand/eqohsee-wordmark-dark.svg" alt="" width="122" height="17">
             <small>Safe Today &middot; Sustainable Tomorrow</small>
           </span>
         </div>
@@ -604,19 +604,11 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   min-width: 0;
 }
 
-.eq-tur-merek strong {
-  font-size: 1.25rem;
-  font-weight: 900;
-  letter-spacing: -.015em;
-  color: #E8ECF0;
-}
-
-/* Q jingga — satu-satunya huruf berwarna, sama seperti di bilah
-   samping. Dimatikan gaya miringnya: <em> dipakai sebagai penanda
-   warna, bukan sebagai penekanan yang dibaca. */
-.eq-tur-merek strong em {
-  font-style: normal;
-  color: #F57C00;
+/* Wordmark resmi (vektor), sama dengan bilah samping: hurufnya buatan,
+   bukan fon, jadi teks biasa tidak pernah menyamai bentuknya. */
+.eq-tur-merek .eq-tur-merek-nama {
+  width: 7.6rem;
+  height: auto;
 }
 
 /* Satu baris, bukan dua. Rel ini 15,5rem — lebih sempit daripada bilah
@@ -626,7 +618,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
 .eq-tur-merek small {
   font-size: .56rem;
   color: rgb(255 255 255 / .42);
-  margin-top: .19rem;
+  margin-top: .3rem;
   letter-spacing: 0;
   white-space: nowrap;
 }

@@ -4,8 +4,11 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import GuestLayout from '../../Layouts/GuestLayout.vue';
 import InputSandi from '../../Components/InputSandi.vue';
 import VerifikasiTurnstile from '../../Components/VerifikasiTurnstile.vue';
+import { useBahasa } from '../../tamu/bahasa';
 
 defineOptions({ layout: GuestLayout });
+
+const { t } = useBahasa();
 
 const props = defineProps<{
   companies: Array<{ id: number; name: string }>;
@@ -59,39 +62,39 @@ function daftar() {
 </script>
 
 <template>
-  <Head title="Daftar" />
-  <h2 class="auth-judul">Buat akun</h2>
-  <p class="auth-ket mb-7">Daftar untuk mulai mengikuti pelatihan di perusahaan Anda.</p>
+  <Head :title="t('daftar.judul_tab')" />
+  <h2 class="auth-judul">{{ t('daftar.judul') }}</h2>
+  <p class="auth-ket mb-7">{{ t('daftar.sub') }}</p>
 
   <div v-if="Object.keys(form.errors).length" class="mb-4 rounded-xl bg-red-50 border border-red-100 text-red-700 px-4 py-3 text-[12.5px]"><ul class="space-y-0.5"><li v-for="(pesan, k) in form.errors" :key="k">• {{ pesan }}</li></ul></div>
 
   <form class="space-y-4" @submit.prevent="daftar">
-    <div><label class="label">Nama lengkap</label><input v-model="form.name" autofocus required class="input"></div>
-    <div><label class="label">Email</label><input v-model="form.email" type="email" required autocomplete="username" class="input"></div>
-    <div class="grid grid-cols-2 gap-3"><div><label class="label">NRP / Employee ID</label><input v-model="form.employee_id" class="input"></div><div><label class="label">Departemen</label><input v-model="form.department" list="departments" class="input"><datalist id="departments"><option v-for="d in departments" :key="d" :value="d" /></datalist></div></div>
-    <div><label class="label">Jabatan</label><select v-model="form.position" required class="input" aria-label="Jabatan"><option value="">— pilih jabatan —</option><option v-for="p in positions" :key="p" :value="p">{{ p }}</option></select></div>
+    <div><label class="label">{{ t('daftar.nama') }}</label><input v-model="form.name" autofocus required class="input"></div>
+    <div><label class="label">{{ t('masuk.email') }}</label><input v-model="form.email" type="email" required autocomplete="username" class="input"></div>
+    <div class="grid grid-cols-2 gap-3"><div><label class="label">{{ t('daftar.nrp') }}</label><input v-model="form.employee_id" class="input"></div><div><label class="label">{{ t('daftar.departemen') }}</label><input v-model="form.department" list="departments" class="input"><datalist id="departments"><option v-for="d in departments" :key="d" :value="d" /></datalist></div></div>
+    <div><label class="label">{{ t('daftar.jabatan') }}</label><select v-model="form.position" required class="input" :aria-label="t('daftar.jabatan')"><option value="">{{ t('daftar.pilih_jabatan') }}</option><option v-for="p in positions" :key="p" :value="p">{{ p }}</option></select></div>
     <!-- Akun baru HANYA memakai perusahaan demo (server menolak yang
          lain). Perusahaan sungguhan ditetapkan administrator sesudahnya,
          di Kelola Pengguna — dikatakan di sini supaya pendaftar tidak
          mencari nama perusahaannya sendiri di daftar ini. -->
     <div v-if="companies.length">
-      <label class="label">Perusahaan demo</label>
-      <select v-model="form.company_id" required class="input" aria-label="Perusahaan demo"><option value="">— pilih perusahaan demo —</option><option v-for="c in companies" :key="c.id" :value="String(c.id)">{{ c.name }}</option></select>
-      <p class="petunjuk">Akun baru dimulai di perusahaan demo berisi data contoh. Administrator yang memindahkan akun Anda ke perusahaan Anda sendiri.</p>
+      <label class="label">{{ t('daftar.perusahaan_demo') }}</label>
+      <select v-model="form.company_id" required class="input" :aria-label="t('daftar.perusahaan_demo')"><option value="">{{ t('daftar.pilih_perusahaan') }}</option><option v-for="c in companies" :key="c.id" :value="String(c.id)">{{ c.name }}</option></select>
+      <p class="petunjuk">{{ t('daftar.petunjuk_demo') }}</p>
     </div>
-    <p v-else class="petunjuk">Perusahaan untuk akun Anda ditetapkan administrator sesudah pendaftaran.</p>
+    <p v-else class="petunjuk">{{ t('daftar.petunjuk_perusahaan') }}</p>
     <div>
-      <label class="label">Kata sandi</label>
+      <label class="label">{{ t('daftar.sandi') }}</label>
       <InputSandi v-model="form.password" required autocomplete="new-password" kelas="input" label="baru" />
-      <p class="petunjuk">Minimal {{ sandiMinimal }} huruf, tanpa syarat huruf besar atau angka. Kalimat pendek seperti &laquo;kopi pagi di tambang&raquo; lebih mudah diingat sekaligus lebih sulit ditebak daripada satu kata bercampur angka.</p>
+      <p class="petunjuk">{{ t('daftar.petunjuk_sandi', { n: sandiMinimal }) }}</p>
     </div>
-    <div><label class="label">Ulangi kata sandi</label><InputSandi v-model="form.password_confirmation" required autocomplete="new-password" kelas="input" label="ulangan" /></div>
+    <div><label class="label">{{ t('daftar.ulangi_sandi') }}</label><InputSandi v-model="form.password_confirmation" required autocomplete="new-password" kelas="input" label="ulangan" /></div>
     <VerifikasiTurnstile v-model="form['cf-turnstile-response']"
                          :kunci="props.turnstile ?? null" :tindakan="props.tindakan ?? null"
-                         :galat="gagalKe" />
-    <button type="submit" :disabled="form.processing" class="auth-tombol">{{ form.processing ? 'Mendaftarkan…' : 'Daftar' }}</button>
+                         :galat="gagalKe" tema="light" />
+    <button type="submit" :disabled="form.processing" class="auth-tombol">{{ form.processing ? t('daftar.memproses') : t('daftar.tombol') }}</button>
   </form>
-  <p class="text-center text-sm text-[#5E6875] mt-6">Sudah punya akun? <Link href="/login" class="auth-tautan">Masuk</Link></p>
+  <p class="text-center text-sm text-[#5E6875] mt-6">{{ t('daftar.sudah_punya') }} <Link href="/login" class="auth-tautan">{{ t('daftar.masuk') }}</Link></p>
 </template>
 
 <style scoped>

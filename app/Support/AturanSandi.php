@@ -48,20 +48,15 @@ class AturanSandi
     public static function pesan(string $kolom = 'password'): array
     {
         return [
-            $kolom.'.min' => 'Kata sandi minimal '.self::MINIMAL.' huruf. '
-                .'Kalimat pendek lebih mudah diingat sekaligus lebih sulit ditebak '
-                .'daripada satu kata bercampur angka.',
+            $kolom.'.min' => __('Kata sandi minimal :min huruf. Kalimat pendek lebih mudah diingat sekaligus lebih sulit ditebak daripada satu kata bercampur angka.', ['min' => self::MINIMAL]),
 
             /* Menyebut apa yang terjadi, bukan menyalahkan orangnya.
                Sandi yang bocor umumnya bocor dari situs LAIN, dan yang
                membaca pesan ini perlu tahu itu — kalau tidak, ia
                menyangka akun EQOHSEE-nya yang sudah dibobol. */
-            $kolom.'.uncompromised' => 'Kata sandi ini pernah muncul pada kebocoran data di '
-                .'internet, sehingga sudah ada di daftar tebakan penyerang. Kebocorannya '
-                .'hampir selalu berasal dari situs lain, bukan dari sini. Pilih kata sandi '
-                .'yang berbeda, dan ganti juga di situs lain bila Anda memakainya di sana.',
+            $kolom.'.uncompromised' => __('Kata sandi ini pernah muncul pada kebocoran data di internet, sehingga sudah ada di daftar tebakan penyerang. Kebocorannya hampir selalu berasal dari situs lain, bukan dari sini. Pilih kata sandi yang berbeda, dan ganti juga di situs lain bila Anda memakainya di sana.'),
 
-            $kolom.'.confirmed' => 'Ulangan kata sandinya tidak sama.',
+            $kolom.'.confirmed' => __('Ulangan kata sandinya tidak sama.'),
         ];
     }
 }

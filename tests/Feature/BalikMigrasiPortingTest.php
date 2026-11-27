@@ -43,7 +43,7 @@ class BalikMigrasiPortingTest extends TestCase
         '2026_11_26_200001_harga_website_tambahan_tiga_juta', '2026_11_26_200002_milik_bersama_prosedur_berita',
         '2026_11_26_200003_harga_server_dapat_diatur', '2026_11_26_200004_website_permanen_dan_pemeliharaan',
         // Update 23: rata-rata nasional FR/SR/ASR/MFR Surat Edaran (SMKP).
-        '2026_11_27_000001_smkp_rata_nasional',
+        '2026_11_27_000001_smkp_rata_nasional', '2026_11_27_000002_kunjungan_harian',
     ];
 
     public function test_migrasi_porting_dapat_dibalik_lalu_dijalankan_ulang(): void
@@ -78,5 +78,6 @@ class BalikMigrasiPortingTest extends TestCase
         $this->assertTrue(Schema::hasColumn('beli_item', 'ram'));
         $this->assertTrue(Schema::hasColumn('beli_produk', 'modul_per_blok'));
         $this->assertTrue(Schema::hasTable('smkp_rata_nasional'));
+        $this->assertTrue(Schema::hasTable('kunjungan_harian'));
     }
 }

@@ -10,8 +10,11 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import GuestLayout from '../../Layouts/GuestLayout.vue';
+import { useBahasa } from '../../tamu/bahasa';
 
 defineOptions({ layout: GuestLayout });
+
+const { t } = useBahasa();
 
 const props = defineProps<{
   surel?: string | null;
@@ -44,12 +47,12 @@ function kirim() {
 </script>
 
 <template>
-  <Head title="Verifikasi Dua Langkah" />
+  <Head :title="t('dua.judul_tab')" />
 
-  <h2 class="auth-judul">Satu langkah lagi</h2>
+  <h2 class="auth-judul">{{ t('dua.judul') }}</h2>
   <p class="auth-ket mb-7">
-    Masukkan kode dari aplikasi autentikator Anda<span v-if="props.surel">
-      untuk <span class="font-semibold text-stone-700">{{ props.surel }}</span></span>.
+    {{ t('dua.sub') }}<span v-if="props.surel">
+      {{ t('dua.untuk') }} <span class="font-semibold text-stone-700">{{ props.surel }}</span></span>.
   </p>
 
   <div v-if="Object.keys(form.errors).length" class="mb-4 rounded-xl bg-red-50 border border-red-100 text-red-700 px-4 py-3 text-[12.5px]">
@@ -58,32 +61,32 @@ function kirim() {
 
   <form class="space-y-4" @submit.prevent="kirim">
     <div>
-      <label for="kode" class="label">Kode verifikasi</label>
+      <label for="kode" class="label">{{ t('dua.kode') }}</label>
       <input id="kode" v-model="form.kode" required autofocus autocomplete="one-time-code"
              inputmode="text" placeholder="123456"
              class="input kode">
       <p class="petunjuk">
-        Tidak memegang ponselnya? Masukkan salah satu <strong>kode pemulihan</strong>
-        yang Anda simpan saat menyalakan verifikasi ini — bentuknya seperti
-        <code>a1b2c-d3e4f</code>. Setiap kode pemulihan hanya berlaku sekali.
+        {{ t('dua.petunjuk_1') }} <strong>{{ t('dua.kode_pemulihan') }}</strong>
+        {{ t('dua.petunjuk_2') }}
+        <code>a1b2c-d3e4f</code>. {{ t('dua.petunjuk_3') }}
       </p>
     </div>
 
     <button type="submit" :disabled="form.processing"
             class="auth-tombol">
-      {{ form.processing ? 'Memeriksa…' : 'Lanjutkan' }}
+      {{ form.processing ? t('dua.memproses') : t('dua.tombol') }}
     </button>
   </form>
 
   <p class="mt-5 text-center text-[12px] text-stone-500">
-    <span v-if="sisa > 0">Sisa waktu pengisian <span class="tabular-nums font-semibold">{{ waktu }}</span>.</span>
-    <span v-else>Waktu pengisian sudah habis — silakan masuk lagi dari awal.</span>
+    <span v-if="sisa > 0">{{ t('dua.sisa_waktu') }} <span class="tabular-nums font-semibold">{{ waktu }}</span>.</span>
+    <span v-else>{{ t('dua.habis') }}</span>
   </p>
 
   <p class="text-center text-sm text-stone-500 mt-3">
     <button type="button" class="auth-tautan"
             @click="batal.post('/dua-faktor/batal')">
-      Masuk dengan akun lain
+      {{ t('dua.akun_lain') }}
     </button>
   </p>
 </template>

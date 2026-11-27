@@ -668,18 +668,22 @@ class LapisanTampilanTest extends TestCase
         $kerangka = file_get_contents(resource_path('js/Layouts/AppLayout.vue'));
         $tur      = file_get_contents(resource_path('js/Components/TurSelamatDatang.vue'));
 
-        preg_match('/<img src="(\/brand\/[^"]+)"[^>]*>\s*<span>\s*<strong>/s', $kerangka, $m);
+        /* Bentuk blok merek sejak identitas baru: lambang vektor, lalu
+           wordmark vektor (bukan lagi teks <strong>) di dalam <span>.
+           Keduanya dibandingkan — wordmark yang berbeda sama salahnya
+           dengan lambang yang berbeda. */
+        preg_match('/<img src="(\/brand\/[^"]+)"[^>]*>\s*<span>\s*<img[^>]*src="(\/brand\/[^"]+)"/s', $kerangka, $m);
 
         $this->assertNotEmpty($m,
             'Blok merek pada bilah samping tidak lagi berbentuk yang dikenal penjaga '
             .'ini — tinjau ulang penjaganya, jangan hapus begitu saja.');
 
-        $lambang = $m[1];
-
-        $this->assertStringContainsString($lambang, $tur,
-            "Rel pengenalan tidak memakai lambang yang sama dengan bilah samping "
-            ."($lambang). Merek kedua pada halaman yang tugasnya memperkenalkan "
-            .'merek pertama.');
+        foreach (['lambang' => $m[1], 'wordmark' => $m[2]] as $jenis => $berkas) {
+            $this->assertStringContainsString($berkas, $tur,
+                "Rel pengenalan tidak memakai {$jenis} yang sama dengan bilah samping "
+                ."({$berkas}). Merek kedua pada halaman yang tugasnya memperkenalkan "
+                .'merek pertama.');
+        }
 
         /* Semboyannya dibandingkan sesudah entitas HTML dipulangkan:
            bilah samping menulis "·" apa adanya, pengenalan menulis

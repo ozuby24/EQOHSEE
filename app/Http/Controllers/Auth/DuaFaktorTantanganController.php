@@ -105,7 +105,7 @@ class DuaFaktorTantanganController extends Controller
 
         if ($menunggu === null) {
             throw ValidationException::withMessages([
-                'kode' => 'Waktu pengisian kode sudah habis. Silakan masuk lagi dari awal.',
+                'kode' => __('Waktu pengisian kode sudah habis. Silakan masuk lagi dari awal.'),
             ]);
         }
 
@@ -122,8 +122,9 @@ class DuaFaktorTantanganController extends Controller
 
         if (RateLimiter::tooManyAttempts($kunci, self::TEBAKAN_PER_MENIT)) {
             throw ValidationException::withMessages([
-                'kode' => 'Terlalu banyak percobaan. Coba lagi dalam '
-                    .RateLimiter::availableIn($kunci).' detik.',
+                'kode' => __('Terlalu banyak percobaan. Coba lagi dalam :detik detik.', [
+                    'detik' => RateLimiter::availableIn($kunci),
+                ]),
             ]);
         }
 
@@ -133,8 +134,7 @@ class DuaFaktorTantanganController extends Controller
             RateLimiter::hit($kunci);
 
             throw ValidationException::withMessages([
-                'kode' => 'Kodenya tidak cocok. Periksa lagi aplikasi autentikator Anda, '
-                    .'atau pakai salah satu kode pemulihan.',
+                'kode' => __('Kodenya tidak cocok. Periksa lagi aplikasi autentikator Anda, atau pakai salah satu kode pemulihan.'),
             ]);
         }
 

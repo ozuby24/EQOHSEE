@@ -72,10 +72,9 @@ class RegisteredUserController extends Controller
                server ini. */
             Turnstile::KOLOM => Turnstile::aturan(Turnstile::TINDAKAN['daftar']),
         ], AturanSandi::pesan() + [
-            'company_id.required'   => 'Pilih perusahaan demo untuk akun baru Anda.',
-            'company_id.exists'     => 'Akun baru hanya dapat memakai perusahaan demo. '
-                .'Administrator yang memindahkan akun Anda ke perusahaan Anda sendiri.',
-            'company_id.prohibited' => 'Perusahaan ditetapkan administrator sesudah akun Anda dibuat.',
+            'company_id.required'   => __('Pilih perusahaan demo untuk akun baru Anda.'),
+            'company_id.exists'     => __('Akun baru hanya dapat memakai perusahaan demo. Administrator yang memindahkan akun Anda ke perusahaan Anda sendiri.'),
+            'company_id.prohibited' => __('Perusahaan ditetapkan administrator sesudah akun Anda dibuat.'),
         ]);
 
         /* Tokennya sengaja TIDAK dibuang dari $data di sini.

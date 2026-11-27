@@ -1,0 +1,180 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="30.6 27.6 917.3 164.8" width="917" height="165" role="img" aria-label="EQOHSEE">
+  
+  <g transform="translate(15.0,13.2) scale(0.8)">
+    
+    <defs>
+      <!-- Deep Teal (#0F4C45) sculptural depth gradient -->
+      <linearGradient id="nav_l_teal" x1="12%" y1="88%" x2="82%" y2="12%">
+        <stop offset="0%" stop-color="#042923"/>
+        <stop offset="48%" stop-color="#0F4C45"/>
+        <stop offset="86%" stop-color="#17695E"/>
+        <stop offset="100%" stop-color="#0F4C45"/>
+      </linearGradient>
+
+      <!-- Olive Green (#7A9E3A) sculptural depth gradient -->
+      <linearGradient id="nav_l_olive" x1="88%" y1="15%" x2="18%" y2="88%">
+        <stop offset="0%" stop-color="#4D691E"/>
+        <stop offset="48%" stop-color="#7A9E3A"/>
+        <stop offset="88%" stop-color="#8EB548"/>
+        <stop offset="100%" stop-color="#7A9E3A"/>
+      </linearGradient>
+
+      <!-- Warm Grey (#D6D8D3) Top-Right Underside with realistic fold shadow -->
+      <linearGradient id="nav_l_grey_tr" x1="12%" y1="12%" x2="88%" y2="88%">
+        <stop offset="0%" stop-color="#8F938B"/>
+        <stop offset="32%" stop-color="#B0B3AB"/>
+        <stop offset="68%" stop-color="#C9CBC5"/>
+        <stop offset="100%" stop-color="#E6E8E3"/>
+      </linearGradient>
+
+      <!-- Warm Grey (#D6D8D3) Bottom-Left Underside with realistic fold shadow -->
+      <linearGradient id="nav_l_grey_bl" x1="88%" y1="88%" x2="12%" y2="12%">
+        <stop offset="0%" stop-color="#8F938B"/>
+        <stop offset="32%" stop-color="#B0B3AB"/>
+        <stop offset="68%" stop-color="#C9CBC5"/>
+        <stop offset="100%" stop-color="#E6E8E3"/>
+      </linearGradient>
+
+      <!-- Soft directional inner pocket shadow right under the fold crease -->
+      <linearGradient id="nav_l_sh_tr" x1="0%" y1="0%" x2="65%" y2="65%">
+        <stop offset="0%" stop-color="#06221E" stop-opacity="0.40"/>
+        <stop offset="52%" stop-color="#06221E" stop-opacity="0.06"/>
+        <stop offset="100%" stop-color="#06221E" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="nav_l_sh_bl" x1="100%" y1="100%" x2="35%" y2="35%">
+        <stop offset="0%" stop-color="#2A3810" stop-opacity="0.38"/>
+        <stop offset="52%" stop-color="#2A3810" stop-opacity="0.06"/>
+        <stop offset="100%" stop-color="#2A3810" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <g id="nav_l_emblem">
+      <!-- Warm Grey Underside Wings -->
+      <path d="
+        M 140,76
+        C 156,55 172,46 186,51
+        L 234,99
+        C 238,103 239,106.5 236,109
+        L 196,109
+        C 179,109 167,102 155,89
+        Z
+    " fill="url(#nav_l_grey_tr)"/>
+      <path d="
+        M 140,76
+        C 156,55 172,46 186,51
+        L 234,99
+        C 238,103 239,106.5 236,109
+        L 196,109
+        C 179,109 167,102 155,89
+        Z
+    " fill="url(#nav_l_sh_tr)"/>
+      <path d="
+        M 124,166
+        C 108,187 92,196 78,191
+        L 30,143
+        C 26,139 25,135.5 28,133
+        L 68,133
+        C 85,133 97,140 109,153
+        Z
+    " fill="url(#nav_l_grey_bl)"/>
+      <path d="
+        M 124,166
+        C 108,187 92,196 78,191
+        L 30,143
+        C 26,139 25,135.5 28,133
+        L 68,133
+        C 85,133 97,140 109,153
+        Z
+    " fill="url(#nav_l_sh_bl)"/>
+
+      <!-- Deep Teal & Olive Green Front Ribbons -->
+      <path d="
+        M 25,132
+        C 20,120 26,107 40,93
+        L 96,37
+        C 117,16 148,17 171,38
+        L 186,51
+        C 169,45 155,57 140,77
+        L 126,95
+        C 110,116 92,126 62,126
+        C 42,126 30,127 25,132 Z
+    " fill="url(#nav_l_teal)"/>
+      <path d="
+        M 239,110
+        C 244,122 238,135 224,149
+        L 168,205
+        C 147,226 116,225 93,204
+        L 78,191
+        C 95,197 109,185 124,165
+        L 138,147
+        C 154,126 172,116 202,116
+        C 222,116 234,115 239,110 Z
+    " fill="url(#nav_l_olive)"/>
+
+      <!-- Crisp 1.1px Fold-Crease Edge Highlights -->
+      <path d="M 144,72 C 156,56 169,48 182,50.5" fill="none" stroke="#F2F3EF" stroke-width="1.15" stroke-linecap="round" opacity="0.78"/>
+      <path d="M 120,170 C 108,186 95,194 82,191.5" fill="none" stroke="#F2F3EF" stroke-width="1.15" stroke-linecap="round" opacity="0.78"/>
+    </g>
+    
+  </g>
+  <line x1="258.2" y1="52.0" x2="258.2" y2="168.0" stroke="#889490" stroke-width="2.2"/>
+  <g transform="translate(290.2,66.6) scale(1.24)">
+    <g transform="translate(0,0) scale(1.0)">
+        <path d="
+            M 14,0 H 64 L 56.5,14.5 H 18 Q 14.5,14.5 14.5,18
+            V 27.5 H 56 L 48.5,42 H 14.5
+            V 55.5 H 62 L 54.5,70
+            H 0 V 14 Q 0,0 14,0 Z
+        " fill="#072420"/>
+        
+        <path d="
+            M 122.2,68.4
+            A 38,36 0 1,1 142.0,51.1
+            L 130.6,40.2
+            A 23.2,21.5 0 1,0 114.0,55.8
+            Z
+        " fill="#072420"/>
+        <!-- Official Olive Green (#7A9E3A) Q Tail — FLUSH with baseline y=70! -->
+        <polygon points="100,41 122,41 147,70 125,70" fill="#7A9E3A"/>
+        
+        <path fill-rule="evenodd" d="
+            M 193,-1
+            A 38,36 0 1,1 193,71
+            A 38,36 0 1,1 193,-1 Z
+            M 193,13.5
+            A 23.2,21.5 0 1,0 193,56.5
+            A 23.2,21.5 0 1,0 193,13.5 Z
+        " fill="#072420"/>
+        
+        <path d="M 240,0 H 255 V 27.5 H 291 V 0 H 306 V 70 H 291 V 42 H 255 V 70 H 240 Z" fill="#072420"/>
+        
+        <path d="
+            M 335,0 H 382 L 374.5,14.5 H 336
+            C 331,14.5 329,17 329,20.5
+            C 329,24.5 331.5,27 337,27
+            H 361
+            C 375.5,27 383,35 383,48.5
+            C 383,62 374.5,70 360,70
+            H 315 L 322.5,55.5 H 359
+            C 365,55.5 368,53 368,48.5
+            C 368,44 365,41.5 359,41.5
+            H 336
+            C 322,41.5 315,33.5 315,21
+            C 315,8.5 322.5,0 335,0 Z
+        " fill="#072420"/>
+        
+        <path d="
+            M 406,0 H 456 L 448.5,14.5 H 410 Q 406.5,14.5 406.5,18
+            V 27.5 H 448 L 440.5,42 H 406.5
+            V 55.5 H 454 L 446.5,70
+            H 392 V 14 Q 392,0 406,0 Z
+        " fill="#072420"/>
+        
+        <path d="
+            M 478,0 H 528 L 520.5,14.5 H 482 Q 478.5,14.5 478.5,18
+            V 27.5 H 520 L 512.5,42 H 478.5
+            V 55.5 H 526 L 518.5,70
+            H 464 V 14 Q 464,0 478,0 Z
+        " fill="#072420"/>
+        </g>
+  </g>
+</svg>

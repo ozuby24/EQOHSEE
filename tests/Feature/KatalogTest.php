@@ -150,7 +150,7 @@ class KatalogTest extends TestCase
         // Dahulu tiap aspek berwarna sendiri — delapan hue pada satu layar.
         // Delapan warna berhenti membedakan apa pun: yang tersisa hanya
         // pelangi, dan mereknya ikut hilang di dalamnya. Paletnya kini
-        // hanya jingga, cyan, dan hijau yang berulang.
+        // hanya teal, zaitun, dan oker merek yang berulang.
         $warna = array_values(array_unique(array_column(Pillars::all(), 'warna')));
 
         $this->assertLessThanOrEqual(3, count($warna),

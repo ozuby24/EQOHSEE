@@ -84,20 +84,20 @@ class VerifikasiKodeController extends Controller
 
         if ($u->kodeVerifikasiHangus()) {
             throw ValidationException::withMessages([
-                'kode' => 'Terlalu banyak percobaan. Minta kode baru.',
+                'kode' => __('Terlalu banyak percobaan. Minta kode baru.'),
             ]);
         }
 
         if (!$u->periksaKodeVerifikasi($d['kode'])) {
             throw ValidationException::withMessages([
                 'kode' => $u->kodeVerifikasiKedaluwarsa()
-                    ? 'Kode sudah kedaluwarsa. Minta kode baru.'
-                    : 'Kode tidak cocok.',
+                    ? __('Kode sudah kedaluwarsa. Minta kode baru.')
+                    : __('Kode tidak cocok.'),
             ]);
         }
 
         return $this->kePintuMasuk(
-            $r, 'Email Anda sudah terverifikasi. Silakan masuk dengan email dan sandi Anda.',
+            $r, __('Email Anda sudah terverifikasi. Silakan masuk dengan email dan sandi Anda.'),
         );
     }
 
@@ -143,7 +143,7 @@ class VerifikasiKodeController extends Controller
            ini apa adanya; permintaannya sendiri tetap dapat diulang. */
         if ($detik = $u->jedaKirimUlang()) {
             throw ValidationException::withMessages([
-                'kode' => "Tunggu {$detik} detik sebelum meminta kode baru.",
+                'kode' => __('Tunggu :detik detik sebelum meminta kode baru.', ['detik' => $detik]),
             ]);
         }
 
@@ -151,13 +151,13 @@ class VerifikasiKodeController extends Controller
 
         if (!$terkirim) {
             throw ValidationException::withMessages([
-                'kode' => 'Kode baru dibuat, tetapi surelnya gagal dikirim. Hubungi administrator.',
+                'kode' => __('Kode baru dibuat, tetapi surelnya gagal dikirim. Hubungi administrator.'),
             ]);
         }
 
         return back()->with('sukses', $this->suratAktif()
-            ? 'Kode baru sudah dikirim.'
-            : 'Kode baru dibuat, tetapi pengiriman surel belum aktif di server ini.');
+            ? __('Kode baru sudah dikirim.')
+            : __('Kode baru dibuat, tetapi pengiriman surel belum aktif di server ini.'));
     }
 
     /**

@@ -12,8 +12,11 @@ import { Head, router, useForm } from '@inertiajs/vue3';
 import type { HalamanVerifikasi } from '../../types';
 import GuestLayout from '../../Layouts/GuestLayout.vue';
 import Putaran from '../../Components/Putaran.vue';
+import { useBahasa } from '../../tamu/bahasa';
 
 defineOptions({ layout: GuestLayout });
+
+const { t } = useBahasa();
 
 const props = defineProps<HalamanVerifikasi>();
 
@@ -96,18 +99,18 @@ function kirimUlang() {
 </script>
 
 <template>
-  <Head title="Verifikasi Email" />
+  <Head :title="t('verif.judul_tab')" />
 
   <div class="max-w-md mx-auto">
     <div class="bg-white rounded-2xl shadow-card border border-stone-100 p-7 text-center">
 
-      <h2 class="text-[17px] font-bold text-cam-ink">Periksa surel Anda</h2>
+      <h2 class="text-[17px] font-bold text-cam-ink">{{ t('verif.judul') }}</h2>
       <p v-if="suratAktif" class="text-[12.5px] text-stone-500 mt-2 leading-relaxed">
-        Kami mengirim kode 6 angka ke<br>
+        {{ t('verif.terkirim') }}<br>
         <span class="font-bold text-cam-ink">{{ email }}</span>
       </p>
       <p v-else class="text-[12.5px] text-stone-500 mt-2 leading-relaxed">
-        Kode 6 angka untuk<br>
+        {{ t('verif.kode_untuk') }}<br>
         <span class="font-bold text-cam-ink">{{ email }}</span>
       </p>
 
@@ -116,10 +119,9 @@ function kirimUlang() {
            kotak masuknya sendiri. -->
       <div v-if="!suratAktif"
            class="mt-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-left">
-        <p class="text-[12px] font-bold text-amber-800">Pengiriman surel belum aktif di server ini</p>
+        <p class="text-[12px] font-bold text-amber-800">{{ t('verif.surel_mati') }}</p>
         <p class="text-[11.5px] text-amber-700 mt-1 leading-relaxed">
-          Kodenya sudah dibuat tetapi tidak dikirim ke mana pun. Hubungi administrator
-          untuk memperoleh kodenya, atau agar akun Anda diverifikasi langsung.
+          {{ t('verif.surel_mati_ket') }}
         </p>
       </div>
 
@@ -137,7 +139,7 @@ function kirimUlang() {
       </div>
 
       <p v-if="form.errors.kode" class="text-[12px] text-red-600 mt-3">{{ form.errors.kode }}</p>
-      <p v-else class="text-[11.5px] text-stone-400 mt-3">Kode berlaku {{ berlaku }} menit.</p>
+      <p v-else class="text-[11.5px] text-stone-400 mt-3">{{ t('verif.berlaku', { n: berlaku }) }}</p>
 
       <!-- Kode lengkap terkirim sendiri, jadi tombol ini kerap sudah
            berjalan sebelum sempat ditekan. Justru karena itu keadaan
@@ -149,7 +151,7 @@ function kirimUlang() {
               :class="form.processing ? 'cursor-wait' : ''"
               style="padding:11px 18px">
         <Putaran v-if="form.processing" />
-        {{ form.processing ? 'Memverifikasi kode…' : 'Verifikasi' }}
+        {{ form.processing ? t('verif.memproses') : t('verif.tombol') }}
       </button>
 
       <div class="mt-5 pt-4 border-t border-stone-100">
@@ -159,14 +161,14 @@ function kirimUlang() {
                           ? 'text-stone-300 cursor-not-allowed'
                           : 'text-[color:var(--eq-aksen,#F57C00)] hover:underline'">
           <Putaran v-if="mengirimUlang" :ukuran="12" />
-          <template v-if="mengirimUlang">Mengirim kode baru…</template>
-          <template v-else>{{ sisa > 0 ? `Kirim ulang dalam ${sisa} detik` : 'Kirim ulang kode' }}</template>
+          <template v-if="mengirimUlang">{{ t('verif.mengirim') }}</template>
+          <template v-else>{{ sisa > 0 ? t('verif.kirim_dalam', { n: sisa }) : t('verif.kirim_ulang') }}</template>
         </button>
       </div>
 
       <p v-if="hangus" class="text-[11.5px] text-amber-700 bg-amber-50 border border-amber-200
                               rounded-xl px-3 py-2.5 mt-4 leading-relaxed">
-        Kode terkunci karena terlalu banyak percobaan. Minta kode baru untuk mencoba lagi.
+        {{ t('verif.terkunci') }}
       </p>
     </div>
   </div>

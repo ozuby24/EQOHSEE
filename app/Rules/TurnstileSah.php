@@ -33,6 +33,6 @@ class TurnstileSah implements ValidationRule
            Yang membacanya sedang mencoba masuk, bukan sedang memperbaiki
            integrasi — dan istilah teknis pada pesan galat membuat orang
            berhenti mencoba, lalu menelepon. */
-        $gagal('Verifikasi keamanan gagal. Muat ulang halaman lalu coba lagi.');
+        $gagal(__('Verifikasi keamanan gagal. Muat ulang halaman lalu coba lagi.'));
     }
 }

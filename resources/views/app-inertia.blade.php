@@ -2,7 +2,7 @@
 @php
   $eqTema = \App\Support\Tema::pilihan(auth()->user());
 @endphp
-<html lang="id" @if($eqTema) data-tema="{{ $eqTema }}" @endif style="{{ \App\Support\Tema::gaya(auth()->user()) }}">
+<html lang="{{ app()->getLocale() === 'en' ? 'en' : 'id' }}" @if($eqTema) data-tema="{{ $eqTema }}" @endif style="{{ \App\Support\Tema::gaya(auth()->user()) }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -91,7 +91,11 @@
      dimuat lewat app.css, jadi tidak ada lagi permintaan ke luar di
      sini — dan tidak ada lagi halaman yang tergambar dengan huruf
      cadangan ketika jaringannya tertutup. --}}
-<link rel="preload" href="{{ \App\Support\Aset::v('fonts/inter-latin.woff2') }}" as="font" type="font/woff2" crossorigin>
+{{-- Alamatnya HARUS sama persis dengan url() di fonts.css, tanpa penanda
+     versi. Dengan ?v=… peramban menganggapnya berkas lain: hasil preload
+     tidak terpakai, hurufnya terunduh dua kali, dan konsol memperingatkan
+     "preloaded but not used". --}}
+<link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
 @vite(['resources/css/app.css', 'resources/js/inertia.ts'])
 <link rel="icon" type="image/svg+xml" href="{{ \App\Support\Aset::v('brand/favicon.svg') }}">
 <link rel="icon" href="{{ \App\Support\Aset::v('favicon.ico') }}" sizes="any">

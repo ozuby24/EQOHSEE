@@ -37,16 +37,28 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Routing\Middleware\ThrottleRequests::class.':web',
         ]);
 
+        /* Kuki bahasa halaman tamu ditulis peramban sendiri (pil bahasa),
+           jadi tidak terenkripsi; isinya hanya "id" atau "en". */
+        $middleware->encryptCookies(except: [\App\Http\Middleware\BahasaTamu::KUKI]);
+
         $middleware->web(append: [
             /* Akun nonaktif dikeluarkan pada permintaan berikutnya,
                termasuk sesi terbuka dan cookie "Ingat saya" (Aurorasys). */
             \App\Http\Middleware\PastikanAktif::class,
+
+            /* Sebelum pengendali berjalan: pesan validasi halaman tamu
+               ikut bahasa yang dipilih di pil bahasa. */
+            \App\Http\Middleware\BahasaTamu::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
 
             /* Ditaruh SESUDAH HandleInertiaRequests supaya ia melihat
                tanggapan yang sudah jadi — termasuk yang berasal dari
                halaman Blade, yang justru menjadi alasan keberadaannya. */
             \App\Http\Middleware\PastikanTanggapanInertia::class,
+
+            /* Hitungan pengunjung harian anonim untuk panel halaman tamu
+               — melihat tanggapan yang sudah jadi (hanya halaman 200). */
+            \App\Http\Middleware\CatatPengunjung::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
