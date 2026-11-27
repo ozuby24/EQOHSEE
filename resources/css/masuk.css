@@ -96,7 +96,32 @@
    selebar 60 px dan terpotong menjadi "Environme…". */
 .ms-huruf { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 0 6px; border-top: 1px solid rgba(255, 255, 255, .16); padding-top: 16px; }
 .ms-huruf b { display: block; font-size: clamp(24px, 2.2vw, 32px); line-height: 1; font-weight: 800; font-stretch: 78%; color: rgba(255, 255, 255, .32); }
-.ms-huruf b.ini { color: #FFFFFF; }
+
+/* Sorotan berjalan: E → Q → O → H → S → E → E → +K, lalu mengulang.
+   Dulu hanya S yang disorot, menetap — dan di halaman yang penuh gerak
+   (rekaman latar, titik "sistem aktif") itu terbaca sebagai animasi yang
+   macet di satu huruf. Kini tiap huruf mendapat giliran 1,2 detik dengan
+   peralihan yang saling bertumpang, satu putaran 9,6 detik.
+
+   Jedanya ditulis per huruf lewat :nth-child, bukan gaya sebaris, jadi
+   tidak bergantung pada izin gaya sebaris di Content-Security-Policy. */
+.ms-huruf b { animation: ms-huruf-sorot 9.6s ease-in-out infinite; }
+.ms-huruf b:nth-child(2) { animation-delay: 1.2s; }
+.ms-huruf b:nth-child(3) { animation-delay: 2.4s; }
+.ms-huruf b:nth-child(4) { animation-delay: 3.6s; }
+.ms-huruf b:nth-child(5) { animation-delay: 4.8s; }
+.ms-huruf b:nth-child(6) { animation-delay: 6s; }
+.ms-huruf b:nth-child(7) { animation-delay: 7.2s; }
+.ms-huruf b:nth-child(8) { animation-delay: 8.4s; }
+@keyframes ms-huruf-sorot {
+  0%, 18%, 100% { color: rgba(255, 255, 255, .32); }
+  5%, 12.5%     { color: #FFFFFF; }
+}
+/* Tanpa gerak: kedelapannya sama terang, tidak satu pun menonjol —
+   satu huruf terang yang diam adalah cacat yang baru saja diperbaiki. */
+@media (prefers-reduced-motion: reduce) {
+  .ms-huruf b { animation: none; color: rgba(255, 255, 255, .72); }
+}
 
 /* ── Halaman tamu lain: Daftar, Lupa sandi, Atur ulang, Dua faktor,
    Konfirmasi sandi ──

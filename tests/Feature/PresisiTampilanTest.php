@@ -147,6 +147,36 @@ class PresisiTampilanTest extends TestCase
         }
     }
 
+    /**
+     * Deret E Q O H S E E +K di panel halaman tamu tidak menyorot satu
+     * huruf secara tetap. Dulu S disorot menetap, dan di panel yang penuh
+     * gerak itu terbaca sebagai animasi yang macet di satu huruf.
+     */
+    public function test_deret_huruf_halaman_tamu_tidak_macet_di_satu_huruf(): void
+    {
+        $tataLetak = file_get_contents(resource_path('js/Layouts/GuestLayout.vue'));
+        $this->assertDoesNotMatchRegularExpression("/h\s*===\s*'S'/", $tataLetak,
+            'Huruf S kembali disorot tetap — terbaca sebagai animasi yang macet.');
+
+        $css = preg_replace('#/\*.*?\*/#s', '', file_get_contents(resource_path('css/masuk.css')));
+        $this->assertDoesNotMatchRegularExpression('/\.ms-huruf\s+b\.ini\b/', $css,
+            'Sorotan tetap .ms-huruf b.ini kembali.');
+        $this->assertMatchesRegularExpression('/\.ms-huruf\s+b\s*\{[^}]*animation:\s*ms-huruf-sorot\b/', $css,
+            'Deret huruf tidak lagi bergiliran disorot.');
+        $this->assertMatchesRegularExpression('/@keyframes\s+ms-huruf-sorot\b/', $css);
+
+        // Kedelapan huruf mendapat giliran: tujuh jeda, satu per huruf.
+        for ($n = 2; $n <= 8; $n++) {
+            $this->assertMatchesRegularExpression('/\.ms-huruf\s+b:nth-child\('.$n.'\)\s*\{[^}]*animation-delay:/', $css,
+                "Huruf ke-{$n} tidak mendapat giliran sorot.");
+        }
+
+        // Tanpa gerak: tidak ada huruf yang menonjol sendirian.
+        $this->assertMatchesRegularExpression(
+            '/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{\s*\.ms-huruf\s+b\s*\{[^}]*animation:\s*none/', $css,
+            'Bagi yang meminta gerakan dikurangi, sorotannya tidak dihentikan.');
+    }
+
     public function test_panel_foto_halaman_tamu_menempel_di_layar_lebar(): void
     {
         $tataLetak = file_get_contents(resource_path('js/Layouts/GuestLayout.vue'));

@@ -124,7 +124,10 @@ const ASPEK: [string, string][] = [
         </p>
         <div class="hidden sm:grid ms-huruf mt-8" role="img"
              :aria-label="'Delapan aspek EQOHSEE: ' + ASPEK.map(([, n]) => n).join(', ')">
-          <b v-for="([h], i) in ASPEK" :key="i" :class="{ ini: h === 'S' }" aria-hidden="true">{{ h }}</b>
+          <!-- Sorotannya berjalan bergantian (masuk.css), bukan menetap
+               pada satu huruf: sorotan tetap pada S terbaca sebagai
+               animasi yang macet. -->
+          <b v-for="([h], i) in ASPEK" :key="i" aria-hidden="true">{{ h }}</b>
         </div>
         <p class="hidden sm:block mt-3 ms-mono text-[11px] tracking-[.06em] text-white/50">DELAPAN ASPEK · SATU SISTEM</p>
       </div>
