@@ -1860,6 +1860,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('grup',          [\App\Http\Controllers\SmkpGrupController::class, 'index'])->name('grup');
             Route::post('grup',         [\App\Http\Controllers\SmkpGrupController::class, 'store'])->name('grup.store');
             Route::put('grup/{grup}',   [\App\Http\Controllers\SmkpGrupController::class, 'update'])->name('grup.update');
+            // Rata-rata nasional FR/SR/ASR/MFR Surat Edaran (port DBEST #23) di Kriteria & Acuan.
+            Route::post('acuan/rata-nasional',          [\App\Http\Controllers\SmkpRataNasionalController::class, 'simpan'])->name('rata-nasional.simpan');
+            Route::delete('acuan/rata-nasional/{tahun}', [\App\Http\Controllers\SmkpRataNasionalController::class, 'hapus'])
+                ->where('tahun', '[0-9]{1,9}')->name('rata-nasional.hapus');
         });
         Route::get('dasbor',        [SmkpDasborController::class, 'index'])->name('dasbor');
         Route::get('dasbor/ekspor', [SmkpDasborController::class, 'ekspor'])->name('dasbor.ekspor');
@@ -1880,6 +1884,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('{smkp}/daftar-hadir/{rapat}',  [SmkpController::class, 'daftarHadir'])->name('hadir.cetak');
         Route::get('{smkp}/temuan',                [SmkpController::class, 'temuan'])->name('temuan');
         Route::get('{smkp}/elemen/{elemen}',       [SmkpController::class, 'nilai'])->name('nilai');
+        Route::get('{smkp}/evaluasi',              [SmkpController::class, 'evaluasi'])->name('evaluasi');
         Route::get('{smkp}/laporan',               [SmkpController::class, 'laporan'])->name('laporan');
         Route::get('{smkp}/laporan/isian',         [SmkpController::class, 'laporanIsian'])->name('laporan.isian');
         Route::get('{smkp}/formulir',              [SmkpFormulirController::class, 'halaman'])->name('formulir');

@@ -241,6 +241,7 @@ class SmkpDasbor
                 'nilai'     => route('smkp.nilai', [$a->id, 'I']),
                 'temuan'    => route('smkp.temuan', $a->id),
                 'laporan'   => route('smkp.laporan', $a->id),
+                'evaluasi'  => route('smkp.evaluasi', $a->id),
             ],
         ];
     }

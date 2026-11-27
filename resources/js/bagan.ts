@@ -34,11 +34,14 @@ function pasangTema(): void {
   Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
   Chart.defaults.font.size = 11;
   Chart.defaults.color = '#78716c';
-  /* Tipenya membolehkan `animation` bernilai false, jadi menulis
-     `.duration` langsung tidak sah menurut TypeScript meski selalu bekerja
-     saat dijalankan. Ditulis sebagai objek utuh — lebih jujur pada
-     tipenya, dan tetap satu setelan. */
-  Chart.defaults.animation = { duration: 700 };
+  /* Objek `animation` bawaan JANGAN diganti objek baru: Chart.js 4
+     menyimpan fn/type/easing bawaannya di objek itu, dan menggantinya
+     membuat setiap animasi arahan kursor (tooltip, warna sorot) melempar
+     "this._fn is not a function" — tooltip tidak pernah tampil mulus di
+     seluruh grafik aplikasi. Tipenya membolehkan false, jadi dipersempit
+     dulu sebelum durasinya diubah. */
+  const animasi = Chart.defaults.animation;
+  if (animasi) animasi.duration = 700;
   Chart.defaults.plugins.legend.labels.boxWidth = 10;
   Chart.defaults.plugins.legend.labels.boxHeight = 10;
   Chart.defaults.plugins.legend.labels.usePointStyle = true;

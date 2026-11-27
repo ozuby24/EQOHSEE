@@ -1,3 +1,51 @@
+# Update 23 — Audit SMKP: pembaruan DBEST, Evaluasi Audit, data demo lengkap
+
+```bash
+# Di VPS, dari /var/www/EQOHSEE
+cp database/database.sqlite ~/cadangan-sebelum-update-23.sqlite   # pgsql: pg_dump
+bash deploy/deploy.sh          # migrate + build
+
+# Opsional — muat ulang data contoh perusahaan demo (mis. PT DEMO) agar
+# tiga audit SMKP contoh yang baru (tahun ini dan dua tahun sebelumnya) terpasang:
+# Pusat Kendali → Sistem → Perusahaan demo → Muat data contoh.
+```
+Satu migrasi baru, hanya MENAMBAH tabel `smkp_rata_nasional` (acuan
+nasional Surat Edaran; kosong berarti bawaan SE 2022 & SE 2025 berlaku).
+Tidak ada tabel lama yang diubah, tidak ada penjadwal baru.
+
+## Audit SMKP — yang baru
+- **Evaluasi Audit** (tab baru *Evaluasi* di setiap audit, juga tombol
+  *Evaluasi* di Dasbor): tingkat pencapaian dan selisihnya dari audit
+  tahun lalu, catatan evaluasi otomatis, grafik capaian tujuh elemen vs
+  tahun lalu (klik batang → penilaian elemen), sebaran kategori sub
+  elemen (klik irisan → saring peta panas), peta panas capaian sub
+  elemen, 10 sub elemen dengan poin hilang terbanyak, temuan per kategori
+  & status beserta hitung mundur batas waktu, kinerja FR/SR/ASR/MFR
+  terhadap rata-rata nasional, dan hasil elemen terkait yang tidak sejalan.
+- **Formulir Kesesuaian otomatis**: setiap butir bernilai penuh menjadi
+  satu uraian atas nama perusahaan ("PT X telah menetapkan …"). Auditor
+  dapat menyunting, mengeluarkan dari formulir/laporan, atau
+  **menjadikannya OFI** dengan justifikasi (tercetak di Formulir
+  Rekomendasi & OFI). Uraian tambahan dan OFI lain tetap diisi manual;
+  Laporan bagian 5.1.1 memakai daftar yang sama.
+- **Kalkulator jumlah sampel** di Rencana Audit (Slovin, √N, triangulasi,
+  one sample one population, sensus, persentase, ditetapkan auditor).
+  Barisnya ("Jumlah sampel: 55 dari populasi 120 manpower (Slovin, e 10%)")
+  ikut tercetak dan dihitung ulang server saat Rencana disimpan.
+- **Keterkaitan antar elemen** di halaman Penilaian (panel per sub elemen,
+  peringatan bila Kesesuaian ↔ Mayor) dan peta lengkapnya di Kriteria & Acuan.
+- **Rata-rata nasional FR, SR, ASR, MFR** (Kriteria & Acuan →
+  *Rata-rata nasional*): administrator menambah/memperbarui satu baris per
+  tahun Surat Edaran. Tahap I menandai kondisi 4, 5, 7 faktor penyesuaian
+  otomatis dari Data Kinerja, menampilkan posisi tiap angka terhadap
+  nasional, dan menyediakan **kalkulator FR · SR · ASR · MFR**.
+- **Petunjuk pengisian** di setiap bagian Tahap I (A–G).
+- Data contoh SMKP: tiga audit (dua selesai, satu berjalan) dengan
+  Tahap I lengkap, Rencana Audit (metode & sampel tiap kriteria), penilaian
+  bercatatan & berbukti, Formulir Kesesuaian otomatis + OFI, temuan dengan
+  tindak lanjut berbagai status (satu sengaja terlambat), daftar hadir,
+  dan isian Laporan Audit.
+
 # Update 22 — Aplikasi baru: MERANTI · Reklamasi & Nursery
 
 ```bash

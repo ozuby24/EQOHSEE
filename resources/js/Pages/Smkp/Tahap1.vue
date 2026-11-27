@@ -6,6 +6,9 @@ import Ikon from '../../Components/Smkp/Ikon.vue';
 import StatusSimpan from '../../Components/Smkp/StatusSimpan.vue';
 import { useAutosimpan } from '../../smkp/lib/autosimpan';
 import { angka } from '../../smkp/lib/format';
+import { banding, saranFaktor, type RataNasional } from '../../smkp/lib/kinerja';
+import Petunjuk from '../../Components/Smkp/Tahap1/Petunjuk.vue';
+import KalkulatorRate from '../../Components/Smkp/Tahap1/KalkulatorRate.vue';
 import type { RingkasAudit } from '../../smkp/types';
 
 interface Permulaan {
@@ -30,6 +33,7 @@ const props = defineProps<{
   kelayakan: Record<string, string>;
   faktor: Record<string, string>;
   kinerja: Record<string, { label: string; satuan: string }>;
+  rataNasional: RataNasional;
   kelasRisiko: string[];
   mandays: Record<string, number>;
   hariTetap: { total: number; penyesuaian: number; aturan?: string } | null;
@@ -119,6 +123,34 @@ function simpan() {
 }
 
 const bagian = 'kartu p-5 sm:p-6';
+
+/* ───────── Rata-rata nasional & saran faktor 4, 5, 7 (port DBEST #23) ───────── */
+const NASIONAL = ['fr', 'sr', 'asr', 'mfr'] as const;
+const nilaiNasional = (k: string) => (props.rataNasional as unknown as Record<string, number>)[k];
+const saran = computed(() => saranFaktor(form.kinerja, props.rataNasional));
+// Faktor yang diubah auditor sendiri tidak lagi diikutkan saran otomatis.
+const faktorManual = new Set<string>();
+watch(() => JSON.stringify(saran.value), () => {
+  for (const k of ['kecelakaan', 'penyakit', 'pak'] as const) {
+    const v = saran.value[k];
+    if (v !== null && !faktorManual.has(k) && k in form.permulaan.faktor && form.permulaan.faktor[k] !== v) form.permulaan.faktor[k] = v;
+  }
+});
+/** Keterangan di bawah kotak FR/SR/ASR/MFR: posisi terhadap rata-rata nasional. */
+function bandingNasional(k: string): { teks: string; kelas: string } | null {
+  if (!(NASIONAL as readonly string[]).includes(k)) return null;
+  const n = nilaiNasional(k);
+  const b = banding(form.kinerja[k], n);
+  const teks = { atas: 'Di atas', bawah: 'Di bawah', sama: 'Sama dengan' };
+  return {
+    teks: b ? `${teks[b]} rata-rata nasional ${angka(n, 2)}` : `Rata-rata nasional ${angka(n, 2)}`,
+    kelas: b === 'atas' ? 'text-rose-600 font-semibold' : b === 'bawah' ? 'text-hijau-700 font-semibold' : 'text-slate-500',
+  };
+}
+const saranUntuk = (k: string) => (k === 'kecelakaan' || k === 'penyakit' || k === 'pak' ? saran.value[k] : undefined);
+function pakaiRate(v: Record<'fr' | 'sr' | 'asr' | 'mfr', string>) {
+  for (const k of NASIONAL) form.kinerja[k] = v[k];
+}
 </script>
 
 <template>
@@ -136,6 +168,7 @@ const bagian = 'kartu p-5 sm:p-6';
         <section :class="bagian">
           <h2 class="kartu-judul">A. Kontak Awal &amp; Surat Penugasan</h2>
           <p class="kartu-sub">Pertemuan pertama dengan auditi dan surat pengangkatan tim audit.</p>
+          <Petunjuk bagian="a" />
           <div class="mt-5 grid sm:grid-cols-2 gap-4">
             <div><label class="label" for="t1-tgl-kontak">Tanggal kontak awal</label><input id="t1-tgl-kontak" v-model="form.permulaan.tanggal_kontak" type="date" class="input"></div>
             <div>
@@ -183,18 +216,24 @@ const bagian = 'kartu p-5 sm:p-6';
         <section :class="bagian">
           <h2 class="kartu-judul">B. Data Kinerja Keselamatan Pertambangan</h2>
           <p class="kartu-sub">Angka kinerja pada periode audit.</p>
+          <Petunjuk bagian="b" judul="Petunjuk pengisian & hitung FR/SR">
+            <KalkulatorRate :kinerja="form.kinerja" :nasional="rataNasional" :boleh="bisaSunting" @pakai="pakaiRate" />
+          </Petunjuk>
           <div class="mt-5 grid sm:grid-cols-2 gap-4">
             <div v-for="(b, k) in kinerja" :key="k">
               <label class="label">{{ b.label }} <span v-if="b.satuan" class="font-normal text-slate-400">({{ b.satuan }})</span></label>
               <input v-model="form.kinerja[k]" inputmode="decimal" class="input tabular-nums">
+              <p v-if="bandingNasional(String(k))" class="mt-1 text-[11.5px]" :class="bandingNasional(String(k))!.kelas">{{ bandingNasional(String(k))!.teks }}</p>
             </div>
           </div>
+          <p class="mt-3 text-[11.5px] text-slate-500">Rata-rata nasional: {{ rataNasional.sumber }} (tahun {{ rataNasional.tahun }}) — dipakai untuk saran kondisi 4, 5, dan 7 di bagian D.</p>
         </section>
 
         <!-- C -->
         <section :class="bagian">
           <h2 class="kartu-judul">C. Penentuan Kelayakan Audit</h2>
           <p class="kartu-sub">Tujuh indikator yang memutuskan audit dapat dijalankan.</p>
+          <Petunjuk bagian="c" />
           <div class="mt-5 space-y-3">
             <div v-for="(label, k, i) in kelayakan" :key="k" class="grid md:grid-cols-[1fr_260px] gap-2 md:items-center">
               <label class="text-[13px] text-slate-700"><span class="text-slate-400 tabular-nums mr-1">{{ Number(i) + 1 }}.</span>{{ label }}</label>
@@ -220,11 +259,23 @@ const bagian = 'kartu p-5 sm:p-6';
         <section :class="bagian">
           <h2 class="kartu-judul">D. Perhitungan Hari Kerja Audit</h2>
           <p class="kartu-sub">Centang kondisi yang terpenuhi. Satu kondisi atau lebih menambah hari kerja audit paling banyak 10% — bukan satu hari per kondisi.</p>
-          <div class="mt-5 space-y-2">
+          <Petunjuk bagian="d" />
+          <p class="mt-3 rounded-xl bg-slate-50 px-4 py-2.5 text-[12px] leading-relaxed text-slate-600">
+            Rata-rata nasional ({{ rataNasional.sumber }}): FR <b class="tabular-nums">{{ angka(rataNasional.fr, 2) }}</b> · SR <b class="tabular-nums">{{ angka(rataNasional.sr, 2) }}</b>
+            · ASR <b class="tabular-nums">{{ angka(rataNasional.asr, 2) }}</b> · MFR <b class="tabular-nums">{{ angka(rataNasional.mfr, 2) }}</b>.
+            Kondisi 4, 5, dan 7 dicentang otomatis dari Data Kinerja (bagian B) — tetap dapat diubah.
+          </p>
+          <div class="mt-4 space-y-2">
             <label v-for="(label, k, i) in faktor" :key="k" class="flex items-start gap-3 rounded-xl border px-4 py-3 cursor-pointer transition"
                    :class="form.permulaan.faktor[k] ? 'border-brand-300 bg-brand-50/50' : 'border-slate-200 hover:bg-slate-50'">
-              <input v-model="form.permulaan.faktor[k]" type="checkbox" class="mt-0.5 rounded border-slate-300 text-brand-500 focus:ring-brand-500/30">
-              <span class="text-[13px] text-slate-700 leading-relaxed"><span class="text-slate-400 tabular-nums mr-1">{{ Number(i) + 1 }}.</span>{{ label }}</span>
+              <input v-model="form.permulaan.faktor[k]" type="checkbox" class="mt-0.5 rounded border-slate-300 text-brand-500 focus:ring-brand-500/30" @change="faktorManual.add(String(k))">
+              <span class="text-[13px] text-slate-700 leading-relaxed"><span class="text-slate-400 tabular-nums mr-1">{{ Number(i) + 1 }}.</span>{{ label }}
+                <span v-if="saranUntuk(String(k)) !== undefined && saranUntuk(String(k)) !== null"
+                      class="ml-1 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold align-middle"
+                      :class="saranUntuk(String(k)) ? 'bg-rose-50 text-rose-700' : 'bg-hijau-50 text-hijau-700'">
+                  Data kinerja: {{ saranUntuk(String(k)) ? 'terpenuhi' : 'tidak terpenuhi' }}
+                </span>
+              </span>
             </label>
           </div>
           <div class="mt-5 grid sm:grid-cols-2 gap-4">
@@ -269,6 +320,7 @@ const bagian = 'kartu p-5 sm:p-6';
               {{ ringkasKecukupan.lengkap }} lengkap · {{ ringkasKecukupan.tidak }} tidak lengkap · {{ ringkasKecukupan.belum }} belum
             </span>
           </div>
+          <Petunjuk bagian="e" />
           <div class="mt-5 space-y-3">
             <div v-for="e in elemen" :key="e.kode" class="rounded-xl border border-slate-200 p-4">
               <div class="flex flex-wrap items-center justify-between gap-3">
@@ -289,6 +341,7 @@ const bagian = 'kartu p-5 sm:p-6';
         <section :class="bagian">
           <h2 class="kartu-judul">F. Persiapan Audit Lapangan</h2>
           <p class="kartu-sub">Data pertimbangan penetapan metode dan sampel — Berita Acara bagian III.</p>
+          <Petunjuk bagian="f" />
           <div class="mt-5 space-y-5">
             <div>
               <label class="label" for="t1-integritas">Bukti komitmen integritas auditor</label>
@@ -397,6 +450,7 @@ const bagian = 'kartu p-5 sm:p-6';
         <section :class="bagian">
           <h2 class="kartu-judul">G. Penutup Berita Acara</h2>
           <p class="kartu-sub">Tanggal Berita Acara dibuat. Tanda tangan dibubuhkan di halaman cetak Berita Acara.</p>
+          <Petunjuk bagian="g" />
           <div class="mt-5 sm:w-1/2"><label class="label" for="t1-tgl-ba">Tanggal Berita Acara</label><input id="t1-tgl-ba" v-model="form.permulaan.tanggal_ba" type="date" class="input"></div>
         </section>
       </fieldset>

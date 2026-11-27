@@ -22,6 +22,7 @@ const tab = [
   { kunci: 'temuan', label: 'Temuan & CAR', url: (id: number) => `/smkp/${id}/temuan` },
   { kunci: 'formulir', label: 'Formulir', url: (id: number) => `/smkp/${id}/formulir` },
   { kunci: 'laporan', label: 'Laporan', url: (id: number) => `/smkp/${id}/laporan/isian` },
+  { kunci: 'evaluasi', label: 'Evaluasi', url: (id: number) => `/smkp/${id}/evaluasi` },
 ];
 
 const STATUS: Record<string, string> = {

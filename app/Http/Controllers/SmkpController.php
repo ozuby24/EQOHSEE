@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{ActivityLog, Company, SmkpAttendee, SmkpAudit, SmkpBukti, SmkpFinding, SmkpTindakLanjut, User};
-use App\Support\{KopDokumen, Smkp, SmkpAutosimpan, SmkpSusunan, SmkpTahap, Waktu};
+use App\Support\{KopDokumen, Smkp, SmkpAutosimpan, SmkpEvaluasi, SmkpKesesuaian, SmkpKeterkaitan, SmkpSampel, SmkpSusunan, SmkpTahap, Waktu};
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\{DB, Storage};
@@ -158,6 +158,34 @@ class SmkpController extends Controller
     }
 
     /* ---------- Ringkasan satu audit ---------- */
+    /**
+     * Evaluasi audit (upgrade SMKP): chart interaktif capaian elemen & sub
+     * elemen dibanding audit tahun lalu, celah poin, temuan & tindak lanjut,
+     * kinerja keselamatan terhadap rata-rata nasional, dan catatan evaluasi
+     * otomatis — seluruhnya dari data audit yang sudah diinput.
+     */
+    public function evaluasi(Request $request, SmkpAudit $smkp)
+    {
+        $smkp->load('company');
+        $lalu = SmkpAudit::query()
+            ->where('id', '!=', $smkp->id)
+            ->where('tahun', '<', $smkp->tahun)
+            ->when($smkp->company_id,
+                fn ($q) => $q->where('company_id', $smkp->company_id),
+                fn ($q) => $q->whereNull('company_id')->where('perusahaan_luar', $smkp->perusahaan_luar))
+            ->orderByDesc('tahun')->orderByDesc('id')
+            ->first();
+        $temuan = $smkp->findings()->withCount('tindakLanjut')->get();
+
+        return Inertia::render('Smkp/Evaluasi', [
+            'audit'        => $this->ringkasAudit($smkp),
+            'evaluasi'     => SmkpEvaluasi::susun($smkp, $lalu, $temuan, Waktu::kini()->toDateString()),
+            'kategori'     => SmkpFinding::KATEGORI,
+            'jumlahTemuan' => $temuan->count(),
+            'bisaSunting'  => $request->user()->bisaAudit(),
+        ]);
+    }
+
     public function show(Request $request, SmkpAudit $smkp)
     {
         $smkp->load('company');
@@ -277,6 +305,11 @@ class SmkpController extends Controller
                 'nomor' => $b['nomor'], 'judul' => $b['judul'], 'ket' => $b['ket'], 'warna' => $b['warna'],
                 'langkah' => array_map(fn ($l) => ['judul' => $l['judul'], 'jenis' => $l['jenis']], $b['langkah']),
             ])->values(),
+            'keterkaitan' => SmkpKeterkaitan::data(),
+            // Rata-rata nasional Surat Edaran (port DBEST #23); diubah administrator.
+            'rataNasional' => array_values(SmkpTahap::daftarRataNasional()),
+            'tahunIni'     => (int) Waktu::kini()->year,
+            'bisaKelola'   => (bool) request()->user()?->isAdmin(),
         ]);
     }
 
@@ -345,6 +378,8 @@ class SmkpController extends Controller
             'kelayakan'  => SmkpTahap::indikatorKelayakan(),
             'faktor'     => SmkpTahap::faktorPenyesuaian(),
             'kinerja'    => SmkpTahap::butirKinerja(),
+            // Rata-rata nasional SE yang berlaku untuk tahun audit: saran faktor 4, 5, 7 (port DBEST #23).
+            'rataNasional' => SmkpTahap::rataNasional((int) $smkp->tahun),
             'kelasRisiko'=> SmkpTahap::kelasRisiko(),
             'mandays'    => $smkp->mandays(),
             // Audit selesai: berkas memakai angka yang dibekukan, bukan hitungan formulir.
@@ -684,7 +719,8 @@ class SmkpController extends Controller
         $metodeSampel = [];
         foreach ((array) ($d['metode_sampel'] ?? []) as $kode => $v) {
             $m = trim((string) (((array) $v)['metode'] ?? ''));
-            $sp = trim((string) (((array) $v)['sampel'] ?? ''));
+            // Baris "Jumlah sampel: …" dari kalkulator dihitung ulang (port DBEST #23).
+            $sp = SmkpSampel::normalSampel(trim((string) (((array) $v)['sampel'] ?? '')));
             if (in_array((string) $kode, $kodeSah, true) && ($m !== '' || $sp !== '')) {
                 $metodeSampel[(string) $kode] = ['metode' => $m, 'sampel' => $sp];
             }
@@ -890,9 +926,17 @@ class SmkpController extends Controller
         $diminta = BuktiAuditController::diminta($smkp);
         $kodeElemen = array_column(array_merge(...array_map(fn ($s) => Smkp::butirSub($s), $ref['sub'])), 'kode');
         $berkas = BuktiAuditController::perButir($smkp, $request->user(), $kodeElemen);
+        // Keterkaitan antar elemen (port DBEST #23) dibaca terhadap rekap seluruh audit.
+        $rekapPenuh = Smkp::rekap($hasil);
         $sub = [];
         foreach ($ref['sub'] as $s) {
             $r = Smkp::rekapSub($s, $hasil);
+            $kait = array_map(function ($t) use ($smkp) {
+                $t['status'] = array_map(fn ($ks) => $ks + [
+                    'url' => route('smkp.nilai', [$smkp, $ks['elemen']]).($ks['sub'] ? '?sub='.$ks['sub'] : ''),
+                ], $t['status']);
+                return $t;
+            }, SmkpKeterkaitan::denganStatus($s['kode'], $rekapPenuh, $hasil, SmkpKeterkaitan::kategoriTuntas($r)));
             $butir = [];
             foreach (Smkp::butirSub($s) as $b) {
                 $v = Smkp::nilaiButir($hasil, $b['kode']);
@@ -915,6 +959,7 @@ class SmkpController extends Controller
                 'nilai' => $r['nilai'], 'maks' => $r['maks'], 'dinilai' => $r['dinilai'], 'berlaku' => $r['berlaku'],
                 'kategori' => $r['kategori'], 'butir' => $butir,
                 'diminta' => $diminta[$s['kode']] ?? null,
+                'keterkaitan' => $kait,
             ];
         }
 
@@ -1269,7 +1314,7 @@ class SmkpController extends Controller
                 'alamatSite' => trim((string) ($smkp->permulaan['alamat_site'] ?? '')) ?: $this->alamatSiteBawaan($smkp),
                 'jumlahPekerja' => (string) ($smkp->permulaan['jumlah_pekerja'] ?? ''),
                 'tim'        => count($this->timLaporan($smkp)),
-                'praktik'    => count((array) ($smkp->kesesuaian ?? [])),
+                'praktik'    => count(SmkpKesesuaian::daftar($smkp)),
                 'temuan'     => $smkp->findings()->count(),
                 'dinilai'    => $rekap['dinilai'],
                 'berlaku'    => $rekap['berlaku'],
@@ -1641,9 +1686,9 @@ class SmkpController extends Controller
             }
         }
 
+        // Formulir Kesesuaian otomatis (port DBEST #23): butir bernilai penuh + uraian tambahan, urut Lampiran II.
         $out = [];
-        foreach ((array) ($a->kesesuaian ?? []) as $r) {
-            $r = (array) $r;
+        foreach (SmkpKesesuaian::daftar($a) as $r) {
             $ket = trim((string) ($r['keterangan'] ?? ''));
             $el = (string) ($r['elemen'] ?? '');
             if ($ket === '' || !isset($nama[$el])) continue;

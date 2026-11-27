@@ -1,0 +1,100 @@
+{
+  "meta": {
+    "judul": "Keterkaitan utama antar elemen dan sub elemen kriteria audit SMKP Minerba",
+    "sumber": "Daftar keterkaitan acuan penilaian dari OHSE PT Cemerlang Asa Mandiri (2026), selaras Lampiran II Kepdirjen Minerba No. 185.K/37.04/DJB/2019.",
+    "catatan": "Kode 'a' dan 'b' adalah dua sisi keterkaitan: kode elemen (mis. IV) mencakup seluruh sub elemennya, kode sub elemen (mis. II.2) mencakup sub-sub elemennya."
+  },
+  "kelompok": [
+    {
+      "judul": "Elemen I (Kebijakan) ↔ Elemen II (Perencanaan) & Elemen VII (Tinjauan Manajemen)",
+      "tautan": [
+        {
+          "a": ["I.1", "I.5"],
+          "b": ["II.1"],
+          "label": "Penyusunan Kebijakan & Tinjauan ↔ Penelaahan Awal",
+          "uraian": "Penyusunan kebijakan Keselamatan Pertambangan (KP) mengacu pada hasil tinjauan awal kondisi KP, serta melibatkan pekerja/serikat pekerja dan evaluasi penyusunan kebijakan."
+        },
+        {
+          "a": ["I.3"],
+          "b": ["II.3"],
+          "label": "Penetapan Kebijakan ↔ Identifikasi & Kepatuhan Peraturan Perundang-undangan",
+          "uraian": "Kewajiban kepatuhan regulasi baru yang teridentifikasi di Elemen II dapat memicu evaluasi atau revisi kebijakan di Elemen I bila belum terakomodasi."
+        },
+        {
+          "a": ["I"],
+          "b": ["VII"],
+          "label": "Kebijakan ↔ Tinjauan Manajemen & Peningkatan Kinerja",
+          "uraian": "Evaluasi dalam rapat tinjauan manajemen menjadi dasar penyesuaian atau revisi kebijakan KP agar tetap relevan."
+        }
+      ]
+    },
+    {
+      "judul": "Elemen II (Perencanaan) ↔ Elemen IV (Implementasi) & Elemen V (Pemantauan, Evaluasi, dan Tindak Lanjut)",
+      "tautan": [
+        {
+          "a": ["II.1", "II.2"],
+          "b": ["IV"],
+          "label": "Penelaahan Awal & Manajemen Risiko ↔ Implementasi (termasuk IV.6 Perancangan & Rekayasa)",
+          "uraian": "Hasil identifikasi bahaya, penilaian, dan pengendalian risiko menjadi dasar penetapan program kerja, prosedur operasi, izin kerja khusus, dan pengendalian teknis di lapangan."
+        },
+        {
+          "a": ["II.2.4", "II.2.5"],
+          "b": ["V.7"],
+          "label": "Pengendalian, Pemantauan & Peninjauan Risiko ↔ Rencana Perbaikan & Tindak Lanjut",
+          "uraian": "Ketidaksesuaian atau perubahan risiko di lapangan mendorong pembaruan pengendalian risiko dan rencana tindak lanjut perbaikan."
+        }
+      ]
+    },
+    {
+      "judul": "Elemen III (Organisasi dan Personel) ↔ Elemen IV (Implementasi)",
+      "tautan": [
+        {
+          "a": ["III.8"],
+          "b": ["IV.9"],
+          "label": "Penunjukan Tim Tanggap Darurat ↔ Pengelolaan Keadaan Darurat",
+          "uraian": "Kesiapan dan pengelolaan keadaan darurat di lapangan bergantung pada struktur, penunjukan, dan kompetensi tim tanggap darurat yang ditetapkan di Elemen III."
+        },
+        {
+          "a": ["III.5", "III.6"],
+          "b": ["IV"],
+          "label": "Pengawas Operasional/Teknik & Tenaga Teknis Berkompeten ↔ Implementasi Operasional & KO",
+          "uraian": "Pelaksanaan tugas operasional, pemeliharaan sarana/prasarana, serta pengamanan instalasi di Elemen IV harus didukung personel dan tenaga teknis yang kompeten dan berwenang."
+        }
+      ]
+    },
+    {
+      "judul": "Elemen IV (Implementasi) ↔ Elemen V (Pemantauan, Evaluasi, dan Tindak Lanjut)",
+      "tautan": [
+        {
+          "a": ["IV"],
+          "b": ["V"],
+          "label": "Pelaksanaan Prosedur, Inspeksi & Pengelolaan Operasional ↔ Pemantauan & Pengukuran Kinerja, Investigasi, Audit Internal & V.7 Tindak Lanjut",
+          "uraian": "Inspeksi rutin, pemantauan leading/lagging indicator, investigasi kecelakaan/kejadian berbahaya, dan audit internal menguji efektivitas implementasi di Elemen IV, lalu hasilnya ditindaklanjuti melalui rencana perbaikan di Sub Elemen V.7."
+        }
+      ]
+    },
+    {
+      "judul": "Elemen V (Pemantauan, Evaluasi, dan Tindak Lanjut) ↔ Elemen VII (Tinjauan Manajemen)",
+      "tautan": [
+        {
+          "a": ["V"],
+          "b": ["VII"],
+          "label": "Hasil Pemantauan, Pengukuran, Audit Internal & Tindak Lanjut ↔ Tinjauan Manajemen",
+          "uraian": "Data kinerja KP, hasil audit internal, dan status tindak lanjut menjadi input utama dalam tinjauan manajemen puncak untuk menilai keefektifan sistem dan merumuskan peningkatan kinerja."
+        }
+      ]
+    },
+    {
+      "judul": "Elemen VI (Dokumentasi) ↔ Seluruh Elemen (I–V & VII)",
+      "tautan": [
+        {
+          "a": ["VI.1", "VI.2", "VI.3"],
+          "b": ["I", "II", "III", "IV", "V", "VII"],
+          "label": "Pengendalian Dokumen & Rekaman ↔ Seluruh Elemen",
+          "uraian": "Dokumen prosedur, rencana, penunjukan personel, catatan implementasi (seperti pelaporan kejadian berbahaya, kompetensi, dan audit internal), serta risalah tinjauan manajemen harus dikendalikan, ditelusuri, dan mudah diakses sebagai bukti objektif audit di setiap elemen.",
+          "umum": true
+        }
+      ]
+    }
+  ]
+}
