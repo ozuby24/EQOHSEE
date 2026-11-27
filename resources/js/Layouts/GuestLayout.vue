@@ -101,6 +101,11 @@ const ASPEK: [string, string][] = [
 
       <div class="absolute inset-0 bg-[linear-gradient(180deg,rgba(11,17,23,.62),rgba(11,17,23,.2)_34%,rgba(11,17,23,.96))]"></div>
 
+      <!-- Motif peta tambang di atas citranya, seperti lapisan peta GIS
+           di atas foto udara — bahasa rupa yang sama dengan halaman
+           depan (masuk.css .ms-peta). -->
+      <div class="ms-peta absolute inset-0" aria-hidden="true"></div>
+
       <div class="relative z-10 flex items-center justify-between gap-3">
         <Link href="/" class="w-fit" aria-label="EQOHSEE — ke halaman depan"><Wordmark :tinggi="28" /></Link>
 
@@ -133,7 +138,7 @@ const ASPEK: [string, string][] = [
       </div>
     </section>
 
-    <section class="relative z-10 -mt-6 sm:mt-0 rounded-t-[20px] sm:rounded-none bg-white flex items-start sm:items-center justify-center px-5 pt-7 pb-10 sm:py-12 sm:px-10 lg:px-14">
+    <section class="ms-lembar relative z-10 -mt-6 sm:mt-0 rounded-t-[20px] sm:rounded-none bg-white flex items-start sm:items-center justify-center px-5 pt-7 pb-10 sm:py-12 sm:px-10 lg:px-14">
       <div class="w-full max-w-[420px]">
         <!-- role=status, bukan alert: kabarnya baik, dan alert merebut
              pembacaan di tengah orang membaca judul halamannya. -->

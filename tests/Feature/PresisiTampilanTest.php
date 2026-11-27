@@ -177,6 +177,58 @@ class PresisiTampilanTest extends TestCase
             'Bagi yang meminta gerakan dikurangi, sorotannya tidak dihentikan.');
     }
 
+    /**
+     * Halaman tamu membawa motif peta tambang halaman depan: kontur putih
+     * di atas citra panel foto, laterit tipis di pojok lembar formulir.
+     */
+    public function test_halaman_tamu_membawa_motif_peta_tambang(): void
+    {
+        $tataLetak = file_get_contents(resource_path('js/Layouts/GuestLayout.vue'));
+        $this->assertMatchesRegularExpression('/<div class="ms-peta absolute inset-0"[^>]*aria-hidden="true"/', $tataLetak,
+            'Panel foto halaman tamu kehilangan lapisan peta tambangnya.');
+        $this->assertMatchesRegularExpression('/<section class="ms-lembar /', $tataLetak,
+            'Lembar formulir halaman tamu kehilangan kontur peta di sudutnya.');
+
+        $css = file_get_contents(resource_path('css/masuk.css'));
+        foreach (['--ms-motif-peta', '--ms-motif-peta-tanah'] as $var) {
+            $this->assertMatchesRegularExpression('/'.preg_quote($var, '/').':\s*url\("data:image\/svg\+xml,[^"]+"\)/', $css,
+                "{$var} tidak lagi didefinisikan di masuk.css.");
+            preg_match('/'.preg_quote($var, '/').':\s*url\("data:image\/svg\+xml,([^"]+)"\)/', $css, $m);
+
+            // Versi bersih: label, koordinat, dan patok survei menabrak
+            // merek dan judul di panel sesempit ini.
+            $this->assertStringNotContainsString('<text', $m[1], "{$var} kembali memuat label teks.");
+            $this->assertStringNotContainsString('M114 120h12', $m[1], "{$var} kembali memuat patok survei.");
+            $this->assertStringContainsString('M1100 351', $m[1], "{$var} kehilangan kontur pit bertingkatnya.");
+        }
+
+        $tanpaKomentar = preg_replace('#/\*.*?\*/#s', '', $css);
+        $this->assertMatchesRegularExpression('/\.ms-peta\s*\{[^}]*var\(--ms-motif-peta\)/', $tanpaKomentar);
+        $this->assertMatchesRegularExpression('/\.ms-lembar\s*\{[^}]*var\(--ms-motif-peta-tanah\)/', $tanpaKomentar);
+    }
+
+    /**
+     * Halaman tamu tetap terang ketika tema gelap aktif: kolom isiannya
+     * dulu menjadi kotak gelap di lembar putih dan garis fokusnya hilang.
+     * eq-visual.css dimuat SESUDAH masuk.css, jadi penimpanya harus menang
+     * karena spesifisitas.
+     */
+    public function test_halaman_tamu_tetap_terang_ketika_tema_gelap_aktif(): void
+    {
+        $css = preg_replace('#/\*.*?\*/#s', '', file_get_contents(resource_path('css/masuk.css')));
+
+        $this->assertMatchesRegularExpression('/:root\[data-tema\]:has\(\.ms\)\s*\{[^}]*color-scheme:\s*light/', $css,
+            'Kontrol bawaan peramban di halaman tamu akan digambar gelap.');
+        $this->assertMatchesRegularExpression(
+            '/:root\[data-tema="gelap"\]\s+\.ms\s+:is\(input, select, textarea\)[^{]*\{[^}]*background-color:\s*#FFFFFF/i', $css,
+            'Kolom isian halaman tamu akan menjadi kotak gelap di lembar putih.');
+        $this->assertMatchesRegularExpression(
+            '/:root\[data-tema="gelap"\]\s+\.ms\s+:is\(input, select, textarea\)[^{]*:focus\s*\{[^}]*border-color:\s*var\(--ms-aksen\)/', $css,
+            'Garis fokus jingga kolom isian hilang di tema gelap.');
+        $this->assertMatchesRegularExpression('/:root\[data-tema="gelap"\]\s+\.ms\s+\.eq-sandi-intip\s*\{[^}]*color:\s*#78716C/i', $css,
+            'Ikon mata di lembar putih memakai abu mode gelap (2,5:1).');
+    }
+
     public function test_panel_foto_halaman_tamu_menempel_di_layar_lebar(): void
     {
         $tataLetak = file_get_contents(resource_path('js/Layouts/GuestLayout.vue'));
