@@ -309,6 +309,38 @@ class LandingTest extends TestCase
     }
 
     /**
+     * Motif gabungan halaman depan: kontur topografi di bawah peta tambang
+     * pada setiap jenis bagian (putih di bagian gelap, laterit di bagian
+     * terang), dan desain pit di "Cara kerja" dan "Kontak" — tanpa teks.
+     */
+    public function test_motif_kontur_dan_pit_di_halaman_depan(): void
+    {
+        $css = (string) file_get_contents(resource_path("css/landing.css"));
+        $tanpaKomentar = preg_replace("#/\*.*?\*/#s", "", $css);
+
+        foreach (["--ld-motif-kontur", "--ld-motif-kontur-putih", "--ld-motif-pit"] as $var) {
+            $this->assertMatchesRegularExpression("/".preg_quote($var, "/").":\s*url\(\"data:image\/svg\+xml,/", $css, "{$var} tidak didefinisikan.");
+            preg_match("/".preg_quote($var, "/").":\s*url\(\"data:image\/svg\+xml,([^\"]+)\"\)/", $css, $m);
+            $this->assertStringNotContainsString("<text", $m[1], "{$var} memuat label teks.");
+        }
+
+        $this->assertMatchesRegularExpression("/\.ld-gelap\s*\{[^}]*var\(--ld-motif-peta\),\s*var\(--ld-motif-kontur-putih\)/", $tanpaKomentar,
+            "Bagian gelap kehilangan kontur di bawah peta tambangnya.");
+        $this->assertMatchesRegularExpression("/\.ld-abu\s*\{[^}]*var\(--ld-motif-peta-tanah\),\s*var\(--ld-motif-kontur\)/", $tanpaKomentar,
+            "Bagian pasir kehilangan kontur di bawah peta tambangnya.");
+        $this->assertMatchesRegularExpression("/#alur\.ld-putih,\s*#kontak\.ld-putih\s*\{[^}]*var\(--ld-motif-pit\)/", $tanpaKomentar,
+            "Desain pit hilang dari Cara kerja dan Kontak.");
+
+        // Jumlah lapis gambar dan posisinya harus sepadan, atau lapis
+        // kontur jatuh ke posisi bawaan di pojok kiri atas.
+        preg_match('/\.ld-gelap\s*\{([^}]*background-image[^}]*)\}/', $tanpaKomentar, $gelap);
+        preg_match('/background-position:\s*([^;]+);/', $gelap[1], $posisi);
+        preg_match('/background-size:\s*([^;]+);/', $gelap[1], $ukuran);
+        $this->assertCount(4, explode(',', $posisi[1]), 'Posisi lapis latar bagian gelap tidak sepadan dengan keempat gambarnya.');
+        $this->assertCount(4, explode(',', $ukuran[1]), 'Ukuran lapis latar bagian gelap tidak sepadan dengan keempat gambarnya.');
+    }
+
+    /**
      * Halaman depan tetap terang ketika tema gelap aktif.
      *
      * Tema gelap aplikasi dulu menjalar ke sini lewat aturan global

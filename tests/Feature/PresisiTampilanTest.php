@@ -210,6 +210,15 @@ class PresisiTampilanTest extends TestCase
         $tanpaKomentar = preg_replace('#/\*.*?\*/#s', '', $css);
         $this->assertMatchesRegularExpression('/\.ms-lembar\s*\{[^}]*var\(--ms-motif-kontur\)/', $tanpaKomentar);
         $this->assertDoesNotMatchRegularExpression('/\.ms-peta\b/', $tanpaKomentar, 'Lapisan motif di atas rekaman kembali.');
+
+        // Desain pit (jenjang, ramp, jalan angkut) di pojok lembar yang sama,
+        // TANPA teks: label di belakang tautan terbaca sebagai tulisan nyasar.
+        $this->assertMatchesRegularExpression('/\.ms-lembar\s*\{[^}]*var\(--ms-motif-pit\)/', $tanpaKomentar,
+            'Lembar formulir kehilangan desain pit tambangnya.');
+        preg_match('/--ms-motif-pit:\s*url\("data:image\/svg\+xml,([^"]+)"\)/', $css, $pit);
+        $this->assertNotEmpty($pit, '--ms-motif-pit tidak didefinisikan.');
+        $this->assertStringNotContainsString('<text', $pit[1], 'Desain pit memuat label teks.');
+        $this->assertStringContainsString('%23F57C00', $pit[1], 'Jalan angkut berstrip jingga hilang dari desain pit.');
     }
 
     /**
