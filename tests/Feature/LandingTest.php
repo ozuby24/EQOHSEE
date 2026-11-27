@@ -268,6 +268,47 @@ class LandingTest extends TestCase
     }
 
     /**
+     * Bagian aplikasi lapangan memajang laptop dan dua ponsel dari modul
+     * yang SAMA, tiap tab satu modul — tangkapan layar asli, dan ketiga
+     * berkasnya benar-benar ada.
+     */
+    public function test_aplikasi_lapangan_memajang_laptop_dan_ponsel_dari_modul_yang_sama(): void
+    {
+        $perangkat = $this->props()["perangkat"];
+
+        $this->assertSame(["meranti", "rdas", "lapangan", "energi", "angkat"], array_column($perangkat, "kunci"));
+
+        foreach ($perangkat as $s) {
+            $this->assertNotSame("", $s["ket"]);
+            $this->assertCount(2, $s["ponsel"], "{$s["judul"]}: semestinya dua ponsel.");
+
+            foreach (array_merge([$s["laptop"]], $s["ponsel"]) as $layar) {
+                $this->assertNotSame("", $layar["alt"], "{$s["judul"]}: gambar tanpa teks alternatif.");
+                $jalur = public_path(ltrim(parse_url($layar["url"], PHP_URL_PATH), "/"));
+                $this->assertFileExists($jalur);
+            }
+
+            // Layar ponsel diambil pada 390 × 844 dan disimpan 600 × 1298.
+            foreach ($s["ponsel"] as $layar) {
+                [$w, $h] = getimagesize(public_path(ltrim(parse_url($layar["url"], PHP_URL_PATH), "/")));
+                $this->assertSame([600, 1298], [$w, $h]);
+            }
+        }
+    }
+
+    /** Tanpa berkas layarnya, bagian aplikasi lapangan tetap berdiri dengan teksnya — tanpa bingkai rusak. */
+    public function test_tanpa_berkas_layar_bagian_aplikasi_tetap_berdiri(): void
+    {
+        config(["media.akar" => "media-tidak-ada"]);
+
+        $this->assertSame([], $this->props()["perangkat"]);
+
+        $vue = (string) file_get_contents(resource_path("js/Pages/Landing.vue"));
+        $this->assertStringContainsString("v-if=\"perangkat.length\"", $vue);
+        $this->assertStringNotContainsString("layarPonsel", $vue, "Tangkapan ponsel lama masih dirujuk.");
+    }
+
+    /**
      * Halaman depan tetap terang ketika tema gelap aktif.
      *
      * Tema gelap aplikasi dulu menjalar ke sini lewat aturan global

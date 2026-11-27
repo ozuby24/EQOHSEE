@@ -135,14 +135,7 @@ class LandingController extends Controller
             'jual' => $jual,
             'katalog' => $this->katalog(),
 
-            /* Dua tangkapan layar ponsel untuk bagian aplikasi lapangan.
-               Layar sungguhan dari platform ini, bukan gambar karangan —
-               dan null bila berkasnya belum ditaruh, supaya bagian itu
-               tetap berdiri tanpa bingkai gambar rusak. */
-            'layarPonsel' => array_values(array_filter([
-                ($u = Media::url('aplikasi/beranda.webp')) ? ['url' => $u, 'alt' => 'Beranda mode lapangan EQOHSEE di ponsel: peringatan site dan tugas bertenggat'] : null,
-                ($u = Media::url('aplikasi/lapor.webp'))   ? ['url' => $u, 'alt' => 'Lapor bahaya di mode lapangan: foto dan titik GPS terisi sendiri'] : null,
-            ])),
+            'perangkat' => $this->perangkat(),
 
             'tautan' => [
                 'masuk'   => route('login'),
@@ -248,6 +241,73 @@ class LandingController extends Controller
      * @return array{paket: ?array<string, mixed>, layanan: ?array<string, mixed>, aplikasi: list<array<string, mixed>>}|null
      */
     /** @return list<array<string,mixed>> etalase modul terbaru, urut seperti ETALASE */
+    /**
+     * Susunan perangkat di bagian "Aplikasi lapangan": satu laptop dan dua
+     * ponsel dari modul yang SAMA, supaya pengunjung melihat data yang
+     * sama di meja kantor dan di tangan pengawas — mengikuti sampul materi
+     * promosi tiap modul. Tangkapan layar asli dari data contoh platform,
+     * bukan gambar karangan; layar ponselnya digeser ke bagian yang berisi
+     * angka, bukan kepala halamannya.
+     *
+     * Urutan = urutan tab; adegan pertama yang tampil lebih dulu.
+     */
+    private const PERANGKAT = [
+        ['kunci' => 'meranti', 'judul' => 'MERANTI',
+         'ket' => 'Capaian per blok dan stok bibit persemaian — dasbor yang sama di laptop kantor dan di ponsel pengawas.',
+         'laptop' => ['terbaru/meranti.webp', 'Dashboard Analitik MERANTI di laptop: stok bibit, realisasi rehabilitasi, dan tren per bulan'],
+         'ponsel' => [['aplikasi/meranti-a.webp', 'Aktual pencapaian MERANTI di ponsel: capaian P0–P2 dan grafik per blok'],
+                      ['aplikasi/meranti-b.webp', 'Monitoring reklamasi dan pembibitan MERANTI di ponsel: stok bibit dan realisasi rehabilitasi']]],
+        ['kunci' => 'rdas', 'judul' => 'Rehab DAS',
+         'ket' => 'Kewajiban PPKH, persen tumbuh, dan serah terima — dari meja kantor sampai petak tanam.',
+         'laptop' => ['terbaru/rdas.webp', 'Dasbor Rehabilitasi DAS di laptop: posisi kewajiban seluruh PPKH'],
+         'ponsel' => [['aplikasi/rdas-a.webp', 'Pemenuhan kewajiban Rehabilitasi DAS di ponsel: luas kewajiban, tertanam, dan persen tumbuh'],
+                      ['aplikasi/rdas-b.webp', 'Kewajiban PPKH di ponsel: luas ditetapkan, ditanam, dan serah terima per SK']]],
+        ['kunci' => 'lapangan', 'judul' => 'Lapor & P2H',
+         'ket' => 'Temuan dari ponsel langsung masuk monitor HSE; P2H unit diperiksa sebelum shift berjalan.',
+         'laptop' => ['aplikasi/lapangan-laptop.webp', 'Monitor Hazard Report di laptop: laporan terbuka, berjalan, dan risiko tinggi'],
+         'ponsel' => [['aplikasi/lapangan-a.webp', 'Beranda mode lapangan di ponsel: peringatan site dan tindakan yang menunggu'],
+                      ['aplikasi/lapangan-b.webp', 'P2H unit di ponsel: unit yang ditahan dan yang belum diperiksa shift ini']]],
+        ['kunci' => 'energi', 'judul' => 'Energi & Karbon',
+         'ket' => 'Kinerja energi dan jejak karbon operasi dibaca dari data yang sama, per ton produksi.',
+         'laptop' => ['terbaru/energi.webp', 'Energy Performance Center di laptop: kinerja energi operasi'],
+         'ponsel' => [['aplikasi/energi-a.webp', 'Kinerja energi operasi di ponsel: total energi, intensitas, dan biaya'],
+                      ['aplikasi/energi-b.webp', 'Jejak karbon operasi di ponsel: emisi Scope 1–3 dan intensitasnya']]],
+        ['kunci' => 'angkat', 'judul' => 'Lifting & Scaffolding',
+         'ket' => 'Rencana pengangkatan dan status perancah di lapangan, lengkap dengan kelayakan alatnya.',
+         'laptop' => ['terbaru/angkat.webp', 'Lifting & Rigging Management di laptop: rencana pengangkatan dan kelayakan pesawat angkat'],
+         'ponsel' => [['aplikasi/angkat-a.webp', 'Pengangkatan dan kelayakan pesawat angkat di ponsel'],
+                      ['aplikasi/angkat-b.webp', 'Status perancah di lapangan di ponsel: berdiri, layak, dan tidak layak digunakan']]],
+    ];
+
+    /**
+     * Adegan tampil hanya bila KETIGA gambarnya ada. Tanpa satu pun,
+     * bagiannya tetap berdiri dengan teksnya saja, tidak pernah dengan
+     * bingkai gambar rusak.
+     *
+     * @return list<array{kunci:string,judul:string,ket:string,laptop:array{url:string,alt:string},ponsel:list<array{url:string,alt:string}>}>
+     */
+    private function perangkat(): array
+    {
+        $hasil = [];
+
+        foreach (self::PERANGKAT as $s) {
+            $laptop = Media::url($s['laptop'][0]);
+            $ponsel = array_map(fn ($p) => ['url' => Media::url($p[0]), 'alt' => $p[1]], $s['ponsel']);
+
+            if (! $laptop || in_array(null, array_column($ponsel, 'url'), true)) continue;
+
+            $hasil[] = [
+                'kunci'  => $s['kunci'],
+                'judul'  => $s['judul'],
+                'ket'    => $s['ket'],
+                'laptop' => ['url' => $laptop, 'alt' => $s['laptop'][1]],
+                'ponsel' => $ponsel,
+            ];
+        }
+
+        return $hasil;
+    }
+
     private function etalase(): array
     {
         $modul = Modules::perKunciMenu();
