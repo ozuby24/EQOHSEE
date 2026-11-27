@@ -178,33 +178,38 @@ class PresisiTampilanTest extends TestCase
     }
 
     /**
-     * Halaman tamu membawa motif peta tambang halaman depan: kontur putih
-     * di atas citra panel foto, laterit tipis di pojok lembar formulir.
+     * Motif kontur ada di LEMBAR PUTIH halaman tamu, bukan di atas
+     * rekamannya. Keputusan pemiliknya: motif di atas video bersaing
+     * dengan gambarnya; lembar putih justru yang kosong.
      */
-    public function test_halaman_tamu_membawa_motif_peta_tambang(): void
+    public function test_motif_kontur_di_lembar_putih_bukan_di_atas_rekaman(): void
     {
         $tataLetak = file_get_contents(resource_path('js/Layouts/GuestLayout.vue'));
-        $this->assertMatchesRegularExpression('/<div class="ms-peta absolute inset-0"[^>]*aria-hidden="true"/', $tataLetak,
-            'Panel foto halaman tamu kehilangan lapisan peta tambangnya.');
         $this->assertMatchesRegularExpression('/<section class="ms-lembar /', $tataLetak,
-            'Lembar formulir halaman tamu kehilangan kontur peta di sudutnya.');
+            'Lembar formulir halaman tamu kehilangan motif konturnya.');
+
+        // Panel rekaman: hanya video/poster, tirai gradien, dan isinya.
+        preg_match('#<section class="pendar-rekaman.*?</section>#s', $tataLetak, $panel);
+        $this->assertNotEmpty($panel, 'Panel rekaman halaman tamu tidak ditemukan.');
+        $this->assertDoesNotMatchRegularExpression('/ms-peta|ms-lembar|motif/', $panel[0],
+            'Motif kembali dipasang di atas rekaman halaman tamu.');
 
         $css = file_get_contents(resource_path('css/masuk.css'));
-        foreach (['--ms-motif-peta', '--ms-motif-peta-tanah'] as $var) {
-            $this->assertMatchesRegularExpression('/'.preg_quote($var, '/').':\s*url\("data:image\/svg\+xml,[^"]+"\)/', $css,
-                "{$var} tidak lagi didefinisikan di masuk.css.");
-            preg_match('/'.preg_quote($var, '/').':\s*url\("data:image\/svg\+xml,([^"]+)"\)/', $css, $m);
+        $this->assertMatchesRegularExpression('/--ms-motif-kontur:\s*url\("data:image\/svg\+xml,[^"]+"\)/', $css,
+            '--ms-motif-kontur tidak lagi didefinisikan di masuk.css.');
+        preg_match('/--ms-motif-kontur:\s*url\("data:image\/svg\+xml,([^"]+)"\)/', $css, $m);
 
-            // Versi bersih: label, koordinat, dan patok survei menabrak
-            // merek dan judul di panel sesempit ini.
-            $this->assertStringNotContainsString('<text', $m[1], "{$var} kembali memuat label teks.");
-            $this->assertStringNotContainsString('M114 120h12', $m[1], "{$var} kembali memuat patok survei.");
-            $this->assertStringContainsString('M1100 351', $m[1], "{$var} kehilangan kontur pit bertingkatnya.");
-        }
+        // Garis tinggi sungguhan: banyak jalur, garis indeks yang lebih
+        // tebal, lebar garis tetap di layar sempit, tanpa label teks yang
+        // akan bertumpuk dengan tulisan formulir.
+        $this->assertGreaterThan(15, substr_count($m[1], 'M'), 'Motif kontur terlalu sedikit garisnya.');
+        $this->assertStringContainsString("stroke-width='1.5'", $m[1], 'Garis indeks kontur hilang.');
+        $this->assertStringContainsString('non-scaling-stroke', $m[1]);
+        $this->assertStringNotContainsString('<text', $m[1], 'Motif kontur memuat label teks.');
 
         $tanpaKomentar = preg_replace('#/\*.*?\*/#s', '', $css);
-        $this->assertMatchesRegularExpression('/\.ms-peta\s*\{[^}]*var\(--ms-motif-peta\)/', $tanpaKomentar);
-        $this->assertMatchesRegularExpression('/\.ms-lembar\s*\{[^}]*var\(--ms-motif-peta-tanah\)/', $tanpaKomentar);
+        $this->assertMatchesRegularExpression('/\.ms-lembar\s*\{[^}]*var\(--ms-motif-kontur\)/', $tanpaKomentar);
+        $this->assertDoesNotMatchRegularExpression('/\.ms-peta\b/', $tanpaKomentar, 'Lapisan motif di atas rekaman kembali.');
     }
 
     /**

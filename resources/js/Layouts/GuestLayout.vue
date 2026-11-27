@@ -101,11 +101,6 @@ const ASPEK: [string, string][] = [
 
       <div class="absolute inset-0 bg-[linear-gradient(180deg,rgba(11,17,23,.62),rgba(11,17,23,.2)_34%,rgba(11,17,23,.96))]"></div>
 
-      <!-- Motif peta tambang di atas citranya, seperti lapisan peta GIS
-           di atas foto udara — bahasa rupa yang sama dengan halaman
-           depan (masuk.css .ms-peta). -->
-      <div class="ms-peta absolute inset-0" aria-hidden="true"></div>
-
       <div class="relative z-10 flex items-center justify-between gap-3">
         <Link href="/" class="w-fit" aria-label="EQOHSEE — ke halaman depan"><Wordmark :tinggi="28" /></Link>
 
