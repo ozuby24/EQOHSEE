@@ -1608,8 +1608,15 @@ main a{transition:color .16s}
   .eq-topbar{gap:10px;padding-left:12px;padding-right:12px}
   .eq-sapa{flex:0 1 auto;min-width:0}
   .eq-sapa small{display:none}
-  .eq-sapa strong{font-size:14px;line-height:1.15;white-space:normal;overflow:visible;overflow-wrap:anywhere}
+  .eq-sapa strong{font-size:14px;line-height:1.15;white-space:normal;overflow:visible;overflow-wrap:normal}
   .eq-topbar-aksi{gap:6px}
+}
+/* Di bawah 420 px ruang sapaan tinggal sekitar 50 px: kata "Selamat" saja
+   tidak muat, dan memecahnya di tengah kata ("Selam / at / siang") lebih
+   buruk daripada tidak menyapa. Sapaan disembunyikan; tombol bilah atas
+   tetap terjangkau. */
+@media (max-width:420px){
+  .eq-sapa{display:none}
 }
 @media (max-width:380px){
   .eq-topbar-aksi .eq-bulat{width:36px;height:36px}
