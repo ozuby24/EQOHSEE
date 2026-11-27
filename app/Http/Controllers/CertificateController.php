@@ -230,7 +230,7 @@ class CertificateController extends Controller
                 'barcodeTeks'=> $certificate->barcodeText(),
             ],
 
-            'markUrl' => asset('brand/eqohsee-mark.png'),
+            'markUrl' => asset('brand/eqohsee-navbar-light.svg'),
 
             'tautan' => [
                 'verifikasi' => route('certificates.verify',

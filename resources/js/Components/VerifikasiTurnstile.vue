@@ -28,6 +28,7 @@
  * dirinya berkali-kali dan menggambar widget kembar.
  */
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useBahasa } from '../tamu/bahasa';
 
 const props = withDefaults(defineProps<{
   /** Kunci situs dari server. null berarti fitur ini mati. */
@@ -51,6 +52,11 @@ const props = withDefaults(defineProps<{
 }>(), { kunci: null, galat: 0, tindakan: null, tema: 'auto' });
 
 const model = defineModel<string>({ default: '' });
+
+/* Komponen ini hanya dipakai di halaman tamu, yang berbahasa Indonesia
+   atau Inggris sesuai pilihan pengunjung: kotak Cloudflare dan pesan
+   "terhalang" ikut bahasa halamannya. */
+const { bahasa, t } = useBahasa();
 
 const kotak = ref<HTMLElement | null>(null);
 const id    = ref<string | null>(null);
@@ -133,7 +139,7 @@ async function gambar(): Promise<void> {
     size: 'flexible',
 
     theme: props.tema,
-    language: 'id',
+    language: bahasa.value === 'en' ? 'en' : 'id',
     callback: (t: string) => { model.value = t; },
 
     /* Token kedaluwarsa sesudah lima menit. Halaman masuk yang dibuka
@@ -144,6 +150,17 @@ async function gambar(): Promise<void> {
     'error-callback':   () => { model.value = ''; },
   });
 }
+
+/* Bahasa diganti di tengah pengisian: kotaknya digambar ulang dalam bahasa
+   baru. Tokennya ikut dilepas — kotak yang baru menerbitkan token sendiri. */
+watch(bahasa, () => {
+  if (!id.value) return;
+
+  window.turnstile?.remove(id.value);
+  id.value = null;
+  model.value = '';
+  gambar();
+});
 
 watch(() => props.galat, () => {
   if (!id.value) return;
@@ -167,9 +184,8 @@ onBeforeUnmount(() => {
     <div v-show="!terhalang" ref="kotak" />
 
     <p v-if="terhalang" class="eq-turnstile-halang">
-      Verifikasi keamanan tidak dapat dimuat. Biasanya ini karena pemblokir iklan
-      atau penyaring jaringan yang menutup <code>challenges.cloudflare.com</code>.
-      Matikan pemblokirnya untuk situs ini, atau hubungi administrator jaringan Anda.
+      {{ t('turnstile.halang') }} <code>challenges.cloudflare.com</code>.
+      {{ t('turnstile.halang_saran') }}
     </p>
   </div>
 </template>

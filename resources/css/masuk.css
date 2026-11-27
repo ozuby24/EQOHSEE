@@ -1,109 +1,252 @@
 @import './huruf-archivo.css';
 
 /*
-  Halaman masuk, daftar, lupa sandi, dan dua faktor (GuestLayout).
+  Halaman masuk, daftar, lupa sandi, verifikasi, dua faktor, dan
+  konfirmasi sandi (GuestLayout).
 
-  Bahasanya sama dengan halaman depan (landing.css): Archivo yang
-  dipersempit untuk judul, IBM Plex Mono untuk label, garis rambut,
-  sudut 8 px, tombol jingga berteks ink. Orang yang menekan "Masuk ke
-  Platform" di halaman depan tidak boleh mendarat di halaman yang
-  hurufnya berganti menjadi serif dan semboyannya berbahasa Inggris.
+  Identitas EQOHSEE: Deep Teal #0F4C45 (kepercayaan), Olive Green
+  #7A9E3A (keberlanjutan), Warm Grey #D6D8D3 (netral), wordmark #072420.
+  Panel kiri foto tambang bertirai teal; panel kanan kartu putih di atas
+  lembar bermotif kontur.
 
   Dicakup di bawah .ms supaya tidak bocor ke aplikasi, yang tetap
   memakai Inter lewat app.css.
 */
 .ms {
-  --ms-hitam: #0B1117;
-  --ms-tinta: #0F1720;
-  --ms-isi: #3A4450;
-  --ms-redup: #4A5563;
-  --ms-samar: #5E6875;
-  --ms-garis: #E2E6EB;
-  --ms-garis-2: #CDD3DA;
-  --ms-latar: #F5F7F9;
-  --ms-aksen: #F57C00;
-  --ms-aksen-2: #FF9800;
-  --ms-aksen-teks: #A85400;
+  --ms-hitam: #072420;
+  --ms-tinta: #10211E;
+  --ms-isi: #33433F;
+  --ms-redup: #4A5A56;
+  --ms-samar: #66766F;
+  --ms-garis: #E1E7E3;
+  --ms-garis-2: #CBD5D0;
+  --ms-latar: #F2F5F1;
+  --ms-teal: #0F4C45;
+  --ms-zaitun: #7A9E3A;
+  --ms-limau: #A9CF5E;
+  /* Aksen interaktif (fokus, tautan): teal yang lebih hidup dari Deep
+     Teal supaya garis fokus terbaca di atas putih; teks tautan memakai
+     varian yang lebih pekat (kontras 7,9:1 di atas putih). */
+  --ms-aksen: #13806B;
+  --ms-aksen-teks: #0F5C52;
+  --ms-tombol: linear-gradient(100deg, #17785F 0%, #0F4C45 100%);
   --ms-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* Komponen aplikasi di halaman tamu (tombol utama, aksen kode
+     verifikasi) mengikuti merek, bukan warna bawaan perusahaan. */
+  --eq-aksen: #13806B;
 
   font-family: 'Archivo', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   color: var(--ms-tinta);
+  background: var(--ms-latar);
 }
 .ms-mono { font-family: var(--ms-mono); }
 
-/* Mata judul: garis jingga lalu huruf mono berjarak, persis .ld-hero-mata. */
-.ms-mata {
-  display: flex; align-items: center; gap: 10px; margin: 0;
-  font-family: var(--ms-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
-}
-.ms-mata::before { content: ''; width: 22px; height: 2px; background: var(--ms-aksen); flex: none; }
+/* ═══════════ Panel foto (kiri) ═══════════ */
+.ms-panel { background: #072420; }
 
-/* Judul panel foto — .ld-h1 dalam ukuran yang lebih kecil. */
+/* Foto: unit dump truck dan matahari terbit di sisi kanan-bawah
+   berkasnya, jadi titik beratnya dijaga tetap terlihat di setiap
+   perbandingan layar. Zoom perlahan memberi tanda bidangnya hidup. */
+.ms-foto { object-position: 46% 100%; transform-origin: 75% 85%; }
+/* Zoom perlahan hanya di layar lebar: di ponsel kartu kaca menumpang di
+   atas fotonya, dan foto yang bergerak memaksa kacanya diburamkan ulang
+   setiap bingkai — boros baterai pada ponsel yang dipakai di site. */
+@media (min-width: 1024px) { .ms-foto { animation: ms-zoom 32s ease-in-out infinite alternate; } }
+@keyframes ms-zoom { from { transform: scale(1); } to { transform: scale(1.07); } }
+
+/* Tirai: teal pekat di kiri tempat tulisan, terbuka ke arah foto. */
+.ms-tirai {
+  background:
+    linear-gradient(180deg, rgba(4, 28, 25, .58) 0%, rgba(4, 28, 25, 0) 24%, rgba(4, 28, 25, 0) 56%, rgba(3, 22, 20, .86) 100%),
+    linear-gradient(90deg, rgba(4, 30, 27, .82) 0%, rgba(5, 36, 32, .58) 40%, rgba(5, 36, 32, .12) 74%, rgba(5, 36, 32, 0) 100%);
+}
+@media (max-width: 1023px) {
+  .ms-tirai { background: linear-gradient(180deg, rgba(4, 28, 25, .74) 0%, rgba(4, 30, 27, .4) 55%, rgba(3, 22, 20, .72) 100%); }
+}
+/* Kontur topografi di sisi kosong panel foto. Topeng gradasinya membuat
+   garis hanya tampak di bidang gelap kiri-atas dan lenyap sebelum
+   mencapai foto truk dan matahari di kanan-bawah. */
+.ms-panel-kontur {
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(104deg, #000 0%, #000 34%, rgba(0, 0, 0, .55) 50%, transparent 66%);
+  mask-image: linear-gradient(104deg, #000 0%, #000 34%, rgba(0, 0, 0, .55) 50%, transparent 66%);
+}
+.ms-panel-kontur path { fill: none; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-linejoin: round; }
+.ms-kontur-garis { stroke: rgba(169, 207, 94, .24); stroke-width: 1; }
+.ms-kontur-indeks { stroke: rgba(169, 207, 94, .44); stroke-width: 1.5; }
+/* Digambar bergiliran: tiap garis panjangnya 1 (pathLength), jadi satu
+   pola putus-putus yang sama berlaku untuk semuanya. */
+.ms-kontur-garis, .ms-kontur-indeks {
+  stroke-dasharray: 1; stroke-dashoffset: 1;
+  animation: ms-gambar-kontur 2.6s cubic-bezier(.4, .1, .2, 1) forwards;
+}
+@keyframes ms-gambar-kontur { to { stroke-dashoffset: 0; } }
+
+/* Pendar panel: hijau limau dan teal, bukan jingga. Lapisannya milik
+   .pendar-rekaman (app.css); di sini hanya warnanya. */
+.ms .pendar-rekaman::before {
+  background:
+    radial-gradient(40% 38% at 80% 14%, rgba(169, 207, 94, .2), transparent 66%),
+    radial-gradient(36% 34% at 18% 82%, rgba(23, 120, 95, .24), transparent 68%);
+}
+.ms .pendar-rekaman::after { background: radial-gradient(120% 96% at 50% 50%, transparent 48%, rgba(3, 22, 20, .55) 100%); }
+/* Ponsel: kartu kaca menumpang di tepi bawah foto. Tepi itu dilebur ke
+   warna lembar supaya kacanya tidak memperlihatkan garis sambungan yang
+   tajam di tengah judul kartu. Peleburannya di lapisan vinyet (::after),
+   yang digambar DI ATAS tirai; di tirai, vinyetnya menggelapkan lagi
+   tepi yang mestinya terang. */
+@media (max-width: 639px) {
+  .ms .pendar-rekaman::after {
+    background:
+      linear-gradient(180deg, rgba(238, 243, 239, 0) calc(100% - 96px), rgba(238, 243, 239, .6) calc(100% - 44px), #EEF3EF calc(100% - 14px)),
+      radial-gradient(120% 96% at 50% 50%, transparent 48%, rgba(3, 22, 20, .55) 100%);
+  }
+}
+
+/* Merek: lambang + wordmark resmi + deskriptor. */
+/* Merek dalam pil kaca buram — gaya kaca ala Apple: latar putih tembus
+   pandang, buram dan jenuh, tepi terang tipis, sorot di sisi atas. */
+.ms-merek {
+  display: inline-flex; align-items: center; gap: 12px; width: fit-content;
+  padding: 8px 16px 8px 8px; border-radius: 18px;
+}
+.ms-kaca-gelap {
+  background: linear-gradient(145deg, rgba(255, 255, 255, .15) 0%, rgba(255, 255, 255, .05) 100%);
+  border: 1px solid rgba(255, 255, 255, .22);
+  -webkit-backdrop-filter: blur(22px) saturate(165%);
+  backdrop-filter: blur(22px) saturate(165%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 14px 34px -18px rgba(0, 0, 0, .5);
+}
+.ms-merek-lambang { display: block; width: 46px; height: 46px; flex: none; }
+.ms-merek-teks { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.ms-merek-nama { display: block; width: 146px; height: auto; }
+.ms-merek-sub { font-size: 12.5px; font-weight: 500; letter-spacing: .01em; color: rgba(255, 255, 255, .86); white-space: nowrap; }
+@media (min-width: 640px) {
+  .ms-merek-lambang { width: 54px; height: 54px; }
+  .ms-merek-nama { width: 172px; }
+  .ms-merek-sub { font-size: 13.5px; }
+}
+
+.ms-garis { display: block; width: 56px; height: 4px; border-radius: 2px; margin-bottom: 20px; background: linear-gradient(90deg, var(--ms-limau), var(--ms-zaitun)); }
+
 .ms-h1 {
-  margin: 16px 0 0; font-size: clamp(34px, min(4.4vw, 8vh), 64px); line-height: 1.02; font-weight: 700;
-  font-stretch: 80%; letter-spacing: -.022em; word-spacing: .07em; text-wrap: balance;
+  margin: 0; font-size: clamp(30px, min(4.2vw, 7.2vh), 58px); line-height: 1.06; font-weight: 700;
+  font-stretch: 96%; letter-spacing: -.022em; text-wrap: balance;
+  text-shadow: 0 2px 18px rgba(3, 22, 20, .35);
 }
-.ms-h1 em { font-style: normal; color: var(--ms-aksen-2); }
+.ms-h1 em { font-style: normal; color: var(--ms-limau); }
+.ms-amp { font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-stretch: normal; }
 
-/* Judul kolom formulir, dipakai seluruh halaman tamu. */
-/* Tanpa margin sendiri: halaman tamu lain menata jaraknya dengan kelas
-   Tailwind (mb-2), dan berkas ini dimuat sesudah Tailwind — margin di
-   sini akan menimpanya diam-diam. */
-.ms-judul {
-  font-size: clamp(32px, 3vw, 40px); line-height: 1; font-weight: 700; font-stretch: 82%;
-  letter-spacing: -.02em; color: var(--ms-hitam);
+.ms-hero-sub { margin: 18px 0 0; max-width: 520px; font-size: 16px; line-height: 1.6; color: rgba(255, 255, 255, .86); }
+
+/* ── Kaca kiri-bawah: ringkasan platform + kapsul pilar ──
+   Satu kolom ringkas di kiri panel foto. Lebarnya dibatasi supaya tidak
+   pernah menutupi unit dump truck yang melintas di kanan-bawah foto
+   (posisi fotonya disetel bersama: .ms-foto). Tanpa `display` di sini:
+   diatur kelas Tailwind (hidden sm:grid). */
+.ms-kaca-kiri { gap: 10px; width: min(460px, 52%); container-type: inline-size; }
+.ms-statistik {
+  position: relative; overflow: hidden; isolation: isolate;
+  padding: 14px 16px 15px; border-radius: 20px; font-family: 'Inter', system-ui, sans-serif;
+  animation: ms-muncul .6s cubic-bezier(.2, .7, .3, 1) both;
 }
-.ms-sub { margin: 10px 0 28px; font-size: 15px; line-height: 1.5; color: var(--ms-redup); }
-
-.ms-label {
-  display: block; margin-bottom: 6px; font-family: var(--ms-mono); font-size: 11.5px; font-weight: 500;
-  letter-spacing: .06em; text-transform: uppercase; color: var(--ms-redup);
+.ms-statistik-atas { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ms-statistik-jam { font-size: 11.5px; color: rgba(255, 255, 255, .78); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ms-statistik-jam b { font-weight: 700; color: #FFFFFF; }
+/* Satu baris: kolom selebar isinya, sisa ruang dibagi rata di antaranya —
+   kolom pengunjung (grafik mini) memang lebih lebar dari kolom lain. */
+.ms-statistik-isi { display: grid; grid-auto-flow: column; justify-content: space-between; margin-top: 12px; }
+.ms-stat { position: relative; display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 0 10px; }
+.ms-stat:first-child { padding-left: 0; }
+.ms-stat:last-child { padding-right: 0; }
+.ms-stat + .ms-stat::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 1px; background: rgba(255, 255, 255, .14); }
+.ms-stat-angka {
+  font-size: 25px; line-height: 1.05; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+  background: linear-gradient(180deg, #FFFFFF 35%, #D3EBA0 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent; white-space: nowrap;
 }
-.ms-isian {
-  width: 100%; min-width: 0; height: 50px; padding: 0 14px; border: 1px solid var(--ms-garis-2); border-radius: 8px;
-  background: #FFFFFF; font: inherit; font-size: 16px; color: var(--ms-tinta);
-  transition: border-color .15s, box-shadow .15s;
+.ms-stat-ket { font-size: 11px; line-height: 1.3; font-weight: 600; color: rgba(255, 255, 255, .78); }
+.ms-stat-grafik { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 4px 7px; margin-top: 5px; }
+.ms-stat-tren { display: block; width: 61px; height: 20px; flex: none; }
+.ms-stat-tren rect { fill: rgba(198, 227, 138, .45); }
+.ms-stat-tren rect.kini { fill: #C6E38A; }
+/* "+n hari ini": sewarna batang hari ini di sebelahnya. */
+.ms-stat-naik {
+  padding: 1px 6px; border-radius: 999px; font-size: 10.5px; line-height: 1.45; font-weight: 700;
+  font-variant-numeric: tabular-nums; white-space: nowrap; color: #12332D; background: #C6E38A;
 }
-.ms-isian:hover { border-color: #AEB6C0; }
-.ms-isian:focus { outline: none; border-color: var(--ms-aksen); box-shadow: 0 0 0 3px rgba(245, 124, 0, .18); }
-
-.ms-tombol {
-  width: 100%; height: 52px; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-  border: 0; border-radius: 8px; background: var(--ms-aksen); color: var(--ms-hitam);
-  font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; transition: background-color .15s;
+/* Pita sebaran modul per pilar: lebar tiap ruas sebanding banyak modulnya. */
+.ms-stat-pita { display: flex; gap: 2px; width: 100%; min-width: 88px; max-width: 124px; height: 6px; margin-top: 8px; }
+.ms-stat-pita i { display: block; flex-basis: 0; min-width: 3px; height: 100%; border-radius: 3px; }
+/* Kolom sempit (layar 1024–1279 px): empat angka menjadi 2 × 2. */
+@container (max-width: 400px) {
+  .ms-statistik-isi { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); justify-content: normal; row-gap: 12px; }
+  .ms-stat:nth-child(3) { padding-left: 0; }
+  .ms-stat:nth-child(3)::before { display: none; }
+  .ms-stat:nth-child(2n) { padding-right: 0; }
 }
-.ms-tombol:hover:not(:disabled) { background: var(--ms-aksen-2); }
-.ms-tombol:disabled { opacity: .65; cursor: wait; }
-.ms-tombol svg { width: 18px; height: 18px; flex: none; transition: transform .15s; }
-.ms-tombol:hover:not(:disabled) svg { transform: translateX(3px); }
+/* Kolom yang terlalu sempit (layar 1024–1150 px): kapsul pilar disembunyikan
+   alih-alih kata-katanya bertabrakan, tanggal di kepala kaca dilepas (jamnya
+   tetap), dan grafik mini sedikit diperkecil supaya tanda "+n" tetap di
+   sebelahnya, tidak turun ke baris baru. */
+@container (max-width: 300px) {
+  .ms-pilar { display: none; }
+  .ms-statistik-tgl { display: none; }
+  .ms-stat-tren { width: 48px; height: 16px; }
+  .ms-stat-pita { min-width: 0; }
+}
 
-.ms-tautan { color: var(--ms-aksen-teks); font-weight: 600; text-decoration: underline; text-decoration-color: rgba(168, 84, 0, .35); text-underline-offset: 3px; }
-.ms-tautan:hover { text-decoration-color: currentColor; }
+.ms-widget-label {
+  display: inline-flex; align-items: center; gap: 8px; font-size: 10.5px; font-weight: 700; white-space: nowrap;
+  letter-spacing: .12em; text-transform: uppercase; color: #C6E38A;
+}
+.ms-titik { display: block; width: 7px; height: 7px; border-radius: 50%; background: #86E38F; animation: ms-denyut 2.4s ease-out infinite; }
+@keyframes ms-denyut {
+  0%   { box-shadow: 0 0 0 0 rgba(134, 227, 143, .6); }
+  70%  { box-shadow: 0 0 0 9px rgba(134, 227, 143, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(134, 227, 143, 0); }
+}
 
-.ms :focus-visible { outline: 2px solid var(--ms-aksen); outline-offset: 3px; }
+/* Kilau kaca: seberkas cahaya miring melintas pelan tiap beberapa detik —
+   tanda bidangnya hidup tanpa menuntut perhatian. */
+.ms-statistik::after {
+  content: ''; position: absolute; inset: -40% -60%; z-index: -1; pointer-events: none;
+  background: linear-gradient(105deg, transparent 42%, rgba(255, 255, 255, .12) 50%, transparent 58%);
+  transform: translateX(-60%); animation: ms-kilau 9s ease-in-out 2.4s infinite;
+}
+@keyframes ms-kilau { 0% { transform: translateX(-60%); } 22%, 100% { transform: translateX(60%); } }
+@keyframes ms-muncul { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 
-/* Halaman tamu lain (daftar, lupa sandi, …) masih memakai .label/.input
-   bercakupan sendiri; judul, huruf, dan warna fokusnya diselaraskan di
-   sini tanpa menyentuh logika formulirnya. */
-.ms .input:focus { border-color: var(--ms-aksen); box-shadow: 0 0 0 3px rgba(245, 124, 0, .18); }
-.ms .ring-focus:focus { border-color: var(--ms-aksen); box-shadow: 0 0 0 3px rgba(245, 124, 0, .18); }
+/* Pilar merek — tujuh pilar EQOHSEE ditambah Konservasi, huruf mono
+   berjarak, dipisah garis tegak hijau. Tanpa `display` di sini: diatur
+   kelas Tailwind (hidden sm:flex). */
+/* Kapsulnya sendiri yang menentukan: satu baris delapan kolom bila
+   LEBAR KAPSULNYA cukup, dua baris empat kolom bila tidak. Diukur dari
+   kapsul (container query), bukan dari lebar layar — panel foto berbeda
+   lebarnya untuk layar yang sama (penuh, terlipat, atau di dalam bingkai),
+   dan aturan per lebar layar sempat menumpuk kata-katanya. */
+.ms-pilar { padding: 11px 14px; border-radius: 16px; container-type: inline-size; }
+/* Kisi, bukan deret yang patah sendiri: tidak pernah tujuh kata di atas
+   dan satu kata tertinggal di bawah. Tanpa `display` di sini: diatur
+   kelas Tailwind (grid). */
+.ms-huruf { grid-template-columns: repeat(4, max-content); justify-content: space-between; gap: 8px 8px; }
+@container (min-width: 600px) {
+  .ms-huruf { grid-template-columns: repeat(8, auto); }
+}
+.ms-huruf b {
+  display: block; font-family: 'Inter', system-ui, sans-serif; font-size: 9.5px; font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; color: rgba(255, 255, 255, .55);
+}
 
-/* Deret delapan huruf — bayangan kecil dari deret kerangka di halaman
-   depan. Tanpa `display` di sini: tampil-tidaknya diatur kelas Tailwind
-   (hidden sm:grid), dan display pada berkas ini akan menimpanya. Nama
-   aspeknya tidak ditulis per huruf — "Environment" tidak muat di kolom
-   selebar 60 px dan terpotong menjadi "Environme…". */
-.ms-huruf { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 0 6px; border-top: 1px solid rgba(255, 255, 255, .16); padding-top: 16px; }
-.ms-huruf b { display: block; font-size: clamp(24px, 2.2vw, 32px); line-height: 1; font-weight: 800; font-stretch: 78%; color: rgba(255, 255, 255, .32); }
+/* Sorotan berjalan: Energy → Quality → … → Konservasi, lalu mengulang.
+   Dulu hanya satu huruf yang disorot, menetap — dan di panel yang penuh
+   gerak itu terbaca sebagai animasi yang macet. Kini tiap kata mendapat
+   giliran 1,2 detik dengan peralihan yang saling bertumpang, satu putaran
+   9,6 detik.
 
-/* Sorotan berjalan: E → Q → O → H → S → E → E → +K, lalu mengulang.
-   Dulu hanya S yang disorot, menetap — dan di halaman yang penuh gerak
-   (rekaman latar, titik "sistem aktif") itu terbaca sebagai animasi yang
-   macet di satu huruf. Kini tiap huruf mendapat giliran 1,2 detik dengan
-   peralihan yang saling bertumpang, satu putaran 9,6 detik.
-
-   Jedanya ditulis per huruf lewat :nth-child, bukan gaya sebaris, jadi
+   Jedanya ditulis per kata lewat :nth-child, bukan gaya sebaris, jadi
    tidak bergantung pada izin gaya sebaris di Content-Security-Policy. */
 .ms-huruf b { animation: ms-huruf-sorot 9.6s ease-in-out infinite; }
 .ms-huruf b:nth-child(2) { animation-delay: 1.2s; }
@@ -114,76 +257,332 @@
 .ms-huruf b:nth-child(7) { animation-delay: 7.2s; }
 .ms-huruf b:nth-child(8) { animation-delay: 8.4s; }
 @keyframes ms-huruf-sorot {
-  0%, 18%, 100% { color: rgba(255, 255, 255, .32); }
-  5%, 12.5%     { color: #FFFFFF; }
+  0%, 18%, 100% { color: rgba(255, 255, 255, .55); }
+  5%, 12.5%     { color: #D3EBA0; }
 }
 /* Tanpa gerak: kedelapannya sama terang, tidak satu pun menonjol —
-   satu huruf terang yang diam adalah cacat yang baru saja diperbaiki. */
+   satu kata terang yang diam adalah cacat yang baru saja diperbaiki. */
 @media (prefers-reduced-motion: reduce) {
-  .ms-huruf b { animation: none; color: rgba(255, 255, 255, .72); }
+  .ms-huruf b { animation: none; color: rgba(255, 255, 255, .78); }
+  .ms-foto, .ms-statistik, .ms-titik, .ms-statistik::after { animation: none; }
+  .ms-kontur-garis, .ms-kontur-indeks { animation: none; stroke-dashoffset: 0; }
 }
+
+/* ═══════════ Lembar & kartu formulir (kanan) ═══════════ */
+.ms-kartu {
+  border-radius: 24px; padding: 26px 20px 20px;
+  background: linear-gradient(155deg, rgba(255, 255, 255, .8) 0%, rgba(246, 250, 247, .66) 100%);
+  border: 1px solid rgba(255, 255, 255, .78);
+  -webkit-backdrop-filter: blur(30px) saturate(185%);
+  backdrop-filter: blur(30px) saturate(185%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .95), 0 30px 70px -32px rgba(7, 36, 32, .48), 0 2px 10px rgba(7, 36, 32, .05);
+}
+@media (min-width: 640px) { .ms-kartu { border-radius: 28px; padding: 40px 42px 28px; } }
+/* Ponsel: kartunya mengapung di atas tepi bawah foto, dan kacanya
+   memperlihatkan foto yang terburamkan di belakangnya. */
+@media (max-width: 639px) { .ms-kartu { margin-top: -76px; } }
+/* Peramban tanpa backdrop-filter: kartu hampir putih penuh supaya teks
+   tetap terbaca di atas foto dan garis kontur. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .ms-kartu { background: rgba(255, 255, 255, .97); }
+  .ms-kaca-gelap { background: rgba(7, 36, 32, .55); }
+}
+
+/* Judul kolom formulir, dipakai seluruh halaman tamu. */
+/* Tanpa margin sendiri: halaman tamu lain menata jaraknya dengan kelas
+   Tailwind (mb-2), dan berkas ini dimuat sesudah Tailwind — margin di
+   sini akan menimpanya diam-diam. */
+.ms-judul {
+  font-size: clamp(28px, 2.6vw, 36px); line-height: 1.1; font-weight: 700; font-stretch: 94%;
+  letter-spacing: -.02em; color: var(--ms-hitam);
+}
+.ms-judul-merek { color: var(--ms-teal); }
+.ms-sub { margin: 10px 0 26px; font-size: 15.5px; line-height: 1.55; color: var(--ms-redup); }
+
+.ms-label { display: block; margin-bottom: 8px; font-size: 14.5px; font-weight: 600; color: var(--ms-tinta); }
+
+.ms-isian {
+  width: 100%; min-width: 0; height: 52px; padding-left: 16px; padding-right: 16px;
+  border: 1px solid var(--ms-garis-2); border-radius: 12px; background: #FFFFFF;
+  font: inherit; font-size: 16px; color: var(--ms-tinta);
+  transition: border-color .15s, box-shadow .15s;
+}
+.ms-isian::placeholder { color: #8A9893; opacity: 1; }
+.ms-isian:hover { border-color: #A9B8B2; }
+.ms-isian:focus { outline: none; border-color: var(--ms-aksen); box-shadow: 0 0 0 4px rgba(19, 128, 107, .14); }
+/* Ruang tombol intip sandi (InputSandi menambahkan pr-12, yang kalah
+   oleh padding di atas karena berkas ini dimuat sesudah Tailwind). */
+.ms .eq-sandi .ms-isian { padding-right: 48px; }
+
+/* Kolom berikon: ikon di kiri, teks bergeser ke kanannya. */
+.ms-ikon-isian { position: relative; }
+/* Ikonnya squircle kecil, bahasa yang sama dengan ikon fitur di panel
+   foto: teal muda saat diam, gradasi teal tombol Masuk saat kolomnya
+   difokus. */
+.ms-ikon-isian > .ms-ikon {
+  position: absolute; left: 10px; top: 50%; z-index: 1; display: grid; place-items: center;
+  width: 32px; height: 32px; border-radius: 8px; transform: translateY(-50%);
+  background: linear-gradient(160deg, #E5F1EC, #CFE4DB); color: #0F5C52;
+  pointer-events: none; transition: background .2s, color .2s;
+}
+.ms-ikon-isian > .ms-ikon svg { width: 18px; height: 18px; }
+.ms-ikon-isian:focus-within > .ms-ikon { background: var(--ms-tombol); color: #FFFFFF; }
+.ms .ms-isian.ms-isian-ikon { padding-left: 52px; }
+
+.ms-cek { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; color: var(--ms-isi); cursor: pointer; }
+.ms-cek input { width: 18px; height: 18px; accent-color: var(--ms-teal); }
+
+.ms-tombol {
+  width: 100%; height: 54px; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  border: 0; border-radius: 12px; background: var(--ms-tombol); color: #FFFFFF;
+  font: inherit; font-size: 16.5px; font-weight: 700; cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 16px 30px -16px rgba(15, 76, 69, .7);
+  transition: filter .15s, box-shadow .15s, transform .15s;
+}
+.ms-tombol:hover:not(:disabled) { filter: brightness(1.08); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .26), 0 18px 34px -16px rgba(15, 76, 69, .8); }
+.ms-tombol:active:not(:disabled) { transform: translateY(1px); }
+.ms-tombol:disabled { opacity: .7; cursor: wait; }
+.ms-tombol svg { width: 20px; height: 20px; flex: none; }
+
+.ms-tautan { color: var(--ms-aksen-teks); font-weight: 600; text-decoration: underline; text-decoration-color: rgba(15, 92, 82, .3); text-underline-offset: 4px; }
+.ms-tautan:hover { color: var(--ms-hitam); text-decoration-color: currentColor; }
+
+.ms-daftar { margin: 22px 0 0; text-align: center; font-size: 15px; color: var(--ms-redup); }
+
+/* Masuk dengan Google/Microsoft — tombol putih bergaris, logo resmi
+   penyedia, sesuai pedoman merek keduanya. */
+.ms-atau { display: flex; align-items: center; gap: 14px; margin: 22px 0 14px; font-family: 'Inter', system-ui, sans-serif; font-size: 13px; color: var(--ms-samar); }
+.ms-atau::before, .ms-atau::after { content: ''; flex: 1; height: 1px; background: var(--ms-garis); }
+.ms-sso { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.ms-sso-tombol {
+  height: 50px; display: flex; align-items: center; justify-content: center; gap: 12px; border-radius: 12px;
+  background: rgba(255, 255, 255, .94); border: 1px solid #D5DEDA; box-shadow: 0 1px 2px rgba(7, 36, 32, .05);
+  font: 600 15px 'Inter', system-ui, sans-serif; color: #1D2B28; transition: border-color .15s, box-shadow .15s;
+}
+.ms-sso-tombol:hover { border-color: #A9B8B2; box-shadow: 0 6px 16px -10px rgba(7, 36, 32, .35); }
+.ms-sso-tombol svg { width: 20px; height: 20px; flex: none; }
+
+.ms-kaki {
+  margin: 26px 0 0; padding-top: 16px; border-top: 1px solid var(--ms-garis);
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px;
+  font-size: 13px; color: var(--ms-samar);
+}
+.ms-kaki a:hover { color: var(--ms-aksen-teks); }
+
+.ms :focus-visible { outline: 2px solid var(--ms-aksen); outline-offset: 3px; }
+/* Kolom isian sudah bertanda fokus sendiri (garis teal + pendar); garis
+   luar di atasnya menjadi cincin ganda yang berat. */
+.ms :is(input, select, textarea):not([type="checkbox"], [type="radio"]):focus-visible { outline: none; }
+
+/* Halaman tamu lain (daftar, lupa sandi, …) masih memakai .label/.input
+   bercakupan sendiri; judul, huruf, dan warna fokusnya diselaraskan di
+   sini tanpa menyentuh logika formulirnya. */
+.ms .input:focus { border-color: var(--ms-aksen); box-shadow: 0 0 0 4px rgba(19, 128, 107, .14); }
+.ms .ring-focus:focus { border-color: var(--ms-aksen); box-shadow: 0 0 0 4px rgba(19, 128, 107, .14); }
 
 /* ── Halaman tamu lain: Daftar, Lupa sandi, Atur ulang, Dua faktor,
    Konfirmasi sandi ──
    Markahnya memakai .auth-* dari app.css dan .label/.input bercakupan
    sendiri. Bentuknya diseragamkan di sini dengan halaman Masuk — judul
-   Archivo rapat, label mono, kolom dan tombol bersudut 8 px — tanpa
+   Archivo, label tegas, kolom bersudut 12 px, tombol teal — tanpa
    menyentuh formulirnya. `form` pada pemilih menaikkan bobotnya di atas
    .label[data-v-…] bercakupan, yang urutan muatnya tidak dapat dipegang. */
 .ms .auth-judul {
-  font-size: clamp(32px, 3vw, 40px); line-height: 1; font-weight: 700; font-stretch: 82%;
+  font-size: clamp(28px, 2.6vw, 36px); line-height: 1.1; font-weight: 700; font-stretch: 94%;
   letter-spacing: -.02em; color: var(--ms-hitam);
 }
-.ms .auth-ket { font-size: 15px; line-height: 1.5; color: var(--ms-redup); }
+.ms .auth-ket { font-size: 15px; line-height: 1.55; color: var(--ms-redup); }
 .ms form .label, .ms form .auth-label {
-  font-family: var(--ms-mono); font-size: 11.5px; font-weight: 500; letter-spacing: .06em; color: var(--ms-redup);
+  font-family: inherit; font-size: 14px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--ms-tinta);
 }
 .ms form .input, .ms form .auth-isian {
-  min-height: 50px; border-color: var(--ms-garis-2); border-radius: 8px; font-size: 16px; color: var(--ms-tinta);
+  min-height: 50px; border-color: var(--ms-garis-2); border-radius: 12px; font-size: 16px; color: var(--ms-tinta);
 }
-.ms form .input:hover, .ms form .auth-isian:hover { border-color: #AEB6C0; }
-.ms form .input:focus, .ms form .auth-isian:focus { border-color: var(--ms-aksen); box-shadow: 0 0 0 3px rgba(245, 124, 0, .18); }
-.ms .auth-tombol { min-height: 52px; border-radius: 8px; font-size: 16px; box-shadow: none; }
+.ms form .input:hover, .ms form .auth-isian:hover { border-color: #A9B8B2; }
+.ms form .input:focus, .ms form .auth-isian:focus { border-color: var(--ms-aksen); box-shadow: 0 0 0 4px rgba(19, 128, 107, .14); }
+.ms .auth-tombol { min-height: 54px; border-radius: 12px; font-size: 16px; background: var(--ms-tombol); color: #FFFFFF; box-shadow: 0 16px 30px -16px rgba(15, 76, 69, .7); }
+.ms .auth-tombol:hover:not(:disabled) { background: var(--ms-tombol); filter: brightness(1.08); }
+.ms .auth-tautan { color: var(--ms-aksen-teks); text-decoration-color: rgba(15, 92, 82, .3); }
+.ms .auth-tautan:hover { color: var(--ms-hitam); }
+/* Tombol utama aplikasi (halaman verifikasi kode) di halaman tamu. */
+.ms .eq-btn-utama { background: var(--ms-tombol); color: #FFFFFF; }
 
-/* ═══════════ Motif tambang: desain pit, peta, dan kontur ═══════════
-   Tiga lapis di lembar putih formulir, bahasa peta yang sama dengan
-   halaman depan; panel rekaman di kiri dibiarkan bersih.
+/* ═══════════ Motif tambang: kontur, desain pit, dan pita ═══════════
+   Di lembar formulir, bukan di atas foto; panel foto dibiarkan bersih.
 
-   1. Desain pit di pojok kanan bawah — jenjang (garis puncak dan kaki),
-      ramp spiral dan jalan angkut berstrip jingga, dasar pit, patok
-      survei, dan panah utara. Tanpa label teks: bentuk formulirnya
-      berbeda di tiap lebar layar dan halaman (masuk, daftar), dan label
-      di belakang tautan terbaca sebagai tulisan nyasar.
-   2. Rona pasir hangat di sudut yang sama, supaya pitnya terbaca sebagai
-      titik berat dan kontur di belakangnya meredup.
-   3. Kontur topografi di seluruh lembar — garis tinggi dari satu medan
+   1. Kontur topografi di seluruh lembar — garis tinggi dari satu medan
       ketinggian (marching squares), tidak pernah saling memotong; tiap
       garis kelima lebih tebal; lebarnya tetap di layar sempit.
+   2. Desain pit di pojok kanan bawah — jenjang, ramp spiral dan jalan
+      angkut berstrip hijau zaitun, dasar pit, patok survei, panah utara.
+      Tanpa label teks: label di belakang tautan terbaca sebagai tulisan
+      nyasar.
+   3. Pita lengkung teal–zaitun di pojok kiri atas dan kanan bawah,
+      gema dari lambang EQOHSEE.
 
-   Isian formulir berlatar putih menutup semuanya, jadi teks yang
+   Kartu formulir berlatar putih menutup semuanya, jadi teks yang
    diketik tidak pernah bertumpuk dengan garis. */
 .ms {
-  --ms-motif-kontur: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 1000' preserveAspectRatio='xMidYMid slice'><g fill='none' stroke='%23A9522B' stroke-linejoin='round' vector-effect='non-scaling-stroke'><path stroke-opacity='.13' stroke-width='1' vector-effect='non-scaling-stroke' d='M0 778Q25 760 42 755Q58 750 75 751Q92 752 108 759Q124 767 139 779Q153 792 165 808Q176 825 185 846Q193 867 195 883Q197 900 195 912Q193 925 187 938Q180 950 171 958Q161 967 147 973Q133 979 117 982Q100 985 83 984Q67 984 48 979Q29 975 15 968L0 961M0 719Q50 700 75 702Q100 703 124 714Q148 725 170 745Q192 765 214 799Q236 833 248 867Q260 900 261 917Q263 933 262 946Q260 958 250 979L239 1000M0 676Q58 659 83 661Q108 663 133 674Q158 686 182 705Q205 725 232 759Q258 792 281 834Q303 875 312 908Q321 942 319 971L316 1000M0 638Q50 624 79 625Q108 627 137 638Q166 650 191 670Q217 690 252 732Q288 775 317 821Q345 867 358 900Q370 933 372 967L373 1000M0 570Q67 559 96 562Q125 565 154 576Q183 588 212 609Q242 631 296 690Q349 750 387 800Q424 850 440 888Q456 925 461 962L465 1000M0 538Q75 529 108 534Q142 538 171 551Q200 563 229 585Q258 607 332 687Q406 767 434 804Q463 842 479 879Q496 917 500 938Q504 958 506 979L507 1000M0 507Q75 500 112 505Q150 510 183 524Q217 538 246 561Q275 583 359 671Q444 758 471 792Q498 825 509 846Q521 867 528 888Q536 908 540 929Q544 950 546 975L547 1000M0 476Q83 472 121 478Q158 483 192 496Q225 509 254 530Q283 551 384 651Q485 750 510 779Q535 808 547 829Q559 850 566 871Q574 892 580 917Q585 942 587 971L589 1000M0 413Q117 419 157 426Q198 433 228 445Q258 457 288 478Q317 498 379 557Q442 617 508 669Q575 722 596 744Q617 767 630 788Q643 808 653 833Q664 858 671 888Q678 917 683 958L689 1000M0 380Q183 399 208 405Q233 411 254 420Q275 428 304 448Q333 468 400 529Q467 591 546 645Q625 700 650 725Q674 750 692 779Q709 808 720 838Q731 867 749 933L766 1000M0 345Q58 356 142 366Q225 375 250 382Q275 389 295 399Q314 408 336 425Q358 441 400 481Q442 521 467 541Q492 561 571 606Q650 652 678 672Q706 692 731 717Q756 742 794 791Q833 840 850 852Q867 865 879 868Q892 871 904 870Q917 869 958 852L1000 835M0 306Q67 325 154 334Q242 342 275 351Q308 359 338 377Q367 394 417 442Q467 490 492 509Q517 528 546 544Q575 560 646 593Q716 625 779 662Q842 700 858 707Q875 714 896 718Q917 723 958 719L1000 715M0 76Q17 36 29 18L42 0M0 180Q15 208 27 221Q40 233 54 242Q69 250 89 256Q108 261 150 263Q192 264 258 255Q325 245 346 249Q367 253 388 270Q408 286 458 347Q508 408 528 425Q548 442 568 454Q589 467 623 482Q658 496 767 534Q875 571 908 578Q942 585 971 586L1000 587M129 0Q92 24 77 41Q63 58 56 75Q48 92 46 112Q44 133 48 150Q53 167 64 181Q75 195 92 204Q108 213 129 216Q150 219 171 217Q192 215 213 207Q233 200 252 188Q270 175 282 158Q293 142 297 125Q300 108 296 88Q291 67 279 47Q267 27 250 13L233 0M481 0Q448 108 446 129Q444 150 445 167Q446 183 452 208Q459 233 469 258Q479 283 493 308Q508 333 524 354Q541 375 573 400Q606 425 649 444Q692 463 792 495Q892 526 921 532Q950 537 975 538L1000 539M533 0Q509 108 509 150Q508 192 512 212Q516 233 524 254Q531 275 540 293Q550 311 562 327Q575 344 605 368Q635 392 680 412Q725 432 808 457Q892 483 921 488Q950 493 975 495L1000 496M572 0Q553 100 553 142Q553 183 563 221Q573 258 592 288Q610 317 639 339Q667 362 712 383Q758 403 829 424Q900 445 950 450L1000 456M641 0Q626 75 626 112Q626 150 635 183Q644 217 660 242Q677 267 703 288Q729 308 769 326Q808 344 862 358Q917 372 958 375L1000 378M675 0Q661 67 661 100Q660 133 668 162Q676 192 692 217Q709 242 733 261Q758 281 796 298Q833 314 879 325Q925 336 962 337L1000 338M711 0Q696 67 697 96Q697 125 705 150Q713 175 727 196Q742 217 767 236Q792 254 825 268Q858 282 896 289Q933 297 967 296L1000 296M752 0Q736 58 737 83Q737 108 744 129Q750 150 765 171Q780 192 802 208Q825 223 854 234Q883 245 912 249Q942 253 971 249L1000 246'/><path stroke-opacity='.24' stroke-width='1.5' vector-effect='non-scaling-stroke' d='M0 603Q58 590 88 593Q117 595 146 606Q175 618 202 638Q228 658 269 704Q310 750 347 804Q385 858 400 896Q415 933 419 967L422 1000M0 445Q100 445 138 451Q175 457 208 471Q242 484 271 505Q300 525 358 582Q417 639 475 691Q533 742 554 767Q576 792 588 812Q600 833 609 858Q619 883 624 912Q630 942 632 971L635 1000M0 258Q42 282 67 289Q92 296 121 299Q150 302 217 304Q283 305 308 310Q333 316 346 322Q358 328 373 339Q388 350 447 408Q506 467 540 489Q575 510 725 571Q875 631 904 637Q933 643 967 643L1000 643M608 0Q590 92 590 129Q590 167 599 200Q608 233 626 262Q645 292 672 314Q700 336 742 355Q783 373 846 391Q908 408 954 413L1000 417M807 0Q789 42 787 62Q785 83 791 104Q797 125 810 142Q822 158 842 171Q862 183 885 190Q908 196 933 195Q958 195 979 187L1000 178'/></g></svg>");
-  --ms-motif-pit: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 640'><g fill='none' stroke='%23A9522B' stroke-linejoin='round' stroke-linecap='round'><path d='M719 410L675 509L592 591L462 614L337 616L193 605L122 510L119 410L134 314L218 239L329 176L471 177L567 253L663 315ZM693 425L649 513L571 583L453 599L340 603L210 587L156 497L153 408L172 322L251 257L354 201L481 212L563 280L652 336ZM667 437L625 514L551 574L446 585L344 589L231 569L191 487L188 408L210 333L283 276L376 228L488 245L559 306L638 357ZM640 448L601 514L533 564L441 570L351 575L254 551L226 478L223 410L247 345L312 296L397 257L493 278L553 330L623 376ZM614 456L578 513L517 553L438 555L360 560L280 535L260 471L258 413L283 358L340 317L415 286L495 310L546 353L605 394ZM588 463L557 509L503 540L438 541L372 545L308 520L295 467L294 419L318 373L367 340L431 316L495 340L538 375L586 411ZM563 468L537 505L492 527L440 527L386 530L338 506L330 464L329 425L352 390L391 364L444 347L493 369L528 396L565 426ZM538 471L518 498L483 513L444 513L403 515L369 494L365 463L365 434L384 408L414 388L454 378L490 396L516 416L543 440ZM514 473L500 490L476 499L451 499L423 499L402 484L400 463L400 444L414 428L435 414L462 409L485 422L503 435L519 452Z' stroke-opacity='.34' stroke-width='1.3'/><path d='M708 410L666 506L586 585L460 608L339 610L199 599L131 507L128 410L143 317L224 244L331 183L469 185L561 258L655 318ZM683 424L640 509L565 577L451 593L342 596L217 581L165 495L162 409L181 326L257 263L355 209L478 219L558 285L643 339ZM656 437L616 511L546 568L444 578L347 582L238 563L200 484L197 409L218 336L288 282L378 236L485 252L553 311L630 360ZM630 447L593 510L528 558L440 563L354 568L262 546L234 476L232 411L255 348L317 302L398 264L489 285L547 335L614 379ZM604 455L570 508L512 546L438 549L364 553L288 530L269 469L267 415L291 362L345 324L416 294L491 316L540 358L596 397ZM578 462L549 505L499 534L438 535L376 538L316 515L304 465L303 420L326 378L371 346L431 324L491 346L531 380L576 413ZM553 466L529 500L488 520L440 520L390 523L346 502L339 462L338 427L359 395L395 370L444 355L489 375L521 400L555 428ZM529 469L511 493L479 507L445 506L408 508L378 490L374 462L374 436L391 413L418 395L454 386L486 402L509 420L533 441ZM505 470L493 485L473 492L452 492L428 493L411 480L409 463L409 446L421 432L438 421L461 417L480 428L495 439L509 453Z' stroke-opacity='.18' stroke-width='1'/><path d='M497 474L489 484L474 489L459 488L441 488L430 479L429 466L430 455L439 445L451 437L468 435L481 443L492 451L501 461Z' fill='%23A9522B' fill-opacity='.07' stroke-opacity='.3' stroke-width='1.2'/><path d='M129 336 174 276 241 229 334 213 424 198 505 232 548 302 601 335 653 380 637 442 613 490 578 533 517 549 461 553 410 553 372 542 324 528 302 494 335 460 333 434 341 408 390 408 411 395 436 383 466 414 481 424 492 433' stroke-opacity='.16' stroke-width='9'/><path d='M129 336C69 356 19 426 -61 456S-201 486 -311 566' stroke-opacity='.16' stroke-width='12'/></g><g fill='none' stroke='%23F57C00' stroke-linecap='round' stroke-dasharray='7 8'><path d='M129 336 174 276 241 229 334 213 424 198 505 232 548 302 601 335 653 380 637 442 613 490 578 533 517 549 461 553 410 553 372 542 324 528 302 494 335 460 333 434 341 408 390 408 411 395 436 383 466 414 481 424 492 433' stroke-opacity='.75' stroke-width='1.6'/><path d='M129 336C69 356 19 426 -61 456S-201 486 -311 566' stroke-opacity='.8' stroke-width='1.8'/></g><g stroke='%23A9522B' stroke-opacity='.55' stroke-width='1.2' fill='none'><path d='M103 470h14M110 463v14'/><circle cx='110' cy='470' r='3.5'/><path d='M553 150h14M560 143v14'/><circle cx='560' cy='150' r='3.5'/><path d='M243 600h14M250 593v14'/><circle cx='250' cy='600' r='3.5'/></g><g fill='%23A9522B' fill-opacity='.55'><path d='M604 548l10 28-10-7-10 7z'/></g><path d='M604 584v26' stroke='%23A9522B' stroke-opacity='.45' stroke-width='1.2'/></svg>");
+  --ms-motif-kontur: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 1000' preserveAspectRatio='xMidYMid slice'><g fill='none' stroke='%230F4C45' stroke-linejoin='round' vector-effect='non-scaling-stroke'><path stroke-opacity='.12' stroke-width='1' vector-effect='non-scaling-stroke' d='M0 778Q25 760 42 755Q58 750 75 751Q92 752 108 759Q124 767 139 779Q153 792 165 808Q176 825 185 846Q193 867 195 883Q197 900 195 912Q193 925 187 938Q180 950 171 958Q161 967 147 973Q133 979 117 982Q100 985 83 984Q67 984 48 979Q29 975 15 968L0 961M0 719Q50 700 75 702Q100 703 124 714Q148 725 170 745Q192 765 214 799Q236 833 248 867Q260 900 261 917Q263 933 262 946Q260 958 250 979L239 1000M0 676Q58 659 83 661Q108 663 133 674Q158 686 182 705Q205 725 232 759Q258 792 281 834Q303 875 312 908Q321 942 319 971L316 1000M0 638Q50 624 79 625Q108 627 137 638Q166 650 191 670Q217 690 252 732Q288 775 317 821Q345 867 358 900Q370 933 372 967L373 1000M0 570Q67 559 96 562Q125 565 154 576Q183 588 212 609Q242 631 296 690Q349 750 387 800Q424 850 440 888Q456 925 461 962L465 1000M0 538Q75 529 108 534Q142 538 171 551Q200 563 229 585Q258 607 332 687Q406 767 434 804Q463 842 479 879Q496 917 500 938Q504 958 506 979L507 1000M0 507Q75 500 112 505Q150 510 183 524Q217 538 246 561Q275 583 359 671Q444 758 471 792Q498 825 509 846Q521 867 528 888Q536 908 540 929Q544 950 546 975L547 1000M0 476Q83 472 121 478Q158 483 192 496Q225 509 254 530Q283 551 384 651Q485 750 510 779Q535 808 547 829Q559 850 566 871Q574 892 580 917Q585 942 587 971L589 1000M0 413Q117 419 157 426Q198 433 228 445Q258 457 288 478Q317 498 379 557Q442 617 508 669Q575 722 596 744Q617 767 630 788Q643 808 653 833Q664 858 671 888Q678 917 683 958L689 1000M0 380Q183 399 208 405Q233 411 254 420Q275 428 304 448Q333 468 400 529Q467 591 546 645Q625 700 650 725Q674 750 692 779Q709 808 720 838Q731 867 749 933L766 1000M0 345Q58 356 142 366Q225 375 250 382Q275 389 295 399Q314 408 336 425Q358 441 400 481Q442 521 467 541Q492 561 571 606Q650 652 678 672Q706 692 731 717Q756 742 794 791Q833 840 850 852Q867 865 879 868Q892 871 904 870Q917 869 958 852L1000 835M0 306Q67 325 154 334Q242 342 275 351Q308 359 338 377Q367 394 417 442Q467 490 492 509Q517 528 546 544Q575 560 646 593Q716 625 779 662Q842 700 858 707Q875 714 896 718Q917 723 958 719L1000 715M0 76Q17 36 29 18L42 0M0 180Q15 208 27 221Q40 233 54 242Q69 250 89 256Q108 261 150 263Q192 264 258 255Q325 245 346 249Q367 253 388 270Q408 286 458 347Q508 408 528 425Q548 442 568 454Q589 467 623 482Q658 496 767 534Q875 571 908 578Q942 585 971 586L1000 587M129 0Q92 24 77 41Q63 58 56 75Q48 92 46 112Q44 133 48 150Q53 167 64 181Q75 195 92 204Q108 213 129 216Q150 219 171 217Q192 215 213 207Q233 200 252 188Q270 175 282 158Q293 142 297 125Q300 108 296 88Q291 67 279 47Q267 27 250 13L233 0M481 0Q448 108 446 129Q444 150 445 167Q446 183 452 208Q459 233 469 258Q479 283 493 308Q508 333 524 354Q541 375 573 400Q606 425 649 444Q692 463 792 495Q892 526 921 532Q950 537 975 538L1000 539M533 0Q509 108 509 150Q508 192 512 212Q516 233 524 254Q531 275 540 293Q550 311 562 327Q575 344 605 368Q635 392 680 412Q725 432 808 457Q892 483 921 488Q950 493 975 495L1000 496M572 0Q553 100 553 142Q553 183 563 221Q573 258 592 288Q610 317 639 339Q667 362 712 383Q758 403 829 424Q900 445 950 450L1000 456M641 0Q626 75 626 112Q626 150 635 183Q644 217 660 242Q677 267 703 288Q729 308 769 326Q808 344 862 358Q917 372 958 375L1000 378M675 0Q661 67 661 100Q660 133 668 162Q676 192 692 217Q709 242 733 261Q758 281 796 298Q833 314 879 325Q925 336 962 337L1000 338M711 0Q696 67 697 96Q697 125 705 150Q713 175 727 196Q742 217 767 236Q792 254 825 268Q858 282 896 289Q933 297 967 296L1000 296M752 0Q736 58 737 83Q737 108 744 129Q750 150 765 171Q780 192 802 208Q825 223 854 234Q883 245 912 249Q942 253 971 249L1000 246'/><path stroke-opacity='.22' stroke-width='1.5' vector-effect='non-scaling-stroke' d='M0 603Q58 590 88 593Q117 595 146 606Q175 618 202 638Q228 658 269 704Q310 750 347 804Q385 858 400 896Q415 933 419 967L422 1000M0 445Q100 445 138 451Q175 457 208 471Q242 484 271 505Q300 525 358 582Q417 639 475 691Q533 742 554 767Q576 792 588 812Q600 833 609 858Q619 883 624 912Q630 942 632 971L635 1000M0 258Q42 282 67 289Q92 296 121 299Q150 302 217 304Q283 305 308 310Q333 316 346 322Q358 328 373 339Q388 350 447 408Q506 467 540 489Q575 510 725 571Q875 631 904 637Q933 643 967 643L1000 643M608 0Q590 92 590 129Q590 167 599 200Q608 233 626 262Q645 292 672 314Q700 336 742 355Q783 373 846 391Q908 408 954 413L1000 417M807 0Q789 42 787 62Q785 83 791 104Q797 125 810 142Q822 158 842 171Q862 183 885 190Q908 196 933 195Q958 195 979 187L1000 178'/></g></svg>");
+  --ms-motif-pit: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 640'><g fill='none' stroke='%230F4C45' stroke-linejoin='round' stroke-linecap='round'><path d='M719 410L675 509L592 591L462 614L337 616L193 605L122 510L119 410L134 314L218 239L329 176L471 177L567 253L663 315ZM693 425L649 513L571 583L453 599L340 603L210 587L156 497L153 408L172 322L251 257L354 201L481 212L563 280L652 336ZM667 437L625 514L551 574L446 585L344 589L231 569L191 487L188 408L210 333L283 276L376 228L488 245L559 306L638 357ZM640 448L601 514L533 564L441 570L351 575L254 551L226 478L223 410L247 345L312 296L397 257L493 278L553 330L623 376ZM614 456L578 513L517 553L438 555L360 560L280 535L260 471L258 413L283 358L340 317L415 286L495 310L546 353L605 394ZM588 463L557 509L503 540L438 541L372 545L308 520L295 467L294 419L318 373L367 340L431 316L495 340L538 375L586 411ZM563 468L537 505L492 527L440 527L386 530L338 506L330 464L329 425L352 390L391 364L444 347L493 369L528 396L565 426ZM538 471L518 498L483 513L444 513L403 515L369 494L365 463L365 434L384 408L414 388L454 378L490 396L516 416L543 440ZM514 473L500 490L476 499L451 499L423 499L402 484L400 463L400 444L414 428L435 414L462 409L485 422L503 435L519 452Z' stroke-opacity='.34' stroke-width='1.3'/><path d='M708 410L666 506L586 585L460 608L339 610L199 599L131 507L128 410L143 317L224 244L331 183L469 185L561 258L655 318ZM683 424L640 509L565 577L451 593L342 596L217 581L165 495L162 409L181 326L257 263L355 209L478 219L558 285L643 339ZM656 437L616 511L546 568L444 578L347 582L238 563L200 484L197 409L218 336L288 282L378 236L485 252L553 311L630 360ZM630 447L593 510L528 558L440 563L354 568L262 546L234 476L232 411L255 348L317 302L398 264L489 285L547 335L614 379ZM604 455L570 508L512 546L438 549L364 553L288 530L269 469L267 415L291 362L345 324L416 294L491 316L540 358L596 397ZM578 462L549 505L499 534L438 535L376 538L316 515L304 465L303 420L326 378L371 346L431 324L491 346L531 380L576 413ZM553 466L529 500L488 520L440 520L390 523L346 502L339 462L338 427L359 395L395 370L444 355L489 375L521 400L555 428ZM529 469L511 493L479 507L445 506L408 508L378 490L374 462L374 436L391 413L418 395L454 386L486 402L509 420L533 441ZM505 470L493 485L473 492L452 492L428 493L411 480L409 463L409 446L421 432L438 421L461 417L480 428L495 439L509 453Z' stroke-opacity='.18' stroke-width='1'/><path d='M497 474L489 484L474 489L459 488L441 488L430 479L429 466L430 455L439 445L451 437L468 435L481 443L492 451L501 461Z' fill='%230F4C45' fill-opacity='.07' stroke-opacity='.3' stroke-width='1.2'/><path d='M129 336 174 276 241 229 334 213 424 198 505 232 548 302 601 335 653 380 637 442 613 490 578 533 517 549 461 553 410 553 372 542 324 528 302 494 335 460 333 434 341 408 390 408 411 395 436 383 466 414 481 424 492 433' stroke-opacity='.16' stroke-width='9'/><path d='M129 336C69 356 19 426 -61 456S-201 486 -311 566' stroke-opacity='.16' stroke-width='12'/></g><g fill='none' stroke='%237A9E3A' stroke-linecap='round' stroke-dasharray='7 8'><path d='M129 336 174 276 241 229 334 213 424 198 505 232 548 302 601 335 653 380 637 442 613 490 578 533 517 549 461 553 410 553 372 542 324 528 302 494 335 460 333 434 341 408 390 408 411 395 436 383 466 414 481 424 492 433' stroke-opacity='.75' stroke-width='1.6'/><path d='M129 336C69 356 19 426 -61 456S-201 486 -311 566' stroke-opacity='.8' stroke-width='1.8'/></g><g stroke='%230F4C45' stroke-opacity='.55' stroke-width='1.2' fill='none'><path d='M103 470h14M110 463v14'/><circle cx='110' cy='470' r='3.5'/><path d='M553 150h14M560 143v14'/><circle cx='560' cy='150' r='3.5'/><path d='M243 600h14M250 593v14'/><circle cx='250' cy='600' r='3.5'/></g><g fill='%230F4C45' fill-opacity='.55'><path d='M604 548l10 28-10-7-10 7z'/></g><path d='M604 584v26' stroke='%230F4C45' stroke-opacity='.45' stroke-width='1.2'/></svg>");
+  --ms-pita-kiri: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 420'><defs><linearGradient id='a' x1='0' y1='0' x2='1' y2='.6'><stop offset='0' stop-color='%23A4C95A' stop-opacity='.55'/><stop offset='.55' stop-color='%237A9E3A' stop-opacity='.28'/><stop offset='1' stop-color='%230F4C45' stop-opacity='0'/></linearGradient><linearGradient id='b' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%230F4C45' stop-opacity='.16'/><stop offset='1' stop-color='%230F4C45' stop-opacity='0'/></linearGradient></defs><path d='M0 70C120 10 300 0 600 120V190C330 70 150 90 0 210Z' fill='url(%23a)'/><path d='M0 230C140 120 330 110 600 230V262C340 150 150 165 0 290Z' fill='url(%23b)'/></svg>");
+  --ms-pita-kanan: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 420'><defs><linearGradient id='c' x1='1' y1='1' x2='0' y2='.3'><stop offset='0' stop-color='%237A9E3A' stop-opacity='.5'/><stop offset='.6' stop-color='%23A4C95A' stop-opacity='.22'/><stop offset='1' stop-color='%23A4C95A' stop-opacity='0'/></linearGradient><linearGradient id='d' x1='1' y1='1' x2='0' y2='0'><stop offset='0' stop-color='%230F4C45' stop-opacity='.18'/><stop offset='1' stop-color='%230F4C45' stop-opacity='0'/></linearGradient></defs><path d='M600 330C470 400 300 420 0 300V240C280 350 440 330 600 250Z' fill='url(%23c)'/><path d='M600 220C450 320 280 320 40 210V180C290 280 450 270 600 180Z' fill='url(%23d)'/></svg>");
 }
+/* Pendar warna lembut (zaitun, teal, abu hangat) di belakang kartu kaca:
+   tanpa warna di belakangnya, kaca buram hanya terlihat sebagai putih. */
 .ms-lembar {
-  background-image: var(--ms-motif-pit), radial-gradient(70% 45% at 100% 100%, rgba(245, 238, 226, .9), rgba(245, 238, 226, 0) 70%), var(--ms-motif-kontur);
+  background-color: #EEF3EF;
+  background-image:
+    var(--ms-motif-pit),
+    radial-gradient(44% 34% at 16% 14%, rgba(169, 207, 94, .42), rgba(169, 207, 94, 0) 72%),
+    radial-gradient(46% 40% at 88% 86%, rgba(19, 128, 107, .24), rgba(19, 128, 107, 0) 72%),
+    radial-gradient(40% 34% at 80% 10%, rgba(214, 216, 211, .9), rgba(214, 216, 211, 0) 70%),
+    var(--ms-motif-kontur);
   background-repeat: no-repeat;
-  background-size: 260px auto, 100% 100%, cover;
-  background-position: right -70px bottom -110px, 0 0, center;
+  background-size: 260px auto, 100% 100%, 100% 100%, 100% 100%, cover;
+  background-position: right -70px bottom -110px, 0 0, 0 0, 0 0, center;
 }
 @media (min-width: 640px) {
-  .ms-lembar { background-size: 520px auto, 100% 100%, cover; background-position: right -90px bottom -110px, 0 0, center; }
+  .ms-lembar {
+    background-size: 520px auto, 100% 100%, 100% 100%, 100% 100%, cover;
+    background-position: right -90px bottom -110px, 0 0, 0 0, 0 0, center;
+  }
 }
+/* Ponsel: tanpa pendar warna, supaya warna tepi atas lembar sama persis
+   dengan peleburan tepi bawah foto di belakang kartu kaca. */
+@media (max-width: 639px) {
+  .ms-lembar {
+    background-image: var(--ms-motif-pit), var(--ms-motif-kontur);
+    background-size: 260px auto, cover;
+    background-position: right -70px bottom -110px, center;
+  }
+}
+
+
+/* ═══════════ Kartu melayang (layar lebar) ═══════════
+   Seluruh halaman tamu menjadi satu kartu kaca di atas latar lembut:
+   pendar zaitun dan teal, kontur topografi, dan dua pita lengkung —
+   gema lambang EQOHSEE. Foto di kiri, panel kaca formulir di kanan, dan
+   tiga bintik jendela ala macOS di pojok kiri-atasnya.
+
+   Kartunya setinggi layar paling sedikit dan memanjang mengikuti isinya
+   (formulir Daftar), jadi tidak pernah ada gulir di dalam gulir. */
+.ms-jendela { display: none; }
+/* Dua kelas: .ms-bahasa (position: relative, di bawah) tidak boleh
+   menimpanya — sempat terjadi, pilnya jatuh menjadi butir flex di tengah
+   kiri panel dan menyempitkan formulir. */
+.ms-bahasa.ms-bahasa-panel { position: absolute; top: 22px; right: 22px; z-index: 20; }
+@media (min-width: 1024px) {
+  .ms {
+    --ms-tepi: clamp(16px, 3vh, 36px);
+    position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    padding: var(--ms-tepi) clamp(16px, 2vw, 36px);
+    background:
+      radial-gradient(48% 52% at 6% 4%, rgba(169, 207, 94, .42), rgba(169, 207, 94, 0) 72%),
+      radial-gradient(50% 58% at 98% 98%, rgba(19, 128, 107, .3), rgba(19, 128, 107, 0) 72%),
+      var(--ms-motif-kontur),
+      linear-gradient(160deg, #EEF3F0 0%, #E2EAE6 100%);
+    background-size: 100% 100%, 100% 100%, cover, 100% 100%;
+  }
+  .ms::before, .ms::after {
+    content: ''; position: absolute; pointer-events: none;
+    background-repeat: no-repeat; background-size: 100% 100%;
+  }
+  .ms::before { left: -6%; top: -16%; width: 58%; height: 60%; background-image: var(--ms-pita-kiri); transform: rotate(-6deg); }
+  .ms::after { right: -8%; bottom: -18%; width: 60%; height: 62%; background-image: var(--ms-pita-kanan); }
+
+  .ms-bingkai {
+    position: relative; z-index: 1; width: min(1720px, 100%);
+    min-height: min(940px, calc(100vh - 2 * var(--ms-tepi)));
+    border-radius: 30px; overflow: hidden;
+    background: rgba(255, 255, 255, .38); border: 1px solid rgba(255, 255, 255, .72);
+    box-shadow: 0 60px 120px -50px rgba(7, 36, 32, .55), 0 2px 12px rgba(7, 36, 32, .06);
+    -webkit-backdrop-filter: blur(30px) saturate(160%); backdrop-filter: blur(30px) saturate(160%);
+  }
+
+  .ms-jendela { position: absolute; top: 20px; left: 22px; z-index: 30; display: flex; gap: 9px; }
+  .ms-jendela i { width: 13px; height: 13px; border-radius: 50%; box-shadow: inset 0 0 0 .5px rgba(0, 0, 0, .25), 0 1px 2px rgba(0, 0, 0, .25); }
+  .ms-jendela i:nth-child(1) { background: #FF5F57; }
+  .ms-jendela i:nth-child(2) { background: #FEBC2E; }
+  .ms-jendela i:nth-child(3) { background: #28C840; }
+
+  /* Panel kanan: kaca terang, tanpa kartu kedua di dalamnya. */
+  .ms-lembar { background: linear-gradient(155deg, rgba(255, 255, 255, .88) 0%, rgba(244, 249, 246, .74) 100%); }
+  .ms-kartu {
+    background: none; border: 0; box-shadow: none; padding: 0;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+}
+
+/* Lencana keamanan di bawah formulir. */
+.ms-aman {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px; margin: 20px 0 0;
+  font-family: 'Inter', system-ui, sans-serif; font-size: 12px; font-weight: 500; color: var(--ms-samar);
+}
+.ms-aman span { display: inline-flex; align-items: center; gap: 6px; }
+.ms-aman svg { width: 15px; height: 15px; color: var(--ms-aksen); }
+
+/* Laptop berlayar pendek (1366×768, 1440×900, 1280×800): formulir masuk
+   lengkap — Turnstile, Google/Microsoft, lencana keamanan — muat tanpa
+   menggulir di 1440×900. Hanya jaraknya yang dirapatkan; ukuran huruf
+   dan target sentuh 44 px tetap. Layar yang lebih tinggi memakai ukuran
+   lapangnya.
+   Ditulis sesudah aturan dasarnya (.ms-aman di atas) supaya menang. */
+@media (min-width: 1024px) and (max-height: 940px) {
+  .ms-sub { margin-bottom: 20px; }
+  .ms-isian { height: 48px; }
+  .ms-tombol { height: 50px; }
+  .ms-sso-tombol { height: 46px; }
+  .ms-kartu form.space-y-5 > :not([hidden]) ~ :not([hidden]) { margin-top: 16px; }
+  .ms-atau { margin: 18px 0 12px; }
+  .ms-daftar { margin-top: 16px; }
+  .ms-aman { margin-top: 16px; }
+  .ms-kaki { margin-top: 20px; padding-top: 14px; }
+}
+
+/* ── Pilihan bahasa ── */
+.ms-bahasa { position: relative; }
+.ms-bahasa-tombol {
+  display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px 0 8px; border-radius: 999px;
+  font: 600 13.5px 'Inter', system-ui, sans-serif; color: var(--ms-tinta); cursor: pointer;
+  background: rgba(255, 255, 255, .78); border: 1px solid rgba(15, 76, 69, .12);
+  box-shadow: 0 6px 18px -10px rgba(7, 36, 32, .35);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+}
+.ms-bendera { display: block; width: 22px; height: 22px; flex: none; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 1px rgba(0, 0, 0, .1); }
+.ms-bendera svg { display: block; width: 100%; height: 100%; }
+.ms-bahasa-panah { width: 14px; height: 14px; color: #5B6B67; }
+.ms-bahasa-menu {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 40; min-width: 200px; padding: 6px;
+  border-radius: 16px; background: rgba(255, 255, 255, .94); border: 1px solid rgba(15, 76, 69, .12);
+  box-shadow: 0 24px 48px -20px rgba(7, 36, 32, .45);
+  -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+}
+.ms-bahasa-butir {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border-radius: 10px;
+  font: 500 14px 'Inter', system-ui, sans-serif; color: var(--ms-tinta); text-align: left; cursor: pointer;
+}
+.ms-bahasa-butir:hover, .ms-bahasa-butir.kini { background: rgba(19, 128, 107, .08); }
+.ms-bahasa-centang { width: 16px; height: 16px; margin-left: auto; color: var(--ms-aksen); }
+/* Ponsel & tablet: pil di pojok foto, sedikit lebih ringkas. */
+@media (max-width: 1023px) {
+  .ms-bahasa-tombol { height: 34px; padding: 0 9px 0 6px; gap: 6px; font-size: 12.5px; background: rgba(255, 255, 255, .86); }
+  .ms-bahasa .ms-bendera { width: 20px; height: 20px; }
+}
+
+/* Foto: unit dump truck dijaga di kanan-bawah panel, jauh dari kaca
+   kiri-bawah (diukur di 800–2560 px: jarak terdekat 32 px). Ponsel tanpa
+   kaca kiri-bawah: matahari terbitnya yang diperlihatkan. */
+@media (max-width: 639px) { .ms-foto { object-position: 72% 88%; } }
 
 /* ═══════════ tetap terang ketika tema gelap aktif ═══════════
    Halaman tamu memakai bahasa rupa halaman depan dan, seperti halaman
-   depan, tidak punya versi gelap: lembar formulirnya tetap putih. Tema
+   depan, tidak punya versi gelap: kartu formulirnya tetap putih. Tema
    gelap aplikasi (pilihan pengguna, atau sistem yang bermode gelap) dulu
    tetap menjalar lewat aturan global eq-visual.css — kolom email dan
-   sandi menjadi kotak gelap di lembar putih, garis fokus jingganya
-   hilang, dan ikon mata memakai abu mode gelap yang di atas putih hanya
-   2,5:1.
+   sandi menjadi kotak gelap di kartu putih, garis fokusnya hilang, dan
+   ikon mata memakai abu mode gelap yang di atas putih hanya 2,5:1.
 
    :has(.ms) membuat aturan akar ini berlaku hanya selama halaman tamu
    terpasang. Spesifisitasnya sengaja di atas aturan tema gelap
@@ -191,16 +590,17 @@
    ditampilkan di kotak ringkasan, bukan lewat warna garis kolom, jadi
    warna garis aman dipulihkan di sini. */
 :root[data-tema]:has(.ms) { color-scheme: light; }
-:root[data-tema]:has(.ms) body { background: #FFFFFF; color: #0F1720; }
+:root[data-tema]:has(.ms) body { background: #F2F5F1; color: #10211E; }
 
 :root[data-tema="gelap"] .ms :is(input, select, textarea):not([type="checkbox"], [type="radio"]) {
   background-color: #FFFFFF; color: var(--ms-tinta); border-color: var(--ms-garis-2);
 }
-:root[data-tema="gelap"] .ms :is(input, select, textarea):not([type="checkbox"], [type="radio"]):hover { border-color: #AEB6C0; }
+:root[data-tema="gelap"] .ms :is(input, select, textarea):not([type="checkbox"], [type="radio"]):hover { border-color: #A9B8B2; }
 :root[data-tema="gelap"] .ms :is(input, select, textarea):not([type="checkbox"], [type="radio"]):focus { border-color: var(--ms-aksen); }
 
-:root[data-tema="gelap"] .ms :is([type="checkbox"], [type="radio"]) { background-color: #FFFFFF; border-color: #6B7280; color: #2563EB; }
+:root[data-tema="gelap"] .ms :is([type="checkbox"], [type="radio"]) { background-color: #FFFFFF; border-color: #6B7280; color: #0F4C45; }
 :root[data-tema="gelap"] .ms :is([type="checkbox"], [type="radio"]):checked { background-color: currentColor; border-color: transparent; }
 
 :root[data-tema="gelap"] .ms .eq-sandi-intip { color: #78716C; }
+:root[data-tema="gelap"] .ms .eq-turnstile-halang { background: #FFFBEB; border-color: #FDE68A; color: #92400E; }
 :root[data-tema="gelap"] .ms .eq-sandi-intip:is(:hover, :focus-visible) { color: #292524; background: rgb(0 0 0 / .05); }

@@ -106,9 +106,7 @@
 }
 .ld-kepala-isi { height: var(--ld-kepala); display: flex; align-items: center; gap: 24px; }
 .ld-merek { display: flex; align-items: center; gap: 10px; flex: none; color: #FFFFFF; }
-.ld-merek img { height: 30px; width: auto; }
-.ld-merek b { font-weight: 800; font-size: 18px; letter-spacing: -.01em; }
-.ld-merek b i { font-style: normal; color: var(--ld-aksen-2); }
+.ld-merek img { display: block; height: 30px; width: auto; }
 .ld-nav { flex: 1; min-width: 0; display: flex; justify-content: center; gap: 0 2px; }
 .ld-nav a {
   position: relative; height: 36px; display: flex; align-items: center; padding: 0 12px;
@@ -624,7 +622,6 @@ button.ld-galeri-foto:hover img { transform: scale(1.05); }
 .ld-kaki-isi { padding-top: 40px; padding-bottom: 40px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 32px; }
 .ld-kaki-merek { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .ld-kaki-merek .ld-merek img { height: 26px; }
-.ld-kaki-merek .ld-merek b { font-size: 16px; }
 .ld-kaki-merek > span { font-family: var(--ld-mono); font-size: 12px; letter-spacing: .06em; }
 .ld-kaki nav { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13.5px; }
 .ld-kaki nav a { color: #FFFFFF; }

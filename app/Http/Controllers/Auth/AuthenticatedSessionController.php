@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use App\Support\{DuaFaktor, Turnstile};
+use App\Support\{DuaFaktor, MasukPihakKetiga, Turnstile};
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -32,6 +32,11 @@ class AuthenticatedSessionController extends Controller
              * dirinya persis seperti sebelum fitur ini ada. */
             'turnstile' => Turnstile::kunciSitus(),
             'tindakan'  => Turnstile::TINDAKAN['masuk'],
+
+            /* Penyedia masuk pihak ketiga yang benar-benar dipasang
+               (client id & secret terisi). Tanpa satu pun, halaman masuk
+               tidak menggambar tombol Google/Microsoft sama sekali. */
+            'sso'       => MasukPihakKetiga::tersedia(),
         ]);
     }
 

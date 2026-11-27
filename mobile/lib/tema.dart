@@ -17,6 +17,8 @@ class Warna {
   static const kertas = Color(0xFFF5F7F9);
   static const sinyal = Color(0xFFF57C00);
   static const sinyalTerang = Color(0xFFFF9800);
+  /// Olive Green merek EQOHSEE, varian terang untuk latar gelap (ekor Q pada wordmark).
+  static const zaitun = Color(0xFF8BB243);
   static const jingga = Color(0xFFA85400);
   static const jinggaLunak = Color(0xFFFFF0DE);
   static const abu1 = Color(0xFF3A4450);
@@ -114,7 +116,8 @@ ThemeData temaEqohsee() {
   );
 }
 
-/// Wordmark: E(Q)OHSEE dengan Q jingga, seperti di web.
+/// Wordmark: lambang pita EQOHSEE lalu E(Q)OHSEE dengan Q hijau zaitun,
+/// seperti ekor Q pada wordmark resmi di web.
 class Wordmark extends StatelessWidget {
   const Wordmark({super.key, this.ukuran = 18, this.terang = true});
 
@@ -132,7 +135,7 @@ class Wordmark extends StatelessWidget {
         Text.rich(
           TextSpan(children: [
             TextSpan(text: 'E', style: TextStyle(color: warna)),
-            const TextSpan(text: 'Q', style: TextStyle(color: Warna.sinyalTerang)),
+            const TextSpan(text: 'Q', style: TextStyle(color: Warna.zaitun)),
             TextSpan(text: 'OHSEE', style: TextStyle(color: warna)),
           ]),
           style: TextStyle(fontFamily: Huruf.isi, fontSize: ukuran, fontWeight: FontWeight.w800, letterSpacing: -.3),

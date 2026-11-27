@@ -38,7 +38,7 @@ class PastikanAktif
             }
 
             // Ditampilkan bilah kilat GuestLayout di halaman masuk.
-            return redirect()->route('login')->with('galat', self::PESAN);
+            return redirect()->route('login')->with('galat', __(self::PESAN));
         }
 
         return $next($request);

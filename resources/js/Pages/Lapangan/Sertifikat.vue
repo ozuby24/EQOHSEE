@@ -67,7 +67,7 @@ async function bagikan(s: Sertifikat) {
     <div v-for="s in sertifikat" :key="s.id" class="slot">
       <article class="kartu">
         <header>
-          <span class="merek"><img src="/brand/eqohsee-mark-128.png" alt="" width="24" height="24"><span>E<b>Q</b>OHSEE</span></span>
+          <span class="merek"><img src="/brand/eqohsee-navbar-dark.svg" alt="EQOHSEE" width="123" height="22"></span>
           <span class="lp-mono nomor">{{ s.nomor }}</span>
         </header>
         <div class="garis-jingga"></div>
@@ -122,9 +122,8 @@ async function bagikan(s: Sertifikat) {
 .slot { flex: none; width: 100%; padding: 4px 20px 0; scroll-snap-align: start; }
 .kartu { background: #FFFFFF; border: 1px solid var(--garis); border-radius: 18px; overflow: hidden; box-shadow: 0 18px 40px -28px rgba(11, 17, 23, .4); }
 header { background: var(--ink); padding: 15px 18px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.merek { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 14px; color: #FFFFFF; }
-.merek img { height: 24px; width: auto; display: block; }
-.merek b { color: #FF9800; font-weight: 800; }
+.merek { display: flex; align-items: center; flex: none; }
+.merek img { height: 22px; width: auto; display: block; }
 .nomor { font-size: 11px; color: rgba(255, 255, 255, .74); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .garis-jingga { height: 3px; background: var(--sinyal); }
 .isi { padding: 18px 18px 0; }

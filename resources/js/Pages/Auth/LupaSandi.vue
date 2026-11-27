@@ -3,8 +3,11 @@ import { ref } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import GuestLayout from '../../Layouts/GuestLayout.vue';
 import VerifikasiTurnstile from '../../Components/VerifikasiTurnstile.vue';
+import { useBahasa } from '../../tamu/bahasa';
 
 defineOptions({ layout: GuestLayout });
+
+const { t } = useBahasa();
 
 const props = defineProps<{
   /** Kunci situs Turnstile. null berarti verifikasinya tidak dipasang. */
@@ -42,12 +45,12 @@ function kirim() {
 </script>
 
 <template>
-  <Head title="Lupa Kata Sandi" />
+  <Head :title="t('lupa.judul_tab')" />
 
-  <h2 class="auth-judul">Lupa kata sandi?</h2>
-  <p class="auth-ket mb-7">Masukkan email Anda untuk menerima tautan pengaturan ulang.</p>
+  <h2 class="auth-judul">{{ t('lupa.judul') }}</h2>
+  <p class="auth-ket mb-7">{{ t('lupa.sub') }}</p>
 
-  <div v-if="form.recentlySuccessful" class="mb-4 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 px-4 py-3 text-sm">Tautan reset sudah dikirim jika email terdaftar.</div>
+  <div v-if="form.recentlySuccessful" class="mb-4 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 px-4 py-3 text-sm">{{ t('lupa.terkirim') }}</div>
 
   <div v-if="Object.keys(form.errors).length" class="mb-4 rounded-xl bg-red-50 border border-red-100 text-red-700 px-4 py-3 text-[12.5px]">
     <ul class="space-y-0.5"><li v-for="(pesan, k) in form.errors" :key="k">• {{ pesan }}</li></ul>
@@ -55,18 +58,18 @@ function kirim() {
 
   <form class="space-y-4" @submit.prevent="kirim">
     <div>
-      <label for="email" class="label">Email</label>
+      <label for="email" class="label">{{ t('masuk.email') }}</label>
       <input id="email" v-model="form.email" type="email" required autofocus autocomplete="username" class="input">
     </div>
 
     <VerifikasiTurnstile v-model="form['cf-turnstile-response']"
                          :kunci="props.turnstile ?? null" :tindakan="props.tindakan ?? null"
-                         :galat="putaran" />
+                         :galat="putaran" tema="light" />
 
-    <button type="submit" :disabled="form.processing" class="auth-tombol">{{ form.processing ? 'Mengirim…' : 'Kirim tautan' }}</button>
+    <button type="submit" :disabled="form.processing" class="auth-tombol">{{ form.processing ? t('lupa.memproses') : t('lupa.tombol') }}</button>
   </form>
 
-  <p class="text-center text-sm text-stone-500 mt-6"><Link href="/login" class="auth-tautan">Kembali ke masuk</Link></p>
+  <p class="text-center text-sm text-stone-500 mt-6"><Link href="/login" class="auth-tautan">{{ t('lupa.kembali') }}</Link></p>
 </template>
 
 <style scoped>

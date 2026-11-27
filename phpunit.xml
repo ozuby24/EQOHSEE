@@ -65,5 +65,12 @@
              config() di dalam ujinya, bukan dari sini. -->
         <env name="TURNSTILE_SITE_KEY" value=""/>
         <env name="TURNSTILE_SECRET_KEY" value=""/>
+        <!-- Masuk dengan Google/Microsoft: mati dalam uji, untuk alasan yang
+             sama dengan Turnstile di atas. MasukPihakKetigaTest
+             menyalakannya sendiri lewat config(). -->
+        <env name="GOOGLE_CLIENT_ID" value=""/>
+        <env name="GOOGLE_CLIENT_SECRET" value=""/>
+        <env name="MICROSOFT_CLIENT_ID" value=""/>
+        <env name="MICROSOFT_CLIENT_SECRET" value=""/>
     </php>
 </phpunit>

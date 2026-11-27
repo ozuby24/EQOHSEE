@@ -35,4 +35,24 @@ return [
         ],
     ],
 
+    /* Masuk dengan akun Google / Microsoft (Laravel Socialite).
+       Tombolnya hanya tampil di halaman masuk bila client id DAN secret
+       terisi (App\Support\MasukPihakKetiga). Alamat kembali yang
+       didaftarkan di konsol penyedia: https://<domain>/masuk/google/kembali
+       dan https://<domain>/masuk/microsoft/kembali. */
+    'google' => [
+        'client_id'     => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect'      => env('GOOGLE_REDIRECT_URI', '/masuk/google/kembali'),
+    ],
+
+    'microsoft' => [
+        'client_id'     => env('MICROSOFT_CLIENT_ID'),
+        'client_secret' => env('MICROSOFT_CLIENT_SECRET'),
+        'redirect'      => env('MICROSOFT_REDIRECT_URI', '/masuk/microsoft/kembali'),
+        // 'organizations' = akun kerja/sekolah penyewa mana pun; isi GUID
+        // penyewa untuk membatasi ke satu organisasi.
+        'tenant'        => env('MICROSOFT_TENANT_ID', 'organizations'),
+    ],
+
 ];

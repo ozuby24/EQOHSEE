@@ -2,17 +2,20 @@
 import { Head, useForm } from '@inertiajs/vue3';
 import GuestLayout from '../../Layouts/GuestLayout.vue';
 import InputSandi from '../../Components/InputSandi.vue';
+import { useBahasa } from '../../tamu/bahasa';
 defineOptions({ layout: GuestLayout });
+
+const { t } = useBahasa();
 const form = useForm({ password: '' });
 function konfirmasi() { form.post('/confirm-password', { onFinish: () => form.reset('password') }); }
 </script>
 
 <template>
-  <Head title="Konfirmasi Kata Sandi" />
-  <h2 class="auth-judul">Konfirmasi kata sandi</h2>
-  <p class="auth-ket mb-7">Ini area aman. Konfirmasi kata sandi sebelum melanjutkan.</p>
+  <Head :title="t('konfirmasi.judul_tab')" />
+  <h2 class="auth-judul">{{ t('konfirmasi.judul') }}</h2>
+  <p class="auth-ket mb-7">{{ t('konfirmasi.sub') }}</p>
   <p v-if="form.errors.password" class="mb-4 text-sm text-red-600">{{ form.errors.password }}</p>
-  <form class="space-y-4" @submit.prevent="konfirmasi"><div><label class="label">Kata sandi</label><InputSandi v-model="form.password" required autofocus autocomplete="current-password" kelas="input" /></div><button type="submit" :disabled="form.processing" class="auth-tombol">Konfirmasi</button></form>
+  <form class="space-y-4" @submit.prevent="konfirmasi"><div><label class="label">{{ t('daftar.sandi') }}</label><InputSandi v-model="form.password" required autofocus autocomplete="current-password" kelas="input" /></div><button type="submit" :disabled="form.processing" class="auth-tombol">{{ t('konfirmasi.tombol') }}</button></form>
 </template>
 
 <style scoped>.label{display:block;margin-bottom:.375rem;font-size:11.5px;font-weight:700;text-transform:uppercase;color:#78716c}.input{width:100%;border:1px solid #e7e5e4;border-radius:.75rem;background:#fff;padding:.75rem 1rem;font-size:.875rem}</style>

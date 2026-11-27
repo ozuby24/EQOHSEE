@@ -518,11 +518,14 @@ async function keluar() {
                   text-white/70 transition-transform duration-300"
            :class="lacisTerbuka ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
 
-      <a href="/dashboard" class="eq-merek">
-        <!-- Varian 128 px, bukan berkas 512 px seberat 217 KB untuk kotak 40 px. -->
-        <img src="/brand/eqohsee-mark-128.png" alt="" width="40" height="40">
+      <!-- Lambang dan wordmark berupa vektor resmi (varian latar gelap):
+           tajam di layar berkerapatan tinggi dan hanya beberapa kilobita.
+           Nama tautannya ditulis di aria-label karena saat bilahnya
+           dilipat yang tersisa hanya lambangnya. -->
+      <a href="/dashboard" class="eq-merek" aria-label="EQOHSEE — ke Dashboard">
+        <img src="/brand/eqohsee-icon-dark.svg" alt="" width="40" height="40">
         <span>
-          <strong>E<em>Q</em>OHSEE</strong>
+          <img class="eq-merek-nama" src="/brand/eqohsee-wordmark-dark.svg" alt="" width="122" height="17">
           <small>Safe Today · Sustainable Tomorrow</small>
         </span>
       </a>

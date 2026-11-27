@@ -148,9 +148,10 @@ class PresisiTampilanTest extends TestCase
     }
 
     /**
-     * Deret E Q O H S E E +K di panel halaman tamu tidak menyorot satu
-     * huruf secara tetap. Dulu S disorot menetap, dan di panel yang penuh
-     * gerak itu terbaca sebagai animasi yang macet di satu huruf.
+     * Deret pilar di panel halaman tamu (Energy … Konservasi; dulu deret
+     * huruf E Q O H S E E +K) tidak menyorot satu butir secara tetap. Dulu
+     * S disorot menetap, dan di panel yang penuh gerak itu terbaca sebagai
+     * animasi yang macet di satu huruf.
      */
     public function test_deret_huruf_halaman_tamu_tidak_macet_di_satu_huruf(): void
     {
@@ -178,21 +179,35 @@ class PresisiTampilanTest extends TestCase
     }
 
     /**
-     * Motif kontur ada di LEMBAR PUTIH halaman tamu, bukan di atas
-     * rekamannya. Keputusan pemiliknya: motif di atas video bersaing
-     * dengan gambarnya; lembar putih justru yang kosong.
+     * Motif kontur ada di lembar formulir halaman tamu DAN di sisi kosong
+     * panel foto — tetapi tidak pernah di atas subjek fotonya.
+     *
+     * Keputusan awal pemiliknya: motif di atas rekaman bersaing dengan
+     * gambarnya, jadi hanya lembar formulir yang bermotif. Sesudah panel
+     * itu menjadi foto tambang dengan bidang gelap yang kosong di kiri-
+     * atas, pemiliknya meminta kontur di sisi kosong itu. Kontur panel
+     * karena itu dibatasi topeng gradasi yang lenyap sebelum mencapai
+     * truk dan matahari di kanan-bawah fotonya.
      */
-    public function test_motif_kontur_di_lembar_putih_bukan_di_atas_rekaman(): void
+    public function test_motif_kontur_di_lembar_dan_sisi_kosong_panel_foto(): void
     {
         $tataLetak = file_get_contents(resource_path('js/Layouts/GuestLayout.vue'));
         $this->assertMatchesRegularExpression('/<section class="ms-lembar /', $tataLetak,
             'Lembar formulir halaman tamu kehilangan motif konturnya.');
 
-        // Panel rekaman: hanya video/poster, tirai gradien, dan isinya.
+        // Panel foto: tanpa lapisan motif milik lembar (ms-lembar, ms-peta),
+        // dengan lapisan konturnya sendiri.
         preg_match('#<section class="pendar-rekaman.*?</section>#s', $tataLetak, $panel);
-        $this->assertNotEmpty($panel, 'Panel rekaman halaman tamu tidak ditemukan.');
-        $this->assertDoesNotMatchRegularExpression('/ms-peta|ms-lembar|motif/', $panel[0],
-            'Motif kembali dipasang di atas rekaman halaman tamu.');
+        $this->assertNotEmpty($panel, 'Panel foto halaman tamu tidak ditemukan.');
+        $this->assertDoesNotMatchRegularExpression('/ms-peta|ms-lembar/', $panel[0],
+            'Lapisan motif lembar formulir terpasang di atas panel foto.');
+        $this->assertStringContainsString('ms-panel-kontur', $panel[0],
+            'Sisi kosong panel foto kehilangan konturnya.');
+
+        // Kontur panel ditopeng: pekat di kiri, lenyap sebelum subjek foto.
+        $gaya = preg_replace('#/\*.*?\*/#s', '', file_get_contents(resource_path('css/masuk.css')));
+        $this->assertMatchesRegularExpression('/\.ms-panel-kontur\s*\{[^}]*mask-image:\s*linear-gradient\([^;]*transparent/', $gaya,
+            'Kontur panel foto tidak lagi ditopeng — garisnya akan menutupi truk di fotonya.');
 
         $css = file_get_contents(resource_path('css/masuk.css'));
         $this->assertMatchesRegularExpression('/--ms-motif-kontur:\s*url\("data:image\/svg\+xml,[^"]+"\)/', $css,
@@ -218,7 +233,10 @@ class PresisiTampilanTest extends TestCase
         preg_match('/--ms-motif-pit:\s*url\("data:image\/svg\+xml,([^"]+)"\)/', $css, $pit);
         $this->assertNotEmpty($pit, '--ms-motif-pit tidak didefinisikan.');
         $this->assertStringNotContainsString('<text', $pit[1], 'Desain pit memuat label teks.');
-        $this->assertStringContainsString('%23F57C00', $pit[1], 'Jalan angkut berstrip jingga hilang dari desain pit.');
+        // Strip jalan angkutnya berwarna merek: Olive Green, bukan jingga
+        // identitas lama.
+        $this->assertStringContainsString('%237A9E3A', $pit[1], 'Jalan angkut berstrip hijau zaitun hilang dari desain pit.');
+        $this->assertStringNotContainsString('%23F57C00', $pit[1], 'Desain pit kembali memakai jingga identitas lama.');
     }
 
     /**
@@ -243,11 +261,26 @@ class PresisiTampilanTest extends TestCase
             'Ikon mata di lembar putih memakai abu mode gelap (2,5:1).');
     }
 
-    public function test_panel_foto_halaman_tamu_menempel_di_layar_lebar(): void
+    /**
+     * Kartu melayang halaman tamu: setinggi layar paling sedikit, dan
+     * memanjang mengikuti formulirnya (Daftar). Tidak pernah ada gulir di
+     * dalam gulir — panel formulir yang menggulir sendiri di dalam kartu
+     * setinggi layar menyembunyikan tombol Daftar di bawah dua lapis gulir.
+     */
+    public function test_kartu_halaman_tamu_memanjang_mengikuti_formulir(): void
     {
+        $css = preg_replace('#/\*.*?\*/#s', '', file_get_contents(resource_path('css/masuk.css')));
+
+        $this->assertMatchesRegularExpression('/\.ms-bingkai\s*\{[^}]*min-height:\s*min\(940px,\s*calc\(100vh - 2 \* var\(--ms-tepi\)\)\)/', $css,
+            'Kartu halaman tamu tidak lagi setinggi layar paling sedikit.');
+        $this->assertDoesNotMatchRegularExpression('/\.ms-bingkai\s*\{[^}]*[^-]height:/', $css,
+            'Kartu halaman tamu bertinggi tetap: formulir Daftar terpotong atau menggulir di dalam kartu.');
+        $this->assertDoesNotMatchRegularExpression('/\.ms-lembar\s*\{[^}]*overflow-y:\s*(auto|scroll)/', $css,
+            'Panel formulir menggulir sendiri di dalam kartu.');
+
+        // Panel foto merentang setinggi kartu, judulnya di tengah.
         $tataLetak = file_get_contents(resource_path('js/Layouts/GuestLayout.vue'));
-        $this->assertMatchesRegularExpression('/class="pendar-rekaman[^"]*lg:sticky[^"]*lg:h-\\[100dvh\\]/', $tataLetak,
-            'Panel foto halaman tamu tidak menempel: pada formulir Daftar judulnya jatuh di bawah lipatan.');
+        $this->assertMatchesRegularExpression('/class="pendar-rekaman[^"]*flex flex-col justify-between/', $tataLetak);
     }
 
     public function test_halaman_masuk_merender_bahasa_baru(): void

@@ -1,52 +1,49 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+
 /**
  * Lambang dan nama EQOHSEE, satu bentuk untuk seluruh halaman.
  *
- * Halaman masuk sudah memakai lambangnya lewat GuestLayout, tetapi
- * halaman depan dan halaman /pilar menuliskan namanya sebagai teks
- * biasa — sehingga pengunjung yang datang dari halaman depan lalu
- * masuk melihat dua identitas yang berbeda pada dua layar berurutan.
+ * Merek EQOHSEE berupa pita Deep Teal–Olive Green–Warm Grey dengan
+ * wordmark beraerodinamis dan ekor Q hijau zaitun. Wordmark-nya huruf
+ * buatan, bukan fon: menuliskannya sebagai teks biasa selalu meleset dari
+ * bentuk resminya, jadi yang dimuat adalah vektor resminya.
  *
- * Lambangnya adalah heksagon jingga-perak. Satu berkas melayani latar
- * gelap maupun terang: bidangnya jingga dan perak di atas transparan,
- * jadi tidak ada varian putih yang perlu dipilih. Berkas lambang gunung
- * navy-emas (eqohsee-mark.svg) adalah identitas lama dan tidak dipakai
- * lagi di mana pun.
+ * Satu berkas tiap latar: varian `-dark` bernama putih dan berpita lebih
+ * terang untuk latar gelap, varian `-light` bernama #072420 untuk latar
+ * terang. Lambang heksagon jingga-perak dan lambang gunung navy-emas
+ * adalah identitas lama dan tidak dipakai lagi di mana pun.
  *
- * Yang dimuat varian 128 piksel, bukan berkas 512 piksel seberat 217 KB:
- * slot terbesar yang memakainya 40 piksel, jadi 128 sudah melebihi
- * kebutuhan layar berkerapatan ganda sekalipun.
- *
- * `gelap` kini hanya menentukan warna teksnya, bukan berkas lambangnya.
+ * `tinggi` adalah tinggi gambar keseluruhan; lebarnya mengikuti
+ * perbandingan vektornya sendiri. `teks=false` menampilkan lambangnya
+ * saja (persegi).
  */
-withDefaults(defineProps<{ gelap?: boolean; tinggi?: number; teks?: boolean }>(), {
+const props = withDefaults(defineProps<{ gelap?: boolean; tinggi?: number; teks?: boolean }>(), {
   gelap: true,
   tinggi: 28,
   teks: true,
 });
+
+/* Perbandingan lebar∶tinggi viewBox lockup navbar (917,3 × 164,8). */
+const RASIO_LOCKUP = 917.3 / 164.8;
+
+const sumber = computed(() => props.teks
+  ? (props.gelap ? '/brand/eqohsee-navbar-dark.svg' : '/brand/eqohsee-navbar-light.svg')
+  : (props.gelap ? '/brand/eqohsee-icon-dark.svg' : '/brand/eqohsee-icon.svg'));
+
+const lebar = computed(() => props.teks ? Math.round(props.tinggi * RASIO_LOCKUP) : props.tinggi);
 </script>
 
 <template>
-  <span class="inline-flex items-center gap-2.5">
-    <!-- Lambangnya persegi (512×512), jadi lebar dan tingginya sama. -->
-    <img
-      src="/brand/eqohsee-mark-128.png"
-      alt="" aria-hidden="true"
-      :width="tinggi" :height="tinggi"
-      :style="{ height: `${tinggi}px`, width: `${tinggi}px` }"
-      class="block shrink-0"
-    >
-    <!--
-      Namanya tetap berupa teks, bukan ikut ke dalam gambar. Teks dapat
-      dibaca pembaca layar, ikut tersalin ketika halaman disalin, dan
-      tidak buram pada layar berkerapatan tinggi. Huruf Q diberi warna
-      aksen, sama seperti pada lambangnya — jingga terang di atas latar
-      gelap, jingga penuh di atas latar terang, mengikuti komponen Blade
-      x-brand supaya kedua sisi aplikasi menuliskan merek yang sama.
-    -->
-    <span v-if="teks" class="font-extrabold tracking-wide leading-none"
-          :style="{ fontSize: `${Math.round(tinggi * 0.62)}px` }">
-      E<span :class="gelap ? 'text-cam-orange-light' : 'text-cam-orange'">Q</span>OHSEE
-    </span>
-  </span>
+  <!-- Lebar dan tinggi ditulis supaya ruangnya sudah dipesan sebelum
+       berkasnya tiba: tanpa itu kepala halaman melompat sekali saat
+       logonya muncul. -->
+  <img
+    :src="sumber"
+    alt="EQOHSEE"
+    :width="lebar" :height="tinggi"
+    :style="{ height: `${tinggi}px`, width: `${lebar}px` }"
+    class="block shrink-0 max-w-none"
+    decoding="async"
+  >
 </template>

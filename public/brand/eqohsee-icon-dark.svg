@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="27.25 27.25 225.5 225.5" width="226" height="226" role="img" aria-label="EQOHSEE">
+  
+  <g transform="translate(8.0,19.0)">
+    
+    <defs>
+      <!-- Deep Teal (#0F4C45) sculptural depth gradient -->
+      <linearGradient id="ic_d_teal" x1="12%" y1="88%" x2="82%" y2="12%">
+        <stop offset="0%" stop-color="#083A33"/>
+        <stop offset="48%" stop-color="#11665C"/>
+        <stop offset="86%" stop-color="#1B8577"/>
+        <stop offset="100%" stop-color="#11665C"/>
+      </linearGradient>
+
+      <!-- Olive Green (#7A9E3A) sculptural depth gradient -->
+      <linearGradient id="ic_d_olive" x1="88%" y1="15%" x2="18%" y2="88%">
+        <stop offset="0%" stop-color="#5B7B25"/>
+        <stop offset="48%" stop-color="#88B042"/>
+        <stop offset="88%" stop-color="#9EC454"/>
+        <stop offset="100%" stop-color="#88B042"/>
+      </linearGradient>
+
+      <!-- Warm Grey (#D6D8D3) Top-Right Underside with realistic fold shadow -->
+      <linearGradient id="ic_d_grey_tr" x1="12%" y1="12%" x2="88%" y2="88%">
+        <stop offset="0%" stop-color="#6C7169"/>
+        <stop offset="32%" stop-color="#B0B3AB"/>
+        <stop offset="68%" stop-color="#C7CAC3"/>
+        <stop offset="100%" stop-color="#E8EAE5"/>
+      </linearGradient>
+
+      <!-- Warm Grey (#D6D8D3) Bottom-Left Underside with realistic fold shadow -->
+      <linearGradient id="ic_d_grey_bl" x1="88%" y1="88%" x2="12%" y2="12%">
+        <stop offset="0%" stop-color="#6C7169"/>
+        <stop offset="32%" stop-color="#B0B3AB"/>
+        <stop offset="68%" stop-color="#C7CAC3"/>
+        <stop offset="100%" stop-color="#E8EAE5"/>
+      </linearGradient>
+
+      <!-- Soft directional inner pocket shadow right under the fold crease -->
+      <linearGradient id="ic_d_sh_tr" x1="0%" y1="0%" x2="65%" y2="65%">
+        <stop offset="0%" stop-color="#06221E" stop-opacity="0.40"/>
+        <stop offset="52%" stop-color="#06221E" stop-opacity="0.06"/>
+        <stop offset="100%" stop-color="#06221E" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="ic_d_sh_bl" x1="100%" y1="100%" x2="35%" y2="35%">
+        <stop offset="0%" stop-color="#2A3810" stop-opacity="0.38"/>
+        <stop offset="52%" stop-color="#2A3810" stop-opacity="0.06"/>
+        <stop offset="100%" stop-color="#2A3810" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <g id="ic_d_emblem">
+      <!-- Warm Grey Underside Wings -->
+      <path d="
+        M 140,76
+        C 156,55 172,46 186,51
+        L 234,99
+        C 238,103 239,106.5 236,109
+        L 196,109
+        C 179,109 167,102 155,89
+        Z
+    " fill="url(#ic_d_grey_tr)"/>
+      <path d="
+        M 140,76
+        C 156,55 172,46 186,51
+        L 234,99
+        C 238,103 239,106.5 236,109
+        L 196,109
+        C 179,109 167,102 155,89
+        Z
+    " fill="url(#ic_d_sh_tr)"/>
+      <path d="
+        M 124,166
+        C 108,187 92,196 78,191
+        L 30,143
+        C 26,139 25,135.5 28,133
+        L 68,133
+        C 85,133 97,140 109,153
+        Z
+    " fill="url(#ic_d_grey_bl)"/>
+      <path d="
+        M 124,166
+        C 108,187 92,196 78,191
+        L 30,143
+        C 26,139 25,135.5 28,133
+        L 68,133
+        C 85,133 97,140 109,153
+        Z
+    " fill="url(#ic_d_sh_bl)"/>
+
+      <!-- Deep Teal & Olive Green Front Ribbons -->
+      <path d="
+        M 25,132
+        C 20,120 26,107 40,93
+        L 96,37
+        C 117,16 148,17 171,38
+        L 186,51
+        C 169,45 155,57 140,77
+        L 126,95
+        C 110,116 92,126 62,126
+        C 42,126 30,127 25,132 Z
+    " fill="url(#ic_d_teal)"/>
+      <path d="
+        M 239,110
+        C 244,122 238,135 224,149
+        L 168,205
+        C 147,226 116,225 93,204
+        L 78,191
+        C 95,197 109,185 124,165
+        L 138,147
+        C 154,126 172,116 202,116
+        C 222,116 234,115 239,110 Z
+    " fill="url(#ic_d_olive)"/>
+
+      <!-- Crisp 1.1px Fold-Crease Edge Highlights -->
+      <path d="M 144,72 C 156,56 169,48 182,50.5" fill="none" stroke="#E3E8E5" stroke-width="1.15" stroke-linecap="round" opacity="0.78"/>
+      <path d="M 120,170 C 108,186 95,194 82,191.5" fill="none" stroke="#E3E8E5" stroke-width="1.15" stroke-linecap="round" opacity="0.78"/>
+    </g>
+    
+  </g>
+</svg>

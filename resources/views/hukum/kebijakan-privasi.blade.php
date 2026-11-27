@@ -110,6 +110,13 @@ disimpan aplikasi — bukan daftar umum.</p>
   peran yang memang membutuhkannya, dan setiap pembukaannya tercatat.</p>
 </div>
 
+<p><strong>Hitungan pengunjung situs.</strong> Jumlah pengunjung yang tampil di
+halaman masuk dihitung secara anonim: server hanya menyimpan satu angka per
+hari, tanpa alamat IP, jenis peramban, atau pengenal apa pun. Agar satu
+peramban tidak terhitung berulang pada hari yang sama, peramban Anda
+menyimpan kuki fungsional <code>eq_kunjungan</code> yang hanya berisi tanggal
+kunjungan dan kedaluwarsa dalam dua hari.</p>
+
 <h2>2. Untuk apa data dipakai</h2>
 
 <ul>

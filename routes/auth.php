@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\MasukPihakKetigaController;
+use App\Support\MasukPihakKetiga;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\DuaFaktorTantanganController;
 use App\Http\Controllers\Auth\NewPasswordController;
@@ -26,6 +28,18 @@ Route::middleware('guest')->group(function () {
 
     Route::post('login', [AuthenticatedSessionController::class, 'store'])
         ->middleware('throttle:masuk');
+
+    /* Masuk dengan akun Google / Microsoft. 404 bila penyedianya belum
+       dipasang di .env (MasukPihakKetigaController). */
+    Route::get('masuk/{penyedia}', [MasukPihakKetigaController::class, 'alihkan'])
+        ->whereIn('penyedia', MasukPihakKetiga::PENYEDIA)
+        ->middleware('throttle:masuk-sso')
+        ->name('masuk.sso');
+
+    Route::get('masuk/{penyedia}/kembali', [MasukPihakKetigaController::class, 'kembali'])
+        ->whereIn('penyedia', MasukPihakKetiga::PENYEDIA)
+        ->middleware('throttle:masuk-sso')
+        ->name('masuk.sso.kembali');
 
     /* Halaman kode dua faktor.
        Tetap di dalam grup 'guest': yang membukanya BELUM masuk — ia

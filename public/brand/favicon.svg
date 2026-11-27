@@ -1,1 +1,119 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><image width="48" height="48" href="data:image/png;base64,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"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="27.25 27.25 225.5 225.5" width="226" height="226" role="img" aria-label="EQOHSEE">
+  
+  <g transform="translate(8.0,19.0)">
+    
+    <defs>
+      <!-- Deep Teal (#0F4C45) sculptural depth gradient -->
+      <linearGradient id="ic_l_teal" x1="12%" y1="88%" x2="82%" y2="12%">
+        <stop offset="0%" stop-color="#042923"/>
+        <stop offset="48%" stop-color="#0F4C45"/>
+        <stop offset="86%" stop-color="#17695E"/>
+        <stop offset="100%" stop-color="#0F4C45"/>
+      </linearGradient>
+
+      <!-- Olive Green (#7A9E3A) sculptural depth gradient -->
+      <linearGradient id="ic_l_olive" x1="88%" y1="15%" x2="18%" y2="88%">
+        <stop offset="0%" stop-color="#4D691E"/>
+        <stop offset="48%" stop-color="#7A9E3A"/>
+        <stop offset="88%" stop-color="#8EB548"/>
+        <stop offset="100%" stop-color="#7A9E3A"/>
+      </linearGradient>
+
+      <!-- Warm Grey (#D6D8D3) Top-Right Underside with realistic fold shadow -->
+      <linearGradient id="ic_l_grey_tr" x1="12%" y1="12%" x2="88%" y2="88%">
+        <stop offset="0%" stop-color="#8F938B"/>
+        <stop offset="32%" stop-color="#B0B3AB"/>
+        <stop offset="68%" stop-color="#C9CBC5"/>
+        <stop offset="100%" stop-color="#E6E8E3"/>
+      </linearGradient>
+
+      <!-- Warm Grey (#D6D8D3) Bottom-Left Underside with realistic fold shadow -->
+      <linearGradient id="ic_l_grey_bl" x1="88%" y1="88%" x2="12%" y2="12%">
+        <stop offset="0%" stop-color="#8F938B"/>
+        <stop offset="32%" stop-color="#B0B3AB"/>
+        <stop offset="68%" stop-color="#C9CBC5"/>
+        <stop offset="100%" stop-color="#E6E8E3"/>
+      </linearGradient>
+
+      <!-- Soft directional inner pocket shadow right under the fold crease -->
+      <linearGradient id="ic_l_sh_tr" x1="0%" y1="0%" x2="65%" y2="65%">
+        <stop offset="0%" stop-color="#06221E" stop-opacity="0.40"/>
+        <stop offset="52%" stop-color="#06221E" stop-opacity="0.06"/>
+        <stop offset="100%" stop-color="#06221E" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="ic_l_sh_bl" x1="100%" y1="100%" x2="35%" y2="35%">
+        <stop offset="0%" stop-color="#2A3810" stop-opacity="0.38"/>
+        <stop offset="52%" stop-color="#2A3810" stop-opacity="0.06"/>
+        <stop offset="100%" stop-color="#2A3810" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <g id="ic_l_emblem">
+      <!-- Warm Grey Underside Wings -->
+      <path d="
+        M 140,76
+        C 156,55 172,46 186,51
+        L 234,99
+        C 238,103 239,106.5 236,109
+        L 196,109
+        C 179,109 167,102 155,89
+        Z
+    " fill="url(#ic_l_grey_tr)"/>
+      <path d="
+        M 140,76
+        C 156,55 172,46 186,51
+        L 234,99
+        C 238,103 239,106.5 236,109
+        L 196,109
+        C 179,109 167,102 155,89
+        Z
+    " fill="url(#ic_l_sh_tr)"/>
+      <path d="
+        M 124,166
+        C 108,187 92,196 78,191
+        L 30,143
+        C 26,139 25,135.5 28,133
+        L 68,133
+        C 85,133 97,140 109,153
+        Z
+    " fill="url(#ic_l_grey_bl)"/>
+      <path d="
+        M 124,166
+        C 108,187 92,196 78,191
+        L 30,143
+        C 26,139 25,135.5 28,133
+        L 68,133
+        C 85,133 97,140 109,153
+        Z
+    " fill="url(#ic_l_sh_bl)"/>
+
+      <!-- Deep Teal & Olive Green Front Ribbons -->
+      <path d="
+        M 25,132
+        C 20,120 26,107 40,93
+        L 96,37
+        C 117,16 148,17 171,38
+        L 186,51
+        C 169,45 155,57 140,77
+        L 126,95
+        C 110,116 92,126 62,126
+        C 42,126 30,127 25,132 Z
+    " fill="url(#ic_l_teal)"/>
+      <path d="
+        M 239,110
+        C 244,122 238,135 224,149
+        L 168,205
+        C 147,226 116,225 93,204
+        L 78,191
+        C 95,197 109,185 124,165
+        L 138,147
+        C 154,126 172,116 202,116
+        C 222,116 234,115 239,110 Z
+    " fill="url(#ic_l_olive)"/>
+
+      <!-- Crisp 1.1px Fold-Crease Edge Highlights -->
+      <path d="M 144,72 C 156,56 169,48 182,50.5" fill="none" stroke="#F2F3EF" stroke-width="1.15" stroke-linecap="round" opacity="0.78"/>
+      <path d="M 120,170 C 108,186 95,194 82,191.5" fill="none" stroke="#F2F3EF" stroke-width="1.15" stroke-linecap="round" opacity="0.78"/>
+    </g>
+    
+  </g>
+</svg>

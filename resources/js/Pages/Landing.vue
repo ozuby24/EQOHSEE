@@ -440,8 +440,8 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
     <header class="ld-kepala">
       <div class="ld-lebar ld-kepala-isi">
         <a href="#beranda" class="ld-merek" aria-label="EQOHSEE — ke atas">
-          <img src="/brand/eqohsee-mark-128.png" alt="" width="30" height="30">
-          <b>E<i>Q</i>OHSEE</b>
+          <!-- Lockup resmi: lambang pita + wordmark, varian latar gelap. -->
+          <img src="/brand/eqohsee-navbar-dark.svg" alt="" width="167" height="30">
         </a>
 
         <nav class="ld-nav" aria-label="Bagian halaman">
@@ -1163,7 +1163,7 @@ const WA = 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2
     <footer class="ld-kaki">
       <div class="ld-lebar ld-kaki-isi">
         <div class="ld-kaki-merek">
-          <span class="ld-merek"><img src="/brand/eqohsee-mark-128.png" alt="" width="26" height="26"><b>E<i>Q</i>OHSEE</b></span>
+          <span class="ld-merek"><img src="/brand/eqohsee-navbar-dark.svg" alt="EQOHSEE" width="145" height="26"></span>
           <span>PLATFORM TERPADU KESELAMATAN PERTAMBANGAN</span>
         </div>
         <nav aria-label="Tautan kaki">

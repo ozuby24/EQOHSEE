@@ -186,13 +186,13 @@ body{
 }
 .eq-merek img{display:block;flex:none}
 .eq-merek span{display:flex;flex-direction:column;line-height:1.12;min-width:0}
-.eq-merek strong{font-size:20px;font-weight:900;letter-spacing:-.015em;color:#E8ECF0}
-.eq-merek strong em{font-style:normal;color:#F36F0F}
+/* Wordmark resmi (vektor), bukan teks: hurufnya buatan, bukan fon. */
+.eq-merek .eq-merek-nama{width:122px;height:auto;max-width:100%}
 /* Semboyan di bawah nama: SATU BARIS. Sebelumnya patah menjadi
    "Sustainable / Tomorrow" pada lebar bilah 248px. Hurufnya dikecilkan
    sedikit dan tidak dikapitalkan — kapital berjarak lebar justru
    membuatnya terpotong. */
-.eq-merek small{font-size:8.5px;color:rgba(255,255,255,.5);margin-top:3px;letter-spacing:.02em;
+.eq-merek small{font-size:8.5px;color:rgba(255,255,255,.5);margin-top:5px;letter-spacing:.02em;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ── Kaki bilah samping ──
@@ -305,6 +305,12 @@ body{
   body.eq-sempit .eq-sisi-bawah{justify-content:center;border-top:0}
   body.eq-sempit .eq-lipat svg{transform:rotate(180deg)}
   body.eq-sempit #eqSidebar .grid-cols-3{grid-template-columns:repeat(1,minmax(0,1fr))}
+  /* Pemindah modul: yang tersisa saat terlipat hanya ikonnya. Nama modul
+     dulu tetap tampil dan, di kotak selebar 48 px, tersusun berdiri satu
+     huruf per baris tepat di bawah lambang. */
+  body.eq-sempit .eq-modul-pilih{justify-content:center;padding-inline:0}
+  body.eq-sempit .eq-modul-pilih .eq-modul-nama,
+  body.eq-sempit .eq-modul-pilih > svg:last-child{display:none}
 }
 
 /* ── Kaki bilah samping di laci ponsel ──
