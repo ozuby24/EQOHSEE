@@ -33,7 +33,7 @@ const sum = k => y3.reduce((a,b)=>a+b[k],0);
 const tot = sum('pendapatan');
 out.push('\n### Komposisi pendapatan tahun ke-3 — skenario moderat\n');
 out.push('| Aliran | Nilai tahun 3 | Porsi |\n|---|---:|---:|');
-[['langganan','A. Langganan membership'],['addon','B. Add-on (modul, slot IUJP, paket, pengguna)'],['kreditAi','C. Top-up kredit AI'],['vvip','D. VVIP / dedicated (lisensi + layanan tahunan)'],['digital','E1. Produk digital'],['kursus','E2. Kursus berbayar Learning Center'],['iklan','F. Iklan & sponsor'],['layanan','G. Layanan onboarding']].forEach(([k,l])=>out.push(`| ${l} | ${jt(sum(k))} | ${pct(sum(k)/tot)} |`));
+[['langganan','A. Langganan membership'],['addon','B. Add-on (modul audit, slot IUJP, pengguna)'],['erp','H. ERP SaaS & Paket Operasional'],['kreditAi','C. Top-up kredit AI'],['vvip','D. VVIP / dedicated (lisensi + layanan tahunan)'],['digital','E1. Produk digital'],['kursus','E2. Kursus berbayar Learning Center'],['iklanModul','F1. Iklan pembuka modul (Bronze)'],['iklan','F2. Iklan publik & sponsor'],['layanan','G. Layanan onboarding']].forEach(([k,l])=>out.push(`| ${l} | ${jt(sum(k))} | ${pct(sum(k)/tot)} |`));
 out.push(`| **Total** | **${jt(tot)}** | 100% |`);
 
 out.push('\n### Struktur biaya tahun ke-3 — skenario moderat\n');

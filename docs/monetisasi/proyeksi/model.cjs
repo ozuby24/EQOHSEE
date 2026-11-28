@@ -9,7 +9,10 @@
     tahunanFaktor: 10 / 12,            // bayar 10 bulan, dapat 12
     modulTambahan: 149000,             // per modul audit / bulan
     slotIujp: 49000,                   // per IUJP tambahan / bulan (Diamond)
-    paketOperasional: 999000,          // per paket / bulan
+    paketOperasional: 999000,          // paket tarif tetap (Safety Operations, Environment & ESG) / bulan
+    erpPerKaryawan: 9000,              // ERP SaaS People: per karyawan aktif / bulan
+    erpMinimum: 999000,                // ERP SaaS People: tagihan minimum / bulan
+    erpPerSite: 1499000,               // ERP SaaS Operations: per site / bulan
     penggunaTambahan: 29000,           // per pengguna / bulan
     onboardingGold: 1500000, onboardingDiamond: 3500000,
     vvipLisensi: 25000000,             // paket menyeluruh, sekali bayar (katalog saat ini)
@@ -52,7 +55,9 @@
     bronzeAktif: 0.35,                                          // porsi pendaftar yang masih aktif
     lampiran: {                                                 // add-on, porsi pelanggan aktif
       goldModul: 0.20, diamondSlot: 0.30, slotRata: 3,
-      goldPaket: 0.05, diamondPaket: 0.25, paketRata: 1.3,
+      goldPaket: 0.04, diamondPaket: 0.18, paketRata: 1.2,            // paket tarif tetap
+      goldErpOrang: 0.04, goldKaryawan: 100, diamondErpOrang: 0.12, diamondKaryawan: 250, // ERP People
+      goldErpSite: 0.02, diamondErpSite: 0.06, siteRata: 1.5,          // ERP Operations
       goldPengguna: 0.10, goldPenggunaRata: 3, diamondPengguna: 0.20, diamondPenggunaRata: 8,
       onboarding: 0.25,
     },
@@ -61,13 +66,15 @@
     kursusPorsiBronze: 0.008, kursusRata: 199000,
     tayangPublik0: 10000, tayangTumbuh: 0.06, tayangPerBronze: 15, rpm: 15000,
     sponsorRata: 1500000, sponsorMulai: 6,
+    // Iklan pembuka modul: tampil setiap Bronze membuka modul
+    bukaModulPerBronze: 12, isiPembuka: 0.5, ecpmPembuka: 60000,  // per Bronze aktif/bln, porsi terjual, Rp per 1.000
     biaya: {
       kreditRp: 200,                                   // biaya AI per kredit terpakai
       pakai: { silver: 30, gold: 100, diamond: 400, bronzeBaru: 3 },
       topupCogs: 0.25,
       gerbang: 0.012,                                  // biaya gateway, campuran QRIS/VA/kartu
       infraDasar: 3000000, infraPerBerbayar: 12000, infraPerBronze: 300, serverVvip: 400000,
-      komisiMitra: 0.06,                               // dari langganan + add-on
+      komisiMitra: 0.06,                               // dari langganan + add-on + ERP
       konten: 0.10, pengajar: 0.30, komisiSponsor: 0.10,
       pph: 0.005,                                      // PPh final 0,5% omzet (asumsi, PP 55/2022)
       batasUmkm: 4800000000,                           // omzet setahun; di atasnya tarif umum
@@ -113,26 +120,32 @@
       const addon =
         G * L.goldModul * h.modulTambahan +
         D * L.diamondSlot * L.slotRata * h.slotIujp +
-        (G * L.goldPaket + D * L.diamondPaket * L.paketRata) * h.paketOperasional +
         (G * L.goldPengguna * L.goldPenggunaRata + D * L.diamondPengguna * L.diamondPenggunaRata) * h.penggunaTambahan;
+      const orangErp = (n) => Math.max(h.erpMinimum, n * h.erpPerKaryawan);
+      const erp =
+        (G * L.goldPaket + D * L.diamondPaket * L.paketRata) * h.paketOperasional +
+        G * L.goldErpOrang * orangErp(L.goldKaryawan) + D * L.diamondErpOrang * orangErp(L.diamondKaryawan) +
+        (G * L.goldErpSite + D * L.diamondErpSite * L.siteRata) * h.erpPerSite;
       const kreditAi = (S + G + D) * a.topupPorsiBerbayar * a.topupRata + bronzeAktif * a.topupPorsiBronze * a.topupBronze;
       const digital = (bronzeAktif * a.digitalPorsiBronze + S * a.digitalPorsiSilver) * a.digitalRata;
       const kursus = bronzeAktif * a.kursusPorsiBronze * a.kursusRata;
       const tayangTotal = tayang + bronzeAktif * a.tayangPerBronze;
       const sponsorN = m < a.sponsorMulai ? 0 : Math.min(s.sponsorMaks, Math.floor((m - a.sponsorMulai) / 3) + 1);
       const iklan = tayangTotal / 1000 * a.rpm + sponsorN * a.sponsorRata;
+      const tayangPembuka = bronzeAktif * a.bukaModulPerBronze;
+      const iklanModul = tayangPembuka * a.isiPembuka / 1000 * a.ecpmPembuka;
       const layanan = (baruG * h.onboardingGold + baruD * h.onboardingDiamond) * L.onboarding;
       const vvip = vvipBaru * h.vvipLisensi + V * h.vvipTahunan / 12;
 
-      const pendapatan = langganan + addon + kreditAi + digital + kursus + iklan + layanan + vvip;
-      const mrr = langganan + addon + V * h.vvipTahunan / 12;
+      const pendapatan = langganan + addon + erp + kreditAi + digital + kursus + iklan + iklanModul + layanan + vvip;
+      const mrr = langganan + addon + erp + V * h.vvipTahunan / 12;
 
       // ── biaya ──
       const biayaAi = (S * b.pakai.silver + G * b.pakai.gold + D * b.pakai.diamond + daftar * b.pakai.bronzeBaru) * b.kreditRp
         + kreditAi * b.topupCogs;
       const biayaGerbang = (pendapatan - vvip) * b.gerbang;
       const infra = b.infraDasar + (S + G + D) * b.infraPerBerbayar + bronzeAktif * b.infraPerBronze + V * b.serverVvip;
-      const pemasaran = s.pemasaran[t] + (langganan + addon) * b.komisiMitra + sponsorN * a.sponsorRata * b.komisiSponsor;
+      const pemasaran = s.pemasaran[t] + (langganan + addon + erp) * b.komisiMitra + sponsorN * a.sponsorRata * b.komisiSponsor;
       const konten = digital * b.konten + kursus * b.pengajar;
       const tim = s.tim[t];
       omzetTahunIni = (m - 1) % 12 === 0 ? pendapatan : omzetTahunIni + pendapatan;
@@ -151,7 +164,7 @@
 
       baris.push({
         m, daftar, bronzeAktif, S, G, D, V,
-        langganan, addon, kreditAi, digital, kursus, iklan, layanan, vvip,
+        langganan, addon, erp, kreditAi, digital, kursus, iklan, iklanModul, tayangPembuka, layanan, vvip,
         pendapatan, mrr,
         biayaAi, biayaGerbang, infra, pemasaran, konten, tim, umum, pajak, biaya,
         labaSebelumPajak, laba, kumulatif,
@@ -174,6 +187,7 @@
     silver: 100, gold: 100, diamond: 20,
     hargaSilver: 149000, hargaGold: 399000, hargaDiamond: 799000,
     digital: 5000000, sponsor: 3000000,
+    bronzeAktif: 2000,                 // untuk tuas iklan pembuka modul
   };
 
   function jembatan(p = POTRET_AWAL) {
@@ -182,13 +196,18 @@
     const tuas = [
       { kode: 'T1', nama: 'Modul audit tambahan (Gold)', nilai: p.gold * L.goldModul * h.modulTambahan },
       { kode: 'T2', nama: 'Slot IUJP tambahan (Diamond)', nilai: p.diamond * L.diamondSlot * L.slotRata * h.slotIujp },
-      { kode: 'T3', nama: 'Paket modul operasional', nilai: (p.gold * L.goldPaket + p.diamond * L.diamondPaket * L.paketRata) * h.paketOperasional },
+      { kode: 'T3', nama: 'Paket Operasional & ERP SaaS (per karyawan / site)', nilai:
+          (p.gold * L.goldPaket + p.diamond * L.diamondPaket * L.paketRata) * h.paketOperasional +
+          p.gold * L.goldErpOrang * Math.max(h.erpMinimum, L.goldKaryawan * h.erpPerKaryawan) +
+          p.diamond * L.diamondErpOrang * Math.max(h.erpMinimum, L.diamondKaryawan * h.erpPerKaryawan) +
+          (p.gold * L.goldErpSite + p.diamond * L.diamondErpSite * L.siteRata) * h.erpPerSite },
       { kode: 'T4', nama: 'Pengguna tambahan', nilai: (p.gold * L.goldPengguna * L.goldPenggunaRata + p.diamond * L.diamondPengguna * L.diamondPenggunaRata) * h.penggunaTambahan },
       { kode: 'T5', nama: 'Top-up kredit AI', nilai: (p.silver + p.gold + p.diamond) * ASUMSI.topupPorsiBerbayar * ASUMSI.topupRata },
       { kode: 'T6', nama: 'Jaringan IUJP → Silver (8%/tahun)', nilai: Math.round((p.gold * ASUMSI.iujpPerGold + p.diamond * ASUMSI.iujpPerDiamond) * 0.08) * p.hargaSilver },
       { kode: 'T7', nama: 'Upgrade Gold → Diamond (10%/tahun)', nilai: Math.round(p.gold * 0.10) * (p.hargaDiamond - p.hargaGold) },
       { kode: 'T8', nama: 'Kursus berbayar Learning Center', nilai: 25 * ASUMSI.kursusRata },
       { kode: 'T9', nama: 'VVIP dedicated (2 kontrak, dirata 12 bln)', nilai: 2 * (h.vvipLisensi + h.vvipTahunan) / 12 },
+      { kode: 'T10', nama: 'Iklan pembuka modul (2.000 Bronze aktif)', nilai: p.bronzeAktif * ASUMSI.bukaModulPerBronze * ASUMSI.isiPembuka / 1000 * ASUMSI.ecpmPembuka },
     ].map((x) => ({ ...x, nilai: Math.round(x.nilai) }));
     const total = dasar + tuas.reduce((a, x) => a + x.nilai, 0);
     return { dasar, tuas, total };

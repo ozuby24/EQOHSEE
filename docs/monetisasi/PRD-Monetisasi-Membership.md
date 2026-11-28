@@ -32,19 +32,21 @@ Rangkuman monetisasi mengusulkan membership SaaS Bronze–VVIP. PRD ini menggabu
 | **EQOHSEE Cloud** — Bronze, Silver, Gold, Diamond | IUJP, IUP kecil–menengah, praktisi HSE | Berlangganan bulanan/tahunan, self-serve, otomatis | Mesin **pendapatan berulang (MRR)** dan akuisisi |
 | **EQOHSEE Dedicated** — VVIP | Grup IUP besar, multi-site | Lisensi sekali bayar + layanan tahunan (katalog yang sudah ada) + kontrak | **Kontrak bernilai besar** dan kas di muka |
 
-Di atas keduanya berjalan lima aliran pelengkap: **add-on**, **kredit AI**, **produk digital & kursus**, **iklan & sponsor**, dan **layanan**.
+Di atas keduanya berjalan enam aliran pelengkap: **ERP SaaS**, **add-on**, **kredit AI**, **produk digital & kursus**, **iklan & sponsor** (termasuk iklan pembuka modul untuk Bronze), dan **layanan**.
 
-**Tujuh keputusan desain yang membuat laba lebih besar** (dibanding rancangan awal):
+**Sembilan keputusan desain yang membuat laba lebih besar** (dibanding rancangan awal):
 
 1. **Harga mengikuti nilai, bukan sekadar paket.** Nilai bertambah seiring jumlah IUJP, modul, dan pengguna — maka ketiganya menjadi add-on berbayar. Pelanggan besar otomatis membayar lebih tanpa harga dasar naik.
-2. **Pagar paket yang tegas** supaya Cloud tidak memakan Dedicated: Diamond Cloud berisi 6 modul audit, bukan 23 aplikasi. Modul operasional dijual sebagai *Paket Operasional* (Rp999rb/bulan per paket) atau lewat VVIP.
-3. **Jaringan IUP → IUJP sebagai mesin akuisisi.** Setiap Gold/Diamond mengundang kontraktornya; IUJP terhubung gratis untuk alur audit, lalu sebagian menjadi Silver.
-4. **Bayar tahunan di muka** (bayar 10 bulan, pakai 12) + onboarding gratis untuk tahunan → kas masuk lebih awal, churn turun.
-5. **Uji coba terbalik (reverse trial)**: workspace baru langsung merasakan Gold 14 hari, lalu turun ke Bronze bila tidak membayar.
-6. **Biaya AI dikunci lewat kredit** dengan target biaya ≤ Rp200 per kredit, dijual Rp650–990 per kredit.
-7. **Pembayaran otomatis lewat gateway + webhook**; jalur manual (QRIS statis/transfer) tetap untuk korporasi.
+2. **Pagar paket yang tegas** supaya Cloud tidak memakan Dedicated: Diamond Cloud berisi 6 modul audit, bukan 23 aplikasi. Modul operasional dijual terpisah sebagai **ERP SaaS** atau lewat VVIP.
+3. **EQOHSEE sebagai ERP SaaS tambang.** HRIS, payroll, absensi, Authority, gudang, maintenance, dispatch, dan biaya dijual per karyawan aktif (Rp9.000/karyawan/bulan, minimum Rp999rb) dan per site (Rp1.499.000/site/bulan). Tagihan tumbuh bersama ukuran pelanggan.
+4. **Iklan pembuka setiap kali pengguna Bronze membuka modul** (keputusan pemilik), dengan tombol "Hilangkan iklan — mulai Silver". Sumber uang sponsor sekaligus pendorong upgrade.
+5. **Jaringan IUP → IUJP sebagai mesin akuisisi.** Setiap Gold/Diamond mengundang kontraktornya; IUJP terhubung gratis untuk alur audit, lalu sebagian menjadi Silver.
+6. **Bayar tahunan di muka** (bayar 10 bulan, pakai 12) + onboarding gratis untuk tahunan → kas masuk lebih awal, churn turun.
+7. **Uji coba terbalik (reverse trial)**: workspace baru langsung merasakan Gold 14 hari, lalu turun ke Bronze bila tidak membayar.
+8. **Biaya AI dikunci lewat kredit** dengan target biaya ≤ Rp200 per kredit, dijual Rp650–990 per kredit.
+9. **Pembayaran otomatis lewat gateway + webhook**; jalur manual (QRIS statis/transfer) tetap untuk korporasi.
 
-**Proyeksi (skenario moderat, detail di dokumen Model):** 95 pelanggan berbayar di bulan ke-12 dan 403 di bulan ke-36; MRR Rp40 jt → Rp163 jt; pendapatan tahun ke-3 **Rp1,97 miliar** dengan laba bersih **Rp604 jt (31%)**; impas bulanan di bulan ke-9 dan balik modal kumulatif di bulan ke-15, dengan kebutuhan modal kerja sekitar **Rp86 jt**. Pada basis pelanggan yang sama dengan simulasi rangkuman (100 Silver, 100 Gold, 20 Diamond), tuas-tuas di atas menaikkan omzet bulanan dari **Rp78,8 jt menjadi Rp120,6 jt (+53%)**.
+**Proyeksi (skenario moderat, detail di dokumen Model):** 95 pelanggan berbayar di bulan ke-12 dan 403 di bulan ke-36; MRR Rp45,7 jt → Rp186,8 jt; pendapatan tahun ke-3 **Rp2,22 miliar** dengan laba bersih **Rp829 jt (37%)**; impas bulanan di bulan ke-8 dan balik modal kumulatif di bulan ke-12, dengan kebutuhan modal kerja sekitar **Rp80 jt**. Pada basis pelanggan yang sama dengan simulasi rangkuman (100 Silver, 100 Gold, 20 Diamond), tuas-tuas di atas menaikkan omzet bulanan dari **Rp78,8 jt menjadi Rp133,2 jt (+69%)**.
 
 **Fondasi yang harus dibangun lebih dulu:** mesin **Hak Akses** (entitlement). Saat ini setiap pengguna dapat membuka seluruh modul non-admin [G-01] — tanpa Hak Akses, tidak ada yang dapat dijual sebagai paket.
 
@@ -99,7 +101,7 @@ Fondasinya rapi: uang disimpan sebagai bilangan bulat, harga tidak pernah diteri
 
 | KPI | Definisi | Target |
 |---|---|---|
-| MRR | Langganan + add-on + layanan tahunan VVIP ÷ 12, per bulan | Rp40 jt (bln 12) · Rp96 jt (bln 24) · Rp163 jt (bln 36) |
+| MRR | Langganan + add-on + ERP SaaS + layanan tahunan VVIP ÷ 12, per bulan | Rp46 jt (bln 12) · Rp110 jt (bln 24) · Rp187 jt (bln 36) |
 | Konversi Bronze → berbayar | Workspace berbayar baru ÷ pendaftar baru (bulan yang sama) | ≥ 4% |
 | Churn logo bulanan | Pelanggan berhenti ÷ pelanggan awal bulan | Silver ≤ 3,5% · Gold ≤ 2,5% · Diamond ≤ 1,5% |
 | Porsi bayar tahunan | Pelanggan tahunan ÷ total berbayar | ≥ 40% |
@@ -122,7 +124,8 @@ Fondasinya rapi: uang disimpan sebagai bilangan bulat, harga tidak pernah diteri
 - Lencana membership.
 - Kredit AI (dompet, pemakaian, top-up).
 - Toko produk digital dan kursus berbayar.
-- Iklan, sponsor, rewarded access untuk Bronze.
+- ERP SaaS: modul operasional dengan harga per karyawan aktif dan per site.
+- Iklan, sponsor, iklan pembuka modul, dan rewarded access untuk Bronze.
 - Kupon, program mitra/referal.
 - Monetization Center untuk admin platform.
 
@@ -153,16 +156,17 @@ Fondasinya rapi: uang disimpan sebagai bilangan bulat, harga tidak pernah diteri
 
 ## 6. Model pendapatan
 
-### 6.1 Tujuh aliran pendapatan
+### 6.1 Delapan aliran pendapatan
 
 | # | Aliran | Siapa membayar | Satuan harga (value metric) | Berulang? | Margin kotor | Tahap |
 |---|---|---|---|---|---|---|
 | A | **Membership Cloud** | IUJP, IUP | per workspace per bulan/tahun | Ya | ±80–84% | 1 |
-| B | **Add-on** | Silver/Gold/Diamond | per modul, per IUJP, per pengguna, per paket | Ya | ±90% | 1 |
+| B | **Add-on** | Silver/Gold/Diamond | per modul audit, per IUJP, per pengguna | Ya | ±90% | 1 |
+| H | **ERP SaaS & Paket Operasional** | Gold, Diamond, VVIP Cloud | per karyawan aktif, per site, per paket | Ya | ±85% | 1 (paket) · 2 (meteran karyawan) |
 | C | **Kredit AI** | Semua | per paket kredit | Sebagian (kuota bulanan termasuk paket; top-up sekali) | ±75% | 2 |
 | D | **VVIP / Dedicated** | Grup IUP | lisensi sekali + layanan tahunan + kontrak | Layanan tahunan berulang | ±70% (server & pemeliharaan) | 1 (sudah ada) |
 | E | **Produk digital & kursus** | Bronze, publik, Silver | per produk / per peserta | Tidak | 70–90% | 3 |
-| F | **Iklan & sponsor** | Vendor, konsultan | per bulan slot, per tayangan selesai, RPM | Ya (kontrak sponsor) | ±90% | 4 |
+| F | **Iklan & sponsor** | Vendor, konsultan | iklan pembuka modul (eCPM), slot bulanan, tayangan selesai, RPM | Ya (kontrak sponsor) | ±90% | 1 (pembuka modul, materi sendiri) · 4 (sponsor) |
 | G | **Layanan** | Gold, Diamond, VVIP | onboarding, pelatihan, pendampingan | Tidak | 50–70% | 1 |
 
 ### 6.2 Logika laba
@@ -199,7 +203,8 @@ Laba = (Pelanggan × ARPU × umur pelanggan) − biaya akuisisi − biaya melaya
 | Dasbor konsolidasi IUP–IUJP | — | — | Terbatas (ringkasan) | Penuh | Penuh + multi-site |
 | Template & dokumen | 3 gratis | Premium, diskon toko 10% | Seluruh template standar | Seluruh template standar | Seluruh + kustom |
 | Penyimpanan bukti | 100 MB | 2 GB | 10 GB | 50 GB | Kontrak |
-| Iklan | Ya, terkontrol (§7.7) | Tidak | Tidak | Tidak | Tidak |
+| Iklan | **Iklan pembuka setiap membuka modul** + slot terkontrol (§7.7) | Tidak | Tidak (termasuk selama uji coba) | Tidak | Tidak |
+| ERP SaaS | — | — | Add-on | Add-on | Termasuk / kontrak |
 | Dukungan | Pusat bantuan | Standar (1×24 jam kerja) | Prioritas | Prioritas tinggi | Dedicated + SLA |
 
 **Enam modul audit standar** (kunci hak di FSD §4.3):
@@ -213,16 +218,27 @@ Laba = (Pelanggan × ARPU × umur pelanggan) − biaya akuisisi − biaya melaya
 | 5 | ISO, Dokumen & Kepatuhan Regulasi | `dokumen` (termasuk `kepatuhan*`, `iso*`) |
 | 6 | Audit Kinerja Pengelolaan Lingkungan | `audit-lingkungan*` |
 
-### 7.2 Paket Operasional (add-on, Gold & Diamond Cloud) [K-10]
+### 7.2 ERP SaaS & Paket Operasional (add-on, Gold & Diamond Cloud) [K-10, K-17]
 
-Modul yang selama ini dijual satuan Rp2,5–13,5 jt dikelompokkan menjadi empat paket bulanan. Dengan begitu Diamond tetap terjangkau, sementara pelanggan yang butuh lebih banyak membayar sesuai pemakaiannya.
+EQOHSEE bukan hanya alat audit: HRIS (absensi, roster, cuti, lembur, payroll, kontrak), Authority, gudang, maintenance & P2H, dispatch, dan pengendalian biaya membentuk **ERP tambang**. Modul-modul ini, yang selama ini dijual satuan Rp2,5–13,5 jt, dijual di Cloud dengan dua cara:
+
+**a. ERP SaaS — harga mengikuti ukuran pelanggan**
+
+| Produk | Isi (kunci menu) | Satuan harga |
+|---|---|---|
+| **ERP People** | HRIS (`hris`: absensi, roster, cuti, lembur, payroll, kontrak), Authority — Kelayakan Kerja (`miners`), Learning Center perusahaan (`lms`: kursus & sertifikat internal) | **Rp9.000 per karyawan aktif/bln**, minimum Rp999.000 (setara 111 karyawan) |
+| **ERP Operations** | Gudang (`gudang`), Maintenance & P2H (`maintenance`), Dispatch & Hauling (`angkutan`), Pengendalian Biaya (`biaya`), Mine Ops & GIS (`operasi`), MEH (`meh`), Geoteknik (`geoteknik`), Drill & Blast (`peledakan`) | **Rp1.499.000 per site/bln** |
+
+*Karyawan aktif* = pekerja berstatus aktif di HRIS/Authority pada bulan tagihan (FSD §7.4). *Site* = satu lokasi tambang/pit/jetty yang didaftarkan workspace. Perusahaan 250 karyawan membayar Rp2.250.000/bln untuk ERP People; 1.000 karyawan membayar Rp9.000.000/bln. Untuk lebih dari 2.000 karyawan atau 5 site, harga dinegosiasikan lewat VVIP.
+
+**b. Paket Operasional tarif tetap**
 
 | Paket | Isi (kunci menu) | Harga |
 |---|---|---|
 | Safety Operations | Investigasi Insiden (`investigasi`), Izin Kerja Aman (`izin`), Scaffolding (`perancah`), Lifting & Rigging (`angkat`) | Rp999.000/bln |
-| People & Competency | Authority — Kelayakan Kerja (`miners`), HRIS (`hris`), Learning Center perusahaan (`lms`: buat kursus & sertifikat internal) | Rp999.000/bln |
 | Environment & ESG | Lingkungan & Reklamasi (`lingkungan`), Water (`air`), Konservasi (`konservasi`), RDAS (`rdas`), MERANTI (`meranti`), Energy (`energi`), Carbon (`karbon`), LCA (`lca`) | Rp999.000/bln |
-| Mining Engineering | Mine Ops & GIS (`operasi`), MEH (`meh`), Geoteknik (`geoteknik`), Drill & Blast (`peledakan`), Dispatch (`angkutan`), Maintenance (`maintenance`), Gudang (`gudang`), Biaya (`biaya`) | Rp999.000/bln — disarankan lewat VVIP |
+
+Peluang SaaS lain yang dicatat tetapi **belum dimasukkan proyeksi**: *white-label* untuk konsultan HSE (logo & domain sendiri untuk melayani banyak klien), akses API per panggilan untuk integrasi sistem pelanggan, dan penyimpanan arsip jangka panjang.
 
 ### 7.3 Daftar harga add-on
 
@@ -232,7 +248,9 @@ Modul yang selama ini dijual satuan Rp2,5–13,5 jt dikelompokkan menjadi empat 
 | Slot IUJP tambahan | Diamond | Rp49.000/IUJP/bln | Tanpa batas; Gold tetap maks. 3 (pemicu upgrade) |
 | Pengguna tambahan | Silver, Gold, Diamond | Rp29.000/pengguna/bln | — |
 | Penyimpanan +10 GB | Silver, Gold, Diamond | Rp49.000/bln | — |
-| Paket Operasional | Gold, Diamond | Rp999.000/paket/bln | §7.2 |
+| Paket Operasional tarif tetap | Gold, Diamond | Rp999.000/paket/bln | §7.2 |
+| ERP People | Gold, Diamond | Rp9.000/karyawan aktif/bln, min. Rp999.000 | §7.2 |
+| ERP Operations | Gold, Diamond | Rp1.499.000/site/bln | §7.2 |
 | Onboarding & migrasi data | Gold / Diamond | Rp1.500.000 / Rp3.500.000 sekali | **Gratis bila bayar tahunan** |
 | Pelatihan pengguna daring (2 jam) | Semua berbayar | Rp1.000.000/sesi | — |
 
@@ -290,15 +308,30 @@ Lisensi: **Individu** (1 orang, tidak boleh dibagikan) dan **Perusahaan** (selur
 
 ### 7.7 Iklan & sponsor
 
+**Iklan pembuka modul (keputusan pemilik, K-16).** Setiap kali pengguna Bronze **membuka sebuah modul** (berpindah ke modul lain dari bilah samping, dasbor, atau tautan), satu iklan layar penuh tampil sebelum isi modul dapat dipakai:
+
+| Aturan | Nilai |
+|---|---|
+| Siapa | Pengguna tanpa langganan berbayar (Bronze), termasuk yang hanya bisa membuka demo/hanya-baca atau layar modul terkunci |
+| Kapan | Setiap masuk ke modul yang berbeda dari modul terakhir. Berpindah halaman **di dalam** modul yang sama tidak memicu iklan lagi |
+| Format | Gambar atau video ≤ 15 detik; tombol **Lewati** muncul setelah 5 detik |
+| Ajakan tetap | Tombol "Hilangkan iklan — mulai Silver Rp149rb/bln" dan "Coba Gold gratis 14 hari" pada setiap iklan |
+| Isi saat belum ada sponsor | Promosi milik EQOHSEE sendiri (upgrade, kursus, toko) — iklan tetap tampil |
+| Penargetan | Kontekstual per modul (mis. vendor APD di Hazard Report, konsultan lingkungan di modul Lingkungan); tanpa profil pribadi |
+| Tidak tampil | Pengguna berbayar dan selama uji coba; halaman harga, checkout, pembayaran, langganan; undangan IUJP; IUJP terhubung yang sedang merespons audit milik IUP berbayar; cetak/ekspor; Admin; server mode dedicated |
+
 | Produk | Harga | Penempatan |
 |---|---|---|
+| **Iklan pembuka modul** | eCPM Rp60.000 (Rp60/tayangan), atau eksklusif satu modul Rp1.500.000–Rp3.000.000/bln sesuai tayangan | Layar pembuka modul untuk Bronze |
 | Listing Direktori Unggulan | Rp500.000/bln | HSE Directory, posisi atas kategori |
 | Sponsor Kategori | Rp1.500.000/bln | Banner di artikel regulasi, katalog satu kategori |
 | Sponsor Utama | Rp5.000.000/bln | Landing page, buletin bulanan, satu webinar |
 | Rewarded sponsor video (Bronze) | Rp1.000 per tayangan selesai | Sebelum fitur gratis tertentu |
 | AdSense | Bagi hasil Google | Halaman publik saja |
 
-**Aturan penempatan (WAJIB):** tidak ada iklan di dasbor berbayar, halaman audit, formulir, cetak/ekspor, dan pembayaran. Bronze maksimal 3 rewarded per hari; hadiah = 1 kredit AI atau 1 ekspor PDF tanpa tanda air, berlaku 24 jam.
+**Aturan penempatan (WAJIB):** pengguna berbayar tidak pernah melihat iklan. Untuk Bronze, iklan hanya muncul sebagai pembuka modul dan di slot yang ditentukan — tidak pernah di tengah formulir, cetak/ekspor, atau pembayaran. Bronze maksimal 3 rewarded per hari; hadiah = 1 kredit AI atau 1 ekspor PDF tanpa tanda air, berlaku 24 jam.
+
+**Catatan jujur tentang uangnya:** pada skenario moderat iklan pembuka modul menghasilkan ±Rp1,5 jt/bulan di bulan ke-36 (±48.800 tayangan). Nilai utamanya adalah dorongan upgrade: kenaikan konversi 0,5 poin bernilai +Rp147 jt laba tahun ke-3, dan penurunan konversi 0,5 poin karena pengguna terganggu merugikan kira-kira sebesar itu. Karena itu konversi dan retensi Bronze diukur 30 hari setelah fitur menyala, dan jeda minimum antar iklan dapat diatur tanpa deploy (FSD §11.4).
 
 ### 7.8 Layanan & program mitra
 
@@ -313,7 +346,7 @@ Lisensi: **Individu** (1 orang, tidak boleh dibagikan) dan **Perusahaan** (selur
 | 1 IUJP, audit SMKP saja | Silver Rp1,49 jt/thn | Rp2,5 jt + Rp5 jt/thn | Cloud (target pasar baru) |
 | 1 IUP + 3 IUJP, satu modul audit | Gold Rp3,99 jt/thn | Rp2,5 jt + Rp5 jt/thn | Cloud |
 | IUP + 10 IUJP, semua audit | Diamond Rp7,99 jt/thn | ±Rp23 jt + ±Rp7 jt/thn (6 aplikasi katalog) | Cloud |
-| IUP besar, semua 23 aplikasi | Diamond + 4 paket ≈ Rp47,9 jt/thn | Rp47 jt thn-1, Rp22 jt/thn sesudahnya | **Dedicated lebih murah jangka panjang** → VVIP |
+| IUP besar 250 karyawan, 1 site, semua 23 aplikasi | Diamond + 2 paket + ERP People + ERP Operations ≈ Rp65,5 jt/thn (tahunan) | Rp47 jt thn-1, Rp22 jt/thn sesudahnya | **Dedicated lebih murah jangka panjang** → VVIP |
 | Grup, multi-site, data harus di server sendiri | — | VVIP | VVIP |
 
 Cloud menangkap pasar yang selama ini terlalu kecil untuk Dedicated. Pelanggan yang butuh seluruh aplikasi tetap diarahkan ke Dedicated, yang memberi kas di muka lebih besar.
@@ -330,6 +363,8 @@ Emblem melingkar pada foto profil, logo perusahaan, kepala workspace, daftar per
 |---|---|---|
 | **Uji coba terbalik** [K-08] | Membuat workspace → Gold penuh 14 hari tanpa kartu. Hari ke-15 turun ke Bronze; data tetap ada, hanya baca | Konversi trial → berbayar (target ≥ 15%) |
 | **Loop jaringan IUP → IUJP** | Gold/Diamond mengundang IUJP. IUJP membuat akun gratis, menerima audit/evaluasi, mengunggah bukti. Ketika IUJP ingin mengaudit dirinya sendiri atau memakai modul lain → Silver | IUJP terhubung, konversi ke Silver (target 8%/tahun) |
+| **Iklan pembuka modul** | Setiap Bronze membuka modul: iklan + "Hilangkan iklan — mulai Silver" + "Coba Gold 14 hari" | Klik upgrade dari iklan, konversi & retensi Bronze sebelum/sesudah |
+| **ERP tumbuh bersama pelanggan** | Tagihan ERP People naik otomatis saat karyawan bertambah; pemilik melihat perkiraan tagihan bulan depan | Ekspansi MRR dari ERP |
 | **Pemicu upgrade di batas** | Saat batas tercapai (IUJP ke-4, modul ke-2, pengguna ke-11, kredit habis), layar menunjukkan pilihan add-on dan upgrade dengan selisih harganya | Upgrade per bulan, ekspansi MRR |
 | **Tahunan di muka** | Bayar 10 bulan pakai 12, onboarding gratis | Porsi tahunan (target ≥ 40%) |
 | **Dunning & win-back** | Pengingat H-14, H-7, H-1, H+1, H+3, H+7; tawaran kembali 20% di bulan pertama setelah turun ke Bronze | Pemulihan tagihan terlambat |
@@ -397,11 +432,19 @@ Emblem melingkar pada foto profil, logo perusahaan, kepala workspace, daftar per
 - FR-901 Kursus Learning Center dapat diberi harga; pendaftaran dibuka setelah lunas.
 - FR-902 Kursi korporat: workspace membeli N kursi dan menugaskan karyawannya.
 
-### E10 — Iklan, sponsor & rewarded (BOLEH, Tahap 4) — menutup G-07
-- FR-1001 Slot iklan bernama; kampanye dengan tanggal, slot, materi, batas tayang.
+### E10 — Iklan, sponsor & rewarded (WAJIB untuk iklan pembuka modul di Tahap 1; lainnya BOLEH, Tahap 4) — menutup G-07
+- FR-1000 **Iklan pembuka modul:** setiap kali pengguna Bronze masuk ke modul yang berbeda dari modul terakhirnya, iklan layar penuh tampil sebelum isi modul dapat dipakai; tombol Lewati setelah 5 detik; ajakan upgrade selalu ada; promosi sendiri bila tidak ada sponsor; pengecualian sesuai §7.7. Ditentukan di server, bukan di peramban.
+- FR-1001 Slot iklan bernama; kampanye dengan tanggal, slot, materi, batas tayang, dan target modul (untuk slot pembuka modul).
 - FR-1002 Statistik disimpan sebagai agregat harian (tanpa IP/profil), mengikuti pendekatan `kunjungan_harian`.
 - FR-1003 Rewarded: penyelesaian diverifikasi di server (token bertanda tangan + durasi minimum), maks. 3 per hari per akun.
 - FR-1004 Aturan larangan penempatan §7.7 ditegakkan di server.
+
+### E14 — ERP SaaS berbasis pemakaian (WAJIB untuk paket tarif tetap di Tahap 1; meteran karyawan & site SEHARUSNYA, Tahap 2)
+- FR-1401 Workspace dapat membeli ERP People dan ERP Operations sebagai add-on Gold/Diamond.
+- FR-1402 Jumlah karyawan aktif dihitung otomatis dari HRIS/Authority pada tanggal yang sama setiap bulan; pemilik melihat angka & daftar karyawan yang dihitung sebelum tagihan terbit.
+- FR-1403 Tagihan ERP People dibayar di muka menurut jumlah yang dinyatakan; selisih dengan jumlah sebenarnya ditagih/dikreditkan pada tagihan berikutnya (*true-up*). Minimum Rp999.000 selalu berlaku.
+- FR-1404 Site didaftarkan pemilik (nama, lokasi, jenis); modul ERP Operations hanya dapat memilih site yang terdaftar dan dibayar.
+- FR-1405 Monetization Center menampilkan pendapatan ERP per workspace dan pertumbuhan karyawan (sinyal ekspansi).
 
 ### E11 — Monetization Center (WAJIB sebagian di Tahap 1) — menutup G-06
 - FR-1101 Revenue Overview: MRR, ARR, pendapatan per aliran, tren 12 bulan. MRR tidak mencampur penjualan sekali bayar.
@@ -442,12 +485,14 @@ Detail asumsi dan tabel bulanan di [Model-Pendapatan-dan-Proyeksi.md](Model-Pend
 | Indikator | Konservatif | Moderat | Optimis |
 |---|---:|---:|---:|
 | Pelanggan berbayar bulan ke-12 / ke-36 | 29 / 95 | 95 / 403 | 195 / 890 |
-| MRR bulan ke-36 | Rp44,3 jt | Rp162,9 jt | Rp351,0 jt |
-| Pendapatan tahun 1 / 2 / 3 | Rp140 jt / Rp377 jt / Rp597 jt | Rp354 jt / Rp1,09 M / Rp1,97 M | Rp689 jt / Rp2,15 M / Rp4,08 M |
-| Laba bersih tahun 3 (margin) | Rp52,5 jt (9%) | Rp603,9 jt (31%) | Rp1.667,1 jt (41%) |
-| Impas bulanan | bulan ke-29 | bulan ke-9 | bulan ke-8 |
-| Balik modal kumulatif | > 36 bulan | bulan ke-15 | bulan ke-11 |
-| Kebutuhan modal kerja | ±Rp167 jt | ±Rp86 jt | ±Rp101 jt |
+| MRR bulan ke-36 | Rp50,6 jt | Rp186,8 jt | Rp402,5 jt |
+| Pendapatan tahun 1 / 2 / 3 | Rp153 jt / Rp416 jt / Rp666 jt | Rp390 jt / Rp1,21 M / Rp2,22 M | Rp760 jt / Rp2,40 M / Rp4,59 M |
+| Laba bersih tahun 3 (margin) | Rp116,3 jt (17%) | Rp828,9 jt (37%) | Rp2.142,0 jt (47%) |
+| Impas bulanan | bulan ke-20 | bulan ke-8 | bulan ke-7 |
+| Balik modal kumulatif | bulan ke-36 | bulan ke-12 | bulan ke-10 |
+| Kebutuhan modal kerja | ±Rp134 jt | ±Rp80 jt | ±Rp90 jt |
+| Pendapatan ERP SaaS & Paket Operasional tahun 3 | Rp128 jt | Rp463 jt | Rp989 jt |
+| Pendapatan iklan pembuka modul tahun 3 | Rp5,3 jt | Rp13,6 jt | Rp22,3 jt |
 
 Catatan: skenario optimis butuh modal kerja lebih besar dari moderat karena tim dan pemasaran dibesarkan lebih awal untuk mengejar pertumbuhan.
 
@@ -457,11 +502,11 @@ Catatan: skenario optimis butuh modal kerja lebih besar dari moderat karena tim 
 
 | Tahap | Lama | Isi | Kriteria selesai |
 |---|---|---|---|
-| **0 — Keputusan** | 1 minggu | Putuskan [K-01]–[K-15]; buka akun gateway; konsultasi pajak (PPN, PPh); syarat & ketentuan, kebijakan refund & privasi | Seluruh K bertanda putus |
-| **1 — Fondasi** | 6–8 minggu | E1 Hak Akses, E2 Workspace & IUJP, E3 Langganan, E4 Gateway, E5 Harga & checkout, E6 Lencana, E11 dasar (MRR & tagihan), E12, kupon | Pelanggan membeli Silver sendiri, bayar QRIS/VA, aktif < 60 detik; perpanjangan & tenggang berjalan; instalasi dedicated tidak berubah |
-| **2 — AI premium** | 3–4 minggu | E7 Kredit AI, top-up, laporan biaya AI | Setiap permintaan AI tercatat biayanya; kredit tidak dapat minus |
+| **0 — Keputusan** | 1 minggu | Putuskan [K-01]–[K-17]; buka akun gateway; konsultasi pajak (PPN, PPh); syarat & ketentuan, kebijakan refund & privasi | Seluruh K bertanda putus |
+| **1 — Fondasi** | 7–9 minggu | E1 Hak Akses, E2 Workspace & IUJP, E3 Langganan, E4 Gateway, E5 Harga & checkout, E6 Lencana, **E10 iklan pembuka modul (materi promosi sendiri)**, E14 paket tarif tetap, E11 dasar (MRR & tagihan), E12, kupon | Pelanggan membeli Silver sendiri, bayar QRIS/VA, aktif < 60 detik; Bronze melihat iklan pembuka setiap membuka modul; perpanjangan & tenggang berjalan; instalasi dedicated tidak berubah |
+| **2 — AI premium & ERP SaaS** | 5–6 minggu | E7 Kredit AI, top-up, laporan biaya AI; E14 meteran karyawan aktif & site, true-up | Setiap permintaan AI tercatat biayanya; kredit tidak dapat minus; tagihan ERP People sesuai jumlah karyawan aktif |
 | **3 — Toko & kursus** | 3–4 minggu | E8, E9 | Unduhan hanya lewat tautan bertanda tangan; lisensi tercatat |
-| **4 — Iklan & sponsor** | 2–3 minggu | E10, AdSense halaman publik | Tidak ada iklan di halaman terlarang (diuji otomatis) |
+| **4 — Iklan & sponsor** | 2–3 minggu | E10 sisanya: penjualan slot ke sponsor (termasuk pembuka modul per modul), rewarded, AdSense halaman publik, Ads Manager | Tidak ada iklan di halaman terlarang dan untuk pengguna berbayar (diuji otomatis) |
 | **5 — Enterprise** | Berkelanjutan | Multi-site, API, alur kustom, corporate billing, pendampingan audit, program mitra penuh | Kontrak VVIP Cloud pertama |
 
 ---
@@ -478,6 +523,8 @@ Catatan: skenario optimis butuh modal kerja lebih besar dari moderat karena tim 
 | Webhook hilang / ganda | Aktivasi gagal / ganda | Idempotensi, rekonsiliasi harian |
 | Kebocoran data antar-tenant | Hukum & reputasi | Cakupan berbasis persetujuan, uji otomatis batas tenant, `AksesAuditPerusahaan` diperluas |
 | Lencana disalahartikan sebagai sertifikasi | Reputasi/hukum | Teks bantu wajib, tidak dicetak di dokumen resmi |
+| Iklan pembuka setiap buka modul terasa mengganggu | Bronze pergi sebelum upgrade; konversi turun | Lewati setelah 5 detik, ajakan upgrade jelas, jeda minimum dapat diatur tanpa deploy, ukur 30 hari |
+| Jumlah karyawan ERP diperdebatkan pelanggan | Sengketa tagihan | Daftar karyawan yang dihitung ditampilkan sebelum tagihan terbit; true-up di tagihan berikutnya |
 | Pasar lebih kecil dari asumsi | Proyeksi meleset | Skenario konservatif; pengeluaran tim mengikuti MRR, bukan jadwal |
 
 ### 13.2 Asumsi
@@ -493,6 +540,8 @@ Catatan: skenario optimis butuh modal kerja lebih besar dari moderat karena tim 
 | A-07 | PPh final 0,5% dari omzet (PP 55/2022) selama omzet ≤ Rp4,8 M/tahun dan wajib pajak memenuhi syarat; di atasnya tarif umum | Konsultan pajak |
 | A-08 | Jumlah IUP & IUJP aktif cukup untuk 400–900 pelanggan dalam 3 tahun | Data MODI / MINERBA One Map ESDM |
 | A-09 | Harga katalog dedicated di etalase (Rp25 jt) adalah harga jual aktual | Pemilik |
+| A-10 | Bronze aktif membuka 12 modul/bulan; 50% tayangan pembuka terjual ke sponsor dengan eCPM Rp60.000 | Log tayangan 30 hari + penawaran ke 5 vendor APD/konsultan |
+| A-11 | ERP People dibeli 4% Gold (±100 karyawan) dan 12% Diamond (±250 karyawan); ERP Operations 2% Gold dan 6% Diamond (±1,5 site) | Wawancara 10 calon pelanggan IUP; data HRIS pelanggan dedicated |
 
 ### 13.3 Keputusan menunggu persetujuan
 
@@ -507,12 +556,14 @@ Catatan: skenario optimis butuh modal kerja lebih besar dari moderat karena tim 
 | K-07 | Harga termasuk PPN dan biaya transaksi? | Belum termasuk PPN (B2B); biaya gateway ditanggung EQOHSEE |
 | K-08 | Uji coba terbalik Gold 14 hari | Ya |
 | K-09 | Harga tahunan | 10 × bulanan + onboarding gratis |
-| K-10 | Paket Operasional di Cloud | Ya, Rp999rb/paket/bln untuk Gold & Diamond; Mining Engineering disarankan lewat VVIP |
+| K-10 | Paket Operasional di Cloud | Ya: Safety Operations dan Environment & ESG Rp999rb/paket/bln untuk Gold & Diamond |
 | K-11 | Harga lantai VVIP | Katalog dedicated yang berlaku (tahun ke-1 ±Rp47 jt untuk 23 aplikasi) |
 | K-12 | Komisi mitra konsultan | 20% dari pembayaran 12 bulan pertama |
 | K-13 | Gateway | Pilih satu dari penawaran biaya resmi termurah (Midtrans Snap atau Xendit Invoice); driver mendukung keduanya; jalur manual tetap |
 | K-14 | Kursus berbayar | Ya, sertifikat penyelesaian (bukan sertifikasi kompetensi) |
 | K-15 | Penyedia rewarded ads | Sponsor video internal dulu; jaringan iklan pihak ketiga setelah lalu lintas cukup |
+| K-16 | Iklan untuk Bronze saat membuka modul | **Diputuskan pemilik: setiap membuka modul.** Rekomendasi pelaksanaan: Lewati setelah 5 detik, tidak tampil di pembayaran/uji coba/alur IUJP terhubung, jeda minimum bawaan 0 menit (dapat dinaikkan bila konversi turun) |
+| K-17 | Harga ERP SaaS | ERP People Rp9.000/karyawan aktif/bln (min. Rp999rb); ERP Operations Rp1.499.000/site/bln; di atas 2.000 karyawan atau 5 site lewat VVIP |
 
 ---
 

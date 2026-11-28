@@ -120,6 +120,9 @@ Bawaan `dedicated` disengaja: deploy kode baru ke server pelanggan lama tidak bo
 | **Masa tenggang** | 7 hari setelah periode berakhir tanpa pembayaran; hak penuh tetap |
 | **Masa terbatas** | 30 hari sesudah tenggang; hanya baca + ekspor |
 | **Uji coba** | 14 hari Gold untuk workspace baru [K-08] |
+| **Karyawan aktif** | Orang unik berstatus aktif di HRIS/Authority milik workspace pada tanggal hitung — satuan tagihan ERP People |
+| **Site** | Lokasi tambang/pit/jetty yang didaftarkan workspace — satuan tagihan ERP Operations |
+| **Iklan pembuka modul** | Iklan layar penuh yang tampil setiap kali pengguna Bronze masuk ke modul yang berbeda |
 
 ---
 
@@ -217,8 +220,10 @@ Modul audit pilihan (Silver/Gold) dan modul tambahan.
 | Kolom | Tipe | Catatan |
 |---|---|---|
 | langganan_id | FK | |
-| kode | string(30) | `PENGGUNA`, `SLOT_IUJP`, `PENYIMPANAN_10GB`, `PAKET_SAFETY`, `PAKET_PEOPLE`, `PAKET_ESG`, `PAKET_MINING` |
-| jumlah | int | |
+| kode | string(30) | `PENGGUNA`, `SLOT_IUJP`, `PENYIMPANAN_10GB`, `PAKET_SAFETY`, `PAKET_ESG`, `ERP_PEOPLE`, `ERP_OPERATIONS` |
+| jumlah | int | jumlah satuan: pengguna, slot, GB/10, paket; **karyawan aktif yang dinyatakan** untuk `ERP_PEOPLE`; **site** untuk `ERP_OPERATIONS` |
+| harga_satuan | bigint | disalin dari produk saat dibeli |
+| minimum | bigint null | `ERP_PEOPLE`: Rp999.000 |
 | mulai, berakhir | date | mengikuti periode langganan |
 | item_id | FK beli_item | baris tagihan yang membelinya |
 
@@ -311,11 +316,13 @@ Lisensi produk digital memakai `beli_lisensi` (kolom baru `user_id` null, `jenis
 
 ### 3.12 Iklan
 
-**`iklan_pengiklan`**: nama, kontak, `company_id` null. **`iklan_slot`**: `kode` unik (`landing_utama`, `regulasi_samping`, `katalog_atas`, `direktori_unggulan`, `dasbor_bronze`, `rewarded_video`), `jenis` (`banner`/`video`/`listing`), `ukuran`. **`iklan_kampanye`**: `pengiklan_id`, `slot_id`, `materi` (path privat → disajikan lewat rute), `tautan`, `mulai`, `berakhir`, `bobot`, `maks_tayang`, `pesanan_id` (sponsor dibayar lewat tagihan), `aktif`. **`iklan_statistik_harian`**: `kampanye_id`, `tanggal`, `tayang`, `klik`, `selesai` — unik `(kampanye_id, tanggal)`. **`iklan_hadiah`**: `user_id`, `kampanye_id`, `token` (HMAC), `mulai_pada`, `selesai_pada`, `hadiah` (`kredit_ai`/`ekspor_pdf`), `dipakai_pada`.
+**`iklan_pengiklan`**: nama, kontak, `company_id` null. **`iklan_slot`**: `kode` unik (`pembuka_modul`, `landing_utama`, `regulasi_samping`, `katalog_atas`, `direktori_unggulan`, `dasbor_bronze`, `rewarded_video`), `jenis` (`layar_penuh`/`banner`/`video`/`listing`), `ukuran`. **`iklan_kampanye`**: `pengiklan_id` (null = promosi milik EQOHSEE), `slot_id`, `materi` (path privat → disajikan lewat rute), `jenis_materi` (`gambar`/`video`), `durasi_detik` (video ≤ 15), `tautan`, `target_modul` json null (daftar kunci menu; null = semua modul), `mulai`, `berakhir`, `bobot`, `maks_tayang`, `pesanan_id` (sponsor dibayar lewat tagihan), `cadangan` bool (promosi sendiri, dipakai bila tidak ada kampanye berbayar), `aktif`. **`iklan_statistik_harian`**: `kampanye_id`, `tanggal`, `modul` string(40) null, `tayang`, `klik`, `selesai`, `lewati`, `klik_upgrade` — unik `(kampanye_id, tanggal, modul)`. **`iklan_hadiah`**: `user_id`, `kampanye_id`, `token` (HMAC), `mulai_pada`, `selesai_pada`, `hadiah` (`kredit_ai`/`ekspor_pdf`), `dipakai_pada`.
 
 ### 3.13 Pemakaian bulanan
 
-**`anggota_pemakaian`**: `company_id`, `bulan` (date, hari pertama), `pengguna_aktif`, `iujp_terhubung`, `penyimpanan_mb`, `kredit_ai_terpakai`, `biaya_ai_rp`. Diisi `anggota:siklus` setiap malam (upsert). Dipakai Monetization Center dan pemeriksaan downgrade.
+**`anggota_pemakaian`**: `company_id`, `bulan` (date, hari pertama), `pengguna_aktif`, `iujp_terhubung`, `penyimpanan_mb`, `kredit_ai_terpakai`, `biaya_ai_rp`, `karyawan_aktif` (ERP People), `site_aktif` (ERP Operations). Diisi `anggota:siklus` setiap malam (upsert). Dipakai Monetization Center, pemeriksaan downgrade, dan tagihan ERP.
+
+**`anggota_site`** (ERP Operations): `company_id`, `nama`, `jenis` (`pit`/`site`/`jetty`/`kantor`), `lokasi`, `aktif`, `dibayar_sampai` date null. Data operasional (gudang, unit, dispatch) yang sudah punya lokasi dipetakan ke site ini.
 
 ### 3.14 Diagram relasi (ringkas)
 
@@ -397,15 +404,16 @@ Hasil di-cache per permintaan (memoisasi) dan di cache aplikasi 10 menit dengan 
 | Modul inti | `modul.hazrep` | — | ✔ | ✔ | ✔ | ✔ |
 | | `modul.dasbor`, `modul.personalia`, `modul.pembelian` | ✔ | ✔ | ✔ | ✔ | ✔ |
 | | `modul.lms.peserta` (kursus publik & yang dibeli) | ✔ | ✔ | ✔ | ✔ | ✔ |
-| Paket operasional | `modul.investigasi`, `modul.izin`, `modul.perancah`, `modul.angkat` | — | — | add-on | add-on | ✔ |
-| | `modul.miners`, `modul.hris`, `modul.lms.perusahaan` | — | — | add-on | add-on | ✔ |
-| | `modul.lingkungan`, `modul.air`, `modul.konservasi`, `modul.rdas`, `modul.meranti`, `modul.energi`, `modul.karbon`, `modul.lca` | — | — | add-on | add-on | ✔ |
-| | `modul.operasi`, `modul.meh`, `modul.geoteknik`, `modul.peledakan`, `modul.angkutan`, `modul.maintenance`, `modul.gudang`, `modul.biaya` | — | — | add-on | add-on | ✔ |
+| Paket tarif tetap — Safety Operations (`PAKET_SAFETY`) | `modul.investigasi`, `modul.izin`, `modul.perancah`, `modul.angkat` | — | — | add-on | add-on | ✔ |
+| Paket tarif tetap — Environment & ESG (`PAKET_ESG`) | `modul.lingkungan`, `modul.air`, `modul.konservasi`, `modul.rdas`, `modul.meranti`, `modul.energi`, `modul.karbon`, `modul.lca` | — | — | add-on | add-on | ✔ |
+| ERP People (`ERP_PEOPLE`) | `modul.miners`, `modul.hris`, `modul.lms.perusahaan` | — | — | add-on | add-on | ✔ |
+| ERP Operations (`ERP_OPERATIONS`) | `modul.operasi`, `modul.meh`, `modul.geoteknik`, `modul.peledakan`, `modul.angkutan`, `modul.maintenance`, `modul.gudang`, `modul.biaya` | — | — | add-on | add-on | ✔ |
 | Fitur | `ekspor.pdf` | tanda air | ✔ | ✔ | ✔ | ✔ |
 | | `ekspor.excel` | — | — | ✔ | ✔ | ✔ |
 | | `dasbor.konsolidasi` | — | — | ringkas | ✔ | ✔ |
 | | `template.premium` | 3 | diskon 10% | ✔ | ✔ | ✔ |
-| | `iklan.tampil` | 1 | 0 | 0 | 0 | 0 |
+| | `iklan.tampil` (slot iklan di halaman) | 1 | 0 | 0 | 0 | 0 |
+| | `iklan.pembuka_modul` (iklan setiap membuka modul) | 1 | 0 | 0 | 0 | 0 |
 | | `ai.asisten` | ✔ | ✔ | ✔ | ✔ | ✔ |
 | Kuota | `kuota.pengguna` | 1 | 3 | 10 | 30 | kontrak |
 | | `kuota.iup` | 0 | 0 | 1 | 1 | kontrak |
@@ -586,7 +594,25 @@ Downgrade tidak menghasilkan refund; berlaku periode berikutnya.
 
 Pelanggan yang membeli pada 90 hari pertama peluncuran mendapat `harga_terkunci` selama 12 bulan. Perubahan harga di `anggota_paket` tidak memengaruhi tagihan perpanjangan selama `harga_terkunci_sampai` belum lewat.
 
-### 7.4 Nomor dan dokumen
+### 7.4 ERP SaaS: karyawan aktif, site, dan true-up
+
+**Karyawan aktif** satu workspace pada bulan tagihan = jumlah orang unik (NIK/nomor induk) di HRIS dan Authority (`Miners\Pekerja`) milik `company_id` itu yang berstatus aktif **pada tanggal 25 bulan sebelumnya**, termasuk yang masuk di tengah bulan. Satu orang yang tercatat di HRIS dan Authority dihitung sekali. Pekerja milik IUJP terhubung **tidak** dihitung pada tagihan IUP (mereka milik workspace IUJP).
+
+Alur bulanan (bagian dari `anggota:siklus`):
+
+```text
+H-5 sebelum periode:   hitung karyawan_aktif → simpan di anggota_pemakaian
+                       tampilkan ke pemilik: "Tagihan ERP People bulan depan: N × Rp9.000"
+Terbit tagihan:        baris ERP_PEOPLE = max(minimum, N_dinyatakan × harga_satuan)
+                       + baris true-up periode lalu:
+                         selisih = max(minimum, N_sebenarnya × harga) − yang sudah ditagih
+                         selisih > 0 → ditagih; selisih < 0 → kredit (dipotong dari tagihan)
+Langganan tahunan:     ERP ditagih per kuartal di muka dengan true-up kuartalan
+```
+
+`N_dinyatakan` = hitungan H-5; pemilik boleh menaikkannya (tidak menurunkannya) sebelum tagihan terbit. **ERP Operations** ditagih per site berstatus aktif di `anggota_site`; modul ERP Operations hanya menerima data untuk site yang dibayar. Di atas 2.000 karyawan atau 5 site, pembelian mandiri ditutup dan diarahkan ke VVIP.
+
+### 7.5 Nomor dan dokumen
 
 Nomor `INV` tetap dari `NomorRegister`. Faktur (PDF) memuat: nomor, tanggal, pembeli (nama perusahaan, NPWP bila diisi), rincian, DPP, PPN, total, periode langganan, status. Bukti lunas memuat kanal dan tanggal bayar.
 
@@ -732,7 +758,9 @@ Di awal setiap periode langganan: `hangus` sisa `saldo_kuota`, lalu `kuota_bulan
 
 ## 11. Iklan, sponsor & rewarded
 
-### 11.1 Penentuan tampil
+### 11.1 Penentuan tampil — slot di dalam halaman
+
+Berlaku untuk banner/listing di dalam halaman. Iklan pembuka modul punya aturannya sendiri di §11.4.
 
 `Iklan::bolehTampil($request, $slot)`:
 1. Mode `dedicated` → false.
@@ -758,6 +786,52 @@ Uji otomatis WAJIB menelusuri seluruh rute terlarang dan memastikan props `iklan
 ```
 
 Banner AdSense **tidak** dihitung sebagai bukti menonton. AdSense hanya di halaman publik dan hanya setelah persetujuan kuki iklan.
+
+### 11.4 Iklan pembuka modul (Bronze) — FR-1000, K-16
+
+**Perilaku:** setiap kali pengguna Bronze masuk ke modul yang berbeda dari modul terakhir yang ia buka, satu iklan layar penuh tampil di atas halaman modul. Halaman modul tetap dimuat di belakangnya (tidak memperlambat server), tetapi tidak dapat dipakai sampai iklan ditutup.
+
+**Penentuan di server** — `App\Support\Iklan\Pembuka::untuk(Request $r): ?array`, dipanggil dari `HandleInertiaRequests::share()` sebagai prop `iklanPembuka`, sehingga berlaku untuk seluruh halaman Inertia tanpa menyentuh tiap controller:
+
+```text
+1. Fitur mati (IKLAN_PEMBUKA_MODUL=false) atau mode dedicated          → null
+2. Tidak login, atau Hak::boleh(user, 'iklan.pembuka_modul') false
+   (berbayar, uji coba, Admin)                                         → null
+3. Bukan GET; permintaan JSON non-Inertia; partial reload Inertia;
+   permintaan prefetch (header "Purpose: prefetch")                    → null
+4. modul = Menu::modulAktif()   (sumber yang sama dengan bilah samping)
+5. modul ∈ IKLAN_PEMBUKA_KECUALI_MODUL (bawaan: pembelian, admin)      → simpan modul, null
+6. Alamat dikecualikan: harga*, bayar*, langganan*, workspace/baru,
+   undangan*, rute cetak/ekspor/unduh                                  → simpan modul, null
+7. Pengguna adalah IUJP terhubung dan rute membawa audit milik IUP
+   pengundang (AturanAksesAudit + anggota_mitra)                        → simpan modul, null
+8. session('iklan.modul_terakhir') == modul                            → null
+9. IKLAN_PEMBUKA_JEDA_MENIT > 0 dan iklan terakhir < jeda yang lalu    → simpan modul, null
+10. Simpan modul & waktu; pilih kampanye:
+      slot 'pembuka_modul', aktif, dalam tanggal, belum melewati maks_tayang,
+      target_modul null atau memuat modul → acak berbobot
+      tidak ada → kampanye cadangan (promosi EQOHSEE sendiri)
+11. Kembalikan { token, modul, labelModul, kampanye:{url_materi, jenis, durasi, tautan,
+      pengiklan}, lewatiSetelah: 5, ajakan:{silver: route('harga.checkout','silver'),
+      ujiCoba: route('workspace.baru')} }
+```
+
+`token` = HMAC-SHA256(`user_id|kampanye_id|modul|waktu`, `IKLAN_HMAC_KUNCI`), berlaku 10 menit, dipakai semua beacon di bawah. Langkah 4–9 memperbarui sesi walau iklan tidak tampil, supaya "kembali ke modul sebelumnya" tetap dihitung sebagai membuka modul.
+
+**Komponen `IklanPembuka.vue`** (dipasang sekali di tata letak utama aplikasi):
+- `role="dialog"`, `aria-modal="true"`, fokus terkunci di dalam; isi halaman di belakang diberi `inert`.
+- Label jelas "Iklan · {nama pengiklan}" atau "Dari EQOHSEE" untuk promosi sendiri.
+- Gambar (WebP ≤ 300 KB) atau video (`muted playsinline autoplay`, ≤ 15 detik, ≤ 3 MB) dari disk privat lewat rute bertoken dengan cache peramban 7 hari.
+- Hitung mundur "Lewati dalam 5"; tombol **Lewati** dan tombol Esc aktif setelah 5 detik.
+- Dua ajakan tetap: **Hilangkan iklan — mulai Silver Rp149rb/bln** dan **Coba Gold gratis 14 hari** (yang kedua hanya bila akun belum pernah uji coba).
+- Beacon `navigator.sendBeacon`: `tampil` (saat terlihat), `selesai` (video habis / gambar 5 detik), `lewati`, `klik` (tautan sponsor, buka tab baru), `klik_upgrade`.
+- Aplikasi mobile Flutter (`mobile/`) memanggil `GET /api/iklan/pembuka?modul={kunci}` saat masuk layar modul dan menampilkan layar padanannya dengan aturan yang sama.
+
+**Statistik:** beacon hanya menaikkan `iklan_statistik_harian` (kampanye, tanggal, modul). Tidak ada IP, agen peramban, atau id pengguna yang disimpan. Laporan sponsor: tayang, selesai, klik, CTR per modul per hari. Laporan internal: klik upgrade dan konversi Bronze → berbayar dari sesi yang melihat iklan.
+
+**Pengukuran dampak (disarankan):** `IKLAN_PEMBUKA_PEMBANDING_PERSEN` (bawaan 0) menyisihkan sebagian Bronze dari iklan pembuka selama 30 hari pertama untuk membandingkan konversi dan retensi. Pemilik memutuskan apakah dinyalakan, karena keputusan K-16 adalah "setiap Bronze".
+
+**Penjualan ke sponsor:** kampanye `pembuka_modul` dijual per 1.000 tayangan (eCPM) atau eksklusif satu modul per bulan; `maks_tayang` membatasi kampanye eCPM sesuai nilai pesanannya. Promosi cadangan mengisi seluruh tayangan yang tidak terjual — sejak Tahap 1 materinya promosi upgrade, kursus, dan toko.
 
 ---
 
@@ -793,6 +867,8 @@ Komponen Vue `LencanaAnggota` (`ukuran: 16|24|40`, `paket`, `status`) ditempelka
 | GET `/kredit-ai` · POST `/kredit-ai/beli` | | Login | Saldo, mutasi, top-up |
 | GET `/toko` · `/toko/{produk}` · GET `/toko/unduh/{lisensi}/{berkas}` (signed) | | Publik/Login | §10 |
 | POST `/iklan/{kampanye}/tayang` · `/klik` · POST `/iklan/hadiah` · `/iklan/hadiah/{token}/klaim` | | Publik/Login | §11 |
+| POST `/iklan/pembuka/{token}/{peristiwa}` (`tampil`, `selesai`, `lewati`, `klik`, `klik_upgrade`) · GET `/iklan/materi/{token}` · GET `/api/iklan/pembuka` | `iklan.pembuka.*` | Login (Bronze) | §11.4 |
+| GET `/langganan/erp` · POST `/langganan/erp` · CRUD `/langganan/site` | `langganan.erp` | Pemilik/admin workspace | Karyawan aktif yang dihitung, perkiraan tagihan, site (§7.4) |
 | GET `/admin/monetisasi/*` | `admin.monetisasi.*` | Admin Platform, Admin Keuangan | §14 |
 
 Layar `Hak/Terkunci` (status 402): nama modul, tangkapan layar contoh dari `docs/jual/{modul}`, paket termurah yang membukanya, harga, tombol "Coba gratis 14 hari" (bila belum pernah) atau "Lihat paket".
@@ -914,6 +990,16 @@ ANGGOTA_KREDIT_AI=true
 ANGGOTA_TOKO=false
 ANGGOTA_IKLAN=false
 IKLAN_HMAC_KUNCI=                 # acak 32 byte
+IKLAN_PEMBUKA_MODUL=true          # iklan setiap Bronze membuka modul (K-16)
+IKLAN_PEMBUKA_LEWATI_DETIK=5
+IKLAN_PEMBUKA_JEDA_MENIT=0        # 0 = setiap membuka modul
+IKLAN_PEMBUKA_KECUALI_MODUL=pembelian,admin
+IKLAN_PEMBUKA_PEMBANDING_PERSEN=0
+
+ERP_HARGA_KARYAWAN=9000
+ERP_MINIMUM=999000
+ERP_HARGA_SITE=1499000
+ERP_HITUNG_TANGGAL=25
 ADSENSE_CLIENT=
 ```
 
@@ -934,6 +1020,8 @@ ADSENSE_CLIENT=
 | Kredit AI | Saldo tidak pernah negatif di bawah 20 permintaan bersamaan; gagal → kembali ke sumber asal; kuota hangus di awal periode, kredit beli tidak |
 | Tenant | IUJP terhubung hanya melihat audit dari IUP pengundang; pencabutan menutup akses seketika |
 | Iklan | Tidak ada iklan di seluruh rute terlarang & untuk pengguna berbayar; klaim rewarded sebelum durasi ditolak; klaim ke-4 dalam sehari ditolak |
+| Iklan pembuka modul | Bronze membuka modul A lalu B → 2 iklan; berpindah halaman di dalam A → 1 iklan; A → B → A → 3 iklan; berbayar/uji coba/Admin → 0; halaman harga, checkout, bayar, undangan → 0 dan modul tetap tercatat; prefetch & partial reload tidak memicu; IUJP terhubung di audit IUP → 0; tanpa kampanye berbayar → promosi cadangan tampil; jeda 10 menit menahan iklan kedua dalam 10 menit; token palsu/kedaluwarsa pada beacon → 403 |
+| ERP SaaS | Orang yang sama di HRIS & Authority dihitung sekali; pekerja IUJP tidak masuk tagihan IUP; minimum Rp999.000 berlaku; true-up positif ditagih dan negatif dikreditkan; pemilik tidak dapat menurunkan jumlah dinyatakan; > 2.000 karyawan diarahkan ke VVIP |
 | Toko | Unduhan tanpa tanda tangan → 403; tanda tangan kedaluwarsa → 403; unduhan ke-6 → 429 |
 | Uang | Total = subtotal − diskon + PPN pada setiap kombinasi; harga yang diubah setelah tagihan terbit tidak mengubah tagihan |
 
@@ -959,9 +1047,12 @@ Untuk satu pengembang full-stack yang sudah mengenal repo; termasuk uji.
 | 1 | Siklus langganan, prorata, downgrade, riwayat, penjadwal | 6 |
 | 1 | Gateway (satu driver) + webhook + rekonsiliasi + refund | 6 |
 | 1 | Halaman harga, checkout, halaman langganan, lencana | 6 |
+| 1 | Iklan pembuka modul: `Pembuka`, `IklanPembuka.vue`, beacon, promosi cadangan, uji | 4 |
+| 1 | Paket tarif tetap Safety & ESG sebagai add-on | 1 |
 | 1 | Monetization Center dasar (MRR, tagihan, kapasitas), notifikasi | 5 |
-| **Tahap 1** | | **±40 hari (8 minggu)** |
+| **Tahap 1** | | **±45 hari (9 minggu)** |
 | 2 | Dompet, mutasi, tahan–selesaikan di `LayananAsisten`, top-up, AI Credit Manager | 12 |
+| 2 | ERP SaaS: hitung karyawan aktif, site, true-up, layar `/langganan/erp`, endpoint mobile | 7 |
 | 3 | Toko digital, unduhan aman, tanda air, kursus berbayar & kursi korporat | 14 |
-| 4 | Slot, kampanye, statistik, rewarded, AdSense publik, Ads Manager | 10 |
+| 4 | Slot, kampanye (termasuk penjualan pembuka modul per modul), statistik, rewarded, AdSense publik, Ads Manager | 10 |
 | 5 | Multi-site, API, corporate billing, program mitra penuh | sesuai kontrak |
