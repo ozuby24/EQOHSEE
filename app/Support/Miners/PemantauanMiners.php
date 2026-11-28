@@ -321,10 +321,19 @@ final class PemantauanMiners
             $per[$nama] ??= [
                 'perusahaan' => $nama,
                 'total' => 0, 'aktif' => 0, 'habis' => 0, 'mendekati' => 0,
+                /* Rincian per keadaan, berpita sama dengan sebaran
+                   seluruh situs — supaya grafik bertumpuk per perusahaan
+                   memakai warna yang sama untuk makna yang sama. Jumlah
+                   kelimanya selalu sama dengan `total`. */
+                'perKeadaan' => array_fill_keys([
+                    Authority::HABIS, Authority::MENDESAK, Authority::DEKAT,
+                    Authority::PANJANG, Authority::TAK_BERTANGGAL,
+                ], 0),
                 'orang' => [],
             ];
 
             $per[$nama]['total']++;
+            $per[$nama]['perKeadaan'][$b['keadaan']] = ($per[$nama]['perKeadaan'][$b['keadaan']] ?? 0) + 1;
             $per[$nama]['orang'][$b['orangId']] = $b['orangAktif'];
 
             if ($b['keadaan'] === Authority::HABIS) $per[$nama]['habis']++;

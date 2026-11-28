@@ -4,6 +4,7 @@
  */
 import { Head, Link } from '@inertiajs/vue3';
 import type { HalamanDaftarSop } from '../../types';
+import IkonLapangan from '../../Components/IkonLapangan.vue';
 
 defineProps<HalamanDaftarSop>();
 </script>
@@ -32,8 +33,8 @@ defineProps<HalamanDaftarSop>();
               {{ ev.keterangan }}
             </p>
             <div class="flex gap-3 mt-2.5 text-[10.5px] text-stone-400">
-              <span>⏱ {{ ev.durasi }} menit</span>
-              <span>🎯 Lulus ≥ {{ ev.nilaiLulus }}</span>
+              <span><IkonLapangan nama="jam" :ukuran="13" class="inline-block align-[-2px] mr-1" />{{ ev.durasi }} menit</span>
+              <span><IkonLapangan nama="sasaran" :ukuran="13" class="inline-block align-[-2px] mr-1" />Lulus ≥ {{ ev.nilaiLulus }}</span>
             </div>
           </div>
           <div class="shrink-0 text-right">

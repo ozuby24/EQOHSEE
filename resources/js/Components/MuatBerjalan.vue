@@ -171,7 +171,7 @@ onBeforeUnmount(() => {
   inset: 0 0 auto;
   z-index: 90;
   height: 3px;
-  background: rgb(245 124 0 / .14);
+  background: color-mix(in srgb, var(--eq-aksen) 14%, transparent);
   pointer-events: none;
 }
 
@@ -179,8 +179,8 @@ onBeforeUnmount(() => {
   height: 100%;
   width: 45%;
   border-radius: 0 99px 99px 0;
-  background: linear-gradient(90deg, #F57C00, #FF9800 55%, #FFC46B);
-  box-shadow: 0 0 10px rgb(255 152 0 / .75);
+  background: linear-gradient(90deg, var(--eq-aksen), var(--eq-aksen-terang) 55%, var(--eq-aksen-terang));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--eq-aksen-terang) 75%, transparent);
   animation: eq-muat-geser 1.15s cubic-bezier(.4, 0, .2, 1) infinite;
 }
 
@@ -224,7 +224,7 @@ onBeforeUnmount(() => {
   gap: .5rem;
   padding: .42rem .8rem .42rem .62rem;
   border-radius: 99px;
-  border: 1px solid rgb(245 124 0 / .28);
+  border: 1px solid color-mix(in srgb, var(--eq-aksen) 28%, transparent);
   background: rgb(255 255 255 / .94);
   backdrop-filter: blur(6px);
   box-shadow: 0 6px 20px rgb(28 25 23 / .16);
@@ -236,8 +236,8 @@ onBeforeUnmount(() => {
   width: .85rem;
   height: .85rem;
   border-radius: 99px;
-  border: 2px solid rgb(245 124 0 / .25);
-  border-top-color: #F57C00;
+  border: 2px solid color-mix(in srgb, var(--eq-aksen) 25%, transparent);
+  border-top-color: var(--eq-aksen);
   animation: eq-muat-putar .62s linear infinite;
 }
 
@@ -263,11 +263,11 @@ onBeforeUnmount(() => {
 }
 
 /* ── mode gelap ── */
-[data-tema='gelap'] .eq-muat-bilah { background: rgb(255 152 0 / .16); }
+[data-tema='gelap'] .eq-muat-bilah { background: rgb(169 207 94 / .16); }
 
 [data-tema='gelap'] .eq-muat-keping {
-  background: rgb(20 32 47 / .94);
-  border-color: rgb(255 152 0 / .3);
+  background: rgb(11 46 41 / .94);
+  border-color: rgb(169 207 94 / .3);
   box-shadow: 0 6px 20px rgb(0 0 0 / .45);
 }
 

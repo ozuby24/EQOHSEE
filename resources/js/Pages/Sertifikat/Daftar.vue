@@ -9,6 +9,7 @@
  */
 import { Head, Link, router } from '@inertiajs/vue3';
 import type { HalamanDaftarSertifikat } from '../../types';
+import IkonLapangan from '../../Components/IkonLapangan.vue';
 
 defineProps<HalamanDaftarSertifikat>();
 
@@ -46,7 +47,7 @@ function terbitkan(url: string) {
     </section>
 
     <section v-if="siapTerbit.length" class="bg-cam-lime-soft border border-cam-lime/25 rounded-2xl p-5 mb-5">
-      <h3 class="text-[13px] font-bold text-cam-lime-deep mb-3">🎓 Siap diterbitkan</h3>
+      <h3 class="text-[13px] font-bold text-cam-lime-deep mb-3"><IkonLapangan nama="sertifikat" :ukuran="15" class="inline-block align-[-3px] mr-1" />Siap diterbitkan</h3>
       <div v-for="(s, i) in siapTerbit" :key="i"
            class="flex items-center justify-between gap-3 bg-white rounded-xl px-4 py-3 mb-2 last:mb-0">
         <span class="text-[13px] font-semibold text-cam-ink">{{ s.kursus }}</span>
@@ -66,7 +67,7 @@ function terbitkan(url: string) {
             <div class="text-[11px] text-stone-400 mt-0.5">{{ c.nomor }} · {{ c.tanggal }}</div>
             <div v-if="admin" class="text-[11px] text-stone-400 mt-0.5">{{ c.penerima }}</div>
           </div>
-          <span class="text-[22px]">🎓</span>
+          <span class="text-cam-lime-deep"><IkonLapangan nama="sertifikat" :ukuran="24" /></span>
         </div>
       </Link>
 

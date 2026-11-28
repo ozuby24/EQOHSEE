@@ -202,7 +202,7 @@ const pilih = 'ring-focus rounded-xl border border-stone-200 bg-white pl-3 pr-9 
                   <div class="flex items-end gap-[2px] h-6" aria-hidden="true">
                     <span v-for="(b, j) in g.bulanan" :key="j" class="blg-titik-bulan"
                           :style="{ height: tinggiTitik(b.nilai),
-                                    background: b.nilai ? '#DC6E00' : '#E7E5E4' }"></span>
+                                    background: b.nilai ? 'var(--eq-aksen-gelap)' : '#E7E5E4' }"></span>
                   </div>
                   <span class="sr-only">
                     {{ g.bulanan.map((b) => `${b.label} ${b.nilai}`).join(', ') }}

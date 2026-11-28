@@ -34,15 +34,15 @@
   --mn-bayang:0 1px 2px rgba(11,45,77,.05),0 2px 8px -2px rgba(11,45,77,.06);
   --mn-bayang-angkat:0 6px 20px -6px rgba(11,45,77,.18),0 2px 4px rgba(11,45,77,.05);
 
-  /* aksen tunggal: jingga EQOHSEE. Tulisan DI ATAS jingga memakai navy
-     hampir hitam, bukan putih: putih di atas #F57C00 hanya 2,9:1 (gagal
-     AA), navy #0B1117 di atasnya 7,9:1. */
-  --mn-aksen:#f57c00;
-  --mn-aksen-hover:#ff8a1a;
-  --mn-aksen-tinta:#0b1117;
-  --mn-aksen-pekat:#a85400;      /* teks/ikon jingga di atas putih (5,3:1) */
-  --mn-aksen-lembut:#fff2e2;
-  --mn-cincin:0 0 0 3px rgba(245,124,0,.32);
+  /* aksen tunggal: teal merek EQOHSEE. Tulisan DI ATAS teal memakai
+     putih (4,8:1); teks/ikon teal di atas putih memakai teal yang lebih
+     dalam (7,9:1). */
+  --mn-aksen:#13806b;
+  --mn-aksen-hover:#0f6b59;
+  --mn-aksen-tinta:#ffffff;
+  --mn-aksen-pekat:#0f5c52;      /* teks/ikon teal di atas putih (7,9:1) */
+  --mn-aksen-lembut:#e3f1ec;
+  --mn-cincin:0 0 0 3px rgba(19,128,107,.3);
 
   --mn-navy:#0b2d4d;             /* tombol gelap (sekunder tegas) */
   --mn-navy-hover:#103556;
@@ -78,7 +78,7 @@
   --mn-bayang:0 0 0 1px #1c2a30;
   --mn-bayang-angkat:0 8px 24px -8px rgba(0,0,0,.6),0 0 0 1px #2a3d44;
   --mn-aksen-pekat:#ffb066;
-  --mn-aksen-lembut:rgba(245,124,0,.14);
+  --mn-aksen-lembut:rgba(19,128,107,.14);
   --mn-navy:#235079;
   --mn-navy-hover:#2b5f8e;
   --mn-expired-tinta:#fca5a5; --mn-expired-lembut:rgba(220,38,38,.16);
@@ -131,7 +131,7 @@
   border:1px solid var(--mn-garis);border-radius:12px;padding:12px 14px 12px;background:var(--mn-kartu);color:var(--mn-teks);
   transition:box-shadow .16s ease,transform .16s ease,border-color .16s ease}
 .mn-zona:hover{box-shadow:var(--mn-bayang-angkat);transform:translateY(-1px)}
-.mn-zona.mn-aktif{border-color:var(--mn-aksen);box-shadow:0 0 0 3px rgba(245,124,0,.18)}
+.mn-zona.mn-aktif{border-color:var(--mn-aksen);box-shadow:0 0 0 3px rgba(19,128,107,.18)}
 .mn-zona-atas{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
 .mn-zona-ikon{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:none;
   background:var(--mn-kosong-lembut);color:var(--mn-kosong-tinta)}
@@ -162,10 +162,10 @@
 .mn-saring-aksi{display:flex;gap:6px}
 .mn-chip-baris{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:12px;font-size:12px;color:var(--mn-redup)}
 .mn-chip{display:inline-flex;align-items:center;gap:4px;min-height:28px;padding:0 4px 0 10px;border-radius:999px;font-size:12.5px;
-  background:var(--mn-aksen-lembut);color:var(--mn-aksen-pekat);border:1px solid rgba(245,124,0,.28)}
+  background:var(--mn-aksen-lembut);color:var(--mn-aksen-pekat);border:1px solid rgba(19,128,107,.28)}
 .mn-chip b{font-weight:600}
 .mn-chip button{width:22px;height:22px;display:grid;place-items:center;border-radius:50%;border:0;background:transparent;color:inherit;cursor:pointer}
-.mn-chip button:hover{background:rgba(245,124,0,.18)}
+.mn-chip button:hover{background:rgba(19,128,107,.18)}
 .mn-chip svg{width:10px;height:10px}
 
 .mn-label{display:block;font-size:12.5px;font-weight:600;color:var(--mn-teks);margin-bottom:6px}
@@ -202,7 +202,7 @@ input[type=file].mn-isian{height:auto;padding:7px 8px;font-size:12.5px}
 .mn-btn-peringatan:hover:not(:disabled){background:rgba(234,179,8,.22)}
 .mn-btn-garis{background:var(--mn-kartu);border-color:#cbd5e1;color:var(--mn-judul)}
 .mn-btn-garis:hover:not(:disabled){background:var(--mn-kartu-2);border-color:#94a3b8}
-.mn-btn-garis-utama{background:var(--mn-kartu);border-color:rgba(245,124,0,.55);color:var(--mn-aksen-pekat)}
+.mn-btn-garis-utama{background:var(--mn-kartu);border-color:rgba(19,128,107,.55);color:var(--mn-aksen-pekat)}
 .mn-btn-garis-utama:hover:not(:disabled){background:var(--mn-aksen-lembut)}
 .mn-btn-hantu{background:transparent;color:var(--mn-redup-2)}
 .mn-btn-hantu:hover:not(:disabled){background:var(--mn-kartu-2);color:var(--mn-judul)}
@@ -233,7 +233,7 @@ input[type=file].mn-isian{height:auto;padding:7px 8px;font-size:12.5px}
 .mn-l-kuning{color:var(--mn-waspada-tinta);background:var(--mn-waspada-lembut);border-color:rgba(234,179,8,.32)}
 .mn-l-abu{color:var(--mn-kosong-tinta);background:var(--mn-kosong-lembut);border-color:var(--mn-garis)}
 .mn-l-terang{color:var(--mn-redup-2);background:var(--mn-kartu-2);border-color:var(--mn-garis)}
-.mn-l-utama{color:var(--mn-aksen-pekat);background:var(--mn-aksen-lembut);border-color:rgba(245,124,0,.3)}
+.mn-l-utama{color:var(--mn-aksen-pekat);background:var(--mn-aksen-lembut);border-color:rgba(19,128,107,.3)}
 .mn-l-info{color:var(--mn-info-tinta);background:var(--mn-info-lembut);border-color:rgba(2,132,199,.22)}
 .mn-l-gelap{color:#fff;background:var(--mn-navy)}
 a.mn-l-gelap:hover{background:var(--mn-navy-hover)}
@@ -361,7 +361,7 @@ a.mn-l-gelap:hover{background:var(--mn-navy-hover)}
   background:var(--mn-kartu-2);border-left:3px solid var(--mn-kosong);color:var(--mn-teks)}
 .mn-s-setuju .mn-step-bulat{background:var(--mn-aman);border-color:var(--mn-aman);color:#fff}
 .mn-s-setuju .mn-step-garis{background:var(--mn-aman)}
-.mn-s-proses .mn-step-bulat{border-color:var(--mn-aksen);color:var(--mn-aksen-pekat);background:var(--mn-aksen-lembut);box-shadow:0 0 0 4px rgba(245,124,0,.14)}
+.mn-s-proses .mn-step-bulat{border-color:var(--mn-aksen);color:var(--mn-aksen-pekat);background:var(--mn-aksen-lembut);box-shadow:0 0 0 4px rgba(19,128,107,.14)}
 .mn-s-kembali .mn-step-bulat{background:var(--mn-kritis);border-color:var(--mn-kritis);color:#fff}
 .mn-s-kembali .mn-step-catatan{border-left-color:var(--mn-kritis)}
 .mn-s-tolak .mn-step-bulat{background:var(--mn-expired);border-color:var(--mn-expired);color:#fff}
@@ -503,7 +503,7 @@ a.mn-berkas:hover{border-color:#94a3b8;background:var(--mn-kartu-2)}
 /* bilah aksi rincian: lengket di bawah pada ponsel supaya tombol setuju/tolak
    tidak tenggelam di bawah daftar panjang */
 .mn-bilah-aksi{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;
-  padding:14px 18px;margin-bottom:20px;border-radius:var(--mn-r-kartu);border:1px solid rgba(245,124,0,.35);
+  padding:14px 18px;margin-bottom:20px;border-radius:var(--mn-r-kartu);border:1px solid rgba(19,128,107,.35);
   background:linear-gradient(0deg,var(--mn-aksen-lembut),var(--mn-aksen-lembut)),var(--mn-kartu);box-shadow:var(--mn-bayang)}
 .mn-bilah-aksi-teks{font-size:13px;color:var(--mn-teks);min-width:0;flex:1 1 240px}
 .mn-bilah-aksi-teks b{display:block;font-size:13.5px;color:var(--mn-judul)}

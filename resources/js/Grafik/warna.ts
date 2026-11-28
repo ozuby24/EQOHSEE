@@ -66,8 +66,8 @@ export const KATEGORI = [
  */
 export const KATEGORI_SEBAR = 3;
 
-/** Aksen satu deret — jingga EQOHSEE, distep agar lolos 3:1 pada putih. */
-export const AKSEN = '#C47000';
+/** Aksen satu deret — teal merek EQOHSEE, 4,8:1 pada putih (syarat 3:1). */
+export const AKSEN = '#13806B';
 
 /** Yang diredupkan ketika satu deret ditonjolkan. */
 export const REDUP = '#D6D3D1';
@@ -75,10 +75,11 @@ export const REDUP = '#D6D3D1';
 /**
  * Tangga besaran: satu warna, terang → gelap.
  *
- * Terverifikasi: terangnya menaik tunggal, jarak antar anak tangga
- * ≥ 0,06, ujung terangnya 2,14:1 terhadap putih, sebaran rona 5°.
+ * Teal merek pada rona tetap (OKLCH H≈176°). Terverifikasi: terangnya
+ * menaik tunggal, jarak antar anak tangga 0,070–0,089 (syarat ≥ 0,06),
+ * ujung terangnya 2,24:1 terhadap putih, sebaran rona 0,5° (syarat 5°).
  */
-export const TANGGA = ['#F0A040', '#E28510', '#C47000', '#A05B00', '#7C4600', '#583200'];
+export const TANGGA = ['#54BFA7', '#25A48B', '#008771', '#006B59', '#005345', '#013E33'];
 
 /**
  * Warna keadaan — maknanya dipesan, tidak dipakai untuk hal lain.
@@ -176,4 +177,70 @@ export function batasBulat(maks: number): number {
   const naik    = sisa <= 1 ? 1 : sisa <= 2 ? 2 : sisa <= 2.5 ? 2.5 : sisa <= 5 ? 5 : 10;
 
   return naik * pangkat;
+}
+
+/**
+ * Sumbu tegak yang LANGKAHNYA bulat, bukan hanya ujungnya.
+ *
+ * Ujung bulat saja tidak cukup: sumbu 0–25 yang dibagi empat bertanda
+ * 6,25 dan 18,75 — angka yang tidak dipakai siapa pun untuk menaksir.
+ * Di sini langkahnya yang dipilih lebih dulu (1, 2, 2,5, atau 5 kali
+ * pangkat sepuluh), lalu ujungnya mengikuti: 0–25 bertanda 5, 10, 15, 20.
+ *
+ * Dipilih yang paling sedikit menyisakan ruang kosong di atas data,
+ * dengan tiga sampai enam selang; empat atau lima lebih disukai.
+ *
+ * `bulat` untuk data cacahan (laporan, orang, berkas): langkah pecahan
+ * di sana menghasilkan tanda "0,25 laporan" — satuan yang tidak ada.
+ */
+export function skalaRapi(maks: number, bulat = false): { batas: number; langkah: number } {
+  if (!isFinite(maks) || maks <= 0) return bulat ? { batas: 1, langkah: 1 } : { batas: 1, langkah: 0.25 };
+
+  /* Cacahan kecil: tiap bilangan bulat satu tanda. */
+  if (bulat && maks <= 6) return { batas: Math.ceil(maks), langkah: 1 };
+
+  const dasar = Math.pow(10, Math.floor(Math.log10(maks)) - 1);
+  let terbaik: { batas: number; langkah: number; skor: number } | null = null;
+
+  for (const pangkat of [dasar, dasar * 10, dasar * 100]) {
+    for (const kali of [1, 2, 2.5, 5]) {
+      const langkah = kali * pangkat;
+      if (bulat && Math.abs(langkah - Math.round(langkah)) > 1e-9) continue;
+
+      const n = Math.ceil(maks / langkah - 1e-9);
+      if (n < 3 || n > 6) continue;
+
+      const batas = n * langkah;
+      const skor  = (batas - maks) / batas + (n === 4 || n === 5 ? 0 : 0.05);
+
+      if (!terbaik || skor < terbaik.skor - 1e-12) terbaik = { batas, langkah, skor };
+    }
+  }
+
+  if (terbaik) return { batas: terbaik.batas, langkah: terbaik.langkah };
+
+  const b = batasBulat(maks);
+
+  return { batas: b, langkah: b / 4 };
+}
+
+/**
+ * Angka tanda sumbu, SATU satuan untuk seluruh sumbunya.
+ *
+ * `ringkas` memilih satuannya per angka, sehingga sumbu 0–30 rb
+ * bertanda "5.000" tepat di bawah "10 rb" — dua cara menulis besaran
+ * yang sama pada satu garis. Di sini satuannya dipilih dari ujung
+ * sumbu (`acuan`) lalu dipakai untuk semua tandanya: 5 rb, 10 rb.
+ * Tanpa ",0" yang tidak berarti: "50,0 rb" menyiratkan ketelitian
+ * yang tidak pernah diukur.
+ */
+export function ringkasSumbu(n: number, acuan?: number): string {
+  if (n === 0) return '0';
+
+  const a = Math.abs(acuan ?? n);
+  const [bagi, akhiran] = a >= 1e9 ? [1e9, ' M'] : a >= 1e6 ? [1e6, ' jt'] : a >= 1e4 ? [1e3, ' rb'] : [1, ''];
+
+  if (bagi === 1) return ringkas(n);
+
+  return (n / bagi).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + akhiran;
 }

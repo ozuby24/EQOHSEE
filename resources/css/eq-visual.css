@@ -29,8 +29,8 @@
 body{
   background-color:#FBFAF7;
   background-image:
-    radial-gradient(1100px 520px at 88% -8%, rgba(245,124,0,.06), transparent 62%),
-    radial-gradient(760px 420px at -6% 104%, rgba(11,17,23,.05), transparent 60%),
+    radial-gradient(1100px 520px at 88% -8%, color-mix(in srgb,var(--eq-aksen) 6%,transparent), transparent 62%),
+    radial-gradient(760px 420px at -6% 104%, rgba(7,36,32,.05), transparent 60%),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.028'/%3E%3C/svg%3E");
   background-attachment:fixed,fixed,fixed;
 }
@@ -62,7 +62,7 @@ body{
   color:#1B2024;background:#fff;border:1px solid rgba(27,32,36,.09);
   box-shadow:0 1px 2px rgba(27,32,36,.05);
   transition:border-color .18s,color .18s,transform .18s cubic-bezier(.21,.6,.35,1)}
-.eq-menu-btn:hover{border-color:#C85804;color:#C85804}
+.eq-menu-btn:hover{border-color:var(--eq-aksen-gelap);color:var(--eq-aksen-gelap)}
 .eq-menu-btn:active{transform:scale(.94)}
 .eq-menu-btn svg{width:19px;height:19px}
 @media (min-width:1024px){.eq-menu-btn{display:none}}
@@ -79,7 +79,7 @@ body{
   color:var(--eq-redup,#7C8894);background:#fff;border:1px solid rgba(27,32,36,.09);
   box-shadow:0 1px 2px rgba(27,32,36,.05);
   transition:color .18s,border-color .18s,transform .18s cubic-bezier(.21,.6,.35,1)}
-.eq-bulat:hover{color:#C85804;border-color:#C85804}
+.eq-bulat:hover{color:var(--eq-aksen-gelap);border-color:var(--eq-aksen-gelap)}
 .eq-bulat:active{transform:scale(.94)}
 .eq-bulat svg{width:19px;height:19px}
 .eq-lonceng-titik{position:absolute;top:-2px;right:-2px;min-width:19px;height:19px;padding:0 5px;
@@ -94,7 +94,7 @@ body{
   color:var(--eq-redup,#7C8894);padding:6px 10px 4px}
 .eq-tugas-butir{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;
   border-radius:8px;font-size:12.5px;color:var(--eq-judul,#0F1720)}
-.eq-tugas-butir:hover{background:rgba(245,124,0,.08)}
+.eq-tugas-butir:hover{background:color-mix(in srgb,var(--eq-aksen) 8%,transparent)}
 .eq-tugas-butir b{min-width:22px;height:20px;padding:0 6px;border-radius:999px;background:#F5B400;
   color:#1B2024;font-size:11px;display:grid;place-items:center}
 :root[data-tema="gelap"] .eq-tugas-daftar{background:#152126;border-color:#22343A}
@@ -109,7 +109,7 @@ body{
 
 .eq-profil{display:flex;align-items:center;gap:10px;padding-left:2px}
 .eq-avatar{width:40px;height:40px;flex:none;border-radius:50%;display:grid;place-items:center;
-  background:linear-gradient(135deg,#F36F0F,#FF9800);color:#fff;font-weight:800;font-size:14px}
+  background:linear-gradient(135deg,var(--eq-aksen),var(--eq-aksen-terang));color:#fff;font-weight:800;font-size:14px}
 /* Varian berfoto. Tanpa `object-fit`, potret yang tidak persegi
    dipipihkan ke dalam lingkaran 40px alih-alih dipotong — dan `.eq-avatar`
    sendiri tidak dapat memakainya, sebab varian berhuruf memakai `grid`
@@ -124,7 +124,7 @@ body{
   font-size:12.5px;font-weight:600;color:var(--eq-redup,#7C8894);
   border:1px solid rgba(27,32,36,.09);background:#fff;
   transition:color .18s,border-color .18s,background-color .18s}
-.eq-keluar:hover{color:#C85804;border-color:#C85804;background:rgba(245,124,0,.06)}
+.eq-keluar:hover{color:var(--eq-aksen-gelap);border-color:var(--eq-aksen-gelap);background:color-mix(in srgb,var(--eq-aksen) 6%,transparent)}
 .eq-keluar svg{width:17px;height:17px}
 
 .eq-topbar h1{letter-spacing:-.012em}
@@ -135,7 +135,7 @@ body{
    untuk bersaing dengan isi di bawahnya. */
 .eq-topbar::after{
   content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;
-  background:linear-gradient(90deg,var(--eq-aksen,#F36F0F) 0%,rgba(245,124,0,.35) 38%,transparent 78%);
+  background:linear-gradient(90deg,var(--eq-aksen,#13806B) 0%,color-mix(in srgb,var(--eq-aksen) 35%,transparent) 38%,transparent 78%);
   opacity:.9;
 }
 
@@ -164,7 +164,7 @@ body{
      bersaing dengan daftar menu di atasnya. */
   content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
   background-image:
-    radial-gradient(78% 30% at 18% 4%,  rgba(245,124,0,.16), transparent 72%),
+    radial-gradient(78% 30% at 18% 4%,  color-mix(in srgb,var(--eq-aksen) 16%,transparent), transparent 72%),
     radial-gradient(70% 26% at 88% 34%, rgba(255,255,255,.05), transparent 74%),
     radial-gradient(90% 34% at 50% 96%, rgba(255,255,255,.045), transparent 76%);
 }
@@ -228,7 +228,7 @@ body{
   border-radius:14px;padding:13px}
 .eq-bantuan-ikon{width:34px;height:34px;border-radius:11px;flex:none;
   display:grid;place-items:center;color:#fff;
-  background:linear-gradient(135deg,#F36F0F,#FF9800)}
+  background:linear-gradient(135deg,var(--eq-aksen),var(--eq-aksen-terang))}
 .eq-bantuan-ikon svg{width:17px;height:17px}
 .eq-bantuan-teks{min-width:0}
 .eq-bantuan-teks strong{display:block;font-size:12.5px;color:#fff;font-weight:700}
@@ -283,7 +283,7 @@ body{
   .eq-lipat:hover::before{background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.26)}
   /* Umpan balik tekan bekerja pada sentuhan, tempat :hover tidak ada. */
   .eq-lipat:active::before{background:rgba(255,255,255,.18)}
-  .eq-lipat:focus-visible::before{border-color:#FF9800;box-shadow:0 0 0 2px rgba(255,152,0,.35)}
+  .eq-lipat:focus-visible::before{border-color:var(--eq-aksen-terang);box-shadow:0 0 0 2px color-mix(in srgb,var(--eq-aksen-terang) 35%,transparent)}
   .eq-lipat svg{width:15px;height:15px;position:relative;
     transition:transform .28s cubic-bezier(.21,.6,.35,1)}
 }
@@ -348,7 +348,7 @@ body{
 #eqSidebar nav a{gap:10px}
 .eq-navico{width:15px;height:15px;flex:none;opacity:.55;transition:opacity .18s,transform .18s}
 #eqSidebar nav a:hover .eq-navico{opacity:.95;transform:translateX(1px)}
-#eqSidebar nav a.nav-active .eq-navico{opacity:1;color:#FFB870}
+#eqSidebar nav a.nav-active .eq-navico{opacity:1;color:var(--eq-aksen-terang)}
 #eqSidebar nav a{position:relative;overflow:hidden}
 #eqSidebar nav a::before{                 /* sapuan halus saat disentuh */
   content:"";position:absolute;inset:0;border-radius:inherit;
@@ -388,7 +388,7 @@ main .brand-gradient::before{             /* pendar bidang, bukan kisi */
      membuat mata mengikuti garisnya alih-alih isinya. */
   content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
   background-image:
-    radial-gradient(52% 62% at 16% 6%,  rgba(245,124,0,.14), transparent 70%),
+    radial-gradient(52% 62% at 16% 6%,  color-mix(in srgb,var(--eq-aksen) 14%,transparent), transparent 70%),
     radial-gradient(44% 54% at 84% 40%, rgba(255,255,255,.06), transparent 72%);
 }
 main .brand-gradient::after{              /* siluet punggungan di tepi bawah */
@@ -402,7 +402,7 @@ main .brand-gradient::after{              /* siluet punggungan di tepi bawah */
    6 · PITA SPEKTRUM ENAM PILAR — penanda halus di kepala kartu
    ═══════════════════════════════════════════════════════════ */
 .eq-seam{height:3px;border-radius:3px;
-  background:linear-gradient(90deg,#0B1117 0%,#C85804 40%,#F36F0F 70%,#FF9800 100%)}
+  background:linear-gradient(90deg,#072420 0%,var(--eq-aksen-gelap) 40%,var(--eq-aksen) 70%,var(--eq-aksen-terang) 100%)}
 
 /* ═══════════════════════════════════════════════════════════
    7 · KENYAMANAN BACA
@@ -410,7 +410,7 @@ main .brand-gradient::after{              /* siluet punggungan di tepi bawah */
 main h1,main h2,main h3{letter-spacing:-.011em}
 main input,main select,main textarea{transition:border-color .16s,box-shadow .16s}
 main a{transition:color .16s}
-::selection{background:rgba(245,124,0,.24)}
+::selection{background:color-mix(in srgb,var(--eq-aksen) 24%,transparent)}
 
 /* gulir lebih halus di panel gelap */
 #eqSidebar nav::-webkit-scrollbar{width:5px}
@@ -440,10 +440,10 @@ main a{transition:color .16s}
 /* ── Sambutan ── */
 .eq-hero{
   position:relative;overflow:hidden;border-radius:22px;
-  background:linear-gradient(115deg,#0B1117 0%,#151D26 52%,#243140 100%);
+  background:linear-gradient(115deg,#072420 0%,#0B2E29 52%,#14403A 100%);
   color:#fff;padding:32px 34px;min-height:214px;
   display:flex;align-items:center;
-  box-shadow:0 20px 44px -26px rgba(11,17,23,.8);
+  box-shadow:0 20px 44px -26px rgba(7,36,32,.8);
 }
 .eq-hero-foto{
   position:absolute;inset:0 0 0 auto;width:56%;height:100%;
@@ -454,14 +454,14 @@ main a{transition:color .16s}
 }
 .eq-hero::after{
   content:"";position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(100deg,#0B1117 0%,rgba(21,29,38,.88) 44%,rgba(21,29,38,.30) 100%);
+  background:linear-gradient(100deg,#072420 0%,rgba(11,46,41,.88) 44%,rgba(11,46,41,.30) 100%);
 }
 .eq-hero-isi{position:relative;z-index:2;max-width:58ch}
 .eq-hero-isi h2{font-size:clamp(23px,2.4vw,31px);font-weight:800;letter-spacing:-.022em;line-height:1.18}
 .eq-hero-isi p{font-size:14px;color:rgba(255,255,255,.72);margin-top:10px;line-height:1.6;max-width:44ch}
 .eq-hero-btn{
   display:inline-flex;align-items:center;gap:9px;margin-top:22px;
-  padding:12px 22px;border-radius:13px;background:#F36F0F;color:#fff;
+  padding:12px 22px;border-radius:13px;background:var(--eq-aksen);color:#fff;
   font-size:13.5px;font-weight:700;
   transition:transform .18s cubic-bezier(.21,.6,.35,1),box-shadow .18s;
 }
@@ -497,7 +497,7 @@ main a{transition:color .16s}
 .eq-panel-kepala h3{font-size:16px;font-weight:800;color:var(--eq-judul,#0F1720);letter-spacing:-.015em}
 .eq-panel-ket{font-size:11.5px;color:var(--eq-redup2,#98A2AE)}
 .eq-panel-kaki{font-size:11.5px;color:var(--eq-redup,#7C8894);margin-top:12px}
-.eq-tautan{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#F36F0F;
+.eq-tautan{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--eq-aksen);
   transition:gap .18s;
   /* Sasaran sentuh: padding tegak memperbesar area ketuk, margin negatif
      mengembalikan tinggi tata letaknya persis seperti semula. */
@@ -522,7 +522,7 @@ main a{transition:color .16s}
 .eq-kursus{border:1px solid rgba(27,32,36,.08);border-radius:16px;overflow:hidden;background:#fff;
   display:flex;flex-direction:column;
   transition:transform .22s cubic-bezier(.21,.6,.35,1),box-shadow .22s,border-color .22s}
-.eq-kursus:hover{transform:translateY(-3px);border-color:rgba(245,124,0,.45);
+.eq-kursus:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--eq-aksen) 45%,transparent);
   box-shadow:0 18px 34px -22px rgba(27,32,36,.5)}
 .eq-kursus-gambar{position:relative;aspect-ratio:16/10;overflow:hidden;background:#EDF0F2}
 .eq-kursus-gambar img{width:100%;height:100%;object-fit:cover;
@@ -549,7 +549,7 @@ main a{transition:color .16s}
 
 /* Warna dibawa sebagai semburat tipis, bukan blok penuh — cukup untuk
    membedakan sekilas tanpa menutup fotonya. */
-.l-utama{background:linear-gradient(135deg,rgba(11,17,23,.55),rgba(30,40,53,.42))}
+.l-utama{background:linear-gradient(135deg,rgba(7,36,32,.55),rgba(30,40,53,.42))}
 .l-ikut{background:linear-gradient(135deg,rgba(31,111,184,.44),rgba(20,80,140,.30))}
 .l-selesai{background:linear-gradient(135deg,rgba(107,178,58,.44),rgba(74,142,44,.30))}
 
@@ -580,7 +580,7 @@ main a{transition:color .16s}
 /* Peramban tanpa backdrop-filter menampilkan lencana nyaris tanpa latar,
    jadi warnanya dinaikkan agar tulisannya tetap terbaca. */
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
-  .l-utama{background:rgba(11,17,23,.84)}
+  .l-utama{background:rgba(7,36,32,.84)}
   .l-ikut{background:rgba(31,111,184,.82)}
   .l-selesai{background:rgba(74,142,44,.84)}
   .k-toska {background:rgba(14,116,126,.86)}
@@ -599,10 +599,10 @@ main a{transition:color .16s}
 .eq-kursus-meta svg{width:14px;height:14px}
 .eq-kursus-maju{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
   margin-top:14px;font-size:11.5px;color:var(--eq-redup,#7C8894)}
-.eq-kursus-maju b{font-size:12.5px;font-weight:800;color:#F36F0F;font-variant-numeric:tabular-nums}
+.eq-kursus-maju b{font-size:12.5px;font-weight:800;color:var(--eq-aksen);font-variant-numeric:tabular-nums}
 .eq-bilah{height:7px;border-radius:999px;background:#EDF0F2;overflow:hidden;margin-top:6px}
 .eq-bilah i{display:block;height:100%;border-radius:999px;
-  background:linear-gradient(90deg,#F36F0F,#FF9800);transition:width 1s cubic-bezier(.21,.6,.35,1)}
+  background:linear-gradient(90deg,var(--eq-aksen),var(--eq-aksen-terang));transition:width 1s cubic-bezier(.21,.6,.35,1)}
 .eq-kursus-aksi{display:flex;gap:8px;margin-top:auto;padding-top:15px}
 
 /* `flex:1` berarti flex-basis:0 — tombolnya mulai dari lebar NOL lalu
@@ -636,7 +636,7 @@ main a{transition:color .16s}
 .eq-btn-utama{display:inline-flex;align-items:center;justify-content:center;gap:7px;
   flex:0 0 auto;min-width:fit-content;
   padding:10px 14px;border-radius:11px;font-size:12.5px;font-weight:700;
-  background:linear-gradient(135deg,#F36F0F,#C85804);color:#fff;
+  background:linear-gradient(135deg,var(--eq-aksen),var(--eq-aksen-gelap));color:#fff;
   transition:filter .18s,transform .18s cubic-bezier(.21,.6,.35,1)}
 
 /* Baris tombol yang SENGAJA dibagi rata — dua tindakan setara pada kaki
@@ -655,7 +655,7 @@ main a{transition:color .16s}
   padding:10px 14px;border-radius:11px;font-size:12.5px;font-weight:600;
   color:#5C6874;background:#fff;border:1px solid rgba(27,32,36,.11);
   transition:border-color .18s,color .18s}
-.eq-btn-lain:hover{border-color:#C85804;color:#F36F0F}
+.eq-btn-lain:hover{border-color:var(--eq-aksen-gelap);color:var(--eq-aksen)}
 .eq-btn-blok{width:100%;margin-top:13px}
 
 /* ── Tombol keputusan ──
@@ -704,7 +704,7 @@ main a{transition:color .16s}
   border:1.5px solid transparent;cursor:pointer;
   transition:background-color .18s,color .18s,border-color .18s}
 .eq-saring:hover{background:#E7E5E4;color:#1B2024}
-.eq-saring.aktif{background:#fff;border-color:#C85804;color:#B45309;box-shadow:0 1px 2px rgba(0,0,0,.07)}
+.eq-saring.aktif{background:#fff;border-color:var(--eq-aksen-gelap);color:#B45309;box-shadow:0 1px 2px rgba(0,0,0,.07)}
 .eq-saring b{font-weight:800}
 .eq-saring .titik{width:8px;height:8px;border-radius:999px;display:inline-block;flex:none}
 /* Baris saringan di layar sempit: tiap kendali mengambil separuh baris,
@@ -791,7 +791,7 @@ main a{transition:color .16s}
 .eq-kategori a,.eq-admin-angka{display:flex;align-items:center;gap:11px;padding:13px 15px;
   border:1px solid rgba(27,32,36,.08);border-radius:14px;background:#fff;
   transition:border-color .2s,transform .2s cubic-bezier(.21,.6,.35,1)}
-.eq-kategori a:hover{border-color:rgba(245,124,0,.5);transform:translateY(-2px)}
+.eq-kategori a:hover{border-color:color-mix(in srgb,var(--eq-aksen) 50%,transparent);transform:translateY(-2px)}
 .eq-kategori-ikon{width:38px;height:38px;flex:none;border-radius:13px;display:grid;place-items:center}
 .eq-kategori-ikon svg{width:18px;height:18px}
 .eq-kategori strong{display:block;font-size:12.5px;font-weight:700;color:var(--eq-judul,#0F1720)}
@@ -836,12 +836,12 @@ main a{transition:color .16s}
      itu dianggap tidak sah dan nilainya hilang sama sekali — bukan
      jatuh ke cadangannya — sehingga ubinnya kehilangan gradien tanpa
      satu pun galat yang tercatat. */
-  --ikon-hitung:color-mix(in srgb,var(--c,#F36F0F) 62%,#fff);
+  --ikon-hitung:color-mix(in srgb,var(--c,var(--eq-aksen)) 62%,#fff);
   --ikon-puncak:var(--c-terang,var(--ikon-hitung));
-  background:linear-gradient(145deg,var(--ikon-puncak),var(--c,#F36F0F));
+  background:linear-gradient(145deg,var(--ikon-puncak),var(--c,var(--eq-aksen)));
   color:#fff;
   box-shadow:
-    0 8px 16px -9px color-mix(in srgb,var(--c,#F36F0F) 85%,transparent),
+    0 8px 16px -9px color-mix(in srgb,var(--c,var(--eq-aksen)) 85%,transparent),
     inset 0 1px 0 rgba(255,255,255,.35)}
 
 /* ── Kenapa hanya segini, padahal "3D" ──
@@ -867,7 +867,7 @@ main a{transition:color .16s}
    atas kartu gelap berubah dari bayangan menjadi cahaya neon. */
 :root[data-tema="gelap"] .ikon-3d{
   box-shadow:
-    0 8px 18px -10px color-mix(in srgb,var(--c,#F36F0F) 62%,transparent),
+    0 8px 18px -10px color-mix(in srgb,var(--c,var(--eq-aksen)) 62%,transparent),
     inset 0 1px 0 rgba(255,255,255,.22)}
 
 /* CATATAN: jangan menyetel stroke-width pada .ikon-3d svg.
@@ -918,7 +918,7 @@ main a{transition:color .16s}
 .eq-modul{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(206px,1fr))}
 .eq-modul a{display:block;padding:16px;border:1px solid rgba(27,32,36,.08);border-radius:15px;
   background:#fff;transition:border-color .2s,transform .2s cubic-bezier(.21,.6,.35,1),box-shadow .2s}
-.eq-modul a:hover{border-color:rgba(245,124,0,.5);transform:translateY(-3px);
+.eq-modul a:hover{border-color:color-mix(in srgb,var(--eq-aksen) 50%,transparent);transform:translateY(-3px);
   box-shadow:0 16px 30px -22px rgba(27,32,36,.45)}
 .eq-modul-atas{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
 .eq-modul-nilai{font-size:27px;font-weight:800;letter-spacing:-.03em;line-height:1;
@@ -928,22 +928,28 @@ main a{transition:color .16s}
 .eq-modul strong{display:block;font-size:12.5px;font-weight:700;color:var(--eq-judul,#0F1720);margin-top:12px}
 .eq-modul small{display:block;font-size:11px;color:var(--eq-redup2,#98A2AE);margin-top:2px;line-height:1.5}
 
-/* ── Keterangan data gabungan (administrator, "Semua perusahaan") ── */
+/* ── Keterangan data gabungan (administrator, "Semua perusahaan") ──
+   Keterangan, bukan peringatan: berwarna merek (teal), bukan jingga
+   atau kuning yang dipesan untuk keadaan. Jingga identitas lama di
+   sini adalah sisa terakhir yang tampil di puncak setiap halaman. */
 .eq-gabungan{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
   padding:9px 10px 9px 14px;border-radius:12px;
-  background:#FFF6E8;border:1px solid #F6D9AE;color:#6B3A00;font-size:12.5px;line-height:1.45}
-.eq-gabungan > svg{width:17px;height:17px;flex:none;color:#C85804}
+  background:#EEF6F3;border:1px solid #CFE3DB;color:#12443E;font-size:12.5px;line-height:1.45}
+.eq-gabungan > svg{width:17px;height:17px;flex:none;color:#0F6B59}
 .eq-gabungan p{flex:1 1 16rem;min-width:0;margin:0}
-.eq-gabungan b{font-weight:700;color:#4A2800}
+.eq-gabungan b{font-weight:700;color:#072420}
 .eq-gabungan-pilih{flex:none;padding:6px 12px;border-radius:9px;font-size:12px;font-weight:700;
-  background:#fff;border:1px solid #F0C98C;color:#A85400;transition:background-color .15s,border-color .15s}
-.eq-gabungan-pilih:hover{background:#FFF0DA;border-color:#C85804}
-.eq-gabungan-tutup{flex:none;width:30px;height:30px;display:grid;place-items:center;border-radius:8px;color:#A85400}
-.eq-gabungan-tutup:hover{background:rgba(245,124,0,.12)}
+  background:#fff;border:1px solid #B9D8CC;color:#0F5C52;transition:background-color .15s,border-color .15s}
+.eq-gabungan-pilih:hover{background:#E3F1EC;border-color:#0F6B59}
+.eq-gabungan-tutup{flex:none;width:30px;height:30px;display:grid;place-items:center;border-radius:8px;color:#0F5C52}
+.eq-gabungan-tutup:hover{background:rgba(19,128,107,.12)}
 .eq-gabungan-tutup svg{width:15px;height:15px}
-:root[data-tema="gelap"] .eq-gabungan{background:rgba(245,124,0,.10);border-color:rgba(245,124,0,.28);color:#F6D3A6}
-:root[data-tema="gelap"] .eq-gabungan b{color:#FFE2BD}
-:root[data-tema="gelap"] .eq-gabungan-pilih{background:transparent;border-color:rgba(245,124,0,.4);color:#FFB870}
+:root[data-tema="gelap"] .eq-gabungan{background:rgba(169,207,94,.08);border-color:rgba(169,207,94,.24);color:#D6E9C2}
+:root[data-tema="gelap"] .eq-gabungan > svg{color:#A9CF5E}
+:root[data-tema="gelap"] .eq-gabungan b{color:#EEF7E2}
+:root[data-tema="gelap"] .eq-gabungan-pilih{background:transparent;border-color:rgba(169,207,94,.4);color:#C6E38A}
+:root[data-tema="gelap"] .eq-gabungan-tutup{color:#C6E38A}
+:root[data-tema="gelap"] .eq-gabungan-tutup:hover{background:rgba(169,207,94,.12)}
 
 /* ═══════════════════════════════════════════════════════════
    10 · TEMA GELAP DAN WARNA PERUSAHAAN
@@ -976,7 +982,7 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] body{
   background-color:#0D1417;
   background-image:
-    radial-gradient(1100px 520px at 88% -8%, rgba(245,124,0,.09), transparent 62%),
+    radial-gradient(1100px 520px at 88% -8%, color-mix(in srgb,var(--eq-aksen) 9%,transparent), transparent 62%),
     radial-gradient(760px 420px at -6% 104%, rgba(255,255,255,.035), transparent 60%);
   color:#D6DEE2;
 }
@@ -1072,7 +1078,7 @@ main a{transition:color .16s}
    sama terbacanya di kedua latar. */
 :root[data-tema="gelap"] .eq-saring{background:#1A272C;color:#C4D2D7}
 :root[data-tema="gelap"] .eq-saring:hover{background:#22333A;color:#E8F0F2}
-:root[data-tema="gelap"] .eq-saring.aktif{background:#22333A;border-color:#C85804;color:#FFC078}
+:root[data-tema="gelap"] .eq-saring.aktif{background:#22333A;border-color:var(--eq-aksen-gelap);color:#FFC078}
 :root[data-tema="gelap"] .eq-nilai{background:#131F24;border-color:#26363C;color:#98A8AF}
 :root[data-tema="gelap"] .eq-nilai b{color:#E8F0F2}
 :root[data-tema="gelap"] .eq-nilai:hover{background:#1A272C;border-color:#33474F}
@@ -1214,13 +1220,13 @@ main a{transition:color .16s}
    logo yang kebetulan sangat terang atau sangat pekat akan membuat teks
    di atasnya tidak terbaca kalau dijadikan latar. */
 .eq-btn-utama,
-.eq-bilah i{background:linear-gradient(135deg,var(--eq-aksen,#F36F0F),
-                                       color-mix(in srgb,var(--eq-aksen,#F36F0F) 78%,#FF9800))}
+.eq-bilah i{background:linear-gradient(135deg,var(--eq-aksen,#13806B),
+                                       color-mix(in srgb,var(--eq-aksen,#13806B) 78%,var(--eq-aksen-terang)))}
 .eq-kursus-maju b,
-.eq-panel-lihat{color:var(--eq-aksen,#F36F0F)}
+.eq-panel-lihat{color:var(--eq-aksen,#13806B)}
 .eq-panel-lihat{padding-block:5px;margin-block:-5px}
-.brand-gradient{background:linear-gradient(165deg,var(--eq-dasar,#0B1117),
-                                           color-mix(in srgb,var(--eq-dasar,#0B1117) 62%,#12403E))}
+.brand-gradient{background:linear-gradient(165deg,var(--eq-dasar,#072420),
+                                           color-mix(in srgb,var(--eq-dasar,#072420) 62%,#12403E))}
 
 /* ══════════ Audit SMKP — mode gelap ══════════
    Aurorasys tidak punya mode gelap; pasangan di bawah memetakan palet
@@ -1568,7 +1574,7 @@ main a{transition:color .16s}
 .eq-sisi-akun-tautan{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
 .eq-sisi-avatar{width:34px;height:34px;border-radius:11px;flex:none;display:grid;
   place-items:center;font-size:14px;font-weight:800;color:#fff;
-  background:linear-gradient(135deg,#F36F0F,#FF9F35)}
+  background:linear-gradient(135deg,var(--eq-aksen),var(--eq-aksen-terang))}
 .eq-sisi-avatar-foto{object-fit:cover}
 .eq-sisi-akun-teks{min-width:0;display:flex;flex-direction:column;line-height:1.25}
 .eq-sisi-akun-teks strong{font-size:12.5px;color:#fff;font-weight:700;
@@ -1600,8 +1606,8 @@ main a{transition:color .16s}
   border:1px solid var(--eq-garis,#E4E8EC);background:var(--eq-kartu,#fff);
   transition:border-color .15s,box-shadow .15s}
 .eq-cari input::placeholder{color:var(--eq-redup,#9AA5B1)}
-.eq-cari input:focus{outline:none;border-color:var(--eq-aksen,#F36F0F);
-  box-shadow:0 0 0 3px rgba(245,124,0,.13)}
+.eq-cari input:focus{outline:none;border-color:var(--eq-aksen,#13806B);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--eq-aksen) 13%,transparent)}
 @media (max-width:860px){.eq-cari{display:none}}
 
 /* Ponsel sempit: sapaan boleh MENYUSUT, bukan mendorong chip akun keluar
@@ -1646,7 +1652,7 @@ main a{transition:color .16s}
   border-radius:12px;font-size:12.5px;font-weight:700;flex:none;
   color:var(--eq-judul,#0F1720);border:1px solid var(--eq-garis,#E4E8EC);
   background:var(--eq-kartu,#fff);max-width:min(340px,32vw)}
-.eq-perusahaan svg{width:16px;height:16px;flex:none;color:var(--eq-aksen,#F36F0F)}
+.eq-perusahaan svg{width:16px;height:16px;flex:none;color:var(--eq-aksen,#13806B)}
 .eq-perusahaan span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:640px){.eq-perusahaan span{display:none}}
 
@@ -1685,15 +1691,15 @@ main a{transition:color .16s}
   border:1px solid var(--eq-garis,#E4E8EC);
   transition:border-color .15s ease,color .15s ease,background .15s ease}
 .eq-pindah-pil svg{width:15px;height:15px;flex:none;opacity:.7}
-.eq-pindah-pil:hover{border-color:var(--eq-aksen,#F36F0F);color:var(--eq-judul,#0F1720)}
-.eq-pindah-pil:focus-visible{outline:2px solid var(--eq-aksen,#F36F0F);outline-offset:2px}
+.eq-pindah-pil:hover{border-color:var(--eq-aksen,#13806B);color:var(--eq-judul,#0F1720)}
+.eq-pindah-pil:focus-visible{outline:2px solid var(--eq-aksen,#13806B);outline-offset:2px}
 
 /* Yang sedang dibuka berlatar aksen PENUH, bukan sekadar bertepi tebal.
    Pada baris berisi belasan pil, tepi yang berbeda tipis tidak pernah
    ditemukan mata — dan pembacanya kehilangan satu-satunya tanda di
    mana ia sedang berdiri. */
-.eq-pindah-kini{background:var(--eq-aksen,#F36F0F);border-color:var(--eq-aksen,#F36F0F);
-  color:#fff;box-shadow:0 2px 10px -2px rgba(245,124,0,.45)}
+.eq-pindah-kini{background:var(--eq-aksen,#13806B);border-color:var(--eq-aksen,#13806B);
+  color:#fff;box-shadow:0 2px 10px -2px color-mix(in srgb,var(--eq-aksen) 45%,transparent)}
 .eq-pindah-kini svg{opacity:1}
 .eq-pindah-kini:hover{color:#fff}
 
@@ -1705,8 +1711,8 @@ main a{transition:color .16s}
 :root[data-tema="gelap"] .eq-pindah-pil{background:var(--eq-kartu,#141A21);
   border-color:var(--eq-garis,rgba(255,255,255,.10));color:var(--eq-teks,#A8B2B8)}
 :root[data-tema="gelap"] .eq-pindah-pil:hover{color:var(--eq-judul,#E8ECF0)}
-:root[data-tema="gelap"] .eq-pindah-kini{background:var(--eq-aksen,#F36F0F);
-  border-color:var(--eq-aksen,#F36F0F);color:#fff}
+:root[data-tema="gelap"] .eq-pindah-kini{background:var(--eq-aksen,#13806B);
+  border-color:var(--eq-aksen,#13806B);color:#fff}
 
 /* ── Akun di bilah atas ── */
 .eq-akun{position:relative;flex:none}
@@ -1718,11 +1724,11 @@ main a{transition:color .16s}
   max-width:250px;padding:4px 8px 4px 4px;border:1px solid transparent;
   background:none;cursor:pointer;border-radius:999px;line-height:0;
   transition:background .15s ease,border-color .15s ease}
-.eq-akun-tombol:hover{background:var(--eq-aksen-tipis,rgba(245,124,0,.10));
+.eq-akun-tombol:hover{background:var(--eq-aksen-tipis,rgba(19,128,107,.12));
   border-color:var(--eq-garis,#E6EBF0)}
-.eq-akun-buka .eq-akun-tombol{background:var(--eq-aksen-tipis,rgba(245,124,0,.10));
+.eq-akun-buka .eq-akun-tombol{background:var(--eq-aksen-tipis,rgba(19,128,107,.12));
   border-color:var(--eq-garis,#E6EBF0)}
-.eq-akun-tombol:focus-visible{outline:2px solid var(--eq-aksen,#F36F0F);outline-offset:3px}
+.eq-akun-tombol:focus-visible{outline:2px solid var(--eq-aksen,#13806B);outline-offset:3px}
 
 /* Pembungkus avatar. Titik hijaunya berjangkar ke SINI, bukan ke
    tombolnya: sejak tombolnya melebar, `right:0` pada tombol menaruh
@@ -1754,8 +1760,8 @@ main a{transition:color .16s}
 
 .eq-akun-avatar{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;
   font-size:13px;font-weight:800;letter-spacing:.01em;color:#fff;
-  background:linear-gradient(140deg,var(--eq-aksen,#F36F0F),var(--eq-aksen-gelap,#C75F00));
-  box-shadow:0 2px 10px -2px rgba(245,124,0,.5)}
+  background:linear-gradient(140deg,var(--eq-aksen,#13806B),var(--eq-aksen-gelap,#0F6B59));
+  box-shadow:0 2px 10px -2px color-mix(in srgb,var(--eq-aksen) 50%,transparent)}
 .eq-akun-foto{object-fit:cover}
 .eq-akun-avatar-besar{width:42px;height:42px;font-size:14px;flex:none}
 
@@ -1779,9 +1785,9 @@ main a{transition:color .16s}
   border:0;border-radius:9px;background:none;font:inherit;font-size:12.5px;font-weight:600;
   text-align:left;cursor:pointer;text-decoration:none;color:var(--eq-teks,#44505C)}
 .eq-akun-butir svg{width:16px;height:16px;flex:none;opacity:.65}
-.eq-akun-butir:hover{background:var(--eq-aksen-tipis,rgba(245,124,0,.10));
+.eq-akun-butir:hover{background:var(--eq-aksen-tipis,rgba(19,128,107,.12));
   color:var(--eq-judul,#0F1720)}
-.eq-akun-butir:focus-visible{outline:2px solid var(--eq-aksen,#F36F0F);outline-offset:-2px}
+.eq-akun-butir:focus-visible{outline:2px solid var(--eq-aksen,#13806B);outline-offset:-2px}
 .eq-akun-keluar:hover{background:rgba(220,38,38,.10);color:#B91C1C}
 
 :root[data-tema="gelap"] .eq-akun-nama strong{color:var(--eq-judul,#E8ECF0)}
@@ -1815,7 +1821,7 @@ main a{transition:color .16s}
    bawah kartu itulah yang hendak dihilangkan. */
 .eq-sisi-kartu{position:relative;flex:1 1 auto;min-height:0;margin-top:12px;
   display:flex;flex-direction:column;justify-content:flex-end;
-  border-radius:14px 14px 0 0;overflow:hidden;background:#0A1114}
+  border-radius:14px 14px 0 0;overflow:hidden;background:#072420}
 
 /* Kartu tanpa gambar adalah kotak gelap tanpa isi: saat semboyannya
    disembunyikan, latar dan sudutnya ikut dilepas sehingga yang tersisa
@@ -1825,16 +1831,13 @@ body.eq-sempit .eq-sisi-bawah{background:none}
 
 .eq-semboyan{position:relative;overflow:hidden;
   flex:1 1 auto;min-height:132px;
-  display:flex;flex-direction:column;justify-content:flex-end;
-  padding:13px 14px 14px;isolation:isolate;background:#0A1114}
-.eq-semboyan-gambar{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
-  object-position:62% 30%;z-index:-2}
-.eq-semboyan-tirai{position:absolute;inset:0;z-index:-1;
-  background:linear-gradient(0deg,rgba(8,14,17,.93) 18%,rgba(8,14,17,.55) 58%,rgba(8,14,17,.2) 100%)}
-.eq-semboyan-teks{margin:0;font-size:12.5px;font-weight:800;line-height:1.34;color:#fff;
-  letter-spacing:-.01em;text-shadow:0 1px 10px rgba(0,0,0,.5)}
-.eq-semboyan-garis{display:block;width:52px;height:3px;margin-top:9px;border-radius:999px;
-  background:var(--eq-aksen,#F36F0F)}
+  /* Kontur topografi (garis tinggi satu medan, tidak pernah saling
+     memotong) di atas teal hitam merek, dengan pendar zaitun di kaki. */
+  background:
+    radial-gradient(120% 70% at 0% 100%,rgba(169,207,94,.16),transparent 62%),
+    radial-gradient(90% 60% at 100% 0%,rgba(19,128,107,.22),transparent 65%),
+    url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 1000' preserveAspectRatio='xMidYMid slice'><g fill='none' stroke='%23FFFFFF' stroke-linejoin='round' vector-effect='non-scaling-stroke'><path stroke-opacity='.05' stroke-width='1' vector-effect='non-scaling-stroke' d='M0 778Q25 760 42 755Q58 750 75 751Q92 752 108 759Q124 767 139 779Q153 792 165 808Q176 825 185 846Q193 867 195 883Q197 900 195 912Q193 925 187 938Q180 950 171 958Q161 967 147 973Q133 979 117 982Q100 985 83 984Q67 984 48 979Q29 975 15 968L0 961M0 719Q50 700 75 702Q100 703 124 714Q148 725 170 745Q192 765 214 799Q236 833 248 867Q260 900 261 917Q263 933 262 946Q260 958 250 979L239 1000M0 676Q58 659 83 661Q108 663 133 674Q158 686 182 705Q205 725 232 759Q258 792 281 834Q303 875 312 908Q321 942 319 971L316 1000M0 638Q50 624 79 625Q108 627 137 638Q166 650 191 670Q217 690 252 732Q288 775 317 821Q345 867 358 900Q370 933 372 967L373 1000M0 570Q67 559 96 562Q125 565 154 576Q183 588 212 609Q242 631 296 690Q349 750 387 800Q424 850 440 888Q456 925 461 962L465 1000M0 538Q75 529 108 534Q142 538 171 551Q200 563 229 585Q258 607 332 687Q406 767 434 804Q463 842 479 879Q496 917 500 938Q504 958 506 979L507 1000M0 507Q75 500 112 505Q150 510 183 524Q217 538 246 561Q275 583 359 671Q444 758 471 792Q498 825 509 846Q521 867 528 888Q536 908 540 929Q544 950 546 975L547 1000M0 476Q83 472 121 478Q158 483 192 496Q225 509 254 530Q283 551 384 651Q485 750 510 779Q535 808 547 829Q559 850 566 871Q574 892 580 917Q585 942 587 971L589 1000M0 413Q117 419 157 426Q198 433 228 445Q258 457 288 478Q317 498 379 557Q442 617 508 669Q575 722 596 744Q617 767 630 788Q643 808 653 833Q664 858 671 888Q678 917 683 958L689 1000M0 380Q183 399 208 405Q233 411 254 420Q275 428 304 448Q333 468 400 529Q467 591 546 645Q625 700 650 725Q674 750 692 779Q709 808 720 838Q731 867 749 933L766 1000M0 345Q58 356 142 366Q225 375 250 382Q275 389 295 399Q314 408 336 425Q358 441 400 481Q442 521 467 541Q492 561 571 606Q650 652 678 672Q706 692 731 717Q756 742 794 791Q833 840 850 852Q867 865 879 868Q892 871 904 870Q917 869 958 852L1000 835M0 306Q67 325 154 334Q242 342 275 351Q308 359 338 377Q367 394 417 442Q467 490 492 509Q517 528 546 544Q575 560 646 593Q716 625 779 662Q842 700 858 707Q875 714 896 718Q917 723 958 719L1000 715M0 76Q17 36 29 18L42 0M0 180Q15 208 27 221Q40 233 54 242Q69 250 89 256Q108 261 150 263Q192 264 258 255Q325 245 346 249Q367 253 388 270Q408 286 458 347Q508 408 528 425Q548 442 568 454Q589 467 623 482Q658 496 767 534Q875 571 908 578Q942 585 971 586L1000 587M129 0Q92 24 77 41Q63 58 56 75Q48 92 46 112Q44 133 48 150Q53 167 64 181Q75 195 92 204Q108 213 129 216Q150 219 171 217Q192 215 213 207Q233 200 252 188Q270 175 282 158Q293 142 297 125Q300 108 296 88Q291 67 279 47Q267 27 250 13L233 0M481 0Q448 108 446 129Q444 150 445 167Q446 183 452 208Q459 233 469 258Q479 283 493 308Q508 333 524 354Q541 375 573 400Q606 425 649 444Q692 463 792 495Q892 526 921 532Q950 537 975 538L1000 539M533 0Q509 108 509 150Q508 192 512 212Q516 233 524 254Q531 275 540 293Q550 311 562 327Q575 344 605 368Q635 392 680 412Q725 432 808 457Q892 483 921 488Q950 493 975 495L1000 496M572 0Q553 100 553 142Q553 183 563 221Q573 258 592 288Q610 317 639 339Q667 362 712 383Q758 403 829 424Q900 445 950 450L1000 456M641 0Q626 75 626 112Q626 150 635 183Q644 217 660 242Q677 267 703 288Q729 308 769 326Q808 344 862 358Q917 372 958 375L1000 378M675 0Q661 67 661 100Q660 133 668 162Q676 192 692 217Q709 242 733 261Q758 281 796 298Q833 314 879 325Q925 336 962 337L1000 338M711 0Q696 67 697 96Q697 125 705 150Q713 175 727 196Q742 217 767 236Q792 254 825 268Q858 282 896 289Q933 297 967 296L1000 296M752 0Q736 58 737 83Q737 108 744 129Q750 150 765 171Q780 192 802 208Q825 223 854 234Q883 245 912 249Q942 253 971 249L1000 246'/><path stroke-opacity='.1' stroke-width='1.5' vector-effect='non-scaling-stroke' d='M0 603Q58 590 88 593Q117 595 146 606Q175 618 202 638Q228 658 269 704Q310 750 347 804Q385 858 400 896Q415 933 419 967L422 1000M0 445Q100 445 138 451Q175 457 208 471Q242 484 271 505Q300 525 358 582Q417 639 475 691Q533 742 554 767Q576 792 588 812Q600 833 609 858Q619 883 624 912Q630 942 632 971L635 1000M0 258Q42 282 67 289Q92 296 121 299Q150 302 217 304Q283 305 308 310Q333 316 346 322Q358 328 373 339Q388 350 447 408Q506 467 540 489Q575 510 725 571Q875 631 904 637Q933 643 967 643L1000 643M608 0Q590 92 590 129Q590 167 599 200Q608 233 626 262Q645 292 672 314Q700 336 742 355Q783 373 846 391Q908 408 954 413L1000 417M807 0Q789 42 787 62Q785 83 791 104Q797 125 810 142Q822 158 842 171Q862 183 885 190Q908 196 933 195Q958 195 979 187L1000 178'/></g></svg>") center/cover no-repeat,
+    linear-gradient(180deg,#0B2E29 0%,#072420 100%)}
 
 /* Bilah yang dilipat tidak punya lebar untuk teksnya sama sekali. */
 body.eq-sempit .eq-semboyan{display:none}
@@ -1846,13 +1849,10 @@ body.eq-sempit .eq-semboyan{display:none}
    lapangan — meninggalkan sudut kiri bawah kosong, yang persis
    keadaan yang hendak diperbaikinya. */
 @media (max-height:820px){
-  .eq-semboyan{min-height:104px;padding:11px 12px 12px}
-  .eq-semboyan-teks{font-size:11.5px;line-height:1.3}
+  .eq-semboyan{min-height:104px}
 }
 @media (max-height:660px){
   .eq-semboyan{min-height:82px}
-  .eq-semboyan-teks{font-size:11px}
-  .eq-semboyan-garis{margin-top:7px;width:42px}
 }
 
 /* Di bawah ini menunya sendiri yang kehabisan ruang, dan hiasan tidak
@@ -1878,9 +1878,9 @@ body.eq-sempit .eq-semboyan{display:none}
 
 .eq-perusahaan-tombol{cursor:pointer;font-family:inherit;text-align:left;
   transition:border-color .15s ease,box-shadow .15s ease}
-.eq-perusahaan-tombol:hover{border-color:var(--eq-aksen,#F36F0F)}
-.eq-perusahaan-tombol:focus-visible{outline:none;border-color:var(--eq-aksen,#F36F0F);
-  box-shadow:0 0 0 3px rgba(245,124,0,.13)}
+.eq-perusahaan-tombol:hover{border-color:var(--eq-aksen,#13806B)}
+.eq-perusahaan-tombol:focus-visible{outline:none;border-color:var(--eq-aksen,#13806B);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--eq-aksen) 13%,transparent)}
 
 .eq-perusahaan-panah{width:14px;height:14px;margin-left:auto;opacity:.5;
   color:var(--eq-judul,#0F1720);transition:transform .18s ease}
@@ -1901,12 +1901,12 @@ body.eq-sempit .eq-semboyan{display:none}
 .eq-perusahaan-butir{display:block;width:100%;padding:8px 11px;border:0;border-radius:9px;
   background:none;font:inherit;font-size:12.5px;font-weight:600;text-align:left;cursor:pointer;
   color:var(--eq-teks,#44505C);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.eq-perusahaan-butir:hover{background:var(--eq-aksen-tipis,rgba(245,124,0,.10));
+.eq-perusahaan-butir:hover{background:var(--eq-aksen-tipis,rgba(19,128,107,.12));
   color:var(--eq-judul,#0F1720)}
-.eq-perusahaan-butir:focus-visible{outline:2px solid var(--eq-aksen,#F36F0F);outline-offset:-2px}
+.eq-perusahaan-butir:focus-visible{outline:2px solid var(--eq-aksen,#13806B);outline-offset:-2px}
 
-.eq-perusahaan-kini{background:var(--eq-aksen-tipis,rgba(245,124,0,.13));
-  color:var(--eq-aksen,#F36F0F)}
+.eq-perusahaan-kini{background:var(--eq-aksen-tipis,rgba(19,128,107,.12));
+  color:var(--eq-aksen,#13806B)}
 
 :root[data-tema="gelap"] .eq-perusahaan-daftar{
   background:var(--eq-kartu,#141A21);
@@ -1945,7 +1945,7 @@ body.eq-sempit .eq-semboyan{display:none}
    tanpa satu bita pun tambahan. Disembunyikan di layar sempit, tempat
    ia hanya menutupi tombolnya. */
 .miners-hero::after{content:"";position:absolute;top:0;right:0;bottom:0;width:38%;
-  background:linear-gradient(115deg,transparent 0 38%,rgba(245,124,0,.10) 38% 62%,rgba(245,124,0,.20) 62%);
+  background:linear-gradient(115deg,transparent 0 38%,color-mix(in srgb,var(--eq-aksen) 10%,transparent) 38% 62%,color-mix(in srgb,var(--eq-aksen) 20%,transparent) 62%);
   pointer-events:none}
 @media (max-width:900px){.miners-hero::after{display:none}}
 
@@ -1981,9 +1981,9 @@ body.eq-sempit .eq-semboyan{display:none}
 /* Kaki kartu: tautan, bukan hiasan. Tiap kartu ringkasan menjawab
    sebagian pertanyaan; barisnya selalu ada di halaman lain. */
 .miners-kaki{display:flex;align-items:center;justify-content:space-between;
-  padding:11px 18px;font-size:12px;font-weight:700;color:var(--eq-aksen,#F36F0F);
+  padding:11px 18px;font-size:12px;font-weight:700;color:var(--eq-aksen,#13806B);
   border-top:1px solid var(--eq-garis,#EFEBE4);transition:background .15s}
-.miners-kaki:hover{background:var(--eq-lembut,rgba(245,124,0,.06))}
+.miners-kaki:hover{background:var(--eq-lembut,color-mix(in srgb,var(--eq-aksen) 6%,transparent))}
 
 .miners-donat{width:104px;height:104px;flex:none}
 .miners-donat-angka{font-size:8.5px;font-weight:800;text-anchor:middle;
@@ -2007,7 +2007,7 @@ body.eq-sempit .eq-semboyan{display:none}
 .miners-ubin{display:flex;align-items:center;gap:13px;padding:16px 18px;border-radius:18px;
   background:var(--eq-kartu,#fff);border:1px solid var(--eq-garis,#EFEBE4);
   box-shadow:0 1px 2px rgba(16,24,40,.04);transition:border-color .15s,transform .15s}
-.miners-ubin:hover{border-color:var(--eq-aksen,#F36F0F);transform:translateY(-1px)}
+.miners-ubin:hover{border-color:var(--eq-aksen,#13806B);transform:translateY(-1px)}
 .miners-ubin-angka{display:block;font-size:24px;font-weight:800;line-height:1}
 .miners-ubin-label{display:block;font-size:11.5px;color:var(--eq-redup,#7C8894);margin-top:3px}
 
@@ -2034,8 +2034,8 @@ body.eq-sempit .eq-semboyan{display:none}
   color:var(--eq-judul,#0F1720);border:1px solid var(--eq-garis,#E4E8EC);
   background:var(--eq-kartu,#fff);transition:border-color .15s,box-shadow .15s}
 .beli-isian::placeholder{color:var(--eq-redup,#9AA5B1)}
-.beli-isian:focus{outline:none;border-color:var(--eq-aksen,#F36F0F);
-  box-shadow:0 0 0 3px rgba(245,124,0,.13)}
+.beli-isian:focus{outline:none;border-color:var(--eq-aksen,#13806B);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--eq-aksen) 13%,transparent)}
 
 /* Tombol tambah/kurang. min-width menjaga agar angkanya tidak menggeser
    tombolnya saat berubah dari 9 ke 10. */
@@ -2043,7 +2043,7 @@ body.eq-sempit .eq-semboyan{display:none}
   display:grid;place-items:center;font-size:15px;line-height:1;font-weight:700;
   color:var(--eq-judul,#0F1720);border:1px solid var(--eq-garis,#E4E8EC);
   background:var(--eq-kartu,#fff);cursor:pointer;transition:.15s}
-.beli-plusmin:hover{border-color:var(--eq-aksen,#F36F0F);color:var(--eq-aksen,#F36F0F)}
+.beli-plusmin:hover{border-color:var(--eq-aksen,#13806B);color:var(--eq-aksen,#13806B)}
 
 :root[data-tema="gelap"] .beli-isian,
 :root[data-tema="gelap"] .beli-plusmin{

@@ -92,7 +92,7 @@ async function hapusLogo() {
           <label class="block text-[12px] font-semibold text-cam-ink mb-1.5">Perusahaan yang dibuka</label>
           <select v-if="daftar.length" v-model="pilih" @change="bukaPerusahaan(pilih!)"
                   class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]
-                         focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0" aria-label="Perusahaan yang dibuka">
+                         focus:border-[color:var(--eq-aksen,#13806B)] focus:ring-0" aria-label="Perusahaan yang dibuka">
             <option v-for="c in daftar" :key="c.id" :value="c.id">{{ c.nama }}</option>
           </select>
           <p v-else class="text-[12.5px] text-stone-400">Belum ada perusahaan terdaftar.</p>
@@ -112,14 +112,14 @@ async function hapusLogo() {
           </label>
           <input v-model="tambah.name" type="text" placeholder="PT Contoh Tambang"
                  class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]
-                        focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0">
+                        focus:border-[color:var(--eq-aksen,#13806B)] focus:ring-0">
           <p v-if="tambah.errors.name" class="text-[11.5px] text-red-600 mt-1">{{ tambah.errors.name }}</p>
         </div>
         <div>
           <label class="block text-[12px] font-semibold text-cam-ink mb-1.5">Kode</label>
           <input v-model="tambah.code" type="text" placeholder="PCT"
                  class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]
-                        focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0">
+                        focus:border-[color:var(--eq-aksen,#13806B)] focus:ring-0">
         </div>
         <button type="button" :disabled="tambah.processing || !tambah.name.trim()" @click="simpanBaru"
                 class="eq-btn-utama disabled:opacity-40 disabled:cursor-not-allowed"
@@ -205,7 +205,7 @@ async function hapusLogo() {
           <input v-model="form[m.nama]" type="text" :disabled="!bisaUbah(m)"
                  class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]
                         disabled:bg-stone-50 disabled:text-stone-500
-                        focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0">
+                        focus:border-[color:var(--eq-aksen,#13806B)] focus:ring-0">
           <p v-if="form.errors[m.nama]" class="text-[11.5px] text-red-600 mt-1">
             {{ form.errors[m.nama] }}
           </p>
@@ -216,7 +216,7 @@ async function hapusLogo() {
           <textarea v-model="form.address" rows="3" :disabled="!bisaSunting"
                     class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]
                            disabled:bg-stone-50 disabled:text-stone-500
-                           focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0"></textarea>
+                           focus:border-[color:var(--eq-aksen,#13806B)] focus:ring-0"></textarea>
         </div>
       </div>
 

@@ -75,7 +75,7 @@ const label = 'block text-[12px] font-semibold text-cam-ink mb-1.5';
         <div class="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           <label v-for="s in opsi.syarat" :key="s.kunci" class="inline-flex items-center gap-2.5 cursor-pointer">
             <input v-model="form[s.kunci]" type="checkbox"
-                   class="rounded border-stone-300 accent-[color:var(--eq-aksen,#F57C00)]">
+                   class="rounded border-stone-300 accent-[color:var(--eq-aksen,#13806B)]">
             <span class="text-[12.5px] text-stone-600">{{ s.label }}</span>
           </label>
         </div>

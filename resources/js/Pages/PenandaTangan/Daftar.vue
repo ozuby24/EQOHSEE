@@ -87,7 +87,7 @@ const kecil = 'ring-focus rounded-lg border border-stone-200 px-3 py-2 text-[12.
 
       <label class="flex items-center gap-1.5 text-[12px] text-stone-600 cursor-pointer">
         <input v-model="baru.is_active" type="checkbox"
-               class="rounded border-stone-300 accent-[color:var(--eq-aksen,#F57C00)]">
+               class="rounded border-stone-300 accent-[color:var(--eq-aksen,#13806B)]">
         Aktif
       </label>
 

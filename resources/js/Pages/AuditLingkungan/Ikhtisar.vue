@@ -381,7 +381,7 @@ const warnaPeringkat = computed(() =>
           </template>
         </dl>
         <p v-else class="text-[12px]" style="color: var(--akl-tinta-3)">
-          Profil belum diisi. <a :href="tautan.ubah" class="font-bold hover:underline" style="color: #DC6E00">Lengkapi →</a>
+          Profil belum diisi. <a :href="tautan.ubah" class="font-bold hover:underline" style="color: var(--eq-aksen-gelap)">Lengkapi →</a>
         </p>
 
         <template v-if="a.catatan">

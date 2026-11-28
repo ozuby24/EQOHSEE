@@ -79,7 +79,7 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
         </div>
         <label class="flex items-center gap-2.5 text-[13px] text-stone-600 cursor-pointer">
           <input v-model="form.require_code" type="checkbox"
-                 class="rounded border-stone-300 accent-[color:var(--eq-aksen,#F57C00)]">
+                 class="rounded border-stone-300 accent-[color:var(--eq-aksen,#13806B)]">
           <span class="font-semibold">Wajib memasukkan kode untuk mengambil kursus</span>
         </label>
         <p class="text-[11px] text-stone-400 leading-relaxed">
@@ -98,12 +98,12 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
         <div class="flex flex-col justify-end gap-2 pb-1">
           <label class="flex items-center gap-2.5 text-[13px] text-stone-600 cursor-pointer">
             <input v-model="form.auto_certificate" type="checkbox"
-                   class="rounded border-stone-300 accent-[color:var(--eq-aksen,#F57C00)]">
+                   class="rounded border-stone-300 accent-[color:var(--eq-aksen,#13806B)]">
             <span class="font-semibold">Terbitkan sertifikat otomatis</span>
           </label>
           <label class="flex items-center gap-2.5 text-[13px] text-stone-600 cursor-pointer">
             <input v-model="form.require_evaluation" type="checkbox"
-                   class="rounded border-stone-300 accent-[color:var(--eq-aksen,#F57C00)]">
+                   class="rounded border-stone-300 accent-[color:var(--eq-aksen,#13806B)]">
             <span class="font-semibold">Tunggu evaluasi trainer</span>
           </label>
         </div>

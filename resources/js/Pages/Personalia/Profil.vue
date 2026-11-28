@@ -74,7 +74,7 @@ async function hapusFoto() {
         <img v-if="foto" :src="foto" alt=""
              class="w-20 h-20 rounded-full object-cover border border-stone-200">
         <span v-else class="w-20 h-20 rounded-full grid place-items-center text-white text-2xl font-black"
-              style="background:linear-gradient(135deg,var(--eq-aksen,#F57C00),#FF9800)">
+              style="background:linear-gradient(135deg,var(--eq-aksen,#13806B),var(--eq-aksen-terang))">
           {{ inisial }}
         </span>
 
@@ -104,7 +104,7 @@ async function hapusFoto() {
           </label>
           <input v-model="form[m.nama]" :type="m.tipe"
                  class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]
-                        focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0">
+                        focus:border-[color:var(--eq-aksen,#13806B)] focus:ring-0">
           <p v-if="form.errors[m.nama]" class="text-[11.5px] text-red-600 mt-1">
             {{ form.errors[m.nama] }}
           </p>
@@ -115,7 +115,7 @@ async function hapusFoto() {
           <textarea v-model="form.bio" rows="3" maxlength="300"
                     placeholder="Ringkasan peran atau kompetensi Anda."
                     class="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-[13px]
-                           focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0"></textarea>
+                           focus:border-[color:var(--eq-aksen,#13806B)] focus:ring-0"></textarea>
           <p v-if="form.errors.bio" class="text-[11.5px] text-red-600 mt-1">{{ form.errors.bio }}</p>
         </div>
       </div>
@@ -135,7 +135,7 @@ async function hapusFoto() {
             </p>
           </div>
           <Link :href="urlPerusahaan" class="ml-auto text-[12px] font-semibold shrink-0"
-                style="color:var(--eq-aksen,#F57C00)">Lihat &rarr;</Link>
+                style="color:var(--eq-aksen,#13806B)">Lihat &rarr;</Link>
         </div>
       </div>
 

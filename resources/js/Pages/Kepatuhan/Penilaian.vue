@@ -18,6 +18,7 @@ import { Head, router, useForm } from '@inertiajs/vue3';
 import type { HalamanKepatuhanPenilaian } from '../../types';
 import Dialog from '../../Components/Dialog.vue';
 import { useDialog } from '../../dialog';
+import IkonLapangan from '../../Components/IkonLapangan.vue';
 
 const { dialog, tanya, batal, lanjut } = useDialog();
 
@@ -183,7 +184,7 @@ const label = 'block text-[10.5px] font-bold uppercase tracking-wide text-stone-
 
       <div v-if="s.berkas.length" class="flex flex-wrap gap-2 mt-3">
         <a v-for="(f, n) in s.berkas" :key="n" :href="f" target="_blank" rel="noopener"
-           class="eq-btn-mini">📎 Salinan {{ n + 1 }}</a>
+           class="eq-btn-mini"><IkonLapangan nama="klip" :ukuran="13" class="inline-block align-[-2px] mr-1" />Salinan {{ n + 1 }}</a>
       </div>
     </div>
 
@@ -243,7 +244,7 @@ const label = 'block text-[10.5px] font-bold uppercase tracking-wide text-stone-
 
                 <td class="kpt-k-aksi">
                   <button type="button" class="kpt-ikon" aria-label="Nilai butir" @click="buka(b)">✎</button>
-                  <button type="button" class="kpt-ikon bahaya" aria-label="Hapus butir" @click="hapus(b.urlHapus)">🗑</button>
+                  <button type="button" class="kpt-ikon bahaya" aria-label="Hapus butir" @click="hapus(b.urlHapus)"><IkonLapangan nama="sampah" :ukuran="15" /></button>
                 </td>
               </tr>
 
@@ -398,14 +399,14 @@ const label = 'block text-[10.5px] font-bold uppercase tracking-wide text-stone-
 .is-ok     { background: #16A34A; color: #fff; }
 .is-nok    { background: #DC2626; color: #fff; }
 .is-na     { background: #E7E5E4; color: #57534E; }
-.is-kosong { background: #FFF2E2; color: #B45309; }
+.is-kosong { background: var(--eq-aksen-tipis); color: #B45309; }
 
 .kpt-ikon {
   border: 1px solid #E7E5E4; background: #fff; border-radius: .5rem;
   width: 1.65rem; height: 1.65rem; font-size: 11px; color: #57534E;
   transition: border-color .16s, color .16s, background-color .16s;
 }
-.kpt-ikon:hover { border-color: #DC6E00; color: #DC6E00; }
+.kpt-ikon:hover { border-color: var(--eq-aksen-gelap); color: var(--eq-aksen-gelap); }
 .kpt-ikon.bahaya:hover { border-color: #DC2626; color: #DC2626; background: #FEF2F2; }
 
 .kpt-sunting > td { background: #FAFAF9; border-bottom: 2px solid #E7E5E4; padding: 1rem; }

@@ -26,7 +26,7 @@ const kpi = [
   { label: 'Total dokumen',  nilai: props.stat.total,   warna: 'currentColor' },
   { label: 'Berlaku',        nilai: props.stat.berlaku, warna: '#22C55E' },
   { label: 'Draft',          nilai: props.stat.draft,   warna: '#9AA3AE' },
-  { label: 'Perlu ditinjau', nilai: props.stat.lewat,   warna: '#F57C00' },
+  { label: 'Perlu ditinjau', nilai: props.stat.lewat,   warna: '#D97706' },
 ];
 
 const isian = 'ring-focus rounded-xl border border-stone-200 px-3.5 py-2.5 text-[12.5px] font-semibold text-stone-600 transition';

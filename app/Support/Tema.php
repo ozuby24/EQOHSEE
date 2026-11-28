@@ -14,8 +14,9 @@ use App\Models\User;
  */
 final class Tema
 {
-    public const BAWAAN_TERANG = '#F57C00';
-    public const BAWAAN_GELAP  = '#0B1117';
+    /* Teal dan teal hitam merek EQOHSEE (Deep Teal #0F4C45 keluarga). */
+    public const BAWAAN_TERANG = '#13806B';
+    public const BAWAAN_GELAP  = '#072420';
 
     /** 'terang', 'gelap', atau null bila mengikuti setelan perangkat. */
     public static function pilihan(?User $u): ?string
@@ -48,8 +49,10 @@ final class Tema
         $dasar = self::dasar($u);
 
         return sprintf(
-            '--eq-aksen:%s;--eq-aksen-lembut:%s;--eq-aksen-tipis:%s;--eq-dasar:%s;',
+            '--eq-aksen:%s;--eq-aksen-gelap:%s;--eq-aksen-terang:%s;--eq-aksen-lembut:%s;--eq-aksen-tipis:%s;--eq-dasar:%s;',
             $aksen,
+            self::campur($aksen, '#000000', 0.2),
+            self::campur($aksen, '#FFFFFF', 0.22),
             self::campur($aksen, '#FFFFFF', 0.35),
             self::rgba($aksen, 0.12),
             $dasar

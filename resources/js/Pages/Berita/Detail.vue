@@ -71,9 +71,9 @@ function tandaiBaca() {
 
       <a v-if="berita.lampiran" :href="berita.lampiran.url"
          class="mt-7 flex items-center gap-3 rounded-2xl border border-stone-200 px-4 py-3
-                hover:border-[color:var(--eq-aksen,#F57C00)]/50 transition">
+                hover:border-[color:var(--eq-aksen,#13806B)]/50 transition">
         <span class="w-9 h-9 shrink-0 grid place-items-center rounded-xl
-                     text-[color:var(--eq-aksen,#D96500)] bg-[color:var(--eq-aksen,#F57C00)]/12"
+                     text-[color:var(--eq-aksen-gelap,#0F6B59)] bg-[color:var(--eq-aksen,#13806B)]/12"
               aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                stroke-linecap="round" stroke-linejoin="round" class="w-[18px] h-[18px]">

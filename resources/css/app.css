@@ -176,9 +176,9 @@ th{ white-space:nowrap; }
    Teal + Coral + Sand di atas charcoal. Gradien merek berangkat dari
    charcoal, bukan dari teal, supaya bidang gelapnya terbaca tenang dan
    tealnya muncul sebagai cahaya — itu yang memberi kesan mahal. */
-.brand-gradient{ background:linear-gradient(160deg,#0B1117 0%,#141C25 55%,#1B2530 100%); }
-.lime-gradient { background:linear-gradient(135deg,#DC6E00 0%,#FF9800 100%); }
-.coral-gradient{ background:linear-gradient(135deg,#E2663A 0%,#FF7F50 100%); }
+.brand-gradient{ background:linear-gradient(160deg,#072420 0%,#0A2924 55%,#0F332D 100%); }
+.lime-gradient { background:linear-gradient(135deg,var(--eq-aksen-gelap) 0%,var(--eq-aksen-terang) 100%); }
+.coral-gradient{ background:linear-gradient(135deg,var(--eq-aksen-gelap) 0%,#FF7F50 100%); }
 .sand-gradient { background:linear-gradient(135deg,#F5E6CA 0%,#F3EFE6 100%); }
 
 /* Garis rambut emas-pasir: pemisah tipis yang menaikkan kesan bahan. */
@@ -232,7 +232,7 @@ th{ white-space:nowrap; }
 }
 
 /* ---------- Navigasi ---------- */
-.nav-active{ background:linear-gradient(135deg,rgba(245,124,0,.22),rgba(255,152,0,.08)); color:#fff; }
+.nav-active{ background:linear-gradient(135deg,color-mix(in srgb,var(--eq-aksen) 22%,transparent),color-mix(in srgb,var(--eq-aksen-terang) 8%,transparent)); color:#fff; }
 .nav-active .nav-accent{ opacity:1; }
 
 /* ---------- Kartu ---------- */
@@ -240,7 +240,7 @@ th{ white-space:nowrap; }
 .card-hover:hover{ transform:translateY(-4px); }
 
 /* ---------- Fokus input ---------- */
-.ring-focus:focus{ box-shadow:0 0 0 3px rgba(245,124,0,.22); border-color:#F57C00; }
+.ring-focus:focus{ box-shadow:0 0 0 3px color-mix(in srgb,var(--eq-aksen) 22%,transparent); border-color:var(--eq-aksen); }
 
 /* ---------- Animasi ---------- */
 @keyframes fadeUp{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
@@ -271,7 +271,7 @@ th{ white-space:nowrap; }
   font-size:30px;
   letter-spacing:-.022em;
   line-height:1.1;
-  color:#0B1117;
+  color:#072420;
 }
 .auth-ket{ font-size:13.5px; line-height:1.55; color:#5E6875; margin-top:6px; }
 .auth-label{
@@ -283,18 +283,18 @@ th{ white-space:nowrap; }
   padding:.7rem 1rem; font-size:15px; color:#0F1720;
   transition:border-color .15s, box-shadow .15s;
 }
-.auth-isian:focus{ outline:none; border-color:#F57C00; box-shadow:0 0 0 3px rgba(245,124,0,.18); }
+.auth-isian:focus{ outline:none; border-color:var(--eq-aksen); box-shadow:0 0 0 3px color-mix(in srgb,var(--eq-aksen) 18%,transparent); }
 .auth-tombol{
   width:100%; min-height:50px; display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
-  border-radius:.75rem; background:#F57C00; color:#0B1117; font-size:15px; font-weight:700;
+  border-radius:.75rem; background:var(--eq-aksen); color:#FFFFFF; font-size:15px; font-weight:700;
   transition:background-color .15s, transform .15s, box-shadow .15s;
-  box-shadow:0 10px 24px -14px rgba(245,124,0,.7);
+  box-shadow:0 10px 24px -14px color-mix(in srgb,var(--eq-aksen) 70%,transparent);
 }
-.auth-tombol:hover{ background:#FF9800; }
+.auth-tombol:hover{ background:var(--eq-aksen-terang); }
 .auth-tombol:active{ transform:translateY(1px); }
 .auth-tombol:disabled{ opacity:.6; cursor:wait; }
 .auth-tautan{ font-weight:700; color:#A85400; text-decoration:underline; text-underline-offset:3px; text-decoration-color:rgba(168,84,0,.35); }
-.auth-tautan:hover{ color:#0B1117; text-decoration-color:currentColor; }
+.auth-tautan:hover{ color:#072420; text-decoration-color:currentColor; }
 
 /* ---------- Sistem angka (rata & proporsional) ---------- */
 .num{ font-variant-numeric:tabular-nums lining-nums; font-feature-settings:'tnum' 1,'lnum' 1; }
@@ -466,8 +466,8 @@ input,select,textarea{ outline:none; }
 .aurora::before{
   content:""; position:absolute; inset:-40%; z-index:-1;
   background:
-    radial-gradient(38% 42% at 24% 48%, rgba(245,124,0,.16), transparent 62%),
-    radial-gradient(32% 38% at 78% 56%, rgba(255,152,0,.10), transparent 64%),
+    radial-gradient(38% 42% at 24% 48%, color-mix(in srgb,var(--eq-aksen) 16%,transparent), transparent 62%),
+    radial-gradient(32% 38% at 78% 56%, color-mix(in srgb,var(--eq-aksen-terang) 10%,transparent), transparent 64%),
     radial-gradient(44% 44% at 54% 74%, rgba(30,42,56,.55), transparent 66%);
   filter: blur(38px);
   animation: aurora 22s ease-in-out infinite alternate;
@@ -496,15 +496,15 @@ input,select,textarea{ outline:none; }
 .pendar-rekaman::before{      /* pendar hangat, bergerak */
   content:""; position:absolute; inset:-30%; z-index:1; pointer-events:none;
   background:
-    radial-gradient(42% 40% at 72% 16%, rgba(245,124,0,.26), transparent 66%),
-    radial-gradient(36% 34% at 24% 76%, rgba(255,152,0,.13), transparent 68%);
+    radial-gradient(42% 40% at 72% 16%, color-mix(in srgb,var(--eq-aksen) 26%,transparent), transparent 66%),
+    radial-gradient(36% 34% at 24% 76%, color-mix(in srgb,var(--eq-aksen-terang) 13%,transparent), transparent 68%);
   filter: blur(46px);
   animation: aurora 26s ease-in-out infinite alternate;
 }
 
 .pendar-rekaman::after{       /* vinyet, diam */
   content:""; position:absolute; inset:0; z-index:1; pointer-events:none;
-  background: radial-gradient(120% 96% at 50% 50%, transparent 42%, rgba(11,17,23,.72) 100%);
+  background: radial-gradient(120% 96% at 50% 50%, transparent 42%, rgba(7,36,32,.72) 100%);
 }
 
 /* Isi panel diangkat lewat kelasnya sendiri di templat (relative z-10),
@@ -591,7 +591,7 @@ input,select,textarea{ outline:none; }
    bergeser ke arah palet. Inilah yang membuat foto stok terbaca sebagai
    bagian dari mereknya, bukan sebagai gambar yang ditempel. */
 .grade-tambang-lapis{
-  background:linear-gradient(118deg,#F57C00 0%,#1B2422 46%,#2E2E2E 68%,#E2663A 100%);
+  background:linear-gradient(118deg,var(--eq-aksen) 0%,#1B2422 46%,#2E2E2E 68%,var(--eq-aksen-gelap) 100%);
   mix-blend-mode:soft-light;
   opacity:.55;
 }
@@ -657,7 +657,7 @@ input,select,textarea{ outline:none; }
   animation: sheen 7s ease-in-out infinite;
 }
 /* Varian untuk latar terang. */
-.sheen-ink{ --sheen-base:#0B1117; --sheen-hi:#B8BEC5; }
+.sheen-ink{ --sheen-base:#072420; --sheen-hi:#B7C0BA; }
 @keyframes sheen{
   0%,72% { background-position: 130% 0; }
   100%   { background-position: -30% 0; }
@@ -676,7 +676,7 @@ input,select,textarea{ outline:none; }
 /* ── Garis pemisah bergradien ── */
 .rule-grad{
   height:1px; border:0;
-  background:linear-gradient(90deg,transparent,rgba(245,124,0,.55),transparent);
+  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--eq-aksen) 55%,transparent),transparent);
 }
 
 /* ── Kartu kaca gelap ── */
@@ -897,8 +897,8 @@ input,select,textarea{ outline:none; }
   border-radius:99px;
   font-size:9.5px; font-weight:800;
   letter-spacing:.14em; text-transform:uppercase;
-  color:var(--eq-aksen, #D96500);
-  background:color-mix(in srgb, var(--eq-aksen, #F57C00) 13%, transparent);
+  color:var(--eq-aksen,#13806B);
+  background:color-mix(in srgb, var(--eq-aksen,#13806B) 13%, transparent);
 }
 
 /* ── gerak ── */

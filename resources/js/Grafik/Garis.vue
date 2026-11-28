@@ -25,7 +25,7 @@
  *   angka yang tidak ada.
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import { BINGKAI, ringkas, batasBulat, warnaDeret, AKSEN } from './warna';
+import { BINGKAI, ringkas, ringkasSumbu, skalaRapi, warnaDeret, AKSEN } from './warna';
 
 type Titik = number | null;
 
@@ -38,9 +38,15 @@ const props = withDefaults(defineProps<{
   /** Digambar sebagai bidang berwarna tipis; hanya untuk satu deret. */
   bidang?: boolean;
   tinggi?: number;
-}>(), { satuan: '', bidang: false, tinggi: 176 });
+  /**
+   * Bantalan kiri yang DITETAPKAN pemanggilnya. Untuk grafik kecil yang
+   * bersusun: sumbu waktunya hanya sejajar bila semuanya mulai di
+   * piksel yang sama, sedangkan bantalan yang dihitung dari label
+   * sumbunya sendiri berbeda antara "30 rb" dan "250 rb".
+   */
+  kiri?: number | null;
+}>(), { satuan: '', bidang: false, tinggi: 176, kiri: null });
 
-const P = { atas: 12, kanan: 12, bawah: 22, kiri: 44 };
 
 /* Pengenal unik per contoh komponen: dua grafik pada satu halaman yang
    memakai id landaian sama akan saling menimpa, dan yang kedua mewarisi
@@ -77,7 +83,7 @@ const L = computed(() => Math.max(240, lebar.value));
 
 /* Berapa label tanggal muat di sumbu datar: satu label ~48px. */
 const langkahLabel = computed(() => {
-  const muat = Math.max(2, Math.floor((L.value - P.kiri - P.kanan) / 48));
+  const muat = Math.max(2, Math.floor((L.value - P.value.kiri - P.value.kanan) / 48));
   return props.label.length <= muat ? 1 : Math.ceil(props.label.length / muat);
 });
 
@@ -86,20 +92,59 @@ const T = computed(() => props.tinggi);
 const warna = (i: number) =>
   props.deret[i]?.warna ?? (props.deret.length === 1 ? AKSEN : warnaDeret(i));
 
-const maks = computed(() => {
-  const semua = props.deret.flatMap(d => d.nilai).filter((v): v is number => v !== null);
+const terukur = computed(() =>
+  props.deret.flatMap(d => d.nilai).filter((v): v is number => v !== null && v !== undefined));
 
-  return batasBulat(semua.length ? Math.max(...semua) : 1);
+/* Langkah sumbu bulat, dan bulat-bilangan untuk data cacahan: deret
+   yang seluruh nilainya bilangan bulat tidak diberi tanda "2,5". */
+const skala = computed(() => {
+  const v = terukur.value;
+
+  return skalaRapi(v.length ? Math.max(...v) : 1, v.length > 0 && v.every(Number.isInteger));
 });
+
+const maks = computed(() => skala.value.batas);
+
+/** Tanda sumbu tegak, dari nol sampai ujungnya. */
+const tanda = computed(() => {
+  const { batas, langkah } = skala.value;
+  const n = Math.round(batas / langkah);
+
+  return Array.from({ length: n + 1 }, (_, i) => ({ nilai: i * langkah, teks: ringkasSumbu(i * langkah, batas) }));
+});
+
+/* Bantalan kiri selebar label sumbu terpanjang, bukan 44px yang tetap:
+   "250 rb" dan "1,5 jt" lebih lebar daripada "25", dan label yang
+   melewati tepi kiri kanvas terpotong tanpa tanda apa pun. Satu angka
+   10px ≈ 5,9px. */
+const P = computed(() => ({
+  atas: 12, kanan: 12, bawah: 22,
+  kiri: props.kiri ?? Math.max(30, Math.ceil(Math.max(...tanda.value.map(t => t.teks.length)) * 5.9) + 14),
+}));
 
 const x = (i: number) => {
   const n = Math.max(1, props.label.length - 1);
 
-  return P.kiri + (i / n) * (L.value - P.kiri - P.kanan);
+  return P.value.kiri + (i / n) * (L.value - P.value.kiri - P.value.kanan);
 };
 
 const y = (v: number) =>
-  P.atas + (1 - v / maks.value) * (T.value - P.atas - P.bawah);
+  P.value.atas + (1 - v / maks.value) * (T.value - P.value.atas - P.value.bawah);
+
+/**
+ * Posisi label tanggal. Label di ujung digeser ke dalam kanvas, bukan
+ * dibiarkan terpotong: "Nov 26" di titik terakhir berpusat 12px dari
+ * tepi kanan, dan separuh lebarnya melewati tepi itu.
+ */
+const posLabel = (i: number) => {
+  const w  = (props.label[i]?.length ?? 0) * 5.6;
+  const px = x(i);
+
+  if (px + w / 2 > L.value - 2) return { x: L.value - 2, anchor: 'end' };
+  if (px - w / 2 < 2)           return { x: 2, anchor: 'start' };
+
+  return { x: px, anchor: 'middle' };
+};
 
 /**
  * Jalur dipecah pada setiap lubang, bukan disambung melewatinya.
@@ -135,16 +180,16 @@ const jalurBidang = computed(() => {
 
   if (ada.length < 2) return '';
 
-  const dasar = T.value - P.bawah;
+  const dasar = T.value - P.value.bawah;
 
   return `M${ada[0][0]} ${dasar} `
     + ada.map(([px, py]) => `L${px.toFixed(1)} ${py.toFixed(1)}`).join(' ')
     + ` L${ada[ada.length - 1][0]} ${dasar} Z`;
 });
 
-/** Empat garis bantu; angkanya bulat karena sumbunya dibulatkan. */
+/** Garis bantu di tiap tanda sumbu; langkahnya bulat (skalaRapi). */
 const bantu = computed(() =>
-  [0, 0.25, 0.5, 0.75, 1].map(r => ({ r, nilai: maks.value * r, py: y(maks.value * r) })));
+  tanda.value.map((t, i) => ({ r: i, nilai: t.nilai, teks: t.teks, py: y(t.nilai) })));
 
 /* ── bidikan ── */
 
@@ -160,7 +205,7 @@ function arahkan(e: PointerEvent | FocusEvent) {
   const kotak = el.getBoundingClientRect();
   const px    = ((e.clientX - kotak.left) / kotak.width) * L.value;
   const n     = Math.max(1, props.label.length - 1);
-  const rasio = (px - P.kiri) / (L.value - P.kiri - P.kanan);
+  const rasio = (px - P.value.kiri) / (L.value - P.value.kiri - P.value.kanan);
 
   bidik.value = Math.min(props.label.length - 1, Math.max(0, Math.round(rasio * n)));
 }
@@ -205,11 +250,11 @@ const kosong = computed(() =>
 
       <text v-for="g in bantu" :key="'t' + g.r"
             :x="P.kiri - 8" :y="g.py + 3.5" text-anchor="end"
-            font-size="10" :fill="BINGKAI.redupTinta">{{ ringkas(g.nilai) }}</text>
+            font-size="10" :fill="BINGKAI.redupTinta">{{ g.teks }}</text>
 
       <text v-for="(l, i) in label" :key="'x' + i"
             v-show="i % langkahLabel === 0"
-            :x="x(i)" :y="T - 6" text-anchor="middle"
+            :x="posLabel(i).x" :y="T - 6" :text-anchor="posLabel(i).anchor"
             font-size="10" :fill="BINGKAI.redupTinta">{{ l }}</text>
 
       <!-- Bidang di bawah garis dibuat memudar ke bawah, bukan

@@ -13,7 +13,7 @@
  * sekaligus — bagian tumpukan dan garisnya — dalam satu keterangan.
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import { BINGKAI, ringkas, batasBulat, warnaDeret } from './warna';
+import { BINGKAI, ringkas, ringkasSumbu, skalaRapi, warnaDeret } from './warna';
 
 const props = withDefaults(defineProps<{
   label: string[];
@@ -25,7 +25,11 @@ const props = withDefaults(defineProps<{
   miring?: boolean;
 }>(), { garis: null, satuan: '', tinggi: 200, miring: false });
 
-const P = computed(() => ({ atas: 14, kanan: props.garis ? 40 : 12, bawah: props.miring ? 44 : 24, kiri: 40 }));
+/* Bantalan kiri selebar label sumbu terpanjang (lihat Garis.vue). */
+const P = computed(() => ({
+  atas: 14, kanan: props.garis ? 40 : 12, bawah: props.miring ? 44 : 24,
+  kiri: Math.max(30, Math.ceil(Math.max(...tanda.value.map(t => t.teks.length)) * 5.9) + 13),
+}));
 
 const wadah = ref<HTMLElement | null>(null);
 const lebar = ref(640);
@@ -45,7 +49,16 @@ const tebal = computed(() => Math.max(6, Math.min(38, lajur.value * 0.62)));
 const warna = (i: number) => props.deret[i]?.warna ?? warnaDeret(i);
 
 const jumlah = (i: number) => props.deret.reduce((a, d) => a + (d.nilai[i] ?? 0), 0);
-const maks = computed(() => batasBulat(Math.max(1, ...props.label.map((_, i) => jumlah(i)))));
+/* Langkah sumbu bulat (skalaRapi), bulat-bilangan untuk cacahan. */
+const skala = computed(() => skalaRapi(
+  Math.max(0, ...props.label.map((_, i) => jumlah(i))) || 1,
+  props.deret.every(d => d.nilai.every(v => v === null || v === undefined || Number.isInteger(v)))));
+const maks = computed(() => skala.value.batas);
+const tanda = computed(() => {
+  const { batas, langkah } = skala.value;
+  return Array.from({ length: Math.round(batas / langkah) + 1 },
+    (_, i) => ({ nilai: i * langkah, teks: ringkasSumbu(i * langkah, batas) }));
+});
 
 const cx = (i: number) => P.value.kiri + lajur.value * (i + 0.5);
 const y = (v: number) => P.value.atas + (1 - v / maks.value) * (T.value - P.value.atas - P.value.bawah);
@@ -72,7 +85,7 @@ const jalurGaris = computed(() => {
   return d;
 });
 
-const bantu = computed(() => [0, 0.25, 0.5, 0.75, 1].map(r => ({ r, nilai: maks.value * r, py: y(maks.value * r) })));
+const bantu = computed(() => tanda.value.map((t, i) => ({ r: i, nilai: t.nilai, teks: t.teks, py: y(t.nilai) })));
 const langkah = computed(() => { const muat = Math.max(2, Math.floor((L.value - 60) / (props.miring ? 26 : 46))); return n.value <= muat ? 1 : Math.ceil(n.value / muat); });
 
 const bidik = ref<number | null>(null);
@@ -92,7 +105,7 @@ const kosong = computed(() => !n.value || props.label.every((_, i) => jumlah(i) 
     <svg ref="svgEl" :viewBox="`0 0 ${L} ${T}`" class="w-full block" :style="{ height: T + 'px' }" role="img"
          :aria-label="`Grafik kolom: ${deret.map(d => d.nama).join(', ')}`" @pointermove="arahkan" @pointerleave="bidik = null">
       <line v-for="g in bantu" :key="g.r" :x1="P.kiri" :x2="L - P.kanan" :y1="g.py" :y2="g.py" :stroke="g.r === 0 ? BINGKAI.sumbu : BINGKAI.bantu" />
-      <text v-for="g in bantu" :key="'t' + g.r" :x="P.kiri - 7" :y="g.py + 3.5" text-anchor="end" font-size="10" :fill="BINGKAI.redupTinta">{{ ringkas(g.nilai) }}</text>
+      <text v-for="g in bantu" :key="'t' + g.r" :x="P.kiri - 7" :y="g.py + 3.5" text-anchor="end" font-size="10" :fill="BINGKAI.redupTinta">{{ g.teks }}</text>
       <template v-if="garis">
         <text v-for="r in [0, 50, 100]" :key="'k' + r" :x="L - P.kanan + 6" :y="yKanan(r) + 3.5" font-size="10" :fill="BINGKAI.redupTinta">{{ r }}%</text>
       </template>

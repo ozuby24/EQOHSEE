@@ -24,6 +24,8 @@ import { useDialog } from '../../dialog';
 import PindahBagian from './Pindah.vue';
 import { WARNA_BAGIAN } from './bantu';
 import './akl.css';
+import IkonLapangan from '../../Components/IkonLapangan.vue';
+import type { NamaIkon } from '../../lapangan/ikon';
 
 const props = defineProps<HalamanAuditLingkunganBagian>();
 
@@ -217,7 +219,7 @@ function hapusBukti(b: { kode: string; urlHapusBukti: string }, i: number, nama:
   });
 }
 
-const ikonBerkas = (nama: string) => (/\.(jpe?g|png|webp)$/i.test(nama) ? '🖼' : /\.pdf$/i.test(nama) ? '📄' : '📎');
+const ikonBerkas = (nama: string): NamaIkon => (/\.(jpe?g|png|webp)$/i.test(nama) ? 'galeri' : /\.pdf$/i.test(nama) ? 'dokumen' : 'klip');
 
 /* ═══════════ aksi kelompok ═══════════ */
 
@@ -235,7 +237,7 @@ function pilih(kode: string, kolom: 'nilai' | 'verifikasi', n: number) {
   isi[kode][kolom] = isi[kode][kolom] === n ? null : n;
 }
 
-const warnaBagian = computed(() => WARNA_BAGIAN[props.kini] ?? '#DC6E00');
+const warnaBagian = computed(() => WARNA_BAGIAN[props.kini] ?? '#13806B');
 </script>
 
 <template>
@@ -350,7 +352,7 @@ const warnaBagian = computed(() => WARNA_BAGIAN[props.kini] ?? '#DC6E00');
             <ul v-if="b.bukti.length" class="akb-bukti">
               <li v-for="(d, i) in b.bukti" :key="d.url">
                 <a :href="d.url" target="_blank" rel="noopener" :title="d.nama">
-                  <span aria-hidden="true">{{ ikonBerkas(d.nama) }}</span>{{ d.nama }}
+                  <IkonLapangan :nama="ikonBerkas(d.nama)" :ukuran="14" class="inline-block align-[-2px] mr-1" />{{ d.nama }}
                 </a>
                 <button type="button" class="akb-bukti-hapus" :aria-label="`Hapus ${d.nama}`"
                         @click="hapusBukti(b, i, d.nama)">×</button>
@@ -452,7 +454,7 @@ const warnaBagian = computed(() => WARNA_BAGIAN[props.kini] ?? '#DC6E00');
   border: 1px solid var(--akl-garis); background: var(--akl-permukaan); border-radius: .5rem;
   padding: .25rem .55rem; font-size: 10.5px; font-weight: 700; color: var(--akl-tinta-2); transition: border-color .16s, color .16s;
 }
-.akb-mini:hover { border-color: #DC6E00; color: #DC6E00; }
+.akb-mini:hover { border-color: var(--eq-aksen-gelap); color: var(--eq-aksen-gelap); }
 
 .akb-kolom, .akb-baris {
   display: grid; grid-template-columns: 26px minmax(0, 1fr) 148px 148px minmax(170px, .5fr);
@@ -484,7 +486,7 @@ const warnaBagian = computed(() => WARNA_BAGIAN[props.kini] ?? '#DC6E00');
 }
 .akb-seg button:hover { border-color: #A8A29E; color: var(--akl-tinta); }
 .akb-seg button:active { transform: scale(.94); }
-.akb-seg button:focus-visible { outline: 2px solid #F57C00; outline-offset: 1px; }
+.akb-seg button:focus-visible { outline: 2px solid var(--eq-aksen); outline-offset: 1px; }
 .akb-seg button.pilih { color: #fff; border-color: transparent; }
 .akb-seg button.n0.pilih { background: #DC2626; }
 .akb-seg button.n1.pilih { background: #EA580C; }
@@ -496,7 +498,7 @@ const warnaBagian = computed(() => WARNA_BAGIAN[props.kini] ?? '#DC6E00');
 .akb-ket-isian { padding: .4rem .55rem; font-size: 11.5px; }
 /* ─── dokumen bukti ─── */
 .akb-ket-kolom { display: grid; gap: .35rem; min-width: 0; border-radius: .6rem; transition: box-shadow .12s, background-color .12s; }
-.akb-ket-kolom.seret { background: #FFF7ED; box-shadow: 0 0 0 2px #F59E0B; }
+.akb-ket-kolom.seret { background: var(--eq-aksen-tipis); box-shadow: 0 0 0 2px #F59E0B; }
 .akb-bukti { display: grid; gap: .25rem; }
 .akb-bukti li {
   display: flex; align-items: center; gap: .3rem; min-width: 0;
@@ -517,8 +519,8 @@ const warnaBagian = computed(() => WARNA_BAGIAN[props.kini] ?? '#DC6E00');
   border: 1px dashed #D6A96A; border-radius: .5rem; background: #FFFBF5; padding: .3rem .6rem;
   font-size: 11px; font-weight: 700; color: #B45309; cursor: pointer; transition: background-color .12s, border-color .12s;
 }
-.akb-unggah:hover { background: #FFF3E0; border-color: #DC6E00; }
-.akb-unggah:focus-within { outline: 2px solid #F57C00; outline-offset: 1px; }
+.akb-unggah:hover { background: var(--eq-aksen-tipis); border-color: var(--eq-aksen-gelap); }
+.akb-unggah:focus-within { outline: 2px solid var(--eq-aksen); outline-offset: 1px; }
 .akb-unggah svg { width: 14px; height: 14px; flex: none; }
 .akb-unggah.sibuk { opacity: .6; cursor: progress; }
 .akb-bukti-galat { font-size: 10.5px; line-height: 1.4; color: #B91C1C; }

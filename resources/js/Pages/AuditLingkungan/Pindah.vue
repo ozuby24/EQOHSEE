@@ -57,7 +57,7 @@ defineProps<{
   padding: .5rem .75rem; max-width: 15rem;
   transition: border-color .16s, background-color .16s, transform .16s;
 }
-.akl-pil:hover { border-color: #DC6E00; transform: translateY(-1px); }
+.akl-pil:hover { border-color: var(--eq-aksen-gelap); transform: translateY(-1px); }
 .akl-pil.aktif { background: #0F1720; border-color: #0F1720; }
 .akl-pil.aktif .akl-pil-huruf { box-shadow: 0 0 0 2px rgba(255, 255, 255, .5); }
 .akl-pil.aktif .akl-pil-teks  { color: #fff; }
@@ -66,7 +66,7 @@ defineProps<{
 
 .akl-pil-huruf {
   width: 24px; height: 24px; border-radius: .45rem; display: grid; place-items: center;
-  font-size: 12px; font-weight: 800; color: #fff; line-height: 1; flex: none; background: #DC6E00;
+  font-size: 12px; font-weight: 800; color: #fff; line-height: 1; flex: none; background: var(--eq-aksen-gelap);
 }
 .akl-pil-pita { display: block; height: 3px; border-radius: 99px; background: #E7E5E4; overflow: hidden; margin-top: 3px; width: 100%; }
 .akl-pil-pita > span { display: block; height: 100%; background: #16A34A; border-radius: 99px; }

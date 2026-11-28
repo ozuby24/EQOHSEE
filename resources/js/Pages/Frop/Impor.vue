@@ -29,7 +29,7 @@ const kirim = () => f.post(props.tautan.kirim, { forceFormData: true, preserveSc
       <section class="fr-kartu">
         <div class="fr-kartu-kepala"><h3>Unggah Berkas</h3></div>
         <form class="fr-isi space-y-3" @submit.prevent="kirim">
-          <label class="block rounded-xl border-2 border-dashed border-stone-200 p-6 text-center cursor-pointer hover:border-orange-300 relative">
+          <label class="block rounded-xl border-2 border-dashed border-stone-200 p-6 text-center cursor-pointer hover:border-cam-lime relative">
             <input type="file" accept=".xlsx" class="sr-only" @change="pilih">
             <b class="block text-[13px]">{{ f.berkas ? f.berkas.name : 'Pilih berkas .xlsx' }}</b>
             <span class="fr-ket">Berkas kerja "Observasi PTY-CT Loader" — maks. 20 MB</span>

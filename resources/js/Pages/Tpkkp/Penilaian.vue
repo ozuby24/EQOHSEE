@@ -248,7 +248,7 @@ const bukaTarget = reactive<Record<string, boolean>>({});
             </p>
           </div>
           <div class="text-right">
-            <span class="text-[18px] font-black num" style="color:var(--eq-aksen,#F57C00)">
+            <span class="text-[18px] font-black num" style="color:var(--eq-aksen,#13806B)">
               {{ kemajuan.persen }}%
             </span>
             <p class="text-[11px] text-stone-400 num">{{ kemajuan.isi }} / {{ kemajuan.total }} sel terisi</p>

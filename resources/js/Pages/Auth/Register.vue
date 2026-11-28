@@ -102,6 +102,6 @@ function daftar() {
    (.auth-label/.auth-isian) supaya seluruh pintu masuk seragam. */
 .label { display:block; margin-bottom:.4rem; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#5E6875 }
 .input { width:100%; min-height:46px; border:1px solid #D9DEE4; border-radius:.75rem; background:#fff; padding:.65rem 1rem; font-size:14.5px; color:#0F1720; transition:box-shadow .15s,border-color .15s }
-.input:focus { outline:none; border-color:#f57c00; box-shadow:0 0 0 3px rgb(245 124 0 / .18) }
+.input:focus { outline:none; border-color:var(--eq-aksen); box-shadow:0 0 0 3px color-mix(in srgb, var(--eq-aksen) 18%, transparent) }
 .petunjuk { margin:.45rem 0 0; font-size:11.5px; line-height:1.5; color:#5E6875 }
 </style>

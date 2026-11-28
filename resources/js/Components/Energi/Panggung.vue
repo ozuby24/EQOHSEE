@@ -252,7 +252,7 @@ const kontur = computed(() => {
 <style scoped>
 .pg { position: relative; overflow: hidden; border-radius: 20px; color: #fff; isolation: isolate;
   box-shadow: 0 18px 40px -24px rgba(15, 23, 32, .55); }
-.pg-energi { background: linear-gradient(118deg, #7A2E00 0%, #B85C00 28%, #F57C00 64%, #FFA23A 100%); }
+.pg-energi { background: linear-gradient(118deg, #3D2306 0%, #6F3F0C 28%, #9A5A14 64%, #C98A3E 100%); }
 .pg-karbon { background: linear-gradient(118deg, #062F2C 0%, #0B4F49 30%, #0F766E 62%, #22A699 100%); }
 .pg-perancah { background: linear-gradient(118deg, #17181C 0%, #2E2A1E 26%, #8A5A00 60%, #E3A008 88%, #F7C948 100%); }
 .pg-lca { background: linear-gradient(118deg, #052E1C 0%, #0E4D33 30%, #15803D 64%, #6BAF3A 100%); }
@@ -285,7 +285,7 @@ const kontur = computed(() => {
   background: rgba(255, 255, 255, .13); border: 1px solid rgba(255, 255, 255, .22);
   backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 .pg-ikon { width: 40px; height: 40px; flex: none; border-radius: 12px; display: grid; place-items: center;
-  background: rgba(255, 255, 255, .95); color: #B85C00; }
+  background: rgba(255, 255, 255, .95); color: #6F3F0C; }
 .pg-karbon .pg-ikon { color: #0F766E; }
 .pg-perancah .pg-ikon { color: #A16207; }
 .pg-lca .pg-ikon { color: #15803D; }

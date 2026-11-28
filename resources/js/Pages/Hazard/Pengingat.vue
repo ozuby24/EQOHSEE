@@ -45,8 +45,8 @@ function alih(id: number) {
 
           <div class="text-[11.5px] text-stone-400 mt-1">
             PIC: {{ p.pic.nama ?? '— belum diisi —' }}
-            <template v-if="p.pic.email"> · ✉ {{ p.pic.email }}</template>
-            <template v-if="p.pic.telepon"> · ☎ {{ p.pic.telepon }}</template>
+            <template v-if="p.pic.email"> · {{ p.pic.email }}</template>
+            <template v-if="p.pic.telepon"> · Telp. {{ p.pic.telepon }}</template>
           </div>
 
           <div class="flex flex-wrap gap-2 mt-3">

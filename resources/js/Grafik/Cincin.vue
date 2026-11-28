@@ -29,7 +29,7 @@ const props = withDefaults(defineProps<{
   warna?: string;
   ukuran?: number;
   label?: string | null;
-}>(), { maks: 100, satuan: '%', target: null, warna: '#C47000', ukuran: 116, label: null });
+}>(), { maks: 100, satuan: '%', target: null, warna: '#13806B', ukuran: 116, label: null });
 
 const R = 42;
 const KELILING = 2 * Math.PI * R;
@@ -55,8 +55,11 @@ const warnaBusur = computed(() => {
 const sudutTarget = computed(() =>
   props.target === null ? null : Math.min(1, props.target / props.maks) * 360 - 90);
 
+/* Pemisah desimal Indonesia: "57,1", bukan "57.1" — titik di sini
+   adalah pemisah ribuan, dan "57.1" terbaca lima puluh tujuh ribu satu
+   oleh pembaca yang teliti sekalipun. */
 const teks = computed(() =>
-  props.nilai === null ? '—' : `${Number.isInteger(props.nilai) ? props.nilai : props.nilai.toFixed(1)}`);
+  props.nilai === null ? '—' : props.nilai.toLocaleString('id-ID', { maximumFractionDigits: 1 }));
 </script>
 
 <template>
@@ -76,7 +79,7 @@ const teks = computed(() =>
         </defs>
 
         <!-- jalur -->
-        <circle cx="50" cy="50" :r="R" fill="none" stroke="#F0EFEC" stroke-width="11" />
+        <circle class="cincin-jalur" cx="50" cy="50" :r="R" fill="none" stroke="#F0EFEC" stroke-width="11" />
 
         <!-- busur -->
         <circle v-if="nilai !== null"
@@ -90,7 +93,7 @@ const teks = computed(() =>
              cincin, bukan angka tersendiri. Tanpa ini "72%" tidak dapat
              dinilai — memadai atau tidak bergantung pada targetnya, dan
              target yang hanya tertulis di bawah harus dibaca dua kali. -->
-        <line v-if="sudutTarget !== null"
+        <line v-if="sudutTarget !== null" class="cincin-takik"
               x1="50" y1="2" x2="50" y2="14"
               :transform="`rotate(${sudutTarget + 90} 50 50)`"
               stroke="#0F1720" stroke-width="2" stroke-linecap="round" opacity=".55" />
@@ -108,3 +111,11 @@ const teks = computed(() =>
     <p v-if="label" class="text-[11.5px] text-stone-500 mt-2 text-center">{{ label }}</p>
   </div>
 </template>
+
+<style>
+/* Mode gelap: jalur terang #F0EFEC menjadi cincin putih yang lebih
+   mencolok daripada busurnya sendiri, dan takik target yang gelap
+   hilang di permukaan gelap. Keduanya dibalik nadanya. */
+:root[data-tema="gelap"] .cincin-jalur { stroke: rgba(255, 255, 255, .10); }
+:root[data-tema="gelap"] .cincin-takik { stroke: #E8EFF2; }
+</style>

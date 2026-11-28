@@ -78,6 +78,11 @@ class DasborController extends Controller
                 'manpowerAktif' => $berkas['manpowerAktif'],
                 'berkasHabis'   => $berkas['habis'],
                 'berkasDekat'   => $berkas['mendekati'],
+                /* Penyebut porsi di layar: SELURUH berkas, termasuk yang
+                   tanpa tanggal — yang tidak masuk pita mana pun tetapi
+                   tetap berkas yang dipegang orang. */
+                'berkas'        => $berkas['total'],
+                'tanpaTanggal'  => $berkas['tanpaTanggal'],
                 'perusahaan'    => count(PemantauanMiners::perPerusahaan($baris)),
             ],
 
@@ -87,6 +92,7 @@ class DasborController extends Controller
                sebagai sesuatu yang lain di sana. */
             'kepatuhanBerkas' => collect([
                 Authority::HABIS, Authority::MENDESAK, Authority::DEKAT, Authority::PANJANG,
+                Authority::TAK_BERTANGGAL,
             ])->map(fn ($k) => [
                 'kode'  => $k,
                 'label' => Authority::LABEL_KARTU[$k] ?? $k,
@@ -98,8 +104,14 @@ class DasborController extends Controller
                 ->map(fn ($c) => [
                     'label'     => $c['perusahaan'],
                     'nilai'     => $c['manpower'],
+                    /* Satuan BERKAS, bukan orang: habis dan mendekati
+                       menghitung berkas, jadi pita bertumpuknya diukur
+                       terhadap jumlah berkas — bukan terhadap jumlah orang,
+                       yang akan mencampur dua satuan dalam satu batang. */
+                    'berkas'    => $c['total'],
                     'habis'     => $c['habis'],
                     'mendekati' => $c['mendekati'],
+                    'perKeadaan' => $c['perKeadaan'],
                 ])->values()->all(),
 
             'meter' => $this->meter($kini),

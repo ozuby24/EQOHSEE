@@ -55,7 +55,7 @@ async function kirim() {
                    ? 'border-cam-lime bg-cam-lime-soft/60'
                    : 'border-stone-200 hover:border-cam-lime hover:bg-cam-lime-soft/50'">
             <input v-model="form.answers[q.id]" type="radio" :value="String(idx)"
-                   class="accent-[color:var(--eq-aksen,#F57C00)]">
+                   class="accent-[color:var(--eq-aksen,#13806B)]">
             <span class="text-[13px] text-stone-600">{{ opt }}</span>
           </label>
         </div>

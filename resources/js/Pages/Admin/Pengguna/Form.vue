@@ -146,13 +146,13 @@ const kepala = 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400
         <div class="flex flex-wrap gap-5 pt-1">
           <label class="flex items-center gap-2.5 text-[13px] text-stone-600 cursor-pointer">
             <input v-model="form.is_admin" type="checkbox"
-                   class="rounded border-stone-300 accent-[color:var(--eq-aksen,#F57C00)]">
+                   class="rounded border-stone-300 accent-[color:var(--eq-aksen,#13806B)]">
             <span class="font-semibold">Administrator</span>
             <span class="text-[11px] text-stone-400">(akses penuh semua modul)</span>
           </label>
           <label class="flex items-center gap-2.5 text-[13px] text-stone-600 cursor-pointer">
             <input v-model="form.active" type="checkbox"
-                   class="rounded border-stone-300 accent-[color:var(--eq-aksen,#F57C00)]">
+                   class="rounded border-stone-300 accent-[color:var(--eq-aksen,#13806B)]">
             <span class="font-semibold">Akun aktif</span>
           </label>
         </div>

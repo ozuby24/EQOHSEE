@@ -146,7 +146,7 @@ const pilih = 'ring-focus rounded-xl border border-stone-200 bg-white pl-3 pr-9 
 .kpt-ket   { font-size: 11.5px; color: #78716C; margin-top: .5rem; line-height: 1.55; }
 
 .kpt-intip {
-  margin-top: .6rem; font-size: 11px; font-weight: 700; color: #DC6E00;
+  margin-top: .6rem; font-size: 11px; font-weight: 700; color: var(--eq-aksen-gelap);
 }
 .kpt-intip:hover { text-decoration: underline; }
 

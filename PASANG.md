@@ -1,3 +1,44 @@
+# Update 26 — Aplikasi dalam memakai palet merek baru; dasbor analitik baru
+
+```bash
+# Di VPS, dari /var/www/EQOHSEE
+bash deploy/deploy.sh          # build ulang aset; tidak ada migrasi baru
+```
+Tidak ada migrasi, tabel, atau penjadwal baru.
+
+- **Palet merek di seluruh aplikasi di balik login**: jingga identitas lama
+  diganti teal (#13806B) di bidang terang dan zaitun-limau (#A9CF5E) di
+  bidang gelap — tombol, tautan, garis fokus, bilah muat, tur pengenalan,
+  kartu bermotif kontur di sidebar; navy diganti teal hitam. Tema warna
+  per perusahaan tetap berlaku; bawaannya kini teal. Spanduk "Gabungan N
+  perusahaan" berwarna teal (keterangan, bukan peringatan).
+- Warna keadaan (merah, jingga, kuning, hijau) tidak berubah dan hanya
+  dipakai untuk keadaan. Emoji di antarmuka diganti ikon garis.
+- **Dasbor** (`/dashboard`) dirombak:
+  - *Situasi hari ini*: gawat, serius (menunggu diperiksa), dan perlu
+    diurus — jumlahnya sama persis dengan jumlah tunggakan di tabel modul
+    (sebelumnya butir bernada serius tidak terhitung di mana pun).
+  - Angka pembuka membawa penyebutnya ("14,3% dari 84 berkas"),
+    termasuk berkas tanpa tanggal.
+  - Berkas per perusahaan bertumpuk menurut keadaan (habis, mendesak,
+    dekat, aman, tanpa tanggal) dengan warna yang sama dengan donatnya;
+    tunggakan per modul bertumpuk menurut nada.
+  - Dua besaran berbeda satuan (ton & bcm, mm & m³, liter & jam) kini
+    digambar sebagai dua grafik bersusun dengan sumbu waktu sejajar —
+    sebelumnya satu sumbu, sehingga deret yang kecil tampak datar.
+  - Donat status berwarna keadaan dan berlabel rapi (Draf, Kedaluwarsa,
+    Dibuka, APD, Khusus B3 …); tingkat risiko urut Tinggi → Rendah.
+  - Setiap grafik membawa tabel angkanya ("Lihat angkanya"), yang juga
+    menggantikan grafik saat halaman dicetak.
+  - Tabel *Keadaan tiap modul* menggantikan tiga kisi kartu: dapat
+    disaring (semua / bermasalah / bersih) dan dibuka per modul untuk
+    seluruh butirnya; di ponsel dua baris ringkas per modul.
+  - Realisasi biaya: bulan yang belum tiba tidak lagi digambar Rp 0.
+- **Grafik garis & kolom di seluruh aplikasi**: tanda sumbu berlangkah
+  bulat (0, 5, 10 … — bukan 6,25 dan 18,8), satu satuan per sumbu
+  ("5 rb, 10 rb", bukan "5.000" di samping "10 rb"), label tepi tidak
+  lagi terpotong; cincin persen memakai koma desimal (57,1).
+
 # Update 25 — Halaman depan & katalog memakai palet merek baru
 
 ```bash

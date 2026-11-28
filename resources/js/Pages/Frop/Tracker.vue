@@ -12,6 +12,7 @@ import { reactive, ref, watch } from 'vue';
 import { KATEGORI_WARNA, type OpsiBulan, type TautanFrop } from './tipe';
 import { tgl } from './fmt';
 import './frop.css';
+import IkonLapangan from '../../Components/IkonLapangan.vue';
 
 type Baris = {
   id: number; url: string; ca_url: string; tanggal: string; shift: number | null; unit: string; operator: string;
@@ -102,7 +103,7 @@ const simpan = (b: Baris) =>
               <option v-for="o in opsi.status" :key="o">{{ o }}</option>
             </select>
           </label>
-          <p class="fr-ket">🔁 = kategori yang sama pernah tercatat pada unit yang sama sebelumnya.</p>
+          <p class="fr-ket"><IkonLapangan nama="ulang" :ukuran="12" class="inline-block align-[-2px] " /> = kategori yang sama pernah tercatat pada unit yang sama sebelumnya.</p>
         </div>
       </div>
     </div>
@@ -127,7 +128,7 @@ const simpan = (b: Baris) =>
                 <td style="min-width: 16rem">
                   <div v-for="(t, i) in b.butir" :key="i" class="flex items-start gap-1.5 mb-1">
                     <span class="fr-kat" :style="{ background: KATEGORI_WARNA[t.kat] }" :title="namaKat(t.kat)">{{ namaKat(t.kat).split(' ')[0] }}</span>
-                    <span>{{ t.teks }} <b v-if="t.ulang" class="fr-teks-gawat" title="berulang pada unit ini">🔁</b></span>
+                    <span>{{ t.teks }} <b v-if="t.ulang" class="fr-teks-gawat" title="berulang pada unit ini" aria-label="berulang pada unit ini"><IkonLapangan nama="ulang" :ukuran="12" class="inline-block align-[-2px] " /></b></span>
                   </div>
                 </td>
                 <td style="min-width: 14rem" class="text-stone-600">{{ b.corrective_action ?? '–' }}</td>

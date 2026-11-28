@@ -116,7 +116,7 @@ const langkah = [
 .ac-no { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: linear-gradient(135deg, #5C4326, #3F9A4E); color: #fff; }
 .ac-sanksi { border-left: 6px solid var(--w); padding: 6px 10px; border-radius: 8px; background: #FAFAF9; color: #44403C; }
 .ac-sanksi b { margin-right: 6px; }
-.ac-exit { border-radius: 14px; background: #FFF7ED; border: 1px solid #FED7AA; padding: 10px 12px; display: grid; gap: 2px; }
+.ac-exit { border-radius: 14px; background: var(--eq-aksen-tipis); border: 1px solid #FED7AA; padding: 10px 12px; display: grid; gap: 2px; }
 .ac-exit b { font-size: 11px; color: #C2410C; } .ac-exit span { font-size: 12.5px; font-weight: 700; color: #431407; }
 .ac-bobot { border-radius: 14px; background: #F0FDFA; border: 1px solid #99F6E4; padding: 10px 12px; display: grid; gap: 4px; }
 .ac-bobot b { color: #115E59; } .ac-bobot span { color: #134E4A; }

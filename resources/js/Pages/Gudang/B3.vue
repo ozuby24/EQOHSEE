@@ -127,7 +127,7 @@ const nadaSisa = (sisa: number) => (sisa < 0 ? 't-merah' : sisa <= 30 ? 't-kunin
               </td>
               <td class="py-3 px-4">
                 <a v-if="b.msds" :href="b.msds" target="_blank" rel="noopener"
-                   class="text-[12px] font-semibold" style="color:var(--eq-aksen,#F57C00)">Buka</a>
+                   class="text-[12px] font-semibold" style="color:var(--eq-aksen,#13806B)">Buka</a>
                 <span v-else class="text-[11px] font-bold px-2 py-1 rounded-md bg-amber-50 text-amber-700">
                   Belum ada
                 </span>

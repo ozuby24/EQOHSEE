@@ -48,9 +48,9 @@ const tersimpan = ref<null | { luring: boolean }>(null);
 /* ═══════════ matriks 5×5 ═══════════ */
 
 const WARNA: Record<string, { lunak: string; teks: string; kuat: string; di: string }> = {
-  Rendah: { lunak: '#DDF3E4', teks: '#166534', kuat: '#22C55E', di: '#0B1117' },
-  Sedang: { lunak: '#FBF1C7', teks: '#854D0E', kuat: '#FACC15', di: '#0B1117' },
-  Tinggi: { lunak: '#FFE4C7', teks: '#9A4A00', kuat: '#F57C00', di: '#0B1117' },
+  Rendah: { lunak: '#DDF3E4', teks: '#166534', kuat: '#22C55E', di: '#072420' },
+  Sedang: { lunak: '#FBF1C7', teks: '#854D0E', kuat: '#FACC15', di: '#072420' },
+  Tinggi: { lunak: '#FFE4C7', teks: '#9A4A00', kuat: '#F57C00', di: '#072420' },
   Ekstrem: { lunak: '#FDDEDE', teks: '#B91C1C', kuat: '#DC2626', di: '#FFFFFF' },
 };
 
@@ -382,7 +382,7 @@ function tutup() {
                     :aria-pressed="c.pilih"
                     :aria-label="`${matriks.kemungkinan[c.k]} × ${matriks.keparahan[c.s]}: skor ${c.n}, ${c.nama}`"
                     :style="{ background: c.pilih ? c.w.kuat : c.w.lunak, color: c.pilih ? c.w.di : c.w.teks, fontWeight: c.pilih ? 700 : 500,
-                              boxShadow: c.pilih ? '0 0 0 2px #0B1117, 0 6px 14px -6px rgba(11,17,23,.55)' : 'none' }"
+                              boxShadow: c.pilih ? '0 0 0 2px #072420, 0 6px 14px -6px rgba(7,36,32,.55)' : 'none' }"
                     @click="pilihSel(c.k, c.s)">{{ c.n }}</button>
           </div>
           <div class="sumbu-s lp-mono"><span v-for="(nama, i) in matriks.keparahan" :key="i">{{ nama }}</span></div>
@@ -434,7 +434,7 @@ function tutup() {
 .foto-sel { position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: var(--garis); }
 .foto-sel img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .foto-buang { position: absolute; right: 2px; top: 2px; width: 32px; height: 32px; border: 0; background: none; display: grid; place-items: center; padding: 0; }
-.foto-buang svg { width: 20px; height: 20px; padding: 5px; border-radius: 10px; background: rgba(11, 17, 23, .66); color: #FFFFFF; }
+.foto-buang svg { width: 20px; height: 20px; padding: 5px; border-radius: 10px; background: rgba(7,36,32, .66); color: #FFFFFF; }
 .foto-tambah { aspect-ratio: 1; border-radius: 12px; border: 1.5px dashed #B8C0C9; background: #FFFFFF; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--abu1); font-size: 12px; font-weight: 600; }
 .foto-tambah svg { width: 22px; height: 22px; }
 

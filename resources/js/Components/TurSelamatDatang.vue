@@ -500,7 +500,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   place-items: center;
   padding: 1rem;
   background:
-    radial-gradient(70rem 40rem at 50% -10%, rgb(245 124 0 / .16), transparent 60%),
+    radial-gradient(70rem 40rem at 50% -10%, color-mix(in srgb, var(--eq-aksen) 16%, transparent), transparent 60%),
     rgb(9 13 20 / .72);
   backdrop-filter: blur(4px);
   animation: eq-tur-tirai-masuk .22s ease-out;
@@ -554,18 +554,18 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   overflow: hidden;
 
   /* Gradien yang sama dengan bilah samping situs. */
-  background: linear-gradient(160deg, #0B1117 0%, #141C25 55%, #1B2530 100%);
+  background: linear-gradient(160deg, #072420 0%, #0A2924 55%, #0F332D 100%);
   position: relative;
 }
 
-/* Cahaya jingga tipis di sudut atas — menandai ini "milik EQOHSEE"
+/* Cahaya lime tipis di sudut atas — menandai ini "milik EQOHSEE"
    tanpa menambah satu elemen pun yang harus dibaca. */
 .eq-tur-rel::before {
   content: '';
   position: absolute;
   inset: 0 0 auto;
   height: 11rem;
-  background: radial-gradient(18rem 9rem at 18% 0%, rgb(255 152 0 / .22), transparent 70%);
+  background: radial-gradient(18rem 9rem at 18% 0%, rgb(169 207 94 / .18), transparent 70%);
   pointer-events: none;
 }
 
@@ -650,7 +650,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
 .is-usai .eq-tur-tangga-btn:hover { background: rgb(255 255 255 / .06); }
 
 .eq-tur-tangga-btn:focus-visible {
-  outline: 2px solid #FF9800;
+  outline: 2px solid var(--eq-aksen-terang);
   outline-offset: -2px;
 }
 
@@ -678,18 +678,18 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
 }
 
 .is-usai .eq-tur-tangga-tanda {
-  background: rgb(255 152 0 / .16);
-  border-color: rgb(255 152 0 / .45);
-  color: #FFB74D;
+  background: rgb(169 207 94 / .16);
+  border-color: rgb(169 207 94 / .45);
+  color: #C6E38A;
 }
 
 .is-usai .eq-tur-tangga-nama { color: rgb(231 229 228 / .8); }
 
 .is-kini .eq-tur-tangga-tanda {
-  background: linear-gradient(135deg, #DC6E00, #FF9800);
+  background: linear-gradient(135deg, var(--eq-aksen-gelap), var(--eq-aksen-terang));
   border-color: transparent;
   color: #FFFFFF;
-  box-shadow: 0 0 0 4px rgb(255 152 0 / .16);
+  box-shadow: 0 0 0 4px rgb(169 207 94 / .18);
 }
 
 .is-kini .eq-tur-tangga-nama { color: #FFFFFF; font-weight: 700; }
@@ -829,7 +829,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
 }
 
 .eq-tur-titik.is-lewat { background: #FDBA74; }
-.eq-tur-titik.is-kini  { background: #F57C00; }
+.eq-tur-titik.is-kini  { background: var(--eq-aksen); }
 
 .eq-tur-hitung {
   font-size: 11px;
@@ -900,8 +900,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   width: .9rem;
   height: .9rem;
   border-radius: 99px;
-  border: 2px solid rgb(245 124 0 / .25);
-  border-top-color: #F57C00;
+  border: 2px solid color-mix(in srgb, var(--eq-aksen) 25%, transparent);
+  border-top-color: var(--eq-aksen);
   animation: eq-tur-putar .62s linear infinite;
 }
 
@@ -929,8 +929,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
 .eq-tur-poin li {
   padding: .7rem .85rem .7rem 1rem;
   border-radius: .7rem;
-  background: linear-gradient(90deg, rgb(255 152 0 / .07), transparent 70%);
-  border-left: 3px solid #F57C00;
+  background: linear-gradient(90deg, rgb(169 207 94 / .08), transparent 70%);
+  border-left: 3px solid var(--eq-aksen);
 }
 
 .eq-tur-poin strong {
@@ -974,7 +974,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
 .eq-tur-pilar li:hover,
 .eq-tur-modul li:hover {
   border-color: #FDBA74;
-  box-shadow: 0 4px 14px -4px rgb(245 124 0 / .3);
+  box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--eq-aksen) 30%, transparent);
   transform: translateY(-1px);
 }
 
@@ -1017,7 +1017,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   color: #C7C2BD;
 }
 
-.eq-tur-modul li:hover svg { color: #F57C00; }
+.eq-tur-modul li:hover svg { color: var(--eq-aksen); }
 
 /* ══ langkah pertama ══ */
 .eq-tur-mulai {
@@ -1040,7 +1040,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
 
 .eq-tur-mulai li:hover {
   border-color: #FDBA74;
-  box-shadow: 0 4px 14px -4px rgb(245 124 0 / .28);
+  box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--eq-aksen) 28%, transparent);
 }
 
 .eq-tur-angka {
@@ -1050,11 +1050,11 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   width: 1.6rem;
   height: 1.6rem;
   border-radius: 99px;
-  background: linear-gradient(135deg, #DC6E00, #FF9800);
+  background: linear-gradient(135deg, var(--eq-aksen-gelap), var(--eq-aksen-terang));
   color: #FFFFFF;
   font-size: 11.5px;
   font-weight: 800;
-  box-shadow: 0 2px 8px -2px rgb(245 124 0 / .6);
+  box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--eq-aksen) 60%, transparent);
 }
 
 .eq-tur-tautan {
@@ -1116,12 +1116,12 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
   padding: .55rem 1.05rem;
   border: 0;
   border-radius: .65rem;
-  background: linear-gradient(135deg, #DC6E00, #FF9800);
+  background: linear-gradient(135deg, var(--eq-aksen-gelap), var(--eq-aksen-terang));
   color: #FFFFFF;
   font-size: 12.5px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 14px -3px rgb(245 124 0 / .55);
+  box-shadow: 0 4px 14px -3px color-mix(in srgb, var(--eq-aksen) 55%, transparent);
   transition: box-shadow .16s, transform .16s, filter .16s;
 }
 
@@ -1129,7 +1129,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekanTombol));
 
 .eq-tur-maju:hover {
   filter: brightness(1.06);
-  box-shadow: 0 6px 18px -3px rgb(245 124 0 / .65);
+  box-shadow: 0 6px 18px -3px color-mix(in srgb, var(--eq-aksen) 65%, transparent);
 }
 
 .eq-tur-maju:hover svg { transform: translateX(.15rem); }

@@ -134,7 +134,7 @@ function kirimUlang() {
                inputmode="numeric" autocomplete="one-time-code" maxlength="6"
                class="w-11 h-14 text-center text-[22px] font-bold num rounded-xl border-2
                       border-stone-200 text-cam-ink transition
-                      focus:border-[color:var(--eq-aksen,#F57C00)] focus:ring-0"
+                      focus:border-[color:var(--eq-aksen,#13806B)] focus:ring-0"
                :class="form.errors.kode ? 'border-red-300' : ''">
       </div>
 
@@ -159,7 +159,7 @@ function kirimUlang() {
                 class="text-[12.5px] font-bold transition inline-flex items-center gap-1.5"
                 :class="sisa > 0 || mengirimUlang
                           ? 'text-stone-300 cursor-not-allowed'
-                          : 'text-[color:var(--eq-aksen,#F57C00)] hover:underline'">
+                          : 'text-[color:var(--eq-aksen,#13806B)] hover:underline'">
           <Putaran v-if="mengirimUlang" :ukuran="12" />
           <template v-if="mengirimUlang">{{ t('verif.mengirim') }}</template>
           <template v-else>{{ sisa > 0 ? t('verif.kirim_dalam', { n: sisa }) : t('verif.kirim_ulang') }}</template>

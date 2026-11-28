@@ -147,11 +147,11 @@ onBeforeUnmount(() => document.removeEventListener('keydown', tekan));
 
 .eq-foto-kecil:hover {
   border-color: #FDBA74;
-  box-shadow: 0 3px 10px -2px rgb(245 124 0 / .4);
+  box-shadow: 0 3px 10px -2px color-mix(in srgb, var(--eq-aksen) 40%, transparent);
   transform: translateY(-1px);
 }
 
-.eq-foto-kecil:focus-visible { outline: 2px solid #F57C00; outline-offset: 2px; }
+.eq-foto-kecil:focus-visible { outline: 2px solid var(--eq-aksen); outline-offset: 2px; }
 
 .eq-foto-jumlah {
   position: absolute;

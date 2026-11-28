@@ -235,7 +235,7 @@ const label = 'block text-[10.5px] font-bold uppercase tracking-wide text-stone-
   width: 1.65rem; height: 1.65rem; font-size: 11px; color: #57534E;
   transition: border-color .16s, color .16s;
 }
-.kpt-ikon:hover { border-color: #DC6E00; color: #DC6E00; }
+.kpt-ikon:hover { border-color: var(--eq-aksen-gelap); color: var(--eq-aksen-gelap); }
 
 .kpt-sunting > td { background: #FAFAF9; border-bottom: 2px solid #E7E5E4; padding: 1rem; }
 

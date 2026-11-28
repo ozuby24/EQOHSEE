@@ -69,10 +69,19 @@ final class DasborGrafik
         return ['label' => $label, 'masuk' => $masuk, 'tutup' => $tutup];
     }
 
-    /** Laporan bahaya menurut tingkat risikonya. */
+    /**
+     * Laporan bahaya menurut tingkat risikonya.
+     *
+     * Diurutkan menurut SKALANYA (tinggi lebih dulu), bukan menurut
+     * banyaknya: risiko adalah urutan, dan batang "Rendah" yang naik ke
+     * puncak karena paling banyak membuat skala itu terbaca terbalik.
+     * Warnanya warna keadaan, sama dengan modul Hazard.
+     */
     public static function hazardRisiko(): array
     {
-        return self::hitungKolom(HazardReport::query(), 'risiko');
+        return self::hitungKolom(HazardReport::query(), 'risiko',
+            keadaan: ['tinggi' => 'gawat', 'sedang' => 'ingat', 'rendah' => 'baik'],
+            urut: ['tinggi', 'sedang', 'rendah']);
     }
 
     /** Laporan bahaya menurut kategorinya. */
@@ -83,12 +92,20 @@ final class DasborGrafik
 
     public static function inspeksiStatus(): array
     {
-        return self::hitungKolom(Inspection::query(), 'status');
+        return self::hitungKolom(Inspection::query(), 'status',
+            keadaan: ['selesai' => 'baik', 'berjalan' => 'ingat'],
+            urut: ['berjalan', 'selesai']);
     }
 
+    /* Nama statusnya dibiarkan seperti di modul SMKP (Open, In Progress,
+       Closed) — dua nama untuk satu status di dua layar membuat orang
+       mencari "Ditutup" di halaman yang menulis "Closed". Warnanya pun
+       sama dengan lencana status di sana. */
     public static function temuanStatus(): array
     {
-        return self::hitungKolom(SmkpFinding::query(), 'status');
+        return self::hitungKolom(SmkpFinding::query(), 'status',
+            keadaan: ['open' => 'gawat', 'in progress' => 'ingat', 'closed' => 'baik'],
+            urut: ['open', 'in progress', 'closed']);
     }
 
     /* ═══════════ produksi ═══════════ */
@@ -191,8 +208,8 @@ final class DasborGrafik
         $langgar = $pantau->filter(fn (LingkunganPantau $p) => $p->melanggar())->count();
 
         return [
-            ['label' => 'Sesuai baku mutu', 'nilai' => $pantau->count() - $langgar],
-            ['label' => 'Melampaui',        'nilai' => $langgar],
+            ['label' => 'Sesuai baku mutu',   'nilai' => $pantau->count() - $langgar, 'keadaan' => 'baik'],
+            ['label' => 'Melampaui baku mutu', 'nilai' => $langgar,                  'keadaan' => 'gawat'],
         ];
     }
 
@@ -200,17 +217,26 @@ final class DasborGrafik
 
     public static function koStatus(): array
     {
-        return self::hitungKolom(KoObject::query(), 'status_operasi');
+        return self::hitungKolom(KoObject::query(), 'status_operasi',
+            keadaan: ['aktif' => 'baik', 'standby' => 'netral', 'breakdown' => 'gawat'],
+            urut: ['breakdown', 'standby', 'aktif']);
     }
 
+    /* Label dan warnanya sama dengan lencana status di halaman
+       Maintenance: dibuka merah, dikerjakan kuning, selesai hijau. */
     public static function workOrderStatus(): array
     {
-        return self::hitungKolom(WorkOrder::query(), 'status');
+        return self::hitungKolom(WorkOrder::query(), 'status',
+            label: ['dibuka' => 'Dibuka', 'dikerjakan' => 'Dikerjakan', 'selesai' => 'Selesai', 'batal' => 'Batal'],
+            keadaan: ['dibuka' => 'gawat', 'dikerjakan' => 'ingat', 'selesai' => 'baik', 'batal' => 'netral'],
+            urut: ['dibuka', 'dikerjakan', 'selesai', 'batal']);
     }
 
+    /* Nama kategorinya sama dengan saringan di halaman Gudang. */
     public static function gudangKategori(): array
     {
-        return self::hitungKolom(GudangBarang::query(), 'kategori');
+        return self::hitungKolom(GudangBarang::query(), 'kategori',
+            label: ['apd' => 'APD', 'b3' => 'Khusus B3', 'material' => 'Material']);
     }
 
     /** Realisasi biaya per bulan pada tahun berjalan. */
@@ -225,7 +251,12 @@ final class DasborGrafik
 
         for ($b = 1; $b <= 12; $b++) {
             $label[] = Carbon::create($kini->year, $b, 1)->translatedFormat('M');
-            $rp[]    = (float) ($per[$b] ?? 0);
+
+            /* Bulan yang BELUM TIBA tidak punya realisasi — bukan
+               realisasi nol. Digambar nol, Desember yang belum terjadi
+               terbaca sebagai serapan yang anjlok; null membuat garisnya
+               berhenti di bulan berjalan, dan tabelnya menulis "—". */
+            $rp[] = $b > $kini->month ? null : (float) ($per[$b] ?? 0);
         }
 
         return ['label' => $label, 'rp' => $rp];
@@ -289,9 +320,24 @@ final class DasborGrafik
             $per[$kunci] = ($per[$kunci] ?? 0) + 1;
         }
 
-        arsort($per);
+        /* Urut menurut kelayakannya, bukan banyaknya — Fit, lalu yang
+           makin tidak layak — dan berwarna keadaan: hasil MCU adalah
+           skala, dan donat yang mengurutkannya menurut jumlah membuat
+           "Unfit" pindah tempat tiap kali angkanya berubah. */
+        $urut    = array_flip(['fit', 'fit with note', 'temporary unfit', 'unfit', 'belum ada mcu']);
+        $keadaan = ['fit' => 'baik', 'fit with note' => 'ingat', 'temporary unfit' => 'serius',
+                    'unfit' => 'gawat', 'belum ada mcu' => 'netral'];
 
-        return collect($per)->map(fn ($n, $k) => ['label' => $k, 'nilai' => $n])->values()->all();
+        $keluar = collect($per)->map(fn ($n, $k) => [
+            'label'   => (string) $k,
+            'nilai'   => $n,
+            'keadaan' => $keadaan[mb_strtolower((string) $k)] ?? 'netral',
+        ])->values()->all();
+
+        usort($keluar, fn ($a, $b) =>
+            [$urut[mb_strtolower($a['label'])] ?? 99, $b['nilai']] <=> [$urut[mb_strtolower($b['label'])] ?? 99, $a['nilai']]);
+
+        return $keluar;
     }
 
     /**
@@ -323,9 +369,14 @@ final class DasborGrafik
         return ['label' => $label, 'nilai' => $nilai];
     }
 
+    /* Nilai kolomnya kode, bukan kalimat: "kadaluarsa" ditulis sebagai
+       "Kedaluwarsa" — ejaan bakunya — dan "draft" sebagai "Draf". */
     public static function dokumenStatus(): array
     {
-        return self::hitungKolom(Document::query(), 'status');
+        return self::hitungKolom(Document::query(), 'status',
+            label: ['draft' => 'Draf', 'berlaku' => 'Berlaku', 'kadaluarsa' => 'Kedaluwarsa', 'ditarik' => 'Ditarik'],
+            keadaan: ['berlaku' => 'baik', 'draft' => 'ingat', 'kadaluarsa' => 'gawat', 'ditarik' => 'netral'],
+            urut: ['berlaku', 'draft', 'kadaluarsa', 'ditarik']);
     }
 
     /* ═══════════ pembantu ═══════════ */
@@ -338,19 +389,56 @@ final class DasborGrafik
      * membuangnya membuat grafiknya tampak rapi justru saat datanya
      * paling buruk.
      *
-     * @return list<array{label:string,nilai:int}>
+     * Tiga pilihan, semuanya berkunci nilai kolom berhuruf kecil:
+     *  - `label`   nama tampilannya, bila nilai kolomnya berupa kode;
+     *  - `keadaan` nada warnanya, untuk kolom yang memang menyatakan
+     *              keadaan. Bila diisi, SEMUA irisan diberi keadaan —
+     *              nilai di luar daftar menjadi 'netral' — supaya warna
+     *              keadaan tidak bercampur dengan warna kategori;
+     *  - `urut`    urutan skalanya, untuk kolom berurutan (risiko,
+     *              status alur kerja). Tanpanya, terbanyak lebih dulu.
+     *
+     * Nilai yang hanya berbeda huruf besar-kecilnya digabung: "Selesai"
+     * dan "selesai" adalah satu status, bukan dua irisan berlabel sama.
+     *
+     * @param  array<string,string>  $label
+     * @param  array<string,string>  $keadaan
+     * @param  list<string>|null     $urut
+     * @return list<array{label:string,nilai:int,keadaan?:string}>
      */
-    private static function hitungKolom($kueri, string $kolom, ?int $batas = null): array
+    private static function hitungKolom($kueri, string $kolom, ?int $batas = null,
+                                        array $label = [], array $keadaan = [], ?array $urut = null): array
     {
         $per = $kueri->selectRaw("{$kolom} as k, count(*) as n")
             ->groupBy($kolom)->pluck('n', 'k')->all();
 
-        $keluar = [];
+        $gabung = [];
         foreach ($per as $k => $n) {
-            $keluar[] = ['label' => (string) ($k ?: 'Tidak diisi'), 'nilai' => (int) $n];
+            $kunci = mb_strtolower(trim((string) $k));
+
+            $gabung[$kunci] ??= [
+                'label' => $label[$kunci] ?? (string) ($k ?: 'Tidak diisi'),
+                'nilai' => 0,
+                'kunci' => $kunci,
+            ];
+            $gabung[$kunci]['nilai'] += (int) $n;
+
+            if ($keadaan) {
+                $gabung[$kunci]['keadaan'] = $keadaan[$kunci] ?? 'netral';
+            }
         }
 
-        usort($keluar, fn ($a, $b) => $b['nilai'] <=> $a['nilai']);
+        $keluar = array_values($gabung);
+
+        if ($urut !== null) {
+            $pos = array_flip($urut);
+            usort($keluar, fn ($a, $b) =>
+                [$pos[$a['kunci']] ?? 99, $b['nilai']] <=> [$pos[$b['kunci']] ?? 99, $a['nilai']]);
+        } else {
+            usort($keluar, fn ($a, $b) => $b['nilai'] <=> $a['nilai']);
+        }
+
+        $keluar = array_map(function ($b) { unset($b['kunci']); return $b; }, $keluar);
 
         return $batas ? array_slice($keluar, 0, $batas) : $keluar;
     }

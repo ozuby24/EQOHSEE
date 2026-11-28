@@ -239,7 +239,7 @@ function simpanTutup() {
 .izin-aksi { display: flex; gap: 8px; margin-top: 14px; }
 .kaki { padding: 18px 20px 0; }
 
-.tirai { position: fixed; inset: 0; background: rgba(11, 17, 23, .5); z-index: 70; display: flex; align-items: flex-end; justify-content: center; }
+.tirai { position: fixed; inset: 0; background: rgba(7,36,32, .5); z-index: 70; display: flex; align-items: flex-end; justify-content: center; }
 .lembar { width: 100%; max-width: 480px; max-height: 92dvh; overflow-y: auto; background: #FFFFFF; border-radius: 22px 22px 0 0; padding: 8px 20px calc(20px + env(safe-area-inset-bottom, 0px)); }
 .lembar-kepala { display: flex; align-items: center; justify-content: space-between; }
 .lembar-kepala h2 { margin: 0; font-size: 16px; font-weight: 700; color: var(--ink); }
