@@ -55,6 +55,26 @@ final class IkonNav
         'tukar'       => 'M4 8.5h13l-3.2-3.2M20 15.5H7l3.2 3.2',
         'timbang'     => 'M12 4.5v15M7.5 6.2h9M4 19.5h16M6 6.8 3 13.2h6ZM18 6.8l-3 6.4h6Z',
         'obrolan'     => 'M4 5.5h16a1 1 0 0 1 1 1V15a1 1 0 0 1-1 1H9l-4 3.5V16H4a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1Z',
+        // Siluet tambahan supaya bilah yang DILIPAT tetap dapat dibaca:
+        // di sana tidak ada label, dan enam butir berikon "≡" yang sama
+        // (MCU, Mine Permit, SIMPER, SPIP …) tidak dapat dibedakan sama sekali.
+        'kesehatan'   => 'M12 20.2s-7.2-4.4-7.2-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.2 2.8c0 5.7-7.2 10.1-7.2 10.1ZM7.5 12h2.2l1.3-2.4 2 4.4 1.3-2h2.2',
+        'kartu'       => 'M4.5 5.5h15a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1Zm4 8.2a2.1 2.1 0 1 0 0-4.2 2.1 2.1 0 0 0 0 4.2ZM5.6 16.5a3 3 0 0 1 5.8 0M14 10h4M14 13.5h3',
+        'kemudi'      => 'M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17Zm0 6.4a2.1 2.1 0 1 0 0 4.2 2.1 2.1 0 0 0 0-4.2ZM3.8 10.8l6.2 1.2M14 12l6.2-1.2M12 14.1v6.3',
+        'centang'     => 'M10 6.5h10M10 12h10M10 17.5h10M3.8 6.5l1.4 1.4 2.4-2.6M3.8 12l1.4 1.4 2.4-2.6M3.8 17.5l1.4 1.4 2.4-2.6',
+        'jam'         => 'M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17ZM12 7.5V12l3.2 2',
+        'uang'        => 'M3.5 6.5h17a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-17a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1Zm8.5 3a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5ZM6 9.5v5M18 9.5v5',
+        'riwayat'     => 'M4.2 12a7.8 7.8 0 1 0 2.3-5.5M4 4.5v4h4M12 8v4.2l2.8 1.6',
+        'lup'         => 'M10.5 4a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm4.8 11.3L20 20',
+        'pena'        => 'M4 20h4.2L19.3 8.9a2.6 2.6 0 0 0-3.7-3.7L4.5 16.3ZM13.8 7l3.6 3.6',
+        'sasaran'     => 'M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17Zm0 4.2a4.3 4.3 0 1 0 0 8.6 4.3 4.3 0 0 0 0-8.6Zm0 3.3a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z',
+        'radar'       => 'M12 12l6.2-6.2M12 3.5A8.5 8.5 0 1 0 20.5 12M12 7.7A4.3 4.3 0 1 0 16.3 12',
+        'peta'        => 'M3.5 6.5 9 4.2l6 2.3 5.5-2.3v13.3L15 19.8l-6-2.3-5.5 2.3ZM9 4.2v13.3M15 6.5v13.3',
+        'tetes'       => 'M12 3.5s-6.2 6.8-6.2 10.9a6.2 6.2 0 0 0 12.4 0c0-4.1-6.2-10.9-6.2-10.9Z',
+        'ledak'       => 'M12 2.8v3.4M12 17.8v3.4M2.8 12h3.4M17.8 12h3.4M5.5 5.5l2.4 2.4M16.1 16.1l2.4 2.4M5.5 18.5l2.4-2.4M16.1 7.9l2.4-2.4M12 8.7a3.3 3.3 0 1 0 0 6.6 3.3 3.3 0 0 0 0-6.6Z',
+        'gelombang'   => 'M2.5 12h3.2l2.1-5.5 3.4 11 3.2-13 2.2 7.5h4.9',
+        'jari'        => 'M8.2 19.6c.8-1.8 1.3-4 1.3-6.6a2.5 2.5 0 0 1 5 0c0 3-.5 5.5-1.5 7.6M5.2 15.8c.4-1 .6-2.1.6-3.3a6.2 6.2 0 0 1 9.6-5.2M18.1 9.9c.1.8.2 1.6.2 2.5 0 2.4-.4 4.6-1.1 6.5',
+        'tag'         => 'M3.5 12.6V4.5a1 1 0 0 1 1-1h8.1l8.4 8.4a1.4 1.4 0 0 1 0 2l-6.6 6.6a1.4 1.4 0 0 1-2 0ZM8.2 8.2h.01',
         'default'     => 'M5 12h14M5 7h9M5 17h9',
     ];
 
@@ -136,6 +156,42 @@ final class IkonNav
         'subkontraktor' => 'gedung', 'alur persetujuan' => 'tukar',
         'perpanjangan' => 'kalender', 'masa berlaku' => 'kalender',
         'cetak kartu' => 'sertifikat', 'rujukan' => 'dokumen',
+
+        // Berkas kelayakan Miners dan HRIS.
+        'mcu' => 'kesehatan', 'medical' => 'kesehatan', 'kesehatan' => 'kesehatan',
+        'mine permit' => 'kartu', 'permit' => 'kartu', 'izin' => 'kartu', 'perizinan' => 'kartu',
+        'simper' => 'kemudi', 'spip' => 'dokumen',
+        'riwayat' => 'riwayat', 'field break' => 'kalender', 'cuti' => 'kalender',
+        'pola & regu' => 'kalender', 'regu' => 'orang', 'regu angkut' => 'armada',
+        'pemantauan' => 'grafik', 'pemantauan harian' => 'jam', 'kehadiran' => 'jam',
+        'lembur' => 'jam', 'perintah lembur' => 'jam', 'mesin lapangan' => 'jari',
+        'pengajuan' => 'tukar', 'persetujuan' => 'centang',
+        'upah' => 'uang', 'gaji' => 'uang', 'slip' => 'uang', 'acuan pajak' => 'kalkulator',
+        'pkwt' => 'dokumen', 'kontrak' => 'dokumen',
+
+        // Ringkasan dan dasbor tiap modul.
+        'ringkasan' => 'dashboard', 'dasbor' => 'dashboard', 'dasbor pemenuhan' => 'grafik',
+        'control tower' => 'radar',
+
+        // Insiden, kepatuhan, dan acuan.
+        'insiden' => 'bahaya', 'investigasi' => 'lup',
+        'persyaratan' => 'centang', 'pengujian' => 'evaluasi',
+        'kriteria' => 'buku', 'acuan' => 'buku', 'faktor' => 'buku', 'baku mutu' => 'buku',
+        'daftar induk' => 'buku', 'pustaka daftar periksa' => 'buku', 'bagan akun' => 'buku',
+        'klausul' => 'centang', 'pemenuhan' => 'centang', 'periksa' => 'centang', 'rekap' => 'nilai',
+
+        // Energi, karbon, operasi, air, dan peledakan.
+        'input' => 'pena', 'catatan' => 'pena', 'electricity' => 'energi',
+        'baseline' => 'sasaran', 'target' => 'sasaran', 'enpi' => 'grafik',
+        'kewajiban' => 'perisai', 'monev' => 'evaluasi', 'tinjauan' => 'evaluasi',
+        'tahun dasar' => 'kalender', 'gis' => 'peta', 'layer' => 'peta',
+        'kolam' => 'tetes', 'pompa' => 'tetes', 'peledakan' => 'ledak',
+        'terlindung' => 'perisai', 'getaran' => 'gelombang', 'penimbangan' => 'timbang',
+        'ambang' => 'bahaya', 'perintah kerja' => 'alat',
+
+        // Uang: biaya dan pembelian.
+        'realisasi' => 'uang', 'anggaran' => 'uang', 'tagihan' => 'uang',
+        'harga' => 'tag', 'katalog' => 'kotak',
     ];
 
     /** Nama ikon untuk sebuah label menu. */

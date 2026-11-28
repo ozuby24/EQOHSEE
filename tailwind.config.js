@@ -25,10 +25,13 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Inter', ...defaultTheme.fontFamily.sans],
+                /* 'Inter Tajam' (statis ber-hinting) hanya terdaftar di layar
+                   < 1,5 dppx — lihat fonts.css. Di layar lain keluarganya tidak
+                   dikenal dan peramban langsung memakai 'Inter' variabel. */
+                sans: ['"Inter Tajam"', 'Inter', ...defaultTheme.fontFamily.sans],
                 /* Archivo: muka huruf merek — judul halaman depan, kop, dan
                    halaman tamu. Dimuat lewat huruf-archivo.css. */
-                brand: ['Archivo', ...defaultTheme.fontFamily.sans],
+                brand: ['"Archivo Tajam"', 'Archivo', ...defaultTheme.fontFamily.sans],
                 mono: ['"IBM Plex Mono"', ...defaultTheme.fontFamily.mono],
                 /* Playfair hanya untuk lembar sertifikat — dokumen resmi
                    memang pantas berhuruf serif. */

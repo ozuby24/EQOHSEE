@@ -4,11 +4,12 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\{Company, User};
-use App\Support\{AturanSandi, Turnstile};
+use App\Support\{AturanSandi, MasukPihakKetiga, Turnstile};
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\{Rule, Rules};
+use Illuminate\Support\Str;
+use Illuminate\Validation\{Rules, ValidationException};
 use Inertia\Inertia;
 
 /**
@@ -18,20 +19,15 @@ use Inertia\Inertia;
  */
 class RegisteredUserController extends Controller
 {
-    public function create()
+    public function create(Request $request)
     {
         return Inertia::render('Auth/Register', [
-            /* HANYA perusahaan demo.
-
-               Pendaftaran terbuka untuk siapa saja, dan halaman ini dapat
-               dibuka tanpa masuk. Dulu daftarnya memuat SELURUH perusahaan:
-               nama setiap pelanggan terpampang bagi pengunjung mana pun,
-               dan siapa pun dapat menempatkan dirinya di perusahaan
-               sungguhan lalu — sesudah surelnya terverifikasi — membaca
-               datanya. Akun baru kini hanya dapat memilih perusahaan
-               demo; memindahkannya ke perusahaan sungguhan adalah
-               keputusan administrator, di Kelola Pengguna. */
-            'companies'   => self::perusahaanDemo()->get(['id', 'name']),
+            /* Tidak ada pilihan perusahaan: akun baru OTOMATIS masuk
+               perusahaan demo (perusahaanDemoBawaan). Halaman ini hanya
+               perlu tahu apakah perusahaan demo itu ada, untuk memilih
+               kalimat petunjuknya — nama perusahaan mana pun tidak
+               dikirim ke pengunjung yang belum masuk. */
+            'adaDemo'     => self::perusahaanDemoBawaan() !== null,
             'departments' => \App\Support\Hazard::DEPARTEMEN,
             'positions'   => \App\Support\Hazard::JABATAN,
 
@@ -42,27 +38,47 @@ class RegisteredUserController extends Controller
             'turnstile'   => Turnstile::kunciSitus(),
             'tindakan'    => Turnstile::TINDAKAN['daftar'],
             'sandiMinimal' => AturanSandi::MINIMAL,
+
+            /* Daftar dengan Google/Microsoft: hanya penyedia yang
+               kredensialnya terpasang, sama seperti di halaman masuk. */
+            'sso'         => MasukPihakKetiga::tersedia(),
+
+            /* Identitas yang baru dibuktikan penyedia dan menunggu
+               formulir ini diselesaikan — null bila tidak ada. Surelnya
+               ditampilkan terkunci, dan kolom sandinya tidak digambar. */
+            'identitas'   => MasukPihakKetiga::identitas($request),
         ]);
     }
 
     public function store(Request $request)
     {
+        /* Daftar dengan Google/Microsoft: surelnya milik penyedia, bukan
+           isian formulir — kolom surel yang dikirim diabaikan, jadi
+           identitas yang terbukti tidak dapat ditukar dengan surel lain. */
+        $identitas = MasukPihakKetiga::identitas($request);
+
+        if ($identitas === null && $request->boolean('lewat_sso')) {
+            throw ValidationException::withMessages([
+                'email' => __('Waktu untuk menyelesaikan pendaftaran dengan Google atau Microsoft sudah habis. Ulangi lewat tombolnya.'),
+            ]);
+        }
+
+        if ($identitas !== null) {
+            $request->merge(['email' => $identitas['email']]);
+        }
+
         $data = $request->validate([
             'name'        => ['required','string','max:255'],
             'email'       => ['required','string','lowercase','email','max:255','unique:users,email'],
-            'password'    => ['required','confirmed', Rules\Password::defaults()],
+            /* Tanpa sandi untuk akun dari penyedia: masuknya lewat tombol
+               penyedia itu. Sandi dapat dibuat kapan saja lewat Lupa kata
+               sandi, yang mengirim tautan ke surel yang sama. */
+            'password'    => $identitas !== null
+                ? ['exclude']
+                : ['required','confirmed', Rules\Password::defaults()],
             'employee_id' => ['nullable','string','max:50'],
             'position'    => ['required','string','max:100'],
             'department'  => ['nullable','string','max:100'],
-            /* Ditegakkan DI SINI, bukan hanya dengan menyaring daftar di
-               layar: permintaan dapat dikirim tanpa layarnya sama sekali.
-               Bila ada perusahaan demo, salah satunya wajib dipilih —
-               akun tanpa perusahaan hanya melihat halaman kosong. Bila
-               tidak ada sama sekali, akunnya menunggu ditempatkan
-               administrator. */
-            'company_id'  => self::perusahaanDemo()->exists()
-                ? ['required', Rule::exists('companies', 'id')->where('demo', true)]
-                : ['prohibited'],
 
             /* Pendaftaran terbuka untuk siapa saja yang membuka
                halamannya, dan itu memang disengaja — pekerja baru di site
@@ -71,11 +87,7 @@ class RegisteredUserController extends Controller
                akun, masing-masing memicu satu surel verifikasi dari
                server ini. */
             Turnstile::KOLOM => Turnstile::aturan(Turnstile::TINDAKAN['daftar']),
-        ], AturanSandi::pesan() + [
-            'company_id.required'   => __('Pilih perusahaan demo untuk akun baru Anda.'),
-            'company_id.exists'     => __('Akun baru hanya dapat memakai perusahaan demo. Administrator yang memindahkan akun Anda ke perusahaan Anda sendiri.'),
-            'company_id.prohibited' => __('Perusahaan ditetapkan administrator sesudah akun Anda dibuat.'),
-        ]);
+        ], AturanSandi::pesan());
 
         /* Tokennya sengaja TIDAK dibuang dari $data di sini.
            User::$fillable adalah daftar putih, jadi cf-turnstile-response
@@ -88,7 +100,36 @@ class RegisteredUserController extends Controller
         $data['lms_role'] = 'trainee';
         $data['active']   = true;
 
+        /* Perusahaannya ditetapkan DI SINI, tidak pernah dari isian:
+           company_id tidak ada di aturan validasi, jadi nilai yang
+           dikirim permintaan buatan tidak pernah sampai ke $data. Dulu
+           halaman ini memuat SELURUH perusahaan, dan siapa pun dapat
+           menempatkan dirinya di perusahaan pelanggan lalu membaca
+           datanya. Kini akun baru selalu masuk perusahaan demo;
+           memindahkannya ke perusahaan sungguhan adalah keputusan
+           administrator, di Kelola Pengguna. Tanpa perusahaan demo sama
+           sekali, akunnya menunggu ditempatkan administrator. */
+        $data['company_id'] = self::perusahaanDemoBawaan();
+
+        if ($identitas !== null) {
+            /* Sandi acak yang tidak pernah diketahui siapa pun — kolomnya
+               wajib terisi, dan sandi kosong akan cocok dengan isian
+               kosong di formulir masuk. */
+            $data['password'] = Str::password(48);
+        }
+
         $user = User::create($data);
+
+        if ($identitas !== null) {
+            /* Surelnya sudah dibuktikan penyedia, jadi tidak ada kode
+               verifikasi yang dikirim. Identitasnya dibuang: sekali pakai. */
+            MasukPihakKetiga::lupakanIdentitas($request);
+            $user->markEmailAsVerified();
+            Auth::login($user);
+
+            return redirect()->route('dashboard');
+        }
+
         Auth::login($user);
 
         /* Di lingkungan lokal tidak ada server surel sungguhan (MAIL_MAILER
@@ -111,9 +152,18 @@ class RegisteredUserController extends Controller
         return redirect()->route('verification.notice');
     }
 
-    /** Perusahaan yang boleh dipilih akun baru: hanya yang bertanda demo. */
-    private static function perusahaanDemo()
+    /**
+     * Perusahaan demo tempat akun baru dimulai: PT DEMO (kode DEMO) bila
+     * ada — perusahaan contoh utama dari `php artisan demo:pasang` —
+     * selain itu perusahaan demo tertua. null bila tidak ada satu pun.
+     */
+    public static function perusahaanDemoBawaan(): ?int
     {
-        return Company::query()->withoutGlobalScopes()->where('demo', true)->orderBy('name');
+        $id = Company::query()->withoutGlobalScopes()->where('demo', true)
+            ->orderByRaw("CASE WHEN code = 'DEMO' THEN 0 ELSE 1 END")
+            ->orderBy('id')
+            ->value('id');
+
+        return $id === null ? null : (int) $id;
     }
 }

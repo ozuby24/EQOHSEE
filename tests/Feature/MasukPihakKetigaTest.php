@@ -5,10 +5,11 @@ namespace Tests\Feature;
 use App\Http\Controllers\Auth\DuaFaktorTantanganController as Tantangan;
 use App\Http\Middleware\{BahasaTamu, PastikanAktif};
 use App\Models\{Company, User};
-use App\Support\{DuaFaktor, MasukPihakKetiga, Totp};
+use App\Support\{DuaFaktor, Hazard, MasukPihakKetiga, Totp};
 use App\Support\Sso\PenyediaMicrosoft;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Laravel\Socialite\Contracts\Provider;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\InvalidStateException;
@@ -17,14 +18,17 @@ use Mockery;
 use Tests\TestCase;
 
 /**
- * Masuk dengan Google / Microsoft.
+ * Masuk dan daftar dengan Google / Microsoft.
  *
- * Penyedia hanya membuktikan SIAPA orangnya; akunnya tetap akun EQOHSEE
- * yang sudah ada. Yang dijaga: tidak ada tombol tanpa alur yang
- * terpasang, tidak ada akun yang dibuat diam-diam, surel yang belum
- * terbukti tidak dipercaya (termasuk celah "nOAuth" Microsoft), dan akun
- * nonaktif serta akun berdua faktor diperlakukan persis seperti pada
- * masuk bersandi.
+ * Penyedia hanya membuktikan SIAPA orangnya. Surel yang sudah punya akun
+ * masuk ke akun itu; surel yang belum punya diantar ke formulir Daftar
+ * dengan surel terkunci, dan akunnya baru ada sesudah formulir itu
+ * dikirim. Yang dijaga: tidak ada tombol tanpa alur yang terpasang,
+ * tidak ada akun yang dibuat diam-diam, surel yang belum terbukti tidak
+ * dipercaya (termasuk celah "nOAuth" Microsoft), identitas yang
+ * terbukti tidak dapat ditukar dengan surel lain atau dipakai sesudah
+ * lewat waktunya, dan akun nonaktif serta akun berdua faktor
+ * diperlakukan persis seperti pada masuk bersandi.
  */
 class MasukPihakKetigaTest extends TestCase
 {
@@ -143,17 +147,168 @@ class MasukPihakKetigaTest extends TestCase
         $this->assertAuthenticatedAs($u);
     }
 
-    public function test_surel_tanpa_akun_ditolak_dan_tidak_membuat_akun(): void
+    public function test_surel_tanpa_akun_diantar_ke_formulir_daftar_tanpa_membuat_akun(): void
     {
         $this->pasang('google');
         $sebelum = User::count();
 
-        $this->kembali($this->sosial('orang.baru@contoh.test'))
-            ->assertRedirect('/login')
-            ->assertSessionHas('galat', fn ($p) => str_contains($p, 'Belum ada akun EQOHSEE untuk orang.baru@contoh.test'));
+        $this->kembali($this->sosial('Orang.Baru@contoh.test'))->assertRedirect('/register');
 
         $this->assertGuest();
         $this->assertSame($sebelum, User::count(), 'Masuk dengan Google membuat akun baru diam-diam.');
+
+        // Formulir Daftar menerima identitasnya: surel yang terbukti,
+        // dan tanda bahwa orangnya datang dari tombol Masuk.
+        $this->get('/register')->assertOk()->assertInertia(fn ($p) => $p
+            ->component('Auth/Register')
+            ->where('identitas.email', 'orang.baru@contoh.test')
+            ->where('identitas.penyedia', 'google')
+            ->where('identitas.namaPenyedia', 'Google')
+            ->where('identitas.nama', 'Penjaga Tambang')
+            ->where('identitas.dariMasuk', true));
+    }
+
+    /* ═══════════ daftar dengan Google / Microsoft ═══════════ */
+
+    public function test_tombol_daftar_hanya_untuk_penyedia_yang_dipasang(): void
+    {
+        $this->get('/register')->assertOk()->assertInertia(fn ($p) => $p
+            ->where('sso.google', false)
+            ->where('sso.microsoft', false)
+            ->where('identitas', null));
+        $this->get('/daftar/google')->assertNotFound();
+        $this->get('/daftar/microsoft')->assertNotFound();
+        $this->get('/daftar/facebook')->assertNotFound();
+
+        $this->pasang('microsoft');
+        $this->get('/register')->assertInertia(fn ($p) => $p
+            ->where('sso.google', false)
+            ->where('sso.microsoft', true));
+
+        $halaman = file_get_contents(resource_path('js/Pages/Auth/Register.vue'));
+        $this->assertMatchesRegularExpression('#<a v-if="sso\.google" href="/daftar/google"#', $halaman);
+        $this->assertMatchesRegularExpression('#<a v-if="sso\.microsoft" href="/daftar/microsoft"#', $halaman);
+    }
+
+    public function test_daftar_dialihkan_ke_penyedia_lewat_alamat_kembali_yang_sama(): void
+    {
+        $this->pasang('google');
+
+        $tujuan = $this->get('/daftar/google')
+            ->assertRedirect()
+            ->assertSessionHas(MasukPihakKetiga::KUNCI_NIAT, 'daftar')
+            ->headers->get('Location');
+
+        $this->assertStringStartsWith('https://accounts.google.com/', $tujuan);
+        $this->assertStringContainsString('prompt=select_account', $tujuan);
+        $this->assertStringContainsString(urlencode(url('/masuk/google/kembali')), $tujuan,
+            'Alur daftar memakai alamat kembali lain — yang didaftarkan di konsol penyedia hanya /masuk/google/kembali.');
+
+        // Tombol Masuk sesudahnya membuang niat daftar yang tertinggal.
+        $this->get('/masuk/google')->assertRedirect()->assertSessionMissing(MasukPihakKetiga::KUNCI_NIAT);
+    }
+
+    public function test_menyelesaikan_daftar_membuat_akun_terverifikasi_tanpa_sandi(): void
+    {
+        $this->pasang('google');
+        $demo = Company::create(['name' => 'PT Contoh Demo', 'demo' => true]);
+
+        $this->withSession([MasukPihakKetiga::KUNCI_NIAT => 'daftar']);
+        $this->kembali($this->sosial('pendaftar@contoh.test'))->assertRedirect('/register');
+        $this->assertGuest();
+
+        $this->post('/register', [
+            'name'      => 'Pendaftar Lewat Google',
+            'email'     => 'penyusup@lain.test',   // diabaikan: surelnya milik penyedia
+            'position'  => Hazard::JABATAN[0],
+            'lewat_sso' => true,
+        ])->assertSessionHasNoErrors()
+          ->assertRedirect('/dashboard')
+          ->assertSessionMissing(MasukPihakKetiga::KUNCI_DAFTAR);
+
+        $u = User::where('email', 'pendaftar@contoh.test')->first();
+        $this->assertNotNull($u, 'Akun tidak dibuat dengan surel dari penyedia.');
+        $this->assertFalse(User::where('email', 'penyusup@lain.test')->exists(),
+            'Surel dari formulir menggantikan surel yang dibuktikan penyedia.');
+        $this->assertAuthenticatedAs($u);
+        $this->assertNotNull($u->email_verified_at, 'Surel yang sudah dibuktikan penyedia masih diminta kode verifikasi.');
+        $this->assertSame($demo->id, (int) $u->company_id);
+        $this->assertSame('Pendaftar Lewat Google', $u->name);
+        $this->assertFalse(Hash::check('', $u->password), 'Akun dari penyedia bersandi kosong.');
+    }
+
+    public function test_daftar_tetap_hanya_ke_perusahaan_demo(): void
+    {
+        $this->pasang('google');
+        $demo = Company::create(['name' => 'PT Contoh Demo', 'demo' => true]);
+        $nyata = Company::create(['name' => 'PT Pelanggan Sungguhan', 'demo' => false]);
+
+        $this->kembali($this->sosial('pendaftar@contoh.test'));
+
+        // Perusahaan yang dikirim permintaan buatan diabaikan.
+        $this->post('/register', [
+            'name' => 'Pendaftar', 'position' => Hazard::JABATAN[0], 'company_id' => $nyata->id, 'lewat_sso' => true,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame($demo->id, (int) User::where('email', 'pendaftar@contoh.test')->value('company_id'));
+    }
+
+    public function test_identitas_yang_lewat_waktu_tidak_dapat_dipakai_mendaftar(): void
+    {
+        $this->pasang('google');
+        Company::create(['name' => 'PT Contoh Demo', 'demo' => true]);
+        $this->kembali($this->sosial('terlambat@contoh.test'))->assertRedirect('/register');
+
+        $this->travel(MasukPihakKetiga::MENIT_DAFTAR + 1)->minutes();
+
+        $this->get('/register')->assertInertia(fn ($p) => $p->where('identitas', null));
+        $this->post('/register', [
+            'name' => 'Terlambat', 'position' => Hazard::JABATAN[0], 'lewat_sso' => true,
+        ])->assertSessionHasErrors(['email' => 'Waktu untuk menyelesaikan pendaftaran dengan Google atau Microsoft sudah habis. Ulangi lewat tombolnya.']);
+
+        $this->assertFalse(User::where('email', 'terlambat@contoh.test')->exists());
+        $this->assertGuest();
+    }
+
+    public function test_daftar_dengan_akun_yang_sudah_ada_langsung_masuk(): void
+    {
+        $this->pasang('google');
+        $u = $this->akun();
+
+        $this->withSession([MasukPihakKetiga::KUNCI_NIAT => 'daftar']);
+        $this->kembali($this->sosial('penjaga@tambang.co.id'))
+            ->assertRedirect('/dashboard')
+            ->assertSessionHas('sukses', 'Akun EQOHSEE untuk penjaga@tambang.co.id sudah ada, jadi Anda langsung masuk.');
+
+        $this->assertAuthenticatedAs($u);
+        $this->assertSame(1, User::where('email', 'penjaga@tambang.co.id')->count());
+    }
+
+    public function test_batal_di_penyedia_saat_daftar_kembali_ke_halaman_daftar(): void
+    {
+        $this->pasang('microsoft');
+        Socialite::shouldReceive('driver')->never();
+
+        $this->withSession([MasukPihakKetiga::KUNCI_NIAT => 'daftar'])
+            ->get('/masuk/microsoft/kembali?error=access_denied&state=x')
+            ->assertRedirect('/register')
+            ->assertSessionHas('galat', 'Daftar dengan Microsoft dibatalkan.')
+            ->assertSessionMissing(MasukPihakKetiga::KUNCI_NIAT);
+    }
+
+    public function test_pakai_akun_lain_membuang_identitas(): void
+    {
+        $this->pasang('google');
+        $this->kembali($this->sosial('salah.akun@contoh.test'))->assertRedirect('/register');
+
+        $this->post('/daftar/sso/batal')
+            ->assertRedirect('/register')
+            ->assertSessionMissing(MasukPihakKetiga::KUNCI_DAFTAR);
+        $this->get('/register')->assertInertia(fn ($p) => $p->where('identitas', null));
+
+        // Dari catatan "belum ada akun": kembali ke halaman masuk.
+        $this->kembali($this->sosial('salah.akun@contoh.test'));
+        $this->post('/daftar/sso/batal', ['ke' => 'masuk'])->assertRedirect('/login');
     }
 
     public function test_surel_yang_belum_diverifikasi_penyedia_ditolak(): void

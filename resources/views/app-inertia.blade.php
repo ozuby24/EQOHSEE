@@ -95,7 +95,12 @@
      versi. Dengan ?v=… peramban menganggapnya berkas lain: hasil preload
      tidak terpakai, hurufnya terunduh dua kali, dan konsol memperingatkan
      "preloaded but not used". --}}
-<link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+{{-- Preload mengikuti huruf yang benar-benar dipakai layarnya: monitor
+     PC berkerapatan rendah memakai 'Inter Tajam' statis ber-hinting
+     (lihat fonts.css), layar rapat memakai Inter variabel. Preload yang
+     tidak bersyarat mengunduh berkas yang tidak pernah dipakai. --}}
+<link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin media="(min-resolution: 1.5dppx)">
+<link rel="preload" href="/fonts/inter-tajam-400-latin.woff2" as="font" type="font/woff2" crossorigin media="(max-resolution: 1.49dppx)">
 @vite(['resources/css/app.css', 'resources/js/inertia.ts'])
 <link rel="icon" type="image/svg+xml" href="{{ \App\Support\Aset::v('brand/favicon.svg') }}">
 <link rel="icon" href="{{ \App\Support\Aset::v('favicon.ico') }}" sizes="any">

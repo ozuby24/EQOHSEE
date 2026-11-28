@@ -41,6 +41,17 @@ Route::middleware('guest')->group(function () {
         ->middleware('throttle:masuk-sso')
         ->name('masuk.sso.kembali');
 
+    /* Daftar dengan akun Google / Microsoft. Kembalinya lewat alamat
+       yang sama dengan masuk (satu-satunya yang didaftarkan di konsol
+       penyedia); akunnya baru dibuat sesudah formulir Daftar dikirim. */
+    Route::get('daftar/{penyedia}', [MasukPihakKetigaController::class, 'daftar'])
+        ->whereIn('penyedia', MasukPihakKetiga::PENYEDIA)
+        ->middleware('throttle:masuk-sso')
+        ->name('daftar.sso');
+
+    Route::post('daftar/sso/batal', [MasukPihakKetigaController::class, 'batalDaftar'])
+        ->name('daftar.sso.batal');
+
     /* Halaman kode dua faktor.
        Tetap di dalam grup 'guest': yang membukanya BELUM masuk — ia
        hanya membawa setengah-masuk di sesinya. Dipasang di luar grup,

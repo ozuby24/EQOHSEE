@@ -292,7 +292,7 @@ const tempatTanggal = computed(() => {
 .sl-lembar {
   position: absolute; top: 0; left: 0; width: 1122px; height: 793px;
   transform-origin: 0 0; overflow: hidden; background: #F6F4EE;
-  font-family: 'Inter', system-ui, sans-serif; color: #1F2A24;
+  font-family: 'Inter Tajam', 'Inter', system-ui, sans-serif; color: #1F2A24;
   -webkit-print-color-adjust: exact; print-color-adjust: exact;
 }
 .sl-latar { position: absolute; inset: 0; width: 100%; height: 100%; }

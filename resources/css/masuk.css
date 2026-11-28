@@ -36,7 +36,7 @@
      verifikasi) mengikuti merek, bukan warna bawaan perusahaan. */
   --eq-aksen: #13806B;
 
-  font-family: 'Archivo', system-ui, sans-serif;
+  font-family: 'Archivo Tajam', 'Archivo', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   color: var(--ms-tinta);
   background: var(--ms-latar);
@@ -137,7 +137,7 @@
   text-shadow: 0 2px 18px rgba(3, 22, 20, .35);
 }
 .ms-h1 em { font-style: normal; color: var(--ms-limau); }
-.ms-amp { font-family: 'Inter', system-ui, sans-serif; font-weight: 700; font-stretch: normal; }
+.ms-amp { font-family: 'Inter Tajam', 'Inter', system-ui, sans-serif; font-weight: 700; font-stretch: normal; }
 
 .ms-hero-sub { margin: 18px 0 0; max-width: 520px; font-size: 16px; line-height: 1.6; color: rgba(255, 255, 255, .86); }
 
@@ -149,7 +149,7 @@
 .ms-kaca-kiri { gap: 10px; width: min(460px, 52%); container-type: inline-size; }
 .ms-statistik {
   position: relative; overflow: hidden; isolation: isolate;
-  padding: 14px 16px 15px; border-radius: 20px; font-family: 'Inter', system-ui, sans-serif;
+  padding: 14px 16px 15px; border-radius: 20px; font-family: 'Inter Tajam', 'Inter', system-ui, sans-serif;
   animation: ms-muncul .6s cubic-bezier(.2, .7, .3, 1) both;
 }
 .ms-statistik-atas { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -236,7 +236,7 @@
   .ms-huruf { grid-template-columns: repeat(8, auto); }
 }
 .ms-huruf b {
-  display: block; font-family: 'Inter', system-ui, sans-serif; font-size: 9.5px; font-weight: 600;
+  display: block; font-family: 'Inter Tajam', 'Inter', system-ui, sans-serif; font-size: 9.5px; font-weight: 600;
   letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; color: rgba(255, 255, 255, .55);
 }
 
@@ -351,7 +351,7 @@
 
 /* Masuk dengan Google/Microsoft — tombol putih bergaris, logo resmi
    penyedia, sesuai pedoman merek keduanya. */
-.ms-atau { display: flex; align-items: center; gap: 14px; margin: 22px 0 14px; font-family: 'Inter', system-ui, sans-serif; font-size: 13px; color: var(--ms-samar); }
+.ms-atau { display: flex; align-items: center; gap: 14px; margin: 22px 0 14px; font-family: 'Inter Tajam', 'Inter', system-ui, sans-serif; font-size: 13px; color: var(--ms-samar); }
 .ms-atau::before, .ms-atau::after { content: ''; flex: 1; height: 1px; background: var(--ms-garis); }
 .ms-sso { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
 .ms-sso-tombol {
@@ -361,6 +361,36 @@
 }
 .ms-sso-tombol:hover { border-color: #A9B8B2; box-shadow: 0 6px 16px -10px rgba(7, 36, 32, .35); }
 .ms-sso-tombol svg { width: 20px; height: 20px; flex: none; }
+/* Halaman Daftar: tombol penyedia di atas formulir, garis "atau daftar
+   dengan email" di antaranya. */
+.ms-atau.ms-atau-formulir { margin: 18px 0 16px; }
+
+/* Kartu identitas dari Google/Microsoft di formulir Daftar: surel yang
+   sudah dibuktikan penyedia, terkunci, dengan jalan kembali. */
+.ms-identitas {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 0 0 14px; padding: 12px 14px;
+  border: 1px solid #CFE0D8; border-radius: 14px;
+  background: linear-gradient(160deg, rgba(229, 241, 236, .92), rgba(255, 255, 255, .86));
+}
+.ms-identitas-logo {
+  display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 11px;
+  background: #FFFFFF; box-shadow: inset 0 0 0 1px #E1E7E3, 0 1px 2px rgba(7, 36, 32, .08);
+}
+.ms-identitas-logo svg { width: 22px; height: 22px; }
+/* Kolom surel paling sedikit 180 px: di kartu sempit (ponsel) "Pakai akun
+   lain" turun ke barisnya sendiri alih-alih memotong surelnya. */
+.ms-identitas-teks { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 180px; }
+.ms-identitas-teks b {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 14.5px; font-weight: 700; color: var(--ms-tinta);
+}
+.ms-identitas-teks small { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 600; color: var(--ms-aksen-teks); }
+.ms-identitas-teks small svg { width: 13px; height: 13px; flex: none; }
+.ms-identitas-ganti { flex: none; min-height: 44px; margin-left: auto; padding: 0 2px; font-size: 13px; white-space: nowrap; }
+.ms-identitas-belum { margin: -2px 0 16px; font-size: 13px; line-height: 1.55; color: var(--ms-redup); }
+.ms-identitas button, .ms-identitas-belum button { background: none; border: 0; font: inherit; cursor: pointer; }
+.ms-identitas-belum button { padding: 0; font-size: inherit; }
+.ms-tanpa-sandi { margin: 0; padding: 10px 12px; border-radius: 12px; background: rgba(229, 241, 236, .7); }
 
 .ms-kaki {
   margin: 26px 0 0; padding-top: 16px; border-top: 1px solid var(--ms-garis);
@@ -492,9 +522,15 @@
   .ms::before { left: -6%; top: -16%; width: 58%; height: 60%; background-image: var(--ms-pita-kiri); transform: rotate(-6deg); }
   .ms::after { right: -8%; bottom: -18%; width: 60%; height: 62%; background-image: var(--ms-pita-kanan); }
 
+  /* 100dvh sesudah 100vh: di tablet dan ponsel, 100vh adalah tinggi
+     layar SAAT bilah alamat tersembunyi. Selama bilahnya tampak, kartu
+     setinggi 100vh menjorok ±56 px di bawah layar — tepi bawah formulir
+     (kaki, lencana) terpotong pada zoom 100%. dvh mengikuti tinggi yang
+     benar-benar terlihat; peramban lama memakai baris pertamanya. */
   .ms-bingkai {
     position: relative; z-index: 1; width: min(1720px, 100%);
     min-height: min(940px, calc(100vh - 2 * var(--ms-tepi)));
+    min-height: min(940px, calc(100dvh - 2 * var(--ms-tepi)));
     border-radius: 30px; overflow: hidden;
     background: rgba(255, 255, 255, .38); border: 1px solid rgba(255, 255, 255, .72);
     box-shadow: 0 60px 120px -50px rgba(7, 36, 32, .55), 0 2px 12px rgba(7, 36, 32, .06);
@@ -518,7 +554,7 @@
 /* Lencana keamanan di bawah formulir. */
 .ms-aman {
   display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px; margin: 20px 0 0;
-  font-family: 'Inter', system-ui, sans-serif; font-size: 12px; font-weight: 500; color: var(--ms-samar);
+  font-family: 'Inter Tajam', 'Inter', system-ui, sans-serif; font-size: 12px; font-weight: 500; color: var(--ms-samar);
 }
 .ms-aman span { display: inline-flex; align-items: center; gap: 6px; }
 .ms-aman svg { width: 15px; height: 15px; color: var(--ms-aksen); }
@@ -539,6 +575,78 @@
   .ms-daftar { margin-top: 16px; }
   .ms-aman { margin-top: 16px; }
   .ms-kaki { margin-top: 20px; padding-top: 14px; }
+}
+
+/* ── Muat di layar yang lebih pendek lagi ──
+   Laptop 1366×768, 1536×864 dan 1280×720, tablet mendatar (1280×800,
+   iPad) pada zoom 100%: sesudah bilah alamat dan bilah tugas, tingginya
+   tinggal 600–860 px. Halaman Masuk dan Lupa sandi harus muat
+   SELURUHNYA — kaki formulir dan kaca statistik pernah jatuh di bawah
+   layar. Diukur di 1024–1920 px lebar, 600–950 px tinggi, dengan
+   Turnstile dan tombol Google/Microsoft terpasang: tidak ada yang lewat.
+
+   Yang dirapatkan, bertingkat: jarak dan padding dulu, lalu judul dan
+   kolom (tidak pernah di bawah 44 px — target sentuh), lalu kalimat
+   pembuka formulir masuk, lalu lencana keamanan. Kartunya tetap
+   memanjang mengikuti isinya (formulir Daftar): tidak ada gulir di
+   dalam gulir. */
+@media (min-width: 1024px) and (max-height: 880px) {
+  .ms { --ms-tepi: clamp(10px, 2vh, 20px); }
+
+  /* Pilihan bahasa pindah ke pojok foto, di samping merek — di panel
+     formulir ia memakan 64 px di atas judul. */
+  .ms .ms-bahasa.ms-bahasa-panel { display: none; }
+  .ms .ms-bahasa-foto { display: block; }
+  .ms .ms-panel-atas { z-index: 20; }
+
+  .ms .ms-panel { padding-top: 40px; padding-bottom: 32px; gap: 22px; }
+  .ms-garis { margin-bottom: 14px; }
+  .ms-h1 { font-size: clamp(28px, min(4vw, 6.4vh), 52px); }
+  .ms-hero-sub { margin-top: 12px; font-size: 15px; line-height: 1.55; }
+  .ms-statistik { padding: 12px 14px 13px; }
+  .ms-statistik-isi { margin-top: 10px; }
+  .ms-stat-angka { font-size: 22px; }
+
+  .ms .ms-lembar { padding-top: 34px; padding-bottom: 18px; }
+  .ms-judul, .ms .auth-judul { font-size: clamp(26px, 2.3vw, 32px); }
+  .ms-sub { margin: 6px 0 16px; font-size: 14.5px; line-height: 1.5; }
+  .ms .auth-ket.mb-7 { margin-bottom: 18px; }
+  .ms-label { margin-bottom: 6px; font-size: 14px; }
+  .ms-isian { height: 44px; }
+  .ms-tombol { height: 46px; }
+  .ms .auth-tombol { min-height: 46px; }
+  .ms form .input, .ms form .auth-isian { min-height: 44px; }
+  .ms-sso-tombol { height: 44px; }
+  .ms-kartu form.space-y-5 > :not([hidden]) ~ :not([hidden]),
+  .ms-kartu form.space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 12px; }
+  .ms-atau { margin: 14px 0 10px; }
+  .ms-atau.ms-atau-formulir { margin: 14px 0 12px; }
+  .ms-daftar { margin-top: 12px; }
+  .ms-aman { margin-top: 12px; }
+  .ms-kaki { margin-top: 14px; padding-top: 10px; }
+}
+@media (min-width: 1024px) and (max-height: 720px) {
+  .ms .ms-panel { padding-top: 30px; padding-bottom: 26px; gap: 18px; }
+  .ms .ms-lembar { padding-top: 28px; padding-bottom: 18px; }
+  /* Kalimat pembuka formulir masuk dilepas — judul "Masuk ke EQOHSEE"
+     sudah mengatakannya. Judulnya mengambil alih jaraknya. */
+  .ms .ms-sub { display: none; }
+  .ms .ms-judul:has(+ .ms-sub) { margin-bottom: 16px; }
+  .ms .auth-ket.mb-7 { margin-bottom: 14px; }
+  .ms-kartu form.space-y-5 > :not([hidden]) ~ :not([hidden]),
+  .ms-kartu form.space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 10px; }
+}
+@media (min-width: 1024px) and (max-height: 660px) {
+  .ms .ms-panel { padding-top: 24px; padding-bottom: 22px; gap: 14px; }
+  .ms .ms-lembar { padding-top: 22px; padding-bottom: 14px; }
+  .ms-judul, .ms .auth-judul { font-size: 26px; }
+  .ms .ms-aman { display: none; }
+  .ms-atau { margin: 10px 0 8px; }
+  .ms-daftar { margin-top: 8px; }
+  .ms-kaki { margin-top: 10px; padding-top: 8px; }
+}
+@media (min-width: 1024px) and (max-height: 600px) {
+  .ms .ms-hero-sub { display: none; }
 }
 
 /* ── Pilihan bahasa ── */

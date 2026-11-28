@@ -1,3 +1,55 @@
+# Update 27 — Tampilan tajam di PC, sidebar terlipat, halaman masuk muat satu layar, daftar dengan Google & Microsoft
+
+```bash
+# Di VPS, dari /var/www/EQOHSEE
+bash deploy/deploy.sh          # build ulang aset; tidak ada migrasi baru
+```
+Tidak ada migrasi, tabel, paket, atau penjadwal baru.
+
+- **Huruf tajam di layar PC** (Windows, zoom 100–125%): huruf Inter dan
+  Archivo bawaan tidak membawa *hinting*, sehingga ClearType menggambarnya
+  kabur pada ukuran kecil. Layar berkepadatan biasa (di bawah 1,5 piksel
+  per titik) kini memuat versi ber-hinting (`/fonts/*-tajam-*.woff2`);
+  layar retina dan ponsel tetap memakai huruf variabel.
+- **Gambar tajam di layar lebar & retina**: foto halaman masuk punya versi
+  2× (`/brand/masuk-tambang-2x.webp`), dan enam foto sampul modul punya
+  versi 2.400 dan 3.200 piksel (`/media/sampul/*-2400.webp`, `*-3200.webp`)
+  — peramban memilih sendiri ukuran yang diperlukan layarnya.
+- **Sidebar diperkecil (ikon saja)**: nama menu tampil saat ikon diarahkan
+  atau difokus; tombol *Pindah modul* membuka daftar modul melayang
+  lengkap dengan namanya (sebelumnya hilang/terpotong); menu aktif ditandai
+  jelas; setiap menu memakai ikon yang berbeda (sebelumnya puluhan menu
+  berbagi satu ikon bawaan). Esc atau klik di luar menutup daftarnya.
+  Laci menu di ponsel tidak berubah.
+- **Monitor besar**: isi halaman melebar sampai 1.760 px (sebelumnya
+  1.400 px — layar 1920/2560 px menyisakan bidang kosong lebar).
+- **Tabel di ponsel**: sel teks panjang tidak lagi dikira angka, jadi
+  tidak lagi terpotong.
+- **Halaman masuk muat satu layar**: laptop 1366×768, 1536×864 dan
+  1280×720, tablet mendatar pada zoom 100% — kaki formulir, kaca statistik,
+  dan pilar tidak lagi jatuh di bawah layar (diukur 1024–2560 px lebar,
+  600–1300 px tinggi). Tinggi kartu mengikuti tinggi layar yang benar-benar
+  terlihat (bilah alamat tablet ikut dihitung). Di layar pendek pilihan
+  bahasa pindah ke pojok foto. Formulir Daftar yang panjang memakai dua
+  kolom di layar lebar dan menggulir sebagai satu halaman di layar pendek.
+- **Daftar dengan Google & Microsoft**: halaman Daftar kini punya tombol
+  Google dan Microsoft di atas formulirnya. Penyedia membuktikan surelnya;
+  orangnya melengkapi jabatan dan perusahaan demo, lalu akunnya dibuat —
+  langsung terverifikasi, tanpa kata sandi (kata sandi dapat dibuat kapan
+  saja lewat «Lupa kata sandi»). Tombol *Masuk dengan Google/Microsoft*
+  untuk surel yang belum punya akun kini mengantar ke formulir itu, bukan
+  berhenti di pesan galat. Akun tetap tidak pernah dibuat diam-diam, dan
+  akun baru tetap hanya di perusahaan demo.
+  **Tombolnya baru muncul sesudah kredensial Google/Microsoft diisi di
+  `.env` VPS** — lihat "Masuk & daftar dengan Google / Microsoft" di bawah.
+  Alamat kembali yang didaftarkan di konsol penyedia TIDAK berubah.
+- **Formulir Daftar tanpa pilihan perusahaan**: akun baru otomatis masuk
+  perusahaan demo — PT DEMO (kode `DEMO`) bila ada, selain itu perusahaan
+  demo tertua. Isian perusahaan dari permintaan mana pun diabaikan, dan
+  nama perusahaan tidak lagi dikirim ke halaman Daftar. Tanpa perusahaan
+  demo sama sekali, akun menunggu ditempatkan administrator seperti dulu.
+  Pindah ke perusahaan sungguhan tetap lewat Kelola Pengguna.
+
 # Update 26 — Aplikasi dalam memakai palet merek baru; dasbor analitik baru
 
 ```bash
@@ -105,12 +157,16 @@ halaman masuk bekerja seperti biasa.
 - Lencana "Koneksi terenkripsi" (hanya di HTTPS) dan "Dilindungi
   Cloudflare Turnstile" (hanya bila Turnstile aktif).
 
-## Masuk dengan Google / Microsoft (pilihan)
-Hanya untuk akun yang SUDAH ADA: penyedia membuktikan siapa orangnya,
-lalu akun EQOHSEE dengan surel yang sama yang dimasuki. Tidak ada akun
-yang dibuat otomatis; akun nonaktif ditolak; verifikasi dua langkah
-tetap diminta. Microsoft hanya mempercayai surel berdomain milik
-organisasi itu sendiri (menutup celah "nOAuth").
+## Masuk & daftar dengan Google / Microsoft (pilihan)
+Penyedia membuktikan siapa orangnya (surelnya terverifikasi). Surel yang
+sudah punya akun EQOHSEE langsung masuk ke akun itu. Surel yang belum
+punya akun diantar ke formulir Daftar dengan surel terkunci (berlaku 15
+menit) — akunnya baru dibuat sesudah orangnya melengkapi jabatan dan
+perusahaan demo lalu menekan Daftar; tidak ada akun yang dibuat
+diam-diam, dan akun baru tetap hanya di perusahaan demo. Akun nonaktif
+ditolak; verifikasi dua langkah tetap diminta. Microsoft hanya
+mempercayai surel berdomain milik organisasi itu sendiri (menutup celah
+"nOAuth"). Satu alamat kembali per penyedia melayani masuk dan daftar.
 
 1. **Google** — console.cloud.google.com → APIs & Services → Credentials →
    *Create credentials* → *OAuth client ID* → *Web application*.
@@ -131,8 +187,11 @@ organisasi itu sendiri (menutup celah "nOAuth").
    # kosong = semua organisasi; isi ID/domain penyewa untuk satu organisasi saja
    MICROSOFT_TENANT_ID=
    ```
-   Tombolnya muncul sendiri untuk penyedia yang kredensialnya lengkap.
-   Mengosongkannya lagi = tombolnya hilang, alurnya tertutup (404).
+   Tombolnya muncul sendiri — di halaman Masuk DAN Daftar — untuk
+   penyedia yang kredensialnya lengkap. Mengosongkannya lagi = tombolnya
+   hilang, alurnya tertutup (404).
+4. Periksa: buka `/login` dan `/register` — tombol Google/Microsoft tampil.
+   Selama `.env` belum diisi, keduanya memang tidak tampil (bukan galat).
 
 ## Sesudah deploy — wajib dikerjakan orang
 - Buka halaman masuk sekali dari peramban biasa: kaca kiri-bawah

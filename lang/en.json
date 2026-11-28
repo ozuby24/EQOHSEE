@@ -10,9 +10,6 @@
     "Kode baru dibuat, tetapi surelnya gagal dikirim. Hubungi administrator.": "A new code was created, but the email could not be sent. Contact your administrator.",
     "Kode baru sudah dikirim.": "A new code has been sent.",
     "Kode baru dibuat, tetapi pengiriman surel belum aktif di server ini.": "A new code was created, but email delivery is not enabled on this server yet.",
-    "Pilih perusahaan demo untuk akun baru Anda.": "Choose a demo company for your new account.",
-    "Akun baru hanya dapat memakai perusahaan demo. Administrator yang memindahkan akun Anda ke perusahaan Anda sendiri.": "New accounts can only use a demo company. An administrator moves your account to your own company.",
-    "Perusahaan ditetapkan administrator sesudah akun Anda dibuat.": "Your company is assigned by an administrator after your account is created.",
     "Verifikasi keamanan gagal. Muat ulang halaman lalu coba lagi.": "The security check failed. Reload the page and try again.",
     "Sandi ini adalah sandi akun contoh yang tercantum di kode sumber, sehingga tidak dapat dipakai masuk di server ini. Minta administrator mengatur sandi baru untuk akun Anda di Kelola Pengguna.": "This password is the sample account password published in the source code, so it cannot be used to sign in on this server. Ask an administrator to set a new password for your account in Manage Users.",
     "Akun Anda dinonaktifkan. Hubungi administrator.": "Your account has been deactivated. Contact your administrator.",
@@ -22,5 +19,9 @@
     "Masuk dengan :nama dibatalkan.": "Sign-in with :nama was cancelled.",
     "Masuk dengan :nama gagal. Coba lagi, atau masuk dengan email dan kata sandi.": "Sign-in with :nama failed. Try again, or sign in with your email and password.",
     "Surel akun :nama Anda belum terverifikasi oleh :nama, jadi tidak dapat dipakai untuk masuk.": "The email on your :nama account hasn't been verified by :nama, so it can't be used to sign in.",
-    "Belum ada akun EQOHSEE untuk :surel. Akun diberikan admin perusahaan Anda, atau daftar lebih dulu.": "There is no EQOHSEE account for :surel yet. Accounts are issued by your company administrator, or you can sign up first."
+    "Daftar dengan :nama dibatalkan.": "Sign-up with :nama was cancelled.",
+    "Daftar dengan :nama gagal. Coba lagi, atau isi formulir di bawah.": "Sign-up with :nama failed. Try again, or fill in the form below.",
+    "Surel akun :nama Anda belum terverifikasi oleh :nama, jadi tidak dapat dipakai untuk mendaftar.": "The email on your :nama account hasn't been verified by :nama, so it can't be used to sign up.",
+    "Akun EQOHSEE untuk :surel sudah ada, jadi Anda langsung masuk.": "An EQOHSEE account for :surel already exists, so you have been signed in to it.",
+    "Waktu untuk menyelesaikan pendaftaran dengan Google atau Microsoft sudah habis. Ulangi lewat tombolnya.": "The time to finish signing up with Google or Microsoft has run out. Start again from its button."
 }

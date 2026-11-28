@@ -14,7 +14,7 @@
 *{ -webkit-font-smoothing:antialiased; }
 
 body{
-  font-family:'Inter',sans-serif;
+  font-family:'Inter Tajam', 'Inter',sans-serif;
   background:#F5F7F9;
   color:#0F1720;
 }
@@ -96,7 +96,9 @@ th{ white-space:nowrap; }
   #app table:not(:is(.lembar, .smkp-cetak) table){ min-width:0 !important; }
   #app :is(th, td):not(:is(.lembar, .smkp-cetak) *){ white-space:normal !important; min-width:0 !important; }
   /* ...kecuali angka: lihat td.num di bawah. */
-  #app td.num:not(:is(.lembar, .smkp-cetak) *), #app td .num:not(:is(.lembar, .smkp-cetak) *), #app td.sel-angka:not(:is(.lembar, .smkp-cetak) *){ white-space:nowrap !important; }
+  /* Kecuali di kartu bertumpuk: di sana tiap sel selebar kartunya, dan
+     sel bertanda angka yang ternyata memuat kalimat harus boleh patah. */
+  #app td.num:not(:is(.lembar, .smkp-cetak, .tabel-tumpuk) *), #app td .num:not(:is(.lembar, .smkp-cetak, .tabel-tumpuk) *), #app td.sel-angka:not(:is(.lembar, .smkp-cetak, .tabel-tumpuk) *){ white-space:nowrap !important; }
   #app :is(th, td):not(:is(.lembar, .smkp-cetak) *):not(.tabel-tumpuk *):not(:first-child):not(:last-child){
     padding-left:.45rem !important; padding-right:.45rem !important;
   }
@@ -257,7 +259,7 @@ th{ white-space:nowrap; }
    halaman masuk/daftar, kop halaman, dan halaman pilar. Dipersempit lewat
    sumbu lebar Archivo, sama seperti .ld-h1/.ld-h2 di halaman depan. */
 .huruf-merek{
-  font-family:'Archivo',system-ui,sans-serif;
+  font-family:'Archivo Tajam', 'Archivo',system-ui,sans-serif;
   font-weight:700;
   font-stretch:86%;
   letter-spacing:-.025em;
@@ -265,7 +267,7 @@ th{ white-space:nowrap; }
   text-wrap:balance;
 }
 .auth-judul{
-  font-family:'Archivo',system-ui,sans-serif;
+  font-family:'Archivo Tajam', 'Archivo',system-ui,sans-serif;
   font-weight:700;
   font-stretch:88%;
   font-size:30px;
@@ -300,7 +302,7 @@ th{ white-space:nowrap; }
 .num{ font-variant-numeric:tabular-nums lining-nums; font-feature-settings:'tnum' 1,'lnum' 1; }
 
 .stat{
-  font-family:'Inter',sans-serif;
+  font-family:'Inter Tajam', 'Inter',sans-serif;
   font-weight:800;
   font-variant-numeric:tabular-nums lining-nums;
   letter-spacing:-0.035em;
