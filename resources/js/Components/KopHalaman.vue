@@ -95,6 +95,8 @@ const props = withDefaults(defineProps<{
    * harus dijaga tetap sama selamanya.
    */
   gambar?: string | null;
+  /** Kandidat WebP berlebar (1600w, 2400w, 3200w) — lihat SampulModul::srcset. */
+  srcset?: string | null;
   webp?: string | null;
   keterangan?: string | null;
   kondisi?: {
@@ -110,7 +112,7 @@ const props = withDefaults(defineProps<{
   subjudul: null, label: null, remah: () => [], tagline: null, pil: () => [],
   angka: null, sisi: () => [], aksi: null,
   kanan: null, kananKecil: null, ringkas: false,
-  gambar: null, webp: null, keterangan: null, kondisi: null,
+  gambar: null, webp: null, srcset: null, keterangan: null, kondisi: null,
 });
 
 /* ─────────── Garis aksen di bawah semboyan ───────────
@@ -199,7 +201,11 @@ watch(() => props.tagline, () => nextTick(ukurGaris));
          `lazy` pada gambar paling atas justru menunda yang pasti
          terlihat. -->
     <picture v-if="gambar">
-      <source v-if="webp" :srcset="webp" type="image/webp">
+      <!-- `sizes` = lebar kop sesungguhnya: kolom isi selebar paling
+           banyak 1760 px di sebelah bilah samping 248 px dan bantalan
+           24 px; di bawah 1024 px selebar layar dikurangi bantalan. -->
+      <source v-if="webp" :srcset="srcset || webp" type="image/webp"
+              :sizes="srcset ? '(min-width: 1024px) min(1760px, calc(100vw - 296px)), calc(100vw - 32px)' : undefined">
       <img class="kop-gambar" :src="gambar" alt="" aria-hidden="true"
            fetchpriority="high" decoding="async">
     </picture>
@@ -553,7 +559,7 @@ picture > .kop-gambar { object-position: 50% 50%; }
    supaya judul panjang ("Monitor Hazard Report") tetap satu baris di
    samping jam dan kartu cuaca. */
 .kop-judul {
-  font-family: 'Archivo', system-ui, sans-serif;
+  font-family: 'Archivo Tajam', 'Archivo', system-ui, sans-serif;
   font-size: clamp(1.55rem, 3vw, 2.3rem);
   font-weight: 700;
   font-stretch: 88%;
@@ -695,7 +701,7 @@ picture > .kop-gambar { object-position: 50% 50%; }
    jelas bukan judul. */
 .kop-tagline {
   margin: 0;
-  font-family: 'Archivo', system-ui, sans-serif;
+  font-family: 'Archivo Tajam', 'Archivo', system-ui, sans-serif;
   font-style: normal;
   font-weight: 700;
   font-stretch: 80%;

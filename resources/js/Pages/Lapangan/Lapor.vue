@@ -450,7 +450,7 @@ function tutup() {
 .chip { margin-top: 8px; margin-right: -20px; }
 .lp-masukan { margin-top: 8px; }
 
-.pita { white-space: nowrap; font-family: 'Archivo', sans-serif; font-size: 12.5px; font-weight: 700; padding: 5px 10px; border-radius: 8px; }
+.pita { white-space: nowrap; font-family: 'Archivo Tajam', 'Archivo', sans-serif; font-size: 12.5px; font-weight: 700; padding: 5px 10px; border-radius: 8px; }
 .pita.kosong { background: var(--garis3); color: var(--abu2); }
 
 .matriks { display: flex; gap: 6px; margin-top: 10px; }

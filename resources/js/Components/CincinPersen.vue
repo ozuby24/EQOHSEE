@@ -36,7 +36,9 @@ const warna = computed(() => {
   return '#DC2626';
 });
 
-const teks = computed(() => (props.persen === null ? '—' : `${props.persen}%`));
+/* Koma desimal Indonesia ("69,2%"), bukan titik bawaan JavaScript. */
+const teks = computed(() => (props.persen === null ? '—'
+  : `${props.persen.toLocaleString('id-ID', { maximumFractionDigits: 1 })}%`));
 </script>
 
 <template>

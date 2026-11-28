@@ -1,17 +1,26 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import GuestLayout from '../../Layouts/GuestLayout.vue';
 import InputSandi from '../../Components/InputSandi.vue';
 import VerifikasiTurnstile from '../../Components/VerifikasiTurnstile.vue';
+import LogoPenyedia from '../../Components/Tamu/LogoPenyedia.vue';
 import { useBahasa } from '../../tamu/bahasa';
 
 defineOptions({ layout: GuestLayout });
 
 const { t } = useBahasa();
 
+type Penyedia = 'google' | 'microsoft';
+
 const props = defineProps<{
-  companies: Array<{ id: number; name: string }>;
+  /**
+   * Ada perusahaan demo tempat akun baru otomatis dimulai. Tidak ada
+   * pilihan perusahaan di formulir ini: server yang menetapkannya
+   * (RegisteredUserController::perusahaanDemoBawaan), dan pindah ke
+   * perusahaan sungguhan adalah keputusan administrator.
+   */
+  adaDemo: boolean;
   departments: string[];
   positions: string[];
 
@@ -30,15 +39,35 @@ const props = defineProps<{
    * yang lain.
    */
   sandiMinimal: number;
+
+  /** Penyedia daftar pihak ketiga yang kredensialnya terpasang. */
+  sso?: { google: boolean; microsoft: boolean };
+
+  /**
+   * Identitas yang baru dibuktikan Google/Microsoft dan menunggu formulir
+   * ini diselesaikan (MasukPihakKetiga::identitas). Surelnya milik
+   * penyedia: ditampilkan terkunci, dan server mengabaikan kolom surel
+   * yang dikirim. Akun dari penyedia tidak memerlukan sandi.
+   */
+  identitas?: {
+    penyedia: Penyedia; namaPenyedia: string; email: string; nama: string; dariMasuk: boolean;
+  } | null;
 }>();
 
+const sso = computed(() => props.sso ?? { google: false, microsoft: false });
+const adaSso = computed(() => sso.value.google || sso.value.microsoft);
+const identitas = computed(() => props.identitas ?? null);
+
 const form = useForm({
-  name: '', email: '', employee_id: '', department: '', position: '',
-  /* Satu-satunya perusahaan demo langsung terpilih: memilih dari
-     daftar berisi satu hanya menambah satu ketukan yang tidak mengubah
-     apa pun. */
-  company_id: props.companies.length === 1 ? String(props.companies[0].id) : '',
+  name: props.identitas?.nama ?? '', email: props.identitas?.email ?? '',
+  employee_id: '', department: '', position: '',
   password: '', password_confirmation: '',
+
+  /* Penanda bahwa formulir ini diisi untuk identitas dari penyedia. Bila
+     identitasnya sudah lewat waktu ketika formulirnya dikirim, server
+     menjawab dengan pesan yang jelas — bukan "kata sandi wajib diisi"
+     untuk kolom yang tidak pernah digambar. */
+  lewat_sso: Boolean(props.identitas),
 
   /* Nama kolomnya ditentukan Cloudflare — widget-nya mengisi kolom
      dengan nama persis ini, dan validasi di server mencarinya dengan
@@ -64,37 +93,81 @@ function daftar() {
 <template>
   <Head :title="t('daftar.judul_tab')" />
   <h2 class="auth-judul">{{ t('daftar.judul') }}</h2>
-  <p class="auth-ket mb-7">{{ t('daftar.sub') }}</p>
+  <p class="auth-ket mb-7">{{ identitas ? t('daftar.sso_sub') : t('daftar.sub') }}</p>
 
   <div v-if="Object.keys(form.errors).length" class="mb-4 rounded-xl bg-red-50 border border-red-100 text-red-700 px-4 py-3 text-[12.5px]"><ul class="space-y-0.5"><li v-for="(pesan, k) in form.errors" :key="k">• {{ pesan }}</li></ul></div>
 
-  <form class="space-y-4" @submit.prevent="daftar">
-    <div><label class="label">{{ t('daftar.nama') }}</label><input v-model="form.name" autofocus required class="input"></div>
-    <div><label class="label">{{ t('masuk.email') }}</label><input v-model="form.email" type="email" required autocomplete="username" class="input"></div>
-    <div class="grid grid-cols-2 gap-3"><div><label class="label">{{ t('daftar.nrp') }}</label><input v-model="form.employee_id" class="input"></div><div><label class="label">{{ t('daftar.departemen') }}</label><input v-model="form.department" list="departments" class="input"><datalist id="departments"><option v-for="d in departments" :key="d" :value="d" /></datalist></div></div>
-    <div><label class="label">{{ t('daftar.jabatan') }}</label><select v-model="form.position" required class="input" :aria-label="t('daftar.jabatan')"><option value="">{{ t('daftar.pilih_jabatan') }}</option><option v-for="p in positions" :key="p" :value="p">{{ p }}</option></select></div>
-    <!-- Akun baru HANYA memakai perusahaan demo (server menolak yang
-         lain). Perusahaan sungguhan ditetapkan administrator sesudahnya,
-         di Kelola Pengguna — dikatakan di sini supaya pendaftar tidak
-         mencari nama perusahaannya sendiri di daftar ini. -->
-    <div v-if="companies.length">
-      <label class="label">{{ t('daftar.perusahaan_demo') }}</label>
-      <select v-model="form.company_id" required class="input" :aria-label="t('daftar.perusahaan_demo')"><option value="">{{ t('daftar.pilih_perusahaan') }}</option><option v-for="c in companies" :key="c.id" :value="String(c.id)">{{ c.name }}</option></select>
-      <p class="petunjuk">{{ t('daftar.petunjuk_demo') }}</p>
+  <!-- Identitas dari penyedia: surel yang sudah dibuktikan Google atau
+       Microsoft, terkunci. "Pakai akun lain" membuang identitasnya dan
+       mengembalikan formulir biasa. -->
+  <template v-if="identitas">
+    <div class="ms-identitas" role="group" :aria-label="t('daftar.sso_akun', { nama: identitas.namaPenyedia })">
+      <span class="ms-identitas-logo"><LogoPenyedia :penyedia="identitas.penyedia" /></span>
+      <span class="ms-identitas-teks">
+        <b :title="identitas.email">{{ identitas.email }}</b>
+        <small>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+          {{ t('daftar.sso_terverifikasi', { nama: identitas.namaPenyedia }) }}
+        </small>
+      </span>
+      <Link href="/daftar/sso/batal" method="post" as="button" class="ms-tautan ms-identitas-ganti">{{ t('daftar.sso_ganti') }}</Link>
     </div>
-    <p v-else class="petunjuk">{{ t('daftar.petunjuk_perusahaan') }}</p>
+    <p v-if="identitas.dariMasuk" class="ms-identitas-belum">
+      {{ t('daftar.sso_belum_ada') }}
+      <Link href="/daftar/sso/batal" method="post" as="button" :data="{ ke: 'masuk' }" class="ms-tautan">{{ t('daftar.sso_ke_masuk') }}</Link>
+    </p>
+  </template>
+
+  <!-- Daftar dengan Google/Microsoft — di ATAS formulir: formulirnya
+       panjang, dan jalan pintasnya tidak boleh tersembunyi di bawahnya.
+       Tautan biasa, bukan kunjungan Inertia: alurnya berpindah ke
+       penyedia lalu kembali. Hanya penyedia yang dipasang. -->
+  <template v-else-if="adaSso">
+    <div class="ms-sso">
+      <a v-if="sso.google" href="/daftar/google" class="ms-sso-tombol" :aria-label="t('daftar.google')">
+        <LogoPenyedia penyedia="google" />
+        Google
+      </a>
+      <a v-if="sso.microsoft" href="/daftar/microsoft" class="ms-sso-tombol" :aria-label="t('daftar.microsoft')">
+        <LogoPenyedia penyedia="microsoft" />
+        Microsoft
+      </a>
+    </div>
+    <p class="ms-atau ms-atau-formulir">{{ t('daftar.atau_email') }}</p>
+  </template>
+
+  <form class="space-y-4" @submit.prevent="daftar">
+    <div class="grid gap-4" :class="identitas ? '' : 'xl:grid-cols-2 xl:gap-3'">
+      <div><label class="label" for="daftar-nama">{{ t('daftar.nama') }}</label><input id="daftar-nama" v-model="form.name" :autofocus="!identitas" required autocomplete="name" class="input"></div>
+      <div v-if="!identitas"><label class="label" for="daftar-email">{{ t('masuk.email') }}</label><input id="daftar-email" v-model="form.email" type="email" required autocomplete="username" class="input"></div>
+    </div>
+    <div class="grid grid-cols-2 gap-3"><div><label class="label" for="daftar-nrp">{{ t('daftar.nrp') }}</label><input id="daftar-nrp" v-model="form.employee_id" class="input"></div><div><label class="label" for="daftar-departemen">{{ t('daftar.departemen') }}</label><input id="daftar-departemen" v-model="form.department" list="departments" class="input"><datalist id="departments"><option v-for="d in departments" :key="d" :value="d" /></datalist></div></div>
+    <!-- Tanpa pilihan perusahaan: akun baru otomatis masuk perusahaan
+         demo, dan perusahaan sungguhan ditetapkan administrator
+         sesudahnya di Kelola Pengguna — dikatakan di sini supaya
+         pendaftar tidak mencari nama perusahaannya sendiri. -->
     <div>
-      <label class="label">{{ t('daftar.sandi') }}</label>
-      <InputSandi v-model="form.password" required autocomplete="new-password" kelas="input" label="baru" />
+      <label class="label" for="daftar-jabatan">{{ t('daftar.jabatan') }}</label><select id="daftar-jabatan" v-model="form.position" required class="input"><option value="">{{ t('daftar.pilih_jabatan') }}</option><option v-for="p in positions" :key="p" :value="p">{{ p }}</option></select>
+      <p class="petunjuk">{{ adaDemo ? t('daftar.petunjuk_demo') : t('daftar.petunjuk_perusahaan') }}</p>
+    </div>
+
+    <!-- Akun dari penyedia masuk lewat tombol penyedianya: tidak ada
+         kolom sandi. Sandi dapat dibuat kemudian lewat Lupa kata sandi. -->
+    <p v-if="identitas" class="petunjuk ms-tanpa-sandi">{{ t('daftar.sso_tanpa_sandi', { nama: identitas.namaPenyedia }) }}</p>
+    <div v-else>
+      <div class="grid gap-4 xl:grid-cols-2 xl:gap-3">
+        <div><label class="label" for="daftar-sandi">{{ t('daftar.sandi') }}</label><InputSandi id="daftar-sandi" v-model="form.password" required autocomplete="new-password" kelas="input" label="baru" /></div>
+        <div><label class="label" for="daftar-ulangi">{{ t('daftar.ulangi_sandi') }}</label><InputSandi id="daftar-ulangi" v-model="form.password_confirmation" required autocomplete="new-password" kelas="input" label="ulangan" /></div>
+      </div>
       <p class="petunjuk">{{ t('daftar.petunjuk_sandi', { n: sandiMinimal }) }}</p>
     </div>
-    <div><label class="label">{{ t('daftar.ulangi_sandi') }}</label><InputSandi v-model="form.password_confirmation" required autocomplete="new-password" kelas="input" label="ulangan" /></div>
+
     <VerifikasiTurnstile v-model="form['cf-turnstile-response']"
                          :kunci="props.turnstile ?? null" :tindakan="props.tindakan ?? null"
                          :galat="gagalKe" tema="light" />
     <button type="submit" :disabled="form.processing" class="auth-tombol">{{ form.processing ? t('daftar.memproses') : t('daftar.tombol') }}</button>
   </form>
-  <p class="text-center text-sm text-[#5E6875] mt-6">{{ t('daftar.sudah_punya') }} <Link href="/login" class="auth-tautan">{{ t('daftar.masuk') }}</Link></p>
+  <p class="ms-daftar">{{ t('daftar.sudah_punya') }} <Link href="/login" class="auth-tautan">{{ t('daftar.masuk') }}</Link></p>
 </template>
 
 <style scoped>

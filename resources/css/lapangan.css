@@ -48,7 +48,7 @@
   --tab: 66px;
   --aman-bawah: env(safe-area-inset-bottom, 0px);
 
-  font-family: 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: 'Archivo Tajam', 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
   color: var(--teks);
   background: #E4E8EC;
   min-height: 100vh;

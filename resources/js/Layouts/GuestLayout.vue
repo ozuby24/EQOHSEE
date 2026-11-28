@@ -193,7 +193,12 @@ const PILAR = computed(() => ['Energy', 'Quality', 'OHS', 'Hygiene', 'Safety', '
         ibu jari, bukan di bawah satu layar penuh kalimat pembuka.
       -->
       <section class="pendar-rekaman ms-panel text-white px-5 pt-6 pb-28 sm:px-10 sm:pt-9 sm:pb-12 lg:px-14 lg:pt-16 lg:pb-11 flex flex-col justify-between gap-8 min-h-[340px] sm:min-h-[420px]">
+        <!-- 2080w diperbesar dengan model super-resolusi dari 1040w aslinya:
+             di laptop 150% dan layar retina panel ini butuh ±1.500–2.000
+             piksel perangkat, dan 1040 px yang direntang peramban kabur. -->
         <img src="/brand/masuk-tambang.webp" alt="" aria-hidden="true"
+             srcset="/brand/masuk-tambang.webp 1040w, /brand/masuk-tambang-2x.webp 2080w"
+             sizes="(min-width: 1024px) min(1000px, 56vw), 100vw"
              width="1040" height="1160" decoding="async" fetchpriority="high"
              class="ms-foto absolute inset-0 w-full h-full object-cover">
         <div class="ms-tirai absolute inset-0" aria-hidden="true"></div>
@@ -211,7 +216,7 @@ const PILAR = computed(() => ['Energy', 'Quality', 'OHS', 'Hygiene', 'Safety', '
                 :style="{ animationDelay: `${i * 70}ms` }" />
         </svg>
 
-        <div class="relative z-10 flex items-start justify-between gap-3">
+        <div class="ms-panel-atas relative z-10 flex items-start justify-between gap-3">
           <Link href="/" class="ms-merek ms-kaca-gelap" :aria-label="t('merek.ke_depan')">
             <img src="/brand/eqohsee-icon-dark.svg" alt="" width="54" height="54" class="ms-merek-lambang">
             <span class="ms-merek-teks">
@@ -219,8 +224,9 @@ const PILAR = computed(() => ['Energy', 'Quality', 'OHS', 'Hygiene', 'Safety', '
               <span class="ms-merek-sub">Integrated Mining OHSE Platform</span>
             </span>
           </Link>
-          <!-- Ponsel & tablet: pilihan bahasa di pojok foto. -->
-          <PilihBahasa class="lg:hidden" />
+          <!-- Ponsel & tablet — dan layar lebar yang pendek (masuk.css):
+               pilihan bahasa di pojok foto. -->
+          <PilihBahasa class="ms-bahasa-foto lg:hidden" />
         </div>
 
         <div class="relative z-10 max-w-[660px]">

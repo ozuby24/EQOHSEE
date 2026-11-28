@@ -213,7 +213,14 @@ function tandaiSelAngka(t: HTMLTableElement): void {
         });
         const pertama = jalan.nextNode();
         const teks = (pertama?.textContent ?? '').replace(/\s+/g, ' ').trim();
-        sel.classList.toggle(SEL_ANGKA, teks.length > 0 && teks.length <= 22 && POLA_ANGKA.test(teks));
+        /* Sel yang DIAWALI angka atau kode tetapi berisi kalimat sesudahnya
+           — "II.3.2 Rencana Kerja dan Anggaran Keselamatan Pertambangan" —
+           bukan sel angka. Ditandai juga, ia dilarang patah baris dan
+           kalimatnya terpotong di luar layar ponsel. Ambang 40 huruf
+           menyisakan sel angka berketerangan pendek ("Rp 1,2 jt · lunas"). */
+        const seluruh = (sel.textContent ?? '').replace(/\s+/g, ' ').trim();
+        sel.classList.toggle(SEL_ANGKA,
+          teks.length > 0 && teks.length <= 22 && seluruh.length <= 40 && POLA_ANGKA.test(teks));
       }
     }
   }

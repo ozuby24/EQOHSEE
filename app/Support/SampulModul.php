@@ -123,8 +123,36 @@ final class SampulModul
         return [
             'gambar'     => $jpg,
             'webp'       => Media::url(self::FOLDER."/{$nama}.webp"),
+            'srcset'     => self::srcset($nama),
             'keterangan' => self::KETERANGAN[$nama] ?? 'Area operasi tambang',
         ];
+    }
+
+    /**
+     * Ukuran WebP yang tersedia untuk sebuah sampul, siap dipakai srcset.
+     *
+     * Aslinya 1600 px. Kop terhampar sampai 1760 px CSS; di laptop 150–200%
+     * dan layar retina itu berarti 2600–3500 piksel perangkat, dan foto 1600
+     * px yang dibesarkan peramban terlihat kabur. Versi 2400 dan 3200 px
+     * diperbesar dengan model super-resolusi (EDSR), bukan direntang
+     * bikubik. Peramban memilih sendiri yang secukupnya: ponsel tetap
+     * mengunduh 1600 px. Ukuran yang berkasnya belum ada dilewati.
+     */
+    private static function srcset(string $nama): ?string
+    {
+        $calon = [
+            "{$nama}.webp"      => 1600,
+            "{$nama}-2400.webp" => 2400,
+            "{$nama}-3200.webp" => 3200,
+        ];
+
+        $set = [];
+        foreach ($calon as $berkas => $lebar) {
+            $url = Media::url(self::FOLDER."/{$berkas}");
+            if ($url !== null) $set[] = "{$url} {$lebar}w";
+        }
+
+        return count($set) > 1 ? implode(', ', $set) : null;
     }
 
     /** Seluruh nama berkas yang dipakai — dibaca uji kelengkapan berkas. */

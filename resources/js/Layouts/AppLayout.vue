@@ -9,7 +9,7 @@
  * atau lambat, dan bedanya baru ketahuan saat orang membandingkan dua
  * halaman berdampingan.
  */
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import { bersihkanSimpanan } from '../lapangan/pekerja';
 import type { PropBersama } from '../types';
@@ -68,7 +68,7 @@ const sampul  = computed(() => (halaman.props as Record<string, unknown>).sampul
 const turBawaan  = computed(() => (halaman.props as Record<string, unknown>).tur as any[] | null ?? null);
 const sampulHalaman = computed(() =>
   ((halaman.props as Record<string, unknown>).sampul as
-    { gambar: string; webp?: string | null; keterangan?: string | null } | null) ?? null);
+    { gambar: string; webp?: string | null; srcset?: string | null; keterangan?: string | null } | null) ?? null);
 const turTerbuka = ref(Boolean(turBawaan.value?.length));
 
 /* Membuka lagi dari menu akun.
@@ -316,6 +316,94 @@ function gantiPerusahaan(id: number | null) {
  */
 const modulTerbuka = ref(false);
 
+/* ─────────── Bilah samping yang DILIPAT ───────────
+ *
+ * Keadaan terlipat hanya ada di layar ≥ 1024 px; di bawahnya bilah
+ * samping berupa laci berlabel penuh. `sempit` bertahan di
+ * localStorage, jadi yang menentukan perilakunya adalah keduanya
+ * sekaligus — tanpa ini, memperkecil jendela di keadaan terlipat
+ * membuat laci ponsel ikut memindahkan daftar modulnya ke panel
+ * melayang yang tidak pada tempatnya.
+ */
+const layarLebar = ref(true);
+let mqLebar: MediaQueryList | null = null;
+const ubahLebar = () => { layarLebar.value = !!mqLebar?.matches; };
+const lipatAktif = computed(() => sempit.value && layarLebar.value);
+
+/*
+ * DAFTAR MODUL SAAT TERLIPAT: panel melayang di kanan bilah, berlabel.
+ *
+ * Dulu daftarnya tetap dirender di dalam kolom selebar 48 px — tiap nama
+ * modul tersusun berdiri satu huruf per baris ("D-a-s-h-b-o-a-r-d"),
+ * setinggi 140–218 px per butir, dan menunya praktis hilang. Panelnya
+ * di-Teleport ke <body> dengan posisi fixed: bilah samping memotong
+ * luapannya (overflow:hidden), dan apa pun yang menjorok ke kanan dari
+ * dalamnya akan terpangkas.
+ */
+const tombolModul = ref<HTMLElement | null>(null);
+const panelModul  = ref<HTMLElement | null>(null);
+const posModul    = ref<{ top: number; left: number; maxH: number } | null>(null);
+
+function letakkanModul() {
+  const r = tombolModul.value?.getBoundingClientRect();
+  if (!r) return;
+  /* Dari tepi kanan BILAHNYA, bukan tombolnya: tombol berbantalan 12 px
+     di dalam bilah, dan panel yang diukur dari tombol menempel tepat di
+     tepi bilah tanpa celah. */
+  const kanan = sisi.value?.getBoundingClientRect().right ?? r.right;
+  const top = Math.max(8, Math.round(r.top));
+  posModul.value = { top, left: Math.round(kanan + 10), maxH: Math.max(220, window.innerHeight - top - 16) };
+}
+
+function alihModul() {
+  modulTerbuka.value = !modulTerbuka.value;
+  tip.value = null;
+  if (modulTerbuka.value && lipatAktif.value) letakkanModul();
+}
+
+/* Klik di luar panel melayang menutupnya. Hanya saat terlipat: daftar
+   sebaris di bilah yang lebar memang dibuka-tutup dari tombolnya. */
+function tutupModulLuar(e: MouseEvent) {
+  if (!modulTerbuka.value || !lipatAktif.value) return;
+  const t = e.target as Node;
+  if (panelModul.value?.contains(t) || tombolModul.value?.contains(t)) return;
+  modulTerbuka.value = false;
+}
+
+/*
+ * KETERANGAN BUTIR SAAT TERLIPAT.
+ *
+ * Bilah selebar 72 px hanya memuat ikon. Tanpa keterangan, orang harus
+ * menebak — dan beberapa ikon memang mirip. Keterangannya digambar di
+ * luar bilah (Teleport, fixed) karena alasan yang sama dengan panel
+ * modul. Label aslinya tetap ada untuk pembaca layar (disembunyikan
+ * secara visual saja), jadi keterangan ini aria-hidden.
+ */
+const tip = ref<{ teks: string; x: number; y: number } | null>(null);
+const sisi = ref<HTMLElement | null>(null);
+
+function tunjukTip(e: Event) {
+  if (!lipatAktif.value) { tip.value = null; return; }
+  const el = (e.target as HTMLElement | null)?.closest?.('[data-tip]') as HTMLElement | null;
+  if (!el || !sisi.value?.contains(el)) return;
+  const r = el.getBoundingClientRect();
+  const a = sisi.value.getBoundingClientRect();
+  tip.value = { teks: el.dataset.tip ?? '', x: Math.round(a.right + 10), y: Math.round(r.top + r.height / 2 - 14) };
+}
+
+function sembunyiTip(e: MouseEvent | FocusEvent) {
+  const dari = (e.target as HTMLElement | null)?.closest?.('[data-tip]');
+  const ke = (e.relatedTarget as HTMLElement | null)?.closest?.('[data-tip]');
+  if (dari && ke === dari) return;
+  tip.value = null;
+}
+
+watch(lipatAktif, () => { tip.value = null; modulTerbuka.value = false; });
+watch(() => halaman.url, () => {
+  tip.value = null;
+  if (lipatAktif.value) modulTerbuka.value = false;
+});
+
 /**
  * Tanggal hari ini, ditulis lengkap dalam bahasa Indonesia.
  *
@@ -406,6 +494,13 @@ onMounted(() => {
   if (sempit.value) document.body.classList.add('eq-sempit');
 
   window.addEventListener('keydown', pintasan);
+  document.addEventListener('click', tutupModulLuar);
+
+  if (typeof window.matchMedia === 'function') {
+    mqLebar = window.matchMedia('(min-width: 1024px)');
+    ubahLebar();
+    mqLebar.addEventListener?.('change', ubahLebar);
+  }
 
   const bilah = document.querySelector('.eq-topbar');
 
@@ -425,6 +520,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', pintasan);
+  document.removeEventListener('click', tutupModulLuar);
+  mqLebar?.removeEventListener?.('change', ubahLebar);
   ukur?.disconnect();
 });
 
@@ -441,6 +538,11 @@ function pintasan(e: KeyboardEvent) {
   if (e.key === 'Escape') {
     akunTerbuka.value = false;
     perusahaanTerbuka.value = false;
+    if (modulTerbuka.value) {
+      modulTerbuka.value = false;
+      tombolModul.value?.focus();
+    }
+    tip.value = null;
   }
 }
 
@@ -512,17 +614,19 @@ async function keluar() {
          bergulir di dalam dirinya sendiri. `sticky`, bukan `fixed`:
          fixed melepasnya dari aliran dan kolom isi di sebelahnya
          kehilangan lebarnya. -->
-    <aside id="eqSidebar"
+    <aside id="eqSidebar" ref="sisi"
            class="brand-gradient fixed lg:sticky lg:top-0 lg:h-screen inset-y-0 left-0 z-40
                   w-[248px] shrink-0 flex flex-col
                   text-white/70 transition-transform duration-300"
-           :class="lacisTerbuka ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
+           :class="lacisTerbuka ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+           @mouseover="tunjukTip" @mouseout="sembunyiTip" @focusin="tunjukTip" @focusout="sembunyiTip"
+           @scroll.capture="tip = null">
 
       <!-- Lambang dan wordmark berupa vektor resmi (varian latar gelap):
            tajam di layar berkerapatan tinggi dan hanya beberapa kilobita.
            Nama tautannya ditulis di aria-label karena saat bilahnya
            dilipat yang tersisa hanya lambangnya. -->
-      <a href="/dashboard" class="eq-merek" aria-label="EQOHSEE — ke Dashboard">
+      <a href="/dashboard" class="eq-merek" aria-label="EQOHSEE — ke Dashboard" data-tip="Dashboard">
         <img src="/brand/eqohsee-icon-dark.svg" alt="" width="40" height="40">
         <span>
           <img class="eq-merek-nama" src="/brand/eqohsee-wordmark-dark.svg" alt="" width="122" height="17">
@@ -541,9 +645,9 @@ async function keluar() {
            Daftar lengkapnya muncul saat diminta, dengan LABELNYA, jadi
            tidak ada yang perlu dihafal. -->
       <div class="px-3 pt-3.5">
-        <button type="button" class="eq-modul-pilih" :aria-expanded="modulTerbuka"
-                :title="menu.label" aria-label="Pindah modul"
-                @click="modulTerbuka = !modulTerbuka">
+        <button ref="tombolModul" type="button" class="eq-modul-pilih" :aria-expanded="modulTerbuka"
+                :aria-label="`Pindah modul — sekarang ${menu.label}`" :data-tip="`Pindah modul · ${menu.label}`"
+                @click="alihModul">
           <!-- IKONNYA IKUT, DAN ITU YANG TERSISA SAAT BILAHNYA DILIPAT.
                Tanpa ikon, kotak ini menjadi kotak kosong berisi satu
                panah — tidak menyebutkan modul apa yang sedang dibuka,
@@ -562,18 +666,29 @@ async function keluar() {
           </svg>
         </button>
 
-        <div v-if="modulTerbuka" class="eq-modul-daftar">
-          <component :is="tautan(m.inertia)"
-             v-for="m in menu.modul" :key="m.kunci" :href="m.url"
-             class="eq-modul-butir" :class="m.aktif ? 'eq-modul-aktif' : ''">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path :d="m.ikon"/>
-            </svg>
-            <span>{{ m.label }}</span>
-            <span v-if="m.lencana" class="eq-modul-titik"></span>
-          </component>
-        </div>
+        <!-- Satu daftar, dua tempat: sebaris di bilah yang lebar, panel
+             melayang di kanan bilah yang dilipat (Teleport ke <body>,
+             karena bilah samping memangkas luapannya). -->
+        <Teleport to="body" :disabled="!lipatAktif">
+          <div v-if="modulTerbuka" ref="panelModul" class="eq-modul-daftar"
+               :class="{ 'eq-modul-melayang': lipatAktif }"
+               :style="lipatAktif && posModul
+                 ? { top: `${posModul.top}px`, left: `${posModul.left}px`, maxHeight: `${posModul.maxH}px` }
+                 : undefined">
+            <p v-if="lipatAktif" class="eq-modul-melayang-judul">Pindah modul</p>
+            <component :is="tautan(m.inertia)"
+               v-for="m in menu.modul" :key="m.kunci" :href="m.url"
+               class="eq-modul-butir" :class="m.aktif ? 'eq-modul-aktif' : ''"
+               :aria-current="m.aktif ? 'page' : undefined">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path :d="m.ikon"/>
+              </svg>
+              <span>{{ m.label }}</span>
+              <span v-if="m.lencana" class="eq-modul-titik"></span>
+            </component>
+          </div>
+        </Teleport>
       </div>
 
       <!-- BOLEH MENYUSUT, TIDAK BOLEH MEMBESAR.
@@ -593,10 +708,10 @@ async function keluar() {
                                   tracking-[0.12em] text-white/55">{{ g.nama }}</p>
           <div class="space-y-0.5">
             <component :is="tautan(b.inertia)"
-               v-for="b in g.butir" :key="b.url" :href="b.url"
+               v-for="b in g.butir" :key="b.url" :href="b.url" :data-tip="b.label"
                class="relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[12.5px]
                       font-semibold hover:bg-white/5 hover:text-white transition"
-               :class="b.aktif ? 'nav-active' : ''">
+               :class="b.aktif ? 'nav-active' : ''" :aria-current="b.aktif ? 'page' : undefined">
               <span class="nav-accent absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5
                            rounded-r-full bg-cam-lime-light opacity-0"></span>
               <svg class="eq-navico" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -604,7 +719,7 @@ async function keluar() {
                 <path :d="b.ikon"/>
               </svg>
               <span>{{ b.label }}</span>
-              <span v-if="b.lencana" class="ml-auto text-[10px] font-bold leading-none px-1.5 py-1
+              <span v-if="b.lencana" class="eq-lencana ml-auto text-[10px] font-bold leading-none px-1.5 py-1
                                             rounded-full bg-cam-lime-light text-cam-ink">
                 {{ b.lencana > 99 ? '99+' : b.lencana }}
               </span>
@@ -626,7 +741,7 @@ async function keluar() {
            memakan ruang yang dibutuhkan menu, dan menu yang terpotong
            membuat butir terbawahnya tidak pernah ditemukan. -->
       <div class="eq-sisi-kaki">
-        <Link href="/bantuan" class="eq-bantuan-btn" title="Butuh bantuan?">
+        <Link href="/bantuan" class="eq-bantuan-btn" aria-label="Butuh bantuan?" data-tip="Butuh bantuan?">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.2 8.2 0 0 1 4 11.5a8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 8 8.4Z"/>
@@ -664,7 +779,9 @@ async function keluar() {
 
           <div class="eq-sisi-bawah">
             <small>&copy; {{ new Date().getFullYear() }} EQOHSEE</small>
-            <button type="button" class="eq-lipat" aria-label="Lipat bilah samping" @click="lipat">
+            <button type="button" class="eq-lipat" :aria-expanded="!sempit"
+                    :aria-label="sempit ? 'Lebarkan bilah samping' : 'Lipat bilah samping'"
+                    :data-tip="sempit ? 'Lebarkan bilah samping' : 'Lipat bilah samping'" @click="lipat">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"
                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M13 7l-5 5 5 5M18 7l-5 5 5 5"/>
@@ -674,6 +791,12 @@ async function keluar() {
         </div>
       </div>
     </aside>
+
+    <!-- Keterangan butir bilah yang dilipat — lihat `tip` di skrip. -->
+    <Teleport to="body">
+      <div v-if="tip && lipatAktif" class="eq-tip" aria-hidden="true"
+           :style="{ top: `${tip.y}px`, left: `${tip.x}px` }">{{ tip.teks }}</div>
+    </Teleport>
 
     <!-- ═══════════ ISI ═══════════ -->
     <div class="flex-1 flex flex-col min-w-0">
@@ -951,8 +1074,12 @@ async function keluar() {
            <main>, bukan di pembungkus terluar, supaya bilah samping dan
            kepala halaman tetap satu rupa di seluruh aplikasi: yang
            berganti isinya, bukan kerangkanya. -->
+      <!-- Kolom isi 1760 px: memenuhi monitor 1920 px, dan di monitor 2560 px
+           menyisakan tepi seperempat dari sebelumnya (1400 px meninggalkan
+           ±430 px kosong di tiap sisi — isi tampak mengapung di tengah
+           layar yang tidak dipakai). -->
       <main class="flex-1 p-4 lg:p-6" :class="menu.tema ? `tema-${menu.tema}` : null">
-        <div v-if="kilat.sukses" class="max-w-[1400px] mx-auto mb-5">
+        <div v-if="kilat.sukses" class="max-w-[1760px] mx-auto mb-5">
           <div class="rounded-xl px-4 py-3 text-[12.5px] font-semibold flex items-center gap-2.5"
                style="background:var(--eq-aksen-tipis,rgba(14,116,126,.12));color:var(--eq-aksen,#13806B)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
@@ -970,7 +1097,7 @@ async function keluar() {
         <!-- Halaman audit SMKP menggambar galat ini sendiri sebagai toast
              (Components/Smkp/Kilat.vue, cara Aurorasys); dua pesan yang
              sama pada satu layar terbaca sebagai dua galat. -->
-        <div v-if="kilat.galat && !modulAudit" class="max-w-[1400px] mx-auto mb-5">
+        <div v-if="kilat.galat && !modulAudit" class="max-w-[1760px] mx-auto mb-5">
           <div class="rounded-xl px-4 py-3 text-[12.5px] font-semibold flex items-start gap-2.5"
                style="background:#fdecec;color:#9b1c1c" role="alert">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
@@ -981,7 +1108,7 @@ async function keluar() {
           </div>
         </div>
 
-        <div class="max-w-[1400px] mx-auto space-y-4">
+        <div class="max-w-[1760px] mx-auto space-y-4">
           <div v-if="tampilGabungan" class="eq-gabungan" role="note">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1015,7 +1142,7 @@ async function keluar() {
           <KopHalaman v-if="!kopSendiri" :judul="judul" :subjudul="subjudul ?? null"
                       :label="menu?.label ?? null" :tagline="menu?.semboyan ?? null"
                       :remah="remahKop"
-                      :gambar="sampul?.gambar ?? null" :webp="sampul?.webp ?? null"
+                      :gambar="sampul?.gambar ?? null" :webp="sampul?.webp ?? null" :srcset="sampul?.srcset ?? null"
                       :keterangan="sampul?.keterangan ?? null"
                       :kondisi="sampul?.kondisi ?? null"
                       :angka="kopIsi.angka ?? null" :sisi="kopIsi.sisi ?? []"

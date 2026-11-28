@@ -41,6 +41,36 @@ Route::middleware('guest')->group(function () {
         ->middleware('throttle:masuk-sso')
         ->name('masuk.sso.kembali');
 
+    /* Daftar dengan akun Google / Microsoft. Kembalinya lewat alamat
+       yang sama dengan masuk (satu-satunya yang didaftarkan di konsol
+       penyedia); akunnya baru dibuat sesudah formulir Daftar dikirim. */
+    Route::get('daftar/{penyedia}', [MasukPihakKetigaController::class, 'daftar'])
+        ->whereIn('penyedia', MasukPihakKetiga::PENYEDIA)
+        ->middleware('throttle:masuk-sso')
+        ->name('daftar.sso');
+
+    Route::post('daftar/sso/batal', [MasukPihakKetigaController::class, 'batalDaftar'])
+        ->name('daftar.sso.batal');
+
+    /* Alamat lazim panduan Laravel Socialite: /auth/google dan
+       /auth/google/callback. Banyak yang mendaftarkan alamat INI di konsol
+       Google; keduanya dilayani alur yang sama supaya pemasangan tidak
+       berakhir redirect_uri_mismatch. Alamat kembali yang dikirim tetap
+       satu — services.{penyedia}.redirect (GOOGLE_REDIRECT_URI) — dan
+       `php artisan sso:periksa` menyebutkan yang harus didaftarkan.
+
+       Ditulis harfiah per penyedia: rute harfiah yang sama yang ditulis
+       tangan di routes/web.php (dimuat lebih dulu) tertimpa oleh ini. */
+    foreach (MasukPihakKetiga::PENYEDIA as $penyedia) {
+        Route::get("auth/{$penyedia}", [MasukPihakKetigaController::class, 'alihkan'])
+            ->defaults('penyedia', $penyedia)
+            ->middleware('throttle:masuk-sso');
+
+        Route::get("auth/{$penyedia}/callback", [MasukPihakKetigaController::class, 'kembali'])
+            ->defaults('penyedia', $penyedia)
+            ->middleware('throttle:masuk-sso');
+    }
+
     /* Halaman kode dua faktor.
        Tetap di dalam grup 'guest': yang membukanya BELUM masuk — ia
        hanya membawa setengah-masuk di sesinya. Dipasang di luar grup,

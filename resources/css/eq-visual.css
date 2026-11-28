@@ -293,13 +293,33 @@ body{
   body.eq-sempit #eqSidebar{width:72px}
   body.eq-sempit .eq-merek{justify-content:center;padding:18px 0 15px}
   body.eq-sempit .eq-merek span,
-  body.eq-sempit #eqSidebar nav a span:not(.nav-accent),
   body.eq-sempit .eq-bantuan-teks,
   body.eq-sempit .eq-bantuan-btn span,
   body.eq-sempit .eq-sisi-bawah small,
-  body.eq-sempit #eqSidebar nav p,
   body.eq-sempit #eqSidebar .glass + div{display:none}
-  body.eq-sempit #eqSidebar nav a{justify-content:center;padding-inline:0}
+  /* Label butir: TERSEMBUNYI SECARA VISUAL, bukan display:none. Yang
+     display:none ikut hilang dari pohon aksesibilitas, dan tautan berikon
+     saja tanpa nama dibacakan pembaca layar sebagai "tautan" kosong.
+     Keterangan yang terlihat digambar terpisah (.eq-tip). */
+  body.eq-sempit #eqSidebar nav a span:not(.nav-accent):not(.eq-lencana){
+    position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;
+    clip:rect(0 0 0 0);white-space:nowrap;border:0}
+  /* Nama grup menjadi garis pemisah: pengelompokannya tetap terlihat,
+     teksnya tetap dibacakan. */
+  body.eq-sempit #eqSidebar nav p{display:block;height:1px;margin:10px 16px;padding:0;
+    overflow:hidden;font-size:0;line-height:0;background:rgba(255,255,255,.13)}
+  body.eq-sempit #eqSidebar nav a{justify-content:center;padding-inline:0;min-height:42px}
+  /* Ikon 15 px berkeburaman .55 cukup di samping labelnya; sendirian di
+     bilah 72 px ia nyaris tidak terlihat. */
+  body.eq-sempit .eq-navico{width:19px;height:19px;opacity:.8}
+  body.eq-sempit #eqSidebar nav a:hover .eq-navico{opacity:1;transform:none}
+  body.eq-sempit #eqSidebar nav a.nav-active{background:rgba(169,207,94,.16)}
+  body.eq-sempit #eqSidebar nav a.nav-active .eq-navico{color:#A9CF5E;opacity:1}
+  /* Lencana jumlah menjadi titik di pojok ikonnya; angkanya tetap dibaca
+     pembaca layar dan tertulis di keterangannya saat dibuka. */
+  body.eq-sempit #eqSidebar nav .eq-lencana{position:absolute;top:8px;right:15px;margin:0;
+    width:9px;height:9px;min-width:0;padding:0;font-size:0;line-height:0;border-radius:50%;
+    box-shadow:0 0 0 2px #0B2E29}
   body.eq-sempit .eq-bantuan{justify-content:center;padding:11px 0}
   body.eq-sempit .eq-bantuan-btn{padding:10px 0}
   body.eq-sempit .eq-sisi-bawah{justify-content:center;border-top:0}
@@ -308,9 +328,42 @@ body{
   /* Pemindah modul: yang tersisa saat terlipat hanya ikonnya. Nama modul
      dulu tetap tampil dan, di kotak selebar 48 px, tersusun berdiri satu
      huruf per baris tepat di bawah lambang. */
-  body.eq-sempit .eq-modul-pilih{justify-content:center;padding-inline:0}
+  body.eq-sempit .eq-modul-pilih{justify-content:center;padding-inline:0;min-height:42px}
   body.eq-sempit .eq-modul-pilih .eq-modul-nama,
   body.eq-sempit .eq-modul-pilih > svg:last-child{display:none}
+  body.eq-sempit .eq-modul-pilih .eq-modul-ikon{width:20px;height:20px;opacity:1;color:#A9CF5E}
+  body.eq-sempit .eq-modul-pilih[aria-expanded="true"]{background:rgba(169,207,94,.18);border-color:rgba(169,207,94,.45)}
+}
+
+/* ── Panel modul melayang (bilah terlipat) ──
+   Di-Teleport ke <body>: bilah samping memangkas luapannya. Lebarnya
+   cukup untuk nama modul terpanjang dalam satu baris. */
+/* Dua kelas: .eq-modul-daftar (latar tembus pandang untuk daftar sebaris)
+   ditulis jauh di bawah berkas ini dan akan menang atas satu kelas. */
+.eq-modul-daftar.eq-modul-melayang{position:fixed;z-index:80;width:288px;margin:0;overflow-y:auto;
+  padding:6px;border-radius:14px;background:#0B2E29;border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 22px 48px -16px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.25);
+  scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent}
+.eq-modul-melayang-judul{margin:0;padding:8px 10px 8px;font-size:10.5px;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+.eq-modul-daftar.eq-modul-melayang .eq-modul-butir{color:rgba(255,255,255,.82);font-size:12.5px;padding:9px 10px}
+.eq-modul-daftar.eq-modul-melayang .eq-modul-butir:hover{background:rgba(255,255,255,.09);color:#fff}
+.eq-modul-daftar.eq-modul-melayang .eq-modul-aktif{background:rgba(169,207,94,.16);color:#fff}
+.eq-modul-daftar.eq-modul-melayang .eq-modul-aktif svg{color:#A9CF5E}
+.eq-modul-daftar.eq-modul-melayang .eq-modul-butir span{overflow-wrap:normal}
+
+/* ── Keterangan butir (bilah terlipat) ──
+   Tinggi tetap 28 px dan `top` dihitung bulat di skrip — tanpa
+   translate(-50%): geseran setengah piksel membuat tulisannya kabur. */
+.eq-tip{position:fixed;z-index:90;pointer-events:none;height:28px;display:flex;align-items:center;
+  padding:0 10px;border-radius:8px;background:#0F211E;color:#fff;font-size:12px;font-weight:600;
+  line-height:1;white-space:nowrap;border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 10px 26px -10px rgba(0,0,0,.55)}
+.eq-tip::before{content:"";position:absolute;left:-5px;top:9px;width:9px;height:9px;background:#0F211E;
+  border-left:1px solid rgba(255,255,255,.1);border-bottom:1px solid rgba(255,255,255,.1);transform:rotate(45deg)}
+@media (prefers-reduced-motion:no-preference){
+  .eq-tip{animation:eq-tip-muncul .12s ease-out}
+  @keyframes eq-tip-muncul{from{opacity:0}to{opacity:1}}
 }
 
 /* ── Kaki bilah samping di laci ponsel ──
