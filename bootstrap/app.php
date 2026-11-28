@@ -59,6 +59,10 @@ return Application::configure(basePath: dirname(__DIR__))
             /* Hitungan pengunjung harian anonim untuk panel halaman tamu
                — melihat tanggapan yang sudah jadi (hanya halaman 200). */
             \App\Http\Middleware\CatatPengunjung::class,
+
+            /* Kuki sesi kembar (sesudah SESSION_DOMAIN diubah) dihapus
+               — tanpa ini masuk berputar dan masuk dengan Google gagal. */
+            \App\Http\Middleware\RapikanKukiSesi::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -7,6 +7,9 @@ use App\Http\Middleware\{BahasaTamu, PastikanAktif};
 use App\Models\{Company, User};
 use App\Support\{DuaFaktor, Hazard, MasukPihakKetiga, Totp};
 use App\Support\Sso\PenyediaMicrosoft;
+use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Psr7\Request as PermintaanGuzzle;
+use GuzzleHttp\Psr7\Response as JawabanGuzzle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -69,17 +72,30 @@ class MasukPihakKetigaTest extends TestCase
             ->map(['id' => 'sosial-1', 'name' => 'Penjaga Tambang', 'email' => $surel]);
     }
 
-    /** Kembali dari penyedia dengan hasil tertentu (pengguna, atau galat). */
-    private function kembali(PenggunaSosial|\Throwable $hasil, string $penyedia = 'google')
+    /**
+     * Kembali dari penyedia dengan hasil tertentu (pengguna, atau galat).
+     *
+     * State "keadaan-uji" dititipkan seperti saat berangkat — di sesi, atau
+     * hanya di kuki khusus ($lewatKuki: sesi yang kembali tanpa state, yang
+     * terjadi di produksi). Socialite dipanggil stateless dengan alamat
+     * kembali yang sama persis dengan saat berangkat.
+     */
+    private function kembali(PenggunaSosial|\Throwable $hasil, string $penyedia = 'google', ?string $alamat = null, bool $lewatKuki = false)
     {
         $alur = Mockery::mock(Provider::class);
+        $alur->shouldReceive('stateless')->andReturnSelf();
+        $alur->shouldReceive('redirectUrl')->with(MasukPihakKetiga::alamatKembali($penyedia))->andReturnSelf();
         $hasil instanceof \Throwable
             ? $alur->shouldReceive('user')->andThrow($hasil)
             : $alur->shouldReceive('user')->andReturn($hasil);
 
         Socialite::shouldReceive('driver')->with($penyedia)->andReturn($alur);
 
-        return $this->get("/masuk/{$penyedia}/kembali?code=kode-uji&state=keadaan-uji");
+        $lewatKuki
+            ? $this->withCookie(MasukPihakKetiga::KUKI_STATE, 'keadaan-uji')
+            : $this->withSession([MasukPihakKetiga::KUNCI_STATE => 'keadaan-uji']);
+
+        return $this->get(($alamat ?? "/masuk/{$penyedia}/kembali").'?code=kode-uji&state=keadaan-uji');
     }
 
     /* ═══════════ tombol dan rute ═══════════ */
@@ -132,6 +148,136 @@ class MasukPihakKetigaTest extends TestCase
 
         $this->assertStringStartsWith('https://login.microsoftonline.com/tambang.co.id/oauth2/v2.0/authorize', $tujuan);
         $this->assertStringContainsString('prompt=select_account', $tujuan);
+    }
+
+    /* ═══════════ state OAuth milik sendiri ═══════════ */
+
+    public function test_berangkat_menitipkan_state_di_sesi_dan_kuki(): void
+    {
+        $this->pasang('google');
+
+        $jawab = $this->get('/masuk/google')->assertRedirect();
+        parse_str((string) parse_url($jawab->headers->get('Location'), PHP_URL_QUERY), $kueri);
+
+        $this->assertSame(40, strlen($kueri['state'] ?? ''), 'Alamat ke Google tidak membawa state acak.');
+        $jawab->assertSessionHas(MasukPihakKetiga::KUNCI_STATE, $kueri['state'])
+            ->assertCookie(MasukPihakKetiga::KUKI_STATE, $kueri['state']);
+    }
+
+    /**
+     * Kasus produksi: sesi kembali dari Google TANPA state (has_state=false,
+     * has_cookie=true) dan setiap percobaan berakhir InvalidStateException.
+     * Kuki state khusus cukup untuk membuktikan bahwa peramban yang sama
+     * yang memulai alurnya.
+     */
+    public function test_state_dari_kuki_cukup_walau_sesinya_kosong(): void
+    {
+        $this->pasang('google');
+        $u = $this->akun();
+
+        $this->kembali($this->sosial('penjaga@tambang.co.id'), lewatKuki: true)
+            ->assertRedirect('/dashboard')
+            ->assertCookieExpired(MasukPihakKetiga::KUKI_STATE);
+
+        $this->assertAuthenticatedAs($u);
+    }
+
+    public function test_state_yang_tidak_cocok_ditolak_tanpa_menghubungi_penyedia(): void
+    {
+        $this->pasang('google');
+        $this->akun();
+        Socialite::shouldReceive('driver')->never();
+
+        $this->withSession([MasukPihakKetiga::KUNCI_STATE => 'state-lain'])
+            ->get('/masuk/google/kembali?code=kode-uji&state=keadaan-uji')
+            ->assertRedirect('/login')
+            ->assertSessionHas('galat', fn ($p) => str_contains($p, 'habis atau terputus'));
+
+        // Tanpa state di alamat, atau tanpa titipan sama sekali: sama.
+        $this->withSession([MasukPihakKetiga::KUNCI_STATE => 'keadaan-uji'])
+            ->get('/masuk/google/kembali?code=kode-uji')->assertRedirect('/login');
+        $this->get('/masuk/google/kembali?code=kode-uji&state=keadaan-uji')->assertRedirect('/login');
+
+        $this->assertGuest();
+    }
+
+    /** Alamat lazim panduan Socialite — yang terdaftar di konsol Google pemasangan ini. */
+    public function test_alamat_auth_google_juga_dilayani(): void
+    {
+        $this->pasang('google');
+        $u = $this->akun();
+
+        $this->assertStringStartsWith('https://accounts.google.com/',
+            $this->get('/auth/google')->assertRedirect()->headers->get('Location'));
+
+        $this->kembali($this->sosial('penjaga@tambang.co.id'), alamat: '/auth/google/callback')
+            ->assertRedirect('/dashboard');
+
+        $this->assertAuthenticatedAs($u);
+    }
+
+    /**
+     * Alamat kembali selalu lengkap dari APP_URL — bukan dari host
+     * permintaan, yang di balik proksi bisa terbaca http:// atau datang
+     * lewat www. (Error 400: redirect_uri_mismatch).
+     */
+    public function test_alamat_kembali_lengkap_dari_app_url(): void
+    {
+        $this->pasang('google');
+        config(['app.url' => 'https://eqohsee.example']);
+
+        $this->assertStringContainsString('redirect_uri='.urlencode('https://eqohsee.example/masuk/google/kembali'),
+            $this->get('/masuk/google')->headers->get('Location'));
+
+        // GOOGLE_REDIRECT_URI yang relatif ikut dilengkapi; yang lengkap dipakai apa adanya.
+        config(['services.google.redirect' => '/auth/google/callback']);
+        $this->assertSame('https://eqohsee.example/auth/google/callback', MasukPihakKetiga::alamatKembali('google'));
+        config(['services.google.redirect' => 'https://eqohsee.example/masuk/google/kembali']);
+        $this->assertSame('https://eqohsee.example/masuk/google/kembali', MasukPihakKetiga::alamatKembali('google'));
+    }
+
+    public function test_berangkat_dari_www_dipindah_ke_host_kanonik(): void
+    {
+        $this->pasang('google');
+        config(['app.url' => 'https://eqohsee.example']);
+
+        $this->get('https://www.eqohsee.example/masuk/google')
+            ->assertRedirect('https://eqohsee.example/masuk/google');
+
+        // Host lain sama sekali (APP_URL salah isi) tidak dipindahkan.
+        $this->assertStringStartsWith('https://accounts.google.com/',
+            $this->get('https://situs-lain.example/masuk/google')->headers->get('Location'));
+    }
+
+    public function test_galat_pemasangan_disebut_dengan_kodenya(): void
+    {
+        $this->pasang('google');
+
+        $galat = new ClientException(
+            'Client error: `POST https://www.googleapis.com/oauth2/v4/token` resulted in a `401 Unauthorized` response',
+            new PermintaanGuzzle('POST', 'https://www.googleapis.com/oauth2/v4/token'),
+            new JawabanGuzzle(401, [], '{"error":"invalid_client","error_description":"Unauthorized"}'),
+        );
+
+        $this->kembali($galat)
+            ->assertRedirect('/login')
+            ->assertSessionHas('galat', fn ($p) => str_contains($p, 'belum disetel dengan benar') && str_contains($p, 'invalid_client'));
+
+        $this->assertGuest();
+    }
+
+    public function test_perintah_periksa_menyebut_alamat_yang_harus_didaftarkan(): void
+    {
+        $this->pasang('google');
+        config(['app.url' => 'https://eqohsee.example', 'session.same_site' => 'lax', 'session.domain' => null]);
+
+        $this->artisan('eqohsee:periksa-sso')
+            ->expectsOutputToContain('https://eqohsee.example/masuk/google/kembali')
+            ->expectsOutputToContain('https://eqohsee.example/auth/google/callback')
+            ->assertExitCode(0);
+
+        config(['session.same_site' => 'strict']);
+        $this->artisan('eqohsee:periksa-sso')->expectsOutputToContain('SameSite strict')->assertExitCode(1);
     }
 
     /* ═══════════ kembali dari penyedia ═══════════ */

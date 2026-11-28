@@ -49,6 +49,28 @@ Tidak ada migrasi, tabel, paket, atau penjadwal baru.
   nama perusahaan tidak lagi dikirim ke halaman Daftar. Tanpa perusahaan
   demo sama sekali, akun menunggu ditempatkan administrator seperti dulu.
   Pindah ke perusahaan sungguhan tetap lewat Kelola Pengguna.
+- **Perbaikan masuk dengan Google** (sebelumnya "Error 400:
+  redirect_uri_mismatch", lalu "Google OAuth gagal" / InvalidStateException):
+  - State OAuth dititipkan di sesi DAN di kuki khusus `eq_sso`, dicocokkan
+    sendiri — sesi yang kembali dari Google tanpa state tidak lagi
+    menggagalkan masuk.
+  - Alamat kembali selalu alamat lengkap dari `APP_URL` (https, host yang
+    sama); yang memulai dari `www.` dipindah dulu ke host APP_URL.
+  - `/auth/google` dan `/auth/google/callback` (alamat lazim panduan
+    Socialite) dilayani aplikasi sendiri, sama dengan `/masuk/google/kembali`.
+  - Kuki sesi kembar sesudah `SESSION_DOMAIN` diubah dihapus otomatis
+    (sebelumnya: masuk berputar kembali ke halaman masuk).
+  - Pesan galat menyebut penyebabnya: waktu habis/terputus, atau setelan
+    server beserta kodenya (`invalid_client`, `redirect_uri_mismatch` …).
+  - Perintah baru **`php artisan eqohsee:periksa-sso`**: menampilkan alamat
+    kembali PERSIS yang harus didaftarkan di konsol Google/Microsoft dan
+    memeriksa setelan kuki sesi.
+
+  **Rute buatan tangan** `/auth/google` di `routes/web.php` VPS tidak
+  diperlukan lagi — `deploy.sh` mengembalikan berkas itu ke versi repo
+  (salinan suntingannya disimpan di `storage/`). Sesudah deploy jalankan
+  `php artisan eqohsee:periksa-sso`, lalu samakan *Authorized redirect URIs*
+  di Google Cloud Console dengan alamat hijau yang ditampilkannya.
 
 # Update 26 — Aplikasi dalam memakai palet merek baru; dasbor analitik baru
 
@@ -192,6 +214,20 @@ mempercayai surel berdomain milik organisasi itu sendiri (menutup celah
    hilang, alurnya tertutup (404).
 4. Periksa: buka `/login` dan `/register` — tombol Google/Microsoft tampil.
    Selama `.env` belum diisi, keduanya memang tidak tampil (bukan galat).
+5. **Bila gagal**, jalankan `php artisan eqohsee:periksa-sso`:
+   - *Error 400: redirect_uri_mismatch* (di halaman Google): alamat di
+     konsol berbeda dari alamat hijau yang ditampilkan perintah itu
+     (http/https, www, garis miring penutup). Samakan — boleh mendaftarkan
+     kedua alamat yang disebutkannya. `GOOGLE_REDIRECT_URI` boleh
+     dikosongkan (bawaan `/masuk/google/kembali`) atau diisi salah satunya.
+   - "Waktu masuk dengan Google habis atau terputus": muat ulang halaman
+     masuk lalu coba lagi; bila berulang, betulkan tanda `!` dari perintah
+     tadi (APP_URL, SESSION_DOMAIN, SameSite).
+   - "… belum disetel dengan benar (invalid_client)": Client ID/Secret di
+     `.env` salah atau tertukar.
+   Rincian setiap kegagalan tercatat di `storage/logs/laravel.log` (cari
+   "Masuk pihak ketiga"). Jangan menulis rute OAuth sendiri di
+   `routes/web.php`: aplikasi sudah melayani kedua alamat kembali.
 
 ## Sesudah deploy — wajib dikerjakan orang
 - Buka halaman masuk sekali dari peramban biasa: kaca kiri-bawah

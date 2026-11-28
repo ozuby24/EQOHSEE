@@ -35,11 +35,13 @@ return [
         ],
     ],
 
-    /* Masuk dengan akun Google / Microsoft (Laravel Socialite).
-       Tombolnya hanya tampil di halaman masuk bila client id DAN secret
-       terisi (App\Support\MasukPihakKetiga). Alamat kembali yang
-       didaftarkan di konsol penyedia: https://<domain>/masuk/google/kembali
-       dan https://<domain>/masuk/microsoft/kembali. */
+    /* Masuk & daftar dengan akun Google / Microsoft (Laravel Socialite).
+       Tombolnya hanya tampil bila client id DAN secret terisi
+       (App\Support\MasukPihakKetiga). Alamat kembali yang dikirim — dan
+       harus terdaftar PERSIS di konsol penyedia — dilengkapi dari APP_URL:
+       bawaan https://<domain>/masuk/{google|microsoft}/kembali; aplikasi
+       juga melayani https://<domain>/auth/{google|microsoft}/callback.
+       Periksa dengan: php artisan eqohsee:periksa-sso */
     'google' => [
         'client_id'     => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),

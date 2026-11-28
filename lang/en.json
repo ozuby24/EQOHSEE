@@ -23,5 +23,8 @@
     "Daftar dengan :nama gagal. Coba lagi, atau isi formulir di bawah.": "Sign-up with :nama failed. Try again, or fill in the form below.",
     "Surel akun :nama Anda belum terverifikasi oleh :nama, jadi tidak dapat dipakai untuk mendaftar.": "The email on your :nama account hasn't been verified by :nama, so it can't be used to sign up.",
     "Akun EQOHSEE untuk :surel sudah ada, jadi Anda langsung masuk.": "An EQOHSEE account for :surel already exists, so you have been signed in to it.",
-    "Waktu untuk menyelesaikan pendaftaran dengan Google atau Microsoft sudah habis. Ulangi lewat tombolnya.": "The time to finish signing up with Google or Microsoft has run out. Start again from its button."
+    "Waktu untuk menyelesaikan pendaftaran dengan Google atau Microsoft sudah habis. Ulangi lewat tombolnya.": "The time to finish signing up with Google or Microsoft has run out. Start again from its button.",
+    "Waktu masuk dengan :nama habis atau terputus. Muat ulang halaman ini, lalu tekan tombol :nama sekali lagi.": "Sign-in with :nama timed out or was interrupted. Reload this page, then press the :nama button again.",
+    "Waktu daftar dengan :nama habis atau terputus. Muat ulang halaman ini, lalu tekan tombol :nama sekali lagi.": "Sign-up with :nama timed out or was interrupted. Reload this page, then press the :nama button again.",
+    "Masuk dengan :nama belum disetel dengan benar di server ini (:kode). Hubungi administrator.": "Sign-in with :nama is not set up correctly on this server (:kode). Contact your administrator."
 }
