@@ -525,8 +525,8 @@ async function hapusTanya(url: string, milikSendiri: boolean) {
   font-weight: 800;
   letter-spacing: .06em;
   text-transform: uppercase;
-  color: var(--eq-aksen, #D96500);
-  background: color-mix(in srgb, var(--eq-aksen, #F57C00) 13%, transparent);
+  color: var(--eq-aksen-gelap,#0F6B59);
+  background: color-mix(in srgb, var(--eq-aksen,#13806B) 13%, transparent);
 }
 
 .eq-mt-pil.t-biru   { color: #0369A1; background: rgb(11 165 233 / .13); }
@@ -600,8 +600,8 @@ async function hapusTanya(url: string, milikSendiri: boolean) {
   width: 2rem;
   height: 2rem;
   border-radius: 9px;
-  color: var(--eq-aksen, #D96500);
-  background: color-mix(in srgb, var(--eq-aksen, #F57C00) 12%, transparent);
+  color: var(--eq-aksen-gelap,#0F6B59);
+  background: color-mix(in srgb, var(--eq-aksen,#13806B) 12%, transparent);
 }
 
 .eq-mt-isi strong { display: block; font-size: 12.5px; font-weight: 700; color: #1B2024; }
@@ -627,7 +627,7 @@ async function hapusTanya(url: string, milikSendiri: boolean) {
 
 .eq-mt-layar {
   aspect-ratio: 16 / 9;
-  background: #0B1117;
+  background: #072420;
 }
 
 .eq-mt-layar iframe { width: 100%; height: 100%; border: 0; display: block; }
@@ -639,7 +639,7 @@ async function hapusTanya(url: string, milikSendiri: boolean) {
   color: #A8A29E;
 }
 
-.eq-mt-cadangan a { font-weight: 700; color: var(--eq-aksen, #D96500); }
+.eq-mt-cadangan a { font-weight: 700; color: var(--eq-aksen-gelap,#0F6B59); }
 
 /* Tanpa bingkai panggung ketika isinya hanya kartu tautan. */
 .eq-mt-panggung.is-tautan-saja {
@@ -662,7 +662,7 @@ async function hapusTanya(url: string, milikSendiri: boolean) {
   transition: border-color .15s ease;
 }
 
-.eq-mt-tautan:hover { border-color: var(--eq-aksen, #F57C00); }
+.eq-mt-tautan:hover { border-color: var(--eq-aksen,#13806B); }
 
 .eq-mt-tautan-ikon {
   display: grid;
@@ -671,8 +671,8 @@ async function hapusTanya(url: string, milikSendiri: boolean) {
   width: 2.4rem;
   height: 2.4rem;
   border-radius: 11px;
-  color: var(--eq-aksen, #D96500);
-  background: color-mix(in srgb, var(--eq-aksen, #F57C00) 12%, transparent);
+  color: var(--eq-aksen-gelap,#0F6B59);
+  background: color-mix(in srgb, var(--eq-aksen,#13806B) 12%, transparent);
 }
 
 .eq-mt-tautan strong { display: block; font-size: 13px; font-weight: 700; color: #1B2024; }
@@ -754,8 +754,8 @@ async function hapusTanya(url: string, milikSendiri: boolean) {
 .eq-mt-tab button:hover { color: #1B2024; }
 
 .eq-mt-tab button.is-aktif {
-  color: var(--eq-aksen, #D96500);
-  border-bottom-color: var(--eq-aksen, #F57C00);
+  color: var(--eq-aksen-gelap,#0F6B59);
+  border-bottom-color: var(--eq-aksen,#13806B);
 }
 
 .eq-mt-tab-jml {
@@ -785,7 +785,7 @@ async function hapusTanya(url: string, milikSendiri: boolean) {
   resize: vertical;
 }
 
-.eq-mt-catatan:focus { outline: 2px solid color-mix(in srgb, var(--eq-aksen, #F57C00) 45%, transparent); outline-offset: 1px; }
+.eq-mt-catatan:focus { outline: 2px solid color-mix(in srgb, var(--eq-aksen,#13806B) 45%, transparent); outline-offset: 1px; }
 
 .eq-mt-catatan-kaki { display: flex; align-items: center; gap: .7rem; margin-top: .6rem; }
 
@@ -814,7 +814,7 @@ async function hapusTanya(url: string, milikSendiri: boolean) {
   transition: border-color .15s ease;
 }
 
-.eq-mt-lampiran a:hover { border-color: var(--eq-aksen, #F57C00); }
+.eq-mt-lampiran a:hover { border-color: var(--eq-aksen,#13806B); }
 
 .eq-mt-lampiran-ikon {
   display: grid;
@@ -823,8 +823,8 @@ async function hapusTanya(url: string, milikSendiri: boolean) {
   width: 2rem;
   height: 2rem;
   border-radius: 9px;
-  color: var(--eq-aksen, #D96500);
-  background: color-mix(in srgb, var(--eq-aksen, #F57C00) 12%, transparent);
+  color: var(--eq-aksen-gelap,#0F6B59);
+  background: color-mix(in srgb, var(--eq-aksen,#13806B) 12%, transparent);
 }
 
 .eq-mt-lampiran strong { display: block; font-size: 12.5px; font-weight: 700; color: #1B2024; }
@@ -887,7 +887,7 @@ async function hapusTanya(url: string, milikSendiri: boolean) {
   font: inherit;
   font-size: 11.5px;
   font-weight: 700;
-  color: var(--eq-aksen, #D96500);
+  color: var(--eq-aksen-gelap,#0F6B59);
   cursor: pointer;
 }
 
@@ -916,7 +916,7 @@ async function hapusTanya(url: string, milikSendiri: boolean) {
   transition: border-color .15s ease;
 }
 
-.eq-mt-nav:hover { border-color: var(--eq-aksen, #F57C00); }
+.eq-mt-nav:hover { border-color: var(--eq-aksen,#13806B); }
 .eq-mt-nav.is-kanan { text-align: right; }
 .eq-mt-nav small { font-size: 10.5px; font-weight: 700; color: #A8A29E; }
 .eq-mt-nav strong {

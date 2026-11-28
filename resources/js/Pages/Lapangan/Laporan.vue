@@ -216,16 +216,16 @@ function simpan() {
 </template>
 
 <style scoped>
-.sampul { position: relative; height: 258px; flex: none; background: #1E2835; overflow: hidden; }
+.sampul { position: relative; height: 258px; flex: none; background: #123A34; overflow: hidden; }
 .sampul.tanpa { height: calc(env(safe-area-inset-top, 0px) + 84px); background: var(--ink); }
 .galeri { display: flex; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
 .galeri::-webkit-scrollbar { display: none; }
 .galeri-sel { flex: none; width: 100%; height: 100%; scroll-snap-align: start; }
 .galeri-sel img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .sampul-atas { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 14px); left: 16px; right: 16px; display: flex; justify-content: space-between; z-index: 5; }
-.bulat { width: 44px; height: 44px; border-radius: 22px; background: rgba(11, 17, 23, .62); border: 1px solid rgba(255, 255, 255, .22); display: grid; place-items: center; color: #FFFFFF; }
+.bulat { width: 44px; height: 44px; border-radius: 22px; background: rgba(7,36,32, .62); border: 1px solid rgba(255, 255, 255, .22); display: grid; place-items: center; color: #FFFFFF; }
 .bulat svg { width: 20px; height: 20px; }
-.hitung-foto { position: absolute; right: 16px; bottom: 32px; font-size: 11.5px; color: #FFFFFF; background: rgba(11, 17, 23, .64); padding: 4px 8px; border-radius: 6px; }
+.hitung-foto { position: absolute; right: 16px; bottom: 32px; font-size: 11.5px; color: #FFFFFF; background: rgba(7,36,32, .64); padding: 4px 8px; border-radius: 6px; }
 
 .lembar-isi { position: relative; margin-top: -20px; background: #FFFFFF; border-radius: 22px 22px 0 0; padding: 20px 20px 8px; flex: 1; }
 .lembar-isi :deep(.lp-luring) { margin: 0 0 12px; }
@@ -263,7 +263,7 @@ h2 { font-size: 15px; font-weight: 700; color: var(--ink); margin: 22px 0 0; }
 .linimasa-ket { font-size: 13px; line-height: 1.45; color: var(--abu2); margin-top: 2px; }
 .nanti .linimasa-ket { color: var(--abu3); }
 
-.tirai { position: fixed; inset: 0; background: rgba(11, 17, 23, .5); z-index: 70; display: flex; align-items: flex-end; justify-content: center; }
+.tirai { position: fixed; inset: 0; background: rgba(7,36,32, .5); z-index: 70; display: flex; align-items: flex-end; justify-content: center; }
 .lembar { width: 100%; max-width: 480px; max-height: 92dvh; overflow-y: auto; background: #FFFFFF; border-radius: 22px 22px 0 0; padding: 8px 20px calc(20px + env(safe-area-inset-bottom, 0px)); }
 .lembar-kepala { display: flex; align-items: center; justify-content: space-between; }
 .lembar-kepala h2 { margin: 0; }
@@ -273,7 +273,7 @@ h2 { font-size: 15px; font-weight: 700; color: var(--ink); margin: 22px 0 0; }
 .foto-sel { position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: var(--garis); }
 .foto-sel img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .foto-buang { position: absolute; right: 2px; top: 2px; width: 32px; height: 32px; border: 0; background: none; display: grid; place-items: center; padding: 0; }
-.foto-buang svg { width: 20px; height: 20px; padding: 5px; border-radius: 10px; background: rgba(11, 17, 23, .66); color: #FFFFFF; }
+.foto-buang svg { width: 20px; height: 20px; padding: 5px; border-radius: 10px; background: rgba(7,36,32, .66); color: #FFFFFF; }
 .foto-tambah { aspect-ratio: 1; border-radius: 12px; border: 1.5px dashed #B8C0C9; background: #FFFFFF; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--abu1); font-size: 12px; font-weight: 600; }
 .foto-tambah svg { width: 22px; height: 22px; }
 </style>

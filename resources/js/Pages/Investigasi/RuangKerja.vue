@@ -19,6 +19,7 @@ import { KEADAAN } from '../../Grafik/warna';
 import { useDialog } from '../../dialog';
 import Dialog from '../../Components/Dialog.vue';
 import RelTahap from './RelTahap.vue';
+import IkonLapangan from '../../Components/IkonLapangan.vue';
 
 const props = propHalaman();
 const { dialog, tanya, batal, lanjut } = useDialog();
@@ -275,7 +276,7 @@ const WARNA_STATUS: Record<string, string> = {
 
               <div class="flex items-center gap-3 mt-1">
                 <p class="text-[11px]" :style="{ color: a.disokong ? KEADAAN.baik : KEADAAN.ingat }">
-                  {{ a.disokong ? '✓ disokong ' + a.bukti.join(', ') : '⚠ belum disokong bukti' }}
+                  {{ a.disokong ? '✓ disokong ' + a.bukti.join(', ') : 'belum disokong bukti' }}
                 </p>
                 <button v-if="bisaUbah()" type="button" class="text-red-600 text-[11px] ml-auto"
                         @click="hapus(`akar/${a.id}/hapus`, 'akar masalah ini')">Hapus</button>
@@ -529,7 +530,7 @@ const WARNA_STATUS: Record<string, string> = {
                        bagi siapa pun yang hendak mengganti isinya, dan
                        langkah yang dapat dilewati bukan penjagaan. -->
                   <span v-if="b.dikunci" :title="`Dikunci oleh ${b.pengunci ?? '—'}`"
-                        class="text-[12px]" :style="{ color: KEADAAN.baik }">🔒</span>
+                        class="text-[12px]" :style="{ color: KEADAAN.baik }"><IkonLapangan nama="sandi" :ukuran="13" class="inline-block align-[-2px]" /></span>
 
                   <template v-else-if="bisaUbah()">
                     <button type="button" class="text-[11px] font-bold" :style="{ color: KEADAAN.baik }"

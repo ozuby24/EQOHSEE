@@ -207,7 +207,7 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
               <label v-for="k in s.butir" :key="k.no"
                      class="flex items-start gap-2 rounded-lg px-2.5 py-1.5 hover:bg-cam-sand/30
                             cursor-pointer transition">
-                <input type="checkbox" class="mt-0.5 shrink-0 accent-[color:var(--eq-aksen,#F57C00)]"
+                <input type="checkbox" class="mt-0.5 shrink-0 accent-[color:var(--eq-aksen,#13806B)]"
                        :checked="form.iso[s.kode].includes(k.no)" @change="centang(s.kode, k.no)">
                 <span class="text-[11.5px] text-stone-600 leading-snug">
                   <span class="num font-semibold text-cam-ink">{{ k.no }}</span> {{ k.judul }}

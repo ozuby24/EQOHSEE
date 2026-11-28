@@ -45,7 +45,7 @@ const adaCatatan = props.ev.strengths || props.ev.improvements || props.ev.notes
 
       <div v-if="ev.rekomendasi"
            class="relative mt-5 inline-block glass rounded-xl px-4 py-2 text-[12px] font-bold">
-        📋 {{ ev.rekomendasi }}
+        {{ ev.rekomendasi }}
       </div>
     </section>
 

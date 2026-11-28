@@ -49,7 +49,7 @@ const angkaLti = computed(() => (p.angka.tanpaLti === null ? '—' : p.angka.tan
     </div>
 
     <div class="situs">
-      <span v-if="site" class="situs-chip"><IkonLapangan nama="pin" :tebal="2" class="jingga" />{{ site }}</span>
+      <span v-if="site" class="situs-chip"><IkonLapangan nama="pin" :tebal="2" class="sorot" />{{ site }}</span>
       <span v-if="hujan" class="cuaca"><IkonLapangan :nama="Number(cuaca?.hujanMm) > 0 ? 'hujan' : 'awan'" :tebal="1.8" />{{ hujan }}</span>
     </div>
 
@@ -61,11 +61,11 @@ const angkaLti = computed(() => (p.angka.tanpaLti === null ? '—' : p.angka.tan
         <div class="angka-k">{{ angka.tanpaLti === null ? 'Belum ada catatan LTI' : 'Hari tanpa LTI' }}</div>
       </div>
       <div>
-        <div class="angka-n" :class="{ jingga: angka.perlu > 0 }">{{ angka.perlu }}</div>
+        <div class="angka-n" :class="{ sorot: angka.perlu > 0 }">{{ angka.perlu }}</div>
         <div class="angka-k">Perlu tindakan</div>
       </div>
       <div>
-        <div class="angka-n" :class="{ jingga: angka.peringatan > 0 }">{{ angka.peringatan }}</div>
+        <div class="angka-n" :class="{ sorot: angka.peringatan > 0 }">{{ angka.peringatan }}</div>
         <div class="angka-k">Peringatan site</div>
       </div>
     </div>
@@ -137,7 +137,7 @@ const angkaLti = computed(() => (p.angka.tanpaLti === null ? '—' : p.angka.tan
 <style scoped>
 .kepala { background: var(--ink); padding: calc(env(safe-area-inset-top, 0px) + 14px) 0 18px; color: #FFFFFF; }
 .sapa { display: flex; align-items: center; gap: 12px; padding: 0 20px; }
-.avatar { width: 44px; height: 44px; border-radius: 22px; background: #1E2835; border: 1px solid rgba(255, 255, 255, .14); display: grid; place-items: center; font-size: 15px; font-weight: 700; flex: none; }
+.avatar { width: 44px; height: 44px; border-radius: 22px; background: #123A34; border: 1px solid rgba(255, 255, 255, .14); display: grid; place-items: center; font-size: 15px; font-weight: 700; flex: none; }
 .sapa-isi { flex: 1; min-width: 0; }
 .waktu { font-size: 11px; letter-spacing: .06em; color: rgba(255, 255, 255, .66); }
 h1 { margin: 3px 0 0; font-size: 20px; font-weight: 700; letter-spacing: -.01em; line-height: 1.15; overflow-wrap: anywhere; }
@@ -146,9 +146,11 @@ h1 { margin: 3px 0 0; font-size: 20px; font-weight: 700; letter-spacing: -.01em;
 .lonceng-n { position: absolute; top: -3px; right: -3px; min-width: 20px; height: 20px; padding: 0 4px; border-radius: 10px; background: var(--sinyal); color: var(--ink); font-size: 11px; font-weight: 700; display: grid; place-items: center; border: 2px solid var(--ink); }
 
 .situs { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 16px 20px 0; flex-wrap: wrap; }
-.situs-chip { display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 0 12px 0 10px; border-radius: 18px; background: #151D26; border: 1px solid rgba(255, 255, 255, .12); font-size: 13.5px; font-weight: 600; max-width: 100%; }
+.situs-chip { display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 0 12px 0 10px; border-radius: 18px; background: #0B2E29; border: 1px solid rgba(255, 255, 255, .12); font-size: 13.5px; font-weight: 600; max-width: 100%; }
 .situs-chip svg { width: 16px; height: 16px; flex: none; }
-.jingga { color: #FF9800; }
+/* Sorotan di atas kepala gelap: lime sinyal merek (9,2:1 pada #072420),
+   bukan jingga identitas lama. */
+.sorot { color: var(--sinyal); }
 .cuaca { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: rgba(255, 255, 255, .76); white-space: nowrap; }
 .cuaca svg { width: 17px; height: 17px; }
 
@@ -156,7 +158,7 @@ h1 { margin: 3px 0 0; font-size: 20px; font-weight: 700; letter-spacing: -.01em;
 .angka > div { padding: 0 12px; border-left: 1px solid rgba(255, 255, 255, .12); }
 .angka > div:first-child { padding-left: 0; border-left: 0; }
 .angka-n { font-size: 30px; font-weight: 700; font-stretch: 88%; line-height: 1; font-variant-numeric: tabular-nums; }
-.angka-n.jingga { color: #FF9800; }
+.angka-n.sorot { color: var(--sinyal); }
 .angka-k { font-size: 12.5px; color: rgba(255, 255, 255, .68); margin-top: 6px; line-height: 1.25; }
 
 .geser-kartu { padding: 12px 20px 2px; scroll-snap-type: x mandatory; }

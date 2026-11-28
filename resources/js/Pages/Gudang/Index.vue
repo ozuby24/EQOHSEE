@@ -157,7 +157,7 @@ const lebar = (n: number) => (props.r.jumlah > 0 ? Math.round((n / props.r.jumla
             <div class="flex items-baseline justify-between gap-3">
               <span class="text-[12.5px] font-semibold text-cam-ink group-hover:underline">{{ k.nama }}</span>
               <span class="text-[12.5px] font-bold tabular-nums"
-                    style="color:var(--eq-aksen,#F57C00)">{{ k.jumlah }}</span>
+                    style="color:var(--eq-aksen,#13806B)">{{ k.jumlah }}</span>
             </div>
             <div class="eq-bilah mt-1.5"><i :style="{ width: lebar(k.jumlah) + '%' }"></i></div>
           </Link>

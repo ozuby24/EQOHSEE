@@ -251,7 +251,7 @@ const HURUF = ['A', 'B', 'C', 'D'];
                      :class="[kecil, 'w-full']">
               <div v-for="(_, i) in soalBaru[q.id].options" :key="i" class="flex items-center gap-2">
                 <input v-model.number="soalBaru[q.id].correct_index" type="radio" :value="i"
-                       title="Tandai jawaban benar" class="accent-[color:var(--eq-aksen,#F57C00)]">
+                       title="Tandai jawaban benar" class="accent-[color:var(--eq-aksen,#13806B)]">
                 <input v-model="soalBaru[q.id].options[i]" :placeholder="`Pilihan ${HURUF[i]}`"
                        :class="[kecil, 'flex-1']">
               </div>

@@ -41,6 +41,13 @@ export const IKON = {
   gas: 'M9 3h6M10 3v4.5L5.2 17a2.4 2.4 0 0 0 2.1 3.5h9.4a2.4 2.4 0 0 0 2.1-3.5L14 7.5V3M7.5 14h9',
   titik3: 'M5 12h.01M12 12h.01M19 12h.01',
   sandi: 'M7 11V8a5 5 0 0 1 10 0v3M5.5 11h13v9.5h-13z',
+  /* Pengganti emoji di antarmuka web: klip, sampah, ulang, sasaran, unggah, dokumen. */
+  klip: 'M15.5 7.5 8.6 14.4a2 2 0 0 0 2.8 2.8l7.1-7.1a4 4 0 0 0-5.7-5.7l-7.1 7.1a6 6 0 0 0 8.5 8.5l6.3-6.3',
+  sampah: 'M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5',
+  ulang: 'M17 3.5l3 3-3 3M4 11V9.5a3 3 0 0 1 3-3h13M7 20.5l-3-3 3-3M20 13v1.5a3 3 0 0 1-3 3H4',
+  sasaran: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-4.5a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0-3.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z',
+  unggah: 'M12 15V4M7.5 8.5 12 4l4.5 4.5M5 19.5h14',
+  dokumen: 'M7 3.5h7l4.5 4.5V20a.5.5 0 0 1-.5.5H7a.5.5 0 0 1-.5-.5V4a.5.5 0 0 1 .5-.5ZM13.5 3.5v5h5',
 } as const;
 
 export type NamaIkon = keyof typeof IKON;

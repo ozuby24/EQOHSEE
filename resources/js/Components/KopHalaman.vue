@@ -536,7 +536,7 @@ picture > .kop-gambar { object-position: 50% 50%; }
   font-weight: 600;
   letter-spacing: .12em;
   text-transform: uppercase;
-  color: var(--eq-aksen-lembut, #FFB870);
+  color: var(--eq-aksen-lembut, var(--eq-aksen-terang));
 }
 
 .kop-label::before {
@@ -623,7 +623,7 @@ picture > .kop-gambar { object-position: 50% 50%; }
 .kop-angka-ikon {
   display: inline-flex; align-items: center; justify-content: center;
   width: 38px; height: 38px; border-radius: .7rem; flex: none;
-  background: rgba(245,124,0,.26); color: #FFB870;
+  background: rgba(169,207,94,.2); color: #C6E38A;
 }
 
 .kop-angka-ikon svg { width: 19px; height: 19px; }
@@ -631,7 +631,7 @@ picture > .kop-gambar { object-position: 50% 50%; }
 .kop-angka small {
   display: block; font-size: 9.5px; font-weight: 800;
   letter-spacing: .13em; text-transform: uppercase;
-  color: #FFB870;
+  color: var(--eq-aksen-terang);
 }
 
 .kop-angka strong {
@@ -731,12 +731,12 @@ picture > .kop-gambar { object-position: 50% 50%; }
   text-decoration: none;
   white-space: nowrap;
   color: #fff;
-  background: var(--eq-aksen, #F57C00);
-  box-shadow: 0 4px 16px -4px rgba(245,124,0,.6);
+  background: var(--eq-aksen,#13806B);
+  box-shadow: 0 4px 16px -4px color-mix(in srgb,var(--eq-aksen) 60%,transparent);
   transition: transform .15s ease, box-shadow .15s ease;
 }
 
-.kop-aksi:hover { transform: translateY(-1px); box-shadow: 0 6px 20px -4px rgba(245,124,0,.7); }
+.kop-aksi:hover { transform: translateY(-1px); box-shadow: 0 6px 20px -4px color-mix(in srgb,var(--eq-aksen) 70%,transparent); }
 .kop-aksi svg { width: 15px; height: 15px; }
 
 .kop-tagline::after {
@@ -754,7 +754,7 @@ picture > .kop-gambar { object-position: 50% 50%; }
      dan justru tepi itulah yang membuat pasangan ini terbaca rapi. */
   margin: .5rem 0 0 auto;
   border-radius: 999px;
-  background: var(--eq-aksen, #F57C00);
+  background: var(--eq-aksen,#13806B);
 }
 
 /* ── Layar sempit ──

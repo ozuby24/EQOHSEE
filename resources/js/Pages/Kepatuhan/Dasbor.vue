@@ -17,6 +17,7 @@ import PindahKepatuhan from './Pindah.vue';
 import IkonStat from '../../Components/IkonStat.vue';
 import CincinPersen from '../../Components/CincinPersen.vue';
 import TrenPemenuhan from '../../Components/TrenPemenuhan.vue';
+import IkonLapangan from '../../Components/IkonLapangan.vue';
 
 const props = defineProps<HalamanKepatuhanDasbor>();
 
@@ -73,7 +74,7 @@ const isian = 'ring-focus rounded-xl border border-stone-200 bg-white pl-3 pr-9 
           </select>
         </label>
 
-        <a :href="tautan.unggah" class="eq-btn-lain ml-auto" style="flex:none">☁ Unggah &amp; Rangkum</a>
+        <a :href="tautan.unggah" class="eq-btn-lain ml-auto" style="flex:none"><IkonLapangan nama="unggah" :ukuran="15" class="inline-block align-[-3px] mr-1" />Unggah &amp; Rangkum</a>
         <a :href="tautan.buat" class="eq-btn-utama" style="flex:none">+ Tambah Kewajiban</a>
       </div>
     </div>
@@ -136,7 +137,7 @@ const isian = 'ring-focus rounded-xl border border-stone-200 bg-white pl-3 pr-9 
         </div>
 
         <div class="eq-kpi">
-          <span class="eq-kpi-ikon" style="background:#FFF2E2;color:#DC6E00">
+          <span class="eq-kpi-ikon" style="background:var(--eq-aksen-tipis);color:var(--eq-aksen-gelap)">
             <IkonStat nama="penilaian" :ukuran="21" />
           </span>
           <div class="eq-kpi-isi">
@@ -308,7 +309,7 @@ const isian = 'ring-focus rounded-xl border border-stone-200 bg-white pl-3 pr-9 
 .kpt-keping.is-ok     { background: #E7F8ED; color: #15803D; }
 .kpt-keping.is-nok    { background: #FEE9E9; color: #B91C1C; }
 .kpt-keping.is-na     { background: #F0EFEE; color: #57534E; }
-.kpt-keping.is-kosong { background: #FFF2E2; color: #B45309; }
+.kpt-keping.is-kosong { background: var(--eq-aksen-tipis); color: #B45309; }
 
 /* ── kartu aspek ── */
 .kpt-aspek {

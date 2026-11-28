@@ -106,7 +106,7 @@ function terbitkanSertifikat() {
                        font-bold hover:brightness-105 transition mt-4 disabled:opacity-60
                        inline-flex items-center gap-2">
           <Putaran v-if="menerbitkan" :ukuran="13" />
-          {{ menerbitkan ? 'Menerbitkan sertifikat…' : '🎓 Terbitkan Sertifikat' }}
+          {{ menerbitkan ? 'Menerbitkan sertifikat…' : 'Terbitkan Sertifikat' }}
         </button>
       </div>
     </section>
@@ -168,7 +168,7 @@ function terbitkanSertifikat() {
               </span>
 
               <span class="w-7 h-7 shrink-0 grid place-items-center rounded-lg
-                           text-[color:var(--eq-aksen,#D96500)] bg-[color:var(--eq-aksen,#F57C00)]/12"
+                           text-[color:var(--eq-aksen-gelap,#0F6B59)] bg-[color:var(--eq-aksen,#13806B)]/12"
                     aria-hidden="true"><IkonStat :nama="x.ikon" :ukuran="14" /></span>
 
               <span class="min-w-0 flex-1">

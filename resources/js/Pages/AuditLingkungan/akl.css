@@ -120,7 +120,7 @@
   display: grid; gap: .45rem; border: 1px solid var(--akl-garis); border-radius: 1rem; padding: .85rem .9rem;
   background: var(--akl-permukaan); transition: border-color .16s, transform .16s, box-shadow .16s;
 }
-.akl-kb:hover { border-color: #DC6E00; transform: translateY(-2px); box-shadow: 0 10px 22px -16px rgba(15, 23, 32, .45); }
+.akl-kb:hover { border-color: var(--eq-aksen, #13806B); transform: translateY(-2px); box-shadow: 0 10px 22px -16px rgba(15, 23, 32, .45); }
 .akl-kb-kepala { display: flex; align-items: flex-start; gap: .6rem; }
 .akl-kb-huruf {
   width: 30px; height: 30px; flex: none; border-radius: .6rem; display: grid; place-items: center;
@@ -167,7 +167,7 @@
   width: 100%; border: 1px solid var(--akl-garis); border-radius: .7rem; padding: .5rem .7rem;
   font-size: 12.5px; background: var(--akl-permukaan); color: var(--akl-tinta);
 }
-.akl-isian:focus { outline: 2px solid #F57C00; outline-offset: 1px; border-color: transparent; }
+.akl-isian:focus { outline: 2px solid var(--eq-aksen, #13806B); outline-offset: 1px; border-color: transparent; }
 .akl-lbl { display: block; font-size: 10.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--akl-tinta-2); margin-bottom: .3rem; }
 
 .akl-pratinjau {
@@ -201,9 +201,9 @@ a.akl-pratinjau:hover { transform: translateY(-2px); box-shadow: 0 22px 44px -22
 .akl-kd-angka small { font-size: 11px; color: var(--akl-tinta-3); font-weight: 700; margin-left: .2rem; letter-spacing: 0; }
 .akl-mini { display: flex; align-items: flex-end; gap: 4px; height: 34px; }
 .akl-mini > span { display: grid; justify-items: center; gap: 2px; }
-.akl-mini i { width: 12px; border-radius: 3px 3px 0 0; background: #DC6E00; opacity: .85; display: block; }
+.akl-mini i { width: 12px; border-radius: 3px 3px 0 0; background: var(--eq-aksen, #13806B); opacity: .85; display: block; }
 .akl-mini em { font-style: normal; font-size: 8.5px; font-weight: 800; color: var(--akl-tinta-3); }
 .akl-kd-pita { height: 5px; border-radius: 99px; background: var(--akl-jalur); overflow: hidden; }
-.akl-kd-pita > span { display: block; height: 100%; background: linear-gradient(90deg, #DC6E00, #FF9800); border-radius: 99px; }
+.akl-kd-pita > span { display: block; height: 100%; background: linear-gradient(90deg, var(--eq-aksen-gelap, #0F6B59), var(--eq-aksen-terang, #25A48B)); border-radius: 99px; }
 .akl-kd-kaki { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; font-size: 10.5px; color: var(--akl-tinta-3); }
 .akl-kd-kaki .kanan { margin-left: auto; }

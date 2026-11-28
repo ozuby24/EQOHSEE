@@ -15,11 +15,12 @@ const p = defineProps<{
   pilar: Record<string, string>;
 }>();
 
-/* Warna ikon mengikuti pilar — tiga keluarga, bukan delapan warna. */
+/* Warna ikon mengikuti pilar — tiga keluarga merek (App\Support\Pillars):
+   teal, zaitun, oker; bukan delapan warna. */
 const KELUARGA: Record<string, [string, string]> = {
-  safety: ['#E3F2FA', '#16729A'], quality: ['#E3F2FA', '#16729A'],
-  engineering: ['#FFF0DE', '#A85400'], energy: ['#FFF0DE', '#A85400'], konservasi: ['#FFF0DE', '#A85400'],
-  environment: ['#E4F6EA', '#15803D'], occhealth: ['#E4F6EA', '#15803D'], hygiene: ['#E4F6EA', '#15803D'],
+  quality: ['#E3F1EC', '#0F5C52'], safety: ['#E3F1EC', '#0F5C52'], konservasi: ['#E3F1EC', '#0F5C52'],
+  occhealth: ['#EDF3E2', '#4A6A16'], environment: ['#EDF3E2', '#4A6A16'],
+  energy: ['#F6ECDD', '#7A4810'], hygiene: ['#F6ECDD', '#7A4810'], engineering: ['#F6ECDD', '#7A4810'],
 };
 const warna = (k: string) => KELUARGA[k] ?? ['#EEF1F4', '#3A4450'];
 
@@ -80,7 +81,7 @@ const tampil = computed(() => {
 
 <style scoped>
 .cari { margin: 2px 20px 0; min-height: 46px; border-radius: 12px; background: #FFFFFF; border: 1px solid var(--garis); display: flex; align-items: center; gap: 10px; padding: 0 14px; color: var(--abu3); }
-.cari:focus-within { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(245, 124, 0, .28); }
+.cari:focus-within { border-color: var(--ink); box-shadow: 0 0 0 3px color-mix(in srgb,var(--eq-aksen) 28%,transparent); }
 .cari svg { width: 18px; height: 18px; flex: none; }
 .cari input { flex: 1; min-width: 0; border: 0; background: none; font: inherit; font-size: 15px; color: var(--teks); min-height: 44px; }
 .cari input:focus { outline: none; }

@@ -45,7 +45,7 @@ const mengirim = ref(false);
 const selesai = ref<null | { luring: boolean; ditahan: boolean }>(null);
 
 const PILIHAN: { nilai: Nilai; label: string; bg: string; fg: string }[] = [
-  { nilai: 'ok', label: 'OK', bg: '#22C55E', fg: '#0B1117' },
+  { nilai: 'ok', label: 'OK', bg: '#22C55E', fg: '#072420' },
   { nilai: 'tidak', label: 'Tidak', bg: '#DC2626', fg: '#FFFFFF' },
   { nilai: 'na', label: 'N/A', bg: '#3A4450', fg: '#FFFFFF' },
 ];
@@ -366,7 +366,7 @@ const hm = computed(() => (p.unit.hm === null || p.unit.hm === '' ? null : Numbe
 .foto-sel { position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: var(--garis); }
 .foto-sel img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .foto-buang { position: absolute; right: 2px; top: 2px; width: 32px; height: 32px; border: 0; background: none; display: grid; place-items: center; padding: 0; }
-.foto-buang svg { width: 20px; height: 20px; padding: 5px; border-radius: 10px; background: rgba(11, 17, 23, .66); color: #FFFFFF; }
+.foto-buang svg { width: 20px; height: 20px; padding: 5px; border-radius: 10px; background: rgba(7,36,32, .66); color: #FFFFFF; }
 .foto-tambah { aspect-ratio: 1; border-radius: 12px; border: 1.5px dashed #B8C0C9; background: #FFFFFF; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--abu1); font-size: 12px; font-weight: 600; }
 .foto-tambah svg { width: 22px; height: 22px; }
 .foto-tambah.wajib { border-color: var(--bahaya); color: var(--bahaya-teks); background: #FFF7F7; }

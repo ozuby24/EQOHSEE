@@ -12,6 +12,7 @@ import { computed } from 'vue';
 import Dialog from '../../Components/Dialog.vue';
 import { useDialog } from '../../dialog';
 import type { HalamanSistem } from '../../types';
+import { KATEGORI } from '../../Grafik/warna';
 const props = defineProps<HalamanSistem>();
 
 const { dialog, tanya, batal, lanjut } = useDialog();
@@ -23,7 +24,8 @@ const galat = computed<Record<string, string>>(() => (usePage().props as any).er
 
 /* ── donat sebaran peran ── */
 
-const WARNA = ['#F57C00', '#0B1117', '#FACC15', '#FF9800', '#B85C00', '#B8BEC5', '#29ABE2'];
+/* Palet kategori tervalidasi buta warna (Grafik/warna.ts), bukan palet identitas lama. */
+const WARNA = KATEGORI;
 const KELILING = 2 * Math.PI * 42;
 
 const totalPeran = computed(() => props.peran.reduce((a, p) => a + p.jumlah, 0));
@@ -508,11 +510,11 @@ function lepasTanda(c: Perusahaan) {
 
 <style scoped>
 @keyframes eqdenyut {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 124, 0, .5); }
-  70%      { box-shadow: 0 0 0 9px rgba(245, 124, 0, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb,var(--eq-aksen) 50%,transparent); }
+  70%      { box-shadow: 0 0 0 9px color-mix(in srgb,var(--eq-aksen) 0%,transparent); }
 }
 .eq-denyut {
   width: 10px; height: 10px; border-radius: 9999px;
-  background: #FF9800; flex: none; animation: eqdenyut 2s infinite;
+  background: var(--eq-aksen-terang); flex: none; animation: eqdenyut 2s infinite;
 }
 </style>

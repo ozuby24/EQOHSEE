@@ -295,7 +295,7 @@ const passing = computed(() => {
             <div>
               <label class="fr-label" for="heap">Bucket heap</label>
               <select id="heap" v-model="f.bucket_heap" class="fr-isian">
-                <option value="">–</option><option value="1">✅ Heap</option><option value="0">❌ Tidak heap</option>
+                <option value="">–</option><option value="1">Ya — heap</option><option value="0">Tidak heap</option>
               </select>
             </div>
             <div>

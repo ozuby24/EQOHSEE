@@ -33,6 +33,7 @@ import PetunjukSim from '../../Components/Miners/PetunjukSim.vue';
 import { tglId } from '../../Components/Miners/zona';
 import Dialog from '../../Components/Dialog.vue';
 import { useDialog } from '../../dialog';
+import IkonLapangan from '../../Components/IkonLapangan.vue';
 
 const props = propHalaman();
 const { dialog, tanya, batal, lanjut } = useDialog();
@@ -239,7 +240,7 @@ const jenisTeks = (u: any) => (u.jenis ?? []).join(', ') || '—';
         <tbody>
           <tr v-for="u in unit" :key="u.id">
             <td>{{ u.kendaraan }}<span v-if="u.kode" class="mn-redup"> · {{ u.kode }}</span>
-              <div v-if="u.peringatan" class="mn-petunjuk">⚠ {{ u.peringatan }}</div></td>
+              <div v-if="u.peringatan" class="mn-petunjuk"><IkonLapangan nama="bahaya" :ukuran="13" class="inline-block align-[-2px] mr-1" />{{ u.peringatan }}</div></td>
             <td>{{ jenisTeks(u) }}</td>
             <td><b>{{ u.authority || '—' }}</b></td>
             <td>{{ u.p2h ?? '—' }}</td>

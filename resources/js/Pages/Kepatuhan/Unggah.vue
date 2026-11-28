@@ -574,7 +574,7 @@ const label = 'block text-[10.5px] font-bold uppercase tracking-wide text-stone-
           <div class="flex flex-wrap items-center gap-2">
             <button type="button" class="eq-btn-utama" style="flex:none;padding:9px 18px"
                     :disabled="sibuk" @click="mulai()">
-              {{ sibuk ? 'Sedang bekerja…' : otomatis ? '✦ Baca & Analisis' : '✦ Baca & Pecah' }}
+              {{ sibuk ? 'Sedang bekerja…' : otomatis ? 'Baca & Analisis' : 'Baca & Pecah' }}
             </button>
             <button v-if="sibuk && (tahap === 'halaman' || tahap === 'identitas' || tahap === 'analisis')"
                     type="button" class="eq-btn-mini" @click="hentikan">Hentikan</button>
@@ -789,7 +789,7 @@ const label = 'block text-[10.5px] font-bold uppercase tracking-wide text-stone-
 
 .kpt-maju { border: 1px solid #E7E5E4; border-radius: .75rem; padding: .6rem .75rem; }
 .kpt-pita { height: 6px; border-radius: 999px; background: #F0EFEE; overflow: hidden; }
-.kpt-pita > div { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #DC6E00, #FF9800); transition: width .3s; }
+.kpt-pita > div { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--eq-aksen-gelap), var(--eq-aksen-terang)); transition: width .3s; }
 
 .kpt-galat {
   border-radius: .75rem; padding: .55rem .75rem; font-size: 11.5px; line-height: 1.5;
@@ -833,7 +833,7 @@ const label = 'block text-[10.5px] font-bold uppercase tracking-wide text-stone-
   width: 100%; border: 1px solid #E7E5E4; border-radius: .45rem; background: transparent;
   padding: .25rem .4rem; font-size: 11.5px; line-height: 1.35; resize: vertical;
 }
-.kpt-sel:focus { outline: 2px solid #F57C00; outline-offset: 1px; border-color: transparent; }
+.kpt-sel:focus { outline: 2px solid var(--eq-aksen); outline-offset: 1px; border-color: transparent; }
 
 .kpt-lencana {
   display: inline-block; margin-top: .3rem; font-size: 9px; font-weight: 800; letter-spacing: .03em;

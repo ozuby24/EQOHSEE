@@ -35,12 +35,14 @@ export default {
                 display: ['"Playfair Display"', 'serif'],
             },
             /**
-             * Palet: Dark Navy + Orange + Silver — mengikuti logo EQOHSEE.
+             * Palet: merek EQOHSEE — Deep Teal #0F4C45, Olive #7A9E3A, Warm Grey
+             * #D6D8D3, dengan teal hitam wordmark (#072420) sebagai chrome.
              *
-             * Perbandingannya kira-kira 70% navy gelap, 20% putih/abu terang,
-             * 10% jingga. Jingga hanya untuk aksen dan tombol utama: dipakai
-             * pada bidang lebar ia berhenti menarik perhatian, padahal
-             * menarik perhatian satu-satunya alasan ia ada.
+             * Perbandingannya kira-kira 70% teal hitam & putih hangat, 20% abu
+             * hangat, 10% aksen teal. Aksen hanya untuk tombol utama, tautan,
+             * dan keadaan terpilih: dipakai pada bidang lebar ia berhenti
+             * menarik perhatian, padahal menarik perhatian satu-satunya
+             * alasan ia ada.
              *
              * Nama token sengaja dipertahankan — `cam-lime` dan kerabatnya
              * dipakai di ratusan tempat. Yang berubah nilainya, sehingga satu
@@ -48,16 +50,16 @@ export default {
              */
             colors: {
                 cam: {
-                    black: '#0B1117',       // navy black — chrome utama
-                    dark:  '#151D26',
-                    panel: '#1E2835',
+                    black: '#072420',       // teal hitam — chrome utama (wordmark merek)
+                    dark:  '#0B2E29',
+                    panel: '#123A34',
 
-                    // Jingga EQOHSEE — aksen dan tombol utama
-                    lime:      '#F57C00',
-                    'lime-dark':  '#DC6E00',
-                    'lime-deep':  '#A85400',
-                    'lime-light': '#FF9800',
-                    'lime-soft':  '#FFF2E2',
+                    // Teal merek — aksen dan tombol utama (putih di atasnya 4,8:1)
+                    lime:      '#13806B',
+                    'lime-dark':  '#0F6B59',
+                    'lime-deep':  '#0F5C52',   // teks aksen di latar terang, 7,9:1
+                    'lime-light': '#A9CF5E',   // aksen di bidang gelap: zaitun-limau
+                    'lime-soft':  '#E3F1EC',
 
                     /*
                      * Nama jujurnya, sebagai alias nilai yang sama.
@@ -76,10 +78,12 @@ export default {
                      * nama ini yang benar untuk warnanya, dan tebakan yang
                      * sama pasti terulang.
                      */
-                    orange:         '#F57C00',
-                    'orange-light': '#FF9800',
-                    'orange-dark':  '#DC6E00',
-                    'orange-soft':  '#FFF2E2',
+                    // Dipakai sebagai TULISAN kecil (label, tautan): teal yang lebih
+                    // dalam supaya ≥ 4,5:1 juga di latar halaman #F3F5F2 (5,9:1).
+                    orange:         '#0F6B59',
+                    'orange-light': '#13806B',
+                    'orange-dark':  '#0F5C52',
+                    'orange-soft':  '#E3F1EC',
 
                     // Merah — bahaya, penolakan, penghapusan
                     coral:      '#EF4444',
@@ -87,13 +91,13 @@ export default {
                     'coral-soft': '#FEE9E9',
 
                     // Perak & hijau — bidang tenang dan penanda berhasil
-                    sand:       '#E8ECF0',   // light gray
-                    'sand-dark':'#B8BEC5',   // silver
+                    sand:       '#E5E9E4',   // abu hangat merek, terang
+                    'sand-dark':'#B7C0BA',   // abu hangat merek
                     sage:       '#22C55E',   // success
                     'sage-soft':'#E7F8ED',
 
-                    ink:  '#0F1720',        // teks gelap, bukan hitam pekat
-                    bg:   '#F5F7F9',        // off white
+                    ink:  '#0F211E',        // teks gelap bernada teal, bukan hitam pekat
+                    bg:   '#F3F5F2',        // putih hangat
                     amber:      '#FACC15',  // warning
                     'amber-dark': '#CA9A04',
                 },

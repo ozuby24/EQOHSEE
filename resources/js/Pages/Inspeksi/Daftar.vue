@@ -5,6 +5,7 @@
 import { reactive, ref } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import type { HalamanDaftarInspeksi } from '../../types';
+import IkonLapangan from '../../Components/IkonLapangan.vue';
 
 const props = defineProps<HalamanDaftarInspeksi>();
 
@@ -82,7 +83,7 @@ const pilihan =
             <p class="text-[13.5px] font-semibold text-cam-ink mt-2">{{ i.judul }}</p>
 
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-stone-400 mt-2">
-              <span>📍 {{ i.lokasi ?? '—' }}</span>
+              <span><IkonLapangan nama="pin" :ukuran="13" class="inline-block align-[-2px] mr-1" />{{ i.lokasi ?? '—' }}</span>
               <span>{{ i.tanggal }}</span>
               <span v-if="i.perusahaan">{{ i.perusahaan }}</span>
               <span class="num">{{ i.jumlahItem }} parameter</span>
@@ -109,7 +110,7 @@ const pilihan =
                  :only="['inspeksi', 'halaman']" preserve-state preserve-scroll
                  class="min-w-[36px] text-center rounded-lg border px-3 py-1.5 text-[12px] font-semibold transition"
                  :class="t.aktif
-                   ? 'bg-[color:var(--eq-aksen,#F57C00)] text-white border-transparent'
+                   ? 'bg-[color:var(--eq-aksen,#13806B)] text-white border-transparent'
                    : t.url ? 'bg-white text-stone-600 border-stone-200 hover:border-stone-400'
                            : 'bg-white text-stone-300 border-stone-100 cursor-default'"
                  v-html="t.label" />

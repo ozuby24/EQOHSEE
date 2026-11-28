@@ -127,7 +127,7 @@ const label = 'block text-[12px] font-semibold text-cam-ink mb-1.5';
             <label :class="label">Lembar Data Keselamatan (LDK / MSDS)</label>
             <p v-if="msds" class="text-[12px] mb-1.5">
               <a :href="msds" target="_blank" rel="noopener" class="font-semibold"
-                 style="color:var(--eq-aksen,#F57C00)">Lihat berkas tersimpan →</a>
+                 style="color:var(--eq-aksen,#13806B)">Lihat berkas tersimpan →</a>
             </p>
             <input type="file" accept="application/pdf" @change="pilihBerkas"
                    class="block w-full text-[12.5px] text-stone-600
@@ -177,7 +177,7 @@ const label = 'block text-[12px] font-semibold text-cam-ink mb-1.5';
 
         <label class="inline-flex items-center gap-2.5 mt-4 cursor-pointer">
           <input v-model="form.aktif" type="checkbox" class="rounded border-stone-300
-                 accent-[color:var(--eq-aksen,#F57C00)]">
+                 accent-[color:var(--eq-aksen,#13806B)]">
           <span class="text-[12.5px] text-stone-600">Barang aktif</span>
         </label>
       </div>

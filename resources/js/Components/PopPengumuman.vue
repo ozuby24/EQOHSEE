@@ -344,8 +344,8 @@ onBeforeUnmount(() => {
 }
 
 .eq-pop-lampiran:hover {
-  border-color: color-mix(in srgb, var(--eq-aksen, #F57C00) 45%, transparent);
-  background: color-mix(in srgb, var(--eq-aksen, #F57C00) 6%, transparent);
+  border-color: color-mix(in srgb, var(--eq-aksen,#13806B) 45%, transparent);
+  background: color-mix(in srgb, var(--eq-aksen,#13806B) 6%, transparent);
 }
 
 .eq-pop-lampiran-ikon {
@@ -355,8 +355,8 @@ onBeforeUnmount(() => {
   width: 2.1rem;
   height: 2.1rem;
   border-radius: 10px;
-  color: var(--eq-aksen, #D96500);
-  background: color-mix(in srgb, var(--eq-aksen, #F57C00) 13%, transparent);
+  color: var(--eq-aksen-gelap,#0F6B59);
+  background: color-mix(in srgb, var(--eq-aksen,#13806B) 13%, transparent);
 }
 
 .eq-pop-lampiran-ikon svg { width: 1.05rem; height: 1.05rem; }

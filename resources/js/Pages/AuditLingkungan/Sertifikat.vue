@@ -76,13 +76,13 @@ async function salin() {
   background: rgba(255, 255, 255, .92); border-bottom: 1px solid #D6D3D1; backdrop-filter: blur(8px);
 }
 .slc-kembali { font-size: 12.5px; font-weight: 700; color: #57534E; }
-.slc-kembali:hover { color: #DC6E00; }
+.slc-kembali:hover { color: var(--eq-aksen-gelap); }
 .slc-aksi { display: flex; flex-wrap: wrap; gap: 8px; }
 .slc-tombol {
   border: 1px solid #D6D3D1; background: #fff; color: #44403C; border-radius: .7rem;
   padding: .45rem .85rem; font-size: 12px; font-weight: 700; transition: border-color .15s, color .15s;
 }
-.slc-tombol:hover { border-color: #DC6E00; color: #DC6E00; }
+.slc-tombol:hover { border-color: var(--eq-aksen-gelap); color: var(--eq-aksen-gelap); }
 .slc-tombol.utama { background: #0F1720; border-color: #0F1720; color: #fff; }
 .slc-tombol.utama:hover { background: #1F2937; color: #fff; }
 

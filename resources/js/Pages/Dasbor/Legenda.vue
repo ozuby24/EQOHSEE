@@ -15,7 +15,7 @@ defineProps<{ deret: { nama: string; warna?: string }[] }>();
   <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
     <span v-for="d in deret" :key="d.nama" class="inline-flex items-center gap-1.5 text-[11.5px] text-stone-500">
       <i class="inline-block w-3 h-[3px] rounded-full"
-         :style="{ background: d.warna ?? '#C47000' }" aria-hidden="true"></i>
+         :style="{ background: d.warna ?? '#13806B' }" aria-hidden="true"></i>
       {{ d.nama }}
     </span>
   </div>

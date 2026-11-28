@@ -185,7 +185,7 @@ const nonaktif = computed(() => p.unit.filter((u) => !u.aktif));
           <select v-model="form.ko_object_id" :class="isian"><option value="">— tidak ditautkan —</option><option v-for="o in objek" :key="o.id" :value="o.id">{{ o.nama }}</option></select>
           <span v-if="form.errors.ko_object_id" class="block text-[11px] text-red-600 mt-1">{{ form.errors.ko_object_id }}</span></label>
         <label v-if="ubahId" class="flex items-center gap-2 text-[12px] text-stone-600 md:col-span-3">
-          <input v-model="form.aktif" type="checkbox" class="accent-[#F57C00]"> Unit aktif — wajib P2H tiap shift
+          <input v-model="form.aktif" type="checkbox" class="accent-[color:var(--eq-aksen,#13806B)]"> Unit aktif — wajib P2H tiap shift
         </label>
         <div class="md:col-span-3 flex gap-2">
           <button type="submit" class="eq-btn-utama" :disabled="form.processing">{{ form.processing ? 'Menyimpan…' : (ubahId ? 'Simpan perubahan' : 'Tambah unit') }}</button>

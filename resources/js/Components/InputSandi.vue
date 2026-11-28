@@ -190,7 +190,7 @@ function saatKeluar(e: FocusEvent): void {
 }
 
 .eq-sandi-intip:focus-visible {
-  outline: 2px solid #F57C00;
+  outline: 2px solid var(--eq-aksen);
   outline-offset: 1px;
   color: #292524;
 }

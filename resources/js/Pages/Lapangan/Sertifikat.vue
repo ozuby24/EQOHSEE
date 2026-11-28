@@ -24,7 +24,7 @@ onMounted(async () => {
   for (const s of p.sertifikat) {
     if (!s.verifikasi) continue;
     try {
-      qr.value[s.id] = await QRCode.toDataURL(s.verifikasi, { margin: 0, width: 240, errorCorrectionLevel: 'M', color: { dark: '#0B1117', light: '#FFFFFF' } });
+      qr.value[s.id] = await QRCode.toDataURL(s.verifikasi, { margin: 0, width: 240, errorCorrectionLevel: 'M', color: { dark: '#072420', light: '#FFFFFF' } });
     } catch { /* tanpa QR, tautan teksnya tetap ada */ }
   }
 });
@@ -120,7 +120,7 @@ async function bagikan(s: Sertifikat) {
 .geser { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding-bottom: 4px; }
 .geser::-webkit-scrollbar { display: none; }
 .slot { flex: none; width: 100%; padding: 4px 20px 0; scroll-snap-align: start; }
-.kartu { background: #FFFFFF; border: 1px solid var(--garis); border-radius: 18px; overflow: hidden; box-shadow: 0 18px 40px -28px rgba(11, 17, 23, .4); }
+.kartu { background: #FFFFFF; border: 1px solid var(--garis); border-radius: 18px; overflow: hidden; box-shadow: 0 18px 40px -28px rgba(7,36,32, .4); }
 header { background: var(--ink); padding: 15px 18px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .merek { display: flex; align-items: center; flex: none; }
 .merek img { height: 22px; width: auto; display: block; }

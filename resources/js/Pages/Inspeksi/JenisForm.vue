@@ -62,7 +62,7 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
         </div>
 
         <label class="flex items-center gap-2 text-[12.5px] text-stone-600 cursor-pointer">
-          <input v-model="form.is_active" type="checkbox" class="accent-[color:var(--eq-aksen,#F57C00)]">
+          <input v-model="form.is_active" type="checkbox" class="accent-[color:var(--eq-aksen,#13806B)]">
           Aktif — dapat dipilih saat membuat inspeksi baru
         </label>
       </div>

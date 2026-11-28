@@ -12,6 +12,7 @@ import { Head, router, useForm } from '@inertiajs/vue3';
 import type { HalamanDetailInspeksi } from '../../types';
 import Dialog from '../../Components/Dialog.vue';
 import { useDialog } from '../../dialog';
+import IkonLapangan from '../../Components/IkonLapangan.vue';
 const { dialog, tanya, batal, lanjut } = useDialog();
 
 
@@ -174,7 +175,7 @@ const label = 'block text-[11px] font-bold uppercase tracking-wide text-stone-50
           </div>
           <p class="text-[15px] font-bold text-cam-ink mt-2.5">{{ i.judul }}</p>
           <div class="flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] text-stone-400 mt-1.5">
-            <span>📍 {{ i.lokasi ?? '—' }}</span>
+            <span><IkonLapangan nama="pin" :ukuran="13" class="inline-block align-[-2px] mr-1" />{{ i.lokasi ?? '—' }}</span>
             <span>{{ i.tanggal }}</span>
             <span v-if="i.perusahaan">{{ i.perusahaan }}</span>
             <span v-if="i.pembuat">Dibuat: {{ i.pembuat }}</span>
@@ -383,7 +384,7 @@ const label = 'block text-[11px] font-bold uppercase tracking-wide text-stone-50
                 <input type="file" accept="image/*" capture="environment" multiple class="sr-only"
                        :disabled="mengunggah === x.id"
                        @change="unggahFoto(x.id, x.urlFoto, $event)">
-                {{ mengunggah === x.id ? 'Mengunggah…' : '📷 Tambah foto' }}
+                {{ mengunggah === x.id ? 'Mengunggah…' : 'Tambah foto' }}
               </label>
 
               <span v-if="!x.foto.length" class="text-[11px] text-stone-400">
@@ -595,8 +596,8 @@ const label = 'block text-[11px] font-bold uppercase tracking-wide text-stone-50
   cursor: pointer;
   transition: border-color .16s, color .16s, background-color .16s;
 }
-.eq-foto-tombol:hover { border-color: #DC6E00; color: #DC6E00; background: #FFF2E2; }
-.eq-foto-tombol:focus-within { outline: 2px solid #F57C00; outline-offset: 2px; }
+.eq-foto-tombol:hover { border-color: var(--eq-aksen-gelap); color: var(--eq-aksen-gelap); background: var(--eq-aksen-tipis); }
+.eq-foto-tombol:focus-within { outline: 2px solid var(--eq-aksen); outline-offset: 2px; }
 .eq-foto-tombol:has(input:disabled) { opacity: .5; cursor: progress; }
 
 /* ── ponsel ────────────────────────────────────────────────────── */

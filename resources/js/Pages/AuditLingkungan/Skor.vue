@@ -130,7 +130,7 @@ function titikBintang(r: number): string {
 
 .aks-verif { margin-top: .7rem; }
 .aks-verif-pita { height: 6px; border-radius: 99px; background: var(--akl-jalur); overflow: hidden; }
-.aks-verif-pita > span { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #DC6E00, #FF9800); }
+.aks-verif-pita > span { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--eq-aksen-gelap), var(--eq-aksen-terang)); }
 .aks-verif p { margin-top: .35rem; font-size: 11.5px; line-height: 1.5; }
 .aks-verif .belum { color: #B45309; }
 .aks-verif .lengkap { color: #15803D; }

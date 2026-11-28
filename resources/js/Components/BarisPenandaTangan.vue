@@ -64,7 +64,7 @@ const label = 'block text-[10.5px] font-bold uppercase tracking-wide text-stone-
       <div class="flex items-center gap-2">
         <label class="flex items-center gap-1.5 text-[12px] text-stone-600 cursor-pointer">
           <input v-model="form.is_active" type="checkbox"
-                 class="rounded border-stone-300 accent-[color:var(--eq-aksen,#F57C00)]">
+                 class="rounded border-stone-300 accent-[color:var(--eq-aksen,#13806B)]">
           Aktif
         </label>
         <button type="submit" :disabled="form.processing"

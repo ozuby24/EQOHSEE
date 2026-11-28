@@ -18,7 +18,7 @@
 */
 
 .lp {
-  --ink: #0B1117;
+  --ink: #072420;
   --teks: #0F1720;
   --abu1: #3A4450;
   --abu2: #4A5563;
@@ -28,9 +28,12 @@
   --garis2: #CDD3DA;
   --garis3: #EEF1F4;
   --kertas: #F5F7F9;
-  --sinyal: #F57C00;
-  --jingga: #A85400;
-  --jingga-lunak: #FFF0DE;
+  /* Aksen lapangan: limau merek untuk tombol & pil (tinta gelap di atasnya
+     9,2:1 — terbaca di bawah terik), teal untuk tautan dan ikon bernada.
+     Nama `--jingga` dipertahankan karena dipakai seluruh halaman lapangan. */
+  --sinyal: #A9CF5E;
+  --jingga: #0F5C52;
+  --jingga-lunak: #E3F1EC;
   --bahaya: #DC2626;
   --bahaya-teks: #B91C1C;
   --bahaya-lunak: #FDDEDE;
@@ -56,7 +59,7 @@
 .lp *, .lp *::before, .lp *::after { box-sizing: border-box; }
 :where(.lp) a { color: inherit; text-decoration: none; }
 :where(.lp) button { font-family: inherit; color: inherit; cursor: pointer; }
-.lp :focus-visible { outline: 3px solid rgba(245, 124, 0, .55); outline-offset: 2px; }
+.lp :focus-visible { outline: 3px solid rgba(19, 128, 107, .55); outline-offset: 2px; }
 
 .lp-kolom {
   position: relative;
@@ -72,7 +75,7 @@
 .lp-kolom.ber-tab { padding-bottom: calc(var(--tab) + var(--aman-bawah) + 16px); }
 .lp-kolom.ber-aksi { padding-bottom: calc(96px + var(--aman-bawah)); }
 @media (min-width: 560px) {
-  .lp-kolom { box-shadow: 0 0 0 1px #D5DBE1, 0 30px 80px -40px rgba(11, 17, 23, .35); }
+  .lp-kolom { box-shadow: 0 0 0 1px #D5DBE1, 0 30px 80px -40px rgba(7,36,32, .35); }
 }
 
 .lp-mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
@@ -149,7 +152,7 @@
   border-radius: 12px; padding: 12px 14px;
   display: flex; gap: 10px; align-items: flex-start;
   font-size: 14px; line-height: 1.4; font-weight: 500;
-  box-shadow: 0 16px 40px -18px rgba(11, 17, 23, .6);
+  box-shadow: 0 16px 40px -18px rgba(7,36,32, .6);
   z-index: 60;
 }
 .lp-kabar.galat { background: #7F1D1D; }
@@ -180,7 +183,7 @@
 
 .lp-avatar {
   width: 42px; height: 42px; border-radius: 50%; flex: none;
-  background: #1E2835; color: #FFFFFF;
+  background: #123A34; color: #FFFFFF;
   display: grid; place-items: center; font-size: 14px; font-weight: 700;
 }
 
@@ -270,7 +273,7 @@ a.lp-baris:active { background: var(--kertas); }
   padding: 12px 14px; font: inherit; font-size: 15px; color: var(--teks); background: #FFFFFF;
 }
 textarea.lp-masukan { min-height: 96px; resize: vertical; line-height: 1.45; }
-.lp-masukan:focus { outline: none; border: 1.5px solid var(--ink); box-shadow: 0 0 0 3px rgba(245, 124, 0, .28); }
+.lp-masukan:focus { outline: none; border: 1.5px solid var(--ink); box-shadow: 0 0 0 3px rgba(19, 128, 107, .22); }
 .lp-masukan.salah { border-color: var(--bahaya); }
 .lp-salah { font-size: 12.5px; font-weight: 600; color: var(--bahaya-teks); margin-top: 6px; }
 
@@ -281,7 +284,7 @@ textarea.lp-masukan { min-height: 96px; resize: vertical; line-height: 1.45; }
   display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
 }
 .lp-chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #FFFFFF; }
-.lp-chip svg { width: 14px; height: 14px; color: #FF9800; }
+.lp-chip svg { width: 14px; height: 14px; color: #7A9E3A; }
 .lp-chip small { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; opacity: .78; }
 .lp-geser { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-right: 20px; scroll-padding-inline: 20px; }
 .lp-geser::-webkit-scrollbar { display: none; }
@@ -292,7 +295,7 @@ textarea.lp-masukan { min-height: 96px; resize: vertical; line-height: 1.45; }
   display: flex; align-items: center; justify-content: center; gap: 6px;
   font-size: 13.5px; font-weight: 600; color: var(--abu1);
 }
-.lp-segmen button[aria-pressed="true"] { background: #FFFFFF; color: var(--ink); font-weight: 700; box-shadow: 0 1px 2px rgba(11, 17, 23, .14); }
+.lp-segmen button[aria-pressed="true"] { background: #FFFFFF; color: var(--ink); font-weight: 700; box-shadow: 0 1px 2px rgba(7,36,32, .14); }
 .lp-segmen small { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--abu2); }
 
 /* ═══════════ progres ═══════════ */

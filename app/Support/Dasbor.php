@@ -578,6 +578,12 @@ final class Dasbor
 
                 return $ka !== $kb ? $ka <=> $kb : $b['nilai'] <=> $a['nilai'];
             });
+
+            /* Seluruhnya tetap dibawa, dengan urutan yang sama, untuk
+               baris rincian yang dibuka di tabel dasbor — ringkasan dua
+               butir menjawab "apa yang terbesar", rinciannya menjawab
+               "apa saja", dan yang kedua tidak boleh harus ditebak. */
+            $m['semuaButir'] = $m['butir'];
             $m['butir'] = array_slice($m['butir'], 0, 2);
         }
         unset($m);

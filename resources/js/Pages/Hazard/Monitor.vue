@@ -308,7 +308,7 @@ const pilihan =
                  :only="HANYA" preserve-state preserve-scroll
                  class="min-w-[36px] text-center rounded-lg border px-3 py-1.5 text-[12px] font-semibold transition"
                  :class="t.aktif
-                   ? 'bg-[color:var(--eq-aksen,#F57C00)] text-white border-transparent'
+                   ? 'bg-[color:var(--eq-aksen,#13806B)] text-white border-transparent'
                    : t.url ? 'bg-white text-stone-600 border-stone-200 hover:border-stone-400'
                            : 'bg-white text-stone-300 border-stone-100 cursor-default'"
                  v-html="t.label" />
@@ -461,7 +461,7 @@ const pilihan =
   transition: all .15s;
 }
 
-.eq-detail:hover { border-color: #F57C00; background: #FFF7ED; color: #C2410C; }
+.eq-detail:hover { border-color: var(--eq-aksen); background: var(--eq-aksen-tipis); color: #C2410C; }
 
 /* ══ layar sedang: tabel yang sama, dirapatkan supaya MUAT ══
 

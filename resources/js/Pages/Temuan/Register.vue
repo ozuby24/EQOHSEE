@@ -59,7 +59,7 @@ function simpanTugas(t: { sumber: string; id: number | null }) {
 }
 
 const kartu = computed(() => [
-  { kunci: 'terbuka',    nilai: props.ringkas.terbuka,    label: 'Masih terbuka',  warna: '#F57C00' },
+  { kunci: 'terbuka',    nilai: props.ringkas.terbuka,    label: 'Masih terbuka',  warna: '#D97706' },
   { kunci: 'terlambat',  nilai: props.ringkas.terlambat,  label: 'Lewat tenggat',  warna: '#DC2626' },
   { kunci: 'takBertuan', nilai: props.ringkas.takBertuan, label: 'Tanpa penanggung jawab', warna: '#B45309' },
   { kunci: 'selesai',    nilai: props.ringkas.selesai,    label: 'Sudah selesai',  warna: '#15803D' },

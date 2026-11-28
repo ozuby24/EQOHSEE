@@ -192,7 +192,7 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
             <label v-for="x in opsi.unsafeAction" :key="x"
                    class="flex items-start gap-2 text-[12px] text-stone-600 cursor-pointer">
               <input type="checkbox" :checked="form.unsafe_action.includes(x)"
-                     class="mt-0.5 accent-[color:var(--eq-aksen,#F57C00)]"
+                     class="mt-0.5 accent-[color:var(--eq-aksen,#13806B)]"
                      @change="alih('unsafe_action', x)">
               <span>{{ x }}</span>
             </label>
@@ -205,7 +205,7 @@ const label = 'block text-[11.5px] font-bold uppercase tracking-wide text-stone-
             <label v-for="x in opsi.unsafeCondition" :key="x"
                    class="flex items-start gap-2 text-[12px] text-stone-600 cursor-pointer">
               <input type="checkbox" :checked="form.unsafe_condition.includes(x)"
-                     class="mt-0.5 accent-[color:var(--eq-aksen,#F57C00)]"
+                     class="mt-0.5 accent-[color:var(--eq-aksen,#13806B)]"
                      @change="alih('unsafe_condition', x)">
               <span>{{ x }}</span>
             </label>

@@ -17,6 +17,7 @@ import { bertanda, detik, persen, tgl } from './fmt';
 import Dialog from '../../Components/Dialog.vue';
 import { useDialog } from '../../dialog';
 import './frop.css';
+import IkonLapangan from '../../Components/IkonLapangan.vue';
 
 type Sesi = BarisSesi & {
   gl_front: string | null; verified_by: string | null;
@@ -160,7 +161,7 @@ const lebarPlan = (k: Komponen) => Math.min(100, ((k.plan ?? 0) / Math.max(k.pla
             </div>
             <div class="rounded-xl p-2" :class="sesi.bucket_heap === false ? 'bg-amber-50' : 'bg-stone-50'">
               <div class="fr-ket">Bucket heap</div>
-              <div class="text-[18px] font-extrabold">{{ sesi.bucket_heap === null ? '–' : sesi.bucket_heap ? '✅' : '❌' }}</div>
+              <div class="text-[18px] font-extrabold">{{ sesi.bucket_heap === null ? '–' : sesi.bucket_heap ? 'Ya' : 'Tidak' }}</div>
               <div class="fr-ket">{{ ya(sesi.bucket_heap, 'heap', 'tidak heap') }}</div>
             </div>
           </div>
@@ -222,7 +223,7 @@ const lebarPlan = (k: Komponen) => Math.min(100, ((k.plan ?? 0) / Math.max(k.pla
             <li v-for="(b, i) in sesi.butir" :key="i" class="flex items-start gap-2 text-[12.5px]">
               <span class="fr-kat mt-0.5" :style="{ background: KATEGORI_WARNA[b.kat] }">{{ b.nama }}</span>
               <span>{{ b.teks }}
-                <b v-if="b.ulang" class="fr-teks-gawat text-[11px]" title="Kategori yang sama pernah tercatat pada unit ini">🔁 berulang</b>
+                <b v-if="b.ulang" class="fr-teks-gawat text-[11px]" title="Kategori yang sama pernah tercatat pada unit ini"><IkonLapangan nama="ulang" :ukuran="12" class="inline-block align-[-2px] mr-0.5" />berulang</b>
               </span>
             </li>
           </ul>

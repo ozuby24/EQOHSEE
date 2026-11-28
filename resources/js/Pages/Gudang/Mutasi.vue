@@ -167,7 +167,7 @@ const label = 'block text-[12px] font-semibold text-cam-ink mb-1.5';
 
 <style scoped>
 .eq-jenis-aktif {
-  background: linear-gradient(135deg, var(--eq-aksen, #F57C00), #DC6E00);
+  background: linear-gradient(135deg, var(--eq-aksen,#13806B), var(--eq-aksen-gelap));
   color: #fff !important;
   border-color: transparent !important;
 }

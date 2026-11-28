@@ -641,7 +641,7 @@ async function keluar() {
           <span>Butuh bantuan?</span>
         </Link>
 
-        <!-- Kartu kaki: semboyan bergambar dengan baris hak cipta di
+        <!-- Kartu kaki: bidang bermotif kontur dengan baris hak cipta di
              dalamnya, satu kotak yang TURUN SAMPAI TEPI PALING BAWAH
              bilah — tanpa sudut membulat dan tanpa jarak di bawahnya.
 
@@ -656,13 +656,11 @@ async function keluar() {
              lipat itulah satu-satunya jalan keluar dari keadaan
              terlipat. -->
         <div class="eq-sisi-kartu">
-          <div class="eq-semboyan" aria-hidden="true">
-            <img class="eq-semboyan-gambar" src="/brand/tambang.jpg" alt=""
-                 loading="lazy" decoding="async">
-            <div class="eq-semboyan-tirai" />
-            <p class="eq-semboyan-teks">People<br>Safety<br>Productivity<br>A Better Tomorrow</p>
-            <span class="eq-semboyan-garis" />
-          </div>
+          <!-- Bidang kontur topografi merek — motif yang sama dengan halaman
+               depan dan halaman masuk. Sengaja tanpa semboyan: semboyan
+               merek sudah ada di kepala bilah ini, dan semboyan ketiga
+               hanya membuat merek berbicara dengan tiga suara. -->
+          <div class="eq-semboyan" aria-hidden="true"></div>
 
           <div class="eq-sisi-bawah">
             <small>&copy; {{ new Date().getFullYear() }} EQOHSEE</small>
@@ -700,10 +698,7 @@ async function keluar() {
              persis alasan ia dulu dikeluarkan dari chip. -->
         <div class="eq-sapa min-w-0">
           <small>{{ hariIni }}</small>
-          <!-- &nbsp;: di ponsel sapaannya boleh turun baris, tetapi
-               lambaian tangan tidak boleh tertinggal sendirian di baris
-               kedua. -->
-          <strong>{{ sapaan }}&nbsp;<span aria-hidden="true">&#128075;</span></strong>
+          <strong>{{ sapaan }}</strong>
         </div>
 
         <!-- Kotak cari menuju daftar pekerja: nama, NIK, jabatan.
@@ -959,7 +954,7 @@ async function keluar() {
       <main class="flex-1 p-4 lg:p-6" :class="menu.tema ? `tema-${menu.tema}` : null">
         <div v-if="kilat.sukses" class="max-w-[1400px] mx-auto mb-5">
           <div class="rounded-xl px-4 py-3 text-[12.5px] font-semibold flex items-center gap-2.5"
-               style="background:var(--eq-aksen-tipis,rgba(14,116,126,.12));color:var(--eq-aksen,#F57C00)">
+               style="background:var(--eq-aksen-tipis,rgba(14,116,126,.12));color:var(--eq-aksen,#13806B)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
                  stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 shrink-0" aria-hidden="true">
               <path d="m5 12.5 4.5 4.5L19 7.5"/>

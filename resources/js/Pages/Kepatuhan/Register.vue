@@ -11,6 +11,7 @@ import { Head, router } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import type { HalamanKepatuhanRegister } from '../../types';
 import PindahKepatuhan from './Pindah.vue';
+import IkonLapangan from '../../Components/IkonLapangan.vue';
 
 const props = defineProps<HalamanKepatuhanRegister>();
 
@@ -111,7 +112,7 @@ const teks  = 'ring-focus rounded-xl border border-stone-200 bg-white px-3 py-2 
              title="Seluruh kewajiban tahun ini beserta butirnya, berkop dan berlembar rekap">
             ⬇ Unduh Register (.xlsx)
           </a>
-          <a :href="tautan.unggah" class="eq-btn-lain" style="flex:none">☁ Unggah &amp; Rangkum</a>
+          <a :href="tautan.unggah" class="eq-btn-lain" style="flex:none"><IkonLapangan nama="unggah" :ukuran="15" class="inline-block align-[-3px] mr-1" />Unggah &amp; Rangkum</a>
           <a :href="tautan.buat" class="eq-btn-utama" style="flex:none">+ Tambah</a>
         </div>
       </div>
@@ -233,7 +234,7 @@ const teks  = 'ring-focus rounded-xl border border-stone-200 bg-white px-3 py-2 
 }
 
 .kpt-nomor { font-weight: 700; color: #0F1720; }
-.kpt-nomor:hover { color: #DC6E00; text-decoration: underline; }
+.kpt-nomor:hover { color: var(--eq-aksen-gelap); text-decoration: underline; }
 .kpt-judul { display: block; color: #78716C; font-size: 11px; line-height: 1.35; margin-top: .1rem; }
 
 .kpt-tanda { display: inline-block; margin-left: .3rem; font-size: 9px; font-weight: 800;

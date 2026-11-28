@@ -205,7 +205,7 @@ const persenMateri = computed(() => (props.kursus.materiTotal
   line-height: 1.4;
 }
 
-.eq-kur-balik:hover { color: var(--eq-aksen, #D96500); }
+.eq-kur-balik:hover { color: var(--eq-aksen-gelap,#0F6B59); }
 
 .eq-kur-laju {
   height: 5px;
@@ -219,7 +219,7 @@ const persenMateri = computed(() => (props.kursus.materiTotal
   display: block;
   height: 100%;
   border-radius: 99px;
-  background: linear-gradient(90deg, #F57C00, #FF9800);
+  background: linear-gradient(90deg, var(--eq-aksen), var(--eq-aksen-terang));
   transition: width .3s ease;
 }
 
@@ -296,8 +296,8 @@ const persenMateri = computed(() => (props.kursus.materiTotal
    Latar yang samar sendirian tidak cukup terbaca di layar tablet yang
    dipakai di lapangan pada cahaya matahari. */
 .eq-kur-butir.is-kini {
-  background: color-mix(in srgb, var(--eq-aksen, #F57C00) 9%, transparent);
-  box-shadow: inset 3px 0 0 var(--eq-aksen, #F57C00);
+  background: color-mix(in srgb, var(--eq-aksen,#13806B) 9%, transparent);
+  box-shadow: inset 3px 0 0 var(--eq-aksen,#13806B);
 }
 
 .eq-kur-kotak {
@@ -323,19 +323,19 @@ const persenMateri = computed(() => (props.kursus.materiTotal
   height: 1.05rem;
   margin-top: .1rem;
   border-radius: 99px;
-  border: 2px solid color-mix(in srgb, var(--eq-aksen, #F57C00) 28%, transparent);
-  border-top-color: var(--eq-aksen, #F57C00);
+  border: 2px solid color-mix(in srgb, var(--eq-aksen,#13806B) 28%, transparent);
+  border-top-color: var(--eq-aksen,#13806B);
   animation: eq-kur-putar .62s linear infinite;
 }
 
 @keyframes eq-kur-putar { to { transform: rotate(360deg); } }
 
-.eq-kur-butir.is-memuat { background: color-mix(in srgb, var(--eq-aksen, #F57C00) 7%, transparent); }
+.eq-kur-butir.is-memuat { background: color-mix(in srgb, var(--eq-aksen,#13806B) 7%, transparent); }
 
 @media (prefers-reduced-motion: reduce) {
   .eq-kur-putar {
     animation: none;
-    border-color: color-mix(in srgb, var(--eq-aksen, #F57C00) 60%, transparent);
+    border-color: color-mix(in srgb, var(--eq-aksen,#13806B) 60%, transparent);
   }
 }
 .eq-kur-kotak svg { width: .62rem; height: .62rem; }

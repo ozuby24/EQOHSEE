@@ -135,7 +135,7 @@ const tanpaAuditi = computed(() => new Set(props.mendatang.filter((m) => !m.pene
       </p>
 
       <label class="flex items-start gap-3 rounded-xl border border-stone-200 p-4 cursor-pointer">
-        <input v-model="atur.aktif" type="checkbox" class="mt-0.5 rounded border-stone-300 accent-[color:var(--eq-aksen,#F57C00)]">
+        <input v-model="atur.aktif" type="checkbox" class="mt-0.5 rounded border-stone-300 accent-[color:var(--eq-aksen,#13806B)]">
         <span>
           <span class="block text-[13px] font-bold text-cam-ink">Kirim pengingat ke akun auditi</span>
           <span class="block text-[11.5px] text-stone-600 mt-0.5 leading-relaxed">

@@ -64,7 +64,7 @@ const pengumuman = ref<Pengumuman | null>(null);
    satuan. */
 const deretKegiatan = computed(() => [
   { nama: 'Modul diselesaikan', nilai: g.value.kegiatan?.modul ?? [], warna: '#16A34A' },
-  { nama: 'Kuis & evaluasi',    nilai: g.value.kegiatan?.uji ?? [],   warna: '#C47000' },
+  { nama: 'Kuis & evaluasi',    nilai: g.value.kegiatan?.uji ?? [],   warna: '#13806B' },
 ]);
 
 const adaKegiatan = computed(() =>

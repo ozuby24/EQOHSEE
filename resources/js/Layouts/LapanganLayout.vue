@@ -62,7 +62,7 @@ onBeforeUnmount(() => lepas.forEach((f) => f()));
 
 <template>
   <Head>
-    <meta name="theme-color" content="#0B1117">
+    <meta name="theme-color" content="#072420">
   </Head>
 
   <div class="lp">
